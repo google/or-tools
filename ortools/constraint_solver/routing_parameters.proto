@@ -23,6 +23,7 @@ option csharp_namespace = "Google.OrTools.ConstraintSolver";
 
 import "google/protobuf/duration.proto";
 import "ortools/constraint_solver/routing_enums.proto";
+import "ortools/constraint_solver/routing_heuristic_parameters.proto";
 import "ortools/constraint_solver/routing_ils.proto";
 import "ortools/constraint_solver/solver_parameters.proto";
 import "ortools/sat/sat_parameters.proto";
@@ -36,9 +37,9 @@ package operations_research;
 // then the routing library will pick its preferred value for that parameter
 // automatically: this should be the case for most parameters.
 // To see those "default" parameters, call GetDefaultRoutingSearchParameters().
-// Next ID: 68
+// Next ID: 73
 message RoutingSearchParameters {
-  reserved 19, 65;
+  reserved 14, 15, 16, 18, 19, 21, 23, 31, 40, 44, 45, 46, 49, 55, 65, 67;
 
   // First solution strategies, used as starting point of local search.
   FirstSolutionStrategy.Value first_solution_strategy = 1;
@@ -48,125 +49,28 @@ message RoutingSearchParameters {
   //
   // Use filtered version of first solution strategy if available.
   bool use_unfiltered_first_solution_strategy = 2;
-  // Parameters specific to the Savings first solution heuristic.
-  // Ratio (in ]0, 1]) of neighbors to consider for each node when constructing
-  // the savings. If unspecified, its value is considered to be 1.0.
-  double savings_neighbors_ratio = 14;
-  // The number of neighbors considered for each node in the Savings heuristic
-  // is chosen so that the space used to store the savings doesn't exceed
-  // savings_max_memory_usage_bytes, which must be in ]0, 1e10].
-  // NOTE: If both savings_neighbors_ratio and savings_max_memory_usage_bytes
-  // are specified, the number of neighbors considered for each node will be the
-  // minimum of the two numbers determined by these parameters.
-  double savings_max_memory_usage_bytes = 23;
-  // Add savings related to reverse arcs when finding the nearest neighbors
-  // of the nodes.
-  bool savings_add_reverse_arcs = 15;
-  // Coefficient of the cost of the arc for which the saving value is being
-  // computed:
-  // Saving(a-->b) = Cost(a-->end) + Cost(start-->b)
-  //                 - savings_arc_coefficient * Cost(a-->b)
-  // This parameter must be greater than 0, and its default value is 1.
-  double savings_arc_coefficient = 18;
 
-  // Ratio (between 0 and 1) of available vehicles in the model on which
-  // farthest nodes of the model are inserted as seeds in the
-  // GlobalCheapestInsertion first solution heuristic.
-  double cheapest_insertion_farthest_seeds_ratio = 16;
+  // Parameters for the Savings heuristic.
+  SavingsParameters savings_parameters = 70;
 
-  // Ratio (in ]0, 1]) of closest non start/end nodes to consider as neighbors
-  // for each node when creating new insertions in the parallel/sequential
-  // cheapest insertion heuristic.
-  // If not overridden, its default value is 1, meaning all neighbors will be
-  // considered.
-  // The neighborhood ratio is coupled with the corresponding min_neighbors
-  // integer, indicating the minimum number of neighbors to consider for each
-  // node:
-  // num_closest_neighbors =
-  //        max(min_neighbors, neighbors_ratio * NUM_NON_START_END_NODES)
-  // This minimum number of neighbors must be greater or equal to 1, its
-  // default value.
-  //
-  // Neighbors ratio and minimum number of neighbors for the first solution
-  // heuristic.
-  double cheapest_insertion_first_solution_neighbors_ratio = 21;
-  int32 cheapest_insertion_first_solution_min_neighbors = 44;
-  // Neighbors ratio and minimum number of neighbors for the heuristic when used
-  // in a local search operator (see
+  // Parameters for the global cheapest insertion heuristic when used as first
+  // solution heuristic.
+  GlobalCheapestInsertionParameters
+      global_cheapest_insertion_first_solution_parameters = 71;
+
+  // Parameters for the global cheapest insertion heuristic when
+  // used in a local search operator (see
   // local_search_operators.use_global_cheapest_insertion_path_lns and
   // local_search_operators.use_global_cheapest_insertion_chain_lns below).
-  double cheapest_insertion_ls_operator_neighbors_ratio = 31;
-  int32 cheapest_insertion_ls_operator_min_neighbors = 45;
+  GlobalCheapestInsertionParameters
+      global_cheapest_insertion_ls_operator_parameters = 72;
 
-  // Whether or not to only consider closest neighbors when initializing the
-  // assignment for the first solution.
-  bool
-      cheapest_insertion_first_solution_use_neighbors_ratio_for_initialization =
-          46;
-  // Whether or not to consider entries making the nodes/pairs unperformed in
-  // the GlobalCheapestInsertion heuristic.
-  bool cheapest_insertion_add_unperformed_entries = 40;
+  // Parameters for the local cheapest insertion heuristic.
+  LocalCheapestInsertionParameters local_cheapest_insertion_parameters = 68;
 
-  // In insertion-based heuristics, describes what positions must be considered
-  // when inserting a pickup/delivery pair, and in what order they are
-  // considered.
-  enum PairInsertionStrategy {
-    // Let the solver decide the set of positions and its ordering.
-    AUTOMATIC = 0;
-    // Consider all positions, by increasing (cost(pickup), cost(delivery)).
-    BEST_PICKUP_THEN_BEST_DELIVERY = 1;
-    // Consider all positions, by increasing by cost(pickup) + cost(delivery).
-    BEST_PICKUP_DELIVERY_PAIR = 2;
-    // Only consider insertion positions that are compatible with the multitour
-    // property, meaning a series of pickups may only start when the vehicle
-    // is not carrying any delivery. This setting is designed to explore much
-    // less possibilities than the full BEST_PICKUP_DELIVERY_PAIR.
-    // Order by increasing by cost(pickup) + cost(delivery).
-    BEST_PICKUP_DELIVERY_PAIR_MULTITOUR = 3;
-  }
-  // Choice of insertion strategy for pickup/delivery pairs, used in local
-  // cheapest insertion, both first solution heuristic and LNS.
-  PairInsertionStrategy local_cheapest_insertion_pickup_delivery_strategy = 49;
-  // Choice of insertion strategy for pickup/delivery pairs, used in local
-  // cheapest cost insertion, both first solution heuristic and LNS.
-  PairInsertionStrategy local_cheapest_cost_insertion_pickup_delivery_strategy =
-      55;
-
-  // Properties used to select in which order nodes or node pairs are considered
-  // in insertion heuristics.
-  enum InsertionSortingProperty {
-    // Invalid property.
-    SORTING_PROPERTY_UNSPECIFIED = 0;
-    // Selects nodes with the least number of allowed vehicles.
-    SORTING_PROPERTY_ALLOWED_VEHICLES = 1;
-    // Selects nodes with the highest penalty.
-    SORTING_PROPERTY_PENALTY = 2;
-    // Selects nodes with the highest penalty / number of allowed vehicles
-    // ratio.
-    SORTING_PROPERTY_PENALTY_OVER_ALLOWED_VEHICLES_RATIO = 3;
-    // Selects nodes that are on average the farthest from vehicles.
-    SORTING_PROPERTY_HIGHEST_AVG_ARC_COST_TO_VEHICLE_START_ENDS = 4;
-    // Selects nodes that are on average the closest to vehicles.
-    SORTING_PROPERTY_LOWEST_AVG_ARC_COST_TO_VEHICLE_START_ENDS = 5;
-    // Select nodes with the smallest distance to the closest vehicle.
-    SORTING_PROPERTY_LOWEST_MIN_ARC_COST_TO_VEHICLE_START_ENDS = 6;
-    // Selects nodes that have a higher dimension usage on average, where the
-    // usage is determined as the ratio of node demand over vehicle capacity.
-    // Currently, this property only supports unary dimensions.
-    SORTING_PROPERTY_HIGHEST_DIMENSION_USAGE = 7;
-    // Selects nodes in random order.
-    // This property cannot be used in conjunction with other properties.
-    SORTING_PROPERTY_RANDOM = 8;
-  }
-
-  // The properties used to sort insertion entries in the local cheapest
-  // insertion heuristic, in *decreasing* order of priority. The properties
-  // listed here are applied hierarchically, from highest to lowest priority.
-  // When no properties are provided
-  //        (SORTING_PROPERTY_ALLOWED_VEHICLES, SORTING_PROPERTY_PENALTY)
-  // is used by default.
-  repeated InsertionSortingProperty
-      local_cheapest_insertion_sorting_properties = 67;
+  // Parameters for the local cheapest cost insertion heuristic.
+  LocalCheapestInsertionParameters local_cheapest_cost_insertion_parameters =
+      69;
 
   // If true use minimum matching instead of minimal matching in the
   // Christofides algorithm.
@@ -182,7 +86,7 @@ message RoutingSearchParameters {
   int32 first_solution_optimization_period = 59;
 
   // Local search neighborhood operators used to build a solutions neighborhood.
-  // Next ID: 39
+  // Next ID: 41
   message LocalSearchNeighborhoodOperators {
     // --- Inter-route operators ---
     // Operator which moves a single node to another position.
@@ -471,12 +375,21 @@ message RoutingSearchParameters {
     // Same as above, but insertion positions for nodes are determined by the
     // LocalCheapestInsertion heuristic.
     OptionalBoolean use_local_cheapest_insertion_close_nodes_lns = 32;
+    // The following operator removes all nodes of a visit type connected
+    // component from their current route and reinserts them to an empty route
+    // using the GlobalCheapestInsertion heuristic.
+    OptionalBoolean use_global_cheapest_insertion_visit_types_lns = 39;
+    // Same as above, but insertion positions for nodes are determined by the
+    // LocalCheapestInsertion heuristic.
+    OptionalBoolean use_local_cheapest_insertion_visit_types_lns = 40;
   }
   LocalSearchNeighborhoodOperators local_search_operators = 3;
 
   // Neighbors ratio and minimum number of neighbors considered in local
-  // search operators (see cheapest_insertion_first_solution_neighbors_ratio
-  // and cheapest_insertion_first_solution_min_neighbors for more information).
+  // search operators (see
+  // GlobalCheapestInsertionParameters.neighbors_ratio and
+  // GlobalCheapestInsertionParameters.min_neighbors for more
+  // information).
   double ls_operator_neighbors_ratio = 53;
   int32 ls_operator_min_neighbors = 54;
 

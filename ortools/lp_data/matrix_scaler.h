@@ -57,8 +57,8 @@
 // and:
 //   A'.x' = R.A.C.C^-1.x = R.A.x = R.b = b'.
 
-#ifndef OR_TOOLS_LP_DATA_MATRIX_SCALER_H_
-#define OR_TOOLS_LP_DATA_MATRIX_SCALER_H_
+#ifndef ORTOOLS_LP_DATA_MATRIX_SCALER_H_
+#define ORTOOLS_LP_DATA_MATRIX_SCALER_H_
 
 #include <string>
 #include <vector>
@@ -174,4 +174,4 @@ class SparseMatrixScaler {
 }  // namespace glop
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_LP_DATA_MATRIX_SCALER_H_
+#endif  // ORTOOLS_LP_DATA_MATRIX_SCALER_H_

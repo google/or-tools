@@ -1,0 +1,1 @@
+RUN: $(test_scheduling_sat_py3)

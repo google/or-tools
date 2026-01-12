@@ -1,0 +1,1 @@
+RUN: $(linear_assignment_api)

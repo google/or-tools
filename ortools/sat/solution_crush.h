@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_SAT_SOLUTION_CRUSH_H_
-#define OR_TOOLS_SAT_SOLUTION_CRUSH_H_
+#ifndef ORTOOLS_SAT_SOLUTION_CRUSH_H_
+#define ORTOOLS_SAT_SOLUTION_CRUSH_H_
 
 #include <cstdint>
 #include <memory>
@@ -20,6 +20,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/inlined_vector.h"
 #include "absl/types/span.h"
@@ -80,6 +81,11 @@ class SolutionCrush {
   // Sets the value of `literal` to "`var`'s value == `value`". Does nothing if
   // `literal` already has a value.
   void MaybeSetLiteralToValueEncoding(int literal, int var, int64_t value);
+
+  // Sets the value of `literal` to "`var`'s value >=/<= `value`". Does nothing
+  // if `literal` already has a value.
+  void MaybeSetLiteralToOrderEncoding(int literal, int var, int64_t value,
+                                      bool is_le);
 
   // Sets the value of `var` to the value of the given linear expression, if all
   // the variables in this expression have a value. `linear` must be a list of
@@ -145,6 +151,21 @@ class SolutionCrush {
   // value. Otherwise does nothing.
   void SetOrUpdateVarToDomain(int var, const Domain& domain);
 
+  // If `var` already has a value, updates it to be within the given domain.
+  // There are 3 cases to consider:
+  // 1/ The hinted value is in reduced_var_domain. Nothing to do.
+  // 2/ The hinted value is not in the domain, and there is an escape value.
+  //    Update the hinted value to the escape value, and update the encoding
+  //    literals to reflect the new value of `var`.
+  // 3/ The hinted value is not in the domain, and there is no escape value.
+  //    Update the hinted value to be in the domain by pushing it in the given
+  //    direction, and update the encoding literals to reflect the new value
+  void SetOrUpdateVarToDomainWithOptionalEscapeValue(
+      int var, const Domain& reduced_var_domain,
+      std::optional<int64_t> unique_escape_value,
+      bool push_down_when_not_in_domain,
+      const absl::btree_map<int64_t, int>& encoding);
+
   // Updates the value of the given literals to false if their current values
   // are different (or does nothing otherwise).
   void UpdateLiteralsToFalseIfDifferent(int lit1, int lit2);
@@ -174,15 +195,23 @@ class SolutionCrush {
       int var, bool value,
       absl::Span<const std::unique_ptr<SparsePermutation>> generators);
 
+  // If at most one literal in `orbitope[row]` is equal to `value`, and if this
+  // literal is in a column 'col' > `pivot_col`, swaps the value of all the
+  // literals in columns 'col' and `pivot_col` (if they all have a value).
+  // Otherwise does nothing.
+  void MaybeSwapOrbitopeColumns(absl::Span<const std::vector<int>> orbitope,
+                                int row, int pivot_col, bool value);
+
   // Sets the value of the i-th variable in `vars` so that the given constraint
   // "dotproduct(coeffs, vars values) = rhs" is satisfied, if all the other
-  // variables have a value. i is equal to `var_index` if set. Otherwise it is
-  // the index of the variable without a value (if there is not exactly one,
-  // this method does nothing).
-  void SetVarToLinearConstraintSolution(std::optional<int> var_index,
-                                        absl::Span<const int> vars,
-                                        absl::Span<const int64_t> coeffs,
-                                        int64_t rhs);
+  // variables have a value, and if the constraint is enforced (otherwise it
+  // sets the unset variables to their `default_values`). i is equal to
+  // `var_index` if set. Otherwise it is the index of the variable without a
+  // value (if there is not exactly one, this method does nothing).
+  void SetVarToLinearConstraintSolution(
+      absl::Span<const int> enforcement_lits, std::optional<int> var_index,
+      absl::Span<const int> vars, absl::Span<const int64_t> default_values,
+      absl::Span<const int64_t> coeffs, int64_t rhs);
 
   // Sets the value of the variables in `level_vars` and in `circuit` if all the
   // variables in `reservoir` have a value. This assumes that there is one level
@@ -346,4 +375,4 @@ class SolutionCrush {
 }  // namespace sat
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_SOLUTION_CRUSH_H_
+#endif  // ORTOOLS_SAT_SOLUTION_CRUSH_H_

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# [START program]
 """Implements AllDifferentExcept0 using atomic constraints."""
 
 import collections
@@ -82,3 +83,4 @@ def all_different_except_0():
 
 
 all_different_except_0()
+# [END program]

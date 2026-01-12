@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_MATH_OPT_STORAGE_UPDATE_TRACKERS_H_
-#define OR_TOOLS_MATH_OPT_STORAGE_UPDATE_TRACKERS_H_
+#ifndef ORTOOLS_MATH_OPT_STORAGE_UPDATE_TRACKERS_H_
+#define ORTOOLS_MATH_OPT_STORAGE_UPDATE_TRACKERS_H_
 
 #include <algorithm>
 #include <atomic>
@@ -159,7 +159,7 @@ void UpdateTrackers<Data>::UpdateHasPendingActions() {
 template <typename Data>
 template <typename... Args>
 UpdateTrackerId UpdateTrackers<Data>::NewUpdateTracker(Args&&... args) {
-  const absl::MutexLock lock(&mutex_);
+  const absl::MutexLock lock(mutex_);
 
   const UpdateTrackerId update_tracker = next_update_tracker_;
   ++next_update_tracker_;
@@ -192,7 +192,7 @@ UpdateTrackers<Data>::FindTracker(const std::vector<IdDataPair>& v,
 template <typename Data>
 void UpdateTrackers<Data>::DeleteUpdateTracker(
     const UpdateTrackerId update_tracker) {
-  const absl::MutexLock lock(&mutex_);
+  const absl::MutexLock lock(mutex_);
 
   // The delete trackers may still be in pending_new_trackers_. We have to
   // remove it from there.
@@ -233,7 +233,7 @@ UpdateTrackers<Data>::GetUpdatedTrackers() {
   // Using a non-relaxed memory order has significant impact on performances
   // here.
   if (has_pending_actions_.load(std::memory_order_relaxed)) {
-    const absl::MutexLock lock(&mutex_);
+    const absl::MutexLock lock(mutex_);
 
     // Flush removed trackers.
     gtl::STLEraseAllFromSequenceIf(
@@ -262,7 +262,7 @@ UpdateTrackers<Data>::GetUpdatedTrackers() {
 
 template <typename Data>
 Data& UpdateTrackers<Data>::GetData(UpdateTrackerId update_tracker) {
-  const absl::MutexLock lock(&mutex_);
+  const absl::MutexLock lock(mutex_);
   // Note that here we could apply the pending actions. We don't do so to keep
   // the symmetry with the const overload below.
 
@@ -290,7 +290,7 @@ Data& UpdateTrackers<Data>::GetData(UpdateTrackerId update_tracker) {
 template <typename Data>
 const Data& UpdateTrackers<Data>::GetData(
     UpdateTrackerId update_tracker) const {
-  const absl::MutexLock lock(&mutex_);
+  const absl::MutexLock lock(mutex_);
   // The tracker may still be in pending_new_trackers_.
   {
     const auto found_new = FindTracker(pending_new_trackers_, update_tracker);
@@ -314,4 +314,4 @@ const Data& UpdateTrackers<Data>::GetData(
 
 }  // namespace operations_research::math_opt
 
-#endif  // OR_TOOLS_MATH_OPT_STORAGE_UPDATE_TRACKERS_H_
+#endif  // ORTOOLS_MATH_OPT_STORAGE_UPDATE_TRACKERS_H_

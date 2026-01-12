@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_SAT_2D_RECTANGLE_PRESOLVE_H_
-#define OR_TOOLS_SAT_2D_RECTANGLE_PRESOLVE_H_
+#ifndef ORTOOLS_SAT_2D_RECTANGLE_PRESOLVE_H_
+#define ORTOOLS_SAT_2D_RECTANGLE_PRESOLVE_H_
 
 #include <tuple>
 #include <utility>
@@ -21,6 +21,7 @@
 #include "absl/algorithm/container.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/inlined_vector.h"
+#include "absl/log/log.h"
 #include "absl/types/span.h"
 #include "ortools/sat/diffn_util.h"
 #include "ortools/sat/integer_base.h"
@@ -180,6 +181,7 @@ class Neighbours {
         case EdgePosition::RIGHT:
           return std::tie(a.y_min, a.y_max) > std::tie(b.y_min, b.y_max);
       }
+      LOG(FATAL) << "Invalid edge position: " << static_cast<int>(edge_);
     }
     EdgePosition edge_;
   };
@@ -253,4 +255,4 @@ std::vector<Rectangle> CutShapeIntoRectangles(SingleShape shapes);
 }  // namespace sat
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_2D_RECTANGLE_PRESOLVE_H_
+#endif  // ORTOOLS_SAT_2D_RECTANGLE_PRESOLVE_H_

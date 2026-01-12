@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_GRAPH_BIDIRECTIONAL_DIJKSTRA_H_
-#define OR_TOOLS_GRAPH_BIDIRECTIONAL_DIJKSTRA_H_
+#ifndef ORTOOLS_GRAPH_BIDIRECTIONAL_DIJKSTRA_H_
+#define ORTOOLS_GRAPH_BIDIRECTIONAL_DIJKSTRA_H_
 
 #include <algorithm>
 #include <limits>
@@ -206,7 +206,6 @@ BidirectionalDijkstra<GraphType, DistanceType>::BidirectionalDijkstra(
     distances_[dir].assign(num_nodes, infinity());
     parent_arc_[dir].assign(num_nodes, -1);
   }
-  search_threads_.StartWorkers();
 }
 
 template <typename GraphType, typename DistanceType>
@@ -373,7 +372,7 @@ void BidirectionalDijkstra<GraphType, DistanceType>::PerformHalfSearch(
         // Release the node mutex, now that we can, to prevent deadlocks when
         // we try acquiring the global search mutex.
         node_mutex_[top.node].Unlock();
-        absl::MutexLock search_lock(&search_mutex_);
+        absl::MutexLock search_lock(search_mutex_);
         if (meeting_distance < best_meeting_point_.distance) {
           best_meeting_point_ = {top.node, meeting_distance};
           DVLOG(2) << (dir ? "BACKWARD" : "FORWARD")
@@ -388,7 +387,7 @@ void BidirectionalDijkstra<GraphType, DistanceType>::PerformHalfSearch(
     // should stop the search, based on the other radius.
     DistanceType potentially_interesting_distance_upper_bound;
     {
-      absl::MutexLock lock(&search_mutex_);
+      absl::MutexLock lock(search_mutex_);
       current_search_radius_[dir] = top.distance;
       potentially_interesting_distance_upper_bound =
           best_meeting_point_.distance - current_search_radius_[Reverse(dir)];
@@ -427,7 +426,7 @@ void BidirectionalDijkstra<GraphType, DistanceType>::PerformHalfSearch(
         // protection of a Mutex.
         DistanceType meeting_distance = infinity();
         {
-          absl::MutexLock node_lock(&node_mutex_[head]);
+          absl::MutexLock node_lock(node_mutex_[head]);
           distances_[dir][head] = candidate_distance;
           // Did we reach a meeting point?
           if (is_settled_[Reverse(dir)][head]) {
@@ -441,7 +440,7 @@ void BidirectionalDijkstra<GraphType, DistanceType>::PerformHalfSearch(
         // Mutex -- this is fine performance-wise because it happens rarely.
         // To avoid deadlocks, we make sure that 'node_mutex' is no longer held.
         if (meeting_distance != infinity()) {
-          absl::MutexLock search_lock(&search_mutex_);
+          absl::MutexLock search_lock(search_mutex_);
           if (meeting_distance < best_meeting_point_.distance) {
             best_meeting_point_ = {head, meeting_distance};
             DVLOG(2) << (dir ? "BACKWARD" : "FORWARD")
@@ -461,4 +460,4 @@ void BidirectionalDijkstra<GraphType, DistanceType>::PerformHalfSearch(
 }
 
 }  // namespace operations_research
-#endif  // OR_TOOLS_GRAPH_BIDIRECTIONAL_DIJKSTRA_H_
+#endif  // ORTOOLS_GRAPH_BIDIRECTIONAL_DIJKSTRA_H_

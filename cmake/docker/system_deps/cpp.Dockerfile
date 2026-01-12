@@ -6,12 +6,16 @@ FROM env AS devel
 WORKDIR /home/project
 COPY . .
 
+ARG CMAKE_BUILD_PARALLEL_LEVEL
+ENV CMAKE_BUILD_PARALLEL_LEVEL=${CMAKE_BUILD_PARALLEL_LEVEL:-4}
+
 FROM devel AS build
 RUN cmake -S. -Bbuild -DBUILD_DEPS=OFF \
  -DUSE_COINOR=ON \
  -DUSE_GLPK=ON \
  -DUSE_HIGHS=OFF \
- -DUSE_SCIP=ON
+ -DUSE_SCIP=ON \
+ -DBUILD_googletest=ON
 RUN cmake --build build --target all -v
 RUN cmake --build build --target install
 

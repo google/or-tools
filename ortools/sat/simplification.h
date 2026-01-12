@@ -16,8 +16,8 @@
 // "Effective Preprocessing in SAT through Variable and Clause Elimination",
 // Niklas Een and Armin Biere, published in the SAT 2005 proceedings.
 
-#ifndef OR_TOOLS_SAT_SIMPLIFICATION_H_
-#define OR_TOOLS_SAT_SIMPLIFICATION_H_
+#ifndef ORTOOLS_SAT_SIMPLIFICATION_H_
+#define ORTOOLS_SAT_SIMPLIFICATION_H_
 
 #include <cstdint>
 #include <deque>
@@ -28,7 +28,6 @@
 #include "absl/types/span.h"
 #include "ortools/base/adjustable_priority_queue.h"
 #include "ortools/base/strong_vector.h"
-#include "ortools/sat/drat_proof_handler.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
@@ -152,10 +151,7 @@ class SatPresolver {
   typedef int32_t ClauseIndex;
 
   explicit SatPresolver(SatPostsolver* postsolver, SolverLogger* logger)
-      : postsolver_(postsolver),
-        num_trivial_clauses_(0),
-        drat_proof_handler_(nullptr),
-        logger_(logger) {}
+      : postsolver_(postsolver), num_trivial_clauses_(0), logger_(logger) {}
 
   // This type is neither copyable nor movable.
   SatPresolver(const SatPresolver&) = delete;
@@ -229,10 +225,6 @@ class SatPresolver {
 
   // Visible for testing. Just applies the BVA step of the presolve.
   void PresolveWithBva();
-
-  void SetDratProofHandler(DratProofHandler* drat_proof_handler) {
-    drat_proof_handler_ = drat_proof_handler;
-  }
 
  private:
   // Internal function used by ProcessClauseToSimplifyOthers().
@@ -378,7 +370,6 @@ class SatPresolver {
 
   int num_trivial_clauses_;
   SatParameters parameters_;
-  DratProofHandler* drat_proof_handler_;
   TimeLimit* time_limit_ = nullptr;
   SolverLogger* logger_;
 };
@@ -439,11 +430,10 @@ int ComputeResolvantSize(Literal x, const std::vector<Literal>& a,
 // constraints.
 void ProbeAndFindEquivalentLiteral(
     SatSolver* solver, SatPostsolver* postsolver,
-    DratProofHandler* drat_proof_handler,
     util_intops::StrongVector<LiteralIndex, LiteralIndex>* mapping,
     SolverLogger* = nullptr);
 
 }  // namespace sat
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_SIMPLIFICATION_H_
+#endif  // ORTOOLS_SAT_SIMPLIFICATION_H_

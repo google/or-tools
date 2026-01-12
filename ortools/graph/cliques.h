@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//
 // Maximal clique algorithms, based on the Bron-Kerbosch algorithm.
 // See http://en.wikipedia.org/wiki/Bron-Kerbosch_algorithm
 // and
@@ -21,8 +20,8 @@
 //
 // Keywords: undirected graph, clique, clique cover, Bron, Kerbosch.
 
-#ifndef OR_TOOLS_GRAPH_CLIQUES_H_
-#define OR_TOOLS_GRAPH_CLIQUES_H_
+#ifndef ORTOOLS_GRAPH_CLIQUES_H_
+#define ORTOOLS_GRAPH_CLIQUES_H_
 
 #include <cstddef>
 #include <cstdint>
@@ -647,4 +646,4 @@ const double BronKerboschAlgorithm<
     NodeIndex>::kPushStateDeterministicTimeSecondsPerCandidate = 0.54663e-7;
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_GRAPH_CLIQUES_H_
+#endif  // ORTOOLS_GRAPH_CLIQUES_H_

@@ -11,12 +11,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_UTIL_PROTO_TOOLS_H_
-#define OR_TOOLS_UTIL_PROTO_TOOLS_H_
+#ifndef ORTOOLS_UTIL_PROTO_TOOLS_H_
+#define ORTOOLS_UTIL_PROTO_TOOLS_H_
 
 #include <string>
 
-#include "absl/base/casts.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_format.h"
@@ -41,6 +40,27 @@ absl::StatusOr<const Proto*> SafeProtoConstDownCast(
 // printing parameters.
 std::string FullProtocolMessageAsString(
     const google::protobuf::Message& message, int indent_level);
+
+// This recursive function returns all the proto fields that are set(*) in a
+// proto instance, along with how many times they appeared. A repeated field is
+// only counted once as itself, regardless of its (non-zero) size, but then the
+// nested child fields of a repeated message are counted once per instance.
+// EXAMPLE: with these .proto message definitions:
+//   message YY { repeated int z; }
+//   message XX { int a; int b; repeated int c; repeated YY d; }
+// and this instance of `XX`:
+//   XX x = Parse("a: 10 c: [ 11, 12] d: {z: [13, 14]} d: {z: [15]}"");
+// We'd expect ExploreAndCountAllProtoPathsInInstance() to yield the map:
+//   {"a": 1, "c": 1, "d": 1, "d.z": 3}
+//
+// (*) The term 'set' has the usual semantic, which varies depending on proto
+//     version. Extensions and unknown fields are ignored by this function.
+void ExploreAndCountAllProtoPathsInInstance(
+    const google::protobuf::Message& message,
+    // Output. Must be non-nullptr. Entries are added to the map, i.e., the map
+    // is not cleared. That allows cumulative use of this function across
+    // several proto instances to build a global count of proto paths.
+    absl::flat_hash_map<std::string, int>* proto_path_counts);
 
 // =============================================================================
 // Implementation of function templates.
@@ -74,4 +94,4 @@ absl::StatusOr<const Proto*> SafeProtoConstDownCast(
 }
 
 }  // namespace operations_research
-#endif  // OR_TOOLS_UTIL_PROTO_TOOLS_H_
+#endif  // ORTOOLS_UTIL_PROTO_TOOLS_H_

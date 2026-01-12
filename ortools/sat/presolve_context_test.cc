@@ -506,7 +506,7 @@ TEST(PresolveContextTest, ObjectiveSubstitutionWithLargeCoeff) {
     objective {
       vars: [ 1, 2 ]
       coeffs: [ 2, 2 ]
-      domain: [ 12, 1012 ]  #  [0, 1000] initially, + 2*6 offset.
+      domain: [ 12, 36 ]  #  [0, 1000] initially, + 2*6 offset.
       offset: -9
       integer_before_offset: -12
       scaling_factor: 1
@@ -529,12 +529,12 @@ TEST(PresolveContextTest, VarValueEncoding) {
   EXPECT_FALSE(context.StoreLiteralImpliesVarEqValue(0, 2, 4));
   EXPECT_FALSE(context.HasVarValueEncoding(2, 4));
 
-  EXPECT_TRUE(context.StoreLiteralImpliesVarNEqValue(-1, 2, 4));
-  EXPECT_FALSE(context.StoreLiteralImpliesVarNEqValue(-1, 2, 4));
+  EXPECT_TRUE(context.StoreLiteralImpliesVarNeValue(-1, 2, 4));
+  EXPECT_FALSE(context.StoreLiteralImpliesVarNeValue(-1, 2, 4));
   EXPECT_TRUE(context.HasVarValueEncoding(2, 4));
 
-  EXPECT_TRUE(context.StoreLiteralImpliesVarNEqValue(0, 1, 4));
-  EXPECT_FALSE(context.StoreLiteralImpliesVarNEqValue(0, 1, 4));
+  EXPECT_TRUE(context.StoreLiteralImpliesVarNeValue(0, 1, 4));
+  EXPECT_FALSE(context.StoreLiteralImpliesVarNeValue(0, 1, 4));
   EXPECT_FALSE(context.HasVarValueEncoding(1, 4));
 
   EXPECT_TRUE(context.StoreLiteralImpliesVarEqValue(-1, 1, 4));
@@ -574,7 +574,7 @@ TEST(PresolveContextTest, DetectVarEqValueHalfEncoding) {
   context.InitializeNewDomains();
 
   context.StoreLiteralImpliesVarEqValue(kLiteral, kVar, kValue);
-  context.StoreLiteralImpliesVarNEqValue(NegatedRef(kLiteral), kVar, kValue);
+  context.StoreLiteralImpliesVarNeValue(NegatedRef(kLiteral), kVar, kValue);
   int encoding_literal = 0;
   EXPECT_TRUE(context.HasVarValueEncoding(kVar, kValue, &encoding_literal));
   EXPECT_EQ(encoding_literal, kLiteral);
@@ -1082,6 +1082,92 @@ TEST(PresolveContextTest, LoadSolutionHint) {
                           values: [ 10, 5, 0 ])pb");
   EXPECT_THAT(working_model.solution_hint(),
               testing::EqualsProto(expected_solution_hint));
+}
+
+TEST(PresolveContextTest, IntersectionOfAffineExprsIsNotEmpty_easy) {
+  Model model;
+  CpModelProto working_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+  )pb");
+  PresolveContext context(&model, &working_model, nullptr);
+  context.InitializeNewDomains();
+  LinearExpressionProto expr1;
+  expr1.add_vars(0);
+  expr1.add_coeffs(1);
+  LinearExpressionProto expr2;
+  expr2.add_vars(1);
+  expr2.add_coeffs(1);
+  EXPECT_TRUE(context.IntersectionOfAffineExprsIsNotEmpty(expr1, expr2));
+}
+
+TEST(PresolveContextTest, IntersectionOfAffineExprsIsNotEmpty_shifted) {
+  Model model;
+  CpModelProto working_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+  )pb");
+  PresolveContext context(&model, &working_model, nullptr);
+  context.InitializeNewDomains();
+  LinearExpressionProto expr1;
+  expr1.add_vars(0);
+  expr1.add_coeffs(2);
+  LinearExpressionProto expr2;
+  expr2.add_vars(1);
+  expr2.add_coeffs(2);
+  expr2.set_offset(1);
+  EXPECT_FALSE(context.IntersectionOfAffineExprsIsNotEmpty(expr1, expr2));
+}
+
+TEST(PresolveContextTest, IntersectionOfAffineExprsIsNotEmpty_prime_nosol) {
+  Model model;
+  CpModelProto working_model = ParseTestProto(R"pb(
+    variables { domain: [ 1, 6 ] }
+    variables { domain: [ 1, 4 ] }
+  )pb");
+  PresolveContext context(&model, &working_model, nullptr);
+  context.InitializeNewDomains();
+  LinearExpressionProto expr1;
+  expr1.add_vars(0);
+  expr1.add_coeffs(5);
+  LinearExpressionProto expr2;
+  expr2.add_vars(1);
+  expr2.add_coeffs(7);
+  EXPECT_FALSE(context.IntersectionOfAffineExprsIsNotEmpty(expr1, expr2));
+}
+
+TEST(PresolveContextTest, IntersectionOfAffineExprsIsNotEmpty_prime_nosol2) {
+  Model model;
+  CpModelProto working_model = ParseTestProto(R"pb(
+    variables { domain: [ 1, 6 ] }
+    variables { domain: [ 1, 5 ] }
+  )pb");
+  PresolveContext context(&model, &working_model, nullptr);
+  context.InitializeNewDomains();
+  LinearExpressionProto expr1;
+  expr1.add_vars(0);
+  expr1.add_coeffs(5);
+  LinearExpressionProto expr2;
+  expr2.add_vars(1);
+  expr2.add_coeffs(7);
+  EXPECT_FALSE(context.IntersectionOfAffineExprsIsNotEmpty(expr1, expr2));
+}
+
+TEST(PresolveContextTest, IntersectionOfAffineExprsIsNotEmpty_prime_reach) {
+  Model model;
+  CpModelProto working_model = ParseTestProto(R"pb(
+    variables { domain: [ 1, 7 ] }
+    variables { domain: [ 1, 5 ] }
+  )pb");
+  PresolveContext context(&model, &working_model, nullptr);
+  context.InitializeNewDomains();
+  LinearExpressionProto expr1;
+  expr1.add_vars(0);
+  expr1.add_coeffs(5);
+  LinearExpressionProto expr2;
+  expr2.add_vars(1);
+  expr2.add_coeffs(7);
+  EXPECT_TRUE(context.IntersectionOfAffineExprsIsNotEmpty(expr1, expr2));
 }
 
 }  // namespace

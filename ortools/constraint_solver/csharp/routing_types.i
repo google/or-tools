@@ -78,6 +78,16 @@ DEFINE_INDEX_TYPE(operations_research::RoutingDisjunctionIndex);
 DEFINE_INDEX_TYPE(operations_research::RoutingVehicleClassIndex);
 DEFINE_INDEX_TYPE(operations_research::RoutingResourceClassIndex);
 
-// TODO(user): Replace with %ignoreall/%unignoreall
-//swiglint: disable include-h-allglobals
+%ignoreall
+
+%unignore operations_research;
+namespace operations_research {
+
+// PickupDeliveryPair
+%unignore PickupDeliveryPair;
+
+}  // namespace operations_research
+
 %include "ortools/constraint_solver/routing_types.h"
+
+%unignoreall

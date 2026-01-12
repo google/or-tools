@@ -40,7 +40,7 @@
 namespace operations_research {
 namespace sat {
 
-DratChecker::Clause::Clause(int first_literal_index, int num_literals)
+DratChecker::Clause::Clause(size_t first_literal_index, int num_literals)
     : first_literal_index(first_literal_index), num_literals(num_literals) {}
 
 std::size_t DratChecker::ClauseHash::operator()(
@@ -59,7 +59,7 @@ bool DratChecker::ClauseEquiv::operator()(
 }
 
 DratChecker::DratChecker()
-    : first_infered_clause_index_(kNoClauseIndex),
+    : first_inferred_clause_index_(kNoClauseIndex),
       clause_set_(0, ClauseHash(this), ClauseEquiv(this)),
       num_variables_(0) {}
 
@@ -68,8 +68,9 @@ bool DratChecker::Clause::IsDeleted(ClauseIndex clause_index) const {
 }
 
 void DratChecker::AddProblemClause(absl::Span<const Literal> clause) {
-  DCHECK_EQ(first_infered_clause_index_, kNoClauseIndex);
-  const ClauseIndex clause_index = AddClause(clause);
+  DCHECK_EQ(first_inferred_clause_index_, kNoClauseIndex);
+  const ClauseIndex clause_index = MaybeAddClause(clause);
+  if (clause_index == kNoClauseIndex) return;
 
   const auto it = clause_set_.find(clause_index);
   if (it != clause_set_.end()) {
@@ -80,28 +81,29 @@ void DratChecker::AddProblemClause(absl::Span<const Literal> clause) {
   }
 }
 
-void DratChecker::AddInferedClause(absl::Span<const Literal> clause) {
-  const ClauseIndex infered_clause_index = AddClause(clause);
-  if (first_infered_clause_index_ == kNoClauseIndex) {
-    first_infered_clause_index_ = infered_clause_index;
+void DratChecker::AddInferredClause(absl::Span<const Literal> clause) {
+  const ClauseIndex inferred_clause_index = MaybeAddClause(clause);
+  CHECK_NE(inferred_clause_index, kNoClauseIndex);
+  if (first_inferred_clause_index_ == kNoClauseIndex) {
+    first_inferred_clause_index_ = inferred_clause_index;
   }
 
-  const auto it = clause_set_.find(infered_clause_index);
+  const auto it = clause_set_.find(inferred_clause_index);
   if (it != clause_set_.end()) {
     clauses_[*it].num_copies += 1;
-    if (*it >= first_infered_clause_index_ && !clause.empty()) {
+    if (*it >= first_inferred_clause_index_ && !clause.empty()) {
       CHECK_EQ(clauses_[*it].rat_literal_index, clause[0].Index());
     }
     RemoveLastClause();
   } else {
-    clauses_[infered_clause_index].rat_literal_index =
+    clauses_[inferred_clause_index].rat_literal_index =
         clause.empty() ? kNoLiteralIndex : clause[0].Index();
-    clause_set_.insert(infered_clause_index);
+    clause_set_.insert(inferred_clause_index);
   }
 }
 
-ClauseIndex DratChecker::AddClause(absl::Span<const Literal> clause) {
-  const int first_literal_index = literals_.size();
+ClauseIndex DratChecker::MaybeAddClause(absl::Span<const Literal> clause) {
+  const size_t first_literal_index = literals_.size();
   literals_.insert(literals_.end(), clause.begin(), clause.end());
   // Sort the input clause in strictly increasing order (by sorting and then
   // removing the duplicate literals).
@@ -110,8 +112,11 @@ ClauseIndex DratChecker::AddClause(absl::Span<const Literal> clause) {
       std::unique(literals_.begin() + first_literal_index, literals_.end()),
       literals_.end());
 
-  for (int i = first_literal_index + 1; i < literals_.size(); ++i) {
-    CHECK(literals_[i] != literals_[i - 1].Negated());
+  for (size_t i = first_literal_index + 1; i < literals_.size(); ++i) {
+    if (literals_[i] == literals_[i - 1].Negated()) {
+      literals_.resize(first_literal_index);
+      return kNoClauseIndex;
+    }
   }
   clauses_.push_back(
       Clause(first_literal_index, literals_.size() - first_literal_index));
@@ -124,7 +129,9 @@ ClauseIndex DratChecker::AddClause(absl::Span<const Literal> clause) {
 
 void DratChecker::DeleteClause(absl::Span<const Literal> clause) {
   // Temporarily add 'clause' to find if it has been previously added.
-  const auto it = clause_set_.find(AddClause(clause));
+  const ClauseIndex clause_index = MaybeAddClause(clause);
+  if (clause_index == kNoClauseIndex) return;
+  const auto it = clause_set_.find(clause_index);
   if (it != clause_set_.end()) {
     Clause& existing_clause = clauses_[*it];
     existing_clause.num_copies -= 1;
@@ -151,16 +158,16 @@ void DratChecker::RemoveLastClause() {
 
 // See Algorithm of Fig. 8 in 'Trimming while Checking Clausal Proofs'.
 DratChecker::Status DratChecker::Check(double max_time_in_seconds) {
-  // First check that the last infered clause is empty (this implies there
-  // should be at least one infered clause), and mark it as needed for the
+  // First check that the last inferred clause is empty (this implies there
+  // should be at least one inferred clause), and mark it as needed for the
   // proof.
-  if (clauses_.empty() || first_infered_clause_index_ == kNoClauseIndex ||
+  if (clauses_.empty() || first_inferred_clause_index_ == kNoClauseIndex ||
       clauses_.back().num_literals != 0) {
     return Status::INVALID;
   }
   clauses_.back().is_needed_for_proof = true;
 
-  // Checks the infered clauses in reversed order. The advantage of this order
+  // Checks the inferred clauses in reversed order. The advantage of this order
   // is that when checking a clause, one can mark all the clauses that are used
   // to check it. In turn, only these marked clauses need to be checked (and so
   // on recursively). By contrast, a forward iteration needs to check all the
@@ -168,7 +175,7 @@ DratChecker::Status DratChecker::Check(double max_time_in_seconds) {
   const int64_t start_time_nanos = absl::GetCurrentTimeNanos();
   TimeLimit time_limit(max_time_in_seconds);
   Init();
-  for (ClauseIndex i(clauses_.size() - 1); i >= first_infered_clause_index_;
+  for (ClauseIndex i(clauses_.size() - 1); i >= first_inferred_clause_index_;
        --i) {
     if (time_limit.LimitReached()) {
       return Status::UNKNOWN;
@@ -220,11 +227,11 @@ DratChecker::Status DratChecker::Check(double max_time_in_seconds) {
 }
 
 std::vector<std::vector<Literal>> DratChecker::GetUnsatSubProblem() const {
-  return GetClausesNeededForProof(ClauseIndex(0), first_infered_clause_index_);
+  return GetClausesNeededForProof(ClauseIndex(0), first_inferred_clause_index_);
 }
 
 std::vector<std::vector<Literal>> DratChecker::GetOptimizedProof() const {
-  return GetClausesNeededForProof(first_infered_clause_index_,
+  return GetClausesNeededForProof(first_inferred_clause_index_,
                                   ClauseIndex(clauses_.size()));
 }
 
@@ -237,7 +244,7 @@ std::vector<std::vector<Literal>> DratChecker::GetClausesNeededForProof(
       const absl::Span<const Literal>& literals = Literals(clause);
       result.emplace_back(literals.begin(), literals.end());
       if (clause.rat_literal_index != kNoLiteralIndex) {
-        const int rat_literal_clause_index =
+        const size_t rat_literal_clause_index =
             std::find(literals.begin(), literals.end(),
                       Literal(clause.rat_literal_index)) -
             literals.begin();
@@ -451,24 +458,24 @@ void DratChecker::MarkAsNeededForProof(Clause* clause) {
 
 void DratChecker::LogStatistics(int64_t duration_nanos) const {
   int problem_clauses_needed_for_proof = 0;
-  int infered_clauses_needed_for_proof = 0;
+  int inferred_clauses_needed_for_proof = 0;
   for (ClauseIndex i(0); i < clauses_.size(); ++i) {
     if (clauses_[i].is_needed_for_proof) {
-      if (i < first_infered_clause_index_) {
+      if (i < first_inferred_clause_index_) {
         ++problem_clauses_needed_for_proof;
       } else {
-        ++infered_clauses_needed_for_proof;
+        ++inferred_clauses_needed_for_proof;
       }
     }
   }
-  LOG(INFO) << problem_clauses_needed_for_proof
-            << " problem clauses needed for proof, out of "
-            << first_infered_clause_index_;
-  LOG(INFO) << infered_clauses_needed_for_proof
-            << " infered clauses needed for proof, out of "
-            << clauses_.size() - first_infered_clause_index_;
-  LOG(INFO) << num_rat_checks_ << " RAT infered clauses";
-  LOG(INFO) << "verification time: " << 1e-9 * duration_nanos << " s";
+  VLOG(1) << problem_clauses_needed_for_proof
+          << " problem clauses needed for proof, out of "
+          << first_inferred_clause_index_;
+  VLOG(1) << inferred_clauses_needed_for_proof
+          << " inferred clauses needed for proof, out of "
+          << clauses_.size() - first_inferred_clause_index_;
+  VLOG(1) << num_rat_checks_ << " RAT inferred clauses";
+  VLOG(1) << "verification time: " << 1e-9 * duration_nanos << " s";
 }
 
 bool ContainsLiteral(absl::Span<const Literal> clause, Literal literal) {
@@ -561,8 +568,8 @@ bool AddProblemClauses(const std::string& file_path,
   return result;
 }
 
-bool AddInferedAndDeletedClauses(const std::string& file_path,
-                                 DratChecker* drat_checker) {
+bool AddInferredAndDeletedClauses(const std::string& file_path,
+                                  DratChecker* drat_checker) {
   int line_number = 0;
   bool ends_with_empty_clause = false;
   std::vector<Literal> literals;
@@ -592,12 +599,12 @@ bool AddInferedAndDeletedClauses(const std::string& file_path,
       drat_checker->DeleteClause(literals);
       ends_with_empty_clause = false;
     } else {
-      drat_checker->AddInferedClause(literals);
+      drat_checker->AddInferredClause(literals);
       ends_with_empty_clause = literals.empty();
     }
   }
   if (!ends_with_empty_clause) {
-    drat_checker->AddInferedClause({});
+    drat_checker->AddInferredClause({});
   }
   file.close();
   return result;

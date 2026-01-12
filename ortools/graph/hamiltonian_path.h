@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_GRAPH_HAMILTONIAN_PATH_H_
-#define OR_TOOLS_GRAPH_HAMILTONIAN_PATH_H_
+#ifndef ORTOOLS_GRAPH_HAMILTONIAN_PATH_H_
+#define ORTOOLS_GRAPH_HAMILTONIAN_PATH_H_
 
 // Solves the Shortest Hamiltonian Path Problem using a complete algorithm.
 // The algorithm was first described in
@@ -1023,4 +1023,4 @@ PruningHamiltonianSolver<CostType, CostFunction>::ComputeFutureLowerBound(
 }
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_GRAPH_HAMILTONIAN_PATH_H_
+#endif  // ORTOOLS_GRAPH_HAMILTONIAN_PATH_H_

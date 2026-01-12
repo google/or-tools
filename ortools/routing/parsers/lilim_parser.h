@@ -38,8 +38,8 @@
 // corresponding pickup node. The value of travel time is equal to the value of
 // distance.
 
-#ifndef OR_TOOLS_ROUTING_PARSERS_LILIM_PARSER_H_
-#define OR_TOOLS_ROUTING_PARSERS_LILIM_PARSER_H_
+#ifndef ORTOOLS_ROUTING_PARSERS_LILIM_PARSER_H_
+#define ORTOOLS_ROUTING_PARSERS_LILIM_PARSER_H_
 
 #include <math.h>
 
@@ -124,4 +124,4 @@ class LiLimParser {
 };
 }  // namespace operations_research::routing
 
-#endif  // OR_TOOLS_ROUTING_PARSERS_LILIM_PARSER_H_
+#endif  // ORTOOLS_ROUTING_PARSERS_LILIM_PARSER_H_

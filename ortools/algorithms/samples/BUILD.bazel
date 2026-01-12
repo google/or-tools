@@ -11,14 +11,62 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load(
-    ":code_samples.bzl",
-    "code_sample_cc_py",
-    "code_sample_java",
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
+load("@rules_java//java:java_binary.bzl", "java_binary")
+load("@rules_python//python:py_test.bzl", "py_test")
+load("//tools/testing:bintest.bzl", "bintest")
+
+package(default_visibility = ["//visibility:public"])
+
+cc_test(
+    name = "simple_knapsack_program_test",
+    srcs = ["simple_knapsack_program.cc"],
+    deps = [
+        "//ortools/algorithms:knapsack_solver_lib",
+        "//ortools/base",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:globals",
+    ],
 )
 
-code_sample_cc_py(name = "knapsack")
+py_test(
+    name = "simple_knapsack_program_py3",
+    srcs = ["simple_knapsack_program.py"],
+    main = "simple_knapsack_program.py",
+    deps = ["//ortools/algorithms/python:knapsack_solver"],
+)
 
-code_sample_cc_py(name = "simple_knapsack_program")
+cc_test(
+    name = "knapsack_test",
+    srcs = ["knapsack.cc"],
+    deps = [
+        "//ortools/algorithms:knapsack_solver_lib",
+        "//ortools/base",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log:globals",
+    ],
+)
 
-code_sample_java(name = "Knapsack")
+py_test(
+    name = "knapsack_py3",
+    srcs = ["knapsack.py"],
+    main = "knapsack.py",
+    deps = ["//ortools/algorithms/python:knapsack_solver"],
+)
+
+java_binary(
+    name = "Knapsack",
+    srcs = ["Knapsack.java"],
+    main_class = "com.google.ortools.algorithms.samples.Knapsack",
+    deps = [
+        "//ortools/algorithms/java:knapsacksolver",
+        "//ortools/java/com/google/ortools:Loader",
+    ],
+)
+
+bintest(
+    name = "KnapsackTest",
+    srcs = [":KnapsackTest.bintest"],
+    named_data = {"Knapsack": ":Knapsack"},
+)

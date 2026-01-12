@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_MATH_OPT_CORE_SOLVER_INTERFACE_H_
-#define OR_TOOLS_MATH_OPT_CORE_SOLVER_INTERFACE_H_
+#ifndef ORTOOLS_MATH_OPT_CORE_SOLVER_INTERFACE_H_
+#define ORTOOLS_MATH_OPT_CORE_SOLVER_INTERFACE_H_
 
 #include <functional>
 #include <memory>
@@ -20,9 +20,11 @@
 #include <vector>
 
 #include "absl/base/attributes.h"
+#include "absl/base/nullability.h"
+#include "absl/base/thread_annotations.h"
 #include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/status/statusor.h"
-#include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/non_streamable_solver_init_arguments.h"
@@ -41,8 +43,9 @@ namespace math_opt {
 //
 // This interface is not meant to be used directly. The actual API is the one of
 // the Solver class. The Solver class validates the models before calling this
-// interface. It makes sure no concurrent calls happen on Solve(), CanUpdate()
-// and Update(). It makes sure no other function is called after Solve(),
+// interface. It makes sure no concurrent calls happen on Solve(),
+// ComputeInfeasibleSubsystem(), CanUpdate() and Update(). It makes sure no
+// other function is called after Solve(), ComputeInfeasibleSubsystem(),
 // Update() or a callback have failed.
 //
 // Implementations of this interface should not have public constructors but
@@ -59,7 +62,8 @@ class SolverInterface {
 
     // All parameters that can't be exchanged with another process. The caller
     // keeps ownership of non_streamable.
-    const NonStreamableSolverInitArguments* non_streamable = nullptr;
+    const NonStreamableSolverInitArguments* absl_nullable non_streamable =
+        nullptr;
   };
 
   // A callback function (if non null) for messages emitted by the solver.
@@ -67,12 +71,28 @@ class SolverInterface {
   // See Solver::MessageCallback documentation for details.
   using MessageCallback = std::function<void(const std::vector<std::string>&)>;
 
-  // A callback function (if non null) is a function that validates its input
-  // and its output, and if fails, return a status. The invariant is that the
-  // solver implementation can rely on receiving valid data. The implementation
-  // of this interface must provide valid input (which will be validated) and
-  // in error, it will return a status (without actually calling the callback
-  // function). This is enforced in the solver.cc layer.
+  // A callback function (if non null) provided by the Solver class to its
+  // SolverInterface that wraps the user callback function
+  // (BaseSolver::Callback) and validates its inputs (provided by the
+  // SolverInterface implementation) and outputs (provided by the user). A
+  // failing status is returned if those inputs or outputs are invalid.
+  //
+  // To be clear the SolverInterface::Callback is implemented by the Solver
+  // class and looks like:
+  //
+  //   absl::Status Callback(const CallbackDataProto& callback_data) {
+  //     RETURN_IF_ERROR(ValidateCallbackDataProto(callback_data, ...));
+  //     CallbackResultProto result = user_cb(callback_data);
+  //     RETURN_IF_ERROR(ValidateCallbackResultProto(result));
+  //     return result;
+  //   }
+  //
+  // As a consequence SolverInterface implementations can rely on receiving a
+  // valid CallbackResultProto.
+  //
+  // When the SolverInterface::Callback returns an error the SolverInterface
+  // implementation must interrupt the Solve() as soon as possible and return
+  // this error.
   using Callback = std::function<absl::StatusOr<CallbackResultProto>(
       const CallbackDataProto&)>;
 
@@ -112,7 +132,11 @@ class SolverInterface {
   // When parameter `message_cb` is not null and the underlying solver does not
   // supports message callbacks, it should ignore it.
   //
-  // Solvers should return a InvalidArgumentError when called with events on
+  // The parameter `cb` won't be null when
+  // callback_registration.request_registration is not empty (solver.cc will
+  // return an error in that case before calling SolverInterface::Solve()).
+  //
+  // Solvers should return an InvalidArgumentError when called with events on
   // callback_registration that are not supported by the solver for the type of
   // model being solved (for example MIP events if the model is an LP, or events
   // that are not emitted by the solver). Solvers should use
@@ -122,7 +146,7 @@ class SolverInterface {
       const ModelSolveParametersProto& model_parameters,
       MessageCallback message_cb,
       const CallbackRegistrationProto& callback_registration, Callback cb,
-      const SolveInterrupter* interrupter) = 0;
+      const SolveInterrupter* absl_nullable interrupter) = 0;
 
   // Updates the model to solve and returns true, or returns false if this
   // update is not supported.
@@ -149,9 +173,9 @@ class SolverInterface {
   // When parameter `message_cb` is not null and the underlying solver does not
   // supports message callbacks, it should ignore it.
   virtual absl::StatusOr<ComputeInfeasibleSubsystemResultProto>
-  ComputeInfeasibleSubsystem(const SolveParametersProto& parameters,
-                             MessageCallback message_cb,
-                             const SolveInterrupter* interrupter) = 0;
+  ComputeInfeasibleSubsystem(
+      const SolveParametersProto& parameters, MessageCallback message_cb,
+      const SolveInterrupter* absl_nullable interrupter) = 0;
 };
 
 class AllSolversRegistry {
@@ -159,7 +183,7 @@ class AllSolversRegistry {
   AllSolversRegistry(const AllSolversRegistry&) = delete;
   AllSolversRegistry& operator=(const AllSolversRegistry&) = delete;
 
-  static AllSolversRegistry* Instance();
+  static AllSolversRegistry* absl_nonnull Instance();
 
   // Maps the given factory to the given solver type. Calling this twice will
   // result in an error, using static initialization is recommended, e.g. see
@@ -184,11 +208,43 @@ class AllSolversRegistry {
   std::string RegisteredSolversToString() const;
 
  private:
+  // Friendship to be able to build new instances and use
+  // SetTemporaryTestInstance().
+  friend class WithAlternateAllSolversRegistry;
+
   AllSolversRegistry() = default;
+
+  // Makes a copy of the registry, keeping the factories of the `kept` solver
+  // types.
+  //
+  // If a solver type is listed but not registered, it will generate a
+  // LOG(FATAL).
+  //
+  // See WithAlternateAllSolversRegistry.
+  AllSolversRegistry(const AllSolversRegistry& other,
+                     const absl::flat_hash_set<SolverTypeProto>& kept);
+
+  // Sets or resets a temporary replacement returned by Instance().
+  //
+  // It LOG(FATAL) if called twice without a reset (i.e., without calling
+  // SetTemporaryTestInstance(nullptr)). It also LOG(FATAL) if a reset happens
+  // without a previous set.
+  //
+  // This is for testing only. The user is responsible to make sure that no
+  // threads are using the temp_instance after it has been reset.
+  //
+  // See WithAlternateAllSolversRegistry.
+  static void SetTemporaryTestInstance(
+      AllSolversRegistry* absl_nullable temp_instance);
 
   mutable absl::Mutex mutex_;
   absl::flat_hash_map<SolverTypeProto, SolverInterface::Factory>
-      registered_solvers_;
+      registered_solvers_ ABSL_GUARDED_BY(mutex_);
+
+  // Temporary replacement of Instance() for tests; installed and removed by
+  // WithAlternateAllSolversRegistry via
+  // AllSolversRegistry::SetTemporaryTestInstance().
+  static AllSolversRegistry* absl_nullable temporary_test_instance_;
 };
 
 // Use to ensure that a solver is registered exactly one time. Invoke in each cc
@@ -212,4 +268,4 @@ class AllSolversRegistry {
 }  // namespace math_opt
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_MATH_OPT_CORE_SOLVER_INTERFACE_H_
+#endif  // ORTOOLS_MATH_OPT_CORE_SOLVER_INTERFACE_H_

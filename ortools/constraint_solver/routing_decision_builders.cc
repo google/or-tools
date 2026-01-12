@@ -255,11 +255,10 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
     vehicles_without_resource_assignment_.clear();
     vehicles_with_resource_assignment_.clear();
 
-    util_intops::StrongVector<RCIndex, absl::flat_hash_set<int>>
-        used_resources_per_class;
+    used_resources_per_class_.clear();
     DetermineVehiclesRequiringResourceAssignment(
         &vehicles_without_resource_assignment_,
-        &vehicles_with_resource_assignment_, &used_resources_per_class);
+        &vehicles_with_resource_assignment_, &used_resources_per_class_);
 
     const auto next = [&model = model_](int64_t n) {
       return model.NextVar(n)->Value();
@@ -272,6 +271,7 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
     int solve_duration_shares = vehicles_without_resource_assignment_.size() +
                                 vehicles_with_resource_assignment_.size();
     for (int vehicle : vehicles_without_resource_assignment_) {
+      // This can trigger a fail if the time limit is reached.
       solver->TopPeriodicCheck();
       cumul_values_.clear();
       break_start_end_values_.clear();
@@ -298,7 +298,7 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
     // corresponding var and values.
     resource_indices_.clear();
     if (!ComputeVehicleResourceClassValuesAndIndices(
-            vehicles_with_resource_assignment_, used_resources_per_class, next,
+            vehicles_with_resource_assignment_, used_resources_per_class_, next,
             &resource_indices_)) {
       return false;
     }
@@ -532,6 +532,8 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
   // limit is reached.
   std::vector<int> vehicles_without_resource_assignment_;
   std::vector<int> vehicles_with_resource_assignment_;
+  util_intops::StrongVector<RCIndex, absl::flat_hash_set<int>>
+      used_resources_per_class_;
   std::vector<int64_t> cumul_values_;
   std::vector<int64_t> break_start_end_values_;
   std::vector<int> resource_indices_;
@@ -556,12 +558,11 @@ class SetCumulsFromGlobalDimensionCosts : public DecisionBuilder {
   SetCumulsFromGlobalDimensionCosts(
       GlobalDimensionCumulOptimizer* global_optimizer,
       GlobalDimensionCumulOptimizer* global_mp_optimizer,
-      SearchMonitor* monitor, bool optimize_and_pack,
+      bool optimize_and_pack,
       std::vector<RoutingModel::RouteDimensionTravelInfo>
           dimension_travel_info_per_route)
       : global_optimizer_(global_optimizer),
         global_mp_optimizer_(global_mp_optimizer),
-        monitor_(monitor),
         optimize_and_pack_(optimize_and_pack),
         dimension_travel_info_per_route_(
             std::move(dimension_travel_info_per_route)),
@@ -696,7 +697,6 @@ class SetCumulsFromGlobalDimensionCosts : public DecisionBuilder {
 
   GlobalDimensionCumulOptimizer* const global_optimizer_;
   GlobalDimensionCumulOptimizer* const global_mp_optimizer_;
-  SearchMonitor* const monitor_;
   const bool optimize_and_pack_;
   std::vector<IntVar*> cp_variables_;
   std::vector<int64_t> cp_values_;
@@ -718,12 +718,11 @@ class SetCumulsFromGlobalDimensionCosts : public DecisionBuilder {
 
 DecisionBuilder* MakeSetCumulsFromGlobalDimensionCosts(
     Solver* solver, GlobalDimensionCumulOptimizer* global_optimizer,
-    GlobalDimensionCumulOptimizer* global_mp_optimizer, SearchMonitor* monitor,
-    bool optimize_and_pack,
+    GlobalDimensionCumulOptimizer* global_mp_optimizer, bool optimize_and_pack,
     std::vector<RoutingModel::RouteDimensionTravelInfo>
         dimension_travel_info_per_route) {
   return solver->RevAlloc(new SetCumulsFromGlobalDimensionCosts(
-      global_optimizer, global_mp_optimizer, monitor, optimize_and_pack,
+      global_optimizer, global_mp_optimizer, optimize_and_pack,
       std::move(dimension_travel_info_per_route)));
 }
 
@@ -913,29 +912,11 @@ void FinalizerVariables::AddWeightedVariableTarget(IntVar* var, int64_t target,
   }
 }
 
-void FinalizerVariables::AddWeightedVariableToMinimize(IntVar* var,
-                                                       int64_t cost) {
-  AddWeightedVariableTarget(var, std::numeric_limits<int64_t>::min(), cost);
-}
-
-void FinalizerVariables::AddWeightedVariableToMaximize(IntVar* var,
-                                                       int64_t cost) {
-  AddWeightedVariableTarget(var, std::numeric_limits<int64_t>::max(), cost);
-}
-
 void FinalizerVariables::AddVariableTarget(IntVar* var, int64_t target) {
   CHECK(var != nullptr);
   if (finalizer_variable_target_set_.contains(var)) return;
   finalizer_variable_target_set_.insert(var);
   finalizer_variable_targets_.push_back({var, target});
-}
-
-void FinalizerVariables::AddVariableToMaximize(IntVar* var) {
-  AddVariableTarget(var, std::numeric_limits<int64_t>::max());
-}
-
-void FinalizerVariables::AddVariableToMinimize(IntVar* var) {
-  AddVariableTarget(var, std::numeric_limits<int64_t>::min());
 }
 
 DecisionBuilder* FinalizerVariables::CreateFinalizer() {

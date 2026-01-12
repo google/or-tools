@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_DECISION_BUILDERS_H_
-#define OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_DECISION_BUILDERS_H_
+#ifndef ORTOOLS_CONSTRAINT_SOLVER_ROUTING_DECISION_BUILDERS_H_
+#define ORTOOLS_CONSTRAINT_SOLVER_ROUTING_DECISION_BUILDERS_H_
 
 #include <cstdint>
 #include <utility>
@@ -46,7 +46,7 @@ DecisionBuilder* MakeSetCumulsFromLocalDimensionCosts(
 /// Variant based on global optimizers, handling all routes together.
 DecisionBuilder* MakeSetCumulsFromGlobalDimensionCosts(
     Solver* solver, GlobalDimensionCumulOptimizer* global_optimizer,
-    GlobalDimensionCumulOptimizer* global_mp_optimizer, SearchMonitor* monitor,
+    GlobalDimensionCumulOptimizer* global_mp_optimizer,
     bool optimize_and_pack = false,
     std::vector<RoutingModel::RouteDimensionTravelInfo>
         dimension_travel_info_per_route = {});
@@ -70,27 +70,18 @@ DecisionBuilder* MakeRestoreDimensionValuesForUnchangedRoutes(
 class FinalizerVariables {
  public:
   explicit FinalizerVariables(Solver* solver) : solver_(solver) {}
-  /// Adds a variable to minimize in the solution finalizer. The solution
-  /// finalizer is called each time a solution is found during the search and
-  /// allows to instantiate secondary variables (such as dimension cumul
-  /// variables).
-  void AddVariableToMinimize(IntVar* var);
-  /// Adds a variable to maximize in the solution finalizer (see above for
-  /// information on the solution finalizer).
-  void AddVariableToMaximize(IntVar* var);
-  /// Adds a variable to minimize in the solution finalizer, with a weighted
-  /// priority: the higher the more priority it has.
-  void AddWeightedVariableToMinimize(IntVar* var, int64_t cost);
-  /// Adds a variable to maximize in the solution finalizer, with a weighted
-  /// priority: the higher the more priority it has.
-  void AddWeightedVariableToMaximize(IntVar* var, int64_t cost);
   /// Add a variable to set the closest possible to the target value in the
-  /// solution finalizer.
+  /// solution finalizer. The solution finalizer is called each time a solution
+  /// is found during the search and allows to instantiate secondary variables
+  /// (such as dimension cumul variables).
   void AddVariableTarget(IntVar* var, int64_t target);
   /// Same as above with a weighted priority: the higher the cost, the more
   /// priority it has to be set close to the target value.
   void AddWeightedVariableTarget(IntVar* var, int64_t target, int64_t cost);
-  ///
+  /// Returns a DecisionBuilder* that sets the variables passed through
+  /// AddVariableTarget and AddWeightedVariableTarget towards their target,
+  /// setting weigthed variables by decreasing weight first, then unweighted
+  /// variables in the order they were added.
   DecisionBuilder* CreateFinalizer();
 
  private:
@@ -109,4 +100,4 @@ class FinalizerVariables {
 };
 
 }  // namespace operations_research
-#endif  // OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_DECISION_BUILDERS_H_
+#endif  // ORTOOLS_CONSTRAINT_SOLVER_ROUTING_DECISION_BUILDERS_H_

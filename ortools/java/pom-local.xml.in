@@ -7,7 +7,7 @@
 
 <groupId>@JAVA_PACKAGE@</groupId>
 <artifactId>@JAVA_PROJECT@</artifactId>
-<version>@PROJECT_VERSION@</version>
+<version>@PROJECT_VERSION@@JAVA_RELEASE@</version>
 <packaging>jar</packaging>
 
 <name>${project.groupId}:${project.artifactId}</name>
@@ -48,17 +48,6 @@
   <url>http://github.com/google/or-tools/issues</url>
 </issueManagement>
 
-<distributionManagement>
-  <snapshotRepository>
-    <id>ossrh</id>
-    <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-  </snapshotRepository>
-  <repository>
-    <id>ossrh</id>
-    <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-  </repository>
-</distributionManagement>
-
 <properties>
   <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   <maven.compiler.source>1.8</maven.compiler.source>
@@ -69,7 +58,7 @@
   <dependency>
     <groupId>@JAVA_PACKAGE@</groupId>
     <artifactId>@JAVA_NATIVE_PROJECT@</artifactId>
-    <version>@PROJECT_VERSION@</version>
+    <version>@PROJECT_VERSION@@JAVA_RELEASE@</version>
     <type>jar</type>
     <scope>runtime</scope>
   </dependency>
@@ -81,7 +70,7 @@
   <dependency>
     <groupId>com.google.protobuf</groupId>
     <artifactId>protobuf-java</artifactId>
-    <version>4.31.1</version>
+    <version>4.33.1</version>
   </dependency>
 </dependencies>
 
@@ -137,6 +126,15 @@
           </configuration>
         </execution>
       </executions>
+    </plugin>
+    <plugin>
+      <groupId>org.sonatype.central</groupId>
+      <artifactId>central-publishing-maven-plugin</artifactId>
+      <version>0.9.0</version>
+      <extensions>true</extensions>
+      <configuration>
+        <publishingServerId>central</publishingServerId>
+      </configuration>
     </plugin>
   </plugins>
 </build>

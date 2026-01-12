@@ -21,12 +21,13 @@
 #include <utility>
 #include <vector>
 
+#include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
-#include "ortools/base/int_type.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/constraint_solver/routing.h"
 #include "ortools/constraint_solver/routing_search.h"
+#include "ortools/constraint_solver/routing_types.h"
 #include "ortools/constraint_solver/routing_utils.h"
 #include "ortools/util/bitset.h"
 
@@ -69,6 +70,9 @@ bool FilteredHeuristicLocalSearchOperator::MakeOneNeighbor() {
 bool FilteredHeuristicLocalSearchOperator::MakeChangesAndInsertNodes() {
   removed_nodes_.ResetAllToFalse();
 
+  // Note: next_accessor might be depending on the current state of the
+  // neighborhood. Do not make this class modify it without checking its
+  // derived classes.
   const std::function<int64_t(int64_t)> next_accessor =
       SetupNextAccessorForNeighbor();
   if (next_accessor == nullptr) {
@@ -527,6 +531,149 @@ bool FilteredHeuristicExpensiveChainLNSOperator::
   } while (IncrementRoute());
 
   return false;
+}
+// RelocateVisitTypeOperator
+
+RelocateVisitTypeOperator::RelocateVisitTypeOperator(
+    std::unique_ptr<RoutingFilteredHeuristic> heuristic)
+    : FilteredHeuristicLocalSearchOperator(std::move(heuristic),
+                                           /*keep_inverse_values*/ true),
+      current_visit_type_component_index_(0),
+      last_visit_type_component_index_(0),
+      empty_route_index_(0),
+      new_nexts_(model_->Size()),
+      changed_nexts_(model_->Size()),
+      new_prevs_(model_->Size()),
+      changed_prevs_(model_->Size()),
+      just_started_(false) {}
+
+void RelocateVisitTypeOperator::OnStart() {
+  const std::vector<std::vector<int>>& visit_type_components =
+      model_->GetVisitTypeComponents();
+  while (current_visit_type_component_index_ < visit_type_components.size() &&
+         visit_type_components[current_visit_type_component_index_].empty()) {
+    ++current_visit_type_component_index_;
+  }
+  last_visit_type_component_index_ = current_visit_type_component_index_;
+  empty_routes_.clear();
+  std::vector<bool> empty_vehicle_of_vehicle_class_added(
+      model_->GetVehicleClassesCount(), false);
+  for (int vehicle = 0; vehicle < model_->vehicles(); vehicle++) {
+    if (!model_->IsEnd(OldValue(model_->Start(vehicle)))) {
+      continue;
+    }
+    const int vehicle_class =
+        model_->GetVehicleClassIndexOfVehicle(vehicle).value();
+    if (!empty_vehicle_of_vehicle_class_added[vehicle_class]) {
+      empty_routes_.push_back(vehicle);
+      empty_vehicle_of_vehicle_class_added[vehicle_class] = true;
+    }
+  }
+  if (empty_route_index_ >= empty_routes_.size()) {
+    empty_route_index_ = 0;
+  }
+  last_empty_route_index_ = empty_route_index_;
+  just_started_ = true;
+}
+
+bool RelocateVisitTypeOperator::IncrementPosition() {
+  const std::vector<std::vector<int>>& visit_type_components =
+      model_->GetVisitTypeComponents();
+  if (visit_type_components.empty() || empty_routes_.empty()) return false;
+  if (just_started_) {
+    just_started_ = false;
+    return true;
+  }
+  ++empty_route_index_ %= empty_routes_.size();
+  if (empty_route_index_ != last_empty_route_index_) return true;
+  do {
+    ++current_visit_type_component_index_ %= visit_type_components.size();
+  } while (current_visit_type_component_index_ !=
+               last_visit_type_component_index_ &&
+           visit_type_components[current_visit_type_component_index_].empty());
+  return current_visit_type_component_index_ !=
+         last_visit_type_component_index_;
+}
+
+void RelocateVisitTypeOperator::RemoveNode(int64_t node) {
+  DCHECK(!model_->IsEnd(node) && !model_->IsStart(node));
+  if (Value(node) == node || removed_nodes_[node]) return;
+  removed_nodes_.Set(node);
+  const int64_t prev =
+      changed_prevs_[node] ? new_prevs_[node] : InverseValue(node);
+  const int64_t next = changed_nexts_[node] ? new_nexts_[node] : Value(node);
+  changed_nexts_.Set(prev);
+  new_nexts_[prev] = next;
+  if (next < model_->Size()) {
+    changed_prevs_.Set(next);
+    new_prevs_[next] = prev;
+  }
+}
+
+std::function<int64_t(int64_t)>
+RelocateVisitTypeOperator::SetupNextAccessorForNeighbor() {
+  changed_nexts_.ResetAllToFalse();
+  changed_prevs_.ResetAllToFalse();
+  const std::vector<std::vector<int>>& visit_type_components =
+      model_->GetVisitTypeComponents();
+  if (visit_type_components.empty() ||
+      visit_type_components[current_visit_type_component_index_].empty()) {
+    return nullptr;
+  }
+
+  absl::flat_hash_set<int64_t> visited_types;
+  const std::vector<PickupDeliveryPair>& pairs =
+      model_->GetPickupAndDeliveryPairs();
+  for (const int type :
+       visit_type_components[current_visit_type_component_index_]) {
+    visited_types.insert(type);
+    for (int64_t pair_index : model_->GetPairIndicesOfType(type)) {
+      const PickupDeliveryPair& pair = pairs[pair_index];
+      for (int64_t pickup : pair.pickup_alternatives) RemoveNode(pickup);
+      for (int64_t delivery : pair.delivery_alternatives) RemoveNode(delivery);
+    }
+    for (int64_t node : model_->GetSingleNodesOfType(type)) RemoveNode(node);
+  }
+  // Initiate a new route on an empty vehicle. Picking a "root" type node/pair
+  // to do so. The rationale is to incentivize insertion algorithms to use this
+  // new vehicle, especially in the case where vehicles have fixed costs. By
+  // taking a root node/pair which does not depend on other nodes, the
+  // likelihood of having an initial route which is feasible is higher.
+  const int empty_route = empty_routes_[empty_route_index_];
+  const int64_t empty_start_node = model_->Start(empty_route);
+  const int64_t empty_end_node = model_->End(empty_route);
+  for (const std::vector<int>& sorted_types :
+       model_->GetTopologicallySortedVisitTypes()) {
+    for (const int type : sorted_types) {
+      if (!visited_types.contains(type)) continue;
+      const std::vector<int>& pair_indices = model_->GetPairIndicesOfType(type);
+      if (!pair_indices.empty()) {
+        const int pair_index = pair_indices.front();
+        // TODO(user): Add support for multiple pickup/delivery
+        // alternatives.
+        const int64_t pickup = pairs[pair_index].pickup_alternatives[0];
+        const int64_t delivery = pairs[pair_index].delivery_alternatives[0];
+        return [this, empty_start_node, empty_end_node, pickup,
+                delivery](int64_t node) {
+          if (node == empty_start_node) return pickup;
+          if (node == pickup) return delivery;
+          if (node == delivery) return empty_end_node;
+          return changed_nexts_[node] ? new_nexts_[node] : OldValue(node);
+        };
+      }
+      const std::vector<int>& single_nodes = model_->GetSingleNodesOfType(type);
+      if (!single_nodes.empty()) {
+        const int64_t single_node = single_nodes.front();
+        return [this, empty_start_node, empty_end_node,
+                single_node](int64_t node) {
+          if (node == empty_start_node) return single_node;
+          if (node == single_node) return empty_end_node;
+          return changed_nexts_[node] ? new_nexts_[node] : OldValue(node);
+        };
+      }
+    }
+  }
+  return nullptr;
 }
 
 }  // namespace operations_research

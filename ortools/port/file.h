@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_PORT_FILE_H_
-#define OR_TOOLS_PORT_FILE_H_
+#ifndef ORTOOLS_PORT_FILE_H_
+#define ORTOOLS_PORT_FILE_H_
 
 #include <string>
 
@@ -29,10 +29,6 @@ namespace operations_research {
 
 ::absl::Status PortableDeleteFile(absl::string_view file_name);
 
-// Returns true if successful.  Outputs temp file to filename.
-bool PortableTemporaryFile(const char* directory_prefix,
-                           std::string* filename_out);
-
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_PORT_FILE_H_
+#endif  // ORTOOLS_PORT_FILE_H_

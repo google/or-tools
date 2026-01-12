@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_SAT_C_API_CP_SOLVER_C_H_
-#define OR_TOOLS_SAT_C_API_CP_SOLVER_C_H_
+#ifndef ORTOOLS_SAT_C_API_CP_SOLVER_C_H_
+#define ORTOOLS_SAT_C_API_CP_SOLVER_C_H_
 
 #include <stddef.h>
 #include <stdint.h>
@@ -38,4 +38,4 @@ void SolveCpInterruptible(void* cenv, const void* creq, int creq_len,
 }  // extern "C"
 #endif
 
-#endif  // OR_TOOLS_SAT_C_API_CP_SOLVER_C_H_
+#endif  // ORTOOLS_SAT_C_API_CP_SOLVER_C_H_

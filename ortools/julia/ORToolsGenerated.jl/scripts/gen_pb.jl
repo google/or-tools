@@ -1,3 +1,8 @@
+# Run this script as:
+#     hgd / g4d ...
+#     cd third_party/ortools/ortools/julia/ORToolsGenerated.jl/scripts/
+#     julia gen_pb.jl
+
 using ORTools_jll
 using ProtoBuf
 using Pkg
@@ -10,6 +15,7 @@ if protobuf_jl_version < v"1.0.15"
     # MathOpt requires https://github.com/JuliaIO/ProtoBuf.jl/pull/234.
     # Bop requires https://github.com/JuliaIO/ProtoBuf.jl/pull/244.
     error("ProtoBuf.jl has a too low version: 1.0.15 is the minimum required")
+    # Version 1.1 also works.
 end
 
 # Path to the generated Julia package.
@@ -30,6 +36,9 @@ end
 proto_var_names = [file for file in names(ORTools_jll) if startswith(String(file), "proto_")]
 proto_abs_paths = eval.(Meta.parse.("ORTools_jll." .* String.(proto_var_names)))
 proto_rel_paths = replace.(proto_abs_paths, PROTO_ROOT_PATH => "")
+
+println("List of the $(length(proto_var_names)) protos being included:")
+println(proto_var_names)
 
 mkpath(OUTPUT_PATH)
 protojl(proto_rel_paths, PROTO_ROOT_PATH, OUTPUT_PATH)

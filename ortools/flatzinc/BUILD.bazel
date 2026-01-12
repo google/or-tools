@@ -15,28 +15,10 @@
 # Source code for the flatzinc interpreter. See www.minizinc.org.
 # This is a google owned implementation.
 
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+
 package(default_visibility = ["//visibility:public"])
-
-config_setting(
-    name = "on_linux",
-    constraint_values = [
-        "@platforms//os:linux",
-    ],
-)
-
-config_setting(
-    name = "on_macos",
-    constraint_values = [
-        "@platforms//os:macos",
-    ],
-)
-
-config_setting(
-    name = "on_windows",
-    constraint_values = [
-        "@platforms//os:windows",
-    ],
-)
 
 # ---------------------------------------------------------------------------
 # Baseline flatzinc model.
@@ -47,18 +29,23 @@ cc_library(
     srcs = ["model.cc"],
     hdrs = ["model.h"],
     deps = [
-        "//ortools/base",
-        "//ortools/base:hash",
         "//ortools/base:stl_util",
-        "//ortools/graph:iterators",
         "//ortools/util:logging",
         "//ortools/util:string_array",
+        "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/types:span",
     ],
 )
+
+# ---------------------------------------------------------------------------
+# Parser.
+# ---------------------------------------------------------------------------
 
 cc_library(
     name = "parser_yacc_lib",
@@ -69,6 +56,7 @@ cc_library(
         "parser_util.h",
     ],
     copts = [
+        "-Wno-implicit-fallthrough",
         "$(STACK_FRAME_UNLIMITED)",  # parser.tab.cc
     ],
     deps = [
@@ -76,25 +64,30 @@ cc_library(
         "//ortools/base",
         "//ortools/base:mathutil",
         "//ortools/base:stl_util",
+        "//ortools/base:types",
         "//ortools/util:string_array",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
     ],
 )
 
 cc_library(
     name = "parser_lex_lib",
     srcs = ["parser.yy.cc"],
-    copts = select({
-        "on_linux": ["-Wno-unused-function"],  # parser.yy.cc
-        "on_macos": ["-Wno-unused-function"],  # parser.yy.cc
-        "on_windows": [],
+    copts = [
+        "-Wno-implicit-fallthrough",
+    ] + select({
+        "@platforms//os:linux": ["-Wno-unused-function"],  # parser.yy.cc
+        "@platforms//os:macos": ["-Wno-unused-function"],  # parser.yy.cc
         "//conditions:default": [],
     }),
+    tags = ["keep_dep"],  # So that build_cleaner doesn't remove this as a dep.
     deps = [
         ":parser_yacc_lib",
         "//ortools/base",
         "@abseil-cpp//absl/strings",
-        "@abseil-cpp//absl/strings:str_format",
     ],
 )
 
@@ -106,8 +99,30 @@ cc_library(
         ":model",
         ":parser_lex_lib",
         ":parser_yacc_lib",
+        "@abseil-cpp//absl/log",
     ],
 )
+
+cc_binary(
+    name = "parser",
+    srcs = ["parser_main.cc"],
+    deps = [
+        ":model",
+        ":parser_lib",
+        "//ortools/base",
+        "//ortools/base:timer",
+        "//ortools/util:logging",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/log:globals",
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
+# ---------------------------------------------------------------------------
+# Solution Checker
+# ---------------------------------------------------------------------------
 
 cc_library(
     name = "checker",
@@ -115,13 +130,17 @@ cc_library(
     hdrs = ["checker.h"],
     deps = [
         ":model",
-        "//ortools/base",
-        "//ortools/base:hash",
         "//ortools/util:logging",
+        "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/container:flat_hash_set",
-        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
     ],
 )
+
+# ---------------------------------------------------------------------------
+# Connection to SAT/CP solver.
+# ---------------------------------------------------------------------------
 
 cc_library(
     name = "cp_model_fz_solver",
@@ -130,26 +149,31 @@ cc_library(
     deps = [
         ":checker",
         ":model",
-        "//ortools/base",
-        "//ortools/base:threadpool",
-        "//ortools/sat:cp_constraints",
+        "//ortools/base:iterator_adaptors",
+        "//ortools/base:stl_util",
         "//ortools/sat:cp_model_cc_proto",
+        "//ortools/sat:cp_model_checker",
         "//ortools/sat:cp_model_solver",
         "//ortools/sat:cp_model_utils",
-        "//ortools/sat:cumulative",
-        "//ortools/sat:disjunctive",
-        "//ortools/sat:integer",
-        "//ortools/sat:integer_expr",
-        "//ortools/sat:intervals",
         "//ortools/sat:model",
-        "//ortools/sat:optimization",
-        "//ortools/sat:sat_solver",
-        "//ortools/sat:table",
+        "//ortools/sat:sat_parameters_cc_proto",
         "//ortools/util:logging",
+        "//ortools/util:sorted_interval_list",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/base:no_destructor",
+        "@abseil-cpp//absl/container:btree",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/types:span",
+        "@protobuf",
     ],
 )
 
+# Main binary to parse and execute a fz model using the CP-SAT solver.
 cc_binary(
     name = "fz",
     srcs = ["fz.cc"],
@@ -159,7 +183,15 @@ cc_binary(
         ":parser_lib",
         "//ortools/base",
         "//ortools/base:path",
-        "//ortools/base:threadpool",
+        "//ortools/base:timer",
+        "//ortools/sat:model",
         "//ortools/util:logging",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/log:flags",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/time",
+        "@protobuf",
     ],
 )

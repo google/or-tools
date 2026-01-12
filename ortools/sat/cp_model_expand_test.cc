@@ -14,7 +14,6 @@
 #include "ortools/sat/cp_model_expand.h"
 
 #include <cstdint>
-#include <string>
 #include <vector>
 
 #include "absl/container/btree_set.h"
@@ -24,6 +23,7 @@
 #include "ortools/base/gmock.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/parse_test_proto.h"
+#include "ortools/base/parse_text_proto.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_checker.h"
 #include "ortools/sat/cp_model_solver.h"
@@ -38,6 +38,7 @@ namespace sat {
 namespace {
 
 using ::google::protobuf::contrib::parse_proto::ParseTestProto;
+using ::google::protobuf::contrib::parse_proto::ParseTextOrDie;
 
 CpSolverResponse SolveAndCheck(
     const CpModelProto& initial_model, absl::string_view extra_parameters = "",
@@ -48,7 +49,7 @@ CpSolverResponse SolveAndCheck(
   params.set_debug_crash_if_presolve_breaks_hint(true);
   params.set_log_search_progress(true);
   if (!extra_parameters.empty()) {
-    params.MergeFromString(extra_parameters);
+    params.MergeFrom(ParseTextOrDie<SatParameters>(extra_parameters));
   }
   auto observer = [&](const CpSolverResponse& response) {
     VLOG(1) << response;
@@ -115,6 +116,31 @@ TEST(ReservoirExpandTest, SimpleSemaphore) {
       SolveAndCheck(initial_model, "", &solutions);
   EXPECT_EQ(OPTIMAL, response.status());
   EXPECT_EQ(187, solutions.size());
+}
+
+TEST(ReservoirExpandTest, SimpleSemaphoreWithEnforcementLiteral) {
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: 0 domain: 10 }
+    variables { domain: 0 domain: 10 }
+    variables { domain: 0 domain: 1 }
+    variables { domain: 0 domain: 1 }
+    constraints {
+      enforcement_literal: 3
+      reservoir {
+        max_level: 2
+        time_exprs { vars: 0 coeffs: 1 }
+        time_exprs { vars: 1 coeffs: 1 }
+        active_literals: [ 2, 2 ]
+        level_changes { offset: -1 }
+        level_changes { offset: 1 }
+      }
+    }
+  )pb");
+  absl::btree_set<std::vector<int>> solutions;
+  const CpSolverResponse response =
+      SolveAndCheck(initial_model, "", &solutions);
+  EXPECT_EQ(OPTIMAL, response.status());
+  EXPECT_EQ(187 + 11 * 11 * 2, solutions.size());
 }
 
 TEST(ReservoirExpandTest, GizaReport) {
@@ -229,7 +255,7 @@ TEST(ReservoirExpandTest, RepeatedTimesWithDifferentActivationVariables) {
   )pb");
   absl::btree_set<std::vector<int>> solutions;
   const CpSolverResponse response =
-      SolveAndCheck(initial_model, "", &solutions);
+      SolveAndCheck(initial_model, "cp_model_presolve:false", &solutions);
   EXPECT_EQ(OPTIMAL, response.status());
   // First two time variables should be unconstrained giving us 3x3 solutions.
   EXPECT_EQ(9, solutions.size());
@@ -317,7 +343,7 @@ TEST(ReservoirExpandTest, OneUnschedulableOptionalAndInitiallyFeasible) {
   )pb");
   absl::btree_set<std::vector<int>> solutions;
   const CpSolverResponse response =
-      SolveAndCheck(initial_model, "", &solutions);
+      SolveAndCheck(initial_model, "cp_model_presolve:false", &solutions);
   EXPECT_EQ(OPTIMAL, response.status());
   EXPECT_EQ(3, solutions.size());
 }
@@ -412,12 +438,78 @@ TEST(ReservoirExpandTest, ExpandReservoirUsingCircuitPreservesSolutionHint) {
     }
   )pb");
 
-  SatParameters params;
-  params.set_expand_reservoir_using_circuit(true);
-  params.set_log_search_progress(true);
-  params.set_debug_crash_if_presolve_breaks_hint(true);
-  CpSolverResponse response = SolveWithParameters(initial_model, params);
-  EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+  absl::btree_set<std::vector<int>> solutions;
+  const CpSolverResponse response = SolveAndCheck(
+      initial_model, "expand_reservoir_using_circuit:true", &solutions);
+  EXPECT_EQ(OPTIMAL, response.status());
+}
+
+TEST(ReservoirExpandTest, ExpandReservoirUsingCircuitWithEnforcementLiteral) {
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      enforcement_literal: 2
+      reservoir {
+        max_level: 2
+        time_exprs { offset: 1 }
+        time_exprs { offset: 1 }
+        time_exprs { offset: 1 }
+        time_exprs { offset: 2 }
+        time_exprs { offset: 3 }
+        level_changes: { offset: -1 }
+        level_changes: { offset: -1 }
+        level_changes: { offset: 2 }
+        level_changes: { offset: -2 }
+        level_changes: { offset: 1 }
+        active_literals: 0
+        active_literals: 0
+        active_literals: 0
+        active_literals: 1
+        active_literals: 0
+      }
+    }
+    solution_hint {
+      vars: [ 0, 1, 2 ]
+      values: [ 1, 0, 1 ]
+    }
+  )pb");
+  absl::btree_set<std::vector<int>> solutions;
+  const CpSolverResponse response = SolveAndCheck(
+      initial_model, "expand_reservoir_using_circuit:true", &solutions);
+  EXPECT_EQ(OPTIMAL, response.status());
+  EXPECT_EQ(2 + 2 * 2, solutions.size());
+}
+
+TEST(ReservoirExpandTest, ExpandReservoirUsingSumWithEnforcementLiteral) {
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      enforcement_literal: 2
+      reservoir {
+        max_level: 2
+        time_exprs { offset: 1 }
+        time_exprs { offset: 1 }
+        time_exprs { offset: 2 }
+        time_exprs { offset: 2 }
+        level_changes: { offset: 1 }
+        level_changes: { offset: 2 }
+        level_changes: { offset: 1 }
+        level_changes: { offset: 2 }
+        active_literals: [ 0, -1, 1, -2 ]
+      }
+    }
+  )pb");
+  absl::btree_set<std::vector<int>> solutions;
+  const CpSolverResponse response =
+      SolveAndCheck(initial_model, "cp_model_presolve:false", &solutions);
+  EXPECT_EQ(OPTIMAL, response.status());
+  // There is a single solution when the constraint is enforced. Otherwise the
+  // all the variable values are possible.
+  EXPECT_EQ(1 + 2 * 2, solutions.size());
 }
 
 TEST(IntModExpandTest, FzTest) {
@@ -545,6 +637,52 @@ TEST(IntModExpansionTest, ExpandIntModPreservesSolutionHint) {
   params.set_debug_crash_if_presolve_breaks_hint(true);
   CpSolverResponse response = SolveWithParameters(initial_model, params);
   EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+}
+
+TEST(IntProdExpandTest, EnforcementLiterals) {
+  CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { name: 'b' domain: 0 domain: 1 }
+    variables { name: 'x' domain: -100 domain: 100 }
+    variables { name: 'y' domain: -100 domain: 100 }
+    variables { name: 'z' domain: -100 domain: 100 }
+    constraints {
+      enforcement_literal: 0
+      int_prod {
+        target { offset: 27 }
+        exprs { vars: 1 coeffs: 1 }
+        exprs { vars: 2 coeffs: 1 }
+        exprs { vars: 3 coeffs: 1 }
+      }
+    }
+  )pb");
+  Model model;
+  PresolveContext context(&model, &initial_model, nullptr);
+  ExpandCpModel(&context);
+
+  const CpModelProto expected_model = ParseTestProto(R"pb(
+    variables { name: "b" domain: 0 domain: 1 }
+    variables { name: "x" domain: -100 domain: 100 }
+    variables { name: "y" domain: -100 domain: 100 }
+    variables { name: "z" domain: -100 domain: 100 }
+    variables { domain: -10000 domain: 10000 }
+    constraints {}
+    constraints {
+      enforcement_literal: 0
+      int_prod {
+        target { vars: 4 coeffs: 1 }
+        exprs { vars: 1 coeffs: 1 }
+        exprs { vars: 2 coeffs: 1 }
+      }
+    }
+    constraints {
+      enforcement_literal: 0
+      int_prod {
+        target { offset: 27 }
+        exprs { vars: 4 coeffs: 1 }
+        exprs { vars: 3 coeffs: 1 }
+      }
+    })pb");
+  EXPECT_THAT(initial_model, testing::EqualsProto(expected_model));
 }
 
 TEST(IntProdExpandTest, LeftCase) {
@@ -732,6 +870,159 @@ TEST(IntProdExpansionTest, ExpandNonBinaryIntProdPreservesSolutionHint) {
   EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
 }
 
+TEST(ElementExpandTest, InfeasibleFixedIndex) {
+  CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 4, 4 ] }
+    variables { domain: [ 0, 7 ] }
+    constraints {
+      element {
+        linear_index { vars: 0 coeffs: 1 }
+        linear_target { vars: 1 coeffs: 1 }
+        exprs { offset: 4 }
+        exprs { offset: 2 }
+        exprs { offset: 3 }
+        exprs { offset: 2 }
+      }
+    }
+  )pb");
+
+  EXPECT_EQ(SolveAndCheck(initial_model, "cp_model_presolve:false").status(),
+            CpSolverStatus::INFEASIBLE);
+}
+
+TEST(ElementExpandTest, FixedIndex) {
+  CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 2, 2 ] }
+    variables { domain: [ 0, 7 ] }
+    constraints {
+      element {
+        linear_index { vars: 0 coeffs: 1 }
+        linear_target { vars: 1 coeffs: 1 }
+        exprs { offset: 4 }
+        exprs { offset: 2 }
+        exprs { offset: 3 }
+        exprs { offset: 2 }
+      }
+    }
+  )pb");
+
+  absl::btree_set<std::vector<int>> found_solutions;
+  const CpSolverResponse response =
+      SolveAndCheck(initial_model, "cp_model_presolve:false", &found_solutions);
+  absl::btree_set<std::vector<int>> expected{{2, 3}};
+  EXPECT_EQ(found_solutions, expected);
+}
+
+TEST(ElementExpandTest, InfeasibleFixedIndexWithEnforcementLiteral) {
+  CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 4, 5 ] }
+    variables { domain: [ 0, 7 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      enforcement_literal: 2
+      element {
+        linear_index { vars: 0 coeffs: 1 }
+        linear_target { vars: 1 coeffs: 1 }
+        exprs { offset: 4 }
+        exprs { offset: 2 }
+        exprs { offset: 3 }
+        exprs { offset: 2 }
+      }
+    }
+  )pb");
+
+  absl::btree_set<std::vector<int>> found_solutions;
+  const CpSolverResponse response =
+      SolveAndCheck(initial_model, "cp_model_presolve:false", &found_solutions);
+  absl::btree_set<std::vector<int>> expected;
+  for (int index = 4; index <= 5; ++index) {
+    for (int target = 0; target <= 7; ++target) {
+      expected.insert({index, target, 0});
+    }
+  }
+  EXPECT_EQ(found_solutions, expected);
+}
+
+TEST(ElementExpandTest, FixedIndexWithEnforcementLiteral) {
+  CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 3, 5 ] }
+    variables { domain: [ 0, 7 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      enforcement_literal: 2
+      element {
+        linear_index { vars: 0 coeffs: 1 }
+        linear_target { vars: 1 coeffs: 1 }
+        exprs { offset: 4 }
+        exprs { offset: 2 }
+        exprs { offset: 3 }
+        exprs { offset: 2 }
+      }
+    }
+  )pb");
+
+  absl::btree_set<std::vector<int>> found_solutions;
+  const CpSolverResponse response =
+      SolveAndCheck(initial_model, "cp_model_presolve:false", &found_solutions);
+  absl::btree_set<std::vector<int>> expected{{3, 2, 1}};
+  for (int index = 3; index <= 5; ++index) {
+    for (int target = 0; target <= 7; ++target) {
+      expected.insert({index, target, 0});
+    }
+  }
+  EXPECT_EQ(found_solutions, expected);
+}
+
+TEST(ElementExpandTest, SharedVariable) {
+  // 2i+1 = {3, 5, 4, 2}[i-1]
+  CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 7 ] }
+    constraints {
+      element {
+        linear_index { vars: 0 coeffs: 1 offset: -1 }
+        linear_target { vars: 0 coeffs: 2 offset: 1 }
+        exprs { offset: 3 }
+        exprs { offset: 5 }
+        exprs { offset: 4 }
+        exprs { offset: 2 }
+      }
+    }
+  )pb");
+
+  absl::btree_set<std::vector<int>> found_solutions;
+  const CpSolverResponse response =
+      SolveAndCheck(initial_model, "cp_model_presolve:false", &found_solutions);
+  absl::btree_set<std::vector<int>> expected{{1}, {2}};
+  EXPECT_EQ(found_solutions, expected);
+}
+
+TEST(ElementExpandTest, SharedVariableWithEnforcementLiteral) {
+  // 2i+1 = {3, 5, 4, 2}[i-1]
+  CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 7 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      enforcement_literal: 1
+      element {
+        linear_index { vars: 0 coeffs: 1 offset: -1 }
+        linear_target { vars: 0 coeffs: 2 offset: 1 }
+        exprs { offset: 3 }
+        exprs { offset: 5 }
+        exprs { offset: 4 }
+        exprs { offset: 2 }
+      }
+    }
+  )pb");
+
+  absl::btree_set<std::vector<int>> found_solutions;
+  const CpSolverResponse response =
+      SolveAndCheck(initial_model, "cp_model_presolve:false", &found_solutions);
+  absl::btree_set<std::vector<int>> expected{{0, 0}, {1, 0}, {2, 0}, {3, 0},
+                                             {4, 0}, {5, 0}, {6, 0}, {7, 0},
+                                             {1, 1}, {2, 1}};
+  EXPECT_EQ(found_solutions, expected);
+}
+
 TEST(ElementExpandTest, ConstantArray) {
   CpModelProto initial_model = ParseTestProto(R"pb(
     variables { domain: [ -1, 5 ] }
@@ -756,6 +1047,38 @@ TEST(ElementExpandTest, ConstantArray) {
       {0, 1, 3, 4, 5, 1}, {1, 1, 3, 4, 5, 3}, {2, 1, 3, 4, 5, 4},
       {3, 1, 3, 4, 5, 5}, {4, 1, 3, 4, 5, 1},
   };
+  EXPECT_EQ(found_solutions, expected);
+}
+
+TEST(ElementExpandTest, ConstantArrayWithEnforcementLiteral) {
+  CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ -1, 5 ] }
+    variables { domain: [ 0, 7 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      enforcement_literal: 2
+      element {
+        linear_index { vars: 0 coeffs: 1 }
+        linear_target { vars: 1 coeffs: 1 }
+        exprs { offset: 1 }
+        exprs { offset: 3 }
+        exprs { offset: 4 }
+        exprs { offset: 5 }
+        exprs { offset: 1 }
+      }
+    }
+  )pb");
+
+  absl::btree_set<std::vector<int>> found_solutions;
+  const CpSolverResponse response =
+      SolveAndCheck(initial_model, "", &found_solutions);
+  absl::btree_set<std::vector<int>> expected{
+      {0, 1, 1}, {1, 3, 1}, {2, 4, 1}, {3, 5, 1}, {4, 1, 1}};
+  for (int index = -1; index <= 5; ++index) {
+    for (int target = 0; target <= 7; ++target) {
+      expected.insert({index, target, 0});
+    }
+  }
   EXPECT_EQ(found_solutions, expected);
 }
 
@@ -829,6 +1152,44 @@ TEST(AutomatonExpandTest, Bug1753_1) {
   EXPECT_EQ(found_solutions, expected);
 }
 
+TEST(AutomatonExpandTest, Bug1753WithEnforcementLiteral_1) {
+  CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { name: "0" domain: 0 domain: 2 }
+    variables { name: "1" domain: 0 domain: 2 }
+    variables { name: "2" domain: 0 domain: 2 }
+    variables { name: "3" domain: 0 domain: 1 }
+    constraints {
+      enforcement_literal: 3
+      automaton {
+        starting_state: 1
+        final_states: 1
+        final_states: 2
+        transition_tail: 1
+        transition_tail: 2
+        transition_head: 2
+        transition_head: 1
+        transition_label: 1
+        transition_label: 2
+        exprs { vars: 0 coeffs: 1 }
+        exprs { vars: 1 coeffs: 1 }
+        exprs { vars: 2 coeffs: 1 }
+      }
+    }
+  )pb");
+  absl::btree_set<std::vector<int>> found_solutions;
+  const CpSolverResponse response =
+      SolveAndCheck(initial_model, "", &found_solutions);
+  absl::btree_set<std::vector<int>> expected{{1, 2, 1, 1}};
+  for (int i = 0; i <= 2; ++i) {
+    for (int j = 0; j <= 2; ++j) {
+      for (int k = 0; k <= 2; ++k) {
+        expected.insert({i, j, k, 0});
+      }
+    }
+  }
+  EXPECT_EQ(found_solutions, expected);
+}
+
 TEST(AutomatonExpandTest, Bug1753_2) {
   CpModelProto initial_model = ParseTestProto(R"pb(
     variables { name: "0" domain: 0 domain: 2 }
@@ -875,6 +1236,59 @@ TEST(AutomatonExpandTest, Bug1753_2) {
   EXPECT_EQ(found_solutions, expected);
 }
 
+TEST(AutomatonExpandTest, Bug1753WithEnforcementLiteral_2) {
+  CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { name: "0" domain: 0 domain: 2 }
+    variables { name: "1" domain: 0 domain: 2 }
+    variables { name: "2" domain: 0 domain: 2 }
+    variables { name: "3" domain: 0 domain: 1 }
+    constraints { linear { vars: 2 coeffs: 1 domain: 1 domain: 1 } }
+    constraints {
+      enforcement_literal: 3
+      automaton {
+        starting_state: 1
+        final_states: 1
+        final_states: 2
+        transition_tail: 1
+        transition_tail: 0
+        transition_tail: 1
+        transition_tail: 2
+        transition_tail: 0
+        transition_tail: 2
+        transition_head: 2
+        transition_head: 2
+        transition_head: 1
+        transition_head: 1
+        transition_head: 1
+        transition_head: 2
+        transition_label: 1
+        transition_label: 1
+        transition_label: 0
+        transition_label: 2
+        transition_label: 2
+        transition_label: 0
+        vars: 0
+        vars: 1
+        vars: 2
+      }
+    }
+    solution_hint {
+      vars: [ 0, 1, 2, 3 ]
+      values: [ 0, 0, 1, 1 ]
+    }
+  )pb");
+  absl::btree_set<std::vector<int>> found_solutions;
+  const CpSolverResponse response =
+      SolveAndCheck(initial_model, "", &found_solutions);
+  absl::btree_set<std::vector<int>> expected{{0, 0, 1, 1}, {1, 2, 1, 1}};
+  for (int i = 0; i <= 2; ++i) {
+    for (int j = 0; j <= 2; ++j) {
+      expected.insert({i, j, 1, 0});
+    }
+  }
+  EXPECT_EQ(found_solutions, expected);
+}
+
 TEST(AutomatonExpandTest, EverythingZero) {
   CpModelProto initial_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 1 ] }
@@ -911,6 +1325,62 @@ TEST(AutomatonExpandTest, EverythingZero) {
     variables { domain: 0 domain: 0 }
     variables { domain: 0 domain: 0 }
     constraints {}
+  )pb");
+  EXPECT_THAT(initial_model, testing::EqualsProto(expected_model));
+}
+
+TEST(AutomatonExpandTest, EverythingZeroWithEnforcementLiteral) {
+  CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      enforcement_literal: 0
+      automaton {
+        starting_state: 1,
+        final_states: [ 1 ],
+        transition_tail: 1,
+        transition_head: 1,
+        transition_label: 0,
+        exprs { vars: 0 coeffs: 1 }
+        exprs { vars: 1 coeffs: 1 }
+        exprs { vars: 2 coeffs: 1 }
+      }
+    }
+  )pb");
+  Model model;
+  PresolveContext context(&model, &initial_model, nullptr);
+  ExpandCpModel(&context);
+
+  const CpModelProto expected_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {}
+    constraints {
+      enforcement_literal: 0
+      linear {
+        vars: 0
+        coeffs: 1
+        domain: [ 0, 0 ]
+      }
+    }
+    constraints {
+      enforcement_literal: 0
+      linear {
+        vars: 1
+        coeffs: 1
+        domain: [ 0, 0 ]
+      }
+    }
+    constraints {
+      enforcement_literal: 0
+      linear {
+        vars: 2
+        coeffs: 1
+        domain: [ 0, 0 ]
+      }
+    }
   )pb");
   EXPECT_THAT(initial_model, testing::EqualsProto(expected_model));
 }
@@ -1474,10 +1944,72 @@ TEST(ExpandAllDiffTest, Permutation) {
 
   absl::btree_set<std::vector<int>> found_solutions;
   const CpSolverResponse response =
-      SolveAndCheck(initial_model, "presolve_cp_model:false", &found_solutions);
+      SolveAndCheck(initial_model, "cp_model_presolve:false", &found_solutions);
   absl::btree_set<std::vector<int>> expected{
       {0, 2, 1}, {2, 0, 1}, {1, 2, 0}, {2, 1, 0}};
   EXPECT_EQ(found_solutions, expected);
+}
+
+TEST(ExpandAllDiffTest, GoldenTestWithEnforcementLiteral) {
+  CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      enforcement_literal: -1
+      all_diff {
+        exprs { vars: 1 coeffs: 1 }
+        exprs { vars: 2 coeffs: 1 offset: 1 }
+        exprs { vars: 3 coeffs: -1 offset: 3 }
+      }
+    })pb");
+  Model model;
+  PresolveContext context(&model, &initial_model, nullptr);
+  context.InitializeNewDomains();
+  context.UpdateNewConstraintsVariableUsage();
+  ExpandCpModel(&context);
+
+  const CpModelProto expected_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {}
+    constraints {
+      enforcement_literal: -1
+      linear {
+        vars: 1
+        coeffs: -1
+        domain: [ -1, 0 ]
+      }
+    }
+    constraints {
+      enforcement_literal: -1
+      linear {
+        vars: [ 1, 2 ]
+        coeffs: [ 1, -1 ]
+        domain: [ -1, 0 ]
+      }
+    }
+    constraints {
+      enforcement_literal: -1
+      linear {
+        vars: [ 2, 3 ]
+        coeffs: [ 1, 1 ]
+        domain: [ 0, 1 ]
+      }
+    }
+    constraints {
+      enforcement_literal: -1
+      linear {
+        vars: 3
+        coeffs: -1
+        domain: [ -1, 0 ]
+      }
+    }
+  )pb");
+  EXPECT_THAT(initial_model, testing::EqualsProto(expected_model));
 }
 
 TEST(ExpandInverseTest, CountInvolution) {
@@ -1499,6 +2031,30 @@ TEST(ExpandInverseTest, CountInvolution) {
 
   // On 3 elements, we either have the identity or one of the 3 two cycle.
   EXPECT_EQ(4, solutions.size());
+}
+
+TEST(ExpandInverseTest, CountInvolutionWithEnforcementLiteral) {
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 9 ] }
+    variables { domain: [ 0, 9 ] }
+    variables { domain: [ 0, 9 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      enforcement_literal: 3
+      inverse {
+        f_direct: [ 0, 1, 2 ]
+        f_inverse: [ 0, 1, 2 ]
+      }
+    }
+  )pb");
+  absl::btree_set<std::vector<int>> solutions;
+  const CpSolverResponse response =
+      SolveAndCheck(initial_model, "", &solutions);
+  EXPECT_EQ(OPTIMAL, response.status());
+
+  // On 3 elements, we either have the identity or one of the 3 two cycle (when
+  // the constraint is enforced; otherwise all 10^3 combinations are valid).
+  EXPECT_EQ(1004, solutions.size());
 }
 
 TEST(ExpandInverseTest, DuplicateAtDifferentPosition) {
@@ -1524,253 +2080,6 @@ TEST(ExpandInverseTest, DuplicateAtDifferentPosition) {
 
   // f(0) = 1 has 2 solutions, same with f(0) = 2.
   EXPECT_EQ(4, solutions.size());
-}
-
-TEST(ExpandSmallLinearTest, ReplaceNonEqual) {
-  CpModelProto initial_model = ParseTestProto(R"pb(
-    variables { domain: [ 0, 5 ] }
-    variables { domain: [ 0, 5 ] }
-    variables { domain: [ 0, 1 ] }
-    variables { domain: [ 0, 1 ] }
-    variables { domain: [ 0, 1 ] }
-    variables { domain: [ 0, 1 ] }
-    variables { domain: [ 0, 1 ] }
-    variables { domain: [ 0, 1 ] }
-    variables { domain: [ 0, 1 ] }
-    variables { domain: [ 0, 1 ] }
-    variables { domain: [ 0, 1 ] }
-    variables { domain: [ 0, 1 ] }
-    variables { domain: [ 0, 1 ] }
-    variables { domain: [ 0, 1 ] }
-    constraints {
-      linear {
-        vars: [ 0, 1 ]
-        coeffs: [ 1, 1 ]
-        domain: [ 0, 4, 6, 10 ]
-      }
-    }
-  )pb");
-  Model model;
-  PresolveContext context(&model, &initial_model, nullptr);
-  context.InitializeNewDomains();
-  context.InsertVarValueEncoding(2, 0, 0);
-  context.InsertVarValueEncoding(3, 0, 1);
-  context.InsertVarValueEncoding(4, 0, 2);
-  context.InsertVarValueEncoding(5, 0, 3);
-  context.InsertVarValueEncoding(6, 0, 4);
-  context.InsertVarValueEncoding(7, 0, 5);
-  context.InsertVarValueEncoding(8, 1, 0);
-  context.InsertVarValueEncoding(9, 1, 1);
-  context.InsertVarValueEncoding(10, 1, 2);
-  context.InsertVarValueEncoding(11, 1, 3);
-  context.InsertVarValueEncoding(12, 1, 4);
-  context.InsertVarValueEncoding(13, 1, 5);
-  ExpandCpModel(&context);
-
-  const CpModelProto expected_model = ParseTestProto(R"pb(
-    variables { domain: 0 domain: 5 }
-    variables { domain: 0 domain: 5 }
-    variables { domain: 0 domain: 1 }
-    variables { domain: 0 domain: 1 }
-    variables { domain: 0 domain: 1 }
-    variables { domain: 0 domain: 1 }
-    variables { domain: 0 domain: 1 }
-    variables { domain: 0 domain: 1 }
-    variables { domain: 0 domain: 1 }
-    variables { domain: 0 domain: 1 }
-    variables { domain: 0 domain: 1 }
-    variables { domain: 0 domain: 1 }
-    variables { domain: 0 domain: 1 }
-    variables { domain: 0 domain: 1 }
-    constraints {}
-    constraints {
-      enforcement_literal: 2
-      linear { vars: 0 coeffs: 1 domain: 0 domain: 0 }
-    }
-    constraints {
-      enforcement_literal: -3
-      linear {
-        vars: 0
-        coeffs: 1
-        domain: -9223372036854775808
-        domain: -1
-        domain: 1
-        domain: 9223372036854775807
-      }
-    }
-    constraints {
-      enforcement_literal: 3
-      linear { vars: 0 coeffs: 1 domain: 1 domain: 1 }
-    }
-    constraints {
-      enforcement_literal: -4
-      linear {
-        vars: 0
-        coeffs: 1
-        domain: -9223372036854775808
-        domain: 0
-        domain: 2
-        domain: 9223372036854775807
-      }
-    }
-    constraints {
-      enforcement_literal: 4
-      linear { vars: 0 coeffs: 1 domain: 2 domain: 2 }
-    }
-    constraints {
-      enforcement_literal: -5
-      linear {
-        vars: 0
-        coeffs: 1
-        domain: -9223372036854775808
-        domain: 1
-        domain: 3
-        domain: 9223372036854775807
-      }
-    }
-    constraints {
-      enforcement_literal: 5
-      linear { vars: 0 coeffs: 1 domain: 3 domain: 3 }
-    }
-    constraints {
-      enforcement_literal: -6
-      linear {
-        vars: 0
-        coeffs: 1
-        domain: -9223372036854775808
-        domain: 2
-        domain: 4
-        domain: 9223372036854775807
-      }
-    }
-    constraints {
-      enforcement_literal: 6
-      linear { vars: 0 coeffs: 1 domain: 4 domain: 4 }
-    }
-    constraints {
-      enforcement_literal: -7
-      linear {
-        vars: 0
-        coeffs: 1
-        domain: -9223372036854775808
-        domain: 3
-        domain: 5
-        domain: 9223372036854775807
-      }
-    }
-    constraints {
-      enforcement_literal: 7
-      linear { vars: 0 coeffs: 1 domain: 5 domain: 5 }
-    }
-    constraints {
-      enforcement_literal: -8
-      linear {
-        vars: 0
-        coeffs: 1
-        domain: -9223372036854775808
-        domain: 4
-        domain: 6
-        domain: 9223372036854775807
-      }
-    }
-    constraints {
-      enforcement_literal: 8
-      linear { vars: 1 coeffs: 1 domain: 0 domain: 0 }
-    }
-    constraints {
-      enforcement_literal: -9
-      linear {
-        vars: 1
-        coeffs: 1
-        domain: -9223372036854775808
-        domain: -1
-        domain: 1
-        domain: 9223372036854775807
-      }
-    }
-    constraints {
-      enforcement_literal: 9
-      linear { vars: 1 coeffs: 1 domain: 1 domain: 1 }
-    }
-    constraints {
-      enforcement_literal: -10
-      linear {
-        vars: 1
-        coeffs: 1
-        domain: -9223372036854775808
-        domain: 0
-        domain: 2
-        domain: 9223372036854775807
-      }
-    }
-    constraints {
-      enforcement_literal: 10
-      linear { vars: 1 coeffs: 1 domain: 2 domain: 2 }
-    }
-    constraints {
-      enforcement_literal: -11
-      linear {
-        vars: 1
-        coeffs: 1
-        domain: -9223372036854775808
-        domain: 1
-        domain: 3
-        domain: 9223372036854775807
-      }
-    }
-    constraints {
-      enforcement_literal: 11
-      linear { vars: 1 coeffs: 1 domain: 3 domain: 3 }
-    }
-    constraints {
-      enforcement_literal: -12
-      linear {
-        vars: 1
-        coeffs: 1
-        domain: -9223372036854775808
-        domain: 2
-        domain: 4
-        domain: 9223372036854775807
-      }
-    }
-    constraints {
-      enforcement_literal: 12
-      linear { vars: 1 coeffs: 1 domain: 4 domain: 4 }
-    }
-    constraints {
-      enforcement_literal: -13
-      linear {
-        vars: 1
-        coeffs: 1
-        domain: -9223372036854775808
-        domain: 3
-        domain: 5
-        domain: 9223372036854775807
-      }
-    }
-    constraints {
-      enforcement_literal: 13
-      linear { vars: 1 coeffs: 1 domain: 5 domain: 5 }
-    }
-    constraints {
-      enforcement_literal: -14
-      linear {
-        vars: 1
-        coeffs: 1
-        domain: -9223372036854775808
-        domain: 4
-        domain: 6
-        domain: 9223372036854775807
-      }
-    }
-    constraints { bool_or { literals: -3 literals: -14 } }
-    constraints { bool_or { literals: -4 literals: -13 } }
-    constraints { bool_or { literals: -5 literals: -12 } }
-    constraints { bool_or { literals: -6 literals: -11 } }
-    constraints { bool_or { literals: -7 literals: -10 } }
-    constraints { bool_or { literals: -8 literals: -9 } }
-  )pb");
-  EXPECT_THAT(initial_model, testing::EqualsProto(expected_model));
 }
 
 TEST(TableExpandTest, UsedToFail) {
@@ -1887,6 +2196,62 @@ TEST(LinMaxExpansionTest, GoldenTest) {
     }
     constraints {
       enforcement_literal: -4
+      linear { vars: 0 vars: 2 coeffs: 1 coeffs: -1 domain: -6 domain: -4 }
+    }
+  )pb");
+  EXPECT_THAT(initial_model, testing::EqualsProto(expected_model));
+}
+
+TEST(LinMaxExpansionTest, GoldenTestWithEnforcementLiterals) {
+  CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 5 ] }
+    variables { domain: [ 0, 5 ] }
+    variables { domain: [ 0, 6 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      enforcement_literal: 3
+      lin_max {
+        target { vars: 0 coeffs: 1 offset: 1 }
+        exprs { vars: 1 coeffs: 2 }
+        exprs: { vars: 2 coeffs: 1 offset: -3 }
+      }
+    }
+  )pb");
+  Model model;
+  model.GetOrCreate<SatParameters>()->set_max_lin_max_size_for_expansion(4);
+  PresolveContext context(&model, &initial_model, nullptr);
+  ExpandCpModel(&context);
+
+  const CpModelProto expected_model = ParseTestProto(R"pb(
+    variables { domain: 0 domain: 5 }
+    variables { domain: 0 domain: 5 }
+    variables { domain: 0 domain: 6 }
+    variables { domain: 0 domain: 1 }
+    variables { domain: 0 domain: 1 }
+    variables { domain: 0 domain: 1 }
+    constraints {}
+    constraints {
+      enforcement_literal: 3
+      linear { vars: 0 vars: 1 coeffs: 1 coeffs: -2 domain: -1 domain: 5 }
+    }
+    constraints {
+      enforcement_literal: 3
+      linear { vars: 0 vars: 2 coeffs: 1 coeffs: -1 domain: -4 domain: 5 }
+    }
+    constraints {
+      enforcement_literal: 3
+      linear {
+        vars: [ 4, 5 ]
+        coeffs: [ 1, 1 ]
+        domain: [ 1, 1 ]
+      }
+    }
+    constraints {
+      enforcement_literal: 4
+      linear { vars: 0 vars: 1 coeffs: 1 coeffs: -2 domain: -10 domain: -1 }
+    }
+    constraints {
+      enforcement_literal: 5
       linear { vars: 0 vars: 2 coeffs: 1 coeffs: -1 domain: -6 domain: -4 }
     }
   )pb");

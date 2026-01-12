@@ -18,7 +18,6 @@
 #include <algorithm>
 #include <functional>
 #include <limits>
-#include <ostream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -27,21 +26,19 @@
 #include "absl/cleanup/cleanup.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
-#include "absl/container/inlined_vector.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/log/vlog_is_on.h"
 #include "absl/numeric/int128.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
-#include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/sat/enforcement.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/precedences.h"
 #include "ortools/sat/sat_base.h"
-#include "ortools/sat/sat_solver.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
@@ -51,341 +48,18 @@
 namespace operations_research {
 namespace sat {
 
-std::ostream& operator<<(std::ostream& os, const EnforcementStatus& e) {
-  switch (e) {
-    case EnforcementStatus::IS_FALSE:
-      os << "IS_FALSE";
-      break;
-    case EnforcementStatus::CANNOT_PROPAGATE:
-      os << "CANNOT_PROPAGATE";
-      break;
-    case EnforcementStatus::CAN_PROPAGATE:
-      os << "CAN_PROPAGATE";
-      break;
-    case EnforcementStatus::IS_ENFORCED:
-      os << "IS_ENFORCED";
-      break;
-  }
-  return os;
-}
-
-EnforcementPropagator::EnforcementPropagator(Model* model)
-    : SatPropagator("EnforcementPropagator"),
-      trail_(*model->GetOrCreate<Trail>()),
-      assignment_(trail_.Assignment()),
-      integer_trail_(model->GetOrCreate<IntegerTrail>()),
-      rev_int_repository_(model->GetOrCreate<RevIntRepository>()) {
-  // Note that this will be after the integer trail since rev_int_repository_
-  // depends on IntegerTrail.
-  model->GetOrCreate<SatSolver>()->AddPropagator(this);
-
-  // Sentinel - also start of next Register().
-  starts_.push_back(0);
-}
-
-bool EnforcementPropagator::Propagate(Trail* /*trail*/) {
-  rev_int_repository_->SaveStateWithStamp(&rev_stack_size_, &rev_stamp_);
-  while (propagation_trail_index_ < trail_.Index()) {
-    const Literal literal = trail_[propagation_trail_index_++];
-    if (literal.Index() >= static_cast<int>(watcher_.size())) continue;
-
-    int new_size = 0;
-    auto& watch_list = watcher_[literal.Index()];
-    for (const EnforcementId id : watch_list) {
-      const LiteralIndex index = ProcessIdOnTrue(literal, id);
-      if (index == kNoLiteralIndex) {
-        // We keep the same watcher.
-        watch_list[new_size++] = id;
-      } else {
-        // Change the watcher.
-        CHECK_NE(index, literal.Index());
-        watcher_[index].push_back(id);
-      }
-    }
-    watch_list.resize(new_size);
-
-    // We also mark some constraint false.
-    for (const EnforcementId id : watcher_[literal.NegatedIndex()]) {
-      ChangeStatus(id, EnforcementStatus::IS_FALSE);
-    }
-  }
-  rev_stack_size_ = static_cast<int>(untrail_stack_.size());
-
-  // Compute the enforcement status of any constraint added at a positive level.
-  // This is only needed until we are back to level zero.
-  for (const EnforcementId id : ids_to_fix_until_next_root_level_) {
-    ChangeStatus(id, DebugStatus(id));
-  }
-  if (trail_.CurrentDecisionLevel() == 0) {
-    ids_to_fix_until_next_root_level_.clear();
-  }
-
-  return true;
-}
-
-void EnforcementPropagator::Untrail(const Trail& /*trail*/, int trail_index) {
-  // Simply revert the status change.
-  const int size = static_cast<int>(untrail_stack_.size());
-  for (int i = size - 1; i >= rev_stack_size_; --i) {
-    const auto [id, status] = untrail_stack_[i];
-    statuses_[id] = status;
-    if (callbacks_[id] != nullptr) callbacks_[id](id, status);
-  }
-  untrail_stack_.resize(rev_stack_size_);
-  propagation_trail_index_ = trail_index;
-}
-
-// Adds a new constraint to the class and returns the constraint id.
-//
-// Note that we accept empty enforcement list so that client code can be used
-// regardless of the presence of enforcement or not. A negative id means the
-// constraint is never enforced, and should be ignored.
-EnforcementId EnforcementPropagator::Register(
-    absl::Span<const Literal> enforcement,
-    std::function<void(EnforcementId, EnforcementStatus)> callback) {
-  int num_true = 0;
-  int num_false = 0;
-  bool is_always_false = false;
-  temp_literals_.clear();
-  const int level = trail_.CurrentDecisionLevel();
-  for (const Literal l : enforcement) {
-    // Make sure we always have enough room for the literal and its negation.
-    const int size = std::max(l.Index().value(), l.NegatedIndex().value()) + 1;
-    if (size > static_cast<int>(watcher_.size())) {
-      watcher_.resize(size);
-    }
-    if (assignment_.LiteralIsTrue(l)) {
-      if (level == 0 || trail_.Info(l.Variable()).level == 0) continue;
-      ++num_true;
-    } else if (assignment_.LiteralIsFalse(l)) {
-      if (level == 0 || trail_.Info(l.Variable()).level == 0) {
-        is_always_false = true;
-        break;
-      }
-      ++num_false;
-    }
-    temp_literals_.push_back(l);
-  }
-  gtl::STLSortAndRemoveDuplicates(&temp_literals_);
-
-  // Return special indices if never/always enforced.
-  if (is_always_false) {
-    if (callback != nullptr)
-      callback(EnforcementId(-1), EnforcementStatus::IS_FALSE);
-    return EnforcementId(-1);
-  }
-  if (temp_literals_.empty()) {
-    if (callback != nullptr)
-      callback(EnforcementId(-1), EnforcementStatus::IS_ENFORCED);
-    return EnforcementId(-1);
-  }
-
-  const EnforcementId id(static_cast<int>(callbacks_.size()));
-  callbacks_.push_back(std::move(callback));
-
-  CHECK(!temp_literals_.empty());
-  buffer_.insert(buffer_.end(), temp_literals_.begin(), temp_literals_.end());
-  starts_.push_back(buffer_.size());  // Sentinel/next-start.
-
-  // The default status at level zero.
-  statuses_.push_back(temp_literals_.size() == 1
-                          ? EnforcementStatus::CAN_PROPAGATE
-                          : EnforcementStatus::CANNOT_PROPAGATE);
-
-  if (temp_literals_.size() == 1) {
-    watcher_[temp_literals_[0].Index()].push_back(id);
-  } else {
-    // Make sure we watch correct literals.
-    const auto span = GetSpan(id);
-    int num_not_true = 0;
-    for (int i = 0; i < span.size(); ++i) {
-      if (assignment_.LiteralIsTrue(span[i])) continue;
-      std::swap(span[num_not_true], span[i]);
-      ++num_not_true;
-      if (num_not_true == 2) break;
-    }
-
-    // We need to watch one of the literals at highest level.
-    if (num_not_true == 1) {
-      int max_level = trail_.Info(span[1].Variable()).level;
-      for (int i = 2; i < span.size(); ++i) {
-        const int level = trail_.Info(span[i].Variable()).level;
-        if (level > max_level) {
-          max_level = level;
-          std::swap(span[1], span[i]);
-        }
-      }
-    }
-
-    watcher_[span[0].Index()].push_back(id);
-    watcher_[span[1].Index()].push_back(id);
-  }
-
-  // Change status, call callback and set up untrail if the status is different
-  // from EnforcementStatus::CANNOT_PROPAGATE.
-  if (num_false > 0) {
-    ChangeStatus(id, EnforcementStatus::IS_FALSE);
-  } else if (num_true == temp_literals_.size()) {
-    ChangeStatus(id, EnforcementStatus::IS_ENFORCED);
-  } else if (num_true + 1 == temp_literals_.size()) {
-    ChangeStatus(id, EnforcementStatus::CAN_PROPAGATE);
-    // Because this is the default status, we still need to call the callback.
-    if (temp_literals_.size() == 1) {
-      if (callbacks_[id] != nullptr) {
-        callbacks_[id](id, EnforcementStatus::CAN_PROPAGATE);
-      }
-    }
-  }
-
-  // Tricky: if we added something at a positive level, and its status is
-  // not CANNOT_PROPAGATE, then we might need to fix it on backtrack.
-  if (trail_.CurrentDecisionLevel() > 0 &&
-      statuses_[id] != EnforcementStatus::CANNOT_PROPAGATE) {
-    ids_to_fix_until_next_root_level_.push_back(id);
-  }
-
-  return id;
-}
-
-// Add the enforcement reason to the given vector.
-void EnforcementPropagator::AddEnforcementReason(
-    EnforcementId id, std::vector<Literal>* reason) const {
-  for (const Literal l : GetSpan(id)) {
-    reason->push_back(l.Negated());
-  }
-}
-
-// Try to propagate when the enforced constraint is not satisfiable.
-// This is currently in O(enforcement_size);
-bool EnforcementPropagator::PropagateWhenFalse(
-    EnforcementId id, absl::Span<const Literal> literal_reason,
-    absl::Span<const IntegerLiteral> integer_reason) {
-  temp_reason_.clear();
-  LiteralIndex unique_unassigned = kNoLiteralIndex;
-  for (const Literal l : GetSpan(id)) {
-    if (assignment_.LiteralIsFalse(l)) return true;
-    if (assignment_.LiteralIsTrue(l)) {
-      temp_reason_.push_back(l.Negated());
-      continue;
-    }
-    if (unique_unassigned != kNoLiteralIndex) return true;
-    unique_unassigned = l.Index();
-  }
-
-  temp_reason_.insert(temp_reason_.end(), literal_reason.begin(),
-                      literal_reason.end());
-  if (unique_unassigned == kNoLiteralIndex) {
-    return integer_trail_->ReportConflict(temp_reason_, integer_reason);
-  }
-
-  // We also change the status right away.
-  ChangeStatus(id, EnforcementStatus::IS_FALSE);
-  integer_trail_->EnqueueLiteral(Literal(unique_unassigned).Negated(),
-                                 temp_reason_, integer_reason);
-  return true;
-}
-
-absl::Span<Literal> EnforcementPropagator::GetSpan(EnforcementId id) {
-  if (id < 0) return {};
-  DCHECK_LE(id + 1, starts_.size());
-  const int size = starts_[id + 1] - starts_[id];
-  DCHECK_NE(size, 0);
-  return absl::MakeSpan(&buffer_[starts_[id]], size);
-}
-
-absl::Span<const Literal> EnforcementPropagator::GetSpan(
-    EnforcementId id) const {
-  if (id < 0) return {};
-  DCHECK_LE(id + 1, starts_.size());
-  const int size = starts_[id + 1] - starts_[id];
-  DCHECK_NE(size, 0);
-  return absl::MakeSpan(&buffer_[starts_[id]], size);
-}
-
-LiteralIndex EnforcementPropagator::ProcessIdOnTrue(Literal watched,
-                                                    EnforcementId id) {
-  const EnforcementStatus status = statuses_[id];
-  if (status == EnforcementStatus::IS_FALSE) return kNoLiteralIndex;
-
-  const auto span = GetSpan(id);
-  if (span.size() == 1) {
-    CHECK_EQ(status, EnforcementStatus::CAN_PROPAGATE);
-    ChangeStatus(id, EnforcementStatus::IS_ENFORCED);
-    return kNoLiteralIndex;
-  }
-
-  const int watched_pos = (span[0] == watched) ? 0 : 1;
-  CHECK_EQ(span[watched_pos], watched);
-  if (assignment_.LiteralIsFalse(span[watched_pos ^ 1])) {
-    ChangeStatus(id, EnforcementStatus::IS_FALSE);
-    return kNoLiteralIndex;
-  }
-
-  for (int i = 2; i < span.size(); ++i) {
-    const Literal l = span[i];
-    if (assignment_.LiteralIsFalse(l)) {
-      ChangeStatus(id, EnforcementStatus::IS_FALSE);
-      return kNoLiteralIndex;
-    }
-    if (!assignment_.LiteralIsAssigned(l)) {
-      // Replace the watched literal. Note that if the other watched literal is
-      // true, it should be processed afterwards. We do not change the status
-      std::swap(span[watched_pos], span[i]);
-      return span[watched_pos].Index();
-    }
-  }
-
-  // All literal with index > 1 are true. Two case.
-  if (assignment_.LiteralIsTrue(span[watched_pos ^ 1])) {
-    // All literals are true.
-    ChangeStatus(id, EnforcementStatus::IS_ENFORCED);
-    return kNoLiteralIndex;
-  } else {
-    // The other watched literal is the last unassigned
-    CHECK_EQ(status, EnforcementStatus::CANNOT_PROPAGATE);
-    ChangeStatus(id, EnforcementStatus::CAN_PROPAGATE);
-    return kNoLiteralIndex;
-  }
-}
-
-void EnforcementPropagator::ChangeStatus(EnforcementId id,
-                                         EnforcementStatus new_status) {
-  const EnforcementStatus old_status = statuses_[id];
-  if (old_status == new_status) return;
-  if (trail_.CurrentDecisionLevel() != 0) {
-    untrail_stack_.push_back({id, old_status});
-  }
-  statuses_[id] = new_status;
-  if (callbacks_[id] != nullptr) callbacks_[id](id, new_status);
-}
-
-EnforcementStatus EnforcementPropagator::DebugStatus(EnforcementId id) {
-  if (id < 0) return EnforcementStatus::IS_ENFORCED;
-
-  int num_true = 0;
-  for (const Literal l : GetSpan(id)) {
-    if (assignment_.LiteralIsFalse(l)) {
-      return EnforcementStatus::IS_FALSE;
-    }
-    if (assignment_.LiteralIsTrue(l)) ++num_true;
-  }
-  const int size = GetSpan(id).size();
-  if (num_true == size) return EnforcementStatus::IS_ENFORCED;
-  if (num_true + 1 == size) return EnforcementStatus::CAN_PROPAGATE;
-  return EnforcementStatus::CANNOT_PROPAGATE;
-}
-
 LinearPropagator::LinearPropagator(Model* model)
     : trail_(model->GetOrCreate<Trail>()),
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
       enforcement_propagator_(model->GetOrCreate<EnforcementPropagator>()),
+      enforcement_helper_(model->GetOrCreate<EnforcementHelper>()),
       watcher_(model->GetOrCreate<GenericLiteralWatcher>()),
       time_limit_(model->GetOrCreate<TimeLimit>()),
       rev_int_repository_(model->GetOrCreate<RevIntRepository>()),
       rev_integer_value_repository_(
           model->GetOrCreate<RevIntegerValueRepository>()),
-      precedences_(model->GetOrCreate<PrecedenceRelations>()),
-      binary_relations_(model->GetOrCreate<BinaryRelationsMaps>()),
+      precedences_(model->GetOrCreate<EnforcedLinear2Bounds>()),
+      linear3_bounds_(model->GetOrCreate<Linear2BoundsFromLinear3>()),
       random_(model->GetOrCreate<ModelRandomGenerator>()),
       shared_stats_(model->GetOrCreate<SharedStatistics>()),
       watcher_id_(watcher_->Register(this)),
@@ -538,7 +212,8 @@ bool LinearPropagator::Propagate() {
   //  - Z + Y >= 6            ==>   Z >= 1
   //  - (1) again to push T <= 10  and reach the propagation fixed point.
   Bitset64<int>::View in_queue = in_queue_.view();
-  const bool push_affine_ub = push_affine_ub_for_binary_relations_;
+  const bool push_affine_ub = push_affine_ub_for_binary_relations_ ||
+                              trail_->CurrentDecisionLevel() == 0;
   while (true) {
     // We always process the whole queue in FIFO order.
     // Note that the order really only matter for infeasible constraint so it
@@ -612,7 +287,7 @@ bool LinearPropagator::Propagate() {
           // The rev_rhs was updated to: initial_rhs - lb(vars[2]) * coeffs[2].
           const IntegerValue initial_rhs =
               info.rev_rhs + coeffs[2] * integer_trail_->LowerBound(vars[2]);
-          binary_relations_->AddAffineUpperBound(
+          linear3_bounds_->AddAffineUpperBound(
               expr, AffineExpression(vars[2], -coeffs[2], initial_rhs));
         } else if (info.rev_size == 3) {
           for (int i = 0; i < 3; ++i) {
@@ -623,7 +298,7 @@ bool LinearPropagator::Propagate() {
             expr.vars[1] = vars[b];
             expr.coeffs[0] = coeffs[a];
             expr.coeffs[1] = coeffs[b];
-            binary_relations_->AddAffineUpperBound(
+            linear3_bounds_->AddAffineUpperBound(
                 expr, AffineExpression(vars[i], -coeffs[i], info.rev_rhs));
           }
         }
@@ -715,7 +390,7 @@ bool LinearPropagator::AddConstraint(
           // TODO(user): With some care, when we cannot propagate or the
           // constraint is not enforced, we could leave in_queue_[] at true but
           // not put the constraint in the queue.
-          if (status == EnforcementStatus::CAN_PROPAGATE ||
+          if (status == EnforcementStatus::CAN_PROPAGATE_ENFORCEMENT ||
               status == EnforcementStatus::IS_ENFORCED) {
             AddToQueueIfNeeded(id);
             watcher_->CallOnNextPropagate(watcher_id_);
@@ -730,6 +405,15 @@ bool LinearPropagator::AddConstraint(
             if (info.initial_size == 2) {
               const auto vars = GetVariables(info);
               const auto coeffs = GetCoeffs(info);
+
+              // WARNING, subtle: this callback is called from the enforcement
+              // propagator, which can run before running the propagation of the
+              // IntegerTrail. Since it is in IntegerTrail::Propagate() that we
+              // call SetLevel() on the reversible classes,
+              // EnforcedLinear2Bounds might be at the wrong level.
+              // TODO(user): find a cleaner solution
+              precedences_->SetLevelToTrail();
+
               precedences_->PushConditionalRelation(
                   enforcement_propagator_->GetEnforcementLiterals(enf_id),
                   LinearExpression2(vars[0], vars[1], coeffs[0], coeffs[1]),
@@ -774,13 +458,11 @@ bool LinearPropagator::AddConstraint(
 
   // Propagate this new constraint.
   // TODO(user): Do we want to do that?
-  num_terms_for_dtime_update_ = 0;
-  const auto cleanup = ::absl::MakeCleanup([this]() {
-    time_limit_->AdvanceDeterministicTime(
-        static_cast<double>(num_terms_for_dtime_update_) * 1e-9);
-  });
-  if (!PropagateOneConstraint(id)) return false;
-  return true;
+  //
+  // Tricky: we cannot just call PropagateOneConstraint(id) if some variable
+  // bounds where modified since the last time we propagated, otherwise we
+  // might wrongly detect cycles for instance.
+  return Propagate();
 }
 
 absl::Span<IntegerValue> LinearPropagator::GetCoeffs(
@@ -960,40 +642,17 @@ bool LinearPropagator::PropagateInfeasibleConstraint(int id,
   integer_trail_->RelaxLinearReason(-slack - 1, reason_coeffs_,
                                     &integer_reason_);
   ++num_enforcement_pushes_;
-  return enforcement_propagator_->PropagateWhenFalse(info.enf_id, {},
-                                                     integer_reason_);
+  return enforcement_helper_->PropagateWhenFalse(info.enf_id, {},
+                                                 integer_reason_);
 }
 
-void LinearPropagator::Explain(int id, IntegerValue propagation_slack,
-                               IntegerVariable var_to_explain, int trail_index,
-                               std::vector<Literal>* literals_reason,
-                               std::vector<int>* trail_indices_reason) {
-  literals_reason->clear();
-  trail_indices_reason->clear();
+void LinearPropagator::Explain(int id, IntegerLiteral /*to_explain*/,
+                               IntegerReason* reason) {
   const ConstraintInfo& info = infos_[id];
-  enforcement_propagator_->AddEnforcementReason(info.enf_id, literals_reason);
-  reason_coeffs_.clear();
-
-  const auto coeffs = GetCoeffs(info);
-  const auto vars = GetVariables(info);
-  for (int i = 0; i < info.initial_size; ++i) {
-    const IntegerVariable var = vars[i];
-    if (PositiveVariable(var) == PositiveVariable(var_to_explain)) {
-      continue;
-    }
-    const int index =
-        integer_trail_->FindTrailIndexOfVarBefore(var, trail_index);
-    if (index >= 0) {
-      trail_indices_reason->push_back(index);
-      if (propagation_slack > 0) {
-        reason_coeffs_.push_back(coeffs[i]);
-      }
-    }
-  }
-  if (propagation_slack > 0) {
-    integer_trail_->RelaxLinearReason(propagation_slack, reason_coeffs_,
-                                      trail_indices_reason);
-  }
+  reason->boolean_literals_at_true =
+      enforcement_propagator_->GetEnforcementLiterals(info.enf_id);
+  reason->vars = GetVariables(info);
+  reason->coeffs = GetCoeffs(info);
 }
 
 bool LinearPropagator::PropagateOneConstraint(int id) {

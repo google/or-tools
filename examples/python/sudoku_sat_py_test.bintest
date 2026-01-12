@@ -1,0 +1,1 @@
+RUN: $(sudoku_sat_py3)

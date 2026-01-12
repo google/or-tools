@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_PACKING_ARC_FLOW_SOLVER_H_
-#define OR_TOOLS_PACKING_ARC_FLOW_SOLVER_H_
+#ifndef ORTOOLS_PACKING_ARC_FLOW_SOLVER_H_
+#define ORTOOLS_PACKING_ARC_FLOW_SOLVER_H_
 
 #include <string>
 
@@ -31,4 +31,4 @@ vbp::VectorBinPackingSolution SolveVectorBinPackingWithArcFlow(
 }  // namespace packing
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_PACKING_ARC_FLOW_SOLVER_H_
+#endif  // ORTOOLS_PACKING_ARC_FLOW_SOLVER_H_

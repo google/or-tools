@@ -11,150 +11,146 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/// The vehicle routing library lets one model and solve generic vehicle routing
-/// problems ranging from the Traveling Salesman Problem to more complex
-/// problems such as the Capacitated Vehicle Routing Problem with Time Windows.
-///
-/// The objective of a vehicle routing problem is to build routes covering a set
-/// of nodes minimizing the overall cost of the routes (usually proportional to
-/// the sum of the lengths of each segment of the routes) while respecting some
-/// problem-specific constraints (such as the length of a route). A route is
-/// equivalent to a path connecting nodes, starting/ending at specific
-/// starting/ending nodes.
-///
-/// The term "vehicle routing" is historical and the category of problems solved
-/// is not limited to the routing of vehicles: any problem involving finding
-/// routes visiting a given number of nodes optimally falls under this category
-/// of problems, such as finding the optimal sequence in a playlist.
-/// The literature around vehicle routing problems is extremely dense but one
-/// can find some basic introductions in the following links:
-/// - http://en.wikipedia.org/wiki/Travelling_salesman_problem
-/// - http://en.wikipedia.org/wiki/Vehicle_routing_problem
-///
-/// The vehicle routing library is a vertical layer above the constraint
-/// programming library (ortools/constraint_programming:cp).
-/// One has access to all underlying constrained variables of the vehicle
-/// routing model which can therefore be enriched by adding any constraint
-/// available in the constraint programming library.
-///
-/// There are two sets of variables available:
-/// - path variables:
-///   * "next(i)" variables representing the immediate successor of the node
-///     corresponding to i; use IndexToNode() to get the node corresponding to
-///     a "next" variable value; note that node indices are strongly typed
-///     integers (cf. ortools/base/int_type.h);
-///   * "vehicle(i)" variables representing the vehicle route to which the
-///     node corresponding to i belongs;
-///   * "active(i)" boolean variables, true if the node corresponding to i is
-///     visited and false if not; this can be false when nodes are either
-///     optional or part of a disjunction;
-///   * The following relationships hold for all i:
-///      active(i) == 0 <=> next(i) == i <=> vehicle(i) == -1,
-///      next(i) == j => vehicle(j) == vehicle(i).
-/// - dimension variables, used when one is accumulating quantities along
-///   routes, such as weight or volume carried, distance or time:
-///   * "cumul(i,d)" variables representing the quantity of dimension d when
-///     arriving at the node corresponding to i;
-///   * "transit(i,d)" variables representing the quantity of dimension d added
-///     after visiting the node corresponding to i.
-///   * The following relationship holds for all (i,d):
-///       next(i) == j => cumul(j,d) == cumul(i,d) + transit(i,d).
-/// Solving the vehicle routing problems is mainly done using approximate
-/// methods (namely local search,
-/// cf. http://en.wikipedia.org/wiki/Local_search_(optimization) ), potentially
-/// combined with exact techniques based on dynamic programming and exhaustive
-/// tree search.
-// TODO(user): Add a section on costs (vehicle arc costs, span costs,
-//                disjunctions costs).
-//
-/// Advanced tips: Flags are available to tune the search used to solve routing
-/// problems. Here is a quick overview of the ones one might want to modify:
-/// - Limiting the search for solutions:
-///   * routing_solution_limit (default: kint64max): stop the search after
-///     finding 'routing_solution_limit' improving solutions;
-///   * routing_time_limit (default: kint64max): stop the search after
-///     'routing_time_limit' milliseconds;
-/// - Customizing search:
-///   * routing_first_solution (default: select the first node with an unbound
-///     successor and connect it to the first available node): selects the
-///     heuristic to build a first solution which will then be improved by local
-///     search; possible values are GlobalCheapestArc (iteratively connect two
-///     nodes which produce the cheapest route segment), LocalCheapestArc
-///     (select the first node with an unbound successor and connect it to the
-///     node which produces the cheapest route segment), PathCheapestArc
-///     (starting from a route "start" node, connect it to the node which
-///     produces the cheapest route segment, then extend the route by iterating
-///     on the last node added to the route).
-///   * Local search neighborhoods:
-///     - routing_no_lns (default: false): forbids the use of Large Neighborhood
-///       Search (LNS); LNS can find good solutions but is usually very slow.
-///       Refer to the description of PATHLNS in the LocalSearchOperators enum
-///       in constraint_solver.h for more information.
-///     - routing_no_tsp (default: true): forbids the use of exact methods to
-///       solve "sub"-traveling salesman problems (TSPs) of the current model
-///       (such as sub-parts of a route, or one route in a multiple route
-///       problem). Uses dynamic programming to solve such TSPs with a maximum
-///       size (in number of nodes) up to cp_local_search_tsp_opt_size (flag
-///       with a default value of 13 nodes). It is not activated by default
-///       because it can slow down the search.
-///   * Meta-heuristics: used to guide the search out of local minima found by
-///     local search. Note that, in general, a search with metaheuristics
-///     activated never stops, therefore one must specify a search limit.
-///     Several types of metaheuristics are provided:
-///     - routing_guided_local_search (default: false): activates guided local
-///       search (cf. http://en.wikipedia.org/wiki/Guided_Local_Search);
-///       this is generally the most efficient metaheuristic for vehicle
-///       routing;
-///     - routing_simulated_annealing (default: false): activates simulated
-///       annealing (cf. http://en.wikipedia.org/wiki/Simulated_annealing);
-///     - routing_tabu_search (default: false): activates tabu search (cf.
-///       http://en.wikipedia.org/wiki/Tabu_search).
-///
-/// Code sample:
-/// Here is a simple example solving a traveling salesman problem given a cost
-/// function callback (returns the cost of a route segment):
-///
-/// - Define a custom distance/cost function from an index to another; in this
-///   example just returns the sum of the indices:
-///
-///     int64_t MyDistance(int64_t from, int64_t to) {
-///       return from + to;
-///     }
-///
-/// - Create a routing model for a given problem size (int number of nodes) and
-///   number of routes (here, 1):
-///
-///     RoutingIndexManager manager(...number of nodes..., 1);
-///     RoutingModel routing(manager);
-///
-/// - Set the cost function by registering an std::function<int64_t(int64_t,
-/// int64_t)> in the model and passing its index as the vehicle cost.
-///
-///    const int cost = routing.RegisterTransitCallback(MyDistance);
-///    routing.SetArcCostEvaluatorOfAllVehicles(cost);
-///
-/// - Find a solution using Solve(), returns a solution if any (owned by
-///   routing):
-///
-///    const Assignment* solution = routing.Solve();
-///    CHECK(solution != nullptr);
-///
-/// - Inspect the solution cost and route (only one route here):
-///
-///    LOG(INFO) << "Cost " << solution->ObjectiveValue();
-///    const int route_number = 0;
-///    for (int64_t node = routing.Start(route_number);
-///         !routing.IsEnd(node);
-///         node = solution->Value(routing.NextVar(node))) {
-///      LOG(INFO) << manager.IndexToNode(node);
-///    }
-///
-///
-/// Keywords: Vehicle Routing, Traveling Salesman Problem, TSP, VRP, CVRPTW,
-/// PDP.
+/** @file routing.h
+@brief The vehicle routing library lets one model and solve generic vehicle
+routing problems ranging from the Traveling Salesman Problem to more complex
+problems such as the Capacitated Vehicle Routing Problem with Time Windows.
+@details The objective of a vehicle routing problem is to build routes covering
+a set of nodes minimizing the overall cost of the routes (usually proportional
+to the sum of the lengths of each segment of the routes) while respecting some
+problem-specific constraints (such as the length of a route). A route is
+equivalent to a path connecting nodes, starting/ending at specific
+starting/ending nodes.\n
+The term "vehicle routing" is historical and the category of problems solved
+is not limited to the routing of vehicles: any problem involving finding
+routes visiting a given number of nodes optimally falls under this category
+of problems, such as finding the optimal sequence in a playlist.\n
+The literature around vehicle routing problems is extremely dense but one
+can find some basic introductions in the following links:
+- http://en.wikipedia.org/wiki/Travelling_salesman_problem
+- http://en.wikipedia.org/wiki/Vehicle_routing_problem
 
-#ifndef OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_H_
-#define OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_H_
+The vehicle routing library is a vertical layer above the constraint
+programming library (ortools/constraint_programming:cp).\n
+One has access to all underlying constrained variables of the vehicle
+routing model which can therefore be enriched by adding any constraint
+available in the constraint programming library.\n
+There are two sets of variables available:
+- path variables:
+  - "next(i)" variables representing the immediate successor of the node
+    corresponding to i; use IndexToNode() to get the node corresponding to
+    a "next" variable value; note that node indices are strongly typed
+    integers (cf. ortools/base/int_type.h);
+  - "vehicle(i)" variables representing the vehicle route to which the
+    node corresponding to i belongs;
+  - "active(i)" boolean variables, true if the node corresponding to i is
+    visited and false if not; this can be false when nodes are either
+    optional or part of a disjunction;
+  - The following relationships hold for all i:
+     active(i) == 0 <=> next(i) == i <=> vehicle(i) == -1,
+     next(i) == j => vehicle(j) == vehicle(i).
+- dimension variables, used when one is accumulating quantities along
+  routes, such as weight or volume carried, distance or time:
+  - "cumul(i,d)" variables representing the quantity of dimension d when
+    arriving at the node corresponding to i;
+  - "transit(i,d)" variables representing the quantity of dimension d added
+    after visiting the node corresponding to i.
+  - The following relationship holds for all (i,d):
+      next(i) == j => cumul(j,d) == cumul(i,d) + transit(i,d).
+
+Solving the vehicle routing problems is mainly done using approximate
+methods (namely local search,
+cf. http://en.wikipedia.org/wiki/Local_search_(optimization) ), potentially
+combined with exact techniques based on dynamic programming and exhaustive
+tree search.
+TODO(user): Add a section on costs (vehicle arc costs, span costs,
+               disjunctions costs).
+Advanced tips: Flags are available to tune the search used to solve routing
+problems. Here is a quick overview of the ones one might want to modify:
+- Limiting the search for solutions:
+  - routing_solution_limit (default: kint64max): stop the search after
+    finding 'routing_solution_limit' improving solutions;
+  - routing_time_limit (default: kint64max): stop the search after
+    'routing_time_limit' milliseconds;
+- Customizing search:
+  - routing_first_solution (default: select the first node with an unbound
+    successor and connect it to the first available node): selects the
+    heuristic to build a first solution which will then be improved by local
+    search; possible values are GlobalCheapestArc (iteratively connect two
+    nodes which produce the cheapest route segment), LocalCheapestArc
+    (select the first node with an unbound successor and connect it to the
+    node which produces the cheapest route segment), PathCheapestArc
+    (starting from a route "start" node, connect it to the node which
+    produces the cheapest route segment, then extend the route by iterating
+    on the last node added to the route).
+  - Local search neighborhoods:
+    - routing_no_lns (default: false): forbids the use of Large Neighborhood
+      Search (LNS); LNS can find good solutions but is usually very slow.
+      Refer to the description of PATHLNS in the LocalSearchOperators enum
+      in constraint_solver.h for more information.
+    - routing_no_tsp (default: true): forbids the use of exact methods to
+      solve "sub"-traveling salesman problems (TSPs) of the current model
+      (such as sub-parts of a route, or one route in a multiple route
+      problem). Uses dynamic programming to solve such TSPs with a maximum
+      size (in number of nodes) up to cp_local_search_tsp_opt_size (flag
+      with a default value of 13 nodes). It is not activated by default
+      because it can slow down the search.
+  - Meta-heuristics: used to guide the search out of local minima found by
+    local search. Note that, in general, a search with metaheuristics
+    activated never stops, therefore one must specify a search limit.
+    Several types of metaheuristics are provided:
+    - routing_guided_local_search (default: false): activates guided local
+      search (cf. http://en.wikipedia.org/wiki/Guided_Local_Search);
+      this is generally the most efficient metaheuristic for vehicle
+      routing;
+    - routing_simulated_annealing (default: false): activates simulated
+      annealing (cf. http://en.wikipedia.org/wiki/Simulated_annealing);
+    - routing_tabu_search (default: false): activates tabu search (cf.
+      http://en.wikipedia.org/wiki/Tabu_search).
+
+Code sample:\n
+Here is a simple example solving a traveling salesman problem given a cost
+function callback (returns the cost of a route segment):
+- Define a custom distance/cost function from an index to another; in this
+  example just returns the sum of the indices:
+  @code{.cpp}
+  int64_t MyDistance(int64_t from, int64_t to) {
+    return from + to;
+  }
+  @endcode
+- Create a routing model for a given problem size (int number of nodes) and
+  number of routes (here, 1):
+  @code{.cpp}
+  RoutingIndexManager manager(...number of nodes..., 1);
+  RoutingModel routing(manager);
+  @endcode
+- Set the cost function by registering an std::function<int64_t(int64_t,
+int64_t)> in the model and passing its index as the vehicle cost.
+  @code{.cpp}
+  const int cost = routing.RegisterTransitCallback(MyDistance);
+  routing.SetArcCostEvaluatorOfAllVehicles(cost);
+  @endcode
+- Find a solution using Solve(), returns a solution if any (owned by
+  routing):
+  @code{.cpp}
+  const Assignment* solution = routing.Solve();
+  CHECK(solution != nullptr);
+  @endcode
+- Inspect the solution cost and route (only one route here):
+  @code{.cpp}
+  LOG(INFO) << "Cost " << solution->ObjectiveValue();
+  const int route_number = 0;
+  for (int64_t node = routing.Start(route_number);
+      !routing.IsEnd(node);
+      node = solution->Value(routing.NextVar(node))) {
+    LOG(INFO) << manager.IndexToNode(node);
+  }
+  @endcode
+Keywords: Vehicle Routing, Traveling Salesman Problem, TSP, VRP, CVRPTW, PDP.
+*/
+
+#ifndef ORTOOLS_CONSTRAINT_SOLVER_ROUTING_H_
+#define ORTOOLS_CONSTRAINT_SOLVER_ROUTING_H_
 
 #include <algorithm>
 #include <atomic>
@@ -172,18 +168,19 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/functional/any_invocable.h"
 #include "absl/hash/hash.h"
 #include "absl/log/check.h"
 #include "absl/strings/string_view.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
-#include "ortools/base/int_type.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/constraint_solver/routing_enums.pb.h"
+#include "ortools/constraint_solver/routing_heuristic_parameters.pb.h"
 #include "ortools/constraint_solver/routing_index_manager.h"
 #include "ortools/constraint_solver/routing_parameters.pb.h"
 #include "ortools/constraint_solver/routing_types.h"
@@ -192,7 +189,6 @@
 #include "ortools/util/piecewise_linear_function.h"
 #include "ortools/util/range_query_function.h"
 #include "ortools/util/saturated_arithmetic.h"
-#include "ortools/util/scheduling.h"
 #include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
@@ -249,6 +245,14 @@ class PathsMetadata {
   std::vector<int64_t> start_of_path_;
   std::vector<int64_t> end_of_path_;
   std::vector<int64_t> path_of_node_;
+};
+
+struct RoutingSearchStats {
+  int64_t num_cp_sat_calls_in_lp_scheduling = 0;
+  int64_t num_glop_calls_in_lp_scheduling = 0;
+  int64_t num_min_cost_flow_calls = 0;
+  int64_t num_cp_sat_calls_in_routing = 0;
+  int64_t num_generalized_cp_sat_calls_in_routing = 0;
 };
 
 class OR_DLL RoutingModel {
@@ -437,18 +441,26 @@ class OR_DLL RoutingModel {
     class Resource {
      public:
       const ResourceGroup::Attributes& GetDimensionAttributes(
-          const RoutingDimension* dimension) const;
+          DimensionIndex index) const {
+        return index < dimension_attributes_per_index_.size()
+                   ? attributes_[dimension_attributes_per_index_[index]]
+                   : GetDefaultAttributes();
+      }
 
      private:
-      explicit Resource(const RoutingModel* model) : model_(model) {}
+      Resource(ResourceGroup::Attributes attributes,
+               const RoutingDimension* dimension) {
+        SetDimensionAttributes(std::move(attributes), dimension);
+      }
 
       void SetDimensionAttributes(ResourceGroup::Attributes attributes,
                                   const RoutingDimension* dimension);
       const ResourceGroup::Attributes& GetDefaultAttributes() const;
 
-      const RoutingModel* const model_;
-      absl::flat_hash_map<DimensionIndex, ResourceGroup::Attributes>
-          dimension_attributes_;
+      absl::flat_hash_map<DimensionIndex, int> dimension_attributes_;
+      util_intops::StrongVector<DimensionIndex, int>
+          dimension_attributes_per_index_;
+      std::vector<ResourceGroup::Attributes> attributes_;
 
       friend class ResourceGroup;
     };
@@ -527,12 +539,13 @@ class OR_DLL RoutingModel {
       return resource_class_indices_[resource_index];
     }
     const Attributes& GetDimensionAttributesForClass(
-        const RoutingDimension* dimension, ResourceClassIndex rc_index) const {
+        DimensionIndex dimension_index, ResourceClassIndex rc_index) const {
       DCHECK_LT(rc_index, resource_indices_per_class_.size());
       const std::vector<int>& resource_indices =
           resource_indices_per_class_[rc_index];
       DCHECK(!resource_indices.empty());
-      return resources_[resource_indices[0]].GetDimensionAttributes(dimension);
+      return resources_[resource_indices[0]].GetDimensionAttributes(
+          dimension_index);
     }
 
     int Size() const { return resources_.size(); }
@@ -592,8 +605,8 @@ class OR_DLL RoutingModel {
     const RoutingSearchParameters* const search_parameters_;
     const int64_t solve_period_ = 0;
     int64_t call_count_ = 0;
-    Assignment* state_ = nullptr;
-    absl::flat_hash_map<IntVar*, int> var_to_index_;
+    operations_research::Assignment* state_ = nullptr;
+    absl::flat_hash_map<operations_research::IntVar*, int> var_to_index_;
   };
 
   /// Constant used to express a hard constraint instead of a soft penalty.
@@ -878,9 +891,8 @@ class OR_DLL RoutingModel {
   /// when using @ref AddDisjunction.
   enum PenaltyCostBehavior { PENALIZE_ONCE, PENALIZE_PER_INACTIVE };
 
-  /// Adds a disjunction constraint on the indices: exactly 'max_cardinality' of
-  /// the indices are active. Start and end indices of any vehicle cannot be
-  /// part of a disjunction.
+  /// @brief Adds a disjunction constraint on the indices.
+  /// @details Exactly 'max_cardinality' of the indices are active.
   ///
   /// If a penalty is given, at most 'max_cardinality' of the indices can be
   /// active, and if less are active, 'penalty' is payed per inactive index if
@@ -894,11 +906,13 @@ class OR_DLL RoutingModel {
   ///     p == (Sum(i)active[i] != max_cardinality)
   /// where p is a boolean variable.
   /// The following cost is added to the cost function: p * penalty.
-  /// 'penalty' must be positive to make the disjunction optional; a negative
-  /// penalty will force 'max_cardinality' indices of the disjunction to be
-  /// performed, and therefore p == 0.
+  /// @param[in] penalty must be positive to make the disjunction optional; a
+  /// negative penalty will force 'max_cardinality' indices of the disjunction
+  /// to be performed, and therefore p == 0.
   /// Note: passing a vector with a single index will model an optional index
   /// with a penalty cost if it is not visited.
+  /// @warning Start and end indices of any vehicle cannot be part of a
+  /// disjunction.
   DisjunctionIndex AddDisjunction(const std::vector<int64_t>& indices,
                                   int64_t penalty = kNoPenalty,
                                   int64_t max_cardinality = 1,
@@ -969,20 +983,34 @@ class OR_DLL RoutingModel {
   /// Adds a soft constraint to force a set of variable indices to be on the
   /// same vehicle. If all nodes are not on the same vehicle, each extra vehicle
   /// used adds 'cost' to the cost function.
+  /// TODO(user): Extend this to allow nodes/indices to be on the same given
+  /// set of vehicle.
   void AddSoftSameVehicleConstraint(std::vector<int64_t> indices, int64_t cost);
+  /// Returns the number of soft same vehicle constraints in the model.
+  int GetNumberOfSoftSameVehicleConstraints() const {
+    return same_vehicle_costs_.size();
+  }
+  /// Returns the indices of the nodes in the soft same vehicle constraint of
+  /// index 'index'.
+  const std::vector<int64_t>& GetSoftSameVehicleIndices(int index) const {
+    return same_vehicle_costs_[index].indices;
+  }
+  /// Returns the cost of the soft same vehicle constraint of index 'index'.
+  int64_t GetSoftSameVehicleCost(int index) const {
+    return same_vehicle_costs_[index].value;
+  }
 
   /// Sets the vehicles which can visit a given node. If the node is in a
   /// disjunction, this will not prevent it from being unperformed.
   /// Specifying an empty vector of vehicles has no effect (all vehicles
   /// will be allowed to visit the node).
-  void SetAllowedVehiclesForIndex(const std::vector<int>& vehicles,
+  void SetAllowedVehiclesForIndex(absl::Span<const int> vehicles,
                                   int64_t index);
 
   /// Returns true if a vehicle is allowed to visit a given node.
   bool IsVehicleAllowedForIndex(int vehicle, int64_t index) const {
     return allowed_vehicles_[index].empty() ||
-           allowed_vehicles_[index].find(vehicle) !=
-               allowed_vehicles_[index].end();
+           allowed_vehicles_[index].contains(vehicle);
   }
 
   /// Notifies that index1 and index2 form a pair of nodes which should belong
@@ -1069,10 +1097,8 @@ class OR_DLL RoutingModel {
   /// Set the node visit types and incompatibilities/requirements between the
   /// types (see below).
   ///
-  /// NOTE: Before adding any incompatibilities and/or requirements on types:
-  ///       1) All corresponding node types must have been set.
-  ///       2) CloseVisitTypes() must be called so all containers are resized
-  ///          accordingly.
+  /// NOTE: Before adding any incompatibilities and/or requirements on types,
+  /// all corresponding node types must have been set.
   ///
   /// The following enum is used to describe how a node with a given type 'T'
   /// impacts the number of types 'T' on the route when visited, and thus
@@ -1100,13 +1126,22 @@ class OR_DLL RoutingModel {
   const std::vector<int>& GetSingleNodesOfType(int type) const;
   const std::vector<int>& GetPairIndicesOfType(int type) const;
   VisitTypePolicy GetVisitTypePolicy(int64_t index) const;
-
+#ifndef SWIG
+  const std::vector<std::vector<int>>& GetVisitTypeComponents() const {
+    return visit_type_components_;
+  }
+#endif  // SWIG
   int GetNumberOfVisitTypes() const { return num_visit_types_; }
 #ifndef SWIG
   const std::vector<std::vector<int>>& GetTopologicallySortedVisitTypes()
       const {
     DCHECK(closed_);
     return topologically_sorted_visit_types_;
+  }
+  const std::vector<std::vector<std::vector<int>>>&
+  GetTopologicallySortedNodePrecedences() const {
+    DCHECK(closed_);
+    return topologically_sorted_node_precedences_;
   }
 #endif  // SWIG
   /// Incompatibilities:
@@ -1285,13 +1320,15 @@ class OR_DLL RoutingModel {
   // callback must not return a value if the route vector is invalid, and
   // returns the value of the route otherwise.
   // The callback must always return the same value for a given route.
+#ifndef SWIG
   void AddRouteConstraint(
-      std::function<std::optional<int64_t>(const std::vector<int64_t>&)>
+      absl::AnyInvocable<std::optional<int64_t>(const std::vector<int64_t>&)>
           route_evaluator,
       bool costs_are_homogeneous_across_vehicles = false);
+#endif
   std::optional<int64_t> GetRouteCost(const std::vector<int64_t>& route) const {
     int64_t route_cost = 0;
-    for (const auto& evaluator : route_evaluators_) {
+    for (auto& evaluator : route_evaluators_) {
       std::optional<int64_t> cost = evaluator(route);
       if (!cost.has_value()) return std::nullopt;
       CapAddTo(cost.value(), &route_cost);
@@ -1324,9 +1361,13 @@ class OR_DLL RoutingModel {
   /// must outlive the search.
   /// As of 2024-12, only used by LOCAL_CHEAPEST_INSERTION and
   /// LOCAL_CHEAPEST_COST_INSERTION.
-  void SetFirstSolutionHint(const Assignment* hint) { hint_ = hint; }
+  void SetFirstSolutionHint(const operations_research::Assignment* hint) {
+    hint_ = hint;
+  }
   /// Returns the current hint assignment.
-  const Assignment* GetFirstSolutionHint() const { return hint_; }
+  const operations_research::Assignment* GetFirstSolutionHint() const {
+    return hint_;
+  }
   /// Adds a local search operator to the set of operators used to solve the
   /// vehicle routing problem.
   void AddLocalSearchOperator(LocalSearchOperator* ls_operator);
@@ -1349,23 +1390,26 @@ class OR_DLL RoutingModel {
   /// finalizer is called each time a solution is found during the search and
   /// allows to instantiate secondary variables (such as dimension cumul
   /// variables).
-  void AddVariableMinimizedByFinalizer(IntVar* var);
+  void AddVariableMinimizedByFinalizer(operations_research::IntVar* var);
   /// Adds a variable to maximize in the solution finalizer (see above for
   /// information on the solution finalizer).
-  void AddVariableMaximizedByFinalizer(IntVar* var);
+  void AddVariableMaximizedByFinalizer(operations_research::IntVar* var);
   /// Adds a variable to minimize in the solution finalizer, with a weighted
   /// priority: the higher the more priority it has.
-  void AddWeightedVariableMinimizedByFinalizer(IntVar* var, int64_t cost);
+  void AddWeightedVariableMinimizedByFinalizer(operations_research::IntVar* var,
+                                               int64_t cost);
   /// Adds a variable to maximize in the solution finalizer, with a weighted
   /// priority: the higher the more priority it has.
-  void AddWeightedVariableMaximizedByFinalizer(IntVar* var, int64_t cost);
+  void AddWeightedVariableMaximizedByFinalizer(operations_research::IntVar* var,
+                                               int64_t cost);
   /// Add a variable to set the closest possible to the target value in the
   /// solution finalizer.
-  void AddVariableTargetToFinalizer(IntVar* var, int64_t target);
+  void AddVariableTargetToFinalizer(operations_research::IntVar* var,
+                                    int64_t target);
   /// Same as above with a weighted priority: the higher the cost, the more
   /// priority it has to be set close to the target value.
-  void AddWeightedVariableTargetToFinalizer(IntVar* var, int64_t target,
-                                            int64_t cost);
+  void AddWeightedVariableTargetToFinalizer(operations_research::IntVar* var,
+                                            int64_t target, int64_t cost);
   /// Closes the current routing model; after this method is called, no
   /// modification to the model can be done, but RoutesToAssignment becomes
   /// available. Note that CloseModel() is automatically called by Solve() and
@@ -1383,7 +1427,8 @@ class OR_DLL RoutingModel {
   /// or
   /// SolveFromAssignmentWithParameters(assignment,
   ///                                   DefaultRoutingSearchParameters()).
-  const Assignment* Solve(const Assignment* assignment = nullptr);
+  const operations_research::Assignment* Solve(
+      const operations_research::Assignment* assignment = nullptr);
   /// Solves the current routing model with the given parameters. If 'solutions'
   /// is specified, it will contain the k best solutions found during the search
   /// (from worst to best, including the one returned by this method), where k
@@ -1391,33 +1436,33 @@ class OR_DLL RoutingModel {
   /// 'search_parameters'. Note that the Assignment returned by the method and
   /// the ones in solutions are owned by the underlying solver and should not be
   /// deleted.
-  const Assignment* SolveWithParameters(
+  const operations_research::Assignment* SolveWithParameters(
       const RoutingSearchParameters& search_parameters,
-      std::vector<const Assignment*>* solutions = nullptr);
+      std::vector<const operations_research::Assignment*>* solutions = nullptr);
   /// Same as above, except that if assignment is not null, it will be used as
   /// the initial solution.
-  const Assignment* SolveFromAssignmentWithParameters(
-      const Assignment* assignment,
+  const operations_research::Assignment* SolveFromAssignmentWithParameters(
+      const operations_research::Assignment* assignment,
       const RoutingSearchParameters& search_parameters,
-      std::vector<const Assignment*>* solutions = nullptr);
+      std::vector<const operations_research::Assignment*>* solutions = nullptr);
   /// Improves a given assignment using unchecked local search.
   /// If check_solution_in_cp is true the final solution will be checked with
   /// the CP solver.
   /// As of 11/2023, only works with greedy descent.
-  const Assignment* FastSolveFromAssignmentWithParameters(
-      const Assignment* assignment,
+  const operations_research::Assignment* FastSolveFromAssignmentWithParameters(
+      const operations_research::Assignment* assignment,
       const RoutingSearchParameters& search_parameters,
       bool check_solution_in_cp,
-      absl::flat_hash_set<IntVar*>* touched = nullptr);
+      absl::flat_hash_set<operations_research::IntVar*>* touched = nullptr);
   /// Same as above but will try all assignments in order as first solutions
   /// until one succeeds.
-  const Assignment* SolveFromAssignmentsWithParameters(
-      const std::vector<const Assignment*>& assignments,
+  const operations_research::Assignment* SolveFromAssignmentsWithParameters(
+      const std::vector<const operations_research::Assignment*>& assignments,
       const RoutingSearchParameters& search_parameters,
-      std::vector<const Assignment*>* solutions = nullptr);
+      std::vector<const operations_research::Assignment*>* solutions = nullptr);
   /// Solves the current routing model by using an Iterated Local Search
   /// approach.
-  const Assignment* SolveWithIteratedLocalSearch(
+  const operations_research::Assignment* SolveWithIteratedLocalSearch(
       const RoutingSearchParameters& search_parameters);
   /// Given a "source_model" and its "source_assignment", resets
   /// "target_assignment" with the IntVar variables (nexts_, and vehicle_vars_
@@ -1425,8 +1470,11 @@ class OR_DLL RoutingModel {
   /// values set according to those in "other_assignment".
   /// The objective_element of target_assignment is set to this->cost_.
   void SetAssignmentFromOtherModelAssignment(
-      Assignment* target_assignment, const RoutingModel* source_model,
-      const Assignment* source_assignment);
+      operations_research::Assignment* target_assignment,
+      const RoutingModel* source_model,
+      const operations_research::Assignment* source_assignment);
+  /// Returns detailed search statistics.
+  operations_research::SubSolverStatistics GetSubSolverStatistics() const;
   /// Computes a lower bound to the routing problem solving a linear assignment
   /// problem. The routing model must be closed before calling this method.
   /// Note that problems with node disjunction constraints (including optional
@@ -1439,6 +1487,8 @@ class OR_DLL RoutingModel {
   int64_t objective_lower_bound() const { return objective_lower_bound_; }
   /// Returns the current status of the routing model.
   RoutingSearchStatus::Value status() const { return status_; }
+  /// Returns search statistics.
+  const RoutingSearchStats& search_stats() const { return search_stats_; }
   /// Returns the value of the internal enable_deep_serialization_ parameter.
   bool enable_deep_serialization() const { return enable_deep_serialization_; }
   /// Applies a lock chain to the next search. 'locks' represents an ordered
@@ -1449,7 +1499,7 @@ class OR_DLL RoutingModel {
   /// Returns the next variable at the end of the locked chain; this variable is
   /// not locked. An assignment containing the locks can be obtained by calling
   /// PreAssignment().
-  IntVar* ApplyLocks(const std::vector<int64_t>& locks);
+  operations_research::IntVar* ApplyLocks(absl::Span<const int64_t> locks);
   /// Applies lock chains to all vehicles to the next search, such that locks[p]
   /// is the lock chain for route p. Returns false if the locks do not contain
   /// valid routes; expects that the routes do not contain the depots,
@@ -1464,8 +1514,12 @@ class OR_DLL RoutingModel {
   /// In practice, this assignment locks partial routes of the problem. This
   /// can be used in the context of locking the parts of the routes which have
   /// already been driven in online routing problems.
-  const Assignment* PreAssignment() const { return preassignment_; }
-  Assignment* MutablePreAssignment() { return preassignment_; }
+  const operations_research::Assignment* PreAssignment() const {
+    return preassignment_;
+  }
+  operations_research::Assignment* MutablePreAssignment() {
+    return preassignment_;
+  }
   /// Writes the current solution to a file containing an AssignmentProto.
   /// Returns false if the file cannot be opened or if there is no current
   /// solution.
@@ -1473,16 +1527,17 @@ class OR_DLL RoutingModel {
   /// Reads an assignment from a file and returns the current solution.
   /// Returns nullptr if the file cannot be opened or if the assignment is not
   /// valid.
-  Assignment* ReadAssignment(const std::string& file_name);
+  operations_research::Assignment* ReadAssignment(const std::string& file_name);
   /// Restores an assignment as a solution in the routing model and returns the
   /// new solution. Returns nullptr if the assignment is not valid.
-  Assignment* RestoreAssignment(const Assignment& solution);
+  operations_research::Assignment* RestoreAssignment(
+      const operations_research::Assignment& solution);
   /// Restores the routes as the current solution. Returns nullptr if the
   /// solution cannot be restored (routes do not contain a valid solution). Note
   /// that calling this method will run the solver to assign values to the
   /// dimension variables; this may take considerable amount of time, especially
   /// when using dimensions with slack.
-  Assignment* ReadAssignmentFromRoutes(
+  operations_research::Assignment* ReadAssignmentFromRoutes(
       const std::vector<std::vector<int64_t>>& routes,
       bool ignore_inactive_indices);
   /// Fills an assignment from a specification of the routes of the
@@ -1503,11 +1558,11 @@ class OR_DLL RoutingModel {
   /// it is advisible to call solver()->CheckSolution() afterwards.
   bool RoutesToAssignment(const std::vector<std::vector<int64_t>>& routes,
                           bool ignore_inactive_indices, bool close_routes,
-                          Assignment* assignment) const;
+                          operations_research::Assignment* assignment) const;
   /// Converts the solution in the given assignment to routes for all vehicles.
   /// Expects that assignment contains a valid solution (i.e. routes for all
   /// vehicles end with an end index for that vehicle).
-  void AssignmentToRoutes(const Assignment& assignment,
+  void AssignmentToRoutes(const operations_research::Assignment& assignment,
                           std::vector<std::vector<int64_t>>* routes) const;
   /// Converts the solution in the given assignment to routes for all vehicles.
   /// If the returned vector is route_indices, route_indices[i][j] is the index
@@ -1515,7 +1570,7 @@ class OR_DLL RoutingModel {
   /// AssignmentToRoutes, the vectors do include start and end locations.
 #ifndef SWIG
   std::vector<std::vector<int64_t>> GetRoutesFromAssignment(
-      const Assignment& assignment);
+      const operations_research::Assignment& assignment);
 #endif
   /// Returns a compacted version of the given assignment, in which all vehicles
   /// with id lower or equal to some N have non-empty routes, and all vehicles
@@ -1534,13 +1589,15 @@ class OR_DLL RoutingModel {
   /// While compacting the solution, only basic checks on vehicle variables are
   /// performed; if one of these checks fails no attempts to repair it are made
   /// (instead, the method returns nullptr).
-  Assignment* CompactAssignment(const Assignment& assignment) const;
+  operations_research::Assignment* CompactAssignment(
+      const operations_research::Assignment& assignment) const;
   /// Same as CompactAssignment() but also checks the validity of the final
   /// compact solution; if it is not valid, no attempts to repair it are made
   /// (instead, the method returns nullptr).
-  Assignment* CompactAndCheckAssignment(const Assignment& assignment) const;
+  operations_research::Assignment* CompactAndCheckAssignment(
+      const operations_research::Assignment& assignment) const;
   /// Adds an extra variable to the vehicle routing assignment.
-  void AddToAssignment(IntVar* var);
+  void AddToAssignment(operations_research::IntVar* var);
   void AddIntervalToAssignment(IntervalVar* interval);
   /// For every dimension in the model with an optimizer in
   /// local/global_dimension_optimizers_, this method tries to pack the cumul
@@ -1552,9 +1609,10 @@ class OR_DLL RoutingModel {
   /// - Given these minimal end cumuls, the route start cumuls are maximized.
   /// Returns the assignment resulting from allocating these packed cumuls with
   /// the solver, and nullptr if these cumuls could not be set by the solver.
-  const Assignment* PackCumulsOfOptimizerDimensionsFromAssignment(
-      const Assignment* original_assignment, absl::Duration duration_limit,
-      bool* time_limit_was_reached = nullptr);
+  const operations_research::Assignment*
+  PackCumulsOfOptimizerDimensionsFromAssignment(
+      const operations_research::Assignment* original_assignment,
+      absl::Duration duration_limit, bool* time_limit_was_reached = nullptr);
 
 #ifndef SWIG
   /// Contains the information needed by the solver to optimize a dimension's
@@ -1651,6 +1709,7 @@ class OR_DLL RoutingModel {
       if (routing_model_.IsStart(node_index)) return empty_neighbors_;
 
       if (node_index_to_incoming_neighbors_by_cost_class_.empty()) {
+        DCHECK(IsFullNeighborhood());
         return all_incoming_nodes_;
       }
       const std::vector<std::vector<int>>& node_index_to_incoming_neighbors =
@@ -1669,6 +1728,7 @@ class OR_DLL RoutingModel {
       if (routing_model_.IsEnd(node_index)) return empty_neighbors_;
 
       if (node_index_to_outgoing_neighbors_by_cost_class_.empty()) {
+        DCHECK(IsFullNeighborhood());
         return all_outgoing_nodes_;
       }
       const std::vector<std::vector<int>>& node_index_to_outgoing_neighbors =
@@ -1684,6 +1744,7 @@ class OR_DLL RoutingModel {
     bool IsNeighborhoodArcForCostClass(int cost_class, int64_t from,
                                        int64_t to) const {
       if (node_index_to_outgoing_neighbor_indicator_by_cost_class_.empty()) {
+        DCHECK(full_neighborhood_);
         return true;
       }
       if (routing_model_.IsEnd(from)) {
@@ -1692,6 +1753,8 @@ class OR_DLL RoutingModel {
       return node_index_to_outgoing_neighbor_indicator_by_cost_class_
           [cost_class][from][to];
     }
+
+    bool IsFullNeighborhood() const { return full_neighborhood_; }
 
    private:
     const RoutingModel& routing_model_;
@@ -1710,6 +1773,8 @@ class OR_DLL RoutingModel {
 
     std::vector<int> all_outgoing_nodes_;
     std::vector<int> all_incoming_nodes_;
+
+    bool full_neighborhood_ = false;
   };
 
   /// Returns neighbors of all nodes for every cost class. The result is cached
@@ -1756,53 +1821,67 @@ class OR_DLL RoutingModel {
   /// Assignment inspection
   /// Returns the variable index of the node directly after the node
   /// corresponding to 'index' in 'assignment'.
-  int64_t Next(const Assignment& assignment, int64_t index) const;
+  int64_t Next(const operations_research::Assignment& assignment,
+               int64_t index) const;
   /// Returns true if the route of 'vehicle' is non empty in 'assignment'.
-  bool IsVehicleUsed(const Assignment& assignment, int vehicle) const;
+  bool IsVehicleUsed(const operations_research::Assignment& assignment,
+                     int vehicle) const;
 
 #if !defined(SWIGPYTHON)
   /// Returns all next variables of the model, such that Nexts(i) is the next
   /// variable of the node corresponding to i.
-  const std::vector<IntVar*>& Nexts() const { return nexts_; }
+  const std::vector<operations_research::IntVar*>& Nexts() const {
+    return nexts_;
+  }
   /// Returns all vehicle variables of the model,  such that VehicleVars(i) is
   /// the vehicle variable of the node corresponding to i.
-  const std::vector<IntVar*>& VehicleVars() const { return vehicle_vars_; }
+  const std::vector<operations_research::IntVar*>& VehicleVars() const {
+    return vehicle_vars_;
+  }
   /// Returns vehicle resource variables for a given resource group, such that
   /// ResourceVars(r_g)[v] is the resource variable for vehicle 'v' in resource
   /// group 'r_g'.
-  const std::vector<IntVar*>& ResourceVars(int resource_group) const {
+  const std::vector<operations_research::IntVar*>& ResourceVars(
+      int resource_group) const {
     return resource_vars_[resource_group];
   }
 #endif  /// !defined(SWIGPYTHON)
   /// Returns the next variable of the node corresponding to index. Note that
   /// NextVar(index) == index is equivalent to ActiveVar(index) == 0.
-  IntVar* NextVar(int64_t index) const { return nexts_[index]; }
+  operations_research::IntVar* NextVar(int64_t index) const {
+    return nexts_[index];
+  }
   /// Returns the active variable of the node corresponding to index.
-  IntVar* ActiveVar(int64_t index) const { return active_[index]; }
+  operations_research::IntVar* ActiveVar(int64_t index) const {
+    return active_[index];
+  }
   /// Returns the active variable of the vehicle. It will be equal to 1 iff the
   /// route of the vehicle is not empty, 0 otherwise.
-  IntVar* ActiveVehicleVar(int vehicle) const {
+  operations_research::IntVar* ActiveVehicleVar(int vehicle) const {
     return vehicle_active_[vehicle];
   }
   /// Returns the variable specifying whether or not the given vehicle route is
   /// considered for costs and constraints. It will be equal to 1 iff the route
   /// of the vehicle is not empty OR vehicle_used_when_empty_[vehicle] is true.
-  IntVar* VehicleRouteConsideredVar(int vehicle) const {
+  operations_research::IntVar* VehicleRouteConsideredVar(int vehicle) const {
     return vehicle_route_considered_[vehicle];
   }
   /// Returns the vehicle variable of the node corresponding to index. Note that
   /// VehicleVar(index) == -1 is equivalent to ActiveVar(index) == 0.
-  IntVar* VehicleVar(int64_t index) const { return vehicle_vars_[index]; }
+  operations_research::IntVar* VehicleVar(int64_t index) const {
+    return vehicle_vars_[index];
+  }
   /// Returns the resource variable for the given vehicle index in the given
   /// resource group. If a vehicle doesn't require a resource from the
   /// corresponding resource group, then ResourceVar(v, r_g) == -1.
-  IntVar* ResourceVar(int vehicle, int resource_group) const {
+  operations_research::IntVar* ResourceVar(int vehicle,
+                                           int resource_group) const {
     DCHECK_LT(resource_group, resource_vars_.size());
     DCHECK_LT(vehicle, resource_vars_[resource_group].size());
     return resource_vars_[resource_group][vehicle];
   }
   /// Returns the global cost variable which is being minimized.
-  IntVar* CostVar() const { return cost_; }
+  operations_research::IntVar* CostVar() const { return cost_; }
 
   /// Returns the cost of the transit arc between two nodes for a given vehicle.
   /// Input are variable indices of node. This returns 0 if vehicle < 0.
@@ -1878,6 +1957,14 @@ class OR_DLL RoutingModel {
     DCHECK(closed_);
     return same_vehicle_groups_[same_vehicle_group_[node]];
   }
+  void AddSameActivityGroup(absl::Span<const int> nodes) {
+    DCHECK(!closed_);
+    if (nodes.size() <= 1) return;
+    for (auto it = nodes.begin() + 1; it != nodes.end(); ++it) {
+      solver_->AddConstraint(
+          solver_->MakeEquality(ActiveVar(*it), ActiveVar(*(it - 1))));
+    }
+  }
   /// Returns variable indices of nodes constrained to have the same activity.
   const std::vector<int>& GetSameActivityIndicesOfIndex(int node) const {
     DCHECK(closed_);
@@ -1887,6 +1974,11 @@ class OR_DLL RoutingModel {
   int GetSameActivityGroupOfIndex(int node) const {
     DCHECK(closed_);
     return same_active_var_group_[node];
+  }
+  /// Returns same activity groups of all nodes.
+  const std::vector<int>& GetSameActivityGroups() const {
+    DCHECK(closed_);
+    return same_active_var_group_;
   }
   /// Returns the number of same activity groups.
   int GetSameActivityGroupsCount() const {
@@ -1898,7 +1990,20 @@ class OR_DLL RoutingModel {
     DCHECK(closed_);
     return same_active_var_groups_[group];
   }
-
+#ifndef SWIG
+  /// Adds an ordered activity group. This enforces that if disjunctions[i] is
+  /// active, then disjunctions[i-1] must be active.
+  void AddOrderedActivityGroup(std::vector<DisjunctionIndex> disjunctions) {
+    DCHECK(!closed_);
+    if (disjunctions.size() <= 1) return;
+    ordered_activity_groups_.push_back(std::move(disjunctions));
+  }
+  /// Returns all ordered activity groups.
+  const std::vector<std::vector<DisjunctionIndex>>& GetOrderedActivityGroups()
+      const {
+    return ordered_activity_groups_;
+  }
+#endif  // SWIG
   const VehicleTypeContainer& GetVehicleTypeContainer() const {
     DCHECK(closed_);
     return vehicle_type_container_;
@@ -1928,7 +2033,7 @@ class OR_DLL RoutingModel {
   /// at each step of the routes.
   /// If "dimension_to_print" is omitted, all dimensions will be printed.
   std::string DebugOutputAssignment(
-      const Assignment& solution_assignment,
+      const operations_research::Assignment& solution_assignment,
       const std::string& dimension_to_print) const;
   /// Returns a vector cumul_bounds, for which cumul_bounds[i][j] is a pair
   /// containing the minimum and maximum of the CumulVar of the jth node on
@@ -1937,11 +2042,13 @@ class OR_DLL RoutingModel {
   /// - cumul_bounds[i][j].second is the maximum.
 #ifndef SWIG
   std::vector<std::vector<std::pair<int64_t, int64_t>>> GetCumulBounds(
-      const Assignment& solution_assignment, const RoutingDimension& dimension);
+      const operations_research::Assignment& solution_assignment,
+      const RoutingDimension& dimension);
 #endif
   /// Checks if an assignment is feasible.
-  bool CheckIfAssignmentIsFeasible(const Assignment& assignment,
-                                   bool call_at_solution_monitors);
+  bool CheckIfAssignmentIsFeasible(
+      const operations_research::Assignment& assignment,
+      bool call_at_solution_monitors);
   /// Returns the underlying constraint solver. Can be used to add extra
   /// constraints and/or modify search algorithms.
   Solver* solver() const { return solver_.get(); }
@@ -2039,7 +2146,7 @@ class OR_DLL RoutingModel {
   /// improve the initial assignment by moving a logarithmically decreasing step
   /// away in each possible dimension.
   static std::unique_ptr<LocalSearchOperator> MakeGreedyDescentLSOperator(
-      std::vector<IntVar*> variables);
+      std::vector<operations_research::IntVar*> variables);
   // Read access to currently registered search monitors.
   const std::vector<SearchMonitor*>& GetSearchMonitors() const {
     return monitors_;
@@ -2100,6 +2207,8 @@ class OR_DLL RoutingModel {
     CROSS_EXCHANGE,
     TWO_OPT,
     OR_OPT,
+    GLOBAL_CHEAPEST_INSERTION_VISIT_TYPES_LNS,
+    LOCAL_CHEAPEST_INSERTION_VISIT_TYPES_LNS,
     GLOBAL_CHEAPEST_INSERTION_CLOSE_NODES_LNS,
     LOCAL_CHEAPEST_INSERTION_CLOSE_NODES_LNS,
     GLOBAL_CHEAPEST_INSERTION_PATH_LNS,
@@ -2189,7 +2298,7 @@ class OR_DLL RoutingModel {
       const std::vector<int>& state_dependent_evaluator_indices,
       int64_t slack_max, bool fix_start_cumul_to_zero,
       RoutingDimension* dimension);
-  DimensionIndex GetDimensionIndex(const std::string& dimension_name) const;
+  DimensionIndex GetDimensionIndex(absl::string_view dimension_name) const;
 
   /// Creates global and local cumul optimizers for the dimensions needing them,
   /// and stores them in the corresponding [local|global]_dimension_optimizers_
@@ -2249,8 +2358,13 @@ class OR_DLL RoutingModel {
   ///   topological order based on required-->dependent arcs from the
   ///   visit type requirements.
   void FinalizeVisitTypes();
+  void ComputeVisitTypesConnectedComponents();
   // Called by FinalizeVisitTypes() to setup topologically_sorted_visit_types_.
   void TopologicallySortVisitTypes();
+  // This method updates topologically_sorted_node_precedences_ which contains
+  // nodes in topological order based on precedence constraints for
+  // dimensions of the model.
+  void FinalizePrecedences();
   int64_t GetArcCostForClassInternal(int64_t from_index, int64_t to_index,
                                      CostClassIndex cost_class_index) const;
   int64_t GetArcCostWithGuidedLocalSearchPenalties(int64_t from_index,
@@ -2271,12 +2385,12 @@ class OR_DLL RoutingModel {
   std::function<int64_t(int64_t, int64_t)>
   GetLocalSearchHomogeneousArcCostCallback(
       const RoutingSearchParameters& parameters) const;
-  void AppendHomogeneousArcCosts(const RoutingSearchParameters& parameters,
-                                 int node_index,
-                                 std::vector<IntVar*>* cost_elements);
+  void AppendHomogeneousArcCosts(
+      const RoutingSearchParameters& parameters, int node_index,
+      std::vector<operations_research::IntVar*>* cost_elements);
   void AppendArcCosts(const RoutingSearchParameters& parameters, int node_index,
-                      std::vector<IntVar*>* cost_elements);
-  Assignment* DoRestoreAssignment();
+                      std::vector<operations_research::IntVar*>* cost_elements);
+  operations_research::Assignment* DoRestoreAssignment();
   static const CostClassIndex kCostClassIndexOfZeroCost;
   int64_t SafeGetCostClassInt64OfVehicle(int64_t vehicle) const {
     DCHECK_LT(0, vehicles_);
@@ -2287,21 +2401,22 @@ class OR_DLL RoutingModel {
   int64_t GetDimensionTransitCostSum(int64_t i, int64_t j,
                                      const CostClass& cost_class) const;
   /// Returns nullptr if no penalty cost, otherwise returns penalty variable.
-  IntVar* CreateDisjunction(DisjunctionIndex disjunction);
+  operations_research::IntVar* CreateDisjunction(DisjunctionIndex disjunction);
   /// Sets up pickup and delivery sets.
   void AddPickupAndDeliverySetsInternal(const std::vector<int64_t>& pickups,
                                         const std::vector<int64_t>& deliveries);
   /// Returns the cost variable related to the soft same vehicle constraint of
   /// index 'vehicle_index'.
-  IntVar* CreateSameVehicleCost(int vehicle_index);
+  operations_research::IntVar* CreateSameVehicleCost(int vehicle_index);
   /// Returns the first active variable index in 'indices' starting from index
   /// + 1.
   int FindNextActive(int index, absl::Span<const int64_t> indices) const;
 
   /// Checks that all nodes on the route starting at start_index (using the
   /// solution stored in assignment) can be visited by the given vehicle.
-  bool RouteCanBeUsedByVehicle(const Assignment& assignment, int start_index,
-                               int vehicle) const;
+  bool RouteCanBeUsedByVehicle(
+      const operations_research::Assignment& assignment, int start_index,
+      int vehicle) const;
   /// Replaces the route of unused_vehicle with the route of active_vehicle in
   /// compact_assignment. Expects that unused_vehicle is a vehicle with an empty
   /// route and that the route of active_vehicle is non-empty. Also expects that
@@ -2309,8 +2424,9 @@ class OR_DLL RoutingModel {
   /// compact_assignment was created.
   /// Returns true if the vehicles were successfully swapped; otherwise, returns
   /// false.
-  bool ReplaceUnusedVehicle(int unused_vehicle, int active_vehicle,
-                            Assignment* compact_assignment) const;
+  bool ReplaceUnusedVehicle(
+      int unused_vehicle, int active_vehicle,
+      operations_research::Assignment* compact_assignment) const;
 
   void QuietCloseModel();
   void QuietCloseModelWithParameters(
@@ -2321,13 +2437,14 @@ class OR_DLL RoutingModel {
   }
 
   /// Solve matching problem with min-cost flow and store result in assignment.
-  bool SolveMatchingModel(Assignment* assignment,
+  bool SolveMatchingModel(operations_research::Assignment* assignment,
                           const RoutingSearchParameters& parameters);
 #ifndef SWIG
   /// Append an assignment to a vector of assignments if it is feasible.
   bool AppendAssignmentIfFeasible(
-      const Assignment& assignment,
-      std::vector<std::unique_ptr<Assignment>>* assignments,
+      const operations_research::Assignment& assignment,
+      std::vector<std::unique_ptr<operations_research::Assignment>>*
+          assignments,
       bool call_at_solution_monitors = true);
 #endif
   /// Log a solution.
@@ -2336,8 +2453,9 @@ class OR_DLL RoutingModel {
                    int64_t start_time_ms);
   /// See CompactAssignment. Checks the final solution if
   /// check_compact_assignment is true.
-  Assignment* CompactAssignmentInternal(const Assignment& assignment,
-                                        bool check_compact_assignment) const;
+  operations_research::Assignment* CompactAssignmentInternal(
+      const operations_research::Assignment& assignment,
+      bool check_compact_assignment) const;
   /// Checks that the current search parameters are valid for the current
   /// model's specific settings.
   std::string FindErrorInSearchParametersForModel(
@@ -2349,8 +2467,8 @@ class OR_DLL RoutingModel {
       const RoutingSearchParameters& search_parameters);
   /// Set of auxiliary methods used to setup the search.
   // TODO(user): Document each auxiliary method.
-  Assignment* GetOrCreateAssignment();
-  Assignment* GetOrCreateTmpAssignment();
+  operations_research::Assignment* GetOrCreateAssignment();
+  operations_research::Assignment* GetOrCreateTmpAssignment();
   RegularLimit* GetOrCreateLimit();
   RegularLimit* GetOrCreateCumulativeLimit();
   RegularLimit* GetOrCreateLocalSearchLimit();
@@ -2386,7 +2504,7 @@ class OR_DLL RoutingModel {
   LocalSearchFilterManager* GetOrCreateLocalSearchFilterManager(
       const RoutingSearchParameters& parameters, const FilterOptions& options);
   DecisionBuilder* CreateSolutionFinalizer(
-      const RoutingSearchParameters& parameters, SearchLimit* lns_limit);
+      const RoutingSearchParameters& parameters);
   void CreateFirstSolutionDecisionBuilders(
       const RoutingSearchParameters& search_parameters);
   DecisionBuilder* GetFirstSolutionDecisionBuilder(
@@ -2451,25 +2569,25 @@ class OR_DLL RoutingModel {
   int max_active_vehicles_;
   Constraint* no_cycle_constraint_ = nullptr;
   /// Decision variables: indexed by int64_t var index.
-  std::vector<IntVar*> nexts_;
-  std::vector<IntVar*> vehicle_vars_;
-  std::vector<IntVar*> active_;
+  std::vector<operations_research::IntVar*> nexts_;
+  std::vector<operations_research::IntVar*> vehicle_vars_;
+  std::vector<operations_research::IntVar*> active_;
   /// Resource variables, indexed first by resource group index and then by
   /// vehicle index. A resource variable can have a negative value of -1, iff
   /// the corresponding vehicle doesn't require a resource from this resource
   /// group, OR if the vehicle is unused (i.e. no visits on its route and
   /// vehicle_used_when_empty_[v] is false).
   // clang-format off
-  std::vector<std::vector<IntVar*> > resource_vars_;
+  std::vector<std::vector<operations_research::IntVar*> > resource_vars_;
   // clang-format on
   // The following vectors are indexed by vehicle index.
-  std::vector<IntVar*> vehicle_active_;
-  std::vector<IntVar*> vehicle_route_considered_;
+  std::vector<operations_research::IntVar*> vehicle_active_;
+  std::vector<operations_research::IntVar*> vehicle_route_considered_;
   /// is_bound_to_end_[i] will be true iff the path starting at var #i is fully
   /// bound and reaches the end of a route, i.e. either:
   /// - IsEnd(i) is true
   /// - or nexts_[i] is bound and is_bound_to_end_[nexts_[i].Value()] is true.
-  std::vector<IntVar*> is_bound_to_end_;
+  std::vector<operations_research::IntVar*> is_bound_to_end_;
   mutable RevSwitch is_bound_to_end_ct_added_;
   /// Dimensions
   absl::flat_hash_map<std::string, DimensionIndex> dimension_name_to_index_;
@@ -2496,7 +2614,7 @@ class OR_DLL RoutingModel {
   // clang-format on
   std::string primary_constrained_dimension_;
   /// Costs
-  IntVar* cost_ = nullptr;
+  operations_research::IntVar* cost_ = nullptr;
   std::vector<int> vehicle_to_transit_cost_;
   std::vector<int64_t> fixed_cost_of_vehicle_;
   std::vector<CostClassIndex> cost_class_index_of_vehicle_;
@@ -2504,8 +2622,8 @@ class OR_DLL RoutingModel {
   std::vector<int64_t> linear_cost_factor_of_vehicle_;
   std::vector<int64_t> quadratic_cost_factor_of_vehicle_;
   bool vehicle_amortized_cost_factors_set_;
-  std::vector<
-      std::function<std::optional<int64_t>(const std::vector<int64_t>&)>>
+  mutable std::vector<
+      absl::AnyInvocable<std::optional<int64_t>(const std::vector<int64_t>&)>>
       route_evaluators_;
   /// vehicle_used_when_empty_[vehicle] determines if "vehicle" should be
   /// taken into account for costs (arc costs, span costs, etc.) and constraints
@@ -2568,6 +2686,8 @@ class OR_DLL RoutingModel {
   std::vector<int> same_active_var_group_;
   // Same active var groups.
   std::vector<std::vector<int>> same_active_var_groups_;
+  // Ordered activity groups.
+  std::vector<std::vector<DisjunctionIndex>> ordered_activity_groups_;
   // Node visit types
   // Variable index to visit type index.
   std::vector<int> index_to_visit_type_;
@@ -2609,8 +2729,11 @@ class OR_DLL RoutingModel {
   //
   // The higher these two numbers, the tighter the type is wrt requirements.
   std::vector<std::vector<int> > topologically_sorted_visit_types_;
+  std::vector<std::vector<int>> visit_type_components_;
   // clang-format on
   int num_visit_types_;
+  std::vector<std::vector<std::vector<int>>>
+      topologically_sorted_node_precedences_;
   // Two indices are equivalent if they correspond to the same node (as given
   // to the constructors taking a RoutingIndexManager).
   std::vector<int> index_to_equivalence_class_;
@@ -2636,7 +2759,7 @@ class OR_DLL RoutingModel {
   Solver::IndexEvaluator2 first_solution_evaluator_;
   FirstSolutionStrategy::Value automatic_first_solution_strategy_ =
       FirstSolutionStrategy::UNSET;
-  const Assignment* hint_ = nullptr;
+  const operations_research::Assignment* hint_ = nullptr;
   std::vector<LocalSearchOperator*> local_search_operators_;
   std::vector<SearchMonitor*> monitors_;
   std::vector<SearchMonitor*> secondary_ls_monitors_;
@@ -2659,12 +2782,12 @@ class OR_DLL RoutingModel {
   DecisionBuilder* secondary_ls_db_ = nullptr;
   DecisionBuilder* restore_assignment_ = nullptr;
   DecisionBuilder* restore_tmp_assignment_ = nullptr;
-  Assignment* assignment_ = nullptr;
-  Assignment* preassignment_ = nullptr;
-  Assignment* tmp_assignment_ = nullptr;
+  operations_research::Assignment* assignment_ = nullptr;
+  operations_research::Assignment* preassignment_ = nullptr;
+  operations_research::Assignment* tmp_assignment_ = nullptr;
   LocalSearchOperator* primary_ls_operator_ = nullptr;
   LocalSearchOperator* secondary_ls_operator_ = nullptr;
-  std::vector<IntVar*> extra_vars_;
+  std::vector<operations_research::IntVar*> extra_vars_;
   std::vector<IntervalVar*> extra_intervals_;
   std::vector<LocalSearchOperator*> extra_operators_;
   absl::flat_hash_map<FilterOptions, LocalSearchFilterManager*>
@@ -2684,6 +2807,8 @@ class OR_DLL RoutingModel {
   RegularLimit* lns_limit_ = nullptr;
   RegularLimit* first_solution_lns_limit_ = nullptr;
   absl::Duration time_buffer_;
+
+  RoutingSearchStats search_stats_;
 
   std::atomic<bool> interrupt_cp_sat_;
   std::atomic<bool> interrupt_cp_;
@@ -2721,7 +2846,7 @@ class OR_DLL RoutingModel {
 };
 
 /// Routing model visitor.
-class OR_DLL RoutingModelVisitor : public BaseObject {
+class OR_DLL RoutingModelVisitor : public operations_research::BaseObject {
  public:
   /// Constraint types.
   static const char kLightElement[];
@@ -2730,212 +2855,10 @@ class OR_DLL RoutingModelVisitor : public BaseObject {
 };
 
 #if !defined(SWIG)
-/// This class acts like a CP propagator: it takes a set of tasks given by
-/// their start/duration/end features, and reduces the range of possible values.
-class DisjunctivePropagator {
- public:
-  /// A structure to hold tasks described by their features.
-  /// The first num_chain_tasks are considered linked by a chain of precedences,
-  /// i.e. if i < j < num_chain_tasks, then end(i) <= start(j).
-  /// This occurs frequently in routing, and can be leveraged by
-  /// some variants of classic propagators.
-  struct Tasks {
-    int num_chain_tasks = 0;
-    std::vector<int64_t> start_min;
-    std::vector<int64_t> start_max;
-    std::vector<int64_t> duration_min;
-    std::vector<int64_t> duration_max;
-    std::vector<int64_t> end_min;
-    std::vector<int64_t> end_max;
-    std::vector<bool> is_preemptible;
-    std::vector<const SortedDisjointIntervalList*> forbidden_intervals;
-    std::vector<std::pair<int64_t, int64_t>> distance_duration;
-    int64_t span_min = 0;
-    int64_t span_max = kint64max;
-
-    void Clear() {
-      start_min.clear();
-      start_max.clear();
-      duration_min.clear();
-      duration_max.clear();
-      end_min.clear();
-      end_max.clear();
-      is_preemptible.clear();
-      forbidden_intervals.clear();
-      distance_duration.clear();
-      span_min = 0;
-      span_max = kint64max;
-      num_chain_tasks = 0;
-    }
-  };
-
-  /// Computes new bounds for all tasks, returns false if infeasible.
-  /// This does not compute a fixed point, so recalling it may filter more.
-  bool Propagate(Tasks* tasks);
-
-  /// Propagates the deductions from the chain of precedences, if there is one.
-  bool Precedences(Tasks* tasks);
-  /// Transforms the problem with a time symmetry centered in 0. Returns true
-  /// for convenience.
-  bool MirrorTasks(Tasks* tasks);
-  /// Does edge-finding deductions on all tasks.
-  bool EdgeFinding(Tasks* tasks);
-  /// Does detectable precedences deductions on tasks in the chain precedence,
-  /// taking the time windows of nonchain tasks into account.
-  bool DetectablePrecedencesWithChain(Tasks* tasks);
-  /// Tasks might have holes in their domain, this enforces such holes.
-  bool ForbiddenIntervals(Tasks* tasks);
-  /// Propagates distance_duration constraints, if any.
-  bool DistanceDuration(Tasks* tasks);
-  /// Propagates a lower bound of the chain span,
-  /// end[num_chain_tasks] - start[0], to span_min.
-  bool ChainSpanMin(Tasks* tasks);
-  /// Computes a lower bound of the span of the chain, taking into account only
-  /// the first nonchain task.
-  /// For more accurate results, this should be called after Precedences(),
-  /// otherwise the lower bound might be lower than feasible.
-  bool ChainSpanMinDynamic(Tasks* tasks);
-
- private:
-  /// The main algorithm uses Vilim's theta tree data structure.
-  /// See Petr Vilim's PhD thesis "Global Constraints in Scheduling".
-  ThetaLambdaTree<int64_t> theta_lambda_tree_;
-  /// Mappings between events and tasks.
-  std::vector<int> tasks_by_start_min_;
-  std::vector<int> tasks_by_end_max_;
-  std::vector<int> event_of_task_;
-  std::vector<int> nonchain_tasks_by_start_max_;
-  /// Maps chain elements to the sum of chain task durations before them.
-  std::vector<int64_t> total_duration_before_;
-};
-
-struct TravelBounds {
-  std::vector<int64_t> min_travels;
-  std::vector<int64_t> max_travels;
-  std::vector<int64_t> pre_travels;
-  std::vector<int64_t> post_travels;
-};
-
-void AppendTasksFromPath(absl::Span<const int64_t> path,
-                         const TravelBounds& travel_bounds,
-                         const RoutingDimension& dimension,
-                         DisjunctivePropagator::Tasks* tasks);
-void AppendTasksFromIntervals(const std::vector<IntervalVar*>& intervals,
-                              DisjunctivePropagator::Tasks* tasks);
 void FillPathEvaluation(absl::Span<const int64_t> path,
                         const RoutingModel::TransitCallback2& evaluator,
                         std::vector<int64_t>* values);
-void FillTravelBoundsOfVehicle(int vehicle, absl::Span<const int64_t> path,
-                               const RoutingDimension& dimension,
-                               TravelBounds* travel_bounds);
 #endif  // !defined(SWIG)
-
-/// GlobalVehicleBreaksConstraint ensures breaks constraints are enforced on
-/// all vehicles in the dimension passed to its constructor.
-/// It is intended to be used for dimensions representing time.
-/// A break constraint ensures break intervals fit on the route of a vehicle.
-/// For a given vehicle, it forces break intervals to be disjoint from visit
-/// intervals, where visit intervals start at CumulVar(node) and last for
-/// node_visit_transit[node]. Moreover, it ensures that there is enough time
-/// between two consecutive nodes of a route to do transit and vehicle breaks,
-/// i.e. if Next(nodeA) = nodeB, CumulVar(nodeA) = tA and CumulVar(nodeB) = tB,
-/// then SlackVar(nodeA) >= sum_{breaks \subseteq [tA, tB)} duration(break).
-class GlobalVehicleBreaksConstraint : public Constraint {
- public:
-  explicit GlobalVehicleBreaksConstraint(const RoutingDimension* dimension);
-  std::string DebugString() const override {
-    return "GlobalVehicleBreaksConstraint";
-  }
-
-  void Post() override;
-  void InitialPropagate() override;
-
- private:
-  void PropagateNode(int node);
-  void PropagateVehicle(int vehicle);
-
-  const RoutingModel* model_;
-  const RoutingDimension* const dimension_;
-  std::vector<Demon*> vehicle_demons_;
-  std::vector<int64_t> path_;
-
-  /// Sets path_ to be the longest sequence such that
-  /// _ path_[0] is the start of the vehicle
-  /// _ Next(path_[i-1]) is Bound() and has value path_[i],
-  /// followed by the end of the vehicle if the last node was not an end.
-  void FillPartialPathOfVehicle(int vehicle);
-  void FillPathTravels(absl::Span<const int64_t> path);
-
-  /// This translates pruning information to solver variables.
-  /// If constructed with an IntervalVar*, it follows the usual semantics of
-  /// IntervalVars. If constructed with an IntVar*, before_start and
-  /// after_start, operations are translated to simulate an interval that starts
-  /// at start - before_start and ends and start + after_start. If constructed
-  /// with nothing, the TaskTranslator will do nothing. This class should have
-  /// been an interface + subclasses, but that would force pointers in the
-  /// user's task vector, which means dynamic allocation. With this union-like
-  /// structure, a vector's reserved size will adjust to usage and eventually no
-  /// more dynamic allocation will be made.
-  class TaskTranslator {
-   public:
-    TaskTranslator(IntVar* start, int64_t before_start, int64_t after_start)
-        : start_(start),
-          before_start_(before_start),
-          after_start_(after_start) {}
-    explicit TaskTranslator(IntervalVar* interval) : interval_(interval) {}
-    TaskTranslator() = default;
-
-    void SetStartMin(int64_t value) {
-      if (start_ != nullptr) {
-        start_->SetMin(CapAdd(before_start_, value));
-      } else if (interval_ != nullptr) {
-        interval_->SetStartMin(value);
-      }
-    }
-    void SetStartMax(int64_t value) {
-      if (start_ != nullptr) {
-        start_->SetMax(CapAdd(before_start_, value));
-      } else if (interval_ != nullptr) {
-        interval_->SetStartMax(value);
-      }
-    }
-    void SetDurationMin(int64_t value) {
-      if (interval_ != nullptr) {
-        interval_->SetDurationMin(value);
-      }
-    }
-    void SetEndMin(int64_t value) {
-      if (start_ != nullptr) {
-        start_->SetMin(CapSub(value, after_start_));
-      } else if (interval_ != nullptr) {
-        interval_->SetEndMin(value);
-      }
-    }
-    void SetEndMax(int64_t value) {
-      if (start_ != nullptr) {
-        start_->SetMax(CapSub(value, after_start_));
-      } else if (interval_ != nullptr) {
-        interval_->SetEndMax(value);
-      }
-    }
-
-   private:
-    IntVar* start_ = nullptr;
-    int64_t before_start_;
-    int64_t after_start_;
-    IntervalVar* interval_ = nullptr;
-  };
-
-  /// Route and interval variables are normalized to the following values.
-  std::vector<TaskTranslator> task_translators_;
-
-  /// This is used to restrict bounds of tasks.
-  DisjunctivePropagator disjunctive_propagator_;
-  DisjunctivePropagator::Tasks tasks_;
-
-  /// Used to help filling tasks_ at each propagation.
-  TravelBounds travel_bounds_;
-};
 
 class TypeRegulationsChecker {
  public:
@@ -3028,7 +2951,7 @@ class TypeRequirementChecker : public TypeRegulationsChecker {
   /// Verifies that for each set in required_type_alternatives, at least one of
   /// the required types is on the route at position 'pos'.
   bool CheckRequiredTypesCurrentlyOnRoute(
-      const std::vector<absl::flat_hash_set<int> >& required_type_alternatives,
+      absl::Span<const absl::flat_hash_set<int>>  required_type_alternatives,
       int pos);
   // clang-format on
   bool CheckTypeRegulations(int type, VisitTypePolicy policy, int pos) override;
@@ -3077,7 +3000,7 @@ class TypeRequirementChecker : public TypeRegulationsChecker {
 /// - If T3 is required when removing T1, T3 needs to be on the vehicle when
 ///   r1 is visited:
 ///   ... --> A --> ... --> r1 --> ...   OR   ... --> r1 --> ... --> UV --> ...
-class TypeRegulationsConstraint : public Constraint {
+class TypeRegulationsConstraint : public operations_research::Constraint {
  public:
   explicit TypeRegulationsConstraint(const RoutingModel& model);
 
@@ -3172,12 +3095,18 @@ class RoutingDimension {
   }
   /// Get the cumul, transit and slack variables for the given node (given as
   /// int64_t var index).
-  IntVar* CumulVar(int64_t index) const { return cumuls_[index]; }
-  IntVar* TransitVar(int64_t index) const { return transits_[index]; }
-  IntVar* FixedTransitVar(int64_t index) const {
+  operations_research::IntVar* CumulVar(int64_t index) const {
+    return cumuls_[index];
+  }
+  operations_research::IntVar* TransitVar(int64_t index) const {
+    return transits_[index];
+  }
+  operations_research::IntVar* FixedTransitVar(int64_t index) const {
     return fixed_transits_[index];
   }
-  IntVar* SlackVar(int64_t index) const { return slacks_[index]; }
+  operations_research::IntVar* SlackVar(int64_t index) const {
+    return slacks_[index];
+  }
 
   /// Some functions to allow users to use the interface without knowing about
   /// the underlying CP model.
@@ -3195,10 +3124,18 @@ class RoutingDimension {
 #if !defined(SWIGPYTHON)
   /// Like CumulVar(), TransitVar(), SlackVar() but return the whole variable
   /// vectors instead (indexed by int64_t var index).
-  const std::vector<IntVar*>& cumuls() const { return cumuls_; }
-  const std::vector<IntVar*>& fixed_transits() const { return fixed_transits_; }
-  const std::vector<IntVar*>& transits() const { return transits_; }
-  const std::vector<IntVar*>& slacks() const { return slacks_; }
+  const std::vector<operations_research::IntVar*>& cumuls() const {
+    return cumuls_;
+  }
+  const std::vector<operations_research::IntVar*>& fixed_transits() const {
+    return fixed_transits_;
+  }
+  const std::vector<operations_research::IntVar*>& transits() const {
+    return transits_;
+  }
+  const std::vector<operations_research::IntVar*>& slacks() const {
+    return slacks_;
+  }
 #if !defined(SWIGCSHARP) && !defined(SWIGJAVA)
   /// Returns forbidden intervals for each node.
   const std::vector<SortedDisjointIntervalList>& forbidden_intervals() const {
@@ -3413,7 +3350,7 @@ class RoutingDimension {
   /// never we called on any (end, _). If pre_travel_evaluator or
   /// post_travel_evaluator is -1, it will be taken as a function that always
   /// returns 0.
-  // TODO(user): Remove if !defined when routing.i is repaired.
+  // TODO(user): Remove if !defined when routing.swig is repaired.
 #if !defined(SWIGPYTHON)
   void SetBreakIntervalsOfVehicle(std::vector<IntervalVar*> breaks, int vehicle,
                                   int pre_travel_evaluator,
@@ -3467,6 +3404,10 @@ class RoutingDimension {
   /// is minimized can be found in O(1) using this function.
   int64_t ShortestTransitionSlack(int64_t node) const;
 
+  /// Returns the index of the dimension in the model.
+  operations_research::RoutingDimensionIndex index() const {
+    return index_;
+  }
   /// Returns the name of the dimension.
   const std::string& name() const { return name_; }
 
@@ -3506,6 +3447,8 @@ class RoutingDimension {
       kFirstAndSecondIndependent,
       // if second_node is performed, first_node must be performed.
       kSecondImpliesFirst,
+      // if first_node is performed, second_node must be performed.
+      kFirstImpliesSecond,
       // first_node is performed iff second_node is performed.
       kFirstAndSecondEqual,
     };
@@ -3540,6 +3483,13 @@ class RoutingDimension {
           return PrecedenceStatus::kInactive;
         }
         if (second_unperformed) return PrecedenceStatus::kInactive;
+        break;
+      case NodePrecedence::PerformedConstraint::kFirstImpliesSecond:
+        if (second_unperformed) {
+          if (!first_unperformed) return PrecedenceStatus::kInvalid;
+          return PrecedenceStatus::kInactive;
+        }
+        if (first_unperformed) return PrecedenceStatus::kInactive;
         break;
       case NodePrecedence::PerformedConstraint::kFirstAndSecondEqual:
         if (first_unperformed != second_unperformed) {
@@ -3659,14 +3609,14 @@ class RoutingDimension {
 
  private:
   struct SoftBound {
-    IntVar* var;
+    operations_research::IntVar* var;
     int64_t bound;
     int64_t coefficient;
   };
 
   struct PiecewiseLinearCost {
     PiecewiseLinearCost() : var(nullptr), cost(nullptr) {}
-    IntVar* var;
+    operations_research::IntVar* var;
     std::unique_ptr<PiecewiseLinearFunction> cost;
   };
 
@@ -3676,9 +3626,9 @@ class RoutingDimension {
                    const RoutingDimension* base_dimension);
   RoutingDimension(RoutingModel* model, std::vector<int64_t> vehicle_capacities,
                    const std::string& name, SelfBased);
-  void Initialize(const std::vector<int>& transit_evaluators,
-                  const std::vector<int>& cumul_dependent_transit_evaluators,
-                  const std::vector<int>& state_dependent_transit_evaluators,
+  void Initialize(absl::Span<const int> transit_evaluators,
+                  absl::Span<const int> cumul_dependent_transit_evaluators,
+                  absl::Span<const int> state_dependent_transit_evaluators,
                   int64_t slack_max);
   void InitializeCumuls();
   void InitializeTransits(
@@ -3689,15 +3639,16 @@ class RoutingDimension {
   void InitializeTransitVariables(int64_t slack_max);
   /// Sets up the cost variables related to cumul soft upper bounds.
   void SetupCumulVarSoftUpperBoundCosts(
-      std::vector<IntVar*>* cost_elements) const;
+      std::vector<operations_research::IntVar*>* cost_elements) const;
   /// Sets up the cost variables related to cumul soft lower bounds.
   void SetupCumulVarSoftLowerBoundCosts(
-      std::vector<IntVar*>* cost_elements) const;
+      std::vector<operations_research::IntVar*>* cost_elements) const;
   void SetupCumulVarPiecewiseLinearCosts(
-      std::vector<IntVar*>* cost_elements) const;
+      std::vector<operations_research::IntVar*>* cost_elements) const;
   /// Sets up the cost variables related to the global span and per-vehicle span
   /// costs (only for the "slack" part of the latter).
-  void SetupGlobalSpanCost(std::vector<IntVar*>* cost_elements) const;
+  void SetupGlobalSpanCost(
+      std::vector<operations_research::IntVar*>* cost_elements) const;
   void SetupSlackAndDependentTransitCosts() const;
   /// Finalize the model of the dimension.
   void CloseModel(bool use_light_propagation);
@@ -3713,12 +3664,12 @@ class RoutingDimension {
     local_optimizer_offset_for_vehicle_ = std::move(offsets);
   }
 
-  std::vector<IntVar*> cumuls_;
+  std::vector<operations_research::IntVar*> cumuls_;
   std::vector<SortedDisjointIntervalList> forbidden_intervals_;
-  std::vector<IntVar*> capacity_vars_;
+  std::vector<operations_research::IntVar*> capacity_vars_;
   const std::vector<int64_t> vehicle_capacities_;
-  std::vector<IntVar*> transits_;
-  std::vector<IntVar*> fixed_transits_;
+  std::vector<operations_research::IntVar*> transits_;
+  std::vector<operations_research::IntVar*> fixed_transits_;
   /// Values in class_evaluators_ correspond to the evaluators in
   /// RoutingModel::transit_evaluators_ for each vehicle class.
   std::vector<int> class_evaluators_;
@@ -3767,8 +3718,8 @@ class RoutingDimension {
   std::vector<int> vehicle_pre_travel_evaluators_;
   std::vector<int> vehicle_post_travel_evaluators_;
 
-  std::vector<IntVar*> slacks_;
-  std::vector<IntVar*> dependent_transits_;
+  std::vector<operations_research::IntVar*> slacks_;
+  std::vector<operations_research::IntVar*> dependent_transits_;
   std::vector<int64_t> vehicle_span_upper_bounds_;
   int64_t global_span_cost_coefficient_;
   std::vector<int64_t> vehicle_span_cost_coefficients_;
@@ -3777,6 +3728,7 @@ class RoutingDimension {
   std::vector<SoftBound> cumul_var_soft_lower_bound_;
   std::vector<PiecewiseLinearCost> cumul_var_piecewise_linear_cost_;
   RoutingModel* const model_;
+  const operations_research::RoutingDimensionIndex index_;
   const std::string name_;
   int64_t global_optimizer_offset_;
   std::vector<int64_t> local_optimizer_offset_for_vehicle_;
@@ -3792,15 +3744,10 @@ class RoutingDimension {
 /// solve the TSP corresponding to the model if it has a single vehicle.
 /// Therefore the resulting solution might not actually be feasible. Will return
 /// false if a solution could not be found.
-bool SolveModelWithSat(RoutingModel* model,
+bool SolveModelWithSat(RoutingModel* model, RoutingSearchStats* search_stats,
                        const RoutingSearchParameters& search_parameters,
-                       const Assignment* initial_solution,
-                       Assignment* solution);
-
-#if !defined(SWIG)
-IntVarLocalSearchFilter* MakeVehicleBreaksFilter(
-    const RoutingModel& routing_model, const RoutingDimension& dimension);
-#endif
+                       const operations_research::Assignment* initial_solution,
+                       operations_research::Assignment* solution);
 
 }  // namespace operations_research
-#endif  // OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_H_
+#endif  // ORTOOLS_CONSTRAINT_SOLVER_ROUTING_H_

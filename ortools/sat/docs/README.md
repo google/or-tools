@@ -1,5 +1,5 @@
 [home](README.md) | [boolean logic](boolean_logic.md) | [integer arithmetic](integer_arithmetic.md) | [channeling constraints](channeling.md) | [scheduling](scheduling.md) | [Using the CP-SAT solver](solver.md) | [Model manipulation](model.md) | [Troubleshooting](troubleshooting.md) | [Python API](https://or-tools.github.io/docs/pdoc/ortools/sat/python/cp_model.html)
------------------ | --------------------------------- | ------------------------------------------- | --------------------------------------- | --------------------------- | ------------------------------------ | ------------------------------ | ------------------------------------- | ---------------------------------------------------------------------------------------
+----------------- | --------------------------------- | ------------------------------------------- | --------------------------------------- | --------------------------- | ------------------------------------ | ------------------------------ | ------------------------------------- | -----------------------------------------------------------------------------------
 # Using the CP-SAT solver
 
 https://developers.google.com/optimization/cp/cp_solver
@@ -28,35 +28,35 @@ The Python interface to the CP-SAT solver is implemented using two classes.
     access the solution found by the solve.
 
 ```python
-#!/usr/bin/env python3
+# Snippet from ortools/sat/samples/simple_sat_program.py
 """Simple solve."""
 from ortools.sat.python import cp_model
 
 
 def simple_sat_program():
-    """Minimal CP-SAT example to showcase calling the solver."""
-    # Creates the model.
-    model = cp_model.CpModel()
+  """Minimal CP-SAT example to showcase calling the solver."""
+  # Creates the model.
+  model = cp_model.CpModel()
 
-    # Creates the variables.
-    num_vals = 3
-    x = model.new_int_var(0, num_vals - 1, "x")
-    y = model.new_int_var(0, num_vals - 1, "y")
-    z = model.new_int_var(0, num_vals - 1, "z")
+  # Creates the variables.
+  num_vals = 3
+  x = model.new_int_var(0, num_vals - 1, 'x')
+  y = model.new_int_var(0, num_vals - 1, 'y')
+  z = model.new_int_var(0, num_vals - 1, 'z')
 
-    # Creates the constraints.
-    model.add(x != y)
+  # Creates the constraints.
+  model.add(x != y)
 
-    # Creates a solver and solves the model.
-    solver = cp_model.CpSolver()
-    status = solver.solve(model)
+  # Creates a solver and solves the model.
+  solver = cp_model.CpSolver()
+  status = solver.solve(model)
 
-    if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
-        print(f"x = {solver.value(x)}")
-        print(f"y = {solver.value(y)}")
-        print(f"z = {solver.value(z)}")
-    else:
-        print("No solution found.")
+  if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
+    print(f'x = {solver.value(x)}')
+    print(f'y = {solver.value(y)}')
+    print(f'z = {solver.value(z)}')
+  else:
+    print('No solution found.')
 
 
 simple_sat_program()
@@ -65,20 +65,22 @@ simple_sat_program()
 ### C++ code samples
 
 The interface to the C++ CP-SAT solver is implemented through the
-**CpModelBuilder** class described in *ortools/sat/cp_model.h*.
-This class is just a helper to fill in the cp_model protobuf.
+**CpModelBuilder** class described in
+*ortools/sat/cp_model.h*. This class is just a helper to
+fill in the cp_model protobuf.
 
 Calling Solve() method will return a CpSolverResponse protobuf that contains the
 solve status, the values for each variable in the model if solve was successful,
 and some metrics.
 
 ```cpp
+// Snippet from ortools/sat/samples/simple_sat_program.cc
 #include <stdlib.h>
 
-#include "absl/base/log_severity.h"
-#include "absl/log/globals.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
+#include "absl/base/log_severity.h"
+#include "absl/log/globals.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
@@ -128,11 +130,12 @@ The Java code implements the same interface as the Python code, with a
 **CpModel** and a **CpSolver** class.
 
 ```java
+// Snippet from ortools/sat/samples/SimpleSatProgram.java
 package com.google.ortools.sat.samples;
 import com.google.ortools.Loader;
+import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
-import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.IntVar;
 
 /** Minimal CP-SAT example to showcase calling the solver. */
@@ -174,7 +177,8 @@ public final class SimpleSatProgram {
 The C\# code implements the same interface as the Python code, with a
 **CpModel** and a **CpSolver** class.
 
-```cs
+```csharp
+// Snippet from ortools/sat/samples/SimpleSatProgram.cs
 using System;
 using Google.OrTools.Sat;
 
@@ -217,14 +221,15 @@ public class SimpleSatProgram
 
 The interface to the CP-SAT solver is implemented through the **CpModelBuilder**
 described in the package **cpmodel** in
-*ortools/sat/go/cp_model.go*. This class is a helper to fill in
-the cp_model protobuf.
+*ortools/sat/go/cp_model.go*. This class is a helper to fill
+in the cp_model protobuf.
 
 Also within the **cpmodel** package is
-*ortools/sat/go/cp_model.go* which provides functions to solve
-the model along with helpers to access the solution found by the solver.
+*ortools/sat/go/cp_model.go* which provides functions to
+solve the model along with helpers to access the solution found by the solver.
 
-```cs
+```go
+// Snippet from ortools/sat/samples/simple_sat_program.go
 // The simple_sat_program command is an example of a simple sat program.
 package main
 
@@ -233,6 +238,7 @@ import (
 
 	log "github.com/golang/glog"
 	"github.com/google/or-tools/ortools/sat/go/cpmodel"
+
 	cmpb "github.com/google/or-tools/ortools/sat/proto/cpmodel"
 )
 
@@ -272,4 +278,5 @@ func main() {
 		log.Exitf("simpleSatProgram returned with error: %v", err)
 	}
 }
+
 ```

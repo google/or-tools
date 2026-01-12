@@ -1,0 +1,1 @@
+RUN: $(shift_minimization_sat) --input $(shift_minimization.dat)

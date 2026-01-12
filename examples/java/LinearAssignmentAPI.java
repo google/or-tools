@@ -20,7 +20,6 @@ import com.google.ortools.graph.LinearSumAssignment;
  * Test assignment on a 4x4 matrix. Example taken from
  *  http://www.ee.oulu.fi/~mpa/matreng/eem1_2-1.htm with kCost[0][1]
  *  modified so the optimum solution is unique.
- *
  */
 public class LinearAssignmentAPI {
   private static void runAssignmentOn4x4Matrix() {

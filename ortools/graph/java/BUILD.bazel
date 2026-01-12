@@ -14,17 +14,14 @@
 # Description: java wrapping of the C++ code at ../
 
 load("@contrib_rules_jvm//java:defs.bzl", "java_junit5_test")
-load("@rules_jvm_external//:defs.bzl", "artifact")
-load("//bazel:swig_java.bzl", "ortools_java_wrap_cc")
+load("//bazel:swig_java.bzl", "java_wrap_cc")
 
-ortools_java_wrap_cc(
+java_wrap_cc(
     name = "graph",
-    src = "graph.i",
+    srcs = ["graph.swig"],
     module = "graph",
     package = "com.google.ortools.graph",
-    swig_includes = [
-        "//ortools/base:base_swig",
-    ],
+    swig_includes = ["//ortools/base:base_swig"],
     visibility = ["//visibility:public"],
     deps = [
         "//ortools/graph:assignment",
@@ -37,16 +34,14 @@ java_junit5_test(
     name = "FlowTest",
     size = "small",
     srcs = ["FlowTest.java"],
-    tags = ["unit"],
     test_class = "com.google.ortools.graph.FlowTest",
     deps = [
         "//ortools/graph/java:graph",
         "//ortools/java/com/google/ortools:Loader",
-        "@maven//:com_google_truth_truth",
-        artifact("org.junit.jupiter:junit-jupiter-api"),
-        artifact("org.junit.jupiter:junit-jupiter-params"),
-        artifact("org.junit.jupiter:junit-jupiter-engine"),
-        artifact("org.junit.platform:junit-platform-launcher"),
-        artifact("org.junit.platform:junit-platform-reporting"),
+        "@maven//:org_junit_jupiter_junit_jupiter_api",
+        "@maven//:org_junit_jupiter_junit_jupiter_engine",
+        "@maven//:org_junit_jupiter_junit_jupiter_params",
+        "@maven//:org_junit_platform_junit_platform_launcher",
+        "@maven//:org_junit_platform_junit_platform_reporting",
     ],
 )

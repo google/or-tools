@@ -55,7 +55,7 @@ constexpr double kInf = std::numeric_limits<double>::infinity();
 
 absl::StatusOr<std::unique_ptr<Model>> Model::FromModelProto(
     const ModelProto& model_proto) {
-  ASSIGN_OR_RETURN(absl::Nonnull<std::unique_ptr<ModelStorage>> storage,
+  ASSIGN_OR_RETURN(absl_nonnull std::unique_ptr<ModelStorage> storage,
                    ModelStorage::FromModelProto(model_proto));
   return std::make_unique<Model>(std::move(storage));
 }
@@ -63,10 +63,10 @@ absl::StatusOr<std::unique_ptr<Model>> Model::FromModelProto(
 Model::Model(const absl::string_view name)
     : storage_(std::make_shared<ModelStorage>(name)) {}
 
-Model::Model(absl::Nonnull<std::unique_ptr<ModelStorage>> storage)
+Model::Model(absl_nonnull std::unique_ptr<ModelStorage> storage)
     : storage_(ABSL_DIE_IF_NULL(std::move(storage))) {}
 
-absl::Nonnull<std::unique_ptr<Model>> Model::Clone(
+absl_nonnull std::unique_ptr<Model> Model::Clone(
     const std::optional<absl::string_view> new_name) const {
   return std::make_unique<Model>(storage_->Clone(new_name));
 }

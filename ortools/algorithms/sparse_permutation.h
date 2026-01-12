@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_ALGORITHMS_SPARSE_PERMUTATION_H_
-#define OR_TOOLS_ALGORITHMS_SPARSE_PERMUTATION_H_
+#ifndef ORTOOLS_ALGORITHMS_SPARSE_PERMUTATION_H_
+#define ORTOOLS_ALGORITHMS_SPARSE_PERMUTATION_H_
 
 #include <string>
 #include <vector>
@@ -157,4 +157,4 @@ void SparsePermutation::ApplyToDenseCollection(Collection& span) const {
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_ALGORITHMS_SPARSE_PERMUTATION_H_
+#endif  // ORTOOLS_ALGORITHMS_SPARSE_PERMUTATION_H_

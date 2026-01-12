@@ -17,6 +17,7 @@
 #include <ostream>
 #include <utility>
 
+#include "absl/base/optimization.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
@@ -210,6 +211,7 @@ absl::StatusOr<SimpleMultiObjectiveSolveResult> SolveWithObjectiveDegradation(
       case ObjectiveType::kAuxiliary:
         return model.AddMaximizationObjective(x, /*priority=*/0);
     }
+    ABSL_UNREACHABLE();
   }();
   const Objective priority_1 = [&]() {
     switch (priority_1_type) {
@@ -220,6 +222,7 @@ absl::StatusOr<SimpleMultiObjectiveSolveResult> SolveWithObjectiveDegradation(
       case ObjectiveType::kAuxiliary:
         return model.AddMinimizationObjective(x, /*priority=*/1);
     }
+    ABSL_UNREACHABLE();
   }();
   ModelSolveParameters model_parameters;
   switch (tolerance_type) {
@@ -371,6 +374,10 @@ TEST_P(SimpleMultiObjectiveTest,
   if (!GetParam().supports_integer_variables) {
     GTEST_SKIP() << kNoIntegerVariableSupportMessage;
   }
+  if (GetParam().solver_type == SolverType::kXpress) {
+    GTEST_SKIP() << "Ignoring this test because Xpress does not support per "
+                    "objective time limits at the moment";
+  }
   ASSERT_OK_AND_ASSIGN(const std::unique_ptr<Model> model,
                        Load23588MiplibInstance());
   const Objective aux_obj = model->AddMaximizationObjective(
@@ -401,6 +408,10 @@ TEST_P(SimpleMultiObjectiveTest,
        MultiObjectiveModelWithPrimaryObjectiveTimeLimit) {
   if (!GetParam().supports_integer_variables) {
     GTEST_SKIP() << kNoIntegerVariableSupportMessage;
+  }
+  if (GetParam().solver_type == SolverType::kXpress) {
+    GTEST_SKIP() << "Ignoring this test because Xpress does not support per "
+                    "objective time limits at the moment";
   }
   ASSERT_OK_AND_ASSIGN(const std::unique_ptr<Model> model,
                        Load23588MiplibInstance());
@@ -462,6 +473,10 @@ TEST_P(SimpleMultiObjectiveTest,
   }
   if (!GetParam().supports_integer_variables) {
     GTEST_SKIP() << kNoIntegerVariableSupportMessage;
+  }
+  if (GetParam().solver_type == SolverType::kXpress) {
+    GTEST_SKIP() << "Ignoring this test because Xpress does not support per "
+                    "objective time limits at the moment";
   }
   ASSERT_OK_AND_ASSIGN(const std::unique_ptr<Model> model,
                        Load23588MiplibInstance());
@@ -583,6 +598,10 @@ TEST_P(IncrementalMultiObjectiveTest, AddObjectiveToMultiObjectiveModel) {
   if (!GetParam().supports_auxiliary_objectives) {
     GTEST_SKIP() << kNoMultiObjectiveSupportMessage;
   }
+  if (!GetParam().supports_incremental_objective_add_and_delete) {
+    GTEST_SKIP()
+        << "Ignoring this test as it requires support for incremental solve";
+  }
   Model model;
   const Variable x = model.AddContinuousVariable(0.0, 1.0, "x");
   const Variable y = model.AddContinuousVariable(0.0, 1.0, "y");
@@ -635,6 +654,10 @@ TEST_P(IncrementalMultiObjectiveTest, AddObjectiveToMultiObjectiveModel) {
 TEST_P(IncrementalMultiObjectiveTest, DeleteObjectiveFromMultiObjectiveModel) {
   if (!GetParam().supports_auxiliary_objectives) {
     GTEST_SKIP() << kNoMultiObjectiveSupportMessage;
+  }
+  if (!GetParam().supports_incremental_objective_add_and_delete) {
+    GTEST_SKIP()
+        << "Ignoring this test as it requires support for incremental solve";
   }
   Model model;
   const Variable x = model.AddContinuousVariable(0.0, 1.0, "x");

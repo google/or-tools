@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# [START program]
 """Code sample to demonstrate how to build a NoOverlap constraint."""
 
 from ortools.sat.python import cp_model
@@ -67,3 +68,4 @@ def no_overlap_sample_sat():
 
 
 no_overlap_sample_sat()
+# [END program]

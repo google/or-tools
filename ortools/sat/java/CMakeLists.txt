@@ -11,17 +11,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set_property(SOURCE sat.i PROPERTY CPLUSPLUS ON)
-set_property(SOURCE sat.i PROPERTY SWIG_MODULE_NAME main)
-set_property(SOURCE sat.i PROPERTY COMPILE_DEFINITIONS
+set_property(SOURCE sat.swig PROPERTY CPLUSPLUS ON)
+set_property(SOURCE sat.swig PROPERTY SWIG_MODULE_NAME main)
+set_property(SOURCE sat.swig PROPERTY COMPILE_DEFINITIONS
   ${OR_TOOLS_COMPILE_DEFINITIONS} ABSL_MUST_USE_RESULT=)
-set_property(SOURCE sat.i PROPERTY COMPILE_OPTIONS
+set_property(SOURCE sat.swig PROPERTY COMPILE_OPTIONS
   -package ${JAVA_PACKAGE}.sat)
 swig_add_library(jnisat
   TYPE OBJECT
   LANGUAGE java
   OUTPUT_DIR ${JAVA_PROJECT_DIR}/${JAVA_SRC_PATH}/sat
-  SOURCES sat.i)
+  SOURCES sat.swig)
 
 target_include_directories(jnisat PRIVATE ${JNI_INCLUDE_DIRS})
 set_target_properties(jnisat PROPERTIES

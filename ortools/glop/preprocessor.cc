@@ -2939,11 +2939,12 @@ MatrixEntry SingletonPreprocessor::GetSingletonColumnMatrixEntry(
       return MatrixEntry(e.row(), col, e.coefficient());
     }
   }
-
+  // COV_NF_START
   // This shouldn't happen.
   LOG(DFATAL) << "No unmarked entry in a column that is supposed to have one.";
   status_ = ProblemStatus::ABNORMAL;
   return MatrixEntry(RowIndex(0), ColIndex(0), 0.0);
+  // COV_NF_END
 }
 
 MatrixEntry SingletonPreprocessor::GetSingletonRowMatrixEntry(
@@ -2955,11 +2956,12 @@ MatrixEntry SingletonPreprocessor::GetSingletonRowMatrixEntry(
       return MatrixEntry(row, col, e.coefficient());
     }
   }
-
+  // COV_NF_START
   // This shouldn't happen.
   LOG(DFATAL) << "No unmarked entry in a row that is supposed to have one.";
   status_ = ProblemStatus::ABNORMAL;
   return MatrixEntry(RowIndex(0), ColIndex(0), 0.0);
+  // COV_NF_END
 }
 
 // --------------------------------------------------------

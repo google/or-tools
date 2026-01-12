@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_BOP_BOP_PORTFOLIO_H_
-#define OR_TOOLS_BOP_BOP_PORTFOLIO_H_
+#ifndef ORTOOLS_BOP_BOP_PORTFOLIO_H_
+#define ORTOOLS_BOP_BOP_PORTFOLIO_H_
 
 #include <cstdint>
 #include <memory>
@@ -56,7 +56,6 @@ class OptimizerSelector;
 //   - LP_FIRST_SOLUTION
 //   - OBJECTIVE_FIRST_SOLUTION
 //   - USER_GUIDED_FIRST_SOLUTION
-//   - FEASIBILITY_PUMP_FIRST_SOLUTION
 //   - RANDOM_CONSTRAINT_LNS_GUIDED_BY_LP
 //   - RANDOM_VARIABLE_LNS_GUIDED_BY_LP
 //   - RELATION_GRAPH_LNS
@@ -209,4 +208,4 @@ class OptimizerSelector {
 
 }  // namespace bop
 }  // namespace operations_research
-#endif  // OR_TOOLS_BOP_BOP_PORTFOLIO_H_
+#endif  // ORTOOLS_BOP_BOP_PORTFOLIO_H_

@@ -1,0 +1,82 @@
+# Copyright 2010-2025 Google LLC
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
+load("//tools/testing:bintest.bzl", "bintest")
+
+cc_library(
+    name = "solver",
+    srcs = ["solver.cc"],
+    hdrs = ["solver.h"],
+    deps = [
+        "//ortools/base:status_macros",
+        "//ortools/math_opt:model_cc_proto",
+        "//ortools/math_opt:parameters_cc_proto",
+        "//ortools/math_opt:result_cc_proto",
+        "//ortools/math_opt/core:solver",
+        "//ortools/util:solve_interrupter",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+    ],
+)
+
+cc_test(
+    name = "solver_test",
+    srcs = ["solver_test.cc"],
+    deps = [
+        ":solver",
+        "//ortools/base:gmock_main",
+        "//ortools/base:status_macros",
+        "//ortools/math_opt:model_cc_proto",
+        "//ortools/math_opt:result_cc_proto",
+        "//ortools/math_opt/cpp:math_opt",
+        "//ortools/math_opt/solvers:glop_solver",
+        "@abseil-cpp//absl/cleanup",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings:string_view",
+    ],
+)
+
+cc_test(
+    name = "solver_port_c_test",
+    srcs = ["solver_port_c_test.c"],
+    deps = [
+        ":solver",
+        "//ortools/math_opt/solvers:glop_solver",
+    ],
+)
+
+cc_binary(
+    name = "cpp_example",
+    srcs = ["cpp_example.cc"],
+    deps = [
+        ":solver",
+        "//ortools/base",
+        "//ortools/math_opt:model_cc_proto",
+        "//ortools/math_opt:parameters_cc_proto",
+        "//ortools/math_opt:result_cc_proto",
+        "//ortools/math_opt:sparse_containers_cc_proto",
+        "//ortools/math_opt/solvers:glop_solver",
+        "@abseil-cpp//absl/status",
+    ],
+)
+
+bintest(
+    name = "cpp_example_test",
+    srcs = [":cpp_example_test.bintest"],
+    named_data = {"cpp_example": ":cpp_example"},
+)

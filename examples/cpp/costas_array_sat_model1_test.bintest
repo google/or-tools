@@ -1,0 +1,1 @@
+RUN: $(costas_array_sat) --minsize=6 --maxsize=6 --model=1

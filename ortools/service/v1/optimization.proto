@@ -23,6 +23,7 @@ import "ortools/service/v1/mathopt/solver_resources.proto";
 
 option java_multiple_files = true;
 option java_package = "com.google.ortools.service.v1";
+
 option csharp_namespace = "Google.OrTools.Service";
 
 // A One Platform API exposing a set of optimization solvers for high-level

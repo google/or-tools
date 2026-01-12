@@ -11,32 +11,54 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-file(GLOB _SRCS "*.h" "*.cc")
-if(NOT USE_COINOR)
-  list(FILTER _SRCS EXCLUDE REGEX "/clp_proto_solver.")
-  list(FILTER _SRCS EXCLUDE REGEX "/cbc_proto_solver.")
+list(APPEND _SRCS
+  preprocessor.cc
+  preprocessor.h
+  proto_utils.h
+  sat_proto_solver.cc
+  sat_proto_solver.h
+  sat_solver_utils.cc
+  sat_solver_utils.h
+)
+
+if(USE_GLOP)
+  list(APPEND _SRCS
+    glop_proto_solver.cc
+    glop_proto_solver.h
+  )
 endif()
-if(NOT USE_GLPK)
-  list(FILTER _SRCS EXCLUDE REGEX "/glpk_proto_solver.")
+if(USE_GUROBI)
+  list(APPEND _SRCS
+    gurobi_proto_solver.cc
+    gurobi_proto_solver.h
+  )
 endif()
-if(NOT USE_HIGHS)
-  list(FILTER _SRCS EXCLUDE REGEX "/highs_proto_solver.")
+if(USE_HIGHS)
+  list(APPEND _SRCS
+    highs_proto_solver.cc
+    highs_proto_solver.h
+  )
 endif()
-if(NOT USE_PDLP)
-  list(FILTER _SRCS EXCLUDE REGEX "/pdlp_proto_solver.")
+if(USE_PDLP)
+  list(APPEND _SRCS
+    pdlp_proto_solver.cc
+    pdlp_proto_solver.h
+  )
 endif()
-if(NOT USE_SCIP)
-  list(FILTER _SRCS EXCLUDE REGEX "/scip_proto_solver.")
+if(USE_SCIP)
+  list(APPEND _SRCS
+    scip_params.cc
+    scip_params.h
+    scip_proto_solver.cc
+    scip_proto_solver.h
+  )
 endif()
 
 set(NAME ${PROJECT_NAME}_linear_solver_proto_solver)
 
 # Will be merge in libortools.so
-#add_library(${NAME} STATIC ${_SRCS})
 add_library(${NAME} OBJECT ${_SRCS})
-set_target_properties(${NAME} PROPERTIES
-  POSITION_INDEPENDENT_CODE ON
-  )
+set_target_properties(${NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(${NAME} PUBLIC
   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
   $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>)
@@ -49,4 +71,3 @@ target_link_libraries(${NAME} PRIVATE
   $<$<BOOL:${USE_SCIP}>:SCIP::libscip>
   $<$<BOOL:${USE_HIGHS}>:highs::highs>
   ${PROJECT_NAMESPACE}::ortools_proto)
-#add_library(${PROJECT_NAMESPACE}::linear_solver_proto_solver ALIAS ${NAME})

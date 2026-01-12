@@ -13,7 +13,7 @@
 
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 
-package(default_visibility = ["//ortools:__subpackages__"])
+package(default_visibility = ["//visibility:public"])
 
 cc_library(
     name = "ids_validator",
@@ -184,7 +184,7 @@ cc_library(
         "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/strings",
-        "@protobuf",
+        "@protobuf//:duration_cc_proto",
     ],
 )
 

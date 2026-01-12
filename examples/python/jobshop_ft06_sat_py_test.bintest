@@ -1,0 +1,1 @@
+RUN: $(jobshop_ft06_sat_py3)

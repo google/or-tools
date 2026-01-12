@@ -23,16 +23,16 @@
 #include "ortools/routing/parsers/capacity_planning.pb.h"
 #include "ortools/routing/parsers/dow_parser.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 namespace {
 
 TEST(ProtoToProblemTest, TransformC33) {
   CapacityPlanningInstance request;
-  ::absl::Status status =
-      ReadFile(file::JoinPathRespectAbsolute(
-                   ::testing::SrcDir(), "operations_research_data/",
-                   "MULTICOM_FIXED_CHARGE_NETWORK_DESIGN/C/c33.dow"),
-               &request);
+  ::absl::Status status = ReadFile(
+      file::JoinPathRespectAbsolute(
+          ::testing::SrcDir(), "google3/third_party/operations_research_data/",
+          "MULTICOM_FIXED_CHARGE_NETWORK_DESIGN/C/c33.dow"),
+      &request);
   EXPECT_OK(status);
   CapacityPlanningProblem problem;
   status = Convert(request, &problem);
@@ -107,4 +107,4 @@ TEST(IlphTest, SolveEmptyProto) {
 }
 
 }  // namespace
-}  // namespace operations_research
+}  // namespace operations_research::routing

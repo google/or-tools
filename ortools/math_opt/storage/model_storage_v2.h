@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_MATH_OPT_STORAGE_MODEL_STORAGE_V2_H_
-#define OR_TOOLS_MATH_OPT_STORAGE_MODEL_STORAGE_V2_H_
+#ifndef ORTOOLS_MATH_OPT_STORAGE_MODEL_STORAGE_V2_H_
+#define ORTOOLS_MATH_OPT_STORAGE_MODEL_STORAGE_V2_H_
 
 #include <cstdint>
 #include <memory>
@@ -68,10 +68,7 @@ namespace operations_research::math_opt {
 // the modifications since the previous call to
 // ModelStorage::AdvanceCheckpoint(). Note that, for newly initialized models,
 // before the first checkpoint, there is no additional memory overhead from
-// tracking changes. See
-// g3doc/ortools/math_opt/g3doc/model_building_complexity.md
-// for details.
-//
+// tracking changes.
 // On bad input:
 //
 // Using a bad variable id or constraint id (an id not in the current model,
@@ -90,7 +87,7 @@ class ModelStorageV2 {
   // considered invalid when solving.
   //
   // See ApplyUpdateProto() for dealing with subsequent updates.
-  static absl::StatusOr<absl::Nonnull<std::unique_ptr<ModelStorageV2>>>
+  static absl::StatusOr<absl_nonnull std::unique_ptr<ModelStorageV2>>
   FromModelProto(const ModelProto& model_proto);
 
   // Creates an empty minimization problem.
@@ -106,7 +103,7 @@ class ModelStorageV2 {
   // reused any id of variable/constraint that was deleted in the original.
   //
   // Note that the returned model does not have any update tracker.
-  absl::Nonnull<std::unique_ptr<ModelStorageV2>> Clone(
+  absl_nonnull std::unique_ptr<ModelStorageV2> Clone(
       std::optional<absl::string_view> new_name = std::nullopt) const;
 
   inline const std::string& name() const { return elemental_.model_name(); }
@@ -1136,4 +1133,4 @@ std::vector<VariableId> ModelStorageV2::VariablesInConstraint(
 
 }  // namespace operations_research::math_opt
 
-#endif  // OR_TOOLS_MATH_OPT_STORAGE_MODEL_STORAGE_V2_H_
+#endif  // ORTOOLS_MATH_OPT_STORAGE_MODEL_STORAGE_V2_H_

@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_FLATZINC_MODEL_H_
-#define OR_TOOLS_FLATZINC_MODEL_H_
+#ifndef ORTOOLS_FLATZINC_MODEL_H_
+#define ORTOOLS_FLATZINC_MODEL_H_
 
 #include <cstdint>
 #include <map>
@@ -23,7 +23,6 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/graph/iterators.h"
 #include "ortools/util/logging.h"
 
 namespace operations_research {
@@ -109,6 +108,7 @@ struct Domain {
   bool display_as_boolean = false;
   // Indicates if the domain was created as a set domain.
   bool is_a_set = false;
+  bool is_fixed_set = false;
   // Float domain.
   bool is_float = false;
   std::vector<double> float_values;
@@ -218,12 +218,13 @@ struct Argument {
 // Constraint is on the heap, and owned by the global Model object.
 struct Constraint {
   Constraint(absl::string_view t, std::vector<Argument> args,
-             bool strong_propag)
+             bool strong_propag, bool sym, bool redundant)
       : type(t),
         arguments(std::move(args)),
         strong_propagation(strong_propag),
         active(true),
-        presolve_propagation_done(false) {}
+        is_symmetric_breaking(sym),
+        is_redundant(redundant) {}
 
   std::string DebugString() const;
 
@@ -250,8 +251,11 @@ struct Constraint {
   // presolve.
   bool active : 1;
 
-  // Indicates if presolve has finished propagating this constraint.
-  bool presolve_propagation_done : 1;
+  // Indicates if the constraint is a symmetric breaking constraint.
+  bool is_symmetric_breaking : 1;
+
+  // Indicates if the constraint is a redundant constraint.
+  bool is_redundant : 1;
 };
 
 // An annotation is a set of information. It has two use cases. One during
@@ -349,12 +353,12 @@ class Model {
   // The objects returned by AddVariable(), AddConstant(),  and AddConstraint()
   // are owned by the model and will remain live for its lifetime.
   Variable* AddVariable(absl::string_view name, const Domain& domain,
-                        bool defined);
+                        bool defined, bool set_is_fixed = false);
   Variable* AddConstant(int64_t value);
   Variable* AddFloatConstant(double value);
   // Creates and add a constraint to the model.
   void AddConstraint(absl::string_view id, std::vector<Argument> arguments,
-                     bool is_domain);
+                     bool is_domain, bool symmetry, bool redundant);
   void AddConstraint(absl::string_view id, std::vector<Argument> arguments);
   void AddOutput(SolutionOutputSpecs output);
 
@@ -444,4 +448,4 @@ void FlattenAnnotations(const Annotation& ann, std::vector<Annotation>* out);
 }  // namespace fz
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_FLATZINC_MODEL_H_
+#endif  // ORTOOLS_FLATZINC_MODEL_H_

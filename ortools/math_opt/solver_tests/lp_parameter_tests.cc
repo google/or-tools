@@ -360,6 +360,11 @@ TEST_P(LpParameterTest, IterationLimitFirstOrder) {
   if (!SupportsFirstOrder()) {
     GTEST_SKIP() << "First order methods not supported. Ignoring this test.";
   }
+  if (GetParam().solver_type == SolverType::kXpress) {
+    // Xpress is too smart for the model just here. EVen with n=300 it solves
+    // the problem to optimality (within tolerances) in the first iteration.
+    GTEST_SKIP() << "Test skipped for Xpress since model solves too easily.";
+  }
   ASSERT_OK_AND_ASSIGN(
       const SolveResult result,
       LPForIterationLimit(TestedSolver(), LPAlgorithm::kFirstOrder, 3,

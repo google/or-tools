@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Copyright 2010-2025 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,7 +16,7 @@
 
 Provides several conversion functions to transform from/to protos exposed in the
 Operations Research API to the internal protos in
-/ortools/math_opt/.*.proto.
+ortools/math_opt/.*.proto.
 """
 
 from google.protobuf import message

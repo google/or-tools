@@ -21,13 +21,13 @@
 #include "absl/strings/string_view.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
-#include "ortools/base/protobuf_util.h"
+#include "ortools/base/parse_text_proto.h"
 #include "ortools/pdlp/solvers.pb.h"
 
 namespace operations_research::pdlp {
 namespace {
 
-using ::google::protobuf::util::ParseTextOrDie;
+using ::google::protobuf::contrib::parse_proto::ParseTextOrDie;
 
 using ::testing::HasSubstr;
 
@@ -49,8 +49,7 @@ void TestTerminationCriteriaValidation(
     absl::string_view termination_criteria_string,
     absl::string_view error_substring) {
   TerminationCriteria termination_criteria =
-      ParseTextOrDie<TerminationCriteria>(
-          std::string(termination_criteria_string));
+      ParseTextOrDie<TerminationCriteria>(termination_criteria_string);
   const absl::Status status = ValidateTerminationCriteria(termination_criteria);
   EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument)
       << "With termination criteria \"" << termination_criteria_string << "\"";

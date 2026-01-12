@@ -13,8 +13,8 @@
 
 // Common types and constants used by the Linear Programming solver.
 
-#ifndef OR_TOOLS_LP_DATA_LP_TYPES_H_
-#define OR_TOOLS_LP_DATA_LP_TYPES_H_
+#ifndef ORTOOLS_LP_DATA_LP_TYPES_H_
+#define ORTOOLS_LP_DATA_LP_TYPES_H_
 
 #include <cstddef>
 #include <cstdint>
@@ -436,4 +436,4 @@ static inline double DeterministicTimeForFpOperations(int64_t n) {
 }  // namespace glop
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_LP_DATA_LP_TYPES_H_
+#endif  // ORTOOLS_LP_DATA_LP_TYPES_H_

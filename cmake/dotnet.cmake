@@ -20,6 +20,7 @@ if(NOT TARGET ${PROJECT_NAMESPACE}::ortools)
 endif()
 
 # Will need swig
+set(SWIG_SOURCE_FILE_EXTENSIONS ".i" ".swig")
 set(CMAKE_SWIG_FLAGS)
 find_package(SWIG REQUIRED)
 include(UseSWIG)
@@ -120,6 +121,12 @@ set(DOTNET_PROJECT ${DOTNET_PACKAGE})
 message(STATUS ".Net project: ${DOTNET_PROJECT}")
 set(DOTNET_PROJECT_DIR ${PROJECT_BINARY_DIR}/dotnet/${DOTNET_PROJECT})
 message(STATUS ".Net project build path: ${DOTNET_PROJECT_DIR}")
+
+if(RELEASE)
+  set(DOTNET_RELEASE "")
+else()
+  set(DOTNET_RELEASE "-rc.1")
+endif()
 
 ##################
 ##  PROTO FILE  ##
@@ -505,7 +512,7 @@ if(BUILD_DOTNET_DOC)
   if(DOXYGEN_FOUND)
     configure_file(${PROJECT_SOURCE_DIR}/ortools/dotnet/Doxyfile.in ${PROJECT_BINARY_DIR}/dotnet/Doxyfile @ONLY)
     file(DOWNLOAD
-      https://raw.githubusercontent.com/jothepro/doxygen-awesome-css/v2.1.0/doxygen-awesome.css
+      https://raw.githubusercontent.com/jothepro/doxygen-awesome-css/v2.3.4/doxygen-awesome.css
       ${PROJECT_BINARY_DIR}/dotnet/doxygen-awesome.css
       SHOW_PROGRESS
     )
@@ -517,6 +524,8 @@ if(BUILD_DOTNET_DOC)
         dotnet_package
         ${PROJECT_BINARY_DIR}/dotnet/Doxyfile
         ${PROJECT_BINARY_DIR}/dotnet/doxygen-awesome.css
+        ${PROJECT_SOURCE_DIR}/ortools/doxygen/header.html
+        ${PROJECT_SOURCE_DIR}/ortools/doxygen/DoxygenLayout.xml
         ${PROJECT_SOURCE_DIR}/ortools/dotnet/stylesheet.css
       WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
       COMMENT "Generating .Net API documentation with Doxygen"

@@ -37,8 +37,8 @@
 //     when the cost is not the number of bins, but a function of the capacity
 //     used (useful for fair allocation).
 
-#ifndef OR_TOOLS_PACKING_ARC_FLOW_BUILDER_H_
-#define OR_TOOLS_PACKING_ARC_FLOW_BUILDER_H_
+#ifndef ORTOOLS_PACKING_ARC_FLOW_BUILDER_H_
+#define ORTOOLS_PACKING_ARC_FLOW_BUILDER_H_
 
 #include <cstdint>
 #include <set>
@@ -90,4 +90,4 @@ ArcFlowGraph BuildArcFlowGraph(
 }  // namespace packing
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_PACKING_ARC_FLOW_BUILDER_H_
+#endif  // ORTOOLS_PACKING_ARC_FLOW_BUILDER_H_

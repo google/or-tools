@@ -9,14 +9,14 @@
     <RollForward>LatestMajor</RollForward>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
     <AssemblyName>@DOTNET_PROJECT@.@COMPONENT_NAME@.@SAMPLE_NAME@</AssemblyName>
-    <Version>@PROJECT_VERSION@</Version>
+    <Version>@PROJECT_VERSION@@DOTNET_RELEASE@</Version>
 
     <!-- Nuget Properties -->
     <Description>Simple App consuming @DOTNET_PROJECT@ package</Description>
 
     <!-- Pack Option -->
     <IsPackable>true</IsPackable>
-    <Title>@DOTNET_PROJECT@.@COMPONENT_NAME@.@SAMPLE_NAME@ v@PROJECT_VERSION@</Title>
+    <Title>@DOTNET_PROJECT@.@COMPONENT_NAME@.@SAMPLE_NAME@ v@PROJECT_VERSION@@DOTNET_RELEASE@</Title>
     <PackageId>@DOTNET_PROJECT@.@COMPONENT_NAME@.@SAMPLE_NAME@</PackageId>
     <PackageTags>sample</PackageTags>
     <IncludeSymbols>true</IncludeSymbols>
@@ -42,6 +42,6 @@
 
   <ItemGroup>
     <Compile Include="@SAMPLE_NAME@.cs" />
-    <PackageReference Include="@DOTNET_PROJECT@" Version="@PROJECT_VERSION_MAJOR@.@PROJECT_VERSION_MINOR@.*" />
+    <PackageReference Include="@DOTNET_PROJECT@" Version="@PROJECT_VERSION@@DOTNET_RELEASE@" />
   </ItemGroup>
 </Project>

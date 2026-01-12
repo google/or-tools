@@ -13,8 +13,8 @@
 
 // Basic types and classes used by the sat solver.
 
-#ifndef OR_TOOLS_SAT_SAT_BASE_H_
-#define OR_TOOLS_SAT_SAT_BASE_H_
+#ifndef ORTOOLS_SAT_SAT_BASE_H_
+#define ORTOOLS_SAT_SAT_BASE_H_
 
 #include <algorithm>
 #include <cstdint>
@@ -30,6 +30,7 @@
 #include "absl/strings/str_format.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/strong_int.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/strong_integers.h"
@@ -98,6 +99,7 @@ class Literal {
   Literal Negated() const { return Literal(NegatedIndex()); }
 
   std::string DebugString() const {
+    if (index_ == kNoLiteralIndex.value()) return "NA";
     return absl::StrFormat("%+d", SignedValue());
   }
 
@@ -135,6 +137,22 @@ inline std::ostream& operator<<(std::ostream& os,
       os << ",";
     }
     os << literal.DebugString();
+  }
+  os << "]";
+  return os;
+}
+
+inline std::ostream& operator<<(std::ostream& os,
+                                absl::Span<const LiteralIndex> literals) {
+  os << "[";
+  bool first = true;
+  for (const LiteralIndex index : literals) {
+    if (first) {
+      first = false;
+    } else {
+      os << ",";
+    }
+    os << Literal(index).DebugString();
   }
   os << "]";
   return os;
@@ -207,6 +225,10 @@ class VariablesAssignment {
 
   int NumberOfVariables() const { return assignment_.size().value() / 2; }
 
+  // Expose internal for performance critical code.
+  // You should not use this in normal code.
+  Bitset64<LiteralIndex>::View GetBitsetView() { return assignment_.view(); }
+
  private:
   // The encoding is as follows:
   // - assignment_.IsSet(literal.Index()) means literal is true.
@@ -232,6 +254,19 @@ class AssignmentView {
 
  private:
   Bitset64<LiteralIndex>::ConstView view_;
+};
+
+// The ID of a clause.
+DEFINE_STRONG_INT_TYPE(ClauseId, int64_t);
+constexpr ClauseId kNoClauseId(0);
+
+// A generator for ClauseIds. Not thread-safe.
+class ClauseIdGenerator {
+ public:
+  ClauseId GetNextId() { return ClauseId(next_id_++); }
+
+ private:
+  ClauseId next_id_ = ClauseId(1);
 };
 
 // Forward declaration.
@@ -282,6 +317,14 @@ struct AssignmentType {
   static constexpr int kFirstFreePropagationId = 4;
 };
 
+// A Boolean "decision" taken by the solver.
+struct LiteralWithTrailIndex {
+  LiteralWithTrailIndex() = default;
+  LiteralWithTrailIndex(Literal l, int i) : literal(l), trail_index(i) {}
+  Literal literal;
+  int trail_index = 0;
+};
+
 // The solver trail stores the assignment made by the solver in order.
 // This class is responsible for maintaining the assignment of each variable
 // and the information of each assignment.
@@ -304,29 +347,120 @@ class Trail {
 
   // Enqueues the assignment that make the given literal true on the trail. This
   // should only be called on unassigned variables.
-  void SetCurrentPropagatorId(int propagator_id) {
-    current_info_.type = propagator_id;
-  }
-  void FastEnqueue(Literal true_literal) {
+  void Enqueue(Literal true_literal, int propagator_id) {
     DCHECK(!assignment_.VariableIsAssigned(true_literal.Variable()));
     trail_[current_info_.trail_index] = true_literal;
+    current_info_.type = propagator_id;
     info_[true_literal.Variable()] = current_info_;
     assignment_.AssignFromTrueLiteral(true_literal);
     ++current_info_.trail_index;
   }
-  void Enqueue(Literal true_literal, int propagator_id) {
-    SetCurrentPropagatorId(propagator_id);
-    FastEnqueue(true_literal);
+  void EnqueueAtLevel(Literal true_literal, int propagator_id, int level) {
+    Enqueue(true_literal, propagator_id);
+    if (use_chronological_backtracking_) {
+      info_[true_literal.Variable()].level = level;
+    }
   }
 
-  // Specific Enqueue() version for the search decision.
+  // Using this is faster as it caches all the vectors data.
+  // Warning: call to this cannot be interleaved with normal enqueue.
+  // only use in hot-loops.
+  class EnqueueHelper {
+   public:
+    EnqueueHelper(
+        Literal* trail_ptr, AssignmentInfo* current_info,
+        AssignmentInfo* info_ptr, VariablesAssignment* assignment,
+        util_intops::StrongVector<BooleanVariable, ClauseId>* clause_ids)
+        : trail_ptr_(trail_ptr),
+          current_info_(current_info),
+          info_ptr_(info_ptr),
+          bitset_(assignment->GetBitsetView()),
+          clause_ids_(clause_ids) {}
+
+    void EnqueueAtLevel(Literal true_literal, int level) {
+      bitset_.Set(true_literal);
+      AssignmentInfo* info = info_ptr_ + true_literal.Variable().value();
+      *info = *current_info_;
+      info->level = level;
+      trail_ptr_[current_info_->trail_index++] = true_literal;
+    }
+
+    void EnqueueWithUnitReason(Literal true_literal, ClauseId clause_id) {
+      DCHECK_NE(clause_id, kNoClauseId);
+      const BooleanVariable var = true_literal.Variable();
+      if (var.value() >= clause_ids_->size()) {
+        clause_ids_->resize(var.value() + 1, kNoClauseId);
+      }
+      (*clause_ids_)[var] = clause_id;
+
+      bitset_.Set(true_literal);
+      AssignmentInfo* info = info_ptr_ + true_literal.Variable().value();
+      *info = *current_info_;
+      info->level = 0;
+      info->type = AssignmentType::kUnitReason;
+      trail_ptr_[current_info_->trail_index++] = true_literal;
+    }
+
+    bool LiteralIsTrue(Literal literal) const {
+      return bitset_[literal.Index()];
+    }
+    bool LiteralIsFalse(Literal literal) const {
+      return bitset_[literal.NegatedIndex()];
+    }
+
+   private:
+    Literal* trail_ptr_;
+    AssignmentInfo* current_info_;
+    AssignmentInfo* info_ptr_;
+    Bitset64<LiteralIndex>::View bitset_;
+    util_intops::StrongVector<BooleanVariable, ClauseId>* clause_ids_;
+  };
+  EnqueueHelper GetEnqueueHelper(int propagator_id) {
+    current_info_.type = propagator_id;
+    return EnqueueHelper(trail_.data(), &current_info_, info_.data(),
+                         &assignment_, &clause_ids_);
+  }
+
+  // Specific Enqueue() for search decisions.
   void EnqueueSearchDecision(Literal true_literal) {
+    decisions_[current_decision_level_] =
+        LiteralWithTrailIndex(true_literal, Index());
+    current_info_.level = ++current_decision_level_;
     Enqueue(true_literal, AssignmentType::kSearchDecision);
+  }
+
+  // Specific Enqueue() for assumptions.
+  void EnqueueAssumption(Literal assumptions) {
+    if (current_decision_level_ == 0) {
+      // Special decision. This should never be accessed.
+      decisions_[0] = LiteralWithTrailIndex(Literal(), Index());
+      current_info_.level = ++current_decision_level_;
+    }
+    CHECK_EQ(current_decision_level_, 1);
+    Enqueue(assumptions, AssignmentType::kSearchDecision);
+  }
+
+  void OverrideDecision(int level, Literal literal) {
+    decisions_[level].literal = literal;
+  }
+
+  // Allows to recover the list of decisions.
+  // Note that the Decisions() vector is always of size NumVariables(), and that
+  // only the first CurrentDecisionLevel() entries have a meaning. The decision
+  // made at level l is Decisions()[l - 1] (there are no decisions at level 0).
+  const std::vector<LiteralWithTrailIndex>& Decisions() const {
+    return decisions_;
   }
 
   // Specific Enqueue() version for a fixed variable.
   void EnqueueWithUnitReason(Literal true_literal) {
-    Enqueue(true_literal, AssignmentType::kUnitReason);
+    EnqueueAtLevel(true_literal, AssignmentType::kUnitReason, 0);
+  }
+
+  // Specific Enqueue() version for unit clauses.
+  void EnqueueWithUnitReason(ClauseId clause_id, Literal true_literal) {
+    MaybeSetClauseId(true_literal, clause_id);
+    EnqueueAtLevel(true_literal, AssignmentType::kUnitReason, 0);
   }
 
   // Some constraints propagate a lot of literals at once. In these cases, it is
@@ -336,27 +470,41 @@ class Trail {
                                BooleanVariable reference_var) {
     reference_var_with_same_reason_as_[true_literal.Variable()] = reference_var;
     Enqueue(true_literal, AssignmentType::kSameReasonAs);
+    if (ChronologicalBacktrackingEnabled()) {
+      info_[true_literal.Variable()].level = Info(reference_var).level;
+    }
   }
 
   // Enqueues the given literal using the current content of
   // GetEmptyVectorToStoreReason() as the reason. This API is a bit more
-  // leanient and does not require the literal to be unassigned. If it is
+  // lenient and does not require the literal to be unassigned. If it is
   // already assigned to false, then MutableConflict() will be set appropriately
   // and this will return false otherwise this will enqueue the literal and
   // returns true.
-  ABSL_MUST_USE_RESULT bool EnqueueWithStoredReason(Literal true_literal) {
+  ABSL_MUST_USE_RESULT bool EnqueueWithStoredReason(ClauseId clause_id,
+                                                    Literal true_literal) {
     if (assignment_.LiteralIsTrue(true_literal)) return true;
     if (assignment_.LiteralIsFalse(true_literal)) {
       *MutableConflict() = reasons_repository_[Index()];
       MutableConflict()->push_back(true_literal);
+      failing_clause_id_ = clause_id;
       return false;
     }
 
+    MaybeSetClauseId(true_literal, clause_id);
     Enqueue(true_literal, AssignmentType::kCachedReason);
     const BooleanVariable var = true_literal.Variable();
     reasons_[var] = reasons_repository_[info_[var].trail_index];
     old_type_[var] = info_[var].type;
     info_[var].type = AssignmentType::kCachedReason;
+    DCHECK_EQ(old_type_[var], AssignmentType::kCachedReason);
+    if (ChronologicalBacktrackingEnabled()) {
+      uint32_t level = 0;
+      for (const Literal literal : reasons_[var]) {
+        level = std::max(level, Info(literal.Variable()).level);
+      }
+      info_[var].level = level;
+    }
     return true;
   }
 
@@ -383,6 +531,25 @@ class Trail {
   // from Info(var).type and the latter should not be used outside this class.
   int AssignmentType(BooleanVariable var) const;
 
+  // Returns the ID of the clause which is the reason for the unit clause
+  // containing the given variable, or kNoClauseId if there is none. The
+  // variable must have been enqueued at level zero with a kUnitReason.
+  ClauseId GetUnitClauseId(BooleanVariable var) const {
+    DCHECK(AssignmentType(var) == AssignmentType::kUnitReason);
+    DCHECK_EQ(Info(var).level, 0);
+    if (var.value() >= clause_ids_.size()) return kNoClauseId;
+    return clause_ids_[var];
+  }
+
+  // Returns the ID of the clause which is the reason why the given variable was
+  // enqueued, or kNoClauseId if there is none. The variable must have been
+  // enqueued with EnqueueWithStoredReason().
+  ClauseId GetStoredReasonClauseId(BooleanVariable var) const {
+    DCHECK(AssignmentType(var) == AssignmentType::kCachedReason);
+    if (var.value() >= clause_ids_.size()) return kNoClauseId;
+    return clause_ids_[var];
+  }
+
   // If a variable was propagated with EnqueueWithSameReasonAs(), returns its
   // reference variable. Otherwise return the given variable.
   BooleanVariable ReferenceVarWithSameReason(BooleanVariable var) const;
@@ -405,10 +572,22 @@ class Trail {
 
   // Explicitly overwrite the reason so that the given propagator will be
   // asked for it. This is currently only used by the BinaryImplicationGraph.
+  // Note: Care must be taken not to break the lrat proof!
   void ChangeReason(int trail_index, int propagator_id) {
     const BooleanVariable var = trail_[trail_index].Variable();
     info_[var].type = propagator_id;
     old_type_[var] = propagator_id;
+  }
+
+  // On bactrack we should always do:
+  //
+  // const int target_trail_index = PrepareBacktrack(level);
+  // ...
+  // Untrail(target_trail_index);
+  int PrepareBacktrack(int level) {
+    current_decision_level_ = level;
+    current_info_.level = level;
+    return decisions_[level].trail_index;
   }
 
   // Reverts the trail and underlying assignment to the given target trail
@@ -420,10 +599,11 @@ class Trail {
       assignment_.UnassignLiteral(trail_[i]);
     }
     current_info_.trail_index = target_trail_index;
+    if (use_chronological_backtracking_) {
+      ReimplyAll(index);
+    }
   }
 
-  // Changes the decision level used by the next Enqueue().
-  void SetDecisionLevel(int level) { current_info_.level = level; }
   int CurrentDecisionLevel() const { return current_info_.level; }
 
   // Generic interface to set the current failing clause.
@@ -431,9 +611,14 @@ class Trail {
   // Returns the address of a vector where a client can store the current
   // conflict. This vector will be returned by the FailingClause() call.
   std::vector<Literal>* MutableConflict() {
+    ++conflict_timestamp_;
     failing_sat_clause_ = nullptr;
+    failing_clause_id_ = kNoClauseId;
     return &conflict_;
   }
+
+  // This should increase on each call to MutableConflict().
+  int64_t conflict_timestamp() const { return conflict_timestamp_; }
 
   // Returns the last conflict.
   absl::Span<const Literal> FailingClause() const {
@@ -446,8 +631,15 @@ class Trail {
   // Specific SatClause interface so we can update the conflict clause activity.
   // Note that MutableConflict() automatically sets this to nullptr, so we can
   // know whether or not the last conflict was caused by a clause.
-  void SetFailingSatClause(SatClause* clause) { failing_sat_clause_ = clause; }
+  void SetFailingSatClause(SatClause* clause) {
+    failing_sat_clause_ = clause;
+    failing_clause_id_ = kNoClauseId;
+  }
   SatClause* FailingSatClause() const { return failing_sat_clause_; }
+
+  // Returns the LRAT ID of the failing clause. This ID is only set if a
+  // conflict is detected in EnqueueWithStoredReason().
+  ClauseId FailingClauseId() const { return failing_clause_id_; }
 
   // Getters.
   int NumVariables() const { return trail_.size(); }
@@ -466,6 +658,8 @@ class Trail {
     return info_[var];
   }
 
+  int AssignmentLevel(Literal lit) const { return Info(lit.Variable()).level; }
+
   // Print the current literals on the trail.
   std::string DebugString() const {
     std::string result;
@@ -481,14 +675,62 @@ class Trail {
     debug_checker_ = std::move(checker);
   }
 
+  bool ChronologicalBacktrackingEnabled() const {
+    return use_chronological_backtracking_;
+  }
+
+  void EnableChronologicalBacktracking(bool enable) {
+    CHECK_EQ(CurrentDecisionLevel(), 0);
+    use_chronological_backtracking_ = enable;
+  }
+
+  using ConflictResolutionFunction = std::function<void(
+      std::vector<Literal>* conflict,
+      std::vector<Literal>* reason_used_to_infer_the_conflict,
+      std::vector<SatClause*>* subsumed_clauses)>;
+
+  void SetConflictResolutionFunction(ConflictResolutionFunction resolution) {
+    resolution_ = std::move(resolution);
+  }
+
+  ConflictResolutionFunction GetConflictResolutionFunction() {
+    return resolution_;
+  }
+
+  int NumReimplicationsOnLastUntrail() const { return last_num_reimplication_; }
+
  private:
+  ConflictResolutionFunction resolution_;
+
+  void MaybeSetClauseId(Literal true_literal, ClauseId clause_id) {
+    if (clause_id != kNoClauseId) {
+      const BooleanVariable var = true_literal.Variable();
+      if (var.value() >= clause_ids_.size()) {
+        clause_ids_.resize(var.value() + 1, kNoClauseId);
+      }
+      clause_ids_[var] = clause_id;
+    }
+  }
+
+  // Finds all literals between the current trail index and the given one
+  // assigned at the current level or lower, and re-enqueues them with the same
+  // reason.
+  void ReimplyAll(int old_trail_index);
+
+  bool use_chronological_backtracking_ = false;
+  int64_t num_reimplied_literals_ = 0;
   int64_t num_untrailed_enqueues_ = 0;
   AssignmentInfo current_info_;
   VariablesAssignment assignment_;
   std::vector<Literal> trail_;
+  int64_t conflict_timestamp_ = 0;
   std::vector<Literal> conflict_;
   util_intops::StrongVector<BooleanVariable, AssignmentInfo> info_;
+  // The ID of unit clauses (literals enqueued at level 0 with a kUnitReason)
+  // and of reason clauses for literals enqueued with a stored reason.
+  util_intops::StrongVector<BooleanVariable, ClauseId> clause_ids_;
   SatClause* failing_sat_clause_;
+  ClauseId failing_clause_id_;
 
   // Data used by EnqueueWithSameReasonAs().
   util_intops::StrongVector<BooleanVariable, BooleanVariable>
@@ -527,6 +769,15 @@ class Trail {
 
   std::function<bool(absl::Span<const Literal> clause)> debug_checker_ =
       nullptr;
+
+  int last_num_reimplication_ = 0;
+
+  // The stack of decisions taken by the solver. They are stored in [0,
+  // current_decision_level_). The vector is of size num_variables_ so it can
+  // store all the decisions. This is done this way because in some situation we
+  // need to remember the previously taken decisions after a backtrack.
+  int current_decision_level_ = 0;
+  std::vector<LiteralWithTrailIndex> decisions_;
 };
 
 // Base class for all the SAT constraints.
@@ -568,6 +819,16 @@ class SatPropagator {
     propagation_trail_index_ = std::min(propagation_trail_index_, trail_index);
   }
 
+  // Called if the implication at `old_trail_index` remains true after
+  // backtracking. If this propagator supports reimplication it should call
+  // `trail->EnqueueAtLevel`.
+  // This will be called after Untrail() when backtracking.
+  virtual void Reimply(Trail* /*trail*/, int /*old_trail_index*/) {
+    // It is inefficient and unexpected to call this on a propagator that
+    // doesn't support reimplication.
+    LOG(DFATAL) << "Reimply not implemented for " << name_ << ".";
+  }
+
   // Explains why the literal at given trail_index was propagated by returning a
   // reason for this propagation. This will only be called for literals that are
   // on the trail and were propagated by this class.
@@ -598,6 +859,8 @@ class SatPropagator {
     return propagation_trail_index_ == trail.Index();
   }
 
+  const std::string& name() const { return name_; }
+
   // Small optimization: If a propagator does not contain any "constraints"
   // there is no point calling propagate on it. Before each propagation, the
   // solver will checks for emptiness, and construct an optimized list of
@@ -623,7 +886,7 @@ inline bool SatPropagator::PropagatePreconditionsAreSatisfied(
     return false;
   }
   if (propagation_trail_index_ < trail.Index() &&
-      trail.Info(trail[propagation_trail_index_].Variable()).level !=
+      trail.Info(trail[propagation_trail_index_].Variable()).level >
           trail.CurrentDecisionLevel()) {
     LOG(INFO) << "Issue in '" << name_ << "':"
               << " propagation_trail_index_=" << propagation_trail_index_
@@ -646,6 +909,11 @@ inline void Trail::Resize(int num_variables) {
   // dynamically.
   old_type_.resize(num_variables);
   reference_var_with_same_reason_as_.resize(num_variables);
+
+  // The +1 is a bit tricky, it is because in
+  // EnqueueDecisionAndBacktrackOnConflict() we artificially enqueue the
+  // decision before checking if it is not already assigned.
+  decisions_.resize(num_variables + 1);
 }
 
 inline void Trail::RegisterPropagator(SatPropagator* propagator) {
@@ -653,6 +921,8 @@ inline void Trail::RegisterPropagator(SatPropagator* propagator) {
     propagators_.resize(AssignmentType::kFirstFreePropagationId);
   }
   CHECK_LT(propagators_.size(), 16);
+  VLOG(2) << "Registering propagator " << propagator->name() << " with id "
+          << propagators_.size();
   propagator->SetPropagatorId(propagators_.size());
   propagators_.push_back(propagator);
 }
@@ -689,7 +959,7 @@ inline absl::Span<const Literal> Trail::Reason(BooleanVariable var,
       std::vector<Literal> clause;
       clause.assign(reasons_[var].begin(), reasons_[var].end());
       clause.push_back(assignment_.GetTrueLiteralForAssignedVariable(var));
-      CHECK(debug_checker_(clause));
+      CHECK(debug_checker_(clause)) << " for cached reason";
     }
     return reasons_[var];
   }
@@ -710,12 +980,47 @@ inline absl::Span<const Literal> Trail::Reason(BooleanVariable var,
     std::vector<Literal> clause;
     clause.assign(reasons_[var].begin(), reasons_[var].end());
     clause.push_back(assignment_.GetTrueLiteralForAssignedVariable(var));
-    CHECK(debug_checker_(clause));
+    CHECK(debug_checker_(clause)) << "for propagator_id=" << old_type_[var];
   }
   return reasons_[var];
+}
+
+inline void Trail::ReimplyAll(int old_trail_index) {
+  const int64_t initial_num_reimplied = num_reimplied_literals_;
+  for (int i = Index(); i < old_trail_index; ++i) {
+    const Literal literal = trail_[i];
+    const AssignmentInfo& info = Info(literal.Variable());
+    if (info.level > current_info_.level) continue;
+    CHECK_LE(Index(), i);
+    CHECK(!Assignment().VariableIsAssigned(literal.Variable()));
+    if (info.type == AssignmentType::kSameReasonAs) {
+      // The reference variable must already be re-implied at this level, so we
+      // can just re-enqueue it without having to tell the propagator.
+      DCHECK_EQ(Info(ReferenceVarWithSameReason(literal.Variable())).level,
+                info.level);
+      DCHECK_LT(
+          Info(ReferenceVarWithSameReason(literal.Variable())).trail_index,
+          Index());
+      EnqueueAtLevel(literal, AssignmentType::kSameReasonAs, info.level);
+    } else {
+      const int original_type = AssignmentType(literal.Variable());
+      if (original_type >= AssignmentType::kFirstFreePropagationId) {
+        propagators_[original_type]->Reimply(this, i);
+      } else if (original_type == AssignmentType::kCachedReason) {
+        std::swap(reasons_repository_[Index()], reasons_repository_[i]);
+        reasons_[literal.Variable()] = reasons_repository_[Index()];
+        EnqueueAtLevel(literal, original_type, info.level);
+      } else if (info.type == AssignmentType::kUnitReason || info.level == 0) {
+        CHECK(!Assignment().LiteralIsFalse(literal));
+        EnqueueAtLevel(literal, AssignmentType::kUnitReason, info.level);
+      }
+    }
+    num_reimplied_literals_ += assignment_.LiteralIsTrue(literal);
+  }
+  last_num_reimplication_ = num_reimplied_literals_ - initial_num_reimplied;
 }
 
 }  // namespace sat
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_SAT_BASE_H_
+#endif  // ORTOOLS_SAT_SAT_BASE_H_

@@ -18,7 +18,6 @@ package com.google.ortools.constraintsolver;
  * and a java one. Its main purpose is to catch the java exception launched
  * when a failure occurs during the Next() call, and to return silently
  * a FailDecision that will propagate the failure back to the C++ code.
- *
  */
 public class JavaDecisionBuilder extends DecisionBuilder {
   /** This methods wraps the calls to next() and catches fail exceptions. */

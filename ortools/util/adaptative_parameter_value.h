@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_UTIL_ADAPTATIVE_PARAMETER_VALUE_H_
-#define OR_TOOLS_UTIL_ADAPTATIVE_PARAMETER_VALUE_H_
+#ifndef ORTOOLS_UTIL_ADAPTATIVE_PARAMETER_VALUE_H_
+#define ORTOOLS_UTIL_ADAPTATIVE_PARAMETER_VALUE_H_
 
 #include <algorithm>
 #include <cmath>
@@ -80,4 +80,4 @@ class AdaptiveParameterValue {
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_UTIL_ADAPTATIVE_PARAMETER_VALUE_H_
+#endif  // ORTOOLS_UTIL_ADAPTATIVE_PARAMETER_VALUE_H_

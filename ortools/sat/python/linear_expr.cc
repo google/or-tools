@@ -25,7 +25,10 @@
 #include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
+#include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_utils.h"
 #include "ortools/util/fp_roundtrip_conv.h"
 #include "ortools/util/sorted_interval_list.h"
 
@@ -143,8 +146,7 @@ void FloatExprVisitor::AddToProcess(std::shared_ptr<LinearExpr> expr,
 
 void FloatExprVisitor::AddConstant(double constant) { offset_ += constant; }
 
-void FloatExprVisitor::AddVarCoeff(std::shared_ptr<BaseIntVar> var,
-                                   double coeff) {
+void FloatExprVisitor::AddVarCoeff(std::shared_ptr<IntVar> var, double coeff) {
   canonical_terms_[var] += coeff;
 }
 
@@ -156,7 +158,7 @@ void FloatExprVisitor::ProcessAll() {
   }
 }
 
-double FloatExprVisitor::Process(std::vector<std::shared_ptr<BaseIntVar>>* vars,
+double FloatExprVisitor::Process(std::vector<std::shared_ptr<IntVar>>* vars,
                                  std::vector<double>* coeffs) {
   ProcessAll();
 
@@ -316,7 +318,7 @@ std::string FlatIntExpr::DebugString() const {
   return absl::StrCat(
       "FlatIntExpr([",
       absl::StrJoin(vars_, ", ",
-                    [](std::string* out, std::shared_ptr<BaseIntVar> var) {
+                    [](std::string* out, std::shared_ptr<IntVar> var) {
                       absl::StrAppend(out, var->DebugString());
                     }),
       "], [", absl::StrJoin(coeffs_, ", "), "], ", offset_, ")");
@@ -745,8 +747,7 @@ void IntExprVisitor::AddToProcess(std::shared_ptr<LinearExpr> expr,
 
 void IntExprVisitor::AddConstant(int64_t constant) { offset_ += constant; }
 
-void IntExprVisitor::AddVarCoeff(std::shared_ptr<BaseIntVar> var,
-                                 int64_t coeff) {
+void IntExprVisitor::AddVarCoeff(std::shared_ptr<IntVar> var, int64_t coeff) {
   canonical_terms_[var] += coeff;
 }
 
@@ -759,7 +760,7 @@ bool IntExprVisitor::ProcessAll() {
   return true;
 }
 
-bool IntExprVisitor::Process(std::vector<std::shared_ptr<BaseIntVar>>* vars,
+bool IntExprVisitor::Process(std::vector<std::shared_ptr<IntVar>>* vars,
                              std::vector<int64_t>* coeffs, int64_t* offset) {
   if (!ProcessAll()) return false;
   vars->clear();
@@ -789,64 +790,146 @@ bool IntExprVisitor::Evaluate(const CpSolverResponse& solution,
 // the same index and different models.
 int64_t Literal::Hash() const { return absl::HashOf(index()); }
 
-bool BaseIntVarComparator::operator()(std::shared_ptr<BaseIntVar> lhs,
-                                      std::shared_ptr<BaseIntVar> rhs) const {
+bool IntVarComparator::operator()(std::shared_ptr<IntVar> lhs,
+                                  std::shared_ptr<IntVar> rhs) const {
   return lhs->index() < rhs->index();
 }
 
-BaseIntVar::BaseIntVar(int index, bool is_boolean)
-    : index_(index), is_boolean_(is_boolean) {}
-
-std::shared_ptr<Literal> BaseIntVar::negated() {
-  if (negated_ == nullptr) {
-    std::shared_ptr<BaseIntVar> self =
-        std::static_pointer_cast<BaseIntVar>(shared_from_this());
-    negated_ = std::make_shared<NotBooleanVariable>(self);
+std::string IntVar::name() const {
+  if (model_proto_ == nullptr || index_ >= model_proto_->variables_size()) {
+    return "";
   }
-  return negated_;
+  return model_proto_->variables(index_).name();
 }
 
-int NotBooleanVariable::index() const {
-  std::shared_ptr<BaseIntVar> var = var_.lock();
-  CHECK(var != nullptr);  // Cannot happen as checked in the pybind11 code.
-  return -var->index() - 1;
+void IntVar::SetName(absl::string_view name) {
+  if (model_proto_ == nullptr || index_ >= model_proto_->variables_size()) {
+    return;
+  }
+  if (name.empty()) {
+    model_proto_->mutable_variables(index_)->clear_name();
+  } else {
+    model_proto_->mutable_variables(index_)->set_name(name);
+  }
 }
+
+Domain IntVar::domain() const {
+  if (model_proto_ == nullptr || index_ >= model_proto_->variables_size()) {
+    return Domain();
+  }
+  return ReadDomainFromProto(model_proto_->variables(index_));
+}
+
+void IntVar::SetDomain(const Domain& domain) {
+  if (model_proto_ == nullptr || index_ >= model_proto_->variables_size()) {
+    return;
+  }
+  FillDomainInProto(domain, model_proto_->mutable_variables(index_));
+}
+
+std::shared_ptr<CpModelProto> IntVar::model_proto() const {
+  return model_proto_;
+}
+
+IntegerVariableProto* IntVar::proto() const {
+  if (model_proto_ == nullptr || index_ >= model_proto_->variables_size()) {
+    return nullptr;
+  }
+  return model_proto_->mutable_variables(index_);
+}
+
+bool IntVar::is_boolean() const {
+  IntegerVariableProto* var_proto = proto();
+  if (var_proto == nullptr) return false;
+  return var_proto->domain_size() == 2 && var_proto->domain(0) >= 0 &&
+         var_proto->domain(1) <= 1;
+}
+
+bool IntVar::is_fixed() const {
+  IntegerVariableProto* var_proto = proto();
+  if (var_proto == nullptr) return false;
+  return var_proto->domain_size() == 2 &&
+         var_proto->domain(0) == var_proto->domain(1);
+}
+
+std::shared_ptr<Literal> IntVar::negated() const {
+  return std::make_shared<NotBooleanVariable>(model_proto_, index_);
+}
+
+namespace {
+std::string VarDomainToString(IntegerVariableProto* var_proto) {
+  std::string domain_str;
+  for (int i = 0; i < var_proto->domain_size(); i += 2) {
+    const int64_t lb = var_proto->domain(i);
+    const int64_t ub = var_proto->domain(i + 1);
+    if (i > 0) absl::StrAppend(&domain_str, ", ");
+    if (lb == ub) {
+      absl::StrAppend(&domain_str, lb);
+    } else {
+      absl::StrAppend(&domain_str, lb, "..", ub);
+    }
+  }
+  return domain_str;
+}
+
+}  // namespace
+
+std::string IntVar::ToString() const {
+  std::string var_name = name();
+  IntegerVariableProto* var_proto = proto();
+  if (var_name.empty()) {
+    if (is_fixed() && var_proto != nullptr && var_proto->domain_size() >= 2) {
+      return absl::StrCat(var_proto->domain(0));
+    } else if (is_boolean()) {
+      return absl::StrCat("b", index_);
+    } else {
+      return absl::StrCat("x", index_);
+    }
+  }
+  return var_name;
+}
+
+std::string IntVar::DebugString() const {
+  std::string var_name = name();
+  if (var_name.empty()) {
+    if (is_boolean()) {
+      var_name = absl::StrCat("b", index_);
+    } else {
+      var_name = absl::StrCat("x", index_);
+    }
+  }
+  IntegerVariableProto* var_proto = proto();
+  if (var_proto == nullptr) return var_name;
+  return absl::StrCat(var_name, "(", VarDomainToString(var_proto), ")");
+}
+
+int NotBooleanVariable::index() const { return NegatedRef(var_index_); }
 
 /**
  * Returns the negation of the current literal, that is the original Boolean
  * variable.
  */
-std::shared_ptr<Literal> NotBooleanVariable::negated() {
-  std::shared_ptr<BaseIntVar> var = var_.lock();
-  CHECK(var != nullptr);  // Cannot happen as checked in the pybind11 code.
-  return var;
+std::shared_ptr<Literal> NotBooleanVariable::negated() const {
+  return std::make_shared<IntVar>(model_proto_, var_index_);
 }
 
 bool NotBooleanVariable::VisitAsInt(IntExprVisitor& lin, int64_t c) {
-  std::shared_ptr<BaseIntVar> var = var_.lock();
-  CHECK(var != nullptr);  // Cannot happen as checked in the pybind11 code.
-  lin.AddVarCoeff(var, -c);
+  lin.AddVarCoeff(std::make_shared<IntVar>(model_proto_, var_index_), -c);
   lin.AddConstant(c);
   return true;
 }
 
 void NotBooleanVariable::VisitAsFloat(FloatExprVisitor& lin, double c) {
-  std::shared_ptr<BaseIntVar> var = var_.lock();
-  CHECK(var != nullptr);  // Cannot happen as checked in the pybind11 code.
-  lin.AddVarCoeff(var, -c);
+  lin.AddVarCoeff(std::make_shared<IntVar>(model_proto_, var_index_), -c);
   lin.AddConstant(c);
 }
 
 std::string NotBooleanVariable::ToString() const {
-  std::shared_ptr<BaseIntVar> var = var_.lock();
-  CHECK(var != nullptr);  // Cannot happen as checked in the pybind11 code.
-  return absl::StrCat("not(", var->ToString(), ")");
+  return absl::StrCat("not(", negated()->ToString(), ")");
 }
 
 std::string NotBooleanVariable::DebugString() const {
-  std::shared_ptr<BaseIntVar> var = var_.lock();
-  CHECK(var != nullptr);  // Cannot happen as checked in the pybind11 code.
-  return absl::StrCat("NotBooleanVariable(index=", var->index(), ")");
+  return absl::StrCat("NotBooleanVariable(var_index=", var_index_, ")");
 }
 
 BoundedLinearExpression::BoundedLinearExpression(
@@ -868,7 +951,7 @@ BoundedLinearExpression::BoundedLinearExpression(
 }
 
 const Domain& BoundedLinearExpression::bounds() const { return bounds_; }
-const std::vector<std::shared_ptr<BaseIntVar>>& BoundedLinearExpression::vars()
+const std::vector<std::shared_ptr<IntVar>>& BoundedLinearExpression::vars()
     const {
   return vars_;
 }
@@ -956,7 +1039,7 @@ std::string BoundedLinearExpression::DebugString() const {
   return absl::StrCat(
       "BoundedLinearExpression(vars=[",
       absl::StrJoin(vars_, ", ",
-                    [](std::string* out, std::shared_ptr<BaseIntVar> var) {
+                    [](std::string* out, std::shared_ptr<IntVar> var) {
                       absl::StrAppend(out, var->DebugString());
                     }),
       "], coeffs=[", absl::StrJoin(coeffs_, ", "), "], offset=", offset_,

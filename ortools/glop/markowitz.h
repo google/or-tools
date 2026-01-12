@@ -70,8 +70,8 @@
 //   29:1363-1381, January 2008.
 // - http://perso.ens-lyon.fr/~bucar/papers/kauc.pdf
 
-#ifndef OR_TOOLS_GLOP_MARKOWITZ_H_
-#define OR_TOOLS_GLOP_MARKOWITZ_H_
+#ifndef ORTOOLS_GLOP_MARKOWITZ_H_
+#define ORTOOLS_GLOP_MARKOWITZ_H_
 
 #include <cstdint>
 #include <queue>
@@ -488,4 +488,4 @@ class Markowitz {
 }  // namespace glop
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_GLOP_MARKOWITZ_H_
+#endif  // ORTOOLS_GLOP_MARKOWITZ_H_

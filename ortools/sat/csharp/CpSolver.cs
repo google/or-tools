@@ -26,7 +26,7 @@ namespace Google.OrTools.Sat
  * variables in the best solution, as well as general statistics of the search.
  * </remarks>
  */
-public sealed class CpSolver : IDisposable
+public class CpSolver : IDisposable
 {
     private LogCallback? _log_callback;
     private BestBoundCallback? _best_bound_callback;
@@ -201,21 +201,41 @@ public sealed class CpSolver : IDisposable
 
     public double WallTime() => Response!.WallTime;
 
+    public string SolveLog() => Response!.SolveLog;
+
     public IList<int> SufficientAssumptionsForInfeasibility() => Response!.SufficientAssumptionsForInfeasibility;
 
     public string SolutionInfo() => Response!.SolutionInfo;
 
-    public void Dispose()
+    /// <summary>
+    /// Releases unmanaged resources and optionally releases managed resources.
+    /// </summary>
+    /// <param name="disposing">true to release both managed and unmanaged resources; false to release only unmanaged
+    /// resources.</param>
+    protected virtual void Dispose(bool disposing)
     {
         if (_disposed)
         {
             return;
         }
 
-        _best_bound_callback?.Dispose();
-        _log_callback?.Dispose();
-        ReleaseSolveWrapper();
+        if (disposing)
+        {
+            _best_bound_callback?.Dispose();
+            _log_callback?.Dispose();
+            ReleaseSolveWrapper();
+        }
+
         _disposed = true;
+    }
+
+    /// <summary>
+    /// Releases all resources used by the CpSolver.
+    /// </summary>
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
     }
 
     [MethodImpl(MethodImplOptions.Synchronized)]

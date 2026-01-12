@@ -15,6 +15,7 @@
 """Maximize the number of valid combinations of Boolean variables."""
 
 from typing import Sequence
+
 from absl import app
 
 from ortools.sat.python import cp_model

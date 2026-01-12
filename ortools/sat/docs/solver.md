@@ -1,5 +1,5 @@
 [home](README.md) | [boolean logic](boolean_logic.md) | [integer arithmetic](integer_arithmetic.md) | [channeling constraints](channeling.md) | [scheduling](scheduling.md) | [Using the CP-SAT solver](solver.md) | [Model manipulation](model.md) | [Troubleshooting](troubleshooting.md) | [Python API](https://or-tools.github.io/docs/pdoc/ortools/sat/python/cp_model.html)
------------------ | --------------------------------- | ------------------------------------------- | --------------------------------------- | --------------------------- | ------------------------------------ | ------------------------------ | ------------------------------------- | ---------------------------------------------------------------------------------------
+----------------- | --------------------------------- | ------------------------------------------- | --------------------------------------- | --------------------------- | ------------------------------------ | ------------------------------ | ------------------------------------- | -----------------------------------------------------------------------------------
 # Solving a CP-SAT model
 
 https://developers.google.com/optimization/
@@ -12,36 +12,36 @@ solver. The most useful one is the time limit.
 ### Specifying the time limit in Python
 
 ```python
-#!/usr/bin/env python3
+# Snippet from ortools/sat/samples/solve_with_time_limit_sample_sat.py
 """Solves a problem with a time limit."""
 
 from ortools.sat.python import cp_model
 
 
 def solve_with_time_limit_sample_sat():
-    """Minimal CP-SAT example to showcase calling the solver."""
-    # Creates the model.
-    model = cp_model.CpModel()
-    # Creates the variables.
-    num_vals = 3
-    x = model.new_int_var(0, num_vals - 1, "x")
-    y = model.new_int_var(0, num_vals - 1, "y")
-    z = model.new_int_var(0, num_vals - 1, "z")
-    # Adds an all-different constraint.
-    model.add(x != y)
+  """Minimal CP-SAT example to showcase calling the solver."""
+  # Creates the model.
+  model = cp_model.CpModel()
+  # Creates the variables.
+  num_vals = 3
+  x = model.new_int_var(0, num_vals - 1, 'x')
+  y = model.new_int_var(0, num_vals - 1, 'y')
+  z = model.new_int_var(0, num_vals - 1, 'z')
+  # Adds an all-different constraint.
+  model.add(x != y)
 
-    # Creates a solver and solves the model.
-    solver = cp_model.CpSolver()
+  # Creates a solver and solves the model.
+  solver = cp_model.CpSolver()
 
-    # Sets a time limit of 10 seconds.
-    solver.parameters.max_time_in_seconds = 10.0
+  # Sets a time limit of 10 seconds.
+  solver.parameters.max_time_in_seconds = 10.0
 
-    status = solver.solve(model)
+  status = solver.solve(model)
 
-    if status == cp_model.OPTIMAL:
-        print(f"x = {solver.value(x)}")
-        print(f"y = {solver.value(y)}")
-        print(f"z = {solver.value(z)}")
+  if status == cp_model.OPTIMAL:
+    print(f'x = {solver.value(x)}')
+    print(f'y = {solver.value(y)}')
+    print(f'z = {solver.value(z)}')
 
 
 solve_with_time_limit_sample_sat()
@@ -50,12 +50,13 @@ solve_with_time_limit_sample_sat()
 ### Specifying the time limit in C++
 
 ```cpp
+// Snippet from ortools/sat/samples/solve_with_time_limit_sample_sat.cc
 #include <stdlib.h>
 
-#include "absl/base/log_severity.h"
-#include "absl/log/globals.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
+#include "absl/base/log_severity.h"
+#include "absl/log/globals.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
@@ -109,12 +110,13 @@ int main(int argc, char* argv[]) {
 ### Specifying the time limit in Java
 
 ```java
+// Snippet from ortools/sat/samples/SolveWithTimeLimitSampleSat.java
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.Loader;
+import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
-import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.IntVar;
 
 /** Solves a problem with a time limit. */
@@ -152,7 +154,8 @@ public final class SolveWithTimeLimitSampleSat {
 
 Parameters must be passed as string to the solver.
 
-```cs
+```csharp
+// Snippet from ortools/sat/samples/SolveWithTimeLimitSampleSat.cs
 using System;
 using Google.OrTools.Sat;
 
@@ -191,7 +194,8 @@ public class SolveWithTimeLimitSampleSat
 
 ### Specifying the time limit in Go
 
-```cs
+```go
+// Snippet from ortools/sat/samples/solve_with_time_limit_sample_sat.go
 // The solve_with_time_limit_sample_sat command is an example of setting a time limit on the model.
 package main
 
@@ -199,10 +203,11 @@ import (
 	"fmt"
 
 	log "github.com/golang/glog"
+	"google.golang.org/protobuf/proto"
 	"github.com/google/or-tools/ortools/sat/go/cpmodel"
+
 	cmpb "github.com/google/or-tools/ortools/sat/proto/cpmodel"
 	sppb "github.com/google/or-tools/ortools/sat/proto/satparameters"
-	"google.golang.org/protobuf/proto"
 )
 
 func solveWithTimeLimitSampleSat() error {
@@ -221,7 +226,7 @@ func solveWithTimeLimitSampleSat() error {
 	}
 
 	// Sets a time limit of 10 seconds.
-	params := &sppb.SatParameters{
+		params := &sppb.SatParameters{
 		MaxTimeInSeconds: proto.Float64(10.0),
 	}
 
@@ -247,6 +252,7 @@ func main() {
 		log.Exitf("solveWithTimeLimitSampleSat returned with error: %v", err)
 	}
 }
+
 ```
 
 ## Printing intermediate solutions
@@ -261,57 +267,55 @@ The exact implementation depends on the target language.
 ### Python code
 
 ```python
-#!/usr/bin/env python3
-"""Solves an optimization problem and displays all intermediate solutions."""
-
+# Snippet from ortools/sat/samples/solve_and_print_intermediate_solutions_sample_sat.py
 from ortools.sat.python import cp_model
 
 
 # You need to subclass the cp_model.CpSolverSolutionCallback class.
 class VarArrayAndObjectiveSolutionPrinter(cp_model.CpSolverSolutionCallback):
-    """Print intermediate solutions."""
+  """Print intermediate solutions."""
 
-    def __init__(self, variables: list[cp_model.IntVar]):
-        cp_model.CpSolverSolutionCallback.__init__(self)
-        self.__variables = variables
-        self.__solution_count = 0
+  def __init__(self, variables: list[cp_model.IntVar]):
+    cp_model.CpSolverSolutionCallback.__init__(self)
+    self.__variables = variables
+    self.__solution_count = 0
 
-    def on_solution_callback(self) -> None:
-        print(f"Solution {self.__solution_count}")
-        print(f"  objective value = {self.objective_value}")
-        for v in self.__variables:
-            print(f"  {v}={self.value(v)}", end=" ")
-        print()
-        self.__solution_count += 1
+  def on_solution_callback(self) -> None:
+    print(f'Solution {self.__solution_count}')
+    print(f'  objective value = {self.objective_value}')
+    for v in self.__variables:
+      print(f'  {v}={self.value(v)}', end=' ')
+    print()
+    self.__solution_count += 1
 
-    @property
-    def solution_count(self) -> int:
-        return self.__solution_count
+  @property
+  def solution_count(self) -> int:
+    return self.__solution_count
 
 
 def solve_and_print_intermediate_solutions_sample_sat():
-    """Showcases printing intermediate solutions found during search."""
-    # Creates the model.
-    model = cp_model.CpModel()
+  """Showcases printing intermediate solutions found during search."""
+  # Creates the model.
+  model = cp_model.CpModel()
 
-    # Creates the variables.
-    num_vals = 3
-    x = model.new_int_var(0, num_vals - 1, "x")
-    y = model.new_int_var(0, num_vals - 1, "y")
-    z = model.new_int_var(0, num_vals - 1, "z")
+  # Creates the variables.
+  num_vals = 3
+  x = model.new_int_var(0, num_vals - 1, 'x')
+  y = model.new_int_var(0, num_vals - 1, 'y')
+  z = model.new_int_var(0, num_vals - 1, 'z')
 
-    # Creates the constraints.
-    model.add(x != y)
+  # Creates the constraints.
+  model.add(x != y)
 
-    model.maximize(x + 2 * y + 3 * z)
+  model.maximize(x + 2 * y + 3 * z)
 
-    # Creates a solver and solves.
-    solver = cp_model.CpSolver()
-    solution_printer = VarArrayAndObjectiveSolutionPrinter([x, y, z])
-    status = solver.solve(model, solution_printer)
+  # Creates a solver and solves.
+  solver = cp_model.CpSolver()
+  solution_printer = VarArrayAndObjectiveSolutionPrinter([x, y, z])
+  status = solver.solve(model, solution_printer)
 
-    print(f"Status = {solver.status_name(status)}")
-    print(f"Number of solutions found: {solution_printer.solution_count}")
+  print(f'Status = {solver.status_name(status)}')
+  print(f'Number of solutions found: {solution_printer.solution_count}')
 
 
 solve_and_print_intermediate_solutions_sample_sat()
@@ -320,12 +324,13 @@ solve_and_print_intermediate_solutions_sample_sat()
 ### C++ code
 
 ```cpp
+// Snippet from ortools/sat/samples/solve_and_print_intermediate_solutions_sample_sat.cc
 #include <stdlib.h>
 
-#include "absl/base/log_severity.h"
-#include "absl/log/globals.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
+#include "absl/base/log_severity.h"
+#include "absl/log/globals.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
@@ -377,13 +382,14 @@ int main(int argc, char* argv[]) {
 ### Java code
 
 ```java
+// Snippet from ortools/sat/samples/SolveAndPrintIntermediateSolutionsSampleSat.java
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.Loader;
+import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverSolutionCallback;
-import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.LinearExpr;
 import java.util.function.Consumer;
@@ -473,7 +479,8 @@ public final class SolveAndPrintIntermediateSolutionsSampleSat {
 
 ### C\# code
 
-```cs
+```csharp
+// Snippet from ortools/sat/samples/SolveAndPrintIntermediateSolutionsSampleSat.cs
 using System;
 using Google.OrTools.Sat;
 
@@ -536,7 +543,8 @@ public class SolveAndPrintIntermediateSolutionsSampleSat
 
 ### Go code
 
-```cs
+```go
+// Snippet from ortools/sat/samples/solve_and_print_intermediate_solutions_sample_sat.go
 // The solve_and_print_intermediate_solutions_sample_sat command
 package main
 
@@ -544,9 +552,10 @@ import (
 	"fmt"
 
 	log "github.com/golang/glog"
-	"github.com/google/or-tools/ortools/sat/go/cpmodel"
-	sppb "github.com/google/or-tools/ortools/sat/proto/satparameters"
 	"google.golang.org/protobuf/proto"
+	"github.com/google/or-tools/ortools/sat/go/cpmodel"
+
+	sppb "github.com/google/or-tools/ortools/sat/proto/satparameters"
 )
 
 func solveAndPrintIntermediateSolutionsSampleSat() error {
@@ -570,7 +579,7 @@ func solveAndPrintIntermediateSolutionsSampleSat() error {
 	// Currently, the CpModelBuilder does not allow for callbacks, so intermediate solutions
 	// cannot be printed while solving. However, the CP-SAT solver does allow for returning
 	// the intermediate solutions found while solving in the response.
-	params := &sppb.SatParameters{
+		params := &sppb.SatParameters{
 		FillAdditionalSolutionsInResponse: proto.Bool(true),
 		SolutionPoolSize:                  proto.Int32(10),
 	}
@@ -594,6 +603,7 @@ func main() {
 		log.Exitf("solveAndPrintIntermediateSolutionsSampleSat returned with error: %v", err)
 	}
 }
+
 ```
 
 ## Searching for all solutions in a satisfiability model
@@ -603,16 +613,15 @@ languages except Go, you need to register a callback on the solver that will be
 called at each solution. For Go, callbacks are not implemented, but you can
 still get the intermediate solutions in the response.
 
-Please note that it does not work in parallel
-(i. e. parameter `num_search_workers` > 1).
+Note that it does not work in parallel (i. e. parameter `num_workers` > 1).
 
 It also does not work if the model contains an objective.
 
 The method will return the following:
 
-  * *FEASIBLE* if some solutions have been found
-  * *INFEASIBLE* if the solver has proved there are no solution
-  * *OPTIMAL* if all solutions have been found
+*   *FEASIBLE* if some solutions have been found
+*   *INFEASIBLE* if the solver has proved there are no solution
+*   *OPTIMAL* if all solutions have been found
 
 The exact implementation depends on the target language.
 
@@ -622,55 +631,53 @@ To search for all solutions, use the Solve() method after setting the correct
 parameter.
 
 ```python
-#!/usr/bin/env python3
-"""Code sample that solves a model and displays all solutions."""
-
+# Snippet from ortools/sat/samples/search_for_all_solutions_sample_sat.py
 from ortools.sat.python import cp_model
 
 
 class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
-    """Print intermediate solutions."""
+  """Print intermediate solutions."""
 
-    def __init__(self, variables: list[cp_model.IntVar]):
-        cp_model.CpSolverSolutionCallback.__init__(self)
-        self.__variables = variables
-        self.__solution_count = 0
+  def __init__(self, variables: list[cp_model.IntVar]):
+    cp_model.CpSolverSolutionCallback.__init__(self)
+    self.__variables = variables
+    self.__solution_count = 0
 
-    def on_solution_callback(self) -> None:
-        self.__solution_count += 1
-        for v in self.__variables:
-            print(f"{v}={self.value(v)}", end=" ")
-        print()
+  def on_solution_callback(self) -> None:
+    self.__solution_count += 1
+    for v in self.__variables:
+      print(f'{v}={self.value(v)}', end=' ')
+    print()
 
-    @property
-    def solution_count(self) -> int:
-        return self.__solution_count
+  @property
+  def solution_count(self) -> int:
+    return self.__solution_count
 
 
 def search_for_all_solutions_sample_sat():
-    """Showcases calling the solver to search for all solutions."""
-    # Creates the model.
-    model = cp_model.CpModel()
+  """Showcases calling the solver to search for all solutions."""
+  # Creates the model.
+  model = cp_model.CpModel()
 
-    # Creates the variables.
-    num_vals = 3
-    x = model.new_int_var(0, num_vals - 1, "x")
-    y = model.new_int_var(0, num_vals - 1, "y")
-    z = model.new_int_var(0, num_vals - 1, "z")
+  # Creates the variables.
+  num_vals = 3
+  x = model.new_int_var(0, num_vals - 1, 'x')
+  y = model.new_int_var(0, num_vals - 1, 'y')
+  z = model.new_int_var(0, num_vals - 1, 'z')
 
-    # Create the constraints.
-    model.add(x != y)
+  # Create the constraints.
+  model.add(x != y)
 
-    # Create a solver and solve.
-    solver = cp_model.CpSolver()
-    solution_printer = VarArraySolutionPrinter([x, y, z])
-    # Enumerate all solutions.
-    solver.parameters.enumerate_all_solutions = True
-    # Solve.
-    status = solver.solve(model, solution_printer)
+  # Create a solver and solve.
+  solver = cp_model.CpSolver()
+  solution_printer = VarArraySolutionPrinter([x, y, z])
+  # Enumerate all solutions.
+  solver.parameters.enumerate_all_solutions = True
+  # Solve.
+  status = solver.solve(model, solution_printer)
 
-    print(f"Status = {solver.status_name(status)}")
-    print(f"Number of solutions found: {solution_printer.solution_count}")
+  print(f'Status = {solver.status_name(status)}')
+  print(f'Number of solutions found: {solution_printer.solution_count}')
 
 
 search_for_all_solutions_sample_sat()
@@ -681,12 +688,13 @@ search_for_all_solutions_sample_sat()
 To search for all solutions, a parameter of the SAT solver must be changed.
 
 ```cpp
+// Snippet from ortools/sat/samples/search_for_all_solutions_sample_sat.cc
 #include <stdlib.h>
 
-#include "absl/base/log_severity.h"
-#include "absl/log/globals.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
+#include "absl/base/log_severity.h"
+#include "absl/log/globals.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
@@ -744,13 +752,14 @@ As in Python, CpSolver.solve() must be called after setting the correct
 parameter.
 
 ```java
+// Snippet from ortools/sat/samples/SearchForAllSolutionsSampleSat.java
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.Loader;
+import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverSolutionCallback;
-import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.IntVar;
 
 /** Code sample that solves a model and displays all solutions. */
@@ -810,7 +819,8 @@ public class SearchForAllSolutionsSampleSat {
 As in Python, CpSolver.Solve() must be called after setting the correct string
 parameter.
 
-```cs
+```csharp
+// Snippet from ortools/sat/samples/SearchForAllSolutionsSampleSat.cs
 using System;
 using Google.OrTools.Sat;
 
@@ -876,7 +886,8 @@ public class SearchForAllSolutionsSampleSat
 
 To search for all solutions, a parameter of the SAT solver must be changed.
 
-```cs
+```go
+// Snippet from ortools/sat/samples/search_for_all_solutions_sample_sat.go
 // The search_for_all_solutions_sample_sat command is an example for how to search for
 // all solutions.
 package main
@@ -885,9 +896,10 @@ import (
 	"fmt"
 
 	log "github.com/golang/glog"
-	"github.com/google/or-tools/ortools/sat/go/cpmodel"
-	sppb "github.com/google/or-tools/ortools/sat/proto/satparameters"
 	"google.golang.org/protobuf/proto"
+	"github.com/google/or-tools/ortools/sat/go/cpmodel"
+
+	sppb "github.com/google/or-tools/ortools/sat/proto/satparameters"
 )
 
 func searchForAllSolutionsSampleSat() error {
@@ -907,7 +919,7 @@ func searchForAllSolutionsSampleSat() error {
 	// Currently, the CpModelBuilder does not allow for callbacks, so each feasible solution cannot
 	// be printed while solving. However, the CP Solver can return all of the enumerated solutions
 	// in the response by setting the following parameters.
-	params := &sppb.SatParameters{
+		params := &sppb.SatParameters{
 		EnumerateAllSolutions:             proto.Bool(true),
 		FillAdditionalSolutionsInResponse: proto.Bool(true),
 		SolutionPoolSize:                  proto.Int32(27),
@@ -932,6 +944,7 @@ func main() {
 		log.Exitf("searchForAllSolutionsSampleSat returned with error: %v", err)
 	}
 }
+
 ```
 
 ## Stopping search early
@@ -946,55 +959,55 @@ You can stop the search by calling StopSearch() inside of
 CpSolverSolutionCallback.OnSolutionCallback().
 
 ```python
-#!/usr/bin/env python3
+# Snippet from ortools/sat/samples/stop_after_n_solutions_sample_sat.py
 """Code sample that solves a model and displays a small number of solutions."""
 
 from ortools.sat.python import cp_model
 
 
 class VarArraySolutionPrinterWithLimit(cp_model.CpSolverSolutionCallback):
-    """Print intermediate solutions."""
+  """Print intermediate solutions."""
 
-    def __init__(self, variables: list[cp_model.IntVar], limit: int):
-        cp_model.CpSolverSolutionCallback.__init__(self)
-        self.__variables = variables
-        self.__solution_count = 0
-        self.__solution_limit = limit
+  def __init__(self, variables: list[cp_model.IntVar], limit: int):
+    cp_model.CpSolverSolutionCallback.__init__(self)
+    self.__variables = variables
+    self.__solution_count = 0
+    self.__solution_limit = limit
 
-    def on_solution_callback(self) -> None:
-        self.__solution_count += 1
-        for v in self.__variables:
-            print(f"{v}={self.value(v)}", end=" ")
-        print()
-        if self.__solution_count >= self.__solution_limit:
-            print(f"Stop search after {self.__solution_limit} solutions")
-            self.stop_search()
+  def on_solution_callback(self) -> None:
+    self.__solution_count += 1
+    for v in self.__variables:
+      print(f'{v}={self.value(v)}', end=' ')
+    print()
+    if self.__solution_count >= self.__solution_limit:
+      print(f'Stop search after {self.__solution_limit} solutions')
+      self.stop_search()
 
-    @property
-    def solution_count(self) -> int:
-        return self.__solution_count
+  @property
+  def solution_count(self) -> int:
+    return self.__solution_count
 
 
 def stop_after_n_solutions_sample_sat():
-    """Showcases calling the solver to search for small number of solutions."""
-    # Creates the model.
-    model = cp_model.CpModel()
-    # Creates the variables.
-    num_vals = 3
-    x = model.new_int_var(0, num_vals - 1, "x")
-    y = model.new_int_var(0, num_vals - 1, "y")
-    z = model.new_int_var(0, num_vals - 1, "z")
+  """Showcases calling the solver to search for small number of solutions."""
+  # Creates the model.
+  model = cp_model.CpModel()
+  # Creates the variables.
+  num_vals = 3
+  x = model.new_int_var(0, num_vals - 1, 'x')
+  y = model.new_int_var(0, num_vals - 1, 'y')
+  z = model.new_int_var(0, num_vals - 1, 'z')
 
-    # Create a solver and solve.
-    solver = cp_model.CpSolver()
-    solution_printer = VarArraySolutionPrinterWithLimit([x, y, z], 5)
-    # Enumerate all solutions.
-    solver.parameters.enumerate_all_solutions = True
-    # Solve.
-    status = solver.solve(model, solution_printer)
-    print(f"Status = {solver.status_name(status)}")
-    print(f"Number of solutions found: {solution_printer.solution_count}")
-    assert solution_printer.solution_count == 5
+  # Create a solver and solve.
+  solver = cp_model.CpSolver()
+  solution_printer = VarArraySolutionPrinterWithLimit([x, y, z], 5)
+  # Enumerate all solutions.
+  solver.parameters.enumerate_all_solutions = True
+  # Solve.
+  status = solver.solve(model, solution_printer)
+  print(f'Status = {solver.status_name(status)}')
+  print(f'Number of solutions found: {solution_printer.solution_count}')
+  assert solution_printer.solution_count == 5
 
 
 stop_after_n_solutions_sample_sat()
@@ -1006,14 +1019,15 @@ Stopping search is done by registering an atomic bool on the model-owned time
 limit, and setting that bool to true.
 
 ```cpp
+// Snippet from ortools/sat/samples/stop_after_n_solutions_sample_sat.cc
 #include <stdlib.h>
 
 #include <atomic>
 
-#include "absl/base/log_severity.h"
-#include "absl/log/globals.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
+#include "absl/base/log_severity.h"
+#include "absl/log/globals.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
@@ -1075,13 +1089,14 @@ Stopping search is performed by calling stopSearch() inside of
 CpSolverSolutionCallback.onSolutionCallback().
 
 ```java
+// Snippet from ortools/sat/samples/StopAfterNSolutionsSampleSat.java
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.Loader;
+import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverSolutionCallback;
-import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.IntVar;
 
 /** Code sample that solves a model and displays a small number of solutions. */
@@ -1149,7 +1164,8 @@ public final class StopAfterNSolutionsSampleSat {
 Stopping search is performed by calling StopSearch() inside of
 CpSolverSolutionCallback.OnSolutionCallback().
 
-```cs
+```csharp
+// Snippet from ortools/sat/samples/StopAfterNSolutionsSampleSat.cs
 using System;
 using Google.OrTools.Sat;
 

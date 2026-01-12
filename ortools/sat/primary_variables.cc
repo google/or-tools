@@ -56,12 +56,12 @@ void GetRelationshipForConstraint(const ConstraintProto& ct,
   deducible_vars->clear();
   input_vars->clear();
   *preferred_to_deduce = -1;
+  if (!ct.enforcement_literal().empty()) {
+    return;
+  }
   switch (ct.constraint_case()) {
     case ConstraintProto::kLinear: {
       if (ReadDomainFromProto(ct.linear()).Size() != 1) {
-        return;
-      }
-      if (!ct.enforcement_literal().empty()) {
         return;
       }
       for (int i = 0; i < ct.linear().vars_size(); ++i) {
@@ -411,6 +411,21 @@ VariableRelationships ComputeVariableRelationships(const CpModelProto& model) {
                -num_times_variable_appears_as_preferred_to_deduce[b],
                -num_times_variable_appears_as_deducible[b]);
   });
+
+  // Put in front of the queue all the variables that can readily be deduced
+  // using some constraint.
+  for (int c = 0; c < model.constraints_size(); ++c) {
+    ConstraintData& data = constraint_data[c];
+    if (data.input_vars.size() + data.deducible_vars.size() != 1) {
+      continue;
+    }
+    if (!data.deducible_vars.empty()) {
+      vars_queue.push_front(*data.deducible_vars.begin());
+    } else if (data.is_linear_inequality) {
+      vars_queue.push_front(*data.input_vars.begin());
+    }
+  }
+
   std::vector<int> constraints_to_check;
   while (!vars_queue.empty()) {
     const int v = vars_queue.front();

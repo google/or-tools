@@ -20,8 +20,8 @@
 // still use the objective if there is one in order to orient the search towards
 // good feasible solution though.
 
-#ifndef OR_TOOLS_SAT_INTEGER_SEARCH_H_
-#define OR_TOOLS_SAT_INTEGER_SEARCH_H_
+#ifndef ORTOOLS_SAT_INTEGER_SEARCH_H_
+#define ORTOOLS_SAT_INTEGER_SEARCH_H_
 
 #include <stdint.h>
 
@@ -270,8 +270,10 @@ class IntegerSearchHelper {
   explicit IntegerSearchHelper(Model* model);
 
   // Executes some code before a new decision.
-  // Returns false if model is UNSAT.
-  bool BeforeTakingDecision();
+  //
+  // Tricky: return false if the model is UNSAT or if the assumptions are UNSAT.
+  // One can distinguish with sat_solver->UnsatStatus().
+  ABSL_MUST_USE_RESULT bool BeforeTakingDecision();
 
   // Calls the decision heuristics and extract a non-fixed literal.
   // Note that we do not want to copy the function here.
@@ -290,9 +292,10 @@ class IntegerSearchHelper {
     must_process_conflict_ = true;
   }
 
-  // Tries to take the current decision, this might backjump.
-  // Returns false if the model is UNSAT.
-  bool TakeDecision(Literal decision);
+  // Tries to take the current decision, this might backjump. If
+  // use_representative is true, the representative of the decision is taken
+  // instead. Returns false if the model is UNSAT.
+  bool TakeDecision(Literal decision, bool use_representative = true);
 
   // Tries to find a feasible solution to the current model.
   //
@@ -310,6 +313,7 @@ class IntegerSearchHelper {
   const SatParameters& parameters_;
   Model* model_;
   SatSolver* sat_solver_;
+  BinaryImplicationGraph* binary_implication_graph_;
   IntegerTrail* integer_trail_;
   IntegerEncoder* encoder_;
   ImpliedBounds* implied_bounds_;
@@ -405,4 +409,4 @@ class ContinuousProber {
 }  // namespace sat
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_INTEGER_SEARCH_H_
+#endif  // ORTOOLS_SAT_INTEGER_SEARCH_H_

@@ -47,8 +47,8 @@
 // The classes also define hash functors that allows the strong types to be used
 // as key to hashable containers.
 
-#ifndef OR_TOOLS_UTIL_STRONG_INTEGERS_H_
-#define OR_TOOLS_UTIL_STRONG_INTEGERS_H_
+#ifndef ORTOOLS_UTIL_STRONG_INTEGERS_H_
+#define ORTOOLS_UTIL_STRONG_INTEGERS_H_
 
 #include <stddef.h>
 
@@ -481,4 +481,4 @@ struct numeric_limits<operations_research::StrongInt64<Tag>> {
 
 }  // namespace std
 
-#endif  // OR_TOOLS_UTIL_STRONG_INTEGERS_H_
+#endif  // ORTOOLS_UTIL_STRONG_INTEGERS_H_

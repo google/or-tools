@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# [START program]
 """Code sample to demonstrates how to rank intervals using a circuit."""
 
-from typing import List, Sequence
 
+from collections.abc import Sequence
 
 from ortools.sat.python import cp_model
 
@@ -56,7 +57,7 @@ def rank_tasks_with_circuit(
     num_tasks = len(starts)
     all_tasks = range(num_tasks)
 
-    arcs: List[cp_model.ArcT] = []
+    arcs: list[cp_model.ArcT] = []
     for i in all_tasks:
         # if node i is first.
         start_lit = model.new_bool_var(f"start_{i}")
@@ -177,3 +178,4 @@ def ranking_sample_sat() -> None:
 
 
 ranking_sample_sat()
+# [END program]

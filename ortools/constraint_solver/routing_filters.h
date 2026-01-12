@@ -11,16 +11,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_FILTERS_H_
-#define OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_FILTERS_H_
+#ifndef ORTOOLS_CONSTRAINT_SOLVER_ROUTING_FILTERS_H_
+#define ORTOOLS_CONSTRAINT_SOLVER_ROUTING_FILTERS_H_
 
+#include <algorithm>
+#include <array>
 #include <cstdint>
 #include <functional>
 #include <initializer_list>
 #include <memory>
+#include <optional>
 #include <utility>
 #include <vector>
 
+#include "absl/functional/any_invocable.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/types.h"
@@ -51,8 +55,10 @@ bool FillDimensionValuesFromRoutingDimension(
 
 void FillPrePostVisitValues(
     int path, const DimensionValues& dimension_values,
-    absl::AnyInvocable<int64_t(int64_t, int64_t) const> pre_travel_evaluator,
-    absl::AnyInvocable<int64_t(int64_t, int64_t) const> post_travel_evaluator,
+    std::optional<absl::AnyInvocable<int64_t(int64_t, int64_t) const>>
+        pre_travel_evaluator,
+    std::optional<absl::AnyInvocable<int64_t(int64_t, int64_t) const>>
+        post_travel_evaluator,
     PrePostVisitValues& visit_values);
 
 // Propagates vehicle break constraints in dimension_values.
@@ -77,12 +83,21 @@ IntVarLocalSearchFilter* MakeMaxActiveVehiclesFilter(
 IntVarLocalSearchFilter* MakeActiveNodeGroupFilter(
     const RoutingModel& routing_model);
 
+/// Returns a filter ensuring that for each ordered activity group,
+/// if nodes[i] is active then nodes[i-1] is active.
+IntVarLocalSearchFilter* MakeOrderedActivityGroupFilter(
+    const RoutingModel& routing_model);
+
 /// Returns a filter ensuring that node disjunction constraints are enforced.
 IntVarLocalSearchFilter* MakeNodeDisjunctionFilter(
     const RoutingModel& routing_model, bool filter_cost);
 
 /// Returns a filter computing vehicle amortized costs.
 IntVarLocalSearchFilter* MakeVehicleAmortizedCostFilter(
+    const RoutingModel& routing_model);
+
+/// Returns a filter computing same vehicle costs.
+IntVarLocalSearchFilter* MakeSameVehicleCostFilter(
     const RoutingModel& routing_model);
 
 /// Returns a filter ensuring type regulation constraints are enforced.
@@ -477,7 +492,7 @@ LocalSearchFilter* MakeVehicleVarFilter(const RoutingModel& routing_model,
 /// pair of nodes and given policies.
 LocalSearchFilter* MakePickupDeliveryFilter(
     const RoutingModel& routing_model, const PathState* path_state,
-    const std::vector<PickupDeliveryPair>& pairs,
+    absl::Span<const PickupDeliveryPair> pairs,
     const std::vector<RoutingModel::PickupAndDeliveryPolicy>& vehicle_policies);
 
 // This checker enforces dimension requirements.
@@ -1019,6 +1034,93 @@ class BasePathFilter : public IntVarLocalSearchFilter {
   bool lns_detected_;
 };
 
+// For a fixed matrix of coefficients rows, allows to computes
+// max_r(sum_c(rows[r][c] * values[c])) efficiently for any vector of values.
+// A straightforward computation would best leverage SIMD instructions when
+// there are many columns. This class computes kBlockSize scalar products in
+// parallel, which optimizes the many rows and few columns cases.
+// The constructor reorganizes the input rows into a blocked layout, so that
+// subsequent calls to Evaluate() can benefit from more efficient memory access.
+//
+// For instance, suppose the kBlockSize is 4 and rows is a 7 x 5 matrix:
+// 11 12 13 14 15
+// 21 22 23 24 25
+// 31 32 33 34 35
+// 41 42 43 44 45
+// 51 52 53 54 55
+// 61 62 63 64 65
+// 71 72 73 74 75
+//
+// This class will separate the matrix into 4 x 1 submatrices:
+// 11 | 12 | 13 | 14 | 15
+// 21 | 22 | 23 | 24 | 25
+// 31 | 32 | 33 | 34 | 35
+// 41 | 42 | 43 | 44 | 45
+// ---+----+----+----+----
+// 51 | 52 | 53 | 54 | 55
+// 61 | 62 | 63 | 64 | 65
+// 71 | 72 | 73 | 74 | 75
+// XX | XX | XX | XX | XX
+// NOTE: we need to expand the matrix until the number of rows is a multiple of
+// kBlockSize. We do that by adding copies of an existing row, which does not
+// change the semantics "maximum over linear expressions".
+//
+// Those blocks are aggregated into a single vector of blocks:
+// {{11, 21, 31, 41}, {12, 22, 32, 42}, {13, 23, 33, 43}, {14, 24, 34, 44}.
+//  {15, 25, 35, 45}, {51, 61, 71, XX}, {52, 62, 72, XX}, {53, 63, 73, XX},
+//  {54, 64, 74, XX}, {55, 65, 75, XX}}.
+//
+// The general formula to map rows to blocks: rows[r][v] is mapped to
+// blocks_[r / kBlockSize * num_variables_ + v].coefficient[r % kBlockSize].
+// blocks_[(br, v)].coefficient[c] = row[br * kBlockSize + c][v].
+//
+// When evaluating a vector of values, instead of computing:
+// max_{r in [0, num_rows)}
+//     sum_{c in [0, num_variables_)} rows[r][c] * values[c],
+// we compute:
+// max_{r' in [0, ceil(num_rows / kBlockSize))}
+//     BlockMaximum(sum_{i in [0, num_variables)}
+//                      blocks[r' * num_variables + i] * values[i]),
+// with BlockMaximum(block) = max_{j in [0, kBlockSize)} block[j].
+class MaxLinearExpressionEvaluator {
+ public:
+  // Makes an object that can evaluate the expression
+  // max_r(sum_c(rows[r][c] * values[c])) for any vector of values.
+  explicit MaxLinearExpressionEvaluator(
+      const std::vector<std::vector<double>>& rows);
+  // Returns max_r(sum_c(rows[r][c] * values[c])).
+  double Evaluate(absl::Span<const double> values) const;
+
+ private:
+  // This number was found by running the associated microbenchmarks.
+  // It is larger than one cacheline or SIMD register, surprisingly.
+  static constexpr int kBlockSize = 16;
+  struct Block {
+    std::array<double, kBlockSize> coefficients;
+    // Returns *this += other * value.
+    Block& BlockMultiplyAdd(const Block& other, double value) {
+      // The loop bounds are known in advance, we rely on the compiler to unroll
+      // and SIMD optimize it.
+      for (int i = 0; i < kBlockSize; ++i) {
+        coefficients[i] += other.coefficients[i] * value;
+      }
+      return *this;
+    }
+    Block& MaximumWith(const Block& other) {
+      for (int i = 0; i < kBlockSize; ++i) {
+        coefficients[i] = std::max(coefficients[i], other.coefficients[i]);
+      }
+      return *this;
+    }
+    double Maximum() const {
+      return *std::max_element(coefficients.begin(), coefficients.end());
+    }
+  };
+  std::vector<Block> blocks_;
+  const int64_t num_variables_;
+  const int64_t num_rows_;
+};
+
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_FILTERS_H_
+#endif  // ORTOOLS_CONSTRAINT_SOLVER_ROUTING_FILTERS_H_

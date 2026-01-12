@@ -2,7 +2,6 @@
 
 [![PyPI version](https://img.shields.io/pypi/v/ortools.svg)](https://pypi.org/project/ortools/)
 [![PyPI download](https://img.shields.io/pypi/dm/ortools.svg)](https://pypi.org/project/ortools/#files)
-[![Binder](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/google/or-tools/main)
 \
 [![NuGet version](https://img.shields.io/nuget/v/Google.OrTools.svg)](https://www.nuget.org/packages/Google.OrTools)
 [![NuGet download](https://img.shields.io/nuget/dt/Google.OrTools.svg)](https://www.nuget.org/packages/Google.OrTools)
@@ -85,7 +84,6 @@ This software suite is composed of the following components:
     *   [python](examples/python) Python examples.
     *   [notebook](examples/notebook) Jupyter/IPython notebooks.
     *   [flatzinc](examples/flatzinc) FlatZinc examples.
-    *   [tests](examples/tests) Unit tests and bug reports.
 *   [tools](tools) Delivery Tools (e.g. Windows GNU binaries, scripts, release dockers)
 
 ## Installation

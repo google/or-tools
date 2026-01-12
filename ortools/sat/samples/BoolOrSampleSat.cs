@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// [START program]
 using System;
 using Google.OrTools.Sat;
 
@@ -26,3 +27,4 @@ public class BoolOrSampleSat
         model.AddBoolOr(new ILiteral[] { x, y.Not() });
     }
 }
+// [END program]

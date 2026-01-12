@@ -26,7 +26,6 @@ from typing import List, Sequence, Tuple
 from absl import app
 from absl import flags
 
-from google.protobuf import text_format
 from ortools.sat.python import cp_model
 
 _PARAMS = flags.DEFINE_string(
@@ -287,7 +286,7 @@ def solve_with_cp_sat(
     # Solve model.
     solver = cp_model.CpSolver()
     if _PARAMS.value:
-        text_format.Parse(_PARAMS.value, solver.parameters)
+        solver.parameters.parse_text_format(_PARAMS.value)
     solver.parameters.log_search_progress = True
     status = solver.solve(model)
 

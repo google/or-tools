@@ -11,11 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#if defined(USE_PDLP)
-
 #include <atomic>
 #include <cstdint>
-#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -24,7 +21,6 @@
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
-#include "absl/types/optional.h"
 #include "ortools/base/logging.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
@@ -310,10 +306,16 @@ void PdlpInterface::NonIncrementalChange() {
   sync_status_ = MUST_RELOAD;
 }
 
-// Register PDLP in the global linear solver factory.
-MPSolverInterface* BuildPdlpInterface(MPSolver* const solver) {
-  return new PdlpInterface(solver);
-}
+namespace {
+
+// See MpSolverInterfaceFactoryRepository for details.
+const void* const kRegisterPdlp ABSL_ATTRIBUTE_UNUSED = [] {
+  MPSolverInterfaceFactoryRepository::GetInstance()->Register(
+      [](MPSolver* const solver) { return new PdlpInterface(solver); },
+      MPSolver::PDLP_LINEAR_PROGRAMMING);
+  return nullptr;
+}();
+
+}  // namespace
 
 }  // namespace operations_research
-#endif  //  #if defined(USE_PDLP)

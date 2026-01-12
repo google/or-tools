@@ -33,7 +33,6 @@ from absl import app
 from absl import flags
 import pandas as pd
 
-from google.protobuf import text_format
 from ortools.sat.python import cp_model
 
 
@@ -141,7 +140,7 @@ def solve(
     # Solve model.
     solver = cp_model.CpSolver()
     if _PARAMS.value:
-        text_format.Parse(_PARAMS.value, solver.parameters)
+        solver.parameters.parse_text_format(_PARAMS.value)
     status = solver.solve(model)
 
     # Report solution.

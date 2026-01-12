@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// [START program]
 // The literal_sample_sat command is a simple example of literals.
 package main
 
@@ -31,3 +32,5 @@ func literalSampleSat() {
 func main() {
 	literalSampleSat()
 }
+
+// [END program]

@@ -21,7 +21,6 @@ import com.google.ortools.linearsolver.MPVariable;
 
 /**
  * Linear programming example that shows how to use the API.
- *
  */
 public class LinearProgramming {
   private static void runLinearProgrammingExample(String solverType, boolean printModel) {

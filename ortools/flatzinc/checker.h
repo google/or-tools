@@ -11,11 +11,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_FLATZINC_CHECKER_H_
-#define OR_TOOLS_FLATZINC_CHECKER_H_
+#ifndef ORTOOLS_FLATZINC_CHECKER_H_
+#define ORTOOLS_FLATZINC_CHECKER_H_
 
 #include <cstdint>
 #include <functional>
+#include <vector>
 
 #include "ortools/flatzinc/model.h"
 #include "ortools/util/logging.h"
@@ -26,11 +27,12 @@ namespace fz {
 // Verifies that the solution specified by the given evaluator is a
 // feasible solution of the given model. Returns true iff this is the
 // case.
-bool CheckSolution(const Model& model,
-                   const std::function<int64_t(Variable*)>& evaluator,
-                   SolverLogger* logger);
+bool CheckSolution(
+    const Model& model, const std::function<int64_t(Variable*)>& evaluator,
+    const std::function<std::vector<int64_t>(Variable*)>& set_evaluator,
+    SolverLogger* logger);
 
 }  // namespace fz
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_FLATZINC_CHECKER_H_
+#endif  // ORTOOLS_FLATZINC_CHECKER_H_

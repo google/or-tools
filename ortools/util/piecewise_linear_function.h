@@ -17,8 +17,8 @@
 // This class maintains a minimal internal representation and checks for
 // overflow.
 
-#ifndef OR_TOOLS_UTIL_PIECEWISE_LINEAR_FUNCTION_H_
-#define OR_TOOLS_UTIL_PIECEWISE_LINEAR_FUNCTION_H_
+#ifndef ORTOOLS_UTIL_PIECEWISE_LINEAR_FUNCTION_H_
+#define ORTOOLS_UTIL_PIECEWISE_LINEAR_FUNCTION_H_
 
 #include <cstdint>
 #include <functional>
@@ -105,7 +105,7 @@ class PiecewiseLinearFunction {
 
   // This API provides a factory for creating different families of Piecewise
   // Linear Functions based on specific properties of each family. The
-  // PiecewiseLinearFunction is composed by a set of PiecwiseSegments and upon
+  // PiecewiseLinearFunction is composed by a set of PiecewiseSegments and upon
   // creation is not modifiable but with the provided function operations.
   // The object returned by any of these builders in the factory is owned by
   // the client code.
@@ -356,4 +356,4 @@ class FloatSlopePiecewiseLinearFunction {
 };
 
 }  // namespace operations_research
-#endif  // OR_TOOLS_UTIL_PIECEWISE_LINEAR_FUNCTION_H_
+#endif  // ORTOOLS_UTIL_PIECEWISE_LINEAR_FUNCTION_H_

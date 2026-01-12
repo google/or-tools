@@ -42,8 +42,8 @@
 //
 // For more information, see the class comments below.
 
-#ifndef OR_TOOLS_MATH_OPT_CORE_SPARSE_VECTOR_VIEW_H_
-#define OR_TOOLS_MATH_OPT_CORE_SPARSE_VECTOR_VIEW_H_
+#ifndef ORTOOLS_MATH_OPT_CORE_SPARSE_VECTOR_VIEW_H_
+#define ORTOOLS_MATH_OPT_CORE_SPARSE_VECTOR_VIEW_H_
 
 #include <stdint.h>
 
@@ -253,4 +253,4 @@ absl::flat_hash_map<KeyType, T> SparseVectorView<T>::as_map(
 }  // namespace math_opt
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_MATH_OPT_CORE_SPARSE_VECTOR_VIEW_H_
+#endif  // ORTOOLS_MATH_OPT_CORE_SPARSE_VECTOR_VIEW_H_

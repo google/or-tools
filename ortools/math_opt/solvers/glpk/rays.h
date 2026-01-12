@@ -13,9 +13,9 @@
 
 // This header defines primal/dual unboundness ray computation functions for
 // GLPK solver. They use the index space of the computation form of the model as
-// defined in operations_research/glpk/glpk_computational_form.h.
-#ifndef OR_TOOLS_MATH_OPT_SOLVERS_GLPK_RAYS_H_
-#define OR_TOOLS_MATH_OPT_SOLVERS_GLPK_RAYS_H_
+// defined in cs/ortools/glpk/glpk_computational_form.h.
+#ifndef ORTOOLS_MATH_OPT_SOLVERS_GLPK_RAYS_H_
+#define ORTOOLS_MATH_OPT_SOLVERS_GLPK_RAYS_H_
 
 #include <optional>
 #include <utility>
@@ -48,10 +48,10 @@ enum GlpkRayType {
 
 // A primal or dual unbound ray for the model in computational form.
 //
-// See the top comment of operations_research/glpk/glpk_computational_form.h to
-// understand that the computational form is. This structure uses the word
-// "variable" to mean a variable in the joint set of structural and auxiliary
-// variables.
+// See the top comment of
+// cs/ortools/glpk/glpk_computational_form.h to understand that
+// the computational form is. This structure uses the word "variable" to mean a
+// variable in the joint set of structural and auxiliary variables.
 struct GlpkRay {
   using SparseVector = std::vector<std::pair<int, double>>;
 
@@ -82,4 +82,4 @@ absl::StatusOr<std::optional<GlpkRay>> GlpkComputeUnboundRay(glp_prob* problem);
 
 }  // namespace operations_research::math_opt
 
-#endif  // OR_TOOLS_MATH_OPT_SOLVERS_GLPK_RAYS_H_
+#endif  // ORTOOLS_MATH_OPT_SOLVERS_GLPK_RAYS_H_

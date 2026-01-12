@@ -1,15 +1,23 @@
 # ref: https://github.com/actions/runner-images
 name: amd64 MacOS Bazel
 
-on: [push, pull_request, workflow_dispatch]
+on:
+  push:
+    branches:
+      - main
+      - v99bugfix
+  workflow_dispatch:
 
 concurrency:
   group: ${{github.workflow}}-${{github.ref}}
   cancel-in-progress: true
 
+env:
+  cache-root: /private/tmp/bazel
+
 # Building using the github runner environement directly.
 jobs:
-  native:
+  amd64-MacOS-Bazel-Python:
     strategy:
       matrix:
         python: [
@@ -17,10 +25,12 @@ jobs:
           #{version: '3.11'},
           {version: '3.12'},
           #{version: '3.13'},
+          #{version: '3.14'},
         ]
       fail-fast: false
-    name: amd64•MacOS•Bazel•Python-${{matrix.python.version}}
-    runs-on: macos-13 # last macos intel based runner
+    env:
+      cache-name: ${{github.job}}-${{matrix.python.version}}
+    runs-on: macos-15-intel
     steps:
       - uses: actions/checkout@v6
       - name: Set Java to OpenJDK 17 (Temurin)
@@ -46,21 +56,26 @@ jobs:
         run: |
           sed -i '' -e 's/\(DEFAULT_PYTHON =\) "3.[0-9]*"/\1 "${{matrix.python.version}}"/g' MODULE.bazel
           cat MODULE.bazel
+      - name: Restore bazel cache
+        uses: actions/cache/restore@v4
+        id: bazel-cache-restore
+        with:
+          key: ${{env.cache-name}}
+          path: ${{env.cache-root}}
       - name: Build
-        run: >
-          bazel build
-          -c opt
-          --subcommands=pretty_print
-          //ortools/... //examples/...
+        run: bazel --output_user_root=${{env.cache-root}} build --config=ci //ortools/... //examples/...
       - name: Test
-        run: >
-          bazel test
-          -c opt
-          --test_output=errors
-          //ortools/... //examples/...
+        run: bazel --output_user_root=${{env.cache-root}} test --config=ci //ortools/... //examples/...
+      - name: Save Bazel cache for branch main even when Build and Test fail.
+        uses: actions/cache/save@v4
+        # https://docs.github.com/en/actions/reference/workflows-and-actions/dependency-caching#restrictions-for-accessing-a-cache
+        if: always() && github.ref == 'refs/heads/main'
+        with:
+          key: ${{env.cache-name}}-${{github.sha}}
+          path: ${{env.cache-root}}
 
   amd64_macos_bazel:
     runs-on: ubuntu-latest
-    needs: native
+    needs: amd64-MacOS-Bazel-Python
     steps:
       - uses: actions/checkout@v6

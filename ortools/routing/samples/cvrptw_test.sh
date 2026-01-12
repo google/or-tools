@@ -12,13 +12,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-source gbash.sh || exit
-source module gbash_unit.sh
-
-function test::operations_research_examples::cvrptw() {
-  declare -r DIR="${TEST_SRCDIR}/ortools/routing/samples"
-  EXPECT_SUCCEED '${DIR}/cvrptw --vrp_use_deterministic_random_seed'
-}
-
-gbash::unit::main "$@"
+set -x
+exec {binary_path} "$@"

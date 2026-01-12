@@ -15,7 +15,7 @@
 
 load("@pip_deps//:requirements.bzl", "requirement")
 load("@pybind11_bazel//:build_defs.bzl", "pybind_extension")
-load("@rules_python//python:defs.bzl", "py_test")
+load("@rules_python//python:py_test.bzl", "py_test")
 
 pybind_extension(
     name = "pdlp",
@@ -39,17 +39,13 @@ py_test(
     name = "pdlp_test",
     size = "small",
     srcs = ["pdlp_test.py"],
-    data = [
-        ":pdlp.so",
-    ],
-    python_version = "PY3",
-    srcs_version = "PY3",
+    data = [":pdlp.so"],
     deps = [
+        "//ortools/pdlp:solve_log_py_pb2",
+        "//ortools/pdlp:solvers_py_pb2",
         requirement("absl-py"),
         requirement("numpy"),
         requirement("scipy"),
         "//ortools/linear_solver:linear_solver_py_pb2",
-        "//ortools/pdlp:solve_log_py_pb2",
-        "//ortools/pdlp:solvers_py_pb2",
     ],
 )

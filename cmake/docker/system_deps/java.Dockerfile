@@ -7,6 +7,9 @@ FROM env AS devel
 WORKDIR /home/project
 COPY . .
 
+ARG CMAKE_BUILD_PARALLEL_LEVEL
+ENV CMAKE_BUILD_PARALLEL_LEVEL=${CMAKE_BUILD_PARALLEL_LEVEL:-4}
+
 FROM devel AS build
 RUN cmake -S. -Bbuild -DBUILD_DEPS=OFF \
  -DUSE_COINOR=ON \
@@ -14,7 +17,8 @@ RUN cmake -S. -Bbuild -DBUILD_DEPS=OFF \
  -DUSE_HIGHS=OFF \
  -DUSE_SCIP=ON \
  -DBUILD_JAVA=ON -DSKIP_GPG=ON \
- -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF
+ -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF \
+ -DBUILD_googletest=ON
 RUN cmake --build build --target all -v
 RUN cmake --build build --target install
 

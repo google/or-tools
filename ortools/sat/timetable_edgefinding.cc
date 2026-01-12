@@ -58,6 +58,7 @@ void TimeTableEdgeFinding::RegisterWith(GenericLiteralWatcher* watcher) {
 }
 
 bool TimeTableEdgeFinding::Propagate() {
+  if (!helper_->IsEnforced()) return true;
   if (!helper_->SynchronizeAndSetTimeDirection(true)) return false;
   if (!TimeTableEdgeFindingPass()) return false;
   if (!helper_->SynchronizeAndSetTimeDirection(false)) return false;
@@ -371,11 +372,11 @@ bool TimeTableEdgeFinding::TimeTableEdgeFindingPass() {
 void TimeTableEdgeFinding::FillEnergyInWindowReason(IntegerValue window_min,
                                                     IntegerValue window_max,
                                                     int task_index) {
-  helper_->ClearReason();
+  helper_->ResetReason();
 
   // Capacity of the resource.
   if (capacity_.var != kNoIntegerVariable) {
-    helper_->MutableIntegerReason()->push_back(
+    helper_->AddIntegerReason(
         integer_trail_->UpperBoundAsLiteral(capacity_.var));
   }
 

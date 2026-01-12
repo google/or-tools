@@ -605,8 +605,8 @@ void BM_RandomDag(benchmark::State& state) {
   const int num_nodes = state.range(0);
   const int num_arcs = num_nodes * state.range(1);
   const auto [graph, topological_order] = BuildRandomDag(num_nodes, num_arcs);
-  // Generate at most 20 scenarios of random arc lengths.
-  const int num_scenarios = std::min(20, (int)state.iterations());
+  // Generate 10 scenarios of random arc lengths.
+  const int num_scenarios = 10;
   std::vector<std::vector<double>> arc_lengths_scenarios;
   for (int _ = 0; _ < num_scenarios; ++_) {
     arc_lengths_scenarios.push_back(GenerateRandomLengths(graph));
@@ -632,7 +632,8 @@ BENCHMARK(BM_RandomDag)
     ->ArgPair(1 << 16, 4)
     ->ArgPair(1 << 16, 16)
     ->ArgPair(1 << 22, 4)
-    ->ArgPair(1 << 22, 16);
+    ->ArgPair(1 << 22, 16)
+    ->ArgPair(1 << 26, 4);  // Don't go bigger, can't run on work station.
 
 void BM_LineDag(benchmark::State& state) {
   const int num_nodes = state.range(0);
@@ -1198,8 +1199,8 @@ void BM_RandomDag_K(benchmark::State& state) {
   const int num_arcs = num_nodes * state.range(1);
   const int path_count = state.range(2);
   const auto [graph, topological_order] = BuildRandomDag(num_nodes, num_arcs);
-  // Generate at most 20 scenarios of random arc lengths.
-  const int num_scenarios = std::min(20, (int)state.iterations());
+  // Generate 10 scenarios of random arc lengths.
+  const int num_scenarios = 10;
   std::vector<std::vector<double>> arc_lengths_scenarios;
   for (int _ = 0; _ < num_scenarios; ++_) {
     arc_lengths_scenarios.push_back(GenerateRandomLengths(graph));

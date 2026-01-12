@@ -11,11 +11,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_SAT_SWIG_HELPER_H_
-#define OR_TOOLS_SAT_SWIG_HELPER_H_
+#ifndef ORTOOLS_SAT_SWIG_HELPER_H_
+#define ORTOOLS_SAT_SWIG_HELPER_H_
 
 #include <cstdint>
 #include <functional>
+#include <memory>
 #include <string>
 
 #include "ortools/sat/cp_model.pb.h"
@@ -33,6 +34,8 @@ class SolveWrapper;
 // See http://www.swig.org/Doc4.0/SWIGDocumentation.html#CSharp_directors.
 class SolutionCallback {
  public:
+  SolutionCallback();
+
   virtual ~SolutionCallback();
 
   virtual void OnSolutionCallback() const = 0;
@@ -66,7 +69,9 @@ class SolutionCallback {
   // Stops the search.
   void StopSearch() const;
 
-  const operations_research::sat::CpSolverResponse& Response() const;
+  operations_research::sat::CpSolverResponse Response() const;
+
+  std::shared_ptr<CpSolverResponse> SharedResponse() const;
 
   // We use mutable and non const methods to overcome SWIG difficulties.
   void SetWrapperClass(SolveWrapper* wrapper) const;
@@ -76,7 +81,7 @@ class SolutionCallback {
   bool HasResponse() const;
 
  private:
-  mutable CpSolverResponse response_;
+  mutable std::shared_ptr<CpSolverResponse> response_;
   mutable bool has_response_ = false;
   mutable SolveWrapper* wrapper_ = nullptr;
 };
@@ -161,4 +166,4 @@ struct CpSatHelper {
 }  // namespace sat
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_SWIG_HELPER_H_
+#endif  // ORTOOLS_SAT_SWIG_HELPER_H_

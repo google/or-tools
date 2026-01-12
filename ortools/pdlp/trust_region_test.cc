@@ -22,6 +22,7 @@
 
 #include "Eigen/Core"
 #include "Eigen/SparseCore"
+#include "absl/base/optimization.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "gtest/gtest.h"
@@ -610,6 +611,7 @@ INSTANTIATE_TEST_SUITE_P(
         case PrimalDualNorm::kMaxNorm:
           return absl::StrCat("MaxNorm", "_", suffix);
       }
+      ABSL_UNREACHABLE();
     });
 
 TEST_P(ComputeLocalizedLagrangianBoundsTest, ZeroGapAtOptimal) {

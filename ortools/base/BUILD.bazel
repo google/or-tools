@@ -11,29 +11,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
+
 package(default_visibility = ["//visibility:public"])
-
-config_setting(
-    name = "on_linux",
-    constraint_values = ["@platforms//os:linux"],
-)
-
-config_setting(
-    name = "on_macos",
-    constraint_values = ["@platforms//os:macos"],
-)
-
-config_setting(
-    name = "on_windows",
-    constraint_values = ["@platforms//os:windows"],
-)
 
 filegroup(
     name = "base_swig",
-    srcs = [
-        "base.i",
-    ],
-    visibility = ["//visibility:public"],
+    srcs = ["base.i"],
 )
 
 cc_library(
@@ -47,62 +32,43 @@ cc_library(
         "adjustable_priority_queue.h",
         "adjustable_priority_queue-inl.h",
     ],
-    deps = [
-        ":base",
-    ],
 )
 
 cc_library(
     name = "array",
-    srcs = ["array_internal.h"],
     hdrs = ["array.h"],
-    deps = [
-        "@abseil-cpp//absl/utility",
-    ],
+    deps = ["@abseil-cpp//absl/utility"],
 )
 
 cc_library(
     name = "base",
-    srcs = [
-        "version.cc",
-    ],
+    srcs = ["version.cc"],
     hdrs = [
         "commandlineflags.h",
         "init_google.h",
-        "stl_logging.h",
         "types.h",
         "version.h",
     ],
     copts = [
         "-DOR_TOOLS_MAJOR=9",
-        "-DOR_TOOLS_MINOR=14",
+        "-DOR_TOOLS_MINOR=15",
         "-DOR_TOOLS_PATCH=9999",
     ],
     linkopts = select({
-        "on_linux": [],
-        "on_macos": ["-framework CoreFoundation"],
-        "on_windows": [],
+        "@platforms//os:macos": ["-framework CoreFoundation"],
         "//conditions:default": [],
     }),
     deps = [
         ":commandlineflags",
         ":logging",
         ":types",
-        "@abseil-cpp//absl/base",
-        "@abseil-cpp//absl/container:flat_hash_map",
-        "@abseil-cpp//absl/container:flat_hash_set",
-        "@abseil-cpp//absl/container:node_hash_map",
-        "@abseil-cpp//absl/container:node_hash_set",
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/flags:parse",
         "@abseil-cpp//absl/flags:usage",
         "@abseil-cpp//absl/log",
-        "@abseil-cpp//absl/log:check",
-        "@abseil-cpp//absl/log:die_if_null",
-        "@abseil-cpp//absl/log:globals",
         "@abseil-cpp//absl/log:initialize",
         "@abseil-cpp//absl/strings",
-        "@abseil-cpp//absl/synchronization",
+        "@abseil-cpp//absl/strings:string_view",
     ],
 )
 
@@ -112,28 +78,14 @@ cc_library(
 )
 
 cc_library(
-    name = "basictypes",
-    hdrs = ["basictypes.h"],
-)
-
-cc_library(
     name = "bitmap",
     srcs = ["bitmap.cc"],
     hdrs = ["bitmap.h"],
 )
 
 cc_library(
-    name = "case",
-    srcs = ["case.cc"],
-    hdrs = ["case.h"],
-    deps = [":base"],
-)
-
-cc_library(
     name = "commandlineflags",
-    srcs = [
-        "commandlineflags.cc",
-    ],
+    srcs = ["commandlineflags.cc"],
     hdrs = ["commandlineflags.h"],
     deps = [
         "@abseil-cpp//absl/flags:flag",
@@ -146,7 +98,6 @@ cc_library(
     name = "constant_divisor",
     srcs = ["constant_divisor.cc"],
     hdrs = ["constant_divisor.h"],
-    visibility = ["//visibility:public"],
     deps = [
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/numeric:int128",
@@ -158,32 +109,28 @@ cc_test(
     srcs = ["constant_divisor_test.cc"],
     deps = [
         ":constant_divisor",
+        "//ortools/base:gmock_main",
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/random:bit_gen_ref",
         "@abseil-cpp//absl/random:distributions",
         "@google_benchmark//:benchmark",
-        "@googletest//:gtest_main",
     ],
 )
 
 cc_library(
     name = "container_logging",
     hdrs = ["container_logging.h"],
-    deps = [":base"],
 )
 
 cc_library(
     name = "dump_vars",
     hdrs = ["dump_vars.h"],
     copts = select({
-        "on_linux": [],
-        "on_macos": [],
-        "on_windows": ["/Zc:preprocessor"],
+        "@platforms//os:windows": ["/Zc:preprocessor"],
         "//conditions:default": [],
     }),
     deps = [
-        ":strong_int",
         ":strong_vector",
         "@abseil-cpp//absl/container:inlined_vector",
     ],
@@ -194,47 +141,14 @@ cc_test(
     size = "small",
     srcs = ["dump_vars_test.cc"],
     copts = select({
-        "on_linux": [],
-        "on_macos": [],
-        "on_windows": ["/Zc:preprocessor"],
+        "@platforms//os:windows": ["/Zc:preprocessor"],
         "//conditions:default": [],
     }),
     deps = [
         ":dump_vars",
         ":strong_int",
         ":strong_vector",
-        "@abseil-cpp//absl/strings",
         "@googletest//:gtest_main",
-    ],
-)
-
-cc_library(
-    name = "dynamic_library",
-    hdrs = ["dynamic_library.h"],
-    linkopts = select({
-        "on_linux": ["-Wl,--no-as-needed -ldl"],
-        "on_macos": [],
-        "on_windows": [],
-        "//conditions:default": [],
-    }),
-    deps = [
-        ":base",
-        ":logging",
-        "@abseil-cpp//absl/strings",
-    ],
-)
-
-cc_library(
-    name = "encodingutils",
-    hdrs = ["encodingutils.h"],
-    deps = [":base"],
-)
-
-cc_library(
-    name = "flags",
-    hdrs = ["flags.h"],
-    deps = [
-        "@abseil-cpp//absl/flags:flag",
     ],
 )
 
@@ -255,6 +169,7 @@ cc_library(
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
         "@bzip2//:bz2",
         "@protobuf",
@@ -263,30 +178,19 @@ cc_library(
 )
 
 cc_library(
-    name = "fuzztest",
-    testonly = 1,
-    hdrs = ["fuzztest.h"],
-    deps = [
-        "@abseil-cpp//absl/log:check",
-        "@fuzztest//fuzztest",
-        "@fuzztest//fuzztest:googletest_fixture_adapter",
-        "@fuzztest//fuzztest:init_fuzztest",
-        "@protobuf",
-    ],
-)
-
-cc_library(
     name = "gmock",
+    testonly = True,
     hdrs = ["gmock.h"],
     deps = [
-        ":message_matchers",
-        ":status_matchers",
+        "@abseil-cpp//absl/status:status_matchers",
         "@googletest//:gtest",
+        "@protobuf-matchers//protobuf-matchers",
     ],
 )
 
 cc_library(
     name = "gmock_main",
+    testonly = True,
     deps = [
         ":gmock",
         "@googletest//:gtest_main",
@@ -298,11 +202,9 @@ cc_library(
     srcs = ["gzipfile.cc"],
     hdrs = ["gzipfile.h"],
     deps = [
-        ":base",
-        ":basictypes",
         ":file",
-        ":path",
-        "@abseil-cpp//absl/strings",
+        ":logging",
+        "@abseil-cpp//absl/strings:string_view",
         "@zlib",
     ],
 )
@@ -311,56 +213,51 @@ cc_library(
     name = "gzipstring",
     hdrs = ["gzipstring.h"],
     deps = [
-        ":base",
+        ":logging",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/strings:string_view",
         "@zlib",
     ],
 )
 
 cc_library(
     name = "hash",
-    srcs = [
-        "hash.cc",
-    ],
-    hdrs = [
-        "hash.h",
-    ],
-    deps = [
-        "@abseil-cpp//absl/strings",
-    ],
+    srcs = ["hash.cc"],
+    hdrs = ["hash.h"],
 )
 
 cc_library(
     name = "int_type",
     hdrs = ["int_type.h"],
-    deps = [":base"],
+    deps = [
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/strings:string_view",
+    ],
 )
 
 cc_library(
     name = "intops",
     hdrs = ["strong_int.h"],
     deps = [
-        ":int_type",
-        "@abseil-cpp//absl/log:absl_log",
-        "@abseil-cpp//absl/numeric:int128",
+        "@abseil-cpp//absl/meta:type_traits",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/strings:string_view",
     ],
 )
 
 cc_library(
     name = "iterator_adaptors",
     hdrs = ["iterator_adaptors.h"],
-    deps = [":base"],
 )
 
 cc_library(
     name = "linked_hash_map",
     hdrs = ["linked_hash_map.h"],
     deps = [
-        ":base",
-        ":logging",
+        "//ortools/base",
         "@abseil-cpp//absl/container:common",
-        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:flat_hash_set",
     ],
 )
 
@@ -369,34 +266,28 @@ cc_library(
     srcs = ["logging.cc"],
     hdrs = ["logging.h"],
     deps = [
-        ":macros",
+        ":base_export",
+        "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/base:log_severity",
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/flags:usage",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:die_if_null",
-        "@abseil-cpp//absl/log:flags",
         "@abseil-cpp//absl/log:globals",
         "@abseil-cpp//absl/log:initialize",
+        "@abseil-cpp//absl/log:vlog_is_on",
         "@abseil-cpp//absl/memory",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/strings",
-    ],
-)
-
-cc_library(
-    name = "macros",
-    hdrs = ["macros.h"],
-    deps = [
-        ":base_export",
+        "@abseil-cpp//absl/strings:string_view",
     ],
 )
 
 cc_library(
     name = "map_util",
     hdrs = ["map_util.h"],
-    deps = [":base"],
+    deps = ["//ortools/base:logging"],
 )
 
 cc_library(
@@ -404,48 +295,31 @@ cc_library(
     srcs = ["mathutil.cc"],
     hdrs = ["mathutil.h"],
     deps = [
-        ":base",
+        "//ortools/base:logging",
+        "@abseil-cpp//absl/base",
+        "@abseil-cpp//absl/log:check",
     ],
 )
 
 cc_library(
     name = "memfile",
     hdrs = ["memfile.h"],
-    deps = [],
 )
 
 cc_library(
     name = "memutil",
     hdrs = ["memutil.h"],
-    deps = [
-        "@abseil-cpp//absl/strings",
-    ],
-)
-
-cc_library(
-    name = "message_matchers",
-    hdrs = ["message_matchers.h"],
-    deps = [
-        "@abseil-cpp//absl/strings",
-        "@googletest//:gtest",
-        "@protobuf",
-    ],
 )
 
 cc_library(
     name = "murmur",
     hdrs = ["murmur.h"],
-    deps = [
-        ":base",
-        ":hash",
-        "@abseil-cpp//absl/strings",
-    ],
+    deps = ["//ortools/base:hash"],
 )
 
 cc_library(
     name = "mutable_memfile",
     hdrs = ["mutable_memfile.h"],
-    deps = [],
 )
 
 cc_library(
@@ -462,17 +336,20 @@ cc_library(
     name = "parse_text_proto",
     hdrs = ["parse_text_proto.h"],
     deps = [
+        "//ortools/base:status_macros",
         "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/strings:string_view",
         "@protobuf",
     ],
 )
 
 cc_library(
     name = "parse_test_proto",
+    testonly = True,
     hdrs = ["parse_test_proto.h"],
     deps = [
-        ":gmock",
-        "@abseil-cpp//absl/log:check",
+        "//ortools/base:gmock",
         "@protobuf",
     ],
 )
@@ -482,39 +359,35 @@ cc_library(
     srcs = ["path.cc"],
     hdrs = ["path.h"],
     deps = [
-        ":base",
         "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:string_view",
     ],
 )
 
 cc_library(
     name = "protobuf_util",
     hdrs = ["protobuf_util.h"],
+    deps = [
+        "@abseil-cpp//absl/log:check",
+        "@protobuf",
+    ],
 )
 
 cc_library(
     name = "protoutil",
     hdrs = ["protoutil.h"],
     deps = [
-        ":timer",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
-        "@protobuf",
+        "@abseil-cpp//absl/time",
+        "@protobuf//:duration_cc_proto",
     ],
 )
 
 cc_library(
     name = "proto_enum_utils",
     hdrs = ["proto_enum_utils.h"],
-    deps = [
-        "@abseil-cpp//absl/types:span",
-        "@protobuf",
-    ],
-)
-
-cc_library(
-    name = "ptr_util",
-    hdrs = ["ptr_util.h"],
+    deps = ["@protobuf"],
 )
 
 cc_library(
@@ -522,20 +395,11 @@ cc_library(
     srcs = ["recordio.cc"],
     hdrs = ["recordio.h"],
     deps = [
-        ":base",
         ":file",
-        ":logging",
-        "@abseil-cpp//absl/status:statusor",
-        "@abseil-cpp//absl/strings",
-        "@protobuf",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
         "@zlib",
     ],
-)
-
-cc_library(
-    name = "small_map",
-    hdrs = ["small_map.h"],
-    deps = [":base"],
 )
 
 cc_library(
@@ -548,21 +412,8 @@ cc_library(
     name = "status_builder",
     hdrs = ["status_builder.h"],
     deps = [
-        ":base",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/strings",
-    ],
-)
-
-cc_library(
-    name = "status_matchers",
-    hdrs = ["status_matchers.h"],
-    deps = [
-        ":base",
-        "@abseil-cpp//absl/status",
-        "@abseil-cpp//absl/status:statusor",
-        "@abseil-cpp//absl/strings",
-        "@googletest//:gtest",
     ],
 )
 
@@ -570,7 +421,6 @@ cc_library(
     name = "status_macros",
     hdrs = ["status_macros.h"],
     deps = [
-        ":base",
         ":status_builder",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
@@ -580,7 +430,10 @@ cc_library(
 cc_library(
     name = "stl_util",
     hdrs = ["stl_util.h"],
-    deps = [":base"],
+    deps = [
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/meta:type_traits",
+    ],
 )
 
 cc_library(
@@ -600,16 +453,15 @@ cc_test(
     timeout = "long",
     srcs = ["strong_int_test.cc"],
     deps = [
-        ":gmock",
         ":logging",
         ":strong_int",
+        "//ortools/base:gmock_main",
         "@abseil-cpp//absl/container:node_hash_map",
         "@abseil-cpp//absl/flags:marshalling",
         "@abseil-cpp//absl/hash:hash_testing",
         "@abseil-cpp//absl/numeric:int128",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
-        "@googletest//:gtest_main",
     ],
 )
 
@@ -617,8 +469,8 @@ cc_library(
     name = "strong_vector",
     hdrs = ["strong_vector.h"],
     deps = [
-        ":base",
         ":intops",
+        "//ortools/base:logging",
     ],
 )
 
@@ -627,8 +479,20 @@ cc_library(
     srcs = ["strtoint.cc"],
     hdrs = ["strtoint.h"],
     deps = [
+        "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings",
+    ],
+)
+
+cc_test(
+    name = "strtoint_test",
+    size = "small",
+    srcs = ["strtoint_test.cc"],
+    deps = [
+        ":strtoint",
+        "//ortools/base:gmock_main",
+        "//ortools/base:types",
     ],
 )
 
@@ -636,8 +500,18 @@ cc_library(
     name = "sysinfo",
     srcs = ["sysinfo.cc"],
     hdrs = ["sysinfo.h"],
+)
+
+cc_library(
+    name = "temp_file",
+    srcs = ["temp_file.cc"],
+    hdrs = ["temp_file.h"],
     deps = [
+        "//ortools/base:logging",
+        "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/time",
     ],
 )
 
@@ -651,6 +525,7 @@ cc_library(
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:string_view",
         "@abseil-cpp//absl/time",
     ],
 )
@@ -660,6 +535,10 @@ cc_library(
     srcs = ["threadpool.cc"],
     hdrs = ["threadpool.h"],
     deps = [
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/base:nullability",
+        "@abseil-cpp//absl/functional:any_invocable",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/synchronization",
     ],
@@ -678,11 +557,7 @@ cc_library(
 cc_library(
     name = "top_n",
     hdrs = ["top_n.h"],
-)
-
-cc_library(
-    name = "typeid",
-    hdrs = ["typeid.h"],
+    deps = [":logging"],
 )
 
 cc_library(
@@ -695,11 +570,9 @@ cc_library(
     srcs = ["zipfile.cc"],
     hdrs = ["zipfile.h"],
     deps = [
-        ":basictypes",
         ":file",
-        ":path",
-        ":stl_util",
-        "@abseil-cpp//absl/strings",
+        ":logging",
+        "@abseil-cpp//absl/strings:string_view",
         "@zlib",
     ],
 )

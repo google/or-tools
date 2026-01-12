@@ -11,9 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//
-#if defined(USE_CLP) || defined(USE_CBC)
-
 #include <algorithm>
 #include <cstdint>
 #include <memory>
@@ -21,11 +18,7 @@
 #include <vector>
 
 #include "absl/base/attributes.h"
-#include "absl/memory/memory.h"
-#include "absl/strings/match.h"
 #include "absl/strings/str_format.h"
-#include "ortools/base/commandlineflags.h"
-#include "ortools/base/hash.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
 #include "ortools/linear_solver/linear_solver.h"
@@ -622,9 +615,16 @@ void CLPInterface::SetLpAlgorithm(int value) {
   }
 }
 
-MPSolverInterface* BuildCLPInterface(MPSolver* const solver) {
-  return new CLPInterface(solver);
-}
+namespace {
+
+// See MpSolverInterfaceFactoryRepository for details.
+const void* const kRegisterCLP ABSL_ATTRIBUTE_UNUSED = [] {
+  MPSolverInterfaceFactoryRepository::GetInstance()->Register(
+      [](MPSolver* const solver) { return new CLPInterface(solver); },
+      MPSolver::CLP_LINEAR_PROGRAMMING);
+  return nullptr;
+}();
+
+}  // namespace
 
 }  // namespace operations_research
-#endif  // #if defined(USE_CBC) || defined(USE_CLP)

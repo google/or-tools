@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_MATH_OPT_SOLVERS_XPRESS_SOLVER_H_
-#define OR_TOOLS_MATH_OPT_SOLVERS_XPRESS_SOLVER_H_
+#ifndef ORTOOLS_MATH_OPT_SOLVERS_XPRESS_SOLVER_H_
+#define ORTOOLS_MATH_OPT_SOLVERS_XPRESS_SOLVER_H_
 
 #include <cstdint>
 #include <memory>
@@ -36,13 +36,12 @@
 #include "ortools/math_opt/solution.pb.h"
 #include "ortools/math_opt/solvers/xpress/g_xpress.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
+#include "ortools/third_party_solvers/xpress_environment.h"
 #include "ortools/util/solve_interrupter.h"
-#include "ortools/xpress/environment.h"
 
 namespace operations_research::math_opt {
 
 // Interface to FICO XPRESS solver
-// Largely inspired by the Gurobi interface
 class XpressSolver : public SolverInterface {
  public:
   // Creates the XPRESS solver and loads the model into it
@@ -68,8 +67,9 @@ class XpressSolver : public SolverInterface {
                              const SolveInterrupter* interrupter) override;
 
  private:
-  explicit XpressSolver(std::unique_ptr<Xpress> g_xpress);
+  explicit XpressSolver(std::unique_ptr<Xpress> g_xpress, bool extract_names);
 
+ public:
   // For easing reading the code, we declare these types:
   using VarId = int64_t;
   using AuxiliaryObjectiveId = int64_t;
@@ -88,6 +88,7 @@ class XpressSolver : public SolverInterface {
   using XpressGeneralConstraintIndex = int;
   using XpressAnyConstraintIndex = int;
 
+ private:
   static constexpr XpressVariableIndex kUnspecifiedIndex = -1;
   static constexpr XpressAnyConstraintIndex kUnspecifiedConstraint = -2;
   static constexpr double kPlusInf = XPRS_PLUSINFINITY;
@@ -98,18 +99,21 @@ class XpressSolver : public SolverInterface {
   }
 
   // Data associated with each linear constraint
+ public:
   struct LinearConstraintData {
     XpressLinearConstraintIndex constraint_index = kUnspecifiedConstraint;
     double lower_bound = kMinusInf;
     double upper_bound = kPlusInf;
   };
 
+ private:
   absl::StatusOr<SolveResultProto> ExtractSolveResultProto(
       absl::Time start, const ModelSolveParametersProto& model_parameters,
       const SolveParametersProto& solve_parameters);
-  absl::StatusOr<SolutionProto> GetSolution(
-      const ModelSolveParametersProto& model_parameters,
-      const SolveParametersProto& solve_parameters);
+  absl::Status ExtendWithMultiobj(SolutionProto& solution);
+  absl::Status AppendSolution(SolveResultProto& solve_result,
+                              const ModelSolveParametersProto& model_parameters,
+                              const SolveParametersProto& solve_parameters);
   absl::StatusOr<SolveStatsProto> GetSolveStats(absl::Time start) const;
 
   absl::StatusOr<double> GetBestPrimalBound() const;
@@ -118,11 +122,19 @@ class XpressSolver : public SolverInterface {
   absl::StatusOr<TerminationProto> ConvertTerminationReason(
       double best_primal_bound, double best_dual_bound) const;
 
-  absl::StatusOr<SolutionProto> GetLpSolution(
-      const ModelSolveParametersProto& model_parameters,
-      const SolveParametersProto& solve_parameters);
   bool isPrimalFeasible() const;
   bool isDualFeasible() const;
+
+  void ExtractBounds(double lb, double ub, char& sense, double& rhs,
+                     double& rng);
+  void ExtractLinear(SparseDoubleVectorProto const& expr,
+                     std::vector<int>& colind, std::vector<double>& coef);
+  void ExtractQuadratic(QuadraticConstraintProto const& expr,
+                        std::vector<int>& lin_colind,
+                        std::vector<double>& lin_coef,
+                        std::vector<int>& quad_col1,
+                        std::vector<int>& quad_col2,
+                        std::vector<double>& quad_coef);
 
   absl::StatusOr<std::optional<BasisProto>> GetBasisIfAvailable(
       const SolveParametersProto& parameters);
@@ -130,13 +142,24 @@ class XpressSolver : public SolverInterface {
   absl::Status AddNewLinearConstraints(
       const LinearConstraintsProto& constraints);
   absl::Status AddNewVariables(const VariablesProto& new_variables);
-  absl::Status AddSingleObjective(const ObjectiveProto& objective);
+  absl::Status AddObjective(const ObjectiveProto& objective,
+                            std::optional<AuxiliaryObjectiveId> objective_id,
+                            bool multiobj);
+  absl::Status AddSOS(
+      const google::protobuf::Map<AnyConstraintId, SosConstraintProto>& sets,
+      bool sos1);
+  absl::Status AddIndicators(
+      const google::protobuf::Map<IndicatorConstraintId,
+                                  IndicatorConstraintProto>& indicators);
+  absl::Status AddQuadraticConstraints(
+      const google::protobuf::Map<QuadraticConstraintId,
+                                  QuadraticConstraintProto>& constraints);
+  absl::Status AddSecondOrderConeConstraints(
+      const google::protobuf::Map<SecondOrderConeConstraintId,
+                                  SecondOrderConeConstraintProto>& constraints);
   absl::Status ChangeCoefficients(const SparseDoubleMatrixProto& matrix);
 
   absl::Status LoadModel(const ModelProto& input_model);
-
-  std::string GetLpOptimizationFlags(const SolveParametersProto& parameters);
-  absl::Status CallXpressSolve(const SolveParametersProto& parameters);
 
   // Fills in result with the values in xpress_values aided by the index
   // conversion from map which should be either variables_map_ or
@@ -149,6 +172,7 @@ class XpressSolver : public SolverInterface {
       const SparseVectorFilterProto& filter) const;
 
   const std::unique_ptr<Xpress> xpress_;
+  bool const extract_names_;
 
   // Internal correspondence from variable proto IDs to Xpress-numbered
   // variables.
@@ -157,30 +181,61 @@ class XpressSolver : public SolverInterface {
   // Xpress-numbered linear constraint and extra information.
   gtl::linked_hash_map<LinearConstraintId, LinearConstraintData>
       linear_constraints_map_;
+  // Internal correspondence from objective proto IDs to Xpress-numbered
+  // objectives.
+  gtl::linked_hash_map<AuxiliaryObjectiveId, XpressMultiObjectiveIndex>
+      objectives_map_;
+  // Internal correspondence from SOS1 proto IDs to Xpress-numbered
+  // SOS1 constraints.
+  gtl::linked_hash_map<Sos1ConstraintId, XpressSosConstraintIndex> sos1_map_;
+  // Internal correspondence from SOS2 proto IDs to Xpress-numbered
+  // SOS2 constraints.
+  gtl::linked_hash_map<Sos2ConstraintId, XpressSosConstraintIndex> sos2_map_;
+  // Internal correspondence from indicator proto IDs to Xpress-numbered
+  // indicators.
+  gtl::linked_hash_map<IndicatorConstraintId, LinearConstraintData>
+      indicator_map_;
+  // Internal correspondence from quadratic proto IDs to Xpress-numbered
+  // rows.
+  gtl::linked_hash_map<QuadraticConstraintId, LinearConstraintData>
+      quad_constraints_map_;
+  // Internal correspondence from second order cone constraint proto IDs to
+  // Xpress-numbered rows.
+  gtl::linked_hash_map<QuadraticConstraintId, LinearConstraintData> soc_map_;
 
   int get_model_index(XpressVariableIndex index) const { return index; }
   int get_model_index(const LinearConstraintData& index) const {
     return index.constraint_index;
   }
-  SolutionStatusProto getLpSolutionStatus() const;
+  SolutionStatusProto getPrimalSolutionStatus() const;
   SolutionStatusProto getDualSolutionStatus() const;
   absl::StatusOr<InvertedBounds> ListInvertedBounds() const;
-  absl::Status SetXpressStartingBasis(const BasisProto& basis);
-  absl::Status SetLpIterLimits(const SolveParametersProto& parameters);
 
+  /** Whether to force an XPRSpostsolve() after solving. */
+  bool force_postsolve_ = false;
+  /** Stop immediately after the initial LP in MIPs. */
+  bool stop_after_lp_ = false;
+  /** Whether the model has a non-binary indicator variable.
+   * The behavior expected by ortools is that
+   * - we can happily create a model with non-binary indicators
+   * - this must fail at _solve_ time
+   * Xpress implicitly converts indicator variables to binaries, though,
+   * so we must keep track of this fact at build time and raise an error
+   * only at solve time.
+   */
+  bool nonbinary_indicator_ = false;
+  bool is_multiobj_ = false;
   bool is_mip_ = false;
-  bool is_maximize_ = false;
-
-  struct LpStatus {
-    int primal_status = 0;
-    int dual_status = 0;
-  };
-  LpStatus xpress_lp_status_;
-  LPAlgorithmProto lp_algorithm_ = LP_ALGORITHM_UNSPECIFIED;
-
-  int xpress_mip_status_ = 0;
+  // Results of the last solve
+  int primal_sol_avail_ = XPRS_SOLAVAILABLE_NOTFOUND;
+  int dual_sol_avail_ = XPRS_SOLAVAILABLE_NOTFOUND;
+  // Information queried right after a solve and stored for solution reporting
+  int solvestatus_ = XPRS_SOLVESTATUS_UNSTARTED;
+  int solstatus_ = XPRS_SOLSTATUS_NOTFOUND;
+  int algorithm_ = XPRS_ALG_DEFAULT;
+  int optimizetypeused_ = -1;
 };
 
 }  // namespace operations_research::math_opt
 
-#endif  // OR_TOOLS_MATH_OPT_SOLVERS_XPRESS_SOLVER_H_
+#endif  // ORTOOLS_MATH_OPT_SOLVERS_XPRESS_SOLVER_H_

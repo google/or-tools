@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_MATH_OPT_SOLVERS_GLPK_SOLVER_H_
-#define OR_TOOLS_MATH_OPT_SOLVERS_GLPK_SOLVER_H_
+#ifndef ORTOOLS_MATH_OPT_SOLVERS_GLPK_SOLVER_H_
+#define ORTOOLS_MATH_OPT_SOLVERS_GLPK_SOLVER_H_
 
 #include <cstdint>
 #include <memory>
@@ -20,6 +20,7 @@
 #include <thread>
 #include <vector>
 
+#include "absl/base/nullability.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/log/log.h"
 #include "absl/status/status.h"
@@ -55,12 +56,12 @@ class GlpkSolver : public SolverInterface {
       const ModelSolveParametersProto& model_parameters,
       MessageCallback message_cb,
       const CallbackRegistrationProto& callback_registration, Callback cb,
-      const SolveInterrupter* interrupter) override;
+      const SolveInterrupter* absl_nullable interrupter) override;
   absl::StatusOr<bool> Update(const ModelUpdateProto& model_update) override;
   absl::StatusOr<ComputeInfeasibleSubsystemResultProto>
-  ComputeInfeasibleSubsystem(const SolveParametersProto& parameters,
-                             MessageCallback message_cb,
-                             const SolveInterrupter* interrupter) override;
+  ComputeInfeasibleSubsystem(
+      const SolveParametersProto& parameters, MessageCallback message_cb,
+      const SolveInterrupter* absl_nullable interrupter) override;
 
  private:
   // The columns of the GPLK problem.
@@ -239,4 +240,4 @@ bool GlpkSolver::Variables::IsInteger(glp_prob* const problem, const int j) {
 }  // namespace math_opt
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_MATH_OPT_SOLVERS_GLPK_SOLVER_H_
+#endif  // ORTOOLS_MATH_OPT_SOLVERS_GLPK_SOLVER_H_

@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_SAT_IMPLIED_BOUNDS_H_
-#define OR_TOOLS_SAT_IMPLIED_BOUNDS_H_
+#ifndef ORTOOLS_SAT_IMPLIED_BOUNDS_H_
+#define ORTOOLS_SAT_IMPLIED_BOUNDS_H_
 
 #include <algorithm>
 #include <array>
@@ -132,6 +132,29 @@ class ImpliedBounds {
                                                 : empty_var_to_value_;
   }
 
+  // Returns [lb, ub] for a given variable implied by a literal.
+  // Returns [kMinIntegerValue, kMaxIntegerValue] if no such bounds exist.
+  std::pair<IntegerValue, IntegerValue> GetImpliedBounds(
+      Literal literal, IntegerVariable var) const {
+    std::pair<IntegerValue, IntegerValue> result = {kMinIntegerValue,
+                                                    kMaxIntegerValue};
+    const auto it = bounds_.find({literal.Index(), var});
+    if (it != bounds_.end()) {
+      result.first = it->second;
+    }
+    const auto it2 = bounds_.find({literal.Index(), NegationOf(var)});
+    if (it2 != bounds_.end()) {
+      result.second = -it2->second;
+    }
+    return result;
+  }
+
+  const absl::flat_hash_map<std::pair<LiteralIndex, IntegerVariable>,
+                            IntegerValue>&
+  GetModelImpliedBounds() const {
+    return bounds_;
+  }
+
   // Adds to the integer trail all the new level-zero deduction made here.
   // This can only be called at decision level zero. Returns false iff the model
   // is infeasible.
@@ -177,6 +200,8 @@ class ImpliedBounds {
   // Stats.
   int64_t num_deductions_ = 0;
   int64_t num_enqueued_in_var_to_bounds_ = 0;
+  int64_t num_promoted_to_equivalence_ = 0;
+  int max_changed_domain_complexity_ = 0;
 };
 
 class ElementEncodings {
@@ -400,4 +425,4 @@ class ProductDetector {
 }  // namespace sat
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_IMPLIED_BOUNDS_H_
+#endif  // ORTOOLS_SAT_IMPLIED_BOUNDS_H_

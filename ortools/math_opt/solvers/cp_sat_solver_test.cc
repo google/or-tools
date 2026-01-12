@@ -225,7 +225,7 @@ SolutionHintTestParams MakeCpsatSolutionHintParams() {
   solve_params.cuts = Emphasis::kOff;
   solve_params.presolve = Emphasis::kOff;
   solve_params.cp_sat.set_stop_after_first_solution(true);
-  solve_params.cp_sat.set_num_search_workers(1);
+  solve_params.cp_sat.set_num_workers(1);
   // Matches "best:", "next:" and "hint" appearing in the same line
   std::string hint_message_regex = "best:.*next:.*hint";
   return SolutionHintTestParams(SolverType::kCpSat, solve_params, std::nullopt,
@@ -328,15 +328,16 @@ SolveParameters AllSolutions() {
   return result;
 }
 
-INSTANTIATE_TEST_SUITE_P(CpSatCallbackTest, CallbackTest,
-                         Values(CallbackTestParams(
-                             SolverType::kCpSat,
-                             /*integer_variables=*/true,
-                             /*add_lazy_constraints=*/false,
-                             /*add_cuts=*/false,
-                             /*supported_events=*/{CallbackEvent::kMipSolution},
-                             /*all_solutions=*/AllSolutions(),
-                             /*reaches_cut_callback=*/std::nullopt)));
+INSTANTIATE_TEST_SUITE_P(
+    CpSatCallbackTest, CallbackTest,
+    Values(CallbackTestParams(
+        SolverType::kCpSat,
+        /*integer_variables=*/true,
+        /*add_lazy_constraints=*/false,
+        /*add_cuts=*/false,
+        /*supported_events=*/{CallbackEvent::kMipSolution, CallbackEvent::kMip},
+        /*all_solutions=*/AllSolutions(),
+        /*reaches_cut_callback=*/std::nullopt)));
 
 TEST(CpSatInvalidCallbackTest, RequestLazyConstraints) {
   Model model("model");

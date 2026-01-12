@@ -16,11 +16,11 @@
 #include <algorithm>
 #include <cstdint>
 #include <limits>
-#include <set>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "absl/base/optimization.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
@@ -466,14 +466,22 @@ bool Domain::RemoveValue(int64_t value) {
 }
 
 std::string Domain::DebugString() const {
+  std::string prefix = "";
+  if (is_fixed_set) {
+    prefix = "fixed_set of ";
+  } else if (is_a_set) {
+    prefix = "set of ";
+  }
+
   if (is_float) {
     switch (float_values.size()) {
       case 0:
         return "float";
       case 1:
-        return absl::StrCat(float_values[0]);
+        return absl::StrCat(prefix, float_values[0]);
       case 2:
-        return absl::StrCat("[", float_values[0], "..", float_values[1], "]");
+        return absl::StrCat(prefix, "[", float_values[0], "..", float_values[1],
+                            "]");
       default:
         LOG(DFATAL) << "Error with float domain";
         return "error_float";
@@ -481,14 +489,14 @@ std::string Domain::DebugString() const {
   }
   if (is_interval) {
     if (values.empty()) {
-      return "int";
+      return absl::StrCat(prefix, "int");
     } else {
-      return absl::StrFormat("[%d..%d]", values[0], values[1]);
+      return absl::StrCat(prefix, "[", values[0], "..", values[1], "]");
     }
   } else if (values.size() == 1) {
-    return absl::StrCat(values.back());
+    return absl::StrCat(prefix, values.back());
   } else {
-    return absl::StrFormat("[%s]", absl::StrJoin(values, ", "));
+    return absl::StrFormat("%s[%s]", prefix, absl::StrJoin(values, ", "));
   }
 }
 
@@ -608,7 +616,7 @@ std::string Argument::DebugString() const {
       return absl::StrFormat("[%s]", absl::StrJoin(floats, ", "));
   }
   LOG(FATAL) << "Unhandled case in DebugString " << static_cast<int>(type);
-  return "";
+  ABSL_UNREACHABLE();
 }
 
 bool Argument::IsVariable() const { return type == VAR_REF; }
@@ -627,14 +635,12 @@ int64_t Argument::Value() const {
     case INT_INTERVAL:
     case INT_LIST:
       return values[0];
-    case VAR_REF: {
+    case VAR_REF:
       return variables[0]->domain.values[0];
-    }
-    default: {
-      LOG(FATAL) << "Should not be here";
-      return 0;
-    }
+    default:
+      break;
   }
+  ABSL_UNREACHABLE();
 }
 
 bool Argument::IsArrayOfValues() const {
@@ -672,24 +678,22 @@ bool Argument::IsArrayOfValues() const {
     case FLOAT_LIST:
       return false;
   }
+  ABSL_UNREACHABLE();
 }
 
 bool Argument::Contains(int64_t value) const {
   switch (type) {
-    case Argument::INT_LIST: {
+    case Argument::INT_LIST:
       return std::find(values.begin(), values.end(), value) != values.end();
-    }
-    case Argument::INT_INTERVAL: {
+    case Argument::INT_INTERVAL:
       return value >= values.front() && value <= values.back();
-    }
-    case Argument::INT_VALUE: {
+    case Argument::INT_VALUE:
       return value == values.front();
-    }
-    default: {
-      LOG(FATAL) << "Cannot call Contains() on " << DebugString();
-      return false;
-    }
+    default:
+      break;
   }
+
+  ABSL_UNREACHABLE();
 }
 
 int64_t Argument::ValueAt(int pos) const {
@@ -708,11 +712,10 @@ int64_t Argument::ValueAt(int pos) const {
       CHECK_LT(pos, variables.size());
       return variables[pos]->domain.Value();
     }
-    default: {
-      LOG(FATAL) << "Should not be here";
-      return 0;
-    }
+    default:
+      break;
   }
+  ABSL_UNREACHABLE();
 }
 
 bool Argument::HasOneValueAt(int pos) const {
@@ -731,11 +734,10 @@ bool Argument::HasOneValueAt(int pos) const {
       CHECK_LT(pos, variables.size());
       return variables[pos]->domain.HasOneValue();
     }
-    default: {
-      LOG(FATAL) << "Should not be here";
-      return false;
-    }
+    default:
+      break;
   }
+  ABSL_UNREACHABLE();
 }
 
 Variable* Argument::Var() const {
@@ -762,11 +764,10 @@ int Argument::Size() const {
     case FLOAT_LIST: {
       return floats.size();
     }
-    default: {
-      LOG(FATAL) << "Should not be here";
-      return 0;
-    }
+    default:
+      break;
   }
+  ABSL_UNREACHABLE();
 }
 
 // ----- Variable -----
@@ -802,13 +803,15 @@ std::string Variable::DebugString() const {
 // ----- Constraint -----
 
 std::string Constraint::DebugString() const {
-  const std::string strong = strong_propagation ? "strong propagation" : "";
+  const std::string strong = strong_propagation ? " strong propagation" : "";
   const std::string presolve_status_str =
-      active ? ""
-             : (presolve_propagation_done ? "[propagated during presolve]"
-                                          : "[removed during presolve]");
-  return absl::StrFormat("%s(%s)%s %s", type, JoinDebugString(arguments, ", "),
-                         strong, presolve_status_str);
+      active ? "" : " [removed during presolve]";
+  const std::string symmetric_breaking_str =
+      is_symmetric_breaking ? " symmetric breaking" : "";
+  const std::string redundant_str = is_redundant ? " redundant" : "";
+  return absl::StrCat(type, "(", JoinDebugString(arguments, ", "), ")", strong,
+                      presolve_status_str, symmetric_breaking_str,
+                      redundant_str);
 }
 
 void Constraint::RemoveArg(int arg_pos) {
@@ -934,27 +937,20 @@ void Annotation::AppendAllVariables(std::vector<Variable*>* const vars) const {
 
 std::string Annotation::DebugString() const {
   switch (type) {
-    case ANNOTATION_LIST: {
+    case ANNOTATION_LIST:
       return absl::StrFormat("[%s]", JoinDebugString(annotations, ", "));
-    }
-    case IDENTIFIER: {
+    case IDENTIFIER:
       return id;
-    }
-    case FUNCTION_CALL: {
+    case FUNCTION_CALL:
       return absl::StrFormat("%s(%s)", id, JoinDebugString(annotations, ", "));
-    }
-    case INTERVAL: {
+    case INTERVAL:
       return absl::StrFormat("%d..%d", interval_min, interval_max);
-    }
-    case INT_VALUE: {
+    case INT_VALUE:
       return absl::StrCat(interval_min);
-    }
-    case INT_LIST: {
+    case INT_LIST:
       return absl::StrFormat("[%s]", absl::StrJoin(values, ", "));
-    }
-    case VAR_REF: {
+    case VAR_REF:
       return variables.front()->name;
-    }
     case VAR_REF_ARRAY: {
       std::string result = "[";
       for (int i = 0; i < variables.size(); ++i) {
@@ -963,12 +959,11 @@ std::string Annotation::DebugString() const {
       }
       return result;
     }
-    case STRING_VALUE: {
+    case STRING_VALUE:
       return absl::StrFormat("\"%s\"", string_value);
-    }
   }
   LOG(FATAL) << "Unhandled case in DebugString " << static_cast<int>(type);
-  return "";
+  ABSL_UNREACHABLE();
 }
 
 // ----- SolutionOutputSpecs -----
@@ -1023,8 +1018,12 @@ Model::~Model() {
 }
 
 Variable* Model::AddVariable(absl::string_view name, const Domain& domain,
-                             bool defined) {
+                             bool defined, bool set_is_fixed) {
   Variable* const var = new Variable(name, domain, defined);
+  if (set_is_fixed) {
+    var->domain.is_a_set = true;
+    var->domain.is_fixed_set = true;
+  }
   variables_.push_back(var);
   return var;
 }
@@ -1045,15 +1044,15 @@ Variable* Model::AddFloatConstant(double value) {
 }
 
 void Model::AddConstraint(absl::string_view id, std::vector<Argument> arguments,
-                          bool is_domain) {
+                          bool is_domain, bool symmetry, bool redundant) {
   Constraint* const constraint =
-      new Constraint(id, std::move(arguments), is_domain);
+      new Constraint(id, std::move(arguments), is_domain, symmetry, redundant);
   constraints_.push_back(constraint);
 }
 
 void Model::AddConstraint(absl::string_view id,
                           std::vector<Argument> arguments) {
-  AddConstraint(id, std::move(arguments), false);
+  AddConstraint(id, std::move(arguments), false, false, false);
 }
 
 void Model::AddOutput(SolutionOutputSpecs output) {
@@ -1133,8 +1132,61 @@ bool Model::IsInconsistent() const {
 
 void ModelStatistics::PrintStatistics() const {
   SOLVER_LOG(logger_, "Model ", model_.name());
+
+  // Variables.
+  int num_bool_vars = 0;
+  int num_int_vars = 0;
+  int num_float_vars = 0;
+  int num_set_vars = 0;
+  for (Variable* var : model_.variables()) {
+    if (var->domain.is_float) {
+      ++num_float_vars;
+    } else if (var->domain.is_a_set) {
+      ++num_set_vars;
+    } else if (var->domain.display_as_boolean) {
+      ++num_bool_vars;
+    } else {
+      ++num_int_vars;
+    }
+  }
+  if (num_bool_vars > 0) {
+    SOLVER_LOG(logger_, "  - boolean variables:", num_bool_vars);
+  }
+  if (num_int_vars > 0) {
+    SOLVER_LOG(logger_, "  - integer variables:", num_int_vars);
+  }
+  if (num_float_vars > 0) {
+    SOLVER_LOG(logger_, "  - float variables:", num_float_vars);
+  }
+  if (num_set_vars > 0) {
+    SOLVER_LOG(logger_, "  - set variables:", num_set_vars);
+  }
+  SOLVER_LOG(logger_);
+
+  // Constraints.
+  int num_redundant_constraints = 0;
+  int num_symmetry_breaking_constraints = 0;
+  for (Constraint* const ct : model_.constraints()) {
+    if (ct != nullptr && ct->active) {
+      if (ct->is_redundant) {
+        ++num_redundant_constraints;
+      }
+      if (ct->is_symmetric_breaking) {
+        ++num_symmetry_breaking_constraints;
+      }
+    }
+  }
   for (const auto& it : constraints_per_type_) {
     SOLVER_LOG(logger_, "  - ", it.first, ": ", it.second.size());
+  }
+  SOLVER_LOG(logger_);
+  if (num_redundant_constraints > 0) {
+    SOLVER_LOG(logger_,
+               "  -  redundant constraints: ", num_redundant_constraints);
+  }
+  if (num_symmetry_breaking_constraints > 0) {
+    SOLVER_LOG(logger_, "  - symmetry breaking constraints: ",
+               num_symmetry_breaking_constraints);
   }
   if (model_.objective() == nullptr) {
     SOLVER_LOG(logger_, "  - Satisfaction problem");

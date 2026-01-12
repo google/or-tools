@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_MATH_OPT_STORAGE_MODEL_STORAGE_H_
-#define OR_TOOLS_MATH_OPT_STORAGE_MODEL_STORAGE_H_
+#ifndef ORTOOLS_MATH_OPT_STORAGE_MODEL_STORAGE_H_
+#define ORTOOLS_MATH_OPT_STORAGE_MODEL_STORAGE_H_
 
 #ifdef MATHOPT_STORAGE_V2
 
@@ -155,10 +155,7 @@ namespace math_opt {
 // the modifications since the previous call to
 // ModelStorage::AdvanceCheckpoint(). Note that, for newly initialized models,
 // before the first checkpoint, there is no additional memory overhead from
-// tracking changes. See
-// g3doc/ortools/math_opt/g3doc/model_building_complexity.md
-// for details.
-//
+// tracking changes.
 // On bad input:
 //
 // Using a bad variable id or constraint id (an id not in the current model,
@@ -177,7 +174,7 @@ class ModelStorage {
   // considered invalid when solving.
   //
   // See ApplyUpdateProto() for dealing with subsequent updates.
-  static absl::StatusOr<absl::Nonnull<std::unique_ptr<ModelStorage> > >
+  static absl::StatusOr<absl_nonnull std::unique_ptr<ModelStorage> >
   FromModelProto(const ModelProto& model_proto);
 
   // Creates an empty minimization problem.
@@ -192,7 +189,7 @@ class ModelStorage {
   // reused any id of variable/constraint that was deleted in the original.
   //
   // Note that the returned model does not have any update tracker.
-  absl::Nonnull<std::unique_ptr<ModelStorage> > Clone(
+  absl_nonnull std::unique_ptr<ModelStorage> Clone(
       std::optional<absl::string_view> new_name = std::nullopt) const;
 
   inline const std::string& name() const { return copyable_data_.name; }
@@ -682,7 +679,7 @@ class ModelStorage {
     // returns the address of the appropriate `UpdateTrackerData` field.
     template <typename ConstraintData>
     static constexpr typename AtomicConstraintStorage<ConstraintData>::Diff
-        UpdateTrackerData::*
+        UpdateTrackerData::* absl_nonnull
         AtomicConstraintDirtyFieldPtr();
 
     // Update information
@@ -1208,7 +1205,7 @@ ModelStorage::constraint_storage() const {
 
 template <>
 constexpr typename AtomicConstraintStorage<QuadraticConstraintData>::Diff
-    ModelStorage::UpdateTrackerData::*
+    ModelStorage::UpdateTrackerData::* absl_nonnull
     ModelStorage::UpdateTrackerData::AtomicConstraintDirtyFieldPtr<
         QuadraticConstraintData>() {
   return &UpdateTrackerData::dirty_quadratic_constraints;
@@ -1230,7 +1227,7 @@ ModelStorage::constraint_storage() const {
 
 template <>
 constexpr typename AtomicConstraintStorage<SecondOrderConeConstraintData>::Diff
-    ModelStorage::UpdateTrackerData::*
+    ModelStorage::UpdateTrackerData::* absl_nonnull
     ModelStorage::UpdateTrackerData::AtomicConstraintDirtyFieldPtr<
         SecondOrderConeConstraintData>() {
   return &UpdateTrackerData::dirty_soc_constraints;
@@ -1252,7 +1249,7 @@ ModelStorage::constraint_storage() const {
 
 template <>
 constexpr typename AtomicConstraintStorage<Sos1ConstraintData>::Diff
-    ModelStorage::UpdateTrackerData::*
+    ModelStorage::UpdateTrackerData::* absl_nonnull
     ModelStorage::UpdateTrackerData::AtomicConstraintDirtyFieldPtr<
         Sos1ConstraintData>() {
   return &UpdateTrackerData::dirty_sos1_constraints;
@@ -1274,7 +1271,7 @@ ModelStorage::constraint_storage() const {
 
 template <>
 constexpr typename AtomicConstraintStorage<Sos2ConstraintData>::Diff
-    ModelStorage::UpdateTrackerData::*
+    ModelStorage::UpdateTrackerData::* absl_nonnull
     ModelStorage::UpdateTrackerData::AtomicConstraintDirtyFieldPtr<
         Sos2ConstraintData>() {
   return &UpdateTrackerData::dirty_sos2_constraints;
@@ -1296,7 +1293,7 @@ ModelStorage::constraint_storage() const {
 
 template <>
 constexpr typename AtomicConstraintStorage<IndicatorConstraintData>::Diff
-    ModelStorage::UpdateTrackerData::*
+    ModelStorage::UpdateTrackerData::* absl_nonnull
     ModelStorage::UpdateTrackerData::AtomicConstraintDirtyFieldPtr<
         IndicatorConstraintData>() {
   return &UpdateTrackerData::dirty_indicator_constraints;
@@ -1311,11 +1308,11 @@ namespace operations_research::math_opt {
 
 // Aliases for non-nullable and nullable pointers to a `ModelStorage`.
 // We should mostly be using the former, but in some cases we need the latter.
-using ModelStoragePtr = absl::Nonnull<ModelStorage*>;
-using NullableModelStoragePtr = absl::Nullable<ModelStorage*>;
-using ModelStorageCPtr = absl::Nonnull<const ModelStorage*>;
-using NullableModelStorageCPtr = absl::Nullable<const ModelStorage*>;
+using ModelStoragePtr = ModelStorage* absl_nonnull;
+using NullableModelStoragePtr = ModelStorage* absl_nullable;
+using ModelStorageCPtr = const ModelStorage* absl_nonnull;
+using NullableModelStorageCPtr = const ModelStorage* absl_nullable;
 
 }  // namespace operations_research::math_opt
 
-#endif  // OR_TOOLS_MATH_OPT_STORAGE_MODEL_STORAGE_H_
+#endif  // ORTOOLS_MATH_OPT_STORAGE_MODEL_STORAGE_H_

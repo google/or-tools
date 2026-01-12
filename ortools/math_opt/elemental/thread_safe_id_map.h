@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_MATH_OPT_ELEMENTAL_THREAD_SAFE_ID_MAP_H_
-#define OR_TOOLS_MATH_OPT_ELEMENTAL_THREAD_SAFE_ID_MAP_H_
+#ifndef ORTOOLS_MATH_OPT_ELEMENTAL_THREAD_SAFE_ID_MAP_H_
+#define ORTOOLS_MATH_OPT_ELEMENTAL_THREAD_SAFE_ID_MAP_H_
 
 #include <atomic>
 #include <cstdint>
@@ -154,7 +154,7 @@ template <typename V>
 absl::Span<const std::pair<int64_t, std::unique_ptr<V>>>
 ThreadSafeIdMap<V>::UpdateAndGetAll() {
   if (has_pending_modifications_.load(std::memory_order_relaxed)) {
-    absl::MutexLock lock(&mutex_);
+    absl::MutexLock lock(mutex_);
     ApplyPendingModifications();
   }
   return absl::MakeConstSpan(elements_);
@@ -162,14 +162,14 @@ ThreadSafeIdMap<V>::UpdateAndGetAll() {
 
 template <typename V>
 int64_t ThreadSafeIdMap<V>::Size() const {
-  absl::MutexLock lock(&mutex_);
+  absl::MutexLock lock(mutex_);
   return static_cast<int64_t>(elements_.size() + pending_inserts_.size()) -
          static_cast<int64_t>(pending_deletes_.size());
 }
 
 template <typename V>
 V* ThreadSafeIdMap<V>::Get(const int64_t id) const {
-  absl::MutexLock lock(&mutex_);
+  absl::MutexLock lock(mutex_);
   if (pending_deletes_.contains(id)) {
     return nullptr;
   }
@@ -188,7 +188,7 @@ V* ThreadSafeIdMap<V>::Get(const int64_t id) const {
 
 template <typename V>
 std::vector<std::pair<int64_t, V*>> ThreadSafeIdMap<V>::GetAll() const {
-  absl::MutexLock lock(&mutex_);
+  absl::MutexLock lock(mutex_);
   std::vector<std::pair<int64_t, V*>> result;
   for (const auto& [id, diff] : elements_) {
     if (!pending_deletes_.contains(id)) {
@@ -205,7 +205,7 @@ std::vector<std::pair<int64_t, V*>> ThreadSafeIdMap<V>::GetAll() const {
 
 template <typename V>
 V* ThreadSafeIdMap<V>::UpdateAndGet(const int64_t id) {
-  absl::MutexLock lock(&mutex_);
+  absl::MutexLock lock(mutex_);
   if (has_pending_modifications_.load()) {
     ApplyPendingModifications();
   }
@@ -219,7 +219,7 @@ V* ThreadSafeIdMap<V>::UpdateAndGet(const int64_t id) {
 
 template <typename V>
 int64_t ThreadSafeIdMap<V>::Insert(std::unique_ptr<V> value) {
-  absl::MutexLock lock(&mutex_);
+  absl::MutexLock lock(mutex_);
   const int64_t result = next_id_;
   ++next_id_;
   pending_inserts_.push_back(std::make_pair(result, std::move(value)));
@@ -229,7 +229,7 @@ int64_t ThreadSafeIdMap<V>::Insert(std::unique_ptr<V> value) {
 
 template <typename V>
 bool ThreadSafeIdMap<V>::Erase(const int64_t key) {
-  absl::MutexLock lock(&mutex_);
+  absl::MutexLock lock(mutex_);
   for (auto it = pending_inserts_.begin(); it != pending_inserts_.end(); ++it) {
     if (it->first == key) {
       pending_inserts_.erase(it);
@@ -274,4 +274,4 @@ void ThreadSafeIdMap<V>::UpdateHasPendingModifications() {
 
 }  // namespace operations_research::math_opt
 
-#endif  // OR_TOOLS_MATH_OPT_ELEMENTAL_THREAD_SAFE_ID_MAP_H_
+#endif  // ORTOOLS_MATH_OPT_ELEMENTAL_THREAD_SAFE_ID_MAP_H_

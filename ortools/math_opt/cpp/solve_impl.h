@@ -11,11 +11,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_MATH_OPT_CPP_SOLVE_IMPL_H_
-#define OR_TOOLS_MATH_OPT_CPP_SOLVE_IMPL_H_
+#ifndef ORTOOLS_MATH_OPT_CPP_SOLVE_IMPL_H_
+#define ORTOOLS_MATH_OPT_CPP_SOLVE_IMPL_H_
 
 #include <memory>
 
+#include "absl/base/nullability.h"
 #include "absl/functional/any_invocable.h"
 #include "absl/status/statusor.h"
 #include "ortools/math_opt/core/base_solver.h"
@@ -55,12 +56,10 @@ using BaseSolverFactory =
 // Solves the input model.
 //
 // The `user_canceller` parameter is optional.
-absl::StatusOr<SolveResult> SolveImpl(BaseSolverFactory solver_factory,
-                                      const Model& model,
-                                      SolverType solver_type,
-                                      const SolveArguments& solve_args,
-                                      const SolveInterrupter* user_canceller,
-                                      bool remove_names);
+absl::StatusOr<SolveResult> SolveImpl(
+    BaseSolverFactory solver_factory, const Model& model,
+    SolverType solver_type, const SolveArguments& solve_args,
+    const SolveInterrupter* absl_nullable user_canceller, bool remove_names);
 
 // ComputeInfeasibleSubsystems the input model in a subprocess.
 //
@@ -69,7 +68,7 @@ absl::StatusOr<ComputeInfeasibleSubsystemResult> ComputeInfeasibleSubsystemImpl(
     BaseSolverFactory solver_factory, const Model& model,
     SolverType solver_type,
     const ComputeInfeasibleSubsystemArguments& compute_args,
-    const SolveInterrupter* user_canceller, bool remove_names);
+    const SolveInterrupter* absl_nullable user_canceller, bool remove_names);
 
 // Incremental solve of a model.
 class IncrementalSolverImpl : public IncrementalSolver {
@@ -79,12 +78,7 @@ class IncrementalSolverImpl : public IncrementalSolver {
   // The `user_canceller` parameter is optional.
   static absl::StatusOr<std::unique_ptr<IncrementalSolverImpl>> New(
       BaseSolverFactory solver_factory, Model* model, SolverType solver_type,
-      const SolveInterrupter* user_canceller, bool remove_names);
-
-  absl::StatusOr<SolveResult> Solve(const SolveArguments& arguments) override;
-
-  absl::StatusOr<ComputeInfeasibleSubsystemResult> ComputeInfeasibleSubsystem(
-      const ComputeInfeasibleSubsystemArguments& arguments) override;
+      const SolveInterrupter* absl_nullable user_canceller, bool remove_names);
 
   absl::StatusOr<UpdateResult> Update() override;
 
@@ -121,4 +115,4 @@ class IncrementalSolverImpl : public IncrementalSolver {
 
 }  // namespace operations_research::math_opt::internal
 
-#endif  // OR_TOOLS_MATH_OPT_CPP_SOLVE_IMPL_H_
+#endif  // ORTOOLS_MATH_OPT_CPP_SOLVE_IMPL_H_

@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_GRAPH_DAG_CONSTRAINED_SHORTEST_PATH_H_
-#define OR_TOOLS_GRAPH_DAG_CONSTRAINED_SHORTEST_PATH_H_
+#ifndef ORTOOLS_GRAPH_DAG_CONSTRAINED_SHORTEST_PATH_H_
+#define ORTOOLS_GRAPH_DAG_CONSTRAINED_SHORTEST_PATH_H_
 
 #include <cmath>
 #include <limits>
@@ -92,7 +92,7 @@ struct GraphPathWithLength {
 
 // A wrapper that holds the memory needed to run many constrained shortest path
 // computations efficiently on the given DAG (on which resources do not change).
-// `GraphType` can use one of the interfaces defined in `util/graph/graph.h`.
+// `GraphType` can use one of the interfaces defined in `ortools/graph/graph.h`.
 template <class GraphType>
 class ConstrainedShortestPathsOnDagWrapper {
  public:
@@ -557,7 +557,6 @@ GraphPathWithLength<GraphType> ConstrainedShortestPathsOnDagWrapper<
 
   {
     ThreadPool search_threads(2);
-    search_threads.StartWorkers();
     for (const Direction dir : {FORWARD, BACKWARD}) {
       search_threads.Schedule([this, dir, &sub_arc_lengths]() {
         RunHalfConstrainedShortestPathOnDag(
@@ -912,4 +911,4 @@ std::vector<T> GetInversePermutation(const std::vector<T>& permutation) {
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_GRAPH_DAG_CONSTRAINED_SHORTEST_PATH_H_
+#endif  // ORTOOLS_GRAPH_DAG_CONSTRAINED_SHORTEST_PATH_H_

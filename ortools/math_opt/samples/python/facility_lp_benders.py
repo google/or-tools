@@ -47,10 +47,10 @@ Formulation:
 Below we solve this problem directly and using a benders decompostion
 approach.
 """
+from collections.abc import Sequence
 import dataclasses
 import math
 import time
-from typing import Dict, List, Sequence, Tuple
 
 from absl import app
 from absl import flags
@@ -85,7 +85,7 @@ _ZERO_TOL = 1.0e-3
 ################################################################################
 
 # First element is a facility and second is a location.
-Edge = Tuple[int, int]
+Edge = tuple[int, int]
 
 
 class Network:
@@ -97,14 +97,14 @@ class Network:
         rng = np.random.default_rng(123)
         self.num_facilities: int = num_facilities
         self.num_locations: int = num_locations
-        self.facility_edge_incidence: List[List[Edge]] = [
+        self.facility_edge_incidence: list[list[Edge]] = [
             [] for facility in range(num_facilities)
         ]
-        self.location_edge_incidence: List[List[Edge]] = [
+        self.location_edge_incidence: list[list[Edge]] = [
             [] for location in range(num_locations)
         ]
-        self.edges: List[Edge] = []
-        self.edge_costs: Dict[Edge, float] = {}
+        self.edges: list[Edge] = []
+        self.edge_costs: dict[Edge, float] = {}
         for facility in range(num_facilities):
             for location in range(num_locations):
                 if rng.binomial(1, edge_probability):
@@ -222,14 +222,14 @@ class FirstStageProblem:
     """First stage model and variables."""
 
     model: mathopt.Model
-    z: List[mathopt.Variable]
+    z: list[mathopt.Variable]
     w: mathopt.Variable
 
     def __init__(self, network: Network, facility_cost: float) -> None:
         self.model: mathopt.Model = mathopt.Model(name="First stage problem")
 
         # Capacity variables
-        self.z: List[mathopt.Variable] = [
+        self.z: list[mathopt.Variable] = [
             self.model.add_variable(lb=0.0) for j in range(network.num_facilities)
         ]
 
@@ -252,7 +252,7 @@ class Cut:
     cut if w_coefficient = 1.
     """
 
-    z_coefficients: List[float] = dataclasses.field(default_factory=list)
+    z_coefficients: list[float] = dataclasses.field(default_factory=list)
     constant: float = 0.0
     w_coefficient: float = 0.0
 
@@ -326,7 +326,7 @@ class SecondStageSolver:
         self._second_stage_model.minimize(objective_for_edges)
 
         # Demand constraints
-        self._demand_constraints: List[mathopt.LinearConstraint] = []
+        self._demand_constraints: list[mathopt.LinearConstraint] = []
         for location in range(num_locations):
             incoming_supply = sum(
                 self._x[edge]
@@ -339,7 +339,7 @@ class SecondStageSolver:
             )
 
         # Supply constraints
-        self._supply_constraint: List[mathopt.LinearConstraint] = []
+        self._supply_constraint: list[mathopt.LinearConstraint] = []
         for facility in range(num_facilities):
             outgoing_supply = sum(
                 self._x[edge]
@@ -358,8 +358,8 @@ class SecondStageSolver:
         )
 
     def solve(
-        self, z_values: List[float], w_value: float, first_stage_objective: float
-    ) -> Tuple[float, Cut]:
+        self, z_values: list[float], w_value: float, first_stage_objective: float
+    ) -> tuple[float, Cut]:
         """Solve the second stage problem."""
         num_facilities = self._network.num_facilities
         # Update second stage with first stage solution.

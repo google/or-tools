@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_UTIL_TIME_LIMIT_H_
-#define OR_TOOLS_UTIL_TIME_LIMIT_H_
+#ifndef ORTOOLS_UTIL_TIME_LIMIT_H_
+#define ORTOOLS_UTIL_TIME_LIMIT_H_
 
 #include <algorithm>
 #include <atomic>
@@ -35,11 +35,13 @@
 #include "ortools/base/types.h"
 #include "ortools/util/running_stat.h"
 
+#ifndef SWIG
 /**
  * Enables changing the behavior of the TimeLimit class to use -b usertime
  * instead of \b walltime. This is mainly useful for benchmarks.
  */
 OR_DLL ABSL_DECLARE_FLAG(bool, time_limit_use_usertime);
+#endif  // SWIG
 
 namespace operations_research {
 
@@ -343,37 +345,37 @@ class SharedTimeLimit {
   bool LimitReached() const {
     // Note, time_limit_->LimitReached() is not const, and changes internal
     // state of time_limit_, hence we need a writer's lock.
-    absl::MutexLock lock(&mutex_);
+    absl::MutexLock lock(mutex_);
     return time_limit_->LimitReached();
   }
 
   void Stop() {
-    absl::MutexLock lock(&mutex_);
+    absl::MutexLock lock(mutex_);
     *stopped_ = true;
   }
 
   void UpdateLocalLimit(TimeLimit* local_limit) {
-    absl::MutexLock lock(&mutex_);
+    absl::MutexLock lock(mutex_);
     local_limit->MergeWithGlobalTimeLimit(time_limit_);
   }
 
   void AdvanceDeterministicTime(double deterministic_duration) {
-    absl::MutexLock lock(&mutex_);
+    absl::MutexLock lock(mutex_);
     time_limit_->AdvanceDeterministicTime(deterministic_duration);
   }
 
   double GetTimeLeft() const {
-    absl::ReaderMutexLock lock(&mutex_);
+    absl::ReaderMutexLock lock(mutex_);
     return time_limit_->GetTimeLeft();
   }
 
   double GetElapsedDeterministicTime() const {
-    absl::ReaderMutexLock lock(&mutex_);
+    absl::ReaderMutexLock lock(mutex_);
     return time_limit_->GetElapsedDeterministicTime();
   }
 
   std::atomic<bool>* ExternalBooleanAsLimit() const {
-    absl::ReaderMutexLock lock(&mutex_);
+    absl::ReaderMutexLock lock(mutex_);
     // We can simply return the "external bool" and remain thread-safe because
     // it's wrapped in std::atomic.
     return time_limit_->ExternalBooleanAsLimit();
@@ -568,4 +570,4 @@ inline double TimeLimit::GetTimeLeft() const {
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_UTIL_TIME_LIMIT_H_
+#endif  // ORTOOLS_UTIL_TIME_LIMIT_H_

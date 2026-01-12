@@ -20,6 +20,7 @@ if(NOT TARGET ${PROJECT_NAMESPACE}::ortools)
 endif()
 
 # Will need swig
+set(SWIG_SOURCE_FILE_EXTENSIONS ".i" ".swig")
 set(CMAKE_SWIG_FLAGS)
 find_package(SWIG REQUIRED)
 include(UseSWIG)
@@ -84,6 +85,12 @@ set(JAVA_PROJECT ${JAVA_ARTIFACT}-java)
 message(STATUS "Java project: ${JAVA_PROJECT}")
 set(JAVA_PROJECT_DIR ${PROJECT_BINARY_DIR}/java/${JAVA_PROJECT})
 message(STATUS "Java project build path: ${JAVA_PROJECT_DIR}")
+
+if(RELEASE)
+  set(JAVA_RELEASE "")
+else()
+  set(JAVA_RELEASE "-RC1")
+endif()
 
 ##################
 ##  PROTO FILE  ##
@@ -362,6 +369,7 @@ add_custom_command(
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::int128>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::kernel_timeout_internal>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::leak_check>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::log_entry>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::log_flags>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::log_globals>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::log_initialize>>
@@ -377,7 +385,6 @@ add_custom_command(
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::log_internal_proto>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::log_severity>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::log_sink>>
-    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::low_level_hash>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::malloc_internal>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::random_distributions>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::random_internal_entropy_pool>>
@@ -567,7 +574,7 @@ if(BUILD_JAVA_DOC)
   if(DOXYGEN_FOUND)
     configure_file(${PROJECT_SOURCE_DIR}/ortools/java/Doxyfile.in ${PROJECT_BINARY_DIR}/java/Doxyfile @ONLY)
     file(DOWNLOAD
-      https://raw.githubusercontent.com/jothepro/doxygen-awesome-css/v2.1.0/doxygen-awesome.css
+      https://raw.githubusercontent.com/jothepro/doxygen-awesome-css/v2.3.4/doxygen-awesome.css
       ${PROJECT_BINARY_DIR}/java/doxygen-awesome.css
       SHOW_PROGRESS
     )
@@ -579,6 +586,8 @@ if(BUILD_JAVA_DOC)
         java_package
         ${PROJECT_BINARY_DIR}/java/Doxyfile
         ${PROJECT_BINARY_DIR}/java/doxygen-awesome.css
+        ${PROJECT_SOURCE_DIR}/ortools/doxygen/header.html
+        ${PROJECT_SOURCE_DIR}/ortools/doxygen/DoxygenLayout.xml
         ${PROJECT_SOURCE_DIR}/ortools/java/stylesheet.css
       WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
       COMMENT "Generating Java API documentation with Doxygen"

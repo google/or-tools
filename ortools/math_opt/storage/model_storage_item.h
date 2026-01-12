@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_MATH_OPT_STORAGE_MODEL_STORAGE_ITEM_H_
-#define OR_TOOLS_MATH_OPT_STORAGE_MODEL_STORAGE_ITEM_H_
+#ifndef ORTOOLS_MATH_OPT_STORAGE_MODEL_STORAGE_ITEM_H_
+#define ORTOOLS_MATH_OPT_STORAGE_MODEL_STORAGE_ITEM_H_
 
 #include <cstdint>
 #include <ostream>
@@ -174,9 +174,10 @@ class ModelStorageItemContainer {
 
   // When moving we're leaving the moved-from object unassociated with any
   // model. Derived classes should hold no items after being moved from.
-  ModelStorageItemContainer(ModelStorageItemContainer&& other)
+  ModelStorageItemContainer(ModelStorageItemContainer&& other) noexcept
       : storage_(std::exchange(other.storage_, nullptr)) {}
-  ModelStorageItemContainer& operator=(ModelStorageItemContainer&& other) {
+  ModelStorageItemContainer& operator=(
+      ModelStorageItemContainer&& other) noexcept {
     storage_ = std::exchange(other.storage_, nullptr);
     return *this;
   }
@@ -210,4 +211,4 @@ class ModelStorageItemContainer {
 
 }  // namespace operations_research::math_opt
 
-#endif  // OR_TOOLS_MATH_OPT_STORAGE_MODEL_STORAGE_ITEM_H_
+#endif  // ORTOOLS_MATH_OPT_STORAGE_MODEL_STORAGE_ITEM_H_

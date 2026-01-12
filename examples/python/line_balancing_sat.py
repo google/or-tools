@@ -33,7 +33,7 @@ from typing import Dict, Sequence
 
 from absl import app
 from absl import flags
-from google.protobuf import text_format
+
 
 from ortools.sat.python import cp_model
 
@@ -272,7 +272,7 @@ def solve_problem_with_boolean_model(
     # solve model.
     solver = cp_model.CpSolver()
     if _PARAMS.value:
-        text_format.Parse(_PARAMS.value, solver.parameters)
+        solver.parameters.parse_text_format(_PARAMS.value)
     solver.parameters.log_search_progress = True
     solver.solve(model)
 
@@ -339,7 +339,7 @@ def solve_problem_with_scheduling_model(
     # solve model.
     solver = cp_model.CpSolver()
     if _PARAMS.value:
-        text_format.Parse(_PARAMS.value, solver.parameters)
+        solver.parameters.parse_text_format(_PARAMS.value)
     solver.parameters.log_search_progress = True
     solver.solve(model)
 

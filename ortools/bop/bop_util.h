@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_BOP_BOP_UTIL_H_
-#define OR_TOOLS_BOP_BOP_UTIL_H_
+#ifndef ORTOOLS_BOP_BOP_UTIL_H_
+#define ORTOOLS_BOP_BOP_UTIL_H_
 
 #include <vector>
 
@@ -86,4 +86,4 @@ class LubyAdaptiveParameterValue {
 };
 }  // namespace bop
 }  // namespace operations_research
-#endif  // OR_TOOLS_BOP_BOP_UTIL_H_
+#endif  // ORTOOLS_BOP_BOP_UTIL_H_

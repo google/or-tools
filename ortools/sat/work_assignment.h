@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_SAT_WORK_ASSIGNMENT_H_
-#define OR_TOOLS_SAT_WORK_ASSIGNMENT_H_
+#ifndef ORTOOLS_SAT_WORK_ASSIGNMENT_H_
+#define ORTOOLS_SAT_WORK_ASSIGNMENT_H_
 
 #include <stdint.h>
 #include <sys/stat.h>
@@ -31,14 +31,17 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/container/node_hash_map.h"
+#include "absl/functional/function_ref.h"
 #include "absl/log/check.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/types/span.h"
+#include "ortools/sat/clause.h"
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/integer_search.h"
+#include "ortools/sat/lrat_proof_handler.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/restart.h"
 #include "ortools/sat/sat_base.h"
@@ -74,7 +77,7 @@ class ProtoLiteral {
   // Note you should only decode integer literals at the root level.
   Literal Decode(CpModelMapping*, IntegerEncoder*) const;
 
-  // Enodes a literal as a ProtoLiteral. This can encode literals that occur in
+  // Encodes a literal as a ProtoLiteral. This can encode literals that occur in
   // the proto model, and also integer bounds literals.
   static std::optional<ProtoLiteral> Encode(Literal, CpModelMapping*,
                                             IntegerEncoder*);
@@ -128,18 +131,31 @@ class ProtoTrail {
     return literals_[decision_indexes_[level - 1]];
   }
 
+  // Returns the node ID for the decision at `level`.
+  int DecisionNodeId(int level) const;
+
   // Returns the node ids for decisions and implications at `level`.
   absl::Span<const int> NodeIds(int level) const;
 
   // Returns literals which may be propagated at `level`, this does not include
   // the decision.
   absl::Span<const ProtoLiteral> Implications(int level) const;
-  void AddImplication(int level, ProtoLiteral implication) {
-    auto it = implication_level_.find(implication);
-    if (it != implication_level_.end() && it->second <= level) return;
+
+  // Adds a literal which is implied by the decisions from level 1 to `level`.
+  // The caller must add a corresponding LRAT inferred clause (if LRAT is
+  // enabled). This implication can then be used by other workers as an LRAT
+  // imported clause, without proof.
+  bool AddImplication(int level, ProtoLiteral implication) {
+    auto it = assigned_at_level_.find(implication);
+    if (it != assigned_at_level_.end() && it->second <= level) return false;
     MutableImplications(level).push_back(implication);
-    implication_level_[implication] = level;
+    assigned_at_level_[implication] = level;
+    return true;
   }
+
+  // Removes implications that are already assigned at an earlier level, as well
+  // as duplicate implications at the same level.
+  void NormalizeImplications();
 
   IntegerValue ObjectiveLb(int level) const {
     CHECK_GE(level, 1);
@@ -149,24 +165,30 @@ class ProtoTrail {
   absl::Span<const ProtoLiteral> Literals() const { return literals_; }
 
   const std::vector<ProtoLiteral>& TargetPhase() const { return target_phase_; }
+
+  // Returns the target phase and clears it.
+  std::vector<ProtoLiteral> TakeTargetPhase() {
+    return std::move(target_phase_);
+  }
   void ClearTargetPhase() { target_phase_.clear(); }
   // Appends a literal to the target phase, returns false if the phase is full.
   bool AddPhase(const ProtoLiteral& lit) {
     if (target_phase_.size() >= kMaxPhaseSize) return false;
-    if (!implication_level_.contains(lit)) {
+    if (!IsAssigned(lit)) {
       target_phase_.push_back(lit);
     }
     return true;
   }
-  void SetTargetPhase(absl::Span<const ProtoLiteral> phase) {
-    ClearTargetPhase();
-    for (const ProtoLiteral& lit : phase) {
-      if (!AddPhase(lit)) break;
-    }
+  void SetTargetPhase(std::vector<ProtoLiteral> phase) {
+    target_phase_ = std::move(phase);
+  }
+  bool IsAssigned(const ProtoLiteral& lit) const {
+    return assigned_at_level_.contains(lit) ||
+           assigned_at_level_.contains(lit.Negated());
   }
 
  private:
-  // 256 ProtoLiterals take up 4KiB
+  // Store up to 4 KiB of literals in the target phase.
   static constexpr int kMaxPhaseSize = 256;
 
   std::vector<ProtoLiteral>& MutableImplications(int level) {
@@ -179,7 +201,7 @@ class ProtoTrail {
   // Extra implications that can be propagated at each level but were never
   // branches in the shared tree.
   std::vector<std::vector<ProtoLiteral>> implications_;
-  absl::flat_hash_map<ProtoLiteral, int> implication_level_;
+  absl::flat_hash_map<ProtoLiteral, int> assigned_at_level_;
 
   // The index in the literals_/node_ids_ vectors for the start of each level.
   std::vector<int> decision_indexes_;
@@ -204,6 +226,7 @@ class SharedTreeManager {
 
   int NumWorkers() const { return num_workers_; }
   int NumNodes() const ABSL_LOCKS_EXCLUDED(mu_);
+  int MaxPathDepth() const { return max_path_depth_; }
 
   // Syncs the state of path with the shared search tree.
   // Clears `path` and returns false if the assigned subtree is closed or a
@@ -214,17 +237,24 @@ class SharedTreeManager {
   void ReplaceTree(ProtoTrail& path);
 
   // Asserts that the subtree in path up to `level` contains no improving
-  // solutions. Clears path.
+  // solutions. Clears path. The caller must add a corresponding LRAT inferred
+  // clause first (stating that the negation of the decision at `level` is
+  // implied by the previous decisions).
   void CloseTree(ProtoTrail& path, int level);
 
-  // Called by workers in order to split the shared tree.
-  // `path` may or may not be extended by one level, branching on `decision`.
-  void ProposeSplit(ProtoTrail& path, ProtoLiteral decision);
+  // Attempts to split the tree repeatedly with the given decisions.
+  // `path` will be extended with the accepted splits, the opposite branches
+  // will be added as unassigned leaves.
+  // Returns the number of splits accepted.
+  int TrySplitTree(absl::Span<const ProtoLiteral> decisions, ProtoTrail& path)
+      ABSL_LOCKS_EXCLUDED(mu_);
 
   void Restart() {
-    absl::MutexLock l(&mu_);
+    absl::MutexLock l(mu_);
     RestartLockHeld();
   }
+
+  void CloseLratProof();
 
  private:
   // Because it is quite difficult to get a flat_hash_map to release memory,
@@ -232,34 +262,51 @@ class SharedTreeManager {
   // Note to simplify code, the root will always have a NodeTrailInfo after it
   // is closed.
   struct NodeTrailInfo {
-    // A map from literal to the best lower bound proven at this node.
-    absl::flat_hash_map<int, IntegerValue> implications;
+    // A map from literal to the best lower bound proven at this node, and to
+    // the LRAT clause "decisions of node and its parents => literal" (with
+    // literals of implied nodes filtered out).
+    absl::flat_hash_map<int, std::pair<IntegerValue, ClauseId>> implications;
     // This is only non-empty for nodes where all but one descendent is closed
     // (i.e. mostly leaves).
     std::vector<ProtoLiteral> phase;
   };
   struct Node {
-    ProtoLiteral literal;
+    ProtoLiteral decision;
     IntegerValue objective_lb = kMinIntegerValue;
     Node* parent = nullptr;
     std::array<Node*, 2> children = {nullptr, nullptr};
     // A node's id is related to its index in `nodes_`, see `node_id_offset_`.
     int id;
+    // For each closed node, closing_clause_id is an LRAT clause stating that
+    // all the parent decisions imply the negation of the node's decision.
     bool closed = false;
+    ClauseId closing_clause_id = kNoClauseId;
+    // A node is implied if its sibling is closed. The closing clause of the
+    // sibling is also the clause stating that all the parent decisions imply
+    // the node's decision.
     bool implied = false;
+    bool implied_and_processed = false;
     // Only set for open, non-implied nodes.
     std::unique_ptr<NodeTrailInfo> trail_info;
   };
   bool IsValid(const ProtoTrail& path) const ABSL_EXCLUSIVE_LOCKS_REQUIRED(mu_);
-  Node* GetSibling(Node* node) ABSL_EXCLUSIVE_LOCKS_REQUIRED(mu_);
+  Node* GetSibling(const Node* node) const ABSL_EXCLUSIVE_LOCKS_REQUIRED(mu_);
   // Returns the NodeTrailInfo for `node` or it's closest non-closed,
   // non-implied ancestor. `node` must be valid, never returns nullptr.
   NodeTrailInfo* GetTrailInfo(Node* node);
+  void ClearTrailInfo(Node* node, bool implications_only = false);
+  bool TrySplitTreeLockHeld(ProtoLiteral decision, ProtoTrail& path)
+      ABSL_EXCLUSIVE_LOCKS_REQUIRED(mu_);
   void Split(std::vector<std::pair<Node*, int>>& nodes, ProtoLiteral lit)
       ABSL_EXCLUSIVE_LOCKS_REQUIRED(mu_);
-  Node* MakeSubtree(Node* parent, ProtoLiteral literal)
+  Node* MakeSubtree(Node* parent, ProtoLiteral decision)
       ABSL_EXCLUSIVE_LOCKS_REQUIRED(mu_);
   void ProcessNodeChanges() ABSL_EXCLUSIVE_LOCKS_REQUIRED(mu_);
+  void ProcessImpliedNode(Node* node) ABSL_EXCLUSIVE_LOCKS_REQUIRED(mu_);
+  void UpdateLratClausesInSubtree(Node* node, Node* n,
+                                  std::vector<ClauseId>& clauses)
+      ABSL_EXCLUSIVE_LOCKS_REQUIRED(mu_);
+  Node* GetNode(int node_id) ABSL_EXCLUSIVE_LOCKS_REQUIRED(mu_);
   std::vector<std::pair<Node*, int>> GetAssignedNodes(const ProtoTrail& path)
       ABSL_EXCLUSIVE_LOCKS_REQUIRED(mu_);
   void AssignLeaf(ProtoTrail& path, Node* leaf)
@@ -267,17 +314,53 @@ class SharedTreeManager {
   void RestartLockHeld() ABSL_EXCLUSIVE_LOCKS_REQUIRED(mu_);
   std::string ShortStatus() const ABSL_EXCLUSIVE_LOCKS_REQUIRED(mu_);
 
+  // Returns true if `literal` is a decision of `node` or one of its ancestors.
+  bool IsDecisionOfNodeOrAncestor(ProtoLiteral literal, const Node* node) const
+      ABSL_EXCLUSIVE_LOCKS_REQUIRED(mu_);
+
+  // Returns "non-implied decisions of `node` and its ancestors => implied". A
+  // node is considered implied if its `implied` field is true, and if its
+  // `implied_and_processed` field or `skip_unprocessed_implied_nodes` is
+  // true.
+  std::vector<Literal> ImplicationClause(
+      const Node* node, ProtoLiteral implied,
+      bool skip_unprocessed_implied_nodes = false) const
+      ABSL_EXCLUSIVE_LOCKS_REQUIRED(mu_);
+
+  // Returns "decisions of `node`'s ancestors => negation of `node`'s decision"
+  // (with decisions of implied nodes filtered out -- a node is considered
+  // implied if its `implied` field is true, and if its `implied_and_processed`
+  // field or `skip_unprocessed_implied_nodes` is true).
+  std::vector<Literal> ClosingClause(
+      const Node* node, bool skip_unprocessed_implied_nodes = false) const
+      ABSL_EXCLUSIVE_LOCKS_REQUIRED(mu_);
+
+  // Adds `imported_clause` to the LRAT proof handler, as well as
+  // `inferred_clause`, inferred from `imported_clause` with `lrat_proof` (which
+  // should contain clauses proving that literals removed from `imported_clause`
+  // can actually be removed). Then deletes `imported_clause` and returns the ID
+  // of the inferred clause.
+  ClauseId AddImportedAndInferredClauses(
+      absl::Span<const Literal> imported_clause,
+      absl::Span<const Literal> inferred_clause,
+      std::vector<ClauseId>& lrat_proof) ABSL_EXCLUSIVE_LOCKS_REQUIRED(mu_);
+
+  bool CheckLratInvariants() const ABSL_EXCLUSIVE_LOCKS_REQUIRED(mu_);
+
   mutable absl::Mutex mu_;
   const SatParameters& params_;
   const int num_workers_;
+  const int max_path_depth_;
   SharedResponseManager* const shared_response_manager_;
+  ClauseIdGenerator clause_id_generator_;
+  std::unique_ptr<LratProofHandler> lrat_proof_handler_;
 
   // Stores the node id of the root, this is used to handle global restarts.
   int node_id_offset_ ABSL_GUARDED_BY(mu_) = 0;
 
   // Stores the nodes in the search tree.
   std::deque<Node> nodes_ ABSL_GUARDED_BY(mu_);
-  std::vector<Node*> unassigned_leaves_ ABSL_GUARDED_BY(mu_);
+  std::deque<Node*> unassigned_leaves_ ABSL_GUARDED_BY(mu_);
 
   // How many splits we should generate now to keep the desired number of
   // leaves.
@@ -287,15 +370,16 @@ class SharedTreeManager {
   // communication overhead. If we exceed this, workers become portfolio
   // workers when no unassigned leaves are available.
   const int max_nodes_;
-  int num_leaves_assigned_ ABSL_GUARDED_BY(mu_) = 0;
+  int num_leaves_assigned_since_restart_ ABSL_GUARDED_BY(mu_) = 0;
 
   // Temporary vectors used to maintain the state of the tree when nodes are
-  // closed and/or children are updated.
-  std::vector<Node*> to_close_ ABSL_GUARDED_BY(mu_);
+  // closed and/or children are updated. Each node to close is associated with
+  // the clause stating that the literals of its parents imply the negation of
+  // its own literal (with literals of implied nodes filtered out).
+  std::vector<std::pair<Node*, ClauseId>> to_close_ ABSL_GUARDED_BY(mu_);
   std::vector<Node*> to_update_ ABSL_GUARDED_BY(mu_);
 
   int64_t num_restarts_ ABSL_GUARDED_BY(mu_) = 0;
-  int64_t num_syncs_since_restart_ ABSL_GUARDED_BY(mu_) = 0;
   int num_closed_nodes_ ABSL_GUARDED_BY(mu_) = 0;
 };
 
@@ -317,7 +401,7 @@ class SharedTreeWorker {
   Literal DecodeDecision(ProtoLiteral literal);
   std::optional<ProtoLiteral> EncodeDecision(Literal decision);
   bool NextDecision(LiteralIndex* decision_index);
-  void MaybeProposeSplit();
+  void MaybeProposeSplits();
   bool ShouldReplaceSubtree();
   bool FinishedMinRestarts() const {
     return assigned_tree_.MaxLevel() > 0 &&
@@ -328,9 +412,23 @@ class SharedTreeWorker {
   // Add any implications to the clause database for the current level.
   // Return true if any new information was added.
   bool AddImplications();
-  bool AddDecisionImplication(Literal literal, int level);
+  bool AddDecisionImplication(Literal literal, int level, ClauseId clause_id);
 
-  const std::vector<Literal>& DecisionReason(int level);
+  void ClearAssignedTreeDecisionsAndImplications();
+
+  // Adds the LRAT inferred clause "assigned tree decisions up to `level` =>
+  // `literal`" if `lrat_proof_handler_` is not null.
+  ClauseId AddLratClauseAndProofForImplication(
+      Literal literal, int level,
+      std::optional<absl::FunctionRef<ClauseId(int, int)>> root_literals = {});
+
+  // Adds the LRAT imported clause "assigned tree decisions up to `level` =>
+  // `literal`" if `lrat_proof_handler_` is not null.
+  ClauseId ImportLratClauseForImplication(Literal literal, int level);
+
+  std::vector<Literal>& DecisionReason(int level);
+
+  bool CheckLratInvariants();
 
   SatParameters* parameters_;
   SharedResponseManager* shared_response_;
@@ -339,6 +437,10 @@ class SharedTreeWorker {
   CpModelMapping* mapping_;
   SatSolver* sat_solver_;
   Trail* trail_;
+  BinaryImplicationGraph* binary_propagator_;
+  ClauseManager* clause_manager_;
+  ClauseIdGenerator* clause_id_generator_;
+  LratProofHandler* lrat_proof_handler_;
   IntegerTrail* integer_trail_;
   IntegerEncoder* encoder_;
   const ObjectiveDefinition* objective_;
@@ -353,15 +455,20 @@ class SharedTreeWorker {
   int64_t num_trees_ = 0;
 
   ProtoTrail assigned_tree_;
-  std::vector<Literal> assigned_tree_literals_;
-  std::vector<std::vector<Literal>> assigned_tree_implications_;
+  std::vector<Literal> assigned_tree_decisions_;
+  // The i-th element contains the literals implied by the first i elements of
+  // assigned_tree_decisions_, together with the IDs of the corresponding LRAT
+  // clauses (or kNoClauseId if lrat_proof_handler_ is null).
+  std::vector<std::vector<std::pair<Literal, ClauseId>>>
+      assigned_tree_implications_;
+  double next_split_dtime_ = 0;
 
-  // True if the last decision may split the assigned tree and has not yet been
-  // proposed to the SharedTreeManager.
-  // We propagate the decision before sharing with the SharedTreeManager so we
-  // don't share any decision that immediately leads to conflict.
-  bool new_split_available_ = false;
+  // For each literal on the trail, the ID of the LRAT clause stating that this
+  // literal is implied by the previous decisions on the trail, or kNoClauseId
+  // if there is no such clause.
+  std::vector<ClauseId> trail_implication_clauses_;
 
+  std::vector<ProtoLiteral> tmp_splits_;
   std::vector<Literal> reason_;
   // Stores the average LBD of learned clauses for each tree assigned since it
   // was assigned.
@@ -379,4 +486,4 @@ class SharedTreeWorker {
 
 }  // namespace operations_research::sat
 
-#endif  // OR_TOOLS_SAT_WORK_ASSIGNMENT_H_
+#endif  // ORTOOLS_SAT_WORK_ASSIGNMENT_H_

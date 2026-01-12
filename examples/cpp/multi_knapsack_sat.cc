@@ -28,6 +28,7 @@
 #include "absl/flags/flag.h"
 #include "absl/log/globals.h"
 #include "absl/log/log.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/init_google.h"
 #include "ortools/sat/cp_model.h"
 
@@ -50,7 +51,7 @@ static const int kItemsVolumes[] = {281, 307, 206, 111, 275,
                                     79,  23,  65,  261, 40};
 static const int kNumItems = 10;
 
-void MultiKnapsackSat(int scaling, const std::string& params) {
+void MultiKnapsackSat(int scaling, absl::string_view params) {
   CpModelBuilder builder;
 
   const int num_items = scaling * kNumItems;

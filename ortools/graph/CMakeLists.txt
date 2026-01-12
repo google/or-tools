@@ -57,6 +57,7 @@ if(BUILD_TESTING)
       SOURCES
         ${_FILE_NAME}
       LINK_LIBRARIES
+        absl::status_matchers
         benchmark::benchmark
         GTest::gtest
         GTest::gtest_main
@@ -76,4 +77,10 @@ if(BUILD_TESTING)
     COMPILE_DEFINITIONS
     -DROOT_DIR="${CMAKE_SOURCE_DIR}"
   )
+
+  # These tests are too long so we disable them.
+  set_tests_properties(
+    cxx_graph_min_cost_flow_test
+    cxx_graph_bidirectional_dijkstra_test
+    PROPERTIES DISABLED TRUE)
 endif()

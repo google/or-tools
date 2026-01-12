@@ -14,8 +14,8 @@
 // IWYU pragma: private, include "ortools/math_opt/cpp/math_opt.h"
 // IWYU pragma: friend "ortools/math_opt/cpp/.*"
 
-#ifndef OR_TOOLS_MATH_OPT_CPP_MESSAGE_CALLBACK_H_
-#define OR_TOOLS_MATH_OPT_CPP_MESSAGE_CALLBACK_H_
+#ifndef ORTOOLS_MATH_OPT_CPP_MESSAGE_CALLBACK_H_
+#define ORTOOLS_MATH_OPT_CPP_MESSAGE_CALLBACK_H_
 
 #include <functional>
 #include <iostream>
@@ -96,4 +96,4 @@ MessageCallback RepeatedPtrFieldMessageCallback(
 
 }  // namespace operations_research::math_opt
 
-#endif  // OR_TOOLS_MATH_OPT_CPP_MESSAGE_CALLBACK_H_
+#endif  // ORTOOLS_MATH_OPT_CPP_MESSAGE_CALLBACK_H_

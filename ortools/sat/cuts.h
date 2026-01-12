@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_SAT_CUTS_H_
-#define OR_TOOLS_SAT_CUTS_H_
+#ifndef ORTOOLS_SAT_CUTS_H_
+#define ORTOOLS_SAT_CUTS_H_
 
 #include <stdint.h>
 
@@ -34,6 +34,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/sat/clause.h"
 #include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
@@ -382,6 +383,56 @@ inline std::function<IntegerValue(IntegerValue)> ExtendNegativeFunction(
   };
 }
 
+// Exploit AtMosteOne from the model to derive stronger cut.
+// In the MIP community, using amo in this context is know as GUB (generalized
+// upper bound).
+class GUBHelper {
+ public:
+  explicit GUBHelper(Model* model)
+      : implications_(model->GetOrCreate<BinaryImplicationGraph>()),
+        integer_encoder_(model->GetOrCreate<IntegerEncoder>()),
+        integer_trail_(model->GetOrCreate<IntegerTrail>()),
+        shared_stats_(model->GetOrCreate<SharedStatistics>()) {}
+  ~GUBHelper();
+
+  void ApplyWithPotentialBumpAndGUB(
+      const std::function<IntegerValue(IntegerValue)>& f, IntegerValue divisor,
+      CutData* cut);
+
+  // Stats on the last call to ApplyWithPotentialBumpAndGUB().
+  int last_num_lifts() const { return last_num_lifts_; }
+  int last_num_bumps() const { return last_num_bumps_; }
+  int last_num_gubs() const { return last_num_gubs_; }
+
+ private:
+  BinaryImplicationGraph* implications_;
+  IntegerEncoder* integer_encoder_;
+  IntegerTrail* integer_trail_;
+  SharedStatistics* shared_stats_;
+
+  struct LiteralInCut {
+    int index;
+    Literal literal;
+    IntegerValue original_coeff;
+    bool complemented;
+  };
+
+  // One call stats.
+  int last_num_lifts_;
+  int last_num_bumps_;
+  int last_num_gubs_;
+
+  // Tmp data.
+  std::vector<IntegerValue> initial_coeffs_;
+  std::vector<LiteralInCut> literals_;
+  absl::flat_hash_set<Literal> already_seen_;
+  absl::flat_hash_map<int, int> amo_count_;
+
+  // Stats.
+  int64_t num_improvements_ = 0;
+  int64_t num_todo_both_complements_ = 0;
+};
+
 // Given an upper bounded linear constraint, this function tries to transform it
 // to a valid cut that violate the given LP solution using integer rounding.
 // Note that the returned cut might not always violate the LP solution, in which
@@ -418,6 +469,10 @@ struct RoundingOptions {
 };
 class IntegerRoundingCutHelper {
  public:
+  explicit IntegerRoundingCutHelper(Model* model)
+      : gub_helper_(model),
+        shared_stats_(model->GetOrCreate<SharedStatistics>()) {}
+
   ~IntegerRoundingCutHelper();
 
   // Returns true on success. The cut can be accessed via cut().
@@ -427,8 +482,6 @@ class IntegerRoundingCutHelper {
   // If successful, info about the last generated cut.
   const CutData& cut() const { return cut_; }
 
-  void SetSharedStatistics(SharedStatistics* stats) { shared_stats_ = stats; }
-
   // Single line of text that we append to the cut log line.
   std::string Info() const { return absl::StrCat("ib_lift=", num_ib_used_); }
 
@@ -436,6 +489,9 @@ class IntegerRoundingCutHelper {
   double GetScaledViolation(IntegerValue divisor, IntegerValue max_scaling,
                             IntegerValue remainder_threshold,
                             const CutData& cut);
+
+  GUBHelper gub_helper_;
+  SharedStatistics* shared_stats_;
 
   // The helper is just here to reuse the memory for these vectors.
   std::vector<IntegerValue> divisors_;
@@ -450,7 +506,6 @@ class IntegerRoundingCutHelper {
   std::vector<std::pair<int, IntegerValue>> best_adjusted_coeffs_;
 
   // Overall stats.
-  SharedStatistics* shared_stats_ = nullptr;
   int64_t total_num_dominating_f_ = 0;
   int64_t total_num_pos_lifts_ = 0;
   int64_t total_num_neg_lifts_ = 0;
@@ -468,6 +523,10 @@ class IntegerRoundingCutHelper {
 // Helper to find knapsack cover cuts.
 class CoverCutHelper {
  public:
+  explicit CoverCutHelper(Model* model)
+      : gub_helper_(model),
+        shared_stats_(model->GetOrCreate<SharedStatistics>()) {}
+
   ~CoverCutHelper();
 
   // Try to find a cut with a knapsack heuristic. This assumes an input with all
@@ -521,8 +580,6 @@ class CoverCutHelper {
   // Single line of text that we append to the cut log line.
   std::string Info() const { return absl::StrCat("lift=", num_lifting_); }
 
-  void SetSharedStatistics(SharedStatistics* stats) { shared_stats_ = stats; }
-
   void ClearCache() { has_bool_base_ct_ = false; }
 
  private:
@@ -540,6 +597,9 @@ class CoverCutHelper {
   template <class Compare>
   int MinimizeCover(int cover_size, absl::int128 slack);
 
+  GUBHelper gub_helper_;
+  SharedStatistics* shared_stats_;
+
   // Here to reuse memory, cut_ is both the input and the output.
   CutData cut_;
   CutData temp_cut_;
@@ -550,7 +610,6 @@ class CoverCutHelper {
   int bool_cover_size_ = 0;
 
   // Stats.
-  SharedStatistics* shared_stats_ = nullptr;
   int64_t num_lifting_ = 0;
 
   // Stats for the various type of cuts generated here.
@@ -562,6 +621,7 @@ class CoverCutHelper {
     int64_t num_merges = 0;
     int64_t num_bumps = 0;
     int64_t num_lifting = 0;
+    int64_t num_gubs = 0;
     int64_t num_overflow_aborts = 0;
   };
   CutStats flow_stats_;
@@ -744,4 +804,4 @@ class SumOfAllDiffLowerBounder {
 }  // namespace sat
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_CUTS_H_
+#endif  // ORTOOLS_SAT_CUTS_H_

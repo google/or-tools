@@ -180,7 +180,7 @@ def aggregate_item_collections_optimally(
 
 
 def get_optimal_schedule(
-    demand: list[tuple[float, str, int]]
+    demand: list[tuple[float, str, int]],
 ) -> list[tuple[int, list[tuple[int, str]]]]:
     """Computes the optimal schedule for the installation input.
 

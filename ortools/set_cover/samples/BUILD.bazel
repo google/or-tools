@@ -1,0 +1,56 @@
+# Copyright 2010-2025 Google LLC
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+load("@rules_python//python:py_binary.bzl", "py_binary")
+load("//tools/testing:bintest.bzl", "bintest")
+
+package(default_visibility = ["//visibility:public"])
+
+cc_binary(
+    name = "set_cover_cc",
+    srcs = ["set_cover.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/set_cover:set_cover_heuristics",
+        "//ortools/set_cover:set_cover_invariant",
+        "//ortools/set_cover:set_cover_model",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:globals",
+    ],
+)
+
+bintest(
+    name = "set_cover_cc_test",
+    size = "small",
+    srcs = [":set_cover_cc_test.bintest"],
+    named_data = {"set_cover_cc": ":set_cover_cc"},
+)
+
+py_binary(
+    name = "set_cover_py3",
+    srcs = ["set_cover.py"],
+    main = "set_cover.py",
+    deps = [
+        "//ortools/set_cover:set_cover_py_pb2",
+        "//ortools/set_cover/python:set_cover",
+    ],
+)
+
+bintest(
+    name = "set_cover_py_test",
+    size = "small",
+    srcs = [":set_cover_py_test.bintest"],
+    named_data = {"set_cover_py3": ":set_cover_py3"},
+)

@@ -22,7 +22,7 @@
 #include "gtest/gtest.h"
 #include "ortools/base/init_google.h"
 #include "ortools/linear_solver/linear_solver.h"
-#include "ortools/xpress/environment.h"
+#include "ortools/third_party_solvers/xpress_environment.h"
 #define XPRS_NAMELENGTH 1028
 
 namespace operations_research {

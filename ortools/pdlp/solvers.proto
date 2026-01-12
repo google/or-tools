@@ -46,7 +46,7 @@ enum SchedulerType {
   // Google ThreadPool with barrier synchronization.
   SCHEDULER_TYPE_GOOGLE_THREADPOOL = 1;
   // Eigen non-blocking ThreadPool with barrier synchronization (see
-  // <Eigen/ThreadPool>).
+  // <Eigen/ThreadPool>) that uses Google threads.
   SCHEDULER_TYPE_EIGEN_THREADPOOL = 3;
 }
 

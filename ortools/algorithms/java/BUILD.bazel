@@ -13,19 +13,17 @@
 
 # Description: java wrapping of the C++ code at ../
 
-load("//bazel:swig_java.bzl", "ortools_java_wrap_cc")
+load("//bazel:swig_java.bzl", "java_wrap_cc")
 
-ortools_java_wrap_cc(
+java_wrap_cc(
     name = "knapsacksolver",
-    src = "knapsack_solver.i",
+    srcs = ["knapsack_solver.swig"],
     module = "operations_research_algorithms",
     package = "com.google.ortools.algorithms",
     swig_includes = [
         "//ortools/base:base_swig",
-        "//ortools/util/java:vector_swig",
+        "//ortools/util/java:vector.swig",
     ],
     visibility = ["//visibility:public"],
-    deps = [
-        "//ortools/algorithms:knapsack_solver_lib",
-    ],
+    deps = ["//ortools/algorithms:knapsack_solver_lib"],
 )

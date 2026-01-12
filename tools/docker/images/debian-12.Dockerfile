@@ -6,12 +6,19 @@ FROM debian:12 AS env
 #############
 RUN apt-get update -qq \
 && apt-get install -qq \
- git pkg-config wget cmake make autoconf libtool zlib1g-dev gawk g++ curl subversion \
+ git pkg-config wget make autoconf libtool zlib1g-dev gawk g++ curl subversion \
  swig lsb-release libicu-dev \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 ENTRYPOINT ["/bin/bash", "-c"]
 CMD ["/bin/bash"]
+
+# Install CMake 3.31.0
+RUN ARCH=$(uname -m) \
+&& wget -q "https://cmake.org/files/v3.31/cmake-3.31.0-linux-${ARCH}.sh" \
+&& chmod a+x cmake-3.31.0-linux-${ARCH}.sh \
+&& ./cmake-3.31.0-linux-${ARCH}.sh --prefix=/usr/local/ --skip-license \
+&& rm cmake-3.31.0-linux-${ARCH}.sh
 
 # Install .Net
 # see: https://learn.microsoft.com/en-us/dotnet/core/install/linux-scripted-manual#scripted-install
@@ -49,12 +56,12 @@ COPY or-tools.snk /root/or-tools.snk
 ENV DOTNET_SNK=/root/or-tools.snk
 
 ARG SRC_GIT_BRANCH
-ENV SRC_GIT_BRANCH ${SRC_GIT_BRANCH:-main}
+ENV SRC_GIT_BRANCH=${SRC_GIT_BRANCH:-main}
 ARG SRC_GIT_SHA1
 ENV SRC_GIT_SHA1 ${SRC_GIT_SHA1:-unknown}
 
 ARG OR_TOOLS_PATCH
-ENV OR_TOOLS_PATCH ${OR_TOOLS_PATCH:-9999}
+ENV OR_TOOLS_PATCH=${OR_TOOLS_PATCH:-9999}
 
 # Download sources
 # use SRC_GIT_SHA1 to modify the command

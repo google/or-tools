@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_MATH_OPT_SOLVER_TESTS_LOGICAL_CONSTRAINT_TESTS_H_
-#define OR_TOOLS_MATH_OPT_SOLVER_TESTS_LOGICAL_CONSTRAINT_TESTS_H_
+#ifndef ORTOOLS_MATH_OPT_SOLVER_TESTS_LOGICAL_CONSTRAINT_TESTS_H_
+#define ORTOOLS_MATH_OPT_SOLVER_TESTS_LOGICAL_CONSTRAINT_TESTS_H_
 
 #include <ostream>
 
@@ -30,7 +30,8 @@ struct LogicalConstraintTestParameters {
       bool supports_incremental_add_and_deletes,
       bool supports_incremental_variable_deletions,
       bool supports_deleting_indicator_variables,
-      bool supports_updating_binary_variables);
+      bool supports_updating_binary_variables,
+      bool supports_sos_on_expressions = true);
 
   // The tested solver.
   SolverType solver_type;
@@ -62,6 +63,10 @@ struct LogicalConstraintTestParameters {
   // True if the solver supports updates (changing bounds or vartype) to binary
   // variables.
   bool supports_updating_binary_variables;
+
+  // True if the solver supports SOS constraints on expressions. False if
+  // SOS constraints are only supported on singleton variables.
+  bool supports_sos_on_expressions;
 };
 
 std::ostream& operator<<(std::ostream& out,
@@ -109,4 +114,4 @@ class IncrementalLogicalConstraintTest
 
 }  // namespace operations_research::math_opt
 
-#endif  // OR_TOOLS_MATH_OPT_SOLVER_TESTS_LOGICAL_CONSTRAINT_TESTS_H_
+#endif  // ORTOOLS_MATH_OPT_SOLVER_TESTS_LOGICAL_CONSTRAINT_TESTS_H_

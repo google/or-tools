@@ -17,11 +17,10 @@ package com.google.ortools.algorithms.samples;
 import com.google.ortools.Loader;
 import com.google.ortools.algorithms.KnapsackSolver;
 import java.util.ArrayList;
+
 // [END import]
 
-/**
- * Sample showing how to model using the knapsack solver.
- */
+/** Sample showing how to model using the knapsack solver. */
 public class Knapsack {
   private Knapsack() {}
 

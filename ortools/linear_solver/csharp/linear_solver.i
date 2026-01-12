@@ -11,9 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// This .i file is only used in the open-source export of
-// util/operations_research (github or-tools)
-//
 // It exposes the linear programming and integer programming solver.
 //
 // The C# API is quite different from the C++ API; mostly because it
@@ -238,6 +235,7 @@ CONVERT_VECTOR(operations_research::MPVariable, MPVariable)
 %unignore operations_research::MPConstraint::SetBounds;
 %rename (Index) operations_research::MPConstraint::index;
 %rename (SetIsLazy) operations_research::MPConstraint::set_is_lazy;
+%unignore operations_research::MPConstraint::Clear;
 
 // MPConstraint: reader API.
 %unignore operations_research::MPConstraint::GetCoefficient;

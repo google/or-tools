@@ -24,6 +24,7 @@ cc_binary(
     deps = [
         ":file_format_flags",
         "//ortools/base",
+        "//ortools/base:file",
         "//ortools/base:status_macros",
         "//ortools/math_opt:parameters_cc_proto",
         "//ortools/math_opt/core:solver_interface",
@@ -40,6 +41,7 @@ cc_binary(
         "//ortools/util:sigint",
         "//ortools/util:status_macros",
         "@abseil-cpp//absl/base:no_destructor",
+        "@abseil-cpp//absl/base:nullability",
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
@@ -70,7 +72,6 @@ cc_library(
     srcs = ["file_format_flags.cc"],
     hdrs = ["file_format_flags.h"],
     deps = [
-        "//ortools/base",
         "//ortools/base:file",
         "//ortools/base:status_macros",
         "//ortools/linear_solver:linear_solver_cc_proto",
@@ -81,6 +82,7 @@ cc_library(
         "//ortools/math_opt/io:mps_converter",
         "//ortools/math_opt/io:proto_converter",
         "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/status",

@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_BOP_BOP_FS_H_
-#define OR_TOOLS_BOP_BOP_FS_H_
+#ifndef ORTOOLS_BOP_BOP_FS_H_
+#define ORTOOLS_BOP_BOP_FS_H_
 
 #include <cstdint>
 #include <memory>
@@ -147,4 +147,4 @@ class LinearRelaxation : public BopOptimizerBase {
 
 }  // namespace bop
 }  // namespace operations_research
-#endif  // OR_TOOLS_BOP_BOP_FS_H_
+#endif  // ORTOOLS_BOP_BOP_FS_H_

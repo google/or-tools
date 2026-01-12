@@ -1,0 +1,1 @@
+RUN: $(assignment_with_constraints_sat_py3)

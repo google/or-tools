@@ -497,6 +497,8 @@ message MPModelRequest {
   // These additional solutions may have a worse objective than the main
   // solution returned in the response.
   optional int32 populate_additional_solutions_up_to = 11 [default = 0];
+
+  reserved 12;
 }
 
 // Status returned by the solver. They follow a hierarchical nomenclature, to
@@ -574,7 +576,6 @@ enum MPSolverResponseStatus {
   // Implementation error: the requested solver implementation is not
   // available (see MPModelRequest.solver_type).
   // The linear solver binary was probably not linked with the required library,
-  // eg //ortools/linear_solver:linear_solver_scip for SCIP.
   MPSOLVER_SOLVER_TYPE_UNAVAILABLE = 0x7;
   // Some of the selected options were incompatible, e.g. a cancellable solve
   // was requested via SolverClient::SolveMipRemotely() with an underlying
@@ -658,4 +659,6 @@ message MPSolutionResponse {
   // additional solutions are different than the main solution described by the
   // above fields `objective_value` and `variable_value`.
   repeated MPSolution additional_solutions = 8;
+
+  reserved 9;
 }

@@ -61,8 +61,8 @@
 // Unlike the functions in `shortest_paths.h`, the functions in this file
 // directly return their result, to follow the current best practices.
 
-#ifndef OR_TOOLS_GRAPH_K_SHORTEST_PATHS_H_
-#define OR_TOOLS_GRAPH_K_SHORTEST_PATHS_H_
+#ifndef ORTOOLS_GRAPH_K_SHORTEST_PATHS_H_
+#define ORTOOLS_GRAPH_K_SHORTEST_PATHS_H_
 
 #include <algorithm>
 #include <functional>
@@ -184,7 +184,7 @@ ComputeShortestPath(const GraphType& graph,
   }
 
   if (std::vector<typename GraphType::NodeIndex> path =
-          std::move(dijkstra.NodePathTo(destination));
+          dijkstra.NodePathTo(destination);
       !path.empty()) {
     return {std::move(path), path_length};
   } else {
@@ -538,4 +538,4 @@ KShortestPaths<GraphType> YenKShortestPaths(
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_GRAPH_K_SHORTEST_PATHS_H_
+#endif  // ORTOOLS_GRAPH_K_SHORTEST_PATHS_H_

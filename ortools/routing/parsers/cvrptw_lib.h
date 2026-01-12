@@ -13,8 +13,8 @@
 
 // This header provides functions to help create random instances of the
 // vehicle routing problem; random capacities and random time windows.
-#ifndef OR_TOOLS_ROUTING_PARSERS_CVRPTW_LIB_H_
-#define OR_TOOLS_ROUTING_PARSERS_CVRPTW_LIB_H_
+#ifndef ORTOOLS_ROUTING_PARSERS_CVRPTW_LIB_H_
+#define ORTOOLS_ROUTING_PARSERS_CVRPTW_LIB_H_
 
 #include <cstdint>
 #include <functional>
@@ -95,44 +95,43 @@ class RandomDemand {
 // Service time (proportional to demand) + transition time callback.
 class ServiceTimePlusTransition {
  public:
-  ServiceTimePlusTransition(
-      int64_t time_per_demand_unit,
-      operations_research::RoutingNodeEvaluator2 demand,
-      operations_research::RoutingNodeEvaluator2 transition_time);
+  ServiceTimePlusTransition(int64_t time_per_demand_unit,
+                            RoutingNodeEvaluator2 demand,
+                            RoutingNodeEvaluator2 transition_time);
   int64_t Compute(RoutingIndexManager::NodeIndex from,
                   RoutingIndexManager::NodeIndex to) const;
 
  private:
   const int64_t time_per_demand_unit_;
-  operations_research::RoutingNodeEvaluator2 demand_;
-  operations_research::RoutingNodeEvaluator2 transition_time_;
+  RoutingNodeEvaluator2 demand_;
+  RoutingNodeEvaluator2 transition_time_;
 };
 
 // Stop service time + transition time callback.
 class StopServiceTimePlusTransition {
  public:
-  StopServiceTimePlusTransition(
-      int64_t stop_time, const LocationContainer& location_container,
-      operations_research::RoutingNodeEvaluator2 transition_time);
+  StopServiceTimePlusTransition(int64_t stop_time,
+                                const LocationContainer& location_container,
+                                RoutingNodeEvaluator2 transition_time);
   int64_t Compute(RoutingIndexManager::NodeIndex from,
                   RoutingIndexManager::NodeIndex to) const;
 
  private:
   const int64_t stop_time_;
   const LocationContainer& location_container_;
-  operations_research::RoutingNodeEvaluator2 demand_;
-  operations_research::RoutingNodeEvaluator2 transition_time_;
+  RoutingNodeEvaluator2 demand_;
+  RoutingNodeEvaluator2 transition_time_;
 };
 
 // Route plan displayer.
 // TODO(user): Move the display code to the routing library.
-void DisplayPlan(
-    const operations_research::RoutingIndexManager& manager,
-    const operations_research::RoutingModel& routing,
-    const operations_research::Assignment& plan, bool use_same_vehicle_costs,
-    int64_t max_nodes_per_group, int64_t same_vehicle_cost,
-    absl::Span<const std::string> dimension_names);
+void DisplayPlan(const RoutingIndexManager& manager,
+                 const RoutingModel& routing,
+                 const operations_research::Assignment& plan,
+                 bool use_same_vehicle_costs, int64_t max_nodes_per_group,
+                 int64_t same_vehicle_cost,
+                 absl::Span<const std::string> dimension_names);
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_ROUTING_PARSERS_CVRPTW_LIB_H_
+#endif  // ORTOOLS_ROUTING_PARSERS_CVRPTW_LIB_H_

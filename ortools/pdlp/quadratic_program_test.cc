@@ -26,18 +26,19 @@
 #include "absl/status/statusor.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
-#include "ortools/base/protobuf_util.h"
+#include "ortools/base/parse_text_proto.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/pdlp/test_util.h"
 
 namespace operations_research::pdlp {
 namespace {
 
-using ::google::protobuf::util::ParseTextOrDie;
+using ::google::protobuf::contrib::parse_proto::ParseTextOrDie;
 using ::operations_research::pdlp::internal::CombineRepeatedTripletsInPlace;
 using ::testing::ElementsAre;
 using ::testing::EndsWith;
 using ::testing::Eq;
+using ::testing::EqualsProto;
 using ::testing::HasSubstr;
 using ::testing::IsEmpty;
 using ::testing::Optional;
@@ -45,6 +46,7 @@ using ::testing::PrintToString;
 using ::testing::SizeIs;
 using ::testing::StartsWith;
 using ::testing::StrEq;
+using ::testing::status::IsOkAndHolds;
 
 const double kInfinity = std::numeric_limits<double>::infinity();
 
@@ -231,6 +233,27 @@ TEST_P(ConvertQpMpModelProtoTest, LpFromMpModelProto) {
   VerifyTestLp(*lp, maximize);
 }
 
+TEST_P(ConvertQpMpModelProtoTest, LpToMpModelProto) {
+  const bool maximize = GetParam();
+  QuadraticProgram lp = TestLp();
+  if (maximize) {
+    lp.objective_scaling_factor = -1;
+    lp.objective_vector *= -1;
+    lp.objective_offset *= -1;
+  }
+  EXPECT_THAT(QpToMpModelProto(lp),
+              IsOkAndHolds(EqualsProto(TestLpProto(maximize))));
+}
+
+TEST_P(ConvertQpMpModelProtoTest, LpRoundTrip) {
+  const bool maximize = GetParam();
+  ASSERT_OK_AND_ASSIGN(QuadraticProgram qp,
+                       QpFromMpModelProto(TestLpProto(maximize),
+                                          /*relax_integer_variables=*/false));
+  EXPECT_THAT(QpToMpModelProto(qp),
+              IsOkAndHolds(EqualsProto(TestLpProto(maximize))));
+}
+
 // The QP:
 //   optimize x_0^2 + x_1^2 + 3 x_0 - 4 s.t.
 //       x_0 + x_1          <= 42
@@ -308,6 +331,29 @@ TEST(CanFitInMpModelProto, SmallQpOk) {
                                      /*relax_integer_variables=*/false);
   ASSERT_TRUE(qp.ok()) << qp.status();
   EXPECT_TRUE(CanFitInMpModelProto(*qp).ok());
+}
+
+TEST(CanFitInMpModelProto, TooManyVariablesFails) {
+  QuadraticProgram qp(1024, 5);
+  EXPECT_THAT(internal::TestableCanFitInMpModelProto(qp, 1023),
+              testing::status::StatusIs(absl::StatusCode::kInvalidArgument,
+                                        HasSubstr("variable")));
+}
+
+TEST(CanFitInMpModelProto, TooManyConstraintsFails) {
+  QuadraticProgram qp(3, 1024);
+  EXPECT_THAT(internal::TestableCanFitInMpModelProto(qp, 1023),
+              testing::status::StatusIs(absl::StatusCode::kInvalidArgument,
+                                        HasSubstr("constraint")));
+}
+
+TEST_P(ConvertQpMpModelProtoTest, QpRoundTrip) {
+  const bool maximize = GetParam();
+  ASSERT_OK_AND_ASSIGN(QuadraticProgram qp,
+                       QpFromMpModelProto(TestQpProto(maximize),
+                                          /*relax_integer_variables=*/false));
+  EXPECT_THAT(QpToMpModelProto(qp),
+              IsOkAndHolds(EqualsProto(TestQpProto(maximize))));
 }
 
 // The ILP:

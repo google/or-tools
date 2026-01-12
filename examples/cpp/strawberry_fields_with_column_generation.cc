@@ -610,36 +610,29 @@ int main(int argc, char** argv) {
 
   operations_research::MPSolver::OptimizationProblemType solver_type;
   bool found = false;
-#if defined(USE_CLP)
-  if (absl::GetFlag(FLAGS_colgen_solver) == "clp") {
+  const std::string solver_name = absl::GetFlag(FLAGS_colgen_solver);
+  if (solver_name == "clp") {
     solver_type = operations_research::MPSolver::CLP_LINEAR_PROGRAMMING;
     found = true;
   }
-#endif  // USE_CLP
-  if (absl::GetFlag(FLAGS_colgen_solver) == "glop") {
+  if (solver_name == "glop") {
     solver_type = operations_research::MPSolver::GLOP_LINEAR_PROGRAMMING;
     found = true;
   }
-#if defined(USE_XPRESS)
-  if (absl::GetFlag(FLAGS_colgen_solver) == "xpress") {
+  if (solver_name == "xpress") {
     solver_type = operations_research::MPSolver::XPRESS_LINEAR_PROGRAMMING;
-    // solver_type = operations_research::MPSolver::CPLEX_LINEAR_PROGRAMMING;
     found = true;
   }
-#endif
-#if defined(USE_CPLEX)
-  if (absl::GetFlag(FLAGS_colgen_solver) == "cplex") {
+  if (solver_name == "cplex") {
     solver_type = operations_research::MPSolver::CPLEX_LINEAR_PROGRAMMING;
     found = true;
   }
-#endif
   if (!found) {
-    LOG(ERROR) << "Unknown solver " << absl::GetFlag(FLAGS_colgen_solver);
-    return 1;
+    LOG(ERROR) << "Unknown solver " << solver_name;
+    return EXIT_FAILURE;
   }
 
-  LOG(INFO) << "Chosen solver: " << absl::GetFlag(FLAGS_colgen_solver)
-            << std::endl;
+  LOG(INFO) << "Chosen solver: " << solver_name << std::endl;
 
   if (absl::GetFlag(FLAGS_colgen_instance) == -1) {
     for (int i = 0; i < operations_research::kInstanceCount; ++i) {

@@ -14,7 +14,8 @@
 # Notebook utilities for OR-Tools.
 
 load("@ortools_notebook_deps//:requirements.bzl", "requirement")
-load("@rules_python//python:defs.bzl", "py_binary")
+load("@pip_deps//:requirements.bzl", "requirement")
+load("@rules_python//python:py_binary.bzl", "py_binary")
 
 py_binary(
     name = "ortools_notebook",
@@ -32,7 +33,6 @@ py_binary(
         "//ortools/sat/colab:flags",
         "//ortools/sat/colab:visualization",
         "//ortools/sat/python:cp_model",
-        "//ortools/sat/python:cp_model_numbers",
         requirement("notebook"),
         requirement("svgwrite"),
         requirement("plotly"),

@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_MATH_OPT_SOLVERS_GSCIP_SOLVER_H_
-#define OR_TOOLS_MATH_OPT_SOLVERS_GSCIP_SOLVER_H_
+#ifndef ORTOOLS_MATH_OPT_SOLVERS_GSCIP_SOLVER_H_
+#define ORTOOLS_MATH_OPT_SOLVERS_GSCIP_SOLVER_H_
 
 #include <cstdint>
 #include <memory>
@@ -20,15 +20,13 @@
 #include <utility>
 #include <vector>
 
+#include "absl/base/nullability.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/types/span.h"
 #include "ortools/base/linked_hash_map.h"
-#include "ortools/gscip/gscip.h"
-#include "ortools/gscip/gscip.pb.h"
-#include "ortools/gscip/gscip_event_handler.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/invalid_indicators.h"
 #include "ortools/math_opt/core/inverted_bounds.h"
@@ -39,7 +37,10 @@
 #include "ortools/math_opt/model_update.pb.h"
 #include "ortools/math_opt/parameters.pb.h"
 #include "ortools/math_opt/result.pb.h"
-#include "ortools/math_opt/solvers/gscip/gscip_solver_constraint_handler.h"
+#include "ortools/math_opt/solvers/gscip/gscip.h"
+#include "ortools/math_opt/solvers/gscip/gscip.pb.h"
+#include "ortools/math_opt/solvers/gscip/gscip_event_handler.h"
+#include "ortools/math_opt/solvers/gscip/math_opt_gscip_solver_constraint_handler.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
 #include "ortools/util/solve_interrupter.h"
 #include "scip/type_cons.h"
@@ -58,12 +59,12 @@ class GScipSolver : public SolverInterface {
       const ModelSolveParametersProto& model_parameters,
       MessageCallback message_cb,
       const CallbackRegistrationProto& callback_registration, Callback cb,
-      const SolveInterrupter* interrupter) override;
+      const SolveInterrupter* absl_nullable interrupter) override;
   absl::StatusOr<bool> Update(const ModelUpdateProto& model_update) override;
   absl::StatusOr<ComputeInfeasibleSubsystemResultProto>
-  ComputeInfeasibleSubsystem(const SolveParametersProto& parameters,
-                             MessageCallback message_cb,
-                             const SolveInterrupter* interrupter) override;
+  ComputeInfeasibleSubsystem(
+      const SolveParametersProto& parameters, MessageCallback message_cb,
+      const SolveInterrupter* absl_nullable interrupter) override;
 
   // Returns the merged parameters and a list of warnings for unsupported
   // parameters.
@@ -182,4 +183,4 @@ class GScipSolver : public SolverInterface {
 }  // namespace math_opt
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_MATH_OPT_SOLVERS_GSCIP_SOLVER_H_
+#endif  // ORTOOLS_MATH_OPT_SOLVERS_GSCIP_SOLVER_H_

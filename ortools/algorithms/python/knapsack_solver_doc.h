@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_ALGORITHMS_PYTHON_KNAPSACK_SOLVER_DOC_H_
-#define OR_TOOLS_ALGORITHMS_PYTHON_KNAPSACK_SOLVER_DOC_H_
+#ifndef ORTOOLS_ALGORITHMS_PYTHON_KNAPSACK_SOLVER_DOC_H_
+#define ORTOOLS_ALGORITHMS_PYTHON_KNAPSACK_SOLVER_DOC_H_
 
 /*
   This file contains docstrings for use in the Python bindings.
@@ -298,4 +298,4 @@ static const char* __doc_operations_research_KnapsackState_is_in_2 =
 #pragma GCC diagnostic pop
 #endif
 
-#endif  // OR_TOOLS_ALGORITHMS_PYTHON_KNAPSACK_SOLVER_DOC_H_
+#endif  // ORTOOLS_ALGORITHMS_PYTHON_KNAPSACK_SOLVER_DOC_H_

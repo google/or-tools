@@ -64,8 +64,8 @@
 //   }
 // }
 
-#ifndef OR_TOOLS_BASE_ZIPFILE_H_
-#define OR_TOOLS_BASE_ZIPFILE_H_
+#ifndef ORTOOLS_BASE_ZIPFILE_H_
+#define ORTOOLS_BASE_ZIPFILE_H_
 
 #include <memory>
 #include <optional>
@@ -168,4 +168,4 @@ class ZipArchive {
 
 };  // namespace zipfile
 
-#endif  // OR_TOOLS_BASE_ZIPFILE_H_
+#endif  // ORTOOLS_BASE_ZIPFILE_H_

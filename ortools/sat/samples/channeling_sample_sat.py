@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# [START program]
 """Link integer constraints together."""
 
 
@@ -71,3 +72,4 @@ def channeling_sample_sat():
 
 
 channeling_sample_sat()
+# [END program]

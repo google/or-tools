@@ -73,10 +73,10 @@ Vagrant.configure("2") do |config|
   # note: clang installed by default
   config.vm.provision "env", type: "shell", inline:<<-SHELL
   set -x
-  pkg update -f
-  pkg install -y git cmake
-  pkg install -y swig python39 py39-wheel py39-pip py39-pytest-virtualenv
-  pkg install -y py39-numpy py39-pandas py39-matplotlib
+  pkgin update
+  pkgin -y install git cmake
+  pkgin -y install swig python311 py311-wheel py311-pip py311-pytest-virtualenv
+  pkgin -y install py311-numpy py311-pandas py311-matplotlib
   SHELL
 
   config.vm.provision "file", source: "../../../../CMakeLists.txt", destination: "$HOME/project/"
@@ -87,7 +87,6 @@ Vagrant.configure("2") do |config|
   config.vm.provision "file", source: "../../../../examples/dotnet", destination: "$HOME/project/examples/"
   config.vm.provision "file", source: "../../../../examples/java", destination: "$HOME/project/examples/"
   config.vm.provision "file", source: "../../../../examples/python", destination: "$HOME/project/examples/"
-  config.vm.provision "file", source: "../../../../examples/tests", destination: "$HOME/project/examples/"
   config.vm.provision "file", source: "../../../../patches", destination: "$HOME/project/"
   config.vm.provision "file", source: "../../../../LICENSE", destination: "$HOME/project/"
   config.vm.provision "file", source: "../../../../Version.txt", destination: "$HOME/project/"

@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_UTIL_SORTED_INTERVAL_LIST_H_
-#define OR_TOOLS_UTIL_SORTED_INTERVAL_LIST_H_
+#ifndef ORTOOLS_UTIL_SORTED_INTERVAL_LIST_H_
+#define ORTOOLS_UTIL_SORTED_INTERVAL_LIST_H_
 
 #include <cstddef>
 #include <cstdint>
@@ -148,6 +148,12 @@ class Domain {
    * Returns the full domain Int64.
    */
   static Domain AllValues();
+
+  /** Returns the domain [int_min, value]. */
+  static Domain LowerOrEqual(int64_t value);
+
+  /** Returns the domain [value., int_max]. */
+  static Domain GreaterOrEqual(int64_t value);
 
   /**
    * Creates a domain from the union of an unsorted list of integer values.
@@ -350,6 +356,12 @@ class Domain {
    * Returns true iff D is included in the given domain.
    */
   bool IsIncludedIn(const Domain& domain) const;
+
+  /**
+   * Returns true iff D overlaps with the given domain, that is, the
+   * intersection of the two domains is not empty.
+   */
+  bool OverlapsWith(const Domain& domain) const;
 
   /**
    * Returns the set Int64 ∖ D.
@@ -605,17 +617,6 @@ class SortedDisjointIntervalList {
   Iterator InsertInterval(int64_t start, int64_t end);
 
   /**
-   * If value is in an interval, increase its end by one, otherwise insert the
-   * interval [value, value]. In both cases, this returns an iterator to the
-   * new/modified interval (possibly merged with others) and fills newly_covered
-   * with the new value that was just added in the union of all the intervals.
-   *
-   * If this causes an interval ending at kint64max to grow, it will die with a
-   * CHECK fail.
-   */
-  Iterator GrowRightByOne(int64_t value, int64_t* newly_covered);
-
-  /**
    * Adds all intervals [starts[i]..ends[i]].
    *
    * Same behavior as InsertInterval() upon invalid intervals. There's a version
@@ -663,7 +664,7 @@ class SortedDisjointIntervalList {
   const ClosedInterval& last() const { return *intervals_.rbegin(); }
 
   void clear() { intervals_.clear(); }
-  void swap(SortedDisjointIntervalList& other) {
+  void swap(SortedDisjointIntervalList& other) noexcept {
     intervals_.swap(other.intervals_);
   }
 
@@ -724,7 +725,9 @@ class ClosedInterval::Iterator {
   // arithmetic.
   uint64_t current_;
 };
-
+#if __cplusplus >= 202002L
+static_assert(std::input_iterator<ClosedInterval::Iterator>);
+#endif
 // begin()/end() are required for iteration over ClosedInterval in a range for
 // loop.
 inline ClosedInterval::Iterator begin(ClosedInterval interval) {
@@ -737,4 +740,4 @@ inline ClosedInterval::Iterator end(ClosedInterval interval) {
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_UTIL_SORTED_INTERVAL_LIST_H_
+#endif  // ORTOOLS_UTIL_SORTED_INTERVAL_LIST_H_

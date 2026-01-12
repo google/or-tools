@@ -11,23 +11,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Python wrapper for ..
+# Description: python wrapping of the libraries in ../
+
 load("@pip_deps//:requirements.bzl", "requirement")
 load("@pybind11_bazel//:build_defs.bzl", "pybind_extension")
-load("@rules_python//python:defs.bzl", "py_test")
+load("@rules_python//python:py_test.bzl", "py_test")
 
-# set_cover
 pybind_extension(
     name = "set_cover",
     srcs = ["set_cover.cc"],
     visibility = ["//visibility:public"],
     deps = [
-        "//ortools/set_cover:set_cover_cc_proto",
+        "//ortools/set_cover:base_types",
         "//ortools/set_cover:set_cover_heuristics",
         "//ortools/set_cover:set_cover_invariant",
         "//ortools/set_cover:set_cover_model",
         "//ortools/set_cover:set_cover_reader",
-        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/types:span",
         "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
     ],
 )
@@ -35,10 +35,9 @@ pybind_extension(
 py_test(
     name = "set_cover_test",
     srcs = ["set_cover_test.py"],
-    python_version = "PY3",
     deps = [
         ":set_cover",
-        "//ortools/set_cover:set_cover_py_pb2",
         requirement("absl-py"),
+        "//ortools/set_cover:set_cover_py_pb2",
     ],
 )

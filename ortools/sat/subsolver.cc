@@ -142,7 +142,6 @@ void DeterministicLoop(std::vector<std::unique_ptr<SubSolver>>& subsolvers,
   std::vector<double> timing;
   to_run.reserve(batch_size);
   ThreadPool pool(num_threads);
-  pool.StartWorkers();
   for (int batch_index = 0;; ++batch_index) {
     VLOG(2) << "Starting deterministic batch of size " << batch_size;
     SynchronizeAll(subsolvers);
@@ -214,7 +213,6 @@ void NonDeterministicLoop(std::vector<std::unique_ptr<SubSolver>>& subsolvers,
   };
 
   ThreadPool pool(num_threads);
-  pool.StartWorkers();
 
   // The lambda below are using little space, but there is no reason
   // to create millions of them, so we use the blocking nature of
@@ -235,7 +233,7 @@ void NonDeterministicLoop(std::vector<std::unique_ptr<SubSolver>>& subsolvers,
       // TODO(user): We could also directly register callback to set stopping
       // Boolean to false in a few places.
       if (!condition) {
-        mutex.Unlock();
+        mutex.unlock();
         SynchronizeAll(subsolvers);
         continue;
       }
@@ -243,7 +241,7 @@ void NonDeterministicLoop(std::vector<std::unique_ptr<SubSolver>>& subsolvers,
       // The stopping condition is that we do not have anything else to generate
       // once all the task are done and synchronized.
       if (num_in_flight == 0) all_done = true;
-      mutex.Unlock();
+      mutex.unlock();
     }
 
     SynchronizeAll(subsolvers);
@@ -251,7 +249,7 @@ void NonDeterministicLoop(std::vector<std::unique_ptr<SubSolver>>& subsolvers,
     {
       // We need to do that while holding the lock since substask below might
       // be currently updating the time via AddTaskDuration().
-      const absl::MutexLock mutex_lock(&mutex);
+      const absl::MutexLock mutex_lock(mutex);
       ClearSubsolversThatAreDone(num_in_flight_per_subsolvers, subsolvers);
       best = NextSubsolverToSchedule(subsolvers, /*deterministic=*/false);
       if (VLOG_IS_ON(1) && time_limit->LimitReached()) {
@@ -283,7 +281,7 @@ void NonDeterministicLoop(std::vector<std::unique_ptr<SubSolver>>& subsolvers,
     // Schedule next task.
     subsolvers[best]->NotifySelection();
     {
-      absl::MutexLock mutex_lock(&mutex);
+      absl::MutexLock mutex_lock(mutex);
       num_in_flight++;
       num_in_flight_per_subsolvers[best]++;
     }
@@ -295,7 +293,7 @@ void NonDeterministicLoop(std::vector<std::unique_ptr<SubSolver>>& subsolvers,
       timer.Start();
       task();
 
-      const absl::MutexLock mutex_lock(&mutex);
+      const absl::MutexLock mutex_lock(mutex);
       DCHECK(subsolvers[best] != nullptr);
       DCHECK_GT(num_in_flight_per_subsolvers[best], 0);
       num_in_flight_per_subsolvers[best]--;

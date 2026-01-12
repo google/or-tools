@@ -11,53 +11,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
-load("@rules_cc//cc:defs.bzl", "cc_library")
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
 
 package(default_visibility = ["//visibility:public"])
-
-# Description:
-# Home of algorithms used in OR solvers
-
-config_setting(
-    name = "on_linux",
-    constraint_values = ["@platforms//os:linux"],
-)
-
-config_setting(
-    name = "on_macos",
-    constraint_values = ["@platforms//os:macos"],
-)
-
-config_setting(
-    name = "on_windows",
-    constraint_values = ["@platforms//os:windows"],
-)
-
-# OSS solvers
-bool_flag(
-    name = "with_cbc",
-    build_setting_default = False,
-)
-
-config_setting(
-    name = "use_cbc",
-    flag_values = {
-        ":with_cbc": "true",
-    },
-)
-
-bool_flag(
-    name = "with_scip",
-    build_setting_default = True,
-)
-
-config_setting(
-    name = "use_scip",
-    flag_values = {
-        ":with_scip": "true",
-    },
-)
 
 cc_library(
     name = "binary_search",
@@ -109,11 +66,10 @@ cc_test(
     name = "radix_sort_test",
     srcs = ["radix_sort_test.cc"],
     copts = select({
-        "on_linux": [],
-        "on_macos": [],
-        "on_windows": ["/Zc:preprocessor"],
+        "@platforms//os:windows": ["/Zc:preprocessor"],
         "//conditions:default": [],
     }),
+    tags = ["noci"],
     deps = [
         ":radix_sort",
         "//ortools/base:dump_vars",
@@ -194,6 +150,7 @@ cc_test(
     size = "large",
     timeout = "eternal",
     srcs = ["adjustable_k_ary_heap_stress_test.cc"],
+    tags = ["manual"],
     deps = [
         ":adjustable_k_ary_heap",
         "//ortools/base:gmock_main",
@@ -208,14 +165,8 @@ cc_library(
     name = "knapsack_solver_lib",
     srcs = ["knapsack_solver.cc"],
     hdrs = ["knapsack_solver.h"],
-    copts = [] + select({
-        ":use_cbc": ["-DUSE_CBC"],
-        "//conditions:default": [],
-    }) + select({
-        ":use_scip": ["-DUSE_SCIP"],
-        "//conditions:default": [],
-    }),
     deps = [
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/time",
@@ -240,6 +191,7 @@ cc_test(
         "//ortools/base:gmock_main",
         "//ortools/util:time_limit",
         "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -292,11 +244,40 @@ cc_test(
 )
 
 cc_library(
+    name = "space_saving_most_frequent",
+    hdrs = ["space_saving_most_frequent.h"],
+    deps = [
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/base:nullability",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/hash",
+        "@abseil-cpp//absl/log:check",
+    ],
+)
+
+cc_test(
+    name = "space_saving_most_frequent_test",
+    srcs = ["space_saving_most_frequent_test.cc"],
+    deps = [
+        ":space_saving_most_frequent",
+        "//ortools/base:gmock_main",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/base:nullability",
+        "@abseil-cpp//absl/hash",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/random:distributions",
+        "@google_benchmark//:benchmark",
+    ],
+)
+
+cc_library(
     name = "sparse_permutation",
     srcs = ["sparse_permutation.cc"],
     hdrs = ["sparse_permutation.h"],
     deps = [
         "//ortools/base",
+        "//ortools/base:numbers",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",
     ],
@@ -430,9 +411,7 @@ cc_test(
     deps = [
         ":n_choose_k",
         "//ortools/base:dump_vars",
-        "//ortools/base:fuzztest",
         "//ortools/base:gmock_main",
-        "//ortools/base:mathutil",
         "//ortools/util:flat_matrix",
         "@abseil-cpp//absl/numeric:int128",
         "@abseil-cpp//absl/random",

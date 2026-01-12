@@ -31,8 +31,8 @@
 // See cpp_example.cc for a minimal example of creating and serializing these
 // protos from C++, calling the C API to solve the model, and then deserializing
 // the returned protos.
-#ifndef OR_TOOLS_MATH_OPT_CORE_C_API_SOLVER_H_
-#define OR_TOOLS_MATH_OPT_CORE_C_API_SOLVER_H_
+#ifndef ORTOOLS_MATH_OPT_CORE_C_API_SOLVER_H_
+#define ORTOOLS_MATH_OPT_CORE_C_API_SOLVER_H_
 
 #include <stddef.h>
 
@@ -114,4 +114,4 @@ void MathOptFree(void* ptr);
 }  // extern "C"
 #endif  // __cplusplus
 
-#endif  // OR_TOOLS_MATH_OPT_CORE_C_API_SOLVER_H_
+#endif  // ORTOOLS_MATH_OPT_CORE_C_API_SOLVER_H_

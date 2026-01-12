@@ -19,11 +19,13 @@
 #include <vector>
 
 #include "absl/base/log_severity.h"
+#include "absl/base/optimization.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/types/span.h"
 #include "ortools/sat/2d_rectangle_presolve.h"
 #include "ortools/sat/diffn_util.h"
+#include "ortools/sat/enforcement.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/sat_base.h"
@@ -94,11 +96,11 @@ ItemWithVariableSize NoOverlap2DConstraintHelper::GetItemWithVariableSize(
 namespace {
 void ClearAndAddMandatoryOverlapReason(int box1, int box2,
                                        SchedulingConstraintHelper* y) {
-  y->ClearReason();
+  y->ResetReason();
   y->AddPresenceReason(box1);
   y->AddPresenceReason(box2);
-  y->AddReasonForBeingBefore(box1, box2);
-  y->AddReasonForBeingBefore(box2, box1);
+  y->AddReasonForBeingBeforeAssumingNoOverlap(box1, box2);
+  y->AddReasonForBeingBeforeAssumingNoOverlap(box2, box1);
 }
 }  // namespace
 
@@ -115,7 +117,7 @@ bool NoOverlap2DConstraintHelper::ReportConflictFromTwoBoxes(int box1,
   }
   ClearAndAddMandatoryOverlapReason(box1, box2, x_helper_.get());
   ClearAndAddMandatoryOverlapReason(box1, box2, y_helper_.get());
-  x_helper_->ImportOtherReasons(*y_helper_);
+  x_helper_->ImportReasonsFromOther(*y_helper_);
   return x_helper_->ReportConflict();
 }
 
@@ -124,8 +126,8 @@ bool NoOverlap2DConstraintHelper::ReportConflictFromInfeasibleBoxRanges(
   if (ranges.size() == 2) {
     return ReportConflictFromTwoBoxes(ranges[0].box_index, ranges[1].box_index);
   }
-  x_helper_->ClearReason();
-  y_helper_->ClearReason();
+  x_helper_->ResetReason();
+  y_helper_->ResetReason();
   for (const auto& range : ranges) {
     const int b = range.box_index;
 
@@ -141,7 +143,7 @@ bool NoOverlap2DConstraintHelper::ReportConflictFromInfeasibleBoxRanges(
     x_helper_->AddPresenceReason(b);
     y_helper_->AddPresenceReason(b);
   }
-  x_helper_->ImportOtherReasons(*y_helper_);
+  x_helper_->ImportReasonsFromOther(*y_helper_);
   return x_helper_->ReportConflict();
 }
 
@@ -156,37 +158,15 @@ namespace {
 bool LeftBoxBeforeRightBoxOnFirstDimension(int left, int right,
                                            SchedulingConstraintHelper* x,
                                            SchedulingConstraintHelper* y) {
-  // left box2 pushes right box2.
-  const IntegerValue left_end_min = x->EndMin(left);
-  if (left_end_min > x->StartMin(right)) {
-    x->ClearReason();
-    x->AddPresenceReason(left);
-    x->AddPresenceReason(right);
-    x->AddReasonForBeingBefore(left, right);
-    x->AddEndMinReason(left, left_end_min);
-    // left and right must overlap on y.
-    ClearAndAddMandatoryOverlapReason(left, right, y);
-    // Propagate with the complete reason.
-    x->ImportOtherReasons(*y);
-    if (!x->IncreaseStartMin(right, left_end_min)) return false;
-  }
-
-  // right box2 pushes left box2.
-  const IntegerValue right_start_max = x->StartMax(right);
-  if (right_start_max < x->EndMax(left)) {
-    x->ClearReason();
-    x->AddPresenceReason(left);
-    x->AddPresenceReason(right);
-    x->AddReasonForBeingBefore(left, right);
-    x->AddStartMaxReason(right, right_start_max);
-    // left and right must overlap on y.
-    ClearAndAddMandatoryOverlapReason(left, right, y);
-    // Propagate with the complete reason.
-    x->ImportOtherReasons(*y);
-    if (!x->DecreaseEndMax(left, right_start_max)) return false;
-  }
-
-  return true;
+  x->ResetReason();
+  x->AddPresenceReason(left);
+  x->AddPresenceReason(right);
+  x->AddReasonForBeingBeforeAssumingNoOverlap(left, right);
+  // left and right must overlap on y.
+  ClearAndAddMandatoryOverlapReason(left, right, y);
+  // Propagate with the complete reason.
+  x->ImportReasonsFromOther(*y);
+  return x->PushTaskOrderWhenPresent(left, right);
 }
 
 }  // namespace
@@ -209,6 +189,7 @@ bool NoOverlap2DConstraintHelper::PropagateRelativePosition(
       return LeftBoxBeforeRightBoxOnFirstDimension(
           second, first, y_helper_.get(), x_helper_.get());
   }
+  ABSL_UNREACHABLE();
 }
 
 void NoOverlap2DConstraintHelper::Reset(
@@ -311,11 +292,19 @@ void NoOverlap2DConstraintHelper::Reset(
   y_helper_ = std::make_unique<SchedulingConstraintHelper>(
       std::move(y_starts), std::move(y_ends), std::move(y_sizes),
       std::move(y_reason_for_presence), model_);
+  x_helper_->SetEnforcementId(enforcement_id_);
+  y_helper_->SetEnforcementId(enforcement_id_);
   x_demands_helper_ = nullptr;
   y_demands_helper_ = nullptr;
 }
 
+bool NoOverlap2DConstraintHelper::IsEnforced() const {
+  return enforcement_helper_.Status(enforcement_id_) ==
+         EnforcementStatus::IS_ENFORCED;
+}
+
 bool NoOverlap2DConstraintHelper::Propagate() {
+  if (!IsEnforced()) return true;
   for (const int id : propagators_watching_) {
     watcher_->CallOnNextPropagate(id);
   }
@@ -373,7 +362,9 @@ bool NoOverlap2DConstraintHelper::Propagate() {
   return true;
 }
 
-void NoOverlap2DConstraintHelper::RegisterWith(GenericLiteralWatcher* watcher) {
+void NoOverlap2DConstraintHelper::RegisterWith(
+    GenericLiteralWatcher* watcher,
+    absl::Span<const Literal> enforcement_literals) {
   const int id = watcher->Register(this);
   const int num_boxes = NumBoxes();
   for (int b = 0; b < num_boxes; ++b) {
@@ -391,6 +382,10 @@ void NoOverlap2DConstraintHelper::RegisterWith(GenericLiteralWatcher* watcher) {
     watcher->WatchIntegerVariable(y_helper_->Ends()[b].var, id);
   }
   watcher->SetPropagatorPriority(id, 0);
+  enforcement_id_ =
+      enforcement_helper_.Register(enforcement_literals, watcher, id);
+  x_helper_->SetEnforcementId(enforcement_id_);
+  y_helper_->SetEnforcementId(enforcement_id_);
 }
 
 }  // namespace sat

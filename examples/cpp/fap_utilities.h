@@ -11,12 +11,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//
 // Utilities used by frequency_assignment_problem.cc.
-//
 
-#ifndef OR_TOOLS_EXAMPLES_FAP_UTILITIES_H_
-#define OR_TOOLS_EXAMPLES_FAP_UTILITIES_H_
+#ifndef ORTOOLS_EXAMPLES_FAP_UTILITIES_H_
+#define ORTOOLS_EXAMPLES_FAP_UTILITIES_H_
 
 #include <cstdint>
 #include <vector>
@@ -68,4 +66,4 @@ void PrintResultsSoft(SolutionCollector* collector,
                       absl::Span<const int> key_from_index);
 
 }  // namespace operations_research
-#endif  // OR_TOOLS_EXAMPLES_FAP_UTILITIES_H_
+#endif  // ORTOOLS_EXAMPLES_FAP_UTILITIES_H_

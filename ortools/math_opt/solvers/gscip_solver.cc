@@ -23,6 +23,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/base/nullability.h"
 #include "absl/cleanup/cleanup.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
@@ -43,10 +44,6 @@
 #include "ortools/base/map_util.h"
 #include "ortools/base/protoutil.h"
 #include "ortools/base/status_macros.h"
-#include "ortools/gscip/gscip.h"
-#include "ortools/gscip/gscip.pb.h"
-#include "ortools/gscip/gscip_event_handler.h"
-#include "ortools/gscip/gscip_parameters.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/invalid_indicators.h"
 #include "ortools/math_opt/core/inverted_bounds.h"
@@ -61,7 +58,11 @@
 #include "ortools/math_opt/parameters.pb.h"
 #include "ortools/math_opt/result.pb.h"
 #include "ortools/math_opt/solution.pb.h"
-#include "ortools/math_opt/solvers/gscip/gscip_solver_constraint_handler.h"
+#include "ortools/math_opt/solvers/gscip/gscip.h"
+#include "ortools/math_opt/solvers/gscip/gscip.pb.h"
+#include "ortools/math_opt/solvers/gscip/gscip_event_handler.h"
+#include "ortools/math_opt/solvers/gscip/gscip_parameters.h"
+#include "ortools/math_opt/solvers/gscip/math_opt_gscip_solver_constraint_handler.h"
 #include "ortools/math_opt/solvers/message_callback_data.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
 #include "ortools/math_opt/validators/callback_validator.h"
@@ -1013,7 +1014,7 @@ absl::StatusOr<SolveResultProto> GScipSolver::Solve(
     const ModelSolveParametersProto& model_parameters,
     const MessageCallback message_cb,
     const CallbackRegistrationProto& callback_registration, Callback cb,
-    const SolveInterrupter* const interrupter) {
+    const SolveInterrupter* absl_nullable const interrupter) {
   RETURN_IF_ERROR(ModelSolveParametersAreSupported(
       model_parameters, kGscipSupportedStructures, "SCIP"));
   const absl::Time start = absl::Now();
@@ -1093,8 +1094,7 @@ absl::StatusOr<SolveResultProto> GScipSolver::Solve(
 
   ASSIGN_OR_RETURN(
       GScipResult gscip_result,
-      gscip_->Solve(gscip_parameters,
-                    /*legacy_params=*/"", std::move(gscip_msg_cb),
+      gscip_->Solve(gscip_parameters, std::move(gscip_msg_cb),
                     use_interrupter ? &gscip_interrupter : nullptr));
 
   // Flush the potential last unfinished line.
@@ -1354,7 +1354,7 @@ absl::StatusOr<bool> GScipSolver::Update(const ModelUpdateProto& model_update) {
 absl::StatusOr<ComputeInfeasibleSubsystemResultProto>
 GScipSolver::ComputeInfeasibleSubsystem(const SolveParametersProto&,
                                         MessageCallback,
-                                        const SolveInterrupter*) {
+                                        const SolveInterrupter* absl_nullable) {
   return absl::UnimplementedError(
       "SCIP does not provide a method to compute an infeasible subsystem");
 }

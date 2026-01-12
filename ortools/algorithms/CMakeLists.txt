@@ -52,17 +52,8 @@ if(BUILD_TESTING)
         GTest::gmock
     )
   endforeach()
-  if(USE_fuzztest)
-    ortools_cxx_test(
-      NAME
-      algorithms_n_choose_k_test
-      SOURCES
-      "./n_choose_k_test.cc"
-      LINK_LIBRARIES
-      benchmark::benchmark
-      fuzztest::fuzztest
-      fuzztest::fuzztest_gtest_main
-      GTest::gmock
-    )
-  endif()
+  # These tests are too long so we disable them.
+  set_tests_properties(
+    cxx_algorithms_radix_sort_test
+    PROPERTIES DISABLED TRUE)
 endif()

@@ -1,12 +1,38 @@
 using ORToolsGenerated
 const OperationsResearch = ORToolsGenerated.Proto.operations_research
 const MathOpt = OperationsResearch.math_opt
+const PDLP = OperationsResearch.pdlp
+const Sat = OperationsResearch.sat
 const SolverType = MathOpt.SolverTypeProto
 const SolveResultProto = MathOpt.SolveResultProto
 const TerminationReasonProto = MathOpt.TerminationReasonProto
 const LimitProto = MathOpt.LimitProto
 const FeasibilityStatusProto = MathOpt.FeasibilityStatusProto
+const BasisStatusProto = MathOpt.BasisStatusProto
+const GScipOutput = OperationsResearch.GScipOutput
+const PdlpOutput = MathOpt.var"SolveResultProto.PdlpOutput"
+const PdlpTerminationCriteria_SimpleOptimalityCriteria =
+    PDLP.var"TerminationCriteria.SimpleOptimalityCriteria"
+const PdlpTerminationCriteria_DetailedOptimalityCriteria =
+    PDLP.var"TerminationCriteria.DetailedOptimalityCriteria"
+const PdlpHybridGradientParams_RestartStrategy =
+    PDLP.var"PrimalDualHybridGradientParams.RestartStrategy"
+const PdlpHybridGradientParams_PresolveOptions =
+    PDLP.var"PrimalDualHybridGradientParams.PresolveOptions"
+const PdlpHybridGradientParams_LinesearchRule =
+    PDLP.var"PrimalDualHybridGradientParams.LinesearchRule"
+const PdlpOptimalityNorm = PDLP.OptimalityNorm
+const PdlpSchedulerType = PDLP.SchedulerType
+const PdlpAdaptiveLinesearchParams = PDLP.AdaptiveLinesearchParams
+const PdlpMalitskyPockParams = PDLP.MalitskyPockParams
 const PB = MathOpt.PB
+const BoolArgument = Sat.BoolArgumentProto
+const CPSATVariableSelectionStrategy =
+    Sat.var"DecisionStrategyProto.VariableSelectionStrategy"
+const CPSATDomainReductionStrategy = Sat.var"DecisionStrategyProto.DomainReductionStrategy"
+# EXPERIMENTAL. For now, this is meant to be used by the solver and not filled by clients.
+const CPSATExperimentalSymmetry = Sat.SymmetryProto
+const CpSolverResponse = Sat.CpSolverResponse
 
 """
 Given the nature of the fields, we are using an alias for the VariablesProto struct.
@@ -47,6 +73,43 @@ const NewLinearConstraints =
         Vector{String}(),
     )
 
+"""
+Given the nature of the fields, we are using an alias for the LinearConstraintProto struct
+of CPSat.
+"""
+const CPSatLinearConstraintProto = Sat.LinearConstraintProto
+const NewCPSatLinearConstraint =
+    () -> CPSatLinearConstraintProto(
+        Vector{Int32}(), # vars
+        Vector{Int64}(), # coeffs
+        Vector{Int64}(), # domain
+    )
+
+"""
+Given the nature of the fields, we are using an alias for the CircuitConstraintProto struct
+of CPSat.
+The circuit constraint takes a graph and forces the arcs present (with arc
+presence indicated by a literal) to form a unique cycle.
+"""
+const CircuitConstraintProto = Sat.CircuitConstraintProto
+const CircuitConstraint =
+    () -> CircuitConstraintProto(
+        Vector{Int32}(), # tails
+        Vector{Int32}(), # heads
+        Vector{Int32}(), # literals
+    )
+
+"""
+This message encodes a partial (or full) assignment of the variables of a
+CPSAT Model. The variable indices should be unique and valid.
+"""
+const CPSATPartialVariableAssignment = Sat.PartialVariableAssignment
+const NewCPSATPartialVariableAssignment =
+    () -> CPSATPartialVariableAssignment(
+        Vector{Int32}(), # vars
+        Vector{Int64}(), # values
+    )
+
 const Duration = MathOpt.google.protobuf.Duration
 const Emphasis = MathOpt.EmphasisProto
 const LPAlgorithm = MathOpt.LPAlgorithmProto
@@ -71,29 +134,22 @@ const GlopParameters_InitialBasisHeuristic =
     OperationsResearch.glop.var"GlopParameters.InitialBasisHeuristic"
 
 ## Sat parameter types.
-const AbstractSatParameters = OperationsResearch.sat.var"##AbstractSatParameters"
-const SatParameters_VariableOrder = OperationsResearch.sat.var"SatParameters.VariableOrder"
-const SatParameters_Polarity = OperationsResearch.sat.var"SatParameters.Polarity"
+const SatParameters_VariableOrder = Sat.var"SatParameters.VariableOrder"
+const SatParameters_Polarity = Sat.var"SatParameters.Polarity"
 const SatParameters_ConflictMinimizationAlgorithm =
-    OperationsResearch.sat.var"SatParameters.ConflictMinimizationAlgorithm"
+    Sat.var"SatParameters.ConflictMinimizationAlgorithm"
 const SatParameters_BinaryMinizationAlgorithm =
-    OperationsResearch.sat.var"SatParameters.BinaryMinizationAlgorithm"
-const SatParameters_ClauseProtection =
-    OperationsResearch.sat.var"SatParameters.ClauseProtection"
+    Sat.var"SatParameters.BinaryMinizationAlgorithm"
+const SatParameters_ClauseProtection = Sat.var"SatParameters.ClauseProtection"
 const SatParameters_ClauseOrdering =
     OperationsResearch.sat.var"SatParameters.ClauseOrdering"
-const SatParameters_RestartAlgorithm =
-    OperationsResearch.sat.var"SatParameters.RestartAlgorithm"
-const SatParameters_MaxSatAssumptionOrder =
-    OperationsResearch.sat.var"SatParameters.MaxSatAssumptionOrder"
+const SatParameters_RestartAlgorithm = Sat.var"SatParameters.RestartAlgorithm"
+const SatParameters_MaxSatAssumptionOrder = Sat.var"SatParameters.MaxSatAssumptionOrder"
 const SatParameters_MaxSatStratificationAlgorithm =
-    OperationsResearch.sat.var"SatParameters.MaxSatStratificationAlgorithm"
-const SatParameters_SearchBranching =
-    OperationsResearch.sat.var"SatParameters.SearchBranching"
-const SatParameters_SharedTreeSplitStrategy =
-    OperationsResearch.sat.var"SatParameters.SharedTreeSplitStrategy"
-const SatParameters_FPRoundingMethod =
-    OperationsResearch.sat.var"SatParameters.FPRoundingMethod"
+    Sat.var"SatParameters.MaxSatStratificationAlgorithm"
+const SatParameters_SearchBranching = Sat.var"SatParameters.SearchBranching"
+const SatParameters_SharedTreeSplitStrategy = Sat.var"SatParameters.SharedTreeSplitStrategy"
+const SatParameters_FPRoundingMethod = Sat.var"SatParameters.FPRoundingMethod"
 
 ## Scalar Set constraints with bounds
 const SCALAR_SET = Union{
@@ -215,6 +271,29 @@ function to_proto_struct(linear_expression::LinearExpression)::MathOpt.LinearExp
     )
 end
 
+mutable struct CPSatLinearExpression
+    vars::Vector{Int32}
+    coeffs::Vector{Int64}
+    offset::Int64
+
+    function CPSatLinearExpression(;
+        vars = Vector{Int32}(),
+        coeffs = Vector{Int64}(),
+        offset = zero(Int64),
+    )
+        new(vars, coeffs, offset)
+    end
+end
+
+function to_proto_struct(
+    cpsat_linear_expression::CPSatLinearExpression,
+)::Sat.LinearExpressionProto
+    return Sat.LinearExpressionProto(
+        cpsat_linear_expression.vars,
+        cpsat_linear_expression.coeffs,
+        cpsat_linear_expression.offset,
+    )
+end
 
 """
   Mutable wrapper struct for the SecondOrderConeConstraintProto struct.
@@ -779,7 +858,7 @@ end
 """
   Mutable wrapper struct for the SatParameters struct.
 """
-mutable struct SatParameters <: AbstractSatParameters
+mutable struct SatParameters
     name::String
     preferred_variable_order::SatParameters_VariableOrder.T
     initial_polarity::SatParameters_Polarity.T
@@ -1449,7 +1528,7 @@ end
 function to_proto_struct(
     sat_parameters::SatParameters,
 )::OperationsResearch.sat.SatParameters
-    return OperationsResearch.sat.SatParameters(
+    return Sat.SatParameters(
         sat_parameters.name,
         sat_parameters.preferred_variable_order,
         sat_parameters.initial_polarity,
@@ -1716,6 +1795,227 @@ function to_proto_struct(highs_options::HighsOptions)::MathOpt.HighsOptionsProto
     )
 end
 
+mutable struct OsqpSettings
+    rho::Float64
+    sigma::Float64
+    scaling::Int64
+    adaptive_rho::Bool
+    adaptive_rho_interval::Int64
+    adaptive_rho_tolerance::Float64
+    adaptive_rho_fraction::Float64
+    max_iter::Int64
+    eps_abs::Float64
+    eps_rel::Float64
+    eps_prim_inf::Float64
+    eps_dual_inf::Float64
+    alpha::Float64
+    delta::Float64
+    polish::Bool
+    polish_refine_iter::Int64
+    verbose::Bool
+    scaled_termination::Bool
+    check_termination::Int64
+    warm_start::Bool
+    time_limit::Float64
+
+    function OsqpSettings(;
+        rho = zero(Float64),
+        sigma = zero(Float64),
+        scaling = zero(Int64),
+        adaptive_rho = false,
+        adaptive_rho_interval = zero(Int64),
+        adaptive_rho_tolerance = zero(Float64),
+        adaptive_rho_fraction = zero(Float64),
+        max_iter = zero(Int64),
+        eps_abs = zero(Float64),
+        eps_rel = zero(Float64),
+        eps_prim_inf = zero(Float64),
+        eps_dual_inf = zero(Float64),
+        alpha = zero(Float64),
+        delta = zero(Float64),
+        polish = false,
+        polish_refine_iter = zero(Int64),
+        verbose = false,
+        scaled_termination = false,
+        check_termination = 0,
+        warm_start = false,
+        time_limit = zero(Float64),
+    )
+
+        new(
+            rho,
+            sigma,
+            scaling,
+            adaptive_rho,
+            adaptive_rho_interval,
+            adaptive_rho_tolerance,
+            adaptive_rho_fraction,
+            max_iter,
+            eps_abs,
+            eps_rel,
+            eps_prim_inf,
+            eps_dual_inf,
+            alpha,
+            delta,
+            polish,
+            polish_refine_iter,
+            verbose,
+            scaled_termination,
+            check_termination,
+            warm_start,
+            time_limit,
+        )
+    end
+end
+
+function to_proto_struct(osqp_settings::OsqpSettings)::MathOpt.OsqpSettingsProto
+    return MathOpt.OsqpSettingsProto(
+        osqp_settings.rho,
+        osqp_settings.sigma,
+        osqp_settings.scaling,
+        osqp_settings.adaptive_rho,
+        osqp_settings.adaptive_rho_interval,
+        osqp_settings.adaptive_rho_tolerance,
+        osqp_settings.adaptive_rho_fraction,
+        osqp_settings.max_iter,
+        osqp_settings.eps_abs,
+        osqp_settings.eps_rel,
+        osqp_settings.eps_prim_inf,
+        osqp_settings.eps_dual_inf,
+        osqp_settings.alpha,
+        osqp_settings.delta,
+        osqp_settings.polish,
+        osqp_settings.polish_refine_iter,
+        osqp_settings.verbose,
+        osqp_settings.scaled_termination,
+        osqp_settings.check_termination,
+        osqp_settings.warm_start,
+        osqp_settings.time_limit,
+    )
+end
+
+mutable struct OsqpOutput
+    initialized_underlying_solver::Bool
+
+    function OsqpOutput(; initialized_underlying_solver = false)
+        new(initialized_underlying_solver)
+    end
+end
+
+function to_proto_struct(osqp_output::OsqpOutput)::MathOpt.OsqpOutput
+    return MathOpt.OsqpOutput(osqp_output.initialized_underlying_solver)
+end
+
+mutable struct PdlpTerminationCriteria
+    optimality_norm::PdlpOptimalityNorm.T
+    optimality_criteria::Union{
+        Nothing,
+        PB.OneOf{
+            <:Union{
+                PdlpTerminationCriteria_SimpleOptimalityCriteria,
+                PdlpTerminationCriteria_DetailedOptimalityCriteria,
+            },
+        },
+    }
+    eps_optimal_absolute::Float64
+    eps_optimal_relative::Float64
+    eps_primal_infeasible::Float64
+    eps_dual_infeasible::Float64
+    time_sec_limit::Float64
+    iteration_limit::Int32
+    kkt_matrix_pass_limit::Float64
+end
+
+function to_proto_struct(
+    pdlp_termination_criteria::PdlpTerminationCriteria,
+)::PDLP.TerminationCriteria
+    return PDLP.TerminationCriteria(
+        pdlp_termination_criteria.optimality_norm,
+        pdlp_termination_criteria.optimality_criteria,
+        pdlp_termination_criteria.eps_optimal_absolute,
+        pdlp_termination_criteria.eps_optimal_relative,
+        pdlp_termination_criteria.eps_primal_infeasible,
+        pdlp_termination_criteria.eps_dual_infeasible,
+        pdlp_termination_criteria.time_sec_limit,
+        pdlp_termination_criteria.iteration_limit,
+        pdlp_termination_criteria.kkt_matrix_pass_limit,
+    )
+end
+
+mutable struct PdlpHybridGradientParameters
+    termination_criteria::Union{Nothing,PdlpTerminationCriteria}
+    num_threads::Int32
+    num_shards::Int32
+    scheduler_type::PdlpSchedulerType.T
+    record_iteration_stats::Bool
+    verbosity_level::Int32
+    log_interval_seconds::Float64
+    major_iteration_frequency::Int32
+    termination_check_frequency::Int32
+    restart_strategy::PdlpHybridGradientParams_RestartStrategy.T
+    primal_weight_update_smoothing::Float64
+    initial_primal_weight::Float64
+    presolve_options::Union{Nothing,PdlpHybridGradientParams_PresolveOptions}
+    l_inf_ruiz_iterations::Int32
+    l2_norm_rescaling::Bool
+    sufficient_reduction_for_restart::Float64
+    necessary_reduction_for_restart::Float64
+    linesearch_rule::PdlpHybridGradientParams_LinesearchRule.T
+    adaptive_linesearch_parameters::Union{Nothing,PdlpAdaptiveLinesearchParams}
+    malitsky_pock_parameters::Union{Nothing,PdlpMalitskyPockParams}
+    initial_step_size_scaling::Float64
+    random_projection_seeds::Vector{Int32}
+    infinite_constraint_bound_threshold::Float64
+    handle_some_primal_gradients_on_finite_bounds_as_residuals::Bool
+    use_diagonal_qp_trust_region_solver::Bool
+    diagonal_qp_trust_region_solver_tolerance::Float64
+    use_feasibility_polishing::Bool
+    apply_feasibility_polishing_after_limits_reached::Bool
+    apply_feasibility_polishing_if_solver_is_interrupted::Bool
+end
+
+
+function to_proto_struct(
+    pdlp_hybrid_gradient_parameters::PdlpHybridGradientParameters,
+)::PDLP.PrimalDualHybridGradientParams
+    termination_criteria = nothing
+    if !isnothing(pdlp_hybrid_gradient_parameters.termination_criteria)
+        termination_criteria =
+            to_proto_struct(pdlp_hybrid_gradient_parameters.termination_criteria)
+    end
+
+    return PDLP.PrimalDualHybridGradientParams(
+        termination_criteria,
+        pdlp_hybrid_gradient_parameters.num_threads,
+        pdlp_hybrid_gradient_parameters.num_shards,
+        pdlp_hybrid_gradient_parameters.scheduler_type,
+        pdlp_hybrid_gradient_parameters.record_iteration_stats,
+        pdlp_hybrid_gradient_parameters.verbosity_level,
+        pdlp_hybrid_gradient_parameters.log_interval_seconds,
+        pdlp_hybrid_gradient_parameters.major_iteration_frequency,
+        pdlp_hybrid_gradient_parameters.termination_check_frequency,
+        pdlp_hybrid_gradient_parameters.restart_strategy,
+        pdlp_hybrid_gradient_parameters.primal_weight_update_smoothing,
+        pdlp_hybrid_gradient_parameters.initial_primal_weight,
+        pdlp_hybrid_gradient_parameters.presolve_options,
+        pdlp_hybrid_gradient_parameters.l_inf_ruiz_iterations,
+        pdlp_hybrid_gradient_parameters.l2_norm_rescaling,
+        pdlp_hybrid_gradient_parameters.sufficient_reduction_for_restart,
+        pdlp_hybrid_gradient_parameters.necessary_reduction_for_restart,
+        pdlp_hybrid_gradient_parameters.linesearch_rule,
+        pdlp_hybrid_gradient_parameters.adaptive_linesearch_parameters,
+        pdlp_hybrid_gradient_parameters.malitsky_pock_parameters,
+        pdlp_hybrid_gradient_parameters.initial_step_size_scaling,
+        pdlp_hybrid_gradient_parameters.random_projection_seeds,
+        pdlp_hybrid_gradient_parameters.infinite_constraint_bound_threshold,
+        pdlp_hybrid_gradient_parameters.handle_some_primal_gradients_on_finite_bounds_as_residuals,
+        pdlp_hybrid_gradient_parameters.use_diagonal_qp_trust_region_solver,
+        pdlp_hybrid_gradient_parameters.diagonal_qp_trust_region_solver_tolerance,
+        pdlp_hybrid_gradient_parameters.use_feasibility_polishing,
+        pdlp_hybrid_gradient_parameters.apply_feasibility_polishing_after_limits_reached,
+        pdlp_hybrid_gradient_parameters.apply_feasibility_polishing_if_solver_is_interrupted,
+    )
+end
 
 """
   Mutable wrapper struct for the SolveParametersProto struct.
@@ -1743,6 +2043,8 @@ mutable struct SolveParameters
     gurobi::Union{Nothing,GurobiParameters}
     glop::Union{Nothing,GlopParameters}
     cp_sat::Union{Nothing,SatParameters}
+    pdlp::Union{Nothing,PdlpHybridGradientParameters}
+    osqp::Union{Nothing,OsqpSettings}
     glpk::Union{Nothing,GlpkParameters}
     highs::Union{Nothing,HighsOptions}
 
@@ -1769,6 +2071,8 @@ mutable struct SolveParameters
         gurobi = nothing,
         glop = nothing,
         cp_sat = nothing,
+        pdlp = nothing,
+        osqp = nothing,
         glpk = nothing,
         highs = nothing,
     )
@@ -1795,6 +2099,8 @@ mutable struct SolveParameters
             gurobi,
             glop,
             cp_sat,
+            pdlp,
+            osqp,
             glpk,
             highs,
         )
@@ -1832,6 +2138,16 @@ function to_proto_struct(solve_parameters::SolveParameters)::MathOpt.SolveParame
         highs_parameters = to_proto_struct(solve_parameters.highs)
     end
 
+    pdlp_parameters = nothing
+    if !isnothing(solve_parameters.pdlp)
+        pdlp_parameters = to_proto_struct(solve_parameters.pdlp)
+    end
+
+    osqp_parameters = nothing
+    if !isnothing(solve_parameters.osqp)
+        osqp_parameters = to_proto_struct(solve_parameters.osqp)
+    end
+
     return MathOpt.SolveParametersProto(
         solve_parameters.time_limit,
         solve_parameters.iteration_limit,
@@ -1855,7 +2171,635 @@ function to_proto_struct(solve_parameters::SolveParameters)::MathOpt.SolveParame
         gurobi_parameters,
         glop_parameters,
         cp_sat_parameters,
+        pdlp_parameters,
+        osqp_parameters,
         glpk_parameters,
         highs_parameters,
     )
 end
+
+# The size of the encoded solve parameters proto.
+encoded_parameters_size(parameters::SolveParameters) =
+    PB._encoded_size(to_proto_struct(parameters))
+
+"""
+
+CP-SAT-specific Model, Variables and Constraints Proto implementation.
+
+"""
+
+"""
+  Mutable wrapper struct IntegerVariableProto.
+"""
+mutable struct IntegerVariable
+    name::String
+    domain::Vector{Int64}
+
+    IntegerVariable() = new("", Vector{Int64}())
+end
+
+function to_proto_struct(integer_variable::IntegerVariable)::Sat.IntegerVariableProto
+    return Sat.IntegerVariableProto(integer_variable.name, integer_variable.domain)
+end
+
+
+"""
+    Mutable wrapper struct for the LinearArgumentProto struct.
+"""
+mutable struct LinearArgument
+    target::Union{Nothing,LinearExpression}
+    exprs::Vector{LinearExpression}
+end
+
+function to_proto_struct(linear_argument::LinearArgument)::Sat.LinearArgumentProto
+    return Sat.LinearArgumentProto(linear_argument.target, linear_argument.exprs)
+end
+
+"""
+  Mutable wrapper struct for the AllDifferentConstraintProto struct.
+"""
+mutable struct AllDifferentConstraint
+    exprs::Vector{CPSatLinearExpression}
+
+    function AllDifferentConstraint()
+        new(Vector{CPSatLinearExpression}())
+    end
+end
+
+
+function to_proto_struct(
+    all_different_constraint::AllDifferentConstraint,
+)::Sat.AllDifferentConstraintProto
+    exprs = to_proto_struct.(all_different_constraint.exprs)
+
+    return Sat.AllDifferentConstraintProto(exprs)
+end
+
+
+"""
+    Mutable wrapper struct for the ElementConstraintProto struct.
+    The corresponding proto has 3 fields that are deprecated, they omitted here.
+
+    The constraint linear_target = exprs[linear_index]
+"""
+mutable struct ElementConstraint
+    linear_index::Union{Nothing,CPSatLinearExpression}
+    linear_target::Union{Nothing,CPSatLinearExpression}
+    exprs::Vector{CPSatLinearExpression}
+
+    function ElementConstraint(;
+        linear_index = nothing,
+        linear_target = nothing,
+        exprs = Vector{CPSatLinearExpression}(),
+    )
+        new(nothing, nothing, Vector{CPSatLinearExpression}())
+    end
+end
+
+function to_proto_struct(element_constraint::ElementConstraint)::Sat.ElementConstraintProto
+    linear_index = nothing
+    if !isnothing(element_constraint.linear_index)
+        linear_index = to_proto_struct(element_constraint.linear_index)
+    end
+
+    linear_target = nothing
+    if !isnothing(element_constraint.linear_target)
+        linear_target = to_proto_struct(element_constraint.linear_target)
+    end
+
+    exprs = to_proto_struct.(element_constraint.exprs)
+
+    return Sat.ElementConstraintProto(
+        zero(Int64), # legacy; index
+        zero(Int64), # legacy; target
+        Vector{Int32}(), # legacy; vars
+        linear_index,
+        linear_target,
+        exprs,
+    )
+end
+
+"""
+  Mutable wrapper struct for the RoutesConstraintProto.NodeExpressions struct.
+  This is simply a set of LinearExpressions associated with a node in the RouteConstraintProto.
+"""
+mutable struct NodeExpressions
+    exprs::Vector{CPSatLinearExpression}
+
+    function NodeExpressions()
+        new(Vector{CPSatLinearExpression}())
+    end
+end
+
+function to_proto_struct(
+    node_expressions::NodeExpressions,
+)::Sat.var"RoutesConstraintProto.NodeExpressions"
+    exprs = to_proto_struct.(node_expressions.exprs)
+
+    return Sat.var"RoutesConstraintProto.NodeExpressions"(exprs)
+end
+
+"""
+  Mutable wrapper struct for the RoutesConstraintProto.
+
+  The `demands` and `capacity` fields are deprecated and omitted here.
+"""
+mutable struct RoutesConstraint
+    tails::Vector{Int32}
+    heads::Vector{Int32}
+    literals::Vector{Int32}
+    dimensions::Vector{NodeExpressions}
+
+    function RoutesConstraint()
+        new(Vector{Int32}(), Vector{Int32}(), Vector{Int32}(), Vector{NodeExpressions}())
+    end
+end
+
+function to_proto_struct(routes_constraint::RoutesConstraint)::Sat.RoutesConstraintProto
+    dimensions = to_proto_struct.(routes_constraint.dimensions)
+
+    return Sat.RoutesConstraintProto(
+        tails,
+        heads,
+        literals,
+        Vector{Int32}(), # [Deprecated] demands
+        zero(Int64), # [Deprecated] capacity
+        dimensions,
+    )
+end
+
+"""
+    Mutable wrapper struct for the TableConstraintProto struct.
+"""
+mutable struct TableConstraint
+    values::Vector{Int64}
+    exprs::Vector{CPSatLinearExpression}
+    negated::Bool
+
+    function TableConstraint()
+        new(
+            Vector{Int32}(), # [Deprecated] vars
+            Vector{Int64}(),
+            Vector{CPSatLinearExpression}(),
+            false,  # negated is falase by default
+        )
+    end
+end
+
+
+function to_proto_struct(table_constraint::TableConstraint)::Sat.TableConstraintProto
+    exprs = to_proto_struct.(table_constraint.exprs)
+
+    return Sat.TableConstraintProto(vars, exprs, negated)
+end
+
+"""
+    Mutable wrapper struct for the AutomatonConstraintProto struct.
+    
+    This constraint forces a sequence of expressions to be accepted as an automaton.
+
+    The `vars` field is deprecated and omitted here.
+"""
+mutable struct AutomatonConstraint
+    starting_state::Int64
+    final_states::Vector{Int64}
+    transition_tail::Vector{Int64}
+    transition_head::Vector{Int64}
+    transition_label::Vector{Int64}
+    exprs::Vector{CPSatLinearExpression}
+
+    function AutomatonConstraint()
+        new(
+            zero(Int64),
+            Vector{Int64}(),
+            Vector{Int64}(),
+            Vector{Int64}(),
+            Vector{Int64}(),
+            Vector{CPSatLinearExpression}(),
+        )
+    end
+end
+
+function to_proto_struct(
+    automaton_constraint::AutomatonConstraint,
+)::Sat.AutomatonConstraintProto
+    exprs = to_proto_struct.(automaton_constraint.exprs)
+
+    return Sat.AutomatonConstraintProto(
+        automaton_constraint.starting_state,
+        automaton_constraint.final_states,
+        automaton_constraint.transition_tail,
+        automaton_constraint.transition_head,
+        automaton_constraint.transition_label,
+        Vector{Int64}(), # [Deprecated] vars
+        exprs,
+    )
+end
+
+"""
+  Alias for the `InverseConstraintProto`
+
+  The two arrays of variable each represent a function, the second is the
+  inverse of the first: f_direct[i] == j <=> f_inverse[j] == i.
+"""
+const InverseConstraintProto = Sat.InverseConstraintProto
+const InverseConstraint = () -> InverseConstraintProto(
+    Vector{Int32}(), # f_direct
+    Vector{Int32}(), # f_inverse
+)
+
+"""
+    Mutable wrapper struct for the `ReservoirConstraintProto` struct.
+
+    The reservoir constraint forces the sum of a set of active demands
+    to always be between a specified minimum and maximum value during
+    specific times.
+"""
+mutable struct ReservoirConstraint
+    min_level::Int64
+    max_level::Int64
+    time_exprs::Vector{CPSatLinearExpression}
+    level_changes::Vector{CPSatLinearExpression}
+    active_literals::Vector{Int32}
+
+    function ReservoirConstraint()
+        new(
+            zero(Int64), # min_level
+            zero(Int64), # max_level
+            Vector{CPSatLinearExpression}(), # time_exprs
+            Vector{CPSatLinearExpression}(), # level_changes
+            Vector{Int32}(), # active_literals
+        )
+    end
+end
+
+function to_proto_struct(
+    reservoir_constraint::ReservoirConstraint,
+)::Sat.ReservoirConstraintProto
+    time_exprs = to_proto_struct.(reservoir_constraint.time_exprs)
+    level_changes = to_proto_struct.(reservoir_constraint.level_changes)
+
+    return Sat.ReservoirConstraintProto(
+        reservoir_constraint.min_level,
+        reservoir_constraint.max_level,
+        time_exprs,
+        level_changes,
+        reservoir_constraint.active_literals,
+    )
+end
+
+"""
+    Mutable wrapper struct for the `IntervalConstraintProto` struct.
+
+    This is not really a constraint. It is there so it can be referred by other
+    constraints using this "interval" concept.
+
+    IMPORTANT: For now, this constraint do not enforce any relations on the
+    components, and it is up to the client to add in the model:
+    - enforcement => start + size == end.
+    - enforcement => size >= 0  // Only needed if size is not already >= 0.
+"""
+mutable struct IntervalConstraint
+    start::CPSatLinearExpression
+    end_::CPSatLinearExpression
+    size::CPSatLinearExpression
+
+    function IntervalConstraint()
+        new(
+            CPSatLinearExpression(), # start
+            CPSatLinearExpression(), # end
+            CPSatLinearExpression(), # size
+        )
+    end
+end
+
+function to_proto_struct(
+    interval_constraint::IntervalConstraint,
+)::Sat.IntervalConstraintProto
+    return Sat.IntervalConstraintProto(
+        to_proto_struct(interval_constraint.start),
+        to_proto_struct(interval_constraint.end_),
+        to_proto_struct(interval_constraint.size),
+    )
+end
+
+"""
+    Alias for the `NoOverlapConstraintProto` struct.
+
+    All the intervals (index of IntervalConstraintProto) must be disjoint.
+    More formally, there must exist a sequence so that for each consecutive intervals,
+    we have end_i <= start_{i+1}. In particular, intervals of size zero do matter
+    for this constraint. This is also known as a disjunctive constraint in
+    scheduling.
+"""
+const NoOverlapConstraintProto = Sat.NoOverlapConstraintProto
+const NoOverlapConstraint = () -> NoOverlapConstraintProto(
+    Vector{Int32}(), # intervals
+)
+
+"""
+  Alias for the `NoOverlap2DConstraintProto` struct.
+
+  The no_overlap_2d constraint prevents a set of boxes from overlapping.
+"""
+const NoOverlap2DConstraintProto = Sat.NoOverlap2DConstraintProto
+const NoOverlap2DConstraint =
+    () -> NoOverlap2DConstraintProto(
+        Vector{Int32}(), # x_intervals
+        Vector{Int32}(), # y_intervals (same size as x_intervals)
+    )
+
+"""
+  Alias for the `CumulativeConstraintProto` struct.
+
+  The cumulative constraint ensures that for any integer point, the sum
+  of the demands of the intervals containing that point does not exceed
+  the capacity.
+"""
+mutable struct CumulativeConstraint
+    capacity::Union{Nothing,CPSatLinearExpression}
+    intervals::Vector{Int32}
+    demands::Vector{CPSatLinearExpression}
+
+    function CumulativeConstraint()
+        new(
+            nothing, # capacity
+            Vector{Int32}(), # intervals
+            Vector{CPSatLinearExpression}(), # demands
+        )
+    end
+end
+
+function to_proto_struct(
+    cumulative_constraint::CumulativeConstraint,
+)::Sat.CumulativeConstraintProto
+    capacity = nothing
+    if !isnothing(cumulative_constraint.capacity)
+        capacity = to_proto_struct(cumulative_constraint.capacity)
+    end
+
+    demands = to_proto_struct.(cumulative_constraint.demands)
+
+    return Sat.CumulativeConstraintProto(capacity, cumulative_constraint.intervals, demands)
+end
+
+"""
+  Alias for the `ListOfVariablesProto` struct.
+  
+  This is a list of variables, without any semantics.
+
+  This constraint is not meant to be used and will be rejected by the
+  solver. It is meant to mark variable when testing the presolve code.
+"""
+const ListOfVariablesProto = Sat.ListOfVariablesProto
+const ListOfVariables = () -> ListOfVariablesProto(
+    Vector{Int32}(), # vars
+)
+
+
+"""
+  Mutable wrapper for the `ConstraintProto` in CPSat.
+"""
+mutable struct CPSATConstraint
+    name::String
+    enforcement_literal::Vector{Int32}
+    constraint::Union{
+        Nothing,
+        PB.OneOf{
+            <:Union{
+                AllDifferentConstraint,
+                CPSatLinearConstraintProto,
+                LinearArgument,
+                BoolArgument,
+                InverseConstraintProto,
+                ListOfVariablesProto,
+                ElementConstraint,
+                CircuitConstraintProto,
+                RoutesConstraint,
+                TableConstraint,
+                AutomatonConstraint,
+                ReservoirConstraint,
+                ReservoirConstraint,
+                IntervalConstraint,
+                NoOverlapConstraintProto,
+                NoOverlap2DConstraintProto,
+                CumulativeConstraint,
+            },
+        },
+    }
+    function CPSATConstraint(;
+        name = "",
+        enforcement_literal = Vector{Int32}(),
+        constraint = nothing,
+    )
+        new(
+            name, # name
+            enforcement_literal, # enforcement_literal
+            constraint, # constraint
+        )
+    end
+end
+
+function to_proto_struct(cpsat_constraint::CPSATConstraint)::Sat.ConstraintProto
+    constraint = nothing
+    if !isnothing(cpsat_constraint.constraint)
+        constraint = to_proto_struct(cpsat_constraint.constraint)
+    end
+
+    return Sat.ConstraintProto(
+        cpsat_constraint.name,
+        cpsat_constraint.enforcement_literal,
+        constraint,
+    )
+end
+
+
+"""
+  Mutable wrapper for the `CpObjectiveProto` in CP-SAT.
+"""
+mutable struct CpObjective
+    vars::Vector{Int32}
+    coeffs::Vector{Int64}
+    offset::Float64
+    scaling_factor::Float64
+    domain::Vector{Int64}
+    scaling_was_exact::Bool
+    integer_before_offset::Int64
+    integer_after_offset::Int64
+    integer_scaling_factor::Int64
+
+    function CpObjective(;
+        vars = Vector{Int32}(),
+        coeffs = Vector{Int64}(),
+        offset = zero(Float64),
+        scaling_factor = zero(Float64),
+        domain = Vector{Int64}(),
+        scaling_was_exact = false,
+        integer_before_offset = zero(Int64),
+        integer_after_offset = zero(Int64),
+        integer_scaling_factor = zero(Int64),
+    )
+        new(
+            vars, # vars
+            coeffs, # coeffs
+            offset, # offset
+            scaling_factor, # scaling_factor
+            domain, # domain
+            scaling_was_exact, # scaling_was_exact
+            integer_before_offset, # integer_before_offset
+            integer_after_offset, # integer_after_offset
+            integer_scaling_factor, # integer_scaling_factor
+        )
+    end
+end
+
+function to_proto_struct(cp_objective::CpObjective)::Sat.CpObjectiveProto
+    return Sat.CpObjectiveProto(
+        cp_objective.vars,
+        cp_objective.coeffs,
+        cp_objective.offset,
+        cp_objective.scaling_factor,
+        cp_objective.domain,
+        cp_objective.scaling_was_exact,
+        cp_objective.integer_before_offset,
+        cp_objective.integer_after_offset,
+        cp_objective.integer_scaling_factor,
+    )
+end
+
+
+"""
+  Mutable wrapper for the `FloatObjectiveProto` in CP-SAT.
+
+  A linear floating point objective: sum coeffs[i] * vars[i] + offset.
+  Note that the variable can only still take integer value.
+"""
+mutable struct FloatObjective
+    vars::Vector{Int32}
+    coeffs::Vector{Float64}
+    offset::Float64
+    maximize::Bool
+
+    function FloatObjective(;
+        vars = Vector{Int32}(),
+        coeffs = Vector{Float64}(),
+        offset = zero(Float64),
+        maximize = false,
+    )
+        new(vars, coeffs, offset, maximize)
+    end
+end
+
+function to_proto_struct(float_objective::FloatObjective)::Sat.FloatObjectiveProto
+    return Sat.FloatObjectiveProto(
+        float_objective.vars,
+        float_objective.coeffs,
+        float_objective.offset,
+        float_objective.maximize,
+    )
+end
+
+
+"""
+  Mutable wrapper for the `DecisionStrategyProto` in CP-SAT.
+
+  Define the strategy to follow when the solver needs to take a new decision.
+  Note that this strategy is only defined on a subset of variables.
+"""
+mutable struct DecisionStrategy
+    variables::Vector{Int32}
+    exprs::Vector{CPSatLinearExpression}
+    variable_selection_strategy::CPSATVariableSelectionStrategy.T
+    domain_reduction_strategy::CPSATDomainReductionStrategy.T
+
+    function DecisionStrategy(;
+        variables = Vector{Int32}(),
+        exprs = Vector{CPSatLinearExpression}(),
+        variable_selection_strategy = CPSATVariableSelectionStrategy.CHOOSE_FIRST,
+        domain_selection_strategy = CPSATDomainReductionStrategy.SELECT_MIN_VALUE,
+    )
+        new(variables, exprs, variable_selection_strategy, domain_selection_strategy)
+    end
+end
+
+function to_proto_struct(decision_strategy::DecisionStrategy)::Sat.DecisionStrategyProto
+    return Sat.DecisionStrategyProto(
+        decision_strategy.variables,
+        to_proto_struct.(decision_strategy.exprs),
+        decision_strategy.variable_selection_strategy,
+        decision_strategy.domain_reduction_strategy,
+    )
+end
+
+"""
+ Mutable wrapper for the `CpModelProto` in CP-SAT.
+ 
+ This is basically a constraint programming problem.
+"""
+mutable struct CpModel
+    name::String
+    variables::Vector{IntegerVariable}
+    constraints::Vector{CPSATConstraint}
+    objective::Union{Nothing,CpObjective}
+    floating_point_objective::Union{Nothing,FloatObjective}
+    search_strategy::Vector{DecisionStrategy}
+    solution_hint::Union{Nothing,CPSATPartialVariableAssignment}
+    assumptions::Vector{Int32}
+    symmetry::Union{Nothing,CPSATExperimentalSymmetry}
+
+    function CpModel(;
+        name = "",
+        variables = Vector{IntegerVariable}(),
+        constraints = Vector{CPSATConstraint}(),
+        objective = nothing,
+        floating_point_objective = nothing,
+        search_strategy = Vector{DecisionStrategy}(),
+        solution_hint = nothing,
+        assumptions = Vector{Int32}(),
+    )
+        new(
+            name,
+            variables,
+            constraints,
+            objective,
+            floating_point_objective,
+            search_strategy,
+            solution_hint,
+            assumptions,
+            nothing, ## Symmetry is set by the solver, not by the client.
+        )
+    end
+end
+
+function to_proto_struct(cp_model::CpModel)::Sat.CpModelProto
+    variables = to_proto_struct.(cp_model.variables)
+    constraints = to_proto_struct.(cp_model.constraints)
+    objective = nothing
+    if !isnothing(cp_model.objective)
+        objective = to_proto_struct(cp_model.objective)
+    end
+    floating_point_objective = nothing
+    if !isnothing(cp_model.floating_point_objective)
+        floating_point_objective = to_proto_struct(cp_model.floating_point_objective)
+    end
+    search_strategy = to_proto_struct.(cp_model.search_strategy)
+    solution_hint = nothing
+    if !isnothing(cp_model.solution_hint)
+        solution_hint = to_proto_struct(cp_model.solution_hint)
+    end
+
+    return Sat.CpModelProto(
+        cp_model.name,
+        variables,
+        constraints,
+        objective,
+        floating_point_objective,
+        search_strategy,
+        solution_hint,
+        cp_model.assumptions,
+        nothing, ## Symmetry is set by the solver, not by the client.
+    )
+end
+
+# The size of the model.
+encoded_model_size(model::CpModel) = PB._to_encoded_size(to_proto_struct(model))

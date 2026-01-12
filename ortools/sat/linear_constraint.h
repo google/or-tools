@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_SAT_LINEAR_CONSTRAINT_H_
-#define OR_TOOLS_SAT_LINEAR_CONSTRAINT_H_
+#ifndef ORTOOLS_SAT_LINEAR_CONSTRAINT_H_
+#define ORTOOLS_SAT_LINEAR_CONSTRAINT_H_
 
 #include <algorithm>
 #include <cstdint>
@@ -115,6 +115,18 @@ struct LinearConstraint {
       return false;
     }
     return true;
+  }
+
+  // We rarelly need to copy a LinearConstraint and it should almost always
+  // be moved instead, so we don't want a copy constructor. This can be used
+  // if one really need to copy it.
+  void CopyFrom(const LinearConstraint& other) {
+    const int n = other.num_terms;
+    resize(n);
+    lb = other.lb;
+    ub = other.ub;
+    std::memcpy(vars.get(), other.vars.get(), n * sizeof(IntegerVariable));
+    std::memcpy(coeffs.get(), other.coeffs.get(), n * sizeof(IntegerValue));
   }
 
   bool operator==(const LinearConstraint& other) const {
@@ -338,12 +350,6 @@ double ScalarProduct(const LinearConstraint& constraint1,
 // also tighten the constraint bounds assuming all the variables are integer.
 void DivideByGCD(LinearConstraint* constraint);
 
-// Removes the entries with a coefficient of zero.
-void RemoveZeroTerms(LinearConstraint* constraint);
-
-// Makes all coefficients positive by transforming a variable to its negation.
-void MakeAllCoefficientsPositive(LinearConstraint* constraint);
-
 // Makes all variables "positive" by transforming a variable to its negation.
 void MakeAllVariablesPositive(LinearConstraint* constraint);
 
@@ -454,4 +460,4 @@ inline bool MergePositiveVariableTermsAndCheckForOverflow(
 }  // namespace sat
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_LINEAR_CONSTRAINT_H_
+#endif  // ORTOOLS_SAT_LINEAR_CONSTRAINT_H_

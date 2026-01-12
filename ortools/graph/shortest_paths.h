@@ -61,8 +61,8 @@
 //                                                       /*num_threads=*/4,
 //                                                       &container);
 
-#ifndef OR_TOOLS_GRAPH_SHORTEST_PATHS_H_
-#define OR_TOOLS_GRAPH_SHORTEST_PATHS_H_
+#ifndef ORTOOLS_GRAPH_SHORTEST_PATHS_H_
+#define ORTOOLS_GRAPH_SHORTEST_PATHS_H_
 
 #include <cstdint>
 #include <limits>
@@ -761,7 +761,6 @@ void ComputeManyToManyShortestPathsWithMultipleThreads(
                           graph.num_nodes());
     {
       std::unique_ptr<ThreadPool> pool(new ThreadPool(num_threads));
-      pool->StartWorkers();
       for (int i = 0; i < unique_sources.size(); ++i) {
         pool->Schedule(absl::bind_front(
             &internal::ComputeOneToManyOnGraph<GraphType>, &graph, &arc_lengths,
@@ -775,4 +774,4 @@ void ComputeManyToManyShortestPathsWithMultipleThreads(
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_GRAPH_SHORTEST_PATHS_H_
+#endif  // ORTOOLS_GRAPH_SHORTEST_PATHS_H_

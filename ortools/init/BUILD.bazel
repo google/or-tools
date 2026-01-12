@@ -11,6 +11,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
@@ -19,12 +21,14 @@ cc_library(
     hdrs = ["init.h"],
     deps = [
         "//ortools/base",
-        "//ortools/gurobi:environment",
+        "//ortools/base:logging",
         "//ortools/sat:cp_model_solver",
         "//ortools/sat:cp_model_solver_helpers",
+        "//ortools/sat:cp_model_utils",
+        "//ortools/third_party_solvers:gurobi_environment",
+        "@abseil-cpp//absl/base:log_severity",
         "@abseil-cpp//absl/flags:flag",
-        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:globals",
-        "@abseil-cpp//absl/log:initialize",
+        "@abseil-cpp//absl/strings:string_view",
     ],
 )

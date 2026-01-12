@@ -18,7 +18,7 @@ This project aim to explain how you build a Python native wheel package using
 
 ## Requirement
 
-You'll need "Python >= 3.6" and few python modules ("wheel" and "absl-py").
+You'll need "Python >= 3.9" and few python modules ("wheel" and "absl-py").
 
 ## Directory Layout
 

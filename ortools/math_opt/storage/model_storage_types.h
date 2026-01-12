@@ -14,8 +14,8 @@
 // IWYU pragma: private, include "ortools/math_opt/cpp/math_opt.h"
 // IWYU pragma: friend "ortools/math_opt/cpp/.*"
 
-#ifndef OR_TOOLS_MATH_OPT_STORAGE_MODEL_STORAGE_TYPES_H_
-#define OR_TOOLS_MATH_OPT_STORAGE_MODEL_STORAGE_TYPES_H_
+#ifndef ORTOOLS_MATH_OPT_STORAGE_MODEL_STORAGE_TYPES_H_
+#define ORTOOLS_MATH_OPT_STORAGE_MODEL_STORAGE_TYPES_H_
 
 #include <cstdint>
 #include <optional>
@@ -36,4 +36,4 @@ DEFINE_STRONG_INT_TYPE(UpdateTrackerId, int64_t);
 
 }  // namespace operations_research::math_opt
 
-#endif  // OR_TOOLS_MATH_OPT_STORAGE_MODEL_STORAGE_TYPES_H_
+#endif  // ORTOOLS_MATH_OPT_STORAGE_MODEL_STORAGE_TYPES_H_

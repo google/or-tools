@@ -21,6 +21,7 @@
 #include "absl/log/check.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/glop/preprocessor.h"
+#include "ortools/linear_solver/proto_solver/preprocessor.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/proto_utils.h"
@@ -29,9 +30,10 @@
 
 namespace operations_research {
 
-#define ADD_LP_PREPROCESSOR(name) \
-  names.push_back(#name);         \
-  lp_preprocessors.push_back(std::make_unique<name>(&glop_params));
+#define ADD_LP_PREPROCESSOR(name, ...) \
+  names.push_back(#name);              \
+  lp_preprocessors.push_back(          \
+      std::make_unique<name>(&glop_params __VA_OPT__(, ) __VA_ARGS__));
 
 glop::ProblemStatus ApplyMipPresolveSteps(
     const glop::GlopParameters& glop_params, MPModelProto* model,
@@ -60,13 +62,13 @@ glop::ProblemStatus ApplyMipPresolveSteps(
   // These presolve might change the problem size.
   //
   // TODO(user): transform the hint instead of disabling presolve.
+  std::vector<std::string> names;
+  std::vector<std::unique_ptr<glop::Preprocessor>> lp_preprocessors;
+  const std::string header =
+      "Running basic LP presolve, initial problem dimensions: ";
   if (!hint_is_present) {
-    const std::string header =
-        "Running basic LP presolve, initial problem dimensions: ";
     SOLVER_LOG(logger, "");
     SOLVER_LOG(logger, header, lp.GetDimensionString());
-    std::vector<std::string> names;
-    std::vector<std::unique_ptr<glop::Preprocessor>> lp_preprocessors;
     ADD_LP_PREPROCESSOR(glop::FixedVariablePreprocessor);
     ADD_LP_PREPROCESSOR(glop::SingletonPreprocessor);
     ADD_LP_PREPROCESSOR(glop::ForcingAndImpliedFreeConstraintPreprocessor);
@@ -77,19 +79,30 @@ glop::ProblemStatus ApplyMipPresolveSteps(
     // for the conversion, it is better to have tight bounds even if the bound
     // propagator is supposed to undo what this presolve would have done.
     ADD_LP_PREPROCESSOR(glop::UnconstrainedVariablePreprocessor);
+  }
 
-    for (int i = 0; i < lp_preprocessors.size(); ++i) {
-      if (time_limit->LimitReached()) break;
-      auto& preprocessor = lp_preprocessors[i];
-      preprocessor->SetTimeLimit(time_limit.get());
-      preprocessor->UseInMipContext();
-      const bool need_postsolve = preprocessor->Run(&lp);
-      names[i].resize(header.size(), ' ');  // padding.
-      SOLVER_LOG(logger, names[i], lp.GetDimensionString());
-      const glop::ProblemStatus status = preprocessor->status();
-      if (status != glop::ProblemStatus::INIT) return status;
-      if (need_postsolve) for_postsolve->push_back(std::move(preprocessor));
-    }
+  // These preprocessors do not need postsolve.
+  ADD_LP_PREPROCESSOR(IntegerBoundsPreprocessor, 1e-6);
+  ADD_LP_PREPROCESSOR(BoundPropagationPreprocessor, 1e-6);
+  ADD_LP_PREPROCESSOR(ImpliedIntegerPreprocessor, 1e-6);
+
+  // We need to re-run this after the ImpliedIntegerPreprocessor because the
+  // latter does not round the bounds of the constraints involving only
+  // integer variables and coefficients.
+  ADD_LP_PREPROCESSOR(IntegerBoundsPreprocessor, 1e-6);
+  ADD_LP_PREPROCESSOR(ReduceCostOverExclusiveOrConstraintPreprocessor);
+
+  for (int i = 0; i < lp_preprocessors.size(); ++i) {
+    if (time_limit->LimitReached()) break;
+    auto& preprocessor = lp_preprocessors[i];
+    preprocessor->SetTimeLimit(time_limit.get());
+    preprocessor->UseInMipContext();
+    const bool need_postsolve = preprocessor->Run(&lp);
+    names[i].resize(header.size(), ' ');  // padding.
+    SOLVER_LOG(logger, names[i], lp.GetDimensionString());
+    const glop::ProblemStatus status = preprocessor->status();
+    if (status != glop::ProblemStatus::INIT) return status;
+    if (need_postsolve) for_postsolve->push_back(std::move(preprocessor));
   }
 
   // Finally, we make sure all domains contain zero.

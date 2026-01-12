@@ -95,10 +95,12 @@ void SlitherLink(absl::Span<const std::vector<int>> data) {
   CpModelBuilder builder;
 
   std::vector<BoolVar> horizontal_arcs;
+  horizontal_arcs.reserve(2 * num_horizontal_arcs);
   for (int arc = 0; arc < 2 * num_horizontal_arcs; ++arc) {
     horizontal_arcs.push_back(builder.NewBoolVar());
   }
   std::vector<BoolVar> vertical_arcs;
+  vertical_arcs.reserve(2 * num_vertical_arcs);
   for (int arc = 0; arc < 2 * num_vertical_arcs; ++arc) {
     vertical_arcs.push_back(builder.NewBoolVar());
   }

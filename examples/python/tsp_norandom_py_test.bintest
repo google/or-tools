@@ -1,0 +1,1 @@
+RUN: $(tsp_py3) --tsp_use_random_matrix=false

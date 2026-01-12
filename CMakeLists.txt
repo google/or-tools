@@ -12,18 +12,18 @@
 # limitations under the License.
 
 # This file is just an orchestration
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.24)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 # Enable output of compile commands during generation.
 option(CMAKE_EXPORT_COMPILE_COMMANDS "Export compile command" ON)
 
 include(utils)
-set_version(VERSION)
+set_version(VERSION RELEASE)
 
 project(ortools VERSION ${VERSION} LANGUAGES CXX C)
 set(PROJECT_NAMESPACE ortools)
-message(STATUS "${PROJECT_NAME} version: ${PROJECT_VERSION}")
+message(STATUS "${PROJECT_NAME} version: ${PROJECT_VERSION} release: ${RELEASE}")
 #message(STATUS "major: ${PROJECT_VERSION_MAJOR}")
 #message(STATUS "minor: ${PROJECT_VERSION_MINOR}")
 #message(STATUS "patch: ${PROJECT_VERSION_PATCH}")
@@ -89,6 +89,9 @@ endif()
 if(MSVC AND BUILD_SHARED_LIBS)
   set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 endif()
+
+# Enable CCache if any
+include(ccache)
 
 # Disable CTest targets
 set_property(GLOBAL PROPERTY CTEST_TARGETS_ADDED 1)
@@ -193,32 +196,21 @@ CMAKE_DEPENDENT_OPTION(BUILD_re2 "Build the re2 dependency Library" OFF
 message(STATUS "Build re2: ${BUILD_re2}")
 
 if(BUILD_TESTING)
+  set(OR_TOOLS_BUILD_TESTING ON)
   CMAKE_DEPENDENT_OPTION(BUILD_googletest "Build googletest" OFF
     "NOT BUILD_DEPS" ON)
   CMAKE_DEPENDENT_OPTION(BUILD_benchmark "Build benchmark" OFF
     "NOT BUILD_DEPS" ON)
-  # Fuzztest do not support MSVC or toolchain
-  if(MSVC OR CMAKE_CROSSCOMPILING)
-    set(USE_fuzztest OFF)
-  else()
-    CMAKE_DEPENDENT_OPTION(USE_fuzztest "Enable fuzztest" ON "BUILD_CXX" OFF)
-  endif()
-  if(NOT USE_fuzztest)
-    set(BUILD_fuzztest OFF)
-  else()
-    CMAKE_DEPENDENT_OPTION(BUILD_fuzztest "Build fuzztest" OFF
-      "NOT BUILD_DEPS" ON)
-  endif()
+  set(BUILD_protobuf_matchers ON)
 else()
+  set(OR_TOOLS_BUILD_TESTING OFF)
   set(BUILD_googletest OFF)
+  set(BUILD_protobuf_matchers OFF)
   set(BUILD_benchmark OFF)
-  set(USE_fuzztest OFF)
-  set(BUILD_fuzztest OFF)
 endif()
 message(STATUS "Build googletest: ${BUILD_googletest}")
+message(STATUS "Build protobuf_matchers: ${BUILD_protobuf_matchers}")
 message(STATUS "Build benchmark: ${BUILD_benchmark}")
-message(STATUS "Enable fuzztest: ${USE_fuzztest}")
-message(STATUS "Build fuzztest: ${BUILD_fuzztest}")
 
 # Optional third party solvers (enabled by default)
 ## BOP
@@ -478,6 +470,3 @@ endforeach()
 foreach(EXAMPLES IN ITEMS contrib cpp dotnet java python)
   add_subdirectory(examples/${EXAMPLES})
 endforeach()
-
-# Add tests in examples/tests
-add_subdirectory(examples/tests)

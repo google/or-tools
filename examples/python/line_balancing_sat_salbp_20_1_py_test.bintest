@@ -1,0 +1,2 @@
+RUN: $(line_balancing_sat_py3) --input=$(salbp_20_1.alb)
+CHECK: "objective: 3"

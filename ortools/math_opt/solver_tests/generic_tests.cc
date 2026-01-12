@@ -680,7 +680,7 @@ TEST_P(TimeLimitTest, DenseIndependentSetTimeLimit) {
   absl::Mutex mutex;
   bool has_run = false;
   solve_args.callback = [&mutex, &has_run](const CallbackData& data) {
-    const absl::MutexLock lock(&mutex);
+    const absl::MutexLock lock(mutex);
     if (!has_run) {
       LOG(INFO) << "Waiting two seconds in the callback...";
       absl::SleepFor(absl::Seconds(2));

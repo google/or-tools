@@ -37,12 +37,14 @@
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "absl/time/time.h"
+#include "google/protobuf/text_format.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/path.h"
 #include "ortools/base/timer.h"
 #include "ortools/flatzinc/cp_model_fz_solver.h"
 #include "ortools/flatzinc/model.h"
 #include "ortools/flatzinc/parser.h"
+#include "ortools/sat/model.h"
 #include "ortools/util/logging.h"
 
 constexpr bool kOrToolsMode = true;
@@ -66,6 +68,12 @@ ABSL_FLAG(bool, fz_logging, false,
           "Print logging information from the flatzinc interpreter.");
 ABSL_FLAG(bool, ortools_mode, kOrToolsMode,
           "Display solutions in the flatzinc format");
+ABSL_FLAG(bool, fz_check_all_solutions, DEBUG_MODE,
+          "Checks all solutions returned by the solver.");
+ABSL_FLAG(bool, ignore_redundant_constraints, false,
+          "Ignore redundant constraints.");
+ABSL_FLAG(bool, ignore_symmetry_breaking_constraints, false,
+          "Ignore symmetry breaking constraints.");
 
 namespace operations_research {
 namespace fz {
@@ -159,6 +167,28 @@ Model ParseFlatzincModel(const std::string& input, bool input_is_filename,
   *parse_duration = timer.GetDuration();
   SOLVER_LOG(logger, "File ", (input_is_filename ? input : "stdin"),
              " parsed in ", absl::ToInt64Milliseconds(*parse_duration), " ms");
+
+  int num_redundant_constraints = 0;
+  int num_symmetry_breaking_constraints = 0;
+  for (Constraint* ct : model.constraints()) {
+    if (ct->is_redundant && absl::GetFlag(FLAGS_ignore_redundant_constraints)) {
+      ++num_redundant_constraints;
+      ct->MarkAsInactive();
+    }
+    if (ct->is_symmetric_breaking &&
+        absl::GetFlag(FLAGS_ignore_symmetry_breaking_constraints)) {
+      ++num_symmetry_breaking_constraints;
+      ct->MarkAsInactive();
+    }
+  }
+  if (num_redundant_constraints > 0) {
+    SOLVER_LOG(logger, "  - ignored redundant constraints: ",
+               num_redundant_constraints);
+  }
+  if (num_symmetry_breaking_constraints > 0) {
+    SOLVER_LOG(logger, "  - ignored symmetry breaking constraints: ",
+               num_symmetry_breaking_constraints);
+  }
   SOLVER_LOG(logger, "");
 
   // Print statistics.
@@ -206,20 +236,23 @@ int main(int argc, char** argv) {
     input = residual_flags.back();
   }
 
-  operations_research::SolverLogger logger;
+  operations_research::sat::Model sat_model;
+  operations_research::SolverLogger* logger =
+      sat_model.GetOrCreate<operations_research::SolverLogger>();
   if (absl::GetFlag(FLAGS_ortools_mode)) {
-    logger.EnableLogging(absl::GetFlag(FLAGS_fz_logging));
+    logger->EnableLogging(absl::GetFlag(FLAGS_fz_logging));
     // log_to_stdout is disabled later.
-    logger.AddInfoLoggingCallback(operations_research::fz::LogInFlatzincFormat);
+    logger->AddInfoLoggingCallback(
+        operations_research::fz::LogInFlatzincFormat);
   } else {
-    logger.EnableLogging(true);
-    logger.SetLogToStdOut(true);
+    logger->EnableLogging(true);
+    logger->SetLogToStdOut(true);
   }
 
   absl::Duration parse_duration;
   operations_research::fz::Model model =
       operations_research::fz::ParseFlatzincModel(
-          input, !absl::GetFlag(FLAGS_read_from_stdin), &logger,
+          input, !absl::GetFlag(FLAGS_read_from_stdin), logger,
           &parse_duration);
   operations_research::sat::ProcessFloatingPointOVariablesAndObjective(&model);
 
@@ -235,6 +268,7 @@ int main(int argc, char** argv) {
   parameters.max_time_in_seconds =
       absl::GetFlag(FLAGS_time_limit) - absl::ToInt64Seconds(parse_duration);
   parameters.ortools_mode = absl::GetFlag(FLAGS_ortools_mode);
+  parameters.check_all_solutions = absl::GetFlag(FLAGS_fz_check_all_solutions);
 
   operations_research::SolverLogger solution_logger;
   solution_logger.SetLogToStdOut(true);
@@ -246,14 +280,17 @@ int main(int argc, char** argv) {
       SOLVER_LOG(&solution_logger, "%% TIMEOUT");
     }
     if (parameters.log_search_progress) {
-      SOLVER_LOG(&logger, "CpSolverResponse summary:");
-      SOLVER_LOG(&logger, "status: UNKNOWN");
+      SOLVER_LOG(logger, "CpSolverResponse summary:");
+      SOLVER_LOG(logger, "status: UNKNOWN");
     }
     return EXIT_SUCCESS;
   }
 
-  operations_research::sat::SolveFzWithCpModelProto(model, parameters,
-                                                    absl::GetFlag(FLAGS_params),
-                                                    &logger, &solution_logger);
+  operations_research::sat::SatParameters flag_parameters;
+  CHECK(google::protobuf::TextFormat::ParseFromString(
+      absl::GetFlag(FLAGS_params), &flag_parameters))
+      << absl::GetFlag(FLAGS_params);
+  operations_research::sat::SolveFzWithCpModelProto(
+      model, parameters, flag_parameters, &sat_model, &solution_logger);
   return EXIT_SUCCESS;
 }

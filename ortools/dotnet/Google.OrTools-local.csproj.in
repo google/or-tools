@@ -6,13 +6,13 @@
     <RuntimeIdentifier>@DOTNET_RID@</RuntimeIdentifier>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <AssemblyName>@DOTNET_PROJECT@</AssemblyName>
-    <Version>@PROJECT_VERSION@</Version>
+    <Version>@PROJECT_VERSION@@DOTNET_RELEASE@</Version>
 
     <!-- Nuget Properties -->
     <Description>.NET wrapper for the Operations Research Tools project</Description>
 
     <!-- Pack Option -->
-    <Title>@DOTNET_PROJECT@ v@PROJECT_VERSION@</Title>
+    <Title>@DOTNET_PROJECT@ v@PROJECT_VERSION@@DOTNET_RELEASE@</Title>
     <PackageId>@DOTNET_PROJECT@</PackageId>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
@@ -172,7 +172,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Google.Protobuf" Version="3.31.1"/>
+    <PackageReference Include="Google.Protobuf" Version="3.33.1"/>
   </ItemGroup>
 
   <!-- Need to add required runtime dependencies so Meta-Project will pull runtime Nuget(s) -->
@@ -181,7 +181,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="@DOTNET_PROJECT@.runtime.@DOTNET_RID@" Version="@PROJECT_VERSION@"/>
+    <PackageReference Include="@DOTNET_PROJECT@.runtime.@DOTNET_RID@" Version="@PROJECT_VERSION@@DOTNET_RELEASE@"/>
   </ItemGroup>
 </Project>
 
