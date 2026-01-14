@@ -38,6 +38,13 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
     add_compile_options(-pthread)
     add_link_options(-pthread -sUSE_PTHREADS=1)
   endif()
+  set(EMSCRIPTEN_USE_SIMD ON CACHE BOOL
+      "Enable SIMD when targeting Emscripten")
+  message(STATUS "Emscripten SIMD support (global): ${EMSCRIPTEN_USE_SIMD}")
+  if(EMSCRIPTEN_USE_SIMD)
+    add_compile_options(-msimd128)
+    add_link_options(-msimd128)
+  endif()
 endif()
 
 if(MSVC)
@@ -211,11 +218,17 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
     "-sENVIRONMENT=web,worker"
     "-sASSERTIONS=1"
     "-sALLOW_MEMORY_GROWTH=1"
+    # I think I give up on this. We just have to accept that we don't have full support for all browsers yet, and have to wait it out
     "-sJSPI=2"
-    "-sJSPI_EXPORTS=['solve_model','validate_model']"
+    "-sJSPI_EXPORTS=['solve_model', 'validate_model']"
+    # "-sASYNCIFY=1"
+    # "-sASYNCIFY_ADD=['solve_model','validate_model']"
+    # "-sASYNCIFY_STACK_SIZE=65536"
+    # "-sASYNCIFY_EXPORTS=['solve_model','validate_model', 'asyncify_start_unwind',]"
+    # "-sJSPI_EXPORTS=['solve_model','validate_model', 'asyncify_start_unwind']"
     "-sUSE_PTHREADS=1"
     "-sPTHREAD_POOL_SIZE=Math.max(1,Math.min(8,(typeof navigator!=='undefined'&&navigator.hardwareConcurrency)||8))"
-    "-s PTHREAD_DEBUG=1"
+    # "-sPTHREAD_DEBUG=1"
     "--bind"
     "--emit-tsd"
     "${JS_OUTPUT_DIR}/cp_sat_runtime.d.ts"
