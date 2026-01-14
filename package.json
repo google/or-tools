@@ -14,7 +14,7 @@
     "./build/javascript/lib/*": "./build/javascript/lib/*"
   },
   "scripts": {
-    "build:wasm": "bash -lc 'scripts/ensure-emsdk.sh && source ./emsdk/emsdk_env.sh && cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE=$EMSDK/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake && cmake --build build --target cp_sat_runtime_site -j'",
+    "build:wasm": "bash -lc 'scripts/ensure-emsdk.sh && source ./emsdk/emsdk_env.sh && cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE=$EMSDK/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake ${CMAKE_ARGS} && cmake --build build --target cp_sat_runtime_site -j'",
     "gen:sat-parameters": "node scripts/generate_sat_parameters_types.mjs",
     "build:lib": "npm run gen:sat-parameters && tsc && vite build --config vite.lib.config.ts",
     "sync:lib-assets-to-site": "mkdir -p javascript/site/public/assets && cp build/javascript/lib/assets/* javascript/site/public/assets/",

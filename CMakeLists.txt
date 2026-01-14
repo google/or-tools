@@ -181,6 +181,13 @@ message(STATUS "Install doc: ${INSTALL_DOC}")
 # WASM JS bindings (optional, Emscripten only)
 if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
   # Embed proto schemas directly into the WASM binary.
+  set(EMSCRIPTEN_ALLOWED_ORIGINS "" CACHE STRING
+      "Comma-separated list of allowed origins for the WASM runtime. Empty allows all origins.")
+  string(REGEX REPLACE "^\"(.*)\"$" "\\1"
+    EMSCRIPTEN_ALLOWED_ORIGINS_STRIPPED "${EMSCRIPTEN_ALLOWED_ORIGINS}")
+  string(REPLACE "\"" "\\\"" EMSCRIPTEN_ALLOWED_ORIGINS_ESCAPED
+    "${EMSCRIPTEN_ALLOWED_ORIGINS_STRIPPED}")
+  message(STATUS "Emscripten allowed origins: ${EMSCRIPTEN_ALLOWED_ORIGINS_STRIPPED}")
   set(PROTO_SCHEMA_HEADER "${PROJECT_BINARY_DIR}/javascript/generated_proto_schemas.h")
   add_custom_command(
     OUTPUT "${PROTO_SCHEMA_HEADER}"
@@ -201,6 +208,8 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
     "${PROTO_SCHEMA_HEADER}")
   target_link_libraries(cp_sat_runtime PRIVATE ${PROJECT_NAMESPACE}::ortools)
   target_include_directories(cp_sat_runtime PRIVATE "${PROJECT_BINARY_DIR}/javascript")
+  target_compile_definitions(cp_sat_runtime PRIVATE
+    ORTOOLS_WASM_ALLOWED_ORIGINS="${EMSCRIPTEN_ALLOWED_ORIGINS_ESCAPED}")
 
   set(JS_OUTPUT_DIR "${PROJECT_BINARY_DIR}/javascript/wasm")
   set(JS_EXAMPLES_DIR "${JS_OUTPUT_DIR}/examples")

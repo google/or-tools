@@ -2,8 +2,9 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
-#include <string>
 #include <mutex>
+#include <string>
+#include <string_view>
 
 #include <emscripten/bind.h>
 #include <emscripten/emscripten.h>
@@ -25,6 +26,107 @@ using operations_research::sat::SolveCpModel;
 using operations_research::sat::wasm::kCpModelProtoSchema;
 using operations_research::sat::wasm::kSatParametersProtoSchema;
 using operations_research::sat::StopSearch;
+
+#ifndef ORTOOLS_WASM_ALLOWED_ORIGINS
+#define ORTOOLS_WASM_ALLOWED_ORIGINS ""
+#endif
+
+EM_JS(char*, GetHostCString, (), {
+  var host = "";
+  if (typeof location !== 'undefined' && location.hostname) {
+    host = location.hostname;
+  }
+  var len = lengthBytesUTF8(host) + 1;
+  var ptr = _malloc(len);
+  stringToUTF8(host, ptr, len);
+  return ptr;
+});
+
+std::string TrimAscii(std::string_view value) {
+  const size_t start = value.find_first_not_of(" \t\r\n");
+  if (start == std::string_view::npos) return std::string();
+  const size_t end = value.find_last_not_of(" \t\r\n");
+  return std::string(value.substr(start, end - start + 1));
+}
+
+std::string ToLowerAscii(std::string value) {
+  for (char& ch : value) {
+    ch = static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
+  }
+  return value;
+}
+
+std::string NormalizeHost(std::string_view value) {
+  std::string trimmed = TrimAscii(value);
+  if (trimmed.empty()) return trimmed;
+
+  const size_t scheme_pos = trimmed.find("://");
+  if (scheme_pos != std::string::npos) {
+    trimmed = trimmed.substr(scheme_pos + 3);
+  }
+
+  const size_t path_pos = trimmed.find_first_of("/?#");
+  if (path_pos != std::string::npos) {
+    trimmed = trimmed.substr(0, path_pos);
+  }
+
+  const size_t port_pos = trimmed.find(':');
+  if (port_pos != std::string::npos) {
+    trimmed = trimmed.substr(0, port_pos);
+  }
+
+  return ToLowerAscii(trimmed);
+}
+
+std::string FetchHost() {
+  char* host_ptr = GetHostCString();
+  if (host_ptr == nullptr) return std::string();
+  std::string host(host_ptr);
+  std::free(host_ptr);
+  return ToLowerAscii(host);
+}
+
+struct OriginCheckResult {
+  bool allowed = true;
+  std::string error;
+};
+
+const OriginCheckResult& CheckOriginAllowed() {
+  static OriginCheckResult result = []() {
+    OriginCheckResult res;
+    const std::string allowlist = ORTOOLS_WASM_ALLOWED_ORIGINS;
+    if (allowlist.empty()) {
+      res.allowed = true;
+      return res;
+    }
+
+    const std::string host = FetchHost();
+    if (host.empty()) {
+      res.allowed = false;
+      res.error = "Host unavailable; refusing to run.";
+      return res;
+    }
+
+    size_t start = 0;
+    while (start < allowlist.size()) {
+      const size_t comma = allowlist.find(',', start);
+      const size_t end = (comma == std::string::npos) ? allowlist.size() : comma;
+      const std::string token = NormalizeHost(
+          std::string_view(allowlist).substr(start, end - start));
+      if (!token.empty() && token == host) {
+        res.allowed = true;
+        return res;
+      }
+      if (comma == std::string::npos) break;
+      start = comma + 1;
+    }
+
+    res.allowed = false;
+    res.error = "Host not allowed: " + host;
+    return res;
+  }();
+  return result;
+}
 
 // Track the in-flight model so we can interrupt it from JS.
 std::mutex g_active_model_mutex;
@@ -91,6 +193,12 @@ EMSCRIPTEN_KEEPALIVE uint8_t* solve_model(const uint8_t* model_data,
   if (out_len == nullptr) return nullptr;
   *out_len = 0;
 
+  const OriginCheckResult& origin_check = CheckOriginAllowed();
+  if (!origin_check.allowed) {
+    const auto response = MakeInvalidResponse(origin_check.error);
+    return SerializeResponse(response, out_len);
+  }
+
   CpModelProto model_proto;
   if (model_data == nullptr || !model_proto.ParseFromArray(model_data,
                                                            static_cast<int>(model_len))) {
@@ -140,6 +248,11 @@ EMSCRIPTEN_KEEPALIVE uint8_t* validate_model(const uint8_t* model_data,
                                              size_t* out_len) {
   if (out_len == nullptr) return nullptr;
   *out_len = 0;
+
+  const OriginCheckResult& origin_check = CheckOriginAllowed();
+  if (!origin_check.allowed) {
+    return CopyStringToBuffer(origin_check.error, out_len);
+  }
 
   CpModelProto model_proto;
   if (model_data == nullptr ||
