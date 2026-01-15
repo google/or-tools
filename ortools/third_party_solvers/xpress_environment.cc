@@ -16,8 +16,7 @@
 #include "ortools/third_party_solvers/xpress_environment.h"
 
 #include <cstdlib>
-// NOLINTNEXTLINE(build/c++17)
-#include <filesystem>
+#include <filesystem>  //NOLINT
 #include <functional>
 #include <string>
 #include <vector>
@@ -28,7 +27,6 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "absl/synchronization/mutex.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/status_builder.h"
 #include "ortools/third_party_solvers/dynamic_library.h"
 

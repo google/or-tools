@@ -425,7 +425,8 @@ endif()
 # ##############################################################################
 # Coinutils
 # ##############################################################################
-# Coin-OR does not support C++17/C++20 (use of 'register' storage class specifier)
+
+# Coin-OR uses the 'register' storage class specifier which requires C++11.
 set(CMAKE_CXX_STANDARD 11)
 if(WIN32)
   set(BUILD_SHARED_LIBS OFF)
