@@ -1,4 +1,0 @@
-RUN: $(dijkstra_one_to_all)
-CHECK: "Distance to 1: 2"
-CHECK: "Distance to 2: 6"
-CHECK: "Distance to 3: 2"
