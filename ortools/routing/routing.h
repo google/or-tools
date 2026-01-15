@@ -390,10 +390,8 @@ class OR_DLL RoutingModel {
     }
 
     std::vector<int> type_index_of_vehicle;
-    // clang-format off
-    std::vector<std::set<VehicleClassEntry> > sorted_vehicle_classes_per_type;
-    std::vector<std::deque<int> > vehicles_per_vehicle_class;
-    // clang-format on
+    std::vector<std::set<VehicleClassEntry>> sorted_vehicle_classes_per_type;
+    std::vector<std::deque<int>> vehicles_per_vehicle_class;
   };
 
   /// A ResourceGroup defines a set of available Resources with attributes on
@@ -528,12 +526,10 @@ class OR_DLL RoutingModel {
       DCHECK_LT(resource_class, resource_indices_per_class_.size());
       return resource_indices_per_class_[resource_class];
     }
-    // clang-format off
-    const util_intops::StrongVector<ResourceClassIndex, std::vector<int> >&
-        GetResourceIndicesPerClass() const {
+    const util_intops::StrongVector<ResourceClassIndex, std::vector<int>>&
+    GetResourceIndicesPerClass() const {
       return resource_indices_per_class_;
     }
-    // clang-format on
     ResourceClassIndex GetResourceClassIndex(int resource_index) const {
       DCHECK_LT(resource_index, resource_class_indices_.size());
       return resource_class_indices_[resource_index];
@@ -566,19 +562,15 @@ class OR_DLL RoutingModel {
     // Stores the ResourceClassIndex of each resource (See implementation of
     // ComputeResourceClasses()).
     std::vector<ResourceClassIndex> resource_class_indices_;
-    // clang-format off
-    util_intops::StrongVector<ResourceClassIndex, std::vector<int> >
+    util_intops::StrongVector<ResourceClassIndex, std::vector<int>>
         resource_indices_per_class_;
-    // clang-format on
 
     std::vector<bool> vehicle_requires_resource_;
     std::vector<int> vehicles_requiring_resource_;
     // For each vehicle, stores the set of allowed resource indices if it's
     // restricted for that vehicle. If the set is empty for a vehicle, then any
     // resource from this group can be assigned to it.
-    // clang-format off
-    std::vector<absl::flat_hash_set<int> > vehicle_allowed_resources_;
-    // clang-format on
+    std::vector<absl::flat_hash_set<int>> vehicle_allowed_resources_;
     /// All indices of dimensions affected by this resource group.
     absl::flat_hash_set<DimensionIndex> affected_dimension_indices_;
 
@@ -864,12 +856,9 @@ class OR_DLL RoutingModel {
 
   /// Adds a resource group to the routing model and returns a pointer to it.
   ResourceGroup* AddResourceGroup();
-  // clang-format off
-  const std::vector<std::unique_ptr<ResourceGroup> >& GetResourceGroups()
-      const {
+  const std::vector<std::unique_ptr<ResourceGroup>>& GetResourceGroups() const {
     return resource_groups_;
   }
-  // clang-format on
   ResourceGroup* GetResourceGroup(int rg_index) const {
     DCHECK_LT(rg_index, resource_groups_.size());
     return resource_groups_[rg_index].get();
@@ -1194,18 +1183,16 @@ class OR_DLL RoutingModel {
   /// visited.
   void AddRequiredTypeAlternativesWhenRemovingType(
       int dependent_type, absl::flat_hash_set<int> required_type_alternatives);
-  // clang-format off
   /// Returns the set of same-vehicle requirement alternatives for the given
   /// type.
-  const std::vector<absl::flat_hash_set<int> >&
-      GetSameVehicleRequiredTypeAlternativesOfType(int type) const;
+  const std::vector<absl::flat_hash_set<int>>&
+  GetSameVehicleRequiredTypeAlternativesOfType(int type) const;
   /// Returns the set of requirement alternatives when adding the given type.
-  const std::vector<absl::flat_hash_set<int> >&
-      GetRequiredTypeAlternativesWhenAddingType(int type) const;
+  const std::vector<absl::flat_hash_set<int>>&
+  GetRequiredTypeAlternativesWhenAddingType(int type) const;
   /// Returns the set of requirement alternatives when removing the given type.
-  const std::vector<absl::flat_hash_set<int> >&
-      GetRequiredTypeAlternativesWhenRemovingType(int type) const;
-  // clang-format on
+  const std::vector<absl::flat_hash_set<int>>&
+  GetRequiredTypeAlternativesWhenRemovingType(int type) const;
   /// Returns true iff any same-route (resp. temporal) type requirements have
   /// been added to the model.
   bool HasSameVehicleTypeRequirements() const {
@@ -2577,9 +2564,7 @@ class OR_DLL RoutingModel {
   /// the corresponding vehicle doesn't require a resource from this resource
   /// group, OR if the vehicle is unused (i.e. no visits on its route and
   /// vehicle_used_when_empty_[v] is false).
-  // clang-format off
-  std::vector<std::vector<operations_research::IntVar*> > resource_vars_;
-  // clang-format on
+  std::vector<std::vector<operations_research::IntVar*>> resource_vars_;
   // The following vectors are indexed by vehicle index.
   std::vector<operations_research::IntVar*> vehicle_active_;
   std::vector<operations_research::IntVar*> vehicle_route_considered_;
@@ -2596,22 +2581,20 @@ class OR_DLL RoutingModel {
   /// If resource_groups_ is not empty, then for each group of resources, each
   /// (used) vehicle must be assigned to exactly 1 resource, and each resource
   /// can in turn be assigned to at most 1 vehicle.
-  // clang-format off
-  std::vector<std::unique_ptr<ResourceGroup> > resource_groups_;
+  std::vector<std::unique_ptr<ResourceGroup>> resource_groups_;
   /// Stores the set of resource groups related to each dimension.
-  util_intops::StrongVector<DimensionIndex, std::vector<int> >
+  util_intops::StrongVector<DimensionIndex, std::vector<int>>
       dimension_resource_group_indices_;
 
   /// TODO(user): Define a new Dimension[Global|Local]OptimizerIndex type
   /// and use it to define ITIVectors and for the dimension to optimizer index
   /// mappings below.
-  std::vector<DimensionCumulOptimizers<GlobalDimensionCumulOptimizer> >
+  std::vector<DimensionCumulOptimizers<GlobalDimensionCumulOptimizer>>
       global_dimension_optimizers_;
   util_intops::StrongVector<DimensionIndex, int> global_optimizer_index_;
-  std::vector<DimensionCumulOptimizers<LocalDimensionCumulOptimizer> >
+  std::vector<DimensionCumulOptimizers<LocalDimensionCumulOptimizer>>
       local_dimension_optimizers_;
   util_intops::StrongVector<DimensionIndex, int> local_optimizer_index_;
-  // clang-format on
   std::string primary_constrained_dimension_;
   /// Costs
   operations_research::IntVar* cost_ = nullptr;
@@ -2655,10 +2638,9 @@ class OR_DLL RoutingModel {
   std::function<int(int64_t)> vehicle_start_class_callback_;
   /// Disjunctions
   util_intops::StrongVector<DisjunctionIndex, Disjunction> disjunctions_;
-  // clang-format off
-  std::vector<std::vector<DisjunctionIndex> > index_to_disjunctions_;
+  std::vector<std::vector<DisjunctionIndex>> index_to_disjunctions_;
   /// Same vehicle costs
-  std::vector<ValuedNodes<int64_t> > same_vehicle_costs_;
+  std::vector<ValuedNodes<int64_t>> same_vehicle_costs_;
   /// Allowed vehicles
 #ifndef SWIG
   std::vector<absl::flat_hash_set<int>> allowed_vehicles_;
@@ -2667,7 +2649,7 @@ class OR_DLL RoutingModel {
   std::vector<PickupDeliveryPair> pickup_delivery_pairs_;
   std::vector<PickupDeliveryPair>
       implicit_pickup_delivery_pairs_without_alternatives_;
-  std::vector<std::pair<DisjunctionIndex, DisjunctionIndex> >
+  std::vector<std::pair<DisjunctionIndex, DisjunctionIndex>>
       pickup_delivery_disjunctions_;
   // If node_index is a pickup, index_to_pickup_position_[node_index] contains
   // the PickupDeliveryPosition {pickup_delivery_index, alternative_index}
@@ -2676,7 +2658,6 @@ class OR_DLL RoutingModel {
   std::vector<PickupDeliveryPosition> index_to_pickup_position_;
   // Same as above for deliveries.
   std::vector<PickupDeliveryPosition> index_to_delivery_position_;
-  // clang-format on
   std::vector<PickupAndDeliveryPolicy> vehicle_pickup_delivery_policy_;
   // Same vehicle group to which a node belongs.
   std::vector<int> same_vehicle_group_;
@@ -2693,24 +2674,22 @@ class OR_DLL RoutingModel {
   std::vector<int> index_to_visit_type_;
   // Variable index to VisitTypePolicy.
   std::vector<VisitTypePolicy> index_to_type_policy_;
-  // clang-format off
-  std::vector<std::vector<int> > single_nodes_of_type_;
-  std::vector<std::vector<int> > pair_indices_of_type_;
+  std::vector<std::vector<int>> single_nodes_of_type_;
+  std::vector<std::vector<int>> pair_indices_of_type_;
 
-  std::vector<absl::flat_hash_set<int> >
-      hard_incompatible_types_per_type_index_;
-  std::vector<absl::flat_hash_set<int> >
+  std::vector<absl::flat_hash_set<int>> hard_incompatible_types_per_type_index_;
+  std::vector<absl::flat_hash_set<int>>
       temporal_incompatible_types_per_type_index_;
   const absl::flat_hash_set<int> empty_incompatibility_set_;
 
-  std::vector<std::vector<absl::flat_hash_set<int> > >
+  std::vector<std::vector<absl::flat_hash_set<int>>>
       same_vehicle_required_type_alternatives_per_type_index_;
-  std::vector<std::vector<absl::flat_hash_set<int> > >
+  std::vector<std::vector<absl::flat_hash_set<int>>>
       required_type_alternatives_when_adding_type_index_;
-  std::vector<std::vector<absl::flat_hash_set<int> > >
+  std::vector<std::vector<absl::flat_hash_set<int>>>
       required_type_alternatives_when_removing_type_index_;
   const std::vector<absl::flat_hash_set<int>> empty_required_type_alternatives_;
-  absl::flat_hash_map</*type*/int, absl::flat_hash_set<VisitTypePolicy> >
+  absl::flat_hash_map</*type*/ int, absl::flat_hash_set<VisitTypePolicy>>
       trivially_infeasible_visit_types_to_policies_;
 
   // Visit types sorted topologically based on required-->dependent requirement
@@ -2728,9 +2707,8 @@ class OR_DLL RoutingModel {
   //    containing the type t.
   //
   // The higher these two numbers, the tighter the type is wrt requirements.
-  std::vector<std::vector<int> > topologically_sorted_visit_types_;
+  std::vector<std::vector<int>> topologically_sorted_visit_types_;
   std::vector<std::vector<int>> visit_type_components_;
-  // clang-format on
   int num_visit_types_;
   std::vector<std::vector<std::vector<int>>>
       topologically_sorted_node_precedences_;
@@ -3385,10 +3363,8 @@ class RoutingDimension {
       int vehicle) const;
   /// Returns the pairs (distance, duration) specified by break distance
   /// constraints.
-  // clang-format off
-  const std::vector<std::pair<int64_t, int64_t> >&
-      GetBreakDistanceDurationOfVehicle(int vehicle) const;
-  // clang-format on
+  const std::vector<std::pair<int64_t, int64_t>>&
+  GetBreakDistanceDurationOfVehicle(int vehicle) const;
 #endif  /// !defined(SWIGPYTHON)
   int GetPreTravelEvaluatorOfVehicle(int vehicle) const;
   int GetPostTravelEvaluatorOfVehicle(int vehicle) const;
@@ -3707,11 +3683,9 @@ class RoutingDimension {
 
   // Used if some vehicle has breaks in this dimension, typically time.
   bool break_constraints_are_initialized_ = false;
-  // clang-format off
-  std::vector<std::vector<IntervalVar*> > vehicle_break_intervals_;
-  std::vector<std::vector<std::pair<int64_t, int64_t> > >
+  std::vector<std::vector<IntervalVar*>> vehicle_break_intervals_;
+  std::vector<std::vector<std::pair<int64_t, int64_t>>>
       vehicle_break_distance_duration_;
-  // clang-format on
   // For each vehicle, stores the part of travel that is made directly
   // after (before) the departure (arrival) node of the travel.
   // These parts of the travel are non-interruptible, in particular by a break.

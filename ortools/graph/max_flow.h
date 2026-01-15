@@ -132,7 +132,7 @@ class SimpleMaxFlow {
   // instance that uses it.
   typedef ::util::ReverseArcStaticGraph<NodeIndex, ArcIndex> Graph;
   std::unique_ptr<Graph> underlying_graph_;
-  std::unique_ptr<GenericMaxFlow<Graph> > underlying_max_flow_;
+  std::unique_ptr<GenericMaxFlow<Graph>> underlying_max_flow_;
 };
 
 }  // namespace operations_research

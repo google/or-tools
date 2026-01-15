@@ -162,10 +162,8 @@ class VehicleTypeCurator {
   using VehicleClassEntry =
       RoutingModel::VehicleTypeContainer::VehicleClassEntry;
   const RoutingModel::VehicleTypeContainer* const vehicle_type_container_;
-  // clang-format off
-  std::vector<std::set<VehicleClassEntry> > sorted_vehicle_classes_per_type_;
-  std::vector<std::vector<int> > vehicles_per_vehicle_class_;
-  // clang-format on
+  std::vector<std::set<VehicleClassEntry>> sorted_vehicle_classes_per_type_;
+  std::vector<std::vector<int>> vehicles_per_vehicle_class_;
 };
 
 /// Returns the best value for the automatic first solution strategy, based on
@@ -404,14 +402,14 @@ class CheapestInsertionFilteredHeuristic : public RoutingFilteredHeuristic {
              std::tie(other.vehicle, other.is_node_index, other.index);
     }
   };
-  // clang-format off
+
   struct SeedQueue {
-    explicit SeedQueue(bool prioritize_farthest_nodes) :
-      prioritize_farthest_nodes(prioritize_farthest_nodes) {}
+    explicit SeedQueue(bool prioritize_farthest_nodes)
+        : prioritize_farthest_nodes(prioritize_farthest_nodes) {}
 
     /// By default, the priority is given (hierarchically) to nodes with lower
     /// number of allowed vehicles, higher penalty and lower start/end distance.
-    std::priority_queue<Seed, std::vector<Seed>, std::greater<Seed> >
+    std::priority_queue<Seed, std::vector<Seed>, std::greater<Seed>>
         priority_queue;
     /// When 'prioritize_farthest_nodes' is true, the start/end distance is
     /// inverted so higher priority is given to farther nodes.
@@ -423,16 +421,15 @@ class CheapestInsertionFilteredHeuristic : public RoutingFilteredHeuristic {
   /// start_end_distances_per_node.
   /// For each node, start_end_distances_per_node[node] is sorted in decreasing
   /// order.
-  std::vector<std::vector<StartEndValue> >
-      ComputeStartEndDistanceForVehicles(absl::Span<const int>  vehicles);
+  std::vector<std::vector<StartEndValue>> ComputeStartEndDistanceForVehicles(
+      absl::Span<const int> vehicles);
 
   /// Initializes sq->priority_queue by inserting the best entry corresponding
   /// to each node, i.e. the last element of start_end_distances_per_node[node],
   /// which is supposed to be sorted in decreasing order.
   void InitializeSeedQueue(
-      std::vector<std::vector<StartEndValue> >* start_end_distances_per_node,
+      std::vector<std::vector<StartEndValue>>* start_end_distances_per_node,
       SeedQueue* sq);
-  // clang-format on
 
   /// Adds a Seed corresponding to the given 'node' to sq.priority_queue, based
   /// on the last entry in its 'start_end_distances' (from which it's deleted).
@@ -1357,9 +1354,7 @@ class SavingsFilteredHeuristic : public RoutingFilteredHeuristic {
   int StartNewRouteWithBestVehicleOfType(int type, int64_t before_node,
                                          int64_t after_node);
 
-  // clang-format off
-  std::unique_ptr<SavingsContainer<Saving> > savings_container_;
-  // clang-format on
+  std::unique_ptr<SavingsContainer<Saving>> savings_container_;
   std::unique_ptr<VehicleTypeCurator> vehicle_type_curator_;
 
  private:
@@ -1367,10 +1362,8 @@ class SavingsFilteredHeuristic : public RoutingFilteredHeuristic {
   /// Given the vector of adjacency lists of a graph, adds symmetric arcs not
   /// already in the graph to the adjacencies (i.e. if n1-->n2 is present and
   /// not n2-->n1, then n1 is added to adjacency_matrix[n2].
-  // clang-format off
   void AddSymmetricArcsToAdjacencyLists(
-      std::vector<std::vector<int64_t> >* adjacency_lists);
-  // clang-format on
+      std::vector<std::vector<int64_t>>* adjacency_lists);
 
   /// Computes saving values for node pairs (see MaxNumNeighborsPerNode()) and
   /// all vehicle types (see ComputeVehicleTypes()).

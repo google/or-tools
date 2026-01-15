@@ -38,7 +38,7 @@ absl::Status CheckIdsAndValuesSize(const SparseVectorView<T>& vector_view,
 }
 
 template <typename T,
-          typename = std::enable_if_t<!std::is_floating_point<T>::value> >
+          typename = std::enable_if_t<!std::is_floating_point<T>::value>>
 absl::Status CheckValues(const SparseVectorView<T>& vector_view,
                          absl::string_view value_name = "values") {
   RETURN_IF_ERROR(CheckIdsAndValuesSize(vector_view, value_name));
@@ -46,7 +46,7 @@ absl::Status CheckValues(const SparseVectorView<T>& vector_view,
 }
 
 template <typename T,
-          typename = std::enable_if_t<!std::is_floating_point<T>::value> >
+          typename = std::enable_if_t<!std::is_floating_point<T>::value>>
 absl::Status CheckIdsAndValues(const SparseVectorView<T>& vector_view,
                                absl::string_view value_name = "values") {
   RETURN_IF_ERROR(CheckIdsRangeAndStrictlyIncreasing(vector_view.ids()));
@@ -55,7 +55,7 @@ absl::Status CheckIdsAndValues(const SparseVectorView<T>& vector_view,
 }
 
 template <typename T,
-          typename = std::enable_if_t<std::is_floating_point<T>::value> >
+          typename = std::enable_if_t<std::is_floating_point<T>::value>>
 absl::Status CheckValues(const SparseVectorView<T>& vector_view,
                          const DoubleOptions& options,
                          absl::string_view value_name = "values") {
@@ -69,7 +69,7 @@ absl::Status CheckValues(const SparseVectorView<T>& vector_view,
 }
 
 template <typename T,
-          typename = std::enable_if_t<std::is_floating_point<T>::value> >
+          typename = std::enable_if_t<std::is_floating_point<T>::value>>
 absl::Status CheckIdsAndValues(const SparseVectorView<T>& vector_view,
                                const DoubleOptions& options,
                                absl::string_view value_name = "values") {

@@ -377,7 +377,7 @@ class Cache3 {
 class NonReversibleCache : public ModelCache {
  public:
   typedef Cache1<IntExpr, IntExpr*> ExprIntExprCache;
-  typedef Cache1<IntExpr, std::vector<IntVar*> > VarArrayIntExprCache;
+  typedef Cache1<IntExpr, std::vector<IntVar*>> VarArrayIntExprCache;
 
   typedef Cache2<Constraint, IntVar*, int64_t> VarConstantConstraintCache;
   typedef Cache2<Constraint, IntExpr*, IntExpr*> ExprExprConstraintCache;

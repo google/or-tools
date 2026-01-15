@@ -26,6 +26,7 @@ DEFINE_INDEX_TYPE_TYPEDEF(operations_research::routing::RoutingNodeIndex,
 
 %ignoreall
 
+%unignore operations_research;
 %unignore operations_research::routing;
 
 namespace operations_research::routing {

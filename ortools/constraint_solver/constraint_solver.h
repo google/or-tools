@@ -4842,9 +4842,7 @@ class ImprovementSearchLimit : public SearchLimit {
   int improvement_rate_solutions_distance_;
 
   std::vector<double> best_objectives_;
-  // clang-format off
-  std::vector<std::deque<std::pair<double, int64_t> > > improvements_;
-  // clang-format on
+  std::vector<std::deque<std::pair<double, int64_t>>> improvements_;
   std::vector<double> thresholds_;
   bool objective_updated_;
   bool gradient_stage_;

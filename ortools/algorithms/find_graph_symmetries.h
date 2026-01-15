@@ -251,39 +251,62 @@ class GraphSymmetryFinder {
   struct Stats : public StatsGroup {
     Stats()
         : StatsGroup("GraphSymmetryFinder"),
-          initialization_time("a Initialization", this),
-          initialization_refine_time("b  ┗╸Refine", this),
-          invariant_dive_time("c Invariant Dive", this),
-          main_search_time("d Main Search", this),
-          invariant_unroll_time("e  ┣╸Dive unroll", this),
-          permutation_output_time("f  ┣╸Permutation output", this),
-          search_time("g  ┗╸FindOneSuitablePermutation()", this),
-          search_time_fail("h    ┣╸Fail", this),
-          search_time_success("i    ┣╸Success", this),
-          initial_search_refine_time("j    ┣╸Initial refine", this),
-          search_refine_time("k    ┣╸Further refines", this),
-          quick_compatibility_time("l    ┣╸Compatibility checks", this),
-          quick_compatibility_fail_time("m    ┃ ┣╸Fail", this),
-          quick_compatibility_success_time("n    ┃ ┗╸Success", this),
-          dynamic_permutation_refinement_time(
+          initialization_time(  //
+              "a Initialization", this),
+          initialization_refine_time(  //
+              "b  ┗╸Refine", this),
+          invariant_dive_time(  //
+              "c Invariant Dive", this),
+          main_search_time(  //
+              "d Main Search", this),
+          invariant_unroll_time(  //
+              "e  ┣╸Dive unroll", this),
+          permutation_output_time(  //
+              "f  ┣╸Permutation output", this),
+          search_time(  //
+              "g  ┗╸FindOneSuitablePermutation()", this),
+          search_time_fail(  //
+              "h    ┣╸Fail", this),
+          search_time_success(  //
+              "i    ┣╸Success", this),
+          initial_search_refine_time(  //
+              "j    ┣╸Initial refine", this),
+          search_refine_time(  //
+              "k    ┣╸Further refines", this),
+          quick_compatibility_time(  //
+              "l    ┣╸Compatibility checks", this),
+          quick_compatibility_fail_time(  //
+              "m    ┃ ┣╸Fail", this),
+          quick_compatibility_success_time(  //
+              "n    ┃ ┗╸Success", this),
+          dynamic_permutation_refinement_time(  //
               "o    ┣╸Dynamic permutation refinement", this),
-          map_election_std_time(
+          map_election_std_time(  //
               "p    ┣╸Mapping election / full match detection", this),
-          map_election_std_mapping_time("q    ┃ ┣╸Mapping elected", this),
-          map_election_std_full_match_time("r    ┃ ┗╸Full Match", this),
-          automorphism_test_time("s    ┣╸[Upon full match] Automorphism check",
-                                 this),
-          automorphism_test_fail_time("t    ┃ ┣╸Fail", this),
-          automorphism_test_success_time("u    ┃ ┗╸Success", this),
-          search_finalize_time("v    ┣╸[Upon auto success] Finalization", this),
-          dynamic_permutation_undo_time(
+          map_election_std_mapping_time(  //
+              "q    ┃ ┣╸Mapping elected", this),
+          map_election_std_full_match_time(  //
+              "r    ┃ ┗╸Full Match", this),
+          automorphism_test_time(  //
+              "s    ┣╸[Upon full match] Automorphism check", this),
+          automorphism_test_fail_time(  //
+              "t    ┃ ┣╸Fail", this),
+          automorphism_test_success_time(  //
+              "u    ┃ ┗╸Success", this),
+          search_finalize_time(  //
+              "v    ┣╸[Upon auto success] Finalization", this),
+          dynamic_permutation_undo_time(  //
               "w    ┣╸[Upon auto fail, full] Dynamic permutation undo", this),
-          map_reelection_time(
+          map_reelection_time(  //
               "x    ┣╸[Upon auto fail, partial] Mapping re-election", this),
-          non_singleton_search_time("y    ┃ ┗╸Non-singleton search", this),
-          backtracking_time("z    ┗╸Backtracking", this),
-          pruning_time("{      ┗╸Pruning", this),
-          search_depth("~ Search Stats: search_depth", this) {}
+          non_singleton_search_time(  //
+              "y    ┃ ┗╸Non-singleton search", this),
+          backtracking_time(  //
+              "z    ┗╸Backtracking", this),
+          pruning_time(  //
+              "{      ┗╸Pruning", this),
+          search_depth(  //
+              "~ Search Stats: search_depth", this) {}
 
     TimeDistribution initialization_time;
     TimeDistribution initialization_refine_time;

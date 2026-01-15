@@ -183,13 +183,13 @@ class PriorityQueueWithRestrictedPush {
 
  private:
   // Helper function to get the last element of a vector and pop it.
-  Element PopBack(std::vector<std::pair<Element, IntegerPriority> >* queue);
+  Element PopBack(std::vector<std::pair<Element, IntegerPriority>>* queue);
 
   // This is the heart of the algorithm. basically we split the elements by
   // parity of their priority and the precondition on the Push() ensures that
   // both vectors are always sorted by increasing priority.
-  std::vector<std::pair<Element, IntegerPriority> > even_queue_;
-  std::vector<std::pair<Element, IntegerPriority> > odd_queue_;
+  std::vector<std::pair<Element, IntegerPriority>> even_queue_;
+  std::vector<std::pair<Element, IntegerPriority>> odd_queue_;
 };
 
 // We want an enum for the Status of a max flow run, and we want this
@@ -581,7 +581,7 @@ Element PriorityQueueWithRestrictedPush<Element, IntegerPriority>::Pop() {
 
 template <typename Element, typename IntegerPriority>
 Element PriorityQueueWithRestrictedPush<Element, IntegerPriority>::PopBack(
-    std::vector<std::pair<Element, IntegerPriority> >* queue) {
+    std::vector<std::pair<Element, IntegerPriority>>* queue) {
   DCHECK(!queue->empty());
   Element element = queue->back().first;
   queue->pop_back();

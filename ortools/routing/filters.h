@@ -1026,9 +1026,7 @@ class BasePathFilter : public IntVarLocalSearchFilter {
   std::vector<int64_t> new_nexts_;
   std::vector<int> delta_touched_;
   SparseBitset<> touched_paths_;
-  // clang-format off
-  std::vector<std::pair<int64_t, int64_t> > touched_path_chain_start_ends_;
-  // clang-format on
+  std::vector<std::pair<int64_t, int64_t>> touched_path_chain_start_ends_;
   std::vector<int> ranks_;
 
   bool lns_detected_;
