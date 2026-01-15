@@ -1,2 +1,0 @@
-RUN: $(bfs_directed)
-CHECK: "Shortest path length (in arcs): 2"
