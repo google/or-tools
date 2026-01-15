@@ -650,7 +650,7 @@ class ImpactRecorder : public SearchMonitor {
   double current_log_space_;
   // impacts_[i][j] stores the average search space reduction when assigning
   // original_min_[i] + j to variable i.
-  std::vector<std::vector<double> > impacts_;
+  std::vector<std::vector<double>> impacts_;
   std::vector<int64_t> original_min_;
   std::unique_ptr<IntVarIterator*[]> domain_iterators_;
   int64_t init_count_;

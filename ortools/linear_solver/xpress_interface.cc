@@ -427,7 +427,7 @@ class XpressInterface : public MPSolverInterface {
   // Looping on MPConstraint::coefficients_ yields non-reproducible results
   // since is uses pointer addresses as keys, the value of which is
   // non-deterministic, especially their order.
-  absl::btree_map<int, std::map<int, double> >
+  absl::btree_map<int, std::map<int, double>>
       fixedOrderCoefficientsPerConstraint;
 
   // Incremental extraction.
@@ -2132,7 +2132,7 @@ bool XpressInterface::SetSolverSpecificParametersAsString(
     const std::string& parameters) {
   if (parameters.empty()) return true;
 
-  std::vector<std::pair<std::string, std::string> > paramAndValuePairList;
+  std::vector<std::pair<std::string, std::string>> paramAndValuePairList;
 
   std::stringstream ss(parameters);
   std::string paramName;

@@ -248,7 +248,7 @@ class TreeArrayConstraint : public Constraint {
     Rev<int> performed;
   };
 
-  std::vector<std::vector<NodeInfo> > tree_;
+  std::vector<std::vector<NodeInfo>> tree_;
   const int block_size_;
   NodeInfo* root_node_;
 };

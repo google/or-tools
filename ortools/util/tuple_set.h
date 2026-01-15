@@ -66,8 +66,8 @@ class IntTupleSet {
   int Insert3(int64_t v0, int64_t v1, int64_t v2);
   int Insert4(int64_t v0, int64_t v1, int64_t v2, int64_t v3);
   // Inserts the tuples.
-  void InsertAll(const std::vector<std::vector<int64_t> >& tuples);
-  void InsertAll(const std::vector<std::vector<int> >& tuples);
+  void InsertAll(const std::vector<std::vector<int64_t>>& tuples);
+  void InsertAll(const std::vector<std::vector<int>>& tuples);
 
   // Checks if the tuple is in the set.
   bool Contains(const std::vector<int>& tuple) const;
@@ -122,7 +122,7 @@ class IntTupleSet {
     // Maps a tuple's fingerprint to the list of tuples with this
     // fingerprint, represented by their start index in the
     // flat_tuples_ vector.
-    absl::flat_hash_map<int64_t, std::vector<int> > tuple_fprint_to_index_;
+    absl::flat_hash_map<int64_t, std::vector<int>> tuple_fprint_to_index_;
   };
 
   // Used to represent a light representation of a tuple.
@@ -327,7 +327,7 @@ inline bool IntTupleSet::Contains(const std::vector<int64_t>& tuple) const {
 }
 
 inline void IntTupleSet::InsertAll(
-    const std::vector<std::vector<int> >& tuples) {
+    const std::vector<std::vector<int>>& tuples) {
   data_ = data_->CopyIfShared();
   for (int i = 0; i < tuples.size(); ++i) {
     Insert(tuples[i]);
@@ -335,7 +335,7 @@ inline void IntTupleSet::InsertAll(
 }
 
 inline void IntTupleSet::InsertAll(
-    const std::vector<std::vector<int64_t> >& tuples) {
+    const std::vector<std::vector<int64_t>>& tuples) {
   data_ = data_->CopyIfShared();
   for (int i = 0; i < tuples.size(); ++i) {
     Insert(tuples[i]);

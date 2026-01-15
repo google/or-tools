@@ -146,7 +146,7 @@ class TreeArrayConstraint : public CastConstraint {
     Rev<int64_t> node_max;
   };
 
-  std::vector<std::vector<NodeInfo> > tree_;
+  std::vector<std::vector<NodeInfo>> tree_;
   const int block_size_;
   NodeInfo* root_node_;
 };

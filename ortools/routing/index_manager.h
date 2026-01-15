@@ -83,7 +83,7 @@ class OR_DLL RoutingIndexManager {
   /// elements.
   RoutingIndexManager(
       int num_nodes, int num_vehicles,
-      const std::vector<std::pair<NodeIndex, NodeIndex> >& starts_ends);
+      const std::vector<std::pair<NodeIndex, NodeIndex>>& starts_ends);
 
   // Returns the number of nodes in the manager.
   int num_nodes() const { return num_nodes_; }
@@ -127,7 +127,7 @@ class OR_DLL RoutingIndexManager {
  private:
   void Initialize(
       int num_nodes, int num_vehicles,
-      const std::vector<std::pair<NodeIndex, NodeIndex> >& starts_ends);
+      const std::vector<std::pair<NodeIndex, NodeIndex>>& starts_ends);
 
   std::vector<NodeIndex> index_to_node_;
   util_intops::StrongVector<NodeIndex, int64_t> node_to_index_;

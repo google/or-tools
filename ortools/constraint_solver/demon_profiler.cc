@@ -428,7 +428,7 @@ class DemonProfiler : public PropagationMonitor {
   const int64_t start_time_ns_;
   absl::flat_hash_map<const Constraint*, ConstraintRuns*> constraint_map_;
   absl::flat_hash_map<const Demon*, DemonRuns*> demon_map_;
-  absl::flat_hash_map<const Constraint*, std::vector<DemonRuns*> >
+  absl::flat_hash_map<const Constraint*, std::vector<DemonRuns*>>
       demons_per_constraint_;
 };
 

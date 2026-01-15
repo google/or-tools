@@ -54,7 +54,7 @@ def _java_wrap_cc_impl(ctx):
         if target.label.workspace_root:
             include_path_sets.append(depset([target.label.workspace_root]))
 
-    java_files_dir = ctx.actions.declare_directory("java_files")
+    java_files_dir = ctx.actions.declare_directory("java_files_%s" % ctx.label.name)
 
     swig_args = ctx.actions.args()
     swig_args.add("-c++")

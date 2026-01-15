@@ -191,7 +191,7 @@ class Domain {
    * ignored.
    */
   static Domain FromVectorIntervals(
-      const std::vector<std::vector<int64_t> >& intervals);
+      const std::vector<std::vector<int64_t>>& intervals);
 
   /**
    * This method is available in Python, Java and .NET. It allows
