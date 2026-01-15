@@ -63,16 +63,6 @@ cc_library(
 )
 
 cc_library(
-    name = "bfs",
-    hdrs = ["bfs.h"],
-    visibility = ["//visibility:public"],
-    deps = [
-        "@abseil-cpp//absl/status",
-        "@abseil-cpp//absl/strings:str_format",
-    ],
-)
-
-cc_library(
     name = "bounded_dijkstra",
     hdrs = ["bounded_dijkstra.h"],
     visibility = ["//visibility:public"],
