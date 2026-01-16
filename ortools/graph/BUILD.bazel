@@ -534,32 +534,6 @@ cc_test(
 )
 
 cc_library(
-    name = "dag_connectivity",
-    srcs = ["dag_connectivity.cc"],
-    hdrs = ["dag_connectivity.h"],
-    visibility = ["//visibility:public"],
-    deps = [
-        "//ortools/base",
-        "//ortools/base:container_logging",
-        "//ortools/graph:topologicalsorter",
-        "//ortools/util:bitset",
-        "@abseil-cpp//absl/types:span",
-    ],
-)
-
-cc_test(
-    name = "dag_connectivity_test",
-    srcs = ["dag_connectivity_test.cc"],
-    deps = [
-        ":dag_connectivity",
-        "//ortools/base:gmock_main",
-        "//ortools/util:bitset",
-        "@abseil-cpp//absl/strings",
-        "@abseil-cpp//absl/types:span",
-    ],
-)
-
-cc_library(
     name = "perfect_matching",
     srcs = ["perfect_matching.cc"],
     hdrs = ["perfect_matching.h"],
@@ -575,42 +549,6 @@ cc_library(
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings",
-    ],
-)
-
-cc_library(
-    name = "dag_shortest_path",
-    srcs = ["dag_shortest_path.cc"],
-    hdrs = ["dag_shortest_path.h"],
-    visibility = ["//visibility:public"],
-    deps = [
-        "//ortools/graph",
-        "//ortools/graph:topologicalsorter",
-        "@abseil-cpp//absl/algorithm:container",
-        "@abseil-cpp//absl/log",
-        "@abseil-cpp//absl/log:check",
-        "@abseil-cpp//absl/status",
-        "@abseil-cpp//absl/strings:str_format",
-        "@abseil-cpp//absl/types:span",
-    ],
-)
-
-cc_library(
-    name = "dag_constrained_shortest_path",
-    srcs = ["dag_constrained_shortest_path.cc"],
-    hdrs = ["dag_constrained_shortest_path.h"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":dag_shortest_path",
-        "//ortools/base:threadpool",
-        "//ortools/graph",
-        "//ortools/graph:topologicalsorter",
-        "@abseil-cpp//absl/algorithm:container",
-        "@abseil-cpp//absl/base:log_severity",
-        "@abseil-cpp//absl/log:check",
-        "@abseil-cpp//absl/status:statusor",
-        "@abseil-cpp//absl/strings:str_format",
-        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -656,48 +594,6 @@ cc_test(
         "//ortools/linear_solver:solve_mp_model",
         "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/types:span",
-    ],
-)
-
-cc_test(
-    name = "dag_shortest_path_test",
-    size = "small",
-    srcs = ["dag_shortest_path_test.cc"],
-    deps = [
-        ":dag_shortest_path",
-        "//ortools/base:dump_vars",
-        "//ortools/base:gmock_main",
-        "//ortools/base:intops",
-        "//ortools/base:strong_vector",
-        "//ortools/graph",
-        "//ortools/graph:io",
-        "//ortools/util:flat_matrix",
-        "@abseil-cpp//absl/algorithm:container",
-        "@abseil-cpp//absl/log:check",
-        "@abseil-cpp//absl/random",
-        "@abseil-cpp//absl/status",
-        "@abseil-cpp//absl/types:span",
-        "@google_benchmark//:benchmark",
-    ],
-)
-
-cc_test(
-    name = "dag_constrained_shortest_path_test",
-    srcs = ["dag_constrained_shortest_path_test.cc"],
-    deps = [
-        ":dag_constrained_shortest_path",
-        "//ortools/base:dump_vars",
-        "//ortools/base:gmock_main",
-        "//ortools/graph",
-        "//ortools/graph:io",
-        "//ortools/math_opt/cpp:math_opt",
-        "//ortools/math_opt/solvers:cp_sat_solver",
-        "@abseil-cpp//absl/algorithm:container",
-        "@abseil-cpp//absl/log:check",
-        "@abseil-cpp//absl/random",
-        "@abseil-cpp//absl/strings",
-        "@abseil-cpp//absl/types:span",
-        "@google_benchmark//:benchmark",
     ],
 )
 

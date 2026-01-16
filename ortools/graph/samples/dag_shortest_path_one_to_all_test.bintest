@@ -1,2 +1,0 @@
-RUN: $(dag_shortest_path_one_to_all)
-CHECK: "Length of shortest path to node 4: 2"
