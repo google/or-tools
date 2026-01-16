@@ -22,16 +22,17 @@
 #include <vector>
 
 #include "absl/base/log_severity.h"
+#include "absl/hash/hash.h"
 #include "absl/numeric/int128.h"
 #include "absl/random/distributions.h"
 #include "absl/random/random.h"
 #include "absl/strings/str_format.h"
+#include "absl/strings/string_view.h"
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
 #include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
-#include "ortools/base/hash.h"
 
 namespace operations_research {
 
@@ -259,12 +260,8 @@ TEST(BinarySearchTest, NonMonoticPredicateReachesLocalInflexionPoint_Double) {
   const int kNumAttempts = 100000;
   for (int attempt = 0; attempt < kNumAttempts; ++attempt) {
     const uint64_t hash_seed = random();
-    std::function<bool(double)> non_monotonic_predicate =
-        [hash_seed](double x) {
-          return fasthash64(reinterpret_cast<const char*>(&x), sizeof(x),
-                            hash_seed) &
-                 1;
-        };
+    const std::function<bool(double)> non_monotonic_predicate =
+        [hash_seed](double x) { return absl::HashOf(x, hash_seed) & 1; };
     // Pick a random [x_true, x_false] interval which verifies f(x_true) = true
     // and f(x_false) = false.
     double x_true, x_false;
