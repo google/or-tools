@@ -12,7 +12,6 @@
 # limitations under the License.
 
 load("@pip_deps//:requirements.bzl", "requirement")
-load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 load("@rules_cc//cc:cc_test.bzl", "cc_test")
 load("@rules_java//java:java_binary.bzl", "java_binary")
 load("@rules_python//python:py_test.bzl", "py_test")
@@ -202,43 +201,4 @@ bintest(
     name = "SimpleMinCostFlowProgramTest",
     srcs = [":SimpleMinCostFlowProgramTest.bintest"],
     named_data = {"SimpleMinCostFlowProgram": ":SimpleMinCostFlowProgram"},
-)
-
-cc_binary(
-    name = "root_a_tree",
-    srcs = ["root_a_tree.cc"],
-    deps = [
-        "//ortools/base",
-        "//ortools/base:status_macros",
-        "//ortools/graph",
-        "//ortools/graph:rooted_tree",
-        "@abseil-cpp//absl/log:check",
-        "@abseil-cpp//absl/status",
-        "@abseil-cpp//absl/strings",
-    ],
-)
-
-bintest(
-    name = "root_a_tree_test",
-    srcs = [":root_a_tree_test.bintest"],
-    named_data = {"root_a_tree": ":root_a_tree"},
-)
-
-cc_binary(
-    name = "rooted_tree_paths",
-    srcs = ["rooted_tree_paths.cc"],
-    deps = [
-        "//ortools/base",
-        "//ortools/base:status_macros",
-        "//ortools/graph:rooted_tree",
-        "@abseil-cpp//absl/log:check",
-        "@abseil-cpp//absl/status",
-        "@abseil-cpp//absl/strings",
-    ],
-)
-
-bintest(
-    name = "rooted_tree_paths_test",
-    srcs = [":rooted_tree_paths_test.bintest"],
-    named_data = {"rooted_tree_paths": ":rooted_tree_paths"},
 )

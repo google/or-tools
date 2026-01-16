@@ -13,7 +13,6 @@
 
 load("@protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
 load("@protobuf//bazel:proto_library.bzl", "proto_library")
-load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_cc//cc:cc_test.bzl", "cc_test")
 
@@ -81,36 +80,6 @@ cc_test(
         "//ortools/base:gmock_main",
         "@abseil-cpp//absl/algorithm:container",
         "@google_benchmark//:benchmark",
-    ],
-)
-
-cc_library(
-    name = "multi_dijkstra",
-    hdrs = ["multi_dijkstra.h"],
-    visibility = ["//visibility:public"],
-    deps = [
-        "//ortools/base:map_util",
-        "//ortools/base:types",
-        "@abseil-cpp//absl/container:flat_hash_map",
-    ],
-)
-
-cc_test(
-    name = "multi_dijkstra_test",
-    size = "small",
-    srcs = ["multi_dijkstra_test.cc"],
-    deps = [
-        ":multi_dijkstra",
-        "//ortools/base:gmock_main",
-        "//ortools/base:map_util",
-        "//ortools/base:types",
-        "//ortools/graph",
-        "//ortools/graph:connected_components",
-        "//ortools/graph:random_graph",
-        "//ortools/graph:util",
-        "@abseil-cpp//absl/container:flat_hash_map",
-        "@abseil-cpp//absl/container:flat_hash_set",
-        "@abseil-cpp//absl/random:distributions",
     ],
 )
 
@@ -261,33 +230,6 @@ cc_test(
         "@abseil-cpp//absl/random:distributions",
         "@abseil-cpp//absl/types:span",
         "@google_benchmark//:benchmark",
-    ],
-)
-
-cc_library(
-    name = "one_tree_lower_bound",
-    hdrs = ["one_tree_lower_bound.h"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":christofides",
-        ":minimum_spanning_tree",
-        "//ortools/graph",
-        "@abseil-cpp//absl/log",
-        "@abseil-cpp//absl/types:span",
-    ],
-)
-
-cc_test(
-    name = "one_tree_lower_bound_test",
-    size = "medium",
-    srcs = ["one_tree_lower_bound_test.cc"],
-    deps = [
-        ":one_tree_lower_bound",
-        "//ortools/base:gmock_main",
-        "//ortools/base:path",
-        "//ortools/routing/parsers:tsplib_parser",
-        "@abseil-cpp//absl/log",
-        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -445,33 +387,6 @@ cc_test(
     ],
 )
 
-# Flow-problem solver
-cc_binary(
-    name = "solve_flow_model",
-    srcs = ["solve_flow_model.cc"],
-    deps = [
-        ":flow_problem_cc_proto",
-        ":generic_max_flow",
-        ":min_cost_flow",
-        "//ortools/base",
-        "//ortools/base:file",
-        "//ortools/base:path",
-        "//ortools/base:timer",
-        "//ortools/graph",
-        "//ortools/graph:flow_graph",
-        "//ortools/util:file_util",
-        "//ortools/util:filelineiter",
-        "//ortools/util:stats",
-        "@abseil-cpp//absl/base:log_severity",
-        "@abseil-cpp//absl/flags:flag",
-        "@abseil-cpp//absl/log",
-        "@abseil-cpp//absl/log:check",
-        "@abseil-cpp//absl/log:globals",
-        "@abseil-cpp//absl/strings",
-        "@abseil-cpp//absl/strings:str_format",
-    ],
-)
-
 # Linear Assignment wrapper that consumes more memory but presents a
 # simplified interface and no speed degradation from the full-featured
 # linear assignment implementation.
@@ -549,37 +464,6 @@ cc_library(
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings",
-    ],
-)
-
-cc_library(
-    name = "rooted_tree",
-    hdrs = ["rooted_tree.h"],
-    visibility = ["//visibility:public"],
-    deps = [
-        "//ortools/base:status_macros",
-        "@abseil-cpp//absl/algorithm:container",
-        "@abseil-cpp//absl/log",
-        "@abseil-cpp//absl/log:check",
-        "@abseil-cpp//absl/status",
-        "@abseil-cpp//absl/status:statusor",
-        "@abseil-cpp//absl/strings",
-        "@abseil-cpp//absl/types:span",
-    ],
-)
-
-cc_test(
-    name = "rooted_tree_test",
-    srcs = ["rooted_tree_test.cc"],
-    deps = [
-        ":rooted_tree",
-        "//ortools/base:gmock_main",
-        "//ortools/graph",
-        "@abseil-cpp//absl/algorithm:container",
-        "@abseil-cpp//absl/log:check",
-        "@abseil-cpp//absl/random",
-        "@abseil-cpp//absl/status",
-        "@google_benchmark//:benchmark",
     ],
 )
 
