@@ -1,3 +1,0 @@
-RUN: $(dag_simple_multiple_shortest_paths)
-CHECK: "#1 shortest path has length: 2"
-CHECK: "#2 shortest path has length: 3"

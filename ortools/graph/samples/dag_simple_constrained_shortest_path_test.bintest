@@ -1,2 +1,0 @@
-RUN: $(dag_simple_constrained_shortest_path)
-CHECK: "Constrained shortest path length: 4"

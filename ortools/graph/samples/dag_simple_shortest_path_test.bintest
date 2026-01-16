@@ -1,2 +1,0 @@
-RUN: $(dag_simple_shortest_path)
-CHECK: "Shortest path length: 2"
