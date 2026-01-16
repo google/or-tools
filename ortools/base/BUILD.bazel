@@ -549,12 +549,6 @@ cc_library(
 )
 
 cc_library(
-    name = "top_n",
-    hdrs = ["top_n.h"],
-    deps = [":logging"],
-)
-
-cc_library(
     name = "types",
     hdrs = ["types.h"],
 )

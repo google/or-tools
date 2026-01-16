@@ -81,6 +81,5 @@ if(BUILD_TESTING)
   # These tests are too long so we disable them.
   set_tests_properties(
     cxx_graph_min_cost_flow_test
-    cxx_graph_bidirectional_dijkstra_test
     PROPERTIES DISABLED TRUE)
 endif()
