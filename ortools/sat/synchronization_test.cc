@@ -195,19 +195,19 @@ TEST(SharedBoundsManagerTest, Api) {
   std::vector<int64_t> lbs;
   std::vector<int64_t> ubs;
 
-  EXPECT_EQ(manager.RegisterNewId(), 0);
+  EXPECT_EQ(manager.RegisterNewId("name"), 0);
   manager.GetChangedBounds(0, &vars, &lbs, &ubs);
   EXPECT_THAT(vars, ElementsAre(2, 4));
   EXPECT_THAT(lbs, ElementsAre(1, 2));
   EXPECT_THAT(ubs, ElementsAre(11, 12));
 
-  EXPECT_EQ(manager.RegisterNewId(), 1);
+  EXPECT_EQ(manager.RegisterNewId("other"), 1);
   manager.GetChangedBounds(1, &vars, &lbs, &ubs);
   EXPECT_THAT(vars, ElementsAre(2, 4));
   EXPECT_THAT(lbs, ElementsAre(1, 2));
   EXPECT_THAT(ubs, ElementsAre(11, 12));
 
-  EXPECT_EQ(manager.RegisterNewId(), 2);
+  EXPECT_EQ(manager.RegisterNewId("third"), 2);
   manager.GetChangedBounds(2, &vars, &lbs, &ubs);
   EXPECT_THAT(vars, ElementsAre(2, 4));
   EXPECT_THAT(lbs, ElementsAre(1, 2));
@@ -281,7 +281,7 @@ TEST(SharedBoundsManagerTest, WithSymmetry) {
   std::vector<int64_t> lbs;
   std::vector<int64_t> ubs;
 
-  EXPECT_EQ(manager.RegisterNewId(), 0);
+  EXPECT_EQ(manager.RegisterNewId("test"), 0);
   manager.GetChangedBounds(0, &vars, &lbs, &ubs);
   EXPECT_THAT(vars, ElementsAre(0, 1, 2));
   EXPECT_THAT(lbs, ElementsAre(4, 4, 4));

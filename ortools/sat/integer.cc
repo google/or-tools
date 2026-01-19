@@ -25,6 +25,7 @@
 #include <vector>
 
 #include "absl/base/attributes.h"
+#include "absl/base/log_severity.h"
 #include "absl/cleanup/cleanup.h"
 #include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
@@ -276,12 +277,20 @@ Literal IntegerEncoder::GetOrCreateAssociatedLiteral(IntegerLiteral i_lit) {
   {
     const PositiveOnlyIndex index = GetPositiveOnlyIndex(i_lit.var);
     if (VariableIsPositive(i_lit.var)) {
-      if (i_lit.bound <= domains_[index].Min()) return GetTrueLiteral();
-      if (i_lit.bound > domains_[index].Max()) return GetFalseLiteral();
+      if (i_lit.bound <= domains_[index].Min()) {
+        return trivial_literals_.TrueLiteral();
+      }
+      if (i_lit.bound > domains_[index].Max()) {
+        return trivial_literals_.FalseLiteral();
+      }
     } else {
       const IntegerValue bound = -i_lit.bound;
-      if (bound >= domains_[index].Max()) return GetTrueLiteral();
-      if (bound < domains_[index].Min()) return GetFalseLiteral();
+      if (bound >= domains_[index].Max()) {
+        return trivial_literals_.TrueLiteral();
+      }
+      if (bound < domains_[index].Min()) {
+        return trivial_literals_.FalseLiteral();
+      }
     }
   }
 
@@ -340,11 +349,11 @@ Literal IntegerEncoder::GetOrCreateLiteralAssociatedToEquality(
   const Domain& domain = domains_[GetPositiveOnlyIndex(var)];
   if (!domain.Contains(VariableIsPositive(var) ? value.value()
                                                : -value.value())) {
-    return GetFalseLiteral();
+    return trivial_literals_.FalseLiteral();
   }
   if (domain.IsFixed()) {
-    AssociateToIntegerEqualValue(GetTrueLiteral(), var, value);
-    return GetTrueLiteral();
+    AssociateToIntegerEqualValue(trivial_literals_.TrueLiteral(), var, value);
+    return trivial_literals_.TrueLiteral();
   }
 
   ++num_created_variables_;
@@ -2212,7 +2221,7 @@ void IntegerTrail::MergeReasonIntoInternal(std::vector<Literal>* output,
 
     // If this entry has an associated literal, then it should always be the
     // one we used for the reason. This code DCHECK that.
-    if (DEBUG_MODE) {
+    if (DEBUG_MODE && !new_conflict_resolution_) {
       const LiteralIndex associated_lit =
           encoder_->GetAssociatedLiteral(IntegerLiteral::GreaterOrEqual(
               IntegerVariable(entry.var), entry.bound));

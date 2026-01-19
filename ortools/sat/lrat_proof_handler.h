@@ -110,6 +110,7 @@ class LratMerger {
   // format. Also checks it if lrat_checker_ is not null. Returns true on
   // success, false otherwise.
   bool WriteInferredClause(const LratInferredClause& inferred_clause);
+  void WriteDeletedClauses(absl::Span<const GlobalId> clause_ids);
 
   GlobalId NextGlobalId() { return GlobalId(next_global_id_++); }
 
@@ -124,10 +125,11 @@ class LratMerger {
   std::string merged_proof_filename_;
   std::ofstream merged_proof_file_;
   GlobalId next_global_id_;
+  GlobalId last_written_global_id_;
 
-  absl::flat_hash_map<std::vector<Literal>, GlobalId> shared_clause_ids_;
   std::vector<absl::flat_hash_map<ClauseId, GlobalId>> local_to_global_ids_;
-  std::vector<absl::flat_hash_set<ClauseId>> exported_local_ids_;
+  absl::flat_hash_map<std::vector<Literal>, GlobalId> shared_clause_id_;
+  absl::flat_hash_set<GlobalId> shared_clause_ids_;
   std::vector<LratProofStep> last_read_steps_;
 
   std::vector<Literal> tmp_clause_;
@@ -178,11 +180,9 @@ class LratProofHandler {
   // correspondence. Note that we might not need all the given clauses in the
   // proof.
   //
-  // Return the new clause id. Note that in some corner cases, this could be
-  // one of the id passed in ids_for_proof. Return kNoClauseId if the proof
-  // is wrong.
-  ClauseId AddAndProveInferredClauseByEnumeration(
-      absl::Span<const Literal> new_clause,
+  // Returns false if the proof is wrong.
+  bool AddAndProveInferredClauseByEnumeration(
+      ClauseId new_clause_id, absl::Span<const Literal> new_clause,
       absl::Span<const ClauseId> ids_for_proof,
       const CompactVectorVector<int, Literal>& clauses_for_proof);
 

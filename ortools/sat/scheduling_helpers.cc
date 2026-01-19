@@ -341,6 +341,11 @@ bool SchedulingConstraintHelper::SynchronizeAndSetTimeDirection(
     if (sat_solver_->CurrentDecisionLevel() == 0) {
       int new_size = 0;
       for (const int t : non_fixed_intervals_) {
+        if (IsOptional(t) && IsPresent(t)) {
+          // Optimization: if the interval became non-optional at root level,
+          // we can tag is as so.
+          reason_for_presence_[t] = kNoLiteralIndex;
+        }
         if (IsPresent(t) && StartIsFixed(t) && EndIsFixed(t) &&
             SizeIsFixed(t)) {
           continue;

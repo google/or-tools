@@ -33,7 +33,6 @@
 #include "google/protobuf/repeated_field.h"
 #include "google/protobuf/repeated_ptr_field.h"
 #include "google/protobuf/text_format.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/protobuf_util.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
@@ -64,7 +63,7 @@ ModelCopy::ModelCopy(PresolveContext* context,
     : context_(context), lrat_proof_handler_(lrat_proof_handler) {}
 
 ClauseId ModelCopy::NextInferredClauseId() {
-  return next_inferred_clause_id_++;
+  return ClauseId(next_inferred_clause_id_++);
 }
 
 void ModelCopy::ImportVariablesAndMaybeIgnoreNames(
@@ -111,7 +110,7 @@ bool ModelCopy::ImportAndSimplifyConstraints(
   // Assuming that each input constraint yields at most one clause, we can
   // number the inferred clauses starting from in_model.constraints_size() + 1
   // without risk of collisions.
-  next_inferred_clause_id_ = ClauseId(in_model.constraints_size() + 1);
+  next_inferred_clause_id_ = in_model.constraints_size() + 1;
   unit_clause_ids_.clear();
 
   starting_constraint_index_ = context_->working_model->constraints_size();

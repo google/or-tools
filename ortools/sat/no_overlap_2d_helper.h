@@ -101,7 +101,8 @@ class NoOverlap2DConstraintHelper : public PropagatorInterface {
   }
 
   bool IsFixed(int index) const {
-    return x_helper_->StartIsFixed(index) && x_helper_->EndIsFixed(index) &&
+    return !x_helper_->IsOptional(index) && !y_helper_->IsOptional(index) &&
+           x_helper_->StartIsFixed(index) && x_helper_->EndIsFixed(index) &&
            y_helper_->StartIsFixed(index) && y_helper_->EndIsFixed(index);
   }
 

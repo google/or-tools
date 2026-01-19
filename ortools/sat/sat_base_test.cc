@@ -13,6 +13,8 @@
 
 #include "ortools/sat/sat_base.h"
 
+#include <memory>
+
 #include "gtest/gtest.h"
 
 namespace operations_research {
@@ -65,6 +67,15 @@ TEST(VariablesAssignmentTest, Api) {
   EXPECT_TRUE(assignment.LiteralIsFalse(Literal(var2, true)));
   EXPECT_FALSE(assignment.LiteralIsFalse(Literal(var2, false)));
 }
+
+TEST(SatClauseTest, BasicAllocation) {
+  std::unique_ptr<SatClause> clause(SatClause::Create(Literals({+1, -2, +4})));
+  EXPECT_EQ(3, clause->size());
+  EXPECT_EQ(Literal(+1), clause->FirstLiteral());
+  EXPECT_EQ(Literal(-2), clause->SecondLiteral());
+}
+
+TEST(SatClauseTest, ClassSize) { EXPECT_EQ(4, sizeof(SatClause)); }
 
 }  // namespace
 }  // namespace sat

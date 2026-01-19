@@ -313,6 +313,8 @@ class LinearPropagator : public PropagatorInterface,
   void SetPropagatedBy(IntegerVariable var, int id);
   std::string ConstraintDebugString(int id);
 
+  void PushPendingLin2Bounds();
+
   // External class needed.
   Trail* trail_;
   IntegerTrail* integer_trail_;
@@ -323,6 +325,7 @@ class LinearPropagator : public PropagatorInterface,
   RevIntRepository* rev_int_repository_;
   RevIntegerValueRepository* rev_integer_value_repository_;
   EnforcedLinear2Bounds* precedences_;
+  Linear2Indices* lin2_indices_;
   Linear2BoundsFromLinear3* linear3_bounds_;
   ModelRandomGenerator* random_;
   SharedStatistics* shared_stats_ = nullptr;
@@ -360,6 +363,9 @@ class LinearPropagator : public PropagatorInterface,
   Bitset64<int> in_queue_;
   std::deque<int> propagation_queue_;
 
+  // Lin3 constraint that need to be processed to push lin2 bounds.
+  SparseBitset<int> lin3_ids_;
+
   // This only contain constraint that currently push some bounds.
   ConstraintPropagationOrder order_;
 
@@ -389,6 +395,18 @@ class LinearPropagator : public PropagatorInterface,
   std::vector<DissasembleQueueEntry> disassemble_queue_;
   std::vector<DissasembleQueueEntry> disassemble_branch_;
   std::vector<std::pair<IntegerVariable, IntegerValue>> disassemble_candidates_;
+
+  // We cache once and for all the 3 lin2 with affine bound that are "implied"
+  // by a linear3.
+  //
+  // TODO(user): We "waste" memory for non-linear3 constraints, but then this is
+  // not much more than ConstraintInfo that we already keep for each constraint.
+  struct Lin2AffineBoundsCache {
+    LinearExpression2Index indices[3];
+    IntegerValue gcds[3];
+    AffineExpression affine_ubs[3];
+  };
+  std::vector<Lin2AffineBoundsCache> id_to_lin2_cache_;
 
   // This is used to update the deterministic time.
   int64_t num_terms_for_dtime_update_ = 0;

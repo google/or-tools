@@ -26,6 +26,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/container/flat_hash_set.h"
 #include "absl/functional/function_ref.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
@@ -309,27 +310,36 @@ bool SharedTreeManager::SyncTree(ProtoTrail& path) {
       // proved by the worker providing `path` must be imported and a new one,
       // adapted for the manager, must be inferred from it).
       Node* sibling = GetSibling(node);
-      ClauseId closing_clause_id = kNoClauseId;
-      if (lrat_proof_handler_ != nullptr) {
-        // For the worker, `node` is implied by all the previous decisions in
-        // `path`, but for the manager we need an implication clause using the
-        // non-implied ancestors of `node` in the tree (they can be different
-        // because the manager and the worker have different views of the tree).
-        const std::vector<Literal> inferred_clause = ClosingClause(sibling);
-        std::vector<Literal> imported_clause;
-        std::vector<ClauseId> lrat_proof;
-        for (int l = 1; l <= level + 1; ++l) {
-          Node* n = l <= level ? GetNode(path.DecisionNodeId(l)) : node;
-          const Literal decision = DecodeWithIdentityMapping(n->decision);
-          imported_clause.push_back(l <= level ? decision.Negated() : decision);
-          if (n->implied_and_processed) {
-            lrat_proof.push_back(GetSibling(n)->closing_clause_id);
+      if (!sibling->closed) {
+        ClauseId closing_clause_id = kNoClauseId;
+        if (lrat_proof_handler_ != nullptr) {
+          // For the worker, `node` is implied by all the previous decisions in
+          // `path`, but for the manager we need an implication clause using the
+          // non-implied ancestors of `node` in the tree (they can be different
+          // because the manager and the worker can have different views of the
+          // tree).
+          const std::vector<Literal> inferred_clause = ClosingClause(sibling);
+          std::vector<Literal> imported_clause;
+          std::vector<ClauseId> lrat_proof;
+          for (int l = 1; l <= level + 1; ++l) {
+            Node* n = l <= level ? GetNode(path.DecisionNodeId(l)) : node;
+            const Literal decision = DecodeWithIdentityMapping(n->decision);
+            imported_clause.push_back(l <= level ? decision.Negated()
+                                                 : decision);
+            if (n->implied_and_processed) {
+              lrat_proof.push_back(GetSibling(n)->closing_clause_id);
+            } else if (n == node && n->closed) {
+              // If `node` is closed too, `inferred_clause` becomes the closing
+              // clause of the parent of `node` and `sibling`, whose proof
+              // requires the closing clause of these two children.
+              lrat_proof.push_back(n->closing_clause_id);
+            }
           }
+          closing_clause_id = AddImportedAndInferredClauses(
+              imported_clause, inferred_clause, lrat_proof);
         }
-        closing_clause_id = AddImportedAndInferredClauses(
-            imported_clause, inferred_clause, lrat_proof);
+        to_close_.emplace_back(sibling, closing_clause_id);
       }
-      to_close_.emplace_back(sibling, closing_clause_id);
     } else if (level > 0 && node->objective_lb < path.ObjectiveLb(level)) {
       node->objective_lb = path.ObjectiveLb(level);
       to_update_.push_back(node->parent);
@@ -627,7 +637,6 @@ void SharedTreeManager::ProcessNodeChanges() {
                              " unassigned:", unassigned_leaves_.size(),
                              " restarts:", num_restarts_));
   }
-  DCHECK(CheckLratInvariants());
   // TODO(user): We could do resolution here by moving implications that
   // are true in each child to the parent.
   bool root_updated = false;
@@ -770,13 +779,9 @@ void SharedTreeManager::UpdateLratClausesInSubtree(
       clauses.pop_back();
     }
   }
-  // We can stop at implied but not yet processed nodes (they will be processed
-  // with further calls to ProcessImpliedNode()).
-  if (n == node || !(n->implied && n->trail_info != nullptr)) {
-    for (Node* child : n->children) {
-      if (child != nullptr && child->parent != nullptr) {
-        UpdateLratClausesInSubtree(node, child, clauses);
-      }
+  for (Node* child : n->children) {
+    if (child != nullptr && child->parent != nullptr) {
+      UpdateLratClausesInSubtree(node, child, clauses);
     }
   }
   if (implied_and_not_processed) {
@@ -1151,9 +1156,6 @@ bool SharedTreeWorker::SyncWithLocalTrail() {
   DCHECK(CheckLratInvariants());
   std::vector<int> new_implication_trail_indices;
   while (true) {
-    if (lrat_proof_handler_ != nullptr) {
-      trail_implication_clauses_.resize(reversible_trail_index_, kNoClauseId);
-    }
     if (!sat_solver_->FinishPropagation()) return false;
     // Ensure we are at fixed point w.r.t. implications in the tree up to the
     // current level.
@@ -1161,6 +1163,9 @@ bool SharedTreeWorker::SyncWithLocalTrail() {
 
     if (!helper_->BeforeTakingDecision()) return false;
     const int level = sat_solver_->CurrentDecisionLevel();
+    if (lrat_proof_handler_ != nullptr) {
+      trail_implication_clauses_.resize(reversible_trail_index_, kNoClauseId);
+    }
     if (parameters_->shared_tree_worker_enable_trail_sharing() && level > 0 &&
         level <= assigned_tree_.MaxLevel() &&
         reversible_trail_index_ < trail_->Index()) {
@@ -1196,6 +1201,8 @@ bool SharedTreeWorker::SyncWithLocalTrail() {
                   lit, level, [&](int /*level*/, int trail_index) {
                     return trail_implication_clauses_[trail_index];
                   });
+          assigned_tree_implications_[level - 1].push_back(
+              {lit, trail_implication_clauses_[new_trail_index]});
         }
       }
       reversible_trail_index_ = trail_->Index();
@@ -1228,6 +1235,10 @@ bool SharedTreeWorker::SyncWithLocalTrail() {
         // current decisions imply the next one.
         const ClauseId clause_id =
             AddLratClauseAndProofForImplication(next_decision, level);
+        if (level > 0) {
+          assigned_tree_implications_[level - 1].push_back(
+              {next_decision, clause_id});
+        }
         std::vector<Literal> implication;
         for (int i = 0; i < level; ++i) {
           implication.push_back(assigned_tree_decisions_[i].Negated());
@@ -1246,7 +1257,6 @@ bool SharedTreeWorker::SyncWithLocalTrail() {
             implication.pop_back();
           }
         }
-        lrat_proof_handler_->DeleteClause(clause_id, {});
       }
       assigned_tree_.SetLevelImplied(level + 1);
       if (level > 0) {
@@ -1435,13 +1445,7 @@ bool SharedTreeWorker::SyncWithSharedTree() {
 
 SatSolver::Status SharedTreeWorker::Search(
     const std::function<void()>& feasible_solution_observer) {
-  // Inside GetAssociatedLiteral if a literal becomes fixed at level 0 during
-  // Search, the code CHECKs it is at level 0 when decoding the literal, but
-  // the fixed literals are cached, so we can create them now to avoid a
-  // crash.
   sat_solver_->Backtrack(0);
-  encoder_->GetTrueLiteral();
-  encoder_->GetFalseLiteral();
   level_zero_callbacks_->callbacks.push_back(
       [this]() { return SyncWithSharedTree(); });
   const bool has_objective =
@@ -1500,11 +1504,20 @@ std::optional<ProtoLiteral> SharedTreeWorker::EncodeDecision(Literal decision) {
 bool SharedTreeWorker::CheckLratInvariants() {
   if (lrat_proof_handler_ != nullptr &&
       lrat_proof_handler_->lrat_check_enabled()) {
-    for (int level = 0; level < assigned_tree_decisions_.size(); ++level) {
-      for (auto& [lit, id] : assigned_tree_implications_[level]) {
-        std::vector<Literal>& expected = DecisionReason(level + 1);
+    for (int i = 0; i < assigned_tree_decisions_.size(); ++i) {
+      const int level = i + 1;
+      CHECK_EQ(assigned_tree_decisions_[i],
+               DecodeDecision(assigned_tree_.Decision(level)));
+      absl::flat_hash_set<Literal> implications;
+      for (auto& [lit, id] : assigned_tree_implications_[i]) {
+        implications.insert(lit);
+        std::vector<Literal>& expected = DecisionReason(level);
         expected.push_back(lit);
         CheckEqual(lrat_proof_handler_->GetLratClauseForDebug(id), expected);
+      }
+      for (int j = 0; j < assigned_tree_.Implications(level).size(); ++j) {
+        const ProtoLiteral lit = assigned_tree_.Implications(level)[j];
+        CHECK(implications.contains(DecodeDecision(lit)));
       }
     }
   }

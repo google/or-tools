@@ -458,7 +458,8 @@ class SharedTreeWorker {
   std::vector<Literal> assigned_tree_decisions_;
   // The i-th element contains the literals implied by the first i elements of
   // assigned_tree_decisions_, together with the IDs of the corresponding LRAT
-  // clauses (or kNoClauseId if lrat_proof_handler_ is null).
+  // clauses (or kNoClauseId if lrat_proof_handler_ is null). When LRAT is on,
+  // each assigned_tree.Implication() has a corresponding entry in this vector.
   std::vector<std::vector<std::pair<Literal, ClauseId>>>
       assigned_tree_implications_;
   double next_split_dtime_ = 0;

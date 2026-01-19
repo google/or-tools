@@ -111,9 +111,9 @@ class JumpTable {
 // hot spots.
 class VarDomainWrapper {
  public:
-  explicit VarDomainWrapper(SharedBoundsManager* shared_bounds)
+  VarDomainWrapper(absl::string_view name, SharedBoundsManager* shared_bounds)
       : shared_bounds_id_(
-            shared_bounds == nullptr ? 0 : shared_bounds->RegisterNewId()),
+            shared_bounds == nullptr ? 0 : shared_bounds->RegisterNewId(name)),
         shared_bounds_(shared_bounds) {}
 
   Domain operator[](int var) const { return domains_[var]; }
@@ -485,7 +485,7 @@ class FeasibilityJumpSolver : public SubSolver {
         shared_hints_(shared_hints),
         stat_tables_(stat_tables),
         random_(params_),
-        var_domains_(shared_bounds) {
+        var_domains_(name, shared_bounds) {
     shared_time_limit_->UpdateLocalLimit(&time_limit_);
   }
 

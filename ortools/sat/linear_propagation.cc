@@ -59,6 +59,7 @@ LinearPropagator::LinearPropagator(Model* model)
       rev_integer_value_repository_(
           model->GetOrCreate<RevIntegerValueRepository>()),
       precedences_(model->GetOrCreate<EnforcedLinear2Bounds>()),
+      lin2_indices_(model->GetOrCreate<Linear2Indices>()),
       linear3_bounds_(model->GetOrCreate<Linear2BoundsFromLinear3>()),
       random_(model->GetOrCreate<ModelRandomGenerator>()),
       shared_stats_(model->GetOrCreate<SharedStatistics>()),
@@ -167,6 +168,19 @@ void LinearPropagator::OnVariableChange(IntegerVariable var, IntegerValue lb,
   }
 }
 
+void LinearPropagator::PushPendingLin2Bounds() {
+  for (const int id : lin3_ids_.PositionsSetAtLeastOnce()) {
+    // "Activates" the 3 potential affine bounds.
+    CHECK_LT(id, id_to_lin2_cache_.size());
+    const Lin2AffineBoundsCache& data = id_to_lin2_cache_[id];
+    for (int i = 0; i < 3; ++i) {
+      linear3_bounds_->AddAffineUpperBound(data.indices[i], data.gcds[i],
+                                           data.affine_ubs[i]);
+    }
+  }
+  lin3_ids_.ResetAllToFalse();
+}
+
 bool LinearPropagator::Propagate() {
   // Initial addition.
   //
@@ -184,6 +198,9 @@ bool LinearPropagator::Propagate() {
         static_cast<double>(num_terms_for_dtime_update_) * 1e-9);
     modified_vars_.ClearAndResize(integer_trail_->NumIntegerVariables());
   });
+
+  // Reset the set of linear3 that might activate lin2 affine bounds
+  lin3_ids_.ResetAllToFalse();
 
   // We abort this propagator as soon as a Boolean is propagated, so that we
   // always finish the Boolean propagation first. This can happen when we push a
@@ -230,12 +247,13 @@ bool LinearPropagator::Propagate() {
         if (!PropagateInfeasibleConstraint(id, slack)) return false;
 
         // We abort after the first pushed boolean. We could abort later too,
-        // it  is unclear what works best.
+        // it is unclear what works best.
         //
         // TODO(user): Maybe we should "update" explanation if we have a shorter
         // one to be less reliant on the propagation order.
         if (trail_->Index() > saved_index) {
           ++num_bool_aborts_;
+          PushPendingLin2Bounds();
           return true;
         }
       } else if (num_to_push > 0) {
@@ -269,39 +287,7 @@ bool LinearPropagator::Propagate() {
       // accordingly.
       const ConstraintInfo& info = infos_[id];
       if (push_affine_ub && info.initial_size == 3 && info.enf_id == -1) {
-        // A constraint A + B + C <= rhs can lead to up to 3 relations...
-        const auto vars = GetVariables(info);
-        const auto coeffs = GetCoeffs(info);
-
-        // We don't "push" relation A + B <= ub if A or B is fixed, because
-        // the variable bound of the non-fixed A or B should just be as-strong
-        // as what can be inferred from the binary relation.
-        if (info.rev_size == 2) {
-          LinearExpression2 expr;
-          expr.vars[0] = vars[0];
-          expr.vars[1] = vars[1];
-          expr.coeffs[0] = coeffs[0];
-          expr.coeffs[1] = coeffs[1];
-
-          // The fixed variable is always at index 2.
-          // The rev_rhs was updated to: initial_rhs - lb(vars[2]) * coeffs[2].
-          const IntegerValue initial_rhs =
-              info.rev_rhs + coeffs[2] * integer_trail_->LowerBound(vars[2]);
-          linear3_bounds_->AddAffineUpperBound(
-              expr, AffineExpression(vars[2], -coeffs[2], initial_rhs));
-        } else if (info.rev_size == 3) {
-          for (int i = 0; i < 3; ++i) {
-            LinearExpression2 expr;
-            const int a = (i + 1) % 3;
-            const int b = (i + 2) % 3;
-            expr.vars[0] = vars[a];
-            expr.vars[1] = vars[b];
-            expr.coeffs[0] = coeffs[a];
-            expr.coeffs[1] = coeffs[b];
-            linear3_bounds_->AddAffineUpperBound(
-                expr, AffineExpression(vars[i], -coeffs[i], info.rev_rhs));
-          }
-        }
+        lin3_ids_.Set(id);
       }
     }
 
@@ -318,9 +304,11 @@ bool LinearPropagator::Propagate() {
     // these rather than go back to pure-binary propagation.
     if (trail_->Index() > saved_index) {
       ++num_bool_aborts_;
+      PushPendingLin2Bounds();
       return true;
     }
   }
+  PushPendingLin2Bounds();
   return true;
 }
 
@@ -379,6 +367,38 @@ bool LinearPropagator::AddConstraint(
   // Initialize watchers.
   // Initially we want everything to be propagated at least once.
   in_queue_.resize(in_queue_.size() + 1);
+
+  // Initialize data for lin2 affine ub pushes.
+  // Note that we also initialize the one for enforced constraint, so we can
+  // use this if later the constraint become non-enforced.
+  lin3_ids_.Resize(in_queue_.size());
+  if (vars.size() == 3) {
+    if (id >= id_to_lin2_cache_.size()) {
+      id_to_lin2_cache_.resize(id + 1);
+    }
+    Lin2AffineBoundsCache& data = id_to_lin2_cache_[id];
+
+    // A constraint A + B + C <= rhs can lead to up to 3 relations...
+    const ConstraintInfo& info = infos_[id];
+    const auto vars = GetVariables(info);
+    const auto coeffs = GetCoeffs(info);
+    for (int i = 0; i < 3; ++i) {
+      LinearExpression2 expr;
+      const int a = (i + 1) % 3;
+      const int b = (i + 2) % 3;
+      expr.vars[0] = vars[a];
+      expr.vars[1] = vars[b];
+      expr.coeffs[0] = coeffs[a];
+      expr.coeffs[1] = coeffs[b];
+      expr.SimpleCanonicalization();
+      CHECK_NE(expr.coeffs[0], 0);
+      CHECK_NE(expr.coeffs[1], 0);
+      const IntegerValue gcd = expr.DivideByGcd();
+      data.indices[i] = lin2_indices_->AddOrGet(expr);
+      data.gcds[i] = gcd;
+      data.affine_ubs[i] = AffineExpression(vars[i], -coeffs[i], info.rev_rhs);
+    }
+  }
 
   if (!enforcement_literals.empty()) {
     infos_.back().enf_status =

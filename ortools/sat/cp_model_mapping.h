@@ -231,6 +231,9 @@ class CpModelMapping {
     return result;
   }
 
+  // This one do not count [0, 1] integers.
+  int NumNonBooleanIntegers() const { return num_non_boolean_integers_; }
+
   // Returns the number of variables in the loaded proto.
   int NumProtoVariables() const { return integers_.size(); }
 
@@ -255,6 +258,8 @@ class CpModelMapping {
   // ExtractEncoding().
   absl::flat_hash_set<const ConstraintProto*> already_loaded_ct_;
   absl::flat_hash_set<const ConstraintProto*> is_half_encoding_ct_;
+
+  int64_t num_non_boolean_integers_ = 0;
 };
 
 }  // namespace sat

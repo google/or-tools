@@ -85,6 +85,8 @@ class Vivifier {
   bool SubsumptionIsInteresting(BooleanVariable variable, int max_size);
   void KeepAllClausesUsedToInfer(BooleanVariable variable);
 
+  bool RewriteClauseUsingCurrentDecisions(SatClause* clause);
+
   const VariablesAssignment& assignment_;
   const SatParameters& parameters_;
 

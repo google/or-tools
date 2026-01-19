@@ -22,7 +22,7 @@
 
 #include "absl/container/btree_map.h"
 #include "absl/container/btree_set.h"
-#include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
@@ -179,8 +179,7 @@ class Prober {
   absl::btree_map<IntegerVariable, IntegerValue> new_propagated_bounds_;
   absl::btree_map<IntegerVariable, IntegerValue> always_propagated_bounds_;
 
-  absl::flat_hash_map<std::pair<Literal, Literal>, ClauseId>
-      tmp_binary_clause_ids_;
+  absl::flat_hash_set<ClauseId> tmp_binary_clause_ids_;
   std::vector<ClauseId> tmp_clause_ids_;
   std::vector<Literal> tmp_literals_;
   CompactVectorVector<int, ClauseId> tmp_dnf_clause_ids_;
@@ -418,8 +417,6 @@ class FailedLiteralProbing {
 
   // We delay fixing of already assigned literals once we go back to level 0.
   std::vector<Literal> to_fix_;
-  // For each literal in to_fix_, the ID of the corresponding LRAT unit clause.
-  std::vector<ClauseId> to_fix_unit_id_;
   // The literals for which we want to extract "last_decision => l" clauses.
   std::vector<Literal> binary_clauses_to_extract_;
 

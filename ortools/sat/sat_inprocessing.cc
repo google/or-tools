@@ -292,7 +292,11 @@ bool Inprocessing::InprocessingRound() {
     const double saved_wtime = wall_timer.Get();
     ProbingOptions probing_options;
     probing_options.log_info = log_round_info;
-    probing_options.deterministic_limit = params_.inprocessing_probing_dtime();
+    // Tuning for solving very easy problems very fast: do not spend more than
+    // 10% of the total elapsed time in this single probing round.
+    probing_options.deterministic_limit =
+        std::min(params_.inprocessing_probing_dtime(),
+                 time_limit_->GetElapsedDeterministicTime() / 10);
     probing_options.extract_binary_clauses = true;
     RETURN_IF_FALSE(failed_literal_probing_->DoOneRound(probing_options));
     probing_time += wall_timer.Get() - saved_wtime;
@@ -308,7 +312,9 @@ bool Inprocessing::InprocessingRound() {
 
   if (params_.inprocessing_minimization_dtime() > 0.0) {
     RETURN_IF_FALSE(vivifier_->MinimizeByPropagation(
-        log_round_info, params_.inprocessing_minimization_dtime()));
+        log_round_info,
+        std::min(params_.inprocessing_minimization_dtime(),
+                 time_limit_->GetElapsedDeterministicTime() / 10)));
   }
 
   // TODO(user): Think about the right order in this function.
@@ -470,8 +476,6 @@ bool Inprocessing::RemoveFixedAndEquivalentVariables(bool log_info) {
       // We first do a loop to see if there is anything to do.
       for (const Literal l : clause->AsSpan()) {
         if (assignment_.LiteralIsTrue(l)) {
-          DCHECK(lrat_proof_handler_ == nullptr ||
-                 trail_->GetUnitClauseId(l.Variable()) != kNoClauseId);
           clause_manager_->LazyDelete(clause,
                                       DeletionSourceForStat::FIXED_AT_TRUE);
           num_removed_literals += clause->size();
@@ -496,11 +500,10 @@ bool Inprocessing::RemoveFixedAndEquivalentVariables(bool log_info) {
         const Literal r = implication_graph_->RepresentativeOf(l);
         if (lrat_proof_handler_ != nullptr) {
           if (!marked[r] && assignment_.LiteralIsFalse(r)) {
-            clause_ids_.push_back(trail_->GetUnitClauseId(r.Variable()));
+            clause_ids_.push_back(ClauseId(r.Negated()));
           }
           if (r != l) {
-            clause_ids_.push_back(
-                implication_graph_->GetClauseId(l.Negated(), r));
+            clause_ids_.push_back(ClauseId(l.Negated(), r));
           }
         }
         if (marked[r] || assignment_.LiteralIsFalse(r)) {
@@ -522,7 +525,7 @@ bool Inprocessing::RemoveFixedAndEquivalentVariables(bool log_info) {
       if (removed) continue;
 
       if (lrat_proof_handler_ != nullptr) {
-        clause_ids_.push_back(clause_manager_->GetClauseId(clause));
+        clause_ids_.push_back(ClauseId(clause));
       }
       num_removed_literals += clause->size() - new_clause.size();
       if (!clause_manager_->InprocessingRewriteClause(clause, new_clause,
@@ -585,11 +588,12 @@ bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
 
   // Process clause by increasing sizes.
   // TODO(user): probably faster without the size indirection.
-  std::vector<SatClause*> clauses =
+  std::vector<SatClause*> clauses_copy =
       clause_manager_->AllClausesInCreationOrder();
-  absl::c_stable_sort(clauses, [](SatClause* a, SatClause* b) {
+  absl::c_stable_sort(clauses_copy, [](SatClause* a, SatClause* b) {
     return a->size() < b->size();
   });
+  absl::Span<SatClause*> clauses = absl::MakeSpan(clauses_copy);
 
   // Used to mark clause literals.
   const LiteralIndex num_literals(sat_solver_->NumVariables() * 2);
@@ -603,8 +607,11 @@ bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
   // Clause signatures in the same order as clauses.
   std::vector<uint64_t> signatures(clauses.size());
 
+  absl::flat_hash_set<int> delayed_to_subsume;
+  std::vector<SatClause*> unary_or_binary;
+
   // Literals which can be removed, and the reason why.
-  std::vector<std::pair<Literal, SatClause*>> candidates_for_removal;
+  std::vector<std::pair<Literal, int>> candidates_for_removal;
   for (int clause_index = 0; clause_index < clauses.size(); ++clause_index) {
     SatClause* clause = clauses[clause_index];
     DCHECK(!SomeLiteralAreAssigned(trail_->Assignment(), clause->AsSpan()));
@@ -647,7 +654,7 @@ bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
         if ((mask & signatures[i]) != 0) continue;
 
         bool subsumed = true;
-        bool stengthen = true;
+        bool strengthen = true;
         LiteralIndex to_remove = kNoLiteralIndex;
         num_inspected_literals += clauses[i]->size();
         for (const Literal o : clauses[i]->AsSpan()) {
@@ -656,7 +663,7 @@ bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
             if (to_remove == kNoLiteralIndex && marked[o.NegatedIndex()]) {
               to_remove = o.NegatedIndex();
             } else {
-              stengthen = false;
+              strengthen = false;
               break;
             }
           }
@@ -669,9 +676,9 @@ bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
           removed = true;
           break;
         }
-        if (stengthen) {
+        if (strengthen) {
           CHECK_NE(kNoLiteralIndex, to_remove);
-          candidates_for_removal.emplace_back(Literal(to_remove), clauses[i]);
+          candidates_for_removal.emplace_back(Literal(to_remove), i);
         }
       }
       if (removed) break;
@@ -684,55 +691,76 @@ bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
       for (const int i : one_watcher[l.NegatedIndex()]) {
         if ((mask & signatures[i]) != 0) continue;
 
-        bool stengthen = true;
+        bool strengthen = true;
         num_inspected_literals += clauses[i]->size();
         for (const Literal o : clauses[i]->AsSpan()) {
           if (o == l.Negated()) continue;
           if (!marked[o]) {
-            stengthen = false;
+            strengthen = false;
             break;
           }
         }
-        if (stengthen) {
-          candidates_for_removal.emplace_back(l, clauses[i]);
+        if (strengthen) {
+          candidates_for_removal.emplace_back(l, i);
         }
       }
     }
 
-    // Any literal here can be removed, but afterwards the other might not. For
-    // now we just remove the first one.
-    //
-    // TODO(user): remove first and see if other still removable. Alternatively
-    // use a "removed" marker and redo a check for each clause that simplifies
-    // this one? Or just remove the first one, and wait for next round.
-    if (!candidates_for_removal.empty()) {
+    // Any literal here can be removed, but afterwards the others might not.
+    // So we re-check each potential removal one by one.
+    for (const auto [target_lit, resolvant_index] : candidates_for_removal) {
+      // Check if this is still a valid resolvant.
+      const SatClause* resolvant = clauses[resolvant_index];
+      if (resolvant->size() > clause->size()) continue;
+      if (!marked[target_lit]) continue;
+      bool skip = false;
+      for (const Literal l : resolvant->AsSpan()) {
+        if (l == target_lit.Negated()) continue;
+        if (!marked[l]) skip = true;
+      }
+      if (skip) continue;
+
+      // We properly checked that target_lit appear in clause and negatively in
+      // resolvant (precondition). And also that all other literals of resolvant
+      // appear in clause. We can remove target_lit.
       new_clause.clear();
       for (const Literal l : clause->AsSpan()) {
-        if (l == candidates_for_removal[0].first) continue;
+        if (l == target_lit) continue;
         new_clause.push_back(l);
       }
+      marked.Clear(target_lit);
       CHECK_EQ(new_clause.size() + 1, clause->size());
-      CHECK_GE(new_clause.size(), 2);  // No-unit here.
+
+      // The resolvant is now subsumed by the strengthened clause.
+      if (resolvant->size() == clause->size()) {
+        // The resolvant was already kept forever and is subsumed by this clause
+        // so it make sense to just keep it instead.
+        clause_manager_->KeepClauseForever(clause);
+        delayed_to_subsume.insert(resolvant_index);
+      }
 
       num_removed_literals += clause->size() - new_clause.size();
       if (lrat_proof_handler_ != nullptr) {
-        if (!clause_manager_->InprocessingRewriteClause(
-                clause, new_clause,
-                {clause_manager_->GetClauseId(candidates_for_removal[0].second),
-                 clause_manager_->GetClauseId(clause)})) {
-          return false;
-        }
-      } else if (!clause_manager_->InprocessingRewriteClause(clause,
-                                                             new_clause)) {
-        return false;
+        // The id shouldn't change, this is just a rewrite.
+        lrat_proof_handler_->AddInferredClause(
+            ClauseId(clause), new_clause,
+            {ClauseId(resolvant), ClauseId(clause)});
       }
-      if (clause->size() == 0) continue;
+      clause_manager_->InprocessingTemporaryRewrite(clause, new_clause);
+      if (new_clause.empty()) return false;  // UNSAT
 
       // Recompute signature.
       signature = 0;
       for (const Literal l : clause->AsSpan()) {
         signature |= (uint64_t{1} << (l.Variable().value() % 64));
       }
+    }
+
+    if (clause->size() <= 2) {
+      // We will later "promote" them, but for now we keep them around
+      // to keep subsuming with them!
+      unary_or_binary.push_back(clause);
+      CHECK(!clause_manager_->IsRemovable(clause));
     }
 
     // Register one literal to watch. Any literal works, but we choose the
@@ -769,6 +797,28 @@ bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
     }
   }
 
+  // Remove all element in "delayed_to_subsume". Note that even if the order is
+  // non-deterministic, this should not matter, as we just remove clauses.
+  //
+  // TODO(user): maybe we could have done that as we discovered them, but
+  // then the one_watcher might contain empty clause, and we have to deal with
+  // that.
+  for (const int index : delayed_to_subsume) {
+    SatClause* clause = clauses[index];
+    if (clause->size() <= 2) continue;
+    ++num_subsumed_clauses;
+    num_removed_literals += clause->size();
+    clause_manager_->LazyDelete(
+        clause, DeletionSourceForStat::SUBSUMPTION_INPROCESSING);
+  }
+
+  // Convert unary and binary clauses once all clauses have been processed.
+  for (SatClause* clause : unary_or_binary) {
+    if (!clause_manager_->InprocessingCleanUpUnaryOrBinaryClause(clause)) {
+      return false;
+    }
+  }
+
   // We might have fixed variables, finish the propagation.
   if (!LevelZeroPropagate()) return false;
 
@@ -777,8 +827,9 @@ bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
                        static_cast<double>(num_inspected_literals) * 5e-9;
   time_limit_->AdvanceDeterministicTime(dtime);
   LOG_IF(INFO, log_info) << "Subsume. num_removed_literals: "
-                         << num_removed_literals
-                         << " num_subsumed: " << num_subsumed_clauses
+                         << FormatCounter(num_removed_literals)
+                         << " num_subsumed: "
+                         << FormatCounter(num_subsumed_clauses)
                          << " dtime: " << dtime
                          << " wtime: " << wall_timer.Get();
   return true;
@@ -1207,7 +1258,7 @@ bool StampingSimplifier::ProcessClauses() {
         }
         if (assignment_.LiteralIsFalse(span[i])) {
           if (lrat_proof_handler_ != nullptr) {
-            clause_ids_.push_back(trail_->GetUnitClauseId(span[i].Variable()));
+            clause_ids_.push_back(ClauseId(span[i].Negated()));
           }
           continue;
         }
@@ -1218,7 +1269,7 @@ bool StampingSimplifier::ProcessClauses() {
             [&](Literal a, Literal b, bool reversed) {
               AppendImplicationChain(a, b, clause_ids_, reversed);
             });
-        clause_ids_.push_back(clause_manager_->GetClauseId(clause));
+        clause_ids_.push_back(ClauseId(clause));
       }
       num_removed_literals_ += span.size() - new_clause.size();
       if (!clause_manager_->InprocessingRewriteClause(clause, new_clause,
@@ -1236,8 +1287,7 @@ void StampingSimplifier::AppendImplicationChain(Literal a, Literal b,
   const int initial_size = chain.size();
   Literal l = b;
   while (l != a) {
-    chain.push_back(implication_graph_->GetClauseId(
-        Literal(parents_[l]).Negated(), Literal(l)));
+    chain.push_back(ClauseId(Literal(parents_[l]).Negated(), Literal(l)));
     l = Literal(parents_[l]);
   }
   if (!reversed) {
@@ -2448,7 +2498,7 @@ void GateCongruenceClosure::ExtractShortGates(PresolveTimer& timer) {
     const absl::Span<const BooleanVariable> inputs = truth_tables_inputs_[t_id];
     SmallBitset truth_table = truth_tables_bitset_[t_id];
 
-    // TODO(user): it is unlcear why this is useful. Understand a bit more the
+    // TODO(user): it is unclear why this is useful. Understand a bit more the
     // set of possible Boolean functions of 2 and 3 variables and their clause
     // encoding.
     binary_used.clear();
@@ -2547,14 +2597,13 @@ namespace {
 class LratGateCongruenceHelper {
  public:
   LratGateCongruenceHelper(
-      const Trail* trail, const BinaryImplicationGraph* implication_graph,
-      ClauseManager* clause_manager, ClauseIdGenerator* clause_id_generator,
+      const Trail* trail, ClauseManager* clause_manager,
+      ClauseIdGenerator* clause_id_generator,
       LratProofHandler* lrat_proof_handler,
       const util_intops::StrongVector<GateId, LiteralIndex>& gates_target,
       const CompactVectorVector<GateId, const SatClause*>& gates_clauses,
       DenseConnectedComponentsFinder& union_find)
       : trail_(trail),
-        implication_graph_(implication_graph),
         clause_manager_(clause_manager),
         clause_id_generator_(clause_id_generator),
         lrat_proof_handler_(lrat_proof_handler),
@@ -2656,7 +2705,7 @@ class LratGateCongruenceHelper {
     for (const Literal lit : gates_clauses_[gate_a_id][0]->AsSpan()) {
       if (lit == a) continue;
       const Literal l = lit.Negated();
-      clause_ids.push_back(implication_graph_->GetClauseId(a.Negated(), l));
+      clause_ids.push_back(ClauseId(a.Negated(), l));
       Append(clause_ids, GetLiteralImpliesRepresentativeClauseId(l));
     }
     // For each original input l of b, rep(l) => l. The original inputs are
@@ -2667,12 +2716,16 @@ class LratGateCongruenceHelper {
       Append(clause_ids, GetRepresentativeImpliesLiteralClauseId(l));
     }
     // The original inputs of gate_b_id imply its target b:
-    clause_ids.push_back(
-        clause_manager_->GetClauseId(gates_clauses_[gate_b_id][0]));
+    clause_ids.push_back(ClauseId(gates_clauses_[gate_b_id][0]));
     // b => rep(b):
     Append(clause_ids, GetLiteralImpliesRepresentativeClauseId(b));
 
-    const ClauseId clause_id = clause_id_generator_->GetNextId();
+    if (rep_a.Negated() == rep_b) {
+      lrat_proof_handler_->AddInferredClause(ClauseId(rep_a.Negated()),
+                                             {rep_a.Negated()}, clause_ids);
+      return ClauseId(rep_a.Negated());
+    }
+    const ClauseId clause_id = ClauseId(rep_a.Negated(), rep_b);
     lrat_proof_handler_->AddInferredClause(clause_id, {rep_a.Negated(), rep_b},
                                            clause_ids);
     return clause_id;
@@ -2697,12 +2750,15 @@ class LratGateCongruenceHelper {
     return Literal(LiteralIndex(union_find_.FindRoot(lit_index_as_int)));
   }
 
+  // TODO(user): There is probably no need to add clauses that involve variables
+  // that are no longer inputs of that gate. If for instance we showed that the
+  // gate output is independent of one of the variable, it could still appear in
+  // the clauses.
   void AddGateClausesToTemporaryProof(GateId id) {
     CHECK(lrat_proof_handler_ != nullptr);
     const auto& assignment = trail_->Assignment();
-    std::vector<Literal> fixed;
     for (const SatClause* clause : gates_clauses_[id]) {
-      // We rewrite each clause using new equivalences found.
+      // We rewrite each clause using new equivalences or fixed literals found.
       marked_.ResetAllToFalse();
       tmp_literals_.clear();
       tmp_clause_ids_.clear();
@@ -2710,9 +2766,22 @@ class LratGateCongruenceHelper {
       bool some_change = false;
       for (const Literal lit : clause->AsSpan()) {
         const Literal rep = GetRepresentativeWithProofSupport(lit);
+
         if (assignment.LiteralIsAssigned(rep)) {
-          fixed.push_back(rep);
+          if (assignment.LiteralIsTrue(rep)) {
+            clause_is_trivial = true;
+            break;  // Not needed.
+          } else {
+            some_change = true;
+            tmp_clause_ids_.push_back(ClauseId(rep.Negated()));
+            if (rep != lit) {
+              tmp_clause_ids_.push_back(
+                  GetLiteralImpliesRepresentativeClauseId(lit));
+            }
+            continue;
+          }
         }
+
         if (rep != lit) {
           some_change = true;
           // We need not(rep) => not(lit). This should be equivalent to
@@ -2720,6 +2789,7 @@ class LratGateCongruenceHelper {
           tmp_clause_ids_.push_back(
               GetLiteralImpliesRepresentativeClauseId(lit));
         }
+
         if (marked_[rep]) continue;
         if (marked_[rep.Negated()]) {
           clause_is_trivial = true;
@@ -2732,12 +2802,9 @@ class LratGateCongruenceHelper {
       // If this is the case, we shouldn't need it for the proof.
       if (clause_is_trivial) continue;
 
-      ClauseId new_id =
-          clause->size() == 2
-              ? implication_graph_->GetClauseId(clause->FirstLiteral(),
-                                                clause->SecondLiteral())
-              : clause_manager_->GetClauseId(clause);
-      CHECK_NE(new_id, kNoClauseId);
+      ClauseId new_id = clause->size() == 2 ? ClauseId(clause->FirstLiteral(),
+                                                       clause->SecondLiteral())
+                                            : ClauseId(clause);
       if (some_change) {
         // If there is some change, we add a temporary clause id with the
         // proof to go from the original clause to this one.
@@ -2751,17 +2818,6 @@ class LratGateCongruenceHelper {
       // Add that clause and its id to the set of clauses needed for the proof.
       tmp_proof_clauses_id_.push_back(new_id);
       tmp_proof_clauses_.Add(tmp_literals_);
-    }
-
-    // Add size1 clauses.
-    gtl::STLSortAndRemoveDuplicates(&fixed);
-    for (const Literal lit : fixed) {
-      if (assignment.LiteralIsAssigned(lit)) {
-        tmp_proof_clauses_id_.push_back(
-            trail_->GetUnitClauseId(lit.Variable()));
-        tmp_proof_clauses_.Add(
-            {assignment.LiteralIsTrue(lit) ? lit : lit.Negated()});
-      }
     }
   }
 
@@ -2777,35 +2833,47 @@ class LratGateCongruenceHelper {
       AddGateClausesToTemporaryProof(id);
     }
 
+    // Corner case: If rep_a or rep_b are fixed, add proof for that.
+    for (const Literal lit : {rep_a, rep_b}) {
+      const auto& assignment = trail_->Assignment();
+      if (assignment.LiteralIsAssigned(lit)) {
+        const Literal true_lit =
+            assignment.LiteralIsTrue(lit) ? lit : lit.Negated();
+        tmp_proof_clauses_id_.push_back(ClauseId(true_lit));
+        tmp_proof_clauses_.Add({true_lit});
+      }
+    }
+
     // All clauses are now in tmp_proof_clauses_/tmp_proof_clauses_id_.
     // We can add both implications with proof.
     DCHECK(IsRepresentative(rep_a));
     DCHECK(IsRepresentative(rep_b));
     CHECK_NE(rep_a, rep_b);
 
+    ClauseId rep_a_implies_rep_b = ClauseId(rep_a.Negated(), rep_b);
+    ClauseId rep_b_implies_rep_a = ClauseId(rep_b.Negated(), rep_a);
     if (rep_a.Negated() == rep_b) {
       // The model is UNSAT.
       //
       // TODO(user): AddAndProveInferredClauseByEnumeration() do not like
       // duplicates, but maybe we should just handle the case to have
       // less code here?
-      const ClauseId not_rep_a_id =
-          lrat_proof_handler_->AddAndProveInferredClauseByEnumeration(
-              {rep_a.Negated()}, tmp_proof_clauses_id_, tmp_proof_clauses_);
-      const ClauseId rep_a_id =
-          lrat_proof_handler_->AddAndProveInferredClauseByEnumeration(
-              {rep_a}, tmp_proof_clauses_id_, tmp_proof_clauses_);
-      return {not_rep_a_id, rep_a_id};
+      rep_a_implies_rep_b = ClauseId(rep_a.Negated());
+      rep_b_implies_rep_a = ClauseId(rep_a);
+      lrat_proof_handler_->AddAndProveInferredClauseByEnumeration(
+          rep_a_implies_rep_b, {rep_a.Negated()}, tmp_proof_clauses_id_,
+          tmp_proof_clauses_);
+      lrat_proof_handler_->AddAndProveInferredClauseByEnumeration(
+          rep_b_implies_rep_a, {rep_a}, tmp_proof_clauses_id_,
+          tmp_proof_clauses_);
+    } else {
+      lrat_proof_handler_->AddAndProveInferredClauseByEnumeration(
+          rep_a_implies_rep_b, {rep_a.Negated(), rep_b}, tmp_proof_clauses_id_,
+          tmp_proof_clauses_);
+      lrat_proof_handler_->AddAndProveInferredClauseByEnumeration(
+          rep_b_implies_rep_a, {rep_b.Negated(), rep_a}, tmp_proof_clauses_id_,
+          tmp_proof_clauses_);
     }
-
-    const ClauseId rep_a_implies_rep_b =
-        lrat_proof_handler_->AddAndProveInferredClauseByEnumeration(
-            {rep_a.Negated(), rep_b}, tmp_proof_clauses_id_,
-            tmp_proof_clauses_);
-    const ClauseId rep_b_implies_rep_a =
-        lrat_proof_handler_->AddAndProveInferredClauseByEnumeration(
-            {rep_b.Negated(), rep_a}, tmp_proof_clauses_id_,
-            tmp_proof_clauses_);
 
     for (const int i : tmp_index_to_delete_) {
       // Corner case if the proof used a temporary id.
@@ -2822,17 +2890,17 @@ class LratGateCongruenceHelper {
     CHECK(IsRepresentative(to_fix));
     ClearTemporaryProof();
     AddGateClausesToTemporaryProof(id);
-    const ClauseId new_id =
-        lrat_proof_handler_->AddAndProveInferredClauseByEnumeration(
-            {to_fix}, tmp_proof_clauses_id_, tmp_proof_clauses_);
+    const ClauseId to_fix_id = ClauseId(to_fix);
+    lrat_proof_handler_->AddAndProveInferredClauseByEnumeration(
+        to_fix_id, {to_fix}, tmp_proof_clauses_id_, tmp_proof_clauses_);
 
     for (const int i : tmp_index_to_delete_) {
       // Corner case if the proof used a temporary id.
-      if (tmp_proof_clauses_id_[i] == new_id) continue;
+      if (tmp_proof_clauses_id_[i] == to_fix_id) continue;
       lrat_proof_handler_->DeleteClause(tmp_proof_clauses_id_[i],
                                         tmp_proof_clauses_[i]);
     }
-    return new_id;
+    return to_fix_id;
   }
 
   void AddGateEquivalenceClauses(Literal child, ClauseId child_implies_parent,
@@ -2851,7 +2919,7 @@ class LratGateCongruenceHelper {
   // rep(m) = not(rep) must exist.
   void AppendFixAndGateTargetClauses(
       GateId gate_id, Literal rep,
-      absl::InlinedVector<ClauseId, 4>& clause_ids) {
+      absl::InlinedVector<ClauseId, 5>& clause_ids) {
     const Literal target = Literal(gates_target_[gate_id]);
     LiteralIndex l_index = kNoLiteralIndex;
     LiteralIndex m_index = kNoLiteralIndex;
@@ -2864,15 +2932,18 @@ class LratGateCongruenceHelper {
       if (rep_l == rep) l_index = l.Index();
       if (rep_l == rep.Negated()) m_index = l.Index();
     }
-    clause_ids.push_back(
-        implication_graph_->GetClauseId(target.Negated(), Literal(l_index)));
+    CHECK(l_index != kNoLiteralIndex && m_index != kNoLiteralIndex);
+
+    // We want to prove target_rep.Negated(), we start by showing that
+    // target_rep implies target.
+    Append(clause_ids, GetRepresentativeImpliesLiteralClauseId(target));
+
+    clause_ids.push_back(ClauseId(target.Negated(), Literal(l_index)));
     Append(clause_ids,
            GetLiteralImpliesRepresentativeClauseId(Literal(l_index)));
-    clause_ids.push_back(
-        implication_graph_->GetClauseId(target.Negated(), Literal(m_index)));
+    clause_ids.push_back(ClauseId(target.Negated(), Literal(m_index)));
     Append(clause_ids,
            GetLiteralImpliesRepresentativeClauseId(Literal(m_index)));
-    Append(clause_ids, GetLiteralImpliesRepresentativeClauseId(target));
   }
 
  private:
@@ -2910,7 +2981,6 @@ class LratGateCongruenceHelper {
   }
 
   const Trail* trail_;
-  const BinaryImplicationGraph* implication_graph_;
   ClauseManager* clause_manager_;
   ClauseIdGenerator* clause_id_generator_;
   LratProofHandler* lrat_proof_handler_;
@@ -3002,8 +3072,8 @@ bool GateCongruenceClosure::DoOneRound(bool log_info) {
                                                         num_variables);
 
   LratGateCongruenceHelper lrat_helper(
-      trail_, implication_graph_, clause_manager_, clause_id_generator_,
-      lrat_proof_handler_, gates_target_, gates_clauses_, union_find);
+      trail_, clause_manager_, clause_id_generator_, lrat_proof_handler_,
+      gates_target_, gates_clauses_, union_find);
 
   // Stats + make sure we run it at exit.
   int num_units = 0;
@@ -3057,34 +3127,43 @@ bool GateCongruenceClosure::DoOneRound(bool log_info) {
     return true;
   };
 
-  const auto get_unit_clause = [this](Literal a) {
-    if (lrat_proof_handler_ == nullptr) return kNoClauseId;
-    return trail_->GetUnitClauseId(a.Variable());
-  };
-
   const auto new_equivalence = [&, this](Literal a, Literal b,
                                          ClauseId a_implies_b,
                                          ClauseId b_implies_a) {
-    // Lets propagate fixed variable as we find new equivalences.
+    if (a == b.Negated()) {
+      // The model is UNSAT.
+      if (lrat_proof_handler_ != nullptr) {
+        DCHECK_EQ(a_implies_b, ClauseId(a.Negated()));
+        DCHECK_EQ(b_implies_a, ClauseId(a));
+        lrat_proof_handler_->AddInferredClause(ClauseId::EmptyClauseId(), {},
+                                               {a_implies_b, b_implies_a});
+      }
+      return false;
+    }
+    // Lets propagate fixed variables as we find new equivalences.
     if (assignment_.LiteralIsAssigned(a)) {
       if (assignment_.LiteralIsTrue(a)) {
-        return fix_literal(b, {a_implies_b, get_unit_clause(a)});
+        return fix_literal(b, {a_implies_b, ClauseId(a)});
       } else {
-        return fix_literal(b.Negated(), {b_implies_a, get_unit_clause(a)});
+        return fix_literal(b.Negated(), {b_implies_a, ClauseId(a.Negated())});
       }
     } else if (assignment_.LiteralIsAssigned(b)) {
       if (assignment_.LiteralIsTrue(b)) {
-        return fix_literal(a, {b_implies_a, get_unit_clause(b)});
+        return fix_literal(a, {b_implies_a, ClauseId(b)});
       } else {
-        return fix_literal(a.Negated(), {a_implies_b, get_unit_clause(b)});
+        return fix_literal(a.Negated(), {a_implies_b, ClauseId(b.Negated())});
       }
+    }
+    if (lrat_proof_handler_ != nullptr) {
+      DCHECK_EQ(a_implies_b, ClauseId(a.Negated(), b));
+      DCHECK_EQ(b_implies_a, ClauseId(b.Negated(), a));
     }
 
     ++num_equivalences;
     DCHECK(!implication_graph_->IsRedundant(a));
     DCHECK(!implication_graph_->IsRedundant(b));
-    if (!implication_graph_->AddBinaryClause(a_implies_b, a.Negated(), b) ||
-        !implication_graph_->AddBinaryClause(b_implies_a, b.Negated(), a)) {
+    if (!implication_graph_->AddBinaryClause(a.Negated(), b) ||
+        !implication_graph_->AddBinaryClause(b.Negated(), a)) {
       return false;
     }
 
@@ -3250,7 +3329,7 @@ bool GateCongruenceClosure::DoOneRound(bool log_info) {
             const Literal to_fix =
                 lrat_helper.GetRepresentativeWithProofSupport(initial_to_fix);
             if (!assignment_.LiteralIsTrue(to_fix)) {
-              absl::InlinedVector<ClauseId, 4> clause_ids;
+              absl::InlinedVector<ClauseId, 5> clause_ids;
               if (lrat_proof_handler_ != nullptr) {
                 lrat_helper.AppendFixAndGateTargetClauses(id, Literal(rep),
                                                           clause_ids);

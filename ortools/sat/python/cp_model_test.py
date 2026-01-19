@@ -1182,6 +1182,7 @@ class CpModelTest(absltest.TestCase):
         status = solver.Solve(model)
         self.assertEqual(status, cp_model.OPTIMAL)
         self.assertEqual(solver.objective_value, 1.0)
+        self.assertEqual(solver.status_name(), solver.status_name(status))
 
     def test_division(self) -> None:
         model = cp_model.CpModel()
@@ -1886,7 +1887,7 @@ class CpModelTest(absltest.TestCase):
         solver.parameters.num_workers = 1
         status = solver.solve(model)
         self.assertEqual(cp_model.OPTIMAL, status)
-        self.assertEqual(solver.num_booleans, 0)
+        self.assertEqual(solver.num_booleans, 1)
         self.assertEqual(solver.num_conflicts, 0)
         self.assertEqual(solver.num_branches, 0)
         self.assertGreater(solver.wall_time, 0.0)

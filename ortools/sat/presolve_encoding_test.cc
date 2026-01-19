@@ -438,7 +438,7 @@ TEST(DetectAllEncodedComplexDomainTest, BasicTest) {
       linear {
         vars: [ 3 ]
         coeffs: [ 1 ]
-        domain: [ 0, 0, 2, 2 ]
+        domain: [ 0, 2 ]
       }
     }
     constraints {

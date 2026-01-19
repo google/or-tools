@@ -14,7 +14,6 @@
 #include "ortools/sat/clause.h"
 
 #include <algorithm>
-#include <memory>
 #include <numeric>
 #include <optional>
 #include <vector>
@@ -43,32 +42,6 @@ auto LiteralsAre(Args... literals) {
 template <typename... Args>
 auto UnorderedLiteralsAre(Args... literals) {
   return ::testing::UnorderedElementsAre(Literal(literals)...);
-}
-
-TEST(SatClauseTest, BasicAllocation) {
-  std::unique_ptr<SatClause> clause(SatClause::Create(Literals({+1, -2, +4})));
-  EXPECT_EQ(3, clause->size());
-  EXPECT_EQ(Literal(+1), clause->FirstLiteral());
-  EXPECT_EQ(Literal(-2), clause->SecondLiteral());
-}
-
-struct TestSatClause {
-#ifdef _MSC_VER
-  // MSVC doesn't allow to overflow at the word boundary.
-  unsigned int is_learned : 1;
-  unsigned int is_attached : 1;
-#else
-  bool is_learned : 1;
-  bool is_attached : 1;
-#endif
-  unsigned int size : 30;
-
-  // We test that Literal literals[0]; does not increase the size.
-};
-
-TEST(SatClauseTest, ClassSize) {
-  EXPECT_EQ(4, sizeof(TestSatClause));
-  EXPECT_EQ(4, sizeof(SatClause));
 }
 
 BinaryClause MakeBinaryClause(int a, int b) {

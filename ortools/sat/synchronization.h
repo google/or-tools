@@ -685,7 +685,7 @@ class SharedBoundsManager {
   // Returns a new id to be used in GetChangedBounds(). This is just an ever
   // increasing sequence starting from zero. Note that the class is not designed
   // to have too many of these.
-  int RegisterNewId();
+  int RegisterNewId(absl::string_view worker_name);
 
   // When called, returns the set of bounds improvements since
   // the last time this method was called with the same id.
@@ -735,14 +735,16 @@ class SharedBoundsManager {
   std::deque<SparseBitset<int>> id_to_changed_variables_
       ABSL_GUARDED_BY(mutex_);
 
+  std::vector<std::string> id_to_name_ ABSL_GUARDED_BY(mutex_);
+
   // We track the number of bounds exported by each solver, and the "extra"
   // bounds pushed due to symmetries.
   struct Counters {
     int64_t num_exported = 0;
+    int64_t num_imported = 0;
     int64_t num_symmetric = 0;
   };
-  absl::btree_map<std::string, Counters> bounds_exported_
-      ABSL_GUARDED_BY(mutex_);
+  absl::btree_map<std::string, Counters> bounds_stats_ ABSL_GUARDED_BY(mutex_);
 
   // Symmetry info.
   bool has_symmetry_ = false;

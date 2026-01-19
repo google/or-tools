@@ -48,7 +48,8 @@ IntervalsRepository::IntervalsRepository(Model* model)
       reified_precedences_(model->GetOrCreate<ReifiedLinear2Bounds>()),
       root_level_bounds_(model->GetOrCreate<RootLevelLinear2Bounds>()),
       linear2_bounds_(model->GetOrCreate<Linear2Bounds>()),
-      integer_encoder_(model->GetOrCreate<IntegerEncoder>()) {}
+      integer_encoder_(model->GetOrCreate<IntegerEncoder>()),
+      trivial_literals_(model->GetOrCreate<TrivialLiterals>()) {}
 
 IntervalVariable IntervalsRepository::CreateInterval(IntegerVariable start,
                                                      IntegerVariable end,
@@ -328,10 +329,10 @@ LiteralIndex IntervalsRepository::GetPrecedenceLiteral(
     const auto bound_type =
         std::get<ReifiedLinear2Bounds::ReifiedBoundType>(reified_bound);
     if (bound_type == ReifiedLinear2Bounds::ReifiedBoundType::kAlwaysTrue) {
-      return integer_encoder_->GetTrueLiteral().Index();
+      return trivial_literals_->TrueLiteral().Index();
     }
     if (bound_type == ReifiedLinear2Bounds::ReifiedBoundType::kAlwaysFalse) {
-      return integer_encoder_->GetTrueLiteral().NegatedIndex();
+      return trivial_literals_->FalseLiteral().Index();
     }
   }
 

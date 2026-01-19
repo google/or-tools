@@ -163,7 +163,7 @@ class ModelCopy {
   std::vector<Literal> temp_clause_;
   std::vector<Literal> temp_simplified_clause_;
   std::vector<ClauseId> temp_clause_ids_;
-  ClauseId next_inferred_clause_id_;
+  uint64_t next_inferred_clause_id_;
 
   // Map used in GetOrCreateVariableForConjunction() to avoid creating duplicate
   // variables for identical sets of literals.

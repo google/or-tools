@@ -13,6 +13,7 @@
 
 #include "ortools/sat/presolve_encoding.h"
 
+#include <algorithm>
 #include <cstdint>
 #include <cstdlib>
 #include <functional>
@@ -232,21 +233,17 @@ bool BasicPresolveAndGetFullyEncodedDomains(
     ConstraintProto* ct_proto = context->working_model->mutable_constraints(ct);
     DCHECK(ConstraintIsEncodingBound(*ct_proto));
     const int ref = ct_proto->enforcement_literal(0);
-    Domain domain = ReadDomainFromProto(ct_proto->linear());
-    if (!domain.IsIncludedIn(var_domain)) {
+    const Domain domain = ReadDomainFromProto(ct_proto->linear());
+    if (!domain.OverlapsWith(var_domain)) {
       *changed = true;
-      domain = domain.IntersectionWith(context->DomainOf(local_model.var));
-      if (domain.IsEmpty()) {
-        context->UpdateRuleStats(
-            "variables: linear1 with domain not included in variable domain");
-        if (!context->SetLiteralToFalse(ref)) {
-          return false;
-        }
-        ct_proto->Clear();
-        context->UpdateConstraintVariableUsage(ct);
-        continue;
+      context->UpdateRuleStats(
+          "variables: linear1 with domain not included in variable domain");
+      if (!context->SetLiteralToFalse(ref)) {
+        return false;
       }
-      FillDomainInProto(domain, ct_proto->mutable_linear());
+      ct_proto->Clear();
+      context->UpdateConstraintVariableUsage(ct);
+      continue;
     }
     auto [it, inserted] = ref_to_linear1.insert({ref, ct});
     if (!inserted) {
@@ -456,11 +453,16 @@ bool DetectEncodedComplexDomain(
   // encoding of a complex domain, so we just ignore it.
   // TODO(user): This can be implemented if it turns out to be common.
 
-  std::optional<int> maybe_lit1;
-  Domain domain_lit1;
-  std::optional<int> maybe_lit2;
-  Domain domain_lit2;
-  for (const int lit_var : literals) {
+  // The solver does not handle very well linear1 with complex domains. So, when
+  // we look at two encodings to merge, we will only consider the pair if the
+  // new domain that will replace both is not more complex than any of the
+  // original domains.
+  // TODO(user): if those linear1 are that bad, we should consider expanding
+  // them in the end of the presolve instead of avoiding them.
+  std::vector<std::pair<int, Domain>> candidates;
+  candidates.reserve(literals.size());
+  for (int i = 0; i < literals.size(); ++i) {
+    const int lit_var = literals.Get(i);
     if (!local_model.bools_only_used_inside_the_local_model.contains(
             PositiveRef(lit_var))) {
       continue;
@@ -469,21 +471,42 @@ bool DetectEncodedComplexDomain(
     if (it == fully_encoded_domains->end()) {
       continue;
     }
-
-    if (!maybe_lit1) {
-      maybe_lit1 = lit_var;
-      domain_lit1 = it->second;
-    } else {
-      maybe_lit2 = lit_var;
-      domain_lit2 = it->second;
-      break;
-    }
+    candidates.push_back({lit_var, it->second});
   }
 
-  if (!maybe_lit2.has_value()) return true;
-  DCHECK(maybe_lit1.has_value());
-  const int lit1 = *maybe_lit1;
-  const int lit2 = *maybe_lit2;
+  const Domain var_domain = context->DomainOf(local_model.var);
+  Domain domain_new_var_false;
+  Domain domain_new_var_true;
+  int lit1;
+  int lit2;
+  Domain domain_lit1;
+  Domain domain_lit2;
+  bool found_pair = false;
+  for (int i = 0; i < candidates.size(); ++i) {
+    for (int j = i + 1; j < candidates.size(); ++j) {
+      const auto& [lit_var1, domain_var1] = candidates[i];
+      const auto& [lit_var2, domain_var2] = candidates[j];
+      domain_new_var_true = domain_var1.UnionWith(domain_var2)
+                                .SimplifyUsingImpliedDomain(var_domain);
+      domain_new_var_false =
+          domain_new_var_true.Complement().SimplifyUsingImpliedDomain(
+              var_domain);
+      const int initial_complexity =
+          std::max(domain_var1.NumIntervals(), domain_var2.NumIntervals());
+      if (domain_new_var_true.NumIntervals() <= initial_complexity &&
+          domain_new_var_false.NumIntervals() <= initial_complexity) {
+        lit1 = lit_var1;
+        domain_lit1 = domain_var1;
+        lit2 = lit_var2;
+        domain_lit2 = domain_var2;
+        found_pair = true;
+        break;
+      }
+    }
+    if (found_pair) break;
+  }
+
+  if (!found_pair) return true;
 
   // We found two literals that each fully encodes an interval and are both only
   // used in the encoding and in the bool_or/exactly_one/at_most_one. We can
@@ -505,11 +528,6 @@ bool DetectEncodedComplexDomain(
       return false;
     }
   }
-  const Domain var_domain = context->DomainOf(local_model.var);
-  const Domain domain_new_var_false = var_domain.IntersectionWith(
-      domain_lit1.Complement().IntersectionWith(domain_lit2.Complement()));
-  const Domain domain_new_var_true =
-      var_domain.IntersectionWith(domain_new_var_false.Complement());
 
   // Now we want to build a lit3 = (lit1 or lit2) to use in the AMO/bool_or.
   const int new_var = context->NewBoolVarWithClause({lit1, lit2});
@@ -528,6 +546,8 @@ bool DetectEncodedComplexDomain(
     FillDomainInProto(domain_new_var_true, new_ct->mutable_linear());
     local_model.linear1_constraints.push_back(
         context->working_model->constraints_size());
+    local_model.bools_only_used_inside_the_local_model.insert(
+        PositiveRef(new_var));
     new_ct = context->working_model->add_constraints();
     new_ct->add_enforcement_literal(NegatedRef(new_var));
     new_ct->mutable_linear()->add_vars(local_model.var);

@@ -559,7 +559,7 @@ class SatSolver {
 
   // Adds a binary clause to the BinaryImplicationGraph and to the
   // BinaryClauseManager when track_binary_clauses_ is true.
-  void AddBinaryClauseInternal(ClauseId id, Literal a, Literal b);
+  void AddBinaryClauseInternal(Literal a, Literal b);
 
   // See SaveDebugAssignment(). Note that these functions only consider the
   // variables at the time the debug_assignment_ was saved. If new variables
@@ -882,7 +882,7 @@ class SatSolver {
   // On each conflict, we learn at least one clause, but depending on the cases,
   // we can learn more than one.
   struct NewClauses {
-    ClauseId id;
+    ClauseId id;  // Can point to an already allocated SatClause for 'clause'.
     bool is_redundant;
     int min_lbd_of_subsumed_clauses;
     std::vector<Literal> clause;

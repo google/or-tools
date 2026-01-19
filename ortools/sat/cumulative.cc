@@ -400,8 +400,8 @@ std::function<void(Model*)> CumulativeUsingReservoir(
     if (vars.empty()) return;
 
     auto* integer_trail = model->GetOrCreate<IntegerTrail>();
-    auto* encoder = model->GetOrCreate<IntegerEncoder>();
     auto* repository = model->GetOrCreate<IntervalsRepository>();
+    auto* trivial_literals = model->GetOrCreate<TrivialLiterals>();
 
     CHECK(integer_trail->IsFixed(capacity));
     const IntegerValue fixed_capacity(
@@ -422,8 +422,8 @@ std::function<void(Model*)> CumulativeUsingReservoir(
         presences.push_back(repository->PresenceLiteral(vars[t]));
         presences.push_back(repository->PresenceLiteral(vars[t]));
       } else {
-        presences.push_back(encoder->GetTrueLiteral());
-        presences.push_back(encoder->GetTrueLiteral());
+        presences.push_back(trivial_literals->TrueLiteral());
+        presences.push_back(trivial_literals->TrueLiteral());
       }
     }
     AddReservoirConstraint(enforcement_literals, times, deltas, presences, 0,

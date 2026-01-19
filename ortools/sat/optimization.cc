@@ -745,6 +745,16 @@ SatSolver::Status CoreBasedOptimizer::OptimizeWithSatEncoding(
     if (time_limit_->LimitReached()) return SatSolver::LIMIT_REACHED;
     if (!sat_solver_->ResetToLevelZero()) return SatSolver::INFEASIBLE;
 
+    // Make sure we import everything we can.
+    auto* level_zero_callbacks = model_->GetOrCreate<LevelZeroCallbackHelper>();
+    for (const auto& cb : level_zero_callbacks->callbacks) {
+      if (!cb()) {
+        sat_solver_->NotifyThatModelIsUnsat();
+        return SatSolver::INFEASIBLE;
+      }
+    }
+    if (!sat_solver_->ResetToLevelZero()) return SatSolver::INFEASIBLE;
+
     // Note that the objective_var_ upper bound is the one from the "improving"
     // problem, so if we have a feasible solution, it will be the best solution
     // objective value - 1.

@@ -28,7 +28,6 @@
 #include <stdexcept>
 #include <string>
 #include <tuple>
-#include <utility>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
@@ -299,65 +298,179 @@ std::shared_ptr<LinearExpr> SumArguments(py::args expressions) {
 
 std::shared_ptr<LinearExpr> WeightedSumArguments(py::sequence expressions,
                                                  py::sequence coefficients) {
-  if (expressions.size() != coefficients.size()) {
+  const int64_t size = expressions.size();
+  if (size != coefficients.size()) {
     ThrowError(PyExc_ValueError,
                absl::StrCat("LinearExpr::weighted_sum() requires the same "
                             "number of arguments and coefficients: ",
-                            expressions.size(), " != ", coefficients.size()));
+                            size, " != ", coefficients.size()));
   }
 
   std::vector<std::shared_ptr<LinearExpr>> linear_exprs;
   std::vector<int64_t> int_coeffs;
   std::vector<double> float_coeffs;
-  linear_exprs.reserve(expressions.size());
-  int_coeffs.reserve(expressions.size());
-  float_coeffs.reserve(expressions.size());
+  linear_exprs.reserve(size);
+  int_coeffs.reserve(size);
+  float_coeffs.reserve(size);
   int64_t int_offset = 0;
   double float_offset = 0.0;
   bool has_floats = false;
+  bool fast_coeffs = false;
+  const void* raw_coeffs = nullptr;
+  ssize_t coeff_stride = 0;
 
-  for (int i = 0; i < expressions.size(); ++i) {
-    auto on_expr = [&](std::shared_ptr<LinearExpr> expr) {
-      ProcessConstantArg(
-          coefficients[i],
-          [&](int64_t value) {
-            if (value == 0) return;
-            linear_exprs.push_back(expr);
-            int_coeffs.push_back(value);
-            float_coeffs.push_back(static_cast<double>(value));
-          },
-          [&](double value) {
-            if (value == 0.0) return;
-            linear_exprs.push_back(expr);
-            float_coeffs.push_back(value);
+  enum { kInt64, kInt32, kDouble } coeff_type = kInt64;
+
+  if (py::isinstance<py::array>(coefficients)) {
+    py::array arr = coefficients.cast<py::array>();
+
+    if (arr.ndim() == 1 && arr.size() == size) {
+      if (py::isinstance<py::array_t<int64_t>>(arr)) {
+        fast_coeffs = true;
+        raw_coeffs = arr.data();
+        coeff_stride = arr.strides(0);
+        coeff_type = kInt64;
+      } else if (py::isinstance<py::array_t<int32_t>>(arr)) {
+        fast_coeffs = true;
+        raw_coeffs = arr.data();
+        coeff_stride = arr.strides(0);
+        coeff_type = kInt32;
+      } else if (py::isinstance<py::array_t<double>>(arr)) {
+        fast_coeffs = true;
+        raw_coeffs = arr.data();
+        coeff_stride = arr.strides(0);
+        coeff_type = kDouble;
+      }
+    }
+  }
+
+  for (int64_t i = 0; i < size; ++i) {
+    // --- Parse Coefficient ---
+    int64_t c_int = 0;
+    double c_float = 0.0;
+    bool c_is_float = false;
+    bool c_is_zero = false;
+    if (fast_coeffs) {
+      const char* ptr = static_cast<const char*>(raw_coeffs) + i * coeff_stride;
+      if (coeff_type == kInt64) {
+        c_int = *reinterpret_cast<const int64_t*>(ptr);
+        if (c_int == 0) {
+          c_is_zero = true;
+        } else {
+          c_float = static_cast<double>(c_int);
+        }
+      } else if (coeff_type == kInt32) {
+        c_int = *reinterpret_cast<const int32_t*>(ptr);
+        if (c_int == 0) {
+          c_is_zero = true;
+        } else {
+          c_float = static_cast<double>(c_int);
+        }
+      } else {  // kDouble
+        c_float = *reinterpret_cast<const double*>(ptr);
+        if (c_float == 0.0) {
+          c_is_zero = true;
+        } else {
+          c_is_float = true;
+          has_floats = true;
+        }
+      }
+    } else {
+      const py::handle coeff_obj = coefficients[i];
+      if (py::isinstance<py::int_>(coeff_obj)) {
+        c_int = coeff_obj.cast<int64_t>();
+        if (c_int == 0) {
+          c_is_zero = true;
+        } else {
+          c_float = static_cast<double>(c_int);
+        }
+      } else if (py::isinstance<py::float_>(coeff_obj)) {
+        c_float = coeff_obj.cast<double>();
+        if (c_float == 0.0) {
+          c_is_zero = true;
+        } else {
+          c_is_float = true;
+          has_floats = true;
+        }
+      } else if (hasattr(coeff_obj, "dtype") &&
+                 hasattr(coeff_obj, "is_integer")) {
+        if (getattr(coeff_obj, "is_integer")().cast<bool>()) {
+          c_int = coeff_obj.cast<int64_t>();
+          if (c_int == 0) {
+            c_is_zero = true;
+          } else {
+            c_float = static_cast<double>(c_int);
+          }
+        } else {
+          c_float = coeff_obj.cast<double>();
+          if (c_float == 0.0) {
+            c_is_zero = true;
+          } else {
+            c_is_float = true;
             has_floats = true;
-          });
-    };
-    auto on_int = [&](int64_t expr_value) {
-      if (expr_value == 0) return;
-      ProcessConstantArg(
-          coefficients[i],
-          [&](int64_t coeff_value) { int_offset += coeff_value * expr_value; },
-          [&](double coeff_value) {
-            has_floats = true;
-            float_offset += coeff_value * static_cast<double>(expr_value);
-          });
-    };
-    auto on_float = [&](double expr_value) {
-      if (expr_value == 0.0) return;
+          }
+        }
+      } else {
+        py::type objtype = py::type::of(coeff_obj);
+        const std::string type_name =
+            objtype.attr("__name__").cast<std::string>();
+        ThrowError(
+            PyExc_TypeError,
+            absl::StrCat("LinearExpr::weighted_sum() only accept constants "
+                         "as coefficients: '",
+                         absl::CEscape(type_name), "'"));
+      }
+    }
+
+    if (c_is_zero) continue;
+
+    // --- Parse Expression ---
+    const py::handle expr_obj = expressions[i];
+    if (py::isinstance<LinearExpr>(expr_obj)) {
+      linear_exprs.push_back(expr_obj.cast<std::shared_ptr<LinearExpr>>());
+      if (c_is_float) {
+        float_coeffs.push_back(c_float);
+      } else {
+        int_coeffs.push_back(c_int);
+        float_coeffs.push_back(c_float);
+      }
+    } else if (py::isinstance<py::int_>(expr_obj)) {
+      int64_t val = expr_obj.cast<int64_t>();
+      if (val == 0) continue;
+      if (c_is_float) {
+        float_offset += c_float * static_cast<double>(val);
+      } else {
+        int_offset += c_int * val;
+      }
+    } else if (py::isinstance<py::float_>(expr_obj)) {
+      double val = expr_obj.cast<double>();
+      if (val == 0.0) continue;
       has_floats = true;
-      ProcessConstantArg(
-          coefficients[i],
-          [&](int64_t coeff_value) {
-            float_offset += static_cast<double>(coeff_value) * expr_value;
-          },
-          [&](double coeff_value) {
-            if (coeff_value == 0.0) return;
-            float_offset += coeff_value * expr_value;
-          });
-    };
-    ProcessExprArg(expressions[i], std::move(on_expr), std::move(on_int),
-                   std::move(on_float));
+      float_offset += c_float * val;
+    } else if (hasattr(expr_obj, "dtype") && hasattr(expr_obj, "is_integer")) {
+      if (getattr(expr_obj, "is_integer")().cast<bool>()) {
+        int64_t val = expr_obj.cast<int64_t>();
+        if (val == 0) continue;
+        if (c_is_float) {
+          float_offset += c_float * static_cast<double>(val);
+        } else {
+          int_offset += c_int * val;
+        }
+      } else {
+        double val = expr_obj.cast<double>();
+        if (val == 0.0) continue;
+        has_floats = true;
+        float_offset += c_float * val;
+      }
+    } else {
+      py::type objtype = py::type::of(expr_obj);
+      const std::string type_name =
+          objtype.attr("__name__").cast<std::string>();
+      ThrowError(PyExc_TypeError,
+                 absl::StrCat("LinearExpr::weighted_sum() only accept linear "
+                              "expressions and constants as argument: '",
+                              absl::CEscape(type_name), "'"));
+    }
   }
 
   // Correct the float offset if there are int offsets.

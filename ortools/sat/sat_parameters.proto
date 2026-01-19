@@ -24,7 +24,7 @@ option java_multiple_files = true;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 356
+// NEXT TAG: 357
 message SatParameters {
   // In some context, like in a portfolio of search, it makes sense to name a
   // given parameters set for logging purpose.
@@ -672,8 +672,10 @@ message SatParameters {
   optional double inprocessing_minimization_dtime = 275 [default = 1.0];
   optional bool inprocessing_minimization_use_conflict_analysis = 297
       [default = true];
-  optional bool inprocessing_minimization_use_all_orderings = 298
-      [default = false];
+
+  // The number of ordering to try each time we vivify a clause.
+  // This allow to spend more effort on vivivication if needed.
+  optional int32 num_ordering_in_vivification = 356 [default = 1];
 
   // Whether we use the algorithm described in "Clausal Congruence closure",
   // Armin Biere, Katalin Fazekas, Mathias Fleury, Nils Froleyks, 2024.
@@ -1803,8 +1805,8 @@ message SatParameters {
   optional bool detect_linearized_product = 277 [default = false];
 
   // This should be better on integer problems.
-  // But it is still work in progress.
-  optional bool use_new_integer_conflict_resolution = 336 [default = false];
+  // We only trigger it if there is a least 10 non-binary variables.
+  optional bool use_new_integer_conflict_resolution = 336 [default = true];
 
   // If true, and during integer conflict resolution (icr) the 1-UIP is an
   // integer literal for which we do not have an associated Boolean. Create one.

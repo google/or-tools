@@ -47,6 +47,7 @@
 #include "ortools/linear_solver/model_exporter.h"
 #include "pybind11/cast.h"
 #include "pybind11/eigen.h"
+#include "pybind11/numpy.h"
 #include "pybind11/pybind11.h"
 #include "pybind11/pytypes.h"
 #include "pybind11/stl.h"
@@ -227,9 +228,9 @@ std::shared_ptr<LinearExpr> SumArguments(py::args args,
 
   if (args.size() == 1 && py::isinstance<py::sequence>(args[0])) {
     // Normal list or tuple argument.
-    py::sequence elements = args[0].cast<py::sequence>();
+    const py::sequence elements = args[0].cast<py::sequence>();
     linear_exprs.reserve(elements.size());
-    for (const py::handle& arg : elements) {
+    for (const py::handle arg : elements) {
       if (py::isinstance<LinearExpr>(arg)) {
         linear_exprs.push_back(arg.cast<std::shared_ptr<LinearExpr>>());
       } else {
@@ -272,31 +273,106 @@ std::shared_ptr<LinearExpr> SumArguments(py::args args,
   }
 }
 
-std::shared_ptr<LinearExpr> WeightedSumArguments(
-    py::sequence expressions, const std::vector<double>& coefficients,
-    double offset = 0.0) {
-  if (expressions.size() != coefficients.size()) {
+std::shared_ptr<LinearExpr> WeightedSumArguments(py::sequence expressions,
+                                                 py::sequence coefficients,
+                                                 double offset = 0.0) {
+  const size_t size = expressions.size();
+  if (size != coefficients.size()) {
     ThrowError(PyExc_ValueError,
                absl::StrCat("LinearExpr::weighted_sum() requires the same "
                             "number of arguments and coefficients: ",
-                            expressions.size(), " != ", coefficients.size()));
+                            size, " != ", coefficients.size()));
   }
 
   std::vector<std::shared_ptr<LinearExpr>> linear_exprs;
   std::vector<double> coeffs;
-  linear_exprs.reserve(expressions.size());
-  coeffs.reserve(expressions.size());
+  linear_exprs.reserve(size);
+  coeffs.reserve(size);
 
-  for (int i = 0; i < expressions.size(); ++i) {
-    py::handle arg = expressions[i];
-    std::shared_ptr<LinearExpr> expr = nullptr;
-    if (py::isinstance<LinearExpr>(arg)) {
-      if (coefficients[i] != 0.0) {
-        linear_exprs.push_back(arg.cast<std::shared_ptr<LinearExpr>>());
-        coeffs.push_back(coefficients[i]);
+  bool fast_coeffs = false;
+  const void* raw_coeffs = nullptr;
+  ssize_t coeff_stride = 0;
+  enum { kInt64, kInt32, kDouble } coeff_type = kInt64;
+
+  if (py::isinstance<py::array>(coefficients)) {
+    py::array arr = coefficients.cast<py::array>();
+    if (arr.ndim() == 1 && arr.size() == size) {
+      if (py::isinstance<py::array_t<int64_t>>(arr)) {
+        fast_coeffs = true;
+        raw_coeffs = arr.data();
+        coeff_stride = arr.strides(0);
+        coeff_type = kInt64;
+      } else if (py::isinstance<py::array_t<int32_t>>(arr)) {
+        fast_coeffs = true;
+        raw_coeffs = arr.data();
+        coeff_stride = arr.strides(0);
+        coeff_type = kInt32;
+      } else if (py::isinstance<py::array_t<double>>(arr)) {
+        fast_coeffs = true;
+        raw_coeffs = arr.data();
+        coeff_stride = arr.strides(0);
+        coeff_type = kDouble;
+      }
+    }
+  }
+
+  for (size_t i = 0; i < size; ++i) {
+    double coeff = 0.0;
+    bool c_is_zero = false;
+
+    if (fast_coeffs) {
+      const char* ptr = static_cast<const char*>(raw_coeffs) + i * coeff_stride;
+      if (coeff_type == kInt64) {
+        const int64_t c_int = *reinterpret_cast<const int64_t*>(ptr);
+        if (c_int == 0) {
+          c_is_zero = true;
+        } else {
+          coeff = static_cast<double>(c_int);
+        }
+      } else if (coeff_type == kInt32) {
+        const int32_t c_int = *reinterpret_cast<const int32_t*>(ptr);
+        if (c_int == 0) {
+          c_is_zero = true;
+        } else {
+          coeff = static_cast<double>(c_int);
+        }
+      } else {  // kDouble
+        coeff = *reinterpret_cast<const double*>(ptr);
+        if (coeff == 0.0) {
+          c_is_zero = true;
+        }
       }
     } else {
-      offset += arg.cast<double>() * coefficients[i];
+      const py::handle coeff_obj = coefficients[i];
+      if (py::isinstance<py::int_>(coeff_obj) ||
+          py::isinstance<py::float_>(coeff_obj) ||
+          // Check for NumPy scalars specifically
+          (py::hasattr(coeff_obj, "dtype") &&
+           !py::isinstance<py::array>(coeff_obj))) {
+        coeff = coeff_obj.cast<double>();
+        if (coeff == 0.0) {
+          c_is_zero = true;
+        }
+      } else {
+        py::type objtype = py::type::of(coeff_obj);
+        const std::string type_name =
+            objtype.attr("__name__").cast<std::string>();
+        ThrowError(
+            PyExc_TypeError,
+            absl::StrCat("LinearExpr::weighted_sum() only accept constants "
+                         "as coefficients: '",
+                         absl::CEscape(type_name), "'"));
+      }
+    }
+
+    if (c_is_zero) continue;
+
+    const py::handle arg = expressions[i];
+    if (py::isinstance<LinearExpr>(arg)) {
+      linear_exprs.push_back(arg.cast<std::shared_ptr<LinearExpr>>());
+      coeffs.push_back(coeff);
+    } else {
+      offset += arg.cast<double>() * coeff;
     }
   }
 

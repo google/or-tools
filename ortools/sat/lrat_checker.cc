@@ -36,6 +36,8 @@ void LratChecker::AddStats() const {
   stats_->AddStats(
       {{"LratChecker/num_problem_clauses", num_problem_clauses_},
        {"LratChecker/num_inferred_clauses", num_inferred_clauses_},
+       {"LratChecker/num_inferred_clauses_always_true",
+        num_inferred_clauses_always_true_},
        {"LratChecker/num_processed_rup_literals", num_processed_rup_literals_},
        {"LratChecker/num_processed_rup_clauses", num_processed_rup_clauses_},
        {"LratChecker/num_unneeded_rup_literals", num_unneeded_rup_literals_},
@@ -120,39 +122,41 @@ bool LratChecker::AddClauseInternal(ClauseId id,
                                     absl::Span<const RatIds> rat) {
   if (!valid_) return false;
   if (complete_) return true;
-  if (clauses_.contains(id))
-    return Error(id, absl::StrCat("clause ID ", id, " already used"));
 
-  FixedCapacityVector<Literal> sorted_clause(clause);
-  std::sort(sorted_clause.begin(), sorted_clause.end());
-  sorted_clause.resize(std::unique(sorted_clause.begin(), sorted_clause.end()) -
-                       sorted_clause.begin());
-  for (int i = 1; i < sorted_clause.size(); ++i) {
-    if (sorted_clause[i] == sorted_clause[i - 1].Negated()) {
-      return true;
+  if (!clause.empty()) {
+    BooleanVariable last_variable = clause[0].Variable();
+    for (const Literal literal : clause) {
+      last_variable = std::max(last_variable, literal.Variable());
     }
-  }
-  if (!sorted_clause.empty()) {
-    const int last_variable = sorted_clause.back().Variable().value();
     if (last_variable >= num_variables_) {
-      num_variables_ = last_variable + 1;
+      num_variables_ = last_variable.value() + 1;
       if (occurrences_needed_) {
         occurrences_.resize(2 * num_variables_, 0);
       } else if (clause.size() == 1 && unit_ids.empty() && rat.empty()) {
         // Early return for unit clauses made of a new variable. The following
         // code would validate this proof with the RAT property, but would also
         // set `occurrences_needed_` to true, which is unnecessary.
-        clauses_[id] = std::move(sorted_clause);
+        clauses_[id] = FixedCapacityVector<Literal>(clause);
         return true;
       }
     }
   }
 
-  if (!is_problem_clause) {
-    tmp_false_literals_set_.ClearAndResize(LiteralIndex(2 * num_variables_));
-    for (const Literal literal : sorted_clause) {
-      tmp_false_literals_set_.Set(literal);
+  // `clause` with duplicate literals removed.
+  FixedCapacityVector<Literal> cleaned_clause;
+  cleaned_clause.ClearAndReserve(clause.size());
+  tmp_false_literals_set_.ClearAndResize(LiteralIndex(2 * num_variables_));
+  for (const Literal literal : clause) {
+    if (tmp_false_literals_set_[literal]) continue;
+    if (tmp_false_literals_set_[literal.Negated()]) {
+      if (!is_problem_clause) ++num_inferred_clauses_always_true_;
+      return true;
     }
+    tmp_false_literals_set_.Set(literal);
+    cleaned_clause.push_back(literal);
+  }
+
+  if (!is_problem_clause) {
     UnitPropagationStatus last_propagation_status = kUnit;
     for (int i = 0; i < unit_ids.size(); ++i) {
       const ClauseId unit_id = unit_ids[i];
@@ -255,11 +259,11 @@ bool LratChecker::AddClauseInternal(ClauseId id,
   }
 
   if (occurrences_needed_) {
-    for (const Literal literal : sorted_clause) {
+    for (const Literal literal : cleaned_clause) {
       occurrences_[literal.Index()]++;
     }
   }
-  clauses_[id] = std::move(sorted_clause);
+  clauses_[id] = std::move(cleaned_clause);
   if (clause.empty()) {
     complete_ = true;
   }

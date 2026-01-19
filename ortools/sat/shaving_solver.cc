@@ -285,7 +285,7 @@ VariablesShavingSolver::VariablesShavingSolver(
       stop_current_chunk_(false),
       model_proto_(shared->model_proto) {
   if (shared_->bounds != nullptr) {
-    shared_bounds_id_ = shared_->bounds->RegisterNewId();
+    shared_bounds_id_ = shared_->bounds->RegisterNewId(local_parameters.name());
   }
 
   absl::MutexLock mutex_lock(mutex_);

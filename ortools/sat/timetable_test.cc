@@ -406,8 +406,7 @@ TEST(ReservoirTest, FindAllParenthesis) {
     times[i] = vars[i];
     deltas[i] = IntegerValue((i % 2 == 1) ? -1 : 1);
   }
-  const Literal true_lit =
-      model.GetOrCreate<IntegerEncoder>()->GetTrueLiteral();
+  const Literal true_lit = model.GetOrCreate<TrivialLiterals>()->TrueLiteral();
   std::vector<Literal> all_true(size, true_lit);
 
   model.Add(AllDifferentOnBounds(vars));
@@ -513,8 +512,7 @@ TEST(ReservoirTest, VariableLevelChange) {
     times[i] = IntegerValue(i);
     deltas[i] = model.Add(NewIntegerVariable(-1, 1));
   }
-  const Literal true_lit =
-      model.GetOrCreate<IntegerEncoder>()->GetTrueLiteral();
+  const Literal true_lit = model.GetOrCreate<TrivialLiterals>()->TrueLiteral();
   std::vector<Literal> all_true(size, true_lit);
 
   const int min_level = 0;
@@ -568,7 +566,7 @@ TEST(ReservoirTimeTablingTest, WithUnassignedEnforcementLiteral) {
   for (int i = 0; i < 4; ++i) {
     times.push_back(AffineExpression(i + 1));
     deltas.push_back(AffineExpression(i + 2));
-    presences.push_back(model.GetOrCreate<IntegerEncoder>()->GetTrueLiteral());
+    presences.push_back(model.GetOrCreate<TrivialLiterals>()->TrueLiteral());
   }
   const Literal b = Literal(model.Add(NewBooleanVariable()), true);
   // Always false is enforced (sum(deltas) = 2+3+4+5 > 10).

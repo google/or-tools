@@ -48,15 +48,19 @@ class LratChecker {
     absl::Span<const ClauseId> unit_ids;
   };
 
-  // Adds a clause of the problem. Returns true if successful, i.e., if the
-  // given ID is not already used by another clause (it is OK to reuse the ID of
-  // a deleted clause). Does nothing if a previous step failed or if the proof
-  // is already complete, or if the clause contains a literal and its negation
-  // (since it is always true, it should not be needed to infer anything).
+  // Adds a clause of the problem. Does nothing if a previous step failed or if
+  // the proof is already complete, or if the clause contains a literal and its
+  // negation (since it is always true, it should not be needed to infer
+  // anything). Always returns true.
   //
   // Problem clauses can be added after inferred clauses which do not reference
   // them. This can be used to add learned clauses proved by another worker, or
   // "axioms" that we admit without proof.
+  //
+  // If a clause with the same ID has already been added, this redefines it.
+  // This can happen, for instance, if a unit or binary clause is added several
+  // times, when IDs are computed from the clause literals or the SatClause
+  // pointer.
   bool AddProblemClause(ClauseId id, absl::Span<const Literal> clause);
 
   // Adds a clause which is inferred from the problem clauses and/or the
@@ -67,17 +71,15 @@ class LratChecker {
   // anything). Otherwise, returns true if the given inference proof is valid,
   // i.e., if the following conditions hold (checked sequentially):
   //
-  // 1) The clause ID is not already used by another clause (it is OK to reuse
-  //    the ID of a deleted clause).
-  // 2) The `unit_ids` clauses exist and are or become unit and eventually empty
+  // 1) The `unit_ids` clauses exist and are or become unit and eventually empty
   //    if all the literals of `clause` are assumed to be false (verification
   //    stops at the first empty clause). This list must be in unit propagation
   //    order: if a clause c becomes unit (or empty) because clauses c_1, ...,
   //    c_k are unit, then c must appear after c_1, ..., c_k in the list. Let
   //    RUP be all the literals which are found to be false by unit propagation.
-  // 3) If `rat` is empty, the last `unit_ids` clause must become empty after
+  // 2) If `rat` is empty, the last `unit_ids` clause must become empty after
   //    unit propagation.
-  // 4) Otherwise `clause` must not be empty, and `rat_clauses` must contain
+  // 3) Otherwise `clause` must not be empty, and `rat_clauses` must contain
   //    all the current clauses which contain the negation of the first
   //    literal of `clause` (called the pivot 'p') -- and no other clauses.
   //    Moreover, for each r in `rat`:
@@ -88,6 +90,11 @@ class LratChecker {
   //      (minus ~p), as well as those in RUP (from condition 2), are assumed to
   //      be false (this list must be in unit propagation order, as explained
   //      above; verification stops at the first empty clause).
+  //
+  // If a clause with the same ID has already been added, this redefines it.
+  // This can happen, for instance, if a unit or binary clause is inferred
+  // several times, or if a SatClause is rewritten (e.g., vivified), when IDs
+  // are computed from the clause literals or the SatClause pointer.
   bool AddInferredClause(ClauseId id, absl::Span<const Literal> clause,
                          absl::Span<const ClauseId> unit_ids,
                          absl::Span<const RatIds> rat = {});
@@ -151,6 +158,7 @@ class LratChecker {
   // Statistics.
   int64_t num_problem_clauses_ = 0;
   int64_t num_inferred_clauses_ = 0;
+  int64_t num_inferred_clauses_always_true_ = 0;
   int64_t num_processed_rup_literals_ = 0;
   int64_t num_processed_rup_clauses_ = 0;
   int64_t num_unneeded_rup_literals_ = 0;
@@ -178,7 +186,7 @@ class LratChecker {
 
 template <typename Sink, typename... T>
 void AbslStringify(Sink& sink, LratChecker::RatIds arg) {
-  absl::Format(&sink, "resolvant_id=%d unit_ids=[%s]", arg.resolvant_id.value(),
+  absl::Format(&sink, "resolvant_id=%v unit_ids=[%s]", arg.resolvant_id,
                absl::StrJoin(arg.unit_ids, " "));
 }
 

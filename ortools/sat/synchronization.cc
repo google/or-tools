@@ -1031,8 +1031,8 @@ void SharedBoundsManager::ReportPotentialNewBounds(
   if (num_improvements > 0) {
     total_num_improvements_ += num_improvements;
     VLOG(3) << total_num_improvements_ << "/" << num_variables_;
-    bounds_exported_[worker_name].num_exported += num_improvements;
-    bounds_exported_[worker_name].num_symmetric += num_symmetric_improvements;
+    bounds_stats_[worker_name].num_exported += num_improvements;
+    bounds_stats_[worker_name].num_symmetric += num_symmetric_improvements;
     if (absl::GetFlag(FLAGS_cp_model_dump_tightened_models)) {
       CpModelProto tight_model = model_proto_;
       for (int i = 0; i < num_variables_; ++i) {
@@ -1119,9 +1119,10 @@ void SharedBoundsManager::Synchronize() {
   changed_variables_since_last_synchronize_.ResetAllToFalse();
 }
 
-int SharedBoundsManager::RegisterNewId() {
+int SharedBoundsManager::RegisterNewId(absl::string_view name) {
   absl::MutexLock mutex_lock(mutex_);
   const int id = id_to_changed_variables_.size();
+  id_to_name_.emplace_back(name);
   id_to_changed_variables_.resize(id + 1);
   id_to_changed_variables_[id].ClearAndResize(num_variables_);
   for (int var = 0; var < num_variables_; ++var) {
@@ -1161,6 +1162,11 @@ void SharedBoundsManager::GetChangedBounds(
       new_lower_bounds->push_back(synchronized_lower_bounds_[var]);
       new_upper_bounds->push_back(synchronized_upper_bounds_[var]);
     }
+
+    // Update the stats.
+    if (!variables->empty()) {
+      bounds_stats_[id_to_name_[id]].num_imported += variables->size();
+    }
   }
 
   // Now that the mutex is released, we can add all symmetric version if any.
@@ -1198,12 +1204,13 @@ void SharedBoundsManager::UpdateDomains(std::vector<Domain>* domains) {
 
 void SharedBoundsManager::LogStatistics(SolverLogger* logger) {
   absl::MutexLock mutex_lock(mutex_);
-  if (!bounds_exported_.empty()) {
+  if (!bounds_stats_.empty()) {
     std::vector<std::vector<std::string>> table;
-    table.push_back({"Improving bounds shared", "Num", "Sym"});
-    for (const auto& entry : bounds_exported_) {
+    table.push_back({"Improving bounds shared", "Exported", "Imported", "Sym"});
+    for (const auto& entry : bounds_stats_) {
       table.push_back({FormatName(entry.first),
                        FormatCounter(entry.second.num_exported),
+                       FormatCounter(entry.second.num_imported),
                        FormatCounter(entry.second.num_symmetric)});
     }
     SOLVER_LOG(logger, FormatTable(table));
@@ -1212,8 +1219,8 @@ void SharedBoundsManager::LogStatistics(SolverLogger* logger) {
 
 int SharedBoundsManager::NumBoundsExported(absl::string_view worker_name) {
   absl::MutexLock mutex_lock(mutex_);
-  const auto it = bounds_exported_.find(worker_name);
-  if (it == bounds_exported_.end()) return 0;
+  const auto it = bounds_stats_.find(worker_name);
+  if (it == bounds_stats_.end()) return 0;
   return it->second.num_exported;
 }
 

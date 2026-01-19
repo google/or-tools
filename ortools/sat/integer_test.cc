@@ -604,23 +604,24 @@ TEST(IntegerEncoderTest, BasicInequalityEncoding) {
 TEST(IntegerEncoderTest, GetOrCreateTrivialAssociatedLiteral) {
   Model model;
   IntegerEncoder* encoder = model.GetOrCreate<IntegerEncoder>();
+  TrivialLiterals* trivial_literals = model.GetOrCreate<TrivialLiterals>();
   const IntegerVariable var = model.Add(NewIntegerVariable(0, 10));
-  EXPECT_EQ(encoder->GetTrueLiteral(),
+  EXPECT_EQ(trivial_literals->TrueLiteral(),
             encoder->GetOrCreateAssociatedLiteral(
                 IntegerLiteral::GreaterOrEqual(var, IntegerValue(0))));
-  EXPECT_EQ(encoder->GetTrueLiteral(),
+  EXPECT_EQ(trivial_literals->TrueLiteral(),
             encoder->GetOrCreateAssociatedLiteral(
                 IntegerLiteral::GreaterOrEqual(var, IntegerValue(-1))));
-  EXPECT_EQ(encoder->GetTrueLiteral(),
+  EXPECT_EQ(trivial_literals->TrueLiteral(),
             encoder->GetOrCreateAssociatedLiteral(
                 IntegerLiteral::LowerOrEqual(var, IntegerValue(10))));
-  EXPECT_EQ(encoder->GetFalseLiteral(),
+  EXPECT_EQ(trivial_literals->FalseLiteral(),
             encoder->GetOrCreateAssociatedLiteral(
                 IntegerLiteral::GreaterOrEqual(var, IntegerValue(11))));
-  EXPECT_EQ(encoder->GetFalseLiteral(),
+  EXPECT_EQ(trivial_literals->FalseLiteral(),
             encoder->GetOrCreateAssociatedLiteral(
                 IntegerLiteral::GreaterOrEqual(var, IntegerValue(12))));
-  EXPECT_EQ(encoder->GetFalseLiteral(),
+  EXPECT_EQ(trivial_literals->FalseLiteral(),
             encoder->GetOrCreateAssociatedLiteral(
                 IntegerLiteral::LowerOrEqual(var, IntegerValue(-1))));
 }
@@ -1135,9 +1136,10 @@ TEST(IntegerEncoderTest, IssueWhenNotFullyingPropagatingAtLoading) {
   Model model;
   auto* integer_trail = model.GetOrCreate<IntegerTrail>();
   auto* integer_encoder = model.GetOrCreate<IntegerEncoder>();
+  auto* trivial_literals = model.GetOrCreate<TrivialLiterals>();
   const IntegerVariable var =
       integer_trail->AddIntegerVariable(Domain::FromValues({0, 3, 7, 9}));
-  const Literal false_literal = integer_encoder->GetFalseLiteral();
+  const Literal false_literal = trivial_literals->FalseLiteral();
   integer_encoder->DisableImplicationBetweenLiteral();
 
   // This currently doesn't propagate the domain.

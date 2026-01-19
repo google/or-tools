@@ -50,6 +50,7 @@
 #include "ortools/sat/integer_expr.h"
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/linear_constraint.h"
+#include "ortools/sat/lrat_proof_handler.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/pb_constraint.h"
 #include "ortools/sat/precedences.h"
@@ -127,7 +128,14 @@ void LoadVariables(const CpModelProto& model_proto,
           true_variables.push_back(new_var);
         }
         ++new_var;
+      } else {
+        ++mapping->num_non_boolean_integers_;
       }
+    }
+
+    BooleanVariable new_fixed_true_var = kNoBooleanVariable;
+    if (false_variables.empty() && true_variables.empty()) {
+      new_fixed_true_var = new_var++;
     }
 
     sat_solver->SetNumVariables(new_var.value());
@@ -136,6 +144,30 @@ void LoadVariables(const CpModelProto& model_proto,
     }
     for (const BooleanVariable var : false_variables) {
       m->Add(ClauseConstraint({sat::Literal(var, false)}));
+    }
+
+    auto* trivial_literals = m->GetOrCreate<TrivialLiterals>();
+    if (!true_variables.empty()) {
+      trivial_literals->InitializeTrueLiteral(
+          sat::Literal(true_variables[0], true));
+    } else if (!false_variables.empty()) {
+      trivial_literals->InitializeTrueLiteral(
+          sat::Literal(false_variables[0], false));
+    } else {
+      CHECK_NE(new_fixed_true_var, kNoBooleanVariable);
+      auto* lrat_proof_handler = m->Mutable<LratProofHandler>();
+      auto* trail = m->GetOrCreate<Trail>();
+
+      const Literal literal_true = Literal(new_fixed_true_var, true);
+      trivial_literals->InitializeTrueLiteral(literal_true);
+      if (lrat_proof_handler != nullptr) {
+        // We cannot prove `literal_true` by unit propagation, but we can with a
+        // RAT inference (trivial here since there are no clauses containing the
+        // negation of the pivot `literal_true`).
+        lrat_proof_handler->AddInferredClause(ClauseId(literal_true),
+                                              {literal_true}, {});
+      }
+      trail->EnqueueWithUnitReason(literal_true);
     }
   }
 
@@ -1640,7 +1672,7 @@ void LoadCumulativeConstraint(const ConstraintProto& ct, Model* m) {
 
 void LoadReservoirConstraint(const ConstraintProto& ct, Model* m) {
   auto* mapping = m->GetOrCreate<CpModelMapping>();
-  auto* encoder = m->GetOrCreate<IntegerEncoder>();
+  auto* trivial_literals = m->GetOrCreate<TrivialLiterals>();
   const std::vector<Literal> enforcement_literals =
       mapping->Literals(ct.enforcement_literal());
   const std::vector<AffineExpression> times =
@@ -1653,7 +1685,7 @@ void LoadReservoirConstraint(const ConstraintProto& ct, Model* m) {
     if (!ct.reservoir().active_literals().empty()) {
       presences.push_back(mapping->Literal(ct.reservoir().active_literals(i)));
     } else {
-      presences.push_back(encoder->GetTrueLiteral());
+      presences.push_back(trivial_literals->TrueLiteral());
     }
   }
   AddReservoirConstraint(enforcement_literals, times, level_changes, presences,

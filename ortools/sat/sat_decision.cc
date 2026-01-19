@@ -22,9 +22,11 @@
 #include <vector>
 
 #include "absl/algorithm/container.h"
+#include "absl/base/log_severity.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
+#include "absl/random/distributions.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
@@ -178,7 +180,13 @@ void SatDecisionPolicy::ResetInitialPolarity(int from, bool inverted) {
         var_polarity_[var] = inverted ? true : false;
         break;
       case SatParameters::POLARITY_RANDOM:
-        var_polarity_[var] = std::uniform_int_distribution<int>(0, 1)(*random_);
+        if (trail_.Assignment().VariableIsAssigned(var)) {
+          // No need to consume a random value if the variable is fixed.
+          var_polarity_[var] =
+              trail_.Assignment().LiteralIsTrue(Literal(var, true));
+        } else {
+          var_polarity_[var] = absl::Bernoulli(*random_, 0.5);
+        }
         break;
     }
   }

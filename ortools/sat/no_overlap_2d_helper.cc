@@ -246,9 +246,17 @@ void NoOverlap2DConstraintHelper::Reset(
   int new_num_boxes = fixed_boxes.size() + non_fixed_box_indexes.size();
   active_bounding_boxes.reserve(new_num_boxes);
   active_box_indexes.reserve(new_num_boxes);
+  DCHECK_EQ(x_helper_->CurrentDecisionLevel(), 0);
   for (int box : non_fixed_box_indexes) {
+    if (IsAbsent(box)) continue;
     active_bounding_boxes.push_back(GetBoundingRectangle(box));
-    active_box_indexes.push_back({box, false});
+    // At level zero we can do a stronger check whether a box is fixed, since
+    // we can see use IsPresent() instead of !IsOptional().
+    const bool is_fixed = IsPresent(box) && x_helper_->StartIsFixed(box) &&
+                          x_helper_->EndIsFixed(box) &&
+                          y_helper_->StartIsFixed(box) &&
+                          y_helper_->EndIsFixed(box);
+    active_box_indexes.push_back({box, is_fixed});
   }
   for (int box = 0; box < fixed_boxes.size(); ++box) {
     active_bounding_boxes.push_back(fixed_boxes[box]);

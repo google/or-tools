@@ -1949,10 +1949,10 @@ class CpSolver:
             self._checked_response
         )
 
-    def status_name(self, status: Optional[Any] = None) -> str:
+    def status_name(self, status: Optional[cmh.CpSolverStatus] = None) -> str:
         """Returns the name of the status returned by solve()."""
         if status is None:
-            status = self._checked_response.status()
+            status = self._checked_response.status
         return status.name
 
     def solution_info(self) -> str:
@@ -2014,9 +2014,9 @@ class CpSolver:
 
     @deprecated("Use solve() method instead.")
     def Solve(
-        self, model: CpModel, callback: "CpSolverSolutionCallback" = None
+        self, model: CpModel, solution_callback: "CpSolverSolutionCallback" = None
     ) -> cmh.CpSolverStatus:
-        return self.solve(model, callback)
+        return self.solve(model, solution_callback)
 
     @deprecated("Use solution_info() method instead.")
     def SolutionInfo(self) -> str:

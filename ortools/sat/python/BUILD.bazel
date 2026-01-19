@@ -120,6 +120,7 @@ py_test(
     deps = [
         ":cp_model_helper",
         requirement("absl-py"),
+        requirement("numpy"),
         "//ortools/util/python:sorted_interval_list",
     ],
 )

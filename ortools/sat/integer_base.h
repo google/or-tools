@@ -241,6 +241,7 @@ struct IntegerLiteral {
   }
 
   std::string DebugString() const {
+    if (var == kNoIntegerVariable) return IsAlwaysTrue() ? "<true>" : "<false>";
     return VariableIsPositive(var)
                ? absl::StrCat("I", var.value() / 2, ">=", bound.value())
                : absl::StrCat("I", var.value() / 2, "<=", -bound.value());

@@ -161,6 +161,15 @@ void InitializeDebugSolution(const CpModelProto& model_proto, Model* model) {
       boolean_solution.push_back(l);
     }
 
+    // Also add the trivial literal that is sometimes created by the loader
+    if (model->GetOrCreate<TrivialLiterals>()
+            ->TrueLiteral()
+            .Variable()
+            .value() == debug_sol.proto_values.size()) {
+      boolean_solution.push_back(
+          model->GetOrCreate<TrivialLiterals>()->TrueLiteral());
+    }
+
     if (!mapping.IsInteger(i)) continue;
     const IntegerVariable var = mapping.Integer(i);
     debug_sol.ivar_has_value[var] = true;
@@ -823,13 +832,11 @@ void RegisterVariableBoundsLevelZeroImport(
   auto* sat_solver = model->GetOrCreate<SatSolver>();
   auto* mapping = model->GetOrCreate<CpModelMapping>();
   auto* lrat_proof_handler = model->Mutable<LratProofHandler>();
-  auto* clause_id_generator = model->GetOrCreate<ClauseIdGenerator>();
-  const int id = shared_bounds_manager->RegisterNewId();
+  const int id = shared_bounds_manager->RegisterNewId(model->Name());
 
   const auto& import_level_zero_bounds =
       [&model_proto, shared_bounds_manager, name = name, sat_solver,
-       integer_trail, trail, lrat_proof_handler, clause_id_generator, id,
-       mapping]() {
+       integer_trail, trail, lrat_proof_handler, id, mapping]() {
         std::vector<int> model_variables;
         std::vector<int64_t> new_lower_bounds;
         std::vector<int64_t> new_upper_bounds;
@@ -845,22 +852,20 @@ void RegisterVariableBoundsLevelZeroImport(
             Literal lit = mapping->Literal(model_var);
             if (new_upper_bounds[i] == 0) lit = lit.Negated();
             if (trail->Assignment().LiteralIsTrue(lit)) continue;
-            ClauseId clause_id = kNoClauseId;
             if (lrat_proof_handler != nullptr) {
-              clause_id = clause_id_generator->GetNextId();
-              lrat_proof_handler->AddImportedClause(clause_id, {lit});
+              lrat_proof_handler->AddImportedClause(ClauseId(lit), {lit});
             }
             if (trail->Assignment().LiteralIsFalse(lit)) {
               if (lrat_proof_handler != nullptr) {
                 // Add the UNSAT proof.
                 lrat_proof_handler->AddInferredClause(
-                    clause_id_generator->GetNextId(), {},
-                    {clause_id, trail->GetUnitClauseId(lit.Variable())});
+                    ClauseId::EmptyClauseId(), {},
+                    {ClauseId(lit.Negated()), ClauseId(lit)});
               }
               sat_solver->NotifyThatModelIsUnsat();
               return false;
             }
-            trail->EnqueueWithUnitReason(clause_id, lit);
+            trail->EnqueueWithUnitReason(lit);
             continue;
           }
 
@@ -1740,7 +1745,8 @@ void SolveLoadedCpModel(const CpModelProto& model_proto, Model* model) {
   // TODO(user): right now this is not used for probing since we register
   // it afterwards... find a better way. Note that we need to handle creation
   // of variable in the conflict resolution.
-  if (parameters.use_new_integer_conflict_resolution()) {
+  if (parameters.use_new_integer_conflict_resolution() &&
+      model->GetOrCreate<CpModelMapping>()->NumNonBooleanIntegers() > 10) {
     model->GetOrCreate<IntegerConflictResolution>();
   }
 

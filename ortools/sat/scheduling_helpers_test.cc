@@ -217,6 +217,7 @@ TEST(SchedulingDemandHelperTest, FilteredDecomposedEnergy) {
 TEST(SchedulingDemandHelperTest, FilteredDecomposedEnergyWithFalseLiteral) {
   Model model;
   IntegerEncoder* encoder = model.GetOrCreate<IntegerEncoder>();
+  TrivialLiterals* trivial_literals = model.GetOrCreate<TrivialLiterals>();
 
   const AffineExpression start(model.Add(NewIntegerVariable(0, 10)));
   const AffineExpression size(model.Add(NewIntegerVariable(2, 10)));
@@ -236,7 +237,7 @@ TEST(SchedulingDemandHelperTest, FilteredDecomposedEnergyWithFalseLiteral) {
   const std::vector<LiteralValueValue> no_energy;
   EXPECT_EQ(demands_helper.FilteredDecomposedEnergy(0), no_energy);
 
-  const Literal alt1 = encoder->GetFalseLiteral();
+  const Literal alt1 = trivial_literals->FalseLiteral();
   const IntegerVariable var1(model.Add(NewIntegerVariable(0, 1)));
   model.GetOrCreate<IntegerEncoder>()->AssociateToIntegerEqualValue(
       alt1, var1, IntegerValue(1));

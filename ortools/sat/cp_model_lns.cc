@@ -91,7 +91,7 @@ NeighborhoodGeneratorHelper::NeighborhoodGeneratorHelper(
 
   CHECK(shared_response_ != nullptr);
   if (shared_bounds_ != nullptr) {
-    shared_bounds_id_ = shared_bounds_->RegisterNewId();
+    shared_bounds_id_ = shared_bounds_->RegisterNewId("neighborhood_helper");
   }
   *model_proto_with_only_variables_.mutable_variables() =
       model_proto_.variables();

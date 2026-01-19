@@ -155,22 +155,15 @@ TEST(LratCheckerTest, CheckSuccessWithRatClausesExtensions) {
        LratChecker::RatIds{ClauseId(7), {ClauseId(6)}}}));
 }
 
-TEST(LratCheckerTest, ClauseIdAlreadyUsed) {
-  Model model;
-  LratChecker& checker = *model.GetOrCreate<LratChecker>();
-  EXPECT_TRUE(checker.AddProblemClause(ClauseId(1), Literals({+1, +2})));
-  EXPECT_FALSE(checker.AddProblemClause(ClauseId(1), Literals({+3, +4})));
-  EXPECT_EQ(checker.error_message(), "In clause 1: clause ID 1 already used");
-}
-
 TEST(LratCheckerTest, ErrorStateIsSticky) {
   Model model;
   LratChecker& checker = *model.GetOrCreate<LratChecker>();
   EXPECT_TRUE(checker.AddProblemClause(ClauseId(1), Literals({+1, +2})));
-  EXPECT_FALSE(checker.AddProblemClause(ClauseId(1), Literals({+3, +4})));
+  EXPECT_FALSE(checker.AddInferredClause(ClauseId(2), Literals({-1, -2}), {}));
   // This clause is valid, but there was an error at a previous step.
-  EXPECT_FALSE(checker.AddProblemClause(ClauseId(2), Literals({+5, +6})));
-  EXPECT_EQ(checker.error_message(), "In clause 1: clause ID 1 already used");
+  EXPECT_FALSE(checker.AddProblemClause(ClauseId(3), Literals({+5, +6})));
+  EXPECT_EQ(checker.error_message(),
+            "In clause 2: wrong number of resolvant IDs in RAT proof");
 }
 
 TEST(LratCheckerTest, CompleteStateIsSticky) {

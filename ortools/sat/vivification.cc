@@ -14,6 +14,7 @@
 #include "ortools/sat/vivification.h"
 
 #include <algorithm>
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -167,6 +168,114 @@ bool Vivifier::SubsumptionIsInteresting(BooleanVariable variable,
   return num_clause_to_mark_as_non_deletable <= 1;
 }
 
+bool Vivifier::RewriteClauseUsingCurrentDecisions(SatClause* clause) {
+  std::optional<Literal> true_literal;
+  int true_literal_level;
+  std::vector<std::pair<Literal, int>> decisions_and_level;
+  std::vector<Literal> not_assigned;
+  std::vector<Literal> false_literals;
+
+  for (const Literal l : clause->AsSpan()) {
+    if (!assignment_.LiteralIsAssigned(l)) {
+      not_assigned.push_back(l);
+      continue;
+    }
+    if (assignment_.LiteralIsFalse(l)) {
+      const AssignmentInfo& info = trail_->Info(l.Variable());
+      if (info.type == AssignmentType::kSearchDecision) {
+        decisions_and_level.push_back({l, info.level});
+      } else {
+        false_literals.push_back(l);
+      }
+      continue;
+    }
+
+    // Literal is true, it must be a propagation.
+    // We only keep one of them if there is more than one.
+    const AssignmentInfo& info = trail_->Info(l.Variable());
+    CHECK_NE(info.type, AssignmentType::kSearchDecision);
+    if (!true_literal.has_value() || info.level < true_literal_level) {
+      true_literal = l;
+      true_literal_level = info.level;
+    }
+  }
+
+  // In our setting, all the decision are negated literal from the clause.
+  // We sort them in reverse order of level.
+  CHECK_EQ(decisions_and_level.size(), sat_solver_->CurrentDecisionLevel());
+  absl::c_sort(decisions_and_level, [](const std::pair<Literal, int>& a,
+                                       const std::pair<Literal, int>& b) {
+    return a.second > b.second;
+  });
+
+  std::vector<Literal> new_clause;
+  std::vector<ClauseId> clause_ids;
+
+  if (true_literal.has_value()) {
+    new_clause.push_back(*true_literal);
+
+    if (parameters_.inprocessing_minimization_use_conflict_analysis()) {
+      for (const Literal l : sat_solver_->GetDecisionsFixing({*true_literal})) {
+        new_clause.push_back(l.Negated());
+      }
+      std::reverse(new_clause.begin() + 1, new_clause.end());
+    } else {
+      for (const auto [lit, level] : decisions_and_level) {
+        new_clause.push_back(lit);
+      }
+    }
+
+    if (lrat_proof_handler_ != nullptr) {
+      // If some literals of the minimized clause fix another to true, we just
+      // need the propagating clauses to prove this (assuming that all the
+      // minimized clause literals are false will lead to a conflict on this
+      // 'fixed to true' literal).
+      clause_manager_->AppendClauseIdsFixing({*true_literal}, &clause_ids);
+    }
+  } else {
+    // TODO(user): This happens rarely. Probably if we removed some false
+    // literal and then we have a conflict... Ideally we should just deal with
+    // a conflict right away.
+    if (false_literals.empty()) return true;
+
+    // TODO(user): I am not sure this will ever trigger.
+    new_clause = not_assigned;
+    for (const auto [lit, level] : decisions_and_level) {
+      new_clause.push_back(lit);
+    }
+
+    if (lrat_proof_handler_ != nullptr) {
+      // If some literals of the minimized clause fix those that have been
+      // removed to false, the propagating clauses and the original one prove
+      // this (assuming that all the minimized clause literals are false will
+      // lead to all the literals of the original clause fixed to false, which
+      // is a conflict with the original clause).
+      clause_manager_->AppendClauseIdsFixing(false_literals, &clause_ids);
+      clause_ids.push_back(ClauseId(clause));
+    }
+  }
+
+  // This should only be called when the clause get shrinked.
+  CHECK_LT(new_clause.size(), clause->size())
+      << "lit is true: " << true_literal.has_value();
+
+  // We backtrack to the root level if we fix something as currently
+  // InprocessingRewriteClause() cannot deal with fixing variable if we are at
+  // a positive level.
+  if (new_clause.size() == 1) {
+    sat_solver_->BacktrackAndPropagateReimplications(0);
+  }
+
+  counters_.num_removed_literals += clause->size() - new_clause.size();
+  if (!clause_manager_->InprocessingRewriteClause(clause, new_clause,
+                                                  clause_ids)) {
+    sat_solver_->NotifyThatModelIsUnsat();
+    return false;
+  }
+
+  return true;
+}
+
 // This implements "vivification" as described in
 // https://doi.org/10.1016/j.artint.2019.103197, with one significant tweak:
 // we sort each clause by current trail index before trying to minimize it so
@@ -180,12 +289,6 @@ bool Vivifier::TryToMinimizeClause(SatClause* clause) {
   // we try to minimize it.
   std::vector<Literal> candidate;
   candidate.reserve(clause->size());
-
-  // Some literals of the clause which are fixed to false or true when
-  // propagating some other literals of the clause. Only used if
-  // lrat_proof_handler_ is not null.
-  std::vector<Literal> fixed_false_literals;
-  LiteralIndex fixed_true_literal = kNoLiteralIndex;
 
   // Note that CP-SAT presolve detects clauses that share n-1 literals and
   // transforms them into (n-1 enforcement) => (1 literal per clause). We
@@ -248,8 +351,6 @@ bool Vivifier::TryToMinimizeClause(SatClause* clause) {
     if (!sat_solver_->BacktrackAndPropagateReimplications(target_level)) {
       return false;
     }
-    fixed_false_literals.clear();
-    fixed_true_literal = kNoLiteralIndex;
 
     while (sat_solver_->CurrentDecisionLevel() < candidate.size()) {
       if (time_limit_->LimitReached()) return true;
@@ -257,17 +358,12 @@ bool Vivifier::TryToMinimizeClause(SatClause* clause) {
       const Literal literal = candidate[level];
       // Remove false literals
       if (assignment_.LiteralIsFalse(literal)) {
-        if (lrat_proof_handler_ != nullptr) {
-          fixed_false_literals.push_back(literal);
-        }
         candidate[level] = candidate.back();
         candidate.pop_back();
         continue;
       } else if (assignment_.LiteralIsTrue(literal)) {
         const int variable_level = trail_->Info(literal.Variable()).level;
         if (variable_level == 0) {
-          DCHECK(lrat_proof_handler_ == nullptr ||
-                 trail_->GetUnitClauseId(literal.Variable()) != kNoClauseId);
           counters_.num_true++;
           counters_.num_removed_literals += clause->size();
           clause_manager_->LazyDelete(clause,
@@ -285,7 +381,6 @@ bool Vivifier::TryToMinimizeClause(SatClause* clause) {
         } else {
           candidate.resize(variable_level);
         }
-        fixed_true_literal = literal.Index();
         candidate.push_back(literal);
 
         // If a (true) literal wasn't propagated by this clause, then we know
@@ -326,87 +421,23 @@ bool Vivifier::TryToMinimizeClause(SatClause* clause) {
         }
       }
     }
+
     if (candidate.empty()) {
       sat_solver_->NotifyThatModelIsUnsat();
       return false;
     }
 
-    // TODO(user): To use this, we need to proove and rewrite the clause
-    // on each of its modification.
-    if (!parameters_.inprocessing_minimization_use_all_orderings()) break;
+    if (candidate.size() < clause->size()) {
+      // We abort after any rewrite because in some corner case where only a
+      // subset of decision implies a true literal, the set of candidates can
+      // now be wrong.
+      RewriteClauseUsingCurrentDecisions(clause);
+      break;
+    }
+
+    // Try a different propagation order ?
     moved_last.insert(candidate.back().Index());
-  }
-
-  // Returns if we don't have any minimization.
-  if (candidate.size() == clause->size()) return true;
-
-  std::vector<ClauseId> clause_ids;
-  if (lrat_proof_handler_ != nullptr) {
-    DCHECK(fixed_true_literal != kNoLiteralIndex ||
-           !fixed_false_literals.empty());
-    clause_ids.clear();
-    if (fixed_true_literal != kNoLiteralIndex) {
-      // If some literals of the minimized clause fix another to true, we just
-      // need the propagating clauses to prove this (assuming that all the
-      // minimized clause literals are false will lead to a conflict on this
-      // 'fixed to true' literal).
-      clause_manager_->AppendClauseIdsFixing({Literal(fixed_true_literal)},
-                                             &clause_ids);
-    } else {
-      // If some literals of the minimized clause fix those that have been
-      // removed to false, the propagating clauses and the original one prove
-      // this (assuming that all the minimized clause literals are false will
-      // lead to all the literals of the original clause fixed to false, which
-      // is a conflict with the original clause).
-      clause_manager_->AppendClauseIdsFixing(fixed_false_literals, &clause_ids);
-      clause_ids.push_back(clause_manager_->GetClauseId(clause));
-    }
-  }
-
-  // Reverse the candidate so that the first two literals are appropriate
-  // watchers.
-  absl::c_reverse(candidate);
-  // All but the first literal of the new clause should be false.
-  DCHECK(absl::c_all_of(absl::MakeSpan(candidate).subspan(1), [&](Literal l) {
-    return assignment_.LiteralIsFalse(l);
-  }));
-  if (candidate.size() == 1) {
-    sat_solver_->BacktrackAndPropagateReimplications(0);
-  } else if (assignment_.LiteralIsFalse(candidate[1]) &&
-             (!assignment_.LiteralIsTrue(candidate[0]) ||
-              trail_->AssignmentLevel(candidate[1]) <
-                  trail_->AssignmentLevel(candidate[0]))) {
-    // Backtrack if the new clause would propagate earlier than the current
-    // reason. This should be a very rare edge case, but it can happen if both
-    // conflicts and clause cleanup occur during minimization: some literal in
-    // the clause that was propagated false by some decisions might no longer be
-    // propagated by the same decisions after backjumping because the clause
-    // that propagated it was removed.
-    // Note we backtrack to 1 level before this would propagate because we don't
-    // actually support propagating the new clause during rewrite, and the
-    // propagation would probably be useless.
-    sat_solver_->BacktrackAndPropagateReimplications(
-        std::max(0, trail_->AssignmentLevel(candidate[1])));
-  }
-  if (sat_solver_->CurrentDecisionLevel() == 0) {
-    // Ensure nothing is fixed at level 0 in case more propagation happened
-    // after backtracking.
-    OpenSourceEraseIf(candidate,
-                      [&](Literal l) { return assignment_.LiteralIsFalse(l); });
-    if (absl::c_any_of(clause->AsSpan(), [&](Literal l) {
-          return assignment_.LiteralIsTrue(l);
-        })) {
-      counters_.num_removed_literals += clause->size();
-      clause_manager_->LazyDelete(clause, DeletionSourceForStat::FIXED_AT_TRUE);
-      return true;
-    }
-  }
-
-  counters_.num_removed_literals += clause->size() - candidate.size();
-  if (!clause_manager_->InprocessingRewriteClause(clause, candidate,
-                                                  clause_ids)) {
-    sat_solver_->NotifyThatModelIsUnsat();
-    return false;
+    if (moved_last.size() >= parameters_.num_ordering_in_vivification()) break;
   }
 
   // Adding a unit clause can cause additional propagation. There is also an

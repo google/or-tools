@@ -121,6 +121,7 @@ AllDifferentConstraint::AllDifferentConstraint(
   absl::flat_hash_map<IntegerValue, int> dense_indexing;
   variable_to_possible_values_.resize(num_variables_);
   auto* encoder = model->GetOrCreate<IntegerEncoder>();
+  auto* trivial_literals = model->GetOrCreate<TrivialLiterals>();
   for (int x = 0; x < num_variables_; x++) {
     const IntegerValue lb = integer_trail_->LowerBound(variables[x]);
     const IntegerValue ub = integer_trail_->UpperBound(variables[x]);
@@ -132,7 +133,7 @@ AllDifferentConstraint::AllDifferentConstraint(
       if (inserted) ++num_values_;
 
       variable_to_possible_values_[x].push_back(
-          {it->second, encoder->GetTrueLiteral()});
+          {it->second, trivial_literals->TrueLiteral()});
       continue;
     }
 

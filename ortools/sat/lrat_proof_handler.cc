@@ -30,6 +30,7 @@
 #include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/file.h"
 #include "ortools/base/options.h"
@@ -80,7 +81,7 @@ void LratWriter::AddImportedClause(ClauseId id,
   WriteDeletedClauseIds();
   LratProofStep step;
   LratImportedClause* imported_clause = step.mutable_imported_clause();
-  imported_clause->set_clause_id(id.value());
+  imported_clause->set_clause_id(id.Serialize());
   for (const Literal literal : clause) {
     imported_clause->add_literals(literal.Index().value());
   }
@@ -95,18 +96,18 @@ void LratWriter::AddInferredClause(ClauseId id,
   WriteDeletedClauseIds();
   LratProofStep step;
   LratInferredClause* inferred_clause = step.mutable_inferred_clause();
-  inferred_clause->set_clause_id(id.value());
+  inferred_clause->set_clause_id(id.Serialize());
   for (const Literal literal : clause) {
     inferred_clause->add_literals(literal.Index().value());
   }
   for (const ClauseId unit_id : unit_ids) {
-    inferred_clause->add_unit_ids(unit_id.value());
+    inferred_clause->add_unit_ids(unit_id.Serialize());
   }
   for (const LratChecker::RatIds& rat_ids : rat) {
     LratInferredClause::RatInfo* rat_info = inferred_clause->add_rat_infos();
-    rat_info->set_resolvant_id(rat_ids.resolvant_id.value());
+    rat_info->set_resolvant_id(rat_ids.resolvant_id.Serialize());
     for (const ClauseId unit_id : rat_ids.unit_ids) {
-      rat_info->add_unit_ids(unit_id.value());
+      rat_info->add_unit_ids(unit_id.Serialize());
     }
   }
   inferred_clause->set_exported(exported);
@@ -117,7 +118,7 @@ void LratWriter::ExportClause(ClauseId id, absl::Span<const Literal> clause) {
   WriteDeletedClauseIds();
   LratProofStep step;
   LratExportedClause* exported_clause = step.mutable_exported_clause();
-  exported_clause->set_clause_id(id.value());
+  exported_clause->set_clause_id(id.Serialize());
   for (const Literal literal : clause) {
     exported_clause->add_literals(literal.Index().value());
   }
@@ -131,8 +132,9 @@ void LratWriter::DeleteClause(ClauseId id) {
 void LratWriter::WriteDeletedClauseIds() {
   if (deleted_clause_ids_.empty()) return;
   LratProofStep step;
-  step.mutable_deleted_clauses()->mutable_clause_ids()->Add(
-      deleted_clause_ids_.begin(), deleted_clause_ids_.end());
+  for (const ClauseId id : deleted_clause_ids_) {
+    step.mutable_deleted_clauses()->add_clause_ids(id.Serialize());
+  }
   CHECK(writer_.WriteRecord(step));
   deleted_clause_ids_.clear();
 }
@@ -189,7 +191,6 @@ bool LratMerger::Merge(absl::Span<const std::string> proof_filenames) {
   std::vector<std::unique_ptr<RecordReader>> readers(num_workers);
   last_read_steps_.resize(num_workers);
   local_to_global_ids_.resize(num_workers);
-  exported_local_ids_.resize(num_workers);
   for (int i = 0; i < num_workers; ++i) {
     const std::string& filename = proof_filenames[i + 1];
     inputs[i].open(filename, std::ios::binary);
@@ -215,23 +216,40 @@ bool LratMerger::Merge(absl::Span<const std::string> proof_filenames) {
         LratProofStep& step = last_read_steps_[i];
         switch (step.step_case()) {
           case LratProofStep::kImportedClause: {
-            ClauseId local_id(step.imported_clause().clause_id());
+            const ClauseId local_id =
+                ClauseId::Parse(step.imported_clause().clause_id());
             IndicesToLiterals(step.imported_clause().literals(), &clause);
             std::sort(clause.begin(), clause.end());
-            auto it = shared_clause_ids_.find(clause);
-            if (it != shared_clause_ids_.end()) {
+            auto it = shared_clause_id_.find(clause);
+            if (it != shared_clause_id_.end()) {
               local_to_global_ids_[i][local_id] = it->second;
             } else {
               missing_import = true;
             }
             break;
           }
-          case LratProofStep::kInferredClause:
+          case LratProofStep::kInferredClause: {
+            const ClauseId local_id =
+                ClauseId::Parse(step.inferred_clause().clause_id());
+            const auto it = local_to_global_ids_[i].find(local_id);
+            const GlobalId old_global_id =
+                it == local_to_global_ids_[i].end() ? GlobalId(-1) : it->second;
             if (!RemapInferredClause(i, filename,
                                      *step.mutable_inferred_clause())) {
               return false;
             }
             if (!WriteInferredClause(step.inferred_clause())) return false;
+            if (old_global_id != GlobalId(-1)) {
+              // Case of a clause rewritten without changing its local ID.
+              // We can delete the old one via its old global ID.
+              if (shared_clause_ids_.contains(old_global_id)) {
+                // TODO(user): implement this case. We should delete the
+                // clause from `shared_clause_ids_`, but only after we are sure
+                // that no other worker will ever import it.
+              } else {
+                WriteDeletedClauses({old_global_id});
+              }
+            }
             // We found the empty clause, we don't need anymore steps.
             if (step.inferred_clause().literals().empty()) return true;
             if (step.inferred_clause().exported() ||
@@ -240,12 +258,12 @@ bool LratMerger::Merge(absl::Span<const std::string> proof_filenames) {
               IndicesToLiterals(step.inferred_clause().literals(), &clause);
               SortAndAddSharedClause(
                   GlobalId(step.inferred_clause().clause_id()), clause);
-              exported_local_ids_[i].insert(
-                  ClauseId(step.inferred_clause().clause_id()));
             }
             break;
+          }
           case LratProofStep::kExportedClause: {
-            const ClauseId local_id(step.exported_clause().clause_id());
+            const ClauseId local_id =
+                ClauseId::Parse(step.exported_clause().clause_id());
             auto it = local_to_global_ids_[i].find(local_id);
             if (it == local_to_global_ids_[i].end()) {
               return Error(absl::StrCat("unknown exported clause ID ", local_id,
@@ -254,22 +272,29 @@ bool LratMerger::Merge(absl::Span<const std::string> proof_filenames) {
             const GlobalId global_id = it->second;
             IndicesToLiterals(step.exported_clause().literals(), &clause);
             SortAndAddSharedClause(global_id, clause);
-            exported_local_ids_[i].insert(local_id);
             break;
           }
-          case LratProofStep::kDeletedClauses:
+          case LratProofStep::kDeletedClauses: {
+            std::vector<GlobalId> global_ids_to_delete;
             for (const int64_t clause_id :
                  step.deleted_clauses().clause_ids()) {
-              const ClauseId local_id(clause_id);
-              if (exported_local_ids_[i].contains(local_id)) {
-                // TODO(user): implement this case. We should delete the
-                // clause from `shared_clause_ids_`, but only after we are sure
-                // that no other worker will ever import it.
-              } else {
-                local_to_global_ids_[i].erase(local_id);
+              const ClauseId local_id = ClauseId::Parse(clause_id);
+              auto it = local_to_global_ids_[i].find(local_id);
+              if (it != local_to_global_ids_[i].end()) {
+                const GlobalId global_id = it->second;
+                if (shared_clause_ids_.contains(global_id)) {
+                  // TODO(user): implement this case. We should delete the
+                  // clause from `shared_clause_ids_`, but only after we are
+                  // sure that no other worker will ever import it.
+                } else {
+                  local_to_global_ids_[i].erase(it);
+                  global_ids_to_delete.push_back(global_id);
+                }
               }
             }
+            WriteDeletedClauses(global_ids_to_delete);
             break;
+          }
           default:
             return Error(absl::StrCat("unknown step type ", step.step_case(),
                                       " in ", filename));
@@ -321,7 +346,7 @@ bool LratMerger::ReadPresolveProof(const std::string& filename) {
         std::sort(clause.begin(), clause.end());
         shared_clauses[global_id] = clause;
         if (lrat_checker_ != nullptr &&
-            !lrat_checker_->AddProblemClause(ClauseId(global_id.value()),
+            !lrat_checker_->AddProblemClause(ClauseId::Parse(global_id.value()),
                                              clause)) {
           return LratError();
         }
@@ -340,48 +365,49 @@ bool LratMerger::ReadPresolveProof(const std::string& filename) {
         // Nothing to do, since we export all clauses in the presolve proof.
         break;
       }
-      case LratProofStep::kDeletedClauses:
+      case LratProofStep::kDeletedClauses: {
+        std::vector<GlobalId> global_ids_to_delete;
         for (const int64_t clause_id : step.deleted_clauses().clause_ids()) {
           const GlobalId global_id(clause_id);
-          auto it = shared_clauses.find(global_id);
-          if (it != shared_clauses.end()) {
-            shared_clauses.erase(it);
-          }
+          shared_clauses.erase(global_id);
+          global_ids_to_delete.push_back(global_id);
         }
+        WriteDeletedClauses(global_ids_to_delete);
         break;
+      }
       default:
         return Error(absl::StrCat("unknown proof step type ", step.step_case(),
                                   " in ", filename));
     }
   }
   for (const auto& [global_id, clause] : shared_clauses) {
-    shared_clause_ids_.insert({clause, global_id});
+    shared_clause_id_.insert({clause, global_id});
+    shared_clause_ids_.insert(global_id);
   }
   next_global_id_ = ++max_global_id;
+  last_written_global_id_ = next_global_id_;
   return true;
 }
 
 void LratMerger::SortAndAddSharedClause(GlobalId id,
                                         std::vector<Literal>& literals) {
   std::sort(literals.begin(), literals.end());
-  shared_clause_ids_.insert({literals, id});
+  shared_clause_id_.insert({literals, id});
+  shared_clause_ids_.insert(id);
 }
 
 bool LratMerger::RemapInferredClause(int worker_index,
                                      const std::string& filename,
                                      LratInferredClause& inferred_clause) {
   const GlobalId global_id = NextGlobalId();
-  ClauseId local_id = ClauseId(inferred_clause.clause_id());
-  local_to_global_ids_[worker_index][local_id] = global_id;
 
-  inferred_clause.set_clause_id(global_id.value());
   if (!RemapClauseIds(worker_index, filename,
                       inferred_clause.mutable_unit_ids())) {
     return false;
   }
   for (LratInferredClause::RatInfo& rat_info :
        *inferred_clause.mutable_rat_infos()) {
-    local_id = ClauseId(rat_info.resolvant_id());
+    const ClauseId local_id = ClauseId::Parse(rat_info.resolvant_id());
     auto it = local_to_global_ids_[worker_index].find(local_id);
     if (it == local_to_global_ids_[worker_index].end()) {
       return Error(
@@ -392,6 +418,13 @@ bool LratMerger::RemapInferredClause(int worker_index,
       return false;
     }
   }
+
+  // It is important to update local_to_global_ids_ at the end, so that the
+  // above code works when a clause is rewritten without changing its ID (its
+  // proof generally uses this ID too).
+  const ClauseId local_id = ClauseId::Parse(inferred_clause.clause_id());
+  inferred_clause.set_clause_id(global_id.value());
+  local_to_global_ids_[worker_index][local_id] = global_id;
   return true;
 }
 
@@ -399,7 +432,7 @@ bool LratMerger::RemapClauseIds(
     int worker_index, const std::string& filename,
     google::protobuf::RepeatedField<int64_t>* clause_ids) {
   for (int i = 0; i < clause_ids->size(); ++i) {
-    const ClauseId local_id = ClauseId(clause_ids->Get(i));
+    const ClauseId local_id = ClauseId::Parse(clause_ids->Get(i));
     auto it = local_to_global_ids_[worker_index].find(local_id);
     if (it == local_to_global_ids_[worker_index].end()) {
       return Error(
@@ -418,20 +451,23 @@ bool LratMerger::WriteInferredClause(
     tmp_unit_ids_.clear();
     tmp_unit_ids_.reserve(inferred_clause.unit_ids_size());
     for (const int64_t id : inferred_clause.unit_ids()) {
-      tmp_unit_ids_.push_back(ClauseId(id));
+      tmp_unit_ids_.push_back(ClauseId::Parse(id));
     }
     tmp_rat_ids_.clear();
     tmp_rat_ids_.reserve(inferred_clause.rat_infos_size());
     for (const LratInferredClause::RatInfo& rat_info :
          inferred_clause.rat_infos()) {
+      std::vector<ClauseId> unit_ids;
+      unit_ids.reserve(rat_info.unit_ids_size());
+      for (const int64_t id : rat_info.unit_ids()) {
+        unit_ids.push_back(ClauseId::Parse(id));
+      }
       tmp_rat_ids_.push_back(
-          {ClauseId(rat_info.resolvant_id()),
-           std::vector<ClauseId>(rat_info.unit_ids().begin(),
-                                 rat_info.unit_ids().end())});
+          {ClauseId::Parse(rat_info.resolvant_id()), unit_ids});
     }
-    if (!lrat_checker_->AddInferredClause(ClauseId(inferred_clause.clause_id()),
-                                          tmp_clause_, tmp_unit_ids_,
-                                          tmp_rat_ids_)) {
+    if (!lrat_checker_->AddInferredClause(
+            ClauseId::Parse(inferred_clause.clause_id()), tmp_clause_,
+            tmp_unit_ids_, tmp_rat_ids_)) {
       return LratError();
     }
   }
@@ -451,7 +487,25 @@ bool LratMerger::WriteInferredClause(
     }
   }
   merged_proof_file_ << " 0\n";
+  last_written_global_id_ = GlobalId(inferred_clause.clause_id());
   return true;
+}
+
+void LratMerger::WriteDeletedClauses(absl::Span<const GlobalId> clause_ids) {
+  if (clause_ids.empty()) return;
+  if (lrat_checker_ != nullptr) {
+    std::vector<ClauseId> ids;
+    ids.reserve(clause_ids.size());
+    for (const GlobalId id : clause_ids) {
+      ids.push_back(ClauseId::Parse(id.value()));
+    }
+    lrat_checker_->DeleteClauses(ids);
+  }
+  merged_proof_file_ << last_written_global_id_ << " d";
+  for (const GlobalId id : clause_ids) {
+    merged_proof_file_ << " " << id.value();
+  }
+  merged_proof_file_ << " 0\n";
 }
 
 bool LratMerger::Error(std::string_view message) const {
@@ -735,8 +789,8 @@ void LratProofHandler::Close(bool model_is_unsat) {
   }
 }
 
-ClauseId LratProofHandler::AddAndProveInferredClauseByEnumeration(
-    absl::Span<const Literal> new_clause,
+bool LratProofHandler::AddAndProveInferredClauseByEnumeration(
+    ClauseId new_clause_id, absl::Span<const Literal> new_clause,
     absl::Span<const ClauseId> ids_for_proof,
     const CompactVectorVector<int, Literal>& clauses_for_proof) {
   CHECK_EQ(ids_for_proof.size(), clauses_for_proof.size());
@@ -759,7 +813,7 @@ ClauseId LratProofHandler::AddAndProveInferredClauseByEnumeration(
       }
       VLOG(2) << message;
     }
-    return kNoClauseId;
+    return false;
   };
 
   // First we count the number of variables appearing and have a separate dense
@@ -791,8 +845,8 @@ ClauseId LratProofHandler::AddAndProveInferredClauseByEnumeration(
   // Too many variables.
   //
   // TODO(user): The limit can be increased a bit if needed.
-  if (to_dense_index.size() > 6) {
-    return error("Too many variables");
+  if (to_dense_index.size() > 8) {
+    return error(absl::StrCat("Too many variables: ", to_dense_index.size()));
   }
 
   // For the proof we will need all clauses of the form
@@ -835,17 +889,17 @@ ClauseId LratProofHandler::AddAndProveInferredClauseByEnumeration(
     if (skip) continue;
     if (k == 0) {
       // The clause is the same as the one we try to prove! or smaller.
-      if (clauses_for_proof[i].size() == new_clause.size()) {
-        return ids_for_proof[i];
+      if (clauses_for_proof[i].size() == new_clause.size() &&
+          ids_for_proof[i] == new_clause_id) {
+        return true;
       } else {
         // TODO(user): Likely we could have simplified what we are trying to
         // prove. Like I saw this happen when we prove an equivalence but we
         // can actually prove that the variables are fixed.
-        const ClauseId new_id = id_generator_->GetNextId();
-        if (!AddInferredClause(new_id, new_clause, {ids_for_proof[i]})) {
+        if (!AddInferredClause(new_clause_id, new_clause, {ids_for_proof[i]})) {
           return error("failed trivial inclusion proof");
         }
-        return new_id;
+        return true;
       }
     }
 
@@ -901,7 +955,7 @@ ClauseId LratProofHandler::AddAndProveInferredClauseByEnumeration(
                          " higher2: ", std::bitset<8>(higher2).to_string()));
       }
 
-      ids[index] = id_generator_->GetNextId();
+      ids[index] = index == 1 ? new_clause_id : id_generator_->GetNextId();
       if (k != 0) {
         VLOG(2) << "temporary !! " << ids[index] << " " << tmp_clause;
         id_need_deletion[index] = true;  // temporary.
@@ -931,7 +985,7 @@ ClauseId LratProofHandler::AddAndProveInferredClauseByEnumeration(
     }
   }
 
-  return ids[1];
+  return true;
 }
 
 }  // namespace sat
