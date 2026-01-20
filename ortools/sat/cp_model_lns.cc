@@ -43,7 +43,7 @@
 #include "absl/types/span.h"
 #include "google/protobuf/arena.h"
 #include "ortools/base/stl_util.h"
-#include "ortools/graph/connected_components.h"
+#include "ortools/graph_base/connected_components.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_copy.h"
 #include "ortools/sat/cp_model_mapping.h"

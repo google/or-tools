@@ -35,7 +35,7 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/base/strong_vector.h"
-#include "ortools/graph/topologicalsorter.h"
+#include "ortools/graph_base/topologicalsorter.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/cp_constraints.h"
 #include "ortools/sat/implied_bounds.h"

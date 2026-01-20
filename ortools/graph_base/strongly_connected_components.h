@@ -77,7 +77,7 @@ void FindStronglyConnectedComponents(NodeIndex num_nodes, const Graph& graph,
 // allocating many vectors can save both space and speed if your graph is large.
 //
 // Note: If this matters, you probably don't want to use vector<vector<int>> as
-// an input either. See StaticGraph in ortools/graph/graph.h
+// an input either. See StaticGraph in util/graph/graph.h
 // for an efficient graph data structure compatible with this algorithm.
 template <typename NodeIndex>
 struct SccCounterOutput {

@@ -210,8 +210,8 @@ cc_binary(
     deps = [
         "//ortools/base",
         "//ortools/base:status_macros",
-        "//ortools/graph",
         "//ortools/graph:rooted_tree",
+        "//ortools/graph_base:graph",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/strings",

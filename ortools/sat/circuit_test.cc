@@ -23,7 +23,7 @@
 #include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "gtest/gtest.h"
-#include "ortools/graph/strongly_connected_components.h"
+#include "ortools/graph_base/strongly_connected_components.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_search.h"
 #include "ortools/sat/model.h"

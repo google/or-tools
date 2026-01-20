@@ -27,10 +27,10 @@
 #include "ortools/base/gmock.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/types.h"
-#include "ortools/graph/connected_components.h"
-#include "ortools/graph/graph.h"
-#include "ortools/graph/random_graph.h"
-#include "ortools/graph/util.h"
+#include "ortools/graph_base/connected_components.h"
+#include "ortools/graph_base/graph.h"
+#include "ortools/graph_base/random_graph.h"
+#include "ortools/graph_base/util.h"
 
 namespace operations_research {
 namespace {

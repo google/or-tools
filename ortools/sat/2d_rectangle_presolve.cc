@@ -34,7 +34,7 @@
 #include "absl/types/span.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/graph/minimum_vertex_cover.h"
-#include "ortools/graph/strongly_connected_components.h"
+#include "ortools/graph_base/strongly_connected_components.h"
 #include "ortools/sat/diffn_util.h"
 #include "ortools/sat/integer_base.h"
 

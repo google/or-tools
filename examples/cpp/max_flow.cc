@@ -20,7 +20,7 @@
 #include "absl/log/log.h"
 #include "ortools/base/init_google.h"
 #include "ortools/graph/generic_max_flow.h"
-#include "ortools/graph/graph.h"
+#include "ortools/graph_base/graph.h"
 
 namespace operations_research {
 

@@ -31,14 +31,14 @@
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
-#include "ortools/graph/graph.h"
+#include "ortools/graph_base/graph.h"
 #if !defined(__PORTABLE_PLATFORM__)
-#include "ortools/graph/graph_io.h"
+#include "ortools/graph_base/io.h"
 #endif  // __PORTABLE_PLATFORM__
 #include "ortools/algorithms/find_graph_symmetries.h"
 #include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/base/strong_vector.h"
-#include "ortools/graph/util.h"
+#include "ortools/graph_base/util.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/boolean_problem.pb.h"
 #include "ortools/sat/cp_model.pb.h"

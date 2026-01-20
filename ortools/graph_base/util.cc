@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/graph/util.h"
+#include "ortools/graph_base/util.h"
 
 #include <vector>
 

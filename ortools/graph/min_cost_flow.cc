@@ -30,7 +30,7 @@
 #include "absl/strings/string_view.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/graph/generic_max_flow.h"
-#include "ortools/graph/graph.h"
+#include "ortools/graph_base/graph.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/stats.h"
 

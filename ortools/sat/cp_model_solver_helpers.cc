@@ -46,7 +46,7 @@
 #include "google/protobuf/arena.h"
 #include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/base/strong_vector.h"
-#include "ortools/graph/connected_components.h"
+#include "ortools/graph_base/connected_components.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/cp_model.pb.h"
