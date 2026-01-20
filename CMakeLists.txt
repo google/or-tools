@@ -237,6 +237,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
     # "-sJSPI_EXPORTS=['solve_model','validate_model', 'asyncify_start_unwind']"
     "-sUSE_PTHREADS=1"
     "-sPTHREAD_POOL_SIZE=Math.max(1,Math.min(8,(typeof navigator!=='undefined'&&navigator.hardwareConcurrency)||8))"
+    "-sPTHREAD_POOL_SIZE_STRICT=2"
     # "-sPTHREAD_DEBUG=1"
     "--bind"
     "--emit-tsd"
