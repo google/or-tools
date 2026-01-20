@@ -30,7 +30,7 @@
 //
 // Example usage:
 //
-//   #include "ortools/graph/graph.h"
+//   #include "ortools/graph_base/graph.h"
 //   #include "ortools/graph/linear_assignment.h"
 //
 //   // Choose a graph implementation (we recommend StaticGraph<>).
@@ -208,7 +208,7 @@
 #include "absl/strings/str_format.h"
 #include "ortools/base/base_export.h"
 #include "ortools/base/logging.h"
-#include "ortools/graph/iterators.h"
+#include "ortools/graph_base/iterators.h"
 #include "ortools/util/permutation.h"
 #include "ortools/util/zvector.h"
 

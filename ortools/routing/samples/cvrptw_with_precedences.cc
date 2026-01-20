@@ -34,7 +34,7 @@
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
 #include "ortools/constraint_solver/constraint_solver.h"
-#include "ortools/graph/graph_builder.h"
+#include "ortools/graph_base/graph_builder.h"
 #include "ortools/routing/index_manager.h"
 #include "ortools/routing/parameters.h"
 #include "ortools/routing/parameters.pb.h"

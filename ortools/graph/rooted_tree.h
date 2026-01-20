@@ -304,9 +304,9 @@ class RootedTree {
 // Converts an adjacency list representation of an undirected tree into a rooted
 // tree.
 //
-// Graph must meet the API defined in ortools/graph/graph.h, e.g., StaticGraph
-// or ListGraph. Note that these are directed graph APIs, so they must have both
-// forward and backward arcs for each edge in the tree.
+// Graph must meet the API defined in ortools/graph_base/graph.h, e.g.,
+// StaticGraph or ListGraph. Note that these are directed graph APIs, so they
+// must have both forward and backward arcs for each edge in the tree.
 //
 // Graph must be a tree when viewed as an undirected graph.
 //

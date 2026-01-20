@@ -32,8 +32,8 @@
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/logging.h"
-#include "ortools/graph/flow_graph.h"
-#include "ortools/graph/graph.h"
+#include "ortools/graph_base/flow_graph.h"
+#include "ortools/graph_base/graph.h"
 #include "ortools/linear_solver/linear_solver.h"
 
 namespace operations_research {

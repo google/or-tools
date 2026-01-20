@@ -1,0 +1,181 @@
+# Copyright 2010-2025 Google LLC
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Description:
+# A bunch of graph-related libraries.
+
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
+
+package(
+    default_visibility = ["//visibility:public"],
+    features = ["header_modules"],  # TODO(user): Remove.
+)
+
+# Public exports.
+exports_files(["README"] + glob(
+    [
+        "*.cc",
+        "*.h",
+    ],
+))
+
+# graph.h : Memory efficient implementations for storing in-memory graph datastructure.
+#   Branched from previous util/operation_research/graph.h
+cc_library(
+    name = "graph",
+    hdrs = ["graph.h"],
+    deps = [
+        ":iterators",
+        "//ortools/base",
+        "//ortools/base:constant_divisor",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/debugging:leak_check",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_library(
+    name = "random_graph",
+    testonly = 1,
+    srcs = ["random_graph.cc"],
+    hdrs = ["random_graph.h"],
+    deps = [
+        ":graph",
+        "//ortools/base",
+        "//ortools/base:types",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/memory",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/random:bit_gen_ref",
+    ],
+)
+
+cc_library(
+    name = "io",
+    hdrs = ["io.h"],
+    deps = [
+        "//ortools/base:numbers",
+        "//ortools/util:filelineiter",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+# Utility functions related to graph.h
+cc_library(
+    name = "util",
+    srcs = ["util.cc"],
+    hdrs = ["util.h"],
+    deps = [
+        ":connected_components",
+        ":graph",
+        ":iterators",
+        "//ortools/base:map_util",
+        "@abseil-cpp//absl/container:btree",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:inlined_vector",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+# Iterators used for graph.h
+cc_library(
+    name = "iterators",
+    hdrs = ["iterators.h"],
+    deps = ["@abseil-cpp//absl/log:check"],
+)
+
+cc_test(
+    name = "iterators_test",
+    size = "small",
+    srcs = ["iterators_test.cc"],
+    deps = [
+        ":iterators",
+        "//ortools/base:gmock_main",
+        "//ortools/base:intops",
+    ],
+)
+
+# dependency-graph: allows tasks to be scheduled in accordance with
+#                   a dependency graph's directed edges.
+
+# PROTOBUFFS
+
+# LIBRARIES
+
+cc_library(
+    name = "strongly_connected_components",
+    hdrs = ["strongly_connected_components.h"],
+    deps = [
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_library(
+    name = "topologicalsorter",
+    srcs = ["topologicalsorter.cc"],
+    hdrs = ["topologicalsorter.h"],
+    deps = [
+        ":graph",
+        "//ortools/base",
+        "//ortools/base:container_logging",
+        "//ortools/base:map_util",
+        "//ortools/base:status_macros",
+        "//ortools/base:stl_util",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:inlined_vector",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_library(
+    name = "connected_components",
+    srcs = ["connected_components.cc"],
+    hdrs = ["connected_components.h"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:map_util",
+        "//ortools/base:stl_util",
+        "@abseil-cpp//absl/container:btree",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/hash",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/meta:type_traits",
+    ],
+)
+
+cc_library(
+    name = "flow_graph",
+    hdrs = ["flow_graph.h"],
+    deps = [
+        ":graph",
+        ":iterators",
+        "//ortools/base:stl_util",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+# UNITTESTS

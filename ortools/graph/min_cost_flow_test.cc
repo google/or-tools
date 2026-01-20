@@ -28,7 +28,7 @@
 #include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
 #include "ortools/algorithms/binary_search.h"
-#include "ortools/graph/graph.h"
+#include "ortools/graph_base/graph.h"
 #include "ortools/linear_solver/linear_solver.h"
 
 namespace operations_research {

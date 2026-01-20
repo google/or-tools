@@ -254,7 +254,7 @@ cc_binary(
     srcs = ["jobshop_sat.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/graph:connected_components",
+        "//ortools/graph_base:connected_components",
         "//ortools/sat:cp_model",
         "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:cp_model_solver",
@@ -418,8 +418,8 @@ cc_binary(
     srcs = ["network_routing_sat.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/graph",
         "//ortools/graph:shortest_paths",
+        "//ortools/graph_base:graph",
         "//ortools/sat:cp_model",
         "//ortools/sat:model",
         "//ortools/util:sorted_interval_list",
@@ -676,8 +676,8 @@ cc_binary(
         "//ortools/algorithms:hungarian",
         "//ortools/base",
         "//ortools/base:timer",
-        "//ortools/graph",
         "//ortools/graph:linear_assignment",
+        "//ortools/graph_base:graph",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/strings:string_view",
@@ -749,8 +749,8 @@ cc_binary(
     srcs = ["linear_assignment_api.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/graph",
         "//ortools/graph:linear_assignment",
+        "//ortools/graph_base:graph",
     ],
 )
 
@@ -767,9 +767,9 @@ cc_binary(
     srcs = ["flow_api.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/graph",
         "//ortools/graph:generic_max_flow",
         "//ortools/graph:min_cost_flow",
+        "//ortools/graph_base:graph",
     ],
 )
 
@@ -785,8 +785,8 @@ cc_binary(
     srcs = ["max_flow.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/graph",
         "//ortools/graph:generic_max_flow",
+        "//ortools/graph_base:graph",
         "@abseil-cpp//absl/base:log_severity",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:globals",

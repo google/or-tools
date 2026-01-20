@@ -39,7 +39,7 @@
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/glop/status.h"
 #include "ortools/glop/variables_info.h"
-#include "ortools/graph/iterators.h"
+#include "ortools/graph_base/iterators.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_print_utils.h"
 #include "ortools/lp_data/lp_types.h"

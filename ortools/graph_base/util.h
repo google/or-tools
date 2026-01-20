@@ -30,9 +30,9 @@
 #include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/base/map_util.h"
-#include "ortools/graph/connected_components.h"
-#include "ortools/graph/graph.h"
-#include "ortools/graph/iterators.h"
+#include "ortools/graph_base/connected_components.h"
+#include "ortools/graph_base/graph.h"
+#include "ortools/graph_base/iterators.h"
 
 namespace util {
 

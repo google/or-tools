@@ -27,8 +27,8 @@
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
-#include "ortools/graph/graph.h"
 #include "ortools/graph/linear_assignment.h"
+#include "ortools/graph_base/graph.h"
 
 ABSL_FLAG(bool, assignment_compare_hungarian, false,
           "Compare result and speed against Hungarian method.");

@@ -21,7 +21,7 @@
 // Dijkstra when it has settled 1000 nodes and the second when it has reached
 // the search radius 123.45:
 //
-//  ListGraph<> graph;  // From ortools/graph/graph.h
+//  ListGraph<> graph;  // From ortools/graph_base/graph.h
 //  ... build the graph ...
 //  int source1 = ... , source2 = ...;
 //  vector<double> arc_lengths(graph.num_arcs(), 0);
@@ -88,7 +88,7 @@ std::ostream& operator<<(
 //
 // Arguments:
 // - "graph": the graph. The Graph class must support the interface of
-//   ortools/graph/graph.h: OutgoingArcs(), Head(), Tail().
+//   ortools/graph_base/graph.h: OutgoingArcs(), Head(), Tail().
 // - "arc_length_functor": we will call arc_length_functor(a) on every
 //   arc "a" explored, where "a" is cast to an int. It should return the arc's
 //   length, which is statically cast to DistanceType.

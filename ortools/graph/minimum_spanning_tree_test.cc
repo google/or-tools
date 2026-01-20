@@ -26,7 +26,7 @@
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/types.h"
-#include "ortools/graph/graph.h"
+#include "ortools/graph_base/graph.h"
 
 namespace operations_research {
 namespace {

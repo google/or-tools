@@ -67,7 +67,7 @@ cc_library(
         "//ortools/base",
         "//ortools/base:strong_vector",
         "//ortools/base:types",
-        "//ortools/graph:iterators",
+        "//ortools/graph_base:iterators",
         "//ortools/lp_data",
         "//ortools/lp_data:base",
         "//ortools/lp_data:lp_print_utils",

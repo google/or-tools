@@ -12,7 +12,7 @@
 // limitations under the License.
 
 // A collection of functions to be used in unit tests involving the
-// ortools/graph/... library.
+// util/graph/... library.
 
 #ifndef UTIL_GRAPH_RANDOM_GRAPH_H_
 #define UTIL_GRAPH_RANDOM_GRAPH_H_
@@ -20,7 +20,7 @@
 #include <memory>
 
 #include "absl/random/bit_gen_ref.h"
-#include "ortools/graph/graph.h"
+#include "ortools/graph_base/graph.h"
 
 namespace util {
 

@@ -19,7 +19,7 @@
 
 #include <cstddef>
 
-#include "ortools/graph/iterators.h"
+#include "ortools/graph_base/iterators.h"
 
 // NOTE: It may be unexpected, but views provide a subscript operator that
 // directly accesses the underlying original container using the original

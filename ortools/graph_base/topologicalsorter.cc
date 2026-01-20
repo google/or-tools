@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/graph/topologicalsorter.h"
+#include "ortools/graph_base/topologicalsorter.h"
 
 #include <algorithm>
 #include <cstddef>

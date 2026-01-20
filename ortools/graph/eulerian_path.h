@@ -115,7 +115,7 @@ std::vector<NodeIndex> BuildEulerianPathFromNode(const Graph& graph,
 // Builds an Eulerian tour/circuit/cycle starting and ending at node root on an
 // undirected graph.
 // This function works only on Reverse graphs
-// (cf. ortools/graph/graph.h).
+// (cf. ortools/graph_base/graph.h).
 // Returns an empty tour if either root is invalid or if a tour cannot be built.
 template <typename NodeIndex, typename Graph>
 std::vector<NodeIndex> BuildEulerianTourFromNode(
@@ -137,7 +137,7 @@ std::vector<typename Graph::NodeIndex> BuildEulerianTour(
 
 // Builds an Eulerian path/trail on an undirected graph.
 // This function works only on Reverse graphs
-// (cf. ortools/graph/graph.h).
+// (cf. ortools/graph_base/graph.h).
 // Returns an empty tour if a tour cannot be built.
 template <typename Graph>
 std::vector<typename Graph::NodeIndex> BuildEulerianPath(

@@ -30,7 +30,7 @@
 #include "google/protobuf/text_format.h"
 #include "google/protobuf/wrappers.pb.h"
 #include "ortools/base/init_google.h"
-#include "ortools/graph/connected_components.h"
+#include "ortools/graph_base/connected_components.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"

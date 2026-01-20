@@ -26,7 +26,7 @@
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/stl_util.h"
-#include "ortools/graph/topologicalsorter.h"
+#include "ortools/graph_base/topologicalsorter.h"
 
 namespace operations_research {
 namespace packing {

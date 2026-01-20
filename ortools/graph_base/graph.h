@@ -176,7 +176,7 @@
 #include "absl/types/span.h"
 #include "ortools/base/constant_divisor.h"
 #include "ortools/base/logging.h"
-#include "ortools/graph/iterators.h"
+#include "ortools/graph_base/iterators.h"
 
 namespace util {
 

@@ -645,6 +645,7 @@ foreach(SUBPROJECT IN ITEMS
  base
  init
  algorithms
+ graph_base
  graph
  constraint_solver
  linear_solver
