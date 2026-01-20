@@ -871,6 +871,7 @@ function(add_cxx_example)
       "-sEXPORTED_FUNCTIONS=['_main','_malloc','_free']"
       "-sUSE_PTHREADS=1"
       "-sPTHREAD_POOL_SIZE=4"
+      "-sPTHREAD_POOL_SIZE_STRICT=2"
       "-sPTHREAD_POOL_DELAY_LOAD=1"
       "-sASSERTIONS=2"
       "-sASYNCIFY=1"
