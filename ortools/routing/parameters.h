@@ -24,6 +24,7 @@ namespace operations_research::routing {
 RoutingModelParameters DefaultRoutingModelParameters();
 RoutingSearchParameters DefaultRoutingSearchParameters();
 RoutingSearchParameters DefaultSecondaryRoutingSearchParameters();
+IteratedLocalSearchParameters DefaultIteratedLocalSearchParameters();
 
 /// Returns an empty std::string if the routing search parameters are valid, and
 /// a non-empty, human readable error description if they're not.

@@ -20,8 +20,8 @@ import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.Assignment;
 import com.google.ortools.routing.FirstSolutionStrategy;
 import com.google.ortools.routing.Globals;
-import com.google.ortools.routing.RoutingIndexManager;
-import com.google.ortools.routing.RoutingModel;
+import com.google.ortools.routing.IndexManager;
+import com.google.ortools.routing.Model;
 import com.google.ortools.routing.RoutingSearchParameters;
 import java.util.logging.Logger;
 // [END import]
@@ -41,12 +41,12 @@ public class SimpleRoutingProgram {
 
     // Create Routing Index Manager
     // [START index_manager]
-    RoutingIndexManager manager = new RoutingIndexManager(numLocation, numVehicles, depot);
+    IndexManager manager = new IndexManager(numLocation, numVehicles, depot);
     // [END index_manager]
 
     // Create Routing Model.
     // [START routing_model]
-    RoutingModel routing = new RoutingModel(manager);
+    Model routing = new Model(manager);
     // [END routing_model]
 
     // Create and register a transit callback.

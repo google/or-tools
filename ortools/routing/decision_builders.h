@@ -40,7 +40,7 @@ DecisionBuilder* MakeSetValuesFromTargets(Solver* solver,
 DecisionBuilder* MakeSetCumulsFromLocalDimensionCosts(
     Solver* solver, LocalDimensionCumulOptimizer* lp_optimizer,
     LocalDimensionCumulOptimizer* mp_optimizer, bool optimize_and_pack = false,
-    std::vector<RoutingModel::RouteDimensionTravelInfo>
+    std::vector<Model::RouteDimensionTravelInfo>
         dimension_travel_info_per_route = {});
 
 /// Variant based on global optimizers, handling all routes together.
@@ -48,7 +48,7 @@ DecisionBuilder* MakeSetCumulsFromGlobalDimensionCosts(
     Solver* solver, GlobalDimensionCumulOptimizer* global_optimizer,
     GlobalDimensionCumulOptimizer* global_mp_optimizer,
     bool optimize_and_pack = false,
-    std::vector<RoutingModel::RouteDimensionTravelInfo>
+    std::vector<Model::RouteDimensionTravelInfo>
         dimension_travel_info_per_route = {});
 
 /// A decision builder that monitors solutions, and tries to fix dimension
@@ -61,8 +61,7 @@ DecisionBuilder* MakeSetCumulsFromGlobalDimensionCosts(
 /// Moreover, the decision will be a simultaneous assignment of the dimension
 /// variables of unchanged routes on the left branch, and an empty decision on
 /// the right branch.
-DecisionBuilder* MakeRestoreDimensionValuesForUnchangedRoutes(
-    RoutingModel* model);
+DecisionBuilder* MakeRestoreDimensionValuesForUnchangedRoutes(Model* model);
 
 /// A container that allows to accumulate variables and weights to generate a
 /// static DecisionBuilder that uses weights to prioritize the branching

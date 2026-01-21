@@ -57,7 +57,7 @@ public class VrpSolutionCallback
     /// <summary>
     ///   Print the solution.
     /// </summary>
-    static void printSolution(ref RoutingIndexManager routingManager, ref RoutingModel routingModel)
+    static void printSolution(ref IndexManager routingManager, ref Model routingModel)
     {
         Console.WriteLine($"Solution objective: {routingModel.CostVar().Value()}:");
         // Inspect solution.
@@ -91,12 +91,12 @@ public class VrpSolutionCallback
     class SolutionCallback
     {
         public long[] objectives;
-        private RoutingIndexManager routingManager;
-        private RoutingModel routingModel;
+        private IndexManager routingManager;
+        private Model routingModel;
         private long maxSolution;
         private long counter;
 
-        public SolutionCallback(ref RoutingIndexManager manager, ref RoutingModel routing, in long limit)
+        public SolutionCallback(ref IndexManager manager, ref Model routing, in long limit)
         {
             routingManager = manager;
             routingModel = routing;
@@ -132,13 +132,13 @@ public class VrpSolutionCallback
 
         // Create Routing Index Manager
         // [START index_manager]
-        RoutingIndexManager routingManager =
-            new RoutingIndexManager(data.DistanceMatrix.GetLength(0), data.VehicleNumber, data.Depot);
+        IndexManager routingManager =
+            new IndexManager(data.DistanceMatrix.GetLength(0), data.VehicleNumber, data.Depot);
         // [END index_manager]
 
         // Create Routing Model.
         // [START routing_model]
-        RoutingModel routingModel = new RoutingModel(routingManager);
+        Model routingModel = new Model(routingManager);
         // [END routing_model]
 
         // Create and register a transit callback.
@@ -166,7 +166,7 @@ public class VrpSolutionCallback
                                   3000, // vehicle maximum travel distance
                                   true, // start cumul to zero
                                   "Distance");
-        RoutingDimension distanceDimension = routingModel.GetMutableDimension("Distance");
+        Dimension distanceDimension = routingModel.GetMutableDimension("Distance");
         distanceDimension.SetGlobalSpanCostCoefficient(100);
         // [END distance_constraint]
 

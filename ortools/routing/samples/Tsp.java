@@ -21,8 +21,8 @@ import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.Assignment;
 import com.google.ortools.routing.FirstSolutionStrategy;
 import com.google.ortools.routing.Globals;
-import com.google.ortools.routing.RoutingIndexManager;
-import com.google.ortools.routing.RoutingModel;
+import com.google.ortools.routing.IndexManager;
+import com.google.ortools.routing.Model;
 import com.google.ortools.routing.RoutingSearchParameters;
 import com.google.ortools.routing.RoutingSearchStatus;
 import java.util.function.LongBinaryOperator;
@@ -75,7 +75,7 @@ public class Tsp {
   /// the Manhattan distance between the two positions of
   /// two different indices.
   static class ManhattanDistance implements LongBinaryOperator {
-    public ManhattanDistance(DataModel data, RoutingIndexManager manager) {
+    public ManhattanDistance(DataModel data, IndexManager manager) {
       // precompute distance between location to have distance callback in O(1)
       distanceMatrix = new long[data.locations.length][data.locations.length];
       indexManager = manager;
@@ -101,15 +101,14 @@ public class Tsp {
     }
 
     private final long[][] distanceMatrix;
-    private final RoutingIndexManager indexManager;
+    private final IndexManager indexManager;
   }
 
   // [END manhattan_distance]
 
   // [START solution_printer]
   /// @brief Print the solution.
-  static void printSolution(
-      RoutingModel routing, RoutingIndexManager manager, Assignment solution) {
+  static void printSolution(Model routing, IndexManager manager, Assignment solution) {
     RoutingSearchStatus.Value status = routing.status();
     logger.info("Status: " + status);
     if (status != RoutingSearchStatus.Value.ROUTING_OPTIMAL
@@ -146,13 +145,12 @@ public class Tsp {
 
     // Create Routing Index Manager
     // [START index_manager]
-    RoutingIndexManager manager =
-        new RoutingIndexManager(data.locations.length, data.vehicleNumber, data.depot);
+    IndexManager manager = new IndexManager(data.locations.length, data.vehicleNumber, data.depot);
     // [END index_manager]
 
     // Create Routing Model.
     // [START routing_model]
-    RoutingModel routing = new RoutingModel(manager);
+    Model routing = new Model(manager);
     // [END routing_model]
 
     // Create and register a transit callback.

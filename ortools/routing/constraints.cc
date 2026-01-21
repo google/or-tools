@@ -36,6 +36,7 @@
 #include "ortools/routing/lp_scheduling.h"
 #include "ortools/routing/routing.h"
 #include "ortools/routing/search.h"
+#include "ortools/routing/types.h"
 #include "ortools/util/saturated_arithmetic.h"
 
 namespace operations_research::routing {
@@ -49,12 +50,13 @@ class DifferentFromValues : public Constraint {
   void Post() override {}
   void InitialPropagate() override { var_->RemoveValues(values_); }
   std::string DebugString() const override { return "DifferentFromValues"; }
-  void Accept(ModelVisitor* const visitor) const override {
-    visitor->BeginVisitConstraint(RoutingModelVisitor::kRemoveValues, this);
-    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
-                                               {var_});
-    visitor->VisitIntegerArrayArgument(ModelVisitor::kValuesArgument, values_);
-    visitor->EndVisitConstraint(RoutingModelVisitor::kRemoveValues, this);
+  void Accept(operations_research::ModelVisitor* const visitor) const override {
+    visitor->BeginVisitConstraint(ModelVisitor::kRemoveValues, this);
+    visitor->VisitIntegerVariableArrayArgument(
+        operations_research::ModelVisitor::kVarsArgument, {var_});
+    visitor->VisitIntegerArrayArgument(
+        operations_research::ModelVisitor::kValuesArgument, values_);
+    visitor->EndVisitConstraint(ModelVisitor::kRemoveValues, this);
   }
 
  private:
@@ -78,7 +80,7 @@ namespace {
 // - For every vehicle 'v', end_chain_starts[v] contains the first node of the
 //   end chain of that vehicle.
 void ComputeVehicleChainStartEndInfo(
-    const RoutingModel& model, std::vector<int64_t>* end_chain_starts,
+    const Model& model, std::vector<int64_t>* end_chain_starts,
     std::vector<int>* vehicle_index_of_start_chain_end) {
   vehicle_index_of_start_chain_end->resize(model.Size() + model.vehicles(), -1);
 
@@ -96,15 +98,15 @@ void ComputeVehicleChainStartEndInfo(
 class ResourceAssignmentConstraint : public Constraint {
  public:
   ResourceAssignmentConstraint(
-      const RoutingModel::ResourceGroup* resource_group,
-      const std::vector<IntVar*>* vehicle_resource_vars, RoutingModel* model)
+      const Model::ResourceGroup* resource_group,
+      const std::vector<IntVar*>* vehicle_resource_vars, Model* model)
       : Constraint(model->solver()),
         model_(*model),
         resource_group_(*resource_group),
         vehicle_resource_vars_(*vehicle_resource_vars) {
     DCHECK_EQ(vehicle_resource_vars_.size(), model_.vehicles());
 
-    const std::vector<RoutingDimension*>& dimensions = model_.GetDimensions();
+    const std::vector<Dimension*>& dimensions = model_.GetDimensions();
     for (int v = 0; v < model_.vehicles(); v++) {
       IntVar* const resource_var = vehicle_resource_vars_[v];
       model->AddToAssignment(resource_var);
@@ -114,9 +116,9 @@ class ResourceAssignmentConstraint : public Constraint {
       if (!resource_group_.VehicleRequiresAResource(v)) {
         continue;
       }
-      for (const RoutingModel::DimensionIndex d :
+      for (const DimensionIndex d :
            resource_group_.GetAffectedDimensionIndices()) {
-        const RoutingDimension* const dim = dimensions[d.value()];
+        const Dimension* const dim = dimensions[d.value()];
         // The vehicle's start/end cumuls must be fixed by the search.
         model->AddVariableMinimizedByFinalizer(dim->CumulVar(model_.End(v)));
         model->AddVariableMaximizedByFinalizer(dim->CumulVar(model_.Start(v)));
@@ -154,9 +156,8 @@ class ResourceAssignmentConstraint : public Constraint {
       return end_chain_starts[vehicle];
     };
 
-    const std::vector<RoutingDimension*>& dimensions = model_.GetDimensions();
-    for (RoutingModel::DimensionIndex d :
-         resource_group_.GetAffectedDimensionIndices()) {
+    const std::vector<Dimension*>& dimensions = model_.GetDimensions();
+    for (DimensionIndex d : resource_group_.GetAffectedDimensionIndices()) {
       if (!ResourceAssignmentFeasibleForDimension(*dimensions[d.value()],
                                                   next)) {
         return false;
@@ -166,8 +167,7 @@ class ResourceAssignmentConstraint : public Constraint {
   }
 
   bool ResourceAssignmentFeasibleForDimension(
-      const RoutingDimension& dimension,
-      const std::function<int64_t(int64_t)>& next) {
+      const Dimension& dimension, const std::function<int64_t(int64_t)>& next) {
     LocalDimensionCumulOptimizer* const optimizer =
         model_.GetMutableLocalCumulLPOptimizer(dimension);
 
@@ -185,7 +185,7 @@ class ResourceAssignmentConstraint : public Constraint {
       return std::max<int64_t>(dimension.FixedTransitVar(node)->Min(), 0);
     };
 
-    using RCIndex = RoutingModel::ResourceClassIndex;
+    using RCIndex = ResourceClassIndex;
     const util_intops::StrongVector<RCIndex, absl::flat_hash_set<int>>
         ignored_resources_per_class(resource_group_.GetResourceClassesCount());
     std::vector<std::vector<int64_t>> assignment_costs(model_.vehicles());
@@ -250,10 +250,10 @@ class ResourceAssignmentConstraint : public Constraint {
   void ResourceBound(int vehicle) {
     const int64_t resource = vehicle_resource_vars_[vehicle]->Value();
     if (resource < 0) return;
-    for (const RoutingModel::DimensionIndex d :
+    for (const DimensionIndex d :
          resource_group_.GetAffectedDimensionIndices()) {
-      const RoutingDimension* const dim = model_.GetDimensions()[d.value()];
-      const RoutingModel::ResourceGroup::Attributes& attributes =
+      const Dimension* const dim = model_.GetDimensions()[d.value()];
+      const Model::ResourceGroup::Attributes& attributes =
           resource_group_.GetResources()[resource].GetDimensionAttributes(d);
       // resource_start_lb <= cumul[start(vehicle)] <= resource_start_ub
       // resource_end_lb <= cumul[end(vehicle)] <= resource_end_ub
@@ -266,15 +266,15 @@ class ResourceAssignmentConstraint : public Constraint {
     }
   }
 
-  const RoutingModel& model_;
-  const RoutingModel::ResourceGroup& resource_group_;
+  const Model& model_;
+  const Model::ResourceGroup& resource_group_;
   const std::vector<IntVar*>& vehicle_resource_vars_;
 };
 }  // namespace
 
 Constraint* MakeResourceConstraint(
-    const RoutingModel::ResourceGroup* resource_group,
-    const std::vector<IntVar*>* vehicle_resource_vars, RoutingModel* model) {
+    const Model::ResourceGroup* resource_group,
+    const std::vector<IntVar*>* vehicle_resource_vars, Model* model) {
   return model->solver()->RevAlloc(new ResourceAssignmentConstraint(
       resource_group, vehicle_resource_vars, model));
 }
@@ -282,8 +282,7 @@ Constraint* MakeResourceConstraint(
 namespace {
 class PathSpansAndTotalSlacks : public Constraint {
  public:
-  PathSpansAndTotalSlacks(const RoutingModel* model,
-                          const RoutingDimension* dimension,
+  PathSpansAndTotalSlacks(const Model* model, const Dimension* dimension,
                           std::vector<IntVar*> spans,
                           std::vector<IntVar*> total_slacks)
       : Constraint(model->solver()),
@@ -626,8 +625,8 @@ class PathSpansAndTotalSlacks : public Constraint {
     }
   }
 
-  const RoutingModel* const model_;
-  const RoutingDimension* const dimension_;
+  const Model* const model_;
+  const Dimension* const dimension_;
   std::vector<IntVar*> spans_;
   std::vector<IntVar*> total_slacks_;
   std::vector<int> path_;
@@ -635,10 +634,10 @@ class PathSpansAndTotalSlacks : public Constraint {
 };
 }  // namespace
 
-Constraint* MakePathSpansAndTotalSlacks(const RoutingDimension* dimension,
+Constraint* MakePathSpansAndTotalSlacks(const Dimension* dimension,
                                         std::vector<IntVar*> spans,
                                         std::vector<IntVar*> total_slacks) {
-  RoutingModel* const model = dimension->model();
+  Model* const model = dimension->model();
   CHECK_EQ(model->vehicles(), spans.size());
   CHECK_EQ(model->vehicles(), total_slacks.size());
   return model->solver()->RevAlloc(new PathSpansAndTotalSlacks(
@@ -666,12 +665,15 @@ class LightRangeLessOrEqual : public Constraint {
     return solver()->MakeIsLessOrEqualVar(left_, right_);
   }
   // TODO(user): introduce a kLightLessOrEqual tag.
-  void Accept(ModelVisitor* const visitor) const override {
-    visitor->BeginVisitConstraint(ModelVisitor::kLessOrEqual, this);
-    visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument, left_);
-    visitor->VisitIntegerExpressionArgument(ModelVisitor::kRightArgument,
-                                            right_);
-    visitor->EndVisitConstraint(ModelVisitor::kLessOrEqual, this);
+  void Accept(operations_research::ModelVisitor* const visitor) const override {
+    visitor->BeginVisitConstraint(
+        operations_research::ModelVisitor::kLessOrEqual, this);
+    visitor->VisitIntegerExpressionArgument(
+        operations_research::ModelVisitor::kLeftArgument, left_);
+    visitor->VisitIntegerExpressionArgument(
+        operations_research::ModelVisitor::kRightArgument, right_);
+    visitor->EndVisitConstraint(operations_research::ModelVisitor::kLessOrEqual,
+                                this);
   }
 
  private:
@@ -720,7 +722,7 @@ namespace {
 class RouteConstraint : public Constraint {
  public:
   RouteConstraint(
-      RoutingModel* model, std::vector<IntVar*> route_cost_vars,
+      Model* model, std::vector<IntVar*> route_cost_vars,
       std::function<std::optional<int64_t>(const std::vector<int64_t>&)>
           route_evaluator)
       : Constraint(model->solver()),
@@ -783,7 +785,7 @@ class RouteConstraint : public Constraint {
     route_cost_vars_[model_->VehicleIndex(start)]->SetValue(cost.value());
   }
 
-  RoutingModel* const model_;
+  Model* const model_;
   std::vector<IntVar*> route_cost_vars_;
   std::function<std::optional<int64_t>(const std::vector<int64_t>&)>
       route_evaluator_;
@@ -794,7 +796,7 @@ class RouteConstraint : public Constraint {
 }  // namespace
 
 Constraint* MakeRouteConstraint(
-    RoutingModel* model, std::vector<IntVar*> route_cost_vars,
+    Model* model, std::vector<IntVar*> route_cost_vars,
     std::function<std::optional<int64_t>(const std::vector<int64_t>&)>
         route_evaluator) {
   return model->solver()->RevAlloc(new RouteConstraint(
@@ -815,7 +817,7 @@ namespace {
 /// then SlackVar(nodeA) >= sum_{breaks \subseteq [tA, tB)} duration(break).
 class GlobalVehicleBreaksConstraint : public Constraint {
  public:
-  explicit GlobalVehicleBreaksConstraint(const RoutingDimension* dimension);
+  explicit GlobalVehicleBreaksConstraint(const Dimension* dimension);
   std::string DebugString() const override {
     return "GlobalVehicleBreaksConstraint";
   }
@@ -827,8 +829,8 @@ class GlobalVehicleBreaksConstraint : public Constraint {
   void PropagateNode(int node);
   void PropagateVehicle(int vehicle);
 
-  const RoutingModel* model_;
-  const RoutingDimension* const dimension_;
+  const Model* model_;
+  const Dimension* const dimension_;
   std::vector<Demon*> vehicle_demons_;
 
   DimensionValues dimension_values_;
@@ -839,7 +841,7 @@ class GlobalVehicleBreaksConstraint : public Constraint {
 };
 
 GlobalVehicleBreaksConstraint::GlobalVehicleBreaksConstraint(
-    const RoutingDimension* dimension)
+    const Dimension* dimension)
     : Constraint(dimension->model()->solver()),
       model_(dimension->model()),
       dimension_(dimension),
@@ -908,7 +910,7 @@ void GlobalVehicleBreaksConstraint::PropagateVehicle(int vehicle) {
 
   // Fill dimension_values_ from the path.
   // If the path is not a complete start -> end, return.
-  // This leverages travel caching in FillDimensionValuesFromRoutingDimension().
+  // This leverages travel caching in FillDimensionValuesFromDimension().
   int node = model_->Start(vehicle);
   while (!model_->IsEnd(node)) {
     dimension_values_.PushNode(node);
@@ -933,7 +935,7 @@ void GlobalVehicleBreaksConstraint::PropagateVehicle(int vehicle) {
                                 .max = cp_slacks[node]->Max()};
     }
   }
-  if (!FillDimensionValuesFromRoutingDimension(
+  if (!FillDimensionValuesFromDimension(
           vehicle, dimension_->vehicle_capacities()[vehicle],
           dimension_->vehicle_span_upper_bounds()[vehicle], cumul_intervals_,
           slack_intervals_, dimension_->transit_evaluator(vehicle),
@@ -1021,15 +1023,15 @@ void GlobalVehicleBreaksConstraint::PropagateVehicle(int vehicle) {
   }
   // If everything went fine, we can save dimension state.
   // Saving is only done for caching reasons, this allows subsequent calls to
-  // FillDimensionValuesFromRoutingDimension() to re-use travel evaluations.
+  // FillDimensionValuesFromDimension() to re-use travel evaluations.
   dimension_values_.Commit();
   visits_.Commit();
 }
 
 }  // namespace
 
-Constraint* MakeGlobalVehicleBreaksConstraint(
-    Solver* solver, const RoutingDimension* dimension) {
+Constraint* MakeGlobalVehicleBreaksConstraint(Solver* solver,
+                                              const Dimension* dimension) {
   return solver->RevAlloc(new GlobalVehicleBreaksConstraint(dimension));
 }
 

@@ -43,13 +43,13 @@
 using operations_research::Assignment;
 using operations_research::Solver;
 using operations_research::routing::DefaultRoutingSearchParameters;
+using operations_research::routing::Dimension;
 using operations_research::routing::GetSeed;
+using operations_research::routing::IndexManager;
 using operations_research::routing::LocationContainer;
+using operations_research::routing::Model;
+using operations_research::routing::NodeIndex;
 using operations_research::routing::RandomDemand;
-using operations_research::routing::RoutingDimension;
-using operations_research::routing::RoutingIndexManager;
-using operations_research::routing::RoutingModel;
-using operations_research::routing::RoutingNodeIndex;
 using operations_research::routing::RoutingSearchParameters;
 using operations_research::routing::ServiceTimePlusTransition;
 
@@ -82,10 +82,10 @@ int main(int argc, char** argv) {
   // VRP of size absl::GetFlag(FLAGS_vrp_size).
   // Nodes are indexed from 0 to absl::GetFlag(FLAGS_vrp_orders), the starts and
   // ends of the routes are at node 0.
-  const RoutingIndexManager::NodeIndex kDepot(0);
-  RoutingIndexManager manager(absl::GetFlag(FLAGS_vrp_orders) + 1,
-                              absl::GetFlag(FLAGS_vrp_vehicles), kDepot);
-  RoutingModel routing(manager);
+  const NodeIndex kDepot(0);
+  IndexManager manager(absl::GetFlag(FLAGS_vrp_orders) + 1,
+                       absl::GetFlag(FLAGS_vrp_vehicles), kDepot);
+  Model routing(manager);
 
   // Setting up locations.
   const int64_t kXMax = 100000;
@@ -127,10 +127,8 @@ int main(int argc, char** argv) {
   const int64_t kHorizon = 24 * 3600;
   ServiceTimePlusTransition time(
       kTimePerDemandUnit,
-      [&demand](RoutingNodeIndex i, RoutingNodeIndex j) {
-        return demand.Demand(i, j);
-      },
-      [&locations](RoutingNodeIndex i, RoutingNodeIndex j) {
+      [&demand](NodeIndex i, NodeIndex j) { return demand.Demand(i, j); },
+      [&locations](NodeIndex i, NodeIndex j) {
         return locations.ManhattanTime(i, j);
       });
   routing.AddDimension(
@@ -138,7 +136,7 @@ int main(int argc, char** argv) {
         return time.Compute(manager.IndexToNode(i), manager.IndexToNode(j));
       }),
       kHorizon, kHorizon, /*fix_start_cumul_to_zero=*/true, kTime);
-  const RoutingDimension& time_dimension = routing.GetDimensionOrDie(kTime);
+  const Dimension& time_dimension = routing.GetDimensionOrDie(kTime);
   // Adding time windows.
   // NOTE(user): This randomized test case is quite sensible to the seed:
   // the generated model can be much easier or harder to solve, depending on
@@ -166,7 +164,7 @@ int main(int argc, char** argv) {
                                                   manager.IndexToNode(j));
           }),
       kFuelCapacity, kFuelCapacity, /*fix_start_cumul_to_zero=*/false, kFuel);
-  const RoutingDimension& fuel_dimension = routing.GetDimensionOrDie(kFuel);
+  const Dimension& fuel_dimension = routing.GetDimensionOrDie(kFuel);
   for (int order = 0; order < routing.Size(); ++order) {
     // Only let slack free for refueling nodes.
     if (!IsRefuelNode(order) || routing.IsStart(order)) {
@@ -190,15 +188,15 @@ int main(int argc, char** argv) {
 
   // Adding penalty costs to allow skipping orders.
   const int64_t kPenalty = 100000;
-  const RoutingIndexManager::NodeIndex kFirstNodeAfterDepot(1);
-  for (RoutingIndexManager::NodeIndex order = kFirstNodeAfterDepot;
-       order < routing.nodes(); ++order) {
+  const NodeIndex kFirstNodeAfterDepot(1);
+  for (NodeIndex order = kFirstNodeAfterDepot; order < routing.nodes();
+       ++order) {
     std::vector<int64_t> orders(1, manager.NodeToIndex(order));
     routing.AddDisjunction(
         orders, IsRefuelNode(manager.NodeToIndex(order)) ? 0 : kPenalty);
   }
 
-  // Solve, returns a solution if any (owned by RoutingModel).
+  // Solve, returns a solution if any (owned by Model).
   RoutingSearchParameters parameters = DefaultRoutingSearchParameters();
   CHECK(google::protobuf::TextFormat::MergeFromString(
       absl::GetFlag(FLAGS_routing_search_parameters), &parameters));

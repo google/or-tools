@@ -53,8 +53,8 @@ def main():
     vehicles = len(starts)
     assert len(starts) == len(ends)
 
-    manager = pywraprouting.RoutingIndexManager(locations, vehicles, starts, ends)
-    routing = pywraprouting.RoutingModel(manager)
+    manager = pywraprouting.IndexManager(locations, vehicles, starts, ends)
+    routing = pywraprouting.Model(manager)
 
     print("Starts/Ends:")
     header = "| |"

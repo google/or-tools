@@ -28,6 +28,7 @@
 #include "ortools/routing/index_manager.h"
 #include "ortools/routing/parameters.h"
 #include "ortools/routing/routing.h"
+#include "ortools/routing/types.h"
 // [END import]
 
 namespace operations_research::routing {
@@ -36,8 +37,8 @@ namespace operations_research::routing {
 //! @param[in] routing Routing solver used.
 //! @param[in] solution Solution found by the solver.
 // [START solution_printer]
-void PrintSolution(const RoutingIndexManager& manager,
-                   const RoutingModel& routing, const Assignment& solution) {
+void PrintSolution(const IndexManager& manager, const Model& routing,
+                   const Assignment& solution) {
   int64_t max_route_distance = 0;
   for (int vehicle_id = 0; vehicle_id < manager.num_vehicles(); ++vehicle_id) {
     if (!routing.IsVehicleUsed(solution, vehicle_id)) {
@@ -51,7 +52,7 @@ void PrintSolution(const RoutingIndexManager& manager,
       route << manager.IndexToNode(index).value() << " -> ";
       const int64_t previous_index = index;
       index = solution.Value(routing.NextVar(index));
-      route_distance += const_cast<RoutingModel&>(routing).GetArcCostForVehicle(
+      route_distance += const_cast<Model&>(routing).GetArcCostForVehicle(
           previous_index, index, int64_t{vehicle_id});
     }
     LOG(INFO) << route.str() << manager.IndexToNode(index).value();
@@ -69,17 +70,17 @@ void VrpGlobalSpan() {
   // [START data]
   const int num_locations = 20;
   const int num_vehicles = 5;
-  const RoutingIndexManager::NodeIndex depot{0};
+  const NodeIndex depot{0};
   // [END data]
 
   // Create Routing Index Manager
   // [START index_manager]
-  RoutingIndexManager manager(num_locations, num_vehicles, depot);
+  IndexManager manager(num_locations, num_vehicles, depot);
   // [END index_manager]
 
   // Create Routing Model.
   // [START routing_model]
-  RoutingModel routing(manager);
+  Model routing(manager);
   // [END routing_model]
 
   // Create and register a transit callback.
@@ -103,10 +104,8 @@ void VrpGlobalSpan() {
                        /*slack_max=*/0,
                        /*capacity=*/3000,
                        /*fix_start_cumul_to_zero=*/true, "Distance");
-  const RoutingDimension& distance_dimension =
-      routing.GetDimensionOrDie("Distance");
-  const_cast<RoutingDimension&>(distance_dimension)
-      .SetGlobalSpanCostCoefficient(100);
+  const Dimension& distance_dimension = routing.GetDimensionOrDie("Distance");
+  const_cast<Dimension&>(distance_dimension).SetGlobalSpanCostCoefficient(100);
   // [END distance_constraint]
 
   // Setting first solution heuristic.

@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Wrapper for RoutingIndexManager.
+// Wrapper for IndexManager.
 
 %include "ortools/routing/csharp/types.i"
 
@@ -19,31 +19,27 @@
 #include "ortools/routing/index_manager.h"
 %}
 
-DEFINE_INDEX_TYPE_TYPEDEF(operations_research::routing::RoutingNodeIndex,
-                          operations_research::routing::RoutingIndexManager::NodeIndex);
-
 %ignoreall
 
 %unignore operations_research::routing;
 namespace operations_research::routing {
-
-%unignore RoutingIndexManager;
-%unignore RoutingIndexManager::GetStartIndex;
-%unignore RoutingIndexManager::GetEndIndex;
-%unignore RoutingIndexManager::IndexToNode;
-%unignore RoutingIndexManager::NodeToIndex;
-%unignore RoutingIndexManager::NodesToIndices;
-%unignore RoutingIndexManager::RoutingIndexManager(
+%unignore IndexManager;
+%unignore IndexManager::GetStartIndex;
+%unignore IndexManager::GetEndIndex;
+%unignore IndexManager::IndexToNode;
+%unignore IndexManager::NodeToIndex;
+%unignore IndexManager::NodesToIndices;
+%unignore IndexManager::IndexManager(
     int, int,
     NodeIndex);
-%unignore RoutingIndexManager::RoutingIndexManager(
+%unignore IndexManager::IndexManager(
     int, int,
     const std::vector<NodeIndex>&,
     const std::vector<NodeIndex>&);
-%rename (GetNumberOfNodes) RoutingIndexManager::num_nodes;
-%rename (GetNumberOfVehicles) RoutingIndexManager::num_vehicles;
-%rename (GetNumberOfIndices) RoutingIndexManager::num_indices;
-%unignore RoutingIndexManager::~RoutingIndexManager;
+%rename (GetNumberOfNodes) IndexManager::num_nodes;
+%rename (GetNumberOfVehicles) IndexManager::num_vehicles;
+%rename (GetNumberOfIndices) IndexManager::num_indices;
+%unignore IndexManager::~IndexManager;
 
 }  // namespace operations_research::routing
 

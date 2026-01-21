@@ -27,6 +27,7 @@
 #include "ortools/routing/index_manager.h"
 #include "ortools/routing/parameters.h"
 #include "ortools/routing/routing.h"
+#include "ortools/routing/types.h"
 // [END import]
 
 namespace operations_research::routing {
@@ -69,18 +70,17 @@ struct DataModel {
        194, 798, 0},
   };
   const int num_vehicles = 4;
-  const RoutingIndexManager::NodeIndex depot{0};
+  const NodeIndex depot{0};
 };
 // [END data_model]
 
 // [START solution_printer]
-void PrintSolution(
-    const std::vector<std::vector<RoutingIndexManager::NodeIndex>>& routes) {
+void PrintSolution(const std::vector<std::vector<NodeIndex>>& routes) {
   // Print routes.
   DataModel data;
   int64_t total_distance = 0;
   for (int i = 0; i < routes.size(); ++i) {
-    const std::vector<RoutingIndexManager::NodeIndex>& route = routes[i];
+    const std::vector<NodeIndex>& route = routes[i];
     int64_t route_distance{0};
     std::stringstream route_text;
     LOG(INFO) << "Route for Vehicle " << i << ":";
@@ -106,13 +106,13 @@ void Vrp() {
 
   // Create Routing Index Manager
   // [START index_manager]
-  RoutingIndexManager manager(data.distance_matrix.size(), data.num_vehicles,
-                              data.depot);
+  IndexManager manager(data.distance_matrix.size(), data.num_vehicles,
+                       data.depot);
   // [END index_manager]
 
   // Create Routing Model.
   // [START routing_model]
-  RoutingModel routing(manager);
+  Model routing(manager);
   // [END routing_model]
 
   // Create and register a transit callback.
@@ -146,7 +146,7 @@ void Vrp() {
 
   // [START get_routes]
   // Get the routes and convert indices to nodes.
-  std::vector<std::vector<RoutingIndexManager::NodeIndex>> routes;
+  std::vector<std::vector<NodeIndex>> routes;
   for (const std::vector<int64_t>& route_indices :
        routing.GetRoutesFromAssignment(*solution)) {
     routes.push_back(manager.IndicesToNodes(route_indices));

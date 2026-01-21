@@ -28,6 +28,7 @@
 #include "ortools/routing/index_manager.h"
 #include "ortools/routing/parameters.h"
 #include "ortools/routing/routing.h"
+#include "ortools/routing/types.h"
 // [END import]
 
 namespace operations_research::routing {
@@ -71,17 +72,17 @@ struct DataModel {
   };
   const int num_vehicles = 4;
   // [START starts_ends]
-  const std::vector<RoutingIndexManager::NodeIndex> starts{
-      RoutingIndexManager::NodeIndex{1},
-      RoutingIndexManager::NodeIndex{2},
-      RoutingIndexManager::NodeIndex{15},
-      RoutingIndexManager::NodeIndex{16},
+  const std::vector<NodeIndex> starts{
+      NodeIndex{1},
+      NodeIndex{2},
+      NodeIndex{15},
+      NodeIndex{16},
   };
-  const std::vector<RoutingIndexManager::NodeIndex> ends{
-      RoutingIndexManager::NodeIndex{0},
-      RoutingIndexManager::NodeIndex{0},
-      RoutingIndexManager::NodeIndex{0},
-      RoutingIndexManager::NodeIndex{0},
+  const std::vector<NodeIndex> ends{
+      NodeIndex{0},
+      NodeIndex{0},
+      NodeIndex{0},
+      NodeIndex{0},
   };
   // [END starts_ends]
 };
@@ -93,8 +94,8 @@ struct DataModel {
 //! @param[in] routing Routing solver used.
 //! @param[in] solution Solution found by the solver.
 // [START solution_printer]
-void PrintSolution(const DataModel& data, const RoutingIndexManager& manager,
-                   const RoutingModel& routing, const Assignment& solution) {
+void PrintSolution(const DataModel& data, const IndexManager& manager,
+                   const Model& routing, const Assignment& solution) {
   int64_t max_route_distance{0};
   for (int vehicle_id = 0; vehicle_id < data.num_vehicles; ++vehicle_id) {
     if (!routing.IsVehicleUsed(solution, vehicle_id)) {
@@ -129,13 +130,13 @@ void VrpStartsEnds() {
 
   // Create Routing Index Manager
   // [START index_manager]
-  RoutingIndexManager manager(data.distance_matrix.size(), data.num_vehicles,
-                              data.starts, data.ends);
+  IndexManager manager(data.distance_matrix.size(), data.num_vehicles,
+                       data.starts, data.ends);
   // [END index_manager]
 
   // Create Routing Model.
   // [START routing_model]
-  RoutingModel routing(manager);
+  Model routing(manager);
   // [END routing_model]
 
   // Create and register a transit callback.

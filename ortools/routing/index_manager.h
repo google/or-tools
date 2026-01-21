@@ -38,8 +38,8 @@ namespace operations_research::routing {
 /// Usage:
 ///   \code{.cpp}
 ///   auto starts_ends = ...;  /// These are NodeIndex.
-///   RoutingIndexManager manager(10, 4, starts_ends);  // 10 nodes, 4 vehicles.
-///   RoutingModel model(manager);
+///   IndexManager manager(10, 4, starts_ends);  // 10 nodes, 4 vehicles.
+///   Model model(manager);
 ///   \endcode
 ///
 /// Then, use 'manager.NodeToIndex(node)' whenever model requires a variable
@@ -50,9 +50,12 @@ namespace operations_research::routing {
 /// indices range between 0 and n-1, where n = number of vehicles * 2 (for start
 /// and end nodes) + number of non-start or end nodes.
 ///
-class OR_DLL RoutingIndexManager {
+class OR_DLL IndexManager {
  public:
-  typedef RoutingNodeIndex NodeIndex;
+  // For compatibility only.
+#if !defined(SWIG)
+  using NodeIndex = NodeIndex;
+#endif  // !defined(SWIG)
   static const int64_t kUnassigned;
 
   /// @brief Creates a NodeIndex to variable index mapping for a problem
@@ -63,7 +66,7 @@ class OR_DLL RoutingIndexManager {
   /// @param num_vehicles Number of vehicles in the problem.
   /// @param depot @ref GetStartIndex "start" and @ref GetEndIndex "end"
   /// NodeIndex for all vehicles.
-  RoutingIndexManager(int num_nodes, int num_vehicles, NodeIndex depot);
+  IndexManager(int num_nodes, int num_vehicles, NodeIndex depot);
   /// @brief Creates a NodeIndex to variable index mapping.
   /// @param num_nodes Number of nodes in the problem.
   /// @param num_vehicles Number of vehicles in the problem.
@@ -71,9 +74,9 @@ class OR_DLL RoutingIndexManager {
   /// @param ends Array containing the end NodeIndex for each vehicle.
   /// @note @b starts and @b ends arrays must have @b exactly @ref num_vehicles
   /// elements.
-  RoutingIndexManager(int num_nodes, int num_vehicles,
-                      const std::vector<NodeIndex>& starts,
-                      const std::vector<NodeIndex>& ends);
+  IndexManager(int num_nodes, int num_vehicles,
+               const std::vector<NodeIndex>& starts,
+               const std::vector<NodeIndex>& ends);
   /// @brief Creates a NodeIndex to variable index mapping.
   /// @param num_nodes Number of nodes in the problem.
   /// @param num_vehicles Number of vehicles in the problem.
@@ -81,9 +84,8 @@ class OR_DLL RoutingIndexManager {
   /// vehicle.
   /// @note @b starts_ends arrays must have @b exactly @ref num_vehicles
   /// elements.
-  RoutingIndexManager(
-      int num_nodes, int num_vehicles,
-      const std::vector<std::pair<NodeIndex, NodeIndex>>& starts_ends);
+  IndexManager(int num_nodes, int num_vehicles,
+               const std::vector<std::pair<NodeIndex, NodeIndex>>& starts_ends);
 
   // Returns the number of nodes in the manager.
   int num_nodes() const { return num_nodes_; }
@@ -119,8 +121,7 @@ class OR_DLL RoutingIndexManager {
   std::vector<NodeIndex> IndicesToNodes(
       absl::Span<const int64_t> indices) const;
   // TODO(user) Add unit tests for NodesToIndices and IndicesToNodes.
-  // TODO(user): Remove when removal of NodeIndex from RoutingModel is
-  // complete.
+  // TODO(user): Remove when removal of NodeIndex from Model is complete.
   int num_unique_depots() const { return num_unique_depots_; }
   std::vector<NodeIndex> GetIndexToNodeMap() const { return index_to_node_; }
 
@@ -137,6 +138,9 @@ class OR_DLL RoutingIndexManager {
   int num_vehicles_;
   int num_unique_depots_;
 };
+
+/// For compatibility.
+using RoutingIndexManager = IndexManager;
 
 }  // namespace operations_research::routing
 

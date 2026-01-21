@@ -75,13 +75,12 @@ public class VrpTimeWindows
     /// <summary>
     ///   Print the solution.
     /// </summary>
-    static void PrintSolution(in DataModel data, in RoutingModel routing, in RoutingIndexManager manager,
-                              in Assignment solution)
+    static void PrintSolution(in DataModel data, in Model routing, in IndexManager manager, in Assignment solution)
     {
         Console.WriteLine($"Objective {solution.ObjectiveValue()}:");
 
         // Inspect solution.
-        RoutingDimension timeDimension = routing.GetMutableDimension("Time");
+        Dimension timeDimension = routing.GetMutableDimension("Time");
         long totalTime = 0;
         for (int i = 0; i < data.VehicleNumber; ++i)
         {
@@ -117,13 +116,12 @@ public class VrpTimeWindows
 
         // Create Routing Index Manager
         // [START index_manager]
-        RoutingIndexManager manager =
-            new RoutingIndexManager(data.TimeMatrix.GetLength(0), data.VehicleNumber, data.Depot);
+        IndexManager manager = new IndexManager(data.TimeMatrix.GetLength(0), data.VehicleNumber, data.Depot);
         // [END index_manager]
 
         // Create Routing Model.
         // [START routing_model]
-        RoutingModel routing = new RoutingModel(manager);
+        Model routing = new Model(manager);
         // [END routing_model]
 
         // Create and register a transit callback.
@@ -150,7 +148,7 @@ public class VrpTimeWindows
                              30,                   // vehicle maximum capacities
                              false,                // start cumul to zero
                              "Time");
-        RoutingDimension timeDimension = routing.GetMutableDimension("Time");
+        Dimension timeDimension = routing.GetMutableDimension("Time");
         // Add time window constraints for each location except depot.
         for (int i = 1; i < data.TimeWindows.GetLength(0); ++i)
         {

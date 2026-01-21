@@ -31,6 +31,7 @@
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/routing/lp_scheduling.h"
 #include "ortools/routing/routing.h"
+#include "ortools/routing/types.h"
 #include "ortools/util/saturated_arithmetic.h"
 
 namespace operations_research::routing {
@@ -110,8 +111,8 @@ DecisionBuilder* MakeSetValuesFromTargets(Solver* solver,
 namespace {
 
 bool DimensionFixedTransitsEqualTransitEvaluatorForVehicle(
-    const RoutingDimension& dimension, int vehicle) {
-  const RoutingModel* const model = dimension.model();
+    const Dimension& dimension, int vehicle) {
+  const Model* const model = dimension.model();
   int node = model->Start(vehicle);
   while (!model->IsEnd(node)) {
     if (!model->NextVar(node)->Bound()) {
@@ -127,8 +128,7 @@ bool DimensionFixedTransitsEqualTransitEvaluatorForVehicle(
   return true;
 }
 
-bool DimensionFixedTransitsEqualTransitEvaluators(
-    const RoutingDimension& dimension) {
+bool DimensionFixedTransitsEqualTransitEvaluators(const Dimension& dimension) {
   for (int vehicle = 0; vehicle < dimension.model()->vehicles(); vehicle++) {
     if (!DimensionFixedTransitsEqualTransitEvaluatorForVehicle(dimension,
                                                                vehicle)) {
@@ -141,7 +141,7 @@ bool DimensionFixedTransitsEqualTransitEvaluators(
 // Concatenates cumul_values and break_values into 'values', and generates the
 // corresponding 'variables' vector.
 void AppendRouteCumulAndBreakVarAndValues(
-    const RoutingDimension& dimension, int vehicle,
+    const Dimension& dimension, int vehicle,
     absl::Span<const int64_t> cumul_values,
     absl::Span<const int64_t> break_values, std::vector<IntVar*>* variables,
     std::vector<int64_t>* values) {
@@ -150,19 +150,16 @@ void AppendRouteCumulAndBreakVarAndValues(
   DCHECK_EQ(vars.size(), vals.size());
   const int old_num_values = vals.size();
   vals.insert(vals.end(), cumul_values.begin(), cumul_values.end());
-  const RoutingModel& model = *dimension.model();
+  const Model& model = *dimension.model();
   {
     int current = model.Start(vehicle);
     while (true) {
       vars.push_back(dimension.CumulVar(current));
-      if (!model.IsEnd(current)) {
-        current = model.NextVar(current)->Value();
-      } else {
-        break;
-      }
+      if (model.IsEnd(current)) break;
+      current = model.NextVar(current)->Value();
     }
   }
-  if (dimension.HasBreakConstraints()) {
+  if (dimension.HasBreakConstraints() && !break_values.empty()) {
     for (IntervalVar* interval :
          dimension.GetBreakIntervalsOfVehicle(vehicle)) {
       vars.push_back(interval->SafeStartExpr(0)->Var());
@@ -186,7 +183,7 @@ void AppendRouteCumulAndBreakVarAndValues(
 }
 
 namespace {
-int GetVehicleRouteSize(const RoutingModel& model, int vehicle) {
+int GetVehicleRouteSize(const Model& model, int vehicle) {
   int route_size = -1;
   int64_t node = model.Start(vehicle);
   while (node != model.End(vehicle)) {
@@ -201,11 +198,11 @@ int GetVehicleRouteSize(const RoutingModel& model, int vehicle) {
 
 class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
  public:
-  SetCumulsFromLocalDimensionCosts(
-      LocalDimensionCumulOptimizer* lp_optimizer,
-      LocalDimensionCumulOptimizer* mp_optimizer, bool optimize_and_pack,
-      std::vector<RoutingModel::RouteDimensionTravelInfo>
-          dimension_travel_info_per_route)
+  SetCumulsFromLocalDimensionCosts(LocalDimensionCumulOptimizer* lp_optimizer,
+                                   LocalDimensionCumulOptimizer* mp_optimizer,
+                                   bool optimize_and_pack,
+                                   std::vector<Model::RouteDimensionTravelInfo>
+                                       dimension_travel_info_per_route)
       : model_(*lp_optimizer->dimension()->model()),
         dimension_(*lp_optimizer->dimension()),
         lp_optimizer_(lp_optimizer),
@@ -244,9 +241,9 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
   }
 
  private:
-  using Resource = RoutingModel::ResourceGroup::Resource;
-  using RCIndex = RoutingModel::ResourceClassIndex;
-  using RouteDimensionTravelInfo = RoutingModel::RouteDimensionTravelInfo;
+  using Resource = Model::ResourceGroup::Resource;
+  using RCIndex = ResourceClassIndex;
+  using RouteDimensionTravelInfo = Model::RouteDimensionTravelInfo;
 
   bool FillCPVariablesAndValues(Solver* solver) {
     DCHECK(DimensionFixedTransitsEqualTransitEvaluators(dimension_));
@@ -435,7 +432,8 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
     const bool use_mp_optimizer =
         dimension_.HasQuadraticCostSoftSpanUpperBounds() ||
         (dimension_.HasBreakConstraints() &&
-         !dimension_.GetBreakIntervalsOfVehicle(vehicle).empty());
+         (!dimension_.GetBreakIntervalsOfVehicle(vehicle).empty() ||
+          !dimension_.GetBreakDistanceDurationOfVehicle(vehicle).empty()));
     LocalDimensionCumulOptimizer* const optimizer =
         use_mp_optimizer ? mp_optimizer_ : lp_optimizer_;
     DCHECK_NE(optimizer, nullptr);
@@ -501,14 +499,14 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
                resource_indices) >= 0;
   }
 
-  const RoutingModel& model_;
-  const RoutingDimension& dimension_;
+  const Model& model_;
+  const Dimension& dimension_;
   LocalDimensionCumulOptimizer* lp_optimizer_;
   LocalDimensionCumulOptimizer* mp_optimizer_;
   // Stores the resource group index of the lp_/mp_optimizer_'s dimension, if
   // there is any.
   const int rg_index_;
-  const RoutingModel::ResourceGroup* const resource_group_;
+  const Model::ResourceGroup* const resource_group_;
   // Stores the information related to assigning a given vehicle to resource
   // classes. We keep these as class members to avoid unnecessary memory
   // reallocations.
@@ -544,7 +542,7 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
 DecisionBuilder* MakeSetCumulsFromLocalDimensionCosts(
     Solver* solver, LocalDimensionCumulOptimizer* lp_optimizer,
     LocalDimensionCumulOptimizer* mp_optimizer, bool optimize_and_pack,
-    std::vector<RoutingModel::RouteDimensionTravelInfo>
+    std::vector<Model::RouteDimensionTravelInfo>
         dimension_travel_info_per_route) {
   return solver->RevAlloc(new SetCumulsFromLocalDimensionCosts(
       lp_optimizer, mp_optimizer, optimize_and_pack,
@@ -559,7 +557,7 @@ class SetCumulsFromGlobalDimensionCosts : public DecisionBuilder {
       GlobalDimensionCumulOptimizer* global_optimizer,
       GlobalDimensionCumulOptimizer* global_mp_optimizer,
       bool optimize_and_pack,
-      std::vector<RoutingModel::RouteDimensionTravelInfo>
+      std::vector<Model::RouteDimensionTravelInfo>
           dimension_travel_info_per_route)
       : global_optimizer_(global_optimizer),
         global_mp_optimizer_(global_mp_optimizer),
@@ -573,8 +571,8 @@ class SetCumulsFromGlobalDimensionCosts : public DecisionBuilder {
     // Store the cp variables used to set values on in Next().
     // NOTE: The order is important as we use the same order to add values
     // in cp_values_.
-    const RoutingDimension* dimension = global_optimizer_->dimension();
-    const RoutingModel* model = dimension->model();
+    const Dimension* dimension = global_optimizer_->dimension();
+    const Model* model = dimension->model();
     cp_variables_ = dimension->cumuls();
     if (dimension->HasBreakConstraints()) {
       for (int vehicle = 0; vehicle < model->vehicles(); ++vehicle) {
@@ -616,9 +614,9 @@ class SetCumulsFromGlobalDimensionCosts : public DecisionBuilder {
 
  private:
   bool FillCPValues() {
-    const RoutingDimension* dimension = global_optimizer_->dimension();
+    const Dimension* dimension = global_optimizer_->dimension();
     DCHECK(DimensionFixedTransitsEqualTransitEvaluators(*dimension));
-    RoutingModel* const model = dimension->model();
+    Model* const model = dimension->model();
 
     GlobalDimensionCumulOptimizer* const optimizer =
         model->GetDimensionResourceGroupIndices(dimension).empty()
@@ -684,7 +682,7 @@ class SetCumulsFromGlobalDimensionCosts : public DecisionBuilder {
     cumul_values->clear();
     break_start_end_values->clear();
     resource_indices_per_group->clear();
-    RoutingModel* const model = optimizer->dimension()->model();
+    Model* const model = optimizer->dimension()->model();
     const auto next = [model](int64_t n) { return model->NextVar(n)->Value(); };
     return optimize_and_pack_
                ? optimizer->ComputePackedCumuls(
@@ -705,7 +703,7 @@ class SetCumulsFromGlobalDimensionCosts : public DecisionBuilder {
   std::vector<int64_t> cumul_values_;
   std::vector<int64_t> break_start_end_values_;
   std::vector<std::vector<int>> resource_indices_per_group_;
-  const std::vector<RoutingModel::RouteDimensionTravelInfo>
+  const std::vector<Model::RouteDimensionTravelInfo>
       dimension_travel_info_per_route_;
   // Decision level of this decision builder:
   // - level 0: set remaining dimension values at once.
@@ -719,7 +717,7 @@ class SetCumulsFromGlobalDimensionCosts : public DecisionBuilder {
 DecisionBuilder* MakeSetCumulsFromGlobalDimensionCosts(
     Solver* solver, GlobalDimensionCumulOptimizer* global_optimizer,
     GlobalDimensionCumulOptimizer* global_mp_optimizer, bool optimize_and_pack,
-    std::vector<RoutingModel::RouteDimensionTravelInfo>
+    std::vector<Model::RouteDimensionTravelInfo>
         dimension_travel_info_per_route) {
   return solver->RevAlloc(new SetCumulsFromGlobalDimensionCosts(
       global_optimizer, global_mp_optimizer, optimize_and_pack,
@@ -735,7 +733,7 @@ namespace {
 //   try to record and restore the min/max instead of a single value.
 class RestoreDimensionValuesForUnchangedRoutes : public DecisionBuilder {
  public:
-  explicit RestoreDimensionValuesForUnchangedRoutes(RoutingModel* model)
+  explicit RestoreDimensionValuesForUnchangedRoutes(Model* model)
       : model_(model) {
     model_->AddAtSolutionCallback([this]() { AtSolution(); });
     model_->AddRestoreDimensionValuesResetCallback([this]() { Reset(); });
@@ -762,8 +760,7 @@ class RestoreDimensionValuesForUnchangedRoutes : public DecisionBuilder {
     node_to_interval_variable_indices_.resize(num_nodes);
     // Search for dimension variables that correspond to input variables.
     for (const std::string& dimension_name : model_->GetAllDimensionNames()) {
-      const RoutingDimension& dimension =
-          model_->GetDimensionOrDie(dimension_name);
+      const Dimension& dimension = model_->GetDimensionOrDie(dimension_name);
       // Search among cumuls and slacks, and attach them to corresponding nodes.
       for (const std::vector<IntVar*>& dimension_variables :
            {dimension.cumuls(), dimension.slacks()}) {
@@ -866,7 +863,7 @@ class RestoreDimensionValuesForUnchangedRoutes : public DecisionBuilder {
   }
 
   // Input data.
-  RoutingModel* const model_;
+  Model* const model_;
 
   // The valuation of the last solution.
   std::vector<int> next_last_value_;
@@ -886,8 +883,7 @@ class RestoreDimensionValuesForUnchangedRoutes : public DecisionBuilder {
 };
 }  // namespace
 
-DecisionBuilder* MakeRestoreDimensionValuesForUnchangedRoutes(
-    RoutingModel* model) {
+DecisionBuilder* MakeRestoreDimensionValuesForUnchangedRoutes(Model* model) {
   return model->solver()->RevAlloc(
       new RestoreDimensionValuesForUnchangedRoutes(model));
 }

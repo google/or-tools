@@ -38,8 +38,7 @@ MakeRelocateNeighborsOperator<ignore_path_vars>::MakeRelocateNeighborsOperator(
     const std::vector<IntVar*>& secondary_vars,
     std::function<int(int64_t)> start_empty_path_class,
     NeighborAccessor get_incoming_neighbors,
-    NeighborAccessor get_outgoing_neighbors,
-    RoutingTransitCallback2 arc_evaluator)
+    NeighborAccessor get_outgoing_neighbors, TransitCallback2 arc_evaluator)
     : PathOperator<ignore_path_vars>(
           vars, secondary_vars,
           /*number_of_base_nodes=*/
@@ -142,7 +141,7 @@ LocalSearchOperator* MakeRelocateNeighbors(
     std::function<int(int64_t)> start_empty_path_class,
     std::function<const std::vector<int>&(int, int)> get_incoming_neighbors,
     std::function<const std::vector<int>&(int, int)> get_outgoing_neighbors,
-    RoutingTransitCallback2 arc_evaluator) {
+    TransitCallback2 arc_evaluator) {
   if (secondary_vars.empty()) {
     return solver->RevAlloc(new MakeRelocateNeighborsOperator<true>(
         vars, secondary_vars, std::move(start_empty_path_class),
@@ -159,7 +158,7 @@ LocalSearchOperator* MakeRelocateNeighbors(
     Solver* solver, const std::vector<IntVar*>& vars,
     const std::vector<IntVar*>& secondary_vars,
     std::function<int(int64_t)> start_empty_path_class,
-    RoutingTransitCallback2 arc_evaluator) {
+    TransitCallback2 arc_evaluator) {
   return MakeRelocateNeighbors(solver, vars, secondary_vars,
                                std::move(start_empty_path_class), nullptr,
                                nullptr, std::move(arc_evaluator));
@@ -167,7 +166,7 @@ LocalSearchOperator* MakeRelocateNeighbors(
 
 ShortestPathOnAlternatives::ShortestPathOnAlternatives(
     int num_nodes, std::vector<std::vector<int64_t>> alternative_sets,
-    RoutingTransitCallback2 arc_evaluator)
+    TransitCallback2 arc_evaluator)
     : arc_evaluator_(std::move(arc_evaluator)),
       alternative_sets_(std::move(alternative_sets)),
       to_alternative_set_(num_nodes, -1),
@@ -258,7 +257,7 @@ TwoOptWithShortestPathOperator<ignore_path_vars>::
         const std::vector<IntVar*>& secondary_vars,
         std::function<int(int64_t)> start_empty_path_class,
         std::vector<std::vector<int64_t>> alternative_sets,
-        RoutingTransitCallback2 arc_evaluator)
+        TransitCallback2 arc_evaluator)
     : PathOperator<ignore_path_vars>(
           vars, secondary_vars, /*number_of_base_nodes=*/2,
           /*skip_locally_optimal_paths=*/true,
@@ -318,7 +317,7 @@ LocalSearchOperator* MakeTwoOptWithShortestPath(
     const std::vector<IntVar*>& secondary_vars,
     std::function<int(int64_t)> start_empty_path_class,
     std::vector<std::vector<int64_t>> alternative_sets,
-    RoutingTransitCallback2 arc_evaluator) {
+    TransitCallback2 arc_evaluator) {
   if (secondary_vars.empty()) {
     return solver->RevAlloc(new TwoOptWithShortestPathOperator<true>(
         vars, secondary_vars, std::move(start_empty_path_class),
@@ -336,7 +335,7 @@ SwapActiveToShortestPathOperator<ignore_path_vars>::
         const std::vector<IntVar*>& secondary_vars,
         std::function<int(int64_t)> start_empty_path_class,
         std::vector<std::vector<int64_t>> alternative_sets,
-        RoutingTransitCallback2 arc_evaluator)
+        TransitCallback2 arc_evaluator)
     : PathOperator<ignore_path_vars>(
           vars, secondary_vars, /*number_of_base_nodes=*/1,
           /*skip_locally_optimal_paths=*/true,
@@ -369,7 +368,7 @@ LocalSearchOperator* MakeSwapActiveToShortestPath(
     const std::vector<IntVar*>& secondary_vars,
     std::function<int(int64_t)> start_empty_path_class,
     std::vector<std::vector<int64_t>> alternative_sets,
-    RoutingTransitCallback2 arc_evaluator) {
+    TransitCallback2 arc_evaluator) {
   if (secondary_vars.empty()) {
     return solver->RevAlloc(new SwapActiveToShortestPathOperator<true>(
         vars, secondary_vars, std::move(start_empty_path_class),

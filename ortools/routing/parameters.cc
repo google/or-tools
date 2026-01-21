@@ -59,12 +59,15 @@ RoutingModelParameters DefaultRoutingModelParameters() {
 }
 
 namespace {
-IteratedLocalSearchParameters CreateDefaultIteratedLocalSearchParameters() {
+// Creates IteratedLocalSearchParameters without setting any default values for
+// the repeated fields. Repeated fields are problematic because they will only
+// be appended to when merging with a proto containing this field.
+IteratedLocalSearchParameters CreateMinimalIteratedLocalSearchParameters() {
   IteratedLocalSearchParameters ils;
   ils.set_perturbation_strategy(PerturbationStrategy::RUIN_AND_RECREATE);
   RuinRecreateParameters* rr = ils.mutable_ruin_recreate_parameters();
   // NOTE: As of 07/2024, we no longer add any default ruin strategies to the
-  // default RuinRecreateParameters, because since ruin_strategies is a repeated
+  // default RuinRecreateParameters. Since ruin_strategies is a repeated
   // field, it will only be appended to when merging with a proto containing
   // this field.
   // A ruin strategy can be added as follows.
@@ -78,9 +81,38 @@ IteratedLocalSearchParameters CreateDefaultIteratedLocalSearchParameters() {
   rr->set_route_selection_min_neighbors(10);
   rr->set_route_selection_max_neighbors(100);
   ils.set_improve_perturbed_solution(true);
-  ils.mutable_best_solution_acceptance_strategy()->mutable_greedy_descent();
+  // NOTE: As of 12/2025, we no longer add any default acceptance policies to
+  // the default IteratedLocalSearchParameters. Since strategies is a
+  // repeated field, it will only be appended to when merging with a proto
+  // containing this field.
+  // Acceptance policies can be added as follows.
+  // ils.mutable_best_solution_acceptance_policy()
+  //    ->add_strategies()
+  //    ->mutable_greedy_descent();
+  // SimulatedAnnealingAcceptanceStrategy* sa =
+  //    ils.mutable_reference_solution_acceptance_policy()
+  //        ->add_strategies()
+  //        ->mutable_simulated_annealing();
+  // sa->set_cooling_schedule_strategy(CoolingScheduleStrategy::EXPONENTIAL);
+  // sa->set_initial_temperature(100.0);
+  // sa->set_final_temperature(0.01);
+  // sa->set_automatic_temperatures(false);
+  return ils;
+}
+
+IteratedLocalSearchParameters CreateDefaultIteratedLocalSearchParameters() {
+  IteratedLocalSearchParameters ils =
+      CreateMinimalIteratedLocalSearchParameters();
+  ils.mutable_ruin_recreate_parameters()
+      ->add_ruin_strategies()
+      ->mutable_spatially_close_routes()
+      ->set_num_ruined_routes(2);
+  ils.mutable_best_solution_acceptance_policy()
+      ->add_strategies()
+      ->mutable_greedy_descent();
   SimulatedAnnealingAcceptanceStrategy* sa =
-      ils.mutable_reference_solution_acceptance_strategy()
+      ils.mutable_reference_solution_acceptance_policy()
+          ->add_strategies()
           ->mutable_simulated_annealing();
   sa->set_cooling_schedule_strategy(CoolingScheduleStrategy::EXPONENTIAL);
   sa->set_initial_temperature(100.0);
@@ -201,7 +233,7 @@ RoutingSearchParameters CreateDefaultRoutingSearchParameters() {
   p.set_log_cost_offset(0.0);
   p.set_use_iterated_local_search(false);
   *p.mutable_iterated_local_search_parameters() =
-      CreateDefaultIteratedLocalSearchParameters();
+      CreateMinimalIteratedLocalSearchParameters();
 
   const std::string error = FindErrorInRoutingSearchParameters(p);
   LOG_IF(DFATAL, !error.empty())
@@ -214,7 +246,7 @@ RoutingSearchParameters CreateDefaultSecondaryRoutingSearchParameters() {
   p.set_local_search_metaheuristic(LocalSearchMetaheuristic::GREEDY_DESCENT);
   p.set_use_iterated_local_search(false);
   *p.mutable_iterated_local_search_parameters() =
-      CreateDefaultIteratedLocalSearchParameters();
+      CreateMinimalIteratedLocalSearchParameters();
   RoutingSearchParameters::LocalSearchNeighborhoodOperators* o =
       p.mutable_local_search_operators();
   o->set_use_relocate(BOOL_TRUE);
@@ -269,6 +301,12 @@ RoutingSearchParameters DefaultRoutingSearchParameters() {
 RoutingSearchParameters DefaultSecondaryRoutingSearchParameters() {
   static const auto* default_parameters = new RoutingSearchParameters(
       CreateDefaultSecondaryRoutingSearchParameters());
+  return *default_parameters;
+}
+
+IteratedLocalSearchParameters DefaultIteratedLocalSearchParameters() {
+  static const auto* default_parameters = new IteratedLocalSearchParameters(
+      CreateDefaultIteratedLocalSearchParameters());
   return *default_parameters;
 }
 
@@ -555,67 +593,84 @@ void FindErrorsInIteratedLocalSearchParameters(
 
   struct NamedAcceptanceStrategy {
     std::string name;
-    AcceptanceStrategy acceptance_strategy;
+    AcceptancePolicy acceptance_policy;
   };
-  std::vector<NamedAcceptanceStrategy> named_acceptance_strategies;
+  std::vector<NamedAcceptanceStrategy> named_acceptance_policies;
 
-  if (!ils.has_reference_solution_acceptance_strategy()) {
+  if (!ils.has_reference_solution_acceptance_policy()) {
     errors.emplace_back(
         StrCat("Unset value for "
                "iterated_local_search_parameters.reference_solution_acceptance_"
-               "strategy."));
+               "policy."));
   } else {
-    named_acceptance_strategies.push_back(
-        {"reference_solution", ils.reference_solution_acceptance_strategy()});
+    named_acceptance_policies.push_back(
+        {"reference_solution", ils.reference_solution_acceptance_policy()});
   }
 
-  if (!ils.has_best_solution_acceptance_strategy()) {
+  if (!ils.has_best_solution_acceptance_policy()) {
     errors.emplace_back(StrCat(
         "Unset value for "
-        "iterated_local_search_parameters.best_solution_acceptance_strategy."));
+        "iterated_local_search_parameters.best_solution_acceptance_policy."));
   } else {
-    named_acceptance_strategies.push_back(
-        {"best_solution", ils.best_solution_acceptance_strategy()});
+    named_acceptance_policies.push_back(
+        {"best_solution", ils.best_solution_acceptance_policy()});
   }
 
-  for (const auto& [name, acceptance_strategy] : named_acceptance_strategies) {
-    if (acceptance_strategy.has_simulated_annealing()) {
-      const SimulatedAnnealingAcceptanceStrategy& sa_params =
-          acceptance_strategy.simulated_annealing();
+  for (const auto& [name, acceptance_policy] : named_acceptance_policies) {
+    if (acceptance_policy.strategies().empty()) {
+      errors.emplace_back(StrCat("iterated_local_search_parameters.", name,
+                                 "_acceptance_policy.strategies is empty"));
+    }
 
-      if (sa_params.cooling_schedule_strategy() ==
-          CoolingScheduleStrategy::UNSET) {
-        errors.emplace_back(
-            StrCat("Invalid value for "
-                   "iterated_local_search_parameters.",
-                   name,
-                   "_acceptance_strategy.simulated_annealing.cooling_schedule_"
-                   "strategy: ",
-                   sa_params.cooling_schedule_strategy()));
-      }
+    if (acceptance_policy.strategies().size() > 1 &&
+        acceptance_policy.composition() == AcceptancePolicy::UNSET) {
+      errors.emplace_back(
+          StrCat("iterated_local_search_parameters.", name,
+                 "_acceptance_policy.composition is unset but there are ",
+                 acceptance_policy.strategies().size(), " strategies."));
+    }
 
-      if (!sa_params.automatic_temperatures()) {
-        if (sa_params.initial_temperature() < sa_params.final_temperature()) {
+    for (const AcceptanceStrategy& acceptance_strategy :
+         acceptance_policy.strategies()) {
+      if (acceptance_strategy.has_simulated_annealing()) {
+        const SimulatedAnnealingAcceptanceStrategy& sa_params =
+            acceptance_strategy.simulated_annealing();
+
+        if (sa_params.cooling_schedule_strategy() ==
+            CoolingScheduleStrategy::UNSET) {
           errors.emplace_back(StrCat(
-              "iterated_local_search_parameters.", name,
-              "_acceptance_strategy.simulated_annealing."
-              "initial_temperature cannot be lower than "
-              "iterated_local_search_parameters.simulated_annealing_parameters."
-              "final_temperature."));
+              "Invalid value for "
+              "iterated_local_search_parameters.",
+              name,
+              "_acceptance_strategy.simulated_annealing.cooling_schedule_"
+              "strategy: ",
+              sa_params.cooling_schedule_strategy()));
         }
 
-        if (sa_params.initial_temperature() < 1e-9) {
-          errors.emplace_back(
-              StrCat("iterated_local_search_parameters.", name,
-                     "_acceptance_strategy.simulated_annealing."
-                     "initial_temperature cannot be lower than 1e-9."));
-        }
+        if (!sa_params.automatic_temperatures()) {
+          if (sa_params.initial_temperature() < sa_params.final_temperature()) {
+            errors.emplace_back(
+                StrCat("iterated_local_search_parameters.", name,
+                       "_acceptance_strategy.simulated_annealing."
+                       "initial_temperature cannot be lower than "
+                       "iterated_local_search_parameters.simulated_annealing_"
+                       "parameters."
+                       "final_temperature."));
+          }
 
-        if (sa_params.final_temperature() < 1e-9) {
-          errors.emplace_back(
-              StrCat("iterated_local_search_parameters.", name,
-                     "_acceptance_strategy.simulated_annealing."
-                     "final_temperature cannot be lower than 1e-9."));
+          if (sa_params.initial_temperature() < 1e-9) {
+            errors.emplace_back(
+                StrCat("iterated_local_search_parameters.", name,
+                       "_acceptance_strategy.simulated_annealing."
+                       "initial_temperature cannot be lower than 1e-9."));
+          }
+
+          if (sa_params.final_temperature() < 1e-9) {
+            errors.emplace_back(
+                StrCat("iterated_local_search_parameters.", name,
+                       "_acceptance_strategy.simulated_annealing."
+                       "final_temperature cannot be lower than 1e-9."));
+          }
         }
       }
     }

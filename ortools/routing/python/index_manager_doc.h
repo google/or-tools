@@ -38,7 +38,7 @@
 #pragma GCC diagnostic ignored "-Wunused-variable"
 #endif
 
-static const char* __doc_operations_research_RoutingIndexManager =
+static const char* __doc_operations_research_IndexManager =
     R"doc(Manager for any NodeIndex <-> variable index conversion. The routing
 solver uses variable indices internally and through its API. These
 variable indices are tricky to manage directly because one Node can
@@ -52,8 +52,8 @@ Usage:
 ```
 {.cpp}
   auto starts_ends = ...;  /// These are NodeIndex.
-  RoutingIndexManager manager(10, 4, starts_ends);  // 10 nodes, 4 vehicles.
-  RoutingModel model(manager);
+  IndexManager manager(10, 4, starts_ends);  // 10 nodes, 4 vehicles.
+  Model model(manager);
 ```
 
 Then, use 'manager.NodeToIndex(node)' whenever model requires a
@@ -65,81 +65,74 @@ guarantee is that indices range between 0 and n-1, where n = number of
 vehicles * 2 (for start and end nodes) + number of non-start or end
 nodes.)doc";
 
-static const char* __doc_operations_research_RoutingIndexManager_GetEndIndex =
+static const char* __doc_operations_research_IndexManager_GetEndIndex =
     R"doc()doc";
 
-static const char*
-    __doc_operations_research_RoutingIndexManager_GetIndexToNodeMap =
-        R"doc()doc";
-
-static const char* __doc_operations_research_RoutingIndexManager_GetStartIndex =
+static const char* __doc_operations_research_IndexManager_GetIndexToNodeMap =
     R"doc()doc";
 
-static const char* __doc_operations_research_RoutingIndexManager_IndexToNode =
+static const char* __doc_operations_research_IndexManager_GetStartIndex =
     R"doc()doc";
 
-static const char*
-    __doc_operations_research_RoutingIndexManager_IndicesToNodes = R"doc()doc";
-
-static const char* __doc_operations_research_RoutingIndexManager_Initialize =
+static const char* __doc_operations_research_IndexManager_IndexToNode =
     R"doc()doc";
 
-static const char* __doc_operations_research_RoutingIndexManager_NodeToIndex =
+static const char* __doc_operations_research_IndexManager_IndicesToNodes =
     R"doc()doc";
 
-static const char*
-    __doc_operations_research_RoutingIndexManager_NodesToIndices = R"doc()doc";
+static const char* __doc_operations_research_IndexManager_Initialize =
+    R"doc()doc";
 
-static const char*
-    __doc_operations_research_RoutingIndexManager_RoutingIndexManager =
-        R"doc(Creates a NodeIndex to variable index mapping for a problem containing
+static const char* __doc_operations_research_IndexManager_NodeToIndex =
+    R"doc()doc";
+
+static const char* __doc_operations_research_IndexManager_NodesToIndices =
+    R"doc()doc";
+
+static const char* __doc_operations_research_IndexManager_IndexManager =
+    R"doc(Creates a NodeIndex to variable index mapping for a problem containing
 'num_nodes', 'num_vehicles' and the given starts and ends for each
 vehicle. If used, any start/end arrays have to have exactly
 'num_vehicles' elements.)doc";
 
-static const char*
-    __doc_operations_research_RoutingIndexManager_RoutingIndexManager_2 =
-        R"doc()doc";
-
-static const char*
-    __doc_operations_research_RoutingIndexManager_RoutingIndexManager_3 =
-        R"doc()doc";
-
-static const char* __doc_operations_research_RoutingIndexManager_index_to_node =
+static const char* __doc_operations_research_IndexManager_IndexManager_2 =
     R"doc()doc";
 
-static const char* __doc_operations_research_RoutingIndexManager_node_to_index =
+static const char* __doc_operations_research_IndexManager_IndexManager_3 =
     R"doc()doc";
 
-static const char* __doc_operations_research_RoutingIndexManager_num_indices =
+static const char* __doc_operations_research_IndexManager_index_to_node =
     R"doc()doc";
 
-static const char* __doc_operations_research_RoutingIndexManager_num_nodes =
+static const char* __doc_operations_research_IndexManager_node_to_index =
     R"doc()doc";
 
-static const char* __doc_operations_research_RoutingIndexManager_num_nodes_2 =
+static const char* __doc_operations_research_IndexManager_num_indices =
     R"doc()doc";
 
-static const char*
-    __doc_operations_research_RoutingIndexManager_num_unique_depots =
-        R"doc(complete.)doc";
-
-static const char*
-    __doc_operations_research_RoutingIndexManager_num_unique_depots_2 =
-        R"doc()doc";
-
-static const char* __doc_operations_research_RoutingIndexManager_num_vehicles =
+static const char* __doc_operations_research_IndexManager_num_nodes =
     R"doc()doc";
 
-static const char*
-    __doc_operations_research_RoutingIndexManager_num_vehicles_2 = R"doc()doc";
+static const char* __doc_operations_research_IndexManager_num_nodes_2 =
+    R"doc()doc";
 
-static const char*
-    __doc_operations_research_RoutingIndexManager_vehicle_to_end = R"doc()doc";
+static const char* __doc_operations_research_IndexManager_num_unique_depots =
+    R"doc(complete.)doc";
 
-static const char*
-    __doc_operations_research_RoutingIndexManager_vehicle_to_start =
-        R"doc()doc";
+static const char* __doc_operations_research_IndexManager_num_unique_depots_2 =
+    R"doc()doc";
+
+static const char* __doc_operations_research_IndexManager_num_vehicles =
+    R"doc()doc";
+
+static const char* __doc_operations_research_IndexManager_num_vehicles_2 =
+    R"doc()doc";
+
+static const char* __doc_operations_research_IndexManager_vehicle_to_end =
+    R"doc()doc";
+
+static const char* __doc_operations_research_IndexManager_vehicle_to_start =
+    R"doc()doc";
 
 #if defined(__GNUG__)
 #pragma GCC diagnostic pop

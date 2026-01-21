@@ -290,12 +290,12 @@ def main():
     # [END data]
 
     # Create the routing index manager
-    manager = pywraprouting.RoutingIndexManager(
+    manager = pywraprouting.IndexManager(
         data["numlocations_"], data["num_vehicles"], data["depot"]
     )
 
     # Create Routing Model
-    routing = pywraprouting.RoutingModel(manager)
+    routing = pywraprouting.Model(manager)
 
     # Define weight of each edge
     distance_evaluator_index = routing.RegisterTransitCallback(

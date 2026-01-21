@@ -32,9 +32,9 @@
 namespace operations_research::routing {
 
 // Wraps a routing assignment providing extra features.
-class RoutingSolution {
+class Solution {
  public:
-  explicit RoutingSolution(const RoutingModel& model);
+  explicit Solution(const Model& model);
 
   // Initializes the routing solution for the given assignment.
   void Reset(const Assignment* assignment);
@@ -87,7 +87,7 @@ class RoutingSolution {
       std::bernoulli_distribution& boolean_dist, int size) const;
 
  private:
-  const RoutingModel& model_;
+  const Model& model_;
   std::vector<int64_t> nexts_;
   std::vector<int64_t> prevs_;
   std::vector<int> route_sizes_;
@@ -110,7 +110,7 @@ class RuinProcedure {
 // Removes a number of routes that are spatially close together.
 class CloseRoutesRemovalRuinProcedure : public RuinProcedure {
  public:
-  CloseRoutesRemovalRuinProcedure(RoutingModel* model, std::mt19937* rnd,
+  CloseRoutesRemovalRuinProcedure(Model* model, std::mt19937* rnd,
                                   size_t num_routes,
                                   int num_neighbors_for_route_selection);
   // Returns next accessors where at most num_routes routes have been shortcut,
@@ -120,8 +120,8 @@ class CloseRoutesRemovalRuinProcedure : public RuinProcedure {
   std::function<int64_t(int64_t)> Ruin(const Assignment* assignment) override;
 
  private:
-  const RoutingModel& model_;
-  const RoutingModel::NodeNeighborsByCostClass* const neighbors_manager_;
+  const Model& model_;
+  const Model::NodeNeighborsByCostClass* const neighbors_manager_;
   const size_t num_routes_;
   std::mt19937& rnd_;
   std::uniform_int_distribution<int64_t> node_dist_;
@@ -134,7 +134,7 @@ class CloseRoutesRemovalRuinProcedure : public RuinProcedure {
 // single entity.
 class RandomWalkRemovalRuinProcedure : public RuinProcedure {
  public:
-  RandomWalkRemovalRuinProcedure(RoutingModel* model, std::mt19937* rnd,
+  RandomWalkRemovalRuinProcedure(Model* model, std::mt19937* rnd,
                                  int walk_length,
                                  int num_neighbors_for_route_selection);
 
@@ -144,9 +144,9 @@ class RandomWalkRemovalRuinProcedure : public RuinProcedure {
   // Returns the next node towards which the random walk is extended.
   int64_t GetNextNodeToRemove(const Assignment* assignment, int node);
 
-  const RoutingModel& model_;
-  RoutingSolution routing_solution_;
-  const RoutingModel::NodeNeighborsByCostClass* const neighbors_manager_;
+  const Model& model_;
+  Solution routing_solution_;
+  const Model::NodeNeighborsByCostClass* const neighbors_manager_;
   std::mt19937& rnd_;
   const int walk_length_;
   std::uniform_int_distribution<int64_t> node_dist_;
@@ -172,8 +172,7 @@ class CompositeRuinProcedure : public RuinProcedure {
   };
 
   CompositeRuinProcedure(
-      RoutingModel* model,
-      std::vector<std::unique_ptr<RuinProcedure>> ruin_procedures,
+      Model* model, std::vector<std::unique_ptr<RuinProcedure>> ruin_procedures,
       RuinCompositionStrategy::Value composition_strategy, std::mt19937* rnd);
 
   std::function<int64_t(int64_t)> Ruin(const Assignment* assignment) override;
@@ -183,7 +182,7 @@ class CompositeRuinProcedure : public RuinProcedure {
   const Assignment* BuildAssignmentFromNextAccessor(
       const std::function<int64_t(int64_t)>& next_accessor);
 
-  const RoutingModel& model_;
+  const Model& model_;
   std::vector<std::unique_ptr<RuinProcedure>> ruin_procedures_;
   std::unique_ptr<CompositionStrategy> composition_strategy_;
 
@@ -209,7 +208,7 @@ class CompositeRuinProcedure : public RuinProcedure {
 // See also SISRRuinStrategy in ils.proto.
 class SISRRuinProcedure : public RuinProcedure {
  public:
-  SISRRuinProcedure(RoutingModel* model, std::mt19937* rnd,
+  SISRRuinProcedure(Model* model, std::mt19937* rnd,
                     int max_removed_sequence_size, int avg_num_removed_visits,
                     double bypass_factor, int num_neighbors);
 
@@ -227,25 +226,24 @@ class SISRRuinProcedure : public RuinProcedure {
   void RuinRouteWithSplitSequenceProcedure(int64_t route, int64_t seed_visit,
                                            int sequence_size);
 
-  const RoutingModel& model_;
+  const Model& model_;
   std::mt19937& rnd_;
   int max_removed_sequence_size_;
   int avg_num_removed_visits_;
   double bypass_factor_;
-  const RoutingModel::NodeNeighborsByCostClass* const neighbors_manager_;
+  const Model::NodeNeighborsByCostClass* const neighbors_manager_;
   std::uniform_int_distribution<int64_t> node_dist_;
   std::bernoulli_distribution boolean_dist_;
   std::uniform_real_distribution<double> probability_dist_;
   SparseBitset<int64_t> ruined_routes_;
-  RoutingSolution routing_solution_;
+  Solution routing_solution_;
 };
 
 // Returns a DecisionBuilder implementing a perturbation step of an Iterated
 // Local Search approach.
 DecisionBuilder* MakePerturbationDecisionBuilder(
-    const RoutingSearchParameters& parameters, RoutingModel* model,
-    std::mt19937* rnd, const Assignment* assignment,
-    std::function<bool()> stop_search,
+    const RoutingSearchParameters& parameters, Model* model, std::mt19937* rnd,
+    const Assignment* assignment, std::function<bool()> stop_search,
     LocalSearchFilterManager* filter_manager);
 
 // Neighbor acceptance criterion interface.
@@ -275,15 +273,15 @@ class NeighborAcceptanceCriterion {
 
 // Returns a neighbor acceptance criterion based on the given parameters.
 std::unique_ptr<NeighborAcceptanceCriterion> MakeNeighborAcceptanceCriterion(
-    const RoutingModel& model, const AcceptanceStrategy& acceptance_strategy,
+    const Model& model, const AcceptancePolicy& acceptance_policy,
     const NeighborAcceptanceCriterion::SearchState& final_search_state,
     std::mt19937* rnd);
 
 // Returns initial and final simulated annealing temperatures according to the
 // given simulated annealing input parameters.
 std::pair<double, double> GetSimulatedAnnealingTemperatures(
-    const RoutingModel& model,
-    const SimulatedAnnealingAcceptanceStrategy& sa_params, std::mt19937* rnd);
+    const Model& model, const SimulatedAnnealingAcceptanceStrategy& sa_params,
+    std::mt19937* rnd);
 
 }  // namespace operations_research::routing
 

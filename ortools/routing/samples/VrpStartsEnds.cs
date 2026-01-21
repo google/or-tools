@@ -58,8 +58,7 @@ public class VrpStartsEnds
     /// <summary>
     ///   Print the solution.
     /// </summary>
-    static void PrintSolution(in DataModel data, in RoutingModel routing, in RoutingIndexManager manager,
-                              in Assignment solution)
+    static void PrintSolution(in DataModel data, in Model routing, in IndexManager manager, in Assignment solution)
     {
         Console.WriteLine($"Objective {solution.ObjectiveValue()}:");
 
@@ -98,13 +97,13 @@ public class VrpStartsEnds
 
         // Create Routing Index Manager
         // [START index_manager]
-        RoutingIndexManager manager =
-            new RoutingIndexManager(data.DistanceMatrix.GetLength(0), data.VehicleNumber, data.Starts, data.Ends);
+        IndexManager manager =
+            new IndexManager(data.DistanceMatrix.GetLength(0), data.VehicleNumber, data.Starts, data.Ends);
         // [END index_manager]
 
         // Create Routing Model.
         // [START routing_model]
-        RoutingModel routing = new RoutingModel(manager);
+        Model routing = new Model(manager);
         // [END routing_model]
 
         // Create and register a transit callback.
@@ -129,7 +128,7 @@ public class VrpStartsEnds
         routing.AddDimension(transitCallbackIndex, 0, 2000,
                              true, // start cumul to zero
                              "Distance");
-        RoutingDimension distanceDimension = routing.GetMutableDimension("Distance");
+        Dimension distanceDimension = routing.GetMutableDimension("Distance");
         distanceDimension.SetGlobalSpanCostCoefficient(100);
         // [END distance_constraint]
 

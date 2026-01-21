@@ -100,14 +100,14 @@ def main():
 
     # Create the routing index manager.
     # [START index_manager]
-    manager = pywraprouting.RoutingIndexManager(
+    manager = pywraprouting.IndexManager(
         len(data["distance_matrix"]), data["num_vehicles"], data["depot"]
     )
     # [END index_manager]
 
     # Create Routing Model.
     # [START routing_model]
-    routing = pywraprouting.RoutingModel(manager)
+    routing = pywraprouting.Model(manager)
 
     # [END routing_model]
 
@@ -152,7 +152,7 @@ def main():
             <= distance_dimension.CumulVar(delivery_index)
         )
     routing.SetPickupAndDeliveryPolicyOfAllVehicles(
-        pywraprouting.RoutingModel.PICKUP_AND_DELIVERY_LIFO
+        pywraprouting.Model.PICKUP_AND_DELIVERY_LIFO
     )
     # [END pickup_delivery_constraint]
 

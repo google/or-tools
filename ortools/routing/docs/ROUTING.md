@@ -34,6 +34,7 @@ and .Net. Each language have different requirements for the code samples.
 #include "ortools/routing/index_manager.h"
 #include "ortools/routing/parameters.h"
 #include "ortools/routing/routing.h"
+#include "ortools/routing/types.h"
 
 namespace operations_research::routing {
 
@@ -41,13 +42,13 @@ void SimpleRoutingProgram() {
   // Instantiate the data problem.
   int num_location = 5;
   int num_vehicles = 1;
-  RoutingIndexManager::NodeIndex depot{0};
+  NodeIndex depot{0};
 
   // Create Routing Index Manager
-  RoutingIndexManager manager(num_location, num_vehicles, depot);
+  IndexManager manager(num_location, num_vehicles, depot);
 
   // Create Routing Model.
-  RoutingModel routing(manager);
+  Model routing(manager);
 
   // Define cost of each arc.
   int distance_call_index = routing.RegisterTransitCallback(
@@ -113,12 +114,12 @@ def main():
   depot = 0
 
   # Create the routing index manager.
-  manager = pywraprouting.RoutingIndexManager(
+  manager = pywraprouting.IndexManager(
       num_locations, num_vehicles, depot
   )
 
   # Create Routing Model.
-  routing = pywraprouting.RoutingModel(manager)
+  routing = pywraprouting.Model(manager)
 
   # Create and register a transit callback.
   def distance_callback(from_index, to_index):
@@ -173,8 +174,8 @@ import com.google.ortools.routing.FirstSolutionStrategy;
 import com.google.ortools.routing.RoutingSearchParameters;
 import com.google.ortools.constraintsolver.Assignment;
 import com.google.ortools.routing.Globals;
-import com.google.ortools.routing.RoutingIndexManager;
-import com.google.ortools.routing.RoutingModel;
+import com.google.ortools.routing.IndexManager;
+import com.google.ortools.routing.Model;
 import java.util.logging.Logger;
 
 /** Minimal Routing example to showcase calling the solver.*/
@@ -189,10 +190,10 @@ public class SimpleRoutingProgram {
     final int depot = 0;
 
     // Create Routing Index Manager
-    RoutingIndexManager manager = new RoutingIndexManager(numLocation, numVehicles, depot);
+    IndexManager manager = new IndexManager(numLocation, numVehicles, depot);
 
     // Create Routing Model.
-    RoutingModel routing = new RoutingModel(manager);
+    Model routing = new Model(manager);
 
     // Create and register a transit callback.
     final int transitCallbackIndex =
@@ -257,10 +258,10 @@ public class SimpleRoutingProgram
         const int depot = 0;
 
         // Create Routing Index Manager
-        RoutingIndexManager manager = new RoutingIndexManager(numLocation, numVehicles, depot);
+        IndexManager manager = new IndexManager(numLocation, numVehicles, depot);
 
         // Create Routing Model.
-        RoutingModel routing = new RoutingModel(manager);
+        Model routing = new Model(manager);
 
         // Create and register a transit callback.
         int transitCallbackIndex = routing.RegisterTransitCallback((long fromIndex, long toIndex) =>

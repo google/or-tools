@@ -27,6 +27,7 @@
 #include "ortools/routing/index_manager.h"
 #include "ortools/routing/parameters.h"
 #include "ortools/routing/routing.h"
+#include "ortools/routing/types.h"
 // [END import]
 
 namespace operations_research::routing {
@@ -36,17 +37,17 @@ void SimpleRoutingProgram() {
   // [START data]
   int num_location = 5;
   int num_vehicles = 1;
-  RoutingIndexManager::NodeIndex depot{0};
+  NodeIndex depot{0};
   // [END data]
 
   // Create Routing Index Manager
   // [START index_manager]
-  RoutingIndexManager manager(num_location, num_vehicles, depot);
+  IndexManager manager(num_location, num_vehicles, depot);
   // [END index_manager]
 
   // Create Routing Model.
   // [START routing_model]
-  RoutingModel routing(manager);
+  Model routing(manager);
   // [END routing_model]
 
   // Define cost of each arc.

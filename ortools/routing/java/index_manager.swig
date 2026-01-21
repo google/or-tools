@@ -11,41 +11,35 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Wrapper for RoutingIndexManager.
+// Wrapper for IndexManager.
 
-%include "ortools/base/base.i"
 %include "ortools/routing/java/types.swig"
 
 %{
 #include "ortools/routing/index_manager.h"
 %}
 
-DEFINE_INDEX_TYPE_TYPEDEF(
-    operations_research::routing::RoutingNodeIndex,
-    operations_research::routing::RoutingIndexManager::NodeIndex);
-
 %ignoreall
 
 %unignore operations_research::routing;
 namespace operations_research::routing {
-
-%unignore RoutingIndexManager;
-%unignore RoutingIndexManager::~RoutingIndexManager;
-%unignore RoutingIndexManager::RoutingIndexManager(
+%unignore IndexManager;
+%unignore IndexManager::~IndexManager;
+%unignore IndexManager::IndexManager(
     int, int,
     NodeIndex);
-%unignore RoutingIndexManager::RoutingIndexManager(
+%unignore IndexManager::IndexManager(
     int, int,
     const std::vector<NodeIndex>&,
     const std::vector<NodeIndex>&);
-%rename (getStartIndex) RoutingIndexManager::GetStartIndex;
-%rename (getEndIndex) RoutingIndexManager::GetEndIndex;
-%rename (getNumberOfNodes) RoutingIndexManager::num_nodes;
-%rename (getNumberOfVehicles) RoutingIndexManager::num_vehicles;
-%rename (getNumberOfIndices) RoutingIndexManager::num_indices;
-%rename (indexToNode) RoutingIndexManager::IndexToNode;
-%rename (nodeToIndex) RoutingIndexManager::NodeToIndex;
-%rename (nodesToIndices) RoutingIndexManager::NodesToIndices;
+%rename (getStartIndex) IndexManager::GetStartIndex;
+%rename (getEndIndex) IndexManager::GetEndIndex;
+%rename (getNumberOfNodes) IndexManager::num_nodes;
+%rename (getNumberOfVehicles) IndexManager::num_vehicles;
+%rename (getNumberOfIndices) IndexManager::num_indices;
+%rename (indexToNode) IndexManager::IndexToNode;
+%rename (nodeToIndex) IndexManager::NodeToIndex;
+%rename (nodesToIndices) IndexManager::NodesToIndices;
 
 }  // namespace operations_research::routing
 

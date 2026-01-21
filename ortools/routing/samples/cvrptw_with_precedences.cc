@@ -44,13 +44,13 @@
 
 using operations_research::Assignment;
 using operations_research::routing::DefaultRoutingSearchParameters;
+using operations_research::routing::Dimension;
 using operations_research::routing::GetSeed;
+using operations_research::routing::IndexManager;
 using operations_research::routing::LocationContainer;
+using operations_research::routing::Model;
+using operations_research::routing::NodeIndex;
 using operations_research::routing::RandomDemand;
-using operations_research::routing::RoutingDimension;
-using operations_research::routing::RoutingIndexManager;
-using operations_research::routing::RoutingModel;
-using operations_research::routing::RoutingNodeIndex;
 using operations_research::routing::RoutingSearchParameters;
 using operations_research::routing::ServiceTimePlusTransition;
 
@@ -87,10 +87,10 @@ int main(int argc, char** argv) {
   // VRP of size absl::GetFlag(FLAGS_vrp_size).
   // Nodes are indexed from 0 to absl::GetFlag(FLAGS_vrp_orders), the starts and
   // ends of the routes are at node 0.
-  const RoutingIndexManager::NodeIndex kDepot(0);
-  RoutingIndexManager manager(absl::GetFlag(FLAGS_vrp_orders) + 1,
-                              absl::GetFlag(FLAGS_vrp_vehicles), kDepot);
-  RoutingModel routing(manager);
+  const operations_research::routing::NodeIndex kDepot(0);
+  IndexManager manager(absl::GetFlag(FLAGS_vrp_orders) + 1,
+                       absl::GetFlag(FLAGS_vrp_vehicles), kDepot);
+  Model routing(manager);
 
   // Setting up locations.
   const int64_t kXMax = 100000;
@@ -130,10 +130,8 @@ int main(int argc, char** argv) {
   const int64_t kHorizon = 24 * 3600;
   ServiceTimePlusTransition time(
       kTimePerDemandUnit,
-      [&demand](RoutingNodeIndex i, RoutingNodeIndex j) {
-        return demand.Demand(i, j);
-      },
-      [&locations](RoutingNodeIndex i, RoutingNodeIndex j) {
+      [&demand](NodeIndex i, NodeIndex j) { return demand.Demand(i, j); },
+      [&locations](NodeIndex i, NodeIndex j) {
         return locations.ManhattanTime(i, j);
       });
   routing.AddDimension(
@@ -141,7 +139,7 @@ int main(int argc, char** argv) {
         return time.Compute(manager.IndexToNode(i), manager.IndexToNode(j));
       }),
       kHorizon, kHorizon, /*fix_start_cumul_to_zero=*/true, kTime);
-  RoutingDimension* time_dimension = routing.GetMutableDimension(kTime);
+  Dimension* time_dimension = routing.GetMutableDimension(kTime);
 
   // Adding time windows.
   std::mt19937 randomizer(
@@ -155,9 +153,9 @@ int main(int argc, char** argv) {
 
   // Adding penalty costs to allow skipping orders.
   const int64_t kPenalty = 10000000;
-  const RoutingIndexManager::NodeIndex kFirstNodeAfterDepot(1);
-  for (RoutingIndexManager::NodeIndex order = kFirstNodeAfterDepot;
-       order < manager.num_nodes(); ++order) {
+  const NodeIndex kFirstNodeAfterDepot(1);
+  for (NodeIndex order = kFirstNodeAfterDepot; order < manager.num_nodes();
+       ++order) {
     std::vector<int64_t> orders(1, manager.NodeToIndex(order));
     routing.AddDisjunction(orders, kPenalty);
   }
@@ -165,8 +163,8 @@ int main(int argc, char** argv) {
   // Adding same vehicle constraint costs for consecutive nodes.
   if (absl::GetFlag(FLAGS_vrp_use_same_vehicle_costs)) {
     std::vector<int64_t> group;
-    for (RoutingIndexManager::NodeIndex order = kFirstNodeAfterDepot;
-         order < manager.num_nodes(); ++order) {
+    for (NodeIndex order = kFirstNodeAfterDepot; order < manager.num_nodes();
+         ++order) {
       group.push_back(manager.NodeToIndex(order));
       if (group.size() == kMaxNodesPerGroup) {
         routing.AddSoftSameVehicleConstraint(std::move(group),
@@ -198,7 +196,7 @@ int main(int argc, char** argv) {
            absl::GetFlag(FLAGS_vrp_precedence_offset)});
     }
   }
-  // Solve, returns a solution if any (owned by RoutingModel).
+  // Solve, returns a solution if any (owned by Model).
   RoutingSearchParameters parameters = DefaultRoutingSearchParameters();
   CHECK(google::protobuf::TextFormat::MergeFromString(
       absl::GetFlag(FLAGS_routing_search_parameters), &parameters));

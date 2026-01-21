@@ -28,8 +28,8 @@ Constraint* MakeDifferentFromValues(Solver* solver, IntVar* var,
                                     std::vector<int64_t> values);
 
 Constraint* MakeResourceConstraint(
-    const RoutingModel::ResourceGroup* resource_group,
-    const std::vector<IntVar*>* vehicle_resource_vars, RoutingModel* model);
+    const Model::ResourceGroup* resource_group,
+    const std::vector<IntVar*>* vehicle_resource_vars, Model* model);
 
 /// For every vehicle of the routing model:
 /// - if total_slacks[vehicle] is not nullptr, constrains it to be the sum of
@@ -40,17 +40,17 @@ Constraint* MakeResourceConstraint(
 ///   dimension->CumulVar(end) - dimension->CumulVar(start)
 /// This does stronger propagation than a decomposition, and takes breaks into
 /// account.
-Constraint* MakePathSpansAndTotalSlacks(const RoutingDimension* dimension,
+Constraint* MakePathSpansAndTotalSlacks(const Dimension* dimension,
                                         std::vector<IntVar*> spans,
                                         std::vector<IntVar*> total_slacks);
 
 Constraint* MakeRouteConstraint(
-    RoutingModel* model, std::vector<IntVar*> route_cost_vars,
+    Model* model, std::vector<IntVar*> route_cost_vars,
     std::function<std::optional<int64_t>(const std::vector<int64_t>&)>
         route_evaluator);
 
-Constraint* MakeGlobalVehicleBreaksConstraint(
-    Solver* solver, const RoutingDimension* dimension);
+Constraint* MakeGlobalVehicleBreaksConstraint(Solver* solver,
+                                              const Dimension* dimension);
 
 /// Makes inactive the vehicles which cannot cover the demand resulting from
 /// the transit variables of the active nodes given the maximum number of

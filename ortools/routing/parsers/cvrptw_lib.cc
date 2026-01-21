@@ -35,7 +35,7 @@
 
 namespace operations_research::routing {
 
-using NodeIndex = RoutingIndexManager::NodeIndex;
+using NodeIndex = NodeIndex;
 
 int32_t GetSeed(bool deterministic) {
   if (deterministic) {

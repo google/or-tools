@@ -70,10 +70,10 @@ public class VrpTimeWindowFixedPenalty
     /// <summary>
     ///   Print the solution.
     /// </summary>
-    static void PrintSolution(in DataModel data, in RoutingModel routing, in RoutingIndexManager manager,
+    static void PrintSolution(in DataModel data, in Model routing, in IndexManager manager,
                               in Assignment solution)
     {
-        RoutingDimension timeDimension = routing.GetMutableDimension("Time");
+        Dimension timeDimension = routing.GetMutableDimension("Time");
         // Inspect solution.
         long totalTime = 0;
         for (int i = 0; i < data.VehicleNumber; ++i)
@@ -102,11 +102,11 @@ public class VrpTimeWindowFixedPenalty
         DataModel data = new DataModel();
 
         // Create Routing Index Manager
-        RoutingIndexManager manager =
-            new RoutingIndexManager(data.TimeMatrix.GetLength(0), data.VehicleNumber, data.Depot);
+        IndexManager manager =
+            new IndexManager(data.TimeMatrix.GetLength(0), data.VehicleNumber, data.Depot);
 
         // Create Routing Model.
-        RoutingModel routing = new RoutingModel(manager);
+        Model routing = new Model(manager);
 
         // Create and register a transit callback.
         int transitCallbackIndex = routing.RegisterTransitCallback((long fromIndex, long toIndex) =>
@@ -127,7 +127,7 @@ public class VrpTimeWindowFixedPenalty
                              30,                   // vehicle maximum capacities
                              false,                // start cumul to zero
                              "Time");
-        RoutingDimension timeDimension = routing.GetMutableDimension("Time");
+        Dimension timeDimension = routing.GetMutableDimension("Time");
 
         routing.AddConstantDimensionWithSlack(0,                            // transit var 0 for all
                                               data.TimeMatrix.GetLength(0), // max value is every item being late
@@ -135,7 +135,7 @@ public class VrpTimeWindowFixedPenalty
                                               true,                         // start cumul to zero
                                               "Late");
 
-        RoutingDimension lateDimension = routing.GetMutableDimension("Late");
+        Dimension lateDimension = routing.GetMutableDimension("Late");
 
         // Add time window constraints for each location except depot.
         for (int i = 1; i < data.TimeWindows.GetLength(0); ++i)

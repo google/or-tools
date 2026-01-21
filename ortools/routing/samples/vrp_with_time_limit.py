@@ -59,12 +59,12 @@ def main():
 
     # Create the routing index manager.
     # [START index_manager]
-    manager = pywraprouting.RoutingIndexManager(num_locations, num_vehicles, depot)
+    manager = pywraprouting.IndexManager(num_locations, num_vehicles, depot)
     # [END index_manager]
 
     # Create Routing Model.
     # [START routing_model]
-    routing = pywraprouting.RoutingModel(manager)
+    routing = pywraprouting.Model(manager)
 
     # [END routing_model]
 
@@ -73,6 +73,8 @@ def main():
     def distance_callback(from_index, to_index):
         # pylint: disable=unused-argument
         """Returns the distance between the two nodes."""
+        del from_index
+        del to_index
         return 1
 
     transit_callback_index = routing.RegisterTransitCallback(distance_callback)

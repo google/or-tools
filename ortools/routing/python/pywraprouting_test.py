@@ -59,7 +59,7 @@ class Callback:
 class TestPyWrapRoutingIndexManager(absltest.TestCase):
 
     def testCtor(self):
-        manager = pywraprouting.RoutingIndexManager(42, 3, 7)
+        manager = pywraprouting.IndexManager(42, 3, 7)
         self.assertIsNotNone(manager)
         self.assertEqual(42, manager.GetNumberOfNodes())
         self.assertEqual(3, manager.GetNumberOfVehicles())
@@ -69,7 +69,7 @@ class TestPyWrapRoutingIndexManager(absltest.TestCase):
             self.assertEqual(7, manager.IndexToNode(manager.GetEndIndex(i)))
 
     def testCtorMultiDepotSame(self):
-        manager = pywraprouting.RoutingIndexManager(42, 3, [0, 0, 0], [0, 0, 0])
+        manager = pywraprouting.IndexManager(42, 3, [0, 0, 0], [0, 0, 0])
         self.assertIsNotNone(manager)
         self.assertEqual(42, manager.GetNumberOfNodes())
         self.assertEqual(3, manager.GetNumberOfVehicles())
@@ -79,7 +79,7 @@ class TestPyWrapRoutingIndexManager(absltest.TestCase):
             self.assertEqual(0, manager.IndexToNode(manager.GetEndIndex(i)))
 
     def testCtorMultiDepotAllDiff(self):
-        manager = pywraprouting.RoutingIndexManager(42, 3, [1, 2, 3], [4, 5, 6])
+        manager = pywraprouting.IndexManager(42, 3, [1, 2, 3], [4, 5, 6])
         self.assertIsNotNone(manager)
         self.assertEqual(42, manager.GetNumberOfNodes())
         self.assertEqual(3, manager.GetNumberOfVehicles())
@@ -92,18 +92,18 @@ class TestPyWrapRoutingIndexManager(absltest.TestCase):
 class TestPyWrapRoutingModel(absltest.TestCase):
 
     def testCtor(self):
-        manager = pywraprouting.RoutingIndexManager(42, 3, 7)
+        manager = pywraprouting.IndexManager(42, 3, 7)
         self.assertIsNotNone(manager)
-        model = pywraprouting.RoutingModel(manager)
+        model = pywraprouting.Model(manager)
         self.assertIsNotNone(model)
         for i in range(manager.GetNumberOfVehicles()):
             self.assertEqual(7, manager.IndexToNode(model.Start(i)))
             self.assertEqual(7, manager.IndexToNode(model.End(i)))
 
     def testSolve(self):
-        manager = pywraprouting.RoutingIndexManager(42, 3, 7)
+        manager = pywraprouting.IndexManager(42, 3, 7)
         self.assertIsNotNone(manager)
-        model = pywraprouting.RoutingModel(manager)
+        model = pywraprouting.Model(manager)
         self.assertIsNotNone(model)
         self.assertEqual(
             enums_pb2.RoutingSearchStatus.ROUTING_NOT_SOLVED, model.status()
@@ -114,9 +114,9 @@ class TestPyWrapRoutingModel(absltest.TestCase):
         self.assertEqual(0, assignment.ObjectiveValue())
 
     def testSolveMultiDepot(self):
-        manager = pywraprouting.RoutingIndexManager(42, 3, [1, 2, 3], [4, 5, 6])
+        manager = pywraprouting.IndexManager(42, 3, [1, 2, 3], [4, 5, 6])
         self.assertIsNotNone(manager)
-        model = pywraprouting.RoutingModel(manager)
+        model = pywraprouting.Model(manager)
         self.assertIsNotNone(model)
         self.assertEqual(
             enums_pb2.RoutingSearchStatus.ROUTING_NOT_SOLVED, model.status()
@@ -127,9 +127,9 @@ class TestPyWrapRoutingModel(absltest.TestCase):
         self.assertEqual(0, assignment.ObjectiveValue())
 
     def testTransitCallback(self):
-        manager = pywraprouting.RoutingIndexManager(5, 1, 0)
+        manager = pywraprouting.IndexManager(5, 1, 0)
         self.assertIsNotNone(manager)
-        model = pywraprouting.RoutingModel(manager)
+        model = pywraprouting.Model(manager)
         self.assertIsNotNone(model)
         transit_idx = model.RegisterTransitCallback(
             functools.partial(TransitDistance, manager)
@@ -145,9 +145,9 @@ class TestPyWrapRoutingModel(absltest.TestCase):
         self.assertEqual(20, assignment.ObjectiveValue())
 
     def testTransitLambda(self):
-        manager = pywraprouting.RoutingIndexManager(5, 1, 0)
+        manager = pywraprouting.IndexManager(5, 1, 0)
         self.assertIsNotNone(manager)
-        model = pywraprouting.RoutingModel(manager)
+        model = pywraprouting.Model(manager)
         self.assertIsNotNone(model)
         transit_id = model.RegisterTransitCallback(lambda from_index, to_index: 1)
         self.assertEqual(1, transit_id)
@@ -161,9 +161,9 @@ class TestPyWrapRoutingModel(absltest.TestCase):
         self.assertEqual(5, assignment.ObjectiveValue())
 
     def testTransitMatrix(self):
-        manager = pywraprouting.RoutingIndexManager(5, 1, 0)
+        manager = pywraprouting.IndexManager(5, 1, 0)
         self.assertIsNotNone(manager)
-        model = pywraprouting.RoutingModel(manager)
+        model = pywraprouting.Model(manager)
         self.assertIsNotNone(model)
         matrix = [[i + 1 for i in range(5)] for _ in range(5)]
         transit_idx = model.RegisterTransitMatrix(matrix)
@@ -178,9 +178,9 @@ class TestPyWrapRoutingModel(absltest.TestCase):
         self.assertEqual(15, assignment.ObjectiveValue())
 
     def testUnaryTransitCallback(self):
-        manager = pywraprouting.RoutingIndexManager(5, 1, 0)
+        manager = pywraprouting.IndexManager(5, 1, 0)
         self.assertIsNotNone(manager)
-        model = pywraprouting.RoutingModel(manager)
+        model = pywraprouting.Model(manager)
         self.assertIsNotNone(model)
         transit_idx = model.RegisterUnaryTransitCallback(
             functools.partial(UnaryTransitDistance, manager)
@@ -196,9 +196,9 @@ class TestPyWrapRoutingModel(absltest.TestCase):
         self.assertEqual(10, assignment.ObjectiveValue())
 
     def testUnaryTransitLambda(self):
-        manager = pywraprouting.RoutingIndexManager(5, 1, 0)
+        manager = pywraprouting.IndexManager(5, 1, 0)
         self.assertIsNotNone(manager)
-        model = pywraprouting.RoutingModel(manager)
+        model = pywraprouting.Model(manager)
         self.assertIsNotNone(model)
         transit_id = model.RegisterUnaryTransitCallback(lambda from_index: 1)
         self.assertEqual(1, transit_id)
@@ -212,9 +212,9 @@ class TestPyWrapRoutingModel(absltest.TestCase):
         self.assertEqual(5, assignment.ObjectiveValue())
 
     def testUnaryTransitVector(self):
-        manager = pywraprouting.RoutingIndexManager(10, 1, 0)
+        manager = pywraprouting.IndexManager(10, 1, 0)
         self.assertIsNotNone(manager)
-        model = pywraprouting.RoutingModel(manager)
+        model = pywraprouting.Model(manager)
         self.assertIsNotNone(model)
         vector = list(range(10))
         transit_idx = model.RegisterUnaryTransitVector(vector)
@@ -230,9 +230,9 @@ class TestPyWrapRoutingModel(absltest.TestCase):
 
     def testTSP(self):
         # Create routing model
-        manager = pywraprouting.RoutingIndexManager(10, 1, 0)
+        manager = pywraprouting.IndexManager(10, 1, 0)
         self.assertIsNotNone(manager)
-        model = pywraprouting.RoutingModel(manager)
+        model = pywraprouting.Model(manager)
         self.assertIsNotNone(model)
         # Add cost function
         transit_idx = model.RegisterTransitCallback(
@@ -261,9 +261,9 @@ class TestPyWrapRoutingModel(absltest.TestCase):
 
     def testVRP(self):
         # Create routing model
-        manager = pywraprouting.RoutingIndexManager(10, 2, [0, 1], [1, 0])
+        manager = pywraprouting.IndexManager(10, 2, [0, 1], [1, 0])
         self.assertIsNotNone(manager)
-        model = pywraprouting.RoutingModel(manager)
+        model = pywraprouting.Model(manager)
         self.assertIsNotNone(model)
         # Add cost function
         transit_idx = model.RegisterTransitCallback(
@@ -289,9 +289,9 @@ class TestPyWrapRoutingModel(absltest.TestCase):
 
     def testDimensionTSP(self):
         # Create routing model
-        manager = pywraprouting.RoutingIndexManager(10, 1, 0)
+        manager = pywraprouting.IndexManager(10, 1, 0)
         self.assertIsNotNone(manager)
-        model = pywraprouting.RoutingModel(manager)
+        model = pywraprouting.Model(manager)
         self.assertIsNotNone(model)
         # Add cost function
         transit_idx = model.RegisterTransitCallback(
@@ -319,9 +319,9 @@ class TestPyWrapRoutingModel(absltest.TestCase):
 
     def testDimensionWithVehicleCapacitiesTSP(self):
         # Create routing model
-        manager = pywraprouting.RoutingIndexManager(10, 1, 0)
+        manager = pywraprouting.IndexManager(10, 1, 0)
         self.assertIsNotNone(manager)
-        model = pywraprouting.RoutingModel(manager)
+        model = pywraprouting.Model(manager)
         self.assertIsNotNone(model)
         # Add cost function
         transit_idx = model.RegisterTransitCallback(
@@ -349,9 +349,9 @@ class TestPyWrapRoutingModel(absltest.TestCase):
 
     def testDimensionWithVehicleTransitsTSP(self):
         # Create routing model
-        manager = pywraprouting.RoutingIndexManager(10, 1, 0)
+        manager = pywraprouting.IndexManager(10, 1, 0)
         self.assertIsNotNone(manager)
-        model = pywraprouting.RoutingModel(manager)
+        model = pywraprouting.Model(manager)
         self.assertIsNotNone(model)
         # Add cost function
         transit_idx = model.RegisterTransitCallback(
@@ -379,9 +379,9 @@ class TestPyWrapRoutingModel(absltest.TestCase):
 
     def testDimensionWithVehicleTransitsVRP(self):
         # Create routing model
-        manager = pywraprouting.RoutingIndexManager(10, 3, 0)
+        manager = pywraprouting.IndexManager(10, 3, 0)
         self.assertIsNotNone(manager)
-        model = pywraprouting.RoutingModel(manager)
+        model = pywraprouting.Model(manager)
         self.assertIsNotNone(model)
         # Add cost function
         transit_idx = model.RegisterTransitCallback(
@@ -419,9 +419,9 @@ class TestPyWrapRoutingModel(absltest.TestCase):
 
     def testConstantDimensionTSP(self):
         # Create routing model
-        manager = pywraprouting.RoutingIndexManager(10, 3, 0)
+        manager = pywraprouting.IndexManager(10, 3, 0)
         self.assertIsNotNone(manager)
-        model = pywraprouting.RoutingModel(manager)
+        model = pywraprouting.Model(manager)
         self.assertIsNotNone(model)
         # Add cost function
         transit_idx = model.RegisterTransitCallback(
@@ -451,9 +451,9 @@ class TestPyWrapRoutingModel(absltest.TestCase):
 
     def testVectorDimensionTSP(self):
         # Create routing model
-        manager = pywraprouting.RoutingIndexManager(10, 1, 0)
+        manager = pywraprouting.IndexManager(10, 1, 0)
         self.assertIsNotNone(manager)
-        model = pywraprouting.RoutingModel(manager)
+        model = pywraprouting.Model(manager)
         self.assertIsNotNone(model)
         # Add cost function
         transit_idx = model.RegisterTransitCallback(
@@ -490,9 +490,9 @@ class TestPyWrapRoutingModel(absltest.TestCase):
 
     def testMatrixDimensionTSP(self):
         # Create routing model
-        manager = pywraprouting.RoutingIndexManager(5, 1, 0)
+        manager = pywraprouting.IndexManager(5, 1, 0)
         self.assertIsNotNone(manager)
-        model = pywraprouting.RoutingModel(manager)
+        model = pywraprouting.Model(manager)
         self.assertIsNotNone(model)
         # Add cost function
         cost = model.RegisterTransitCallback(
@@ -526,9 +526,9 @@ class TestPyWrapRoutingModel(absltest.TestCase):
             index = assignment.Value(model.NextVar(index))
 
     def testMatrixDimensionVRP(self):
-        manager = pywraprouting.RoutingIndexManager(5, 2, 0)
+        manager = pywraprouting.IndexManager(5, 2, 0)
         self.assertIsNotNone(manager)
-        model = pywraprouting.RoutingModel(manager)
+        model = pywraprouting.Model(manager)
         self.assertIsNotNone(model)
         # Add cost function
         matrix = [[i + j for i in range(5)] for j in range(5)]
@@ -565,11 +565,38 @@ class TestPyWrapRoutingModel(absltest.TestCase):
                     manager.IndexToNode(index)
                 ]
 
+    def testAllowedVehicles(self):
+        manager = pywraprouting.IndexManager(
+            2, 2, 0  # num_nodes  # num_vehicles  # depot
+        )
+        self.assertIsNotNone(manager)
+        model = pywraprouting.Model(manager)
+        self.assertIsNotNone(model)
+        # out of range vehicle index is allowed.
+        model.SetAllowedVehiclesForIndex(vehicles=[13], index=1)
+        self.assertFalse(model.IsVehicleAllowedForIndex(vehicle=0, index=1))
+        self.assertFalse(model.IsVehicleAllowedForIndex(1, 1))
+        self.assertTrue(model.IsVehicleAllowedForIndex(13, 1))
+        # empty list means any vehicles are allowed.
+        model.SetAllowedVehiclesForIndex([], 1)
+        self.assertTrue(model.IsVehicleAllowedForIndex(0, 1))
+        self.assertTrue(model.IsVehicleAllowedForIndex(1, 1))
+        self.assertTrue(model.IsVehicleAllowedForIndex(42, 1))
+        # only allow first vehicle for node 1.
+        model.SetAllowedVehiclesForIndex([0], 1)
+        self.assertTrue(model.IsVehicleAllowedForIndex(0, 1))
+        self.assertFalse(model.IsVehicleAllowedForIndex(1, 1))
+        self.assertFalse(model.IsVehicleAllowedForIndex(2, 1))
+        assignment = model.Solve()
+        self.assertIsNotNone(assignment)
+        self.assertEqual(1, assignment.Value(model.NextVar(model.Start(0))))
+        self.assertEqual(model.GetVehicleClassesCount(), 2)
+
     def testDisjunctionTSP(self):
         # Create routing model
-        manager = pywraprouting.RoutingIndexManager(10, 1, 0)
+        manager = pywraprouting.IndexManager(10, 1, 0)
         self.assertIsNotNone(manager)
-        model = pywraprouting.RoutingModel(manager)
+        model = pywraprouting.Model(manager)
         self.assertIsNotNone(model)
         # Add cost function
         transit_idx = model.RegisterTransitCallback(
@@ -606,9 +633,9 @@ class TestPyWrapRoutingModel(absltest.TestCase):
 
     def testDisjunctionPenaltyTSP(self):
         # Create routing model
-        manager = pywraprouting.RoutingIndexManager(10, 1, 0)
+        manager = pywraprouting.IndexManager(10, 1, 0)
         self.assertIsNotNone(manager)
-        model = pywraprouting.RoutingModel(manager)
+        model = pywraprouting.Model(manager)
         self.assertIsNotNone(model)
         # Add cost function
         transit_idx = model.RegisterTransitCallback(
@@ -648,9 +675,9 @@ class TestPyWrapRoutingModel(absltest.TestCase):
         parameters = pywraprouting.DefaultRoutingModelParameters()
         parameters.solver_parameters.CopyFrom(pywrapcp.Solver.DefaultSolverParameters())
         parameters.solver_parameters.trace_propagation = True
-        manager = pywraprouting.RoutingIndexManager(10, 1, 0)
+        manager = pywraprouting.IndexManager(10, 1, 0)
         self.assertIsNotNone(manager)
-        model = pywraprouting.RoutingModel(manager, parameters)
+        model = pywraprouting.Model(manager, parameters)
         self.assertIsNotNone(model)
         self.assertEqual(1, model.vehicles())
         self.assertTrue(model.solver().Parameters().trace_propagation)
@@ -658,9 +685,9 @@ class TestPyWrapRoutingModel(absltest.TestCase):
     def testRoutingLocalSearchFiltering(self):
         parameters = pywraprouting.DefaultRoutingModelParameters()
         parameters.solver_parameters.profile_local_search = True
-        manager = pywraprouting.RoutingIndexManager(10, 1, 0)
+        manager = pywraprouting.IndexManager(10, 1, 0)
         self.assertIsNotNone(manager)
-        model = pywraprouting.RoutingModel(manager, parameters)
+        model = pywraprouting.Model(manager, parameters)
         self.assertIsNotNone(model)
         model.Solve()
         profile = model.solver().LocalSearchProfile()
@@ -670,9 +697,9 @@ class TestPyWrapRoutingModel(absltest.TestCase):
 
     def testRoutingSearchParameters(self):
         # Create routing model
-        manager = pywraprouting.RoutingIndexManager(10, 1, 0)
+        manager = pywraprouting.IndexManager(10, 1, 0)
         self.assertIsNotNone(manager)
-        model = pywraprouting.RoutingModel(manager)
+        model = pywraprouting.Model(manager)
         self.assertIsNotNone(model)
         # Add cost function
         transit_idx = model.RegisterTransitCallback(
@@ -708,9 +735,9 @@ class TestPyWrapRoutingModel(absltest.TestCase):
         self.assertIn("cross", pywraprouting.FindErrorInRoutingSearchParameters(params))
 
     def testCallback(self):
-        manager = pywraprouting.RoutingIndexManager(10, 1, 0)
+        manager = pywraprouting.IndexManager(10, 1, 0)
         self.assertIsNotNone(manager)
-        model = pywraprouting.RoutingModel(manager)
+        model = pywraprouting.Model(manager)
         self.assertIsNotNone(model)
         transit_idx = model.RegisterTransitCallback(
             functools.partial(TransitDistance, manager)
@@ -728,9 +755,9 @@ class TestPyWrapRoutingModel(absltest.TestCase):
         self.assertEqual(90, callback.costs[0])
 
     def testReadAssignment(self):
-        manager = pywraprouting.RoutingIndexManager(10, 2, 0)
+        manager = pywraprouting.IndexManager(10, 2, 0)
         self.assertIsNotNone(manager)
-        model = pywraprouting.RoutingModel(manager)
+        model = pywraprouting.Model(manager)
         self.assertIsNotNone(model)
         # TODO(user): porting this segfaults the tests.
         transit_idx = model.RegisterTransitCallback(
@@ -769,9 +796,9 @@ class TestPyWrapRoutingModel(absltest.TestCase):
                     count += 1
 
     def testAutomaticFirstSolutionStrategy_simple(self):
-        manager = pywraprouting.RoutingIndexManager(31, 7, 3)
+        manager = pywraprouting.IndexManager(31, 7, 3)
         self.assertIsNotNone(manager)
-        model = pywraprouting.RoutingModel(manager)
+        model = pywraprouting.Model(manager)
         self.assertIsNotNone(model)
         # Add cost function
         transit_idx = model.RegisterTransitCallback(
@@ -787,9 +814,9 @@ class TestPyWrapRoutingModel(absltest.TestCase):
         )
 
     def testAutomaticFirstSolutionStrategy_pd(self):
-        manager = pywraprouting.RoutingIndexManager(31, 7, 0)
+        manager = pywraprouting.IndexManager(31, 7, 0)
         self.assertIsNotNone(manager)
-        model = pywraprouting.RoutingModel(manager)
+        model = pywraprouting.Model(manager)
         self.assertIsNotNone(model)
         # Add cost function
         transit_idx = model.RegisterTransitCallback(
@@ -836,9 +863,9 @@ class TestBoundCost(absltest.TestCase):
 class TestRoutingDimension(absltest.TestCase):
 
     def testCtor(self):
-        manager = pywraprouting.RoutingIndexManager(31, 7, 3)
+        manager = pywraprouting.IndexManager(31, 7, 3)
         self.assertIsNotNone(manager)
-        model = pywraprouting.RoutingModel(manager)
+        model = pywraprouting.Model(manager)
         self.assertIsNotNone(model)
         transit_idx = model.RegisterTransitCallback(
             functools.partial(TransitDistance, manager)
@@ -847,9 +874,9 @@ class TestRoutingDimension(absltest.TestCase):
         model.GetDimensionOrDie("distance")
 
     def testSoftSpanUpperBound(self):
-        manager = pywraprouting.RoutingIndexManager(31, 7, 3)
+        manager = pywraprouting.IndexManager(31, 7, 3)
         self.assertIsNotNone(manager)
-        model = pywraprouting.RoutingModel(manager)
+        model = pywraprouting.Model(manager)
         self.assertIsNotNone(model)
         transit_idx = model.RegisterTransitCallback(
             functools.partial(TransitDistance, manager)
@@ -869,9 +896,9 @@ class TestRoutingDimension(absltest.TestCase):
         self.assertTrue(dimension.HasSoftSpanUpperBounds())
 
     def testQuadraticCostSoftSpanUpperBound(self):
-        manager = pywraprouting.RoutingIndexManager(31, 7, 3)
+        manager = pywraprouting.IndexManager(31, 7, 3)
         self.assertIsNotNone(manager)
-        model = pywraprouting.RoutingModel(manager)
+        model = pywraprouting.Model(manager)
         self.assertIsNotNone(model)
         transit_idx = model.RegisterTransitCallback(
             functools.partial(TransitDistance, manager)

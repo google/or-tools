@@ -334,8 +334,22 @@ message AcceptanceStrategy {
   }
 }
 
+// Composition of acceptance strategies. When a single strategy is specified,
+// the composition rule is ignored.
+message AcceptancePolicy {
+  enum Composition {
+    UNSET = 0;
+    OR = 1;
+  }
+
+  Composition composition = 1;
+  repeated AcceptanceStrategy strategies = 2;
+}
+
 // Specifies the behavior of a search based on ILS.
 message IteratedLocalSearchParameters {
+  reserved 4, 5;
+
   // Determines how a reference solution S is perturbed to obtain a neighbor
   // solution S'.
   PerturbationStrategy.Value perturbation_strategy = 1;
@@ -349,9 +363,9 @@ message IteratedLocalSearchParameters {
 
   // Determines when the neighbor solution S', possibly improved if
   // `improve_perturbed_solution` is true, replaces the reference solution S.
-  AcceptanceStrategy reference_solution_acceptance_strategy = 4;
+  AcceptancePolicy reference_solution_acceptance_policy = 6;
 
   // Determines when the neighbor solution S' replaces the best solution found
   // so far.
-  AcceptanceStrategy best_solution_acceptance_strategy = 5;
+  AcceptancePolicy best_solution_acceptance_policy = 7;
 }

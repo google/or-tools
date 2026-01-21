@@ -17,12 +17,12 @@ package com.google.ortools.routing.samples;
 // [START import]
 import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.Assignment;
+import com.google.ortools.routing.Dimension;
 import com.google.ortools.routing.FirstSolutionStrategy;
 import com.google.ortools.routing.Globals;
+import com.google.ortools.routing.IndexManager;
 import com.google.ortools.routing.LocalSearchMetaheuristic;
-import com.google.ortools.routing.RoutingDimension;
-import com.google.ortools.routing.RoutingIndexManager;
-import com.google.ortools.routing.RoutingModel;
+import com.google.ortools.routing.Model;
 import com.google.ortools.routing.RoutingSearchParameters;
 import com.google.protobuf.Duration;
 import java.util.logging.Logger;
@@ -56,11 +56,12 @@ public final class VrpSolutionCallback {
     public final int vehicleNumber = 4;
     public final int depot = 0;
   }
+
   // [END data_model]
 
   // [START solution_callback_printer]
   /// @brief Print the solution.
-  static void printSolution(RoutingIndexManager routingManager, RoutingModel routingModel) {
+  static void printSolution(IndexManager routingManager, Model routingModel) {
     // Solution cost.
     logger.info("################");
     logger.info("Solution objective : " + routingModel.costVar().value());
@@ -91,13 +92,12 @@ public final class VrpSolutionCallback {
   // [START solution_callback]
   static class SolutionCallback implements Runnable {
     public final long[] objectives;
-    private final RoutingIndexManager routingManager;
-    private final RoutingModel routingModel;
+    private final IndexManager routingManager;
+    private final Model routingModel;
     private final int maxSolution;
     private int counter;
 
-    public SolutionCallback(
-        final RoutingIndexManager manager, final RoutingModel routing, int limit) {
+    public SolutionCallback(final IndexManager manager, final Model routing, int limit) {
       routingManager = manager;
       routingModel = routing;
       maxSolution = limit;
@@ -130,13 +130,13 @@ public final class VrpSolutionCallback {
 
     // Create Routing Index Manager
     // [START index_manager]
-    final RoutingIndexManager routingManager =
-        new RoutingIndexManager(data.distanceMatrix.length, data.vehicleNumber, data.depot);
+    final IndexManager routingManager =
+        new IndexManager(data.distanceMatrix.length, data.vehicleNumber, data.depot);
     // [END index_manager]
 
     // Create Routing Model.
     // [START routing_model]
-    final RoutingModel routingModel = new RoutingModel(routingManager);
+    final Model routingModel = new Model(routingManager);
     // [END routing_model]
 
     // Create and register a transit callback.
@@ -162,7 +162,7 @@ public final class VrpSolutionCallback {
         3000, // vehicle maximum travel distance
         true, // start cumul to zero
         "Distance");
-    RoutingDimension distanceDimension = routingModel.getMutableDimension("Distance");
+    Dimension distanceDimension = routingModel.getMutableDimension("Distance");
     distanceDimension.setGlobalSpanCostCoefficient(100);
     // [END distance_constraint]
 

@@ -44,13 +44,13 @@
 
 using operations_research::Assignment;
 using operations_research::routing::DefaultRoutingSearchParameters;
+using operations_research::routing::Dimension;
 using operations_research::routing::GetSeed;
+using operations_research::routing::IndexManager;
 using operations_research::routing::LocationContainer;
+using operations_research::routing::Model;
+using operations_research::routing::NodeIndex;
 using operations_research::routing::RandomDemand;
-using operations_research::routing::RoutingDimension;
-using operations_research::routing::RoutingIndexManager;
-using operations_research::routing::RoutingModel;
-using operations_research::routing::RoutingNodeIndex;
 using operations_research::routing::RoutingSearchParameters;
 using operations_research::routing::ServiceTimePlusTransition;
 
@@ -95,10 +95,10 @@ int main(int argc, char** argv) {
   // VRP of size absl::GetFlag(FLAGS_vrp_size).
   // Nodes are indexed from 0 to absl::GetFlag(FLAGS_vrp_orders), the starts and
   // ends of the routes are at node 0.
-  const RoutingIndexManager::NodeIndex kDepot(0);
-  RoutingIndexManager manager(absl::GetFlag(FLAGS_vrp_orders) + 1,
-                              absl::GetFlag(FLAGS_vrp_vehicles), kDepot);
-  RoutingModel routing(manager);
+  const operations_research::routing::NodeIndex kDepot(0);
+  IndexManager manager(absl::GetFlag(FLAGS_vrp_orders) + 1,
+                       absl::GetFlag(FLAGS_vrp_vehicles), kDepot);
+  Model routing(manager);
 
   // Setting up locations.
   const int64_t kXMax = 100'000;
@@ -131,7 +131,7 @@ int main(int argc, char** argv) {
       }),
       kNullCapacitySlack, absl::GetFlag(FLAGS_vrp_vehicle_hard_capacity),
       /*fix_start_cumul_to_zero=*/true, kCapacity);
-  RoutingDimension* capacity_dimension = routing.GetMutableDimension(kCapacity);
+  Dimension* capacity_dimension = routing.GetMutableDimension(kCapacity);
 
   // Penalise the capacity slacks to implement the soft constraint (a hard
   // constraint has a zero slack).
@@ -147,10 +147,8 @@ int main(int argc, char** argv) {
   const int64_t kHorizon = 24 * 3600;
   ServiceTimePlusTransition time(
       kTimePerDemandUnit,
-      [&demand](RoutingNodeIndex i, RoutingNodeIndex j) {
-        return demand.Demand(i, j);
-      },
-      [&locations](RoutingNodeIndex i, RoutingNodeIndex j) {
+      [&demand](NodeIndex i, NodeIndex j) { return demand.Demand(i, j); },
+      [&locations](NodeIndex i, NodeIndex j) {
         return locations.ManhattanTime(i, j);
       });
   routing.AddDimension(
@@ -158,7 +156,7 @@ int main(int argc, char** argv) {
         return time.Compute(manager.IndexToNode(i), manager.IndexToNode(j));
       }),
       kHorizon, kHorizon, /*fix_start_cumul_to_zero=*/true, kTime);
-  const RoutingDimension& time_dimension = routing.GetDimensionOrDie(kTime);
+  const Dimension& time_dimension = routing.GetDimensionOrDie(kTime);
 
   // Adding time windows.
   std::mt19937 randomizer(
@@ -172,8 +170,8 @@ int main(int argc, char** argv) {
 
   // Adding penalty costs to allow skipping orders.
   const int64_t kPenalty = 10'000'000;
-  const RoutingIndexManager::NodeIndex kFirstNodeAfterDepot(1);
-  for (RoutingIndexManager::NodeIndex order = kFirstNodeAfterDepot;
+  const operations_research::routing::NodeIndex kFirstNodeAfterDepot(1);
+  for (operations_research::routing::NodeIndex order = kFirstNodeAfterDepot;
        order < manager.num_nodes(); ++order) {
     std::vector<int64_t> orders(1, manager.NodeToIndex(order));
     routing.AddDisjunction(orders, kPenalty);
@@ -182,7 +180,7 @@ int main(int argc, char** argv) {
   // Adding same vehicle constraint costs for consecutive nodes.
   if (absl::GetFlag(FLAGS_vrp_use_same_vehicle_costs)) {
     std::vector<int64_t> group;
-    for (RoutingIndexManager::NodeIndex order = kFirstNodeAfterDepot;
+    for (operations_research::routing::NodeIndex order = kFirstNodeAfterDepot;
          order < manager.num_nodes(); ++order) {
       group.push_back(manager.NodeToIndex(order));
       if (group.size() == kMaxNodesPerGroup) {
@@ -196,7 +194,7 @@ int main(int argc, char** argv) {
     }
   }
 
-  // Solve, returns a solution if any (owned by RoutingModel).
+  // Solve, returns a solution if any (owned by Model).
   RoutingSearchParameters parameters = DefaultRoutingSearchParameters();
   CHECK(google::protobuf::TextFormat::MergeFromString(
       absl::GetFlag(FLAGS_routing_search_parameters), &parameters));
