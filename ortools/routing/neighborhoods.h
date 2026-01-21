@@ -62,7 +62,7 @@ class MakeRelocateNeighborsOperator : public PathOperator<ignore_path_vars> {
       std::function<int(int64_t)> start_empty_path_class,
       std::function<const std::vector<int>&(int, int)> get_incoming_neighbors,
       std::function<const std::vector<int>&(int, int)> get_outgoing_neighbors,
-      RoutingTransitCallback2 arc_evaluator);
+      TransitCallback2 arc_evaluator);
   ~MakeRelocateNeighborsOperator() override = default;
 
   bool MakeNeighbor() override;
@@ -87,7 +87,7 @@ class MakeRelocateNeighborsOperator : public PathOperator<ignore_path_vars> {
   /// if it was moved just after up_to returns the node which was after up_to.
   int64_t Reposition(int64_t before_to_move, int64_t up_to);
 
-  RoutingTransitCallback2 arc_evaluator_;
+  TransitCallback2 arc_evaluator_;
 };
 
 LocalSearchOperator* MakeRelocateNeighbors(
@@ -96,13 +96,13 @@ LocalSearchOperator* MakeRelocateNeighbors(
     std::function<int(int64_t)> start_empty_path_class,
     std::function<const std::vector<int>&(int, int)> get_incoming_neighbors,
     std::function<const std::vector<int>&(int, int)> get_outgoing_neighbors,
-    RoutingTransitCallback2 arc_evaluator);
+    TransitCallback2 arc_evaluator);
 
 LocalSearchOperator* MakeRelocateNeighbors(
     Solver* solver, const std::vector<IntVar*>& vars,
     const std::vector<IntVar*>& secondary_vars,
     std::function<int(int64_t)> start_empty_path_class,
-    RoutingTransitCallback2 arc_evaluator);
+    TransitCallback2 arc_evaluator);
 
 // Class used to compute shortest paths on DAGs formed by chains of alternative
 // node sets.
@@ -110,7 +110,7 @@ class ShortestPathOnAlternatives {
  public:
   ShortestPathOnAlternatives(int num_nodes,
                              std::vector<std::vector<int64_t>> alternative_sets,
-                             RoutingTransitCallback2 arc_evaluator);
+                             TransitCallback2 arc_evaluator);
   bool HasAlternatives(int node) const;
   // Returns the shortest path between source and sink, going through the DAG
   // formed by the alternative nodes of the chain. The path omits source and
@@ -119,7 +119,7 @@ class ShortestPathOnAlternatives {
                                             absl::Span<const int64_t> chain);
 
  private:
-  RoutingTransitCallback2 arc_evaluator_;
+  TransitCallback2 arc_evaluator_;
   std::vector<std::vector<int64_t>> alternative_sets_;
   std::vector<int> to_alternative_set_;
   std::vector<int64_t> path_predecessor_;
@@ -139,7 +139,7 @@ class TwoOptWithShortestPathOperator : public PathOperator<ignore_path_vars> {
       const std::vector<IntVar*>& secondary_vars,
       std::function<int(int64_t)> start_empty_path_class,
       std::vector<std::vector<int64_t>> alternative_sets,
-      RoutingTransitCallback2 arc_evaluator);
+      TransitCallback2 arc_evaluator);
   ~TwoOptWithShortestPathOperator() override = default;
   bool MakeNeighbor() override;
   std::string DebugString() const override { return "TwoOptWithShortestPath"; }
@@ -179,7 +179,7 @@ LocalSearchOperator* MakeTwoOptWithShortestPath(
     const std::vector<IntVar*>& secondary_vars,
     std::function<int(int64_t)> start_empty_path_class,
     std::vector<std::vector<int64_t>> alternative_sets,
-    RoutingTransitCallback2 arc_evaluator);
+    TransitCallback2 arc_evaluator);
 
 // Swaps active nodes from node alternatives in sequence. Considers chains of
 // nodes with alternatives, builds a DAG from the chain, each "layer" of the DAG
@@ -207,7 +207,7 @@ class SwapActiveToShortestPathOperator : public PathOperator<ignore_path_vars> {
       const std::vector<IntVar*>& secondary_vars,
       std::function<int(int64_t)> start_empty_path_class,
       std::vector<std::vector<int64_t>> alternative_sets,
-      RoutingTransitCallback2 arc_evaluator);
+      TransitCallback2 arc_evaluator);
   ~SwapActiveToShortestPathOperator() override = default;
   bool MakeNeighbor() override;
   std::string DebugString() const override {
@@ -224,7 +224,7 @@ LocalSearchOperator* MakeSwapActiveToShortestPath(
     const std::vector<IntVar*>& secondary_vars,
     std::function<int(int64_t)> start_empty_path_class,
     std::vector<std::vector<int64_t>> alternative_sets,
-    RoutingTransitCallback2 arc_evaluator);
+    TransitCallback2 arc_evaluator);
 
 /// Pair-based neighborhood operators, designed to move nodes by pairs (pairs
 /// are static and given). These neighborhoods are very useful for Pickup and

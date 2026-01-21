@@ -58,7 +58,7 @@ public class VrpBreaks
     /// <summary>
     ///   Print the solution.
     /// </summary>
-    static void PrintSolution(in RoutingModel routing, in RoutingIndexManager manager, in Assignment solution)
+    static void PrintSolution(in Model routing, in IndexManager manager, in Assignment solution)
     {
         Console.WriteLine($"Objective {solution.ObjectiveValue()}:");
 
@@ -78,7 +78,7 @@ public class VrpBreaks
             }
         }
 
-        RoutingDimension timeDimension = routing.GetMutableDimension("Time");
+        Dimension timeDimension = routing.GetMutableDimension("Time");
         long totalTime = 0;
         for (int i = 0; i < manager.GetNumberOfVehicles(); ++i)
         {
@@ -113,14 +113,13 @@ public class VrpBreaks
 
         // Create Routing Index Manager
         // [START index_manager]
-        RoutingIndexManager manager =
-            new RoutingIndexManager(data.TimeMatrix.GetLength(0), data.VehicleNumber, data.Depot);
+        IndexManager manager = new IndexManager(data.TimeMatrix.GetLength(0), data.VehicleNumber, data.Depot);
 
         // [END index_manager]
 
         // Create Routing Model.
         // [START routing_model]
-        RoutingModel routing = new RoutingModel(manager);
+        Model routing = new Model(manager);
         // [END routing_model]
 
         // Create and register a transit callback.
@@ -145,7 +144,7 @@ public class VrpBreaks
         routing.AddDimension(transitCallbackIndex, 10, 180,
                              true, // start cumul to zero
                              "Time");
-        RoutingDimension timeDimension = routing.GetMutableDimension("Time");
+        Dimension timeDimension = routing.GetMutableDimension("Time");
         timeDimension.SetGlobalSpanCostCoefficient(10);
         // [END time_constraint]
 

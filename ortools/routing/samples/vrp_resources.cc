@@ -29,6 +29,7 @@
 #include "ortools/routing/index_manager.h"
 #include "ortools/routing/parameters.h"
 #include "ortools/routing/routing.h"
+#include "ortools/routing/types.h"
 // [END import]
 
 namespace operations_research::routing {
@@ -78,7 +79,7 @@ struct DataModel {
   const int vehicle_unload_time = 5;
   const int depot_capacity = 2;
   // [END resources_data]
-  const RoutingIndexManager::NodeIndex depot{0};
+  const NodeIndex depot{0};
 };
 // [END data_model]
 
@@ -88,9 +89,9 @@ struct DataModel {
 //! @param[in] manager Index manager used.
 //! @param[in] routing Routing solver used.
 //! @param[in] solution Solution found by the solver.
-void PrintSolution(const DataModel& data, const RoutingIndexManager& manager,
-                   const RoutingModel& routing, const Assignment& solution) {
-  const RoutingDimension& time_dimension = routing.GetDimensionOrDie("Time");
+void PrintSolution(const DataModel& data, const IndexManager& manager,
+                   const Model& routing, const Assignment& solution) {
+  const Dimension& time_dimension = routing.GetDimensionOrDie("Time");
   int64_t total_time{0};
   for (int vehicle_id = 0; vehicle_id < data.num_vehicles; ++vehicle_id) {
     if (!routing.IsVehicleUsed(solution, vehicle_id)) {
@@ -128,13 +129,12 @@ void VrpTimeWindows() {
 
   // Create Routing Index Manager
   // [START index_manager]
-  RoutingIndexManager manager(data.time_matrix.size(), data.num_vehicles,
-                              data.depot);
+  IndexManager manager(data.time_matrix.size(), data.num_vehicles, data.depot);
   // [END index_manager]
 
   // Create Routing Model.
   // [START routing_model]
-  RoutingModel routing(manager);
+  Model routing(manager);
   // [END routing_model]
 
   // Create and register a transit callback.
@@ -162,11 +162,10 @@ void VrpTimeWindows() {
                        int64_t{30},             // maximum time per vehicle
                        false,  // Don't force start cumul to zero
                        time);
-  const RoutingDimension& time_dimension = routing.GetDimensionOrDie(time);
+  const Dimension& time_dimension = routing.GetDimensionOrDie(time);
   // Add time window constraints for each location except depot.
   for (int i = 1; i < data.time_windows.size(); ++i) {
-    const int64_t index =
-        manager.NodeToIndex(RoutingIndexManager::NodeIndex(i));
+    const int64_t index = manager.NodeToIndex(NodeIndex(i));
     time_dimension.CumulVar(index)->SetRange(data.time_windows[i].first,
                                              data.time_windows[i].second);
   }

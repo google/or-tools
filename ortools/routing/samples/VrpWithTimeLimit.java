@@ -19,12 +19,12 @@ import static java.lang.Math.max;
 
 import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.Assignment;
+import com.google.ortools.routing.Dimension;
 import com.google.ortools.routing.FirstSolutionStrategy;
 import com.google.ortools.routing.Globals;
+import com.google.ortools.routing.IndexManager;
 import com.google.ortools.routing.LocalSearchMetaheuristic;
-import com.google.ortools.routing.RoutingDimension;
-import com.google.ortools.routing.RoutingIndexManager;
-import com.google.ortools.routing.RoutingModel;
+import com.google.ortools.routing.Model;
 import com.google.ortools.routing.RoutingSearchParameters;
 import com.google.protobuf.Duration;
 import java.util.logging.Logger;
@@ -36,8 +36,7 @@ public final class VrpWithTimeLimit {
 
   // [START solution_printer]
   /// @brief Print the solution.
-  static void printSolution(
-      RoutingIndexManager manager, RoutingModel routing, Assignment solution) {
+  static void printSolution(IndexManager manager, Model routing, Assignment solution) {
     // Solution cost.
     logger.info("Objective : " + solution.objectiveValue());
     // Inspect solution.
@@ -75,12 +74,12 @@ public final class VrpWithTimeLimit {
 
     // Create Routing Index Manager
     // [START index_manager]
-    RoutingIndexManager manager = new RoutingIndexManager(locationNumber, vehicleNumber, depot);
+    IndexManager manager = new IndexManager(locationNumber, vehicleNumber, depot);
     // [END index_manager]
 
     // Create Routing Model.
     // [START routing_model]
-    RoutingModel routing = new RoutingModel(manager);
+    Model routing = new Model(manager);
     // [END routing_model]
 
     // Create and register a transit callback.
@@ -100,7 +99,7 @@ public final class VrpWithTimeLimit {
         /* slack_max= */ 0,
         /* capacity= */ 3000,
         /* fix_start_cumul_to_zero= */ true, "Distance");
-    RoutingDimension distanceDimension = routing.getMutableDimension("Distance");
+    Dimension distanceDimension = routing.getMutableDimension("Distance");
     distanceDimension.setGlobalSpanCostCoefficient(100);
     // [END distance_constraint]
 

@@ -29,6 +29,7 @@
 #include "ortools/routing/index_manager.h"
 #include "ortools/routing/parameters.h"
 #include "ortools/routing/routing.h"
+#include "ortools/routing/types.h"
 // [END import]
 
 // [START program_part1]
@@ -74,7 +75,7 @@ struct DataModel {
       {11, 15},  // 16
   };
   const int num_vehicles = 4;
-  const RoutingIndexManager::NodeIndex depot{0};
+  const NodeIndex depot{0};
 };
 // [END data_model]
 
@@ -111,8 +112,8 @@ void PrintSolution(
 
 // [START get_routes]
 std::vector<std::vector<int>> GetRoutes(const Assignment& solution,
-                                        const RoutingModel& routing,
-                                        const RoutingIndexManager& manager) {
+                                        const Model& routing,
+                                        const IndexManager& manager) {
   // Get vehicle routes and store them in a two dimensional array, whose
   // i, j entry is the node for the jth visit of vehicle i.
   std::vector<std::vector<int>> routes(manager.num_vehicles());
@@ -131,8 +132,8 @@ std::vector<std::vector<int>> GetRoutes(const Assignment& solution,
 
 // [START get_cumulative_data]
 std::vector<std::vector<std::pair<int64_t, int64_t>>> GetCumulData(
-    const Assignment& solution, const RoutingModel& routing,
-    const RoutingDimension& dimension) {
+    const Assignment& solution, const Model& routing,
+    const Dimension& dimension) {
   // Returns an array cumul_data, whose i, j entry is a pair containing
   // the minimum and maximum of CumulVar for the dimension.:
   // - cumul_data[i][j].first is the minimum.
@@ -164,13 +165,12 @@ void VrpTimeWindows() {
 
   // Create Routing Index Manager
   // [START index_manager]
-  RoutingIndexManager manager(data.time_matrix.size(), data.num_vehicles,
-                              data.depot);
+  IndexManager manager(data.time_matrix.size(), data.num_vehicles, data.depot);
   // [END index_manager]
 
   // Create Routing Model.
   // [START routing_model]
-  RoutingModel routing(manager);
+  Model routing(manager);
   // [END routing_model]
 
   // Create and register a transit callback.
@@ -197,11 +197,10 @@ void VrpTimeWindows() {
                        /*slack_max*/ int64_t{30},  // allow waiting time
                        /*capacity*/ int64_t{30},   // maximum time per vehicle
                        /*fix_start_cumul_to_zero*/ false, time);
-  const RoutingDimension& time_dimension = routing.GetDimensionOrDie(time);
+  const Dimension& time_dimension = routing.GetDimensionOrDie(time);
   // Add time window constraints for each location except depot.
   for (int i = 1; i < data.time_windows.size(); ++i) {
-    const int64_t index =
-        manager.NodeToIndex(RoutingIndexManager::NodeIndex(i));
+    const int64_t index = manager.NodeToIndex(NodeIndex(i));
     time_dimension.CumulVar(index)->SetRange(data.time_windows[i].first,
                                              data.time_windows[i].second);
   }

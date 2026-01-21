@@ -29,8 +29,7 @@
 
 namespace operations_research::routing {
 
-typedef std::function<int64_t(RoutingNodeIndex, RoutingNodeIndex)>
-    RoutingNodeEvaluator2;
+typedef std::function<int64_t(NodeIndex, NodeIndex)> RoutingNodeEvaluator2;
 
 // Random seed generator.
 int32_t GetSeed(bool deterministic);
@@ -45,15 +44,11 @@ class LocationContainer {
   }
   void AddRandomLocation(int64_t x_max, int64_t y_max);
   void AddRandomLocation(int64_t x_max, int64_t y_max, int duplicates);
-  int64_t ManhattanDistance(RoutingIndexManager::NodeIndex from,
-                            RoutingIndexManager::NodeIndex to) const;
-  int64_t NegManhattanDistance(RoutingIndexManager::NodeIndex from,
-                               RoutingIndexManager::NodeIndex to) const;
-  int64_t ManhattanTime(RoutingIndexManager::NodeIndex from,
-                        RoutingIndexManager::NodeIndex to) const;
+  int64_t ManhattanDistance(NodeIndex from, NodeIndex to) const;
+  int64_t NegManhattanDistance(NodeIndex from, NodeIndex to) const;
+  int64_t ManhattanTime(NodeIndex from, NodeIndex to) const;
 
-  bool SameLocation(RoutingIndexManager::NodeIndex node1,
-                    RoutingIndexManager::NodeIndex node2) const;
+  bool SameLocation(NodeIndex node1, NodeIndex node2) const;
   int64_t SameLocationFromIndex(int64_t node1, int64_t node2) const;
 
  private:
@@ -73,23 +68,20 @@ class LocationContainer {
 
   std::mt19937 randomizer_;
   const int64_t speed_;
-  util_intops::StrongVector<RoutingIndexManager::NodeIndex, Location>
-      locations_;
+  util_intops::StrongVector<NodeIndex, Location> locations_;
 };
 
 // Random demand.
 class RandomDemand {
  public:
-  RandomDemand(int size, RoutingIndexManager::NodeIndex depot,
-               bool use_deterministic_seed);
+  RandomDemand(int size, NodeIndex depot, bool use_deterministic_seed);
   void Initialize();
-  int64_t Demand(RoutingIndexManager::NodeIndex from,
-                 RoutingIndexManager::NodeIndex to) const;
+  int64_t Demand(NodeIndex from, NodeIndex to) const;
 
  private:
   std::unique_ptr<int64_t[]> demand_;
   const int size_;
-  const RoutingIndexManager::NodeIndex depot_;
+  const NodeIndex depot_;
   const bool use_deterministic_seed_;
 };
 
@@ -99,8 +91,7 @@ class ServiceTimePlusTransition {
   ServiceTimePlusTransition(int64_t time_per_demand_unit,
                             RoutingNodeEvaluator2 demand,
                             RoutingNodeEvaluator2 transition_time);
-  int64_t Compute(RoutingIndexManager::NodeIndex from,
-                  RoutingIndexManager::NodeIndex to) const;
+  int64_t Compute(NodeIndex from, NodeIndex to) const;
 
  private:
   const int64_t time_per_demand_unit_;
@@ -114,8 +105,7 @@ class StopServiceTimePlusTransition {
   StopServiceTimePlusTransition(int64_t stop_time,
                                 const LocationContainer& location_container,
                                 RoutingNodeEvaluator2 transition_time);
-  int64_t Compute(RoutingIndexManager::NodeIndex from,
-                  RoutingIndexManager::NodeIndex to) const;
+  int64_t Compute(NodeIndex from, NodeIndex to) const;
 
  private:
   const int64_t stop_time_;

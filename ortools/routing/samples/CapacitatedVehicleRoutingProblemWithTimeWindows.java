@@ -16,11 +16,11 @@ package com.google.ortools.routing.samples;
 import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.Assignment;
 import com.google.ortools.constraintsolver.IntVar;
+import com.google.ortools.routing.Dimension;
 import com.google.ortools.routing.FirstSolutionStrategy;
 import com.google.ortools.routing.Globals;
-import com.google.ortools.routing.RoutingDimension;
-import com.google.ortools.routing.RoutingIndexManager;
-import com.google.ortools.routing.RoutingModel;
+import com.google.ortools.routing.IndexManager;
+import com.google.ortools.routing.Model;
 import com.google.ortools.routing.RoutingSearchParameters;
 import com.google.ortools.routing.RoutingSearchStatus;
 import java.util.ArrayList;
@@ -154,7 +154,7 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
    * @param costCoefficient The coefficient to apply to the evaluator.
    */
   private static LongBinaryOperator buildManhattanCallback(
-      DataModel data, RoutingIndexManager manager, int costCoefficient) {
+      DataModel data, IndexManager manager, int costCoefficient) {
     return new LongBinaryOperator() {
       @Override
       public long applyAsLong(long fromIndex, long toIndex) {
@@ -176,7 +176,7 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
 
   // Print the solution.
   static void printSolution(
-      DataModel data, RoutingModel model, RoutingIndexManager manager, Assignment solution) {
+      DataModel data, Model model, IndexManager manager, Assignment solution) {
     RoutingSearchStatus.Value status = model.status();
     logger.info("Status: " + status);
     if (status != RoutingSearchStatus.Value.ROUTING_OPTIMAL
@@ -206,8 +206,8 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
       long index = model.start(vehicle);
       logger.info("Route for Vehicle " + vehicle + ":");
       String route = "";
-      RoutingDimension capacityDimension = model.getMutableDimension("capacity");
-      RoutingDimension timeDimension = model.getMutableDimension("time");
+      Dimension capacityDimension = model.getMutableDimension("capacity");
+      Dimension timeDimension = model.getMutableDimension("time");
       while (!model.isEnd(index)) {
         IntVar load = capacityDimension.cumulVar(index);
         IntVar time = timeDimension.cumulVar(index);
@@ -232,16 +232,16 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
     final DataModel data = new DataModel();
 
     // Create Routing Index Manager
-    RoutingIndexManager manager = new RoutingIndexManager(
+    IndexManager manager = new IndexManager(
         data.locations.size(), data.numberOfVehicles, data.vehicleStarts, data.vehicleEnds);
-    RoutingModel model = new RoutingModel(manager);
+    Model model = new Model(manager);
 
     // Setting up dimensions
     final int bigNumber = 100000;
     final LongBinaryOperator callback = buildManhattanCallback(data, manager, 1);
     boolean unused = model.addDimension(
         model.registerTransitCallback(callback), bigNumber, bigNumber, false, "time");
-    RoutingDimension timeDimension = model.getMutableDimension("time");
+    Dimension timeDimension = model.getMutableDimension("time");
 
     LongUnaryOperator demandCallback = new LongUnaryOperator() {
       @Override

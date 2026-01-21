@@ -28,6 +28,7 @@
 #include "ortools/routing/index_manager.h"
 #include "ortools/routing/parameters.h"
 #include "ortools/routing/routing.h"
+#include "ortools/routing/types.h"
 // [END import]
 
 namespace operations_research::routing {
@@ -76,7 +77,7 @@ struct DataModel {
   const std::vector<int64_t> vehicle_capacities{15, 15, 15, 15};
   // [END demands_capacities]
   const int num_vehicles = 4;
-  const RoutingIndexManager::NodeIndex depot{0};
+  const NodeIndex depot{0};
 };
 // [END data_model]
 
@@ -86,8 +87,8 @@ struct DataModel {
 //! @param[in] manager Index manager used.
 //! @param[in] routing Routing solver used.
 //! @param[in] solution Solution found by the solver.
-void PrintSolution(const DataModel& data, const RoutingIndexManager& manager,
-                   const RoutingModel& routing, const Assignment& solution) {
+void PrintSolution(const DataModel& data, const IndexManager& manager,
+                   const Model& routing, const Assignment& solution) {
   // Display dropped nodes.
   std::ostringstream dropped_nodes;
   for (int64_t node = 0; node < routing.Size(); ++node) {
@@ -140,13 +141,13 @@ void VrpDropNodes() {
 
   // Create Routing Index Manager
   // [START index_manager]
-  RoutingIndexManager manager(data.distance_matrix.size(), data.num_vehicles,
-                              data.depot);
+  IndexManager manager(data.distance_matrix.size(), data.num_vehicles,
+                       data.depot);
   // [END index_manager]
 
   // Create Routing Model.
   // [START routing_model]
-  RoutingModel routing(manager);
+  Model routing(manager);
   // [END routing_model]
 
   // Create and register a transit callback.
@@ -183,8 +184,7 @@ void VrpDropNodes() {
   // Allow to drop nodes.
   int64_t penalty{1000};
   for (int i = 1; i < data.distance_matrix.size(); ++i) {
-    routing.AddDisjunction(
-        {manager.NodeToIndex(RoutingIndexManager::NodeIndex(i))}, penalty);
+    routing.AddDisjunction({manager.NodeToIndex(NodeIndex(i))}, penalty);
   }
   // [END capacity_constraint]
 

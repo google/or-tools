@@ -27,6 +27,7 @@
 #include "ortools/routing/index_manager.h"
 #include "ortools/routing/parameters.h"
 #include "ortools/routing/routing.h"
+#include "ortools/routing/types.h"
 // [END import]
 
 namespace operations_research::routing {
@@ -69,28 +70,15 @@ struct DataModel {
        194, 798, 0},
   };
   // [START pickups_deliveries]
-  const std::vector<std::vector<RoutingIndexManager::NodeIndex>>
-      pickups_deliveries{
-          {RoutingIndexManager::NodeIndex{1},
-           RoutingIndexManager::NodeIndex{6}},
-          {RoutingIndexManager::NodeIndex{2},
-           RoutingIndexManager::NodeIndex{10}},
-          {RoutingIndexManager::NodeIndex{4},
-           RoutingIndexManager::NodeIndex{3}},
-          {RoutingIndexManager::NodeIndex{5},
-           RoutingIndexManager::NodeIndex{9}},
-          {RoutingIndexManager::NodeIndex{7},
-           RoutingIndexManager::NodeIndex{8}},
-          {RoutingIndexManager::NodeIndex{15},
-           RoutingIndexManager::NodeIndex{11}},
-          {RoutingIndexManager::NodeIndex{13},
-           RoutingIndexManager::NodeIndex{12}},
-          {RoutingIndexManager::NodeIndex{16},
-           RoutingIndexManager::NodeIndex{14}},
-      };
+  const std::vector<std::vector<NodeIndex>> pickups_deliveries{
+      {NodeIndex{1}, NodeIndex{6}},   {NodeIndex{2}, NodeIndex{10}},
+      {NodeIndex{4}, NodeIndex{3}},   {NodeIndex{5}, NodeIndex{9}},
+      {NodeIndex{7}, NodeIndex{8}},   {NodeIndex{15}, NodeIndex{11}},
+      {NodeIndex{13}, NodeIndex{12}}, {NodeIndex{16}, NodeIndex{14}},
+  };
   // [END pickups_deliveries]
   const int num_vehicles = 4;
-  const RoutingIndexManager::NodeIndex depot{0};
+  const NodeIndex depot{0};
 };
 // [END data_model]
 
@@ -100,8 +88,8 @@ struct DataModel {
 //! @param[in] manager Index manager used.
 //! @param[in] routing Routing solver used.
 //! @param[in] solution Solution found by the solver.
-void PrintSolution(const DataModel& data, const RoutingIndexManager& manager,
-                   const RoutingModel& routing, const Assignment& solution) {
+void PrintSolution(const DataModel& data, const IndexManager& manager,
+                   const Model& routing, const Assignment& solution) {
   int64_t total_distance{0};
   for (int vehicle_id = 0; vehicle_id < data.num_vehicles; ++vehicle_id) {
     if (!routing.IsVehicleUsed(solution, vehicle_id)) {
@@ -137,13 +125,13 @@ void VrpGlobalSpan() {
 
   // Create Routing Index Manager
   // [START index_manager]
-  RoutingIndexManager manager(data.distance_matrix.size(), data.num_vehicles,
-                              data.depot);
+  IndexManager manager(data.distance_matrix.size(), data.num_vehicles,
+                       data.depot);
   // [END index_manager]
 
   // Create Routing Model.
   // [START routing_model]
-  RoutingModel routing(manager);
+  Model routing(manager);
   // [END routing_model]
 
   // Define cost of each arc.
@@ -166,8 +154,7 @@ void VrpGlobalSpan() {
                        3000,  // vehicle maximum travel distance
                        true,  // start cumul to zero
                        "Distance");
-  RoutingDimension* distance_dimension =
-      routing.GetMutableDimension("Distance");
+  Dimension* distance_dimension = routing.GetMutableDimension("Distance");
   distance_dimension->SetGlobalSpanCostCoefficient(100);
   // [END distance_constraint]
 
@@ -185,7 +172,7 @@ void VrpGlobalSpan() {
                                 distance_dimension->CumulVar(delivery_index)));
   }
   routing.SetPickupAndDeliveryPolicyOfAllVehicles(
-      RoutingModel::PICKUP_AND_DELIVERY_LIFO);
+      Model::PICKUP_AND_DELIVERY_LIFO);
   // [END pickup_delivery_constraint]
 
   // Setting first solution heuristic.

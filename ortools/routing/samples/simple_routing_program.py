@@ -33,12 +33,12 @@ def main():
 
     # Create the routing index manager.
     # [START index_manager]
-    manager = pywraprouting.RoutingIndexManager(num_locations, num_vehicles, depot)
+    manager = pywraprouting.IndexManager(num_locations, num_vehicles, depot)
     # [END index_manager]
 
     # Create Routing Model.
     # [START routing_model]
-    routing = pywraprouting.RoutingModel(manager)
+    routing = pywraprouting.Model(manager)
     # [END routing_model]
 
     # Create and register a transit callback.

@@ -65,8 +65,8 @@ def create_data_model():
 
 # [START solution_callback_printer]
 def print_solution(
-    routing_manager: pywraprouting.RoutingIndexManager,
-    routing_model: pywraprouting.RoutingModel,
+    routing_manager: pywraprouting.IndexManager,
+    routing_model: pywraprouting.Model,
 ):
     """Prints solution on console."""
     print("################")
@@ -101,8 +101,8 @@ class SolutionCallback:
 
     def __init__(
         self,
-        manager: pywraprouting.RoutingIndexManager,
-        model: pywraprouting.RoutingModel,
+        manager: pywraprouting.IndexManager,
+        model: pywraprouting.Model,
         limit: int,
     ):
         # We need a weak ref on the routing model to avoid a cycle.
@@ -138,14 +138,14 @@ def main():
 
     # Create the routing index manager.
     # [START index_manager]
-    routing_manager = pywraprouting.RoutingIndexManager(
+    routing_manager = pywraprouting.IndexManager(
         len(data["distance_matrix"]), data["num_vehicles"], data["depot"]
     )
     # [END index_manager]
 
     # Create Routing Model.
     # [START routing_model]
-    routing_model = pywraprouting.RoutingModel(routing_manager)
+    routing_model = pywraprouting.Model(routing_manager)
 
     # [END routing_model]
 

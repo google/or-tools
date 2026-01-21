@@ -49,39 +49,30 @@ JAGGED_MATRIX_AS_CSHARP_ARRAY(int64_t, int64_t, long, Int64VectorVector);
 // works correctly. The order matters very much: this declaration needs to be
 // before the %{ #include ".../routing.h" %}.
 namespace operations_research::routing {
+// enum.proto
+struct FirstSolutionStrategy;
+struct LocalSearchMetaheuristic;
+struct RoutingSearchStatus;
+// ils.proto
+class IteratedLocalSearchParameters;
+// parameters.proto
 class RoutingModelParameters;
 class RoutingSearchParameters;
-class RoutingSearchStatus;
 }  // namespace operations_research::routing
 
 %module(directors="1") RoutingGlobals;
 
-// Include the file we want to wrap a first time.
+// Include the files we want to wrap a first time.
 %{
 #include "ortools/routing/enums.pb.h"
-#include "ortools/routing/index_manager.h"
-#include "ortools/routing/parameters.h"
-#include "ortools/routing/parameters.pb.h"
-#include "ortools/routing/routing.h"
+#include "ortools/routing/ils.pb.h"
 #include "ortools/routing/types.h"
+#include "ortools/routing/index_manager.h"
+#include "ortools/routing/parameters.pb.h"
+#include "ortools/routing/parameters.h"
+#include "ortools/routing/routing.h"
+#include "ortools/util/optional_boolean.pb.h"
 %}
-
-// RoutingModel methods.
-DEFINE_INDEX_TYPE_TYPEDEF(
-    operations_research::routing::RoutingCostClassIndex,
-    operations_research::routing::RoutingModel::CostClassIndex);
-DEFINE_INDEX_TYPE_TYPEDEF(
-    operations_research::routing::RoutingDimensionIndex,
-    operations_research::routing::RoutingModel::DimensionIndex);
-DEFINE_INDEX_TYPE_TYPEDEF(
-    operations_research::routing::RoutingDisjunctionIndex,
-    operations_research::routing::RoutingModel::DisjunctionIndex);
-DEFINE_INDEX_TYPE_TYPEDEF(
-    operations_research::routing::RoutingVehicleClassIndex,
-    operations_research::routing::RoutingModel::VehicleClassIndex);
-DEFINE_INDEX_TYPE_TYPEDEF(
-    operations_research::routing::RoutingResourceClassIndex,
-    operations_research::routing::RoutingModel::ResourceClassIndex);
 
 namespace operations_research::routing {
 
@@ -94,14 +85,14 @@ using Google.OrTools.ConstraintSolver;
 // PathsMetadata
 %unignore PathsMetadata;
 
-// RoutingDimension
-%unignore RoutingDimension;
-%typemap(csimports) RoutingDimension %{
+// Routing Dimension
+%unignore Dimension;
+%typemap(csimports) Dimension %{
 using System;
 using System.Collections.Generic;
 using Google.OrTools.ConstraintSolver;
 %}
-%typemap(cscode) RoutingDimension %{
+%typemap(cscode) Dimension %{
   // Keep reference to delegate to avoid GC to collect them early.
   private List<IntIntToLong> limitCallbacks;
   private IntIntToLong StoreIntIntToLong(IntIntToLong limit) {
@@ -119,17 +110,17 @@ using Google.OrTools.ConstraintSolver;
     return groupDelay;
   }
 %}
-%ignore RoutingDimension::GetBreakDistanceDurationOfVehicle;
+%ignore Dimension::GetBreakDistanceDurationOfVehicle;
 
-// RoutingModel
-%unignore RoutingModel;
-%typemap(csimports) RoutingModel %{
+// Routing Model
+%unignore Model;
+%typemap(csimports) Model %{
 using System;
 using System.Collections.Generic;
 using Google.OrTools.ConstraintSolver;
 using Domain = Google.OrTools.Util.Domain;
 %}
-%typemap(cscode) RoutingModel %{
+%typemap(cscode) Model %{
   // Keep reference to delegate to avoid GC to collect them early.
   private List<LongToLong> unaryTransitCallbacks;
   private LongToLong StoreLongToLong(LongToLong c) {
@@ -155,51 +146,54 @@ using Domain = Google.OrTools.Util.Domain;
     return c;
   }
 %}
-%rename("GetStatus") RoutingModel::status;
+%rename("GetStatus") Model::status;
 // Ignored:
-%ignore RoutingModel::AddDimensionDependentDimensionWithVehicleCapacity;
+%ignore Model::AddDimensionDependentDimensionWithVehicleCapacity;
 
-%unignore RoutingModel::RegisterUnaryTransitVector;
-%unignore RoutingModel::RegisterTransitMatrix;
+%unignore Model::RegisterUnaryTransitVector;
+%unignore Model::RegisterTransitMatrix;
 
-%unignore RoutingModel::AddVectorDimension;
-%unignore RoutingModel::AddMatrixDimension;
+%unignore Model::AddVectorDimension;
+%unignore Model::AddMatrixDimension;
 
-%ignore RoutingModel::AddSameVehicleRequiredTypeAlternatives;
-%ignore RoutingModel::GetAllDimensionNames;
-%ignore RoutingModel::GetAutomaticFirstSolutionStrategy;
-%ignore RoutingModel::GetDeliveryIndexPairs;
-%ignore RoutingModel::GetDimensions;
-%ignore RoutingModel::GetDimensionsWithSoftAndSpanCosts;
-%ignore RoutingModel::GetDimensionsWithSoftOrSpanCosts;
-%ignore RoutingModel::GetGlobalDimensionCumulOptimizers;
-%ignore RoutingModel::GetHardTypeIncompatibilitiesOfType;
-%ignore RoutingModel::GetLocalDimensionCumulMPOptimizers;
-%ignore RoutingModel::GetLocalDimensionCumulOptimizers;
-%ignore RoutingModel::GetMutableGlobalCumulOptimizer;
-%ignore RoutingModel::GetMutableLocalCumulOptimizer;
-%ignore RoutingModel::GetMutableLocalCumulMPOptimizer;
-%ignore RoutingModel::GetPerfectBinaryDisjunctions;
-%ignore RoutingModel::GetPickupIndexPairs;
-%ignore RoutingModel::HasTypeRegulations;
-%ignore RoutingModel::MakeStateDependentTransit;
-%ignore RoutingModel::PackCumulsOfOptimizerDimensionsFromAssignment;
-%ignore RoutingModel::RegisterStateDependentTransitCallback;
-%ignore RoutingModel::RemainingTime;
-%ignore RoutingModel::StateDependentTransitCallback;
-%ignore RoutingModel::SolveWithParameters(
+%ignore Model::AddSameVehicleRequiredTypeAlternatives;
+%ignore Model::GetAllDimensionNames;
+%ignore Model::GetAutomaticFirstSolutionStrategy;
+%ignore Model::GetDeliveryIndexPairs;
+%ignore Model::GetDimensions;
+%ignore Model::GetDimensionsWithSoftAndSpanCosts;
+%ignore Model::GetDimensionsWithSoftOrSpanCosts;
+%ignore Model::GetGlobalDimensionCumulOptimizers;
+%ignore Model::GetHardTypeIncompatibilitiesOfType;
+%ignore Model::GetLocalDimensionCumulMPOptimizers;
+%ignore Model::GetLocalDimensionCumulOptimizers;
+%ignore Model::GetMutableGlobalCumulOptimizer;
+%ignore Model::GetMutableLocalCumulOptimizer;
+%ignore Model::GetMutableLocalCumulMPOptimizer;
+%ignore Model::GetPerfectBinaryDisjunctions;
+%ignore Model::GetPickupIndexPairs;
+%ignore Model::HasTypeRegulations;
+%ignore Model::MakeStateDependentTransit;
+%ignore Model::PackCumulsOfOptimizerDimensionsFromAssignment;
+%ignore Model::RegisterStateDependentTransitCallback;
+%ignore Model::RemainingTime;
+%ignore Model::StateDependentTransitCallback;
+%ignore Model::SolveWithParameters(
     const RoutingSearchParameters& search_parameters,
     std::vector<const Assignment*>* solutions);
-%ignore RoutingModel::SolveFromAssignmentWithParameters(
+%ignore Model::SolveFromAssignmentWithParameters(
       const Assignment* assignment,
       const RoutingSearchParameters& search_parameters,
       std::vector<const Assignment*>* solutions);
-%ignore RoutingModel::TransitCallback;
-%ignore RoutingModel::UnaryTransitCallbackOrNull;
+%ignore Model::TransitCallback;
+%ignore Model::UnaryTransitCallbackOrNull;
 
-// RoutingModelVisitor
-%unignore RoutingModelVisitor;
-%typemap(csimports) RoutingModelVisitor %{
+%ignore operations_research::routing::Model::AddResourceGroup;
+%ignore operations_research::routing::Model::GetResourceGroups;
+
+// ModelVisitor
+%unignore ModelVisitor;
+%typemap(csimports) ModelVisitor %{
 using Google.OrTools.ConstraintSolver;
 %}
 
@@ -230,16 +224,20 @@ using Google.OrTools.ConstraintSolver;
 %}
 
 // Protobuf support
-PROTO_INPUT(operations_research::routing::RoutingSearchParameters,
-            Google.OrTools.Routing.RoutingSearchParameters,
-            search_parameters)
 PROTO_INPUT(operations_research::routing::RoutingModelParameters,
             Google.OrTools.Routing.RoutingModelParameters,
             parameters)
-PROTO2_RETURN(operations_research::routing::RoutingSearchParameters,
-              Google.OrTools.Routing.RoutingSearchParameters)
+PROTO_INPUT(operations_research::routing::RoutingSearchParameters,
+            Google.OrTools.Routing.RoutingSearchParameters,
+            search_parameters)
+PROTO2_RETURN(operations_research::routing::IteratedLocalSearchParameters,
+              Google.OrTools.Routing.IteratedLocalSearchParameters)
 PROTO2_RETURN(operations_research::routing::RoutingModelParameters,
               Google.OrTools.Routing.RoutingModelParameters)
+PROTO2_RETURN(operations_research::routing::RoutingSearchParameters,
+              Google.OrTools.Routing.RoutingSearchParameters)
+PROTO_ENUM_RETURN(operations_research::routing::FirstSolutionStrategy::Value,
+                  Google.OrTools.Routing.FirstSolutionStrategy.Types.Value)
 PROTO_ENUM_RETURN(operations_research::routing::RoutingSearchStatus::Value,
                   Google.OrTools.Routing.RoutingSearchStatus.Types.Value)
 
@@ -249,8 +247,25 @@ PROTO_ENUM_RETURN(operations_research::routing::RoutingSearchStatus::Value,
 using Google.OrTools.ConstraintSolver;
 %}
 
+// Wrap parameters.h according to the SWIG style guide.
+%ignoreall
+%unignore operations_research::routing;
+namespace operations_research::routing {
+// parameters.h
+// IMPORTANT: These functions are global, so in .Net, they are in the
+// RoutingGlobals.cs file.
+%unignore DefaultRoutingSearchParameters;
+%unignore DefaultRoutingModelParameters;
+%unignore DefaultSecondaryRoutingSearchParameters;
+%unignore DefaultIteratedLocalSearchParameters;
+%unignore FindErrorInRoutingSearchParameters;
+%unignore FindErrorsInRoutingSearchParameters;
+}  // namespace operations_research::routing
+
+%include "ortools/routing/parameters.h"
+%unignoreall
+
 // Wrap routing includes
 // TODO(user): Replace with %ignoreall/%unignoreall
 //swiglint: disable include-h-allglobals
-%include "ortools/routing/parameters.h"
 %include "ortools/routing/routing.h"

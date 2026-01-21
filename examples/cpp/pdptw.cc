@@ -186,12 +186,11 @@ void SetupModel(const routing::LiLimParser& parser,
   const RoutingDimension& time_dimension = model->GetDimensionOrDie("time");
   Solver* const solver = model->solver();
   for (int node = 0; node < num_nodes; ++node) {
-    const int64_t index =
-        manager.NodeToIndex(RoutingIndexManager::NodeIndex(node));
+    const int64_t index = manager.NodeToIndex(NodeIndex(node));
     if (const std::optional<int> delivery = parser.GetDelivery(node);
         delivery.has_value()) {
       const int64_t delivery_index =
-          manager.NodeToIndex(RoutingIndexManager::NodeIndex(delivery.value()));
+          manager.NodeToIndex(NodeIndex(delivery.value()));
       solver->AddConstraint(solver->MakeEquality(
           model->VehicleVar(index), model->VehicleVar(delivery_index)));
       solver->AddConstraint(
@@ -234,8 +233,7 @@ void SetupModel(const routing::LiLimParser& parser,
   }
 
   // Adding penalty costs to allow skipping orders.
-  for (RoutingIndexManager::NodeIndex order(1); order < model->nodes();
-       ++order) {
+  for (NodeIndex order(1); order < model->nodes(); ++order) {
     std::vector<int64_t> orders(1, manager.NodeToIndex(order));
     model->AddDisjunction(orders,
                           MathUtil::Round<int64_t>(scaling_factor * kPenalty));
@@ -309,8 +307,7 @@ bool LoadAndSolve(absl::string_view pdp_file,
   // Build pickup and delivery model.
   const int num_nodes = parser.NumberOfNodes();
   const int num_vehicles = parser.NumberOfVehicles();
-  const RoutingIndexManager::NodeIndex depot =
-      RoutingIndexManager::NodeIndex(parser.Depot());
+  const NodeIndex depot = NodeIndex(parser.Depot());
   RoutingIndexManager manager(num_nodes, num_vehicles, depot);
   RoutingModel model(manager, model_parameters);
   SetupModel(parser, manager, &model, &search_parameters);
@@ -341,8 +338,7 @@ bool LoadAndSolve(absl::string_view pdp_file,
       if (!model.IsEnd(node) && !model.IsStart(node) &&
           assignment->Value(model.NextVar(node)) == node) {
         skipped_nodes++;
-        for (RoutingModel::DisjunctionIndex disjunction :
-             model.GetDisjunctionIndices(node)) {
+        for (DisjunctionIndex disjunction : model.GetDisjunctionIndices(node)) {
           total_penalty += model.GetDisjunctionPenalty(disjunction);
         }
       }

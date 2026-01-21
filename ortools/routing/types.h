@@ -24,20 +24,20 @@
 namespace operations_research::routing {
 
 /// Defining common types used in the routing library outside the main
-/// RoutingModel class has several purposes:
+/// routing::Model class has several purposes:
 /// 1) It allows some small libraries to avoid a dependency on routing.{h,cc},
 ///    eg. routing_neighborhoods.h.
 /// 2) It allows an easier wrapping via SWIG, which can have issues with
 ///    intra-class types.
 ///
 /// Users that depend on routing.{h,cc} should just use the
-/// RoutingModel:: equivalent, eg. RoutingModel::NodeIndex.
-DEFINE_STRONG_INDEX_TYPE(RoutingNodeIndex);
-DEFINE_STRONG_INDEX_TYPE(RoutingCostClassIndex);
-DEFINE_STRONG_INDEX_TYPE(RoutingDimensionIndex);
-DEFINE_STRONG_INDEX_TYPE(RoutingDisjunctionIndex);
-DEFINE_STRONG_INDEX_TYPE(RoutingVehicleClassIndex);
-DEFINE_STRONG_INDEX_TYPE(RoutingResourceClassIndex);
+/// routing::Model:: equivalent, eg. routing::Model::NodeIndex.
+DEFINE_STRONG_INDEX_TYPE(NodeIndex);
+DEFINE_STRONG_INDEX_TYPE(CostClassIndex);
+DEFINE_STRONG_INDEX_TYPE(DimensionIndex);
+DEFINE_STRONG_INDEX_TYPE(DisjunctionIndex);
+DEFINE_STRONG_INDEX_TYPE(VehicleClassIndex);
+DEFINE_STRONG_INDEX_TYPE(ResourceClassIndex);
 
 /// Pickup and delivery pair representation, including alternatives for pickups
 /// and deliveries respectively.
@@ -46,12 +46,24 @@ struct PickupDeliveryPair {
   std::vector<int64_t> delivery_alternatives;
 };
 
-typedef std::function<int64_t(int64_t)> RoutingTransitCallback1;
-typedef std::function<int64_t(int64_t, int64_t)> RoutingTransitCallback2;
+typedef std::function<int64_t(int64_t)> TransitCallback1;
+typedef std::function<int64_t(int64_t, int64_t)> TransitCallback2;
 typedef std::function<const FloatSlopePiecewiseLinearFunction*(int64_t,
                                                                int64_t)>
-    RoutingCumulDependentTransitCallback2;
+    CumulDependentTransitCallback2;
 
+/// For compatibility.
+#if !defined(SWIG)
+using RoutingNodeIndex = NodeIndex;
+using RoutingCostClassIndex = CostClassIndex;
+using RoutingDimensionIndex = DimensionIndex;
+using RoutingDisjunctionIndex = DisjunctionIndex;
+using RoutingVehicleClassIndex = VehicleClassIndex;
+using RoutingResourceClassIndex = ResourceClassIndex;
+using RoutingTransitCallback1 = TransitCallback1;
+using RoutingTransitCallback2 = TransitCallback2;
+using RoutingCumulDependentTransitCallback2 = CumulDependentTransitCallback2;
+#endif  // !defined(SWIG)
 }  // namespace operations_research::routing
 
 #endif  // ORTOOLS_ROUTING_TYPES_H_

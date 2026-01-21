@@ -127,14 +127,14 @@ def main():
 
     # Create the routing index manager.
     # [START index_manager]
-    manager = pywraprouting.RoutingIndexManager(
+    manager = pywraprouting.IndexManager(
         1 + 16 * 4, data["num_vehicles"], data["depot"]  # number of locations
     )
     # [END index_manager]
 
     # Create Routing Model.
     # [START routing_model]
-    routing = pywraprouting.RoutingModel(manager)
+    routing = pywraprouting.Model(manager)
 
     # [END routing_model]
 

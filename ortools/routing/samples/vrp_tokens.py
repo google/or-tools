@@ -66,7 +66,6 @@ def print_solution(manager, routing, solution):
         index = routing.Start(vehicle_id)
         total_token += solution.Value(token_dimension.CumulVar(index))
         route_distance = 0
-        route_token = 0
         while not routing.IsEnd(index):
             node_index = manager.IndexToNode(index)
             token_var = token_dimension.CumulVar(index)
@@ -94,12 +93,12 @@ def main():
     data = create_data_model()
 
     # Create the routing index manager.
-    manager = pywraprouting.RoutingIndexManager(
+    manager = pywraprouting.IndexManager(
         len(data["tokens"]), data["num_vehicles"], data["depot"]
     )
 
     # Create Routing Model.
-    routing = pywraprouting.RoutingModel(manager)
+    routing = pywraprouting.Model(manager)
 
     # Create and register a transit callback.
     def distance_callback(from_index, to_index):

@@ -17,7 +17,7 @@
 from ortools.routing import enums_pb2
 from ortools.routing import pywraprouting
 
-RoutingIndexManager = pywraprouting.RoutingIndexManager
+RoutingIndexManager = pywraprouting.IndexManager
 
 DISTANCE_MATRIX = [
     # fmt:off
@@ -114,7 +114,7 @@ def main():
     manager = RoutingIndexManager(num_nodes, num_vehicles, depot)
 
     # Create routing model.
-    routing = pywraprouting.RoutingModel(manager)
+    routing = pywraprouting.Model(manager)
 
     # Create and register a transit callback.
     def distance_callback(from_index, to_index):

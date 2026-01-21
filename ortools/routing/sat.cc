@@ -16,13 +16,11 @@
 #include <cstdint>
 #include <functional>
 #include <limits>
-#include <memory>
 #include <ostream>
 #include <utility>
 #include <vector>
 
 #include "absl/container/btree_map.h"
-#include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
@@ -33,10 +31,8 @@
 #include "ortools/routing/types.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
-#include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
-#include "ortools/util/bitset.h"
 #include "ortools/util/optional_boolean.pb.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/time_limit.h"
@@ -64,7 +60,7 @@ using operations_research::sat::SatParameters;
 // supported.
 // TODO(user): Support any type of constraints.
 // TODO(user): Make VRPs properly support optional nodes.
-bool RoutingModelCanBeSolvedBySat(const RoutingModel& model) {
+bool RoutingModelCanBeSolvedBySat(const routing::Model& model) {
   return model.GetVehicleClassesCount() == 1;
 }
 
@@ -106,7 +102,9 @@ void AddLinearConstraint(
 }
 
 // Returns the unique depot node used in the CP-SAT models (as of 01/2020).
-int64_t GetDepotFromModel(const RoutingModel& model) { return model.Start(0); }
+int64_t GetDepotFromModel(const routing::Model& model) {
+  return model.Start(0);
+}
 
 // Structure to keep track of arcs created.
 struct Arc {
@@ -132,7 +130,7 @@ struct Arc {
 using ArcVarMap =
     absl::btree_map<Arc, int>;  // needs to be stable when iterating
 
-void AddSoftCumulBounds(const RoutingDimension* dimension, int index, int cumul,
+void AddSoftCumulBounds(const Dimension* dimension, int index, int cumul,
                         int64_t cumul_min, int64_t cumul_max,
                         CpModelProto* cp_model) {
   {
@@ -168,12 +166,11 @@ void AddSoftCumulBounds(const RoutingDimension* dimension, int index, int cumul,
 
 // Adds all dimensions to a CpModelProto. Only adds path cumul constraints and
 // cumul bounds.
-void AddDimensions(const RoutingModel& model, const ArcVarMap& arc_vars,
+void AddDimensions(const routing::Model& model, const ArcVarMap& arc_vars,
                    CpModelProto* cp_model) {
-  for (const RoutingDimension* dimension : model.GetDimensions()) {
+  for (const Dimension* dimension : model.GetDimensions()) {
     // Only a single vehicle class.
-    const RoutingModel::TransitCallback2& transit =
-        dimension->transit_evaluator(0);
+    const TransitCallback2& transit = dimension->transit_evaluator(0);
     const int num_cumuls = dimension->cumuls().size();
     std::vector<int> cumuls(num_cumuls, -1);
     const int64_t min_start = dimension->cumuls()[model.Start(0)]->Min();
@@ -207,7 +204,7 @@ void AddDimensions(const RoutingModel& model, const ArcVarMap& arc_vars,
   }
 }
 
-std::vector<int> CreateRanks(const RoutingModel& model,
+std::vector<int> CreateRanks(const routing::Model& model,
                              const ArcVarMap& arc_vars,
                              CpModelProto* cp_model) {
   const int depot = GetDepotFromModel(model);
@@ -234,7 +231,7 @@ std::vector<int> CreateRanks(const RoutingModel& model,
 // performing a node, but we ensure that the values of two vehicle variables
 // are the same if and only if the corresponding nodes are served by the same
 // vehicle.
-std::vector<int> CreateVehicleVars(const RoutingModel& model,
+std::vector<int> CreateVehicleVars(const routing::Model& model,
                                    const ArcVarMap& arc_vars,
                                    CpModelProto* cp_model) {
   const int depot = GetDepotFromModel(model);
@@ -262,7 +259,7 @@ std::vector<int> CreateVehicleVars(const RoutingModel& model,
   return vehicles;
 }
 
-void AddPickupDeliveryConstraints(const RoutingModel& model,
+void AddPickupDeliveryConstraints(const routing::Model& model,
                                   const ArcVarMap& arc_vars,
                                   CpModelProto* cp_model) {
   if (model.GetPickupAndDeliveryPairs().empty()) return;
@@ -281,13 +278,13 @@ void AddPickupDeliveryConstraints(const RoutingModel& model,
   }
 }
 
-// Converts a RoutingModel to CpModelProto for models with multiple vehicles.
+// Converts a Model to CpModelProto for models with multiple vehicles.
 // All non-start/end nodes have the same index in both models. Start/end nodes
 // map to a single depot index; its value is arbitrarly the index of the start
-// node of the first vehicle in the RoutingModel.
+// node of the first vehicle in the Model.
 // The map between CPModelProto arcs and their corresponding arc variable is
 // returned.
-ArcVarMap PopulateMultiRouteModelFromRoutingModel(const RoutingModel& model,
+ArcVarMap PopulateMultiRouteModelFromRoutingModel(const routing::Model& model,
                                                   CpModelProto* cp_model) {
   ArcVarMap arc_vars;
   const int num_nodes = model.Nexts().size();
@@ -354,8 +351,8 @@ ArcVarMap PopulateMultiRouteModelFromRoutingModel(const RoutingModel& model,
   // based on the first "unary" dimension in the model if it exists.
   // TODO(user): We might want to try to get demand lower bounds from
   // non-unary dimensions if no unary exist.
-  const RoutingDimension* primary_dimension = nullptr;
-  for (const RoutingDimension* dimension : model.GetDimensions()) {
+  const Dimension* primary_dimension = nullptr;
+  for (const Dimension* dimension : model.GetDimensions()) {
     // Only a single vehicle class is supported.
     if (dimension->GetUnaryTransitEvaluator(0) != nullptr) {
       primary_dimension = dimension;
@@ -363,7 +360,7 @@ ArcVarMap PopulateMultiRouteModelFromRoutingModel(const RoutingModel& model,
     }
   }
   if (primary_dimension != nullptr) {
-    const RoutingModel::TransitCallback1& transit =
+    const TransitCallback1& transit =
         primary_dimension->GetUnaryTransitEvaluator(0);
     for (int node = 0; node < num_nodes; ++node) {
       // Tricky: demand is added for all nodes in the sat model; this means
@@ -378,10 +375,10 @@ ArcVarMap PopulateMultiRouteModelFromRoutingModel(const RoutingModel& model,
   return arc_vars;
 }
 
-// Converts a RoutingModel with a single vehicle to a CpModelProto.
+// Converts a Model with a single vehicle to a CpModelProto.
 // The mapping between CPModelProto arcs and their corresponding arc variables
 // is returned.
-ArcVarMap PopulateSingleRouteModelFromRoutingModel(const RoutingModel& model,
+ArcVarMap PopulateSingleRouteModelFromRoutingModel(const routing::Model& model,
                                                    CpModelProto* cp_model) {
   ArcVarMap arc_vars;
   const int num_nodes = model.Nexts().size();
@@ -414,10 +411,10 @@ ArcVarMap PopulateSingleRouteModelFromRoutingModel(const RoutingModel& model,
   return arc_vars;
 }
 
-// Converts a RoutingModel to a CpModelProto.
+// Converts a Model to a CpModelProto.
 // The mapping between CPModelProto arcs and their corresponding arc variables
 // is returned.
-ArcVarMap PopulateModelFromRoutingModel(const RoutingModel& model,
+ArcVarMap PopulateModelFromRoutingModel(const routing::Model& model,
                                         CpModelProto* cp_model) {
   if (model.vehicles() == 1) {
     return PopulateSingleRouteModelFromRoutingModel(model, cp_model);
@@ -427,7 +424,7 @@ ArcVarMap PopulateModelFromRoutingModel(const RoutingModel& model,
 
 void ConvertObjectiveToSolution(const CpSolverResponse& response,
                                 const CpObjectiveProto& objective,
-                                const RoutingModel& model,
+                                const routing::Model& model,
                                 Assignment* solution) {
   if (response.status() == CpSolverStatus::OPTIMAL) {
     // If the solution was proven optimal by CP-SAT, add the objective value to
@@ -454,7 +451,7 @@ void ConvertObjectiveToSolution(const CpSolverResponse& response,
 // Converts a CpSolverResponse to an Assignment containing next variables.
 bool ConvertToSolution(const CpSolverResponse& response,
                        const CpObjectiveProto& objective,
-                       const RoutingModel& model, const ArcVarMap& arc_vars,
+                       const routing::Model& model, const ArcVarMap& arc_vars,
                        Assignment* solution) {
   solution->Clear();
   if (response.status() != CpSolverStatus::OPTIMAL &&
@@ -493,12 +490,12 @@ bool ConvertToSolution(const CpSolverResponse& response,
 // Adds dimensions to a CpModelProto for heterogeneous fleet. Adds path
 // cumul constraints and cumul bounds.
 void AddGeneralizedDimensions(
-    const RoutingModel& model, const ArcVarMap& arc_vars,
+    const routing::Model& model, const ArcVarMap& arc_vars,
     absl::Span<const absl::flat_hash_map<int, int>> vehicle_performs_node,
     absl::Span<const absl::flat_hash_map<int, int>> vehicle_class_performs_arc,
     CpModelProto* cp_model) {
   const int num_cp_nodes = model.Nexts().size() + model.vehicles() + 1;
-  for (const RoutingDimension* dimension : model.GetDimensions()) {
+  for (const Dimension* dimension : model.GetDimensions()) {
     // Initialize cumuls.
     std::vector<int> cumuls(num_cp_nodes, -1);
     for (int cp_node = 1; cp_node < num_cp_nodes; ++cp_node) {
@@ -529,7 +526,7 @@ void AddGeneralizedDimensions(
       }
     }
 
-    for (auto vehicle_class = RoutingVehicleClassIndex(0);
+    for (auto vehicle_class = VehicleClassIndex(0);
          vehicle_class < model.GetVehicleClassesCount(); vehicle_class++) {
       std::vector<int> slack(num_cp_nodes, -1);
       const int64_t slack_cost = CapAdd(
@@ -603,7 +600,7 @@ void AddGeneralizedDimensions(
   }
 }
 
-std::vector<int> CreateGeneralizedRanks(const RoutingModel& model,
+std::vector<int> CreateGeneralizedRanks(const routing::Model& model,
                                         const ArcVarMap& arc_vars,
                                         absl::Span<const int> is_unperformed,
                                         CpModelProto* cp_model) {
@@ -632,7 +629,7 @@ std::vector<int> CreateGeneralizedRanks(const RoutingModel& model,
 }
 
 void AddGeneralizedPickupDeliveryConstraints(
-    const RoutingModel& model, const ArcVarMap& arc_vars,
+    const routing::Model& model, const ArcVarMap& arc_vars,
     absl::Span<const absl::flat_hash_map<int, int>> vehicle_performs_node,
     absl::Span<const int> is_unperformed, CpModelProto* cp_model) {
   if (model.GetPickupAndDeliveryPairs().empty()) return;
@@ -697,14 +694,14 @@ void AddGeneralizedPickupDeliveryConstraints(
   }
 }
 
-// Converts a RoutingModel to CpModelProto for models with multiple
+// Converts a routing::Model to CpModelProto for models with multiple
 // vehicles. The node 0 is depot. All nodes in CpModel have index increased
-// by 1 in comparison to the RoutingModel. Each start node has only 1
+// by 1 in comparison to the routing::Model. Each start node has only 1
 // incoming arc (from depot), each end node has only 1 outgoing arc (to
 // depot). The mapping from CPModelProto arcs to their corresponding arc
 // variable is returned.
 ArcVarMap PopulateGeneralizedRouteModelFromRoutingModel(
-    const RoutingModel& model, CpModelProto* cp_model) {
+    const routing::Model& model, CpModelProto* cp_model) {
   ArcVarMap arc_vars;
   const int depot = 0;
   const int num_nodes = model.Nexts().size();
@@ -739,14 +736,14 @@ ArcVarMap PopulateGeneralizedRouteModelFromRoutingModel(
     const int cp_node = node + 1;
     // Forced active and nodes that are not involved in any disjunctions are
     // always performed.
-    const std::vector<RoutingDisjunctionIndex>& disjunction_indices =
+    const std::vector<DisjunctionIndex>& disjunction_indices =
         model.GetDisjunctionIndices(node);
     if (disjunction_indices.empty() || model.ActiveVar(node)->Min() == 1) {
       is_unperformed[cp_node] = AddVariable(cp_model, 0, 0);
       continue;
     }
     // Check if the node is in a forced active disjunction.
-    for (RoutingDisjunctionIndex disjunction_index : disjunction_indices) {
+    for (DisjunctionIndex disjunction_index : disjunction_indices) {
       const int num_nodes =
           model.GetDisjunctionNodeIndices(disjunction_index).size();
       const int64_t penalty = model.GetDisjunctionPenalty(disjunction_index);
@@ -762,7 +759,7 @@ ArcVarMap PopulateGeneralizedRouteModelFromRoutingModel(
   }
   // Add alternative visits. Create self-looped arc variables. Set penalty for
   // not performing disjunctions.
-  for (RoutingDisjunctionIndex disjunction_index(0);
+  for (DisjunctionIndex disjunction_index(0);
        disjunction_index < model.GetNumberOfDisjunctions();
        disjunction_index++) {
     const std::vector<int64_t>& disjunction_indices =
@@ -1012,8 +1009,8 @@ ArcVarMap PopulateGeneralizedRouteModelFromRoutingModel(
   //  are based on the first "unary" dimension in the model if it exists.
   //  TODO(user): We might want to try to get demand lower bounds from
   //  non-unary dimensions if no unary exist.
-  const RoutingDimension* primary_dimension = nullptr;
-  for (const RoutingDimension* dimension : model.GetDimensions()) {
+  const Dimension* primary_dimension = nullptr;
+  for (const Dimension* dimension : model.GetDimensions()) {
     bool is_unary = true;
     for (int vehicle = 0; vehicle < model.vehicles(); vehicle++) {
       if (dimension->GetUnaryTransitEvaluator(vehicle) == nullptr) {
@@ -1031,7 +1028,7 @@ ArcVarMap PopulateGeneralizedRouteModelFromRoutingModel(
       int64_t min_transit = std::numeric_limits<int64_t>::max();
       if (cp_node != 0 && !model.IsEnd(cp_node - 1)) {
         for (int vehicle = 0; vehicle < model.vehicles(); vehicle++) {
-          const RoutingModel::TransitCallback1& transit =
+          const TransitCallback1& transit =
               primary_dimension->GetUnaryTransitEvaluator(vehicle);
           min_transit = std::min(min_transit, transit(cp_node - 1));
         }
@@ -1054,7 +1051,7 @@ ArcVarMap PopulateGeneralizedRouteModelFromRoutingModel(
 // Converts a CpSolverResponse to an Assignment containing next variables.
 bool ConvertGeneralizedResponseToSolution(const CpSolverResponse& response,
                                           const CpObjectiveProto& objective,
-                                          const RoutingModel& model,
+                                          const routing::Model& model,
                                           const ArcVarMap& arc_vars,
                                           Assignment* solution) {
   solution->Clear();
@@ -1075,7 +1072,7 @@ bool ConvertGeneralizedResponseToSolution(const CpSolverResponse& response,
 
 // Uses CP solution as hint for CP-SAT.
 void AddSolutionAsHintToGeneralizedModel(const Assignment* solution,
-                                         const RoutingModel& model,
+                                         const routing::Model& model,
                                          const ArcVarMap& arc_vars,
                                          CpModelProto* cp_model) {
   if (solution == nullptr) return;
@@ -1097,7 +1094,7 @@ void AddSolutionAsHintToGeneralizedModel(const Assignment* solution,
 }
 
 void AddSolutionAsHintToModel(const Assignment* solution,
-                              const RoutingModel& model,
+                              const routing::Model& model,
                               const ArcVarMap& arc_vars,
                               CpModelProto* cp_model) {
   if (solution == nullptr) return;
@@ -1168,9 +1165,9 @@ bool IsFeasibleArcVarMap(const ArcVarMap& arc_vars, int max_node_index) {
 }  // namespace
 }  // namespace sat
 
-// Solves a RoutingModel using the CP-SAT solver. Returns false if no solution
+// Solves a Model using the CP-SAT solver. Returns false if no solution
 // was found.
-bool SolveModelWithSat(RoutingModel* model, RoutingSearchStats* search_stats,
+bool SolveModelWithSat(routing::Model* model, SearchStats* search_stats,
                        const RoutingSearchParameters& search_parameters,
                        const Assignment* initial_solution,
                        Assignment* solution) {

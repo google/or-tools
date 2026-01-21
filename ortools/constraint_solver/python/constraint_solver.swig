@@ -46,12 +46,6 @@
 #pragma SWIG nowarn=551
 #pragma SWIG nowarn=473
 
-// In some parts of the generated code, SWIG 4 decides to use vector instead of
-// std::vector.
-%insert(header) %{
-using std::vector;
-%}
-
 // We *do* need to use SWIGTYPE_... type names directly, because the
 // (recommended replacement) $descriptor macro fails, as of 2019-07, with
 // types such as operations_research::Solver.

@@ -19,22 +19,22 @@
 
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
+#include "ortools/routing/types.h"
 
 namespace operations_research::routing {
 
-const int64_t RoutingIndexManager::kUnassigned = -1;
+const int64_t IndexManager::kUnassigned = -1;
 
-RoutingIndexManager::RoutingIndexManager(int num_nodes, int num_vehicles,
-                                         NodeIndex depot)
-    : RoutingIndexManager(num_nodes, num_vehicles,
-                          std::vector<std::pair<NodeIndex, NodeIndex>>(
-                              num_vehicles, {depot, depot})) {}
+IndexManager::IndexManager(int num_nodes, int num_vehicles, NodeIndex depot)
+    : IndexManager(num_nodes, num_vehicles,
+                   std::vector<std::pair<NodeIndex, NodeIndex>>(
+                       num_vehicles, {depot, depot})) {}
 
-RoutingIndexManager::RoutingIndexManager(int num_nodes, int num_vehicles,
-                                         const std::vector<NodeIndex>& starts,
-                                         const std::vector<NodeIndex>& ends) {
+IndexManager::IndexManager(int num_nodes, int num_vehicles,
+                           const std::vector<NodeIndex>& starts,
+                           const std::vector<NodeIndex>& ends) {
   CHECK_EQ(starts.size(), num_vehicles);
   CHECK_EQ(ends.size(), num_vehicles);
   std::vector<std::pair<NodeIndex, NodeIndex>> starts_ends(num_vehicles);
@@ -44,13 +44,13 @@ RoutingIndexManager::RoutingIndexManager(int num_nodes, int num_vehicles,
   Initialize(num_nodes, num_vehicles, starts_ends);
 }
 
-RoutingIndexManager::RoutingIndexManager(
+IndexManager::IndexManager(
     int num_nodes, int num_vehicles,
     const std::vector<std::pair<NodeIndex, NodeIndex>>& starts_ends) {
   Initialize(num_nodes, num_vehicles, starts_ends);
 }
 
-void RoutingIndexManager::Initialize(
+void IndexManager::Initialize(
     int num_nodes, int num_vehicles,
     const std::vector<std::pair<NodeIndex, NodeIndex>>& starts_ends) {
   static const NodeIndex kZeroNode(0);
@@ -123,7 +123,7 @@ void RoutingIndexManager::Initialize(
   }
 }
 
-std::vector<int64_t> RoutingIndexManager::NodesToIndices(
+std::vector<int64_t> IndexManager::NodesToIndices(
     const std::vector<NodeIndex>& nodes) const {
   std::vector<int64_t> indices;
   indices.reserve(nodes.size());
@@ -135,7 +135,7 @@ std::vector<int64_t> RoutingIndexManager::NodesToIndices(
   return indices;
 }
 
-std::vector<RoutingIndexManager::NodeIndex> RoutingIndexManager::IndicesToNodes(
+std::vector<NodeIndex> IndexManager::IndicesToNodes(
     absl::Span<const int64_t> indices) const {
   std::vector<NodeIndex> nodes;
   nodes.reserve(indices.size());

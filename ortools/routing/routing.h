@@ -174,7 +174,6 @@ Keywords: Vehicle Routing, Traveling Salesman Problem, TSP, VRP, CVRPTW, PDP.
 #include "absl/strings/string_view.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
@@ -193,21 +192,19 @@ Keywords: Vehicle Routing, Traveling Salesman Problem, TSP, VRP, CVRPTW, PDP.
 
 namespace operations_research::routing {
 
+class Dimension;
 class FinalizerVariables;
 class GlobalDimensionCumulOptimizer;
 class LocalDimensionCumulOptimizer;
-#ifndef SWIG
+#if !defined(SWIG)
 class IntVarFilteredDecisionBuilder;
-#endif
-class RoutingDimension;
-#ifndef SWIG
 using util::ReverseArcListGraph;
 class SweepArranger;
-#endif
+#endif  // !defined(SWIG)
 
 class PathsMetadata {
  public:
-  explicit PathsMetadata(const RoutingIndexManager& manager) {
+  explicit PathsMetadata(const IndexManager& manager) {
     const int num_indices = manager.num_indices();
     const int num_paths = manager.num_vehicles();
     path_of_node_.resize(num_indices, -1);
@@ -247,7 +244,7 @@ class PathsMetadata {
   std::vector<int64_t> path_of_node_;
 };
 
-struct RoutingSearchStats {
+struct SearchStats {
   int64_t num_cp_sat_calls_in_lp_scheduling = 0;
   int64_t num_glop_calls_in_lp_scheduling = 0;
   int64_t num_min_cost_flow_calls = 0;
@@ -255,7 +252,7 @@ struct RoutingSearchStats {
   int64_t num_generalized_cp_sat_calls_in_routing = 0;
 };
 
-class OR_DLL RoutingModel {
+class OR_DLL Model {
  public:
   /// Types of precedence policy applied to pickup and delivery pairs.
   enum PickupAndDeliveryPolicy {
@@ -266,14 +263,17 @@ class OR_DLL RoutingModel {
     /// Deliveries must be performed in the same order as pickups.
     PICKUP_AND_DELIVERY_FIFO
   };
-  typedef RoutingCostClassIndex CostClassIndex;
-  typedef RoutingDimensionIndex DimensionIndex;
-  typedef RoutingDisjunctionIndex DisjunctionIndex;
-  typedef RoutingVehicleClassIndex VehicleClassIndex;
-  typedef RoutingResourceClassIndex ResourceClassIndex;
-  typedef RoutingTransitCallback1 TransitCallback1;
-  typedef RoutingTransitCallback2 TransitCallback2;
-  typedef RoutingCumulDependentTransitCallback2 CumulDependentTransitCallback2;
+// For compatibility only.
+#if !defined(SWIG)
+  using CostClassIndex = CostClassIndex;
+  using DimensionIndex = DimensionIndex;
+  using DisjunctionIndex = DisjunctionIndex;
+  using VehicleClassIndex = VehicleClassIndex;
+  using ResourceClassIndex = ResourceClassIndex;
+  using TransitCallback1 = TransitCallback1;
+  using TransitCallback2 = TransitCallback2;
+  using CumulDependentTransitCallback2 = CumulDependentTransitCallback2;
+#endif  // !defined(SWIG)
 
 #if !defined(SWIG)
   /// What follows is relevant for models with time/state dependent transits.
@@ -294,11 +294,11 @@ class OR_DLL RoutingModel {
   };
   typedef std::function<StateDependentTransit(int64_t, int64_t)>
       VariableIndexEvaluator2;
-#endif  // SWIG
+#endif  // !defined(SWIG)
 
 #if !defined(SWIG)
   struct CostClass {
-    /// Index of the arc cost evaluator, registered in the RoutingModel class.
+    /// Index of the arc cost evaluator, registered in the Model class.
     int evaluator_index = 0;
 
     /// SUBTLE:
@@ -327,7 +327,7 @@ class OR_DLL RoutingModel {
       // transit_cost_coefficient and add the span coefficient to the slack one.
       int64_t span_cost_coefficient;
       int64_t slack_cost_coefficient;
-      const RoutingDimension* dimension;
+      const Dimension* dimension;
       bool operator<(const DimensionCost& cost) const {
         return std::tie(transit_evaluator_class, span_cost_coefficient,
                         slack_cost_coefficient) <
@@ -366,7 +366,7 @@ class OR_DLL RoutingModel {
           c.dimension_transit_evaluator_class_and_cost_coefficient);
     }
   };
-#endif  // defined(SWIG)
+#endif  // !defined(SWIG)
 
   /// Struct used to sort and store vehicles by their type. Two vehicles have
   /// the same "vehicle type" iff they have the same cost class and start/end
@@ -402,7 +402,7 @@ class OR_DLL RoutingModel {
   /// turn be assigned to at most 1 vehicle requiring it. This
   /// vehicle-to-resource assignment will apply the corresponding Attributes to
   /// the dimensions affected by the resource group. NOTE: As of 2021/07, each
-  /// ResourceGroup can only affect a single RoutingDimension at a time, i.e.
+  /// ResourceGroup can only affect a single Dimension at a time, i.e.
   /// all Resources in a group must apply attributes to the same single
   /// dimension.
   class ResourceGroup {
@@ -447,12 +447,12 @@ class OR_DLL RoutingModel {
 
      private:
       Resource(ResourceGroup::Attributes attributes,
-               const RoutingDimension* dimension) {
+               const Dimension* dimension) {
         SetDimensionAttributes(std::move(attributes), dimension);
       }
 
       void SetDimensionAttributes(ResourceGroup::Attributes attributes,
-                                  const RoutingDimension* dimension);
+                                  const Dimension* dimension);
       const ResourceGroup::Attributes& GetDefaultAttributes() const;
 
       absl::flat_hash_map<DimensionIndex, int> dimension_attributes_;
@@ -465,7 +465,7 @@ class OR_DLL RoutingModel {
 
     /// Adds a Resource with the given attributes for the corresponding
     /// dimension. Returns the index of the added resource in resources_.
-    int AddResource(Attributes attributes, const RoutingDimension* dimension);
+    int AddResource(Attributes attributes, const Dimension* dimension);
 
     /// Notifies that the given vehicle index requires a resource from this
     /// group if the vehicle is used (i.e. if its route is non-empty or
@@ -548,7 +548,7 @@ class OR_DLL RoutingModel {
     int Index() const { return index_; }
 
    private:
-    explicit ResourceGroup(const RoutingModel* model)
+    explicit ResourceGroup(const Model* model)
         : index_(model->GetResourceGroups().size()),
           model_(model),
           vehicle_requires_resource_(model->vehicles(), false),
@@ -557,7 +557,7 @@ class OR_DLL RoutingModel {
     void ComputeResourceClasses();
 
     const int index_;
-    const RoutingModel* const model_;
+    const Model* const model_;
     std::vector<Resource> resources_;
     // Stores the ResourceClassIndex of each resource (See implementation of
     // ComputeResourceClasses()).
@@ -574,7 +574,7 @@ class OR_DLL RoutingModel {
     /// All indices of dimensions affected by this resource group.
     absl::flat_hash_set<DimensionIndex> affected_dimension_indices_;
 
-    friend class RoutingModel;
+    friend class Model;
   };
 
   /// Struct used to store a variable value.
@@ -586,14 +586,13 @@ class OR_DLL RoutingModel {
   /// Class used to solve a secondary model within a first solution strategy.
   class SecondaryOptimizer {
    public:
-    SecondaryOptimizer(RoutingModel* model,
-                       RoutingSearchParameters* search_parameters,
+    SecondaryOptimizer(Model* model, RoutingSearchParameters* search_parameters,
                        int64_t solve_period);
-    bool Solve(const std::vector<RoutingModel::VariableValuePair>& in_state,
-               std::vector<RoutingModel::VariableValuePair>* out_state);
+    bool Solve(const std::vector<Model::VariableValuePair>& in_state,
+               std::vector<Model::VariableValuePair>* out_state);
 
    private:
-    RoutingModel* const model_;
+    Model* const model_;
     const RoutingSearchParameters* const search_parameters_;
     const int64_t solve_period_ = 0;
     int64_t call_count_ = 0;
@@ -615,15 +614,15 @@ class OR_DLL RoutingModel {
   /// Constructor taking an index manager. The version which does not take
   /// RoutingModelParameters is equivalent to passing
   /// DefaultRoutingModelParameters().
-  explicit RoutingModel(const RoutingIndexManager& index_manager);
-  RoutingModel(const RoutingIndexManager& index_manager,
-               const RoutingModelParameters& parameters);
+  explicit Model(const IndexManager& index_manager);
+  Model(const IndexManager& index_manager,
+        const RoutingModelParameters& parameters);
 
   // This type is neither copyable nor movable.
-  RoutingModel(const RoutingModel&) = delete;
-  RoutingModel& operator=(const RoutingModel&) = delete;
+  Model(const Model&) = delete;
+  Model& operator=(const Model&) = delete;
 
-  ~RoutingModel();
+  ~Model();
 
   /// Represents the sign of values returned by a transit evaluator.
   enum TransitEvaluatorSign {
@@ -767,7 +766,7 @@ class OR_DLL RoutingModel {
   bool AddDimensionDependentDimensionWithVehicleCapacity(
       const std::vector<int>& pure_transits,
       const std::vector<int>& dependent_transits,
-      const RoutingDimension* base_dimension, int64_t slack_max,
+      const Dimension* base_dimension, int64_t slack_max,
       std::vector<int64_t> vehicle_capacities, bool fix_start_cumul_to_zero,
       const std::string& name) {
     return AddDimensionDependentDimensionWithVehicleCapacityInternal(
@@ -777,22 +776,21 @@ class OR_DLL RoutingModel {
 
   /// As above, but pure_transits are taken to be zero evaluators.
   bool AddDimensionDependentDimensionWithVehicleCapacity(
-      const std::vector<int>& transits, const RoutingDimension* base_dimension,
+      const std::vector<int>& transits, const Dimension* base_dimension,
       int64_t slack_max, std::vector<int64_t> vehicle_capacities,
       bool fix_start_cumul_to_zero, const std::string& name);
   /// Homogeneous versions of the functions above.
   bool AddDimensionDependentDimensionWithVehicleCapacity(
-      int transit, const RoutingDimension* base_dimension, int64_t slack_max,
+      int transit, const Dimension* base_dimension, int64_t slack_max,
       int64_t vehicle_capacity, bool fix_start_cumul_to_zero,
       const std::string& name);
   bool AddDimensionDependentDimensionWithVehicleCapacity(
-      int pure_transit, int dependent_transit,
-      const RoutingDimension* base_dimension, int64_t slack_max,
-      int64_t vehicle_capacity, bool fix_start_cumul_to_zero,
+      int pure_transit, int dependent_transit, const Dimension* base_dimension,
+      int64_t slack_max, int64_t vehicle_capacity, bool fix_start_cumul_to_zero,
       const std::string& name);
 
   /// Creates a cached StateDependentTransit from an std::function.
-  static RoutingModel::StateDependentTransit MakeStateDependentTransit(
+  static Model::StateDependentTransit MakeStateDependentTransit(
       const std::function<int64_t(int64_t)>& f, int64_t domain_start,
       int64_t domain_end);
 
@@ -800,47 +798,43 @@ class OR_DLL RoutingModel {
   // TODO(user): rename.
   std::vector<std::string> GetAllDimensionNames() const;
   /// Returns all dimensions of the model.
-  const std::vector<RoutingDimension*>& GetDimensions() const {
+  const std::vector<Dimension*>& GetDimensions() const {
     return dimensions_.get();
   }
   /// Returns dimensions with soft or vehicle span costs.
-  std::vector<RoutingDimension*> GetDimensionsWithSoftOrSpanCosts() const;
+  std::vector<Dimension*> GetDimensionsWithSoftOrSpanCosts() const;
   /// Returns dimensions for which all transit evaluators are unary.
-  std::vector<RoutingDimension*> GetUnaryDimensions() const;
+  std::vector<Dimension*> GetUnaryDimensions() const;
 
   /// Returns the dimensions which have [global|local]_dimension_optimizers_.
-  std::vector<const RoutingDimension*> GetDimensionsWithGlobalCumulOptimizers()
-      const;
-  std::vector<const RoutingDimension*> GetDimensionsWithLocalCumulOptimizers()
-      const;
+  std::vector<const Dimension*> GetDimensionsWithGlobalCumulOptimizers() const;
+  std::vector<const Dimension*> GetDimensionsWithLocalCumulOptimizers() const;
 
   /// Returns whether the given dimension has global/local cumul optimizers.
-  bool HasGlobalCumulOptimizer(const RoutingDimension& dimension) const {
+  bool HasGlobalCumulOptimizer(const Dimension& dimension) const {
     return GetGlobalCumulOptimizerIndex(dimension) >= 0;
   }
-  bool HasLocalCumulOptimizer(const RoutingDimension& dimension) const {
+  bool HasLocalCumulOptimizer(const Dimension& dimension) const {
     return GetLocalCumulOptimizerIndex(dimension) >= 0;
   }
   /// Returns the global/local dimension cumul optimizer for a given dimension,
   /// or nullptr if there is none.
   GlobalDimensionCumulOptimizer* GetMutableGlobalCumulLPOptimizer(
-      const RoutingDimension& dimension) const;
+      const Dimension& dimension) const;
   GlobalDimensionCumulOptimizer* GetMutableGlobalCumulMPOptimizer(
-      const RoutingDimension& dimension) const;
+      const Dimension& dimension) const;
   LocalDimensionCumulOptimizer* GetMutableLocalCumulLPOptimizer(
-      const RoutingDimension& dimension) const;
+      const Dimension& dimension) const;
   LocalDimensionCumulOptimizer* GetMutableLocalCumulMPOptimizer(
-      const RoutingDimension& dimension) const;
+      const Dimension& dimension) const;
 
   /// Returns true if a dimension exists for a given dimension name.
   bool HasDimension(absl::string_view dimension_name) const;
   /// Returns a dimension from its name. Dies if the dimension does not exist.
-  const RoutingDimension& GetDimensionOrDie(
-      const std::string& dimension_name) const;
+  const Dimension& GetDimensionOrDie(const std::string& dimension_name) const;
   /// Returns a dimension from its name. Returns nullptr if the dimension does
   /// not exist.
-  RoutingDimension* GetMutableDimension(
-      const std::string& dimension_name) const;
+  Dimension* GetMutableDimension(const std::string& dimension_name) const;
   /// Set the given dimension as "primary constrained". As of August 2013, this
   /// is only used by ArcIsMoreConstrainedThanArc().
   /// "dimension" must be the name of an existing dimension, or be empty, in
@@ -867,11 +861,11 @@ class OR_DLL RoutingModel {
   /// Returns the indices of resource groups for this dimension. This method can
   /// only be called after the model has been closed.
   const std::vector<int>& GetDimensionResourceGroupIndices(
-      const RoutingDimension* dimension) const;
+      const Dimension* dimension) const;
 
   /// Returns the index of the resource group attached to the dimension.
   /// DCHECKS that there's exactly one resource group for this dimension.
-  int GetDimensionResourceGroupIndex(const RoutingDimension* dimension) const {
+  int GetDimensionResourceGroupIndex(const Dimension* dimension) const {
     DCHECK_EQ(GetDimensionResourceGroupIndices(dimension).size(), 1);
     return GetDimensionResourceGroupIndices(dimension)[0];
   }
@@ -1058,7 +1052,7 @@ class OR_DLL RoutingModel {
 
   int GetNumOfSingletonNodes() const;
 
-#ifndef SWIG
+#if !defined(SWIG)
   /// Returns pickup and delivery pairs currently in the model.
   const std::vector<PickupDeliveryPair>& GetPickupAndDeliveryPairs() const {
     return pickup_delivery_pairs_;
@@ -1076,7 +1070,7 @@ class OR_DLL RoutingModel {
     DCHECK(closed_);
     return implicit_pickup_delivery_pairs_without_alternatives_;
   }
-#endif  // SWIG
+#endif  // !defined(SWIG)
 
   // Returns the first pickup or delivery sibling of the given node matching
   // the given predicate.
@@ -1115,13 +1109,13 @@ class OR_DLL RoutingModel {
   const std::vector<int>& GetSingleNodesOfType(int type) const;
   const std::vector<int>& GetPairIndicesOfType(int type) const;
   VisitTypePolicy GetVisitTypePolicy(int64_t index) const;
-#ifndef SWIG
+#if !defined(SWIG)
   const std::vector<std::vector<int>>& GetVisitTypeComponents() const {
     return visit_type_components_;
   }
-#endif  // SWIG
+#endif  // !defined(SWIG)
   int GetNumberOfVisitTypes() const { return num_visit_types_; }
-#ifndef SWIG
+#if !defined(SWIG)
   const std::vector<std::vector<int>>& GetTopologicallySortedVisitTypes()
       const {
     DCHECK(closed_);
@@ -1132,7 +1126,7 @@ class OR_DLL RoutingModel {
     DCHECK(closed_);
     return topologically_sorted_node_precedences_;
   }
-#endif  // SWIG
+#endif  // !defined(SWIG)
   /// Incompatibilities:
   /// Two nodes with "hard" incompatible types cannot share the same route at
   /// all, while with a "temporal" incompatibility they can't be on the same
@@ -1307,12 +1301,12 @@ class OR_DLL RoutingModel {
   // callback must not return a value if the route vector is invalid, and
   // returns the value of the route otherwise.
   // The callback must always return the same value for a given route.
-#ifndef SWIG
+#if !defined(SWIG)
   void AddRouteConstraint(
       absl::AnyInvocable<std::optional<int64_t>(const std::vector<int64_t>&)>
           route_evaluator,
       bool costs_are_homogeneous_across_vehicles = false);
-#endif
+#endif  // !defined(SWIG)
   std::optional<int64_t> GetRouteCost(const std::vector<int64_t>& route) const {
     int64_t route_cost = 0;
     for (auto& evaluator : route_evaluators_) {
@@ -1335,11 +1329,11 @@ class OR_DLL RoutingModel {
 
 /// Gets/sets the evaluator used during the search. Only relevant when
 /// RoutingSearchParameters.first_solution_strategy = EVALUATOR_STRATEGY.
-#ifndef SWIG
+#if !defined(SWIG)
   const Solver::IndexEvaluator2& first_solution_evaluator() const {
     return first_solution_evaluator_;
   }
-#endif
+#endif  // !defined(SWIG)
   /// Takes ownership of evaluator.
   void SetFirstSolutionEvaluator(Solver::IndexEvaluator2 evaluator) {
     first_solution_evaluator_ = std::move(evaluator);
@@ -1458,7 +1452,7 @@ class OR_DLL RoutingModel {
   /// The objective_element of target_assignment is set to this->cost_.
   void SetAssignmentFromOtherModelAssignment(
       operations_research::Assignment* target_assignment,
-      const RoutingModel* source_model,
+      const Model* source_model,
       const operations_research::Assignment* source_assignment);
   /// Returns detailed search statistics.
   operations_research::SubSolverStatistics GetSubSolverStatistics() const;
@@ -1475,7 +1469,7 @@ class OR_DLL RoutingModel {
   /// Returns the current status of the routing model.
   RoutingSearchStatus::Value status() const { return status_; }
   /// Returns search statistics.
-  const RoutingSearchStats& search_stats() const { return search_stats_; }
+  const SearchStats& search_stats() const { return search_stats_; }
   /// Returns the value of the internal enable_deep_serialization_ parameter.
   bool enable_deep_serialization() const { return enable_deep_serialization_; }
   /// Applies a lock chain to the next search. 'locks' represents an ordered
@@ -1555,10 +1549,10 @@ class OR_DLL RoutingModel {
   /// If the returned vector is route_indices, route_indices[i][j] is the index
   /// for jth location visited on route i. Note that contrary to
   /// AssignmentToRoutes, the vectors do include start and end locations.
-#ifndef SWIG
+#if !defined(SWIG)
   std::vector<std::vector<int64_t>> GetRoutesFromAssignment(
       const operations_research::Assignment& assignment);
-#endif
+#endif  // !defined(SWIG)
   /// Returns a compacted version of the given assignment, in which all vehicles
   /// with id lower or equal to some N have non-empty routes, and all vehicles
   /// with id greater than N have empty routes. Does not take ownership of the
@@ -1601,7 +1595,7 @@ class OR_DLL RoutingModel {
       const operations_research::Assignment* original_assignment,
       absl::Duration duration_limit, bool* time_limit_was_reached = nullptr);
 
-#ifndef SWIG
+#if !defined(SWIG)
   /// Contains the information needed by the solver to optimize a dimension's
   /// cumuls with travel-start dependent transit values.
   struct RouteDimensionTravelInfo {
@@ -1644,14 +1638,14 @@ class OR_DLL RoutingModel {
     std::string DebugString(std::string line_prefix = "") const;
   };
 
-#endif  // SWIG
+#endif  // !defined(SWIG)
 
-#ifndef SWIG
-  // TODO(user): Revisit if coordinates are added to the RoutingModel class.
+#if !defined(SWIG)
+  // TODO(user): Revisit if coordinates are added to the Model class.
   void SetSweepArranger(SweepArranger* sweep_arranger);
   /// Returns the sweep arranger to be used by routing heuristics.
   SweepArranger* sweep_arranger() const;
-#endif
+#endif  // !defined(SWIG)
   struct NodeNeighborsParameters {
     int num_neighbors;
     bool add_vehicle_starts_to_neighbors = true;
@@ -1682,7 +1676,7 @@ class OR_DLL RoutingModel {
   };
   class NodeNeighborsByCostClass {
    public:
-    explicit NodeNeighborsByCostClass(const RoutingModel* routing_model)
+    explicit NodeNeighborsByCostClass(const Model* routing_model)
         : routing_model_(*routing_model) {};
 
     /// Computes num_neighbors neighbors of all nodes for every cost class in
@@ -1744,7 +1738,7 @@ class OR_DLL RoutingModel {
     bool IsFullNeighborhood() const { return full_neighborhood_; }
 
    private:
-    const RoutingModel& routing_model_;
+    const Model& routing_model_;
 #if __cplusplus >= 202002L
     static constexpr std::vector<int> empty_neighbors_ = {};
 #else
@@ -1926,7 +1920,7 @@ class OR_DLL RoutingModel {
   /// vehicles for this class.
   int GetVehicleOfClass(VehicleClassIndex vehicle_class) const {
     DCHECK(closed_);
-    const RoutingModel::VehicleTypeContainer& vehicle_type_container =
+    const Model::VehicleTypeContainer& vehicle_type_container =
         GetVehicleTypeContainer();
     if (vehicle_class.value() >= GetVehicleClassesCount() ||
         vehicle_type_container.vehicles_per_vehicle_class[vehicle_class.value()]
@@ -1977,7 +1971,7 @@ class OR_DLL RoutingModel {
     DCHECK(closed_);
     return same_active_var_groups_[group];
   }
-#ifndef SWIG
+#if !defined(SWIG)
   /// Adds an ordered activity group. This enforces that if disjunctions[i] is
   /// active, then disjunctions[i-1] must be active.
   void AddOrderedActivityGroup(std::vector<DisjunctionIndex> disjunctions) {
@@ -1990,7 +1984,7 @@ class OR_DLL RoutingModel {
       const {
     return ordered_activity_groups_;
   }
-#endif  // SWIG
+#endif  // !defined(SWIG)
   const VehicleTypeContainer& GetVehicleTypeContainer() const {
     DCHECK(closed_);
     return vehicle_type_container_;
@@ -2027,10 +2021,10 @@ class OR_DLL RoutingModel {
   /// route i.
   /// - cumul_bounds[i][j].first is the minimum.
   /// - cumul_bounds[i][j].second is the maximum.
-#ifndef SWIG
+#if !defined(SWIG)
   std::vector<std::vector<std::pair<int64_t, int64_t>>> GetCumulBounds(
       const operations_research::Assignment& solution_assignment,
-      const RoutingDimension& dimension);
+      const Dimension& dimension);
 #endif
   /// Checks if an assignment is feasible.
   bool CheckIfAssignmentIsFeasible(
@@ -2101,14 +2095,14 @@ class OR_DLL RoutingModel {
   /// modification to a route might impact another.
   bool AreRoutesInterdependent(const RoutingSearchParameters& parameters) const;
 
-#ifndef SWIG
+#if !defined(SWIG)
   /// Sets the callback returning the variable to use for the Tabu Search
   /// metaheuristic.
   using GetTabuVarsCallback =
-      std::function<std::vector<operations_research::IntVar*>(RoutingModel*)>;
+      std::function<std::vector<operations_research::IntVar*>(Model*)>;
 
   void SetTabuVarsCallback(GetTabuVarsCallback tabu_var_callback);
-#endif  // SWIG
+#endif  // !defined(SWIG)
 
   /// The next few members are in the public section only for testing purposes.
   // TODO(user): Find a way to test and restrict the access at the same time.
@@ -2124,9 +2118,8 @@ class OR_DLL RoutingModel {
   ///    returned value is x it creates decisions slack[i] = x, slack[i] = x +
   ///    1, slack[i] = x - 1, slack[i] = x + 2, etc.
   DecisionBuilder* MakeGuidedSlackFinalizer(
-      const RoutingDimension* dimension,
-      std::function<int64_t(int64_t)> initializer);
-#ifndef SWIG
+      const Dimension* dimension, std::function<int64_t(int64_t)> initializer);
+#if !defined(SWIG)
   // TODO(user): MakeGreedyDescentLSOperator is too general for routing.h.
   /// Perhaps move it to constraint_solver.h.
   /// MakeGreedyDescentLSOperator creates a local search operator that tries to
@@ -2138,7 +2131,7 @@ class OR_DLL RoutingModel {
   const std::vector<SearchMonitor*>& GetSearchMonitors() const {
     return monitors_;
   }
-#endif  /// __SWIG__
+#endif  // !defined(SWIG)
   /// MakeSelfDependentDimensionFinalizer is a finalizer for the slacks of a
   /// self-dependent dimension. It makes an extensive use of the caches of the
   /// state dependent transits.
@@ -2153,21 +2146,21 @@ class OR_DLL RoutingModel {
   /// departute time, n is the number of nodes in the network and m is the
   /// number of vehicles.
   DecisionBuilder* MakeSelfDependentDimensionFinalizer(
-      const RoutingDimension* dimension);
+      const Dimension* dimension);
 
   const PathsMetadata& GetPathsMetadata() const { return paths_metadata_; }
-#ifndef SWIG
+#if !defined(SWIG)
   BinCapacities* GetBinCapacities() { return bin_capacities_.get(); }
 
   /// Sets a secondary solver (routing model + parameters) which can be used to
   /// run sub-solves while building a first solution.
-  void SetSecondaryModel(RoutingModel* secondary_model,
+  void SetSecondaryModel(Model* secondary_model,
                          RoutingSearchParameters secondary_parameters) {
     DCHECK(!closed_);
     secondary_model_ = secondary_model;
     secondary_parameters_ = std::move(secondary_parameters);
   }
-#endif  // SWIG
+#endif  // !defined(SWIG)
 
   /// Returns indices of the vehicles which are in the same vehicle class as the
   /// vehicle starting or ending at start_end_index.
@@ -2276,15 +2269,14 @@ class OR_DLL RoutingModel {
   bool AddDimensionDependentDimensionWithVehicleCapacityInternal(
       const std::vector<int>& pure_transits,
       const std::vector<int>& dependent_transits,
-      const RoutingDimension* base_dimension, int64_t slack_max,
+      const Dimension* base_dimension, int64_t slack_max,
       std::vector<int64_t> vehicle_capacities, bool fix_start_cumul_to_zero,
       const std::string& name);
   bool InitializeDimensionInternal(
       const std::vector<int>& evaluator_indices,
       const std::vector<int>& cumul_dependent_evaluator_indices,
       const std::vector<int>& state_dependent_evaluator_indices,
-      int64_t slack_max, bool fix_start_cumul_to_zero,
-      RoutingDimension* dimension);
+      int64_t slack_max, bool fix_start_cumul_to_zero, Dimension* dimension);
   DimensionIndex GetDimensionIndex(absl::string_view dimension_name) const;
 
   /// Creates global and local cumul optimizers for the dimensions needing them,
@@ -2426,7 +2418,7 @@ class OR_DLL RoutingModel {
   /// Solve matching problem with min-cost flow and store result in assignment.
   bool SolveMatchingModel(operations_research::Assignment* assignment,
                           const RoutingSearchParameters& parameters);
-#ifndef SWIG
+#if !defined(SWIG)
   /// Append an assignment to a vector of assignments if it is feasible.
   bool AppendAssignmentIfFeasible(
       const operations_research::Assignment& assignment,
@@ -2498,11 +2490,11 @@ class OR_DLL RoutingModel {
       const RoutingSearchParameters& search_parameters) const;
   IntVarFilteredDecisionBuilder* GetFilteredFirstSolutionDecisionBuilderOrNull(
       const RoutingSearchParameters& parameters) const;
-#ifndef SWIG
+#if !defined(SWIG)
   template <typename Heuristic, typename... Args>
   IntVarFilteredDecisionBuilder* CreateIntVarFilteredDecisionBuilder(
       const Args&... args);
-#endif
+#endif  // !defined(SWIG)
   LocalSearchPhaseParameters* CreateLocalSearchParameters(
       const RoutingSearchParameters& search_parameters, bool secondary_ls);
   DecisionBuilder* CreatePrimaryLocalSearchDecisionBuilder(
@@ -2546,8 +2538,8 @@ class OR_DLL RoutingModel {
 
   /// Returns the internal global/local optimizer index for the given dimension
   /// if any, and -1 otherwise.
-  int GetGlobalCumulOptimizerIndex(const RoutingDimension& dimension) const;
-  int GetLocalCumulOptimizerIndex(const RoutingDimension& dimension) const;
+  int GetGlobalCumulOptimizerIndex(const Dimension& dimension) const;
+  int GetLocalCumulOptimizerIndex(const Dimension& dimension) const;
 
   /// Model
   std::unique_ptr<Solver> solver_;
@@ -2576,7 +2568,7 @@ class OR_DLL RoutingModel {
   mutable RevSwitch is_bound_to_end_ct_added_;
   /// Dimensions
   absl::flat_hash_map<std::string, DimensionIndex> dimension_name_to_index_;
-  util_intops::StrongVector<DimensionIndex, RoutingDimension*> dimensions_;
+  util_intops::StrongVector<DimensionIndex, Dimension*> dimensions_;
   /// Resource Groups.
   /// If resource_groups_ is not empty, then for each group of resources, each
   /// (used) vehicle must be assigned to exactly 1 resource, and each resource
@@ -2620,14 +2612,14 @@ class OR_DLL RoutingModel {
   /// i.e. by default empty routes will not contribute to the cost nor be
   /// considered for constraints.
   std::vector<bool> vehicle_used_when_empty_;
-#ifndef SWIG
+#if !defined(SWIG)
   absl::flat_hash_map<
       std::pair<std::string, std::string>,
       std::vector<Solver::PathEnergyCostConstraintSpecification::EnergyCost>,
       absl::Hash<std::pair<std::string, std::string>>>
       force_distance_to_energy_costs_;
   util_intops::StrongVector<CostClassIndex, CostClass> cost_classes_;
-#endif  // SWIG
+#endif  // !defined(SWIG)
   bool costs_are_homogeneous_across_vehicles_;
   bool cache_callbacks_;
   mutable std::vector<CostCacheElement> cost_cache_;  /// Index by source index.
@@ -2642,9 +2634,9 @@ class OR_DLL RoutingModel {
   /// Same vehicle costs
   std::vector<ValuedNodes<int64_t>> same_vehicle_costs_;
   /// Allowed vehicles
-#ifndef SWIG
+#if !defined(SWIG)
   std::vector<absl::flat_hash_set<int>> allowed_vehicles_;
-#endif  // SWIG
+#endif  // !defined(SWIG)
   /// Pickup and delivery
   std::vector<PickupDeliveryPair> pickup_delivery_pairs_;
   std::vector<PickupDeliveryPair>
@@ -2713,12 +2705,12 @@ class OR_DLL RoutingModel {
   std::vector<std::vector<std::vector<int>>>
       topologically_sorted_node_precedences_;
   // Two indices are equivalent if they correspond to the same node (as given
-  // to the constructors taking a RoutingIndexManager).
+  // to the constructors taking a IndexManager).
   std::vector<int> index_to_equivalence_class_;
   const PathsMetadata paths_metadata_;
   // TODO(user): b/62478706 Once the port is done, this shouldn't be needed
   //                  anymore.
-  RoutingIndexManager manager_;
+  IndexManager manager_;
   int start_end_count_;
   // Model status
   bool closed_ = false;
@@ -2726,7 +2718,7 @@ class OR_DLL RoutingModel {
   bool enable_deep_serialization_ = true;
 
   // Secondary routing solver
-  RoutingModel* secondary_model_ = nullptr;
+  Model* secondary_model_ = nullptr;
   RoutingSearchParameters secondary_parameters_;
   std::unique_ptr<SecondaryOptimizer> secondary_optimizer_;
 
@@ -2775,9 +2767,9 @@ class OR_DLL RoutingModel {
                       std::unique_ptr<NodeNeighborsByCostClass>>
       node_neighbors_by_cost_class_per_size_;
   std::unique_ptr<FinalizerVariables> finalizer_variables_;
-#ifndef SWIG
+#if !defined(SWIG)
   std::unique_ptr<SweepArranger> sweep_arranger_;
-#endif
+#endif  // !defined(SWIG)
 
   RegularLimit* limit_ = nullptr;
   RegularLimit* cumulative_limit_ = nullptr;
@@ -2786,7 +2778,7 @@ class OR_DLL RoutingModel {
   RegularLimit* first_solution_lns_limit_ = nullptr;
   absl::Duration time_buffer_;
 
-  RoutingSearchStats search_stats_;
+  SearchStats search_stats_;
 
   std::atomic<bool> interrupt_cp_sat_;
   std::atomic<bool> interrupt_cp_;
@@ -2818,13 +2810,13 @@ class OR_DLL RoutingModel {
   // Returns global BinCapacities state, may be nullptr.
   std::unique_ptr<BinCapacities> bin_capacities_;
 
-  friend class RoutingDimension;
-  friend class RoutingModelInspector;
+  friend class Dimension;
+  friend class ModelInspector;
   friend class ResourceGroup::Resource;
 };
 
 /// Routing model visitor.
-class OR_DLL RoutingModelVisitor : public operations_research::BaseObject {
+class OR_DLL ModelVisitor : public operations_research::BaseObject {
  public:
   /// Constraint types.
   static const char kLightElement[];
@@ -2834,22 +2826,22 @@ class OR_DLL RoutingModelVisitor : public operations_research::BaseObject {
 
 #if !defined(SWIG)
 void FillPathEvaluation(absl::Span<const int64_t> path,
-                        const RoutingModel::TransitCallback2& evaluator,
+                        const TransitCallback2& evaluator,
                         std::vector<int64_t>* values);
 #endif  // !defined(SWIG)
 
 class TypeRegulationsChecker {
  public:
-  explicit TypeRegulationsChecker(const RoutingModel& model);
+  explicit TypeRegulationsChecker(const Model& model);
   virtual ~TypeRegulationsChecker() = default;
 
   bool CheckVehicle(int vehicle,
                     const std::function<int64_t(int64_t)>& next_accessor);
 
  protected:
-#ifndef SWIG
-  using VisitTypePolicy = RoutingModel::VisitTypePolicy;
-#endif  // SWIG
+#if !defined(SWIG)
+  using VisitTypePolicy = Model::VisitTypePolicy;
+#endif  // !defined(SWIG)
 
   struct TypePolicyOccurrence {
     /// Number of TYPE_ADDED_TO_VEHICLE and
@@ -2890,7 +2882,7 @@ class TypeRegulationsChecker {
                                     int pos) = 0;
   virtual bool FinalizeCheck() const { return true; }
 
-  const RoutingModel& model_;
+  const Model& model_;
 
  private:
   std::vector<TypePolicyOccurrence> occurrences_of_type_;
@@ -2900,7 +2892,7 @@ class TypeRegulationsChecker {
 /// Checker for type incompatibilities.
 class TypeIncompatibilityChecker : public TypeRegulationsChecker {
  public:
-  TypeIncompatibilityChecker(const RoutingModel& model,
+  TypeIncompatibilityChecker(const Model& model,
                              bool check_hard_incompatibilities);
   ~TypeIncompatibilityChecker() override = default;
 
@@ -2916,7 +2908,7 @@ class TypeIncompatibilityChecker : public TypeRegulationsChecker {
 /// Checker for type requirements.
 class TypeRequirementChecker : public TypeRegulationsChecker {
  public:
-  explicit TypeRequirementChecker(const RoutingModel& model)
+  explicit TypeRequirementChecker(const Model& model)
       : TypeRegulationsChecker(model) {}
   ~TypeRequirementChecker() override = default;
 
@@ -2980,7 +2972,7 @@ class TypeRequirementChecker : public TypeRegulationsChecker {
 ///   ... --> A --> ... --> r1 --> ...   OR   ... --> r1 --> ... --> UV --> ...
 class TypeRegulationsConstraint : public operations_research::Constraint {
  public:
-  explicit TypeRegulationsConstraint(const RoutingModel& model);
+  explicit TypeRegulationsConstraint(const Model& model);
 
   void Post() override;
   void InitialPropagate() override;
@@ -2989,7 +2981,7 @@ class TypeRegulationsConstraint : public operations_research::Constraint {
   void PropagateNodeRegulations(int node);
   void CheckRegulationsOnVehicle(int vehicle);
 
-  const RoutingModel& model_;
+  const Model& model_;
   TypeIncompatibilityChecker incompatibility_checker_;
   TypeRequirementChecker requirement_checker_;
   std::vector<Demon*> vehicle_demons_;
@@ -3018,13 +3010,15 @@ class SimpleBoundCosts {
  public:
   SimpleBoundCosts(int num_bounds, BoundCost default_bound_cost)
       : bound_costs_(num_bounds, default_bound_cost) {}
-#ifndef SWIG
+#if !defined(SWIG)
   BoundCost& bound_cost(int element) { return bound_costs_[element]; }
-#endif
+#endif  // !defined(SWIG)
   BoundCost bound_cost(int element) const { return bound_costs_[element]; }
   int Size() { return bound_costs_.size(); }
+#if !defined(SWIG)
   SimpleBoundCosts(const SimpleBoundCosts&) = delete;
   SimpleBoundCosts operator=(const SimpleBoundCosts&) = delete;
+#endif  // !defined(SWIG)
 
  private:
   std::vector<BoundCost> bound_costs_;
@@ -3050,15 +3044,15 @@ class SimpleBoundCosts {
 // TODO(user): Break constraints need to know the service time of nodes
 /// for a given vehicle, it is passed as an external vector, it would be better
 /// to have this information here.
-class RoutingDimension {
+class Dimension {
  public:
   // This type is neither copyable nor movable.
-  RoutingDimension(const RoutingDimension&) = delete;
-  RoutingDimension& operator=(const RoutingDimension&) = delete;
+  Dimension(const Dimension&) = delete;
+  Dimension& operator=(const Dimension&) = delete;
 
-  ~RoutingDimension();
+  ~Dimension();
   /// Returns the model on which the dimension was created.
-  RoutingModel* model() const { return model_; }
+  Model* model() const { return model_; }
   /// Returns the transition value for a given pair of nodes (as var index);
   /// this value is the one taken by the corresponding transit variable when
   /// the 'next' variable for 'from_index' is bound to 'to_index'.
@@ -3164,15 +3158,15 @@ class RoutingDimension {
   }
   /// Returns the callback evaluating the transit value between two node indices
   /// for a given vehicle.
-  const RoutingModel::TransitCallback2& transit_evaluator(int vehicle) const {
+  const TransitCallback2& transit_evaluator(int vehicle) const {
     return model_->TransitCallback(
         class_evaluators_[vehicle_to_class_[vehicle]]);
   }
 
   /// Returns the callback evaluating the transit value between two node indices
   /// for a given vehicle class.
-  const RoutingModel::TransitCallback2& class_transit_evaluator(
-      RoutingVehicleClassIndex vehicle_class) const {
+  const TransitCallback2& class_transit_evaluator(
+      VehicleClassIndex vehicle_class) const {
     const int vehicle = model_->GetVehicleOfClass(vehicle_class);
     DCHECK_NE(vehicle, -1);
     return transit_evaluator(vehicle);
@@ -3191,13 +3185,11 @@ class RoutingDimension {
   /// Returns the unary callback evaluating the transit value between two node
   /// indices for a given vehicle. If the corresponding callback is not unary,
   /// returns a null callback.
-  const RoutingModel::TransitCallback1& GetUnaryTransitEvaluator(
-      int vehicle) const {
+  const TransitCallback1& GetUnaryTransitEvaluator(int vehicle) const {
     return model_->UnaryTransitCallbackOrNull(
         class_evaluators_[vehicle_to_class_[vehicle]]);
   }
-  const RoutingModel::TransitCallback2& GetBinaryTransitEvaluator(
-      int vehicle) const {
+  const TransitCallback2& GetBinaryTransitEvaluator(int vehicle) const {
     return model_->TransitCallback(
         class_evaluators_[vehicle_to_class_[vehicle]]);
   }
@@ -3206,11 +3198,10 @@ class RoutingDimension {
   bool AreVehicleTransitsPositive(int vehicle) const {
     const int evaluator_index = class_evaluators_[vehicle_to_class_[vehicle]];
     return model()->transit_evaluator_sign_[evaluator_index] ==
-           RoutingModel::kTransitEvaluatorSignPositiveOrZero;
+           Model::kTransitEvaluatorSignPositiveOrZero;
   }
   bool AllTransitEvaluatorSignsAreUnknown() const;
-  RoutingModel::TransitEvaluatorSign GetTransitEvaluatorSign(
-      int vehicle) const {
+  Model::TransitEvaluatorSign GetTransitEvaluatorSign(int vehicle) const {
     const int evaluator_index = class_evaluators_[vehicle_to_class_[vehicle]];
     return model()->transit_evaluator_sign_[evaluator_index];
   }
@@ -3222,8 +3213,8 @@ class RoutingDimension {
     DCHECK_LT(vehicle, vehicle_to_cumul_dependent_class_.size());
     return vehicle_to_cumul_dependent_class_[vehicle];
   }
-#endif  /// !defined(SWIGCSHARP) && !defined(SWIGJAVA)
-#endif  /// !defined(SWIGPYTHON)
+#endif  // !defined(SWIGCSHARP) && !defined(SWIGJAVA)
+#endif  // !defined(SWIGPYTHON)
   /// Sets an upper bound on the dimension span on a given vehicle. This is the
   /// preferred way to limit the "length" of the route of a vehicle according to
   /// a dimension.
@@ -3253,7 +3244,7 @@ class RoutingDimension {
   ///   coefficient * (Max(dimension end value) - Min(dimension start value)).
   void SetGlobalSpanCostCoefficient(int64_t coefficient);
 
-#ifndef SWIG
+#if !defined(SWIG)
   /// Sets a piecewise linear cost on the cumul variable of a given variable
   /// index. If f is a piecewise linear function, the resulting cost at 'index'
   /// will be f(CumulVar(index)). As of 3/2017, only non-decreasing positive
@@ -3267,7 +3258,7 @@ class RoutingDimension {
   /// index. The returned pointer has the same validity as this class.
   const PiecewiseLinearFunction* GetCumulVarPiecewiseLinearCost(
       int64_t index) const;
-#endif
+#endif  // !defined(SWIG)
 
   /// Sets a soft upper bound to the cumul variable of a given variable index.
   /// If the value of the cumul variable is greater than the bound, a cost
@@ -3365,12 +3356,12 @@ class RoutingDimension {
   /// constraints.
   const std::vector<std::pair<int64_t, int64_t>>&
   GetBreakDistanceDurationOfVehicle(int vehicle) const;
-#endif  /// !defined(SWIGPYTHON)
+#endif  // !defined(SWIGPYTHON)
   int GetPreTravelEvaluatorOfVehicle(int vehicle) const;
   int GetPostTravelEvaluatorOfVehicle(int vehicle) const;
 
   /// Returns the parent in the dependency tree if any or nullptr otherwise.
-  const RoutingDimension* base_dimension() const { return base_dimension_; }
+  const Dimension* base_dimension() const { return base_dimension_; }
   /// It makes sense to use the function only for self-dependent dimension.
   /// For such dimensions the value of the slack of a node determines the
   /// transition cost of the next transit. Provided that
@@ -3381,22 +3372,20 @@ class RoutingDimension {
   int64_t ShortestTransitionSlack(int64_t node) const;
 
   /// Returns the index of the dimension in the model.
-  operations_research::routing::RoutingDimensionIndex index() const {
-    return index_;
-  }
+  operations_research::routing::DimensionIndex index() const { return index_; }
   /// Returns the name of the dimension.
   const std::string& name() const { return name_; }
 
   /// Accessors.
-#ifndef SWIG
+#if !defined(SWIG)
   const ReverseArcListGraph<int, int>& GetPathPrecedenceGraph() const {
     return path_precedence_graph_;
   }
-#endif  // SWIG
+#endif  // !defined(SWIG)
 
   /// Limits, in terms of maximum difference between the cumul variables,
   /// between the pickup and delivery alternatives belonging to a single
-  /// pickup/delivery pair in the RoutingModel. The indices passed to the
+  /// pickup/delivery pair in the Model. The indices passed to the
   /// function respectively correspond to the position of the pickup in the
   /// vector of pickup alternatives, and delivery position in the delivery
   /// alternatives for this pickup/delivery pair. These limits should only be
@@ -3409,7 +3398,7 @@ class RoutingDimension {
       PickupToDeliveryLimitFunction limit_function, int pair_index);
 
   bool HasPickupToDeliveryLimits() const;
-#ifndef SWIG
+#if !defined(SWIG)
   int64_t GetPickupToDeliveryLimitForPair(int pair_index,
                                           int pickup_alternative_index,
                                           int delivery_alternative_index) const;
@@ -3482,55 +3471,49 @@ class RoutingDimension {
           NodePrecedence::PerformedConstraint::kFirstAndSecondIndependent) {
     AddNodePrecedence({first_node, second_node, offset, performed_constraint});
   }
-#else
+#else   // !defined(SWIG)
   void AddNodePrecedence(int64_t first_node, int64_t second_node,
                          int64_t offset) {
     AddNodePrecedence(
         {first_node, second_node, offset,
          NodePrecedence::PerformedConstraint::kFirstAndSecondIndependent});
   }
-#endif  // SWIG
+#endif  // !defined(SWIG)
 
   int64_t GetSpanUpperBoundForVehicle(int vehicle) const {
     return vehicle_span_upper_bounds_[vehicle];
   }
-#ifndef SWIG
+#if !defined(SWIG)
   const std::vector<int64_t>& vehicle_span_upper_bounds() const {
     return vehicle_span_upper_bounds_;
   }
-#endif  // SWIG
+#endif  // !defined(SWIG)
   int64_t GetSpanCostCoefficientForVehicle(int vehicle) const {
     return vehicle_span_cost_coefficients_[vehicle];
   }
-#ifndef SWIG
+  int64_t GetSlackCostCoefficientForVehicle(int vehicle) const {
+    return vehicle_slack_cost_coefficients_[vehicle];
+  }
+#if !defined(SWIG)
   int64_t GetSpanCostCoefficientForVehicleClass(
-      RoutingVehicleClassIndex vehicle_class) const {
+      VehicleClassIndex vehicle_class) const {
     const int vehicle = model_->GetVehicleOfClass(vehicle_class);
     DCHECK_NE(vehicle, -1);
     return GetSpanCostCoefficientForVehicle(vehicle);
   }
-#endif  // SWIG
-#ifndef SWIG
-  const std::vector<int64_t>& vehicle_span_cost_coefficients() const {
-    return vehicle_span_cost_coefficients_;
-  }
-#endif  // SWIG
-#ifndef SWIG
-  const std::vector<int64_t>& vehicle_slack_cost_coefficients() const {
-    return vehicle_slack_cost_coefficients_;
-  }
-#endif  // SWIG
-  int64_t GetSlackCostCoefficientForVehicle(int vehicle) const {
-    return vehicle_slack_cost_coefficients_[vehicle];
-  }
-#ifndef SWIG
   int64_t GetSlackCostCoefficientForVehicleClass(
-      RoutingVehicleClassIndex vehicle_class) const {
+      VehicleClassIndex vehicle_class) const {
     const int vehicle = model_->GetVehicleOfClass(vehicle_class);
     DCHECK_NE(vehicle, -1);
     return GetSlackCostCoefficientForVehicle(vehicle);
   }
-#endif  // SWIG
+  const std::vector<int64_t>& vehicle_span_cost_coefficients() const {
+    return vehicle_span_cost_coefficients_;
+  }
+  const std::vector<int64_t>& vehicle_slack_cost_coefficients() const {
+    return vehicle_slack_cost_coefficients_;
+  }
+#endif  // !defined(SWIG)
   int64_t global_span_cost_coefficient() const {
     return global_span_cost_coefficient_;
   }
@@ -3597,11 +3580,10 @@ class RoutingDimension {
   };
 
   class SelfBased {};
-  RoutingDimension(RoutingModel* model, std::vector<int64_t> vehicle_capacities,
-                   const std::string& name,
-                   const RoutingDimension* base_dimension);
-  RoutingDimension(RoutingModel* model, std::vector<int64_t> vehicle_capacities,
-                   const std::string& name, SelfBased);
+  Dimension(Model* model, std::vector<int64_t> vehicle_capacities,
+            const std::string& name, const Dimension* base_dimension);
+  Dimension(Model* model, std::vector<int64_t> vehicle_capacities,
+            const std::string& name, SelfBased);
   void Initialize(absl::Span<const int> transit_evaluators,
                   absl::Span<const int> cumul_dependent_transit_evaluators,
                   absl::Span<const int> state_dependent_transit_evaluators,
@@ -3647,18 +3629,18 @@ class RoutingDimension {
   std::vector<operations_research::IntVar*> transits_;
   std::vector<operations_research::IntVar*> fixed_transits_;
   /// Values in class_evaluators_ correspond to the evaluators in
-  /// RoutingModel::transit_evaluators_ for each vehicle class.
+  /// Model::transit_evaluators_ for each vehicle class.
   std::vector<int> class_evaluators_;
   std::vector<int> vehicle_to_class_;
 
   /// Values in cumul_dependent_class_evaluators_ correspond to the evaluators
-  /// in RoutingModel::cumul_dependent_transit_evaluators_ for each vehicle
+  /// in Model::cumul_dependent_transit_evaluators_ for each vehicle
   /// class.
   std::vector<int> cumul_dependent_class_evaluators_;
   std::vector<int> vehicle_to_cumul_dependent_class_;
-#ifndef SWIG
+#if !defined(SWIG)
   ReverseArcListGraph<int, int> path_precedence_graph_;
-#endif
+#endif  // !defined(SWIG)
   // For every {first_node, second_node, offset} element in node_precedences_,
   // if both first_node and second_node are performed, then
   // cumuls_[second_node] must be greater than (or equal to)
@@ -3668,9 +3650,9 @@ class RoutingDimension {
   // The transits of a dimension may depend on its cumuls or the cumuls of
   // another dimension. There can be no cycles, except for self loops, a
   // typical example for this is a time dimension.
-  const RoutingDimension* const base_dimension_;
+  const Dimension* const base_dimension_;
   // Values in state_dependent_class_evaluators_ correspond to the evaluators
-  // in RoutingModel::state_dependent_transit_evaluators_ for each vehicle
+  // in Model::state_dependent_transit_evaluators_ for each vehicle
   // class.
   std::vector<int> state_dependent_class_evaluators_;
   std::vector<int> state_dependent_vehicle_to_class_;
@@ -3701,8 +3683,8 @@ class RoutingDimension {
   std::vector<SoftBound> cumul_var_soft_upper_bound_;
   std::vector<SoftBound> cumul_var_soft_lower_bound_;
   std::vector<PiecewiseLinearCost> cumul_var_piecewise_linear_cost_;
-  RoutingModel* const model_;
-  const operations_research::routing::RoutingDimensionIndex index_;
+  Model* const model_;
+  const operations_research::routing::DimensionIndex index_;
   const std::string name_;
   int64_t global_optimizer_offset_;
   std::vector<int64_t> local_optimizer_offset_for_vehicle_;
@@ -3710,18 +3692,25 @@ class RoutingDimension {
   std::unique_ptr<SimpleBoundCosts> vehicle_soft_span_upper_bound_;
   std::unique_ptr<SimpleBoundCosts>
       vehicle_quadratic_cost_soft_span_upper_bound_;
-  friend class RoutingModel;
-  friend class RoutingModelInspector;
+  friend class Model;
+  friend class ModelInspector;
 };
 
 /// Attempts to solve the model using the cp-sat solver. As of 5/2019, will
 /// solve the TSP corresponding to the model if it has a single vehicle.
 /// Therefore the resulting solution might not actually be feasible. Will return
 /// false if a solution could not be found.
-bool SolveModelWithSat(RoutingModel* model, RoutingSearchStats* search_stats,
+bool SolveModelWithSat(Model* model, SearchStats* search_stats,
                        const RoutingSearchParameters& search_parameters,
                        const operations_research::Assignment* initial_solution,
                        operations_research::Assignment* solution);
+
+// For compatibility only.
+#if !defined(SWIG)
+using RoutingSearchStats = SearchStats;
+using RoutingModel = Model;
+using RoutingDimension = Dimension;
+#endif  // !defined(SWIG)
 
 }  // namespace operations_research::routing
 #endif  // ORTOOLS_ROUTING_ROUTING_H_

@@ -52,7 +52,7 @@ RoutingOutputFormat RoutingOutputFormatFromString(std::string_view format);
 
 // Describes completely a solution to a routing problem in preparation of its
 // serialization as a string.
-class RoutingSolution {
+class Solution {
  public:
   // Describes a state transition performed by a vehicle: starting from/ending
   // at a given depot, serving a given customer, etc.
@@ -99,10 +99,10 @@ class RoutingSolution {
 
   using Route = std::vector<Event>;
 
-  RoutingSolution(std::vector<Route> routes, std::vector<int64_t> total_demands,
-                  std::vector<int64_t> total_distances, int64_t total_cost = -1,
-                  int64_t total_distance = -1, double total_time = -1.0,
-                  std::string_view name = "")
+  Solution(std::vector<Route> routes, std::vector<int64_t> total_demands,
+           std::vector<int64_t> total_distances, int64_t total_cost = -1,
+           int64_t total_distance = -1, double total_time = -1.0,
+           std::string_view name = "")
       : routes_(std::move(routes)),
         total_demands_(std::move(total_demands)),
         total_distances_(std::move(total_distances)),
@@ -114,14 +114,12 @@ class RoutingSolution {
     CHECK_EQ(routes_.size(), total_distances_.size());
   }
 
-  bool operator==(const RoutingSolution& other) const {
+  bool operator==(const Solution& other) const {
     return routes_ == other.routes_ && total_demands_ == other.total_demands_ &&
            total_distances_ == other.total_distances_ &&
            total_cost_ == other.total_cost_ && total_time_ == other.total_time_;
   }
-  bool operator!=(const RoutingSolution& other) const {
-    return !(*this == other);
-  }
+  bool operator!=(const Solution& other) const { return !(*this == other); }
 
   // Setters for solution metadata.
   void SetTotalTime(double total_time) { total_time_ = total_time; }
@@ -143,9 +141,8 @@ class RoutingSolution {
   // Builds a RoutingSolution object from a vector of routes, each represented
   // as a vector of nodes being traversed. All the routes are supposed to start
   // and end at the depot if specified.
-  static RoutingSolution FromSplitRoutes(
-      absl::Span<const std::vector<int64_t>> routes,
-      std::optional<int64_t> depot = std::nullopt);
+  static Solution FromSplitRoutes(absl::Span<const std::vector<int64_t>> routes,
+                                  std::optional<int64_t> depot = std::nullopt);
 
   // Serializes the bare solution to a string, i.e. only the routes for the
   // vehicles, without other metadata that is typically present in solution

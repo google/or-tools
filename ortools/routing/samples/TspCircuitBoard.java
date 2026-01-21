@@ -19,8 +19,8 @@ import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.Assignment;
 import com.google.ortools.routing.FirstSolutionStrategy;
 import com.google.ortools.routing.Globals;
-import com.google.ortools.routing.RoutingIndexManager;
-import com.google.ortools.routing.RoutingModel;
+import com.google.ortools.routing.IndexManager;
+import com.google.ortools.routing.Model;
 import com.google.ortools.routing.RoutingSearchParameters;
 import java.util.logging.Logger;
 
@@ -93,12 +93,12 @@ public class TspCircuitBoard {
     }
     return distanceMatrix;
   }
+
   // [END euclidean_distance]
 
   // [START solution_printer]
   /// @brief Print the solution.
-  static void printSolution(
-      RoutingModel routing, RoutingIndexManager manager, Assignment solution) {
+  static void printSolution(Model routing, IndexManager manager, Assignment solution) {
     // Solution cost.
     logger.info("Objective: " + solution.objectiveValue());
     // Inspect solution.
@@ -127,13 +127,12 @@ public class TspCircuitBoard {
 
     // Create Routing Index Manager
     // [START index_manager]
-    RoutingIndexManager manager =
-        new RoutingIndexManager(data.locations.length, data.vehicleNumber, data.depot);
+    IndexManager manager = new IndexManager(data.locations.length, data.vehicleNumber, data.depot);
     // [END index_manager]
 
     // Create Routing Model.
     // [START routing_model]
-    RoutingModel routing = new RoutingModel(manager);
+    Model routing = new Model(manager);
     // [END routing_model]
 
     // Create and register a transit callback.

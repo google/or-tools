@@ -28,6 +28,7 @@
 #include "ortools/routing/index_manager.h"
 #include "ortools/routing/parameters.h"
 #include "ortools/routing/routing.h"
+#include "ortools/routing/types.h"
 // [END import]
 
 namespace operations_research::routing {
@@ -83,7 +84,7 @@ struct DataModel {
       {246, 141}, {252, 125}, {260, 129}, {280, 133},
   };
   const int num_vehicles = 1;
-  const RoutingIndexManager::NodeIndex depot{0};
+  const NodeIndex depot{0};
 };
 // [END data_model]
 
@@ -111,8 +112,8 @@ std::vector<std::vector<int64_t>> ComputeEuclideanDistanceMatrix(
 //! @param[in] manager Index manager used.
 //! @param[in] routing Routing solver used.
 //! @param[in] solution Solution found by the solver.
-void PrintSolution(const RoutingIndexManager& manager,
-                   const RoutingModel& routing, const Assignment& solution) {
+void PrintSolution(const IndexManager& manager, const Model& routing,
+                   const Assignment& solution) {
   LOG(INFO) << "Objective: " << solution.ObjectiveValue();
   // Inspect solution.
   int64_t index = routing.Start(0);
@@ -141,13 +142,12 @@ void Tsp() {
 
   // Create Routing Index Manager
   // [START index_manager]
-  RoutingIndexManager manager(data.locations.size(), data.num_vehicles,
-                              data.depot);
+  IndexManager manager(data.locations.size(), data.num_vehicles, data.depot);
   // [END index_manager]
 
   // Create Routing Model.
   // [START routing_model]
-  RoutingModel routing(manager);
+  Model routing(manager);
   // [END routing_model]
 
   // [START transit_callback]

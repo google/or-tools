@@ -38,7 +38,7 @@ namespace operations_research::routing {
 namespace {
 // Compute set of disjunctions involved in a pickup and delivery pair.
 template <typename Disjunctions>
-void AddDisjunctionsFromNodes(const RoutingModel& model,
+void AddDisjunctionsFromNodes(const Model& model,
                               absl::Span<const int64_t> nodes,
                               Disjunctions* disjunctions) {
   for (int64_t node : nodes) {
@@ -49,7 +49,7 @@ void AddDisjunctionsFromNodes(const RoutingModel& model,
 }
 }  // namespace
 
-bool RoutingModel::IsMatchingModel() const {
+bool Model::IsMatchingModel() const {
   // TODO(user): Support overlapping disjunctions and disjunctions with
   // a cardinality > 1.
   absl::flat_hash_set<int> disjunction_nodes;
@@ -70,7 +70,7 @@ bool RoutingModel::IsMatchingModel() const {
   // non-start/end node (or a single pickup and delivery pair) on a route.
   // Binary dimensions are not considered because they would result in a
   // quadratic check.
-  for (const RoutingDimension* const dimension : dimensions_) {
+  for (const Dimension* const dimension : dimensions_) {
     // TODO(user): Support vehicle-dependent dimension callbacks.
     if (dimension->class_evaluators_.size() != 1) {
       continue;
@@ -148,8 +148,8 @@ struct FlowArc {
 };
 }  // namespace
 
-bool RoutingModel::SolveMatchingModel(
-    Assignment* assignment, const RoutingSearchParameters& parameters) {
+bool Model::SolveMatchingModel(Assignment* assignment,
+                               const RoutingSearchParameters& parameters) {
   if (parameters.disable_scheduling_beware_this_may_degrade_performance()) {
     // We need to use LocalDimensionCumulOptimizers below, so we return false if
     // LP scheduling is disabled.
@@ -161,11 +161,10 @@ bool RoutingModel::SolveMatchingModel(
   // Collect dimensions with costs.
   // TODO(user): If the costs are soft cumul upper (resp. lower) bounds only,
   // do not use the LP model.
-  const std::vector<RoutingDimension*> dimensions =
-      GetDimensionsWithSoftOrSpanCosts();
+  const std::vector<Dimension*> dimensions = GetDimensionsWithSoftOrSpanCosts();
   std::vector<LocalDimensionCumulOptimizer> optimizers;
   optimizers.reserve(dimensions.size());
-  for (RoutingDimension* dimension : dimensions) {
+  for (Dimension* dimension : dimensions) {
     optimizers.emplace_back(
         dimension, parameters.continuous_scheduling_solver(), &search_stats_);
   }

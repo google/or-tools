@@ -74,33 +74,32 @@ namespace operations_research::routing {
 // interrupted and the best solution found will be returned immediately.
 // TODO(user): Add a version taking search parameters for alternative models.
 const Assignment* SolveWithAlternativeSolvers(
-    RoutingModel* primary_model,
-    const std::vector<RoutingModel*>& alternative_models,
+    Model* primary_model, const std::vector<Model*>& alternative_models,
     const RoutingSearchParameters& parameters,
     int max_non_improving_iterations);
 // Same as above, but taking an initial solution.
 const Assignment* SolveFromAssignmentWithAlternativeSolvers(
-    const Assignment* assignment, RoutingModel* primary_model,
-    const std::vector<RoutingModel*>& alternative_models,
+    const Assignment* assignment, Model* primary_model,
+    const std::vector<Model*>& alternative_models,
     const RoutingSearchParameters& parameters,
     int max_non_improving_iterations);
 // Same as above but taking alternative parameters for each alternative model.
 const Assignment* SolveFromAssignmentWithAlternativeSolversAndParameters(
-    const Assignment* assignment, RoutingModel* primary_model,
+    const Assignment* assignment, Model* primary_model,
     const RoutingSearchParameters& parameters,
-    const std::vector<RoutingModel*>& alternative_models,
+    const std::vector<Model*>& alternative_models,
     const std::vector<RoutingSearchParameters>& alternative_parameters,
     int max_non_improving_iterations);
 
 class IntVarFilteredHeuristic;
 #ifndef SWIG
 /// Helper class that manages vehicles. This class is based on the
-/// RoutingModel::VehicleTypeContainer that sorts and stores vehicles based on
+/// Model::VehicleTypeContainer that sorts and stores vehicles based on
 /// their "type".
 class VehicleTypeCurator {
  public:
   explicit VehicleTypeCurator(
-      const RoutingModel::VehicleTypeContainer& vehicle_type_container)
+      const Model::VehicleTypeContainer& vehicle_type_container)
       : vehicle_type_container_(&vehicle_type_container) {}
 
   int NumTypes() const { return vehicle_type_container_->NumTypes(); }
@@ -159,9 +158,8 @@ class VehicleTypeCurator {
       const std::function<bool(int)>& stop_and_return_vehicle);
 
  private:
-  using VehicleClassEntry =
-      RoutingModel::VehicleTypeContainer::VehicleClassEntry;
-  const RoutingModel::VehicleTypeContainer* const vehicle_type_container_;
+  using VehicleClassEntry = Model::VehicleTypeContainer::VehicleClassEntry;
+  const Model::VehicleTypeContainer* const vehicle_type_container_;
   std::vector<std::set<VehicleClassEntry>> sorted_vehicle_classes_per_type_;
   std::vector<std::vector<int>> vehicles_per_vehicle_class_;
 };
@@ -175,7 +173,7 @@ AutomaticFirstSolutionStrategy(bool has_pickup_deliveries,
 
 /// Computes and returns the first node in the end chain of each vehicle in the
 /// model, based on the current bound NextVar values.
-std::vector<int64_t> ComputeVehicleEndChainStarts(const RoutingModel& model);
+std::vector<int64_t> ComputeVehicleEndChainStarts(const Model& model);
 
 /// Decision builder building a solution using heuristics with local search
 /// filters to evaluate its feasibility. This is very fast but can eventually
@@ -313,14 +311,13 @@ class IntVarFilteredHeuristic {
 /// Filter-based heuristic dedicated to routing.
 class RoutingFilteredHeuristic : public IntVarFilteredHeuristic {
  public:
-  RoutingFilteredHeuristic(RoutingModel* model,
-                           std::function<bool()> stop_search,
+  RoutingFilteredHeuristic(Model* model, std::function<bool()> stop_search,
                            LocalSearchFilterManager* filter_manager);
   ~RoutingFilteredHeuristic() override = default;
   /// Builds a solution starting from the routes formed by the next accessor.
   Assignment* BuildSolutionFromRoutes(
       const std::function<int64_t(int64_t)>& next_accessor);
-  RoutingModel* model() const { return model_; }
+  Model* model() const { return model_; }
   /// Returns the end of the start chain of vehicle,
   int GetStartChainEnd(int vehicle) const { return start_chain_ends_[vehicle]; }
   /// Returns the start of the end chain of vehicle,
@@ -354,7 +351,7 @@ class RoutingFilteredHeuristic : public IntVarFilteredHeuristic {
   /// Initializes the current solution with empty or partial vehicle routes.
   bool InitializeSolution() override;
 
-  RoutingModel* const model_;
+  Model* const model_;
   std::function<bool()> stop_search_;
   std::vector<int64_t> start_chain_ends_;
   std::vector<int64_t> end_chain_starts_;
@@ -364,7 +361,7 @@ class CheapestInsertionFilteredHeuristic : public RoutingFilteredHeuristic {
  public:
   /// Takes ownership of evaluator.
   CheapestInsertionFilteredHeuristic(
-      RoutingModel* model, std::function<bool()> stop_search,
+      Model* model, std::function<bool()> stop_search,
       std::function<int64_t(int64_t, int64_t, int64_t)> evaluator,
       std::function<int64_t(int64_t)> penalty_evaluator,
       LocalSearchFilterManager* filter_manager);
@@ -502,7 +499,7 @@ class GlobalCheapestInsertionFilteredHeuristic
  public:
   /// Takes ownership of evaluators.
   GlobalCheapestInsertionFilteredHeuristic(
-      RoutingModel* model, std::function<bool()> stop_search,
+      Model* model, std::function<bool()> stop_search,
       std::function<int64_t(int64_t, int64_t, int64_t)> evaluator,
       std::function<int64_t(int64_t)> penalty_evaluator,
       LocalSearchFilterManager* filter_manager,
@@ -888,8 +885,7 @@ class GlobalCheapestInsertionFilteredHeuristic
   /// Stores the vehicle index of each node in the current assignment.
   std::vector<int> node_index_to_vehicle_;
 
-  const RoutingModel::NodeNeighborsByCostClass*
-      node_index_to_neighbors_by_cost_class_;
+  const Model::NodeNeighborsByCostClass* node_index_to_neighbors_by_cost_class_;
 
   std::unique_ptr<VehicleTypeCurator> empty_vehicle_type_curator_;
 
@@ -1111,13 +1107,13 @@ class LocalCheapestInsertionFilteredHeuristic
  public:
   /// Takes ownership of evaluator.
   LocalCheapestInsertionFilteredHeuristic(
-      RoutingModel* model, std::function<bool()> stop_search,
+      Model* model, std::function<bool()> stop_search,
       std::function<int64_t(int64_t, int64_t, int64_t)> evaluator,
       LocalCheapestInsertionParameters lci_params,
       LocalSearchFilterManager* filter_manager, bool use_first_solution_hint,
       BinCapacities* bin_capacities = nullptr,
-      std::function<bool(const std::vector<RoutingModel::VariableValuePair>&,
-                         std::vector<RoutingModel::VariableValuePair>*)>
+      std::function<bool(const std::vector<Model::VariableValuePair>&,
+                         std::vector<Model::VariableValuePair>*)>
           optimize_on_insertion = nullptr);
   ~LocalCheapestInsertionFilteredHeuristic() override = default;
   bool BuildSolutionInternal() override;
@@ -1205,8 +1201,8 @@ class LocalCheapestInsertionFilteredHeuristic
 
   BinCapacities* const bin_capacities_;
 
-  std::function<bool(const std::vector<RoutingModel::VariableValuePair>&,
-                     std::vector<RoutingModel::VariableValuePair>*)>
+  std::function<bool(const std::vector<Model::VariableValuePair>&,
+                     std::vector<Model::VariableValuePair>*)>
       optimize_on_insertion_;
   bool synchronize_insertion_optimizer_ = true;
 
@@ -1218,7 +1214,7 @@ class LocalCheapestInsertionFilteredHeuristic
 /// a path from its start node with the cheapest arc.
 class CheapestAdditionFilteredHeuristic : public RoutingFilteredHeuristic {
  public:
-  CheapestAdditionFilteredHeuristic(RoutingModel* model,
+  CheapestAdditionFilteredHeuristic(Model* model,
                                     std::function<bool()> stop_search,
                                     LocalSearchFilterManager* filter_manager);
   ~CheapestAdditionFilteredHeuristic() override = default;
@@ -1264,7 +1260,7 @@ class EvaluatorCheapestAdditionFilteredHeuristic
  public:
   /// Takes ownership of evaluator.
   EvaluatorCheapestAdditionFilteredHeuristic(
-      RoutingModel* model, std::function<bool()> stop_search,
+      Model* model, std::function<bool()> stop_search,
       std::function<int64_t(int64_t, int64_t)> evaluator,
       LocalSearchFilterManager* filter_manager);
   ~EvaluatorCheapestAdditionFilteredHeuristic() override = default;
@@ -1288,7 +1284,7 @@ class ComparatorCheapestAdditionFilteredHeuristic
  public:
   /// Takes ownership of evaluator.
   ComparatorCheapestAdditionFilteredHeuristic(
-      RoutingModel* model, std::function<bool()> stop_search,
+      Model* model, std::function<bool()> stop_search,
       Solver::VariableValueComparator comparator,
       LocalSearchFilterManager* filter_manager);
   ~ComparatorCheapestAdditionFilteredHeuristic() override = default;
@@ -1315,8 +1311,7 @@ class ComparatorCheapestAdditionFilteredHeuristic
 /// and cost classes are taken into account.
 class SavingsFilteredHeuristic : public RoutingFilteredHeuristic {
  public:
-  SavingsFilteredHeuristic(RoutingModel* model,
-                           std::function<bool()> stop_search,
+  SavingsFilteredHeuristic(Model* model, std::function<bool()> stop_search,
                            SavingsParameters parameters,
                            LocalSearchFilterManager* filter_manager);
   ~SavingsFilteredHeuristic() override;
@@ -1394,7 +1389,7 @@ class SavingsFilteredHeuristic : public RoutingFilteredHeuristic {
 
 class SequentialSavingsFilteredHeuristic : public SavingsFilteredHeuristic {
  public:
-  SequentialSavingsFilteredHeuristic(RoutingModel* model,
+  SequentialSavingsFilteredHeuristic(Model* model,
                                      std::function<bool()> stop_search,
                                      SavingsParameters parameters,
                                      LocalSearchFilterManager* filter_manager)
@@ -1416,7 +1411,7 @@ class SequentialSavingsFilteredHeuristic : public SavingsFilteredHeuristic {
 
 class ParallelSavingsFilteredHeuristic : public SavingsFilteredHeuristic {
  public:
-  ParallelSavingsFilteredHeuristic(RoutingModel* model,
+  ParallelSavingsFilteredHeuristic(Model* model,
                                    std::function<bool()> stop_search,
                                    SavingsParameters parameters,
                                    LocalSearchFilterManager* filter_manager)
@@ -1464,8 +1459,7 @@ class ParallelSavingsFilteredHeuristic : public SavingsFilteredHeuristic {
 
 class ChristofidesFilteredHeuristic : public RoutingFilteredHeuristic {
  public:
-  ChristofidesFilteredHeuristic(RoutingModel* model,
-                                std::function<bool()> stop_search,
+  ChristofidesFilteredHeuristic(Model* model, std::function<bool()> stop_search,
                                 LocalSearchFilterManager* filter_manager,
                                 bool use_minimum_matching);
   ~ChristofidesFilteredHeuristic() override = default;
@@ -1500,11 +1494,10 @@ class SweepArranger {
 
 // Returns a DecisionBuilder building a first solution based on the Sweep
 // heuristic. Mostly suitable when cost is proportional to distance.
-DecisionBuilder* MakeSweepDecisionBuilder(RoutingModel* model,
-                                          bool check_assignment);
+DecisionBuilder* MakeSweepDecisionBuilder(Model* model, bool check_assignment);
 
 // Returns a DecisionBuilder making all nodes unperformed.
-DecisionBuilder* MakeAllUnperformed(RoutingModel* model);
+DecisionBuilder* MakeAllUnperformed(Model* model);
 
 }  // namespace operations_research::routing
 

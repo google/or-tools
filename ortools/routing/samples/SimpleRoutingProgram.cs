@@ -34,12 +34,12 @@ public class SimpleRoutingProgram
 
         // Create Routing Index Manager
         // [START index_manager]
-        RoutingIndexManager manager = new RoutingIndexManager(numLocation, numVehicles, depot);
+        IndexManager manager = new IndexManager(numLocation, numVehicles, depot);
         // [END index_manager]
 
         // Create Routing Model.
         // [START routing_model]
-        RoutingModel routing = new RoutingModel(manager);
+        Model routing = new Model(manager);
         // [END routing_model]
 
         // Create and register a transit callback.

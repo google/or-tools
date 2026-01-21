@@ -117,14 +117,14 @@ def main():
 
     # Create the routing index manager.
     # [START index_manager]
-    manager = model.RoutingIndexManager(
+    manager = model.IndexManager(
         len(data["locations"]), data["num_vehicles"], data["depot"]
     )
     # [END index_manager]
 
     # Create Routing Model.
     # [START model]
-    routing = model.RoutingModel(manager)
+    routing = model.Model(manager)
     # [END model]
 
     # Create and register a transit callback.

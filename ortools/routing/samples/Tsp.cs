@@ -55,7 +55,7 @@ public class Tsp
     /// </summary>
     class ManhattanDistance
     {
-        public ManhattanDistance(in DataModel data, in RoutingIndexManager manager)
+        public ManhattanDistance(in DataModel data, in IndexManager manager)
         {
             // precompute distance between location to have distance callback in O(1)
             int locationNumber = data.Locations.GetLength(0);
@@ -86,7 +86,7 @@ public class Tsp
             return distancesMatrix_[fromNode, toNode];
         }
         private long[,] distancesMatrix_;
-        private RoutingIndexManager indexManager_;
+        private IndexManager indexManager_;
     };
     // [END manhattan_distance]
 
@@ -94,7 +94,7 @@ public class Tsp
     /// <summary>
     ///   Print the solution.
     /// </summary>
-    static void PrintSolution(in RoutingModel routing, in RoutingIndexManager manager, in Assignment solution)
+    static void PrintSolution(in Model routing, in IndexManager manager, in Assignment solution)
     {
         RoutingSearchStatus.Types.Value status = routing.GetStatus();
         Console.WriteLine("Status: {0}", status);
@@ -130,13 +130,12 @@ public class Tsp
 
         // Create Routing Index Manager
         // [START index_manager]
-        RoutingIndexManager manager =
-            new RoutingIndexManager(data.Locations.GetLength(0), data.VehicleNumber, data.Depot);
+        IndexManager manager = new IndexManager(data.Locations.GetLength(0), data.VehicleNumber, data.Depot);
         // [END index_manager]
 
         // Create Routing Model.
         // [START routing_model]
-        RoutingModel routing = new RoutingModel(manager);
+        Model routing = new Model(manager);
         // [END routing_model]
 
         // Create and register a transit callback.

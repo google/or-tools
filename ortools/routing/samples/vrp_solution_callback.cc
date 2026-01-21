@@ -30,6 +30,7 @@
 #include "ortools/routing/index_manager.h"
 #include "ortools/routing/parameters.h"
 #include "ortools/routing/routing.h"
+#include "ortools/routing/types.h"
 // [END import]
 
 namespace operations_research::routing {
@@ -72,7 +73,7 @@ struct DataModel {
        194, 798, 0},
   };
   const int num_vehicles = 4;
-  const RoutingIndexManager::NodeIndex depot{0};
+  const NodeIndex depot{0};
 };
 // [END data_model]
 
@@ -80,8 +81,8 @@ struct DataModel {
 //! @param[in] routing_manager Index manager used.
 //! @param[in] routing_model Routing solver used.
 // [START solution_callback_printer]
-void print_solution(const RoutingIndexManager& routing_manager,
-                    const RoutingModel& routing_model) {
+void print_solution(const IndexManager& routing_manager,
+                    const Model& routing_model) {
   LOG(INFO) << "################";
   LOG(INFO) << "Solution objective: " << routing_model.CostVar()->Value();
   int64_t total_distance = 0;
@@ -111,12 +112,12 @@ void print_solution(const RoutingIndexManager& routing_manager,
 
 // [START solution_callback]
 struct SolutionCallback {
-  const RoutingIndexManager& routing_manager;
-  const RoutingModel& routing_model;
+  const IndexManager& routing_manager;
+  const Model& routing_model;
   const int64_t max_solution;
 
-  SolutionCallback(const RoutingIndexManager& manager,
-                   const RoutingModel& model, const int64_t max_solution)
+  SolutionCallback(const IndexManager& manager, const Model& model,
+                   const int64_t max_solution)
       : routing_manager(manager),
         routing_model(model),
         max_solution(max_solution) {
@@ -151,13 +152,13 @@ void VrpSolutionCallback() {
 
   // Create Routing Index Manager.
   // [START index_manager]
-  RoutingIndexManager routing_manager(data.distance_matrix.size(),
-                                      data.num_vehicles, data.depot);
+  IndexManager routing_manager(data.distance_matrix.size(), data.num_vehicles,
+                               data.depot);
   // [END index_manager]
 
   // Create Routing Model.
   // [START routing_model]
-  RoutingModel routing_model(routing_manager);
+  Model routing_model(routing_manager);
   // [END routing_model]
 
   // Create and register a transit callback.

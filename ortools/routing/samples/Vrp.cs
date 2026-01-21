@@ -55,7 +55,7 @@ public class Vrp
     /// <summary>
     ///   Print the solution.
     /// </summary>
-    static void PrintSolution(in RoutingModel routing, in RoutingIndexManager manager, in Assignment solution)
+    static void PrintSolution(in Model routing, in IndexManager manager, in Assignment solution)
     {
         RoutingSearchStatus.Types.Value status = routing.GetStatus();
         Console.WriteLine("Status: {0}", status);
@@ -101,13 +101,12 @@ public class Vrp
 
         // Create Routing Index Manager
         // [START index_manager]
-        RoutingIndexManager manager =
-            new RoutingIndexManager(data.DistanceMatrix.GetLength(0), data.VehicleNumber, data.Depot);
+        IndexManager manager = new IndexManager(data.DistanceMatrix.GetLength(0), data.VehicleNumber, data.Depot);
         // [END index_manager]
 
         // Create Routing Model.
         // [START routing_model]
-        RoutingModel routing = new RoutingModel(manager);
+        Model routing = new Model(manager);
         // [END routing_model]
 
         // Create and register a transit callback.

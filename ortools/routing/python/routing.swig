@@ -32,46 +32,49 @@
 // class from the module specified in the following %import.
 %module pywraprouting
 %import(module="ortools.constraint_solver.pywrapcp") "ortools/constraint_solver/python/constraint_solver.swig"
-%include "ortools/routing/python/types.swig"
 %include "ortools/routing/python/index_manager.swig"
 
 // We need to forward-declare the proto here, so that PROTO_INPUT involving it
 // works correctly. The order matters very much: this declaration needs to be
 // before the %{ #include ".../routing.h" %}.
 namespace operations_research {
-class LocalSearchOperator;
+// util/optional_boolean.proto
+enum OptionalBoolean {
+  BOOL_UNSPECIFIED = 0,
+  BOOL_FALSE = 2,
+  BOOL_TRUE = 3,
+};
 }  // namespace operations_research
 namespace operations_research::routing {
+// enum.proto
+struct FirstSolutionStrategy {
+  enum Value {};
+};
+struct LocalSearchMetaheuristic {
+  enum Value {};
+};
+struct RoutingSearchStatus {
+  enum Value{};
+};
+// ils.proto
+class IteratedLocalSearchParameters;
+// parameters.proto
 class RoutingModelParameters;
 class RoutingSearchParameters;
-class RoutingSearchStatus;
 }  // namespace operations_research::routing
 
 // Include the files we want to wrap a first time.
 %{
 #include "ortools/routing/enums.pb.h"
+#include "ortools/routing/ils.pb.h"
 #include "ortools/routing/types.h"
+#include "ortools/routing/index_manager.h"
 #include "ortools/routing/parameters.pb.h"
 #include "ortools/routing/parameters.h"
 #include "ortools/routing/routing.h"
 #include "ortools/util/optional_boolean.pb.h"
 %}
 
-DEFINE_INDEX_TYPE_TYPEDEF(
-    operations_research::routing::RoutingCostClassIndex,
-    operations_research::routing::RoutingModel::CostClassIndex);
-DEFINE_INDEX_TYPE_TYPEDEF(
-    operations_research::routing::RoutingDimensionIndex,
-    operations_research::routing::RoutingModel::DimensionIndex);
-DEFINE_INDEX_TYPE_TYPEDEF(
-    operations_research::routing::RoutingDisjunctionIndex,
-    operations_research::routing::RoutingModel::DisjunctionIndex);
-DEFINE_INDEX_TYPE_TYPEDEF(
-    operations_research::routing::RoutingVehicleClassIndex,
-    operations_research::routing::RoutingModel::VehicleClassIndex);
-DEFINE_INDEX_TYPE_TYPEDEF(
-    operations_research::routing::RoutingResourceClassIndex,
-    operations_research::routing::RoutingModel::ResourceClassIndex);
 
 // ============= Type conversions ==============
 
@@ -82,13 +85,36 @@ PY_CONVERT_HELPER_PTR(LocalSearchFilter);
 PY_CONVERT_HELPER_PTR(LocalSearchOperator);
 PY_CONVERT_HELPER_PTR(SearchMonitor);
 
-%ignore operations_research::routing::RoutingModel::RegisterStateDependentTransitCallback;
-%ignore operations_research::routing::RoutingModel::StateDependentTransitCallback;
-%ignore operations_research::routing::RoutingModel::MakeStateDependentTransit;
-%ignore operations_research::routing::RoutingModel::AddDimensionDependentDimensionWithVehicleCapacity;
-%ignore operations_research::routing::RoutingModel::AddResourceGroup;
-%ignore operations_research::routing::RoutingModel::GetResourceGroups;
+namespace operations_research::routing {
 
+// RoutingModel
+%unignore Model;
+%ignore Model::RegisterStateDependentTransitCallback;
+%ignore Model::StateDependentTransitCallback;
+%ignore Model::MakeStateDependentTransit;
+%ignore Model::AddDimensionDependentDimensionWithVehicleCapacity;
+%ignore Model::AddResourceGroup;
+%ignore Model::GetResourceGroups;
+%ignore Model::SetAllowedVehiclesForIndex(absl::Span<const int>, int64_t);
+%extend Model {
+  void SetAllowedVehiclesForIndex(
+    const std::vector<int>& vehicles,
+    int64_t index) {
+      $self->SetAllowedVehiclesForIndex(absl::Span<const int>(vehicles), index);
+    }
+}
+
+// SimpleBoundCosts
+%unignore BoundCost;
+%unignore SimpleBoundCosts;
+%unignore SimpleBoundCosts::bound_cost;
+%rename("size") SimpleBoundCosts::Size;
+
+}  // namespace operations_research::routing
+
+PY_PROTO_TYPEMAP(ortools.routing.parameters_pb2,
+                 IteratedLocalSearchParameters,
+                 operations_research::routing::IteratedLocalSearchParameters)
 PY_PROTO_TYPEMAP(ortools.routing.parameters_pb2,
                  RoutingModelParameters,
                  operations_research::routing::RoutingModelParameters)
@@ -96,56 +122,22 @@ PY_PROTO_TYPEMAP(ortools.routing.parameters_pb2,
                  RoutingSearchParameters,
                  operations_research::routing::RoutingSearchParameters)
 
-// Wrap types.h, parameters.h according to the SWIG style guide.
+// Wrap parameters.h according to the SWIG style guide.
 %ignoreall
-%unignore RoutingTransitCallback1;
-%unignore RoutingTransitCallback2;
-%unignore RoutingIndexPair;
-%unignore RoutingIndexPairs;
-
-%unignore DefaultRoutingSearchParameters;
-%unignore DefaultRoutingModelParameters;
-%unignore FindErrorInRoutingSearchParameters;
-
-%include "ortools/routing/types.h"
-%include "ortools/routing/parameters.h"
-%unignoreall
-
-%unignore operations_research;
-namespace operations_research {
-
-// %including a .proto.h is frowned upon (for good general reasons), so we
-// have to duplicate the OptionalBoolean enum here to give it to python users.
-enum OptionalBoolean {
-  BOOL_UNSPECIFIED = 0,
-  BOOL_FALSE = 2,
-  BOOL_TRUE = 3,
-};
-}  // namespace operations_research
-
 %unignore operations_research::routing;
 namespace operations_research::routing {
-
-struct FirstSolutionStrategy {
-  enum Value {};
-};
-
-struct LocalSearchMetaheuristic {
-  enum Value {};
-};
-
-struct RoutingSearchStatus {
-  enum Value {};
-};
-
-// SimpleBoundCosts
-%unignore BoundCost;
-
-%unignore SimpleBoundCosts;
-%unignore SimpleBoundCosts::bound_cost;
-%rename("size") SimpleBoundCosts::Size;
-
+// parameters.h
+// IMPORTANT: These functions are global, so in .Net, they are in the RoutingGlobals.cs
+%unignore DefaultRoutingSearchParameters;
+%unignore DefaultRoutingModelParameters;
+%unignore DefaultSecondaryRoutingSearchParameters;
+%unignore DefaultIteratedLocalSearchParameters;
+%unignore FindErrorInRoutingSearchParameters;
+%unignore FindErrorsInRoutingSearchParameters;
 }  // namespace operations_research::routing
+
+%include "ortools/routing/parameters.h"
+%unignoreall
 
 // TODO(user): Use ignoreall/unignoreall for this one. A lot of work.
 //swiglint: disable include-h-allglobals

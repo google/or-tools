@@ -3,8 +3,8 @@ package com.google.ortools.contrib;
 import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.Assignment;
 import com.google.ortools.routing.FirstSolutionStrategy;
-import com.google.ortools.routing.RoutingIndexManager;
-import com.google.ortools.routing.RoutingModel;
+import com.google.ortools.routing.IndexManager;
+import com.google.ortools.routing.Model;
 import com.google.ortools.routing.RoutingSearchParameters;
 import com.google.ortools.routing.Globals;
 import java.util.ArrayList;
@@ -49,9 +49,9 @@ public class SimpleRoutingTest {
   // Node Distance Evaluation
   public static class NodeDistance implements LongBinaryOperator {
     private int[][] costMatrix;
-    private RoutingIndexManager indexManager;
+    private IndexManager indexManager;
 
-    public NodeDistance(RoutingIndexManager manager, int[][] costMatrix) {
+    public NodeDistance(IndexManager manager, int[][] costMatrix) {
       this.costMatrix = costMatrix;
       this.indexManager = manager;
     }
@@ -66,8 +66,8 @@ public class SimpleRoutingTest {
 
   // Solve Method
   public void solve() {
-    RoutingIndexManager manager = new RoutingIndexManager(costMatrix.length, 1, 0);
-    RoutingModel routing = new RoutingModel(manager);
+    IndexManager manager = new IndexManager(costMatrix.length, 1, 0);
+    Model routing = new Model(manager);
     RoutingSearchParameters parameters =
         RoutingSearchParameters.newBuilder()
             .mergeFrom(Globals.defaultRoutingSearchParameters())

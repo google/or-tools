@@ -11,18 +11,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Wrapper for RoutingIndexManager.
+// Wrapper for IndexManager.
 
-%include "ortools/base/base.i"
 %include "ortools/routing/python/types.swig"
-%import "ortools/util/python/vector.swig"
 
 %{
 #include "ortools/routing/index_manager.h"
 %}
-
-DEFINE_INDEX_TYPE_TYPEDEF(operations_research::routing::RoutingNodeIndex,
-                          operations_research::routing::RoutingIndexManager::NodeIndex);
 
 %ignoreall
 
@@ -31,22 +26,24 @@ DEFINE_INDEX_TYPE_TYPEDEF(operations_research::routing::RoutingNodeIndex,
 
 namespace operations_research::routing {
 
-%unignore RoutingIndexManager;
-%unignore RoutingIndexManager::GetStartIndex;
-%unignore RoutingIndexManager::GetEndIndex;
-%unignore RoutingIndexManager::IndexToNode;
-%unignore RoutingIndexManager::NodeToIndex;
-%unignore RoutingIndexManager::RoutingIndexManager(
+class NodeIndex;
+
+%unignore IndexManager;
+%unignore IndexManager::GetStartIndex;
+%unignore IndexManager::GetEndIndex;
+%unignore IndexManager::IndexToNode;
+%unignore IndexManager::NodeToIndex;
+%unignore IndexManager::IndexManager(
     int, int,
     NodeIndex);
-%unignore RoutingIndexManager::RoutingIndexManager(
+%unignore IndexManager::IndexManager(
     int, int,
     const std::vector<NodeIndex>&,
     const std::vector<NodeIndex>&);
-%rename (GetNumberOfNodes) RoutingIndexManager::num_nodes;
-%rename (GetNumberOfVehicles) RoutingIndexManager::num_vehicles;
-%rename (GetNumberOfIndices) RoutingIndexManager::num_indices;
-%unignore RoutingIndexManager::~RoutingIndexManager;
+%rename (GetNumberOfNodes) IndexManager::num_nodes;
+%rename (GetNumberOfVehicles) IndexManager::num_vehicles;
+%rename (GetNumberOfIndices) IndexManager::num_indices;
+%unignore IndexManager::~IndexManager;
 
 }  // namespace operations_research::routing
 

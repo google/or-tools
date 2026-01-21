@@ -63,10 +63,10 @@ class FilteredHeuristicLocalSearchOperator : public IntVarLocalSearchOperator {
     return heuristic_name;
   }
 
-  // TODO(user): Remove the dependency from RoutingModel by storing an
+  // TODO(user): Remove the dependency from Model by storing an
   // IntVarFilteredHeuristic here instead and storing information on path
   // start/ends like PathOperator does (instead of relying on the model).
-  RoutingModel* const model_;
+  Model* const model_;
   /// Keeps track of removed nodes when making a neighbor.
   SparseBitset<> removed_nodes_;
 

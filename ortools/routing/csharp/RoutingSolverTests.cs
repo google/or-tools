@@ -27,10 +27,10 @@ public class RoutingSolverTest
     public void SimpleLambdaCallback(bool callGC)
     {
         // Create Routing Index Manager
-        RoutingIndexManager manager = new RoutingIndexManager(5 /*locations*/, 1 /*vehicle*/, 0 /*depot*/);
+        IndexManager manager = new IndexManager(5 /*locations*/, 1 /*vehicle*/, 0 /*depot*/);
         Assert.NotNull(manager);
         // Create Routing Model.
-        RoutingModel routing = new RoutingModel(manager);
+        Model routing = new Model(manager);
         Assert.NotNull(routing);
         // Create a distance callback.
         int transitCallbackIndex = routing.RegisterTransitCallback((long fromIndex, long toIndex) =>
@@ -59,10 +59,10 @@ public class RoutingSolverTest
     public void TestTransitMatrix()
     {
         // Create Routing Index Manager
-        RoutingIndexManager manager = new RoutingIndexManager(5 /*locations*/, 1 /*vehicle*/, 0 /*depot*/);
+        IndexManager manager = new IndexManager(5 /*locations*/, 1 /*vehicle*/, 0 /*depot*/);
         Assert.NotNull(manager);
         // Create Routing Model.
-        RoutingModel routing = new RoutingModel(manager);
+        Model routing = new Model(manager);
         Assert.NotNull(routing);
         // Create a distance callback.
         long[][] matrix = new long[][] {
@@ -84,10 +84,10 @@ public class RoutingSolverTest
     public void TestTransitCallback()
     {
         // Create Routing Index Manager
-        RoutingIndexManager manager = new RoutingIndexManager(5 /*locations*/, 1 /*vehicle*/, 0 /*depot*/);
+        IndexManager manager = new IndexManager(5 /*locations*/, 1 /*vehicle*/, 0 /*depot*/);
         Assert.NotNull(manager);
         // Create Routing Model.
-        RoutingModel routing = new RoutingModel(manager);
+        Model routing = new Model(manager);
         Assert.NotNull(routing);
         // Create a distance callback.
         int transitCallbackIndex = routing.RegisterTransitCallback((long fromIndex, long toIndex) =>
@@ -111,10 +111,10 @@ public class RoutingSolverTest
     public void TestMatrixDimension()
     {
         // Create Routing Index Manager
-        RoutingIndexManager manager = new RoutingIndexManager(5 /*locations*/, 1 /*vehicle*/, 0 /*depot*/);
+        IndexManager manager = new IndexManager(5 /*locations*/, 1 /*vehicle*/, 0 /*depot*/);
         Assert.NotNull(manager);
         // Create Routing Model.
-        RoutingModel routing = new RoutingModel(manager);
+        Model routing = new Model(manager);
         Assert.NotNull(routing);
         // Create a distance callback.
         long[][] matrix = new long[][] {
@@ -138,10 +138,10 @@ public class RoutingSolverTest
     public void TestUnaryTransitVector()
     {
         // Create Routing Index Manager
-        RoutingIndexManager manager = new RoutingIndexManager(5 /*locations*/, 1 /*vehicle*/, 0 /*depot*/);
+        IndexManager manager = new IndexManager(5 /*locations*/, 1 /*vehicle*/, 0 /*depot*/);
         Assert.NotNull(manager);
         // Create Routing Model.
-        RoutingModel routing = new RoutingModel(manager);
+        Model routing = new Model(manager);
         Assert.NotNull(routing);
         // Create a distance callback.
         long[] vector = { 1, 1, 1, 1, 1 };
@@ -160,10 +160,10 @@ public class RoutingSolverTest
     public void TestUnaryTransitCallback()
     {
         // Create Routing Index Manager
-        RoutingIndexManager manager = new RoutingIndexManager(5 /*locations*/, 1 /*vehicle*/, 0 /*depot*/);
+        IndexManager manager = new IndexManager(5 /*locations*/, 1 /*vehicle*/, 0 /*depot*/);
         Assert.NotNull(manager);
         // Create Routing Model.
-        RoutingModel routing = new RoutingModel(manager);
+        Model routing = new Model(manager);
         Assert.NotNull(routing);
         // Create a distance callback.
         int transitCallbackIndex = routing.RegisterUnaryTransitCallback((long fromIndex) =>
@@ -188,10 +188,10 @@ public class RoutingSolverTest
     public void TestVectorDimension()
     {
         // Create Routing Index Manager
-        RoutingIndexManager manager = new RoutingIndexManager(5 /*locations*/, 1 /*vehicle*/, 0 /*depot*/);
+        IndexManager manager = new IndexManager(5 /*locations*/, 1 /*vehicle*/, 0 /*depot*/);
         Assert.NotNull(manager);
         // Create Routing Model.
-        RoutingModel routing = new RoutingModel(manager);
+        Model routing = new Model(manager);
         Assert.NotNull(routing);
         // Create a distance callback.
         long[] vector = new long[] { 1, 1, 1, 1, 1 };
@@ -233,10 +233,10 @@ public class RoutingDimensionTest
     public void TestCtor()
     {
         // Create Routing Index Manager
-        RoutingIndexManager manager = new RoutingIndexManager(31 /*locations*/, 7 /*vehicle*/, 3 /*depot*/);
+        IndexManager manager = new IndexManager(31 /*locations*/, 7 /*vehicle*/, 3 /*depot*/);
         Assert.NotNull(manager);
         // Create Routing Model.
-        RoutingModel routing = new RoutingModel(manager);
+        Model routing = new Model(manager);
         Assert.NotNull(routing);
         // Create a distance callback.
         int transitIndex = routing.RegisterTransitCallback((long fromIndex, long toIndex) =>
@@ -248,17 +248,17 @@ public class RoutingDimensionTest
                                                                return Math.Abs(toNode - fromNode);
                                                            });
         Assert.True(routing.AddDimension(transitIndex, 100, 100, true, "Dimension"));
-        RoutingDimension dimension = routing.GetDimensionOrDie("Dimension");
+        Dimension dimension = routing.GetDimensionOrDie("Dimension");
     }
 
     [Fact]
     public void TestSoftSpanUpperBound()
     {
         // Create Routing Index Manager
-        RoutingIndexManager manager = new RoutingIndexManager(31 /*locations*/, 7 /*vehicle*/, 3 /*depot*/);
+        IndexManager manager = new IndexManager(31 /*locations*/, 7 /*vehicle*/, 3 /*depot*/);
         Assert.NotNull(manager);
         // Create Routing Model.
-        RoutingModel routing = new RoutingModel(manager);
+        Model routing = new Model(manager);
         Assert.NotNull(routing);
         // Create a distance callback.
         int transitIndex = routing.RegisterTransitCallback((long fromIndex, long toIndex) =>
@@ -270,7 +270,7 @@ public class RoutingDimensionTest
                                                                return Math.Abs(toNode - fromNode);
                                                            });
         Assert.True(routing.AddDimension(transitIndex, 100, 100, true, "Dimension"));
-        RoutingDimension dimension = routing.GetDimensionOrDie("Dimension");
+        Dimension dimension = routing.GetDimensionOrDie("Dimension");
 
         BoundCost boundCost = new BoundCost(/*bound=*/97, /*cost=*/43);
         Assert.NotNull(boundCost);
@@ -290,10 +290,10 @@ public class RoutingDimensionTest
     public void TestQuadraticCostSoftSpanUpperBound()
     {
         // Create Routing Index Manager
-        RoutingIndexManager manager = new RoutingIndexManager(31 /*locations*/, 7 /*vehicle*/, 3 /*depot*/);
+        IndexManager manager = new IndexManager(31 /*locations*/, 7 /*vehicle*/, 3 /*depot*/);
         Assert.NotNull(manager);
         // Create Routing Model.
-        RoutingModel routing = new RoutingModel(manager);
+        Model routing = new Model(manager);
         Assert.NotNull(routing);
         // Create a distance callback.
         int transitIndex = routing.RegisterTransitCallback((long fromIndex, long toIndex) =>
@@ -305,7 +305,7 @@ public class RoutingDimensionTest
                                                                return Math.Abs(toNode - fromNode);
                                                            });
         Assert.True(routing.AddDimension(transitIndex, 100, 100, true, "Dimension"));
-        RoutingDimension dimension = routing.GetDimensionOrDie("Dimension");
+        Dimension dimension = routing.GetDimensionOrDie("Dimension");
 
         BoundCost boundCost = new BoundCost(/*bound=*/97, /*cost=*/43);
         Assert.NotNull(boundCost);

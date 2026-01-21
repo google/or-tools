@@ -71,9 +71,29 @@ PY_LIST_LIST_INPUT_TYPEMAP(IndexT, PyInt_Check);
 %apply const std::vector<IndexT>& { std::vector<NewIndexT>& };
 %enddef  // DEFINE_INDEX_TYPE_TYPEDEF
 
-DEFINE_INDEX_TYPE(operations_research::routing::RoutingNodeIndex);
-DEFINE_INDEX_TYPE(operations_research::routing::RoutingCostClassIndex);
-DEFINE_INDEX_TYPE(operations_research::routing::RoutingDimensionIndex);
-DEFINE_INDEX_TYPE(operations_research::routing::RoutingDisjunctionIndex);
-DEFINE_INDEX_TYPE(operations_research::routing::RoutingVehicleClassIndex);
-DEFINE_INDEX_TYPE(operations_research::routing::RoutingResourceClassIndex);
+DEFINE_INDEX_TYPE(operations_research::routing::NodeIndex);
+DEFINE_INDEX_TYPE(operations_research::routing::CostClassIndex);
+DEFINE_INDEX_TYPE(operations_research::routing::DimensionIndex);
+DEFINE_INDEX_TYPE(operations_research::routing::DisjunctionIndex);
+DEFINE_INDEX_TYPE(operations_research::routing::VehicleClassIndex);
+DEFINE_INDEX_TYPE(operations_research::routing::ResourceClassIndex);
+
+%ignoreall
+
+%unignore operations_research::routing;
+namespace operations_research::routing {
+class NodeIndex;
+class CostClassIndex;
+class DimensionIndex;
+class DisjunctionIndex;
+class VehicleClassIndex;
+class ResourceClassIndex;
+}  // namespace operations_research::routing
+
+%unignore operations_research::routing::PickupDeliveryPair;
+%unignore operations_research::routing::TransitCallback1(int64_t);
+%unignore operations_research::routing::TransitCallback2(int64_t, int64_t);
+
+%include "ortools/routing/types.h"
+
+%unignoreall
