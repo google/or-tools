@@ -375,17 +375,6 @@ cc_library(
 )
 
 cc_library(
-    name = "string_util",
-    srcs = ["string_util.cc"],
-    hdrs = ["string_util.h"],
-    deps = [
-        "//ortools/base",
-        "@abseil-cpp//absl/strings",
-        "@abseil-cpp//absl/strings:str_format",
-    ],
-)
-
-cc_library(
     name = "adaptative_parameter_value",
     hdrs = ["adaptative_parameter_value.h"],
 )
@@ -455,13 +444,6 @@ cc_library(
     testonly = 1,
     hdrs = ["fp_roundtrip_conv_testing.h"],
     deps = ["@abseil-cpp//absl/strings"],
-)
-
-cc_library(
-    name = "aligned_memory",
-    srcs = ["aligned_memory_internal.h"],
-    hdrs = ["aligned_memory.h"],
-    deps = ["//ortools/base:mathutil"],
 )
 
 cc_library(
