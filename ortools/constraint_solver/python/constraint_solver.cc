@@ -13,16 +13,21 @@
 
 #include "ortools/constraint_solver/constraint_solver.h"
 
-#include <setjmp.h>  // For FailureProtect. See below.
+#include <setjmp.h>
 
 #include <cstdint>
-#include <functional>
 #include <string>
 #include <vector>
 
+#include "absl/cleanup/cleanup.h"
+#include "absl/functional/function_ref.h"
 #include "absl/strings/string_view.h"
 #include "ortools/constraint_solver/assignment.pb.h"
+#include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/constraint_solver/python/constraint_solver_doc.h"
+#include "ortools/constraint_solver/search_limit.pb.h"
+#include "ortools/util/piecewise_linear_function.h"
+#include "ortools/util/tuple_set.h"
 #include "pybind11/cast.h"
 #include "pybind11/functional.h"
 #include "pybind11/gil.h"
@@ -30,41 +35,67 @@
 #include "pybind11/stl.h"
 #include "pybind11_protobuf/native_proto_caster.h"
 
+namespace py = ::pybind11;
+
 using ::operations_research::Assignment;
+using ::operations_research::AssignmentElement;
 using ::operations_research::AssignmentProto;
 using ::operations_research::BaseObject;
 using ::operations_research::Constraint;
 using ::operations_research::ConstraintSolverParameters;
+using ::operations_research::Decision;
 using ::operations_research::DecisionBuilder;
+using ::operations_research::DecisionVisitor;
+using ::operations_research::DefaultPhaseParameters;
+using ::operations_research::Demon;
+using ::operations_research::DisjunctiveConstraint;
 using ::operations_research::IntervalVar;
+using ::operations_research::IntervalVarElement;
 using ::operations_research::IntExpr;
+using ::operations_research::IntTupleSet;
 using ::operations_research::IntVar;
+using ::operations_research::IntVarElement;
+using ::operations_research::LocalSearchFilter;
+using ::operations_research::LocalSearchFilterManager;
+using ::operations_research::LocalSearchOperator;
 using ::operations_research::ModelVisitor;
+using ::operations_research::OptimizeVar;
+using ::operations_research::Pack;
+using ::operations_research::PiecewiseLinearFunction;
 using ::operations_research::PropagationBaseObject;
+using ::operations_research::RegularLimit;
+using ::operations_research::RegularLimitParameters;
+using ::operations_research::SearchLimit;
+using ::operations_research::SearchMonitor;
+using ::operations_research::SequenceVar;
+using ::operations_research::SequenceVarElement;
+using ::operations_research::SolutionCollector;
 using ::operations_research::Solver;
-using ::pybind11::arg;
 
-// Used in the PROTECT_FROM_FAILURE macro. See below.
-namespace {
-
-struct FailureProtect {
-  jmp_buf exception_buffer;
-  void JumpBack() { longjmp(exception_buffer, 1); }
-};
-
-}  // namespace
-
-#define PROTECT_FROM_FAILURE(this_, action)                         \
-  Solver* solver = this_->solver();                                 \
-  FailureProtect protect;                                           \
-  solver->set_fail_intercept([&protect]() { protect.JumpBack(); }); \
-  if (setjmp(protect.exception_buffer) == 0) {                      \
-    this_->action;                                                  \
-    solver->clear_fail_intercept();                                 \
-  } else {                                                          \
-    solver->clear_fail_intercept();                                 \
-    throw pybind11::value_error("Solver fails outside of solve()"); \
+// There is no proper error propagation in `constraint_solver` but some
+// operation may fail and end-up calling `Solver::Fail()`. `Solver` offers a
+// `set_fail_intercept` method we can use to _break_ and return control flow to
+// the caller in this case. Theoretically, we could just `set_fail_intercept` to
+// `throw` but `Solver` is not compiled with exception enabled, this would
+// result in a crash. Instead we use `setjmp`/`longjump` to resume the control
+// flow in the function below and throw from here. This is quite convoluted but
+// a cleaner solution would require rewriting the API.
+template <typename T>
+void ThrowOnFailure(T* this_, absl::FunctionRef<void(T*)> action) {
+  Solver* solver = this_->solver();
+  jmp_buf buffer;
+  solver->set_fail_intercept([&buffer]() { longjmp(buffer, 1); });
+  auto cleanup =
+      absl::MakeCleanup([solver]() { solver->clear_fail_intercept(); });
+  if (setjmp(buffer) == 0) {
+    // If the statement below end-up calling `Solver::Fail()`, `longjmp` is
+    // executed and resets execution to the if-condition above. The code then
+    // branches in the `else` clause below and throws.
+    action(this_);
+  } else {
+    throw py::value_error("Solver fails outside of solve()");
   }
+}
 
 class BaseObjectPythonHelper {
  public:
@@ -78,6 +109,7 @@ class PropagationBaseObjectPythonHelper : BaseObjectPythonHelper {
   static std::string DebugString(PropagationBaseObject* this_) {
     return this_->DebugString();
   }
+
   static Solver* solver(PropagationBaseObject* this_) {
     return this_->solver();
   }
@@ -94,174 +126,2251 @@ class PropagationBaseObjectPythonHelper : BaseObjectPythonHelper {
 class IntExprPythonHelper : PropagationBaseObjectPythonHelper {
  public:
   static int64_t Min(IntExpr* this_) { return this_->Min(); }
+
   static int64_t Max(IntExpr* this_) { return this_->Max(); }
+
   static void SetMin(IntExpr* this_, int64_t m) {
-    PROTECT_FROM_FAILURE(this_, SetMin(m));
+    ThrowOnFailure<IntExpr>(this_, [m](IntExpr* this_) { this_->SetMin(m); });
   }
+
   static void SetMax(IntExpr* this_, int64_t m) {
-    PROTECT_FROM_FAILURE(this_, SetMax(m));
+    ThrowOnFailure<IntExpr>(this_, [m](IntExpr* this_) { this_->SetMax(m); });
   }
+
   static void SetRange(IntExpr* this_, int64_t mi, int64_t ma) {
-    PROTECT_FROM_FAILURE(this_, SetRange(mi, ma));
+    ThrowOnFailure<IntExpr>(
+        this_, [mi, ma](IntExpr* this_) { this_->SetRange(mi, ma); });
   }
+
   static void SetValue(IntExpr* this_, int64_t v) {
-    PROTECT_FROM_FAILURE(this_, SetValue(v));
+    ThrowOnFailure<IntExpr>(this_, [v](IntExpr* this_) { this_->SetValue(v); });
   }
+
   static bool Bound(IntExpr* this_) { return this_->Bound(); }
 };
 
 class IntVarPythonHelper : IntExprPythonHelper {
  public:
   static std::string name(IntVar* this_) { return this_->name(); }
+
   static int64_t Value(IntVar* this_) { return this_->Value(); }
+
   static void RemoveValue(IntVar* this_, int64_t v) {
-    PROTECT_FROM_FAILURE(this_, RemoveValue(v));
+    ThrowOnFailure<IntVar>(this_,
+                           [v](IntVar* this_) { this_->RemoveValue(v); });
   }
+
   static int64_t Size(IntVar* this_) { return this_->Size(); }
+};
+
+class PyDecision : public Decision {
+ public:
+  using Decision::Decision;  // Inherit constructors
+  void Apply(Solver* s) override {
+    PYBIND11_OVERRIDE_PURE(void, Decision, Apply, s);
+  }
+  void Refute(Solver* s) override {
+    PYBIND11_OVERRIDE_PURE(void, Decision, Refute, s);
+  }
+  void Accept(DecisionVisitor* visitor) const override {
+    PYBIND11_OVERRIDE(void, Decision, Accept, visitor);
+  }
+  std::string DebugString() const override {
+    PYBIND11_OVERRIDE(std::string, Decision, DebugString, );
+  }
+};
+
+class PyDecisionBuilder : public DecisionBuilder {
+ public:
+  using DecisionBuilder::DecisionBuilder;
+  Decision* Next(Solver* s) override {
+    PYBIND11_OVERRIDE_PURE(Decision*, DecisionBuilder, Next, s);
+  }
+  std::string DebugString() const override {
+    PYBIND11_OVERRIDE(std::string, DecisionBuilder, DebugString, );
+  }
+};
+
+class PyDemon : public Demon {
+ public:
+  using Demon::Demon;
+  void Run(Solver* s) override { PYBIND11_OVERRIDE_PURE(void, Demon, Run, s); }
+  Solver::DemonPriority priority() const override {
+    PYBIND11_OVERRIDE(Solver::DemonPriority, Demon, priority, );
+  }
+  std::string DebugString() const override {
+    PYBIND11_OVERRIDE(std::string, Demon, DebugString, );
+  }
+};
+
+class PyLocalSearchOperator : public LocalSearchOperator {
+ public:
+  using LocalSearchOperator::LocalSearchOperator;
+  bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta) override {
+    PYBIND11_OVERRIDE_PURE(bool, LocalSearchOperator, MakeNextNeighbor, delta,
+                           deltadelta);
+  }
+  void Start(const Assignment* assignment) override {
+    PYBIND11_OVERRIDE_PURE(void, LocalSearchOperator, Start, assignment);
+  }
+  void EnterSearch() override {
+    PYBIND11_OVERRIDE(void, LocalSearchOperator, EnterSearch, );
+  }
+  void Reset() override {
+    PYBIND11_OVERRIDE(void, LocalSearchOperator, Reset, );
+  }
+  bool HasFragments() const override {
+    PYBIND11_OVERRIDE(bool, LocalSearchOperator, HasFragments, );
+  }
+  bool HoldsDelta() const override {
+    PYBIND11_OVERRIDE(bool, LocalSearchOperator, HoldsDelta, );
+  }
+  std::string DebugString() const override {
+    PYBIND11_OVERRIDE(std::string, LocalSearchOperator, DebugString, );
+  }
+};
+
+class PyLocalSearchFilter : public LocalSearchFilter {
+ public:
+  using LocalSearchFilter::LocalSearchFilter;
+  bool Accept(const Assignment* delta, const Assignment* deltadelta,
+              int64_t objective_min, int64_t objective_max) override {
+    PYBIND11_OVERRIDE_PURE(bool, LocalSearchFilter, Accept, delta, deltadelta,
+                           objective_min, objective_max);
+  }
+  void Synchronize(const Assignment* assignment,
+                   const Assignment* delta) override {
+    PYBIND11_OVERRIDE_PURE(void, LocalSearchFilter, Synchronize, assignment,
+                           delta);
+  }
+  bool IsIncremental() const override {
+    PYBIND11_OVERRIDE(bool, LocalSearchFilter, IsIncremental, );
+  }
+  void Revert() override {
+    PYBIND11_OVERRIDE(void, LocalSearchFilter, Revert, );
+  }
+  void Reset() override { PYBIND11_OVERRIDE(void, LocalSearchFilter, Reset, ); }
+  int64_t GetSynchronizedObjectiveValue() const override {
+    PYBIND11_OVERRIDE(int64_t, LocalSearchFilter,
+                      GetSynchronizedObjectiveValue, );
+  }
+  int64_t GetAcceptedObjectiveValue() const override {
+    PYBIND11_OVERRIDE(int64_t, LocalSearchFilter, GetAcceptedObjectiveValue, );
+  }
+  std::string DebugString() const override {
+    PYBIND11_OVERRIDE(std::string, LocalSearchFilter, DebugString, );
+  }
+};
+
+class PyConstraint : public Constraint {
+ public:
+  using Constraint::Constraint;
+  void Post() override { PYBIND11_OVERRIDE_PURE(void, Constraint, Post, ); }
+  void InitialPropagate() override {
+    PYBIND11_OVERRIDE_PURE(void, Constraint, InitialPropagate, );
+  }
+  std::string DebugString() const override {
+    PYBIND11_OVERRIDE(std::string, Constraint, DebugString, );
+  }
+  IntVar* Var() override { PYBIND11_OVERRIDE(IntVar*, Constraint, Var, ); }
+};
+
+class PySearchMonitor : public SearchMonitor {
+ public:
+  using SearchMonitor::SearchMonitor;
+  void EnterSearch() override {
+    PYBIND11_OVERRIDE(void, SearchMonitor, EnterSearch, );
+  }
+  void RestartSearch() override {
+    PYBIND11_OVERRIDE(void, SearchMonitor, RestartSearch, );
+  }
+  void ExitSearch() override {
+    PYBIND11_OVERRIDE(void, SearchMonitor, ExitSearch, );
+  }
+  void BeginNextDecision(DecisionBuilder* b) override {
+    PYBIND11_OVERRIDE(void, SearchMonitor, BeginNextDecision, b);
+  }
+  void EndNextDecision(DecisionBuilder* b, Decision* d) override {
+    PYBIND11_OVERRIDE(void, SearchMonitor, EndNextDecision, b, d);
+  }
+  void ApplyDecision(Decision* d) override {
+    PYBIND11_OVERRIDE(void, SearchMonitor, ApplyDecision, d);
+  }
+  void RefuteDecision(Decision* d) override {
+    PYBIND11_OVERRIDE(void, SearchMonitor, RefuteDecision, d);
+  }
+  void AfterDecision(Decision* d, bool apply) override {
+    PYBIND11_OVERRIDE(void, SearchMonitor, AfterDecision, d, apply);
+  }
+  void BeginFail() override {
+    PYBIND11_OVERRIDE(void, SearchMonitor, BeginFail, );
+  }
+  void EndFail() override { PYBIND11_OVERRIDE(void, SearchMonitor, EndFail, ); }
+  void BeginInitialPropagation() override {
+    PYBIND11_OVERRIDE(void, SearchMonitor, BeginInitialPropagation, );
+  }
+  void EndInitialPropagation() override {
+    PYBIND11_OVERRIDE(void, SearchMonitor, EndInitialPropagation, );
+  }
+  bool AcceptSolution() override {
+    PYBIND11_OVERRIDE(bool, SearchMonitor, AcceptSolution, );
+  }
+  bool AtSolution() override {
+    PYBIND11_OVERRIDE(bool, SearchMonitor, AtSolution, );
+  }
+  void NoMoreSolutions() override {
+    PYBIND11_OVERRIDE(void, SearchMonitor, NoMoreSolutions, );
+  }
+  bool AtLocalOptimum() override {
+    PYBIND11_OVERRIDE(bool, SearchMonitor, AtLocalOptimum, );
+  }
+  bool AcceptDelta(Assignment* delta, Assignment* deltadelta) override {
+    PYBIND11_OVERRIDE(bool, SearchMonitor, AcceptDelta, delta, deltadelta);
+  }
+  void AcceptNeighbor() override {
+    PYBIND11_OVERRIDE(void, SearchMonitor, AcceptNeighbor, );
+  }
+  void AcceptUncheckedNeighbor() override {
+    PYBIND11_OVERRIDE(void, SearchMonitor, AcceptUncheckedNeighbor, );
+  }
+  bool IsUncheckedSolutionLimitReached() override {
+    PYBIND11_OVERRIDE(bool, SearchMonitor, IsUncheckedSolutionLimitReached, );
+  }
+  void PeriodicCheck() override {
+    PYBIND11_OVERRIDE(void, SearchMonitor, PeriodicCheck, );
+  }
+  int ProgressPercent() override {
+    PYBIND11_OVERRIDE(int, SearchMonitor, ProgressPercent, );
+  }
+  void Accept(ModelVisitor* visitor) const override {
+    PYBIND11_OVERRIDE(void, SearchMonitor, Accept, visitor);
+  }
+  void Install() override { PYBIND11_OVERRIDE(void, SearchMonitor, Install, ); }
+  std::string DebugString() const override {
+    PYBIND11_OVERRIDE(std::string, SearchMonitor, DebugString, );
+  }
 };
 
 PYBIND11_MODULE(constraint_solver, m) {
   pybind11_protobuf::ImportNativeProtoCasters();
 
-  pybind11::class_<Solver>(m, "Solver", DOC(operations_research, Solver))
-      .def(pybind11::init<const std::string&>())
-      .def(pybind11::init<const std::string&,
+  py::class_<operations_research::PiecewiseLinearFunction>(
+      m, "PiecewiseLinearFunction")
+      .def_static("create_piecewise_linear_function",
+                  &PiecewiseLinearFunction::CreatePiecewiseLinearFunction,
+                  py::arg("points_x"), py::arg("points_y"), py::arg("slopes"),
+                  py::arg("other_points_x"),
+                  py::return_value_policy::take_ownership)
+      .def_static(
+          "create_step_function", &PiecewiseLinearFunction::CreateStepFunction,
+          py::arg("points_x"), py::arg("points_y"), py::arg("other_points_x"),
+          py::return_value_policy::take_ownership)
+      .def_static("create_full_domain_function",
+                  &PiecewiseLinearFunction::CreateFullDomainFunction,
+                  py::arg("initial_level"), py::arg("points_x"),
+                  py::arg("slopes"), py::return_value_policy::take_ownership)
+      .def_static("create_one_segment_function",
+                  &PiecewiseLinearFunction::CreateOneSegmentFunction,
+                  py::arg("point_x"), py::arg("point_y"), py::arg("slope"),
+                  py::arg("other_point_x"),
+                  py::return_value_policy::take_ownership)
+      .def_static("create_right_ray_function",
+                  &PiecewiseLinearFunction::CreateRightRayFunction,
+                  py::arg("point_x"), py::arg("point_y"), py::arg("slope"),
+                  py::return_value_policy::take_ownership)
+      .def_static("create_left_ray_function",
+                  &PiecewiseLinearFunction::CreateLeftRayFunction,
+                  py::arg("point_x"), py::arg("point_y"), py::arg("slope"),
+                  py::return_value_policy::take_ownership)
+      .def_static("create_fixed_charge_function",
+                  &PiecewiseLinearFunction::CreateFixedChargeFunction,
+                  py::arg("slope"), py::arg("value"),
+                  py::return_value_policy::take_ownership)
+      .def_static("create_early_tardy_function",
+                  &PiecewiseLinearFunction::CreateEarlyTardyFunction,
+                  py::arg("reference"), py::arg("earliness_slope"),
+                  py::arg("tardiness_slope"),
+                  py::return_value_policy::take_ownership)
+      .def_static("create_early_tardy_function_with_slack",
+                  &PiecewiseLinearFunction::CreateEarlyTardyFunctionWithSlack,
+                  py::arg("early_slack"), py::arg("late_slack"),
+                  py::arg("earliness_slope"), py::arg("tardiness_slope"),
+                  py::return_value_policy::take_ownership)
+      .def("in_domain", &PiecewiseLinearFunction::InDomain, py::arg("x"))
+      .def("is_convex", &PiecewiseLinearFunction::IsConvex)
+      .def("is_non_decreasing", &PiecewiseLinearFunction::IsNonDecreasing)
+      .def("is_non_increasing", &PiecewiseLinearFunction::IsNonIncreasing)
+      .def("value", &PiecewiseLinearFunction::Value, py::arg("x"))
+      .def("__str__", &PiecewiseLinearFunction::DebugString);
+
+  py::class_<DefaultPhaseParameters> default_phase_parameters(
+      m, "DefaultPhaseParameters");
+  default_phase_parameters.def(py::init<>())
+      .def_readwrite("var_selection_schema",
+                     &DefaultPhaseParameters::var_selection_schema)
+      .def_readwrite("value_selection_schema",
+                     &DefaultPhaseParameters::value_selection_schema)
+      .def_readwrite("initialization_splits",
+                     &DefaultPhaseParameters::initialization_splits)
+      .def_readwrite("run_all_heuristics",
+                     &DefaultPhaseParameters::run_all_heuristics)
+      .def_readwrite("heuristic_period",
+                     &DefaultPhaseParameters::heuristic_period)
+      .def_readwrite("heuristic_num_failures_limit",
+                     &DefaultPhaseParameters::heuristic_num_failures_limit)
+      .def_readwrite("persistent_impact",
+                     &DefaultPhaseParameters::persistent_impact)
+      .def_readwrite("random_seed", &DefaultPhaseParameters::random_seed)
+      .def_readwrite("display_level", &DefaultPhaseParameters::display_level)
+      .def_readwrite("use_last_conflict",
+                     &DefaultPhaseParameters::use_last_conflict)
+      .def_readwrite("decision_builder",
+                     &DefaultPhaseParameters::decision_builder);
+
+  py::enum_<DefaultPhaseParameters::VariableSelection>(default_phase_parameters,
+                                                       "VariableSelection")
+      .value("CHOOSE_MAX_SUM_IMPACT",
+             DefaultPhaseParameters::CHOOSE_MAX_SUM_IMPACT)
+      .value("CHOOSE_MAX_AVERAGE_IMPACT",
+             DefaultPhaseParameters::CHOOSE_MAX_AVERAGE_IMPACT)
+      .value("CHOOSE_MAX_VALUE_IMPACT",
+             DefaultPhaseParameters::CHOOSE_MAX_VALUE_IMPACT)
+      .export_values();
+
+  py::enum_<DefaultPhaseParameters::ValueSelection>(default_phase_parameters,
+                                                    "ValueSelection")
+      .value("SELECT_MIN_IMPACT", DefaultPhaseParameters::SELECT_MIN_IMPACT)
+      .value("SELECT_MAX_IMPACT", DefaultPhaseParameters::SELECT_MAX_IMPACT)
+      .export_values();
+
+  py::enum_<DefaultPhaseParameters::DisplayLevel>(default_phase_parameters,
+                                                  "DisplayLevel")
+      .value("NONE", DefaultPhaseParameters::NONE)
+      .value("NORMAL", DefaultPhaseParameters::NORMAL)
+      .value("VERBOSE", DefaultPhaseParameters::VERBOSE)
+      .export_values();
+
+  py::enum_<Solver::DemonPriority>(m, "DemonPriority")
+      .value("DELAYED_PRIORITY", Solver::DELAYED_PRIORITY)
+      .value("VAR_PRIORITY", Solver::VAR_PRIORITY)
+      .value("NORMAL_PRIORITY", Solver::NORMAL_PRIORITY)
+      .export_values();
+
+  py::enum_<Solver::SequenceStrategy>(m, "SequenceStrategy")
+      .value("SEQUENCE_DEFAULT", Solver::SEQUENCE_DEFAULT)
+      .value("SEQUENCE_SIMPLE", Solver::SEQUENCE_SIMPLE)
+      .value("CHOOSE_MIN_SLACK_RANK_FORWARD",
+             Solver::CHOOSE_MIN_SLACK_RANK_FORWARD)
+      .value("CHOOSE_RANDOM_RANK_FORWARD", Solver::CHOOSE_RANDOM_RANK_FORWARD)
+      .export_values();
+
+  py::enum_<Solver::IntervalStrategy>(m, "IntervalStrategy")
+      .value("INTERVAL_DEFAULT", Solver::INTERVAL_DEFAULT)
+      .value("INTERVAL_SIMPLE", Solver::INTERVAL_SIMPLE)
+      .value("INTERVAL_SET_TIMES_FORWARD", Solver::INTERVAL_SET_TIMES_FORWARD)
+      .value("INTERVAL_SET_TIMES_BACKWARD", Solver::INTERVAL_SET_TIMES_BACKWARD)
+      .export_values();
+
+  py::enum_<Solver::LocalSearchOperators>(m, "LocalSearchOperators")
+      .value("TWOOPT", Solver::TWOOPT)
+      .value("OROPT", Solver::OROPT)
+      .value("RELOCATE", Solver::RELOCATE)
+      .value("EXCHANGE", Solver::EXCHANGE)
+      .value("CROSS", Solver::CROSS)
+      .value("MAKEACTIVE", Solver::MAKEACTIVE)
+      .value("MAKEINACTIVE", Solver::MAKEINACTIVE)
+      .value("MAKECHAININACTIVE", Solver::MAKECHAININACTIVE)
+      .value("SWAPACTIVE", Solver::SWAPACTIVE)
+      .value("EXTENDEDSWAPACTIVE", Solver::EXTENDEDSWAPACTIVE)
+      .value("PATHLNS", Solver::PATHLNS)
+      .value("FULLPATHLNS", Solver::FULLPATHLNS)
+      .value("UNACTIVELNS", Solver::UNACTIVELNS)
+      .value("INCREMENT", Solver::INCREMENT)
+      .value("DECREMENT", Solver::DECREMENT)
+      .value("SIMPLELNS", Solver::SIMPLELNS)
+      .export_values();
+
+  py::enum_<Solver::LocalSearchFilterBound>(m, "LocalSearchFilterBound")
+      .value("GE", Solver::GE)
+      .value("LE", Solver::LE)
+      .value("EQ", Solver::EQ)
+      .export_values();
+
+  py::enum_<Solver::IntVarStrategy>(m, "IntVarStrategy")
+      .value("INT_VAR_DEFAULT", Solver::INT_VAR_DEFAULT)
+      .value("INT_VAR_SIMPLE", Solver::INT_VAR_SIMPLE)
+      .value("CHOOSE_FIRST_UNBOUND", Solver::CHOOSE_FIRST_UNBOUND)
+      .value("CHOOSE_RANDOM", Solver::CHOOSE_RANDOM)
+      .value("CHOOSE_MIN_SIZE_LOWEST_MIN", Solver::CHOOSE_MIN_SIZE_LOWEST_MIN)
+      .value("CHOOSE_MIN_SIZE_HIGHEST_MIN", Solver::CHOOSE_MIN_SIZE_HIGHEST_MIN)
+      .value("CHOOSE_MIN_SIZE_LOWEST_MAX", Solver::CHOOSE_MIN_SIZE_LOWEST_MAX)
+      .value("CHOOSE_MIN_SIZE_HIGHEST_MAX", Solver::CHOOSE_MIN_SIZE_HIGHEST_MAX)
+      .value("CHOOSE_LOWEST_MIN", Solver::CHOOSE_LOWEST_MIN)
+      .value("CHOOSE_HIGHEST_MAX", Solver::CHOOSE_HIGHEST_MAX)
+      .value("CHOOSE_MIN_SIZE", Solver::CHOOSE_MIN_SIZE)
+      .value("CHOOSE_MAX_SIZE", Solver::CHOOSE_MAX_SIZE)
+      .value("CHOOSE_MAX_REGRET_ON_MIN", Solver::CHOOSE_MAX_REGRET_ON_MIN)
+      .value("CHOOSE_PATH", Solver::CHOOSE_PATH)
+      .export_values();
+
+  py::enum_<Solver::IntValueStrategy>(m, "IntValueStrategy")
+      .value("INT_VALUE_DEFAULT", Solver::INT_VALUE_DEFAULT)
+      .value("INT_VALUE_SIMPLE", Solver::INT_VALUE_SIMPLE)
+      .value("ASSIGN_MIN_VALUE", Solver::ASSIGN_MIN_VALUE)
+      .value("ASSIGN_MAX_VALUE", Solver::ASSIGN_MAX_VALUE)
+      .value("ASSIGN_RANDOM_VALUE", Solver::ASSIGN_RANDOM_VALUE)
+      .value("ASSIGN_CENTER_VALUE", Solver::ASSIGN_CENTER_VALUE)
+      .value("SPLIT_LOWER_HALF", Solver::SPLIT_LOWER_HALF)
+      .value("SPLIT_UPPER_HALF", Solver::SPLIT_UPPER_HALF)
+      .export_values();
+
+  pybind11::enum_<Solver::UnaryIntervalRelation>(m, "UnaryIntervalRelation")
+      .value("ENDS_AFTER", Solver::ENDS_AFTER)
+      .value("ENDS_AT", Solver::ENDS_AT)
+      .value("ENDS_BEFORE", Solver::ENDS_BEFORE)
+      .value("STARTS_AFTER", Solver::STARTS_AFTER)
+      .value("STARTS_AT", Solver::STARTS_AT)
+      .value("STARTS_BEFORE", Solver::STARTS_BEFORE)
+      .value("CROSS_DATE", Solver::CROSS_DATE)
+      .value("AVOID_DATE", Solver::AVOID_DATE)
+      .export_values();
+
+  pybind11::enum_<Solver::BinaryIntervalRelation>(m, "BinaryIntervalRelation")
+      .value("ENDS_AFTER_END", Solver::ENDS_AFTER_END)
+      .value("ENDS_AFTER_START", Solver::ENDS_AFTER_START)
+      .value("ENDS_AT_END", Solver::ENDS_AT_END)
+      .value("ENDS_AT_START", Solver::ENDS_AT_START)
+      .value("STARTS_AFTER_END", Solver::STARTS_AFTER_END)
+      .value("STARTS_AFTER_START", Solver::STARTS_AFTER_START)
+      .value("STARTS_AT_END", Solver::STARTS_AT_END)
+      .value("STARTS_AT_START", Solver::STARTS_AT_START)
+      .value("STAYS_IN_SYNC", Solver::STAYS_IN_SYNC)
+      .export_values();
+
+  py::class_<BaseObject>(m, "BaseObject", DOC(operations_research, BaseObject))
+      .def("__str__", &BaseObjectPythonHelper::DebugString);
+
+  py::class_<operations_research::SearchMonitor, BaseObject, PySearchMonitor>(
+      m, "SearchMonitor", DOC(operations_research, SearchMonitor))
+      .def(py::init<Solver*>(), py::arg("solver"))
+      .def("enter_search", &SearchMonitor::EnterSearch,
+           DOC(operations_research, SearchMonitor, EnterSearch))
+      .def("restart_search", &SearchMonitor::RestartSearch,
+           DOC(operations_research, SearchMonitor, RestartSearch))
+      .def("exit_search", &SearchMonitor::ExitSearch,
+           DOC(operations_research, SearchMonitor, ExitSearch))
+      .def("begin_next_decision", &SearchMonitor::BeginNextDecision,
+           py::arg("b"),
+           DOC(operations_research, SearchMonitor, BeginNextDecision))
+      .def("end_next_decision", &SearchMonitor::EndNextDecision, py::arg("b"),
+           py::arg("d"),
+           DOC(operations_research, SearchMonitor, EndNextDecision))
+      .def("apply_decision", &SearchMonitor::ApplyDecision, py::arg("d"),
+           DOC(operations_research, SearchMonitor, ApplyDecision))
+      .def("refute_decision", &SearchMonitor::RefuteDecision, py::arg("d"),
+           DOC(operations_research, SearchMonitor, RefuteDecision))
+      .def("after_decision", &SearchMonitor::AfterDecision, py::arg("d"),
+           py::arg("apply"),
+           DOC(operations_research, SearchMonitor, AfterDecision))
+      .def("begin_fail", &SearchMonitor::BeginFail,
+           DOC(operations_research, SearchMonitor, BeginFail))
+      .def("end_fail", &SearchMonitor::EndFail,
+           DOC(operations_research, SearchMonitor, EndFail))
+      .def("begin_initial_propagation", &SearchMonitor::BeginInitialPropagation,
+           DOC(operations_research, SearchMonitor, BeginInitialPropagation))
+      .def("end_initial_propagation", &SearchMonitor::EndInitialPropagation,
+           DOC(operations_research, SearchMonitor, EndInitialPropagation))
+      .def("accept_solution", &SearchMonitor::AcceptSolution,
+           DOC(operations_research, SearchMonitor, AcceptSolution))
+      .def("at_solution", &SearchMonitor::AtSolution,
+           DOC(operations_research, SearchMonitor, AtSolution))
+      .def("no_more_solutions", &SearchMonitor::NoMoreSolutions,
+           DOC(operations_research, SearchMonitor, NoMoreSolutions))
+      .def("at_local_optimum", &SearchMonitor::AtLocalOptimum,
+           DOC(operations_research, SearchMonitor, AtLocalOptimum))
+      .def("accept_delta", &SearchMonitor::AcceptDelta, py::arg("delta"),
+           py::arg("deltadelta"),
+           DOC(operations_research, SearchMonitor, AcceptDelta))
+      .def("accept_neighbor", &SearchMonitor::AcceptNeighbor,
+           DOC(operations_research, SearchMonitor, AcceptNeighbor))
+      .def("accept_unchecked_neighbor", &SearchMonitor::AcceptUncheckedNeighbor,
+           DOC(operations_research, SearchMonitor, AcceptUncheckedNeighbor))
+      .def("is_unchecked_solution_limit_reached",
+           &SearchMonitor::IsUncheckedSolutionLimitReached,
+           DOC(operations_research, SearchMonitor,
+               IsUncheckedSolutionLimitReached))
+      .def("periodic_check", &SearchMonitor::PeriodicCheck,
+           DOC(operations_research, SearchMonitor, PeriodicCheck))
+      .def("progress_percent", &SearchMonitor::ProgressPercent,
+           DOC(operations_research, SearchMonitor, ProgressPercent))
+      .def("accept", &SearchMonitor::Accept, py::arg("visitor"),
+           DOC(operations_research, SearchMonitor, Accept))
+      .def("install", &SearchMonitor::Install,
+           DOC(operations_research, SearchMonitor, Install))
+      .def("__str__", &SearchMonitor::DebugString);
+
+  py::class_<SolutionCollector, SearchMonitor>(m, "SolutionCollector")
+      .def(py::init<Solver*, const Assignment*>(), py::arg("solver"),
+           py::arg("assignment"))
+      .def(py::init<Solver*>(), py::arg("solver"))
+      .def("add", py::overload_cast<IntVar*>(&SolutionCollector::Add),
+           py::arg("var"))
+      .def("add",
+           py::overload_cast<const std::vector<IntVar*>&>(
+               &SolutionCollector::Add),
+           py::arg("vars"))
+      .def("add", py::overload_cast<IntervalVar*>(&SolutionCollector::Add),
+           py::arg("var"))
+      .def("add",
+           py::overload_cast<const std::vector<IntervalVar*>&>(
+               &SolutionCollector::Add),
+           py::arg("vars"))
+      .def("add", py::overload_cast<SequenceVar*>(&SolutionCollector::Add),
+           py::arg("var"))
+      .def("add",
+           py::overload_cast<const std::vector<SequenceVar*>&>(
+               &SolutionCollector::Add),
+           py::arg("vars"))
+      .def("add_objective", &SolutionCollector::AddObjective,
+           py::arg("objective"))
+      .def("add_objectives", &SolutionCollector::AddObjectives,
+           py::arg("objectives"))
+      .def_property_readonly("solution_count",
+                             &SolutionCollector::solution_count)
+      .def("has_solution", &SolutionCollector::has_solution)
+      .def("solution", &SolutionCollector::solution, py::arg("n"),
+           py::return_value_policy::reference_internal)
+      .def("last_solution_or_null", &SolutionCollector::last_solution_or_null,
+           py::return_value_policy::reference_internal)
+      .def("wall_time", &SolutionCollector::wall_time, py::arg("n"))
+      .def("branches", &SolutionCollector::branches, py::arg("n"))
+      .def("failures", &SolutionCollector::failures, py::arg("n"))
+      .def("objective_value", &SolutionCollector::objective_value, py::arg("n"))
+      .def("objective_value_from_index",
+           &SolutionCollector::ObjectiveValueFromIndex, py::arg("n"),
+           py::arg("index"))
+      .def("value", &SolutionCollector::Value, py::arg("n"), py::arg("var"))
+      .def("start_value", &SolutionCollector::StartValue, py::arg("n"),
+           py::arg("var"))
+      .def("end_value", &SolutionCollector::EndValue, py::arg("n"),
+           py::arg("var"))
+      .def("duration_value", &SolutionCollector::DurationValue, py::arg("n"),
+           py::arg("var"))
+      .def("performed_value", &SolutionCollector::PerformedValue, py::arg("n"),
+           py::arg("var"))
+      .def("forward_sequence", &SolutionCollector::ForwardSequence,
+           py::arg("n"), py::arg("var"))
+      .def("backward_sequence", &SolutionCollector::BackwardSequence,
+           py::arg("n"), py::arg("var"))
+      .def("unperformed", &SolutionCollector::Unperformed, py::arg("n"),
+           py::arg("var"));
+
+  py::class_<OptimizeVar, SearchMonitor>(m, "OptimizeVar")
+      .def("best", &OptimizeVar::best)
+      .def("var", &OptimizeVar::var,
+           py::return_value_policy::reference_internal)
+      .def("apply_bound", &OptimizeVar::ApplyBound)
+      .def("__str__", &OptimizeVar::DebugString);
+
+  py::class_<SearchLimit, SearchMonitor>(m, "SearchLimit")
+      .def("crossed", &SearchLimit::crossed)
+      .def("check", &SearchLimit::Check)
+      .def("init", &SearchLimit::Init)
+      .def("__str__", &SearchLimit::DebugString);
+
+  py::class_<RegularLimit, SearchLimit>(m, "RegularLimit")
+      .def_property_readonly("wall_time", &RegularLimit::wall_time)
+      .def_property_readonly("branches", &RegularLimit::branches)
+      .def_property_readonly("failures", &RegularLimit::failures)
+      .def_property_readonly("solutions", &RegularLimit::solutions);
+
+  py::class_<AssignmentElement>(m, "AssignmentElement")
+      .def(py::init<>())
+      .def("activate", &AssignmentElement::Activate)
+      .def("deactivate", &AssignmentElement::Deactivate)
+      .def("activated", &AssignmentElement::Activated);
+
+  py::class_<IntVarElement, AssignmentElement>(m, "IntVarElement")
+      .def(py::init<>())
+      .def(py::init<IntVar*>())
+      .def("var", &IntVarElement::Var,
+           py::return_value_policy::reference_internal)
+      .def("min", &IntVarElement::Min)
+      .def("set_min", &IntVarElement::SetMin, py::arg("m"))
+      .def("max", &IntVarElement::Max)
+      .def("set_max", &IntVarElement::SetMax, py::arg("m"))
+      .def("value", &IntVarElement::Value)
+      .def("bound", &IntVarElement::Bound)
+      .def("set_range", &IntVarElement::SetRange, py::arg("l"), py::arg("u"))
+      .def("set_value", &IntVarElement::SetValue, py::arg("v"))
+      .def("__str__", &IntVarElement::DebugString)
+      .def("__eq__", &IntVarElement::operator==)
+      .def("__ne__", &IntVarElement::operator!=);
+
+  py::class_<IntervalVarElement, AssignmentElement>(m, "IntervalVarElement")
+      .def(py::init<>())
+      .def(py::init<IntervalVar*>())
+      .def("var", &IntervalVarElement::Var,
+           py::return_value_policy::reference_internal)
+      .def("start_min", &IntervalVarElement::StartMin)
+      .def("start_max", &IntervalVarElement::StartMax)
+      .def("start_value", &IntervalVarElement::StartValue)
+      .def("duration_min", &IntervalVarElement::DurationMin)
+      .def("duration_max", &IntervalVarElement::DurationMax)
+      .def("duration_value", &IntervalVarElement::DurationValue)
+      .def("end_min", &IntervalVarElement::EndMin)
+      .def("end_max", &IntervalVarElement::EndMax)
+      .def("end_value", &IntervalVarElement::EndValue)
+      .def("performed_min", &IntervalVarElement::PerformedMin)
+      .def("performed_max", &IntervalVarElement::PerformedMax)
+      .def("performed_value", &IntervalVarElement::PerformedValue)
+      .def("set_start_min", &IntervalVarElement::SetStartMin, py::arg("m"))
+      .def("set_start_max", &IntervalVarElement::SetStartMax, py::arg("m"))
+      .def("set_start_range", &IntervalVarElement::SetStartRange, py::arg("mi"),
+           py::arg("ma"))
+      .def("set_start_value", &IntervalVarElement::SetStartValue, py::arg("v"))
+      .def("set_duration_min", &IntervalVarElement::SetDurationMin,
+           py::arg("m"))
+      .def("set_duration_max", &IntervalVarElement::SetDurationMax,
+           py::arg("m"))
+      .def("set_duration_range", &IntervalVarElement::SetDurationRange,
+           py::arg("mi"), py::arg("ma"))
+      .def("set_duration_value", &IntervalVarElement::SetDurationValue,
+           py::arg("v"))
+      .def("set_end_min", &IntervalVarElement::SetEndMin, py::arg("m"))
+      .def("set_end_max", &IntervalVarElement::SetEndMax, py::arg("m"))
+      .def("set_end_range", &IntervalVarElement::SetEndRange, py::arg("mi"),
+           py::arg("ma"))
+      .def("set_end_value", &IntervalVarElement::SetEndValue, py::arg("v"))
+      .def("set_performed_min", &IntervalVarElement::SetPerformedMin,
+           py::arg("m"))
+      .def("set_performed_max", &IntervalVarElement::SetPerformedMax,
+           py::arg("m"))
+      .def("set_performed_range", &IntervalVarElement::SetPerformedRange,
+           py::arg("mi"), py::arg("ma"))
+      .def("set_performed_value", &IntervalVarElement::SetPerformedValue,
+           py::arg("v"))
+      .def("bound", &IntervalVarElement::Bound)
+      .def("__str__", &IntervalVarElement::DebugString)
+      .def("__eq__", &IntervalVarElement::operator==)
+      .def("__ne__", &IntervalVarElement::operator!=);
+
+  py::class_<SequenceVarElement, AssignmentElement>(m, "SequenceVarElement")
+      .def(py::init<>())
+      .def(py::init<SequenceVar*>())
+      .def("var", &SequenceVarElement::Var,
+           py::return_value_policy::reference_internal)
+      .def("forward_sequence", &SequenceVarElement::ForwardSequence)
+      .def("backward_sequence", &SequenceVarElement::BackwardSequence)
+      .def("unperformed", &SequenceVarElement::Unperformed)
+      .def("set_sequence", &SequenceVarElement::SetSequence,
+           py::arg("forward_sequence"), py::arg("backward_sequence"),
+           py::arg("unperformed"))
+      .def("set_forward_sequence", &SequenceVarElement::SetForwardSequence,
+           py::arg("forward_sequence"))
+      .def("set_backward_sequence", &SequenceVarElement::SetBackwardSequence,
+           py::arg("backward_sequence"))
+      .def("set_unperformed", &SequenceVarElement::SetUnperformed,
+           py::arg("unperformed"))
+      .def("bound", &SequenceVarElement::Bound)
+      .def("__str__", &SequenceVarElement::DebugString)
+      .def("__eq__", &SequenceVarElement::operator==)
+      .def("__ne__", &SequenceVarElement::operator!=);
+
+  py::class_<Assignment::IntContainer>(m, "AssignmentIntContainer")
+      .def("add", py::overload_cast<IntVar*>(&Assignment::IntContainer::Add),
+           py::arg("var"), py::return_value_policy::reference_internal)
+      .def("fast_add", &Assignment::IntContainer::FastAdd, py::arg("var"),
+           py::return_value_policy::reference_internal)
+      .def("add_at_position", &Assignment::IntContainer::AddAtPosition,
+           py::arg("var"), py::arg("position"),
+           py::return_value_policy::reference_internal)
+      .def("clear", &Assignment::IntContainer::Clear)
+      .def("resize", &Assignment::IntContainer::Resize, py::arg("size"))
+      .def("empty", &Assignment::IntContainer::Empty)
+      .def("copy_intersection", &Assignment::IntContainer::CopyIntersection,
+           py::arg("container"))
+      .def("copy", &Assignment::IntContainer::Copy, py::arg("container"))
+      .def("contains", &Assignment::IntContainer::Contains, py::arg("var"))
+      .def("mutable_element",
+           py::overload_cast<const IntVar*>(
+               &Assignment::IntContainer::MutableElementOrNull),
+           py::arg("var"), py::return_value_policy::reference_internal)
+      .def("element",
+           py::overload_cast<const IntVar*>(
+               &Assignment::IntContainer::ElementPtrOrNull, py::const_),
+           py::arg("var"), py::return_value_policy::reference_internal)
+      .def("mutable_element",
+           py::overload_cast<int>(&Assignment::IntContainer::MutableElement),
+           py::arg("index"), py::return_value_policy::reference_internal)
+      .def("element",
+           py::overload_cast<int>(&Assignment::IntContainer::Element,
+                                  py::const_),
+           py::arg("index"), py::return_value_policy::reference_internal)
+      .def("size", &Assignment::IntContainer::Size)
+      .def("store", &Assignment::IntContainer::Store)
+      .def("restore", &Assignment::IntContainer::Restore)
+      .def("are_all_elements_bound",
+           &Assignment::IntContainer::AreAllElementsBound)
+      .def("__eq__", &Assignment::IntContainer::operator==)
+      .def("__ne__", &Assignment::IntContainer::operator!=);
+
+  py::class_<Assignment::IntervalContainer>(m, "AssignmentIntervalContainer")
+      .def("add",
+           py::overload_cast<IntervalVar*>(&Assignment::IntervalContainer::Add),
+           py::arg("var"), py::return_value_policy::reference_internal)
+      .def("fast_add", &Assignment::IntervalContainer::FastAdd, py::arg("var"),
+           py::return_value_policy::reference_internal)
+      .def("add_at_position", &Assignment::IntervalContainer::AddAtPosition,
+           py::arg("var"), py::arg("position"),
+           py::return_value_policy::reference_internal)
+      .def("clear", &Assignment::IntervalContainer::Clear)
+      .def("resize", &Assignment::IntervalContainer::Resize, py::arg("size"))
+      .def("empty", &Assignment::IntervalContainer::Empty)
+      .def("copy_intersection",
+           &Assignment::IntervalContainer::CopyIntersection,
+           py::arg("container"))
+      .def("copy", &Assignment::IntervalContainer::Copy, py::arg("container"))
+      .def("contains", &Assignment::IntervalContainer::Contains, py::arg("var"))
+      .def("mutable_element",
+           py::overload_cast<const IntervalVar*>(
+               &Assignment::IntervalContainer::MutableElementOrNull),
+           py::arg("var"), py::return_value_policy::reference_internal)
+      .def("element",
+           py::overload_cast<const IntervalVar*>(
+               &Assignment::IntervalContainer::ElementPtrOrNull, py::const_),
+           py::arg("var"), py::return_value_policy::reference_internal)
+      .def("mutable_element",
+           py::overload_cast<int>(
+               &Assignment::IntervalContainer::MutableElement),
+           py::arg("index"), py::return_value_policy::reference_internal)
+      .def("element",
+           py::overload_cast<int>(&Assignment::IntervalContainer::Element,
+                                  py::const_),
+           py::arg("index"), py::return_value_policy::reference_internal)
+      .def("size", &Assignment::IntervalContainer::Size)
+      .def("store", &Assignment::IntervalContainer::Store)
+      .def("restore", &Assignment::IntervalContainer::Restore)
+      .def("are_all_elements_bound",
+           &Assignment::IntervalContainer::AreAllElementsBound)
+      .def("__eq__", &Assignment::IntervalContainer::operator==)
+      .def("__ne__", &Assignment::IntervalContainer::operator!=);
+
+  py::class_<Assignment::SequenceContainer>(m, "AssignmentSequenceContainer")
+      .def("add",
+           py::overload_cast<SequenceVar*>(&Assignment::SequenceContainer::Add),
+           py::arg("var"), py::return_value_policy::reference_internal)
+      .def("fast_add", &Assignment::SequenceContainer::FastAdd, py::arg("var"),
+           py::return_value_policy::reference_internal)
+      .def("add_at_position", &Assignment::SequenceContainer::AddAtPosition,
+           py::arg("var"), py::arg("position"),
+           py::return_value_policy::reference_internal)
+      .def("clear", &Assignment::SequenceContainer::Clear)
+      .def("resize", &Assignment::SequenceContainer::Resize, py::arg("size"))
+      .def("empty", &Assignment::SequenceContainer::Empty)
+      .def("copy_intersection",
+           &Assignment::SequenceContainer::CopyIntersection,
+           py::arg("container"))
+      .def("copy", &Assignment::SequenceContainer::Copy, py::arg("container"))
+      .def("contains", &Assignment::SequenceContainer::Contains, py::arg("var"))
+      .def("mutable_element",
+           py::overload_cast<const SequenceVar*>(
+               &Assignment::SequenceContainer::MutableElementOrNull),
+           py::arg("var"), py::return_value_policy::reference_internal)
+      .def("element",
+           py::overload_cast<const SequenceVar*>(
+               &Assignment::SequenceContainer::ElementPtrOrNull, py::const_),
+           py::arg("var"), py::return_value_policy::reference_internal)
+      .def("mutable_element",
+           py::overload_cast<int>(
+               &Assignment::SequenceContainer::MutableElement),
+           py::arg("index"), py::return_value_policy::reference_internal)
+      .def("element",
+           py::overload_cast<int>(&Assignment::SequenceContainer::Element,
+                                  py::const_),
+           py::arg("index"), py::return_value_policy::reference_internal)
+      .def("size", &Assignment::SequenceContainer::Size)
+      .def("store", &Assignment::SequenceContainer::Store)
+      .def("restore", &Assignment::SequenceContainer::Restore)
+      .def("are_all_elements_bound",
+           &Assignment::SequenceContainer::AreAllElementsBound)
+      .def("__eq__", &Assignment::SequenceContainer::operator==)
+      .def("__ne__", &Assignment::SequenceContainer::operator!=);
+
+  py::class_<Solver>(m, "Solver", DOC(operations_research, Solver))
+      .def(py::init<const std::string&>())
+      .def(py::init<const std::string&,
                           const ConstraintSolverParameters&>())
       .def("__str__", &Solver::DebugString)
       .def("default_solver_parameters", &Solver::DefaultSolverParameters)
-      .def("parameters", &Solver::parameters)
+      .def_property_readonly("parameters", &Solver::parameters)
       .def("local_search_profile", &Solver::LocalSearchProfile)
       .def("new_int_var",
-           pybind11::overload_cast<int64_t, int64_t, const std::string&>(
+           py::overload_cast<int64_t, int64_t, const std::string&>(
                &Solver::MakeIntVar),
            DOC(operations_research, Solver, MakeIntVar),
-           pybind11::return_value_policy::reference_internal)
+           py::return_value_policy::reference_internal)
       .def("new_int_var",
-           pybind11::overload_cast<int64_t, int64_t>(&Solver::MakeIntVar),
+           py::overload_cast<int64_t, int64_t>(&Solver::MakeIntVar),
            DOC(operations_research, Solver, MakeIntVar),
-           pybind11::return_value_policy::reference_internal)
+           py::return_value_policy::reference_internal)
       .def("new_int_var",
-           pybind11::overload_cast<const std::vector<int64_t>&,
+           py::overload_cast<const std::vector<int64_t>&,
                                    const std::string&>(&Solver::MakeIntVar),
            DOC(operations_research, Solver, MakeIntVar_2),
-           pybind11::return_value_policy::reference_internal)
+           py::return_value_policy::reference_internal)
       .def("new_int_var",
-           pybind11::overload_cast<const std::vector<int64_t>&>(
+           py::overload_cast<const std::vector<int64_t>&>(
                &Solver::MakeIntVar),
            DOC(operations_research, Solver, MakeIntVar_2),
-           pybind11::return_value_policy::reference_internal)
+           py::return_value_policy::reference_internal)
+      .def("new_interval_var",
+           py::overload_cast<int64_t, int64_t, int64_t, int64_t, int64_t,
+                                   int64_t, bool, const std::string&>(
+               &Solver::MakeIntervalVar),
+           py::arg("start_min"),
+           py::arg("start_max"),
+           py::arg("duration_min"),
+           py::arg("duration_max"),
+           py::arg("end_min"),
+           py::arg("end_max"),
+           py::arg("optional"),
+           py::arg("name"),
+           DOC(operations_research, Solver, MakeIntervalVar),
+           py::return_value_policy::reference_internal)
+      .def("new_fixed_duration_interval_var",
+           py::overload_cast<int64_t, int64_t, int64_t, bool,
+                                   const std::string&>(
+               &Solver::MakeFixedDurationIntervalVar),
+           DOC(operations_research, Solver, MakeFixedDurationIntervalVar),
+           py::return_value_policy::reference_internal)
+      .def("new_fixed_duration_interval_var",
+           py::overload_cast<IntVar*, int64_t, const std::string&>(
+               &Solver::MakeFixedDurationIntervalVar),
+           DOC(operations_research, Solver, MakeFixedDurationIntervalVar_2),
+           py::return_value_policy::reference_internal)
+      .def("new_fixed_duration_interval_var",
+           py::overload_cast<IntVar*, int64_t, IntVar*,
+                                   const std::string&>(
+               &Solver::MakeFixedDurationIntervalVar),
+           DOC(operations_research, Solver, MakeFixedDurationIntervalVar_3),
+           py::return_value_policy::reference_internal)
       .def("add", &Solver::AddConstraint,
-           DOC(operations_research, Solver, AddConstraint), arg("c"))
+           DOC(operations_research, Solver, AddConstraint), py::arg("c"))
+      .def("add_abs_equality",
+           [](Solver* s, IntVar* var, IntVar* abs_var) {
+             s->AddConstraint(s->MakeAbsEquality(var, abs_var));
+           })
+      .def("add_all_different",
+           [](Solver* s, const std::vector<IntVar*>& vars) {
+             s->AddConstraint(s->MakeAllDifferent(vars));
+           })
+      .def("add_all_different",
+           [](Solver* s, const std::vector<IntVar*>& vars, bool stronger) {
+             s->AddConstraint(s->MakeAllDifferent(vars, stronger));
+           })
+      .def("add_all_different_except",
+           [](Solver* s, const std::vector<IntVar*>& vars, int64_t v) {
+             s->AddConstraint(s->MakeAllDifferentExcept(vars, v));
+           })
+      .def("add_between_ct",
+           [](Solver* s, IntExpr* expr, int64_t l, int64_t u) {
+             s->AddConstraint(s->MakeBetweenCt(expr, l, u));
+           })
+      .def("add_circuit",
+           [](Solver* s, const std::vector<IntVar*>& nexts) {
+             s->AddConstraint(s->MakeCircuit(nexts));
+           })
+      .def("add_count",
+           [](Solver* s, const std::vector<IntVar*>& vars, int64_t value,
+              int64_t max_count) {
+             s->AddConstraint(s->MakeCount(vars, value, max_count));
+           })
+      .def("add_count",
+           [](Solver* s, const std::vector<IntVar*>& vars, int64_t value,
+              IntVar* max_count) {
+             s->AddConstraint(s->MakeCount(vars, value, max_count));
+           })
+      .def("add_cover",
+           [](Solver* s, const std::vector<IntervalVar*>& vars,
+              IntervalVar* target_var) {
+             s->AddConstraint(s->MakeCover(vars, target_var));
+           })
+      .def("add_cumulative",
+           [](Solver* s, const std::vector<IntervalVar*>& intervals,
+              const std::vector<int64_t>& demands, int64_t capacity,
+              const std::string& name) {
+             s->AddConstraint(
+                  s->MakeCumulative(intervals, demands, capacity, name));
+           })
+      .def("add_cumulative",
+           [](Solver* s, const std::vector<IntervalVar*>& intervals,
+              const std::vector<int>& demands, int64_t capacity,
+              const std::string& name) {
+             s->AddConstraint(
+                 s->MakeCumulative(intervals, demands, capacity, name));
+           })
+      .def("add_cumulative",
+           [](Solver* s, const std::vector<IntervalVar*>& intervals,
+              const std::vector<int64_t>& demands, IntVar* capacity,
+              absl::string_view name) {
+             s->AddConstraint(
+                 s->MakeCumulative(intervals, demands, capacity, name));
+           })
+      .def("add_cumulative",
+           [](Solver* s, const std::vector<IntervalVar*>& intervals,
+              const std::vector<int>& demands, IntVar* capacity,
+              const std::string& name) {
+             s->AddConstraint(
+                 s->MakeCumulative(intervals, demands, capacity, name));
+           })
+      .def("add_cumulative",
+           [](Solver* s, const std::vector<IntervalVar*>& intervals,
+              const std::vector<IntVar*>& demands, int64_t capacity,
+              const std::string& name) {
+             s->AddConstraint(
+                 s->MakeCumulative(intervals, demands, capacity, name));
+           })
+      .def("add_cumulative",
+           [](Solver* s, const std::vector<IntervalVar*>& intervals,
+              const std::vector<IntVar*>& demands, IntVar* capacity,
+              const std::string& name) {
+             s->AddConstraint(
+                 s->MakeCumulative(intervals, demands, capacity, name));
+           })
+      .def("add_delayed_path_cumul",
+           [](Solver* s, const std::vector<IntVar*>& nexts,
+              const std::vector<IntVar*>& active,
+              const std::vector<IntVar*>& cumuls,
+              const std::vector<IntVar*>& transits) {
+             s->AddConstraint(s->MakeDelayedPathCumul(nexts, active, cumuls,
+                                                      transits));
+           })
+      .def("add_deviation",
+           [](Solver* s, const std::vector<IntVar*>& vars,
+              IntVar* deviation_var, int64_t total_sum) {
+             s->AddConstraint(
+                 s->MakeDeviation(vars, deviation_var, total_sum));
+           })
+      .def("add_disjunctive_constraint",
+           [](Solver* s, const std::vector<IntervalVar*>& intervals,
+              const std::string& name) {
+             auto* ct = s->MakeDisjunctiveConstraint(intervals, name);
+             s->AddConstraint(ct);
+             return ct;
+           }, py::return_value_policy::reference_internal)
+      .def("add_distribute",
+           [](Solver* s, const std::vector<IntVar*>& vars,
+              const std::vector<int64_t>& values,
+              const std::vector<IntVar*>& cards) {
+             s->AddConstraint(s->MakeDistribute(vars, values, cards));
+           })
+      .def("add_distribute",
+           [](Solver* s, const std::vector<IntVar*>& vars,
+              const std::vector<int>& values,
+              const std::vector<IntVar*>& cards) {
+             s->AddConstraint(s->MakeDistribute(vars, values, cards));
+           })
+      .def("add_distribute",
+           [](Solver* s, const std::vector<IntVar*>& vars,
+              const std::vector<IntVar*>& cards) {
+             s->AddConstraint(s->MakeDistribute(vars, cards));
+           })
+      .def("add_distribute",
+           [](Solver* s, const std::vector<IntVar*>& vars, int64_t card_min,
+              int64_t card_max, int64_t card_size) {
+             s->AddConstraint(
+                 s->MakeDistribute(vars, card_min, card_max, card_size));
+           })
+      .def("add_distribute",
+           [](Solver* s, const std::vector<IntVar*>& vars,
+              const std::vector<int64_t>& values,
+              const std::vector<int64_t>& cards) {
+             s->AddConstraint(s->MakeDistribute(vars, values, cards));
+           })
+      .def("add_distribute",
+           [](Solver* s, const std::vector<IntVar*>& vars,
+              const std::vector<int>& values,
+              const std::vector<int>& cards) {
+             s->AddConstraint(s->MakeDistribute(vars, values, cards));
+           })
+      .def("add_element_equality",
+           [](Solver* s, const std::vector<int64_t>& vals, IntVar* index,
+              IntVar* target) {
+             s->AddConstraint(s->MakeElementEquality(vals, index, target));
+           })
+      .def("add_element_equality",
+           [](Solver* s, const std::vector<int>& vals, IntVar* index,
+              IntVar* target) {
+             s->AddConstraint(s->MakeElementEquality(vals, index, target));
+           })
+      .def("add_element_equality",
+           [](Solver* s, const std::vector<IntVar*>& vars, IntVar* index,
+              IntVar* target) {
+             s->AddConstraint(s->MakeElementEquality(vars, index, target));
+           })
+      .def("add_element_equality",
+           [](Solver* s, const std::vector<IntVar*>& vars, IntVar* index,
+              int64_t target) {
+             s->AddConstraint(s->MakeElementEquality(vars, index, target));
+           })
+      .def("add_false_constraint",
+           [](Solver* s) { s->AddConstraint(s->MakeFalseConstraint()); })
+      .def("add_index_of_constraint",
+           [](Solver* s, const std::vector<IntVar*>& vars, IntVar* index,
+              int64_t target) {
+             s->AddConstraint(s->MakeIndexOfConstraint(vars, index, target));
+           })
+      .def("add_interval_var_relation",
+           [](Solver* s, IntervalVar* t, Solver::UnaryIntervalRelation r,
+              int64_t d) {
+             s->AddConstraint(s->MakeIntervalVarRelation(t, r, d));
+           })
+      .def("add_interval_var_relation",
+           [](Solver* s, IntervalVar* t1, Solver::BinaryIntervalRelation r,
+              IntervalVar* t2) {
+             s->AddConstraint(s->MakeIntervalVarRelation(t1, r, t2));
+           })
+      .def("add_interval_var_relation",
+           [](Solver* s, IntervalVar* t1, Solver::BinaryIntervalRelation r,
+              IntervalVar* t2, int64_t delay) {
+             s->AddConstraint(s->MakeIntervalVarRelationWithDelay(t1, r, t2,
+                                                                  delay));
+           })
+      .def("add_inverse_permutation_constraint",
+           [](Solver* s, const std::vector<IntVar*>& left,
+              const std::vector<IntVar*>& right) {
+             s->AddConstraint(s->MakeInversePermutationConstraint(left, right));
+           })
+      .def("add_is_between_ct",
+           [](Solver* s, IntExpr* var, int64_t l, int64_t u, IntVar* boolvar) {
+             s->AddConstraint(s->MakeIsBetweenCt(var, l, u, boolvar));
+           })
+      .def("add_is_different_cst_ct",
+           [](Solver* s, IntExpr* var, int64_t value, IntVar* boolvar) {
+             s->AddConstraint(s->MakeIsDifferentCstCt(var, value, boolvar));
+           })
+      .def("add_is_different_ct",
+           [](Solver* s, IntExpr* var, IntExpr* other, IntVar* boolvar) {
+             s->AddConstraint(s->MakeIsDifferentCt(var, other, boolvar));
+           })
+      .def("add_is_equal_cst_ct",
+           [](Solver* s, IntExpr* var, int64_t value, IntVar* boolvar) {
+             s->AddConstraint(s->MakeIsEqualCstCt(var, value, boolvar));
+           })
+      .def("add_is_equal_ct",
+           [](Solver* s, IntExpr* var, IntExpr* other, IntVar* boolvar) {
+             s->AddConstraint(s->MakeIsEqualCt(var, other, boolvar));
+           })
+      .def("add_is_greater_cst_ct",
+           [](Solver* s, IntExpr* var, int64_t value, IntVar* boolvar) {
+             s->AddConstraint(s->MakeIsGreaterCstCt(var, value, boolvar));
+           })
+      .def("add_is_greater_ct",
+           [](Solver* s, IntExpr* var, IntExpr* other, IntVar* boolvar) {
+             s->AddConstraint(s->MakeIsGreaterCt(var, other, boolvar));
+           })
+      .def("add_is_greater_or_equal_cst_ct",
+           [](Solver* s, IntExpr* var, int64_t value, IntVar* boolvar) {
+             s->AddConstraint(
+                 s->MakeIsGreaterOrEqualCstCt(var, value, boolvar));
+           })
+      .def("add_is_greater_or_equal_ct",
+           [](Solver* s, IntExpr* var, IntExpr* other, IntVar* boolvar) {
+             s->AddConstraint(
+                 s->MakeIsGreaterOrEqualCt(var, other, boolvar));
+           })
+      .def("add_is_less_cst_ct",
+           [](Solver* s, IntExpr* var, int64_t value, IntVar* boolvar) {
+             s->AddConstraint(s->MakeIsLessCstCt(var, value, boolvar));
+           })
+      .def("add_is_less_ct",
+           [](Solver* s, IntExpr* var, IntExpr* other, IntVar* boolvar) {
+             s->AddConstraint(s->MakeIsLessCt(var, other, boolvar));
+           })
+      .def("add_is_less_or_equal_cst_ct",
+           [](Solver* s, IntExpr* var, int64_t value, IntVar* boolvar) {
+             s->AddConstraint(
+                 s->MakeIsLessOrEqualCstCt(var, value, boolvar));
+           })
+      .def("add_is_less_or_equal_ct",
+           [](Solver* s, IntExpr* var, IntExpr* other, IntVar* boolvar) {
+             s->AddConstraint(s->MakeIsLessOrEqualCt(var, other, boolvar));
+           })
+      .def("add_is_member_ct",
+           [](Solver* s, IntExpr* var, const std::vector<int64_t>& values,
+              IntVar* boolvar) {
+             s->AddConstraint(s->MakeIsMemberCt(var, values, boolvar));
+           })
+      .def("add_lexical_less",
+           [](Solver* s, const std::vector<IntVar*>& left,
+              const std::vector<IntVar*>& right) {
+             s->AddConstraint(s->MakeLexicalLess(left, right));
+           })
+      .def("add_lexical_less_or_equal",
+           [](Solver* s, const std::vector<IntVar*>& left,
+              const std::vector<IntVar*>& right) {
+             s->AddConstraint(s->MakeLexicalLessOrEqual(left, right));
+           })
+      .def("add_max_equality",
+           [](Solver* s, const std::vector<IntVar*>& vars, IntVar* var) {
+             s->AddConstraint(s->MakeMaxEquality(vars, var));
+           })
+      .def("add_member_ct",
+           [](Solver* s, IntExpr* expr, const std::vector<int64_t>& values) {
+             s->AddConstraint(s->MakeMemberCt(expr, values));
+           })
+      .def("add_min_equality",
+           [](Solver* s, const std::vector<IntVar*>& vars, IntVar* var) {
+             s->AddConstraint(s->MakeMinEquality(vars, var));
+           })
+      .def("add_non_overlapping_boxes_constraint",
+           [](Solver* s, const std::vector<IntVar*>& x_vars,
+              const std::vector<IntVar*>& y_vars,
+              const std::vector<IntVar*>& x_size,
+              const std::vector<IntVar*>& y_size) {
+             s->AddConstraint(s->MakeNonOverlappingBoxesConstraint(
+                 x_vars, y_vars, x_size, y_size));
+           })
+      .def("add_non_overlapping_boxes_constraint",
+           [](Solver* s, const std::vector<IntVar*>& x_vars,
+              const std::vector<IntVar*>& y_vars,
+              const std::vector<int64_t>& x_size,
+              const std::vector<int64_t>& y_size) {
+             s->AddConstraint(s->MakeNonOverlappingBoxesConstraint(
+                 x_vars, y_vars, x_size, y_size));
+           })
+      .def("add_non_overlapping_boxes_constraint",
+           [](Solver* s, const std::vector<IntVar*>& x_vars,
+              const std::vector<IntVar*>& y_vars,
+              const std::vector<int>& x_size, const std::vector<int>& y_size) {
+             s->AddConstraint(s->MakeNonOverlappingBoxesConstraint(
+                 x_vars, y_vars, x_size, y_size));
+           })
+      .def("add_not_member_ct",
+           [](Solver* s, IntExpr* expr, const std::vector<int64_t>& values) {
+             s->AddConstraint(s->MakeNotMemberCt(expr, values));
+           })
+      .def("add_null_intersect",
+           [](Solver* s, const std::vector<IntVar*>& first_vars,
+              const std::vector<IntVar*>& second_vars) {
+             s->AddConstraint(
+                 s->MakeNullIntersect(first_vars, second_vars));
+           })
+      .def("add_null_intersect_except",
+           [](Solver* s, const std::vector<IntVar*>& first_vars,
+              const std::vector<IntVar*>& second_vars, int64_t escape_value) {
+             s->AddConstraint(s->MakeNullIntersectExcept(
+                 first_vars, second_vars, escape_value));
+           })
+      .def("add_pack",
+           [](Solver* s, const std::vector<IntVar*>& vars, int number_of_bins) {
+             s->AddConstraint(s->MakePack(vars, number_of_bins));
+           })
+      .def("add_path_cumul",
+           [](Solver* s, const std::vector<IntVar*>& nexts,
+              const std::vector<IntVar*>& active,
+              const std::vector<IntVar*>& cumuls,
+              const std::vector<IntVar*>& transits) {
+             s->AddConstraint(
+                 s->MakePathCumul(nexts, active, cumuls, transits));
+           })
+      .def("add_path_cumul",
+           [](Solver* s, const std::vector<IntVar*>& nexts,
+              const std::vector<IntVar*>& active,
+              const std::vector<IntVar*>& cumuls,
+              Solver::IndexEvaluator2 transit_evaluator) {
+             s->AddConstraint(
+                 s->MakePathCumul(nexts, active, cumuls, transit_evaluator));
+           })
+      .def("add_scal_prod_equality",
+           [](Solver* s, const std::vector<IntVar*>& vars,
+              const std::vector<int64_t>& coeffs, int64_t cst) {
+             s->AddConstraint(s->MakeScalProdEquality(vars, coeffs, cst));
+           })
+      .def("add_scal_prod_equality",
+           [](Solver* s, const std::vector<IntVar*>& vars,
+              const std::vector<int>& coeffs, int64_t cst) {
+             s->AddConstraint(s->MakeScalProdEquality(vars, coeffs, cst));
+           })
+      .def("add_scal_prod_equality",
+           [](Solver* s, const std::vector<IntVar*>& vars,
+              const std::vector<int64_t>& coeffs, IntVar* target) {
+             s->AddConstraint(s->MakeScalProdEquality(vars, coeffs, target));
+           })
+      .def("add_scal_prod_equality",
+           [](Solver* s, const std::vector<IntVar*>& vars,
+              const std::vector<int>& coeffs, IntVar* target) {
+             s->AddConstraint(s->MakeScalProdEquality(vars, coeffs, target));
+           })
+      .def("add_scal_prod_greater_or_equal",
+           [](Solver* s, const std::vector<IntVar*>& vars,
+              const std::vector<int64_t>& coeffs, int64_t cst) {
+             s->AddConstraint(
+                 s->MakeScalProdGreaterOrEqual(vars, coeffs, cst));
+           })
+      .def("add_scal_prod_greater_or_equal",
+           [](Solver* s, const std::vector<IntVar*>& vars,
+              const std::vector<int>& coeffs, int64_t cst) {
+             s->AddConstraint(
+                 s->MakeScalProdGreaterOrEqual(vars, coeffs, cst));
+           })
+      .def("add_scal_prod_less_or_equal",
+           [](Solver* s, const std::vector<IntVar*>& vars,
+              const std::vector<int64_t>& coeffs, int64_t cst) {
+             s->AddConstraint(
+                 s->MakeScalProdLessOrEqual(vars, coeffs, cst));
+           })
+      .def("add_scal_prod_less_or_equal",
+           [](Solver* s, const std::vector<IntVar*>& vars,
+              const std::vector<int>& coeffs, int64_t cst) {
+             s->AddConstraint(
+                 s->MakeScalProdLessOrEqual(vars, coeffs, cst));
+           })
+      .def("add_sorting_constraint",
+           [](Solver* s, const std::vector<IntVar*>& vars,
+              const std::vector<IntVar*>& sorted) {
+             s->AddConstraint(s->MakeSortingConstraint(vars, sorted));
+           })
+      .def("add_sub_circuit",
+           [](Solver* s, const std::vector<IntVar*>& nexts) {
+             s->AddConstraint(s->MakeSubCircuit(nexts));
+           })
+      .def("add_sum_equality",
+           [](Solver* s, const std::vector<IntVar*>& vars, int64_t cst) {
+             s->AddConstraint(s->MakeSumEquality(vars, cst));
+           })
+      .def("add_sum_equality",
+           [](Solver* s, const std::vector<IntVar*>& vars, IntVar* var) {
+             s->AddConstraint(s->MakeSumEquality(vars, var));
+           })
+      .def("add_sum_greater_or_equal",
+           [](Solver* s, const std::vector<IntVar*>& vars, int64_t cst) {
+             s->AddConstraint(s->MakeSumGreaterOrEqual(vars, cst));
+           })
+      .def("add_sum_less_or_equal",
+           [](Solver* s, const std::vector<IntVar*>& vars, int64_t cst) {
+             s->AddConstraint(s->MakeSumLessOrEqual(vars, cst));
+           })
+      .def("add_temporal_disjunction",
+           [](Solver* s, IntervalVar* t1, IntervalVar* t2) {
+             s->AddConstraint(s->MakeTemporalDisjunction(t1, t2));
+           })
+      .def("add_allowed_assignments",
+           [](Solver* s, const std::vector<IntVar*>& vars,
+              const std::vector<std::vector<int64_t>>& raw_tuples) {
+             IntTupleSet tuples(vars.size());
+             tuples.InsertAll(raw_tuples);
+             s->AddConstraint(s->MakeAllowedAssignments(vars, tuples));
+           },
+           py::arg("vars"), py::arg("tuples"),
+           DOC(operations_research, Solver, MakeAllowedAssignments))
+      .def("assignment", py::overload_cast<>(&Solver::MakeAssignment),
+           DOC(operations_research, Solver, MakeAssignment_2),
+           py::return_value_policy::reference_internal)
+      .def("add_true_constraint",
+           [](Solver* s) { s->AddConstraint(s->MakeTrueConstraint()); })
+      .def("limit",
+           py::overload_cast<const RegularLimitParameters&>(&Solver::MakeLimit),
+           py::arg("proto"),
+           py::return_value_policy::reference_internal)
+      .def("element_function",
+           py::overload_cast<Solver::IndexEvaluator1, IntVar*>(
+               &Solver::MakeElement),
+           py::arg("values"), py::arg("index"),
+           DOC(operations_research, Solver, MakeElement_3),
+           py::return_value_policy::reference_internal)
+      .def("first_solution_collector",
+           py::overload_cast<const Assignment*>(
+               &Solver::MakeFirstSolutionCollector),
+           py::arg("assignment"),
+           DOC(operations_research, Solver, MakeFirstSolutionCollector),
+           py::return_value_policy::reference_internal)
+      .def("first_solution_collector",
+           py::overload_cast<>(&Solver::MakeFirstSolutionCollector),
+           DOC(operations_research, Solver, MakeFirstSolutionCollector_2),
+           py::return_value_policy::reference_internal)
+      .def("last_solution_collector",
+           py::overload_cast<const Assignment*>(
+               &Solver::MakeLastSolutionCollector),
+           py::arg("assignment"),
+           DOC(operations_research, Solver, MakeLastSolutionCollector),
+           py::return_value_policy::reference_internal)
+      .def("last_solution_collector",
+           py::overload_cast<>(&Solver::MakeLastSolutionCollector),
+           DOC(operations_research, Solver, MakeLastSolutionCollector_2),
+           py::return_value_policy::reference_internal)
+      .def("best_value_solution_collector",
+           py::overload_cast<const Assignment*, bool>(
+               &Solver::MakeBestValueSolutionCollector),
+           py::arg("assignment"), py::arg("maximize"),
+           DOC(operations_research, Solver, MakeBestValueSolutionCollector),
+           py::return_value_policy::reference_internal)
+      .def("best_value_solution_collector",
+           py::overload_cast<bool>(&Solver::MakeBestValueSolutionCollector),
+           py::arg("maximize"),
+           DOC(operations_research, Solver, MakeBestValueSolutionCollector_2),
+           py::return_value_policy::reference_internal)
+      .def("best_lexicographic_value_solution_collector",
+           py::overload_cast<const Assignment*, std::vector<bool>>(
+               &Solver::MakeBestLexicographicValueSolutionCollector),
+           py::arg("assignment"), py::arg("maximize"),
+           DOC(operations_research, Solver,
+               MakeBestLexicographicValueSolutionCollector),
+           py::return_value_policy::reference_internal)
+      .def("best_lexicographic_value_solution_collector",
+           py::overload_cast<std::vector<bool>>(
+               &Solver::MakeBestLexicographicValueSolutionCollector),
+           py::arg("maximize"),
+           DOC(operations_research, Solver,
+               MakeBestLexicographicValueSolutionCollector_2),
+           py::return_value_policy::reference_internal)
+      .def("n_best_value_solution_collector",
+           py::overload_cast<const Assignment*, int, bool>(
+               &Solver::MakeNBestValueSolutionCollector),
+           py::arg("assignment"), py::arg("solution_count"),
+           py::arg("maximize"),
+           DOC(operations_research, Solver,
+               MakeNBestValueSolutionCollector),
+           py::return_value_policy::reference_internal)
+      .def("n_best_value_solution_collector",
+           py::overload_cast<int, bool>(
+               &Solver::MakeNBestValueSolutionCollector),
+           py::arg("solution_count"), py::arg("maximize"),
+           DOC(operations_research, Solver, MakeNBestValueSolutionCollector_2),
+           py::return_value_policy::reference_internal)
+      .def("n_best_lexicographic_value_solution_collector",
+           py::overload_cast<const Assignment*, int, std::vector<bool>>(
+               &Solver::MakeNBestLexicographicValueSolutionCollector),
+           py::arg("assignment"), py::arg("solution_count"),
+           py::arg("maximize"),
+           DOC(operations_research, Solver,
+               MakeNBestLexicographicValueSolutionCollector),
+           py::return_value_policy::reference_internal)
+      .def("n_best_lexicographic_value_solution_collector",
+           py::overload_cast<int, std::vector<bool>>(
+               &Solver::MakeNBestLexicographicValueSolutionCollector),
+           py::arg("solution_count"), py::arg("maximize"),
+           DOC(operations_research, Solver,
+               MakeNBestLexicographicValueSolutionCollector_2),
+           py::return_value_policy::reference_internal)
+      .def("all_solution_collector",
+           py::overload_cast<const Assignment*>(
+               &Solver::MakeAllSolutionCollector),
+           py::arg("assignment"),
+           DOC(operations_research, Solver, MakeAllSolutionCollector),
+           py::return_value_policy::reference_internal)
+      .def("all_solution_collector",
+           py::overload_cast<>(&Solver::MakeAllSolutionCollector),
+           DOC(operations_research, Solver, MakeAllSolutionCollector_2),
+           py::return_value_policy::reference_internal)
+      .def("minimize", &Solver::MakeMinimize, py::arg("v"), py::arg("step"),
+           DOC(operations_research, Solver, MakeMinimize),
+           py::return_value_policy::reference_internal)
+      .def("maximize", &Solver::MakeMaximize, py::arg("v"), py::arg("step"),
+           DOC(operations_research, Solver, MakeMaximize),
+           py::return_value_policy::reference_internal)
+      .def("optimize", &Solver::MakeOptimize, py::arg("maximize"), py::arg("v"),
+           py::arg("step"), DOC(operations_research, Solver, MakeOptimize),
+           py::return_value_policy::reference_internal)
+      .def("weighted_minimize",
+           py::overload_cast<const std::vector<IntVar*>&,
+                             const std::vector<int64_t>&, int64_t>(
+               &Solver::MakeWeightedMinimize),
+           py::arg("sub_objectives"), py::arg("weights"), py::arg("step"),
+           DOC(operations_research, Solver, MakeWeightedMinimize),
+           py::return_value_policy::reference_internal)
+      .def("weighted_minimize",
+           py::overload_cast<const std::vector<IntVar*>&,
+                             const std::vector<int>&, int64_t>(
+               &Solver::MakeWeightedMinimize),
+           py::arg("sub_objectives"), py::arg("weights"), py::arg("step"),
+           DOC(operations_research, Solver, MakeWeightedMinimize_2),
+           py::return_value_policy::reference_internal)
+      .def("weighted_maximize",
+           py::overload_cast<const std::vector<IntVar*>&,
+                             const std::vector<int64_t>&, int64_t>(
+               &Solver::MakeWeightedMaximize),
+           py::arg("sub_objectives"), py::arg("weights"), py::arg("step"),
+           DOC(operations_research, Solver, MakeWeightedMaximize),
+           py::return_value_policy::reference_internal)
+      .def("weighted_maximize",
+           py::overload_cast<const std::vector<IntVar*>&,
+                             const std::vector<int>&, int64_t>(
+               &Solver::MakeWeightedMaximize),
+           py::arg("sub_objectives"), py::arg("weights"), py::arg("step"),
+           DOC(operations_research, Solver, MakeWeightedMaximize_2),
+           py::return_value_policy::reference_internal)
+      .def("weighted_optimize",
+           py::overload_cast<bool, const std::vector<IntVar*>&,
+                             const std::vector<int64_t>&, int64_t>(
+               &Solver::MakeWeightedOptimize),
+           py::arg("maximize"), py::arg("sub_objectives"), py::arg("weights"),
+           py::arg("step"),
+           DOC(operations_research, Solver, MakeWeightedOptimize),
+           py::return_value_policy::reference_internal)
+      .def("weighted_optimize",
+           py::overload_cast<bool, const std::vector<IntVar*>&,
+                             const std::vector<int>&, int64_t>(
+               &Solver::MakeWeightedOptimize),
+           py::arg("maximize"), py::arg("sub_objectives"), py::arg("weights"),
+           py::arg("step"),
+           DOC(operations_research, Solver, MakeWeightedOptimize_2),
+           py::return_value_policy::reference_internal)
+      .def("lexicographic_optimize", &Solver::MakeLexicographicOptimize,
+           py::arg("maximize"), py::arg("variables"), py::arg("steps"),
+           DOC(operations_research, Solver, MakeLexicographicOptimize),
+           py::return_value_policy::reference_internal)
+      .def("sum",
+           py::overload_cast<const std::vector<IntVar*>&>(&Solver::MakeSum),
+           DOC(operations_research, Solver, MakeSum),
+           py::return_value_policy::reference_internal)
+      .def("element",
+           py::overload_cast<const std::vector<int64_t>&, IntVar*>(
+               &Solver::MakeElement),
+           py::arg("values"), py::arg("index"),
+           DOC(operations_research, Solver, MakeElement),
+           py::return_value_policy::reference_internal)
+      .def("min",
+           py::overload_cast<const std::vector<IntVar*>&>(&Solver::MakeMin),
+           DOC(operations_research, Solver, MakeMin),
+           py::return_value_policy::reference_internal)
+      .def("min", py::overload_cast<IntExpr*, IntExpr*>(&Solver::MakeMin),
+           DOC(operations_research, Solver, MakeMin_2),
+           py::return_value_policy::reference_internal)
+      .def("min", py::overload_cast<IntExpr*, int64_t>(&Solver::MakeMin),
+           DOC(operations_research, Solver, MakeMin_3),
+           py::return_value_policy::reference_internal)
+      .def("min", py::overload_cast<IntExpr*, int>(&Solver::MakeMin),
+           DOC(operations_research, Solver, MakeMin_4),
+           py::return_value_policy::reference_internal)
+      .def("max",
+           py::overload_cast<const std::vector<IntVar*>&>(&Solver::MakeMax),
+           DOC(operations_research, Solver, MakeMax),
+           py::return_value_policy::reference_internal)
+      .def("max", py::overload_cast<IntExpr*, IntExpr*>(&Solver::MakeMax),
+           DOC(operations_research, Solver, MakeMax_2),
+           py::return_value_policy::reference_internal)
+      .def("max", py::overload_cast<IntExpr*, int64_t>(&Solver::MakeMax),
+           DOC(operations_research, Solver, MakeMax_3),
+           py::return_value_policy::reference_internal)
+      .def("max", py::overload_cast<IntExpr*, int>(&Solver::MakeMax),
+           DOC(operations_research, Solver, MakeMax_4),
+           py::return_value_policy::reference_internal)
+      .def("convex_piecewise_expr", &Solver::MakeConvexPiecewiseExpr,
+           py::arg("expr"), py::arg("early_cost"), py::arg("early_date"),
+           py::arg("late_date"), py::arg("late_cost"),
+           DOC(operations_research, Solver, MakeConvexPiecewiseExpr),
+           py::return_value_policy::reference_internal)
+      .def("semi_continuous_expr", &Solver::MakeSemiContinuousExpr,
+           py::arg("expr"), py::arg("fixed_charge"), py::arg("step"),
+           DOC(operations_research, Solver, MakeSemiContinuousExpr),
+           py::return_value_policy::reference_internal)
+      .def("piecewise_linear_expr", &Solver::MakePiecewiseLinearExpr,
+           py::arg("expr"), py::arg("f"),
+           DOC(operations_research, Solver, MakePiecewiseLinearExpr),
+           py::return_value_policy::reference_internal)
+      .def("modulo", py::overload_cast<IntExpr*, int64_t>(&Solver::MakeModulo),
+           py::arg("x"), py::arg("mod"),
+           DOC(operations_research, Solver, MakeModulo),
+           py::return_value_policy::reference_internal)
+      .def("modulo", py::overload_cast<IntExpr*, IntExpr*>(&Solver::MakeModulo),
+           py::arg("x"), py::arg("mod"),
+           DOC(operations_research, Solver, MakeModulo_2),
+           py::return_value_policy::reference_internal)
+      .def("conditional_expression", &Solver::MakeConditionalExpression,
+           py::arg("condition"), py::arg("expr"), py::arg("unperformed_value"),
+           DOC(operations_research, Solver, MakeConditionalExpression),
+           py::return_value_policy::reference_internal)
       .def("accept", &Solver::Accept, DOC(operations_research, Solver, Accept),
-           arg("visitor"))
+           py::arg("visitor"))
       .def("print_model_visitor", &Solver::MakePrintModelVisitor,
            DOC(operations_research, Solver, MakePrintModelVisitor),
-           pybind11::return_value_policy::reference_internal);
+           py::return_value_policy::reference_internal)
+      .def("phase",
+           py::overload_cast<const std::vector<IntVar*>&,
+                                   Solver::IntVarStrategy,
+                                   Solver::IntValueStrategy>(
+               &Solver::MakePhase),
+           DOC(operations_research, Solver, MakePhase),
+           py::return_value_policy::reference_internal)
+      .def("new_search",
+           py::overload_cast<DecisionBuilder*,
+                                   const std::vector<operations_research::SearchMonitor*>&>(  // NOLINT
+               &Solver::NewSearch),
+           DOC(operations_research, Solver, NewSearch))
+      .def("new_search",
+           [](Solver* s, DecisionBuilder* db) {
+             std::vector<operations_research::SearchMonitor*> monitors;
+             s->NewSearch(db, monitors);
+           },
+           DOC(operations_research, Solver, NewSearch))
+      .def("next_solution", &Solver::NextSolution,
+           DOC(operations_research, Solver, NextSolution))
+      .def("solve",
+           py::overload_cast<DecisionBuilder*,
+                             const std::vector<SearchMonitor*>&>(
+               &Solver::Solve),
+           py::arg("db"), py::arg("monitors"),
+           DOC(operations_research, Solver, Solve))
+      .def("solve", py::overload_cast<DecisionBuilder*>(&Solver::Solve),
+           py::arg("db"), DOC(operations_research, Solver, Solve_2))
+      .def("solve_and_commit",
+           py::overload_cast<DecisionBuilder*,
+                             const std::vector<SearchMonitor*>&>(
+               &Solver::SolveAndCommit),
+           py::arg("db"), py::arg("monitors"),
+           DOC(operations_research, Solver, SolveAndCommit))
+      .def("solve_and_commit",
+           py::overload_cast<DecisionBuilder*>(&Solver::SolveAndCommit),
+           py::arg("db"), DOC(operations_research, Solver, SolveAndCommit_2))
+      .def("end_search", &Solver::EndSearch,
+           DOC(operations_research, Solver, EndSearch));
 
-  pybind11::class_<BaseObject>(m, "BaseObject",
-                               DOC(operations_research, BaseObject))
-      .def("__str__", &BaseObjectPythonHelper::DebugString);
-
-  pybind11::class_<PropagationBaseObject, BaseObject>(
+  py::class_<PropagationBaseObject, BaseObject>(
       m, "PropagationBaseObject",
       DOC(operations_research, PropagationBaseObject))
       .def_property("name", &PropagationBaseObjectPythonHelper::name,
-                    &PropagationBaseObjectPythonHelper::SetName);
+                    &PropagationBaseObjectPythonHelper::SetName)
+      .def_property_readonly("solver",
+                             &PropagationBaseObjectPythonHelper::solver);
 
   // Note: no ctor.
-  pybind11::class_<IntExpr, PropagationBaseObject>(
-      m, "IntExpr", DOC(operations_research, IntExpr))
-      .def_property_readonly("min", &IntExprPythonHelper::Min,
-                             DOC(operations_research, IntExpr, Min))
-      .def_property_readonly("max", &IntExprPythonHelper::Max,
-                             DOC(operations_research, IntExpr, Max))
+  py::class_<IntExpr, PropagationBaseObject>(m, "IntExpr",
+                                             DOC(operations_research, IntExpr))
+      .def("min", &IntExprPythonHelper::Min,
+           DOC(operations_research, IntExpr, Min))
+      .def("max", &IntExprPythonHelper::Max,
+           DOC(operations_research, IntExpr, Max))
       .def("set_min", &IntExprPythonHelper::SetMin,
-           DOC(operations_research, IntExpr, SetMin), arg("m"))
+           DOC(operations_research, IntExpr, SetMin), py::arg("m"))
       .def("set_max", &IntExprPythonHelper::SetMax,
-           DOC(operations_research, IntExpr, SetMax), arg("m"))
+           DOC(operations_research, IntExpr, SetMax), py::arg("m"))
       .def("set_range", &IntExprPythonHelper::SetRange,
-           DOC(operations_research, IntExpr, SetRange), arg("mi"), arg("ma"))
+           DOC(operations_research, IntExpr, SetRange), py::arg("mi"),
+           py::arg("ma"))
       .def("set_value", &IntExprPythonHelper::SetValue,
-           DOC(operations_research, IntExpr, SetValue), arg("v"))
+           DOC(operations_research, IntExpr, SetValue), py::arg("v"))
       .def("bound", &IntExprPythonHelper::Bound,
            DOC(operations_research, IntExpr, Bound))
+      .def("var", &IntExpr::Var, DOC(operations_research, IntExpr, Var),
+           py::return_value_policy::reference_internal)
+      .def(
+          "index_of",
+          [](IntExpr* e, const std::vector<int64_t>& values) {
+            return e->solver()->MakeElement(values, e->Var());
+          },
+          py::return_value_policy::reference_internal)
       .def(
           "__add__",
           [](IntExpr* e, int64_t arg) { return e->solver()->MakeSum(e, arg); },
-          pybind11::return_value_policy::reference_internal)
+          py::return_value_policy::reference_internal)
       .def(
           "__add__",
           [](IntExpr* e, IntExpr* arg) { return e->solver()->MakeSum(e, arg); },
-          pybind11::return_value_policy::reference_internal)
+          py::return_value_policy::reference_internal)
+      .def(
+          "__add__",
+          [](IntExpr* e, Constraint* arg) {
+            return e->solver()->MakeSum(e, arg->Var());
+          },
+          py::return_value_policy::reference_internal)
       .def(
           "__radd__",
           [](IntExpr* e, int64_t arg) { return e->solver()->MakeSum(e, arg); },
-          pybind11::return_value_policy::reference_internal)
+          py::return_value_policy::reference_internal)
       .def(
           "__radd__",
           [](IntExpr* e, IntExpr* arg) { return e->solver()->MakeSum(e, arg); },
-          pybind11::return_value_policy::reference_internal)
+          py::return_value_policy::reference_internal)
+      .def(
+          "__radd__",
+          [](IntExpr* e, Constraint* arg) {
+            return e->solver()->MakeSum(e, arg->Var());
+          },
+          py::return_value_policy::reference_internal)
       .def(
           "__mul__",
           [](IntExpr* e, int64_t arg) { return e->solver()->MakeProd(e, arg); },
-          pybind11::return_value_policy::reference_internal)
+          py::return_value_policy::reference_internal)
       .def(
           "__mul__",
           [](IntExpr* e, IntExpr* arg) {
             return e->solver()->MakeProd(e, arg);
           },
-          pybind11::return_value_policy::reference_internal)
+          py::return_value_policy::reference_internal)
+      .def(
+          "__mul__",
+          [](IntExpr* e, Constraint* arg) {
+            return e->solver()->MakeProd(e, arg->Var());
+          },
+          py::return_value_policy::reference_internal)
       .def(
           "__rmul__",
           [](IntExpr* e, int64_t arg) { return e->solver()->MakeProd(e, arg); },
-          pybind11::return_value_policy::reference_internal)
+          py::return_value_policy::reference_internal)
       .def(
           "__rmul__",
           [](IntExpr* e, IntExpr* arg) {
             return e->solver()->MakeProd(e, arg);
           },
-          pybind11::return_value_policy::reference_internal)
+          py::return_value_policy::reference_internal)
+      .def(
+          "__rmul__",
+          [](IntExpr* e, Constraint* arg) {
+            return e->solver()->MakeProd(e, arg->Var());
+          },
+          py::return_value_policy::reference_internal)
+      .def(
+          "__sub__",
+          [](IntExpr* e, int64_t v) { return e->solver()->MakeSum(e, -v); },
+          py::return_value_policy::reference_internal)
+      .def(
+          "__sub__",
+          [](IntExpr* e, IntExpr* other) {
+            return e->solver()->MakeDifference(e, other);
+          },
+          py::return_value_policy::reference_internal)
+      .def(
+          "__sub__",
+          [](IntExpr* e, Constraint* other) {
+            return e->solver()->MakeDifference(e, other->Var());
+          },
+          py::return_value_policy::reference_internal)
+      .def(
+          "__rsub__",
+          [](IntExpr* e, int64_t v) {
+            return e->solver()->MakeDifference(v, e);
+          },
+          py::return_value_policy::reference_internal)
+      .def(
+          "__rsub__",
+          [](IntExpr* e, IntExpr* other) {
+            return e->solver()->MakeDifference(other, e);
+          },
+          py::return_value_policy::reference_internal)
+      .def(
+          "__rsub__",
+          [](IntExpr* e, Constraint* other) {
+            return e->solver()->MakeDifference(other->Var(), e);
+          },
+          py::return_value_policy::reference_internal)
+      .def(
+          "__floordiv__",
+          [](IntExpr* e, int64_t v) { return e->solver()->MakeDiv(e, v); },
+          py::return_value_policy::reference_internal)
+      .def(
+          "__floordiv__",
+          [](IntExpr* e, IntExpr* other) {
+            return e->solver()->MakeDiv(e, other);
+          },
+          py::return_value_policy::reference_internal)
+      .def(
+          "__floordiv__",
+          [](IntExpr* e, Constraint* other) {
+            return e->solver()->MakeDiv(e, other->Var());
+          },
+          py::return_value_policy::reference_internal)
+      .def(
+          "__mod__",
+          [](IntExpr* e, int64_t v) { return e->solver()->MakeModulo(e, v); },
+          py::return_value_policy::reference_internal)
+      .def(
+          "__mod__",
+          [](IntExpr* e, IntExpr* other) {
+            return e->solver()->MakeModulo(e, other);
+          },
+          py::return_value_policy::reference_internal)
+      .def(
+          "__mod__",
+          [](IntExpr* e, Constraint* other) {
+            return e->solver()->MakeModulo(e, other->Var());
+          },
+          py::return_value_policy::reference_internal)
+      .def(
+          "__neg__", [](IntExpr* e) { return e->solver()->MakeOpposite(e); },
+          py::return_value_policy::reference_internal)
+      .def(
+          "__abs__", [](IntExpr* e) { return e->solver()->MakeAbs(e); },
+          py::return_value_policy::reference_internal)
+      .def(
+          "square", [](IntExpr* e) { return e->solver()->MakeSquare(e); },
+          py::return_value_policy::reference_internal)
       .def(
           "__eq__",
           [](IntExpr* left, IntExpr* right) {
             return left->solver()->MakeEquality(left, right);
           },
-          pybind11::return_value_policy::reference_internal)
+          py::return_value_policy::reference_internal)
       .def(
           "__eq__",
           [](IntExpr* left, int64_t right) {
             return left->solver()->MakeEquality(left, right);
           },
-          pybind11::return_value_policy::reference_internal);
+          py::return_value_policy::reference_internal)
+      .def(
+          "__eq__",
+          [](IntExpr* left, Constraint* right) {
+            return left->solver()->MakeEquality(left, right->Var());
+          },
+          py::return_value_policy::reference_internal)
+      .def(
+          "__ne__",
+          [](IntExpr* left, IntExpr* right) {
+            return left->solver()->MakeNonEquality(left, right);
+          },
+          py::return_value_policy::reference_internal)
+      .def(
+          "__ne__",
+          [](IntExpr* left, int64_t right) {
+            return left->solver()->MakeNonEquality(left, right);
+          },
+          py::return_value_policy::reference_internal)
+      .def(
+          "__ne__",
+          [](IntExpr* left, Constraint* right) {
+            return left->solver()->MakeNonEquality(left, right->Var());
+          },
+          py::return_value_policy::reference_internal)
+      .def(
+          "__ge__",
+          [](IntExpr* left, IntExpr* right) {
+            return left->solver()->MakeGreaterOrEqual(left, right);
+          },
+          py::return_value_policy::reference_internal)
+      .def(
+          "__ge__",
+          [](IntExpr* left, int64_t right) {
+            return left->solver()->MakeGreaterOrEqual(left, right);
+          },
+          py::return_value_policy::reference_internal)
+      .def(
+          "__ge__",
+          [](IntExpr* left, Constraint* right) {
+            return left->solver()->MakeGreaterOrEqual(left, right->Var());
+          },
+          py::return_value_policy::reference_internal)
+      .def(
+          "__gt__",
+          [](IntExpr* left, IntExpr* right) {
+            return left->solver()->MakeGreater(left, right);
+          },
+          py::return_value_policy::reference_internal)
+      .def(
+          "__gt__",
+          [](IntExpr* left, int64_t right) {
+            return left->solver()->MakeGreater(left, right);
+          },
+          py::return_value_policy::reference_internal)
+      .def(
+          "__gt__",
+          [](IntExpr* left, Constraint* right) {
+            return left->solver()->MakeGreater(left, right->Var());
+          },
+          py::return_value_policy::reference_internal)
+      .def(
+          "__le__",
+          [](IntExpr* left, IntExpr* right) {
+            return left->solver()->MakeLessOrEqual(left, right);
+          },
+          py::return_value_policy::reference_internal)
+      .def(
+          "__le__",
+          [](IntExpr* left, int64_t right) {
+            return left->solver()->MakeLessOrEqual(left, right);
+          },
+          py::return_value_policy::reference_internal)
+      .def(
+          "__le__",
+          [](IntExpr* left, Constraint* right) {
+            return left->solver()->MakeLessOrEqual(left, right->Var());
+          },
+          py::return_value_policy::reference_internal)
+      .def(
+          "__lt__",
+          [](IntExpr* left, IntExpr* right) {
+            return left->solver()->MakeLess(left, right);
+          },
+          py::return_value_policy::reference_internal)
+      .def(
+          "__lt__",
+          [](IntExpr* left, int64_t right) {
+            return left->solver()->MakeLess(left, right);
+          },
+          py::return_value_policy::reference_internal)
+      .def(
+          "__lt__",
+          [](IntExpr* left, Constraint* right) {
+            return left->solver()->MakeLess(left, right->Var());
+          },
+          py::return_value_policy::reference_internal);
 
   // Note: no ctor.
-  pybind11::class_<IntVar, IntExpr>(m, "IntVar",
-                                    DOC(operations_research, IntVar))
+  py::class_<IntVar, IntExpr>(m, "IntVar", DOC(operations_research, IntVar))
       .def("value", &IntVarPythonHelper::Value,
            DOC(operations_research, IntVar, Value))
       .def("remove_value", &IntVarPythonHelper::RemoveValue,
-           DOC(operations_research, IntVar, RemoveValue), arg("v"))
+           DOC(operations_research, IntVar, RemoveValue), py::arg("v"))
       .def("size", &IntVarPythonHelper::Size,
-           DOC(operations_research, IntVar, Size));
+           DOC(operations_research, IntVar, Size))
+      .def("contains", &IntVar::Contains,
+           DOC(operations_research, IntVar, Contains))
+      .def("remove_interval", &IntVar::RemoveInterval,
+           DOC(operations_research, IntVar, RemoveInterval))
+      .def("set_values", &IntVar::SetValues,
+           DOC(operations_research, IntVar, SetValues))
+      .def("when_bound", py::overload_cast<Demon*>(&IntVar::WhenBound),
+           DOC(operations_research, IntVar, WhenBound))
+      .def("when_bound", py::overload_cast<Solver::Closure>(&IntVar::WhenBound),
+           DOC(operations_research, IntVar, WhenBound))
+      .def("when_bound", py::overload_cast<Solver::Action>(&IntVar::WhenBound),
+           DOC(operations_research, IntVar, WhenBound))
+      .def("when_domain", py::overload_cast<Demon*>(&IntVar::WhenDomain),
+           DOC(operations_research, IntVar, WhenDomain))
+      .def("when_domain",
+           py::overload_cast<Solver::Closure>(&IntVar::WhenDomain),
+           DOC(operations_research, IntVar, WhenDomain))
+      .def("when_domain",
+           py::overload_cast<Solver::Action>(&IntVar::WhenDomain),
+           DOC(operations_research, IntVar, WhenDomain))
+      .def("old_min", &IntVar::OldMin, DOC(operations_research, IntVar, OldMin))
+      .def("old_max", &IntVar::OldMax, DOC(operations_research, IntVar, OldMax))
+      .def("var_type", &IntVar::VarType,
+           DOC(operations_research, IntVar, VarType));
 
   // Note: no ctor.
-  pybind11::class_<Constraint>(m, "Constraint",
-                               DOC(operations_research, Constraint))
-      .def("var", &Constraint::Var, DOC(operations_research, Constraint, Var));
+  py::class_<IntervalVar, PropagationBaseObject>(
+      m, "IntervalVar", DOC(operations_research, IntervalVar))
+      .def_property_readonly(
+          "name", &IntervalVar::name,
+          DOC(operations_research, PropagationBaseObject, name))
+      .def("start_min", &IntervalVar::StartMin,
+           DOC(operations_research, IntervalVar, StartMin))
+      .def("start_max", &IntervalVar::StartMax,
+           DOC(operations_research, IntervalVar, StartMax))
+      .def("end_min", &IntervalVar::EndMin,
+           DOC(operations_research, IntervalVar, EndMin))
+      .def("end_max", &IntervalVar::EndMax,
+           DOC(operations_research, IntervalVar, EndMax))
+      .def("duration_min", &IntervalVar::DurationMin,
+           DOC(operations_research, IntervalVar, DurationMin))
+      .def("duration_max", &IntervalVar::DurationMax,
+           DOC(operations_research, IntervalVar, DurationMax))
+      .def("must_be_performed", &IntervalVar::MustBePerformed,
+           DOC(operations_research, IntervalVar, MustBePerformed))
+      .def("may_be_performed", &IntervalVar::MayBePerformed,
+           DOC(operations_research, IntervalVar, MayBePerformed))
+      .def("start_expr", &IntervalVar::StartExpr,
+           DOC(operations_research, IntervalVar, StartExpr),
+           py::return_value_policy::reference_internal)
+      .def("duration_expr", &IntervalVar::DurationExpr,
+           DOC(operations_research, IntervalVar, DurationExpr),
+           py::return_value_policy::reference_internal)
+      .def("end_expr", &IntervalVar::EndExpr,
+           DOC(operations_research, IntervalVar, EndExpr),
+           py::return_value_policy::reference_internal)
+      .def("performed_expr", &IntervalVar::PerformedExpr,
+           DOC(operations_research, IntervalVar, PerformedExpr),
+           py::return_value_policy::reference_internal)
+      .def("set_start_min", &IntervalVar::SetStartMin,
+           DOC(operations_research, IntervalVar, SetStartMin))
+      .def("set_start_max", &IntervalVar::SetStartMax,
+           DOC(operations_research, IntervalVar, SetStartMax))
+      .def("set_start_range", &IntervalVar::SetStartRange,
+           DOC(operations_research, IntervalVar, SetStartRange))
+      .def("set_duration_min", &IntervalVar::SetDurationMin,
+           DOC(operations_research, IntervalVar, SetDurationMin))
+      .def("set_duration_max", &IntervalVar::SetDurationMax,
+           DOC(operations_research, IntervalVar, SetDurationMax))
+      .def("set_duration_range", &IntervalVar::SetDurationRange,
+           DOC(operations_research, IntervalVar, SetDurationRange))
+      .def("set_end_min", &IntervalVar::SetEndMin,
+           DOC(operations_research, IntervalVar, SetEndMin))
+      .def("set_end_max", &IntervalVar::SetEndMax,
+           DOC(operations_research, IntervalVar, SetEndMax))
+      .def("set_end_range", &IntervalVar::SetEndRange,
+           DOC(operations_research, IntervalVar, SetEndRange))
+      .def("set_performed", &IntervalVar::SetPerformed,
+           DOC(operations_research, IntervalVar, SetPerformed))
+      .def("when_start_range",
+           py::overload_cast<Demon*>(&IntervalVar::WhenStartRange),
+           DOC(operations_research, IntervalVar, WhenStartRange))
+      .def("when_start_range",
+           py::overload_cast<Solver::Closure>(&IntervalVar::WhenStartRange),
+           DOC(operations_research, IntervalVar, WhenStartRange))
+      .def("when_start_range",
+           py::overload_cast<Solver::Action>(&IntervalVar::WhenStartRange),
+           DOC(operations_research, IntervalVar, WhenStartRange))
+      .def("when_start_bound",
+           py::overload_cast<Demon*>(&IntervalVar::WhenStartBound),
+           DOC(operations_research, IntervalVar, WhenStartBound))
+      .def("when_start_bound",
+           py::overload_cast<Solver::Closure>(&IntervalVar::WhenStartBound),
+           DOC(operations_research, IntervalVar, WhenStartBound))
+      .def("when_start_bound",
+           py::overload_cast<Solver::Action>(&IntervalVar::WhenStartBound),
+           DOC(operations_research, IntervalVar, WhenStartBound))
+      .def("when_duration_range",
+           py::overload_cast<Demon*>(&IntervalVar::WhenDurationRange),
+           DOC(operations_research, IntervalVar, WhenDurationRange))
+      .def("when_duration_range",
+           py::overload_cast<Solver::Closure>(&IntervalVar::WhenDurationRange),
+           DOC(operations_research, IntervalVar, WhenDurationRange))
+      .def("when_duration_range",
+           py::overload_cast<Solver::Action>(&IntervalVar::WhenDurationRange),
+           DOC(operations_research, IntervalVar, WhenDurationRange))
+      .def("when_duration_bound",
+           py::overload_cast<Demon*>(&IntervalVar::WhenDurationBound),
+           DOC(operations_research, IntervalVar, WhenDurationBound))
+      .def("when_duration_bound",
+           py::overload_cast<Solver::Closure>(&IntervalVar::WhenDurationBound),
+           DOC(operations_research, IntervalVar, WhenDurationBound))
+      .def("when_duration_bound",
+           py::overload_cast<Solver::Action>(&IntervalVar::WhenDurationBound),
+           DOC(operations_research, IntervalVar, WhenDurationBound))
+      .def("when_end_range",
+           py::overload_cast<Demon*>(&IntervalVar::WhenEndRange),
+           DOC(operations_research, IntervalVar, WhenEndRange))
+      .def("when_end_range",
+           py::overload_cast<Solver::Closure>(&IntervalVar::WhenEndRange),
+           DOC(operations_research, IntervalVar, WhenEndRange))
+      .def("when_end_range",
+           py::overload_cast<Solver::Action>(&IntervalVar::WhenEndRange),
+           DOC(operations_research, IntervalVar, WhenEndRange))
+      .def("when_end_bound",
+           py::overload_cast<Demon*>(&IntervalVar::WhenEndBound),
+           DOC(operations_research, IntervalVar, WhenEndBound))
+      .def("when_end_bound",
+           py::overload_cast<Solver::Closure>(&IntervalVar::WhenEndBound),
+           DOC(operations_research, IntervalVar, WhenEndBound))
+      .def("when_end_bound",
+           py::overload_cast<Solver::Action>(&IntervalVar::WhenEndBound),
+           DOC(operations_research, IntervalVar, WhenEndBound))
+      .def("when_performed_bound",
+           py::overload_cast<Demon*>(&IntervalVar::WhenPerformedBound),
+           DOC(operations_research, IntervalVar, WhenPerformedBound))
+      .def("when_performed_bound",
+           py::overload_cast<Solver::Closure>(&IntervalVar::WhenPerformedBound),
+           DOC(operations_research, IntervalVar, WhenPerformedBound))
+      .def("when_performed_bound",
+           py::overload_cast<Solver::Action>(&IntervalVar::WhenPerformedBound),
+           DOC(operations_research, IntervalVar, WhenPerformedBound))
+      .def("when_anything",
+           py::overload_cast<Demon*>(&IntervalVar::WhenAnything),
+           DOC(operations_research, IntervalVar, WhenAnything))
+      .def("when_anything",
+           py::overload_cast<Solver::Closure>(&IntervalVar::WhenAnything),
+           DOC(operations_research, IntervalVar, WhenAnything))
+      .def("when_anything",
+           py::overload_cast<Solver::Action>(&IntervalVar::WhenAnything),
+           DOC(operations_research, IntervalVar, WhenAnything));
 
-  // Note: no ctor.
-  pybind11::class_<DecisionBuilder, BaseObject>(
+  py::class_<Constraint, PropagationBaseObject, PyConstraint>(
+      m, "Constraint", DOC(operations_research, Constraint))
+      .def(py::init<Solver*>())
+      .def("post", &Constraint::Post,
+           DOC(operations_research, Constraint, Post))
+      .def("initial_propagate", &Constraint::InitialPropagate,
+           DOC(operations_research, Constraint, InitialPropagate))
+      .def("__str__", &Constraint::DebugString)
+      .def("var", &Constraint::Var, DOC(operations_research, Constraint, Var),
+           py::return_value_policy::reference_internal)
+      .def(
+          "__add__",
+          [](Constraint* c, int64_t v) {
+            return c->solver()->MakeSum(c->Var(), v);
+          },
+          py::return_value_policy::reference_internal)
+      .def(
+          "__add__",
+          [](Constraint* c, IntExpr* e) {
+            return c->solver()->MakeSum(c->Var(), e);
+          },
+          py::return_value_policy::reference_internal)
+      .def(
+          "__add__",
+          [](Constraint* c, Constraint* other) {
+            return c->solver()->MakeSum(c->Var(), other->Var());
+          },
+          py::return_value_policy::reference_internal)
+      .def(
+          "__radd__",
+          [](Constraint* c, int64_t v) {
+            return c->solver()->MakeSum(c->Var(), v);
+          },
+          py::return_value_policy::reference_internal)
+      .def(
+          "__mul__",
+          [](Constraint* c, int64_t v) {
+            return c->solver()->MakeProd(c->Var(), v);
+          },
+          py::return_value_policy::reference_internal)
+      .def(
+          "__mul__",
+          [](Constraint* c, IntExpr* e) {
+            return c->solver()->MakeProd(c->Var(), e);
+          },
+          py::return_value_policy::reference_internal)
+      .def(
+          "__mul__",
+          [](Constraint* c, Constraint* other) {
+            return c->solver()->MakeProd(c->Var(), other->Var());
+          },
+          py::return_value_policy::reference_internal)
+      .def(
+          "__rmul__",
+          [](Constraint* c, int64_t v) {
+            return c->solver()->MakeProd(c->Var(), v);
+          },
+          py::return_value_policy::reference_internal)
+      .def(
+          "__sub__",
+          [](Constraint* c, int64_t v) {
+            return c->solver()->MakeSum(c->Var(), -v);
+          },
+          py::return_value_policy::reference_internal)
+      .def(
+          "__sub__",
+          [](Constraint* c, IntExpr* e) {
+            return c->solver()->MakeDifference(c->Var(), e);
+          },
+          py::return_value_policy::reference_internal)
+      .def(
+          "__sub__",
+          [](Constraint* c, Constraint* other) {
+            return c->solver()->MakeDifference(c->Var(), other->Var());
+          },
+          py::return_value_policy::reference_internal)
+      .def(
+          "__rsub__",
+          [](Constraint* c, int64_t v) {
+            return c->solver()->MakeDifference(v, c->Var());
+          },
+          py::return_value_policy::reference_internal)
+      .def(
+          "__floordiv__",
+          [](Constraint* c, int64_t v) {
+            return c->solver()->MakeDiv(c->Var(), v);
+          },
+          py::return_value_policy::reference_internal)
+      .def(
+          "__floordiv__",
+          [](Constraint* c, IntExpr* e) {
+            return c->solver()->MakeDiv(c->Var(), e);
+          },
+          py::return_value_policy::reference_internal)
+      .def(
+          "__floordiv__",
+          [](Constraint* c, Constraint* other) {
+            return c->solver()->MakeDiv(c->Var(), other->Var());
+          },
+          py::return_value_policy::reference_internal)
+      .def(
+          "__mod__",
+          [](Constraint* c, int64_t v) {
+            return c->solver()->MakeModulo(c->Var(), v);
+          },
+          py::return_value_policy::reference_internal)
+      .def(
+          "__mod__",
+          [](Constraint* c, IntExpr* e) {
+            return c->solver()->MakeModulo(c->Var(), e);
+          },
+          py::return_value_policy::reference_internal)
+      .def(
+          "__mod__",
+          [](Constraint* c, Constraint* other) {
+            return c->solver()->MakeModulo(c->Var(), other->Var());
+          },
+          py::return_value_policy::reference_internal)
+      .def(
+          "__neg__",
+          [](Constraint* c) { return c->solver()->MakeOpposite(c->Var()); },
+          py::return_value_policy::reference_internal)
+      .def(
+          "__abs__",
+          [](Constraint* c) { return c->solver()->MakeAbs(c->Var()); },
+          py::return_value_policy::reference_internal)
+      .def(
+          "square",
+          [](Constraint* c) { return c->solver()->MakeSquare(c->Var()); },
+          py::return_value_policy::reference_internal)
+      .def(
+          "__eq__",
+          [](Constraint* c, int64_t v) {
+            return c->solver()->MakeEquality(c->Var(), v);
+          },
+          py::return_value_policy::reference_internal)
+      .def(
+          "__eq__",
+          [](Constraint* c, IntExpr* e) {
+            return c->solver()->MakeEquality(c->Var(), e);
+          },
+          py::return_value_policy::reference_internal)
+      .def(
+          "__eq__",
+          [](Constraint* c, Constraint* other) {
+            return c->solver()->MakeEquality(c->Var(), other->Var());
+          },
+          py::return_value_policy::reference_internal)
+      .def(
+          "__ne__",
+          [](Constraint* c, int64_t v) {
+            return c->solver()->MakeNonEquality(c->Var(), v);
+          },
+          py::return_value_policy::reference_internal)
+      .def(
+          "__ne__",
+          [](Constraint* c, IntExpr* e) {
+            return c->solver()->MakeNonEquality(c->Var(), e);
+          },
+          py::return_value_policy::reference_internal)
+      .def(
+          "__ne__",
+          [](Constraint* c, Constraint* other) {
+            return c->solver()->MakeNonEquality(c->Var(), other->Var());
+          },
+          py::return_value_policy::reference_internal)
+      .def(
+          "__ge__",
+          [](Constraint* c, int64_t v) {
+            return c->solver()->MakeGreaterOrEqual(c->Var(), v);
+          },
+          py::return_value_policy::reference_internal)
+      .def(
+          "__ge__",
+          [](Constraint* c, IntExpr* e) {
+            return c->solver()->MakeGreaterOrEqual(c->Var(), e);
+          },
+          py::return_value_policy::reference_internal)
+      .def(
+          "__ge__",
+          [](Constraint* c, Constraint* other) {
+            return c->solver()->MakeGreaterOrEqual(c->Var(), other->Var());
+          },
+          py::return_value_policy::reference_internal)
+      .def(
+          "__gt__",
+          [](Constraint* c, int64_t v) {
+            return c->solver()->MakeGreater(c->Var(), v);
+          },
+          py::return_value_policy::reference_internal)
+      .def(
+          "__gt__",
+          [](Constraint* c, IntExpr* e) {
+            return c->solver()->MakeGreater(c->Var(), e);
+          },
+          py::return_value_policy::reference_internal)
+      .def(
+          "__gt__",
+          [](Constraint* c, Constraint* other) {
+            return c->solver()->MakeGreater(c->Var(), other->Var());
+          },
+          py::return_value_policy::reference_internal)
+      .def(
+          "__le__",
+          [](Constraint* c, int64_t v) {
+            return c->solver()->MakeLessOrEqual(c->Var(), v);
+          },
+          py::return_value_policy::reference_internal)
+      .def(
+          "__le__",
+          [](Constraint* c, IntExpr* e) {
+            return c->solver()->MakeLessOrEqual(c->Var(), e);
+          },
+          py::return_value_policy::reference_internal)
+      .def(
+          "__le__",
+          [](Constraint* c, Constraint* other) {
+            return c->solver()->MakeLessOrEqual(c->Var(), other->Var());
+          },
+          py::return_value_policy::reference_internal)
+      .def(
+          "__lt__",
+          [](Constraint* c, int64_t v) {
+            return c->solver()->MakeLess(c->Var(), v);
+          },
+          py::return_value_policy::reference_internal)
+      .def(
+          "__lt__",
+          [](Constraint* c, IntExpr* e) {
+            return c->solver()->MakeLess(c->Var(), e);
+          },
+          py::return_value_policy::reference_internal)
+      .def(
+          "__lt__",
+          [](Constraint* c, Constraint* other) {
+            return c->solver()->MakeLess(c->Var(), other->Var());
+          },
+          py::return_value_policy::reference_internal);
+
+  py::class_<DecisionBuilder, BaseObject, PyDecisionBuilder>(
       m, "DecisionBuilder", DOC(operations_research, DecisionBuilder))
+      .def(py::init<>())
+      .def("next", &DecisionBuilder::Next,
+           DOC(operations_research, DecisionBuilder, Next))
+      .def("__str__", &DecisionBuilder::DebugString)
       .def_property("name", &DecisionBuilder::GetName,
                     &DecisionBuilder::set_name);
 
-  // Note: no ctor.
-  pybind11::class_<ModelVisitor, BaseObject>(
-      m, "ModelVisitor", DOC(operations_research, ModelVisitor));
+  py::class_<Decision, BaseObject, PyDecision>(
+      m, "Decision", DOC(operations_research, Decision))
+      .def(py::init<>())
+      .def("apply", &Decision::Apply, DOC(operations_research, Decision, Apply))
+      .def("refute", &Decision::Refute,
+           DOC(operations_research, Decision, Refute))
+      .def("accept", &Decision::Accept,
+           DOC(operations_research, Decision, Accept))
+      .def("__str__", &Decision::DebugString);
 
-  pybind11::class_<Assignment, PropagationBaseObject>(
+  py::class_<Demon, BaseObject, PyDemon>(m, "Demon",
+                                         DOC(operations_research, Demon))
+      .def(py::init<>())
+      .def("run", &Demon::Run, DOC(operations_research, Demon, Run))
+      .def_property_readonly("priority", &Demon::priority,
+                             DOC(operations_research, Demon, priority))
+      .def("inhibit", &Demon::inhibit, DOC(operations_research, Demon, inhibit))
+      .def("desinhibit", &Demon::desinhibit,
+           DOC(operations_research, Demon, desinhibit))
+      .def("__str__", &Demon::DebugString);
+
+  py::class_<LocalSearchOperator, BaseObject, PyLocalSearchOperator>(
+      m, "LocalSearchOperator", DOC(operations_research, LocalSearchOperator))
+      .def(py::init<>())
+      .def("make_next_neighbor", &LocalSearchOperator::MakeNextNeighbor)
+      .def("start", &LocalSearchOperator::Start)
+      .def("enter_search", &LocalSearchOperator::EnterSearch)
+      .def("reset", &LocalSearchOperator::Reset)
+      .def("has_fragments", &LocalSearchOperator::HasFragments)
+      .def("holds_delta", &LocalSearchOperator::HoldsDelta)
+      .def("__str__", &LocalSearchOperator::DebugString);
+
+  py::class_<LocalSearchFilter, BaseObject, PyLocalSearchFilter>(
+      m, "LocalSearchFilter", DOC(operations_research, LocalSearchFilter))
+      .def(py::init<>())
+      .def("accept", &LocalSearchFilter::Accept)
+      .def("synchronize", &LocalSearchFilter::Synchronize)
+      .def("is_incremental", &LocalSearchFilter::IsIncremental)
+      .def("revert", &LocalSearchFilter::Revert)
+      .def("reset", &LocalSearchFilter::Reset)
+      .def("synchronized_objective_value",
+           &LocalSearchFilter::GetSynchronizedObjectiveValue)
+      .def("accepted_objective_value",
+           &LocalSearchFilter::GetAcceptedObjectiveValue)
+      .def("__str__", &LocalSearchFilter::DebugString);
+
+  py::class_<LocalSearchFilterManager, BaseObject>(
+      m, "LocalSearchFilterManager",
+      DOC(operations_research, LocalSearchFilterManager))
+      .def("__str__", &LocalSearchFilterManager::DebugString);
+
+  // Note: no ctor.
+  py::class_<ModelVisitor, BaseObject>(m, "ModelVisitor",
+                                       DOC(operations_research, ModelVisitor));
+
+  py::class_<Assignment, PropagationBaseObject>(
       m, "Assignment", DOC(operations_research, Assignment))
-      .def(pybind11::init<Solver*>())
+      .def(py::init<Solver*>())
       .def("clear", &Assignment::Clear)
       .def("empty", &Assignment::Empty)
       .def("size", &Assignment::Size)
@@ -270,65 +2379,153 @@ PYBIND11_MODULE(constraint_solver, m) {
       .def("num_sequence_vars", &Assignment::NumSequenceVars)
       .def("store", &Assignment::Store)
       .def("restore", &Assignment::Restore)
-      .def("load",
-           pybind11::overload_cast<const std::string&>(&Assignment::Load),
-           arg("filename"))
-      .def("load",
-           pybind11::overload_cast<const AssignmentProto&>(&Assignment::Load),
-           arg("assignment_proto"))
-      .def("add_objective", &Assignment::AddObjective, arg("v"))
-      .def("add_objectives", &Assignment::AddObjectives, arg("vars"))
+      .def("load", py::overload_cast<const std::string&>(&Assignment::Load),
+           py::arg("filename"))
+      .def("load", py::overload_cast<const AssignmentProto&>(&Assignment::Load),
+           py::arg("assignment_proto"))
+      .def("add_objective", &Assignment::AddObjective, py::arg("v"))
+      .def("add_objectives", &Assignment::AddObjectives, py::arg("vars"))
       .def("clear_objective", &Assignment::ClearObjective)
       .def("num_objectives", &Assignment::NumObjectives)
       .def("objective", &Assignment::Objective)
       .def("objective_from_index", &Assignment::ObjectiveFromIndex,
-           arg("index"))
+           py::arg("index"))
       .def("has_objective", &Assignment::HasObjective)
       .def("has_objective_from_index", &Assignment::HasObjectiveFromIndex,
-           arg("index"))
+           py::arg("index"))
       .def("objective_min", &Assignment::ObjectiveMin)
       .def("objective_max", &Assignment::ObjectiveMax)
       .def("objective_value", &Assignment::ObjectiveValue)
       .def("objective_bound", &Assignment::ObjectiveBound)
-      .def("set_objective_min", &Assignment::SetObjectiveMin, arg("m"))
-      .def("set_objective_max", &Assignment::SetObjectiveMax, arg("m"))
-      .def("set_objective_value", &Assignment::SetObjectiveValue, arg("value"))
-      .def("set_objective_range", &Assignment::SetObjectiveRange, arg("l"),
-           arg("u"))
+      .def("set_objective_min", &Assignment::SetObjectiveMin, py::arg("m"))
+      .def("set_objective_max", &Assignment::SetObjectiveMax, py::arg("m"))
+      .def("set_objective_value", &Assignment::SetObjectiveValue,
+           py::arg("value"))
+      .def("set_objective_range", &Assignment::SetObjectiveRange, py::arg("l"),
+           py::arg("u"))
       .def("objective_min_from_index", &Assignment::ObjectiveMinFromIndex,
-           arg("index"))
+           py::arg("index"))
       .def("objective_max_from_index", &Assignment::ObjectiveMaxFromIndex,
-           arg("index"))
+           py::arg("index"))
       .def("objective_value_from_index", &Assignment::ObjectiveValueFromIndex,
-           arg("index"))
+           py::arg("index"))
       .def("objective_bound_from_index", &Assignment::ObjectiveBoundFromIndex,
-           arg("index"))
+           py::arg("index"))
       .def("set_objective_min_from_index",
-           &Assignment::SetObjectiveMinFromIndex, arg("index"), arg("m"))
+           &Assignment::SetObjectiveMinFromIndex, py::arg("index"),
+           py::arg("m"))
       .def("set_objective_max_from_index",
-           &Assignment::SetObjectiveMaxFromIndex, arg("index"), arg("m"))
+           &Assignment::SetObjectiveMaxFromIndex, py::arg("index"),
+           py::arg("m"))
       .def("set_objective_range_from_index",
-           &Assignment::SetObjectiveRangeFromIndex, arg("index"), arg("l"),
-           arg("u"))
-      .def("add", pybind11::overload_cast<IntVar*>(&Assignment::Add),
-           arg("var"))
+           &Assignment::SetObjectiveRangeFromIndex, py::arg("index"),
+           py::arg("l"), py::arg("u"))
+      .def("add", py::overload_cast<IntVar*>(&Assignment::Add), py::arg("var"),
+           py::return_value_policy::reference_internal)
       .def("add",
-           pybind11::overload_cast<const std::vector<IntVar*>&>(
-               &Assignment::Add),
-           arg("var"))
-      .def("min", &Assignment::Min, arg("var"))
-      .def("max", &Assignment::Max, arg("var"))
-      .def("value", &Assignment::Value, arg("var"))
-      .def("bound", &Assignment::Bound, arg("var"))
-      .def("set_min", &Assignment::SetMin, arg("var"), arg("m"))
-      .def("set_max", &Assignment::SetMax, arg("var"), arg("m"))
-      .def("set_range", &Assignment::SetRange, arg("var"), arg("l"), arg("u"))
-      .def("set_value", &Assignment::SetValue, arg("var"), arg("value"))
-      .def("add", pybind11::overload_cast<IntervalVar*>(&Assignment::Add),
-           arg("var"))
-      .def("add",
-           pybind11::overload_cast<const std::vector<IntervalVar*>&>(
-               &Assignment::Add),
-           arg("var"));
-  // missing IntervalVar, SequenceVar, active/deactivate, contains, copy
-}
+           py::overload_cast<const std::vector<IntVar*>&>(&Assignment::Add),
+           py::arg("var"), py::return_value_policy::reference_internal)
+      .def("min", &Assignment::Min, py::arg("var"))
+      .def("max", &Assignment::Max, py::arg("var"))
+      .def("value", &Assignment::Value, py::arg("var"))
+      .def("bound", &Assignment::Bound, py::arg("var"))
+      .def("set_min", &Assignment::SetMin, py::arg("var"), py::arg("m"))
+      .def("set_max", &Assignment::SetMax, py::arg("var"), py::arg("m"))
+      .def("set_range", &Assignment::SetRange, py::arg("var"), py::arg("l"),
+           py::arg("u"))
+      .def("set_value", &Assignment::SetValue, py::arg("var"), py::arg("value"))
+      .def("add", py::overload_cast<IntervalVar*>(&Assignment::Add),
+           py::arg("var"), py::return_value_policy::reference_internal)
+      .def(
+          "add",
+          py::overload_cast<const std::vector<IntervalVar*>&>(&Assignment::Add),
+          py::arg("var"), py::return_value_policy::reference_internal)
+      .def("add", py::overload_cast<SequenceVar*>(&Assignment::Add),
+           py::arg("var"), py::return_value_policy::reference_internal)
+      .def(
+          "add",
+          py::overload_cast<const std::vector<SequenceVar*>&>(&Assignment::Add),
+          py::arg("var"), py::return_value_policy::reference_internal)
+      .def("forward_sequence", &Assignment::ForwardSequence, py::arg("var"))
+      .def("backward_sequence", &Assignment::BackwardSequence, py::arg("var"))
+      .def("unperformed", &Assignment::Unperformed, py::arg("var"))
+      .def("set_forward_sequence", &Assignment::SetForwardSequence,
+           py::arg("var"), py::arg("forward_sequence"))
+      .def("set_backward_sequence", &Assignment::SetBackwardSequence,
+           py::arg("var"), py::arg("backward_sequence"))
+      .def("set_unperformed", &Assignment::SetUnperformed, py::arg("var"),
+           py::arg("unperformed"));
+
+  py::class_<SequenceVar, PropagationBaseObject>(
+      m, "SequenceVar", DOC(operations_research, SequenceVar))
+      .def("rank_first", &SequenceVar::RankFirst,
+           DOC(operations_research, SequenceVar, RankFirst))
+      .def("rank_not_first", &SequenceVar::RankNotFirst,
+           DOC(operations_research, SequenceVar, RankNotFirst))
+      .def("rank_last", &SequenceVar::RankLast,
+           DOC(operations_research, SequenceVar, RankLast))
+      .def("rank_not_last", &SequenceVar::RankNotLast,
+           DOC(operations_research, SequenceVar, RankNotLast))
+      .def("interval", &SequenceVar::Interval,
+           DOC(operations_research, SequenceVar, Interval))
+      .def("next", &SequenceVar::Next,
+           DOC(operations_research, SequenceVar, Next))
+      .def("size", &SequenceVar::size,
+           DOC(operations_research, SequenceVar, size))
+      .def("__str__", &SequenceVar::DebugString);
+
+  py::class_<DisjunctiveConstraint, Constraint>(
+      m, "DisjunctiveConstraint",
+      DOC(operations_research, DisjunctiveConstraint))
+      .def("make_sequence_var", &DisjunctiveConstraint::MakeSequenceVar,
+           DOC(operations_research, DisjunctiveConstraint, MakeSequenceVar),
+           py::return_value_policy::reference_internal)
+      .def("set_transition_time", &DisjunctiveConstraint::SetTransitionTime,
+           DOC(operations_research, DisjunctiveConstraint, SetTransitionTime))
+      .def_property(
+          "transition_time", &DisjunctiveConstraint::TransitionTime,
+          &DisjunctiveConstraint::SetTransitionTime,
+          DOC(operations_research, DisjunctiveConstraint, TransitionTime));
+
+  py::class_<Pack, Constraint>(m, "Pack", DOC(operations_research, Pack))
+      .def("add_weighted_sum_less_or_equal_constant_dimension",
+           py::overload_cast<const std::vector<int64_t>&,
+                             const std::vector<int64_t>&>(
+               &Pack::AddWeightedSumLessOrEqualConstantDimension),
+           DOC(operations_research, Pack,
+               AddWeightedSumLessOrEqualConstantDimension))
+      .def("add_weighted_sum_less_or_equal_constant_dimension",
+           py::overload_cast<Solver::IndexEvaluator1,
+                             const std::vector<int64_t>&>(
+               &Pack::AddWeightedSumLessOrEqualConstantDimension),
+           DOC(operations_research, Pack,
+               AddWeightedSumLessOrEqualConstantDimension))
+      .def("add_weighted_sum_less_or_equal_constant_dimension",
+           py::overload_cast<Solver::IndexEvaluator2,
+                             const std::vector<int64_t>&>(
+               &Pack::AddWeightedSumLessOrEqualConstantDimension),
+           DOC(operations_research, Pack,
+               AddWeightedSumLessOrEqualConstantDimension))
+      .def("add_weighted_sum_equal_var_dimension",
+           py::overload_cast<const std::vector<int64_t>&,
+                             const std::vector<IntVar*>&>(
+               &Pack::AddWeightedSumEqualVarDimension),
+           DOC(operations_research, Pack, AddWeightedSumEqualVarDimension))
+      .def("add_weighted_sum_equal_var_dimension",
+           py::overload_cast<Solver::IndexEvaluator2,
+                             const std::vector<IntVar*>&>(
+               &Pack::AddWeightedSumEqualVarDimension),
+           DOC(operations_research, Pack, AddWeightedSumEqualVarDimension))
+      .def("add_sum_variable_weights_less_or_equal_constant_dimension",
+           &Pack::AddSumVariableWeightsLessOrEqualConstantDimension,
+           DOC(operations_research, Pack,
+               AddSumVariableWeightsLessOrEqualConstantDimension))
+      .def("add_weighted_sum_of_assigned_dimension",
+           &Pack::AddWeightedSumOfAssignedDimension,
+           DOC(operations_research, Pack, AddWeightedSumOfAssignedDimension))
+      .def("add_count_used_bin_dimension", &Pack::AddCountUsedBinDimension,
+           DOC(operations_research, Pack, AddCountUsedBinDimension))
+      .def("add_count_assigned_items_dimension",
+           &Pack::AddCountAssignedItemsDimension,
+           DOC(operations_research, Pack, AddCountAssignedItemsDimension));
+}  // NOLINT(readability/fn_size)

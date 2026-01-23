@@ -131,8 +131,9 @@
 #include <utility>
 #include <vector>
 
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/logging.h"
 #include "ortools/graph/flow_problem.pb.h"
 #include "ortools/util/stats.h"
 #include "ortools/util/zvector.h"
@@ -195,7 +196,7 @@ class PriorityQueueWithRestrictedPush {
 // We want an enum for the Status of a max flow run, and we want this
 // enum to be scoped under GenericMaxFlow<>. Unfortunately, swig
 // doesn't handle templated enums very well, so we need a base,
-// untemplated class to hold it.
+// non templated class to hold it.
 class MaxFlowStatusClass {
  public:
   enum Status {
@@ -592,11 +593,7 @@ template <typename Graph, typename ArcFlowT, typename FlowSumT>
 GenericMaxFlow<Graph, ArcFlowT, FlowSumT>::GenericMaxFlow(const Graph* graph,
                                                           NodeIndex source,
                                                           NodeIndex sink)
-    : graph_(graph),
-      residual_arc_capacity_(),
-      source_(source),
-      sink_(sink),
-      stats_("MaxFlow") {
+    : graph_(graph), source_(source), sink_(sink), stats_("MaxFlow") {
   SCOPED_TIME_STAT(&stats_);
   DCHECK(graph->IsNodeValid(source));
   DCHECK(graph->IsNodeValid(sink));
@@ -614,11 +611,12 @@ GenericMaxFlow<Graph, ArcFlowT, FlowSumT>::GenericMaxFlow(const Graph* graph,
   const ArcIndex max_num_arcs = graph_->arc_capacity();
   if (max_num_arcs > 0) {
     if constexpr (Graph::kHasNegativeReverseArcs) {
-      residual_arc_capacity_.Reserve(-max_num_arcs, max_num_arcs - 1);
+      residual_arc_capacity_ =
+          ZVector<ArcFlowType>(-max_num_arcs, max_num_arcs - 1);
     } else {
       // We will need to store the initial capacity in this case.
       initial_capacity_ = std::make_unique<ArcFlowType[]>(max_num_arcs);
-      residual_arc_capacity_.Reserve(0, max_num_arcs - 1);
+      residual_arc_capacity_ = ZVector<ArcFlowType>(0, max_num_arcs - 1);
     }
     residual_arc_capacity_.SetAll(0);
   }

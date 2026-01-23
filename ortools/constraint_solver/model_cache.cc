@@ -12,13 +12,13 @@
 // limitations under the License.
 
 #include <cstdint>
-#include <string>
 #include <vector>
 
-#include "ortools/base/commandlineflags.h"
-#include "ortools/base/logging.h"
+#include "absl/flags/declare.h"
+#include "absl/flags/flag.h"
+#include "absl/hash/hash.h"
+#include "absl/log/check.h"
 #include "ortools/base/stl_util.h"
-#include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 
@@ -53,33 +53,6 @@ bool IsEqual(const std::vector<T*>& a1, const std::vector<T*>& a2) {
     }
   }
   return true;
-}
-
-template <class A1, class A2>
-uint64_t Hash2(const A1& a1, const A2& a2) {
-  uint64_t a = Hash1(a1);
-  uint64_t b = uint64_t{0xe08c1d668b756f82};  // more of the golden ratio
-  uint64_t c = Hash1(a2);
-  mix(a, b, c);
-  return c;
-}
-
-template <class A1, class A2, class A3>
-uint64_t Hash3(const A1& a1, const A2& a2, const A3& a3) {
-  uint64_t a = Hash1(a1);
-  uint64_t b = Hash1(a2);
-  uint64_t c = Hash1(a3);
-  mix(a, b, c);
-  return c;
-}
-
-template <class A1, class A2, class A3, class A4>
-uint64_t Hash4(const A1& a1, const A2& a2, const A3& a3, const A4& a4) {
-  uint64_t a = Hash1(a1);
-  uint64_t b = Hash1(a2);
-  uint64_t c = Hash2(a3, a4);
-  mix(a, b, c);
-  return c;
 }
 
 template <class C>
@@ -229,7 +202,7 @@ class Cache2 {
   }
 
   C* Find(const A1& a1, const A2& a2) const {
-    uint64_t code = Hash2(a1, a2) % size_;
+    uint64_t code = absl::HashOf(a1, a2) % size_;
     Cell* tmp = array_[code];
     while (tmp) {
       C* const result = tmp->ReturnsIfEqual(a1, a2);
@@ -242,7 +215,7 @@ class Cache2 {
   }
 
   void UnsafeInsert(const A1& a1, const A2& a2, C* const c) {
-    const int position = Hash2(a1, a2) % size_;
+    const int position = absl::HashOf(a1, a2) % size_;
     Cell* const cell = new Cell(a1, a2, c, array_[position]);
     array_[position] = cell;
     if (++num_items_ > 2 * size_) {
@@ -263,7 +236,7 @@ class Cache2 {
       return nullptr;
     }
 
-    uint64_t Hash() const { return Hash2(a1_, a2_); }
+    uint64_t Hash() const { return absl::HashOf(a1_, a2_); }
 
     void set_next(Cell* const next) { next_ = next; }
 
@@ -318,7 +291,7 @@ class Cache3 {
   }
 
   C* Find(const A1& a1, const A2& a2, const A3& a3) const {
-    uint64_t code = Hash3(a1, a2, a3) % size_;
+    uint64_t code = absl::HashOf(a1, a2, a3) % size_;
     Cell* tmp = array_[code];
     while (tmp) {
       C* const result = tmp->ReturnsIfEqual(a1, a2, a3);
@@ -331,7 +304,7 @@ class Cache3 {
   }
 
   void UnsafeInsert(const A1& a1, const A2& a2, const A3& a3, C* const c) {
-    const int position = Hash3(a1, a2, a3) % size_;
+    const int position = absl::HashOf(a1, a2, a3) % size_;
     Cell* const cell = new Cell(a1, a2, a3, c, array_[position]);
     array_[position] = cell;
     if (++num_items_ > 2 * size_) {
@@ -353,7 +326,7 @@ class Cache3 {
       return nullptr;
     }
 
-    uint64_t Hash() const { return Hash3(a1_, a2_, a3_); }
+    uint64_t Hash() const { return absl::HashOf(a1_, a2_, a3_); }
 
     void set_next(Cell* const next) { next_ = next; }
 
