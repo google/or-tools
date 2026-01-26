@@ -33,6 +33,7 @@
 #include "ortools/graph_base/graph.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/stats.h"
+#include "ortools/util/zvector.h"
 
 // TODO(user): Remove these flags and expose the parameters in the API.
 // New clients, please do not use these flags!
@@ -68,9 +69,11 @@ GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::GenericMinCostFlow(
   }
   const ArcIndex max_num_arcs = graph_->arc_capacity();
   if (max_num_arcs > 0) {
-    residual_arc_capacity_.Reserve(-max_num_arcs, max_num_arcs - 1);
+    residual_arc_capacity_ =
+        ZVector<ArcFlowType>(-max_num_arcs, max_num_arcs - 1);
     residual_arc_capacity_.SetAll(0);
-    scaled_arc_unit_cost_.Reserve(-max_num_arcs, max_num_arcs - 1);
+    scaled_arc_unit_cost_ =
+        ZVector<ArcScaledCostType>(-max_num_arcs, max_num_arcs - 1);
     scaled_arc_unit_cost_.SetAll(0);
   }
 }
@@ -935,7 +938,7 @@ bool GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::Relabel(
 
   // No residual arc leaves this node!
   //
-  // TODO(user): This can be dealt with before the aglorithm start so that we
+  // TODO(user): This can be dealt with before the algorithm start so that we
   // do not need to test it here.
   if (min_non_admissible_potential == kMinCostValue) {
     if (node_excess_[node] != 0) {

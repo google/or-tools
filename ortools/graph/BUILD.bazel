@@ -111,9 +111,8 @@ cc_library(
     hdrs = ["hamiltonian_path.h"],
     visibility = ["//visibility:public"],
     deps = [
-        "//ortools/util:bitset",
+        "//ortools/util:flat_matrix",
         "//ortools/util:saturated_arithmetic",
-        "//ortools/util:vector_or_function",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/types:span",
     ],
@@ -197,9 +196,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//ortools/base:adjustable_priority_queue",
-        "//ortools/base:types",
         "//ortools/graph_base:connected_components",
-        "//ortools/util:vector_or_function",
         "@abseil-cpp//absl/types:span",
     ],
 )
@@ -327,9 +324,10 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":flow_problem_cc_proto",
-        "//ortools/base",
         "//ortools/util:stats",
         "//ortools/util:zvector",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings",
     ],
 )
@@ -462,7 +460,6 @@ cc_library(
     hdrs = ["linear_assignment.h"],
     visibility = ["//visibility:public"],
     deps = [
-        "//ortools/base",
         "//ortools/base:base_export",
         "//ortools/graph_base:iterators",
         "//ortools/util:permutation",

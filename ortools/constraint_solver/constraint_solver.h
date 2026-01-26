@@ -3109,8 +3109,8 @@ class Solver {
   void set_fail_intercept(std::function<void()> fail_intercept) {
     fail_intercept_ = std::move(fail_intercept);
   }
-#endif  // !defined(SWIG)
   void clear_fail_intercept() { fail_intercept_ = nullptr; }
+#endif  // !defined(SWIG)
   /// Access to demon profiler.
   DemonProfiler* demon_profiler() const { return demon_profiler_; }
   // TODO(user): Get rid of the following methods once fast local search is

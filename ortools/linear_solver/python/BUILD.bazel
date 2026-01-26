@@ -27,7 +27,6 @@ pybind_extension(
         "//ortools/linear_solver:linear_solver_cc_proto",
         "//ortools/linear_solver:model_exporter",
         "//ortools/linear_solver/wrappers:model_builder_helper",
-        # "//third_party/py/numpy:headers",  # buildcleaner: keep
         "@abseil-cpp//absl/hash",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings",

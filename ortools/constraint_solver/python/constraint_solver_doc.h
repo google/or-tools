@@ -2564,7 +2564,7 @@ unchecked solutions.)doc";
 static const char* __doc_operations_research_SearchMonitor_ListenToEvent =
     R"doc()doc";
 
-static const char* __doc_operations_research_SearchMonitor_LocalOptimum =
+static const char* __doc_operations_research_SearchMonitor_AtLocalOptimum =
     R"doc(When a local optimum is reached. If 'true' is returned, the last
 solution is discarded and the search proceeds with the next one.)doc";
 

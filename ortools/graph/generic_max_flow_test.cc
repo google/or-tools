@@ -271,7 +271,7 @@ TYPED_TEST(GenericMaxFlowTest, FlowOnDisconnectedGraph2) {
 // TODO(user): Unfortunately, there is no open-source version of strong int
 // supporting uint16_t...
 struct StrongUint16 {
-  constexpr StrongUint16() : v(0) {}
+  constexpr StrongUint16() = default;  // int semantics
   constexpr StrongUint16(int v) : v(v) {}
 
   explicit operator int64_t() const { return static_cast<int64_t>(v); }
