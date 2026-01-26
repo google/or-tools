@@ -20,6 +20,7 @@ from absl.testing import absltest
 from ortools.constraint_solver import pywrapcp
 from ortools.routing import enums_pb2
 from ortools.routing import pywraprouting
+from ortools.util import optional_boolean_pb2
 
 
 def Distance(node_i, node_j):
@@ -714,7 +715,7 @@ class TestPyWrapRoutingModel(absltest.TestCase):
         search_parameters.local_search_metaheuristic = (
             enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH
         )
-        search_parameters.local_search_operators.use_two_opt = pywraprouting.BOOL_FALSE
+        search_parameters.local_search_operators.use_two_opt = optional_boolean_pb2.BOOL_FALSE
         search_parameters.solution_limit = 20
         model.CloseModelWithParameters(search_parameters)
         # Solve with parameters
@@ -731,7 +732,7 @@ class TestPyWrapRoutingModel(absltest.TestCase):
 
     def testFindErrorInRoutingSearchParameters(self):
         params = pywraprouting.DefaultRoutingSearchParameters()
-        params.local_search_operators.use_cross = pywraprouting.BOOL_UNSPECIFIED
+        params.local_search_operators.use_cross = optional_boolean_pb2.BOOL_UNSPECIFIED
         self.assertIn("cross", pywraprouting.FindErrorInRoutingSearchParameters(params))
 
     def testCallback(self):
