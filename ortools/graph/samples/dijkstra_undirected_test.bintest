@@ -1,0 +1,2 @@
+RUN: $(dijkstra_undirected)
+CHECK: "Shortest path length: 4"

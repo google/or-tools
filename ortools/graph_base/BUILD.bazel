@@ -94,6 +94,26 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "test_util",
+    hdrs = ["test_util.h"],
+    deps = [
+        ":graph",
+        "//ortools/base:types",
+        "@abseil-cpp//absl/memory",
+    ],
+)
+
+cc_test(
+    name = "test_util_test",
+    srcs = ["test_util_test.cc"],
+    deps = [
+        ":io",
+        ":test_util",
+        "//ortools/base:gmock_main",
+    ],
+)
+
 # Iterators used for graph.h
 cc_library(
     name = "iterators",
@@ -109,6 +129,16 @@ cc_test(
         ":iterators",
         "//ortools/base:gmock_main",
         "//ortools/base:intops",
+    ],
+)
+
+cc_library(
+    name = "bfs",
+    hdrs = ["bfs.h"],
+    deps = [
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings:str_format",
     ],
 )
 
