@@ -48,8 +48,8 @@ cc_library(
     name = "filelineiter",
     hdrs = ["filelineiter.h"],
     deps = [
-        "//ortools/base",
         "//ortools/base:file",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/strings",
     ],
 )
@@ -253,6 +253,7 @@ cc_library(
     hdrs = ["proto_tools.h"],
     deps = [
         "//ortools/base:murmur",
+        "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/numeric:int128",

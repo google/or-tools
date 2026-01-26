@@ -1,0 +1,74 @@
+# Copyright 2010-2025 Google LLC
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+load("//tools/testing:bintest.bzl", "bintest")
+
+package(default_visibility = ["//visibility:public"])
+
+cc_binary(
+    name = "bfs_directed",
+    srcs = ["bfs_directed.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:status_macros",
+        "//ortools/graph_base:bfs",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
+bintest(
+    name = "bfs_directed_test",
+    srcs = [":bfs_directed_test.bintest"],
+    named_data = {"bfs_directed": ":bfs_directed"},
+)
+
+cc_binary(
+    name = "bfs_undirected",
+    srcs = ["bfs_undirected.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:status_macros",
+        "//ortools/graph_base:bfs",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
+bintest(
+    name = "bfs_undirected_test",
+    srcs = [":bfs_undirected_test.bintest"],
+    named_data = {"bfs_undirected": ":bfs_undirected"},
+)
+
+cc_binary(
+    name = "bfs_one_to_all",
+    srcs = ["bfs_one_to_all.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:status_macros",
+        "//ortools/graph_base:bfs",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
+bintest(
+    name = "bfs_one_to_all_test",
+    srcs = [":bfs_one_to_all_test.bintest"],
+    named_data = {"bfs_one_to_all": ":bfs_one_to_all"},
+)

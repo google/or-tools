@@ -74,6 +74,8 @@ cc_library(
         ":vector_bin_packing_cc_proto",
         "//ortools/base:types",
         "//ortools/util:filelineiter",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings",
     ],
 )
@@ -109,6 +111,7 @@ cc_test(
         "//ortools/packing:vector_bin_packing_cc_proto",
         "//ortools/packing:vector_bin_packing_parser",
         "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/strings",
     ],

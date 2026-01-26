@@ -1,0 +1,3 @@
+RUN: $(dag_multiple_shortest_paths_one_to_all)
+CHECK: "#1 shortest path to node 4 has length: 2"
+CHECK: "#2 shortest path to node 4 has length: 3"

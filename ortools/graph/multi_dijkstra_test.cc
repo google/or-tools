@@ -22,15 +22,12 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/log/check.h"
 #include "absl/random/distributions.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
-#include "ortools/base/map_util.h"
-#include "ortools/base/types.h"
-#include "ortools/graph_base/connected_components.h"
 #include "ortools/graph_base/graph.h"
 #include "ortools/graph_base/random_graph.h"
-#include "ortools/graph_base/util.h"
 
 namespace operations_research {
 namespace {
@@ -172,8 +169,9 @@ TEST(MultiDijkstraTest, RandomizedStressTest) {
       CHECK_GE(arc, 0);
       CHECK_LT(arc, graph->num_arcs());
       ++num_arc_length_functor_calls[arc];
-      return gtl::LookupOrInsert(&arc_length, arc,
-                                 absl::Uniform<int64_t>(random, 0, 1e12));
+      return arc_length
+          .try_emplace(arc, absl::Uniform<int64_t>(random, 0, 1e12))
+          .first->second;
     };
     auto settled_node_callback = [&](int node, int source_index,
                                      int64_t distance) -> bool {
@@ -216,14 +214,13 @@ TEST(MultiDijkstraTest, RandomizedStressTest) {
           ASSERT_TRUE(arc_length.contains(parent_arc));
           const int parent_node = graph->Tail(parent_arc);
           ASSERT_TRUE(reached[source_index].contains(parent_node));
-          ASSERT_EQ(gtl::FindOrDie(reached[source_index], parent_node).distance,
-                    distance - gtl::FindOrDie(arc_length, parent_arc));
+          ASSERT_EQ(reached[source_index].at(parent_node).distance,
+                    distance - arc_length.at(parent_arc));
         }
       }
       for (const auto& p : settled_node_distance[source_index]) {
         ASSERT_TRUE(reached[source_index].contains(p.first));
-        ASSERT_EQ(gtl::FindOrDie(reached[source_index], p.first).distance,
-                  p.second);
+        ASSERT_EQ(reached[source_index].at(p.first).distance, p.second);
       }
       if (!search_was_stopped[source_index]) {
         if (source_sets[source_index].empty()) {
@@ -232,8 +229,7 @@ TEST(MultiDijkstraTest, RandomizedStressTest) {
           // All sources have been settled with distance 0.
           for (const int source : source_sets[source_index]) {
             ASSERT_TRUE(settled_node_distance[source_index].contains(source));
-            ASSERT_EQ(
-                gtl::FindOrDie(settled_node_distance[source_index], source), 0);
+            ASSERT_EQ(settled_node_distance[source_index].at(source), 0);
           }
           // All reached nodes have been settled.
           ASSERT_EQ(reached[source_index].size(),
