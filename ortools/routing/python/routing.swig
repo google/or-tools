@@ -37,25 +37,11 @@
 // We need to forward-declare the proto here, so that PROTO_INPUT involving it
 // works correctly. The order matters very much: this declaration needs to be
 // before the %{ #include ".../routing.h" %}.
-namespace operations_research {
-// util/optional_boolean.proto
-enum OptionalBoolean {
-  BOOL_UNSPECIFIED = 0,
-  BOOL_FALSE = 2,
-  BOOL_TRUE = 3,
-};
-}  // namespace operations_research
 namespace operations_research::routing {
 // enum.proto
-struct FirstSolutionStrategy {
-  enum Value {};
-};
-struct LocalSearchMetaheuristic {
-  enum Value {};
-};
-struct RoutingSearchStatus {
-  enum Value{};
-};
+struct FirstSolutionStrategy;
+struct LocalSearchMetaheuristic;
+struct RoutingSearchStatus;
 // ils.proto
 class IteratedLocalSearchParameters;
 // parameters.proto
@@ -111,6 +97,14 @@ namespace operations_research::routing {
 %rename("size") SimpleBoundCosts::Size;
 
 }  // namespace operations_research::routing
+
+// Protobuf support
+PY_PROTO_ENUM_TYPEMAP(
+    operations_research::routing::FirstSolutionStrategy::Value,
+    ortools.routing.enums_pb2.FirstSolutionStrategy.Value)
+PY_PROTO_ENUM_TYPEMAP(
+    operations_research::routing::RoutingSearchStatus::Value,
+    ortools.routing.enums_pb2.RoutingSearchStatus.Value)
 
 PY_PROTO_TYPEMAP(ortools.routing.parameters_pb2,
                  IteratedLocalSearchParameters,
