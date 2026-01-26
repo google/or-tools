@@ -564,6 +564,33 @@ class TestPyWrapRoutingModel(absltest.TestCase):
                     manager.IndexToNode(index)
                 ]
 
+    def testAllowedVehicles(self):
+        manager = pywrapcp.RoutingIndexManager(
+            2, 2, 0  # num_nodes  # num_vehicles  # depot
+        )
+        self.assertIsNotNone(manager)
+        model = pywrapcp.RoutingModel(manager)
+        self.assertIsNotNone(model)
+        # out of range vehicle index is allowed.
+        model.SetAllowedVehiclesForIndex(vehicles=[13], index=1)
+        self.assertFalse(model.IsVehicleAllowedForIndex(vehicle=0, index=1))
+        self.assertFalse(model.IsVehicleAllowedForIndex(1, 1))
+        self.assertTrue(model.IsVehicleAllowedForIndex(13, 1))
+        # empty list means any vehicles are allowed.
+        model.SetAllowedVehiclesForIndex([], 1)
+        self.assertTrue(model.IsVehicleAllowedForIndex(0, 1))
+        self.assertTrue(model.IsVehicleAllowedForIndex(1, 1))
+        self.assertTrue(model.IsVehicleAllowedForIndex(42, 1))
+        # only allow first vehicle for node 1.
+        model.SetAllowedVehiclesForIndex([0], 1)
+        self.assertTrue(model.IsVehicleAllowedForIndex(0, 1))
+        self.assertFalse(model.IsVehicleAllowedForIndex(1, 1))
+        self.assertFalse(model.IsVehicleAllowedForIndex(2, 1))
+        assignment = model.Solve()
+        self.assertIsNotNone(assignment)
+        self.assertEqual(1, assignment.Value(model.NextVar(model.Start(0))))
+        self.assertEqual(model.GetVehicleClassesCount(), 2)
+
     def testDisjunctionTSP(self):
         # Create routing model
         manager = pywrapcp.RoutingIndexManager(10, 1, 0)

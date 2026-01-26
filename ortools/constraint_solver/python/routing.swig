@@ -71,6 +71,14 @@ DEFINE_INDEX_TYPE_TYPEDEF(
 %ignore operations_research::RoutingModel::AddDimensionDependentDimensionWithVehicleCapacity;
 %ignore operations_research::RoutingModel::AddResourceGroup;
 %ignore operations_research::RoutingModel::GetResourceGroups;
+%ignore operations_research::RoutingModel::SetAllowedVehiclesForIndex(absl::Span<const int>, int64_t);
+%extend operations_research::RoutingModel {
+  void SetAllowedVehiclesForIndex(
+    const std::vector<int>& vehicles,
+    int64_t index) {
+      $self->SetAllowedVehiclesForIndex(absl::Span<const int>(vehicles), index);
+    }
+}
 
 PY_PROTO_TYPEMAP(ortools.constraint_solver.routing_parameters_pb2,
                  RoutingModelParameters,
