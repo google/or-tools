@@ -55,7 +55,7 @@ def Three(unused_i, unused_j):
 class TestRoutingIndexManager(absltest.TestCase):
 
     def testCtor(self):
-        manager = model.RoutingIndexManager(42, 3, 7)
+        manager = model.IndexManager(42, 3, 7)
         self.assertIsNotNone(manager)
         print(manager)
         self.assertEqual(42, manager.num_nodes())
@@ -66,7 +66,7 @@ class TestRoutingIndexManager(absltest.TestCase):
             self.assertEqual(7, manager.index_to_node(manager.get_end_index(i)))
 
     def testCtorMultiDepotSame(self):
-        manager = model.RoutingIndexManager(42, 3, [0, 0, 0], [0, 0, 0])
+        manager = model.IndexManager(42, 3, [0, 0, 0], [0, 0, 0])
         self.assertIsNotNone(manager)
         print(manager)
         self.assertEqual(42, manager.num_nodes())
@@ -77,7 +77,7 @@ class TestRoutingIndexManager(absltest.TestCase):
             self.assertEqual(0, manager.index_to_node(manager.get_end_index(i)))
 
     def testCtorMultiDepotAllDiff(self):
-        manager = model.RoutingIndexManager(42, 3, [1, 2, 3], [4, 5, 6])
+        manager = model.IndexManager(42, 3, [1, 2, 3], [4, 5, 6])
         self.assertIsNotNone(manager)
         print(manager)
         self.assertEqual(42, manager.num_nodes())
@@ -91,9 +91,9 @@ class TestRoutingIndexManager(absltest.TestCase):
 class ModelTest(absltest.TestCase):
 
     def testCtor(self):
-        manager = model.RoutingIndexManager(42, 3, 7)
+        manager = model.IndexManager(42, 3, 7)
         self.assertIsNotNone(manager)
-        routing_model = model.RoutingModel(manager)
+        routing_model = model.Model(manager)
         self.assertIsNotNone(routing_model)
         print(routing_model)
         for i in range(manager.num_vehicles()):
@@ -101,9 +101,9 @@ class ModelTest(absltest.TestCase):
             self.assertEqual(7, manager.index_to_node(routing_model.end(i)))
 
     def testSolve(self):
-        manager = model.RoutingIndexManager(42, 3, 7)
+        manager = model.IndexManager(42, 3, 7)
         self.assertIsNotNone(manager)
-        routing_model = model.RoutingModel(manager)
+        routing_model = model.Model(manager)
         self.assertIsNotNone(routing_model)
         self.assertEqual(RoutingSearchStatus.ROUTING_NOT_SOLVED, routing_model.status())
         assignment = routing_model.solve()
@@ -112,9 +112,9 @@ class ModelTest(absltest.TestCase):
         self.assertEqual(0, assignment.objective_value())
 
     def testSolveMultiDepot(self):
-        manager = model.RoutingIndexManager(42, 3, [1, 2, 3], [4, 5, 6])
+        manager = model.IndexManager(42, 3, [1, 2, 3], [4, 5, 6])
         self.assertIsNotNone(manager)
-        routing_model = model.RoutingModel(manager)
+        routing_model = model.Model(manager)
         self.assertIsNotNone(routing_model)
         self.assertEqual(RoutingSearchStatus.ROUTING_NOT_SOLVED, routing_model.status())
         assignment = routing_model.solve()
@@ -123,9 +123,9 @@ class ModelTest(absltest.TestCase):
         self.assertEqual(0, assignment.objective_value())
 
     def testTransitCallback(self):
-        manager = model.RoutingIndexManager(5, 1, 0)
+        manager = model.IndexManager(5, 1, 0)
         self.assertIsNotNone(manager)
-        routing_model = model.RoutingModel(manager)
+        routing_model = model.Model(manager)
         self.assertIsNotNone(routing_model)
         transit_idx = routing_model.register_transit_callback(
             functools.partial(TransitDistance, manager)
@@ -139,9 +139,9 @@ class ModelTest(absltest.TestCase):
         self.assertEqual(20, assignment.objective_value())
 
     def testTransitLambda(self):
-        manager = model.RoutingIndexManager(5, 1, 0)
+        manager = model.IndexManager(5, 1, 0)
         self.assertIsNotNone(manager)
-        routing_model = model.RoutingModel(manager)
+        routing_model = model.Model(manager)
         self.assertIsNotNone(routing_model)
         transit_id = routing_model.register_transit_callback(
             lambda from_index, to_index: 1
@@ -155,9 +155,9 @@ class ModelTest(absltest.TestCase):
         self.assertEqual(5, assignment.objective_value())
 
     def testTransitMatrix(self):
-        manager = model.RoutingIndexManager(5, 1, 0)
+        manager = model.IndexManager(5, 1, 0)
         self.assertIsNotNone(manager)
-        routing_model = model.RoutingModel(manager)
+        routing_model = model.Model(manager)
         self.assertIsNotNone(routing_model)
         matrix = [[i + 1 for i in range(5)] for _ in range(5)]
         transit_idx = routing_model.register_transit_matrix(matrix)
@@ -170,9 +170,9 @@ class ModelTest(absltest.TestCase):
         self.assertEqual(15, assignment.objective_value())
 
     def testUnaryTransitCallback(self):
-        manager = model.RoutingIndexManager(5, 1, 0)
+        manager = model.IndexManager(5, 1, 0)
         self.assertIsNotNone(manager)
-        routing_model = model.RoutingModel(manager)
+        routing_model = model.Model(manager)
         self.assertIsNotNone(routing_model)
         transit_idx = routing_model.register_unary_transit_callback(
             functools.partial(UnaryTransitDistance, manager)
@@ -186,9 +186,9 @@ class ModelTest(absltest.TestCase):
         self.assertEqual(10, assignment.objective_value())
 
     def testUnaryTransitLambda(self):
-        manager = model.RoutingIndexManager(5, 1, 0)
+        manager = model.IndexManager(5, 1, 0)
         self.assertIsNotNone(manager)
-        routing_model = model.RoutingModel(manager)
+        routing_model = model.Model(manager)
         self.assertIsNotNone(routing_model)
         transit_id = routing_model.register_unary_transit_callback(lambda from_index: 1)
         self.assertEqual(1, transit_id)
@@ -200,9 +200,9 @@ class ModelTest(absltest.TestCase):
         self.assertEqual(5, assignment.objective_value())
 
     def testUnaryTransitVector(self):
-        manager = model.RoutingIndexManager(10, 1, 0)
+        manager = model.IndexManager(10, 1, 0)
         self.assertIsNotNone(manager)
-        routing_model = model.RoutingModel(manager)
+        routing_model = model.Model(manager)
         self.assertIsNotNone(routing_model)
         vector = list(range(10))
         transit_idx = routing_model.register_unary_transit_vector(vector)
@@ -216,9 +216,9 @@ class ModelTest(absltest.TestCase):
 
     def testTSP(self):
         # Create routing model
-        manager = model.RoutingIndexManager(10, 1, 0)
+        manager = model.IndexManager(10, 1, 0)
         self.assertIsNotNone(manager)
-        routing_model = model.RoutingModel(manager)
+        routing_model = model.Model(manager)
         self.assertIsNotNone(routing_model)
         # Add cost function
         transit_idx = routing_model.register_transit_callback(
@@ -245,9 +245,9 @@ class ModelTest(absltest.TestCase):
 
     def testVRP(self):
         # Create routing model
-        manager = model.RoutingIndexManager(10, 2, [0, 1], [1, 0])
+        manager = model.IndexManager(10, 2, [0, 1], [1, 0])
         self.assertIsNotNone(manager)
-        routing_model = model.RoutingModel(manager)
+        routing_model = model.Model(manager)
         self.assertIsNotNone(routing_model)
         # Add cost function
         transit_idx = routing_model.register_transit_callback(
@@ -277,9 +277,9 @@ class ModelTest(absltest.TestCase):
 
     def testDimensionTSP(self):
         # Create routing model
-        manager = model.RoutingIndexManager(10, 1, 0)
+        manager = model.IndexManager(10, 1, 0)
         self.assertIsNotNone(manager)
-        routing_model = model.RoutingModel(manager)
+        routing_model = model.Model(manager)
         self.assertIsNotNone(routing_model)
         # Add cost function
         transit_idx = routing_model.register_transit_callback(
@@ -309,9 +309,9 @@ class ModelTest(absltest.TestCase):
 
     def testDimensionWithVehicleCapacitiesTSP(self):
         # Create routing model
-        manager = model.RoutingIndexManager(10, 1, 0)
+        manager = model.IndexManager(10, 1, 0)
         self.assertIsNotNone(manager)
-        routing_model = model.RoutingModel(manager)
+        routing_model = model.Model(manager)
         self.assertIsNotNone(routing_model)
         # Add cost function
         transit_idx = routing_model.register_transit_callback(
@@ -343,9 +343,9 @@ class ModelTest(absltest.TestCase):
 
     def testDimensionWithVehicleTransitsTSP(self):
         # Create routing model
-        manager = model.RoutingIndexManager(10, 1, 0)
+        manager = model.IndexManager(10, 1, 0)
         self.assertIsNotNone(manager)
-        routing_model = model.RoutingModel(manager)
+        routing_model = model.Model(manager)
         self.assertIsNotNone(routing_model)
         # Add cost function
         transit_idx = routing_model.register_transit_callback(
@@ -377,9 +377,9 @@ class ModelTest(absltest.TestCase):
 
     def testDimensionWithVehicleTransitsVRP(self):
         # Create routing model
-        manager = model.RoutingIndexManager(10, 3, 0)
+        manager = model.IndexManager(10, 3, 0)
         self.assertIsNotNone(manager)
-        routing_model = model.RoutingModel(manager)
+        routing_model = model.Model(manager)
         self.assertIsNotNone(routing_model)
         # Add cost function
         transit_idx = routing_model.register_transit_callback(
@@ -419,9 +419,9 @@ class ModelTest(absltest.TestCase):
 
     def testConstantDimensionTSP(self):
         # Create routing model
-        manager = model.RoutingIndexManager(10, 3, 0)
+        manager = model.IndexManager(10, 3, 0)
         self.assertIsNotNone(manager)
-        routing_model = model.RoutingModel(manager)
+        routing_model = model.Model(manager)
         self.assertIsNotNone(routing_model)
         # Add cost function
         transit_idx = routing_model.register_transit_callback(
@@ -453,9 +453,9 @@ class ModelTest(absltest.TestCase):
 
     def testVectorDimensionTSP(self):
         # Create routing model
-        manager = model.RoutingIndexManager(10, 1, 0)
+        manager = model.IndexManager(10, 1, 0)
         self.assertIsNotNone(manager)
-        routing_model = model.RoutingModel(manager)
+        routing_model = model.Model(manager)
         self.assertIsNotNone(routing_model)
         # Add cost function
         transit_idx = routing_model.register_transit_callback(
@@ -493,9 +493,9 @@ class ModelTest(absltest.TestCase):
 
     def testMatrixDimensionTSP(self):
         # Create routing model
-        manager = model.RoutingIndexManager(5, 1, 0)
+        manager = model.IndexManager(5, 1, 0)
         self.assertIsNotNone(manager)
-        routing_model = model.RoutingModel(manager)
+        routing_model = model.Model(manager)
         self.assertIsNotNone(routing_model)
         # Add cost function
         cost = routing_model.register_transit_callback(
@@ -529,9 +529,9 @@ class ModelTest(absltest.TestCase):
             index = assignment.value(routing_model.next_var(index))
 
     def testMatrixDimensionVRP(self):
-        manager = model.RoutingIndexManager(5, 2, 0)
+        manager = model.IndexManager(5, 2, 0)
         self.assertIsNotNone(manager)
-        routing_model = model.RoutingModel(manager)
+        routing_model = model.Model(manager)
         self.assertIsNotNone(routing_model)
         # Add cost function
         matrix = [[i + j for i in range(5)] for j in range(5)]
@@ -568,9 +568,9 @@ class ModelTest(absltest.TestCase):
 
     def testDisjunctionTSP(self):
         # Create routing model
-        manager = model.RoutingIndexManager(10, 1, 0)
+        manager = model.IndexManager(10, 1, 0)
         self.assertIsNotNone(manager)
-        routing_model = model.RoutingModel(manager)
+        routing_model = model.Model(manager)
         self.assertIsNotNone(routing_model)
         # Add cost function
         transit_idx = routing_model.register_transit_callback(
@@ -607,9 +607,9 @@ class ModelTest(absltest.TestCase):
 
     def testDisjunctionPenaltyTSP(self):
         # Create routing model
-        manager = model.RoutingIndexManager(10, 1, 0)
+        manager = model.IndexManager(10, 1, 0)
         self.assertIsNotNone(manager)
-        routing_model = model.RoutingModel(manager)
+        routing_model = model.Model(manager)
         self.assertIsNotNone(routing_model)
         # Add cost function
         transit_idx = routing_model.register_transit_callback(
@@ -651,19 +651,19 @@ class ModelTest(absltest.TestCase):
             constraint_solver.Solver.default_solver_parameters()
         )
         parameters.solver_parameters.trace_propagation = True
-        manager = model.RoutingIndexManager(10, 1, 0)
+        manager = model.IndexManager(10, 1, 0)
         self.assertIsNotNone(manager)
-        routing_model = model.RoutingModel(manager, parameters)
+        routing_model = model.Model(manager, parameters)
         self.assertIsNotNone(routing_model)
         self.assertEqual(1, routing_model.vehicles())
-        self.assertTrue(routing_model.solver().parameters().trace_propagation)
+        self.assertTrue(routing_model.solver().parameters.trace_propagation)
 
     def testRoutingLocalSearchFiltering(self):
         parameters = model.default_routing_model_parameters()
         parameters.solver_parameters.profile_local_search = True
-        manager = model.RoutingIndexManager(10, 1, 0)
+        manager = model.IndexManager(10, 1, 0)
         self.assertIsNotNone(manager)
-        routing_model = model.RoutingModel(manager, parameters)
+        routing_model = model.Model(manager, parameters)
         self.assertIsNotNone(routing_model)
         routing_model.solve()
         profile = routing_model.solver().local_search_profile()
