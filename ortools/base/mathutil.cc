@@ -12,7 +12,7 @@
 // limitations under the License.
 
 #include "absl/log/check.h"
-#if defined(_MSC_VER)
+#if defined(_WIN32)
 #define _USE_MATH_DEFINES
 #include <cmath>
 #endif
