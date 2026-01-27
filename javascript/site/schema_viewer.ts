@@ -27,18 +27,3 @@ if (button) {
     void loadSchemas();
   });
 }
-
-void CpSat.loadModule()
-  .then(() => {
-    if (statusEl) {
-      statusEl.textContent = 'Module ready.';
-    }
-    if (button) {
-      button.disabled = false;
-    }
-  })
-  .catch((err) => {
-    if (statusEl) {
-      statusEl.textContent = `Module failed to load: ${(err as Error).message}`;
-    }
-  });

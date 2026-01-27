@@ -45,6 +45,21 @@ const pendingWorkerRequests = new Map<
 >();
 let nextWorkerRequestId = 1;
 
+let workerBridgePreferred = workerBridgeAvailable;
+let activeWorkerSolveId: number | null = null;
+
+function shouldUseWorkerBridge() {
+  return workerBridgePreferred && workerBridgeAvailable;
+}
+
+function setWorkerBridgePreferred(enabled: boolean) {
+  workerBridgePreferred = Boolean(enabled);
+  if (workerBridgePreferred && !workerBridgeAvailable) {
+    console.warn('Worker bridge requested but no worker is initialized in this environment.');
+  }
+}
+
+
 function terminateWorker(reason?: string) {
   if (!worker) return;
   worker.terminate();
@@ -126,22 +141,36 @@ async function postWorkerRequest<T extends WorkerResponse>(request: WorkerReques
 }
 
 
-const modulePromise = loadCpSat();
+let modulePromise: Promise<MainModule> | null = null;
 
-const schemaPromise: Promise<SchemaPair> = modulePromise.then((Module: MainModule) => {
-  const getCpSchema =
-    typeof Module.getCpModelSchema === 'function'
-      ? Module.getCpModelSchema.bind(Module)
-      : () => Module.ccall('get_cp_model_schema', 'string', [], []) as unknown as string;
-  const getSatSchema =
-    typeof Module.getSatParametersSchema === 'function'
-      ? Module.getSatParametersSchema.bind(Module)
-      : () => Module.ccall('get_sat_parameters_schema', 'string', [], []) as unknown as string;
-  return {
-    cp_model: getCpSchema(),
-    sat_parameters: getSatSchema(),
-  };
-});
+function loadModule() {
+  if (shouldUseWorkerBridge()) {
+    throw new Error("Wasm should not be loaded on main thread when Worker Bridge is enabled");
+  }
+  if (!modulePromise) {
+    modulePromise = loadCpSat();
+  }
+  return modulePromise;
+}
+
+
+const schemaPromise: Promise<SchemaPair> = (async () => {
+  if (shouldUseWorkerBridge()) {
+    // 1. Ask the worker for schemas
+    const response = await postWorkerRequest<Extract<WorkerResponse, { type: 'schemaResult' }>>({
+      type: 'getSchemas',
+      id: nextWorkerRequestId++,
+    });
+    return response.schemas;
+  } else {
+    // 2. Fallback to local (Direct) loading only if bridge is disabled
+    const Module = await loadModule();
+    return {
+      cp_model: Module.ccall('get_cp_model_schema', 'string', [], []),
+      sat_parameters: Module.ccall('get_sat_parameters_schema', 'string', [], []),
+    };
+  }
+})();
 
 type ProtobufModule = typeof import('protobufjs');
 type ProtobufRoot = import('protobufjs').Root;
@@ -306,19 +335,6 @@ function copyBytesToHeap(Module: MainModule, bytes: Uint8Array | null) {
   return ptr;
 }
 
-let workerBridgePreferred = workerBridgeAvailable;
-let activeWorkerSolveId: number | null = null;
-
-function shouldUseWorkerBridge() {
-  return workerBridgePreferred && workerBridgeAvailable;
-}
-
-function setWorkerBridgePreferred(enabled: boolean) {
-  workerBridgePreferred = Boolean(enabled);
-  if (workerBridgePreferred && !workerBridgeAvailable) {
-    console.warn('Worker bridge requested but no worker is initialized in this environment.');
-  }
-}
 
 type WorkerSolveResponse = Extract<WorkerResponse, { type: 'solveResult' }>;
 type WorkerValidateResponse = Extract<WorkerResponse, { type: 'validateResult' }>;
@@ -353,7 +369,7 @@ async function validateViaWorker(modelBytes: Uint8Array) {
 }
 
 async function solveRawDirect(modelBytes: Uint8Array, paramsBytes: Uint8Array | null = null) {
-  const Module = await modulePromise;
+  const Module = await loadModule();
 
   const lenPtr = Module._malloc(4);
   const modelPtr = copyBytesToHeap(Module, modelBytes);
@@ -410,7 +426,7 @@ async function solve(modelBytes: Uint8Array, params: SolverParams = null): Promi
 }
 
 async function validateDirect(model: Uint8Array) {
-  const Module = await modulePromise;
+  const Module = await loadModule();
   const lenPtr = Module._malloc(4);
   const modelPtr = copyBytesToHeap(Module, model);
   let msgPtr = 0;
@@ -443,13 +459,18 @@ async function validateDirect(model: Uint8Array) {
 }
 
 async function cancelSolve() {
-  if (worker && activeWorkerSolveId !== null) {
-    terminateWorker('Solve canceled by user.');
-    activeWorkerSolveId = null;
-    return;
+  if (shouldUseWorkerBridge()) {
+    if (worker && activeWorkerSolveId !== null) {
+      // await postWorkerRequest<WorkerSolveResponse>({
+      //   type: 'cancel_solve',
+      // });
+      terminateWorker('Solve canceled by user.');
+      activeWorkerSolveId = null;
+    }
+  } else {
+    const Module = await loadModule();
+    Module.ccall('interrupt_solve', 'void', [], []);
   }
-  const Module = await modulePromise;
-  Module.ccall('interrupt_solve', 'void', [], []);
 }
 
 export const CpSat: CpSatApi = {
@@ -458,10 +479,10 @@ export const CpSat: CpSatApi = {
   validate: (model) => (shouldUseWorkerBridge() ? validateViaWorker(model) : validateDirect(model)),
   getSchemas: () => schemaPromise,
   createModel,
-  loadModule: () => modulePromise,
+  loadModule,
+  cancelSolve,
   setWorkerBridgeEnabled: (enabled: boolean) => setWorkerBridgePreferred(enabled),
   isWorkerBridgeEnabled: () => shouldUseWorkerBridge(),
-  cancelSolve,
 };
 
 if (isBrowserMainThread) {

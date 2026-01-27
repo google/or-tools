@@ -129,9 +129,7 @@ workerScope.onmessage = async (event: MessageEvent<WorkerRequest>) => {
         message: validation.message,
       } satisfies WorkerResponse);
       return;
-    }
-
-    if (message.type === 'solve') {
+    } else if (message.type === 'solve') {
       const bytes = await solveModel(message.modelBytes, message.paramsBytes);
       workerScope.postMessage({
         type: 'solveResult',
@@ -139,6 +137,17 @@ workerScope.onmessage = async (event: MessageEvent<WorkerRequest>) => {
         bytes,
       } satisfies WorkerResponse);
       return;
+    } else if (message.type === "getSchemas") {
+      const schemas = {
+        cp_model: moduleInstance.ccall('get_cp_model_schema', 'string', [], []),
+        sat_parameters: moduleInstance.ccall('get_sat_parameters_schema', 'string', [], [])
+      };
+      self.postMessage({ type: 'schemaResult', id: message.id, schemas });
+      return
+    } else if (message.type === "cancel_solve") {
+      moduleInstance.ccall('interrupt_solve', 'void', [], []);
+      self.postMessage({ type: 'solved_cancelled', id: message.id });
+      return
     }
   } catch (error) {
     console.error('[cpsat_worker] request failed', message?.type, error);
