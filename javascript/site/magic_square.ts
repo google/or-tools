@@ -27,7 +27,6 @@ const maxWorkerCount = getMaxWorkerCount();
 const workerBridgeToggle = document.getElementById('use-worker-bridge') as HTMLInputElement | null;
 const runButton = document.getElementById('run') as HTMLButtonElement | null;
 const stopButton = document.getElementById('stop') as HTMLButtonElement | null;
-const readyIndicator = document.getElementById('ready-indicator') as HTMLElement | null;
 
 function applyWorkerBridgePreference(enabled: boolean) {
   if (typeof CpSat?.setWorkerBridgeEnabled === 'function') {
@@ -250,15 +249,3 @@ if (stopButton) {
   });
 }
 
-void CpSat.loadModule()
-  .then(() => {
-    if (readyIndicator) {
-      readyIndicator.textContent = 'Module ready.';
-    }
-  })
-  .catch((err) => {
-    if (readyIndicator) {
-      readyIndicator.textContent = 'Module failed to load.';
-    }
-    append(String(err));
-  });

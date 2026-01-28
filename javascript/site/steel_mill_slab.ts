@@ -244,9 +244,9 @@ type CpModelInput = {
   variables: Array<{ name?: string; domain: [number, number] }>;
   constraints: Array<
     | {
-        name?: string;
-        linear: { vars: number[]; coeffs: number[]; domain: [number, number] };
-      }
+      name?: string;
+      linear: { vars: number[]; coeffs: number[]; domain: [number, number] };
+    }
     | { name?: string; table: { vars: number[]; values: number[] } }
   >;
   objective?: {
@@ -1033,9 +1033,3 @@ if (solverSelect && breakSymCheckbox) {
   updateBreakSymVisibility();
 }
 
-void CpSat.loadModule()
-  .then(() => setReadyIndicator('Module ready.'))
-  .catch((error) => {
-    setReadyIndicator('Module failed to load.');
-    appendStatus(`Module load error: ${(error as Error).message}`);
-  });
