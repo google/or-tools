@@ -14,7 +14,7 @@
 package com.google.ortools.sat;
 
 import static com.google.common.truth.Truth.assertThat;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.google.ortools.Loader;
 import com.google.ortools.sat.CpSolverStatus;
@@ -27,16 +27,12 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import java.util.function.Consumer;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 /** Tests the CpSolver java interface. */
-@RunWith(JUnit4.class)
 public final class CpModelTest {
-  @SuppressWarnings("EmptyMethods")
-  @Before
+  @BeforeEach
   public void setUp() {
     Loader.loadNativeLibraries();
   }
