@@ -26,6 +26,13 @@ const patchEmscriptenWasmPlugin = () => ({
         );
       }
 
+      if (modifiedCode.includes('new Worker')) {
+        modifiedCode = modifiedCode.replace(
+          /new\s+Worker\s*\(\s*([^,]+),\s*\{/g,
+          'new Worker($1, /* @vite-ignore */ {'
+        );
+      }
+
       return {
         code: modifiedCode,
         map: null

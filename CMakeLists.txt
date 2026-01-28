@@ -188,6 +188,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
   string(REPLACE "\"" "\\\"" EMSCRIPTEN_ALLOWED_ORIGINS_ESCAPED
     "${EMSCRIPTEN_ALLOWED_ORIGINS_STRIPPED}")
   message(STATUS "Emscripten allowed origins: ${EMSCRIPTEN_ALLOWED_ORIGINS_STRIPPED}")
+  file(MAKE_DIRECTORY "${PROJECT_BINARY_DIR}/javascript")
   set(PROTO_SCHEMA_HEADER "${PROJECT_BINARY_DIR}/javascript/generated_proto_schemas.h")
   add_custom_command(
     OUTPUT "${PROTO_SCHEMA_HEADER}"
