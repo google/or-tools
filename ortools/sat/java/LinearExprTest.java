@@ -14,20 +14,16 @@
 package com.google.ortools.sat;
 
 import static com.google.common.truth.Truth.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.google.ortools.Loader;
 import com.google.ortools.util.Domain;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-@RunWith(JUnit4.class)
 public final class LinearExprTest {
-  @SuppressWarnings("EmptyMethods")
-  @Before
+  @BeforeEach
   public void setUp() {
     Loader.loadNativeLibraries();
   }

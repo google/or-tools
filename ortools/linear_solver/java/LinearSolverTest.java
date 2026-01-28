@@ -14,10 +14,10 @@
 package com.google.ortools.linearsolver;
 
 import static com.google.common.truth.Truth.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.ortools.Loader;
 import com.google.ortools.linearsolver.MPConstraintProto;
@@ -27,20 +27,16 @@ import com.google.ortools.linearsolver.MPSolutionResponse;
 import com.google.ortools.linearsolver.MPSolverResponseStatus;
 import com.google.ortools.linearsolver.MPVariableProto;
 import com.google.ortools.linearsolver.PartialVariableAssignment;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 /** Test the Linear Solver java interface. */
-@RunWith(JUnit4.class)
 public final class LinearSolverTest {
   // Numerical tolerance for checking primal, dual, objective values
   // and other values.
   private static final double NUM_TOLERANCE = 1e-5;
 
-  @SuppressWarnings("EmptyMethods")
-  @Before
+  @BeforeEach
   public void setUp() {
     Loader.loadNativeLibraries();
   }
