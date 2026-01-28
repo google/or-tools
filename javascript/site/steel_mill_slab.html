@@ -1,121 +1,118 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <title>CP-SAT WASM • Steel Mill Slab</title>
-    <style>
-      body {
-        font-family: system-ui, sans-serif;
-        margin: 2rem;
-        line-height: 1.6;
-      }
-      nav a {
-        text-decoration: none;
-        color: #0b57d0;
-      }
-      label {
-        display: flex;
-        gap: 0.35rem;
-        align-items: center;
-      }
-      .controls {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 1rem;
-        margin-bottom: 1rem;
-      }
-      .controls > div {
-        min-width: 250px;
-      }
-      button {
-        font-size: 1rem;
-      }
-      table {
-        border-collapse: collapse;
-        width: 100%;
-        margin-bottom: 1rem;
-      }
-      th,
-      td {
-        border: 1px solid #d0d7de;
-        padding: 0.35rem 0.5rem;
-      }
-      th {
-        background: #f6f8fa;
-        text-align: left;
-      }
-      #status {
-        background: #f6f8fa;
-        border-radius: 6px;
-        padding: 1rem;
-        min-height: 10rem;
-        white-space: pre-wrap;
-      }
-      input,
-      select {
-        font-size: 1rem;
-      }
-      #summary {
-        font-weight: 600;
-        margin-bottom: 0.5rem;
-      }
-    </style>
-  </head>
-  <body>
-    <nav><a href="../index.html">← All examples</a></nav>
-    <h1>Steel Mill Slab (CP-SAT WASM)</h1>
-    <p>This demo reimplements the <code>steel_mill_slab_sat.py</code> sample entirely in TypeScript:
-      you can choose between three solution approaches (standard SAT, SAT with table constraints, and
-      column generation) and inspect the slab assignment returned by the WebAssembly module.</p>
-    <div class="controls">
-      <div>
-        <label>
-          Problem
-          <select id="problem-id"></select>
-        </label>
-      </div>
-      <div>
-        <label>
-          Solver
-          <select id="solver-method">
-            <option value="sat">SAT (load + loss via dynamic tables)</option>
-            <option value="sat_table">SAT + Valid Slabs (allowed assignments)</option>
-            <option value="sat_column">Column generation (allowed columns)</option>
-          </select>
-        </label>
-      </div>
-      <div>
-        <label><input id="break-symmetries" type="checkbox" checked /> Break symmetries</label>
-      </div>
-      <div>
-        <label>
-          Workers
-          <input id="workers" type="number" value="1" min="1" />
-        </label>
-      </div>
-      <div>
-        <label><input id="use-worker-bridge" type="checkbox" checked /> Use worker bridge</label>
-      </div>
-    </div>
-    <div style="margin-bottom: 1rem;">
-      <label>
-        Solver parameters (comma-separated key:value pairs)
-        <input
-          id="params"
-          type="text"
-          value="max_time_in_seconds:10,log_search_progress:true"
-          style="width: 100%;"
-        />
-      </label>
-    </div>
-    <button id="run">Run steel mill slab</button>
-    <button id="stop" disabled>Stop solving</button>
-    <span id="ready-indicator" style="margin-left: 1rem; color: #555;">Loading module…</span>
-    <h2 style="margin-top: 2rem;">Solution</h2>
-    <div id="summary">No solution yet.</div>
-    <table id="slab-table"></table>
-    <p>Status / Response:</p>
-    <pre id="status"></pre>
-  <script type="module" src="./steel_mill_slab.ts"></script>
-</body>
+	<head>
+		<meta charset="utf-8">
+		<title>CP-SAT WASM • Steel Mill Slab</title>
+		<style>
+			body {
+				font-family: system-ui, sans-serif;
+				margin: 2rem;
+				line-height: 1.6;
+			}
+			nav a {
+				text-decoration: none;
+				color: #0b57d0;
+			}
+			label {
+				display: flex;
+				gap: 0.35rem;
+				align-items: center;
+			}
+			.controls {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 1rem;
+				margin-bottom: 1rem;
+			}
+			.controls > div {
+				min-width: 250px;
+			}
+			button {
+				font-size: 1rem;
+			}
+			table {
+				border-collapse: collapse;
+				width: 100%;
+				margin-bottom: 1rem;
+			}
+			th,
+			td {
+				border: 1px solid #d0d7de;
+				padding: 0.35rem 0.5rem;
+			}
+			th {
+				background: #f6f8fa;
+				text-align: left;
+			}
+			#status {
+				background: #f6f8fa;
+				border-radius: 6px;
+				padding: 1rem;
+				min-height: 10rem;
+				white-space: pre-wrap;
+			}
+			input,
+			select {
+				font-size: 1rem;
+			}
+			#summary {
+				font-weight: 600;
+				margin-bottom: 0.5rem;
+			}
+		</style>
+	</head>
+	<body>
+		<nav><a href="../index.html">← All examples</a></nav>
+		<h1>Steel Mill Slab (CP-SAT WASM)</h1>
+		<p>This demo reimplements the <code>steel_mill_slab_sat.py</code>
+			sample entirely in TypeScript:
+			you can choose between three solution approaches (standard SAT, SAT with table constraints, and
+			column generation) and inspect the slab assignment returned by the WebAssembly module.</p>
+		<div class="controls">
+			<div>
+				<label>
+					Problem
+					<select id="problem-id"></select>
+				</label>
+			</div>
+			<div>
+				<label>
+					Solver
+					<select id="solver-method">
+						<option value="sat">SAT (load + loss via dynamic tables)</option>
+						<option value="sat_table">SAT + Valid Slabs (allowed assignments)</option>
+						<option value="sat_column">Column generation (allowed columns)</option>
+					</select>
+				</label>
+			</div>
+			<div>
+				<label><input id="break-symmetries" type="checkbox" checked>
+				Break symmetries</label>
+			</div>
+			<div>
+				<label>
+					Workers
+					<input id="workers" type="number" value="1" min="1">
+				</label>
+			</div>
+			<div>
+				<label><input id="use-worker-bridge" type="checkbox" checked>
+				Use worker bridge</label>
+			</div>
+		</div>
+		<div style="margin-bottom: 1rem;">
+			<label>
+				Solver parameters (comma-separated key:value pairs)
+				<input id="params" type="text" value="max_time_in_seconds:10,log_search_progress:true" style="width: 100%;">
+			</label>
+		</div>
+		<button id="run">Run steel mill slab</button>
+		<button id="stop" disabled>Stop solving</button>
+		<h2 style="margin-top: 2rem;">Solution</h2>
+		<div id="summary">No solution yet.</div>
+		<table id="slab-table"></table>
+		<p>Status / Response:</p>
+		<pre id="status"></pre>
+		<script type="module" src="./steel_mill_slab.ts"></script>
+	</body>
 </html>

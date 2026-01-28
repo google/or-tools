@@ -13,7 +13,7 @@ const outDir = path.resolve(__dirname, 'build/javascript/lib');
 const patchEmscriptenWasmPlugin = () => ({
   name: 'patch-emscripten-no-inline',
   transform(code, id) {
-    if (id.includes('cp_sat_runtime.js')) {
+    if (id.includes('cp_sat_runtime') && id.endsWith('.js')) {
       let modifiedCode = code;
 
       // 1. WASM Fix: Keep WASM external

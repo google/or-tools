@@ -164,7 +164,6 @@ const schemaPromise: Promise<SchemaPair> = (async () => {
     return response.schemas;
   } else {
     // 2. Fallback to local (Direct) loading only if bridge is disabled
-    console.log("AAA load a");
     const Module = await loadModule();
     return {
       cp_model: Module.ccall('get_cp_model_schema', 'string', [], []),
@@ -370,7 +369,6 @@ async function validateViaWorker(modelBytes: Uint8Array) {
 }
 
 async function solveRawDirect(modelBytes: Uint8Array, paramsBytes: Uint8Array | null = null) {
-  console.log("AAA load b")
   const Module = await loadModule();
 
   const lenPtr = Module._malloc(4);
@@ -428,7 +426,6 @@ async function solve(modelBytes: Uint8Array, params: SolverParams = null): Promi
 }
 
 async function validateDirect(model: Uint8Array) {
-  console.log("AAA load c")
   const Module = await loadModule();
   const lenPtr = Module._malloc(4);
   const modelPtr = copyBytesToHeap(Module, model);
@@ -471,7 +468,6 @@ async function cancelSolve() {
       activeWorkerSolveId = null;
     }
   } else {
-    console.log("AAA load d")
     const Module = await loadModule();
     Module.ccall('interrupt_solve', 'void', [], []);
   }

@@ -38,10 +38,10 @@
 		<div style="display:flex; gap:1rem; flex-wrap:wrap; align-items:center; margin-bottom:0.5rem;">
 			<label>Size <input id="size" type="number" value="5" min="1" style="width:4rem"></label>
 			<label>Workers <input id="workers" type="number" value="4" min="1" style="width:4rem"></label>
-			<label><input id="use-worker-bridge" type="checkbox" checked> Use worker bridge</label>
+			<label><input id="use-worker-bridge" type="checkbox" checked>
+			Use worker bridge</label>
 			<button id="run">Run magic square</button>
 			<button id="stop" disabled>Stop</button>
-			<span id="ready-indicator" style="color:#555;">Loading module…</span>
 		</div>
 		<div id="solution-wrapper">
 			<p>Latest solution:</p>
@@ -50,6 +50,6 @@
 		<p>Status / Response:</p>
 		<pre id="status"></pre>
 
-  <script type="module" src="./magic_square.ts"></script>
-</body>
+		<script type="module" src="./magic_square.ts"></script>
+	</body>
 </html>

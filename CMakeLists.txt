@@ -203,44 +203,27 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
       "${PROJECT_SOURCE_DIR}/ortools/sat/cp_model.proto"
       "${PROJECT_SOURCE_DIR}/ortools/sat/sat_parameters.proto")
 
-  add_executable(cp_sat_runtime
-    "${PROJECT_SOURCE_DIR}/javascript/cp_sat_api.cc"
-    "${PROTO_SCHEMA_HEADER}")
-  target_link_libraries(cp_sat_runtime PRIVATE ${PROJECT_NAMESPACE}::ortools)
-  target_include_directories(cp_sat_runtime PRIVATE "${PROJECT_BINARY_DIR}/javascript")
-  target_compile_definitions(cp_sat_runtime PRIVATE
-    ORTOOLS_WASM_ALLOWED_ORIGINS="${EMSCRIPTEN_ALLOWED_ORIGINS_ESCAPED}")
-
   set(JS_OUTPUT_DIR "${PROJECT_BINARY_DIR}/javascript/wasm")
   set(JS_EXAMPLES_DIR "${JS_OUTPUT_DIR}/examples")
   file(MAKE_DIRECTORY "${JS_OUTPUT_DIR}")
   file(MAKE_DIRECTORY "${JS_EXAMPLES_DIR}")
 
-  set_target_properties(cp_sat_runtime PROPERTIES
-    OUTPUT_NAME "cp_sat_runtime"
-    RUNTIME_OUTPUT_DIRECTORY "${JS_OUTPUT_DIR}")
+  set(CP_SAT_COMMON_SOURCES
+    "${PROJECT_SOURCE_DIR}/javascript/cp_sat_api.cc"
+    "${PROTO_SCHEMA_HEADER}")
 
-  target_link_options(cp_sat_runtime PRIVATE
+  set(CP_SAT_COMMON_LINK_OPTIONS
     "-sMODULARIZE=1"
     "-sEXPORT_ES6=1"
     "-sEXPORT_NAME=cpSatModule"
     "-sENVIRONMENT=web,worker"
     "-sASSERTIONS=1"
     "-sALLOW_MEMORY_GROWTH=1"
-    # "-sJSPI=2"
-    # "-sJSPI_EXPORTS=['solve_model', 'validate_model']"
-    "-sASYNCIFY=1"
-    # "-sASYNCIFY_ADD=['solve_model','validate_model']"
-    # "-sASYNCIFY_STACK_SIZE=65536"
-    # "-sASYNCIFY_EXPORTS=['solve_model','validate_model', 'asyncify_start_unwind']"
-    # "-sJSPI_EXPORTS=['solve_model','validate_model']"
     "-sUSE_PTHREADS=1"
     "-sPTHREAD_POOL_SIZE=navigator.hardwareConcurrency"
     "-sPTHREAD_POOL_SIZE_STRICT=2"
-    # "-sPTHREADS_DEBUG=1"
     "--bind"
-    "-sEXPORTED_FUNCTIONS=['_malloc','_free','_solve_model','_validate_model']"
-    # "-sEXPORTED_FUNCTIONS=['_malloc','_free','_solve_model','_free_buffer','_validate_model','_get_cp_model_schema','_get_sat_parameters_schema']"
+    "-sEXPORTED_FUNCTIONS=['_malloc','_free','_solve_model','_free_buffer','_validate_model','_interrupt_solve','_get_cp_model_schema','_get_sat_parameters_schema']"
     "-sEXPORTED_RUNTIME_METHODS=ccall,cwrap,UTF8ToString,stringToUTF8,allocateUTF8,HEAPU8"
     "-sNODEJS_CATCH_REJECTION=0"
     "-sNODEJS_CATCH_EXIT=0"
@@ -250,9 +233,44 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
     "-gsource-map"
     "--source-map-base=./")
 
+  set(CP_SAT_JSPI_LINK_OPTIONS
+    "-sJSPI=2"
+    "-sJSPI_EXPORTS=['solve_model','validate_model']")
+
+  set(CP_SAT_ASYNCIFY_LINK_OPTIONS
+    "-sASYNCIFY=1")
+
+  add_executable(cp_sat_runtime
+    ${CP_SAT_COMMON_SOURCES})
+  target_link_libraries(cp_sat_runtime PRIVATE ${PROJECT_NAMESPACE}::ortools)
+  target_include_directories(cp_sat_runtime PRIVATE "${PROJECT_BINARY_DIR}/javascript")
+  target_compile_definitions(cp_sat_runtime PRIVATE
+    ORTOOLS_WASM_ALLOWED_ORIGINS="${EMSCRIPTEN_ALLOWED_ORIGINS_ESCAPED}")
+  set_target_properties(cp_sat_runtime PROPERTIES
+    OUTPUT_NAME "cp_sat_runtime"
+    RUNTIME_OUTPUT_DIRECTORY "${JS_OUTPUT_DIR}")
+  target_link_options(cp_sat_runtime PRIVATE
+    ${CP_SAT_COMMON_LINK_OPTIONS}
+    ${CP_SAT_JSPI_LINK_OPTIONS}
+    "--emit-tsd"
+    "${JS_OUTPUT_DIR}/cp_sat_runtime.d.ts")
+
+  add_executable(cp_sat_runtime_asyncify
+    ${CP_SAT_COMMON_SOURCES})
+  target_link_libraries(cp_sat_runtime_asyncify PRIVATE ${PROJECT_NAMESPACE}::ortools)
+  target_include_directories(cp_sat_runtime_asyncify PRIVATE "${PROJECT_BINARY_DIR}/javascript")
+  target_compile_definitions(cp_sat_runtime_asyncify PRIVATE
+    ORTOOLS_WASM_ALLOWED_ORIGINS="${EMSCRIPTEN_ALLOWED_ORIGINS_ESCAPED}")
+  set_target_properties(cp_sat_runtime_asyncify PROPERTIES
+    OUTPUT_NAME "cp_sat_runtime_asyncify"
+    RUNTIME_OUTPUT_DIRECTORY "${JS_OUTPUT_DIR}")
+  target_link_options(cp_sat_runtime_asyncify PRIVATE
+    ${CP_SAT_COMMON_LINK_OPTIONS}
+    ${CP_SAT_ASYNCIFY_LINK_OPTIONS})
+
   add_custom_target(cp_sat_runtime_site ALL
-    DEPENDS cp_sat_runtime
-    COMMENT "Building cp_sat_runtime runtime")
+    DEPENDS cp_sat_runtime cp_sat_runtime_asyncify
+    COMMENT "Building cp_sat_runtime runtimes")
 endif()
 
 # By default all dependencies are NOT built (i.e. BUILD_DEPS=OFF),
