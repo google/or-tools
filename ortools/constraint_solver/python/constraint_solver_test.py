@@ -891,6 +891,75 @@ class ConstraintSolverTest(absltest.TestCase):
         solver.solve(db, [obj, collector])
         self.assertEqual(collector.value(0, x), 10)
 
+    def test_phase_interval(self):
+        solver = constraint_solver.Solver("test_phase_interval")
+        s = solver.new_int_var(0, 10, "s")
+        t = solver.new_fixed_duration_interval_var(s, 5, "t")
+        db = solver.phase([t], constraint_solver.IntervalStrategy.INTERVAL_DEFAULT)
+        solver.solve(db)
+
+    def test_phase_sequence(self):
+        solver = constraint_solver.Solver("test_phase_sequence")
+        s = solver.new_int_var(0, 10, "s")
+        t = solver.new_fixed_duration_interval_var(s, 5, "t")
+        d = solver.add_disjunctive_constraint([t], "d")
+        seq = d.make_sequence_var()
+        db = solver.phase([seq], constraint_solver.SequenceStrategy.SEQUENCE_DEFAULT)
+        solver.solve(db)
+
+    def test_add_transition_constraint(self):
+        solver = constraint_solver.Solver("test_transition")
+        # Simple automaton: 0 -(1)-> 1 -(2)-> 2.
+        # vars: v0, v1. v0=1, v1=2.
+        v0 = solver.new_int_var(0, 5, "v0")
+        v1 = solver.new_int_var(0, 5, "v1")
+        variables = [v0, v1]
+        # Transitions: (state, label, next_state)
+        transitions = [
+            [0, 1, 1],
+            [1, 2, 2],
+        ]
+        initial_state = 0
+        final_states = [2]
+        solver.add_transition_constraint(
+            variables, transitions, initial_state, final_states
+        )
+
+        def check_single_solution():
+            self.assertEqual(v0.value(), 1)
+            self.assertEqual(v1.value(), 2)
+
+        count = self._solve_and_check(solver, variables, check_single_solution)
+        self.assertEqual(count, 1)
+
+    def test_new_fixed_interval(self):
+        solver = constraint_solver.Solver("test_fixed_interval")
+        t = solver.new_fixed_interval(2, 5, "t")
+        self.assertEqual(t.start_min(), 2)
+        self.assertEqual(t.duration_min(), 5)
+        self.assertEqual(t.end_min(), 7)
+
+    def test_new_mirror_interval(self):
+        solver = constraint_solver.Solver("test_mirror_interval")
+        s = solver.new_int_var(0, 10, "s")
+        t = solver.new_fixed_duration_interval_var(s, 5, "t")
+        m = solver.new_mirror_interval(t)
+        self.assertIsNotNone(m)
+
+    def test_new_interval_relaxed_min(self):
+        solver = constraint_solver.Solver("test_relaxed_min")
+        s = solver.new_int_var(0, 10, "s")
+        t = solver.new_fixed_duration_interval_var(s, 5, "t")
+        r = solver.new_interval_relaxed_min(t)
+        self.assertIsNotNone(r)
+
+    def test_new_interval_relaxed_max(self):
+        solver = constraint_solver.Solver("test_relaxed_max")
+        s = solver.new_int_var(0, 10, "s")
+        t = solver.new_fixed_duration_interval_var(s, 5, "t")
+        r = solver.new_interval_relaxed_max(t)
+        self.assertIsNotNone(r)
+
 
 if __name__ == "__main__":
     absltest.main()
