@@ -238,7 +238,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
     "-sUSE_PTHREADS=1"
     "-sPTHREAD_POOL_SIZE=navigator.hardwareConcurrency"
     "-sPTHREAD_POOL_SIZE_STRICT=2"
-    "-sPTHREADS_DEBUG=1"
+    # "-sPTHREADS_DEBUG=1"
     "--bind"
     "--emit-tsd"
     "${JS_OUTPUT_DIR}/cp_sat_runtime.d.ts"
