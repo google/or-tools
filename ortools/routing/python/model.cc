@@ -202,8 +202,8 @@ PYBIND11_MODULE(model, m) {
          pybind11::return_value_policy::reference_internal, arg("index"));
   rm.def("get_arc_cost_for_vehicle", &Model::GetArcCostForVehicle,
          arg("from_index"), arg("to_index"), arg("vehicle"));
-  rm.def("solver", &Model::solver,
-         pybind11::return_value_policy::reference_internal);
+  rm.def_property_readonly("solver", &Model::solver,
+                           pybind11::return_value_policy::reference_internal);
 
   pybind11::enum_<Model::PenaltyCostBehavior>(rm, "PenaltyCostBehavior")
       .value("PENALIZE_ONCE", Model::PenaltyCostBehavior::PENALIZE_ONCE)

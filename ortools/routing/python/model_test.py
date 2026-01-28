@@ -656,7 +656,7 @@ class ModelTest(absltest.TestCase):
         routing_model = model.Model(manager, parameters)
         self.assertIsNotNone(routing_model)
         self.assertEqual(1, routing_model.vehicles())
-        self.assertTrue(routing_model.solver().parameters.trace_propagation)
+        self.assertTrue(routing_model.solver.parameters.trace_propagation)
 
     def testRoutingLocalSearchFiltering(self):
         parameters = model.default_routing_model_parameters()
@@ -666,7 +666,7 @@ class ModelTest(absltest.TestCase):
         routing_model = model.Model(manager, parameters)
         self.assertIsNotNone(routing_model)
         routing_model.solve()
-        profile = routing_model.solver().local_search_profile()
+        profile = routing_model.solver.local_search_profile()
         print(profile)
         self.assertIsInstance(profile, str)
         self.assertTrue(profile)  # Verify it's not empty.
