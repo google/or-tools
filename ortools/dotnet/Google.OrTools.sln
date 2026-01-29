@@ -6,6 +6,7 @@ MinimumVisualStudioVersion = 15.0.26124.0
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Google.OrTools.runtime.linux-x64", "Google.OrTools.runtime.linux-x64\Google.OrTools.runtime.linux-x64.csproj", "{FC646C34-8541-427D-B9F6-1247798F4574}"
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Google.OrTools.runtime.osx-x64",   "Google.OrTools.runtime.osx-x64\Google.OrTools.runtime.osx-x64.csproj", "{FC646C34-8541-427D-B9F6-1247798F4574}"
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Google.OrTools.runtime.win-x64",   "Google.OrTools.runtime.win-x64\Google.OrTools.runtime.win-x64.csproj", "{FC646C34-8541-427D-B9F6-1247798F4574}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Google.OrTools.runtime.win-arm64",   "Google.OrTools.runtime.win-arm64\Google.OrTools.runtime.win-arm64.csproj", "{FC646C34-8541-427D-B9F6-1247798F4574}"
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Google.OrTools",   "Google.OrTools\Google.OrTools.csproj", "{FC646C34-8541-427D-B9F6-1247798F4574}"
 EndProject
 Global
