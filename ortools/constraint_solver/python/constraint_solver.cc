@@ -21,6 +21,7 @@
 
 #include "absl/cleanup/cleanup.h"
 #include "absl/functional/function_ref.h"
+#include "absl/strings/match.h"
 #include "absl/strings/string_view.h"
 #include "ortools/constraint_solver/assignment.pb.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
@@ -55,16 +56,20 @@ using ::operations_research::IntExpr;
 using ::operations_research::IntTupleSet;
 using ::operations_research::IntVar;
 using ::operations_research::IntVarElement;
+using ::operations_research::IntVarIterator;
 using ::operations_research::LocalSearchFilter;
 using ::operations_research::LocalSearchFilterManager;
 using ::operations_research::LocalSearchOperator;
+using ::operations_research::LocalSearchPhaseParameters;
 using ::operations_research::ModelVisitor;
+using ::operations_research::NumericalRev;
 using ::operations_research::OptimizeVar;
 using ::operations_research::Pack;
 using ::operations_research::PiecewiseLinearFunction;
 using ::operations_research::PropagationBaseObject;
 using ::operations_research::RegularLimit;
 using ::operations_research::RegularLimitParameters;
+using ::operations_research::Rev;
 using ::operations_research::SearchLimit;
 using ::operations_research::SearchMonitor;
 using ::operations_research::SequenceVar;
@@ -81,8 +86,8 @@ using ::operations_research::Solver;
 // flow in the function below and throw from here. This is quite convoluted but
 // a cleaner solution would require rewriting the API.
 template <typename T>
-void ThrowOnFailure(T* this_, absl::FunctionRef<void(T*)> action) {
-  Solver* solver = this_->solver();
+void ThrowOnFailure(T* this_, Solver* solver,
+                    absl::FunctionRef<void(T*)> action) {
   jmp_buf buffer;
   solver->set_fail_intercept([&buffer]() { longjmp(buffer, 1); });
   auto cleanup =
@@ -92,6 +97,23 @@ void ThrowOnFailure(T* this_, absl::FunctionRef<void(T*)> action) {
     // executed and resets execution to the if-condition above. The code then
     // branches in the `else` clause below and throws.
     action(this_);
+  } else {
+    throw py::value_error("Solver fails outside of solve()");
+  }
+}
+
+template <typename T, typename R>
+R* ThrowOnFailureOrReturn(T* this_, Solver* solver,
+                          absl::FunctionRef<R*(T*)> action) {
+  jmp_buf buffer;
+  solver->set_fail_intercept([&buffer]() { longjmp(buffer, 1); });
+  auto cleanup =
+      absl::MakeCleanup([solver]() { solver->clear_fail_intercept(); });
+  if (setjmp(buffer) == 0) {
+    // If the statement below end-up calling `Solver::Fail()`, `longjmp` is
+    // executed and resets execution to the if-condition above. The code then
+    // branches in the `else` clause below and throws.
+    return action(this_);
   } else {
     throw py::value_error("Solver fails outside of solve()");
   }
@@ -130,20 +152,24 @@ class IntExprPythonHelper : PropagationBaseObjectPythonHelper {
   static int64_t Max(IntExpr* this_) { return this_->Max(); }
 
   static void SetMin(IntExpr* this_, int64_t m) {
-    ThrowOnFailure<IntExpr>(this_, [m](IntExpr* this_) { this_->SetMin(m); });
+    ThrowOnFailure<IntExpr>(this_, this_->solver(),
+                            [m](IntExpr* this_) { this_->SetMin(m); });
   }
 
   static void SetMax(IntExpr* this_, int64_t m) {
-    ThrowOnFailure<IntExpr>(this_, [m](IntExpr* this_) { this_->SetMax(m); });
+    ThrowOnFailure<IntExpr>(this_, this_->solver(),
+                            [m](IntExpr* this_) { this_->SetMax(m); });
   }
 
   static void SetRange(IntExpr* this_, int64_t mi, int64_t ma) {
-    ThrowOnFailure<IntExpr>(
-        this_, [mi, ma](IntExpr* this_) { this_->SetRange(mi, ma); });
+    ThrowOnFailure<IntExpr>(this_, this_->solver(), [mi, ma](IntExpr* this_) {
+      this_->SetRange(mi, ma);
+    });
   }
 
   static void SetValue(IntExpr* this_, int64_t v) {
-    ThrowOnFailure<IntExpr>(this_, [v](IntExpr* this_) { this_->SetValue(v); });
+    ThrowOnFailure<IntExpr>(this_, this_->solver(),
+                            [v](IntExpr* this_) { this_->SetValue(v); });
   }
 
   static bool Bound(IntExpr* this_) { return this_->Bound(); }
@@ -156,8 +182,14 @@ class IntVarPythonHelper : IntExprPythonHelper {
   static int64_t Value(IntVar* this_) { return this_->Value(); }
 
   static void RemoveValue(IntVar* this_, int64_t v) {
-    ThrowOnFailure<IntVar>(this_,
+    ThrowOnFailure<IntVar>(this_, this_->solver(),
                            [v](IntVar* this_) { this_->RemoveValue(v); });
+  }
+
+  static void RemoveValues(IntVar* this_, const std::vector<int64_t>& values) {
+    ThrowOnFailure<IntVar>(this_, this_->solver(), [&values](IntVar* this_) {
+      this_->RemoveValues(values);
+    });
   }
 
   static int64_t Size(IntVar* this_) { return this_->Size(); }
@@ -166,242 +198,225 @@ class IntVarPythonHelper : IntExprPythonHelper {
 class PyDecision : public Decision {
  public:
   using Decision::Decision;  // Inherit constructors
+  virtual ~PyDecision() = default;
+  virtual void apply(Solver* s) {}
+  virtual void refute(Solver* s) {}
+  virtual void accept(DecisionVisitor* v) const {}
+  virtual std::string debug_string() const { return "PyDecision"; }
   void Apply(Solver* s) override {
-    PYBIND11_OVERRIDE_PURE(void, Decision, Apply, s);
+    try {
+      ThrowOnFailure<PyDecision>(this, s,
+                                 [s](PyDecision* db) { db->apply(s); });
+    } catch (const py::error_already_set& e) {
+      if (e.matches(PyExc_ValueError) &&
+          absl::StrContains(e.what(), "Solver fails outside of solve")) {
+        s->Fail();
+      }
+      throw;
+    }
   }
   void Refute(Solver* s) override {
-    PYBIND11_OVERRIDE_PURE(void, Decision, Refute, s);
+    try {
+      ThrowOnFailure<PyDecision>(this, s,
+                                 [s](PyDecision* db) { db->refute(s); });
+    } catch (const py::error_already_set& e) {
+      if (e.matches(PyExc_ValueError) &&
+          absl::StrContains(e.what(), "Solver fails outside of solve")) {
+        s->Fail();
+      }
+      throw;
+    }
   }
-  void Accept(DecisionVisitor* visitor) const override {
-    PYBIND11_OVERRIDE(void, Decision, Accept, visitor);
+  void Accept(DecisionVisitor* visitor) const override { accept(visitor); }
+  std::string DebugString() const override { return debug_string(); }
+};
+
+class PyDecisionHelper : public PyDecision {
+ public:
+  using PyDecision::PyDecision;  // Inherit constructors
+
+  void apply(Solver* s) override {
+    PYBIND11_OVERRIDE(void, PyDecision, apply, s);
   }
-  std::string DebugString() const override {
-    PYBIND11_OVERRIDE(std::string, Decision, DebugString, );
+  void refute(Solver* s) override {
+    PYBIND11_OVERRIDE(void, PyDecision, refute, s);
+  }
+  void accept(DecisionVisitor* visitor) const override {
+    PYBIND11_OVERRIDE(void, PyDecision, accept, visitor);
+  }
+  std::string debug_string() const override {
+    PYBIND11_OVERRIDE(std::string, PyDecision, debug_string, );
   }
 };
 
 class PyDecisionBuilder : public DecisionBuilder {
  public:
   using DecisionBuilder::DecisionBuilder;
+  virtual ~PyDecisionBuilder() = default;
+  virtual Decision* next(Solver* s) { return nullptr; }
+  virtual std::string debug_string() const { return "PyDecisionBuilder"; }
   Decision* Next(Solver* s) override {
-    PYBIND11_OVERRIDE_PURE(Decision*, DecisionBuilder, Next, s);
+    try {
+      return ThrowOnFailureOrReturn<PyDecisionBuilder, Decision>(
+          this, s, [s](PyDecisionBuilder* db) { return db->next(s); });
+    } catch (const py::error_already_set& e) {
+      if (e.matches(PyExc_ValueError) &&
+          absl::StrContains(e.what(), "Solver fails outside of solve")) {
+        s->Fail();
+      }
+      throw;
+    }
   }
-  std::string DebugString() const override {
-    PYBIND11_OVERRIDE(std::string, DecisionBuilder, DebugString, );
-  }
+  std::string DebugString() const override { return debug_string(); }
 };
 
-class PyDemon : public Demon {
+class PyDecisionBuilderHelper : public PyDecisionBuilder {
  public:
-  using Demon::Demon;
-  void Run(Solver* s) override { PYBIND11_OVERRIDE_PURE(void, Demon, Run, s); }
-  Solver::DemonPriority priority() const override {
-    PYBIND11_OVERRIDE(Solver::DemonPriority, Demon, priority, );
+  using PyDecisionBuilder::PyDecisionBuilder;
+  Decision* next(Solver* s) override {
+    auto override = pybind11::get_override(this, "next");
+    if (override) {
+      try {
+        return override(s).cast<Decision*>();
+      } catch (const py::error_already_set& e) {
+        if (e.matches(PyExc_ValueError) &&
+            absl::StrContains(e.what(), "Solver fails outside of solve")) {
+          s->Fail();
+        }
+        throw;
+      }
+    }
+    return PyDecisionBuilder::next(s);
   }
-  std::string DebugString() const override {
-    PYBIND11_OVERRIDE(std::string, Demon, DebugString, );
+  std::string debug_string() const override {
+    PYBIND11_OVERRIDE(std::string, PyDecisionBuilder, debug_string, );
   }
-};
-
-class PyLocalSearchOperator : public LocalSearchOperator {
- public:
-  using LocalSearchOperator::LocalSearchOperator;
-  bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta) override {
-    PYBIND11_OVERRIDE_PURE(bool, LocalSearchOperator, MakeNextNeighbor, delta,
-                           deltadelta);
-  }
-  void Start(const Assignment* assignment) override {
-    PYBIND11_OVERRIDE_PURE(void, LocalSearchOperator, Start, assignment);
-  }
-  void EnterSearch() override {
-    PYBIND11_OVERRIDE(void, LocalSearchOperator, EnterSearch, );
-  }
-  void Reset() override {
-    PYBIND11_OVERRIDE(void, LocalSearchOperator, Reset, );
-  }
-  bool HasFragments() const override {
-    PYBIND11_OVERRIDE(bool, LocalSearchOperator, HasFragments, );
-  }
-  bool HoldsDelta() const override {
-    PYBIND11_OVERRIDE(bool, LocalSearchOperator, HoldsDelta, );
-  }
-  std::string DebugString() const override {
-    PYBIND11_OVERRIDE(std::string, LocalSearchOperator, DebugString, );
-  }
-};
-
-class PyLocalSearchFilter : public LocalSearchFilter {
- public:
-  using LocalSearchFilter::LocalSearchFilter;
-  bool Accept(const Assignment* delta, const Assignment* deltadelta,
-              int64_t objective_min, int64_t objective_max) override {
-    PYBIND11_OVERRIDE_PURE(bool, LocalSearchFilter, Accept, delta, deltadelta,
-                           objective_min, objective_max);
-  }
-  void Synchronize(const Assignment* assignment,
-                   const Assignment* delta) override {
-    PYBIND11_OVERRIDE_PURE(void, LocalSearchFilter, Synchronize, assignment,
-                           delta);
-  }
-  bool IsIncremental() const override {
-    PYBIND11_OVERRIDE(bool, LocalSearchFilter, IsIncremental, );
-  }
-  void Revert() override {
-    PYBIND11_OVERRIDE(void, LocalSearchFilter, Revert, );
-  }
-  void Reset() override { PYBIND11_OVERRIDE(void, LocalSearchFilter, Reset, ); }
-  int64_t GetSynchronizedObjectiveValue() const override {
-    PYBIND11_OVERRIDE(int64_t, LocalSearchFilter,
-                      GetSynchronizedObjectiveValue, );
-  }
-  int64_t GetAcceptedObjectiveValue() const override {
-    PYBIND11_OVERRIDE(int64_t, LocalSearchFilter, GetAcceptedObjectiveValue, );
-  }
-  std::string DebugString() const override {
-    PYBIND11_OVERRIDE(std::string, LocalSearchFilter, DebugString, );
-  }
-};
-
-class PyConstraint : public Constraint {
- public:
-  using Constraint::Constraint;
-  void Post() override { PYBIND11_OVERRIDE_PURE(void, Constraint, Post, ); }
-  void InitialPropagate() override {
-    PYBIND11_OVERRIDE_PURE(void, Constraint, InitialPropagate, );
-  }
-  std::string DebugString() const override {
-    PYBIND11_OVERRIDE(std::string, Constraint, DebugString, );
-  }
-  IntVar* Var() override { PYBIND11_OVERRIDE(IntVar*, Constraint, Var, ); }
 };
 
 class PySearchMonitor : public SearchMonitor {
  public:
   using SearchMonitor::SearchMonitor;
   void EnterSearch() override {
-    PYBIND11_OVERRIDE(void, SearchMonitor, EnterSearch, );
+    PYBIND11_OVERRIDE_NAME(void, SearchMonitor, "enter_search", EnterSearch, );
   }
   void RestartSearch() override {
-    PYBIND11_OVERRIDE(void, SearchMonitor, RestartSearch, );
+    PYBIND11_OVERRIDE_NAME(void, SearchMonitor, "restart_search",
+                           RestartSearch, );
   }
   void ExitSearch() override {
-    PYBIND11_OVERRIDE(void, SearchMonitor, ExitSearch, );
+    PYBIND11_OVERRIDE_NAME(void, SearchMonitor, "exit_search", ExitSearch, );
   }
   void BeginNextDecision(DecisionBuilder* b) override {
-    PYBIND11_OVERRIDE(void, SearchMonitor, BeginNextDecision, b);
+    PYBIND11_OVERRIDE_NAME(void, SearchMonitor, "begin_next_decision",
+                           BeginNextDecision, b);
   }
   void EndNextDecision(DecisionBuilder* b, Decision* d) override {
-    PYBIND11_OVERRIDE(void, SearchMonitor, EndNextDecision, b, d);
+    PYBIND11_OVERRIDE_NAME(void, SearchMonitor, "end_next_decision",
+                           EndNextDecision, b, d);
   }
   void ApplyDecision(Decision* d) override {
-    PYBIND11_OVERRIDE(void, SearchMonitor, ApplyDecision, d);
+    PYBIND11_OVERRIDE_NAME(void, SearchMonitor, "apply_decision", ApplyDecision,
+                           d);
   }
   void RefuteDecision(Decision* d) override {
-    PYBIND11_OVERRIDE(void, SearchMonitor, RefuteDecision, d);
+    PYBIND11_OVERRIDE_NAME(void, SearchMonitor, "refute_decision",
+                           RefuteDecision, d);
   }
   void AfterDecision(Decision* d, bool apply) override {
-    PYBIND11_OVERRIDE(void, SearchMonitor, AfterDecision, d, apply);
+    PYBIND11_OVERRIDE_NAME(void, SearchMonitor, "after_decision", AfterDecision,
+                           d, apply);
   }
   void BeginFail() override {
-    PYBIND11_OVERRIDE(void, SearchMonitor, BeginFail, );
+    PYBIND11_OVERRIDE_NAME(void, SearchMonitor, "begin_fail", BeginFail, );
   }
-  void EndFail() override { PYBIND11_OVERRIDE(void, SearchMonitor, EndFail, ); }
+  void EndFail() override {
+    PYBIND11_OVERRIDE_NAME(void, SearchMonitor, "end_fail", EndFail, );
+  }
   void BeginInitialPropagation() override {
-    PYBIND11_OVERRIDE(void, SearchMonitor, BeginInitialPropagation, );
+    PYBIND11_OVERRIDE_NAME(void, SearchMonitor, "begin_initial_propagation",
+                           BeginInitialPropagation, );
   }
   void EndInitialPropagation() override {
-    PYBIND11_OVERRIDE(void, SearchMonitor, EndInitialPropagation, );
+    PYBIND11_OVERRIDE_NAME(void, SearchMonitor, "end_initial_propagation",
+                           EndInitialPropagation, );
   }
   bool AcceptSolution() override {
-    PYBIND11_OVERRIDE(bool, SearchMonitor, AcceptSolution, );
+    PYBIND11_OVERRIDE_NAME(bool, SearchMonitor, "accept_solution",
+                           AcceptSolution, );
   }
   bool AtSolution() override {
-    PYBIND11_OVERRIDE(bool, SearchMonitor, AtSolution, );
+    PYBIND11_OVERRIDE_NAME(bool, SearchMonitor, "at_solution", AtSolution, );
   }
   void NoMoreSolutions() override {
-    PYBIND11_OVERRIDE(void, SearchMonitor, NoMoreSolutions, );
+    PYBIND11_OVERRIDE_NAME(void, SearchMonitor, "no_more_solutions",
+                           NoMoreSolutions, );
   }
   bool AtLocalOptimum() override {
-    PYBIND11_OVERRIDE(bool, SearchMonitor, AtLocalOptimum, );
+    PYBIND11_OVERRIDE_NAME(bool, SearchMonitor, "at_local_optimum",
+                           AtLocalOptimum, );
   }
   bool AcceptDelta(Assignment* delta, Assignment* deltadelta) override {
-    PYBIND11_OVERRIDE(bool, SearchMonitor, AcceptDelta, delta, deltadelta);
+    PYBIND11_OVERRIDE_NAME(bool, SearchMonitor, "accept_delta", AcceptDelta,
+                           delta, deltadelta);
   }
   void AcceptNeighbor() override {
-    PYBIND11_OVERRIDE(void, SearchMonitor, AcceptNeighbor, );
+    PYBIND11_OVERRIDE_NAME(void, SearchMonitor, "accept_neighbor",
+                           AcceptNeighbor, );
   }
   void AcceptUncheckedNeighbor() override {
-    PYBIND11_OVERRIDE(void, SearchMonitor, AcceptUncheckedNeighbor, );
+    PYBIND11_OVERRIDE_NAME(void, SearchMonitor, "accept_unchecked_neighbor",
+                           AcceptUncheckedNeighbor, );
   }
   bool IsUncheckedSolutionLimitReached() override {
-    PYBIND11_OVERRIDE(bool, SearchMonitor, IsUncheckedSolutionLimitReached, );
+    PYBIND11_OVERRIDE_NAME(bool, SearchMonitor,
+                           "is_unchecked_solution_limit_reached",
+                           IsUncheckedSolutionLimitReached, );
   }
   void PeriodicCheck() override {
-    PYBIND11_OVERRIDE(void, SearchMonitor, PeriodicCheck, );
+    PYBIND11_OVERRIDE_NAME(void, SearchMonitor, "periodic_check",
+                           PeriodicCheck, );
   }
   int ProgressPercent() override {
-    PYBIND11_OVERRIDE(int, SearchMonitor, ProgressPercent, );
+    PYBIND11_OVERRIDE_NAME(int, SearchMonitor, "progress_percent",
+                           ProgressPercent, );
   }
   void Accept(ModelVisitor* visitor) const override {
-    PYBIND11_OVERRIDE(void, SearchMonitor, Accept, visitor);
+    PYBIND11_OVERRIDE_NAME(void, SearchMonitor, "accept", Accept, visitor);
   }
-  void Install() override { PYBIND11_OVERRIDE(void, SearchMonitor, Install, ); }
+  void Install() override {
+    PYBIND11_OVERRIDE_NAME(void, SearchMonitor, "install", Install, );
+  }
   std::string DebugString() const override {
-    PYBIND11_OVERRIDE(std::string, SearchMonitor, DebugString, );
+    PYBIND11_OVERRIDE_NAME(std::string, SearchMonitor, "__str__",
+                           DebugString, );
   }
 };
+
+std::vector<IntVar*> ToIntVarArray(const std::vector<IntExpr*>& exprs) {
+  std::vector<IntVar*> result;
+  result.reserve(exprs.size());
+  for (IntExpr* expr : exprs) {
+    result.push_back(expr->Var());
+  }
+  return result;
+}
 
 PYBIND11_MODULE(constraint_solver, m) {
   pybind11_protobuf::ImportNativeProtoCasters();
 
-  py::class_<operations_research::PiecewiseLinearFunction>(
-      m, "PiecewiseLinearFunction")
-      .def_static("create_piecewise_linear_function",
-                  &PiecewiseLinearFunction::CreatePiecewiseLinearFunction,
-                  py::arg("points_x"), py::arg("points_y"), py::arg("slopes"),
-                  py::arg("other_points_x"),
-                  py::return_value_policy::take_ownership)
-      .def_static(
-          "create_step_function", &PiecewiseLinearFunction::CreateStepFunction,
-          py::arg("points_x"), py::arg("points_y"), py::arg("other_points_x"),
-          py::return_value_policy::take_ownership)
-      .def_static("create_full_domain_function",
-                  &PiecewiseLinearFunction::CreateFullDomainFunction,
-                  py::arg("initial_level"), py::arg("points_x"),
-                  py::arg("slopes"), py::return_value_policy::take_ownership)
-      .def_static("create_one_segment_function",
-                  &PiecewiseLinearFunction::CreateOneSegmentFunction,
-                  py::arg("point_x"), py::arg("point_y"), py::arg("slope"),
-                  py::arg("other_point_x"),
-                  py::return_value_policy::take_ownership)
-      .def_static("create_right_ray_function",
-                  &PiecewiseLinearFunction::CreateRightRayFunction,
-                  py::arg("point_x"), py::arg("point_y"), py::arg("slope"),
-                  py::return_value_policy::take_ownership)
-      .def_static("create_left_ray_function",
-                  &PiecewiseLinearFunction::CreateLeftRayFunction,
-                  py::arg("point_x"), py::arg("point_y"), py::arg("slope"),
-                  py::return_value_policy::take_ownership)
-      .def_static("create_fixed_charge_function",
-                  &PiecewiseLinearFunction::CreateFixedChargeFunction,
-                  py::arg("slope"), py::arg("value"),
-                  py::return_value_policy::take_ownership)
-      .def_static("create_early_tardy_function",
-                  &PiecewiseLinearFunction::CreateEarlyTardyFunction,
-                  py::arg("reference"), py::arg("earliness_slope"),
-                  py::arg("tardiness_slope"),
-                  py::return_value_policy::take_ownership)
-      .def_static("create_early_tardy_function_with_slack",
-                  &PiecewiseLinearFunction::CreateEarlyTardyFunctionWithSlack,
-                  py::arg("early_slack"), py::arg("late_slack"),
-                  py::arg("earliness_slope"), py::arg("tardiness_slope"),
-                  py::return_value_policy::take_ownership)
-      .def("in_domain", &PiecewiseLinearFunction::InDomain, py::arg("x"))
-      .def("is_convex", &PiecewiseLinearFunction::IsConvex)
-      .def("is_non_decreasing", &PiecewiseLinearFunction::IsNonDecreasing)
-      .def("is_non_increasing", &PiecewiseLinearFunction::IsNonIncreasing)
-      .def("value", &PiecewiseLinearFunction::Value, py::arg("x"))
-      .def("__str__", &PiecewiseLinearFunction::DebugString);
+  py::class_<Rev<bool>>(m, "RevBool")
+      .def(py::init<bool>(), py::arg("val"))
+      .def("value", &Rev<bool>::Value)
+      .def("set_value", &Rev<bool>::SetValue, py::arg("s"), py::arg("val"));
+
+  py::class_<NumericalRev<int64_t>>(m, "RevInteger")
+      .def(py::init<int64_t>(), py::arg("val"))
+      .def("value", &NumericalRev<int64_t>::Value)
+      .def("set_value", &NumericalRev<int64_t>::SetValue, py::arg("s"),
+           py::arg("val"))
+      .def("add", &NumericalRev<int64_t>::Add, py::arg("s"), py::arg("to_add"))
+      .def("incr", &NumericalRev<int64_t>::Incr, py::arg("s"))
+      .def("decr", &NumericalRev<int64_t>::Decr, py::arg("s"));
 
   py::class_<DefaultPhaseParameters> default_phase_parameters(
       m, "DefaultPhaseParameters");
@@ -547,10 +562,29 @@ PYBIND11_MODULE(constraint_solver, m) {
       .value("STAYS_IN_SYNC", Solver::STAYS_IN_SYNC)
       .export_values();
 
+  py::class_<IntVarIterator>(m, "IntVarIterator")
+      .def("init", &IntVarIterator::Init)
+      .def("ok", &IntVarIterator::Ok)
+      .def("value", &IntVarIterator::Value)
+      .def("next", &IntVarIterator::Next)
+      .def("__iter__",
+           [](IntVarIterator* it) {
+             it->Init();
+             return it;
+           })
+      .def("__next__", [](IntVarIterator* it) {
+        if (it->Ok()) {
+          int64_t v = it->Value();
+          it->Next();
+          return v;
+        }
+        throw py::stop_iteration();
+      });
+
   py::class_<BaseObject>(m, "BaseObject", DOC(operations_research, BaseObject))
       .def("__str__", &BaseObjectPythonHelper::DebugString);
 
-  py::class_<operations_research::SearchMonitor, BaseObject, PySearchMonitor>(
+  py::class_<SearchMonitor, BaseObject, PySearchMonitor>(
       m, "SearchMonitor", DOC(operations_research, SearchMonitor))
       .def(py::init<Solver*>(), py::arg("solver"))
       .def("enter_search", &SearchMonitor::EnterSearch,
@@ -642,7 +676,7 @@ PYBIND11_MODULE(constraint_solver, m) {
            py::return_value_policy::reference_internal)
       .def("last_solution_or_null", &SolutionCollector::last_solution_or_null,
            py::return_value_policy::reference_internal)
-      .def("wall_time", &SolutionCollector::wall_time, py::arg("n"))
+      .def("wall_time_ms", &SolutionCollector::wall_time, py::arg("n"))
       .def("branches", &SolutionCollector::branches, py::arg("n"))
       .def("failures", &SolutionCollector::failures, py::arg("n"))
       .def("objective_value", &SolutionCollector::objective_value, py::arg("n"))
@@ -679,7 +713,7 @@ PYBIND11_MODULE(constraint_solver, m) {
       .def("__str__", &SearchLimit::DebugString);
 
   py::class_<RegularLimit, SearchLimit>(m, "RegularLimit")
-      .def_property_readonly("wall_time", &RegularLimit::wall_time)
+      .def_property_readonly("wall_time_ms", &RegularLimit::wall_time)
       .def_property_readonly("branches", &RegularLimit::branches)
       .def_property_readonly("failures", &RegularLimit::failures)
       .def_property_readonly("solutions", &RegularLimit::solutions);
@@ -901,10 +935,6 @@ PYBIND11_MODULE(constraint_solver, m) {
       .def(py::init<const std::string&>())
       .def(py::init<const std::string&,
                           const ConstraintSolverParameters&>())
-      .def("__str__", &Solver::DebugString)
-      .def("default_solver_parameters", &Solver::DefaultSolverParameters)
-      .def_property_readonly("parameters", &Solver::parameters)
-      .def("local_search_profile", &Solver::LocalSearchProfile)
       .def("new_int_var",
            py::overload_cast<int64_t, int64_t, const std::string&>(
                &Solver::MakeIntVar),
@@ -923,6 +953,12 @@ PYBIND11_MODULE(constraint_solver, m) {
            py::overload_cast<const std::vector<int64_t>&>(
                &Solver::MakeIntVar),
            DOC(operations_research, Solver, MakeIntVar_2),
+           py::return_value_policy::reference_internal)
+      .def("new_bool_var",
+           [](Solver* s, const std::string& name) {
+             return s->MakeBoolVar(name);
+           },
+           py::arg("name"), DOC(operations_research, Solver, MakeBoolVar),
            py::return_value_policy::reference_internal)
       .def("new_interval_var",
            py::overload_cast<int64_t, int64_t, int64_t, int64_t, int64_t,
@@ -955,41 +991,64 @@ PYBIND11_MODULE(constraint_solver, m) {
                &Solver::MakeFixedDurationIntervalVar),
            DOC(operations_research, Solver, MakeFixedDurationIntervalVar_3),
            py::return_value_policy::reference_internal)
-      .def("add", &Solver::AddConstraint,
-           DOC(operations_research, Solver, AddConstraint), py::arg("c"))
+      .def("new_fixed_interval",
+           py::overload_cast<int64_t, int64_t, const std::string&>(
+               &Solver::MakeFixedInterval),
+           py::arg("start"), py::arg("duration"), py::arg("name"),
+           DOC(operations_research, Solver, MakeFixedInterval),
+           py::return_value_policy::reference_internal)
+      .def("new_mirror_interval",
+           py::overload_cast<IntervalVar*>(&Solver::MakeMirrorInterval),
+           py::arg("interval_var"),
+           DOC(operations_research, Solver, MakeMirrorInterval),
+           py::return_value_policy::reference_internal)
+      .def("new_interval_relaxed_min",
+           py::overload_cast<IntervalVar*>(&Solver::MakeIntervalRelaxedMin),
+           py::arg("interval_var"),
+           DOC(operations_research, Solver, MakeIntervalRelaxedMin),
+           py::return_value_policy::reference_internal)
+      .def("new_interval_relaxed_max",
+           py::overload_cast<IntervalVar*>(&Solver::MakeIntervalRelaxedMax),
+           py::arg("interval_var"),
+           DOC(operations_research, Solver, MakeIntervalRelaxedMax),
+           py::return_value_policy::reference_internal)
       .def("add_abs_equality",
            [](Solver* s, IntVar* var, IntVar* abs_var) {
              s->AddConstraint(s->MakeAbsEquality(var, abs_var));
            })
       .def("add_all_different",
-           [](Solver* s, const std::vector<IntVar*>& vars) {
-             s->AddConstraint(s->MakeAllDifferent(vars));
+           [](Solver* s, const std::vector<IntExpr*>& exprs) {
+             s->AddConstraint(s->MakeAllDifferent(ToIntVarArray(exprs)));
            })
       .def("add_all_different",
-           [](Solver* s, const std::vector<IntVar*>& vars, bool stronger) {
-             s->AddConstraint(s->MakeAllDifferent(vars, stronger));
+           [](Solver* s, const std::vector<IntExpr*>& exprs, bool stronger) {
+             s->AddConstraint(
+                 s->MakeAllDifferent(ToIntVarArray(exprs), stronger));
            })
       .def("add_all_different_except",
-           [](Solver* s, const std::vector<IntVar*>& vars, int64_t v) {
-             s->AddConstraint(s->MakeAllDifferentExcept(vars, v));
+           [](Solver* s, const std::vector<IntExpr*>& exprs, int64_t v) {
+             s->AddConstraint(
+                 s->MakeAllDifferentExcept(ToIntVarArray(exprs), v));
            })
       .def("add_between_ct",
            [](Solver* s, IntExpr* expr, int64_t l, int64_t u) {
              s->AddConstraint(s->MakeBetweenCt(expr, l, u));
            })
       .def("add_circuit",
-           [](Solver* s, const std::vector<IntVar*>& nexts) {
-             s->AddConstraint(s->MakeCircuit(nexts));
+           [](Solver* s, const std::vector<IntExpr*>& nexts) {
+             s->AddConstraint(s->MakeCircuit(ToIntVarArray(nexts)));
            })
       .def("add_count",
-           [](Solver* s, const std::vector<IntVar*>& vars, int64_t value,
+           [](Solver* s, const std::vector<IntExpr*>& exprs, int64_t value,
               int64_t max_count) {
-             s->AddConstraint(s->MakeCount(vars, value, max_count));
+             s->AddConstraint(
+                 s->MakeCount(ToIntVarArray(exprs), value, max_count));
            })
       .def("add_count",
-           [](Solver* s, const std::vector<IntVar*>& vars, int64_t value,
+           [](Solver* s, const std::vector<IntExpr*>& exprs, int64_t value,
               IntVar* max_count) {
-             s->AddConstraint(s->MakeCount(vars, value, max_count));
+             s->AddConstraint(
+                 s->MakeCount(ToIntVarArray(exprs), value, max_count));
            })
       .def("add_cover",
            [](Solver* s, const std::vector<IntervalVar*>& vars,
@@ -1005,13 +1064,6 @@ PYBIND11_MODULE(constraint_solver, m) {
            })
       .def("add_cumulative",
            [](Solver* s, const std::vector<IntervalVar*>& intervals,
-              const std::vector<int>& demands, int64_t capacity,
-              const std::string& name) {
-             s->AddConstraint(
-                 s->MakeCumulative(intervals, demands, capacity, name));
-           })
-      .def("add_cumulative",
-           [](Solver* s, const std::vector<IntervalVar*>& intervals,
               const std::vector<int64_t>& demands, IntVar* capacity,
               absl::string_view name) {
              s->AddConstraint(
@@ -1019,80 +1071,58 @@ PYBIND11_MODULE(constraint_solver, m) {
            })
       .def("add_cumulative",
            [](Solver* s, const std::vector<IntervalVar*>& intervals,
-              const std::vector<int>& demands, IntVar* capacity,
+              const std::vector<IntExpr*>& demands, int64_t capacity,
               const std::string& name) {
-             s->AddConstraint(
-                 s->MakeCumulative(intervals, demands, capacity, name));
+             s->AddConstraint(s->MakeCumulative(
+                 intervals, ToIntVarArray(demands), capacity, name));
            })
       .def("add_cumulative",
            [](Solver* s, const std::vector<IntervalVar*>& intervals,
-              const std::vector<IntVar*>& demands, int64_t capacity,
+              const std::vector<IntExpr*>& demands, IntVar* capacity,
               const std::string& name) {
-             s->AddConstraint(
-                 s->MakeCumulative(intervals, demands, capacity, name));
-           })
-      .def("add_cumulative",
-           [](Solver* s, const std::vector<IntervalVar*>& intervals,
-              const std::vector<IntVar*>& demands, IntVar* capacity,
-              const std::string& name) {
-             s->AddConstraint(
-                 s->MakeCumulative(intervals, demands, capacity, name));
+             s->AddConstraint(s->MakeCumulative(
+                 intervals, ToIntVarArray(demands), capacity, name));
            })
       .def("add_delayed_path_cumul",
-           [](Solver* s, const std::vector<IntVar*>& nexts,
-              const std::vector<IntVar*>& active,
-              const std::vector<IntVar*>& cumuls,
-              const std::vector<IntVar*>& transits) {
-             s->AddConstraint(s->MakeDelayedPathCumul(nexts, active, cumuls,
-                                                      transits));
+           [](Solver* s, const std::vector<IntExpr*>& nexts,
+              const std::vector<IntExpr*>& active,
+              const std::vector<IntExpr*>& cumuls,
+              const std::vector<IntExpr*>& transits) {
+             s->AddConstraint(s->MakeDelayedPathCumul(
+                 ToIntVarArray(nexts), ToIntVarArray(active),
+                 ToIntVarArray(cumuls), ToIntVarArray(transits)));
            })
       .def("add_deviation",
-           [](Solver* s, const std::vector<IntVar*>& vars,
+           [](Solver* s, const std::vector<IntExpr*>& exprs,
               IntVar* deviation_var, int64_t total_sum) {
-             s->AddConstraint(
-                 s->MakeDeviation(vars, deviation_var, total_sum));
+             s->AddConstraint(s->MakeDeviation(
+                 ToIntVarArray(exprs), deviation_var, total_sum));
            })
-      .def("add_disjunctive_constraint",
-           [](Solver* s, const std::vector<IntervalVar*>& intervals,
-              const std::string& name) {
-             auto* ct = s->MakeDisjunctiveConstraint(intervals, name);
-             s->AddConstraint(ct);
-             return ct;
-           }, py::return_value_policy::reference_internal)
       .def("add_distribute",
-           [](Solver* s, const std::vector<IntVar*>& vars,
+           [](Solver* s, const std::vector<IntExpr*>& exprs,
               const std::vector<int64_t>& values,
-              const std::vector<IntVar*>& cards) {
-             s->AddConstraint(s->MakeDistribute(vars, values, cards));
+              const std::vector<IntExpr*>& cards) {
+             s->AddConstraint(s->MakeDistribute(ToIntVarArray(exprs), values,
+                                                ToIntVarArray(cards)));
            })
       .def("add_distribute",
-           [](Solver* s, const std::vector<IntVar*>& vars,
-              const std::vector<int>& values,
-              const std::vector<IntVar*>& cards) {
-             s->AddConstraint(s->MakeDistribute(vars, values, cards));
-           })
-      .def("add_distribute",
-           [](Solver* s, const std::vector<IntVar*>& vars,
-              const std::vector<IntVar*>& cards) {
-             s->AddConstraint(s->MakeDistribute(vars, cards));
-           })
-      .def("add_distribute",
-           [](Solver* s, const std::vector<IntVar*>& vars, int64_t card_min,
-              int64_t card_max, int64_t card_size) {
+           [](Solver* s, const std::vector<IntExpr*>& exprs,
+              const std::vector<IntExpr*>& cards) {
              s->AddConstraint(
-                 s->MakeDistribute(vars, card_min, card_max, card_size));
+                 s->MakeDistribute(ToIntVarArray(exprs), ToIntVarArray(cards)));
            })
       .def("add_distribute",
-           [](Solver* s, const std::vector<IntVar*>& vars,
+           [](Solver* s, const std::vector<IntExpr*>& exprs, int64_t card_min,
+              int64_t card_max, int64_t card_size) {
+             s->AddConstraint(s->MakeDistribute(
+                 ToIntVarArray(exprs), card_min, card_max, card_size));
+           })
+      .def("add_distribute",
+           [](Solver* s, const std::vector<IntExpr*>& exprs,
               const std::vector<int64_t>& values,
               const std::vector<int64_t>& cards) {
-             s->AddConstraint(s->MakeDistribute(vars, values, cards));
-           })
-      .def("add_distribute",
-           [](Solver* s, const std::vector<IntVar*>& vars,
-              const std::vector<int>& values,
-              const std::vector<int>& cards) {
-             s->AddConstraint(s->MakeDistribute(vars, values, cards));
+             s->AddConstraint(s->MakeDistribute(
+                 ToIntVarArray(exprs), values, cards));
            })
       .def("add_element_equality",
            [](Solver* s, const std::vector<int64_t>& vals, IntVar* index,
@@ -1100,26 +1130,24 @@ PYBIND11_MODULE(constraint_solver, m) {
              s->AddConstraint(s->MakeElementEquality(vals, index, target));
            })
       .def("add_element_equality",
-           [](Solver* s, const std::vector<int>& vals, IntVar* index,
+           [](Solver* s, const std::vector<IntExpr*>& exprs, IntVar* index,
               IntVar* target) {
-             s->AddConstraint(s->MakeElementEquality(vals, index, target));
+             s->AddConstraint(s->MakeElementEquality(
+                 ToIntVarArray(exprs), index, target));
            })
       .def("add_element_equality",
-           [](Solver* s, const std::vector<IntVar*>& vars, IntVar* index,
-              IntVar* target) {
-             s->AddConstraint(s->MakeElementEquality(vars, index, target));
-           })
-      .def("add_element_equality",
-           [](Solver* s, const std::vector<IntVar*>& vars, IntVar* index,
+           [](Solver* s, const std::vector<IntExpr*>& exprs, IntVar* index,
               int64_t target) {
-             s->AddConstraint(s->MakeElementEquality(vars, index, target));
+             s->AddConstraint(s->MakeElementEquality(
+                 ToIntVarArray(exprs), index, target));
            })
       .def("add_false_constraint",
            [](Solver* s) { s->AddConstraint(s->MakeFalseConstraint()); })
       .def("add_index_of_constraint",
-           [](Solver* s, const std::vector<IntVar*>& vars, IntVar* index,
+           [](Solver* s, const std::vector<IntExpr*>& exprs, IntVar* index,
               int64_t target) {
-             s->AddConstraint(s->MakeIndexOfConstraint(vars, index, target));
+             s->AddConstraint(
+                 s->MakeIndexOfConstraint(ToIntVarArray(exprs), index, target));
            })
       .def("add_interval_var_relation",
            [](Solver* s, IntervalVar* t, Solver::UnaryIntervalRelation r,
@@ -1138,9 +1166,10 @@ PYBIND11_MODULE(constraint_solver, m) {
                                                                   delay));
            })
       .def("add_inverse_permutation_constraint",
-           [](Solver* s, const std::vector<IntVar*>& left,
-              const std::vector<IntVar*>& right) {
-             s->AddConstraint(s->MakeInversePermutationConstraint(left, right));
+           [](Solver* s, const std::vector<IntExpr*>& left,
+              const std::vector<IntExpr*>& right) {
+             s->AddConstraint(s->MakeInversePermutationConstraint(
+                 ToIntVarArray(left), ToIntVarArray(right)));
            })
       .def("add_is_between_ct",
            [](Solver* s, IntExpr* var, int64_t l, int64_t u, IntVar* boolvar) {
@@ -1203,176 +1232,302 @@ PYBIND11_MODULE(constraint_solver, m) {
              s->AddConstraint(s->MakeIsMemberCt(var, values, boolvar));
            })
       .def("add_lexical_less",
-           [](Solver* s, const std::vector<IntVar*>& left,
-              const std::vector<IntVar*>& right) {
-             s->AddConstraint(s->MakeLexicalLess(left, right));
+           [](Solver* s, const std::vector<IntExpr*>& left,
+              const std::vector<IntExpr*>& right) {
+             s->AddConstraint(s->MakeLexicalLess(
+                 ToIntVarArray(left), ToIntVarArray(right)));
            })
       .def("add_lexical_less_or_equal",
-           [](Solver* s, const std::vector<IntVar*>& left,
-              const std::vector<IntVar*>& right) {
-             s->AddConstraint(s->MakeLexicalLessOrEqual(left, right));
+           [](Solver* s, const std::vector<IntExpr*>& left,
+              const std::vector<IntExpr*>& right) {
+             s->AddConstraint(s->MakeLexicalLessOrEqual(
+                 ToIntVarArray(left), ToIntVarArray(right)));
            })
       .def("add_max_equality",
-           [](Solver* s, const std::vector<IntVar*>& vars, IntVar* var) {
-             s->AddConstraint(s->MakeMaxEquality(vars, var));
+           [](Solver* s, const std::vector<IntExpr*>& exprs, IntVar* var) {
+             s->AddConstraint(s->MakeMaxEquality(ToIntVarArray(exprs), var));
            })
       .def("add_member_ct",
            [](Solver* s, IntExpr* expr, const std::vector<int64_t>& values) {
              s->AddConstraint(s->MakeMemberCt(expr, values));
            })
       .def("add_min_equality",
-           [](Solver* s, const std::vector<IntVar*>& vars, IntVar* var) {
-             s->AddConstraint(s->MakeMinEquality(vars, var));
+           [](Solver* s, const std::vector<IntExpr*>& exprs, IntVar* var) {
+             s->AddConstraint(s->MakeMinEquality(ToIntVarArray(exprs), var));
            })
       .def("add_non_overlapping_boxes_constraint",
-           [](Solver* s, const std::vector<IntVar*>& x_vars,
-              const std::vector<IntVar*>& y_vars,
-              const std::vector<IntVar*>& x_size,
-              const std::vector<IntVar*>& y_size) {
+           [](Solver* s, const std::vector<IntExpr*>& x_vars,
+              const std::vector<IntExpr*>& y_vars,
+              const std::vector<IntExpr*>& x_size,
+              const std::vector<IntExpr*>& y_size) {
              s->AddConstraint(s->MakeNonOverlappingBoxesConstraint(
-                 x_vars, y_vars, x_size, y_size));
+                 ToIntVarArray(x_vars),
+                 ToIntVarArray(y_vars),
+                 ToIntVarArray(x_size),
+                 ToIntVarArray(y_size)));
            })
       .def("add_non_overlapping_boxes_constraint",
-           [](Solver* s, const std::vector<IntVar*>& x_vars,
-              const std::vector<IntVar*>& y_vars,
+           [](Solver* s, const std::vector<IntExpr*>& x_vars,
+              const std::vector<IntExpr*>& y_vars,
               const std::vector<int64_t>& x_size,
               const std::vector<int64_t>& y_size) {
              s->AddConstraint(s->MakeNonOverlappingBoxesConstraint(
-                 x_vars, y_vars, x_size, y_size));
-           })
-      .def("add_non_overlapping_boxes_constraint",
-           [](Solver* s, const std::vector<IntVar*>& x_vars,
-              const std::vector<IntVar*>& y_vars,
-              const std::vector<int>& x_size, const std::vector<int>& y_size) {
-             s->AddConstraint(s->MakeNonOverlappingBoxesConstraint(
-                 x_vars, y_vars, x_size, y_size));
+                 ToIntVarArray(x_vars), ToIntVarArray(y_vars), x_size, y_size));
            })
       .def("add_not_member_ct",
            [](Solver* s, IntExpr* expr, const std::vector<int64_t>& values) {
              s->AddConstraint(s->MakeNotMemberCt(expr, values));
            })
       .def("add_null_intersect",
-           [](Solver* s, const std::vector<IntVar*>& first_vars,
-              const std::vector<IntVar*>& second_vars) {
+           [](Solver* s, const std::vector<IntExpr*>& first_exprs,
+              const std::vector<IntExpr*>& second_exprs) {
              s->AddConstraint(
-                 s->MakeNullIntersect(first_vars, second_vars));
+                 s->MakeNullIntersect(
+                    ToIntVarArray(first_exprs), ToIntVarArray(second_exprs)));
            })
       .def("add_null_intersect_except",
-           [](Solver* s, const std::vector<IntVar*>& first_vars,
-              const std::vector<IntVar*>& second_vars, int64_t escape_value) {
+           [](Solver* s, const std::vector<IntExpr*>& first_exprs,
+              const std::vector<IntExpr*>& second_exprs, int64_t escape_value) {
              s->AddConstraint(s->MakeNullIntersectExcept(
-                 first_vars, second_vars, escape_value));
+                 ToIntVarArray(first_exprs),
+                 ToIntVarArray(second_exprs),
+                 escape_value));
            })
       .def("add_pack",
-           [](Solver* s, const std::vector<IntVar*>& vars, int number_of_bins) {
-             s->AddConstraint(s->MakePack(vars, number_of_bins));
-           })
-      .def("add_path_cumul",
-           [](Solver* s, const std::vector<IntVar*>& nexts,
-              const std::vector<IntVar*>& active,
-              const std::vector<IntVar*>& cumuls,
-              const std::vector<IntVar*>& transits) {
+           [](Solver* s,
+              const std::vector<IntExpr*>& exprs,
+              int64_t number_of_bins) {
              s->AddConstraint(
-                 s->MakePathCumul(nexts, active, cumuls, transits));
+                 s->MakePack(ToIntVarArray(exprs), number_of_bins));
            })
       .def("add_path_cumul",
-           [](Solver* s, const std::vector<IntVar*>& nexts,
-              const std::vector<IntVar*>& active,
-              const std::vector<IntVar*>& cumuls,
+           [](Solver* s, const std::vector<IntExpr*>& nexts,
+              const std::vector<IntExpr*>& active,
+              const std::vector<IntExpr*>& cumuls,
+              const std::vector<IntExpr*>& transits) {
+             s->AddConstraint(
+                 s->MakePathCumul(ToIntVarArray(nexts),
+                  ToIntVarArray(active),
+                   ToIntVarArray(cumuls),
+                    ToIntVarArray(transits)));
+           })
+      .def("add_path_cumul",
+           [](Solver* s, const std::vector<IntExpr*>& nexts,
+              const std::vector<IntExpr*>& active,
+              const std::vector<IntExpr*>& cumuls,
               Solver::IndexEvaluator2 transit_evaluator) {
              s->AddConstraint(
-                 s->MakePathCumul(nexts, active, cumuls, transit_evaluator));
+                 s->MakePathCumul(ToIntVarArray(nexts),
+                   ToIntVarArray(active),
+                    ToIntVarArray(cumuls),
+                       transit_evaluator));
            })
-      .def("add_scal_prod_equality",
-           [](Solver* s, const std::vector<IntVar*>& vars,
+      .def("add_weighted_sum_equality",
+           [](Solver* s, const std::vector<IntExpr*>& exprs,
               const std::vector<int64_t>& coeffs, int64_t cst) {
-             s->AddConstraint(s->MakeScalProdEquality(vars, coeffs, cst));
+             s->AddConstraint(
+                s->MakeScalProdEquality(ToIntVarArray(exprs), coeffs, cst));
            })
-      .def("add_scal_prod_equality",
-           [](Solver* s, const std::vector<IntVar*>& vars,
-              const std::vector<int>& coeffs, int64_t cst) {
-             s->AddConstraint(s->MakeScalProdEquality(vars, coeffs, cst));
-           })
-      .def("add_scal_prod_equality",
-           [](Solver* s, const std::vector<IntVar*>& vars,
+      .def("add_weighted_sum_equality",
+           [](Solver* s, const std::vector<IntExpr*>& exprs,
               const std::vector<int64_t>& coeffs, IntVar* target) {
-             s->AddConstraint(s->MakeScalProdEquality(vars, coeffs, target));
+             s->AddConstraint(
+                s->MakeScalProdEquality(ToIntVarArray(exprs), coeffs, target));
            })
-      .def("add_scal_prod_equality",
-           [](Solver* s, const std::vector<IntVar*>& vars,
-              const std::vector<int>& coeffs, IntVar* target) {
-             s->AddConstraint(s->MakeScalProdEquality(vars, coeffs, target));
+      .def("add_weighted_sum_greater_or_equal",
+           [](Solver* s, const std::vector<IntExpr*>& exprs,
+              const std::vector<int64_t>& coeffs, int64_t cst) {
+             s->AddConstraint(s->MakeScalProdGreaterOrEqual(
+              ToIntVarArray(exprs), coeffs, cst));
            })
-      .def("add_scal_prod_greater_or_equal",
-           [](Solver* s, const std::vector<IntVar*>& vars,
+      .def("add_weighted_sum_less_or_equal",
+           [](Solver* s, const std::vector<IntExpr*>& exprs,
               const std::vector<int64_t>& coeffs, int64_t cst) {
              s->AddConstraint(
-                 s->MakeScalProdGreaterOrEqual(vars, coeffs, cst));
-           })
-      .def("add_scal_prod_greater_or_equal",
-           [](Solver* s, const std::vector<IntVar*>& vars,
-              const std::vector<int>& coeffs, int64_t cst) {
-             s->AddConstraint(
-                 s->MakeScalProdGreaterOrEqual(vars, coeffs, cst));
-           })
-      .def("add_scal_prod_less_or_equal",
-           [](Solver* s, const std::vector<IntVar*>& vars,
-              const std::vector<int64_t>& coeffs, int64_t cst) {
-             s->AddConstraint(
-                 s->MakeScalProdLessOrEqual(vars, coeffs, cst));
-           })
-      .def("add_scal_prod_less_or_equal",
-           [](Solver* s, const std::vector<IntVar*>& vars,
-              const std::vector<int>& coeffs, int64_t cst) {
-             s->AddConstraint(
-                 s->MakeScalProdLessOrEqual(vars, coeffs, cst));
+                 s->MakeScalProdLessOrEqual(ToIntVarArray(exprs), coeffs, cst));
            })
       .def("add_sorting_constraint",
-           [](Solver* s, const std::vector<IntVar*>& vars,
-              const std::vector<IntVar*>& sorted) {
-             s->AddConstraint(s->MakeSortingConstraint(vars, sorted));
+           [](Solver* s, const std::vector<IntExpr*>& exprs,
+              const std::vector<IntExpr*>& sorted) {
+             s->AddConstraint(s->MakeSortingConstraint(
+                 ToIntVarArray(exprs), ToIntVarArray(sorted)));
            })
       .def("add_sub_circuit",
-           [](Solver* s, const std::vector<IntVar*>& nexts) {
-             s->AddConstraint(s->MakeSubCircuit(nexts));
+           [](Solver* s, const std::vector<IntExpr*>& nexts) {
+             s->AddConstraint(s->MakeSubCircuit(ToIntVarArray(nexts)));
            })
       .def("add_sum_equality",
-           [](Solver* s, const std::vector<IntVar*>& vars, int64_t cst) {
-             s->AddConstraint(s->MakeSumEquality(vars, cst));
+           [](Solver* s, const std::vector<IntExpr*>& exprs, int64_t cst) {
+             s->AddConstraint(s->MakeSumEquality(ToIntVarArray(exprs), cst));
            })
       .def("add_sum_equality",
-           [](Solver* s, const std::vector<IntVar*>& vars, IntVar* var) {
-             s->AddConstraint(s->MakeSumEquality(vars, var));
+           [](Solver* s, const std::vector<IntExpr*>& exprs, IntVar* var) {
+             s->AddConstraint(s->MakeSumEquality(ToIntVarArray(exprs), var));
            })
       .def("add_sum_greater_or_equal",
-           [](Solver* s, const std::vector<IntVar*>& vars, int64_t cst) {
-             s->AddConstraint(s->MakeSumGreaterOrEqual(vars, cst));
+           [](Solver* s, const std::vector<IntExpr*>& exprs, int64_t cst) {
+             s->AddConstraint(
+                 s->MakeSumGreaterOrEqual(ToIntVarArray(exprs), cst));
            })
       .def("add_sum_less_or_equal",
-           [](Solver* s, const std::vector<IntVar*>& vars, int64_t cst) {
-             s->AddConstraint(s->MakeSumLessOrEqual(vars, cst));
+           [](Solver* s, const std::vector<IntExpr*>& exprs, int64_t cst) {
+             s->AddConstraint(s->MakeSumLessOrEqual(ToIntVarArray(exprs), cst));
            })
       .def("add_temporal_disjunction",
            [](Solver* s, IntervalVar* t1, IntervalVar* t2) {
              s->AddConstraint(s->MakeTemporalDisjunction(t1, t2));
            })
       .def("add_allowed_assignments",
-           [](Solver* s, const std::vector<IntVar*>& vars,
+           [](Solver* s, const std::vector<IntExpr*>& exprs,
               const std::vector<std::vector<int64_t>>& raw_tuples) {
-             IntTupleSet tuples(vars.size());
+             IntTupleSet tuples(exprs.size());
              tuples.InsertAll(raw_tuples);
-             s->AddConstraint(s->MakeAllowedAssignments(vars, tuples));
+             s->AddConstraint(
+                 s->MakeAllowedAssignments(ToIntVarArray(exprs), tuples));
            },
            py::arg("vars"), py::arg("tuples"),
            DOC(operations_research, Solver, MakeAllowedAssignments))
+      .def("add_true_constraint",
+           [](Solver* s) { s->AddConstraint(s->MakeTrueConstraint()); })
+      .def("add_transition_constraint",
+           [](Solver* s, const std::vector<IntExpr*>& exprs,
+              const std::vector<std::vector<int64_t>>& raw_transitions,
+              int64_t initial_state, const std::vector<int64_t>& final_states) {
+             IntTupleSet transitions(3);
+             transitions.InsertAll(raw_transitions);
+             s->AddConstraint(s->MakeTransitionConstraint(
+                 ToIntVarArray(exprs), transitions, initial_state,
+                 final_states));
+           },
+           py::arg("exprs"), py::arg("transitions"), py::arg("initial_state"),
+           py::arg("final_states"),
+           DOC(operations_research, Solver, MakeTransitionConstraint))
+      .def("add_disjunctive_constraint",
+           [](Solver* s, const std::vector<IntervalVar*>& intervals,
+              const std::string& name) {
+             auto* ct = s->MakeDisjunctiveConstraint(intervals, name);
+             s->AddConstraint(ct);
+             return ct;
+           }, py::return_value_policy::reference_internal)
+      .def("__str__", &Solver::DebugString)
+      .def("local_search_profile", &Solver::LocalSearchProfile)
+      .def("add", &Solver::AddConstraint,
+           DOC(operations_research, Solver, AddConstraint), py::arg("c"),
+           py::keep_alive<1, 2>())
+      .def("fail",
+           [](Solver* s) {
+             jmp_buf buffer;
+             s->set_fail_intercept([&buffer]() { longjmp(buffer, 1); });
+             auto cleanup =
+                 absl::MakeCleanup([s]() { s->clear_fail_intercept(); });
+             if (setjmp(buffer) == 0) {
+               s->Fail();
+             } else {
+               throw py::value_error("Solver fails outside of solve()");
+             }
+           })
+      .def("accept", &Solver::Accept, DOC(operations_research, Solver, Accept),
+           py::arg("visitor"))
+      .def("solve",
+           py::overload_cast<DecisionBuilder*,
+                             const std::vector<SearchMonitor*>&>(
+               &Solver::Solve),
+           py::arg("db"), py::arg("monitors"),
+           DOC(operations_research, Solver, Solve))
+      .def("solve",
+           py::overload_cast<DecisionBuilder*, SearchMonitor*>(
+               &Solver::Solve),
+           py::arg("db"), py::arg("m1"),
+           DOC(operations_research, Solver, Solve))
+      .def("solve",
+           py::overload_cast<DecisionBuilder*, SearchMonitor*, SearchMonitor*>(
+               &Solver::Solve),
+           py::arg("db"), py::arg("m1"), py::arg("m2"),
+           DOC(operations_research, Solver, Solve))
+      .def("solve",
+           py::overload_cast<DecisionBuilder*, SearchMonitor*, SearchMonitor*,
+                             SearchMonitor*>(
+               &Solver::Solve),
+           py::arg("db"), py::arg("m1"), py::arg("m2"), py::arg("m3"),
+           DOC(operations_research, Solver, Solve))
+      .def("solve",
+           py::overload_cast<DecisionBuilder*, SearchMonitor*, SearchMonitor*,
+                             SearchMonitor*, SearchMonitor*>(
+               &Solver::Solve),
+           py::arg("db"), py::arg("m1"), py::arg("m2"), py::arg("m3"),
+           py::arg("m4"), DOC(operations_research, Solver, Solve))
+      .def("solve", py::overload_cast<DecisionBuilder*>(&Solver::Solve),
+           py::arg("db"), DOC(operations_research, Solver, Solve_2))
+      .def("solve_and_commit",
+           py::overload_cast<DecisionBuilder*,
+                             const std::vector<SearchMonitor*>&>(
+               &Solver::SolveAndCommit),
+           py::arg("db"), py::arg("monitors"),
+           DOC(operations_research, Solver, SolveAndCommit))
+      .def("solve_and_commit",
+           py::overload_cast<DecisionBuilder*>(&Solver::SolveAndCommit),
+           py::arg("db"), DOC(operations_research, Solver, SolveAndCommit_2))
+      .def("new_search",
+           py::overload_cast<DecisionBuilder*,
+                                   const std::vector<SearchMonitor*>&>(  // NOLINT
+               &Solver::NewSearch),
+           DOC(operations_research, Solver, NewSearch),
+           py::keep_alive<1, 3>())
+      .def("new_search",
+           [](Solver* s, DecisionBuilder* db) {
+             std::vector<SearchMonitor*> monitors;
+             s->NewSearch(db, monitors);
+           },
+           DOC(operations_research, Solver, NewSearch))
+      .def("next_solution", &Solver::NextSolution,
+           DOC(operations_research, Solver, NextSolution))
+      .def("end_search", &Solver::EndSearch,
+           DOC(operations_research, Solver, EndSearch))
+      .def_property_readonly("fail_stamp", &Solver::fail_stamp)
+      .def_property_readonly("num_accepted_neighbors",
+                             &Solver::accepted_neighbors)
+      .def_property_readonly("num_branches", &Solver::branches)
+      .def_property_readonly("num_constraints", &Solver::constraints)
+      .def_property_readonly("num_failures", &Solver::failures)
+      .def_property_readonly("num_solutions", &Solver::solutions)
+      .def_property_readonly("search_depth", &Solver::SearchDepth)
+      .def_property_readonly("search_left_depth", &Solver::SearchLeftDepth)
+      .def_property_readonly("solve_depth", &Solver::SolveDepth)
+      .def_property_readonly("stamp", &Solver::stamp)
+      .def_property_readonly("wall_time_ms", &Solver::wall_time)
+      .def_static("memory_usage", &Solver::MemoryUsage)
+      .def("local_search_phase_parameters",
+           [](Solver* s, IntVar* objective, LocalSearchOperator* ls_operator,
+              DecisionBuilder* sub_decision_builder,
+              RegularLimit* limit,
+              LocalSearchFilterManager* filter_manager) {
+             return py::capsule(
+                 s->MakeLocalSearchPhaseParameters(objective, ls_operator,
+                                                   sub_decision_builder, limit,
+                                                   filter_manager),
+                 "LocalSearchPhaseParameters");
+           },
+           py::arg("objective"), py::arg("ls_operator"),
+           py::arg("sub_decision_builder"), py::arg("limit") = nullptr,
+           py::arg("filter_manager") = nullptr)
+      .def("default_solver_parameters", &Solver::DefaultSolverParameters)
+      .def_property_readonly("parameters", &Solver::parameters)
       .def("assignment", py::overload_cast<>(&Solver::MakeAssignment),
            DOC(operations_research, Solver, MakeAssignment_2),
            py::return_value_policy::reference_internal)
-      .def("add_true_constraint",
-           [](Solver* s) { s->AddConstraint(s->MakeTrueConstraint()); })
       .def("limit",
            py::overload_cast<const RegularLimitParameters&>(&Solver::MakeLimit),
            py::arg("proto"),
+           py::return_value_policy::reference_internal)
+      .def("limit",
+           [](Solver* s, int64_t time, int64_t branches, int64_t failures,
+              int64_t solutions, bool smart_time_check, bool cumulative) {
+             return s->MakeLimit(time, branches, failures, solutions,
+                                 smart_time_check, cumulative);
+           },
+           py::arg("time"), py::arg("branches"), py::arg("failures"),
+           py::arg("solutions"), py::arg("smart_time_check") = false,
+           py::arg("cumulative") = false,
            py::return_value_policy::reference_internal)
       .def("element_function",
            py::overload_cast<Solver::IndexEvaluator1, IntVar*>(
@@ -1474,55 +1629,49 @@ PYBIND11_MODULE(constraint_solver, m) {
            py::arg("step"), DOC(operations_research, Solver, MakeOptimize),
            py::return_value_policy::reference_internal)
       .def("weighted_minimize",
-           py::overload_cast<const std::vector<IntVar*>&,
-                             const std::vector<int64_t>&, int64_t>(
-               &Solver::MakeWeightedMinimize),
+         [](Solver* s, const std::vector<IntExpr*>& sub_objectives,
+              const std::vector<int64_t>& weights, int64_t step) {
+             return s->MakeWeightedMinimize(
+                 ToIntVarArray(sub_objectives), weights, step);
+           },
            py::arg("sub_objectives"), py::arg("weights"), py::arg("step"),
            DOC(operations_research, Solver, MakeWeightedMinimize),
            py::return_value_policy::reference_internal)
-      .def("weighted_minimize",
-           py::overload_cast<const std::vector<IntVar*>&,
-                             const std::vector<int>&, int64_t>(
-               &Solver::MakeWeightedMinimize),
-           py::arg("sub_objectives"), py::arg("weights"), py::arg("step"),
-           DOC(operations_research, Solver, MakeWeightedMinimize_2),
-           py::return_value_policy::reference_internal)
       .def("weighted_maximize",
-           py::overload_cast<const std::vector<IntVar*>&,
-                             const std::vector<int64_t>&, int64_t>(
-               &Solver::MakeWeightedMaximize),
+           [](Solver* s, const std::vector<IntExpr*>& sub_objectives,
+              const std::vector<int64_t>& weights, int64_t step) {
+             return s->MakeWeightedMaximize(ToIntVarArray(sub_objectives),
+                                           weights, step);
+           },
            py::arg("sub_objectives"), py::arg("weights"), py::arg("step"),
            DOC(operations_research, Solver, MakeWeightedMaximize),
            py::return_value_policy::reference_internal)
-      .def("weighted_maximize",
-           py::overload_cast<const std::vector<IntVar*>&,
-                             const std::vector<int>&, int64_t>(
-               &Solver::MakeWeightedMaximize),
-           py::arg("sub_objectives"), py::arg("weights"), py::arg("step"),
-           DOC(operations_research, Solver, MakeWeightedMaximize_2),
-           py::return_value_policy::reference_internal)
       .def("weighted_optimize",
-           py::overload_cast<bool, const std::vector<IntVar*>&,
-                             const std::vector<int64_t>&, int64_t>(
-               &Solver::MakeWeightedOptimize),
+           [](Solver* s, bool maximize,
+              const std::vector<IntExpr*>& sub_objectives,
+              const std::vector<int64_t>& weights, int64_t step) {
+             return s->MakeWeightedOptimize(
+                 maximize, ToIntVarArray(sub_objectives), weights, step);
+           },
            py::arg("maximize"), py::arg("sub_objectives"), py::arg("weights"),
            py::arg("step"),
            DOC(operations_research, Solver, MakeWeightedOptimize),
-           py::return_value_policy::reference_internal)
-      .def("weighted_optimize",
-           py::overload_cast<bool, const std::vector<IntVar*>&,
-                             const std::vector<int>&, int64_t>(
-               &Solver::MakeWeightedOptimize),
-           py::arg("maximize"), py::arg("sub_objectives"), py::arg("weights"),
-           py::arg("step"),
-           DOC(operations_research, Solver, MakeWeightedOptimize_2),
            py::return_value_policy::reference_internal)
       .def("lexicographic_optimize", &Solver::MakeLexicographicOptimize,
            py::arg("maximize"), py::arg("variables"), py::arg("steps"),
            DOC(operations_research, Solver, MakeLexicographicOptimize),
            py::return_value_policy::reference_internal)
-      .def("sum",
-           py::overload_cast<const std::vector<IntVar*>&>(&Solver::MakeSum),
+      .def("sum", [](Solver* s, const std::vector<IntExpr*>& exprs) {
+             return s->MakeSum(ToIntVarArray(exprs));
+           },
+           DOC(operations_research, Solver, MakeSum),
+           py::return_value_policy::reference_internal)
+      .def("weighted_sum",
+           [](Solver* s,
+              const std::vector<IntExpr*>& exprs,
+              const std::vector<int64_t>& coeffs) {
+             return s->MakeScalProd(ToIntVarArray(exprs), coeffs);
+           },
            DOC(operations_research, Solver, MakeSum),
            py::return_value_policy::reference_internal)
       .def("element",
@@ -1532,7 +1681,9 @@ PYBIND11_MODULE(constraint_solver, m) {
            DOC(operations_research, Solver, MakeElement),
            py::return_value_policy::reference_internal)
       .def("min",
-           py::overload_cast<const std::vector<IntVar*>&>(&Solver::MakeMin),
+           [](Solver* s, const std::vector<IntExpr*>& exprs) {
+             return s->MakeMin(ToIntVarArray(exprs));
+           },
            DOC(operations_research, Solver, MakeMin),
            py::return_value_policy::reference_internal)
       .def("min", py::overload_cast<IntExpr*, IntExpr*>(&Solver::MakeMin),
@@ -1544,8 +1695,9 @@ PYBIND11_MODULE(constraint_solver, m) {
       .def("min", py::overload_cast<IntExpr*, int>(&Solver::MakeMin),
            DOC(operations_research, Solver, MakeMin_4),
            py::return_value_policy::reference_internal)
-      .def("max",
-           py::overload_cast<const std::vector<IntVar*>&>(&Solver::MakeMax),
+      .def("max", [](Solver* s, const std::vector<IntExpr*>& exprs) {
+             return s->MakeMax(ToIntVarArray(exprs));
+           },
            DOC(operations_research, Solver, MakeMax),
            py::return_value_policy::reference_internal)
       .def("max", py::overload_cast<IntExpr*, IntExpr*>(&Solver::MakeMax),
@@ -1582,50 +1734,88 @@ PYBIND11_MODULE(constraint_solver, m) {
            py::arg("condition"), py::arg("expr"), py::arg("unperformed_value"),
            DOC(operations_research, Solver, MakeConditionalExpression),
            py::return_value_policy::reference_internal)
-      .def("accept", &Solver::Accept, DOC(operations_research, Solver, Accept),
-           py::arg("visitor"))
       .def("print_model_visitor", &Solver::MakePrintModelVisitor,
            DOC(operations_research, Solver, MakePrintModelVisitor),
            py::return_value_policy::reference_internal)
-      .def("phase",
-           py::overload_cast<const std::vector<IntVar*>&,
-                                   Solver::IntVarStrategy,
-                                   Solver::IntValueStrategy>(
-               &Solver::MakePhase),
+      .def("phase", [](Solver* s, const std::vector<IntExpr*>& exprs,
+                       Solver::IntVarStrategy var_strategy,
+                       Solver::IntValueStrategy val_strategy) {
+             return s->MakePhase(ToIntVarArray(exprs), var_strategy,
+                                 val_strategy);
+           },
            DOC(operations_research, Solver, MakePhase),
            py::return_value_policy::reference_internal)
-      .def("new_search",
-           py::overload_cast<DecisionBuilder*,
-                                   const std::vector<operations_research::SearchMonitor*>&>(  // NOLINT
-               &Solver::NewSearch),
-           DOC(operations_research, Solver, NewSearch))
-      .def("new_search",
-           [](Solver* s, DecisionBuilder* db) {
-             std::vector<operations_research::SearchMonitor*> monitors;
-             s->NewSearch(db, monitors);
+      .def("assign_variable_value", &Solver::MakeAssignVariableValue,
+           py::arg("var"), py::arg("val"),
+           DOC(operations_research, Solver, MakeAssignVariableValue),
+           py::return_value_policy::reference_internal)
+      .def("local_search_phase",
+           [](Solver* s, const std::vector<IntExpr*>& exprs,
+              DecisionBuilder* db, py::capsule ls_params) {
+             void* ptr = ls_params;
+             return s->MakeLocalSearchPhase(
+                 ToIntVarArray(exprs), db,
+                 reinterpret_cast<LocalSearchPhaseParameters*>(ptr));
            },
-           DOC(operations_research, Solver, NewSearch))
-      .def("next_solution", &Solver::NextSolution,
-           DOC(operations_research, Solver, NextSolution))
-      .def("solve",
-           py::overload_cast<DecisionBuilder*,
-                             const std::vector<SearchMonitor*>&>(
-               &Solver::Solve),
-           py::arg("db"), py::arg("monitors"),
-           DOC(operations_research, Solver, Solve))
-      .def("solve", py::overload_cast<DecisionBuilder*>(&Solver::Solve),
-           py::arg("db"), DOC(operations_research, Solver, Solve_2))
-      .def("solve_and_commit",
-           py::overload_cast<DecisionBuilder*,
-                             const std::vector<SearchMonitor*>&>(
-               &Solver::SolveAndCommit),
-           py::arg("db"), py::arg("monitors"),
-           DOC(operations_research, Solver, SolveAndCommit))
-      .def("solve_and_commit",
-           py::overload_cast<DecisionBuilder*>(&Solver::SolveAndCommit),
-           py::arg("db"), DOC(operations_research, Solver, SolveAndCommit_2))
-      .def("end_search", &Solver::EndSearch,
-           DOC(operations_research, Solver, EndSearch));
+           py::arg("vars"), py::arg("db"), py::arg("ls_params"),
+           py::return_value_policy::reference_internal)
+      .def("local_search_phase",
+           [](Solver* s, Assignment* assignment, py::capsule ls_params) {
+             void* ptr = ls_params;
+             return s->MakeLocalSearchPhase(
+                 assignment,
+                 reinterpret_cast<
+                     LocalSearchPhaseParameters*>(ptr));
+           },
+           py::arg("assignment"), py::arg("ls_params"),
+           py::return_value_policy::reference_internal)
+      .def("random_lns_operator",
+           [](Solver* s, const std::vector<IntExpr*>& exprs,
+              int number_of_variables) {
+             return s->MakeRandomLnsOperator(ToIntVarArray(exprs),
+                                              number_of_variables);
+           },
+           py::arg("exprs"), py::arg("number_of_variables"),
+           py::return_value_policy::reference_internal)
+      .def("operator",
+           [](Solver* s, const std::vector<IntExpr*>& exprs,
+              Solver::LocalSearchOperators op) {
+             return s->MakeOperator(ToIntVarArray(exprs), op);
+           },
+           py::arg("vars"), py::arg("op"),
+           py::return_value_policy::reference_internal)
+      .def("concatenate_operators",
+           [](Solver* s, const std::vector<LocalSearchOperator*>& ops) {
+             return s->ConcatenateOperators(ops);
+           },
+           py::arg("ops"), py::return_value_policy::reference_internal)
+      .def("compose",
+           [](Solver* s, const std::vector<DecisionBuilder*>& dbs) {
+             return s->Compose(dbs);
+           },
+           py::arg("dbs"), py::return_value_policy::reference_internal)
+      .def("search_log",
+           [](Solver* s, int64_t period, IntVar* var) {
+             return s->MakeSearchLog(period, var);
+           },
+           py::arg("period"), py::arg("var"),
+           py::return_value_policy::reference_internal)
+      .def("split_variable_domain", &Solver::MakeSplitVariableDomain,
+           py::arg("var"), py::arg("val"), py::arg("start_with_lower_half"),
+           py::return_value_policy::reference_internal)
+      .def("fail_decision", &Solver::MakeFailDecision,
+           DOC(operations_research, Solver, MakeFailDecision),
+           py::return_value_policy::reference_internal)
+      .def("phase",
+           py::overload_cast<const std::vector<IntervalVar*>&,
+                             Solver::IntervalStrategy>(&Solver::MakePhase),
+           DOC(operations_research, Solver, MakePhase),
+           py::return_value_policy::reference_internal)
+      .def("phase",
+           py::overload_cast<const std::vector<SequenceVar*>&,
+                             Solver::SequenceStrategy>(&Solver::MakePhase),
+           DOC(operations_research, Solver, MakePhase),
+           py::return_value_policy::reference_internal);
 
   py::class_<PropagationBaseObject, BaseObject>(
       m, "PropagationBaseObject",
@@ -1655,12 +1845,6 @@ PYBIND11_MODULE(constraint_solver, m) {
            DOC(operations_research, IntExpr, Bound))
       .def("var", &IntExpr::Var, DOC(operations_research, IntExpr, Var),
            py::return_value_policy::reference_internal)
-      .def(
-          "index_of",
-          [](IntExpr* e, const std::vector<int64_t>& values) {
-            return e->solver()->MakeElement(values, e->Var());
-          },
-          py::return_value_policy::reference_internal)
       .def(
           "__add__",
           [](IntExpr* e, int64_t arg) { return e->solver()->MakeSum(e, arg); },
@@ -1903,14 +2087,30 @@ PYBIND11_MODULE(constraint_solver, m) {
           [](IntExpr* left, Constraint* right) {
             return left->solver()->MakeLess(left, right->Var());
           },
-          py::return_value_policy::reference_internal);
+          py::return_value_policy::reference_internal)
+      .def(
+          "index_of",
+          [](IntExpr* expr, const std::vector<int64_t>& values) {
+            return expr->solver()->MakeElement(values, expr->Var());
+          },
+          py::return_value_policy::reference);
 
   // Note: no ctor.
   py::class_<IntVar, IntExpr>(m, "IntVar", DOC(operations_research, IntVar))
+      .def(
+          "domain_iterator",
+          [](IntVar* var) { return var->MakeDomainIterator(false); },
+          py::return_value_policy::take_ownership)
+      .def(
+          "hole_iterator",
+          [](IntVar* var) { return var->MakeHoleIterator(false); },
+          py::return_value_policy::take_ownership)
       .def("value", &IntVarPythonHelper::Value,
            DOC(operations_research, IntVar, Value))
       .def("remove_value", &IntVarPythonHelper::RemoveValue,
            DOC(operations_research, IntVar, RemoveValue), py::arg("v"))
+      .def("remove_values", &IntVarPythonHelper::RemoveValues,
+           DOC(operations_research, IntVar, RemoveValues), py::arg("values"))
       .def("size", &IntVarPythonHelper::Size,
            DOC(operations_research, IntVar, Size))
       .def("contains", &IntVar::Contains,
@@ -1919,22 +2119,6 @@ PYBIND11_MODULE(constraint_solver, m) {
            DOC(operations_research, IntVar, RemoveInterval))
       .def("set_values", &IntVar::SetValues,
            DOC(operations_research, IntVar, SetValues))
-      .def("when_bound", py::overload_cast<Demon*>(&IntVar::WhenBound),
-           DOC(operations_research, IntVar, WhenBound))
-      .def("when_bound", py::overload_cast<Solver::Closure>(&IntVar::WhenBound),
-           DOC(operations_research, IntVar, WhenBound))
-      .def("when_bound", py::overload_cast<Solver::Action>(&IntVar::WhenBound),
-           DOC(operations_research, IntVar, WhenBound))
-      .def("when_domain", py::overload_cast<Demon*>(&IntVar::WhenDomain),
-           DOC(operations_research, IntVar, WhenDomain))
-      .def("when_domain",
-           py::overload_cast<Solver::Closure>(&IntVar::WhenDomain),
-           DOC(operations_research, IntVar, WhenDomain))
-      .def("when_domain",
-           py::overload_cast<Solver::Action>(&IntVar::WhenDomain),
-           DOC(operations_research, IntVar, WhenDomain))
-      .def("old_min", &IntVar::OldMin, DOC(operations_research, IntVar, OldMin))
-      .def("old_max", &IntVar::OldMax, DOC(operations_research, IntVar, OldMax))
       .def("var_type", &IntVar::VarType,
            DOC(operations_research, IntVar, VarType));
 
@@ -2065,13 +2249,8 @@ PYBIND11_MODULE(constraint_solver, m) {
            py::overload_cast<Solver::Action>(&IntervalVar::WhenAnything),
            DOC(operations_research, IntervalVar, WhenAnything));
 
-  py::class_<Constraint, PropagationBaseObject, PyConstraint>(
+  py::class_<Constraint, PropagationBaseObject>(
       m, "Constraint", DOC(operations_research, Constraint))
-      .def(py::init<Solver*>())
-      .def("post", &Constraint::Post,
-           DOC(operations_research, Constraint, Post))
-      .def("initial_propagate", &Constraint::InitialPropagate,
-           DOC(operations_research, Constraint, InitialPropagate))
       .def("__str__", &Constraint::DebugString)
       .def("var", &Constraint::Var, DOC(operations_research, Constraint, Var),
            py::return_value_policy::reference_internal)
@@ -2304,65 +2483,35 @@ PYBIND11_MODULE(constraint_solver, m) {
           },
           py::return_value_policy::reference_internal);
 
-  py::class_<DecisionBuilder, BaseObject, PyDecisionBuilder>(
-      m, "DecisionBuilder", DOC(operations_research, DecisionBuilder))
-      .def(py::init<>())
-      .def("next", &DecisionBuilder::Next,
-           DOC(operations_research, DecisionBuilder, Next))
+  py::class_<DecisionBuilder, BaseObject>(
+      m, "DecisionBuilderBase", DOC(operations_research, DecisionBuilder))
       .def("__str__", &DecisionBuilder::DebugString)
       .def_property("name", &DecisionBuilder::GetName,
                     &DecisionBuilder::set_name);
 
-  py::class_<Decision, BaseObject, PyDecision>(
-      m, "Decision", DOC(operations_research, Decision))
+  py::class_<PyDecisionBuilder, DecisionBuilder, PyDecisionBuilderHelper>(
+      m, "DecisionBuilder", DOC(operations_research, DecisionBuilder))
       .def(py::init<>())
-      .def("apply", &Decision::Apply, DOC(operations_research, Decision, Apply))
-      .def("refute", &Decision::Refute,
-           DOC(operations_research, Decision, Refute))
-      .def("accept", &Decision::Accept,
-           DOC(operations_research, Decision, Accept))
+      .def("next", &PyDecisionBuilder::next,
+           DOC(operations_research, DecisionBuilder, Next))
+      .def("__str__", &DecisionBuilder::DebugString)
+      .def_property("name", &PyDecisionBuilder::GetName,
+                    &PyDecisionBuilder::set_name);
+
+  py::class_<Decision, BaseObject>(m, "DecisionBase",
+                                   DOC(operations_research, Decision))
       .def("__str__", &Decision::DebugString);
 
-  py::class_<Demon, BaseObject, PyDemon>(m, "Demon",
-                                         DOC(operations_research, Demon))
+  py::class_<PyDecision, Decision, PyDecisionHelper>(
+      m, "Decision", DOC(operations_research, Decision))
       .def(py::init<>())
-      .def("run", &Demon::Run, DOC(operations_research, Demon, Run))
-      .def_property_readonly("priority", &Demon::priority,
-                             DOC(operations_research, Demon, priority))
-      .def("inhibit", &Demon::inhibit, DOC(operations_research, Demon, inhibit))
-      .def("desinhibit", &Demon::desinhibit,
-           DOC(operations_research, Demon, desinhibit))
-      .def("__str__", &Demon::DebugString);
-
-  py::class_<LocalSearchOperator, BaseObject, PyLocalSearchOperator>(
-      m, "LocalSearchOperator", DOC(operations_research, LocalSearchOperator))
-      .def(py::init<>())
-      .def("make_next_neighbor", &LocalSearchOperator::MakeNextNeighbor)
-      .def("start", &LocalSearchOperator::Start)
-      .def("enter_search", &LocalSearchOperator::EnterSearch)
-      .def("reset", &LocalSearchOperator::Reset)
-      .def("has_fragments", &LocalSearchOperator::HasFragments)
-      .def("holds_delta", &LocalSearchOperator::HoldsDelta)
-      .def("__str__", &LocalSearchOperator::DebugString);
-
-  py::class_<LocalSearchFilter, BaseObject, PyLocalSearchFilter>(
-      m, "LocalSearchFilter", DOC(operations_research, LocalSearchFilter))
-      .def(py::init<>())
-      .def("accept", &LocalSearchFilter::Accept)
-      .def("synchronize", &LocalSearchFilter::Synchronize)
-      .def("is_incremental", &LocalSearchFilter::IsIncremental)
-      .def("revert", &LocalSearchFilter::Revert)
-      .def("reset", &LocalSearchFilter::Reset)
-      .def("synchronized_objective_value",
-           &LocalSearchFilter::GetSynchronizedObjectiveValue)
-      .def("accepted_objective_value",
-           &LocalSearchFilter::GetAcceptedObjectiveValue)
-      .def("__str__", &LocalSearchFilter::DebugString);
-
-  py::class_<LocalSearchFilterManager, BaseObject>(
-      m, "LocalSearchFilterManager",
-      DOC(operations_research, LocalSearchFilterManager))
-      .def("__str__", &LocalSearchFilterManager::DebugString);
+      .def("__str__", &Decision::DebugString)
+      .def("apply", &PyDecision::apply,
+           DOC(operations_research, Decision, Apply))
+      .def("refute", &PyDecision::refute,
+           DOC(operations_research, Decision, Refute))
+      .def("accept", &PyDecision::accept,
+           DOC(operations_research, Decision, Accept));
 
   // Note: no ctor.
   py::class_<ModelVisitor, BaseObject>(m, "ModelVisitor",
@@ -2506,16 +2655,22 @@ PYBIND11_MODULE(constraint_solver, m) {
                &Pack::AddWeightedSumLessOrEqualConstantDimension),
            DOC(operations_research, Pack,
                AddWeightedSumLessOrEqualConstantDimension))
-      .def("add_weighted_sum_equal_var_dimension",
-           py::overload_cast<const std::vector<int64_t>&,
-                             const std::vector<IntVar*>&>(
-               &Pack::AddWeightedSumEqualVarDimension),
-           DOC(operations_research, Pack, AddWeightedSumEqualVarDimension))
-      .def("add_weighted_sum_equal_var_dimension",
-           py::overload_cast<Solver::IndexEvaluator2,
-                             const std::vector<IntVar*>&>(
-               &Pack::AddWeightedSumEqualVarDimension),
-           DOC(operations_research, Pack, AddWeightedSumEqualVarDimension))
+      .def(
+          "add_weighted_sum_equal_var_dimension",
+          [](Pack* pack, const std::vector<int64_t>& weights,
+             const std::vector<IntExpr*>& exprs) {
+            return pack->AddWeightedSumEqualVarDimension(weights,
+                                                         ToIntVarArray(exprs));
+          },
+          DOC(operations_research, Pack, AddWeightedSumEqualVarDimension))
+      .def(
+          "add_weighted_sum_equal_var_dimension",
+          [](Pack* pack, Solver::IndexEvaluator2 weights,
+             const std::vector<IntExpr*>& exprs) {
+            return pack->AddWeightedSumEqualVarDimension(weights,
+                                                         ToIntVarArray(exprs));
+          },
+          DOC(operations_research, Pack, AddWeightedSumEqualVarDimension))
       .def("add_sum_variable_weights_less_or_equal_constant_dimension",
            &Pack::AddSumVariableWeightsLessOrEqualConstantDimension,
            DOC(operations_research, Pack,

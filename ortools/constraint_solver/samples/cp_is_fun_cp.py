@@ -21,7 +21,7 @@ where each letter represents a unique digit.
 This problem has 72 different solutions in base 10.
 """
 # [START import]
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 # [END import]
 
@@ -29,7 +29,7 @@ from ortools.constraint_solver import pywrapcp
 def main():
     # Constraint programming engine
     # [START solver]
-    solver = pywrapcp.Solver("CP is fun!")
+    solver = cp.Solver("CP is fun!")
     # [END solver]
 
     # [START variables]
@@ -38,16 +38,16 @@ def main():
     # Decision variables.
     digits = list(range(0, base))
     digits_without_zero = list(range(1, base))
-    c = solver.IntVar(digits_without_zero, "C")
-    p = solver.IntVar(digits, "P")
-    i = solver.IntVar(digits_without_zero, "I")
-    s = solver.IntVar(digits, "S")
-    f = solver.IntVar(digits_without_zero, "F")
-    u = solver.IntVar(digits, "U")
-    n = solver.IntVar(digits, "N")
-    t = solver.IntVar(digits_without_zero, "T")
-    r = solver.IntVar(digits, "R")
-    e = solver.IntVar(digits, "E")
+    c = solver.new_int_var(digits_without_zero, "C")
+    p = solver.new_int_var(digits, "P")
+    i = solver.new_int_var(digits_without_zero, "I")
+    s = solver.new_int_var(digits, "S")
+    f = solver.new_int_var(digits_without_zero, "F")
+    u = solver.new_int_var(digits, "U")
+    n = solver.new_int_var(digits, "N")
+    t = solver.new_int_var(digits_without_zero, "T")
+    r = solver.new_int_var(digits, "R")
+    e = solver.new_int_var(digits, "E")
 
     # We need to group variables in a list to use the constraint AllDifferent.
     letters = [c, p, i, s, f, u, n, t, r, e]
@@ -58,10 +58,10 @@ def main():
 
     # Define constraints.
     # [START constraints]
-    solver.Add(solver.AllDifferent(letters))
+    solver.add_all_different(letters)
 
     # CP + IS + FUN = TRUE
-    solver.Add(
+    solver.add(
         p + s + n + base * (c + i + u) + base * base * f
         == e + base * u + base * base * r + base * base * base * t
     )
@@ -69,26 +69,30 @@ def main():
 
     # [START solve]
     solution_count = 0
-    db = solver.Phase(letters, solver.INT_VAR_DEFAULT, solver.INT_VALUE_DEFAULT)
-    solver.NewSearch(db)
-    while solver.NextSolution():
-        print(letters)
+    db = solver.phase(
+        letters,
+        cp.IntVarStrategy.INT_VAR_DEFAULT,
+        cp.IntValueStrategy.INT_VALUE_DEFAULT,
+    )
+    solver.new_search(db)
+    while solver.next_solution():
+        print(list(f"{var.name}:{var.value()}" for var in letters))
         # Is CP + IS + FUN = TRUE?
         assert (
-            base * c.Value()
-            + p.Value()
-            + base * i.Value()
-            + s.Value()
-            + base * base * f.Value()
-            + base * u.Value()
-            + n.Value()
-            == base * base * base * t.Value()
-            + base * base * r.Value()
-            + base * u.Value()
-            + e.Value()
+            base * c.value()
+            + p.value()
+            + base * i.value()
+            + s.value()
+            + base * base * f.value()
+            + base * u.value()
+            + n.value()
+            == base * base * base * t.value()
+            + base * base * r.value()
+            + base * u.value()
+            + e.value()
         )
         solution_count += 1
-    solver.EndSearch()
+    solver.end_search()
     print(f"Number of solutions found: {solution_count}")
     # [END solve]
 

@@ -12,6 +12,7 @@
 # limitations under the License.
 
 load("@rules_cc//cc:cc_test.bzl", "cc_test")
+load("@rules_python//python:py_test.bzl", "py_test")
 
 cc_test(
     name = "cp_is_fun_cp_test",
@@ -24,6 +25,13 @@ cc_test(
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:globals",
     ],
+)
+
+py_test(
+    name = "cp_is_fun_cp_py3",
+    srcs = ["cp_is_fun_cp.py"],
+    main = "cp_is_fun_cp.py",
+    deps = ["//ortools/constraint_solver/python:constraint_solver"],
 )
 
 cc_test(
@@ -49,6 +57,13 @@ cc_test(
         "@abseil-cpp//absl/base:log_severity",
         "@abseil-cpp//absl/log:globals",
     ],
+)
+
+py_test(
+    name = "nqueens_cp_py3",
+    srcs = ["nqueens_cp.py"],
+    main = "nqueens_cp.py",
+    deps = ["//ortools/constraint_solver/python:constraint_solver"],
 )
 
 cc_test(
@@ -84,6 +99,13 @@ cc_test(
         "@abseil-cpp//absl/base:log_severity",
         "@abseil-cpp//absl/log:globals",
     ],
+)
+
+py_test(
+    name = "simple_cp_program_py3",
+    srcs = ["simple_cp_program.py"],
+    main = "simple_cp_program.py",
+    deps = ["//ortools/constraint_solver/python:constraint_solver"],
 )
 
 cc_test(

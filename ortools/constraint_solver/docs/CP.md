@@ -77,47 +77,49 @@ int main(int argc, char* argv[]) {
 # Snippet from ortools/constraint_solver/samples/simple_cp_program.py
 """Simple Constraint optimization example."""
 
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 def main():
   """Entry point of the program."""
   # Instantiate the solver.
-  solver = pywrapcp.Solver("CPSimple")
+  solver = cp.Solver('CPSimple')
 
   # Create the variables.
   num_vals = 3
-  x = solver.IntVar(0, num_vals - 1, "x")
-  y = solver.IntVar(0, num_vals - 1, "y")
-  z = solver.IntVar(0, num_vals - 1, "z")
+  x = solver.new_int_var(0, num_vals - 1, 'x')
+  y = solver.new_int_var(0, num_vals - 1, 'y')
+  z = solver.new_int_var(0, num_vals - 1, 'z')
 
   # Constraint 0: x != y.
-  solver.Add(x != y)
-  print("Number of constraints: ", solver.Constraints())
+  solver.add(x != y)
+  print('Number of constraints: ', solver.num_constraints)
 
   # Solve the problem.
-  decision_builder = solver.Phase(
-      [x, y, z], solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MIN_VALUE
+  decision_builder = solver.phase(
+      [x, y, z],
+      cp.IntVarStrategy.CHOOSE_FIRST_UNBOUND,
+      cp.IntValueStrategy.ASSIGN_MIN_VALUE,
   )
 
   # Print solution on console.
   count = 0
-  solver.NewSearch(decision_builder)
-  while solver.NextSolution():
+  solver.new_search(decision_builder)
+  while solver.next_solution():
     count += 1
-    solution = f"Solution {count}:\n"
+    solution = f'Solution {count}:\n'
     for var in [x, y, z]:
-      solution += f" {var.Name()} = {var.Value()}"
+      solution += f' {var.name} = {var.value()}'
     print(solution)
-  solver.EndSearch()
-  print(f"Number of solutions found: {count}")
+  solver.end_search()
+  print(f'Number of solutions found: {count}')
 
-  print("Advanced usage:")
-  print(f"Problem solved in {solver.WallTime()}ms")
-  print(f"Memory usage: {pywrapcp.Solver.MemoryUsage()}bytes")
+  print('Advanced usage:')
+  print(f'Memory usage: {solver.memory_usage()} bytes')
+  print(f'Problem solved in {solver.wall_time_ms} ms')
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
   main()
 ```
 

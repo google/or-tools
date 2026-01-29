@@ -16,7 +16,7 @@
 """Simple Constraint optimization example."""
 
 # [START import]
-from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver.python import constraint_solver as cp
 
 # [END import]
 
@@ -25,48 +25,50 @@ def main():
     """Entry point of the program."""
     # Instantiate the solver.
     # [START solver]
-    solver = pywrapcp.Solver("CPSimple")
+    solver = cp.Solver("CPSimple")
     # [END solver]
 
     # Create the variables.
     # [START variables]
     num_vals = 3
-    x = solver.IntVar(0, num_vals - 1, "x")
-    y = solver.IntVar(0, num_vals - 1, "y")
-    z = solver.IntVar(0, num_vals - 1, "z")
+    x = solver.new_int_var(0, num_vals - 1, "x")
+    y = solver.new_int_var(0, num_vals - 1, "y")
+    z = solver.new_int_var(0, num_vals - 1, "z")
     # [END variables]
 
     # Constraint 0: x != y.
     # [START constraints]
-    solver.Add(x != y)
-    print("Number of constraints: ", solver.Constraints())
+    solver.add(x != y)
+    print("Number of constraints: ", solver.num_constraints)
     # [END constraints]
 
     # Solve the problem.
     # [START solve]
-    decision_builder = solver.Phase(
-        [x, y, z], solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MIN_VALUE
+    decision_builder = solver.phase(
+        [x, y, z],
+        cp.IntVarStrategy.CHOOSE_FIRST_UNBOUND,
+        cp.IntValueStrategy.ASSIGN_MIN_VALUE,
     )
     # [END solve]
 
     # Print solution on console.
     # [START print_solution]
     count = 0
-    solver.NewSearch(decision_builder)
-    while solver.NextSolution():
+    solver.new_search(decision_builder)
+    while solver.next_solution():
         count += 1
         solution = f"Solution {count}:\n"
         for var in [x, y, z]:
-            solution += f" {var.Name()} = {var.Value()}"
+            solution += f" {var.name} = {var.value()}"
         print(solution)
-    solver.EndSearch()
+    solver.end_search()
     print(f"Number of solutions found: {count}")
     # [END print_solution]
 
     # [START advanced]
     print("Advanced usage:")
-    print(f"Problem solved in {solver.WallTime()}ms")
-    print(f"Memory usage: {pywrapcp.Solver.MemoryUsage()}bytes")
+    print(f"Memory usage: {solver.memory_usage()} bytes")
+    print(f"Problem solved in {solver.wall_time_ms} ms")
     # [END advanced]
 
 

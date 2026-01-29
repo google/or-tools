@@ -15,19 +15,19 @@
 """Test for constraint_solver pybind11 layer."""
 
 from absl.testing import absltest
-from ortools.constraint_solver.python import constraint_solver
+from ortools.constraint_solver.python import constraint_solver as cp
 
 
 class ConstraintSolverTest(absltest.TestCase):
 
     def test_create_solver(self):
         print("test_create_solver")
-        solver = constraint_solver.Solver("test_create_solver")
+        solver = cp.Solver("test_create_solver")
         print(solver)
 
     def test_create_int_var(self):
         print("test_create_int_var")
-        solver = constraint_solver.Solver("test_create_int_var")
+        solver = cp.Solver("test_create_int_var")
         x = solver.new_int_var(0, 10, "x")
         self.assertEqual(str(x), "x(0..10)")
         self.assertEqual(x.min(), 0)
@@ -43,7 +43,7 @@ class ConstraintSolverTest(absltest.TestCase):
 
     def test_create_int_expr(self):
         print("test_create_int_expr")
-        solver = constraint_solver.Solver("test_create_int_expr")
+        solver = cp.Solver("test_create_int_expr")
         x = solver.new_int_var(0, 10, "x")
         y = solver.new_int_var(0, 10, "y")
 
@@ -62,7 +62,7 @@ class ConstraintSolverTest(absltest.TestCase):
 
     def test_fail_outside_solve(self):
         print("test_fail_outside_solve")
-        solver = constraint_solver.Solver("test_fail_outside_solve")
+        solver = cp.Solver("test_fail_outside_solve")
         x = solver.new_int_var(0, 10, "x")
         try:
             x.set_min(20)
@@ -71,7 +71,7 @@ class ConstraintSolverTest(absltest.TestCase):
 
     def test_rabbits_pheasants(self):
         print("test_rabbits_pheasants")
-        solver = constraint_solver.Solver("test_rabbits_pheasants")
+        solver = cp.Solver("test_rabbits_pheasants")
         rabbits = solver.new_int_var(0, 20, "rabbits")
         pheasants = solver.new_int_var(0, 20, "pheasants")
         solver.add(rabbits + pheasants == 20)
@@ -81,8 +81,8 @@ class ConstraintSolverTest(absltest.TestCase):
     def _solve_and_check(self, solver, variables, check_single_solution_callback):
         db = solver.phase(
             variables,
-            constraint_solver.IntVarStrategy.CHOOSE_FIRST_UNBOUND,
-            constraint_solver.IntValueStrategy.ASSIGN_MIN_VALUE,
+            cp.IntVarStrategy.CHOOSE_FIRST_UNBOUND,
+            cp.IntValueStrategy.ASSIGN_MIN_VALUE,
         )
         solver.new_search(db)
         solution_count = 0
@@ -93,7 +93,7 @@ class ConstraintSolverTest(absltest.TestCase):
         return solution_count
 
     def test_add_abs_equality(self):
-        solver = constraint_solver.Solver("test_add_abs_equality")
+        solver = cp.Solver("test_add_abs_equality")
         x = solver.new_int_var(-5, 5, "x")
         abs_x = solver.new_int_var(0, 5, "abs_x")
         solver.add_abs_equality(x, abs_x)
@@ -105,7 +105,7 @@ class ConstraintSolverTest(absltest.TestCase):
         self.assertEqual(count, 11)
 
     def test_add_all_different(self):
-        solver = constraint_solver.Solver("test_add_all_different")
+        solver = cp.Solver("test_add_all_different")
         variables = [solver.new_int_var(0, 2, f"v{i}") for i in range(3)]
         solver.add_all_different(variables)
 
@@ -117,7 +117,7 @@ class ConstraintSolverTest(absltest.TestCase):
         self.assertEqual(count, 6)
 
     def test_add_all_different_except(self):
-        solver = constraint_solver.Solver("test_add_all_different_except")
+        solver = cp.Solver("test_add_all_different_except")
         variables = [solver.new_int_var(0, 2, f"v{i}") for i in range(3)]
         # 0 is the escape value, so duplicated 0s are allowed.
         solver.add_all_different_except(variables, 0)
@@ -131,7 +131,7 @@ class ConstraintSolverTest(absltest.TestCase):
         self.assertEqual(count, 13)
 
     def test_add_between_ct(self):
-        solver = constraint_solver.Solver("test_add_between_ct")
+        solver = cp.Solver("test_add_between_ct")
         x = solver.new_int_var(0, 10, "x")
         solver.add_between_ct(x, 2, 4)
 
@@ -142,7 +142,7 @@ class ConstraintSolverTest(absltest.TestCase):
         self.assertEqual(count, 3)  # 2, 3, 4
 
     def test_add_circuit(self):
-        solver = constraint_solver.Solver("test_add_circuit")
+        solver = cp.Solver("test_add_circuit")
         # 3 nodes 0, 1, 2. Circuit must visit all.
         # x[i] is the successor of i.
         x = [solver.new_int_var(0, 2, f"x{i}") for i in range(3)]
@@ -166,7 +166,7 @@ class ConstraintSolverTest(absltest.TestCase):
         self.assertEqual(count, 2)  # 0->1->2->0, 0->2->1->0
 
     def test_add_count(self):
-        solver = constraint_solver.Solver("test_add_count")
+        solver = cp.Solver("test_add_count")
         variables = [solver.new_int_var(0, 2, f"v{i}") for i in range(3)]
         # Count occurrences of value 1.
         count_var = solver.new_int_var(0, 3, "count")
@@ -182,7 +182,7 @@ class ConstraintSolverTest(absltest.TestCase):
         self.assertEqual(count, 27)
 
     def test_add_cover(self):
-        solver = constraint_solver.Solver("test_add_cover")
+        solver = cp.Solver("test_add_cover")
         s1 = solver.new_int_var(0, 5, "s1")
         s2 = solver.new_int_var(0, 5, "s2")
         t1 = solver.new_fixed_duration_interval_var(s1, 2, "t1")
@@ -209,7 +209,7 @@ class ConstraintSolverTest(absltest.TestCase):
         self.assertEqual(count, 36)  # 6 * 6
 
     def test_add_cumulative(self):
-        solver = constraint_solver.Solver("test_add_cumulative")
+        solver = cp.Solver("test_add_cumulative")
         # Just verify it doesn't crash on invocation, hard to verify semantics
         # deeply in small unit test without intervals.
         # But we can try a simple case.
@@ -237,7 +237,7 @@ class ConstraintSolverTest(absltest.TestCase):
         self.assertEqual(count, 2)
 
     def test_add_deviation(self):
-        solver = constraint_solver.Solver("test_add_deviation")
+        solver = cp.Solver("test_add_deviation")
         variables = [solver.new_int_var(0, 2, f"v{i}") for i in range(3)]
         deviation = solver.new_int_var(0, 10, "dev")
         # deviation = sum |variables[i] - mean| where mean is implied.
@@ -257,7 +257,7 @@ class ConstraintSolverTest(absltest.TestCase):
         self.assertEqual(count, 41)
 
     def test_add_disjunctive_constraint(self):
-        solver = constraint_solver.Solver("test_add_disjunctive")
+        solver = cp.Solver("test_add_disjunctive")
         s0 = solver.new_int_var(0, 10, "s0")
         s1 = solver.new_int_var(0, 10, "s1")
         intervals = [
@@ -276,7 +276,7 @@ class ConstraintSolverTest(absltest.TestCase):
         self.assertEqual(count, 90)
 
     def test_add_distribute(self):
-        solver = constraint_solver.Solver("test_add_distribute")
+        solver = cp.Solver("test_add_distribute")
         variables = [solver.new_int_var(0, 2, f"v{i}") for i in range(3)]
         # Count how many times 0, 1, 2 appear.
         cards = [solver.new_int_var(0, 3, f"c{i}") for i in range(3)]
@@ -291,7 +291,7 @@ class ConstraintSolverTest(absltest.TestCase):
         self.assertEqual(count, 27)
 
     def test_add_element_equality(self):
-        solver = constraint_solver.Solver("test_add_element")
+        solver = cp.Solver("test_add_element")
         values = [10, 20, 30]
         index = solver.new_int_var(0, 2, "index")
         target = solver.new_int_var(0, 100, "target")
@@ -304,13 +304,13 @@ class ConstraintSolverTest(absltest.TestCase):
         self.assertEqual(count, 3)
 
     def test_add_false_constraint(self):
-        solver = constraint_solver.Solver("test_add_false")
+        solver = cp.Solver("test_add_false")
         solver.add_false_constraint()
         count = self._solve_and_check(solver, [], lambda: None)
         self.assertEqual(count, 0)
 
     def test_add_index_of_constraint(self):
-        solver = constraint_solver.Solver("test_add_index_of")
+        solver = cp.Solver("test_add_index_of")
         variables = [solver.new_int_var(0, 10, f"v{i}") for i in range(5)]
         index = solver.new_int_var(0, 4, "index")
         target = 5
@@ -326,7 +326,7 @@ class ConstraintSolverTest(absltest.TestCase):
         self.assertEqual(count, 50000)
 
     def test_add_inverse_permutation(self):
-        solver = constraint_solver.Solver("test_inverse")
+        solver = cp.Solver("test_add_inverse_permutation")
         left = [solver.new_int_var(0, 2, f"l{i}") for i in range(3)]
         right = [solver.new_int_var(0, 2, f"r{i}") for i in range(3)]
         solver.add_inverse_permutation_constraint(left, right)
@@ -341,7 +341,7 @@ class ConstraintSolverTest(absltest.TestCase):
         self.assertEqual(count, 6)  # 3!
 
     def test_add_is_between_ct(self):
-        solver = constraint_solver.Solver("test_is_between")
+        solver = cp.Solver("test_add_is_between_ct")
         x = solver.new_int_var(0, 5, "x")
         b = solver.new_int_var(0, 1, "b")
         solver.add_is_between_ct(x, 2, 4, b)
@@ -353,7 +353,7 @@ class ConstraintSolverTest(absltest.TestCase):
         self.assertEqual(count, 6)
 
     def test_add_is_equal_ct(self):
-        solver = constraint_solver.Solver("test_is_equal")
+        solver = cp.Solver("test_add_is_equal_ct")
         x = solver.new_int_var(0, 2, "x")
         y = solver.new_int_var(0, 2, "y")
         b = solver.new_int_var(0, 1, "b")
@@ -366,7 +366,7 @@ class ConstraintSolverTest(absltest.TestCase):
         self.assertEqual(count, 9)
 
     def test_add_lexical_less(self):
-        solver = constraint_solver.Solver("test_lex_less")
+        solver = cp.Solver("test_add_lexical_less")
         x_vars = [solver.new_int_var(0, 1, f"x{i}") for i in range(2)]
         y_vars = [solver.new_int_var(0, 1, f"y{i}") for i in range(2)]
         solver.add_lexical_less(x_vars, y_vars)
@@ -380,7 +380,7 @@ class ConstraintSolverTest(absltest.TestCase):
         self.assertEqual(count, 6)
 
     def test_add_max_equality(self):
-        solver = constraint_solver.Solver("test_max_eq")
+        solver = cp.Solver("test_add_max_equality")
         variables = [solver.new_int_var(0, 5, f"v{i}") for i in range(3)]
         m = solver.new_int_var(0, 5, "max")
         solver.add_max_equality(variables, m)
@@ -392,7 +392,7 @@ class ConstraintSolverTest(absltest.TestCase):
         self.assertEqual(count, 216)
 
     def test_add_member_ct(self):
-        solver = constraint_solver.Solver("test_member")
+        solver = cp.Solver("test_add_member_ct")
         x = solver.new_int_var(0, 10, "x")
         values = [1, 3, 5]
         solver.add_member_ct(x, values)
@@ -404,7 +404,7 @@ class ConstraintSolverTest(absltest.TestCase):
         self.assertEqual(count, 3)
 
     def test_add_min_equality(self):
-        solver = constraint_solver.Solver("test_min_eq")
+        solver = cp.Solver("test_add_min_equality")
         variables = [solver.new_int_var(0, 5, f"v{i}") for i in range(3)]
         m = solver.new_int_var(0, 5, "min")
         solver.add_min_equality(variables, m)
@@ -416,7 +416,7 @@ class ConstraintSolverTest(absltest.TestCase):
         self.assertEqual(count, 216)
 
     def test_add_null_intersect(self):
-        solver = constraint_solver.Solver("test_null_intersect")
+        solver = cp.Solver("test_add_null_intersect")
         x_vars = [solver.new_int_var(0, 2, f"x{i}") for i in range(2)]
         y_vars = [solver.new_int_var(0, 2, f"y{i}") for i in range(2)]
         solver.add_null_intersect(x_vars, y_vars)
@@ -430,7 +430,7 @@ class ConstraintSolverTest(absltest.TestCase):
         self.assertEqual(count, 18)
 
     def test_add_pack(self):
-        solver = constraint_solver.Solver("test_pack")
+        solver = cp.Solver("test_add_pack")
         # 4 items, 2 bins.
         # variables[i] is the bin index for item i.
         variables = [solver.new_int_var(0, 1, f"v{i}") for i in range(4)]
@@ -440,12 +440,12 @@ class ConstraintSolverTest(absltest.TestCase):
         count = self._solve_and_check(solver, variables, lambda: None)
         self.assertEqual(count, 16)
 
-    def test_add_scal_prod_equality(self):
-        solver = constraint_solver.Solver("test_scal_prod")
+    def test_add_weighted_sum_equality(self):
+        solver = cp.Solver("test_add_weighted_sum_equality")
         variables = [solver.new_int_var(0, 2, f"v{i}") for i in range(3)]
         coeffs = [1, 2, 3]
         # 1*x + 2*y + 3*z = 5
-        solver.add_scal_prod_equality(variables, coeffs, 5)
+        solver.add_weighted_sum_equality(variables, coeffs, 5)
 
         def check_single_solution():
             self.assertEqual(sum(variables[i].value() * coeffs[i] for i in range(3)), 5)
@@ -454,7 +454,7 @@ class ConstraintSolverTest(absltest.TestCase):
         self.assertEqual(count, 3)
 
     def test_add_sorting_constraint(self):
-        solver = constraint_solver.Solver("test_sorting")
+        solver = cp.Solver("test_sorting")
         variables = [solver.new_int_var(0, 3, f"v{i}") for i in range(3)]
         sorted_vars = [solver.new_int_var(0, 3, f"s{i}") for i in range(3)]
         solver.add_sorting_constraint(variables, sorted_vars)
@@ -470,7 +470,7 @@ class ConstraintSolverTest(absltest.TestCase):
         self.assertEqual(count, 64)
 
     def test_add_sum_equality(self):
-        solver = constraint_solver.Solver("test_sum_eq")
+        solver = cp.Solver("test_sum_eq")
         variables = [solver.new_int_var(0, 5, f"v{i}") for i in range(3)]
         solver.add_sum_equality(variables, 10)
 
@@ -481,13 +481,13 @@ class ConstraintSolverTest(absltest.TestCase):
         self.assertEqual(count, 21)
 
     def test_add_true_constraint(self):
-        solver = constraint_solver.Solver("test_true")
+        solver = cp.Solver("test_true")
         solver.add_true_constraint()
         count = self._solve_and_check(solver, [], lambda: None)
         self.assertEqual(count, 1)
 
     def test_add_is_different_ct(self):
-        solver = constraint_solver.Solver("test_is_diff")
+        solver = cp.Solver("test_is_diff")
         x = solver.new_int_var(0, 1, "x")
         y = solver.new_int_var(0, 1, "y")
         b = solver.new_int_var(0, 1, "b")
@@ -500,7 +500,7 @@ class ConstraintSolverTest(absltest.TestCase):
         self.assertEqual(count, 4)
 
     def test_add_sum_greater_or_equal(self):
-        solver = constraint_solver.Solver("test_sum_ge")
+        solver = cp.Solver("test_sum_ge")
         variables = [solver.new_int_var(0, 2, f"v{i}") for i in range(3)]
         solver.add_sum_greater_or_equal(variables, 5)
 
@@ -510,13 +510,13 @@ class ConstraintSolverTest(absltest.TestCase):
         count = self._solve_and_check(solver, variables, check_single_solution)
         self.assertEqual(count, 4)
 
-    def test_add_scal_prod_greater_or_equal(self):
-        solver = constraint_solver.Solver("test_scal_ge")
+    def test_add_weighted_sum_greater_or_equal(self):
+        solver = cp.Solver("test_scal_ge")
         v0 = solver.new_int_var(0, 2, "v0")
         v1 = solver.new_int_var(0, 2, "v1")
         variables = [v0, v1]
         coeffs = [2, 3]
-        solver.add_scal_prod_greater_or_equal(variables, coeffs, 8)
+        solver.add_weighted_sum_greater_or_equal(variables, coeffs, 8)
 
         def check_single_solution():
             val = v0.value() * 2 + v1.value() * 3
@@ -526,7 +526,7 @@ class ConstraintSolverTest(absltest.TestCase):
         self.assertEqual(count, 2)
 
     def test_add_temporal_disjunction(self):
-        solver = constraint_solver.Solver("test_temporal")
+        solver = cp.Solver("test_temporal")
         # t1 before t2 or t2 before t1.
         s1 = solver.new_int_var(0, 10, "s1")
         s2 = solver.new_int_var(0, 10, "s2")
@@ -544,7 +544,7 @@ class ConstraintSolverTest(absltest.TestCase):
         self.assertEqual(count, 90)
 
     def test_add_non_overlapping_boxes_constraint(self):
-        solver = constraint_solver.Solver("test_boxes")
+        solver = cp.Solver("test_boxes")
         # 2 boxes.
         x_vars = [solver.new_int_var(0, 5, f"x{i}") for i in range(2)]
         y_vars = [solver.new_int_var(0, 5, f"y{i}") for i in range(2)]
@@ -564,7 +564,7 @@ class ConstraintSolverTest(absltest.TestCase):
         self.assertEqual(count, 1040)
 
     def test_add_lexical_less_or_equal(self):
-        solver = constraint_solver.Solver("test_lex_le")
+        solver = cp.Solver("test_lex_le")
         x_vars = [solver.new_int_var(0, 1, f"x{i}") for i in range(2)]
         y_vars = [solver.new_int_var(0, 1, f"y{i}") for i in range(2)]
         solver.add_lexical_less_or_equal(x_vars, y_vars)
@@ -578,7 +578,7 @@ class ConstraintSolverTest(absltest.TestCase):
         self.assertEqual(count, 10)
 
     def test_add_null_intersect_except(self):
-        solver = constraint_solver.Solver("test_null_exc")
+        solver = cp.Solver("test_null_exc")
         x = [solver.new_int_var(0, 2, f"x{i}") for i in range(2)]
         y = [solver.new_int_var(0, 2, f"y{i}") for i in range(2)]
         # Intersect is null except for value 0.
@@ -595,7 +595,7 @@ class ConstraintSolverTest(absltest.TestCase):
         self.assertEqual(count, 35)
 
     def test_add_not_member_ct(self):
-        solver = constraint_solver.Solver("test_not_member")
+        solver = cp.Solver("test_not_member")
         x = solver.new_int_var(0, 5, "x")
         solver.add_not_member_ct(x, [1, 3])
 
@@ -606,7 +606,7 @@ class ConstraintSolverTest(absltest.TestCase):
         self.assertEqual(count, 4)
 
     def test_add_is_member_ct(self):
-        solver = constraint_solver.Solver("test_is_member")
+        solver = cp.Solver("test_is_member")
         x = solver.new_int_var(0, 5, "x")
         b = solver.new_int_var(0, 1, "b")
         solver.add_is_member_ct(x, [1, 3], b)
@@ -618,7 +618,7 @@ class ConstraintSolverTest(absltest.TestCase):
         self.assertEqual(count, 6)
 
     def test_add_sub_circuit(self):
-        solver = constraint_solver.Solver("test_sub_circuit")
+        solver = cp.Solver("test_sub_circuit")
         x = [solver.new_int_var(0, 2, f"x{i}") for i in range(3)]
         solver.add_sub_circuit(x)
         # SubCircuit allows partial circuits (if x[i] == i, it's not in the
@@ -646,7 +646,7 @@ class ConstraintSolverTest(absltest.TestCase):
         self.assertEqual(count, 6)
 
     def test_add_sum_less_or_equal(self):
-        solver = constraint_solver.Solver("test_sum_le")
+        solver = cp.Solver("test_sum_le")
         variables = [solver.new_int_var(0, 2, f"v{i}") for i in range(3)]
         solver.add_sum_less_or_equal(variables, 2)
 
@@ -656,13 +656,13 @@ class ConstraintSolverTest(absltest.TestCase):
         count = self._solve_and_check(solver, variables, check_single_solution)
         self.assertEqual(count, 10)
 
-    def test_add_scal_prod_less_or_equal(self):
-        solver = constraint_solver.Solver("test_scal_le")
+    def test_add_weighted_sum_less_or_equal(self):
+        solver = cp.Solver("test_scal_le")
         v0 = solver.new_int_var(0, 2, "v0")
         v1 = solver.new_int_var(0, 2, "v1")
         variables = [v0, v1]
         coeffs = [2, 3]
-        solver.add_scal_prod_less_or_equal(variables, coeffs, 4)
+        solver.add_weighted_sum_less_or_equal(variables, coeffs, 4)
 
         def check_single_solution():
             val = v0.value() * 2 + v1.value() * 3
@@ -672,7 +672,7 @@ class ConstraintSolverTest(absltest.TestCase):
         self.assertEqual(count, 4)
 
     def test_add_path_cumul(self):
-        solver = constraint_solver.Solver("test_add_path_cumul")
+        solver = cp.Solver("test_add_path_cumul")
         # 3 nodes.
         nexts = [solver.new_int_var(0, 3, f"n{i}") for i in range(3)]
         active = [solver.new_int_var(1, 1, f"a{i}") for i in range(3)]
@@ -699,13 +699,11 @@ class ConstraintSolverTest(absltest.TestCase):
         self.assertEqual(count, 2)
 
     def test_add_interval_var_relation_unary(self):
-        solver = constraint_solver.Solver("test_unary_interval_relation")
+        solver = cp.Solver("test_unary_interval_relation")
         s = solver.new_int_var(0, 10, "s")
         t = solver.new_fixed_duration_interval_var(s, 5, "t")
         # t ends after 7. End(t) = s + 5 >= 7 => s >= 2.
-        solver.add_interval_var_relation(
-            t, constraint_solver.UnaryIntervalRelation.ENDS_AFTER, 7
-        )
+        solver.add_interval_var_relation(t, cp.UnaryIntervalRelation.ENDS_AFTER, 7)
 
         def check_single_solution():
             self.assertGreaterEqual(t.end_min(), 7)
@@ -714,14 +712,14 @@ class ConstraintSolverTest(absltest.TestCase):
         self.assertEqual(count, 9)
 
     def test_add_interval_var_relation_binary(self):
-        solver = constraint_solver.Solver("test_binary_interval_relation")
+        solver = cp.Solver("test_binary_interval_relation")
         s1 = solver.new_int_var(0, 10, "s1")
         t1 = solver.new_fixed_duration_interval_var(s1, 5, "t1")
         s2 = solver.new_int_var(0, 10, "s2")
         t2 = solver.new_fixed_duration_interval_var(s2, 5, "t2")
         # t1 starts after t2 end. s1 >= s2 + 5.
         solver.add_interval_var_relation(
-            t1, constraint_solver.BinaryIntervalRelation.STARTS_AFTER_END, t2
+            t1, cp.BinaryIntervalRelation.STARTS_AFTER_END, t2
         )
 
         def check_single_solution():
@@ -731,14 +729,14 @@ class ConstraintSolverTest(absltest.TestCase):
         self.assertEqual(count, 21)
 
     def test_add_interval_var_relation_binary_delay(self):
-        solver = constraint_solver.Solver("test_binary_interval_relation_delay")
+        solver = cp.Solver("test_binary_interval_relation_delay")
         s1 = solver.new_int_var(0, 10, "s1")
         t1 = solver.new_fixed_duration_interval_var(s1, 5, "t1")
         s2 = solver.new_int_var(0, 10, "s2")
         t2 = solver.new_fixed_duration_interval_var(s2, 5, "t2")
         # t1 starts after t2 end with delay 2. s1 >= s2 + 5 + 2.
         solver.add_interval_var_relation(
-            t1, constraint_solver.BinaryIntervalRelation.STARTS_AFTER_END, t2, 2
+            t1, cp.BinaryIntervalRelation.STARTS_AFTER_END, t2, 2
         )
 
         def check_single_solution():
@@ -748,7 +746,7 @@ class ConstraintSolverTest(absltest.TestCase):
         self.assertEqual(count, 10)
 
     def test_int_expr_comparisons(self):
-        solver = constraint_solver.Solver("test_int_expr_comparisons")
+        solver = cp.Solver("test_int_expr_comparisons")
         x = solver.new_int_var(0, 10, "x")
         y = solver.new_int_var(0, 10, "y")
 
@@ -776,7 +774,7 @@ class ConstraintSolverTest(absltest.TestCase):
         self.assertEqual(count, 37)
 
     def test_int_expr_arithmetic(self):
-        solver = constraint_solver.Solver("test_int_expr_arithmetic")
+        solver = cp.Solver("test_int_expr_arithmetic")
         x = solver.new_int_var(1, 10, "x")
         y = solver.new_int_var(1, 10, "y")
 
@@ -809,7 +807,7 @@ class ConstraintSolverTest(absltest.TestCase):
         self.assertEqual(count, 1)
 
     def test_solution_collector(self):
-        solver = constraint_solver.Solver("test_solution_collector")
+        solver = cp.Solver("test_solution_collector")
         x = solver.new_int_var(0, 10, "x")
         y = solver.new_int_var(0, 10, "y")
         solver.add(x + y == 10)
@@ -819,8 +817,8 @@ class ConstraintSolverTest(absltest.TestCase):
 
         db = solver.phase(
             [x, y],
-            constraint_solver.IntVarStrategy.CHOOSE_FIRST_UNBOUND,
-            constraint_solver.IntValueStrategy.ASSIGN_MIN_VALUE,
+            cp.IntVarStrategy.CHOOSE_FIRST_UNBOUND,
+            cp.IntValueStrategy.ASSIGN_MIN_VALUE,
         )
         solver.solve(db, [collector])
 
@@ -832,7 +830,7 @@ class ConstraintSolverTest(absltest.TestCase):
             self.assertEqual(sol.value(x) + sol.value(y), 10)
 
     def test_best_value_solution_collector(self):
-        solver = constraint_solver.Solver("test_best_value_solution_collector")
+        solver = cp.Solver("test_best_value_solution_collector")
         x = solver.new_int_var(0, 10, "x")
         y = solver.new_int_var(0, 10, "y")
         solver.add(x + y == 10)
@@ -844,8 +842,8 @@ class ConstraintSolverTest(absltest.TestCase):
 
         db = solver.phase(
             [x, y],
-            constraint_solver.IntVarStrategy.CHOOSE_FIRST_UNBOUND,
-            constraint_solver.IntValueStrategy.ASSIGN_MIN_VALUE,
+            cp.IntVarStrategy.CHOOSE_FIRST_UNBOUND,
+            cp.IntValueStrategy.ASSIGN_MIN_VALUE,
         )
         solver.solve(db, [collector])
 
@@ -855,7 +853,7 @@ class ConstraintSolverTest(absltest.TestCase):
         self.assertEqual(collector.objective_value(0), 10)
 
     def test_first_last_solution_collector(self):
-        solver = constraint_solver.Solver("test_first_last_solution_collector")
+        solver = cp.Solver("test_first_last_solution_collector")
         x = solver.new_int_var(0, 10, "x")
         solver.add(x >= 5)
 
@@ -866,8 +864,8 @@ class ConstraintSolverTest(absltest.TestCase):
 
         db = solver.phase(
             [x],
-            constraint_solver.IntVarStrategy.CHOOSE_FIRST_UNBOUND,
-            constraint_solver.IntValueStrategy.ASSIGN_MIN_VALUE,
+            cp.IntVarStrategy.CHOOSE_FIRST_UNBOUND,
+            cp.IntValueStrategy.ASSIGN_MIN_VALUE,
         )
         solver.solve(db, [first_collector, last_collector])
 
@@ -875,14 +873,14 @@ class ConstraintSolverTest(absltest.TestCase):
         self.assertEqual(last_collector.value(0, x), 10)
 
     def test_optimize_var(self):
-        solver = constraint_solver.Solver("test_optimize_var")
+        solver = cp.Solver("test_optimize_var")
         x = solver.new_int_var(0, 10, "x")
         obj = solver.maximize(x, 1)
 
         db = solver.phase(
             [x],
-            constraint_solver.IntVarStrategy.CHOOSE_FIRST_UNBOUND,
-            constraint_solver.IntValueStrategy.ASSIGN_MIN_VALUE,
+            cp.IntVarStrategy.CHOOSE_FIRST_UNBOUND,
+            cp.IntValueStrategy.ASSIGN_MIN_VALUE,
         )
 
         collector = solver.last_solution_collector()
@@ -890,6 +888,75 @@ class ConstraintSolverTest(absltest.TestCase):
 
         solver.solve(db, [obj, collector])
         self.assertEqual(collector.value(0, x), 10)
+
+    def test_phase_interval(self):
+        solver = cp.Solver("test_phase_interval")
+        s = solver.new_int_var(0, 10, "s")
+        t = solver.new_fixed_duration_interval_var(s, 5, "t")
+        db = solver.phase([t], cp.IntervalStrategy.INTERVAL_DEFAULT)
+        solver.solve(db)
+
+    def test_phase_sequence(self):
+        solver = cp.Solver("test_phase_sequence")
+        s = solver.new_int_var(0, 10, "s")
+        t = solver.new_fixed_duration_interval_var(s, 5, "t")
+        d = solver.add_disjunctive_constraint([t], "d")
+        seq = d.make_sequence_var()
+        db = solver.phase([seq], cp.SequenceStrategy.SEQUENCE_DEFAULT)
+        solver.solve(db)
+
+    def test_add_transition_constraint(self):
+        solver = cp.Solver("test_transition")
+        # Simple automaton: 0 -(1)-> 1 -(2)-> 2.
+        # vars: v0, v1. v0=1, v1=2.
+        v0 = solver.new_int_var(0, 5, "v0")
+        v1 = solver.new_int_var(0, 5, "v1")
+        variables = [v0, v1]
+        # Transitions: (state, label, next_state)
+        transitions = [
+            [0, 1, 1],
+            [1, 2, 2],
+        ]
+        initial_state = 0
+        final_states = [2]
+        solver.add_transition_constraint(
+            variables, transitions, initial_state, final_states
+        )
+
+        def check_single_solution():
+            self.assertEqual(v0.value(), 1)
+            self.assertEqual(v1.value(), 2)
+
+        count = self._solve_and_check(solver, variables, check_single_solution)
+        self.assertEqual(count, 1)
+
+    def test_new_fixed_interval(self):
+        solver = cp.Solver("test_fixed_interval")
+        t = solver.new_fixed_interval(2, 5, "t")
+        self.assertEqual(t.start_min(), 2)
+        self.assertEqual(t.duration_min(), 5)
+        self.assertEqual(t.end_min(), 7)
+
+    def test_new_mirror_interval(self):
+        solver = cp.Solver("test_mirror_interval")
+        s = solver.new_int_var(0, 10, "s")
+        t = solver.new_fixed_duration_interval_var(s, 5, "t")
+        m = solver.new_mirror_interval(t)
+        self.assertIsNotNone(m)
+
+    def test_new_interval_relaxed_min(self):
+        solver = cp.Solver("test_relaxed_min")
+        s = solver.new_int_var(0, 10, "s")
+        t = solver.new_fixed_duration_interval_var(s, 5, "t")
+        r = solver.new_interval_relaxed_min(t)
+        self.assertIsNotNone(r)
+
+    def test_new_interval_relaxed_max(self):
+        solver = cp.Solver("test_relaxed_max")
+        s = solver.new_int_var(0, 10, "s")
+        t = solver.new_fixed_duration_interval_var(s, 5, "t")
+        r = solver.new_interval_relaxed_max(t)
+        self.assertIsNotNone(r)
 
 
 if __name__ == "__main__":
