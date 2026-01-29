@@ -11,6 +11,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+pybind11_add_module(piecewise_linear_function_pybind11 MODULE piecewise_linear_function.cc)
+set_target_properties(piecewise_linear_function_pybind11 PROPERTIES
+  LIBRARY_OUTPUT_NAME "piecewise_linear_function")
+# note: macOS is APPLE and also UNIX !
+if(APPLE)
+  set_target_properties(piecewise_linear_function_pybind11 PROPERTIES
+    SUFFIX ".so"
+    INSTALL_RPATH "@loader_path;@loader_path/../../../${PYTHON_PROJECT}/.libs")
+elseif(UNIX)
+  set_target_properties(piecewise_linear_function_pybind11 PROPERTIES
+    INSTALL_RPATH "$ORIGIN:$ORIGIN/../../../${PYTHON_PROJECT}/.libs")
+endif()
+target_link_libraries(piecewise_linear_function_pybind11 PRIVATE ${PROJECT_NAMESPACE}::ortools)
+add_library(${PROJECT_NAMESPACE}::piecewise_linear_function_pybind11 ALIAS piecewise_linear_function_pybind11)
+
 pybind11_add_module(sorted_interval_list_pybind11 MODULE sorted_interval_list.cc)
 set_target_properties(sorted_interval_list_pybind11 PROPERTIES
   LIBRARY_OUTPUT_NAME "sorted_interval_list")
