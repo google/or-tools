@@ -32,9 +32,10 @@
 #include <utility>
 #include <vector>
 
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
-#include "ortools/base/int_type.h"
-#include "ortools/base/logging.h"
+#include "ortools/base/strong_int.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/time_limit.h"
@@ -211,7 +212,7 @@ class BronKerboschAlgorithm {
   }
 
  private:
-  DEFINE_INT_TYPE(CandidateIndex, ptrdiff_t);
+  DEFINE_STRONG_INT_TYPE(CandidateIndex, ptrdiff_t);
 
   // A data structure that maintains the variables of one "iteration" of the
   // search algorithm. These are the variables that would normally be allocated
@@ -253,8 +254,8 @@ class BronKerboschAlgorithm {
       absl::StrAppend(&buffer, "pivot = ", pivot,
                       "\nnum_remaining_candidates = ", num_remaining_candidates,
                       "\ncandidates = [");
-      for (CandidateIndex i(0); i < candidates.size(); ++i) {
-        if (i > 0) buffer += ", ";
+      for (CandidateIndex i(0); i < CandidateIndex(candidates.size()); ++i) {
+        if (i > CandidateIndex(0)) buffer += ", ";
         absl::StrAppend(&buffer, candidates[i]);
       }
       absl::StrAppend(
@@ -443,8 +444,9 @@ class WeightedBronKerboschBitsetAlgorithm {
 template <typename NodeIndex>
 void BronKerboschAlgorithm<NodeIndex>::InitializeState(State* state) {
   DCHECK(state != nullptr);
-  const int num_candidates = state->candidates.size();
-  int num_disconnected_candidates = num_candidates;
+  const CandidateIndex num_candidates =
+      CandidateIndex(state->candidates.size());
+  int num_disconnected_candidates = num_candidates.value();
   state->pivot = 0;
   CandidateIndex pivot_index(-1);
   for (CandidateIndex pivot_candidate_index(0);
@@ -480,7 +482,7 @@ BronKerboschAlgorithm<NodeIndex>::SelectCandidateIndexForRecursion(
   DCHECK(state != nullptr);
   CandidateIndex disconnected_node_index =
       std::max(state->first_candidate_index, state->candidate_for_recursion);
-  while (disconnected_node_index < state->candidates.size() &&
+  while (disconnected_node_index < CandidateIndex(state->candidates.size()) &&
          state->candidates[disconnected_node_index] != state->pivot &&
          IsArc(state->pivot, state->candidates[disconnected_node_index])) {
     ++disconnected_node_index;
@@ -496,8 +498,8 @@ void BronKerboschAlgorithm<NodeIndex>::Initialize() {
   states_.emplace_back();
 
   State* const root_state = &states_.back();
-  root_state->first_candidate_index = 0;
-  root_state->candidate_for_recursion = 0;
+  root_state->first_candidate_index = CandidateIndex(0);
+  root_state->candidate_for_recursion = CandidateIndex(0);
   root_state->candidates.resize(num_nodes_, 0);
   std::iota(root_state->candidates.begin(), root_state->candidates.end(), 0);
   root_state->num_remaining_candidates = num_nodes_;
@@ -555,8 +557,9 @@ void BronKerboschAlgorithm<NodeIndex>::PushState(NodeIndex selected) {
     }
   }
   const CandidateIndex new_first_candidate_index(new_candidates.size());
-  for (CandidateIndex i = previous_state->first_candidate_index + 1;
-       i < previous_state->candidates.size(); ++i) {
+  for (CandidateIndex i =
+           previous_state->first_candidate_index + CandidateIndex(1);
+       i < CandidateIndex(previous_state->candidates.size()); ++i) {
     const NodeIndex candidate = previous_state->candidates[i];
     if (IsArc(selected, candidate)) {
       new_candidates.push_back(candidate);
