@@ -1149,6 +1149,28 @@ bool CheckIntTimes(
   return target == left * right;
 }
 
+int64_t Int64Pow(int64_t x, int64_t p) {
+  DCHECK_GE(p, 0);
+  if (p == 0) return 1;
+  if (p == 1) return x;
+
+  int64_t tmp = Int64Pow(x, p / 2);
+  if (p % 2 == 0)
+    return tmp * tmp;
+  else
+    return x * tmp * tmp;
+}
+
+bool CheckIntPow(
+    const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
+    const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
+  const int64_t base = Eval(ct.arguments[0], evaluator);
+  const int64_t exp = Eval(ct.arguments[1], evaluator);
+  if (exp < 0) return false;
+  const int64_t target = Eval(ct.arguments[2], evaluator);
+  return target == Int64Pow(base, exp);
+}
+
 bool CheckOrToolsInverse(
     const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
     const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
@@ -1844,6 +1866,7 @@ CallMap CreateCallMap() {
   m["int_not_in"] = CheckSetNotIn;
   m["int_plus"] = CheckIntPlus;
   m["int_times"] = CheckIntTimes;
+  m["int_pow"] = CheckIntPow;
   m["maximum_arg_int"] = CheckMaximumArgInt;
   m["maximum_int"] = CheckMaximumInt;
   m["minimum_arg_int"] = CheckMinimumArgInt;

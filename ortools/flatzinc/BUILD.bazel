@@ -158,6 +158,7 @@ cc_library(
         "//ortools/sat:model",
         "//ortools/sat:sat_parameters_cc_proto",
         "//ortools/util:logging",
+        "//ortools/util:saturated_arithmetic",
         "//ortools/util:sorted_interval_list",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/base:no_destructor",
@@ -169,7 +170,6 @@ cc_library(
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",
-        "@protobuf",
     ],
 )
 
@@ -184,6 +184,7 @@ cc_binary(
         "//ortools/base",
         "//ortools/base:path",
         "//ortools/base:timer",
+        "//ortools/linear_solver:linear_solver_scip",
         "//ortools/sat:model",
         "//ortools/util:logging",
         "@abseil-cpp//absl/flags:flag",
