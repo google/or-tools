@@ -11,17 +11,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Defines macros about target OS and whether it supports threads.
+// Defines macros and constexpr about target OS features.
 #ifndef ORTOOLS_PORT_OS_H_
 #define ORTOOLS_PORT_OS_H_
+
+namespace operations_research {
 
 #if defined(__ANDROID__)
 #define ORTOOLS_TARGET_OS_IS_ANDROID
 #endif
 
 #if (defined(__apple__) || defined(__APPLE__) || defined(__MACH__))
+// Temporarily close the `namespace operations_research` to include a file.
+}  // namespace operations_research
 // From https://stackoverflow.com/a/49560690
 #include "TargetConditionals.h"
+// Reopen the namespace.
+namespace operations_research {
 #if TARGET_OS_IPHONE == 1
 #define ORTOOLS_TARGET_OS_IS_IOS
 #endif
@@ -29,7 +35,10 @@
 
 #if defined(__EMSCRIPTEN__)
 #define ORTOOLS_TARGET_OS_IS_EMSCRIPTEN
-#endif
+inline constexpr bool kTargetOsIsEmscripten = true;
+#else   // __EMSCRIPTEN__
+inline constexpr bool kTargetOsIsEmscripten = false;
+#endif  // __EMSCRIPTEN__
 
 #if defined(ORTOOLS_TARGET_OS_IS_ANDROID) || \
     defined(ORTOOLS_TARGET_OS_IS_IOS) ||     \
@@ -38,5 +47,14 @@
 #else
 #define ORTOOLS_TARGET_OS_SUPPORTS_THREADS 1
 #endif
+
+#ifdef __PORTABLE_PLATFORM__
+#define ORTOOLS_TARGET_OS_IS_PORTABLE_PLATFORM
+inline constexpr bool kTargetOsIsPortablePlatform = true;
+#else   // __PORTABLE_PLATFORM__
+inline constexpr bool kTargetOsIsPortablePlatform = false;
+#endif  // __PORTABLE_PLATFORM__
+
+}  // namespace operations_research
 
 #endif  // ORTOOLS_PORT_OS_H_
