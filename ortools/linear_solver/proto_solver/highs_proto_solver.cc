@@ -21,6 +21,7 @@
 #include <vector>
 
 #include "Highs.h"
+#include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
@@ -222,43 +223,51 @@ absl::StatusOr<MPSolutionResponse> HighsSolveProto(
   const absl::Time time_before = absl::Now();
   UserTimer user_timer;
   user_timer.Start();
-  HighsStatus run_status = highs.run();
-  switch (run_status) {
-    case HighsStatus::kError: {
-      response.set_status(MPSOLVER_NOT_SOLVED);
-      response.set_status_str("Error running HiGHS run()");
-      return response;
-    }
-    case HighsStatus::kWarning: {
-      response.set_status_str("Warning HiGHS run()");
+  const HighsStatus run_status = highs.run();
+  VLOG(2) << "run_status: " << highsStatusToString(run_status);
+  if (run_status == HighsStatus::kError) {
+    response.set_status(MPSOLVER_NOT_SOLVED);
+    response.set_status_str("Error running HiGHS run()");
+    return response;
+  }
+  const HighsModelStatus model_status = highs.getModelStatus();
+  VLOG(2) << "model_status: " << highs.modelStatusToString(model_status);
+
+  switch (model_status) {
+    case HighsModelStatus::kOptimal:
+      response.set_status(MPSOLVER_OPTIMAL);
+      break;
+    case HighsModelStatus::kUnboundedOrInfeasible:
+      response.set_status_str(
+          "The model may actually be unbounded: HiGHS returned "
+          "kUnboundedOrInfeasible");
+      response.set_status(MPSOLVER_INFEASIBLE);
+      break;
+    case HighsModelStatus::kInfeasible:
+      response.set_status(MPSOLVER_INFEASIBLE);
+      break;
+    case HighsModelStatus::kUnbounded:
+      response.set_status(MPSOLVER_UNBOUNDED);
+      break;
+    case HighsModelStatus::kTimeLimit:       // ABSL_FALLTHROUGH_INTENDED
+    case HighsModelStatus::kIterationLimit:  // ABSL_FALLTHROUGH_INTENDED
+    case HighsModelStatus::kInterrupt:       // ABSL_FALLTHROUGH_INTENDED
+    case HighsModelStatus::kSolutionLimit:   // ABSL_FALLTHROUGH_INTENDED
+    case HighsModelStatus::kMemoryLimit: {
+      const HighsInfo& info = highs.getInfo();
+      if (info.primal_solution_status == kSolutionStatusFeasible) {
+        response.set_status(MPSOLVER_FEASIBLE);
+      } else {
+        response.set_status(MPSOLVER_UNKNOWN_STATUS);
+      }
       break;
     }
-    case HighsStatus::kOk: {
-      HighsModelStatus model_status = highs.getModelStatus();
-      switch (model_status) {
-        case HighsModelStatus::kOptimal:
-          response.set_status(MPSOLVER_OPTIMAL);
-          break;
-        case HighsModelStatus::kUnboundedOrInfeasible:
-          response.set_status_str(
-              "The model may actually be unbounded: HiGHS returned "
-              "kUnboundedOrInfeasible");
-          response.set_status(MPSOLVER_INFEASIBLE);
-          break;
-        case HighsModelStatus::kInfeasible:
-          response.set_status(MPSOLVER_INFEASIBLE);
-          break;
-        case HighsModelStatus::kUnbounded:
-          response.set_status(MPSOLVER_UNBOUNDED);
-          break;
-        default: {
-          // TODO(user): report feasible status.
-          const HighsInfo& info = highs.getInfo();
-          if (info.primal_solution_status == kSolutionStatusFeasible)
-            response.set_status(MPSOLVER_FEASIBLE);
-          break;
-        }
+    default: {
+      const HighsInfo& info = highs.getInfo();
+      if (info.primal_solution_status == kSolutionStatusFeasible) {
+        response.set_status(MPSOLVER_FEASIBLE);
       }
+      break;
     }
   }
 
