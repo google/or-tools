@@ -715,7 +715,9 @@ class TestPyWrapRoutingModel(absltest.TestCase):
         search_parameters.local_search_metaheuristic = (
             enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH
         )
-        search_parameters.local_search_operators.use_two_opt = optional_boolean_pb2.BOOL_FALSE
+        search_parameters.local_search_operators.use_two_opt = (
+            optional_boolean_pb2.BOOL_FALSE
+        )
         search_parameters.solution_limit = 20
         model.CloseModelWithParameters(search_parameters)
         # Solve with parameters
