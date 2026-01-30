@@ -53,6 +53,115 @@ class RoutingSearchParameters;
 #include "ortools/util/optional_boolean.pb.h"
 %}
 
+// Add needed import to GlobalsJNI.java
+%pragma(java) jniclassimports=%{
+// Types from ConstraintSolver
+import com.google.ortools.constraintsolver.Assignment;
+import com.google.ortools.constraintsolver.IntVar;
+import com.google.ortools.constraintsolver.IntervalVar;
+import com.google.ortools.constraintsolver.LocalSearchFilter;
+import com.google.ortools.constraintsolver.LocalSearchOperator;
+import com.google.ortools.constraintsolver.SearchMonitor;
+
+// Used to wrap Domain
+import com.google.ortools.util.Domain;
+
+// Used to wrap std::function<std::string()>
+// see https://docs.oracle.com/javase/8/docs/api/java/util/function/Supplier.html
+import java.util.function.Supplier;
+
+// Used to wrap std::function<bool()>
+// see https://docs.oracle.com/javase/8/docs/api/java/util/function/BooleanSupplier.html
+import java.util.function.BooleanSupplier;
+
+// Used to wrap std::function<int(int64_t)>
+// see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongToIntFunction.html
+import java.util.function.LongToIntFunction;
+
+// Used to wrap std::function<int64_t(int64_t)>
+// see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongUnaryOperator.html
+import java.util.function.LongUnaryOperator;
+
+// Used to wrap std::function<int64_t(int64_t, int64_t)>
+// see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongBinaryOperator.html
+import java.util.function.LongBinaryOperator;
+
+// Used to wrap std::function<int64_t(int64_t, int64_t, int64_t)>
+// note: Java does not provide TernaryOperator so we provide it
+import com.google.ortools.constraintsolver.LongTernaryOperator;
+
+// Used to wrap std::function<int64_t(int, int)>
+// note: Java does not provide it, so we provide it.
+import com.google.ortools.constraintsolver.IntIntToLongFunction;
+
+// Used to wrap std::function<bool(int64_t)>
+// see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongPredicate.html
+import java.util.function.LongPredicate;
+
+// Used to wrap std::function<bool(int64_t, int64_t, int64_t)>
+// note: Java does not provide TernaryPredicate so we provide it
+import com.google.ortools.constraintsolver.LongTernaryPredicate;
+
+// Used to wrap std::function<void(Solver*)>
+// see https://docs.oracle.com/javase/8/docs/api/java/util/function/Consumer.html
+import java.util.function.Consumer;
+
+// Used to wrap std::function<void(int64_t)>
+// see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongConsumer.html
+import java.util.function.LongConsumer;
+
+// Used to wrap std::function<void()>
+// see https://docs.oracle.com/javase/8/docs/api/java/lang/Runnable.html
+import java.lang.Runnable;
+%}
+
+// Protobuf support
+PROTO_INPUT(operations_research::routing::RoutingModelParameters,
+            com.google.ortools.routing.RoutingModelParameters,
+            parameters)
+PROTO_INPUT(operations_research::routing::RoutingSearchParameters,
+            com.google.ortools.routing.RoutingSearchParameters,
+            search_parameters)
+PROTO2_RETURN(operations_research::routing::IteratedLocalSearchParameters,
+              com.google.ortools.routing.IteratedLocalSearchParameters)
+PROTO2_RETURN(operations_research::routing::RoutingModelParameters,
+              com.google.ortools.routing.RoutingModelParameters)
+PROTO2_RETURN(operations_research::routing::RoutingSearchParameters,
+              com.google.ortools.routing.RoutingSearchParameters)
+PROTO_ENUM_RETURN(operations_research::routing::FirstSolutionStrategy::Value,
+                  com.google.ortools.routing.FirstSolutionStrategy.Value)
+PROTO_ENUM_RETURN(operations_research::routing::RoutingSearchStatus::Value,
+                  com.google.ortools.routing.RoutingSearchStatus.Value)
+
+// Add needed import to Globals.java
+%pragma(java) moduleimports=%{
+// Types from ConstraintSolver
+import com.google.ortools.constraintsolver.Assignment;
+import com.google.ortools.constraintsolver.IntVar;
+%}
+
+// Wrap parameters.h according to the SWIG style guide.
+%ignoreall
+%unignore operations_research::routing;
+namespace operations_research::routing {
+// parameters.h
+// IMPORTANT(user): These functions are global, so in Java, they are in the
+// Globals.java file. (import com.[...].routing.Globals).
+%rename (defaultRoutingSearchParameters) DefaultRoutingSearchParameters;
+%rename (defaultRoutingModelParameters) DefaultRoutingModelParameters;
+%rename (defaultSecondaryRoutingSearchParameters) DefaultSecondaryRoutingSearchParameters;
+%rename (defaultIteratedLocalSearchParameters) DefaultIteratedLocalSearchParameters;
+%rename (findErrorInRoutingSearchParameters) FindErrorInRoutingSearchParameters;
+%rename (findErrorsInRoutingSearchParameters) FindErrorsInRoutingSearchParameters;
+%rename (makeSetValuesFromTargets) MakeSetValuesFromTargets;
+}  // namespace operations_research::routing
+
+%include "ortools/routing/parameters.h"
+%unignoreall
+
+// Wrap routing.h according to the SWIG style guide.
+%ignoreall
+%unignore operations_research::routing;
 namespace operations_research::routing {
 
 // GlobalVehicleBreaksConstraint
@@ -335,112 +444,8 @@ import com.google.ortools.constraintsolver.Constraint;
 // Generic rename rules.
 %rename (buildSolution) *::BuildSolution;
 
-// Add needed import to GlobalsJNI.java
-%pragma(java) jniclassimports=%{
-// Types from ConstraintSolver
-import com.google.ortools.constraintsolver.Assignment;
-import com.google.ortools.constraintsolver.IntVar;
-import com.google.ortools.constraintsolver.IntervalVar;
-import com.google.ortools.constraintsolver.LocalSearchFilter;
-import com.google.ortools.constraintsolver.LocalSearchOperator;
-import com.google.ortools.constraintsolver.SearchMonitor;
-
-// Used to wrap Domain
-import com.google.ortools.util.Domain;
-
-// Used to wrap std::function<std::string()>
-// see https://docs.oracle.com/javase/8/docs/api/java/util/function/Supplier.html
-import java.util.function.Supplier;
-
-// Used to wrap std::function<bool()>
-// see https://docs.oracle.com/javase/8/docs/api/java/util/function/BooleanSupplier.html
-import java.util.function.BooleanSupplier;
-
-// Used to wrap std::function<int(int64_t)>
-// see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongToIntFunction.html
-import java.util.function.LongToIntFunction;
-
-// Used to wrap std::function<int64_t(int64_t)>
-// see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongUnaryOperator.html
-import java.util.function.LongUnaryOperator;
-
-// Used to wrap std::function<int64_t(int64_t, int64_t)>
-// see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongBinaryOperator.html
-import java.util.function.LongBinaryOperator;
-
-// Used to wrap std::function<int64_t(int64_t, int64_t, int64_t)>
-// note: Java does not provide TernaryOperator so we provide it
-import com.google.ortools.constraintsolver.LongTernaryOperator;
-
-// Used to wrap std::function<int64_t(int, int)>
-// note: Java does not provide it, so we provide it.
-import com.google.ortools.constraintsolver.IntIntToLongFunction;
-
-// Used to wrap std::function<bool(int64_t)>
-// see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongPredicate.html
-import java.util.function.LongPredicate;
-
-// Used to wrap std::function<bool(int64_t, int64_t, int64_t)>
-// note: Java does not provide TernaryPredicate so we provide it
-import com.google.ortools.constraintsolver.LongTernaryPredicate;
-
-// Used to wrap std::function<void(Solver*)>
-// see https://docs.oracle.com/javase/8/docs/api/java/util/function/Consumer.html
-import java.util.function.Consumer;
-
-// Used to wrap std::function<void(int64_t)>
-// see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongConsumer.html
-import java.util.function.LongConsumer;
-
-// Used to wrap std::function<void()>
-// see https://docs.oracle.com/javase/8/docs/api/java/lang/Runnable.html
-import java.lang.Runnable;
-%}
-
-// Protobuf support
-PROTO_INPUT(operations_research::routing::RoutingModelParameters,
-            com.google.ortools.routing.RoutingModelParameters,
-            parameters)
-PROTO_INPUT(operations_research::routing::RoutingSearchParameters,
-            com.google.ortools.routing.RoutingSearchParameters,
-            search_parameters)
-PROTO2_RETURN(operations_research::routing::IteratedLocalSearchParameters,
-              com.google.ortools.routing.IteratedLocalSearchParameters)
-PROTO2_RETURN(operations_research::routing::RoutingModelParameters,
-              com.google.ortools.routing.RoutingModelParameters)
-PROTO2_RETURN(operations_research::routing::RoutingSearchParameters,
-              com.google.ortools.routing.RoutingSearchParameters)
-PROTO_ENUM_RETURN(operations_research::routing::FirstSolutionStrategy::Value,
-                  com.google.ortools.routing.FirstSolutionStrategy.Value)
-PROTO_ENUM_RETURN(operations_research::routing::RoutingSearchStatus::Value,
-                  com.google.ortools.routing.RoutingSearchStatus.Value)
-
-// Add needed import to Globals.java
-%pragma(java) moduleimports=%{
-// Types from ConstraintSolver
-import com.google.ortools.constraintsolver.Assignment;
-import com.google.ortools.constraintsolver.IntVar;
-%}
-
-// Wrap parameters.h according to the SWIG style guide.
-%ignoreall
-%unignore operations_research::routing;
-namespace operations_research::routing {
-// parameters.h
-// IMPORTANT(user): These functions are global, so in Java, they are in the
-// Globals.java file. (import com.[...].routing.Globals).
-%rename (defaultRoutingSearchParameters) DefaultRoutingSearchParameters;
-%rename (defaultRoutingModelParameters) DefaultRoutingModelParameters;
-%rename (defaultSecondaryRoutingSearchParameters) DefaultSecondaryRoutingSearchParameters;
-%rename (defaultIteratedLocalSearchParameters) DefaultIteratedLocalSearchParameters;
-%rename (findErrorInRoutingSearchParameters) FindErrorInRoutingSearchParameters;
-%rename (findErrorsInRoutingSearchParameters) FindErrorsInRoutingSearchParameters;
-%rename (makeSetValuesFromTargets) MakeSetValuesFromTargets;
-}  // namespace operations_research::routing
-
-%include "ortools/routing/parameters.h"
-%unignoreall
 
 // TODO(user): Use ignoreall/unignoreall for this one. A lot of work.
 //swiglint: disable include-h-allglobals
 %include "ortools/routing/routing.h"
+%unignoreall
