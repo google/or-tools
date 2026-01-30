@@ -74,149 +74,6 @@ class RoutingSearchParameters;
 #include "ortools/util/optional_boolean.pb.h"
 %}
 
-namespace operations_research::routing {
-
-// GlobalVehicleBreaksConstraint
-%unignore GlobalVehicleBreaksConstraint;
-%typemap(csimports) GlobalVehicleBreaksConstraint %{
-using Google.OrTools.ConstraintSolver;
-%}
-
-// PathsMetadata
-%unignore PathsMetadata;
-
-// Routing Dimension
-%unignore Dimension;
-%typemap(csimports) Dimension %{
-using System;
-using System.Collections.Generic;
-using Google.OrTools.ConstraintSolver;
-%}
-%typemap(cscode) Dimension %{
-  // Keep reference to delegate to avoid GC to collect them early.
-  private List<IntIntToLong> limitCallbacks;
-  private IntIntToLong StoreIntIntToLong(IntIntToLong limit) {
-    if (limitCallbacks == null)
-      limitCallbacks = new List<IntIntToLong>();
-    limitCallbacks.Add(limit);
-    return limit;
-  }
-
-  private List<LongLongToLong> groupDelayCallbacks;
-  private LongLongToLong StoreLongLongToLong(LongLongToLong groupDelay) {
-    if (groupDelayCallbacks == null)
-      groupDelayCallbacks = new List<LongLongToLong>();
-    groupDelayCallbacks.Add(groupDelay);
-    return groupDelay;
-  }
-%}
-%ignore Dimension::GetBreakDistanceDurationOfVehicle;
-
-// Routing Model
-%unignore Model;
-%typemap(csimports) Model %{
-using System;
-using System.Collections.Generic;
-using Google.OrTools.ConstraintSolver;
-using Domain = Google.OrTools.Util.Domain;
-%}
-%typemap(cscode) Model %{
-  // Keep reference to delegate to avoid GC to collect them early.
-  private List<LongToLong> unaryTransitCallbacks;
-  private LongToLong StoreLongToLong(LongToLong c) {
-    if (unaryTransitCallbacks == null)
-      unaryTransitCallbacks = new List<LongToLong>();
-    unaryTransitCallbacks.Add(c);
-    return c;
-  }
-
-  private List<LongLongToLong> transitCallbacks;
-  private LongLongToLong StoreLongLongToLong(LongLongToLong c) {
-    if (transitCallbacks == null)
-      transitCallbacks = new List<LongLongToLong>();
-    transitCallbacks.Add(c);
-    return c;
-  }
-
-  private List<VoidToVoid> solutionCallbacks;
-  private VoidToVoid StoreVoidToVoid(VoidToVoid c) {
-    if (solutionCallbacks == null)
-      solutionCallbacks = new List<VoidToVoid>();
-    solutionCallbacks.Add(c);
-    return c;
-  }
-%}
-%rename("GetStatus") Model::status;
-// Ignored:
-%ignore Model::AddDimensionDependentDimensionWithVehicleCapacity;
-
-%unignore Model::RegisterUnaryTransitVector;
-%unignore Model::RegisterTransitMatrix;
-
-%unignore Model::AddVectorDimension;
-%unignore Model::AddMatrixDimension;
-
-%ignore Model::AddSameVehicleRequiredTypeAlternatives;
-%ignore Model::GetAllDimensionNames;
-%ignore Model::GetAutomaticFirstSolutionStrategy;
-%ignore Model::GetDeliveryIndexPairs;
-%ignore Model::GetDimensions;
-%ignore Model::GetDimensionsWithSoftAndSpanCosts;
-%ignore Model::GetDimensionsWithSoftOrSpanCosts;
-%ignore Model::GetGlobalDimensionCumulOptimizers;
-%ignore Model::GetHardTypeIncompatibilitiesOfType;
-%ignore Model::GetLocalDimensionCumulMPOptimizers;
-%ignore Model::GetLocalDimensionCumulOptimizers;
-%ignore Model::GetMutableGlobalCumulOptimizer;
-%ignore Model::GetMutableLocalCumulOptimizer;
-%ignore Model::GetMutableLocalCumulMPOptimizer;
-%ignore Model::GetPerfectBinaryDisjunctions;
-%ignore Model::GetPickupIndexPairs;
-%ignore Model::HasTypeRegulations;
-%ignore Model::MakeStateDependentTransit;
-%ignore Model::PackCumulsOfOptimizerDimensionsFromAssignment;
-%ignore Model::RegisterStateDependentTransitCallback;
-%ignore Model::RemainingTime;
-%ignore Model::StateDependentTransitCallback;
-%ignore Model::SolveWithParameters(
-    const RoutingSearchParameters& search_parameters,
-    std::vector<const Assignment*>* solutions);
-%ignore Model::SolveFromAssignmentWithParameters(
-      const Assignment* assignment,
-      const RoutingSearchParameters& search_parameters,
-      std::vector<const Assignment*>* solutions);
-%ignore Model::TransitCallback;
-%ignore Model::UnaryTransitCallbackOrNull;
-
-%ignore operations_research::routing::Model::AddResourceGroup;
-%ignore operations_research::routing::Model::GetResourceGroups;
-
-// ModelVisitor
-%unignore ModelVisitor;
-%typemap(csimports) ModelVisitor %{
-using Google.OrTools.ConstraintSolver;
-%}
-
-// SimpleBoundCosts
-%unignore BoundCost;
-%unignore SimpleBoundCosts;
-%rename("GetBoundCost") SimpleBoundCosts::bound_cost;
-%rename("GetSize") SimpleBoundCosts::Size;
-
-// TypeRegulationsConstraint
-%unignore TypeRegulationsConstraint;
-%typemap(csimports) TypeRegulationsConstraint %{
-using Google.OrTools.ConstraintSolver;
-%}
-
-// TypeRegulationsChecker
-%unignore TypeRegulationsChecker;
-%ignore TypeRegulationsChecker::CheckVehicle;
-
-}  // namespace operations_research::routing
-
-%rename("%(camelcase)s", %$isfunction) "";
-
 // Add needed import to RoutingGlobalsPINVOKE.cs
 %pragma(csharp) imclassimports=%{
 // Types from ConstraintSolver
@@ -259,13 +116,177 @@ namespace operations_research::routing {
 %unignore DefaultSecondaryRoutingSearchParameters;
 %unignore DefaultIteratedLocalSearchParameters;
 %unignore FindErrorInRoutingSearchParameters;
-%unignore FindErrorsInRoutingSearchParameters;
+//%unignore FindErrorsInRoutingSearchParameters;  // vector<string> not wrapped
 }  // namespace operations_research::routing
 
 %include "ortools/routing/parameters.h"
 %unignoreall
 
-// Wrap routing includes
-// TODO(user): Replace with %ignoreall/%unignoreall
-//swiglint: disable include-h-allglobals
+// Routing
+// Wrap routing.h according to the SWIG style guide.
+%ignoreall
+%unignore operations_research::routing;
+namespace operations_research::routing {
+
+// GlobalVehicleBreaksConstraint
+%unignore GlobalVehicleBreaksConstraint;
+%typemap(csimports) GlobalVehicleBreaksConstraint %{
+using Google.OrTools.ConstraintSolver;
+%}
+
+// Routing Dimension
+%unignore Dimension;
+%typemap(csimports) Dimension %{
+using System;
+using System.Collections.Generic;
+using Google.OrTools.ConstraintSolver;
+%}
+%typemap(cscode) Dimension %{
+  // Keep reference to delegate to avoid GC to collect them early.
+  private List<IntIntToLong> limitCallbacks;
+  private IntIntToLong StoreIntIntToLong(IntIntToLong limit) {
+    if (limitCallbacks == null)
+      limitCallbacks = new List<IntIntToLong>();
+    limitCallbacks.Add(limit);
+    return limit;
+  }
+
+  private List<LongLongToLong> groupDelayCallbacks;
+  private LongLongToLong StoreLongLongToLong(LongLongToLong groupDelay) {
+    if (groupDelayCallbacks == null)
+      groupDelayCallbacks = new List<LongLongToLong>();
+    groupDelayCallbacks.Add(groupDelay);
+    return groupDelay;
+  }
+%}
+%unignore Dimension::Dimension;
+%unignore Dimension::~Dimension;
+%unignore Dimension::CumulVar;
+%unignore Dimension::GetQuadraticCostSoftSpanUpperBoundForVehicle;
+%unignore Dimension::GetSoftSpanUpperBoundForVehicle;
+%unignore Dimension::HasQuadraticCostSoftSpanUpperBounds;
+%unignore Dimension::HasSoftSpanUpperBounds;
+%unignore Dimension::SetBreakIntervalsOfVehicle;
+%unignore Dimension::SetCumulVarSoftUpperBound;
+%unignore Dimension::SetGlobalSpanCostCoefficient;
+%unignore Dimension::SetQuadraticCostSoftSpanUpperBoundForVehicle;
+%unignore Dimension::SetSoftSpanUpperBoundForVehicle;
+%unignore Dimension::SlackVar;
+%unignore Dimension::TransitVar;
+
+// Routing Model
+%unignore Model;
+%typemap(csimports) Model %{
+using System;
+using System.Collections.Generic;
+using Google.OrTools.ConstraintSolver;
+using Domain = Google.OrTools.Util.Domain;
+%}
+%typemap(cscode) Model %{
+  // Keep reference to delegate to avoid GC to collect them early.
+  private List<LongToLong> unaryTransitCallbacks;
+  private LongToLong StoreLongToLong(LongToLong c) {
+    if (unaryTransitCallbacks == null)
+      unaryTransitCallbacks = new List<LongToLong>();
+    unaryTransitCallbacks.Add(c);
+    return c;
+  }
+
+  private List<LongLongToLong> transitCallbacks;
+  private LongLongToLong StoreLongLongToLong(LongLongToLong c) {
+    if (transitCallbacks == null)
+      transitCallbacks = new List<LongLongToLong>();
+    transitCallbacks.Add(c);
+    return c;
+  }
+
+  private List<VoidToVoid> solutionCallbacks;
+  private VoidToVoid StoreVoidToVoid(VoidToVoid c) {
+    if (solutionCallbacks == null)
+      solutionCallbacks = new List<VoidToVoid>();
+    solutionCallbacks.Add(c);
+    return c;
+  }
+%}
+%unignore Model::Model;
+%unignore Model::~Model;
+%unignore Model::AddAtSolutionCallback;
+%unignore Model::AddConstantDimensionWithSlack;
+%unignore Model::AddDimension;
+%unignore Model::AddDimensionWithVehicleCapacity;
+%unignore Model::AddDisjunction;
+%unignore Model::AddMatrixDimension;
+%unignore Model::AddPickupAndDelivery;
+%unignore Model::AddVariableMinimizedByFinalizer;
+%unignore Model::AddVectorDimension;
+%unignore Model::CostVar;
+%unignore Model::CumulVar;
+%unignore Model::End;
+%unignore Model::GetArcCostForVehicle;
+%unignore Model::GetDimensionOrDie;
+%unignore Model::GetMutableDimension;
+%unignore Model::IsEnd;
+%unignore Model::IsStart;
+%unignore Model::IsVehicleUsed;
+%unignore Model::NextVar;
+%unignore Model::ReadAssignmentFromRoutes;
+%unignore Model::RegisterTransitCallback;
+%unignore Model::RegisterTransitMatrix;
+%unignore Model::RegisterUnaryTransitCallback;
+%unignore Model::RegisterUnaryTransitVector;
+%unignore Model::SetArcCostEvaluatorOfAllVehicles;
+%unignore Model::SetArcCostEvaluatorOfVehicle;
+%unignore Model::SetPickupAndDeliveryPolicyOfAllVehicles;
+%unignore Model::Size;
+%unignore Model::SolveFromAssignmentWithParameters(const operations_research::Assignment*, const RoutingSearchParameters&);
+%unignore Model::SolveWithParameters(const RoutingSearchParameters&);
+%unignore Model::Start;
+%unignore Model::VehicleVar;
+%rename("GetStatus") Model::status;
+// Model nested enum
+%unignore Model::PenaltyCostBehavior;
+%unignore Model::PENALIZE_ONCE;
+%unignore Model::PENALIZE_PER_INACTIVE;
+%unignore Model::PickupAndDeliveryPolicy;
+%unignore Model::PICKUP_AND_DELIVERY_FIFO;
+%unignore Model::PICKUP_AND_DELIVERY_LIFO;
+%unignore Model::PICKUP_AND_DELIVERY_NO_ORDER;
+%unignore Model::VisitTypePolicy;
+%unignore Model::TYPE_ADDED_TO_VEHICLE;
+%unignore Model::ADDED_TYPE_REMOVED_FROM_VEHICLE;
+%unignore Model::TYPE_ON_VEHICLE_UP_TO_VISIT;
+%unignore Model::TYPE_SIMULTANEOUSLY_ADDED_AND_REMOVED;
+
+// ModelVisitor
+%unignore ModelVisitor;
+%typemap(csimports) ModelVisitor %{
+using Google.OrTools.ConstraintSolver;
+%}
+
+// PathsMetadata
+%unignore PathsMetadata;
+
+// BoundCosts
+%unignore BoundCost;
+%unignore BoundCost::BoundCost;
+%unignore BoundCost::bound;
+%unignore BoundCost::cost;
+
+%unignore SimpleBoundCosts;
+%unignore SimpleBoundCosts::SimpleBoundCosts;
+%rename("GetBoundCost") SimpleBoundCosts::bound_cost;
+%rename("GetSize") SimpleBoundCosts::Size;
+
+// TypeRegulationsConstraint
+%unignore TypeRegulationsConstraint;
+%typemap(csimports) TypeRegulationsConstraint %{
+using Google.OrTools.ConstraintSolver;
+%}
+
+// TypeRegulationsChecker
+%unignore TypeRegulationsChecker;
+
+}  // namespace operations_research::routing
+
 %include "ortools/routing/routing.h"
+%unignoreall

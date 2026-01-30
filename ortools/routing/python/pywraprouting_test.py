@@ -19,6 +19,7 @@ import functools
 from absl.testing import absltest
 from ortools.constraint_solver import pywrapcp
 from ortools.routing import enums_pb2
+from ortools.routing import parameters_pb2
 from ortools.routing import pywraprouting
 from ortools.util import optional_boolean_pb2
 
@@ -848,6 +849,58 @@ class TestPyWrapRoutingModel(absltest.TestCase):
             model.GetAutomaticFirstSolutionStrategy(),
         )
 
+    def testCostSettings(self):
+        manager = pywraprouting.IndexManager(10, 2, 0)
+        model = pywraprouting.Model(manager)
+        transit_idx = model.RegisterTransitCallback(lambda i, j: 1)
+        model.SetArcCostEvaluatorOfAllVehicles(transit_idx)
+        model.SetArcCostEvaluatorOfVehicle(transit_idx, 0)
+        model.SetFixedCostOfAllVehicles(100)
+        self.assertEqual(100, model.GetFixedCostOfVehicle(0))
+        self.assertEqual(100, model.GetFixedCostOfVehicle(1))
+        model.SetFixedCostOfVehicle(200, 0)
+        self.assertEqual(200, model.GetFixedCostOfVehicle(0))
+        self.assertEqual(100, model.GetFixedCostOfVehicle(1))
+        model.SetAmortizedCostFactorsOfAllVehicles(3, 5)
+        self.assertEqual([3, 3], model.GetAmortizedLinearCostFactorOfVehicles())
+        self.assertEqual([5, 5], model.GetAmortizedQuadraticCostFactorOfVehicles())
+        model.SetAmortizedCostFactorsOfVehicle(7, 11, 0)
+        self.assertEqual([7, 3], model.GetAmortizedLinearCostFactorOfVehicles())
+        self.assertEqual([11, 5], model.GetAmortizedQuadraticCostFactorOfVehicles())
+
+    def testPickupAndDelivery(self):
+        manager = pywraprouting.IndexManager(10, 1, 0)
+        model = pywraprouting.Model(manager)
+        p = manager.NodeToIndex(1)
+        d = manager.NodeToIndex(2)
+        model.AddPickupAndDelivery(p, d)
+        self.assertTrue(model.IsPickup(p))
+        self.assertTrue(model.IsDelivery(d))
+        self.assertFalse(model.IsPickup(d))
+
+    def testVisitTypes(self):
+        manager = pywraprouting.IndexManager(10, 1, 0)
+        model = pywraprouting.Model(manager)
+        index_one = manager.NodeToIndex(1)
+        model.SetVisitType(index_one, 1, pywraprouting.Model.TYPE_ADDED_TO_VEHICLE)
+        self.assertEqual(1, model.GetVisitType(index_one))
+        index_two = manager.NodeToIndex(2)
+        model.SetVisitType(index_two, 2, pywraprouting.Model.TYPE_ADDED_TO_VEHICLE)
+        self.assertEqual(2, model.GetVisitType(index_two))
+
+    def testApplyLocks(self):
+        manager = pywraprouting.IndexManager(10, 1, 0)
+        model = pywraprouting.Model(manager)
+        node1 = manager.NodeToIndex(1)
+        node2 = manager.NodeToIndex(2)
+        model.ApplyLocks([node1, node2])
+
+    def testNewMethods(self):
+        manager = pywraprouting.IndexManager(10, 2, 0)
+        model = pywraprouting.Model(manager)
+        locks = [[manager.NodeToIndex(3)], [manager.NodeToIndex(4)]]
+        model.ApplyLocksToAllVehicles(locks, True)
+
 
 class TestBoundCost(absltest.TestCase):
 
@@ -919,6 +972,34 @@ class TestRoutingDimension(absltest.TestCase):
             self.assertEqual(97, bc.bound)
             self.assertEqual(43, bc.cost)
         self.assertTrue(dimension.HasQuadraticCostSoftSpanUpperBounds())
+
+    def testDimensionMethods(self):
+        manager = pywraprouting.IndexManager(10, 1, 0)
+        model = pywraprouting.Model(manager)
+        transit_idx = model.RegisterTransitCallback(lambda i, j: 1)
+        model.AddDimension(transit_idx, 100, 100, True, "Dist")
+        dim = model.GetDimensionOrDie("Dist")
+        dim.SetSpanCostCoefficientForVehicle(10, 0)
+        self.assertEqual(10, dim.GetSpanCostCoefficientForVehicle(0))
+        dim.SetGlobalSpanCostCoefficient(5)
+        dim.SetSlackCostCoefficientForVehicle(2, 0)
+        index = manager.NodeToIndex(1)
+        dim.SetCumulVarSoftUpperBound(index, 10, 100)
+        dim.SetCumulVarSoftLowerBound(index, 0, 100)
+        self.assertEqual(1, dim.GetTransitValue(0, 1, 0))
+        self.assertIsNotNone(dim.CumulVar(0))
+        self.assertIsNotNone(dim.SlackVar(0))
+        self.assertIsNotNone(dim.TransitVar(0))
+
+    def testBreakIntervals(self):
+        manager = pywraprouting.IndexManager(10, 1, 0)
+        model = pywraprouting.Model(manager)
+        transit_idx = model.RegisterTransitCallback(lambda i, j: 1)
+        model.AddDimension(transit_idx, 100, 100, True, "Dist")
+        dim = model.GetDimensionOrDie("Dist")
+        solver = model.solver()
+        interval = solver.FixedDurationIntervalVar(0, 10, 5, False, "Break")
+        dim.SetBreakIntervalsOfVehicle([interval], 0, [0] * manager.GetNumberOfNodes())
 
 
 # TODO(user): Add tests for Routing[Cost|Vehicle|Resource]ClassIndex
