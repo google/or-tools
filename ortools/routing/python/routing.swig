@@ -71,33 +71,6 @@ PY_CONVERT_HELPER_PTR(LocalSearchFilter);
 PY_CONVERT_HELPER_PTR(LocalSearchOperator);
 PY_CONVERT_HELPER_PTR(SearchMonitor);
 
-namespace operations_research::routing {
-
-// RoutingModel
-%unignore Model;
-%ignore Model::RegisterStateDependentTransitCallback;
-%ignore Model::StateDependentTransitCallback;
-%ignore Model::MakeStateDependentTransit;
-%ignore Model::AddDimensionDependentDimensionWithVehicleCapacity;
-%ignore Model::AddResourceGroup;
-%ignore Model::GetResourceGroups;
-%ignore Model::SetAllowedVehiclesForIndex(absl::Span<const int>, int64_t);
-%extend Model {
-  void SetAllowedVehiclesForIndex(
-    const std::vector<int>& vehicles,
-    int64_t index) {
-      $self->SetAllowedVehiclesForIndex(absl::Span<const int>(vehicles), index);
-    }
-}
-
-// SimpleBoundCosts
-%unignore BoundCost;
-%unignore SimpleBoundCosts;
-%unignore SimpleBoundCosts::bound_cost;
-%rename("size") SimpleBoundCosts::Size;
-
-}  // namespace operations_research::routing
-
 PY_PROTO_ENUM_TYPEMAP(
     operations_research::routing::FirstSolutionStrategy::Value,
     ortools.routing.enums_pb2.FirstSolutionStrategy.Value)
@@ -115,6 +88,7 @@ PY_PROTO_TYPEMAP(ortools.routing.parameters_pb2,
                  RoutingSearchParameters,
                  operations_research::routing::RoutingSearchParameters)
 
+// Parameters
 // Wrap parameters.h according to the SWIG style guide.
 %ignoreall
 %unignore operations_research::routing;
@@ -132,6 +106,175 @@ namespace operations_research::routing {
 %include "ortools/routing/parameters.h"
 %unignoreall
 
-// TODO(user): Use ignoreall/unignoreall for this one. A lot of work.
-//swiglint: disable include-h-allglobals
+// Routing
+// Wrap routing.h according to the SWIG style guide.
+%ignoreall
+
+%unignore operations_research::routing;
+namespace operations_research::routing {
+
+// routing::Model
+%unignore Model;
+%unignore Model::Model;
+%unignore Model::~Model;
+%unignore Model::AddAtSolutionCallback;
+%unignore Model::AddConstantDimension;
+%unignore Model::AddDimension;
+%unignore Model::AddDimensionWithVehicleCapacity;
+%unignore Model::AddDimensionWithVehicleTransits;
+%unignore Model::AddDisjunction;
+%unignore Model::AddMatrixDimension;
+%unignore Model::AddPickupAndDelivery;
+%unignore Model::AddVectorDimension;
+%unignore Model::ApplyLocks(const std::vector<int64_t>&);
+%extend Model {
+  void ApplyLocks(
+    const std::vector<int64_t>& locks) {
+      $self->ApplyLocks(absl::Span<const int64_t>(locks));
+  }
+}
+%unignore Model::CloseModelWithParameters;
+%unignore Model::CostVar;
+%unignore Model::End;
+%unignore Model::GetAmortizedLinearCostFactorOfVehicles;
+%unignore Model::GetAmortizedQuadraticCostFactorOfVehicles;
+%unignore Model::GetAutomaticFirstSolutionStrategy;
+%unignore Model::GetDimensionOrDie;
+%unignore Model::GetFixedCostOfVehicle;
+%unignore Model::GetNumberOfDecisionsInFirstSolution;
+%unignore Model::GetNumberOfRejectsInFirstSolution;
+%unignore Model::GetVehicleClassCount;
+%unignore Model::GetVehicleClassesCount;
+%unignore Model::GetVisitType;
+%unignore Model::IsDelivery;
+%unignore Model::IsEnd;
+%unignore Model::IsPickup;
+%unignore Model::IsVehicleAllowedForIndex;
+%unignore Model::NextVar;
+%unignore Model::ReadAssignmentFromRoutes;
+%unignore Model::RegisterTransitCallback;
+%unignore Model::RegisterTransitMatrix;
+%unignore Model::RegisterUnaryTransitCallback;
+%unignore Model::RegisterUnaryTransitVector;
+%unignore Model::SetAllowedVehiclesForIndex(const std::vector<int>&, int64_t);
+%extend Model {
+  void SetAllowedVehiclesForIndex(
+    const std::vector<int>& vehicles,
+    int64_t index) {
+      $self->SetAllowedVehiclesForIndex(absl::Span<const int>(vehicles), index);
+  }
+}
+%unignore Model::SetAmortizedCostFactorsOfAllVehicles;
+%unignore Model::SetAmortizedCostFactorsOfVehicle;
+%unignore Model::SetArcCostEvaluatorOfAllVehicles;
+%unignore Model::SetFixedCostOfAllVehicles;
+%unignore Model::SetFixedCostOfVehicle;
+%unignore Model::SetVisitType;
+%unignore Model::Solve;
+%unignore Model::SolveFromAssignmentWithParameters;
+%unignore Model::SolveWithParameters;
+%unignore Model::Start;
+%unignore Model::VehicleVar;
+%unignore Model::solver;
+%unignore Model::status;
+%unignore Model::vehicles;
+// Used in samples/ but not in pywraprouting_test.py
+%unignore Model::AddConstantDimensionWithSlack;
+%unignore Model::AddToAssignment;
+%unignore Model::AddVariableMinimizedByFinalizer;
+%unignore Model::GetArcCostForVehicle;
+%unignore Model::IsStart;
+%unignore Model::IsVehicleUsed;
+%unignore Model::SetPickupAndDeliveryPolicyOfAllVehicles;
+%unignore Model::Size;
+// untested but currently exported
+// TODO(user) triage to ignore or add unit test
+%unignore Model::ActiveVar;
+%unignore Model::ActiveVehicleVar;
+%unignore Model::AddDimensionWithCumulDependentVehicleTransitAndCapacity;
+%unignore Model::AddDimensionWithVehicleTransitAndCapacity;
+%unignore Model::AddEnterSearchCallback;
+%unignore Model::AddHardTypeIncompatibility;
+%unignore Model::AddRequiredTypeAlternativesWhenAddingType;
+%unignore Model::AddSearchMonitor;
+%unignore Model::AddTemporalTypeIncompatibility;
+%unignore Model::ApplyLocksToAllVehicles;
+%unignore Model::CancelSearch;
+%unignore Model::CompactAssignment;
+%unignore Model::CostsAreHomogeneousAcrossVehicles;
+%unignore Model::CumulDependentTransitCallback;
+%unignore Model::FastSolveFromAssignmentWithParameters;
+%unignore Model::GetAllDimensionNames;
+%unignore Model::GetDimensions;
+%unignore Model::GetDisjunctionIndices;
+%unignore Model::GetDisjunctionPenalty;
+%unignore Model::ReadAssignment;
+%unignore Model::RegisterCumulDependentTransitCallback;
+%unignore Model::ResourceVar;
+%unignore Model::RestoreAssignment;
+%unignore Model::SetArcCostEvaluatorOfVehicle;
+%unignore Model::SetPathEnergyCostOfVehicle;
+%unignore Model::TransitCallback;
+%unignore Model::UnaryTransitCallbackOrNull;
+%unignore Model::UpdateTimeLimit;
+%unignore Model::VehicleRouteConsideredVar;
+%unignore Model::WriteAssignment;
+// Model nested enum
+%unignore Model::PenaltyCostBehavior;
+%unignore Model::PENALIZE_ONCE;
+%unignore Model::PENALIZE_PER_INACTIVE;
+%unignore Model::PickupAndDeliveryPolicy;
+%unignore Model::PICKUP_AND_DELIVERY_FIFO;
+%unignore Model::PICKUP_AND_DELIVERY_LIFO;
+%unignore Model::PICKUP_AND_DELIVERY_NO_ORDER;
+%unignore Model::VisitTypePolicy;
+%unignore Model::TYPE_ADDED_TO_VEHICLE;
+%unignore Model::ADDED_TYPE_REMOVED_FROM_VEHICLE;
+%unignore Model::TYPE_ON_VEHICLE_UP_TO_VISIT;
+%unignore Model::TYPE_SIMULTANEOUSLY_ADDED_AND_REMOVED;
+
+// Dimension
+%unignore Dimension;
+%unignore Dimension::Dimension;
+%unignore Dimension::CumulVar;
+%unignore Dimension::GetQuadraticCostSoftSpanUpperBoundForVehicle;
+%unignore Dimension::GetSoftSpanUpperBoundForVehicle;
+%unignore Dimension::GetSpanCostCoefficientForVehicle;
+%unignore Dimension::GetTransitValue;
+%unignore Dimension::HasQuadraticCostSoftSpanUpperBounds;
+%unignore Dimension::HasSoftSpanUpperBounds;
+%unignore Dimension::SetBreakIntervalsOfVehicle;
+%unignore Dimension::SetCumulVarSoftLowerBound;
+%unignore Dimension::SetCumulVarSoftUpperBound;
+%unignore Dimension::SetGlobalSpanCostCoefficient;
+%unignore Dimension::SetQuadraticCostSoftSpanUpperBoundForVehicle;
+%unignore Dimension::SetSlackCostCoefficientForVehicle;
+%unignore Dimension::SetSoftSpanUpperBoundForVehicle;
+%unignore Dimension::SetSpanCostCoefficientForVehicle;
+%unignore Dimension::SlackVar;
+%unignore Dimension::TransitVar;
+// In Samples not in pywraprouting_test.py
+// untested but currently exported
+// TODO(user) triage to ignore or add unit test
+%unignore Dimension::FixedTransitVar;
+%unignore Dimension::GetCumulVarMax;
+%unignore Dimension::GetCumulVarMin;
+%unignore Dimension::GetTransitValueFromClass;
+%unignore Dimension::SetCumulVarRange;
+%unignore Dimension::SetSpanUpperBoundForVehicle;
+%unignore Dimension::model;
+
+// SimpleBoundCosts
+%unignore BoundCost;
+%unignore BoundCost::BoundCost;
+%unignore BoundCost::bound;
+%unignore BoundCost::cost;
+
+%unignore SimpleBoundCosts;
+%unignore SimpleBoundCosts::bound_cost;
+%rename("size") SimpleBoundCosts::Size;
+
+}  // namespace operations_research::routing
+
 %include "ortools/routing/routing.h"
+%unignoreall
