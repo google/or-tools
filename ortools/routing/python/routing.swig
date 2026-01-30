@@ -126,15 +126,29 @@ namespace operations_research::routing {
 %unignore Model::AddMatrixDimension;
 %unignore Model::AddPickupAndDelivery;
 %unignore Model::AddVectorDimension;
+%unignore Model::ApplyLocks(const std::vector<int64_t>&);
+%extend Model {
+  void ApplyLocks(
+    const std::vector<int64_t>& locks) {
+      $self->ApplyLocks(absl::Span<const int64_t>(locks));
+  }
+}
 %unignore Model::CloseModelWithParameters;
 %unignore Model::CostVar;
 %unignore Model::End;
+%unignore Model::GetAmortizedLinearCostFactorOfVehicles;
+%unignore Model::GetAmortizedQuadraticCostFactorOfVehicles;
 %unignore Model::GetAutomaticFirstSolutionStrategy;
 %unignore Model::GetDimensionOrDie;
+%unignore Model::GetFixedCostOfVehicle;
 %unignore Model::GetNumberOfDecisionsInFirstSolution;
 %unignore Model::GetNumberOfRejectsInFirstSolution;
 %unignore Model::GetVehicleClassCount;
+%unignore Model::GetVehicleClassesCount;
+%unignore Model::GetVisitType;
+%unignore Model::IsDelivery;
 %unignore Model::IsEnd;
+%unignore Model::IsPickup;
 %unignore Model::IsVehicleAllowedForIndex;
 %unignore Model::NextVar;
 %unignore Model::ReadAssignmentFromRoutes;
@@ -150,7 +164,12 @@ namespace operations_research::routing {
       $self->SetAllowedVehiclesForIndex(absl::Span<const int>(vehicles), index);
   }
 }
+%unignore Model::SetAmortizedCostFactorsOfAllVehicles;
+%unignore Model::SetAmortizedCostFactorsOfVehicle;
 %unignore Model::SetArcCostEvaluatorOfAllVehicles;
+%unignore Model::SetFixedCostOfAllVehicles;
+%unignore Model::SetFixedCostOfVehicle;
+%unignore Model::SetVisitType;
 %unignore Model::Solve;
 %unignore Model::SolveFromAssignmentWithParameters;
 %unignore Model::SolveWithParameters;
@@ -164,13 +183,8 @@ namespace operations_research::routing {
 %unignore Model::AddToAssignment;
 %unignore Model::AddVariableMinimizedByFinalizer;
 %unignore Model::GetArcCostForVehicle;
-%unignore Model::GetVehicleClassesCount;
 %unignore Model::IsStart;
 %unignore Model::IsVehicleUsed;
-%unignore Model::PICKUP_AND_DELIVERY_FIFO;
-%unignore Model::PICKUP_AND_DELIVERY_LIFO;
-%unignore Model::PICKUP_AND_DELIVERY_NO_ORDER;
-%unignore Model::PickupAndDeliveryPolicy;
 %unignore Model::SetPickupAndDeliveryPolicyOfAllVehicles;
 %unignore Model::Size;
 // untested but currently exported
@@ -184,7 +198,6 @@ namespace operations_research::routing {
 %unignore Model::AddRequiredTypeAlternativesWhenAddingType;
 %unignore Model::AddSearchMonitor;
 %unignore Model::AddTemporalTypeIncompatibility;
-%unignore Model::ApplyLocks;
 %unignore Model::ApplyLocksToAllVehicles;
 %unignore Model::CancelSearch;
 %unignore Model::CompactAssignment;
@@ -199,11 +212,8 @@ namespace operations_research::routing {
 %unignore Model::RegisterCumulDependentTransitCallback;
 %unignore Model::ResourceVar;
 %unignore Model::RestoreAssignment;
-%unignore Model::SetAmortizedCostFactorsOfAllVehicles;
 %unignore Model::SetArcCostEvaluatorOfVehicle;
-%unignore Model::SetFixedCostOfVehicle;
 %unignore Model::SetPathEnergyCostOfVehicle;
-%unignore Model::SetVisitType;
 %unignore Model::TransitCallback;
 %unignore Model::UnaryTransitCallbackOrNull;
 %unignore Model::UpdateTimeLimit;
@@ -216,7 +226,24 @@ namespace operations_research::routing {
 //%ignore Model::MakeStateDependentTransit;  // not working with swig.
 //%ignore Model::RegisterStateDependentTransitCallback;  // not working with swig.
 //%ignore Model::SetAllowedVehiclesForIndex(absl::Span<const int>, int64_t);  // absl::Span not supported.
+//%ignore Model::ApplyLocks(absl::Span<const int64_t> locks); // absl::Span not supported.
 //%ignore Model::StateDependentTransitCallback;  // not working with swig.
+
+// Model nested enum
+%unignore Model::PenaltyCostBehavior;
+%unignore Model::PENALIZE_ONCE;
+%unignore Model::PENALIZE_PER_INACTIVE;
+
+%unignore Model::PickupAndDeliveryPolicy;
+%unignore Model::PICKUP_AND_DELIVERY_FIFO;
+%unignore Model::PICKUP_AND_DELIVERY_LIFO;
+%unignore Model::PICKUP_AND_DELIVERY_NO_ORDER;
+
+%unignore Model::VisitTypePolicy;
+%unignore Model::TYPE_ADDED_TO_VEHICLE;
+%unignore Model::ADDED_TYPE_REMOVED_FROM_VEHICLE;
+%unignore Model::TYPE_ON_VEHICLE_UP_TO_VISIT;
+%unignore Model::TYPE_SIMULTANEOUSLY_ADDED_AND_REMOVED;
 
 // Dimension
 %unignore Dimension;
@@ -224,29 +251,30 @@ namespace operations_research::routing {
 %unignore Dimension::CumulVar;
 %unignore Dimension::GetQuadraticCostSoftSpanUpperBoundForVehicle;
 %unignore Dimension::GetSoftSpanUpperBoundForVehicle;
+%unignore Dimension::GetSpanCostCoefficientForVehicle;
+%unignore Dimension::GetTransitValue;
 %unignore Dimension::HasQuadraticCostSoftSpanUpperBounds;
 %unignore Dimension::HasSoftSpanUpperBounds;
-%unignore Dimension::SetQuadraticCostSoftSpanUpperBoundForVehicle;
-%unignore Dimension::SetSoftSpanUpperBoundForVehicle;
-// In Samples not in pywraprouting_test.py
 %unignore Dimension::SetBreakIntervalsOfVehicle;
+%unignore Dimension::SetCumulVarSoftLowerBound;
 %unignore Dimension::SetCumulVarSoftUpperBound;
 %unignore Dimension::SetGlobalSpanCostCoefficient;
+%unignore Dimension::SetQuadraticCostSoftSpanUpperBoundForVehicle;
+%unignore Dimension::SetSlackCostCoefficientForVehicle;
+%unignore Dimension::SetSoftSpanUpperBoundForVehicle;
+%unignore Dimension::SetSpanCostCoefficientForVehicle;
 %unignore Dimension::SlackVar;
+%unignore Dimension::TransitVar;
+// In Samples not in pywraprouting_test.py
 // untested but currently exported
 // TODO(corentinl) triage to ignore or add unit test
-%unignore Dimension::FixedTransitVar();
-%unignore Dimension::GetCumulVarMax();
-%unignore Dimension::GetCumulVarMin();
-%unignore Dimension::GetTransitValue();
-%unignore Dimension::GetTransitValueFromClass();
-%unignore Dimension::SetCumulVarRange();
-%unignore Dimension::SetCumulVarSoftLowerBound();
-%unignore Dimension::SetSlackCostCoefficientForVehicle();
-%unignore Dimension::SetSpanCostCoefficientForVehicle();
-%unignore Dimension::SetSpanUpperBoundForVehicle();
-%unignore Dimension::TransitVar();
-%unignore Dimension::model();
+%unignore Dimension::FixedTransitVar;
+%unignore Dimension::GetCumulVarMax;
+%unignore Dimension::GetCumulVarMin;
+%unignore Dimension::GetTransitValueFromClass;
+%unignore Dimension::SetCumulVarRange;
+%unignore Dimension::SetSpanUpperBoundForVehicle;
+%unignore Dimension::model;
 
 // SimpleBoundCosts
 %unignore BoundCost;
