@@ -62,10 +62,6 @@ ModelCopy::ModelCopy(PresolveContext* context,
                      LratProofHandler* lrat_proof_handler)
     : context_(context), lrat_proof_handler_(lrat_proof_handler) {}
 
-ClauseId ModelCopy::NextInferredClauseId() {
-  return ClauseId(next_inferred_clause_id_++);
-}
-
 void ModelCopy::ImportVariablesAndMaybeIgnoreNames(
     const CpModelProto& in_model) {
   if (context_->params().ignore_names()) {
@@ -106,12 +102,10 @@ bool ModelCopy::ImportAndSimplifyConstraints(
   interval_mapping_.assign(in_model.constraints().size(), -1);
   boolean_product_encoding_.clear();
 
-  // The LRAT ASCII file format numbers input problem clauses from 1 to n.
-  // Assuming that each input constraint yields at most one clause, we can
-  // number the inferred clauses starting from in_model.constraints_size() + 1
-  // without risk of collisions.
-  next_inferred_clause_id_ = in_model.constraints_size() + 1;
-  unit_clause_ids_.clear();
+  if (first_copy && lrat_proof_handler_ != nullptr) {
+    lrat_proof_handler_->proof_status()->SetMaxOneBasedCnfIndex(
+        in_model.constraints_size());
+  }
 
   starting_constraint_index_ = context_->working_model->constraints_size();
   for (int c = 0; c < in_model.constraints_size(); ++c) {
@@ -133,7 +127,7 @@ bool ModelCopy::ImportAndSimplifyConstraints(
         break;
       case ConstraintProto::kBoolOr:
         if (first_copy) {
-          if (!CopyBoolOrWithDupSupport(ct, ClauseId(c + 1))) {
+          if (!CopyBoolOrWithDupSupport(ct, c + 1)) {
             return CreateUnsatModel(c, ct);
           }
         } else {
@@ -300,14 +294,11 @@ void ModelCopy::FinishEnforcementCopy(ConstraintProto* ct) {
                                          temp_enforcement_literals_.end());
 }
 
-bool ModelCopy::FinishBoolOrCopy(ClauseId clause_id) {
+bool ModelCopy::FinishBoolOrCopy() {
   if (temp_literals_.empty()) return false;
 
   if (temp_literals_.size() == 1) {
     context_->UpdateRuleStats("bool_or: only one literal");
-    if (lrat_proof_handler_ != nullptr) {
-      unit_clause_ids_[RefToLiteral(temp_literals_[0])] = clause_id;
-    }
     return context_->SetLiteralToTrue(temp_literals_[0]);
   }
 
@@ -334,8 +325,25 @@ bool ModelCopy::CopyBoolOr(const ConstraintProto& ct) {
   return FinishBoolOrCopy();
 }
 
+namespace {
+// Returns the pointer of a new SatClause with the given literals, or an
+// "inlined literals" pointer if there is at most two literals.
+ClausePtr NewClausePtr(absl::Span<const Literal> literals) {
+  switch (literals.size()) {
+    case 0:
+      return ClausePtr::EmptyClausePtr();
+    case 1:
+      return ClausePtr(literals[0]);
+    case 2:
+      return ClausePtr(literals[0], literals[1]);
+    default:
+      return ClausePtr(SatClause::Create(literals));
+  }
+}
+}  // namespace
+
 bool ModelCopy::CopyBoolOrWithDupSupport(const ConstraintProto& ct,
-                                         ClauseId clause_id) {
+                                         int one_based_cnf_index) {
   temp_literals_.clear();
   temp_literals_set_.clear();
   for (const int enforcement_lit : temp_enforcement_literals_) {
@@ -361,6 +369,7 @@ bool ModelCopy::CopyBoolOrWithDupSupport(const ConstraintProto& ct,
     const auto [it, inserted] = temp_literals_set_.insert(lit);
     if (inserted) temp_literals_.push_back(lit);
   }
+  DCHECK_EQ(temp_literals_.size(), temp_literals_set_.size());
   if (lrat_proof_handler_ != nullptr) {
     // Add the original clause as a problem clause, and its simplified version
     // as an inferred clause (only if it is different), with proof.
@@ -371,29 +380,32 @@ bool ModelCopy::CopyBoolOrWithDupSupport(const ConstraintProto& ct,
     for (const int lit : ct.bool_or().literals()) {
       temp_clause_.push_back(RefToLiteral(lit));
     }
-    lrat_proof_handler_->AddProblemClause(clause_id, temp_clause_);
+    ClausePtr tmp_clause = NewClausePtr(temp_clause_);
+    lrat_proof_handler_->AddProblemClause(tmp_clause, one_based_cnf_index);
 
-    if (temp_literals_set_.size() != temp_clause_.size()) {
-      temp_clause_ids_.clear();
+    if (temp_literals_.size() != temp_clause_.size()) {
+      temp_proof_.clear();
       for (const Literal lit : temp_clause_) {
         if (!temp_literals_set_.contains(LiteralToRef(lit))) {
-          DCHECK(unit_clause_ids_.contains(lit.Negated())) << lit.Negated();
-          temp_clause_ids_.push_back(unit_clause_ids_[lit.Negated()]);
+          temp_proof_.push_back(ClausePtr(lit.Negated()));
         }
       }
-      temp_clause_ids_.push_back(clause_id);
+      temp_proof_.push_back(tmp_clause);
       temp_simplified_clause_.clear();
-      for (const int lit : temp_literals_set_) {
+      for (const int lit : temp_literals_) {
         temp_simplified_clause_.push_back(RefToLiteral(lit));
       }
-      ClauseId new_clause_id = NextInferredClauseId();
-      lrat_proof_handler_->AddInferredClause(
-          new_clause_id, temp_simplified_clause_, temp_clause_ids_);
-      lrat_proof_handler_->DeleteClause(clause_id, temp_clause_);
-      clause_id = new_clause_id;
+      const ClausePtr new_clause = NewClausePtr(temp_simplified_clause_);
+      lrat_proof_handler_->AddInferredClause(new_clause, temp_proof_);
+      DCHECK_GT(temp_clause_.size(), 1);
+      lrat_proof_handler_->DeleteClause(tmp_clause);
+      tmp_clause = new_clause;
+    }
+    if (tmp_clause.IsSatClausePtr()) {
+      delete tmp_clause.GetSatClause();
     }
   }
-  return FinishBoolOrCopy(clause_id);
+  return FinishBoolOrCopy();
 }
 
 bool ModelCopy::CopyBoolAnd(const ConstraintProto& ct) {

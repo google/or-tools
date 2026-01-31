@@ -24,7 +24,7 @@ option java_multiple_files = true;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 357
+// NEXT TAG: 358
 message SatParameters {
   // In some context, like in a portfolio of search, it makes sense to name a
   // given parameters set for logging purpose.
@@ -586,6 +586,14 @@ message SatParameters {
   optional bool encode_complex_linear_constraint_with_integer = 223
       [default = false];
 
+  // Depending on the model, a variable with a "complex" domain like
+  // [0][2,5][7][9] is encoded with a domain of [0, 9] + a bunch of Booleans
+  // that are only used to enforce the holes. This presolve rule try to detect
+  // such case and remove these Booleans. Note that it actually does more than
+  // this, and in general try to remove "encoding" Boolean that are not really
+  // used.
+  optional bool detect_encoded_complex_domain = 357 [default = true];
+
   // During presolve, we use a maximum clique heuristic to merge together
   // no-overlap constraints or at most one constraints. This code can be slow,
   // so we have a limit in place on the number of explored nodes in the
@@ -831,28 +839,6 @@ message SatParameters {
   //  - linearization_level <= 1,
   //  - symmetry_level <= 1.
   optional bool output_lrat_proof = 345 [default = false];
-
-  // If true, and if the problem is UNSAT, a DRAT proof of this UNSAT property
-  // is checked after the solver has finished. As of November 2025, this only
-  // works for pure SAT problems, with
-  //  - num_workers = 1,
-  //  - cp_model_presolve = false,
-  //  - linearization_level <= 1,
-  //  - symmetry_level <= 1.
-  optional bool check_drat_proof = 346 [default = false];
-
-  // If true, a DRAT proof that all the clauses inferred by the solver are valid
-  // is output to a file. As of December 2025, this only works for pure SAT
-  // problems, with
-  //  - num_workers = 1,
-  //  - cp_model_presolve = false,
-  //  - linearization_level <= 1,
-  //  - symmetry_level <= 1.
-  optional bool output_drat_proof = 347 [default = false];
-
-  // The maximum time allowed to check the DRAT proof (this can take more time
-  // than the solve itself). Only used if check_drat_proof is true.
-  optional double max_drat_time_in_seconds = 348 [default = inf];
 
   // ==========================================================================
   // Debugging parameters

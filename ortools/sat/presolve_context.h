@@ -30,7 +30,6 @@
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/base_export.h"
-#include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/model.h"
@@ -270,7 +269,7 @@ class PresolveContext {
 
   // Functions to make sure that once we remove a variable, we no longer reuse
   // it.
-  void MarkVariableAsRemoved(int ref);
+  void MarkVariableAsRemoved(int var);
   bool VariableWasRemoved(int ref) const;
 
   // Same as VariableIsUniqueAndRemovable() except that in this case the
@@ -566,7 +565,8 @@ class PresolveContext {
   // than the implied domain from the equality).
   ABSL_MUST_USE_RESULT bool SubstituteVariableInObjective(
       int var_in_equality, int64_t coeff_in_equality,
-      const ConstraintProto& equality);
+      const ConstraintProto& equality,
+      bool substitution_does_not_change_objective_domain = false);
 
   // Objective getters.
   const Domain& ObjectiveDomain() const { return objective_domain_; }
@@ -814,7 +814,7 @@ class PresolveContext {
   AffineRelation affine_relations_;
 
   // Used by SetVariableAsRemoved() and VariableWasRemoved().
-  absl::flat_hash_set<int> removed_variables_;
+  std::vector<bool> var_was_removed_;
 
   // Cache for the reified precedence literals created during the expansion of
   // the reservoir constraint. This cache is only valid during the expansion

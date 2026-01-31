@@ -25,6 +25,7 @@
 #include <vector>
 
 #include "absl/base/attributes.h"
+#include "absl/base/log_severity.h"
 #include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
@@ -460,23 +461,27 @@ bool PresolveContext::VariableIsNotUsedAnymore(int ref) const {
   return var_to_constraints_[PositiveRef(ref)].empty();
 }
 
-void PresolveContext::MarkVariableAsRemoved(int ref) {
-  removed_variables_.insert(PositiveRef(ref));
+void PresolveContext::MarkVariableAsRemoved(int var) {
+  DCHECK(RefIsPositive(var));
+  var_was_removed_[var] = true;
 }
 
 // Note(user): I added an indirection and a function for this to be able to
-// display debug information when this return false. This should actually never
-// return false in the cases where it is used.
+// display debug information when this return true. This should actually rarely
+// return true in the case where it is used.
 bool PresolveContext::VariableWasRemoved(int ref) const {
+  // TODO(user): clean this up, but we have a lot of usage with literal...
+  const int var = PositiveRef(ref);
+
   // It is okay to reuse removed fixed variable.
-  if (IsFixed(ref)) return false;
-  if (!removed_variables_.contains(PositiveRef(ref))) return false;
-  if (!var_to_constraints_[PositiveRef(ref)].empty()) {
-    SOLVER_LOG(logger_, "Variable ", PositiveRef(ref),
+  if (IsFixed(var)) return false;
+  if (!var_was_removed_[var]) return false;
+
+  if (DEBUG_MODE && !var_to_constraints_[var].empty()) {
+    SOLVER_LOG(logger_, "Variable ", var,
                " was removed, yet it appears in some constraints!");
-    SOLVER_LOG(logger_, "affine relation: ",
-               AffineRelationDebugString(PositiveRef(ref)));
-    for (const int c : var_to_constraints_[PositiveRef(ref)]) {
+    SOLVER_LOG(logger_, "affine relation: ", AffineRelationDebugString(var));
+    for (const int c : var_to_constraints_[var]) {
       SOLVER_LOG(logger_, "constraint #", c, " : ",
                  c >= 0
                      ? ProtobufShortDebugString(working_model->constraints(c))
@@ -1309,8 +1314,8 @@ ABSL_MUST_USE_RESULT bool PresolveContext::StoreBooleanEqualityRelation(
     int ref_a, int ref_b) {
   if (is_unsat_) return false;
 
-  CHECK(!VariableWasRemoved(ref_a));
-  CHECK(!VariableWasRemoved(ref_b));
+  CHECK(!VariableWasRemoved(PositiveRef(ref_a)));
+  CHECK(!VariableWasRemoved(PositiveRef(ref_b)));
   CHECK(!DomainOf(PositiveRef(ref_a)).IsEmpty());
   CHECK(!DomainOf(PositiveRef(ref_b)).IsEmpty());
   CHECK(CanBeUsedAsLiteral(ref_a));
@@ -1407,6 +1412,7 @@ void PresolveContext::InitializeNewDomains() {
   var_with_reduced_small_degree.Resize(new_size);
   var_to_constraints_.resize(new_size);
   var_to_num_linear1_.resize(new_size);
+  var_was_removed_.resize(new_size);
 
   // We mark the domain as modified so we will look at these new variable during
   // our presolve loop.
@@ -1467,7 +1473,7 @@ void PresolveContext::CanonicalizeDomainOfSizeTwo(int var) {
   auto min_it = var_map.find(var_min);
   if (min_it != var_map.end()) {
     const int old_var = PositiveRef(min_it->second.Get(this));
-    if (removed_variables_.contains(old_var)) {
+    if (var_was_removed_[old_var]) {
       var_map.erase(min_it);
       min_it = var_map.end();
     }
@@ -1477,7 +1483,7 @@ void PresolveContext::CanonicalizeDomainOfSizeTwo(int var) {
   auto max_it = var_map.find(var_max);
   if (max_it != var_map.end()) {
     const int old_var = PositiveRef(max_it->second.Get(this));
-    if (removed_variables_.contains(old_var)) {
+    if (var_was_removed_[old_var]) {
       var_map.erase(max_it);
       max_it = var_map.end();
     }
@@ -1545,7 +1551,7 @@ bool PresolveContext::InsertVarValueEncodingInternal(int literal, int var,
                                                      int64_t value,
                                                      bool add_constraints) {
   DCHECK(RefIsPositive(var));
-  DCHECK(!VariableWasRemoved(literal));
+  DCHECK(!VariableWasRemoved(PositiveRef(literal)));
   DCHECK(!VariableWasRemoved(var));
   if (is_unsat_) return false;
   absl::flat_hash_map<int64_t, SavedLiteral>& var_map = encoding_[var];
@@ -1574,7 +1580,7 @@ bool PresolveContext::InsertVarValueEncodingInternal(int literal, int var,
     // radiation_m18_12_05_sat.fzn. The value was encoded, but maybe we never
     // used the involved variables / constraints, so it was removed (with the
     // encoding constraints) from the model already! We have to be careful.
-    if (VariableWasRemoved(previous_literal)) {
+    if (VariableWasRemoved(PositiveRef(previous_literal))) {
       it->second = SavedLiteral(literal);
     } else {
       if (literal != previous_literal) {
@@ -1745,7 +1751,7 @@ bool PresolveContext::StoreLiteralImpliesVarNeValue(int literal, int var,
 
 bool PresolveContext::HasVarValueEncoding(int ref, int64_t value,
                                           int* literal) {
-  CHECK(!VariableWasRemoved(ref));
+  CHECK(!VariableWasRemoved(PositiveRef(ref)));
   // TODO(user): do instead a DCHECK(VariableIsAffineRepresentative(ref))
   if (!CanonicalizeEncoding(&ref, &value)) return false;
   DCHECK(RefIsPositive(ref));
@@ -1828,7 +1834,7 @@ int PresolveContext::GetOrCreateVarValueEncoding(int ref, int64_t value) {
   auto it = var_map.find(value);
   if (it != var_map.end()) {
     const int lit = it->second.Get(this);
-    if (VariableWasRemoved(lit)) {
+    if (VariableWasRemoved(PositiveRef(lit))) {
       // If the variable was already removed, for now we create a new one.
       // This should be rare hopefully.
       var_map.erase(value);
@@ -1853,7 +1859,7 @@ int PresolveContext::GetOrCreateVarValueEncoding(int ref, int64_t value) {
     auto other_it = var_map.find(other_value);
     if (other_it != var_map.end()) {
       const int literal = NegatedRef(other_it->second.Get(this));
-      if (VariableWasRemoved(literal)) {
+      if (VariableWasRemoved(PositiveRef(literal))) {
         // If the variable was already removed, for now we create a new one.
         // This should be rare hopefully.
         var_map.erase(other_value);
@@ -2056,23 +2062,24 @@ bool PresolveContext::CanonicalizeObjective(bool simplify_domain) {
     }
   }
 
-  Domain implied_domain(0);
+  // We only compute the min/max activity.
+  // This doesn't require to sort to be deterministic, and should be good
+  // enough in most situation.
+  int64_t min_activity = 0;
+  int64_t max_activity = 0;
   int64_t gcd(0);
-
-  // We need to sort the entries to be deterministic.
-  tmp_entries_.clear();
-  for (const auto& entry : objective_map_) {
-    tmp_entries_.push_back(entry);
-  }
-  std::sort(tmp_entries_.begin(), tmp_entries_.end());
-  for (const auto& entry : tmp_entries_) {
-    const int var = entry.first;
-    const int64_t coeff = entry.second;
+  for (const auto [var, coeff] : objective_map_) {
+    const Domain d = DomainOf(var);
     gcd = std::gcd(gcd, std::abs(coeff));
-    implied_domain =
-        implied_domain.AdditionWith(DomainOf(var).MultiplicationBy(coeff))
-            .RelaxIfTooComplex();
+    if (coeff > 0) {
+      min_activity += d.Min() * coeff;
+      max_activity += d.Max() * coeff;
+    } else {
+      min_activity += d.Max() * coeff;
+      max_activity += d.Min() * coeff;
+    }
   }
+  Domain implied_domain(min_activity, max_activity);
 
   // This is the new domain.
   // Note that the domain never include the offset.
@@ -2206,7 +2213,8 @@ bool PresolveContext::AddToObjectiveOffset(int64_t delta) {
 
 bool PresolveContext::SubstituteVariableInObjective(
     int var_in_equality, int64_t coeff_in_equality,
-    const ConstraintProto& equality) {
+    const ConstraintProto& equality,
+    bool substitution_does_not_change_objective_domain) {
   objective_proto_is_up_to_date_ = false;
   CHECK(equality.enforcement_literal().empty());
   CHECK(RefIsPositive(var_in_equality));
@@ -2271,7 +2279,7 @@ bool PresolveContext::SubstituteVariableInObjective(
   RemoveVariableFromObjective(var_in_equality);
 
   // If the objective is small enough,  recompute the value of
-  // objective_domain_is_constrainting_, otherwise, we just assume it to be
+  // objective_domain_is_constraining_, otherwise, we just assume it to be
   // true. This uses the updated objective_map_.
   if (objective_map_.size() < 256) {
     Domain implied_domain(0);
@@ -2313,7 +2321,7 @@ bool PresolveContext::SubstituteVariableInObjective(
               << ", implied: " << implied_domain.ToString()
               << " objective: " << objective_domain_.ToString();
     }
-  } else {
+  } else if (!substitution_does_not_change_objective_domain) {
     objective_domain_is_constraining_ = true;
   }
 

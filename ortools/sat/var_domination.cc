@@ -1451,13 +1451,22 @@ void ScanModelForDualBoundStrengthening(
   // The objective is handled like a <= constraints, or an == constraint if
   // there is a non-trivial domain.
   if (cp_model.has_objective()) {
-    // WARNING: The proto objective might not be up to date, so we need to
-    // write it first.
-    context.WriteObjectiveToProto();
-    const auto [min_activity, max_activity] =
-        context.ComputeMinMaxActivity(cp_model.objective());
-    dual_bound_strengthening->ProcessLinearConstraint(
-        true, context, cp_model.objective(), min_activity, max_activity);
+    if (!context.ObjectiveDomainIsConstraining()) {
+      // Fast pass, we just never want to increase the objective.
+      // It is okay to decrease it.
+      for (const auto [proto_var, coeff] : context.ObjectiveMap()) {
+        const int ref = coeff > 0 ? proto_var : NegatedRef(proto_var);
+        dual_bound_strengthening->CannotIncrease({ref});
+      }
+    } else {
+      // WARNING: The proto objective might not be up to date, so we need to
+      // write it first.
+      context.WriteObjectiveToProto();
+      const auto [min_activity, max_activity] =
+          context.ComputeMinMaxActivity(cp_model.objective());
+      dual_bound_strengthening->ProcessLinearConstraint(
+          true, context, cp_model.objective(), min_activity, max_activity);
+    }
   }
 }
 
@@ -1934,7 +1943,7 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
         const int dom_ref = VarDomination::IntegerVariableToRef(dom);
         if (context->IsFixed(dom_ref)) continue;
         if (context->VariableIsNotUsedAnymore(dom_ref)) continue;
-        if (context->VariableWasRemoved(dom_ref)) continue;
+        if (context->VariableWasRemoved(PositiveRef(dom_ref))) continue;
         if (!context->CanBeUsedAsLiteral(dom_ref)) continue;
         if (implications.contains({ref, dom_ref})) continue;
 

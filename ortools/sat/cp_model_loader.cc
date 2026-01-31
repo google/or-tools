@@ -164,8 +164,7 @@ void LoadVariables(const CpModelProto& model_proto,
         // We cannot prove `literal_true` by unit propagation, but we can with a
         // RAT inference (trivial here since there are no clauses containing the
         // negation of the pivot `literal_true`).
-        lrat_proof_handler->AddInferredClause(ClauseId(literal_true),
-                                              {literal_true}, {});
+        lrat_proof_handler->AddInferredClause(ClausePtr(literal_true), {});
       }
       trail->EnqueueWithUnitReason(literal_true);
     }
@@ -549,6 +548,8 @@ void ExtractEncoding(const CpModelProto& model_proto, Model* m) {
                                          inequalities[i].i_lit);
       mapping->already_loaded_ct_.insert(inequalities[i].ct);
       mapping->already_loaded_ct_.insert(inequalities[i + 1].ct);
+      mapping->encoding_ct_.insert(inequalities[i].ct);
+      mapping->encoding_ct_.insert(inequalities[i + 1].ct);
     }
   }
 
@@ -563,7 +564,6 @@ void ExtractEncoding(const CpModelProto& model_proto, Model* m) {
 
     ++num_half_inequalities;
     mapping->already_loaded_ct_.insert(inequality.ct);
-    mapping->is_half_encoding_ct_.insert(inequality.ct);
   }
   if (!inequalities.empty()) {
     SOLVER_LOG(logger, "[Encoding] ", num_inequalities,
@@ -598,6 +598,8 @@ void ExtractEncoding(const CpModelProto& model_proto, Model* m) {
                                             IntegerValue(encoding[j].value));
       mapping->already_loaded_ct_.insert(encoding[j].ct);
       mapping->already_loaded_ct_.insert(encoding[j + 1].ct);
+      mapping->encoding_ct_.insert(encoding[j].ct);
+      mapping->encoding_ct_.insert(encoding[j + 1].ct);
       values.insert(encoding[j].value);
     }
 
@@ -643,7 +645,6 @@ void ExtractEncoding(const CpModelProto& model_proto, Model* m) {
 
       ++num_half_equalities;
       mapping->already_loaded_ct_.insert(equality.ct);
-      mapping->is_half_encoding_ct_.insert(equality.ct);
     }
 
     // Update stats.

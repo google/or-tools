@@ -17,7 +17,6 @@
 
 #include <algorithm>
 #include <atomic>
-#include <cctype>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -32,9 +31,7 @@
 #include <vector>
 
 #include "absl/algorithm/container.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
-#include "ortools/sat/drat_checker.h"
 #if !defined(__PORTABLE_PLATFORM__)
 #include "ortools/base/helpers.h"
 #include "ortools/base/options.h"
@@ -1609,37 +1606,43 @@ void SharedStatistics::Log(SolverLogger* logger) {
 
 SharedLratProofStatus::SharedLratProofStatus()
     : num_subsolvers_(0),
+      num_lrat_checkers_(0),
       num_valid_proofs_(0),
       num_invalid_proofs_(0),
       num_unknown_proofs_(0),
-      lrat_check_enabled_(false),
-      drat_check_enabled_(false),
-      num_assumed_clauses_(0),
-      walltime_in_seconds_(0.0) {}
+      num_assumed_clauses_(0) {}
+
+int64_t SharedLratProofStatus::MaxOneBasedCnfIndex() const {
+  absl::MutexLock mutex_lock(mutex_);
+  return max_one_based_cnf_index_;
+}
+
+void SharedLratProofStatus::SetMaxOneBasedCnfIndex(
+    int64_t max_one_based_cnf_index) {
+  absl::MutexLock mutex_lock(mutex_);
+  max_one_based_cnf_index_ = max_one_based_cnf_index;
+}
 
 int SharedLratProofStatus::NewSubSolverId() {
   absl::MutexLock mutex_lock(mutex_);
   return num_subsolvers_++;
 }
 
-void SharedLratProofStatus::NewSubsolverProofStatus(
-    DratChecker::Status status, bool lrat_check_enabled,
-    bool drat_check_enabled, int num_assumed_clauses,
-    double walltime_in_seconds) {
+void SharedLratProofStatus::NewSubsolverProofStatus(Status status,
+                                                    bool lrat_check_enabled,
+                                                    int num_assumed_clauses) {
   absl::MutexLock mutex_lock(mutex_);
-  if (status == DratChecker::Status::VALID) {
-    num_valid_proofs_++;
-  } else if (status == DratChecker::Status::INVALID) {
-    num_invalid_proofs_++;
-  } else if (status == DratChecker::Status::UNKNOWN) {
-    num_unknown_proofs_++;
+  if (lrat_check_enabled) {
+    num_lrat_checkers_++;
+    if (status == Status::VALID) {
+      num_valid_proofs_++;
+    } else if (status == Status::INVALID) {
+      num_invalid_proofs_++;
+    } else if (status == Status::UNKNOWN) {
+      num_unknown_proofs_++;
+    }
   }
-  lrat_check_enabled_ |= lrat_check_enabled;
-  drat_check_enabled_ |= drat_check_enabled;
   num_assumed_clauses_ += num_assumed_clauses;
-  if (drat_check_enabled) {
-    walltime_in_seconds_ += walltime_in_seconds;
-  }
 }
 
 void SharedLratProofStatus::NewProofFile(absl::string_view filename) {
@@ -1647,15 +1650,15 @@ void SharedLratProofStatus::NewProofFile(absl::string_view filename) {
   proof_filenames_.push_back(std::string(filename));
 }
 
-std::vector<std::string> SharedLratProofStatus::GetProofFilenames() {
+std::vector<std::string> SharedLratProofStatus::GetProofFilenames() const {
   absl::MutexLock mutex_lock(mutex_);
   return proof_filenames_;
 }
 
 void SharedLratProofStatus::Log(SolverLogger* logger) {
   absl::MutexLock mutex_lock(mutex_);
-  if (lrat_check_enabled_ || drat_check_enabled_) {
-    if (num_valid_proofs_ == num_subsolvers_) {
+  if (num_lrat_checkers_ > 0) {
+    if (num_valid_proofs_ == num_lrat_checkers_) {
       if (num_assumed_clauses_ > 0) {
         SOLVER_LOG(logger, "LRAT_status: VALID_WITH_ASSUMED_CLAUSES");
       } else {
@@ -1666,16 +1669,10 @@ void SharedLratProofStatus::Log(SolverLogger* logger) {
     } else {
       SOLVER_LOG(logger, "LRAT_status: UNKNOWN");
     }
-    if (drat_check_enabled_) {
-      SOLVER_LOG(logger, "DRAT_walltime: ", walltime_in_seconds_);
-    }
   } else {
     // Always log an LRAT status to make it easier to extract it from a
     // multirun result with awk.
     SOLVER_LOG(logger, "LRAT_status: NA");
-    if (drat_check_enabled_) {
-      SOLVER_LOG(logger, "DRAT_walltime: NA");
-    }
   }
 }
 

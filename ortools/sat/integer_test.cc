@@ -21,6 +21,7 @@
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/types/span.h"
 #include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
@@ -546,6 +547,92 @@ TEST(GenericLiteralWatcherTest, RevIsInDiveUpdate) {
 
   EXPECT_TRUE(sat_solver->EnqueueDecisionIfNotConflicting(a));
   EXPECT_TRUE(is_in_dive);
+}
+
+TEST(IntegerEncoderTest, AtOrAfter) {
+  Model model;
+  IntegerEncoder* encoder = model.GetOrCreate<IntegerEncoder>();
+  const IntegerVariable var = model.Add(NewIntegerVariable(0, 10));
+  const Literal l3 = encoder->GetOrCreateAssociatedLiteral(
+      IntegerLiteral::GreaterOrEqual(var, IntegerValue(3)));
+  const Literal l7 = encoder->GetOrCreateAssociatedLiteral(
+      IntegerLiteral::GreaterOrEqual(var, IntegerValue(7)));
+  const Literal l5 = encoder->GetOrCreateAssociatedLiteral(
+      IntegerLiteral::GreaterOrEqual(var, IntegerValue(5)));
+
+  for (IntegerValue v(0); v < 10; ++v) {
+    IntegerValue lb_bound;
+    const LiteralIndex lb_index = encoder->SearchForLiteralAtOrAfter(
+        IntegerLiteral::GreaterOrEqual(var, v), &lb_bound);
+    LOG(INFO) << "Testing " << IntegerLiteral::GreaterOrEqual(var, v);
+    if (v <= 3) {
+      EXPECT_EQ(lb_index, l3.Index()) << " >= " << lb_bound;
+    } else if (v <= 5) {
+      EXPECT_EQ(lb_index, l5.Index()) << " >= " << lb_bound;
+    } else if (v <= 7) {
+      EXPECT_EQ(lb_index, l7.Index()) << " >= " << lb_bound;
+    } else {
+      EXPECT_EQ(lb_index, kNoLiteralIndex) << " >= " << lb_bound;
+    }
+
+    IntegerValue ub_bound;
+    const LiteralIndex ub_index = encoder->SearchForLiteralAtOrAfter(
+        IntegerLiteral::LowerOrEqual(var, v), &ub_bound);
+    LOG(INFO) << "Testing " << IntegerLiteral::LowerOrEqual(var, v);
+    if (v < 2) {
+      EXPECT_EQ(ub_index, kNoLiteralIndex) << " <= " << -ub_bound;
+    } else if (v < 4) {
+      EXPECT_EQ(ub_index, l3.NegatedIndex()) << " <= " << -ub_bound;
+    } else if (v < 6) {
+      EXPECT_EQ(ub_index, l5.NegatedIndex()) << " <= " << -ub_bound;
+    } else {
+      EXPECT_EQ(ub_index, l7.NegatedIndex()) << " <= " << -ub_bound;
+    }
+  }
+}
+
+TEST(IntegerEncoderTest, AtOrAfterWithHoles) {
+  Model model;
+  IntegerEncoder* encoder = model.GetOrCreate<IntegerEncoder>();
+  const IntegerVariable var =
+      model.Add(NewIntegerVariable(Domain::FromValues({0, 1, 2, 4, 5, 9})));
+  const Literal l2 = encoder->GetOrCreateAssociatedLiteral(
+      IntegerLiteral::GreaterOrEqual(var, IntegerValue(2)));
+  const Literal l4 = encoder->GetOrCreateAssociatedLiteral(
+      IntegerLiteral::GreaterOrEqual(var, IntegerValue(4)));
+  const Literal l9 = encoder->GetOrCreateAssociatedLiteral(
+      IntegerLiteral::GreaterOrEqual(var, IntegerValue(9)));
+
+  for (IntegerValue v(0); v < 10; ++v) {
+    IntegerValue lb_bound;
+    const LiteralIndex lb_index = encoder->SearchForLiteralAtOrAfter(
+        IntegerLiteral::GreaterOrEqual(var, v), &lb_bound);
+    LOG(INFO) << "Testing " << IntegerLiteral::GreaterOrEqual(var, v);
+    if (v <= 2) {
+      EXPECT_EQ(lb_index, l2.Index()) << " >= " << lb_bound;
+    } else if (v <= 4) {
+      EXPECT_EQ(lb_index, l4.Index()) << " >= " << lb_bound;
+    } else if (v <= 9) {
+      EXPECT_EQ(lb_index, l9.Index()) << " >= " << lb_bound;
+    } else {
+      EXPECT_EQ(lb_index, kNoLiteralIndex) << " >= " << lb_bound;
+    }
+
+    if (v == 9) continue;  // X <= 9 is always true.
+    IntegerValue ub_bound;
+    const LiteralIndex ub_index = encoder->SearchForLiteralAtOrAfter(
+        IntegerLiteral::LowerOrEqual(var, v), &ub_bound);
+    LOG(INFO) << "Testing " << IntegerLiteral::LowerOrEqual(var, v);
+    if (v < 1) {
+      EXPECT_EQ(ub_index, kNoLiteralIndex) << " <= " << -ub_bound;
+    } else if (v < 2) {
+      EXPECT_EQ(ub_index, l2.NegatedIndex()) << " <= " << -ub_bound;
+    } else if (v < 5) {
+      EXPECT_EQ(ub_index, l4.NegatedIndex()) << " <= " << -ub_bound;
+    } else {
+      EXPECT_EQ(ub_index, l9.NegatedIndex()) << " <= " << -ub_bound;
+    }
+  }
 }
 
 TEST(IntegerEncoderTest, BasicInequalityEncoding) {

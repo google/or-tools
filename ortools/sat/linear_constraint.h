@@ -353,6 +353,11 @@ void DivideByGCD(LinearConstraint* constraint);
 // Makes all variables "positive" by transforming a variable to its negation.
 void MakeAllVariablesPositive(LinearConstraint* constraint);
 
+// Makes sure the coefficient of the first variable is positive while keeping
+// all variable positive. This can simply be achieved by negating the
+// constraint.
+void MakeFirstCoefficientPositive(LinearConstraint* constraint);
+
 // Returns false if duplicate variables are found in ct.
 bool NoDuplicateVariable(const LinearConstraint& ct);
 

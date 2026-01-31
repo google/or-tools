@@ -3559,6 +3559,7 @@ TEST(PresolveCpModelTest, AffineBooleanProduct) {
   params.set_keep_all_feasible_solutions_in_presolve(true);
   params.set_permute_variable_randomly(false);
   params.set_cp_model_probing_level(0);
+  params.set_max_domain_size_for_linear2_expansion(0);
   const CpModelProto presolved_model = PresolveForTest(initial_model, params);
   EXPECT_THAT(presolved_model, testing::EqualsProto(expected_presolved_model));
 }
@@ -3596,6 +3597,7 @@ TEST(PresolveCpModelTest, EnforcedAffineBooleanProduct) {
   params.set_keep_all_feasible_solutions_in_presolve(true);
   params.set_permute_variable_randomly(false);
   params.set_cp_model_probing_level(0);
+  params.set_max_domain_size_for_linear2_expansion(0);
   const CpModelProto presolved_model = PresolveForTest(initial_model, params);
   EXPECT_THAT(presolved_model, testing::EqualsProto(expected_presolved_model));
 }

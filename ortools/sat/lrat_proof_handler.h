@@ -16,7 +16,6 @@
 
 #include <cstdint>
 #include <fstream>
-#include <limits>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -24,19 +23,15 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
-#include "absl/log/check.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/strong_int.h"
-#include "ortools/sat/drat_checker.h"
-#include "ortools/sat/drat_writer.h"
 #include "ortools/sat/lrat.pb.h"
 #include "ortools/sat/lrat_checker.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/recordio.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/synchronization.h"
-#include "ortools/sat/util.h"
 
 namespace operations_research {
 namespace sat {
@@ -49,24 +44,28 @@ class LratWriter {
 
   std::string_view filename() const { return filename_; }
 
-  void AddImportedClause(ClauseId id, absl::Span<const Literal> clause);
+  void AddImportedClause(ClausePtr clause, int64_t one_based_cnf_index);
 
-  void AddInferredClause(ClauseId id, absl::Span<const Literal> clause,
-                         absl::Span<const ClauseId> unit_ids,
-                         absl::Span<const LratChecker::RatIds> rat,
+  void AddInferredClause(ClausePtr clause, absl::Span<const ClausePtr> proof,
+                         absl::Span<const LratChecker::RatClauses> rat_proof,
                          bool exported = false);
 
-  void ExportClause(ClauseId id, absl::Span<const Literal> clause);
+  void RewriteClause(ClausePtr clause, absl::Span<const Literal> literals,
+                     absl::Span<const ClausePtr> proof,
+                     absl::Span<const LratChecker::RatClauses> rat_proof,
+                     bool exported = false);
 
-  void DeleteClause(ClauseId id);
+  void ExportClause(ClausePtr clause);
+
+  void DeleteClause(ClausePtr clause);
 
  private:
-  void WriteDeletedClauseIds();
+  void WriteDeletedClauses();
 
   std::string filename_;
   std::ofstream ofstream_;
   RecordWriter writer_;
-  std::vector<ClauseId> deleted_clause_ids_;
+  std::vector<ClausePtr> deleted_clauses_;
 };
 
 // Merges separate LRAT proofs into a single LRAT file in ASCII format.
@@ -77,8 +76,7 @@ class LratMerger {
 
   // Merges the given LRAT proofs in a single one, and writes it to a file in
   // ASCII format. The first proof must be the presolve proof. Its imported
-  // clauses must be the input problem clauses, and their ID must be the 1-based
-  // clause index in the input CNF file. Returns true on success, false
+  // clauses must be the input problem clauses. Returns true on success, false
   // otherwise.
   bool Merge(absl::Span<const std::string> proof_filenames);
 
@@ -86,31 +84,31 @@ class LratMerger {
   // Clause IDs used in the merged proof. Local clause IDs in individual proof
   // files are remapped to global clause IDs (except for the presolve proof: its
   // IDs are kept unchanged). This mapping is stored in `local_to_global_ids_`
-  // (one map per proof file, except for the presolve proof).
+  // (one map per proof file).
   DEFINE_STRONG_INT_TYPE(GlobalId, int64_t);
 
   // Reads the proof of the presolved model and adds its clauses to
-  // `shared_clause_ids_`. Also checks this proof if lrat_checker_ is not null.
+  // `shared_global_id_`. Also checks this proof if lrat_checker_ is not null.
   // Returns true on success, false otherwise.
   bool ReadPresolveProof(const std::string& filename);
 
   // Canonicalizes (i.e., sorts) and registers a clause so that it can be
   // imported from an individual proof file.
-  // TODO(user): is the canonicalization really needed?
   void SortAndAddSharedClause(GlobalId id, std::vector<Literal>& literals);
 
   // Remaps the local clause IDs in the given inferred clause to global IDs, in
   // place. Returns true on success, false otherwise.
-  bool RemapInferredClause(int worker_index, const std::string& filename,
-                           LratInferredClause& inferred_clause);
-  bool RemapClauseIds(int worker_index, const std::string& filename,
+  bool RemapInferredClause(int proof_index, const std::string& filename,
+                           LratInferredClause& inferred_clause,
+                           GlobalId global_id);
+  bool RemapClauseIds(int proof_index, const std::string& filename,
                       google::protobuf::RepeatedField<int64_t>* clause_ids);
 
   // Writes the given clause to the merged proof file, in LRAT ASCII file
   // format. Also checks it if lrat_checker_ is not null. Returns true on
   // success, false otherwise.
   bool WriteInferredClause(const LratInferredClause& inferred_clause);
-  void WriteDeletedClauses(absl::Span<const GlobalId> clause_ids);
+  void WriteDeletedClauses(absl::Span<const GlobalId> global_ids);
 
   GlobalId NextGlobalId() { return GlobalId(next_global_id_++); }
 
@@ -127,14 +125,16 @@ class LratMerger {
   GlobalId next_global_id_;
   GlobalId last_written_global_id_;
 
-  std::vector<absl::flat_hash_map<ClauseId, GlobalId>> local_to_global_ids_;
-  absl::flat_hash_map<std::vector<Literal>, GlobalId> shared_clause_id_;
-  absl::flat_hash_set<GlobalId> shared_clause_ids_;
+  std::vector<absl::flat_hash_map<int64_t, GlobalId>> local_to_global_ids_;
+  absl::flat_hash_map<std::vector<Literal>, GlobalId> shared_global_id_;
+  absl::flat_hash_set<GlobalId> shared_global_ids_;
   std::vector<LratProofStep> last_read_steps_;
 
-  std::vector<Literal> tmp_clause_;
-  std::vector<ClauseId> tmp_unit_ids_;
-  std::vector<LratChecker::RatIds> tmp_rat_ids_;
+  absl::flat_hash_map<GlobalId, ClausePtr> global_id_to_clause_;
+
+  std::vector<Literal> tmp_literals_;
+  std::vector<ClausePtr> tmp_proof_;
+  std::vector<LratChecker::RatClauses> tmp_rat_clauses_;
 };
 
 // Handles the LRAT proof of a SAT problem by either checking it incrementally
@@ -143,33 +143,37 @@ class LratProofHandler {
  public:
   static std::unique_ptr<LratProofHandler> MaybeCreate(Model* model);
   static std::unique_ptr<LratProofHandler> MaybeCreate(
-      const SatParameters& params, ClauseIdGenerator* id_generator,
-      SharedLratProofStatus* proof_status, SharedStatistics* stats);
+      const SatParameters& params, SharedLratProofStatus* proof_status,
+      SharedStatistics* stats);
+
+  SharedLratProofStatus* proof_status() const { return proof_status_; }
 
   bool lrat_check_enabled() const { return lrat_checker_ != nullptr; }
   bool lrat_output_enabled() const { return lrat_writer_ != nullptr; }
-  bool drat_check_enabled() const { return drat_checker_ != nullptr; }
-  bool drat_output_enabled() const { return drat_writer_ != nullptr; }
 
   int64_t num_assumed_clauses() const { return num_assumed_clauses_; }
 
-  // Adds a clause of the problem. See LratChecker for more details.
-  bool AddProblemClause(ClauseId id, absl::Span<const Literal> clause);
+  // Adds a clause of the problem. `one_based_cnf_index` is the clause's 1-based
+  // index in the input CNF file, or a nonpositive value if not applicable. See
+  // LratChecker for more details.
+  bool AddProblemClause(ClausePtr clause, int64_t one_based_cnf_index = 0);
 
   // No more problem clauses must be added after this call.
   void EndProblemClauses();
 
   // Adds a clause which is inferred from the problem clauses and/or the
   // previously inferred clauses. See LratChecker for more details.
-  bool AddInferredClause(ClauseId id, absl::Span<const Literal> clause,
-                         absl::Span<const ClauseId> unit_ids,
+  bool AddInferredClause(ClausePtr clause, absl::Span<const ClausePtr> proof,
                          bool exported = false) {
-    return AddInferredClause(id, clause, unit_ids, {}, exported);
+    return AddInferredClause(clause, proof, {}, exported);
   }
-  bool AddInferredClause(ClauseId id, absl::Span<const Literal> clause,
-                         absl::Span<const ClauseId> unit_ids,
-                         absl::Span<const LratChecker::RatIds> rat,
+  bool AddInferredClause(ClausePtr clause, absl::Span<const ClausePtr> proof,
+                         absl::Span<const LratChecker::RatClauses> rat_proof,
                          bool exported = false);
+
+  // Rewrites a clause. See LratChecker for more details.
+  bool RewriteClause(ClausePtr clause, absl::Span<const Literal> literals,
+                     absl::Span<const ClausePtr> proof);
 
   // This assumes that the 'new_clause' to prove and all the ones needed for the
   // proof only touch a small number of variables (<= 6). It will then prove the
@@ -182,85 +186,54 @@ class LratProofHandler {
   //
   // Returns false if the proof is wrong.
   bool AddAndProveInferredClauseByEnumeration(
-      ClauseId new_clause_id, absl::Span<const Literal> new_clause,
-      absl::Span<const ClauseId> ids_for_proof,
-      const CompactVectorVector<int, Literal>& clauses_for_proof);
+      ClausePtr new_clause, absl::Span<const ClausePtr> clauses_for_proof);
 
-  // Adds a clause which was inferred and exported by another worker. Returns
-  // true if successful (the operation can fail if LRAT checks are enabled, and
-  // the ID is already used by another clause).
-  bool AddImportedClause(ClauseId id, absl::Span<const Literal> clause);
+  // Adds a clause which was inferred and exported by another worker. Always
+  // returns true.
+  bool AddImportedClause(ClausePtr clause);
 
-  // Adds a clause which is assumed to be true, without proof. Returns true if
-  // successful (the operation fails if DRAT checks are enabled, or if LRAT
-  // checks are enabled and the ID is already used by another clause).
-  bool AddAssumedClause(ClauseId id, absl::Span<const Literal> clause);
+  // Adds a clause which is assumed to be true, without proof. Always returns
+  // true.
+  bool AddAssumedClause(ClausePtr clause);
 
   // Exports a clause so that it can be imported by other workers. If you know
   // whether a clause must be exported when it is inferred, it is more efficient
-  // to use the `exported` parameter of AddInferredClause(). `id` and `clause`
-  // must be the ID and the literals of a previously added clause. This is not
-  // needed for unary and binary clauses, which are always exported.
-  bool ExportClause(ClauseId id, absl::Span<const Literal> clause);
+  // to use the `exported` parameter of AddInferredClause(). `clause` must be a
+  // previously added clause. This is not needed for unary and binary clauses,
+  // which are always exported.
+  bool ExportClause(ClausePtr clause);
 
-  // Prevents the given clause from being deleted, until UnpinClause() is called
-  // with the same ID. At most one clause can be pinned at any time.
-  void PinClause(ClauseId id, absl::Span<const Literal> clause);
-
-  // Unpins the clause with the given ID, and deletes it if a call to
-  // DeleteClause() for this clause was made since it was pinned.
-  void UnpinClause(ClauseId id);
-
-  // Deletes a problem or inferred clause. The clause literals are only needed
-  // when checking DRAT.
-  void DeleteClause(ClauseId id, absl::Span<const Literal> clause);
+  // Deletes a problem or inferred clause. If `delete_sat_clause` is true and
+  // `clause` is a SatClause pointer, then this SatClause* is deleted.
+  void DeleteClause(ClausePtr clause, bool delete_sat_clause = true);
 
   // Returns VALID if all the inferred clauses were successfully checked with
   // LRAT. Returns INVALID if at least one of them was not. Returns UNKNOWN if
   // LRAT checks are not enabled.
-  DratChecker::Status Valid() const;
+  SharedLratProofStatus::Status Valid() const;
 
   // Returns VALID if the unsatisfiability proof is valid and complete, i.e.
   // whether the empty clause has been successfully inferred. Returns INVALID if
-  // it is not. Returns UNKNOWN if the check timed out (this can only occur
-  // with DRAT checks), or if neither LRAT nor DRAT checks were enabled.
-  DratChecker::Status Check();
+  // it is not. Returns UNKNOWN if LRAT checks are not enabled.
+  SharedLratProofStatus::Status Check();
 
   void Close(bool model_is_unsat);
 
-  // This can be helpful to debug wrong proof, but shouldn't be used otherwise.
-  absl::Span<const Literal> GetLratClauseForDebug(ClauseId id) const {
-    CHECK(lrat_checker_ != nullptr);
-    return lrat_checker_->GetClauseForDebug(id);
-  }
-
  private:
-  LratProofHandler(const SatParameters& params, ClauseIdGenerator* id_generator,
+  LratProofHandler(const SatParameters& params,
                    SharedLratProofStatus* proof_status,
                    SharedStatistics* stats);
 
   bool LratError(absl::string_view message) const;
 
   const int id_;
-  ClauseIdGenerator* id_generator_;
   SharedLratProofStatus* proof_status_;
   std::unique_ptr<LratChecker> lrat_checker_;
   std::unique_ptr<LratWriter> lrat_writer_;
-  std::unique_ptr<DratChecker> drat_checker_;
-  std::unique_ptr<DratWriter> drat_writer_;
-  double max_drat_time_in_seconds_ = std::numeric_limits<double>::infinity();
   bool debug_crash_on_error_ = false;
 
   bool all_problem_clauses_loaded_ = false;
   int64_t num_assumed_clauses_ = 0;
-
-  ClauseId pinned_clause_id_ = kNoClauseId;
-  std::vector<Literal> pinned_clause_;
-  bool delete_pinned_clause_ = false;
-
-  // Only used when checking DRAT, because the DRAT checker does not support
-  // interleaving problem and inferred clauses.
-  std::vector<std::vector<Literal>> clauses_inferred_during_problem_loading_;
 };
 
 }  // namespace sat

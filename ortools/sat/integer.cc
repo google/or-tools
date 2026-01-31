@@ -307,12 +307,6 @@ Literal IntegerEncoder::GetOrCreateAssociatedLiteral(IntegerLiteral i_lit) {
   ++num_created_variables_;
   const Literal literal(sat_solver_->NewBooleanVariable(), true);
   AssociateToIntegerLiteral(literal, canonical_lit.first);
-
-  // TODO(user): on some problem this happens. We should probably make sure that
-  // we don't create extra fixed Boolean variable for no reason.
-  if (sat_solver_->Assignment().LiteralIsAssigned(literal)) {
-    VLOG(1) << "Created a fixed literal for no reason!";
-  }
   return literal;
 }
 
@@ -409,6 +403,7 @@ void IntegerEncoder::AssociateToIntegerLiteral(Literal literal,
     }
     return;
   }
+
   AddImplications(var_encoding, it, literal);
 
   // Corner case if adding implication cause this to be fixed.
@@ -592,17 +587,23 @@ LiteralIndex IntegerEncoder::SearchForLiteralAtOrAfter(
     *bound = it->first;
     return it->second.Index();
   } else {
-    // We ask for the first at or after by -var >= bound,
-    // so we look for the first before var < -bound and takes its negation
-    auto after_it = encoding.upper_bound(-i_lit.bound);
-    if (after_it == encoding.begin()) return kNoLiteralIndex;
-    --after_it;
+    // Tricky: SearchForLiteralAtOrBefore() only work for canonicalized literal.
+    // But SearchForLiteralAtOrAfter() do not have this restriction.
+    //
+    // TODO(user): Clean this up.
+    const auto [unused_1, negated_i_lit] = Canonicalize(i_lit);
 
-    // Compute tight bound if there are holes, we have X <= candidate.
-    const Domain& domain = domains_[index];
-    if (after_it->first <= domain.Min()) return kNoLiteralIndex;
-    *bound = -domain.ValueAtOrBefore(after_it->first.value() - 1);
-    return after_it->second.NegatedIndex();
+    IntegerValue neg_bound;
+    LiteralIndex neg_literal =
+        SearchForLiteralAtOrBefore(negated_i_lit, &neg_bound);
+    if (neg_literal == kNoLiteralIndex) {
+      return kNoLiteralIndex;
+    }
+
+    const auto [unused_2, double_neg] = Canonicalize(
+        IntegerLiteral::GreaterOrEqual(PositiveVariable(i_lit.var), neg_bound));
+    *bound = double_neg.bound;
+    return Literal(neg_literal).NegatedIndex();
   }
 }
 
@@ -906,6 +907,11 @@ const Domain& IntegerTrail::InitialVariableDomain(IntegerVariable var) const {
   if (VariableIsPositive(var)) return (*domains_)[index];
   temp_domain_ = (*domains_)[index].Negation();
   return temp_domain_;
+}
+
+std::string IntegerTrail::VarDebugString(IntegerVariable var) const {
+  return absl::StrCat(var, " root:", InitialVariableDomain(var).ToString(),
+                      " current:[", LowerBound(var), ",", UpperBound(var), "]");
 }
 
 // Note that we don't support optional variable here. Or at least if you set

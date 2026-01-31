@@ -163,7 +163,7 @@ class CpModelPresolver {
   bool PresolveBoolAnd(ConstraintProto* ct);
   bool PresolveBoolOr(ConstraintProto* ct);
   bool PresolveBoolXor(ConstraintProto* ct);
-  bool PresolveEnforcementLiteral(ConstraintProto* ct);
+  bool PresolveEnforcementLiteral(ConstraintProto* ct, bool* changed);
 
   // Regroups terms and substitute affine relations.
   // Returns true if the set of variables in the expression changed.
@@ -175,6 +175,7 @@ class CpModelPresolver {
   // For the linear constraints, we have more than one function.
   ABSL_MUST_USE_RESULT bool CanonicalizeLinear(ConstraintProto* ct,
                                                bool* changed);
+  ABSL_MUST_USE_RESULT bool CanonicalizeAllLinears();
   bool PropagateDomainsInLinear(int ct_index, ConstraintProto* ct);
   bool RemoveSingletonInLinear(ConstraintProto* ct);
   bool PresolveSmallLinear(ConstraintProto* ct);
@@ -335,7 +336,7 @@ class CpModelPresolver {
   // merge this with what ExpandObjective() is doing.
   void ShiftObjectiveWithExactlyOnes();
 
-  void ProcessVariableOnlyUsedInEncoding(int var);
+  void ProcessVariablesOnlyUsedInEncoding();
   void TryToSimplifyDomain(int var);
 
   void LookAtVariableWithDegreeTwo(int var);
@@ -436,6 +437,10 @@ class CpModelPresolver {
   MaxBoundedSubsetSum lb_infeasible_;
   MaxBoundedSubsetSum ub_feasible_;
   MaxBoundedSubsetSum ub_infeasible_;
+
+  // Used by ProcessVariablesOnlyUsedInEncoding()
+  int encoding_tmp_num_vars_ = 0;
+  std::vector<int> encoding_tmp_vars_;
 
   // We have an hash-map of know relation between two variables.
   // In particular, this will include all known precedences a <= b.

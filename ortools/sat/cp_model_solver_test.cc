@@ -5451,31 +5451,6 @@ TEST(PresolveCpModelTest, SolutionCrushBug) {
   EXPECT_EQ(response.status(), CpSolverStatus::INFEASIBLE);
 }
 
-TEST(CpModelSolverTest, DratProofIsValidForRandom3Sat) {
-  SatParameters params;
-  params.set_num_workers(1);
-  params.set_cp_model_presolve(false);
-  params.set_inprocessing_use_sat_sweeping(false);
-  params.set_symmetry_level(1);
-  params.set_linearization_level(1);
-  params.set_check_drat_proof(true);
-  params.set_max_drat_time_in_seconds(60);
-  params.set_debug_crash_if_lrat_check_fails(true);
-
-  int num_infeasible = 0;
-  for (int i = 0; i < 100; ++i) {
-    const int kNumVariables = 100;
-    CpModelProto model_proto = Random3SatProblem(kNumVariables);
-
-    CpSolverResponse response = SolveWithParameters(model_proto, params);
-    if (response.status() == CpSolverStatus::INFEASIBLE) {
-      ++num_infeasible;
-    }
-  }
-  LOG(INFO) << "num_infeasible: " << num_infeasible;
-  EXPECT_GT(num_infeasible, 0);
-}
-
 TEST(CpModelSolverTest, LratProofIsValidForRandom3Sat) {
   SatParameters params;
   params.set_num_workers(8);

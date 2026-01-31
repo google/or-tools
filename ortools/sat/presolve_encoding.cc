@@ -18,7 +18,7 @@
 #include <cstdlib>
 #include <functional>
 #include <limits>
-#include <optional>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -28,9 +28,12 @@
 #include "absl/container/inlined_vector.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_join.h"
 #include "google/protobuf/repeated_field.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/sat/cp_model_utils.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/presolve_context.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/sorted_interval_list.h"
@@ -459,7 +462,22 @@ bool DetectEncodedComplexDomain(
   // original domains.
   // TODO(user): if those linear1 are that bad, we should consider expanding
   // them in the end of the presolve instead of avoiding them.
-  std::vector<std::pair<int, Domain>> candidates;
+  const Domain var_domain = context->DomainOf(local_model.var);
+
+  // We use as a proxy for the complexity the number of literals that will be
+  // needed to encode it. Note: this assume `domain = domain ∩ var_domain` or
+  // `domain = domain.SimplifyUsingImpliedDomain(var_domain)`.
+  const auto encoding_complexity = [&var_domain](const Domain& domain) {
+    return 2 * domain.NumIntervals() - (domain.Min() == var_domain.Min()) -
+           (domain.Max() == var_domain.Max());
+  };
+
+  struct Candidate {
+    int lit_var;
+    Domain domain;
+    int complexity;
+  };
+  std::vector<Candidate> candidates;
   candidates.reserve(literals.size());
   for (int i = 0; i < literals.size(); ++i) {
     const int lit_var = literals.Get(i);
@@ -471,48 +489,137 @@ bool DetectEncodedComplexDomain(
     if (it == fully_encoded_domains->end()) {
       continue;
     }
-    candidates.push_back({lit_var, it->second});
+    if (!var_domain.OverlapsWith(it->second)) {
+      // We will handle this on the next pass.
+      continue;
+    }
+    candidates.push_back(
+        {lit_var, it->second, encoding_complexity(it->second)});
   }
 
-  const Domain var_domain = context->DomainOf(local_model.var);
-  Domain domain_new_var_false;
-  Domain domain_new_var_true;
-  int lit1;
-  int lit2;
-  Domain domain_lit1;
-  Domain domain_lit2;
-  bool found_pair = false;
+  absl::c_stable_sort(candidates, [](const auto& a, const auto& b) {
+    return a.domain.Max() < b.domain.Max();
+  });
+
+  if (candidates.size() < 2) return true;
+
+  absl::flat_hash_map<int64_t, int> start_to_candidate_index;
   for (int i = 0; i < candidates.size(); ++i) {
-    for (int j = i + 1; j < candidates.size(); ++j) {
-      const auto& [lit_var1, domain_var1] = candidates[i];
-      const auto& [lit_var2, domain_var2] = candidates[j];
-      domain_new_var_true = domain_var1.UnionWith(domain_var2)
-                                .SimplifyUsingImpliedDomain(var_domain);
-      domain_new_var_false =
-          domain_new_var_true.Complement().SimplifyUsingImpliedDomain(
-              var_domain);
-      const int initial_complexity =
-          std::max(domain_var1.NumIntervals(), domain_var2.NumIntervals());
-      if (domain_new_var_true.NumIntervals() <= initial_complexity &&
-          domain_new_var_false.NumIntervals() <= initial_complexity) {
-        lit1 = lit_var1;
-        domain_lit1 = domain_var1;
-        lit2 = lit_var2;
-        domain_lit2 = domain_var2;
-        found_pair = true;
-        break;
+    start_to_candidate_index[candidates[i].domain.Min()] = i;
+  }
+
+  // This function checks whether we think applying the heuristic is a good
+  // idea. It returns whether the complexity of the union and the complement of
+  // the union is at most the complexity of the original domains.
+  const auto merge_domains_and_compare_complexity =
+      [&var_domain, &encoding_complexity](const Candidate& candidate1,
+                                          const Candidate& candidate2,
+                                          Domain* domain_union) {
+        *domain_union = candidate1.domain.UnionWith(candidate2.domain)
+                            .SimplifyUsingImpliedDomain(var_domain);
+        const int initial_complexity =
+            std::max(candidate1.complexity, candidate2.complexity);
+        return encoding_complexity(*domain_union) <= initial_complexity;
+      };
+
+  std::vector<int> indexes_to_merge;
+  Domain domain_new_var;
+
+  // Some crazy models have many thousands encodings for a single variable! So
+  // we need to first try to find a suitable set of encodings to merge with a
+  // quick heuristic.
+  int cur_candidate = 0;
+  while (cur_candidate < candidates.size()) {
+    const auto& candidate1 = candidates[cur_candidate];
+    // Look for a candidate that starts when this ends.
+    if (candidate1.domain.Max() >= kMaxIntegerValue) break;
+    auto it = start_to_candidate_index.find(candidate1.domain.Max() + 1);
+    if (it == start_to_candidate_index.end()) {
+      ++cur_candidate;
+      continue;
+    }
+    const int j = it->second;
+    DCHECK_NE(cur_candidate, j);
+    const auto& candidate2 = candidates[j];
+    if (merge_domains_and_compare_complexity(candidate1, candidate2,
+                                             &domain_new_var)) {
+      // We found a pair! Let's try greedly merging more intervals.
+      indexes_to_merge = {cur_candidate, j};
+      Candidate candidate_new_var;
+      candidate_new_var.domain = domain_new_var;
+      candidate_new_var.complexity =
+          encoding_complexity(candidate_new_var.domain);
+      if (candidate_new_var.domain.Max() >= kMaxIntegerValue) break;
+      auto it =
+          start_to_candidate_index.find(candidate_new_var.domain.Max() + 1);
+      while (it != start_to_candidate_index.end()) {
+        const auto& candidate = candidates[it->second];
+        Domain domain_new_var_tmp;
+        if (merge_domains_and_compare_complexity(candidate, candidate_new_var,
+                                                 &domain_new_var_tmp)) {
+          if (domain_new_var_tmp.Max() <= candidate_new_var.domain.Max()) {
+            // Avoid infinite loop in corner cases by making sure the resulting
+            // domain always increase its max.
+            break;
+          }
+          indexes_to_merge.push_back(it->second);
+          candidate_new_var.complexity =
+              encoding_complexity(domain_new_var_tmp);
+          candidate_new_var.domain = std::move(domain_new_var_tmp);
+          domain_new_var = candidate_new_var.domain;
+        } else {
+          break;
+        }
+        it = start_to_candidate_index.find(candidate_new_var.domain.Max() + 1);
+      }
+      break;
+    }
+    ++cur_candidate;
+  }
+
+  // If the greedy approach failed, we will just try all pairs if there are not
+  // too many.
+  if (indexes_to_merge.empty() && candidates.size() < 100) {
+    for (int i = 0; i < candidates.size(); ++i) {
+      if (!indexes_to_merge.empty()) break;
+      for (int j = i + 1; j < candidates.size(); ++j) {
+        const auto& candidate1 = candidates[i];
+        const auto& candidate2 = candidates[j];
+        if (merge_domains_and_compare_complexity(candidate1, candidate2,
+                                                 &domain_new_var)) {
+          indexes_to_merge = {i, j};
+          break;
+        }
       }
     }
-    if (found_pair) break;
   }
 
-  if (!found_pair) return true;
+  if (indexes_to_merge.empty()) {
+    VLOG(2) << "Not found any merge for variable=" << local_model.var
+            << " variable_domain=" << var_domain.ToString() << " encodings=["
+            << absl::StrJoin(candidates, ",",
+                             [](std::string* out, const Candidate& c) {
+                               absl::StrAppend(out, c.domain.ToString());
+                             })
+            << "]";
+    return true;
+  }
 
-  // We found two literals that each fully encodes an interval and are both only
-  // used in the encoding and in the bool_or/exactly_one/at_most_one. We can
-  // thus replace the two literals by their OR. Since this code is already
-  // rather complex, so we will just simplify a pair of literals at a time, and
-  // leave for the presolve fixpoint to do the rest.
+  VLOG(2) << "variable=" << local_model.var
+          << " variable_domain=" << var_domain.ToString()
+          << " merging_encodings=["
+          << absl::StrJoin(indexes_to_merge, ",",
+                           [&candidates](std::string* out, const int i) {
+                             absl::StrAppend(out,
+                                             candidates[i].domain.ToString());
+                           })
+          << "] into " << domain_new_var.ToString();
+
+  // We found a set of literals that each fully encodes an interval and are all
+  // only used in the encoding and in the bool_or/exactly_one/at_most_one. We
+  // can thus replace the literals by their OR. Since this code is already
+  // rather complex, so we will just simplify a set of literals at a time, and
+  // leave for the presolve fixpoint to handle disconnected regions.
   *changed = true;
 
   context->UpdateRuleStats(
@@ -520,21 +627,42 @@ bool DetectEncodedComplexDomain(
       "linear1");
 
   if (ct->constraint_case() != ConstraintProto::kBoolOr) {
-    // In virtue of the AMO, var must not be in the intersection of the two
+    // In virtue of the AMO, var must not be in the intersection of any two
     // domains where both literals are true.
-    if (!context->IntersectDomainWith(
-            local_model.var,
-            domain_lit2.IntersectionWith(domain_lit1).Complement())) {
+    Domain intervals_union;
+    Domain forbidden_domain;
+    for (const int index : indexes_to_merge) {
+      const auto& candidate = candidates[index];
+      const Domain intersection_with_other_domain =
+          candidate.domain.IntersectionWith(intervals_union);
+      forbidden_domain =
+          forbidden_domain.UnionWith(intersection_with_other_domain);
+      intervals_union = intervals_union.UnionWith(candidate.domain);
+    }
+    if (!context->IntersectDomainWith(local_model.var,
+                                      forbidden_domain.Complement())) {
       return false;
     }
+    DCHECK(intervals_union.SimplifyUsingImpliedDomain(var_domain) ==
+           domain_new_var);
   }
 
-  // Now we want to build a lit3 = (lit1 or lit2) to use in the AMO/bool_or.
-  const int new_var = context->NewBoolVarWithClause({lit1, lit2});
+  std::vector<int> literals_to_remove;
+  absl::flat_hash_set<int> bools_to_remove_set;
+  for (const int index : indexes_to_merge) {
+    const int lit = candidates[index].lit_var;
+    literals_to_remove.push_back(lit);
+    bools_to_remove_set.insert(PositiveRef(lit));
+  }
+  // Now we want to build a new_lit = (lit1 or lit2 or ...) to use in the
+  // AMO/bool_or.
+  const int new_var = context->NewBoolVarWithClause(literals_to_remove);
 
-  if (domain_new_var_true.IsEmpty()) {
+  const Domain domain_new_var_complement =
+      domain_new_var.Complement().SimplifyUsingImpliedDomain(var_domain);
+  if (domain_new_var.IsEmpty()) {
     CHECK(context->SetLiteralToFalse(new_var));
-  } else if (domain_new_var_false.IsEmpty()) {
+  } else if (domain_new_var_complement.IsEmpty()) {
     CHECK(context->SetLiteralToTrue(new_var));
   } else {
     local_model.linear1_constraints.push_back(
@@ -543,7 +671,7 @@ bool DetectEncodedComplexDomain(
     new_ct->add_enforcement_literal(new_var);
     new_ct->mutable_linear()->add_vars(local_model.var);
     new_ct->mutable_linear()->add_coeffs(1);
-    FillDomainInProto(domain_new_var_true, new_ct->mutable_linear());
+    FillDomainInProto(domain_new_var, new_ct->mutable_linear());
     local_model.linear1_constraints.push_back(
         context->working_model->constraints_size());
     local_model.bools_only_used_inside_the_local_model.insert(
@@ -552,14 +680,17 @@ bool DetectEncodedComplexDomain(
     new_ct->add_enforcement_literal(NegatedRef(new_var));
     new_ct->mutable_linear()->add_vars(local_model.var);
     new_ct->mutable_linear()->add_coeffs(1);
-    FillDomainInProto(domain_new_var_false, new_ct->mutable_linear());
+    FillDomainInProto(domain_new_var_complement, new_ct->mutable_linear());
     context->UpdateNewConstraintsVariableUsage();
+    fully_encoded_domains->insert({new_var, domain_new_var});
+    fully_encoded_domains->insert(
+        {NegatedRef(new_var), domain_new_var_complement});
   }
 
   // Remove the two literals from the AMO.
   int new_size = 0;
   for (int i = 0; i < literals.size(); ++i) {
-    if (literals.Get(i) != lit1 && literals.Get(i) != lit2) {
+    if (!bools_to_remove_set.contains(PositiveRef(literals.Get(i)))) {
       literals.Set(new_size++, literals.Get(i));
     }
   }
@@ -567,21 +698,19 @@ bool DetectEncodedComplexDomain(
   literals.Add(new_var);
   context->UpdateConstraintVariableUsage(ct_index);
 
-  // Finally, move the four linear1 to the mapping model.
-  fully_encoded_domains->insert({new_var, domain_new_var_true});
-  fully_encoded_domains->insert({NegatedRef(new_var), domain_new_var_false});
-  fully_encoded_domains->erase(lit1);
-  fully_encoded_domains->erase(lit2);
-  fully_encoded_domains->erase(NegatedRef(lit1));
-  fully_encoded_domains->erase(NegatedRef(lit2));
-  context->MarkVariableAsRemoved(PositiveRef(lit1));
-  context->MarkVariableAsRemoved(PositiveRef(lit2));
+  // Finally, move the all removable linear1 to the mapping model.
+  for (const int lit : literals_to_remove) {
+    fully_encoded_domains->erase(lit);
+    fully_encoded_domains->erase(NegatedRef(lit));
+    context->MarkVariableAsRemoved(PositiveRef(lit));
+    local_model.bools_only_used_inside_the_local_model.erase(PositiveRef(lit));
+  }
   int new_linear1_size = 0;
   for (int i = 0; i < local_model.linear1_constraints.size(); ++i) {
     const int ct = local_model.linear1_constraints[i];
     ConstraintProto* ct_proto = context->working_model->mutable_constraints(ct);
-    if (PositiveRef(ct_proto->enforcement_literal(0)) == PositiveRef(lit1) ||
-        PositiveRef(ct_proto->enforcement_literal(0)) == PositiveRef(lit2)) {
+    if (bools_to_remove_set.contains(
+            PositiveRef(ct_proto->enforcement_literal(0)))) {
       context->NewMappingConstraint(*ct_proto, __FILE__, __LINE__);
       ct_proto->Clear();
       context->UpdateConstraintVariableUsage(ct);

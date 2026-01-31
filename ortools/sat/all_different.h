@@ -31,6 +31,7 @@
 #include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/strong_integers.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -215,6 +216,8 @@ class AllDifferentBoundsPropagator : public PropagatorInterface {
   IntegerValue GetValue(int index) const { return base_ + IntegerValue(index); }
 
   const IntegerTrail& integer_trail_;
+  TimeLimit* time_limit_;
+
   EnforcementHelper& enforcement_helper_;
   EnforcementId enforcement_id_;
 

@@ -844,7 +844,7 @@ void LaunchSubsolvers(Model* global_model, SharedClasses* shared,
   }
 
   shared->shared_tree_manager->CloseLratProof();
-  if (params.check_merged_lrat_proof() && shared->response->ProblemIsSolved() &&
+  if (shared->response->ProblemIsSolved() &&
       !shared->response->HasFeasibleSolution()) {
     LratMerger(global_model)
         .Merge(shared->lrat_proof_status->GetProofFilenames());
@@ -862,9 +862,9 @@ bool VarIsFixed(const CpModelProto& model_proto, int i) {
 // Note that we restrict the objective to be <= so that the hint is still
 // feasible. Alternatively, we could look for < hint value if we only want
 // better solution.
-void RestrictObjectiveUsingHint(CpModelProto* model_proto) {
-  if (!model_proto->has_objective()) return;
-  if (!model_proto->has_solution_hint()) return;
+bool RestrictObjectiveUsingHint(CpModelProto* model_proto) {
+  if (!model_proto->has_objective()) return true;
+  if (!model_proto->has_solution_hint()) return true;
 
   // We will abort if the hint is not complete, ignoring fixed variables.
   const int num_vars = model_proto->variables().size();
@@ -890,20 +890,24 @@ void RestrictObjectiveUsingHint(CpModelProto* model_proto) {
     filled[var] = true;
     ++num_filled;
   }
-  if (num_filled != num_vars) return;
+  if (num_filled != num_vars) return true;
 
   const int64_t obj_upper_bound =
       ComputeInnerObjective(model_proto->objective(), solution);
   const Domain restriction =
       Domain(std::numeric_limits<int64_t>::min(), obj_upper_bound);
 
+  if (restriction.IsEmpty()) return false;
+
   if (model_proto->objective().domain().empty()) {
     FillDomainInProto(restriction, model_proto->mutable_objective());
   } else {
-    FillDomainInProto(ReadDomainFromProto(model_proto->objective())
-                          .IntersectionWith(restriction),
-                      model_proto->mutable_objective());
+    const Domain new_domain = ReadDomainFromProto(model_proto->objective())
+                                  .IntersectionWith(restriction);
+    if (new_domain.IsEmpty()) return false;
+    FillDomainInProto(new_domain, model_proto->mutable_objective());
   }
+  return true;
 }
 
 // Returns true iff there is a hint, and (ignoring fixed variables) if it is
@@ -1502,7 +1506,9 @@ class LnsSolver : public SubSolver {
       // of the hint. This is helpful on some model where doing so can cause
       // the presolve to restrict the domain of many variables. Note that the
       // hint will still be feasible as we use <= and not <.
-      RestrictObjectiveUsingHint(&lns_fragment);
+      if (!RestrictObjectiveUsingHint(&lns_fragment)) {
+        return;
+      }
 
       CpModelProto debug_copy;
       if (absl::GetFlag(FLAGS_cp_model_dump_problematic_lns)) {
@@ -1519,6 +1525,8 @@ class LnsSolver : public SubSolver {
         LOG(INFO) << "Dumping LNS model to '" << lns_name << "'.";
         CHECK(WriteModelProtoToFile(lns_fragment, lns_name));
       }
+
+      DCHECK_EQ(ValidateCpModel(lns_fragment), "");
 
       std::vector<int> postsolve_mapping;
       const CpSolverStatus presolve_status =
@@ -1750,10 +1758,6 @@ class LnsSolver : public SubSolver {
 void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
   const SatParameters& params = *global_model->GetOrCreate<SatParameters>();
   if (global_model->GetOrCreate<TimeLimit>()->LimitReached()) return;
-
-  if (params.check_drat_proof() || params.output_drat_proof()) {
-    LOG(FATAL) << "DRAT proofs are not supported with several workers";
-  }
 
   // If specified by the user, we might disable some parameters based on their
   // name.

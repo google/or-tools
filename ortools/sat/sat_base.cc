@@ -25,6 +25,10 @@ namespace sat {
 // static
 SatClause* SatClause::Create(absl::Span<const Literal> literals) {
   DCHECK_GE(literals.size(), 2);
+  return CreateInternal(literals);
+}
+
+SatClause* SatClause::CreateInternal(absl::Span<const Literal> literals) {
   SatClause* clause = reinterpret_cast<SatClause*>(
       ::operator new(sizeof(SatClause) + literals.size() * sizeof(Literal)));
   clause->size_ = literals.size();

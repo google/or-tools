@@ -34,7 +34,6 @@
 #include "absl/functional/function_ref.h"
 #include "absl/log/check.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/enforcement.h"
@@ -64,8 +63,8 @@ const int kUnsatTrailIndex = -1;
 class SatSolver {
  public:
   // Callback called when a new conflict clause is learned. The arguments are
-  // the ID and the literals of the learned clause.
-  typedef absl::FunctionRef<void(ClauseId, absl::Span<const Literal>)>
+  // the pointer and the literals of the learned clause.
+  typedef absl::FunctionRef<void(ClausePtr, absl::Span<const Literal>)>
       ConflictCallback;
 
   SatSolver();
@@ -627,7 +626,7 @@ class SatSolver {
 
   // Add a problem clause. The clause is assumed to be "cleaned", that is no
   // duplicate variables (not strictly required) and not empty.
-  bool AddProblemClauseInternal(ClauseId id,
+  bool AddProblemClauseInternal(ClausePtr ptr,
                                 absl::Span<const Literal> literals);
 
   // This is used by all the Add*LinearConstraint() functions. It detects
@@ -649,7 +648,7 @@ class SatSolver {
   //
   // Returns the LBD of the clause.
   int AddLearnedClauseAndEnqueueUnitPropagation(
-      ClauseId clause_id, absl::Span<const Literal> literals, bool is_redundant,
+      ClausePtr ptr, absl::Span<const Literal> literals, bool is_redundant,
       int min_lbd_of_subsumed_clauses);
 
   // Creates a new decision which corresponds to setting the given literal to
@@ -684,16 +683,16 @@ class SatSolver {
   // Returns the pair <is_redundant, minimum_lbd of the subsumed clause>.
   // A clause will be marked as redundant only if all the subsumed clauses are.
   std::pair<bool, int> SubsumptionsInConflictResolution(
-      ClauseId learned_conflict_id, absl::Span<const Literal> conflict,
+      ClausePtr learned_conflict, absl::Span<const Literal> conflict,
       absl::Span<const Literal> reason_used);
 
-  // Append the necessary `clause_ids` for the corresponding part of an LRAT
+  // Append the necessary `proof` for the corresponding part of an LRAT
   // proof. Note that the first function modify is_marked_.
   void AppendLratProofForFixedLiterals(absl::Span<const Literal> literals,
-                                       std::vector<ClauseId>* clause_ids);
-  void AppendLratProofForFailingClause(std::vector<ClauseId>* clause_ids);
+                                       std::vector<ClausePtr>* proof);
+  void AppendLratProofForFailingClause(std::vector<ClausePtr>* proof);
   void AppendLratProofFromReasons(absl::Span<const Literal> reasons,
-                                  std::vector<ClauseId>* clause_ids);
+                                  std::vector<ClausePtr>* proof);
 
   // Fills literals with all the literals in the reasons of the literals in the
   // given input. The output vector will have no duplicates and will not contain
@@ -713,22 +712,22 @@ class SatSolver {
   // replace literals by other literals from lower decision levels. The first
   // function choose which one of the other functions to call depending on the
   // parameters. If an LRAT proof handler is set, fills the LRAT proof for the
-  // minimization in `clause_ids`.
+  // minimization in `proof`.
   //
   // Precondition: is_marked_ should be set to true for all the variables of
   // the conflict. It can also contains false non-conflict variables that
   // are implied by the negation of the 1-UIP conflict literal.
   void MinimizeConflict(std::vector<Literal>* conflict,
-                        std::vector<ClauseId>* clause_ids);
+                        std::vector<ClausePtr>* proof);
   void MinimizeConflictSimple(std::vector<Literal>* conflict,
-                              std::vector<ClauseId>* clause_ids);
+                              std::vector<ClausePtr>* proof);
   void MinimizeConflictRecursively(std::vector<Literal>* conflict,
-                                   std::vector<ClauseId>* clause_ids);
+                                   std::vector<ClausePtr>* proof);
 
   // Utility methods used by MinimizeConflictRecursively().
   bool CanBeInferredFromConflictVariables(BooleanVariable variable);
   void AppendInferenceChain(BooleanVariable variable,
-                            std::vector<ClauseId>* clause_ids);
+                            std::vector<ClausePtr>* clauses);
 
   // To be used in DCHECK(). Verifies some property of the conflict clause:
   // - There is an unique literal with the highest decision level.
@@ -776,7 +775,6 @@ class SatSolver {
   std::unique_ptr<Model> owned_model_;
 
   BooleanVariable num_variables_ = BooleanVariable(0);
-  ClauseIdGenerator* clause_id_generator_;
 
   // Internal propagators. We keep them here because we need more than the
   // SatPropagator interface for them.
@@ -859,10 +857,10 @@ class SatSolver {
   // Temporary member used when adding clauses.
   std::vector<Literal> tmp_literals_;
   // Temporary members used when adding LRAT inferred clauses.
-  std::vector<ClauseId> tmp_clause_ids_;
-  std::vector<ClauseId> tmp_clause_ids_for_1uip_;
-  std::vector<ClauseId> tmp_clause_ids_for_minimization_;
-  absl::flat_hash_set<ClauseId> tmp_clause_id_set_;
+  std::vector<ClausePtr> tmp_proof_;
+  std::vector<ClausePtr> tmp_proof_for_1uip_;
+  std::vector<ClausePtr> tmp_proof_for_minimization_;
+  absl::flat_hash_set<ClausePtr> tmp_clauses_set_;
 
   // A boolean vector used to temporarily mark decision levels.
   DEFINE_STRONG_INDEX_TYPE(SatDecisionLevel);
@@ -882,10 +880,11 @@ class SatSolver {
   // On each conflict, we learn at least one clause, but depending on the cases,
   // we can learn more than one.
   struct NewClauses {
-    ClauseId id;  // Can point to an already allocated SatClause for 'clause'.
+    // Can point to an already allocated SatClause for 'literals'.
+    ClausePtr clause;
     bool is_redundant;
     int min_lbd_of_subsumed_clauses;
-    std::vector<Literal> clause;
+    std::vector<Literal> literals;
   };
   std::vector<NewClauses> learned_clauses_;
 

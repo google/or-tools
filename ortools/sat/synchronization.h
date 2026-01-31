@@ -23,7 +23,7 @@
 #include <functional>
 #include <limits>
 #include <memory>
-#include <optional>
+#include <numeric>
 #include <string>
 #include <utility>
 #include <vector>
@@ -33,17 +33,16 @@
 #include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/random/random.h"
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
-#include "absl/time/time.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/timer.h"
 #include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/drat_checker.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -56,9 +55,9 @@ namespace operations_research {
 namespace sat {
 
 struct SolverStatusChangeInfo {
-  double best_objective_value;
-  double cur_objective_value_lb;
-  double cur_objective_value_ub;
+  double best_objective_value = std::numeric_limits<double>::quiet_NaN();
+  double cur_objective_value_lb = std::numeric_limits<double>::quiet_NaN();
+  double cur_objective_value_ub = std::numeric_limits<double>::quiet_NaN();
 
   std::string change_info;
 
@@ -1300,29 +1299,34 @@ class SharedLratProofStatus {
  public:
   SharedLratProofStatus();
 
+  int64_t MaxOneBasedCnfIndex() const;
+  void SetMaxOneBasedCnfIndex(int64_t max_one_based_cnf_index);
+
   // Each LratProofHandler should call this to get a unique "worker ID".
   int NewSubSolverId();
 
-  void NewSubsolverProofStatus(DratChecker::Status status,
-                               bool lrat_check_enabled, bool drat_check_enabled,
-                               int num_assumed_clauses,
-                               double walltime_in_seconds);
+  enum Status {
+    UNKNOWN,
+    VALID,
+    INVALID,
+  };
+  void NewSubsolverProofStatus(Status status, bool lrat_check_enabled,
+                               int num_assumed_clauses);
 
   void NewProofFile(absl::string_view filename);
-  std::vector<std::string> GetProofFilenames();
+  std::vector<std::string> GetProofFilenames() const;
 
   void Log(SolverLogger* logger);
 
  private:
-  absl::Mutex mutex_;
+  mutable absl::Mutex mutex_;
+  int64_t max_one_based_cnf_index_ ABSL_GUARDED_BY(mutex_) = 0;
   int num_subsolvers_ ABSL_GUARDED_BY(mutex_);
+  int num_lrat_checkers_ ABSL_GUARDED_BY(mutex_);
   int num_valid_proofs_ ABSL_GUARDED_BY(mutex_);
   int num_invalid_proofs_ ABSL_GUARDED_BY(mutex_);
   int num_unknown_proofs_ ABSL_GUARDED_BY(mutex_);
-  bool lrat_check_enabled_ ABSL_GUARDED_BY(mutex_);
-  bool drat_check_enabled_ ABSL_GUARDED_BY(mutex_);
   int num_assumed_clauses_ ABSL_GUARDED_BY(mutex_);
-  double walltime_in_seconds_ ABSL_GUARDED_BY(mutex_);
   std::vector<std::string> proof_filenames_ ABSL_GUARDED_BY(mutex_);
 };
 

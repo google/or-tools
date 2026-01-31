@@ -268,8 +268,7 @@ SharedTreeManager::SharedTreeManager(Model* model)
       max_path_depth_(MaxPossibleLeafDepth(params_)),
       shared_response_manager_(model->GetOrCreate<SharedResponseManager>()),
       lrat_proof_handler_(LratProofHandler::MaybeCreate(
-          params_, &clause_id_generator_,
-          model->GetOrCreate<SharedLratProofStatus>(),
+          params_, model->GetOrCreate<SharedLratProofStatus>(),
           model->GetOrCreate<SharedStatistics>())),
       num_splits_wanted_(
           num_workers_ * params_.shared_tree_open_leaves_per_worker() - 1),
@@ -311,7 +310,7 @@ bool SharedTreeManager::SyncTree(ProtoTrail& path) {
       // adapted for the manager, must be inferred from it).
       Node* sibling = GetSibling(node);
       if (!sibling->closed) {
-        ClauseId closing_clause_id = kNoClauseId;
+        ClausePtr closing_clause = kNullClausePtr;
         if (lrat_proof_handler_ != nullptr) {
           // For the worker, `node` is implied by all the previous decisions in
           // `path`, but for the manager we need an implication clause using the
@@ -320,25 +319,25 @@ bool SharedTreeManager::SyncTree(ProtoTrail& path) {
           // tree).
           const std::vector<Literal> inferred_clause = ClosingClause(sibling);
           std::vector<Literal> imported_clause;
-          std::vector<ClauseId> lrat_proof;
+          std::vector<ClausePtr> proof;
           for (int l = 1; l <= level + 1; ++l) {
             Node* n = l <= level ? GetNode(path.DecisionNodeId(l)) : node;
             const Literal decision = DecodeWithIdentityMapping(n->decision);
             imported_clause.push_back(l <= level ? decision.Negated()
                                                  : decision);
             if (n->implied_and_processed) {
-              lrat_proof.push_back(GetSibling(n)->closing_clause_id);
+              proof.push_back(GetSibling(n)->closing_clause);
             } else if (n == node && n->closed) {
               // If `node` is closed too, `inferred_clause` becomes the closing
               // clause of the parent of `node` and `sibling`, whose proof
               // requires the closing clause of these two children.
-              lrat_proof.push_back(n->closing_clause_id);
+              proof.push_back(n->closing_clause);
             }
           }
-          closing_clause_id = AddImportedAndInferredClauses(
-              imported_clause, inferred_clause, lrat_proof);
+          closing_clause = AddImportedAndInferredClauses(
+              imported_clause, inferred_clause, proof);
         }
-        to_close_.emplace_back(sibling, closing_clause_id);
+        to_close_.emplace_back(sibling, closing_clause);
       }
     } else if (level > 0 && node->objective_lb < path.ObjectiveLb(level)) {
       node->objective_lb = path.ObjectiveLb(level);
@@ -349,7 +348,14 @@ bool SharedTreeManager::SyncTree(ProtoTrail& path) {
       for (const ProtoLiteral& implication : path.Implications(level)) {
         // Trivial implication, can be ignored.
         if (IsDecisionOfNodeOrAncestor(implication, node)) continue;
-        ClauseId implication_clause_id = kNoClauseId;
+        auto it = trail_info->implications.find(implication.proto_var());
+        if (it != trail_info->implications.end()) {
+          if (it->second.first < implication.lb()) {
+            it->second.first = implication.lb();
+          }
+          continue;
+        }
+        ClausePtr implication_clause = kNullClausePtr;
         if (lrat_proof_handler_ != nullptr) {
           // For the worker, 'implication' is implied by all the previous
           // decisions in `path`, but for the manager we need an implication
@@ -359,27 +365,22 @@ bool SharedTreeManager::SyncTree(ProtoTrail& path) {
           const std::vector<Literal> inferred_clause =
               ImplicationClause(node, implication);
           std::vector<Literal> imported_clause;
-          std::vector<ClauseId> lrat_proof;
+          std::vector<ClausePtr> proof;
           for (int l = 1; l <= level; ++l) {
             Node* n = GetNode(path.DecisionNodeId(l));
             const Literal decision = DecodeWithIdentityMapping(n->decision);
             imported_clause.push_back(decision.Negated());
             if (n->implied_and_processed) {
-              lrat_proof.push_back(GetSibling(n)->closing_clause_id);
+              proof.push_back(GetSibling(n)->closing_clause);
             }
           }
           imported_clause.push_back(DecodeWithIdentityMapping(implication));
-          implication_clause_id = AddImportedAndInferredClauses(
-              imported_clause, inferred_clause, lrat_proof);
+          implication_clause = AddImportedAndInferredClauses(
+              imported_clause, inferred_clause, proof);
         }
-        auto it = trail_info->implications
-                      .emplace(implication.proto_var(),
-                               std::make_pair(implication.lb(),
-                                              implication_clause_id))
-                      .first;
-        if (it->second.first < implication.lb()) {
-          it->second.first = implication.lb();
-        }
+        trail_info->implications.insert(
+            {implication.proto_var(),
+             std::make_pair(implication.lb(), implication_clause)});
       }
     }
     prev_level = level;
@@ -518,7 +519,7 @@ void SharedTreeManager::ClearTrailInfo(Node* node, bool implications_only) {
   if (node->trail_info == nullptr) return;
   if (lrat_proof_handler_ != nullptr) {
     for (const auto& [var, lb_and_clause] : node->trail_info->implications) {
-      lrat_proof_handler_->DeleteClause(lb_and_clause.second, {});
+      lrat_proof_handler_->DeleteClause(lb_and_clause.second);
     }
   }
   if (implications_only) {
@@ -570,15 +571,23 @@ void SharedTreeManager::ProcessNodeChanges() {
   int num_newly_closed = 0;
   std::vector<Node*> newly_implied;
   while (!to_close_.empty()) {
-    auto [node, closing_clause_id] = to_close_.back();
+    auto [node, closing_clause] = to_close_.back();
     CHECK_NE(node, nullptr);
     to_close_.pop_back();
     // Iterate over open parents while each sibling is closed.
-    while (node != nullptr && !node->closed) {
+    while (node != nullptr) {
+      if (node->closed) {
+        if (closing_clause != kNullClausePtr) {
+          lrat_proof_handler_->DeleteClause(closing_clause);
+        }
+        break;
+      }
+      DCHECK(lrat_proof_handler_ == nullptr ||
+             closing_clause != kNullClausePtr);
       ++num_newly_closed;
       ++num_closed_nodes_;
       node->closed = true;
-      node->closing_clause_id = closing_clause_id;
+      node->closing_clause = closing_clause;
       // Keep the root trail_info so GetTrailInfo never returns nullptr.
       if (node->parent != nullptr) {
         ClearTrailInfo(node);
@@ -588,17 +597,17 @@ void SharedTreeManager::ProcessNodeChanges() {
       num_splits_wanted_ += (node->children[0] == nullptr);
       for (Node* child : node->children) {
         if (child == nullptr || child->closed) continue;
-        ClauseId child_closing_clause_id = kNoClauseId;
+        ClausePtr child_closing_clause = kNullClausePtr;
         if (lrat_proof_handler_ != nullptr) {
           // The node's closing clause is sufficient to prove that `child` can
           // be closed. We use a new clause only to avoid double deletes in
           // RestartLockHeld().
-          child_closing_clause_id = clause_id_generator_.GetNextId();
-          lrat_proof_handler_->AddInferredClause(
-              child_closing_clause_id, ClosingClause(child),
-              {closing_clause_id}, /*exported=*/true);
+          child_closing_clause = ClausePtr(ClosingClause(child));
+          lrat_proof_handler_->AddInferredClause(child_closing_clause,
+                                                 {closing_clause},
+                                                 /*exported=*/true);
         }
-        to_close_.emplace_back(child, child_closing_clause_id);
+        to_close_.emplace_back(child, child_closing_clause);
       }
       Node* sibling = GetSibling(node);
       if (sibling != nullptr) {
@@ -613,13 +622,14 @@ void SharedTreeManager::ProcessNodeChanges() {
       Node* parent = node->parent;
       if (lrat_proof_handler_ != nullptr && parent != nullptr &&
           !parent->closed) {
-        closing_clause_id = clause_id_generator_.GetNextId();
+        closing_clause = ClausePtr(ClosingClause(parent));
         // Combine the clauses proving that the node and its sibling could be
         // closed to prove that the parent can be closed.
         lrat_proof_handler_->AddInferredClause(
-            closing_clause_id, ClosingClause(parent),
-            {node->closing_clause_id, sibling->closing_clause_id},
+            closing_clause, {node->closing_clause, sibling->closing_clause},
             /*exported=*/true);
+      } else {
+        closing_clause = kNullClausePtr;
       }
       node = parent;
     }
@@ -702,14 +712,14 @@ void SharedTreeManager::ProcessImpliedNode(Node* node) {
   }
   // Gather the clauses needed to prove the new implications and closing
   // clauses.
-  std::vector<ClauseId> clauses;
+  std::vector<ClausePtr> clauses;
   Node* n = node;
   while (n->parent != nullptr) {
     // Newly implied nodes must be removed from the closing and implication
     // clauses, which requires a proof (already implied nodes are no longer in
     // these clauses, so we don't need a proof for them).
     if (n->implied && !n->implied_and_processed) {
-      clauses.push_back(GetSibling(n)->closing_clause_id);
+      clauses.push_back(GetSibling(n)->closing_clause);
     }
     n = n->parent;
   }
@@ -721,17 +731,17 @@ void SharedTreeManager::ProcessImpliedNode(Node* node) {
       if (first_non_implied_ancestor->trail_info->implications.contains(var)) {
         continue;
       }
-      const auto [lb, clause_id] = lb_and_clause;
-      ClauseId new_clause_id = clause_id_generator_.GetNextId();
-      clauses.push_back(clause_id);
-      lrat_proof_handler_->AddInferredClause(
-          new_clause_id,
+      const auto [lb, clause] = lb_and_clause;
+      std::vector<Literal> implication_clause =
           ImplicationClause(first_non_implied_ancestor, ProtoLiteral(var, lb),
-                            /*skip_unprocessed_implied_nodes=*/true),
-          clauses, /*exported=*/true);
+                            /*skip_unprocessed_implied_nodes=*/true);
+      clauses.push_back(clause);
+      ClausePtr new_clause = ClausePtr(implication_clause);
+      lrat_proof_handler_->AddInferredClause(new_clause, clauses,
+                                             /*exported=*/true);
       clauses.pop_back();
       first_non_implied_ancestor->trail_info->implications.insert(
-          {var, std::make_pair(lb, new_clause_id)});
+          {var, std::make_pair(lb, new_clause)});
     }
   }
   UpdateLratClausesInSubtree(node, node, clauses);
@@ -743,39 +753,39 @@ void SharedTreeManager::ProcessImpliedNode(Node* node) {
 // clauses needed to infer its updated closing and implication clauses.
 // TODO(user): change to a non-recursive implementation?
 void SharedTreeManager::UpdateLratClausesInSubtree(
-    Node* node, Node* n, std::vector<ClauseId>& clauses) {
+    Node* node, Node* n, std::vector<ClausePtr>& clauses) {
   const bool implied_and_not_processed =
       n->implied && !n->implied_and_processed;
   if (implied_and_not_processed) {
     // Newly implied nodes must be removed from the closing and implication
     // clauses of `n`, which requires a proof (already implied nodes are no
     // longer in these clauses, so we don't need a proof for them).
-    clauses.push_back(GetSibling(n)->closing_clause_id);
+    clauses.push_back(GetSibling(n)->closing_clause);
   }
   if (n->closed) {
-    DCHECK_NE(n->closing_clause_id, kNoClauseId);
-    ClauseId new_clause_id = clause_id_generator_.GetNextId();
-    clauses.push_back(n->closing_clause_id);
-    lrat_proof_handler_->AddInferredClause(
-        new_clause_id,
-        ClosingClause(n, /*skip_unprocessed_implied_nodes=*/true), clauses,
-        /*exported=*/true);
+    DCHECK_NE(n->closing_clause, kNullClausePtr);
+    std::vector<Literal> closing_clause =
+        ClosingClause(n, /*skip_unprocessed_implied_nodes=*/true);
+    ClausePtr new_clause = ClausePtr(closing_clause);
+    clauses.push_back(n->closing_clause);
+    lrat_proof_handler_->AddInferredClause(new_clause, clauses,
+                                           /*exported=*/true);
     clauses.pop_back();
-    lrat_proof_handler_->DeleteClause(n->closing_clause_id, {});
-    n->closing_clause_id = new_clause_id;
+    lrat_proof_handler_->DeleteClause(n->closing_clause);
+    n->closing_clause = new_clause;
   }
   if (n != node && n->trail_info != nullptr) {
     for (auto& [var, lb_and_clause] : n->trail_info->implications) {
-      auto& [lb, clause_id] = lb_and_clause;
-      ClauseId new_clause_id = clause_id_generator_.GetNextId();
-      clauses.push_back(clause_id);
-      lrat_proof_handler_->AddInferredClause(
-          new_clause_id,
+      auto& [lb, clause] = lb_and_clause;
+      std::vector<Literal> implication_clause =
           ImplicationClause(n, ProtoLiteral(var, lb),
-                            /*skip_unprocessed_implied_nodes=*/true),
-          clauses, /*exported=*/true);
-      lrat_proof_handler_->DeleteClause(clause_id, {});
-      clause_id = new_clause_id;
+                            /*skip_unprocessed_implied_nodes=*/true);
+      ClausePtr new_clause = ClausePtr(implication_clause);
+      clauses.push_back(clause);
+      lrat_proof_handler_->AddInferredClause(new_clause, clauses,
+                                             /*exported=*/true);
+      lrat_proof_handler_->DeleteClause(clause);
+      clause = new_clause;
       clauses.pop_back();
     }
   }
@@ -829,7 +839,7 @@ void SharedTreeManager::CloseTree(ProtoTrail& path, int level) {
   VLOG(2) << "Closing subtree at level " << level;
   DCHECK(to_close_.empty());
 
-  ClauseId closing_clause_id = kNoClauseId;
+  ClausePtr closing_clause = kNullClausePtr;
   if (lrat_proof_handler_ != nullptr) {
     // For the worker providing `path`, `node` is implied by all the previous
     // decisions in `path`, but for the manager we need a closing clause using
@@ -838,20 +848,20 @@ void SharedTreeManager::CloseTree(ProtoTrail& path, int level) {
     // views of the tree).
     const std::vector<Literal> inferred_clause = ClosingClause(node);
     std::vector<Literal> imported_clause;
-    std::vector<ClauseId> lrat_proof;
+    std::vector<ClausePtr> proof;
     for (int l = 1; l <= level; ++l) {
       Node* n = GetNode(path.DecisionNodeId(l));
       const Literal decision = DecodeWithIdentityMapping(n->decision);
       imported_clause.push_back(decision.Negated());
       if (n->implied_and_processed) {
-        lrat_proof.push_back(GetSibling(n)->closing_clause_id);
+        proof.push_back(GetSibling(n)->closing_clause);
       }
     }
-    closing_clause_id = AddImportedAndInferredClauses(
-        imported_clause, inferred_clause, lrat_proof);
+    closing_clause =
+        AddImportedAndInferredClauses(imported_clause, inferred_clause, proof);
   }
   path.Clear();
-  to_close_.emplace_back(node, closing_clause_id);
+  to_close_.emplace_back(node, closing_clause);
   ProcessNodeChanges();
   DCHECK(CheckLratInvariants());
 }
@@ -915,22 +925,21 @@ bool UnorderedSpansAreEqual(absl::Span<const Literal> a,
 }
 }  // namespace
 
-ClauseId SharedTreeManager::AddImportedAndInferredClauses(
+ClausePtr SharedTreeManager::AddImportedAndInferredClauses(
     absl::Span<const Literal> imported_clause,
-    absl::Span<const Literal> inferred_clause,
-    std::vector<ClauseId>& lrat_proof) {
-  const ClauseId id = clause_id_generator_.GetNextId();
-  lrat_proof_handler_->AddImportedClause(id, imported_clause);
-  if (!lrat_proof.empty() ||
+    absl::Span<const Literal> inferred_clause, std::vector<ClausePtr>& proof) {
+  const ClausePtr imported_clause_ptr = ClausePtr(imported_clause);
+  lrat_proof_handler_->AddImportedClause(imported_clause_ptr);
+  if (!proof.empty() ||
       !UnorderedSpansAreEqual(inferred_clause, imported_clause)) {
-    lrat_proof.push_back(id);
-    const ClauseId new_id = clause_id_generator_.GetNextId();
-    lrat_proof_handler_->AddInferredClause(new_id, inferred_clause, lrat_proof,
+    proof.push_back(imported_clause_ptr);
+    const ClausePtr inferred_clause_ptr = ClausePtr(inferred_clause);
+    lrat_proof_handler_->AddInferredClause(inferred_clause_ptr, proof,
                                            /*exported=*/true);
-    lrat_proof_handler_->DeleteClause(id, {});
-    return new_id;
+    lrat_proof_handler_->DeleteClause(imported_clause_ptr);
+    return inferred_clause_ptr;
   } else {
-    return id;
+    return imported_clause_ptr;
   }
 }
 
@@ -951,7 +960,7 @@ void SharedTreeManager::AssignLeaf(ProtoTrail& path, Node* leaf) {
     if (params_.shared_tree_worker_enable_trail_sharing() &&
         leaf->trail_info != nullptr) {
       for (const auto& [var, lb_and_clause] : leaf->trail_info->implications) {
-        const auto [lb, clause_id] = lb_and_clause;
+        const auto [lb, clause] = lb_and_clause;
         path.AddImplication(path.MaxLevel(), ProtoLiteral(var, lb));
       }
     }
@@ -968,10 +977,11 @@ bool SharedTreeManager::IsValid(const ProtoTrail& path) const {
 void SharedTreeManager::RestartLockHeld() {
   node_id_offset_ += nodes_.size();
   if (lrat_proof_handler_ != nullptr) {
-    for (const Node& node : nodes_) {
-      if (node.closing_clause_id != kNoClauseId) {
-        lrat_proof_handler_->DeleteClause(node.closing_clause_id, {});
+    for (Node& node : nodes_) {
+      if (node.closing_clause != kNullClausePtr) {
+        lrat_proof_handler_->DeleteClause(node.closing_clause);
       }
+      ClearTrailInfo(&node, /*implications_only=*/true);
     }
   }
   nodes_.resize(1);
@@ -990,6 +1000,7 @@ void SharedTreeManager::RestartLockHeld() {
 void SharedTreeManager::CloseLratProof() {
   absl::MutexLock l(mu_);
   if (lrat_proof_handler_ != nullptr) {
+    RestartLockHeld();  // This deletes all remaining LRAT clauses.
     lrat_proof_handler_->Close(/*model_is_unsat=*/false);
     lrat_proof_handler_.reset();
   }
@@ -1016,14 +1027,12 @@ bool SharedTreeManager::CheckLratInvariants() const {
     for (const Node& node : nodes_) {
       if (node.parent == nullptr) continue;
       if (node.closed) {
-        CheckEqual(
-            lrat_proof_handler_->GetLratClauseForDebug(node.closing_clause_id),
-            ClosingClause(&node));
+        CheckEqual(node.closing_clause.GetLiterals(), ClosingClause(&node));
       }
       if (node.trail_info != nullptr) {
         for (const auto& [var, lb_and_clause] : node.trail_info->implications) {
-          const auto [lb, clause_id] = lb_and_clause;
-          CheckEqual(lrat_proof_handler_->GetLratClauseForDebug(clause_id),
+          const auto [lb, clause] = lb_and_clause;
+          CheckEqual(clause.GetLiterals(),
                      ImplicationClause(&node, ProtoLiteral(var, lb)));
         }
       }
@@ -1042,7 +1051,6 @@ SharedTreeWorker::SharedTreeWorker(Model* model)
       trail_(model->GetOrCreate<Trail>()),
       binary_propagator_(model->GetOrCreate<BinaryImplicationGraph>()),
       clause_manager_(model->GetOrCreate<ClauseManager>()),
-      clause_id_generator_(model->GetOrCreate<ClauseIdGenerator>()),
       lrat_proof_handler_(model->Mutable<LratProofHandler>()),
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
       encoder_(model->GetOrCreate<IntegerEncoder>()),
@@ -1056,6 +1064,10 @@ SharedTreeWorker::SharedTreeWorker(Model* model)
       reversible_int_repository_(model->GetOrCreate<RevIntRepository>()),
       assigned_tree_lbds_(/*window_size=*/8) {}
 
+SharedTreeWorker::~SharedTreeWorker() {
+  ClearAssignedTreeDecisionsAndImplications();
+}
+
 std::vector<Literal>& SharedTreeWorker::DecisionReason(int level) {
   CHECK_LE(level, assigned_tree_decisions_.size());
   reason_.clear();
@@ -1066,7 +1078,7 @@ std::vector<Literal>& SharedTreeWorker::DecisionReason(int level) {
 }
 
 bool SharedTreeWorker::AddDecisionImplication(Literal lit, int level,
-                                              ClauseId clause_id) {
+                                              ClausePtr reason_clause) {
   CHECK_GT(level, 0);
   CHECK_NE(lit.Index(), kNoLiteralIndex);
   CHECK(!sat_solver_->Assignment().LiteralIsTrue(lit));
@@ -1077,14 +1089,13 @@ bool SharedTreeWorker::AddDecisionImplication(Literal lit, int level,
     if (lrat_proof_handler_ != nullptr) {
       // Use the fact that `reason` implies both `lit` and not(`lit`) to prove
       // that the tree can be closed.
-      const ClauseId closing_clause_id = clause_id_generator_->GetNextId();
-      std::vector<ClauseId> clause_ids;
-      clause_manager_->AppendClauseIdsFixing({lit}, &clause_ids);
-      clause_ids.push_back(clause_id);
-      lrat_proof_handler_->AddInferredClause(closing_clause_id,
-                                             DecisionReason(level), clause_ids,
+      const ClausePtr closing_clause = ClausePtr(reason);
+      std::vector<ClausePtr> proof;
+      clause_manager_->AppendClausesFixing({lit}, &proof);
+      proof.push_back(reason_clause);
+      lrat_proof_handler_->AddInferredClause(closing_clause, proof,
                                              /*exported=*/true);
-      lrat_proof_handler_->DeleteClause(closing_clause_id, {});
+      lrat_proof_handler_->DeleteClause(closing_clause);
     }
     trail_->MutableConflict()->assign(reason.begin(), reason.end());
     manager_->CloseTree(assigned_tree_, level);
@@ -1093,7 +1104,7 @@ bool SharedTreeWorker::AddDecisionImplication(Literal lit, int level,
   }
   VLOG(2) << "Learned shared clause";
   trail_->GetEmptyVectorToStoreReason()->assign(reason.begin(), reason.end());
-  return trail_->EnqueueWithStoredReason(clause_id, lit);
+  return trail_->EnqueueWithStoredReason(lit, reason_clause);
 }
 
 bool SharedTreeWorker::AddImplications() {
@@ -1106,15 +1117,17 @@ bool SharedTreeWorker::AddImplications() {
   rev_num_processed_implications_.resize(level + 1, 0);
   auto& num_processed_implications = rev_num_processed_implications_[level];
   reversible_int_repository_->SaveState(&num_processed_implications);
-  absl::Span<const std::pair<Literal, ClauseId>> implied_literals =
+  absl::Span<const std::pair<Literal, ClausePtr>> implied_literals =
       absl::MakeConstSpan(assigned_tree_implications_[level - 1])
           .subspan(num_processed_implications);
   bool added_clause = false;
-  for (const auto& [implied, clause_id] : implied_literals) {
+  for (const auto& [implied, implication_clause] : implied_literals) {
     ++num_processed_implications;
     if (sat_solver_->Assignment().LiteralIsTrue(implied)) continue;
     added_clause = true;
-    if (!AddDecisionImplication(implied, level, clause_id)) return true;
+    if (!AddDecisionImplication(implied, level, implication_clause)) {
+      return true;
+    }
   }
   if (objective_ != nullptr &&
       objective_->objective_var != kNoIntegerVariable) {
@@ -1125,7 +1138,7 @@ bool SharedTreeWorker::AddImplications() {
         encoder_->GetOrCreateAssociatedLiteral(IntegerLiteral::GreaterOrEqual(
             objective_->objective_var, assigned_tree_.ObjectiveLb(level)));
     if (!sat_solver_->Assignment().LiteralIsTrue(obj_lit)) {
-      AddDecisionImplication(obj_lit, level, kNoClauseId);
+      AddDecisionImplication(obj_lit, level, kNullClausePtr);
       return true;
     }
   }
@@ -1136,15 +1149,15 @@ bool SharedTreeWorker::AddImplications() {
 void SharedTreeWorker::ClearAssignedTreeDecisionsAndImplications() {
   // Delete all LRAT clauses corresponding to the assigned tree implications,
   // which are deleted too. Note that there is one LRAT proof per worker. Each
-  // proof uses its local clause IDs, and there is no global clause ID space.
+  // proof uses its local clauses, and there is no global clauses space.
   // Individual proofs can be merged at the end of the solve, if UNSAT. In this
   // case clause deletions of individual proofs are ignored until the clause is
   // no longer needed by any other partial proof. Hence it is safe to delete the
   // clauses here, even if they are still needed in the SharedTreeManager.
   if (lrat_proof_handler_ != nullptr) {
     for (const auto& implications : assigned_tree_implications_) {
-      for (const auto& [literal, clause_id] : implications) {
-        lrat_proof_handler_->DeleteClause(clause_id, {});
+      for (const auto& [literal, clause] : implications) {
+        lrat_proof_handler_->DeleteClause(clause);
       }
     }
   }
@@ -1164,7 +1177,8 @@ bool SharedTreeWorker::SyncWithLocalTrail() {
     if (!helper_->BeforeTakingDecision()) return false;
     const int level = sat_solver_->CurrentDecisionLevel();
     if (lrat_proof_handler_ != nullptr) {
-      trail_implication_clauses_.resize(reversible_trail_index_, kNoClauseId);
+      trail_implication_clauses_.resize(reversible_trail_index_,
+                                        kNullClausePtr);
     }
     if (parameters_->shared_tree_worker_enable_trail_sharing() && level > 0 &&
         level <= assigned_tree_.MaxLevel() &&
@@ -1192,7 +1206,7 @@ bool SharedTreeWorker::SyncWithLocalTrail() {
       // index order, and reuse the previously added clauses to prove the new
       // ones (to avoid a quadratic complexity).
       if (lrat_proof_handler_ != nullptr) {
-        trail_implication_clauses_.resize(trail_->Index(), kNoClauseId);
+        trail_implication_clauses_.resize(trail_->Index(), kNullClausePtr);
         for (int i = new_implication_trail_indices.size() - 1; i >= 0; --i) {
           const int new_trail_index = new_implication_trail_indices[i];
           const Literal lit = (*trail_)[new_trail_index];
@@ -1218,11 +1232,11 @@ bool SharedTreeWorker::SyncWithLocalTrail() {
       // Add the LRAT inferred clause "current decisions => not(next_decision)"
       // so that it can be imported in SharedTreeManager to close the tree. We
       // can delete it right away since we don't need it in the worker itself.
-      const ClauseId clause_id =
+      const ClausePtr implication =
           AddLratClauseAndProofForImplication(next_decision.Negated(), level);
       manager_->CloseTree(assigned_tree_, level + 1);
       if (lrat_proof_handler_ != nullptr) {
-        lrat_proof_handler_->DeleteClause(clause_id, {});
+        lrat_proof_handler_->DeleteClause(implication);
       }
       ClearAssignedTreeDecisionsAndImplications();
       sat_solver_->Backtrack(0);
@@ -1233,11 +1247,11 @@ bool SharedTreeWorker::SyncWithLocalTrail() {
         // order to remove `next_decision` from these implications. Each new
         // clause is proved with the old one, combined with the clause that the
         // current decisions imply the next one.
-        const ClauseId clause_id =
+        const ClausePtr decision_implication =
             AddLratClauseAndProofForImplication(next_decision, level);
         if (level > 0) {
           assigned_tree_implications_[level - 1].push_back(
-              {next_decision, clause_id});
+              {next_decision, decision_implication});
         }
         std::vector<Literal> implication;
         for (int i = 0; i < level; ++i) {
@@ -1247,15 +1261,20 @@ bool SharedTreeWorker::SyncWithLocalTrail() {
           if (l != level) {
             implication.push_back(assigned_tree_decisions_[l].Negated());
           }
-          for (auto& [lit, id] : assigned_tree_implications_[l]) {
-            const ClauseId old_id = id;
-            id = clause_id_generator_->GetNextId();
+          for (auto& [lit, implication_clause] :
+               assigned_tree_implications_[l]) {
+            const ClausePtr old_clause = implication_clause;
             implication.push_back(lit);
+            implication_clause = ClausePtr(implication);
             lrat_proof_handler_->AddInferredClause(
-                id, implication, {clause_id, old_id}, /*exported=*/true);
-            lrat_proof_handler_->DeleteClause(old_id, {});
+                implication_clause, {decision_implication, old_clause},
+                /*exported=*/true);
+            lrat_proof_handler_->DeleteClause(old_clause);
             implication.pop_back();
           }
+        }
+        if (level == 0) {
+          lrat_proof_handler_->DeleteClause(decision_implication);
         }
       }
       assigned_tree_.SetLevelImplied(level + 1);
@@ -1264,6 +1283,10 @@ bool SharedTreeWorker::SyncWithLocalTrail() {
             assigned_tree_implications_[level - 1].end(),
             assigned_tree_implications_[level].begin(),
             assigned_tree_implications_[level].end());
+      } else if (lrat_proof_handler_ != nullptr) {
+        for (const auto& [literal, clause] : assigned_tree_implications_[0]) {
+          lrat_proof_handler_->DeleteClause(clause);
+        }
       }
       assigned_tree_implications_.erase(assigned_tree_implications_.begin() +
                                         level);
@@ -1274,33 +1297,33 @@ bool SharedTreeWorker::SyncWithLocalTrail() {
   return true;
 }
 
-ClauseId SharedTreeWorker::AddLratClauseAndProofForImplication(
+ClausePtr SharedTreeWorker::AddLratClauseAndProofForImplication(
     Literal literal, int level,
-    std::optional<absl::FunctionRef<ClauseId(int, int)>> root_literals) {
-  if (lrat_proof_handler_ == nullptr) return kNoClauseId;
+    std::optional<absl::FunctionRef<ClausePtr(int, int)>> root_literals) {
+  if (lrat_proof_handler_ == nullptr) return kNullClausePtr;
 
   CHECK_LE(level, assigned_tree_decisions_.size());
-  const ClauseId clause_id = clause_id_generator_->GetNextId();
-  std::vector<Literal>& implication = DecisionReason(level);
-  implication.push_back(literal);
-  std::vector<ClauseId> clause_ids;
-  clause_manager_->AppendClauseIdsFixing(
-      {literal}, &clause_ids, /*decision=*/kNoLiteralIndex, root_literals);
-  lrat_proof_handler_->AddInferredClause(clause_id, implication, clause_ids,
+  std::vector<Literal>& literals = DecisionReason(level);
+  literals.push_back(literal);
+  const ClausePtr implication = ClausePtr(literals);
+  std::vector<ClausePtr> proof;
+  clause_manager_->AppendClausesFixing(
+      {literal}, &proof, /*decision=*/kNoLiteralIndex, root_literals);
+  lrat_proof_handler_->AddInferredClause(implication, proof,
                                          /*exported=*/true);
-  return clause_id;
+  return implication;
 }
 
-ClauseId SharedTreeWorker::ImportLratClauseForImplication(Literal literal,
-                                                          int level) {
-  if (lrat_proof_handler_ == nullptr) return kNoClauseId;
+ClausePtr SharedTreeWorker::ImportLratClauseForImplication(Literal literal,
+                                                           int level) {
+  if (lrat_proof_handler_ == nullptr) return kNullClausePtr;
 
   CHECK_LE(level, assigned_tree_decisions_.size());
-  const ClauseId clause_id = clause_id_generator_->GetNextId();
-  std::vector<Literal>& implication = DecisionReason(level);
-  implication.push_back(literal);
-  lrat_proof_handler_->AddImportedClause(clause_id, implication);
-  return clause_id;
+  std::vector<Literal>& literals = DecisionReason(level);
+  literals.push_back(literal);
+  const ClausePtr implication = ClausePtr(literals);
+  lrat_proof_handler_->AddImportedClause(implication);
+  return implication;
 }
 
 bool SharedTreeWorker::NextDecision(LiteralIndex* decision_index) {
@@ -1431,7 +1454,7 @@ bool SharedTreeWorker::SyncWithSharedTree() {
   for (int level = 1; level <= assigned_tree_.MaxLevel(); ++level) {
     assigned_tree_decisions_.push_back(
         DecodeDecision(assigned_tree_.Decision(level)));
-    std::vector<std::pair<Literal, ClauseId>> implications;
+    std::vector<std::pair<Literal, ClausePtr>> implications;
     for (const ProtoLiteral& impl : assigned_tree_.Implications(level)) {
       const Literal lit = DecodeDecision(impl);
       implications.emplace_back(lit,
@@ -1509,11 +1532,11 @@ bool SharedTreeWorker::CheckLratInvariants() {
       CHECK_EQ(assigned_tree_decisions_[i],
                DecodeDecision(assigned_tree_.Decision(level)));
       absl::flat_hash_set<Literal> implications;
-      for (auto& [lit, id] : assigned_tree_implications_[i]) {
+      for (auto& [lit, clause] : assigned_tree_implications_[i]) {
         implications.insert(lit);
         std::vector<Literal>& expected = DecisionReason(level);
         expected.push_back(lit);
-        CheckEqual(lrat_proof_handler_->GetLratClauseForDebug(id), expected);
+        CheckEqual(clause.GetLiterals(), expected);
       }
       for (int j = 0; j < assigned_tree_.Implications(level).size(); ++j) {
         const ProtoLiteral lit = assigned_tree_.Implications(level)[j];

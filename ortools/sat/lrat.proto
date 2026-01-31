@@ -26,6 +26,8 @@ package operations_research.sat;
 message LratImportedClause {
   optional int64 clause_id = 1;
   repeated int32 literals = 2 [packed = true];
+  // If present, the 1-based index of the clause in the input CNF file.
+  optional int64 one_based_cnf_index = 3;
 }
 
 // An LRAT inferred clause.
@@ -36,20 +38,21 @@ message LratInferredClause {
   // Clauses which become unit and possibly empty if all the `literals` are
   // assumed to be false (verification stops at the first empty clause). This
   // list must be in unit propagation order. See LratChecker for more details.
-  repeated int64 unit_ids = 3 [packed = true];
+  repeated int64 rup_clause_ids = 3 [packed = true];
 
-  // If `rat_infos` is empty, the last `unit_ids` clause must become empty after
-  // unit propagation. If the last `unit_ids` clause does not become empty by
-  // unit propagation, then `rat_infos` must contain all the clauses which
-  // contain the negation of the first `literals` (called the pivot 'p') -- and
-  // no other clauses. Moreover, for each r in `rat_infos`, all the `r.unit_ids`
-  // clauses must become unit and eventually empty if all the literals of the
-  // `r.resolvant_id` clause (minus ~p), plus those in `literals`, are assumed
-  // to be false (this list must be in unit propagation order; verification
-  // stops at the first empty clause). See LratChecker for more details.
+  // If `rat_infos` is empty, the last `rup_clause_ids` clause must become empty
+  // after unit propagation. If the last `rup_clause_ids` clause does not become
+  // empty by unit propagation, then `rat_infos` must contain all the clauses
+  // which contain the negation of the first `literals` (called the pivot 'p')
+  // -- and no other clauses. Moreover, for each r in `rat_infos`, all the
+  // `r.rup_clause_ids` clauses must become unit and eventually empty if all the
+  // literals of the `r.resolvant_id` clause (minus ~p), plus those in
+  // `literals`, are assumed to be false (this list must be in unit propagation
+  // order; verification stops at the first empty clause). See LratChecker for
+  // more details.
   message RatInfo {
     optional int64 resolvant_id = 1;
-    repeated int64 unit_ids = 2 [packed = true];
+    repeated int64 rup_clause_ids = 2 [packed = true];
   }
   repeated RatInfo rat_infos = 4;
 

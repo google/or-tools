@@ -933,8 +933,7 @@ std::vector<SatParameters> GetFullWorkerParameters(
     }
     // As of November 2025, we don't support any LP reasoning when producing an
     // UNSAT proof.
-    if ((params.check_lrat_proof() || params.output_lrat_proof() ||
-         params.check_drat_proof() || params.output_drat_proof()) &&
+    if ((params.check_lrat_proof() || params.output_lrat_proof()) &&
         params.linearization_level() > 1) {
       continue;
     }

@@ -418,6 +418,15 @@ void IntegerConflictResolution::ComputeFirstUIPConflict(
       // integer_literal. This can be disabled, but it should lead to better
       // reason hopefully.
       if (is_only_one_left_at_top_level || uip_found) {
+        // We don't want trivial literal here.
+        //
+        // TODO(user): Deal with literal falling in holes? the situation is
+        // not clear.
+        const IntegerLiteral needed_lit =
+            IntegerLiteral::GreaterOrEqual(i_lit.var, bound_to_explain);
+        DCHECK(!integer_trail_->IsTrueAtLevelZero(needed_lit));
+        DCHECK(!integer_trail_->IsTrueAtLevelZero(needed_lit.Negated()));
+
         // We only need to explain var >= bound_to_explain.
         // We have the explanation for i_lit.
         IntegerValue associated_bound;
@@ -425,16 +434,32 @@ void IntegerConflictResolution::ComputeFirstUIPConflict(
             integer_encoder_->SearchForLiteralAtOrAfter(
                 IntegerLiteral::GreaterOrEqual(i_lit.var, bound_to_explain),
                 &associated_bound);
-        if (lit_index != kNoLiteralIndex &&
-            associated_bound >= bound_to_explain &&
-            associated_bound <= i_lit.bound) {
+
+        if (lit_index == kNoLiteralIndex) {
+          IntegerValue test_bound;
+          const LiteralIndex test_index =
+              integer_encoder_->SearchForLiteralAtOrBefore(
+                  IntegerLiteral::GreaterOrEqual(i_lit.var, bound_to_explain),
+                  &test_bound);
+          if (test_index != kNoLiteralIndex && test_bound == bound_to_explain) {
+            LOG(FATAL) << top_index.level << " BUG " << i_lit.var
+                       << " >= " << bound_to_explain
+                       << " Not AtOrAfter, but at or before return"
+                       << Literal(test_index) << " var >=" << test_bound
+                       << " | " << integer_trail_->VarDebugString(i_lit.var);
+          }
+        }
+
+        if (lit_index != kNoLiteralIndex && associated_bound <= i_lit.bound) {
+          CHECK_GE(associated_bound, bound_to_explain);
           const Literal lit(lit_index);
 
           IntegerValue test_bound;
           const LiteralIndex test_index =
               integer_encoder_->SearchForLiteralAtOrBefore(i_lit, &test_bound);
-          if (test_index != kNoLiteralIndex)
+          if (test_index != kNoLiteralIndex) {
             CHECK_LE(associated_bound, test_bound);
+          }
 
           // Lets do more sanity_check before just using this literal.
           // Instead. Since we output it right away. we should be good.
@@ -461,35 +486,42 @@ void IntegerConflictResolution::ComputeFirstUIPConflict(
                    top_index.level > sat_solver_->AssumptionLevel() &&
                    is_only_one_left_at_top_level && !uip_found) {
           // Lets create a new associated literal and use it as the UIP.
+          // Note that we should always create a new fresh literal here.
           //
           // TODO(user): Note that we disabled this with assumptions otherwise
           // we might have a core with new literal !
+          const int num_bools = trail_->NumVariables();
           const Literal new_lit =
               integer_encoder_->GetOrCreateAssociatedLiteral(
                   IntegerLiteral::GreaterOrEqual(i_lit.var, bound_to_explain));
+          CHECK_EQ(new_lit.Variable().value(), num_bools);
 
-          // This should always be true.
-          // TODO(user): Why is it assigned sometimes and not always?
-          if (!trail_->Assignment().LiteralIsAssigned(new_lit)) {
-            // Using a decision should work as we will backtrack right away.
-            trail_->EnqueueSearchDecision(new_lit);
+          // TODO(user): This can happen is some rare corner case, we just skip.
+          if (!trail_->Assignment().LiteralIsFalse(new_lit)) {
+            // The literal can be true if we have other encoding literal at true
+            // that implies it. However, if we only have an integer literal that
+            // implies it, the "integer_encoder_" do not have access to
+            // integer_trail_ (it should probably be split) and it cannot set it
+            // to true.
+            if (!trail_->Assignment().LiteralIsAssigned(new_lit)) {
+              // Using a decision should work as we will backtrack right away.
+              trail_->EnqueueSearchDecision(new_lit);
+            }
+
+            // It should be true.
+            CHECK(trail_->Assignment().LiteralIsTrue(new_lit));
+
+            const auto& info = trail_->Info(new_lit.Variable());
+            CHECK_GE(info.level, top_index.level);
+            CHECK_EQ((*trail_)[info.trail_index], new_lit);
+            const GlobalTrailIndex new_top{info.level, info.trail_index};
+
+            tmp_bool_index_seen_.Set(info.trail_index);
+            data.bound = kMinIntegerValue;
+
+            top_index = new_top;
+            ++num_created_1uip_bool_;
           }
-
-          // It should be true.
-          CHECK(trail_->Assignment().LiteralIsTrue(new_lit))
-              << associated_bound << " " << bound_to_explain << " "
-              << i_lit.bound << " " << lit_index << " new " << new_lit;
-
-          const auto& info = trail_->Info(new_lit.Variable());
-          CHECK_GE(info.level, top_index.level);
-          CHECK_EQ((*trail_)[info.trail_index], new_lit);
-          const GlobalTrailIndex new_top{info.level, info.trail_index};
-
-          tmp_bool_index_seen_.Set(info.trail_index);
-          data.bound = kMinIntegerValue;
-
-          top_index = new_top;
-          ++num_created_1uip_bool_;
         }
       }
     }

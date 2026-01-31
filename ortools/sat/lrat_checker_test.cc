@@ -13,6 +13,11 @@
 
 #include "ortools/sat/lrat_checker.h"
 
+#include <memory>
+#include <vector>
+
+#include "absl/memory/memory.h"
+#include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
@@ -23,316 +28,415 @@ namespace operations_research {
 namespace sat {
 namespace {
 
+class ClauseFactory {
+ public:
+  ClausePtr NewClause(absl::Span<const int> literals) {
+    const ClausePtr clause = ClausePtr(Literals(literals));
+    sat_clauses_.push_back(absl::WrapUnique(clause.GetSatClause()));
+    return clause;
+  }
+
+ private:
+  std::vector<std::unique_ptr<SatClause>> sat_clauses_;
+};
+
 TEST(LratCheckerTest, LiteralEquivalentToItsNegationIsUnsat) {
   Model model;
-  LratChecker& checker = *model.GetOrCreate<LratChecker>();
-  checker.AddProblemClause(ClauseId(1), Literals({-1, +2}));  // +1 => +2
-  checker.AddProblemClause(ClauseId(2), Literals({-2, -1}));  // +2 => -1
-  checker.AddProblemClause(ClauseId(3), Literals({+1, +2}));  // -1 => +2
-  checker.AddProblemClause(ClauseId(4), Literals({-2, +1}));  // +2 => +1
+  ClauseFactory factory;
+  const ClausePtr c1 = factory.NewClause({-1, +2});  // +1 => +2
+  const ClausePtr c2 = factory.NewClause({-2, -1});  // +2 => -1
+  const ClausePtr c3 = factory.NewClause({+1, +2});  // -1 => +2
+  const ClausePtr c4 = factory.NewClause({-2, +1});  // +2 => +1
+  const ClausePtr c5 = factory.NewClause({-1});
+  const ClausePtr c6 = factory.NewClause({});
 
-  EXPECT_TRUE(checker.AddInferredClause(ClauseId(5), {Literals({-1})},
-                                        {ClauseId(1), ClauseId(2)}));
-  EXPECT_TRUE(checker.AddInferredClause(
-      ClauseId(6), {}, {ClauseId(5), ClauseId(3), ClauseId(4)}));
+  LratChecker& checker = *model.GetOrCreate<LratChecker>();
+  checker.AddProblemClause(c1);
+  checker.AddProblemClause(c2);
+  checker.AddProblemClause(c3);
+  checker.AddProblemClause(c4);
+
+  EXPECT_TRUE(checker.AddInferredClause(c5, {c1, c2}));
+  EXPECT_TRUE(checker.AddInferredClause(c6, {c5, c3, c4}));
   EXPECT_TRUE(checker.Check());
+}
+
+TEST(LratCheckerTest, RewriteClauseOk) {
+  Model model;
+  ClauseFactory factory;
+  const ClausePtr c1 = factory.NewClause({+1, +2, +3});
+  const ClausePtr c2 = factory.NewClause({-2, +4});  // +2 => +4
+  const ClausePtr c3 = factory.NewClause({-3, +5});  // +3 => +5
+
+  LratChecker& checker = *model.GetOrCreate<LratChecker>();
+  checker.AddProblemClause(c1);
+  checker.AddProblemClause(c2);
+  checker.AddProblemClause(c3);
+
+  EXPECT_TRUE(checker.RewriteClause(c1, Literals({+1, +4, +5}), {c2, c3, c1}));
+  EXPECT_EQ(checker.error_message(), "");
 }
 
 TEST(LratCheckerTest, ValidationStopsAtFirstEmptyClause) {
   Model model;
+  ClauseFactory factory;
+  const ClausePtr c1 = factory.NewClause({+1, -2});  // -1 => -2
+  const ClausePtr c2 = factory.NewClause({+2, +3});  // -2 => +3
+  const ClausePtr c3 = factory.NewClause({-3, +2});  // -3 => +2
+  const ClausePtr c4 = factory.NewClause({-2, +1});  // +2 => +1
+  const ClausePtr c5 = factory.NewClause({-1, +4});  // +1 => +4
+  const ClausePtr c6 = factory.NewClause({+1});
+
   LratChecker& checker = *model.GetOrCreate<LratChecker>();
-  checker.AddProblemClause(ClauseId(1), Literals({+1, -2}));  // -1 => -2
-  checker.AddProblemClause(ClauseId(2), Literals({+2, +3}));  // -2 => +3
-  checker.AddProblemClause(ClauseId(3), Literals({-3, +2}));  // -3 => +2
-  checker.AddProblemClause(ClauseId(4), Literals({-2, +1}));  // +2 => +1
-  checker.AddProblemClause(ClauseId(5), Literals({-1, +4}));  // +1 => +4
+  checker.AddProblemClause(c1);
+  checker.AddProblemClause(c2);
+  checker.AddProblemClause(c3);
+  checker.AddProblemClause(c4);
+  checker.AddProblemClause(c5);
 
   // not(a) => ... => a proves that a is true. If the content in the middle is
   // of the same form, not(b) => ... => b, then not(a) => not(b) => ... => b if
   // sufficient to prove a.
-  EXPECT_TRUE(checker.AddInferredClause(
-      ClauseId(6), {Literals({+1})}, {ClauseId(1), ClauseId(2), ClauseId(3)}));
+  EXPECT_TRUE(checker.AddInferredClause(c6, {c1, c2, c3}));
   // Using unneeded clauses after that is still valid (here not(a) => not(b) =>
   // c => b => a), even if these clauses would not become unit or empty if they
   // were processed.
-  EXPECT_TRUE(checker.AddInferredClause(
-      ClauseId(7), {Literals({+1})},
-      {ClauseId(1), ClauseId(2), ClauseId(3), ClauseId(4)}));
+  EXPECT_TRUE(checker.AddInferredClause(c6, {c1, c2, c3, c4}));
 }
 
 TEST(LratCheckerTest, CheckSuccessWithoutRatClauses) {
   // Example from Fig. 1 of 'Efficient Certified RAT Verification'.
   Model model;
-  LratChecker& checker = *model.GetOrCreate<LratChecker>();
-  checker.AddProblemClause(ClauseId(1), Literals({+1, +2, -3}));
-  checker.AddProblemClause(ClauseId(2), Literals({-1, -2, +3}));
-  checker.AddProblemClause(ClauseId(3), Literals({+2, +3, -4}));
-  checker.AddProblemClause(ClauseId(4), Literals({-2, -3, +4}));
-  checker.AddProblemClause(ClauseId(5), Literals({-1, -3, -4}));
-  checker.AddProblemClause(ClauseId(6), Literals({+1, +3, +4}));
-  checker.AddProblemClause(ClauseId(7), Literals({-1, +2, +4}));
-  checker.AddProblemClause(ClauseId(8), Literals({+1, -2, -4}));
+  ClauseFactory factory;
+  const ClausePtr c1 = factory.NewClause({+1, +2, -3});
+  const ClausePtr c2 = factory.NewClause({-1, -2, +3});
+  const ClausePtr c3 = factory.NewClause({+2, +3, -4});
+  const ClausePtr c4 = factory.NewClause({-2, -3, +4});
+  const ClausePtr c5 = factory.NewClause({-1, -3, -4});
+  const ClausePtr c6 = factory.NewClause({+1, +3, +4});
+  const ClausePtr c7 = factory.NewClause({-1, +2, +4});
+  const ClausePtr c8 = factory.NewClause({+1, -2, -4});
+  const ClausePtr c9 = factory.NewClause({+1, +2});
+  const ClausePtr c10 = factory.NewClause({+1, +3});
+  const ClausePtr c11 = factory.NewClause({+1});
+  const ClausePtr c12 = factory.NewClause({+2});
+  const ClausePtr c13 = factory.NewClause({});
 
-  EXPECT_TRUE(
-      checker.AddInferredClause(ClauseId(9), Literals({+1, +2}),
-                                {ClauseId(1), ClauseId(6), ClauseId(3)}));
-  checker.DeleteClauses({ClauseId(1)});
-  EXPECT_TRUE(
-      checker.AddInferredClause(ClauseId(10), Literals({+1, +3}),
-                                {ClauseId(9), ClauseId(8), ClauseId(6)}));
-  checker.DeleteClauses({ClauseId(6)});
-  EXPECT_TRUE(checker.AddInferredClause(
-      ClauseId(11), Literals({+1}),
-      {ClauseId(10), ClauseId(9), ClauseId(4), ClauseId(8)}));
+  LratChecker& checker = *model.GetOrCreate<LratChecker>();
+  checker.AddProblemClause(c1);
+  checker.AddProblemClause(c2);
+  checker.AddProblemClause(c3);
+  checker.AddProblemClause(c4);
+  checker.AddProblemClause(c5);
+  checker.AddProblemClause(c6);
+  checker.AddProblemClause(c7);
+  checker.AddProblemClause(c8);
+
+  EXPECT_TRUE(checker.AddInferredClause(c9, {c1, c6, c3}));
+  checker.DeleteClauses({c1});
+  EXPECT_TRUE(checker.AddInferredClause(c10, {c9, c8, c6}));
+  checker.DeleteClauses({c6});
+  EXPECT_TRUE(checker.AddInferredClause(c11, {c10, c9, c4, c8}));
   EXPECT_FALSE(checker.Check());
-  checker.DeleteClauses({ClauseId(10), ClauseId(9), ClauseId(8)});
-  EXPECT_TRUE(checker.AddInferredClause(
-      ClauseId(12), Literals({+2}),
-      {ClauseId(11), ClauseId(7), ClauseId(5), ClauseId(3)}));
+  checker.DeleteClauses({c10, c9, c8});
+  EXPECT_TRUE(checker.AddInferredClause(c12, {c11, c7, c5, c3}));
   EXPECT_FALSE(checker.Check());
-  checker.DeleteClauses({ClauseId(7), ClauseId(3)});
-  EXPECT_TRUE(checker.AddInferredClause(
-      ClauseId(13), {},
-      {ClauseId(11), ClauseId(12), ClauseId(2), ClauseId(4), ClauseId(5)}));
+  checker.DeleteClauses({c7, c3});
+  EXPECT_TRUE(checker.AddInferredClause(c13, {c11, c12, c2, c4, c5}));
   EXPECT_TRUE(checker.Check());
 }
 
 TEST(LratCheckerTest, CheckSuccessWithRatClause) {
   // Example from Fig. 2 of 'Efficient Certified RAT Verification'.
   Model model;
-  LratChecker& checker = *model.GetOrCreate<LratChecker>();
-  checker.AddProblemClause(ClauseId(1), Literals({+1, +2, -3}));
-  checker.AddProblemClause(ClauseId(2), Literals({-1, -2, +3}));
-  checker.AddProblemClause(ClauseId(3), Literals({+2, +3, -4}));
-  checker.AddProblemClause(ClauseId(4), Literals({-2, -3, +4}));
-  checker.AddProblemClause(ClauseId(5), Literals({-1, -3, -4}));
-  checker.AddProblemClause(ClauseId(6), Literals({+1, +3, +4}));
-  checker.AddProblemClause(ClauseId(7), Literals({-1, +2, +4}));
-  checker.AddProblemClause(ClauseId(8), Literals({+1, -2, -4}));
+  ClauseFactory factory;
+  const ClausePtr c1 = factory.NewClause({+1, +2, -3});
+  const ClausePtr c2 = factory.NewClause({-1, -2, +3});
+  const ClausePtr c3 = factory.NewClause({+2, +3, -4});
+  const ClausePtr c4 = factory.NewClause({-2, -3, +4});
+  const ClausePtr c5 = factory.NewClause({-1, -3, -4});
+  const ClausePtr c6 = factory.NewClause({+1, +3, +4});
+  const ClausePtr c7 = factory.NewClause({-1, +2, +4});
+  const ClausePtr c8 = factory.NewClause({+1, -2, -4});
+  const ClausePtr c9 = factory.NewClause({+1});
+  const ClausePtr c10 = factory.NewClause({+2});
+  const ClausePtr c11 = factory.NewClause({});
 
-  EXPECT_TRUE(checker.AddInferredClause(
-      ClauseId(9), Literals({+1}), /*unit_ids=*/{},
-      {LratChecker::RatIds{ClauseId(2), {ClauseId(6), ClauseId(8)}},
-       LratChecker::RatIds{ClauseId(5), {ClauseId(1), ClauseId(8)}},
-       LratChecker::RatIds{ClauseId(7), {ClauseId(6), ClauseId(1)}}}));
+  LratChecker& checker = *model.GetOrCreate<LratChecker>();
+  checker.EnableRatProofs();
+  checker.AddProblemClause(c1);
+  checker.AddProblemClause(c2);
+  checker.AddProblemClause(c3);
+  checker.AddProblemClause(c4);
+  checker.AddProblemClause(c5);
+  checker.AddProblemClause(c6);
+  checker.AddProblemClause(c7);
+  checker.AddProblemClause(c8);
+
+  EXPECT_TRUE(
+      checker.AddInferredClause(c9, /*rup_clauses=*/{},
+                                {LratChecker::RatClauses{c2, {c6, c8}},
+                                 LratChecker::RatClauses{c5, {c1, c8}},
+                                 LratChecker::RatClauses{c7, {c6, c1}}}));
   EXPECT_FALSE(checker.Check());
-  checker.DeleteClauses({ClauseId(8), ClauseId(6), ClauseId(1)});
-  EXPECT_TRUE(checker.AddInferredClause(
-      ClauseId(10), Literals({+2}),
-      {ClauseId(9), ClauseId(7), ClauseId(5), ClauseId(3)}));
+  checker.DeleteClauses({c8, c6, c1});
+  EXPECT_TRUE(checker.AddInferredClause(c10, {c9, c7, c5, c3}));
   EXPECT_FALSE(checker.Check());
-  checker.DeleteClauses({ClauseId(7), ClauseId(3)});
-  EXPECT_TRUE(checker.AddInferredClause(
-      ClauseId(11), {},
-      {ClauseId(9), ClauseId(10), ClauseId(2), ClauseId(4), ClauseId(5)}));
+  checker.DeleteClauses({c7, c3});
+  EXPECT_TRUE(checker.AddInferredClause(c11, {c9, c10, c2, c4, c5}));
   EXPECT_TRUE(checker.Check());
 }
 
 TEST(LratCheckerTest, CheckSuccessWithRatClausesExtensions) {
   Model model;
+  ClauseFactory factory;
+  const ClausePtr c1 = factory.NewClause({+1, +2, -3});
+  const ClausePtr c2 = factory.NewClause({-1, -2, +3});
+  const ClausePtr c3 = factory.NewClause({+2, +3, -4});
+  const ClausePtr c4 = factory.NewClause({-2, -3, +4});
+  const ClausePtr c5 = factory.NewClause({-1, -3, -4});
+  const ClausePtr c6 = factory.NewClause({+1, +3, +4});
+  const ClausePtr c7 = factory.NewClause({-1, +2, +4});
+  const ClausePtr c8 = factory.NewClause({+1, -2, -4});
+  const ClausePtr c9 = factory.NewClause({+1, +2});
+
   LratChecker& checker = *model.GetOrCreate<LratChecker>();
-  checker.AddProblemClause(ClauseId(1), Literals({+1, +2, -3}));
-  checker.AddProblemClause(ClauseId(2), Literals({-1, -2, +3}));
-  checker.AddProblemClause(ClauseId(3), Literals({+2, +3, -4}));
-  checker.AddProblemClause(ClauseId(4), Literals({-2, -3, +4}));
-  checker.AddProblemClause(ClauseId(5), Literals({-1, -3, -4}));
-  checker.AddProblemClause(ClauseId(6), Literals({+1, +3, +4}));
-  checker.AddProblemClause(ClauseId(7), Literals({-1, +2, +4}));
-  checker.AddProblemClause(ClauseId(8), Literals({+1, -2, -4}));
+  checker.EnableRatProofs();
+  checker.AddProblemClause(c1);
+  checker.AddProblemClause(c2);
+  checker.AddProblemClause(c3);
+  checker.AddProblemClause(c4);
+  checker.AddProblemClause(c5);
+  checker.AddProblemClause(c6);
+  checker.AddProblemClause(c7);
+  checker.AddProblemClause(c8);
 
   EXPECT_TRUE(checker.AddInferredClause(
       // Clause 1 becomes unit ({-3}).
-      ClauseId(9), Literals({+1, +2}), {ClauseId(1)},
+      c9, {c1},
       // clause 9 ∪ {+3} = {+1, +2, +3} has two complementary literals with
       // clause 2 (+1 and +2). Hence the unit propagation proof is not needed.
-      {LratChecker::RatIds{ClauseId(2), {}},
+      {LratChecker::RatClauses{c2, {}},
        // Likewise with clause 5 (+1 and +3).
-       LratChecker::RatIds{ClauseId(5), {}},
+       LratChecker::RatClauses{c5, {}},
        // If we assume that all the literals of clause 9 ∪ {+3} are false, as
        // well as all those of clause 7 except the negation of the pivot (i.e.,
        // {+2, +4}), then clause 6 is in conflict. But this would not be the
        // case if {+3}, propagated from clause 1 above, was ignored.
-       LratChecker::RatIds{ClauseId(7), {ClauseId(6)}}}));
+       LratChecker::RatClauses{c7, {c6}}}));
 }
 
 TEST(LratCheckerTest, ErrorStateIsSticky) {
   Model model;
+  ClauseFactory factory;
+  const ClausePtr c1 = factory.NewClause({+1, +2});
+  const ClausePtr c2 = factory.NewClause({-1, -2});
+  const ClausePtr c3 = factory.NewClause({+5, +6});
+
   LratChecker& checker = *model.GetOrCreate<LratChecker>();
-  EXPECT_TRUE(checker.AddProblemClause(ClauseId(1), Literals({+1, +2})));
-  EXPECT_FALSE(checker.AddInferredClause(ClauseId(2), Literals({-1, -2}), {}));
+  checker.EnableRatProofs();
+  EXPECT_TRUE(checker.AddProblemClause(c1));
+  EXPECT_FALSE(checker.AddInferredClause(c2, {}));
   // This clause is valid, but there was an error at a previous step.
-  EXPECT_FALSE(checker.AddProblemClause(ClauseId(3), Literals({+5, +6})));
+  EXPECT_FALSE(checker.AddProblemClause(c3));
   EXPECT_EQ(checker.error_message(),
-            "In clause 2: wrong number of resolvant IDs in RAT proof");
+            absl::StrCat("In clause ", c2,
+                         ": wrong number of resolvant clauses in RAT proof"));
 }
 
 TEST(LratCheckerTest, CompleteStateIsSticky) {
   Model model;
+  ClauseFactory factory;
+  const ClausePtr c1 = factory.NewClause({+1});
+  const ClausePtr c2 = factory.NewClause({-1});
+  const ClausePtr c3 = factory.NewClause({});
+  const ClausePtr c4 = factory.NewClause({-1, -2});
+
   LratChecker& checker = *model.GetOrCreate<LratChecker>();
-  EXPECT_TRUE(checker.AddProblemClause(ClauseId(1), Literals({})));
+  checker.EnableRatProofs();
+  EXPECT_TRUE(checker.AddProblemClause(c1));
+  EXPECT_TRUE(checker.AddProblemClause(c2));
+  EXPECT_TRUE(checker.AddInferredClause(c3, {c1, c2}));
   EXPECT_TRUE(checker.Check());
-  // This clause is invalid (ID already used), but it is ignored since the proof
-  // is already complete.
-  EXPECT_TRUE(checker.AddProblemClause(ClauseId(1), Literals({+1, +2})));
+  // This clause is invalid (wrong number of resolvant clauses), but it is
+  // ignored since the proof is already complete.
+  EXPECT_TRUE(checker.AddInferredClause(c4, {}));
   EXPECT_EQ(checker.error_message(), "");
-}
-
-TEST(LratCheckerTest, ClauseWithTwoComplementaryLiteralsIsIgnored) {
-  Model model;
-  LratChecker& checker = *model.GetOrCreate<LratChecker>();
-  EXPECT_TRUE(checker.AddProblemClause(ClauseId(1), Literals({+1, +2, -1})));
-  // The clause ID is the same as the previous one, but this should be OK as the
-  // previous clause should not be ignored.
-  EXPECT_TRUE(checker.AddProblemClause(ClauseId(1), Literals({+3, +4})));
-}
-
-TEST(LratCheckerTest, UnknownUnitClauseId) {
-  Model model;
-  LratChecker& checker = *model.GetOrCreate<LratChecker>();
-  checker.AddProblemClause(ClauseId(1), Literals({+1, +2}));
-
-  EXPECT_FALSE(checker.AddInferredClause(ClauseId(2), Literals({+3, +4}),
-                                         {ClauseId(2)}));
-  EXPECT_EQ(checker.error_message(), "In clause 2: unit_id 2 not found");
 }
 
 TEST(LratCheckerTest, UnitClauseIdIsNotUnit) {
   Model model;
-  LratChecker& checker = *model.GetOrCreate<LratChecker>();
-  checker.AddProblemClause(ClauseId(1), Literals({+1, +2, +3}));
+  ClauseFactory factory;
+  const ClausePtr c1 = factory.NewClause({+1, +2, +3});
+  const ClausePtr c2 = factory.NewClause({+1});
 
-  EXPECT_FALSE(
-      checker.AddInferredClause(ClauseId(2), Literals({+1}), {ClauseId(1)}));
+  LratChecker& checker = *model.GetOrCreate<LratChecker>();
+  checker.AddProblemClause(c1);
+
+  EXPECT_FALSE(checker.AddInferredClause(c2, {c1}));
   EXPECT_THAT(checker.error_message(),
-              ::testing::HasSubstr("In clause 2: unit_id 1 is not unit"));
+              ::testing::HasSubstr(absl::StrCat(
+                  "In clause ", c2, ": rup_clause ", c1, " is not unit")));
 }
 
 TEST(LratCheckerTest, MissingPivotForRatProof) {
   Model model;
-  LratChecker& checker = *model.GetOrCreate<LratChecker>();
-  checker.AddProblemClause(ClauseId(1), Literals({+1, +2, +3}));
+  ClauseFactory factory;
+  const ClausePtr c1 = factory.NewClause({+1, +2, +3});
+  const ClausePtr c2 = factory.NewClause({});
 
-  EXPECT_FALSE(checker.AddInferredClause(
-      ClauseId(2), Literals({}), {}, {LratChecker::RatIds{ClauseId(1), {}}}));
+  LratChecker& checker = *model.GetOrCreate<LratChecker>();
+  checker.EnableRatProofs();
+  checker.AddProblemClause(c1);
+
+  EXPECT_FALSE(
+      checker.AddInferredClause(c2, {}, {LratChecker::RatClauses{c1, {}}}));
   EXPECT_EQ(checker.error_message(),
-            "In clause 2: missing pivot for RAT proof");
+            absl::StrCat("In clause ", c2, ": missing pivot for RAT proof"));
 }
 
 TEST(LratCheckerTest, MissingClauseInRatIds) {
   Model model;
-  LratChecker& checker = *model.GetOrCreate<LratChecker>();
-  checker.AddProblemClause(ClauseId(1), Literals({+1, +2, -3}));
-  checker.AddProblemClause(ClauseId(2), Literals({-1, -2, +3}));
+  ClauseFactory factory;
+  const ClausePtr c1 = factory.NewClause({+1, +2, -3});
+  const ClausePtr c2 = factory.NewClause({-1, -2, +3});
+  const ClausePtr c3 = factory.NewClause({+1, +2});
 
-  // If the last clause in `unit_ids` is not a conflict, the `rat` proof must be
-  // valid (here it is not, since clause 2 contains the negation of the pivot
-  // but is not listed).
-  EXPECT_FALSE(checker.AddInferredClause(ClauseId(3), Literals({+1, +2}),
-                                         {ClauseId(1)}));
+  LratChecker& checker = *model.GetOrCreate<LratChecker>();
+  checker.EnableRatProofs();
+  checker.AddProblemClause(c1);
+  checker.AddProblemClause(c2);
+
+  // If the last clause in `rup_clauses` is not a conflict, the `rat_clauses`
+  // proof must be valid (here it is not, since clause 2 contains the negation
+  // of the pivot but is not listed).
+  EXPECT_FALSE(checker.AddInferredClause(c3, {c1}));
   EXPECT_EQ(checker.error_message(),
-            "In clause 3: wrong number of resolvant IDs in RAT proof");
+            absl::StrCat("In clause ", c3,
+                         ": wrong number of resolvant clauses in RAT proof"));
 }
 
 TEST(LratCheckerTest, DuplicateRatResolvantId) {
   Model model;
-  LratChecker& checker = *model.GetOrCreate<LratChecker>();
-  checker.AddProblemClause(ClauseId(1), Literals({+1, +2, -3}));
-  checker.AddProblemClause(ClauseId(2), Literals({-1, -2, +3}));
-  checker.AddProblemClause(ClauseId(3), Literals({+2, +3, -4}));
-  checker.AddProblemClause(ClauseId(4), Literals({-2, -3, +4}));
-  checker.AddProblemClause(ClauseId(5), Literals({-1, -3, -4}));
-  checker.AddProblemClause(ClauseId(6), Literals({+1, +3, +4}));
-  checker.AddProblemClause(ClauseId(7), Literals({-1, +2, +4}));
-  checker.AddProblemClause(ClauseId(8), Literals({+1, -2, -4}));
+  ClauseFactory factory;
+  const ClausePtr c1 = factory.NewClause({+1, +2, -3});
+  const ClausePtr c2 = factory.NewClause({-1, -2, +3});
+  const ClausePtr c3 = factory.NewClause({+2, +3, -4});
+  const ClausePtr c4 = factory.NewClause({-2, -3, +4});
+  const ClausePtr c5 = factory.NewClause({-1, -3, -4});
+  const ClausePtr c6 = factory.NewClause({+1, +3, +4});
+  const ClausePtr c7 = factory.NewClause({-1, +2, +4});
+  const ClausePtr c8 = factory.NewClause({+1, -2, -4});
+  const ClausePtr c9 = factory.NewClause({+1});
 
-  EXPECT_FALSE(checker.AddInferredClause(
-      ClauseId(9), Literals({+1}), /*unit_ids=*/{},
-      {LratChecker::RatIds{ClauseId(2), {ClauseId(6), ClauseId(8)}},
-       LratChecker::RatIds{ClauseId(5), {ClauseId(1), ClauseId(8)}},
-       LratChecker::RatIds{ClauseId(5), {ClauseId(1), ClauseId(8)}}}));
-  EXPECT_EQ(checker.error_message(), "In clause 9: duplicate resolvant_id 5");
-}
-
-TEST(LratCheckerTest, UnknownRatResolvantId) {
-  Model model;
   LratChecker& checker = *model.GetOrCreate<LratChecker>();
-  checker.AddProblemClause(ClauseId(1), Literals({+1, +2}));
-  checker.AddProblemClause(ClauseId(2), Literals({-3, +4}));
+  checker.EnableRatProofs();
+  checker.AddProblemClause(c1);
+  checker.AddProblemClause(c2);
+  checker.AddProblemClause(c3);
+  checker.AddProblemClause(c4);
+  checker.AddProblemClause(c5);
+  checker.AddProblemClause(c6);
+  checker.AddProblemClause(c7);
+  checker.AddProblemClause(c8);
 
   EXPECT_FALSE(
-      checker.AddInferredClause(ClauseId(3), Literals({+3, +4}), {},
-                                {LratChecker::RatIds{ClauseId(3), {}}}));
-  EXPECT_EQ(checker.error_message(), "In clause 3: resolvant_id 3 not found");
+      checker.AddInferredClause(c9, /*rup_clauses=*/{},
+                                {LratChecker::RatClauses{c2, {c6, c8}},
+                                 LratChecker::RatClauses{c5, {c1, c8}},
+                                 LratChecker::RatClauses{c5, {c1, c8}}}));
+  EXPECT_EQ(checker.error_message(),
+            absl::StrCat("In clause ", c9, ": duplicate resolvant ", c5));
 }
 
 TEST(LratCheckerTest, MissingNegatedPivotInRatResolvant) {
   Model model;
+  ClauseFactory factory;
+  const ClausePtr c1 = factory.NewClause({+1, +2});
+  const ClausePtr c2 = factory.NewClause({-3, +4});
+  const ClausePtr c3 = factory.NewClause({+3, +4});
+
   LratChecker& checker = *model.GetOrCreate<LratChecker>();
-  checker.AddProblemClause(ClauseId(1), Literals({+1, +2}));
-  checker.AddProblemClause(ClauseId(2), Literals({-3, +4}));
+  checker.EnableRatProofs();
+  checker.AddProblemClause(c1);
+  checker.AddProblemClause(c2);
 
   EXPECT_FALSE(
-      checker.AddInferredClause(ClauseId(3), Literals({+3, +4}), {},
-                                {LratChecker::RatIds{ClauseId(1), {}}}));
+      checker.AddInferredClause(c3, {}, {LratChecker::RatClauses{c1, {}}}));
   EXPECT_EQ(checker.error_message(),
-            "In clause 3: missing negated pivot in resolvant_id 1");
-}
-
-TEST(LratCheckerTest, UnknownRatUnitId) {
-  Model model;
-  LratChecker& checker = *model.GetOrCreate<LratChecker>();
-  checker.AddProblemClause(ClauseId(1), Literals({+1, +2}));
-  checker.AddProblemClause(ClauseId(2), Literals({-3, +4}));
-
-  EXPECT_FALSE(checker.AddInferredClause(
-      ClauseId(3), Literals({+3, +4}), {},
-      {LratChecker::RatIds{ClauseId(2), {ClauseId(3)}}}));
-  EXPECT_EQ(checker.error_message(), "In clause 3: rat.unit_id 3 not found");
+            absl::StrCat("In clause ", c3,
+                         ": missing negated pivot in resolvant ", c1));
 }
 
 TEST(LratCheckerTest, RatUnitClauseIdIsNotUnit) {
   // Example from Fig. 2 of 'Efficient Certified RAT Verification'.
   Model model;
-  LratChecker& checker = *model.GetOrCreate<LratChecker>();
-  checker.AddProblemClause(ClauseId(1), Literals({+1, +2, -3}));
-  checker.AddProblemClause(ClauseId(2), Literals({-1, -2, +3}));
-  checker.AddProblemClause(ClauseId(3), Literals({+2, +3, -4}));
-  checker.AddProblemClause(ClauseId(4), Literals({-2, -3, +4}));
-  checker.AddProblemClause(ClauseId(5), Literals({-1, -3, -4}));
-  checker.AddProblemClause(ClauseId(6), Literals({+1, +3, +4}));
-  checker.AddProblemClause(ClauseId(7), Literals({-1, +2, +4}));
-  checker.AddProblemClause(ClauseId(8), Literals({+1, -2, -4}));
+  ClauseFactory factory;
+  const ClausePtr c1 = factory.NewClause({+1, +2, -3});
+  const ClausePtr c2 = factory.NewClause({-1, -2, +3});
+  const ClausePtr c3 = factory.NewClause({+2, +3, -4});
+  const ClausePtr c4 = factory.NewClause({-2, -3, +4});
+  const ClausePtr c5 = factory.NewClause({-1, -3, -4});
+  const ClausePtr c6 = factory.NewClause({+1, +3, +4});
+  const ClausePtr c7 = factory.NewClause({-1, +2, +4});
+  const ClausePtr c8 = factory.NewClause({+1, -2, -4});
+  const ClausePtr c9 = factory.NewClause({+1});
 
-  EXPECT_FALSE(checker.AddInferredClause(
-      ClauseId(9), Literals({+1}), /*unit_ids=*/{},
-      {LratChecker::RatIds{ClauseId(2), {ClauseId(7), ClauseId(8)}},
-       LratChecker::RatIds{ClauseId(5), {ClauseId(1), ClauseId(8)}},
-       LratChecker::RatIds{ClauseId(7), {ClauseId(6), ClauseId(1)}}}));
-  EXPECT_EQ(checker.error_message(), "In clause 9: rat.unit_id 7 is not unit");
+  LratChecker& checker = *model.GetOrCreate<LratChecker>();
+  checker.EnableRatProofs();
+  checker.AddProblemClause(c1);
+  checker.AddProblemClause(c2);
+  checker.AddProblemClause(c3);
+  checker.AddProblemClause(c4);
+  checker.AddProblemClause(c5);
+  checker.AddProblemClause(c6);
+  checker.AddProblemClause(c7);
+  checker.AddProblemClause(c8);
+
+  EXPECT_FALSE(
+      checker.AddInferredClause(c9, /*rup_clauses=*/{},
+                                {LratChecker::RatClauses{c2, {c7, c8}},
+                                 LratChecker::RatClauses{c5, {c1, c8}},
+                                 LratChecker::RatClauses{c7, {c6, c1}}}));
+  EXPECT_EQ(checker.error_message(),
+            absl::StrCat("In clause ", c9, ": rat_clauses.rup_clause ", c7,
+                         " is not unit"));
 }
 
 TEST(LratCheckerTest, LastRatUnitClauseIdIsNotAConflict) {
   // Example from Fig. 2 of 'Efficient Certified RAT Verification'.
   Model model;
+  ClauseFactory factory;
+  const ClausePtr c1 = factory.NewClause({+1, +2, -3});
+  const ClausePtr c2 = factory.NewClause({-1, -2, +3});
+  const ClausePtr c3 = factory.NewClause({+2, +3, -4});
+  const ClausePtr c4 = factory.NewClause({-2, -3, +4});
+  const ClausePtr c5 = factory.NewClause({-1, -3, -4});
+  const ClausePtr c6 = factory.NewClause({+1, +3, +4});
+  const ClausePtr c7 = factory.NewClause({-1, +2, +4});
+  const ClausePtr c8 = factory.NewClause({+1, -2, -4});
+  const ClausePtr c9 = factory.NewClause({+1});
+
   LratChecker& checker = *model.GetOrCreate<LratChecker>();
-  checker.AddProblemClause(ClauseId(1), Literals({+1, +2, -3}));
-  checker.AddProblemClause(ClauseId(2), Literals({-1, -2, +3}));
-  checker.AddProblemClause(ClauseId(3), Literals({+2, +3, -4}));
-  checker.AddProblemClause(ClauseId(4), Literals({-2, -3, +4}));
-  checker.AddProblemClause(ClauseId(5), Literals({-1, -3, -4}));
-  checker.AddProblemClause(ClauseId(6), Literals({+1, +3, +4}));
-  checker.AddProblemClause(ClauseId(7), Literals({-1, +2, +4}));
-  checker.AddProblemClause(ClauseId(8), Literals({+1, -2, -4}));
+  checker.EnableRatProofs();
+  checker.AddProblemClause(c1);
+  checker.AddProblemClause(c2);
+  checker.AddProblemClause(c3);
+  checker.AddProblemClause(c4);
+  checker.AddProblemClause(c5);
+  checker.AddProblemClause(c6);
+  checker.AddProblemClause(c7);
+  checker.AddProblemClause(c8);
 
   EXPECT_FALSE(checker.AddInferredClause(
-      ClauseId(9), Literals({+1}), /*unit_ids=*/{},
+      c9, /*rup_clauses=*/{},
       // Clause 6 does not become empty after propagation (clause 8 missing).
-      {LratChecker::RatIds{ClauseId(2), {ClauseId(6)}},
-       LratChecker::RatIds{ClauseId(5), {ClauseId(1), ClauseId(8)}},
-       LratChecker::RatIds{ClauseId(7), {ClauseId(6), ClauseId(1)}}}));
-  EXPECT_EQ(
-      checker.error_message(),
-      "In clause 9: last unit_id for rat.resolvant_id 2 is not a conflict");
+      {LratChecker::RatClauses{c2, {c6}}, LratChecker::RatClauses{c5, {c1, c8}},
+       LratChecker::RatClauses{c7, {c6, c1}}}));
+  EXPECT_EQ(checker.error_message(),
+            absl::StrCat("In clause ", c9,
+                         ": last rup_clause for rat_clauses.resolvant ", c2,
+                         " is not a conflict"));
 }
 
 }  // namespace

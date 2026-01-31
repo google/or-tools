@@ -316,6 +316,7 @@ LinearConstraintManager::ConstraintIndex LinearConstraintManager::Add(
   SimplifyConstraint(&ct);
   DivideByGCD(&ct);
   MakeAllVariablesPositive(&ct);
+  MakeFirstCoefficientPositive(&ct);
   DCHECK(DebugCheckConstraint(ct));
 
   // If configured, store instead the folded version of this constraint.
@@ -729,6 +730,7 @@ bool LinearConstraintManager::ChangeLp(glop::BasisState* solution_state,
       // of the variable is not changed by the simplification, and we only
       // reduce the coefficients at both end of the spectrum.
       DivideByGCD(&constraint_infos_[i].constraint);
+      MakeFirstCoefficientPositive(&constraint_infos_[i].constraint);
       DCHECK(DebugCheckConstraint(constraint_infos_[i].constraint));
 
       constraint_infos_[i].objective_parallelism_computed = false;

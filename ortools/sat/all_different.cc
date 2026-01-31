@@ -33,6 +33,7 @@
 #include "ortools/sat/sat_solver.h"
 #include "ortools/util/sort.h"
 #include "ortools/util/strong_integers.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -405,7 +406,7 @@ bool AllDifferentConstraint::Propagate() {
           }
         }
 
-        return trail_->EnqueueWithStoredReason(kNoClauseId, x_lit.Negated());
+        return trail_->EnqueueWithStoredReason(x_lit.Negated(), kNullClausePtr);
       }
     }
   }
@@ -417,6 +418,7 @@ AllDifferentBoundsPropagator::AllDifferentBoundsPropagator(
     absl::Span<const Literal> enforcement_literals,
     absl::Span<const AffineExpression> expressions, Model* model)
     : integer_trail_(*model->GetOrCreate<IntegerTrail>()),
+      time_limit_(model->GetOrCreate<TimeLimit>()),
       enforcement_helper_(*model->GetOrCreate<EnforcementHelper>()) {
   CHECK(!expressions.empty());
 
@@ -489,8 +491,15 @@ bool AllDifferentBoundsPropagator::PropagateLowerBounds() {
     entry.lb = integer_trail_.LowerBound(entry.expr);
     entry.ub = integer_trail_.UpperBound(entry.expr);
   }
-  IncrementalSort(bounds_.begin(), bounds_.end(),
-                  [](CachedBounds a, CachedBounds b) { return a.lb < b.lb; });
+
+  // TODO(user): The running time can be dominated by this sort. For the
+  // "permutation" case where we have as many bounds has possible lb, maybe a
+  // radix sort is more efficient.
+  time_limit_->AdvanceDeterministicTime(static_cast<double>(bounds_.size()) *
+                                        1e-8);
+  IncrementalSort(
+      bounds_.begin(), bounds_.end(),
+      [](const CachedBounds& a, const CachedBounds& b) { return a.lb < b.lb; });
 
   // We will split the affine epressions in vars sorted by lb in contiguous
   // subset with index of the form [start, start + num_in_window).

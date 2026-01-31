@@ -149,13 +149,10 @@ class CpModelMapping {
     return already_loaded_ct_.contains(ct);
   }
 
-  // Returns true if the given constraint is a "half-encoding" constraint. That
-  // is, if it is of the form (b => size 1 linear) but there is no (<=) side in
-  // the model. Such constraint are detected while we extract integer encoding
-  // and are cached here so that we can deal properly with them during the
-  // linear relaxation.
-  bool IsHalfEncodingConstraint(const ConstraintProto* ct) const {
-    return is_half_encoding_ct_.contains(ct);
+  // Returns true if the given constraint is a fully reified var == value or
+  // var >= value. We will deal with them differently during linearization.
+  bool IsLinear1EncodingConstraint(const ConstraintProto* ct) const {
+    return encoding_ct_.contains(ct);
   }
 
   // Note that both these functions returns positive reference or -1.
@@ -257,7 +254,11 @@ class CpModelMapping {
   // Set of constraints to ignore because they were already dealt with by
   // ExtractEncoding().
   absl::flat_hash_set<const ConstraintProto*> already_loaded_ct_;
-  absl::flat_hash_set<const ConstraintProto*> is_half_encoding_ct_;
+
+  // These are the linear1 that are either part of lit <=> X==value or lit <=> X
+  // >= value. Because they are fully reified, they will be processed
+  // differently during linearization.
+  absl::flat_hash_set<const ConstraintProto*> encoding_ct_;
 
   int64_t num_non_boolean_integers_ = 0;
 };

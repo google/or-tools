@@ -307,6 +307,20 @@ void MakeAllVariablesPositive(LinearConstraint* constraint) {
   }
 }
 
+void MakeFirstCoefficientPositive(LinearConstraint* constraint) {
+  const int size = constraint->num_terms;
+  if (size == 0 || constraint->coeffs[0] > 0) return;
+  CHECK_NE(constraint->coeffs[0], 0);
+
+  // Negate.
+  for (int i = 0; i < size; ++i) {
+    constraint->coeffs[i] = -constraint->coeffs[i];
+  }
+  const IntegerValue old_ub = constraint->ub;
+  constraint->ub = -constraint->lb;
+  constraint->lb = -old_ub;
+}
+
 double LinearExpression::LpValue(
     const util_intops::StrongVector<IntegerVariable, double>& lp_values) const {
   double result = ToDouble(offset);

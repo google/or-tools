@@ -209,7 +209,7 @@ bool Vivifier::RewriteClauseUsingCurrentDecisions(SatClause* clause) {
   });
 
   std::vector<Literal> new_clause;
-  std::vector<ClauseId> clause_ids;
+  std::vector<ClausePtr> proof;
 
   if (true_literal.has_value()) {
     new_clause.push_back(*true_literal);
@@ -230,7 +230,7 @@ bool Vivifier::RewriteClauseUsingCurrentDecisions(SatClause* clause) {
       // need the propagating clauses to prove this (assuming that all the
       // minimized clause literals are false will lead to a conflict on this
       // 'fixed to true' literal).
-      clause_manager_->AppendClauseIdsFixing({*true_literal}, &clause_ids);
+      clause_manager_->AppendClausesFixing({*true_literal}, &proof);
     }
   } else {
     // TODO(user): This happens rarely. Probably if we removed some false
@@ -250,14 +250,17 @@ bool Vivifier::RewriteClauseUsingCurrentDecisions(SatClause* clause) {
       // this (assuming that all the minimized clause literals are false will
       // lead to all the literals of the original clause fixed to false, which
       // is a conflict with the original clause).
-      clause_manager_->AppendClauseIdsFixing(false_literals, &clause_ids);
-      clause_ids.push_back(ClauseId(clause));
+      clause_manager_->AppendClausesFixing(false_literals, &proof);
+      proof.push_back(ClausePtr(clause));
     }
   }
 
   // This should only be called when the clause get shrinked.
-  CHECK_LT(new_clause.size(), clause->size())
-      << "lit is true: " << true_literal.has_value();
+  //
+  // TODO(user): this should be never true, except in some rare corner case
+  // where we add a conflict... It should go away if we handle the conflict
+  // right away rather than via a backtrack + repropagate.
+  if (new_clause.size() == clause->size()) return true;
 
   // We backtrack to the root level if we fix something as currently
   // InprocessingRewriteClause() cannot deal with fixing variable if we are at
@@ -267,8 +270,7 @@ bool Vivifier::RewriteClauseUsingCurrentDecisions(SatClause* clause) {
   }
 
   counters_.num_removed_literals += clause->size() - new_clause.size();
-  if (!clause_manager_->InprocessingRewriteClause(clause, new_clause,
-                                                  clause_ids)) {
+  if (!clause_manager_->InprocessingRewriteClause(clause, new_clause, proof)) {
     sat_solver_->NotifyThatModelIsUnsat();
     return false;
   }

@@ -198,7 +198,7 @@ class Inprocessing {
   int64_t last_num_fixed_variables_ = 0;
 
   // Temporary data for LRAT proofs.
-  std::vector<ClauseId> clause_ids_;
+  std::vector<ClausePtr> tmp_proof_;
 };
 
 // Implements "stamping" as described in "Efficient CNF Simplification based on
@@ -255,7 +255,7 @@ class StampingSimplifier {
   // (not(b) => not(z) => ... not(y) => not(x) => not(a)) otherwise. b must be a
   // descendant of a.
   void AppendImplicationChain(Literal a, Literal b,
-                              std::vector<ClauseId>& chain,
+                              std::vector<ClausePtr>& chain,
                               bool reversed = false);
 
   const VariablesAssignment& assignment_;
@@ -282,7 +282,7 @@ class StampingSimplifier {
   util_intops::StrongVector<LiteralIndex, bool> marked_;
   std::vector<LiteralIndex> dfs_stack_;
   // Temporary data for LRAT proofs.
-  std::vector<ClauseId> clause_ids_;
+  std::vector<ClausePtr> tmp_proof_;
 
   // First/Last visited index in a DFS of the tree above.
   util_intops::StrongVector<LiteralIndex, int> first_stamps_;
@@ -452,7 +452,6 @@ class GateCongruenceClosure {
         trail_(model->GetOrCreate<Trail>()),
         implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()),
         clause_manager_(model->GetOrCreate<ClauseManager>()),
-        clause_id_generator_(model->GetOrCreate<ClauseIdGenerator>()),
         lrat_proof_handler_(model->Mutable<LratProofHandler>()),
         shared_stats_(model->GetOrCreate<SharedStatistics>()),
         logger_(model->GetOrCreate<SolverLogger>()),
@@ -529,7 +528,6 @@ class GateCongruenceClosure {
   Trail* trail_;
   BinaryImplicationGraph* implication_graph_;
   ClauseManager* clause_manager_;
-  ClauseIdGenerator* clause_id_generator_;
   LratProofHandler* lrat_proof_handler_;
   SharedStatistics* shared_stats_;
   SolverLogger* logger_;

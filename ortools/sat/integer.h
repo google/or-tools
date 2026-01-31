@@ -617,6 +617,9 @@ class IntegerTrail final : public SatPropagator {
   // are updated with level zero propagation, but not holes.
   const Domain& InitialVariableDomain(IntegerVariable var) const;
 
+  // Useful for debugging the solver.
+  std::string VarDebugString(IntegerVariable var) const;
+
   // Takes the intersection with the current initial variable domain.
   //
   // TODO(user): There is some memory inefficiency if this is called many time

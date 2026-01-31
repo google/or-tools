@@ -88,8 +88,9 @@ class ModelCopy {
 
   // All these functions return false if the constraint is found infeasible.
   bool CopyBoolOr(const ConstraintProto& ct);
-  bool CopyBoolOrWithDupSupport(const ConstraintProto& ct, ClauseId clause_id);
-  bool FinishBoolOrCopy(ClauseId clause_id = kNoClauseId);
+  bool CopyBoolOrWithDupSupport(const ConstraintProto& ct,
+                                int one_based_cnf_index);
+  bool FinishBoolOrCopy();
 
   bool CopyBoolAnd(const ConstraintProto& ct);
   bool CopyBoolAndWithDupSupport(const ConstraintProto& ct);
@@ -137,8 +138,6 @@ class ModelCopy {
   void MaybeExpandNonAffineExpression(LinearExpressionProto* expr);
   void MaybeExpandNonAffineExpressions(LinearArgumentProto* linear_argument);
 
-  ClauseId NextInferredClauseId();
-
   PresolveContext* context_;
   LratProofHandler* lrat_proof_handler_;
 
@@ -156,14 +155,10 @@ class ModelCopy {
 
   ConstraintProto tmp_constraint_;
 
-  // The unit clause IDs of the literals which are fixed to true. Only used if
-  // lrat_proof_handler_ is not null.
-  absl::flat_hash_map<Literal, ClauseId> unit_clause_ids_;
   // Temp vectors used for LRAT.
   std::vector<Literal> temp_clause_;
   std::vector<Literal> temp_simplified_clause_;
-  std::vector<ClauseId> temp_clause_ids_;
-  uint64_t next_inferred_clause_id_;
+  std::vector<ClausePtr> temp_proof_;
 
   // Map used in GetOrCreateVariableForConjunction() to avoid creating duplicate
   // variables for identical sets of literals.

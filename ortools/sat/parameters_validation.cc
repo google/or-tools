@@ -106,7 +106,6 @@ std::string ValidateParameters(const SatParameters& params) {
 
   TEST_NOT_NAN(max_time_in_seconds);
   TEST_NOT_NAN(max_deterministic_time);
-  TEST_NOT_NAN(max_drat_time_in_seconds);
 
   // Parallelism.
   const int kMaxReasonableParallelism = 10'000;

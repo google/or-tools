@@ -411,7 +411,7 @@ TEST(PresolveContextTest, ExploitAtMostOneInObjectiveNegatedRef) {
     objective {
       vars: [ 0, 2, 3 ]
       coeffs: [ 5, 10, 4 ]
-      domain: [ 0, 15 ]  # We get 15 because 16 is not reachable.
+      domain: [ 0, 16 ]  # 16 is not reachable, but we don't see that.
       scaling_factor: 1
     }
   )pb");

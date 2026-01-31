@@ -853,14 +853,14 @@ void RegisterVariableBoundsLevelZeroImport(
             if (new_upper_bounds[i] == 0) lit = lit.Negated();
             if (trail->Assignment().LiteralIsTrue(lit)) continue;
             if (lrat_proof_handler != nullptr) {
-              lrat_proof_handler->AddImportedClause(ClauseId(lit), {lit});
+              lrat_proof_handler->AddImportedClause(ClausePtr(lit));
             }
             if (trail->Assignment().LiteralIsFalse(lit)) {
               if (lrat_proof_handler != nullptr) {
                 // Add the UNSAT proof.
                 lrat_proof_handler->AddInferredClause(
-                    ClauseId::EmptyClauseId(), {},
-                    {ClauseId(lit.Negated()), ClauseId(lit)});
+                    ClausePtr::EmptyClausePtr(),
+                    {ClausePtr(lit.Negated()), ClausePtr(lit)});
               }
               sat_solver->NotifyThatModelIsUnsat();
               return false;
@@ -1090,7 +1090,7 @@ void RegisterClausesExport(int id, SharedClausesManager* shared_clauses_manager,
   auto share_clause = [mapping, clause_stream, time_limit, lrat_proof_handler,
                        id, shared_clauses_manager, share_interval,
                        next_batch_dtime = -1.0, clause = std::vector<int>()](
-                          int lbd, ClauseId clause_id,
+                          int lbd, ClausePtr clause_ptr,
                           absl::Span<const Literal> literals) mutable {
     if (literals.size() >= UniqueClauseStream::kMinClauseSize &&
         literals.size() <= UniqueClauseStream::kMaxClauseSize) {
@@ -1102,7 +1102,7 @@ void RegisterClausesExport(int id, SharedClausesManager* shared_clauses_manager,
         clause.push_back(lit.IsPositive() ? var : NegatedRef(var));
       }
       if (clause_stream->Add(clause, lbd) && lrat_proof_handler != nullptr) {
-        lrat_proof_handler->ExportClause(clause_id, literals);
+        lrat_proof_handler->ExportClause(clause_ptr);
       }
     }
     const double elapsed_dtime = time_limit->GetElapsedDeterministicTime();
