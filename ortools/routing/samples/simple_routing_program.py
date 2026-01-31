@@ -17,7 +17,8 @@
 
 # [START import]
 from ortools.routing import enums_pb2
-from ortools.routing import pywraprouting
+from ortools.routing import parameters_pb2
+from ortools.routing.python import routing
 
 # [END import]
 
@@ -33,12 +34,12 @@ def main():
 
     # Create the routing index manager.
     # [START index_manager]
-    manager = pywraprouting.IndexManager(num_locations, num_vehicles, depot)
+    manager = routing.IndexManager(num_locations, num_vehicles, depot)
     # [END index_manager]
 
-    # Create Routing Model.
+    # Create Routing routing.
     # [START routing_model]
-    routing = pywraprouting.Model(manager)
+    routing_model = routing.Model(manager)
     # [END routing_model]
 
     # Create and register a transit callback.
@@ -46,21 +47,23 @@ def main():
     def distance_callback(from_index, to_index):
         """Returns the absolute difference between the two nodes."""
         # Convert from routing variable Index to user NodeIndex.
-        from_node = int(manager.IndexToNode(from_index))
-        to_node = int(manager.IndexToNode(to_index))
+        from_node = int(manager.index_to_node(from_index))
+        to_node = int(manager.index_to_node(to_index))
         return abs(to_node - from_node)
 
-    transit_callback_index = routing.RegisterTransitCallback(distance_callback)
+    transit_callback_index = routing_model.register_transit_callback(distance_callback)
     # [END transit_callback]
 
     # Define cost of each arc.
     # [START arc_cost]
-    routing.SetArcCostEvaluatorOfAllVehicles(transit_callback_index)
+    routing_model.set_arc_cost_evaluator_of_all_vehicles(transit_callback_index)
     # [END arc_cost]
 
     # Setting first solution heuristic.
     # [START parameters]
-    search_parameters = pywraprouting.DefaultRoutingSearchParameters()
+    search_parameters: parameters_pb2.RoutingSearchParameters = (
+        routing.default_routing_search_parameters()
+    )
     search_parameters.first_solution_strategy = (
         enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
     )  # pylint: disable=no-member
@@ -68,21 +71,23 @@ def main():
 
     # Solve the problem.
     # [START solve]
-    assignment = routing.SolveWithParameters(search_parameters)
+    assignment = routing_model.solve_with_parameters(search_parameters)
     # [END solve]
 
     # Print solution on console.
     # [START print_solution]
-    print(f"Objective: {assignment.ObjectiveValue()}")
-    index = routing.Start(0)
+    print(f"Objective: {assignment.objective_value()}")
+    index = routing_model.start(0)
     plan_output = "Route for vehicle 0:\n"
     route_distance = 0
-    while not routing.IsEnd(index):
-        plan_output += f"{manager.IndexToNode(index)} -> "
+    while not routing_model.is_end(index):
+        plan_output += f"{manager.index_to_node(index)} -> "
         previous_index = index
-        index = assignment.Value(routing.NextVar(index))
-        route_distance += routing.GetArcCostForVehicle(previous_index, index, 0)
-    plan_output += f"{manager.IndexToNode(index)}\n"
+        index = assignment.value(routing_model.next_var(index))
+        route_distance += routing_model.get_arc_cost_for_vehicle(
+            previous_index, index, 0
+        )
+    plan_output += f"{manager.index_to_node(index)}\n"
     plan_output += f"Distance of the route: {route_distance}m\n"
     print(plan_output)
     # [END print_solution]

@@ -25,14 +25,18 @@ Distances are in meters and time in minutes.
 
 # [START import]
 import functools
+from typing import Any, Dict
+
+from ortools.constraint_solver.python import constraint_solver
 from ortools.routing import enums_pb2
-from ortools.routing import pywraprouting
+from ortools.routing import parameters_pb2
+from ortools.routing.python import routing
 
 # [END import]
 
 
 # [START data_model]
-def create_data_model():
+def create_data_model() -> Dict[str, Any]:
     """Stores the data for the problem."""
     data = {}
     # Locations in block unit
@@ -114,7 +118,9 @@ def create_distance_evaluator(data):
 
     def distance_evaluator(manager, from_node, to_node):
         """Returns the manhattan distance between the two nodes."""
-        return distances_[manager.IndexToNode(from_node)][manager.IndexToNode(to_node)]
+        return distances_[manager.index_to_node(from_node)][
+            manager.index_to_node(to_node)
+        ]
 
     return distance_evaluator
 
@@ -125,15 +131,15 @@ def create_demand_evaluator(data):
 
     def demand_evaluator(manager, node):
         """Returns the demand of the current node."""
-        return demands_[manager.IndexToNode(node)]
+        return demands_[manager.index_to_node(node)]
 
     return demand_evaluator
 
 
-def add_capacity_constraints(routing, data, demand_evaluator_index):
+def add_capacity_constraints(routing_model, data, demand_evaluator_index):
     """Adds capacity constraint."""
     capacity = "Capacity"
-    routing.AddDimension(
+    routing_model.add_dimension(
         demand_evaluator_index,
         0,  # null capacity slack
         data["vehicle_capacity"],
@@ -177,39 +183,41 @@ def create_time_evaluator(data):
 
     def time_evaluator(manager, from_node, to_node):
         """Returns the total time between the two nodes."""
-        return total_time_[manager.IndexToNode(from_node)][manager.IndexToNode(to_node)]
+        return total_time_[manager.index_to_node(from_node)][
+            manager.index_to_node(to_node)
+        ]
 
     return time_evaluator
 
 
-def add_time_window_constraints(routing, manager, data, time_evaluator_index):
+def add_time_window_constraints(routing_model, manager, data, time_evaluator_index):
     """Add Global Span constraint."""
     time = "Time"
     horizon = 120
-    routing.AddDimension(
+    routing_model.add_dimension(
         time_evaluator_index,
         horizon,  # allow waiting time
         horizon,  # maximum time per vehicle
         False,  # don't force start cumul to zero
         time,
     )
-    time_dimension = routing.GetDimensionOrDie(time)
+    time_dimension = routing_model.get_dimension_or_die(time)
     # Add time window constraints for each location except depot
     # and 'copy' the slack var in the solution object (aka Assignment) to print it
     for location_idx, time_window in enumerate(data["time_windows"]):
         if location_idx == data["depot"]:
             continue
-        index = manager.NodeToIndex(location_idx)
-        time_dimension.CumulVar(index).SetRange(time_window[0], time_window[1])
-        routing.AddToAssignment(time_dimension.SlackVar(index))
+        index = manager.node_to_index(location_idx)
+        time_dimension.cumul_var(index).set_range(time_window[0], time_window[1])
+        # routing.AddToAssignment(time_dimension.SlackVar(index))
     # Add time window constraints for each vehicle start node
     # and 'copy' the slack var in the solution object (aka Assignment) to print it
     for vehicle_id in range(data["num_vehicles"]):
-        index = routing.Start(vehicle_id)
-        time_dimension.CumulVar(index).SetRange(
+        index = routing_model.start(vehicle_id)
+        time_dimension.cumul_var(index).set_range(
             data["time_windows"][0][0], data["time_windows"][0][1]
         )
-        routing.AddToAssignment(time_dimension.SlackVar(index))
+        # routing.AddToAssignment(time_dimension.SlackVar(index))
         # The time window at the end node was impliclty set in the time dimension
         # definition to be [0, horizon].
         # Warning: Slack var is not defined for vehicle end nodes and should not
@@ -218,71 +226,76 @@ def add_time_window_constraints(routing, manager, data, time_evaluator_index):
 
 # [START solution_printer]
 def print_solution(
-    data, manager, routing, assignment
-):  # pylint:disable=too-many-locals
+    data: Dict[str, Any],
+    manager: routing.IndexManager,
+    routing_model: routing.Model,
+    assignment: constraint_solver.Assignment,
+) -> None:  # pylint:disable=too-many-locals
     """Prints assignment on console."""
-    print(f"Objective: {assignment.ObjectiveValue()}")
+    print(f"Objective: {assignment.objective_value()}")
 
     print("Breaks:")
-    intervals = assignment.IntervalVarContainer()
-    for i in range(intervals.Size()):
-        brk = intervals.Element(i)
-        if brk.PerformedValue() == 1:
+    intervals = assignment.interval_var_container()
+    for i in range(intervals.size()):
+        brk = intervals.element(i)
+        if brk.performed_value() == 1:
             print(
-                f"{brk.Var().Name()}:"
-                f" Start({brk.StartValue()}) Duration({brk.DurationValue()})"
+                f"{brk.var().name}:"
+                f" Start({brk.start_value()}) Duration({brk.duration_value()})"
             )
         else:
-            print(f"{brk.Var().Name()}: Unperformed")
+            print(f"{brk.var().name}: Unperformed")
 
     total_distance = 0
     total_load = 0
     total_time = 0
-    capacity_dimension = routing.GetDimensionOrDie("Capacity")
-    time_dimension = routing.GetDimensionOrDie("Time")
+    capacity_dimension = routing_model.get_dimension_or_die("Capacity")
+    time_dimension = routing_model.get_dimension_or_die("Time")
     for vehicle_id in range(data["num_vehicles"]):
-        if not routing.IsVehicleUsed(assignment, vehicle_id):
+        if not routing_model.is_vehicle_used(assignment, vehicle_id):
             continue
-        index = routing.Start(vehicle_id)
+        index = routing_model.start(vehicle_id)
         plan_output = f"Route for vehicle {vehicle_id}:\n"
         distance = 0
-        while not routing.IsEnd(index):
-            load_var = capacity_dimension.CumulVar(index)
-            time_var = time_dimension.CumulVar(index)
-            slack_var = time_dimension.SlackVar(index)
-            node = manager.IndexToNode(index)
+        while not routing_model.is_end(index):
+            load_var = capacity_dimension.cumul_var(index)
+            time_var = time_dimension.cumul_var(index)
+            slack_var = time_dimension.slack_var(index)
+            node = manager.index_to_node(index)
             plan_output += (
                 f" {node}"
-                f" Load({assignment.Value(load_var)})"
-                f" Time({assignment.Min(time_var)}, {assignment.Max(time_var)})"
-                f" Slack({assignment.Min(slack_var)}, {assignment.Max(slack_var)})"
+                f" Load({assignment.value(load_var)})"
+                f" Time({assignment.min(time_var)}, {assignment.max(time_var)})"
+                f" Slack({assignment.min(slack_var)}, {assignment.max(slack_var)})"
                 " ->"
             )
             previous_index = index
-            index = assignment.Value(routing.NextVar(index))
-            distance += routing.GetArcCostForVehicle(previous_index, index, vehicle_id)
-        load_var = capacity_dimension.CumulVar(index)
-        time_var = time_dimension.CumulVar(index)
-        node = manager.IndexToNode(index)
+            index = assignment.value(routing_model.next_var(index))
+            distance += routing_model.get_arc_cost_for_vehicle(
+                previous_index, index, vehicle_id
+            )
+        load_var = capacity_dimension.cumul_var(index)
+        time_var = time_dimension.cumul_var(index)
+        node = manager.index_to_node(index)
         plan_output += (
             f" {node}"
-            f" Load({assignment.Value(load_var)})"
-            f" Time({assignment.Min(time_var)}, {assignment.Max(time_var)})\n"
+            f" Load({assignment.value(load_var)})"
+            f" Time({assignment.min(time_var)}, {assignment.max(time_var)})\n"
         )
         plan_output += f"Distance of the route: {distance}m\n"
-        plan_output += f"Load of the route: {assignment.Value(load_var)}\n"
-        plan_output += f"Time of the route: {assignment.Value(time_var)}\n"
+        plan_output += f"Load of the route: {assignment.value(load_var)}\n"
+        plan_output += f"Time of the route: {assignment.value(time_var)}\n"
         print(plan_output)
         total_distance += distance
-        total_load += assignment.Value(load_var)
-        total_time += assignment.Value(time_var)
+        total_load += assignment.value(load_var)
+        total_time += assignment.value(time_var)
     print(f"Total Distance of all routes: {total_distance}m")
     print(f"Total Load of all routes: {total_load}")
     print(f"Total Time of all routes: {total_time}min")
     # [END solution_printer]
 
 
-def main():
+def main() -> None:
     """Entry point of the program."""
     # Instantiate the data problem.
     # [START data]
@@ -290,36 +303,40 @@ def main():
     # [END data]
 
     # Create the routing index manager
-    manager = pywraprouting.IndexManager(
+    manager = routing.IndexManager(
         data["numlocations_"], data["num_vehicles"], data["depot"]
     )
 
     # Create Routing Model
-    routing = pywraprouting.Model(manager)
+    routing_model = routing.Model(manager)
 
     # Define weight of each edge
-    distance_evaluator_index = routing.RegisterTransitCallback(
+    distance_evaluator_index = routing_model.register_transit_callback(
         functools.partial(create_distance_evaluator(data), manager)
     )
-    routing.SetArcCostEvaluatorOfAllVehicles(distance_evaluator_index)
+    routing_model.set_arc_cost_evaluator_of_all_vehicles(distance_evaluator_index)
 
     # Add Capacity constraint
-    demand_evaluator_index = routing.RegisterUnaryTransitCallback(
+    demand_evaluator_index = routing_model.register_unary_transit_callback(
         functools.partial(create_demand_evaluator(data), manager)
     )
-    add_capacity_constraints(routing, data, demand_evaluator_index)
+    add_capacity_constraints(routing_model, data, demand_evaluator_index)
 
     # Add Time Window constraint
-    time_evaluator_index = routing.RegisterTransitCallback(
+    time_evaluator_index = routing_model.register_transit_callback(
         functools.partial(create_time_evaluator(data), manager)
     )
-    add_time_window_constraints(routing, manager, data, time_evaluator_index)
+    add_time_window_constraints(routing_model, manager, data, time_evaluator_index)
 
     # Add breaks
-    time_dimension = routing.GetDimensionOrDie("Time")
+    time_dimension = routing_model.get_dimension_or_die("Time")
     node_visit_transit = {}
-    for index in range(routing.Size()):
-        node = manager.IndexToNode(index)
+    for index in range(routing_model.size()):
+        # Add slack var to the assignment to print it.
+        routing_model.add_to_assignment(time_dimension.slack_var(index))
+
+        # Add transit for the break interval var
+        node = manager.index_to_node(index)
         node_visit_transit[index] = int(
             data["demands"][node] * data["time_per_demand_unit"]
         )
@@ -328,7 +345,7 @@ def main():
     for v in range(data["num_vehicles"]):
         vehicle_break = data["breaks"][v]
         break_intervals[v] = [
-            routing.solver().FixedDurationIntervalVar(
+            routing_model.solver.new_fixed_duration_interval_var(
                 15,
                 100,
                 vehicle_break[0],
@@ -336,13 +353,15 @@ def main():
                 f"Break for vehicle {v}",
             )
         ]
-        time_dimension.SetBreakIntervalsOfVehicle(
-            break_intervals[v], v, node_visit_transit.values()
+        time_dimension.set_break_intervals_of_vehicle(
+            break_intervals[v], v, list(node_visit_transit.values())
         )
 
     # Setting first solution heuristic (cheapest addition).
     # [START parameters]
-    search_parameters = pywraprouting.DefaultRoutingSearchParameters()
+    search_parameters: parameters_pb2.RoutingSearchParameters = (
+        routing.default_routing_search_parameters()
+    )
     search_parameters.first_solution_strategy = (
         enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
     )  # pylint: disable=no-member
@@ -350,13 +369,13 @@ def main():
 
     # Solve the problem.
     # [START solve]
-    assignment = routing.SolveWithParameters(search_parameters)
+    assignment = routing_model.solve_with_parameters(search_parameters)
     # [END solve]
 
     # Print solution on console.
     # [START print_solution]
     if assignment:
-        print_solution(data, manager, routing, assignment)
+        print_solution(data, manager, routing_model, assignment)
     else:
         print("No solution found!")
     # [END print_solution]

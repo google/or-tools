@@ -24,16 +24,18 @@ Distances are in meters.
 """
 
 # [START import]
+from typing import Any, Dict
 import weakref
 
 from ortools.routing import enums_pb2
-from ortools.routing import pywraprouting
+from ortools.routing import parameters_pb2
+from ortools.routing.python import routing
 
 # [END import]
 
 
 # [START data_model]
-def create_data_model():
+def create_data_model() -> Dict[str, Any]:
     """Stores the data for the problem."""
     data = {}
     data["distance_matrix"] = [
@@ -65,27 +67,27 @@ def create_data_model():
 
 # [START solution_callback_printer]
 def print_solution(
-    routing_manager: pywraprouting.IndexManager,
-    routing_model: pywraprouting.Model,
-):
+    routing_manager: routing.IndexManager,
+    routing_model: routing.Model,
+) -> None:
     """Prints solution on console."""
     print("################")
-    print(f"Solution objective: {routing_model.CostVar().Value()}")
+    print(f"Solution objective: {routing_model.cost_var().value()}")
     total_distance = 0
-    for vehicle_id in range(routing_manager.GetNumberOfVehicles()):
-        index = routing_model.Start(vehicle_id)
-        if routing_model.IsEnd(routing_model.NextVar(index).Value()):
+    for vehicle_id in range(routing_manager.num_vehicles()):
+        index = routing_model.start(vehicle_id)
+        if routing_model.is_end(routing_model.next_var(index).value()):
             continue
         plan_output = f"Route for vehicle {vehicle_id}:\n"
         route_distance = 0
-        while not routing_model.IsEnd(index):
-            plan_output += f" {routing_manager.IndexToNode(index)} ->"
+        while not routing_model.is_end(index):
+            plan_output += f" {routing_manager.index_to_node(index)} ->"
             previous_index = index
-            index = routing_model.NextVar(index).Value()
-            route_distance += routing_model.GetArcCostForVehicle(
+            index = routing_model.next_var(index).value()
+            route_distance += routing_model.get_arc_cost_for_vehicle(
                 previous_index, index, vehicle_id
             )
-        plan_output += f" {routing_manager.IndexToNode(index)}\n"
+        plan_output += f" {routing_manager.index_to_node(index)}\n"
         plan_output += f"Distance of the route: {route_distance}m\n"
         print(plan_output)
         total_distance += route_distance
@@ -101,8 +103,8 @@ class SolutionCallback:
 
     def __init__(
         self,
-        manager: pywraprouting.IndexManager,
-        model: pywraprouting.Model,
+        manager: routing.IndexManager,
+        model: routing.Model,
         limit: int,
     ):
         # We need a weak ref on the routing model to avoid a cycle.
@@ -114,7 +116,7 @@ class SolutionCallback:
 
     def __call__(self):
         objective = int(
-            self._routing_model_ref().CostVar().Value()
+            self._routing_model_ref().cost_var().value()
         )  # pytype: disable=attribute-error
         if not self.objectives or objective < self.objectives[-1]:
             self.objectives.append(objective)
@@ -123,13 +125,13 @@ class SolutionCallback:
             )  # pytype: disable=attribute-error
             self._counter += 1
         if self._counter > self._counter_limit:
-            self._routing_model_ref().solver().FinishCurrentSearch()  # pytype: disable=attribute-error
+            self._routing_model_ref().solver.finish_current_search()  # pytype: disable=attribute-error
 
 
 # [END solution_callback]
 
 
-def main():
+def main() -> None:
     """Entry point of the program."""
     # Instantiate the data problem.
     # [START data]
@@ -138,57 +140,59 @@ def main():
 
     # Create the routing index manager.
     # [START index_manager]
-    routing_manager = pywraprouting.IndexManager(
+    routing_manager = routing.IndexManager(
         len(data["distance_matrix"]), data["num_vehicles"], data["depot"]
     )
     # [END index_manager]
 
     # Create Routing Model.
     # [START routing_model]
-    routing_model = pywraprouting.Model(routing_manager)
+    routing_model = routing.Model(routing_manager)
 
     # [END routing_model]
 
     # Create and register a transit callback.
     # [START transit_callback]
-    def distance_callback(from_index, to_index):
+    def distance_callback(from_index: int, to_index: int) -> int:
         """Returns the distance between the two nodes."""
         # Convert from routing variable Index to distance matrix NodeIndex.
-        from_node = routing_manager.IndexToNode(from_index)
-        to_node = routing_manager.IndexToNode(to_index)
+        from_node = routing_manager.index_to_node(from_index)
+        to_node = routing_manager.index_to_node(to_index)
         return data["distance_matrix"][from_node][to_node]
 
-    transit_callback_index = routing_model.RegisterTransitCallback(distance_callback)
+    transit_callback_index = routing_model.register_transit_callback(distance_callback)
     # [END transit_callback]
 
     # Define cost of each arc.
     # [START arc_cost]
-    routing_model.SetArcCostEvaluatorOfAllVehicles(transit_callback_index)
+    routing_model.set_arc_cost_evaluator_of_all_vehicles(transit_callback_index)
     # [END arc_cost]
 
     # Add Distance constraint.
     # [START distance_constraint]
     dimension_name = "Distance"
-    routing_model.AddDimension(
+    routing_model.add_dimension(
         transit_callback_index,
         0,  # no slack
         3000,  # vehicle maximum travel distance
         True,  # start cumul to zero
         dimension_name,
     )
-    distance_dimension = routing_model.GetDimensionOrDie(dimension_name)
-    distance_dimension.SetGlobalSpanCostCoefficient(100)
+    distance_dimension = routing_model.get_dimension_or_die(dimension_name)
+    distance_dimension.set_global_span_cost_coefficient(100)
     # [END distance_constraint]
 
     # Attach a solution callback.
     # [START attach_callback]
     solution_callback = SolutionCallback(routing_manager, routing_model, 15)
-    routing_model.AddAtSolutionCallback(solution_callback)
+    routing_model.add_at_solution_callback(solution_callback)
     # [END attach_callback]
 
     # Setting first solution heuristic.
     # [START parameters]
-    search_parameters = pywraprouting.DefaultRoutingSearchParameters()
+    search_parameters: parameters_pb2.RoutingSearchParameters = (
+        routing.default_routing_search_parameters()
+    )
     search_parameters.first_solution_strategy = (
         enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
     )
@@ -200,7 +204,7 @@ def main():
 
     # Solve the problem.
     # [START solve]
-    solution = routing_model.SolveWithParameters(search_parameters)
+    solution = routing_model.solve_with_parameters(search_parameters)
     # [END solve]
 
     # Print solution on console.

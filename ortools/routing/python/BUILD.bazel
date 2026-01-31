@@ -1,0 +1,63 @@
+# Copyright 2010-2025 Google LLC
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Description: python wrapping of the C++ code of the routing library.
+
+load("@pip_deps//:requirements.bzl", "requirement")
+load("@pybind11_bazel//:build_defs.bzl", "pybind_extension")
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_python//python:py_test.bzl", "py_test")
+
+cc_library(
+    name = "doc",
+    hdrs = [
+        "doc.h",
+        "index_manager_doc.h",
+        "parameters_doc.h",
+    ],
+)
+
+pybind_extension(
+    name = "routing",
+    srcs = ["routing.cc"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":doc",
+        "//ortools/constraint_solver:cp",
+        "//ortools/constraint_solver:solver_parameters_cc_proto",
+        "//ortools/constraint_solver/python:constraint_solver",
+        "//ortools/routing",
+        "//ortools/routing:index_manager",
+        "//ortools/routing:parameters",
+        "//ortools/routing:types",
+        "//ortools/util:sorted_interval_list",
+        "//ortools/util/python:sorted_interval_list",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@pybind11_abseil//pybind11_abseil:absl_casters",
+        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
+    ],
+)
+
+py_test(
+    name = "routing_test",
+    size = "small",
+    srcs = ["routing_test.py"],
+    deps = [
+        ":routing",
+        requirement("absl-py"),
+        "//ortools/constraint_solver/python:constraint_solver",
+        "//ortools/routing:enums_py_pb2",
+        "//ortools/routing:parameters_py_pb2",
+    ],
+)

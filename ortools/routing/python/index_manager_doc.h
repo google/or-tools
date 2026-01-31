@@ -15,6 +15,8 @@
   This file contains docstrings for use in the Python bindings.
   Do not edit! They were automatically extracted by pybind11_mkdoc.
  */
+#ifndef ORTOOLS_ROUTING_PYTHON_INDEX_MANAGER_DOC_H_
+#define ORTOOLS_ROUTING_PYTHON_INDEX_MANAGER_DOC_H_
 
 #define __EXPAND(x) x
 #define __COUNT(_1, _2, _3, _4, _5, _6, _7, COUNT, ...) COUNT
@@ -38,7 +40,7 @@
 #pragma GCC diagnostic ignored "-Wunused-variable"
 #endif
 
-static const char* __doc_operations_research_IndexManager =
+static const char* __doc_operations_research_routing_IndexManager =
     R"doc(Manager for any NodeIndex <-> variable index conversion. The routing
 solver uses variable indices internally and through its API. These
 variable indices are tricky to manage directly because one Node can
@@ -65,75 +67,90 @@ guarantee is that indices range between 0 and n-1, where n = number of
 vehicles * 2 (for start and end nodes) + number of non-start or end
 nodes.)doc";
 
-static const char* __doc_operations_research_IndexManager_GetEndIndex =
+static const char* __doc_operations_research_routing_IndexManager_GetEndIndex =
     R"doc()doc";
 
-static const char* __doc_operations_research_IndexManager_GetIndexToNodeMap =
+static const char*
+    __doc_operations_research_routing_IndexManager_GetIndexToNodeMap =  // NOLINT
     R"doc()doc";
 
-static const char* __doc_operations_research_IndexManager_GetStartIndex =
+static const char*
+    __doc_operations_research_routing_IndexManager_GetStartIndex =  // NOLINT
     R"doc()doc";
 
-static const char* __doc_operations_research_IndexManager_IndexToNode =
+static const char* __doc_operations_research_routing_IndexManager_IndexToNode =
     R"doc()doc";
 
-static const char* __doc_operations_research_IndexManager_IndicesToNodes =
+static const char*
+    __doc_operations_research_routing_IndexManager_IndicesToNodes =  // NOLINT
     R"doc()doc";
 
-static const char* __doc_operations_research_IndexManager_Initialize =
+static const char* __doc_operations_research_routing_IndexManager_Initialize =
     R"doc()doc";
 
-static const char* __doc_operations_research_IndexManager_NodeToIndex =
+static const char* __doc_operations_research_routing_IndexManager_NodeToIndex =
     R"doc()doc";
 
-static const char* __doc_operations_research_IndexManager_NodesToIndices =
+static const char*
+    __doc_operations_research_routing_IndexManager_NodesToIndices =  // NOLINT
     R"doc()doc";
 
-static const char* __doc_operations_research_IndexManager_IndexManager =
+static const char* __doc_operations_research_routing_IndexManager_IndexManager =
     R"doc(Creates a NodeIndex to variable index mapping for a problem containing
 'num_nodes', 'num_vehicles' and the given starts and ends for each
 vehicle. If used, any start/end arrays have to have exactly
 'num_vehicles' elements.)doc";
 
-static const char* __doc_operations_research_IndexManager_IndexManager_2 =
+static const char*
+    __doc_operations_research_routing_IndexManager_IndexManager_2 =  // NOLINT
     R"doc()doc";
 
-static const char* __doc_operations_research_IndexManager_IndexManager_3 =
+static const char*
+    __doc_operations_research_routing_IndexManager_IndexManager_3 =  // NOLINT
     R"doc()doc";
 
-static const char* __doc_operations_research_IndexManager_index_to_node =
+static const char*
+    __doc_operations_research_routing_IndexManager_index_to_node =  // NOLINT
     R"doc()doc";
 
-static const char* __doc_operations_research_IndexManager_node_to_index =
+static const char*
+    __doc_operations_research_routing_IndexManager_node_to_index =  // NOLINT
     R"doc()doc";
 
-static const char* __doc_operations_research_IndexManager_num_indices =
+static const char* __doc_operations_research_routing_IndexManager_num_indices =
     R"doc()doc";
 
-static const char* __doc_operations_research_IndexManager_num_nodes =
+static const char* __doc_operations_research_routing_IndexManager_num_nodes =
     R"doc()doc";
 
-static const char* __doc_operations_research_IndexManager_num_nodes_2 =
+static const char* __doc_operations_research_routing_IndexManager_num_nodes_2 =
     R"doc()doc";
 
-static const char* __doc_operations_research_IndexManager_num_unique_depots =
+static const char*
+    __doc_operations_research_routing_IndexManager_num_unique_depots =  // NOLINT
     R"doc(complete.)doc";
 
-static const char* __doc_operations_research_IndexManager_num_unique_depots_2 =
+static const char*
+    __doc_operations_research_routing_IndexManager_num_unique_depots_2 =  // NOLINT
     R"doc()doc";
 
-static const char* __doc_operations_research_IndexManager_num_vehicles =
+static const char* __doc_operations_research_routing_IndexManager_num_vehicles =
     R"doc()doc";
 
-static const char* __doc_operations_research_IndexManager_num_vehicles_2 =
+static const char*
+    __doc_operations_research_routing_IndexManager_num_vehicles_2 =  // NOLINT
     R"doc()doc";
 
-static const char* __doc_operations_research_IndexManager_vehicle_to_end =
+static const char*
+    __doc_operations_research_routing_IndexManager_vehicle_to_end =  // NOLINT
     R"doc()doc";
 
-static const char* __doc_operations_research_IndexManager_vehicle_to_start =
+static const char*
+    __doc_operations_research_routing_IndexManager_vehicle_to_start =  // NOLINT
     R"doc()doc";
 
 #if defined(__GNUG__)
 #pragma GCC diagnostic pop
 #endif
+
+#endif  // ORTOOLS_ROUTING_PYTHON_INDEX_MANAGER_DOC_H_

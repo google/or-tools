@@ -12,9 +12,9 @@
 # limitations under the License.
 
 # routing
-pybind11_add_module(routing_pybind11 MODULE model.cc)
+pybind11_add_module(routing_pybind11 MODULE routing.cc)
 set_target_properties(routing_pybind11 PROPERTIES
-  LIBRARY_OUTPUT_NAME "model")
+  LIBRARY_OUTPUT_NAME "routing")
 
 # note: macOS is APPLE and also UNIX !
 if(APPLE)
@@ -29,6 +29,7 @@ endif()
 target_link_libraries(routing_pybind11 PRIVATE
   ${PROJECT_NAMESPACE}::ortools
   pybind11_native_proto_caster
+  pybind11_abseil::absl_casters
 )
 add_library(${PROJECT_NAMESPACE}::routing_pybind11 ALIAS routing_pybind11)
 

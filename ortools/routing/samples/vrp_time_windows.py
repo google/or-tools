@@ -16,14 +16,18 @@
 """Vehicles Routing Problem (VRP) with Time Windows."""
 
 # [START import]
+from typing import Any, Dict
+
+from ortools.constraint_solver.python import constraint_solver
 from ortools.routing import enums_pb2
-from ortools.routing import pywraprouting
+from ortools.routing import parameters_pb2
+from ortools.routing.python import routing
 
 # [END import]
 
 
 # [START data_model]
-def create_data_model():
+def create_data_model() -> Dict[str, Any]:
     """Stores the data for the problem."""
     data = {}
     data["time_matrix"] = [
@@ -71,37 +75,42 @@ def create_data_model():
 
 
 # [START solution_printer]
-def print_solution(data, manager, routing, solution):
+def print_solution(
+    data: Dict[str, Any],
+    manager: routing.IndexManager,
+    routing_model: routing.Model,
+    solution: constraint_solver.Assignment,
+) -> None:
     """Prints solution on console."""
-    print(f"Objective: {solution.ObjectiveValue()}")
-    time_dimension = routing.GetDimensionOrDie("Time")
+    print(f"Objective: {solution.objective_value()}")
+    time_dimension = routing_model.get_dimension_or_die("Time")
     total_time = 0
     for vehicle_id in range(data["num_vehicles"]):
-        if not routing.IsVehicleUsed(solution, vehicle_id):
+        if not routing_model.is_vehicle_used(solution, vehicle_id):
             continue
-        index = routing.Start(vehicle_id)
+        index = routing_model.start(vehicle_id)
         plan_output = f"Route for vehicle {vehicle_id}:\n"
-        while not routing.IsEnd(index):
-            time_var = time_dimension.CumulVar(index)
+        while not routing_model.is_end(index):
+            time_var = time_dimension.cumul_var(index)
             plan_output += (
-                f"{manager.IndexToNode(index)}"
-                f" Time({solution.Min(time_var)},{solution.Max(time_var)})"
+                f"{manager.index_to_node(index)}"
+                f" Time({solution.min(time_var)}, {solution.max(time_var)})"
                 " -> "
             )
-            index = solution.Value(routing.NextVar(index))
-        time_var = time_dimension.CumulVar(index)
+            index = solution.value(routing_model.next_var(index))
+        time_var = time_dimension.cumul_var(index)
         plan_output += (
-            f"{manager.IndexToNode(index)}"
-            f" Time({solution.Min(time_var)},{solution.Max(time_var)})\n"
+            f"{manager.index_to_node(index)}"
+            f" Time({solution.min(time_var)},{solution.max(time_var)})\n"
         )
-        plan_output += f"Time of the route: {solution.Min(time_var)}min\n"
+        plan_output += f"Time of the route: {solution.min(time_var)}min\n"
         print(plan_output)
-        total_time += solution.Min(time_var)
+        total_time += solution.min(time_var)
     print(f"Total time of all routes: {total_time}min")
     # [END solution_printer]
 
 
-def main():
+def main() -> None:
     """Solve the VRP with time windows."""
     # Instantiate the data problem.
     # [START data]
@@ -110,55 +119,55 @@ def main():
 
     # Create the routing index manager.
     # [START index_manager]
-    manager = pywraprouting.IndexManager(
+    manager = routing.IndexManager(
         len(data["time_matrix"]), data["num_vehicles"], data["depot"]
     )
     # [END index_manager]
 
     # Create Routing Model.
     # [START routing_model]
-    routing = pywraprouting.Model(manager)
+    routing_model = routing.Model(manager)
     # [END routing_model]
 
     # Create and register a transit callback.
     # [START transit_callback]
-    def time_callback(from_index, to_index):
+    def time_callback(from_index: int, to_index: int) -> int:
         """Returns the travel time between the two nodes."""
         # Convert from routing variable Index to time matrix NodeIndex.
-        from_node = manager.IndexToNode(from_index)
-        to_node = manager.IndexToNode(to_index)
+        from_node = manager.index_to_node(from_index)
+        to_node = manager.index_to_node(to_index)
         return data["time_matrix"][from_node][to_node]
 
-    transit_callback_index = routing.RegisterTransitCallback(time_callback)
+    transit_callback_index = routing_model.register_transit_callback(time_callback)
     # [END transit_callback]
 
     # Define cost of each arc.
     # [START arc_cost]
-    routing.SetArcCostEvaluatorOfAllVehicles(transit_callback_index)
+    routing_model.set_arc_cost_evaluator_of_all_vehicles(transit_callback_index)
     # [END arc_cost]
 
     # Add Time Windows constraint.
     # [START time_windows_constraint]
     time = "Time"
-    routing.AddDimension(
+    routing_model.add_dimension(
         transit_callback_index,
         30,  # allow waiting time
         30,  # maximum time per vehicle
         False,  # Don't force start cumul to zero.
         time,
     )
-    time_dimension = routing.GetDimensionOrDie(time)
+    time_dimension = routing_model.get_dimension_or_die(time)
     # Add time window constraints for each location except depot.
     for location_idx, time_window in enumerate(data["time_windows"]):
         if location_idx == data["depot"]:
             continue
-        index = manager.NodeToIndex(location_idx)
-        time_dimension.CumulVar(index).SetRange(time_window[0], time_window[1])
+        index = manager.node_to_index(location_idx)
+        time_dimension.cumul_var(index).set_range(time_window[0], time_window[1])
     # Add time window constraints for each vehicle start node.
     depot_idx = data["depot"]
     for vehicle_id in range(data["num_vehicles"]):
-        index = routing.Start(vehicle_id)
-        time_dimension.CumulVar(index).SetRange(
+        index = routing_model.start(vehicle_id)
+        time_dimension.cumul_var(index).set_range(
             data["time_windows"][depot_idx][0], data["time_windows"][depot_idx][1]
         )
     # [END time_windows_constraint]
@@ -166,15 +175,19 @@ def main():
     # Instantiate route start and end times to produce feasible times.
     # [START depot_start_end_times]
     for i in range(data["num_vehicles"]):
-        routing.AddVariableMinimizedByFinalizer(
-            time_dimension.CumulVar(routing.Start(i))
+        routing_model.add_variable_minimized_by_finalizer(
+            time_dimension.cumul_var(routing_model.start(i))
         )
-        routing.AddVariableMinimizedByFinalizer(time_dimension.CumulVar(routing.End(i)))
+        routing_model.add_variable_minimized_by_finalizer(
+            time_dimension.cumul_var(routing_model.end(i))
+        )
     # [END depot_start_end_times]
 
     # Setting first solution heuristic.
     # [START parameters]
-    search_parameters = pywraprouting.DefaultRoutingSearchParameters()
+    search_parameters: parameters_pb2.RoutingSearchParameters = (
+        routing.default_routing_search_parameters()
+    )
     search_parameters.first_solution_strategy = (
         enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
     )
@@ -182,13 +195,15 @@ def main():
 
     # Solve the problem.
     # [START solve]
-    solution = routing.SolveWithParameters(search_parameters)
+    solution = routing_model.solve_with_parameters(search_parameters)
     # [END solve]
 
     # Print solution on console.
     # [START print_solution]
     if solution:
-        print_solution(data, manager, routing, solution)
+        print_solution(data, manager, routing_model, solution)
+    else:
+        print("No solution found !")
     # [END print_solution]
 
 

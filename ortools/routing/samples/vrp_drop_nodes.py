@@ -16,14 +16,18 @@
 """Capacited Vehicles Routing Problem (CVRP)."""
 
 # [START import]
+from typing import Any, Dict
+
+from ortools.constraint_solver.python import constraint_solver
 from ortools.routing import enums_pb2
-from ortools.routing import pywraprouting
+from ortools.routing import parameters_pb2
+from ortools.routing.python import routing
 
 # [END import]
 
 
 # [START data_model]
-def create_data_model():
+def create_data_model() -> Dict[str, Any]:
     """Stores the data for the problem."""
     data = {}
     data["distance_matrix"] = [
@@ -58,37 +62,42 @@ def create_data_model():
 
 
 # [START solution_printer]
-def print_solution(data, manager, routing, assignment):
+def print_solution(
+    data: Dict[str, Any],
+    manager: routing.IndexManager,
+    routing_model: routing.Model,
+    assignment: constraint_solver.Assignment,
+) -> None:
     """Prints assignment on console."""
-    print(f"Objective: {assignment.ObjectiveValue()}")
+    print(f"Objective: {assignment.objective_value()}")
     # Display dropped nodes.
     dropped_nodes = "Dropped nodes:"
-    for node in range(routing.Size()):
-        if routing.IsStart(node) or routing.IsEnd(node):
+    for node in range(routing_model.size()):
+        if routing_model.is_start(node) or routing_model.is_end(node):
             continue
-        if assignment.Value(routing.NextVar(node)) == node:
-            dropped_nodes += f" {manager.IndexToNode(node)}"
+        if assignment.value(routing_model.next_var(node)) == node:
+            dropped_nodes += f" {manager.index_to_node(node)}"
     print(dropped_nodes)
     # Display routes
     total_distance = 0
     total_load = 0
     for vehicle_id in range(data["num_vehicles"]):
-        if not routing.IsVehicleUsed(assignment, vehicle_id):
+        if not routing_model.is_vehicle_used(assignment, vehicle_id):
             continue
-        index = routing.Start(vehicle_id)
+        index = routing_model.start(vehicle_id)
         plan_output = f"Route for vehicle {vehicle_id}:\n"
         route_distance = 0
         route_load = 0
-        while not routing.IsEnd(index):
-            node_index = manager.IndexToNode(index)
+        while not routing_model.is_end(index):
+            node_index = manager.index_to_node(index)
             route_load += data["demands"][node_index]
             plan_output += f" {node_index} Load({route_load}) -> "
             previous_index = index
-            index = assignment.Value(routing.NextVar(index))
-            route_distance += routing.GetArcCostForVehicle(
+            index = assignment.value(routing_model.next_var(index))
+            route_distance += routing_model.get_arc_cost_for_vehicle(
                 previous_index, index, vehicle_id
             )
-        plan_output += f" {manager.IndexToNode(index)} Load({route_load})\n"
+        plan_output += f" {manager.index_to_node(index)} Load({route_load})\n"
         plan_output += f"Distance of the route: {route_distance}m\n"
         plan_output += f"Load of the route: {route_load}\n"
         print(plan_output)
@@ -99,7 +108,7 @@ def print_solution(data, manager, routing, assignment):
     # [END solution_printer]
 
 
-def main():
+def main() -> None:
     """Solve the CVRP problem."""
     # Instantiate the data problem.
     # [START data]
@@ -108,43 +117,45 @@ def main():
 
     # Create the routing index manager.
     # [START index_manager]
-    manager = pywraprouting.IndexManager(
+    manager = routing.IndexManager(
         len(data["distance_matrix"]), data["num_vehicles"], data["depot"]
     )
     # [END index_manager]
 
     # Create Routing Model.
     # [START routing_model]
-    routing = pywraprouting.Model(manager)
+    routing_model = routing.Model(manager)
     # [END routing_model]
 
     # Create and register a transit callback.
     # [START transit_callback]
-    def distance_callback(from_index, to_index):
+    def distance_callback(from_index: int, to_index: int) -> int:
         """Returns the distance between the two nodes."""
         # Convert from routing variable Index to distance matrix NodeIndex.
-        from_node = manager.IndexToNode(from_index)
-        to_node = manager.IndexToNode(to_index)
+        from_node = manager.index_to_node(from_index)
+        to_node = manager.index_to_node(to_index)
         return data["distance_matrix"][from_node][to_node]
 
-    transit_callback_index = routing.RegisterTransitCallback(distance_callback)
+    transit_callback_index = routing_model.register_transit_callback(distance_callback)
     # [END transit_callback]
 
     # Define cost of each arc.
     # [START arc_cost]
-    routing.SetArcCostEvaluatorOfAllVehicles(transit_callback_index)
+    routing_model.set_arc_cost_evaluator_of_all_vehicles(transit_callback_index)
     # [END arc_cost]
 
     # Add Capacity constraint.
     # [START capacity_constraint]
-    def demand_callback(from_index):
+    def demand_callback(from_index: int) -> int:
         """Returns the demand of the node."""
         # Convert from routing variable Index to demands NodeIndex.
-        from_node = manager.IndexToNode(from_index)
+        from_node = manager.index_to_node(from_index)
         return data["demands"][from_node]
 
-    demand_callback_index = routing.RegisterUnaryTransitCallback(demand_callback)
-    routing.AddDimensionWithVehicleCapacity(
+    demand_callback_index = routing_model.register_unary_transit_callback(
+        demand_callback
+    )
+    routing_model.add_dimension_with_vehicle_capacity(
         demand_callback_index,
         0,  # null capacity slack
         data["vehicle_capacities"],  # vehicle maximum capacities
@@ -154,12 +165,14 @@ def main():
     # Allow to drop nodes.
     penalty = 1000
     for node in range(1, len(data["distance_matrix"])):
-        routing.AddDisjunction([manager.NodeToIndex(node)], penalty)
+        routing_model.add_disjunction([manager.node_to_index(node)], penalty)
     # [END capacity_constraint]
 
     # Setting first solution heuristic.
     # [START parameters]
-    search_parameters = pywraprouting.DefaultRoutingSearchParameters()
+    search_parameters: parameters_pb2.RoutingSearchParameters = (
+        routing.default_routing_search_parameters()
+    )
     search_parameters.first_solution_strategy = (
         enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
     )
@@ -171,13 +184,13 @@ def main():
 
     # Solve the problem.
     # [START solve]
-    assignment = routing.SolveWithParameters(search_parameters)
+    assignment = routing_model.solve_with_parameters(search_parameters)
     # [END solve]
 
     # Print solution on console.
     # [START print_solution]
     if assignment:
-        print_solution(data, manager, routing, assignment)
+        print_solution(data, manager, routing_model, assignment)
     # [END print_solution]
 
 

@@ -14,6 +14,8 @@
 # Description: java wrapping of (some of) the code in ../, plus
 # some generic utilities for SWIG java.
 
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
 load("//bazel:swig_java.bzl", "java_wrap_cc")
 
 # These .swig files are currently just included in other .swig files.
@@ -21,10 +23,12 @@ load("//bazel:swig_java.bzl", "java_wrap_cc")
 exports_files(
     [
         "absl_string_view.swig",
-        "proto.i",
         "sorted_interval_list.swig",
         "tuple_set.swig",
         "vector.swig",
+        "java_swig_solve_interrupter.swig",
+        "proto.i",
+        "status.swig",
     ],
 )
 
@@ -45,4 +49,36 @@ java_wrap_cc(
         "//ortools/base",
         "//ortools/util:sorted_interval_list",
     ],
+)
+
+cc_library(
+    name = "java_swig_solve_interrupter",
+    hdrs = ["java_swig_solve_interrupter.h"],
+    visibility = ["//visibility:public"],
+    deps = ["//ortools/util:solve_interrupter"],
+)
+
+cc_test(
+    name = "java_swig_solve_interrupter_test",
+    srcs = ["java_swig_solve_interrupter_test.cc"],
+    deps = [
+        ":java_swig_solve_interrupter",
+        "//ortools/base:gmock_main",
+    ],
+)
+
+java_wrap_cc(
+    name = "java_swig_solve_interrupter_swig",
+    srcs = ["java_swig_solve_interrupter.swig"],
+    package = "com.google.ortools.util",
+    swig_includes = [
+        ":java_swig_solve_interrupter",
+        "//ortools/base:base_swig",
+    ],
+    visibility = [
+        "//javatests/com/google/wrappers/util/operationsresearch:__subpackages__",
+        "//ortools:__subpackages__",
+        "//visibility:public",
+    ],
+    deps = [":java_swig_solve_interrupter"],
 )

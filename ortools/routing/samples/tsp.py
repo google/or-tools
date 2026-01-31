@@ -22,7 +22,7 @@ http://en.wikipedia.org/wiki/Travelling_salesperson_problem.
 # [START import]
 from ortools.routing import enums_pb2
 from ortools.routing import parameters_pb2
-from ortools.routing.python import model
+from ortools.routing.python import routing
 
 FirstSolutionStrategy = enums_pb2.FirstSolutionStrategy
 RoutingSearchStatus = enums_pb2.RoutingSearchStatus
@@ -83,9 +83,9 @@ def create_distance_callback(data, manager):
 
 
 # [START solution_printer]
-def print_solution(manager, routing, solution):
+def print_solution(manager, routing_model, solution):
     """Prints assignment on console."""
-    status = routing.status()
+    status = routing_model.status()
     print(f"Status: {RoutingSearchStatus.Value.Name(status)}")
     if (
         status != RoutingSearchStatus.ROUTING_OPTIMAL
@@ -94,14 +94,16 @@ def print_solution(manager, routing, solution):
         print("No solution found!")
         return
     print(f"Objective: {solution.objective_value()}")
-    index = routing.start(0)
+    index = routing_model.start(0)
     plan_output = "Route for vehicle 0:\n"
     route_distance = 0
-    while not routing.is_end(index):
+    while not routing_model.is_end(index):
         plan_output += f" {manager.index_to_node(index)} ->"
         previous_index = index
-        index = solution.value(routing.next_var(index))
-        route_distance += routing.get_arc_cost_for_vehicle(previous_index, index, 0)
+        index = solution.value(routing_model.next_var(index))
+        route_distance += routing_model.get_arc_cost_for_vehicle(
+            previous_index, index, 0
+        )
     plan_output += f" {manager.index_to_node(index)}\n"
     plan_output += f"Distance of the route: {route_distance}m\n"
     print(plan_output)
@@ -117,44 +119,43 @@ def main():
 
     # Create the routing index manager.
     # [START index_manager]
-    manager = model.IndexManager(
+    manager = routing.IndexManager(
         len(data["locations"]), data["num_vehicles"], data["depot"]
     )
     # [END index_manager]
 
     # Create Routing Model.
     # [START model]
-    routing = model.Model(manager)
+    routing_model = routing.Model(manager)
     # [END model]
 
     # Create and register a transit callback.
     # [START transit_callback]
     distance_callback = create_distance_callback(data, manager)
-    transit_callback_index = routing.register_transit_callback(distance_callback)
+    transit_callback_index = routing_model.register_transit_callback(distance_callback)
     # [END transit_callback]
 
     # Define cost of each arc.
     # [START arc_cost]
-    routing.set_arc_cost_evaluator_of_all_vehicles(transit_callback_index)
+    routing_model.set_arc_cost_evaluator_of_all_vehicles(transit_callback_index)
     # [END arc_cost]
 
     # Setting first solution heuristic.
     # [START parameters]
     search_parameters: parameters_pb2.RoutingSearchParameters = (
-        model.default_routing_search_parameters()
+        routing.default_routing_search_parameters()
     )
     search_parameters.first_solution_strategy = FirstSolutionStrategy.PATH_CHEAPEST_ARC
     # [END parameters]
 
     # Solve the problem.
     # [START solve]
-    solution = routing.solve()
-    # solution = routing.solve_with_parameters(search_parameters)
+    solution = routing_model.solve_with_parameters(search_parameters)
     # [END solve]
 
     # Print solution on console.
     # [START print_solution]
-    print_solution(manager, routing, solution)
+    print_solution(manager, routing_model, solution)
     # [END print_solution]
 
 

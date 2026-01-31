@@ -16,6 +16,7 @@
 
 #include <string>
 
+#include "absl/base/casts.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_format.h"
@@ -71,8 +72,9 @@ absl::StatusOr<Proto*> SafeProtoDownCast(google::protobuf::Message* proto) {
       Proto::default_instance().GetDescriptor();
   const google::protobuf::Descriptor* actual_descriptor =
       proto->GetDescriptor();
-  if (actual_descriptor == expected_descriptor)
+  if (actual_descriptor == expected_descriptor) {
     return reinterpret_cast<Proto*>(proto);
+  }
   return absl::InvalidArgumentError(absl::StrFormat(
       "Expected message type '%s', but got type '%s'",
       expected_descriptor->full_name(), actual_descriptor->full_name()));

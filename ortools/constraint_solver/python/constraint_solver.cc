@@ -22,6 +22,7 @@
 #include "absl/cleanup/cleanup.h"
 #include "absl/functional/function_ref.h"
 #include "absl/strings/match.h"
+#include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "ortools/constraint_solver/assignment.pb.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
@@ -392,13 +393,40 @@ class PySearchMonitor : public SearchMonitor {
   }
 };
 
-std::vector<IntVar*> ToIntVarArray(const std::vector<IntExpr*>& exprs) {
-  std::vector<IntVar*> result;
-  result.reserve(exprs.size());
-  for (IntExpr* expr : exprs) {
-    result.push_back(expr->Var());
+std::vector<IntVar*> ToIntVarArray(
+    const std::vector<PropagationBaseObject*>& arguments) {
+  std::vector<IntVar*> vars;
+  vars.reserve(arguments.size());
+  for (BaseObject* arg : arguments) {
+    IntExpr* expr = dynamic_cast<IntExpr*>(arg);
+    if (expr != nullptr) {
+      vars.push_back(expr->Var());
+    } else {
+      Constraint* constraint = dynamic_cast<Constraint*>(arg);
+      if (constraint != nullptr) {
+        IntVar* var = constraint->Var();
+        if (var != nullptr) {
+          vars.push_back(var);
+        } else {
+          PyErr_SetString(
+              PyExc_TypeError,
+              absl::StrCat("Constraint cannot be cast to an IntVar: '",
+                           arg->DebugString(), "'")
+                  .c_str());
+          throw py::error_already_set();
+        }
+      } else {
+        PyErr_SetString(
+            PyExc_TypeError,
+            absl::StrCat(
+                "Model argument should be castable to an IntVar, got: '",
+                arg->DebugString(), "'")
+                .c_str());
+        throw py::error_already_set();
+      }
+    }
   }
-  return result;
+  return vars;
 }
 
 PYBIND11_MODULE(constraint_solver, m) {
@@ -1017,16 +1045,18 @@ PYBIND11_MODULE(constraint_solver, m) {
              s->AddConstraint(s->MakeAbsEquality(var, abs_var));
            })
       .def("add_all_different",
-           [](Solver* s, const std::vector<IntExpr*>& exprs) {
+           [](Solver* s, const std::vector<PropagationBaseObject*>& exprs) {
              s->AddConstraint(s->MakeAllDifferent(ToIntVarArray(exprs)));
            })
       .def("add_all_different",
-           [](Solver* s, const std::vector<IntExpr*>& exprs, bool stronger) {
+           [](Solver* s, const std::vector<PropagationBaseObject*>& exprs,
+              bool stronger) {
              s->AddConstraint(
                  s->MakeAllDifferent(ToIntVarArray(exprs), stronger));
            })
       .def("add_all_different_except",
-           [](Solver* s, const std::vector<IntExpr*>& exprs, int64_t v) {
+           [](Solver* s, const std::vector<PropagationBaseObject*>& exprs,
+              int64_t v) {
              s->AddConstraint(
                  s->MakeAllDifferentExcept(ToIntVarArray(exprs), v));
            })
@@ -1035,18 +1065,18 @@ PYBIND11_MODULE(constraint_solver, m) {
              s->AddConstraint(s->MakeBetweenCt(expr, l, u));
            })
       .def("add_circuit",
-           [](Solver* s, const std::vector<IntExpr*>& nexts) {
+           [](Solver* s, const std::vector<PropagationBaseObject*>& nexts) {
              s->AddConstraint(s->MakeCircuit(ToIntVarArray(nexts)));
            })
       .def("add_count",
-           [](Solver* s, const std::vector<IntExpr*>& exprs, int64_t value,
-              int64_t max_count) {
+           [](Solver* s, const std::vector<PropagationBaseObject*>& exprs,
+              int64_t value, int64_t max_count) {
              s->AddConstraint(
                  s->MakeCount(ToIntVarArray(exprs), value, max_count));
            })
       .def("add_count",
-           [](Solver* s, const std::vector<IntExpr*>& exprs, int64_t value,
-              IntVar* max_count) {
+           [](Solver* s, const std::vector<PropagationBaseObject*>& exprs,
+              int64_t value, IntVar* max_count) {
              s->AddConstraint(
                  s->MakeCount(ToIntVarArray(exprs), value, max_count));
            })
@@ -1071,54 +1101,54 @@ PYBIND11_MODULE(constraint_solver, m) {
            })
       .def("add_cumulative",
            [](Solver* s, const std::vector<IntervalVar*>& intervals,
-              const std::vector<IntExpr*>& demands, int64_t capacity,
-              const std::string& name) {
+              const std::vector<PropagationBaseObject*>& demands,
+              int64_t capacity, const std::string& name) {
              s->AddConstraint(s->MakeCumulative(
                  intervals, ToIntVarArray(demands), capacity, name));
            })
       .def("add_cumulative",
            [](Solver* s, const std::vector<IntervalVar*>& intervals,
-              const std::vector<IntExpr*>& demands, IntVar* capacity,
-              const std::string& name) {
+              const std::vector<PropagationBaseObject*>& demands,
+              IntVar* capacity, const std::string& name) {
              s->AddConstraint(s->MakeCumulative(
                  intervals, ToIntVarArray(demands), capacity, name));
            })
       .def("add_delayed_path_cumul",
-           [](Solver* s, const std::vector<IntExpr*>& nexts,
-              const std::vector<IntExpr*>& active,
-              const std::vector<IntExpr*>& cumuls,
-              const std::vector<IntExpr*>& transits) {
+           [](Solver* s, const std::vector<PropagationBaseObject*>& nexts,
+              const std::vector<PropagationBaseObject*>& active,
+              const std::vector<PropagationBaseObject*>& cumuls,
+              const std::vector<PropagationBaseObject*>& transits) {
              s->AddConstraint(s->MakeDelayedPathCumul(
                  ToIntVarArray(nexts), ToIntVarArray(active),
                  ToIntVarArray(cumuls), ToIntVarArray(transits)));
            })
       .def("add_deviation",
-           [](Solver* s, const std::vector<IntExpr*>& exprs,
+           [](Solver* s, const std::vector<PropagationBaseObject*>& exprs,
               IntVar* deviation_var, int64_t total_sum) {
              s->AddConstraint(s->MakeDeviation(
                  ToIntVarArray(exprs), deviation_var, total_sum));
            })
       .def("add_distribute",
-           [](Solver* s, const std::vector<IntExpr*>& exprs,
+           [](Solver* s, const std::vector<PropagationBaseObject*>& exprs,
               const std::vector<int64_t>& values,
-              const std::vector<IntExpr*>& cards) {
+              const std::vector<PropagationBaseObject*>& cards) {
              s->AddConstraint(s->MakeDistribute(ToIntVarArray(exprs), values,
                                                 ToIntVarArray(cards)));
            })
       .def("add_distribute",
-           [](Solver* s, const std::vector<IntExpr*>& exprs,
-              const std::vector<IntExpr*>& cards) {
+           [](Solver* s, const std::vector<PropagationBaseObject*>& exprs,
+              const std::vector<PropagationBaseObject*>& cards) {
              s->AddConstraint(
                  s->MakeDistribute(ToIntVarArray(exprs), ToIntVarArray(cards)));
            })
       .def("add_distribute",
-           [](Solver* s, const std::vector<IntExpr*>& exprs, int64_t card_min,
-              int64_t card_max, int64_t card_size) {
+           [](Solver* s, const std::vector<PropagationBaseObject*>& exprs,
+              int64_t card_min, int64_t card_max, int64_t card_size) {
              s->AddConstraint(s->MakeDistribute(
                  ToIntVarArray(exprs), card_min, card_max, card_size));
            })
       .def("add_distribute",
-           [](Solver* s, const std::vector<IntExpr*>& exprs,
+           [](Solver* s, const std::vector<PropagationBaseObject*>& exprs,
               const std::vector<int64_t>& values,
               const std::vector<int64_t>& cards) {
              s->AddConstraint(s->MakeDistribute(
@@ -1130,22 +1160,22 @@ PYBIND11_MODULE(constraint_solver, m) {
              s->AddConstraint(s->MakeElementEquality(vals, index, target));
            })
       .def("add_element_equality",
-           [](Solver* s, const std::vector<IntExpr*>& exprs, IntVar* index,
-              IntVar* target) {
+           [](Solver* s, const std::vector<PropagationBaseObject*>& exprs,
+              IntVar* index, IntVar* target) {
              s->AddConstraint(s->MakeElementEquality(
                  ToIntVarArray(exprs), index, target));
            })
       .def("add_element_equality",
-           [](Solver* s, const std::vector<IntExpr*>& exprs, IntVar* index,
-              int64_t target) {
+           [](Solver* s, const std::vector<PropagationBaseObject*>& exprs,
+              IntVar* index, int64_t target) {
              s->AddConstraint(s->MakeElementEquality(
                  ToIntVarArray(exprs), index, target));
            })
       .def("add_false_constraint",
            [](Solver* s) { s->AddConstraint(s->MakeFalseConstraint()); })
       .def("add_index_of_constraint",
-           [](Solver* s, const std::vector<IntExpr*>& exprs, IntVar* index,
-              int64_t target) {
+           [](Solver* s, const std::vector<PropagationBaseObject*>& exprs,
+              IntVar* index, int64_t target) {
              s->AddConstraint(
                  s->MakeIndexOfConstraint(ToIntVarArray(exprs), index, target));
            })
@@ -1166,8 +1196,8 @@ PYBIND11_MODULE(constraint_solver, m) {
                                                                   delay));
            })
       .def("add_inverse_permutation_constraint",
-           [](Solver* s, const std::vector<IntExpr*>& left,
-              const std::vector<IntExpr*>& right) {
+           [](Solver* s, const std::vector<PropagationBaseObject*>& left,
+              const std::vector<PropagationBaseObject*>& right) {
              s->AddConstraint(s->MakeInversePermutationConstraint(
                  ToIntVarArray(left), ToIntVarArray(right)));
            })
@@ -1232,19 +1262,20 @@ PYBIND11_MODULE(constraint_solver, m) {
              s->AddConstraint(s->MakeIsMemberCt(var, values, boolvar));
            })
       .def("add_lexical_less",
-           [](Solver* s, const std::vector<IntExpr*>& left,
-              const std::vector<IntExpr*>& right) {
+           [](Solver* s, const std::vector<PropagationBaseObject*>& left,
+              const std::vector<PropagationBaseObject*>& right) {
              s->AddConstraint(s->MakeLexicalLess(
                  ToIntVarArray(left), ToIntVarArray(right)));
            })
       .def("add_lexical_less_or_equal",
-           [](Solver* s, const std::vector<IntExpr*>& left,
-              const std::vector<IntExpr*>& right) {
+           [](Solver* s, const std::vector<PropagationBaseObject*>& left,
+              const std::vector<PropagationBaseObject*>& right) {
              s->AddConstraint(s->MakeLexicalLessOrEqual(
                  ToIntVarArray(left), ToIntVarArray(right)));
            })
       .def("add_max_equality",
-           [](Solver* s, const std::vector<IntExpr*>& exprs, IntVar* var) {
+           [](Solver* s, const std::vector<PropagationBaseObject*>& exprs,
+              IntVar* var) {
              s->AddConstraint(s->MakeMaxEquality(ToIntVarArray(exprs), var));
            })
       .def("add_member_ct",
@@ -1252,14 +1283,15 @@ PYBIND11_MODULE(constraint_solver, m) {
              s->AddConstraint(s->MakeMemberCt(expr, values));
            })
       .def("add_min_equality",
-           [](Solver* s, const std::vector<IntExpr*>& exprs, IntVar* var) {
+           [](Solver* s, const std::vector<PropagationBaseObject*>& exprs,
+              IntVar* var) {
              s->AddConstraint(s->MakeMinEquality(ToIntVarArray(exprs), var));
            })
       .def("add_non_overlapping_boxes_constraint",
-           [](Solver* s, const std::vector<IntExpr*>& x_vars,
-              const std::vector<IntExpr*>& y_vars,
-              const std::vector<IntExpr*>& x_size,
-              const std::vector<IntExpr*>& y_size) {
+           [](Solver* s, const std::vector<PropagationBaseObject*>& x_vars,
+              const std::vector<PropagationBaseObject*>& y_vars,
+              const std::vector<PropagationBaseObject*>& x_size,
+              const std::vector<PropagationBaseObject*>& y_size) {
              s->AddConstraint(s->MakeNonOverlappingBoxesConstraint(
                  ToIntVarArray(x_vars),
                  ToIntVarArray(y_vars),
@@ -1267,8 +1299,8 @@ PYBIND11_MODULE(constraint_solver, m) {
                  ToIntVarArray(y_size)));
            })
       .def("add_non_overlapping_boxes_constraint",
-           [](Solver* s, const std::vector<IntExpr*>& x_vars,
-              const std::vector<IntExpr*>& y_vars,
+           [](Solver* s, const std::vector<PropagationBaseObject*>& x_vars,
+              const std::vector<PropagationBaseObject*>& y_vars,
               const std::vector<int64_t>& x_size,
               const std::vector<int64_t>& y_size) {
              s->AddConstraint(s->MakeNonOverlappingBoxesConstraint(
@@ -1279,15 +1311,16 @@ PYBIND11_MODULE(constraint_solver, m) {
              s->AddConstraint(s->MakeNotMemberCt(expr, values));
            })
       .def("add_null_intersect",
-           [](Solver* s, const std::vector<IntExpr*>& first_exprs,
-              const std::vector<IntExpr*>& second_exprs) {
+           [](Solver* s, const std::vector<PropagationBaseObject*>& first_exprs,
+              const std::vector<PropagationBaseObject*>& second_exprs) {
              s->AddConstraint(
                  s->MakeNullIntersect(
                     ToIntVarArray(first_exprs), ToIntVarArray(second_exprs)));
            })
       .def("add_null_intersect_except",
-           [](Solver* s, const std::vector<IntExpr*>& first_exprs,
-              const std::vector<IntExpr*>& second_exprs, int64_t escape_value) {
+           [](Solver* s, const std::vector<PropagationBaseObject*>& first_exprs,
+              const std::vector<PropagationBaseObject*>& second_exprs,
+              int64_t escape_value) {
              s->AddConstraint(s->MakeNullIntersectExcept(
                  ToIntVarArray(first_exprs),
                  ToIntVarArray(second_exprs),
@@ -1295,16 +1328,16 @@ PYBIND11_MODULE(constraint_solver, m) {
            })
       .def("add_pack",
            [](Solver* s,
-              const std::vector<IntExpr*>& exprs,
+              const std::vector<PropagationBaseObject*>& exprs,
               int64_t number_of_bins) {
              s->AddConstraint(
                  s->MakePack(ToIntVarArray(exprs), number_of_bins));
            })
       .def("add_path_cumul",
-           [](Solver* s, const std::vector<IntExpr*>& nexts,
-              const std::vector<IntExpr*>& active,
-              const std::vector<IntExpr*>& cumuls,
-              const std::vector<IntExpr*>& transits) {
+           [](Solver* s, const std::vector<PropagationBaseObject*>& nexts,
+              const std::vector<PropagationBaseObject*>& active,
+              const std::vector<PropagationBaseObject*>& cumuls,
+              const std::vector<PropagationBaseObject*>& transits) {
              s->AddConstraint(
                  s->MakePathCumul(ToIntVarArray(nexts),
                   ToIntVarArray(active),
@@ -1312,9 +1345,9 @@ PYBIND11_MODULE(constraint_solver, m) {
                     ToIntVarArray(transits)));
            })
       .def("add_path_cumul",
-           [](Solver* s, const std::vector<IntExpr*>& nexts,
-              const std::vector<IntExpr*>& active,
-              const std::vector<IntExpr*>& cumuls,
+           [](Solver* s, const std::vector<PropagationBaseObject*>& nexts,
+              const std::vector<PropagationBaseObject*>& active,
+              const std::vector<PropagationBaseObject*>& cumuls,
               Solver::IndexEvaluator2 transit_evaluator) {
              s->AddConstraint(
                  s->MakePathCumul(ToIntVarArray(nexts),
@@ -1323,54 +1356,58 @@ PYBIND11_MODULE(constraint_solver, m) {
                        transit_evaluator));
            })
       .def("add_weighted_sum_equality",
-           [](Solver* s, const std::vector<IntExpr*>& exprs,
+           [](Solver* s, const std::vector<PropagationBaseObject*>& exprs,
               const std::vector<int64_t>& coeffs, int64_t cst) {
              s->AddConstraint(
                 s->MakeScalProdEquality(ToIntVarArray(exprs), coeffs, cst));
            })
       .def("add_weighted_sum_equality",
-           [](Solver* s, const std::vector<IntExpr*>& exprs,
+           [](Solver* s, const std::vector<PropagationBaseObject*>& exprs,
               const std::vector<int64_t>& coeffs, IntVar* target) {
              s->AddConstraint(
                 s->MakeScalProdEquality(ToIntVarArray(exprs), coeffs, target));
            })
       .def("add_weighted_sum_greater_or_equal",
-           [](Solver* s, const std::vector<IntExpr*>& exprs,
+           [](Solver* s, const std::vector<PropagationBaseObject*>& exprs,
               const std::vector<int64_t>& coeffs, int64_t cst) {
              s->AddConstraint(s->MakeScalProdGreaterOrEqual(
               ToIntVarArray(exprs), coeffs, cst));
            })
       .def("add_weighted_sum_less_or_equal",
-           [](Solver* s, const std::vector<IntExpr*>& exprs,
+           [](Solver* s, const std::vector<PropagationBaseObject*>& exprs,
               const std::vector<int64_t>& coeffs, int64_t cst) {
              s->AddConstraint(
                  s->MakeScalProdLessOrEqual(ToIntVarArray(exprs), coeffs, cst));
            })
       .def("add_sorting_constraint",
-           [](Solver* s, const std::vector<IntExpr*>& exprs,
-              const std::vector<IntExpr*>& sorted) {
+           [](Solver* s, const std::vector<PropagationBaseObject*>& exprs,
+              const std::vector<PropagationBaseObject*>& sorted) {
              s->AddConstraint(s->MakeSortingConstraint(
                  ToIntVarArray(exprs), ToIntVarArray(sorted)));
            })
       .def("add_sub_circuit",
-           [](Solver* s, const std::vector<IntExpr*>& nexts) {
+           [](Solver* s, const std::vector<PropagationBaseObject*>& nexts) {
              s->AddConstraint(s->MakeSubCircuit(ToIntVarArray(nexts)));
            })
       .def("add_sum_equality",
-           [](Solver* s, const std::vector<IntExpr*>& exprs, int64_t cst) {
+           [](Solver* s, const std::vector<PropagationBaseObject*>& exprs,
+              int64_t cst) {
              s->AddConstraint(s->MakeSumEquality(ToIntVarArray(exprs), cst));
            })
       .def("add_sum_equality",
-           [](Solver* s, const std::vector<IntExpr*>& exprs, IntVar* var) {
+           [](Solver* s, const std::vector<PropagationBaseObject*>& exprs,
+              IntVar* var) {
              s->AddConstraint(s->MakeSumEquality(ToIntVarArray(exprs), var));
            })
       .def("add_sum_greater_or_equal",
-           [](Solver* s, const std::vector<IntExpr*>& exprs, int64_t cst) {
+           [](Solver* s, const std::vector<PropagationBaseObject*>& exprs,
+              int64_t cst) {
              s->AddConstraint(
                  s->MakeSumGreaterOrEqual(ToIntVarArray(exprs), cst));
            })
       .def("add_sum_less_or_equal",
-           [](Solver* s, const std::vector<IntExpr*>& exprs, int64_t cst) {
+           [](Solver* s, const std::vector<PropagationBaseObject*>& exprs,
+              int64_t cst) {
              s->AddConstraint(s->MakeSumLessOrEqual(ToIntVarArray(exprs), cst));
            })
       .def("add_temporal_disjunction",
@@ -1378,7 +1415,7 @@ PYBIND11_MODULE(constraint_solver, m) {
              s->AddConstraint(s->MakeTemporalDisjunction(t1, t2));
            })
       .def("add_allowed_assignments",
-           [](Solver* s, const std::vector<IntExpr*>& exprs,
+           [](Solver* s, const std::vector<PropagationBaseObject*>& exprs,
               const std::vector<std::vector<int64_t>>& raw_tuples) {
              IntTupleSet tuples(exprs.size());
              tuples.InsertAll(raw_tuples);
@@ -1390,7 +1427,7 @@ PYBIND11_MODULE(constraint_solver, m) {
       .def("add_true_constraint",
            [](Solver* s) { s->AddConstraint(s->MakeTrueConstraint()); })
       .def("add_transition_constraint",
-           [](Solver* s, const std::vector<IntExpr*>& exprs,
+           [](Solver* s, const std::vector<PropagationBaseObject*>& exprs,
               const std::vector<std::vector<int64_t>>& raw_transitions,
               int64_t initial_state, const std::vector<int64_t>& final_states) {
              IntTupleSet transitions(3);
@@ -1481,6 +1518,8 @@ PYBIND11_MODULE(constraint_solver, m) {
            DOC(operations_research, Solver, NewSearch))
       .def("next_solution", &Solver::NextSolution,
            DOC(operations_research, Solver, NextSolution))
+      .def("finish_current_search", &Solver::FinishCurrentSearch,
+           DOC(operations_research, Solver, FinishCurrentSearch))
       .def("end_search", &Solver::EndSearch,
            DOC(operations_research, Solver, EndSearch))
       .def_property_readonly("fail_stamp", &Solver::fail_stamp)
@@ -1629,8 +1668,9 @@ PYBIND11_MODULE(constraint_solver, m) {
            py::arg("step"), DOC(operations_research, Solver, MakeOptimize),
            py::return_value_policy::reference_internal)
       .def("weighted_minimize",
-         [](Solver* s, const std::vector<IntExpr*>& sub_objectives,
-              const std::vector<int64_t>& weights, int64_t step) {
+         [](Solver* s,
+            const std::vector<PropagationBaseObject*>& sub_objectives,
+            const std::vector<int64_t>& weights, int64_t step) {
              return s->MakeWeightedMinimize(
                  ToIntVarArray(sub_objectives), weights, step);
            },
@@ -1638,7 +1678,8 @@ PYBIND11_MODULE(constraint_solver, m) {
            DOC(operations_research, Solver, MakeWeightedMinimize),
            py::return_value_policy::reference_internal)
       .def("weighted_maximize",
-           [](Solver* s, const std::vector<IntExpr*>& sub_objectives,
+           [](Solver* s,
+              const std::vector<PropagationBaseObject*>& sub_objectives,
               const std::vector<int64_t>& weights, int64_t step) {
              return s->MakeWeightedMaximize(ToIntVarArray(sub_objectives),
                                            weights, step);
@@ -1648,7 +1689,7 @@ PYBIND11_MODULE(constraint_solver, m) {
            py::return_value_policy::reference_internal)
       .def("weighted_optimize",
            [](Solver* s, bool maximize,
-              const std::vector<IntExpr*>& sub_objectives,
+              const std::vector<PropagationBaseObject*>& sub_objectives,
               const std::vector<int64_t>& weights, int64_t step) {
              return s->MakeWeightedOptimize(
                  maximize, ToIntVarArray(sub_objectives), weights, step);
@@ -1661,14 +1702,16 @@ PYBIND11_MODULE(constraint_solver, m) {
            py::arg("maximize"), py::arg("variables"), py::arg("steps"),
            DOC(operations_research, Solver, MakeLexicographicOptimize),
            py::return_value_policy::reference_internal)
-      .def("sum", [](Solver* s, const std::vector<IntExpr*>& exprs) {
+      .def(
+          "sum",
+          [](Solver* s, const std::vector<PropagationBaseObject*>& exprs) {
              return s->MakeSum(ToIntVarArray(exprs));
            },
            DOC(operations_research, Solver, MakeSum),
            py::return_value_policy::reference_internal)
       .def("weighted_sum",
            [](Solver* s,
-              const std::vector<IntExpr*>& exprs,
+              const std::vector<PropagationBaseObject*>& exprs,
               const std::vector<int64_t>& coeffs) {
              return s->MakeScalProd(ToIntVarArray(exprs), coeffs);
            },
@@ -1681,7 +1724,7 @@ PYBIND11_MODULE(constraint_solver, m) {
            DOC(operations_research, Solver, MakeElement),
            py::return_value_policy::reference_internal)
       .def("min",
-           [](Solver* s, const std::vector<IntExpr*>& exprs) {
+           [](Solver* s, const std::vector<PropagationBaseObject*>& exprs) {
              return s->MakeMin(ToIntVarArray(exprs));
            },
            DOC(operations_research, Solver, MakeMin),
@@ -1692,10 +1735,8 @@ PYBIND11_MODULE(constraint_solver, m) {
       .def("min", py::overload_cast<IntExpr*, int64_t>(&Solver::MakeMin),
            DOC(operations_research, Solver, MakeMin_3),
            py::return_value_policy::reference_internal)
-      .def("min", py::overload_cast<IntExpr*, int>(&Solver::MakeMin),
-           DOC(operations_research, Solver, MakeMin_4),
-           py::return_value_policy::reference_internal)
-      .def("max", [](Solver* s, const std::vector<IntExpr*>& exprs) {
+      .def("max",
+           [](Solver* s, const std::vector<PropagationBaseObject*>& exprs) {
              return s->MakeMax(ToIntVarArray(exprs));
            },
            DOC(operations_research, Solver, MakeMax),
@@ -1705,9 +1746,6 @@ PYBIND11_MODULE(constraint_solver, m) {
            py::return_value_policy::reference_internal)
       .def("max", py::overload_cast<IntExpr*, int64_t>(&Solver::MakeMax),
            DOC(operations_research, Solver, MakeMax_3),
-           py::return_value_policy::reference_internal)
-      .def("max", py::overload_cast<IntExpr*, int>(&Solver::MakeMax),
-           DOC(operations_research, Solver, MakeMax_4),
            py::return_value_policy::reference_internal)
       .def("convex_piecewise_expr", &Solver::MakeConvexPiecewiseExpr,
            py::arg("expr"), py::arg("early_cost"), py::arg("early_date"),
@@ -1737,7 +1775,8 @@ PYBIND11_MODULE(constraint_solver, m) {
       .def("print_model_visitor", &Solver::MakePrintModelVisitor,
            DOC(operations_research, Solver, MakePrintModelVisitor),
            py::return_value_policy::reference_internal)
-      .def("phase", [](Solver* s, const std::vector<IntExpr*>& exprs,
+      .def("phase",
+           [](Solver* s, const std::vector<PropagationBaseObject*>& exprs,
                        Solver::IntVarStrategy var_strategy,
                        Solver::IntValueStrategy val_strategy) {
              return s->MakePhase(ToIntVarArray(exprs), var_strategy,
@@ -1750,7 +1789,7 @@ PYBIND11_MODULE(constraint_solver, m) {
            DOC(operations_research, Solver, MakeAssignVariableValue),
            py::return_value_policy::reference_internal)
       .def("local_search_phase",
-           [](Solver* s, const std::vector<IntExpr*>& exprs,
+           [](Solver* s, const std::vector<PropagationBaseObject*>& exprs,
               DecisionBuilder* db, py::capsule ls_params) {
              void* ptr = ls_params;
              return s->MakeLocalSearchPhase(
@@ -1770,7 +1809,7 @@ PYBIND11_MODULE(constraint_solver, m) {
            py::arg("assignment"), py::arg("ls_params"),
            py::return_value_policy::reference_internal)
       .def("random_lns_operator",
-           [](Solver* s, const std::vector<IntExpr*>& exprs,
+           [](Solver* s, const std::vector<PropagationBaseObject*>& exprs,
               int number_of_variables) {
              return s->MakeRandomLnsOperator(ToIntVarArray(exprs),
                                               number_of_variables);
@@ -1778,7 +1817,7 @@ PYBIND11_MODULE(constraint_solver, m) {
            py::arg("exprs"), py::arg("number_of_variables"),
            py::return_value_policy::reference_internal)
       .def("operator",
-           [](Solver* s, const std::vector<IntExpr*>& exprs,
+           [](Solver* s, const std::vector<PropagationBaseObject*>& exprs,
               Solver::LocalSearchOperators op) {
              return s->MakeOperator(ToIntVarArray(exprs), op);
            },
@@ -2526,6 +2565,12 @@ PYBIND11_MODULE(constraint_solver, m) {
       .def("num_int_vars", &Assignment::NumIntVars)
       .def("num_interval_vars", &Assignment::NumIntervalVars)
       .def("num_sequence_vars", &Assignment::NumSequenceVars)
+      .def("int_var_container", &Assignment::IntVarContainer,
+           py::return_value_policy::reference_internal)
+      .def("interval_var_container", &Assignment::IntervalVarContainer,
+           py::return_value_policy::reference_internal)
+      .def("sequence_var_container", &Assignment::SequenceVarContainer,
+           py::return_value_policy::reference_internal)
       .def("store", &Assignment::Store)
       .def("restore", &Assignment::Restore)
       .def("load", py::overload_cast<const std::string&>(&Assignment::Load),
@@ -2658,7 +2703,7 @@ PYBIND11_MODULE(constraint_solver, m) {
       .def(
           "add_weighted_sum_equal_var_dimension",
           [](Pack* pack, const std::vector<int64_t>& weights,
-             const std::vector<IntExpr*>& exprs) {
+             const std::vector<PropagationBaseObject*>& exprs) {
             return pack->AddWeightedSumEqualVarDimension(weights,
                                                          ToIntVarArray(exprs));
           },
@@ -2666,7 +2711,7 @@ PYBIND11_MODULE(constraint_solver, m) {
       .def(
           "add_weighted_sum_equal_var_dimension",
           [](Pack* pack, Solver::IndexEvaluator2 weights,
-             const std::vector<IntExpr*>& exprs) {
+             const std::vector<PropagationBaseObject*>& exprs) {
             return pack->AddWeightedSumEqualVarDimension(weights,
                                                          ToIntVarArray(exprs));
           },

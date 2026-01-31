@@ -98,7 +98,6 @@ namespace operations_research::routing {
 
 }  // namespace operations_research::routing
 
-// Protobuf support
 PY_PROTO_ENUM_TYPEMAP(
     operations_research::routing::FirstSolutionStrategy::Value,
     ortools.routing.enums_pb2.FirstSolutionStrategy.Value)

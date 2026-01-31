@@ -16,31 +16,37 @@
 """Vehicles Routing Problem (VRP)."""
 
 # [START import]
+from ortools.constraint_solver.python import constraint_solver
 from ortools.routing import enums_pb2
-from ortools.routing import pywraprouting
+from ortools.routing import parameters_pb2
+from ortools.routing.python import routing
 
 # [END import]
 
 
 # [START solution_printer]
-def print_solution(manager, routing, solution):
+def print_solution(
+    manager: routing.IndexManager,
+    routing_model: routing.Model,
+    solution: constraint_solver.Assignment,
+) -> None:
     """Prints solution on console."""
-    print(f"Objective: {solution.ObjectiveValue()}")
+    print(f"Objective: {solution.objective_value()}")
     max_route_distance = 0
-    for vehicle_id in range(manager.GetNumberOfVehicles()):
-        if not routing.IsVehicleUsed(solution, vehicle_id):
+    for vehicle_id in range(manager.num_vehicles()):
+        if not routing_model.is_vehicle_used(solution, vehicle_id):
             continue
-        index = routing.Start(vehicle_id)
+        index = routing_model.start(vehicle_id)
         plan_output = f"Route for vehicle {vehicle_id}:\n"
         route_distance = 0
-        while not routing.IsEnd(index):
-            plan_output += f" {manager.IndexToNode(index)} -> "
+        while not routing_model.is_end(index):
+            plan_output += f" {manager.index_to_node(index)} -> "
             previous_index = index
-            index = solution.Value(routing.NextVar(index))
-            route_distance += routing.GetArcCostForVehicle(
+            index = solution.value(routing_model.next_var(index))
+            route_distance += routing_model.get_arc_cost_for_vehicle(
                 previous_index, index, vehicle_id
             )
-        plan_output += f"{manager.IndexToNode(index)}\n"
+        plan_output += f"{manager.index_to_node(index)}\n"
         plan_output += f"Distance of the route: {route_distance}m\n"
         print(plan_output)
         max_route_distance = max(route_distance, max_route_distance)
@@ -48,7 +54,7 @@ def print_solution(manager, routing, solution):
     # [END solution_printer]
 
 
-def main():
+def main() -> None:
     """Solve the CVRP problem."""
     # Instantiate the data problem.
     # [START data]
@@ -59,49 +65,51 @@ def main():
 
     # Create the routing index manager.
     # [START index_manager]
-    manager = pywraprouting.IndexManager(num_locations, num_vehicles, depot)
+    manager = routing.IndexManager(num_locations, num_vehicles, depot)
     # [END index_manager]
 
     # Create Routing Model.
     # [START routing_model]
-    routing = pywraprouting.Model(manager)
+    routing_model = routing.Model(manager)
 
     # [END routing_model]
 
     # Create and register a transit callback.
     # [START transit_callback]
-    def distance_callback(from_index, to_index):
+    def distance_callback(from_index: int, to_index: int) -> int:
         # pylint: disable=unused-argument
         """Returns the distance between the two nodes."""
         del from_index
         del to_index
         return 1
 
-    transit_callback_index = routing.RegisterTransitCallback(distance_callback)
+    transit_callback_index = routing_model.register_transit_callback(distance_callback)
     # [END transit_callback]
 
     # Define cost of each arc.
     # [START arc_cost]
-    routing.SetArcCostEvaluatorOfAllVehicles(transit_callback_index)
+    routing_model.set_arc_cost_evaluator_of_all_vehicles(transit_callback_index)
     # [END arc_cost]
 
     # Add Distance constraint.
     # [START distance_constraint]
     dimension_name = "Distance"
-    routing.AddDimension(
+    routing_model.add_dimension(
         transit_callback_index,
         0,  # no slack
         3000,  # vehicle maximum travel distance
         True,  # start cumul to zero
         dimension_name,
     )
-    distance_dimension = routing.GetDimensionOrDie(dimension_name)
-    distance_dimension.SetGlobalSpanCostCoefficient(100)
+    distance_dimension = routing_model.get_dimension_or_die(dimension_name)
+    distance_dimension.set_global_span_cost_coefficient(100)
     # [END distance_constraint]
 
     # Setting first solution heuristic.
     # [START parameters]
-    search_parameters = pywraprouting.DefaultRoutingSearchParameters()
+    search_parameters: parameters_pb2.RoutingSearchParameters = (
+        routing.default_routing_search_parameters()
+    )
     search_parameters.first_solution_strategy = (
         enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
     )
@@ -114,13 +122,13 @@ def main():
 
     # Solve the problem.
     # [START solve]
-    solution = routing.SolveWithParameters(search_parameters)
+    solution = routing_model.solve_with_parameters(search_parameters)
     # [END solve]
 
     # Print solution on console.
     # [START print_solution]
     if solution:
-        print_solution(manager, routing, solution)
+        print_solution(manager, routing_model, solution)
     # [END print_solution]
 
 

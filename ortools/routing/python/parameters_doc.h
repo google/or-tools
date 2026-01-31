@@ -15,6 +15,8 @@
   This file contains docstrings for use in the Python bindings.
   Do not edit! They were automatically extracted by pybind11_mkdoc.
  */
+#ifndef ORTOOLS_ROUTING_PYTHON_PARAMETERS_DOC_H_
+#define ORTOOLS_ROUTING_PYTHON_PARAMETERS_DOC_H_
 
 #define __EXPAND(x) x
 #define __COUNT(_1, _2, _3, _4, _5, _6, _7, COUNT, ...) COUNT
@@ -38,10 +40,12 @@
 #pragma GCC diagnostic ignored "-Wunused-variable"
 #endif
 
-static const char* __doc_operations_research_DefaultRoutingModelParameters =
+static const char*
+    __doc_operations_research_routing_DefaultRoutingModelParameters =  // NOLINT
     R"doc()doc";
 
-static const char* __doc_operations_research_DefaultRoutingSearchParameters =
+static const char*
+    __doc_operations_research_routing_DefaultRoutingSearchParameters =  // NOLINT
     R"doc()doc";
 
 static const char*
@@ -63,3 +67,5 @@ valid.)doc";
 #if defined(__GNUG__)
 #pragma GCC diagnostic pop
 #endif
+
+#endif  // ORTOOLS_ROUTING_PYTHON_PARAMETERS_DOC_H_
