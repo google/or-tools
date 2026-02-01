@@ -64,6 +64,29 @@ PYBIND11_MODULE(routing, m) {
   m.def("default_routing_search_parameters", &DefaultRoutingSearchParameters,
         DOC(operations_research, routing, DefaultRoutingSearchParameters));
 
+  pybind11::class_<operations_research::routing::BoundCost>(m, "BoundCost")
+      .def(pybind11::init<>())
+      .def(pybind11::init<int64_t, int64_t>(), py::arg("bound"),
+           py::arg("cost"))
+      .def_readwrite("bound", &operations_research::routing::BoundCost::bound)
+      .def_readwrite("cost", &operations_research::routing::BoundCost::cost);
+
+  pybind11::class_<operations_research::PiecewiseLinearFunction>(
+      m, "PiecewiseLinearFunction")
+      .def(pybind11::init([](std::vector<int64_t> points_x,
+                             std::vector<int64_t> points_y,
+                             std::vector<int64_t> slopes,
+                             std::vector<int64_t> other_points_x) {
+             return operations_research::PiecewiseLinearFunction::
+                 CreatePiecewiseLinearFunction(
+                     std::move(points_x), std::move(points_y),
+                     std::move(slopes), std::move(other_points_x));
+           }),
+           py::arg("points_x"), py::arg("points_y"), py::arg("slopes"),
+           py::arg("other_points_x"))
+      .def("value", &operations_research::PiecewiseLinearFunction::Value,
+           py::arg("x"));
+
   pybind11::class_<IndexManager>(
       m, "IndexManager", DOC(operations_research, routing, IndexManager))
       .def(pybind11::init([](int num_nodes, int num_vehicles, int depot) {
@@ -111,7 +134,36 @@ PYBIND11_MODULE(routing, m) {
       .def("get_start_index", &IndexManager::GetStartIndex,
            DOC(operations_research, routing, IndexManager, GetStartIndex))
       .def("get_end_index", &IndexManager::GetEndIndex,
-           DOC(operations_research, routing, IndexManager, GetEndIndex));
+           DOC(operations_research, routing, IndexManager, GetEndIndex))
+      .def("num_unique_depots", &IndexManager::num_unique_depots,
+           DOC(operations_research, routing, IndexManager, num_unique_depots))
+      .def(
+          "nodes_to_indices",
+          [](const IndexManager& manager, const std::vector<int>& nodes) {
+            std::vector<NodeIndex> node_indices;
+            node_indices.reserve(nodes.size());
+            for (const int node : nodes) {
+              node_indices.push_back(NodeIndex(node));
+            }
+            return manager.NodesToIndices(node_indices);
+          },
+          py::arg("nodes"),
+          DOC(operations_research, routing, IndexManager, NodesToIndices))
+      .def(
+          "indices_to_nodes",
+          [](const IndexManager& manager, const std::vector<int64_t>& indices) {
+            std::vector<int> nodes;
+            const std::vector<NodeIndex> node_indices =
+                manager.IndicesToNodes(absl::MakeConstSpan(indices));
+            nodes.reserve(node_indices.size());
+            for (const NodeIndex node_index : node_indices) {
+              nodes.push_back(node_index.value());
+            }
+            return nodes;
+          },
+          py::arg("indices"),
+          DOC(operations_research, routing, IndexManager, IndicesToNodes))
+      .def_readonly_static("k_unassigned", &IndexManager::kUnassigned);
 
   pybind11::class_<Dimension>(m, "Dimension",
                               DOC(operations_research, routing, Dimension))
@@ -130,11 +182,21 @@ PYBIND11_MODULE(routing, m) {
       .def("slack_var", &Dimension::SlackVar,
            pybind11::return_value_policy::reference_internal, py::arg("index"),
            DOC(operations_research, routing, Dimension, SlackVar))
+      .def("set_span_upper_bound_for_vehicle",
+           &Dimension::SetSpanUpperBoundForVehicle, py::arg("upper_bound"),
+           py::arg("vehicle"),
+           DOC(operations_research, routing, Dimension,
+               SetSpanUpperBoundForVehicle))
       .def("set_span_cost_coefficient_for_vehicle",
            &Dimension::SetSpanCostCoefficientForVehicle, py::arg("coefficient"),
            py::arg("vehicle"),
            DOC(operations_research, routing, Dimension,
                SetSpanCostCoefficientForVehicle))
+      .def("set_span_cost_coefficient_for_all_vehicles",
+           &Dimension::SetSpanCostCoefficientForAllVehicles,
+           py::arg("coefficient"),
+           DOC(operations_research, routing, Dimension,
+               SetSpanCostCoefficientForAllVehicles))
       .def("set_global_span_cost_coefficient",
            &Dimension::SetGlobalSpanCostCoefficient, py::arg("coefficient"),
            DOC(operations_research, routing, Dimension,
@@ -154,6 +216,102 @@ PYBIND11_MODULE(routing, m) {
            py::arg("limit"), py::arg("coefficient"),
            DOC(operations_research, routing, Dimension,
                SetCumulVarSoftLowerBound))
+      .def("get_transit_value_from_class", &Dimension::GetTransitValueFromClass,
+           py::arg("from_index"), py::arg("to_index"), py::arg("vehicle_class"),
+           DOC(operations_research, routing, Dimension,
+               GetTransitValueFromClass))
+      .def("set_cumul_var_range", &Dimension::SetCumulVarRange,
+           py::arg("index"), py::arg("min"), py::arg("max"),
+           DOC(operations_research, routing, Dimension, SetCumulVarRange))
+      .def("get_cumul_var_min", &Dimension::GetCumulVarMin, py::arg("index"),
+           DOC(operations_research, routing, Dimension, GetCumulVarMin))
+      .def("get_cumul_var_max", &Dimension::GetCumulVarMax, py::arg("index"),
+           DOC(operations_research, routing, Dimension, GetCumulVarMax))
+
+      .def("has_cumul_var_soft_upper_bound",
+           &Dimension::HasCumulVarSoftUpperBound, py::arg("index"),
+           DOC(operations_research, routing, Dimension,
+               HasCumulVarSoftUpperBound))
+      .def("get_cumul_var_soft_upper_bound",
+           &Dimension::GetCumulVarSoftUpperBound, py::arg("index"),
+           DOC(operations_research, routing, Dimension,
+               GetCumulVarSoftUpperBound))
+      .def("get_cumul_var_soft_upper_bound_coefficient",
+           &Dimension::GetCumulVarSoftUpperBoundCoefficient, py::arg("index"),
+           DOC(operations_research, routing, Dimension,
+               GetCumulVarSoftUpperBoundCoefficient))
+      .def("has_cumul_var_soft_lower_bound",
+           &Dimension::HasCumulVarSoftLowerBound, py::arg("index"),
+           DOC(operations_research, routing, Dimension,
+               HasCumulVarSoftLowerBound))
+      .def("get_cumul_var_soft_lower_bound",
+           &Dimension::GetCumulVarSoftLowerBound, py::arg("index"),
+           DOC(operations_research, routing, Dimension,
+               GetCumulVarSoftLowerBound))
+      .def("get_cumul_var_soft_lower_bound_coefficient",
+           &Dimension::GetCumulVarSoftLowerBoundCoefficient, py::arg("index"),
+           DOC(operations_research, routing, Dimension,
+               GetCumulVarSoftLowerBoundCoefficient))
+      .def("has_soft_span_upper_bounds", &Dimension::HasSoftSpanUpperBounds,
+           DOC(operations_research, routing, Dimension, HasSoftSpanUpperBounds))
+      .def("set_soft_span_upper_bound_for_vehicle",
+           &Dimension::SetSoftSpanUpperBoundForVehicle, py::arg("bound_cost"),
+           py::arg("vehicle"),
+           DOC(operations_research, routing, Dimension,
+               SetSoftSpanUpperBoundForVehicle))
+      .def("get_soft_span_upper_bound_for_vehicle",
+           &Dimension::GetSoftSpanUpperBoundForVehicle, py::arg("vehicle"),
+           DOC(operations_research, routing, Dimension,
+               GetSoftSpanUpperBoundForVehicle))
+      .def("set_quadratic_cost_soft_span_upper_bound_for_vehicle",
+           &Dimension::SetQuadraticCostSoftSpanUpperBoundForVehicle,
+           py::arg("bound_cost"), py::arg("vehicle"),
+           DOC(operations_research, routing, Dimension,
+               SetQuadraticCostSoftSpanUpperBoundForVehicle))
+      .def("has_quadratic_cost_soft_span_upper_bounds",
+           &Dimension::HasQuadraticCostSoftSpanUpperBounds,
+           DOC(operations_research, routing, Dimension,
+               HasQuadraticCostSoftSpanUpperBounds))
+      .def("get_quadratic_cost_soft_span_upper_bound_for_vehicle",
+           &Dimension::GetQuadraticCostSoftSpanUpperBoundForVehicle,
+           py::arg("vehicle"),
+           DOC(operations_research, routing, Dimension,
+               GetQuadraticCostSoftSpanUpperBoundForVehicle))
+      .def("set_cumul_var_piecewise_linear_cost",
+           &Dimension::SetCumulVarPiecewiseLinearCost, py::arg("index"),
+           py::arg("cost"),
+           DOC(operations_research, routing, Dimension,
+               SetCumulVarPiecewiseLinearCost))
+      .def("has_cumul_var_piecewise_linear_cost",
+           &Dimension::HasCumulVarPiecewiseLinearCost, py::arg("index"),
+           DOC(operations_research, routing, Dimension,
+               HasCumulVarPiecewiseLinearCost))
+      .def("get_cumul_var_piecewise_linear_cost",
+           &Dimension::GetCumulVarPiecewiseLinearCost,
+           pybind11::return_value_policy::reference_internal, py::arg("index"),
+           DOC(operations_research, routing, Dimension,
+               GetCumulVarPiecewiseLinearCost))
+      .def("set_break_distance_duration_of_vehicle",
+           &Dimension::SetBreakDistanceDurationOfVehicle, py::arg("distance"),
+           py::arg("duration"), py::arg("vehicle"),
+           DOC(operations_research, routing, Dimension,
+               SetBreakDistanceDurationOfVehicle))
+      .def("initialize_breaks", &Dimension::InitializeBreaks,
+           DOC(operations_research, routing, Dimension, InitializeBreaks))
+      .def("has_break_constraints", &Dimension::HasBreakConstraints,
+           DOC(operations_research, routing, Dimension, HasBreakConstraints))
+      .def("get_break_intervals_of_vehicle",
+           &Dimension::GetBreakIntervalsOfVehicle,
+           pybind11::return_value_policy::reference_internal,
+           py::arg("vehicle"),
+           DOC(operations_research, routing, Dimension,
+               GetBreakIntervalsOfVehicle))
+      .def("get_break_distance_duration_of_vehicle",
+           &Dimension::GetBreakDistanceDurationOfVehicle,
+           pybind11::return_value_policy::reference_internal,
+           py::arg("vehicle"),
+           DOC(operations_research, routing, Dimension,
+               GetBreakDistanceDurationOfVehicle))
       .def(
           "set_break_intervals_of_vehicle",
           [](Dimension* dimension,
@@ -456,9 +614,16 @@ PYBIND11_MODULE(routing, m) {
   rm.def("add_pickup_and_delivery", &Model::AddPickupAndDelivery,
          py::arg("pickup"), py::arg("delivery"),
          DOC(operations_research, routing, Model, AddPickupAndDelivery));
-  rm.def("add_pickup_and_delivery_sets", &Model::AddPickupAndDeliverySets,
-         py::arg("pickup_disjunction"), py::arg("delivery_disjunction"),
-         DOC(operations_research, routing, Model, AddPickupAndDeliverySets));
+  rm.def(
+      "add_pickup_and_delivery_sets",
+      [](Model* model, int pickup_disjunction, int delivery_disjunction) {
+        model->AddPickupAndDeliverySets(
+            operations_research::routing::DisjunctionIndex(pickup_disjunction),
+            operations_research::routing::DisjunctionIndex(
+                delivery_disjunction));
+      },
+      py::arg("pickup_disjunction"), py::arg("delivery_disjunction"),
+      DOC(operations_research, routing, Model, AddPickupAndDeliverySets));
   rm.def("get_pickup_position", &Model::GetPickupPosition,
          py::arg("node_index"));  // Missing doc.
   rm.def("get_delivery_position", &Model::GetDeliveryPosition,
@@ -475,6 +640,15 @@ PYBIND11_MODULE(routing, m) {
          DOC(operations_research, routing, Model, UnperformedPenaltyOrValue));
   rm.def("get_depot", &Model::GetDepot,
          DOC(operations_research, routing, Model, GetDepot));
+  rm.def("set_maximum_number_of_active_vehicles",
+         &Model::SetMaximumNumberOfActiveVehicles,
+         py::arg("max_active_vehicles"),
+         DOC(operations_research, routing, Model,
+             SetMaximumNumberOfActiveVehicles));
+  rm.def("get_maximum_number_of_active_vehicles",
+         &Model::GetMaximumNumberOfActiveVehicles,
+         DOC(operations_research, routing, Model,
+             GetMaximumNumberOfActiveVehicles));
   rm.def("set_visit_type", &Model::SetVisitType, py::arg("index"),
          py::arg("type"), py::arg("type_policy"),
          DOC(operations_research, routing, Model, SetVisitType));

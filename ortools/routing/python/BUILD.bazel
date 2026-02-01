@@ -61,3 +61,37 @@ py_test(
         "//ortools/routing:parameters_py_pb2",
     ],
 )
+
+py_test(
+    name = "dimension_test",
+    size = "small",
+    srcs = ["dimension_test.py"],
+    deps = [
+        ":routing",
+        requirement("absl-py"),
+        "//ortools/routing:enums_py_pb2",
+    ],
+)
+
+py_test(
+    name = "index_manager_test",
+    size = "small",
+    srcs = ["index_manager_test.py"],
+    deps = [
+        ":routing",
+        requirement("absl-py"),
+    ],
+)
+
+py_test(
+    name = "sat_test",
+    size = "small",
+    srcs = ["sat_test.py"],
+    deps = [
+        ":routing",
+        requirement("absl-py"),
+        "//ortools/routing:enums_py_pb2",
+        "//ortools/util:optional_boolean_py_pb2",
+        "//ortools/util/python:sorted_interval_list",
+    ],
+)
