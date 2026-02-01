@@ -518,22 +518,25 @@ bool LratMerger::WriteInferredClause(
       return LratError();
     }
   }
-  merged_proof_file_ << inferred_clause.clause_id();
+  std::string& clause_str = tmp_clause_str_;
+  clause_str.clear();
+  absl::StrAppend(&clause_str, inferred_clause.clause_id());
   for (const int lit : inferred_clause.literals()) {
-    merged_proof_file_ << " " << Literal(LiteralIndex(lit)).SignedValue();
+    absl::StrAppend(&clause_str, " ", Literal(LiteralIndex(lit)).SignedValue());
   }
-  merged_proof_file_ << " 0";
+  absl::StrAppend(&clause_str, " 0");
   for (const int rup_clause_id : inferred_clause.rup_clause_ids()) {
-    merged_proof_file_ << " " << rup_clause_id;
+    absl::StrAppend(&clause_str, " ", rup_clause_id);
   }
   for (const LratInferredClause::RatInfo& rat_info :
        inferred_clause.rat_infos()) {
-    merged_proof_file_ << " " << -rat_info.resolvant_id();
+    absl::StrAppend(&clause_str, " ", -rat_info.resolvant_id());
     for (const int rup_clause_id : rat_info.rup_clause_ids()) {
-      merged_proof_file_ << " " << rup_clause_id;
+      absl::StrAppend(&clause_str, " ", rup_clause_id);
     }
   }
-  merged_proof_file_ << " 0\n";
+  absl::StrAppend(&clause_str, " 0\n");
+  merged_proof_file_ << clause_str;
   last_written_global_id_ = GlobalId(inferred_clause.clause_id());
   return true;
 }

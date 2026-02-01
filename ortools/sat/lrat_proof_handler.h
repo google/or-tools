@@ -135,6 +135,7 @@ class LratMerger {
   std::vector<Literal> tmp_literals_;
   std::vector<ClausePtr> tmp_proof_;
   std::vector<LratChecker::RatClauses> tmp_rat_clauses_;
+  std::string tmp_clause_str_;
 };
 
 // Handles the LRAT proof of a SAT problem by either checking it incrementally
