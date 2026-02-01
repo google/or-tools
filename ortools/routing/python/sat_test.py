@@ -1480,7 +1480,7 @@ class SatTest(absltest.TestCase):
 
             routing_model.add_constant_dimension_with_slack(1, 24, 24, False, "dim")
             dim = routing_model.get_dimension_or_die("dim")
-            dim.set_soft_span_upper_bound_for_vehicle(8, 1, 0)
+            dim.set_soft_span_upper_bound_for_vehicle(routing.BoundCost(8, 1), 0)
             dim.cumul_var(0).set_range(6, 15)
             dim.cumul_var(1).set_range(7, 7)
             dim.cumul_var(2).set_range(8, 8)
@@ -1514,7 +1514,7 @@ class SatTest(absltest.TestCase):
 
             routing_model.add_constant_dimension_with_slack(1, 24, 24, False, "dim")
             dim = routing_model.get_dimension_or_die("dim")
-            dim.set_soft_span_upper_bound_for_vehicle(8, 2, 0)
+            dim.set_soft_span_upper_bound_for_vehicle(routing.BoundCost(8, 2), 0)
             dim.cumul_var(0).set_range(6, 15)
             dim.cumul_var(1).set_range(7, 7)
             dim.cumul_var(2).set_range(8, 8)
