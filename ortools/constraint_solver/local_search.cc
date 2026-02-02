@@ -26,7 +26,7 @@
 
 #include "absl/algorithm/container.h"
 #include "absl/base/nullability.h"
-#include "absl/container/flat_hash_map.h"
+#include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
@@ -3722,10 +3722,9 @@ class LocalSearchProfiler : public LocalSearchMonitor {
   WallTimer accept_neighbor_timer_;
   WallTimer filter_timer_;
   const LocalSearchOperator* last_operator_ = nullptr;
-  absl::flat_hash_map<const LocalSearchOperator*, OperatorStats>
-      operator_stats_;
-  absl::flat_hash_map<
-      std::string, absl::flat_hash_map<const LocalSearchFilter*, FilterStats>>
+  absl::btree_map<const LocalSearchOperator*, OperatorStats> operator_stats_;
+  absl::btree_map<std::string,
+                  absl::btree_map<const LocalSearchFilter*, FilterStats>>
       filter_stats_per_context_;
   // Profiled decision builders.
   std::vector<ProfiledDecisionBuilder*> profiled_decision_builders_;
