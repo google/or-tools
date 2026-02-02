@@ -24,6 +24,7 @@ target_link_libraries(routing_gen_proto_builder_pybind11 PRIVATE
   absl::str_format
   protobuf::libprotobuf
   ${PROJECT_NAMESPACE}::ortools_proto
+  ${PROJECT_NAMESPACE}::routing_proto
   ${PROJECT_NAMESPACE}::sat_python_wrappers)
 
 include(GNUInstallDirs)
