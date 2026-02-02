@@ -15,6 +15,7 @@
 
 load("@pip_deps//:requirements.bzl", "requirement")
 load("@pybind11_bazel//:build_defs.bzl", "pybind_extension")
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_python//python:py_test.bzl", "py_test")
 
@@ -27,31 +28,71 @@ cc_library(
     ],
 )
 
+cc_binary(
+    name = "gen_proto_builder_pybind11",
+    srcs = ["gen_proto_builder_pybind11.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/constraint_solver:search_stats_cc_proto",
+        "//ortools/constraint_solver:solver_parameters_cc_proto",
+        "//ortools/routing:enums_cc_proto",
+        "//ortools/routing:heuristic_parameters_cc_proto",
+        "//ortools/routing:ils_cc_proto",
+        "//ortools/routing:parameters_cc_proto",
+        "//ortools/sat/python:wrappers",
+        "@abseil-cpp//absl/flags:parse",
+        "@abseil-cpp//absl/flags:usage",
+        "@abseil-cpp//absl/log:die_if_null",
+        "@abseil-cpp//absl/log:initialize",
+        "@abseil-cpp//absl/strings:str_format",
+    ],
+)
+
+genrule(
+    name = "run_gen_proto_builder_pybind11",
+    outs = ["proto_builder_pybind11.h"],
+    cmd = "$(location :gen_proto_builder_pybind11) > $@",
+    tools = [":gen_proto_builder_pybind11"],
+)
+
+cc_library(
+    name = "proto_builder_pybind11",
+    hdrs = ["proto_builder_pybind11.h"],
+)
+
 pybind_extension(
     name = "routing",
     srcs = ["routing.cc"],
     visibility = ["//visibility:public"],
     deps = [
         ":doc",
+        ":proto_builder_pybind11",
         "//ortools/constraint_solver:cp",
+        "//ortools/constraint_solver:search_stats_cc_proto",
         "//ortools/constraint_solver:solver_parameters_cc_proto",
         "//ortools/constraint_solver/python:constraint_solver",
+        "//ortools/port:proto_utils",
         "//ortools/routing",
+        "//ortools/routing:enums_cc_proto",
+        "//ortools/routing:heuristic_parameters_cc_proto",
+        "//ortools/routing:ils_cc_proto",
         "//ortools/routing:index_manager",
         "//ortools/routing:parameters",
         "//ortools/routing:types",
+        "//ortools/sat:sat_parameters_cc_proto",
+        "//ortools/util:optional_boolean_cc_proto",
         "//ortools/util:sorted_interval_list",
         "//ortools/util/python:sorted_interval_list",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/container:flat_hash_set",
+        "@protobuf//:duration_cc_proto",
         "@pybind11_abseil//pybind11_abseil:absl_casters",
-        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
     ],
 )
 
 py_test(
     name = "routing_test",
-    size = "small",
+    size = "medium",
     srcs = ["routing_test.py"],
     deps = [
         ":routing",
@@ -85,7 +126,7 @@ py_test(
 
 py_test(
     name = "sat_test",
-    size = "small",
+    size = "medium",
     srcs = ["sat_test.py"],
     deps = [
         ":routing",

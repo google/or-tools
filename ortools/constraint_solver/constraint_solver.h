@@ -83,6 +83,7 @@ Solver(name = "pheasant",
 
 #include "absl/base/attributes.h"
 #include "absl/base/log_severity.h"
+#include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/flags/declare.h"
@@ -5330,6 +5331,8 @@ class SequenceVarElement : public AssignmentElement {
 template <class V, class E>
 class AssignmentContainer {
  public:
+  using LocalMap = absl::btree_map<const V*, int>;
+
   AssignmentContainer() {}
   E* Add(V* var) {
     CHECK(var != nullptr);
@@ -5473,8 +5476,7 @@ class AssignmentContainer {
 
  private:
   void EnsureMapIsUpToDate() const {
-    absl::flat_hash_map<const V*, int>* map =
-        const_cast<absl::flat_hash_map<const V*, int>*>(&elements_map_);
+    LocalMap* map = const_cast<LocalMap*>(&elements_map_);
     for (int i = map->size(); i < elements_.size(); ++i) {
       (*map)[elements_[i].Var()] = i;
     }
@@ -5501,7 +5503,7 @@ class AssignmentContainer {
   }
 
   std::vector<E> elements_;
-  absl::flat_hash_map<const V*, int> elements_map_;
+  LocalMap elements_map_;
 };
 
 /// An Assignment is a variable -> domains mapping, used

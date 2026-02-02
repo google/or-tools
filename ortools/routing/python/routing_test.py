@@ -19,13 +19,11 @@ import functools
 from absl.testing import absltest
 
 from ortools.constraint_solver.python import constraint_solver
-from ortools.routing import enums_pb2
-from ortools.routing import parameters_pb2
 from ortools.routing.python import routing
 
-FirstSolutionStrategy = enums_pb2.FirstSolutionStrategy
-RoutingSearchStatus = enums_pb2.RoutingSearchStatus
-RoutingSearchParameters = parameters_pb2.RoutingSearchParameters
+FirstSolutionStrategy = routing.FirstSolutionStrategy
+RoutingSearchStatus = routing.RoutingSearchStatus
+RoutingSearchParameters = routing.RoutingSearchParameters
 
 
 def distance(node_i: int, node_j: int) -> int:
@@ -356,8 +354,8 @@ class ModelTest(absltest.TestCase):
     def test_routing_model_parameters(self) -> None:
         # Create routing model with parameters
         parameters = routing.default_routing_model_parameters()
-        parameters.solver_parameters.CopyFrom(
-            constraint_solver.Solver.default_solver_parameters()
+        parameters.solver_parameters.parse_text_format(
+            str(constraint_solver.Solver.default_solver_parameters())
         )
         parameters.solver_parameters.trace_propagation = True
         manager = routing.IndexManager(10, 1, 0)

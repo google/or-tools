@@ -22,14 +22,23 @@
 
 #include "absl/algorithm/container.h"
 #include "absl/container/flat_hash_set.h"
+#include "google/protobuf/duration.pb.h"
 #include "ortools/constraint_solver/constraint_solver.h"
+#include "ortools/constraint_solver/search_stats.pb.h"
 #include "ortools/constraint_solver/solver_parameters.pb.h"
+#include "ortools/port/proto_utils.h"  // IWYU: keep
+#include "ortools/routing/enums.pb.h"
+#include "ortools/routing/heuristic_parameters.pb.h"
+#include "ortools/routing/ils.pb.h"
 #include "ortools/routing/index_manager.h"
 #include "ortools/routing/parameters.h"
 #include "ortools/routing/python/doc.h"                // IWYU pragma: keep
 #include "ortools/routing/python/index_manager_doc.h"  // IWYU pragma: keep. NOLINT
 #include "ortools/routing/python/parameters_doc.h"     // IWYU pragma: keep
+#include "ortools/routing/python/proto_builder_pybind11.h"
 #include "ortools/routing/types.h"
+#include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/util/optional_boolean.pb.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "pybind11/cast.h"
 #include "pybind11/functional.h"
@@ -37,7 +46,6 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 #include "pybind11_abseil/absl_casters.h"
-#include "pybind11_protobuf/native_proto_caster.h"
 
 namespace py = ::pybind11;
 
@@ -52,11 +60,13 @@ using ::operations_research::routing::RoutingModelParameters;
 using ::operations_research::routing::RoutingSearchParameters;
 
 PYBIND11_MODULE(routing, m) {
-  pybind11_protobuf::ImportNativeProtoCasters();
-
   pybind11::module::import(
       "ortools.constraint_solver.python.constraint_solver");
   pybind11::module::import("ortools.util.python.sorted_interval_list");
+
+#define IMPORT_PROTO_WRAPPER_CODE
+#include "ortools/routing/python/proto_builder_pybind11.h"
+#undef IMPORT_PROTO_WRAPPER_CODE
 
   m.def("default_routing_model_parameters", &DefaultRoutingModelParameters,
         DOC(operations_research, routing, DefaultRoutingModelParameters));

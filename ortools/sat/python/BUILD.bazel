@@ -48,6 +48,7 @@ cc_library(
     name = "wrappers",
     srcs = ["wrappers.cc"],
     hdrs = ["wrappers.h"],
+    visibility = ["//visibility:public"],
     deps = [
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/base:nullability",

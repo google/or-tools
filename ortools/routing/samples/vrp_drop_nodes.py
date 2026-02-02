@@ -19,8 +19,6 @@
 from typing import Any, Dict
 
 from ortools.constraint_solver.python import constraint_solver
-from ortools.routing import enums_pb2
-from ortools.routing import parameters_pb2
 from ortools.routing.python import routing
 
 # [END import]
@@ -170,16 +168,14 @@ def main() -> None:
 
     # Setting first solution heuristic.
     # [START parameters]
-    search_parameters: parameters_pb2.RoutingSearchParameters = (
-        routing.default_routing_search_parameters()
-    )
+    search_parameters = routing.default_routing_search_parameters()
     search_parameters.first_solution_strategy = (
-        enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
+        routing.FirstSolutionStrategy.PATH_CHEAPEST_ARC
     )
     search_parameters.local_search_metaheuristic = (
-        enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH
+        routing.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH
     )
-    search_parameters.time_limit.FromSeconds(1)
+    search_parameters.time_limit.seconds = 1
     # [END parameters]
 
     # Solve the problem.

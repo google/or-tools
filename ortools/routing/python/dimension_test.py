@@ -18,11 +18,10 @@ import functools
 
 from absl.testing import absltest
 
-from ortools.routing import enums_pb2
 from ortools.routing.python import routing
 
-FirstSolutionStrategy = enums_pb2.FirstSolutionStrategy
-RoutingSearchStatus = enums_pb2.RoutingSearchStatus
+FirstSolutionStrategy = routing.FirstSolutionStrategy
+RoutingSearchStatus = routing.RoutingSearchStatus
 
 
 def distance(node_i: int, node_j: int) -> int:

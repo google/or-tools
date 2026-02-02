@@ -55,8 +55,11 @@ class Generator {
   };
 
   explicit Generator(
-      absl::Span<const google::protobuf::Descriptor* absl_nonnull const> roots)
-      : message_stack_(roots.begin(), roots.end()) {
+      absl::Span<const google::protobuf::Descriptor* absl_nonnull const> roots,
+      absl::Span<const google::protobuf::EnumDescriptor* absl_nonnull const>
+          enums)
+      : message_stack_(roots.begin(), roots.end()),
+        enum_types_(enums.begin(), enums.end()) {
     // DFS on root.
     while (!message_stack_.empty()) {
       const google::protobuf::Descriptor* const msg = message_stack_.back();
@@ -71,6 +74,12 @@ class Generator {
         GenerateMessageDecl(*msg);
       }
       GenerateMessageFields(*msg);
+      for (int i = 0; i < msg->nested_type_count(); ++i) {
+        message_stack_.push_back(msg->nested_type(i));
+      }
+      for (int i = 0; i < msg->enum_type_count(); ++i) {
+        enum_types_.insert(msg->enum_type(i));
+      }
       absl::StrAppend(&out_, ";\n");
     }
 
@@ -147,6 +156,10 @@ class Generator {
           [](std::shared_ptr<$0> self, std::shared_ptr<$0> other) {
             self->MergeFrom(*other); 
           })
+    .def("clear",
+          [](std::shared_ptr<$0> self) {
+            self->Clear(); 
+          })
     .def("merge_text_format",
           [](std::shared_ptr<$0> self, const std::string& text) {
             return google::protobuf::TextFormat::MergeFromString(text, self.get());
@@ -176,11 +189,15 @@ class Generator {
   void GenerateMessageDecl(const google::protobuf::Descriptor& msg) {
     CHECK(wrapper_id_.emplace(&msg, wrapper_id_.size()).second)
         << "duplicate message: " << msg.full_name();
+    std::string msg_name(msg.name());
+    if (const google::protobuf::Descriptor* containing_type =
+            msg.containing_type()) {
+      msg_name = absl::StrCat(containing_type->name(), "_", msg_name);
+    }
     absl::SubstituteAndAppend(&out_, R"(
   const auto $0 = py::class_<$1>($2, "$3"))",
                               GetWrapperName(&msg), current_context_.cpp_name,
-                              GetWrapperName(msg.containing_type()),
-                              msg.name());
+                              GetWrapperName(msg.containing_type()), msg_name);
     // Add constructor and utilities.
     absl::SubstituteAndAppend(&out_, R"(
     .def(py::init<>())
@@ -188,6 +205,8 @@ class Generator {
           []($0* self, const $0& other) { self->CopyFrom(other); })
     .def("merge_from",
           []($0* self, const $0& other) { self->MergeFrom(other); })
+    .def("clear",
+          []($0* self) { self->Clear(); })
     .def("merge_text_format",
           []($0* self, const std::string& text) {
             return google::protobuf::TextFormat::MergeFromString(text, self);
@@ -213,11 +232,17 @@ class Generator {
 
   // Generates a pybind11 wrapper class declaration for an enum.
   void GenerateEnumDecl(const google::protobuf::EnumDescriptor& pb_enum) {
+    std::string enum_name(pb_enum.name());
+    if (const google::protobuf::Descriptor* containing_type =
+            pb_enum.containing_type();
+        containing_type != nullptr && enum_name == "Value") {
+      enum_name = absl::StrCat(containing_type->name(), "_", enum_name);
+    }
     absl::SubstituteAndAppend(&out_, R"(
   py::enum_<$0>($1, "$2"))",
                               GetQualifiedCppName(pb_enum),
                               GetWrapperName(pb_enum.containing_type()),
-                              pb_enum.name());
+                              enum_name);
     for (int i = 0; i < pb_enum.value_count(); ++i) {
       const google::protobuf::EnumValueDescriptor& value = *pb_enum.value(i);
       absl::SubstituteAndAppend(&out_, R"(
@@ -454,8 +479,10 @@ class Generator {
 };
 
 std::string GeneratePybindCode(
-    absl::Span<const google::protobuf::Descriptor* absl_nonnull const> roots) {
-  return Generator(roots).Result();
+    absl::Span<const google::protobuf::Descriptor* absl_nonnull const> roots,
+    absl::Span<const google::protobuf::EnumDescriptor* absl_nonnull const>
+        enums) {
+  return Generator(roots, enums).Result();
 }
 
 }  // namespace operations_research::sat::python

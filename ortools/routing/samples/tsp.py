@@ -20,12 +20,11 @@ http://en.wikipedia.org/wiki/Travelling_salesperson_problem.
 """
 
 # [START import]
-from ortools.routing import enums_pb2
-from ortools.routing import parameters_pb2
+
 from ortools.routing.python import routing
 
-FirstSolutionStrategy = enums_pb2.FirstSolutionStrategy
-RoutingSearchStatus = enums_pb2.RoutingSearchStatus
+FirstSolutionStrategy = routing.FirstSolutionStrategy
+RoutingSearchStatus = routing.RoutingSearchStatus
 # [END import]
 
 
@@ -86,7 +85,7 @@ def create_distance_callback(data, manager):
 def print_solution(manager, routing_model, solution):
     """Prints assignment on console."""
     status = routing_model.status()
-    print(f"Status: {RoutingSearchStatus.Value.Name(status)}")
+    print(f"Status: {status.name}")
     if (
         status != RoutingSearchStatus.ROUTING_OPTIMAL
         and status != RoutingSearchStatus.ROUTING_SUCCESS
@@ -142,9 +141,7 @@ def main():
 
     # Setting first solution heuristic.
     # [START parameters]
-    search_parameters: parameters_pb2.RoutingSearchParameters = (
-        routing.default_routing_search_parameters()
-    )
+    search_parameters = routing.default_routing_search_parameters()
     search_parameters.first_solution_strategy = FirstSolutionStrategy.PATH_CHEAPEST_ARC
     # [END parameters]
 

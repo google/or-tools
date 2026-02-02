@@ -24,7 +24,9 @@ namespace operations_research::sat::python {
 
 // Generated pybind11 code for the given proto messages.
 std::string GeneratePybindCode(
-    absl::Span<const google::protobuf::Descriptor* absl_nonnull const> roots);
+    absl::Span<const google::protobuf::Descriptor* absl_nonnull const> roots,
+    absl::Span<const google::protobuf::EnumDescriptor* absl_nonnull const>
+        enums = {});
 
 }  // namespace operations_research::sat::python
 

@@ -349,6 +349,7 @@ java_proto_library(
 
 cc_proto_library(
     name = "heuristic_parameters_cc_proto",
+    visibility = ["//visibility:public"],
     deps = [":heuristic_parameters_proto"],
 )
 

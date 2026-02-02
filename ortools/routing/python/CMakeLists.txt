@@ -11,8 +11,43 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# routing_gen_proto_builder_pybind11 code generator.
+add_executable(routing_gen_proto_builder_pybind11)
+target_sources(routing_gen_proto_builder_pybind11 PRIVATE "gen_proto_builder_pybind11.cc")
+target_include_directories(routing_gen_proto_builder_pybind11 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_compile_features(routing_gen_proto_builder_pybind11 PRIVATE cxx_std_17)
+target_link_libraries(routing_gen_proto_builder_pybind11 PRIVATE
+  absl::flags_commandlineflag
+  absl::flags_parse
+  absl::flags_usage
+  absl::die_if_null
+  absl::str_format
+  protobuf::libprotobuf
+  ${PROJECT_NAMESPACE}::ortools_proto
+  ${PROJECT_NAMESPACE}::sat_python_wrappers)
+
+include(GNUInstallDirs)
+if(APPLE)
+  set_target_properties(routing_gen_proto_builder_pybind11 PROPERTIES INSTALL_RPATH
+    "@loader_path/../${CMAKE_INSTALL_LIBDIR};@loader_path")
+elseif(UNIX)
+  cmake_path(RELATIVE_PATH CMAKE_INSTALL_FULL_LIBDIR
+             BASE_DIRECTORY ${CMAKE_INSTALL_FULL_BINDIR}
+             OUTPUT_VARIABLE libdir_relative_path)
+  set_target_properties(routing_gen_proto_builder_pybind11 PROPERTIES
+                        INSTALL_RPATH "$ORIGIN/${libdir_relative_path}")
+endif()
+
+install(TARGETS routing_gen_proto_builder_pybind11)
+
+add_custom_command(
+     OUTPUT proto_builder_pybind11.h
+     COMMAND routing_gen_proto_builder_pybind11 > proto_builder_pybind11.h
+     COMMENT "Generate C++ proto_builder_pybind11.h"
+     VERBATIM)
+
 # routing
-pybind11_add_module(routing_pybind11 MODULE routing.cc)
+pybind11_add_module(routing_pybind11 MODULE routing.cc proto_builder_pybind11.h)
 set_target_properties(routing_pybind11 PROPERTIES
   LIBRARY_OUTPUT_NAME "routing")
 
@@ -28,7 +63,7 @@ endif()
 
 target_link_libraries(routing_pybind11 PRIVATE
   ${PROJECT_NAMESPACE}::ortools
-  pybind11_native_proto_caster
+  ${PROJECT_NAMESPACE}::ortools_proto
   pybind11_abseil::absl_casters
 )
 add_library(${PROJECT_NAMESPACE}::routing_pybind11 ALIAS routing_pybind11)
