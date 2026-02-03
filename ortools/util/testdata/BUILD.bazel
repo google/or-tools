@@ -23,6 +23,7 @@ proto_library(
 
 cc_proto_library(
     name = "wrappers_test_cc_proto",
+    testonly = True,
     visibility = ["//visibility:public"],
     deps = [":wrappers_test_proto"],
 )

@@ -156,6 +156,7 @@ cc_library(
 
 cc_binary(
     name = "gen_wrappers_test_pybind11",
+    testonly = True,
     srcs = ["gen_wrappers_test_pybind11.cc"],
     deps = [
         ":wrappers",
@@ -172,6 +173,7 @@ cc_binary(
 
 genrule(
     name = "run_gen_wrappers_test_pybind11",
+    testonly = True,
     outs = ["wrappers_test_pybind11.h"],
     cmd = "$(location :gen_wrappers_test_pybind11) > $@",
     tools = [":gen_wrappers_test_pybind11"],
@@ -179,11 +181,13 @@ genrule(
 
 cc_library(
     name = "wrappers_test_pybind11",
+    testonly = True,
     hdrs = ["wrappers_test_pybind11.h"],
 )
 
 pybind_extension(
     name = "wrappers_test_extension",
+    testonly = True,
     srcs = ["wrappers_test_extension.cc"],
     visibility = ["//visibility:public"],
     deps = [
