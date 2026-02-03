@@ -282,7 +282,7 @@ absl::StatusOr<MPSolutionResponse> HighsSolveProto(
   response.mutable_solve_info()->set_solve_user_time_seconds(
       absl::ToDoubleSeconds(user_timer.GetDuration()));
 
-  if (response.status() == MPSOLVER_OPTIMAL) {
+  if (response.status() == MPSOLVER_OPTIMAL || response.status() == MPSOLVER_FEASIBLE) {
     double objective_value = highs.getObjectiveValue();
     response.set_objective_value(objective_value);
     response.set_best_objective_bound(objective_value);
@@ -302,7 +302,7 @@ absl::StatusOr<MPSolutionResponse> HighsSolveProto(
       }
     }
 
-    if (!has_integer_variables && model.general_constraint_size() == 0) {
+    if (response.status() == MPSOLVER_OPTIMAL && !has_integer_variables && model.general_constraint_size() == 0) {
       response.mutable_dual_value()->Resize(model.constraint_size(), 0);
       for (int row = 0; row < model.constraint_size(); row++) {
         response.set_dual_value(row, highs.getSolution().row_value[row]);
