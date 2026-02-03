@@ -32,6 +32,10 @@
 
 namespace operations_research {
 
+template class AssignmentContainer<IntVar, IntVarElement>;
+template class AssignmentContainer<IntervalVar, IntervalVarElement>;
+template class AssignmentContainer<SequenceVar, SequenceVarElement>;
+
 // ----------------- Solutions ------------------------
 
 // ----- IntVarElement -----
@@ -1016,6 +1020,184 @@ DecisionBuilder* Solver::MakeRestoreAssignment(Assignment* assignment) {
 
 DecisionBuilder* Solver::MakeStoreAssignment(Assignment* assignment) {
   return RevAlloc(new StoreAssignment(assignment));
+}
+
+bool Assignment::Empty() const {
+  return int_var_container_.Empty() && interval_var_container_.Empty() &&
+         sequence_var_container_.Empty();
+}
+
+int Assignment::Size() const {
+  return NumIntVars() + NumIntervalVars() + NumSequenceVars();
+}
+
+int Assignment::NumIntVars() const { return int_var_container_.Size(); }
+
+int Assignment::NumIntervalVars() const {
+  return interval_var_container_.Size();
+}
+
+int Assignment::NumSequenceVars() const {
+  return sequence_var_container_.Size();
+}
+
+void Assignment::AddObjective(IntVar* const v) { AddObjectives({v}); }
+
+void Assignment::AddObjectives(const std::vector<IntVar*>& vars) {
+  // Objective can only set once.
+  DCHECK(!HasObjective());
+  objective_elements_.reserve(vars.size());
+  for (IntVar* const var : vars) {
+    if (var != nullptr) {
+      objective_elements_.emplace_back(var);
+    }
+  }
+}
+
+void Assignment::ClearObjective() { objective_elements_.clear(); }
+
+int Assignment::NumObjectives() const { return objective_elements_.size(); }
+
+IntVar* Assignment::Objective() const { return ObjectiveFromIndex(0); }
+
+IntVar* Assignment::ObjectiveFromIndex(int index) const {
+  return HasObjectiveFromIndex(index) ? objective_elements_[index].Var()
+                                      : nullptr;
+}
+
+bool Assignment::HasObjective() const { return !objective_elements_.empty(); }
+
+bool Assignment::HasObjectiveFromIndex(int index) const {
+  return index < objective_elements_.size();
+}
+
+int64_t Assignment::ObjectiveMin() const { return ObjectiveMinFromIndex(0); }
+
+int64_t Assignment::ObjectiveMax() const { return ObjectiveMaxFromIndex(0); }
+
+int64_t Assignment::ObjectiveValue() const {
+  return ObjectiveValueFromIndex(0);
+}
+
+bool Assignment::ObjectiveBound() const { return ObjectiveBoundFromIndex(0); }
+
+void Assignment::SetObjectiveMin(int64_t m) { SetObjectiveMinFromIndex(0, m); }
+
+void Assignment::SetObjectiveMax(int64_t m) { SetObjectiveMaxFromIndex(0, m); }
+
+void Assignment::SetObjectiveValue(int64_t value) {
+  SetObjectiveValueFromIndex(0, value);
+}
+
+void Assignment::SetObjectiveRange(int64_t l, int64_t u) {
+  SetObjectiveRangeFromIndex(0, l, u);
+}
+
+int64_t Assignment::ObjectiveMinFromIndex(int index) const {
+  return HasObjectiveFromIndex(index) ? objective_elements_[index].Min() : 0;
+}
+
+int64_t Assignment::ObjectiveMaxFromIndex(int index) const {
+  return HasObjectiveFromIndex(index) ? objective_elements_[index].Max() : 0;
+}
+
+int64_t Assignment::ObjectiveValueFromIndex(int index) const {
+  return HasObjectiveFromIndex(index) ? objective_elements_[index].Value() : 0;
+}
+
+bool Assignment::ObjectiveBoundFromIndex(int index) const {
+  return HasObjectiveFromIndex(index) ? objective_elements_[index].Bound()
+                                      : true;
+}
+
+void Assignment::SetObjectiveMinFromIndex(int index, int64_t m) {
+  if (HasObjectiveFromIndex(index)) {
+    objective_elements_[index].SetMin(m);
+  }
+}
+
+void Assignment::SetObjectiveMaxFromIndex(int index, int64_t m) {
+  if (HasObjectiveFromIndex(index)) {
+    objective_elements_[index].SetMax(m);
+  }
+}
+
+void Assignment::SetObjectiveValueFromIndex(int index, int64_t value) {
+  if (HasObjectiveFromIndex(index)) {
+    objective_elements_[index].SetValue(value);
+  }
+}
+
+void Assignment::SetObjectiveRangeFromIndex(int index, int64_t l, int64_t u) {
+  if (HasObjectiveFromIndex(index)) {
+    objective_elements_[index].SetRange(l, u);
+  }
+}
+
+void Assignment::ActivateObjective() { ActivateObjectiveFromIndex(0); }
+
+void Assignment::DeactivateObjective() { DeactivateObjectiveFromIndex(0); }
+
+bool Assignment::ActivatedObjective() const {
+  return ActivatedObjectiveFromIndex(0);
+}
+
+void Assignment::ActivateObjectiveFromIndex(int index) {
+  if (HasObjectiveFromIndex(index)) {
+    objective_elements_[index].Activate();
+  }
+}
+
+void Assignment::DeactivateObjectiveFromIndex(int index) {
+  if (HasObjectiveFromIndex(index)) {
+    objective_elements_[index].Deactivate();
+  }
+}
+
+bool Assignment::ActivatedObjectiveFromIndex(int index) const {
+  return HasObjectiveFromIndex(index) ? objective_elements_[index].Activated()
+                                      : true;
+}
+
+bool Assignment::AreAllElementsBound() const {
+  return int_var_container_.AreAllElementsBound() &&
+         interval_var_container_.AreAllElementsBound() &&
+         sequence_var_container_.AreAllElementsBound();
+}
+
+const Assignment::IntContainer& Assignment::IntVarContainer() const {
+  return int_var_container_;
+}
+
+Assignment::IntContainer* Assignment::MutableIntVarContainer() {
+  return &int_var_container_;
+}
+
+const Assignment::IntervalContainer& Assignment::IntervalVarContainer() const {
+  return interval_var_container_;
+}
+
+Assignment::IntervalContainer* Assignment::MutableIntervalVarContainer() {
+  return &interval_var_container_;
+}
+
+const Assignment::SequenceContainer& Assignment::SequenceVarContainer() const {
+  return sequence_var_container_;
+}
+
+Assignment::SequenceContainer* Assignment::MutableSequenceVarContainer() {
+  return &sequence_var_container_;
+}
+
+bool Assignment::operator==(const Assignment& assignment) const {
+  return int_var_container_ == assignment.int_var_container_ &&
+         interval_var_container_ == assignment.interval_var_container_ &&
+         sequence_var_container_ == assignment.sequence_var_container_ &&
+         objective_elements_ == assignment.objective_elements_;
+}
+
+bool Assignment::operator!=(const Assignment& assignment) const {
+  return !(*this == assignment);
 }
 
 std::ostream& operator<<(std::ostream& out, const Assignment& assignment) {

@@ -83,7 +83,6 @@ Solver(name = "pheasant",
 
 #include "absl/base/attributes.h"
 #include "absl/base/log_severity.h"
-#include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/flags/declare.h"
@@ -5331,8 +5330,6 @@ class SequenceVarElement : public AssignmentElement {
 template <class V, class E>
 class AssignmentContainer {
  public:
-  using LocalMap = absl::btree_map<const V*, int>;
-
   AssignmentContainer() {}
   E* Add(V* var) {
     CHECK(var != nullptr);
@@ -5476,7 +5473,8 @@ class AssignmentContainer {
 
  private:
   void EnsureMapIsUpToDate() const {
-    LocalMap* map = const_cast<LocalMap*>(&elements_map_);
+    absl::flat_hash_map<const V*, int>* map =
+        const_cast<absl::flat_hash_map<const V*, int>*>(&elements_map_);
     for (int i = map->size(); i < elements_.size(); ++i) {
       (*map)[elements_[i].Var()] = i;
     }
@@ -5503,8 +5501,14 @@ class AssignmentContainer {
   }
 
   std::vector<E> elements_;
-  LocalMap elements_map_;
+  absl::flat_hash_map<const V*, int> elements_map_;
 };
+
+//#if !defined(SWIG)
+extern template class AssignmentContainer<IntVar, IntVarElement>;
+extern template class AssignmentContainer<IntervalVar, IntervalVarElement>;
+extern template class AssignmentContainer<SequenceVar, SequenceVarElement>;
+//#endif  // !defined(SWIG)
 
 /// An Assignment is a variable -> domains mapping, used
 /// to report solutions to the user.
@@ -5528,16 +5532,11 @@ class Assignment : public PropagationBaseObject {
   ~Assignment() override;
 
   void Clear();
-  bool Empty() const {
-    return int_var_container_.Empty() && interval_var_container_.Empty() &&
-           sequence_var_container_.Empty();
-  }
-  int Size() const {
-    return NumIntVars() + NumIntervalVars() + NumSequenceVars();
-  }
-  int NumIntVars() const { return int_var_container_.Size(); }
-  int NumIntervalVars() const { return interval_var_container_.Size(); }
-  int NumSequenceVars() const { return sequence_var_container_.Size(); }
+  bool Empty() const;
+  int Size() const;
+  int NumIntVars() const;
+  int NumIntervalVars() const;
+  int NumSequenceVars() const;
   void Store();
   void Restore();
 
@@ -5555,74 +5554,30 @@ class Assignment : public PropagationBaseObject {
 #endif  // #if !defined(SWIG)
   void Save(AssignmentProto* assignment_proto) const;
 
-  void AddObjective(IntVar* const v) { AddObjectives({v}); }
-  void AddObjectives(const std::vector<IntVar*>& vars) {
-    // Objective can only set once.
-    DCHECK(!HasObjective());
-    objective_elements_.reserve(vars.size());
-    for (IntVar* const var : vars) {
-      if (var != nullptr) {
-        objective_elements_.emplace_back(var);
-      }
-    }
-  }
-  void ClearObjective() { objective_elements_.clear(); }
-  int NumObjectives() const { return objective_elements_.size(); }
-  IntVar* Objective() const { return ObjectiveFromIndex(0); }
-  IntVar* ObjectiveFromIndex(int index) const {
-    return HasObjectiveFromIndex(index) ? objective_elements_[index].Var()
-                                        : nullptr;
-  }
-  bool HasObjective() const { return !objective_elements_.empty(); }
-  bool HasObjectiveFromIndex(int index) const {
-    return index < objective_elements_.size();
-  }
-  int64_t ObjectiveMin() const { return ObjectiveMinFromIndex(0); }
-  int64_t ObjectiveMax() const { return ObjectiveMaxFromIndex(0); }
-  int64_t ObjectiveValue() const { return ObjectiveValueFromIndex(0); }
-  bool ObjectiveBound() const { return ObjectiveBoundFromIndex(0); }
-  void SetObjectiveMin(int64_t m) { SetObjectiveMinFromIndex(0, m); }
-  void SetObjectiveMax(int64_t m) { SetObjectiveMaxFromIndex(0, m); }
-  void SetObjectiveValue(int64_t value) {
-    SetObjectiveValueFromIndex(0, value);
-  }
-  void SetObjectiveRange(int64_t l, int64_t u) {
-    SetObjectiveRangeFromIndex(0, l, u);
-  }
-  int64_t ObjectiveMinFromIndex(int index) const {
-    return HasObjectiveFromIndex(index) ? objective_elements_[index].Min() : 0;
-  }
-  int64_t ObjectiveMaxFromIndex(int index) const {
-    return HasObjectiveFromIndex(index) ? objective_elements_[index].Max() : 0;
-  }
-  int64_t ObjectiveValueFromIndex(int index) const {
-    return HasObjectiveFromIndex(index) ? objective_elements_[index].Value()
-                                        : 0;
-  }
-  bool ObjectiveBoundFromIndex(int index) const {
-    return HasObjectiveFromIndex(index) ? objective_elements_[index].Bound()
-                                        : true;
-  }
-  void SetObjectiveMinFromIndex(int index, int64_t m) {
-    if (HasObjectiveFromIndex(index)) {
-      objective_elements_[index].SetMin(m);
-    }
-  }
-  void SetObjectiveMaxFromIndex(int index, int64_t m) {
-    if (HasObjectiveFromIndex(index)) {
-      objective_elements_[index].SetMax(m);
-    }
-  }
-  void SetObjectiveValueFromIndex(int index, int64_t value) {
-    if (HasObjectiveFromIndex(index)) {
-      objective_elements_[index].SetValue(value);
-    }
-  }
-  void SetObjectiveRangeFromIndex(int index, int64_t l, int64_t u) {
-    if (HasObjectiveFromIndex(index)) {
-      objective_elements_[index].SetRange(l, u);
-    }
-  }
+  void AddObjective(IntVar* const v);
+  void AddObjectives(const std::vector<IntVar*>& vars);
+  void ClearObjective();
+  int NumObjectives() const;
+  IntVar* Objective() const;
+  IntVar* ObjectiveFromIndex(int index) const;
+  bool HasObjective() const;
+  bool HasObjectiveFromIndex(int index) const;
+  int64_t ObjectiveMin() const;
+  int64_t ObjectiveMax() const;
+  int64_t ObjectiveValue() const;
+  bool ObjectiveBound() const;
+  void SetObjectiveMin(int64_t m);
+  void SetObjectiveMax(int64_t m);
+  void SetObjectiveValue(int64_t value);
+  void SetObjectiveRange(int64_t l, int64_t u);
+  int64_t ObjectiveMinFromIndex(int index) const;
+  int64_t ObjectiveMaxFromIndex(int index) const;
+  int64_t ObjectiveValueFromIndex(int index) const;
+  bool ObjectiveBoundFromIndex(int index) const;
+  void SetObjectiveMinFromIndex(int index, int64_t m);
+  void SetObjectiveMaxFromIndex(int index, int64_t m);
+  void SetObjectiveValueFromIndex(int index, int64_t value);
+  void SetObjectiveRangeFromIndex(int index, int64_t l, int64_t u);
 
   IntVarElement* Add(IntVar* var);
   void Add(const std::vector<IntVar*>& vars);
@@ -5700,31 +5655,16 @@ class Assignment : public PropagationBaseObject {
   void Deactivate(const SequenceVar* var);
   bool Activated(const SequenceVar* var) const;
 
-  void ActivateObjective() { ActivateObjectiveFromIndex(0); }
-  void DeactivateObjective() { DeactivateObjectiveFromIndex(0); }
-  bool ActivatedObjective() const { return ActivatedObjectiveFromIndex(0); }
-  void ActivateObjectiveFromIndex(int index) {
-    if (HasObjectiveFromIndex(index)) {
-      objective_elements_[index].Activate();
-    }
-  }
-  void DeactivateObjectiveFromIndex(int index) {
-    if (HasObjectiveFromIndex(index)) {
-      objective_elements_[index].Deactivate();
-    }
-  }
-  bool ActivatedObjectiveFromIndex(int index) const {
-    return HasObjectiveFromIndex(index) ? objective_elements_[index].Activated()
-                                        : true;
-  }
+  void ActivateObjective();
+  void DeactivateObjective();
+  bool ActivatedObjective() const;
+  void ActivateObjectiveFromIndex(int index);
+  void DeactivateObjectiveFromIndex(int index);
+  bool ActivatedObjectiveFromIndex(int index) const;
 
   std::string DebugString() const override;
 
-  bool AreAllElementsBound() const {
-    return int_var_container_.AreAllElementsBound() &&
-           interval_var_container_.AreAllElementsBound() &&
-           sequence_var_container_.AreAllElementsBound();
-  }
+  bool AreAllElementsBound() const;
 
   bool Contains(const IntVar* var) const;
   bool Contains(const IntervalVar* var) const;
@@ -5737,29 +5677,14 @@ class Assignment : public PropagationBaseObject {
   void Copy(const Assignment* assignment);
 
   // TODO(user): Add element iterators to avoid exposing container class.
-  const IntContainer& IntVarContainer() const { return int_var_container_; }
-  IntContainer* MutableIntVarContainer() { return &int_var_container_; }
-  const IntervalContainer& IntervalVarContainer() const {
-    return interval_var_container_;
-  }
-  IntervalContainer* MutableIntervalVarContainer() {
-    return &interval_var_container_;
-  }
-  const SequenceContainer& SequenceVarContainer() const {
-    return sequence_var_container_;
-  }
-  SequenceContainer* MutableSequenceVarContainer() {
-    return &sequence_var_container_;
-  }
-  bool operator==(const Assignment& assignment) const {
-    return int_var_container_ == assignment.int_var_container_ &&
-           interval_var_container_ == assignment.interval_var_container_ &&
-           sequence_var_container_ == assignment.sequence_var_container_ &&
-           objective_elements_ == assignment.objective_elements_;
-  }
-  bool operator!=(const Assignment& assignment) const {
-    return !(*this == assignment);
-  }
+  const IntContainer& IntVarContainer() const;
+  IntContainer* MutableIntVarContainer();
+  const IntervalContainer& IntervalVarContainer() const;
+  IntervalContainer* MutableIntervalVarContainer();
+  const SequenceContainer& SequenceVarContainer() const;
+  SequenceContainer* MutableSequenceVarContainer();
+  bool operator==(const Assignment& assignment) const;
+  bool operator!=(const Assignment& assignment) const;
 
  private:
   IntContainer int_var_container_;
