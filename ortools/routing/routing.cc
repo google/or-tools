@@ -7353,30 +7353,28 @@ void Dimension::SetupCumulVarPiecewiseLinearCosts(
 
 void Dimension::SetCumulVarSoftUpperBound(int64_t index, int64_t upper_bound,
                                           int64_t coefficient) {
-  if (index >= cumul_var_soft_upper_bound_.size()) {
-    cumul_var_soft_upper_bound_.resize(index + 1, {nullptr, 0, 0});
+  if (soft_upper_bound_of_cumul_.empty()) {
+    if (coefficient == 0) return;  // Coefficient is already 0.
+    soft_upper_bound_of_cumul_.resize(cumuls_.size(), {0, 0});
   }
-  cumul_var_soft_upper_bound_[index] = {cumuls_[index], upper_bound,
-                                        coefficient};
+  soft_upper_bound_of_cumul_[index] = {upper_bound, coefficient};
 }
 
 bool Dimension::HasCumulVarSoftUpperBound(int64_t index) const {
-  return (index < cumul_var_soft_upper_bound_.size() &&
-          cumul_var_soft_upper_bound_[index].var != nullptr);
+  return (index < soft_upper_bound_of_cumul_.size() &&
+          soft_upper_bound_of_cumul_[index].cost != 0);
 }
 
 int64_t Dimension::GetCumulVarSoftUpperBound(int64_t index) const {
-  if (index < cumul_var_soft_upper_bound_.size() &&
-      cumul_var_soft_upper_bound_[index].var != nullptr) {
-    return cumul_var_soft_upper_bound_[index].bound;
+  if (index < soft_upper_bound_of_cumul_.size()) {
+    return soft_upper_bound_of_cumul_[index].bound;
   }
   return cumuls_[index]->Max();
 }
 
 int64_t Dimension::GetCumulVarSoftUpperBoundCoefficient(int64_t index) const {
-  if (index < cumul_var_soft_upper_bound_.size() &&
-      cumul_var_soft_upper_bound_[index].var != nullptr) {
-    return cumul_var_soft_upper_bound_[index].coefficient;
+  if (index < soft_upper_bound_of_cumul_.size()) {
+    return soft_upper_bound_of_cumul_[index].cost;
   }
   return 0;
 }
@@ -7385,48 +7383,43 @@ void Dimension::SetupCumulVarSoftUpperBoundCosts(
     std::vector<IntVar*>* cost_elements) const {
   CHECK(cost_elements != nullptr);
   Solver* const solver = model_->solver();
-  for (int i = 0; i < cumul_var_soft_upper_bound_.size(); ++i) {
-    const SoftBound& soft_bound = cumul_var_soft_upper_bound_[i];
-    if (soft_bound.var != nullptr) {
-      IntExpr* const expr = solver->MakeSemiContinuousExpr(
-          solver->MakeSum(soft_bound.var, -soft_bound.bound), 0,
-          soft_bound.coefficient);
-      IntVar* cost_var = BuildVarFromExprAndIndexActiveState(model_, expr, i);
-      cost_elements->push_back(cost_var);
-      // NOTE: We minimize the cost here instead of minimizing the cumul
-      // variable, to avoid setting the cumul to earlier than necessary.
-      model_->AddWeightedVariableMinimizedByFinalizer(cost_var,
-                                                      soft_bound.coefficient);
-    }
+  for (int i = 0; i < soft_upper_bound_of_cumul_.size(); ++i) {
+    const auto& [bound, coefficient] = soft_upper_bound_of_cumul_[i];
+    if (coefficient == 0) continue;
+    IntExpr* const expr = solver->MakeSemiContinuousExpr(
+        solver->MakeSum(cumuls_[i], -bound), 0, coefficient);
+    IntVar* cost_var = BuildVarFromExprAndIndexActiveState(model_, expr, i);
+    cost_elements->push_back(cost_var);
+    // NOTE: We minimize the cost here instead of minimizing the cumul
+    // variable, to avoid setting the cumul to earlier than necessary.
+    model_->AddWeightedVariableMinimizedByFinalizer(cost_var, coefficient);
   }
 }
 
 void Dimension::SetCumulVarSoftLowerBound(int64_t index, int64_t lower_bound,
                                           int64_t coefficient) {
-  if (index >= cumul_var_soft_lower_bound_.size()) {
-    cumul_var_soft_lower_bound_.resize(index + 1, {nullptr, 0, 0});
+  if (soft_lower_bound_of_cumul_.empty()) {
+    if (coefficient == 0) return;  // Coefficient is already 0.
+    soft_lower_bound_of_cumul_.resize(cumuls_.size(), {0, 0});
   }
-  cumul_var_soft_lower_bound_[index] = {cumuls_[index], lower_bound,
-                                        coefficient};
+  soft_lower_bound_of_cumul_[index] = {lower_bound, coefficient};
 }
 
 bool Dimension::HasCumulVarSoftLowerBound(int64_t index) const {
-  return (index < cumul_var_soft_lower_bound_.size() &&
-          cumul_var_soft_lower_bound_[index].var != nullptr);
+  return (index < soft_lower_bound_of_cumul_.size() &&
+          soft_lower_bound_of_cumul_[index].cost != 0);
 }
 
 int64_t Dimension::GetCumulVarSoftLowerBound(int64_t index) const {
-  if (index < cumul_var_soft_lower_bound_.size() &&
-      cumul_var_soft_lower_bound_[index].var != nullptr) {
-    return cumul_var_soft_lower_bound_[index].bound;
+  if (index < soft_lower_bound_of_cumul_.size()) {
+    return soft_lower_bound_of_cumul_[index].bound;
   }
   return cumuls_[index]->Min();
 }
 
 int64_t Dimension::GetCumulVarSoftLowerBoundCoefficient(int64_t index) const {
-  if (index < cumul_var_soft_lower_bound_.size() &&
-      cumul_var_soft_lower_bound_[index].var != nullptr) {
-    return cumul_var_soft_lower_bound_[index].coefficient;
+  if (index < soft_lower_bound_of_cumul_.size()) {
+    return soft_lower_bound_of_cumul_[index].cost;
   }
   return 0;
 }
@@ -7435,19 +7428,16 @@ void Dimension::SetupCumulVarSoftLowerBoundCosts(
     std::vector<IntVar*>* cost_elements) const {
   CHECK(cost_elements != nullptr);
   Solver* const solver = model_->solver();
-  for (int i = 0; i < cumul_var_soft_lower_bound_.size(); ++i) {
-    const SoftBound& soft_bound = cumul_var_soft_lower_bound_[i];
-    if (soft_bound.var != nullptr) {
-      IntExpr* const expr = solver->MakeSemiContinuousExpr(
-          solver->MakeDifference(soft_bound.bound, soft_bound.var), 0,
-          soft_bound.coefficient);
-      IntVar* cost_var = BuildVarFromExprAndIndexActiveState(model_, expr, i);
-      cost_elements->push_back(cost_var);
-      // NOTE: We minimize the cost here instead of maximizing the cumul
-      // variable, to avoid setting the cumul to later than necessary.
-      model_->AddWeightedVariableMinimizedByFinalizer(cost_var,
-                                                      soft_bound.coefficient);
-    }
+  for (int i = 0; i < soft_lower_bound_of_cumul_.size(); ++i) {
+    const auto& [bound, coefficient] = soft_lower_bound_of_cumul_[i];
+    if (coefficient == 0) continue;
+    IntExpr* const expr = solver->MakeSemiContinuousExpr(
+        solver->MakeDifference(bound, cumuls_[i]), 0, coefficient);
+    IntVar* cost_var = BuildVarFromExprAndIndexActiveState(model_, expr, i);
+    cost_elements->push_back(cost_var);
+    // NOTE: We minimize the cost here instead of maximizing the cumul
+    // variable, to avoid setting the cumul to later than necessary.
+    model_->AddWeightedVariableMinimizedByFinalizer(cost_var, coefficient);
   }
 }
 

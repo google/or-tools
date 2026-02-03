@@ -328,19 +328,21 @@ class OR_DLL Model {
       int64_t span_cost_coefficient;
       int64_t slack_cost_coefficient;
       const Dimension* dimension;
-      bool operator<(const DimensionCost& cost) const {
-        return std::tie(transit_evaluator_class, span_cost_coefficient,
-                        slack_cost_coefficient) <
-               std::tie(cost.transit_evaluator_class,
+
+      static auto as_tuple(const DimensionCost& cost) {
+        return std::tie(cost.transit_evaluator_class,
                         cost.span_cost_coefficient,
                         cost.slack_cost_coefficient);
+      };
+
+      friend bool operator<(const DimensionCost& c1, const DimensionCost& c2) {
+        return as_tuple(c1) < as_tuple(c2);
       }
 
       friend bool operator==(const DimensionCost& c1, const DimensionCost& c2) {
-        return c1.transit_evaluator_class == c2.transit_evaluator_class &&
-               c1.span_cost_coefficient == c2.span_cost_coefficient &&
-               c1.slack_cost_coefficient == c2.slack_cost_coefficient;
+        return as_tuple(c1) == as_tuple(c2);
       }
+
       template <typename H>
       friend H AbslHashValue(H h, const DimensionCost& cost) {
         return H::combine(std::move(h), cost.transit_evaluator_class,
@@ -376,9 +378,10 @@ class OR_DLL Model {
       int vehicle_class;
       int64_t fixed_cost;
 
-      bool operator<(const VehicleClassEntry& other) const {
-        return std::tie(fixed_cost, vehicle_class) <
-               std::tie(other.fixed_cost, other.vehicle_class);
+      friend bool operator<(const VehicleClassEntry& e1,
+                            const VehicleClassEntry& e2) {
+        return std::tie(e1.fixed_cost, e1.vehicle_class) <
+               std::tie(e2.fixed_cost, e2.vehicle_class);
       }
     };
 
@@ -3567,12 +3570,6 @@ class Dimension {
   }
 
  private:
-  struct SoftBound {
-    operations_research::IntVar* var;
-    int64_t bound;
-    int64_t coefficient;
-  };
-
   struct PiecewiseLinearCost {
     PiecewiseLinearCost() : var(nullptr), cost(nullptr) {}
     operations_research::IntVar* var;
@@ -3680,8 +3677,8 @@ class Dimension {
   int64_t global_span_cost_coefficient_;
   std::vector<int64_t> vehicle_span_cost_coefficients_;
   std::vector<int64_t> vehicle_slack_cost_coefficients_;
-  std::vector<SoftBound> cumul_var_soft_upper_bound_;
-  std::vector<SoftBound> cumul_var_soft_lower_bound_;
+  std::vector<BoundCost> soft_upper_bound_of_cumul_;
+  std::vector<BoundCost> soft_lower_bound_of_cumul_;
   std::vector<PiecewiseLinearCost> cumul_var_piecewise_linear_cost_;
   Model* const model_;
   const operations_research::routing::DimensionIndex index_;
