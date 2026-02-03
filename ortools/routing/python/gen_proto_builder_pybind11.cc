@@ -22,7 +22,7 @@
 #include "ortools/routing/heuristic_parameters.pb.h"
 #include "ortools/routing/ils.pb.h"
 #include "ortools/routing/parameters.pb.h"
-#include "ortools/sat/python/wrappers.h"
+#include "ortools/util/python/wrappers.h"
 
 namespace operations_research::routing::python {
 
@@ -35,7 +35,7 @@ void ParseAndGenerate() {
 %s
 #endif  // defined(IMPORT_PROTO_WRAPPER_CODE)
 )",
-      sat::python::GeneratePybindCode(
+      operations_research::util::python::GeneratePybindCode(
           {ABSL_DIE_IF_NULL(RoutingModelParameters::descriptor()),
            ABSL_DIE_IF_NULL(RoutingSearchParameters::descriptor()),
            ABSL_DIE_IF_NULL(FirstSolutionStrategy::descriptor()),

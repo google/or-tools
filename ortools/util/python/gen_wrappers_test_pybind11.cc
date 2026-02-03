@@ -16,11 +16,11 @@
 #include "absl/log/die_if_null.h"
 #include "absl/log/initialize.h"
 #include "absl/strings/str_format.h"
-#include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/sat_parameters.pb.h"
+#include "absl/strings/str_join.h"  // IWYU pragma: keep
 #include "ortools/util/python/wrappers.h"
+#include "ortools/util/testdata/wrappers_test.pb.h"
 
-namespace operations_research::sat::python {
+namespace operations_research::util::python {
 
 void ParseAndGenerate() {
   absl::PrintF(
@@ -31,20 +31,17 @@ void ParseAndGenerate() {
 %s
 #endif  // defined(IMPORT_PROTO_WRAPPER_CODE)
 )",
-      operations_research::util::python::GeneratePybindCode(
-          {ABSL_DIE_IF_NULL(CpModelProto::descriptor()),
-           ABSL_DIE_IF_NULL(CpSolverResponse::descriptor()),
-           ABSL_DIE_IF_NULL(SatParameters::descriptor())}));
+      GeneratePybindCode(
+          {ABSL_DIE_IF_NULL(operations_research::util::python::
+                                WrappersTestMessage::descriptor())}));
 }
 
-}  // namespace operations_research::sat::python
+}  // namespace operations_research::util::python
 
 int main(int argc, char* argv[]) {
-  // We do not use InitGoogle() to avoid linking with or-tools as this would
-  // create a circular dependency.
   absl::InitializeLog();
   absl::SetProgramUsageMessage(argv[0]);
   absl::ParseCommandLine(argc, argv);
-  operations_research::sat::python::ParseAndGenerate();
+  operations_research::util::python::ParseAndGenerate();
   return 0;
 }

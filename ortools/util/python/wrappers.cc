@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/sat/python/wrappers.h"
+#include "ortools/util/python/wrappers.h"
 
 #include <string>
 #include <utility>
@@ -31,7 +31,7 @@
 #include "absl/types/span.h"
 #include "google/protobuf/descriptor.h"
 
-namespace operations_research::sat::python {
+namespace operations_research::util::python {
 
 // A class that generates pybind11 code for a proto message.
 class Generator {
@@ -150,15 +150,15 @@ class Generator {
     .def(py::init<>())
     .def("copy_from",
           [](std::shared_ptr<$0> self, std::shared_ptr<$0> other) {
-            self->CopyFrom(*other); 
+            self->CopyFrom(*other);
           })
     .def("merge_from",
           [](std::shared_ptr<$0> self, std::shared_ptr<$0> other) {
-            self->MergeFrom(*other); 
+            self->MergeFrom(*other);
           })
     .def("clear",
           [](std::shared_ptr<$0> self) {
-            self->Clear(); 
+            self->Clear();
           })
     .def("merge_text_format",
           [](std::shared_ptr<$0> self, const std::string& text) {
@@ -217,11 +217,11 @@ class Generator {
           })
     .def("__copy__",
           []($0 self) {
-            return $0(self); 
+            return $0(self);
           })
     .def("__deepcopy__",
          []($0 self, py::dict) {
-            return $0(self); 
+            return $0(self);
           })
     .def("__str__",
           []($0 self) {
@@ -485,4 +485,4 @@ std::string GeneratePybindCode(
   return Generator(roots, enums).Result();
 }
 
-}  // namespace operations_research::sat::python
+}  // namespace operations_research::util::python

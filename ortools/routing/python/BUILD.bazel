@@ -39,7 +39,7 @@ cc_binary(
         "//ortools/routing:heuristic_parameters_cc_proto",
         "//ortools/routing:ils_cc_proto",
         "//ortools/routing:parameters_cc_proto",
-        "//ortools/sat/python:wrappers",
+        "//ortools/util/python:wrappers",
         "@abseil-cpp//absl/flags:parse",
         "@abseil-cpp//absl/flags:usage",
         "@abseil-cpp//absl/log:die_if_null",

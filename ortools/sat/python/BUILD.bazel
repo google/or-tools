@@ -44,33 +44,14 @@ cc_library(
     ],
 )
 
-cc_library(
-    name = "wrappers",
-    srcs = ["wrappers.cc"],
-    hdrs = ["wrappers.h"],
-    visibility = ["//visibility:public"],
-    deps = [
-        "@abseil-cpp//absl/algorithm:container",
-        "@abseil-cpp//absl/base:nullability",
-        "@abseil-cpp//absl/container:flat_hash_map",
-        "@abseil-cpp//absl/container:flat_hash_set",
-        "@abseil-cpp//absl/log",
-        "@abseil-cpp//absl/log:check",
-        "@abseil-cpp//absl/log:die_if_null",
-        "@abseil-cpp//absl/strings",
-        "@abseil-cpp//absl/types:span",
-        "@protobuf",
-    ],
-)
-
 cc_binary(
     name = "gen_proto_builder_pybind11",
     srcs = ["gen_proto_builder_pybind11.cc"],
     deps = [
-        ":wrappers",
         "//ortools/base",
         "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:sat_parameters_cc_proto",
+        "//ortools/util/python:wrappers",
         "@abseil-cpp//absl/flags:parse",
         "@abseil-cpp//absl/flags:usage",
         "@abseil-cpp//absl/log:die_if_null",

@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ORTOOLS_SAT_PYTHON_WRAPPERS_H_
-#define ORTOOLS_SAT_PYTHON_WRAPPERS_H_
+#ifndef ORTOOLS_UTIL_PYTHON_WRAPPERS_H_
+#define ORTOOLS_UTIL_PYTHON_WRAPPERS_H_
 
 #include <string>
 
@@ -20,7 +20,7 @@
 #include "absl/types/span.h"
 #include "google/protobuf/descriptor.h"
 
-namespace operations_research::sat::python {
+namespace operations_research::util::python {
 
 // Generated pybind11 code for the given proto messages.
 std::string GeneratePybindCode(
@@ -28,6 +28,6 @@ std::string GeneratePybindCode(
     absl::Span<const google::protobuf::EnumDescriptor* absl_nonnull const>
         enums = {});
 
-}  // namespace operations_research::sat::python
+}  // namespace operations_research::util::python
 
-#endif  // ORTOOLS_SAT_PYTHON_WRAPPERS_H_
+#endif  // ORTOOLS_UTIL_PYTHON_WRAPPERS_H_

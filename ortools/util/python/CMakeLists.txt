@@ -67,6 +67,20 @@ endif()
 target_link_libraries(solve_interrupter_pybind11 PRIVATE ${PROJECT_NAMESPACE}::ortools)
 add_library(${PROJECT_NAMESPACE}::solve_interrupter_pybind11 ALIAS solve_interrupter_pybind11)
 
+set(WRAPPERS_NAME util_python_wrappers)
+
+add_library(${WRAPPERS_NAME} OBJECT wrappers.h wrappers.cc)
+set_target_properties(${WRAPPERS_NAME} PROPERTIES
+  POSITION_INDEPENDENT_CODE ON)
+target_include_directories(${WRAPPERS_NAME} PUBLIC
+  ${PROJECT_SOURCE_DIR}
+  ${PROJECT_BINARY_DIR})
+target_link_libraries(${WRAPPERS_NAME} PUBLIC
+  absl::memory
+  absl::synchronization
+  absl::str_format
+  protobuf::libprotobuf)
+add_library(${PROJECT_NAMESPACE}::${WRAPPERS_NAME} ALIAS ${WRAPPERS_NAME})  
 
 if(BUILD_TESTING)
   add_library(py_solve_interrupter_testing OBJECT
@@ -97,6 +111,9 @@ if(BUILD_TESTING)
 
   file(GLOB PYTHON_SRCS "*_test.py")
   foreach(FILE_NAME IN LISTS PYTHON_SRCS)
+    if("${FILE_NAME}" MATCHES ".*wrappers_test.py")
+        continue() # Skip to the next iteration of the loop
+    endif()
     add_python_test(FILE_NAME ${FILE_NAME})
   endforeach()
 endif()
