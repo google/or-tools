@@ -57,12 +57,12 @@ jobs:
 
       # CONFIGURING CACHES
       - name: Cache CMake dependency source code
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           key: ${{env.deps_src_key}}-${{hashFiles('CMakeLists.txt', 'cmake/**')}}
           path: ${{github.workspace}}/build/_deps/*-src
       - name: Cache CMake dependency build
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           key: ${{env.deps_build_key}}-${{hashFiles('CMakeLists.txt', 'cmake/**')}}
           path: |
