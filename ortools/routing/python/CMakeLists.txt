@@ -64,7 +64,6 @@ endif()
 
 target_link_libraries(routing_pybind11 PRIVATE
   ${PROJECT_NAMESPACE}::ortools
-  ${PROJECT_NAMESPACE}::ortools_proto
   pybind11_abseil::absl_casters
 )
 add_library(${PROJECT_NAMESPACE}::routing_pybind11 ALIAS routing_pybind11)

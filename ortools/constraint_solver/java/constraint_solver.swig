@@ -33,6 +33,9 @@ SWIG_JAVABODY_PROXY(/*PTRCTOR_VISIBILITY=*/public,
 
 // Remove swig warnings
 %warnfilter(473) operations_research::DecisionBuilder;
+// Explicit template instantiation ignored
+#pragma SWIG nowarn=320
+
 // TODO(user): Remove this warnfilter.
 
 // We need to forward-declare the proto here, so that PROTO_INPUT involving it

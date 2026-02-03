@@ -30,18 +30,18 @@ Here is some simple Constraint Programming code to find out:
     Solver s("pheasant");
     // Create integer variables to represent the number of pheasants and
     // rabbits, with a minimum of 0 and a maximum of 20.
-    IntVar* const p = s.MakeIntVar(0, 20, "pheasant"));
-    IntVar* const r = s.MakeIntVar(0, 20, "rabbit"));
+    IntVar* p = s.MakeIntVar(0, 20, "pheasant"));
+    IntVar* r = s.MakeIntVar(0, 20, "rabbit"));
     // The number of heads is the sum of pheasants and rabbits.
-    IntExpr* const heads = s.MakeSum(p, r);
+    IntExpr* heads = s.MakeSum(p, r);
     // The number of legs is the sum of pheasants * 2 and rabbits * 4.
-    IntExpr* const legs = s.MakeSum(s.MakeProd(p, 2), s.MakeProd(r, 4));
+    IntExpr* legs = s.MakeSum(s.MakeProd(p, 2), s.MakeProd(r, 4));
     // Constraints: the number of legs is 56 and heads is 20.
-    Constraint* const ct_legs = s.MakeEquality(legs, 56);
-    Constraint* const ct_heads = s.MakeEquality(heads, 20);
+    Constraint* ct_legs = s.MakeEquality(legs, 56);
+    Constraint* ct_heads = s.MakeEquality(heads, 20);
     s.AddConstraint(ct_legs);
     s.AddConstraint(ct_heads);
-    DecisionBuilder* const db = s.MakePhase(p, r,
+    DecisionBuilder* db = s.MakePhase(p, r,
                                             Solver::CHOOSE_FIRST_UNBOUND,
                                             Solver::ASSIGN_MIN_VALUE);
     s.NewSearch(db);
@@ -263,7 +263,7 @@ class Solver {
   struct IntegerCastInfo {
     IntegerCastInfo()
         : variable(nullptr), expression(nullptr), maintainer(nullptr) {}
-    IntegerCastInfo(IntVar* const v, IntExpr* const e, Constraint* const c)
+    IntegerCastInfo(IntVar* v, IntExpr* e, Constraint* c)
         : variable(v), expression(e), maintainer(c) {}
     IntVar* variable;
     IntExpr* expression;
@@ -1259,7 +1259,7 @@ class Solver {
   /// If deep_serialize returns false, the model visitor will not extract all
   /// possible values from the values function.
   template <typename F>
-  Constraint* MakeLightElement(F values, IntVar* const var, IntVar* const index,
+  Constraint* MakeLightElement(F values, IntVar* var, IntVar* index,
                                std::function<bool()> deep_serialize = nullptr) {
     return RevAlloc(new LightIntFunctionElementCt<F>(
         this, var, index, std::move(values), std::move(deep_serialize)));
@@ -1272,8 +1272,8 @@ class Solver {
   /// If deep_serialize returns false, the model visitor will not extract all
   /// possible values from the values function.
   template <typename F>
-  Constraint* MakeLightElement(F values, IntVar* const var,
-                               IntVar* const index1, IntVar* const index2,
+  Constraint* MakeLightElement(F values, IntVar* var, IntVar* index1,
+                               IntVar* index2,
                                std::function<bool()> deep_serialize = nullptr) {
     return RevAlloc(new LightIntIntFunctionElementCt<F>(
         this, var, index1, index2, std::move(values),
@@ -1285,9 +1285,8 @@ class Solver {
   /// The constraint does not perform bound reduction of the resulting variable
   /// until the index variables are bound.
   template <typename F>
-  Constraint* MakeLightElement(F values, IntVar* const var,
-                               IntVar* const index1, IntVar* const index2,
-                               IntVar* const index3) {
+  Constraint* MakeLightElement(F values, IntVar* var, IntVar* index1,
+                               IntVar* index2, IntVar* index3) {
     return RevAlloc(new LightIntIntIntFunctionElementCt<F>(
         this, var, index1, index2, index3, std::move(values)));
   }
@@ -1654,7 +1653,7 @@ class Solver {
                                     const std::vector<IntVar*>& sorted);
   // TODO(user): Add void MakeSortedArray(
   //                             const std::vector<IntVar*>& vars,
-  //                             std::vector<IntVar*>* const sorted);
+  //                             std::vector<IntVar*>* sorted);
 
   /// Creates a constraint that enforces that left is lexicographically less
   /// than right.
@@ -3383,7 +3382,7 @@ class Solver {
   std::function<int64_t(int64_t, int64_t, int64_t)> penalty_callback_;
 };
 
-std::ostream& operator<<(std::ostream& out, const Solver* const s);  /// NOLINT
+std::ostream& operator<<(std::ostream& out, const Solver* s);  /// NOLINT
 
 /// This method returns 0. It is useful when 0 can be cast either as
 /// a pointer or as an integer value and thus lead to an ambiguous
@@ -3416,7 +3415,7 @@ std::ostream& operator<<(std::ostream& out, const BaseObject* o);  /// NOLINT
 /// writing new constraints or new expressions.
 class PropagationBaseObject : public BaseObject {
  public:
-  explicit PropagationBaseObject(Solver* const s) : solver_(s) {}
+  explicit PropagationBaseObject(Solver* s) : solver_(s) {}
 
 #ifndef SWIG
   // This type is neither copyable nor movable.
@@ -3445,8 +3444,8 @@ class PropagationBaseObject : public BaseObject {
   /// This method pushes the demon onto the propagation queue. It will
   /// be processed directly if the queue is empty. It will be enqueued
   /// according to its priority otherwise.
-  void EnqueueDelayedDemon(Demon* const d) { solver_->EnqueueDelayedDemon(d); }
-  void EnqueueVar(Demon* const d) { solver_->EnqueueVar(d); }
+  void EnqueueDelayedDemon(Demon* d) { solver_->EnqueueDelayedDemon(d); }
+  void EnqueueVar(Demon* d) { solver_->EnqueueVar(d); }
   void ExecuteAll(const SimpleRevFIFO<Demon*>& demons);
   void EnqueueAll(const SimpleRevFIFO<Demon*>& demons);
 
@@ -3883,7 +3882,7 @@ class
 ///     by the demons Posted during the post() method.
 class Constraint : public PropagationBaseObject {
  public:
-  explicit Constraint(Solver* const solver) : PropagationBaseObject(solver) {}
+  explicit Constraint(Solver* solver) : PropagationBaseObject(solver) {}
 
 #ifndef SWIG
   // This type is neither copyable nor movable.
@@ -3922,7 +3921,7 @@ class Constraint : public PropagationBaseObject {
 /// created internally when Var() is called on a subclass of IntExpr.
 class CastConstraint : public Constraint {
  public:
-  CastConstraint(Solver* const solver, IntVar* const target_var)
+  CastConstraint(Solver* solver, IntVar* target_var)
       : Constraint(solver), target_var_(target_var) {
     CHECK(target_var != nullptr);
   }
@@ -3939,7 +3938,7 @@ class SearchMonitor : public BaseObject {
  public:
   static constexpr int kNoProgress = -1;
 
-  explicit SearchMonitor(Solver* const s) : solver_(s) {}
+  explicit SearchMonitor(Solver* s) : solver_(s) {}
 
 #ifndef SWIG
   // This type is neither copyable nor movable.
@@ -4050,7 +4049,7 @@ class Rev {
 
   const T& Value() const { return value_; }
 
-  void SetValue(Solver* const s, const T& val) {
+  void SetValue(Solver* s, const T& val) {
     if (val != value_) {
       if (stamp_ < s->stamp()) {
         s->SaveValue(&value_);
@@ -4071,13 +4070,13 @@ class NumericalRev : public Rev<T> {
  public:
   explicit NumericalRev(const T& val) : Rev<T>(val) {}
 
-  void Add(Solver* const s, const T& to_add) {
+  void Add(Solver* s, const T& to_add) {
     this->SetValue(s, this->Value() + to_add);
   }
 
-  void Incr(Solver* const s) { Add(s, 1); }
+  void Incr(Solver* s) { Add(s, 1); }
 
-  void Decr(Solver* const s) { Add(s, -1); }
+  void Decr(Solver* s) { Add(s, -1); }
 };
 
 /// Reversible array of POD types.
@@ -4106,7 +4105,7 @@ class RevArray {
   const T& operator[](int index) const { return values_[index]; }
 #endif
 
-  void SetValue(Solver* const s, int index, const T& val) {
+  void SetValue(Solver* s, int index, const T& val) {
     DCHECK_LT(index, size_);
     if (val != values_[index]) {
       if (stamps_[index] < s->stamp()) {
@@ -4129,13 +4128,13 @@ class NumericalRevArray : public RevArray<T> {
  public:
   NumericalRevArray(int size, const T& val) : RevArray<T>(size, val) {}
 
-  void Add(Solver* const s, int index, const T& to_add) {
+  void Add(Solver* s, int index, const T& to_add) {
     this->SetValue(s, index, this->Value(index) + to_add);
   }
 
-  void Incr(Solver* const s, int index) { Add(s, index, 1); }
+  void Incr(Solver* s, int index) { Add(s, index, 1); }
 
-  void Decr(Solver* const s, int index) { Add(s, index, -1); }
+  void Decr(Solver* s, int index) { Add(s, index, -1); }
 };
 
 /// The class IntExpr is the base of all integer expressions in
@@ -4147,7 +4146,7 @@ class NumericalRevArray : public RevArray<T> {
 ///   - casting it into a variable (instance of IntVar)
 class IntExpr : public PropagationBaseObject {
  public:
-  explicit IntExpr(Solver* const s) : PropagationBaseObject(s) {}
+  explicit IntExpr(Solver* s) : PropagationBaseObject(s) {}
 
 #ifndef SWIG
   // This type is neither copyable nor movable.
@@ -4602,7 +4601,7 @@ class ObjectiveMonitor : public BaseObjectiveMonitor {
     if (Size() == 1) {
       MinimizationVar(0)->SetMax(CapSub(upper_bounds(0), Step(0)));
     } else {
-      Solver* const solver = this->solver();
+      Solver* solver = this->solver();
       for (int i = 0; i < Size(); ++i) {
         upper_bounds_[i] = solver->MakeIntConst(upper_bounds(i));
       }
@@ -4613,7 +4612,7 @@ class ObjectiveMonitor : public BaseObjectiveMonitor {
   template <typename T>
   IntVar* MakeMinimizationVarsLessOrEqualWithStepsStatus(
       const T& upper_bounds) {
-    Solver* const solver = this->solver();
+    Solver* solver = this->solver();
     IntVar* status = solver->MakeBoolVar();
     if (Size() == 1) {
       solver->AddConstraint(solver->MakeIsLessOrEqualCstCt(
@@ -4687,7 +4686,7 @@ class OptimizeVar : public ObjectiveMonitor {
 /// Base class of all search limits.
 class SearchLimit : public SearchMonitor {
  public:
-  explicit SearchLimit(Solver* const s) : SearchMonitor(s), crossed_(false) {}
+  explicit SearchLimit(Solver* s) : SearchMonitor(s), crossed_(false) {}
 
 #ifndef SWIG
   // This type is neither copyable nor movable.
@@ -4866,7 +4865,7 @@ class
   static const int64_t kMinValidValue;
   /// The largest acceptable value to be returned by EndMax()
   static const int64_t kMaxValidValue;
-  IntervalVar(Solver* const solver, const std::string& name)
+  IntervalVar(Solver* solver, const std::string& name)
       : PropagationBaseObject(solver) {
     set_name(name);
   }
@@ -5367,7 +5366,7 @@ class AssignmentContainer {
   void CopyIntersection(const AssignmentContainer<V, E>& container) {
     for (int i = 0; i < container.elements_.size(); ++i) {
       const E& element = container.elements_[i];
-      const V* const var = element.Var();
+      const V* var = element.Var();
       int index = -1;
       if (i < elements_.size() && elements_[i].Var() == var) {
         index = i;
@@ -5375,7 +5374,7 @@ class AssignmentContainer {
         continue;
       }
       DCHECK_GE(index, 0);
-      E* const local_element = &elements_[index];
+      E* local_element = &elements_[index];
       local_element->Copy(element);
       if (element.Activated()) {
         local_element->Activate();
@@ -5392,30 +5391,30 @@ class AssignmentContainer {
       elements_.emplace_back(element);
     }
   }
-  bool Contains(const V* const var) const {
+  bool Contains(const V* var) const {
     int index;
     return Find(var, &index);
   }
-  E* MutableElement(const V* const var) {
-    E* const element = MutableElementOrNull(var);
+  E* MutableElement(const V* var) {
+    E* element = MutableElementOrNull(var);
     DCHECK(element != nullptr)
         << "Unknown variable " << var->DebugString() << " in solution";
     return element;
   }
-  E* MutableElementOrNull(const V* const var) {
+  E* MutableElementOrNull(const V* var) {
     int index = -1;
     if (Find(var, &index)) {
       return MutableElement(index);
     }
     return nullptr;
   }
-  const E& Element(const V* const var) const {
-    const E* const element = ElementPtrOrNull(var);
+  const E& Element(const V* var) const {
+    const E* element = ElementPtrOrNull(var);
     DCHECK(element != nullptr)
         << "Unknown variable " << var->DebugString() << " in solution";
     return *element;
   }
-  const E* ElementPtrOrNull(const V* const var) const {
+  const E* ElementPtrOrNull(const V* var) const {
     int index = -1;
     if (Find(var, &index)) {
       return &Element(index);
@@ -5479,7 +5478,7 @@ class AssignmentContainer {
       (*map)[elements_[i].Var()] = i;
     }
   }
-  bool Find(const V* const var, int* index) const {
+  bool Find(const V* var, int* index) const {
     /// This threshold was determined from microbenchmarks on Nehalem platform.
     const size_t kMaxSizeForLinearAccess = 11;
     if (Size() <= kMaxSizeForLinearAccess) {
@@ -5504,11 +5503,9 @@ class AssignmentContainer {
   absl::flat_hash_map<const V*, int> elements_map_;
 };
 
-//#if !defined(SWIG)
 extern template class AssignmentContainer<IntVar, IntVarElement>;
 extern template class AssignmentContainer<IntervalVar, IntervalVarElement>;
 extern template class AssignmentContainer<SequenceVar, SequenceVarElement>;
-//#endif  // !defined(SWIG)
 
 /// An Assignment is a variable -> domains mapping, used
 /// to report solutions to the user.
@@ -5554,7 +5551,7 @@ class Assignment : public PropagationBaseObject {
 #endif  // #if !defined(SWIG)
   void Save(AssignmentProto* assignment_proto) const;
 
-  void AddObjective(IntVar* const v);
+  void AddObjective(IntVar* v);
   void AddObjectives(const std::vector<IntVar*>& vars);
   void ClearObjective();
   int NumObjectives() const;

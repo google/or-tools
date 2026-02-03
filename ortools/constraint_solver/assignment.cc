@@ -20,12 +20,16 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
 #include "ortools/base/file.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
+#include "ortools/base/options.h"
 #include "ortools/base/recordio.h"
 #include "ortools/constraint_solver/assignment.pb.h"
 #include "ortools/constraint_solver/constraint_solver.h"
@@ -42,9 +46,9 @@ template class AssignmentContainer<SequenceVar, SequenceVarElement>;
 
 IntVarElement::IntVarElement() { Reset(nullptr); }
 
-IntVarElement::IntVarElement(IntVar* const var) { Reset(var); }
+IntVarElement::IntVarElement(IntVar* var) { Reset(var); }
 
-void IntVarElement::Reset(IntVar* const var) {
+void IntVarElement::Reset(IntVar* var) {
   var_ = var;
   min_ = std::numeric_limits<int64_t>::min();
   max_ = std::numeric_limits<int64_t>::max();
@@ -116,9 +120,9 @@ std::string IntVarElement::DebugString() const {
 
 IntervalVarElement::IntervalVarElement() { Reset(nullptr); }
 
-IntervalVarElement::IntervalVarElement(IntervalVar* const var) { Reset(var); }
+IntervalVarElement::IntervalVarElement(IntervalVar* var) { Reset(var); }
 
-void IntervalVarElement::Reset(IntervalVar* const var) {
+void IntervalVarElement::Reset(IntervalVar* var) {
   var_ = var;
   start_min_ = std::numeric_limits<int64_t>::min();
   start_max_ = std::numeric_limits<int64_t>::max();
@@ -250,9 +254,9 @@ bool IntervalVarElement::operator==(const IntervalVarElement& element) const {
 
 SequenceVarElement::SequenceVarElement() { Reset(nullptr); }
 
-SequenceVarElement::SequenceVarElement(SequenceVar* const var) { Reset(var); }
+SequenceVarElement::SequenceVarElement(SequenceVar* var) { Reset(var); }
 
-void SequenceVarElement::Reset(SequenceVar* const var) {
+void SequenceVarElement::Reset(SequenceVar* var) {
   var_ = var;
   forward_sequence_.clear();
   backward_sequence_.clear();
@@ -640,217 +644,213 @@ std::string Assignment::DebugString() const {
   return out;
 }
 
-IntVarElement* Assignment::Add(IntVar* const var) {
+IntVarElement* Assignment::Add(IntVar* var) {
   return int_var_container_.Add(var);
 }
 
 void Assignment::Add(const std::vector<IntVar*>& vars) {
-  for (IntVar* const var : vars) {
+  for (IntVar* var : vars) {
     Add(var);
   }
 }
 
-IntVarElement* Assignment::FastAdd(IntVar* const var) {
+IntVarElement* Assignment::FastAdd(IntVar* var) {
   return int_var_container_.FastAdd(var);
 }
 
-int64_t Assignment::Min(const IntVar* const var) const {
+int64_t Assignment::Min(const IntVar* var) const {
   return int_var_container_.Element(var).Min();
 }
 
-int64_t Assignment::Max(const IntVar* const var) const {
+int64_t Assignment::Max(const IntVar* var) const {
   return int_var_container_.Element(var).Max();
 }
 
-int64_t Assignment::Value(const IntVar* const var) const {
+int64_t Assignment::Value(const IntVar* var) const {
   return int_var_container_.Element(var).Value();
 }
 
-bool Assignment::Bound(const IntVar* const var) const {
+bool Assignment::Bound(const IntVar* var) const {
   return int_var_container_.Element(var).Bound();
 }
 
-void Assignment::SetMin(const IntVar* const var, int64_t m) {
+void Assignment::SetMin(const IntVar* var, int64_t m) {
   int_var_container_.MutableElement(var)->SetMin(m);
 }
 
-void Assignment::SetMax(const IntVar* const var, int64_t m) {
+void Assignment::SetMax(const IntVar* var, int64_t m) {
   int_var_container_.MutableElement(var)->SetMax(m);
 }
 
-void Assignment::SetRange(const IntVar* const var, int64_t l, int64_t u) {
+void Assignment::SetRange(const IntVar* var, int64_t l, int64_t u) {
   int_var_container_.MutableElement(var)->SetRange(l, u);
 }
 
-void Assignment::SetValue(const IntVar* const var, int64_t value) {
+void Assignment::SetValue(const IntVar* var, int64_t value) {
   int_var_container_.MutableElement(var)->SetValue(value);
 }
 
 // ----- Interval Var -----
 
-IntervalVarElement* Assignment::Add(IntervalVar* const var) {
+IntervalVarElement* Assignment::Add(IntervalVar* var) {
   return interval_var_container_.Add(var);
 }
 
 void Assignment::Add(const std::vector<IntervalVar*>& vars) {
-  for (IntervalVar* const var : vars) {
+  for (IntervalVar* var : vars) {
     Add(var);
   }
 }
 
-IntervalVarElement* Assignment::FastAdd(IntervalVar* const var) {
+IntervalVarElement* Assignment::FastAdd(IntervalVar* var) {
   return interval_var_container_.FastAdd(var);
 }
 
-int64_t Assignment::StartMin(const IntervalVar* const var) const {
+int64_t Assignment::StartMin(const IntervalVar* var) const {
   return interval_var_container_.Element(var).StartMin();
 }
 
-int64_t Assignment::StartMax(const IntervalVar* const var) const {
+int64_t Assignment::StartMax(const IntervalVar* var) const {
   return interval_var_container_.Element(var).StartMax();
 }
 
-int64_t Assignment::StartValue(const IntervalVar* const var) const {
+int64_t Assignment::StartValue(const IntervalVar* var) const {
   return interval_var_container_.Element(var).StartValue();
 }
 
-int64_t Assignment::DurationMin(const IntervalVar* const var) const {
+int64_t Assignment::DurationMin(const IntervalVar* var) const {
   return interval_var_container_.Element(var).DurationMin();
 }
 
-int64_t Assignment::DurationMax(const IntervalVar* const var) const {
+int64_t Assignment::DurationMax(const IntervalVar* var) const {
   return interval_var_container_.Element(var).DurationMax();
 }
 
-int64_t Assignment::DurationValue(const IntervalVar* const var) const {
+int64_t Assignment::DurationValue(const IntervalVar* var) const {
   return interval_var_container_.Element(var).DurationValue();
 }
 
-int64_t Assignment::EndMin(const IntervalVar* const var) const {
+int64_t Assignment::EndMin(const IntervalVar* var) const {
   return interval_var_container_.Element(var).EndMin();
 }
 
-int64_t Assignment::EndMax(const IntervalVar* const var) const {
+int64_t Assignment::EndMax(const IntervalVar* var) const {
   return interval_var_container_.Element(var).EndMax();
 }
 
-int64_t Assignment::EndValue(const IntervalVar* const var) const {
+int64_t Assignment::EndValue(const IntervalVar* var) const {
   return interval_var_container_.Element(var).EndValue();
 }
 
-int64_t Assignment::PerformedMin(const IntervalVar* const var) const {
+int64_t Assignment::PerformedMin(const IntervalVar* var) const {
   return interval_var_container_.Element(var).PerformedMin();
 }
 
-int64_t Assignment::PerformedMax(const IntervalVar* const var) const {
+int64_t Assignment::PerformedMax(const IntervalVar* var) const {
   return interval_var_container_.Element(var).PerformedMax();
 }
 
-int64_t Assignment::PerformedValue(const IntervalVar* const var) const {
+int64_t Assignment::PerformedValue(const IntervalVar* var) const {
   return interval_var_container_.Element(var).PerformedValue();
 }
 
-void Assignment::SetStartMin(const IntervalVar* const var, int64_t m) {
+void Assignment::SetStartMin(const IntervalVar* var, int64_t m) {
   interval_var_container_.MutableElement(var)->SetStartMin(m);
 }
 
-void Assignment::SetStartMax(const IntervalVar* const var, int64_t m) {
+void Assignment::SetStartMax(const IntervalVar* var, int64_t m) {
   interval_var_container_.MutableElement(var)->SetStartMax(m);
 }
 
-void Assignment::SetStartRange(const IntervalVar* const var, int64_t mi,
-                               int64_t ma) {
+void Assignment::SetStartRange(const IntervalVar* var, int64_t mi, int64_t ma) {
   interval_var_container_.MutableElement(var)->SetStartRange(mi, ma);
 }
 
-void Assignment::SetStartValue(const IntervalVar* const var, int64_t value) {
+void Assignment::SetStartValue(const IntervalVar* var, int64_t value) {
   interval_var_container_.MutableElement(var)->SetStartValue(value);
 }
 
-void Assignment::SetDurationMin(const IntervalVar* const var, int64_t m) {
+void Assignment::SetDurationMin(const IntervalVar* var, int64_t m) {
   interval_var_container_.MutableElement(var)->SetDurationMin(m);
 }
 
-void Assignment::SetDurationMax(const IntervalVar* const var, int64_t m) {
+void Assignment::SetDurationMax(const IntervalVar* var, int64_t m) {
   interval_var_container_.MutableElement(var)->SetDurationMax(m);
 }
 
-void Assignment::SetDurationRange(const IntervalVar* const var, int64_t mi,
+void Assignment::SetDurationRange(const IntervalVar* var, int64_t mi,
                                   int64_t ma) {
   interval_var_container_.MutableElement(var)->SetDurationRange(mi, ma);
 }
 
-void Assignment::SetDurationValue(const IntervalVar* const var, int64_t value) {
+void Assignment::SetDurationValue(const IntervalVar* var, int64_t value) {
   interval_var_container_.MutableElement(var)->SetDurationValue(value);
 }
 
-void Assignment::SetEndMin(const IntervalVar* const var, int64_t m) {
+void Assignment::SetEndMin(const IntervalVar* var, int64_t m) {
   interval_var_container_.MutableElement(var)->SetEndMin(m);
 }
 
-void Assignment::SetEndMax(const IntervalVar* const var, int64_t m) {
+void Assignment::SetEndMax(const IntervalVar* var, int64_t m) {
   interval_var_container_.MutableElement(var)->SetEndMax(m);
 }
 
-void Assignment::SetEndRange(const IntervalVar* const var, int64_t mi,
-                             int64_t ma) {
+void Assignment::SetEndRange(const IntervalVar* var, int64_t mi, int64_t ma) {
   interval_var_container_.MutableElement(var)->SetEndRange(mi, ma);
 }
 
-void Assignment::SetEndValue(const IntervalVar* const var, int64_t value) {
+void Assignment::SetEndValue(const IntervalVar* var, int64_t value) {
   interval_var_container_.MutableElement(var)->SetEndValue(value);
 }
 
-void Assignment::SetPerformedMin(const IntervalVar* const var, int64_t m) {
+void Assignment::SetPerformedMin(const IntervalVar* var, int64_t m) {
   interval_var_container_.MutableElement(var)->SetPerformedMin(m);
 }
 
-void Assignment::SetPerformedMax(const IntervalVar* const var, int64_t m) {
+void Assignment::SetPerformedMax(const IntervalVar* var, int64_t m) {
   interval_var_container_.MutableElement(var)->SetPerformedMax(m);
 }
 
-void Assignment::SetPerformedRange(const IntervalVar* const var, int64_t mi,
+void Assignment::SetPerformedRange(const IntervalVar* var, int64_t mi,
                                    int64_t ma) {
   interval_var_container_.MutableElement(var)->SetPerformedRange(mi, ma);
 }
 
-void Assignment::SetPerformedValue(const IntervalVar* const var,
-                                   int64_t value) {
+void Assignment::SetPerformedValue(const IntervalVar* var, int64_t value) {
   interval_var_container_.MutableElement(var)->SetPerformedValue(value);
 }
 
 // ----- Sequence Var -----
 
-SequenceVarElement* Assignment::Add(SequenceVar* const var) {
+SequenceVarElement* Assignment::Add(SequenceVar* var) {
   return sequence_var_container_.Add(var);
 }
 
 void Assignment::Add(const std::vector<SequenceVar*>& vars) {
-  for (SequenceVar* const var : vars) {
+  for (SequenceVar* var : vars) {
     Add(var);
   }
 }
 
-SequenceVarElement* Assignment::FastAdd(SequenceVar* const var) {
+SequenceVarElement* Assignment::FastAdd(SequenceVar* var) {
   return sequence_var_container_.FastAdd(var);
 }
 
 const std::vector<int>& Assignment::ForwardSequence(
-    const SequenceVar* const var) const {
+    const SequenceVar* var) const {
   return sequence_var_container_.Element(var).ForwardSequence();
 }
 
 const std::vector<int>& Assignment::BackwardSequence(
-    const SequenceVar* const var) const {
+    const SequenceVar* var) const {
   return sequence_var_container_.Element(var).BackwardSequence();
 }
 
-const std::vector<int>& Assignment::Unperformed(
-    const SequenceVar* const var) const {
+const std::vector<int>& Assignment::Unperformed(const SequenceVar* var) const {
   return sequence_var_container_.Element(var).Unperformed();
 }
 
-void Assignment::SetSequence(const SequenceVar* const var,
+void Assignment::SetSequence(const SequenceVar* var,
                              const std::vector<int>& forward_sequence,
                              const std::vector<int>& backward_sequence,
                              const std::vector<int>& unperformed) {
@@ -858,68 +858,68 @@ void Assignment::SetSequence(const SequenceVar* const var,
       forward_sequence, backward_sequence, unperformed);
 }
 
-void Assignment::SetForwardSequence(const SequenceVar* const var,
+void Assignment::SetForwardSequence(const SequenceVar* var,
                                     const std::vector<int>& forward_sequence) {
   sequence_var_container_.MutableElement(var)->SetForwardSequence(
       forward_sequence);
 }
 
 void Assignment::SetBackwardSequence(
-    const SequenceVar* const var, const std::vector<int>& backward_sequence) {
+    const SequenceVar* var, const std::vector<int>& backward_sequence) {
   sequence_var_container_.MutableElement(var)->SetBackwardSequence(
       backward_sequence);
 }
 
-void Assignment::SetUnperformed(const SequenceVar* const var,
+void Assignment::SetUnperformed(const SequenceVar* var,
                                 const std::vector<int>& unperformed) {
   sequence_var_container_.MutableElement(var)->SetUnperformed(unperformed);
 }
 
-void Assignment::Activate(const IntVar* const var) {
+void Assignment::Activate(const IntVar* var) {
   int_var_container_.MutableElement(var)->Activate();
 }
 
-void Assignment::Deactivate(const IntVar* const var) {
+void Assignment::Deactivate(const IntVar* var) {
   int_var_container_.MutableElement(var)->Deactivate();
 }
 
-bool Assignment::Activated(const IntVar* const var) const {
+bool Assignment::Activated(const IntVar* var) const {
   return int_var_container_.Element(var).Activated();
 }
 
-void Assignment::Activate(const IntervalVar* const var) {
+void Assignment::Activate(const IntervalVar* var) {
   interval_var_container_.MutableElement(var)->Activate();
 }
 
-void Assignment::Deactivate(const IntervalVar* const var) {
+void Assignment::Deactivate(const IntervalVar* var) {
   interval_var_container_.MutableElement(var)->Deactivate();
 }
 
-bool Assignment::Activated(const IntervalVar* const var) const {
+bool Assignment::Activated(const IntervalVar* var) const {
   return interval_var_container_.Element(var).Activated();
 }
 
-void Assignment::Activate(const SequenceVar* const var) {
+void Assignment::Activate(const SequenceVar* var) {
   sequence_var_container_.MutableElement(var)->Activate();
 }
 
-void Assignment::Deactivate(const SequenceVar* const var) {
+void Assignment::Deactivate(const SequenceVar* var) {
   sequence_var_container_.MutableElement(var)->Deactivate();
 }
 
-bool Assignment::Activated(const SequenceVar* const var) const {
+bool Assignment::Activated(const SequenceVar* var) const {
   return sequence_var_container_.Element(var).Activated();
 }
 
-bool Assignment::Contains(const IntVar* const var) const {
+bool Assignment::Contains(const IntVar* var) const {
   return int_var_container_.Contains(var);
 }
 
-bool Assignment::Contains(const IntervalVar* const var) const {
+bool Assignment::Contains(const IntervalVar* var) const {
   return interval_var_container_.Contains(var);
 }
 
-bool Assignment::Contains(const SequenceVar* const var) const {
+bool Assignment::Contains(const SequenceVar* var) const {
   return sequence_var_container_.Contains(var);
 }
 
@@ -1041,13 +1041,13 @@ int Assignment::NumSequenceVars() const {
   return sequence_var_container_.Size();
 }
 
-void Assignment::AddObjective(IntVar* const v) { AddObjectives({v}); }
+void Assignment::AddObjective(IntVar* v) { AddObjectives({v}); }
 
 void Assignment::AddObjectives(const std::vector<IntVar*>& vars) {
   // Objective can only set once.
   DCHECK(!HasObjective());
   objective_elements_.reserve(vars.size());
-  for (IntVar* const var : vars) {
+  for (IntVar* var : vars) {
     if (var != nullptr) {
       objective_elements_.emplace_back(var);
     }

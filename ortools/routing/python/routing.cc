@@ -35,7 +35,6 @@
 #include "ortools/routing/python/doc.h"                // IWYU pragma: keep
 #include "ortools/routing/python/index_manager_doc.h"  // IWYU pragma: keep. NOLINT
 #include "ortools/routing/python/parameters_doc.h"     // IWYU pragma: keep
-#include "ortools/routing/python/proto_builder_pybind11.h"
 #include "ortools/routing/types.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/optional_boolean.pb.h"

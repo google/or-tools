@@ -45,6 +45,8 @@
 // Ignore warnings for operators like: Unreferenced %newobject *::operator -=
 #pragma SWIG nowarn=551
 #pragma SWIG nowarn=473
+// Explicit template instantiation ignored.
+#pragma SWIG nowarn=320
 
 // We *do* need to use SWIGTYPE_... type names directly, because the
 // (recommended replacement) $descriptor macro fails, as of 2019-07, with

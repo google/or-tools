@@ -35,7 +35,11 @@ class RegularLimitParameters;
 }  // namespace operations_research
 
 %module(directors="1") ConstraintSolverGlobals;
+
+// Remove swig warnings
 #pragma SWIG nowarn=473
+// Explicit template instantiation ignored
+#pragma SWIG nowarn=320
 
 %{
 #include <setjmp.h>
