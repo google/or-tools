@@ -38,7 +38,6 @@ class RecordReader {
 
  private:
   google::protobuf::io::IstreamInputStream istream_;
-  google::protobuf::io::CodedInputStream coded_istream_;
 };
 
 // Writes a sequence of serialized protos to a stream.

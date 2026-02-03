@@ -24,7 +24,7 @@ option java_multiple_files = true;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 358
+// NEXT TAG: 360
 message SatParameters {
   // In some context, like in a portfolio of search, it makes sense to name a
   // given parameters set for logging purpose.
@@ -1829,6 +1829,17 @@ message SatParameters {
   // are quite frequent, and if we detect this, we will scale such variable
   // domain by 2 to make it implied integer.
   optional bool mip_automatically_scale_variables = 166 [default = true];
+
+  // If true, both mip_var_scaling and mip_scale_large_domain are ignored.
+  // Instead, we scale any floating point variable by a power of two so that
+  // its domain is the largest that fit in [-mip_max_bound, mip_max_bound].
+  // Note that any domain already larger than this is ignored.
+  optional bool mip_scale_to_max_bound = 358 [default = false];
+
+  // If true, use dual-reasoning to try to restrict the domains of the variable
+  // before we scale the model to integer. This can help with the scaling
+  // significantly.
+  optional bool mip_presolve_restrict_bounds = 359 [default = true];
 
   // If one try to solve a MIP model with CP-SAT, because we assume all variable
   // to be integer after scaling, we will not necessarily have the correct

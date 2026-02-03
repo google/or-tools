@@ -35,6 +35,25 @@
 namespace operations_research {
 namespace sat {
 
+// Returns the highest x such that 2^x <= value.
+// This is meant to be called with non-negative value.
+inline int HighestPowerOfTwoAtOrBelow(double value) {
+  CHECK_GE(value, 0.0);
+  int exp;
+  std::frexp(value, &exp);
+  return exp > 0 ? exp - 1 : 0;
+}
+
+// Returns the lowest x such that value <= 2^x.
+// This is meant to be called with non-negative value.
+inline int LowestPowerOfTwoAtOrAbove(double value) {
+  CHECK_GE(value, 0.0);
+  int exp;
+  const double left = std::frexp(value, &exp);
+  if (left == 0.5) return exp - 1;
+  return exp;
+}
+
 // Returns the smallest factor f such that f * abs(x) is integer modulo the
 // given tolerance relative to f (we use f * tolerance). It is only looking
 // for f smaller than the given limit. Returns zero if no such factor exist
@@ -147,11 +166,34 @@ struct ConstraintScaler {
 std::vector<double> ScaleContinuousVariables(double scaling, double max_bound,
                                              MPModelProto* mp_model);
 
+// Scales with a power of two so that all continuous variable domain are
+// as big as possible while staying in [-max_bound, max_bound].
+//
+// We use "wanted_precision" to compute a maximum scaling needed per variables
+// so that if a variable only appear with really low coefficients in all
+// constraints, we don't need to scale it too much.
+std::vector<double> ScaleContinuousVariablesUpToMaxBound(
+    double max_bound, double wanted_precision, MPModelProto* mp_model,
+    SolverLogger* logger);
+
 // This simple step helps and should be done first. Returns false if the model
 // is trivially infeasible because of crossing bounds.
 bool MakeBoundsOfIntegerVariablesInteger(const SatParameters& params,
                                          MPModelProto* mp_model,
                                          SolverLogger* logger);
+
+// If a variable only appear in >= constraint (resp. <=) it is sometime possible
+// to compute a bound such that any value above it will just always satisfy all
+// constraints, so there is no point looking for such high value.
+//
+// Doing this before scaling can reduce the domain of variables and help.
+//
+// TODO(user): This should probably be done within a fixed-point loop and
+// mixed with bound propagation. Doing a single pass can still help remove
+// all [0, infinity) variable on models like uccase7.mps for instance.
+void RestrictBoundsWithDualReasoning(const SatParameters& params,
+                                     MPModelProto* mp_model,
+                                     SolverLogger* logger);
 
 // This function changes bounds of variables or constraints that have a
 // magnitude greater than mip_max_valid_magnitude.

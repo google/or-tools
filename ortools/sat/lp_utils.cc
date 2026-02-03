@@ -21,7 +21,9 @@
 #include <utility>
 #include <vector>
 
+#include "absl/base/log_severity.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
@@ -125,6 +127,119 @@ std::vector<double> ScaleContinuousVariables(double scaling, double max_bound,
     if (magnitude == 0 || magnitude > max_bound) continue;
     var_scaling[i] = std::min(scaling, max_bound / magnitude);
   }
+  ApplyVarScaling(var_scaling, mp_model);
+  return var_scaling;
+}
+
+std::vector<double> ScaleContinuousVariablesUpToMaxBound(
+    double max_bound, double wanted_precision, MPModelProto* mp_model,
+    SolverLogger* logger) {
+  CHECK_GT(max_bound, 0);
+  CHECK_GT(wanted_precision, 0);
+  const int num_variables = mp_model->variable_size();
+
+  std::vector<bool> is_integer(num_variables, false);
+  for (int i = 0; i < num_variables; ++i) {
+    is_integer[i] = mp_model->variable(i).is_integer();
+  }
+
+  // Since we only want "wanted_precision" on the constraint activity, if
+  // a variable only appear with really small coefficient, we don't need to
+  // scale it too much. If there is a feasible solution, there will be one
+  // "integer" close by.
+  std::vector<double> max_scaling_needed(num_variables, 0.0);
+  for (const MPConstraintProto& mp_constraint : mp_model->constraint()) {
+    int num_floats = 0;
+    for (const int var : mp_constraint.var_index()) {
+      if (!is_integer[var]) ++num_floats;
+    }
+    if (num_floats == 0) continue;
+
+    const int num_terms = mp_constraint.var_index().size();
+    for (int i = 0; i < num_terms; ++i) {
+      const int var = mp_constraint.var_index(i);
+      if (is_integer[var]) continue;
+
+      // TODO(user): When the float is the unique non-integer in a constraint
+      // (num_floats == 1), we could maybe derive a tighter bound? especially if
+      // all coeff are integer.
+      const double coeff_magnitude = std::abs(mp_constraint.coefficient(i));
+      if (coeff_magnitude == 0.0) continue;
+
+      // We assume that we don't care if the activity change by less than
+      // wanted_precision / coeff_magnitude / num_floats.
+      max_scaling_needed[var] = std::max(
+          max_scaling_needed[var],
+          static_cast<double>(num_floats) * coeff_magnitude / wanted_precision);
+    }
+  }
+
+  // For stats.
+  int num_scaled = 0;
+  int num_too_large = 0;
+  int min_exponent = 100;
+  int max_exponent = 0;
+
+  std::vector<double> var_scaling(num_variables, 1.0);
+  for (int i = 0; i < num_variables; ++i) {
+    if (mp_model->variable(i).is_integer()) continue;
+
+    const double lb = mp_model->variable(i).lower_bound();
+    const double ub = mp_model->variable(i).upper_bound();
+    const double bound_magnitude = std::max(std::abs(lb), std::abs(ub));
+    if (bound_magnitude == 0) continue;
+    if (bound_magnitude > max_bound) {
+      // TODO(user): we should probably still scale them a bit. Like we can
+      // assume |original variable| < 1e7 and scale to 1e10 or something.
+      // And scale all variables to 1e10 ?
+      ++num_too_large;
+      VLOG(2) << "Unbounded var " << i << " [" << lb << "," << ub
+              << "] max_needed:" << max_scaling_needed[i];
+      continue;
+    }
+
+    // We prefer power of two scaling factors.
+    //
+    // This has nice property. In particular if there is an integer solution
+    // without scaling, it should be still be a solution of the scaled problem,
+    // this allow to compare various scaling factors. As it turn out, we have
+    // more trouble finding solution to highly scaled problem currently.
+    // like.
+    const int exp =
+        std::min(HighestPowerOfTwoAtOrBelow(max_bound / bound_magnitude),
+                 LowestPowerOfTwoAtOrAbove(max_scaling_needed[i]));
+    const double scaling = std::ldexp(1.0, exp);
+
+    // This piece of code might be a bit clearer to understand compared to
+    // the O(1) formula above.
+    if (DEBUG_MODE) {
+      double test = 1.0;
+      while (test < max_scaling_needed[i] &&
+             2 * test * bound_magnitude <= max_bound) {
+        test *= 2;
+      }
+      CHECK_EQ(test, scaling);
+    }
+
+    ++num_scaled;
+    min_exponent = std::min(min_exponent, exp);
+    max_exponent = std::max(max_exponent, exp);
+
+    var_scaling[i] = scaling;
+    VLOG(2) << i << " [" << lb << ", " << ub << "] scaling:" << scaling
+            << " max_needed:" << max_scaling_needed[i];
+  }
+
+  if (num_scaled > 0) {
+    SOLVER_LOG(logger, "Scaled ", num_scaled,
+               " domains, power of two scaling in [", min_exponent, ",",
+               max_exponent, "]");
+  }
+  if (num_too_large > 0) {
+    SOLVER_LOG(logger, num_too_large,
+               " variables with domain magnitude larger than mip_max_bound.");
+  }
+
   ApplyVarScaling(var_scaling, mp_model);
   return var_scaling;
 }
@@ -235,6 +350,157 @@ bool MakeBoundsOfIntegerVariablesInteger(const SatParameters& params,
     }
   }
   return true;
+}
+
+void RestrictBoundsWithDualReasoning(const SatParameters& params,
+                                     MPModelProto* mp_model,
+                                     SolverLogger* logger) {
+  const int num_variables = mp_model->variable_size();
+  const double kInfinity = std::numeric_limits<double>::infinity();
+
+  // Note that we don't want to decrease/increase past zero.
+  //
+  // It is not "incorrect" but can lead to complication. For instance, if we
+  // have two variables in [0, infinity) with X only appearing in X - Y >= 0. We
+  // don't want to fix X to "infinity" or enforce "X >= any large value"
+  // unecessarily, even if the larger lb, the better from a constraint
+  // perspective. We still want to try to find solution with low magnitude in
+  // general.
+  std::vector<double> can_freely_decrease_to(num_variables, 0.0);
+  std::vector<double> can_freely_increase_to(num_variables, 0.0);
+
+  // Deal with objective. We disable any bound restriction in the wrong
+  // direction.
+  const double adjust = mp_model->maximize() ? -1.0 : 1.0;
+  for (int v = 0; v < num_variables; ++v) {
+    const double coeff = adjust * mp_model->variable(v).objective_coefficient();
+    if (coeff > 0.0) {
+      can_freely_increase_to[v] = -kInfinity;
+    } else if (coeff < 0.0) {
+      can_freely_decrease_to[v] = kInfinity;
+    }
+  }
+
+  std::vector<double> min_left_activity;
+  std::vector<double> min_right_activity;
+  std::vector<double> max_left_activity;
+  std::vector<double> max_right_activity;
+
+  const int num_constraints = mp_model->constraint_size();
+  for (int c = 0; c < num_constraints; ++c) {
+    const MPConstraintProto& ct = mp_model->constraint(c);
+    const int num_terms = ct.var_index().size();
+    if (num_terms == 0) continue;
+
+    min_left_activity.resize(num_terms);
+    max_left_activity.resize(num_terms);
+    min_right_activity.resize(num_terms);
+    max_right_activity.resize(num_terms);
+
+    min_left_activity[0] = 0.0;
+    max_left_activity[0] = 0.0;
+    min_left_activity[num_terms - 1] = 0.0;
+    max_left_activity[num_terms - 1] = 0.0;
+
+    // *left*[i] contains the min/max sum of all the terms in [0, i).
+    for (int i = 0; i + 1 < num_terms; ++i) {
+      const int var = ct.var_index(i);
+      const double coeff = ct.coefficient(i);
+      double min_term = coeff * mp_model->variable(var).lower_bound();
+      double max_term = coeff * mp_model->variable(var).upper_bound();
+      if (min_term > max_term) std::swap(min_term, max_term);
+
+      min_left_activity[i + 1] = min_left_activity[i] + min_term;
+      max_left_activity[i + 1] = max_left_activity[i] + max_term;
+    }
+
+    // *right*[i] contains the min/max sum of all the terms in (i, num_terms).
+    for (int i = num_terms - 1; i > 0; --i) {
+      const int var = ct.var_index(i);
+      const double coeff = ct.coefficient(i);
+      double min_term = coeff * mp_model->variable(var).lower_bound();
+      double max_term = coeff * mp_model->variable(var).upper_bound();
+      if (min_term > max_term) std::swap(min_term, max_term);
+
+      min_right_activity[i - 1] = min_right_activity[i] + min_term;
+      max_right_activity[i - 1] = max_right_activity[i] + max_term;
+    }
+
+    // For each position, combine *left[i]* and *right*[i] to derive bounds
+    // on the variable at position i.
+    for (int i = 0; i < num_terms; ++i) {
+      const int var = ct.var_index(i);
+      const double coeff = ct.coefficient(i);
+      if (coeff == 0.0) continue;
+
+      const double min_activity = min_left_activity[i] + min_right_activity[i];
+      const double max_activity = max_left_activity[i] + max_right_activity[i];
+
+      if (coeff > 0.0) {
+        // min_activity + c.X >= rhs so X >= (rhs - min_activity) / c
+        can_freely_decrease_to[var] =
+            std::max(can_freely_decrease_to[var],
+                     (ct.lower_bound() - min_activity) / coeff);
+        // max_activity + c.X <= rhs so X <= (rhs - max_activity) / c
+        can_freely_increase_to[var] =
+            std::min(can_freely_increase_to[var],
+                     (ct.upper_bound() - max_activity) / coeff);
+      } else {
+        // min_activity - c.X >= rhs, so X <= (min_activity - rhs) / c.
+        can_freely_increase_to[var] =
+            std::min(can_freely_increase_to[var],
+                     (ct.lower_bound() - min_activity) / coeff);
+        can_freely_decrease_to[var] =
+            std::max(can_freely_decrease_to[var],
+                     (ct.upper_bound() - max_activity) / coeff);
+      }
+    }
+  }
+
+  // Use collected info.
+  // Note that we keep "integer" solutions.
+  int num_changed_bounds = 0;
+  double min_lb = 0.0;
+  double max_ub = 0.0;
+  const double epsilon = params.mip_wanted_precision();
+  for (int v = 0; v < num_variables; ++v) {
+    const MPVariableProto& var = mp_model->variable(v);
+    const double ub_target = std::ceil(
+        std::max(can_freely_decrease_to[v] + epsilon, var.lower_bound()));
+    const double lb_target = std::floor(
+        std::min(can_freely_increase_to[v] - epsilon, var.upper_bound()));
+
+    CHECK_GE(ub_target, var.lower_bound());
+    CHECK_LE(lb_target, var.upper_bound());
+    if (ub_target < lb_target) {
+      const double target =
+          ub_target < 0.0 ? lb_target > 0.0 ? 0.0 : lb_target : ub_target;
+      VLOG(2) << "Fixing " << v << " with bound [" << var.lower_bound() << ","
+              << var.upper_bound() << "] to " << target;
+      mp_model->mutable_variable(v)->set_upper_bound(target);
+      mp_model->mutable_variable(v)->set_lower_bound(target);
+      continue;
+    }
+    if (var.upper_bound() > ub_target) {
+      ++num_changed_bounds;
+      VLOG(2) << v << " UB " << var.upper_bound() << " --> " << ub_target;
+      mp_model->mutable_variable(v)->set_upper_bound(ub_target);
+    }
+    if (var.lower_bound() < lb_target) {
+      ++num_changed_bounds;
+      VLOG(2) << v << " LB " << var.lower_bound() << " --> " << lb_target;
+      mp_model->mutable_variable(v)->set_lower_bound(lb_target);
+    }
+
+    min_lb = std::min(min_lb, var.lower_bound());
+    max_ub = std::max(max_ub, var.upper_bound());
+  }
+
+  if (num_changed_bounds > 0) {
+    SOLVER_LOG(logger, "Restricted ", num_changed_bounds,
+               " bounds using dual reasoning.");
+  }
+  SOLVER_LOG(logger, "All variables in [", min_lb, ",", max_ub, "]");
 }
 
 void ChangeLargeBoundsToInfinity(double max_magnitude, MPModelProto* mp_model,

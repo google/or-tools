@@ -31,6 +31,7 @@
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/base/timer.h"
+#include "ortools/graph_base/connected_components.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/drat_checker.h"
 #include "ortools/sat/model.h"
@@ -79,26 +80,35 @@ std::vector<absl::Span<const Literal>> EquivalenceSatSweeping::GetNeighborhood(
   const int binary_clause_slack = max_num_clauses_ / 10;
   std::deque<BooleanVariable> bools_to_add;
   bools_to_add.push_back(var);
+  auto rep = [&](Literal l) {
+    auto it = lit_representative_.find(l);
+    return it == lit_representative_.end() ? l : it->second;
+  };
+  auto rep_var = [&](BooleanVariable v) {
+    return rep(Literal(v, true)).Variable();
+  };
   while (!bools_to_add.empty()) {
     // TODO(user): when all the variables and clauses of a given distance
     // don't fit in the limit we are picking which ones we put in the
     // neighborhood quite arbitrarily. We should try doing it using a priority
     // queue of how many clauses they using the variable or do it randomly.
-    const BooleanVariable cur_var = bools_to_add.front();
+    const BooleanVariable cur_var = rep_var(bools_to_add.front());
     bools_to_add.pop_front();
     for (const ClauseIndex clause_index : var_to_clauses_[cur_var]) {
       const absl::Span<const Literal> cur_clause = clauses_[clause_index];
       const int num_unseen_bools = absl::c_count_if(cur_clause, [&](Literal l) {
-        return !seen_bools.contains(l.Variable());
+        return !seen_bools.contains(rep(l).Variable());
       });
       if (seen_bools.size() + num_unseen_bools >= max_num_boolean_variables_) {
         continue;
       }
       if (cur_clause.size() == 2) {
-        const Literal other_lit =
-            cur_clause[0].Variable() == cur_var ? cur_clause[1] : cur_clause[0];
-        if (implication_graph_->RepresentativeOf(other_lit).Variable() ==
-            cur_var) {
+        const Literal l1 = rep(cur_clause[0]);
+        const Literal l2 = rep(cur_clause[1]);
+        const Literal other_lit = l1.Variable() == cur_var ? l2 : l1;
+        if (l1.Variable() == l2.Variable() ||
+            implication_graph_->RepresentativeOf(other_lit).Variable() ==
+                cur_var) {
           // Do not waste our variable budget with non-representative literals
           // and the clauses mapping them to their representative. We might end
           // up with a neighborhood that is too small if the inprocessing did
@@ -113,7 +123,8 @@ std::vector<absl::Span<const Literal>> EquivalenceSatSweeping::GetNeighborhood(
         // want to waste resources rediscovering them.
         continue;
       }
-      for (const Literal l : cur_clause) {
+      for (const Literal non_rep_l : cur_clause) {
+        const Literal l = rep(non_rep_l);
         if (seen_bools.contains(l.Variable())) continue;
         bools_to_add.push_back(l.Variable());
         seen_bools.insert(l.Variable());
@@ -213,6 +224,7 @@ bool EquivalenceSatSweeping::DoOneRound(
     BooleanVariable operator()(Literal l) const { return l.Variable(); }
   };
   var_to_clauses_.ResetFromTransposeMap<GetVarMapper>(clauses_, num_vars);
+  lit_representative_.clear();
 
   global_time_limit_->AdvanceDeterministicTime(clause_manager_->num_clauses() *
                                                1.0e-7);
@@ -221,15 +233,16 @@ bool EquivalenceSatSweeping::DoOneRound(
   sweep_time_limit.MergeWithGlobalTimeLimit(global_time_limit_);
   std::vector<std::pair<Literal, Literal>> binary_clauses;
   std::vector<Literal> unary_clauses;
+  BooleanVariable next_candidate_var = kNoBooleanVariable;
   for (int i = 0; i < 50; ++i) {
-    BooleanVariable boolean_for_neighborhood;
-    {
+    if (next_candidate_var == kNoBooleanVariable) {
       int tries = 0;
       constexpr int kMaxTries = 10;
       for (tries = 0; tries < kMaxTries; ++tries) {
-        boolean_for_neighborhood = absl::Uniform<int>(*random_, 0, num_vars);
-        if (var_to_clauses_[boolean_for_neighborhood].size() < 2) continue;
-        const Literal positive_lit(boolean_for_neighborhood, true);
+        next_candidate_var = RepresentativeVar(
+            BooleanVariable(absl::Uniform<int>(*random_, 0, num_vars)));
+        if (var_to_clauses_[next_candidate_var].size() < 2) continue;
+        const Literal positive_lit(next_candidate_var, true);
         if (implication_graph_->RepresentativeOf(positive_lit) !=
             positive_lit) {
           continue;
@@ -240,10 +253,11 @@ bool EquivalenceSatSweeping::DoOneRound(
     }
 
     const std::vector<absl::Span<const Literal>> neighborhood =
-        GetNeighborhood(boolean_for_neighborhood);
+        GetNeighborhood(next_candidate_var);
 
     if (neighborhood.empty()) {
-      VLOG(2) << "Neighborhood is empty for " << boolean_for_neighborhood;
+      VLOG(2) << "Neighborhood is empty for " << next_candidate_var;
+      next_candidate_var = kNoBooleanVariable;
       continue;
     }
 
@@ -252,7 +266,8 @@ bool EquivalenceSatSweeping::DoOneRound(
     small_model_to_big_model_.clear();
     for (const absl::Span<const Literal> clause : neighborhood) {
       neighborhood_clauses.Add({});
-      for (const Literal l : clause) {
+      for (const Literal non_rep_l : clause) {
+        const Literal l = Representative(non_rep_l);
         const BooleanVariable new_var(big_model_to_small_model_.size());
         auto [it, inserted] =
             big_model_to_small_model_.insert({l.Variable(), new_var});
@@ -290,6 +305,63 @@ bool EquivalenceSatSweeping::DoOneRound(
     }
     if (result.status == SatSolver::LIMIT_REACHED) {
       break;
+    }
+
+    // Now update var_to_clauses_ and lit_representative_ with the new
+    // equivalences. The number of new equivalences is small, so we want to be
+    // linear on its size.
+    DenseConnectedComponentsFinder union_find;
+    union_find.SetNumberOfNodes(2 * small_model_to_big_model_.size() + 1);
+    absl::flat_hash_set<BooleanVariable> seen_bools;
+    std::vector<BooleanVariable> bools_with_new_equivalences;
+    for (const auto& [l1, l2] : result.new_equivalences) {
+      CHECK_NE(l1.Variable(), l2.Variable());
+      union_find.AddEdge(l1.Index().value(), l2.Index().value());
+      union_find.AddEdge(l1.NegatedIndex().value(), l2.NegatedIndex().value());
+      DCHECK_EQ(Representative(l1), Representative(l1.Negated()).Negated());
+      if (seen_bools.insert(l1.Variable()).second) {
+        bools_with_new_equivalences.push_back(l1.Variable());
+      }
+      if (seen_bools.insert(l2.Variable()).second) {
+        bools_with_new_equivalences.push_back(l2.Variable());
+      }
+    }
+    for (const BooleanVariable current_var : bools_with_new_equivalences) {
+      const Literal current_lit(current_var, true);
+      const Literal representative_lit = Literal(
+          LiteralIndex(union_find.FindRoot(current_lit.Index().value())));
+      if (current_lit == representative_lit) continue;
+      const Literal mapped_representative =
+          Literal(small_model_to_big_model_[representative_lit.Variable()],
+                  representative_lit.IsPositive());
+      const Literal mapped_current =
+          Literal(small_model_to_big_model_[current_lit.Variable()],
+                  current_lit.IsPositive());
+      lit_representative_[mapped_current] = mapped_representative;
+      lit_representative_[mapped_current.Negated()] =
+          mapped_representative.Negated();
+      var_to_clauses_.MergeInto(mapped_current.Variable(),
+                                mapped_representative.Variable());
+    }
+    for (std::pair<const Literal, Literal>& pair : lit_representative_) {
+      auto it = lit_representative_.find(pair.second);
+      if (it != lit_representative_.end()) {
+        pair.second = it->second;
+      }
+    }
+    if (result.new_equivalences.size() > 10) {
+      // Retry same variable
+      next_candidate_var = RepresentativeVar(next_candidate_var);
+    } else if (!result.new_equivalences.empty()) {
+      // Try a different variable from the same neighborhood.
+      const int var_index =
+          absl::Uniform<int>(*random_, 0, bools_with_new_equivalences.size());
+      const BooleanVariable unmapped_next_candidate_var =
+          bools_with_new_equivalences[var_index];
+      next_candidate_var = RepresentativeVar(
+          small_model_to_big_model_[unmapped_next_candidate_var]);
+    } else {
+      next_candidate_var = kNoBooleanVariable;
     }
   }
   global_time_limit_->AdvanceDeterministicTime(
@@ -349,8 +421,17 @@ SatSweepingResult DoFullSatSweeping(
   CHECK_EQ(sat_solver->NumVariables(), 0);
   sat_solver->SetNumVariables(max_boolean.value() + 1);
 
+  absl::flat_hash_set<std::pair<Literal, Literal>> input_binary_clauses;
   for (int i = 0; i < clauses.size(); ++i) {
     sat_solver->AddProblemClause(clauses[i]);
+    if (clauses[i].size() == 2) {
+      Literal l1 = clauses[i][0];
+      Literal l2 = clauses[i][1];
+      if (l1.Variable() > l2.Variable()) {
+        std::swap(l1, l2);
+      }
+      input_binary_clauses.insert({l1, l2});
+    }
   }
   configure_model_before_first_solve(&neighborhood_model);
 
@@ -365,8 +446,15 @@ SatSweepingResult DoFullSatSweeping(
   // initializing the set of potential backbone (ie., fixable) literals and
   // the partitions of potentially equivalent literals.
   result.status = nh_solver->Solve();
-  if (result.status == SatSolver::INFEASIBLE ||
-      result.status == SatSolver::LIMIT_REACHED) {
+  if (result.status == SatSolver::INFEASIBLE) {
+    VLOG(2) << "Neighborhood is infeasible, problem closed?";
+    return result;
+  }
+
+  if (result.status == SatSolver::LIMIT_REACHED) {
+    VLOG(2)
+        << "Limit reached in first solve of the neighborhood, elapsed_dtime="
+        << model_time_limit->GetElapsedDeterministicTime();
     return result;
   }
   CHECK_EQ(result.status, SatSolver::FEASIBLE);
@@ -395,8 +483,10 @@ SatSweepingResult DoFullSatSweeping(
         nh_solver->ResetAndSolveWithGivenAssumptions({l.Negated()});
     ++num_sat_calls;
     if (status == SatSolver::LIMIT_REACHED) {
+      VLOG(2) << "Limit reached in neighborhood, elapsed_dtime="
+              << model_time_limit->GetElapsedDeterministicTime();
       result.status = status;
-      return result;
+      break;
     }
     if (status == SatSolver::ASSUMPTIONS_UNSAT) {
       // Our subproblem is unsat with ~l!
@@ -439,9 +529,9 @@ SatSweepingResult DoFullSatSweeping(
     }
   }
   const int num_partitions = partitions.size();
-  std::vector<std::pair<Literal, Literal>> equivalences;
   int num_equivalences = 0;
-  while (!partitions.empty()) {
+
+  while (result.status != SatSolver::LIMIT_REACHED && !partitions.empty()) {
     std::vector<Literal>& partition = partitions.back();
     if (partition.size() <= 1) {
       partitions.pop_back();
@@ -462,13 +552,25 @@ SatSweepingResult DoFullSatSweeping(
       status = nh_solver->ResetAndSolveWithGivenAssumptions({l1.Negated(), l2});
     }
     if (status == SatSolver::LIMIT_REACHED) {
+      VLOG(2) << "Limit reached in neighborhood, elapsed_dtime="
+              << model_time_limit->GetElapsedDeterministicTime();
       result.status = status;
-      return result;
+      break;
     }
     if (status == SatSolver::ASSUMPTIONS_UNSAT) {
       // We have an equivalence! Add it to the main problem.
       ++num_equivalences;
-      equivalences.push_back({l1, l2});
+      Literal l1_canonical = l1;
+      Literal l2_canonical = l2;
+      if (l1_canonical.Variable() > l2_canonical.Variable()) {
+        std::swap(l1_canonical, l2_canonical);
+      }
+      if (!input_binary_clauses.contains(
+              {l1_canonical, l2_canonical.Negated()}) ||
+          !input_binary_clauses.contains(
+              {l1_canonical.Negated(), l2_canonical})) {
+        result.new_equivalences.push_back({l1_canonical, l2_canonical});
+      }
       partition.pop_back();  // Remove l2 from the partition. It's equivalent to
                              // l1, so it's not useful for finding more
                              // equivalences.
@@ -501,7 +603,7 @@ SatSweepingResult DoFullSatSweeping(
   GetBinaryClause helper(result.binary_clauses);
   implication_graph->ExtractAllBinaryClauses(&helper);
 
-  if (DEBUG_MODE) {
+  if (result.status != SatSolver::LIMIT_REACHED && DEBUG_MODE) {
     // Since we kept the set of all possible partitions and ran the algorithm
     // until they were all unitary, we must have seen all possible equivalences
     // that are valid. Check that the solver didn't found more equivalences than
@@ -541,7 +643,7 @@ SatSweepingResult DoFullSatSweeping(
           << " num_partitions: " << num_partitions
           << " num_unary_clauses: " << result.unary_clauses.size()
           << " num_binary_clauses: " << result.binary_clauses.size()
-          << " num_equivalences: " << num_equivalences
+          << " num_equivalences: " << result.new_equivalences.size()
           << " num_sat_calls: " << num_sat_calls
           << " dtime: " << model_time_limit->GetElapsedDeterministicTime()
           << " wtime: " << wall_timer.Get();
