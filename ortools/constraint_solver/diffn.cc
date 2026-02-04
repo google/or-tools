@@ -20,7 +20,6 @@
 #include "absl/log/check.h"
 #include "absl/strings/str_format.h"
 #include "absl/types/span.h"
-#include "ortools/base/int_type.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/util/string_array.h"
@@ -28,7 +27,7 @@
 namespace operations_research {
 // Diffn constraint, Non overlapping boxes.
 namespace {
-DEFINE_INT_TYPE(Box, int);
+
 class Diffn : public Constraint {
  public:
   Diffn(Solver* const solver, const std::vector<IntVar*>& x_vars,

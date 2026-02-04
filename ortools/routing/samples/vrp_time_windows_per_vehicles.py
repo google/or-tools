@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 # [START program]
 """Vehicles Routing Problem (VRP) with Time Window (TW) per vehicle.
 
@@ -30,8 +31,8 @@ location: [49-64] vehicle: 3 TW: [900, 1020] (3pm-5pm)
 """
 
 # [START import]
-from ortools.routing import enums_pb2
-from ortools.routing import pywraprouting
+from ortools.routing.python import routing
+
 # [END import]
 
 
@@ -65,16 +66,16 @@ def create_data_model():
 
 
 # [START solution_printer]
-def print_solution(manager, routing, assignment):
+def print_solution(manager, routing_model, assignment):
     """Prints solution on console."""
-    print(f"Objective: {assignment.ObjectiveValue()}")
+    print(f"Objective: {assignment.objective_value()}")
     # Display dropped nodes.
     dropped_nodes = "Dropped nodes:"
-    for index in range(routing.Size()):
-        if routing.IsStart(index) or routing.IsEnd(index):
+    for index in range(routing_model.size()):
+        if routing_model.is_start(index) or routing_model.is_end(index):
             continue
-        if assignment.Value(routing.NextVar(index)) == index:
-            node = manager.IndexToNode(index)
+        if assignment.value(routing_model.next_var(index)) == index:
+            node = manager.index_to_node(index)
             if node > 16:
                 original = node
                 while original > 16:
@@ -84,17 +85,17 @@ def print_solution(manager, routing, assignment):
                 dropped_nodes += f" {node}"
     print(dropped_nodes)
     # Display routes
-    time_dimension = routing.GetDimensionOrDie("Time")
+    time_dimension = routing_model.get_dimension_or_die("Time")
     total_time = 0
-    for vehicle_id in range(manager.GetNumberOfVehicles()):
-        if not routing.IsVehicleUsed(assignment, vehicle_id):
+    for vehicle_id in range(manager.num_vehicles()):
+        if not routing_model.is_vehicle_used(assignment, vehicle_id):
             continue
         plan_output = f"Route for vehicle {vehicle_id}:\n"
-        index = routing.Start(vehicle_id)
+        index = routing_model.start(vehicle_id)
         start_time = 0
-        while not routing.IsEnd(index):
-            time_var = time_dimension.CumulVar(index)
-            node = manager.IndexToNode(index)
+        while not routing_model.is_end(index):
+            time_var = time_dimension.cumul_var(index)
+            node = manager.index_to_node(index)
             if node > 16:
                 original = node
                 while original > 16:
@@ -102,14 +103,14 @@ def print_solution(manager, routing, assignment):
                 plan_output += f"{node}({original})"
             else:
                 plan_output += f"{node}"
-            plan_output += f" Time:{assignment.Value(time_var)} -> "
+            plan_output += f" Time:{assignment.value(time_var)} -> "
             if start_time == 0:
-                start_time = assignment.Value(time_var)
-            index = assignment.Value(routing.NextVar(index))
-        time_var = time_dimension.CumulVar(index)
-        node = manager.IndexToNode(index)
-        plan_output += f"{node} Time:{assignment.Value(time_var)}\n"
-        end_time = assignment.Value(time_var)
+                start_time = assignment.value(time_var)
+            index = assignment.value(routing_model.next_var(index))
+        time_var = time_dimension.cumul_var(index)
+        node = manager.index_to_node(index)
+        plan_output += f"{node} Time:{assignment.value(time_var)}\n"
+        end_time = assignment.value(time_var)
         duration = end_time - start_time
         plan_output += f"Duration of the route:{duration}min\n"
         print(plan_output)
@@ -127,14 +128,14 @@ def main():
 
     # Create the routing index manager.
     # [START index_manager]
-    manager = pywraprouting.IndexManager(
+    manager = routing.IndexManager(
         1 + 16 * 4, data["num_vehicles"], data["depot"]  # number of locations
     )
     # [END index_manager]
 
     # Create Routing Model.
     # [START routing_model]
-    routing = pywraprouting.Model(manager)
+    routing_model = routing.Model(manager)
 
     # [END routing_model]
 
@@ -143,8 +144,8 @@ def main():
     def time_callback(from_index, to_index):
         """Returns the travel time between the two nodes."""
         # Convert from routing variable Index to time matrix NodeIndex.
-        from_node = manager.IndexToNode(from_index)
-        to_node = manager.IndexToNode(to_index)
+        from_node = manager.index_to_node(from_index)
+        to_node = manager.index_to_node(to_index)
         # since our matrix is 17x17 map duplicated node to original one to
         # retrieve the travel time
         while from_node > 16:
@@ -157,96 +158,96 @@ def main():
             service_time = 25
         return data["time_matrix"][from_node][to_node] + service_time
 
-    transit_callback_index = routing.RegisterTransitCallback(time_callback)
+    transit_callback_index = routing_model.register_transit_callback(time_callback)
     # [END transit_callback]
 
     # Define cost of each arc.
     # [START arc_cost]
-    routing.SetArcCostEvaluatorOfAllVehicles(transit_callback_index)
+    routing_model.set_arc_cost_evaluator_of_all_vehicles(transit_callback_index)
     # [END arc_cost]
 
     # Add Time Windows constraint.
     # [START time_windows_constraint]
     time = "Time"
-    routing.AddDimension(
+    routing_model.add_dimension(
         transit_callback_index,
         0,  # allow waiting time (0 min)
         1020,  # maximum time per vehicle (9 hours)
         False,  # Don't force start cumul to zero.
         time,
     )
-    time_dimension = routing.GetDimensionOrDie(time)
+    time_dimension = routing_model.get_dimension_or_die(time)
     # Add time window constraints for each location except depot.
     for location_idx in range(17):
         if location_idx == data["depot"]:
             continue
         # Vehicle 0 location TW: [9am, 11am]
-        index_0 = manager.NodeToIndex(location_idx)
-        time_dimension.CumulVar(index_0).SetRange(540, 660)
-        routing.VehicleVar(index_0).SetValues([-1, 0])
+        index_0 = manager.node_to_index(location_idx)
+        time_dimension.cumul_var(index_0).set_range(540, 660)
+        routing_model.vehicle_var(index_0).set_values([-1, 0])
 
         # Vehicle 1 location TW: [11am, 1pm]
-        index_1 = manager.NodeToIndex(location_idx + 16 * 1)
-        time_dimension.CumulVar(index_1).SetRange(660, 780)
-        routing.VehicleVar(index_1).SetValues([-1, 1])
+        index_1 = manager.node_to_index(location_idx + 16 * 1)
+        time_dimension.cumul_var(index_1).set_range(660, 780)
+        routing_model.vehicle_var(index_1).set_values([-1, 1])
 
         # Vehicle 2 location TW: [1pm, 3pm]
-        index_2 = manager.NodeToIndex(location_idx + 16 * 2)
-        time_dimension.CumulVar(index_2).SetRange(780, 900)
-        routing.VehicleVar(index_2).SetValues([-1, 2])
+        index_2 = manager.node_to_index(location_idx + 16 * 2)
+        time_dimension.cumul_var(index_2).set_range(780, 900)
+        routing_model.vehicle_var(index_2).set_values([-1, 2])
 
         # Vehicle 3 location TW: [3pm, 5pm]
-        index_3 = manager.NodeToIndex(location_idx + 16 * 3)
-        time_dimension.CumulVar(index_3).SetRange(900, 1020)
-        routing.VehicleVar(index_3).SetValues([-1, 3])
+        index_3 = manager.node_to_index(location_idx + 16 * 3)
+        time_dimension.cumul_var(index_3).set_range(900, 1020)
+        routing_model.vehicle_var(index_3).set_values([-1, 3])
 
         # Add Disjunction so only one node among duplicate is visited
         penalty = 100_000  # Give solver strong incentive to visit one node
-        routing.AddDisjunction([index_0, index_1, index_2, index_3], penalty, 1)
+        routing_model.add_disjunction([index_0, index_1, index_2, index_3], penalty, 1)
 
     # Add time window constraints for each vehicle start node.
-    depot_idx = data["depot"]
     for vehicle_id in range(data["num_vehicles"]):
-        index = routing.Start(vehicle_id)
-        time_dimension.CumulVar(index).SetRange(480, 1020)  # (8am, 5pm)
+        index = routing_model.start(vehicle_id)
+        time_dimension.cumul_var(index).set_range(480, 1020)  # (8am, 5pm)
 
     # Add time window constraints for each vehicle end node.
-    depot_idx = data["depot"]
     for vehicle_id in range(data["num_vehicles"]):
-        index = routing.End(vehicle_id)
-        time_dimension.CumulVar(index).SetRange(480, 1020)  # (8am, 5pm)
+        index = routing_model.end(vehicle_id)
+        time_dimension.cumul_var(index).set_range(480, 1020)  # (8am, 5pm)
     # [END time_windows_constraint]
 
     # Instantiate route start and end times to produce feasible times.
     # [START depot_start_end_times]
     for i in range(data["num_vehicles"]):
-        routing.AddVariableMinimizedByFinalizer(
-            time_dimension.CumulVar(routing.Start(i))
+        routing_model.add_variable_minimized_by_finalizer(
+            time_dimension.cumul_var(routing_model.start(i))
         )
-        routing.AddVariableMinimizedByFinalizer(time_dimension.CumulVar(routing.End(i)))
+        routing_model.add_variable_minimized_by_finalizer(
+            time_dimension.cumul_var(routing_model.end(i))
+        )
     # [END depot_start_end_times]
 
     # Setting first solution heuristic.
     # [START parameters]
-    search_parameters = pywraprouting.DefaultRoutingSearchParameters()
+    search_parameters = routing.default_routing_search_parameters()
     search_parameters.first_solution_strategy = (
-        enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
+        routing.FirstSolutionStrategy.PATH_CHEAPEST_ARC
     )
     search_parameters.local_search_metaheuristic = (
-        enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH
+        routing.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH
     )
-    search_parameters.time_limit.FromSeconds(1)
+    search_parameters.time_limit.seconds = 1
     # [END parameters]
 
     # Solve the problem.
     # [START solve]
-    assignment = routing.SolveWithParameters(search_parameters)
+    assignment = routing_model.solve_with_parameters(search_parameters)
     # [END solve]
 
     # Print solution on console.
     # [START print_solution]
     if assignment:
-        print_solution(manager, routing, assignment)
+        print_solution(manager, routing_model, assignment)
     else:
         print("no solution found !")
     # [END print_solution]

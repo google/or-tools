@@ -1,5 +1,17 @@
 #!/usr/bin/env python3
-# [START program]
+# Copyright 2010-2025 Google LLC
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Vehicles Routing Problem (VRP) for delivering items from any suppliers.
 
 Description: Need to deliver some item X and Y at end nodes (at least 11 X and
@@ -13,9 +25,11 @@ fleet:
   * end node: 1
 """
 
+# [START program]
+
 # [START import]
-from ortools.routing import enums_pb2
-from ortools.routing import pywraprouting
+from ortools.routing.python import routing
+
 # [END import]
 
 
@@ -408,41 +422,40 @@ def create_data_model():
 
 
 # [START solution_printer]
-def print_solution(data, manager, routing, assignment):
+def print_solution(data, manager, routing_model, assignment):
     """Prints assignment on console."""
-    print(f"Objective: {assignment.ObjectiveValue()}")
+    print(f"Objective: {assignment.objective_value()}")
     # Display dropped nodes.
     dropped_nodes = "Dropped nodes:"
-    for node in range(routing.Size()):
-        if routing.IsStart(node) or routing.IsEnd(node):
+    for node in range(routing_model.size()):
+        if routing_model.is_start(node) or routing_model.is_end(node):
             continue
-        if assignment.Value(routing.NextVar(node)) == node:
-            dropped_nodes += f" {manager.IndexToNode(node)}"
+        if assignment.value(routing_model.next_var(node)) == node:
+            dropped_nodes += f" {manager.index_to_node(node)}"
     print(dropped_nodes)
     # Display routes
     total_distance = 0
     total_load_x = 0
     total_load_y = 0
-    for vehicle_id in range(manager.GetNumberOfVehicles()):
-        if not routing.IsVehicleUsed(assignment, vehicle_id):
+    for vehicle_id in range(manager.num_vehicles()):
+        if not routing_model.is_vehicle_used(assignment, vehicle_id):
             continue
-        index = routing.Start(vehicle_id)
+        index = routing_model.start(vehicle_id)
         plan_output = f"Route for vehicle {vehicle_id}:\n"
         route_distance = 0
         route_load_x = 0
         route_load_y = 0
-        while not routing.IsEnd(index):
-            node_index = manager.IndexToNode(index)
+        while not routing_model.is_end(index):
+            node_index = manager.index_to_node(index)
             route_load_x += data["providers_x"][node_index]
             route_load_y += data["providers_y"][node_index]
             plan_output += f" {node_index} Load(X:{route_load_x}, Y:{route_load_y}) -> "
             previous_index = index
-            previous_node_index = node_index
-            index = assignment.Value(routing.NextVar(index))
-            node_index = manager.IndexToNode(index)
-            # route_distance += routing.GetArcCostForVehicle(previous_index, index, vehicle_id)
-            route_distance += data["distance_matrix"][previous_node_index][node_index]
-        node_index = manager.IndexToNode(index)
+            index = assignment.value(routing_model.next_var(index))
+            route_distance += routing_model.get_arc_cost_for_vehicle(
+                previous_index, index, vehicle_id
+            )
+        node_index = manager.index_to_node(index)
         plan_output += f" {node_index} Load({route_load_x}, {route_load_y})\n"
         plan_output += f"Distance of the route: {route_distance}m\n"
         plan_output += f"Load of the route: X:{route_load_x}, Y:{route_load_y}\n"
@@ -464,7 +477,7 @@ def main():
 
     # Create the routing index manager.
     # [START index_manager]
-    manager = pywraprouting.IndexManager(
+    manager = routing.IndexManager(
         len(data["distance_matrix"]),
         data["num_vehicles"],
         data["starts"],
@@ -474,7 +487,7 @@ def main():
 
     # Create Routing Model.
     # [START routing_model]
-    routing = pywraprouting.Model(manager)
+    routing_model = routing.Model(manager)
 
     # [END routing_model]
 
@@ -483,31 +496,31 @@ def main():
     def distance_callback(from_index, to_index):
         """Returns the distance between the two nodes."""
         # Convert from routing variable Index to distance matrix NodeIndex.
-        from_node = manager.IndexToNode(from_index)
-        to_node = manager.IndexToNode(to_index)
+        from_node = manager.index_to_node(from_index)
+        to_node = manager.index_to_node(to_index)
         return data["distance_matrix"][from_node][to_node]
 
-    transit_callback_index = routing.RegisterTransitCallback(distance_callback)
+    transit_callback_index = routing_model.register_transit_callback(distance_callback)
     # [END transit_callback]
 
     # Define cost of each arc.
     # [START arc_cost]
-    routing.SetArcCostEvaluatorOfAllVehicles(transit_callback_index)
+    routing_model.set_arc_cost_evaluator_of_all_vehicles(transit_callback_index)
     # [END arc_cost]
 
     # Add Distance constraint.
     # [START distance_constraint]
     dimension_name = "Distance"
-    routing.AddDimension(
+    routing_model.add_dimension(
         transit_callback_index,
         0,  # no slack
         2000,  # vehicle maximum travel distance
         True,  # start cumul to zero
         dimension_name,
     )
-    distance_dimension = routing.GetDimensionOrDie(dimension_name)
+    distance_dimension = routing_model.get_dimension_or_die(dimension_name)
     # Minimize the longest road
-    distance_dimension.SetGlobalSpanCostCoefficient(100)
+    distance_dimension.set_global_span_cost_coefficient(100)
 
     # [END distance_constraint]
 
@@ -516,11 +529,13 @@ def main():
     def demand_callback_x(from_index):
         """Returns the demand of the node."""
         # Convert from routing variable Index to demands NodeIndex.
-        from_node = manager.IndexToNode(from_index)
+        from_node = manager.index_to_node(from_index)
         return data["providers_x"][from_node]
 
-    demand_callback_x_index = routing.RegisterUnaryTransitCallback(demand_callback_x)
-    routing.AddDimensionWithVehicleCapacity(
+    demand_callback_x_index = routing_model.register_unary_transit_callback(
+        demand_callback_x
+    )
+    routing_model.add_dimension_with_vehicle_capacity(
         demand_callback_x_index,
         0,  # null capacity slack
         data["vehicle_capacities_x"],  # vehicle maximum capacities
@@ -531,11 +546,13 @@ def main():
     def demand_callback_y(from_index):
         """Returns the demand of the node."""
         # Convert from routing variable Index to demands NodeIndex.
-        from_node = manager.IndexToNode(from_index)
+        from_node = manager.index_to_node(from_index)
         return data["providers_y"][from_node]
 
-    demand_callback_y_index = routing.RegisterUnaryTransitCallback(demand_callback_y)
-    routing.AddDimensionWithVehicleCapacity(
+    demand_callback_y_index = routing_model.register_unary_transit_callback(
+        demand_callback_y
+    )
+    routing_model.add_dimension_with_vehicle_capacity(
         demand_callback_y_index,
         0,  # null capacity slack
         data["vehicle_capacities_y"],  # vehicle maximum capacities
@@ -545,53 +562,53 @@ def main():
     # [END capacity_constraint]
 
     # Add constraint at end
-    solver = routing.solver()
-    load_x_dim = routing.GetDimensionOrDie("Load_x")
-    load_y_dim = routing.GetDimensionOrDie("Load_y")
+    solver = routing_model.solver
+    load_x_dim = routing_model.get_dimension_or_die("Load_x")
+    load_y_dim = routing_model.get_dimension_or_die("Load_y")
     ends = []
-    for v in range(manager.GetNumberOfVehicles()):
-        ends.append(routing.End(v))
+    for v in range(manager.num_vehicles()):
+        ends.append(routing_model.end(v))
 
     node_end = data["ends"][0]
-    solver.Add(
-        solver.Sum([load_x_dim.CumulVar(l) for l in ends])
+    solver.add(
+        solver.sum([load_x_dim.cumul_var(l) for l in ends])
         >= -data["providers_x"][node_end]
     )
-    solver.Add(
-        solver.Sum([load_y_dim.CumulVar(l) for l in ends])
+    solver.add(
+        solver.sum([load_y_dim.cumul_var(l) for l in ends])
         >= -data["providers_y"][node_end]
     )
-    # solver.Add(load_y_dim.CumulVar(end) >= -data['providers_y'][node_end])
+    # solver.add(load_y_dim.cumul_var(end) >= -data['providers_y'][node_end])
 
     # Allow to freely drop any nodes.
     penalty = 0
     for node in range(0, len(data["distance_matrix"])):
         if node not in data["starts"] and node not in data["ends"]:
-            routing.AddDisjunction([manager.NodeToIndex(node)], penalty)
+            routing_model.add_disjunction([manager.node_to_index(node)], penalty)
 
     # Setting first solution heuristic.
     # [START parameters]
-    search_parameters = pywraprouting.DefaultRoutingSearchParameters()
+    search_parameters = routing.default_routing_search_parameters()
     search_parameters.first_solution_strategy = (
-        enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
+        routing.FirstSolutionStrategy.PATH_CHEAPEST_ARC
     )
     search_parameters.local_search_metaheuristic = (
-        enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH
+        routing.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH
     )
     # Sets a time limit; default is 100 milliseconds.
     # search_parameters.log_search = True
-    search_parameters.time_limit.FromSeconds(1)
+    search_parameters.time_limit.seconds = 1
     # [END parameters]
 
     # Solve the problem.
     # [START solve]
-    solution = routing.SolveWithParameters(search_parameters)
+    solution = routing_model.solve_with_parameters(search_parameters)
     # [END solve]
 
     # Print solution on console.
     # [START print_solution]
     if solution:
-        print_solution(data, manager, routing, solution)
+        print_solution(data, manager, routing_model, solution)
     else:
         print("no solution found !")
     # [END print_solution]

@@ -40,7 +40,7 @@ There are two sets of variables available:
   - "next(i)" variables representing the immediate successor of the node
     corresponding to i; use IndexToNode() to get the node corresponding to
     a "next" variable value; note that node indices are strongly typed
-    integers (cf. ortools/base/int_type.h);
+    integers;
   - "vehicle(i)" variables representing the vehicle route to which the
     node corresponding to i belongs;
   - "active(i)" boolean variables, true if the node corresponding to i is

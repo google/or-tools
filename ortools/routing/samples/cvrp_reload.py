@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
-# This Python file uses the following encoding: utf-8
-# Copyright 2015 Tin Arm Engineering AB
-# Copyright 2018 Google LLC
+# Copyright 2010-2025 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -13,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """Capacitated Vehicle Routing Problem (CVRP).
 
 This is a sample using the routing library python wrapper to solve a CVRP
@@ -42,17 +41,16 @@ those new nodes unless it's necessary to reload. This consideration is taken
 into account in `create_distance_evaluator()`.
 """
 
-from functools import partial
+import functools
 
-from ortools.routing import enums_pb2
-from ortools.routing import pywraprouting
+from ortools.routing.python import routing
 
 
 ###########################
 # Problem Data Definition #
 ###########################
 def create_data_model():
-    """Stores the data for the problem"""
+    """Stores the data for the problem."""
     data = {}
     _capacity = 15
     # Locations in block unit
@@ -148,7 +146,7 @@ def create_data_model():
 # Problem Constraints #
 #######################
 def manhattan_distance(position_1, position_2):
-    """Computes the Manhattan distance between two points"""
+    """Computes the Manhattan distance between two points."""
     return abs(position_1[0] - position_2[0]) + abs(position_1[1] - position_2[1])
 
 
@@ -170,27 +168,29 @@ def create_distance_evaluator(data):
                 )
 
     def distance_evaluator(manager, from_node, to_node):
-        """Returns the manhattan distance between the two nodes"""
-        return _distances[manager.IndexToNode(from_node)][manager.IndexToNode(to_node)]
+        """Returns the manhattan distance between the two nodes."""
+        return _distances[manager.index_to_node(from_node)][
+            manager.index_to_node(to_node)
+        ]
 
     return distance_evaluator
 
 
-def add_distance_dimension(routing, manager, data, distance_evaluator_index):
-    """Add Global Span constraint"""
+def add_distance_dimension(routing_model, manager, data, distance_evaluator_index):
+    """Add Global Span constraint."""
     del manager
     distance = "Distance"
-    routing.AddDimension(
+    routing_model.add_dimension(
         distance_evaluator_index,
         0,  # null slack
         data["vehicle_max_distance"],  # maximum distance per vehicle
         True,  # start cumul to zero
         distance,
     )
-    distance_dimension = routing.GetDimensionOrDie(distance)
+    distance_dimension = routing_model.get_dimension_or_die(distance)
     # Try to minimize the max distance among vehicles.
     # /!\ It doesn't mean the standard deviation is minimized
-    distance_dimension.SetGlobalSpanCostCoefficient(100)
+    distance_dimension.set_global_span_cost_coefficient(100)
 
 
 def create_demand_evaluator(data):
@@ -198,17 +198,17 @@ def create_demand_evaluator(data):
     _demands = data["demands"]
 
     def demand_evaluator(manager, from_node):
-        """Returns the demand of the current node"""
-        return _demands[manager.IndexToNode(from_node)]
+        """Returns the demand of the current node."""
+        return _demands[manager.index_to_node(from_node)]
 
     return demand_evaluator
 
 
-def add_capacity_constraints(routing, manager, data, demand_evaluator_index):
-    """Adds capacity constraint"""
+def add_capacity_constraints(routing_model, manager, data, demand_evaluator_index):
+    """Adds capacity constraint."""
     vehicle_capacity = data["vehicle_capacity"]
     capacity = "Capacity"
-    routing.AddDimension(
+    routing_model.add_dimension(
         demand_evaluator_index,
         vehicle_capacity,
         vehicle_capacity,
@@ -216,20 +216,20 @@ def add_capacity_constraints(routing, manager, data, demand_evaluator_index):
         capacity,
     )
 
-    # Add Slack for reseting to zero unload depot nodes.
+    # Add Slack for resetting to zero unload depot nodes.
     # e.g. vehicle with load 10/15 arrives at node 1 (depot unload)
     # so we have CumulVar = 10(current load) + -15(unload) + 5(slack) = 0.
-    capacity_dimension = routing.GetDimensionOrDie(capacity)
+    capacity_dimension = routing_model.get_dimension_or_die(capacity)
     # Allow to drop reloading nodes with zero cost.
     for node in [1, 2, 3, 4, 5]:
-        node_index = manager.NodeToIndex(node)
-        routing.AddDisjunction([node_index], 0)
+        node_index = manager.node_to_index(node)
+        routing_model.add_disjunction([node_index], 0)
 
     # Allow to drop regular node with a cost.
     for node in range(6, len(data["demands"])):
-        node_index = manager.NodeToIndex(node)
-        capacity_dimension.SlackVar(node_index).SetValue(0)
-        routing.AddDisjunction([node_index], 100_000)
+        node_index = manager.node_to_index(node)
+        capacity_dimension.slack_var(node_index).set_value(0)
+        routing_model.add_disjunction([node_index], 100_000)
 
 
 def create_time_evaluator(data):
@@ -266,105 +266,115 @@ def create_time_evaluator(data):
                 )
 
     def time_evaluator(manager, from_node, to_node):
-        """Returns the total time between the two nodes"""
-        return _total_time[manager.IndexToNode(from_node)][manager.IndexToNode(to_node)]
+        """Returns the total time between the two nodes."""
+        return _total_time[manager.index_to_node(from_node)][
+            manager.index_to_node(to_node)
+        ]
 
     return time_evaluator
 
 
-def add_time_window_constraints(routing, manager, data, time_evaluator):
-    """Add Time windows constraint"""
+def add_time_window_constraints(routing_model, manager, data, time_evaluator):
+    """Add Time windows constraint."""
     time = "Time"
     max_time = data["vehicle_max_time"]
-    routing.AddDimension(
+    routing_model.add_dimension(
         time_evaluator,
         max_time,  # allow waiting time
         max_time,  # maximum time per vehicle
-        False,  # don't force start cumul to zero since we are giving TW to start nodes
+        # don't fix start cumul to zero since we are giving TW to start nodes.
+        False,
         time,
     )
-    time_dimension = routing.GetDimensionOrDie(time)
+    time_dimension = routing_model.get_dimension_or_die(time)
     # Add time window constraints for each location except depot
     # and 'copy' the slack var in the solution object (aka Assignment) to print it
     for location_idx, time_window in enumerate(data["time_windows"]):
         if location_idx == 0:
             continue
-        index = manager.NodeToIndex(location_idx)
-        time_dimension.CumulVar(index).SetRange(time_window[0], time_window[1])
-        routing.AddToAssignment(time_dimension.SlackVar(index))
+        index = manager.node_to_index(location_idx)
+        time_dimension.cumul_var(index).set_range(time_window[0], time_window[1])
+        routing_model.add_to_assignment(time_dimension.slack_var(index))
     # Add time window constraints for each vehicle start node
     # and 'copy' the slack var in the solution object (aka Assignment) to print it
     for vehicle_id in range(data["num_vehicles"]):
-        index = routing.Start(vehicle_id)
-        time_dimension.CumulVar(index).SetRange(
+        index = routing_model.start(vehicle_id)
+        time_dimension.cumul_var(index).set_range(
             data["time_windows"][0][0], data["time_windows"][0][1]
         )
-        routing.AddToAssignment(time_dimension.SlackVar(index))
-        # Warning: Slack var is not defined for vehicle's end node
-        # routing.AddToAssignment(time_dimension.SlackVar(self.routing.End(vehicle_id)))
+        routing_model.add_to_assignment(time_dimension.slack_var(index))
+        # Warning: slack_var is not defined for vehicle's end node
+        # routing.add_to_assignment(
+        #     time_dimension.slack_var(self.routing.End(vehicle_id)))
 
 
 ###########
 # Printer #
 ###########
 def print_solution(
-    data, manager, routing, assignment
+    data, manager, routing_model, assignment
 ):  # pylint:disable=too-many-locals
-    """Prints assignment on console"""
-    print(f"Objective: {assignment.ObjectiveValue()}")
+    """Prints assignment on console."""
+    print(f"Objective: {assignment.objective_value()}")
     total_distance = 0
     total_load = 0
     total_time = 0
-    capacity_dimension = routing.GetDimensionOrDie("Capacity")
-    time_dimension = routing.GetDimensionOrDie("Time")
-    distance_dimension = routing.GetDimensionOrDie("Distance")
+    capacity_dimension = routing_model.get_dimension_or_die("Capacity")
+    time_dimension = routing_model.get_dimension_or_die("Time")
+    distance_dimension = routing_model.get_dimension_or_die("Distance")
     dropped = []
-    for order in range(6, routing.nodes()):
-        index = manager.NodeToIndex(order)
-        if assignment.Value(routing.NextVar(index)) == index:
+    for order in range(6, routing_model.nodes()):
+        index = manager.node_to_index(order)
+        if assignment.value(routing_model.next_var(index)) == index:
             dropped.append(order)
     print(f"dropped orders: {dropped}")
     dropped = []
     for reload in range(1, 6):
-        index = manager.NodeToIndex(reload)
-        if assignment.Value(routing.NextVar(index)) == index:
+        index = manager.node_to_index(reload)
+        if assignment.value(routing_model.next_var(index)) == index:
             dropped.append(reload)
     print(f"dropped reload stations: {dropped}")
 
     for vehicle_id in range(data["num_vehicles"]):
-        if not routing.IsVehicleUsed(assignment, vehicle_id):
+        if not routing_model.is_vehicle_used(assignment, vehicle_id):
             continue
-        index = routing.Start(vehicle_id)
+        index = routing_model.start(vehicle_id)
         plan_output = f"Route for vehicle {vehicle_id}:\n"
         load_value = 0
         distance = 0
-        while not routing.IsEnd(index):
-            time_var = time_dimension.CumulVar(index)
+        while not routing_model.is_end(index):
+            time_var = time_dimension.cumul_var(index)
             plan_output += (
-                f" {manager.IndexToNode(index)} "
-                f"Load({assignment.Min(capacity_dimension.CumulVar(index))}) "
-                f"Time({assignment.Min(time_var)},{assignment.Max(time_var)}) ->"
+                f" {manager.index_to_node(index)} "
+                f"Load({assignment.min(capacity_dimension.cumul_var(index))}) "
+                f"Time({assignment.min(time_var)},{assignment.max(time_var)}) ->"
             )
             previous_index = index
-            index = assignment.Value(routing.NextVar(index))
-            distance += distance_dimension.GetTransitValue(previous_index, index, vehicle_id)
-            # capacity dimension TransitVar is negative at reload stations during replenishment
-            # don't want to consider those values when calculating the total load of the route
-            # hence only considering the positive values
-            load_value += max(0, capacity_dimension.GetTransitValue(previous_index, index, vehicle_id))
-        time_var = time_dimension.CumulVar(index)
+            index = assignment.value(routing_model.next_var(index))
+            distance += distance_dimension.get_transit_value(
+                previous_index, index, vehicle_id
+            )
+            # capacity dimension transit_var is negative at reload stations during
+            # replenishment. We don't want to consider those values when calculating
+            # the total load of the route, hence only considering the positive values.
+            load_value += max(
+                0,
+                capacity_dimension.get_transit_value(previous_index, index, vehicle_id),
+            )
+        time_var = time_dimension.cumul_var(index)
         plan_output += (
-            f" {manager.IndexToNode(index)} "
-            f"Load({assignment.Min(capacity_dimension.CumulVar(index))}) "
-            f"Time({assignment.Min(time_var)},{assignment.Max(time_var)})\n"
+            f" {manager.index_to_node(index)} "
+            f"Load({assignment.min(capacity_dimension.cumul_var(index))}) "
+            f"Time({assignment.min(time_var)},{assignment.max(time_var)})\n"
         )
         plan_output += f"Distance of the route: {distance}m\n"
         plan_output += f"Load of the route: {load_value}\n"
-        plan_output += f"Time of the route: {assignment.Min(time_var)}min\n"
+        plan_output += f"Time of the route: {assignment.min(time_var)}min\n"
         print(plan_output)
         total_distance += distance
         total_load += load_value
-        total_time += assignment.Min(time_var)
+        total_time += assignment.min(time_var)
+
     print(f"Total Distance of all routes: {total_distance}m")
     print(f"Total Load of all routes: {total_load}")
     print(f"Total Time of all routes: {total_time}min")
@@ -374,53 +384,53 @@ def print_solution(
 # Main #
 ########
 def main():
-    """Entry point of the program"""
+    """Entry point of the program."""
     # Instantiate the data problem.
     data = create_data_model()
 
     # Create the routing index manager
-    manager = pywraprouting.IndexManager(
+    manager = routing.IndexManager(
         data["num_locations"], data["num_vehicles"], data["depot"]
     )
 
     # Create Routing Model
-    routing = pywraprouting.Model(manager)
+    routing_model = routing.Model(manager)
 
     # Define weight of each edge
-    distance_evaluator_index = routing.RegisterTransitCallback(
-        partial(create_distance_evaluator(data), manager)
+    distance_evaluator_index = routing_model.register_transit_callback(
+        functools.partial(create_distance_evaluator(data), manager)
     )
-    routing.SetArcCostEvaluatorOfAllVehicles(distance_evaluator_index)
+    routing_model.set_arc_cost_evaluator_of_all_vehicles(distance_evaluator_index)
 
     # Add Distance constraint to minimize the longuest route
-    add_distance_dimension(routing, manager, data, distance_evaluator_index)
+    add_distance_dimension(routing_model, manager, data, distance_evaluator_index)
 
     # Add Capacity constraint
-    demand_evaluator_index = routing.RegisterUnaryTransitCallback(
-        partial(create_demand_evaluator(data), manager)
+    demand_evaluator_index = routing_model.register_unary_transit_callback(
+        functools.partial(create_demand_evaluator(data), manager)
     )
-    add_capacity_constraints(routing, manager, data, demand_evaluator_index)
+    add_capacity_constraints(routing_model, manager, data, demand_evaluator_index)
 
     # Add Time Window constraint
-    time_evaluator_index = routing.RegisterTransitCallback(
-        partial(create_time_evaluator(data), manager)
+    time_evaluator_index = routing_model.register_transit_callback(
+        functools.partial(create_time_evaluator(data), manager)
     )
-    add_time_window_constraints(routing, manager, data, time_evaluator_index)
+    add_time_window_constraints(routing_model, manager, data, time_evaluator_index)
 
     # Setting first solution heuristic (cheapest addition).
-    search_parameters = pywraprouting.DefaultRoutingSearchParameters()
+    search_parameters = routing.default_routing_search_parameters()
     search_parameters.first_solution_strategy = (
-        enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
+        routing.FirstSolutionStrategy.PATH_CHEAPEST_ARC
     )  # pylint: disable=no-member
     search_parameters.local_search_metaheuristic = (
-        enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH
+        routing.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH
     )
-    search_parameters.time_limit.FromSeconds(3)
+    search_parameters.time_limit.seconds = 3
 
     # Solve the problem.
-    solution = routing.SolveWithParameters(search_parameters)
+    solution = routing_model.solve_with_parameters(search_parameters)
     if solution:
-        print_solution(data, manager, routing, solution)
+        print_solution(data, manager, routing_model, solution)
     else:
         print("No solution found !")
 

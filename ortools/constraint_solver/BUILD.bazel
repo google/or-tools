@@ -193,7 +193,6 @@ cc_library(
         "//ortools/base:base_export",
         "//ortools/base:bitmap",
         "//ortools/base:file",
-        "//ortools/base:int_type",
         "//ortools/base:intops",
         "//ortools/base:iterator_adaptors",
         "//ortools/base:map_util",

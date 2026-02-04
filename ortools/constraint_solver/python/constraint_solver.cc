@@ -1009,14 +1009,22 @@ PYBIND11_MODULE(constraint_solver, m) {
            DOC(operations_research, Solver, MakeFixedDurationIntervalVar),
            py::return_value_policy::reference_internal)
       .def("new_fixed_duration_interval_var",
-           py::overload_cast<IntVar*, int64_t, const std::string&>(
-               &Solver::MakeFixedDurationIntervalVar),
+        [](Solver* s, IntExpr* start, int64_t duration,
+               const std::string& name) {
+             return s->MakeFixedDurationIntervalVar(
+                 start->Var(), duration, name);
+           },
+           py::arg("start"), py::arg("duration"), py::arg("name"),
            DOC(operations_research, Solver, MakeFixedDurationIntervalVar_2),
            py::return_value_policy::reference_internal)
       .def("new_fixed_duration_interval_var",
-           py::overload_cast<IntVar*, int64_t, IntVar*,
-                                   const std::string&>(
-               &Solver::MakeFixedDurationIntervalVar),
+        [](Solver* s, IntExpr* start, int64_t duration,
+           IntExpr* performed_variable, const std::string& name) {
+             return s->MakeFixedDurationIntervalVar(
+                 start->Var(), duration, performed_variable->Var(), name);
+           },
+           py::arg("start"), py::arg("duration"), py::arg("performed_variable"),
+           py::arg("name"),
            DOC(operations_research, Solver, MakeFixedDurationIntervalVar_3),
            py::return_value_policy::reference_internal)
       .def("new_fixed_interval",

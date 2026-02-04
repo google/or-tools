@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# [START program]
 """Capacited Vehicles Routing Problem with Time Windows (CVRPTW).
 
 This is a sample using the routing library python wrapper to solve a VRP
@@ -23,13 +22,13 @@ http://en.wikipedia.org/wiki/Vehicle_routing_problem.
 Distances are in meters.
 """
 
+# [START program]
 # [START import]
-from ortools.routing import enums_pb2
-from ortools.routing import pywraprouting
+from ortools.routing.python import routing
 
-FirstSolutionStrategy = enums_pb2.FirstSolutionStrategy
-LocalSearchMetaheuristic = enums_pb2.LocalSearchMetaheuristic
-RoutingSearchStatus = enums_pb2.RoutingSearchStatus
+FirstSolutionStrategy = routing.FirstSolutionStrategy
+LocalSearchMetaheuristic = routing.LocalSearchMetaheuristic
+RoutingSearchStatus = routing.RoutingSearchStatus
 # [END import]
 
 
@@ -112,58 +111,58 @@ def create_data_model():
 
 
 # [START solution_printer]
-def print_solution(manager, routing, solution):
+def print_solution(manager, routing_model, solution):
     """Prints solution on console."""
-    status = routing.status()
-    print(f"Status: {RoutingSearchStatus.Value.Name(status)}")
+    status = routing_model.status()
+    print(f"Status: {status.name}")
     if (
         status != RoutingSearchStatus.ROUTING_OPTIMAL
         and status != RoutingSearchStatus.ROUTING_SUCCESS
     ):
         print("No solution found!")
         return
-    print(f"Objective: {solution.ObjectiveValue()}")
-    time_dimension = routing.GetDimensionOrDie("Time")
-    capacity_dimension = routing.GetDimensionOrDie("Capacity")
+    print(f"Objective: {solution.objective_value()}")
+    time_dimension = routing_model.get_dimension_or_die("Time")
+    capacity_dimension = routing_model.get_dimension_or_die("Capacity")
     total_distance = 0
     total_time = 0
     total_load = 0
-    for vehicle_id in range(manager.GetNumberOfVehicles()):
-        if not routing.IsVehicleUsed(solution, vehicle_id):
+    for vehicle_id in range(manager.num_vehicles()):
+        if not routing_model.is_vehicle_used(solution, vehicle_id):
             continue
-        index = routing.Start(vehicle_id)
+        index = routing_model.start(vehicle_id)
         plan_output = f"Route for vehicle {vehicle_id}:\n"
         route_distance = 0
-        while not routing.IsEnd(index):
-            time_var = time_dimension.CumulVar(index)
-            capacity_var = capacity_dimension.CumulVar(index)
+        while not routing_model.is_end(index):
+            time_var = time_dimension.cumul_var(index)
+            capacity_var = capacity_dimension.cumul_var(index)
             plan_output += (
-                f"Node_{manager.IndexToNode(index)}"
-                f" TW:[{time_var.Min()},{time_var.Max()}]"
-                f" Time({solution.Min(time_var)},{solution.Max(time_var)})"
-                f" Load({solution.Value(capacity_var)}/{capacity_var.Max()})"
+                f"Node_{manager.index_to_node(index)}"
+                f" TW:[{time_var.min()},{time_var.max()}]"
+                f" Time({solution.min(time_var)},{solution.max(time_var)})"
+                f" Load({solution.value(capacity_var)}/{capacity_var.max()})"
                 " -> "
             )
             previous_index = index
-            index = solution.Value(routing.NextVar(index))
-            route_distance += routing.GetArcCostForVehicle(
+            index = solution.value(routing_model.next_var(index))
+            route_distance += routing_model.get_arc_cost_for_vehicle(
                 previous_index, index, vehicle_id
             )
-        time_var = time_dimension.CumulVar(index)
-        capacity_var = capacity_dimension.CumulVar(index)
+        time_var = time_dimension.cumul_var(index)
+        capacity_var = capacity_dimension.cumul_var(index)
         plan_output += (
-            f"Node_{manager.IndexToNode(index)}"
-            f" Time({solution.Min(time_var)},{solution.Max(time_var)})"
-            f" Load({solution.Value(capacity_var)}/{capacity_var.Max()})"
+            f"Node_{manager.index_to_node(index)}"
+            f" Time({solution.min(time_var)},{solution.max(time_var)})"
+            f" Load({solution.value(capacity_var)}/{capacity_var.max()})"
             "\n"
         )
         plan_output += f"Distance of the route: {route_distance}m\n"
-        plan_output += f"Time of the route: {solution.Min(time_var)}min\n"
-        plan_output += f"Load of the route: {solution.Value(capacity_var)}\n"
+        plan_output += f"Time of the route: {solution.min(time_var)}min\n"
+        plan_output += f"Load of the route: {solution.value(capacity_var)}\n"
         print(plan_output)
         total_distance += route_distance
-        total_time += solution.Min(time_var)
-        total_load += solution.Value(capacity_var)
+        total_time += solution.min(time_var)
+        total_load += solution.value(capacity_var)
     print(f"Total distance of all routes: {total_distance}m")
     print(f"Total time of all routes: {total_time}min")
     print(f"Total load of all routes: {total_load}")
@@ -179,14 +178,14 @@ def main():
 
     # Create the routing index manager.
     # [START index_manager]
-    manager = pywraprouting.IndexManager(
+    manager = routing.IndexManager(
         len(data["distance_matrix"]), data["num_vehicles"], data["depot"]
     )
     # [END index_manager]
 
     # Create Routing Model.
     # [START routing_model]
-    routing = pywraprouting.Model(manager)
+    routing_model = routing.Model(manager)
     # [END routing_model]
 
     # Create and register a distance transit callback.
@@ -194,16 +193,16 @@ def main():
     def distance_callback(from_index, to_index):
         """Returns the distance between the two nodes."""
         # Convert from routing variable Index to distance matrix NodeIndex.
-        from_node = manager.IndexToNode(from_index)
-        to_node = manager.IndexToNode(to_index)
+        from_node = manager.index_to_node(from_index)
+        to_node = manager.index_to_node(to_index)
         return data["distance_matrix"][from_node][to_node]
 
-    distance_callback_index = routing.RegisterTransitCallback(distance_callback)
+    distance_callback_index = routing_model.register_transit_callback(distance_callback)
     # [END distance_callback]
 
     # Define cost of each arc.
     # [START arc_cost]
-    routing.SetArcCostEvaluatorOfAllVehicles(distance_callback_index)
+    routing_model.set_arc_cost_evaluator_of_all_vehicles(distance_callback_index)
     # [END arc_cost]
 
     # Add Time Windows constraint.
@@ -211,30 +210,30 @@ def main():
     def time_callback(from_index, to_index):
         """Returns the travel time between the two nodes."""
         # Convert from routing variable Index to time matrix NodeIndex.
-        from_node = manager.IndexToNode(from_index)
-        to_node = manager.IndexToNode(to_index)
+        from_node = manager.index_to_node(from_index)
+        to_node = manager.index_to_node(to_index)
         return data["time_matrix"][from_node][to_node]
 
-    time_callback_index = routing.RegisterTransitCallback(time_callback)
-    routing.AddDimension(
+    time_callback_index = routing_model.register_transit_callback(time_callback)
+    routing_model.add_dimension(
         time_callback_index,
         30,  # allow waiting time
         30,  # maximum time per vehicle
         False,  # Don't force start cumul to zero.
         "Time",
     )
-    time_dimension = routing.GetDimensionOrDie("Time")
+    time_dimension = routing_model.get_dimension_or_die("Time")
     # Add time window constraints for each location except depot.
     for location_idx, time_window in enumerate(data["time_windows"]):
         if location_idx == data["depot"]:
             continue
-        index = manager.NodeToIndex(location_idx)
-        time_dimension.CumulVar(index).SetRange(time_window[0], time_window[1])
+        index = manager.node_to_index(location_idx)
+        time_dimension.cumul_var(index).set_range(time_window[0], time_window[1])
     # Add time window constraints for each vehicle start node.
     depot_idx = data["depot"]
     for vehicle_id in range(data["num_vehicles"]):
-        index = routing.Start(vehicle_id)
-        time_dimension.CumulVar(index).SetRange(
+        index = routing_model.start(vehicle_id)
+        time_dimension.cumul_var(index).set_range(
             data["time_windows"][depot_idx][0], data["time_windows"][depot_idx][1]
         )
     # [END time_windows_constraint]
@@ -242,10 +241,12 @@ def main():
     # Instantiate route start and end times to produce feasible times.
     # [START depot_start_end_times]
     for i in range(data["num_vehicles"]):
-        routing.AddVariableMinimizedByFinalizer(
-            time_dimension.CumulVar(routing.Start(i))
+        routing_model.add_variable_minimized_by_finalizer(
+            time_dimension.cumul_var(routing_model.start(i))
         )
-        routing.AddVariableMinimizedByFinalizer(time_dimension.CumulVar(routing.End(i)))
+        routing_model.add_variable_minimized_by_finalizer(
+            time_dimension.cumul_var(routing_model.end(i))
+        )
     # [END depot_start_end_times]
 
     # Add Capacity constraint.
@@ -253,11 +254,13 @@ def main():
     def demand_callback(from_index):
         """Returns the demand of the node."""
         # Convert from routing variable Index to demands NodeIndex.
-        from_node = manager.IndexToNode(from_index)
+        from_node = manager.index_to_node(from_index)
         return data["demands"][from_node]
 
-    demand_callback_index = routing.RegisterUnaryTransitCallback(demand_callback)
-    routing.AddDimensionWithVehicleCapacity(
+    demand_callback_index = routing_model.register_unary_transit_callback(
+        demand_callback
+    )
+    routing_model.add_dimension_with_vehicle_capacity(
         demand_callback_index,
         0,  # null capacity slack
         data["vehicle_capacities"],  # vehicle maximum capacities
@@ -268,24 +271,24 @@ def main():
 
     # Setting first solution heuristic.
     # [START parameters]
-    search_parameters = pywraprouting.DefaultRoutingSearchParameters()
+    search_parameters = routing.default_routing_search_parameters()
     search_parameters.first_solution_strategy = (
         FirstSolutionStrategy.PARALLEL_CHEAPEST_INSERTION
     )
     search_parameters.local_search_metaheuristic = (
         LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH
     )
-    search_parameters.time_limit.FromSeconds(3)
+    search_parameters.time_limit.seconds = 3
     # [END parameters]
 
     # Solve the problem.
     # [START solve]
-    solution = routing.SolveWithParameters(search_parameters)
+    solution = routing_model.solve_with_parameters(search_parameters)
     # [END solve]
 
     # Print solution on console.
     # [START print_solution]
-    print_solution(manager, routing, solution)
+    print_solution(manager, routing_model, solution)
     # [END print_solution]
 
 
