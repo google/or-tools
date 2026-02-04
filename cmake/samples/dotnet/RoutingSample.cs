@@ -13,7 +13,6 @@
 
 using System;
 using Xunit;
-
 using Google.OrTools.ConstraintSolver;
 using Google.OrTools.Routing;
 
@@ -27,9 +26,11 @@ public class RoutingSolverTest
     public void SolverTest(bool callGC)
     {
         // Create Routing Index Manager
-        RoutingIndexManager manager = new RoutingIndexManager(5 /*locations*/, 1 /*vehicle*/, 0 /*depot*/);
+        IndexManager manager = new IndexManager(5 /*locations*/, 1 /*vehicle*/, 0 /*depot*/);
+        Assert.NotNull(manager);
         // Create Routing Model.
-        RoutingModel routing = new RoutingModel(manager);
+        Model routing = new Model(manager);
+        Assert.NotNull(routing);
         // Create a distance callback.
         int transitCallbackIndex = routing.RegisterTransitCallback((long fromIndex, long toIndex) =>
                                                                    {
