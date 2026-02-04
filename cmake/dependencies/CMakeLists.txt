@@ -318,8 +318,7 @@ if(BUILD_HIGHS)
   FetchContent_Declare(
     highs
     GIT_REPOSITORY "https://github.com/ERGO-Code/HiGHS.git"
-    GIT_TAG        "v1.12.0"
-    # GIT_TAG        "master"
+    GIT_TAG        "v1.13.0"
     GIT_SHALLOW TRUE
     UPDATE_COMMAND git reset --hard
     SYSTEM
