@@ -14,7 +14,6 @@
 #include "ortools/linear_solver/proto_solver/glop_proto_solver.h"
 
 #include <atomic>
-#include <cstdlib>
 #include <functional>
 #include <memory>
 #include <optional>

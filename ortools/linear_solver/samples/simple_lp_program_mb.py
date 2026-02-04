@@ -14,6 +14,7 @@
 
 # [START program]
 """Minimal example to call the GLOP solver using model_builder."""
+
 # [START import]
 import math
 

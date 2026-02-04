@@ -447,7 +447,8 @@ message MPModelRequest {
     // gradient method. Sometimes faster than Glop for medium-size problems and
     // scales to much larger problems than Glop.
     PDLP_LINEAR_PROGRAMMING = 8;
-    KNAPSACK_MIXED_INTEGER_PROGRAMMING = 13;
+
+    reserved 13;  // Removal of KNAPSACK_MIXED_INTEGER_PROGRAMMING
   }
   optional SolverType solver_type = 2 [default = GLOP_LINEAR_PROGRAMMING];
 

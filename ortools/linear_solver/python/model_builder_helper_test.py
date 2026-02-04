@@ -16,8 +16,8 @@ import gzip
 import os
 import threading
 
-from absl.testing import absltest
 import numpy as np
+from absl.testing import absltest
 from scipy import sparse
 
 from ortools.linear_solver import linear_solver_pb2

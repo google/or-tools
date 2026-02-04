@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """MIP example that solves an assignment problem."""
+
 # [START program]
 # [START import]
 import io

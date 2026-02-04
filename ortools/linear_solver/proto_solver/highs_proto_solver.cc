@@ -15,12 +15,14 @@
 
 #include <cassert>
 #include <cmath>
+#include <functional>
 #include <limits>
 #include <optional>
 #include <string>
 #include <vector>
 
 #include "Highs.h"
+#include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
@@ -45,8 +47,25 @@ namespace operations_research {
 absl::Status SetSolverSpecificParameters(const std::string& parameters,
                                          Highs& highs);
 
+namespace {
+
+// Adapter from HiGHS unified callback (setCallback) to OR-Tools
+// TODO: Only forwards kCallbackLogging now
+void HighsCallbackAdapter(int callback_type, const std::string& message,
+                          const HighsCallbackOutput*, HighsCallbackInput*,
+                          void* user_data) {
+  if (callback_type == kCallbackLogging && user_data != nullptr) {
+    const auto* cb =
+        static_cast<const std::function<void(const std::string&)>*>(user_data);
+    if (*cb) (*cb)(message);
+  }
+}
+
+}  // namespace
+
 absl::StatusOr<MPSolutionResponse> HighsSolveProto(
-    LazyMutableCopy<MPModelRequest> request, HighsSolveInfo* solve_info) {
+    LazyMutableCopy<MPModelRequest> request, HighsSolveInfo* solve_info,
+    const std::function<void(const std::string&)>* logging_callback) {
   MPSolutionResponse response;
   const std::optional<LazyMutableCopy<MPModelProto>> optional_model =
       GetMPModelOrPopulateResponse(request, &response);
@@ -214,6 +233,21 @@ absl::StatusOr<MPSolutionResponse> HighsSolveProto(
   if (request->enable_internal_solver_output()) {
     highs.setOptionValue("log_to_console", true);
     highs.setOptionValue("output_flag", true);
+    if (logging_callback != nullptr && *logging_callback) {
+      if (highs.setCallback(
+              HighsCallbackAdapter,
+              const_cast<std::function<void(const std::string&)>*>(
+                  logging_callback)) != HighsStatus::kOk) {
+        response.set_status(MPSOLVER_ABNORMAL);
+        response.set_status_str("HiGHS setCallback failed");
+        return response;
+      }
+      if (highs.startCallback(kCallbackLogging) != HighsStatus::kOk) {
+        response.set_status(MPSOLVER_ABNORMAL);
+        response.set_status_str("HIGHS startCallback(kCallbackLogging) failed");
+        return response;
+      }
+    }
   } else {
     highs.setOptionValue("log_to_console", false);
     highs.setOptionValue("output_flag", false);
@@ -222,43 +256,58 @@ absl::StatusOr<MPSolutionResponse> HighsSolveProto(
   const absl::Time time_before = absl::Now();
   UserTimer user_timer;
   user_timer.Start();
-  HighsStatus run_status = highs.run();
-  switch (run_status) {
-    case HighsStatus::kError: {
-      response.set_status(MPSOLVER_NOT_SOLVED);
-      response.set_status_str("Error running HiGHS run()");
-      return response;
-    }
-    case HighsStatus::kWarning: {
-      response.set_status_str("Warning HiGHS run()");
+  const HighsStatus run_status = highs.run();
+
+  // Unregister log callback.
+  if (logging_callback != nullptr && *logging_callback) {
+    highs.stopCallback(kCallbackLogging);
+    highs.setCallback(nullptr, nullptr);
+  }
+
+  VLOG(2) << "run_status: " << highsStatusToString(run_status);
+  if (run_status == HighsStatus::kError) {
+    response.set_status(MPSOLVER_NOT_SOLVED);
+    response.set_status_str("Error running HiGHS run()");
+    return response;
+  }
+  const HighsModelStatus model_status = highs.getModelStatus();
+  VLOG(2) << "model_status: " << highs.modelStatusToString(model_status);
+
+  switch (model_status) {
+    case HighsModelStatus::kOptimal:
+      response.set_status(MPSOLVER_OPTIMAL);
+      break;
+    case HighsModelStatus::kUnboundedOrInfeasible:
+      response.set_status_str(
+          "The model may actually be unbounded: HiGHS returned "
+          "kUnboundedOrInfeasible");
+      response.set_status(MPSOLVER_INFEASIBLE);
+      break;
+    case HighsModelStatus::kInfeasible:
+      response.set_status(MPSOLVER_INFEASIBLE);
+      break;
+    case HighsModelStatus::kUnbounded:
+      response.set_status(MPSOLVER_UNBOUNDED);
+      break;
+    case HighsModelStatus::kTimeLimit:       // ABSL_FALLTHROUGH_INTENDED
+    case HighsModelStatus::kIterationLimit:  // ABSL_FALLTHROUGH_INTENDED
+    case HighsModelStatus::kInterrupt:       // ABSL_FALLTHROUGH_INTENDED
+    case HighsModelStatus::kSolutionLimit:   // ABSL_FALLTHROUGH_INTENDED
+    case HighsModelStatus::kMemoryLimit: {
+      const HighsInfo& info = highs.getInfo();
+      if (info.primal_solution_status == kSolutionStatusFeasible) {
+        response.set_status(MPSOLVER_FEASIBLE);
+      } else {
+        response.set_status(MPSOLVER_UNKNOWN_STATUS);
+      }
       break;
     }
-    case HighsStatus::kOk: {
-      HighsModelStatus model_status = highs.getModelStatus();
-      switch (model_status) {
-        case HighsModelStatus::kOptimal:
-          response.set_status(MPSOLVER_OPTIMAL);
-          break;
-        case HighsModelStatus::kUnboundedOrInfeasible:
-          response.set_status_str(
-              "The model may actually be unbounded: HiGHS returned "
-              "kUnboundedOrInfeasible");
-          response.set_status(MPSOLVER_INFEASIBLE);
-          break;
-        case HighsModelStatus::kInfeasible:
-          response.set_status(MPSOLVER_INFEASIBLE);
-          break;
-        case HighsModelStatus::kUnbounded:
-          response.set_status(MPSOLVER_UNBOUNDED);
-          break;
-        default: {
-          // TODO(user): report feasible status.
-          const HighsInfo& info = highs.getInfo();
-          if (info.primal_solution_status == kSolutionStatusFeasible)
-            response.set_status(MPSOLVER_FEASIBLE);
-          break;
-        }
+    default: {
+      const HighsInfo& info = highs.getInfo();
+      if (info.primal_solution_status == kSolutionStatusFeasible) {
+        response.set_status(MPSOLVER_FEASIBLE);
       }
+      break;
     }
   }
 
@@ -273,7 +322,8 @@ absl::StatusOr<MPSolutionResponse> HighsSolveProto(
   response.mutable_solve_info()->set_solve_user_time_seconds(
       absl::ToDoubleSeconds(user_timer.GetDuration()));
 
-  if (response.status() == MPSOLVER_OPTIMAL || response.status() == MPSOLVER_FEASIBLE) {
+  if (response.status() == MPSOLVER_OPTIMAL ||
+      response.status() == MPSOLVER_FEASIBLE) {
     double objective_value = highs.getObjectiveValue();
     response.set_objective_value(objective_value);
     response.set_best_objective_bound(objective_value);
@@ -293,7 +343,8 @@ absl::StatusOr<MPSolutionResponse> HighsSolveProto(
       }
     }
 
-    if (response.status() == MPSOLVER_OPTIMAL && !has_integer_variables && model.general_constraint_size() == 0) {
+    if (response.status() == MPSOLVER_OPTIMAL && !has_integer_variables &&
+        model.general_constraint_size() == 0) {
       response.mutable_dual_value()->Resize(model.constraint_size(), 0);
       for (int row = 0; row < model.constraint_size(); row++) {
         response.set_dual_value(row, highs.getSolution().row_value[row]);

@@ -24,6 +24,10 @@ java_wrap_cc(
         "//ortools/base:base_swig",
         "//ortools/util/java:vector.swig",
     ],
+    tags = [
+        "not_build:arm",
+        "not_run:arm",
+    ],
     visibility = ["//visibility:public"],
     deps = [
         "//ortools/linear_solver:linear_solver_cc_proto",
@@ -34,10 +38,16 @@ java_wrap_cc(
 java_junit5_test(
     name = "ModelBuilderTest",
     srcs = ["ModelBuilderTest.java"],
+    jvm_flags = ["-Xcheck:jni"],
+    tags = [
+        "not_build:arm",
+        "not_run:arm",
+    ],
     test_class = "com.google.ortools.modelbuilder.ModelBuilderTest",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/modelbuilder",
+        "//ortools/linear_solver:linear_solver_glop",
         "//ortools/linear_solver/java:modelbuilder",
         "@maven//:com_google_truth_truth",
         "@maven//:org_junit_jupiter_junit_jupiter_api",

@@ -50,6 +50,7 @@
 #include "absl/time/time.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/base/accurate_sum.h"
+#include "ortools/base/macros/os_support.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/threadpool.h"
@@ -98,7 +99,6 @@ bool SolverTypeIsMip(MPModelRequest::SolverType solver_type) {
     case MPModelRequest::GLPK_MIXED_INTEGER_PROGRAMMING:
     case MPModelRequest::CBC_MIXED_INTEGER_PROGRAMMING:
     case MPModelRequest::GUROBI_MIXED_INTEGER_PROGRAMMING:
-    case MPModelRequest::KNAPSACK_MIXED_INTEGER_PROGRAMMING:
     case MPModelRequest::BOP_INTEGER_PROGRAMMING:
     case MPModelRequest::SAT_INTEGER_PROGRAMMING:
     case MPModelRequest::HIGHS_MIXED_INTEGER_PROGRAMMING:
@@ -449,7 +449,6 @@ constexpr
         {MPSolver::GLPK_MIXED_INTEGER_PROGRAMMING, "glpk"},
         {MPSolver::HIGHS_MIXED_INTEGER_PROGRAMMING, "highs"},
         {MPSolver::PDLP_LINEAR_PROGRAMMING, "pdlp"},
-        {MPSolver::KNAPSACK_MIXED_INTEGER_PROGRAMMING, "knapsack"},
         {MPSolver::CPLEX_MIXED_INTEGER_PROGRAMMING, "cplex"},
         {MPSolver::XPRESS_MIXED_INTEGER_PROGRAMMING, "xpress"},
 };
@@ -1833,7 +1832,7 @@ MPSolverInterface::MPSolverInterface(MPSolver* const solver)
 
 MPSolverInterface::~MPSolverInterface() {}
 
-void MPSolverInterface::Write(const std::string& filename) {
+void MPSolverInterface::Write([[maybe_unused]] const std::string& filename) {
   LOG(WARNING) << "Writing model not implemented in this solver interface.";
 }
 
@@ -1980,7 +1979,8 @@ void MPSolverInterface::SetIntegerParamToUnsupportedValue(
                << " to an unsupported value: " << value;
 }
 
-absl::Status MPSolverInterface::SetNumThreads(int num_threads) {
+absl::Status MPSolverInterface::SetNumThreads(
+    [[maybe_unused]] int num_threads) {
   return absl::UnimplementedError(
       absl::StrFormat("SetNumThreads() not supported by %s.", SolverVersion()));
 }
@@ -2190,15 +2190,17 @@ int MPSolverParameters::GetIntegerParam(
 std::string MPSolver::GetMPModelRequestLoggingInfo(
     const MPModelRequest& request) {
   std::string out;
-#if !defined(__PORTABLE_PLATFORM__)
+#if defined(ORTOOLS_TARGET_OS_SUPPORTS_PROTO_DESCRIPTOR)
+  static_assert(kTargetOsSupportsProtoDescriptor);
   MPModelRequest abbreviated_request;
   abbreviated_request = request;
   abbreviated_request.clear_model();
   abbreviated_request.clear_model_delta();
   google::protobuf::TextFormat::PrintToString(abbreviated_request, &out);
-#else   // __PORTABLE_PLATFORM__
-  out = "<Info unavailable because: __PORTABLE_PLATFORM__>\n";
-#endif  // __PORTABLE_PLATFORM__
+#else   // ORTOOLS_TARGET_OS_SUPPORTS_PROTO_DESCRIPTOR
+  static_assert(!kTargetOsSupportsProtoDescriptor);
+  out = "<Info unavailable because proto descriptor is not supported.>\n";
+#endif  // ORTOOLS_TARGET_OS_SUPPORTS_PROTO_DESCRIPTOR
   if (request.model().has_name()) {
     absl::StrAppendFormat(&out, "model_name: '%s'\n", request.model().name());
   }

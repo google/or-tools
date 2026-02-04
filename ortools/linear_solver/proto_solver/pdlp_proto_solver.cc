@@ -18,8 +18,8 @@
 #include <string>
 #include <utility>
 
+#include "absl/log/check.h"
 #include "absl/status/statusor.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/model_validator.h"

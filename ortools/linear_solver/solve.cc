@@ -57,6 +57,7 @@
 #include <utility>
 
 #include "absl/flags/flag.h"
+#include "absl/log/check.h"
 #include "absl/log/flags.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
@@ -68,7 +69,6 @@
 #include "ortools/base/file.h"
 #include "ortools/base/helpers.h"
 #include "ortools/base/init_google.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/options.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"

@@ -15,6 +15,8 @@
 #define ORTOOLS_LINEAR_SOLVER_PROTO_SOLVER_HIGHS_PROTO_SOLVER_H_
 
 #include <cstdint>
+#include <functional>
+#include <string>
 
 #include "absl/status/statusor.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
@@ -28,10 +30,12 @@ struct HighsSolveInfo {
 };
 
 // Solve the input MIP model with the HIGHS solver and fills `solve_info` if
-// provided.
+// provided. When `logging_callback` is non-null and points to a callable
+// function, solver log messages are sent to it instead of the console.
 absl::StatusOr<MPSolutionResponse> HighsSolveProto(
     LazyMutableCopy<MPModelRequest> request,
-    HighsSolveInfo* solve_info = nullptr);
+    HighsSolveInfo* solve_info = nullptr,
+    const std::function<void(const std::string&)>* logging_callback = nullptr);
 
 }  // namespace operations_research
 

@@ -152,4 +152,25 @@ public final class ModelBuilderTest {
     assertThat(model.varFromIndex(0).getUpperBound()).isEqualTo(42.0);
     assertThat(model.varFromIndex(0).getName()).isEqualTo("x");
   }
+
+  @Test
+  public void highsLogCallback_receivesLogsWhenEnabled() {
+    ModelBuilder model = new ModelBuilder();
+    double infinity = Double.POSITIVE_INFINITY;
+    Variable x = model.newNumVar(0.0, infinity, "x");
+    Variable y = model.newNumVar(0.0, infinity, "y");
+    model.addLessOrEqual(LinearExpr.sum(new Variable[] {x, y}), 10.0);
+    model.maximize(LinearExpr.newBuilder().addTerm(x, 1.0).addTerm(y, 2.0));
+
+    ModelSolver solver = new ModelSolver("highs");
+    if (!solver.solverIsSupported()) {
+      return;
+    }
+    StringBuilder log = new StringBuilder();
+    solver.setLogCallback(msg -> log.append(msg));
+    solver.enableOutput(true);
+    assertThat(solver.solve(model)).isEqualTo(SolveStatus.OPTIMAL);
+    assertThat(log.length()).isGreaterThan(0);
+    assertThat(log.toString()).contains("Model");
+  }
 }

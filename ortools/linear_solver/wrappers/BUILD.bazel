@@ -28,6 +28,10 @@ cc_library(
         "-DUSE_PDLP",
         "-DUSE_SCIP",
     ],
+    tags = [
+        "not_build:arm",
+        "not_run:arm",
+    ],
     deps = [
         "//ortools/base:file",
         "//ortools/linear_solver",
