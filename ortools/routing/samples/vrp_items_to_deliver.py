@@ -27,14 +27,17 @@ fleet:
 
 # [START program]
 
+
 # [START import]
+from typing import Any, Dict
+from ortools.constraint_solver.python import constraint_solver
 from ortools.routing.python import routing
 
 # [END import]
 
 
 # [START data_model]
-def create_data_model():
+def create_data_model() -> Dict[str, Any]:
     """Stores the data for the problem."""
     data = {}
     data["num_vehicles"] = 2
@@ -422,7 +425,12 @@ def create_data_model():
 
 
 # [START solution_printer]
-def print_solution(data, manager, routing_model, assignment):
+def print_solution(
+    data: Dict[str, Any],
+    manager: routing.IndexManager,
+    routing_model: routing.Model,
+    assignment: constraint_solver.Assignment,
+) -> None:
     """Prints assignment on console."""
     print(f"Objective: {assignment.objective_value()}")
     # Display dropped nodes.
@@ -468,7 +476,7 @@ def print_solution(data, manager, routing_model, assignment):
     # [END solution_printer]
 
 
-def main():
+def main() -> None:
     """Entry point of the program."""
     # Instantiate the data problem.
     # [START data]
@@ -493,7 +501,7 @@ def main():
 
     # Create and register a transit callback.
     # [START transit_callback]
-    def distance_callback(from_index, to_index):
+    def distance_callback(from_index: int, to_index: int) -> int:
         """Returns the distance between the two nodes."""
         # Convert from routing variable Index to distance matrix NodeIndex.
         from_node = manager.index_to_node(from_index)
@@ -526,7 +534,7 @@ def main():
 
     # Add Capacity constraint.
     # [START capacity_constraint]
-    def demand_callback_x(from_index):
+    def demand_callback_x(from_index: int) -> int:
         """Returns the demand of the node."""
         # Convert from routing variable Index to demands NodeIndex.
         from_node = manager.index_to_node(from_index)
@@ -543,7 +551,7 @@ def main():
         "Load_x",
     )
 
-    def demand_callback_y(from_index):
+    def demand_callback_y(from_index: int) -> int:
         """Returns the demand of the node."""
         # Convert from routing variable Index to demands NodeIndex.
         from_node = manager.index_to_node(from_index)

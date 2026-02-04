@@ -24,6 +24,9 @@ Distances are in meters.
 
 # [START program]
 # [START import]
+from typing import Any, Dict
+
+from ortools.constraint_solver.python import constraint_solver
 from ortools.routing.python import routing
 
 FirstSolutionStrategy = routing.FirstSolutionStrategy
@@ -33,7 +36,7 @@ RoutingSearchStatus = routing.RoutingSearchStatus
 
 
 # [START data_model]
-def create_data_model():
+def create_data_model() -> Dict[str, Any]:
     """Stores the data for the problem."""
     data = {}
     data["distance_matrix"] = [
@@ -111,7 +114,11 @@ def create_data_model():
 
 
 # [START solution_printer]
-def print_solution(manager, routing_model, solution):
+def print_solution(
+    manager: routing.IndexManager,
+    routing_model: routing.Model,
+    solution: constraint_solver.Assignment,
+) -> None:
     """Prints solution on console."""
     status = routing_model.status()
     print(f"Status: {status.name}")
@@ -169,7 +176,7 @@ def print_solution(manager, routing_model, solution):
     # [END solution_printer]
 
 
-def main():
+def main() -> None:
     """Entry point of the program."""
     # Instantiate the data problem.
     # [START data]
@@ -190,7 +197,7 @@ def main():
 
     # Create and register a distance transit callback.
     # [START distance_callback]
-    def distance_callback(from_index, to_index):
+    def distance_callback(from_index: int, to_index: int) -> int:
         """Returns the distance between the two nodes."""
         # Convert from routing variable Index to distance matrix NodeIndex.
         from_node = manager.index_to_node(from_index)
@@ -207,7 +214,7 @@ def main():
 
     # Add Time Windows constraint.
     # [START time_windows_constraint]
-    def time_callback(from_index, to_index):
+    def time_callback(from_index: int, to_index: int) -> int:
         """Returns the travel time between the two nodes."""
         # Convert from routing variable Index to time matrix NodeIndex.
         from_node = manager.index_to_node(from_index)
@@ -251,7 +258,7 @@ def main():
 
     # Add Capacity constraint.
     # [START capacity_constraint]
-    def demand_callback(from_index):
+    def demand_callback(from_index: int) -> int:
         """Returns the demand of the node."""
         # Convert from routing variable Index to demands NodeIndex.
         from_node = manager.index_to_node(from_index)

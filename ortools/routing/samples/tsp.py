@@ -20,7 +20,9 @@ http://en.wikipedia.org/wiki/Travelling_salesperson_problem.
 """
 
 # [START import]
+from typing import Any, Callable, Dict
 
+from ortools.constraint_solver.python import constraint_solver
 from ortools.routing.python import routing
 
 FirstSolutionStrategy = routing.FirstSolutionStrategy
@@ -29,7 +31,7 @@ RoutingSearchStatus = routing.RoutingSearchStatus
 
 
 # [START data_model]
-def create_data_model():
+def create_data_model() -> Dict[str, Any]:
     """Stores the data for the problem."""
     data = {}
     # Locations in block units
@@ -55,7 +57,9 @@ def create_data_model():
 
 
 # [START distance_callback]
-def create_distance_callback(data, manager):
+def create_distance_callback(
+    data: Dict[str, Any], manager: routing.IndexManager
+) -> Callable[[int, int], int]:
     """Creates callback to return distance between points."""
     distances_ = {}
     index_manager_ = manager
@@ -70,7 +74,7 @@ def create_distance_callback(data, manager):
                     from_node[0] - to_node[0]
                 ) + abs(from_node[1] - to_node[1])
 
-    def distance_callback(from_index, to_index):
+    def distance_callback(from_index: int, to_index: int) -> int:
         """Returns the manhattan distance between the two nodes."""
         # Convert from routing variable Index to distance matrix NodeIndex.
         from_node = index_manager_.index_to_node(from_index)
@@ -82,7 +86,11 @@ def create_distance_callback(data, manager):
 
 
 # [START solution_printer]
-def print_solution(manager, routing_model, solution):
+def print_solution(
+    manager: routing.IndexManager,
+    routing_model: routing.Model,
+    solution: constraint_solver.Assignment,
+) -> None:
     """Prints assignment on console."""
     status = routing_model.status()
     print(f"Status: {status.name}")
@@ -109,7 +117,7 @@ def print_solution(manager, routing_model, solution):
     # [END solution_printer]
 
 
-def main():
+def main() -> None:
     """Entry point of the program."""
     # Instantiate the data problem.
     # [START data]

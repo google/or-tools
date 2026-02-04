@@ -815,14 +815,12 @@ class SatTest(absltest.TestCase):
             index_manager = routing.IndexManager(4, len(vehicle_costs), 0)
             routing_model = routing.Model(index_manager)
 
-            for vehicle in range(len(vehicle_costs)):
+            for vehicle, rename_me in enumerate(vehicle_costs):
                 vehicle_cost = routing_model.register_unary_transit_callback(
-                    lambda i, cost=vehicle_costs[vehicle]: cost
+                    lambda i, cost=rename_me: cost
                 )
                 routing_model.set_arc_cost_evaluator_of_vehicle(vehicle_cost, vehicle)
-                routing_model.set_fixed_cost_of_vehicle(
-                    vehicle_costs[vehicle] * 100, vehicle
-                )
+                routing_model.set_fixed_cost_of_vehicle(rename_me * 100, vehicle)
 
             routing_model.add_dimension_with_vehicle_capacity(
                 1, 3, vehicle_capacities, True, "dim"
@@ -1362,8 +1360,8 @@ class SatTest(absltest.TestCase):
             vehicle_capacities = [1, 2]
             index_manager = routing.IndexManager(5, 2, 0)
             routing_model = routing.Model(index_manager)
-            for vehicle in range(len(vehicle_costs)):
-                routing_model.set_fixed_cost_of_vehicle(vehicle_costs[vehicle], vehicle)
+            for vehicle, rename_me in enumerate(vehicle_costs):
+                routing_model.set_fixed_cost_of_vehicle(rename_me, vehicle)
 
             def vehicle_cost_callback(from_, to):
                 if from_ == 1 and to == 2:

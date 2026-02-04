@@ -20,14 +20,16 @@ road multiply by a constant factor (4200)
 """
 
 # [START import]
+from typing import Any, Dict
 
+from ortools.constraint_solver.python import constraint_solver
 from ortools.routing.python import routing
 
 # [END import]
 
 
 # [START data_model]
-def create_data_model():
+def create_data_model() -> Dict[str, Any]:
     """Stores the data for the problem."""
     data = {}
     data["distance_matrix"] = [
@@ -80,7 +82,12 @@ def create_data_model():
 
 
 # [START solution_printer]
-def print_solution(data, manager, model, solution):
+def print_solution(
+    data: Dict[str, Any],
+    manager: routing.IndexManager,
+    model: routing.Model,
+    solution: constraint_solver.Assignment,
+) -> None:
     """Prints solution on console."""
     print(f"Objective: {solution.objective_value()}")
     max_route_distance = 0
@@ -125,7 +132,7 @@ def print_solution(data, manager, model, solution):
 # [END solution_printer]
 
 
-def main():
+def main() -> None:
     """Solve the CVRP problem."""
     # Instantiate the data problem.
     # [START data]
@@ -146,7 +153,7 @@ def main():
 
     # Create and register a transit callback.
     # [START transit_callback]
-    def distance_callback(from_index, to_index):
+    def distance_callback(from_index: int, to_index: int) -> int:
         """Returns the distance between the two nodes."""
         # Convert from routing variable Index to distance matrix NodeIndex.
         from_node = manager.index_to_node(from_index)

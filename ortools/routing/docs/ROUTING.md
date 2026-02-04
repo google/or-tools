@@ -106,7 +106,7 @@ int main(int argc, char* argv[]) {
 from ortools.routing.python import routing
 
 
-def main():
+def main() -> None:
   """Entry point of the program."""
   # Instantiate the data problem.
   num_locations = 5
@@ -120,7 +120,7 @@ def main():
   routing_model = routing.Model(manager)
 
   # Create and register a transit callback.
-  def distance_callback(from_index, to_index):
+  def distance_callback(from_index: int, to_index: int) -> int:
     """Returns the absolute difference between the two nodes."""
     # Convert from routing variable Index to user NodeIndex.
     from_node = int(manager.index_to_node(from_index))

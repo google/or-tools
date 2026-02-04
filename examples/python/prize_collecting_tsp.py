@@ -14,10 +14,8 @@
 
 """Simple prize collecting TSP problem with a max distance."""
 
-from ortools.routing import enums_pb2
-from ortools.routing import pywraprouting
+from ortools.routing.python import routing
 
-RoutingIndexManager = pywraprouting.IndexManager
 
 DISTANCE_MATRIX = [
     # fmt:off
@@ -71,32 +69,34 @@ VISIT_VALUES[0] = 0
 
 
 # Create a console solution printer.
-def print_solution(manager, routing, assignment):
+def print_solution(manager, routing_model, assignment):
     """Prints assignment on console."""
-    print(f"Objective: {assignment.ObjectiveValue()}")
+    print(f"Objective: {assignment.objective_value()}")
     # Display dropped nodes.
     dropped_nodes = "Dropped nodes:"
-    for index in range(routing.Size()):
-        if routing.IsStart(index) or routing.IsEnd(index):
+    for index in range(routing_model.size()):
+        if routing_model.is_start(index) or routing_model.is_end(index):
             continue
-        if assignment.Value(routing.NextVar(index)) == index:
-            node = manager.IndexToNode(index)
+        if assignment.value(routing_model.next_var(index)) == index:
+            node = manager.index_to_node(index)
             dropped_nodes += f" {node}({VISIT_VALUES[node]})"
     print(dropped_nodes)
     # Display routes
-    index = routing.Start(0)
+    index = routing_model.start(0)
     plan_output = "Route for vehicle 0:\n"
     route_distance = 0
     value_collected = 0
-    while not routing.IsEnd(index):
-        node = manager.IndexToNode(index)
+    while not routing_model.is_end(index):
+        node = manager.index_to_node(index)
         value_collected += VISIT_VALUES[node]
         plan_output += f" {node} ->"
         previous_index = index
-        index = assignment.Value(routing.NextVar(index))
-        route_distance += routing.GetArcCostForVehicle(previous_index, index, 0)
+        index = assignment.value(routing_model.next_var(index))
+        route_distance += routing_model.get_arc_cost_for_vehicle(
+            previous_index, index, 0
+        )
 
-    plan_output += f" {manager.IndexToNode(index)}\n"
+    plan_output += f" {manager.index_to_node(index)}\n"
     plan_output += f"Distance of the route: {route_distance}m\n"
     plan_output += f"Value collected: {value_collected}/{sum(VISIT_VALUES)}\n"
     print(plan_output)
@@ -108,60 +108,57 @@ def main():
     print(f"Num nodes = {num_nodes}")
     num_vehicles = 1
     depot = 0
-    all_nodes = range(num_nodes)
 
     # Create the routing index manager.
-    manager = RoutingIndexManager(num_nodes, num_vehicles, depot)
+    manager = routing.IndexManager(num_nodes, num_vehicles, depot)
 
     # Create routing model.
-    routing = pywraprouting.Model(manager)
+    routing_model = routing.Model(manager)
 
     # Create and register a transit callback.
     def distance_callback(from_index, to_index):
         """Returns the distance between the two nodes."""
         # Convert from routing variable Index to distance matrix NodeIndex.
-        from_node = manager.IndexToNode(from_index)
-        to_node = manager.IndexToNode(to_index)
+        from_node = manager.index_to_node(from_index)
+        to_node = manager.index_to_node(to_index)
         return DISTANCE_MATRIX[from_node][to_node]
 
-    transit_callback_index = routing.RegisterTransitCallback(distance_callback)
+    transit_callback_index = routing_model.register_transit_callback(distance_callback)
 
     # Define cost of each arc.
-    routing.SetArcCostEvaluatorOfAllVehicles(transit_callback_index)
+    routing_model.set_arc_cost_evaluator_of_all_vehicles(transit_callback_index)
 
     # Limit Vehicle distance.
     dimension_name = "Distance"
-    routing.AddDimension(
+    routing_model.add_dimension(
         transit_callback_index,
         0,  # no slack
         MAX_DISTANCE,  # vehicle maximum travel distance
         True,  # start cumul to zero
         dimension_name,
     )
-    # distance_dimension = routing.GetDimensionOrDie(dimension_name)
-    # distance_dimension.SetGlobalSpanCostCoefficient(100)
 
     # Allow to drop nodes.
     for node in range(1, num_nodes):
-        routing.AddDisjunction([manager.NodeToIndex(node)], VISIT_VALUES[node])
+        routing_model.add_disjunction([manager.node_to_index(node)], VISIT_VALUES[node])
 
     # Setting first solution heuristic.
-    search_parameters = pywraprouting.DefaultRoutingSearchParameters()
+    search_parameters = routing.default_routing_search_parameters()
     search_parameters.first_solution_strategy = (
-        enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
+        routing.FirstSolutionStrategy.PATH_CHEAPEST_ARC
     )
     search_parameters.local_search_metaheuristic = (
-        enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH
+        routing.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH
     )
-    search_parameters.time_limit.FromSeconds(15)
+    search_parameters.time_limit.seconds = 15
     # search_parameters.log_search = True
 
     # Solve the problem.
-    assignment = routing.SolveWithParameters(search_parameters)
+    assignment = routing_model.solve_with_parameters(search_parameters)
 
     # Print solution on console.
     if assignment:
-        print_solution(manager, routing, assignment)
+        print_solution(manager, routing_model, assignment)
 
 
 if __name__ == "__main__":

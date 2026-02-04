@@ -46,7 +46,7 @@ manager::num_indices() (C++)
 from ortools.routing.python import routing
 
 
-def main():
+def main() -> None:
     """Entry point of the program."""
     locations = 17
     starts = [5, 5, 7, 8]

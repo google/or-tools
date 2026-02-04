@@ -104,7 +104,7 @@ class SolutionCallback:
         manager: routing.IndexManager,
         model: routing.Model,
         limit: int,
-    ):
+    ) -> None:
         # We need a weak ref on the routing model to avoid a cycle.
         self._routing_manager_ref = weakref.ref(manager)
         self._routing_model_ref = weakref.ref(model)
@@ -112,7 +112,7 @@ class SolutionCallback:
         self._counter_limit = limit
         self.objectives = []
 
-    def __call__(self):
+    def __call__(self) -> None:
         objective = int(
             self._routing_model_ref().cost_var().value()
         )  # pytype: disable=attribute-error

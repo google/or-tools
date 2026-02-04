@@ -42,14 +42,16 @@ into account in `create_distance_evaluator()`.
 """
 
 import functools
+from typing import Any, Dict
 
+from ortools.constraint_solver.python import constraint_solver
 from ortools.routing.python import routing
 
 
 ###########################
 # Problem Data Definition #
 ###########################
-def create_data_model():
+def create_data_model() -> Dict[str, Any]:
     """Stores the data for the problem."""
     data = {}
     _capacity = 15
@@ -145,12 +147,12 @@ def create_data_model():
 #######################
 # Problem Constraints #
 #######################
-def manhattan_distance(position_1, position_2):
+def manhattan_distance(position_1: tuple[int, int], position_2: tuple[int, int]) -> int:
     """Computes the Manhattan distance between two points."""
     return abs(position_1[0] - position_2[0]) + abs(position_1[1] - position_2[1])
 
 
-def create_distance_evaluator(data):
+def create_distance_evaluator(data: Dict[str, Any]) -> Any:
     """Creates callback to return distance between points."""
     _distances = {}
     # precompute distance between location to have distance callback in O(1)
@@ -167,7 +169,9 @@ def create_distance_evaluator(data):
                     data["locations"][from_node], data["locations"][to_node]
                 )
 
-    def distance_evaluator(manager, from_node, to_node):
+    def distance_evaluator(
+        manager: routing.IndexManager, from_node: int, to_node: int
+    ) -> int:
         """Returns the manhattan distance between the two nodes."""
         return _distances[manager.index_to_node(from_node)][
             manager.index_to_node(to_node)
@@ -176,7 +180,12 @@ def create_distance_evaluator(data):
     return distance_evaluator
 
 
-def add_distance_dimension(routing_model, manager, data, distance_evaluator_index):
+def add_distance_dimension(
+    routing_model: routing.Model,
+    manager: routing.IndexManager,
+    data: Dict[str, Any],
+    distance_evaluator_index: int,
+) -> None:
     """Add Global Span constraint."""
     del manager
     distance = "Distance"
@@ -193,18 +202,23 @@ def add_distance_dimension(routing_model, manager, data, distance_evaluator_inde
     distance_dimension.set_global_span_cost_coefficient(100)
 
 
-def create_demand_evaluator(data):
+def create_demand_evaluator(data: Dict[str, Any]) -> Any:
     """Creates callback to get demands at each location."""
     _demands = data["demands"]
 
-    def demand_evaluator(manager, from_node):
+    def demand_evaluator(manager: routing.IndexManager, from_node: int) -> int:
         """Returns the demand of the current node."""
         return _demands[manager.index_to_node(from_node)]
 
     return demand_evaluator
 
 
-def add_capacity_constraints(routing_model, manager, data, demand_evaluator_index):
+def add_capacity_constraints(
+    routing_model: routing.Model,
+    manager: routing.IndexManager,
+    data: Dict[str, Any],
+    demand_evaluator_index: int,
+) -> None:
     """Adds capacity constraint."""
     vehicle_capacity = data["vehicle_capacity"]
     capacity = "Capacity"
@@ -232,14 +246,14 @@ def add_capacity_constraints(routing_model, manager, data, demand_evaluator_inde
         routing_model.add_disjunction([node_index], 100_000)
 
 
-def create_time_evaluator(data):
+def create_time_evaluator(data: Dict[str, Any]) -> Any:
     """Creates callback to get total times between locations."""
 
-    def service_time(data, node):
+    def service_time(data: Dict[str, Any], node: int) -> int:
         """Gets the service time for the specified location."""
         return abs(data["demands"][node]) * data["time_per_demand_unit"]
 
-    def travel_time(data, from_node, to_node):
+    def travel_time(data: Dict[str, Any], from_node: int, to_node: int) -> int:
         """Gets the travel times between two locations."""
         if from_node == to_node:
             travel_time = 0
@@ -250,7 +264,7 @@ def create_time_evaluator(data):
                 )
                 / data["vehicle_speed"]
             )
-        return travel_time
+        return int(travel_time)
 
     _total_time = {}
     # precompute total time to have time callback in O(1)
@@ -265,7 +279,9 @@ def create_time_evaluator(data):
                     + travel_time(data, from_node, to_node)
                 )
 
-    def time_evaluator(manager, from_node, to_node):
+    def time_evaluator(
+        manager: routing.IndexManager, from_node: int, to_node: int
+    ) -> int:
         """Returns the total time between the two nodes."""
         return _total_time[manager.index_to_node(from_node)][
             manager.index_to_node(to_node)
@@ -274,7 +290,12 @@ def create_time_evaluator(data):
     return time_evaluator
 
 
-def add_time_window_constraints(routing_model, manager, data, time_evaluator):
+def add_time_window_constraints(
+    routing_model: routing.Model,
+    manager: routing.IndexManager,
+    data: Dict[str, Any],
+    time_evaluator: int,
+) -> None:
     """Add Time windows constraint."""
     time = "Time"
     max_time = data["vehicle_max_time"]
@@ -312,8 +333,11 @@ def add_time_window_constraints(routing_model, manager, data, time_evaluator):
 # Printer #
 ###########
 def print_solution(
-    data, manager, routing_model, assignment
-):  # pylint:disable=too-many-locals
+    data: Dict[str, Any],
+    manager: routing.IndexManager,
+    routing_model: routing.Model,
+    assignment: constraint_solver.Assignment,
+) -> None:  # pylint:disable=too-many-locals
     """Prints assignment on console."""
     print(f"Objective: {assignment.objective_value()}")
     total_distance = 0
@@ -383,7 +407,7 @@ def print_solution(
 ########
 # Main #
 ########
-def main():
+def main() -> None:
     """Entry point of the program."""
     # Instantiate the data problem.
     data = create_data_model()

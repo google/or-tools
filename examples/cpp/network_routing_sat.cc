@@ -306,12 +306,10 @@ class NetworkRoutingDataBuilder {
     data->set_name(name);
 
     data->set_num_nodes(size);
-    int num_arcs = 0;
     for (int i = 0; i < size - 1; ++i) {
       for (int j = i + 1; j < size; ++j) {
         if (network_[i][j]) {
           data->AddArc(i, j, max_capacity_);
-          num_arcs++;
         }
       }
     }

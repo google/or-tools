@@ -22,7 +22,7 @@ from ortools.routing.python import routing
 # [END import]
 
 
-def main():
+def main() -> None:
     """Entry point of the program."""
     # Instantiate the data problem.
     # [START data]
@@ -43,7 +43,7 @@ def main():
 
     # Create and register a transit callback.
     # [START transit_callback]
-    def distance_callback(from_index, to_index):
+    def distance_callback(from_index: int, to_index: int) -> int:
         """Returns the absolute difference between the two nodes."""
         # Convert from routing variable Index to user NodeIndex.
         from_node = int(manager.index_to_node(from_index))

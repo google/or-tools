@@ -31,13 +31,16 @@ location: [49-64] vehicle: 3 TW: [900, 1020] (3pm-5pm)
 """
 
 # [START import]
+from typing import Any, Dict
+
+from ortools.constraint_solver.python import constraint_solver
 from ortools.routing.python import routing
 
 # [END import]
 
 
 # [START data_model]
-def create_data_model():
+def create_data_model() -> Dict[str, Any]:
     """Stores the data for the problem."""
     data = {}
     data["time_matrix"] = [
@@ -66,7 +69,11 @@ def create_data_model():
 
 
 # [START solution_printer]
-def print_solution(manager, routing_model, assignment):
+def print_solution(
+    manager: routing.IndexManager,
+    routing_model: routing.Model,
+    assignment: constraint_solver.Assignment,
+) -> None:
     """Prints solution on console."""
     print(f"Objective: {assignment.objective_value()}")
     # Display dropped nodes.
@@ -119,7 +126,7 @@ def print_solution(manager, routing_model, assignment):
     # [END solution_printer]
 
 
-def main():
+def main() -> None:
     """Solve the VRP with time windows."""
     # Instantiate the data problem.
     # [START data]
@@ -141,7 +148,7 @@ def main():
 
     # Create and register a transit callback.
     # [START transit_callback]
-    def time_callback(from_index, to_index):
+    def time_callback(from_index: int, to_index: int) -> int:
         """Returns the travel time between the two nodes."""
         # Convert from routing variable Index to time matrix NodeIndex.
         from_node = manager.index_to_node(from_index)
