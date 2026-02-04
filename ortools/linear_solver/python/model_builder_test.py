@@ -205,6 +205,23 @@ ENDATA
         self.assertEqual(42, model.var_from_index(0).upper_bound)
         self.assertEqual("x", model.var_from_index(0).name)
 
+    def test_highs_log_callback_receives_logs_when_enabled(self):
+        model = mb.Model()
+        x = model.new_num_var(0.0, math.inf, "x")
+        y = model.new_num_var(0.0, math.inf, "y")
+        model.add(x + y <= 10.0)
+        model.maximize(1.0 * x + 2.0 * y)
+
+        solver = mb.Solver("highs")
+        if not solver.solver_is_supported():
+            return
+        log_lines = []
+        solver.log_callback = log_lines.append
+        solver.enable_output(True)
+        self.assertEqual(solver.solve(model), mb.SolveStatus.OPTIMAL)
+        self.assertGreater(len(log_lines), 0, "Log callback should receive output")
+        self.assertIn("Model", "".join(log_lines))
+
     def test_class_api(self):
         model = mb.Model()
         x = model.new_int_var(0, 10, "x")
