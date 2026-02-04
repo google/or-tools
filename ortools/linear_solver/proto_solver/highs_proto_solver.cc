@@ -46,8 +46,25 @@ namespace operations_research {
 absl::Status SetSolverSpecificParameters(const std::string& parameters,
                                          Highs& highs);
 
+namespace {
+
+// Adapter from HiGHS unified callback (setCallback) to OR-Tools
+// TODO: Only forwards kCallbackLogging now
+void HighsCallbackAdapter(int callback_type, const std::string& message,
+                          const HighsCallbackOutput*, HighsCallbackInput*,
+                          void* user_data) {
+  if (callback_type == kCallbackLogging && user_data != nullptr) {
+    const auto* cb =
+        static_cast<const std::function<void(const std::string&)>*>(user_data);
+    if (*cb) (*cb)(message);
+  }
+}
+
+}
+
 absl::StatusOr<MPSolutionResponse> HighsSolveProto(
-    LazyMutableCopy<MPModelRequest> request, HighsSolveInfo* solve_info) {
+    LazyMutableCopy<MPModelRequest> request, HighsSolveInfo* solve_info,
+    const std::function<void(const std::string&)>* logging_callback) {
   MPSolutionResponse response;
   const std::optional<LazyMutableCopy<MPModelProto>> optional_model =
       GetMPModelOrPopulateResponse(request, &response);
@@ -79,6 +96,29 @@ absl::StatusOr<MPSolutionResponse> HighsSolveProto(
       response.set_status_str("time_limit");
       return response;
     }
+  }
+
+  // Logging.
+  if (request->enable_internal_solver_output()) {
+    highs.setOptionValue("log_to_console", true);
+    highs.setOptionValue("output_flag", true);
+    if (logging_callback != nullptr && *logging_callback) {
+      if (highs.setCallback(HighsCallbackAdapter,
+                            const_cast<std::function<void(const std::string&)>*>(
+                                logging_callback)) != HighsStatus::kOk) {
+        response.set_status(MPSOLVER_ABNORMAL);
+        response.set_status_str("HiGHS setCallback failed");
+        return response;
+      }
+      if (highs.startCallback(kCallbackLogging) != HighsStatus::kOk) {
+        response.set_status(MPSOLVER_ABNORMAL);
+        response.set_status_str("HiGHS startCallback(kCallbackLogging) failed");
+        return response;
+      }
+    }
+  } else {
+    highs.setOptionValue("log_to_console", false);
+    highs.setOptionValue("output_flag", false);
   }
 
   const int variable_size = model.variable_size();
@@ -211,19 +251,16 @@ absl::StatusOr<MPSolutionResponse> HighsSolveProto(
     highs.changeObjectiveOffset(offset);
   }
 
-  // Logging.
-  if (request->enable_internal_solver_output()) {
-    highs.setOptionValue("log_to_console", true);
-    highs.setOptionValue("output_flag", true);
-  } else {
-    highs.setOptionValue("log_to_console", false);
-    highs.setOptionValue("output_flag", false);
-  }
-
   const absl::Time time_before = absl::Now();
   UserTimer user_timer;
   user_timer.Start();
   const HighsStatus run_status = highs.run();
+
+  // Unregister log callback.
+  if (logging_callback != nullptr && *logging_callback) {
+    highs.stopCallback(kCallbackLogging);
+    highs.setCallback(nullptr, nullptr);
+  }
   VLOG(2) << "run_status: " << highsStatusToString(run_status);
   if (run_status == HighsStatus::kError) {
     response.set_status(MPSOLVER_NOT_SOLVED);
