@@ -249,11 +249,17 @@ void SolutionCrush::SetOrUpdateVarToDomainWithOptionalEscapeValue(
     if (unique_escape_value.has_value()) {
       new_value = unique_escape_value.value();
     } else if (push_down_when_not_in_domain) {
-      DCHECK_GT(old_value, reduced_var_domain.Min());
-      new_value = reduced_var_domain.ValueAtOrBefore(old_value);
+      if (old_value < reduced_var_domain.Min()) {
+        new_value = reduced_var_domain.Min();
+      } else {
+        new_value = reduced_var_domain.ValueAtOrBefore(old_value);
+      }
     } else {
-      DCHECK_LT(old_value, reduced_var_domain.Max());
-      new_value = reduced_var_domain.ValueAtOrAfter(old_value);
+      if (old_value > reduced_var_domain.Max()) {
+        new_value = reduced_var_domain.Max();
+      } else {
+        new_value = reduced_var_domain.ValueAtOrAfter(old_value);
+      }
     }
 
     SetLiteralValue(encoding.at(new_value), true);

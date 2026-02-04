@@ -269,7 +269,23 @@ MPSolutionResponse SatSolveProtoInternal(
           *logger, "A detected integer variable has an empty domain");
     }
   }
-  if (params.mip_var_scaling() != 1.0) {
+
+  // Try to restrict bounds further before we scale.
+  if (params.mip_presolve_restrict_bounds() &&
+      !params.keep_all_feasible_solutions_in_presolve() &&
+      !params.enumerate_all_solutions()) {
+    sat::RestrictBoundsWithDualReasoning(params, mp_model.get(), logger);
+  }
+
+  if (params.mip_scale_to_max_bound()) {
+    const std::vector<double> other_scaling =
+        sat::ScaleContinuousVariablesUpToMaxBound(params.mip_max_bound(),
+                                                  params.mip_wanted_precision(),
+                                                  mp_model.get(), logger);
+    for (int i = 0; i < var_scaling.size(); ++i) {
+      var_scaling[i] *= other_scaling[i];
+    }
+  } else if (params.mip_var_scaling() != 1.0) {
     const double max_bound = params.mip_scale_large_domain()
                                  ? std::numeric_limits<double>::infinity()
                                  : params.mip_max_bound();

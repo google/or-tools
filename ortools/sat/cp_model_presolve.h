@@ -293,9 +293,13 @@ class CpModelPresolver {
                            bool* remove_subset, bool* remove_superset,
                            bool* stop_processing_superset);
 
-  // Run SAT specific presolve code.
+  // Runs SAT specific presolve code.
   // Returns false on UNSAT.
   bool PresolvePureSatPart();
+
+  // Runs a simplified presolve code for pure SAT problems.
+  // Returns false on UNSAT.
+  bool PresolvePureSatProblem();
 
   // Extracts AtMostOne constraint from Linear constraint.
   void ExtractAtMostOneFromLinear(ConstraintProto* ct);
@@ -397,6 +401,9 @@ class CpModelPresolver {
   ABSL_MUST_USE_RESULT bool MarkConstraintAsFalse(ConstraintProto* ct,
                                                   std::string_view reason);
   ABSL_MUST_USE_RESULT bool MarkOptionalIntervalAsFalse(ConstraintProto* ct);
+
+  void MaybePermuteVariablesRandomly(std::vector<int>& mapping);
+  CpSolverStatus LogAndValidatePresolvedModel();
 
   std::vector<int>* postsolve_mapping_;
   PresolveContext* context_;

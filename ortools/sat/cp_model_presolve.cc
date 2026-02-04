@@ -6108,7 +6108,7 @@ void ExtractClauses(bool merge_into_bool_and,
   // how we perform the postsolve.
   absl::flat_hash_map<int, int> ref_to_bool_and;
   for (int i = 0; i < container.NumClauses(); ++i) {
-    const std::vector<Literal>& clause = container.Clause(i);
+    const auto& clause = container.Clause(i);
     if (clause.empty()) continue;
 
     // bool_and.
@@ -8923,6 +8923,176 @@ bool CpModelPresolver::PresolvePureSatPart() {
       absl::GetFlag(FLAGS_cp_model_debug_postsolve) ? "sat_postsolver" : "";
   ExtractClauses(/*merge_into_bool_and=*/false, new_to_old_index,
                  sat_postsolver, context_->mapping_model, name);
+  return true;
+}
+
+namespace {
+class BasicClauseContainer {
+ public:
+  void SetNumVariables(int /*num_variables*/) {}
+  void AddBinaryClause(Literal a, Literal b) { AddClause({a, b}); }
+  void AddClause(absl::Span<const Literal> clause) { clauses_.Add(clause); }
+
+  int NumClauses() const { return clauses_.size(); }
+  absl::Span<const Literal> Clause(int index) const { return clauses_[index]; }
+
+ private:
+  CompactVectorVector<int, Literal> clauses_;
+};
+}  // namespace
+
+bool CpModelPresolver::PresolvePureSatProblem() {
+  if (context_->ModelIsUnsat()) return true;
+  if (context_->params().keep_all_feasible_solutions_in_presolve()) return true;
+
+  // Crash if the problem is not pure SAT.
+  const int num_variables = context_->working_model->variables().size();
+  const int num_constraints = context_->working_model->constraints().size();
+  const std::string error_msg =
+      "cp_model_pure_sat_presolve can only be used with pure SAT problems.";
+  if (context_->working_model->has_objective()) {
+    LOG(FATAL) << error_msg;
+  }
+  for (int i = 0; i < num_variables; ++i) {
+    if (!context_->CanBeUsedAsLiteral(i)) {
+      LOG(FATAL) << error_msg;
+    }
+  }
+  for (int i = 0; i < num_constraints; ++i) {
+    const ConstraintProto& ct = context_->working_model->constraints(i);
+    if (!(ct.constraint_case() == ConstraintProto::kBoolOr ||
+          ct.constraint_case() == ConstraintProto::kBoolAnd ||
+          ct.constraint_case() == ConstraintProto::CONSTRAINT_NOT_SET)) {
+      LOG(FATAL) << error_msg;
+    }
+  }
+
+  Model local_model;
+  local_model.GetOrCreate<TimeLimit>()->MergeWithGlobalTimeLimit(time_limit_);
+  auto* sat_solver = local_model.GetOrCreate<SatSolver>();
+  sat_solver->SetNumVariables(num_variables);
+
+  std::vector<int> new_to_old_index;
+  new_to_old_index.reserve(num_variables);
+  for (int i = 0; i < num_variables; ++i) {
+    new_to_old_index.push_back(i);
+  }
+
+  // 1) Load the problem in the SAT solver.
+  // 1.1) Fix variables if any.
+  auto ref_to_literal = [](int ref) {
+    return Literal(BooleanVariable(PositiveRef(ref)), RefIsPositive(ref));
+  };
+  for (int var = 0; var < num_variables; ++var) {
+    if (context_->IsFixed(var)) {
+      if (context_->LiteralIsTrue(var)) {
+        if (!sat_solver->AddUnitClause({ref_to_literal(var)})) return false;
+      } else {
+        if (!sat_solver->AddUnitClause({ref_to_literal(NegatedRef(var))})) {
+          return false;
+        }
+      }
+    }
+  }
+  // 1.2) Load the clauses.
+  std::vector<Literal> clause;
+  for (int i = 0; i < context_->working_model->constraints_size(); ++i) {
+    const ConstraintProto& ct = context_->working_model->constraints(i);
+    if (ct.constraint_case() == ConstraintProto::kBoolOr) {
+      clause.clear();
+      for (const int ref : ct.enforcement_literal()) {
+        clause.push_back(ref_to_literal(ref).Negated());
+      }
+      for (const int ref : ct.bool_or().literals()) {
+        clause.push_back(ref_to_literal(ref));
+      }
+      sat_solver->AddProblemClause(clause);
+    } else if (ct.constraint_case() == ConstraintProto::kBoolAnd) {
+      clause.clear();
+      for (const int ref : ct.enforcement_literal()) {
+        clause.push_back(ref_to_literal(ref).Negated());
+      }
+      clause.push_back(Literal(kNoLiteralIndex));  // will be replaced below.
+      for (const int ref : ct.bool_and().literals()) {
+        clause.back() = ref_to_literal(ref);
+        sat_solver->AddProblemClause(clause);
+      }
+    } else {
+      DCHECK_EQ(ct.constraint_case(), ConstraintProto::CONSTRAINT_NOT_SET);
+      continue;
+    }
+    context_->working_model->mutable_constraints(i)->Clear();
+    context_->UpdateConstraintVariableUsage(i);
+  }
+  if (sat_solver->ModelIsUnsat()) return false;
+
+  // Some problems are formulated in such a way that our SAT heuristics
+  // simply works without conflict. Get them out of the way first because it
+  // is possible that the presolve lose this "lucky" ordering. This is in
+  // particular the case on the SAT14.crafted.complete-xxx-... problems.
+  if (!LookForTrivialSatSolution(/*deterministic_time_limit=*/1.0, &local_model,
+                                 logger_)) {
+    return false;
+  }
+  if (sat_solver->LiteralTrail().Index() == num_variables) {
+    // Problem solved! We should be able to assign the solution.
+    CHECK(FixFromAssignment(sat_solver->Assignment(), new_to_old_index,
+                            context_));
+    return true;
+  }
+
+  // 2) Do a few rounds of inprocessing.
+  SatPresolveOptions options;
+  options.log_info = true;  // log_info;
+  options.extract_binary_clauses_in_probing = false;
+  options.use_transitive_reduction = false;
+  options.deterministic_time_limit =
+      context_->params().presolve_probing_deterministic_time_limit();
+  options.use_equivalence_sat_sweeping =
+      context_->params().inprocessing_use_sat_sweeping();
+
+  auto* inprocessing = local_model.GetOrCreate<Inprocessing>();
+  inprocessing->ProvideLogger(logger_);
+  // TODO(user): re-index the variables to remove the unused ones between
+  // each iteration?
+  for (int i = 0; i < context_->params().max_presolve_iterations(); ++i) {
+    if (time_limit_->LimitReached()) break;
+    context_->UpdateRuleStats("presolve: iteration");
+    if (!inprocessing->PresolveLoop(options)) return false;
+    time_limit_->AdvanceDeterministicTime(
+        local_model.GetOrCreate<TimeLimit>()->GetElapsedDeterministicTime());
+  }
+
+  // 3) Extract the new clauses.
+  SatPostsolver sat_postsolver(num_variables);
+  for (const auto& c : local_model.GetOrCreate<PostsolveClauses>()->clauses) {
+    sat_postsolver.Add(c[0], c);
+  }
+  for (int i = 0; i < sat_solver->LiteralTrail().Index(); ++i) {
+    sat_postsolver.FixVariable(sat_solver->LiteralTrail()[i]);
+  }
+  // TODO(user): can we improve ExtractClauses() to avoid the intermediate
+  // container?
+  BasicClauseContainer clauses_container;
+  if (!sat_solver->ExtractClauses(&clauses_container)) return false;
+  ExtractClauses(/*merge_into_bool_and=*/true, new_to_old_index,
+                 clauses_container, context_->working_model);
+  const std::string name =
+      absl::GetFlag(FLAGS_cp_model_debug_postsolve) ? "sat_postsolver" : "";
+  ExtractClauses(/*merge_into_bool_and=*/false, new_to_old_index,
+                 sat_postsolver, context_->mapping_model, name);
+
+  // Update the constraints <-> variables graph.
+  context_->UpdateNewConstraintsVariableUsage();
+
+  // We mark as removed any variables removed by the pure SAT presolve.
+  // This is mainly to discover or avoid bug as we might have stale entries
+  // in our encoding hash-map for instance.
+  for (int var = 0; var < num_variables; ++var) {
+    if (context_->VarToConstraints(var).empty()) {
+      context_->MarkVariableAsRemoved(var);
+    }
+  }
   return true;
 }
 
@@ -13993,6 +14163,71 @@ bool CpModelPresolver::CanonicalizeAllLinears() {
 CpSolverStatus CpModelPresolver::Presolve() {
   context_->InitializeNewDomains();
 
+  if (context_->params().cp_model_pure_sat_presolve()) {
+    context_->UpdateNewConstraintsVariableUsage();
+    DCHECK(context_->ConstraintVariableUsageIsConsistent());
+
+    if (!PresolvePureSatProblem()) {
+      (void)context_->NotifyThatModelIsUnsat(
+          "Proved Infeasible during SAT presolve");
+      return InfeasibleStatus();
+    }
+
+    // Sync the domains and initialize the mapping model variables.
+    context_->WriteVariableDomainsToProto();
+
+    // Starts the postsolve mapping model.
+    std::vector<int> fixed_postsolve_mapping;
+    InitializeMappingModelVariables(context_->AllDomains(),
+                                    &fixed_postsolve_mapping,
+                                    context_->mapping_model);
+
+    // Remove all the unused variables from the presolved model.
+    postsolve_mapping_->clear();
+    std::vector<int> mapping(context_->working_model->variables_size(), -1);
+    int num_unused_variables = 0;
+    for (int i = 0; i < context_->working_model->variables_size(); ++i) {
+      if (mapping[i] != -1) continue;  // Already mapped.
+      if (context_->VariableWasRemoved(i)) continue;
+
+      // Deal with unused variables.
+      //
+      // If the variable is not fixed, we have multiple feasible solutions for
+      // this variable, so we can't remove it if we want all of them.
+      if (context_->VariableIsNotUsedAnymore(i) &&
+          (!context_->params().keep_all_feasible_solutions_in_presolve() ||
+           context_->IsFixed(i))) {
+        // Tricky. Variables that were not removed by a presolve rule should be
+        // fixed first during postsolve, so that more complex postsolve rules
+        // can use their values. One way to do that is to fix them here.
+        //
+        // We prefer to fix them to zero if possible.
+        ++num_unused_variables;
+        FillDomainInProto(Domain(context_->DomainOf(i).SmallestValue()),
+                          context_->mapping_model->mutable_variables(
+                              fixed_postsolve_mapping[i]));
+        continue;
+      }
+      mapping[i] = postsolve_mapping_->size();
+      postsolve_mapping_->push_back(fixed_postsolve_mapping[i]);
+    }
+    context_->UpdateRuleStats(absl::StrCat("presolve: ", num_unused_variables,
+                                           " unused variables removed."));
+
+    MaybePermuteVariablesRandomly(mapping);
+
+    DCHECK(context_->ConstraintVariableUsageIsConsistent());
+    const int old_size = postsolve_mapping_->size();
+    ApplyVariableMapping(absl::MakeSpan(mapping), context_->working_model,
+                         postsolve_mapping_);
+    CHECK_EQ(old_size, postsolve_mapping_->size());
+
+    // Compact all non-empty constraint at the beginning.
+    RemoveEmptyConstraints();
+
+    return LogAndValidatePresolvedModel();
+  }
+
   // If the objective is a floating point one, we scale it.
   //
   // TODO(user): We should probably try to delay this even more. For that we
@@ -14180,7 +14415,7 @@ CpSolverStatus CpModelPresolver::Presolve() {
       if (!time_limit_->LimitReached()) {
         if (!PresolvePureSatPart()) {
           (void)context_->NotifyThatModelIsUnsat(
-              "Proven Infeasible during SAT presolve");
+              "Proved Infeasible during SAT presolve");
           return InfeasibleStatus();
         }
       }
@@ -14386,7 +14621,7 @@ CpSolverStatus CpModelPresolver::Presolve() {
 
     // Deal with unused variables.
     //
-    // If the variable is not fixed, we have multiple feasible solution for
+    // If the variable is not fixed, we have multiple feasible solutions for
     // this variable, so we can't remove it if we want all of them.
     if (context_->VariableIsNotUsedAnymore(i) &&
         (!context_->params().keep_all_feasible_solutions_in_presolve() ||
@@ -14420,21 +14655,7 @@ CpSolverStatus CpModelPresolver::Presolve() {
   context_->UpdateRuleStats(absl::StrCat("presolve: ", num_unused_variables,
                                          " unused variables removed."));
 
-  if (context_->params().permute_variable_randomly()) {
-    // The mapping might merge variable, so we have to be careful here.
-    const int n = postsolve_mapping_->size();
-    std::vector<int> perm(n);
-    std::iota(perm.begin(), perm.end(), 0);
-    std::shuffle(perm.begin(), perm.end(), *context_->random());
-    for (int i = 0; i < context_->working_model->variables_size(); ++i) {
-      if (mapping[i] != -1) mapping[i] = perm[mapping[i]];
-    }
-    std::vector<int> new_postsolve_mapping(n);
-    for (int i = 0; i < n; ++i) {
-      new_postsolve_mapping[perm[i]] = (*postsolve_mapping_)[i];
-    }
-    *postsolve_mapping_ = std::move(new_postsolve_mapping);
-  }
+  MaybePermuteVariablesRandomly(mapping);
 
   DCHECK(context_->ConstraintVariableUsageIsConsistent());
   CanonicalizeRoutesConstraintNodeExpressions(context_);
@@ -14452,7 +14673,28 @@ CpSolverStatus CpModelPresolver::Presolve() {
     context_->UpdateRuleStats(absl::StrCat(
         "deductions: ", context_->deductions.NumDeductions(), " stored"));
   }
+  return LogAndValidatePresolvedModel();
+}
 
+void CpModelPresolver::MaybePermuteVariablesRandomly(
+    std::vector<int>& mapping) {
+  if (!context_->params().permute_variable_randomly()) return;
+  // The mapping might merge variable, so we have to be careful here.
+  const int n = postsolve_mapping_->size();
+  std::vector<int> perm(n);
+  std::iota(perm.begin(), perm.end(), 0);
+  std::shuffle(perm.begin(), perm.end(), *context_->random());
+  for (int i = 0; i < context_->working_model->variables_size(); ++i) {
+    if (mapping[i] != -1) mapping[i] = perm[mapping[i]];
+  }
+  std::vector<int> new_postsolve_mapping(n);
+  for (int i = 0; i < n; ++i) {
+    new_postsolve_mapping[perm[i]] = (*postsolve_mapping_)[i];
+  }
+  *postsolve_mapping_ = std::move(new_postsolve_mapping);
+}
+
+CpSolverStatus CpModelPresolver::LogAndValidatePresolvedModel() {
   // Stats and checks.
   if (logger_->LoggingIsEnabled()) context_->LogInfo();
 
