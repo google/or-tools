@@ -24,11 +24,7 @@
 %unignore operations_research::routing;
 namespace operations_research::routing {
 %unignore IndexManager;
-%unignore IndexManager::GetStartIndex;
-%unignore IndexManager::GetEndIndex;
-%unignore IndexManager::IndexToNode;
-%unignore IndexManager::NodeToIndex;
-%unignore IndexManager::NodesToIndices;
+%unignore IndexManager::~IndexManager;
 %unignore IndexManager::IndexManager(
     int, int,
     NodeIndex);
@@ -36,10 +32,23 @@ namespace operations_research::routing {
     int, int,
     const std::vector<NodeIndex>&,
     const std::vector<NodeIndex>&);
+%unignore IndexManager::GetStartIndex;
+%unignore IndexManager::GetEndIndex;
 %rename (GetNumberOfNodes) IndexManager::num_nodes;
 %rename (GetNumberOfVehicles) IndexManager::num_vehicles;
 %rename (GetNumberOfIndices) IndexManager::num_indices;
-%unignore IndexManager::~IndexManager;
+%rename (GetNumberOfUniqueDepots) IndexManager::num_unique_depots;
+%unignore IndexManager::IndexToNode;
+%unignore IndexManager::NodeToIndex;
+%unignore IndexManager::IndicesToNodes(const std::vector<int64_t>&);
+%extend IndexManager {
+  std::vector<NodeIndex> IndicesToNodes(
+    const std::vector<int64_t>& indices) {
+      return $self->IndicesToNodes(absl::Span<const int64_t>(indices));
+  }
+}
+%unignore IndexManager::NodesToIndices;
+%unignore IndexManager::kUnassigned;
 
 }  // namespace operations_research::routing
 
