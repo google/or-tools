@@ -523,8 +523,6 @@ bool LinearProgrammingConstraint::CreateLpFromConstraintManager() {
     new_ct.ub_is_trivial = all_constraints[index].ub_is_trivial;
 
     IntegerValue infinity_norm = 0;
-    infinity_norm = std::max(infinity_norm, IntTypeAbs(ct.lb));
-    infinity_norm = std::max(infinity_norm, IntTypeAbs(ct.ub));
     new_ct.start_in_buffer = integer_lp_cols_.size();
 
     // TODO(user): Make sure we don't have empty constraint!
@@ -563,8 +561,6 @@ bool LinearProgrammingConstraint::CreateLpFromConstraintManager() {
     integer_objective_[new_size++] = entry;
   }
   integer_objective_.resize(new_size);
-  objective_infinity_norm_ =
-      std::max(objective_infinity_norm_, IntTypeAbs(integer_objective_offset_));
 
   // Scale everything.
   // TODO(user): As we have an idea of the LP optimal after the first solves,
@@ -2328,13 +2324,22 @@ bool LinearProgrammingConstraint::ScalingCanOverflow(
     int power, bool take_objective_into_account,
     absl::Span<const std::pair<glop::RowIndex, double>> multipliers,
     int64_t overflow_cap) const {
+  // We will bound separately the sum of coefficients and the rhs upper bound.
   int64_t bound = 0;
+  int64_t rhs_bound = 0;
+
+  // Start with the objective if requested.
   const int64_t factor = int64_t{1} << power;
   const double factor_as_double = static_cast<double>(factor);
   if (take_objective_into_account) {
-    bound = CapAdd(bound, CapProd(factor, objective_infinity_norm_.value()));
+    bound = CapProd(factor, objective_infinity_norm_.value());
     if (bound >= overflow_cap) return true;
+
+    // It is important to take the objective offset into account !!
+    rhs_bound = CapProd(factor, std::abs(integer_objective_offset_.value()));
   }
+
+  // Then add the contribution of all the involved rows.
   for (const auto [row, double_coeff] : multipliers) {
     const double magnitude =
         std::abs(std::round(double_coeff * factor_as_double));
@@ -2342,11 +2347,20 @@ bool LinearProgrammingConstraint::ScalingCanOverflow(
     if (magnitude >= static_cast<double>(std::numeric_limits<int64_t>::max())) {
       return true;
     }
-    bound = CapAdd(bound, CapProd(static_cast<int64_t>(magnitude),
-                                  infinity_norms_[row].value()));
+
+    const int64_t int_magnitude = static_cast<int64_t>(magnitude);
+    bound = CapAdd(bound, CapProd(int_magnitude, infinity_norms_[row].value()));
     if (bound >= overflow_cap) return true;
+
+    // The bound we use depend on the sign.
+    const int64_t relevant_bound =
+        std::abs(double_coeff > 0.0 ? integer_lp_[row].ub.value()
+                                    : integer_lp_[row].lb.value());
+    rhs_bound = CapAdd(rhs_bound, CapProd(int_magnitude, relevant_bound));
+    if (rhs_bound >= overflow_cap) return true;
   }
-  return bound >= overflow_cap;
+
+  return bound >= overflow_cap || rhs_bound >= overflow_cap;
 }
 
 void LinearProgrammingConstraint::IgnoreTrivialConstraintMultipliers(

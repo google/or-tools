@@ -1302,13 +1302,19 @@ int UniqueClauseStream::NumBufferedLiterals() const {
   return result;
 }
 
+// A wrapper around a clause that implements an unordered hash function.
+struct ClauseHasher {
+  absl::Span<const int> clause;
+
+  template <typename H>
+  friend H AbslHashValue(H h, const ClauseHasher& c) {
+    return H::combine_unordered(std::move(h), c.clause.begin(), c.clause.end());
+  }
+};
+
 size_t UniqueClauseStream::HashClause(absl::Span<const int> clause,
                                       size_t hash_seed) {
-  size_t hash = absl::HashOf(hash_seed, clause.size());
-  for (int i = 0; i < clause.size(); ++i) {
-    hash ^= absl::HashOf(clause[i], hash_seed);
-  }
-  return hash;
+  return absl::HashOf(ClauseHasher{clause}, hash_seed);
 }
 
 absl::Span<const int> UniqueClauseStream::NextClause(int size) const {

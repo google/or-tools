@@ -559,6 +559,10 @@ void AutomatonConstraint::AddTransition(int tail, int head,
   proto_->mutable_automaton()->add_transition_label(transition_label);
 }
 
+void NoOverlapConstraint::AddInterval(IntervalVar interval) {
+  proto_->mutable_no_overlap()->add_intervals(interval.index_);
+}
+
 void NoOverlap2DConstraint::AddRectangle(IntervalVar x_coordinate,
                                          IntervalVar y_coordinate) {
   proto_->mutable_no_overlap_2d()->add_x_intervals(x_coordinate.index_);
@@ -1267,12 +1271,13 @@ Constraint CpModelBuilder::AddMultiplicationEquality(const LinearExpr& target,
   return Constraint(proto);
 }
 
-Constraint CpModelBuilder::AddNoOverlap(absl::Span<const IntervalVar> vars) {
+NoOverlapConstraint CpModelBuilder::AddNoOverlap(
+    absl::Span<const IntervalVar> vars) {
   ConstraintProto* const proto = cp_model_.add_constraints();
   for (const IntervalVar& var : vars) {
     proto->mutable_no_overlap()->add_intervals(var.index_);
   }
-  return Constraint(proto);
+  return NoOverlapConstraint(proto);
 }
 
 NoOverlap2DConstraint CpModelBuilder::AddNoOverlap2D() {

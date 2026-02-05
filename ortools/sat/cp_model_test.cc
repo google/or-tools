@@ -1192,7 +1192,8 @@ TEST(CpModelTest, TestNoOverlap) {
   IntVar z_start = cp_model.NewIntVar({0, 20});
   IntVar z_end = cp_model.NewIntVar({0, 20});
   const IntervalVar z = cp_model.NewIntervalVar(z_start, 5, z_end);
-  cp_model.AddNoOverlap({x, y, z});
+  NoOverlapConstraint ct = cp_model.AddNoOverlap({x, y});
+  ct.AddInterval(z);
   const CpModelProto expected_model = ParseTestProto(R"pb(
     variables { domain: 0 domain: 20 }
     variables { domain: 0 domain: 20 }

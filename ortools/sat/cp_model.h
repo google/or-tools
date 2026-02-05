@@ -497,6 +497,7 @@ class IntervalVar {
  private:
   friend class CpModelBuilder;
   friend class CumulativeConstraint;
+  friend class NoOverlapConstraint;
   friend class NoOverlap2DConstraint;
   friend std::ostream& operator<<(std::ostream& os, const IntervalVar& var);
 
@@ -677,6 +678,23 @@ class AutomatonConstraint : public Constraint {
  public:
   /// Adds a transitions to the automaton.
   void AddTransition(int tail, int head, int64_t transition_label);
+
+ private:
+  friend class CpModelBuilder;
+
+  using Constraint::Constraint;
+};
+
+/**
+ * Specialized no_overlap constraint.
+ *
+ * This constraint allows adding intervals to the no_overlap
+ * constraint incrementally.
+ */
+class NoOverlapConstraint : public Constraint {
+ public:
+  /// Adds an interval to the constraint.
+  void AddInterval(IntervalVar interval);
 
  private:
   friend class CpModelBuilder;
@@ -1076,7 +1094,7 @@ class CpModelBuilder {
    * Adds a no-overlap constraint that ensures that all present intervals do
    * not overlap in time.
    */
-  Constraint AddNoOverlap(absl::Span<const IntervalVar> vars);
+  NoOverlapConstraint AddNoOverlap(absl::Span<const IntervalVar> vars = {});
 
   /**
    * The no_overlap_2d constraint prevents a set of boxes from overlapping.
