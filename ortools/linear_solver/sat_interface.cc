@@ -145,7 +145,32 @@ MPSolver::ResultStatus SatInterface::Solve(const MPSolverParameters& param) {
 
   // The solution must be marked as synchronized even when no solution exists.
   sync_status_ = SOLUTION_SYNCHRONIZED;
-  result_status_ = static_cast<MPSolver::ResultStatus>(response.status());
+  switch (response.status()) {
+    case MPSOLVER_OPTIMAL:
+      result_status_ = MPSolver::OPTIMAL;
+      break;
+    case MPSOLVER_FEASIBLE:
+      result_status_ = MPSolver::FEASIBLE;
+      break;
+    case MPSOLVER_INFEASIBLE:
+      result_status_ = MPSolver::INFEASIBLE;
+      break;
+    case MPSOLVER_UNBOUNDED:
+      result_status_ = MPSolver::UNBOUNDED;
+      break;
+    case MPSOLVER_ABNORMAL:
+      result_status_ = MPSolver::ABNORMAL;
+      break;
+    case MPSOLVER_MODEL_INVALID:
+      result_status_ = MPSolver::MODEL_INVALID;
+      break;
+    case MPSOLVER_NOT_SOLVED:
+      result_status_ = MPSolver::NOT_SOLVED;
+      break;
+    default:
+      result_status_ = MPSolver::ABNORMAL;
+      break;
+  }
 
   if (response.status() == MPSOLVER_FEASIBLE ||
       response.status() == MPSOLVER_OPTIMAL) {
