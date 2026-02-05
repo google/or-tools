@@ -291,7 +291,7 @@ std::shared_ptr<LinearExpr> WeightedSumArguments(py::sequence expressions,
 
   bool fast_coeffs = false;
   const void* raw_coeffs = nullptr;
-  ssize_t coeff_stride = 0;
+  Py_ssize_t coeff_stride = 0;
   enum { kInt64, kInt32, kDouble } coeff_type = kInt64;
 
   if (py::isinstance<py::array>(coefficients)) {
