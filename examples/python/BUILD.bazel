@@ -428,6 +428,44 @@ bintest(
 )
 
 py_binary(
+    name = "prize_collecting_tsp_py3",
+    srcs = ["prize_collecting_tsp.py"],
+    main = "prize_collecting_tsp.py",
+    deps = [
+        "//ortools/constraint_solver/python:constraint_solver",
+        "//ortools/routing:enums_py_pb2",
+        "//ortools/routing:parameters_py_pb2",
+        "//ortools/routing/python:routing",
+    ],
+)
+
+bintest(
+    name = "prize_collecting_tsp_py_test",
+    size = "medium",
+    srcs = [":prize_collecting_tsp_py_test.bintest"],
+    named_data = {"prize_collecting_tsp_py3": ":prize_collecting_tsp_py3"},
+)
+
+py_binary(
+    name = "prize_collecting_vrp_py3",
+    srcs = ["prize_collecting_vrp.py"],
+    main = "prize_collecting_vrp.py",
+    deps = [
+        "//ortools/constraint_solver/python:constraint_solver",
+        "//ortools/routing:enums_py_pb2",
+        "//ortools/routing:parameters_py_pb2",
+        "//ortools/routing/python:routing",
+    ],
+)
+
+bintest(
+    name = "prize_collecting_vrp_py_test",
+    size = "medium",
+    srcs = [":prize_collecting_vrp_py_test.bintest"],
+    named_data = {"prize_collecting_vrp_py3": ":prize_collecting_vrp_py3"},
+)
+
+py_binary(
     name = "prize_collecting_vrp_sat_py3",
     srcs = ["prize_collecting_vrp_sat.py"],
     main = "prize_collecting_vrp_sat.py",
