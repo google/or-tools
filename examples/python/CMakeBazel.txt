@@ -275,6 +275,28 @@ ortools_cxx_bintest(
 )
 
 add_python_binary(
+  NAME bzl_py_example_prize_collecting_tsp_py3
+  FILE ${CMAKE_CURRENT_SOURCE_DIR}/prize_collecting_tsp.py
+)
+
+ortools_cxx_bintest(
+  NAME bzl_py_example_prize_collecting_tsp_py_test
+  SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/prize_collecting_tsp_py_test.bintest
+  ENVIRONMENT BINTEST_prize_collecting_tsp_py3=$<TARGET_FILE:bzl_py_example_prize_collecting_tsp_py3>
+)
+
+add_python_binary(
+  NAME bzl_py_example_prize_collecting_vrp_py3
+  FILE ${CMAKE_CURRENT_SOURCE_DIR}/prize_collecting_vrp.py
+)
+
+ortools_cxx_bintest(
+  NAME bzl_py_example_prize_collecting_vrp_py_test
+  SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/prize_collecting_vrp_py_test.bintest
+  ENVIRONMENT BINTEST_prize_collecting_vrp_py3=$<TARGET_FILE:bzl_py_example_prize_collecting_vrp_py3>
+)
+
+add_python_binary(
   NAME bzl_py_example_prize_collecting_vrp_sat_py3
   FILE ${CMAKE_CURRENT_SOURCE_DIR}/prize_collecting_vrp_sat.py
 )
