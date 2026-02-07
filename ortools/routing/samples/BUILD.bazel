@@ -214,6 +214,8 @@ py_binary(
     srcs = ["tsp.py"],
     main = "tsp.py",
     deps = [
+        "//ortools/routing:enums_py_pb2",
+        "//ortools/routing:parameters_py_pb2",  # keep
         "//ortools/routing/python:routing",
     ],
 )
@@ -225,6 +227,8 @@ py_test(
     main = "cvrp_reload.py",
     deps = [
         "//ortools/constraint_solver/python:constraint_solver",
+        "//ortools/routing:enums_py_pb2",
+        "//ortools/routing:parameters_py_pb2",  # keep
         "//ortools/routing/python:routing",
     ],
 )
@@ -236,6 +240,8 @@ py_test(
     main = "cvrptw.py",
     deps = [
         "//ortools/constraint_solver/python:constraint_solver",
+        "//ortools/routing:enums_py_pb2",
+        "//ortools/routing:parameters_py_pb2",  # keep
         "//ortools/routing/python:routing",
     ],
 )
@@ -247,6 +253,8 @@ py_test(
     main = "cvrptw_break.py",
     deps = [
         "//ortools/constraint_solver/python:constraint_solver",
+        "//ortools/routing:enums_py_pb2",
+        "//ortools/routing:parameters_py_pb2",  # keep
         "//ortools/routing/python:routing",
     ],
 )
@@ -276,6 +284,8 @@ py_test(
     srcs = ["simple_routing_program.py"],
     main = "simple_routing_program.py",
     deps = [
+        "//ortools/routing:enums_py_pb2",
+        "//ortools/routing:parameters_py_pb2",  # keep
         "//ortools/routing/python:routing",
     ],
 )
@@ -286,6 +296,8 @@ py_test(
     srcs = ["vrp_node_max.py"],
     main = "vrp_node_max.py",
     deps = [
+        "//ortools/routing:enums_py_pb2",
+        "//ortools/routing:parameters_py_pb2",  # keep
         "//ortools/routing/python:routing",
     ],
 )
@@ -297,6 +309,8 @@ py_test(
     main = "vrp_tokens.py",
     deps = [
         "//ortools/constraint_solver/python:constraint_solver",
+        "//ortools/routing:enums_py_pb2",
+        "//ortools/routing:parameters_py_pb2",  # keep
         "//ortools/routing/python:routing",
     ],
 )
@@ -346,6 +360,8 @@ py_test(
     main = "tsp_circuit_board.py",
     deps = [
         "//ortools/constraint_solver/python:constraint_solver",
+        "//ortools/routing:enums_py_pb2",
+        "//ortools/routing:parameters_py_pb2",  # keep
         "//ortools/routing/python:routing",
     ],
 )
@@ -375,6 +391,8 @@ py_test(
     srcs = ["tsp_cities.py"],
     main = "tsp_cities.py",
     deps = [
+        "//ortools/routing:enums_py_pb2",
+        "//ortools/routing:parameters_py_pb2",  # keep
         "//ortools/routing/python:routing",
     ],
 )
@@ -424,6 +442,8 @@ py_test(
     main = "tsp_distance_matrix.py",
     deps = [
         "//ortools/constraint_solver/python:constraint_solver",
+        "//ortools/routing:enums_py_pb2",
+        "//ortools/routing:parameters_py_pb2",  # keep
         "//ortools/routing/python:routing",
     ],
 )
@@ -454,6 +474,8 @@ py_test(
     main = "vrp.py",
     deps = [
         "//ortools/constraint_solver/python:constraint_solver",
+        "//ortools/routing:enums_py_pb2",
+        "//ortools/routing:parameters_py_pb2",  # keep
         "//ortools/routing/python:routing",
     ],
 )
@@ -485,6 +507,8 @@ py_test(
     main = "vrp_breaks.py",
     deps = [
         "//ortools/constraint_solver/python:constraint_solver",
+        "//ortools/routing:enums_py_pb2",
+        "//ortools/routing:parameters_py_pb2",  # keep
         "//ortools/routing/python:routing",
     ],
 )
@@ -496,6 +520,8 @@ py_test(
     main = "vrp_breaks_from_start.py",
     deps = [
         "//ortools/constraint_solver/python:constraint_solver",
+        "//ortools/routing:enums_py_pb2",
+        "//ortools/routing:parameters_py_pb2",  # keep
         "//ortools/routing/python:routing",
     ],
 )
@@ -527,6 +553,8 @@ py_test(
     main = "vrp_capacity.py",
     deps = [
         "//ortools/constraint_solver/python:constraint_solver",
+        "//ortools/routing:enums_py_pb2",
+        "//ortools/routing:parameters_py_pb2",  # keep
         "//ortools/routing/python:routing",
     ],
 )
@@ -558,6 +586,8 @@ py_test(
     main = "vrp_drop_nodes.py",
     deps = [
         "//ortools/constraint_solver/python:constraint_solver",
+        "//ortools/routing:enums_py_pb2",
+        "//ortools/routing:parameters_py_pb2",  # keep
         "//ortools/routing/python:routing",
     ],
 )
@@ -588,6 +618,8 @@ py_test(
     main = "vrp_global_span.py",
     deps = [
         "//ortools/constraint_solver/python:constraint_solver",
+        "//ortools/routing:enums_py_pb2",
+        "//ortools/routing:parameters_py_pb2",  # keep
         "//ortools/routing/python:routing",
     ],
 )
@@ -619,6 +651,8 @@ py_test(
     main = "vrp_initial_routes.py",
     deps = [
         "//ortools/constraint_solver/python:constraint_solver",
+        "//ortools/routing:enums_py_pb2",
+        "//ortools/routing:parameters_py_pb2",  # keep
         "//ortools/routing/python:routing",
     ],
 )
@@ -630,6 +664,8 @@ py_test(
     main = "vrp_items_to_deliver.py",
     deps = [
         "//ortools/constraint_solver/python:constraint_solver",
+        "//ortools/routing:enums_py_pb2",
+        "//ortools/routing:parameters_py_pb2",  # keep
         "//ortools/routing/python:routing",
     ],
 )
@@ -641,6 +677,8 @@ py_test(
     main = "vrp_nodes_indices.py",
     deps = [
         "//ortools/constraint_solver/python:constraint_solver",
+        "//ortools/routing:enums_py_pb2",
+        "//ortools/routing:parameters_py_pb2",  # keep
         "//ortools/routing/python:routing",
     ],
 )
@@ -671,6 +709,8 @@ py_test(
     main = "vrp_starts_ends.py",
     deps = [
         "//ortools/constraint_solver/python:constraint_solver",
+        "//ortools/routing:enums_py_pb2",
+        "//ortools/routing:parameters_py_pb2",  # keep
         "//ortools/routing/python:routing",
     ],
 )
@@ -701,6 +741,8 @@ py_test(
     main = "vrp_pickup_delivery.py",
     deps = [
         "//ortools/constraint_solver/python:constraint_solver",
+        "//ortools/routing:enums_py_pb2",
+        "//ortools/routing:parameters_py_pb2",  # keep
         "//ortools/routing/python:routing",
     ],
 )
@@ -731,6 +773,8 @@ py_test(
     main = "vrp_pickup_delivery_fifo.py",
     deps = [
         "//ortools/constraint_solver/python:constraint_solver",
+        "//ortools/routing:enums_py_pb2",
+        "//ortools/routing:parameters_py_pb2",  # keep
         "//ortools/routing/python:routing",
     ],
 )
@@ -761,6 +805,8 @@ py_test(
     main = "vrp_pickup_delivery_lifo.py",
     deps = [
         "//ortools/constraint_solver/python:constraint_solver",
+        "//ortools/routing:enums_py_pb2",
+        "//ortools/routing:parameters_py_pb2",  # keep
         "//ortools/routing/python:routing",
     ],
 )
@@ -791,6 +837,8 @@ py_test(
     main = "vrp_resources.py",
     deps = [
         "//ortools/constraint_solver/python:constraint_solver",
+        "//ortools/routing:enums_py_pb2",
+        "//ortools/routing:parameters_py_pb2",  # keep
         "//ortools/routing/python:routing",
     ],
 )
@@ -840,6 +888,8 @@ py_test(
     srcs = ["vrp_solution_callback.py"],
     main = "vrp_solution_callback.py",
     deps = [
+        "//ortools/routing:enums_py_pb2",
+        "//ortools/routing:parameters_py_pb2",  # keep
         "//ortools/routing/python:routing",
     ],
 )
@@ -870,6 +920,8 @@ py_test(
     main = "vrp_time_windows.py",
     deps = [
         "//ortools/constraint_solver/python:constraint_solver",
+        "//ortools/routing:enums_py_pb2",
+        "//ortools/routing:parameters_py_pb2",  # keep
         "//ortools/routing/python:routing",
     ],
 )
@@ -881,6 +933,8 @@ py_test(
     main = "vrp_time_windows_per_vehicles.py",
     deps = [
         "//ortools/constraint_solver/python:constraint_solver",
+        "//ortools/routing:enums_py_pb2",
+        "//ortools/routing:parameters_py_pb2",  # keep
         "//ortools/routing/python:routing",
     ],
 )
@@ -912,6 +966,8 @@ py_test(
     main = "vrp_with_time_limit.py",
     deps = [
         "//ortools/constraint_solver/python:constraint_solver",
+        "//ortools/routing:enums_py_pb2",
+        "//ortools/routing:parameters_py_pb2",  # keep
         "//ortools/routing/python:routing",
     ],
 )
@@ -942,6 +998,8 @@ py_test(
     main = "vrptw_store_solution_data.py",
     deps = [
         "//ortools/constraint_solver/python:constraint_solver",
+        "//ortools/routing:enums_py_pb2",
+        "//ortools/routing:parameters_py_pb2",  # keep
         "//ortools/routing/python:routing",
     ],
 )

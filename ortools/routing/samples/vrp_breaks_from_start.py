@@ -29,6 +29,7 @@ Durations are in minutes.
 from typing import Any, Dict
 
 from ortools.constraint_solver.python import constraint_solver
+from ortools.routing import enums_pb2
 from ortools.routing.python import routing
 
 # [END import]
@@ -198,10 +199,10 @@ def main() -> None:
     # [START parameters]
     search_parameters = routing.default_routing_search_parameters()
     search_parameters.first_solution_strategy = (
-        routing.FirstSolutionStrategy.PATH_CHEAPEST_ARC
+        enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
     )
     search_parameters.local_search_metaheuristic = (
-        routing.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH
+        enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH
     )
     # search_parameters.log_search = True
     search_parameters.time_limit.seconds = 2

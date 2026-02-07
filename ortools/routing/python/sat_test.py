@@ -15,7 +15,9 @@
 """Tests for CP-SAT routing."""
 
 from absl.testing import absltest
+from ortools.routing import enums_pb2
 from ortools.routing.python import routing
+from ortools.util import optional_boolean_pb2
 from ortools.util.python import sorted_interval_list
 
 
@@ -28,15 +30,17 @@ class SatTest(absltest.TestCase):
     def test_solve_tsp_model(self):
         for use_scaling in [False, True]:
             for use_cp in [
-                routing.BOOL_FALSE,
-                routing.BOOL_TRUE,
+                optional_boolean_pb2.BOOL_FALSE,
+                optional_boolean_pb2.BOOL_TRUE,
             ]:
                 for use_generalized_cp_sat in [False, True]:
                     parameters = routing.default_routing_search_parameters()
                     if use_generalized_cp_sat:
-                        parameters.use_generalized_cp_sat = routing.BOOL_TRUE
+                        parameters.use_generalized_cp_sat = (
+                            optional_boolean_pb2.BOOL_TRUE
+                        )
                     else:
-                        parameters.use_cp_sat = routing.BOOL_TRUE
+                        parameters.use_cp_sat = optional_boolean_pb2.BOOL_TRUE
                     parameters.use_cp = use_cp
                     if use_scaling:
                         parameters.log_cost_scaling_factor = 2.3
@@ -53,7 +57,7 @@ class SatTest(absltest.TestCase):
 
                     assignment = routing_model.solve_with_parameters(parameters)
                     self.assertEqual(
-                        routing.RoutingSearchStatus.ROUTING_OPTIMAL,
+                        enums_pb2.RoutingSearchStatus.ROUTING_OPTIMAL,
                         routing_model.status(),
                     )
                     self.assertIsNotNone(assignment)
@@ -61,15 +65,15 @@ class SatTest(absltest.TestCase):
 
     def test_solve_tsp_model_with_disjoint_time_windows(self):
         for use_cp in [
-            routing.BOOL_FALSE,
-            routing.BOOL_TRUE,
+            optional_boolean_pb2.BOOL_FALSE,
+            optional_boolean_pb2.BOOL_TRUE,
         ]:
             for use_generalized_cp_sat in [False, True]:
                 parameters = routing.default_routing_search_parameters()
                 if use_generalized_cp_sat:
-                    parameters.use_generalized_cp_sat = routing.BOOL_TRUE
+                    parameters.use_generalized_cp_sat = optional_boolean_pb2.BOOL_TRUE
                 else:
-                    parameters.use_cp_sat = routing.BOOL_TRUE
+                    parameters.use_cp_sat = optional_boolean_pb2.BOOL_TRUE
                 parameters.use_cp = use_cp
 
                 index_manager = routing.IndexManager(4, 1, 0)
@@ -102,15 +106,15 @@ class SatTest(absltest.TestCase):
 
     def test_solve_tsp_model_with_soft_ub(self):
         for use_cp in [
-            routing.BOOL_FALSE,
-            routing.BOOL_TRUE,
+            optional_boolean_pb2.BOOL_FALSE,
+            optional_boolean_pb2.BOOL_TRUE,
         ]:
             for use_generalized_cp_sat in [False, True]:
                 parameters = routing.default_routing_search_parameters()
                 if use_generalized_cp_sat:
-                    parameters.use_generalized_cp_sat = routing.BOOL_TRUE
+                    parameters.use_generalized_cp_sat = optional_boolean_pb2.BOOL_TRUE
                 else:
-                    parameters.use_cp_sat = routing.BOOL_TRUE
+                    parameters.use_cp_sat = optional_boolean_pb2.BOOL_TRUE
                 parameters.use_cp = use_cp
 
                 index_manager = routing.IndexManager(4, 1, 0)
@@ -129,7 +133,7 @@ class SatTest(absltest.TestCase):
 
                 assignment = routing_model.solve_with_parameters(parameters)
                 self.assertEqual(
-                    routing.RoutingSearchStatus.ROUTING_OPTIMAL,
+                    enums_pb2.RoutingSearchStatus.ROUTING_OPTIMAL,
                     routing_model.status(),
                 )
                 self.assertIsNotNone(assignment)
@@ -137,15 +141,15 @@ class SatTest(absltest.TestCase):
 
     def test_solve_tsp_model_with_soft_lb(self):
         for use_cp in [
-            routing.BOOL_FALSE,
-            routing.BOOL_TRUE,
+            optional_boolean_pb2.BOOL_FALSE,
+            optional_boolean_pb2.BOOL_TRUE,
         ]:
             for use_generalized_cp_sat in [False, True]:
                 parameters = routing.default_routing_search_parameters()
                 if use_generalized_cp_sat:
-                    parameters.use_generalized_cp_sat = routing.BOOL_TRUE
+                    parameters.use_generalized_cp_sat = optional_boolean_pb2.BOOL_TRUE
                 else:
-                    parameters.use_cp_sat = routing.BOOL_TRUE
+                    parameters.use_cp_sat = optional_boolean_pb2.BOOL_TRUE
                 parameters.use_cp = use_cp
 
                 index_manager = routing.IndexManager(4, 1, 0)
@@ -164,7 +168,7 @@ class SatTest(absltest.TestCase):
 
                 assignment = routing_model.solve_with_parameters(parameters)
                 self.assertEqual(
-                    routing.RoutingSearchStatus.ROUTING_OPTIMAL,
+                    enums_pb2.RoutingSearchStatus.ROUTING_OPTIMAL,
                     routing_model.status(),
                 )
                 self.assertIsNotNone(assignment)
@@ -172,15 +176,15 @@ class SatTest(absltest.TestCase):
 
     def test_solve_tsp_model_with_soft_lb_and_ub(self):
         for use_cp in [
-            routing.BOOL_FALSE,
-            routing.BOOL_TRUE,
+            optional_boolean_pb2.BOOL_FALSE,
+            optional_boolean_pb2.BOOL_TRUE,
         ]:
             for use_generalized_cp_sat in [False, True]:
                 parameters = routing.default_routing_search_parameters()
                 if use_generalized_cp_sat:
-                    parameters.use_generalized_cp_sat = routing.BOOL_TRUE
+                    parameters.use_generalized_cp_sat = optional_boolean_pb2.BOOL_TRUE
                 else:
-                    parameters.use_cp_sat = routing.BOOL_TRUE
+                    parameters.use_cp_sat = optional_boolean_pb2.BOOL_TRUE
                 parameters.use_cp = use_cp
 
                 index_manager = routing.IndexManager(4, 1, 0)
@@ -202,7 +206,7 @@ class SatTest(absltest.TestCase):
 
                 assignment = routing_model.solve_with_parameters(parameters)
                 self.assertEqual(
-                    routing.RoutingSearchStatus.ROUTING_OPTIMAL,
+                    enums_pb2.RoutingSearchStatus.ROUTING_OPTIMAL,
                     routing_model.status(),
                 )
                 self.assertIsNotNone(assignment)
@@ -210,15 +214,15 @@ class SatTest(absltest.TestCase):
 
     def test_solve_tsp_with_unperformed_model(self):
         for use_cp in [
-            routing.BOOL_FALSE,
-            routing.BOOL_TRUE,
+            optional_boolean_pb2.BOOL_FALSE,
+            optional_boolean_pb2.BOOL_TRUE,
         ]:
             for use_generalized_cp_sat in [False, True]:
                 parameters = routing.default_routing_search_parameters()
                 if use_generalized_cp_sat:
-                    parameters.use_generalized_cp_sat = routing.BOOL_TRUE
+                    parameters.use_generalized_cp_sat = optional_boolean_pb2.BOOL_TRUE
                 else:
-                    parameters.use_cp_sat = routing.BOOL_TRUE
+                    parameters.use_cp_sat = optional_boolean_pb2.BOOL_TRUE
                 parameters.use_cp = use_cp
                 parameters.log_search = True
 
@@ -235,7 +239,7 @@ class SatTest(absltest.TestCase):
 
                 assignment = routing_model.solve_with_parameters(parameters)
                 self.assertEqual(
-                    routing.RoutingSearchStatus.ROUTING_OPTIMAL,
+                    enums_pb2.RoutingSearchStatus.ROUTING_OPTIMAL,
                     routing_model.status(),
                 )
                 self.assertIsNotNone(assignment)
@@ -243,11 +247,11 @@ class SatTest(absltest.TestCase):
 
     def test_solve_tsp_with_delayed_active_nodes(self):
         for use_cp in [
-            routing.BOOL_FALSE,
-            routing.BOOL_TRUE,
+            optional_boolean_pb2.BOOL_FALSE,
+            optional_boolean_pb2.BOOL_TRUE,
         ]:
             parameters = routing.default_routing_search_parameters()
-            parameters.use_cp_sat = routing.BOOL_TRUE
+            parameters.use_cp_sat = optional_boolean_pb2.BOOL_TRUE
             parameters.use_cp = use_cp
 
             index_manager = routing.IndexManager(4, 1, 0)
@@ -264,22 +268,22 @@ class SatTest(absltest.TestCase):
 
             assignment = routing_model.solve_with_parameters(parameters)
             self.assertEqual(
-                routing.RoutingSearchStatus.ROUTING_OPTIMAL, routing_model.status()
+                enums_pb2.RoutingSearchStatus.ROUTING_OPTIMAL, routing_model.status()
             )
             self.assertIsNotNone(assignment)
             self.assertEqual(1 + 2 + 3, assignment.objective_value())
 
     def test_solve_vrp_with_soft_lb_and_ub(self):
         for use_cp in [
-            routing.BOOL_FALSE,
-            routing.BOOL_TRUE,
+            optional_boolean_pb2.BOOL_FALSE,
+            optional_boolean_pb2.BOOL_TRUE,
         ]:
             for use_generalized_cp_sat in [False, True]:
                 parameters = routing.default_routing_search_parameters()
                 if use_generalized_cp_sat:
-                    parameters.use_generalized_cp_sat = routing.BOOL_TRUE
+                    parameters.use_generalized_cp_sat = optional_boolean_pb2.BOOL_TRUE
                 else:
-                    parameters.use_cp_sat = routing.BOOL_TRUE
+                    parameters.use_cp_sat = optional_boolean_pb2.BOOL_TRUE
                 parameters.use_cp = use_cp
                 parameters.log_search = True
 
@@ -303,7 +307,7 @@ class SatTest(absltest.TestCase):
 
                 assignment = routing_model.solve_with_parameters(parameters)
                 self.assertEqual(
-                    routing.RoutingSearchStatus.ROUTING_OPTIMAL,
+                    enums_pb2.RoutingSearchStatus.ROUTING_OPTIMAL,
                     routing_model.status(),
                 )
                 self.assertIsNotNone(assignment)
@@ -312,8 +316,8 @@ class SatTest(absltest.TestCase):
     def test_solve_vrp_callbacks(self):
         for report_intermediate_cp_sat_solutions in [False, True]:
             for use_cp in [
-                routing.BOOL_FALSE,
-                routing.BOOL_TRUE,
+                optional_boolean_pb2.BOOL_FALSE,
+                optional_boolean_pb2.BOOL_TRUE,
             ]:
                 for use_generalized_cp_sat in [False, True]:
                     parameters = routing.default_routing_search_parameters()
@@ -321,9 +325,11 @@ class SatTest(absltest.TestCase):
                         report_intermediate_cp_sat_solutions
                     )
                     if use_generalized_cp_sat:
-                        parameters.use_generalized_cp_sat = routing.BOOL_TRUE
+                        parameters.use_generalized_cp_sat = (
+                            optional_boolean_pb2.BOOL_TRUE
+                        )
                     else:
-                        parameters.use_cp_sat = routing.BOOL_TRUE
+                        parameters.use_cp_sat = optional_boolean_pb2.BOOL_TRUE
                     parameters.use_cp = use_cp
                     parameters.log_search = True
 
@@ -351,7 +357,7 @@ class SatTest(absltest.TestCase):
 
                     assignment = routing_model.solve_with_parameters(parameters)
                     self.assertEqual(
-                        routing.RoutingSearchStatus.ROUTING_OPTIMAL,
+                        enums_pb2.RoutingSearchStatus.ROUTING_OPTIMAL,
                         routing_model.status(),
                     )
                     self.assertIsNotNone(assignment)
@@ -363,15 +369,15 @@ class SatTest(absltest.TestCase):
 
     def test_solve_vrp_with_unperformed_model(self):
         for use_cp in [
-            routing.BOOL_FALSE,
-            routing.BOOL_TRUE,
+            optional_boolean_pb2.BOOL_FALSE,
+            optional_boolean_pb2.BOOL_TRUE,
         ]:
             for use_generalized_cp_sat in [False, True]:
                 parameters = routing.default_routing_search_parameters()
                 if use_generalized_cp_sat:
-                    parameters.use_generalized_cp_sat = routing.BOOL_TRUE
+                    parameters.use_generalized_cp_sat = optional_boolean_pb2.BOOL_TRUE
                 else:
-                    parameters.use_cp_sat = routing.BOOL_TRUE
+                    parameters.use_cp_sat = optional_boolean_pb2.BOOL_TRUE
                 parameters.use_cp = use_cp
 
                 index_manager = routing.IndexManager(3, 2, 0)
@@ -387,7 +393,7 @@ class SatTest(absltest.TestCase):
 
                 assignment = routing_model.solve_with_parameters(parameters)
                 self.assertEqual(
-                    routing.RoutingSearchStatus.ROUTING_OPTIMAL,
+                    enums_pb2.RoutingSearchStatus.ROUTING_OPTIMAL,
                     routing_model.status(),
                 )
                 self.assertIsNotNone(assignment)
@@ -395,11 +401,11 @@ class SatTest(absltest.TestCase):
 
     def test_solve_alternatives_vrp_model_with_forced_active(self):
         for use_cp in [
-            routing.BOOL_FALSE,
-            routing.BOOL_TRUE,
+            optional_boolean_pb2.BOOL_FALSE,
+            optional_boolean_pb2.BOOL_TRUE,
         ]:
             parameters = routing.default_routing_search_parameters()
-            parameters.use_generalized_cp_sat = routing.BOOL_TRUE
+            parameters.use_generalized_cp_sat = optional_boolean_pb2.BOOL_TRUE
             parameters.use_cp = use_cp
             parameters.log_search = True
 
@@ -415,7 +421,7 @@ class SatTest(absltest.TestCase):
 
             assignment = routing_model.solve_with_parameters(parameters)
             self.assertEqual(
-                routing.RoutingSearchStatus.ROUTING_OPTIMAL, routing_model.status()
+                enums_pb2.RoutingSearchStatus.ROUTING_OPTIMAL, routing_model.status()
             )
             self.assertIsNotNone(assignment)
             self.assertEqual(5 + 2 * 10, assignment.objective_value())
@@ -425,11 +431,11 @@ class SatTest(absltest.TestCase):
 
     def test_solve_alternatives_vrp_model_with_double_disjunctions(self):
         for use_cp in [
-            routing.BOOL_FALSE,
-            routing.BOOL_TRUE,
+            optional_boolean_pb2.BOOL_FALSE,
+            optional_boolean_pb2.BOOL_TRUE,
         ]:
             parameters = routing.default_routing_search_parameters()
-            parameters.use_generalized_cp_sat = routing.BOOL_TRUE
+            parameters.use_generalized_cp_sat = optional_boolean_pb2.BOOL_TRUE
             parameters.use_cp = use_cp
             parameters.log_search = True
 
@@ -449,18 +455,18 @@ class SatTest(absltest.TestCase):
 
             assignment = routing_model.solve_with_parameters(parameters)
             self.assertEqual(
-                routing.RoutingSearchStatus.ROUTING_OPTIMAL, routing_model.status()
+                enums_pb2.RoutingSearchStatus.ROUTING_OPTIMAL, routing_model.status()
             )
             self.assertIsNotNone(assignment)
             self.assertEqual(100 + 2 + 3 + 4, assignment.objective_value())
 
     def test_solve_capacitated_alternatives_vrp_model_with_forced_active(self):
         for use_cp in [
-            routing.BOOL_FALSE,
-            routing.BOOL_TRUE,
+            optional_boolean_pb2.BOOL_FALSE,
+            optional_boolean_pb2.BOOL_TRUE,
         ]:
             parameters = routing.default_routing_search_parameters()
-            parameters.use_generalized_cp_sat = routing.BOOL_TRUE
+            parameters.use_generalized_cp_sat = optional_boolean_pb2.BOOL_TRUE
             parameters.use_cp = use_cp
             parameters.log_search = True
 
@@ -482,22 +488,22 @@ class SatTest(absltest.TestCase):
 
             assignment = routing_model.solve_with_parameters(parameters)
             self.assertEqual(
-                routing.RoutingSearchStatus.ROUTING_OPTIMAL, routing_model.status()
+                enums_pb2.RoutingSearchStatus.ROUTING_OPTIMAL, routing_model.status()
             )
             self.assertIsNotNone(assignment)
             self.assertEqual(200 + 2 + 3 + 5, assignment.objective_value())
 
     def test_solve_tsp_with_windows_model(self):
         for use_cp in [
-            routing.BOOL_FALSE,
-            routing.BOOL_TRUE,
+            optional_boolean_pb2.BOOL_FALSE,
+            optional_boolean_pb2.BOOL_TRUE,
         ]:
             for use_generalized_cp_sat in [False, True]:
                 parameters = routing.default_routing_search_parameters()
                 if use_generalized_cp_sat:
-                    parameters.use_generalized_cp_sat = routing.BOOL_TRUE
+                    parameters.use_generalized_cp_sat = optional_boolean_pb2.BOOL_TRUE
                 else:
-                    parameters.use_cp_sat = routing.BOOL_TRUE
+                    parameters.use_cp_sat = optional_boolean_pb2.BOOL_TRUE
                 parameters.use_cp = use_cp
                 parameters.log_search = True
 
@@ -517,7 +523,7 @@ class SatTest(absltest.TestCase):
 
                 assignment = routing_model.solve_with_parameters(parameters)
                 self.assertEqual(
-                    routing.RoutingSearchStatus.ROUTING_OPTIMAL,
+                    enums_pb2.RoutingSearchStatus.ROUTING_OPTIMAL,
                     routing_model.status(),
                 )
                 self.assertIsNotNone(assignment)
@@ -529,8 +535,8 @@ class SatTest(absltest.TestCase):
 
     def test_solve_tsp_with_windows_model_different_slacks(self):
         parameters = routing.default_routing_search_parameters()
-        parameters.use_generalized_cp_sat = routing.BOOL_TRUE
-        parameters.use_cp = routing.BOOL_FALSE
+        parameters.use_generalized_cp_sat = optional_boolean_pb2.BOOL_TRUE
+        parameters.use_cp = optional_boolean_pb2.BOOL_FALSE
         parameters.log_search = True
 
         index_manager = routing.IndexManager(3, 1, 0)
@@ -551,22 +557,22 @@ class SatTest(absltest.TestCase):
 
         assignment = routing_model.solve_with_parameters(parameters)
         self.assertEqual(
-            routing.RoutingSearchStatus.ROUTING_OPTIMAL, routing_model.status()
+            enums_pb2.RoutingSearchStatus.ROUTING_OPTIMAL, routing_model.status()
         )
         self.assertIsNotNone(assignment)
         self.assertEqual(1 + 2, assignment.objective_value())
 
     def test_solve_tsp_with_pickup_and_delivery(self):
         for use_cp in [
-            routing.BOOL_FALSE,
-            routing.BOOL_TRUE,
+            optional_boolean_pb2.BOOL_FALSE,
+            optional_boolean_pb2.BOOL_TRUE,
         ]:
             for use_generalized_cp_sat in [False, True]:
                 parameters = routing.default_routing_search_parameters()
                 if use_generalized_cp_sat:
-                    parameters.use_generalized_cp_sat = routing.BOOL_TRUE
+                    parameters.use_generalized_cp_sat = optional_boolean_pb2.BOOL_TRUE
                 else:
-                    parameters.use_cp_sat = routing.BOOL_TRUE
+                    parameters.use_cp_sat = optional_boolean_pb2.BOOL_TRUE
                 parameters.use_cp = use_cp
                 parameters.log_search = True
 
@@ -590,7 +596,7 @@ class SatTest(absltest.TestCase):
 
                 assignment = routing_model.solve_with_parameters(parameters)
                 self.assertEqual(
-                    routing.RoutingSearchStatus.ROUTING_OPTIMAL,
+                    enums_pb2.RoutingSearchStatus.ROUTING_OPTIMAL,
                     routing_model.status(),
                 )
                 self.assertIsNotNone(assignment)
@@ -640,10 +646,10 @@ class SatTest(absltest.TestCase):
         for use_generalized_cp_sat in [False, True]:
             parameters = routing.default_routing_search_parameters()
             if use_generalized_cp_sat:
-                parameters.use_generalized_cp_sat = routing.BOOL_TRUE
+                parameters.use_generalized_cp_sat = optional_boolean_pb2.BOOL_TRUE
             else:
-                parameters.use_cp_sat = routing.BOOL_TRUE
-            parameters.use_cp = routing.BOOL_TRUE
+                parameters.use_cp_sat = optional_boolean_pb2.BOOL_TRUE
+            parameters.use_cp = optional_boolean_pb2.BOOL_TRUE
             parameters.solution_limit = 1
 
             index_manager = routing.IndexManager(4, 1, 0)
@@ -663,12 +669,12 @@ class SatTest(absltest.TestCase):
 
             if use_generalized_cp_sat:
                 self.assertEqual(
-                    routing.RoutingSearchStatus.ROUTING_OPTIMAL,
+                    enums_pb2.RoutingSearchStatus.ROUTING_OPTIMAL,
                     routing_model.status(),
                 )
             else:
                 self.assertEqual(
-                    routing.RoutingSearchStatus.ROUTING_SUCCESS,
+                    enums_pb2.RoutingSearchStatus.ROUTING_SUCCESS,
                     routing_model.status(),
                 )
             self.assertIsNotNone(assignment)
@@ -680,10 +686,10 @@ class SatTest(absltest.TestCase):
         for use_generalized_cp_sat in [False, True]:
             parameters = routing.default_routing_search_parameters()
             if use_generalized_cp_sat:
-                parameters.use_generalized_cp_sat = routing.BOOL_TRUE
+                parameters.use_generalized_cp_sat = optional_boolean_pb2.BOOL_TRUE
             else:
-                parameters.use_cp_sat = routing.BOOL_TRUE
-            parameters.use_cp = routing.BOOL_TRUE
+                parameters.use_cp_sat = optional_boolean_pb2.BOOL_TRUE
+            parameters.use_cp = optional_boolean_pb2.BOOL_TRUE
             parameters.number_of_solutions_to_collect = 2
 
             index_manager = routing.IndexManager(2, 1, 0)
@@ -695,22 +701,22 @@ class SatTest(absltest.TestCase):
 
             assignment = routing_model.solve_with_parameters(parameters)
             self.assertEqual(
-                routing.RoutingSearchStatus.ROUTING_OPTIMAL, routing_model.status()
+                enums_pb2.RoutingSearchStatus.ROUTING_OPTIMAL, routing_model.status()
             )
             self.assertIsNotNone(assignment)
             self.assertEqual(2**63 - 1, assignment.objective_value())
 
     def test_solve_unconstrained_vrp_model_with_sat_improvement(self):
         for use_cp in [
-            routing.BOOL_FALSE,
-            routing.BOOL_TRUE,
+            optional_boolean_pb2.BOOL_FALSE,
+            optional_boolean_pb2.BOOL_TRUE,
         ]:
             for use_generalized_cp_sat in [False, True]:
                 parameters = routing.default_routing_search_parameters()
                 if use_generalized_cp_sat:
-                    parameters.use_generalized_cp_sat = routing.BOOL_TRUE
+                    parameters.use_generalized_cp_sat = optional_boolean_pb2.BOOL_TRUE
                 else:
-                    parameters.use_cp_sat = routing.BOOL_TRUE
+                    parameters.use_cp_sat = optional_boolean_pb2.BOOL_TRUE
                 parameters.use_cp = use_cp
 
                 index_manager = routing.IndexManager(4, 2, 0)
@@ -722,7 +728,7 @@ class SatTest(absltest.TestCase):
 
                 assignment = routing_model.solve_with_parameters(parameters)
                 self.assertEqual(
-                    routing.RoutingSearchStatus.ROUTING_OPTIMAL,
+                    enums_pb2.RoutingSearchStatus.ROUTING_OPTIMAL,
                     routing_model.status(),
                 )
                 self.assertIsNotNone(assignment)
@@ -730,19 +736,19 @@ class SatTest(absltest.TestCase):
 
     def test_solve_constrained_vehicle_vrp_model(self):
         for use_cp in [
-            routing.BOOL_FALSE,
-            routing.BOOL_TRUE,
+            optional_boolean_pb2.BOOL_FALSE,
+            optional_boolean_pb2.BOOL_TRUE,
         ]:
             for use_generalized_cp_sat in [False, True]:
                 parameters = routing.default_routing_search_parameters()
                 if use_generalized_cp_sat:
-                    parameters.use_generalized_cp_sat = routing.BOOL_TRUE
+                    parameters.use_generalized_cp_sat = optional_boolean_pb2.BOOL_TRUE
                 else:
                     # Even if the non-generalized cp-sat solver is specified, we will
                     # automatically fallback to the generalized routing_model since
                     # vehicles
                     # are heterogeneous.
-                    parameters.use_cp_sat = routing.BOOL_TRUE
+                    parameters.use_cp_sat = optional_boolean_pb2.BOOL_TRUE
                 parameters.use_cp = use_cp
 
                 index_manager = routing.IndexManager(4, 2, 0)
@@ -759,7 +765,7 @@ class SatTest(absltest.TestCase):
 
                 assignment = routing_model.solve_with_parameters(parameters)
                 self.assertEqual(
-                    routing.RoutingSearchStatus.ROUTING_OPTIMAL,
+                    enums_pb2.RoutingSearchStatus.ROUTING_OPTIMAL,
                     routing_model.status(),
                 )
                 self.assertIsNotNone(assignment)
@@ -771,15 +777,15 @@ class SatTest(absltest.TestCase):
 
     def test_solve_capacitated_vrp_model(self):
         for use_cp in [
-            routing.BOOL_FALSE,
-            routing.BOOL_TRUE,
+            optional_boolean_pb2.BOOL_FALSE,
+            optional_boolean_pb2.BOOL_TRUE,
         ]:
             for use_generalized_cp_sat in [False, True]:
                 parameters = routing.default_routing_search_parameters()
                 if use_generalized_cp_sat:
-                    parameters.use_generalized_cp_sat = routing.BOOL_TRUE
+                    parameters.use_generalized_cp_sat = optional_boolean_pb2.BOOL_TRUE
                 else:
-                    parameters.use_cp_sat = routing.BOOL_TRUE
+                    parameters.use_cp_sat = optional_boolean_pb2.BOOL_TRUE
                 parameters.use_cp = use_cp
 
                 index_manager = routing.IndexManager(4, 2, 0)
@@ -794,7 +800,7 @@ class SatTest(absltest.TestCase):
 
                 assignment = routing_model.solve_with_parameters(parameters)
                 self.assertEqual(
-                    routing.RoutingSearchStatus.ROUTING_OPTIMAL,
+                    enums_pb2.RoutingSearchStatus.ROUTING_OPTIMAL,
                     routing_model.status(),
                 )
                 self.assertIsNotNone(assignment)
@@ -802,11 +808,11 @@ class SatTest(absltest.TestCase):
 
     def test_solve_heterogeneous_capacitated_vrp_model(self):
         for use_cp in [
-            routing.BOOL_FALSE,
-            routing.BOOL_TRUE,
+            optional_boolean_pb2.BOOL_FALSE,
+            optional_boolean_pb2.BOOL_TRUE,
         ]:
             parameters = routing.default_routing_search_parameters()
-            parameters.use_generalized_cp_sat = routing.BOOL_TRUE
+            parameters.use_generalized_cp_sat = optional_boolean_pb2.BOOL_TRUE
             parameters.use_cp = use_cp
 
             vehicle_costs = [1, 2]
@@ -828,7 +834,7 @@ class SatTest(absltest.TestCase):
 
             assignment = routing_model.solve_with_parameters(parameters)
             self.assertEqual(
-                routing.RoutingSearchStatus.ROUTING_OPTIMAL, routing_model.status()
+                enums_pb2.RoutingSearchStatus.ROUTING_OPTIMAL, routing_model.status()
             )
             self.assertIsNotNone(assignment)
             self.assertEqual(
@@ -839,9 +845,9 @@ class SatTest(absltest.TestCase):
         for use_generalized_cp_sat in [False, True]:
             parameters = routing.default_routing_search_parameters()
             if use_generalized_cp_sat:
-                parameters.use_generalized_cp_sat = routing.BOOL_TRUE
+                parameters.use_generalized_cp_sat = optional_boolean_pb2.BOOL_TRUE
             else:
-                parameters.use_cp_sat = routing.BOOL_TRUE
+                parameters.use_cp_sat = optional_boolean_pb2.BOOL_TRUE
 
             index_manager = routing.IndexManager(4, 2, 0)
             routing_model = routing.Model(index_manager)
@@ -859,7 +865,7 @@ class SatTest(absltest.TestCase):
 
             assignment = routing_model.solve_with_parameters(parameters)
             self.assertEqual(
-                routing.RoutingSearchStatus.ROUTING_OPTIMAL, routing_model.status()
+                enums_pb2.RoutingSearchStatus.ROUTING_OPTIMAL, routing_model.status()
             )
             self.assertIsNotNone(assignment)
             self.assertEqual(4, assignment.objective_value())
@@ -868,9 +874,9 @@ class SatTest(absltest.TestCase):
         for use_generalized_cp_sat in [False, True]:
             parameters = routing.default_routing_search_parameters()
             if use_generalized_cp_sat:
-                parameters.use_generalized_cp_sat = routing.BOOL_TRUE
+                parameters.use_generalized_cp_sat = optional_boolean_pb2.BOOL_TRUE
             else:
-                parameters.use_cp_sat = routing.BOOL_TRUE
+                parameters.use_cp_sat = optional_boolean_pb2.BOOL_TRUE
 
             index_manager = routing.IndexManager(4, 2, 0)
             routing_model = routing.Model(index_manager)
@@ -890,7 +896,7 @@ class SatTest(absltest.TestCase):
 
             assignment = routing_model.solve_with_parameters(parameters)
             self.assertEqual(
-                routing.RoutingSearchStatus.ROUTING_OPTIMAL, routing_model.status()
+                enums_pb2.RoutingSearchStatus.ROUTING_OPTIMAL, routing_model.status()
             )
             self.assertIsNotNone(assignment)
             self.assertEqual(4, assignment.objective_value())
@@ -899,9 +905,9 @@ class SatTest(absltest.TestCase):
         for use_generalized_cp_sat in [False, True]:
             parameters = routing.default_routing_search_parameters()
             if use_generalized_cp_sat:
-                parameters.use_generalized_cp_sat = routing.BOOL_TRUE
+                parameters.use_generalized_cp_sat = optional_boolean_pb2.BOOL_TRUE
             else:
-                parameters.use_cp_sat = routing.BOOL_TRUE
+                parameters.use_cp_sat = optional_boolean_pb2.BOOL_TRUE
 
             index_manager = routing.IndexManager(4, 2, 0)
             routing_model = routing.Model(index_manager)
@@ -974,22 +980,22 @@ class SatTest(absltest.TestCase):
 
             assignment = routing_model.solve_with_parameters(parameters)
             self.assertEqual(
-                routing.RoutingSearchStatus.ROUTING_OPTIMAL, routing_model.status()
+                enums_pb2.RoutingSearchStatus.ROUTING_OPTIMAL, routing_model.status()
             )
             self.assertIsNotNone(assignment)
             self.assertEqual(4, assignment.objective_value())
 
     def test_solve_no_unary_capacities_vrp_model(self):
         for use_cp in [
-            routing.BOOL_FALSE,
-            routing.BOOL_TRUE,
+            optional_boolean_pb2.BOOL_FALSE,
+            optional_boolean_pb2.BOOL_TRUE,
         ]:
             for use_generalized_cp_sat in [False, True]:
                 parameters = routing.default_routing_search_parameters()
                 if use_generalized_cp_sat:
-                    parameters.use_generalized_cp_sat = routing.BOOL_TRUE
+                    parameters.use_generalized_cp_sat = optional_boolean_pb2.BOOL_TRUE
                 else:
-                    parameters.use_cp_sat = routing.BOOL_TRUE
+                    parameters.use_cp_sat = optional_boolean_pb2.BOOL_TRUE
                 parameters.use_cp = use_cp
 
                 index_manager = routing.IndexManager(4, 2, 0)
@@ -1010,7 +1016,7 @@ class SatTest(absltest.TestCase):
 
                 assignment = routing_model.solve_with_parameters(parameters)
                 self.assertEqual(
-                    routing.RoutingSearchStatus.ROUTING_OPTIMAL,
+                    enums_pb2.RoutingSearchStatus.ROUTING_OPTIMAL,
                     routing_model.status(),
                 )
                 self.assertIsNotNone(assignment)
@@ -1018,15 +1024,15 @@ class SatTest(absltest.TestCase):
 
     def test_solve_capacitated_vrp_with_windows_model(self):
         for use_cp in [
-            routing.BOOL_FALSE,
-            routing.BOOL_TRUE,
+            optional_boolean_pb2.BOOL_FALSE,
+            optional_boolean_pb2.BOOL_TRUE,
         ]:
             for use_generalized_cp_sat in [False, True]:
                 parameters = routing.default_routing_search_parameters()
                 if use_generalized_cp_sat:
-                    parameters.use_generalized_cp_sat = routing.BOOL_TRUE
+                    parameters.use_generalized_cp_sat = optional_boolean_pb2.BOOL_TRUE
                 else:
-                    parameters.use_cp_sat = routing.BOOL_TRUE
+                    parameters.use_cp_sat = optional_boolean_pb2.BOOL_TRUE
                 parameters.use_cp = use_cp
                 parameters.log_search = True
 
@@ -1056,7 +1062,7 @@ class SatTest(absltest.TestCase):
 
                 assignment = routing_model.solve_with_parameters(parameters)
                 self.assertEqual(
-                    routing.RoutingSearchStatus.ROUTING_OPTIMAL,
+                    enums_pb2.RoutingSearchStatus.ROUTING_OPTIMAL,
                     routing_model.status(),
                 )
                 self.assertIsNotNone(assignment)
@@ -1064,11 +1070,11 @@ class SatTest(absltest.TestCase):
 
     def test_solve_capacitated_tsp_model_with_windows_and_slack_cost(self):
         for use_cp in [
-            routing.BOOL_FALSE,
-            routing.BOOL_TRUE,
+            optional_boolean_pb2.BOOL_FALSE,
+            optional_boolean_pb2.BOOL_TRUE,
         ]:
             parameters = routing.default_routing_search_parameters()
-            parameters.use_generalized_cp_sat = routing.BOOL_TRUE
+            parameters.use_generalized_cp_sat = optional_boolean_pb2.BOOL_TRUE
             parameters.use_cp = use_cp
             parameters.log_search = True
 
@@ -1096,7 +1102,7 @@ class SatTest(absltest.TestCase):
 
             assignment = routing_model.solve_with_parameters(parameters)
             self.assertEqual(
-                routing.RoutingSearchStatus.ROUTING_OPTIMAL, routing_model.status()
+                enums_pb2.RoutingSearchStatus.ROUTING_OPTIMAL, routing_model.status()
             )
             self.assertIsNotNone(assignment)
             self.assertEqual(600 + 3, assignment.objective_value())
@@ -1105,11 +1111,11 @@ class SatTest(absltest.TestCase):
         self,
     ):
         for use_cp in [
-            routing.BOOL_FALSE,
-            routing.BOOL_TRUE,
+            optional_boolean_pb2.BOOL_FALSE,
+            optional_boolean_pb2.BOOL_TRUE,
         ]:
             parameters = routing.default_routing_search_parameters()
-            parameters.use_generalized_cp_sat = routing.BOOL_TRUE
+            parameters.use_generalized_cp_sat = optional_boolean_pb2.BOOL_TRUE
             parameters.use_cp = use_cp
             parameters.log_search = True
 
@@ -1134,7 +1140,7 @@ class SatTest(absltest.TestCase):
 
             assignment = routing_model.solve_with_parameters(parameters)
             self.assertEqual(
-                routing.RoutingSearchStatus.ROUTING_OPTIMAL, routing_model.status()
+                enums_pb2.RoutingSearchStatus.ROUTING_OPTIMAL, routing_model.status()
             )
             self.assertIsNotNone(assignment)
             self.assertEqual(600 + 1 + 1 + 1, assignment.objective_value())
@@ -1143,11 +1149,11 @@ class SatTest(absltest.TestCase):
         self,
     ):
         for use_cp in [
-            routing.BOOL_FALSE,
-            routing.BOOL_TRUE,
+            optional_boolean_pb2.BOOL_FALSE,
+            optional_boolean_pb2.BOOL_TRUE,
         ]:
             parameters = routing.default_routing_search_parameters()
-            parameters.use_generalized_cp_sat = routing.BOOL_TRUE
+            parameters.use_generalized_cp_sat = optional_boolean_pb2.BOOL_TRUE
             parameters.use_cp = use_cp
             parameters.log_search = True
 
@@ -1185,7 +1191,7 @@ class SatTest(absltest.TestCase):
 
             assignment = routing_model.solve_with_parameters(parameters)
             self.assertEqual(
-                routing.RoutingSearchStatus.ROUTING_OPTIMAL, routing_model.status()
+                enums_pb2.RoutingSearchStatus.ROUTING_OPTIMAL, routing_model.status()
             )
             self.assertIsNotNone(assignment)
             self.assertEqual(600 + 200 * 3, assignment.objective_value())
@@ -1195,11 +1201,11 @@ class SatTest(absltest.TestCase):
         self,
     ):
         for use_cp in [
-            routing.BOOL_FALSE,
-            routing.BOOL_TRUE,
+            optional_boolean_pb2.BOOL_FALSE,
+            optional_boolean_pb2.BOOL_TRUE,
         ]:
             parameters = routing.default_routing_search_parameters()
-            parameters.use_generalized_cp_sat = routing.BOOL_TRUE
+            parameters.use_generalized_cp_sat = optional_boolean_pb2.BOOL_TRUE
             parameters.use_cp = use_cp
             parameters.log_search = True
 
@@ -1238,7 +1244,7 @@ class SatTest(absltest.TestCase):
 
             assignment = routing_model.solve_with_parameters(parameters)
             self.assertEqual(
-                routing.RoutingSearchStatus.ROUTING_OPTIMAL, routing_model.status()
+                enums_pb2.RoutingSearchStatus.ROUTING_OPTIMAL, routing_model.status()
             )
             self.assertIsNotNone(assignment)
             self.assertEqual(100 + 1 + 1 + 1, assignment.objective_value())
@@ -1248,11 +1254,11 @@ class SatTest(absltest.TestCase):
         self,
     ):
         for use_cp in [
-            routing.BOOL_FALSE,
-            routing.BOOL_TRUE,
+            optional_boolean_pb2.BOOL_FALSE,
+            optional_boolean_pb2.BOOL_TRUE,
         ]:
             parameters = routing.default_routing_search_parameters()
-            parameters.use_generalized_cp_sat = routing.BOOL_TRUE
+            parameters.use_generalized_cp_sat = optional_boolean_pb2.BOOL_TRUE
             parameters.use_cp = use_cp
             parameters.log_search = True
 
@@ -1283,22 +1289,22 @@ class SatTest(absltest.TestCase):
 
             assignment = routing_model.solve_with_parameters(parameters)
             self.assertEqual(
-                routing.RoutingSearchStatus.ROUTING_OPTIMAL, routing_model.status()
+                enums_pb2.RoutingSearchStatus.ROUTING_OPTIMAL, routing_model.status()
             )
             self.assertIsNotNone(assignment)
             self.assertEqual(1000 + 1100 + 2, assignment.objective_value())
 
     def test_solve_capacitated_vrp_with_pickup_and_delivery(self):
         for use_cp in [
-            routing.BOOL_FALSE,
-            routing.BOOL_TRUE,
+            optional_boolean_pb2.BOOL_FALSE,
+            optional_boolean_pb2.BOOL_TRUE,
         ]:
             for use_generalized_cp_sat in [False, True]:
                 parameters = routing.default_routing_search_parameters()
                 if use_generalized_cp_sat:
-                    parameters.use_generalized_cp_sat = routing.BOOL_TRUE
+                    parameters.use_generalized_cp_sat = optional_boolean_pb2.BOOL_TRUE
                 else:
-                    parameters.use_cp_sat = routing.BOOL_TRUE
+                    parameters.use_cp_sat = optional_boolean_pb2.BOOL_TRUE
                 parameters.use_cp = use_cp
                 parameters.log_search = True
 
@@ -1327,7 +1333,7 @@ class SatTest(absltest.TestCase):
 
                 assignment = routing_model.solve_with_parameters(parameters)
                 self.assertEqual(
-                    routing.RoutingSearchStatus.ROUTING_OPTIMAL,
+                    enums_pb2.RoutingSearchStatus.ROUTING_OPTIMAL,
                     routing_model.status(),
                 )
                 self.assertIsNotNone(assignment)
@@ -1348,11 +1354,11 @@ class SatTest(absltest.TestCase):
 
     def test_solve_heterogeneous_capacitated_vrp_with_pickup_and_delivery(self):
         for use_cp in [
-            routing.BOOL_FALSE,
-            routing.BOOL_TRUE,
+            optional_boolean_pb2.BOOL_FALSE,
+            optional_boolean_pb2.BOOL_TRUE,
         ]:
             parameters = routing.default_routing_search_parameters()
-            parameters.use_generalized_cp_sat = routing.BOOL_TRUE
+            parameters.use_generalized_cp_sat = optional_boolean_pb2.BOOL_TRUE
             parameters.use_cp = use_cp
             parameters.log_search = True
 
@@ -1402,7 +1408,7 @@ class SatTest(absltest.TestCase):
 
             assignment = routing_model.solve_with_parameters(parameters)
             self.assertEqual(
-                routing.RoutingSearchStatus.ROUTING_OPTIMAL, routing_model.status()
+                enums_pb2.RoutingSearchStatus.ROUTING_OPTIMAL, routing_model.status()
             )
             self.assertIsNotNone(assignment)
             self.assertEqual(100 + 5, assignment.objective_value())
@@ -1422,11 +1428,11 @@ class SatTest(absltest.TestCase):
 
     def test_solve_limited_vrp_with_windows_model(self):
         for use_cp in [
-            routing.BOOL_FALSE,
-            routing.BOOL_TRUE,
+            optional_boolean_pb2.BOOL_FALSE,
+            optional_boolean_pb2.BOOL_TRUE,
         ]:
             parameters = routing.default_routing_search_parameters()
-            parameters.use_generalized_cp_sat = routing.BOOL_TRUE
+            parameters.use_generalized_cp_sat = optional_boolean_pb2.BOOL_TRUE
             parameters.use_cp = use_cp
 
             index_manager = routing.IndexManager(4, 2, 0)
@@ -1448,18 +1454,18 @@ class SatTest(absltest.TestCase):
 
             assignment = routing_model.solve_with_parameters(parameters)
             self.assertEqual(
-                routing.RoutingSearchStatus.ROUTING_OPTIMAL, routing_model.status()
+                enums_pb2.RoutingSearchStatus.ROUTING_OPTIMAL, routing_model.status()
             )
             self.assertIsNotNone(assignment)
             self.assertEqual(200 + 1 + 2 + 3, assignment.objective_value())
 
     def test_solve_unperforming_vrp_model_with_soft_upper_bound_limit(self):
         for use_cp in [
-            routing.BOOL_FALSE,
-            routing.BOOL_TRUE,
+            optional_boolean_pb2.BOOL_FALSE,
+            optional_boolean_pb2.BOOL_TRUE,
         ]:
             parameters = routing.default_routing_search_parameters()
-            parameters.use_generalized_cp_sat = routing.BOOL_TRUE
+            parameters.use_generalized_cp_sat = optional_boolean_pb2.BOOL_TRUE
             parameters.use_cp = use_cp
 
             index_manager = routing.IndexManager(4, 1, 0)
@@ -1482,18 +1488,18 @@ class SatTest(absltest.TestCase):
 
             assignment = routing_model.solve_with_parameters(parameters)
             self.assertEqual(
-                routing.RoutingSearchStatus.ROUTING_OPTIMAL, routing_model.status()
+                enums_pb2.RoutingSearchStatus.ROUTING_OPTIMAL, routing_model.status()
             )
             self.assertIsNotNone(assignment)
             self.assertEqual(100 + 1 + 2 + 10, assignment.objective_value())
 
     def test_solve_vrp_model_with_soft_upper_bound_limit(self):
         for use_cp in [
-            routing.BOOL_FALSE,
-            routing.BOOL_TRUE,
+            optional_boolean_pb2.BOOL_FALSE,
+            optional_boolean_pb2.BOOL_TRUE,
         ]:
             parameters = routing.default_routing_search_parameters()
-            parameters.use_generalized_cp_sat = routing.BOOL_TRUE
+            parameters.use_generalized_cp_sat = optional_boolean_pb2.BOOL_TRUE
             parameters.use_cp = use_cp
 
             index_manager = routing.IndexManager(4, 1, 0)
@@ -1516,7 +1522,7 @@ class SatTest(absltest.TestCase):
 
             assignment = routing_model.solve_with_parameters(parameters)
             self.assertEqual(
-                routing.RoutingSearchStatus.ROUTING_OPTIMAL, routing_model.status()
+                enums_pb2.RoutingSearchStatus.ROUTING_OPTIMAL, routing_model.status()
             )
             self.assertIsNotNone(assignment)
             self.assertEqual(100 + 1 + 2 + 3 + 20, assignment.objective_value())
@@ -1524,21 +1530,22 @@ class SatTest(absltest.TestCase):
     def test_solve_capacitated_vrp_model_with_max_active_vehicles(self):
         for max_active_vehicles in [3, 2, 1]:
             for use_cp in [
-                routing.BOOL_FALSE,
-                routing.BOOL_TRUE,
+                optional_boolean_pb2.BOOL_FALSE,
+                optional_boolean_pb2.BOOL_TRUE,
             ]:
                 for use_cp_sat in [
-                    routing.BOOL_FALSE,
-                    routing.BOOL_TRUE,
+                    optional_boolean_pb2.BOOL_FALSE,
+                    optional_boolean_pb2.BOOL_TRUE,
                 ]:
                     for use_generalized_cp_sat in [
-                        routing.BOOL_FALSE,
-                        routing.BOOL_TRUE,
+                        optional_boolean_pb2.BOOL_FALSE,
+                        optional_boolean_pb2.BOOL_TRUE,
                     ]:
                         if (
-                            use_cp == routing.BOOL_FALSE
-                            and use_cp_sat == routing.BOOL_FALSE
-                            and use_generalized_cp_sat == routing.BOOL_FALSE
+                            use_cp == optional_boolean_pb2.BOOL_FALSE
+                            and use_cp_sat == optional_boolean_pb2.BOOL_FALSE
+                            and use_generalized_cp_sat
+                            == optional_boolean_pb2.BOOL_FALSE
                         ):
                             continue
 
@@ -1564,17 +1571,17 @@ class SatTest(absltest.TestCase):
                         assignment = routing_model.solve_with_parameters(parameters)
 
                         if (
-                            use_cp_sat == routing.BOOL_TRUE
-                            or use_generalized_cp_sat == routing.BOOL_TRUE
+                            use_cp_sat == optional_boolean_pb2.BOOL_TRUE
+                            or use_generalized_cp_sat == optional_boolean_pb2.BOOL_TRUE
                             or max_active_vehicles == 3
                         ):
                             self.assertEqual(
-                                routing.RoutingSearchStatus.ROUTING_OPTIMAL,
+                                enums_pb2.RoutingSearchStatus.ROUTING_OPTIMAL,
                                 routing_model.status(),
                             )
                         else:
                             self.assertEqual(
-                                routing.RoutingSearchStatus.ROUTING_SUCCESS,
+                                enums_pb2.RoutingSearchStatus.ROUTING_SUCCESS,
                                 routing_model.status(),
                             )
 
@@ -1585,8 +1592,8 @@ class SatTest(absltest.TestCase):
 
     def test_solve_alternatives_tsp_with_pickup_and_delivery(self):
         parameters = routing.default_routing_search_parameters()
-        parameters.use_generalized_cp_sat = routing.BOOL_TRUE
-        parameters.use_cp = routing.BOOL_FALSE
+        parameters.use_generalized_cp_sat = optional_boolean_pb2.BOOL_TRUE
+        parameters.use_cp = optional_boolean_pb2.BOOL_FALSE
         parameters.log_search = True
 
         index_manager = routing.IndexManager(6, 1, 0)
@@ -1605,7 +1612,7 @@ class SatTest(absltest.TestCase):
 
         assignment = routing_model.solve_with_parameters(parameters)
         self.assertEqual(
-            routing.RoutingSearchStatus.ROUTING_OPTIMAL, routing_model.status()
+            enums_pb2.RoutingSearchStatus.ROUTING_OPTIMAL, routing_model.status()
         )
         self.assertIsNotNone(assignment)
         self.assertEqual(1 + 0 + 2 + 3, assignment.objective_value())
@@ -1614,11 +1621,11 @@ class SatTest(absltest.TestCase):
 
     def test_solve_capacitated_vrp_model_with_windows_and_slack_cost(self):
         for use_cp in [
-            routing.BOOL_FALSE,
-            routing.BOOL_TRUE,
+            optional_boolean_pb2.BOOL_FALSE,
+            optional_boolean_pb2.BOOL_TRUE,
         ]:
             parameters = routing.default_routing_search_parameters()
-            parameters.use_generalized_cp_sat = routing.BOOL_TRUE
+            parameters.use_generalized_cp_sat = optional_boolean_pb2.BOOL_TRUE
             parameters.use_cp = use_cp
             parameters.log_search = True
 
@@ -1642,28 +1649,28 @@ class SatTest(absltest.TestCase):
 
             assignment = routing_model.solve_with_parameters(parameters)
             self.assertEqual(
-                routing.RoutingSearchStatus.ROUTING_OPTIMAL, routing_model.status()
+                enums_pb2.RoutingSearchStatus.ROUTING_OPTIMAL, routing_model.status()
             )
             self.assertIsNotNone(assignment)
             self.assertEqual(600 + 1 + 1 + 1, assignment.objective_value())
 
     def test_solve_vrp_model_with_unbound_cumuls(self):
         for use_cp in [
-            routing.BOOL_FALSE,
-            routing.BOOL_TRUE,
+            optional_boolean_pb2.BOOL_FALSE,
+            optional_boolean_pb2.BOOL_TRUE,
         ]:
             for use_cp_sat in [
-                routing.BOOL_FALSE,
-                routing.BOOL_TRUE,
+                optional_boolean_pb2.BOOL_FALSE,
+                optional_boolean_pb2.BOOL_TRUE,
             ]:
                 for use_generalized_cp_sat in [
-                    routing.BOOL_FALSE,
-                    routing.BOOL_TRUE,
+                    optional_boolean_pb2.BOOL_FALSE,
+                    optional_boolean_pb2.BOOL_TRUE,
                 ]:
                     if (
-                        use_cp == routing.BOOL_FALSE
-                        and use_cp_sat == routing.BOOL_FALSE
-                        and use_generalized_cp_sat == routing.BOOL_FALSE
+                        use_cp == optional_boolean_pb2.BOOL_FALSE
+                        and use_cp_sat == optional_boolean_pb2.BOOL_FALSE
+                        and use_generalized_cp_sat == optional_boolean_pb2.BOOL_FALSE
                     ):
                         continue
 
@@ -1692,16 +1699,16 @@ class SatTest(absltest.TestCase):
                     assignment = routing_model.solve_with_parameters(parameters)
 
                     if (
-                        use_cp_sat == routing.BOOL_TRUE
-                        or use_generalized_cp_sat == routing.BOOL_TRUE
+                        use_cp_sat == optional_boolean_pb2.BOOL_TRUE
+                        or use_generalized_cp_sat == optional_boolean_pb2.BOOL_TRUE
                     ):
                         self.assertEqual(
-                            routing.RoutingSearchStatus.ROUTING_OPTIMAL,
+                            enums_pb2.RoutingSearchStatus.ROUTING_OPTIMAL,
                             routing_model.status(),
                         )
                     else:
                         self.assertEqual(
-                            routing.RoutingSearchStatus.ROUTING_SUCCESS,
+                            enums_pb2.RoutingSearchStatus.ROUTING_SUCCESS,
                             routing_model.status(),
                         )
 
@@ -1711,8 +1718,8 @@ class SatTest(absltest.TestCase):
     def test_solve_vrp_model_with_time_limit(self):
         time_limit_seconds = 5
         parameters = routing.default_routing_search_parameters()
-        parameters.use_cp = routing.BOOL_FALSE
-        parameters.use_generalized_cp_sat = routing.BOOL_TRUE
+        parameters.use_cp = optional_boolean_pb2.BOOL_FALSE
+        parameters.use_generalized_cp_sat = optional_boolean_pb2.BOOL_TRUE
         parameters.disable_scheduling_beware_this_may_degrade_performance = True
         parameters.report_intermediate_cp_sat_solutions = True
         parameters.time_limit.seconds = time_limit_seconds

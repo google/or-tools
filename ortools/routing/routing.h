@@ -1742,7 +1742,7 @@ class OR_DLL Model {
 
    private:
     const Model& routing_model_;
-#if __cplusplus >= 202002L
+#if __cplusplus >= 202002L && !defined(__APPLE__)
     static constexpr std::vector<int> empty_neighbors_ = {};
 #else
     inline static const std::vector<int> empty_neighbors_ = {};

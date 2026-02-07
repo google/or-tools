@@ -19,7 +19,6 @@ import functools
 from absl.testing import absltest
 from ortools.constraint_solver import pywrapcp
 from ortools.routing import enums_pb2
-from ortools.routing import parameters_pb2
 from ortools.routing import pywraprouting
 from ortools.util import optional_boolean_pb2
 

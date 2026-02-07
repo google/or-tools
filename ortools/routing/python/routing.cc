@@ -45,6 +45,7 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 #include "pybind11_abseil/absl_casters.h"
+#include "pybind11_protobuf/native_proto_caster.h"
 
 namespace py = ::pybind11;
 
@@ -59,13 +60,11 @@ using ::operations_research::routing::RoutingModelParameters;
 using ::operations_research::routing::RoutingSearchParameters;
 
 PYBIND11_MODULE(routing, m) {
+  pybind11_protobuf::ImportNativeProtoCasters();
+
   pybind11::module::import(
       "ortools.constraint_solver.python.constraint_solver");
   pybind11::module::import("ortools.util.python.sorted_interval_list");
-
-#define IMPORT_PROTO_WRAPPER_CODE
-#include "ortools/routing/python/proto_builder_pybind11.h"
-#undef IMPORT_PROTO_WRAPPER_CODE
 
   m.def("default_routing_model_parameters", &DefaultRoutingModelParameters,
         DOC(operations_research, routing, DefaultRoutingModelParameters));

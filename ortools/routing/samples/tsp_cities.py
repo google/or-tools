@@ -18,6 +18,7 @@
 # [START import]
 from typing import Any, Dict
 
+from ortools.routing import enums_pb2
 from ortools.routing.python import routing
 
 # [END import]
@@ -110,7 +111,7 @@ def main():
     # [START parameters]
     search_parameters = routing.default_routing_search_parameters()
     search_parameters.first_solution_strategy = (
-        routing.FirstSolutionStrategy.PATH_CHEAPEST_ARC
+        enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
     )
     # [END parameters]
 

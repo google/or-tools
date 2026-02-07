@@ -27,10 +27,11 @@ Distances are in meters.
 from typing import Any, Dict
 
 from ortools.constraint_solver.python import constraint_solver
+from ortools.routing import enums_pb2
 from ortools.routing.python import routing
 
-FirstSolutionStrategy = routing.FirstSolutionStrategy
-RoutingSearchStatus = routing.RoutingSearchStatus
+FirstSolutionStrategy = enums_pb2.FirstSolutionStrategy
+RoutingSearchStatus = enums_pb2.RoutingSearchStatus
 # [END import]
 
 
@@ -73,7 +74,7 @@ def print_solution(
 ) -> None:
     """Prints assignment on console."""
     status = routing_model.status()
-    print(f"Status: {status.name}")
+    print(f"Status: {RoutingSearchStatus.Value.Name(status)}")
     if (
         status != RoutingSearchStatus.ROUTING_OPTIMAL
         and status != RoutingSearchStatus.ROUTING_SUCCESS

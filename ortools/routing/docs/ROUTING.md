@@ -103,6 +103,7 @@ int main(int argc, char* argv[]) {
 """Vehicle Routing example."""
 
 
+from ortools.routing import enums_pb2
 from ortools.routing.python import routing
 
 
@@ -137,7 +138,7 @@ def main() -> None:
   # Setting first solution heuristic.
   search_parameters = routing.default_routing_search_parameters()
   search_parameters.first_solution_strategy = (
-      routing.FirstSolutionStrategy.PATH_CHEAPEST_ARC
+      enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
   )  # pylint: disable=no-member
 
   # Solve the problem.
