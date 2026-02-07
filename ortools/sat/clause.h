@@ -571,8 +571,7 @@ class BinaryImplicationGraph : public SatPropagator {
 
   // TODO(user): can we remove this function?
   bool HasLratBinaryClause(Literal a, Literal b) const {
-    if (a.Variable() > b.Variable()) std::swap(a, b);
-    return lrat_binary_clauses_.contains(std::make_pair(a, b));
+    return lrat_binary_clauses_.contains(ClausePtr(a, b));
   }
 
   // When set, the callback will be called on ALL newly added binary clauses.
@@ -918,9 +917,27 @@ class BinaryImplicationGraph : public SatPropagator {
 
   void AddLratBinaryClause(Literal a, Literal b) {
     DCHECK_NE(a, b);
-    if (a.Variable() > b.Variable()) std::swap(a, b);
-    lrat_binary_clauses_.insert({a, b});
+    lrat_binary_clauses_.insert(ClausePtr(a, b));
   }
+
+  // Replaces each literal implied by `a` with the result of update(literal), or
+  // removes it if this result is kNoLiteralIndex. Also adds the old
+  // implications to `lrat_implications_to_delete_` if LRAT is enabled.
+  void UpdateImplications(Literal a,
+                          absl::FunctionRef<LiteralIndex(Literal)> update);
+
+  // Removes all the literals implied by `a` for which `predicate` returns true.
+  // Also adds the corresponding implications to `lrat_implications_to_delete_`
+  // if LRAT is enabled.
+  void RemoveImplicationsIf(Literal a,
+                            absl::FunctionRef<bool(Literal)> predicate);
+
+  // Clears all the implications of the given literal, and adds them to
+  // `lrat_implications_to_delete_` if LRAT is enabled.
+  void ClearImplications(Literal a, bool release_memory = false);
+
+  // Deletes the LRAT implications which are no longer in this graph.
+  void DeleteUnusedLratImplications();
 
   // Removes any literal whose negation is marked (except the first one). If
   // `fill_proof` is true, fills the LRAT proof for this change in `proof` (this
@@ -982,13 +999,12 @@ class BinaryImplicationGraph : public SatPropagator {
   // elements of this array and this can dynamically change size.
   std::deque<Literal> reasons_;
 
-  // The binary clauses for which we added a corresponding LRAT clause. Each key
-  // is sorted by variable index.
-  absl::flat_hash_set<std::pair<Literal, Literal>> lrat_binary_clauses_;
-  // Stores a list of clauses added to lrat_binary_clauses_ that are only needed
+  // The binary clauses for which we added a corresponding LRAT clause.
+  absl::flat_hash_set<ClausePtr> lrat_binary_clauses_;
+  // Stores a set of clauses added to lrat_binary_clauses_ that are only needed
   // due to ChangeReason calls. Once we backtrack past the first literal in the
   // clause we delete them.
-  std::vector<std::pair<Literal, Literal>> changed_reasons_on_trail_;
+  absl::flat_hash_set<ClausePtr> changed_reasons_on_trail_;
 
   // This is indexed by the Index() of a literal. Each entry stores two lists:
   //  - A list of literals that are implied if the index literal becomes true.
@@ -1034,8 +1050,11 @@ class BinaryImplicationGraph : public SatPropagator {
   // information?
   SparseBitset<LiteralIndex> is_marked_;
   SparseBitset<LiteralIndex> tmp_bitset_;
-  SparseBitset<LiteralIndex> is_simplified_;
   std::vector<Literal> tmp_to_keep_;
+
+  // Data structures used to delete LRAT implications.
+  SparseBitset<LiteralIndex> tmp_deleted_implications_;
+  absl::flat_hash_set<ClausePtr> lrat_implications_to_delete_;
 
   // Used by AppendImplicationChains() to avoid processing a unit clause several
   // times.

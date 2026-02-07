@@ -221,15 +221,6 @@ cc_library(
 )
 
 cc_library(
-    name = "int_type",
-    hdrs = ["int_type.h"],
-    deps = [
-        "@abseil-cpp//absl/base:core_headers",
-        "@abseil-cpp//absl/strings:string_view",
-    ],
-)
-
-cc_library(
     name = "intops",
     hdrs = ["strong_int.h"],
     deps = [

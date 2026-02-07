@@ -20,6 +20,8 @@
 #include <random>
 #include <vector>
 
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/random/random.h"
 #include "absl/types/span.h"
 #include "gtest/gtest.h"
@@ -144,8 +146,8 @@ TEST(BlossomGraphTest, Initialization) {
   const int num_nodes = 4;
   BlossomGraph graph(num_nodes);
   CostValue increasing_cost;
-  for (NodeIndex a(0); a < num_nodes; ++a) {
-    for (NodeIndex b(a + 1); b < num_nodes; ++b) {
+  for (NodeIndex a(0); a < NodeIndex(num_nodes); ++a) {
+    for (NodeIndex b(a + NodeIndex(1)); b < NodeIndex(num_nodes); ++b) {
       graph.AddEdge(a, b, ++increasing_cost);
     }
   }
@@ -183,7 +185,7 @@ TEST(BlossomGraphTest, Initialization) {
 
   const CostValue delta =
       graph.ComputeMaxCommonTreeDualDeltaAndResetPrimalEdgeQueue();
-  EXPECT_EQ(delta, 3);
+  EXPECT_EQ(delta, CostValue(3));
   graph.UpdateAllTrees(delta);
 
   EXPECT_EQ(graph.Dual(graph.GetNode(0)), CostValue(-1));

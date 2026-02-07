@@ -15,7 +15,7 @@
 #define ORTOOLS_BASE_GMOCK_H_
 
 #include "absl/status/status_matchers.h"
-#include "ortools/base/gmock.h"
+#include "gmock/gmock.h"
 #include "protobuf-matchers/protocol-buffer-matchers.h"
 
 namespace testing {

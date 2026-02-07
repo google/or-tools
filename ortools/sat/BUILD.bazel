@@ -1562,11 +1562,10 @@ cc_library(
     srcs = ["sat_base.cc"],
     hdrs = ["sat_base.h"],
     deps = [
-        "//ortools/base",
-        "//ortools/base:intops",
         "//ortools/base:strong_vector",
         "//ortools/util:bitset",
         "//ortools/util:strong_integers",
+        "@abseil-cpp//absl/base",
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings:str_format",

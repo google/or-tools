@@ -236,7 +236,7 @@ class AdjustableKAryHeap {
 
   // Finds the child with the highest priority, i.e. the child with the
   // smallest (resp. largest) key for a min- (resp. max-) heap.
-  // Returns index is there are no such children.
+  // Returns index if there are no such children.
   HeapIndex GetHighestPriorityChild(HeapIndex index) const {
     const HeapIndex right_bound = std::min(RightChild(index) + 1, heap_size());
     HeapIndex highest_priority_child = index;

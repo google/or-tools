@@ -65,17 +65,9 @@ std::pair<DistanceType, std::vector<NodeIndex>> SimpleOneToOneShortestPath(
 
 namespace internal {
 
-// TODO(user): We should move `is_strong_int` to ortools/base/strong_int.h.
-template <typename T>
-struct is_strong_int : std::false_type {};
-
-template <typename Tag, typename Native, typename Validator>
-struct is_strong_int<::util_intops::StrongInt<Tag, Native, Validator>>
-    : std::true_type {};
-
 template <typename IndexType, typename ValueType>
 using IndexedVector =
-    std::conditional_t<is_strong_int<IndexType>::value,
+    std::conditional_t<util_intops::IsStrongInt<IndexType>::value,
                        ::util_intops::StrongVector<IndexType, ValueType>,
                        std::vector<ValueType>>;
 

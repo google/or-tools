@@ -151,8 +151,9 @@ class LratChecker {
   UnitPropagationStatus Propagate(
       ClausePtr clause, SparseBitset<LiteralIndex>& false_literals_set);
 
-  bool AddClauseInternal(ClausePtr ptr, absl::Span<const Literal> literals,
-                         bool is_problem_clause,
+  enum ClauseType { kProblemClause, kInferredClause, kRewrittenClause };
+  bool AddClauseInternal(ClauseType type, ClausePtr ptr,
+                         absl::Span<const Literal> literals,
                          absl::Span<const ClausePtr> rup_clauses,
                          absl::Span<const RatClauses> rat_clauses);
 

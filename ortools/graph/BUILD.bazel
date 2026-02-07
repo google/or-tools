@@ -80,11 +80,7 @@ cc_library(
     name = "multi_dijkstra",
     hdrs = ["multi_dijkstra.h"],
     visibility = ["//visibility:public"],
-    deps = [
-        "//ortools/base:map_util",
-        "//ortools/base:types",
-        "@abseil-cpp//absl/container:flat_hash_map",
-    ],
+    deps = ["@abseil-cpp//absl/container:flat_hash_map"],
 )
 
 cc_test(
@@ -317,15 +313,12 @@ cc_library(
     hdrs = ["shortest_paths.h"],
     visibility = ["//visibility:public"],
     deps = [
-        "//ortools/base",
         "//ortools/base:adjustable_priority_queue",
-        "//ortools/base:map_util",
-        "//ortools/base:stl_util",
         "//ortools/base:threadpool",
         "//ortools/base:timer",
-        "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/functional:bind_front",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/types:span",
     ],
@@ -620,11 +613,10 @@ cc_library(
     hdrs = ["perfect_matching.h"],
     visibility = ["//visibility:public"],
     deps = [
-        "//ortools/base",
         "//ortools/base:adjustable_priority_queue",
-        "//ortools/base:int_type",
         "//ortools/base:strong_vector",
         "//ortools/util:saturated_arithmetic",
+        "//ortools/util:strong_integers",
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/base:log_severity",
         "@abseil-cpp//absl/log",
@@ -709,6 +701,8 @@ cc_test(
         "//ortools/base:gmock_main",
         "//ortools/linear_solver:linear_solver_cc_proto",
         "//ortools/linear_solver:solve_mp_model",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/types:span",
     ],

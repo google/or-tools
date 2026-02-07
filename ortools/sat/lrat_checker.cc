@@ -32,13 +32,6 @@
 namespace operations_research {
 namespace sat {
 
-namespace {
-bool SameSpanPointerAndSize(absl::Span<const Literal> c,
-                            absl::Span<const Literal> d) {
-  return c.data() == d.data() && c.size() == d.size();
-}
-}  // namespace
-
 void LratChecker::AddStats() const {
   if (!VLOG_IS_ON(1)) return;
   stats_->AddStats(
@@ -65,8 +58,7 @@ void LratChecker::EnableRatProofs() {
 
 bool LratChecker::AddProblemClause(ClausePtr clause) {
   ++num_problem_clauses_;
-  return AddClauseInternal(clause, clause.GetLiterals(),
-                           /*is_problem_clause=*/true,
+  return AddClauseInternal(kProblemClause, clause, clause.GetLiterals(),
                            /*rup_clauses=*/{}, /*rat_clauses=*/{});
 }
 
@@ -74,9 +66,8 @@ bool LratChecker::AddInferredClause(ClausePtr clause,
                                     absl::Span<const ClausePtr> rup_clauses,
                                     absl::Span<const RatClauses> rat_clauses) {
   ++num_inferred_clauses_;
-  return AddClauseInternal(clause, clause.GetLiterals(),
-                           /*is_problem_clause=*/false, rup_clauses,
-                           rat_clauses);
+  return AddClauseInternal(kInferredClause, clause, clause.GetLiterals(),
+                           rup_clauses, rat_clauses);
 }
 
 bool LratChecker::RewriteClause(ClausePtr clause,
@@ -84,22 +75,26 @@ bool LratChecker::RewriteClause(ClausePtr clause,
                                 absl::Span<const ClausePtr> rup_clauses,
                                 absl::Span<const RatClauses> rat_clauses) {
   ++num_inferred_clauses_;
-  return AddClauseInternal(clause, literals, /*is_problem_clause=*/false,
-                           rup_clauses, rat_clauses);
+  return AddClauseInternal(kRewrittenClause, clause, literals, rup_clauses,
+                           rat_clauses);
 }
 
 void LratChecker::DeleteClauses(absl::Span<const ClausePtr> clauses) {
   ++num_deleted_clauses_;
+  if constexpr (kDebugCheckProofClauses) {
+    for (const ClausePtr clause : clauses) {
+      CHECK(debug_clause_by_ptr_.contains(clause));
+      debug_clause_by_ptr_.erase(clause);
+    }
+  }
   if (!rat_enabled_) return;
   for (const ClausePtr clause : clauses) {
     tmp_marked_literals_.ClearAndResize(LiteralIndex(2 * num_variables_));
     for (const Literal literal : clause.GetLiterals()) {
       if (tmp_marked_literals_[literal]) continue;
       occurrences_[literal.Index()]--;
+      DCHECK_GE(occurrences_[literal.Index()], 0);
       tmp_marked_literals_.Set(literal);
-    }
-    if constexpr (kDebugCheckProofClauses) {
-      debug_clause_by_ptr_.erase(clause);
     }
   }
 }
@@ -133,9 +128,8 @@ bool EqualSatClausePtrs(ClausePtr ptr, ClausePtr other_ptr) {
 }
 }  // namespace
 
-bool LratChecker::AddClauseInternal(ClausePtr ptr,
+bool LratChecker::AddClauseInternal(ClauseType type, ClausePtr ptr,
                                     absl::Span<const Literal> literals,
-                                    bool is_problem_clause,
                                     absl::Span<const ClausePtr> rup_clauses,
                                     absl::Span<const RatClauses> rat_clauses) {
   if (!valid_) return false;
@@ -151,7 +145,7 @@ bool LratChecker::AddClauseInternal(ClausePtr ptr,
   for (const Literal literal : literals) {
     if (tmp_false_literals_set_[literal]) continue;
     if (tmp_false_literals_set_[literal.Negated()]) {
-      if (!is_problem_clause) ++num_inferred_clauses_always_true_;
+      if (type == kProblemClause) ++num_inferred_clauses_always_true_;
       return true;
     }
     tmp_false_literals_set_.Set(literal);
@@ -163,7 +157,7 @@ bool LratChecker::AddClauseInternal(ClausePtr ptr,
     if (rat_enabled_) {
       occurrences_.resize(2 * num_variables_, 0);
     } else if (clause.size() == 1 && rup_clauses.empty() &&
-               rat_clauses.empty()) {
+               rat_clauses.empty() && type != kRewrittenClause) {
       // Early return for unit clauses made of a new variable. The following
       // code would validate this proof with the RAT property, but would also
       // require `rat_enabled_`, which is unnecessary here.
@@ -174,7 +168,7 @@ bool LratChecker::AddClauseInternal(ClausePtr ptr,
     }
   }
 
-  if (!is_problem_clause) {
+  if (type != kProblemClause) {
     UnitPropagationStatus last_propagation_status = kUnit;
     for (int i = 0; i < rup_clauses.size(); ++i) {
       const ClausePtr rup_clause = rup_clauses[i];
@@ -182,8 +176,7 @@ bool LratChecker::AddClauseInternal(ClausePtr ptr,
       // prone with SatClause (we might accidentally use the new version to
       // prove it again, instead of proving the new version from the old one).
       // Hence we only allow this with the explicit RewriteClause() method.
-      DCHECK(!SameSpanPointerAndSize(rup_clause.GetLiterals(), literals) ||
-             !EqualSatClausePtrs(rup_clause, ptr));
+      DCHECK(type == kRewrittenClause || !EqualSatClausePtrs(rup_clause, ptr));
       if constexpr (kDebugCheckProofClauses) {
         if (!DebugCheckProofClauseId(ptr, rup_clause)) return false;
       }
@@ -215,8 +208,7 @@ bool LratChecker::AddClauseInternal(ClausePtr ptr,
       // Check that the unit propagation proof of each rat_clauses is correct.
       for (const RatClauses& rat_clauses : rat_clauses) {
         const ClausePtr resolvant = rat_clauses.resolvant;
-        DCHECK(!SameSpanPointerAndSize(ptr.GetLiterals(), literals) ||
-               !EqualSatClausePtrs(resolvant, ptr));
+        DCHECK(type == kRewrittenClause || !EqualSatClausePtrs(resolvant, ptr));
         if constexpr (kDebugCheckProofClauses) {
           if (!DebugCheckProofClauseId(ptr, resolvant)) return false;
         }
@@ -248,7 +240,7 @@ bool LratChecker::AddClauseInternal(ClausePtr ptr,
         last_propagation_status = kUnit;
         for (int j = 0; j < rat_clauses.rup_clauses.size(); ++j) {
           const ClausePtr rup_clause = rat_clauses.rup_clauses[j];
-          DCHECK(!SameSpanPointerAndSize(ptr.GetLiterals(), literals) ||
+          DCHECK(type == kRewrittenClause ||
                  !EqualSatClausePtrs(rup_clause, ptr));
           if constexpr (kDebugCheckProofClauses) {
             if (!DebugCheckProofClauseId(ptr, rup_clause)) return false;
@@ -279,6 +271,17 @@ bool LratChecker::AddClauseInternal(ClausePtr ptr,
   if (rat_enabled_) {
     for (const Literal literal : clause) {
       occurrences_[literal.Index()]++;
+    }
+    if (type == kRewrittenClause) {
+      // A rewrite is like removing and adding the same clause. To get correct
+      // occurrence values we need to decrement the occurrences for the removed
+      // literals (incrementing them for the added literals was done above).
+      tmp_false_literals_set_.ClearAndResize(LiteralIndex(2 * num_variables));
+      for (const Literal literal : ptr.GetLiterals()) {
+        if (tmp_false_literals_set_[literal]) continue;
+        tmp_false_literals_set_.Set(literal);
+        occurrences_[literal.Index()]--;
+      }
     }
   }
   if constexpr (kDebugCheckProofClauses) {

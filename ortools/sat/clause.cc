@@ -1045,11 +1045,11 @@ bool BinaryImplicationGraph::AddBinaryClauseInternal(
       if (a != b) {
         if (change_reason) {
           // Remember the non-canonical clause so we can delete it on restart.
-          changed_reasons_on_trail_.emplace_back(std::minmax(a, b));
+          changed_reasons_on_trail_.insert(ClausePtr(a, b));
           AddLratBinaryClause(a, b);
         } else if (delete_non_representative_id) {
           lrat_proof_handler_->DeleteClause(old_clause);
-          lrat_binary_clauses_.erase(std::minmax(a, b));
+          lrat_binary_clauses_.erase(old_clause);
         }
       }
     }
@@ -1076,9 +1076,17 @@ bool BinaryImplicationGraph::AddBinaryClauseInternal(
     if (lrat_proof_handler_ != nullptr) {
       const ClausePtr rep_clause = ClausePtr(rep_a, rep_b);
       if (assignment.LiteralIsFalse(rep_a)) {
-        return FixLiteral(rep_b, {rep_clause, ClausePtr(rep_a.Negated())});
+        const bool result =
+            FixLiteral(rep_b, {rep_clause, ClausePtr(rep_a.Negated())});
+        lrat_proof_handler_->DeleteClause(rep_clause);
+        lrat_binary_clauses_.erase(rep_clause);
+        return result;
       } else if (assignment.LiteralIsFalse(rep_b)) {
-        return FixLiteral(rep_a, {rep_clause, ClausePtr(rep_b.Negated())});
+        const bool result =
+            FixLiteral(rep_a, {rep_clause, ClausePtr(rep_b.Negated())});
+        lrat_proof_handler_->DeleteClause(rep_clause);
+        lrat_binary_clauses_.erase(rep_clause);
+        return result;
       }
     } else {
       if (assignment.LiteralIsFalse(rep_a)) {
@@ -1340,7 +1348,7 @@ bool BinaryImplicationGraph::Propagate(Trail* trail) {
   Trail::EnqueueHelper helper = trail->GetEnqueueHelper(propagator_id_);
 
   const auto implies_something = implies_something_.view();
-  auto* implications = implications_and_amos_.data();
+  const auto* implications = implications_and_amos_.data();
 
   while (propagation_trail_index_ < trail->Index()) {
     const Literal true_literal = (*trail)[propagation_trail_index_++];
@@ -1510,6 +1518,79 @@ void BinaryImplicationGraph::MinimizeConflictFirst(
   }
 }
 
+void BinaryImplicationGraph::UpdateImplications(
+    Literal a, absl::FunctionRef<LiteralIndex(Literal)> update) {
+  auto& implications = implications_and_amos_[a];
+  if (lrat_proof_handler_ != nullptr) {
+    tmp_deleted_implications_.ClearAndResize(
+        LiteralIndex(implications_and_amos_.size()));
+    for (const Literal l : implications.literals()) {
+      tmp_deleted_implications_.Set(l.Index());
+    }
+  }
+
+  int new_size = 0;
+  for (const Literal l : implications.literals()) {
+    LiteralIndex new_l = update(l);
+    if (new_l == kNoLiteralIndex) continue;
+    implications.literals()[new_size++] = Literal(new_l);
+  }
+  implications.TruncateLiterals(new_size);
+
+  if (lrat_proof_handler_ != nullptr) {
+    for (const Literal l : implications.literals()) {
+      tmp_deleted_implications_.Clear(l.Index());
+    }
+    for (const LiteralIndex l :
+         tmp_deleted_implications_.PositionsSetAtLeastOnce()) {
+      if (tmp_deleted_implications_[l]) {
+        if (a.Negated() == Literal(l)) continue;
+        lrat_implications_to_delete_.insert(ClausePtr(a.Negated(), Literal(l)));
+      }
+    }
+  }
+}
+
+void BinaryImplicationGraph::RemoveImplicationsIf(
+    Literal a, absl::FunctionRef<bool(Literal)> predicate) {
+  int new_size = 0;
+  auto& implications = implications_and_amos_[a];
+  for (const Literal l : implications.literals()) {
+    if (predicate(l)) {
+      if (lrat_proof_handler_ != nullptr) {
+        if (a.Negated() == Literal(l)) continue;
+        lrat_implications_to_delete_.insert(ClausePtr(a.Negated(), l));
+      }
+      continue;
+    }
+    implications.literals()[new_size++] = l;
+  }
+  implications.TruncateLiterals(new_size);
+}
+
+void BinaryImplicationGraph::ClearImplications(Literal a, bool release_memory) {
+  if (lrat_proof_handler_ != nullptr) {
+    for (const Literal b : implications_and_amos_[a].literals()) {
+      if (a.Negated() == b) continue;
+      lrat_implications_to_delete_.insert(ClausePtr(a.Negated(), b));
+    }
+  }
+  if (release_memory) {
+    implications_and_amos_[a].ClearAndReleaseMemory();
+  } else {
+    implications_and_amos_[a].ClearLiterals();
+  }
+}
+
+void BinaryImplicationGraph::DeleteUnusedLratImplications() {
+  if (lrat_proof_handler_ == nullptr) return;
+  for (const ClausePtr clause : lrat_implications_to_delete_) {
+    lrat_binary_clauses_.erase(clause);
+    lrat_proof_handler_->DeleteClause(clause);
+  }
+  lrat_implications_to_delete_.clear();
+}
+
 template <bool fill_proof>
 void BinaryImplicationGraph::RemoveRedundantLiterals(
     std::vector<Literal>* conflict, std::vector<ClausePtr>* proof) {
@@ -1608,14 +1689,12 @@ void BinaryImplicationGraph::RemoveFixedVariables() {
         is_marked_.Set(lit.NegatedIndex());
       }
     }
-    implications_and_amos_[true_literal].ClearAndReleaseMemory();
-    implications_and_amos_[true_literal.NegatedIndex()].ClearAndReleaseMemory();
+    ClearImplications(true_literal, /*release_memory=*/true);
+    ClearImplications(true_literal.Negated(), /*release_memory=*/true);
   }
   for (const LiteralIndex i : is_marked_.PositionsSetAtLeastOnce()) {
-    implications_and_amos_[i].RemoveLiteralsIf(
-        [&assignment](const Literal lit) {
-          return assignment.LiteralIsTrue(lit);
-        });
+    RemoveImplicationsIf(
+        Literal(i), [&](Literal lit) { return assignment.LiteralIsTrue(lit); });
   }
 
   // TODO(user): This might be a bit slow. Do not call all the time if needed,
@@ -1624,6 +1703,7 @@ void BinaryImplicationGraph::RemoveFixedVariables() {
     v.ClearOffsets();
   }
   CHECK(CleanUpAndAddAtMostOnes(/*base_index=*/0));
+  DeleteUnusedLratImplications();
   DCHECK(InvariantsAreOk());
 }
 
@@ -1817,7 +1897,8 @@ class LratEquivalenceHelper {
   // singleton {l}.
   void ProcessSingletonComponent() {
     LiteralIndex representative = LiteralIndex(component_[0]);
-    for (Literal& ref : implications_and_amos_[representative].literals()) {
+    for (const Literal ref :
+         implications_and_amos_[representative].literals()) {
       const LiteralIndex rep = graph_->RepresentativeOf(ref);
       if (rep == ref.Index() || rep == representative) continue;
       if (rep == kNoLiteralIndex) continue;
@@ -2010,9 +2091,9 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
   log_info |= VLOG_IS_ON(1);
 
   if (trail_->CurrentDecisionLevel() == 0) {
-    for (std::pair<Literal, Literal> clause : changed_reasons_on_trail_) {
-      lrat_proof_handler_->DeleteClause(ClausePtr(clause.first, clause.second));
-      lrat_binary_clauses_.erase({clause.first, clause.second});
+    for (const ClausePtr clause : changed_reasons_on_trail_) {
+      lrat_proof_handler_->DeleteClause(clause);
+      lrat_binary_clauses_.erase(clause);
     }
     changed_reasons_on_trail_.clear();
   }
@@ -2076,13 +2157,12 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
         if (lrat_helper_ != nullptr) {
           lrat_helper_->ProcessSingletonComponent();
         }
-        auto& representative_list = implications_and_amos_[representative];
-        for (Literal& ref : representative_list.literals()) {
+        UpdateImplications(Literal(representative), [&](Literal ref) {
           const LiteralIndex rep = representative_of_[ref];
-          if (rep == representative) continue;
-          if (rep == kNoLiteralIndex) continue;
-          ref = Literal(rep);
-        }
+          if (rep == representative) return ref.Index();
+          if (rep == kNoLiteralIndex) return ref.Index();
+          return rep;
+        });
 
         // We should already have detected fixing because of l => x and not(x).
         CHECK(CleanUpImplicationList(Literal(representative)));
@@ -2115,17 +2195,14 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
     }
     // Merge all the lists in implications_and_offsets_[representative].
     // Note that we do not want representative in its own list.
-    auto& representative_list = implications_and_amos_[representative];
-    int new_size = 0;
-    for (const Literal l : representative_list.literals()) {
+    UpdateImplications(Literal(representative), [&](Literal l) {
       const Literal rep = RepresentativeOf(l);
-      if (rep.Index() == representative) continue;
-      representative_list.literals()[new_size++] = rep;
-    }
-    representative_list.TruncateLiterals(new_size);
+      return rep.Index() == representative ? kNoLiteralIndex : rep.Index();
+    });
+    auto& representative_list = implications_and_amos_[representative];
     for (int i = 1; i < component.size(); ++i) {
       const Literal literal = Literal(LiteralIndex(component[i]));
-      auto& ref = implications_and_amos_[literal];
+      const auto& ref = implications_and_amos_[literal];
       for (const Literal l : ref.literals()) {
         const Literal rep = RepresentativeOf(l);
         if (rep.Index() != representative) {
@@ -2135,13 +2212,15 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
       dtime += 1e-8 * static_cast<double>(ref.num_literals());
 
       // Add representative <=> literal.
-      //
-      // Remark: this relation do not need to be added to a DRAT proof since
-      // the redundant variables should never be used again for a pure SAT
-      // problem.
       representative_list.PushBackLiteral(literal);
-      ref.ClearLiterals();
-      ref.PushBackLiteral(Literal(representative));
+      ClearImplications(literal, /*release_memory=*/false);
+      implications_and_amos_[literal].PushBackLiteral(Literal(representative));
+      if (lrat_helper_ != nullptr) {
+        lrat_implications_to_delete_.erase(
+            ClausePtr(Literal(representative).Negated(), literal));
+        lrat_implications_to_delete_.erase(
+            ClausePtr(literal.Negated(), Literal(representative)));
+      }
     }
 
     // We should already have detected fixing because of l => x and not(x).
@@ -2244,6 +2323,7 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
   // implications, so we need to redo a round of cleaning.
   if (!RemoveDuplicatesAndFixedVariables()) return false;
 
+  DeleteUnusedLratImplications();
   DCHECK(InvariantsAreOk());
   LOG_IF(INFO, log_info) << "SCC. " << num_equivalences
                          << " redundant equivalent literals. "
@@ -2313,7 +2393,7 @@ bool BinaryImplicationGraph::ComputeTransitiveReduction(bool log_info) {
     if (is_redundant_[root]) continue;
     if (trail_->Assignment().LiteralIsAssigned(Literal(root))) continue;
 
-    auto& direct_implications = implications_and_amos_[root];
+    const auto& direct_implications = implications_and_amos_[root];
     if (direct_implications.literals().empty()) continue;
 
     // This is a "poor" version of the tree look stuff, but it does show good
@@ -2417,18 +2497,18 @@ bool BinaryImplicationGraph::ComputeTransitiveReduction(bool log_info) {
     // Only keep the non-marked literal (and the redundant one which are never
     // marked). We mark root to remove it in the corner case where it was
     // there.
-    int new_size = 0;
-    for (const Literal l : direct_implications.literals()) {
+    const int old_size = direct_implications.num_literals();
+    RemoveImplicationsIf(Literal(root), [&](Literal l) {
       if (!is_marked_[l]) {
-        direct_implications.literals()[new_size++] = l;
+        return false;
       } else {
         tmp_removed_.push_back({Literal(root), l});
         DCHECK(!is_redundant_[l]);
+        return true;
       }
-    }
-    const int diff = direct_implications.num_literals() - new_size;
-    direct_implications.TruncateLiterals(new_size);
-    direct_implications.ShrinkToFit();
+    });
+    const int diff = old_size - direct_implications.num_literals();
+    implications_and_amos_[root].ShrinkToFit();
     num_new_redundant_implications += diff;
 
     // Abort if the computation involved is too big.
@@ -2449,19 +2529,16 @@ bool BinaryImplicationGraph::ComputeTransitiveReduction(bool log_info) {
       removed.insert({a.Index(), b.Index()});
     }
     for (LiteralIndex i(0); i < implications_and_amos_.size(); ++i) {
-      int new_size = 0;
       const LiteralIndex negated_i = Literal(i).NegatedIndex();
-      auto& implication = implications_and_amos_[i];
-      for (const Literal l : implication.literals()) {
-        if (removed.contains({l.NegatedIndex(), negated_i})) continue;
-        implication.literals()[new_size++] = l;
-      }
-      implication.TruncateLiterals(new_size);
+      RemoveImplicationsIf(Literal(i), [&](Literal l) {
+        return removed.contains({l.NegatedIndex(), negated_i});
+      });
     }
   }
   if (num_fixed > 0) {
     RemoveFixedVariables();
   }
+  DeleteUnusedLratImplications();
   DCHECK(InvariantsAreOk());
 
   gtl::STLClearObject(&tmp_removed_);
@@ -3424,7 +3501,7 @@ void BinaryImplicationGraph::RemoveBooleanVariable(
   // be delayed to the CleanupAllRemovedVariables() call.
   for (const LiteralIndex index : {literal.Index(), literal.NegatedIndex()}) {
     is_removed_[index] = true;
-    implications_and_amos_[index].ClearLiterals();
+    ClearImplications(Literal(index));
     implications_and_amos_[index].ShrinkToFit();
     if (!is_redundant_[index]) {
       ++num_redundant_literals_;
@@ -3440,20 +3517,15 @@ void BinaryImplicationGraph::RemoveAllRedundantVariables(
       postsolve_clauses->push_back(
           {Literal(a), Literal(RepresentativeOf(Literal(a))).Negated()});
       is_removed_[a] = true;
-      implications_and_amos_[a].ClearLiterals();
+      ClearImplications(Literal(a));
       implications_and_amos_[a].ShrinkToFit();
       continue;
     }
 
-    int new_size = 0;
-    auto& implication = implications_and_amos_[a];
-    for (const Literal l : implication.literals()) {
-      if (!is_redundant_[l]) {
-        implication.literals()[new_size++] = l;
-      }
-    }
-    implication.TruncateLiterals(new_size);
+    RemoveImplicationsIf(Literal(a),
+                         [&](Literal l) { return is_redundant_[l]; });
   }
+  DeleteUnusedLratImplications();
 }
 
 void BinaryImplicationGraph::CleanupAllRemovedAndFixedVariables() {
@@ -3468,19 +3540,14 @@ void BinaryImplicationGraph::CleanupAllRemovedAndFixedVariables() {
         }
       }
 
-      implications_and_amos_[a].ClearLiterals();
+      ClearImplications(Literal(a));
       implications_and_amos_[a].ShrinkToFit();
       continue;
     }
 
-    int new_size = 0;
-    auto& implication = implications_and_amos_[a];
-    for (const Literal l : implication.literals()) {
-      if (!is_removed_[l] && !assignment.LiteralIsTrue(l)) {
-        implication.literals()[new_size++] = l;
-      }
-    }
-    implication.TruncateLiterals(new_size);
+    RemoveImplicationsIf(Literal(a), [&](Literal l) {
+      return is_removed_[l] || assignment.LiteralIsTrue(l);
+    });
   }
 
   // Clean-up at most ones.
@@ -3490,6 +3557,7 @@ void BinaryImplicationGraph::CleanupAllRemovedAndFixedVariables() {
   CHECK(CleanUpAndAddAtMostOnes(/*base_index=*/0));
 
   // Note that to please the invariant() we also removed fixed literal above.
+  DeleteUnusedLratImplications();
   DCHECK(InvariantsAreOk());
 }
 
@@ -3532,7 +3600,8 @@ bool BinaryImplicationGraph::InvariantsAreOk() {
       seen.insert({a_index, b.Index()});
       if (lrat_proof_handler_ != nullptr &&
           !HasLratBinaryClause(Literal(a_index).Negated(), b)) {
-        LOG(ERROR) << "No clause id for " << Literal(a_index) << " => " << b;
+        LOG(ERROR) << "No LRAT binary clause for " << Literal(a_index) << " => "
+                   << b;
         return false;
       }
     }
@@ -3578,6 +3647,19 @@ bool BinaryImplicationGraph::InvariantsAreOk() {
       if (is_dag_ && !is_redundant_[b] && !is_redundant_[a_index]) {
         DCHECK_NE(lit_to_order[b], -1);
         DCHECK_LE(lit_to_order[b], lit_to_order[a_index]);
+      }
+    }
+  }
+
+  // Check that we don't have more LRAT binary clauses than implications.
+  if (lrat_proof_handler_ != nullptr) {
+    for (const ClausePtr binary_clause : lrat_binary_clauses_) {
+      if (changed_reasons_on_trail_.contains(binary_clause)) continue;
+      if (!seen.contains({binary_clause.GetFirstLiteral().Negated(),
+                          binary_clause.GetSecondLiteral()})) {
+        LOG(ERROR) << "No implication for LRAT binary clause "
+                   << binary_clause.GetLiterals();
+        return false;
       }
     }
   }

@@ -70,18 +70,16 @@
 #include <utility>
 #include <vector>
 
-#include "absl/base/attributes.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/functional/bind_front.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/types/span.h"
 #include "ortools/base/adjustable_priority_queue-inl.h"
 #include "ortools/base/adjustable_priority_queue.h"
-#include "ortools/base/logging.h"
-#include "ortools/base/map_util.h"
-#include "ortools/base/stl_util.h"
 #include "ortools/base/threadpool.h"
 #include "ortools/base/timer.h"
+
 namespace operations_research {
 
 // Storing distances on 32 bits to limit memory consumption of distance
@@ -403,8 +401,8 @@ void PathTree<NodeIndex, kNilNode>::Initialize(
     }
     parents_.resize(num_nodes, -1);
     for (int i = 0; i < num_nodes; ++i) {
-      parents_[i] =
-          ::gtl::FindWithDefault(node_indices, tree[i].second, kNilNode);
+      auto it = node_indices.find(tree[i].second);
+      parents_[i] = it != node_indices.end() ? it->second : kNilNode;
     }
   }
   nodes_.resize(num_nodes, kNilNode);
@@ -750,10 +748,18 @@ void ComputeManyToManyShortestPathsWithMultipleThreads(
     // Removing duplicate sources to allow mutex-free implementation (and it's
     // more efficient); same with destinations for efficiency reasons.
     std::vector<typename GraphType::NodeIndex> unique_sources = sources;
-    ::gtl::STLSortAndRemoveDuplicates(&unique_sources);
+    std::sort(unique_sources.begin(), unique_sources.end());
+    unique_sources.erase(
+        std::unique(unique_sources.begin(), unique_sources.end()),
+        unique_sources.end());
+
     std::vector<typename GraphType::NodeIndex> unique_destinations =
         destinations;
-    ::gtl::STLSortAndRemoveDuplicates(&unique_destinations);
+    std::sort(unique_destinations.begin(), unique_destinations.end());
+    unique_destinations.erase(
+        std::unique(unique_destinations.begin(), unique_destinations.end()),
+        unique_destinations.end());
+
     WallTimer timer;
     timer.Start();
     auto* const container = paths->GetImplementation();

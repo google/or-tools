@@ -64,7 +64,7 @@ MinCostPerfectMatching::Status MinCostPerfectMatching::Solve() {
   // TODO(user): Improve the overflow detection if needed. The current one seems
   // ok though.
   int64_t overflow_detection = CapAdd(maximum_edge_cost_, maximum_edge_cost_);
-  if (overflow_detection >= BlossomGraph::kMaxCostValue) {
+  if (overflow_detection >= BlossomGraph::kMaxCostValue.value()) {
     return Status::INTEGER_OVERFLOW;
   }
 
@@ -87,11 +87,11 @@ MinCostPerfectMatching::Status MinCostPerfectMatching::Solve() {
     const BlossomGraph::CostValue delta =
         graph_->ComputeMaxCommonTreeDualDeltaAndResetPrimalEdgeQueue();
     overflow_detection = CapAdd(overflow_detection, std::abs(delta.value()));
-    if (overflow_detection >= BlossomGraph::kMaxCostValue) {
+    if (overflow_detection >= BlossomGraph::kMaxCostValue.value()) {
       return Status::INTEGER_OVERFLOW;
     }
 
-    if (delta == 0) break;  // Infeasible!
+    if (delta == BlossomGraph::CostValue(0)) break;  // Infeasible!
     graph_->UpdateAllTrees(delta);
   }
 
@@ -131,18 +131,18 @@ BlossomGraph::BlossomGraph(int num_nodes) {
   graph_.resize(num_nodes);
   nodes_.reserve(num_nodes);
   root_blossom_node_.resize(num_nodes);
-  for (NodeIndex n(0); n < num_nodes; ++n) {
+  for (NodeIndex n(0); n < NodeIndex(num_nodes); ++n) {
     root_blossom_node_[n] = n;
     nodes_.push_back(Node(n));
   }
 }
 
 void BlossomGraph::AddEdge(NodeIndex tail, NodeIndex head, CostValue cost) {
-  DCHECK_GE(tail, 0);
-  DCHECK_LT(tail, nodes_.size());
-  DCHECK_GE(head, 0);
-  DCHECK_LT(head, nodes_.size());
-  DCHECK_GE(cost, 0);
+  DCHECK_GE(tail, NodeIndex(0));
+  DCHECK_LT(tail, NodeIndex(nodes_.size()));
+  DCHECK_GE(head, NodeIndex(0));
+  DCHECK_LT(head, NodeIndex(nodes_.size()));
+  DCHECK_GE(cost, CostValue(0));
   DCHECK(!is_initialized_);
   const EdgeIndex index(edges_.size());
   edges_.push_back(Edge(tail, head, cost));
@@ -158,7 +158,7 @@ bool BlossomGraph::Initialize() {
   CHECK(!is_initialized_);
   is_initialized_ = true;
 
-  for (NodeIndex n(0); n < nodes_.size(); ++n) {
+  for (NodeIndex n(0); n < NodeIndex(nodes_.size()); ++n) {
     if (graph_[n].empty()) return false;  // INFEASIBLE.
     CostValue min_cost = kMaxCostValue;
 
@@ -178,14 +178,14 @@ bool BlossomGraph::Initialize() {
 
   // Update the slack of each edges now that nodes might have non-zero duals.
   // Note that we made sure that all updated slacks are non-negative.
-  for (EdgeIndex e(0); e < edges_.size(); ++e) {
+  for (EdgeIndex e(0); e < EdgeIndex(edges_.size()); ++e) {
     Edge& mutable_edge = edges_[e];
     mutable_edge.pseudo_slack -= nodes_[mutable_edge.tail].pseudo_dual +
                                  nodes_[mutable_edge.head].pseudo_dual;
-    DCHECK_GE(mutable_edge.pseudo_slack, 0);
+    DCHECK_GE(mutable_edge.pseudo_slack, CostValue(0));
   }
 
-  for (NodeIndex n(0); n < nodes_.size(); ++n) {
+  for (NodeIndex n(0); n < NodeIndex(nodes_.size()); ++n) {
     if (NodeIsMatched(n)) continue;
 
     // After this greedy update, there will be at least an edge with a
@@ -195,7 +195,7 @@ bool BlossomGraph::Initialize() {
       min_slack = std::min(min_slack, edges_[e].pseudo_slack);
     }
     DCHECK_NE(min_slack, kMaxCostValue);
-    if (min_slack > 0) {
+    if (min_slack > CostValue(0)) {
       nodes_[n].pseudo_dual += min_slack;
       for (const EdgeIndex e : graph_[n]) {
         edges_[e].pseudo_slack -= min_slack;
@@ -208,7 +208,7 @@ bool BlossomGraph::Initialize() {
     // TODO(user): Optimize by merging this loop with the one above?
     for (const EdgeIndex e : graph_[n]) {
       const Edge& edge = edges_[e];
-      if (edge.pseudo_slack != 0) continue;
+      if (edge.pseudo_slack != CostValue(0)) continue;
       if (!NodeIsMatched(edge.OtherEnd(n))) {
         nodes_[edge.tail].type = 0;
         nodes_[edge.tail].match = edge.head;
@@ -220,7 +220,7 @@ bool BlossomGraph::Initialize() {
   }
 
   // Initialize unmatched_nodes_.
-  for (NodeIndex n(0); n < nodes_.size(); ++n) {
+  for (NodeIndex n(0); n < NodeIndex(nodes_.size()); ++n) {
     if (NodeIsMatched(n)) continue;
     unmatched_nodes_.push_back(n);
   }
@@ -233,7 +233,7 @@ bool BlossomGraph::Initialize() {
   //
   // TODO(user): Reduce the number of loops we do in the initialization. We
   // could likely just scale the edge cost as we fill them.
-  for (NodeIndex n(0); n < nodes_.size(); ++n) {
+  for (NodeIndex n(0); n < NodeIndex(nodes_.size()); ++n) {
     DCHECK_LE(nodes_[n].pseudo_dual, kMaxCostValue / 2);
     nodes_[n].pseudo_dual *= 2;
     AddToDualObjective(nodes_[n].pseudo_dual);
@@ -241,7 +241,7 @@ bool BlossomGraph::Initialize() {
     nodes_[n].dual = nodes_[n].pseudo_dual;
 #endif
   }
-  for (EdgeIndex e(0); e < edges_.size(); ++e) {
+  for (EdgeIndex e(0); e < EdgeIndex(edges_.size()); ++e) {
     DCHECK_LE(edges_[e].pseudo_slack, kMaxCostValue / 2);
     edges_[e].pseudo_slack *= 2;
 #ifndef NDEBUG
@@ -253,16 +253,18 @@ bool BlossomGraph::Initialize() {
   // We only need to do that if we have unmatched nodes.
   if (!unmatched_nodes_.empty()) {
     primal_update_edge_queue_.clear();
-    for (EdgeIndex e(0); e < edges_.size(); ++e) {
+    for (EdgeIndex e(0); e < EdgeIndex(edges_.size()); ++e) {
       Edge& edge = edges_[e];
       const bool tail_is_plus = nodes_[edge.tail].IsPlus();
       const bool head_is_plus = nodes_[edge.head].IsPlus();
       if (tail_is_plus && head_is_plus) {
         plus_plus_pq_.Add(&edge);
-        if (edge.pseudo_slack == 0) primal_update_edge_queue_.push_back(e);
+        if (edge.pseudo_slack == CostValue(0))
+          primal_update_edge_queue_.push_back(e);
       } else if (tail_is_plus || head_is_plus) {
         plus_free_pq_.Add(&edge);
-        if (edge.pseudo_slack == 0) primal_update_edge_queue_.push_back(e);
+        if (edge.pseudo_slack == CostValue(0))
+          primal_update_edge_queue_.push_back(e);
       }
     }
   }
@@ -273,7 +275,7 @@ bool BlossomGraph::Initialize() {
 CostValue BlossomGraph::ComputeMaxCommonTreeDualDeltaAndResetPrimalEdgeQueue() {
   // TODO(user): Avoid this linear loop.
   CostValue best_update = kMaxCostValue;
-  for (NodeIndex n(0); n < nodes_.size(); ++n) {
+  for (NodeIndex n(0); n < NodeIndex(nodes_.size()); ++n) {
     const Node& node = nodes_[n];
     if (node.IsBlossom() && node.IsMinus()) {
       best_update = std::min(best_update, Dual(node));
@@ -285,7 +287,8 @@ CostValue BlossomGraph::ComputeMaxCommonTreeDualDeltaAndResetPrimalEdgeQueue() {
   const CostValue tree_delta = nodes_[unmatched_nodes_.front()].tree_dual_delta;
   CostValue plus_plus_slack = kMaxCostValue;
   if (!plus_plus_pq_.IsEmpty()) {
-    DCHECK_EQ(plus_plus_pq_.Top()->pseudo_slack % 2, 0) << "Non integer bound!";
+    DCHECK_EQ(plus_plus_pq_.Top()->pseudo_slack % 2, CostValue(0))
+        << "Non integer bound!";
     plus_plus_slack = plus_plus_pq_.Top()->pseudo_slack / 2 - tree_delta;
     best_update = std::min(best_update, plus_plus_slack);
   }
@@ -324,7 +327,7 @@ void BlossomGraph::UpdateAllTrees(CostValue delta) {
   ++num_dual_updates_;
 
   // Reminder: the tree roots are exactly the unmatched nodes.
-  CHECK_GE(delta, 0);
+  CHECK_GE(delta, CostValue(0));
   for (const NodeIndex n : unmatched_nodes_) {
     CHECK(!NodeIsMatched(n));
     AddToDualObjective(delta);
@@ -332,7 +335,7 @@ void BlossomGraph::UpdateAllTrees(CostValue delta) {
   }
 
   if (DEBUG_MODE) {
-    for (NodeIndex n(0); n < nodes_.size(); ++n) {
+    for (NodeIndex n(0); n < NodeIndex(nodes_.size()); ++n) {
       const Node& node = nodes_[n];
       if (node.IsPlus()) DebugUpdateNodeDual(n, delta);
       if (node.IsMinus()) DebugUpdateNodeDual(n, -delta);
@@ -359,13 +362,13 @@ NodeIndex BlossomGraph::Match(NodeIndex n) const {
 // Meant to only be used in DEBUG to make sure our queue in PrimalUpdates()
 // do not miss any potential edges.
 void BlossomGraph::DebugCheckNoPossiblePrimalUpdates() {
-  for (EdgeIndex e(0); e < edges_.size(); ++e) {
+  for (EdgeIndex e(0); e < EdgeIndex(edges_.size()); ++e) {
     const Edge& edge = edges_[e];
     if (Head(edge) == Tail(edge)) continue;
 
     CHECK(!nodes_[Tail(edge)].is_internal);
     CHECK(!nodes_[Head(edge)].is_internal);
-    if (Slack(edge) != 0) continue;
+    if (Slack(edge) != CostValue(0)) continue;
 
     // Make sure tail is a plus node if possible.
     NodeIndex tail = Tail(edge);
@@ -386,7 +389,7 @@ void BlossomGraph::DebugCheckNoPossiblePrimalUpdates() {
     }
   }
   for (const Node& node : nodes_) {
-    if (node.IsMinus() && node.IsBlossom() && Dual(node) == 0) {
+    if (node.IsMinus() && node.IsBlossom() && Dual(node) == CostValue(0)) {
       LOG(FATAL) << "Possible expand!";
     }
   }
@@ -410,7 +413,7 @@ void BlossomGraph::PrimalUpdates() {
       // detect it here and skip it than it would be to dynamically update the
       // queue to only keep actually tight edges at all times.
       const Edge& edge = edges_[e];
-      if (Slack(edge) != 0) continue;
+      if (Slack(edge) != CostValue(0)) continue;
 
       NodeIndex tail = Tail(edge);
       NodeIndex head = Head(edge);
@@ -450,9 +453,9 @@ void BlossomGraph::PrimalUpdates() {
     // recursively? I am not sure it is a good heuristic to expand all possible
     // blossom before trying the other operations though.
     int num_expands = 0;
-    for (NodeIndex n(0); n < nodes_.size(); ++n) {
+    for (NodeIndex n(0); n < NodeIndex(nodes_.size()); ++n) {
       const Node& node = nodes_[n];
-      if (node.IsMinus() && node.IsBlossom() && Dual(node) == 0) {
+      if (node.IsMinus() && node.IsBlossom() && Dual(node) == CostValue(0)) {
         ++num_expands;
         Expand(n);
       }
@@ -464,12 +467,12 @@ void BlossomGraph::PrimalUpdates() {
 bool BlossomGraph::DebugDualsAreFeasible() const {
   // The slack of all edge must be non-negative.
   for (const Edge& edge : edges_) {
-    if (Slack(edge) < 0) return false;
+    if (Slack(edge) < CostValue(0)) return false;
   }
 
   // The dual of all Blossom must be non-negative.
   for (const Node& node : nodes_) {
-    if (node.IsBlossom() && Dual(node) < 0) return false;
+    if (node.IsBlossom() && Dual(node) < CostValue(0)) return false;
   }
   return true;
 }
@@ -478,7 +481,7 @@ bool BlossomGraph::DebugEdgeIsTightAndExternal(const Edge& edge) const {
   if (Tail(edge) == Head(edge)) return false;
   if (nodes_[Tail(edge)].IsInternal()) return false;
   if (nodes_[Head(edge)].IsInternal()) return false;
-  return Slack(edge) == 0;
+  return Slack(edge) == CostValue(0);
 }
 
 void BlossomGraph::Grow(EdgeIndex e, NodeIndex tail, NodeIndex head) {
@@ -532,7 +535,7 @@ void BlossomGraph::Grow(EdgeIndex e, NodeIndex tail, NodeIndex head) {
         plus_free_pq_.Remove(&edge);
         plus_plus_pq_.Add(&edge);
         if (edge.pseudo_slack == 2 * tree_dual) {
-          DCHECK_EQ(Slack(edge), 0);
+          DCHECK_EQ(Slack(edge), CostValue(0));
           primal_update_edge_queue_.push_back(e);
         }
       } else if (other_node.IsFree()) {
@@ -541,7 +544,7 @@ void BlossomGraph::Grow(EdgeIndex e, NodeIndex tail, NodeIndex head) {
         DCHECK(!plus_plus_pq_.Contains(&edge));
         plus_free_pq_.Add(&edge);
         if (edge.pseudo_slack == tree_dual) {
-          DCHECK_EQ(Slack(edge), 0);
+          DCHECK_EQ(Slack(edge), CostValue(0));
           primal_update_edge_queue_.push_back(e);
         }
       }
@@ -580,8 +583,8 @@ void BlossomGraph::Augment(EdgeIndex e) {
   // TODO(user): Check all dual/slack same after primal op?
   const CostValue delta_a = nodes_[root_a].tree_dual_delta;
   const CostValue delta_b = nodes_[root_b].tree_dual_delta;
-  nodes_[root_a].tree_dual_delta = 0;
-  nodes_[root_b].tree_dual_delta = 0;
+  nodes_[root_a].tree_dual_delta = CostValue(0);
+  nodes_[root_b].tree_dual_delta = CostValue(0);
 
   // Make all the nodes from both trees free while keeping the
   // current matching.
@@ -594,7 +597,7 @@ void BlossomGraph::Augment(EdgeIndex e) {
   // even do O(num_node_in_path) with lazy updates. Note that this operation
   // will only be performed at most num_initial_unmatched_nodes / 2 times
   // though.
-  for (NodeIndex n(0); n < nodes_.size(); ++n) {
+  for (NodeIndex n(0); n < NodeIndex(nodes_.size()); ++n) {
     Node& node = nodes_[n];
     if (node.IsInternal()) continue;
     const NodeIndex root = node.root;
@@ -618,7 +621,9 @@ void BlossomGraph::Augment(EdgeIndex e) {
           if (plus_plus_pq_.Contains(&edge)) plus_plus_pq_.Remove(&edge);
           DCHECK(!plus_free_pq_.Contains(&edge));
           plus_free_pq_.Add(&edge);
-          if (Slack(edge) == 0) primal_update_edge_queue_.push_back(e);
+          if (Slack(edge) == CostValue(0)) {
+            primal_update_edge_queue_.push_back(e);
+          }
         } else {
           if (plus_plus_pq_.Contains(&edge)) plus_plus_pq_.Remove(&edge);
           if (plus_free_pq_.Contains(&edge)) plus_free_pq_.Remove(&edge);
@@ -732,10 +737,10 @@ void BlossomGraph::Shrink(EdgeIndex e) {
 
   // Set the new dual of the node to zero.
 #ifndef NDEBUG
-  lca.dual = 0;
+  lca.dual = CostValue(0);
 #endif
   lca.pseudo_dual = -tree_dual;
-  CHECK_EQ(Dual(lca), 0);
+  CHECK_EQ(Dual(lca), CostValue(0));
 
   // Mark node as internal, but do not change their type to zero yet.
   // We need to do that first to properly detect edges between two internal
@@ -848,7 +853,7 @@ BlossomGraph::EdgeIndex BlossomGraph::FindTightExternalEdgeBetweenNodes(
     for (const EdgeIndex e : graph_[subnode]) {
       const Edge& edge = edges_[e];
       const NodeIndex other_end = OtherEnd(edge, subnode);
-      if (other_end == head && Slack(edge) == 0) {
+      if (other_end == head && Slack(edge) == CostValue(0)) {
         return e;
       }
     }
@@ -863,7 +868,7 @@ void BlossomGraph::Expand(NodeIndex to_expand) {
   Node& node_to_expand = nodes_[to_expand];
   DCHECK(node_to_expand.IsBlossom());
   DCHECK(node_to_expand.IsMinus());
-  DCHECK_EQ(Dual(node_to_expand), 0);
+  DCHECK_EQ(Dual(node_to_expand), CostValue(0));
 
   const EdgeIndex match_edge_index =
       FindTightExternalEdgeBetweenNodes(to_expand, node_to_expand.match);
@@ -1068,7 +1073,7 @@ void BlossomGraph::Expand(NodeIndex to_expand) {
 void BlossomGraph::ExpandAllBlossoms() {
   // Queue of blossoms to expand.
   std::vector<NodeIndex> queue;
-  for (NodeIndex n(0); n < nodes_.size(); ++n) {
+  for (NodeIndex n(0); n < NodeIndex(nodes_.size()); ++n) {
     Node& node = nodes_[n];
     if (node.IsInternal()) continue;
 
@@ -1216,10 +1221,10 @@ std::string BlossomGraph::EdgeDebugString(EdgeIndex e) const {
 
 std::string BlossomGraph::DebugString() const {
   std::string result = "Graph:\n";
-  for (NodeIndex n(0); n < nodes_.size(); ++n) {
+  for (NodeIndex n(0); n < NodeIndex(nodes_.size()); ++n) {
     absl::StrAppend(&result, NodeDebugString(n), "\n");
   }
-  for (EdgeIndex e(0); e < edges_.size(); ++e) {
+  for (EdgeIndex e(0); e < EdgeIndex(edges_.size()); ++e) {
     absl::StrAppend(&result, EdgeDebugString(e), "\n");
   }
   return result;
@@ -1267,14 +1272,15 @@ CostValue BlossomGraph::Dual(const Node& node) const {
 }
 
 CostValue BlossomGraph::DualObjective() const {
-  if (dual_objective_ == std::numeric_limits<int64_t>::max())
+  if (dual_objective_ == CostValue(std::numeric_limits<int64_t>::max())) {
     return CostValue(std::numeric_limits<int64_t>::max());
-  CHECK_EQ(dual_objective_ % 2, 0);
+  }
+  CHECK_EQ(dual_objective_ % 2, CostValue(0));
   return dual_objective_ / 2;
 }
 
 void BlossomGraph::AddToDualObjective(CostValue delta) {
-  CHECK_GE(delta, 0);
+  CHECK_GE(delta, CostValue(0));
   dual_objective_ = CostValue(CapAdd(dual_objective_.value(), delta.value()));
 }
 

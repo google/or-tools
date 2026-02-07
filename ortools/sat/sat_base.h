@@ -28,6 +28,7 @@
 #include <vector>
 
 #include "absl/base/attributes.h"
+#include "absl/base/casts.h"
 #include "absl/log/check.h"
 #include "absl/strings/str_format.h"
 #include "absl/types/span.h"
@@ -394,7 +395,7 @@ class ClausePtr {
     // Make sure we can store SatClause pointers without losing information.
     static_assert(sizeof(uint64_t) >= sizeof(uintptr_t));
     static_assert(alignof(SatClause) >= 2);
-    const uintptr_t ptr_rep = std::bit_cast<uintptr_t>(clause);
+    const uintptr_t ptr_rep = absl::bit_cast<uintptr_t>(clause);
     const uint64_t bits = kSatClauseBit | (static_cast<uint64_t>(ptr_rep) >> 1);
     rep_ = rep_from_uint64(bits);
   }
@@ -475,7 +476,7 @@ class ClausePtr {
     // case, the extra bits are zero (see how SatClause* are IDs are created).
     const uint64_t bits = uint64_from_rep(rep_);
     const uintptr_t ptr_rep = static_cast<uintptr_t>(bits << 1);
-    return std::bit_cast<SatClause*>(ptr_rep);
+    return absl::bit_cast<SatClause*>(ptr_rep);
   }
 
   // Returns a uint64_t representation of this pointer (and not of its target

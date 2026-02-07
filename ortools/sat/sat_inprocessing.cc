@@ -2051,6 +2051,7 @@ void AppendBinaryClausesFromTruthTable(
 // the congruence closure should be quite fast.
 void GateCongruenceClosure::ExtractAndGatesAndFillShortTruthTables(
     PresolveTimer& timer) {
+  ids2_.clear();
   ids3_.clear();
   ids4_.clear();
   ids5_.clear();
@@ -2382,7 +2383,7 @@ BooleanVariable FindMissing(absl::Span<const BooleanVariable> vars_a,
 
 }  // namespace
 
-// TODO(user): It should be possible to extract ALL possible short gate, but
+// TODO(user): It should be possible to extract ALL possible short gates, but
 // we are not there yet.
 void GateCongruenceClosure::ExtractShortGates(PresolveTimer& timer) {
   if (lrat_proof_handler_ != nullptr) {
@@ -2392,8 +2393,8 @@ void GateCongruenceClosure::ExtractShortGates(PresolveTimer& timer) {
     CHECK_EQ(truth_tables_bitset_.size(), truth_tables_clauses_.size());
   }
 
-  // This is used to combine two 3 arity table into one 4 arity one if
-  // they share two variables.
+  // This is used to combine two 3 arity tables into one 4 arity one if they
+  // share two variables.
   absl::flat_hash_map<std::array<BooleanVariable, 2>, int> binary_index_map;
   std::vector<int> flat_binary_index;
   std::vector<TruthTableId> flat_table_id;
@@ -2785,15 +2786,15 @@ class LratGateCongruenceHelper {
               ? ClausePtr(clause->FirstLiteral(), clause->SecondLiteral())
               : ClausePtr(clause);
       if (some_change) {
-        // If there is some change, we add a temporary clause id with the
-        // proof to go from the original clause to this one.
+        // If there is some change, we add a temporary clause with the proof to
+        // go from the original clause to this one.
         tmp_index_to_delete_.push_back(tmp_proof_clauses_.size());
         tmp_proof_.push_back(new_clause);
         new_clause = ClausePtr(tmp_literals_);
         lrat_proof_handler_->AddInferredClause(new_clause, tmp_proof_);
       }
 
-      // Add that clause and its id to the set of clauses needed for the proof.
+      // Add that clause to the set of clauses needed for the proof.
       tmp_proof_clauses_.push_back(new_clause);
     }
   }

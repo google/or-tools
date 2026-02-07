@@ -12,6 +12,7 @@
 # limitations under the License.
 
 load("@protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
+load("@protobuf//bazel:java_proto_library.bzl", "java_proto_library")
 load("@protobuf//bazel:proto_library.bzl", "proto_library")
 load("@protobuf//bazel:py_proto_library.bzl", "py_proto_library")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
@@ -60,6 +61,11 @@ py_proto_library(
     deps = [":solve_log_proto"],
 )
 
+java_proto_library(
+    name = "solve_log_java_proto",
+    deps = [":solve_log_proto"],
+)
+
 proto_library(
     name = "solvers_proto",
     srcs = ["solvers.proto"],
@@ -73,6 +79,11 @@ cc_proto_library(
 
 py_proto_library(
     name = "solvers_py_pb2",
+    deps = [":solvers_proto"],
+)
+
+java_proto_library(
+    name = "solvers_java_proto",
     deps = [":solvers_proto"],
 )
 

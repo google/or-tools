@@ -51,7 +51,6 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
-#include "ortools/base/map_util.h"
 
 namespace operations_research {
 
@@ -151,9 +150,9 @@ MultiDijkstra(const Graph& graph, ArcLengthFunctor arc_length_functor,
       ++num_active_dijkstras;
     }
     for (const int node : source_sets[source_index]) {
-      if (gtl::InsertIfNotPresent(
-              &reached_from[source_index],
-              {node, {/*distance=*/0, /*parent_arc=*/-1}})) {
+      if (reached_from[source_index]
+              .insert({node, {/*distance=*/0, /*parent_arc=*/-1}})
+              .second) {
         pq.push({/*distance=*/0, /*node=*/node, /*source_index=*/source_index});
       }
     }
@@ -169,7 +168,7 @@ MultiDijkstra(const Graph& graph, ArcLengthFunctor arc_length_functor,
     // Dijkstra optimization: ignore states that don't correspond to the optimal
     // (such states have been preceded by better states in the queue order,
     // without being deleted since priority_queue doesn't have erase()).
-    if (gtl::FindOrDie(reached_from[state.source_index], state.node).distance <
+    if (reached_from[state.source_index].at(state.node).distance <
         state.distance) {
       continue;
     }

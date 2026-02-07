@@ -9071,6 +9071,10 @@ bool CpModelPresolver::PresolvePureSatProblem() {
   for (int i = 0; i < sat_solver->LiteralTrail().Index(); ++i) {
     sat_postsolver.FixVariable(sat_solver->LiteralTrail()[i]);
   }
+  if (!FixFromAssignment(sat_postsolver.assignment(), new_to_old_index,
+                         context_)) {
+    return false;
+  }
   // TODO(user): can we improve ExtractClauses() to avoid the intermediate
   // container?
   BasicClauseContainer clauses_container;

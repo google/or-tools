@@ -143,6 +143,7 @@ cc_test(
     deps = [
         ":adjustable_k_ary_heap",
         "//ortools/base:gmock_main",
+        "@abseil-cpp//absl/random",
     ],
 )
 

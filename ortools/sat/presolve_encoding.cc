@@ -231,7 +231,7 @@ bool BasicPresolveAndGetFullyEncodedDomains(
   absl::flat_hash_map<int, int> ref_to_linear1;
 
   // Fill ref_to_linear1 and do some basic presolving.
-  const Domain var_domain = context->DomainOf(local_model.var);
+  Domain var_domain = context->DomainOf(local_model.var);
   for (const int ct : local_model.linear1_constraints) {
     ConstraintProto* ct_proto = context->working_model->mutable_constraints(ct);
     DCHECK(ConstraintIsEncodingBound(*ct_proto));
@@ -303,6 +303,23 @@ bool BasicPresolveAndGetFullyEncodedDomains(
         context->working_model->constraints(it->second);
     const Domain positive_domain = ReadDomainFromProto(positive_ct.linear());
     const Domain negative_domain = ReadDomainFromProto(negative_ct.linear());
+    // b => x in D1
+    // ~b => x in D2
+    //
+    // So x in (D1 U D2).
+    bool domain_modified = false;
+    if (!context->IntersectDomainWith(
+            local_model.var, positive_domain.UnionWith(negative_domain),
+            &domain_modified)) {
+      return false;
+    }
+    if (domain_modified) {
+      *changed = true;
+      var_domain = context->DomainOf(local_model.var);
+      context->UpdateRuleStats(
+          "variables: restricted domain to union of a linear1 and its "
+          "negation");
+    }
     if (!positive_domain.IntersectionWith(negative_domain).IsEmpty()) {
       // This is not a fully encoded domain. For example, it could be
       //    l => x in {-inf,inf}
@@ -310,13 +327,6 @@ bool BasicPresolveAndGetFullyEncodedDomains(
       // which actually means that `l` doesn't really encode anything.
       continue;
     }
-    bool domain_modified = false;
-    if (!context->IntersectDomainWith(
-            local_model.var, positive_domain.UnionWith(negative_domain),
-            &domain_modified)) {
-      return false;
-    }
-    *changed = *changed || domain_modified;
     result->insert({ref, positive_domain});
     result->insert({NegatedRef(ref), negative_domain});
   }
@@ -368,6 +378,7 @@ bool BasicPresolveAndGetFullyEncodedDomains(
         return false;
       }
       if (domain_modified) {
+        var_domain = context->DomainOf(local_model.var);
         context->UpdateRuleStats(
             "variables: restricted domain to fully encoded domain");
       }
@@ -391,6 +402,48 @@ bool BasicPresolveAndGetFullyEncodedDomains(
             ->Add(new_enforcement_literals.begin(),
                   new_enforcement_literals.end());
         *changed = true;
+      }
+      // Reinforce any negated encodings that might exist
+      for (const auto& [ref, domain] : ref_and_domains) {
+        auto it = ref_to_linear1.find(NegatedRef(ref));
+        if (it == ref_to_linear1.end()) continue;
+        // If we are here, we have:
+        //   l0 => x in D0
+        //   l1 => x in D1
+        //   ...
+        //   l_n => x in D_n
+        //   bool_or(l0, ..., l_n)
+        // and we checked that the {D0, ..., D_n} are disjoint and thus
+        // l0 <=> x in D0, etc. Moreover we found another related linear1 in the
+        // model:
+        //   ~l0 => x in D'
+        // which is potentially weaker than the `~l0 => x in D0.Complement()`
+        // that we got from the bool_or. Thus we can apply a logic similar to
+        // the one earlier in this function that detects two redundant
+        // encodings:
+        //   ~l0 => x in D'
+        //   ~l0 => x in D0.Complement()
+        //
+        // This is also useful to make things more canonical downstream, since
+        // the linear1 holding the ~l0 encoding and the implicit encoding for
+        // ~l0 coming from the bool_or are equivalent.
+        ConstraintProto& negated_linear1_ct =
+            *context->working_model->mutable_constraints(it->second);
+        const Domain negated_ct_domain =
+            ReadDomainFromProto(negated_linear1_ct.linear());
+        const Domain potential_new_domain =
+            domain.Complement().IntersectionWith(negated_ct_domain);
+        // Check if restricting the domain will actually remove any valid values
+        if (potential_new_domain
+                .IntersectionWith(negated_ct_domain.Complement())
+                .OverlapsWith(var_domain)) {
+          *changed = true;
+          FillDomainInProto(potential_new_domain,
+                            negated_linear1_ct.mutable_linear());
+          context->UpdateRuleStats(
+              "variables: reinforced negated encodings for fully encoded "
+              "domain");
+        }
       }
     }
   }
@@ -698,6 +751,24 @@ bool DetectEncodedComplexDomain(
   literals.Add(new_var);
   context->UpdateConstraintVariableUsage(ct_index);
 
+  // Add the removed encodings to the mapping model. Note that we cannot just
+  // simply copy the ones we removed, since we detect some full encodings that
+  // were only full due to an exactly_one constraint.
+  absl::flat_hash_set<int> already_added;
+  for (const int lit : literals_to_remove) {
+    auto [unused_it, inserted] = already_added.insert(PositiveRef(lit));
+    if (!inserted) continue;
+    for (const int l : {lit, NegatedRef(lit)}) {
+      ConstraintProto* ct = context->NewMappingConstraint(__FILE__, __LINE__);
+      const auto it = fully_encoded_domains->find(l);
+      CHECK(it != fully_encoded_domains->end());
+      ct->add_enforcement_literal(l);
+      ct->mutable_linear()->add_vars(local_model.var);
+      ct->mutable_linear()->add_coeffs(1);
+      FillDomainInProto(it->second, ct->mutable_linear());
+    }
+  }
+
   // Finally, move the all removable linear1 to the mapping model.
   for (const int lit : literals_to_remove) {
     fully_encoded_domains->erase(lit);
@@ -711,7 +782,6 @@ bool DetectEncodedComplexDomain(
     ConstraintProto* ct_proto = context->working_model->mutable_constraints(ct);
     if (bools_to_remove_set.contains(
             PositiveRef(ct_proto->enforcement_literal(0)))) {
-      context->NewMappingConstraint(*ct_proto, __FILE__, __LINE__);
       ct_proto->Clear();
       context->UpdateConstraintVariableUsage(ct);
       continue;

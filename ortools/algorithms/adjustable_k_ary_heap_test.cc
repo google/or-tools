@@ -19,6 +19,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/random/random.h"
 #include "gtest/gtest.h"
 
 namespace operations_research {
@@ -26,8 +27,7 @@ namespace operations_research {
 TEST(AdjustableKAryHeapTest, RandomDataStrongCheck) {
   const int kSize = 10'000;
   const double priority_range = kSize / 100;
-  std::random_device rd;
-  std::mt19937 generator(rd());  // Mersenne Twister generator
+  absl::BitGen generator;
   std::uniform_real_distribution<float> priority_dist(0, priority_range);
   std::vector<std::pair<float, int>> subsets_and_values(kSize);
   for (int i = 0; i < kSize; ++i) {
@@ -50,8 +50,7 @@ TEST(AdjustableKAryHeapTest, RandomDataStrongCheck) {
 TEST(AdjustableKAryHeapTest, RandomDataSpeed) {
   const int kSize = 1'000'000;
   const double priority_range = kSize / 100;
-  std::random_device rd;
-  std::mt19937 generator(rd());  // Mersenne Twister generator
+  absl::BitGen generator;
   std::uniform_real_distribution<float> priority_dist(0, priority_range);
   std::vector<std::pair<float, int>> subsets_and_values(kSize);
   for (int i = 0; i < kSize; ++i) {
@@ -71,8 +70,7 @@ TEST(AdjustableKAryHeapTest, UpdateStrongCheck) {
   const int kSize = 10'000;
   const int kNumUpdates = kSize / 100;
   const double priority_range = kSize / 100;
-  std::random_device rd;
-  std::mt19937 generator(rd());  // Mersenne Twister generator
+  absl::BitGen generator;
   std::uniform_real_distribution<float> priority_dist(0, priority_range);
   std::uniform_int_distribution<int> index_dist(0, kSize - 1);
   std::vector<std::pair<float, int>> subsets_and_values(kSize);
@@ -91,8 +89,7 @@ TEST(AdjustableKAryHeapTest, RemoveStrongCheck) {
   const int kSize = 10'000;
   const int kNumRemovals = kSize;
   const double priority_range = kSize / 10;
-  std::random_device rd;
-  std::mt19937 generator(rd());  // Mersenne Twister generator
+  absl::BitGen generator;
   std::uniform_real_distribution<float> priority_dist(0, priority_range);
   std::uniform_int_distribution<int> index_dist(0, kSize - 1);
   std::vector<std::pair<float, int>> subsets_and_values(kSize);
@@ -111,8 +108,7 @@ TEST(AdjustableKAryHeapTest, OneByOneStrongCheck) {
   const int kSize = 10'000;
   const int kNumInsertions = kSize;
   const double priority_range = kSize / 10;
-  std::random_device rd;
-  std::mt19937 generator(rd());  // Mersenne Twister generator
+  absl::BitGen generator;
   std::uniform_real_distribution<float> priority_dist(0, priority_range);
   std::uniform_int_distribution<int> index_dist(0, kSize - 1);
   std::vector<std::pair<float, int>> subsets_and_values;
@@ -128,8 +124,7 @@ TEST(AdjustableKAryHeapTest, OneByOneStrongSpeed) {
   const int kSize = 1'000'000;
   const int kNumInsertions = kSize;
   const double priority_range = kSize / 10;
-  std::random_device rd;
-  std::mt19937 generator(rd());  // Mersenne Twister generator
+  absl::BitGen generator;
   std::uniform_real_distribution<float> priority_dist(0, priority_range);
   std::uniform_int_distribution<int> index_dist(0, kSize - 1);
   std::vector<std::pair<float, int>> subsets_and_values;
@@ -144,8 +139,7 @@ TEST(AdjustableKAryHeapTest, OneByOneStrongSpeed) {
 TEST(StandardHeapTest, RandomDataSpeed) {
   const int kSize = 1'000'000;
   const double priority_range = kSize / 100;
-  std::random_device rd;
-  std::mt19937 generator(rd());  // Mersenne Twister generator
+  absl::BitGen generator;
   std::uniform_real_distribution<float> priority_dist(0, priority_range);
 
   std::vector<float> values(kSize);
