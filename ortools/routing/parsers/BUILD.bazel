@@ -119,12 +119,12 @@ cc_library(
     hdrs = ["carp_parser.h"],
     deps = [
         ":simple_graph",
-        "//ortools/base",
         "//ortools/base:linked_hash_map",
         "//ortools/base:numbers",
         "//ortools/util:filelineiter",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",
     ],
@@ -165,9 +165,9 @@ cc_library(
     deps = [
         ":simple_graph",
         "//ortools/base:linked_hash_map",
-        "//ortools/base:logging",
         "//ortools/base:numbers",
         "//ortools/util:filelineiter",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings",
     ],
 )

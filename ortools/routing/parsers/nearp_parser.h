@@ -75,14 +75,15 @@
 #ifndef ORTOOLS_ROUTING_PARSERS_NEARP_PARSER_H_
 #define ORTOOLS_ROUTING_PARSERS_NEARP_PARSER_H_
 
-#include <algorithm>
+#include <cstdint>
 #include <string>
 #include <string_view>
 #include <vector>
 
+#include "absl/log/check.h"
+#include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "ortools/base/linked_hash_map.h"
-#include "ortools/base/logging.h"
 #include "ortools/routing/parsers/simple_graph.h"
 
 namespace operations_research::routing {
