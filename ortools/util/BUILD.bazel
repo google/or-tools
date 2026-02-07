@@ -472,8 +472,8 @@ cc_library(
     srcs = ["solve_interrupter.cc"],
     hdrs = ["solve_interrupter.h"],
     deps = [
-        "//ortools/base:intops",
         "//ortools/base:linked_hash_map",
+        "//ortools/base:strong_int",
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/base:nullability",
         "@abseil-cpp//absl/functional:any_invocable",

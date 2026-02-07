@@ -263,16 +263,18 @@ class OR_DLL Model {
     /// Deliveries must be performed in the same order as pickups.
     PICKUP_AND_DELIVERY_FIFO
   };
-// For compatibility only.
+
 #if !defined(SWIG)
-  using CostClassIndex = CostClassIndex;
-  using DimensionIndex = DimensionIndex;
-  using DisjunctionIndex = DisjunctionIndex;
-  using VehicleClassIndex = VehicleClassIndex;
-  using ResourceClassIndex = ResourceClassIndex;
-  using TransitCallback1 = TransitCallback1;
-  using TransitCallback2 = TransitCallback2;
-  using CumulDependentTransitCallback2 = CumulDependentTransitCallback2;
+  // For compatibility only.
+  using CostClassIndex = ::operations_research::routing::CostClassIndex;
+  using DimensionIndex = ::operations_research::routing::DimensionIndex;
+  using DisjunctionIndex = ::operations_research::routing::DisjunctionIndex;
+  using VehicleClassIndex = ::operations_research::routing::VehicleClassIndex;
+  using ResourceClassIndex = ::operations_research::routing::ResourceClassIndex;
+  using TransitCallback1 = ::operations_research::routing::TransitCallback1;
+  using TransitCallback2 = ::operations_research::routing::TransitCallback2;
+  using CumulDependentTransitCallback2 =
+     ::operations_research::routing::CumulDependentTransitCallback2;
 #endif  // !defined(SWIG)
 
 #if !defined(SWIG)

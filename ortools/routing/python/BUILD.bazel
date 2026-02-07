@@ -64,8 +64,8 @@ py_test(
     deps = [
         ":routing",
         requirement("absl-py"),
-        "//ortools/constraint_solver/python:constraint_solver",
         "//ortools/constraint_solver:search_stats_py_pb2",
+        "//ortools/constraint_solver/python:constraint_solver",
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
     ],
@@ -79,7 +79,7 @@ py_test(
         ":routing",
         requirement("absl-py"),
         "//ortools/routing:enums_py_pb2",
-        "//ortools/routing:parameters_py_pb2",  # keep
+        "//ortools/routing:parameters_py_pb2",
     ],
 )
 
@@ -101,7 +101,7 @@ py_test(
         ":routing",
         requirement("absl-py"),
         "//ortools/routing:enums_py_pb2",
-        "//ortools/routing:parameters_py_pb2",  # keep
+        "//ortools/routing:parameters_py_pb2",
         "//ortools/util:optional_boolean_py_pb2",
         "//ortools/util/python:sorted_interval_list",
     ],

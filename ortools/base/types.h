@@ -14,21 +14,19 @@
 #ifndef ORTOOLS_BASE_TYPES_H_
 #define ORTOOLS_BASE_TYPES_H_
 
-#include <cinttypes>
 #include <cstdint>
 
-static const uint8_t kuint8max = UINT8_MAX;
-static const uint16_t kuint16max = UINT16_MAX;
-static const uint32_t kuint32max = UINT32_MAX;
-static const uint64_t kuint64max = UINT64_MAX;
-
-static const int8_t kint8min = INT8_MIN;
-static const int8_t kint8max = INT8_MAX;
-static const int16_t kint16min = INT16_MIN;
-static const int16_t kint16max = INT16_MAX;
-static const int32_t kint32min = INT32_MIN;
-static const int32_t kint32max = INT32_MAX;
-static const int64_t kint64min = INT64_MIN;
-static const int64_t kint64max = INT64_MAX;
+const uint8_t kuint8max{0xFF};
+const uint16_t kuint16max{0xFFFF};
+const uint32_t kuint32max{0xFFFFFFFF};
+const uint64_t kuint64max{0xFFFFFFFFFFFFFFFF};
+const int8_t kint8min{~0x7F};
+const int8_t kint8max{0x7F};
+const int16_t kint16min{~0x7FFF};
+const int16_t kint16max{0x7FFF};
+const int32_t kint32min{~0x7FFFFFFF};
+const int32_t kint32max{0x7FFFFFFF};
+const int64_t kint64min{~0x7FFFFFFFFFFFFFFF};
+const int64_t kint64max{0x7FFFFFFFFFFFFFFF};
 
 #endif  // ORTOOLS_BASE_TYPES_H_

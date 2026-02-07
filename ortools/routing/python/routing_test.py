@@ -357,10 +357,9 @@ class ModelTest(absltest.TestCase):
     def test_routing_model_parameters(self) -> None:
         # Create routing model with parameters
         parameters = routing.default_routing_model_parameters()
-        # text_format.Parse(
-        #     str(constraint_solver.Solver.default_solver_parameters()),
-        #     parameters.solver_parameters,
-        # )
+        parameters.solver_parameters.CopyFrom(
+            constraint_solver.Solver.default_solver_parameters()
+        )
         parameters.solver_parameters.trace_propagation = True
         manager = routing.IndexManager(10, 1, 0)
         self.assertIsNotNone(manager)

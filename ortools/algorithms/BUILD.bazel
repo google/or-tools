@@ -134,9 +134,9 @@ cc_library(
     name = "adjustable_k_ary_heap",
     hdrs = ["adjustable_k_ary_heap.h"],
     deps = [
-        "@abseil-cpp//absl/log:check",
         "//ortools/base:strong_int",
-        "//ortools/base:strong_vector",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -147,6 +147,8 @@ cc_test(
     deps = [
         ":adjustable_k_ary_heap",
         "//ortools/base:gmock_main",
+        "//ortools/base:strong_int",
+        "//ortools/base:strong_vector",
         "@abseil-cpp//absl/random",
     ],
 )

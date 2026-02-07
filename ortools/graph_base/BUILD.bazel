@@ -128,7 +128,7 @@ cc_test(
     deps = [
         ":iterators",
         "//ortools/base:gmock_main",
-        "//ortools/base:intops",
+        "//ortools/base:strong_int",
     ],
 )
 

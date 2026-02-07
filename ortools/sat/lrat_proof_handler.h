@@ -25,13 +25,13 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/base/strong_int.h"
 #include "ortools/sat/lrat.pb.h"
 #include "ortools/sat/lrat_checker.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/recordio.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/synchronization.h"
+#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {
@@ -85,7 +85,7 @@ class LratMerger {
   // files are remapped to global clause IDs (except for the presolve proof: its
   // IDs are kept unchanged). This mapping is stored in `local_to_global_ids_`
   // (one map per proof file).
-  DEFINE_STRONG_INT_TYPE(GlobalId, int64_t);
+  DEFINE_STRONG_INT64_TYPE(GlobalId);
 
   // Reads the proof of the presolved model and adds its clauses to
   // `shared_global_id_`. Also checks this proof if lrat_checker_ is not null.
