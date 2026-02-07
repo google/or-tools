@@ -54,7 +54,7 @@ class OR_DLL IndexManager {
  public:
   // For compatibility only.
 #if !defined(SWIG)
-  using NodeIndex = NodeIndex;
+  using NodeIndex = ::operations_research::routing::NodeIndex;
 #endif  // !defined(SWIG)
   static const int64_t kUnassigned;
 
