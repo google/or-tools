@@ -20,6 +20,24 @@
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/types/span.h"
+#include "ortools/base/strong_int.h"
+
+namespace internal {
+template <typename T, bool IsStrong>
+struct ArrayIndexTypeHelper {
+  using type = T;
+};
+
+template <typename T>
+struct ArrayIndexTypeHelper<T, true> {
+  using type = typename T::ValueType;
+};
+
+template <typename T>
+using ArrayIndexType =
+    typename ArrayIndexTypeHelper<T, util_intops::IsStrongInt<T>::value>::type;
+}  // namespace internal
 
 // Adjustable k-ary heap for std::pair<Priority, Index> classes containing a
 // priority and an index referring to an array where the relevant data is
@@ -53,13 +71,13 @@ class AdjustableKAryHeap {
 
   // Construct a k-heap from an existing vector, tracking original indices.
   // `universe_size` is the maximum possible index in `elements`.
-  explicit AdjustableKAryHeap(const std::vector<Aggregate>& elements,
+  explicit AdjustableKAryHeap(const absl::Span<const Aggregate> elements,
                               HeapIndex universe_size) {
     Load(elements, universe_size);
   }
 
-  explicit AdjustableKAryHeap(const std::vector<Index>& indices,
-                              const std::vector<Priority>& priorities,
+  explicit AdjustableKAryHeap(const absl::Span<const Index> indices,
+                              const absl::Span<const Priority> priorities,
                               HeapIndex universe_size) {
     Load(indices, priorities, universe_size);
   }
@@ -67,10 +85,11 @@ class AdjustableKAryHeap {
   void Clear() {
     data_.clear();
     heap_positions_.clear();
-    heap_size_ = 0;
+    heap_size_ = HeapIndex(0);
   }
 
-  void Load(const std::vector<Aggregate>& elements, HeapIndex universe_size) {
+  void Load(const absl::Span<const Aggregate> elements,
+            HeapIndex universe_size) {
     data_.resize(elements.size());
     heap_size_ = elements.size();
     std::copy(elements.begin(), elements.end(), data_.begin());
@@ -81,14 +100,21 @@ class AdjustableKAryHeap {
     BuildHeap();
   }
 
-  void Load(const std::vector<Index>& indices,
-            const std::vector<Priority>& priorities, HeapIndex universe_size) {
+  void Load(const absl::Span<const Index> indices,
+            const absl::Span<const Priority> priorities,
+            HeapIndex universe_size) {
+    CHECK_EQ(indices.size(), priorities.size());
+    data_.resize(indices.size());
+    indices_.resize(indices.size());
+    priorities_.resize(indices.size());
     std::copy(indices.begin(), indices.end(), indices_.begin());
     std::copy(priorities.begin(), priorities.end(), priorities_.begin());
-    heap_size_ = indices.size();
-    heap_positions_.resize(universe_size, kNonExistent);
-    for (HeapIndex i = 0; i < data_.size(); ++i) {
-      heap_positions_[indices_[i]] = i;
+    heap_size_ = HeapIndex(indices.size());
+    heap_positions_.resize(GetHeapIndexAsArrayIndex(universe_size),
+                           kNonExistent);
+    for (HeapIndex i{0}; i < HeapIndex(data_.size()); ++i) {
+      heap_positions_[GetIndexAsArrayIndex(
+          indices_[GetHeapIndexAsArrayIndex(i)])] = i;
     }
     BuildHeap();
   }
@@ -98,7 +124,7 @@ class AdjustableKAryHeap {
   // This will CHECK-fail if the heap is empty (through Top()).
   void Pop() {
     CHECK(!IsEmpty());
-    CHECK(RemoveAtHeapPosition(0));
+    CHECK(RemoveAtHeapPosition(HeapIndex(0)));
   }
 
   // Returns the index of the top element, without modifying the heap.
@@ -109,31 +135,47 @@ class AdjustableKAryHeap {
     return data_[0].second;
   }
 
-  // Returns the index of the top element, without modifying the heap.
+  // Returns the index of the bottom element, without modifying the heap.
+  // This operation does not remove the element from the heap.
+  Index BottomIndex() const {
+    CHECK(!IsEmpty());
+    return data_[GetHeapIndexAsArrayIndex(GetLowestPriorityChild(HeapIndex(0)))]
+        .second;
+  }
+
+  // Returns the priority of the top element, without modifying the heap.
   // Note that this does not remove the element from the heap, Pop() must be
   // called explicitly.
-
   Priority TopPriority() const {
     CHECK(!IsEmpty());
     return data_[0].first;
+  }
+
+  // Returns the priority of the bottom element, without modifying the heap.
+  // Note that this does not remove the element from the heap.
+  Priority BottomPriority() const {
+    CHECK(!IsEmpty());
+    return data_[GetHeapIndexAsArrayIndex(GetLowestPriorityChild(HeapIndex(0)))]
+        .first;
   }
 
   // Returns the number of elements in the heap.
   HeapIndex heap_size() const { return heap_size_; }
 
   // True iff the heap is empty.
-  bool IsEmpty() const { return heap_size() == 0; }
+  bool IsEmpty() const { return heap_size() == HeapIndex(0); }
 
   // Insert an element into the heap.
   void Insert(Aggregate element) {
     const Index index = element.second;
-    if (index >= heap_positions_.size()) {
-      heap_positions_.resize(index + 1, kNonExistent);
+    if (index >= Index(heap_positions_.size())) {
+      heap_positions_.resize(GetIndexAsArrayIndex(index) + 1, kNonExistent);
     }
     if (GetHeapPosition(index) == kNonExistent) {
-      heap_positions_[index] = heap_size_;
-      if (heap_size_ < data_.size()) {
-        data_[heap_size_] = element;
+      heap_positions_[GetIndexAsArrayIndex(index)] = heap_size_;
+
+      if (heap_size_ < HeapIndex(data_.size())) {
+        data_[GetHeapIndexAsArrayIndex(heap_size_)] = element;
       } else {
         data_.push_back(element);
       }
@@ -155,9 +197,9 @@ class AdjustableKAryHeap {
   void Update(Aggregate element) {
     DCHECK(!IsEmpty());
     const HeapIndex heap_position = GetHeapPosition(element.second);
-    DCHECK_GE(heap_position, 0);
-    DCHECK_LT(heap_position, heap_positions_.size());
-    data_[heap_position] = element;
+    DCHECK_GE(heap_position, HeapIndex(0));
+    DCHECK_LT(heap_position, HeapIndex(heap_positions_.size()));
+    data_[GetHeapIndexAsArrayIndex(heap_position)] = element;
     if (HasPriority(heap_position, Parent(heap_position))) {
       SiftUp(heap_position);
     } else {
@@ -172,45 +214,47 @@ class AdjustableKAryHeap {
 
   // Checks that the heap is well-formed.
   bool CheckHeapProperty() const {
-    for (HeapIndex i = heap_size() - 1; i >= Arity; --i) {
+    for (HeapIndex i = heap_size() - HeapIndex(1);
+         GetHeapIndexAsArrayIndex(i) >= Arity; --i) {
       CHECK(HasPriority(Parent(i), i))
           << "Parent " << Parent(i) << " with priority " << priority(Parent(i))
           << " does not have priority over " << i << " with priority "
           << priority(i) << " , heap_size = " << heap_size()
           << ", priority difference = " << priority(i) - priority(Parent(i));
     }
-    CHECK_LE(heap_size(), heap_positions_.size());
-    CHECK_LE(heap_size(), data_.size());
+    CHECK_LE(heap_size(), HeapIndex(heap_positions_.size()));
+    CHECK_LE(heap_size(), HeapIndex(data_.size()));
     return true;
   }
 
  private:
   // Gets the current position of element with index i in the heap.
   HeapIndex GetHeapPosition(Index i) const {
-    DCHECK_GE(i, 0);
-    DCHECK_LT(i, heap_positions_.size());
-    return heap_positions_[i];
+    DCHECK_GE(i, Index(0));
+    DCHECK_LT(i, Index(heap_positions_.size()));
+    return heap_positions_[GetIndexAsArrayIndex(i)];
   }
 
   // Removes an element at a given heap position.
   bool RemoveAtHeapPosition(HeapIndex heap_index) {
     DCHECK(!IsEmpty());
-    DCHECK_GE(heap_index, 0);
+    DCHECK_GE(GetHeapIndexAsArrayIndex(heap_index), 0);
+
     if (heap_index >= heap_size()) return false;
-    PerformSwap(heap_index, heap_size() - 1);
+    PerformSwap(heap_index, heap_size() - HeapIndex(1));
     --heap_size_;
     if (HasPriority(heap_index, Parent(heap_index))) {
       SiftUp(heap_index);
     } else {
       SiftDown(heap_index);
     }
-    heap_positions_[index(heap_size_)] = kNonExistent;
+    heap_positions_[GetIndexAsArrayIndex(index(heap_size_))] = kNonExistent;
     return true;
   }
 
   // Maintains heap property by sifting down starting from the end,
   void BuildHeap() {
-    for (HeapIndex i = Parent(heap_size()); i >= 0; --i) {
+    for (HeapIndex i = Parent(heap_size()); i >= HeapIndex(0); --i) {
       SiftDown(i);
     }
     DCHECK(CheckHeapProperty());
@@ -218,7 +262,7 @@ class AdjustableKAryHeap {
 
   // Maintains heap property by sifting up an element.
   void SiftUp(HeapIndex index) {
-    while (index > 0 && HasPriority(index, Parent(index))) {
+    while (index > HeapIndex(0) && HasPriority(index, Parent(index))) {
       PerformSwap(index, Parent(index));
       index = Parent(index);
     }
@@ -238,7 +282,8 @@ class AdjustableKAryHeap {
   // smallest (resp. largest) key for a min- (resp. max-) heap.
   // Returns index if there are no such children.
   HeapIndex GetHighestPriorityChild(HeapIndex index) const {
-    const HeapIndex right_bound = std::min(RightChild(index) + 1, heap_size());
+    const HeapIndex right_bound =
+        std::min(RightChild(index) + HeapIndex(1), heap_size());
     HeapIndex highest_priority_child = index;
     for (HeapIndex i = LeftChild(index); i < right_bound; ++i) {
       if (HasPriority(i, highest_priority_child)) {
@@ -248,18 +293,37 @@ class AdjustableKAryHeap {
     return highest_priority_child;
   }
 
+  // Finds the child with the lowest priority, i.e. the child with the
+  // largest (resp. smallest) key for a min- (resp. max-) heap.
+  // Returns index if there are no such children.
+  HeapIndex GetLowestPriorityChild(HeapIndex index) const {
+    const HeapIndex right_bound =
+        std::min(RightChild(index) + HeapIndex(1), heap_size());
+    HeapIndex highest_priority_child = index;
+    for (HeapIndex i = LeftChild(index); i < right_bound; ++i) {
+      if (!HasPriority(i, highest_priority_child)) {
+        highest_priority_child = i;
+      }
+    }
+    return highest_priority_child;
+  }
+
   // Swaps two elements of data_, while also making sure heap_positions_ is
   // properly maintained.
   void PerformSwap(HeapIndex i, HeapIndex j) {
-    std::swap(data_[i], data_[j]);
-    std::swap(heap_positions_[index(i)], heap_positions_[index(j)]);
+    std::swap(data_[GetIndexAsArrayIndex(i)], data_[GetIndexAsArrayIndex(j)]);
+    std::swap(heap_positions_[GetIndexAsArrayIndex(index(i))],
+              heap_positions_[GetIndexAsArrayIndex(index(j))]);
   }
 
   // Compares two elements based on whether we are dealing with a min- or a
   // max-heap. Returns true if (data indexed by) i has more priority
   // than j. Note that we only use operator::<.
   bool HasPriority(HeapIndex i, HeapIndex j) const {
-    return IsMaxHeap ? data_[j] < data_[i] : data_[i] < data_[j];
+    return IsMaxHeap
+               ? data_[GetIndexAsArrayIndex(j)] < data_[GetIndexAsArrayIndex(i)]
+               : data_[GetIndexAsArrayIndex(i)] <
+                     data_[GetIndexAsArrayIndex(j)];
   }
 
   // Since Arity is a (small) constant, we expect compilers to avoid
@@ -268,23 +332,51 @@ class AdjustableKAryHeap {
   // Powers of 2 are guaranteed to be quick thanks to simple shifts.
 
   // Gets the leftmost child index of a given node
-  HeapIndex LeftChild(HeapIndex index) const { return Arity * index + 1; }
+  HeapIndex LeftChild(HeapIndex index) const {
+    return Arity * index + HeapIndex(1);
+  }
 
   // Gets the rightmost child index of a given node
-  HeapIndex RightChild(HeapIndex index) const { return Arity * (index + 1); }
+  HeapIndex RightChild(HeapIndex index) const {
+    return Arity * (index + HeapIndex(1));
+  }
 
   // For division, the optimization is more uncertain, although a simple
   // multiplication and a shift might be used by the compiler.
   // Of course, powers of 2 are guaranteed to be quick thanks to simple shifts.
 
   // Gets the parent index of a given index.
-  HeapIndex Parent(HeapIndex index) const { return (index - 1) / Arity; }
+  HeapIndex Parent(HeapIndex index) const {
+    return (index - HeapIndex(1)) / Arity;
+  }
 
   // Returns the index of the element at position i in the heap.
-  Index index(HeapIndex i) const { return data_[i].second; }
+  Index index(HeapIndex i) const {
+    return data_[GetIndexAsArrayIndex(i)].second;
+  }
 
   // Returns the index of the element at position i in the heap.
-  Priority priority(HeapIndex i) const { return data_[i].first; }
+  Priority priority(HeapIndex i) const {
+    return data_[GetHeapIndexAsArrayIndex(i)].first;
+  }
+
+  // Returns the index as an array index.
+  internal::ArrayIndexType<Index> GetIndexAsArrayIndex(Index i) const {
+    if constexpr (util_intops::IsStrongInt<Index>::value) {
+      return i.value();
+    } else {
+      return i;
+    }
+  }
+  // Returns the heap index as an array index.
+  internal::ArrayIndexType<HeapIndex> GetHeapIndexAsArrayIndex(
+      HeapIndex i) const {
+    if constexpr (util_intops::IsStrongInt<HeapIndex>::value) {
+      return i.value();
+    } else {
+      return i;
+    }
+  }
 
   // The heap is stored as a vector.
   std::vector<Aggregate> data_;
@@ -303,10 +395,10 @@ class AdjustableKAryHeap {
   // The number of elements currently in the heap. This may be updated
   // either when removing an element (which is not removed from data_), or
   // adding a new one.
-  HeapIndex heap_size_ = 0;
+  HeapIndex heap_size_ = HeapIndex(0);
 
   // The index for Aggregates not in the heap.
-  const Index kNonExistent = -1;
+  const Index kNonExistent = Index(-1);
 };
 
 #endif  // ORTOOLS_ALGORITHMS_ADJUSTABLE_K_ARY_HEAP_H_
