@@ -57,6 +57,7 @@ and exposed in this file:
 #include <algorithm>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -71,11 +72,9 @@ and exposed in this file:
 #include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "ortools/base/base_export.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/strong_int.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/base/timer.h"
-#include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/tuple_set.h"
@@ -1800,6 +1799,20 @@ class PathOperator : public IntVarLocalSearchOperator {
     return false;
   }
 
+  /// Returns the last node of the chain of length 'chain_length' starting after
+  /// 'before_chain'. Returns nullopt if the chain contains 'exclude' or
+  /// reaches the end of the path. Returns 'before_chain' if 'chain_length' is
+  /// 0.
+  std::optional<int64_t> GetChainEnd(int64_t before_chain, int64_t exclude,
+                                     int64_t chain_length) const {
+    for (int64_t chain_end = before_chain;
+         !IsPathEnd(chain_end) && chain_end != exclude;
+         chain_end = Next(chain_end)) {
+      if (chain_length-- == 0) return chain_end;
+    }
+    return std::nullopt;
+  }
+
   /// Swaps the nodes node1 and node2.
   bool SwapNodes(int64_t node1, int64_t node2) {
     if (IsPathEnd(node1) || IsPathEnd(node2) || IsPathStart(node1) ||
@@ -2446,10 +2459,6 @@ LocalSearchOperator* MakeTwoOpt(
 /// therefore not be moved):
 /// 1 -> 4 -> 2 -> 3 -> 5
 /// 1 -> 3 -> 4 -> 2 -> 5
-///
-/// Using Relocate with chain lengths of 1, 2 and 3 together is equivalent to
-/// the OrOpt operator on a path. The OrOpt operator is a limited version of
-/// 3Opt (breaks 3 arcs on a path).
 
 LocalSearchOperator* MakeRelocate(
     Solver* solver, const std::vector<IntVar*>& vars,
@@ -2458,9 +2467,17 @@ LocalSearchOperator* MakeRelocate(
     std::function<const std::vector<int>&(int, int)> get_incoming_neighbors =
         nullptr,
     std::function<const std::vector<int>&(int, int)> get_outgoing_neighbors =
-        nullptr,
-    int64_t chain_length = 1LL, bool single_path = false,
-    const std::string& name = "Relocate");
+        nullptr);
+
+/// ----- OrOpt -----
+
+/// Variant of Relocate  which relocates chains of nodes of length 1, 2 and 3
+/// within the same path. The OrOpt operator is a limited version of 3Opt
+/// (breaking 3 arcs on a path).
+LocalSearchOperator* MakeOrOpt(
+    Solver* solver, const std::vector<IntVar*>& vars,
+    const std::vector<IntVar*>& secondary_vars,
+    std::function<int(int64_t)> start_empty_path_class);
 
 /// ----- Exchange -----
 

@@ -346,6 +346,14 @@ class DecrementValue : public ChangeValue {
 using NeighborAccessor =
     std::function<const std::vector<int>&(/*node=*/int, /*start_node=*/int)>;
 
+#define BUILD_PATH_OPERATOR(operator_class, args...)           \
+  do {                                                         \
+    if (secondary_vars.empty()) {                              \
+      return solver->RevAlloc(new operator_class<true>(args)); \
+    }                                                          \
+    return solver->RevAlloc(new operator_class<false>(args));  \
+  } while (false);
+
 // ----- 2Opt -----
 
 template <bool ignore_path_vars>
@@ -448,91 +456,159 @@ LocalSearchOperator* MakeTwoOpt(
     std::function<int(int64_t)> start_empty_path_class,
     NeighborAccessor get_incoming_neighbors,
     NeighborAccessor get_outgoing_neighbors) {
-  if (secondary_vars.empty()) {
-    return solver->RevAlloc(new TwoOpt<true>(
-        vars, secondary_vars, std::move(start_empty_path_class),
-        std::move(get_incoming_neighbors), std::move(get_outgoing_neighbors)));
-  }
-  return solver->RevAlloc(new TwoOpt<false>(
-      vars, secondary_vars, std::move(start_empty_path_class),
-      std::move(get_incoming_neighbors), std::move(get_outgoing_neighbors)));
+  BUILD_PATH_OPERATOR(
+      TwoOpt, vars, secondary_vars, std::move(start_empty_path_class),
+      std::move(get_incoming_neighbors), std::move(get_outgoing_neighbors));
 }
 
-// ----- Relocate -----
+// ----- Relocate variants -----
 
 template <bool ignore_path_vars>
-class Relocate : public PathOperator<ignore_path_vars> {
+class SinglePathRelocate : public PathOperator<ignore_path_vars> {
  public:
-  Relocate(const std::vector<IntVar*>& vars,
-           const std::vector<IntVar*>& secondary_vars, absl::string_view name,
-           std::function<int(int64_t)> start_empty_path_class,
-           NeighborAccessor get_incoming_neighbors,
-           NeighborAccessor get_outgoing_neighbors, int64_t chain_length = 1LL,
-           bool single_path = false)
+  SinglePathRelocate(const std::vector<IntVar*>& vars,
+                     const std::vector<IntVar*>& secondary_vars,
+                     absl::string_view name,
+                     std::function<int(int64_t)> start_empty_path_class,
+                     int64_t chain_length)
       : PathOperator<ignore_path_vars>(
-            vars, secondary_vars,
-            (get_incoming_neighbors == nullptr &&
-             get_outgoing_neighbors == nullptr)
-                ? 2
-                : 1,
+            vars, secondary_vars, /*number_of_base_nodes=*/2,
             /*skip_locally_optimal_paths=*/true,
             /*accept_path_end_base=*/false, std::move(start_empty_path_class),
-            chain_length == 1 ? std::move(get_incoming_neighbors) : nullptr,
-            std::move(get_outgoing_neighbors)),
+            /*get_incoming_neighbors=*/nullptr,
+            /*get_outgoing_neighbors=*/nullptr),
         chain_length_(chain_length),
-        single_path_(single_path),
-        name_(absl::StrCat(name, "<", chain_length, ">")) {
-    CHECK_GT(chain_length_, 0);
+        name_(name) {
+    DCHECK_GT(chain_length_, 0);
   }
-  ~Relocate() override = default;
+  ~SinglePathRelocate() override = default;
   bool MakeNeighbor() override;
 
   std::string DebugString() const override { return name_; }
 
  protected:
   bool OnSamePathAsPreviousBase(int64_t /*base_index*/) override {
-    // Both base nodes have to be on the same path when it's the single path
-    // version.
-    return single_path_;
+    return true;
   }
 
  private:
   const int64_t chain_length_;
-  const bool single_path_;
   const std::string name_;
 };
 
 template <bool ignore_path_vars>
+bool SinglePathRelocate<ignore_path_vars>::MakeNeighbor() {
+  DCHECK(this->StartNode(0) == this->StartNode(1));
+  const int64_t before_chain = this->BaseNode(0);
+  const int64_t destination = this->BaseNode(1);
+  std::optional<int64_t> chain_end =
+      this->GetChainEnd(before_chain, destination, chain_length_);
+  return chain_end.has_value() &&
+         this->MoveChain(before_chain, *chain_end, destination);
+}
+
+LocalSearchOperator* MakeOrOpt(
+    Solver* solver, const std::vector<IntVar*>& vars,
+    const std::vector<IntVar*>& secondary_vars,
+    std::function<int(int64_t)> start_empty_path_class) {
+  auto build_operator = [&](int chain_length) -> LocalSearchOperator* {
+    BUILD_PATH_OPERATOR(SinglePathRelocate, vars, secondary_vars,
+                        absl::StrCat("OrOpt<", chain_length, ">"),
+                        std::move(start_empty_path_class), chain_length);
+  };
+  std::vector<LocalSearchOperator*> operators;
+  for (int i = 1; i < 4; ++i) {
+    operators.push_back(build_operator(i));
+  }
+  return solver->ConcatenateOperators(operators);
+}
+
+template <bool ignore_path_vars>
+class Relocate : public PathOperator<ignore_path_vars> {
+ public:
+  Relocate(const std::vector<IntVar*>& vars,
+           const std::vector<IntVar*>& secondary_vars,
+           std::function<int(int64_t)> start_empty_path_class,
+           int64_t chain_length)
+      : PathOperator<ignore_path_vars>(
+            vars, secondary_vars, /*number_of_base_nodes=*/2,
+            /*skip_locally_optimal_paths=*/true,
+            /*accept_path_end_base=*/false, std::move(start_empty_path_class),
+            /*get_incoming_neighbors=*/nullptr,
+            /*get_outgoing_neighbors=*/nullptr),
+        chain_length_(chain_length) {
+    DCHECK_GT(chain_length_, 0);
+  }
+  ~Relocate() override = default;
+  bool MakeNeighbor() override;
+
+  std::string DebugString() const override { return "Relocate"; }
+
+ private:
+  const int64_t chain_length_;
+};
+
+template <bool ignore_path_vars>
 bool Relocate<ignore_path_vars>::MakeNeighbor() {
+  const int64_t before_chain = this->BaseNode(0);
+  const int64_t destination = this->BaseNode(1);
+  std::optional<int64_t> chain_end =
+      this->GetChainEnd(before_chain, destination, chain_length_);
+  return chain_end.has_value() &&
+         this->MoveChain(before_chain, *chain_end, destination);
+}
+
+template <bool ignore_path_vars>
+class RelocateWithNeighbors : public PathOperator<ignore_path_vars> {
+ public:
+  RelocateWithNeighbors(const std::vector<IntVar*>& vars,
+                        const std::vector<IntVar*>& secondary_vars,
+                        std::function<int(int64_t)> start_empty_path_class,
+                        NeighborAccessor get_incoming_neighbors,
+                        NeighborAccessor get_outgoing_neighbors,
+                        int64_t chain_length)
+      : PathOperator<ignore_path_vars>(
+            vars, secondary_vars,
+            /*number_of_base_nodes=*/1, /*skip_locally_optimal_paths=*/true,
+            /*accept_path_end_base=*/false, std::move(start_empty_path_class),
+            chain_length == 1 ? std::move(get_incoming_neighbors) : nullptr,
+            std::move(get_outgoing_neighbors)),
+        chain_length_(chain_length) {
+    DCHECK_GT(chain_length_, 0);
+    DCHECK(this->HasNeighbors());
+  }
+  ~RelocateWithNeighbors() override = default;
+  bool MakeNeighbor() override;
+
+  std::string DebugString() const override { return "RelocateWithNeighbors"; }
+
+ private:
+  const int64_t chain_length_;
+};
+
+template <bool ignore_path_vars>
+bool RelocateWithNeighbors<ignore_path_vars>::MakeNeighbor() {
   const auto do_move = [this](int64_t before_chain, int64_t destination) {
-    DCHECK(!this->IsPathEnd(destination));
-    int64_t chain_end = before_chain;
-    for (int i = 0; i < chain_length_; ++i) {
-      if (this->IsPathEnd(chain_end) || chain_end == destination) return false;
-      chain_end = this->Next(chain_end);
-    }
-    return !this->IsPathEnd(chain_end) &&
-           this->MoveChain(before_chain, chain_end, destination);
+    std::optional<int64_t> chain_end =
+        this->GetChainEnd(before_chain, destination, this->chain_length_);
+    if (!chain_end.has_value()) return false;
+    return this->MoveChain(before_chain, *chain_end, destination);
   };
   const int64_t node0 = this->BaseNode(0);
-  if (this->HasNeighbors()) {
-    const auto [neighbor, outgoing] = this->GetNeighborForBaseNode(0);
-    if (neighbor < 0 || this->IsInactive(neighbor)) return false;
-    if (outgoing) {
-      return do_move(/*before_chain=*/this->Prev(neighbor),
-                     /*destination=*/node0);
-    }
-    DCHECK_EQ(chain_length_, 1);
-    // TODO(user): Handle chain_length_ > 1 for incoming neighbors by going
-    // backwards on the chain. NOTE: In this setting it makes sense to have path
-    // ends as base nodes as we move the chain "before" the base node.
-    DCHECK(!this->IsPathStart(node0))
-        << "Path starts have no incoming neighbors.";
+  const auto [neighbor, outgoing] = this->GetNeighborForBaseNode(0);
+  if (neighbor < 0 || this->IsInactive(neighbor)) return false;
+  if (outgoing) {
     return do_move(/*before_chain=*/this->Prev(neighbor),
-                   /*destination=*/this->Prev(node0));
+                   /*destination=*/node0);
   }
-  DCHECK(!single_path_ || this->StartNode(0) == this->StartNode(1));
-  return do_move(/*before_chain=*/node0, /*destination=*/this->BaseNode(1));
+  DCHECK_EQ(this->chain_length_, 1);
+  // TODO(user): Handle chain_length_ > 1 for incoming neighbors by going
+  // backwards on the chain. NOTE: In this setting it makes sense to have path
+  // ends as base nodes as we move the chain "before" the base node.
+  DCHECK(!this->IsPathStart(node0))
+      << "Path starts have no incoming neighbors.";
+  return do_move(/*before_chain=*/this->Prev(neighbor),
+                 /*destination=*/this->Prev(node0));
 }
 
 LocalSearchOperator* MakeRelocate(
@@ -540,18 +616,15 @@ LocalSearchOperator* MakeRelocate(
     const std::vector<IntVar*>& secondary_vars,
     std::function<int(int64_t)> start_empty_path_class,
     NeighborAccessor get_incoming_neighbors,
-    NeighborAccessor get_outgoing_neighbors, int64_t chain_length,
-    bool single_path, const std::string& name) {
-  if (secondary_vars.empty()) {
-    return solver->RevAlloc(new Relocate<true>(
-        vars, secondary_vars, name, std::move(start_empty_path_class),
-        std::move(get_incoming_neighbors), std::move(get_outgoing_neighbors),
-        chain_length, single_path));
+    NeighborAccessor get_outgoing_neighbors) {
+  if (get_incoming_neighbors == nullptr && get_outgoing_neighbors == nullptr) {
+    BUILD_PATH_OPERATOR(Relocate, vars, secondary_vars,
+                        std::move(start_empty_path_class), 1);
   }
-  return solver->RevAlloc(new Relocate<false>(
-      vars, secondary_vars, name, std::move(start_empty_path_class),
-      std::move(get_incoming_neighbors), std::move(get_outgoing_neighbors),
-      chain_length, single_path));
+  BUILD_PATH_OPERATOR(RelocateWithNeighbors, vars, secondary_vars,
+                      std::move(start_empty_path_class),
+                      std::move(get_incoming_neighbors),
+                      std::move(get_outgoing_neighbors), 1);
 }
 
 // ----- Exchange -----
@@ -604,14 +677,9 @@ LocalSearchOperator* MakeExchange(
     std::function<int(int64_t)> start_empty_path_class,
     NeighborAccessor get_incoming_neighbors,
     NeighborAccessor get_outgoing_neighbors) {
-  if (secondary_vars.empty()) {
-    return solver->RevAlloc(new Exchange<true>(
-        vars, secondary_vars, std::move(start_empty_path_class),
-        std::move(get_incoming_neighbors), std::move(get_outgoing_neighbors)));
-  }
-  return solver->RevAlloc(new Exchange<false>(
-      vars, secondary_vars, std::move(start_empty_path_class),
-      std::move(get_incoming_neighbors), std::move(get_outgoing_neighbors)));
+  BUILD_PATH_OPERATOR(
+      Exchange, vars, secondary_vars, std::move(start_empty_path_class),
+      std::move(get_incoming_neighbors), std::move(get_outgoing_neighbors));
 }
 
 // ----- Cross -----
@@ -720,14 +788,9 @@ LocalSearchOperator* MakeCross(
     std::function<int(int64_t)> start_empty_path_class,
     NeighborAccessor get_incoming_neighbors,
     NeighborAccessor get_outgoing_neighbors) {
-  if (secondary_vars.empty()) {
-    return solver->RevAlloc(new Cross<true>(
-        vars, secondary_vars, std::move(start_empty_path_class),
-        std::move(get_incoming_neighbors), std::move(get_outgoing_neighbors)));
-  }
-  return solver->RevAlloc(new Cross<false>(
-      vars, secondary_vars, std::move(start_empty_path_class),
-      std::move(get_incoming_neighbors), std::move(get_outgoing_neighbors)));
+  BUILD_PATH_OPERATOR(
+      Cross, vars, secondary_vars, std::move(start_empty_path_class),
+      std::move(get_incoming_neighbors), std::move(get_outgoing_neighbors));
 }
 
 // ----- BaseInactiveNodeToPathOperator -----
@@ -861,12 +924,8 @@ LocalSearchOperator* RelocateAndMakeActive(
     Solver* solver, const std::vector<IntVar*>& vars,
     const std::vector<IntVar*>& secondary_vars,
     std::function<int(int64_t)> start_empty_path_class) {
-  if (secondary_vars.empty()) {
-    return solver->RevAlloc(new RelocateAndMakeActiveOperator<true>(
-        vars, secondary_vars, std::move(start_empty_path_class)));
-  }
-  return solver->RevAlloc(new RelocateAndMakeActiveOperator<false>(
-      vars, secondary_vars, std::move(start_empty_path_class)));
+  BUILD_PATH_OPERATOR(RelocateAndMakeActiveOperator, vars, secondary_vars,
+                      std::move(start_empty_path_class));
 }
 
 // ----- ExchangeAndMakeActiveOperator -----
@@ -901,12 +960,8 @@ LocalSearchOperator* ExchangeAndMakeActive(
     Solver* solver, const std::vector<IntVar*>& vars,
     const std::vector<IntVar*>& secondary_vars,
     std::function<int(int64_t)> start_empty_path_class) {
-  if (secondary_vars.empty()) {
-    return solver->RevAlloc(new ExchangeAndMakeActiveOperator<true>(
-        vars, secondary_vars, std::move(start_empty_path_class)));
-  }
-  return solver->RevAlloc(new ExchangeAndMakeActiveOperator<false>(
-      vars, secondary_vars, std::move(start_empty_path_class)));
+  BUILD_PATH_OPERATOR(ExchangeAndMakeActiveOperator, vars, secondary_vars,
+                      std::move(start_empty_path_class));
 }
 
 // ----- ExchangePathEndsAndMakeActiveOperator -----
@@ -948,13 +1003,8 @@ LocalSearchOperator* ExchangePathStartEndsAndMakeActive(
     Solver* solver, const std::vector<IntVar*>& vars,
     const std::vector<IntVar*>& secondary_vars,
     std::function<int(int64_t)> start_empty_path_class) {
-  if (secondary_vars.empty()) {
-    return solver->RevAlloc(
-        new ExchangePathStartEndsAndMakeActiveOperator<true>(
-            vars, secondary_vars, std::move(start_empty_path_class)));
-  }
-  return solver->RevAlloc(new ExchangePathStartEndsAndMakeActiveOperator<false>(
-      vars, secondary_vars, std::move(start_empty_path_class)));
+  BUILD_PATH_OPERATOR(ExchangePathStartEndsAndMakeActiveOperator, vars,
+                      secondary_vars, std::move(start_empty_path_class));
 }
 
 // ----- MakeActiveAndRelocate -----
@@ -991,12 +1041,8 @@ LocalSearchOperator* MakeActiveAndRelocate(
     Solver* solver, const std::vector<IntVar*>& vars,
     const std::vector<IntVar*>& secondary_vars,
     std::function<int(int64_t)> start_empty_path_class) {
-  if (secondary_vars.empty()) {
-    return solver->RevAlloc(new MakeActiveAndRelocateOperator<true>(
-        vars, secondary_vars, std::move(start_empty_path_class)));
-  }
-  return solver->RevAlloc(new MakeActiveAndRelocateOperator<false>(
-      vars, secondary_vars, std::move(start_empty_path_class)));
+  BUILD_PATH_OPERATOR(MakeActiveAndRelocateOperator, vars, secondary_vars,
+                      std::move(start_empty_path_class));
 }
 
 // ----- MakeInactiveOperator -----
@@ -1023,12 +1069,8 @@ LocalSearchOperator* MakeInactive(
     Solver* solver, const std::vector<IntVar*>& vars,
     const std::vector<IntVar*>& secondary_vars,
     std::function<int(int64_t)> start_empty_path_class) {
-  if (secondary_vars.empty()) {
-    return solver->RevAlloc(new MakeInactiveOperator<true>(
-        vars, secondary_vars, std::move(start_empty_path_class)));
-  }
-  return solver->RevAlloc(new MakeInactiveOperator<false>(
-      vars, secondary_vars, std::move(start_empty_path_class)));
+  BUILD_PATH_OPERATOR(MakeInactiveOperator, vars, secondary_vars,
+                      std::move(start_empty_path_class));
 }
 
 // ----- RelocateAndMakeInactiveOperator -----
@@ -1067,12 +1109,8 @@ LocalSearchOperator* RelocateAndMakeInactive(
     Solver* solver, const std::vector<IntVar*>& vars,
     const std::vector<IntVar*>& secondary_vars,
     std::function<int(int64_t)> start_empty_path_class) {
-  if (secondary_vars.empty()) {
-    return solver->RevAlloc(new RelocateAndMakeInactiveOperator<true>(
-        vars, secondary_vars, std::move(start_empty_path_class)));
-  }
-  return solver->RevAlloc(new RelocateAndMakeInactiveOperator<false>(
-      vars, secondary_vars, std::move(start_empty_path_class)));
+  BUILD_PATH_OPERATOR(RelocateAndMakeInactiveOperator, vars, secondary_vars,
+                      std::move(start_empty_path_class));
 }
 
 // ----- MakeChainInactiveOperator -----
@@ -1123,12 +1161,8 @@ LocalSearchOperator* MakeChainInactive(
     Solver* solver, const std::vector<IntVar*>& vars,
     const std::vector<IntVar*>& secondary_vars,
     std::function<int(int64_t)> start_empty_path_class) {
-  if (secondary_vars.empty()) {
-    return solver->RevAlloc(new MakeChainInactiveOperator<true>(
-        vars, secondary_vars, std::move(start_empty_path_class)));
-  }
-  return solver->RevAlloc(new MakeChainInactiveOperator<false>(
-      vars, secondary_vars, std::move(start_empty_path_class)));
+  BUILD_PATH_OPERATOR(MakeChainInactiveOperator, vars, secondary_vars,
+                      std::move(start_empty_path_class));
 }
 
 // ----- SwapActiveOperator -----
@@ -1156,12 +1190,8 @@ LocalSearchOperator* MakeSwapActive(
     Solver* solver, const std::vector<IntVar*>& vars,
     const std::vector<IntVar*>& secondary_vars,
     std::function<int(int64_t)> start_empty_path_class) {
-  if (secondary_vars.empty()) {
-    return solver->RevAlloc(new SwapActiveOperator<true>(
-        vars, secondary_vars, std::move(start_empty_path_class)));
-  }
-  return solver->RevAlloc(new SwapActiveOperator<false>(
-      vars, secondary_vars, std::move(start_empty_path_class)));
+  BUILD_PATH_OPERATOR(SwapActiveOperator, vars, secondary_vars,
+                      std::move(start_empty_path_class));
 }
 
 // ----- SwapActiveChainOperator -----
@@ -1257,13 +1287,8 @@ LocalSearchOperator* MakeSwapActiveChain(
     Solver* solver, const std::vector<IntVar*>& vars,
     const std::vector<IntVar*>& secondary_vars,
     std::function<int(int64_t)> start_empty_path_class, int max_chain_size) {
-  if (secondary_vars.empty()) {
-    return solver->RevAlloc(new SwapActiveChainOperator<true>(
-        vars, secondary_vars, std::move(start_empty_path_class),
-        max_chain_size));
-  }
-  return solver->RevAlloc(new SwapActiveChainOperator<false>(
-      vars, secondary_vars, std::move(start_empty_path_class), max_chain_size));
+  BUILD_PATH_OPERATOR(SwapActiveChainOperator, vars, secondary_vars,
+                      std::move(start_empty_path_class), max_chain_size);
 }
 
 // ----- ExtendedSwapActiveOperator -----
@@ -1297,12 +1322,8 @@ LocalSearchOperator* MakeExtendedSwapActive(
     Solver* solver, const std::vector<IntVar*>& vars,
     const std::vector<IntVar*>& secondary_vars,
     std::function<int(int64_t)> start_empty_path_class) {
-  if (secondary_vars.empty()) {
-    return solver->RevAlloc(new ExtendedSwapActiveOperator<true>(
-        vars, secondary_vars, std::move(start_empty_path_class)));
-  }
-  return solver->RevAlloc(new ExtendedSwapActiveOperator<false>(
-      vars, secondary_vars, std::move(start_empty_path_class)));
+  BUILD_PATH_OPERATOR(ExtendedSwapActiveOperator, vars, secondary_vars,
+                      std::move(start_empty_path_class));
 }
 
 // ----- TSP-based operators -----
@@ -1377,12 +1398,8 @@ LocalSearchOperator* MakeTSPOpt(Solver* solver,
                                 const std::vector<IntVar*>& secondary_vars,
                                 Solver::IndexEvaluator3 evaluator,
                                 int chain_length) {
-  if (secondary_vars.empty()) {
-    return solver->RevAlloc(new TSPOpt<true>(
-        vars, secondary_vars, std::move(evaluator), chain_length));
-  }
-  return solver->RevAlloc(new TSPOpt<false>(
-      vars, secondary_vars, std::move(evaluator), chain_length));
+  BUILD_PATH_OPERATOR(TSPOpt, vars, secondary_vars, std::move(evaluator),
+                      chain_length);
 }
 
 template <bool ignore_path_vars>
@@ -1531,12 +1548,8 @@ LocalSearchOperator* MakeTSPLns(Solver* solver,
                                 const std::vector<IntVar*>& secondary_vars,
                                 Solver::IndexEvaluator3 evaluator,
                                 int tsp_size) {
-  if (secondary_vars.empty()) {
-    return solver->RevAlloc(
-        new TSPLns<true>(vars, secondary_vars, std::move(evaluator), tsp_size));
-  }
-  return solver->RevAlloc(
-      new TSPLns<false>(vars, secondary_vars, std::move(evaluator), tsp_size));
+  BUILD_PATH_OPERATOR(TSPLns, vars, secondary_vars, std::move(evaluator),
+                      tsp_size);
 }
 
 // ----- Lin-Kernighan -----
@@ -1792,12 +1805,8 @@ LocalSearchOperator* MakeLinKernighan(
     Solver* solver, const std::vector<IntVar*>& vars,
     const std::vector<IntVar*>& secondary_vars,
     const Solver::IndexEvaluator3& evaluator, bool topt) {
-  if (secondary_vars.empty()) {
-    return solver->RevAlloc(new LinKernighan<true>(vars, secondary_vars,
-                                                   std::move(evaluator), topt));
-  }
-  return solver->RevAlloc(new LinKernighan<false>(vars, secondary_vars,
-                                                  std::move(evaluator), topt));
+  BUILD_PATH_OPERATOR(LinKernighan, vars, secondary_vars, std::move(evaluator),
+                      topt);
 }
 
 // ----- Path-based Large Neighborhood Search -----
@@ -1879,14 +1888,11 @@ LocalSearchOperator* MakePathLns(Solver* solver,
                                  const std::vector<IntVar*>& secondary_vars,
                                  int number_of_chunks, int chunk_size,
                                  bool unactive_fragments) {
-  if (secondary_vars.empty()) {
-    return solver->RevAlloc(new PathLns<true>(vars, secondary_vars,
-                                              number_of_chunks, chunk_size,
-                                              unactive_fragments));
-  }
-  return solver->RevAlloc(new PathLns<false>(
-      vars, secondary_vars, number_of_chunks, chunk_size, unactive_fragments));
+  BUILD_PATH_OPERATOR(PathLns, vars, secondary_vars, number_of_chunks,
+                      chunk_size, unactive_fragments);
 }
+
+#undef BUILD_PATH_OPERATOR
 
 // ----- Limit the number of neighborhoods explored -----
 
@@ -2373,17 +2379,8 @@ LocalSearchOperator* Solver::MakeOperator(
                         std::move(get_outgoing_neighbors));
     }
     case Solver::OROPT: {
-      std::vector<LocalSearchOperator*> operators;
-      for (int i = 1; i < 4; ++i) {
-        operators.push_back(MakeRelocate(this, vars, secondary_vars,
-                                         /*start_empty_path_class=*/nullptr,
-                                         /*get_incoming_neighbors=*/nullptr,
-                                         /*get_outgoing_neighbors=*/nullptr,
-                                         /*chain_length=*/i,
-                                         /*single_path=*/true,
-                                         /*name=*/"OrOpt"));
-      }
-      return ConcatenateOperators(operators);
+      return MakeOrOpt(this, vars, secondary_vars,
+                       /*start_empty_path_class=*/nullptr);
     }
     case Solver::RELOCATE: {
       return MakeRelocate(
