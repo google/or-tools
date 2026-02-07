@@ -133,7 +133,11 @@ cc_test(
 cc_library(
     name = "adjustable_k_ary_heap",
     hdrs = ["adjustable_k_ary_heap.h"],
-    deps = ["@abseil-cpp//absl/log:check"],
+    deps = [
+        "@abseil-cpp//absl/log:check",
+        "//ortools/base:strong_int",
+        "//ortools/base:strong_vector",
+    ],
 )
 
 cc_test(
