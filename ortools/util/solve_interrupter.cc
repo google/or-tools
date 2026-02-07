@@ -19,9 +19,8 @@
 
 #include "absl/base/nullability.h"
 #include "absl/functional/any_invocable.h"
+#include "absl/log/check.h"
 #include "absl/synchronization/mutex.h"
-#include "ortools/base/linked_hash_map.h"
-#include "ortools/base/logging.h"
 
 namespace operations_research {
 

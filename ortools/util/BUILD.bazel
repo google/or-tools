@@ -349,7 +349,6 @@ cc_library(
     srcs = ["file_util.cc"],
     hdrs = ["file_util.h"],
     deps = [
-        "//ortools/base",
         "//ortools/base:file",
         "//ortools/base:gzipstring",
         "//ortools/base:recordio",
@@ -475,10 +474,10 @@ cc_library(
     deps = [
         "//ortools/base:intops",
         "//ortools/base:linked_hash_map",
-        "//ortools/base:logging",
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/base:nullability",
         "@abseil-cpp//absl/functional:any_invocable",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/synchronization",
     ],
 )
