@@ -27,7 +27,6 @@
 #include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
 #include "ortools/base/file.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/options.h"
 #include "ortools/base/recordio.h"
@@ -36,11 +35,28 @@
 
 namespace operations_research {
 
-template class AssignmentContainer<IntVar, IntVarElement>;
-template class AssignmentContainer<IntervalVar, IntervalVarElement>;
-template class AssignmentContainer<SequenceVar, SequenceVarElement>;
+// ----------------- BaseAssignmentContainer ------------------------
 
-// ----------------- Solutions ------------------------
+int BaseAssignmentContainer::FindWithDefault(const void* var,
+                                             int default_value) const {
+  auto it = var_to_index_.find(var);
+  return it == var_to_index_.end() ? default_value : it->second;
+}
+
+int BaseAssignmentContainer::MapSize() const { return var_to_index_.size(); }
+bool BaseAssignmentContainer::MapEmpty() const { return var_to_index_.empty(); }
+void BaseAssignmentContainer::ClearMap() { var_to_index_.clear(); }
+void BaseAssignmentContainer::AssignMap(const void* var, int index) const {
+  var_to_index_[var] = index;
+}
+bool BaseAssignmentContainer::FindCopy(const void* var, int* index) const {
+  auto it = var_to_index_.find(var);
+  if (it == var_to_index_.end()) {
+    return false;
+  }
+  *index = it->second;
+  return true;
+}
 
 // ----- IntVarElement -----
 

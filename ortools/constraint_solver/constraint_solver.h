@@ -5326,10 +5326,24 @@ class SequenceVarElement : public AssignmentElement {
   std::vector<int> unperformed_;
 };
 
-template <class V, class E>
-class AssignmentContainer {
+class BaseAssignmentContainer {
  public:
-  AssignmentContainer() {}
+  int FindWithDefault(const void* var, int default_value) const;
+
+  int MapSize() const;
+  bool MapEmpty() const;
+  void ClearMap();
+  void AssignMap(const void* var, int index) const;
+  bool FindCopy(const void* var, int* index) const;
+
+ private:
+  mutable absl::flat_hash_map<const void*, int> var_to_index_;
+};
+
+template <class V, class E>
+class AssignmentContainer : public BaseAssignmentContainer {
+ public:
+  AssignmentContainer() = default;
   E* Add(V* var) {
     CHECK(var != nullptr);
     int index = -1;
@@ -5353,8 +5367,8 @@ class AssignmentContainer {
   }
   void Clear() {
     elements_.clear();
-    if (!elements_map_.empty()) {  /// 2x speedup on OR-Tools.
-      elements_map_.clear();
+    if (!MapEmpty()) {  /// 2x speedup on OR-Tools.
+      ClearMap();
     }
   }
   /// Advanced usage: Resizes the container, potentially adding elements with
@@ -5458,8 +5472,7 @@ class AssignmentContainer {
     /// compares both content and how the map is hashed (e.g., number of
     /// buckets). This is not what we want.
     for (const E& element : container.elements_) {
-      const int position =
-          gtl::FindWithDefault(elements_map_, element.Var(), -1);
+      const int position = FindWithDefault(element.Var(), -1);
       if (position < 0 || elements_[position] != element) {
         return false;
       }
@@ -5472,12 +5485,11 @@ class AssignmentContainer {
 
  private:
   void EnsureMapIsUpToDate() const {
-    absl::flat_hash_map<const V*, int>* map =
-        const_cast<absl::flat_hash_map<const V*, int>*>(&elements_map_);
-    for (int i = map->size(); i < elements_.size(); ++i) {
-      (*map)[elements_[i].Var()] = i;
+    for (int i = MapSize(); i < elements_.size(); ++i) {
+      AssignMap(elements_[i].Var(), i);
     }
   }
+
   bool Find(const V* var, int* index) const {
     /// This threshold was determined from microbenchmarks on Nehalem platform.
     const size_t kMaxSizeForLinearAccess = 11;
@@ -5494,18 +5506,17 @@ class AssignmentContainer {
       return false;
     } else {
       EnsureMapIsUpToDate();
-      DCHECK_EQ(elements_map_.size(), elements_.size());
-      return gtl::FindCopy(elements_map_, var, index);
+      DCHECK_EQ(MapSize(), elements_.size());
+      return FindCopy(var, index);
     }
   }
 
   std::vector<E> elements_;
-  absl::flat_hash_map<const V*, int> elements_map_;
 };
 
-extern template class AssignmentContainer<IntVar, IntVarElement>;
-extern template class AssignmentContainer<IntervalVar, IntervalVarElement>;
-extern template class AssignmentContainer<SequenceVar, SequenceVarElement>;
+template class AssignmentContainer<IntVar, IntVarElement>;
+template class AssignmentContainer<IntervalVar, IntervalVarElement>;
+template class AssignmentContainer<SequenceVar, SequenceVarElement>;
 
 /// An Assignment is a variable -> domains mapping, used
 /// to report solutions to the user.

@@ -27,8 +27,8 @@ Durations are in minutes.
 from typing import Any, Dict
 
 from ortools.constraint_solver.python import constraint_solver
-from ortools.routing.python import routing
 from ortools.routing import enums_pb2
+from ortools.routing.python import routing
 
 # [END import]
 

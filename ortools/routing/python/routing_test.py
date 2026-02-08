@@ -17,7 +17,6 @@
 import functools
 
 from absl.testing import absltest
-from google.protobuf import text_format
 
 from ortools.constraint_solver.python import constraint_solver
 from ortools.routing import enums_pb2
