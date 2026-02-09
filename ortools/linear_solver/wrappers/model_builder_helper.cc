@@ -620,7 +620,8 @@ void ModelSolverHelper::Solve(const ModelBuilderHelper& model) {
     case MPModelRequest::HIGHS_LINEAR_PROGRAMMING:  // ABSL_FALLTHROUGH_INTENDED
     case MPModelRequest::HIGHS_MIXED_INTEGER_PROGRAMMING: {
       // TODO(user): Enable interrupt_solve.
-      const auto temp = HighsSolveProto(std::move(request), nullptr, &log_callback_);
+      const auto temp =
+          HighsSolveProto(std::move(request), nullptr, &log_callback_);
       if (temp.ok()) {
         response_ = std::move(temp.value());
       }
