@@ -14,7 +14,7 @@
 # Description: python wrapping of the code in ../
 
 load("@pip_deps//:requirements.bzl", "requirement")
-load("@pybind11_bazel//:build_defs.bzl", "pybind_extension")
+load("@pybind11_bazel//:build_defs.bzl", "pybind_extension", "pybind_library")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_python//python:py_test.bzl", "py_test")
 
@@ -26,6 +26,24 @@ cc_library(
 
 pybind_extension(
     name = "constraint_solver",
+    srcs = ["constraint_solver.cc"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":constraint_solver_doc",
+        "//ortools/constraint_solver:assignment_cc_proto",
+        "//ortools/constraint_solver:cp",
+        "//ortools/constraint_solver:search_limit_cc_proto",
+        "//ortools/util:piecewise_linear_function",
+        "//ortools/util:tuple_set",
+        "@abseil-cpp//absl/cleanup",
+        "@abseil-cpp//absl/functional:function_ref",
+        "@abseil-cpp//absl/strings",
+        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
+    ],
+)
+
+pybind_library(
+    name = "constraint_solver_lib",
     srcs = ["constraint_solver.cc"],
     visibility = ["//visibility:public"],
     deps = [

@@ -5514,9 +5514,9 @@ class AssignmentContainer : public BaseAssignmentContainer {
   std::vector<E> elements_;
 };
 
-template class AssignmentContainer<IntVar, IntVarElement>;
-template class AssignmentContainer<IntervalVar, IntervalVarElement>;
-template class AssignmentContainer<SequenceVar, SequenceVarElement>;
+extern template class AssignmentContainer<IntVar, IntVarElement>;
+extern template class AssignmentContainer<IntervalVar, IntervalVarElement>;
+extern template class AssignmentContainer<SequenceVar, SequenceVarElement>;
 
 /// An Assignment is a variable -> domains mapping, used
 /// to report solutions to the user.

@@ -58,6 +58,10 @@ bool BaseAssignmentContainer::FindCopy(const void* var, int* index) const {
   return true;
 }
 
+template class AssignmentContainer<IntVar, IntVarElement>;
+template class AssignmentContainer<IntervalVar, IntervalVarElement>;
+template class AssignmentContainer<SequenceVar, SequenceVarElement>;
+
 // ----- IntVarElement -----
 
 IntVarElement::IntVarElement() { Reset(nullptr); }

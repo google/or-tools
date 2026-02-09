@@ -15,7 +15,7 @@
 # some generic utilities for SWIG python.
 
 load("@pip_deps//:requirements.bzl", "requirement")
-load("@pybind11_bazel//:build_defs.bzl", "pybind_extension")
+load("@pybind11_bazel//:build_defs.bzl", "pybind_extension", "pybind_library")
 load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_python//python:py_library.bzl", "py_library")
@@ -29,6 +29,17 @@ cc_library(
 
 pybind_extension(
     name = "sorted_interval_list",
+    srcs = ["sorted_interval_list.cc"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":sorted_interval_list_doc",
+        "//ortools/util:sorted_interval_list",
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
+pybind_library(
+    name = "sorted_interval_list_lib",
     srcs = ["sorted_interval_list.cc"],
     visibility = ["//visibility:public"],
     deps = [

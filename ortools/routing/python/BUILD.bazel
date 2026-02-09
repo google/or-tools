@@ -36,7 +36,7 @@ pybind_extension(
         "//ortools/constraint_solver:cp",
         "//ortools/constraint_solver:search_stats_cc_proto",
         "//ortools/constraint_solver:solver_parameters_cc_proto",
-        "//ortools/constraint_solver/python:constraint_solver",
+        "//ortools/constraint_solver/python:constraint_solver_lib",
         "//ortools/port:proto_utils",
         "//ortools/routing",
         "//ortools/routing:enums_cc_proto",
@@ -48,7 +48,7 @@ pybind_extension(
         "//ortools/sat:sat_parameters_cc_proto",
         "//ortools/util:optional_boolean_cc_proto",
         "//ortools/util:sorted_interval_list",
-        "//ortools/util/python:sorted_interval_list",
+        "//ortools/util/python:sorted_interval_list_lib",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/container:flat_hash_set",
         "@protobuf//:duration_cc_proto",
@@ -68,6 +68,7 @@ py_test(
         "//ortools/constraint_solver/python:constraint_solver",
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
+        "//ortools/util/python:sorted_interval_list",
     ],
 )
 
@@ -78,8 +79,10 @@ py_test(
     deps = [
         ":routing",
         requirement("absl-py"),
+        "//ortools/constraint_solver/python:constraint_solver",
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
+        "//ortools/util/python:sorted_interval_list",
     ],
 )
 
@@ -90,6 +93,10 @@ py_test(
     deps = [
         ":routing",
         requirement("absl-py"),
+        "//ortools/constraint_solver/python:constraint_solver",
+        "//ortools/routing:enums_py_pb2",
+        "//ortools/routing:parameters_py_pb2",
+        "//ortools/util/python:sorted_interval_list",
     ],
 )
 
@@ -100,6 +107,7 @@ py_test(
     deps = [
         ":routing",
         requirement("absl-py"),
+        "//ortools/constraint_solver/python:constraint_solver",
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
         "//ortools/util:optional_boolean_py_pb2",

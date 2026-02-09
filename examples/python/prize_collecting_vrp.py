@@ -15,6 +15,7 @@
 """Simple prize collecting VRP problem with a max distance."""
 
 from ortools.routing import enums_pb2
+from ortools.routing import parameters_pb2
 from ortools.routing.python import routing
 
 
@@ -154,7 +155,9 @@ def main():
         routing_model.add_disjunction([manager.node_to_index(node)], VISIT_VALUES[node])
 
     # Setting first solution heuristic.
-    search_parameters = routing.default_routing_search_parameters()
+    search_parameters: parameters_pb2.RoutingSearchParameters = (
+        routing.default_routing_search_parameters()
+    )
     search_parameters.first_solution_strategy = (
         enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
     )

@@ -15,7 +15,6 @@
 
 load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 load("@rules_cc//cc:cc_test.bzl", "cc_test")
-load("@rules_python//python:py_binary.bzl", "py_binary")
 load("@rules_python//python:py_test.bzl", "py_test")
 load("//tools/testing:bintest.bzl", "bintest")
 
@@ -209,14 +208,17 @@ bintest(
     named_data = {"cvrptw_with_refueling": ":cvrptw_with_refueling"},
 )
 
-py_binary(
+py_test(
     name = "tsp_py3",
+    size = "medium",
     srcs = ["tsp.py"],
     main = "tsp.py",
     deps = [
+        "//ortools/constraint_solver/python:constraint_solver",
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
         "//ortools/routing/python:routing",
+        "//ortools/util/python:sorted_interval_list",
     ],
 )
 
@@ -230,6 +232,7 @@ py_test(
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
         "//ortools/routing/python:routing",
+        "//ortools/util/python:sorted_interval_list",
     ],
 )
 
@@ -243,6 +246,7 @@ py_test(
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
         "//ortools/routing/python:routing",
+        "//ortools/util/python:sorted_interval_list",
     ],
 )
 
@@ -256,6 +260,7 @@ py_test(
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
         "//ortools/routing/python:routing",
+        "//ortools/util/python:sorted_interval_list",
     ],
 )
 
@@ -284,9 +289,11 @@ py_test(
     srcs = ["simple_routing_program.py"],
     main = "simple_routing_program.py",
     deps = [
+        "//ortools/constraint_solver/python:constraint_solver",
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
         "//ortools/routing/python:routing",
+        "//ortools/util/python:sorted_interval_list",
     ],
 )
 
@@ -296,9 +303,11 @@ py_test(
     srcs = ["vrp_node_max.py"],
     main = "vrp_node_max.py",
     deps = [
+        "//ortools/constraint_solver/python:constraint_solver",
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
         "//ortools/routing/python:routing",
+        "//ortools/util/python:sorted_interval_list",
     ],
 )
 
@@ -312,6 +321,7 @@ py_test(
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
         "//ortools/routing/python:routing",
+        "//ortools/util/python:sorted_interval_list",
     ],
 )
 
@@ -363,6 +373,7 @@ py_test(
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
         "//ortools/routing/python:routing",
+        "//ortools/util/python:sorted_interval_list",
     ],
 )
 
@@ -391,9 +402,11 @@ py_test(
     srcs = ["tsp_cities.py"],
     main = "tsp_cities.py",
     deps = [
+        "//ortools/constraint_solver/python:constraint_solver",
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
         "//ortools/routing/python:routing",
+        "//ortools/util/python:sorted_interval_list",
     ],
 )
 
@@ -445,6 +458,7 @@ py_test(
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
         "//ortools/routing/python:routing",
+        "//ortools/util/python:sorted_interval_list",
     ],
 )
 
@@ -477,6 +491,7 @@ py_test(
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
         "//ortools/routing/python:routing",
+        "//ortools/util/python:sorted_interval_list",
     ],
 )
 
@@ -510,6 +525,7 @@ py_test(
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
         "//ortools/routing/python:routing",
+        "//ortools/util/python:sorted_interval_list",
     ],
 )
 
@@ -523,6 +539,7 @@ py_test(
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
         "//ortools/routing/python:routing",
+        "//ortools/util/python:sorted_interval_list",
     ],
 )
 
@@ -556,6 +573,7 @@ py_test(
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
         "//ortools/routing/python:routing",
+        "//ortools/util/python:sorted_interval_list",
     ],
 )
 
@@ -589,6 +607,7 @@ py_test(
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
         "//ortools/routing/python:routing",
+        "//ortools/util/python:sorted_interval_list",
     ],
 )
 
@@ -621,6 +640,7 @@ py_test(
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
         "//ortools/routing/python:routing",
+        "//ortools/util/python:sorted_interval_list",
     ],
 )
 
@@ -654,6 +674,7 @@ py_test(
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
         "//ortools/routing/python:routing",
+        "//ortools/util/python:sorted_interval_list",
     ],
 )
 
@@ -667,6 +688,7 @@ py_test(
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
         "//ortools/routing/python:routing",
+        "//ortools/util/python:sorted_interval_list",
     ],
 )
 
@@ -680,6 +702,7 @@ py_test(
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
         "//ortools/routing/python:routing",
+        "//ortools/util/python:sorted_interval_list",
     ],
 )
 
@@ -712,6 +735,7 @@ py_test(
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
         "//ortools/routing/python:routing",
+        "//ortools/util/python:sorted_interval_list",
     ],
 )
 
@@ -744,6 +768,7 @@ py_test(
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
         "//ortools/routing/python:routing",
+        "//ortools/util/python:sorted_interval_list",
     ],
 )
 
@@ -776,6 +801,7 @@ py_test(
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
         "//ortools/routing/python:routing",
+        "//ortools/util/python:sorted_interval_list",
     ],
 )
 
@@ -808,6 +834,7 @@ py_test(
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
         "//ortools/routing/python:routing",
+        "//ortools/util/python:sorted_interval_list",
     ],
 )
 
@@ -840,6 +867,7 @@ py_test(
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
         "//ortools/routing/python:routing",
+        "//ortools/util/python:sorted_interval_list",
     ],
 )
 
@@ -888,9 +916,11 @@ py_test(
     srcs = ["vrp_solution_callback.py"],
     main = "vrp_solution_callback.py",
     deps = [
+        "//ortools/constraint_solver/python:constraint_solver",
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
         "//ortools/routing/python:routing",
+        "//ortools/util/python:sorted_interval_list",
     ],
 )
 
@@ -923,6 +953,7 @@ py_test(
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
         "//ortools/routing/python:routing",
+        "//ortools/util/python:sorted_interval_list",
     ],
 )
 
@@ -936,6 +967,7 @@ py_test(
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
         "//ortools/routing/python:routing",
+        "//ortools/util/python:sorted_interval_list",
     ],
 )
 
@@ -969,6 +1001,7 @@ py_test(
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
         "//ortools/routing/python:routing",
+        "//ortools/util/python:sorted_interval_list",
     ],
 )
 
@@ -1001,5 +1034,6 @@ py_test(
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
         "//ortools/routing/python:routing",
+        "//ortools/util/python:sorted_interval_list",
     ],
 )

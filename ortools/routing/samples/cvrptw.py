@@ -28,6 +28,7 @@ from typing import Any, Dict
 
 from ortools.constraint_solver.python import constraint_solver
 from ortools.routing import enums_pb2
+from ortools.routing import parameters_pb2
 from ortools.routing.python import routing
 
 FirstSolutionStrategy = enums_pb2.FirstSolutionStrategy
@@ -279,7 +280,9 @@ def main() -> None:
 
     # Setting first solution heuristic.
     # [START parameters]
-    search_parameters = routing.default_routing_search_parameters()
+    search_parameters: parameters_pb2.RoutingSearchParameters = (
+        routing.default_routing_search_parameters()
+    )
     search_parameters.first_solution_strategy = (
         FirstSolutionStrategy.PARALLEL_CHEAPEST_INSERTION
     )
