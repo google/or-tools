@@ -31,7 +31,6 @@
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "google/protobuf/message.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -773,6 +772,7 @@ void ExpandInverse(ConstraintProto* ct, PresolveContext* context) {
         // We have f[i] == j <=> r[j] == i;
         int r_j_i;
         if (enforced_domains.DomainContains(r_j, i) &&
+            context->VarCanTakeValue(r_j, i) &&
             context->HasVarValueEncoding(r_j, i, &r_j_i)) {
           if (!context->InsertVarValueEncoding(r_j_i, f_i, j)) {
             return;
@@ -1285,11 +1285,11 @@ void LinkLiteralsAndValues(absl::Span<const int> enforcement_literals,
 // Add the constraint enforcement_literals && literal => one_of(encoding[v]),
 // for v in reachable_values. Note that all possible values are the ones
 // appearing in encoding.
-void AddImplyInReachableValues(absl::Span<const int> enforcement_literals,
-                               int literal,
-                               std::vector<int64_t>& reachable_values,
-                               const absl::flat_hash_map<int64_t, int> encoding,
-                               PresolveContext* context) {
+void AddImplyInReachableValues(
+    absl::Span<const int> enforcement_literals, int literal,
+    std::vector<int64_t>& reachable_values,
+    const absl::flat_hash_map<int64_t, int>& encoding,
+    PresolveContext* context) {
   gtl::STLSortAndRemoveDuplicates(&reachable_values);
   if (reachable_values.size() == encoding.size()) return;  // No constraint.
   if (reachable_values.size() <= encoding.size() / 2) {

@@ -1081,7 +1081,7 @@ TEST(AppendLinearConstraintRelaxation, SmallConstraint) {
   AppendLinearConstraintRelaxation(initial_model.constraints(0), &model,
                                    &relaxation);
 
-  EXPECT_EQ(relaxation.linear_constraints.size(), 0);
+  EXPECT_EQ(relaxation.linear_constraints.size(), 1);
 }
 
 TEST(AppendLinearConstraintRelaxation, SingleEnforcementLiteralLowerBound) {

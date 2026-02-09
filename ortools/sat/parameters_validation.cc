@@ -106,7 +106,6 @@ std::string ValidateParameters(const SatParameters& params) {
 
   TEST_NOT_NAN(max_time_in_seconds);
   TEST_NOT_NAN(max_deterministic_time);
-  TEST_NOT_NAN(max_drat_time_in_seconds);
 
   // Parallelism.
   const int kMaxReasonableParallelism = 10'000;
@@ -134,10 +133,8 @@ std::string ValidateParameters(const SatParameters& params) {
   TEST_IN_RANGE(feasibility_jump_var_perburbation_range_ratio, 0.0, 1.0);
 
   // Violation ls.
-  TEST_NOT_NAN(violation_ls_compound_move_probability);
   TEST_IN_RANGE(num_violation_ls, 0, kMaxReasonableParallelism);
   TEST_IN_RANGE(violation_ls_perturbation_period, 1, 1'000'000'000);
-  TEST_IN_RANGE(violation_ls_compound_move_probability, 0.0, 1.0);
 
   TEST_POSITIVE(glucose_decay_increment_period);
   TEST_POSITIVE(shared_tree_max_nodes_per_worker);
@@ -176,6 +173,11 @@ std::string ValidateParameters(const SatParameters& params) {
     return "use_shared_tree_search must only be set on workers' parameters";
   }
 
+  if (params.optimize_with_max_hs() && !params.optimize_with_core()) {
+    // TODO(user): untangle those two heuristics.
+    return "optimize_with_max_hs requires optimize_with_core";
+  }
+
   if (params.enumerate_all_solutions() && params.interleave_search()) {
     return "Enumerating all solutions does not work with interleaved search";
   }
@@ -183,6 +185,30 @@ std::string ValidateParameters(const SatParameters& params) {
   for (const SatParameters& new_subsolver : params.subsolver_params()) {
     if (new_subsolver.name().empty()) {
       return "New subsolver parameter defined without a name";
+    }
+  }
+
+  if (params.output_lrat_proof() && params.cp_model_presolve() &&
+      !params.cp_model_pure_sat_presolve()) {
+    return "output_lrat_proof is only supported with "
+           "cp_model_pure_sat_presolve if cp_model_presolve is true";
+  }
+  if (params.check_lrat_proof() || params.output_lrat_proof()) {
+    if (params.linearization_level() > 1) {
+      return "check_lrat_proof and output_lrat_proof are only supported with "
+             "linearization_level <= 1";
+    }
+    if (params.symmetry_level() > 1) {
+      return "check_lrat_proof and output_lrat_proof are only supported with "
+             "symmetry_level <= 1";
+    }
+    if (params.use_chronological_backtracking()) {
+      return "check_lrat_proof and output_lrat_proof are only supported with "
+             "use_chronological_backtracking = false";
+    }
+    if (params.inprocessing_use_sat_sweeping()) {
+      return "check_lrat_proof and output_lrat_proof are only supported with "
+             "inprocessing_use_sat_sweeping = false";
     }
   }
 

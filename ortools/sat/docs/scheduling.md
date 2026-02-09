@@ -39,7 +39,7 @@ def interval_sample_sat():
 
   # An interval can be created from three affine expressions.
   start_var = model.new_int_var(0, horizon, 'start')
-  duration = 10  # Python cp/sat code accept integer variables or constants.
+  duration = 10  # Python CP-SAT code accepts integer variables or constants.
   end_var = model.new_int_var(0, horizon, 'end')
   interval_var = model.new_interval_var(
       start_var, duration, end_var + 2, 'interval'
@@ -47,8 +47,7 @@ def interval_sample_sat():
 
   print(f'interval = {repr(interval_var)}')
 
-  # If the size is fixed, a simpler version uses the start expression and the
-  # size.
+  # If the size is fixed, you only need the start expression and the size.
   fixed_size_interval_var = model.new_fixed_size_interval_var(
       start_var, 10, 'fixed_size_interval_var'
   )
@@ -69,11 +68,11 @@ interval_sample_sat()
 #include <stdlib.h>
 
 #include "ortools/base/init_google.h"
-#include "ortools/base/logging.h"
-#include "absl/base/log_severity.h"
+#include "ortools/base/log_severity.h"
+#include "absl/log/check.h"
 #include "absl/log/globals.h"
-#include "ortools/sat/cp_model.h"
 #include "ortools/util/sorted_interval_list.h"
+#include "ortools/sat/cp_model.h"
 
 namespace operations_research {
 namespace sat {
@@ -306,11 +305,11 @@ optional_interval_sample_sat()
 #include <stdlib.h>
 
 #include "ortools/base/init_google.h"
-#include "ortools/base/logging.h"
-#include "absl/base/log_severity.h"
+#include "ortools/base/log_severity.h"
+#include "absl/log/check.h"
 #include "absl/log/globals.h"
-#include "ortools/sat/cp_model.h"
 #include "ortools/util/sorted_interval_list.h"
+#include "ortools/sat/cp_model.h"
 
 namespace operations_research {
 namespace sat {
@@ -494,13 +493,13 @@ Temporal relations between intervals can be expressions using linear
 inequalities involving the start and end expressions of the intervals.
 
 As seen above, the factory methods on the model used to build intervals accept
-1-var affine expression (a * var + b, a, b integer constants) as arguments to
-the start, size, and end parameters.
+1-var affine expression (`a * var + b`, where `a` and `b` are integer constants)
+as arguments to the `start`, `size`, and `end` parameters.
 
 Once the interval is build, these same expressions can be queries using
-`StartExpr(), SizeExpr() and EndExpr()` in C++ and C#, `start_expr(),
-size_expr(), and end_expr()` in python, and `getStartExpr(), getSizeExpr(), and
-getEndExpr()` in Java.
+`StartExpr()`, `SizeExpr()`, and `EndExpr()` in C++ and C#, `start_expr()`,
+`size_expr()`, and `end_expr()` in Python, and `getStartExpr()`, `getSizeExpr(),
+and `getEndExpr()` in Java.
 
 If one or both intervals are optional, then these inequalities must be reified
 by the presence literals of the optional intervals used.
@@ -580,7 +579,7 @@ interval_relations_sample_sat()
 
 ## NoOverlap constraint
 
-A no_overlap constraint simply states that all intervals are disjoint. It is
+A NoOverlap constraint simply states that all intervals are disjoint. It is
 built with a list of interval variables. Fixed intervals are useful for
 excluding part of the timeline.
 
@@ -659,15 +658,15 @@ no_overlap_sample_sat()
 #include <cstdint>
 
 #include "ortools/base/init_google.h"
-#include "ortools/base/logging.h"
-#include "absl/base/log_severity.h"
+#include "ortools/base/log_severity.h"
+#include "absl/log/check.h"
 #include "absl/log/globals.h"
 #include "absl/types/span.h"
+#include "ortools/util/sorted_interval_list.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/model.h"
-#include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
 namespace sat {
@@ -1428,14 +1427,14 @@ ranking_sample_sat()
 #include <vector>
 
 #include "ortools/base/init_google.h"
-#include "ortools/base/logging.h"
-#include "absl/base/log_severity.h"
+#include "ortools/base/log_severity.h"
+#include "absl/log/check.h"
 #include "absl/log/globals.h"
 #include "absl/types/span.h"
+#include "ortools/util/sorted_interval_list.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
-#include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
 namespace sat {

@@ -24,7 +24,6 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
-#include "ortools/base/logging.h"
 
 namespace operations_research {
 namespace sat {

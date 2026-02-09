@@ -17,6 +17,7 @@
 # [START import]
 import sys
 import time
+
 from ortools.sat.python import cp_model
 
 # [END import]

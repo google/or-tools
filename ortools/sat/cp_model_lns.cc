@@ -27,14 +27,12 @@
 #include <vector>
 
 #include "absl/algorithm/container.h"
-#include "absl/base/log_severity.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/log/vlog_is_on.h"
-#include "absl/meta/type_traits.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/random/distributions.h"
 #include "absl/strings/str_cat.h"
@@ -42,8 +40,10 @@
 #include "absl/synchronization/mutex.h"
 #include "absl/types/span.h"
 #include "google/protobuf/arena.h"
+#include "ortools/base/log_severity.h"
+#include "ortools/base/macros/buildenv.h"
 #include "ortools/base/stl_util.h"
-#include "ortools/graph/connected_components.h"
+#include "ortools/graph_base/connected_components.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_copy.h"
 #include "ortools/sat/cp_model_mapping.h"
@@ -73,11 +73,13 @@ namespace sat {
 NeighborhoodGeneratorHelper::NeighborhoodGeneratorHelper(
     CpModelProto const* model_proto, SatParameters const* parameters,
     SharedResponseManager* shared_response,
-    ModelSharedTimeLimit* global_time_limit, SharedBoundsManager* shared_bounds)
+    ModelSharedTimeLimit* global_time_limit, SharedBoundsManager* shared_bounds,
+    SharedClausesManager* shared_clauses)
     : SubSolver("neighborhood_helper", HELPER),
       parameters_(*parameters),
       model_proto_(*model_proto),
       shared_bounds_(shared_bounds),
+      shared_clauses_(shared_clauses),
       global_time_limit_(global_time_limit),
       shared_response_(shared_response) {
   // Initialize proto memory.
@@ -91,7 +93,7 @@ NeighborhoodGeneratorHelper::NeighborhoodGeneratorHelper(
 
   CHECK(shared_response_ != nullptr);
   if (shared_bounds_ != nullptr) {
-    shared_bounds_id_ = shared_bounds_->RegisterNewId();
+    shared_bounds_id_ = shared_bounds_->RegisterNewId("neighborhood_helper");
   }
   *model_proto_with_only_variables_.mutable_variables() =
       model_proto_.variables();
@@ -165,15 +167,17 @@ void NeighborhoodGeneratorHelper::Synchronize() {
 }
 
 bool NeighborhoodGeneratorHelper::ObjectiveDomainIsConstraining() const {
-  if (!model_proto_.has_objective()) return false;
-  if (model_proto_.objective().domain().empty()) return false;
+  if (!simplified_model_proto_->has_objective()) return false;
+
+  const auto& objective = simplified_model_proto_->objective();
+  if (objective.domain().empty()) return false;
 
   int64_t min_activity = 0;
   int64_t max_activity = 0;
-  const int num_terms = model_proto_.objective().vars().size();
+  const int num_terms = objective.vars().size();
   for (int i = 0; i < num_terms; ++i) {
-    const int var = PositiveRef(model_proto_.objective().vars(i));
-    const int64_t coeff = model_proto_.objective().coeffs(i);
+    const int var = PositiveRef(objective.vars(i));
+    const int64_t coeff = objective.coeffs(i);
     const auto& var_domain =
         model_proto_with_only_variables_.variables(var).domain();
     const int64_t v1 = coeff * var_domain[0];
@@ -182,7 +186,7 @@ bool NeighborhoodGeneratorHelper::ObjectiveDomainIsConstraining() const {
     max_activity += std::max(v1, v2);
   }
 
-  const Domain obj_domain = ReadDomainFromProto(model_proto_.objective());
+  const Domain obj_domain = ReadDomainFromProto(objective);
   const Domain inferred_domain =
       Domain(min_activity, max_activity)
           .IntersectionWith(
@@ -200,20 +204,6 @@ void NeighborhoodGeneratorHelper::InitializeHelperData() {
     }
     type_to_constraints_[type].push_back(c);
   }
-
-  const int num_variables = model_proto_.variables().size();
-  is_in_objective_.resize(num_variables, false);
-  has_positive_objective_coefficient_.resize(num_variables, false);
-  if (model_proto_.has_objective()) {
-    for (int i = 0; i < model_proto_.objective().vars_size(); ++i) {
-      const int ref = model_proto_.objective().vars(i);
-      const int64_t coeff = model_proto_.objective().coeffs(i);
-      DCHECK_NE(coeff, 0);
-      is_in_objective_[PositiveRef(ref)] = true;
-      has_positive_objective_coefficient_[PositiveRef(ref)] =
-          ref == PositiveRef(ref) ? coeff > 0 : coeff < 0;
-    }
-  }
 }
 
 // Recompute all the data when new variables have been fixed. Note that this
@@ -221,6 +211,10 @@ void NeighborhoodGeneratorHelper::InitializeHelperData() {
 void NeighborhoodGeneratorHelper::RecomputeHelperData() {
   absl::MutexLock graph_lock(graph_mutex_);
   absl::ReaderMutexLock domain_lock(domain_mutex_);
+
+  if (shared_clauses_ != nullptr) {
+    var_to_representative_ = shared_clauses_->GetRepresentatives();
+  }
 
   // Do basic presolving to have a more precise graph.
   // Here we just remove trivially true constraints.
@@ -249,13 +243,38 @@ void NeighborhoodGeneratorHelper::RecomputeHelperData() {
         google::protobuf::Arena::Create<CpModelProto>(local_arena_.get());
     *simplified_model_proto_->mutable_variables() =
         model_proto_with_only_variables_.variables();
+
+    const int num_vars = model_proto_with_only_variables_.variables_size();
+    std::vector<int> mapping;
+    std::vector<int> reverse_mapping;
+    mapping.reserve(num_vars);
+    reverse_mapping.reserve(num_vars);
+    int first_fixed_literal = -1;
+    for (int var = 0; var < num_vars; ++var) {
+      if (IsConstant(var)) {
+        const int64_t value = ConstantValue(var);
+        // ModelCopy requires that if some literals are fixed, then one of them
+        // must not be removed by the mapping.
+        if (first_fixed_literal == -1 && (value == 0 || value == 1)) {
+          first_fixed_literal = var;
+          mapping.push_back(var);
+        } else {
+          mapping.push_back(kNoVariableMapping);
+        }
+      } else {
+        mapping.push_back(GetRepresentative(var));
+      }
+      reverse_mapping.push_back(var);
+    }
+
     PresolveContext context(&local_model, simplified_model_proto_,
                             &mapping_proto);
-    ModelCopy copier(&context);
+    ModelCopy copier(&context, mapping, reverse_mapping);
 
     // TODO(user): Not sure what to do if the model is UNSAT.
     // This  shouldn't matter as it should be dealt with elsewhere.
-    copier.ImportAndSimplifyConstraints(model_proto_, {});
+    copier.ImportAndSimplifyConstraints(model_proto_);
+    copier.ImportObjective(model_proto_);
   }
 
   // Compute the constraint <-> variable graph.
@@ -310,34 +329,48 @@ void NeighborhoodGeneratorHelper::RecomputeHelperData() {
       constraint_to_var_,
       /*min_transpose_size=*/model_proto_.variables().size());
 
-  // We mark as active all non-constant variables.
-  // Non-active variable will never be fixed in standard LNS fragment.
+  // We mark as active all non-constant representative variables.
+  // Non-active variables will never be fixed in a standard LNS fragment.
   active_variables_.clear();
   const int num_variables = model_proto_.variables_size();
   active_variables_set_.assign(num_variables, false);
   for (int i = 0; i < num_variables; ++i) {
-    if (!IsConstant(i)) {
+    if (!IsConstant(i) && GetRepresentative(i) == i) {
       active_variables_.push_back(i);
       active_variables_set_[i] = true;
     }
   }
 
+  is_in_objective_.resize(num_variables, false);
+  has_positive_objective_coefficient_.resize(num_variables, false);
   active_objective_variables_.clear();
-  for (const int var : model_proto_.objective().vars()) {
-    DCHECK(RefIsPositive(var));
-    if (active_variables_set_[var]) {
-      active_objective_variables_.push_back(var);
+  if (simplified_model_proto_->has_objective()) {
+    const auto& objective = simplified_model_proto_->objective();
+    for (int i = 0; i < objective.vars_size(); ++i) {
+      const int var = objective.vars(i);
+      const int64_t coeff = objective.coeffs(i);
+      DCHECK(RefIsPositive(var));
+      DCHECK_NE(coeff, 0);
+      is_in_objective_[var] = true;
+      has_positive_objective_coefficient_[var] = coeff > 0;
+      if (active_variables_set_[var]) {
+        active_objective_variables_.push_back(var);
+      }
     }
   }
 
   // Compute connected components.
-  // Note that fixed variable are just ignored.
+  // Note that fixed and non-representative variables are just ignored.
   DenseConnectedComponentsFinder union_find;
   union_find.SetNumberOfNodes(num_variables);
   for (int c = 0; c < constraint_to_var_.size(); ++c) {
     const auto row = constraint_to_var_[c];
     if (row.size() <= 1) continue;
+    DCHECK(!IsConstant(row[0]));
+    DCHECK_EQ(GetRepresentative(row[0]), row[0]);
     for (int i = 1; i < row.size(); ++i) {
+      DCHECK(!IsConstant(row[i]));
+      DCHECK_EQ(GetRepresentative(row[i]), row[i]);
       union_find.AddEdge(row[0], row[i]);
     }
   }
@@ -345,14 +378,20 @@ void NeighborhoodGeneratorHelper::RecomputeHelperData() {
   // If we have a lower bound on the objective, then this "objective constraint"
   // might link components together.
   if (ObjectiveDomainIsConstraining()) {
-    const auto& refs = model_proto_.objective().vars();
-    const int num_terms = refs.size();
-    for (int i = 1; i < num_terms; ++i) {
-      union_find.AddEdge(PositiveRef(refs[0]), PositiveRef(refs[i]));
+    const auto& vars = simplified_model_proto_->objective().vars();
+    const int num_terms = vars.size();
+    if (num_terms > 1) {
+      DCHECK(!IsConstant(vars[0]));
+      DCHECK_EQ(GetRepresentative(vars[0]), vars[0]);
+      for (int i = 1; i < num_terms; ++i) {
+        DCHECK(!IsConstant(vars[i]));
+        DCHECK_EQ(GetRepresentative(vars[i]), vars[i]);
+        union_find.AddEdge(vars[0], vars[i]);
+      }
     }
   }
 
-  // Compute all components involving non-fixed variables.
+  // Compute all components involving non-fixed, representative variables.
   //
   // TODO(user): If a component has no objective, we can fix it to any feasible
   // solution. This will automatically be done by LNS fragment covering such
@@ -361,6 +400,7 @@ void NeighborhoodGeneratorHelper::RecomputeHelperData() {
   var_to_component_index_.assign(num_variables, -1);
   for (int var = 0; var < num_variables; ++var) {
     if (IsConstant(var)) continue;
+    if (GetRepresentative(var) != var) continue;
     const int root = union_find.FindRoot(var);
     DCHECK_LT(root, var_to_component_index_.size());
     int& index = var_to_component_index_[root];
@@ -416,6 +456,11 @@ bool NeighborhoodGeneratorHelper::IsConstant(int var) const {
          var_proto.domain(0) == var_proto.domain(1);
 }
 
+int64_t NeighborhoodGeneratorHelper::ConstantValue(int var) const {
+  DCHECK(IsConstant(var));
+  return model_proto_with_only_variables_.variables(var).domain(0);
+}
+
 Neighborhood NeighborhoodGeneratorHelper::FullNeighborhood() const {
   Neighborhood neighborhood;
   neighborhood.is_reduced = false;
@@ -457,6 +502,11 @@ bool NeighborhoodGeneratorHelper::IntervalIsActive(
     if (!IsConstant(v)) return true;
   }
   return false;
+}
+
+int NeighborhoodGeneratorHelper::GetRepresentative(int var) const {
+  if (var >= var_to_representative_.size()) return var;
+  return var_to_representative_[var];
 }
 
 std::vector<int> NeighborhoodGeneratorHelper::KeepActiveIntervals(
@@ -1076,10 +1126,14 @@ Neighborhood NeighborhoodGeneratorHelper::FixGivenVariables(
 
   // TODO(user): Maybe relax all variables in the objective when the number
   // is small or negligible compared to the number of variables.
-  const int unique_objective_variable =
-      model_proto_.has_objective() && model_proto_.objective().vars_size() == 1
-          ? model_proto_.objective().vars(0)
-          : -1;
+  int unique_objective_variable = -1;
+  {
+    absl::ReaderMutexLock graph_lock(graph_mutex_);
+    if (simplified_model_proto_->has_objective() &&
+        simplified_model_proto_->objective().vars_size() == 1) {
+      unique_objective_variable = simplified_model_proto_->objective().vars(0);
+    }
+  }
 
   // Fill in neighborhood.delta all variable domains.
   int num_fixed = 0;
@@ -1141,7 +1195,10 @@ Neighborhood NeighborhoodGeneratorHelper::FixGivenVariables(
           ++neighborhood.num_relaxed_variables_in_objective;
         }
         const int c = var_to_component_index_[var];
-        if (c != -1) count[c]++;
+        if (c != -1) {
+          DCHECK_EQ(GetRepresentative(var), var);
+          count[c]++;
+        }
       }
     }
 
@@ -1205,24 +1262,21 @@ void NeighborhoodGeneratorHelper::AddSolutionHinting(
 Neighborhood NeighborhoodGeneratorHelper::RelaxGivenVariables(
     const CpSolverResponse& initial_solution,
     absl::Span<const int> relaxed_variables) const {
+  // Fix all the `active_variables_` except the ones in `relaxed_variables`.
+  // Note that non-representative variables are not active, and thus never
+  // fixed. Hence if a representative variable is relaxed, the equivalent ones
+  // are relaxed too. If a representative variable is fixed, the equivalent ones
+  // should be quickly fixed by propagation during presolve or during the solve.
   Bitset64<int> fixed_variables(NumVariables());
   {
     absl::ReaderMutexLock graph_lock(graph_mutex_);
     for (const int i : active_variables_) {
       fixed_variables.Set(i);
     }
-  }
-  for (const int var : relaxed_variables) fixed_variables.Clear(var);
-  return FixGivenVariables(initial_solution, fixed_variables);
-}
-
-Neighborhood NeighborhoodGeneratorHelper::FixAllVariables(
-    const CpSolverResponse& initial_solution) const {
-  Bitset64<int> fixed_variables(NumVariables());
-  {
-    absl::ReaderMutexLock graph_lock(graph_mutex_);
-    for (const int i : active_variables_) {
-      fixed_variables.Set(i);
+    for (const int var : relaxed_variables) {
+      // `var` might no longer be a representative if the state changed while
+      // the mutex was not held.
+      fixed_variables.Clear(PositiveRef(GetRepresentative(var)));
     }
   }
   return FixGivenVariables(initial_solution, fixed_variables);
@@ -2423,9 +2477,9 @@ Neighborhood RectanglesPackingRelaxOneNeighborhoodGenerator::Generate(
           {i, CenterToCenterLInfinityDistance(center_rect, rect)});
     }
   }
-  std::stable_sort(
-      distances.begin(), distances.end(),
-      [](const auto& a, const auto& b) { return a.second < b.second; });
+  absl::c_stable_sort(distances, [](const auto& a, const auto& b) {
+    return a.second < b.second;
+  });
 
   const int num_to_sample = data.difficulty * all_active_rectangles.size();
   const int num_to_relax = std::min<int>(distances.size(), num_to_sample);

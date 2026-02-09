@@ -23,7 +23,7 @@
 #include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "gtest/gtest.h"
-#include "ortools/graph/strongly_connected_components.h"
+#include "ortools/graph_base/strongly_connected_components.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_search.h"
 #include "ortools/sat/model.h"
@@ -196,11 +196,11 @@ TEST(CircuitConstraintTest, AllCircuitCoverings) {
           arcs.emplace_back(graph[i][j]);
         }
         if (i >= num_distinguished) {
-          model.Add(ClauseConstraint({graph[i][i].Negated()}));
+          AddClauseConstraint({graph[i][i].Negated()}, &model);
         }
       }
-      model.Add(ExactlyOnePerRowAndPerColumn(graph));
-      model.Add(CircuitCovering(graph, distinguished));
+      AddExactlyOnePerRowAndPerColumn(graph, &model);
+      AddCircuitCovering(graph, distinguished, &model);
       const int64_t num_solutions = CountSolutions(&model);
       EXPECT_EQ(num_solutions * Factorial(num_distinguished - 1),
                 Factorial(num_nodes - 1));

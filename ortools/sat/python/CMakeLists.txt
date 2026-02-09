@@ -11,21 +11,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set(WRAPPERS_NAME sat_python_wrappers)
-
-add_library(${WRAPPERS_NAME} OBJECT wrappers.h wrappers.cc)
-set_target_properties(${WRAPPERS_NAME} PROPERTIES
-  POSITION_INDEPENDENT_CODE ON)
-target_include_directories(${WRAPPERS_NAME} PUBLIC
-  ${PROJECT_SOURCE_DIR}
-  ${PROJECT_BINARY_DIR})
-target_link_libraries(${WRAPPERS_NAME} PUBLIC
-  absl::memory
-  absl::synchronization
-  absl::str_format
-  protobuf::libprotobuf)
-add_library(${PROJECT_NAMESPACE}::${WRAPPERS_NAME} ALIAS ${WRAPPERS_NAME})  
-
 # gen_proto_builder_pybind11 code generator.
 add_executable(gen_proto_builder_pybind11)
 target_sources(gen_proto_builder_pybind11 PRIVATE "gen_proto_builder_pybind11.cc")
@@ -39,7 +24,7 @@ target_link_libraries(gen_proto_builder_pybind11 PRIVATE
   absl::str_format
   protobuf::libprotobuf
   ${PROJECT_NAMESPACE}::ortools_proto
-  ${PROJECT_NAMESPACE}::${WRAPPERS_NAME})
+  ${PROJECT_NAMESPACE}::util_python_wrappers)
 
 include(GNUInstallDirs)
 if(APPLE)

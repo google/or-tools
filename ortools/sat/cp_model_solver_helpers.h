@@ -20,6 +20,7 @@
 #include <vector>
 
 #include "absl/types/span.h"
+#include "ortools/base/macros/buildenv.h"
 #include "ortools/base/timer.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver_logging.h"

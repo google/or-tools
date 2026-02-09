@@ -16,9 +16,9 @@
 #include <string>
 #include <vector>
 
+#include "absl/log/log.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_split.h"
-#include "ortools/base/logging.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/sat_decision.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -54,29 +54,11 @@ void RestartPolicy::Reset() {
         parameters_.default_restart_algorithms(), ',', absl::SkipEmpty());
     for (const std::string& string_value : string_values) {
       SatParameters::RestartAlgorithm tmp;
-#if defined(__PORTABLE_PLATFORM__)
-      if (string_value == "NO_RESTART") {
-        tmp = SatParameters::NO_RESTART;
-      } else if (string_value == "LUBY_RESTART") {
-        tmp = SatParameters::LUBY_RESTART;
-      } else if (string_value == "DL_MOVING_AVERAGE_RESTART") {
-        tmp = SatParameters::DL_MOVING_AVERAGE_RESTART;
-      } else if (string_value == "LBD_MOVING_AVERAGE_RESTART") {
-        tmp = SatParameters::LBD_MOVING_AVERAGE_RESTART;
-      } else if (string_value == "FIXED_RESTART") {
-        tmp = SatParameters::FIXED_RESTART;
-      } else {
-        LOG(WARNING) << "Couldn't parse the RestartAlgorithm name: '"
-                     << string_value << "'.";
-        continue;
-      }
-#else   // __PORTABLE_PLATFORM__
       if (!SatParameters::RestartAlgorithm_Parse(string_value, &tmp)) {
         LOG(WARNING) << "Couldn't parse the RestartAlgorithm name: '"
                      << string_value << "'.";
         continue;
       }
-#endif  // !__PORTABLE_PLATFORM__
       strategies_.push_back(tmp);
     }
   }

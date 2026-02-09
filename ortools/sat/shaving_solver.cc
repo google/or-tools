@@ -30,7 +30,8 @@
 #include "absl/strings/str_cat.h"
 #include "absl/synchronization/mutex.h"
 #include "google/protobuf/arena.h"
-#include "ortools/graph/connected_components.h"
+#include "ortools/base/macros/buildenv.h"
+#include "ortools/graph_base/connected_components.h"
 #include "ortools/sat/cp_model_copy.h"
 #include "ortools/sat/cp_model_lns.h"
 #include "ortools/sat/cp_model_presolve.h"
@@ -285,7 +286,7 @@ VariablesShavingSolver::VariablesShavingSolver(
       stop_current_chunk_(false),
       model_proto_(shared->model_proto) {
   if (shared_->bounds != nullptr) {
-    shared_bounds_id_ = shared_->bounds->RegisterNewId();
+    shared_bounds_id_ = shared_->bounds->RegisterNewId(local_parameters.name());
   }
 
   absl::MutexLock mutex_lock(mutex_);

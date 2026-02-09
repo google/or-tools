@@ -356,10 +356,16 @@ bool TimeTableEdgeFinding::TimeTableEdgeFindingPass() {
       if (helper_->StartMin(max_task) < new_start) {
         FillEnergyInWindowReason(window_min, window_max, max_task);
 
-        // Reason needed for task_index.
-        // We only need start_min and demand_min to push the start.
+        // Reason needed for max_task.
+        // We need start_min and demand_min to push the start.
         helper_->AddStartMinReason(max_task, window_min);
         demands_->AddDemandMinReason(max_task);
+
+        // We also need the explanation for extra_energy_required_by_max_task.
+        //
+        // TODO(user): This might not be enough, the whole logic probably need
+        // to be inspected again as task with variable size are tricky.
+        helper_->AddSizeMinReason(max_task);
 
         if (!helper_->IncreaseStartMin(max_task, new_start)) return false;
       }

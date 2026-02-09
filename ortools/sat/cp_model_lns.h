@@ -110,7 +110,8 @@ class NeighborhoodGeneratorHelper : public SubSolver {
                               SatParameters const* parameters,
                               SharedResponseManager* shared_response,
                               ModelSharedTimeLimit* global_time_limit,
-                              SharedBoundsManager* shared_bounds = nullptr);
+                              SharedBoundsManager* shared_bounds = nullptr,
+                              SharedClausesManager* shared_clauses = nullptr);
 
   // SubSolver interface.
   bool TaskIsAvailable() override { return false; }
@@ -131,10 +132,6 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   Neighborhood RelaxGivenVariables(
       const CpSolverResponse& initial_solution,
       absl::Span<const int> relaxed_variables) const;
-
-  // Returns a trivial model by fixing all active variables to the initial
-  // solution values.
-  Neighborhood FixAllVariables(const CpSolverResponse& initial_solution) const;
 
   // Returns a neighborhood that correspond to the full problem.
   Neighborhood FullNeighborhood() const;
@@ -306,11 +303,13 @@ class NeighborhoodGeneratorHelper : public SubSolver {
 
   // Indicates if a variable is fixed in the model.
   bool IsConstant(int var) const ABSL_SHARED_LOCKS_REQUIRED(domain_mutex_);
+  int64_t ConstantValue(int var) const
+      ABSL_SHARED_LOCKS_REQUIRED(domain_mutex_);
 
   // Returns true if the domain on the objective is constraining and we might
   // get a lower objective value at optimum without it.
   bool ObjectiveDomainIsConstraining() const
-      ABSL_SHARED_LOCKS_REQUIRED(domain_mutex_);
+      ABSL_SHARED_LOCKS_REQUIRED(domain_mutex_, graph_mutex_);
 
   // Checks if an interval is active w.r.t. the initial_solution.
   // An interval is inactive if and only if it is either unperformed in the
@@ -319,10 +318,13 @@ class NeighborhoodGeneratorHelper : public SubSolver {
                         const CpSolverResponse& initial_solution) const
       ABSL_SHARED_LOCKS_REQUIRED(domain_mutex_);
 
+  int GetRepresentative(int var) const ABSL_SHARED_LOCKS_REQUIRED(graph_mutex_);
+
   const SatParameters& parameters_;
   const CpModelProto& model_proto_;
   int shared_bounds_id_;
   SharedBoundsManager* shared_bounds_;
+  SharedClausesManager* shared_clauses_;
   ModelSharedTimeLimit* global_time_limit_;
   SharedResponseManager* shared_response_;
 
@@ -342,41 +344,45 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   // Constraints by types. This never changes.
   std::vector<std::vector<int>> type_to_constraints_;
 
-  // Whether a model_proto_ variable appears in the objective. This never
-  // changes.
+  // Whether a variable appears in the simplified_model_proto_ objective.
   std::vector<bool> is_in_objective_;
-  // If a model_proto_ variable has a positive coefficient in the objective.
-  // This never changes.
+  // If a variable has a positive coefficient in the simplified_model_proto_
+  // objective.
   std::vector<bool> has_positive_objective_coefficient_;
 
   // A copy of CpModelProto where we did some basic presolving to remove all
-  // constraint that are always true. The Variable-Constraint graph is based on
-  // this model. Note that only the constraints field is present here.
+  // constraints that are always true. The Variable-Constraint graph is based on
+  // this model. Note that only the constraints and objective fields are present
+  // here.
   CpModelProto* simplified_model_proto_ ABSL_GUARDED_BY(graph_mutex_);
 
-  // Variable-Constraint graph.
+  // Variable-Constraint graph. The objective is also considered if it is
+  // constraining.
   // We replace an interval by its variables in the scheduling constraints.
-  //
-  // TODO(user): Note that the objective is not considered here. Which is fine
-  // except if the objective domain is constraining.
   CompactVectorVector<int, int> constraint_to_var_
       ABSL_GUARDED_BY(graph_mutex_);
   CompactVectorVector<int, int> var_to_constraint_
       ABSL_GUARDED_BY(graph_mutex_);
 
   // Connected components of the variable-constraint graph. If a variable is
-  // constant, it will not appear in any component and
+  // constant or non-representative, it will not appear in any component and
   // var_to_component_index_[var] will be -1.
   std::vector<std::vector<int>> components_ ABSL_GUARDED_BY(graph_mutex_);
   std::vector<int> var_to_component_index_ ABSL_GUARDED_BY(graph_mutex_);
 
-  // The set of active variables which is currently the list of non-constant
-  // variables. It is stored both as a list and as a set (using a Boolean
-  // vector).
+  // The set of active variables which is currently the list of non-constant,
+  // representative variables. It is stored both as a list and as a set (using a
+  // Boolean vector).
   std::vector<bool> active_variables_set_ ABSL_GUARDED_BY(graph_mutex_);
   std::vector<int> active_variables_ ABSL_GUARDED_BY(graph_mutex_);
 
-  // The list of non constant variables appearing in the objective.
+  // The representative of each variable (for the equivalence relations in the
+  // SharedClausesManager). The representative of a Boolean variable can be a
+  // negative reference. Can be empty is shared_clauses_ is null.
+  std::vector<int> var_to_representative_ ABSL_GUARDED_BY(graph_mutex_);
+
+  // The list of non constant representative variables appearing in the
+  // simplified_model_proto_ objective.
   std::vector<int> active_objective_variables_ ABSL_GUARDED_BY(graph_mutex_);
 
   std::vector<int> tmp_row_;

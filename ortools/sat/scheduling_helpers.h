@@ -25,6 +25,7 @@
 
 #include "absl/base/attributes.h"
 #include "absl/log/check.h"
+#include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "ortools/sat/enforcement.h"
 #include "ortools/sat/enforcement_helper.h"
@@ -80,6 +81,14 @@ struct IntervalDefinition {
   bool operator==(const IntervalDefinition& other) const {
     return start == other.start && end == other.end && size == other.size &&
            is_present == other.is_present;
+  }
+
+  template <typename Sink>
+  friend void AbslStringify(Sink& sink, const IntervalDefinition& i) {
+    absl::Format(&sink, "start=%v end=%v size=%v is_present=%v", i.start, i.end,
+                 i.size,
+                 i.is_present.has_value() ? absl::StrCat(i.is_present.value())
+                                          : "always");
   }
 };
 
@@ -243,6 +252,9 @@ class SchedulingConstraintHelper : public PropagatorInterface {
 
   // Returns a string with the current task bounds.
   std::string TaskDebugString(int t) const;
+
+  // Same as TaskDebugString() with also the affine expression.
+  std::string FullTaskDebugString(int t) const;
 
   // Sorts and returns the tasks in corresponding order at the time of the call.
   // Note that we do not mean strictly-increasing/strictly-decreasing, there
@@ -637,6 +649,8 @@ class SchedulingDemandHelper {
   // Init all decomposed energies. It needs probing to be finished. This happens
   // after the creation of the helper.
   void InitDecomposedEnergies();
+
+  std::string TaskDebugString(int t) const;
 
  private:
   IntegerValue SimpleEnergyMin(int t) const;

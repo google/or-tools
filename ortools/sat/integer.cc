@@ -30,9 +30,10 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/inlined_vector.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
@@ -276,12 +277,20 @@ Literal IntegerEncoder::GetOrCreateAssociatedLiteral(IntegerLiteral i_lit) {
   {
     const PositiveOnlyIndex index = GetPositiveOnlyIndex(i_lit.var);
     if (VariableIsPositive(i_lit.var)) {
-      if (i_lit.bound <= domains_[index].Min()) return GetTrueLiteral();
-      if (i_lit.bound > domains_[index].Max()) return GetFalseLiteral();
+      if (i_lit.bound <= domains_[index].Min()) {
+        return trivial_literals_.TrueLiteral();
+      }
+      if (i_lit.bound > domains_[index].Max()) {
+        return trivial_literals_.FalseLiteral();
+      }
     } else {
       const IntegerValue bound = -i_lit.bound;
-      if (bound >= domains_[index].Max()) return GetTrueLiteral();
-      if (bound < domains_[index].Min()) return GetFalseLiteral();
+      if (bound >= domains_[index].Max()) {
+        return trivial_literals_.TrueLiteral();
+      }
+      if (bound < domains_[index].Min()) {
+        return trivial_literals_.FalseLiteral();
+      }
     }
   }
 
@@ -298,12 +307,6 @@ Literal IntegerEncoder::GetOrCreateAssociatedLiteral(IntegerLiteral i_lit) {
   ++num_created_variables_;
   const Literal literal(sat_solver_->NewBooleanVariable(), true);
   AssociateToIntegerLiteral(literal, canonical_lit.first);
-
-  // TODO(user): on some problem this happens. We should probably make sure that
-  // we don't create extra fixed Boolean variable for no reason.
-  if (sat_solver_->Assignment().LiteralIsAssigned(literal)) {
-    VLOG(1) << "Created a fixed literal for no reason!";
-  }
   return literal;
 }
 
@@ -340,11 +343,11 @@ Literal IntegerEncoder::GetOrCreateLiteralAssociatedToEquality(
   const Domain& domain = domains_[GetPositiveOnlyIndex(var)];
   if (!domain.Contains(VariableIsPositive(var) ? value.value()
                                                : -value.value())) {
-    return GetFalseLiteral();
+    return trivial_literals_.FalseLiteral();
   }
   if (domain.IsFixed()) {
-    AssociateToIntegerEqualValue(GetTrueLiteral(), var, value);
-    return GetTrueLiteral();
+    AssociateToIntegerEqualValue(trivial_literals_.TrueLiteral(), var, value);
+    return trivial_literals_.TrueLiteral();
   }
 
   ++num_created_variables_;
@@ -400,6 +403,7 @@ void IntegerEncoder::AssociateToIntegerLiteral(Literal literal,
     }
     return;
   }
+
   AddImplications(var_encoding, it, literal);
 
   // Corner case if adding implication cause this to be fixed.
@@ -583,17 +587,23 @@ LiteralIndex IntegerEncoder::SearchForLiteralAtOrAfter(
     *bound = it->first;
     return it->second.Index();
   } else {
-    // We ask for the first at or after by -var >= bound,
-    // so we look for the first before var < -bound and takes its negation
-    auto after_it = encoding.upper_bound(-i_lit.bound);
-    if (after_it == encoding.begin()) return kNoLiteralIndex;
-    --after_it;
+    // Tricky: SearchForLiteralAtOrBefore() only work for canonicalized literal.
+    // But SearchForLiteralAtOrAfter() do not have this restriction.
+    //
+    // TODO(user): Clean this up.
+    const auto [unused_1, negated_i_lit] = Canonicalize(i_lit);
 
-    // Compute tight bound if there are holes, we have X <= candidate.
-    const Domain& domain = domains_[index];
-    if (after_it->first <= domain.Min()) return kNoLiteralIndex;
-    *bound = -domain.ValueAtOrBefore(after_it->first.value() - 1);
-    return after_it->second.NegatedIndex();
+    IntegerValue neg_bound;
+    LiteralIndex neg_literal =
+        SearchForLiteralAtOrBefore(negated_i_lit, &neg_bound);
+    if (neg_literal == kNoLiteralIndex) {
+      return kNoLiteralIndex;
+    }
+
+    const auto [unused_2, double_neg] = Canonicalize(
+        IntegerLiteral::GreaterOrEqual(PositiveVariable(i_lit.var), neg_bound));
+    *bound = double_neg.bound;
+    return Literal(neg_literal).NegatedIndex();
   }
 }
 
@@ -897,6 +907,11 @@ const Domain& IntegerTrail::InitialVariableDomain(IntegerVariable var) const {
   if (VariableIsPositive(var)) return (*domains_)[index];
   temp_domain_ = (*domains_)[index].Negation();
   return temp_domain_;
+}
+
+std::string IntegerTrail::VarDebugString(IntegerVariable var) const {
+  return absl::StrCat(var, " root:", InitialVariableDomain(var).ToString(),
+                      " current:[", LowerBound(var), ",", UpperBound(var), "]");
 }
 
 // Note that we don't support optional variable here. Or at least if you set
@@ -2212,7 +2227,7 @@ void IntegerTrail::MergeReasonIntoInternal(std::vector<Literal>* output,
 
     // If this entry has an associated literal, then it should always be the
     // one we used for the reason. This code DCHECK that.
-    if (DEBUG_MODE) {
+    if (DEBUG_MODE && !new_conflict_resolution_) {
       const LiteralIndex associated_lit =
           encoder_->GetAssociatedLiteral(IntegerLiteral::GreaterOrEqual(
               IntegerVariable(entry.var), entry.bound));

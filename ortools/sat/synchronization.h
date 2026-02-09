@@ -23,7 +23,7 @@
 #include <functional>
 #include <limits>
 #include <memory>
-#include <optional>
+#include <numeric>
 #include <string>
 #include <utility>
 #include <vector>
@@ -33,19 +33,21 @@
 #include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
+#include "absl/log/vlog_is_on.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/random/random.h"
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
-#include "absl/time/time.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/base/timer.h"
 #include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/drat_checker.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
@@ -56,9 +58,9 @@ namespace operations_research {
 namespace sat {
 
 struct SolverStatusChangeInfo {
-  double best_objective_value;
-  double cur_objective_value_lb;
-  double cur_objective_value_ub;
+  double best_objective_value = std::numeric_limits<double>::quiet_NaN();
+  double cur_objective_value_lb = std::numeric_limits<double>::quiet_NaN();
+  double cur_objective_value_ub = std::numeric_limits<double>::quiet_NaN();
 
   std::string change_info;
 
@@ -685,13 +687,16 @@ class SharedBoundsManager {
   // Returns a new id to be used in GetChangedBounds(). This is just an ever
   // increasing sequence starting from zero. Note that the class is not designed
   // to have too many of these.
-  int RegisterNewId();
+  int RegisterNewId(absl::string_view worker_name);
 
   // When called, returns the set of bounds improvements since
-  // the last time this method was called with the same id.
+  // the last time this method was called with the same id. If timestamp is
+  // not null, it will be set to a logical timestamp which is increased each
+  // time a method call on this instance changes at least one bound.
   void GetChangedBounds(int id, std::vector<int>* variables,
                         std::vector<int64_t>* new_lower_bounds,
-                        std::vector<int64_t>* new_upper_bounds);
+                        std::vector<int64_t>* new_upper_bounds,
+                        int64_t* timestamp = nullptr);
 
   // This should not be called too often as it lock the class for
   // O(num_variables) time.
@@ -728,6 +733,9 @@ class SharedBoundsManager {
   SparseBitset<int> changed_variables_since_last_synchronize_
       ABSL_GUARDED_BY(mutex_);
   int64_t total_num_improvements_ ABSL_GUARDED_BY(mutex_) = 0;
+  // Logical timestamp increased each time ReportPotentialNewBounds() or
+  // FixVariablesFromPartialSolution() changes at least one bound.
+  int64_t timestamp_ ABSL_GUARDED_BY(mutex_) = 0;
 
   // These are only updated on Synchronize().
   std::vector<int64_t> synchronized_lower_bounds_ ABSL_GUARDED_BY(mutex_);
@@ -735,14 +743,16 @@ class SharedBoundsManager {
   std::deque<SparseBitset<int>> id_to_changed_variables_
       ABSL_GUARDED_BY(mutex_);
 
+  std::vector<std::string> id_to_name_ ABSL_GUARDED_BY(mutex_);
+
   // We track the number of bounds exported by each solver, and the "extra"
   // bounds pushed due to symmetries.
   struct Counters {
     int64_t num_exported = 0;
+    int64_t num_imported = 0;
     int64_t num_symmetric = 0;
   };
-  absl::btree_map<std::string, Counters> bounds_exported_
-      ABSL_GUARDED_BY(mutex_);
+  absl::btree_map<std::string, Counters> bounds_stats_ ABSL_GUARDED_BY(mutex_);
 
   // Symmetry info.
   bool has_symmetry_ = false;
@@ -855,6 +865,12 @@ class SharedClausesManager {
   explicit SharedClausesManager(bool always_synchronize);
   void AddBinaryClause(int id, int lit1, int lit2);
 
+  // Returns the representative of each Boolean variable for the equivalence
+  // classes of the binary clauses. The representative can be the negation of a
+  // variable. If timestamp is not null, it is set to a logical timestamp
+  // increased each time a new Boolean equivalence relation is found.
+  std::vector<int> GetRepresentatives(int64_t* timestamp = nullptr);
+
   // Returns new glue clauses.
   // The spans are guaranteed to remain valid until the next call to
   // SyncClauses().
@@ -888,6 +904,15 @@ class SharedClausesManager {
   bool ShouldReadBatch(int reader_id, int writer_id)
       ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
+  // Connects a and b in the `parents_` union find data structure.
+  void AddEdge(LiteralIndex a, LiteralIndex b)
+      ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
+
+  // Returns the representative of a for the equivalence relations found in the
+  // binary clauses. Also shortens the parents_ links found on the way.
+  LiteralIndex GetRepresentative(LiteralIndex a)
+      ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
+
   static constexpr int kMinBatches = 64;
   mutable absl::Mutex mutex_;
 
@@ -916,6 +941,12 @@ class SharedClausesManager {
   int num_full_workers_ ABSL_GUARDED_BY(mutex_) = 0;
 
   const bool always_synchronize_ = true;
+
+  // The parent of each literal in a union find data structure, used to find the
+  // representatives for the equivalence relations found in the binary clauses.
+  util_intops::StrongVector<LiteralIndex, LiteralIndex> parents_
+      ABSL_GUARDED_BY(mutex_);
+  int num_equivalences_ ABSL_GUARDED_BY(mutex_) = 0;
 
   // Stats:
   std::vector<int64_t> id_to_num_exported_ ABSL_GUARDED_BY(mutex_);
@@ -1298,29 +1329,34 @@ class SharedLratProofStatus {
  public:
   SharedLratProofStatus();
 
+  int64_t MaxOneBasedCnfIndex() const;
+  void SetMaxOneBasedCnfIndex(int64_t max_one_based_cnf_index);
+
   // Each LratProofHandler should call this to get a unique "worker ID".
   int NewSubSolverId();
 
-  void NewSubsolverProofStatus(DratChecker::Status status,
-                               bool lrat_check_enabled, bool drat_check_enabled,
-                               int num_assumed_clauses,
-                               double walltime_in_seconds);
+  enum Status {
+    UNKNOWN,
+    VALID,
+    INVALID,
+  };
+  void NewSubsolverProofStatus(Status status, bool lrat_check_enabled,
+                               int num_assumed_clauses);
 
   void NewProofFile(absl::string_view filename);
-  std::vector<std::string> GetProofFilenames();
+  std::vector<std::string> GetProofFilenames() const;
 
   void Log(SolverLogger* logger);
 
  private:
-  absl::Mutex mutex_;
+  mutable absl::Mutex mutex_;
+  int64_t max_one_based_cnf_index_ ABSL_GUARDED_BY(mutex_) = 0;
   int num_subsolvers_ ABSL_GUARDED_BY(mutex_);
+  int num_lrat_checkers_ ABSL_GUARDED_BY(mutex_);
   int num_valid_proofs_ ABSL_GUARDED_BY(mutex_);
   int num_invalid_proofs_ ABSL_GUARDED_BY(mutex_);
   int num_unknown_proofs_ ABSL_GUARDED_BY(mutex_);
-  bool lrat_check_enabled_ ABSL_GUARDED_BY(mutex_);
-  bool drat_check_enabled_ ABSL_GUARDED_BY(mutex_);
   int num_assumed_clauses_ ABSL_GUARDED_BY(mutex_);
-  double walltime_in_seconds_ ABSL_GUARDED_BY(mutex_);
   std::vector<std::string> proof_filenames_ ABSL_GUARDED_BY(mutex_);
 };
 

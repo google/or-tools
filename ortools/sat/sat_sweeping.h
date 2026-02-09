@@ -67,6 +67,14 @@ class EquivalenceSatSweeping {
   std::vector<absl::Span<const Literal>> GetNeighborhood(BooleanVariable var);
   void LoadClausesInModel(absl::Span<const SatClause* const> clauses, Model* m);
 
+  Literal Representative(Literal l) {
+    auto it = lit_representative_.find(l);
+    return it == lit_representative_.end() ? l : it->second;
+  }
+  BooleanVariable RepresentativeVar(BooleanVariable v) {
+    return Representative(Literal(v, true)).Variable();
+  }
+
   SatSolver* sat_solver_;
   BinaryImplicationGraph* implication_graph_;
   ClauseManager* clause_manager_;
@@ -78,7 +86,8 @@ class EquivalenceSatSweeping {
 
   // We compute the occurrence graph once at the beginning of each round.
   util_intops::StrongVector<ClauseIndex, absl::Span<const Literal>> clauses_;
-  CompactVectorVector<BooleanVariable, ClauseIndex> var_to_clauses_;
+  MergeableOccurrenceList<BooleanVariable, ClauseIndex> var_to_clauses_;
+  absl::flat_hash_map<Literal, Literal> lit_representative_;
 
   absl::flat_hash_map<BooleanVariable, BooleanVariable>
       big_model_to_small_model_;
@@ -102,6 +111,7 @@ struct SatSweepingResult {
   std::vector<std::pair<Literal, Literal>> binary_clauses;
   // TODO(user): also return small clauses of size > 2?
   SatSolver::Status status;
+  std::vector<std::pair<Literal, Literal>> new_equivalences;
 };
 SatSweepingResult DoFullSatSweeping(
     const CompactVectorVector<int, Literal>& clauses, TimeLimit* time_limit,

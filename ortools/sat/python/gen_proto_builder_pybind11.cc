@@ -17,8 +17,8 @@
 #include "absl/log/initialize.h"
 #include "absl/strings/str_format.h"
 #include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/python/wrappers.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/util/python/wrappers.h"
 
 namespace operations_research::sat::python {
 
@@ -31,9 +31,10 @@ void ParseAndGenerate() {
 %s
 #endif  // defined(IMPORT_PROTO_WRAPPER_CODE)
 )",
-      GeneratePybindCode({ABSL_DIE_IF_NULL(CpModelProto::descriptor()),
-                          ABSL_DIE_IF_NULL(CpSolverResponse::descriptor()),
-                          ABSL_DIE_IF_NULL(SatParameters::descriptor())}));
+      operations_research::util::python::GeneratePybindCode(
+          {ABSL_DIE_IF_NULL(CpModelProto::descriptor()),
+           ABSL_DIE_IF_NULL(CpSolverResponse::descriptor()),
+           ABSL_DIE_IF_NULL(SatParameters::descriptor())}));
 }
 
 }  // namespace operations_research::sat::python

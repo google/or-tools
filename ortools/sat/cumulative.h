@@ -45,29 +45,29 @@ namespace sat {
 //
 // Optimization: If one already have an helper constructed from the interval
 // variable, it can be passed as last argument.
-std::function<void(Model*)> Cumulative(
-    const std::vector<Literal>& enforcement_literals,
-    const std::vector<IntervalVariable>& vars,
-    absl::Span<const AffineExpression> demands, AffineExpression capacity,
-    SchedulingConstraintHelper* helper = nullptr);
+void AddCumulative(const std::vector<Literal>& enforcement_literals,
+                   const std::vector<IntervalVariable>& vars,
+                   absl::Span<const AffineExpression> demands,
+                   AffineExpression capacity, Model* model,
+                   SchedulingConstraintHelper* helper = nullptr);
 
 // Adds a simple cumulative constraint. See the comment of Cumulative() above
 // for a definition of the constraint. This is only used for testing.
 //
 // This constraint assumes that task demands and the resource capacity are fixed
 // to non-negative number.
-std::function<void(Model*)> CumulativeTimeDecomposition(
+void AddCumulativeTimeDecomposition(
     absl::Span<const Literal> enforcement_literals,
     absl::Span<const IntervalVariable> vars,
     absl::Span<const AffineExpression> demands, AffineExpression capacity,
-    SchedulingConstraintHelper* helper = nullptr);
+    Model* model, SchedulingConstraintHelper* helper = nullptr);
 
 // Another testing code, same assumptions as the CumulativeTimeDecomposition().
-std::function<void(Model*)> CumulativeUsingReservoir(
-    absl::Span<const Literal> enforcement_literals,
-    absl::Span<const IntervalVariable> vars,
-    absl::Span<const AffineExpression> demands, AffineExpression capacity,
-    SchedulingConstraintHelper* helper = nullptr);
+void AddCumulativeUsingReservoir(absl::Span<const Literal> enforcement_literals,
+                                 absl::Span<const IntervalVariable> vars,
+                                 absl::Span<const AffineExpression> demands,
+                                 AffineExpression capacity, Model* model,
+                                 SchedulingConstraintHelper* helper = nullptr);
 
 }  // namespace sat
 }  // namespace operations_research

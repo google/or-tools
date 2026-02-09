@@ -34,6 +34,7 @@
 #include "google/protobuf/descriptor.h"
 #include "google/protobuf/message.h"
 #include "google/protobuf/text_format.h"
+#include "ortools/base/macros/os_support.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/sat_base.h"
@@ -919,7 +920,8 @@ uint64_t FingerprintModel(const CpModelProto& model, uint64_t seed) {
   return fp;
 }
 
-#if !defined(__PORTABLE_PLATFORM__)
+#if defined(ORTOOLS_TARGET_OS_SUPPORTS_PROTO_DESCRIPTOR)
+static_assert(kTargetOsSupportsProtoDescriptor);
 namespace {
 
 // We need to print " { " instead of " {\n" to inline our variables like:
@@ -996,7 +998,9 @@ void SetupTextFormatPrinter(google::protobuf::TextFormat::Printer* printer) {
   printer->RegisterMessagePrinter(LinearExpressionProto::descriptor(),
                                   new InlineMessagePrinter());
 }
-#endif  // !defined(__PORTABLE_PLATFORM__)
+#else
+static_assert(!kTargetOsSupportsProtoDescriptor);
+#endif  // defined(ORTOOLS_TARGET_OS_SUPPORTS_PROTO_DESCRIPTOR)
 
 namespace {
 bool ModelHasOnlyClausesAndBooleanVariables(const CpModelProto& cp_model,

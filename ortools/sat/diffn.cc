@@ -150,9 +150,9 @@ void AddDiffnCumulativeRelationOnX(
                   integer_trail->LowerBound(min_start_var).value())));
     const std::vector<int64_t> coeffs = {-capacity.coeff.value(), -1, 1};
     // TODO(user): is the conditional really needed?
-    model->Add(ConditionalWeightedSumGreaterOrEqual(
+    AddConditionalWeightedSumGreaterOrEqual(
         enforcement_literals, {capacity.var, min_start_var, max_end_var},
-        coeffs, capacity.constant.value()));
+        coeffs, capacity.constant.value(), model);
   }
 
   SchedulingDemandHelper* demands =
@@ -327,11 +327,19 @@ void AddNonOverlappingRectangles(
             repository->End(x[i]), repository->Start(x[j]));
         const Literal x_ji = repository->GetOrCreatePrecedenceLiteral(
             repository->End(x[j]), repository->Start(x[i]));
-        if ((integer_trail->LowerBound(repository->Size(x[i])) > 0 ||
-             integer_trail->LowerBound(repository->Size(x[j])) > 0) &&
-            !AddAtMostOne(enforcement_literals, {x_ij, x_ji}, model)) {
-          sat_solver->NotifyThatModelIsUnsat();
-          return;
+        if (((integer_trail->LowerBound(repository->Size(x[i])) > 0 ||
+              integer_trail->LowerBound(repository->Size(x[j])) > 0))) {
+          std::vector<Literal> enforcement = enforcement_literals;
+          if (repository->IsOptional(x[i])) {
+            enforcement.push_back(repository->PresenceLiteral(x[i]));
+          }
+          if (repository->IsOptional(x[j])) {
+            enforcement.push_back(repository->PresenceLiteral(x[j]));
+          }
+          if (!AddAtMostOne(enforcement, {x_ij, x_ji}, model)) {
+            sat_solver->NotifyThatModelIsUnsat();
+            return;
+          }
         }
 
         // At most one of these two y options is true if the sizes are fixed or
@@ -341,10 +349,18 @@ void AddNonOverlappingRectangles(
         const Literal y_ji = repository->GetOrCreatePrecedenceLiteral(
             repository->End(y[j]), repository->Start(y[i]));
         if ((integer_trail->LowerBound(repository->Size(y[i])) > 0 ||
-             integer_trail->LowerBound(repository->Size(y[j])) > 0) &&
-            !AddAtMostOne(enforcement_literals, {y_ij, y_ji}, model)) {
-          sat_solver->NotifyThatModelIsUnsat();
-          return;
+             integer_trail->LowerBound(repository->Size(y[j])) > 0)) {
+          std::vector<Literal> enforcement = enforcement_literals;
+          if (repository->IsOptional(y[i])) {
+            enforcement.push_back(repository->PresenceLiteral(y[i]));
+          }
+          if (repository->IsOptional(y[j])) {
+            enforcement.push_back(repository->PresenceLiteral(y[j]));
+          }
+          if (!AddAtMostOne(enforcement, {y_ij, y_ji}, model)) {
+            sat_solver->NotifyThatModelIsUnsat();
+            return;
+          }
         }
 
         // At least one of the 4 options is true if all boxes are present.
@@ -361,7 +377,7 @@ void AddNonOverlappingRectangles(
         if (repository->IsOptional(y[j])) {
           clause.push_back(repository->PresenceLiteral(y[j]).Negated());
         }
-        model->Add(EnforcedClause(enforcement_literals, clause));
+        AddEnforcedClause(enforcement_literals, clause, model);
         if (sat_solver->ModelIsUnsat()) return;
       }
     }

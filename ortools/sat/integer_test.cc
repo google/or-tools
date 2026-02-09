@@ -21,11 +21,12 @@
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/types/span.h"
 #include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
-#include "ortools/base/logging.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/integer_search.h"
 #include "ortools/sat/model.h"
@@ -467,7 +468,7 @@ TEST(IntegerTrailTest, VariableWithHole) {
   Model model;
   IntegerVariable a =
       model.Add(NewIntegerVariable(Domain::FromIntervals({{1, 3}, {6, 7}})));
-  model.Add(GreaterOrEqual(a, 4));
+  AddGreaterOrEqual(a, 4, &model);
   EXPECT_EQ(model.Get(LowerBound(a)), 6);
 }
 
@@ -548,6 +549,92 @@ TEST(GenericLiteralWatcherTest, RevIsInDiveUpdate) {
   EXPECT_TRUE(is_in_dive);
 }
 
+TEST(IntegerEncoderTest, AtOrAfter) {
+  Model model;
+  IntegerEncoder* encoder = model.GetOrCreate<IntegerEncoder>();
+  const IntegerVariable var = model.Add(NewIntegerVariable(0, 10));
+  const Literal l3 = encoder->GetOrCreateAssociatedLiteral(
+      IntegerLiteral::GreaterOrEqual(var, IntegerValue(3)));
+  const Literal l7 = encoder->GetOrCreateAssociatedLiteral(
+      IntegerLiteral::GreaterOrEqual(var, IntegerValue(7)));
+  const Literal l5 = encoder->GetOrCreateAssociatedLiteral(
+      IntegerLiteral::GreaterOrEqual(var, IntegerValue(5)));
+
+  for (IntegerValue v(0); v < 10; ++v) {
+    IntegerValue lb_bound;
+    const LiteralIndex lb_index = encoder->SearchForLiteralAtOrAfter(
+        IntegerLiteral::GreaterOrEqual(var, v), &lb_bound);
+    LOG(INFO) << "Testing " << IntegerLiteral::GreaterOrEqual(var, v);
+    if (v <= 3) {
+      EXPECT_EQ(lb_index, l3.Index()) << " >= " << lb_bound;
+    } else if (v <= 5) {
+      EXPECT_EQ(lb_index, l5.Index()) << " >= " << lb_bound;
+    } else if (v <= 7) {
+      EXPECT_EQ(lb_index, l7.Index()) << " >= " << lb_bound;
+    } else {
+      EXPECT_EQ(lb_index, kNoLiteralIndex) << " >= " << lb_bound;
+    }
+
+    IntegerValue ub_bound;
+    const LiteralIndex ub_index = encoder->SearchForLiteralAtOrAfter(
+        IntegerLiteral::LowerOrEqual(var, v), &ub_bound);
+    LOG(INFO) << "Testing " << IntegerLiteral::LowerOrEqual(var, v);
+    if (v < 2) {
+      EXPECT_EQ(ub_index, kNoLiteralIndex) << " <= " << -ub_bound;
+    } else if (v < 4) {
+      EXPECT_EQ(ub_index, l3.NegatedIndex()) << " <= " << -ub_bound;
+    } else if (v < 6) {
+      EXPECT_EQ(ub_index, l5.NegatedIndex()) << " <= " << -ub_bound;
+    } else {
+      EXPECT_EQ(ub_index, l7.NegatedIndex()) << " <= " << -ub_bound;
+    }
+  }
+}
+
+TEST(IntegerEncoderTest, AtOrAfterWithHoles) {
+  Model model;
+  IntegerEncoder* encoder = model.GetOrCreate<IntegerEncoder>();
+  const IntegerVariable var =
+      model.Add(NewIntegerVariable(Domain::FromValues({0, 1, 2, 4, 5, 9})));
+  const Literal l2 = encoder->GetOrCreateAssociatedLiteral(
+      IntegerLiteral::GreaterOrEqual(var, IntegerValue(2)));
+  const Literal l4 = encoder->GetOrCreateAssociatedLiteral(
+      IntegerLiteral::GreaterOrEqual(var, IntegerValue(4)));
+  const Literal l9 = encoder->GetOrCreateAssociatedLiteral(
+      IntegerLiteral::GreaterOrEqual(var, IntegerValue(9)));
+
+  for (IntegerValue v(0); v < 10; ++v) {
+    IntegerValue lb_bound;
+    const LiteralIndex lb_index = encoder->SearchForLiteralAtOrAfter(
+        IntegerLiteral::GreaterOrEqual(var, v), &lb_bound);
+    LOG(INFO) << "Testing " << IntegerLiteral::GreaterOrEqual(var, v);
+    if (v <= 2) {
+      EXPECT_EQ(lb_index, l2.Index()) << " >= " << lb_bound;
+    } else if (v <= 4) {
+      EXPECT_EQ(lb_index, l4.Index()) << " >= " << lb_bound;
+    } else if (v <= 9) {
+      EXPECT_EQ(lb_index, l9.Index()) << " >= " << lb_bound;
+    } else {
+      EXPECT_EQ(lb_index, kNoLiteralIndex) << " >= " << lb_bound;
+    }
+
+    if (v == 9) continue;  // X <= 9 is always true.
+    IntegerValue ub_bound;
+    const LiteralIndex ub_index = encoder->SearchForLiteralAtOrAfter(
+        IntegerLiteral::LowerOrEqual(var, v), &ub_bound);
+    LOG(INFO) << "Testing " << IntegerLiteral::LowerOrEqual(var, v);
+    if (v < 1) {
+      EXPECT_EQ(ub_index, kNoLiteralIndex) << " <= " << -ub_bound;
+    } else if (v < 2) {
+      EXPECT_EQ(ub_index, l2.NegatedIndex()) << " <= " << -ub_bound;
+    } else if (v < 5) {
+      EXPECT_EQ(ub_index, l4.NegatedIndex()) << " <= " << -ub_bound;
+    } else {
+      EXPECT_EQ(ub_index, l9.NegatedIndex()) << " <= " << -ub_bound;
+    }
+  }
+}
+
 TEST(IntegerEncoderTest, BasicInequalityEncoding) {
   Model model;
   IntegerEncoder* encoder = model.GetOrCreate<IntegerEncoder>();
@@ -592,7 +679,7 @@ TEST(IntegerEncoderTest, BasicInequalityEncoding) {
 
   // Test the other way around.
   model.GetOrCreate<SatSolver>()->Backtrack(0);
-  model.Add(GreaterOrEqual(var, 4));
+  AddGreaterOrEqual(var, 4, &model);
   EXPECT_EQ(SatSolver::FEASIBLE, model.GetOrCreate<SatSolver>()->Solve());
   EXPECT_TRUE(model.Get(Value(l3)));
   EXPECT_FALSE(model.Get(Value(l5)));
@@ -604,23 +691,24 @@ TEST(IntegerEncoderTest, BasicInequalityEncoding) {
 TEST(IntegerEncoderTest, GetOrCreateTrivialAssociatedLiteral) {
   Model model;
   IntegerEncoder* encoder = model.GetOrCreate<IntegerEncoder>();
+  TrivialLiterals* trivial_literals = model.GetOrCreate<TrivialLiterals>();
   const IntegerVariable var = model.Add(NewIntegerVariable(0, 10));
-  EXPECT_EQ(encoder->GetTrueLiteral(),
+  EXPECT_EQ(trivial_literals->TrueLiteral(),
             encoder->GetOrCreateAssociatedLiteral(
                 IntegerLiteral::GreaterOrEqual(var, IntegerValue(0))));
-  EXPECT_EQ(encoder->GetTrueLiteral(),
+  EXPECT_EQ(trivial_literals->TrueLiteral(),
             encoder->GetOrCreateAssociatedLiteral(
                 IntegerLiteral::GreaterOrEqual(var, IntegerValue(-1))));
-  EXPECT_EQ(encoder->GetTrueLiteral(),
+  EXPECT_EQ(trivial_literals->TrueLiteral(),
             encoder->GetOrCreateAssociatedLiteral(
                 IntegerLiteral::LowerOrEqual(var, IntegerValue(10))));
-  EXPECT_EQ(encoder->GetFalseLiteral(),
+  EXPECT_EQ(trivial_literals->FalseLiteral(),
             encoder->GetOrCreateAssociatedLiteral(
                 IntegerLiteral::GreaterOrEqual(var, IntegerValue(11))));
-  EXPECT_EQ(encoder->GetFalseLiteral(),
+  EXPECT_EQ(trivial_literals->FalseLiteral(),
             encoder->GetOrCreateAssociatedLiteral(
                 IntegerLiteral::GreaterOrEqual(var, IntegerValue(12))));
-  EXPECT_EQ(encoder->GetFalseLiteral(),
+  EXPECT_EQ(trivial_literals->FalseLiteral(),
             encoder->GetOrCreateAssociatedLiteral(
                 IntegerLiteral::LowerOrEqual(var, IntegerValue(-1))));
 }
@@ -1135,9 +1223,10 @@ TEST(IntegerEncoderTest, IssueWhenNotFullyingPropagatingAtLoading) {
   Model model;
   auto* integer_trail = model.GetOrCreate<IntegerTrail>();
   auto* integer_encoder = model.GetOrCreate<IntegerEncoder>();
+  auto* trivial_literals = model.GetOrCreate<TrivialLiterals>();
   const IntegerVariable var =
       integer_trail->AddIntegerVariable(Domain::FromValues({0, 3, 7, 9}));
-  const Literal false_literal = integer_encoder->GetFalseLiteral();
+  const Literal false_literal = trivial_literals->FalseLiteral();
   integer_encoder->DisableImplicationBetweenLiteral();
 
   // This currently doesn't propagate the domain.
@@ -1174,8 +1263,8 @@ TEST(SolveIntegerProblemWithLazyEncodingTest, Sat) {
 TEST(SolveIntegerProblemWithLazyEncodingTest, Unsat) {
   Model model;
   const IntegerVariable var = model.Add(NewIntegerVariable(-100, 100));
-  model.Add(LowerOrEqual(var, -10));
-  model.Add(GreaterOrEqual(var, 10));
+  AddLowerOrEqual(var, -10, &model);
+  AddGreaterOrEqual(var, 10, &model);
   model.GetOrCreate<SearchHeuristics>()->fixed_search =
       FirstUnassignedVarAtItsMinHeuristic({var}, &model);
   ConfigureSearchHeuristics(&model);

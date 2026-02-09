@@ -20,7 +20,6 @@
 
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
-#include "ortools/sat/boolean_problem.pb.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/integer_search.h"

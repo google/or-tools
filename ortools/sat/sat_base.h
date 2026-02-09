@@ -17,6 +17,7 @@
 #define ORTOOLS_SAT_SAT_BASE_H_
 
 #include <algorithm>
+#include <array>
 #include <cstdint>
 #include <deque>
 #include <functional>
@@ -26,11 +27,13 @@
 #include <vector>
 
 #include "absl/base/attributes.h"
+#include "absl/base/casts.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
+#include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
-#include "ortools/base/strong_int.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/strong_integers.h"
@@ -66,14 +69,14 @@ const LiteralIndex kFalseLiteralIndex(-3);
 // same number XOR 1 encode its negation.
 class Literal {
  public:
-  explicit Literal(int signed_value)
+  explicit constexpr Literal(int signed_value)
       : index_(signed_value > 0 ? ((signed_value - 1) << 1)
                                 : ((-signed_value - 1) << 1) ^ 1) {
     CHECK_NE(signed_value, 0);
   }
 
   Literal() = default;
-  explicit Literal(LiteralIndex index) : index_(index.value()) {}
+  explicit constexpr Literal(LiteralIndex index) : index_(index.value()) {}
   Literal(BooleanVariable variable, bool is_positive)
       : index_(is_positive ? (variable.value() << 1)
                            : (variable.value() << 1) ^ 1) {}
@@ -106,6 +109,7 @@ class Literal {
   bool operator==(Literal other) const { return index_ == other.index_; }
   bool operator!=(Literal other) const { return index_ != other.index_; }
   bool operator<(const Literal& other) const { return index_ < other.index_; }
+  bool operator<=(const Literal& other) const { return index_ <= other.index_; }
 
   template <typename H>
   friend H AbslHashValue(H h, Literal literal) {
@@ -229,6 +233,19 @@ class VariablesAssignment {
   // You should not use this in normal code.
   Bitset64<LiteralIndex>::View GetBitsetView() { return assignment_.view(); }
 
+  std::string DebugString() const {
+    std::string result;
+    for (int i = 0; i < NumberOfVariables(); ++i) {
+      const BooleanVariable var(i);
+      if (VariableIsAssigned(var)) {
+        absl::StrAppend(&result, LiteralIsTrue(Literal(var, true)) ? "1" : "0");
+      } else {
+        absl::StrAppend(&result, "?");
+      }
+    }
+    return result;
+  }
+
  private:
   // The encoding is as follows:
   // - assignment_.IsSet(literal.Index()) means literal is true.
@@ -256,22 +273,306 @@ class AssignmentView {
   Bitset64<LiteralIndex>::ConstView view_;
 };
 
-// The ID of a clause.
-DEFINE_STRONG_INT_TYPE(ClauseId, int64_t);
-constexpr ClauseId kNoClauseId(0);
-
-// A generator for ClauseIds. Not thread-safe.
-class ClauseIdGenerator {
+// This is how the SatSolver stores a clause. A clause is just a disjunction of
+// literals. In many places, we just use vector<literal> to encode one. But in
+// the critical propagation code, we use this class to remove one memory
+// indirection.
+class SatClause {
  public:
-  ClauseId GetNextId() { return ClauseId(next_id_++); }
+  // Creates a sat clause. There must be at least 2 literals.
+  // Clause with one literal fix variable directly and are never constructed.
+  // Note that in practice, we use BinaryImplicationGraph for the clause of size
+  // 2, so this is used for size at least 3.
+  static SatClause* Create(absl::Span<const Literal> literals);
+
+  // Non-sized delete because this is a tail-padded class.
+  void operator delete(void* p) {
+    ::operator delete(p);  // non-sized delete
+  }
+
+  // Number of literals in the clause.
+  int size() const { return size_; }
+  bool empty() const { return size_ == 0; }
+
+  // We re-use the size to lazily remove clause and notify that they need to be
+  // deleted. It is why this is not called empty() to emphasis that fact. Note
+  // that we never create an initially empty clause, so there is no confusion
+  // with an infeasible model with an empty clause inside.
+  int IsRemoved() const { return size_ == 0; }
+
+  // Allows for range based iteration: for (Literal literal : clause) {}.
+  const Literal* begin() const { return &(literals_[0]); }
+  const Literal* end() const { return &(literals_[size_]); }
+
+  // Returns the first and second literals. These are always the watched
+  // literals if the clause is attached in the LiteralWatchers.
+  Literal FirstLiteral() const { return literals_[0]; }
+  Literal SecondLiteral() const { return literals_[1]; }
+
+  // Returns the literal that was propagated to true. This only works for a
+  // clause that just propagated this literal. Otherwise, this will just returns
+  // a literal of the clause.
+  Literal PropagatedLiteral() const { return literals_[0]; }
+
+  // Returns the reason for the last unit propagation of this clause. The
+  // preconditions are the same as for PropagatedLiteral(). Note that we don't
+  // need to include the propagated literal.
+  absl::Span<const Literal> PropagationReason() const {
+    return absl::Span<const Literal>(&(literals_[1]), size_ - 1);
+  }
+
+  // Returns a Span<> representation of the clause.
+  absl::Span<const Literal> AsSpan() const {
+    return absl::Span<const Literal>(&(literals_[0]), size_);
+  }
+
+  // Returns true if the clause is satisfied for the given assignment. Note that
+  // the assignment may be partial, so false does not mean that the clause can't
+  // be satisfied by completing the assignment.
+  bool IsSatisfied(const VariablesAssignment& assignment) const;
+
+  std::string DebugString() const;
 
  private:
-  ClauseId next_id_ = ClauseId(1);
+  // The manager needs to permute the order of literals in the clause and
+  // call Clear()/Rewrite. ClausePtr needs CreateInternal() to be able to create
+  // instances with less than two literals.
+  friend class ClauseManager;
+  friend class ClausePtr;
+
+  static SatClause* CreateInternal(absl::Span<const Literal> literals);
+
+  Literal* literals() { return &(literals_[0]); }
+
+  // Marks the clause so that the next call to CleanUpWatchers() can identify it
+  // and actually remove it. We use size_ = 0 for this since the clause will
+  // never be used afterwards.
+  void Clear() { size_ = 0; }
+
+  // Removes literals that are fixed. This should only be called at level 0
+  // where a literal is fixed iff it is assigned. Aborts and returns true if
+  // they are not all false.
+  //
+  // Note that the removed literal can still be accessed in the portion [size,
+  // old_size) of literals().
+  bool RemoveFixedLiteralsAndTestIfTrue(const VariablesAssignment& assignment);
+
+  // Rewrites a clause with another shorter one. Note that the clause shouldn't
+  // be attached when this is called.
+  void Rewrite(absl::Span<const Literal> new_clause) {
+    size_ = 0;
+    for (const Literal l : new_clause) literals_[size_++] = l;
+  }
+
+  int32_t size_;
+
+  // This class store the literals inline, and literals_ mark the starts of the
+  // variable length portion.
+  Literal literals_[0];
 };
 
-// Forward declaration.
-class SatClause;
-class SatPropagator;
+// A clause pointer. This is either a SatClause pointer or, for clauses with at
+// most 2 literals, the literals themselves. At any given time two distinct
+// active (i.e., created and not yet deleted) clauses are guaranteed to have
+// different pointers. On the other hand, several pointers can describe the same
+// set of literals. Also, a given pointer can describe different clauses at
+// different times (in such cases it is important to delete the first clause
+// before reusing its pointer for a new one).
+class ClausePtr {
+ public:
+  enum Type {
+    kEmptyClause,
+    kUnitClause,
+    kBinaryClause,
+    kSatClause,
+  };
+
+  // Returns `kNullClausePtr`.
+  constexpr ClausePtr() : ClausePtr({LiteralIndex(0), LiteralIndex(0)}) {}
+
+  // Returns the pointer to the empty clause.
+  static constexpr ClausePtr EmptyClausePtr() {
+    return ClausePtr({LiteralIndex(0), LiteralIndex(kEmptyClauseBits)});
+  }
+
+  // Creates the pointer to the given unit clause.
+  explicit ClausePtr(Literal a)
+      : ClausePtr({a.Index(), LiteralIndex(kUnitClauseBit)}) {}
+
+  // Creates the pointer to the given binary clause. The two literals must be
+  // different. The result does not depend on their order.
+  ClausePtr(Literal a, Literal b)
+      : ClausePtr(std::minmax(a.Index(), b.Index())) {
+    DCHECK_NE(a, b);
+  }
+
+  // Creates a ClausePtr from a SatClause pointer.
+  explicit ClausePtr(const SatClause* clause) {
+    // Make sure we can store SatClause pointers without losing information.
+    static_assert(sizeof(uint64_t) >= sizeof(uintptr_t));
+    static_assert(alignof(SatClause) >= 2);
+    const uintptr_t ptr_rep = absl::bit_cast<uintptr_t>(clause);
+    const uint64_t bits = kSatClauseBit | (static_cast<uint64_t>(ptr_rep) >> 1);
+    rep_ = rep_from_uint64(bits);
+  }
+
+  // Creates a SatClause with the given literals and returns its pointer. This
+  // always creates a `kSatClause` ClausePtr, even if there are 2 literals or
+  // less.
+  explicit ClausePtr(absl::Span<const Literal> literals)
+      : ClausePtr(SatClause::CreateInternal(literals)) {}
+
+  // Returns the type of this pointer, which must not be null.
+  Type GetType() const {
+    DCHECK_NE(*this, ClausePtr());
+    // Switch on bits (b2,b1,b0) = (rep_[1]_31, rep_[0]_31, rep_[0]_30):
+    // - 011 : empty clause
+    // - 010 : unit clause
+    // - 00* : binary clause
+    // - 1** : sat clause
+    // Compiles down to simple code with clang: https://godbolt.org/z/3d7czGxaT.
+    const uint64_t bits = uint64_from_rep(rep_);
+    switch (((bits >> 61) & 4) | ((bits >> 30) & 3)) {
+      case 0b000:
+      case 0b001:
+        return kBinaryClause;
+      case 0b010:
+        return kUnitClause;
+      case 0b011:
+        return kEmptyClause;
+      default:
+        return kSatClause;
+    }
+  }
+
+  // Returns true if this pointer is a `kBinaryClause` pointer.
+  bool IsBinaryClausePtr() const {
+    const uint64_t bits = uint64_from_rep(rep_);
+    const uint64_t kBinaryClauseBits = 0x80000000'80000000;
+    return bits != 0 && (bits & kBinaryClauseBits) == 0;
+  }
+
+  // Returns the first literal of the pointer's target clause. The pointer must
+  // not be null and must be a `kUnitClause` or `kBinaryClause` pointer. For
+  // binary clauses, the literal order is unspecified.
+  Literal GetFirstLiteral() const {
+    DCHECK_NE(*this, ClausePtr());
+    DCHECK(GetType() == kUnitClause || GetType() == kBinaryClause);
+    return rep_[1];
+  }
+
+  // Returns the second literal of the pointer's target clause. The pointer must
+  // not be null and must be a `kBinaryClause` pointer. The literal order is
+  // unspecified.
+  Literal GetSecondLiteral() const {
+    DCHECK_NE(*this, ClausePtr());
+    DCHECK_EQ(GetType(), kBinaryClause);
+    return rep_[0];
+  }
+
+  // Returns the literals of the pointer's target clause. The pointer must not
+  // be null.
+  absl::Span<const Literal> GetLiterals() const {
+    DCHECK_NE(*this, ClausePtr());
+    switch (GetType()) {
+      case kEmptyClause:
+        return absl::Span<const Literal>();
+      case kUnitClause:
+        return absl::Span<const Literal>(rep_.data() + 1, 1);
+      case kBinaryClause:
+        return absl::Span<const Literal>(rep_.data(), 2);
+      default:
+        return GetSatClause()->AsSpan();
+    }
+  }
+
+  // Returns true if this pointer is a `kSatClause` pointer.
+  bool IsSatClausePtr() const {
+    return (rep_[1].Index().value() & (kSatClauseBit >> 32)) != 0;
+  }
+
+  // Returns the SatClause pointer corresponding to this pointer.
+  // IsSatClausePtr() must be true.
+  SatClause* GetSatClause() const {
+    DCHECK(IsSatClausePtr());
+    // This is fine even if uintptr_t is smaller than uint64_t because, in this
+    // case, the extra bits are zero (see how SatClause* are IDs are created).
+    const uint64_t bits = uint64_from_rep(rep_);
+    const uintptr_t ptr_rep = static_cast<uintptr_t>(bits << 1);
+    return absl::bit_cast<SatClause*>(ptr_rep);
+  }
+
+  // Returns a uint64_t representation of this pointer (and not of its target
+  // clause).
+  uint64_t SerializePtr() const {
+    // TODO(user): reorder the bits, depending on GetType() in a bijective
+    // way, to get small values (in order to improve compression in protos,
+    // which use a varint encoding). Also omit the ID in protos when it can be
+    // recomputed from the literals.
+    return uint64_from_rep(rep_);
+  }
+
+  bool operator==(ClausePtr other) const { return rep_ == other.rep_; }
+  bool operator!=(ClausePtr other) const { return rep_ != other.rep_; }
+
+  template <typename H>
+  friend H AbslHashValue(H h, const ClausePtr& clause) {
+    return H::combine(std::move(h), clause.rep_);
+  }
+
+  template <typename Sink>
+  friend void AbslStringify(Sink& sink, const ClausePtr& clause) {
+    absl::Format(&sink, "%lu", uint64_from_rep(clause.rep_));
+  }
+
+ private:
+  static constexpr uint32_t kEmptyClauseBits = 0xC0000000;
+  static constexpr uint32_t kUnitClauseBit = 0x80000000;
+  static constexpr uint64_t kSatClauseBit = 0x80000000'00000000;
+
+  // literals.first, literals.second must be rep_[1], rep_[0], respectively.
+  constexpr explicit ClausePtr(std::pair<LiteralIndex, LiteralIndex> literals)
+      : rep_({Literal(literals.second), Literal(literals.first)}) {}
+
+  // Returns (rep_[1], rep_[0]) as an uint64_t. Compiles down to a single
+  // instruction on most architectures (https://godbolt.org/z/KdjK3aev9).
+  static inline uint64_t uint64_from_rep(std::array<Literal, 2> rep) {
+    return (static_cast<uint64_t>(rep[1].Index().value()) << 32) |
+           static_cast<uint64_t>(static_cast<uint32_t>(rep[0].Index().value()));
+  }
+
+  // Returns rep[1] = bits_63..32, rep[0] = bits_31..0. Compiles down to a
+  // single instruction on most architectures (https://godbolt.org/z/KdjK3aev9).
+  static inline std::array<Literal, 2> rep_from_uint64(uint64_t bits) {
+    return {Literal(LiteralIndex(static_cast<uint32_t>(bits))),
+            Literal(LiteralIndex(static_cast<uint32_t>(bits >> 32)))};
+  }
+
+  // The clause pointer, encoded as follows (the order of the array elements is
+  // chosen so that SatClause* pointers can be bit_cast to this representation
+  // on little endian platforms, the most common ones):
+  //   rep[1] rep[0]
+  // - 000... 000... : the null clause pointer.
+  // - 000... 110... : the pointer of the empty clause.
+  // - 0xxx.. 10.... : the pointer of a unit clause. The 31 xxx bits are the
+  //                   literal index of the single literal of this clause.
+  // - 0xxx.. 0yyy.. : the pointer of a binary clause. The 31 xxx (resp. yyy)
+  //                   bits are the smallest (resp. largest) literal index of
+  //                   the two literals of this clause. The two literals must be
+  //                   different, hence a binary clause pointer cannot be
+  //                   confused with the null clause pointer.
+  // - 1xxx.. xxx... : a SatClause* pointer. The 63 xxx bits are the pointer
+  //                   value shifted right by 1. Due to alignment the LSB of the
+  //                   pointer should be 0.
+  std::array<Literal, 2> rep_;
+};
+
+// The null clause pointer.
+constexpr ClausePtr kNullClausePtr = ClausePtr();
+
+// Creates a clause pointer for the given literals. If there are more than 2
+// literals, allocates a SatClause and returns its pointer.
+ClausePtr NewClausePtr(absl::Span<const Literal> literals);
 
 // Information about a variable assignment.
 struct AssignmentInfo {
@@ -325,6 +626,9 @@ struct LiteralWithTrailIndex {
   int trail_index = 0;
 };
 
+// Forward declaration.
+class SatPropagator;
+
 // The solver trail stores the assignment made by the solver in order.
 // This class is responsible for maintaining the assignment of each variable
 // and the information of each assignment.
@@ -367,15 +671,12 @@ class Trail {
   // only use in hot-loops.
   class EnqueueHelper {
    public:
-    EnqueueHelper(
-        Literal* trail_ptr, AssignmentInfo* current_info,
-        AssignmentInfo* info_ptr, VariablesAssignment* assignment,
-        util_intops::StrongVector<BooleanVariable, ClauseId>* clause_ids)
+    EnqueueHelper(Literal* trail_ptr, AssignmentInfo* current_info,
+                  AssignmentInfo* info_ptr, VariablesAssignment* assignment)
         : trail_ptr_(trail_ptr),
           current_info_(current_info),
           info_ptr_(info_ptr),
-          bitset_(assignment->GetBitsetView()),
-          clause_ids_(clause_ids) {}
+          bitset_(assignment->GetBitsetView()) {}
 
     void EnqueueAtLevel(Literal true_literal, int level) {
       bitset_.Set(true_literal);
@@ -385,14 +686,7 @@ class Trail {
       trail_ptr_[current_info_->trail_index++] = true_literal;
     }
 
-    void EnqueueWithUnitReason(Literal true_literal, ClauseId clause_id) {
-      DCHECK_NE(clause_id, kNoClauseId);
-      const BooleanVariable var = true_literal.Variable();
-      if (var.value() >= clause_ids_->size()) {
-        clause_ids_->resize(var.value() + 1, kNoClauseId);
-      }
-      (*clause_ids_)[var] = clause_id;
-
+    void EnqueueWithUnitReason(Literal true_literal) {
       bitset_.Set(true_literal);
       AssignmentInfo* info = info_ptr_ + true_literal.Variable().value();
       *info = *current_info_;
@@ -413,12 +707,11 @@ class Trail {
     AssignmentInfo* current_info_;
     AssignmentInfo* info_ptr_;
     Bitset64<LiteralIndex>::View bitset_;
-    util_intops::StrongVector<BooleanVariable, ClauseId>* clause_ids_;
   };
   EnqueueHelper GetEnqueueHelper(int propagator_id) {
     current_info_.type = propagator_id;
     return EnqueueHelper(trail_.data(), &current_info_, info_.data(),
-                         &assignment_, &clause_ids_);
+                         &assignment_);
   }
 
   // Specific Enqueue() for search decisions.
@@ -452,14 +745,8 @@ class Trail {
     return decisions_;
   }
 
-  // Specific Enqueue() version for a fixed variable.
-  void EnqueueWithUnitReason(Literal true_literal) {
-    EnqueueAtLevel(true_literal, AssignmentType::kUnitReason, 0);
-  }
-
   // Specific Enqueue() version for unit clauses.
-  void EnqueueWithUnitReason(ClauseId clause_id, Literal true_literal) {
-    MaybeSetClauseId(true_literal, clause_id);
+  void EnqueueWithUnitReason(Literal true_literal) {
     EnqueueAtLevel(true_literal, AssignmentType::kUnitReason, 0);
   }
 
@@ -481,17 +768,17 @@ class Trail {
   // already assigned to false, then MutableConflict() will be set appropriately
   // and this will return false otherwise this will enqueue the literal and
   // returns true.
-  ABSL_MUST_USE_RESULT bool EnqueueWithStoredReason(ClauseId clause_id,
-                                                    Literal true_literal) {
+  ABSL_MUST_USE_RESULT bool EnqueueWithStoredReason(Literal true_literal,
+                                                    ClausePtr reason_clause) {
     if (assignment_.LiteralIsTrue(true_literal)) return true;
     if (assignment_.LiteralIsFalse(true_literal)) {
       *MutableConflict() = reasons_repository_[Index()];
       MutableConflict()->push_back(true_literal);
-      failing_clause_id_ = clause_id;
+      failing_clause_ptr_ = reason_clause;
       return false;
     }
 
-    MaybeSetClauseId(true_literal, clause_id);
+    MaybeSetReasonClause(true_literal, reason_clause);
     Enqueue(true_literal, AssignmentType::kCachedReason);
     const BooleanVariable var = true_literal.Variable();
     reasons_[var] = reasons_repository_[info_[var].trail_index];
@@ -531,23 +818,13 @@ class Trail {
   // from Info(var).type and the latter should not be used outside this class.
   int AssignmentType(BooleanVariable var) const;
 
-  // Returns the ID of the clause which is the reason for the unit clause
-  // containing the given variable, or kNoClauseId if there is none. The
-  // variable must have been enqueued at level zero with a kUnitReason.
-  ClauseId GetUnitClauseId(BooleanVariable var) const {
-    DCHECK(AssignmentType(var) == AssignmentType::kUnitReason);
-    DCHECK_EQ(Info(var).level, 0);
-    if (var.value() >= clause_ids_.size()) return kNoClauseId;
-    return clause_ids_[var];
-  }
-
-  // Returns the ID of the clause which is the reason why the given variable was
-  // enqueued, or kNoClauseId if there is none. The variable must have been
+  // Returns the clause which is the reason why the given variable was
+  // enqueued, or kNullClausePtr if there is none. The variable must have been
   // enqueued with EnqueueWithStoredReason().
-  ClauseId GetStoredReasonClauseId(BooleanVariable var) const {
+  ClausePtr GetStoredReasonClause(BooleanVariable var) const {
     DCHECK(AssignmentType(var) == AssignmentType::kCachedReason);
-    if (var.value() >= clause_ids_.size()) return kNoClauseId;
-    return clause_ids_[var];
+    if (var.value() >= reason_clauses_.size()) return kNullClausePtr;
+    return reason_clauses_[var];
   }
 
   // If a variable was propagated with EnqueueWithSameReasonAs(), returns its
@@ -613,7 +890,7 @@ class Trail {
   std::vector<Literal>* MutableConflict() {
     ++conflict_timestamp_;
     failing_sat_clause_ = nullptr;
-    failing_clause_id_ = kNoClauseId;
+    failing_clause_ptr_ = kNullClausePtr;
     return &conflict_;
   }
 
@@ -633,13 +910,13 @@ class Trail {
   // know whether or not the last conflict was caused by a clause.
   void SetFailingSatClause(SatClause* clause) {
     failing_sat_clause_ = clause;
-    failing_clause_id_ = kNoClauseId;
+    failing_clause_ptr_ = kNullClausePtr;
   }
   SatClause* FailingSatClause() const { return failing_sat_clause_; }
 
-  // Returns the LRAT ID of the failing clause. This ID is only set if a
-  // conflict is detected in EnqueueWithStoredReason().
-  ClauseId FailingClauseId() const { return failing_clause_id_; }
+  // Returns the LRAT failing clause. This is only set if a conflict is detected
+  // in EnqueueWithStoredReason().
+  ClausePtr FailingClausePtr() const { return failing_clause_ptr_; }
 
   // Getters.
   int NumVariables() const { return trail_.size(); }
@@ -686,8 +963,7 @@ class Trail {
 
   using ConflictResolutionFunction = std::function<void(
       std::vector<Literal>* conflict,
-      std::vector<Literal>* reason_used_to_infer_the_conflict,
-      std::vector<SatClause*>* subsumed_clauses)>;
+      std::vector<Literal>* reason_used_to_infer_the_conflict)>;
 
   void SetConflictResolutionFunction(ConflictResolutionFunction resolution) {
     resolution_ = std::move(resolution);
@@ -702,13 +978,13 @@ class Trail {
  private:
   ConflictResolutionFunction resolution_;
 
-  void MaybeSetClauseId(Literal true_literal, ClauseId clause_id) {
-    if (clause_id != kNoClauseId) {
+  void MaybeSetReasonClause(Literal true_literal, ClausePtr reason_clause) {
+    if (reason_clause != kNullClausePtr) {
       const BooleanVariable var = true_literal.Variable();
-      if (var.value() >= clause_ids_.size()) {
-        clause_ids_.resize(var.value() + 1, kNoClauseId);
+      if (var.value() >= reason_clauses_.size()) {
+        reason_clauses_.resize(var.value() + 1, kNullClausePtr);
       }
-      clause_ids_[var] = clause_id;
+      reason_clauses_[var] = reason_clause;
     }
   }
 
@@ -726,11 +1002,10 @@ class Trail {
   int64_t conflict_timestamp_ = 0;
   std::vector<Literal> conflict_;
   util_intops::StrongVector<BooleanVariable, AssignmentInfo> info_;
-  // The ID of unit clauses (literals enqueued at level 0 with a kUnitReason)
-  // and of reason clauses for literals enqueued with a stored reason.
-  util_intops::StrongVector<BooleanVariable, ClauseId> clause_ids_;
+  // The reason clauses for literals enqueued with a stored reason.
+  util_intops::StrongVector<BooleanVariable, ClausePtr> reason_clauses_;
   SatClause* failing_sat_clause_;
-  ClauseId failing_clause_id_;
+  ClausePtr failing_clause_ptr_;
 
   // Data used by EnqueueWithSameReasonAs().
   util_intops::StrongVector<BooleanVariable, BooleanVariable>

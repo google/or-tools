@@ -167,8 +167,12 @@ AffineExpression LinearExpression2::GetAffineLowerBound(
   // x + ceil(b / a) * y >= ceil((expr_lb + residual * y_lb) / a)
   const IntegerValue ceil_coeff_ratio = CeilRatio(other_coeff, coeff);
   const IntegerValue residual = coeff * ceil_coeff_ratio - other_coeff;
+  const IntegerValue term = CapProdI(residual, other_var_lb);
+  if (AtMinOrMaxInt64I(term)) return AffineExpression(kMinIntegerValue);
+  const IntegerValue nominator = CapAddI(expr_lb, term);
+  if (AtMinOrMaxInt64I(nominator)) return AffineExpression(kMinIntegerValue);
   return AffineExpression(other_var, -ceil_coeff_ratio,
-                          CeilRatio(expr_lb + residual * other_var_lb, coeff));
+                          CeilRatio(nominator, coeff));
 }
 
 void LinearExpression2::MakeVariablesPositive() {

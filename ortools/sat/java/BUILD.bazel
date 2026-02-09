@@ -14,13 +14,72 @@
 # Description: java wrapping of the code in ../
 
 load("@contrib_rules_jvm//java:defs.bzl", "java_junit5_test")
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 load("//bazel:swig_java.bzl", "java_wrap_cc")
+
+package(default_visibility = ["//visibility:public"])
+
+cc_binary(
+    name = "gen_cp_model_proto_swig",
+    srcs = ["gen_cp_model_proto_swig.cc"],
+    deps = [
+        "//ortools/sat:cp_model_cc_proto",
+        "//ortools/sat:sat_parameters_cc_proto",
+        "//ortools/util/java:wrappers",
+        "@abseil-cpp//absl/flags:parse",
+        "@abseil-cpp//absl/flags:usage",
+        "@abseil-cpp//absl/log:die_if_null",
+        "@abseil-cpp//absl/log:initialize",
+        "@abseil-cpp//absl/strings:str_format",
+    ],
+)
+
+genrule(
+    name = "run_gen_cp_model_proto_swig",
+    outs = ["cp_model_proto.swig"],
+    cmd = "$(location :gen_cp_model_proto_swig) > $@",
+    tools = [":gen_cp_model_proto_swig"],
+)
+
+java_wrap_cc(
+    name = "cp_model_proto",
+    srcs = ["cp_model_proto.swig"],
+    package = "com.google.ortools.sat",
+    swig_includes = [
+        "//ortools/base:base_swig",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//ortools/port:proto_utils",
+        "//ortools/sat:cp_model_cc_proto",
+        "//ortools/util/java:jni_helper",
+    ],
+)
+
+java_junit5_test(
+    name = "CpModelProtoTest",
+    size = "medium",
+    srcs = ["CpModelProtoTest.java"],
+    jvm_flags = ["-Xcheck:jni"],
+    test_class = "com.google.ortools.sat.CpModelProtoTest",
+    deps = [
+        "//ortools/java/com/google/ortools:Loader",
+        "//ortools/sat/java:cp_model_proto",
+        "//ortools/util/java:jni_helper",
+        "@maven//:com_google_truth_truth",
+        "@maven//:org_junit_jupiter_junit_jupiter_api",
+        "@maven//:org_junit_jupiter_junit_jupiter_engine",
+        "@maven//:org_junit_jupiter_junit_jupiter_params",
+        "@maven//:org_junit_platform_junit_platform_launcher",
+        "@maven//:org_junit_platform_junit_platform_reporting",
+    ],
+)
 
 java_wrap_cc(
     name = "sat",
     srcs = ["sat.swig"],
     java_deps = [
-        "//ortools/sat:cp_model_java_proto",
+        ":cp_model_proto",
         "//ortools/sat:sat_parameters_java_proto",
         "//ortools/util/java:sorted_interval_list",
         "@protobuf//java/core",
@@ -28,6 +87,7 @@ java_wrap_cc(
     package = "com.google.ortools.sat",
     swig_includes = [
         "//ortools/base:base_swig",
+        "//ortools/sat/java:cp_model_proto.swig",
         "//ortools/util/java:proto.i",
         "//ortools/util/java:sorted_interval_list.swig",
         "//ortools/util/java:vector.swig",
@@ -48,8 +108,6 @@ java_junit5_test(
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
-        "//ortools/sat:cp_model_java_proto",
-        "//ortools/util/java:sorted_interval_list",
         "@maven//:com_google_truth_truth",
         "@maven//:org_junit_jupiter_junit_jupiter_api",
         "@maven//:org_junit_jupiter_junit_jupiter_engine",
@@ -67,8 +125,6 @@ java_junit5_test(
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
-        "//ortools/sat:cp_model_java_proto",
-        "//ortools/util/java:sorted_interval_list",
         "@maven//:com_google_truth_truth",
         "@maven//:org_junit_jupiter_junit_jupiter_api",
         "@maven//:org_junit_jupiter_junit_jupiter_engine",
@@ -86,7 +142,6 @@ java_junit5_test(
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
-        "//ortools/util/java:sorted_interval_list",
         "@maven//:com_google_truth_truth",
         "@maven//:org_junit_jupiter_junit_jupiter_api",
         "@maven//:org_junit_jupiter_junit_jupiter_engine",

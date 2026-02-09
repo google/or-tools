@@ -101,7 +101,8 @@ class NoOverlap2DConstraintHelper : public PropagatorInterface {
   }
 
   bool IsFixed(int index) const {
-    return x_helper_->StartIsFixed(index) && x_helper_->EndIsFixed(index) &&
+    return !x_helper_->IsOptional(index) && !y_helper_->IsOptional(index) &&
+           x_helper_->StartIsFixed(index) && x_helper_->EndIsFixed(index) &&
            y_helper_->StartIsFixed(index) && y_helper_->EndIsFixed(index);
   }
 
@@ -164,6 +165,8 @@ class NoOverlap2DConstraintHelper : public PropagatorInterface {
     AddXSizeMinReason(index);
     AddYSizeMinReason(index);
   }
+
+  Rectangle GetBoxInDebugSolution(int index) const;
 
   // Push the explanation that the left edge of this box is to the right of the
   // vertical line x=lower_bound.

@@ -22,12 +22,12 @@
 #include <string>
 #include <vector>
 
-#include "absl/base/log_severity.h"
 #include "absl/numeric/int128.h"
 #include "absl/random/random.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "gtest/gtest.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/base/mathutil.h"
 
 namespace operations_research::sat {

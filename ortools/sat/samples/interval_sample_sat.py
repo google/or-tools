@@ -26,14 +26,13 @@ def interval_sample_sat():
 
     # An interval can be created from three affine expressions.
     start_var = model.new_int_var(0, horizon, "start")
-    duration = 10  # Python cp/sat code accept integer variables or constants.
+    duration = 10  # Python CP-SAT code accepts integer variables or constants.
     end_var = model.new_int_var(0, horizon, "end")
     interval_var = model.new_interval_var(start_var, duration, end_var + 2, "interval")
 
     print(f"interval = {repr(interval_var)}")
 
-    # If the size is fixed, a simpler version uses the start expression and the
-    # size.
+    # If the size is fixed, you only need the start expression and the size.
     fixed_size_interval_var = model.new_fixed_size_interval_var(
         start_var, 10, "fixed_size_interval_var"
     )

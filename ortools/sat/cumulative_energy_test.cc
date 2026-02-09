@@ -28,7 +28,6 @@
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "gtest/gtest.h"
-#include "ortools/base/logging.h"
 #include "ortools/sat/2d_orthogonal_packing_testing.h"
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/cumulative.h"
@@ -105,7 +104,7 @@ bool SolveUsingConstraint(const EnergyInstance& instance) {
       energy_literals.push_back(lit);
       energy_literals_values_values.push_back({lit, e, 1});
     }
-    model.Add(ExactlyOneConstraint(energy_literals));
+    AddExactlyOneConstraint(energy_literals, &model);
     decomposed_energies.push_back(energy_literals_values_values);
   }
 
@@ -224,8 +223,8 @@ bool SolveUsingNaiveModel(const EnergyInstance& instance) {
 
   SatParameters params =
       model.Add(NewSatParameters("use_overload_checker_in_cumulative:true"));
-  model.Add(Cumulative(/*enforcement_literals=*/{}, intervals, consumptions,
-                       AffineExpression(IntegerValue(instance.capacity))));
+  AddCumulative(/*enforcement_literals=*/{}, intervals, consumptions,
+                AffineExpression(IntegerValue(instance.capacity)), &model);
 
   return SolveIntegerProblemWithLazyEncoding(&model) ==
          SatSolver::Status::FEASIBLE;

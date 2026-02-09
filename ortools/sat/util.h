@@ -37,10 +37,10 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/util/bitset.h"
 #include "ortools/util/random_engine.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
@@ -839,7 +839,7 @@ class Percentile {
 // Keep the top n elements from a stream of elements.
 //
 // TODO(user): We could use gtl::TopN when/if it gets open sourced. Note that
-// we might be slighlty faster here since we use an indirection and don't move
+// we might be slightly faster here since we use an indirection and don't move
 // the Element class around as much.
 template <typename Element, typename Score>
 class TopN {

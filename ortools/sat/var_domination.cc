@@ -20,7 +20,6 @@
 #include <cstdlib>
 #include <limits>
 #include <memory>
-#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -29,13 +28,13 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
-#include "absl/meta/type_traits.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/algorithms/dynamic_partition.h"
 #include "ortools/base/hash.h"
-#include "ortools/base/logging.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
@@ -45,8 +44,8 @@
 #include "ortools/sat/presolve_context.h"
 #include "ortools/sat/presolve_util.h"
 #include "ortools/sat/solution_crush.h"
-#include "ortools/sat/util.h"
 #include "ortools/util/affine_relation.h"
+#include "ortools/util/logging.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/strong_integers.h"
@@ -1451,13 +1450,22 @@ void ScanModelForDualBoundStrengthening(
   // The objective is handled like a <= constraints, or an == constraint if
   // there is a non-trivial domain.
   if (cp_model.has_objective()) {
-    // WARNING: The proto objective might not be up to date, so we need to
-    // write it first.
-    context.WriteObjectiveToProto();
-    const auto [min_activity, max_activity] =
-        context.ComputeMinMaxActivity(cp_model.objective());
-    dual_bound_strengthening->ProcessLinearConstraint(
-        true, context, cp_model.objective(), min_activity, max_activity);
+    if (!context.ObjectiveDomainIsConstraining()) {
+      // Fast pass, we just never want to increase the objective.
+      // It is okay to decrease it.
+      for (const auto [proto_var, coeff] : context.ObjectiveMap()) {
+        const int ref = coeff > 0 ? proto_var : NegatedRef(proto_var);
+        dual_bound_strengthening->CannotIncrease({ref});
+      }
+    } else {
+      // WARNING: The proto objective might not be up to date, so we need to
+      // write it first.
+      context.WriteObjectiveToProto();
+      const auto [min_activity, max_activity] =
+          context.ComputeMinMaxActivity(cp_model.objective());
+      dual_bound_strengthening->ProcessLinearConstraint(
+          true, context, cp_model.objective(), min_activity, max_activity);
+    }
   }
 }
 
@@ -1710,8 +1718,9 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
       if (context->IsFixed(ref)) continue;
 
       // For strenghtening using domination, just consider >= constraint.
-      const bool only_lb = max_activity <= rhs_ub;
-      const bool only_ub = min_activity >= rhs_lb;
+      const bool domain_is_simple = ct.linear().domain_size() == 2;
+      const bool only_lb = max_activity <= rhs_ub && domain_is_simple;
+      const bool only_ub = min_activity >= rhs_lb && domain_is_simple;
       if (only_lb || only_ub) {
         // Always transform to coeff_magnitude * current_ref + ... >=
         const int current_ref = (coeff > 0) == only_lb ? ref : NegatedRef(ref);
@@ -1934,7 +1943,7 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
         const int dom_ref = VarDomination::IntegerVariableToRef(dom);
         if (context->IsFixed(dom_ref)) continue;
         if (context->VariableIsNotUsedAnymore(dom_ref)) continue;
-        if (context->VariableWasRemoved(dom_ref)) continue;
+        if (context->VariableWasRemoved(PositiveRef(dom_ref))) continue;
         if (!context->CanBeUsedAsLiteral(dom_ref)) continue;
         if (implications.contains({ref, dom_ref})) continue;
 

@@ -35,12 +35,11 @@
 #include "absl/log/vlog_is_on.h"
 #include "absl/random/distributions.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/base/stl_util.h"
-#include "ortools/base/strong_int.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/base/timer.h"
-#include "ortools/graph/strongly_connected_components.h"
+#include "ortools/graph_base/strongly_connected_components.h"
 #include "ortools/sat/container.h"
 #include "ortools/sat/inclusion.h"
 #include "ortools/sat/lrat_proof_handler.h"
@@ -104,7 +103,6 @@ bool LiteralsAreFixedAtRoot(const Trail& trail,
 
 ClauseManager::ClauseManager(Model* model)
     : SatPropagator("ClauseManager"),
-      clause_id_generator_(model->GetOrCreate<ClauseIdGenerator>()),
       parameters_(*model->GetOrCreate<SatParameters>()),
       assignment_(model->GetOrCreate<Trail>()->Assignment()),
       implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()),
@@ -246,18 +244,16 @@ bool ClauseManager::Propagate(Trail* trail) {
 
         if (propagation_level == 0) {
           if (lrat_proof_handler_ != nullptr) {
-            std::vector<ClauseId>& unit_ids = clause_ids_scratchpad_;
-            unit_ids.clear();
+            std::vector<ClausePtr>& proof = tmp_proof_;
+            proof.clear();
             const int size = it->clause->size();
             for (int i = 1; i < size; ++i) {
-              unit_ids.push_back(
-                  trail_->GetUnitClauseId(literals[i].Variable()));
+              proof.push_back(ClausePtr(literals[i].Negated()));
             }
-            unit_ids.push_back(GetClauseId(it->clause));
-            const ClauseId new_clause_id = clause_id_generator_->GetNextId();
+            proof.push_back(ClausePtr(it->clause));
             lrat_proof_handler_->AddInferredClause(
-                new_clause_id, {other_watched_literal}, unit_ids);
-            helper.EnqueueWithUnitReason(other_watched_literal, new_clause_id);
+                ClausePtr(other_watched_literal), proof);
+            helper.EnqueueWithUnitReason(other_watched_literal);
           } else {
             trail_->EnqueueWithUnitReason(other_watched_literal);
           }
@@ -316,34 +312,27 @@ bool ClauseManager::ClauseIsUsedAsReason(SatClause* clause) const {
 }
 
 bool ClauseManager::AddClause(absl::Span<const Literal> literals) {
-  return AddClause(kNoClauseId, literals, trail_, -1);
+  return AddClause(SatClause::Create(literals), trail_, -1);
 }
 
-bool ClauseManager::AddClause(ClauseId id, absl::Span<const Literal> literals,
-                              Trail* trail, int lbd) {
-  SatClause* clause = SatClause::Create(literals);
+bool ClauseManager::AddClause(SatClause* clause, Trail* trail, int lbd) {
   clauses_.push_back(clause);
-  if (id != kNoClauseId) {
-    clause_id_[clause] = id;
+  if (add_clause_callback_ != nullptr) {
+    add_clause_callback_(lbd, ClausePtr(clause), clause->AsSpan());
   }
-  if (add_clause_callback_ != nullptr) add_clause_callback_(lbd, id, literals);
   return AttachAndPropagate(clause, trail);
 }
 
-SatClause* ClauseManager::AddRemovableClause(ClauseId id,
-                                             absl::Span<const Literal> literals,
-                                             Trail* trail, int lbd) {
-  SatClause* clause = SatClause::Create(literals);
+void ClauseManager::AddRemovableClause(SatClause* clause, Trail* trail,
+                                       int lbd) {
   clauses_.push_back(clause);
-  if (id != kNoClauseId) {
-    clause_id_[clause] = id;
+  if (add_clause_callback_ != nullptr) {
+    add_clause_callback_(lbd, ClausePtr(clause), clause->AsSpan());
   }
-  if (add_clause_callback_ != nullptr) add_clause_callback_(lbd, id, literals);
   CHECK(AttachAndPropagate(clause, trail));
 
   // Create an entry in clauses_info_ to mark that clause as removable.
   clauses_info_[clause].lbd = lbd;
-  return clause;
 }
 
 // Sets up the 2-watchers data structure. It selects two non-false literals
@@ -422,11 +411,8 @@ void ClauseManager::InternalDetach(SatClause* clause,
 
   --num_watched_clauses_;
   if (lrat_proof_handler_ != nullptr) {
-    const auto it = clause_id_.find(clause);
-    if (it != clause_id_.end()) {
-      lrat_proof_handler_->DeleteClause(it->second, clause->AsSpan());
-      clause_id_.erase(it);
-    }
+    lrat_proof_handler_->DeleteClause(ClausePtr(clause),
+                                      /*delete_sat_clause=*/false);
   }
   deletion_counters_[static_cast<int>(source)]++;
   clauses_info_.erase(clause);
@@ -470,29 +456,28 @@ void ClauseManager::AttachAllClauses() {
   }
 }
 
-bool ClauseManager::InprocessingAddUnitClause(ClauseId unit_clause_id,
-                                              Literal true_literal) {
+bool ClauseManager::InprocessingAddUnitClause(Literal true_literal) {
   DCHECK_EQ(trail_->CurrentDecisionLevel(), 0);
   if (trail_->Assignment().LiteralIsTrue(true_literal)) return true;
   if (trail_->Assignment().LiteralIsFalse(true_literal)) {
     if (lrat_proof_handler_ != nullptr) {
       lrat_proof_handler_->AddInferredClause(
-          clause_id_generator_->GetNextId(), {},
-          {unit_clause_id, trail_->GetUnitClauseId(true_literal.Variable())});
+          ClausePtr::EmptyClausePtr(),
+          {ClausePtr(true_literal.Negated()), ClausePtr(true_literal)});
     }
     return false;
   }
 
-  trail_->EnqueueWithUnitReason(unit_clause_id, true_literal);
+  trail_->EnqueueWithUnitReason(true_literal);
 
   // Even when all clauses are detached, we can propagate the implication
   // graph and we do that right away.
   return implication_graph_->Propagate(trail_);
 }
 
-bool ClauseManager::InprocessingFixLiteral(
-    Literal true_literal, absl::Span<const ClauseId> clause_ids) {
-  return implication_graph_->FixLiteral(true_literal, clause_ids);
+bool ClauseManager::InprocessingFixLiteral(Literal true_literal,
+                                           absl::Span<const ClausePtr> proof) {
+  return implication_graph_->FixLiteral(true_literal, proof);
 }
 
 void ClauseManager::ChangeLbdIfBetter(SatClause* clause, int new_lbd) {
@@ -512,26 +497,65 @@ void ClauseManager::ChangeLbdIfBetter(SatClause* clause, int new_lbd) {
 }
 
 bool ClauseManager::RemoveFixedLiteralsAndTestIfTrue(SatClause* clause) {
+  const int old_size = clause->size();
   if (clause->RemoveFixedLiteralsAndTestIfTrue(assignment_)) {
     // The clause is always true, detach it.
     LazyDelete(clause, DeletionSourceForStat::FIXED_AT_TRUE);
     return true;
   }
+  const int new_size = clause->size();
 
   // We should have dealt with unit and unsat clause before this.
-  CHECK_GE(clause->size(), 2);
-  ChangeLbdIfBetter(clause, clause->size());
+  CHECK_GE(new_size, 2);
+  ChangeLbdIfBetter(clause, new_size);
+
+  if (lrat_proof_handler_ != nullptr && new_size != old_size) {
+    std::vector<ClausePtr>& proof = tmp_proof_;
+    proof.clear();
+    for (int i = new_size; i < old_size; ++i) {
+      const Literal fixed_literal = *(clause->begin() + i);
+      DCHECK(trail_->Assignment().LiteralIsFalse(fixed_literal));
+      proof.push_back(ClausePtr(fixed_literal.Negated()));
+    }
+    const ClausePtr clause_ptr = ClausePtr(clause);
+    proof.push_back(clause_ptr);
+    // If the new size is 3 or more the clause pointer does not change since the
+    // SatClause pointer stays the same.
+    clause->size_ = old_size;
+    if (new_size == 2) {
+      lrat_proof_handler_->AddInferredClause(
+          ClausePtr(clause->FirstLiteral(), clause->SecondLiteral()), proof);
+    } else {
+      lrat_proof_handler_->RewriteClause(
+          clause_ptr, absl::Span<const Literal>(clause->begin(), new_size),
+          proof);
+    }
+    clause->size_ = new_size;
+  }
   return false;
 }
 
 bool ClauseManager::InprocessingRewriteClause(
     SatClause* clause, absl::Span<const Literal> new_clause,
-    absl::Span<const ClauseId> clause_ids) {
-  ClauseId new_clause_id = kNoClauseId;
+    absl::Span<const ClausePtr> proof) {
+  ClausePtr new_clause_ptr = kNullClausePtr;
   if (lrat_proof_handler_ != nullptr) {
-    new_clause_id = clause_id_generator_->GetNextId();
-    lrat_proof_handler_->AddInferredClause(new_clause_id, new_clause,
-                                           clause_ids);
+    if (new_clause.empty()) {
+      new_clause_ptr = ClausePtr::EmptyClausePtr();
+    } else if (new_clause.size() == 1) {
+      new_clause_ptr = ClausePtr(new_clause[0]);
+    } else if (new_clause.size() == 2) {
+      new_clause_ptr = ClausePtr(new_clause[0], new_clause[1]);
+    } else {
+      // Note that the new pointer is equal to the old one, since it is computed
+      // from the SatClause* pointer.
+      new_clause_ptr = ClausePtr(clause);
+    }
+    if (new_clause.size() <= 2) {
+      lrat_proof_handler_->AddInferredClause(new_clause_ptr, proof);
+    } else {
+      lrat_proof_handler_->RewriteClause(new_clause_ptr, new_clause, proof);
+    }
   }
   const bool is_reason = ClauseIsUsedAsReason(clause);
 
@@ -541,7 +565,7 @@ bool ClauseManager::InprocessingRewriteClause(
   if (new_clause.empty()) return false;  // UNSAT.
 
   if (new_clause.size() == 1) {
-    if (!InprocessingAddUnitClause(new_clause_id, new_clause[0])) return false;
+    if (!InprocessingAddUnitClause(new_clause[0])) return false;
     LazyDelete(clause, DeletionSourceForStat::FIXED_AT_TRUE);
     return true;
   }
@@ -552,22 +576,13 @@ bool ClauseManager::InprocessingRewriteClause(
 
   if (new_clause.size() == 2) {
     if (is_reason) {
-      CHECK(implication_graph_->AddBinaryClauseAndChangeReason(
-          new_clause_id, new_clause[0], new_clause[1]));
+      CHECK(implication_graph_->AddBinaryClauseAndChangeReason(new_clause[0],
+                                                               new_clause[1]));
     } else {
-      CHECK(implication_graph_->AddBinaryClause(new_clause_id, new_clause[0],
-                                                new_clause[1]));
+      CHECK(implication_graph_->AddBinaryClause(new_clause[0], new_clause[1]));
     }
     LazyDelete(clause, DeletionSourceForStat::PROMOTED_TO_BINARY);
     return true;
-  }
-
-  if (lrat_proof_handler_ != nullptr) {
-    const auto it = clause_id_.find(clause);
-    if (it != clause_id_.end()) {
-      lrat_proof_handler_->DeleteClause(it->second, clause->AsSpan());
-    }
-    SetClauseId(clause, new_clause_id);
   }
 
   if (all_clauses_are_attached_) {
@@ -602,8 +617,42 @@ bool ClauseManager::InprocessingRewriteClause(
   return true;
 }
 
+bool ClauseManager::InprocessingCleanUpUnaryOrBinaryClause(SatClause* clause) {
+  if (clause->size() == 1) {
+    DCHECK_EQ(trail_->CurrentDecisionLevel(), 0);
+    if (trail_->Assignment().LiteralIsTrue(clause->FirstLiteral())) {
+      // If already assigned, we don't want to keep the clause.
+      LazyDelete(clause, DeletionSourceForStat::FIXED_AT_TRUE);
+      return true;
+    }
+    if (lrat_proof_handler_ != nullptr) {
+      // This just changes the clause pointer.
+      lrat_proof_handler_->AddInferredClause(ClausePtr(clause->FirstLiteral()),
+                                             {ClausePtr(clause)});
+    }
+    if (!InprocessingAddUnitClause(clause->FirstLiteral())) {
+      return false;
+    }
+    LazyDelete(clause, DeletionSourceForStat::FIXED_AT_TRUE);
+  } else {
+    CHECK_EQ(clause->size(), 2);
+    if (lrat_proof_handler_ != nullptr) {
+      // This just changes the clause pointer.
+      lrat_proof_handler_->AddInferredClause(
+          ClausePtr(clause->FirstLiteral(), clause->SecondLiteral()),
+          {ClausePtr(clause)});
+    }
+    if (!implication_graph_->AddBinaryClause(clause->FirstLiteral(),
+                                             clause->SecondLiteral())) {
+      return false;
+    }
+    LazyDelete(clause, DeletionSourceForStat::PROMOTED_TO_BINARY);
+  }
+  return true;
+}
+
 SatClause* ClauseManager::InprocessingAddClause(
-    absl::Span<const Literal> new_clause) {
+    absl::Span<const Literal> new_clause, absl::Span<const ClausePtr> proof) {
   DCHECK(!new_clause.empty());
   DCHECK(!all_clauses_are_attached_);
   if (DEBUG_MODE) {
@@ -614,17 +663,24 @@ SatClause* ClauseManager::InprocessingAddClause(
 
   if (new_clause.size() == 1) {
     // TODO(user): We should return false...
-    if (!InprocessingFixLiteral(new_clause[0])) return nullptr;
+    if (!InprocessingFixLiteral(new_clause[0], proof)) return nullptr;
     return nullptr;
   }
 
   if (new_clause.size() == 2) {
+    if (lrat_proof_handler_ != nullptr) {
+      lrat_proof_handler_->AddInferredClause(
+          ClausePtr(new_clause[0], new_clause[1]), proof);
+    }
     implication_graph_->AddBinaryClause(new_clause[0], new_clause[1]);
     return nullptr;
   }
 
   SatClause* clause = SatClause::Create(new_clause);
   clauses_.push_back(clause);
+  if (lrat_proof_handler_ != nullptr) {
+    lrat_proof_handler_->AddInferredClause(ClausePtr(clause), proof);
+  }
   return clause;
 }
 
@@ -729,34 +785,34 @@ SatClause* ClauseManager::NextClauseToProbe() {
   return nullptr;
 }
 
-ClauseId ClauseManager::ReasonClauseId(Literal literal) const {
+ClausePtr ClauseManager::ReasonClausePtr(Literal literal) const {
   const BooleanVariable var = literal.Variable();
   DCHECK(trail_->Assignment().VariableIsAssigned(var));
   const int assignment_type = trail_->AssignmentType(var);
   const int trail_index = trail_->Info(var).trail_index;
   if (assignment_type == AssignmentType::kCachedReason) {
-    return trail_->GetStoredReasonClauseId(var);
+    return trail_->GetStoredReasonClause(var);
   } else if (assignment_type == AssignmentType::kUnitReason) {
-    return trail_->GetUnitClauseId(var);
+    return ClausePtr(literal);
   } else if (assignment_type == implication_graph_->PropagatorId()) {
     absl::Span<const Literal> reason =
         implication_graph_->Reason(*trail_, trail_index,
                                    /*conflict_id=*/-1);
     CHECK_EQ(reason.size(), 1);
-    return implication_graph_->GetClauseId(literal, reason[0]);
+    return ClausePtr(literal, reason[0]);
   } else if (assignment_type == propagator_id_) {
     const SatClause* reason = ReasonClause(trail_index);
     if (reason != nullptr) {
-      return GetClauseId(reason);
+      return ClausePtr(reason);
     }
   }
-  return kNoClauseId;
+  return kNullClausePtr;
 }
 
-void ClauseManager::AppendClauseIdsFixing(
-    absl::Span<const Literal> literals, std::vector<ClauseId>* clause_ids,
+void ClauseManager::AppendClausesFixing(
+    absl::Span<const Literal> literals, std::vector<ClausePtr>* clauses,
     LiteralIndex decision,
-    std::optional<absl::FunctionRef<ClauseId(int, int)>> root_literals) {
+    std::optional<absl::FunctionRef<ClausePtr(int, int)>> root_literals) {
   SCOPED_TIME_STAT(&stats_);
   const auto& assignment = trail_->Assignment();
 
@@ -775,11 +831,11 @@ void ClauseManager::AppendClauseIdsFixing(
   // The min level of the expanded literals.
   int min_level = current_level;
 
-  // Unit clauses must come first. We put them in clause_ids directly. We put
-  // the others in non_unit_clause_ids and append them to clause_ids at the end.
-  std::vector<ClauseId>& non_unit_clause_ids =
-      tmp_clause_ids_for_append_clauses_fixing_;
-  non_unit_clause_ids.clear();
+  // Unit clauses must come first. We put them in `clauses` directly. We put the
+  // others in `non_unit_clauses` and append them to `clauses` at the end.
+  std::vector<ClausePtr>& non_unit_clauses =
+      tmp_clauses_for_append_clauses_fixing_;
+  non_unit_clauses.clear();
 
   const auto& decisions = trail_->Decisions();
   while (!marked_trail_indices_heap_.empty()) {
@@ -797,17 +853,22 @@ void ClauseManager::AppendClauseIdsFixing(
       continue;
     }
     if (level == 0) {
-      clause_ids->push_back(trail_->GetUnitClauseId(marked_literal.Variable()));
+      DCHECK(assignment.LiteralIsTrue(marked_literal));
+      clauses->push_back(ClausePtr(marked_literal));
       continue;
     }
-    const Literal level_decision = decisions[level - 1].literal;
-    ClauseId clause_id = implication_graph_->GetClauseId(
-        level_decision.Negated(), marked_literal);
-    if (clause_id == kNoClauseId && root_literals.has_value()) {
-      clause_id = (*root_literals)(level, trail_index);
+    ClausePtr clause = kNullClausePtr;
+    if (root_literals.has_value()) {
+      clause = (*root_literals)(level, trail_index);
     }
-    if (clause_id != kNoClauseId) {
-      non_unit_clause_ids.push_back(clause_id);
+    const Literal level_decision = decisions[level - 1].literal;
+    if (clause == kNullClausePtr &&
+        lrat_proof_handler_->HasBinaryClause(level_decision.Negated(),
+                                             marked_literal)) {
+      clause = ClausePtr(level_decision.Negated(), marked_literal);
+    }
+    if (clause != kNullClausePtr) {
+      non_unit_clauses.push_back(clause);
       continue;
     }
 
@@ -821,11 +882,12 @@ void ClauseManager::AppendClauseIdsFixing(
           marked_trail_indices_heap_.push_back(info.trail_index);
           absl::c_push_heap(marked_trail_indices_heap_);
         } else {
-          clause_ids->push_back(trail_->GetUnitClauseId(var));
+          DCHECK(assignment.LiteralIsFalse(literal));
+          clauses->push_back(ClausePtr(literal.Negated()));
         }
       }
     }
-    non_unit_clause_ids.push_back(ReasonClauseId(marked_literal));
+    non_unit_clauses.push_back(ReasonClausePtr(marked_literal));
   }
 
   if (decision != kNoLiteralIndex) {
@@ -833,17 +895,17 @@ void ClauseManager::AppendClauseIdsFixing(
     // during the expansion.
     if (Literal(decision) != decisions[current_level - 1].literal) {
       // If `decision` is not the last decision, it must directly imply it.
-      clause_ids->push_back(implication_graph_->GetClauseId(
-          Literal(decision).Negated(), decisions[current_level - 1].literal));
+      clauses->push_back(ClausePtr(Literal(decision).Negated(),
+                                   decisions[current_level - 1].literal));
     }
     for (int level = current_level - 1; level >= min_level; --level) {
-      clause_ids->push_back(implication_graph_->GetClauseId(
-          decisions[level].literal.Negated(), decisions[level - 1].literal));
+      clauses->push_back(ClausePtr(decisions[level].literal.Negated(),
+                                   decisions[level - 1].literal));
     }
   }
 
-  clause_ids->insert(clause_ids->end(), non_unit_clause_ids.rbegin(),
-                     non_unit_clause_ids.rend());
+  clauses->insert(clauses->end(), non_unit_clauses.rbegin(),
+                  non_unit_clauses.rend());
 }
 
 // ----- BinaryImplicationGraph -----
@@ -890,9 +952,8 @@ bool BinaryImplicationGraph::CleanUpImplicationList(Literal a) {
     if (range[i] == range[i - 1].Negated() &&
         !trail_->Assignment().LiteralIsFalse(a)) {
       if (lrat_proof_handler_ != nullptr) {
-        if (!FixLiteral(a.Negated(),
-                        {GetClauseId(a.Negated(), range[i]),
-                         GetClauseId(a.Negated(), range[i - 1])})) {
+        if (!FixLiteral(a.Negated(), {ClausePtr(a.Negated(), range[i]),
+                                      ClausePtr(a.Negated(), range[i - 1])})) {
           return false;
         }
       } else {
@@ -957,9 +1018,8 @@ bool BinaryImplicationGraph::HasNoDuplicates() {
 // use them here to maintains invariant? Explore this when we start cleaning our
 // clauses using equivalence during search. We can easily do it for every
 // conflict we learn instead of here.
-bool BinaryImplicationGraph::AddBinaryClauseInternal(
-    ClauseId id, Literal a, Literal b, bool change_reason,
-    bool delete_non_representative_id) {
+bool BinaryImplicationGraph::AddBinaryClauseInternal(Literal a, Literal b,
+                                                     bool change_reason) {
   SCOPED_TIME_STAT(&stats_);
   DCHECK_GE(a.Index(), 0);
   DCHECK_GE(b.Index(), 0);
@@ -969,7 +1029,6 @@ bool BinaryImplicationGraph::AddBinaryClauseInternal(
   if (no_constraint_ever_added_) propagation_trail_index_ = trail_->Index();
   no_constraint_ever_added_ = false;
 
-  ClauseId rep_id = kNoClauseId;
   const Literal rep_a = RepresentativeOf(a);
   const Literal rep_b = RepresentativeOf(b);
   if (rep_a == rep_b.Negated()) return true;
@@ -978,28 +1037,25 @@ bool BinaryImplicationGraph::AddBinaryClauseInternal(
     // TODO(user): we could use a single LRAT clause instead of two if this
     // method was responsible for adding it to the LRAT proof handler (currently
     // is this done before calling this method).
-    rep_id = id;
     if (rep_a != a || rep_b != b) {
-      absl::InlinedVector<ClauseId, 3> clause_ids;
+      absl::InlinedVector<ClausePtr, 3> proof;
       if (rep_a != a) {
-        clause_ids.push_back(GetClauseId(rep_a, a.Negated()));
+        proof.push_back(ClausePtr(rep_a, a.Negated()));
       }
       if (rep_b != b) {
-        clause_ids.push_back(GetClauseId(rep_b, b.Negated()));
+        proof.push_back(ClausePtr(rep_b, b.Negated()));
       }
-      clause_ids.push_back(id);
-      rep_id = clause_id_generator_->GetNextId();
-      lrat_proof_handler_->AddInferredClause(rep_id, {rep_a, rep_b},
-                                             clause_ids);
-      if (change_reason) {
-        // Remember the non-canonical clause so we can delete it on restart.
-        changed_reasons_on_trail_.emplace_back(std::minmax(a, b));
-        AddClauseId(id, a, b);
-      } else if (delete_non_representative_id) {
-        lrat_proof_handler_->DeleteClause(id, {a, b});
+      const ClausePtr old_clause = a == b ? ClausePtr(a) : ClausePtr(a, b);
+      proof.push_back(old_clause);
+      lrat_proof_handler_->AddInferredClause(
+          rep_a == rep_b ? ClausePtr(rep_a) : ClausePtr(rep_a, rep_b), proof);
+      if (a != b) {
+        lrat_proof_handler_->DeleteImplicationGraphClause(old_clause);
       }
     }
-    AddClauseId(rep_id, rep_a, rep_b);
+    if (rep_a != rep_b) {
+      lrat_proof_handler_->AddImplicationGraphClause(rep_a, rep_b);
+    }
   }
   if (change_reason) {
     CHECK(trail_->Assignment().LiteralIsFalse(b));
@@ -1011,19 +1067,24 @@ bool BinaryImplicationGraph::AddBinaryClauseInternal(
 
   // Deal with literal fixing and do not even add a binary clause in that case.
   if (rep_a == rep_b) {
-    return FixLiteral(rep_a, {rep_id});
+    return FixLiteral(rep_a, {ClausePtr(rep_a)});
   } else if (trail_->CurrentDecisionLevel() == 0) {
     const auto& assignment = trail_->Assignment();
 
-    // TODO(user): just make GetUnitClauseId() work all the time? for that
+    // TODO(user): just make GetClauseId() work all the time? for that
     // we need to make sure all level zero are pushed with kUnitReason.
     if (lrat_proof_handler_ != nullptr) {
+      const ClausePtr rep_clause = ClausePtr(rep_a, rep_b);
       if (assignment.LiteralIsFalse(rep_a)) {
-        return FixLiteral(rep_b,
-                          {rep_id, trail_->GetUnitClauseId(rep_a.Variable())});
+        const bool result =
+            FixLiteral(rep_b, {rep_clause, ClausePtr(rep_a.Negated())});
+        lrat_proof_handler_->DeleteImplicationGraphClause(rep_clause);
+        return result;
       } else if (assignment.LiteralIsFalse(rep_b)) {
-        return FixLiteral(rep_a,
-                          {rep_id, trail_->GetUnitClauseId(rep_b.Variable())});
+        const bool result =
+            FixLiteral(rep_a, {rep_clause, ClausePtr(rep_b.Negated())});
+        lrat_proof_handler_->DeleteImplicationGraphClause(rep_clause);
+        return result;
       }
     } else {
       if (assignment.LiteralIsFalse(rep_a)) {
@@ -1098,27 +1159,25 @@ bool BinaryImplicationGraph::AddAtMostOne(
 // Note that we currently do not support calling this at a positive level since
 // we might loose the fixing on backtrack otherwise.
 bool BinaryImplicationGraph::FixLiteral(Literal true_literal,
-                                        absl::Span<const ClauseId> clause_ids) {
+                                        absl::Span<const ClausePtr> proof) {
   CHECK_EQ(trail_->CurrentDecisionLevel(), 0);
   if (trail_->Assignment().LiteralIsTrue(true_literal)) return true;
   if (trail_->Assignment().LiteralIsFalse(true_literal)) {
     if (lrat_proof_handler_ != nullptr) {
-      std::vector<ClauseId> proof = {clause_ids.begin(), clause_ids.end()};
-      proof.push_back(trail_->GetUnitClauseId(true_literal.Variable()));
-      lrat_proof_handler_->AddInferredClause(clause_id_generator_->GetNextId(),
-                                             {}, proof);
+      std::vector<ClausePtr> unsat_proof = {proof.begin(), proof.end()};
+      unsat_proof.push_back(ClausePtr(true_literal.Negated()));
+      lrat_proof_handler_->AddInferredClause(ClausePtr::EmptyClausePtr(),
+                                             unsat_proof);
     }
     return false;
   }
 
-  ClauseId new_clause_id = kNoClauseId;
-  if (lrat_proof_handler_ != nullptr) {
-    new_clause_id = clause_id_generator_->GetNextId();
-    lrat_proof_handler_->AddInferredClause(new_clause_id, {true_literal},
-                                           clause_ids);
+  if (lrat_proof_handler_ != nullptr &&
+      !(proof.size() == 1 && proof[0] == ClausePtr(true_literal))) {
+    lrat_proof_handler_->AddInferredClause(ClausePtr(true_literal), proof);
   }
 
-  trail_->EnqueueWithUnitReason(new_clause_id, true_literal);
+  trail_->EnqueueWithUnitReason(true_literal);
   return Propagate(trail_);
 }
 
@@ -1287,7 +1346,7 @@ bool BinaryImplicationGraph::Propagate(Trail* trail) {
   Trail::EnqueueHelper helper = trail->GetEnqueueHelper(propagator_id_);
 
   const auto implies_something = implies_something_.view();
-  auto* implications = implications_and_amos_.data();
+  const auto* implications = implications_and_amos_.data();
 
   while (propagation_trail_index_ < trail->Index()) {
     const Literal true_literal = (*trail)[propagation_trail_index_++];
@@ -1318,22 +1377,20 @@ bool BinaryImplicationGraph::Propagate(Trail* trail) {
         if (lrat_proof_handler_ != nullptr && level == 0 &&
             trail->AssignmentLevel(literal) == 0) {
           lrat_proof_handler_->AddInferredClause(
-              clause_id_generator_->GetNextId(), {},
-              {trail->GetUnitClauseId(true_literal.Variable()),
-               GetClauseId(true_literal.Negated(), literal),
-               trail->GetUnitClauseId(literal.Variable())});
+              ClausePtr::EmptyClausePtr(),
+              {ClausePtr(true_literal),
+               ClausePtr(true_literal.Negated(), literal),
+               ClausePtr(literal.Negated())});
         }
         return false;
-      } else {
+      } else if (!is_removed_[literal]) {
         // Propagation.
         reasons_[trail->Index()] = true_literal.Negated();
         if (level == 0 && lrat_proof_handler_ != nullptr) {
-          const ClauseId new_clause_id = clause_id_generator_->GetNextId();
           lrat_proof_handler_->AddInferredClause(
-              new_clause_id, {literal},
-              {trail->GetUnitClauseId(true_literal.Variable()),
-               GetClauseId(true_literal.Negated(), literal)});
-          helper.EnqueueWithUnitReason(literal, new_clause_id);
+              ClausePtr(literal), {ClausePtr(true_literal),
+                                   ClausePtr(true_literal.Negated(), literal)});
+          helper.EnqueueWithUnitReason(literal);
         } else {
           helper.EnqueueAtLevel(literal, level);
         }
@@ -1396,7 +1453,7 @@ void BinaryImplicationGraph::Reimply(Trail* trail, int old_trail_index) {
 // can take advantage of that.
 void BinaryImplicationGraph::MinimizeConflictFirst(
     const Trail& trail, std::vector<Literal>* conflict,
-    SparseBitset<BooleanVariable>* marked, std::vector<ClauseId>* clause_ids,
+    SparseBitset<BooleanVariable>* marked, std::vector<ClausePtr>* proof,
     bool also_use_decisions) {
   SCOPED_TIME_STAT(&stats_);
   DCHECK(!conflict->empty());
@@ -1453,19 +1510,91 @@ void BinaryImplicationGraph::MinimizeConflictFirst(
   // Remove all marked literals from the conflict.
   for (const Literal l : tmp_to_keep_) is_marked_.Clear(l);
   if (lrat_proof_handler_ != nullptr) {
-    RemoveRedundantLiterals</*fill_clause_ids=*/true>(conflict, clause_ids);
+    RemoveRedundantLiterals</*fill_proof=*/true>(conflict, proof);
   } else {
     RemoveRedundantLiterals(conflict);
   }
 }
 
-template <bool fill_clause_ids>
+void BinaryImplicationGraph::UpdateImplications(
+    Literal a, absl::FunctionRef<LiteralIndex(Literal)> update) {
+  auto& implications = implications_and_amos_[a];
+  if (lrat_proof_handler_ != nullptr) {
+    tmp_deleted_implications_.ClearAndResize(
+        LiteralIndex(implications_and_amos_.size()));
+    for (const Literal l : implications.literals()) {
+      tmp_deleted_implications_.Set(l.Index());
+    }
+  }
+
+  int new_size = 0;
+  for (const Literal l : implications.literals()) {
+    LiteralIndex new_l = update(l);
+    if (new_l == kNoLiteralIndex) continue;
+    implications.literals()[new_size++] = Literal(new_l);
+  }
+  implications.TruncateLiterals(new_size);
+
+  if (lrat_proof_handler_ != nullptr) {
+    for (const Literal l : implications.literals()) {
+      tmp_deleted_implications_.Clear(l.Index());
+    }
+    for (const LiteralIndex l :
+         tmp_deleted_implications_.PositionsSetAtLeastOnce()) {
+      if (tmp_deleted_implications_[l]) {
+        if (a.Negated() == Literal(l)) continue;
+        lrat_implications_to_delete_.insert(ClausePtr(a.Negated(), Literal(l)));
+      }
+    }
+  }
+}
+
+void BinaryImplicationGraph::RemoveImplicationsIf(
+    Literal a, absl::FunctionRef<bool(Literal)> predicate) {
+  int new_size = 0;
+  auto& implications = implications_and_amos_[a];
+  for (const Literal l : implications.literals()) {
+    if (predicate(l)) {
+      if (lrat_proof_handler_ != nullptr) {
+        if (a.Negated() == Literal(l)) continue;
+        lrat_implications_to_delete_.insert(ClausePtr(a.Negated(), l));
+      }
+      continue;
+    }
+    implications.literals()[new_size++] = l;
+  }
+  implications.TruncateLiterals(new_size);
+}
+
+void BinaryImplicationGraph::ClearImplications(Literal a, bool release_memory) {
+  if (lrat_proof_handler_ != nullptr) {
+    for (const Literal b : implications_and_amos_[a].literals()) {
+      if (a.Negated() == b) continue;
+      lrat_implications_to_delete_.insert(ClausePtr(a.Negated(), b));
+    }
+  }
+  if (release_memory) {
+    implications_and_amos_[a].ClearAndReleaseMemory();
+  } else {
+    implications_and_amos_[a].ClearLiterals();
+  }
+}
+
+void BinaryImplicationGraph::DeleteUnusedLratImplications() {
+  if (lrat_proof_handler_ == nullptr) return;
+  for (const ClausePtr clause : lrat_implications_to_delete_) {
+    lrat_proof_handler_->DeleteImplicationGraphClause(clause);
+  }
+  lrat_implications_to_delete_.clear();
+}
+
+template <bool fill_proof>
 void BinaryImplicationGraph::RemoveRedundantLiterals(
-    std::vector<Literal>* conflict, std::vector<ClauseId>* clause_ids) {
+    std::vector<Literal>* conflict, std::vector<ClausePtr>* proof) {
   SCOPED_TIME_STAT(&stats_);
   int new_index = 1;
-  if constexpr (fill_clause_ids) {
-    clause_ids->clear();
+  if constexpr (fill_proof) {
+    proof->clear();
   }
   for (int i = 1; i < conflict->size(); ++i) {
     const Literal literal = (*conflict)[i];
@@ -1473,8 +1602,8 @@ void BinaryImplicationGraph::RemoveRedundantLiterals(
     if (!is_marked_[negated_index]) {
       (*conflict)[new_index] = (*conflict)[i];
       ++new_index;
-    } else if constexpr (fill_clause_ids) {
-      AppendImplicationChain(literal, clause_ids);
+    } else if constexpr (fill_proof) {
+      AppendImplicationChain(literal, proof);
     }
   }
   if (new_index < conflict->size()) {
@@ -1485,37 +1614,34 @@ void BinaryImplicationGraph::RemoveRedundantLiterals(
 }
 
 void BinaryImplicationGraph::AppendImplicationChains(
-    absl::Span<const Literal> literals, std::vector<ClauseId>* clause_ids) {
+    absl::Span<const Literal> literals, std::vector<ClausePtr>* clauses) {
   for (const Literal literal : literals) {
     if (trail_->Info(literal.Variable()).level == 0) {
-      const ClauseId clause_id = trail_->GetUnitClauseId(literal.Variable());
-      DCHECK_NE(clause_id, kNoClauseId);
+      DCHECK(trail_->Assignment().LiteralIsFalse(literal));
       if (!processed_unit_clauses_[literal]) {
         processed_unit_clauses_.Set(literal);
-        clause_ids->push_back(clause_id);
+        clauses->push_back(ClausePtr(literal.Negated()));
       }
       continue;
     } else if (is_marked_[literal.NegatedIndex()]) {
-      AppendImplicationChain(literal, clause_ids);
+      AppendImplicationChain(literal, clauses);
     }
   }
 }
 
 void BinaryImplicationGraph::AppendImplicationChain(
-    Literal literal, std::vector<ClauseId>* clause_ids) {
+    Literal literal, std::vector<ClausePtr>* clauses) {
   LiteralIndex negated_index = literal.NegatedIndex();
-  const int initial_size = clause_ids->size();
+  const int initial_size = clauses->size();
   while (implied_by_[negated_index] != Literal(negated_index)) {
-    const ClauseId clause_id = GetClauseId(
-        Literal(negated_index), implied_by_[negated_index].Negated());
-    DCHECK_NE(clause_id, kNoClauseId);
-    clause_ids->push_back(clause_id);
+    clauses->push_back(ClausePtr(Literal(negated_index),
+                                 implied_by_[negated_index].Negated()));
     const LiteralIndex next_negated_index = implied_by_[negated_index];
     // Make sure we don't process the same literal twice.
     implied_by_[negated_index] = Literal(negated_index);
     negated_index = next_negated_index;
   }
-  std::reverse(clause_ids->begin() + initial_size, clause_ids->end());
+  std::reverse(clauses->begin() + initial_size, clauses->end());
 }
 
 void BinaryImplicationGraph::RemoveFixedVariables() {
@@ -1560,14 +1686,12 @@ void BinaryImplicationGraph::RemoveFixedVariables() {
         is_marked_.Set(lit.NegatedIndex());
       }
     }
-    implications_and_amos_[true_literal].ClearAndReleaseMemory();
-    implications_and_amos_[true_literal.NegatedIndex()].ClearAndReleaseMemory();
+    ClearImplications(true_literal, /*release_memory=*/true);
+    ClearImplications(true_literal.Negated(), /*release_memory=*/true);
   }
   for (const LiteralIndex i : is_marked_.PositionsSetAtLeastOnce()) {
-    implications_and_amos_[i].RemoveLiteralsIf(
-        [&assignment](const Literal lit) {
-          return assignment.LiteralIsTrue(lit);
-        });
+    RemoveImplicationsIf(
+        Literal(i), [&](Literal lit) { return assignment.LiteralIsTrue(lit); });
   }
 
   // TODO(user): This might be a bit slow. Do not call all the time if needed,
@@ -1576,7 +1700,19 @@ void BinaryImplicationGraph::RemoveFixedVariables() {
     v.ClearOffsets();
   }
   CHECK(CleanUpAndAddAtMostOnes(/*base_index=*/0));
+  DeleteUnusedLratImplications();
   DCHECK(InvariantsAreOk());
+}
+
+void BinaryImplicationGraph::RemoveFixedImplications(Literal lit) {
+  SCOPED_TIME_STAT(&stats_);
+  DCHECK_EQ(trail_->CurrentDecisionLevel(), 0);
+
+  const VariablesAssignment& assignment = trail_->Assignment();
+  RemoveImplicationsIf(lit, [&](Literal l) {
+    return is_removed_[l] || assignment.LiteralIsTrue(l);
+  });
+  DeleteUnusedLratImplications();
 }
 
 class SccGraph {
@@ -1721,7 +1857,6 @@ class LratEquivalenceHelper {
       : graph_(graph),
         trail_(graph->trail_),
         implications_and_amos_(graph->implications_and_amos_),
-        clause_id_generator_(graph->clause_id_generator_),
         lrat_proof_handler_(graph->lrat_proof_handler_) {}
 
   // Initializes the internal data structures to process the given component
@@ -1731,9 +1866,6 @@ class LratEquivalenceHelper {
   // representative.
   void NewComponent(absl::Span<const int32_t> component) {
     component_ = component;
-    // TODO(user): we could use representative_of_ instead to check if a
-    // literal is in the component. This requires populating it before calling
-    // the methods below, which is currently not the case.
     in_component_.ClearAndResize(LiteralIndex(graph_->literal_size()));
     for (int i = 0; i < component.size(); ++i) {
       in_component_.Set(LiteralIndex(component[i]));
@@ -1758,11 +1890,11 @@ class LratEquivalenceHelper {
         is_marked_.Set(l.Index());
         const Literal to_fix = all_true ? l : l.Negated();
         if (trail_->Assignment().LiteralIsTrue(to_fix)) continue;
-        clause_ids_.clear();
-        clause_ids_.push_back(
-            trail_->GetUnitClauseId(Literal(node).Variable()));
-        clause_ids_.push_back(graph_->GetClauseId(Literal(node).Negated(), l));
-        if (!graph_->FixLiteral(l, clause_ids_)) return false;
+        tmp_proof_.clear();
+        DCHECK(trail_->Assignment().LiteralIsTrue(Literal(node)));
+        tmp_proof_.push_back(ClausePtr(Literal(node)));
+        tmp_proof_.push_back(ClausePtr(Literal(node).Negated(), l));
+        if (!graph_->FixLiteral(l, tmp_proof_)) return false;
       }
     }
     return true;
@@ -1773,11 +1905,12 @@ class LratEquivalenceHelper {
   // singleton {l}.
   void ProcessSingletonComponent() {
     LiteralIndex representative = LiteralIndex(component_[0]);
-    for (Literal& ref : implications_and_amos_[representative].literals()) {
+    for (const Literal ref :
+         implications_and_amos_[representative].literals()) {
       const LiteralIndex rep = graph_->RepresentativeOf(ref);
-      if (rep == representative) continue;
+      if (rep == ref.Index() || rep == representative) continue;
       if (rep == kNoLiteralIndex) continue;
-      MaybeAddLratImplicationChain(
+      AddLratImplicationChain(
           {Literal(representative), Literal(ref), Literal(rep)});
     }
   }
@@ -1795,11 +1928,13 @@ class LratEquivalenceHelper {
   // starting from not(representative), restricted to literals whose negation is
   // in the component (each literal is proved using the proof of its parent).
   void ProcessComponent(LiteralIndex representative) {
+    directly_implied_.ClearAndResize(LiteralIndex(graph_->literal_size()));
     for (const Literal l : implications_and_amos_[representative].literals()) {
+      directly_implied_.Set(l.Index());
       const Literal rep = graph_->RepresentativeOf(l);
-      if (rep.Index() == representative) continue;
+      if (rep.Index() == representative || rep == l) continue;
       // case a)
-      MaybeAddLratImplicationChain({Literal(representative), l, rep});
+      AddLratImplicationChain({Literal(representative), l, rep});
     }
 
     DCHECK(stack_.empty());
@@ -1814,13 +1949,15 @@ class LratEquivalenceHelper {
         stack_.push(l.Index());
         is_marked_.Set(l.Index());
         // case b)
-        MaybeAddLratImplicationChain(
-            {Literal(representative), Literal(node), l});
+        if (!directly_implied_[l.Index()]) {
+          AddLratImplicationChain({Literal(representative), Literal(node), l});
+        }
         for (const Literal m : implications_and_amos_[l].literals()) {
           const Literal rep = graph_->RepresentativeOf(m);
-          if (rep.Index() != representative) {
+          if (rep.Index() != representative &&
+              !directly_implied_[rep.Index()]) {
             // case c)
-            MaybeAddLratImplicationChain({Literal(representative), l, m, rep});
+            AddLratImplicationChain({Literal(representative), l, m, rep});
           }
         }
       }
@@ -1829,6 +1966,11 @@ class LratEquivalenceHelper {
     // Perform a DFS starting from not(representative) to prove cases d).
     const LiteralIndex negated_representative =
         Literal(representative).NegatedIndex();
+    directly_implied_.ClearAndResize(LiteralIndex(graph_->literal_size()));
+    for (const Literal l :
+         implications_and_amos_[negated_representative].literals()) {
+      directly_implied_.Set(l.Index());
+    }
     DCHECK(stack_.empty());
     stack_.push(negated_representative);
     is_marked_.ClearAndResize(LiteralIndex(implications_and_amos_.size()));
@@ -1841,8 +1983,10 @@ class LratEquivalenceHelper {
         stack_.push(l.Index());
         is_marked_.Set(l.Index());
         // case d)
-        MaybeAddLratImplicationChain(
-            {Literal(negated_representative), Literal(node), l});
+        if (!directly_implied_[l.Index()]) {
+          AddLratImplicationChain(
+              {Literal(negated_representative), Literal(node), l});
+        }
       }
     }
   }
@@ -1852,28 +1996,29 @@ class LratEquivalenceHelper {
   // already been shown to be equivalent to representative.
   void ProcessUnsatComponent(Literal literal, Literal representative) {
     // "literal => representative => not(literal)" proves "not(literal)"
-    const ClauseId clause_id = clause_id_generator_->GetNextId();
-    clause_ids_.clear();
+    tmp_proof_.clear();
     AppendLratImplicationChain({literal, representative, literal.Negated()},
-                               clause_ids_);
-    AddInferredClause(clause_id, {literal.Negated()}, clause_ids_);
+                               tmp_proof_);
+    lrat_proof_handler_->AddInferredClause(ClausePtr(literal.Negated()),
+                                           tmp_proof_);
     // "not(literal) => representative => literal" proves "literal". Combined
     // with the previous clause, this gives the empty clause.
-    clause_ids_.clear();
-    clause_ids_.push_back(clause_id);
+    tmp_proof_.clear();
+    tmp_proof_.push_back(ClausePtr(literal.Negated()));
     AppendLratImplicationChain({literal.Negated(), representative, literal},
-                               clause_ids_);
-    AddInferredClause(clause_id_generator_->GetNextId(), {}, clause_ids_);
+                               tmp_proof_);
+    lrat_proof_handler_->AddInferredClause(ClausePtr::EmptyClausePtr(),
+                                           tmp_proof_);
   }
 
-  // Sets `clause_ids` to a list of implications proving that "a => b". This
+  // Sets `proof` to a list of implications proving that "a => b". This
   // is done by iterating over the parents of 'b' until a parent p in the same
   // SCC as 'a' is found. We can then use the implication chain a => rep(a) => p
   // => ... parent(b) => b.
   void ComputeImplicationChain(
       Literal a, Literal b,
       util_intops::StrongVector<LiteralIndex, LiteralIndex>& parents,
-      std::vector<ClauseId>& clause_ids) {
+      std::vector<ClausePtr>& proof) {
     if (a == b) return;
     // Build the steps of the implication chain in reverse order.
     std::vector<Literal>& steps = tmp_literals_;
@@ -1886,43 +2031,39 @@ class LratEquivalenceHelper {
     }
     steps.push_back(a_rep);
     steps.push_back(a);
-    // Add the corresponding clause IDs to clause_ids.
+    // Add the corresponding clauses to `proof`.
     std::reverse(steps.begin(), steps.end());
-    clause_ids.clear();
-    AppendLratImplicationChain(steps, clause_ids);
+    proof.clear();
+    AppendLratImplicationChain(steps, proof);
   }
 
  private:
-  // Adds the LRAT inferred clause "steps.front() => steps.back()" if it doesn't
-  // exist already. There must be an existing clause for each pair of
-  // consecutive step literals, unless they are equal.
-  void MaybeAddLratImplicationChain(absl::Span<const Literal> steps) {
+  // Adds the LRAT inferred clause "steps.front() => steps.back()". There must
+  // be an existing clause for each pair of consecutive step literals, unless
+  // they are equal.
+  void AddLratImplicationChain(absl::Span<const Literal> steps) {
     const Literal a = steps.front().Negated();
     const Literal b = steps.back();
-    if (graph_->GetClauseId(a, b) != kNoClauseId) return;
-    clause_ids_.clear();
-    AppendLratImplicationChain(steps, clause_ids_);
-    if (clause_ids_.empty()) return;
-    const ClauseId new_clause_id = clause_id_generator_->GetNextId();
-    AddInferredClause(new_clause_id, {a, b}, clause_ids_);
-    graph_->AddClauseId(new_clause_id, a, b);
-  }
-
-  void AppendLratImplicationChain(absl::Span<const Literal> steps,
-                                  std::vector<ClauseId>& clause_ids) {
-    for (int i = 1; i < steps.size(); ++i) {
-      if (steps[i] == steps[i - 1]) continue;
-      clause_ids.push_back(
-          graph_->GetClauseId(steps[i - 1].Negated(), steps[i]));
+    tmp_proof_.clear();
+    AppendLratImplicationChain(steps, tmp_proof_);
+    if (tmp_proof_.empty()) return;
+    if (a == b) {
+      lrat_proof_handler_->AddInferredClause(ClausePtr(a), tmp_proof_);
+    } else {
+      lrat_proof_handler_->AddInferredClause(ClausePtr(a, b), tmp_proof_);
+      lrat_proof_handler_->AddImplicationGraphClause(a, b);
     }
   }
 
-  void AddInferredClause(ClauseId new_clause_id,
-                         absl::Span<const Literal> literals,
-                         absl::Span<const ClauseId> clause_ids) {
-    if (lrat_proof_handler_ != nullptr) {
-      lrat_proof_handler_->AddInferredClause(new_clause_id, literals,
-                                             clause_ids);
+  void AppendLratImplicationChain(absl::Span<const Literal> steps,
+                                  std::vector<ClausePtr>& proof) {
+    for (int i = 1; i < steps.size(); ++i) {
+      if (steps[i] == steps[i - 1]) continue;
+      if (steps[i - 1].Negated() == steps[i]) {
+        proof.push_back(ClausePtr(steps[i]));
+      } else {
+        proof.push_back(ClausePtr(steps[i - 1].Negated(), steps[i]));
+      }
     }
   }
 
@@ -1930,20 +2071,22 @@ class LratEquivalenceHelper {
   Trail* trail_;
   util_intops::StrongVector<LiteralIndex, LiteralsOrOffsets>&
       implications_and_amos_;
-  ClauseIdGenerator* clause_id_generator_;
   LratProofHandler* lrat_proof_handler_;
 
   // Temporary data structures used by the above methods:
   // - component_: the component being processed.
   // - in_component: for each literal, whether it is in component_ or not.
+  // - directly_implied_: for each literal, whether it is directly implied by
+  // the component representative (or its negation, depending on the context).
   // - stack_, is_marked_: used to do DFS in the component.
-  // - clause_ids_: used to add inferred clauses.
+  // - tmp_proof_: used to add inferred clauses.
   // - tmp_literals_: used in ComputeImplicationChain().
   absl::Span<const int32_t> component_;
   SparseBitset<LiteralIndex> in_component_;
+  SparseBitset<LiteralIndex> directly_implied_;
   std::stack<LiteralIndex> stack_;
   SparseBitset<LiteralIndex> is_marked_;
-  std::vector<ClauseId> clause_ids_;
+  std::vector<ClausePtr> tmp_proof_;
   std::vector<Literal> tmp_literals_;
 };
 
@@ -1954,16 +2097,6 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
   WallTimer wall_timer;
   wall_timer.Start();
   log_info |= VLOG_IS_ON(1);
-
-  if (trail_->CurrentDecisionLevel() == 0) {
-    for (std::pair<Literal, Literal> clause : changed_reasons_on_trail_) {
-      auto it = clause_id_.find(clause);
-      lrat_proof_handler_->DeleteClause(it->second,
-                                        {clause.first, clause.second});
-      clause_id_.erase(it);
-    }
-    changed_reasons_on_trail_.clear();
-  }
 
   // Lets remove all fixed/duplicate variables first.
   if (!RemoveDuplicatesAndFixedVariables()) return false;
@@ -2024,13 +2157,12 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
         if (lrat_helper_ != nullptr) {
           lrat_helper_->ProcessSingletonComponent();
         }
-        auto& representative_list = implications_and_amos_[representative];
-        for (Literal& ref : representative_list.literals()) {
+        UpdateImplications(Literal(representative), [&](Literal ref) {
           const LiteralIndex rep = representative_of_[ref];
-          if (rep == representative) continue;
-          if (rep == kNoLiteralIndex) continue;
-          ref = Literal(rep);
-        }
+          if (rep == representative) return ref.Index();
+          if (rep == kNoLiteralIndex) return ref.Index();
+          return rep;
+        });
 
         // We should already have detected fixing because of l => x and not(x).
         CHECK(CleanUpImplicationList(Literal(representative)));
@@ -2063,17 +2195,14 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
     }
     // Merge all the lists in implications_and_offsets_[representative].
     // Note that we do not want representative in its own list.
-    auto& representative_list = implications_and_amos_[representative];
-    int new_size = 0;
-    for (const Literal l : representative_list.literals()) {
+    UpdateImplications(Literal(representative), [&](Literal l) {
       const Literal rep = RepresentativeOf(l);
-      if (rep.Index() == representative) continue;
-      representative_list.literals()[new_size++] = rep;
-    }
-    representative_list.TruncateLiterals(new_size);
+      return rep.Index() == representative ? kNoLiteralIndex : rep.Index();
+    });
+    auto& representative_list = implications_and_amos_[representative];
     for (int i = 1; i < component.size(); ++i) {
       const Literal literal = Literal(LiteralIndex(component[i]));
-      auto& ref = implications_and_amos_[literal];
+      const auto& ref = implications_and_amos_[literal];
       for (const Literal l : ref.literals()) {
         const Literal rep = RepresentativeOf(l);
         if (rep.Index() != representative) {
@@ -2083,13 +2212,15 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
       dtime += 1e-8 * static_cast<double>(ref.num_literals());
 
       // Add representative <=> literal.
-      //
-      // Remark: this relation do not need to be added to a DRAT proof since
-      // the redundant variables should never be used again for a pure SAT
-      // problem.
       representative_list.PushBackLiteral(literal);
-      ref.ClearLiterals();
-      ref.PushBackLiteral(Literal(representative));
+      ClearImplications(literal, /*release_memory=*/false);
+      implications_and_amos_[literal].PushBackLiteral(Literal(representative));
+      if (lrat_helper_ != nullptr) {
+        lrat_implications_to_delete_.erase(
+            ClausePtr(Literal(representative).Negated(), literal));
+        lrat_implications_to_delete_.erase(
+            ClausePtr(literal.Negated(), Literal(representative)));
+      }
     }
 
     // We should already have detected fixing because of l => x and not(x).
@@ -2097,7 +2228,7 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
     num_equivalences += component.size() - 1;
   }
 
-  std::vector<ClauseId> clause_ids;
+  std::vector<ClausePtr> proof;
   // Fix all literals in `to_fix`.
   for (int i = 0; i < to_fix.size(); ++i) {
     const Literal l = to_fix[i];
@@ -2105,10 +2236,10 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
     if (lrat_helper_ != nullptr) {
       const Literal parent_of_l = parent_of_to_fix[i];
       lrat_helper_->ComputeImplicationChain(l.Negated(), parent_of_l, parents,
-                                            clause_ids);
-      clause_ids.push_back(GetClauseId(parent_of_l.Negated(), l));
+                                            proof);
+      proof.push_back(ClausePtr(parent_of_l.Negated(), l));
     }
-    if (!FixLiteral(l, clause_ids)) return false;
+    if (!FixLiteral(l, proof)) return false;
   }
   // Look for fixed variables in each component, and make sure if one is fixed,
   // all variables in the same component are fixed. Note that the reason why the
@@ -2192,6 +2323,7 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
   // implications, so we need to redo a round of cleaning.
   if (!RemoveDuplicatesAndFixedVariables()) return false;
 
+  DeleteUnusedLratImplications();
   DCHECK(InvariantsAreOk());
   LOG_IF(INFO, log_info) << "SCC. " << num_equivalences
                          << " redundant equivalent literals. "
@@ -2235,7 +2367,7 @@ bool BinaryImplicationGraph::ComputeTransitiveReduction(bool log_info) {
   tmp_removed_.clear();
   work_done_in_mark_descendants_ = 0;
   int marked_index = 0;
-  std::vector<ClauseId> clause_ids;
+  std::vector<ClausePtr> proof;
 
   // For each node we do a graph traversal and only keep the literals
   // at maximum distance 1. This only works because we have a DAG when ignoring
@@ -2261,7 +2393,7 @@ bool BinaryImplicationGraph::ComputeTransitiveReduction(bool log_info) {
     if (is_redundant_[root]) continue;
     if (trail_->Assignment().LiteralIsAssigned(Literal(root))) continue;
 
-    auto& direct_implications = implications_and_amos_[root];
+    const auto& direct_implications = implications_and_amos_[root];
     if (direct_implications.literals().empty()) continue;
 
     // This is a "poor" version of the tree look stuff, but it does show good
@@ -2348,11 +2480,11 @@ bool BinaryImplicationGraph::ComputeTransitiveReduction(bool log_info) {
         // reduction.
         ++num_fixed;
         if (lrat_proof_handler_ != nullptr) {
-          clause_ids.clear();
-          AppendImplicationChain(Literal(i), &clause_ids);
-          AppendImplicationChain(Literal(i).Negated(), &clause_ids);
+          proof.clear();
+          AppendImplicationChain(Literal(i), &proof);
+          AppendImplicationChain(Literal(i).Negated(), &proof);
         }
-        if (!FixLiteral(Literal(root).Negated(), clause_ids)) return false;
+        if (!FixLiteral(Literal(root).Negated(), proof)) return false;
         break;
       }
     }
@@ -2365,18 +2497,18 @@ bool BinaryImplicationGraph::ComputeTransitiveReduction(bool log_info) {
     // Only keep the non-marked literal (and the redundant one which are never
     // marked). We mark root to remove it in the corner case where it was
     // there.
-    int new_size = 0;
-    for (const Literal l : direct_implications.literals()) {
+    const int old_size = direct_implications.num_literals();
+    RemoveImplicationsIf(Literal(root), [&](Literal l) {
       if (!is_marked_[l]) {
-        direct_implications.literals()[new_size++] = l;
+        return false;
       } else {
         tmp_removed_.push_back({Literal(root), l});
         DCHECK(!is_redundant_[l]);
+        return true;
       }
-    }
-    const int diff = direct_implications.num_literals() - new_size;
-    direct_implications.TruncateLiterals(new_size);
-    direct_implications.ShrinkToFit();
+    });
+    const int diff = old_size - direct_implications.num_literals();
+    implications_and_amos_[root].ShrinkToFit();
     num_new_redundant_implications += diff;
 
     // Abort if the computation involved is too big.
@@ -2397,19 +2529,16 @@ bool BinaryImplicationGraph::ComputeTransitiveReduction(bool log_info) {
       removed.insert({a.Index(), b.Index()});
     }
     for (LiteralIndex i(0); i < implications_and_amos_.size(); ++i) {
-      int new_size = 0;
       const LiteralIndex negated_i = Literal(i).NegatedIndex();
-      auto& implication = implications_and_amos_[i];
-      for (const Literal l : implication.literals()) {
-        if (removed.contains({l.NegatedIndex(), negated_i})) continue;
-        implication.literals()[new_size++] = l;
-      }
-      implication.TruncateLiterals(new_size);
+      RemoveImplicationsIf(Literal(i), [&](Literal l) {
+        return removed.contains({l.NegatedIndex(), negated_i});
+      });
     }
   }
   if (num_fixed > 0) {
     RemoveFixedVariables();
   }
+  DeleteUnusedLratImplications();
   DCHECK(InvariantsAreOk());
 
   gtl::STLClearObject(&tmp_removed_);
@@ -3111,6 +3240,12 @@ absl::Span<const Literal> BinaryImplicationGraph::GetAllImpliedLiterals(
   return MarkDescendants(root);
 }
 
+absl::Span<const Literal> BinaryImplicationGraph::GetNewlyImpliedLiterals(
+    Literal root) {
+  CHECK(!is_marked_[root]);
+  return MarkDescendants(root);
+}
+
 void BinaryImplicationGraph::ClearImpliedLiterals() {
   const LiteralIndex size(implications_and_amos_.size());
   is_marked_.ClearAndResize(size);
@@ -3299,7 +3434,8 @@ bool BinaryImplicationGraph::FindFailedLiteralAroundVar(BooleanVariable var,
   for (const Literal l : direct_implications_of_negated_literal_) {
     if (in_direct_implications_[l]) {
       // not(l) => literal => l.
-      if (!FixLiteral(l)) {
+      if (!FixLiteral(
+              l, {ClausePtr(l, literal), ClausePtr(literal.Negated(), l)})) {
         *is_unsat = true;
         return false;
       }
@@ -3344,7 +3480,12 @@ void BinaryImplicationGraph::RemoveBooleanVariable(
     for (const Literal a_negated : direct_implications_of_negated_literal_) {
       if (a_negated.Negated() == b) continue;
       if (is_removed_[a_negated]) continue;
-      AddImplication(a_negated.Negated(), b);
+      if (lrat_proof_handler_ != nullptr) {
+        lrat_proof_handler_->AddInferredClause(
+            ClausePtr(a_negated, b),
+            {ClausePtr(a_negated, literal), ClausePtr(literal.Negated(), b)});
+      }
+      AddBinaryClause(a_negated, b);
     }
   }
   for (const Literal a_negated : direct_implications_of_negated_literal_) {
@@ -3366,13 +3507,14 @@ void BinaryImplicationGraph::RemoveBooleanVariable(
   // be delayed to the CleanupAllRemovedVariables() call.
   for (const LiteralIndex index : {literal.Index(), literal.NegatedIndex()}) {
     is_removed_[index] = true;
-    implications_and_amos_[index].ClearLiterals();
+    ClearImplications(Literal(index));
     implications_and_amos_[index].ShrinkToFit();
     if (!is_redundant_[index]) {
       ++num_redundant_literals_;
       is_redundant_.Set(index);
     }
   }
+  DeleteUnusedLratImplications();
 }
 
 void BinaryImplicationGraph::RemoveAllRedundantVariables(
@@ -3382,20 +3524,15 @@ void BinaryImplicationGraph::RemoveAllRedundantVariables(
       postsolve_clauses->push_back(
           {Literal(a), Literal(RepresentativeOf(Literal(a))).Negated()});
       is_removed_[a] = true;
-      implications_and_amos_[a].ClearLiterals();
+      ClearImplications(Literal(a));
       implications_and_amos_[a].ShrinkToFit();
       continue;
     }
 
-    int new_size = 0;
-    auto& implication = implications_and_amos_[a];
-    for (const Literal l : implication.literals()) {
-      if (!is_redundant_[l]) {
-        implication.literals()[new_size++] = l;
-      }
-    }
-    implication.TruncateLiterals(new_size);
+    RemoveImplicationsIf(Literal(a),
+                         [&](Literal l) { return is_redundant_[l]; });
   }
+  DeleteUnusedLratImplications();
 }
 
 void BinaryImplicationGraph::CleanupAllRemovedAndFixedVariables() {
@@ -3406,23 +3543,18 @@ void BinaryImplicationGraph::CleanupAllRemovedAndFixedVariables() {
         // The code assumes that everything is already propagated.
         // Otherwise we will remove implications that didn't propagate yet!
         for (const Literal lit : implications_and_amos_[a].literals()) {
-          DCHECK(trail_->Assignment().LiteralIsTrue(lit));
+          DCHECK(is_removed_[lit] || trail_->Assignment().LiteralIsTrue(lit));
         }
       }
 
-      implications_and_amos_[a].ClearLiterals();
+      ClearImplications(Literal(a));
       implications_and_amos_[a].ShrinkToFit();
       continue;
     }
 
-    int new_size = 0;
-    auto& implication = implications_and_amos_[a];
-    for (const Literal l : implication.literals()) {
-      if (!is_removed_[l] && !assignment.LiteralIsTrue(l)) {
-        implication.literals()[new_size++] = l;
-      }
-    }
-    implication.TruncateLiterals(new_size);
+    RemoveImplicationsIf(Literal(a), [&](Literal l) {
+      return is_removed_[l] || assignment.LiteralIsTrue(l);
+    });
   }
 
   // Clean-up at most ones.
@@ -3432,6 +3564,7 @@ void BinaryImplicationGraph::CleanupAllRemovedAndFixedVariables() {
   CHECK(CleanUpAndAddAtMostOnes(/*base_index=*/0));
 
   // Note that to please the invariant() we also removed fixed literal above.
+  DeleteUnusedLratImplications();
   DCHECK(InvariantsAreOk());
 }
 
@@ -3442,6 +3575,9 @@ bool BinaryImplicationGraph::InvariantsAreOk() {
   int num_redundant = 0;
   int num_fixed = 0;
   TimeLimitCheckEveryNCalls time_limit_check(100, time_limit_);
+  const absl::flat_hash_map<ClausePtr, bool>* binary_clauses =
+      lrat_proof_handler_ != nullptr ? &lrat_proof_handler_->BinaryClauses()
+                                     : nullptr;
   for (LiteralIndex a_index(0); a_index < implications_and_amos_.size();
        ++a_index) {
     if (time_limit_check.LimitReached()) return true;
@@ -3472,10 +3608,14 @@ bool BinaryImplicationGraph::InvariantsAreOk() {
     }
     for (const Literal b : implications_and_amos_[a_index].literals()) {
       seen.insert({a_index, b.Index()});
-      if (lrat_proof_handler_ != nullptr &&
-          GetClauseId(Literal(a_index).Negated(), b) == kNoClauseId) {
-        LOG(ERROR) << "No clause id for " << Literal(a_index) << " => " << b;
-        return false;
+      if (binary_clauses != nullptr && !is_removed_[b.Index()]) {
+        const auto it =
+            binary_clauses->find(ClausePtr(Literal(a_index).Negated(), b));
+        if (it == binary_clauses->end() || !it->second) {
+          LOG(ERROR) << "No LRAT binary clause for " << Literal(a_index)
+                     << " => " << b;
+          return false;
+        }
       }
     }
   }
@@ -3524,6 +3664,19 @@ bool BinaryImplicationGraph::InvariantsAreOk() {
     }
   }
 
+  // Check that we don't have more LRAT binary clauses than implications.
+  if (binary_clauses != nullptr) {
+    for (const auto [binary_clause, in_implication_graph] : *binary_clauses) {
+      if (!in_implication_graph) continue;
+      if (!seen.contains({binary_clause.GetFirstLiteral().Negated(),
+                          binary_clause.GetSecondLiteral()})) {
+        LOG(ERROR) << "No implication for LRAT binary clause "
+                   << binary_clause.GetLiterals();
+        return false;
+      }
+    }
+  }
+
   // Check the at-most ones.
   absl::flat_hash_set<std::pair<LiteralIndex, int>> lit_to_start;
   for (LiteralIndex i(0); i < implications_and_amos_.size(); ++i) {
@@ -3566,7 +3719,6 @@ BinaryImplicationGraph::BinaryImplicationGraph(Model* model)
       time_limit_(model->GetOrCreate<TimeLimit>()),
       random_(model->GetOrCreate<ModelRandomGenerator>()),
       trail_(model->GetOrCreate<Trail>()),
-      clause_id_generator_(model->GetOrCreate<ClauseIdGenerator>()),
       lrat_proof_handler_(model->Mutable<LratProofHandler>()),
       at_most_one_max_expansion_size_(model->GetOrCreate<SatParameters>()
                                           ->at_most_one_max_expansion_size()) {
@@ -3582,62 +3734,6 @@ BinaryImplicationGraph::~BinaryImplicationGraph() {
     LOG(INFO) << "num_redundant_implications " << num_redundant_implications_;
   });
   if (lrat_helper_ != nullptr) delete lrat_helper_;
-}
-
-// ----- SatClause -----
-
-// static
-SatClause* SatClause::Create(absl::Span<const Literal> literals) {
-  DCHECK_GE(literals.size(), 2);
-  SatClause* clause = reinterpret_cast<SatClause*>(
-      ::operator new(sizeof(SatClause) + literals.size() * sizeof(Literal)));
-  clause->size_ = literals.size();
-  for (int i = 0; i < literals.size(); ++i) {
-    clause->literals_[i] = literals[i];
-  }
-  return clause;
-}
-
-// Note that for an attached clause, removing fixed literal is okay because if
-// any of the watched literal is assigned, then the clause is necessarily true.
-bool SatClause::RemoveFixedLiteralsAndTestIfTrue(
-    const VariablesAssignment& assignment) {
-  DCHECK(!IsRemoved());
-  if (assignment.VariableIsAssigned(literals_[0].Variable()) ||
-      assignment.VariableIsAssigned(literals_[1].Variable())) {
-    DCHECK(IsSatisfied(assignment));
-    return true;
-  }
-  int j = 2;
-  while (j < size_ && !assignment.VariableIsAssigned(literals_[j].Variable())) {
-    ++j;
-  }
-  for (int i = j; i < size_; ++i) {
-    if (assignment.VariableIsAssigned(literals_[i].Variable())) {
-      if (assignment.LiteralIsTrue(literals_[i])) return true;
-    } else {
-      std::swap(literals_[j], literals_[i]);
-      ++j;
-    }
-  }
-  size_ = j;
-  return false;
-}
-
-bool SatClause::IsSatisfied(const VariablesAssignment& assignment) const {
-  for (const Literal literal : *this) {
-    if (assignment.LiteralIsTrue(literal)) return true;
-  }
-  return false;
-}
-
-std::string SatClause::DebugString() const {
-  std::string result;
-  for (const Literal literal : *this) {
-    if (!result.empty()) result.append(" ");
-    result.append(literal.DebugString());
-  }
-  return result;
 }
 
 }  // namespace sat

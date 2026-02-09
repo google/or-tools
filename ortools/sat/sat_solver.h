@@ -34,7 +34,6 @@
 #include "absl/functional/function_ref.h"
 #include "absl/log/check.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/enforcement.h"
@@ -64,8 +63,8 @@ const int kUnsatTrailIndex = -1;
 class SatSolver {
  public:
   // Callback called when a new conflict clause is learned. The arguments are
-  // the ID and the literals of the learned clause.
-  typedef absl::FunctionRef<void(ClauseId, absl::Span<const Literal>)>
+  // the pointer and the literals of the learned clause.
+  typedef absl::FunctionRef<void(ClausePtr, absl::Span<const Literal>)>
       ConflictCallback;
 
   SatSolver();
@@ -125,14 +124,14 @@ class SatSolver {
   // We call this a "problem" clause just because we will never delete such
   // clause unless it is proven to always be satisfied. So this can be called
   // with the initial clause of a problem, but also an inferred clause that we
-  // don't want to delete (`shared` must be true iff the clause was inferred by
-  // another solver, from the same initial clauses).
+  // don't want to delete (`one_based_cnf_index` must be positive for an initial
+  // problem clause).
   //
   // TODO(user): Rename this to AddClause() ? Also get rid of the specialized
   // AddUnitClause(), AddBinaryClause() and AddTernaryClause() since they
   // just end up calling this?
   bool AddProblemClause(absl::Span<const Literal> literals,
-                        bool shared = false);
+                        int64_t one_based_cnf_index = 0);
 
   // Adds a pseudo-Boolean constraint to the problem. Returns false if the
   // problem is detected to be UNSAT. If the constraint is always true, this
@@ -559,7 +558,7 @@ class SatSolver {
 
   // Adds a binary clause to the BinaryImplicationGraph and to the
   // BinaryClauseManager when track_binary_clauses_ is true.
-  void AddBinaryClauseInternal(ClauseId id, Literal a, Literal b);
+  void AddBinaryClauseInternal(Literal a, Literal b);
 
   // See SaveDebugAssignment(). Note that these functions only consider the
   // variables at the time the debug_assignment_ was saved. If new variables
@@ -627,7 +626,7 @@ class SatSolver {
 
   // Add a problem clause. The clause is assumed to be "cleaned", that is no
   // duplicate variables (not strictly required) and not empty.
-  bool AddProblemClauseInternal(ClauseId id,
+  bool AddProblemClauseInternal(ClausePtr ptr,
                                 absl::Span<const Literal> literals);
 
   // This is used by all the Add*LinearConstraint() functions. It detects
@@ -649,7 +648,7 @@ class SatSolver {
   //
   // Returns the LBD of the clause.
   int AddLearnedClauseAndEnqueueUnitPropagation(
-      ClauseId clause_id, absl::Span<const Literal> literals, bool is_redundant,
+      ClausePtr ptr, absl::Span<const Literal> literals, bool is_redundant,
       int min_lbd_of_subsumed_clauses);
 
   // Creates a new decision which corresponds to setting the given literal to
@@ -684,16 +683,16 @@ class SatSolver {
   // Returns the pair <is_redundant, minimum_lbd of the subsumed clause>.
   // A clause will be marked as redundant only if all the subsumed clauses are.
   std::pair<bool, int> SubsumptionsInConflictResolution(
-      ClauseId learned_conflict_id, absl::Span<const Literal> conflict,
+      ClausePtr learned_conflict, absl::Span<const Literal> conflict,
       absl::Span<const Literal> reason_used);
 
-  // Append the necessary `clause_ids` for the corresponding part of an LRAT
+  // Append the necessary `proof` for the corresponding part of an LRAT
   // proof. Note that the first function modify is_marked_.
   void AppendLratProofForFixedLiterals(absl::Span<const Literal> literals,
-                                       std::vector<ClauseId>* clause_ids);
-  void AppendLratProofForFailingClause(std::vector<ClauseId>* clause_ids);
+                                       std::vector<ClausePtr>* proof);
+  void AppendLratProofForFailingClause(std::vector<ClausePtr>* proof);
   void AppendLratProofFromReasons(absl::Span<const Literal> reasons,
-                                  std::vector<ClauseId>* clause_ids);
+                                  std::vector<ClausePtr>* proof);
 
   // Fills literals with all the literals in the reasons of the literals in the
   // given input. The output vector will have no duplicates and will not contain
@@ -713,22 +712,22 @@ class SatSolver {
   // replace literals by other literals from lower decision levels. The first
   // function choose which one of the other functions to call depending on the
   // parameters. If an LRAT proof handler is set, fills the LRAT proof for the
-  // minimization in `clause_ids`.
+  // minimization in `proof`.
   //
   // Precondition: is_marked_ should be set to true for all the variables of
   // the conflict. It can also contains false non-conflict variables that
   // are implied by the negation of the 1-UIP conflict literal.
   void MinimizeConflict(std::vector<Literal>* conflict,
-                        std::vector<ClauseId>* clause_ids);
+                        std::vector<ClausePtr>* proof);
   void MinimizeConflictSimple(std::vector<Literal>* conflict,
-                              std::vector<ClauseId>* clause_ids);
+                              std::vector<ClausePtr>* proof);
   void MinimizeConflictRecursively(std::vector<Literal>* conflict,
-                                   std::vector<ClauseId>* clause_ids);
+                                   std::vector<ClausePtr>* proof);
 
   // Utility methods used by MinimizeConflictRecursively().
   bool CanBeInferredFromConflictVariables(BooleanVariable variable);
   void AppendInferenceChain(BooleanVariable variable,
-                            std::vector<ClauseId>* clause_ids);
+                            std::vector<ClausePtr>* clauses);
 
   // To be used in DCHECK(). Verifies some property of the conflict clause:
   // - There is an unique literal with the highest decision level.
@@ -776,7 +775,6 @@ class SatSolver {
   std::unique_ptr<Model> owned_model_;
 
   BooleanVariable num_variables_ = BooleanVariable(0);
-  ClauseIdGenerator* clause_id_generator_;
 
   // Internal propagators. We keep them here because we need more than the
   // SatPropagator interface for them.
@@ -859,10 +857,10 @@ class SatSolver {
   // Temporary member used when adding clauses.
   std::vector<Literal> tmp_literals_;
   // Temporary members used when adding LRAT inferred clauses.
-  std::vector<ClauseId> tmp_clause_ids_;
-  std::vector<ClauseId> tmp_clause_ids_for_1uip_;
-  std::vector<ClauseId> tmp_clause_ids_for_minimization_;
-  absl::flat_hash_set<ClauseId> tmp_clause_id_set_;
+  std::vector<ClausePtr> tmp_proof_;
+  std::vector<ClausePtr> tmp_proof_for_1uip_;
+  std::vector<ClausePtr> tmp_proof_for_minimization_;
+  absl::flat_hash_set<ClausePtr> tmp_clauses_set_;
 
   // A boolean vector used to temporarily mark decision levels.
   DEFINE_STRONG_INDEX_TYPE(SatDecisionLevel);
@@ -882,10 +880,11 @@ class SatSolver {
   // On each conflict, we learn at least one clause, but depending on the cases,
   // we can learn more than one.
   struct NewClauses {
-    ClauseId id;
+    // Can point to an already allocated SatClause for 'literals'.
+    ClausePtr clause;
     bool is_redundant;
     int min_lbd_of_subsumed_clauses;
-    std::vector<Literal> clause;
+    std::vector<Literal> literals;
   };
   std::vector<NewClauses> learned_clauses_;
 
@@ -933,144 +932,115 @@ void MinimizeCore(SatSolver* solver, std::vector<Literal>* core);
 // TODO(user): move them in another file, and unit-test them.
 // ============================================================================
 
-inline std::function<void(Model*)> BooleanLinearConstraint(
-    int64_t lower_bound, int64_t upper_bound,
-    std::vector<LiteralWithCoeff>* cst) {
-  return [=](Model* model) {
-    model->GetOrCreate<SatSolver>()->AddLinearConstraint(
-        /*use_lower_bound=*/true, Coefficient(lower_bound),
-        /*use_upper_bound=*/true, Coefficient(upper_bound), cst);
-  };
+inline void AddBooleanLinearConstraint(int64_t lower_bound, int64_t upper_bound,
+                                       std::vector<LiteralWithCoeff>* cst,
+                                       Model* model) {
+  model->GetOrCreate<SatSolver>()->AddLinearConstraint(
+      /*use_lower_bound=*/true, Coefficient(lower_bound),
+      /*use_upper_bound=*/true, Coefficient(upper_bound), cst);
 }
 
-inline std::function<void(Model*)> CardinalityConstraint(
-    int64_t lower_bound, int64_t upper_bound,
-    absl::Span<const Literal> literals) {
-  return [=, literals = std::vector<Literal>(literals.begin(), literals.end())](
-             Model* model) {
-    std::vector<LiteralWithCoeff> cst;
-    cst.reserve(literals.size());
-    for (int i = 0; i < literals.size(); ++i) {
-      cst.emplace_back(literals[i], 1);
-    }
-    model->GetOrCreate<SatSolver>()->AddLinearConstraint(
-        /*use_lower_bound=*/true, Coefficient(lower_bound),
-        /*use_upper_bound=*/true, Coefficient(upper_bound), &cst);
-  };
+inline void AddCardinalityConstraint(int64_t lower_bound, int64_t upper_bound,
+                                     absl::Span<const Literal> literals,
+                                     Model* model) {
+  std::vector<LiteralWithCoeff> cst;
+  cst.reserve(literals.size());
+  for (int i = 0; i < literals.size(); ++i) {
+    cst.emplace_back(literals[i], 1);
+  }
+  model->GetOrCreate<SatSolver>()->AddLinearConstraint(
+      /*use_lower_bound=*/true, Coefficient(lower_bound),
+      /*use_upper_bound=*/true, Coefficient(upper_bound), &cst);
 }
 
-inline std::function<void(Model*)> ExactlyOneConstraint(
-    absl::Span<const Literal> literals) {
-  return [=, literals = std::vector<Literal>(literals.begin(), literals.end())](
-             Model* model) {
-    std::vector<LiteralWithCoeff> cst;
-    cst.reserve(literals.size());
-    for (const Literal l : literals) {
-      cst.emplace_back(l, Coefficient(1));
-    }
-    model->GetOrCreate<SatSolver>()->AddLinearConstraint(
-        /*use_lower_bound=*/true, Coefficient(1),
-        /*use_upper_bound=*/true, Coefficient(1), &cst);
-  };
+inline void AddExactlyOneConstraint(absl::Span<const Literal> literals,
+                                    Model* model) {
+  std::vector<LiteralWithCoeff> cst;
+  cst.reserve(literals.size());
+  for (const Literal l : literals) {
+    cst.emplace_back(l, Coefficient(1));
+  }
+  model->GetOrCreate<SatSolver>()->AddLinearConstraint(
+      /*use_lower_bound=*/true, Coefficient(1),
+      /*use_upper_bound=*/true, Coefficient(1), &cst);
 }
 
-inline std::function<void(Model*)> AtMostOneConstraint(
-    absl::Span<const Literal> literals) {
-  return [=, literals = std::vector<Literal>(literals.begin(), literals.end())](
-             Model* model) {
-    std::vector<LiteralWithCoeff> cst;
-    cst.reserve(literals.size());
-    for (const Literal l : literals) {
-      cst.emplace_back(l, Coefficient(1));
-    }
-    model->GetOrCreate<SatSolver>()->AddLinearConstraint(
-        /*use_lower_bound=*/false, Coefficient(0),
-        /*use_upper_bound=*/true, Coefficient(1), &cst);
-  };
+inline void AddAtMostOneConstraint(absl::Span<const Literal> literals,
+                                   Model* model) {
+  std::vector<LiteralWithCoeff> cst;
+  cst.reserve(literals.size());
+  for (const Literal l : literals) {
+    cst.emplace_back(l, Coefficient(1));
+  }
+  model->GetOrCreate<SatSolver>()->AddLinearConstraint(
+      /*use_lower_bound=*/false, Coefficient(0),
+      /*use_upper_bound=*/true, Coefficient(1), &cst);
 }
 
-inline std::function<void(Model*)> ClauseConstraint(
-    absl::Span<const Literal> literals) {
-  return [=](Model* model) {
-    model->GetOrCreate<SatSolver>()->AddProblemClause(literals);
-  };
+inline void AddClauseConstraint(absl::Span<const Literal> literals,
+                                Model* model) {
+  model->GetOrCreate<SatSolver>()->AddProblemClause(literals);
 }
 
 // a => b.
-inline std::function<void(Model*)> Implication(Literal a, Literal b) {
-  return [=](Model* model) {
-    model->GetOrCreate<SatSolver>()->AddBinaryClause(a.Negated(), b);
-  };
+inline void AddImplication(Literal a, Literal b, Model* model) {
+  model->GetOrCreate<SatSolver>()->AddBinaryClause(a.Negated(), b);
 }
 
 // a == b.
-inline std::function<void(Model*)> Equality(Literal a, Literal b) {
-  return [=](Model* model) {
-    model->GetOrCreate<SatSolver>()->AddBinaryClause(a.Negated(), b);
-    model->GetOrCreate<SatSolver>()->AddBinaryClause(a, b.Negated());
-  };
+inline void AddEquality(Literal a, Literal b, Model* model) {
+  model->GetOrCreate<SatSolver>()->AddBinaryClause(a.Negated(), b);
+  model->GetOrCreate<SatSolver>()->AddBinaryClause(a, b.Negated());
 }
 
 // r <=> (at least one literal is true). This is a reified clause.
-inline std::function<void(Model*)> ReifiedBoolOr(
-    absl::Span<const Literal> literals, Literal r) {
-  return [=, literals = std::vector<Literal>(literals.begin(), literals.end())](
-             Model* model) {
-    std::vector<Literal> clause;
-    for (const Literal l : literals) {
-      model->Add(Implication(l, r));  // l => r.
-      clause.push_back(l);
-    }
+inline void AddReifiedBoolOr(absl::Span<const Literal> literals, Literal r,
+                             Model* model) {
+  std::vector<Literal> clause;
+  for (const Literal l : literals) {
+    AddImplication(l, r, model);  // l => r.
+    clause.push_back(l);
+  }
 
-    // All false => r false.
-    clause.push_back(r.Negated());
-    model->Add(ClauseConstraint(clause));
-  };
+  // All false => r false.
+  clause.push_back(r.Negated());
+  AddClauseConstraint(clause, model);
 }
 
 // enforcement_literals => clause.
-inline std::function<void(Model*)> EnforcedClause(
-    absl::Span<const Literal> enforcement_literals,
-    absl::Span<const Literal> clause) {
-  return [=](Model* model) {
-    std::vector<Literal> tmp;
-    for (const Literal l : enforcement_literals) {
-      tmp.push_back(l.Negated());
-    }
-    for (const Literal l : clause) {
-      tmp.push_back(l);
-    }
-    model->Add(ClauseConstraint(tmp));
-  };
+inline void AddEnforcedClause(absl::Span<const Literal> enforcement_literals,
+                              absl::Span<const Literal> clause, Model* model) {
+  std::vector<Literal> tmp;
+  for (const Literal l : enforcement_literals) {
+    tmp.push_back(l.Negated());
+  }
+  for (const Literal l : clause) {
+    tmp.push_back(l);
+  }
+  AddClauseConstraint(tmp, model);
 }
 
 // r <=> (all literals are true).
 //
 // Note(user): we could have called ReifiedBoolOr() with everything negated.
-inline std::function<void(Model*)> ReifiedBoolAnd(
-    absl::Span<const Literal> literals, Literal r) {
-  return [=, literals = std::vector<Literal>(literals.begin(), literals.end())](
-             Model* model) {
-    std::vector<Literal> clause;
-    for (const Literal l : literals) {
-      model->Add(Implication(r, l));  // r => l.
-      clause.push_back(l.Negated());
-    }
+inline void AddReifiedBoolAnd(absl::Span<const Literal> literals, Literal r,
+                              Model* model) {
+  std::vector<Literal> clause;
+  for (const Literal l : literals) {
+    AddImplication(r, l, model);  // r => l.
+    clause.push_back(l.Negated());
+  }
 
-    // All true => r true.
-    clause.push_back(r);
-    model->Add(ClauseConstraint(clause));
-  };
+  // All true => r true.
+  clause.push_back(r);
+  AddClauseConstraint(clause, model);
 }
 
 // r <=> (a <= b).
-inline std::function<void(Model*)> ReifiedBoolLe(Literal a, Literal b,
-                                                 Literal r) {
-  return [=](Model* model) {
-    // r <=> (a <= b) is the same as r <=> not(a=1 and b=0).
-    // So r <=> a=0 OR b=1.
-    model->Add(ReifiedBoolOr({a.Negated(), b}, r));
-  };
+inline void AddReifiedBoolLe(Literal a, Literal b, Literal r, Model* model) {
+  // r <=> (a <= b) is the same as r <=> not(a=1 and b=0).
+  // So r <=> a=0 OR b=1.
+  AddReifiedBoolOr({a.Negated(), b}, r, model);
 }
 
 // This checks that the variable is fixed.
@@ -1109,7 +1079,7 @@ inline std::function<void(Model*)> ExcludeCurrentSolutionAndBacktrack() {
       clause_to_exclude_solution.push_back(decisions[i].literal.Negated());
     }
     sat_solver->Backtrack(0);
-    model->Add(ClauseConstraint(clause_to_exclude_solution));
+    AddClauseConstraint(clause_to_exclude_solution, model);
   };
 }
 

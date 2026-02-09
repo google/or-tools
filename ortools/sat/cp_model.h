@@ -100,6 +100,12 @@ class BoolVar {
 
   BoolVar operator~() const { return Not(); }
 
+  // Returns true if the variable is fixed to true.
+  bool IsFixedToTrue() const;
+
+  // Returns true if the variable is fixed to false.
+  bool IsFixedToFalse() const;
+
   std::string DebugString() const;
 
   /**
@@ -111,17 +117,11 @@ class BoolVar {
   int index() const { return index_; }
 
  private:
-  friend class CircuitConstraint;
-  friend class Constraint;
   friend class CpModelBuilder;
   friend class DoubleLinearExpr;
   friend class IntVar;
   friend class IntervalVar;
-  friend class MultipleCircuitConstraint;
   friend class LinearExpr;
-  friend class ReservoirConstraint;
-  friend bool SolutionBooleanValue(const CpSolverResponse& r, BoolVar x);
-
   BoolVar(int index, CpModelBuilder* builder);
 
   CpModelBuilder* builder_ = nullptr;
@@ -192,13 +192,8 @@ class IntVar {
  private:
   friend class BoolVar;
   friend class CpModelBuilder;
-  friend class CumulativeConstraint;
   friend class DoubleLinearExpr;
   friend class LinearExpr;
-  friend class IntervalVar;
-  friend class ReservoirConstraint;
-  friend int64_t SolutionIntegerValue(const CpSolverResponse& r,
-                                      const LinearExpr& expr);
 
   IntVar(int index, CpModelBuilder* builder);
 
@@ -439,7 +434,7 @@ std::ostream& operator<<(std::ostream& os, const DoubleLinearExpr& e);
  *
  * Optionally, a presence literal can be added to this constraint. This presence
  * literal is understood by the same constraints. These constraints ignore
- * interval variables with precence literals assigned to false. Conversely,
+ * interval variables with presence literals assigned to false. Conversely,
  * these constraints will also set these presence literals to false if they
  * cannot fit these intervals into the schedule.
  *
@@ -496,9 +491,6 @@ class IntervalVar {
 
  private:
   friend class CpModelBuilder;
-  friend class CumulativeConstraint;
-  friend class NoOverlap2DConstraint;
-  friend std::ostream& operator<<(std::ostream& os, const IntervalVar& var);
 
   IntervalVar(int index, CpModelBuilder* builder);
 
@@ -586,7 +578,7 @@ class CircuitConstraint : public Constraint {
    * @param head the index of the head node.
    * @param literal it will be set to true if the arc is selected.
    */
-  void AddArc(int tail, int head, BoolVar literal);
+  CircuitConstraint& AddArc(int tail, int head, BoolVar literal);
 
  private:
   friend class CpModelBuilder;
@@ -609,7 +601,7 @@ class MultipleCircuitConstraint : public Constraint {
    * @param head the index of the head node.
    * @param literal it will be set to true if the arc is selected.
    */
-  void AddArc(int tail, int head, BoolVar literal);
+  MultipleCircuitConstraint& AddArc(int tail, int head, BoolVar literal);
 
  private:
   friend class CpModelBuilder;
@@ -626,11 +618,101 @@ class MultipleCircuitConstraint : public Constraint {
 class TableConstraint : public Constraint {
  public:
   /// Adds a tuple of possible values to the constraint.
-  void AddTuple(absl::Span<const int64_t> tuple);
+  TableConstraint& AddTuple(absl::Span<const int64_t> tuple);
 
  private:
   friend class CpModelBuilder;
 
+  using Constraint::Constraint;
+};
+
+/**
+ * Specialized BoolOr constraint.
+ *
+ * This constraint allows adding literals to the BoolOr constraint
+ * incrementally.
+ */
+class BoolOrConstraint : public Constraint {
+ public:
+  /// Adds a literal to the constraint.
+  BoolOrConstraint& AddLiteral(BoolVar literal);
+
+  /// Adds a set of literals to the constraint.
+  BoolOrConstraint& AddLiterals(absl::Span<const BoolVar> literals);
+
+ private:
+  using Constraint::Constraint;
+};
+
+/**
+ * Specialized BoolAnd constraint.
+ *
+ * This constraint allows adding literals to the BoolAnd constraint
+ * incrementally.
+ */
+class BoolAndConstraint : public Constraint {
+ public:
+  /// Adds a literal to the constraint.
+  BoolAndConstraint& AddLiteral(BoolVar literal);
+
+  /// Adds a set of literals to the constraint.
+  BoolAndConstraint& AddLiterals(absl::Span<const BoolVar> literals);
+
+ private:
+  using Constraint::Constraint;
+};
+
+/**
+ * Specialized AtMostOne constraint.
+ *
+ * This constraint allows adding literals to the AtMostOne constraint
+ * incrementally.
+ */
+class AtMostOneConstraint : public Constraint {
+ public:
+  /// Adds a literal to the constraint.
+  AtMostOneConstraint& AddLiteral(BoolVar literal);
+
+  /// Adds a set of literals to the constraint.
+  AtMostOneConstraint& AddLiterals(absl::Span<const BoolVar> literals);
+
+ private:
+  using Constraint::Constraint;
+};
+
+/**
+ * Specialized ExactlyOne constraint.
+ *
+ * This constraint allows adding literals to the ExactlyOne constraint
+ * incrementally.
+ */
+class ExactlyOneConstraint : public Constraint {
+ public:
+  /// Adds a literal to the constraint.
+  ExactlyOneConstraint& AddLiteral(BoolVar literal);
+
+  /// Adds a set of literals to the constraint.
+  ExactlyOneConstraint& AddLiterals(absl::Span<const BoolVar> literals);
+
+ private:
+  using Constraint::Constraint;
+};
+
+/**
+ * Specialized BoolXor constraint.
+ *
+ * This constraint allows adding literals to the BoolXor constraint
+ * incrementally.
+ */
+class BoolXorConstraint : public Constraint {
+ public:
+  /// Adds a literal to the constraint.
+  BoolXorConstraint& AddLiteral(BoolVar literal);
+
+  /// Adds a set of literals to the constraint.
+  BoolXorConstraint& AddLiterals(absl::Span<const BoolVar> literals);
+
+ private:
   using Constraint::Constraint;
 };
 
@@ -648,7 +730,7 @@ class ReservoirConstraint : public Constraint {
    * It will increase the used capacity by `level_change` at time `time`.
    * `time` must be an affine expression.
    */
-  void AddEvent(LinearExpr time, int64_t level_change);
+  ReservoirConstraint& AddEvent(LinearExpr time, int64_t level_change);
 
   /**
    * Adds an optional event
@@ -656,8 +738,8 @@ class ReservoirConstraint : public Constraint {
    * If `is_active` is true, It will increase the used capacity by
    * `level_change` at time `time. `time` must be an affine expression.
    */
-  void AddOptionalEvent(LinearExpr time, int64_t level_change,
-                        BoolVar is_active);
+  ReservoirConstraint& AddOptionalEvent(LinearExpr time, int64_t level_change,
+                                        BoolVar is_active);
 
  private:
   friend class CpModelBuilder;
@@ -676,7 +758,25 @@ class ReservoirConstraint : public Constraint {
 class AutomatonConstraint : public Constraint {
  public:
   /// Adds a transitions to the automaton.
-  void AddTransition(int tail, int head, int64_t transition_label);
+  AutomatonConstraint& AddTransition(int tail, int head,
+                                     int64_t transition_label);
+
+ private:
+  friend class CpModelBuilder;
+
+  using Constraint::Constraint;
+};
+
+/**
+ * Specialized no_overlap constraint.
+ *
+ * This constraint allows adding intervals to the no_overlap
+ * constraint incrementally.
+ */
+class NoOverlapConstraint : public Constraint {
+ public:
+  /// Adds an interval to the constraint.
+  NoOverlapConstraint& AddInterval(IntervalVar interval);
 
  private:
   friend class CpModelBuilder;
@@ -693,7 +793,8 @@ class AutomatonConstraint : public Constraint {
 class NoOverlap2DConstraint : public Constraint {
  public:
   /// Adds a rectangle (parallel to the axis) to the constraint.
-  void AddRectangle(IntervalVar x_coordinate, IntervalVar y_coordinate);
+  NoOverlap2DConstraint& AddRectangle(IntervalVar x_coordinate,
+                                      IntervalVar y_coordinate);
 
  private:
   friend class CpModelBuilder;
@@ -713,7 +814,7 @@ class NoOverlap2DConstraint : public Constraint {
 class CumulativeConstraint : public Constraint {
  public:
   /// Adds a pair (interval, demand) to the constraint.
-  void AddDemand(IntervalVar interval, LinearExpr demand);
+  CumulativeConstraint& AddDemand(IntervalVar interval, LinearExpr demand);
 
  private:
   friend class CpModelBuilder;
@@ -732,6 +833,14 @@ class CumulativeConstraint : public Constraint {
  */
 class CpModelBuilder {
  public:
+  CpModelBuilder() = default;
+
+  // CpModelBuilder cannot be copied or moved. This is because several
+  // structures (IntVar, BoolVar, ...) keep a pointer to the CpModelBuilder.
+  // Copy and move constructors are private to permit Clone() to be used.
+  CpModelBuilder& operator=(const CpModelBuilder& other) = delete;
+  CpModelBuilder& operator=(CpModelBuilder&& other) = delete;
+
   /// Sets the name of the model.
   void SetName(absl::string_view name);
 
@@ -786,22 +895,22 @@ class CpModelBuilder {
   void FixVariable(BoolVar var, bool value);
 
   /// Adds the constraint that at least one of the literals must be true.
-  Constraint AddBoolOr(absl::Span<const BoolVar> literals);
+  BoolOrConstraint AddBoolOr(absl::Span<const BoolVar> literals);
 
   /// Same as AddBoolOr(). Sum literals >= 1.
-  Constraint AddAtLeastOne(absl::Span<const BoolVar> literals);
+  BoolOrConstraint AddAtLeastOne(absl::Span<const BoolVar> literals);
 
   /// At most one literal is true. Sum literals <= 1.
-  Constraint AddAtMostOne(absl::Span<const BoolVar> literals);
+  AtMostOneConstraint AddAtMostOne(absl::Span<const BoolVar> literals);
 
   /// Exactly one literal is true. Sum literals == 1.
-  Constraint AddExactlyOne(absl::Span<const BoolVar> literals);
+  ExactlyOneConstraint AddExactlyOne(absl::Span<const BoolVar> literals);
 
   /// Adds the constraint that all literals must be true.
-  Constraint AddBoolAnd(absl::Span<const BoolVar> literals);
+  BoolAndConstraint AddBoolAnd(absl::Span<const BoolVar> literals);
 
   /// Adds the constraint that an odd number of literals is true.
-  Constraint AddBoolXor(absl::Span<const BoolVar> literals);
+  BoolXorConstraint AddBoolXor(absl::Span<const BoolVar> literals);
 
   /// Adds a => b.
   Constraint AddImplication(BoolVar a, BoolVar b) {
@@ -1076,7 +1185,7 @@ class CpModelBuilder {
    * Adds a no-overlap constraint that ensures that all present intervals do
    * not overlap in time.
    */
-  Constraint AddNoOverlap(absl::Span<const IntervalVar> vars);
+  NoOverlapConstraint AddNoOverlap(absl::Span<const IntervalVar> vars = {});
 
   /**
    * The no_overlap_2d constraint prevents a set of boxes from overlapping.
@@ -1173,13 +1282,18 @@ class CpModelBuilder {
   IntervalVar GetIntervalVarFromProtoIndex(int index);
 
  private:
+  // Move and copy constructors.
+  CpModelBuilder(CpModelBuilder&& other) = default;
+  CpModelBuilder(const CpModelBuilder& other) = default;
+
   friend class CumulativeConstraint;
   friend class ReservoirConstraint;
   friend class IntervalVar;
   friend class IntVar;
 
-  // Used for cloning a model.
-  void ResetAndImport(const CpModelProto& model_proto);
+  // Initializes the class from a given model proto.
+  // This could be made public if needed, also with a corresponding constructor.
+  void ResetFromProto(const CpModelProto& model_proto);
 
   // Fills the 'expr_proto' with the linear expression represented by 'expr'.
   LinearExpressionProto LinearExprToProto(const LinearExpr& expr,
@@ -1193,14 +1307,14 @@ class CpModelBuilder {
   // If the input index is negative, it creates a cached IntVar equal to
   // 1 - BoolVar(PositiveRef(index)), and returns the index of this new
   // variable.
-  int GetOrCreateIntegerIndex(int index);
+  int GetOrCreateIntegerView(int bool_index);
 
   void FillLinearTerms(const LinearExpr& left, const LinearExpr& right,
                        LinearConstraintProto* proto);
 
   CpModelProto cp_model_;
   absl::flat_hash_map<int64_t, int> constant_to_index_map_;
-  absl::flat_hash_map<int, int> bool_to_integer_index_map_;
+  absl::flat_hash_map<int, int> negative_bool_index_to_integer_index_map_;
 };
 
 /// Evaluates the value of an linear expression in a solver response.

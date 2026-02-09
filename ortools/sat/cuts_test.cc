@@ -551,7 +551,7 @@ TEST(SquareCutGeneratorTest, TestBelowCut) {
   square.generate_cuts(manager);
   EXPECT_EQ(1, manager->num_cuts());
   EXPECT_THAT(manager->AllConstraints().front().constraint.DebugString(),
-              EndsWith("-5*I0 1*I1 <= 0"));
+              StartsWith("0 <= 5*I0 -1*I1"));
 }
 
 TEST(SquareCutGeneratorTest, TestBelowCutWithOffset) {
@@ -565,7 +565,7 @@ TEST(SquareCutGeneratorTest, TestBelowCutWithOffset) {
   square.generate_cuts(manager);
   ASSERT_EQ(1, manager->num_cuts());
   EXPECT_THAT(manager->AllConstraints().front().constraint.DebugString(),
-              EndsWith("-6*I0 1*I1 <= -5"));
+              StartsWith("5 <= 6*I0 -1*I1"));
 }
 
 TEST(SquareCutGeneratorTest, TestNoBelowCut) {
@@ -591,7 +591,7 @@ TEST(SquareCutGeneratorTest, TestAboveCut) {
   square.generate_cuts(manager);
   ASSERT_EQ(1, manager->num_cuts());
   EXPECT_THAT(manager->AllConstraints().front().constraint.DebugString(),
-              StartsWith("-6 <= -5*I0 1*I1"));
+              EndsWith("5*I0 -1*I1 <= 6"));
 }
 
 TEST(SquareCutGeneratorTest, TestNearlyAboveCut) {
@@ -772,7 +772,7 @@ TEST(LinMaxCutsTest, BasicCuts1) {
   // respectively.
   // Most violated inequality is 2.
   EXPECT_THAT(manager->AllConstraints().front().constraint.DebugString(),
-              StartsWith("0 <= -2*I1 -1*I2 3*I3 1*I4 4*I5"));
+              EndsWith("2*I1 1*I2 -3*I3 -1*I4 -4*I5 <= 0"));
 
   InitializeLpValues({-1.0, -1.0, 2.0, 1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0},
                      &model);

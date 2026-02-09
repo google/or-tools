@@ -19,11 +19,11 @@
 #include <vector>
 
 #include "absl/container/btree_set.h"
+#include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "gtest/gtest.h"
 #include "ortools/base/container_logging.h"
 #include "ortools/base/gmock.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/parse_test_proto.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -606,7 +606,7 @@ TEST(LiteralTableConstraint, PropagationFromLiterals) {
     for (int j = 0; j < 3; ++j) {
       literals[i].push_back(Literal(model.Add(NewBooleanVariable()), true));
     }
-    model.Add(ExactlyOneConstraint(literals[i]));
+    AddExactlyOneConstraint(literals[i], &model);
   }
 
   // Tuples (0, 0, 0), (1, 1, 1), (2, 2, 2), (0, 1, 2).
@@ -616,7 +616,7 @@ TEST(LiteralTableConstraint, PropagationFromLiterals) {
       {literals[0][2], literals[1][2], literals[2][2]},
       {literals[0][0], literals[1][1], literals[2][2]}};
 
-  model.Add(LiteralTableConstraint(tuples, selected));
+  AddLiteralTableConstraint(tuples, selected, &model);
   SatSolver* sat_solver = model.GetOrCreate<SatSolver>();
 
   EXPECT_TRUE(sat_solver->EnqueueDecisionIfNotConflicting(literals[0][0]));
@@ -641,7 +641,7 @@ TEST(LiteralTableConstraint, PropagationFromSelected) {
     for (int j = 0; j < 3; ++j) {
       literals[i].push_back(Literal(model.Add(NewBooleanVariable()), true));
     }
-    model.Add(ExactlyOneConstraint(literals[i]));
+    AddExactlyOneConstraint(literals[i], &model);
   }
 
   // Tuples (0, 0, 0), (1, 1, 1), (2, 2, 2), (0, 1, 2).
@@ -651,7 +651,7 @@ TEST(LiteralTableConstraint, PropagationFromSelected) {
       {literals[0][2], literals[1][2], literals[2][2]},
       {literals[0][0], literals[1][1], literals[2][2]}};
 
-  model.Add(LiteralTableConstraint(tuples, selected));
+  AddLiteralTableConstraint(tuples, selected, &model);
   Trail* trail = model.GetOrCreate<Trail>();
   SatSolver* sat_solver = model.GetOrCreate<SatSolver>();
 

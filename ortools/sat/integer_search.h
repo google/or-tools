@@ -69,6 +69,16 @@ struct BooleanOrIntegerLiteral {
 
   LiteralIndex boolean_literal_index = kNoLiteralIndex;
   IntegerLiteral integer_literal = IntegerLiteral();
+
+  template <typename Sink>
+  friend void AbslStringify(Sink& sink, const BooleanOrIntegerLiteral& lit) {
+    if (lit.boolean_literal_index != kNoLiteralIndex) {
+      absl::Format(&sink, "%v",
+                   Literal(lit.boolean_literal_index).DebugString());
+    } else {
+      absl::Format(&sink, "%v", lit.integer_literal.DebugString());
+    }
+  }
 };
 
 // Model struct that contains the search heuristics used to find a feasible

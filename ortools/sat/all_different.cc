@@ -23,8 +23,7 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
-#include "ortools/graph/strongly_connected_components.h"
+#include "ortools/graph_base/strongly_connected_components.h"
 #include "ortools/sat/enforcement.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
@@ -33,81 +32,71 @@
 #include "ortools/sat/sat_solver.h"
 #include "ortools/util/sort.h"
 #include "ortools/util/strong_integers.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
 
-std::function<void(Model*)> AllDifferentBinary(
-    absl::Span<const IntegerVariable> vars) {
-  return [=, vars = std::vector<IntegerVariable>(vars.begin(), vars.end())](
-             Model* model) {
-    // Fully encode all the given variables and construct a mapping value ->
-    // List of literal each indicating that a given variable takes this value.
-    //
-    // Note that we use a map to always add the constraints in the same order.
-    absl::btree_map<IntegerValue, std::vector<Literal>> value_to_literals;
-    IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
-    for (const IntegerVariable var : vars) {
-      model->Add(FullyEncodeVariable(var));
-      for (const auto& entry : encoder->FullDomainEncoding(var)) {
-        value_to_literals[entry.value].push_back(entry.literal);
-      }
+void AddAllDifferentBinary(absl::Span<const IntegerVariable> vars,
+                           Model* model) {
+  // Fully encode all the given variables and construct a mapping value ->
+  // List of literal each indicating that a given variable takes this value.
+  //
+  // Note that we use a map to always add the constraints in the same order.
+  absl::btree_map<IntegerValue, std::vector<Literal>> value_to_literals;
+  IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
+  for (const IntegerVariable var : vars) {
+    model->Add(FullyEncodeVariable(var));
+    for (const auto& entry : encoder->FullDomainEncoding(var)) {
+      value_to_literals[entry.value].push_back(entry.literal);
     }
+  }
 
-    // Add an at most one constraint for each value.
+  // Add an at most one constraint for each value.
+  for (const auto& entry : value_to_literals) {
+    if (entry.second.size() > 1) {
+      AddAtMostOneConstraint(entry.second, model);
+    }
+  }
+
+  // If the number of values is equal to the number of variables, we have
+  // a permutation. We can add a bool_or for each literals attached to a
+  // value.
+  if (value_to_literals.size() == vars.size()) {
     for (const auto& entry : value_to_literals) {
-      if (entry.second.size() > 1) {
-        model->Add(AtMostOneConstraint(entry.second));
-      }
+      AddClauseConstraint(entry.second, model);
     }
-
-    // If the number of values is equal to the number of variables, we have
-    // a permutation. We can add a bool_or for each literals attached to a
-    // value.
-    if (value_to_literals.size() == vars.size()) {
-      for (const auto& entry : value_to_literals) {
-        model->Add(ClauseConstraint(entry.second));
-      }
-    }
-  };
+  }
 }
 
-std::function<void(Model*)> AllDifferentOnBounds(
-    absl::Span<const Literal> enforcement_literals,
-    absl::Span<const AffineExpression> expressions) {
-  return [=, expressions = std::vector<AffineExpression>(
-                 expressions.begin(), expressions.end())](Model* model) {
-    if (expressions.empty()) return;
-    model->TakeOwnership(new AllDifferentBoundsPropagator(enforcement_literals,
-                                                          expressions, model));
-  };
+void AddAllDifferentOnBounds(absl::Span<const Literal> enforcement_literals,
+                             absl::Span<const AffineExpression> expressions,
+                             Model* model) {
+  if (expressions.empty()) return;
+  model->TakeOwnership(new AllDifferentBoundsPropagator(enforcement_literals,
+                                                        expressions, model));
 }
 
-std::function<void(Model*)> AllDifferentOnBounds(
-    absl::Span<const IntegerVariable> vars) {
-  return [=, vars = std::vector<IntegerVariable>(vars.begin(), vars.end())](
-             Model* model) {
-    if (vars.empty()) return;
-    std::vector<AffineExpression> expressions;
-    expressions.reserve(vars.size());
-    for (const IntegerVariable var : vars) {
-      expressions.push_back(AffineExpression(var));
-    }
-    model->TakeOwnership(new AllDifferentBoundsPropagator(
-        /*enforcement_literals=*/{}, expressions, model));
-  };
+void AddAllDifferentOnBounds(absl::Span<const IntegerVariable> vars,
+                             Model* model) {
+  if (vars.empty()) return;
+  std::vector<AffineExpression> expressions;
+  expressions.reserve(vars.size());
+  for (const IntegerVariable var : vars) {
+    expressions.push_back(AffineExpression(var));
+  }
+  model->TakeOwnership(new AllDifferentBoundsPropagator(
+      /*enforcement_literals=*/{}, expressions, model));
 }
 
-std::function<void(Model*)> AllDifferentAC(
-    absl::Span<const IntegerVariable> variables) {
-  return [variables](Model* model) {
-    if (variables.size() < 3) return;
+void AddAllDifferentAC(absl::Span<const IntegerVariable> variables,
+                       Model* model) {
+  if (variables.size() < 3) return;
 
-    AllDifferentConstraint* constraint =
-        new AllDifferentConstraint(variables, model);
-    constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
-    model->TakeOwnership(constraint);
-  };
+  AllDifferentConstraint* constraint =
+      new AllDifferentConstraint(variables, model);
+  constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
+  model->TakeOwnership(constraint);
 }
 
 AllDifferentConstraint::AllDifferentConstraint(
@@ -121,6 +110,7 @@ AllDifferentConstraint::AllDifferentConstraint(
   absl::flat_hash_map<IntegerValue, int> dense_indexing;
   variable_to_possible_values_.resize(num_variables_);
   auto* encoder = model->GetOrCreate<IntegerEncoder>();
+  auto* trivial_literals = model->GetOrCreate<TrivialLiterals>();
   for (int x = 0; x < num_variables_; x++) {
     const IntegerValue lb = integer_trail_->LowerBound(variables[x]);
     const IntegerValue ub = integer_trail_->UpperBound(variables[x]);
@@ -132,7 +122,7 @@ AllDifferentConstraint::AllDifferentConstraint(
       if (inserted) ++num_values_;
 
       variable_to_possible_values_[x].push_back(
-          {it->second, encoder->GetTrueLiteral()});
+          {it->second, trivial_literals->TrueLiteral()});
       continue;
     }
 
@@ -404,7 +394,7 @@ bool AllDifferentConstraint::Propagate() {
           }
         }
 
-        return trail_->EnqueueWithStoredReason(kNoClauseId, x_lit.Negated());
+        return trail_->EnqueueWithStoredReason(x_lit.Negated(), kNullClausePtr);
       }
     }
   }
@@ -416,6 +406,7 @@ AllDifferentBoundsPropagator::AllDifferentBoundsPropagator(
     absl::Span<const Literal> enforcement_literals,
     absl::Span<const AffineExpression> expressions, Model* model)
     : integer_trail_(*model->GetOrCreate<IntegerTrail>()),
+      time_limit_(model->GetOrCreate<TimeLimit>()),
       enforcement_helper_(*model->GetOrCreate<EnforcementHelper>()) {
   CHECK(!expressions.empty());
 
@@ -488,8 +479,15 @@ bool AllDifferentBoundsPropagator::PropagateLowerBounds() {
     entry.lb = integer_trail_.LowerBound(entry.expr);
     entry.ub = integer_trail_.UpperBound(entry.expr);
   }
-  IncrementalSort(bounds_.begin(), bounds_.end(),
-                  [](CachedBounds a, CachedBounds b) { return a.lb < b.lb; });
+
+  // TODO(user): The running time can be dominated by this sort. For the
+  // "permutation" case where we have as many bounds has possible lb, maybe a
+  // radix sort is more efficient.
+  time_limit_->AdvanceDeterministicTime(static_cast<double>(bounds_.size()) *
+                                        1e-8);
+  IncrementalSort(
+      bounds_.begin(), bounds_.end(),
+      [](const CachedBounds& a, const CachedBounds& b) { return a.lb < b.lb; });
 
   // We will split the affine epressions in vars sorted by lb in contiguous
   // subset with index of the form [start, start + num_in_window).

@@ -26,65 +26,11 @@
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
-#include "ortools/sat/boolean_problem.pb.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/util/filelineiter.h"
 
 namespace operations_research {
 namespace sat {
-
-// This implement the implicit contract needed by the SatCnfReader class.
-class LinearBooleanProblemWrapper {
- public:
-  explicit LinearBooleanProblemWrapper(LinearBooleanProblem* p) : problem_(p) {}
-
-  // In the new 2022 .wcnf format, we don't know the number of variable before
-  // hand (no header). So when this is called (after all the constraint have
-  // been added), we need to re-index the slack so that they are after the
-  // variable of the original problem.
-  void SetSizeAndPostprocess(int num_variables, int num_slacks) {
-    problem_->set_num_variables(num_variables + num_slacks);
-    problem_->set_original_num_variables(num_variables);
-    for (const int c : to_postprocess_) {
-      auto* literals = problem_->mutable_constraints(c)->mutable_literals();
-      const int last_index = literals->size() - 1;
-      const int last = (*literals)[last_index];
-      (*literals)[last_index] =
-          last >= 0 ? last + num_variables : last - num_variables;
-    }
-  }
-
-  // If last_is_slack is true, then the last literal is assumed to be a slack
-  // with index in [-num_slacks, num_slacks]. We will re-index it at the end in
-  // SetSizeAndPostprocess().
-  void AddConstraint(absl::Span<const int> clause, bool last_is_slack = false) {
-    if (last_is_slack)
-      to_postprocess_.push_back(problem_->constraints().size());
-    LinearBooleanConstraint* constraint = problem_->add_constraints();
-    constraint->mutable_literals()->Reserve(clause.size());
-    constraint->mutable_coefficients()->Reserve(clause.size());
-    constraint->set_lower_bound(1);
-    for (const int literal : clause) {
-      constraint->add_literals(literal);
-      constraint->add_coefficients(1);
-    }
-  }
-
-  void AddObjectiveTerm(int literal, int64_t value) {
-    CHECK_GE(literal, 0) << "Negative literal not supported.";
-    problem_->mutable_objective()->add_literals(literal);
-    problem_->mutable_objective()->add_coefficients(value);
-  }
-
-  void SetObjectiveOffset(int64_t offset) {
-    problem_->mutable_objective()->set_offset(offset);
-  }
-
- private:
-  LinearBooleanProblem* problem_;
-  std::vector<int> to_postprocess_;
-};
 
 // This implement the implicit contract needed by the SatCnfReader class.
 class CpModelProtoWrapper {
@@ -157,12 +103,6 @@ class SatCnfReader {
   void InterpretCnfAsMaxSat(bool v) { interpret_cnf_as_max_sat_ = v; }
 
   // Loads the given cnf filename into the given proto.
-  bool Load(const std::string& filename, LinearBooleanProblem* problem) {
-    problem->Clear();
-    problem->set_name(ExtractProblemName(filename));
-    LinearBooleanProblemWrapper wrapper(problem);
-    return LoadInternal(filename, &wrapper);
-  }
   bool Load(const std::string& filename, CpModelProto* problem) {
     problem->Clear();
     problem->set_name(ExtractProblemName(filename));
@@ -170,7 +110,7 @@ class SatCnfReader {
     return LoadInternal(filename, &wrapper);
   }
 
- private:
+  // Exposed for testing, do not use.
   template <class Problem>
   bool LoadInternal(const std::string& filename, Problem* problem) {
     is_wcnf_ = false;
@@ -231,6 +171,7 @@ class SatCnfReader {
     return true;
   }
 
+  // Exposed for testing, do not use.
   // Since the problem name is not stored in the cnf format, we infer it from
   // the file name.
   static std::string ExtractProblemName(const std::string& filename) {
@@ -240,6 +181,7 @@ class SatCnfReader {
     return problem_name;
   }
 
+ private:
   void ProcessHeader(const std::string& line) {
     static const char kWordDelimiters[] = " ";
     words_ = absl::StrSplit(line, kWordDelimiters, absl::SkipEmpty());

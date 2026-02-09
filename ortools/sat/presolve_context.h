@@ -15,6 +15,7 @@
 #define ORTOOLS_SAT_PRESOLVE_CONTEXT_H_
 
 #include <cstdint>
+#include <memory>
 #include <optional>
 #include <string>
 #include <tuple>
@@ -30,9 +31,9 @@
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/base_export.h"
-#include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
+#include "ortools/sat/lrat_proof_handler.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/presolve_util.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -103,7 +104,10 @@ class PresolveContext {
         logger_(model->GetOrCreate<SolverLogger>()),
         params_(*model->GetOrCreate<SatParameters>()),
         time_limit_(model->GetOrCreate<TimeLimit>()),
-        random_(model->GetOrCreate<ModelRandomGenerator>()) {}
+        random_(model->GetOrCreate<ModelRandomGenerator>()) {
+    lrat_proof_handler = LratProofHandler::MaybeCreate(
+        model, /*enable_rat_proofs=*/params_.cp_model_pure_sat_presolve());
+  }
 
   // Helpers to adds new variables to the presolved model.
 
@@ -270,7 +274,7 @@ class PresolveContext {
 
   // Functions to make sure that once we remove a variable, we no longer reuse
   // it.
-  void MarkVariableAsRemoved(int ref);
+  void MarkVariableAsRemoved(int var);
   bool VariableWasRemoved(int ref) const;
 
   // Same as VariableIsUniqueAndRemovable() except that in this case the
@@ -566,7 +570,8 @@ class PresolveContext {
   // than the implied domain from the equality).
   ABSL_MUST_USE_RESULT bool SubstituteVariableInObjective(
       int var_in_equality, int64_t coeff_in_equality,
-      const ConstraintProto& equality);
+      const ConstraintProto& equality,
+      bool substitution_does_not_change_objective_domain = false);
 
   // Objective getters.
   const Domain& ObjectiveDomain() const { return objective_domain_; }
@@ -684,6 +689,10 @@ class PresolveContext {
 
   CpModelProto* working_model = nullptr;
   CpModelProto* mapping_model = nullptr;
+
+  // Used for the LRAT proof of inferred clauses during model copy and, if
+  // applicable, during the pure SAT presolve.
+  std::unique_ptr<LratProofHandler> lrat_proof_handler = nullptr;
 
   // Number of "rules" applied. This should be equal to the sum of all numbers
   // in stats_by_rule_name. This is used to decide if we should do one more pass
@@ -814,7 +823,7 @@ class PresolveContext {
   AffineRelation affine_relations_;
 
   // Used by SetVariableAsRemoved() and VariableWasRemoved().
-  absl::flat_hash_set<int> removed_variables_;
+  std::vector<bool> var_was_removed_;
 
   // Cache for the reified precedence literals created during the expansion of
   // the reservoir constraint. This cache is only valid during the expansion

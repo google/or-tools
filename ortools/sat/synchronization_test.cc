@@ -26,6 +26,7 @@
 #include "ortools/base/gmock.h"
 #include "ortools/base/parse_test_proto.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/util.h"
@@ -195,19 +196,19 @@ TEST(SharedBoundsManagerTest, Api) {
   std::vector<int64_t> lbs;
   std::vector<int64_t> ubs;
 
-  EXPECT_EQ(manager.RegisterNewId(), 0);
+  EXPECT_EQ(manager.RegisterNewId("name"), 0);
   manager.GetChangedBounds(0, &vars, &lbs, &ubs);
   EXPECT_THAT(vars, ElementsAre(2, 4));
   EXPECT_THAT(lbs, ElementsAre(1, 2));
   EXPECT_THAT(ubs, ElementsAre(11, 12));
 
-  EXPECT_EQ(manager.RegisterNewId(), 1);
+  EXPECT_EQ(manager.RegisterNewId("other"), 1);
   manager.GetChangedBounds(1, &vars, &lbs, &ubs);
   EXPECT_THAT(vars, ElementsAre(2, 4));
   EXPECT_THAT(lbs, ElementsAre(1, 2));
   EXPECT_THAT(ubs, ElementsAre(11, 12));
 
-  EXPECT_EQ(manager.RegisterNewId(), 2);
+  EXPECT_EQ(manager.RegisterNewId("third"), 2);
   manager.GetChangedBounds(2, &vars, &lbs, &ubs);
   EXPECT_THAT(vars, ElementsAre(2, 4));
   EXPECT_THAT(lbs, ElementsAre(1, 2));
@@ -281,7 +282,7 @@ TEST(SharedBoundsManagerTest, WithSymmetry) {
   std::vector<int64_t> lbs;
   std::vector<int64_t> ubs;
 
-  EXPECT_EQ(manager.RegisterNewId(), 0);
+  EXPECT_EQ(manager.RegisterNewId("test"), 0);
   manager.GetChangedBounds(0, &vars, &lbs, &ubs);
   EXPECT_THAT(vars, ElementsAre(0, 1, 2));
   EXPECT_THAT(lbs, ElementsAre(4, 4, 4));
@@ -830,6 +831,19 @@ TEST(SharedResponseManagerTest, Callback) {
     shared_response->NewSolution(solution.solution(), solution.solution_info());
     EXPECT_EQ(num_solutions, 2);
   }
+}
+
+TEST(SharedClausesManagerTest, GetRepresentatives) {
+  SharedClausesManager manager(/*always_synchronize=*/true);
+  EXPECT_EQ(0, manager.RegisterNewId("", /*may_terminate_early=*/false));
+
+  // 1 is equivalent to NegatedRef(2).
+  manager.AddBinaryClause(/*id=*/0, 2, 1);
+  manager.AddBinaryClause(/*id=*/0, 3, 1);
+  manager.AddBinaryClause(/*id=*/0, NegatedRef(1), NegatedRef(2));
+
+  EXPECT_THAT(manager.GetRepresentatives(),
+              ::testing::ElementsAre(0, 1, NegatedRef(1)));
 }
 
 TEST(SharedClausesManagerTest, SyncApi) {

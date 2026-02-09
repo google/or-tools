@@ -74,6 +74,11 @@ void AppendPartialGreaterThanEncodingRelaxation(IntegerVariable var,
                                                 const Model& model,
                                                 LinearRelaxation* relaxation);
 
+// Deal with non fully reified linear1 constraints.
+void LinearizeComplexLinear1(Model* m, const CpModelProto& model_proto,
+                             std::vector<bool>* already_linearized,
+                             LinearRelaxation* relaxation);
+
 // Returns a vector of new literals in exactly one relationship.
 // In addition, this create an IntegerView for all these literals and also add
 // the exactly one to the LinearRelaxation.

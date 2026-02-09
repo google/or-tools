@@ -46,17 +46,12 @@ Other methods and functions listed are primarily used for developing OR-Tools,
 rather than for solving specific optimization problems.
 """
 
-from collections.abc import Callable, Iterable, Sequence
 import copy
 import threading
 import time
-from typing import (
-    Any,
-    Optional,
-    Union,
-    overload,
-)
 import warnings
+from collections.abc import Callable, Iterable, Sequence
+from typing import Any, Optional, Union, overload
 
 import numpy as np
 import pandas as pd
@@ -184,7 +179,7 @@ _IndexOrSeries = Union[pd.Index, pd.Series]
 
 
 # Helper functions.
-enable_warnings = False
+
 
 # warnings.deprecated is python3.13+. Not compatible with Open Source (3.10+).
 # pylint: disable=g-bare-generic
@@ -193,13 +188,12 @@ def deprecated(message: str) -> Callable[[Callable], Callable]:
 
     def deprecated_decorator(func) -> Callable:
         def deprecated_func(*args, **kwargs):
-            if enable_warnings:
-                warnings.warn(
-                    f"{func.__name__} is a deprecated function. {message}",
-                    category=DeprecationWarning,
-                    stacklevel=2,
-                )
-                warnings.simplefilter("default", DeprecationWarning)
+            warnings.warn(
+                f"{func.__name__} is a deprecated function. {message}",
+                category=DeprecationWarning,
+                stacklevel=2,
+            )
+            warnings.simplefilter("default", DeprecationWarning)
             return func(*args, **kwargs)
 
         return deprecated_func
@@ -211,13 +205,12 @@ def deprecated_method(func, old_name: str) -> Callable:
     """Wrapper that warns about a deprecated method."""
 
     def deprecated_func(*args, **kwargs) -> Any:
-        if enable_warnings:
-            warnings.warn(
-                f"{old_name} is a deprecated function. Use {func.__name__} instead.",
-                category=DeprecationWarning,
-                stacklevel=2,
-            )
-            warnings.simplefilter("default", DeprecationWarning)
+        warnings.warn(
+            f"{old_name} is a deprecated function. Use {func.__name__} instead.",
+            category=DeprecationWarning,
+            stacklevel=2,
+        )
+        warnings.simplefilter("default", DeprecationWarning)
         return func(*args, **kwargs)
 
     return deprecated_func
@@ -1951,10 +1944,10 @@ class CpSolver:
             self._checked_response
         )
 
-    def status_name(self, status: Optional[Any] = None) -> str:
+    def status_name(self, status: Optional[cmh.CpSolverStatus] = None) -> str:
         """Returns the name of the status returned by solve()."""
         if status is None:
-            status = self._checked_response.status()
+            status = self._checked_response.status
         return status.name
 
     def solution_info(self) -> str:
@@ -2016,9 +2009,9 @@ class CpSolver:
 
     @deprecated("Use solve() method instead.")
     def Solve(
-        self, model: CpModel, callback: "CpSolverSolutionCallback" = None
+        self, model: CpModel, solution_callback: "CpSolverSolutionCallback" = None
     ) -> cmh.CpSolverStatus:
-        return self.solve(model, callback)
+        return self.solve(model, solution_callback)
 
     @deprecated("Use solution_info() method instead.")
     def SolutionInfo(self) -> str:

@@ -30,7 +30,6 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/cp_model_utils.h"
@@ -564,7 +563,15 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
     new_params.set_optimize_with_core(true);
     new_params.set_optimize_with_max_hs(true);
-    strategies["max_hs"] = new_params;
+    new_params.set_initial_polarity(SatParameters::POLARITY_RANDOM);
+    new_params.set_preferred_variable_order(SatParameters::IN_RANDOM_ORDER);
+    new_params.set_random_polarity_ratio(0.3);
+    new_params.set_random_branches_ratio(0.3);
+
+    new_params.set_linearization_level(0);
+    strategies["max_hs_no_lp"] = new_params;
+    new_params.set_linearization_level(2);
+    strategies["max_hs_max_lp"] = new_params;
   }
 
   {
@@ -933,8 +940,7 @@ std::vector<SatParameters> GetFullWorkerParameters(
     }
     // As of November 2025, we don't support any LP reasoning when producing an
     // UNSAT proof.
-    if ((params.check_lrat_proof() || params.output_lrat_proof() ||
-         params.check_drat_proof() || params.output_drat_proof()) &&
+    if ((params.check_lrat_proof() || params.output_lrat_proof()) &&
         params.linearization_level() > 1) {
       continue;
     }

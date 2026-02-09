@@ -21,7 +21,6 @@
 #include <deque>
 #include <functional>
 #include <optional>
-#include <string>
 #include <utility>
 #include <vector>
 
@@ -47,100 +46,6 @@
 
 namespace operations_research {
 namespace sat {
-
-// This is how the SatSolver stores a clause. A clause is just a disjunction of
-// literals. In many places, we just use vector<literal> to encode one. But in
-// the critical propagation code, we use this class to remove one memory
-// indirection.
-class SatClause {
- public:
-  // Creates a sat clause. There must be at least 2 literals.
-  // Clause with one literal fix variable directly and are never constructed.
-  // Note that in practice, we use BinaryImplicationGraph for the clause of size
-  // 2, so this is used for size at least 3.
-  static SatClause* Create(absl::Span<const Literal> literals);
-
-  // Non-sized delete because this is a tail-padded class.
-  void operator delete(void* p) {
-    ::operator delete(p);  // non-sized delete
-  }
-
-  // Number of literals in the clause.
-  int size() const { return size_; }
-  bool empty() const { return size_ == 0; }
-
-  // We re-use the size to lazily remove clause and notify that they need to be
-  // deleted. It is why this is not called empty() to emphasis that fact. Note
-  // that we never create an initially empty clause, so there is no confusion
-  // with an infeasible model with an empty clause inside.
-  int IsRemoved() const { return size_ == 0; }
-
-  // Allows for range based iteration: for (Literal literal : clause) {}.
-  const Literal* begin() const { return &(literals_[0]); }
-  const Literal* end() const { return &(literals_[size_]); }
-
-  // Returns the first and second literals. These are always the watched
-  // literals if the clause is attached in the LiteralWatchers.
-  Literal FirstLiteral() const { return literals_[0]; }
-  Literal SecondLiteral() const { return literals_[1]; }
-
-  // Returns the literal that was propagated to true. This only works for a
-  // clause that just propagated this literal. Otherwise, this will just returns
-  // a literal of the clause.
-  Literal PropagatedLiteral() const { return literals_[0]; }
-
-  // Returns the reason for the last unit propagation of this clause. The
-  // preconditions are the same as for PropagatedLiteral(). Note that we don't
-  // need to include the propagated literal.
-  absl::Span<const Literal> PropagationReason() const {
-    return absl::Span<const Literal>(&(literals_[1]), size_ - 1);
-  }
-
-  // Returns a Span<> representation of the clause.
-  absl::Span<const Literal> AsSpan() const {
-    return absl::Span<const Literal>(&(literals_[0]), size_);
-  }
-
-  // Returns true if the clause is satisfied for the given assignment. Note that
-  // the assignment may be partial, so false does not mean that the clause can't
-  // be satisfied by completing the assignment.
-  bool IsSatisfied(const VariablesAssignment& assignment) const;
-
-  std::string DebugString() const;
-
- private:
-  // The manager needs to permute the order of literals in the clause and
-  // call Clear()/Rewrite.
-  friend class ClauseManager;
-
-  Literal* literals() { return &(literals_[0]); }
-
-  // Marks the clause so that the next call to CleanUpWatchers() can identify it
-  // and actually remove it. We use size_ = 0 for this since the clause will
-  // never be used afterwards.
-  void Clear() { size_ = 0; }
-
-  // Removes literals that are fixed. This should only be called at level 0
-  // where a literal is fixed iff it is assigned. Aborts and returns true if
-  // they are not all false.
-  //
-  // Note that the removed literal can still be accessed in the portion [size,
-  // old_size) of literals().
-  bool RemoveFixedLiteralsAndTestIfTrue(const VariablesAssignment& assignment);
-
-  // Rewrites a clause with another shorter one. Note that the clause shouldn't
-  // be attached when this is called.
-  void Rewrite(absl::Span<const Literal> new_clause) {
-    size_ = 0;
-    for (const Literal l : new_clause) literals_[size_++] = l;
-  }
-
-  int32_t size_;
-
-  // This class store the literals inline, and literals_ mark the starts of the
-  // variable length portion.
-  Literal literals_[0];
-};
 
 // Clause information used for the clause database management. Note that only
 // the clauses that can be removed have an info. The problem clauses and
@@ -209,14 +114,12 @@ class ClauseManager : public SatPropagator {
   bool ClauseIsUsedAsReason(SatClause* clause) const;
 
   // Adds a new clause and perform initial propagation for this clause only.
-  bool AddClause(ClauseId id, absl::Span<const Literal> literals, Trail* trail,
-                 int lbd);
+  bool AddClause(SatClause* clause, Trail* trail, int lbd);
   bool AddClause(absl::Span<const Literal> literals);
 
   // Same as AddClause() for a removable clause. This is only called on learned
   // conflict, so this should never have all its literal at false (CHECKED).
-  SatClause* AddRemovableClause(ClauseId id, absl::Span<const Literal> literals,
-                                Trail* trail, int lbd);
+  void AddRemovableClause(SatClause* clause, Trail* trail, int lbd);
 
   // Returns the number of deletion for each DeletionSourceForStat type.
   absl::Span<const int64_t> DeletionCounters() const {
@@ -292,15 +195,6 @@ class ClauseManager : public SatPropagator {
   // recomputation of lbd in different branches).
   int64_t num_lbd_promotions() const { return num_lbd_promotions_; }
 
-  ClauseId GetClauseId(const SatClause* clause) const {
-    const auto it = clause_id_.find(clause);
-    return it != clause_id_.end() ? it->second : kNoClauseId;
-  }
-
-  void SetClauseId(const SatClause* clause, ClauseId id) {
-    clause_id_[clause] = id;
-  }
-
   // Methods implementing pseudo-iterators over the clause database that are
   // stable across cleanups. They all return nullptr if there are no more
   // clauses.
@@ -358,22 +252,37 @@ class ClauseManager : public SatPropagator {
   // This does *not* propagate the clause.
   ABSL_MUST_USE_RESULT bool InprocessingRewriteClause(
       SatClause* clause, absl::Span<const Literal> new_clause,
-      absl::Span<const ClauseId> clause_ids = {});
+      absl::Span<const ClausePtr> proof = {});
+
+  // Rewrite the clause, temporary allowing binary/unary clause. One has to
+  // clean such clause up later with InprocessingCleanUpUnaryOrBinaryClause().
+  // The LRAT proof should be handled separately.
+  void InprocessingTemporaryRewrite(SatClause* clause,
+                                    absl::Span<const Literal> new_clause) {
+    DCHECK(!all_clauses_are_attached_);
+    clause->Rewrite(new_clause);
+    ChangeLbdIfBetter(clause, new_clause.size());
+  }
+
+  // Convert a clause of size 1 or 2 to their custom representation and mark
+  // the given clause for lazy deletion later.
+  bool InprocessingCleanUpUnaryOrBinaryClause(SatClause* clause);
 
   bool RemoveFixedLiteralsAndTestIfTrue(SatClause* clause);
 
-  // Fix a literal either with an existing LRAT `unit_clause_id`, or with a new
-  // inferred unit clause, using `clause_ids` as proof.
-  // This do NOT need to be between [Detach/Attach]AllClauses() calls.
-  ABSL_MUST_USE_RESULT bool InprocessingAddUnitClause(ClauseId unit_clause_id,
-                                                      Literal true_literal);
+  // Fix a literal either by using `proof` as proof for a new LRAT inferred
+  // clause, or by assuming that this inferred clause has already been added by
+  // the caller. This do NOT need to be between [Detach/Attach]AllClauses()
+  // calls.
   ABSL_MUST_USE_RESULT bool InprocessingFixLiteral(
-      Literal true_literal, absl::Span<const ClauseId> clause_ids = {});
+      Literal true_literal, absl::Span<const ClausePtr> proof = {});
+  ABSL_MUST_USE_RESULT bool InprocessingAddUnitClause(Literal true_literal);
 
   // This can return nullptr if new_clause was of size one or two as these are
   // treated differently. Note that none of the variable should be fixed in the
   // given new clause.
-  SatClause* InprocessingAddClause(absl::Span<const Literal> new_clause);
+  SatClause* InprocessingAddClause(absl::Span<const Literal> new_clause,
+                                   absl::Span<const ClausePtr> proof = {});
 
   // Contains, for each literal, the list of clauses that need to be inspected
   // when the corresponding literal becomes false.
@@ -406,51 +315,51 @@ class ClauseManager : public SatPropagator {
     return watchers_on_false_[false_literal];
   }
 
-  void SetAddClauseCallback(
-      absl::AnyInvocable<void(int lbd, ClauseId id, absl::Span<const Literal>)>
-          add_clause_callback) {
+  void SetAddClauseCallback(absl::AnyInvocable<void(int lbd, ClausePtr ptr,
+                                                    absl::Span<const Literal>)>
+                                add_clause_callback) {
     add_clause_callback_ = std::move(add_clause_callback);
   }
 
   // Removes the add clause callback and returns it. This can be used to
   // temporarily disable the callback.
-  absl::AnyInvocable<void(int lbd, ClauseId id, absl::Span<const Literal>)>
+  absl::AnyInvocable<void(int lbd, ClausePtr ptr, absl::Span<const Literal>)>
   TakeAddClauseCallback() {
     return std::move(add_clause_callback_);
   }
 
-  // Returns the ID of the unit, binary, or general clause that is the reason
-  // for the given literal, or kNoClauseId if there is none.
-  ClauseId ReasonClauseId(Literal literal) const;
+  // Returns the reason ClausePtr for the given literal, or kNullClausePtr if
+  // there is none.
+  ClausePtr ReasonClausePtr(Literal literal) const;
 
-  // Appends to `clause_ids` the IDs of the clauses which, by unit propagation
-  // from some decisions, are sufficient to ensure that all literals in
-  // `literals` are fixed to their current value.
+  // Appends to `clauses` the clauses which, by unit propagation from some
+  // decisions, are sufficient to ensure that all literals in `literals` are
+  // fixed to their current value.
   //
-  // If `decision` is not `kNoLiteralIndex`, also appends the IDs of the clauses
-  // proving that `decision` implies all the literals in `literals`. In this
-  // case, `decision` must either be the last decision on the trail, or must
-  // directly imply it. Furthermore, each decision must directly imply the
-  // previous one on the trail.
+  // If `decision` is not `kNoLiteralIndex`, also appends the clauses proving
+  // that `decision` implies all the literals in `literals`. In this case,
+  // `decision` must either be the last decision on the trail, or must directly
+  // imply it. Furthermore, each decision must directly imply the previous one
+  // on the trail.
   //
   // This method expands the reasons of each literal recursively until a
   // decision, or a literal implied by the decision at its decision level, or a
-  // literal for which `root_literals` returns a value other than kNoClauseId,
-  // is found. The latter criteria avoid a quadratic complexity when
-  // implications of the form "decision(s) => literal" are added for each newly
-  // propagated literal after taking a decision (provided these implications are
-  // added to the binary implication graph or to the `root_literals` function
-  // right away, in trail index order).
+  // literal for which `root_literals` returns a value other than
+  // kNullClausePtr, is found. The latter criteria avoid a quadratic complexity
+  // when implications of the form "decision(s) => literal" are added for each
+  // newly propagated literal after taking a decision (provided these
+  // implications are added to the binary implication graph or to the
+  // `root_literals` function right away, in trail index order).
   //
   // `root_literals` must take a decision level and a trail index as parameter
   // (the level is the assignment level of this trail index). It must return the
-  // ID of the clause stating that the literal at this index is fixed by
-  // previous decision(s), if the reason expansion should be stopped here
-  // (otherwise it should return kNoClauseId).
-  void AppendClauseIdsFixing(
-      absl::Span<const Literal> literals, std::vector<ClauseId>* clause_ids,
+  // clause stating that the literal at this index is fixed by previous
+  // decision(s), if the reason expansion should be stopped here (otherwise it
+  // should return kNullClausePtr).
+  void AppendClausesFixing(
+      absl::Span<const Literal> literals, std::vector<ClausePtr>* clauses,
       LiteralIndex decision = kNoLiteralIndex,
-      std::optional<absl::FunctionRef<ClauseId(int, int)>> root_literals = {});
+      std::optional<absl::FunctionRef<ClausePtr(int, int)>> root_literals = {});
 
  private:
   // Attaches the given clause. This eventually propagates a literal which is
@@ -465,8 +374,6 @@ class ClauseManager : public SatPropagator {
 
   // Common code between LazyDelete() and Detach().
   void InternalDetach(SatClause* clause, DeletionSourceForStat source);
-
-  ClauseIdGenerator* clause_id_generator_;
 
   util_intops::StrongVector<LiteralIndex, std::vector<Watcher>>
       watchers_on_false_;
@@ -509,29 +416,27 @@ class ClauseManager : public SatPropagator {
   int to_first_minimize_index_ = 0;
   int to_probe_index_ = 0;
 
-  absl::flat_hash_map<const SatClause*, ClauseId> clause_id_;
   // Only contains removable clause.
   absl::flat_hash_map<SatClause*, ClauseInfo> clauses_info_;
 
   LratProofHandler* lrat_proof_handler_ = nullptr;
 
   // Temporary member used when adding LRAT inferred clauses.
-  std::vector<ClauseId> clause_ids_scratchpad_;
+  std::vector<ClausePtr> tmp_proof_;
 
-  absl::AnyInvocable<void(int lbd, ClauseId id, absl::Span<const Literal>)>
+  absl::AnyInvocable<void(int lbd, ClausePtr ptr, absl::Span<const Literal>)>
       add_clause_callback_ = nullptr;
 
   SparseBitset<BooleanVariable> tmp_mark_;
   std::vector<int> marked_trail_indices_heap_;
-  std::vector<ClauseId> tmp_clause_ids_for_append_clauses_fixing_;
+  std::vector<ClausePtr> tmp_clauses_for_append_clauses_fixing_;
 };
 
 // A binary clause. This is used by BinaryClauseManager.
 struct BinaryClause {
-  BinaryClause(Literal _a, Literal _b) : id(-1), a(_a), b(_b) {}
+  BinaryClause(Literal _a, Literal _b) : a(_a), b(_b) {}
   bool operator==(BinaryClause o) const { return a == o.a && b == o.b; }
   bool operator!=(BinaryClause o) const { return a != o.a || b != o.b; }
-  ClauseId id;
   Literal a;
   Literal b;
 };
@@ -646,9 +551,7 @@ class BinaryImplicationGraph : public SatPropagator {
   // Note that it is also equivalent to (not b => a). More precisely, adds the
   // binary clause (rep(a) OR rep(b)), where rep(l) is the representative of l.
   // If they are different from a and b, a new inferred LRAT clause is also
-  // added (if an LRAT proof handler is set), with a new clause ID (and the old
-  // LRAT `id` clause is deleted, unless `delete_non_representative_id` is
-  // false).
+  // added (if an LRAT proof handler is set).
   //
   // Preconditions:
   // - If we are at root node, then none of the literal should be assigned.
@@ -657,22 +560,11 @@ class BinaryImplicationGraph : public SatPropagator {
   // - If we are at a positive decision level, we will propagate something if
   //   we can. However, if both literal are false, we will just return false
   //   and do nothing. In all other case, we will return true.
-  bool AddBinaryClause(ClauseId id, Literal a, Literal b,
-                       bool delete_non_representative_id = true) {
-    return AddBinaryClauseInternal(id, a, b, /*change_reason=*/false,
-                                   delete_non_representative_id);
-  }
   bool AddBinaryClause(Literal a, Literal b) {
-    return AddBinaryClause(kNoClauseId, a, b);
+    return AddBinaryClauseInternal(a, b, /*change_reason=*/false);
   }
   bool AddImplication(Literal a, Literal b) {
     return AddBinaryClause(a.Negated(), b);
-  }
-
-  ClauseId GetClauseId(Literal a, Literal b) const {
-    if (a.Variable() > b.Variable()) std::swap(a, b);
-    const auto it = clause_id_.find(std::make_pair(a, b));
-    return it != clause_id_.end() ? it->second : kNoClauseId;
   }
 
   // When set, the callback will be called on ALL newly added binary clauses.
@@ -705,7 +597,7 @@ class BinaryImplicationGraph : public SatPropagator {
   // removing literals that implies others. The idea is that if a and b are two
   // literals from the given conflict and a => b (which is the same as not(b) =>
   // not(a)) then a is redundant and can be removed. If an LRAT proof handler is
-  // set, fills the LRAT proof for these implications in `clause_ids`.
+  // set, fills the LRAT proof for these implications in `proof`.
   //
   // Note that removing as many literals as possible is too time consuming, so
   // we use different heuristics/algorithms to do this minimization.
@@ -713,23 +605,25 @@ class BinaryImplicationGraph : public SatPropagator {
   // details about the different algorithms.
   void MinimizeConflictFirst(const Trail& trail, std::vector<Literal>* c,
                              SparseBitset<BooleanVariable>* marked,
-                             std::vector<ClauseId>* clause_ids,
+                             std::vector<ClausePtr>* proof,
                              bool also_use_decisions);
 
-  // Appends the IDs of the unit and binary clauses that imply the given
-  // literals to `clause_ids`. Either `MinimizeConflictFirst` or
-  // `ClearImpliedLiterals` must have been called just before, and the given
-  // literals must be the reason of a literal in the conflict. Does nothing for
-  // literals that have already been processed by a previous call to this
-  // method.
+  // Appends the unit and binary clauses that imply the given literals to
+  // `clauses`. Either `MinimizeConflictFirst` or `ClearImpliedLiterals` must
+  // have been called just before, and the given literals must be the reason of
+  // a literal in the conflict. Does nothing for literals that have already been
+  // processed by a previous call to this method.
   void AppendImplicationChains(absl::Span<const Literal> literals,
-                               std::vector<ClauseId>* clause_ids);
+                               std::vector<ClausePtr>* clauses);
 
   // This must only be called at decision level 0 after all the possible
   // propagations. It:
   // - Removes the variable at true from the implications lists.
   // - Frees the propagation list of the assigned literals.
   void RemoveFixedVariables();
+
+  // Removes the literals at true from the implication list of `lit`.
+  void RemoveFixedImplications(Literal lit);
 
   // Returns false if the model is unsat, otherwise detects equivalent variable
   // (with respect to the implications only) and reorganize the propagation
@@ -910,8 +804,8 @@ class BinaryImplicationGraph : public SatPropagator {
   // by this new clause.
   // This allows inprocessing to shrink clauses to binary without backtracking
   // to the root.
-  bool AddBinaryClauseAndChangeReason(ClauseId id, Literal a, Literal b) {
-    return AddBinaryClauseInternal(id, a, b, /*change_reason=*/true);
+  bool AddBinaryClauseAndChangeReason(Literal a, Literal b) {
+    return AddBinaryClauseInternal(a, b, /*change_reason=*/true);
   }
 
   // The literals that are "directly" implied when literal is set to true. This
@@ -962,6 +856,7 @@ class BinaryImplicationGraph : public SatPropagator {
   // It is also possible to use LiteralIsImplied() to find in O(1) if one
   // literal is in the list.
   absl::Span<const Literal> GetAllImpliedLiterals(Literal root);
+  absl::Span<const Literal> GetNewlyImpliedLiterals(Literal root);
   bool LiteralIsImplied(Literal l) const { return is_marked_[l]; }
   void ClearImpliedLiterals();
 
@@ -998,17 +893,15 @@ class BinaryImplicationGraph : public SatPropagator {
   }
 
   // Simple wrapper to not forget to output newly fixed variable to the DRAT
-  // or LRAT proof (with clause_ids as proof) if needed. This will propagate
-  // right away the implications.
-  bool FixLiteral(Literal true_literal,
-                  absl::Span<const ClauseId> clause_ids = {});
+  // or LRAT proof (with `proof` as proof) if needed. This will propagate right
+  // away the implications.
+  bool FixLiteral(Literal true_literal, absl::Span<const ClausePtr> proof = {});
 
  private:
   friend class LratEquivalenceHelper;
 
-  bool AddBinaryClauseInternal(ClauseId id, Literal a, Literal b,
-                               bool change_reason = false,
-                               bool delete_non_representative_id = true);
+  bool AddBinaryClauseInternal(Literal a, Literal b,
+                               bool change_reason = false);
 
   // Marks implications_[a] for cleanup in RemoveDuplicatesAndFixedVariables().
   void NotifyPossibleDuplicate(Literal a);
@@ -1018,23 +911,35 @@ class BinaryImplicationGraph : public SatPropagator {
   // Returns false on UNSAT.
   ABSL_MUST_USE_RESULT bool CleanUpImplicationList(Literal a);
 
-  void AddClauseId(ClauseId id, Literal a, Literal b) {
-    if (a.Variable() > b.Variable()) std::swap(a, b);
-    clause_id_[{a, b}] = id;
-  }
+  // Replaces each literal implied by `a` with the result of update(literal), or
+  // removes it if this result is kNoLiteralIndex. Also adds the old
+  // implications to `lrat_implications_to_delete_` if LRAT is enabled.
+  void UpdateImplications(Literal a,
+                          absl::FunctionRef<LiteralIndex(Literal)> update);
+
+  // Removes all the literals implied by `a` for which `predicate` returns true.
+  // Also adds the corresponding implications to `lrat_implications_to_delete_`
+  // if LRAT is enabled.
+  void RemoveImplicationsIf(Literal a,
+                            absl::FunctionRef<bool(Literal)> predicate);
+
+  // Clears all the implications of the given literal, and adds them to
+  // `lrat_implications_to_delete_` if LRAT is enabled.
+  void ClearImplications(Literal a, bool release_memory = false);
+
+  // Deletes the LRAT implications which are no longer in this graph.
+  void DeleteUnusedLratImplications();
 
   // Removes any literal whose negation is marked (except the first one). If
-  // `fill_clause_ids` is true, fills the LRAT proof for this change in
-  // `clause_ids` (this requires an LRAT proof handler to be set, and
-  // `implied_by_` to be up to date).
-  template <bool fill_clause_ids = false>
+  // `fill_proof` is true, fills the LRAT proof for this change in `proof` (this
+  // requires an LRAT proof handler to be set, and `implied_by_` to be up to
+  // date).
+  template <bool fill_proof = false>
   void RemoveRedundantLiterals(std::vector<Literal>* conflict,
-                               std::vector<ClauseId>* clause_ids = nullptr);
+                               std::vector<ClausePtr>* proof = nullptr);
 
-  // Appends the IDs of the binary clauses that imply the given literal to
-  // `clause_ids`.
-  void AppendImplicationChain(Literal literal,
-                              std::vector<ClauseId>* clause_ids);
+  // Appends the binary clauses that imply the given literal to `clauses`.
+  void AppendImplicationChain(Literal literal, std::vector<ClausePtr>* clauses);
 
   // Fills is_marked_ with all the descendant of root, and returns them. If
   // `fill_implied_by` is true, also stores the parent of each marked literal in
@@ -1073,7 +978,6 @@ class BinaryImplicationGraph : public SatPropagator {
   TimeLimit* time_limit_;
   ModelRandomGenerator* random_;
   Trail* trail_;
-  ClauseIdGenerator* clause_id_generator_;
   LratProofHandler* lrat_proof_handler_ = nullptr;
   LratEquivalenceHelper* lrat_helper_ = nullptr;
 
@@ -1085,12 +989,6 @@ class BinaryImplicationGraph : public SatPropagator {
   // Binary reasons by trail_index. We need a deque because we kept pointers to
   // elements of this array and this can dynamically change size.
   std::deque<Literal> reasons_;
-
-  // The binary clause IDs. Each key is sorted by variable index.
-  absl::flat_hash_map<std::pair<Literal, Literal>, ClauseId> clause_id_;
-  // Stores a list of clauses added to clause_id_ that are only needed due to
-  // ChangeReason calls. Once we backtrack past the first literal in the clause
-  std::vector<std::pair<Literal, Literal>> changed_reasons_on_trail_;
 
   // This is indexed by the Index() of a literal. Each entry stores two lists:
   //  - A list of literals that are implied if the index literal becomes true.
@@ -1136,8 +1034,11 @@ class BinaryImplicationGraph : public SatPropagator {
   // information?
   SparseBitset<LiteralIndex> is_marked_;
   SparseBitset<LiteralIndex> tmp_bitset_;
-  SparseBitset<LiteralIndex> is_simplified_;
   std::vector<Literal> tmp_to_keep_;
+
+  // Data structures used to delete LRAT implications.
+  SparseBitset<LiteralIndex> tmp_deleted_implications_;
+  absl::flat_hash_set<ClausePtr> lrat_implications_to_delete_;
 
   // Used by AppendImplicationChains() to avoid processing a unit clause several
   // times.

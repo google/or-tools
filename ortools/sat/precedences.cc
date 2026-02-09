@@ -32,10 +32,10 @@
 #include "absl/log/log.h"
 #include "absl/log/vlog_is_on.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/base/strong_vector.h"
-#include "ortools/graph/topologicalsorter.h"
+#include "ortools/graph_base/topologicalsorter.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/cp_constraints.h"
 #include "ortools/sat/implied_bounds.h"
@@ -263,31 +263,57 @@ RootLevelLinear2Bounds::GetSortedNonTrivialUpperBounds() const {
 std::vector<std::tuple<LinearExpression2, IntegerValue, IntegerValue>>
 RootLevelLinear2Bounds::GetAllBoundsContainingVariable(
     IntegerVariable var) const {
+  const IntegerValue var_lb = integer_trail_->LevelZeroLowerBound(var);
+  const IntegerValue var_ub = integer_trail_->LevelZeroUpperBound(var);
   std::vector<std::tuple<LinearExpression2, IntegerValue, IntegerValue>> result;
   for (const LinearExpression2Index index :
        lin2_indices_->GetAllLinear2ContainingVariable(var)) {
     const IntegerValue lb = -GetUpperBoundNoTrail(NegationOf(index));
     const IntegerValue ub = GetUpperBoundNoTrail(index);
     const LinearExpression2 expr = lin2_indices_->GetExpression(index);
-    const IntegerValue trail_lb = integer_trail_->LevelZeroLowerBound(expr);
-    const IntegerValue trail_ub = integer_trail_->LevelZeroUpperBound(expr);
+    // We rewrite the expression so that expr.vars[0] == var.
+    LinearExpression2 rewritten_expr = expr;
+    if (rewritten_expr.vars[0] == NegationOf(var)) {
+      rewritten_expr.vars[0] = NegationOf(rewritten_expr.vars[0]);
+      rewritten_expr.coeffs[0] = -rewritten_expr.coeffs[0];
+    } else if (rewritten_expr.vars[1] == NegationOf(var)) {
+      rewritten_expr.vars[1] = NegationOf(rewritten_expr.vars[1]);
+      rewritten_expr.coeffs[1] = -rewritten_expr.coeffs[1];
+      std::swap(rewritten_expr.vars[0], rewritten_expr.vars[1]);
+      std::swap(rewritten_expr.coeffs[0], rewritten_expr.coeffs[1]);
+    } else if (rewritten_expr.vars[1] == var) {
+      std::swap(rewritten_expr.vars[0], rewritten_expr.vars[1]);
+      std::swap(rewritten_expr.coeffs[0], rewritten_expr.coeffs[1]);
+    }
+    DCHECK(rewritten_expr.vars[0] == var);
+    const IntegerValue other_var_lb =
+        integer_trail_->LevelZeroLowerBound(rewritten_expr.vars[1]);
+    const IntegerValue other_var_ub =
+        integer_trail_->LevelZeroUpperBound(rewritten_expr.vars[1]);
+    IntegerValue trail_lb = 0;
+    IntegerValue trail_ub = 0;
+    if (rewritten_expr.coeffs[1] > 0) {
+      trail_lb += other_var_lb * rewritten_expr.coeffs[1];
+      trail_ub += other_var_ub * rewritten_expr.coeffs[1];
+    } else {
+      trail_lb += other_var_ub * rewritten_expr.coeffs[1];
+      trail_ub += other_var_lb * rewritten_expr.coeffs[1];
+    }
+    if (rewritten_expr.coeffs[0] > 0) {
+      trail_lb += var_lb * rewritten_expr.coeffs[0];
+      trail_ub += var_ub * rewritten_expr.coeffs[0];
+    } else {
+      trail_lb += var_ub * rewritten_expr.coeffs[0];
+      trail_ub += var_lb * rewritten_expr.coeffs[0];
+    }
+    DCHECK_EQ(trail_lb, integer_trail_->LevelZeroLowerBound(expr));
+    DCHECK_EQ(trail_ub, integer_trail_->LevelZeroUpperBound(expr));
+
+    // As documented, this function does not return an expression if both bounds
+    // are trivial.
     if (lb <= trail_lb && ub >= trail_ub) continue;
-    LinearExpression2 explicit_vars_expr = expr;
-    if (explicit_vars_expr.vars[0] == NegationOf(var)) {
-      explicit_vars_expr.vars[0] = NegationOf(explicit_vars_expr.vars[0]);
-      explicit_vars_expr.coeffs[0] = -explicit_vars_expr.coeffs[0];
-    }
-    if (explicit_vars_expr.vars[1] == NegationOf(var)) {
-      explicit_vars_expr.vars[1] = NegationOf(explicit_vars_expr.vars[1]);
-      explicit_vars_expr.coeffs[1] = -explicit_vars_expr.coeffs[1];
-    }
-    if (explicit_vars_expr.vars[1] == var) {
-      std::swap(explicit_vars_expr.vars[0], explicit_vars_expr.vars[1]);
-      std::swap(explicit_vars_expr.coeffs[0], explicit_vars_expr.coeffs[1]);
-    }
-    DCHECK(explicit_vars_expr.vars[0] == var);
     result.push_back(
-        {explicit_vars_expr, std::max(lb, trail_lb), std::min(ub, trail_ub)});
+        {rewritten_expr, std::max(lb, trail_lb), std::min(ub, trail_ub)});
   }
   return result;
 }
@@ -308,25 +334,24 @@ RootLevelLinear2Bounds::GetAllBoundsContainingVariables(
     const IntegerValue trail_ub = integer_trail_->LevelZeroUpperBound(expr);
     if (lb <= trail_lb && ub >= trail_ub) continue;
 
-    LinearExpression2 explicit_vars_expr = expr;
-    if (explicit_vars_expr.vars[0] == NegationOf(var1) ||
-        explicit_vars_expr.vars[0] == NegationOf(var2)) {
-      explicit_vars_expr.vars[0] = NegationOf(explicit_vars_expr.vars[0]);
-      explicit_vars_expr.coeffs[0] = -explicit_vars_expr.coeffs[0];
+    LinearExpression2 rewritten_expr = expr;
+    if (rewritten_expr.vars[0] == NegationOf(var1) ||
+        rewritten_expr.vars[0] == NegationOf(var2)) {
+      rewritten_expr.vars[0] = NegationOf(rewritten_expr.vars[0]);
+      rewritten_expr.coeffs[0] = -rewritten_expr.coeffs[0];
     }
-    if (explicit_vars_expr.vars[1] == NegationOf(var1) ||
-        explicit_vars_expr.vars[1] == NegationOf(var2)) {
-      explicit_vars_expr.vars[1] = NegationOf(explicit_vars_expr.vars[1]);
-      explicit_vars_expr.coeffs[1] = -explicit_vars_expr.coeffs[1];
+    if (rewritten_expr.vars[1] == NegationOf(var1) ||
+        rewritten_expr.vars[1] == NegationOf(var2)) {
+      rewritten_expr.vars[1] = NegationOf(rewritten_expr.vars[1]);
+      rewritten_expr.coeffs[1] = -rewritten_expr.coeffs[1];
     }
-    if (explicit_vars_expr.vars[1] == var1) {
-      std::swap(explicit_vars_expr.vars[0], explicit_vars_expr.vars[1]);
-      std::swap(explicit_vars_expr.coeffs[0], explicit_vars_expr.coeffs[1]);
+    if (rewritten_expr.vars[1] == var1) {
+      std::swap(rewritten_expr.vars[0], rewritten_expr.vars[1]);
+      std::swap(rewritten_expr.coeffs[0], rewritten_expr.coeffs[1]);
     }
-    DCHECK(explicit_vars_expr.vars[0] == var1 &&
-           explicit_vars_expr.vars[1] == var2);
+    DCHECK(rewritten_expr.vars[0] == var1 && rewritten_expr.vars[1] == var2);
     result.push_back(
-        {explicit_vars_expr, std::max(lb, trail_lb), std::min(ub, trail_ub)});
+        {rewritten_expr, std::max(lb, trail_lb), std::min(ub, trail_ub)});
   }
   return result;
 }

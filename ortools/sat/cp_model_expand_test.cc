@@ -17,11 +17,11 @@
 #include <vector>
 
 #include "absl/container/btree_set.h"
+#include "absl/log/check.h"
 #include "absl/strings/string_view.h"
 #include "gtest/gtest.h"
 #include "ortools/base/container_logging.h"
 #include "ortools/base/gmock.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/parse_test_proto.h"
 #include "ortools/base/parse_text_proto.h"
 #include "ortools/sat/cp_model.pb.h"

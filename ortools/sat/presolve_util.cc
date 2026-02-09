@@ -591,8 +591,8 @@ int ActivityBoundHelper::RemoveEnforcementThatMakesConstraintTrivial(
                           amo_indices_[negated_index].end());
     ++num_enforcement_to_check;
   }
-  int non_amo_min_activity = 0;
-  int non_amo_max_activity = 0;
+  int64_t non_amo_min_activity = 0;
+  int64_t non_amo_max_activity = 0;
   auto log_work = [&]() {
     VLOG(1) << "RemoveEnforcementThatMakesConstraintTrivial: "
                "aborting because too expensive: "

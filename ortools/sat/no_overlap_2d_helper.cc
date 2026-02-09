@@ -18,12 +18,13 @@
 #include <utility>
 #include <vector>
 
-#include "absl/base/log_severity.h"
 #include "absl/base/optimization.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/types/span.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/sat/2d_rectangle_presolve.h"
+#include "ortools/sat/debug_solution.h"
 #include "ortools/sat/diffn_util.h"
 #include "ortools/sat/enforcement.h"
 #include "ortools/sat/integer.h"
@@ -246,9 +247,17 @@ void NoOverlap2DConstraintHelper::Reset(
   int new_num_boxes = fixed_boxes.size() + non_fixed_box_indexes.size();
   active_bounding_boxes.reserve(new_num_boxes);
   active_box_indexes.reserve(new_num_boxes);
+  DCHECK_EQ(x_helper_->CurrentDecisionLevel(), 0);
   for (int box : non_fixed_box_indexes) {
+    if (IsAbsent(box)) continue;
     active_bounding_boxes.push_back(GetBoundingRectangle(box));
-    active_box_indexes.push_back({box, false});
+    // At level zero we can do a stronger check whether a box is fixed, since
+    // we can see use IsPresent() instead of !IsOptional().
+    const bool is_fixed = IsPresent(box) && x_helper_->StartIsFixed(box) &&
+                          x_helper_->EndIsFixed(box) &&
+                          y_helper_->StartIsFixed(box) &&
+                          y_helper_->EndIsFixed(box);
+    active_box_indexes.push_back({box, is_fixed});
   }
   for (int box = 0; box < fixed_boxes.size(); ++box) {
     active_bounding_boxes.push_back(fixed_boxes[box]);
@@ -386,6 +395,34 @@ void NoOverlap2DConstraintHelper::RegisterWith(
       enforcement_helper_.Register(enforcement_literals, watcher, id);
   x_helper_->SetEnforcementId(enforcement_id_);
   y_helper_->SetEnforcementId(enforcement_id_);
+}
+
+Rectangle NoOverlap2DConstraintHelper::GetBoxInDebugSolution(int index) const {
+  DebugSolution* debug_solution = model_->GetOrCreate<DebugSolution>();
+  const auto& ivar_values = debug_solution->IntegerVariableValues();
+  if (ivar_values.empty()) {
+    return {};
+  }
+  const AffineExpression& x_start = x_helper_->Starts()[index];
+  const AffineExpression& x_size = x_helper_->Sizes()[index];
+  const AffineExpression& y_start = y_helper_->Starts()[index];
+  const AffineExpression& y_size = y_helper_->Sizes()[index];
+  const IntegerValue x_min = x_start.IsConstant()
+                                 ? x_start.constant
+                                 : x_start.ValueAt(ivar_values[x_start.var]);
+  const IntegerValue x_size_val = x_size.IsConstant()
+                                      ? x_size.constant
+                                      : x_size.ValueAt(ivar_values[x_size.var]);
+  const IntegerValue y_min = y_start.IsConstant()
+                                 ? y_start.constant
+                                 : y_start.ValueAt(ivar_values[y_start.var]);
+  const IntegerValue y_size_val = y_size.IsConstant()
+                                      ? y_size.constant
+                                      : y_size.ValueAt(ivar_values[y_size.var]);
+  return {.x_min = x_min,
+          .x_max = x_min + x_size_val,
+          .y_min = y_min,
+          .y_max = y_min + y_size_val};
 }
 
 }  // namespace sat

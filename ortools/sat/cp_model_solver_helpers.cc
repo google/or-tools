@@ -25,13 +25,6 @@
 #include <utility>
 #include <vector>
 
-#include "ortools/base/logging.h"
-#include "ortools/base/timer.h"
-#include "ortools/sat/lrat_proof_handler.h"
-#if !defined(__PORTABLE_PLATFORM__)
-#include "ortools/base/helpers.h"
-#include "ortools/base/options.h"
-#endif  // __PORTABLE_PLATFORM__
 #include "absl/algorithm/container.h"
 #include "absl/cleanup/cleanup.h"
 #include "absl/container/flat_hash_set.h"
@@ -45,8 +38,13 @@
 #include "absl/types/span.h"
 #include "google/protobuf/arena.h"
 #include "ortools/algorithms/sparse_permutation.h"
+#include "ortools/base/log_severity.h"
+#include "ortools/base/macros/buildenv.h"
+#include "ortools/base/macros/os_support.h"
 #include "ortools/base/strong_vector.h"
-#include "ortools/graph/connected_components.h"
+#include "ortools/base/timer.h"
+#include "ortools/base/version.h"
+#include "ortools/graph_base/connected_components.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -58,6 +56,7 @@
 #include "ortools/sat/cp_model_solver_logging.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/cuts.h"
+#include "ortools/sat/debug_solution.h"
 #include "ortools/sat/feasibility_pump.h"
 #include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
@@ -71,6 +70,7 @@
 #include "ortools/sat/linear_constraint_manager.h"
 #include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/linear_relaxation.h"
+#include "ortools/sat/lrat_proof_handler.h"
 #include "ortools/sat/max_hs.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/optimization.h"
@@ -86,12 +86,17 @@
 #include "ortools/sat/vivification.h"
 #include "ortools/sat/work_assignment.h"
 #include "ortools/util/logging.h"
-#if !defined(__PORTABLE_PLATFORM__)
-#endif  // __PORTABLE_PLATFORM__
-#include "ortools/base/version.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
+
+#if defined(ORTOOLS_TARGET_OS_SUPPORTS_FILE)
+static_assert(operations_research::kTargetOsSupportsFile);
+#include "ortools/base/helpers.h"
+#include "ortools/base/options.h"
+#else
+static_assert(!operations_research::kTargetOsSupportsFile);
+#endif  // ORTOOLS_TARGET_OS_SUPPORTS_FILE
 
 ABSL_FLAG(
     std::string, cp_model_load_debug_solution, "",
@@ -105,8 +110,10 @@ namespace sat {
 // This should be called on the presolved model. It will read the file
 // specified by --cp_model_load_debug_solution and properly fill the
 // model->Get<DebugSolution>() proto vector.
-void LoadDebugSolution(const CpModelProto& model_proto, Model* model) {
-#if !defined(__PORTABLE_PLATFORM__)
+void LoadDebugSolution([[maybe_unused]] const CpModelProto& model_proto,
+                       [[maybe_unused]] Model* model) {
+#if defined(ORTOOLS_TARGET_OS_SUPPORTS_FILE)
+  static_assert(kTargetOsSupportsFile);
   if (absl::GetFlag(FLAGS_cp_model_load_debug_solution).empty()) return;
 
   CpSolverResponse response;
@@ -121,190 +128,37 @@ void LoadDebugSolution(const CpModelProto& model_proto, Model* model) {
   CHECK_EQ(response.solution().size(), model_proto.variables().size());
   model->GetOrCreate<SharedResponseManager>()->LoadDebugSolution(
       response.solution());
-#endif  // __PORTABLE_PLATFORM__
+#else
+  static_assert(!kTargetOsSupportsFile);
+#endif  // ORTOOLS_TARGET_OS_SUPPORTS_FILE
 }
 
 // This both copy the "main" DebugSolution to a local_model and also cache
 // the value of the integer variables in that solution.
 void InitializeDebugSolution(const CpModelProto& model_proto, Model* model) {
-  auto* shared_response = model->Get<SharedResponseManager>();
-  if (shared_response == nullptr) return;
-  if (shared_response->DebugSolution().empty()) return;
-
-  if (!SolutionIsFeasible(model_proto, shared_response->DebugSolution())) {
-    // TODO(user): we should probably CHECK-fail.
-    SOLVER_LOG(model->GetOrCreate<SolverLogger>(),
-               "Debug solution is not feasible.");
-    return;
-  }
-  SOLVER_LOG(model->GetOrCreate<SolverLogger>(), "Debug solution is feasible.");
-
-  // Copy the proto values.
-  DebugSolution& debug_sol = *model->GetOrCreate<DebugSolution>();
-  debug_sol.proto_values = shared_response->DebugSolution();
-
-  // Fill the values by integer variable.
-  const int num_integers =
-      model->GetOrCreate<IntegerTrail>()->NumIntegerVariables().value();
-  debug_sol.ivar_has_value.assign(num_integers, false);
-  debug_sol.ivar_values.assign(num_integers, 0);
-
-  std::vector<Literal> boolean_solution;
-
-  const auto& mapping = *model->GetOrCreate<CpModelMapping>();
-  for (int i = 0; i < debug_sol.proto_values.size(); ++i) {
-    if (mapping.IsBoolean(i)) {
-      Literal l = mapping.Literal(i);
-      if (debug_sol.proto_values[i] == 0) {
-        l = l.Negated();
-      }
-      boolean_solution.push_back(l);
-    }
-
-    if (!mapping.IsInteger(i)) continue;
-    const IntegerVariable var = mapping.Integer(i);
-    debug_sol.ivar_has_value[var] = true;
-    debug_sol.ivar_has_value[NegationOf(var)] = true;
-    debug_sol.ivar_values[var] = debug_sol.proto_values[i];
-    debug_sol.ivar_values[NegationOf(var)] = -debug_sol.proto_values[i];
-  }
+  if (model->Get<SharedResponseManager>()->DebugSolution().empty()) return;
+  DebugSolution* debug_solution = model->GetOrCreate<DebugSolution>();
+  debug_solution->SynchronizeWithShared(model_proto);
 
   // If the solution is fully boolean (there is no integer variable), and
   // we have a decision problem (so no new boolean should be created), we load
   // it in the sat solver for debugging too.
-  if (boolean_solution.size() == debug_sol.proto_values.size() &&
-      !model_proto.has_objective()) {
+  if (debug_solution->IsBooleanSolution() && !model_proto.has_objective() &&
+      !model_proto.has_floating_point_objective()) {
     SOLVER_LOG(model->GetOrCreate<SolverLogger>(),
                "Loaded pure Boolean debugging solution.");
-    model->GetOrCreate<SatSolver>()->LoadDebugSolution(boolean_solution);
-  }
-
-  // The objective variable is usually not part of the proto, but it is still
-  // nice to have it, so we recompute it here.
-  auto* objective_def = model->Get<ObjectiveDefinition>();
-  if (objective_def != nullptr &&
-      objective_def->objective_var != kNoIntegerVariable) {
-    if (absl::c_all_of(objective_def->vars, [&debug_sol](IntegerVariable var) {
-          return var < debug_sol.ivar_has_value.end_index() &&
-                 debug_sol.ivar_has_value[var];
-        })) {
-      const IntegerVariable objective_var = objective_def->objective_var;
-      if (objective_var + 1 >= debug_sol.ivar_has_value.size()) {
-        debug_sol.ivar_has_value.resize(objective_var + 2, false);
-        debug_sol.ivar_values.resize(objective_var + 2, 0);
-      }
-      IntegerValue objective_value = 0;
-      for (int i = 0; i < objective_def->vars.size(); ++i) {
-        objective_value += objective_def->coeffs[i] *
-                           debug_sol.ivar_values[objective_def->vars[i]];
-      }
-      SOLVER_LOG(
-          model->GetOrCreate<SolverLogger>(),
-          absl::StrCat("Debug solution objective value: ",
-                       objective_def->ScaleIntegerObjective(objective_value)));
-      debug_sol.ivar_has_value[objective_var] = true;
-      debug_sol.ivar_has_value[NegationOf(objective_var)] = true;
-      debug_sol.ivar_values[objective_var] = objective_value;
-      debug_sol.ivar_values[NegationOf(objective_var)] = -objective_value;
-      debug_sol.inner_objective_value = objective_value;
-    }
+    model->GetOrCreate<SatSolver>()->LoadDebugSolution(
+        debug_solution->boolean_solution());
   }
 
   // We also register a DEBUG callback to check our reasons.
-  auto* encoder = model->GetOrCreate<IntegerEncoder>();
-  const auto checker = [mapping = &mapping, encoder, model](
+  const auto checker = [debug_solution](
                            absl::Span<const Literal> clause,
                            absl::Span<const IntegerLiteral> integers) {
-    const DebugSolution* debug_sol = model->Get<DebugSolution>();
-    if (!debug_sol || debug_sol->proto_values.empty()) return true;
-
-    bool is_satisfied = false;
-    std::vector<std::tuple<Literal, IntegerLiteral, IntegerValue>> to_print;
-    for (const Literal l : clause) {
-      // First case, this Boolean is mapped.
-      {
-        const int proto_var =
-            mapping->GetProtoVariableFromBooleanVariable(l.Variable());
-        if (proto_var != -1) {
-          CHECK_LT(proto_var, debug_sol->proto_values.size());
-          to_print.push_back(
-              {l, IntegerLiteral(), debug_sol->proto_values[proto_var]});
-          if (debug_sol->proto_values[proto_var] == (l.IsPositive() ? 1 : 0)) {
-            is_satisfied = true;
-            break;
-          }
-          continue;
-        }
-      }
-
-      // Second case, it is associated to IntVar >= value.
-      // We can use any of them, so if one is false, we use this one.
-      bool all_true = true;
-      for (const IntegerLiteral associated : encoder->GetIntegerLiterals(l)) {
-        if (associated.var >= debug_sol->ivar_has_value.end_index() ||
-            !debug_sol->ivar_has_value[associated.var]) {
-          continue;
-        }
-        const IntegerValue value = debug_sol->ivar_values[associated.var];
-        to_print.push_back({l, associated, value});
-
-        if (value < associated.bound) {
-          all_true = false;
-          break;
-        }
-      }
-      if (all_true) {
-        is_satisfied = true;
-        break;
-      }
-    }
-    for (const IntegerLiteral i_lit : integers) {
-      DCHECK(!i_lit.IsAlwaysFalse());
-      if (i_lit.IsAlwaysTrue()) continue;
-      if (i_lit.var >= debug_sol->ivar_has_value.end_index() ||
-          !debug_sol->ivar_has_value[i_lit.var]) {
-        is_satisfied = true;
-        break;
-      }
-
-      const IntegerValue value = debug_sol->ivar_values[i_lit.var];
-      to_print.push_back({Literal(kNoLiteralIndex), i_lit, value});
-
-      // This is a bit confusing, but since the i_lit in the reason are
-      // not "negated", we need at least one to be FALSE, for the reason to
-      // be valid.
-      if (value < i_lit.bound) {
-        is_satisfied = true;
-        break;
-      }
-    }
-    if (!is_satisfied) {
-      LOG(INFO) << "Reason clause is not satisfied by loaded solution:";
-      LOG(INFO) << "Worker '" << model->Name() << "', level="
-                << model->GetOrCreate<SatSolver>()->CurrentDecisionLevel();
-      LOG(INFO) << "literals (neg): " << clause;
-      LOG(INFO) << "integer literals: " << integers;
-      for (const auto [l, i_lit, solution_value] : to_print) {
-        if (i_lit.IsAlwaysTrue()) {
-          const int proto_var =
-              mapping->GetProtoVariableFromBooleanVariable(l.Variable());
-          LOG(INFO) << l << " (bool in model) proto_var=" << proto_var
-                    << " value_in_sol=" << solution_value;
-        } else {
-          const int proto_var = mapping->GetProtoVariableFromIntegerVariable(
-              PositiveVariable(i_lit.var));
-          LOG(INFO) << l << " " << i_lit << " proto_var="
-                    << (proto_var == -1 ? "none" : absl::StrCat(proto_var))
-                    << (VariableIsPositive(i_lit.var) ? "" : " (negated)")
-                    << " value_in_sol=" << solution_value;
-        }
-      }
-    }
-    return is_satisfied;
+    return debug_solution->CheckClause(clause, integers);
   };
-  const auto lit_checker = [checker =
-                                checker](absl::Span<const Literal> clause) {
-    return checker(clause, {});
+  const auto lit_checker = [debug_solution](absl::Span<const Literal> clause) {
+    return debug_solution->CheckClause(clause, {});
   };
 
   model->GetOrCreate<Trail>()->RegisterDebugChecker(lit_checker);
@@ -823,13 +677,11 @@ void RegisterVariableBoundsLevelZeroImport(
   auto* sat_solver = model->GetOrCreate<SatSolver>();
   auto* mapping = model->GetOrCreate<CpModelMapping>();
   auto* lrat_proof_handler = model->Mutable<LratProofHandler>();
-  auto* clause_id_generator = model->GetOrCreate<ClauseIdGenerator>();
-  const int id = shared_bounds_manager->RegisterNewId();
+  const int id = shared_bounds_manager->RegisterNewId(model->Name());
 
   const auto& import_level_zero_bounds =
       [&model_proto, shared_bounds_manager, name = name, sat_solver,
-       integer_trail, trail, lrat_proof_handler, clause_id_generator, id,
-       mapping]() {
+       integer_trail, trail, lrat_proof_handler, id, mapping]() {
         std::vector<int> model_variables;
         std::vector<int64_t> new_lower_bounds;
         std::vector<int64_t> new_upper_bounds;
@@ -845,22 +697,20 @@ void RegisterVariableBoundsLevelZeroImport(
             Literal lit = mapping->Literal(model_var);
             if (new_upper_bounds[i] == 0) lit = lit.Negated();
             if (trail->Assignment().LiteralIsTrue(lit)) continue;
-            ClauseId clause_id = kNoClauseId;
             if (lrat_proof_handler != nullptr) {
-              clause_id = clause_id_generator->GetNextId();
-              lrat_proof_handler->AddImportedClause(clause_id, {lit});
+              lrat_proof_handler->AddImportedClause(ClausePtr(lit));
             }
             if (trail->Assignment().LiteralIsFalse(lit)) {
               if (lrat_proof_handler != nullptr) {
                 // Add the UNSAT proof.
                 lrat_proof_handler->AddInferredClause(
-                    clause_id_generator->GetNextId(), {},
-                    {clause_id, trail->GetUnitClauseId(lit.Variable())});
+                    ClausePtr::EmptyClausePtr(),
+                    {ClausePtr(lit.Negated()), ClausePtr(lit)});
               }
               sat_solver->NotifyThatModelIsUnsat();
               return false;
             }
-            trail->EnqueueWithUnitReason(clause_id, lit);
+            trail->EnqueueWithUnitReason(lit);
             continue;
           }
 
@@ -1023,14 +873,6 @@ void RegisterObjectiveBoundsImport(
     const IntegerValue current_ub =
         integer_trail->UpperBound(objective->objective_var);
     if (external_ub < current_ub) {
-      if (DEBUG_MODE) {
-        // If the current solution is as good or better than the debug one,
-        // the debug solution is not a solution anymore for the improving
-        // problem.
-        if (debug_sol && external_ub <= debug_sol->inner_objective_value) {
-          debug_sol->Clear();
-        }
-      }
       if (!integer_trail->Enqueue(IntegerLiteral::LowerOrEqual(
                                       objective->objective_var, external_ub),
                                   {}, {})) {
@@ -1085,7 +927,7 @@ void RegisterClausesExport(int id, SharedClausesManager* shared_clauses_manager,
   auto share_clause = [mapping, clause_stream, time_limit, lrat_proof_handler,
                        id, shared_clauses_manager, share_interval,
                        next_batch_dtime = -1.0, clause = std::vector<int>()](
-                          int lbd, ClauseId clause_id,
+                          int lbd, ClausePtr clause_ptr,
                           absl::Span<const Literal> literals) mutable {
     if (literals.size() >= UniqueClauseStream::kMinClauseSize &&
         literals.size() <= UniqueClauseStream::kMaxClauseSize) {
@@ -1097,7 +939,7 @@ void RegisterClausesExport(int id, SharedClausesManager* shared_clauses_manager,
         clause.push_back(lit.IsPositive() ? var : NegatedRef(var));
       }
       if (clause_stream->Add(clause, lbd) && lrat_proof_handler != nullptr) {
-        lrat_proof_handler->ExportClause(clause_id, literals);
+        lrat_proof_handler->ExportClause(clause_ptr);
       }
     }
     const double elapsed_dtime = time_limit->GetElapsedDeterministicTime();
@@ -1143,7 +985,7 @@ int RegisterClausesLevelZeroImport(int id,
     for (const auto& [ref1, ref2] : new_binary_clauses) {
       const Literal l1 = mapping->Literal(ref1);
       const Literal l2 = mapping->Literal(ref2);
-      if (!sat_solver->AddProblemClause({l1, l2}, /*shared=*/true)) {
+      if (!sat_solver->AddProblemClause({l1, l2})) {
         return false;
       }
     }
@@ -1167,8 +1009,8 @@ int RegisterClausesLevelZeroImport(int id,
           local_clause[i] = mapping->Literal(shared_clause[i]);
         }
         if (!sat_solver->AddProblemClause(
-                absl::MakeSpan(local_clause).subspan(0, shared_clause.size()),
-                /*shared=*/true)) {
+                absl::MakeSpan(local_clause)
+                    .subspan(0, shared_clause.size()))) {
           return false;
         }
       }
@@ -1492,6 +1334,9 @@ void LoadCpModel(const CpModelProto& model_proto, Model* model) {
     if (!sat_solver->FinishPropagation()) return unsat();
   }
 
+  // Try to extract some structure before we start anything else.
+  model->GetOrCreate<GateCongruenceClosure>()->EarlyGateDetection();
+
   // Note that this is already done in the presolve, but it is important to redo
   // it here to collect literal => integer >= bound constraints that are used in
   // many places. Without it, we don't detect them if they depends on long chain
@@ -1509,7 +1354,8 @@ void LoadCpModel(const CpModelProto& model_proto, Model* model) {
     if (!prober->ProbeBooleanVariables(/*deterministic_time_limit=*/1.0)) {
       return unsat();
     }
-    if (!model->GetOrCreate<BinaryImplicationGraph>()
+    if (parameters.inprocessing_use_transitive_reduction() &&
+        !model->GetOrCreate<BinaryImplicationGraph>()
              ->ComputeTransitiveReduction()) {
       return unsat();
     }
@@ -1704,9 +1550,18 @@ void LoadCpModel(const CpModelProto& model_proto, Model* model) {
     };
 
     const auto& objective = *model->GetOrCreate<ObjectiveDefinition>();
+    auto solve_cp_model_callback = [](CpModelProto& cp_model_proto,
+                                      Model* model) {
+      auto* response_manager = model->GetOrCreate<SharedResponseManager>();
+      response_manager->InitializeObjective(cp_model_proto);
+      LoadCpModel(cp_model_proto, model);
+      SolveLoadedCpModel(cp_model_proto, model);
+      return model->GetOrCreate<SharedResponseManager>()->GetResponse();
+    };
     if (parameters.optimize_with_max_hs()) {
-      HittingSetOptimizer* max_hs = new HittingSetOptimizer(
-          model_proto, objective, solution_observer, model);
+      HittingSetOptimizer* max_hs =
+          new HittingSetOptimizer(model_proto, objective, solution_observer,
+                                  solve_cp_model_callback, model);
       model->Register<HittingSetOptimizer>(max_hs);
       model->TakeOwnership(max_hs);
     } else {
@@ -1740,7 +1595,8 @@ void SolveLoadedCpModel(const CpModelProto& model_proto, Model* model) {
   // TODO(user): right now this is not used for probing since we register
   // it afterwards... find a better way. Note that we need to handle creation
   // of variable in the conflict resolution.
-  if (parameters.use_new_integer_conflict_resolution()) {
+  if (parameters.use_new_integer_conflict_resolution() &&
+      model->GetOrCreate<CpModelMapping>()->NumNonBooleanIntegers() > 10) {
     model->GetOrCreate<IntegerConflictResolution>();
   }
 
@@ -1920,17 +1776,6 @@ void QuickSolveWithHint(const CpModelProto& model_proto, Model* model) {
       const IntegerVariable objective_var =
           model->GetOrCreate<ObjectiveDefinition>()->objective_var;
       IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
-      if (DEBUG_MODE) {
-        // If we try to improve the hint but the hint is already as good as the
-        // debug solution, we are trying to solve a problem for which the debug
-        // solution is not a solution anymore.
-        const DebugSolution* debug_sol = model->Get<DebugSolution>();
-        if (debug_sol &&
-            shared_response_manager->GetInnerObjectiveUpperBound() <=
-                debug_sol->inner_objective_value) {
-          model->GetOrCreate<DebugSolution>()->Clear();
-        }
-      }
       model->GetOrCreate<SatSolver>()->Backtrack(0);
       if (!integer_trail->Enqueue(
               IntegerLiteral::LowerOrEqual(
@@ -2193,10 +2038,12 @@ void AdaptGlobalParameters(const CpModelProto& model_proto, Model* model) {
 
   if (params->num_workers() == 0) {
     // Initialize the number of workers if set to 0.
-#if !defined(__PORTABLE_PLATFORM__)
+#if defined(ORTOOLS_TARGET_OS_SUPPORTS_THREADS)
+    static_assert(kTargetOsSupportsThreads);
     // Sometimes, hardware_concurrency will return 0. So always default to 1.
     const int num_cores = std::max<int>(std::thread::hardware_concurrency(), 1);
 #else
+    static_assert(!kTargetOsSupportsThreads);
     const int num_cores = 1;
 #endif
     SOLVER_LOG(logger, "Setting number of workers to ", num_cores);

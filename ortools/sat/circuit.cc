@@ -21,8 +21,7 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
-#include "ortools/graph/strongly_connected_components.h"
+#include "ortools/graph_base/strongly_connected_components.h"
 #include "ortools/sat/all_different.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/enforcement.h"
@@ -308,7 +307,8 @@ bool CircuitPropagator::Propagate() {
         std::vector<Literal>* reason = trail_.GetEmptyVectorToStoreReason();
         FillReasonForPath(start_node, reason);
         enforcement_helper_.AddEnforcementReason(enforcement_id_, reason);
-        if (!trail_.EnqueueWithStoredReason(kNoClauseId, literal.Negated())) {
+        if (!trail_.EnqueueWithStoredReason(literal.Negated(),
+                                            kNullClausePtr)) {
           return false;
         }
       }
@@ -358,7 +358,7 @@ bool CircuitPropagator::Propagate() {
           reason->push_back(Literal(extra_reason));
         }
         const bool ok =
-            trail_.EnqueueWithStoredReason(kNoClauseId, literal.Negated());
+            trail_.EnqueueWithStoredReason(literal.Negated(), kNullClausePtr);
         if (!ok) return false;
         continue;
       }
@@ -399,7 +399,8 @@ bool CircuitPropagator::Propagate() {
           std::vector<Literal>* reason = trail_.GetEmptyVectorToStoreReason();
           FillReasonForPath(start_node, reason);
           enforcement_helper_.AddEnforcementReason(enforcement_id_, reason);
-          const bool ok = trail_.EnqueueWithStoredReason(kNoClauseId, literal);
+          const bool ok =
+              trail_.EnqueueWithStoredReason(literal, kNullClausePtr);
           if (!ok) return false;
         } else {
           trail_.EnqueueWithSameReasonAs(literal, variable_with_same_reason);
@@ -671,31 +672,27 @@ bool CircuitCoveringPropagator::Propagate() {
       auto* reason = trail_->GetEmptyVectorToStoreReason();
       FillFixedPathInReason(start, end, reason);
       const bool ok = trail_->EnqueueWithStoredReason(
-          kNoClauseId, graph_[end][start].Negated());
+          graph_[end][start].Negated(), kNullClausePtr);
       if (!ok) return false;
     }
   }
   return true;
 }
 
-std::function<void(Model*)> ExactlyOnePerRowAndPerColumn(
-    absl::Span<const std::vector<Literal>> graph) {
-  return [=, graph = std::vector<std::vector<Literal>>(
-                 graph.begin(), graph.end())](Model* model) {
-    const int n = graph.size();
-    std::vector<Literal> exactly_one_constraint;
-    exactly_one_constraint.reserve(n);
-    for (const bool transpose : {false, true}) {
-      for (int i = 0; i < n; ++i) {
-        exactly_one_constraint.clear();
-        for (int j = 0; j < n; ++j) {
-          exactly_one_constraint.push_back(transpose ? graph[j][i]
-                                                     : graph[i][j]);
-        }
-        model->Add(ExactlyOneConstraint(exactly_one_constraint));
+void AddExactlyOnePerRowAndPerColumn(
+    absl::Span<const std::vector<Literal>> graph, Model* model) {
+  const int n = graph.size();
+  std::vector<Literal> exactly_one_constraint;
+  exactly_one_constraint.reserve(n);
+  for (const bool transpose : {false, true}) {
+    for (int i = 0; i < n; ++i) {
+      exactly_one_constraint.clear();
+      for (int j = 0; j < n; ++j) {
+        exactly_one_constraint.push_back(transpose ? graph[j][i] : graph[i][j]);
       }
+      AddExactlyOneConstraint(exactly_one_constraint, model);
     }
-  };
+  }
 }
 
 namespace {
@@ -745,7 +742,7 @@ void LoadSubcircuitConstraint(int num_nodes, absl::Span<const int> tails,
       sat_solver->NotifyThatModelIsUnsat();
       return;
     }
-    model->Add(EnforcedClause(enforcement_literals, exactly_one_incoming[i]));
+    AddEnforcedClause(enforcement_literals, exactly_one_incoming[i], model);
     if (sat_solver->ModelIsUnsat()) return;
   }
   for (int i = 0; i < exactly_one_outgoing.size(); ++i) {
@@ -754,7 +751,7 @@ void LoadSubcircuitConstraint(int num_nodes, absl::Span<const int> tails,
       sat_solver->NotifyThatModelIsUnsat();
       return;
     }
-    model->Add(EnforcedClause(enforcement_literals, exactly_one_outgoing[i]));
+    AddEnforcedClause(enforcement_literals, exactly_one_outgoing[i], model);
     if (sat_solver->ModelIsUnsat()) return;
   }
 
@@ -776,19 +773,14 @@ void LoadSubcircuitConstraint(int num_nodes, absl::Span<const int> tails,
   }
 }
 
-std::function<void(Model*)> CircuitCovering(
-    absl::Span<const std::vector<Literal>> graph,
-    absl::Span<const int> distinguished_nodes) {
-  return [=,
-          distinguished_nodes = std::vector<int>(distinguished_nodes.begin(),
-                                                 distinguished_nodes.end()),
-          graph = std::vector<std::vector<Literal>>(
-              graph.begin(), graph.end())](Model* model) {
-    CircuitCoveringPropagator* constraint =
-        new CircuitCoveringPropagator(graph, distinguished_nodes, model);
-    constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
-    model->TakeOwnership(constraint);
-  };
+void AddCircuitCovering(absl::Span<const std::vector<Literal>> graph,
+                        absl::Span<const int> distinguished_nodes,
+                        Model* model) {
+  CircuitCoveringPropagator* constraint = new CircuitCoveringPropagator(
+      std::vector<std::vector<Literal>>(graph.begin(), graph.end()),
+      distinguished_nodes, model);
+  constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
+  model->TakeOwnership(constraint);
 }
 
 }  // namespace sat

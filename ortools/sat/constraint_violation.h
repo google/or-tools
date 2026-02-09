@@ -97,8 +97,9 @@ class LinearIncrementalEvaluator {
   bool VarIsConsistent(int var) const;
 
   // Intersect constraint bounds with [lb..ub].
-  // It returns true if a reduction of the domain took place.
-  bool ReduceBounds(int c, int64_t lb, int64_t ub);
+  // Sets reduced to true if a reduction of the domain took place.
+  // Returns false if the model becomes UNSAT.
+  bool ReduceBounds(int c, int64_t lb, int64_t ub, bool& reduced);
 
   // Model getters.
   int num_constraints() const { return num_constraints_; }
@@ -232,12 +233,6 @@ class LinearIncrementalEvaluator {
   std::vector<int64_t> distances_;
   std::vector<int> num_false_enforcement_;
 
-  // Code to update the scores on a variable change.
-  std::vector<int64_t> old_distances_;
-  std::vector<int> old_num_false_enforcement_;
-  std::vector<int64_t> cached_deltas_;
-  std::vector<double> cached_scores_;
-
   SparseBitset<int> last_affected_variables_;
 
   mutable size_t num_ops_ = 0;
@@ -335,8 +330,9 @@ class LsEvaluator {
               TimeLimit* time_limit);
 
   // Intersects the domain of the objective with [lb..ub].
-  // It returns true if a reduction of the domain took place.
-  bool ReduceObjectiveBounds(int64_t lb, int64_t ub);
+  // Sets reduced to true if a reduction of the domain took place.
+  // Returns false if the objective domain becomes empty.
+  bool ReduceObjectiveBounds(int64_t lb, int64_t ub, bool& reduced);
 
   // Recomputes the violations of all constraints (resp only non-linear one).
   void ComputeAllViolations(absl::Span<const int64_t> solution);

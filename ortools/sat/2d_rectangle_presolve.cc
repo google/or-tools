@@ -23,7 +23,6 @@
 #include <vector>
 
 #include "absl/algorithm/container.h"
-#include "absl/base/log_severity.h"
 #include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
@@ -32,9 +31,10 @@
 #include "absl/log/vlog_is_on.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/graph/minimum_vertex_cover.h"
-#include "ortools/graph/strongly_connected_components.h"
+#include "ortools/graph_base/strongly_connected_components.h"
 #include "ortools/sat/diffn_util.h"
 #include "ortools/sat/integer_base.h"
 
@@ -187,9 +187,11 @@ bool PresolveFixed2dRectangles(
 
   // The greedy algorithm is really fast. Run it first since it might greatly
   // reduce the size of large trivial instances.
-  std::vector<Rectangle> empty_vec;
-  if (ReduceNumberofBoxesGreedy(fixed_boxes, &empty_vec)) {
-    changed = true;
+  if (fixed_boxes->size() > 1) {
+    std::vector<Rectangle> empty_vec;
+    if (ReduceNumberofBoxesGreedy(fixed_boxes, &empty_vec)) {
+      changed = true;
+    }
   }
 
   IntegerValue min_x_size = std::numeric_limits<IntegerValue>::max();

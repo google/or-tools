@@ -20,7 +20,7 @@
 #include "gtest/gtest.h"
 #include "ortools/base/dump_vars.h"
 #include "ortools/base/gmock.h"
-#include "ortools/base/logging.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/base/parse_test_proto.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
@@ -216,7 +216,9 @@ TEST(ConstraintViolationTest, BasicObjectiveExampleWithChange) {
   ls.ComputeAllViolations({0, 0, 0, 1});
   EXPECT_EQ(0, ls.SumOfViolations());
   EXPECT_EQ(ls.NumViolatedConstraintsForVarIgnoringObjective(0), 0);
-  ls.ReduceObjectiveBounds(0, 3);
+  bool reduced = false;
+  ls.ReduceObjectiveBounds(0, 3, reduced);
+  EXPECT_TRUE(reduced);
   EXPECT_EQ(2, ls.SumOfViolations());
   EXPECT_THAT(ls.ViolatedConstraints(), ElementsAre(0));
   EXPECT_EQ(ls.NumViolatedConstraintsForVarIgnoringObjective(0), 0);

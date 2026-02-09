@@ -30,7 +30,7 @@
 #include "absl/types/span.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/base/stl_util.h"
-#include "ortools/graph/strongly_connected_components.h"
+#include "ortools/graph_base/strongly_connected_components.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/util.h"
@@ -649,10 +649,17 @@ bool LinearIncrementalEvaluator::IsViolated(int c) const {
   return is_violated_[c];
 }
 
-bool LinearIncrementalEvaluator::ReduceBounds(int c, int64_t lb, int64_t ub) {
-  if (domains_[c].Min() >= lb && domains_[c].Max() <= ub) return false;
+bool LinearIncrementalEvaluator::ReduceBounds(int c, int64_t lb, int64_t ub,
+                                              bool& reduced) {
+  reduced = false;
+  if (domains_[c].Min() >= lb && domains_[c].Max() <= ub) return true;
   domains_[c] = domains_[c].IntersectionWith(Domain(lb, ub));
+  if (domains_[c].IsEmpty() &&
+      rows_[c].num_neg_literal + rows_[c].num_pos_literal == 0) {
+    return false;
+  }
   distances_[c] = domains_[c].Distance(activities_[c]);
+  reduced = true;
   return true;
 }
 
@@ -906,8 +913,6 @@ void LinearIncrementalEvaluator::PrecomputeCompactView(
     }
   }
 
-  cached_deltas_.assign(columns_.size(), 0);
-  cached_scores_.assign(columns_.size(), 0);
   last_affected_variables_.ClearAndResize(columns_.size());
 }
 
@@ -1922,13 +1927,16 @@ void LsEvaluator::CompileConstraintsAndObjective(
   linear_evaluator_.PrecomputeCompactView(var_max_variations);
 }
 
-bool LsEvaluator::ReduceObjectiveBounds(int64_t lb, int64_t ub) {
-  if (!cp_model_.has_objective()) return false;
-  if (linear_evaluator_.ReduceBounds(/*c=*/0, lb, ub)) {
-    UpdateViolatedList(0);
-    return true;
+bool LsEvaluator::ReduceObjectiveBounds(int64_t lb, int64_t ub, bool& reduced) {
+  reduced = false;
+  if (!cp_model_.has_objective()) return true;
+  if (!linear_evaluator_.ReduceBounds(/*c=*/0, lb, ub, reduced)) {
+    return false;
   }
-  return false;
+  if (reduced) {
+    UpdateViolatedList(0);
+  }
+  return true;
 }
 
 void LsEvaluator::ComputeAllViolations(absl::Span<const int64_t> solution) {
@@ -2312,6 +2320,9 @@ void CompiledReservoirConstraint::InitializeDenseIndexToEvents() {
   int num_dense_indices = 0;
   for (const int var : UsedVariables(unused)) {
     var_to_dense_index_[var] = num_dense_indices++;
+  }
+  if (var_to_dense_index_.empty()) {
+    return;
   }
 
   CompactVectorVector<int, int> event_to_dense_indices;

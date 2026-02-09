@@ -45,7 +45,6 @@ class Vivifier {
         trail_(model->GetOrCreate<Trail>()),
         binary_clauses_(model->GetOrCreate<BinaryImplicationGraph>()),
         clause_manager_(model->GetOrCreate<ClauseManager>()),
-        clause_id_generator_(model->GetOrCreate<ClauseIdGenerator>()),
         lrat_proof_handler_(model->Mutable<LratProofHandler>()) {}
 
   // Minimize a batch of clauses using propagation.
@@ -85,6 +84,8 @@ class Vivifier {
   bool SubsumptionIsInteresting(BooleanVariable variable, int max_size);
   void KeepAllClausesUsedToInfer(BooleanVariable variable);
 
+  bool RewriteClauseUsingCurrentDecisions(SatClause* clause);
+
   const VariablesAssignment& assignment_;
   const SatParameters& parameters_;
 
@@ -94,7 +95,6 @@ class Vivifier {
   Trail* trail_;
   BinaryImplicationGraph* binary_clauses_;
   ClauseManager* clause_manager_;
-  ClauseIdGenerator* clause_id_generator_;
   LratProofHandler* lrat_proof_handler_ = nullptr;
 
   Counters counters_;

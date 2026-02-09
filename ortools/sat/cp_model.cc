@@ -56,6 +56,22 @@ std::string BoolVar::Name() const {
   }
 }
 
+bool BoolVar::IsFixedToTrue() const {
+  const IntegerVariableProto& var_proto =
+      builder_->Proto().variables(PositiveRef(index_));
+  DCHECK_EQ(var_proto.domain().size(), 2);
+  return RefIsPositive(index_) ? var_proto.domain(0) == 1
+                               : var_proto.domain(1) == 0;
+}
+
+bool BoolVar::IsFixedToFalse() const {
+  const IntegerVariableProto& var_proto =
+      builder_->Proto().variables(PositiveRef(index_));
+  DCHECK_EQ(var_proto.domain().size(), 2);
+  return RefIsPositive(index_) ? var_proto.domain(1) == 0
+                               : var_proto.domain(0) == 1;
+}
+
 std::string BoolVar::DebugString() const {
   if (builder_ == nullptr) return "null";
   if (index_ < 0) {
@@ -102,7 +118,7 @@ IntVar::IntVar(const BoolVar& var) {
     return;
   }
   builder_ = var.builder_;
-  index_ = builder_->GetOrCreateIntegerIndex(var.index_);
+  index_ = builder_->GetOrCreateIntegerView(var.index());
   DCHECK(RefIsPositive(index_));
 }
 
@@ -175,7 +191,7 @@ std::ostream& operator<<(std::ostream& os, const IntVar& var) {
 
 LinearExpr::LinearExpr(BoolVar var) {
   DCHECK(var.builder_ != nullptr);
-  const int index = var.index_;
+  const int index = var.index();
   if (RefIsPositive(index)) {
     variables_.push_back(index);
     coefficients_.push_back(1);
@@ -189,7 +205,7 @@ LinearExpr::LinearExpr(BoolVar var) {
 
 LinearExpr::LinearExpr(IntVar var) {
   DCHECK(var.builder_ != nullptr);
-  variables_.push_back(var.index_);
+  variables_.push_back(var.index());
   coefficients_.push_back(1);
 }
 
@@ -389,13 +405,13 @@ DoubleLinearExpr& DoubleLinearExpr::operator+=(const DoubleLinearExpr& expr) {
 }
 
 DoubleLinearExpr& DoubleLinearExpr::AddTerm(IntVar var, double coeff) {
-  variables_.push_back(var.index_);
+  variables_.push_back(var.index());
   coefficients_.push_back(coeff);
   return *this;
 }
 
 DoubleLinearExpr& DoubleLinearExpr::AddTerm(BoolVar var, double coeff) {
-  const int index = var.index_;
+  const int index = var.index();
   if (RefIsPositive(index)) {
     variables_.push_back(index);
     coefficients_.push_back(coeff);
@@ -502,77 +518,167 @@ absl::string_view Constraint::Name() const { return proto_->name(); }
 
 Constraint Constraint::OnlyEnforceIf(absl::Span<const BoolVar> literals) {
   for (const BoolVar& var : literals) {
-    proto_->add_enforcement_literal(var.index_);
+    proto_->add_enforcement_literal(var.index());
   }
   return *this;
 }
 
 Constraint Constraint::OnlyEnforceIf(BoolVar literal) {
-  proto_->add_enforcement_literal(literal.index_);
+  proto_->add_enforcement_literal(literal.index());
   return *this;
 }
 
-void CircuitConstraint::AddArc(int tail, int head, BoolVar literal) {
+CircuitConstraint& CircuitConstraint::AddArc(int tail, int head,
+                                             BoolVar literal) {
   proto_->mutable_circuit()->add_tails(tail);
   proto_->mutable_circuit()->add_heads(head);
-  proto_->mutable_circuit()->add_literals(literal.index_);
+  proto_->mutable_circuit()->add_literals(literal.index());
+  return *this;
 }
 
-void MultipleCircuitConstraint::AddArc(int tail, int head, BoolVar literal) {
+MultipleCircuitConstraint& MultipleCircuitConstraint::AddArc(int tail, int head,
+                                                             BoolVar literal) {
   proto_->mutable_routes()->add_tails(tail);
   proto_->mutable_routes()->add_heads(head);
-  proto_->mutable_routes()->add_literals(literal.index_);
+  proto_->mutable_routes()->add_literals(literal.index());
+  return *this;
 }
 
-void TableConstraint::AddTuple(absl::Span<const int64_t> tuple) {
+BoolOrConstraint& BoolOrConstraint::AddLiteral(BoolVar literal) {
+  proto_->mutable_bool_or()->add_literals(literal.index());
+  return *this;
+}
+
+BoolOrConstraint& BoolOrConstraint::AddLiterals(
+    absl::Span<const BoolVar> literals) {
+  auto* const ct = proto_->mutable_bool_or();
+  ct->mutable_literals()->Reserve(ct->literals_size() + literals.size());
+  for (const BoolVar& literal : literals) {
+    ct->add_literals(literal.index());
+  }
+  return *this;
+}
+
+BoolAndConstraint& BoolAndConstraint::AddLiteral(BoolVar literal) {
+  proto_->mutable_bool_and()->add_literals(literal.index());
+  return *this;
+}
+
+BoolAndConstraint& BoolAndConstraint::AddLiterals(
+    absl::Span<const BoolVar> literals) {
+  auto* const ct = proto_->mutable_bool_and();
+  ct->mutable_literals()->Reserve(ct->literals_size() + literals.size());
+  for (const BoolVar& literal : literals) {
+    ct->add_literals(literal.index());
+  }
+  return *this;
+}
+
+AtMostOneConstraint& AtMostOneConstraint::AddLiteral(BoolVar literal) {
+  proto_->mutable_at_most_one()->add_literals(literal.index());
+  return *this;
+}
+
+AtMostOneConstraint& AtMostOneConstraint::AddLiterals(
+    absl::Span<const BoolVar> literals) {
+  auto* const ct = proto_->mutable_at_most_one();
+  ct->mutable_literals()->Reserve(ct->literals_size() + literals.size());
+  for (const BoolVar& literal : literals) {
+    ct->add_literals(literal.index());
+  }
+  return *this;
+}
+
+ExactlyOneConstraint& ExactlyOneConstraint::AddLiteral(BoolVar literal) {
+  proto_->mutable_exactly_one()->add_literals(literal.index());
+  return *this;
+}
+
+ExactlyOneConstraint& ExactlyOneConstraint::AddLiterals(
+    absl::Span<const BoolVar> literals) {
+  auto* const ct = proto_->mutable_exactly_one();
+  ct->mutable_literals()->Reserve(ct->literals_size() + literals.size());
+  for (const BoolVar& literal : literals) {
+    ct->add_literals(literal.index());
+  }
+  return *this;
+}
+
+BoolXorConstraint& BoolXorConstraint::AddLiteral(BoolVar literal) {
+  proto_->mutable_bool_xor()->add_literals(literal.index());
+  return *this;
+}
+
+BoolXorConstraint& BoolXorConstraint::AddLiterals(
+    absl::Span<const BoolVar> literals) {
+  for (const BoolVar& literal : literals) {
+    proto_->mutable_bool_xor()->add_literals(literal.index());
+  }
+  return *this;
+}
+
+TableConstraint& TableConstraint::AddTuple(absl::Span<const int64_t> tuple) {
   CHECK_EQ(tuple.size(), proto_->table().exprs_size());
   for (const int64_t t : tuple) {
     proto_->mutable_table()->add_values(t);
   }
+  return *this;
 }
 
 ReservoirConstraint::ReservoirConstraint(ConstraintProto* proto,
                                          CpModelBuilder* builder)
     : Constraint(proto), builder_(builder) {}
 
-void ReservoirConstraint::AddEvent(LinearExpr time, int64_t level_change) {
+ReservoirConstraint& ReservoirConstraint::AddEvent(LinearExpr time,
+                                                   int64_t level_change) {
   *proto_->mutable_reservoir()->add_time_exprs() =
       builder_->LinearExprToProto(time);
   proto_->mutable_reservoir()->add_level_changes()->set_offset(level_change);
   proto_->mutable_reservoir()->add_active_literals(
       builder_->IndexFromConstant(1));
+  return *this;
 }
 
-void ReservoirConstraint::AddOptionalEvent(LinearExpr time,
-                                           int64_t level_change,
-                                           BoolVar is_active) {
+ReservoirConstraint& ReservoirConstraint::AddOptionalEvent(LinearExpr time,
+                                                           int64_t level_change,
+                                                           BoolVar is_active) {
   *proto_->mutable_reservoir()->add_time_exprs() =
       builder_->LinearExprToProto(time);
   proto_->mutable_reservoir()->add_level_changes()->set_offset(level_change);
-  proto_->mutable_reservoir()->add_active_literals(is_active.index_);
+  proto_->mutable_reservoir()->add_active_literals(is_active.index());
+  return *this;
 }
 
-void AutomatonConstraint::AddTransition(int tail, int head,
-                                        int64_t transition_label) {
+AutomatonConstraint& AutomatonConstraint::AddTransition(
+    int tail, int head, int64_t transition_label) {
   proto_->mutable_automaton()->add_transition_tail(tail);
   proto_->mutable_automaton()->add_transition_head(head);
   proto_->mutable_automaton()->add_transition_label(transition_label);
+  return *this;
 }
 
-void NoOverlap2DConstraint::AddRectangle(IntervalVar x_coordinate,
-                                         IntervalVar y_coordinate) {
-  proto_->mutable_no_overlap_2d()->add_x_intervals(x_coordinate.index_);
-  proto_->mutable_no_overlap_2d()->add_y_intervals(y_coordinate.index_);
+NoOverlapConstraint& NoOverlapConstraint::AddInterval(IntervalVar interval) {
+  proto_->mutable_no_overlap()->add_intervals(interval.index());
+  return *this;
+}
+
+NoOverlap2DConstraint& NoOverlap2DConstraint::AddRectangle(
+    IntervalVar x_coordinate, IntervalVar y_coordinate) {
+  proto_->mutable_no_overlap_2d()->add_x_intervals(x_coordinate.index());
+  proto_->mutable_no_overlap_2d()->add_y_intervals(y_coordinate.index());
+  return *this;
 }
 
 CumulativeConstraint::CumulativeConstraint(ConstraintProto* proto,
                                            CpModelBuilder* builder)
     : Constraint(proto), builder_(builder) {}
 
-void CumulativeConstraint::AddDemand(IntervalVar interval, LinearExpr demand) {
-  proto_->mutable_cumulative()->add_intervals(interval.index_);
+CumulativeConstraint& CumulativeConstraint::AddDemand(IntervalVar interval,
+                                                      LinearExpr demand) {
+  proto_->mutable_cumulative()->add_intervals(interval.index());
   *proto_->mutable_cumulative()->add_demands() =
       builder_->LinearExprToProto(demand);
+  return *this;
 }
 
 IntervalVar::IntervalVar() : builder_(nullptr), index_() {}
@@ -662,25 +768,25 @@ int CpModelBuilder::IndexFromConstant(int64_t value) {
   return constant_to_index_map_[value];
 }
 
-int CpModelBuilder::GetOrCreateIntegerIndex(int index) {
-  if (index >= 0) {
-    return index;
+int CpModelBuilder::GetOrCreateIntegerView(int bool_index) {
+  if (bool_index >= 0) {
+    return bool_index;
   }
-  if (!bool_to_integer_index_map_.contains(index)) {
-    const int var = PositiveRef(index);
-    const IntegerVariableProto& old_var = cp_model_.variables(var);
+  if (!negative_bool_index_to_integer_index_map_.contains(bool_index)) {
+    const IntegerVariableProto& bool_var =
+        cp_model_.variables(PositiveRef(bool_index));
     const int new_index = cp_model_.variables_size();
     IntegerVariableProto* const new_var = cp_model_.add_variables();
     new_var->add_domain(0);
     new_var->add_domain(1);
-    if (!old_var.name().empty()) {
-      new_var->set_name(absl::StrCat("Not(", old_var.name(), ")"));
+    if (!bool_var.name().empty()) {
+      new_var->set_name(absl::StrCat("Not(", bool_var.name(), ")"));
     }
-    AddEquality(IntVar(new_index, this), BoolVar(index, this));
-    bool_to_integer_index_map_[index] = new_index;
+    AddEquality(IntVar(new_index, this), BoolVar(bool_index, this));
+    negative_bool_index_to_integer_index_map_[bool_index] = new_index;
     return new_index;
   }
-  return bool_to_integer_index_map_[index];
+  return negative_bool_index_to_integer_index_map_[bool_index];
 }
 
 IntVar CpModelBuilder::NewIntVar(const Domain& domain) {
@@ -743,7 +849,7 @@ IntervalVar CpModelBuilder::NewOptionalIntervalVar(const LinearExpr& start,
                                                    BoolVar presence) {
   const int index = cp_model_.constraints_size();
   ConstraintProto* const ct = cp_model_.add_constraints();
-  ct->add_enforcement_literal(presence.index_);
+  ct->add_enforcement_literal(presence.index());
   IntervalConstraintProto* const interval = ct->mutable_interval();
   *interval->mutable_start() = LinearExprToProto(start);
   *interval->mutable_size() = LinearExprToProto(size);
@@ -755,7 +861,7 @@ IntervalVar CpModelBuilder::NewOptionalFixedSizeIntervalVar(
     const LinearExpr& start, int64_t size, BoolVar presence) {
   const int index = cp_model_.constraints_size();
   ConstraintProto* const ct = cp_model_.add_constraints();
-  ct->add_enforcement_literal(presence.index_);
+  ct->add_enforcement_literal(presence.index());
   IntervalConstraintProto* const interval = ct->mutable_interval();
   *interval->mutable_start() = LinearExprToProto(start);
   interval->mutable_size()->set_offset(size);
@@ -778,46 +884,59 @@ void CpModelBuilder::FixVariable(BoolVar var, bool value) {
   }
 }
 
-Constraint CpModelBuilder::AddBoolOr(absl::Span<const BoolVar> literals) {
+BoolOrConstraint CpModelBuilder::AddBoolOr(absl::Span<const BoolVar> literals) {
   ConstraintProto* const proto = cp_model_.add_constraints();
   BoolArgumentProto* const bool_or = proto->mutable_bool_or();
-  for (const BoolVar& lit : literals) bool_or->add_literals(lit.index_);
-  return Constraint(proto);
+  bool_or->mutable_literals()->Reserve(literals.size());
+  for (const BoolVar& lit : literals) bool_or->add_literals(lit.index());
+  return BoolOrConstraint(proto);
 }
 
-Constraint CpModelBuilder::AddAtLeastOne(absl::Span<const BoolVar> literals) {
+BoolOrConstraint CpModelBuilder::AddAtLeastOne(
+    absl::Span<const BoolVar> literals) {
   return AddBoolOr(literals);
 }
 
-Constraint CpModelBuilder::AddAtMostOne(absl::Span<const BoolVar> literals) {
+AtMostOneConstraint CpModelBuilder::AddAtMostOne(
+    absl::Span<const BoolVar> literals) {
   ConstraintProto* const proto = cp_model_.add_constraints();
+  BoolArgumentProto* const at_most_one = proto->mutable_at_most_one();
+  at_most_one->mutable_literals()->Reserve(literals.size());
   for (const BoolVar& lit : literals) {
-    proto->mutable_at_most_one()->add_literals(lit.index_);
+    at_most_one->add_literals(lit.index());
   }
-  return Constraint(proto);
+  return AtMostOneConstraint(proto);
 }
 
-Constraint CpModelBuilder::AddExactlyOne(absl::Span<const BoolVar> literals) {
+ExactlyOneConstraint CpModelBuilder::AddExactlyOne(
+    absl::Span<const BoolVar> literals) {
   ConstraintProto* const proto = cp_model_.add_constraints();
   BoolArgumentProto* const exactly_one = proto->mutable_exactly_one();
-  for (const BoolVar& lit : literals) exactly_one->add_literals(lit.index_);
-  return Constraint(proto);
+  exactly_one->mutable_literals()->Reserve(literals.size());
+  for (const BoolVar& lit : literals) exactly_one->add_literals(lit.index());
+  return ExactlyOneConstraint(proto);
 }
 
-Constraint CpModelBuilder::AddBoolAnd(absl::Span<const BoolVar> literals) {
+BoolAndConstraint CpModelBuilder::AddBoolAnd(
+    absl::Span<const BoolVar> literals) {
   ConstraintProto* const proto = cp_model_.add_constraints();
+  BoolArgumentProto* const bool_and = proto->mutable_bool_and();
+  bool_and->mutable_literals()->Reserve(literals.size());
   for (const BoolVar& lit : literals) {
-    proto->mutable_bool_and()->add_literals(lit.index_);
+    bool_and->add_literals(lit.index());
   }
-  return Constraint(proto);
+  return BoolAndConstraint(proto);
 }
 
-Constraint CpModelBuilder::AddBoolXor(absl::Span<const BoolVar> literals) {
+BoolXorConstraint CpModelBuilder::AddBoolXor(
+    absl::Span<const BoolVar> literals) {
   ConstraintProto* const proto = cp_model_.add_constraints();
+  BoolArgumentProto* const bool_xor = proto->mutable_bool_xor();
+  bool_xor->mutable_literals()->Reserve(literals.size());
   for (const BoolVar& lit : literals) {
-    proto->mutable_bool_xor()->add_literals(lit.index_);
+    bool_xor->add_literals(lit.index());
   }
-  return Constraint(proto);
+  return BoolXorConstraint(proto);
 }
 
 void CpModelBuilder::FillLinearTerms(const LinearExpr& left,
@@ -920,7 +1039,7 @@ Constraint CpModelBuilder::AddAllDifferent(absl::Span<const IntVar> vars) {
   ConstraintProto* const proto = cp_model_.add_constraints();
   for (const IntVar& var : vars) {
     auto* expr = proto->mutable_all_diff()->add_exprs();
-    expr->add_vars(var.index_);
+    expr->add_vars(var.index());
     expr->add_coeffs(1);
   }
   return Constraint(proto);
@@ -1016,7 +1135,7 @@ TableConstraint CpModelBuilder::AddAllowedAssignments(
   ConstraintProto* const proto = cp_model_.add_constraints();
   for (const IntVar var : variables) {
     LinearExpressionProto* expr = proto->mutable_table()->add_exprs();
-    expr->add_vars(var.index_);
+    expr->add_vars(var.index());
     expr->add_coeffs(1);
   }
   return TableConstraint(proto);
@@ -1057,10 +1176,10 @@ Constraint CpModelBuilder::AddInverseConstraint(
     absl::Span<const IntVar> inverse_variables) {
   ConstraintProto* const proto = cp_model_.add_constraints();
   for (const IntVar& var : variables) {
-    proto->mutable_inverse()->add_f_direct(var.index_);
+    proto->mutable_inverse()->add_f_direct(var.index());
   }
   for (const IntVar& var : inverse_variables) {
-    proto->mutable_inverse()->add_f_inverse(var.index_);
+    proto->mutable_inverse()->add_f_inverse(var.index());
   }
   return Constraint(proto);
 }
@@ -1093,7 +1212,7 @@ AutomatonConstraint CpModelBuilder::AddAutomaton(
   ConstraintProto* const proto = cp_model_.add_constraints();
   for (const IntVar& var : transition_variables) {
     LinearExpressionProto* expr = proto->mutable_automaton()->add_exprs();
-    expr->add_vars(var.index_);
+    expr->add_vars(var.index());
     expr->add_coeffs(1);
   }
   proto->mutable_automaton()->set_starting_state(starting_state);
@@ -1267,12 +1386,13 @@ Constraint CpModelBuilder::AddMultiplicationEquality(const LinearExpr& target,
   return Constraint(proto);
 }
 
-Constraint CpModelBuilder::AddNoOverlap(absl::Span<const IntervalVar> vars) {
+NoOverlapConstraint CpModelBuilder::AddNoOverlap(
+    absl::Span<const IntervalVar> vars) {
   ConstraintProto* const proto = cp_model_.add_constraints();
   for (const IntervalVar& var : vars) {
-    proto->mutable_no_overlap()->add_intervals(var.index_);
+    proto->mutable_no_overlap()->add_intervals(var.index());
   }
-  return Constraint(proto);
+  return NoOverlapConstraint(proto);
 }
 
 NoOverlap2DConstraint CpModelBuilder::AddNoOverlap2D() {
@@ -1347,11 +1467,11 @@ void CpModelBuilder::AddDecisionStrategy(
   DecisionStrategyProto* const proto = cp_model_.add_search_strategy();
   for (const IntVar& var : variables) {
     LinearExpressionProto* expr = proto->add_exprs();
-    if (var.index_ >= 0) {
-      expr->add_vars(var.index_);
+    if (var.index() >= 0) {
+      expr->add_vars(var.index());
       expr->add_coeffs(1);
     } else {
-      expr->add_vars(PositiveRef(var.index_));
+      expr->add_vars(PositiveRef(var.index()));
       expr->add_coeffs(-1);
       expr->set_offset(1);
     }
@@ -1367,11 +1487,11 @@ void CpModelBuilder::AddDecisionStrategy(
   DecisionStrategyProto* const proto = cp_model_.add_search_strategy();
   for (const BoolVar& var : variables) {
     LinearExpressionProto* expr = proto->add_exprs();
-    if (var.index_ >= 0) {
-      expr->add_vars(var.index_);
+    if (var.index() >= 0) {
+      expr->add_vars(var.index());
       expr->add_coeffs(1);
     } else {
-      expr->add_vars(PositiveRef(var.index_));
+      expr->add_vars(PositiveRef(var.index()));
       expr->add_coeffs(-1);
       expr->set_offset(1);
     }
@@ -1405,16 +1525,16 @@ void CpModelBuilder::AddDecisionStrategy(
 }
 
 void CpModelBuilder::AddHint(IntVar var, int64_t value) {
-  cp_model_.mutable_solution_hint()->add_vars(var.index_);
+  cp_model_.mutable_solution_hint()->add_vars(var.index());
   cp_model_.mutable_solution_hint()->add_values(value);
 }
 
 void CpModelBuilder::AddHint(BoolVar var, bool value) {
-  if (var.index_ >= 0) {
-    cp_model_.mutable_solution_hint()->add_vars(var.index_);
+  if (var.index() >= 0) {
+    cp_model_.mutable_solution_hint()->add_vars(var.index());
     cp_model_.mutable_solution_hint()->add_values(value);
   } else {
-    cp_model_.mutable_solution_hint()->add_vars(PositiveRef(var.index_));
+    cp_model_.mutable_solution_hint()->add_vars(PositiveRef(var.index()));
     cp_model_.mutable_solution_hint()->add_values(!value);
   }
 }
@@ -1424,12 +1544,12 @@ void CpModelBuilder::ClearHints() {
 }
 
 void CpModelBuilder::AddAssumption(BoolVar lit) {
-  cp_model_.mutable_assumptions()->Add(lit.index_);
+  cp_model_.mutable_assumptions()->Add(lit.index());
 }
 
 void CpModelBuilder::AddAssumptions(absl::Span<const BoolVar> literals) {
   for (const BoolVar& lit : literals) {
-    cp_model_.mutable_assumptions()->Add(lit.index_);
+    cp_model_.mutable_assumptions()->Add(lit.index());
   }
 }
 
@@ -1439,12 +1559,13 @@ void CpModelBuilder::ClearAssumptions() {
 
 CpModelBuilder CpModelBuilder::Clone() const {
   CpModelBuilder clone;
-  clone.ResetAndImport(cp_model_);
+  clone.ResetFromProto(cp_model_);
   return clone;
 }
 
-void CpModelBuilder::ResetAndImport(const CpModelProto& model_proto) {
+void CpModelBuilder::ResetFromProto(const CpModelProto& model_proto) {
   cp_model_ = model_proto;
+
   // Rebuild constant to index map.
   constant_to_index_map_.clear();
   for (int i = 0; i < cp_model_.variables_size(); ++i) {
@@ -1453,8 +1574,9 @@ void CpModelBuilder::ResetAndImport(const CpModelProto& model_proto) {
       constant_to_index_map_[var.domain(0)] = i;
     }
   }
+
   // This one would be more complicated to rebuild. Let's just clear it.
-  bool_to_integer_index_map_.clear();
+  negative_bool_index_to_integer_index_map_.clear();
 }
 
 BoolVar CpModelBuilder::GetBoolVarFromProtoIndex(int index) {
@@ -1505,7 +1627,7 @@ int64_t SolutionIntegerValue(const CpSolverResponse& r,
 }
 
 bool SolutionBooleanValue(const CpSolverResponse& r, BoolVar x) {
-  const int ref = x.index_;
+  const int ref = x.index();
   if (RefIsPositive(ref)) {
     return r.solution(ref) == 1;
   } else {

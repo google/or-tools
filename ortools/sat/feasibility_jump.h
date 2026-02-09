@@ -16,7 +16,6 @@
 
 #include <algorithm>
 #include <atomic>
-#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <limits>
@@ -34,8 +33,8 @@
 #include "absl/synchronization/mutex.h"
 #include "absl/types/span.h"
 #include "ortools/sat/constraint_violation.h"
+#include "ortools/sat/cp_model_copy.h"
 #include "ortools/sat/integer_base.h"
-#include "ortools/sat/linear_model.h"
 #include "ortools/sat/restart.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/stat_tables.h"
@@ -105,108 +104,6 @@ class JumpTable {
   std::vector<int64_t> deltas_;
   std::vector<double> scores_;
   std::vector<bool> needs_recomputation_;
-};
-
-// Accessing Domain can be expensive, so we maintain vector of bool for the
-// hot spots.
-class VarDomainWrapper {
- public:
-  explicit VarDomainWrapper(SharedBoundsManager* shared_bounds)
-      : shared_bounds_id_(
-            shared_bounds == nullptr ? 0 : shared_bounds->RegisterNewId()),
-        shared_bounds_(shared_bounds) {}
-
-  Domain operator[](int var) const { return domains_[var]; }
-  bool HasTwoValues(int var) const { return has_two_values_[var]; }
-  size_t size() const { return domains_.size(); }
-
-  void resize(int num_vars) {
-    domains_.resize(num_vars);
-    has_two_values_.resize(num_vars);
-    is_fixed_.resize(num_vars, false);
-    objective_is_positive_.resize(num_vars, false);
-    objective_is_negative_.resize(num_vars, false);
-    has_better_objective_value_.resize(num_vars, false);
-  }
-
-  void Set(int var, Domain d) {
-    has_two_values_[var] = d.HasTwoValues();
-    if (is_fixed_[var]) {
-      // The code here assume that once fixed, a variable stays that way.
-      CHECK(d.IsFixed());
-    } else if (d.IsFixed()) {
-      is_fixed_[var] = true;
-      fixed_vars_.push_back(var);
-    }
-    domains_[var] = std::move(d);
-  }
-
-  // Return false if one of the domain becomes empty (UNSAT). This might happen
-  // while we are cleaning up all workers at the end of a search.
-  bool UpdateFromSharedBounds() {
-    if (shared_bounds_ == nullptr) return true;
-    shared_bounds_->GetChangedBounds(shared_bounds_id_, &tmp_variables_,
-                                     &tmp_new_lower_bounds_,
-                                     &tmp_new_upper_bounds_);
-    for (int i = 0; i < tmp_variables_.size(); ++i) {
-      const int var = tmp_variables_[i];
-      const Domain new_domain = domains_[var].IntersectionWith(
-          Domain(tmp_new_lower_bounds_[i], tmp_new_upper_bounds_[i]));
-      if (new_domain.IsEmpty()) return false;
-      Set(var, new_domain);
-    }
-    return true;
-  }
-
-  absl::Span<const Domain> AsSpan() const { return domains_; }
-
-  void InitializeObjective(const CpModelProto& cp_model_proto) {
-    if (!cp_model_proto.has_objective()) return;
-    const int num_terms = cp_model_proto.objective().vars().size();
-    for (int i = 0; i < num_terms; ++i) {
-      const int var = cp_model_proto.objective().vars(i);
-      const int coeff = cp_model_proto.objective().coeffs(i);
-      objective_is_positive_[var] = coeff > 0;
-      objective_is_negative_[var] = coeff < 0;
-    }
-  }
-
-  bool IsFixed(int var) const { return is_fixed_[var]; }
-
-  bool HasBetterObjectiveValue(int var) const {
-    return has_better_objective_value_[var];
-  }
-
-  // Tricky: this must be called on solution value change or domains update.
-  void OnValueChange(int var, int64_t value) {
-    has_better_objective_value_[var] =
-        (objective_is_positive_[var] && value > domains_[var].Min()) ||
-        (objective_is_negative_[var] && value < domains_[var].Max());
-  }
-
-  absl::Span<const int> FixedVariables() const { return fixed_vars_; }
-
- private:
-  const int shared_bounds_id_;
-  SharedBoundsManager* shared_bounds_;
-
-  // Basically fixed once and for all.
-  std::vector<bool> objective_is_positive_;
-  std::vector<bool> objective_is_negative_;
-
-  // Depends on domain updates.
-  std::vector<Domain> domains_;
-  std::vector<bool> has_two_values_;
-  std::vector<bool> is_fixed_;
-  std::vector<int> fixed_vars_;
-
-  // This is the only one that depends on the current solution value.
-  std::vector<bool> has_better_objective_value_;
-
-  // Temporary data for UpdateFromSharedBounds()
-  std::vector<int> tmp_variables_;
-  std::vector<int64_t> tmp_new_lower_bounds_;
-  std::vector<int64_t> tmp_new_upper_bounds_;
 };
 
 // Local search counters. This can either be the stats of one run without
@@ -292,15 +189,21 @@ struct LsOptions {
 };
 
 // Each FeasibilityJumpSolver work on many LsState in an interleaved parallel
-// fashion. Each "batch of moves" will update one of these state. Restart
-// heuristic are also on a per state basis.
+// fashion. Each "batch of moves" will update one of these states. Restart
+// heuristics are also on a per state basis.
 //
 // This allows to not use O(problem size) per state while having a more
 // diverse set of heuristics.
 struct LsState {
-  // The score of a solution is just the sum of infeasibility of each
-  // constraint weighted by these weights.
+  // Contains a value for each variable of the FeasibilityJumpSolver's
+  // input_model_proto_.
+  std::vector<int64_t> input_solution;
+  // Contains a value for each variable of the FeasibilityJumpSolver's
+  // dense_model_. This can be recomputed from `input_solution` when the mapping
+  // between the two models changes.
   std::vector<int64_t> solution;
+  // The score of a solution is the sum of infeasibility of each constraint of
+  // the FeasibilityJumpSolver's dense_model_, weighted by `weights`.
   std::vector<double> weights;
   std::shared_ptr<const SharedSolutionRepository<int64_t>::Solution>
       base_solution;
@@ -329,6 +232,10 @@ struct LsState {
 
   // Strategy
   LsOptions options;
+
+  // Timestamps of the bounds and equivalences used to compute this state.
+  int64_t bounds_timestamp = -1;
+  int64_t equivalences_timestamp = -1;
 
   // Global counters, incremented across restart.
   int64_t num_restarts = 0;
@@ -360,16 +267,6 @@ class SharedLsStates {
   }
 
   ~SharedLsStates();
-
-  void CreateNewState() {
-    const int index = states_.size();
-    states_.emplace_back(new LsState());
-    taken_.push_back(false);
-    num_selected_.push_back(0);
-
-    // We add one no-restart per 16 states and put it last.
-    states_.back()->options.use_restart = (index % 16 != 15);
-  }
 
   // Returns the next available state in round-robin fashion.
   // This is thread safe. If we respect the max_parallelism guarantee, then
@@ -438,6 +335,16 @@ class SharedLsStates {
   }
 
  private:
+  void CreateNewState() {
+    const int index = states_.size();
+    states_.emplace_back(new LsState());
+    taken_.push_back(false);
+    num_selected_.push_back(0);
+
+    // We add one no-restart per 16 states and put it last.
+    states_.back()->options.use_restart = (index % 16 != 15);
+  }
+
   const std::string name_;
   const SatParameters& params_;
   SharedStatTables* stat_tables_;
@@ -466,26 +373,24 @@ class SharedLsStates {
 // model and its transpose for each FeasibilityJumpSolver.
 class FeasibilityJumpSolver : public SubSolver {
  public:
-  FeasibilityJumpSolver(const absl::string_view name,
-                        SubSolver::SubsolverType type,
-                        const LinearModel* linear_model, SatParameters params,
-                        std::shared_ptr<SharedLsStates> ls_states,
-                        ModelSharedTimeLimit* shared_time_limit,
-                        SharedResponseManager* shared_response,
-                        SharedBoundsManager* shared_bounds,
-                        SharedLsSolutionRepository* shared_hints,
-                        SharedStatistics* shared_stats,
-                        SharedStatTables* stat_tables)
+  FeasibilityJumpSolver(
+      const absl::string_view name, SubSolver::SubsolverType type,
+      const CpModelProto& input_model_proto, SatParameters params,
+      std::shared_ptr<SharedLsStates> ls_states,
+      ModelSharedTimeLimit* shared_time_limit,
+      SharedResponseManager* shared_response,
+      SharedBoundsManager* shared_bounds, SharedClausesManager* shared_clauses,
+      SharedLsSolutionRepository* shared_hints, SharedStatTables* stat_tables)
       : SubSolver(name, type),
-        linear_model_(linear_model),
+        input_model_proto_(input_model_proto),
+        dense_model_(name, input_model_proto, shared_bounds, shared_clauses),
         params_(params),
         states_(std::move(ls_states)),
         shared_time_limit_(shared_time_limit),
         shared_response_(shared_response),
         shared_hints_(shared_hints),
         stat_tables_(stat_tables),
-        random_(params_),
-        var_domains_(shared_bounds) {
+        random_(params_) {
     shared_time_limit_->UpdateLocalLimit(&time_limit_);
   }
 
@@ -569,6 +474,9 @@ class FeasibilityJumpSolver : public SubSolver {
   void AddVarToScan(int var);
   void RecomputeVarsToScan();
 
+  // Tricky: this must be called on solution value change or domains update.
+  void OnValueChange(int var, int64_t value);
+
   // Resets the weights used to find compound moves.
   // Ensures the following invariant holds afterwards:
   // compound_weights[c] = weights_[c] if c is violated, and epsilon *
@@ -589,7 +497,14 @@ class FeasibilityJumpSolver : public SubSolver {
     return evaluator_->DeterministicTime() + num_ops_ * 1e-8;
   }
 
-  const LinearModel* linear_model_;
+  const CpModelProto& input_model_proto_;
+
+  // A dense `input_model_proto_` copy, with fixed and non-representative
+  // variables removed. Unless stated otherwise with an explicit mention to the
+  // 'input' model, the fields, methods, and method parameters in this class
+  // operate on the variables and constraints of this model.
+  DenseModelCopy dense_model_;
+
   SatParameters params_;
   std::shared_ptr<SharedLsStates> states_;
   ModelSharedTimeLimit* shared_time_limit_;
@@ -599,7 +514,13 @@ class FeasibilityJumpSolver : public SubSolver {
   SharedStatTables* stat_tables_;
   ModelRandomGenerator random_;
 
-  VarDomainWrapper var_domains_;
+  // Whether each `dense_model_` variable occurs in a positive/negative term in
+  // the objective.
+  std::vector<bool> objective_is_positive_;
+  std::vector<bool> objective_is_negative_;
+  // Depends on the current solution value (one element per `dense_model_`
+  // variable).
+  std::vector<bool> has_better_objective_value_;
 
   // Synchronization Booleans.
   //
@@ -613,13 +534,15 @@ class FeasibilityJumpSolver : public SubSolver {
   std::unique_ptr<LsEvaluator> evaluator_;
   std::vector<bool> var_occurs_in_non_linear_constraint_;
 
+  // The jumps for the `dense_model_` variables.
   JumpTable jumps_;
   std::vector<double> for_weight_update_;
 
-  // The current sate we work on.
+  // The current state we work on, based on the `dense_model_` variables.
   LsState* state_;
 
-  // A list of variables that might be relevant to check for improving jumps.
+  // A list of `dense_model_` variables that might be relevant to check for
+  // improving jumps.
   std::vector<bool> in_vars_to_scan_;
   FixedCapacityVector<int> vars_to_scan_;
 

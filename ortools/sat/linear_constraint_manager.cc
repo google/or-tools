@@ -24,6 +24,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/algorithm/container.h"
 #include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
@@ -34,10 +35,10 @@
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/hash.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/glop/variables_info.h"
 #include "ortools/lp_data/lp_types.h"
+#include "ortools/sat/debug_solution.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/linear_constraint.h"
@@ -316,7 +317,8 @@ LinearConstraintManager::ConstraintIndex LinearConstraintManager::Add(
   SimplifyConstraint(&ct);
   DivideByGCD(&ct);
   MakeAllVariablesPositive(&ct);
-  DCHECK(DebugCheckConstraint(ct));
+  MakeFirstCoefficientPositive(&ct);
+  DCHECK(DebugCheckConstraint(ct, /*only_check_ub=*/false));
 
   // If configured, store instead the folded version of this constraint.
   // TODO(user): Shall we simplify again?
@@ -729,7 +731,9 @@ bool LinearConstraintManager::ChangeLp(glop::BasisState* solution_state,
       // of the variable is not changed by the simplification, and we only
       // reduce the coefficients at both end of the spectrum.
       DivideByGCD(&constraint_infos_[i].constraint);
-      DCHECK(DebugCheckConstraint(constraint_infos_[i].constraint));
+      MakeFirstCoefficientPositive(&constraint_infos_[i].constraint);
+      DCHECK(DebugCheckConstraint(constraint_infos_[i].constraint,
+                                  /*only_check_ub=*/false));
 
       constraint_infos_[i].objective_parallelism_computed = false;
       constraint_infos_[i].l2_norm =
@@ -839,12 +843,11 @@ bool LinearConstraintManager::ChangeLp(glop::BasisState* solution_state,
   }
   VLOG(3) << "   - size = " << current_size << ", limit = " << constraint_limit;
 
-  std::stable_sort(new_constraints_by_score.begin(),
-                   new_constraints_by_score.end(),
-                   [&](std::pair<ConstraintIndex, double> a,
-                       std::pair<ConstraintIndex, double> b) {
-                     return a.second > b.second;
-                   });
+  absl::c_stable_sort(new_constraints_by_score,
+                      [&](std::pair<ConstraintIndex, double> a,
+                          std::pair<ConstraintIndex, double> b) {
+                        return a.second > b.second;
+                      });
   if (new_constraints_by_score.size() > kBlowupFactor * constraint_limit) {
     VLOG(3) << "Resize candidate constraints from "
             << new_constraints_by_score.size() << " down to "
@@ -856,11 +859,62 @@ bool LinearConstraintManager::ChangeLp(glop::BasisState* solution_state,
   TimeLimitCheckEveryNCalls time_limit_check(1000, time_limit_);
   ConstraintIndex last_added_candidate = kInvalidConstraintIndex;
   std::vector<double> orthogonality_score(new_constraints_by_score.size(), 1.0);
+
+  // We want to quickly compute the scalar product between two constraints. To
+  // use the fact that the constraints are sparse, we build a representation of
+  // the constraints indexed by variable. Concretely, if we have
+  //     ct_0 = 2*var_0 + var_1
+  //     ct_1 = -var_0 + 3*var_2
+  // we will have:
+  //     constraint_terms_by_var[var_0] = {(ct_0, 2), (ct_1, -1)}
+  //     constraint_terms_by_var[var_1] = {(ct_0, 1)}
+  //     constraint_terms_by_var[var_2] = {(ct_1, 3)}
+  CompactVectorVector<IntegerVariable, std::pair<int, double>>
+      constraint_terms_by_var;
+  {
+    FixedCapacityVector<std::pair<IntegerVariable, std::pair<int, double>>>
+        constraint_terms;
+    constraint_terms.ClearAndReserve(absl::c_accumulate(
+        new_constraints_by_score, 0,
+        [constraint_infos = &constraint_infos_](
+            int sum, const std::pair<ConstraintIndex, double>& candidate) {
+          return sum +
+                 (*constraint_infos)[candidate.first].constraint.num_terms;
+        }));
+    for (int i = 0; i < new_constraints_by_score.size(); ++i) {
+      const ConstraintIndex index = new_constraints_by_score[i].first;
+      for (int j = 0; j < constraint_infos_[index].constraint.num_terms; ++j) {
+        constraint_terms.push_back(
+            {constraint_infos_[index].constraint.vars[j],
+             {i, static_cast<double>(
+                     constraint_infos_[index].constraint.coeffs[j].value())}});
+      }
+    }
+    constraint_terms_by_var.ResetFromPairs(constraint_terms);
+  }
+  std::vector<double> products;
+  products.reserve(new_constraints_by_score.size());
   for (int i = 0; i < constraint_limit; ++i) {
+    // Compute the scalar product between the last added constraint and the new
+    // constraints.
+    if (last_added_candidate != kInvalidConstraintIndex) {
+      products.clear();
+      products.resize(new_constraints_by_score.size(), 0.0);
+      const LinearConstraint& constraint =
+          constraint_infos_[last_added_candidate].constraint;
+      // products[j] holds the scalar product between `constraint` and
+      // `constraint_infos_[new_constraints_by_score[j].first].constraint`.
+      for (int j = 0; j < constraint.num_terms; ++j) {
+        const IntegerVariable var = constraint.vars[j];
+        const double cur_coeff =
+            static_cast<double>(constraint.coeffs[j].value());
+        for (const auto& [index, coeff] : constraint_terms_by_var[var]) {
+          products[index] += coeff * cur_coeff;
+        }
+      }
+    }
     // Iterate through all new constraints and select the one with the best
     // score.
-    //
-    // TODO(user): find better algo, this does 1000 * 4000 scalar product!
     double best_score = 0.0;
     ConstraintIndex best_candidate = kInvalidConstraintIndex;
     for (int j = 0; j < new_constraints_by_score.size(); ++j) {
@@ -871,10 +925,9 @@ bool LinearConstraintManager::ChangeLp(glop::BasisState* solution_state,
       if (constraint_infos_[new_index].is_in_lp) continue;
 
       if (last_added_candidate != kInvalidConstraintIndex) {
+        const double product = products[j];
         const double current_orthogonality =
-            1.0 - (std::abs(ScalarProduct(
-                       constraint_infos_[last_added_candidate].constraint,
-                       constraint_infos_[new_index].constraint)) /
+            1.0 - (std::abs(product) /
                    (constraint_infos_[last_added_candidate].l2_norm *
                     constraint_infos_[new_index].l2_norm));
         orthogonality_score[j] =
@@ -955,31 +1008,13 @@ void LinearConstraintManager::AddAllConstraintsToLp() {
   }
 }
 
-bool LinearConstraintManager::DebugCheckConstraint(
-    const LinearConstraint& cut) {
+bool LinearConstraintManager::DebugCheckConstraint(const LinearConstraint& cut,
+                                                   bool only_check_ub) {
   const DebugSolution* debug_solution = model_->Get<DebugSolution>();
-  if (debug_solution == nullptr || debug_solution->proto_values.empty()) {
+  if (debug_solution == nullptr) {
     return true;
   }
-
-  absl::int128 activity(0);
-  for (int i = 0; i < cut.num_terms; ++i) {
-    const IntegerVariable var = cut.vars[i];
-    const IntegerValue coeff = cut.coeffs[i];
-    if (var >= debug_solution->ivar_has_value.size() ||
-        !debug_solution->ivar_has_value[var]) {
-      return true;
-    }
-    activity +=
-        absl::int128(coeff.value()) * debug_solution->ivar_values[var].value();
-  }
-  if (activity > cut.ub.value() || activity < cut.lb.value()) {
-    LOG(INFO) << cut.DebugString();
-    LOG(INFO) << "activity " << activity << " not in [" << cut.lb << ","
-              << cut.ub << "]";
-    return false;
-  }
-  return true;
+  return debug_solution->CheckCut(cut, only_check_ub);
 }
 
 void LinearConstraintManager::CacheReducedCostsInfo() {

@@ -22,7 +22,6 @@
 #include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
 #include "ortools/sat/enforcement.h"
 #include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
@@ -341,6 +340,11 @@ bool SchedulingConstraintHelper::SynchronizeAndSetTimeDirection(
     if (sat_solver_->CurrentDecisionLevel() == 0) {
       int new_size = 0;
       for (const int t : non_fixed_intervals_) {
+        if (IsOptional(t) && IsPresent(t)) {
+          // Optimization: if the interval became non-optional at root level,
+          // we can tag is as so.
+          reason_for_presence_[t] = kNoLiteralIndex;
+        }
         if (IsPresent(t) && StartIsFixed(t) && EndIsFixed(t) &&
             SizeIsFixed(t)) {
           continue;
@@ -820,6 +824,18 @@ std::string SchedulingConstraintHelper::TaskDebugString(int t) const {
                       ",", EndMax(t).value(), "]");
 }
 
+std::string SchedulingConstraintHelper::FullTaskDebugString(int t) const {
+  return absl::StrCat(
+      "t=", t, " is_present=(", Literal(reason_for_presence_[t]), ")",
+      (IsPresent(t)  ? "1"
+       : IsAbsent(t) ? "0"
+                     : "?"),
+      " size=", sizes_[t], "[", SizeMin(t).value(), ",", SizeMax(t).value(),
+      "]", " start=", starts_[t], "[", StartMin(t).value(), ",",
+      StartMax(t).value(), "]", " end=", ends_[t], "[", EndMin(t).value(), ",",
+      EndMax(t).value(), "]");
+}
+
 IntegerValue SchedulingConstraintHelper::GetMinOverlap(int t,
                                                        IntegerValue start,
                                                        IntegerValue end) const {
@@ -876,6 +892,11 @@ SchedulingDemandHelper::SchedulingDemandHelper(
   // We try to init decomposed energies. This is needed for the cuts that are
   // created after we call InitAllDecomposedEnergies().
   InitDecomposedEnergies();
+}
+
+std::string SchedulingDemandHelper::TaskDebugString(int t) const {
+  return absl::StrCat("t=", t, " demand=", demands_[t], " [", DemandMin(t), ",",
+                      DemandMax(t), "]");
 }
 
 void SchedulingDemandHelper::InitDecomposedEnergies() {

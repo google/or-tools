@@ -17,7 +17,6 @@
 
 #include <algorithm>
 #include <atomic>
-#include <cctype>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -26,19 +25,13 @@
 #include <functional>
 #include <limits>
 #include <memory>
+#include <numeric>
 #include <string>
 #include <tuple>
 #include <utility>
 #include <vector>
 
 #include "absl/algorithm/container.h"
-#include "ortools/base/logging.h"
-#include "ortools/base/timer.h"
-#include "ortools/sat/drat_checker.h"
-#if !defined(__PORTABLE_PLATFORM__)
-#include "ortools/base/helpers.h"
-#include "ortools/base/options.h"
-#endif  // __PORTABLE_PLATFORM__
 #include "absl/base/thread_annotations.h"
 #include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
@@ -56,10 +49,14 @@
 #include "absl/synchronization/mutex.h"
 #include "absl/types/span.h"
 #include "ortools/algorithms/sparse_permutation.h"
+#include "ortools/base/log_severity.h"
+#include "ortools/base/macros/os_support.h"
+#include "ortools/base/timer.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/symmetry_util.h"
 #include "ortools/sat/util.h"
@@ -67,6 +64,14 @@
 #include "ortools/util/logging.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/strong_integers.h"
+
+#if defined(ORTOOLS_TARGET_OS_SUPPORTS_FILE)
+static_assert(operations_research::kTargetOsSupportsFile);
+#include "ortools/base/helpers.h"
+#include "ortools/base/options.h"
+#else
+static_assert(!operations_research::kTargetOsSupportsFile);
+#endif  // ORTOOLS_TARGET_OS_SUPPORTS_FILE
 
 ABSL_FLAG(bool, cp_model_dump_solutions, false,
           "DEBUG ONLY. If true, all the intermediate solution will be dumped "
@@ -869,7 +874,8 @@ SharedResponseManager::NewSolution(absl::Span<const int64_t> solution_values,
     pair.second(tmp_postsolved_response);
   }
 
-#if !defined(__PORTABLE_PLATFORM__)
+#if defined(ORTOOLS_TARGET_OS_SUPPORTS_FILE)
+  static_assert(kTargetOsSupportsFile);
   // We protect solution dumping with log_updates as LNS subsolvers share
   // another solution manager, and we do not want to dump those.
   if (logger_->LoggingIsEnabled() &&
@@ -885,7 +891,9 @@ SharedResponseManager::NewSolution(absl::Span<const int64_t> solution_values,
                                         solution_values.end());
     CHECK_OK(file::SetTextProto(file, response, file::Defaults()));
   }
-#endif  // __PORTABLE_PLATFORM__
+#else
+  static_assert(!kTargetOsSupportsFile);
+#endif  // ORTOOLS_TARGET_OS_SUPPORTS_FILE
 
   return ret;
 }
@@ -1030,9 +1038,10 @@ void SharedBoundsManager::ReportPotentialNewBounds(
   }
   if (num_improvements > 0) {
     total_num_improvements_ += num_improvements;
+    timestamp_++;
     VLOG(3) << total_num_improvements_ << "/" << num_variables_;
-    bounds_exported_[worker_name].num_exported += num_improvements;
-    bounds_exported_[worker_name].num_symmetric += num_symmetric_improvements;
+    bounds_stats_[worker_name].num_exported += num_improvements;
+    bounds_stats_[worker_name].num_symmetric += num_symmetric_improvements;
     if (absl::GetFlag(FLAGS_cp_model_dump_tightened_models)) {
       CpModelProto tight_model = model_proto_;
       for (int i = 0; i < num_variables_; ++i) {
@@ -1079,6 +1088,7 @@ void SharedBoundsManager::FixVariablesFromPartialSolution(
   }
 
   // Fix the variables.
+  int num_changes = 0;
   for (const int var : variables_to_fix) {
     const int64_t old_lb = lower_bounds_[var];
     const int64_t old_ub = upper_bounds_[var];
@@ -1089,6 +1099,7 @@ void SharedBoundsManager::FixVariablesFromPartialSolution(
     lower_bounds_[var] = solution[var];
     upper_bounds_[var] = solution[var];
     changed_variables_since_last_synchronize_.Set(var);
+    ++num_changes;
 
     // This is problematic as we might find a different partial solution.
     // To allow for further investigation, we currently fix it to the debug
@@ -1102,6 +1113,9 @@ void SharedBoundsManager::FixVariablesFromPartialSolution(
         upper_bounds_[var] = debug_solution_[var];
       }
     }
+  }
+  if (num_changes > 0) {
+    timestamp_++;
   }
 }
 
@@ -1119,9 +1133,10 @@ void SharedBoundsManager::Synchronize() {
   changed_variables_since_last_synchronize_.ResetAllToFalse();
 }
 
-int SharedBoundsManager::RegisterNewId() {
+int SharedBoundsManager::RegisterNewId(absl::string_view name) {
   absl::MutexLock mutex_lock(mutex_);
   const int id = id_to_changed_variables_.size();
+  id_to_name_.emplace_back(name);
   id_to_changed_variables_.resize(id + 1);
   id_to_changed_variables_[id].ClearAndResize(num_variables_);
   for (int var = 0; var < num_variables_; ++var) {
@@ -1139,7 +1154,7 @@ int SharedBoundsManager::RegisterNewId() {
 
 void SharedBoundsManager::GetChangedBounds(
     int id, std::vector<int>* variables, std::vector<int64_t>* new_lower_bounds,
-    std::vector<int64_t>* new_upper_bounds) {
+    std::vector<int64_t>* new_upper_bounds, int64_t* timestamp) {
   variables->clear();
   new_lower_bounds->clear();
   new_upper_bounds->clear();
@@ -1160,6 +1175,14 @@ void SharedBoundsManager::GetChangedBounds(
     for (const int var : *variables) {
       new_lower_bounds->push_back(synchronized_lower_bounds_[var]);
       new_upper_bounds->push_back(synchronized_upper_bounds_[var]);
+    }
+
+    // Update the stats.
+    if (!variables->empty()) {
+      bounds_stats_[id_to_name_[id]].num_imported += variables->size();
+    }
+    if (timestamp != nullptr) {
+      *timestamp = timestamp_;
     }
   }
 
@@ -1198,12 +1221,13 @@ void SharedBoundsManager::UpdateDomains(std::vector<Domain>* domains) {
 
 void SharedBoundsManager::LogStatistics(SolverLogger* logger) {
   absl::MutexLock mutex_lock(mutex_);
-  if (!bounds_exported_.empty()) {
+  if (!bounds_stats_.empty()) {
     std::vector<std::vector<std::string>> table;
-    table.push_back({"Improving bounds shared", "Num", "Sym"});
-    for (const auto& entry : bounds_exported_) {
+    table.push_back({"Improving bounds shared", "Exported", "Imported", "Sym"});
+    for (const auto& entry : bounds_stats_) {
       table.push_back({FormatName(entry.first),
                        FormatCounter(entry.second.num_exported),
+                       FormatCounter(entry.second.num_imported),
                        FormatCounter(entry.second.num_symmetric)});
     }
     SOLVER_LOG(logger, FormatTable(table));
@@ -1212,8 +1236,8 @@ void SharedBoundsManager::LogStatistics(SolverLogger* logger) {
 
 int SharedBoundsManager::NumBoundsExported(absl::string_view worker_name) {
   absl::MutexLock mutex_lock(mutex_);
-  const auto it = bounds_exported_.find(worker_name);
-  if (it == bounds_exported_.end()) return 0;
+  const auto it = bounds_stats_.find(worker_name);
+  if (it == bounds_stats_.end()) return 0;
   return it->second.num_exported;
 }
 
@@ -1298,13 +1322,19 @@ int UniqueClauseStream::NumBufferedLiterals() const {
   return result;
 }
 
+// A wrapper around a clause that implements an unordered hash function.
+struct ClauseHasher {
+  absl::Span<const int> clause;
+
+  template <typename H>
+  friend H AbslHashValue(H h, const ClauseHasher& c) {
+    return H::combine_unordered(std::move(h), c.clause.begin(), c.clause.end());
+  }
+};
+
 size_t UniqueClauseStream::HashClause(absl::Span<const int> clause,
                                       size_t hash_seed) {
-  size_t hash = absl::HashOf(hash_seed, clause.size());
-  for (int i = 0; i < clause.size(); ++i) {
-    hash ^= absl::HashOf(clause[i], hash_seed);
-  }
-  return hash;
+  return absl::HashOf(ClauseHasher{clause}, hash_seed);
 }
 
 absl::Span<const int> UniqueClauseStream::NextClause(int size) const {
@@ -1358,8 +1388,7 @@ bool SharedClausesManager::ShouldReadBatch(int reader_id, int writer_id) {
 }
 
 void SharedClausesManager::AddBinaryClause(int id, int lit1, int lit2) {
-  if (lit2 < lit1) std::swap(lit1, lit2);
-  const auto p = std::make_pair(lit1, lit2);
+  const auto p = std::minmax(lit1, lit2);
 
   absl::MutexLock mutex_lock(mutex_);
   const auto [unused_it, inserted] = added_binary_clauses_set_.insert(p);
@@ -1374,7 +1403,75 @@ void SharedClausesManager::AddBinaryClause(int id, int lit1, int lit2) {
         added_binary_clauses_.size() - 1) {
       id_to_last_processed_binary_clause_[id]++;
     }
+
+    const int lit1_negated = NegatedRef(lit1);
+    const int lit2_negated = NegatedRef(lit2);
+    const auto q = std::minmax(lit1_negated, lit2_negated);
+    if (added_binary_clauses_set_.contains(q)) {
+      // We have not(l1) => l2 and not(l2) => l1.
+      const Literal l1 =
+          Literal(BooleanVariable(PositiveRef(lit1)), RefIsPositive(lit1));
+      const Literal l2 =
+          Literal(BooleanVariable(PositiveRef(lit2)), RefIsPositive(lit2));
+      AddEdge(l1.NegatedIndex(), l2.Index());
+      AddEdge(l1.Index(), l2.NegatedIndex());
+      ++num_equivalences_;
+    }
   }
+}
+
+void SharedClausesManager::AddEdge(LiteralIndex a, LiteralIndex b) {
+  const size_t size = parents_.size();
+  const size_t new_size = std::max(a, b).value() + 1;
+  if (new_size > size) {
+    parents_.resize(new_size);
+    std::iota(parents_.begin() + size, parents_.end(), size);
+  }
+  const LiteralIndex rep_a = GetRepresentative(a);
+  const LiteralIndex rep_b = GetRepresentative(b);
+  // Always use the min as the new parent, in order to guarantee that the
+  // representative of not(a) is the negation of the representative of a. On the
+  // other hand, this does not give the shallowest new tree. This gives a less
+  // good algorithmic complexity compared with the classic union-find algorithm.
+  if (rep_a < rep_b) {
+    parents_[rep_b] = rep_a;
+  } else if (rep_b < rep_a) {
+    parents_[rep_a] = rep_b;
+  }
+}
+
+LiteralIndex SharedClausesManager::GetRepresentative(LiteralIndex a) {
+  if (a >= parents_.size()) return a;
+  // Find the representative.
+  LiteralIndex representative = a;
+  while (parents_[representative] != representative) {
+    representative = parents_[representative];
+  }
+  // Shorten the links.
+  while (a != representative) {
+    const LiteralIndex prev_parent = parents_[a];
+    parents_[a] = representative;
+    a = prev_parent;
+  }
+  return representative;
+}
+
+std::vector<int> SharedClausesManager::GetRepresentatives(int64_t* timestamp) {
+  absl::MutexLock mutex_lock(mutex_);
+  std::vector<int> representatives;
+  const int num_vars = parents_.size() / 2;
+  representatives.reserve(num_vars);
+  for (int i = 0; i < num_vars; ++i) {
+    const Literal lit = Literal(BooleanVariable(i), /*is_positive=*/true);
+    const Literal rep = Literal(GetRepresentative(lit.Index()));
+    DCHECK_EQ(GetRepresentative(lit.NegatedIndex()), rep.NegatedIndex());
+    const int rep_var = rep.Variable().value();
+    representatives.push_back(rep.IsPositive() ? rep_var : NegatedRef(rep_var));
+  }
+  if (timestamp != nullptr) {
+    *timestamp = num_equivalences_;
+  }
+  return representatives;
 }
 
 void SharedClausesManager::AddBatch(int id, CompactVectorVector<int> batch) {
@@ -1602,37 +1699,43 @@ void SharedStatistics::Log(SolverLogger* logger) {
 
 SharedLratProofStatus::SharedLratProofStatus()
     : num_subsolvers_(0),
+      num_lrat_checkers_(0),
       num_valid_proofs_(0),
       num_invalid_proofs_(0),
       num_unknown_proofs_(0),
-      lrat_check_enabled_(false),
-      drat_check_enabled_(false),
-      num_assumed_clauses_(0),
-      walltime_in_seconds_(0.0) {}
+      num_assumed_clauses_(0) {}
+
+int64_t SharedLratProofStatus::MaxOneBasedCnfIndex() const {
+  absl::MutexLock mutex_lock(mutex_);
+  return max_one_based_cnf_index_;
+}
+
+void SharedLratProofStatus::SetMaxOneBasedCnfIndex(
+    int64_t max_one_based_cnf_index) {
+  absl::MutexLock mutex_lock(mutex_);
+  max_one_based_cnf_index_ = max_one_based_cnf_index;
+}
 
 int SharedLratProofStatus::NewSubSolverId() {
   absl::MutexLock mutex_lock(mutex_);
   return num_subsolvers_++;
 }
 
-void SharedLratProofStatus::NewSubsolverProofStatus(
-    DratChecker::Status status, bool lrat_check_enabled,
-    bool drat_check_enabled, int num_assumed_clauses,
-    double walltime_in_seconds) {
+void SharedLratProofStatus::NewSubsolverProofStatus(Status status,
+                                                    bool lrat_check_enabled,
+                                                    int num_assumed_clauses) {
   absl::MutexLock mutex_lock(mutex_);
-  if (status == DratChecker::Status::VALID) {
-    num_valid_proofs_++;
-  } else if (status == DratChecker::Status::INVALID) {
-    num_invalid_proofs_++;
-  } else if (status == DratChecker::Status::UNKNOWN) {
-    num_unknown_proofs_++;
+  if (lrat_check_enabled) {
+    num_lrat_checkers_++;
+    if (status == Status::VALID) {
+      num_valid_proofs_++;
+    } else if (status == Status::INVALID) {
+      num_invalid_proofs_++;
+    } else if (status == Status::UNKNOWN) {
+      num_unknown_proofs_++;
+    }
   }
-  lrat_check_enabled_ |= lrat_check_enabled;
-  drat_check_enabled_ |= drat_check_enabled;
   num_assumed_clauses_ += num_assumed_clauses;
-  if (drat_check_enabled) {
-    walltime_in_seconds_ += walltime_in_seconds;
-  }
 }
 
 void SharedLratProofStatus::NewProofFile(absl::string_view filename) {
@@ -1640,15 +1743,15 @@ void SharedLratProofStatus::NewProofFile(absl::string_view filename) {
   proof_filenames_.push_back(std::string(filename));
 }
 
-std::vector<std::string> SharedLratProofStatus::GetProofFilenames() {
+std::vector<std::string> SharedLratProofStatus::GetProofFilenames() const {
   absl::MutexLock mutex_lock(mutex_);
   return proof_filenames_;
 }
 
 void SharedLratProofStatus::Log(SolverLogger* logger) {
   absl::MutexLock mutex_lock(mutex_);
-  if (lrat_check_enabled_ || drat_check_enabled_) {
-    if (num_valid_proofs_ == num_subsolvers_) {
+  if (num_lrat_checkers_ > 0) {
+    if (num_valid_proofs_ == num_lrat_checkers_) {
       if (num_assumed_clauses_ > 0) {
         SOLVER_LOG(logger, "LRAT_status: VALID_WITH_ASSUMED_CLAUSES");
       } else {
@@ -1659,16 +1762,10 @@ void SharedLratProofStatus::Log(SolverLogger* logger) {
     } else {
       SOLVER_LOG(logger, "LRAT_status: UNKNOWN");
     }
-    if (drat_check_enabled_) {
-      SOLVER_LOG(logger, "DRAT_walltime: ", walltime_in_seconds_);
-    }
   } else {
     // Always log an LRAT status to make it easier to extract it from a
     // multirun result with awk.
     SOLVER_LOG(logger, "LRAT_status: NA");
-    if (drat_check_enabled_) {
-      SOLVER_LOG(logger, "DRAT_walltime: NA");
-    }
   }
 }
 
