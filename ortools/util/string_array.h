@@ -17,19 +17,11 @@
 #include <string>
 #include <vector>
 
+#include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
 
 namespace operations_research {
 // ---------- Pretty Print Helpers ----------
-
-// See the straightforward (and unique) usage of this macro below.
-#define RETURN_STRINGIFIED_VECTOR(vector, separator, method) \
-  std::string out;                                           \
-  for (int i = 0; i < vector.size(); ++i) {                  \
-    if (i > 0) out += separator;                             \
-    out += vector[i] method;                                 \
-  }                                                          \
-  return out
 
 // Converts a vector into a string by calling the given method (or simply
 // getting the given string member), on all elements, and concatenating
@@ -38,31 +30,37 @@ namespace operations_research {
 // Join v[i].DebugString().
 template <class T>
 std::string JoinDebugString(const std::vector<T>& v,
-                            absl::string_view separator) {
-  RETURN_STRINGIFIED_VECTOR(v, separator, .DebugString());
+                            absl::string_view separator = ", ") {
+  return absl::StrJoin(v, separator, [](std::string* out, const T& t) {
+    out->append(t.DebugString());
+  });
 }
 
 // Join v[i]->DebugString().
 template <class T>
 std::string JoinDebugStringPtr(const std::vector<T>& v,
-                               absl::string_view separator) {
-  RETURN_STRINGIFIED_VECTOR(v, separator, ->DebugString());
+                               absl::string_view separator = ", ") {
+  return absl::StrJoin(v, separator, [](std::string* out, const T& t) {
+    out->append(t->DebugString());
+  });
 }
 
 // Join v[i]->name().
 template <class T>
-std::string JoinNamePtr(const std::vector<T>& v, absl::string_view separator) {
-  RETURN_STRINGIFIED_VECTOR(v, separator, ->name());
+std::string JoinNamePtr(const std::vector<T>& v,
+                        absl::string_view separator = ", ") {
+  return absl::StrJoin(v, separator, [](std::string* out, const T& t) {
+    out->append(t->name());
+  });
 }
 
 // Join v[i]->name.
 template <class T>
 std::string JoinNameFieldPtr(const std::vector<T>& v,
-                             absl::string_view separator) {
-  RETURN_STRINGIFIED_VECTOR(v, separator, ->name);
+                             absl::string_view separator = ", ") {
+  return absl::StrJoin(
+      v, separator, [](std::string* out, const T& t) { out->append(t->name); });
 }
-
-#undef RETURN_STRINGIFIED_VECTOR
 
 }  // namespace operations_research
 #endif  // ORTOOLS_UTIL_STRING_ARRAY_H_

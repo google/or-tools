@@ -31,14 +31,10 @@
 #include "ortools/base/file.h"
 #include "ortools/base/gzipstring.h"
 #include "ortools/base/helpers.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/options.h"
 #include "ortools/base/status_macros.h"
 
 namespace operations_research {
-
-using google::protobuf::util::JsonParseOptions;
-using google::protobuf::util::JsonStringToMessage;
 
 absl::StatusOr<std::string> ReadFileToString(absl::string_view filename) {
   std::string contents;
@@ -119,7 +115,7 @@ absl::Status StringToProto(absl::string_view data,
   }
   std::string json_error;
   absl::Status json_status =
-      JsonStringToMessage(data, proto, JsonParseOptions());
+      ::google::protobuf::util::JsonStringToMessage(data, proto);
   if (json_status.ok()) {
     // NOTE(user): We protect against the JSON proto3 parser being very lenient
     // and easily accepting any JSON as a valid JSON for our proto: if the
@@ -164,34 +160,30 @@ absl::Status WriteProtoToFile(absl::string_view filename,
       }
       break;
     case ProtoWriteFormat::kJson: {
+      google::protobuf::json::PrintOptions options;
+      options.add_whitespace = true;
+      options.unquote_int64_if_possible = true;
+      options.always_print_fields_with_no_presence = true;
+      options.preserve_proto_field_names = true;
+      if (!google::protobuf::json::MessageToJsonString(proto, &output_string,
+                                                       options)
+               .ok()) {
+        return make_error("google::protobuf::json::MessageToJsonString()");
+      }
+      file_type_suffix = ".json";
+      break;
+    }
+    case ProtoWriteFormat::kCanonicalJson: {
       google::protobuf::util::JsonPrintOptions options;
       options.add_whitespace = true;
-#if PROTOBUF_VERSION >= 5026000  // Version 26.0.0
-      options.always_print_fields_with_no_presence = true;
-#else
-      options.always_print_primitive_fields = true;
-#endif
-      options.preserve_proto_field_names = true;
       if (!google::protobuf::util::MessageToJsonString(proto, &output_string,
                                                        options)
                .ok()) {
-        LOG(WARNING) << "Printing to stream failed.";
         return make_error("google::protobuf::util::MessageToJsonString()");
       }
       file_type_suffix = ".json";
       break;
     }
-    case ProtoWriteFormat::kCanonicalJson:
-      google::protobuf::util::JsonPrintOptions options;
-      options.add_whitespace = true;
-      if (!google::protobuf::util::MessageToJsonString(proto, &output_string,
-                                                       options)
-               .ok()) {
-        LOG(WARNING) << "Printing to stream failed.";
-        return make_error("google::protobuf::util::MessageToJsonString()");
-      }
-      file_type_suffix = ".json";
-      break;
   }
   if (gzipped) {
     std::string gzip_string;

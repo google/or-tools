@@ -14,17 +14,41 @@
 # Description: java wrapping of (some of) the code in ../, plus
 # some generic utilities for SWIG java.
 
+load("@contrib_rules_jvm//java:defs.bzl", "java_junit5_test")
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
 load("//bazel:swig_java.bzl", "java_wrap_cc")
+
+package(default_visibility = ["//visibility:public"])
 
 # These .swig files are currently just included in other .swig files.
 # TODO(user): Create dedicated java_wrap_cc rules and unit tests.
 exports_files(
     [
         "absl_string_view.swig",
-        "proto.i",
         "sorted_interval_list.swig",
         "tuple_set.swig",
         "vector.swig",
+        "java_swig_solve_interrupter.swig",
+        "proto.i",
+        "status.swig",
+    ],
+)
+
+cc_library(
+    name = "wrappers",
+    srcs = ["wrappers.cc"],
+    hdrs = ["wrappers.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "@abseil-cpp//absl/base:nullability",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:die_if_null",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/types:span",
+        "@protobuf",
     ],
 )
 
@@ -44,5 +68,109 @@ java_wrap_cc(
     deps = [
         "//ortools/base",
         "//ortools/util:sorted_interval_list",
+    ],
+)
+
+cc_library(
+    name = "java_swig_solve_interrupter",
+    hdrs = ["java_swig_solve_interrupter.h"],
+    visibility = ["//visibility:public"],
+    deps = ["//ortools/util:solve_interrupter"],
+)
+
+cc_test(
+    name = "java_swig_solve_interrupter_test",
+    srcs = ["java_swig_solve_interrupter_test.cc"],
+    deps = [
+        ":java_swig_solve_interrupter",
+        "//ortools/base:gmock_main",
+    ],
+)
+
+java_wrap_cc(
+    name = "java_swig_solve_interrupter_swig",
+    srcs = ["java_swig_solve_interrupter.swig"],
+    package = "com.google.ortools.util",
+    swig_includes = [
+        ":java_swig_solve_interrupter",
+        "//ortools/base:base_swig",
+    ],
+    visibility = [
+        "//javatests/com/google/wrappers/util/operationsresearch:__subpackages__",
+        "//ortools:__subpackages__",
+        "//visibility:public",
+    ],
+    deps = [":java_swig_solve_interrupter"],
+)
+
+JNI_DEPS = select({
+    "//conditions:default": ["@bazel_tools//tools/jdk:jni"],
+})
+
+cc_library(
+    name = "jni_helper",
+    srcs = ["jni_helper.cc"],
+    hdrs = ["jni_helper.h"],
+    deps = [
+        "@abseil-cpp//absl/base:nullability",
+        "@abseil-cpp//absl/synchronization",
+    ] + JNI_DEPS,
+)
+
+cc_binary(
+    name = "gen_wrappers_test_message_java_swig",
+    testonly = 1,
+    srcs = ["gen_wrappers_test_message_java_swig.cc"],
+    tags = ["manual"],
+    deps = [
+        ":wrappers",
+        "//ortools/base",
+        "//ortools/util/testdata:wrappers_test_message_cc_proto",
+        "@abseil-cpp//absl/flags:parse",
+        "@abseil-cpp//absl/flags:usage",
+        "@abseil-cpp//absl/log:die_if_null",
+        "@abseil-cpp//absl/log:initialize",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+    ],
+)
+
+genrule(
+    name = "run_gen_wrappers_test_message_java_swig",
+    testonly = 1,
+    outs = ["wrappers_test_message.swig"],
+    cmd = "$(location :gen_wrappers_test_message_java_swig) > $@",
+    tags = ["manual"],
+    tools = [":gen_wrappers_test_message_java_swig"],
+)
+
+java_wrap_cc(
+    name = "wrappers_test_message",
+    srcs = ["wrappers_test_message.swig"],
+    package = "com.google.ortools.util",
+    swig_includes = [
+        "//ortools/base:base_swig",
+    ],
+    use_directors = True,
+    deps = [
+        ":jni_helper",
+        "//ortools/base",
+        "//ortools/port:proto_utils",
+        "//ortools/util/testdata:wrappers_test_message_cc_proto",
+    ],
+)
+
+java_junit5_test(
+    name = "WrappersTestMessageTest",
+    srcs = ["WrappersTestMessageTest.java"],
+    test_class = "WrappersTestMessageTest",
+    deps = [
+        ":wrappers_test_message",
+        "//ortools/java/com/google/ortools:Loader",
+        "@maven//:org_junit_jupiter_junit_jupiter_api",
+        "@maven//:org_junit_jupiter_junit_jupiter_engine",
+        "@maven//:org_junit_jupiter_junit_jupiter_params",
+        "@maven//:org_junit_platform_junit_platform_launcher",
+        "@maven//:org_junit_platform_junit_platform_reporting",
     ],
 )

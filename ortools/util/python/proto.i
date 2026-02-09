@@ -106,4 +106,24 @@ namespace operations_research {
   delete $1;
 }
 %enddef  // PY_PROTO_TYPEMAP
+
+// SWIG Macro for mapping protocol message enum type.
+// @param CppEnumProto the C++ protocol message enum type
+// @param PythonEnumProto the corresponding Python protocol message enum type
+%define PY_PROTO_ENUM_TYPEMAP(CppEnumProto, PythonEnumProto)
+// Typemap for passing Python Proto Enums to C++
+%typemap(in) CppEnumProto {
+    if (PyLong_Check($input)) {
+        // Convert Python int to C++ enum type
+        $1 = static_cast<CppEnumProto>(PyLong_AsLong($input));
+    } else {
+        PyErr_SetString(PyExc_TypeError, "Expected an integer (PythonEnumProto)");
+        SWIG_fail;
+    }
+}
+%typemap(out) CppEnumProto {
+    $result = PyLong_FromLong((long)$1);
+}
+%enddef // end PY_PROTO_ENUM_TYPEMAP
+
 }  // namespace operations_research

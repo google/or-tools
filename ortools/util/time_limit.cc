@@ -25,6 +25,8 @@
 #include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "absl/time/time.h"
+#include "ortools/base/macros/buildenv.h"
+#include "ortools/base/macros/os_support.h"
 
 ABSL_FLAG(bool, time_limit_use_usertime, false,
           "If true, rely on the user time in the TimeLimit class. This is "

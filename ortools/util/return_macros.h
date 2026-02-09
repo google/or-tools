@@ -14,6 +14,9 @@
 #ifndef ORTOOLS_UTIL_RETURN_MACROS_H_
 #define ORTOOLS_UTIL_RETURN_MACROS_H_
 
+#include "absl/log/check.h"  // IWYU pragma: keep
+#include "absl/log/log.h"    // IWYU pragma: keep
+
 // Macros to replace CHECK_NOTNULL() so we don't crash in production.
 // Logs a FATAL message in debug mode, and an ERROR message in production.
 // It is not perfect, but more robust than crashing right away.

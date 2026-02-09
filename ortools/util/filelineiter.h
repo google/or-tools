@@ -29,8 +29,8 @@
 #include <cstdint>
 #include <string>
 
+#include "absl/log/log.h"
 #include "ortools/base/file.h"
-#include "ortools/base/logging.h"
 
 // Implements the minimum interface for a range-based for loop iterator.
 class FileLineIterator {

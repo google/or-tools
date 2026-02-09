@@ -20,9 +20,9 @@
 
 #include "absl/base/nullability.h"
 #include "absl/base/thread_annotations.h"
+#include "absl/container/linked_hash_map.h"
 #include "absl/functional/any_invocable.h"
 #include "absl/synchronization/mutex.h"
-#include "ortools/base/linked_hash_map.h"
 #include "ortools/base/strong_int.h"
 
 namespace operations_research {
@@ -105,7 +105,7 @@ class SolveInterrupter {
   // * or after Interrupt() has been called.
   //
   // This reflects the fact that callback can only be called once.
-  mutable gtl::linked_hash_map<CallbackId, absl_nullable Callback> callbacks_
+  mutable absl::linked_hash_map<CallbackId, absl_nullable Callback> callbacks_
       ABSL_GUARDED_BY(mutex_);
 };
 

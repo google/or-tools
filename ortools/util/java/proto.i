@@ -89,6 +89,61 @@
 }
 %enddef // PROTO2_RETURN
 
+%define PROTO2_CALLBACK_ARGUMENT(CppProtoType, JavaProtoType, JavaProtoTypeWithSlashes, param_name)
+%typemap(directorin, descriptor="L"JavaProtoTypeWithSlashes";") const CppProtoType& %{
+  const size_t size = $1.ByteSizeLong();
+  const std::unique_ptr<jbyte[]> buf(new jbyte[size]);
+  $1.SerializeWithCachedSizesToArray(reinterpret_cast<uint8_t*>(buf.get()));
+  $input = jenv->NewByteArray(size);
+  jenv->SetByteArrayRegion($input, 0, size, buf.get());
+  Swig::LocalRefGuard $1_refguard(jenv, $input);
+%}
+
+%typemap(javadirectorin) const CppProtoType& %{
+  // This code is injected as a parameter in a function call. Thus it must be an
+  // expression.
+  new Object() {
+    JavaProtoType run() {
+      byte[] buf = $jniinput;
+      if (buf == null) {
+        return null;
+      }
+      try {
+        return JavaProtoType.parseFrom(buf);
+      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        throw new RuntimeException(
+            "Unable to parse JavaProtoType protocol message.");
+      }
+    }
+  }.run()
+%}
+
+PROTO_INPUT(CppProtoType, JavaProtoType, param_name);
+%enddef // PROTO2_CALLBACK_ARGUMENT
+
+%define PROTO2_CALLBACK_RETURN(CppProtoType, JavaProtoType, JavaProtoTypeWithSlashes)
+%typemap(directorout) CppProtoType %{
+  if ($input != nullptr) {
+    const int proto_size = jenv->GetArrayLength($input);
+    const std::unique_ptr<jbyte[]> proto_buffer(new jbyte[proto_size]);
+    jenv->GetByteArrayRegion($input, 0, proto_size, proto_buffer.get());
+    if (!$result.ParseFromArray(proto_buffer.get(), proto_size)) {
+      SWIG_JavaThrowException(jenv,
+                              SWIG_JavaRuntimeException,
+                              "Unable to parse CppProtoType protocol message.");
+    }
+  }
+%}
+
+%typemap(javadirectorout) CppProtoType %{
+  $javacall == null ? null : $javacall.toByteArray()
+%}
+
+%typemap(directorin, descriptor="L"JavaProtoTypeWithSlashes";") CppProtoType {}
+
+PROTO2_RETURN(CppProtoType, JavaProtoType);
+%enddef // PROTO2_CALLBACK_RETURN
+
 // SWIG Macro for mapping protocol message enum type.
 // @param CppEnumProto the C++ protocol message enum type
 // @param JavaEnumProto the corresponding Java protocol message enum type
@@ -107,3 +162,16 @@
 
 %enddef // end PROTO_ENUM_RETURN
 
+%define PROTO2_ENUM_INPUT_COMMON(CppEnumProto, JavaEnumProto, param_name)
+%typemap(jni) CppEnumProto INPUT "jint"
+%typemap(jtype) CppEnumProto INPUT "int"
+%typemap(jstype) CppEnumProto INPUT "JavaEnumProto"
+%typemap(javain) CppEnumProto INPUT "$javainput.getNumber()"
+%typemap(in) CppEnumProto {
+  $1 = (CppEnumProto) $input;
+}
+
+%apply CppEnumProto INPUT { CppEnumProto param_name }
+%apply CppEnumProto INPUT { const CppEnumProto& param_name }
+%apply CppEnumProto INPUT { CppEnumProto& param_name }
+%enddef // end PROTO2_ENUM_INPUT_COMMON

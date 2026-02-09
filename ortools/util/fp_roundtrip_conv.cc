@@ -29,7 +29,6 @@
 #include "absl/strings/escaping.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/status_builder.h"
 
 namespace operations_research {

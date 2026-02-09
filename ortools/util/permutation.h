@@ -77,7 +77,8 @@
 #ifndef ORTOOLS_UTIL_PERMUTATION_H_
 #define ORTOOLS_UTIL_PERMUTATION_H_
 
-#include "ortools/base/logging.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 
 namespace operations_research {
 
@@ -110,7 +111,7 @@ class PermutationCycleHandler {
   // This method must be overridden in implementations where it is
   // called. If an implementation doesn't call it, no need to
   // override.
-  virtual void SetSeen(IndexType* unused_permutation_element) const {
+  virtual void SetSeen(IndexType*) const {
     LOG(FATAL) << "Base implementation of SetSeen() must not be called.";
   }
 
@@ -121,7 +122,7 @@ class PermutationCycleHandler {
   // This method must be overridden in implementations where it is
   // called. If an implementation doesn't call it, no need to
   // override.
-  virtual bool Unseen(IndexType unused_permutation_element) const {
+  virtual bool Unseen(IndexType) const {
     LOG(FATAL) << "Base implementation of Unseen() must not be called.";
     return false;
   }

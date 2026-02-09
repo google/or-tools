@@ -39,8 +39,8 @@ cc_library(
     name = "affine_relation",
     hdrs = ["affine_relation.h"],
     deps = [
-        "//ortools/base",
         "//ortools/base:iterator_adaptors",
+        "@abseil-cpp//absl/log:check",
     ],
 )
 
@@ -48,9 +48,10 @@ cc_library(
     name = "filelineiter",
     hdrs = ["filelineiter.h"],
     deps = [
-        "//ortools/base",
         "//ortools/base:file",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:string_view",
     ],
 )
 
@@ -68,24 +69,22 @@ cc_library(
     name = "cached_log",
     srcs = ["cached_log.cc"],
     hdrs = ["cached_log.h"],
-    deps = [
-        "//ortools/base",
-    ],
+    deps = ["@abseil-cpp//absl/log:check"],
 )
 
 cc_library(
     name = "zvector",
     hdrs = ["zvector.h"],
-    deps = [
-        "//ortools/base",
-        "@abseil-cpp//absl/log:check",
-    ],
+    deps = ["@abseil-cpp//absl/log:check"],
 )
 
 cc_library(
     name = "permutation",
     hdrs = ["permutation.h"],
-    deps = ["//ortools/base"],
+    deps = [
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+    ],
 )
 
 cc_library(
@@ -109,13 +108,13 @@ cc_library(
     }),
     deps = [
         ":saturated_arithmetic",
-        "//ortools/base",
         "//ortools/base:dump_vars",
         "//ortools/base:mathutil",
         "//ortools/base:types",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/container:btree",
         "@abseil-cpp//absl/container:inlined_vector",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings:str_format",
         "@abseil-cpp//absl/strings:string_view",
@@ -126,7 +125,7 @@ cc_library(
     name = "rational_approximation",
     srcs = ["rational_approximation.cc"],
     hdrs = ["rational_approximation.h"],
-    deps = ["//ortools/base"],
+    deps = ["@abseil-cpp//absl/log:check"],
 )
 
 cc_library(
@@ -135,9 +134,11 @@ cc_library(
     hdrs = ["sorted_interval_list.h"],
     deps = [
         ":saturated_arithmetic",
-        "//ortools/base",
         "//ortools/base:types",
+        "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/container:inlined_vector",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/numeric:int128",
         "@abseil-cpp//absl/strings:str_format",
         "@abseil-cpp//absl/types:span",
@@ -154,10 +155,11 @@ cc_library(
     name = "tuple_set",
     hdrs = ["tuple_set.h"],
     deps = [
-        "//ortools/base",
-        "//ortools/base:hash",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/hash",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -166,13 +168,13 @@ cc_library(
     srcs = ["stats.cc"],
     hdrs = ["stats.h"],
     deps = [
-        "//ortools/base",
         "//ortools/base:timer",
         "//ortools/port:sysinfo",
         "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
-        "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/strings:string_view",
         "@abseil-cpp//absl/time",
     ],
 )
@@ -184,8 +186,11 @@ cc_library(
     deps = [
         ":running_stat",
         "//ortools/base:base_export",
+        "//ortools/base:threadpool",
         "//ortools/base:timer",
         "//ortools/base:types",
+        "//ortools/base/macros:buildenv",
+        "//ortools/base/macros:os_support",
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/flags:flag",
@@ -203,8 +208,9 @@ cc_library(
     srcs = ["sigint.cc"],
     hdrs = ["sigint.h"],
     deps = [
-        "//ortools/base",
-        "//ortools/port:os",
+        "//ortools/base:threadpool",
+        "//ortools/base/macros:os_support",
+        "@abseil-cpp//absl/log",
     ],
 )
 
@@ -233,7 +239,7 @@ cc_library(
     name = "monoid_operation_tree",
     hdrs = ["monoid_operation_tree.h"],
     deps = [
-        "//ortools/base",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings:str_format",
     ],
 )
@@ -241,12 +247,16 @@ cc_library(
 cc_library(
     name = "return_macros",
     hdrs = ["return_macros.h"],
+    deps = [
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+    ],
 )
 
 cc_library(
     name = "running_stat",
     hdrs = ["running_stat.h"],
-    deps = ["//ortools/base"],
+    deps = ["@abseil-cpp//absl/log:check"],
 )
 
 cc_library(
@@ -255,6 +265,7 @@ cc_library(
     hdrs = ["proto_tools.h"],
     deps = [
         "//ortools/base:murmur",
+        "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/numeric:int128",
@@ -282,7 +293,6 @@ py_proto_library(
 )
 
 # helper library for the swig wrappers.
-
 cc_library(
     name = "functions_swig_helpers",
     hdrs = ["functions_swig_helpers.h"],
@@ -291,7 +301,7 @@ cc_library(
 
 cc_library(
     name = "functions_swig_test_helpers",
-    testonly = 1,
+    testonly = True,
     hdrs = ["functions_swig_test_helpers.h"],
 )
 
@@ -310,8 +320,8 @@ cc_library(
     hdrs = ["range_query_function.h"],
     deps = [
         ":range_minimum_query",
-        "//ortools/base",
         "//ortools/base:types",
+        "@abseil-cpp//absl/log:check",
     ],
 )
 
@@ -319,19 +329,10 @@ cc_library(
     name = "rev",
     hdrs = ["rev.h"],
     deps = [
-        "//ortools/base",
         "//ortools/base:strong_vector",
         "@abseil-cpp//absl/container:flat_hash_map",
-    ],
-)
-
-cc_library(
-    name = "vector_or_function",
-    hdrs = ["vector_or_function.h"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":flat_matrix",
-        "//ortools/base",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
     ],
 )
 
@@ -345,6 +346,7 @@ cc_library(
         ":filelineiter",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:string_view",
     ],
 )
 
@@ -359,7 +361,6 @@ cc_library(
     srcs = ["file_util.cc"],
     hdrs = ["file_util.h"],
     deps = [
-        "//ortools/base",
         "//ortools/base:file",
         "//ortools/base:gzipstring",
         "//ortools/base:recordio",
@@ -368,8 +369,8 @@ cc_library(
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
-        "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/strings:string_view",
         "@protobuf",
     ],
 )
@@ -383,18 +384,7 @@ cc_library(
     name = "integer_pq",
     hdrs = ["integer_pq.h"],
     visibility = ["//visibility:public"],
-    deps = ["//ortools/base"],
-)
-
-cc_library(
-    name = "string_util",
-    srcs = ["string_util.cc"],
-    hdrs = ["string_util.h"],
-    deps = [
-        "//ortools/base",
-        "@abseil-cpp//absl/strings",
-        "@abseil-cpp//absl/strings:str_format",
-    ],
+    deps = ["@abseil-cpp//absl/log:check"],
 )
 
 cc_library(
@@ -430,8 +420,8 @@ cc_library(
     hdrs = ["strong_integers.h"],
     deps = [
         "@abseil-cpp//absl/base:core_headers",
-        "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/strings:string_view",
     ],
 )
 
@@ -446,13 +436,13 @@ cc_library(
     srcs = ["fp_roundtrip_conv.cc"],
     hdrs = ["fp_roundtrip_conv.h"],
     deps = [
-        "//ortools/base:logging",
         "//ortools/base:status_macros",
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/strings:string_view",
     ],
 )
 
@@ -464,27 +454,9 @@ cc_library(
 
 cc_library(
     name = "fp_roundtrip_conv_testing",
-    testonly = 1,
+    testonly = True,
     hdrs = ["fp_roundtrip_conv_testing.h"],
-    deps = ["@abseil-cpp//absl/strings"],
-)
-
-cc_library(
-    name = "aligned_memory",
-    srcs = ["aligned_memory_internal.h"],
-    hdrs = ["aligned_memory.h"],
-    deps = ["//ortools/base:mathutil"],
-)
-
-cc_library(
-    name = "vector_sum",
-    srcs = ["vector_sum_internal.h"],
-    hdrs = ["vector_sum.h"],
-    deps = [
-        ":aligned_memory",
-        "@abseil-cpp//absl/base:core_headers",
-        "@abseil-cpp//absl/types:span",
-    ],
+    deps = ["@abseil-cpp//absl/strings:string_view"],
 )
 
 cc_library(
@@ -493,6 +465,7 @@ cc_library(
     hdrs = ["parse_proto.h"],
     deps = [
         "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:string_view",
         "@protobuf",
     ],
 )
@@ -512,12 +485,12 @@ cc_library(
     srcs = ["solve_interrupter.cc"],
     hdrs = ["solve_interrupter.h"],
     deps = [
-        "//ortools/base:intops",
-        "//ortools/base:linked_hash_map",
-        "//ortools/base:logging",
+        "//ortools/base:strong_int",
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/base:nullability",
+        "@abseil-cpp//absl/container:linked_hash_map",
         "@abseil-cpp//absl/functional:any_invocable",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/synchronization",
     ],
 )

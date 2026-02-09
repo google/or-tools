@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 import copy
+
 from absl.testing import absltest
+
 from ortools.util.python import sorted_interval_list as sil
 
 
@@ -107,6 +108,14 @@ class SortedIntervalListTest(absltest.TestCase):
                 sil.Domain.from_values({0, 2, 4})
             )
         )
+
+    def testEq(self):
+        d1 = sil.Domain(0, 5)
+        d2 = sil.Domain(0, 5)
+        d3 = sil.Domain(0, 6)
+        self.assertIsNot(d1, d2)
+        self.assertEqual(d1, d2)
+        self.assertNotEqual(d1, d3)
 
     def testStr(self):
         d1 = sil.Domain(0, 5)

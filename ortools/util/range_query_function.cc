@@ -19,7 +19,7 @@
 #include <utility>
 #include <vector>
 
-#include "ortools/base/logging.h"
+#include "absl/log/check.h"
 #include "ortools/base/types.h"
 #include "ortools/util/range_minimum_query.h"
 

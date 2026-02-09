@@ -15,10 +15,13 @@
 # some generic utilities for SWIG python.
 
 load("@pip_deps//:requirements.bzl", "requirement")
-load("@pybind11_bazel//:build_defs.bzl", "pybind_extension")
+load("@pybind11_bazel//:build_defs.bzl", "pybind_extension", "pybind_library")
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_python//python:py_library.bzl", "py_library")
 load("@rules_python//python:py_test.bzl", "py_test")
+
+package(default_visibility = ["//visibility:public"])
 
 cc_library(
     name = "sorted_interval_list_doc",
@@ -37,12 +40,41 @@ pybind_extension(
     ],
 )
 
+pybind_library(
+    name = "sorted_interval_list_deps",
+    srcs = ["sorted_interval_list.cc"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":sorted_interval_list_doc",
+        "//ortools/util:sorted_interval_list",
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
 py_test(
     name = "sorted_interval_list_test",
     srcs = ["sorted_interval_list_test.py"],
     deps = [
         ":sorted_interval_list",
         requirement("absl-py"),
+    ],
+)
+
+pybind_extension(
+    name = "piecewise_linear_function",
+    srcs = ["piecewise_linear_function.cc"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//ortools/util:piecewise_linear_function",
+    ],
+)
+
+pybind_library(
+    name = "piecewise_linear_function_deps",
+    srcs = ["piecewise_linear_function.cc"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//ortools/util:piecewise_linear_function",
     ],
 )
 
@@ -61,6 +93,7 @@ cc_library(
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/base:nullability",
         "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/synchronization",
     ],
 )
@@ -121,6 +154,78 @@ py_test(
         ":py_solve_interrupter_testing_lib",
         ":pybind_solve_interrupter_testing",
         ":solve_interrupter",
+        requirement("absl-py"),
+    ],
+)
+
+cc_library(
+    name = "wrappers",
+    srcs = ["wrappers.cc"],
+    hdrs = ["wrappers.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/base:nullability",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/log:die_if_null",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/types:span",
+        "@protobuf",
+    ],
+)
+
+cc_binary(
+    name = "gen_wrappers_test_message_pybind11",
+    testonly = True,
+    srcs = ["gen_wrappers_test_message_pybind11.cc"],
+    deps = [
+        ":wrappers",
+        "//ortools/base",
+        "//ortools/util/testdata:wrappers_test_message_cc_proto",
+        "@abseil-cpp//absl/flags:parse",
+        "@abseil-cpp//absl/flags:usage",
+        "@abseil-cpp//absl/log:die_if_null",
+        "@abseil-cpp//absl/log:initialize",
+        "@abseil-cpp//absl/strings",  # IWYU pragma: keep
+        "@abseil-cpp//absl/strings:str_format",
+    ],
+)
+
+genrule(
+    name = "run_gen_wrappers_test_message_pybind11",
+    testonly = True,
+    outs = ["wrappers_test_message_pybind11.h"],
+    cmd = "$(location :gen_wrappers_test_message_pybind11) > $@",
+    tools = [":gen_wrappers_test_message_pybind11"],
+)
+
+cc_library(
+    name = "wrappers_test_message_pybind11",
+    testonly = True,
+    hdrs = ["wrappers_test_message_pybind11.h"],
+)
+
+pybind_extension(
+    name = "wrappers_test_message_extension",
+    testonly = True,
+    srcs = ["wrappers_test_message_extension.cc"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":wrappers_test_message_pybind11",
+        "//ortools/port:proto_utils",
+        "//ortools/util/testdata:wrappers_test_message_cc_proto",
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
+py_test(
+    name = "wrappers_test_message_test",
+    srcs = ["wrappers_test_message_test.py"],
+    deps = [
+        ":wrappers_test_message_extension",
         requirement("absl-py"),
     ],
 )

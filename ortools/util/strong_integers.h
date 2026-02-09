@@ -56,6 +56,7 @@
 #include <iosfwd>
 #include <limits>
 #include <ostream>  // NOLINT
+#include <unordered_map>
 
 #include "absl/base/attributes.h"
 #include "absl/base/port.h"
@@ -403,13 +404,13 @@ struct numeric_limits<operations_research::StrongIndex<Tag>> {
       numeric_limits<NativeTypeT>::tinyness_before;
   // NOLINTEND(google3-readability-class-member-naming)
 
-  static constexpr StrongIntT(min)() {
+  static constexpr StrongIntT min() {
     return StrongIntT(numeric_limits<NativeTypeT>::min());
   }
   static constexpr StrongIntT lowest() {
     return StrongIntT(numeric_limits<NativeTypeT>::lowest());
   }
-  static constexpr StrongIntT(max)() {
+  static constexpr StrongIntT max() {
     return StrongIntT(numeric_limits<NativeTypeT>::max());
   }
   static constexpr StrongIntT epsilon() { return StrongIntT(); }
@@ -462,13 +463,13 @@ struct numeric_limits<operations_research::StrongInt64<Tag>> {
       numeric_limits<NativeTypeT>::tinyness_before;
   // NOLINTEND(google3-readability-class-member-naming)
 
-  static constexpr StrongIntT(min)() {
+  static constexpr StrongIntT min() {
     return StrongIntT(numeric_limits<NativeTypeT>::min());
   }
   static constexpr StrongIntT lowest() {
     return StrongIntT(numeric_limits<NativeTypeT>::lowest());
   }
-  static constexpr StrongIntT(max)() {
+  static constexpr StrongIntT max() {
     return StrongIntT(numeric_limits<NativeTypeT>::max());
   }
   static constexpr StrongIntT epsilon() { return StrongIntT(); }
