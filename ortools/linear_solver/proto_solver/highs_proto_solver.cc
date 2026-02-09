@@ -60,7 +60,7 @@ void HighsCallbackAdapter(int callback_type, const std::string& message,
   }
 }
 
-}
+}  // namespace
 
 absl::StatusOr<MPSolutionResponse> HighsSolveProto(
     LazyMutableCopy<MPModelRequest> request, HighsSolveInfo* solve_info,
@@ -103,9 +103,10 @@ absl::StatusOr<MPSolutionResponse> HighsSolveProto(
     highs.setOptionValue("log_to_console", true);
     highs.setOptionValue("output_flag", true);
     if (logging_callback != nullptr && *logging_callback) {
-      if (highs.setCallback(HighsCallbackAdapter,
-                            const_cast<std::function<void(const std::string&)>*>(
-                                logging_callback)) != HighsStatus::kOk) {
+      if (highs.setCallback(
+              HighsCallbackAdapter,
+              const_cast<std::function<void(const std::string&)>*>(
+                  logging_callback)) != HighsStatus::kOk) {
         response.set_status(MPSOLVER_ABNORMAL);
         response.set_status_str("HiGHS setCallback failed");
         return response;

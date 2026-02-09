@@ -274,7 +274,7 @@ class OR_DLL Model {
   using TransitCallback1 = ::operations_research::routing::TransitCallback1;
   using TransitCallback2 = ::operations_research::routing::TransitCallback2;
   using CumulDependentTransitCallback2 =
-     ::operations_research::routing::CumulDependentTransitCallback2;
+      ::operations_research::routing::CumulDependentTransitCallback2;
 #endif  // !defined(SWIG)
 
 #if !defined(SWIG)
