@@ -30,12 +30,12 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <initializer_list>
 #include <string>
 #include <vector>
 
 #include "absl/log/check.h"
 #include "absl/types/span.h"
-#include "ortools/base/types.h"
 #include "ortools/graph_base/iterators.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/permutation.h"
@@ -73,7 +73,6 @@ class SparseMatrix {
   //    {1, 2, 3},
   //    {4, 5, 6},
   //    {7, 8, 9}};
-#if (!defined(_MSC_VER) || _MSC_VER >= 1800)
   SparseMatrix(
       std::initializer_list<std::initializer_list<Fractional>> init_list);
 
@@ -81,7 +80,6 @@ class SparseMatrix {
   SparseMatrix(const SparseMatrix&) = delete;
   SparseMatrix& operator=(const SparseMatrix&) = delete;
 
-#endif
   // Clears internal data structure, i.e. erases all the columns and set
   // the number of rows to zero.
   void Clear();
