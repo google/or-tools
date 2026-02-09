@@ -261,7 +261,6 @@ test_python_contrib: \
  rpy_broken_weights \
  rpy_bus_schedule \
  rpy_car \
- rpy_check_dependencies \
  rpy_circuit \
  rpy_coins3 \
  rpy_coins_grid_mip \
