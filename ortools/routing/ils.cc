@@ -31,6 +31,7 @@
 #include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "google/protobuf/repeated_ptr_field.h"
+#include "ortools/constraint_solver/assignment.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/routing/ils.pb.h"
 #include "ortools/routing/parameters.pb.h"
@@ -283,11 +284,35 @@ std::unique_ptr<RoutingFilteredHeuristic> MakeRecreateProcedure(
 // improving candidate assignment.
 class GreedyDescentAcceptanceCriterion : public NeighborAcceptanceCriterion {
  public:
+  explicit GreedyDescentAcceptanceCriterion(int late_acceptance_window)
+      : late_acceptance_window_(late_acceptance_window), history_index_(0) {
+    if (late_acceptance_window_ > 0) {
+      history_.resize(late_acceptance_window_,
+                      std::numeric_limits<int64_t>::max());
+    }
+  }
+
   bool Accept([[maybe_unused]] const SearchState& search_state,
               const Assignment* candidate,
               const Assignment* reference) override {
-    return candidate->ObjectiveValue() < reference->ObjectiveValue();
+    const bool accept =
+        candidate->ObjectiveValue() < reference->ObjectiveValue() ||
+        (late_acceptance_window_ > 0 &&
+         candidate->ObjectiveValue() < history_[history_index_]);
+
+    if (late_acceptance_window_ > 0) {
+      history_[history_index_] =
+          accept ? candidate->ObjectiveValue() : history_[history_index_];
+      history_index_ = (history_index_ + 1) % history_.size();
+    }
+
+    return accept;
   }
+
+ private:
+  const int late_acceptance_window_;
+  std::vector<int64_t> history_;
+  int history_index_;
 };
 
 // Simulated annealing cooling schedule interface.
@@ -1283,7 +1308,8 @@ std::unique_ptr<NeighborAcceptanceCriterion> MakeNeighborAcceptanceCriterion(
     std::mt19937* rnd) {
   switch (acceptance_strategy.strategy_case()) {
     case AcceptanceStrategy::kGreedyDescent:
-      return std::make_unique<GreedyDescentAcceptanceCriterion>();
+      return std::make_unique<GreedyDescentAcceptanceCriterion>(
+          acceptance_strategy.greedy_descent().late_acceptance_window());
     case AcceptanceStrategy::kSimulatedAnnealing:
       return std::make_unique<SimulatedAnnealingAcceptanceCriterion>(
           MakeCoolingSchedule(model, acceptance_strategy.simulated_annealing(),

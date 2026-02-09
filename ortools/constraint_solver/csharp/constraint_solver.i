@@ -50,6 +50,7 @@ class RegularLimitParameters;
 #include <functional>
 
 #include "ortools/constraint_solver/constraint_solver.h"
+#include "ortools/constraint_solver/assignment.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/constraint_solver/search_limit.pb.h"
 #include "ortools/constraint_solver/solver_parameters.pb.h"
@@ -966,6 +967,7 @@ namespace operations_research {
 // TODO(user): Replace with %ignoreall/%unignoreall
 //swiglint: disable include-h-allglobals
 %include "ortools/constraint_solver/constraint_solver.h"
+%include "ortools/constraint_solver/assignment.h"
 %include "ortools/constraint_solver/constraint_solveri.h"
 
 namespace operations_research {

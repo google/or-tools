@@ -853,10 +853,11 @@ cc_library(
     hdrs = ["fap_utilities.h"],
     deps = [
         ":fap_parser",
-        "//ortools/base",
         "//ortools/base:map_util",
         "//ortools/constraint_solver:cp",
         "@abseil-cpp//absl/container:btree",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/types:span",
     ],
 )

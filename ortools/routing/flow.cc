@@ -26,6 +26,7 @@
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
+#include "ortools/constraint_solver/assignment.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/graph/min_cost_flow.h"
 #include "ortools/routing/lp_scheduling.h"

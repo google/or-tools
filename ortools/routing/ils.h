@@ -23,6 +23,7 @@
 #include <vector>
 
 #include "absl/time/time.h"
+#include "ortools/constraint_solver/assignment.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/routing/ils.pb.h"
 #include "ortools/routing/parameters.pb.h"

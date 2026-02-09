@@ -37,15 +37,17 @@
 #include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "ortools/base/bitmap.h"
-#include "ortools/base/logging.h"
+#include "ortools/base/map_util.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/base/timer.h"
 #include "ortools/base/types.h"
+#include "ortools/constraint_solver/assignment.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/constraint_solver/search_limit.pb.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/saturated_arithmetic.h"
+#include "ortools/util/stats.h"
 #include "ortools/util/string_array.h"
 
 ABSL_FLAG(bool, cp_use_sparse_gls_penalties, false,
@@ -312,23 +314,7 @@ void SearchLog::OutputLine(const std::string& line) {
 }
 
 std::string SearchLog::MemoryUsage() {
-  static const int64_t kDisplayThreshold = 2;
-  static const int64_t kKiloByte = 1024;
-  static const int64_t kMegaByte = kKiloByte * kKiloByte;
-  static const int64_t kGigaByte = kMegaByte * kKiloByte;
-  const int64_t memory_usage = Solver::MemoryUsage();
-  if (memory_usage > kDisplayThreshold * kGigaByte) {
-    return absl::StrFormat("memory used = %.2lf GB",
-                           memory_usage * 1.0 / kGigaByte);
-  } else if (memory_usage > kDisplayThreshold * kMegaByte) {
-    return absl::StrFormat("memory used = %.2lf MB",
-                           memory_usage * 1.0 / kMegaByte);
-  } else if (memory_usage > kDisplayThreshold * kKiloByte) {
-    return absl::StrFormat("memory used = %2lf KB",
-                           memory_usage * 1.0 / kKiloByte);
-  } else {
-    return absl::StrFormat("memory used = %d", memory_usage);
-  }
+  return absl::StrCat("memory used = ", operations_research::MemoryUsage());
 }
 
 SearchMonitor* Solver::MakeSearchLog(int branch_period) {

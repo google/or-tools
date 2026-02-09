@@ -25,6 +25,7 @@
 #include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "ortools/base/map_util.h"
+#include "ortools/constraint_solver/assignment.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/routing/parameters.pb.h"
 #include "ortools/routing/routing.h"

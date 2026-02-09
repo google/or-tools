@@ -17,32 +17,38 @@
 #include <cmath>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
 #include "ortools/port/sysinfo.h"
 
 namespace operations_research {
 
 std::string MemoryUsage() {
-  const int64_t mem = operations_research::sysinfo::MemoryUsageProcess();
-  static const int64_t kDisplayThreshold = 2;
-  static const int64_t kKiloByte = 1024;
-  static const int64_t kMegaByte = kKiloByte * kKiloByte;
-  static const int64_t kGigaByte = kMegaByte * kKiloByte;
+  const std::optional<uint64_t> result =
+      operations_research::sysinfo::MemoryUsageProcess();
+  if (!result.has_value()) {
+    return "Memory Usage Not Implemented";
+  }
+  constexpr double kDisplayThreshold = 2;
+  constexpr double kKiloByte = 1024;
+  constexpr double kMegaByte = kKiloByte * kKiloByte;
+  constexpr double kGigaByte = kMegaByte * kKiloByte;
+  const double mem = static_cast<double>(result.value());
   if (mem > kDisplayThreshold * kGigaByte) {
-    return absl::StrFormat("%.2lf GB", mem * 1.0 / kGigaByte);
+    return absl::StrFormat("%.2lf GB", mem / kGigaByte);
   } else if (mem > kDisplayThreshold * kMegaByte) {
-    return absl::StrFormat("%.2lf MB", mem * 1.0 / kMegaByte);
+    return absl::StrFormat("%.2lf MB", mem / kMegaByte);
   } else if (mem > kDisplayThreshold * kKiloByte) {
-    return absl::StrFormat("%2lf KB", mem * 1.0 / kKiloByte);
+    return absl::StrFormat("%2lf KB", mem / kKiloByte);
   } else {
-    return absl::StrFormat("%d", mem);
+    return absl::StrFormat("%d", *result);
   }
 }
 

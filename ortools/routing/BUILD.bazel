@@ -301,6 +301,7 @@ cc_library(
         "//ortools/util:range_query_function",
         "//ortools/util:saturated_arithmetic",
         "//ortools/util:sorted_interval_list",
+        "//ortools/util:stats",
         "//ortools/util:time_limit",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/base:core_headers",

@@ -24,6 +24,7 @@
 #include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
+#include "ortools/constraint_solver/assignment.h"
 #include "ortools/constraint_solver/assignment.pb.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/constraint_solver/python/constraint_solver_doc.h"
@@ -58,7 +59,6 @@ using ::operations_research::IntTupleSet;
 using ::operations_research::IntVar;
 using ::operations_research::IntVarElement;
 using ::operations_research::IntVarIterator;
-using ::operations_research::LocalSearchFilter;
 using ::operations_research::LocalSearchFilterManager;
 using ::operations_research::LocalSearchOperator;
 using ::operations_research::LocalSearchPhaseParameters;
@@ -66,7 +66,6 @@ using ::operations_research::ModelVisitor;
 using ::operations_research::NumericalRev;
 using ::operations_research::OptimizeVar;
 using ::operations_research::Pack;
-using ::operations_research::PiecewiseLinearFunction;
 using ::operations_research::PropagationBaseObject;
 using ::operations_research::RegularLimit;
 using ::operations_research::RegularLimitParameters;

@@ -67,9 +67,8 @@ std::string ProtoEnumToString(ProtoEnumType enum_value) {
   auto enum_descriptor = google::protobuf::GetEnumDescriptor<ProtoEnumType>();
   auto enum_value_descriptor = enum_descriptor->FindValueByNumber(enum_value);
   if (enum_value_descriptor == nullptr) {
-    return absl::StrCat(
-        "Invalid enum value of: ", enum_value, " for enum type: ",
-        google::protobuf::GetEnumDescriptor<ProtoEnumType>()->name());
+    return absl::StrCat("Invalid enum value of: ", enum_value,
+                        " for enum type: ", enum_descriptor->name());
   }
   return std::string(enum_value_descriptor->name());
 #endif  // !defined(__PORTABLE_PLATFORM__)
@@ -79,8 +78,8 @@ template <typename ProtoType>
 bool ProtobufTextFormatMergeFromString(absl::string_view proto_text_string,
                                        ProtoType* proto) {
   if constexpr (std::is_base_of_v<google::protobuf::Message, ProtoType>) {
-    return google::protobuf::TextFormat::MergeFromString(
-        std::string(proto_text_string), proto);
+    return google::protobuf::TextFormat::MergeFromString(proto_text_string,
+                                                         proto);
   } else if constexpr (std::is_base_of_v<google::protobuf::MessageLite,
                                          ProtoType>) {
     return false;

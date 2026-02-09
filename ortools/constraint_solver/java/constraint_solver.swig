@@ -50,6 +50,7 @@ class RegularLimitParameters;
 // Include the files we want to wrap a first time.
 %{
 #include "ortools/constraint_solver/constraint_solver.h"
+#include "ortools/constraint_solver/assignment.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/constraint_solver/java/javawrapcp_util.h"
 #include "ortools/constraint_solver/search_limit.pb.h"
@@ -1648,6 +1649,7 @@ namespace operations_research {
 // TODO(user): Use ignoreall/unignoreall for this one. A lot of work.
 //swiglint: disable include-h-allglobals
 %include "ortools/constraint_solver/constraint_solver.h"
+%include "ortools/constraint_solver/assignment.h"
 %include "ortools/constraint_solver/constraint_solveri.h"
 %include "ortools/constraint_solver/java/javawrapcp_util.h"
 

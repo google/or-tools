@@ -114,7 +114,7 @@ struct ConstraintScaler {
   // below and decide when there are too high and report an error separately.
   absl::Status ScaleAndAddConstraint(
       absl::Span<const int> vars, absl::Span<const double> coeffs,
-      double lower_bound, double upper_bound, absl::string_view name,
+      double ct_lower_bound, double ct_upper_bound, absl::string_view name,
       absl::Span<const IntegerVariableProto* const> var_domains,
       ConstraintProto* constraint);
 
@@ -133,6 +133,11 @@ struct ConstraintScaler {
   double max_absolute_rhs_error = 0.0;
   double max_scaling_factor = 0.0;
   double min_scaling_factor = std::numeric_limits<double>::infinity();
+
+  // Statistics for enforcement extraction.
+  int num_enforcements = 0;
+  int num_integer_enforcements = 0;
+  double max_enforcement_magnitude = 0.0;
 
   // Parameters. Whether we ignore or copy the mp_constraint.name() field.
   bool keep_names = false;

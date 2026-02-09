@@ -12,6 +12,7 @@
 # limitations under the License.
 
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -24,9 +25,16 @@ cc_library(
     name = "sysinfo",
     srcs = ["sysinfo.cc"],
     hdrs = ["sysinfo.h"],
+    deps = ["//ortools/base/macros:os"],
+)
+
+cc_test(
+    name = "sysinfo_test",
+    srcs = ["sysinfo_test.cc"],
     deps = [
-        "//ortools/base:sysinfo",
-        "//ortools/base:types",
+        ":sysinfo",
+        "//ortools/base:gmock_main",
+        "//ortools/base/macros:os",
     ],
 )
 

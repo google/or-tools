@@ -44,6 +44,7 @@
 #include "absl/hash/hash.h"
 #include "absl/log/check.h"
 #include "absl/log/die_if_null.h"
+#include "absl/log/log.h"
 #include "absl/memory/memory.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
@@ -52,13 +53,13 @@
 #include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "google/protobuf/util/message_differencer.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/base/protoutil.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/base/types.h"
+#include "ortools/constraint_solver/assignment.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/constraint_solver/solver_parameters.pb.h"
@@ -3215,7 +3216,7 @@ bool Model::AppendAssignmentIfFeasible(
 void Model::LogSolution(const RoutingSearchParameters& parameters,
                         absl::string_view description, int64_t solution_cost,
                         int64_t start_time_ms) {
-  const std::string memory_str = MemoryUsage();
+  const std::string memory_str = operations_research::MemoryUsage();
   const double cost_scaling_factor = parameters.log_cost_scaling_factor();
   const double cost_offset = parameters.log_cost_offset();
   const std::string cost_string =

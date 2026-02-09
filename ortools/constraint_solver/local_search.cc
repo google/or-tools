@@ -26,7 +26,7 @@
 
 #include "absl/algorithm/container.h"
 #include "absl/base/nullability.h"
-#include "absl/container/flat_hash_map.h"
+#include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
@@ -44,6 +44,7 @@
 #include "ortools/base/strong_vector.h"
 #include "ortools/base/timer.h"
 #include "ortools/base/types.h"
+#include "ortools/constraint_solver/assignment.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/graph/hamiltonian_path.h"
@@ -346,12 +347,12 @@ class DecrementValue : public ChangeValue {
 using NeighborAccessor =
     std::function<const std::vector<int>&(/*node=*/int, /*start_node=*/int)>;
 
-#define BUILD_PATH_OPERATOR(operator_class, args...)           \
-  do {                                                         \
-    if (secondary_vars.empty()) {                              \
-      return solver->RevAlloc(new operator_class<true>(args)); \
-    }                                                          \
-    return solver->RevAlloc(new operator_class<false>(args));  \
+#define BUILD_PATH_OPERATOR(operator_class, ...)                      \
+  do {                                                                \
+    if (secondary_vars.empty()) {                                     \
+      return solver->RevAlloc(new operator_class<true>(__VA_ARGS__)); \
+    }                                                                 \
+    return solver->RevAlloc(new operator_class<false>(__VA_ARGS__));  \
   } while (false);
 
 // ----- 2Opt -----
@@ -3719,10 +3720,10 @@ class LocalSearchProfiler : public LocalSearchMonitor {
   WallTimer accept_neighbor_timer_;
   WallTimer filter_timer_;
   const LocalSearchOperator* last_operator_ = nullptr;
-  absl::flat_hash_map<const LocalSearchOperator*, OperatorStats>
+  absl::btree_map<const LocalSearchOperator*, OperatorStats>
       operator_stats_;
-  absl::flat_hash_map<
-      std::string, absl::flat_hash_map<const LocalSearchFilter*, FilterStats>>
+  absl::btree_map<
+      std::string, absl::btree_map<const LocalSearchFilter*, FilterStats>>
       filter_stats_per_context_;
   // Profiled decision builders.
   std::vector<ProfiledDecisionBuilder*> profiled_decision_builders_;

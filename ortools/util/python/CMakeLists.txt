@@ -112,7 +112,7 @@ if(BUILD_TESTING)
   file(GLOB PYTHON_SRCS "*_test.py")
   foreach(FILE_NAME IN LISTS PYTHON_SRCS)
     if("${FILE_NAME}" MATCHES ".*wrappers_test.py")
-        continue() # Skip to the next iteration of the loop
+      continue() # Skip to the next iteration of the loop
     endif()
     add_python_test(FILE_NAME ${FILE_NAME})
   endforeach()

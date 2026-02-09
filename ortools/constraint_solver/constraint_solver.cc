@@ -29,15 +29,17 @@
 #include <utility>
 #include <vector>
 
+#include "absl/base/attributes.h"
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/time/time.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/stl_util.h"
-#include "ortools/base/sysinfo.h"
 #include "ortools/base/timer.h"
+#include "ortools/constraint_solver/assignment.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
+#include "ortools/port/sysinfo.h"
 #include "ortools/util/tuple_set.h"
 #include "zlib.h"
 
@@ -1546,7 +1548,9 @@ std::string Solver::DebugString() const {
   return out;
 }
 
-int64_t Solver::MemoryUsage() { return GetProcessMemoryUsage(); }
+int64_t Solver::MemoryUsage() {
+  return operations_research::sysinfo::MemoryUsageProcess().value_or(-1);
+}
 
 int64_t Solver::wall_time() const {
   return absl::ToInt64Milliseconds(timer_->GetDuration());
@@ -3262,6 +3266,8 @@ Assignment* Solver::GetOrCreateLocalSearchState() {
   }
   return local_search_state_.get();
 }
+
+void Solver::ClearLocalSearchState() { local_search_state_.reset(nullptr); }
 
 // ----------------- ProfiledDecisionBuilder ------------
 

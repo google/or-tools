@@ -74,6 +74,7 @@ struct FailureProtect {
 };
 
 // This #includes constraint_solver.h, and inlines some C++ helpers.
+#include "ortools/constraint_solver/assignment.h"
 #include "ortools/constraint_solver/assignment.pb.h"
 #include "ortools/constraint_solver/search_limit.pb.h"
 #include "ortools/constraint_solver/solver_parameters.pb.h"
@@ -1866,7 +1867,7 @@ PY_PROTO_TYPEMAP(ortools.constraint_solver.search_limit_pb2,
                  operations_research::RegularLimitParameters)
 
 %include "ortools/constraint_solver/constraint_solver.h"
-
+%include "ortools/constraint_solver/assignment.h"
 
 // Define templates instantiation after wrapping.
 namespace operations_research {

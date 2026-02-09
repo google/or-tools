@@ -75,6 +75,7 @@ and exposed in this file:
 #include "ortools/base/strong_int.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/base/timer.h"
+#include "ortools/constraint_solver/assignment.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/tuple_set.h"

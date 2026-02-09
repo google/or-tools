@@ -262,7 +262,16 @@ message CoolingScheduleStrategy {
 }
 
 // Acceptance strategy in which only improving solutions are accepted.
-message GreedyDescentAcceptanceStrategy {}
+//
+// Optionally, when the late acceptance window is set to a value k > 1, a
+// solution is also accepted if it is better than the solution found k
+// iterations before. See also Edmund K. Burke, Yuri Bykov, The late acceptance
+// Hill-Climbing heuristic, European Journal of Operational Research, 2017.
+message GreedyDescentAcceptanceStrategy {
+  // Specifies how many solutions in the past to consider for the late
+  // acceptance.
+  optional uint32 late_acceptance_window = 1;
+}
 
 // Acceptance strategy in which solutions are accepted with a probability that
 // depends on its quality and on the current state of the search.

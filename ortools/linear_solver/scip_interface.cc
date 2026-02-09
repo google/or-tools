@@ -24,13 +24,15 @@
 
 #include "absl/base/attributes.h"
 #include "absl/cleanup/cleanup.h"
+#include "absl/container/flat_hash_map.h"
 #include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/strings/str_format.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/time/time.h"
 #include "lpi/lpi.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
@@ -189,7 +191,7 @@ class SCIPInterface : public MPSolverInterface {
   // SetSolverSpecificParametersAsString(). However, one must change
   // "parallel/maxnthread" with SetNumThreads() because only this will inform
   // the interface to run SCIPsolveConcurrent() instead of SCIPsolve() which is
-  // necessery to enable multi-threading.
+  // necessary to enable multi-threading.
   absl::Status SetNumThreads(int num_threads) override;
 
   bool SetSolverSpecificParametersAsString(

@@ -357,6 +357,7 @@ void RestrictBoundsWithDualReasoning(const SatParameters& params,
                                      SolverLogger* logger) {
   const int num_variables = mp_model->variable_size();
   const double kInfinity = std::numeric_limits<double>::infinity();
+  const double epsilon = params.mip_wanted_precision();
 
   // Note that we don't want to decrease/increase past zero.
   //
@@ -386,6 +387,7 @@ void RestrictBoundsWithDualReasoning(const SatParameters& params,
   std::vector<double> max_left_activity;
   std::vector<double> max_right_activity;
 
+  int num_primal_changes = 0;
   const int num_constraints = mp_model->constraint_size();
   for (int c = 0; c < num_constraints; ++c) {
     const MPConstraintProto& ct = mp_model->constraint(c);
@@ -399,8 +401,8 @@ void RestrictBoundsWithDualReasoning(const SatParameters& params,
 
     min_left_activity[0] = 0.0;
     max_left_activity[0] = 0.0;
-    min_left_activity[num_terms - 1] = 0.0;
-    max_left_activity[num_terms - 1] = 0.0;
+    min_right_activity[num_terms - 1] = 0.0;
+    max_right_activity[num_terms - 1] = 0.0;
 
     // *left*[i] contains the min/max sum of all the terms in [0, i).
     for (int i = 0; i + 1 < num_terms; ++i) {
@@ -436,33 +438,57 @@ void RestrictBoundsWithDualReasoning(const SatParameters& params,
       const double min_activity = min_left_activity[i] + min_right_activity[i];
       const double max_activity = max_left_activity[i] + max_right_activity[i];
 
-      if (coeff > 0.0) {
-        // min_activity + c.X >= rhs so X >= (rhs - min_activity) / c
-        can_freely_decrease_to[var] =
-            std::max(can_freely_decrease_to[var],
-                     (ct.lower_bound() - min_activity) / coeff);
-        // max_activity + c.X <= rhs so X <= (rhs - max_activity) / c
-        can_freely_increase_to[var] =
-            std::min(can_freely_increase_to[var],
-                     (ct.upper_bound() - max_activity) / coeff);
-      } else {
-        // min_activity - c.X >= rhs, so X <= (min_activity - rhs) / c.
-        can_freely_increase_to[var] =
-            std::min(can_freely_increase_to[var],
-                     (ct.lower_bound() - min_activity) / coeff);
-        can_freely_decrease_to[var] =
-            std::max(can_freely_decrease_to[var],
-                     (ct.upper_bound() - max_activity) / coeff);
+      double dual_lt = (ct.upper_bound() - max_activity) / coeff;
+      double dual_gt = (ct.lower_bound() - min_activity) / coeff;
+      double primal_lt = (ct.upper_bound() - min_activity) / coeff;
+      double primal_gt = (ct.lower_bound() - max_activity) / coeff;
+      if (coeff < 0.0) {
+        std::swap(dual_gt, dual_lt);
+        std::swap(primal_gt, primal_lt);
+      }
+
+      // If c>=0, max_activity + c.X <= rhs so X <= (rhs - max_activity) / c
+      can_freely_increase_to[var] =
+          std::min(can_freely_increase_to[var], dual_lt);
+
+      // If c>=0, min_activity + c.X >= rhs so X >= (rhs - min_activity) / c
+      can_freely_decrease_to[var] =
+          std::max(can_freely_decrease_to[var], dual_gt);
+
+      // Also do bound propagation.
+      //
+      // TODO(user): It is cheap, but shall we do it here?
+      // TODO(user): We don't make the problem infeasible right away as we
+      // don't properly handle it and report an INVALID conversion instead.
+      const MPVariableProto& dom = mp_model->variable(var);
+      const double implied_ub =
+          std::max(dom.lower_bound(), std::ceil(primal_lt + epsilon));
+      if (implied_ub < dom.upper_bound()) {
+        ++num_primal_changes;
+        VLOG(2) << var << " better ub " << implied_ub << " "
+                << dom.upper_bound();
+        mp_model->mutable_variable(var)->set_upper_bound(implied_ub);
+      }
+      const double implied_lb =
+          std::min(dom.upper_bound(), std::floor(primal_gt - epsilon));
+      if (implied_lb > dom.lower_bound()) {
+        ++num_primal_changes;
+        VLOG(2) << var << " better lb " << implied_lb << " "
+                << dom.lower_bound() << " " << min_activity << " "
+                << max_activity;
+        mp_model->mutable_variable(var)->set_lower_bound(implied_lb);
       }
     }
   }
+
+  // We can't do dual reasoning if there are constraints we do not know about.
+  if (!mp_model->general_constraint().empty()) return;
 
   // Use collected info.
   // Note that we keep "integer" solutions.
   int num_changed_bounds = 0;
   double min_lb = 0.0;
   double max_ub = 0.0;
-  const double epsilon = params.mip_wanted_precision();
   for (int v = 0; v < num_variables; ++v) {
     const MPVariableProto& var = mp_model->variable(v);
     const double ub_target = std::ceil(
@@ -497,8 +523,12 @@ void RestrictBoundsWithDualReasoning(const SatParameters& params,
   }
 
   if (num_changed_bounds > 0) {
-    SOLVER_LOG(logger, "Restricted ", num_changed_bounds,
+    SOLVER_LOG(logger, "Restricted ", FormatCounter(num_changed_bounds),
                " bounds using dual reasoning.");
+  }
+  if (num_primal_changes > 0) {
+    SOLVER_LOG(logger, "Propagated ", FormatCounter(num_primal_changes),
+               " bounds during dual reasoning.");
   }
   SOLVER_LOG(logger, "All variables in [", min_lb, ",", max_ub, "]");
 }
@@ -1012,11 +1042,25 @@ absl::Status ConstraintScaler::ScaleAndAddConstraint(
 
 absl::Status ConstraintScaler::ScaleAndAddConstraint(
     absl::Span<const int> vars, absl::Span<const double> coeffs,
-    double lower_bound, double upper_bound, absl::string_view name,
+    double ct_lower_bound, double ct_upper_bound, absl::string_view name,
     absl::Span<const IntegerVariableProto* const> var_domains,
     ConstraintProto* constraint) {
   if (keep_names && !name.empty()) constraint->set_name(name);
   auto* arg = constraint->mutable_linear();
+
+  // If the constraint is one-sided, we try to extract enforcement literal
+  // before scaling !! This allow to scale better the rest of the constraint.
+  // Especially since on some problem (like neos-3421095-cinca.mps) big-M value
+  // are way too high (1e17 instead of 1e6).
+  //
+  // TODO(user): Handle the case of non-Boolean that can be extract similarly
+  // by introducing literal <=> var == lb / ub.
+  const double kInfinity = std::numeric_limits<double>::infinity();
+  bool try_to_extract_enforcement =
+      ct_lower_bound == -kInfinity || ct_upper_bound == kInfinity;
+  double min_activity = 0.0;
+  double max_activity = 0.0;
+  double max_coeff_magnitude = 0.0;
 
   // First scale the coefficients of the constraints so that the constraint
   // sum can always be computed without integer overflow.
@@ -1038,6 +1082,89 @@ absl::Status ConstraintScaler::ScaleAndAddConstraint(
     coefficients.push_back(coeff);
     lower_bounds.push_back(lb);
     upper_bounds.push_back(ub);
+
+    if (try_to_extract_enforcement) {
+      double min_term = coeff * static_cast<double>(lb);
+      double max_term = coeff * static_cast<double>(ub);
+      if (min_term > max_term) std::swap(min_term, max_term);
+
+      min_activity += min_term;
+      max_activity += max_term;
+      max_coeff_magnitude = std::max(max_coeff_magnitude, std::abs(coeff));
+    }
+  }
+
+  if (try_to_extract_enforcement) {
+    const int num_terms = var_indices.size();
+    std::vector<int> to_remove;
+    if (ct_lower_bound == -kInfinity) {
+      const double limit = max_activity - ct_upper_bound;
+      if (max_coeff_magnitude > limit) {
+        for (int i = 0; i < num_terms; ++i) {
+          const int var = var_indices[i];
+          const double coeff = coefficients[i];
+          if (std::abs(coeff) < limit) continue;
+          if (lower_bounds[i] != 0 || upper_bounds[i] != 1) {
+            ++num_integer_enforcements;
+            continue;
+          }
+
+          // We have an enforcement literal!
+          if (coeff < 0) {
+            constraint->add_enforcement_literal(NegatedRef(var));
+          } else {
+            constraint->add_enforcement_literal(var);
+            ct_upper_bound -= coeff;
+          }
+          to_remove.push_back(i);
+        }
+      }
+    } else {
+      const double limit = ct_lower_bound - min_activity;
+      if (max_coeff_magnitude > limit) {
+        for (int i = 0; i < num_terms; ++i) {
+          const int var = var_indices[i];
+          const double coeff = coefficients[i];
+          if (std::abs(coeff) < limit) continue;
+          if (lower_bounds[i] != 0 || upper_bounds[i] != 1) {
+            ++num_integer_enforcements;
+            continue;
+          }
+
+          // We have an enforcement literal!
+          if (coeff > 0) {
+            constraint->add_enforcement_literal(NegatedRef(var));
+          } else {
+            constraint->add_enforcement_literal(var);
+            ct_lower_bound -= coeff;
+          }
+          to_remove.push_back(i);
+        }
+      }
+    }
+
+    if (!to_remove.empty()) {
+      int new_size = 0;
+      int r = 0;
+      for (int i = 0; i < num_terms; ++i) {
+        if (r < to_remove.size() && to_remove[r] == i) {
+          ++num_enforcements;
+          max_enforcement_magnitude =
+              std::max(max_enforcement_magnitude, std::abs(coefficients[i]));
+          ++r;
+          continue;
+        }
+        var_indices[new_size] = var_indices[i];
+        coefficients[new_size] = coefficients[i];
+        lower_bounds[new_size] = lower_bounds[i];
+        upper_bounds[new_size] = upper_bounds[i];
+        ++new_size;
+      }
+      var_indices.resize(new_size);
+      coefficients.resize(new_size);
+      lower_bounds.resize(new_size);
+      upper_bounds.resize(new_size);
+    }
   }
 
   double relative_coeff_error;
@@ -1075,8 +1202,8 @@ absl::Status ConstraintScaler::ScaleAndAddConstraint(
   // but absolute is usually what is used in the MIP world. Also if the problem
   // was a pure integer problem, and a user asked for sum == 10k, we want to
   // stay exact here.
-  const Fractional lb = lower_bound - wanted_precision;
-  const Fractional ub = upper_bound + wanted_precision;
+  const Fractional lb = ct_lower_bound - wanted_precision;
+  const Fractional ub = ct_upper_bound + wanted_precision;
 
   // Add the constraint bounds. Because we are sure the scaled constraint fit
   // on an int64_t, if the scaled bounds are too large, the constraint is either
@@ -1119,11 +1246,13 @@ bool ConstraintIsAlwaysTrue(const MPConstraintProto& mp_constraint) {
 
 // TODO(user): unit test this.
 double FindFractionalScaling(absl::Span<const double> coefficients,
-                             double tolerance) {
+                             double tolerance, double fp_limit) {
   double multiplier = 1.0;
+  const int64_t limit =
+      static_cast<int64_t>(std::min(std::abs(fp_limit), 1e15));
   for (const double coeff : coefficients) {
-    multiplier *= FindRationalFactor(multiplier * coeff, /*limit=*/1e8,
-                                     multiplier * tolerance);
+    multiplier *=
+        FindRationalFactor(multiplier * coeff, limit, multiplier * tolerance);
     if (multiplier == 0.0) break;
   }
   return multiplier;
@@ -1170,18 +1299,36 @@ double FindBestScalingAndComputeErrors(
   //
   // Note that if our current precisions is already above the requested one,
   // we choose integer scaling if we get a better precision.
-  const double integer_factor = FindFractionalScaling(coefficients, 1e-8);
+  double integer_factor =
+      FindFractionalScaling(coefficients, 1e-8, scaling_factor);
   DCHECK(std::isfinite(integer_factor));
   if (integer_factor != 0 && integer_factor < scaling_factor) {
     double local_relative_coeff_error;
     double local_scaled_sum_error;
-    ComputeScalingErrors(coefficients, lower_bounds, upper_bounds,
-                         integer_factor, &local_relative_coeff_error,
-                         &local_scaled_sum_error);
-    if (local_scaled_sum_error * scaling_factor <=
-            *scaled_sum_error * integer_factor ||
-        local_scaled_sum_error <
-            wanted_absolute_activity_precision * integer_factor) {
+
+    // As long as integer_factor * 2^x is smaller than scaling_factor, consider
+    // it!
+    bool use_rational = false;
+    while (true) {
+      ComputeScalingErrors(coefficients, lower_bounds, upper_bounds,
+                           integer_factor, &local_relative_coeff_error,
+                           &local_scaled_sum_error);
+
+      if (local_scaled_sum_error <
+          wanted_absolute_activity_precision * integer_factor) {
+        // Smaller factor under the wanted precision, select it.
+        use_rational = true;
+        break;
+      }
+
+      if (integer_factor * 2 >= scaling_factor) break;
+      integer_factor *= 2;
+    }
+
+    // If use_rational was set, or we have a smaller error, go for it.
+    DCHECK_LT(integer_factor, scaling_factor);
+    if (use_rational || local_scaled_sum_error * scaling_factor <=
+                            *scaled_sum_error * integer_factor) {
       *relative_coeff_error = local_relative_coeff_error;
       *scaled_sum_error = local_scaled_sum_error;
       scaling_factor = integer_factor;
@@ -1274,11 +1421,11 @@ bool ConvertMPModelProtoToCpModelProto(const SatParameters& params,
   }
 
   if (num_truncated_bounds > 0) {
-    SOLVER_LOG(logger, "Warning: ", num_truncated_bounds,
+    SOLVER_LOG(logger, "Warning: ", FormatCounter(num_truncated_bounds),
                " bounds were truncated to ", kMaxVariableBound, ".");
   }
   if (num_small_domains > 0) {
-    SOLVER_LOG(logger, "Warning: ", num_small_domains,
+    SOLVER_LOG(logger, "Warning: ", FormatCounter(num_small_domains),
                " continuous variable domain with fewer than ", kSmallDomainSize,
                " values.");
   }
@@ -1301,6 +1448,8 @@ bool ConvertMPModelProtoToCpModelProto(const SatParameters& params,
       return false;
     }
   }
+  int num_indicator_constraints = 0;
+  int num_boolean_constraints = 0;
   for (const MPGeneralConstraintProto& general_constraint :
        mp_model.general_constraint()) {
     switch (general_constraint.general_constraint_case()) {
@@ -1311,6 +1460,7 @@ bool ConvertMPModelProtoToCpModelProto(const SatParameters& params,
             indicator_constraint.constraint();
         if (ConstraintIsAlwaysTrue(mp_constraint)) continue;
 
+        ++num_indicator_constraints;
         const int new_ct_index = cp_model->constraints().size();
         const absl::Status status =
             scaler.ScaleAndAddConstraint(mp_constraint, cp_model);
@@ -1328,6 +1478,7 @@ bool ConvertMPModelProtoToCpModelProto(const SatParameters& params,
         break;
       }
       case MPGeneralConstraintProto::kAndConstraint: {
+        ++num_boolean_constraints;
         const auto& and_constraint = general_constraint.and_constraint();
         absl::string_view name = general_constraint.name();
 
@@ -1347,6 +1498,7 @@ bool ConvertMPModelProtoToCpModelProto(const SatParameters& params,
         break;
       }
       case MPGeneralConstraintProto::kOrConstraint: {
+        ++num_boolean_constraints;
         const auto& or_constraint = general_constraint.or_constraint();
         absl::string_view name = general_constraint.name();
 
@@ -1371,6 +1523,25 @@ bool ConvertMPModelProtoToCpModelProto(const SatParameters& params,
                    << " to CpModelProto.";
         return false;
     }
+  }
+  if (num_indicator_constraints > 0) {
+    SOLVER_LOG(logger, "MIP model had ",
+               FormatCounter(num_indicator_constraints),
+               " indicator constraints.");
+  }
+  if (num_boolean_constraints > 0) {
+    SOLVER_LOG(logger, "MIP model had ", FormatCounter(num_boolean_constraints),
+               " Boolean constraints.");
+  }
+  if (scaler.num_enforcements > 0) {
+    SOLVER_LOG(logger, "Extracted ", FormatCounter(scaler.num_enforcements),
+               " enforcement literals, max_magnitude ",
+               scaler.max_enforcement_magnitude);
+  }
+  if (scaler.num_integer_enforcements > 0) {
+    SOLVER_LOG(logger, "TODO: could have extracted ",
+               FormatCounter(scaler.num_integer_enforcements),
+               " 'integer' enforcements before scaling.");
   }
 
   // Display the error/scaling on the constraints.

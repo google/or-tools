@@ -30,18 +30,15 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
-#include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/commandlineflags.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/base/stl_util.h"
-#include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
-#include "ortools/util/bitset.h"
 #include "ortools/util/monoid_operation_tree.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/string_array.h"
@@ -1460,7 +1457,8 @@ class EdgeFinder : public Constraint {
 
  private:
   UpdatesForADemand* GetOrMakeUpdate(int64_t demand_min) {
-    UpdatesForADemand* update = gtl::FindPtrOrNull(update_map_, demand_min);
+    const auto it = update_map_.find(demand_min);
+    UpdatesForADemand* update = it == update_map_.end() ? nullptr : it->second;
     if (update == nullptr) {
       update = new UpdatesForADemand(tasks_.size());
       update_map_[demand_min] = update;

@@ -145,10 +145,11 @@ void SatSolver::SetParameters(const SatParameters& parameters) {
 }
 
 bool SatSolver::IsMemoryLimitReached() const {
-  const int64_t memory_usage =
+  const std::optional<uint64_t> memory_usage =
       ::operations_research::sysinfo::MemoryUsageProcess();
-  const int64_t kMegaByte = 1024 * 1024;
-  return memory_usage > kMegaByte * parameters_->max_memory_in_mb();
+  if (!memory_usage.has_value()) return false;
+  constexpr uint64_t kMegaByte = 1024 * 1024;
+  return *memory_usage > kMegaByte * parameters_->max_memory_in_mb();
 }
 
 bool SatSolver::SetModelUnsat() {

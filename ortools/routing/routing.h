@@ -176,6 +176,7 @@ Keywords: Vehicle Routing, Traveling Salesman Problem, TSP, VRP, CVRPTW, PDP.
 #include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/constraint_solver/assignment.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/graph_base/graph.h"
@@ -274,7 +275,7 @@ class OR_DLL Model {
   using TransitCallback1 = ::operations_research::routing::TransitCallback1;
   using TransitCallback2 = ::operations_research::routing::TransitCallback2;
   using CumulDependentTransitCallback2 =
-     ::operations_research::routing::CumulDependentTransitCallback2;
+      ::operations_research::routing::CumulDependentTransitCallback2;
 #endif  // !defined(SWIG)
 
 #if !defined(SWIG)

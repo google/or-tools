@@ -3531,6 +3531,7 @@ cc_library(
         "//ortools/base:logging",
         "//ortools/base:mathutil",
         "//ortools/base:stl_util",
+        "//ortools/util:bitset",
         "//ortools/util:random_engine",
         "//ortools/util:saturated_arithmetic",
         "//ortools/util:sorted_interval_list",
