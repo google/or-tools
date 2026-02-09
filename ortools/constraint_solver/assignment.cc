@@ -21,7 +21,6 @@
 #include <string>
 #include <vector>
 
-#include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
@@ -32,33 +31,11 @@
 #include "ortools/base/map_util.h"
 #include "ortools/base/options.h"
 #include "ortools/base/recordio.h"
+#include "ortools/base/safe_hash_map.h"
 #include "ortools/constraint_solver/assignment.pb.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 
 namespace operations_research {
-
-// ----------------- BaseAssignmentContainer ------------------------
-
-int BaseAssignmentContainer::FindWithDefault(const void* var,
-                                             int default_value) const {
-  auto it = var_to_index_.find(var);
-  return it == var_to_index_.end() ? default_value : it->second;
-}
-
-int BaseAssignmentContainer::MapSize() const { return var_to_index_.size(); }
-bool BaseAssignmentContainer::MapEmpty() const { return var_to_index_.empty(); }
-void BaseAssignmentContainer::ClearMap() { var_to_index_.clear(); }
-void BaseAssignmentContainer::AssignMap(const void* var, int index) const {
-  var_to_index_[var] = index;
-}
-bool BaseAssignmentContainer::FindCopy(const void* var, int* index) const {
-  auto it = var_to_index_.find(var);
-  if (it == var_to_index_.end()) {
-    return false;
-  }
-  *index = it->second;
-  return true;
-}
 
 template class AssignmentContainer<IntVar, IntVarElement>;
 template class AssignmentContainer<IntervalVar, IntervalVarElement>;

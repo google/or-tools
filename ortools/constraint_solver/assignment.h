@@ -20,7 +20,6 @@
 #include <string>
 #include <vector>
 
-#include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
 #include "ortools/base/safe_hash_map.h"
 #include "ortools/constraint_solver/constraint_solver.h"
@@ -240,22 +239,8 @@ class SequenceVarElement : public AssignmentElement {
   std::vector<int> unperformed_;
 };
 
-class BaseAssignmentContainer {
- public:
-  int FindWithDefault(const void* var, int default_value) const;
-
-  int MapSize() const;
-  bool MapEmpty() const;
-  void ClearMap();
-  void AssignMap(const void* var, int index) const;
-  bool FindCopy(const void* var, int* index) const;
-
- private:
-  mutable safe_hash_map<const void*, int> var_to_index_;
-};
-
 template <class V, class E>
-class AssignmentContainer : public BaseAssignmentContainer {
+class AssignmentContainer {
  public:
   AssignmentContainer() = default;
   E* Add(V* var) {
@@ -281,8 +266,8 @@ class AssignmentContainer : public BaseAssignmentContainer {
   }
   void Clear() {
     elements_.clear();
-    if (!MapEmpty()) {  /// 2x speedup on OR-Tools.
-      ClearMap();
+    if (!index_map_.empty()) {  /// 2x speedup on OR-Tools.
+      index_map_.clear();
     }
   }
   /// Advanced usage: Resizes the container, potentially adding elements with
@@ -386,7 +371,8 @@ class AssignmentContainer : public BaseAssignmentContainer {
     /// compares both content and how the map is hashed (e.g., number of
     /// buckets). This is not what we want.
     for (const E& element : container.elements_) {
-      const int position = FindWithDefault(element.Var(), -1);
+      const auto it = index_map_.find(element.Var());
+      const int position = it == index_map_.end() ? -1 : it->second;
       if (position < 0 || elements_[position] != element) {
         return false;
       }
@@ -399,8 +385,8 @@ class AssignmentContainer : public BaseAssignmentContainer {
 
  private:
   void EnsureMapIsUpToDate() const {
-    for (int i = MapSize(); i < elements_.size(); ++i) {
-      AssignMap(elements_[i].Var(), i);
+    for (int i = index_map_.size(); i < elements_.size(); ++i) {
+      index_map_[elements_[i].Var()] = i;
     }
   }
 
@@ -420,11 +406,15 @@ class AssignmentContainer : public BaseAssignmentContainer {
       return false;
     } else {
       EnsureMapIsUpToDate();
-      DCHECK_EQ(MapSize(), elements_.size());
-      return FindCopy(var, index);
+      DCHECK_EQ(index_map_.size(), elements_.size());
+      const auto it = index_map_.find(var);
+      if (it == index_map_.end()) return false;
+      *index = it->second;
+      return true;
     }
   }
 
+  mutable safe_hash_map<const V*, int> index_map_;
   std::vector<E> elements_;
 };
 

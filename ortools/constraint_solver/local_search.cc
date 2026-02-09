@@ -38,12 +38,10 @@
 #include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "ortools/base/iterator_adaptors.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/strong_int.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/base/timer.h"
-#include "ortools/base/types.h"
 #include "ortools/constraint_solver/assignment.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
@@ -3720,10 +3718,9 @@ class LocalSearchProfiler : public LocalSearchMonitor {
   WallTimer accept_neighbor_timer_;
   WallTimer filter_timer_;
   const LocalSearchOperator* last_operator_ = nullptr;
-  absl::btree_map<const LocalSearchOperator*, OperatorStats>
-      operator_stats_;
-  absl::btree_map<
-      std::string, absl::btree_map<const LocalSearchFilter*, FilterStats>>
+  absl::btree_map<const LocalSearchOperator*, OperatorStats> operator_stats_;
+  absl::btree_map<std::string,
+                  absl::btree_map<const LocalSearchFilter*, FilterStats>>
       filter_stats_per_context_;
   // Profiled decision builders.
   std::vector<ProfiledDecisionBuilder*> profiled_decision_builders_;
