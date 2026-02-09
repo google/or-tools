@@ -346,12 +346,12 @@ class DecrementValue : public ChangeValue {
 using NeighborAccessor =
     std::function<const std::vector<int>&(/*node=*/int, /*start_node=*/int)>;
 
-#define BUILD_PATH_OPERATOR(operator_class, args...)           \
-  do {                                                         \
-    if (secondary_vars.empty()) {                              \
-      return solver->RevAlloc(new operator_class<true>(args)); \
-    }                                                          \
-    return solver->RevAlloc(new operator_class<false>(args));  \
+#define BUILD_PATH_OPERATOR(operator_class, ...)                      \
+  do {                                                                \
+    if (secondary_vars.empty()) {                                     \
+      return solver->RevAlloc(new operator_class<true>(__VA_ARGS__)); \
+    }                                                                 \
+    return solver->RevAlloc(new operator_class<false>(__VA_ARGS__));  \
   } while (false);
 
 // ----- 2Opt -----
