@@ -4,7 +4,7 @@ FROM archlinux:latest AS env
 
 # Install system build dependencies
 ENV PATH=/usr/local/bin:$PATH
-RUN pacman -Syu --noconfirm git base-devel bazelisk
+RUN pacman -Syu --noconfirm git base-devel bazelisk jdk21-openjdk
 
 # Install Python
 RUN pacman -Syu --noconfirm python python-pip python-setuptools \
