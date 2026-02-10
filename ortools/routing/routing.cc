@@ -36,6 +36,7 @@
 #include <vector>
 
 #include "absl/algorithm/container.h"
+#include "absl/base/no_destructor.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/flags/flag.h"
@@ -216,6 +217,12 @@ void Model::SetSweepArranger(SweepArranger* sweep_arranger) {
 }
 
 SweepArranger* Model::sweep_arranger() const { return sweep_arranger_.get(); }
+
+/* static */
+const std::vector<int>& Model::NodeNeighborsByCostClass::GetEmptyNeighbors() {
+  static const absl::NoDestructor<std::vector<int>> kEmptyNeighbors;
+  return *kEmptyNeighbors;
+}
 
 void Model::NodeNeighborsByCostClass::ComputeNeighbors(
     const NodeNeighborsParameters& params) {

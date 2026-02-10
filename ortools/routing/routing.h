@@ -1693,7 +1693,7 @@ class OR_DLL Model {
     /// is a neighborhood arc for 'cost_class'.
     const std::vector<int>& GetIncomingNeighborsOfNodeForCostClass(
         int cost_class, int node_index) const {
-      if (routing_model_.IsStart(node_index)) return empty_neighbors_;
+      if (routing_model_.IsStart(node_index)) return GetEmptyNeighbors();
 
       if (node_index_to_incoming_neighbors_by_cost_class_.empty()) {
         DCHECK(IsFullNeighborhood());
@@ -1702,7 +1702,7 @@ class OR_DLL Model {
       const std::vector<std::vector<int>>& node_index_to_incoming_neighbors =
           node_index_to_incoming_neighbors_by_cost_class_[cost_class];
       if (node_index_to_incoming_neighbors.empty()) {
-        return empty_neighbors_;
+        return GetEmptyNeighbors();
       }
       return node_index_to_incoming_neighbors[node_index];
     }
@@ -1712,7 +1712,7 @@ class OR_DLL Model {
     /// arc for 'cost_class'.
     const std::vector<int>& GetOutgoingNeighborsOfNodeForCostClass(
         int cost_class, int node_index) const {
-      if (routing_model_.IsEnd(node_index)) return empty_neighbors_;
+      if (routing_model_.IsEnd(node_index)) return GetEmptyNeighbors();
 
       if (node_index_to_outgoing_neighbors_by_cost_class_.empty()) {
         DCHECK(IsFullNeighborhood());
@@ -1721,7 +1721,7 @@ class OR_DLL Model {
       const std::vector<std::vector<int>>& node_index_to_outgoing_neighbors =
           node_index_to_outgoing_neighbors_by_cost_class_[cost_class];
       if (node_index_to_outgoing_neighbors.empty()) {
-        return empty_neighbors_;
+        return GetEmptyNeighbors();
       }
       return node_index_to_outgoing_neighbors[node_index];
     }
@@ -1744,12 +1744,9 @@ class OR_DLL Model {
     bool IsFullNeighborhood() const { return full_neighborhood_; }
 
    private:
+    static const std::vector<int>& GetEmptyNeighbors();
+
     const Model& routing_model_;
-#if __cplusplus >= 202002L && !defined(__APPLE__)
-    static constexpr std::vector<int> empty_neighbors_ = {};
-#else
-    inline static const std::vector<int> empty_neighbors_ = {};
-#endif
 
     std::vector<std::vector<std::vector<int>>>
         node_index_to_incoming_neighbors_by_cost_class_;
