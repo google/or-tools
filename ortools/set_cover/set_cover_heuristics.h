@@ -15,6 +15,7 @@
 #define ORTOOLS_SET_COVER_SET_COVER_HEURISTICS_H_
 
 #include <cstdint>
+#include <functional>
 #include <limits>
 #include <string>
 #include <vector>
@@ -31,10 +32,11 @@ namespace operations_research {
 
 // Solver classes for the weighted set covering problem.
 //
-// The solution procedure is based on the general scheme known as local search.
-// Once a solution exists, it is improved by modifying it slightly, for example
-// by flipping a binary variable, so as to minimize the cost.
-// But first, we have to generate a first solution that is as good as possible.
+// The solution procedure is based on the general scheme known as local
+// search. Once a solution exists, it is improved by modifying it slightly,
+// for example by flipping a binary variable, so as to minimize the cost.
+// But first, we have to generate a first solution that is as good as
+// possible.
 //
 // The first solution is then improved by using local search descent, which
 // eliminates the S_j's that have no interest in the solution.
@@ -42,12 +44,13 @@ namespace operations_research {
 // A mix of the guided local search (GLS) and Tabu Search (TS) metaheuristic
 // is also provided.
 //
-// The term 'focus' hereafter means a subset of the S_j's designated by their
-// indices. Focus make it possible to run the algorithms on the corresponding
-// subproblems.
+// The term 'focus' hereafter means a subset of the S_j's designated by
+// their indices. Focus make it possible to run the algorithms on the
+// corresponding subproblems.
 
 // Base class for all set cover solution generators. This is almost an
 // interface.
+
 class SetCoverSolutionGenerator {
  public:
   // By default, the maximum number of iterations is set to infinity, and the
@@ -60,6 +63,7 @@ class SetCoverSolutionGenerator {
       : run_time_(absl::ZeroDuration()),
         consistency_level_(consistency_level),
         inv_(inv),
+        subset_priority_fn_(&DefaultSubsetMarginalImpactFn),
         class_name_(class_name),
         name_(name),
         time_limit_in_seconds_(std::numeric_limits<double>::infinity()),
@@ -70,6 +74,24 @@ class SetCoverSolutionGenerator {
   void SetName(const absl::string_view name) { name_ = name; }
 
   SetCoverInvariant* inv() const { return inv_; }
+
+  // Sets the function used to compute the priority of a subset.
+  // The priority of a subset is the expected marginal impact of selecting it,
+  // defined as the number of newly covered elements divided by the cost of the
+  // subset, if the said subset is selected.
+  // It is possible for the priority to be negative. This is an easy way to
+  // discard subsets for some particular heuristics.
+  void SetSubsetPriorityFunction(
+      std::function<double(SetCoverInvariant*, SubsetIndex)>
+          subset_priority_fn) {
+    subset_priority_fn_ = subset_priority_fn;
+  }
+
+  // Computes the priority of a subset using the function set by the
+  // SetSubsetPriorityFunction() method.
+  double ComputeSubsetPriority(SubsetIndex subset) const {
+    return subset_priority_fn_(inv_, subset);
+  }
 
   // Resets the limits to their default values.
   virtual SetCoverSolutionGenerator& ResetLimits() {
@@ -100,10 +122,14 @@ class SetCoverSolutionGenerator {
     return absl::ToDoubleSeconds(run_time_);
   }
 
+  // Returns the total elapsed runtime in milliseconds.
+  int64_t run_time_ms() const { return absl::ToInt64Milliseconds(run_time_); }
+
   // Returns the total elapsed runtime in microseconds.
-  double run_time_in_microseconds() const {
-    return absl::ToInt64Microseconds(run_time_);
-  }
+  int64_t run_time_us() const { return absl::ToInt64Microseconds(run_time_); }
+
+  // Returns the total elapsed runtime in nanoseconds.
+  int64_t run_time_ns() const { return absl::ToInt64Nanoseconds(run_time_); }
 
   // Returns the name of the heuristic.
   std::string name() const { return name_; }
@@ -143,8 +169,20 @@ class SetCoverSolutionGenerator {
   SetCoverInvariant::ConsistencyLevel consistency_level_;
 
  private:
+  // The default function used to compute the marginal impact of a subset.
+  static double DefaultSubsetMarginalImpactFn(SetCoverInvariant* inv,
+                                              SubsetIndex subset) {
+    return inv->num_free_elements()[subset] /
+           inv->model()->subset_costs()[subset];
+  }
+
   // The data structure that will maintain the invariant for the model.
   SetCoverInvariant* inv_;
+
+  // The function used to compute the marginal impact of a subset, defined as
+  // the number of newly covered elements divided by the cost of the subset, if
+  // the said subset is selected.
+  std::function<double(SetCoverInvariant*, SubsetIndex)> subset_priority_fn_;
 
   // The name of the solution generator class. Cannot be changed by the user.
   std::string class_name_;
@@ -188,7 +226,7 @@ class SubsetListBasedSolutionGenerator : public SetCoverSolutionGenerator {
   // Converts a vector of Booleans to a vector of subset indices.
   // TODO(user): this should not be, but a better iterator system should be
   // implemented.
-  absl::Span<const SubsetIndex> MakeSubsetIndexSpan(
+  std::vector<SubsetIndex> MakeSubsetIndexSpan(
       const SubsetBoolVector& in_focus) {
     std::vector<SubsetIndex> result;
     result.reserve(in_focus.size());
@@ -198,7 +236,7 @@ class SubsetListBasedSolutionGenerator : public SetCoverSolutionGenerator {
         result.push_back(i);
       }
     }
-    return absl::MakeConstSpan(result);
+    return result;
   }
 };
 
@@ -312,6 +350,27 @@ class GreedySolutionGenerator : public SubsetListBasedSolutionGenerator {
   bool NextSolution(absl::Span<const SubsetIndex> focus) final;
 };
 
+// LazyGreedySolutionGenerator is a variant of the standard greedy approach
+// that minimizes priority re-evaluations.
+// Priorities are *only* computed for a subset when it's selected as the
+// locally best choice, instead of being re-evaluated for all subsets at every
+// iteration. This is more efficient for dense problems or when the priority
+// function is expensive, significantly reducing the total number of expensive
+// evaluations.
+class LazyGreedySolutionGenerator : public SubsetListBasedSolutionGenerator {
+ public:
+  explicit LazyGreedySolutionGenerator(SetCoverInvariant* inv)
+      : LazyGreedySolutionGenerator(inv, "GreedyGenerator") {}
+
+  LazyGreedySolutionGenerator(SetCoverInvariant* inv, absl::string_view name)
+      : SubsetListBasedSolutionGenerator(
+            inv, SetCoverInvariant::ConsistencyLevel::kFreeAndUncovered,
+            "LazyGreedyGenerator", name) {}
+
+  using SubsetListBasedSolutionGenerator::NextSolution;
+  bool NextSolution(absl::Span<const SubsetIndex> focus) final;
+};
+
 // Solution generator based on the degree of elements.
 // The degree of an element is the number of subsets covering it.
 // The generator consists in iteratively choosing a non-covered element with
@@ -358,6 +417,20 @@ class LazyElementDegreeSolutionGenerator
 
   using BoolVectorBasedSolutionGenerator::NextSolution;
   bool NextSolution(const SubsetBoolVector& in_focus) final;
+
+  // Sets the number of random passes to be performed before after the main
+  // heuristic. This is used to generate diverse solutions.
+  // If set to 0, no random passes are performed.
+  void SetNumRandomPasses(int num_random_passes) {
+    num_random_passes_ = num_random_passes;
+  }
+
+  // Returns the number of random passes to be performed. The default value is
+  // 0.
+  int64_t num_random_passes() const { return num_random_passes_; }
+
+ private:
+  int64_t num_random_passes_ = 0;
 };
 
 // Once we have a first solution to the problem, there may be (most often,
@@ -616,11 +689,11 @@ class GuidedLocalSearch : public SubsetListBasedSolutionGenerator {
 
   // The priority heap used to select the subset with the maximum priority
   // to be updated.
-  AdjustableKAryHeap<float, SubsetIndex::ValueType, 2, true> priority_heap_;
+  AdjustableKAryHeap<float, SubsetIndex, 2, true> priority_heap_;
 
   // The utility heap used to select the subset with the maximum utility to
   // be penalized.
-  AdjustableKAryHeap<float, SubsetIndex::ValueType, 2, true> utility_heap_;
+  AdjustableKAryHeap<float, SubsetIndex, 2, true> utility_heap_;
 };
 
 // Randomly clears a proportion num_subsets variables in the solution.
@@ -653,6 +726,17 @@ std::vector<SubsetIndex> ClearMostCoveredElements(BaseInt num_subsets,
 std::vector<SubsetIndex> ClearMostCoveredElements(
     absl::Span<const SubsetIndex> focus, BaseInt num_subsets,
     SetCoverInvariant* inv);
+
+// Computes a lower bound of the set cover instance and element dual values
+// using a dual ascent algorithm, with num_random_passes random permutations of
+// elements. Returns the maximum lower bound found.
+Cost ComputeDualAscentLB(const SetCoverInvariant& inv, int num_random_passes);
+
+// As above, but starts with a permutation sorted by degree, and then
+// shuffles elements of same degree for num_random_passes.
+Cost ComputeDegreeBasedDualAscentLB(const SetCoverInvariant& inv,
+                                    int num_random_passes);
+
 }  // namespace operations_research
 
 #endif  // ORTOOLS_SET_COVER_SET_COVER_HEURISTICS_H_

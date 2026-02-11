@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include <climits>
+#include <cstddef>
 #include <cstdint>
 #include <limits>
 #include <numeric>
@@ -29,18 +30,35 @@
 #include "absl/random/random.h"
 #include "absl/types/span.h"
 #include "ortools/algorithms/adjustable_k_ary_heap.h"
-#include "ortools/base/logging.h"
+#include "ortools/base/adjustable_priority_queue-inl.h"
+#include "ortools/base/adjustable_priority_queue.h"
 #include "ortools/set_cover/base_types.h"
 #include "ortools/set_cover/set_cover_invariant.h"
 #include "ortools/set_cover/set_cover_model.h"
 
 namespace operations_research {
+namespace {
 
 constexpr SubsetIndex kNotFound(-1);
 static constexpr Cost kMaxPossibleCost = std::numeric_limits<Cost>::max();
 static constexpr double kInfinity = std::numeric_limits<float>::infinity();
 
 using CL = SetCoverInvariant::ConsistencyLevel;
+
+// Struct to store the subset and its priority, as required by the
+// AdjustablePriorityQueue.
+struct SubsetAndPriority {
+  bool operator<(const SubsetAndPriority& other) const {
+    return priority < other.priority;
+  }
+  void SetHeapIndex(int64_t h) { heap_index = h; }
+  int64_t GetHeapIndex() const { return heap_index; }
+  double priority;
+  SubsetIndex subset;
+  int64_t heap_index;
+};
+
+}  // namespace
 
 bool SetCoverSolutionGenerator::CheckInvariantConsistency() const {
   return inv_->CheckConsistency(consistency_level_);
@@ -88,7 +106,7 @@ bool GreedySolutionGenerator::NextSolution(
   DCHECK(inv()->CheckConsistency(CL::kCostAndCoverage));
   inv()->Recompute(CL::kFreeAndUncovered);
   inv()->ClearTrace();
-  std::vector<std::pair<float, SubsetIndex::ValueType>> subset_priorities;
+  std::vector<std::pair<float, SubsetIndex>> subset_priorities;
   DVLOG(1) << "focus.size(): " << focus.size();
   subset_priorities.reserve(focus.size());
   const SubsetCostVector& costs = model()->subset_costs();
@@ -97,7 +115,7 @@ bool GreedySolutionGenerator::NextSolution(
         inv()->num_free_elements()[subset] != 0) {
       // NOMUTANTS -- reason, for C++
       const float priority = inv()->num_free_elements()[subset] / costs[subset];
-      subset_priorities.push_back({priority, subset.value()});
+      subset_priorities.push_back({priority, subset});
     }
   }
   const BaseInt num_subsets = model()->num_subsets();
@@ -106,12 +124,12 @@ bool GreedySolutionGenerator::NextSolution(
   // The priority queue maintains the maximum number of elements covered by unit
   // of cost. We chose 16 as the arity of the heap after some testing.
   // TODO(user): research more about the best value for Arity.
-  AdjustableKAryHeap<float, SubsetIndex::ValueType, 16, true> pq(
-      subset_priorities, num_subsets);
+  AdjustableKAryHeap<float, SubsetIndex, 16, true> pq(subset_priorities,
+                                                      SubsetIndex(num_subsets));
   SubsetBoolVector subset_seen(num_subsets, false);
   std::vector<SubsetIndex> subsets_to_remove;
   subsets_to_remove.reserve(focus.size());
-  while (!pq.IsEmpty() || inv()->num_uncovered_elements() > 0) {
+  while (!pq.IsEmpty() && inv()->num_uncovered_elements() > 0) {
     VLOG_EVERY_N_SEC(1, 5) << "Queue size: " << pq.heap_size()
                            << ", #uncovered elements: "
                            << inv()->num_uncovered_elements();
@@ -128,9 +146,9 @@ bool GreedySolutionGenerator::NextSolution(
         const BaseInt marginal_impact(inv()->num_free_elements()[subset]);
         if (marginal_impact > 0) {
           const float priority = marginal_impact / costs[subset];
-          pq.Update({priority, subset.value()});
+          pq.Update({priority, subset});
         } else {
-          pq.Remove(subset.value());
+          pq.Remove(subset);
         }
         subsets_to_remove.push_back(subset);
       }
@@ -144,6 +162,54 @@ bool GreedySolutionGenerator::NextSolution(
   }
   inv()->CompressTrace();
   // Don't expect pq to be empty, because of the break in the while loop.
+  DCHECK(inv()->CheckConsistency(CL::kFreeAndUncovered));
+  return true;
+}
+
+// LazyGreedySolutionGenerator.
+
+bool LazyGreedySolutionGenerator::NextSolution(
+    absl::Span<const SubsetIndex> focus) {
+  StopWatch stop_watch(&run_time_);
+  DCHECK(inv()->CheckConsistency(CL::kCostAndCoverage));
+  // TODO: b/460484820 - Try to use kCostAndCoverage instead.
+  inv()->Recompute(CL::kFreeAndUncovered);
+  inv()->ClearTrace();
+  std::vector<SubsetAndPriority> subset_priorities;
+  subset_priorities.reserve(focus.size());
+  for (const SubsetIndex subset : focus) {
+    if (!inv()->is_selected()[subset] &&
+        inv()->num_free_elements()[subset] != 0) {
+      // NOMUTANTS -- reason, for C++
+      const double priority = ComputeSubsetPriority(subset);
+      subset_priorities.push_back({priority, subset});
+    }
+  }
+  AdjustablePriorityQueue<SubsetAndPriority> pq;
+  pq.SetCapacity(subset_priorities.size());
+  for (auto& priority_and_subset : subset_priorities) {
+    pq.Add(&priority_and_subset);
+  }
+  while (!pq.IsEmpty() && inv()->num_uncovered_elements() > 0) {
+    SubsetAndPriority* best = pq.Top();
+    // TODO: b/460484820 - Try using inv()->NumFreeElements(best->subset).
+    const double priority = ComputeSubsetPriority(best->subset);
+    if (priority <= 0) {
+      pq.Pop();
+      continue;
+    }
+    // Priority is recomputed with updated coverage. Note that the priority
+    // can only be lower than its previous value.
+    if (priority < best->priority) {
+      best->priority = priority;
+      pq.NoteChangedPriority(best);
+      continue;
+    }
+    // The element is the top with the true priority. We select it.
+    pq.Pop();
+    inv()->Select(best->subset, CL::kFreeAndUncovered);
+  }
+  inv()->CompressTrace();
   DCHECK(inv()->CheckConsistency(CL::kFreeAndUncovered));
   return true;
 }
@@ -419,27 +485,51 @@ bool ElementDegreeSolutionGenerator::NextSolution(
   return true;
 }
 
-// LazyElementDegreeSolutionGenerator.
-// There is no need to use a priority queue here, as the ratios are computed
-// on-demand. Also elements are sorted based on degree once and for all and
-// moved past when the elements become already covered.
+namespace {
+// Returns the segment starts for a permutation sorted by degree.
+// A segment is a contiguous range of elements with the same degree.
+// `get_degree(i)` should return the degree of the i-th element in the
+// permutation.
+template <typename DegreeGetter>
+std::vector<size_t> GetSegmentStarts(size_t permutation_size,
+                                     DegreeGetter get_degree) {
+  std::vector<size_t> segment_starts;
+  segment_starts.push_back(0);
+  for (size_t i = 1; i < permutation_size; ++i) {
+    if (get_degree(i) != get_degree(i - 1)) {
+      segment_starts.push_back(i);
+    }
+  }
+  segment_starts.push_back(permutation_size);
+  return segment_starts;
+}
 
-bool LazyElementDegreeSolutionGenerator::NextSolution(
-    const SubsetBoolVector& in_focus) {
-  StopWatch stop_watch(&run_time_);
-  inv()->CompressTrace();
-  DVLOG(1) << "Entering LazyElementDegreeSolutionGenerator::NextSolution";
-  DCHECK(inv()->CheckConsistency(CL::kCostAndCoverage));
-  // Create the list of all the indices in the problem.
-  std::vector<ElementIndex> degree_sorted_elements =
-      GetUncoveredElementsSortedByDegree(inv());
-  const SparseRowView& rows = model()->rows();
-  const SparseColumnView& columns = model()->columns();
-  ComputationUsefulnessStats stats(inv(), false);
-  const SubsetCostVector& costs = model()->subset_costs();
+// Shuffles each segment of `elements` as defined by `segment_starts`.
+void ShuffleSegments(const std::vector<size_t>& segment_starts,
+                     std::vector<ElementIndex>* elements) {
+  for (size_t j = 0; j < segment_starts.size() - 1; ++j) {
+    // NOMUTANTS -- don't need to test shuffling a segment of length 1.
+    if (segment_starts[j + 1] - segment_starts[j] > 1) {
+      std::shuffle(
+          elements->begin() + segment_starts[j],
+          // NOMUTANTS -- the end iterator is not included in the range.
+          elements->begin() + segment_starts[j + 1], absl::BitGen());
+    }
+  }
+}
+
+// Runs one pass of lazy element degree heuristic.
+void RunLazyElementDegreePass(
+    const std::vector<ElementIndex>& degree_sorted_elements,
+    const SubsetBoolVector& in_focus, SetCoverInvariant* inv,
+    ComputationUsefulnessStats* stats) {
+  const SetCoverModel* model = inv->model();
+  const SparseRowView& rows = model->rows();
+  const SparseColumnView& columns = model->columns();
+  const SubsetCostVector& costs = model->subset_costs();
   for (const ElementIndex element : degree_sorted_elements) {
     // No need to cover an element that is already covered.
-    if (inv()->coverage()[element] != 0) continue;
+    if (inv->coverage()[element] != 0) continue;
     SubsetIndex best_subset(-1);
     Cost best_subset_cost = 0.0;  // Cost of the best subset.
     BaseInt best_subset_num_free_elts = 0;
@@ -448,11 +538,11 @@ bool LazyElementDegreeSolutionGenerator::NextSolution(
       const Cost filtering_det =
           Determinant(costs[subset], columns[subset].size(), best_subset_cost,
                       best_subset_num_free_elts);
-      // If the ratio with the initial number elements is greater, we skip this
-      // subset.
+      // If the ratio with the initial number elements is greater, we skip
+      // this subset.
       if (filtering_det > 0) continue;
-      const BaseInt num_free_elements = inv()->ComputeNumFreeElements(subset);
-      stats.Update(subset, num_free_elements);
+      const BaseInt num_free_elements = inv->ComputeNumFreeElements(subset);
+      stats->Update(subset, num_free_elements);
       const Cost det = Determinant(costs[subset], num_free_elements,
                                    best_subset_cost, best_subset_num_free_elts);
       // Same as ElementDegreeSolutionGenerator.
@@ -464,10 +554,67 @@ bool LazyElementDegreeSolutionGenerator::NextSolution(
       }
     }
     DCHECK_NE(best_subset, SubsetIndex(-1));
-    inv()->Select(best_subset, CL::kCostAndCoverage);
-    DVLOG(1) << "Cost = " << inv()->cost()
-             << " num_uncovered_elements = " << inv()->num_uncovered_elements();
+    inv->Select(best_subset, CL::kCostAndCoverage);
+    // The loop will finish anyway when degree_sorted_elements has been
+    // traversed, but we cut the loop short if there are no uncovered elements
+    // left. This actually more that offsets the extra work done to update
+    // num_uncovered_elements in the kCostAndCoverage consistency level.
+    if (inv->num_uncovered_elements() == 0) {
+      return;
+    }
+    DVLOG(1) << "Cost = " << inv->cost()
+             << " num_uncovered_elements = " << inv->num_uncovered_elements();
   }
+}
+}  // namespace
+
+// LazyElementDegreeSolutionGenerator.
+// There is no need to use a priority queue here, as the ratios are computed
+// on-demand. Also elements are sorted based on degree once and for all and
+// moved past when the elements become already covered.
+
+bool LazyElementDegreeSolutionGenerator::NextSolution(
+    const SubsetBoolVector& in_focus) {
+  StopWatch stop_watch(&run_time_);
+  inv()->CompressTrace();
+  DVLOG(1) << "Entering LazyElementDegreeSolutionGenerator::NextSolution";
+  DCHECK(inv()->CheckConsistency(CL::kCostAndCoverage));
+
+  // Create the list of all the uncovered elements in the problem, sorted by
+  // increasing degree.
+  std::vector<ElementIndex> degree_sorted_elements =
+      GetUncoveredElementsSortedByDegree(inv());
+  const SparseRowView& rows = model()->rows();
+
+  // Get the segment starts for the permutation sorted by degree so that we can
+  // shuffle the elements with the same degree in each pass.
+  const std::vector<size_t> segment_starts = GetSegmentStarts(
+      degree_sorted_elements.size(),
+      [&](size_t i) { return rows[degree_sorted_elements[i]].size(); });
+
+  ComputationUsefulnessStats stats(inv(), false);
+
+  const SubsetBoolVector initial_solution = inv()->is_selected();
+
+  RunLazyElementDegreePass(degree_sorted_elements, in_focus, inv(), &stats);
+  Cost best_cost = inv()->cost();
+  SubsetBoolVector best_solution = inv()->is_selected();
+
+  for (int pass = 0; pass < num_random_passes_; ++pass) {
+    inv()->LoadSolution(initial_solution);
+    inv()->Recompute(CL::kCostAndCoverage);
+
+    // Shuffle the elements with the same degree in each pass.
+    ShuffleSegments(segment_starts, &degree_sorted_elements);
+
+    RunLazyElementDegreePass(degree_sorted_elements, in_focus, inv(), &stats);
+    if (inv()->num_uncovered_elements() == 0 && inv()->cost() < best_cost) {
+      best_cost = inv()->cost();
+      best_solution = inv()->is_selected();
+    }
+  }
+  inv()->LoadSolution(best_solution);
+  inv()->Recompute(CL::kCostAndCoverage);
   DCHECK(inv()->CheckConsistency(CL::kCostAndCoverage));
   stats.PrintStats();
   return true;
@@ -491,19 +638,19 @@ bool SteepestSearch::NextSolution(const SubsetBoolVector& in_focus) {
   // Create priority queue with cost of using a subset, by decreasing order.
   // Do it only for selected AND removable subsets.
   const SubsetCostVector& costs = model()->subset_costs();
-  std::vector<std::pair<float, SubsetIndex::ValueType>> subset_priorities;
+  std::vector<std::pair<float, SubsetIndex>> subset_priorities;
   subset_priorities.reserve(in_focus.size());
   for (const SetCoverDecision& decision : inv()->trace()) {
     const SubsetIndex subset = decision.subset();
     if (in_focus[subset] && inv()->is_selected()[subset] &&
         inv()->ComputeIsRedundant(subset)) {
       const float delta_per_element = costs[subset];
-      subset_priorities.push_back({delta_per_element, subset.value()});
+      subset_priorities.push_back({delta_per_element, subset});
     }
   }
   DVLOG(1) << "subset_priorities.size(): " << subset_priorities.size();
-  AdjustableKAryHeap<float, SubsetIndex::ValueType, 16, true> pq(
-      subset_priorities, model()->num_subsets());
+  AdjustableKAryHeap<float, SubsetIndex, 16, true> pq(
+      subset_priorities, SubsetIndex(model()->num_subsets()));
   for (int iteration = 0; iteration < num_iterations && !pq.IsEmpty();
        ++iteration) {
     const SubsetIndex best_subset(pq.TopIndex());
@@ -515,7 +662,7 @@ bool SteepestSearch::NextSolution(const SubsetBoolVector& in_focus) {
     for (const SubsetIndex subset :
          IntersectingSubsetsRange(*model(), best_subset)) {
       if (!inv()->ComputeIsRedundant(subset)) {
-        pq.Remove(subset.value());
+        pq.Remove(subset);
       }
     }
     DVLOG(1) << "Cost = " << inv()->cost();
@@ -539,8 +686,8 @@ bool LazySteepestSearch::NextSolution(const SubsetBoolVector& in_focus) {
   std::vector<Cost> selected_costs;
   selected_costs.reserve(num_selected_subsets);
   // First part of the trick:
-  // Since the heuristic is greedy, it only considers subsets that are selected
-  // and in_focus.
+  // Since the heuristic is greedy, it only considers subsets that are
+  // selected and in_focus.
   const SubsetCostVector& costs = model()->subset_costs();
   for (const SetCoverDecision& decision : inv()->trace()) {
     if (in_focus[decision.subset()]) {
@@ -565,15 +712,15 @@ bool LazySteepestSearch::NextSolution(const SubsetBoolVector& in_focus) {
   for (const SubsetIndex subset : cost_sorted_subsets) {
     // Second part of the trick:
     // ComputeIsRedundant is expensive, but it is going to be called only once
-    // per subset in the solution. Once this has been done, there is no need to
-    // update any priority queue, nor to use a stronger level of consistency
-    // than kCostAndCoverage.
-    // In the non-lazy version, the redundancy of a subset may be updated many
-    // times and the priority queue must be updated accordingly, including just
-    // for removing the subset that was just considered,
-    // A possible optimization would be to sort the elements by coverage and
-    // run ComputeIsRedundant with the new element order. This would make the
-    // subsets which cover only one element easier to prove non-redundant.
+    // per subset in the solution. Once this has been done, there is no need
+    // to update any priority queue, nor to use a stronger level of
+    // consistency than kCostAndCoverage. In the non-lazy version, the
+    // redundancy of a subset may be updated many times and the priority queue
+    // must be updated accordingly, including just for removing the subset
+    // that was just considered, A possible optimization would be to sort the
+    // elements by coverage and run ComputeIsRedundant with the new element
+    // order. This would make the subsets which cover only one element easier
+    // to prove non-redundant.
     if (inv()->is_selected()[subset] && inv()->ComputeIsRedundant(subset)) {
       inv()->Deselect(subset, CL::kCostAndCoverage);
     }
@@ -719,7 +866,7 @@ void GuidedLocalSearch::Initialize() {
     if (inv()->is_selected()[subset]) {
       utility_heap_.Insert({static_cast<float>(model()->subset_costs()[subset] /
                                                (1 + penalties_[subset])),
-                            subset.value()});
+                            subset});
     }
   }
 }
@@ -745,23 +892,23 @@ bool GuidedLocalSearch::NextSolution(absl::Span<const SubsetIndex> focus) {
   for (const SubsetIndex& subset : focus) {
     const float delta = ComputeDelta(subset);
     if (delta < kInfinity) {
-      priority_heap_.Insert({delta, subset.value()});
+      priority_heap_.Insert({delta, subset});
     }
   }
 
   for (int iteration = 0;
        !priority_heap_.IsEmpty() && iteration < num_iterations; ++iteration) {
-    // Improve current solution respective to the current penalties by flipping
-    // the best subset.
+    // Improve current solution respective to the current penalties by
+    // flipping the best subset.
     const SubsetIndex best_subset(priority_heap_.TopIndex());
     if (inv()->is_selected()[best_subset]) {
-      utility_heap_.Insert({0, best_subset.value()});
+      utility_heap_.Insert({0, best_subset});
       inv()->Deselect(best_subset, CL::kRedundancy);
     } else {
       utility_heap_.Insert(
           {static_cast<float>(model()->subset_costs()[best_subset] /
                               (1 + penalties_[best_subset])),
-           best_subset.value()});
+           best_subset});
       inv()->Select(best_subset, CL::kRedundancy);
     }
     DCHECK(!utility_heap_.IsEmpty());
@@ -774,21 +921,21 @@ bool GuidedLocalSearch::NextSolution(absl::Span<const SubsetIndex> focus) {
     utility_heap_.Insert(
         {static_cast<float>(model()->subset_costs()[penalized_subset] /
                             (1 + penalties_[penalized_subset])),
-         penalized_subset.value()});
+         penalized_subset});
     DCHECK(!utility_heap_.IsEmpty());
 
     // Get removable subsets (Add them to the heap).
     for (const SubsetIndex subset : inv()->newly_removable_subsets()) {
       const float delta_selected = (penalization_factor_ * penalties_[subset] +
                                     model()->subset_costs()[subset]);
-      priority_heap_.Insert({delta_selected, subset.value()});
+      priority_heap_.Insert({delta_selected, subset});
     }
     DCHECK(!priority_heap_.IsEmpty());
 
     for (const SubsetIndex subset : {penalized_subset, best_subset}) {
       const float delta = ComputeDelta(subset);
       if (delta < kInfinity) {
-        priority_heap_.Insert({delta, subset.value()});
+        priority_heap_.Insert({delta, subset});
       }
     }
     DCHECK(!priority_heap_.IsEmpty());
@@ -797,7 +944,7 @@ bool GuidedLocalSearch::NextSolution(absl::Span<const SubsetIndex> focus) {
     // This is when the priority_heap_ can become empty and end the outer loop
     // early.
     for (const SubsetIndex subset : inv()->newly_non_removable_subsets()) {
-      priority_heap_.Remove(subset.value());
+      priority_heap_.Remove(subset);
     }
 
     if (inv()->cost() < best_cost) {
@@ -858,7 +1005,8 @@ std::vector<SubsetIndex> ClearRandomSubsets(absl::Span<const SubsetIndex> focus,
         ++num_deselected;
       }
     }
-    // Note that num_deselected may exceed num_subsets_to_choose by more than 1.
+    // Note that num_deselected may exceed num_subsets_to_choose by more
+    // than 1.
     if (num_deselected > num_subsets_to_choose) break;
   }
   return chosen_indices;
@@ -913,6 +1061,111 @@ std::vector<SubsetIndex> ClearMostCoveredElements(
     inv->Deselect(subset, CL::kCostAndCoverage);
   }
   return sampled_subsets;
+}
+
+namespace {
+// Performs a single pass of dual ascent with the given element permutation.
+// Returns the lower bound and the dual values.
+// The input SetCoverInvariant is not modified.
+// The time complexity is O(N + M), where N is the number of elements and M is
+// the number of subset endpoints.
+std::pair<Cost, ElementCostVector> PerformDualAscent(
+    const SetCoverInvariant& inv,
+    const std::vector<ElementIndex>& element_permutation) {
+  const SetCoverModel& model = *(inv.model());
+  const SparseRowView& rows = model.rows();
+  const SubsetCostVector& costs = model.subset_costs();
+  ElementCostVector dual_values(model.num_elements(),
+                                0.0);     // Initialize dual variables to 0
+  SubsetCostVector reduced_cost = costs;  // Remaining budget for each set j
+  Cost lower_bound = 0.0;
+
+  // Iterate through each element i
+  for (const ElementIndex i : element_permutation) {
+    // Find the minimum reduced cost among all sets containing element i
+    Cost delta = std::numeric_limits<Cost>::max();
+
+    for (const SubsetIndex j : rows[i]) {
+      if (reduced_cost[j] < delta) {
+        delta = reduced_cost[j];
+      }
+    }
+
+    // If delta > 0, we can increase dual_values[i]
+    if (delta > 0 && delta != std::numeric_limits<Cost>::max()) {
+      dual_values[i] = delta;
+      lower_bound += delta;
+
+      // Subtract delta from the reduced cost of all sets containing element i
+      for (const SubsetIndex j : rows[i]) {
+        reduced_cost[j] -= delta;
+      }
+    }
+  }
+
+  return {lower_bound, dual_values};
+}
+}  // namespace
+
+Cost ComputeDualAscentLB(const SetCoverInvariant& inv, int num_random_passes) {
+  const BaseInt num_elements = inv.model()->num_elements();
+  std::vector<ElementIndex> element_permutation(num_elements);
+  std::iota(element_permutation.begin(), element_permutation.end(),
+            ElementIndex(0));
+  Cost max_lower_bound = PerformDualAscent(inv, element_permutation).first;
+  for (int i = 0; i < num_random_passes; ++i) {
+    std::shuffle(element_permutation.begin(), element_permutation.end(),
+                 absl::BitGen());
+    max_lower_bound = std::max(
+        max_lower_bound, PerformDualAscent(inv, element_permutation).first);
+  }
+  return max_lower_bound;
+}
+
+Cost ComputeDegreeBasedDualAscentLB(const SetCoverInvariant& inv,
+                                    int num_random_passes) {
+  const BaseInt num_elements = inv.model()->num_elements();
+  std::vector<ElementIndex> permutation;
+  permutation.reserve(num_elements);
+  std::vector<BaseInt> degrees;
+  degrees.reserve(num_elements);
+  const SparseRowView& rows = inv.model()->rows();
+  // Sort the elements according by increasing degree.
+  // We use radix sort, which requires an auxiliary array (degrees).
+  BaseInt max_degree = 0;
+  for (const ElementIndex element : inv.model()->ElementRange()) {
+    permutation.push_back(element);
+    const BaseInt size = rows[element].size();
+    max_degree = std::max(max_degree, size);
+    degrees.push_back(size);
+  }
+  RadixSort(11, degrees, permutation, 1, max_degree);
+
+  Cost max_lower_bound = PerformDualAscent(inv, permutation).first;
+  if (num_random_passes == 0) {
+    return max_lower_bound;
+  }
+
+  // Find the starts of the segments of equal degrees.
+  // The initial permutation is sorted according to degrees, so the segments are
+  // contiguous. We will shuffle each segment independently.
+  std::vector<size_t> segment_starts;
+  segment_starts.push_back(0);
+  for (size_t i = 1; i < permutation.size(); ++i) {
+    if (degrees[i] != degrees[i - 1]) {
+      segment_starts.push_back(i);
+    }
+  }
+  segment_starts.push_back(permutation.size());
+
+  for (int i = 0; i < num_random_passes; ++i) {
+    // Shuffle each segment independently.
+    ShuffleSegments(segment_starts, &permutation);
+    // Perform dual ascent with the updated permutation.
+    max_lower_bound =
+        std::max(max_lower_bound, PerformDualAscent(inv, permutation).first);
+  }
+  return max_lower_bound;
 }
 
 }  // namespace operations_research

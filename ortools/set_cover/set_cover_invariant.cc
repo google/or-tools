@@ -18,6 +18,7 @@
 #include <tuple>
 #include <vector>
 
+#include "absl/base/optimization.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/types/span.h"
@@ -44,6 +45,7 @@ void SetCoverInvariant::Clear() {
 
   lower_bound_ = 0.0;
   is_cost_consistent_ = true;
+  local_timestamp_ = model_->timestamp();
 
   const BaseInt num_subsets = model_->num_subsets();
   const BaseInt num_elements = model_->num_elements();
@@ -76,7 +78,8 @@ bool SetCoverInvariant::CheckConsistency(ConsistencyLevel consistency) const {
   if (consistency == CL::kInconsistent) {
     return true;
   }
-  auto [cst, cvrg] = ComputeCostAndCoverage(is_selected_);
+  auto [cst, cvrg, num_uncvrd_elts] = ComputeCostAndCoverage(is_selected_);
+  CHECK_EQ(num_uncvrd_elts, num_uncovered_elements_);
   CHECK(MathUtil::AlmostEquals(cost_, cst))
       << "cost_ = " << cost_ << " vs recomputed cst = " << cst;
   for (const ElementIndex element : model_->ElementRange()) {
@@ -85,8 +88,11 @@ bool SetCoverInvariant::CheckConsistency(ConsistencyLevel consistency) const {
   if (consistency == CL::kCostAndCoverage) {
     return true;
   }
-  auto [num_uncvrd_elts, num_free_elts] =
+  // TODO(user): remove the computation of num_uncord_elts2 in
+  // ComputeNumUncoveredAndFreeElements.
+  auto [num_uncvrd_elts2, num_free_elts] =
       ComputeNumUncoveredAndFreeElements(coverage_);
+  CHECK_EQ(num_uncvrd_elts2, num_uncovered_elements_);
   for (const SubsetIndex subset : model_->SubsetRange()) {
     CHECK_EQ(num_free_elts[subset], num_free_elements_[subset]);
   }
@@ -109,6 +115,7 @@ bool SetCoverInvariant::CheckConsistency(ConsistencyLevel consistency) const {
 void SetCoverInvariant::LoadSolution(const SubsetBoolVector& solution) {
   ClearTrace();
   ClearRemovabilityInformation();
+  local_timestamp_ = model_->timestamp();
   SubsetIndex subset(0);
   const SparseColumnView& columns = model_->columns();
   for (const bool b : solution) {
@@ -131,6 +138,7 @@ void SetCoverInvariant::LoadSolution(const SubsetBoolVector& solution) {
     is_selected_[subset] = b;
     ++subset;
   }
+  num_uncovered_elements_ = ComputeNumUncoveredElements(coverage_);
   consistency_level_ = CL::kCostAndCoverage;
 }
 
@@ -149,22 +157,30 @@ void SetCoverInvariant::LoadTraceAndCoverage(
       cost_ += model_->subset_costs()[subset];
     }
   }
+  num_uncovered_elements_ = ComputeNumUncoveredElements(coverage_);
   consistency_level_ = CL::kCostAndCoverage;
   DCHECK(CheckConsistency(CL::kCostAndCoverage));
 }
 
-bool SetCoverInvariant::NeedToRecompute(ConsistencyLevel cheched_consistency,
-                                        ConsistencyLevel target_consistency) {
-  return consistency_level_ < cheched_consistency &&
-         cheched_consistency <= target_consistency;
+bool SetCoverInvariant::NeedToRecompute(
+    ConsistencyLevel checked_consistency,
+    ConsistencyLevel target_consistency) const {
+  return consistency_level_ < checked_consistency &&
+         checked_consistency <= target_consistency;
 }
 
 void SetCoverInvariant::Recompute(ConsistencyLevel target_consistency) {
   CHECK(target_consistency >= CL::kCostAndCoverage);
   CHECK(target_consistency <= CL::kRedundancy);
   DCHECK(CheckConsistency(consistency_level_));
-  if (NeedToRecompute(CL::kCostAndCoverage, target_consistency)) {
-    std::tie(cost_, coverage_) = ComputeCostAndCoverage(is_selected_);
+  const bool cost_changed = (local_timestamp_ != model_->timestamp());
+  if (cost_changed) {
+    local_timestamp_ = model_->timestamp();
+  }
+  if (cost_changed ||
+      NeedToRecompute(CL::kCostAndCoverage, target_consistency)) {
+    std::tie(cost_, coverage_, num_uncovered_elements_) =
+        ComputeCostAndCoverage(is_selected_);
   }
   if (NeedToRecompute(CL::kFreeAndUncovered, target_consistency)) {
     std::tie(num_uncovered_elements_, num_free_elements_) =
@@ -200,7 +216,19 @@ void SetCoverInvariant::Recompute(ConsistencyLevel target_consistency) {
 //   0);
 // }
 
-std::tuple<Cost, ElementToIntVector> SetCoverInvariant::ComputeCostAndCoverage(
+BaseInt SetCoverInvariant::ComputeNumUncoveredElements(
+    const ElementToIntVector& coverage) const {
+  BaseInt num_uncvrd_elts = 0;
+  for (const auto c : coverage) {
+    if (c == 0) {
+      ++num_uncvrd_elts;
+    }
+  }
+  return num_uncvrd_elts;
+}
+
+std::tuple<Cost, ElementToIntVector, BaseInt>
+SetCoverInvariant::ComputeCostAndCoverage(
     const SubsetBoolVector& choices) const {
   Cost cst = 0.0;
   ElementToIntVector cvrg(model_->num_elements(), 0);
@@ -218,12 +246,13 @@ std::tuple<Cost, ElementToIntVector> SetCoverInvariant::ComputeCostAndCoverage(
     }
     ++subset;
   }
-  return {cst, cvrg};
+  const BaseInt num_uncvrd_elts = ComputeNumUncoveredElements(cvrg);
+  return {cst, cvrg, num_uncvrd_elts};
 }
 
 ElementToIntVector SetCoverInvariant::ComputeCoverageInFocus(
     const absl::Span<const SubsetIndex> focus) const {
-  ElementToIntVector coverage(coverage_.size());
+  ElementToIntVector coverage(model_->num_elements());
   for (const SubsetIndex subset : focus) {
     if (is_selected_[subset]) {
       for (const ElementIndex element : model_->columns()[subset]) {
@@ -237,27 +266,25 @@ ElementToIntVector SetCoverInvariant::ComputeCoverageInFocus(
 std::tuple<BaseInt, SubsetToIntVector>
 SetCoverInvariant::ComputeNumUncoveredAndFreeElements(
     const ElementToIntVector& cvrg) const {
-  BaseInt num_uncvrd_elts = model_->num_elements();
+  const BaseInt num_uncvrd_elts = ComputeNumUncoveredElements(cvrg);
 
   const BaseInt num_subsets(model_->num_subsets());
   SubsetToIntVector num_free_elts(num_subsets, 0);
 
   const SparseColumnView& columns = model_->columns();
-  // Initialize number of free elements and number of elements covered 0
-  // or 1.
   for (const SubsetIndex subset : model_->SubsetRange()) {
     num_free_elts[subset] = columns[subset].size();
   }
 
   const SparseRowView& rows = model_->rows();
   for (const ElementIndex element : model_->ElementRange()) {
-    if (cvrg[element] >= 1) {
-      --num_uncvrd_elts;
+    if (cvrg[element] != 0) {
       for (const SubsetIndex subset : rows[element]) {
         --num_free_elts[subset];
       }
     }
   }
+
   return {num_uncvrd_elts, num_free_elts};
 }
 
@@ -269,7 +296,7 @@ SetCoverInvariant::ComputeRedundancyInfo(const ElementToIntVector& cvrg) const {
 
   const SparseColumnView& columns = model_->columns();
   // Initialize number of free elements and number of elements covered 0
-  // or 1.
+  // or 1 times.
   for (const SubsetIndex subset : model_->SubsetRange()) {
     num_cvrg_le_1_elts[subset] = columns[subset].size();
   }
@@ -331,6 +358,27 @@ bool SetCoverInvariant::ComputeIsRedundant(SubsetIndex subset) const {
   return true;
 }
 
+std::vector<SubsetIndex> SetCoverInvariant::ComputeUncoveredFocus() const {
+  std::vector<SubsetIndex> focus;
+  SubsetBoolVector seen_subsets(model_->num_subsets(), false);
+  // NOTE(user): to be optimal in memory, we could use is_selected_ to store the
+  // fact that a subset has been processed and is therefore redundant.
+  // This would necessitate to reset all the is_selected_[i] to false for i in
+  // focus before returning focus.
+  for (const ElementIndex element : model_->ElementRange()) {
+    if (coverage_[element] == 0) {
+      for (const SubsetIndex subset : model_->rows()[element]) {
+        if (seen_subsets[subset]) continue;
+        DCHECK(!is_selected_[subset]);
+        focus.push_back(subset);
+        seen_subsets[subset] = true;
+      }
+    }
+  }
+  std::sort(focus.begin(), focus.end());
+  return focus;
+}
+
 BaseInt SetCoverInvariant::ComputeNumFreeElements(SubsetIndex subset) const {
   BaseInt num_free_elements = model_->columns()[subset].size();
   for (const ElementIndex element : model_->columns()[subset]) {
@@ -363,6 +411,9 @@ bool SetCoverInvariant::Select(SubsetIndex subset,
   if (target_consistency == CL::kCostAndCoverage) {
     for (const ElementIndex element : columns[subset]) {
       ++coverage_[element];
+      if (ABSL_PREDICT_TRUE(coverage_[element] == 1)) {
+        --num_uncovered_elements_;
+      }
     }
     return true;
   }
@@ -389,15 +440,14 @@ bool SetCoverInvariant::Select(SubsetIndex subset,
         }
       }
     }
-    // Update coverage. Notice the asymmetry with Deselect where
-    // coverage is
-    // **decremented** before being tested. This allows to have more
-    // symmetrical code for conditions.
+    // Update coverage. Notice the asymmetry with Deselect where coverage is
+    // **decremented** before being tested. This allows to have more symmetrical
+    // code for conditions.
     ++coverage_[element];
   }
   if (update_redundancy_info) {
     if (is_redundant_[subset]) {
-      newly_removable_subsets_.push_back(subset);
+      // Nothing to do. subset was added to newly_removable_subsets_ above.
     } else {
       newly_non_removable_subsets_.push_back(subset);
     }
@@ -431,6 +481,9 @@ bool SetCoverInvariant::Deselect(SubsetIndex subset,
   if (target_consistency == CL::kCostAndCoverage) {
     for (const ElementIndex element : columns[subset]) {
       --coverage_[element];
+      if (coverage_[element] == 0) {
+        ++num_uncovered_elements_;
+      }
     }
     return true;
   }

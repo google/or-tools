@@ -1,4 +1,5 @@
 // Copyright 2025 Francesco Cavaliere
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -11,17 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ORTOOLS_SET_COVER_SET_COVER_SUBMODEL_H
-#define ORTOOLS_SET_COVER_SET_COVER_SUBMODEL_H
+#ifndef ORTOOLS_SET_COVER_SET_COVER_SUBMODEL_H_
+#define ORTOOLS_SET_COVER_SET_COVER_SUBMODEL_H_
 
+#include <vector>
+
+#include "absl/log/check.h"
+#include "absl/log/log.h"
+#include "ortools/set_cover/base_types.h"
+#include "ortools/set_cover/set_cover_model.h"
 #include "ortools/set_cover/set_cover_views.h"
 
-namespace operations_research::scp {
-
-// TODO(anyone): since we are working within the scp namespace, the "SetCover*"
-// prefix became redundant and can be removed. For now, only redefine it
-// locally.
-using Model = SetCoverModel;
+namespace operations_research {
 
 // Forward declarations, see below for the definition of the classes.
 struct PrimalDualState;
@@ -45,9 +47,9 @@ struct DualState;
 //    columns per row (on average, around six columns per row). Unlike the
 //    incremental nature of column fixing, core models are constructed from
 //    scratch during each update. This type of small model can take advantage of
-//    a Model object which stores the sub-model explicitly in memory, avoiding
-//    looping over "inactive" columns and rows. Both SubModelView and CoreModel
-//    can be used as a core model.
+//    a SetCoverModel object which stores the sub-model explicitly in memory,
+//    avoiding looping over "inactive" columns and rows. Both SubModelView and
+//    CoreModel can be used as a core model.
 //
 // Two types of "core-model" representations are implemented, both of which can
 // be used interchangeably:
@@ -66,15 +68,14 @@ struct DualState;
 // CoreModel can actually be more memory-efficient.
 class SubModelView;
 class CoreModel;
-using SubModel = CoreModel;
 
 // `SubModelView` provides a mechanism to interact with a subset of the rows and
 // columns of a SetCoverModel, effectively creating a filtered view of the
 // model. This abstraction allows operations to be performed on a restricted
 // portion of the model without modifying the original data structure. The
-// filtering is achieved using index lists and sizes vectors, which define the
+// filtering is achieved using index lists and size vectors, which define the
 // active rows and columns. This approach ensures flexibility and avoids
-// unnecessary duplication of data. Columns/rows sizes are uses to both keep
+// unnecessary duplication of data. Columns/rows sizes are used to both keep
 // track of the number of elements in them and also provide the "activation"
 // status: (item size == 0) <==> inactive
 // SubModelView inherits from IndexListSubModelView, which provides the "view"
@@ -87,10 +88,10 @@ class SubModelView : public IndexListModelView {
   SubModelView() = default;
 
   // Identity sub-model: all items are considered
-  SubModelView(const Model* model);
+  explicit SubModelView(const SetCoverModel* model);
 
   // Focus construction: create a sub-model with only the required items
-  SubModelView(const Model* model,
+  SubModelView(const SetCoverModel* model,
                const std::vector<FullSubsetIndex>& columns_focus);
 
   virtual ~SubModelView() = default;
@@ -110,7 +111,7 @@ class SubModelView : public IndexListModelView {
   // not overwrite the current fixing.
   void SetFocus(const std::vector<FullSubsetIndex>& columns_focus);
 
-  // Fix the provided columns, removing them for the submodel. Rows now covered
+  // Fix the provided columns, removing them from the submodel. Rows now covered
   // by fixed columns are also removed from the submodel along with non-fixed
   // columns that only cover those rows.
   virtual Cost FixMoreColumns(const std::vector<SubsetIndex>& columns_to_fix);
@@ -126,6 +127,10 @@ class SubModelView : public IndexListModelView {
   virtual bool UpdateCore(Cost best_lower_bound,
                           const ElementCostVector& best_multipliers,
                           const Solution& best_solution, bool force) {
+    (void)best_lower_bound;
+    (void)best_multipliers;
+    (void)best_solution;
+    (void)force;
     return false;
   }
 
@@ -137,13 +142,13 @@ class SubModelView : public IndexListModelView {
   void ResetToIdentitySubModel();
 
   // Pointer to the original model
-  const Model* full_model_;
+  const SetCoverModel* full_model_;
 
   // Columns/rows sizes after filtering (size==0 <==> inactive)
   SubsetToIntVector cols_sizes_;
   ElementToIntVector rows_sizes_;
 
-  // List of columns/rows currectly active
+  // List of columns/rows currently active
   std::vector<SubsetIndex> cols_focus_;
   std::vector<ElementIndex> rows_focus_;
 
@@ -153,22 +158,22 @@ class SubModelView : public IndexListModelView {
 };
 
 // CoreModel stores a subset of the filtered columns and rows in an explicit
-// Model object.
+// SetCoverModel object.
 // The indices are compacted and mapped to the range [0, <sub-model-size>],
 // effectively creating a smaller set-covering model. Similar to SubModelView,
 // the core model supports column fixing and focusing on a subset of the
 // original model. Mappings are maintained to translate indices back to the
 // original model space.
-class CoreModel : private Model {
+class CoreModel : public SetCoverModel {
  public:
   // Empty initialization to facilitate delayed construction
   CoreModel() = default;
 
   // Identity sub-model: all items are considered
-  CoreModel(const Model* model);
+  explicit CoreModel(const SetCoverModel* model);
 
   // Focus construction: create a sub-model with only the required items
-  CoreModel(const Model* model,
+  CoreModel(const SetCoverModel* model,
             const std::vector<FullSubsetIndex>& columns_focus);
 
   virtual ~CoreModel() = default;
@@ -176,8 +181,8 @@ class CoreModel : private Model {
   ///////// Sub-model view interface: /////////
   BaseInt num_subsets() const { return full_model_.num_subsets(); }
   BaseInt num_elements() const { return full_model_.num_elements(); }
-  BaseInt num_focus_subsets() const { return Model::num_subsets(); }
-  BaseInt num_focus_elements() const { return Model::num_elements(); }
+  BaseInt num_focus_subsets() const { return SetCoverModel::num_subsets(); }
+  BaseInt num_focus_elements() const { return SetCoverModel::num_elements(); }
   BaseInt column_size(SubsetIndex j) const {
     DCHECK(SubsetIndex() <= j && j < SubsetIndex(num_subsets()));
     return columns()[j].size();
@@ -200,12 +205,12 @@ class CoreModel : private Model {
     DCHECK(SubsetIndex() <= core_j && core_j < SubsetIndex(num_subsets()));
     return core2full_col_map_[core_j];
   }
-  // Member function relevant for the CFT inherited from Model
-  using Model::columns;
-  using Model::ElementRange;
-  using Model::rows;
-  using Model::subset_costs;
-  using Model::SubsetRange;
+  // Member functions relevant for the CFT inherited from SetCoverModel
+  using SetCoverModel::columns;
+  using SetCoverModel::ElementRange;
+  using SetCoverModel::rows;
+  using SetCoverModel::subset_costs;
+  using SetCoverModel::SubsetRange;
 
   ///////// Core-model interface: /////////
 
@@ -221,7 +226,7 @@ class CoreModel : private Model {
   // not overwrite the current fixing.
   void SetFocus(const std::vector<FullSubsetIndex>& columns_focus);
 
-  // Fix the provided columns, removing them for the submodel. Rows now covered
+  // Fix the provided columns, removing them from the submodel. Rows now covered
   // by fixed columns are also removed from the submodel along with non-fixed
   // columns that only cover those rows.
   virtual Cost FixMoreColumns(const std::vector<SubsetIndex>& columns_to_fix);
@@ -237,6 +242,10 @@ class CoreModel : private Model {
   virtual bool UpdateCore(Cost best_lower_bound,
                           const ElementCostVector& best_multipliers,
                           const Solution& best_solution, bool force) {
+    (void)best_lower_bound;
+    (void)best_multipliers;
+    (void)best_solution;
+    (void)force;
     return false;
   }
 
@@ -245,7 +254,8 @@ class CoreModel : private Model {
  private:
   void MarkNewFixingInMaps(const std::vector<SubsetIndex>& columns_to_fix);
   CoreToFullElementMapVector MakeOrFillBothRowMaps();
-  Model MakeNewCoreModel(const CoreToFullElementMapVector& new_c2f_col_map);
+  SetCoverModel MakeNewCoreModel(
+      const CoreToFullElementMapVector& new_c2f_row_map);
   void ResetToIdentitySubModel();
 
   // Pointer to the original model
@@ -258,38 +268,29 @@ class CoreModel : private Model {
   // Fixing data
   Cost fixed_cost_ = .0;
   std::vector<FullSubsetIndex> fixed_columns_;
-
-  static constexpr SubsetIndex null_subset_index =
-      std::numeric_limits<SubsetIndex>::max();
-  static constexpr ElementIndex null_element_index =
-      std::numeric_limits<ElementIndex>::max();
-  static constexpr FullSubsetIndex null_full_subset_index =
-      std::numeric_limits<FullSubsetIndex>::max();
-  static constexpr FullElementIndex null_full_element_index =
-      std::numeric_limits<FullElementIndex>::max();
 };
 
 template <typename SubModelT>
 bool ValidateSubModel(const SubModelT& model) {
   if (model.num_elements() <= 0) {
-    std::cerr << "Sub-Model has no elements.\n";
+    LOG(ERROR) << "SubModel has no elements.\n";
     return false;
   }
   if (model.num_subsets() <= 0) {
-    std::cerr << "Sub-Model has no subsets.\n";
+    LOG(ERROR) << "SubModel has no subsets.\n";
     return false;
   }
 
   for (SubsetIndex j : model.SubsetRange()) {
     const auto& column = model.columns()[j];
     if (model.column_size(j) == 0) {
-      std::cerr << "Column " << j << " is empty.\n";
+      LOG(ERROR) << "Column " << j << " is empty.\n";
       return false;
     }
     BaseInt j_size = std::distance(column.begin(), column.end());
     if (j_size != model.column_size(j)) {
-      std::cerr << "Sub-Model size mismatch on column " << j << ", " << j_size
-                << " != " << model.column_size(j) << "\n";
+      LOG(ERROR) << "SubModel size mismatch on column " << j << ", " << j_size
+                 << " != " << model.column_size(j) << "\n";
       return false;
     }
   }
@@ -297,18 +298,19 @@ bool ValidateSubModel(const SubModelT& model) {
   for (ElementIndex i : model.ElementRange()) {
     const auto& row = model.rows()[i];
     if (model.row_size(i) == 0) {
-      std::cerr << "Row " << i << " is empty.\n";
+      LOG(ERROR) << "Row " << i << " is empty.\n";
       return false;
     }
     BaseInt i_size = std::distance(row.begin(), row.end());
     if (i_size != model.row_size(i)) {
-      std::cerr << "Sub-Model size mismatch on row " << i << ", " << i_size
-                << " != " << model.row_size(i) << "\n";
+      LOG(ERROR) << "SubModel size mismatch on row " << i << ", " << i_size
+                 << " != " << model.row_size(i) << "\n";
       return false;
     }
   }
   return true;
 }
 
-}  // namespace operations_research::scp
-#endif /* ORTOOLS_SET_COVER_SET_COVER_SUBMODEL_H */
+}  // namespace operations_research
+
+#endif  // ORTOOLS_SET_COVER_SET_COVER_SUBMODEL_H_
