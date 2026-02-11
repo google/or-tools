@@ -77,6 +77,8 @@ class SolverType(enum.Enum):
         QPs are unimplemented).
       SANTORINI: The Santorini Solver (first party). Supports MIP. Experimental,
         do not use in production.
+      XPRESS: FICO Xpress solver (third party). Supports LP, MIP, and QP/MIQP
+        problems. Requires a local Xpress installation with XPRESSDIR set.
     """
 
     GSCIP = math_opt_parameters_pb2.SOLVER_TYPE_GSCIP
@@ -90,6 +92,7 @@ class SolverType(enum.Enum):
     SCS = math_opt_parameters_pb2.SOLVER_TYPE_SCS
     HIGHS = math_opt_parameters_pb2.SOLVER_TYPE_HIGHS
     SANTORINI = math_opt_parameters_pb2.SOLVER_TYPE_SANTORINI
+    XPRESS = math_opt_parameters_pb2.SOLVER_TYPE_XPRESS
 
 
 def solver_type_from_proto(
