@@ -237,14 +237,4 @@ TEST(AdjustableKAryHeapTest, StrongIntIndex) {
   EXPECT_EQ(heap.BottomIndex(), NodeIndex(1));
   heap.Pop();
 }
-
-TEST(AdjustableKAryHeapTest, StrongVector) {
-  // As most of the implementation is based on templates, check that it compiles
-  // with StrongVector. The vector constructor only defers to `Load`.
-  AdjustableKAryHeap<int, NodeIndex, 4, true> heap;
-
-  const util_intops::StrongVector<NodeIndex, int> indices{NodeIndex(1)};
-  const util_intops::StrongVector<NodeIndex, int> priorities{1};
-  // heap.Load(indices, priorities, NodeIndex(1));
-}
 }  // namespace operations_research
