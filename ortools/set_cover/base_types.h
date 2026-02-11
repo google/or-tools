@@ -14,8 +14,13 @@
 #ifndef ORTOOLS_SET_COVER_BASE_TYPES_H_
 #define ORTOOLS_SET_COVER_BASE_TYPES_H_
 
+#include <sys/types.h>
+
+#include <array>
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
+#include <tuple>
 #include <type_traits>
 #include <vector>
 
@@ -54,6 +59,7 @@ DEFINE_STRONG_INT_TYPE(RowEntryIndex, BaseInt);
 using SubsetRange = util_intops::StrongIntRange<SubsetIndex>;
 using ElementRange = util_intops::StrongIntRange<ElementIndex>;
 using ColumnEntryRange = util_intops::StrongIntRange<ColumnEntryIndex>;
+using RowEntryRange = util_intops::StrongIntRange<RowEntryIndex>;
 
 using SubsetCostVector = util_intops::StrongVector<SubsetIndex, Cost>;
 using ElementCostVector = util_intops::StrongVector<ElementIndex, Cost>;
@@ -71,209 +77,23 @@ using SparseRowView = util_intops::StrongVector<ElementIndex, SparseRow>;
 using SubsetBoolVector = util_intops::StrongVector<SubsetIndex, bool>;
 using ElementBoolVector = util_intops::StrongVector<ElementIndex, bool>;
 
+using SubsetWeightVector = util_intops::StrongVector<SubsetIndex, double>;
+using ElementWeightVector = util_intops::StrongVector<ElementIndex, double>;
+
 // Maps from element to subset. Useful to compress the sparse row view.
 using ElementToSubsetVector =
     util_intops::StrongVector<ElementIndex, SubsetIndex>;
 
-template <typename EntryIndex, typename Index>
-class CompressedStrongVectorIterator;
-
-// A compressed vector of strong indices (e.g. SubsetIndex, ElementIndex), with
-// EntryIndex indicating the position in the vector (e.g. RowEntryIndex or
-// ColumnEntryIndex).
-// The vector is compressed in a variable-length encoding, where each element
-// is encoded as a delta from the previous element.
-// The vector is stored in a byte stream, which is addressed byte-by-byte, which
-// is necessary to store variable-length integers.
-// The variable-length encoding is little-endian base128 (LEB128) as used by
-// protobufs. Since we only use non-negative integers, there is no need to
-// encode the sign bit (so non-zigzag encoding or similar techniques).
-//
-// TODO(user):
-// There is a lot of room for optimization in this class.
-// - Use a bit-twiddling approach to encode and decode integers.
-// - Use another simpler variable encoding (base on vu128) using a single 64-bit
-// word and limited to storing 8 bytes with 7 bits per byte. A 64-bit word would
-// contain 8*7 = 56 bits. This is enough for an index in an array with
-// 2^56 = 7.2e16 elements, and more that the address space of current (2025)
-// machines.
-// - Access memory by 64-bit words instead of bytes.
-// - Make Codecs a template parameter of CompressedStrongVector (?)
-template <typename EntryIndex, typename Index>
-class CompressedStrongVector {
- public:
-  using iterator = CompressedStrongVectorIterator<EntryIndex, Index>;
-  using const_iterator = CompressedStrongVectorIterator<EntryIndex, Index>;
-  using value_type = Index;
-
-  explicit CompressedStrongVector() : memorized_value_(0), byte_stream_() {}
-
-  // Initializes the compressed vector from a strong vector.
-  // TODO(user): try to guess the size of the compressed vector and pre-allocate
-  // it. Experience shows it consumes between 1 and 2 bytes per Index on
-  // average.
-  explicit CompressedStrongVector(
-      const util_intops::StrongVector<EntryIndex, Index>& strong_vector)
-      : memorized_value_(0), byte_stream_() {
-    for (const Index x : strong_vector) {
-      push_back(x);
-    }
-  }
-
-  explicit CompressedStrongVector(absl::Span<const Index> vec)
-      : memorized_value_(0), byte_stream_() {
-    for (const Index x : vec) {
-      push_back(x);
-    }
-  }
-
-  // Appends an x to the vector in a compressed form.
-  void push_back(Index x) { EncodeInteger(x.value()); }
-
-  // Returns a reference to the underlying byte stream.
-  const std::vector<uint8_t>& byte_stream() const { return byte_stream_; }
-
-  // Returns the number of bytes needed to store the vector.
-  size_t size_in_bytes() const { return byte_stream_.size(); }
-
-  bool empty() const { return byte_stream_.empty(); }
-
-  // Reserves space for n bytes.
-  void Reserve(size_t n) { byte_stream_.reserve(n); }
-
-  // For range-for loops.
-  iterator begin() { return iterator(*this); }
-  iterator end() { return iterator(*this, true); }
-
-  // For const range-for loops.
-  const_iterator begin() const { return const_iterator(*this); }
-  const_iterator end() const { return const_iterator(*this, true); }
-
- private:
-  void EncodeInteger(BaseInt x) {
-    BaseInt delta = x - memorized_value_;  // Delta from previous value.
-    DCHECK_GE(delta, 0);
-
-    // Push the delta as a variable-length integer.
-    while (delta >= 128) {
-      // Keep the lower 7 bits of the delta and set the higher bit to 1 to mark
-      // the continuation of the variable-length encoding.
-      byte_stream_.push_back(static_cast<uint8_t>(delta | 0x80));
-      // Shift the delta by 7 bits to get the next value.
-      delta >>= 7;
-    }
-    // The final byte is less than 128, so its higher bit is zero, which marks
-    // the end of the variable-length encoding.
-    byte_stream_.push_back(static_cast<uint8_t>(delta));
-
-    // Do not forget to remember the last value.
-    memorized_value_ = x + kMinDelta;
-  }
-  // The last value memorized in the vector. It is defined as the last value
-  // appended to the vector plus a kMinDelta. It starts at zero.
-  BaseInt memorized_value_;
-
-  // The minimum difference between two consecutive elements in the vector.
-  static constexpr int64_t kMinDelta = 1;
-
-  // The byte stream.
-  std::vector<uint8_t> byte_stream_;
-};
-
-// Iterator for a compressed strong vector. There is no tool for decompressing
-// a compressed strong vector, so this iterator is the only way to access the
-// elements, always in order.
-// The iterator is not thread-safe.
-template <typename EntryIndex, typename Index>
-class CompressedStrongVectorIterator {
- public:
-  explicit CompressedStrongVectorIterator(
-      const CompressedStrongVector<EntryIndex, Index>& compressed_vector)
-      : compressed_vector_(compressed_vector),
-        memorized_value_(0),
-        pos_(0),
-        last_pos_(0) {}
-
-  explicit CompressedStrongVectorIterator(
-      const CompressedStrongVector<EntryIndex, Index>& compressed_vector,
-      bool at_end)
-      : compressed_vector_(compressed_vector),
-        memorized_value_(0),
-        pos_(0),
-        last_pos_(at_end ? compressed_vector.size_in_bytes() : 0) {}
-
-  bool at_end() const {
-    DCHECK_LE(last_pos_, compressed_vector_.size_in_bytes());
-    return last_pos_ == compressed_vector_.size_in_bytes();
-  }
-
-  Index operator*() { return DecodeInteger(); }
-
-  bool operator==(const CompressedStrongVectorIterator& other) const {
-    DCHECK_EQ(&compressed_vector_, &(other.compressed_vector_));
-    return last_pos_ == other.last_pos_;
-  }
-
-  bool operator!=(const CompressedStrongVectorIterator& other) const {
-    return !(*this == other);
-  }
-
-  CompressedStrongVectorIterator& operator++() {
-    last_pos_ = pos_;
-    return *this;
-  }
-
- private:
-  Index DecodeInteger() {
-    // This can be made much faster by using a bit-twiddling approach.
-    const std::vector<uint8_t>& encoded = compressed_vector_.byte_stream();
-    BaseInt delta = 0;
-    int shift = 0;
-    for (pos_ = last_pos_, shift = 0;
-         encoded[pos_] >= 128 && pos_ < compressed_vector_.size_in_bytes();
-         shift += 7, ++pos_) {
-      delta |= static_cast<BaseInt>(encoded[pos_] & 0x7F) << shift;
-    }
-    delta |= static_cast<BaseInt>(encoded[pos_]) << shift;
-    ++pos_;
-    memorized_value_ += Index(delta + kMinDelta);
-    return memorized_value_ - Index(kMinDelta);
-  }
-
-  // The compressed vector.
-  const CompressedStrongVector<EntryIndex, Index>& compressed_vector_;
-
-  // The last value memorized in the decoder. It is defined as the last value
-  // appended to the vector plus a kMinDelta. It starts at zero.
-  Index memorized_value_;
-
-  // The current position in the byte stream.
-  int64_t pos_;
-
-  // The last position in the byte stream.
-  int64_t last_pos_;
-
-  static constexpr int64_t kMinDelta = 1;
-};
-
-using CompressedColumn = CompressedStrongVector<ColumnEntryIndex, ElementIndex>;
-using CompressedRow = CompressedStrongVector<RowEntryIndex, SubsetIndex>;
-
-using CompressedColumnView =
-    util_intops::StrongVector<SubsetIndex, CompressedColumn>;
-using CompressedRowView =
-    util_intops::StrongVector<ElementIndex, CompressedRow>;
-
-using CompressedColumnIterator =
-    CompressedStrongVectorIterator<ColumnEntryIndex, ElementIndex>;
-using CompressedRowIterator =
-    CompressedStrongVectorIterator<RowEntryIndex, SubsetIndex>;
+using SparseColumnIterator = SparseColumn::iterator;
+using SparseRowIterator = SparseRow::iterator;
+using SparseColumnConstIterator = SparseColumn::const_iterator;
+using SparseRowConstIterator = SparseRow::const_iterator;
 
 template <typename Index>
 class IndexRangeIterator;
 
-// A range of indices, that can be iterated over. Useful if used in a range-for
-// loop or as an IterableContainer.
+// A range of indices, that can be iterated over. Useful if used in a
+// range-for loop or as an IterableContainer.
 template <typename Index>
 class IndexRange {
  public:
@@ -342,7 +162,7 @@ class IndexRangeIterator {
 // A container that can be iterated over, but does not own the data.
 // The container can be either const or non-const.
 // The container can be either a std::vector, a absl::Span, an IndexRange, a
-// StrongVector or a CompressedStrongVector.
+// StrongVector or a CompressedStrongList.
 // We use the Curiously-Recurring Template Pattern (CRTP) to avoid having to
 // specify the type of the container in the derived class, and to not lose
 // runtime performance because of virtual functions.
@@ -390,10 +210,11 @@ class StopWatch {
     timer_.Stop();
     *duration_ = timer_.GetDuration();
   }
-  // Returns the elapsed time in seconds at a given moment. To be use to
+  // Returns the elapsed time in seconds at a given moment. To be used to
   // implement time limits in the derived classes.
   double elapsed_time_in_seconds() const { return timer_.Get(); }
 
+  // Returns the elapsed time as an absl::Duration.
   absl::Duration GetElapsedDuration() const { return timer_.GetDuration(); }
 
  private:

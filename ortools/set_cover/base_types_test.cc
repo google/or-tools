@@ -18,6 +18,7 @@
 #include <random>
 #include <vector>
 
+#include "absl/random/random.h"
 #include "absl/types/span.h"
 #include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
@@ -69,10 +70,6 @@ using IndexRangeElementIndexTest =
 
 using SparseRowTest = IterableContainerTest<SparseRow, SubsetIndex>;
 using SparseColumnTest = IterableContainerTest<SparseColumn, ElementIndex>;
-
-using CompressedRowTest = IterableContainerTest<CompressedRow, SubsetIndex>;
-using CompressedColumnTest =
-    IterableContainerTest<CompressedColumn, ElementIndex>;
 
 TEST_F(VectorSubsetIndexTest, StdVectorSubsetIndex) {
   std::vector<SubsetIndex> vec = {SubsetIndex(1), SubsetIndex(2),
@@ -131,29 +128,10 @@ TEST_F(SparseColumnTest, StrongVectorElementIndex) {
   CompareVectors(strong_vector, expected_data);
 }
 
-TEST_F(CompressedRowTest, CompressedStrongVectorSubsetIndex) {
-  SparseRow original_vector{SubsetIndex(2), SubsetIndex(5), SubsetIndex(8),
-                            SubsetIndex(12)};
-  CompressedRow compressed_vector(original_vector);
-  std::vector<SubsetIndex> expected_data = {SubsetIndex(2), SubsetIndex(5),
-                                            SubsetIndex(8), SubsetIndex(12)};
-  CompareVectors(compressed_vector, expected_data);
-}
-
-TEST_F(CompressedColumnTest, CompressedStrongVectorElementIndex) {
-  SparseColumn original_vector{ElementIndex(100), ElementIndex(105),
-                               ElementIndex(111)};
-  CompressedStrongVector<ColumnEntryIndex, ElementIndex> compressed_vector(
-      original_vector);
-  std::vector<ElementIndex> expected_data = {
-      ElementIndex(100), ElementIndex(105), ElementIndex(111)};
-  CompareVectors(compressed_vector, expected_data);
-}
-
 SparseRow GenerateRandomSparseRow(size_t size, int64_t max_value) {
   SparseRow sparse_row;
   sparse_row.reserve(size);
-  std::mt19937_64 gen(std::random_device{}());  // Seed the generator
+  absl::BitGen gen;
   std::uniform_int_distribution<int64_t> dist(0, max_value);
   SubsetIndex current_value(0);
   for (size_t i = 0; i < size; ++i) {
@@ -162,7 +140,6 @@ SparseRow GenerateRandomSparseRow(size_t size, int64_t max_value) {
   }
   return sparse_row;
 }
-
 static void BM_StrongVectorIteration(benchmark::State& state) {
   const size_t size = state.range(0);
   const int64_t delta_range = state.range(1);
@@ -177,24 +154,6 @@ static void BM_StrongVectorIteration(benchmark::State& state) {
 }
 BENCHMARK(BM_StrongVectorIteration)
     ->ArgsProduct({{100'000, 100'000'000}, {1 << 8, 1 << 16}});
-
-static void BM_CompressedStrongVectorIteration(benchmark::State& state) {
-  const size_t size = state.range(0);
-  const int64_t delta_range = state.range(1);
-  CompressedRow compressed_vector(GenerateRandomSparseRow(size, delta_range));
-  for (auto _ : state) {
-    int64_t sum = 0;
-    for (const auto& x : compressed_vector) {
-      sum += x.value();
-    }
-    benchmark::DoNotOptimize(sum);  // Prevent optimization
-  }
-}
-BENCHMARK(BM_CompressedStrongVectorIteration)
-    ->ArgsProduct({
-        {100'000, 100'000'000},
-        {1 << 8, 1 << 16},
-    });
 
 }  // namespace
 }  // namespace operations_research

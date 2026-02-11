@@ -1,4 +1,5 @@
 // Copyright 2025 Francesco Cavaliere
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -11,15 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ORTOOLS_SET_COVER_VIEWS_H
-#define ORTOOLS_SET_COVER_VIEWS_H
-
-#include <absl/meta/type_traits.h>
-#include <absl/types/span.h>
-
-#include <cstddef>
-
-#include "ortools/graph_base/iterators.h"
+#ifndef ORTOOLS_SET_COVER_VIEWS_H_
+#define ORTOOLS_SET_COVER_VIEWS_H_
 
 // NOTE: It may be unexpected, but views provide a subscript operator that
 // directly accesses the underlying original container using the original
@@ -33,19 +27,26 @@
 // 1. Directly using the original container.
 // 2. Accessing a subset of the original items via a view.
 // 3. Using a new container with a compacted subset of items, indexing them with
-//    the position the have in the new container and not in the original one.
-//    This also need the old indices stored in rows/columns to be mapped into
+//    the position they have in the new container and not in the original one.
+//    This also needs the old indices stored in rows/columns to be mapped into
 //    the new ones.
 
-namespace util_intops {
+#include <cstddef>
+#include <iterator>
+#include <type_traits>
+#include <vector>
+
+#include "absl/types/span.h"
+
+namespace operations_research {
 
 namespace util {
 
 template <typename RangeT>
 using range_const_iterator_type =
-    absl::remove_cvref_t<decltype(std::declval<const RangeT>().begin())>;
+    std::remove_cvref_t<decltype(std::declval<const RangeT>().begin())>;
 template <typename RangeT>
-using range_value_type = absl::remove_cvref_t<
+using range_value_type = std::remove_cvref_t<
     decltype(*std::declval<range_const_iterator_type<RangeT>>())>;
 
 // Enable compatibility with STL algorithms.
@@ -84,34 +85,33 @@ class FilterIndexRangeView {
  public:
   struct FilterIndicesViewIterator
       : util::IteratorCRTP<FilterIndicesViewIterator, IntT> {
-    FilterIndicesViewIterator(IntT index, const EnableVectorT* is_active)
-        : index_(index), is_active_(is_active) {
+    FilterIndicesViewIterator(IntT index_, const EnableVectorT* is_active_)
+        : index(index_), is_active(is_active_) {
       AdjustToValidValue();
       std::vector<bool> vb;
     }
     bool operator!=(FilterIndicesViewIterator other) const {
-      return index_ != other.index_;
+      return index != other.index;
     }
     FilterIndicesViewIterator& operator++() {
-      ++index_;
+      ++index;
       AdjustToValidValue();
       return *this;
     }
-    IntT operator*() const { return index_; }
+    IntT operator*() const { return index; }
 
    private:
     void AdjustToValidValue() {
-      while (index_ < IntT(is_active_->size()) &&
-             !util::at(is_active_, index_)) {
-        ++index_;
+      while (index < IntT(is_active->size()) && !util::at(is_active, index)) {
+        ++index;
       }
     }
 
-    IntT index_;
-    const EnableVectorT* is_active_;
+    IntT index;
+    const EnableVectorT* is_active;
   };
 
-  FilterIndexRangeView(const EnableVectorT* is_active)
+  explicit FilterIndexRangeView(const EnableVectorT* is_active)
       : is_active_(is_active) {}
   FilterIndicesViewIterator begin() const {
     return FilterIndicesViewIterator(IntT(0), is_active_);
@@ -142,23 +142,24 @@ class IndexListView {
 
   struct IndexListViewIterator
       : util::IteratorCRTP<IndexListViewIterator, value_type> {
-    IndexListViewIterator(absl::Span<value_type> values, index_iterator iter)
-        : values_(values), index_iter_(iter) {}
+    IndexListViewIterator(absl::Span<value_type> values_,
+                          index_iterator iterator_)
+        : values(values_), index_iterator(iterator_) {}
     bool operator!=(const IndexListViewIterator& other) const {
-      DCHECK_EQ(values_.data(), other.values_.data());
-      return index_iter_ != other.index_iter_;
+      DCHECK_EQ(values.data(), other.values.data());
+      return index_iterator != other.index_iterator;
     }
     IndexListViewIterator& operator++() {
-      ++index_iter_;
+      ++index_iterator;
       return *this;
     }
     decltype(auto) operator*() const {
-      return values_[static_cast<size_t>(*index_iter_)];
+      return values[static_cast<size_t>(*index_iterator)];
     }
 
    private:
-    absl::Span<value_type> values_;
-    index_iterator index_iter_;
+    absl::Span<value_type> values;
+    index_iterator index_iterator;
   };
 
   IndexListView() = default;
@@ -173,7 +174,7 @@ class IndexListView {
 
   // NOTE: uses indices of the original container, not the filtered one
   decltype(auto) operator[](index_type index) const {
-    // TODO(user): we could check that index is in indices_, but that's is O(n).
+    // TODO(user): we could check that index is in indices_, but that's O(n).
     return values_[static_cast<size_t>(index)];
   }
   IndexListViewIterator begin() const {
@@ -191,9 +192,9 @@ class IndexListView {
 
 // This view provides access to elements of a container of integral types, which
 // are used as indices to a filter (in) vector.
-// The view filters and returns only those elements that, when used a subscript
-// to the filter vector, are evaluated to a true value.
-// Looping over this view is equivalent to:
+// The view filters and returns only those elements that, when used as a
+// subscript to the filter vector, are evaluated to a true value. Looping over
+// this view is equivalent to:
 //
 // for (decltype(auto) item : container) {
 //   if (is_active[item]) {
@@ -209,32 +210,33 @@ class ValueFilterView {
 
   struct ValueFilterViewIterator
       : util::IteratorCRTP<ValueFilterViewIterator, value_type> {
-    ValueFilterViewIterator(value_iterator iterator, value_iterator end,
-                            const EnableVectorT* is_active)
-        : iterator_(iterator), end_(end), is_active_(is_active) {
+    ValueFilterViewIterator(value_iterator iterator_begin,
+                            value_iterator iterator_end,
+                            const EnableVectorT* is_active_)
+        : iterator(iterator_begin), end(iterator_end), is_active(is_active_) {
       AdjustToValidValue();
     }
     bool operator!=(const ValueFilterViewIterator& other) const {
-      DCHECK_EQ(is_active_, other.is_active_);
-      return iterator_ != other.iterator_;
+      DCHECK_EQ(is_active, other.is_active);
+      return iterator != other.iterator;
     }
     ValueFilterViewIterator& operator++() {
-      ++iterator_;
+      ++iterator;
       AdjustToValidValue();
       return *this;
     }
-    decltype(auto) operator*() const { return *iterator_; }
+    decltype(auto) operator*() const { return *iterator; }
 
    private:
     void AdjustToValidValue() {
-      while (iterator_ != end_ && !util::at(is_active_, *iterator_)) {
-        ++iterator_;
+      while (iterator != end && !util::at(is_active, *iterator)) {
+        ++iterator;
       }
     }
 
-    value_iterator iterator_;
-    value_iterator end_;
-    const EnableVectorT* is_active_;
+    value_iterator iterator;
+    value_iterator end;
+    const EnableVectorT* is_active;
   };
 
   template <typename ValueRangeT>
@@ -285,42 +287,42 @@ class IndexFilterView {
 
   struct IndexFilterViewIterator
       : util::IteratorCRTP<IndexFilterViewIterator, value_type> {
-    IndexFilterViewIterator(value_iterator iterator,
-                            enable_iterator is_active_begin,
-                            enable_iterator is_active_end)
-        : iterator_(iterator),
-          is_active_iter_(is_active_begin),
-          is_active_end_(is_active_end) {
+    IndexFilterViewIterator(value_iterator iterator_,
+                            enable_iterator is_active_begin_,
+                            enable_iterator is_active_end_)
+        : iterator(iterator_),
+          is_active_iter(is_active_begin_),
+          is_active_end(is_active_end_) {
       AdjustToValidValue();
     }
     bool operator!=(const IndexFilterViewIterator& other) const {
-      DCHECK(is_active_end_ == other.is_active_end_);
-      return iterator_ != other.iterator_;
+      DCHECK(is_active_end == other.is_active_end);
+      return iterator != other.iterator;
     }
     IndexFilterViewIterator& operator++() {
-      ++is_active_iter_;
-      ++iterator_;
+      ++is_active_iter;
+      ++iterator;
       AdjustToValidValue();
       return *this;
     }
-    decltype(auto) operator*() const { return *iterator_; }
+    decltype(auto) operator*() const { return *iterator; }
 
    private:
     void AdjustToValidValue() {
-      while (is_active_iter_ != is_active_end_ && !*is_active_iter_) {
-        ++is_active_iter_;
-        ++iterator_;
+      while (is_active_iter != is_active_end && !*is_active_iter) {
+        ++is_active_iter;
+        ++iterator;
       }
     }
 
-    value_iterator iterator_;
-    enable_iterator is_active_iter_;
-    enable_iterator is_active_end_;
+    value_iterator iterator;
+    enable_iterator is_active_iter;
+    enable_iterator is_active_end;
   };
 
   template <typename ValueRangeT>
-  IndexFilterView(const ValueRangeT* values, const EnableVectorT* is_active_)
-      : values_(absl::MakeConstSpan(*values)), is_active_(is_active_) {
+  IndexFilterView(const ValueRangeT* values, const EnableVectorT* is_active)
+      : values_(absl::MakeConstSpan(*values)), is_active_(is_active) {
     DCHECK(values != nullptr);
     DCHECK(is_active_ != nullptr);
     DCHECK_EQ(values->size(), is_active_->size());
@@ -350,7 +352,7 @@ class IndexFilterView {
 
 // This view provides a mechanism to access and filter elements in a 2D
 // container. The filtering is applied in two stages:
-// 1. The first dimension is generic and can be both and index-list or
+// 1. The first dimension is generic and can be either an index-list or
 //    bool-vector based view.
 // 2. The second dimension (items of each sub-container) is further filtered
 //    using a boolean-vector-like object, which determines which elements within
@@ -365,25 +367,25 @@ class TwoLevelsView : public Lvl1ViewT {
 
   struct TwoLevelsViewIterator
       : util::IteratorCRTP<TwoLevelsViewIterator, level2_type> {
-    TwoLevelsViewIterator(level1_iterator iter,
-                          const EnableVectorT* active_items)
-        : iter_(iter), active_items_(active_items) {}
+    TwoLevelsViewIterator(level1_iterator iterator_,
+                          const EnableVectorT* active_items_)
+        : iterator(iterator_), active_items(active_items_) {}
     bool operator!=(const TwoLevelsViewIterator& other) const {
-      DCHECK_EQ(active_items_, other.active_items_);
-      return iter_ != other.iter_;
+      DCHECK_EQ(active_items, other.active_items);
+      return iterator != other.iterator;
     }
     TwoLevelsViewIterator& operator++() {
-      ++iter_;
+      ++iterator;
       return *this;
     }
     level2_type operator*() const {
-      return level2_type(&(*iter_), active_items_);
+      return level2_type(&(*iterator), active_items);
     }
     const Lvl1ViewT& base() const { return *this; }
 
    private:
-    level1_iterator iter_;
-    const EnableVectorT* active_items_;
+    level1_iterator iterator;
+    const EnableVectorT* active_items;
   };
 
   TwoLevelsView() = default;
@@ -418,7 +420,7 @@ struct TypeCastTransform {
   ToT operator()(FromT value) const { return static_cast<ToT>(value); }
 };
 
-// View applying stateless transformation to the values of a continugous
+// View applying stateless transformation to the values of a contiguous
 // container. Looping over this view is equivalent to:
 //
 // for (IndexT i(0); i < IndexT(container.size()); ++i) {
@@ -434,24 +436,25 @@ class TransformView {
 
   struct TransformViewIterator
       : util::IteratorCRTP<TransformViewIterator, value_type> {
-    TransformViewIterator(value_iterator iterator) : iterator_(iterator) {}
+    explicit TransformViewIterator(value_iterator iterator_)
+        : iterator(iterator_) {}
     bool operator!=(const TransformViewIterator& other) const {
-      return iterator_ != other.iterator_;
+      return iterator != other.iterator;
     }
     TransformViewIterator& operator++() {
-      ++iterator_;
+      ++iterator;
       return *this;
     }
-    decltype(auto) operator*() const { return ValueTransformT()(*iterator_); }
+    decltype(auto) operator*() const { return ValueTransformT()(*iterator); }
 
    private:
-    value_iterator iterator_;
+    value_iterator iterator;
   };
 
   TransformView() = default;
 
   template <typename ValueRangeT>
-  TransformView(const ValueRangeT* values)
+  explicit TransformView(const ValueRangeT* values)
       : values_(absl::MakeConstSpan(*values)) {}
 
   auto size() const { return values_.size(); }
@@ -472,6 +475,6 @@ class TransformView {
   absl::Span<value_type> values_;
 };
 
-}  // namespace util_intops
+}  // namespace operations_research
 
-#endif /* ORTOOLS_SET_COVER_VIEWS_H */
+#endif  // ORTOOLS_SET_COVER_VIEWS_H_
