@@ -91,11 +91,12 @@ class AdjustableKAryHeap {
   void Load(const absl::Span<const Aggregate> elements,
             HeapIndex universe_size) {
     data_.resize(elements.size());
-    heap_size_ = elements.size();
+    heap_size_ = HeapIndex(elements.size());
     std::copy(elements.begin(), elements.end(), data_.begin());
-    heap_positions_.resize(universe_size, kNonExistent);
-    for (HeapIndex i = 0; i < data_.size(); ++i) {
-      heap_positions_[index(i)] = i;
+    heap_positions_.resize(GetHeapIndexAsArrayIndex(universe_size),
+                           kNonExistent);
+    for (HeapIndex i = HeapIndex(0); i < HeapIndex(data_.size()); ++i) {
+      heap_positions_[GetHeapIndexAsArrayIndex(index(i))] = i;
     }
     BuildHeap();
   }
