@@ -143,23 +143,23 @@ class IndexListView {
   struct IndexListViewIterator
       : util::IteratorCRTP<IndexListViewIterator, value_type> {
     IndexListViewIterator(absl::Span<value_type> values_,
-                          index_iterator iterator_)
-        : values(values_), index_iterator(iterator_) {}
+                          index_iterator idx_iterator_)
+        : values(values_), idx_iterator(idx_iterator_) {}
     bool operator!=(const IndexListViewIterator& other) const {
       DCHECK_EQ(values.data(), other.values.data());
-      return index_iterator != other.index_iterator;
+      return idx_iterator != other.idx_iterator;
     }
     IndexListViewIterator& operator++() {
-      ++index_iterator;
+      ++idx_iterator;
       return *this;
     }
     decltype(auto) operator*() const {
-      return values[static_cast<size_t>(*index_iterator)];
+      return values[static_cast<size_t>(*idx_iterator)];
     }
 
    private:
     absl::Span<value_type> values;
-    index_iterator index_iterator;
+    index_iterator idx_iterator;
   };
 
   IndexListView() = default;
