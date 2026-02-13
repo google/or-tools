@@ -502,7 +502,11 @@ bool Inprocessing::RemoveFixedAndEquivalentVariables(bool log_info) {
             tmp_proof_.push_back(ClausePtr(r.Negated()));
           }
           if (r != l) {
-            tmp_proof_.push_back(ClausePtr(l.Negated(), r));
+            if (assignment_.LiteralIsFalse(l)) {
+              tmp_proof_.push_back(ClausePtr(l.Negated()));
+            } else {
+              tmp_proof_.push_back(ClausePtr(l.Negated(), r));
+            }
           }
         }
         if (marked[r] || assignment_.LiteralIsFalse(r)) {
@@ -2996,7 +3000,12 @@ bool GateCongruenceClosure::DoOneRound(bool log_info) {
 
   // Lets release the memory on exit.
   CHECK(tmp_binary_clauses_.empty());
-  absl::Cleanup binary_cleanup = [this] { tmp_binary_clauses_.clear(); };
+  absl::Cleanup binary_cleanup = [this] {
+    tmp_binary_clauses_.clear();
+    if (lrat_proof_handler_ != nullptr) {
+      lrat_proof_handler_->DeleteTemporaryBinaryClauses();
+    }
+  };
 
   ExtractAndGatesAndFillShortTruthTables(timer);
   ExtractShortGates(timer);

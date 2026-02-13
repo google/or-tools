@@ -20,9 +20,6 @@
 #include <string>
 #include <vector>
 
-#if !defined(__PORTABLE_PLATFORM__)
-#include "ortools/base/helpers.h"
-#endif  // !defined(__PORTABLE_PLATFORM__)
 #include "absl/flags/declare.h"
 #include "absl/functional/function_ref.h"
 #include "absl/log/check.h"
@@ -34,10 +31,18 @@
 #include "google/protobuf/text_format.h"
 #include "ortools/base/base_export.h"
 #include "ortools/base/hash.h"
+#include "ortools/base/macros/os_support.h"
 #include "ortools/base/options.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/sorted_interval_list.h"
+
+#if defined(ORTOOLS_TARGET_OS_SUPPORTS_FILE)
+static_assert(operations_research::kTargetOsSupportsFile);
+#include "ortools/base/helpers.h"
+#else
+static_assert(!operations_research::kTargetOsSupportsFile);
+#endif  // defined(ORTOOLS_TARGET_OS_SUPPORTS_FILE)
 
 #ifndef SWIG
 OR_DLL ABSL_DECLARE_FLAG(bool, cp_model_dump_models);
@@ -167,12 +172,7 @@ void FillDomainInProto(int64_t value, ProtoWithDomain* proto) {
 // Reads a Domain from the domain field of a proto.
 template <typename ProtoWithDomain>
 Domain ReadDomainFromProto(const ProtoWithDomain& proto) {
-#if defined(__PORTABLE_PLATFORM__)
-  return Domain::FromFlatIntervals(
-      {proto.domain().begin(), proto.domain().end()});
-#else
   return Domain::FromFlatSpanOfIntervals(proto.domain());
-#endif
 }
 
 // Returns the list of values in a given domain.
@@ -337,7 +337,8 @@ uint64_t FingerprintExpression(const LinearExpressionProto& lin, uint64_t seed);
 uint64_t FingerprintModel(const CpModelProto& model,
                           uint64_t seed = kDefaultFingerprintSeed);
 
-#if !defined(__PORTABLE_PLATFORM__)
+#if defined(ORTOOLS_TARGET_OS_SUPPORTS_PROTO_DESCRIPTOR)
+static_assert(kTargetOsSupportsProtoDescriptor);
 
 // We register a few custom printers to display variables and linear
 // expression on one line. This is especially nice for variables where it is
@@ -357,13 +358,15 @@ uint64_t FingerprintModel(const CpModelProto& model,
 //   }
 // }
 void SetupTextFormatPrinter(google::protobuf::TextFormat::Printer* printer);
-#endif  // !defined(__PORTABLE_PLATFORM__)
+#else
+static_assert(!kTargetOsSupportsProtoDescriptor);
+#endif  // ORTOOLS_TARGET_OS_SUPPORTS_PROTO_DESCRIPTOR
 
 template <class M>
-bool WriteModelProtoToFile(const M& proto, absl::string_view filename) {
-#if defined(__PORTABLE_PLATFORM__)
-  return false;
-#else   // !defined(__PORTABLE_PLATFORM__)
+bool WriteModelProtoToFile([[maybe_unused]] const M& proto,
+                           [[maybe_unused]] absl::string_view filename) {
+#if defined(ORTOOLS_TARGET_OS_SUPPORTS_PROTO_DESCRIPTOR)
+  static_assert(kTargetOsSupportsProtoDescriptor);
   if (absl::EndsWith(filename, "txt") ||
       absl::EndsWith(filename, "textproto")) {
     std::string proto_string;
@@ -374,7 +377,10 @@ bool WriteModelProtoToFile(const M& proto, absl::string_view filename) {
   } else {
     return file::SetBinaryProto(filename, proto, file::Defaults()).ok();
   }
-#endif  // !defined(__PORTABLE_PLATFORM__)
+#else   // defined(ORTOOLS_TARGET_OS_SUPPORTS_PROTO_DESCRIPTOR)
+  static_assert(!kTargetOsSupportsProtoDescriptor);
+  return false;
+#endif  // ORTOOLS_TARGET_OS_SUPPORTS_PROTO_DESCRIPTOR
 }
 
 // hashing support.

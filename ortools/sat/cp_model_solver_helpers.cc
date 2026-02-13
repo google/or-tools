@@ -25,14 +25,8 @@
 #include <utility>
 #include <vector>
 
-#include "ortools/base/logging.h"
-#include "ortools/base/timer.h"
-#include "ortools/sat/lrat_proof_handler.h"
-#if !defined(__PORTABLE_PLATFORM__)
-#include "ortools/base/helpers.h"
-#include "ortools/base/options.h"
-#endif  // __PORTABLE_PLATFORM__
 #include "absl/algorithm/container.h"
+#include "absl/base/log_severity.h"
 #include "absl/cleanup/cleanup.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/flags/flag.h"
@@ -45,7 +39,11 @@
 #include "absl/types/span.h"
 #include "google/protobuf/arena.h"
 #include "ortools/algorithms/sparse_permutation.h"
+#include "ortools/base/macros/buildenv.h"
+#include "ortools/base/macros/os_support.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/base/timer.h"
+#include "ortools/base/version.h"
 #include "ortools/graph_base/connected_components.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/clause.h"
@@ -71,6 +69,7 @@
 #include "ortools/sat/linear_constraint_manager.h"
 #include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/linear_relaxation.h"
+#include "ortools/sat/lrat_proof_handler.h"
 #include "ortools/sat/max_hs.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/optimization.h"
@@ -86,12 +85,17 @@
 #include "ortools/sat/vivification.h"
 #include "ortools/sat/work_assignment.h"
 #include "ortools/util/logging.h"
-#if !defined(__PORTABLE_PLATFORM__)
-#endif  // __PORTABLE_PLATFORM__
-#include "ortools/base/version.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
+
+#if defined(ORTOOLS_TARGET_OS_SUPPORTS_FILE)
+static_assert(operations_research::kTargetOsSupportsFile);
+#include "ortools/base/helpers.h"
+#include "ortools/base/options.h"
+#else
+static_assert(!operations_research::kTargetOsSupportsFile);
+#endif  // ORTOOLS_TARGET_OS_SUPPORTS_FILE
 
 ABSL_FLAG(
     std::string, cp_model_load_debug_solution, "",
@@ -105,8 +109,10 @@ namespace sat {
 // This should be called on the presolved model. It will read the file
 // specified by --cp_model_load_debug_solution and properly fill the
 // model->Get<DebugSolution>() proto vector.
-void LoadDebugSolution(const CpModelProto& model_proto, Model* model) {
-#if !defined(__PORTABLE_PLATFORM__)
+void LoadDebugSolution([[maybe_unused]] const CpModelProto& model_proto,
+                       [[maybe_unused]] Model* model) {
+#if defined(ORTOOLS_TARGET_OS_SUPPORTS_FILE)
+  static_assert(kTargetOsSupportsFile);
   if (absl::GetFlag(FLAGS_cp_model_load_debug_solution).empty()) return;
 
   CpSolverResponse response;
@@ -121,7 +127,9 @@ void LoadDebugSolution(const CpModelProto& model_proto, Model* model) {
   CHECK_EQ(response.solution().size(), model_proto.variables().size());
   model->GetOrCreate<SharedResponseManager>()->LoadDebugSolution(
       response.solution());
-#endif  // __PORTABLE_PLATFORM__
+#else
+  static_assert(!kTargetOsSupportsFile);
+#endif  // ORTOOLS_TARGET_OS_SUPPORTS_FILE
 }
 
 // This both copy the "main" DebugSolution to a local_model and also cache
@@ -2199,10 +2207,12 @@ void AdaptGlobalParameters(const CpModelProto& model_proto, Model* model) {
 
   if (params->num_workers() == 0) {
     // Initialize the number of workers if set to 0.
-#if !defined(__PORTABLE_PLATFORM__)
+#if defined(ORTOOLS_TARGET_OS_SUPPORTS_THREADS)
+    static_assert(kTargetOsSupportsThreads);
     // Sometimes, hardware_concurrency will return 0. So always default to 1.
     const int num_cores = std::max<int>(std::thread::hardware_concurrency(), 1);
 #else
+    static_assert(!kTargetOsSupportsThreads);
     const int num_cores = 1;
 #endif
     SOLVER_LOG(logger, "Setting number of workers to ", num_cores);

@@ -184,6 +184,8 @@ cc_library(
         "//ortools/base:base_export",
         "//ortools/base:timer",
         "//ortools/base:types",
+        "//ortools/base/macros:buildenv",
+        "//ortools/base/macros:os_support",
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/flags:flag",
@@ -201,8 +203,8 @@ cc_library(
     srcs = ["sigint.cc"],
     hdrs = ["sigint.h"],
     deps = [
-        "//ortools/base",
-        "//ortools/port:os",
+        "//ortools/base/macros:os_support",
+        "@abseil-cpp//absl/log",
     ],
 )
 

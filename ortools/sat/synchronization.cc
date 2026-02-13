@@ -31,11 +31,6 @@
 #include <vector>
 
 #include "absl/algorithm/container.h"
-#include "ortools/base/timer.h"
-#if !defined(__PORTABLE_PLATFORM__)
-#include "ortools/base/helpers.h"
-#include "ortools/base/options.h"
-#endif  // __PORTABLE_PLATFORM__
 #include "absl/base/thread_annotations.h"
 #include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
@@ -53,6 +48,8 @@
 #include "absl/synchronization/mutex.h"
 #include "absl/types/span.h"
 #include "ortools/algorithms/sparse_permutation.h"
+#include "ortools/base/macros/os_support.h"
+#include "ortools/base/timer.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/integer_base.h"
@@ -64,6 +61,14 @@
 #include "ortools/util/logging.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/strong_integers.h"
+
+#if defined(ORTOOLS_TARGET_OS_SUPPORTS_FILE)
+static_assert(operations_research::kTargetOsSupportsFile);
+#include "ortools/base/helpers.h"
+#include "ortools/base/options.h"
+#else
+static_assert(!operations_research::kTargetOsSupportsFile);
+#endif  // ORTOOLS_TARGET_OS_SUPPORTS_FILE
 
 ABSL_FLAG(bool, cp_model_dump_solutions, false,
           "DEBUG ONLY. If true, all the intermediate solution will be dumped "
@@ -866,7 +871,8 @@ SharedResponseManager::NewSolution(absl::Span<const int64_t> solution_values,
     pair.second(tmp_postsolved_response);
   }
 
-#if !defined(__PORTABLE_PLATFORM__)
+#if defined(ORTOOLS_TARGET_OS_SUPPORTS_FILE)
+  static_assert(kTargetOsSupportsFile);
   // We protect solution dumping with log_updates as LNS subsolvers share
   // another solution manager, and we do not want to dump those.
   if (logger_->LoggingIsEnabled() &&
@@ -882,7 +888,9 @@ SharedResponseManager::NewSolution(absl::Span<const int64_t> solution_values,
                                         solution_values.end());
     CHECK_OK(file::SetTextProto(file, response, file::Defaults()));
   }
-#endif  // __PORTABLE_PLATFORM__
+#else
+  static_assert(!kTargetOsSupportsFile);
+#endif  // ORTOOLS_TARGET_OS_SUPPORTS_FILE
 
   return ret;
 }

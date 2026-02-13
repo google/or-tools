@@ -429,6 +429,13 @@ class ClausePtr {
     }
   }
 
+  // Returns true if this pointer is a `kBinaryClause` pointer.
+  bool IsBinaryClausePtr() const {
+    const uint64_t bits = uint64_from_rep(rep_);
+    const uint64_t kBinaryClauseBits = 0x80000000'80000000;
+    return bits != 0 && (bits & kBinaryClauseBits) == 0;
+  }
+
   // Returns the first literal of the pointer's target clause. The pointer must
   // not be null and must be a `kUnitClause` or `kBinaryClause` pointer. For
   // binary clauses, the literal order is unspecified.

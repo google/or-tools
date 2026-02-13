@@ -33,12 +33,16 @@
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
+#include "ortools/base/macros/os_support.h"
 #include "ortools/base/timer.h"
 #include "ortools/sat/util.h"
-#if !defined(__PORTABLE_PLATFORM__)
+
+#if defined(ORTOOLS_TARGET_OS_SUPPORTS_THREADS)
+static_assert(operations_research::kTargetOsSupportsThreads);
 #include "ortools/base/threadpool.h"
-#endif  // __PORTABLE_PLATFORM__
+#else
+static_assert(!operations_research::kTargetOsSupportsThreads);
+#endif
 
 namespace operations_research {
 namespace sat {
@@ -111,22 +115,8 @@ void SequentialLoop(std::vector<std::unique_ptr<SubSolver>>& subsolvers) {
   }
 }
 
-#if defined(__PORTABLE_PLATFORM__)
-
-// On portable platform, we don't support multi-threading for now.
-
-void NonDeterministicLoop(std::vector<std::unique_ptr<SubSolver>>& subsolvers,
-                          int num_threads, ModelSharedTimeLimit* time_limit) {
-  SequentialLoop(subsolvers);
-}
-
-void DeterministicLoop(std::vector<std::unique_ptr<SubSolver>>& subsolvers,
-                       int num_threads, int batch_size, int max_num_batches) {
-  SequentialLoop(subsolvers);
-}
-
-#else  // __PORTABLE_PLATFORM__
-
+#if defined(ORTOOLS_TARGET_OS_SUPPORTS_THREADS)
+static_assert(operations_research::kTargetOsSupportsThreads);
 void DeterministicLoop(std::vector<std::unique_ptr<SubSolver>>& subsolvers,
                        int num_threads, int batch_size, int max_num_batches) {
   CHECK_GT(num_threads, 0);
@@ -303,8 +293,20 @@ void NonDeterministicLoop(std::vector<std::unique_ptr<SubSolver>>& subsolvers,
     });
   }
 }
-
-#endif  // __PORTABLE_PLATFORM__
+#else   // ORTOOLS_TARGET_OS_SUPPORTS_THREADS
+static_assert(!operations_research::kTargetOsSupportsThreads);
+void NonDeterministicLoop(std::vector<std::unique_ptr<SubSolver>>& subsolvers,
+                          [[maybe_unused]] int num_threads,
+                          [[maybe_unused]] ModelSharedTimeLimit* time_limit) {
+  SequentialLoop(subsolvers);
+}
+void DeterministicLoop(std::vector<std::unique_ptr<SubSolver>>& subsolvers,
+                       [[maybe_unused]] int num_threads,
+                       [[maybe_unused]] int batch_size,
+                       [[maybe_unused]] int max_num_batches) {
+  SequentialLoop(subsolvers);
+}
+#endif  // ORTOOLS_TARGET_OS_SUPPORTS_THREADS
 
 }  // namespace sat
 }  // namespace operations_research

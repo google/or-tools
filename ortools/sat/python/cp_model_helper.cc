@@ -1938,7 +1938,9 @@ PYBIND11_MODULE(cp_model_helper, m) {
           }))
       // Pre PEP8 compatibility layer.
       .def("Name", &IntVar::name)
-      .def("Proto", &IntVar::proto)
+      .def("Proto", &IntVar::proto, py::return_value_policy::reference,
+           py::keep_alive<1, 0>(),
+           "Returns the IntegerVariableProto of this variable.")
       .def("Not",
            [](std::shared_ptr<IntVar> self) {
              if (!self->is_boolean()) {

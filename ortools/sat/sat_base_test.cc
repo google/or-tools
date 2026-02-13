@@ -112,6 +112,13 @@ TEST(ClausePtrTest, Accessors) {
 
   EXPECT_EQ(binary, ClausePtr(b, a));
 
+  EXPECT_FALSE(empty.IsBinaryClausePtr());
+  EXPECT_FALSE(unit.IsBinaryClausePtr());
+  EXPECT_TRUE(binary.IsBinaryClausePtr());
+  EXPECT_FALSE(sat_clause.IsBinaryClausePtr());
+  EXPECT_FALSE(sat_empty.IsBinaryClausePtr());
+  EXPECT_FALSE(sat_unit.IsBinaryClausePtr());
+
   EXPECT_FALSE(empty.IsSatClausePtr());
   EXPECT_FALSE(unit.IsSatClausePtr());
   EXPECT_FALSE(binary.IsSatClausePtr());

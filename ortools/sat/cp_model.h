@@ -111,17 +111,11 @@ class BoolVar {
   int index() const { return index_; }
 
  private:
-  friend class CircuitConstraint;
-  friend class Constraint;
   friend class CpModelBuilder;
   friend class DoubleLinearExpr;
   friend class IntVar;
   friend class IntervalVar;
-  friend class MultipleCircuitConstraint;
   friend class LinearExpr;
-  friend class ReservoirConstraint;
-  friend bool SolutionBooleanValue(const CpSolverResponse& r, BoolVar x);
-
   BoolVar(int index, CpModelBuilder* builder);
 
   CpModelBuilder* builder_ = nullptr;
@@ -192,13 +186,8 @@ class IntVar {
  private:
   friend class BoolVar;
   friend class CpModelBuilder;
-  friend class CumulativeConstraint;
   friend class DoubleLinearExpr;
   friend class LinearExpr;
-  friend class IntervalVar;
-  friend class ReservoirConstraint;
-  friend int64_t SolutionIntegerValue(const CpSolverResponse& r,
-                                      const LinearExpr& expr);
 
   IntVar(int index, CpModelBuilder* builder);
 
@@ -496,10 +485,6 @@ class IntervalVar {
 
  private:
   friend class CpModelBuilder;
-  friend class CumulativeConstraint;
-  friend class NoOverlapConstraint;
-  friend class NoOverlap2DConstraint;
-  friend std::ostream& operator<<(std::ostream& os, const IntervalVar& var);
 
   IntervalVar(int index, CpModelBuilder* builder);
 

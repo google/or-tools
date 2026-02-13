@@ -24,6 +24,7 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
@@ -548,8 +549,12 @@ void LratMerger::WriteDeletedClauses(absl::Span<const GlobalId> global_ids) {
     clauses.reserve(global_ids.size());
     for (const GlobalId id : global_ids) {
       const auto it = global_id_to_clause_.find(id);
-      clauses.push_back(it->second);
-      global_id_to_clause_.erase(it);
+      if (it == global_id_to_clause_.end()) {
+        Error(absl::StrCat("deleted clause ", id, " not found"));
+      } else {
+        clauses.push_back(it->second);
+        global_id_to_clause_.erase(it);
+      }
     }
     lrat_checker_->DeleteClauses(clauses);
     for (const ClausePtr clause : clauses) {
@@ -581,10 +586,16 @@ bool LratMerger::LratError() const {
   return false;
 }
 
-std::unique_ptr<LratProofHandler> LratProofHandler::MaybeCreate(Model* model) {
-  return MaybeCreate(*model->GetOrCreate<SatParameters>(),
-                     model->GetOrCreate<SharedLratProofStatus>(),
-                     model->GetOrCreate<SharedStatistics>());
+std::unique_ptr<LratProofHandler> LratProofHandler::MaybeCreate(
+    Model* model, bool enable_rat_proofs) {
+  auto result = MaybeCreate(*model->GetOrCreate<SatParameters>(),
+                            model->GetOrCreate<SharedLratProofStatus>(),
+                            model->GetOrCreate<SharedStatistics>());
+  if (result != nullptr && result->lrat_checker_ != nullptr &&
+      enable_rat_proofs) {
+    result->lrat_checker_->EnableRatProofs();
+  }
+  return result;
 }
 
 std::unique_ptr<LratProofHandler> LratProofHandler::MaybeCreate(
@@ -620,6 +631,13 @@ bool LratProofHandler::AddProblemClause(ClausePtr clause,
     LOG(FATAL) << "LRAT error: problem clauses must not be added after "
                   "EndProblemClauses()";
   }
+  if (clause.IsBinaryClausePtr()) {
+    if (implication_graph_clauses_.contains(clause) ||
+        temporary_binary_clauses_.contains(clause)) {
+      return true;
+    }
+    temporary_binary_clauses_.insert(clause);
+  }
   if (lrat_checker_ != nullptr && !lrat_checker_->AddProblemClause(clause)) {
     return LratError("In AddProblemClause.");
   }
@@ -640,6 +658,13 @@ bool LratProofHandler::AddInferredClause(
           << " literals=" << absl::StrJoin(clause.GetLiterals(), ",")
           << " proof=" << absl::StrJoin(proof, ",") << " rat_proof={"
           << absl::StrJoin(rat_proof, " ") << "}";
+  if (clause.IsBinaryClausePtr()) {
+    if (implication_graph_clauses_.contains(clause) ||
+        temporary_binary_clauses_.contains(clause)) {
+      return true;
+    }
+    temporary_binary_clauses_.insert(clause);
+  }
   if (lrat_checker_ != nullptr &&
       !lrat_checker_->AddInferredClause(clause, proof, rat_proof)) {
     return LratError(
@@ -709,14 +734,24 @@ bool LratProofHandler::ExportClause(ClausePtr clause) {
 void LratProofHandler::DeleteClause(ClausePtr clause, bool delete_sat_clause) {
   VLOG(2) << "DeleteClause: ptr=" << clause
           << " literals=" << absl::StrJoin(clause.GetLiterals(), ",");
+  if (clause.IsBinaryClausePtr()) {
+    auto it = temporary_binary_clauses_.find(clause);
+    if (it == temporary_binary_clauses_.end()) return;
+    DCHECK(!implication_graph_clauses_.contains(clause));
+    temporary_binary_clauses_.erase(it);
+  }
+  DeleteClauseInternal(clause);
+  if (delete_sat_clause && clause.IsSatClausePtr()) {
+    delete clause.GetSatClause();
+  }
+}
+
+void LratProofHandler::DeleteClauseInternal(ClausePtr clause) {
   if (lrat_checker_ != nullptr) {
     lrat_checker_->DeleteClauses({clause});
   }
   if (lrat_writer_ != nullptr) {
     lrat_writer_->DeleteClause(clause);
-  }
-  if (delete_sat_clause && clause.IsSatClausePtr()) {
-    delete clause.GetSatClause();
   }
 }
 
@@ -763,6 +798,45 @@ void LratProofHandler::Close(bool model_is_unsat) {
   if (lrat_writer_ != nullptr) {
     proof_status_->NewProofFile(lrat_writer_->filename());
   }
+}
+
+bool LratProofHandler::HasImplicationGraphClause(Literal a, Literal b) const {
+  return implication_graph_clauses_.contains(ClausePtr(a, b));
+}
+
+bool LratProofHandler::AddImplicationGraphClause(Literal a, Literal b) {
+  DCHECK_NE(a, b);
+  const bool result = implication_graph_clauses_.insert(ClausePtr(a, b)).second;
+  temporary_binary_clauses_.erase(ClausePtr(a, b));
+  return result;
+}
+
+void LratProofHandler::DeleteImplicationGraphClause(ClausePtr clause) {
+  auto it = implication_graph_clauses_.find(clause);
+  if (it != implication_graph_clauses_.end()) {
+    DCHECK(!temporary_binary_clauses_.contains(clause));
+    implication_graph_clauses_.erase(it);
+    DeleteClauseInternal(clause);
+  }
+}
+
+const absl::flat_hash_set<ClausePtr>&
+LratProofHandler::ImplicationGraphClauses() {
+  return implication_graph_clauses_;
+}
+
+bool LratProofHandler::HasTemporaryBinaryClause(Literal a, Literal b) const {
+  return temporary_binary_clauses_.contains(ClausePtr(a, b));
+}
+
+int LratProofHandler::DeleteTemporaryBinaryClauses() {
+  const int num_deleted = temporary_binary_clauses_.size();
+  for (const ClausePtr clause : temporary_binary_clauses_) {
+    DCHECK(!implication_graph_clauses_.contains(clause));
+    DeleteClauseInternal(clause);
+  }
+  temporary_binary_clauses_.clear();
+  return num_deleted;
 }
 
 bool LratProofHandler::AddAndProveInferredClauseByEnumeration(

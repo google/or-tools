@@ -26,18 +26,16 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
-#include "ortools/graph_base/graph.h"
-#if !defined(__PORTABLE_PLATFORM__)
-#include "ortools/graph_base/io.h"
-#endif  // __PORTABLE_PLATFORM__
 #include "ortools/algorithms/find_graph_symmetries.h"
 #include "ortools/algorithms/sparse_permutation.h"
+#include "ortools/base/macros/os_support.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/graph_base/graph.h"
 #include "ortools/graph_base/util.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/boolean_problem.pb.h"
@@ -48,6 +46,13 @@
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/simplification.h"
 #include "ortools/util/strong_integers.h"
+
+#if defined(ORTOOLS_TARGET_OS_SUPPORTS_FILE)
+static_assert(operations_research::kTargetOsSupportsFile);
+#include "ortools/graph_base/io.h"
+#else
+static_assert(!operations_research::kTargetOsSupportsFile);
+#endif  // defined(ORTOOLS_TARGET_OS_SUPPORTS_FILE)
 
 ABSL_FLAG(std::string, debug_dump_symmetry_graph_to_file, "",
           "If this flag is non-empty, an undirected graph whose"
@@ -276,9 +281,12 @@ bool LoadAndConsumeBooleanProblem(LinearBooleanProblem* problem,
     LOG(WARNING) << "The given problem is invalid! " << status.message();
   }
   if (solver->parameters().log_search_progress()) {
-#if !defined(__PORTABLE_PLATFORM__)
+#if defined(ORTOOLS_TARGET_OS_SUPPORTS_PROTO_DESCRIPTOR)
+    static_assert(kTargetOsSupportsProtoDescriptor);
     LOG(INFO) << "LinearBooleanProblem memory: " << problem->SpaceUsedLong();
-#endif
+#else
+    static_assert(!kTargetOsSupportsProtoDescriptor);
+#endif  // defined(ORTOOLS_TARGET_OS_SUPPORTS_PROTO_DESCRIPTOR)
     LOG(INFO) << "Loading problem '" << problem->name() << "', "
               << problem->num_variables() << " variables, "
               << problem->constraints_size() << " constraints.";
@@ -689,7 +697,8 @@ void FindLinearBooleanProblemSymmetries(
       GenerateGraphForSymmetryDetection<Graph>(problem, &equivalence_classes));
   LOG(INFO) << "Graph has " << graph->num_nodes() << " nodes and "
             << graph->num_arcs() / 2 << " edges.";
-#if !defined(__PORTABLE_PLATFORM__)
+#if defined(ORTOOLS_TARGET_OS_SUPPORTS_FILE)
+  static_assert(kTargetOsSupportsFile);
   if (!absl::GetFlag(FLAGS_debug_dump_symmetry_graph_to_file).empty()) {
     // Remap the graph nodes to sort them by equivalence classes.
     std::vector<int> new_node_index(graph->num_nodes(), -1);
@@ -712,7 +721,9 @@ void FindLinearBooleanProblemSymmetries(
                   << status;
     }
   }
-#endif  // __PORTABLE_PLATFORM__
+#else
+  static_assert(!kTargetOsSupportsFile);
+#endif  // defined(ORTOOLS_TARGET_OS_SUPPORTS_FILE)
   GraphSymmetryFinder symmetry_finder(*graph,
                                       /*is_undirected=*/true);
   std::vector<int> factorized_automorphism_group_size;

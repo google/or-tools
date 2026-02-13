@@ -176,7 +176,6 @@ class Prober {
   absl::btree_map<IntegerVariable, IntegerValue> new_propagated_bounds_;
   absl::btree_map<IntegerVariable, IntegerValue> always_propagated_bounds_;
 
-  absl::flat_hash_set<ClausePtr> tmp_binary_clauses_;
   std::vector<ClausePtr> tmp_proof_;
   std::vector<Literal> tmp_literals_;
   CompactVectorVector<int, ClausePtr> tmp_dnf_clauses_;

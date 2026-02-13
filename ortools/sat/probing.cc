@@ -55,8 +55,11 @@ namespace sat {
 // build LRAT proofs after the trail has been modified.
 class TrailCopy {
  public:
-  TrailCopy(const Trail& trail, const ClauseManager& clause_manager)
-      : trail_(trail), clause_manager_(clause_manager) {}
+  TrailCopy(const Trail& trail, const ClauseManager& clause_manager,
+            const LratProofHandler* lrat_proof_handler)
+      : trail_(trail),
+        clause_manager_(clause_manager),
+        lrat_proof_handler_(lrat_proof_handler) {}
 
   // Updates this trail copy with the current trail state. Only trail elements
   // starting from `start_index` are copied.
@@ -91,8 +94,7 @@ class TrailCopy {
   // trail copy instead of on the real trail.
   void AppendClausesFixing(absl::Span<const Literal> literals,
                            std::vector<ClausePtr>* clauses,
-                           LiteralIndex decision,
-                           absl::flat_hash_set<ClausePtr> tmp_binary_clauses) {
+                           LiteralIndex decision) {
     // Mark the literals whose reason must be expanded, and put them in a heap.
     tmp_mark_.ClearAndResize(
         BooleanVariable(start_index_ + new_trail_index_.size()));
@@ -133,10 +135,9 @@ class TrailCopy {
       }
       const Literal level_decision = decisions_[level - 1];
       ClausePtr clause = kNullClausePtr;
-      const ClausePtr binary_clause =
-          ClausePtr(level_decision.Negated(), marked_literal);
-      if (tmp_binary_clauses.contains(binary_clause)) {
-        clause = binary_clause;
+      if (lrat_proof_handler_->HasTemporaryBinaryClause(
+              level_decision.Negated(), marked_literal)) {
+        clause = ClausePtr(level_decision.Negated(), marked_literal);
       }
       if (clause != kNullClausePtr) {
         non_unit_clauses.push_back(clause);
@@ -208,6 +209,7 @@ class TrailCopy {
 
   const Trail& trail_;
   const ClauseManager& clause_manager_;
+  const LratProofHandler* lrat_proof_handler_;
 
   // Trail elements starting from this index are read from the new_xxx fields.
   // Others are read from the original trail_.
@@ -233,7 +235,7 @@ Prober::Prober(Model* model)
       implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()),
       clause_manager_(model->GetOrCreate<ClauseManager>()),
       lrat_proof_handler_(model->Mutable<LratProofHandler>()),
-      trail_copy_(new TrailCopy(trail_, *clause_manager_)),
+      trail_copy_(new TrailCopy(trail_, *clause_manager_, lrat_proof_handler_)),
       logger_(model->GetOrCreate<SolverLogger>()) {}
 
 Prober::~Prober() { delete trail_copy_; }
@@ -256,7 +258,6 @@ bool Prober::ProbeBooleanVariables(const double deterministic_time_limit) {
 bool Prober::ProbeOneVariableInternal(BooleanVariable b) {
   new_integer_bounds_.clear();
   propagated_.ResetAllToFalse();
-  tmp_binary_clauses_.clear();
   // We block clause deletion since we compute some LRAT proofs in a delayed
   // way, and we need to make sure the clauses that were used are still around.
   sat_solver_->BlockClauseDeletion(true);
@@ -329,16 +330,17 @@ bool Prober::ProbeOneVariableInternal(BooleanVariable b) {
             [&](int level, int trail_index) {
               const Literal decision = trail_.Decisions()[level - 1].literal;
               const Literal lit = trail_[trail_index];
-              const ClausePtr clause = ClausePtr(decision.Negated(), lit);
-              if (tmp_binary_clauses_.contains(clause)) return clause;
+              if (lrat_proof_handler_->HasTemporaryBinaryClause(
+                      decision.Negated(), lit)) {
+                return ClausePtr(decision.Negated(), lit);
+              }
               return kNullClausePtr;
             });
         if (l == decision.Negated()) {
           lrat_proof_handler_->AddInferredClause(ClausePtr(l), tmp_proof_);
         } else {
-          const ClausePtr clause = ClausePtr(decision.Negated(), l);
-          lrat_proof_handler_->AddInferredClause(clause, tmp_proof_);
-          tmp_binary_clauses_.insert(clause);
+          lrat_proof_handler_->AddInferredClause(
+              ClausePtr(decision.Negated(), l), tmp_proof_);
         }
         num_lrat_clauses_++;
         num_lrat_proof_clauses_ += tmp_proof_.size();
@@ -347,12 +349,14 @@ bool Prober::ProbeOneVariableInternal(BooleanVariable b) {
         trail_copy_->CopyTrail(saved_index);
       } else {
         for (const Literal l : to_fix_at_true_) {
+          if (lrat_proof_handler_->HasImplicationGraphClause(decision, l)) {
+            continue;
+          }
           tmp_proof_.clear();
-          trail_copy_->AppendClausesFixing(
-              {l}, &tmp_proof_, decision.NegatedIndex(), tmp_binary_clauses_);
-          const ClausePtr clause = ClausePtr(decision, l);
-          lrat_proof_handler_->AddInferredClause(clause, tmp_proof_);
-          tmp_binary_clauses_.insert(clause);
+          trail_copy_->AppendClausesFixing({l}, &tmp_proof_,
+                                           decision.NegatedIndex());
+          lrat_proof_handler_->AddInferredClause(ClausePtr(decision, l),
+                                                 tmp_proof_);
           num_lrat_clauses_++;
           num_lrat_proof_clauses_ += tmp_proof_.size();
         }
@@ -397,16 +401,8 @@ bool Prober::ProbeOneVariableInternal(BooleanVariable b) {
     if (!sat_solver_->FinishPropagation()) return false;
   }
   if (lrat_proof_handler_ != nullptr) {
-    // Delete the temporary LRAT clauses that have not been added to the binary
-    // implication graph.
-    for (const auto& clause : tmp_binary_clauses_) {
-      const Literal a = clause.GetFirstLiteral();
-      const Literal b = clause.GetSecondLiteral();
-      if (!implication_graph_->HasLratBinaryClause(a, b)) {
-        lrat_proof_handler_->DeleteClause(clause);
-        num_unneeded_lrat_clauses_++;
-      }
-    }
+    num_unneeded_lrat_clauses_ +=
+        lrat_proof_handler_->DeleteTemporaryBinaryClauses();
   }
 
   // We have at most two lower bounds for each variables (one for b==0 and one
@@ -1163,8 +1159,12 @@ bool FailedLiteralProbing::DoOneRound(ProbingOptions options) {
   binary_clause_extracted_.assign(trail_.Index(), false);
   DeleteTemporaryLratImplicationsStartingFrom(0);
   trail_implication_clauses_.resize(trail_.Index());
-  auto cleanup = absl::MakeCleanup(
-      [this]() { DeleteTemporaryLratImplicationsStartingFrom(0); });
+  auto cleanup = absl::MakeCleanup([this]() {
+    if (lrat_proof_handler_ != nullptr) {
+      lrat_proof_handler_->DeleteTemporaryBinaryClauses();
+    }
+    DeleteTemporaryLratImplicationsStartingFrom(0);
+  });
 
   while (!time_limit_->LimitReached() &&
          time_limit_->GetElapsedDeterministicTime() <= limit) {

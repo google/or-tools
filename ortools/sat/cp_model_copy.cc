@@ -33,6 +33,7 @@
 #include "google/protobuf/repeated_field.h"
 #include "google/protobuf/repeated_ptr_field.h"
 #include "google/protobuf/text_format.h"
+#include "ortools/base/macros/os_support.h"
 #include "ortools/base/protobuf_util.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
@@ -1044,11 +1045,14 @@ bool ModelCopy::CreateUnsatModel(int c, const ConstraintProto& ct) {
   if (context_->ModelIsUnsat()) return false;
 
   std::string proto_string;
-#if !defined(__PORTABLE_PLATFORM__)
+#if defined(ORTOOLS_TARGET_OS_SUPPORTS_PROTO_DESCRIPTOR)
+  static_assert(kTargetOsSupportsProtoDescriptor);
   google::protobuf::TextFormat::Printer printer;
   SetupTextFormatPrinter(&printer);
   printer.PrintToString(ct, &proto_string);
-#endif  // !defined(__PORTABLE_PLATFORM__)
+#else
+  static_assert(!kTargetOsSupportsProtoDescriptor);
+#endif  // defined(ORTOOLS_TARGET_OS_SUPPORTS_PROTO_DESCRIPTOR)
   std::string message = absl::StrCat(
       "proven during initial copy of constraint #", c, ":\n", proto_string);
   std::vector<int> vars = UsedVariables(ct);

@@ -855,8 +855,8 @@ void ClauseManager::AppendClausesFixing(
     }
     const Literal level_decision = decisions[level - 1].literal;
     if (clause == kNullClausePtr &&
-        implication_graph_->HasLratBinaryClause(level_decision.Negated(),
-                                                marked_literal)) {
+        lrat_proof_handler_->HasImplicationGraphClause(level_decision.Negated(),
+                                                       marked_literal)) {
       clause = ClausePtr(level_decision.Negated(), marked_literal);
     }
     if (clause != kNullClausePtr) {
@@ -1046,15 +1046,14 @@ bool BinaryImplicationGraph::AddBinaryClauseInternal(
         if (change_reason) {
           // Remember the non-canonical clause so we can delete it on restart.
           changed_reasons_on_trail_.insert(ClausePtr(a, b));
-          AddLratBinaryClause(a, b);
+          lrat_proof_handler_->AddImplicationGraphClause(a, b);
         } else if (delete_non_representative_id) {
-          lrat_proof_handler_->DeleteClause(old_clause);
-          lrat_binary_clauses_.erase(old_clause);
+          lrat_proof_handler_->DeleteImplicationGraphClause(old_clause);
         }
       }
     }
     if (rep_a != rep_b) {
-      AddLratBinaryClause(rep_a, rep_b);
+      lrat_proof_handler_->AddImplicationGraphClause(rep_a, rep_b);
     }
   }
   if (change_reason) {
@@ -1078,14 +1077,12 @@ bool BinaryImplicationGraph::AddBinaryClauseInternal(
       if (assignment.LiteralIsFalse(rep_a)) {
         const bool result =
             FixLiteral(rep_b, {rep_clause, ClausePtr(rep_a.Negated())});
-        lrat_proof_handler_->DeleteClause(rep_clause);
-        lrat_binary_clauses_.erase(rep_clause);
+        lrat_proof_handler_->DeleteImplicationGraphClause(rep_clause);
         return result;
       } else if (assignment.LiteralIsFalse(rep_b)) {
         const bool result =
             FixLiteral(rep_a, {rep_clause, ClausePtr(rep_b.Negated())});
-        lrat_proof_handler_->DeleteClause(rep_clause);
-        lrat_binary_clauses_.erase(rep_clause);
+        lrat_proof_handler_->DeleteImplicationGraphClause(rep_clause);
         return result;
       }
     } else {
@@ -1385,7 +1382,7 @@ bool BinaryImplicationGraph::Propagate(Trail* trail) {
                ClausePtr(literal.Negated())});
         }
         return false;
-      } else {
+      } else if (!is_removed_[literal]) {
         // Propagation.
         reasons_[trail->Index()] = true_literal.Negated();
         if (level == 0 && lrat_proof_handler_ != nullptr) {
@@ -1585,8 +1582,7 @@ void BinaryImplicationGraph::ClearImplications(Literal a, bool release_memory) {
 void BinaryImplicationGraph::DeleteUnusedLratImplications() {
   if (lrat_proof_handler_ == nullptr) return;
   for (const ClausePtr clause : lrat_implications_to_delete_) {
-    lrat_binary_clauses_.erase(clause);
-    lrat_proof_handler_->DeleteClause(clause);
+    lrat_proof_handler_->DeleteImplicationGraphClause(clause);
   }
   lrat_implications_to_delete_.clear();
 }
@@ -2043,7 +2039,7 @@ class LratEquivalenceHelper {
       lrat_proof_handler_->AddInferredClause(ClausePtr(a), tmp_proof_);
     } else {
       lrat_proof_handler_->AddInferredClause(ClausePtr(a, b), tmp_proof_);
-      graph_->AddLratBinaryClause(a, b);
+      lrat_proof_handler_->AddImplicationGraphClause(a, b);
     }
   }
 
@@ -2092,8 +2088,7 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
 
   if (trail_->CurrentDecisionLevel() == 0) {
     for (const ClausePtr clause : changed_reasons_on_trail_) {
-      lrat_proof_handler_->DeleteClause(clause);
-      lrat_binary_clauses_.erase(clause);
+      lrat_proof_handler_->DeleteImplicationGraphClause(clause);
     }
     changed_reasons_on_trail_.clear();
   }
@@ -3536,7 +3531,7 @@ void BinaryImplicationGraph::CleanupAllRemovedAndFixedVariables() {
         // The code assumes that everything is already propagated.
         // Otherwise we will remove implications that didn't propagate yet!
         for (const Literal lit : implications_and_amos_[a].literals()) {
-          DCHECK(trail_->Assignment().LiteralIsTrue(lit));
+          DCHECK(is_removed_[lit] || trail_->Assignment().LiteralIsTrue(lit));
         }
       }
 
@@ -3598,8 +3593,9 @@ bool BinaryImplicationGraph::InvariantsAreOk() {
     }
     for (const Literal b : implications_and_amos_[a_index].literals()) {
       seen.insert({a_index, b.Index()});
-      if (lrat_proof_handler_ != nullptr &&
-          !HasLratBinaryClause(Literal(a_index).Negated(), b)) {
+      if (!is_removed_[b.Index()] && lrat_proof_handler_ != nullptr &&
+          !lrat_proof_handler_->HasImplicationGraphClause(
+              Literal(a_index).Negated(), b)) {
         LOG(ERROR) << "No LRAT binary clause for " << Literal(a_index) << " => "
                    << b;
         return false;
@@ -3653,7 +3649,8 @@ bool BinaryImplicationGraph::InvariantsAreOk() {
 
   // Check that we don't have more LRAT binary clauses than implications.
   if (lrat_proof_handler_ != nullptr) {
-    for (const ClausePtr binary_clause : lrat_binary_clauses_) {
+    for (const ClausePtr binary_clause :
+         lrat_proof_handler_->ImplicationGraphClauses()) {
       if (changed_reasons_on_trail_.contains(binary_clause)) continue;
       if (!seen.contains({binary_clause.GetFirstLiteral().Negated(),
                           binary_clause.GetSecondLiteral()})) {

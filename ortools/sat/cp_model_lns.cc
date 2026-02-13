@@ -34,7 +34,6 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/log/vlog_is_on.h"
-#include "absl/meta/type_traits.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/random/distributions.h"
 #include "absl/strings/str_cat.h"
@@ -42,6 +41,7 @@
 #include "absl/synchronization/mutex.h"
 #include "absl/types/span.h"
 #include "google/protobuf/arena.h"
+#include "ortools/base/macros/buildenv.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/graph_base/connected_components.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -2423,9 +2423,9 @@ Neighborhood RectanglesPackingRelaxOneNeighborhoodGenerator::Generate(
           {i, CenterToCenterLInfinityDistance(center_rect, rect)});
     }
   }
-  std::stable_sort(
-      distances.begin(), distances.end(),
-      [](const auto& a, const auto& b) { return a.second < b.second; });
+  absl::c_stable_sort(distances, [](const auto& a, const auto& b) {
+    return a.second < b.second;
+  });
 
   const int num_to_sample = data.difficulty * all_active_rectangles.size();
   const int num_to_relax = std::min<int>(distances.size(), num_to_sample);

@@ -142,7 +142,8 @@ class LratMerger {
 // and/or by saving it to a file.
 class LratProofHandler {
  public:
-  static std::unique_ptr<LratProofHandler> MaybeCreate(Model* model);
+  static std::unique_ptr<LratProofHandler> MaybeCreate(
+      Model* model, bool enable_rat_proofs = false);
   static std::unique_ptr<LratProofHandler> MaybeCreate(
       const SatParameters& params, SharedLratProofStatus* proof_status,
       SharedStatistics* stats);
@@ -220,10 +221,37 @@ class LratProofHandler {
 
   void Close(bool model_is_unsat);
 
+  // Returns true if the given binary clause is in the BinaryImplicationGraph.
+  // By hypothesis, it is also in the LRAT proof.
+  bool HasImplicationGraphClause(Literal a, Literal b) const;
+
+  // Reserved for the BinaryImplicationGraph implementation:
+  // - marks a clause as being in the BinaryImplicationGraph. The clause must
+  // be added to the LRAT proof first.
+  bool AddImplicationGraphClause(Literal a, Literal b);
+  // - marks a clause as no longer being in the BinaryImplicationGraph, and
+  // deletes it from the LRAT proof.
+  void DeleteImplicationGraphClause(ClausePtr clause);
+  // - returns the binary clauses in the LRAT proof which are currently marked
+  // as being in the BinaryImplicationGraph.
+  const absl::flat_hash_set<ClausePtr>& ImplicationGraphClauses();
+
+  // Returns true if the LRAT proof currently contains the given binary clause,
+  // and if this clause is not in the BinaryImplicationGraph.
+  bool HasTemporaryBinaryClause(Literal a, Literal b) const;
+
+  // Deletes the binary clauses which have been added with AddProblemClause() or
+  // AddInferredClause() since the last call to this method, if they have not
+  // been added to the BinaryImplicationGraph in between. Returns the number of
+  // clauses deleted.
+  int DeleteTemporaryBinaryClauses();
+
  private:
   LratProofHandler(const SatParameters& params,
                    SharedLratProofStatus* proof_status,
                    SharedStatistics* stats);
+
+  void DeleteClauseInternal(ClausePtr clause);
 
   bool LratError(absl::string_view message) const;
 
@@ -235,6 +263,21 @@ class LratProofHandler {
 
   bool all_problem_clauses_loaded_ = false;
   int64_t num_assumed_clauses_ = 0;
+
+  // TODO(user): other implementations of the sets below could be used. For
+  // instance, a map from ClausePtr to is_temporary Booleans, plus a lazily
+  // updated vector of the temporary clauses. Test if one is more efficient than
+  // the others.
+
+  // The binary clauses which are in the BinaryImplicationGraph. By hypothesis,
+  // they are also in the LRAT proof and have not been deleted from it. All
+  // these clause pointers are of ClausePtr::kBinaryClause type.
+  absl::flat_hash_set<ClausePtr> implication_graph_clauses_;
+
+  // The binary clauses added to the LRAT proof which are not in the
+  // BinaryImplicationGraph and have not been deleted from the proof yet. All
+  // these clause pointers are of ClausePtr::kBinaryClause type.
+  absl::flat_hash_set<ClausePtr> temporary_binary_clauses_;
 };
 
 }  // namespace sat

@@ -22,9 +22,9 @@
 #include "absl/strings/str_join.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
+#include "ortools/base/macros/os_support.h"
 #include "ortools/base/parse_test_proto.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
-#include "ortools/port/os.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_checker.h"
 #include "ortools/sat/cp_model_test_utils.h"
@@ -434,7 +434,8 @@ TEST(SolveCpModelTest, TrivialModelWithCore) {
                                         response.solution().end())));
 }
 
-#if ORTOOLS_TARGET_OS_SUPPORTS_THREADS
+#if defined(ORTOOLS_TARGET_OS_SUPPORTS_THREADS)
+static_assert(operations_research::kTargetOsSupportsThreads);
 
 TEST(SolveCpModelTest, IntervalsWithSeveralEnforcementLiterals) {
   const CpModelProto model_proto = ParseTestProto(R"pb(
@@ -5474,8 +5475,9 @@ TEST(CpModelSolverTest, LratProofIsValidForRandom3Sat) {
   LOG(INFO) << "num_infeasible: " << num_infeasible;
   EXPECT_GT(num_infeasible, 0);
 }
-
-#endif  // ORTOOLS_TARGET_OS_SUPPORTS_THREADS
+#else
+static_assert(!operations_research::kTargetOsSupportsThreads);
+#endif  // defined(ORTOOLS_TARGET_OS_SUPPORTS_THREADS)
 
 }  // namespace
 }  // namespace sat

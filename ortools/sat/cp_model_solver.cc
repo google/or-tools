@@ -51,11 +51,11 @@
 #include "google/protobuf/arena.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/base/helpers.h"
-#include "ortools/base/logging.h"
+#include "ortools/base/macros/buildenv.h"
+#include "ortools/base/macros/os_support.h"
 #include "ortools/base/options.h"
 #include "ortools/base/timer.h"
 #include "ortools/base/version.h"
-#include "ortools/port/os.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/combine_solutions.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -1218,7 +1218,8 @@ class FullProblemSolver : public SubSolver {
   bool previous_task_is_completed_ ABSL_GUARDED_BY(mutex_) = true;
 };
 
-#if ORTOOLS_TARGET_OS_SUPPORTS_THREADS
+#if defined(ORTOOLS_TARGET_OS_SUPPORTS_THREADS)
+static_assert(operations_research::kTargetOsSupportsThreads);
 
 class FeasibilityPumpSolver : public SubSolver {
  public:
@@ -2226,6 +2227,8 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
   LaunchSubsolvers(global_model, shared, subsolvers, name_filter.AllIgnored());
 }
 
+#else
+static_assert(!operations_research::kTargetOsSupportsThreads);
 #endif  // ORTOOLS_TARGET_OS_SUPPORTS_THREADS
 
 // If the option use_sat_inprocessing is true, then before post-solving a
@@ -2527,13 +2530,16 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   // Initialize the time limit from the parameters.
   model->GetOrCreate<TimeLimit>()->ResetLimitFromParameters(params);
 
-#if ORTOOLS_TARGET_OS_SUPPORTS_THREADS
+#if defined(ORTOOLS_TARGET_OS_SUPPORTS_THREADS)
+  static_assert(operations_research::kTargetOsSupportsThreads);
   // Register SIGINT handler if requested by the parameters.
   if (params.catch_sigint_signal()) {
     model->GetOrCreate<SigintHandler>()->Register(
         [shared_time_limit]() { shared_time_limit->Stop(); });
   }
-#endif  // ORTOOLS_TARGET_OS_SUPPORTS_THREADS
+#else
+  static_assert(!operations_research::kTargetOsSupportsThreads);
+#endif  // defined( ORTOOLS_TARGET_OS_SUPPORTS_THREADS)
 
   if (DEBUG_MODE && !ProbablyRunningInsideUnitTest()) {
     LOG_EVERY_N_SEC(WARNING, 0.1)
@@ -3038,15 +3044,17 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   }
 
   if (!model->GetOrCreate<TimeLimit>()->LimitReached()) {
-#if ORTOOLS_TARGET_OS_SUPPORTS_THREADS
+#if defined(ORTOOLS_TARGET_OS_SUPPORTS_THREADS)
+    static_assert(operations_research::kTargetOsSupportsThreads);
     if (params.num_workers() > 1 || params.interleave_search() ||
         !params.subsolvers().empty() || !params.filter_subsolvers().empty() ||
         params.use_ls_only()) {
       SolveCpModelParallel(&shared, model);
-#else   // ORTOOLS_TARGET_OS_SUPPORTS_THREADS
+#else   // defined(ORTOOLS_TARGET_OS_SUPPORTS_THREADS)
+    static_assert(!operations_research::kTargetOsSupportsThreads);
     if (/* DISABLES CODE */ (false)) {
       // We ignore the multithreading parameter in this case.
-#endif  // ORTOOLS_TARGET_OS_SUPPORTS_THREADS
+#endif  // defined(ORTOOLS_TARGET_OS_SUPPORTS_THREADS)
     } else {
       shared_response_manager->SetUpdateGapIntegralOnEachChange(true);
 

@@ -26,15 +26,12 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
-#include "absl/meta/type_traits.h"
+#include "absl/log/log.h"
 #include "absl/random/random.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
+#include "ortools/base/macros/os_support.h"
 #include "ortools/base/strong_vector.h"
-#if !defined(__PORTABLE_PLATFORM__) && defined(USE_SCIP)
-#include "ortools/linear_solver/solve_mp_model.h"
-#endif  // __PORTABLE_PLATFORM__
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_mapping.h"
@@ -53,6 +50,15 @@
 #include "ortools/sat/util.h"
 #include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
+
+#if defined(USE_SCIP)
+#if defined(ORTOOLS_TARGET_OS_SUPPORTS_THREADS)
+static_assert(operations_research::kTargetOsSupportsThreads);
+#include "ortools/linear_solver/solve_mp_model.h"
+#else   // defined(ORTOOLS_TARGET_OS_SUPPORTS_THREADS)
+static_assert(!operations_research::kTargetOsSupportsThreads);
+#endif  // defined(ORTOOLS_TARGET_OS_SUPPORTS_THREADS)
+#endif  // USE_SCIP
 
 // TODO(user): Remove this flag when experiments are stable.
 ABSL_FLAG(
@@ -95,7 +101,7 @@ bool HittingSetOptimizer::ImportFromOtherWorkers() {
 }
 
 // Slightly different algo than FindCores() which aim to extract more cores, but
-// not necessarily non-overlaping ones.
+// not necessarily non-overlapping ones.
 SatSolver::Status HittingSetOptimizer::FindMultipleCoresForMaxHs(
     std::vector<Literal> assumptions,
     std::vector<std::vector<Literal>>* cores) {
@@ -552,7 +558,9 @@ std::vector<Literal> HittingSetOptimizer::BuildAssumptions(
 //
 // TODO(user): remove code duplication with MinimizeWithCoreAndLazyEncoding();
 SatSolver::Status HittingSetOptimizer::Optimize() {
-#if !defined(__PORTABLE_PLATFORM__) && defined(USE_SCIP)
+#if defined(USE_SCIP)
+#if defined(ORTOOLS_TARGET_OS_SUPPORTS_THREADS)
+  static_assert(operations_research::kTargetOsSupportsThreads);
   if (!ComputeInitialMpModel()) return SatSolver::INFEASIBLE;
 
   // This is used by the "stratified" approach. We will only consider terms with
@@ -586,7 +594,7 @@ SatSolver::Status HittingSetOptimizer::Optimize() {
       // cases.
       //
       // TODO(user): It is actually easy to use a FEASIBLE result. If when
-      // passing it to SAT it is no feasbile, we can still create cores. If it
+      // passing it to SAT it is no feasible, we can still create cores. If it
       // is feasible, we have a solution, but we cannot increase the lower
       // bound.
       return SatSolver::LIMIT_REACHED;
@@ -660,11 +668,12 @@ SatSolver::Status HittingSetOptimizer::Optimize() {
     sat_solver_->SetAssumptionLevel(0);
     AddCoresToTheMpModel(temp_cores_);
   }
-
   return result;
-#else   // !__PORTABLE_PLATFORM__ && USE_SCIP
+#else   // defined(ORTOOLS_TARGET_OS_SUPPORTS_THREADS)
+  static_assert(!kTargetOsSupportsThreads);
+#endif  // defined(ORTOOLS_TARGET_OS_SUPPORTS_THREADS)
+#endif  // defined(USE_SCIP)
   LOG(FATAL) << "Not supported.";
-#endif  // !__PORTABLE_PLATFORM__ && USE_SCIP
 }
 
 }  // namespace sat

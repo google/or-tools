@@ -17,9 +17,10 @@
 #include <atomic>
 #include <functional>
 
-#include "ortools/port/os.h"
+#include "ortools/base/macros/os_support.h"
 
-#if ORTOOLS_TARGET_OS_SUPPORTS_THREADS
+#if defined(ORTOOLS_TARGET_OS_SUPPORTS_THREADS)
+static_assert(operations_research::kTargetOsSupportsThreads);
 
 namespace operations_research {
 
@@ -55,6 +56,8 @@ class SigtermHandler {
 
 }  // namespace operations_research
 
-#endif  // ORTOOLS_TARGET_OS_SUPPORTS_THREADS
+#else
+static_assert(!operations_research::kTargetOsSupportsThreads);
+#endif  // defined(ORTOOLS_TARGET_OS_SUPPORTS_THREADS)
 
 #endif  // ORTOOLS_UTIL_SIGINT_H_

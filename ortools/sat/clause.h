@@ -569,11 +569,6 @@ class BinaryImplicationGraph : public SatPropagator {
     return AddBinaryClause(a.Negated(), b);
   }
 
-  // TODO(user): can we remove this function?
-  bool HasLratBinaryClause(Literal a, Literal b) const {
-    return lrat_binary_clauses_.contains(ClausePtr(a, b));
-  }
-
   // When set, the callback will be called on ALL newly added binary clauses.
   //
   // The EnableSharing() function can be used to disable sharing temporarily for
@@ -915,11 +910,6 @@ class BinaryImplicationGraph : public SatPropagator {
   // Returns false on UNSAT.
   ABSL_MUST_USE_RESULT bool CleanUpImplicationList(Literal a);
 
-  void AddLratBinaryClause(Literal a, Literal b) {
-    DCHECK_NE(a, b);
-    lrat_binary_clauses_.insert(ClausePtr(a, b));
-  }
-
   // Replaces each literal implied by `a` with the result of update(literal), or
   // removes it if this result is kNoLiteralIndex. Also adds the old
   // implications to `lrat_implications_to_delete_` if LRAT is enabled.
@@ -999,8 +989,6 @@ class BinaryImplicationGraph : public SatPropagator {
   // elements of this array and this can dynamically change size.
   std::deque<Literal> reasons_;
 
-  // The binary clauses for which we added a corresponding LRAT clause.
-  absl::flat_hash_set<ClausePtr> lrat_binary_clauses_;
   // Stores a set of clauses added to lrat_binary_clauses_ that are only needed
   // due to ChangeReason calls. Once we backtrack past the first literal in the
   // clause we delete them.

@@ -17,10 +17,11 @@
 #include <cstdlib>
 #include <functional>
 
-#include "ortools/base/logging.h"
-#include "ortools/port/os.h"
+#include "absl/log/log.h"
+#include "ortools/base/macros/os_support.h"
 
-#if ORTOOLS_TARGET_OS_SUPPORTS_THREADS
+#if defined(ORTOOLS_TARGET_OS_SUPPORTS_THREADS)
+static_assert(operations_research::kTargetOsSupportsThreads);
 
 namespace operations_research {
 
@@ -71,4 +72,6 @@ thread_local std::function<void()> SigtermHandler::handler_;
 
 }  // namespace operations_research
 
-#endif  // ORTOOLS_TARGET_OS_SUPPORTS_THREADS
+#else
+static_assert(!operations_research::kTargetOsSupportsThreads);
+#endif  // defined(ORTOOLS_TARGET_OS_SUPPORTS_THREADS)

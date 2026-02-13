@@ -24,6 +24,7 @@
 #include <vector>
 
 #include "absl/algorithm/container.h"
+#include "absl/base/log_severity.h"
 #include "absl/container/btree_set.h"
 #include "absl/log/check.h"
 #include "absl/numeric/bits.h"
@@ -33,7 +34,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "google/protobuf/descriptor.h"
-#include "ortools/base/logging.h"
+#include "ortools/base/macros/os_support.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -89,7 +90,8 @@ std::string FormatTable(std::vector<std::vector<std::string>>& table,
 
 void RandomizeDecisionHeuristic(absl::BitGenRef random,
                                 SatParameters* parameters) {
-#if !defined(__PORTABLE_PLATFORM__)
+#if defined(ORTOOLS_TARGET_OS_SUPPORTS_PROTO_DESCRIPTOR)
+  static_assert(kTargetOsSupportsProtoDescriptor);
   // Random preferred variable order.
   const google::protobuf::EnumDescriptor* order_d =
       SatParameters::VariableOrder_descriptor();
@@ -104,7 +106,9 @@ void RandomizeDecisionHeuristic(absl::BitGenRef random,
   parameters->set_initial_polarity(static_cast<SatParameters::Polarity>(
       polarity_d->value(absl::Uniform(random, 0, polarity_d->value_count()))
           ->number()));
-#endif  // __PORTABLE_PLATFORM__
+#else
+  static_assert(!kTargetOsSupportsProtoDescriptor);
+#endif  // ORTOOLS_TARGET_OS_SUPPORTS_PROTO_DESCRIPTOR
   // Other random parameters.
   parameters->set_use_phase_saving(absl::Bernoulli(random, 0.5));
   parameters->set_random_polarity_ratio(absl::Bernoulli(random, 0.5) ? 0.01
