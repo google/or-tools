@@ -60,6 +60,8 @@ build:macos --cxxopt=-mmacos-version-min=10.15 --host_cxxopt=-mmacos-version-min
 ###############################################################################
 
 build:windows --cxxopt=/std:c++20 --host_cxxopt=/std:c++20
+# Enable preprocessor conformance mode needed to correctly support __VA_OPT__
+build:windows --cxxopt=/Zc:preprocessor --host_cxxopt=/Zc:preprocessor
 
 # Enable the runfiles symlink tree on Windows. This makes it possible to build
 # the pip package on Windows without an intermediate data-file archive, as the
