@@ -19,21 +19,21 @@
 
 #include "ortools/base/macros/os.h"
 
-#if defined(ORTOOLS_TARGET_OS_LINUX)
+#if defined(ORTOOLS_TARGET_OS_IS_LINUX)
 #include <unistd.h>
 #endif
 
-#if defined(ORTOOLS_TARGET_OS_MACOS)
+#if defined(ORTOOLS_TARGET_OS_IS_MACOS)
 #include <mach/mach_init.h>
 #include <mach/task.h>
 #endif
 
-#if defined(ORTOOLS_TARGET_OS_ANY_BSD)
+#if defined(ORTOOLS_TARGET_OS_IS_ANY_BSD)
 #include <sys/resource.h>
 #include <sys/time.h>
 #endif
 
-#if defined(ORTOOLS_TARGET_OS_WINDOWS)
+#if defined(ORTOOLS_TARGET_OS_IS_WINDOWS)
 #include <windows.h>
 // windows.h must be included first.
 #include <psapi.h>
@@ -43,7 +43,7 @@ namespace operations_research {
 namespace sysinfo {
 
 std::optional<uint64_t> MemoryUsageProcess() {
-#if defined(ORTOOLS_TARGET_OS_LINUX)
+#if defined(ORTOOLS_TARGET_OS_IS_LINUX)
   // /proc/self/statm contains the memory usage of the current process.
   // https://man7.org/linux/man-pages/man5/proc_pid_statm.5.html
   std::ifstream stream("/proc/self/statm");
@@ -56,7 +56,7 @@ std::optional<uint64_t> MemoryUsageProcess() {
     return std::nullopt;
   }
   return resident_set_size * getpagesize();
-#elif defined(ORTOOLS_TARGET_OS_MACOS)
+#elif defined(ORTOOLS_TARGET_OS_IS_MACOS)
   struct task_basic_info t_info;
   mach_msg_type_number_t t_info_count = TASK_BASIC_INFO_COUNT;
   if (KERN_SUCCESS != task_info(mach_task_self(), TASK_BASIC_INFO,
@@ -64,14 +64,14 @@ std::optional<uint64_t> MemoryUsageProcess() {
     return std::nullopt;
   }
   return t_info.resident_size;
-#elif defined(ORTOOLS_TARGET_OS_WINDOWS)
+#elif defined(ORTOOLS_TARGET_OS_IS_WINDOWS)
   // https://docs.microsoft.com/en-us/windows/win32/api/psapi/ns-psapi-PROCESS_MEMORY_COUNTERS
   PROCESS_MEMORY_COUNTERS counters;
   if (!GetProcessMemoryInfo(GetCurrentProcess(), &counters, sizeof(counters))) {
     return std::nullopt;
   }
   return counters.WorkingSetSize;
-#elif defined(ORTOOLS_TARGET_OS_ANY_BSD)
+#elif defined(ORTOOLS_TARGET_OS_IS_ANY_BSD)
   struct rusage usage;
   if (getrusage(RUSAGE_SELF, &usage) != 0) {
     return std::nullopt;

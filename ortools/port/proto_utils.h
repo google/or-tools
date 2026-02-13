@@ -23,6 +23,7 @@
 #include "google/protobuf/message.h"
 #include "google/protobuf/message_lite.h"
 #include "google/protobuf/text_format.h"
+#include "ortools/base/macros/os_support.h"
 #include "ortools/util/parse_proto.h"
 
 namespace operations_research {
@@ -61,9 +62,8 @@ std::string ProtobufShortDebugString(const P& message) {
 
 template <typename ProtoEnumType>
 std::string ProtoEnumToString(ProtoEnumType enum_value) {
-#if defined(__PORTABLE_PLATFORM__)
-  return absl::StrCat(enum_value);
-#else   // defined(__PORTABLE_PLATFORM__)
+#if defined(ORTOOLS_TARGET_OS_SUPPORTS_PROTO_DESCRIPTOR)
+  static_assert(kTargetOsSupportsProtoDescriptor);
   auto enum_descriptor = google::protobuf::GetEnumDescriptor<ProtoEnumType>();
   auto enum_value_descriptor = enum_descriptor->FindValueByNumber(enum_value);
   if (enum_value_descriptor == nullptr) {
@@ -71,7 +71,10 @@ std::string ProtoEnumToString(ProtoEnumType enum_value) {
                         " for enum type: ", enum_descriptor->name());
   }
   return std::string(enum_value_descriptor->name());
-#endif  // !defined(__PORTABLE_PLATFORM__)
+#else   // defined(ORTOOLS_TARGET_OS_SUPPORTS_PROTO_DESCRIPTOR)
+  static_assert(!kTargetOsSupportsProtoDescriptor);
+  return absl::StrCat(enum_value);
+#endif  // defined(ORTOOLS_TARGET_OS_SUPPORTS_PROTO_DESCRIPTOR)
 }
 
 template <typename ProtoType>

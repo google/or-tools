@@ -11,49 +11,99 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Refer to README.md to understand how to use these macros safely.
 #ifndef ORTOOLS_BASE_MACROS_OS_H_
 #define ORTOOLS_BASE_MACROS_OS_H_
 
 #if (defined(__freebsd__) || defined(__FreeBSD__))
-#define ORTOOLS_TARGET_OS_FREEBSD
+#define ORTOOLS_TARGET_OS_IS_FREEBSD
 #endif
 
 #if defined(__OpenBSD__)
-#define ORTOOLS_TARGET_OS_OPENBSD
+#define ORTOOLS_TARGET_OS_IS_OPENBSD
 #endif
 
 #if defined(__NetBSD__)
-#define ORTOOLS_TARGET_OS_NETBSD
+#define ORTOOLS_TARGET_OS_IS_NETBSD
 #endif
 
-#if defined(ORTOOLS_TARGET_OS_FREEBSD) || \
-    defined(ORTOOLS_TARGET_OS_OPENBSD) || defined(ORTOOLS_TARGET_OS_NETBSD)
-#define ORTOOLS_TARGET_OS_ANY_BSD
+#if defined(ORTOOLS_TARGET_OS_IS_FREEBSD) || \
+    defined(ORTOOLS_TARGET_OS_IS_OPENBSD) || \
+    defined(ORTOOLS_TARGET_OS_IS_NETBSD)
+#define ORTOOLS_TARGET_OS_IS_ANY_BSD
 #endif
 
 #if defined(__ANDROID__)
-#define ORTOOLS_TARGET_OS_ANDROID
+#define ORTOOLS_TARGET_OS_IS_ANDROID
 #endif
 
-#if defined(__linux__) && !defined(ORTOOLS_TARGET_OS_ANY_BSD) && \
-    !defined(ORTOOLS_TARGET_OS_ANDROID)
-#define ORTOOLS_TARGET_OS_LINUX
+#if defined(__linux__) && !defined(ORTOOLS_TARGET_OS_IS_ANY_BSD) && \
+    !defined(ORTOOLS_TARGET_OS_IS_ANDROID)
+#define ORTOOLS_TARGET_OS_IS_LINUX
 #endif
 
 #if (defined(_WIN64) || defined(_WIN32))
-#define ORTOOLS_TARGET_OS_WINDOWS
+#define ORTOOLS_TARGET_OS_IS_WINDOWS
 #endif
 
 #if (defined(__apple__) || defined(__APPLE__) || defined(__MACH__))
 // From https://stackoverflow.com/a/49560690
 #include "TargetConditionals.h"
 #if TARGET_OS_OSX
-#define ORTOOLS_TARGET_OS_MACOS
+#define ORTOOLS_TARGET_OS_IS_MACOS
 #endif
 #if TARGET_OS_IPHONE
 // This is set for any non-Mac Apple products (IOS, TV, WATCH)
-#define ORTOOLS_TARGET_OS_IPHONE
+#define ORTOOLS_TARGET_OS_IS_IPHONE
 #endif
 #endif
+
+#if defined(__EMSCRIPTEN__)
+#define ORTOOLS_TARGET_OS_IS_EMSCRIPTEN
+#endif
+
+namespace operations_research {
+
+enum class TargetOs {
+  kAndroid,
+  kEmscripten,
+  kFreeBsd,
+  kIPhone,
+  kLinux,
+  kMacOS,
+  kNetBsd,
+  kOpenBsd,
+  kWindows,
+};
+
+#if defined(ORTOOLS_TARGET_OS_IS_FREEBSD)
+inline constexpr TargetOs kTargetOs = TargetOs::kFreeBsd;
+#endif
+#if defined(ORTOOLS_TARGET_OS_IS_OPENBSD)
+inline constexpr TargetOs kTargetOs = TargetOs::kOpenBsd;
+#endif
+#if defined(ORTOOLS_TARGET_OS_IS_NETBSD)
+inline constexpr TargetOs kTargetOs = TargetOs::kNetBsd;
+#endif
+#if defined(ORTOOLS_TARGET_OS_IS_ANDROID)
+inline constexpr TargetOs kTargetOs = TargetOs::kAndroid;
+#endif
+#if defined(ORTOOLS_TARGET_OS_IS_LINUX)
+inline constexpr TargetOs kTargetOs = TargetOs::kLinux;
+#endif
+#if defined(ORTOOLS_TARGET_OS_IS_WINDOWS)
+inline constexpr TargetOs kTargetOs = TargetOs::kWindows;
+#endif
+#if defined(ORTOOLS_TARGET_OS_IS_MACOS)
+inline constexpr TargetOs kTargetOs = TargetOs::kMacOS;
+#endif
+#if defined(ORTOOLS_TARGET_OS_IS_IPHONE)
+inline constexpr TargetOs kTargetOs = TargetOs::kIPhone;
+#endif
+#if defined(ORTOOLS_TARGET_OS_IS_EMSCRIPTEN)
+inline constexpr TargetOs kTargetOs = TargetOs::kEmscripten;
+#endif
+
+}  // namespace operations_research
 
 #endif  // ORTOOLS_BASE_MACROS_OS_H_

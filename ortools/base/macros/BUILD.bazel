@@ -19,3 +19,14 @@ cc_library(
     name = "os",
     hdrs = ["os.h"],
 )
+
+cc_library(
+    name = "os_support",
+    hdrs = ["os_support.h"],
+    deps = [":os"],
+)
+
+cc_library(
+    name = "buildenv",
+    hdrs = ["buildenv.h"],
+)

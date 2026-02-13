@@ -17,47 +17,54 @@
 
 #include "absl/status/status.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/logging.h"
+#include "ortools/base/filesystem.h"
+#include "ortools/base/macros/os_support.h"
 
-#if !defined(__PORTABLE_PLATFORM__)
+#if defined(ORTOOLS_TARGET_OS_SUPPORTS_FILE)
+static_assert(operations_research::kTargetOsSupportsFile);
 #if !defined(_MSC_VER)
 #include <unistd.h>
-#endif
+#endif !defined(_MSC_VER)
 
 #include "absl/strings/str_format.h"
 #include "absl/time/clock.h"
 #include "ortools/base/helpers.h"
 #include "ortools/base/options.h"
-#endif  // !defined(__PORTABLE_PLATFORM__)
+#else   // defined(ORTOOLS_TARGET_OS_SUPPORTS_FILE)
+static_assert(!operations_research::kTargetOsSupportsFile);
+#endif  // defined(ORTOOLS_TARGET_OS_SUPPORTS_FILE)
 
 namespace operations_research {
 
 ::absl::Status PortableFileSetContents(absl::string_view file_name,
                                        absl::string_view content) {
-#if defined(__PORTABLE_PLATFORM__)
+#if defined(ORTOOLS_TARGET_OS_SUPPORTS_FILE)
+  return file::SetContents(file_name, content, file::Defaults());
+#else   // defined(ORTOOLS_TARGET_OS_SUPPORTS_FILE)
+  static_assert(!kTargetOsSupportsFile);
   return absl::Status(absl::StatusCode::kUnimplemented,
                       "File io is not implemented for this platform.");
-#else   // defined(__PORTABLE_PLATFORM__)
-  return file::SetContents(file_name, content, file::Defaults());
-#endif  // !defined(__PORTABLE_PLATFORM__)
+#endif  // !defined(ORTOOLS_TARGET_OS_SUPPORTS_FILE)
 }
 
 ::absl::Status PortableFileGetContents(absl::string_view file_name,
                                        std::string* output) {
-#if defined(__PORTABLE_PLATFORM__)
+#if defined(ORTOOLS_TARGET_OS_SUPPORTS_FILE)
+  return file::GetContents(file_name, output, file::Defaults());
+#else   // defined(ORTOOLS_TARGET_OS_SUPPORTS_FILE)
+  static_assert(!kTargetOsSupportsFile);
   return absl::Status(absl::StatusCode::kUnimplemented,
                       "File io is not implemented for this platform.");
-#else   // defined(__PORTABLE_PLATFORM__)
-  return file::GetContents(file_name, output, file::Defaults());
-#endif  // !defined(__PORTABLE_PLATFORM__)
+#endif  // !defined(ORTOOLS_TARGET_OS_SUPPORTS_FILE)
 }
 
 ::absl::Status PortableDeleteFile(absl::string_view file_name) {
-#if defined(__PORTABLE_PLATFORM__)
+#if defined(ORTOOLS_TARGET_OS_SUPPORTS_FILE)
+  return file::Delete(file_name, file::Defaults());
+#else   // defined(ORTOOLS_TARGET_OS_SUPPORTS_FILE)
+  static_assert(!kTargetOsSupportsFile);
   return absl::Status(absl::StatusCode::kUnimplemented,
                       "File io is not implemented for this platform.");
-#else   // defined(__PORTABLE_PLATFORM__)
-  return file::Delete(file_name, file::Defaults());
-#endif  // !defined(__PORTABLE_PLATFORM__)
+#endif  // !defined(ORTOOLS_TARGET_OS_SUPPORTS_FILE)
 }
 }  // namespace operations_research

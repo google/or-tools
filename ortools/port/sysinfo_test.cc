@@ -17,25 +17,31 @@
 #include <optional>
 
 #include "gtest/gtest.h"
+#include "ortools/base/gmock.h"
 #include "ortools/base/macros/os.h"
-
-#if defined(ORTOOLS_TARGET_OS_LINUX) || defined(ORTOOLS_TARGET_OS_MACOS) || \
-    defined(ORTOOLS_TARGET_OS_ANY_BSD) || defined(ORTOOLS_TARGET_OS_WINDOWS)
-#define ORTOOLS_SYSINFO_SUPPORTED
-#endif
 
 namespace operations_research {
 namespace sysinfo {
 namespace {
 
+using ::testing::Gt;
+using ::testing::Optional;
+
 TEST(SysinfoTest, MemoryUsageProcess) {
-  std::optional<int64_t> memory_usage = MemoryUsageProcess();
-#if defined(ORTOOLS_SYSINFO_SUPPORTED)
-  ASSERT_TRUE(memory_usage.has_value());
-  EXPECT_GT(*memory_usage, 0);
-#else
-  ASSERT_FALSE(memory_usage.has_value());
-#endif
+  const std::optional<int64_t> memory_usage = MemoryUsageProcess();
+  switch (kTargetOs) {
+    case TargetOs::kLinux:
+    case TargetOs::kMacOS:
+    case TargetOs::kFreeBsd:
+    case TargetOs::kNetBsd:
+    case TargetOs::kOpenBsd:
+    case TargetOs::kWindows:
+      ASSERT_THAT(memory_usage, Optional(Gt(0)));
+      break;
+    default:
+      ASSERT_EQ(memory_usage, std::nullopt);
+      break;
+  }
 }
 
 }  // namespace

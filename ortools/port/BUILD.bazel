@@ -17,11 +17,6 @@ load("@rules_cc//cc:cc_test.bzl", "cc_test")
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
-    name = "os",
-    hdrs = ["os.h"],
-)
-
-cc_library(
     name = "sysinfo",
     srcs = ["sysinfo.cc"],
     hdrs = ["sysinfo.h"],
@@ -43,6 +38,7 @@ cc_library(
     srcs = ["proto_utils.cc"],
     hdrs = ["proto_utils.h"],
     deps = [
+        "//ortools/base/macros:os_support",
         "//ortools/util:parse_proto",
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/log",
@@ -56,9 +52,8 @@ cc_library(
     srcs = ["file.cc"],
     hdrs = ["file.h"],
     deps = [
-        "//ortools/base",
         "//ortools/base:file",
-        "//ortools/base:status_macros",
+        "//ortools/base/macros:os_support",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/strings",
     ],

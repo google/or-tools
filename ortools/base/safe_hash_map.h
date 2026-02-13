@@ -961,31 +961,21 @@ class safe_hash_map {
     for (auto it = first; it != last; ++it) do_insert(it->first, it->second);
   }
 
-#if 0
-    template <typename Iter>
-    void insert_unique(Iter begin, Iter end)
-    {
-        reserve(std::distance(begin, end) + _num_filled);
-        for (; begin != end; ++begin)
-            do_insert_unqiue(*begin);
-    }
-#endif
-
   template <typename K, typename V>
   inline size_type insert_unique(K&& key, V&& val) {
-    return do_insert_unqiue(std::forward<K>(key), std::forward<V>(val));
+    return do_insert_unique(std::forward<K>(key), std::forward<V>(val));
   }
 
   inline size_type insert_unique(value_type&& value) {
-    return do_insert_unqiue(std::move(value.first), std::move(value.second));
+    return do_insert_unique(std::move(value.first), std::move(value.second));
   }
 
   inline size_type insert_unique(const value_type& value) {
-    return do_insert_unqiue(value.first, value.second);
+    return do_insert_unique(value.first, value.second);
   }
 
   template <typename K, typename V>
-  size_type do_insert_unqiue(K&& key, V&& val) {
+  size_type do_insert_unique(K&& key, V&& val) {
     check_expand_need();
     auto bucket = find_unique_bucket(key);
     EMH_NEW(std::forward<K>(key), std::forward<V>(val), bucket);
@@ -1389,7 +1379,7 @@ class safe_hash_map {
   }
 
   // kick out bucket and find empty to occpuy
-  // it will break the orgin link and relnik again.
+  // it will break the origin link and relnik again.
   // before: main_bucket-->prev_bucket --> bucket   --> next_bucket
   // atfer : main_bucket-->prev_bucket --> (removed)--> new_bucket-->
   // next_bucket
