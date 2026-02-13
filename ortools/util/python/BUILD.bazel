@@ -39,7 +39,7 @@ pybind_extension(
 )
 
 pybind_library(
-    name = "sorted_interval_list_lib",
+    name = "sorted_interval_list_deps",
     srcs = ["sorted_interval_list.cc"],
     visibility = ["//visibility:public"],
     deps = [
@@ -68,7 +68,7 @@ pybind_extension(
 )
 
 pybind_library(
-    name = "piecewise_linear_function_lib",
+    name = "piecewise_linear_function_deps",
     srcs = ["piecewise_linear_function.cc"],
     visibility = ["//visibility:public"],
     deps = [

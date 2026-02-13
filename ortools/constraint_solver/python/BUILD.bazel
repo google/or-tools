@@ -16,6 +16,7 @@
 load("@pip_deps//:requirements.bzl", "requirement")
 load("@pybind11_bazel//:build_defs.bzl", "pybind_extension", "pybind_library")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_python//python:py_library.bzl", "py_library")
 load("@rules_python//python:py_test.bzl", "py_test")
 
 cc_library(
@@ -35,7 +36,7 @@ pybind_extension(
         "//ortools/constraint_solver:search_limit_cc_proto",
         "//ortools/util:piecewise_linear_function",
         "//ortools/util:tuple_set",
-        "//ortools/util/python:piecewise_linear_function_lib",
+        "//ortools/util/python:piecewise_linear_function_deps",
         "@abseil-cpp//absl/cleanup",
         "@abseil-cpp//absl/functional:function_ref",
         "@abseil-cpp//absl/strings",
@@ -44,9 +45,9 @@ pybind_extension(
 )
 
 pybind_library(
-    name = "constraint_solver_lib",
+    name = "constraint_solver_deps",
     srcs = ["constraint_solver.cc"],
-    visibility = ["//visibility:public"],
+    visibility = ["//ortools/routing/python:__pkg__"],
     deps = [
         ":constraint_solver_doc",
         "//ortools/constraint_solver:assignment_cc_proto",
@@ -54,11 +55,23 @@ pybind_library(
         "//ortools/constraint_solver:search_limit_cc_proto",
         "//ortools/util:piecewise_linear_function",
         "//ortools/util:tuple_set",
-        "//ortools/util/python:piecewise_linear_function_lib",
+        "//ortools/util/python:piecewise_linear_function_deps",
         "@abseil-cpp//absl/cleanup",
         "@abseil-cpp//absl/functional:function_ref",
         "@abseil-cpp//absl/strings",
         "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
+    ],
+)
+
+py_library(
+    name = "constraint_solver_py",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":constraint_solver",
+        "//ortools/constraint_solver:search_limit_py_pb2",
+        "//ortools/constraint_solver:search_stats_py_pb2",
+        "//ortools/constraint_solver:solver_parameters_py_pb2",
+        "//ortools/util/python:piecewise_linear_function",
     ],
 )
 
@@ -67,9 +80,8 @@ py_test(
     size = "small",
     srcs = ["constraint_solver_test.py"],
     deps = [
-        ":constraint_solver",
+        ":constraint_solver_py",
         requirement("absl-py"),
-        "//ortools/util/python:piecewise_linear_function",
     ],
 )
 
@@ -78,10 +90,7 @@ py_test(
     size = "small",
     srcs = ["constraint_solver_extension_test.py"],
     deps = [
-        ":constraint_solver",
+        ":constraint_solver_py",
         requirement("absl-py"),
-        "//ortools/constraint_solver:search_limit_py_pb2",
-        "//ortools/constraint_solver:solver_parameters_py_pb2",
-        "//ortools/util/python:piecewise_linear_function",
     ],
 )

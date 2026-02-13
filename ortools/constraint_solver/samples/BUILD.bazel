@@ -32,8 +32,7 @@ py_test(
     srcs = ["cp_is_fun_cp.py"],
     main = "cp_is_fun_cp.py",
     deps = [
-        "//ortools/constraint_solver/python:constraint_solver",
-        "//ortools/util/python:piecewise_linear_function",
+        "//ortools/constraint_solver/python:constraint_solver_py",
     ],
 )
 
@@ -67,8 +66,7 @@ py_test(
     srcs = ["nqueens_cp.py"],
     main = "nqueens_cp.py",
     deps = [
-        "//ortools/constraint_solver/python:constraint_solver",
-        "//ortools/util/python:piecewise_linear_function",
+        "//ortools/constraint_solver/python:constraint_solver_py",
     ],
 )
 
@@ -112,8 +110,7 @@ py_test(
     srcs = ["simple_cp_program.py"],
     main = "simple_cp_program.py",
     deps = [
-        "//ortools/constraint_solver/python:constraint_solver",
-        "//ortools/util/python:piecewise_linear_function",
+        "//ortools/constraint_solver/python:constraint_solver_py",
     ],
 )
 
