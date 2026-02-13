@@ -436,6 +436,7 @@ py_binary(
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
         "//ortools/routing/python:routing",
+        "//ortools/util/python:piecewise_linear_function",
         "//ortools/util/python:sorted_interval_list",
     ],
 )
@@ -456,6 +457,7 @@ py_binary(
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
         "//ortools/routing/python:routing",
+        "//ortools/util/python:piecewise_linear_function",
         "//ortools/util/python:sorted_interval_list",
     ],
 )
