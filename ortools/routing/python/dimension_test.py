@@ -20,6 +20,7 @@ from absl.testing import absltest
 
 from ortools.routing import enums_pb2
 from ortools.routing.python import routing
+from ortools.util.python import piecewise_linear_function
 
 FirstSolutionStrategy = enums_pb2.FirstSolutionStrategy
 RoutingSearchStatus = enums_pb2.RoutingSearchStatus
@@ -383,7 +384,7 @@ class DimensionTest(absltest.TestCase):
         self.assertEqual(20, bound.cost)
 
         # Test piecewise linear cost
-        pwl_cost = routing.PiecewiseLinearFunction(
+        pwl_cost = piecewise_linear_function.PiecewiseLinearFunction(
             [0, 10],  # points_x
             [0, 10],  # points_y
             [1, 1],  # slopes

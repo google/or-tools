@@ -21,13 +21,13 @@
 #include <utility>
 #include <vector>
 
+#include "absl/log/check.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
-#include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
-#include "ortools/constraint_solver/constraint_solveri.h"
+#include "ortools/constraint_solver/constraints.h"
+#include "ortools/constraint_solver/utilities.h"
 
 namespace operations_research {
 
@@ -35,8 +35,7 @@ namespace operations_research {
 
 class Dimension : public BaseObject {
  public:
-  explicit Dimension(Solver* const s, Pack* const pack)
-      : solver_(s), pack_(pack) {}
+  explicit Dimension(Solver* s, Pack* pack) : solver_(s), pack_(pack) {}
   ~Dimension() override {}
 
   virtual void Post() = 0;
@@ -106,8 +105,7 @@ class Dimension : public BaseObject {
 
 // ----- Pack -----
 
-Pack::Pack(Solver* const s, const std::vector<IntVar*>& vars,
-           int number_of_bins)
+Pack::Pack(Solver* s, const std::vector<IntVar*>& vars, int number_of_bins)
     : Constraint(s),
       vars_(vars),
       bins_(number_of_bins),
@@ -391,7 +389,7 @@ std::string Pack::DebugString() const {
   return result;
 }
 
-void Pack::Accept(ModelVisitor* const visitor) const {
+void Pack::Accept(ModelVisitor* visitor) const {
   visitor->BeginVisitConstraint(ModelVisitor::kPack, this);
   visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                              vars_);
@@ -513,8 +511,8 @@ struct WeightContainer {
   bool operator<(const WeightContainer& c) const { return (weight < c.weight); }
 };
 
-void SortWeightVector(std::vector<int>* const indices,
-                      std::vector<WeightContainer>* const to_sort) {
+void SortWeightVector(std::vector<int>* indices,
+                      std::vector<WeightContainer>* to_sort) {
   std::sort(to_sort->begin(), to_sort->end());
   for (int index = 0; index < to_sort->size(); ++index) {
     (*indices)[index] = (*to_sort)[index].index;
@@ -522,7 +520,7 @@ void SortWeightVector(std::vector<int>* const indices,
   indices->resize(to_sort->size());
 }
 
-void SortIndexByWeight(std::vector<int>* const indices,
+void SortIndexByWeight(std::vector<int>* indices,
                        absl::Span<const int64_t> weights) {
   std::vector<WeightContainer> to_sort;
   for (int index = 0; index < indices->size(); ++index) {
@@ -533,7 +531,7 @@ void SortIndexByWeight(std::vector<int>* const indices,
   SortWeightVector(indices, &to_sort);
 }
 
-void SortIndexByWeight(std::vector<int>* const indices,
+void SortIndexByWeight(std::vector<int>* indices,
                        const Solver::IndexEvaluator1& weights) {
   std::vector<WeightContainer> to_sort;
   for (int index = 0; index < indices->size(); ++index) {
@@ -545,7 +543,7 @@ void SortIndexByWeight(std::vector<int>* const indices,
   SortWeightVector(indices, &to_sort);
 }
 
-void SortIndexByWeight(std::vector<int>* const indices,
+void SortIndexByWeight(std::vector<int>* indices,
                        const Solver::IndexEvaluator2& weights, int bin_index) {
   std::vector<WeightContainer> to_sort;
   for (int index = 0; index < indices->size(); ++index) {
@@ -559,7 +557,7 @@ void SortIndexByWeight(std::vector<int>* const indices,
 
 class DimensionLessThanConstant : public Dimension {
  public:
-  DimensionLessThanConstant(Solver* const s, Pack* const p,
+  DimensionLessThanConstant(Solver* s, Pack* p,
                             const std::vector<int64_t>& weights,
                             const std::vector<int64_t>& upper_bounds)
       : Dimension(s, p),
@@ -634,7 +632,7 @@ class DimensionLessThanConstant : public Dimension {
 
   void EndPropagate() override {}
 
-  void Accept(ModelVisitor* const visitor) const override {
+  void Accept(ModelVisitor* visitor) const override {
     visitor->BeginVisitExtension(ModelVisitor::kUsageLessConstantExtension);
     visitor->VisitIntegerArrayArgument(ModelVisitor::kCoefficientsArgument,
                                        weights_);
@@ -655,7 +653,7 @@ class DimensionLessThanConstant : public Dimension {
 
 class DimensionSumCallbackLessThanConstant : public Dimension {
  public:
-  DimensionSumCallbackLessThanConstant(Solver* const s, Pack* const p,
+  DimensionSumCallbackLessThanConstant(Solver* s, Pack* p,
                                        const Solver::IndexEvaluator1& weights,
                                        int vars_count,
                                        const std::vector<int64_t>& upper_bounds)
@@ -733,7 +731,7 @@ class DimensionSumCallbackLessThanConstant : public Dimension {
 
   void EndPropagate() override {}
 
-  void Accept(ModelVisitor* const visitor) const override {
+  void Accept(ModelVisitor* visitor) const override {
     visitor->BeginVisitExtension(ModelVisitor::kUsageLessConstantExtension);
     // TODO(user) : Visit weight correctly.
     // visitor->VisitIntegerArrayArgument(ModelVisitor::kCoefficientsArgument,
@@ -755,7 +753,7 @@ class DimensionSumCallbackLessThanConstant : public Dimension {
 
 class DimensionLessThanConstantCallback2 : public Dimension {
  public:
-  DimensionLessThanConstantCallback2(Solver* const s, Pack* const p,
+  DimensionLessThanConstantCallback2(Solver* s, Pack* p,
                                      const Solver::IndexEvaluator2& weights,
                                      int vars_count,
                                      const std::vector<int64_t>& upper_bounds)
@@ -837,7 +835,7 @@ class DimensionLessThanConstantCallback2 : public Dimension {
 
   void EndPropagate() override {}
 
-  void Accept(ModelVisitor* const visitor) const override {
+  void Accept(ModelVisitor* visitor) const override {
     visitor->BeginVisitExtension(ModelVisitor::kUsageLessConstantExtension);
     // TODO(user): Visit weight correctly
     // visitor->VisitIntegerArrayArgument(ModelVisitor::kCoefficientsArgument,
@@ -861,18 +859,18 @@ class DimensionWeightedSumEqVar : public Dimension {
  public:
   class VarDemon : public Demon {
    public:
-    VarDemon(DimensionWeightedSumEqVar* const dim, int index)
+    VarDemon(DimensionWeightedSumEqVar* dim, int index)
         : dim_(dim), index_(index) {}
     ~VarDemon() override {}
 
-    void Run(Solver* const s) override { dim_->PushFromTop(index_); }
+    void Run(Solver* s) override { dim_->PushFromTop(index_); }
 
    private:
     DimensionWeightedSumEqVar* const dim_;
     const int index_;
   };
 
-  DimensionWeightedSumEqVar(Solver* const s, Pack* const p,
+  DimensionWeightedSumEqVar(Solver* s, Pack* p,
                             const std::vector<int64_t>& weights,
                             const std::vector<IntVar*>& loads)
       : Dimension(s, p),
@@ -972,7 +970,7 @@ class DimensionWeightedSumEqVar : public Dimension {
 
   void EndPropagate() override {}
 
-  void Accept(ModelVisitor* const visitor) const override {
+  void Accept(ModelVisitor* visitor) const override {
     visitor->BeginVisitExtension(ModelVisitor::kUsageEqualVariableExtension);
     visitor->VisitIntegerArrayArgument(ModelVisitor::kCoefficientsArgument,
                                        weights_);
@@ -996,18 +994,18 @@ class DimensionWeightedCallback2SumEqVar : public Dimension {
  public:
   class VarDemon : public Demon {
    public:
-    VarDemon(DimensionWeightedCallback2SumEqVar* const dim, int index)
+    VarDemon(DimensionWeightedCallback2SumEqVar* dim, int index)
         : dim_(dim), index_(index) {}
     ~VarDemon() override {}
 
-    void Run(Solver* const s) override { dim_->PushFromTop(index_); }
+    void Run(Solver* s) override { dim_->PushFromTop(index_); }
 
    private:
     DimensionWeightedCallback2SumEqVar* const dim_;
     const int index_;
   };
 
-  DimensionWeightedCallback2SumEqVar(Solver* const s, Pack* const p,
+  DimensionWeightedCallback2SumEqVar(Solver* s, Pack* p,
                                      const Solver::IndexEvaluator2& weights,
                                      int vars_count,
                                      const std::vector<IntVar*>& loads)
@@ -1113,7 +1111,7 @@ class DimensionWeightedCallback2SumEqVar : public Dimension {
 
   void EndPropagate() override {}
 
-  void Accept(ModelVisitor* const visitor) const override {
+  void Accept(ModelVisitor* visitor) const override {
     visitor->BeginVisitExtension(ModelVisitor::kUsageEqualVariableExtension);
     // TODO(user): Visit weight correctly
     // visitor->VisitIntegerArrayArgument(ModelVisitor::kCoefficientsArgument,
@@ -1138,18 +1136,18 @@ class AssignedWeightedSumDimension : public Dimension {
  public:
   class VarDemon : public Demon {
    public:
-    explicit VarDemon(AssignedWeightedSumDimension* const dim) : dim_(dim) {}
+    explicit VarDemon(AssignedWeightedSumDimension* dim) : dim_(dim) {}
     ~VarDemon() override {}
 
-    void Run(Solver* const s) override { dim_->PropagateAll(); }
+    void Run(Solver* s) override { dim_->PropagateAll(); }
 
    private:
     AssignedWeightedSumDimension* const dim_;
   };
 
-  AssignedWeightedSumDimension(Solver* const s, Pack* const p,
+  AssignedWeightedSumDimension(Solver* s, Pack* p,
                                const std::vector<int64_t>& weights,
-                               int bins_count, IntVar* const cost_var)
+                               int bins_count, IntVar* cost_var)
       : Dimension(s, p),
         vars_count_(weights.size()),
         weights_(weights),
@@ -1238,7 +1236,7 @@ class AssignedWeightedSumDimension : public Dimension {
 
   void EndPropagate() override {}
 
-  void Accept(ModelVisitor* const visitor) const override {
+  void Accept(ModelVisitor* visitor) const override {
     visitor->BeginVisitExtension(
         ModelVisitor::kWeightedSumOfAssignedEqualVariableExtension);
     visitor->VisitIntegerArrayArgument(ModelVisitor::kCoefficientsArgument,
@@ -1267,17 +1265,17 @@ class CountAssignedItemsDimension : public Dimension {
  public:
   class VarDemon : public Demon {
    public:
-    explicit VarDemon(CountAssignedItemsDimension* const dim) : dim_(dim) {}
+    explicit VarDemon(CountAssignedItemsDimension* dim) : dim_(dim) {}
     ~VarDemon() override {}
 
-    void Run(Solver* const s) override { dim_->PropagateAll(); }
+    void Run(Solver* s) override { dim_->PropagateAll(); }
 
    private:
     CountAssignedItemsDimension* const dim_;
   };
 
-  CountAssignedItemsDimension(Solver* const s, Pack* const p, int vars_count,
-                              int bins_count, IntVar* const cost_var)
+  CountAssignedItemsDimension(Solver* s, Pack* p, int vars_count,
+                              int bins_count, IntVar* cost_var)
       : Dimension(s, p),
         vars_count_(vars_count),
         bins_count_(bins_count),
@@ -1331,7 +1329,7 @@ class CountAssignedItemsDimension : public Dimension {
 
   void EndPropagate() override {}
 
-  void Accept(ModelVisitor* const visitor) const override {
+  void Accept(ModelVisitor* visitor) const override {
     visitor->BeginVisitExtension(ModelVisitor::kCountAssignedItemsExtension);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
                                             cost_var_);
@@ -1353,17 +1351,17 @@ class CountUsedBinDimension : public Dimension {
  public:
   class VarDemon : public Demon {
    public:
-    explicit VarDemon(CountUsedBinDimension* const dim) : dim_(dim) {}
+    explicit VarDemon(CountUsedBinDimension* dim) : dim_(dim) {}
     ~VarDemon() override {}
 
-    void Run(Solver* const s) override { dim_->PropagateAll(); }
+    void Run(Solver* s) override { dim_->PropagateAll(); }
 
    private:
     CountUsedBinDimension* const dim_;
   };
 
-  CountUsedBinDimension(Solver* const s, Pack* const p, int vars_count,
-                        int bins_count, IntVar* const count_var)
+  CountUsedBinDimension(Solver* s, Pack* p, int vars_count, int bins_count,
+                        IntVar* count_var)
       : Dimension(s, p),
         vars_count_(vars_count),
         bins_count_(bins_count),
@@ -1448,7 +1446,7 @@ class CountUsedBinDimension : public Dimension {
 
   void EndPropagate() override { PropagateAll(); }
 
-  void Accept(ModelVisitor* const visitor) const override {
+  void Accept(ModelVisitor* visitor) const override {
     visitor->BeginVisitExtension(ModelVisitor::kCountUsedBinsExtension);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
                                             count_var_);
@@ -1472,7 +1470,7 @@ class CountUsedBinDimension : public Dimension {
 // This is a very naive, but correct implementation of the constraint.
 class VariableUsageDimension : public Dimension {
  public:
-  VariableUsageDimension(Solver* const solver, Pack* const pack,
+  VariableUsageDimension(Solver* solver, Pack* pack,
                          const std::vector<int64_t>& capacities,
                          const std::vector<IntVar*>& weights)
       : Dimension(solver, pack), capacities_(capacities), weights_(weights) {}
@@ -1508,7 +1506,7 @@ class VariableUsageDimension : public Dimension {
 
   std::string DebugString() const override { return "VariableUsageDimension"; }
 
-  void Accept(ModelVisitor* const visitor) const override {
+  void Accept(ModelVisitor* visitor) const override {
     visitor->BeginVisitExtension(
         ModelVisitor::kVariableUsageLessConstantExtension);
     visitor->VisitIntegerArrayArgument(ModelVisitor::kValuesArgument,
@@ -1578,7 +1576,7 @@ void Pack::AddWeightedSumEqualVarDimension(Solver::IndexEvaluator2 weights,
 }
 
 void Pack::AddWeightedSumOfAssignedDimension(
-    const std::vector<int64_t>& weights, IntVar* const cost_var) {
+    const std::vector<int64_t>& weights, IntVar* cost_var) {
   CHECK_EQ(weights.size(), vars_.size());
   Solver* const s = solver();
   Dimension* const dim = s->RevAlloc(
@@ -1596,14 +1594,14 @@ void Pack::AddSumVariableWeightsLessOrEqualConstantDimension(
   dims_.push_back(dim);
 }
 
-void Pack::AddCountUsedBinDimension(IntVar* const count_var) {
+void Pack::AddCountUsedBinDimension(IntVar* count_var) {
   Solver* const s = solver();
   Dimension* const dim = s->RevAlloc(
       new CountUsedBinDimension(s, this, vars_.size(), bins_, count_var));
   dims_.push_back(dim);
 }
 
-void Pack::AddCountAssignedItemsDimension(IntVar* const count_var) {
+void Pack::AddCountAssignedItemsDimension(IntVar* count_var) {
   Solver* const s = solver();
   Dimension* const dim = s->RevAlloc(
       new CountAssignedItemsDimension(s, this, vars_.size(), bins_, count_var));

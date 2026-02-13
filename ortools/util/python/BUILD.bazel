@@ -67,6 +67,15 @@ pybind_extension(
     ],
 )
 
+pybind_library(
+    name = "piecewise_linear_function_lib",
+    srcs = ["piecewise_linear_function.cc"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//ortools/util:piecewise_linear_function",
+    ],
+)
+
 cc_library(
     name = "py_solve_interrupter_lib",
     srcs = ["py_solve_interrupter.cc"],

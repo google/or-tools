@@ -58,6 +58,7 @@ class RoutingSearchParameters;
 #include "ortools/routing/parameters.pb.h"
 #include "ortools/routing/parameters.h"
 #include "ortools/routing/routing.h"
+#include "ortools/constraint_solver/search.h"
 #include "ortools/util/optional_boolean.pb.h"
 %}
 

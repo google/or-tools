@@ -16,7 +16,6 @@
 #include <algorithm>
 #include <cstdint>
 #include <limits>
-#include <memory>
 #include <string>
 #include <vector>
 
@@ -26,7 +25,9 @@
 #include "absl/strings/str_join.h"
 #include "absl/types/span.h"
 #include "ortools/constraint_solver/constraint_solver.h"
-#include "ortools/constraint_solver/constraint_solveri.h"
+#include "ortools/constraint_solver/constraints.h"
+#include "ortools/constraint_solver/utilities.h"
+#include "ortools/constraint_solver/visitor.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/string_array.h"
 #include "ortools/util/tuple_set.h"
@@ -43,7 +44,7 @@ struct AffineTransformation {  // y == a*x + b.
   int64_t a;
   int64_t b;
 
-  bool Reverse(int64_t value, int64_t* const reverse) const {
+  bool Reverse(int64_t value, int64_t* reverse) const {
     const int64_t temp = value - b;
     if (temp % a == 0) {
       *reverse = temp / a;
@@ -74,9 +75,9 @@ class VarLinearizer : public ModelParser {
   VarLinearizer() : target_var_(nullptr), transformation_(nullptr) {}
   ~VarLinearizer() override {}
 
-  void VisitIntegerVariable(const IntVar* const variable,
+  void VisitIntegerVariable(const IntVar* variable,
                             const std::string& operation, int64_t value,
-                            IntVar* const delegate) override {
+                            IntVar* delegate) override {
     if (operation == ModelVisitor::kSumOperation) {
       AddConstant(value);
       delegate->Accept(this);
@@ -95,14 +96,14 @@ class VarLinearizer : public ModelParser {
     }
   }
 
-  void VisitIntegerVariable(const IntVar* const variable,
-                            IntExpr* const delegate) override {
+  void VisitIntegerVariable(const IntVar* variable,
+                            IntExpr* delegate) override {
     *target_var_ = const_cast<IntVar*>(variable);
     transformation_->a = multipliers_.back();
   }
 
-  void Visit(const IntVar* const var, IntVar** const target_var,
-             AffineTransformation* const transformation) {
+  void Visit(const IntVar* var, IntVar** target_var,
+             AffineTransformation* transformation) {
     target_var_ = target_var;
     transformation_ = transformation;
     transformation->Clear();
@@ -152,7 +153,7 @@ static const int kBitsInUint64 = 64;
 
 class BasePositiveTableConstraint : public Constraint {
  public:
-  BasePositiveTableConstraint(Solver* const s, const std::vector<IntVar*>& vars,
+  BasePositiveTableConstraint(Solver* s, const std::vector<IntVar*>& vars,
                               const IntTupleSet& tuples)
       : Constraint(s),
         tuple_count_(tuples.NumTuples()),
@@ -189,7 +190,7 @@ class BasePositiveTableConstraint : public Constraint {
                            arity_, tuple_count_);
   }
 
-  void Accept(ModelVisitor* const visitor) const override {
+  void Accept(ModelVisitor* visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kAllowedAssignments, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars_);
@@ -198,7 +199,7 @@ class BasePositiveTableConstraint : public Constraint {
   }
 
  protected:
-  bool TupleValue(int tuple_index, int var_index, int64_t* const value) const {
+  bool TupleValue(int tuple_index, int var_index, int64_t* value) const {
     return transformations_[var_index].Reverse(
         tuples_.Value(tuple_index, var_index), value);
   }
@@ -238,7 +239,7 @@ class PositiveTableConstraint : public BasePositiveTableConstraint {
  public:
   typedef absl::flat_hash_map<int, std::vector<uint64_t>> ValueBitset;
 
-  PositiveTableConstraint(Solver* const s, const std::vector<IntVar*>& vars,
+  PositiveTableConstraint(Solver* s, const std::vector<IntVar*>& vars,
                           const IntTupleSet& tuples)
       : BasePositiveTableConstraint(s, vars, tuples),
         word_length_(BitLength64(tuples.NumTuples())),
@@ -391,8 +392,7 @@ class PositiveTableConstraint : public BasePositiveTableConstraint {
 
 class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
  public:
-  CompactPositiveTableConstraint(Solver* const s,
-                                 const std::vector<IntVar*>& vars,
+  CompactPositiveTableConstraint(Solver* s, const std::vector<IntVar*>& vars,
                                  const IntTupleSet& tuples)
       : BasePositiveTableConstraint(s, vars, tuples),
         word_length_(BitLength64(tuples.NumTuples())),
@@ -806,7 +806,7 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
 
 class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
  public:
-  SmallCompactPositiveTableConstraint(Solver* const s,
+  SmallCompactPositiveTableConstraint(Solver* s,
                                       const std::vector<IntVar*>& vars,
                                       const IntTupleSet& tuples)
       : BasePositiveTableConstraint(s, vars, tuples),
@@ -1147,7 +1147,7 @@ class TransitionConstraint : public Constraint {
   static const int kStatePosition;
   static const int kNextStatePosition;
   static const int kTransitionTupleSize;
-  TransitionConstraint(Solver* const s, const std::vector<IntVar*>& vars,
+  TransitionConstraint(Solver* s, const std::vector<IntVar*>& vars,
                        const IntTupleSet& transition_table,
                        int64_t initial_state,
                        const std::vector<int64_t>& final_states)
@@ -1157,7 +1157,7 @@ class TransitionConstraint : public Constraint {
         initial_state_(initial_state),
         final_states_(final_states) {}
 
-  TransitionConstraint(Solver* const s, const std::vector<IntVar*>& vars,
+  TransitionConstraint(Solver* s, const std::vector<IntVar*>& vars,
                        const IntTupleSet& transition_table,
                        int64_t initial_state,
                        absl::Span<const int> final_states)
@@ -1217,7 +1217,7 @@ class TransitionConstraint : public Constraint {
 
   void InitialPropagate() override {}
 
-  void Accept(ModelVisitor* const visitor) const override {
+  void Accept(ModelVisitor* visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kTransition, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars_);
@@ -1244,7 +1244,7 @@ class TransitionConstraint : public Constraint {
   const IntTupleSet transition_table_;
   // The initial state before the first transition.
   const int64_t initial_state_;
-  // Vector of final state after the last transision.
+  // Vector of final state after the last transition.
   std::vector<int64_t> final_states_;
 };
 

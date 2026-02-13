@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "ortools/constraint_solver/visitor.h"
+
 #include <cstddef>
 #include <cstdint>
 #include <string>
@@ -21,7 +23,6 @@
 #include "absl/log/check.h"
 #include "ortools/base/map_util.h"
 #include "ortools/constraint_solver/constraint_solver.h"
-#include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/util/tuple_set.h"
 
 namespace operations_research {

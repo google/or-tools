@@ -218,6 +218,7 @@ py_test(
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
         "//ortools/routing/python:routing",
+        "//ortools/util/python:piecewise_linear_function",
         "//ortools/util/python:sorted_interval_list",
     ],
 )
@@ -232,6 +233,7 @@ py_test(
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
         "//ortools/routing/python:routing",
+        "//ortools/util/python:piecewise_linear_function",
         "//ortools/util/python:sorted_interval_list",
     ],
 )
@@ -246,6 +248,7 @@ py_test(
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
         "//ortools/routing/python:routing",
+        "//ortools/util/python:piecewise_linear_function",
         "//ortools/util/python:sorted_interval_list",
     ],
 )
@@ -260,6 +263,7 @@ py_test(
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
         "//ortools/routing/python:routing",
+        "//ortools/util/python:piecewise_linear_function",  # buildcleaner: keep
         "//ortools/util/python:sorted_interval_list",
     ],
 )
@@ -293,6 +297,7 @@ py_test(
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
         "//ortools/routing/python:routing",
+        "//ortools/util/python:piecewise_linear_function",
         "//ortools/util/python:sorted_interval_list",
     ],
 )
@@ -307,6 +312,7 @@ py_test(
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
         "//ortools/routing/python:routing",
+        "//ortools/util/python:piecewise_linear_function",
         "//ortools/util/python:sorted_interval_list",
     ],
 )
@@ -321,6 +327,7 @@ py_test(
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
         "//ortools/routing/python:routing",
+        "//ortools/util/python:piecewise_linear_function",
         "//ortools/util/python:sorted_interval_list",
     ],
 )
@@ -373,6 +380,7 @@ py_test(
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
         "//ortools/routing/python:routing",
+        "//ortools/util/python:piecewise_linear_function",
         "//ortools/util/python:sorted_interval_list",
     ],
 )
@@ -406,6 +414,7 @@ py_test(
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
         "//ortools/routing/python:routing",
+        "//ortools/util/python:piecewise_linear_function",
         "//ortools/util/python:sorted_interval_list",
     ],
 )
@@ -458,6 +467,7 @@ py_test(
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
         "//ortools/routing/python:routing",
+        "//ortools/util/python:piecewise_linear_function",
         "//ortools/util/python:sorted_interval_list",
     ],
 )
@@ -491,6 +501,7 @@ py_test(
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
         "//ortools/routing/python:routing",
+        "//ortools/util/python:piecewise_linear_function",
         "//ortools/util/python:sorted_interval_list",
     ],
 )
@@ -525,6 +536,7 @@ py_test(
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
         "//ortools/routing/python:routing",
+        "//ortools/util/python:piecewise_linear_function",
         "//ortools/util/python:sorted_interval_list",
     ],
 )
@@ -539,6 +551,7 @@ py_test(
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
         "//ortools/routing/python:routing",
+        "//ortools/util/python:piecewise_linear_function",
         "//ortools/util/python:sorted_interval_list",
     ],
 )
@@ -573,6 +586,7 @@ py_test(
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
         "//ortools/routing/python:routing",
+        "//ortools/util/python:piecewise_linear_function",
         "//ortools/util/python:sorted_interval_list",
     ],
 )
@@ -607,6 +621,7 @@ py_test(
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
         "//ortools/routing/python:routing",
+        "//ortools/util/python:piecewise_linear_function",
         "//ortools/util/python:sorted_interval_list",
     ],
 )
@@ -640,6 +655,7 @@ py_test(
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
         "//ortools/routing/python:routing",
+        "//ortools/util/python:piecewise_linear_function",
         "//ortools/util/python:sorted_interval_list",
     ],
 )
@@ -674,6 +690,7 @@ py_test(
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
         "//ortools/routing/python:routing",
+        "//ortools/util/python:piecewise_linear_function",
         "//ortools/util/python:sorted_interval_list",
     ],
 )
@@ -688,6 +705,7 @@ py_test(
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
         "//ortools/routing/python:routing",
+        "//ortools/util/python:piecewise_linear_function",
         "//ortools/util/python:sorted_interval_list",
     ],
 )
@@ -702,6 +720,7 @@ py_test(
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
         "//ortools/routing/python:routing",
+        "//ortools/util/python:piecewise_linear_function",
         "//ortools/util/python:sorted_interval_list",
     ],
 )
@@ -735,6 +754,7 @@ py_test(
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
         "//ortools/routing/python:routing",
+        "//ortools/util/python:piecewise_linear_function",
         "//ortools/util/python:sorted_interval_list",
     ],
 )
@@ -768,6 +788,7 @@ py_test(
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
         "//ortools/routing/python:routing",
+        "//ortools/util/python:piecewise_linear_function",
         "//ortools/util/python:sorted_interval_list",
     ],
 )
@@ -801,6 +822,7 @@ py_test(
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
         "//ortools/routing/python:routing",
+        "//ortools/util/python:piecewise_linear_function",
         "//ortools/util/python:sorted_interval_list",
     ],
 )
@@ -834,6 +856,7 @@ py_test(
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
         "//ortools/routing/python:routing",
+        "//ortools/util/python:piecewise_linear_function",
         "//ortools/util/python:sorted_interval_list",
     ],
 )
@@ -867,6 +890,7 @@ py_test(
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
         "//ortools/routing/python:routing",
+        "//ortools/util/python:piecewise_linear_function",
         "//ortools/util/python:sorted_interval_list",
     ],
 )
@@ -920,6 +944,7 @@ py_test(
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
         "//ortools/routing/python:routing",
+        "//ortools/util/python:piecewise_linear_function",
         "//ortools/util/python:sorted_interval_list",
     ],
 )
@@ -953,6 +978,7 @@ py_test(
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
         "//ortools/routing/python:routing",
+        "//ortools/util/python:piecewise_linear_function",
         "//ortools/util/python:sorted_interval_list",
     ],
 )
@@ -967,6 +993,7 @@ py_test(
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
         "//ortools/routing/python:routing",
+        "//ortools/util/python:piecewise_linear_function",
         "//ortools/util/python:sorted_interval_list",
     ],
 )
@@ -1001,6 +1028,7 @@ py_test(
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
         "//ortools/routing/python:routing",
+        "//ortools/util/python:piecewise_linear_function",
         "//ortools/util/python:sorted_interval_list",
     ],
 )
@@ -1034,6 +1062,7 @@ py_test(
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
         "//ortools/routing/python:routing",
+        "//ortools/util/python:piecewise_linear_function",
         "//ortools/util/python:sorted_interval_list",
     ],
 )

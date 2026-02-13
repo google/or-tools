@@ -17,10 +17,12 @@
 
 #include <string>
 
+#include "absl/log/check.h"
 #include "absl/strings/str_format.h"
-#include "ortools/base/logging.h"
+#include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
-#include "ortools/constraint_solver/constraint_solveri.h"
+#include "ortools/constraint_solver/constraints.h"
+#include "ortools/constraint_solver/model_cache.h"
 
 namespace operations_research {
 
@@ -30,7 +32,7 @@ namespace operations_research {
 namespace {
 class RangeEquality : public Constraint {
  public:
-  RangeEquality(Solver* const s, IntExpr* const l, IntExpr* const r)
+  RangeEquality(Solver* s, IntExpr* l, IntExpr* r)
       : Constraint(s), left_(l), right_(r) {}
 
   ~RangeEquality() override {}
@@ -52,7 +54,7 @@ class RangeEquality : public Constraint {
 
   IntVar* Var() override { return solver()->MakeIsEqualVar(left_, right_); }
 
-  void Accept(ModelVisitor* const visitor) const override {
+  void Accept(ModelVisitor* visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kEquality, this);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument, left_);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kRightArgument,
@@ -78,7 +80,7 @@ class RangeLessOrEqual : public Constraint {
   IntVar* Var() override {
     return solver()->MakeIsLessOrEqualVar(left_, right_);
   }
-  void Accept(ModelVisitor* const visitor) const override {
+  void Accept(ModelVisitor* visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kLessOrEqual, this);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument, left_);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kRightArgument,
@@ -92,8 +94,7 @@ class RangeLessOrEqual : public Constraint {
   Demon* demon_;
 };
 
-RangeLessOrEqual::RangeLessOrEqual(Solver* const s, IntExpr* const l,
-                                   IntExpr* const r)
+RangeLessOrEqual::RangeLessOrEqual(Solver* s, IntExpr* l, IntExpr* r)
     : Constraint(s), left_(l), right_(r), demon_(nullptr) {}
 
 void RangeLessOrEqual::Post() {
@@ -125,7 +126,7 @@ class RangeLess : public Constraint {
   void InitialPropagate() override;
   std::string DebugString() const override;
   IntVar* Var() override { return solver()->MakeIsLessVar(left_, right_); }
-  void Accept(ModelVisitor* const visitor) const override {
+  void Accept(ModelVisitor* visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kLess, this);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument, left_);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kRightArgument,
@@ -139,7 +140,7 @@ class RangeLess : public Constraint {
   Demon* demon_;
 };
 
-RangeLess::RangeLess(Solver* const s, IntExpr* const l, IntExpr* const r)
+RangeLess::RangeLess(Solver* s, IntExpr* l, IntExpr* r)
     : Constraint(s), left_(l), right_(r), demon_(nullptr) {}
 
 void RangeLess::Post() {
@@ -176,7 +177,7 @@ class DiffVar : public Constraint {
   void LeftBound();
   void RightBound();
 
-  void Accept(ModelVisitor* const visitor) const override {
+  void Accept(ModelVisitor* visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kNonEqual, this);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument, left_);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kRightArgument,
@@ -189,7 +190,7 @@ class DiffVar : public Constraint {
   IntVar* const right_;
 };
 
-DiffVar::DiffVar(Solver* const s, IntVar* const l, IntVar* const r)
+DiffVar::DiffVar(Solver* s, IntVar* l, IntVar* r)
     : Constraint(s), left_(l), right_(r) {}
 
 void DiffVar::Post() {
@@ -240,8 +241,7 @@ std::string DiffVar::DebugString() const {
 
 class IsEqualCt : public CastConstraint {
  public:
-  IsEqualCt(Solver* const s, IntExpr* const l, IntExpr* const r,
-            IntVar* const b)
+  IsEqualCt(Solver* s, IntExpr* l, IntExpr* r, IntVar* b)
       : CastConstraint(s, b), left_(l), right_(r), range_demon_(nullptr) {}
 
   ~IsEqualCt() override {}
@@ -307,7 +307,7 @@ class IsEqualCt : public CastConstraint {
                            right_->DebugString(), target_var_->DebugString());
   }
 
-  void Accept(ModelVisitor* const visitor) const override {
+  void Accept(ModelVisitor* visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kIsEqual, this);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument, left_);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kRightArgument,
@@ -327,8 +327,7 @@ class IsEqualCt : public CastConstraint {
 
 class IsDifferentCt : public CastConstraint {
  public:
-  IsDifferentCt(Solver* const s, IntExpr* const l, IntExpr* const r,
-                IntVar* const b)
+  IsDifferentCt(Solver* s, IntExpr* l, IntExpr* r, IntVar* b)
       : CastConstraint(s, b), left_(l), right_(r), range_demon_(nullptr) {}
 
   ~IsDifferentCt() override {}
@@ -386,7 +385,7 @@ class IsDifferentCt : public CastConstraint {
                            right_->DebugString(), target_var_->DebugString());
   }
 
-  void Accept(ModelVisitor* const visitor) const override {
+  void Accept(ModelVisitor* visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kIsDifferent, this);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument, left_);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kRightArgument,
@@ -404,8 +403,7 @@ class IsDifferentCt : public CastConstraint {
 
 class IsLessOrEqualCt : public CastConstraint {
  public:
-  IsLessOrEqualCt(Solver* const s, IntExpr* const l, IntExpr* const r,
-                  IntVar* const b)
+  IsLessOrEqualCt(Solver* s, IntExpr* l, IntExpr* r, IntVar* b)
       : CastConstraint(s, b), left_(l), right_(r), demon_(nullptr) {}
 
   ~IsLessOrEqualCt() override {}
@@ -440,7 +438,7 @@ class IsLessOrEqualCt : public CastConstraint {
                            right_->DebugString(), target_var_->DebugString());
   }
 
-  void Accept(ModelVisitor* const visitor) const override {
+  void Accept(ModelVisitor* visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kIsLessOrEqual, this);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument, left_);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kRightArgument,
@@ -458,7 +456,7 @@ class IsLessOrEqualCt : public CastConstraint {
 
 class IsLessCt : public CastConstraint {
  public:
-  IsLessCt(Solver* const s, IntExpr* const l, IntExpr* const r, IntVar* const b)
+  IsLessCt(Solver* s, IntExpr* l, IntExpr* r, IntVar* b)
       : CastConstraint(s, b), left_(l), right_(r), demon_(nullptr) {}
 
   ~IsLessCt() override {}
@@ -493,7 +491,7 @@ class IsLessCt : public CastConstraint {
                            right_->DebugString(), target_var_->DebugString());
   }
 
-  void Accept(ModelVisitor* const visitor) const override {
+  void Accept(ModelVisitor* visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kIsLess, this);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument, left_);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kRightArgument,
@@ -510,7 +508,7 @@ class IsLessCt : public CastConstraint {
 };
 }  // namespace
 
-Constraint* Solver::MakeEquality(IntExpr* const l, IntExpr* const r) {
+Constraint* Solver::MakeEquality(IntExpr* l, IntExpr* r) {
   CHECK(l != nullptr) << "left expression nullptr, maybe a bad cast";
   CHECK(r != nullptr) << "left expression nullptr, maybe a bad cast";
   CHECK_EQ(this, l->solver());
@@ -524,7 +522,7 @@ Constraint* Solver::MakeEquality(IntExpr* const l, IntExpr* const r) {
   }
 }
 
-Constraint* Solver::MakeLessOrEqual(IntExpr* const l, IntExpr* const r) {
+Constraint* Solver::MakeLessOrEqual(IntExpr* l, IntExpr* r) {
   CHECK(l != nullptr) << "left expression nullptr, maybe a bad cast";
   CHECK(r != nullptr) << "left expression nullptr, maybe a bad cast";
   CHECK_EQ(this, l->solver());
@@ -540,11 +538,11 @@ Constraint* Solver::MakeLessOrEqual(IntExpr* const l, IntExpr* const r) {
   }
 }
 
-Constraint* Solver::MakeGreaterOrEqual(IntExpr* const l, IntExpr* const r) {
+Constraint* Solver::MakeGreaterOrEqual(IntExpr* l, IntExpr* r) {
   return MakeLessOrEqual(r, l);
 }
 
-Constraint* Solver::MakeLess(IntExpr* const l, IntExpr* const r) {
+Constraint* Solver::MakeLess(IntExpr* l, IntExpr* r) {
   CHECK(l != nullptr) << "left expression nullptr, maybe a bad cast";
   CHECK(r != nullptr) << "left expression nullptr, maybe a bad cast";
   CHECK_EQ(this, l->solver());
@@ -558,11 +556,11 @@ Constraint* Solver::MakeLess(IntExpr* const l, IntExpr* const r) {
   }
 }
 
-Constraint* Solver::MakeGreater(IntExpr* const l, IntExpr* const r) {
+Constraint* Solver::MakeGreater(IntExpr* l, IntExpr* r) {
   return MakeLess(r, l);
 }
 
-Constraint* Solver::MakeNonEquality(IntExpr* const l, IntExpr* const r) {
+Constraint* Solver::MakeNonEquality(IntExpr* l, IntExpr* r) {
   CHECK(l != nullptr) << "left expression nullptr, maybe a bad cast";
   CHECK(r != nullptr) << "left expression nullptr, maybe a bad cast";
   CHECK_EQ(this, l->solver());
@@ -575,7 +573,7 @@ Constraint* Solver::MakeNonEquality(IntExpr* const l, IntExpr* const r) {
   return RevAlloc(new DiffVar(this, l->Var(), r->Var()));
 }
 
-IntVar* Solver::MakeIsEqualVar(IntExpr* const v1, IntExpr* const v2) {
+IntVar* Solver::MakeIsEqualVar(IntExpr* v1, IntExpr* v2) {
   CHECK_EQ(this, v1->solver());
   CHECK_EQ(this, v2->solver());
   if (v1->Bound()) {
@@ -620,8 +618,7 @@ IntVar* Solver::MakeIsEqualVar(IntExpr* const v1, IntExpr* const v2) {
   }
 }
 
-Constraint* Solver::MakeIsEqualCt(IntExpr* const v1, IntExpr* const v2,
-                                  IntVar* b) {
+Constraint* Solver::MakeIsEqualCt(IntExpr* v1, IntExpr* v2, IntVar* b) {
   CHECK_EQ(this, v1->solver());
   CHECK_EQ(this, v2->solver());
   if (v1->Bound()) {
@@ -639,7 +636,7 @@ Constraint* Solver::MakeIsEqualCt(IntExpr* const v1, IntExpr* const v2,
   return RevAlloc(new IsEqualCt(this, v1, v2, b));
 }
 
-IntVar* Solver::MakeIsDifferentVar(IntExpr* const v1, IntExpr* const v2) {
+IntVar* Solver::MakeIsDifferentVar(IntExpr* v1, IntExpr* v2) {
   CHECK_EQ(this, v1->solver());
   CHECK_EQ(this, v2->solver());
   if (v1->Bound()) {
@@ -684,8 +681,7 @@ IntVar* Solver::MakeIsDifferentVar(IntExpr* const v1, IntExpr* const v2) {
   }
 }
 
-Constraint* Solver::MakeIsDifferentCt(IntExpr* const v1, IntExpr* const v2,
-                                      IntVar* b) {
+Constraint* Solver::MakeIsDifferentCt(IntExpr* v1, IntExpr* v2, IntVar* b) {
   CHECK_EQ(this, v1->solver());
   CHECK_EQ(this, v2->solver());
   if (v1->Bound()) {
@@ -696,8 +692,7 @@ Constraint* Solver::MakeIsDifferentCt(IntExpr* const v1, IntExpr* const v2,
   return RevAlloc(new IsDifferentCt(this, v1, v2, b));
 }
 
-IntVar* Solver::MakeIsLessOrEqualVar(IntExpr* const left,
-                                     IntExpr* const right) {
+IntVar* Solver::MakeIsLessOrEqualVar(IntExpr* left, IntExpr* right) {
   CHECK_EQ(this, left->solver());
   CHECK_EQ(this, right->solver());
   if (left->Bound()) {
@@ -728,8 +723,8 @@ IntVar* Solver::MakeIsLessOrEqualVar(IntExpr* const left,
   }
 }
 
-Constraint* Solver::MakeIsLessOrEqualCt(IntExpr* const left,
-                                        IntExpr* const right, IntVar* const b) {
+Constraint* Solver::MakeIsLessOrEqualCt(IntExpr* left, IntExpr* right,
+                                        IntVar* b) {
   CHECK_EQ(this, left->solver());
   CHECK_EQ(this, right->solver());
   if (left->Bound()) {
@@ -740,7 +735,7 @@ Constraint* Solver::MakeIsLessOrEqualCt(IntExpr* const left,
   return RevAlloc(new IsLessOrEqualCt(this, left, right, b));
 }
 
-IntVar* Solver::MakeIsLessVar(IntExpr* const left, IntExpr* const right) {
+IntVar* Solver::MakeIsLessVar(IntExpr* left, IntExpr* right) {
   CHECK_EQ(this, left->solver());
   CHECK_EQ(this, right->solver());
   if (left->Bound()) {
@@ -771,8 +766,7 @@ IntVar* Solver::MakeIsLessVar(IntExpr* const left, IntExpr* const right) {
   }
 }
 
-Constraint* Solver::MakeIsLessCt(IntExpr* const left, IntExpr* const right,
-                                 IntVar* const b) {
+Constraint* Solver::MakeIsLessCt(IntExpr* left, IntExpr* right, IntVar* b) {
   CHECK_EQ(this, left->solver());
   CHECK_EQ(this, right->solver());
   if (left->Bound()) {
@@ -783,23 +777,20 @@ Constraint* Solver::MakeIsLessCt(IntExpr* const left, IntExpr* const right,
   return RevAlloc(new IsLessCt(this, left, right, b));
 }
 
-IntVar* Solver::MakeIsGreaterOrEqualVar(IntExpr* const left,
-                                        IntExpr* const right) {
+IntVar* Solver::MakeIsGreaterOrEqualVar(IntExpr* left, IntExpr* right) {
   return MakeIsLessOrEqualVar(right, left);
 }
 
-Constraint* Solver::MakeIsGreaterOrEqualCt(IntExpr* const left,
-                                           IntExpr* const right,
-                                           IntVar* const b) {
+Constraint* Solver::MakeIsGreaterOrEqualCt(IntExpr* left, IntExpr* right,
+                                           IntVar* b) {
   return MakeIsLessOrEqualCt(right, left, b);
 }
 
-IntVar* Solver::MakeIsGreaterVar(IntExpr* const left, IntExpr* const right) {
+IntVar* Solver::MakeIsGreaterVar(IntExpr* left, IntExpr* right) {
   return MakeIsLessVar(right, left);
 }
 
-Constraint* Solver::MakeIsGreaterCt(IntExpr* const left, IntExpr* const right,
-                                    IntVar* const b) {
+Constraint* Solver::MakeIsGreaterCt(IntExpr* left, IntExpr* right, IntVar* b) {
   return MakeIsLessCt(right, left, b);
 }
 

@@ -348,31 +348,6 @@ ArcVarMap PopulateMultiRouteModelFromRoutingModel(const routing::Model& model,
     routes_ct->add_literals(arc_var.second);
   }
 
-  // Add demands and capacities to improve the LP relaxation and cuts. These are
-  // based on the first "unary" dimension in the model if it exists.
-  // TODO(user): We might want to try to get demand lower bounds from
-  // non-unary dimensions if no unary exist.
-  const Dimension* primary_dimension = nullptr;
-  for (const Dimension* dimension : model.GetDimensions()) {
-    // Only a single vehicle class is supported.
-    if (dimension->GetUnaryTransitEvaluator(0) != nullptr) {
-      primary_dimension = dimension;
-      break;
-    }
-  }
-  if (primary_dimension != nullptr) {
-    const TransitCallback1& transit =
-        primary_dimension->GetUnaryTransitEvaluator(0);
-    for (int node = 0; node < num_nodes; ++node) {
-      // Tricky: demand is added for all nodes in the sat model; this means
-      // start/end nodes other than the one used for the depot must be ignored.
-      if (!model.IsEnd(node) && (!model.IsStart(node) || node == depot)) {
-        routes_ct->add_demands(transit(node));
-      }
-    }
-    DCHECK_EQ(routes_ct->demands_size(), num_nodes + 1 - model.vehicles());
-    routes_ct->set_capacity(primary_dimension->vehicle_capacities()[0]);
-  }
   return arc_vars;
 }
 

@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "ortools/constraint_solver/model_cache.h"
+
 #include <cstdint>
 #include <vector>
 
@@ -20,7 +22,6 @@
 #include "absl/log/check.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/constraint_solver/constraint_solver.h"
-#include "ortools/constraint_solver/constraint_solveri.h"
 
 ABSL_DECLARE_FLAG(int, cache_initial_size);
 ABSL_FLAG(bool, cp_disable_cache, false, "Disable caching of model objects");

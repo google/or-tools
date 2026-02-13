@@ -11,8 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// This .swig file exposes the code declared in ../constraint_solver.h and
-// ../constraint_solveri.h.
+// This .swig file exposes the code declared in ../constraint_solver.h.
 //
 // It is particularly complex for a swig file, mostly because it contains a
 // lot of MOE code for the export to the or-tools open-source project at
@@ -75,6 +74,9 @@ struct FailureProtect {
 
 // This #includes constraint_solver.h, and inlines some C++ helpers.
 #include "ortools/constraint_solver/assignment.h"
+#include "ortools/constraint_solver/search.h"
+#include "ortools/constraint_solver/local_search.h"
+#include "ortools/constraint_solver/utilities.h"
 #include "ortools/constraint_solver/assignment.pb.h"
 #include "ortools/constraint_solver/search_limit.pb.h"
 #include "ortools/constraint_solver/solver_parameters.pb.h"
@@ -1868,6 +1870,8 @@ PY_PROTO_TYPEMAP(ortools.constraint_solver.search_limit_pb2,
 
 %include "ortools/constraint_solver/constraint_solver.h"
 %include "ortools/constraint_solver/assignment.h"
+%include "ortools/constraint_solver/search.h"
+%include "ortools/constraint_solver/utilities.h"
 
 // Define templates instantiation after wrapping.
 namespace operations_research {
@@ -2092,7 +2096,7 @@ namespace operations_research {
 
 }  // namespace operations_research
 
-%include "ortools/constraint_solver/constraint_solveri.h"
+%include "ortools/constraint_solver/local_search.h"
 
 %unignoreall
 

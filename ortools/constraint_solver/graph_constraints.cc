@@ -12,22 +12,23 @@
 // limitations under the License.
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <deque>
-#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
-#include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
-#include "ortools/constraint_solver/constraint_solveri.h"
+#include "ortools/constraint_solver/constraints.h"
+#include "ortools/util/bitset.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/string_array.h"
 
@@ -62,7 +63,7 @@ class NoCycle : public Constraint {
   void ComputeSupport(int index);
   std::string DebugString() const override;
 
-  void Accept(ModelVisitor* const visitor) const override {
+  void Accept(ModelVisitor* visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kNoCycle, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kNextsArgument,
                                                nexts_);
@@ -91,7 +92,7 @@ class NoCycle : public Constraint {
   bool assume_paths_;
 };
 
-NoCycle::NoCycle(Solver* const s, const std::vector<IntVar*>& nexts,
+NoCycle::NoCycle(Solver* s, const std::vector<IntVar*>& nexts,
                  const std::vector<IntVar*>& active,
                  Solver::IndexFilter1 sink_handler, bool assume_paths)
     : Constraint(s),
@@ -368,7 +369,7 @@ std::string NoCycle::DebugString() const {
 
 class Circuit : public Constraint {
  public:
-  Circuit(Solver* const s, const std::vector<IntVar*>& nexts, bool sub_circuit)
+  Circuit(Solver* s, const std::vector<IntVar*>& nexts, bool sub_circuit)
       : Constraint(s),
         nexts_(nexts),
         size_(nexts_.size()),
@@ -441,7 +442,7 @@ class Circuit : public Constraint {
                            JoinDebugStringPtr(nexts_, " "));
   }
 
-  void Accept(ModelVisitor* const visitor) const override {
+  void Accept(ModelVisitor* visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kCircuit, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kNextsArgument,
                                                nexts_);
@@ -675,7 +676,7 @@ class BasePathCumul : public Constraint {
   std::vector<int> supports_;
 };
 
-BasePathCumul::BasePathCumul(Solver* const s, const std::vector<IntVar*>& nexts,
+BasePathCumul::BasePathCumul(Solver* s, const std::vector<IntVar*>& nexts,
                              const std::vector<IntVar*>& active,
                              const std::vector<IntVar*>& cumuls)
     : Constraint(s),
@@ -773,7 +774,7 @@ std::string BasePathCumul::DebugString() const {
 
 class PathCumul : public BasePathCumul {
  public:
-  PathCumul(Solver* const s, const std::vector<IntVar*>& nexts,
+  PathCumul(Solver* s, const std::vector<IntVar*>& nexts,
             const std::vector<IntVar*>& active,
             const std::vector<IntVar*>& cumuls,
             const std::vector<IntVar*>& transits)
@@ -784,7 +785,7 @@ class PathCumul : public BasePathCumul {
   bool AcceptLink(int i, int j) const override;
   void TransitRange(int index);
 
-  void Accept(ModelVisitor* const visitor) const override {
+  void Accept(ModelVisitor* visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kPathCumul, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kNextsArgument,
                                                nexts_);
@@ -884,7 +885,7 @@ class StampedVector {
 
 class DelayedPathCumul : public Constraint {
  public:
-  DelayedPathCumul(Solver* const solver, const std::vector<IntVar*>& nexts,
+  DelayedPathCumul(Solver* solver, const std::vector<IntVar*>& nexts,
                    const std::vector<IntVar*>& active,
                    const std::vector<IntVar*>& cumuls,
                    const std::vector<IntVar*>& transits)
@@ -946,7 +947,7 @@ class DelayedPathCumul : public Constraint {
       }
     }
   }
-  // TODO(user): Merge NextBound and ActiveBound to re-use the same demon
+  // TODO(user): Merge NextBound and ActiveBound to reuse the same demon
   // for next and active variables.
   void NextBound(int index) {
     if (active_[index]->Min() > 0) {
@@ -1037,7 +1038,7 @@ class DelayedPathCumul : public Constraint {
     touched_.Clear(solver());
   }
 
-  void Accept(ModelVisitor* const visitor) const override {
+  void Accept(ModelVisitor* visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kDelayedPathCumul, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kNextsArgument,
                                                nexts_);
@@ -1144,7 +1145,7 @@ class IndexEvaluator2PathCumul : public BasePathCumul {
   void NextBound(int index) override;
   bool AcceptLink(int i, int j) const override;
 
-  void Accept(ModelVisitor* const visitor) const override {
+  void Accept(ModelVisitor* visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kPathCumul, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kNextsArgument,
                                                nexts_);
@@ -1208,7 +1209,7 @@ class IndexEvaluator2SlackPathCumul : public BasePathCumul {
   bool AcceptLink(int i, int j) const override;
   void SlackRange(int index);
 
-  void Accept(ModelVisitor* const visitor) const override {
+  void Accept(ModelVisitor* visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kPathCumul, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kNextsArgument,
                                                nexts_);
@@ -1512,7 +1513,7 @@ class PathTransitPrecedenceConstraint : public Constraint {
     output += absl::StrJoin(elements, ",") + ")";
     return output;
   }
-  void Accept(ModelVisitor* const visitor) const override {
+  void Accept(ModelVisitor* visitor) const override {
     // TODO(user): Implement.
   }
 

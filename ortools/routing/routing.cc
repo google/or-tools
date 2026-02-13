@@ -62,8 +62,11 @@
 #include "ortools/base/types.h"
 #include "ortools/constraint_solver/assignment.h"
 #include "ortools/constraint_solver/constraint_solver.h"
-#include "ortools/constraint_solver/constraint_solveri.h"
+#include "ortools/constraint_solver/constraints.h"
+#include "ortools/constraint_solver/expressions.h"
+#include "ortools/constraint_solver/local_search.h"
 #include "ortools/constraint_solver/solver_parameters.pb.h"
+#include "ortools/constraint_solver/utilities.h"
 #include "ortools/graph/linear_assignment.h"
 #include "ortools/graph_base/connected_components.h"
 #include "ortools/graph_base/graph.h"
@@ -2387,11 +2390,11 @@ class ModelInspector : public operations_research::ModelVisitor {
     // TODO(user): Have a single annotated precedence graph.
   }
   void EndVisitConstraint(const std::string& type_name,
-                          const Constraint* const /*constraint*/) override {
+                          const Constraint* /*constraint*/) override {
     gtl::FindWithDefault(constraint_inspectors_, type_name, []() {})();
   }
   void VisitIntegerExpressionArgument(const std::string& type_name,
-                                      IntExpr* const expr) override {
+                                      IntExpr* expr) override {
     gtl::FindWithDefault(expr_inspectors_, type_name,
                          [](const IntExpr*) {})(expr);
   }
@@ -3091,7 +3094,7 @@ void Model::CloseModelWithParameters(
   SetupSearch(parameters);
 }
 
-void Model::AddSearchMonitor(SearchMonitor* const monitor) {
+void Model::AddSearchMonitor(SearchMonitor* monitor) {
   monitors_.push_back(monitor);
   secondary_ls_monitors_.push_back(monitor);
 }
@@ -3778,7 +3781,7 @@ bool Model::RouteCanBeUsedByVehicle(const Assignment& assignment,
 }
 
 bool Model::ReplaceUnusedVehicle(int unused_vehicle, int active_vehicle,
-                                 Assignment* const compact_assignment) const {
+                                 Assignment* compact_assignment) const {
   CHECK(compact_assignment != nullptr);
   CHECK(!IsVehicleUsed(*compact_assignment, unused_vehicle));
   CHECK(IsVehicleUsed(*compact_assignment, active_vehicle));
@@ -4028,7 +4031,7 @@ Assignment* Model::DoRestoreAssignment() {
 
 bool Model::RoutesToAssignment(const std::vector<std::vector<int64_t>>& routes,
                                bool ignore_inactive_indices, bool close_routes,
-                               Assignment* const assignment) const {
+                               Assignment* assignment) const {
   CHECK(assignment != nullptr);
   if (!closed_) {
     LOG(ERROR) << "The model is not closed yet";
@@ -4153,7 +4156,7 @@ Assignment* Model::ReadAssignmentFromRoutes(
 
 void Model::AssignmentToRoutes(
     const Assignment& assignment,
-    std::vector<std::vector<int64_t>>* const routes) const {
+    std::vector<std::vector<int64_t>>* routes) const {
   CHECK(closed_);
   CHECK(routes != nullptr);
 
@@ -4697,34 +4700,6 @@ std::string Model::DebugOutputAssignment(
   output.append("\n");
   return output;
 }
-
-#ifndef SWIG
-std::vector<std::vector<std::pair<int64_t, int64_t>>> Model::GetCumulBounds(
-    const Assignment& solution_assignment, const Dimension& dimension) {
-  std::vector<std::vector<std::pair<int64_t, int64_t>>> cumul_bounds(
-      vehicles());
-  for (int vehicle = 0; vehicle < vehicles(); ++vehicle) {
-    if (!solution_assignment.Bound(NextVar(vehicle))) {
-      LOG(DFATAL) << "GetCumulBounds() called on incomplete solution:"
-                  << " NextVar(" << vehicle << ") is unbound.";
-    }
-  }
-
-  for (int vehicle_id = 0; vehicle_id < vehicles(); ++vehicle_id) {
-    int64_t index = Start(vehicle_id);
-    IntVar* dim_var = dimension.CumulVar(index);
-    cumul_bounds[vehicle_id].emplace_back(solution_assignment.Min(dim_var),
-                                          solution_assignment.Max(dim_var));
-    while (!IsEnd(index)) {
-      index = solution_assignment.Value(NextVar(index));
-      IntVar* dim_var = dimension.CumulVar(index);
-      cumul_bounds[vehicle_id].emplace_back(solution_assignment.Min(dim_var),
-                                            solution_assignment.Max(dim_var));
-    }
-  }
-  return cumul_bounds;
-}
-#endif
 
 Assignment* Model::GetOrCreateAssignment() {
   if (assignment_ == nullptr) {
@@ -6627,9 +6602,9 @@ void Model::UpdateSearchFromParametersIfNeeded(
   VLOG(1) << "Search parameters:\n" << search_parameters;
 }
 
-void Model::AddToAssignment(IntVar* const var) { extra_vars_.push_back(var); }
+void Model::AddToAssignment(IntVar* var) { extra_vars_.push_back(var); }
 
-void Model::AddIntervalToAssignment(IntervalVar* const interval) {
+void Model::AddIntervalToAssignment(IntervalVar* interval) {
   extra_intervals_.push_back(interval);
 }
 

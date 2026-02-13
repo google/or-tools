@@ -38,7 +38,8 @@
 #include "ortools/base/mathutil.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/constraint_solver/constraint_solver.h"
-#include "ortools/constraint_solver/constraint_solveri.h"
+#include "ortools/constraint_solver/constraints.h"
+#include "ortools/constraint_solver/utilities.h"
 #include "ortools/util/monoid_operation_tree.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/string_array.h"
@@ -51,7 +52,7 @@ namespace {
 
 // Comparison methods, used by the STL sort.
 template <class Task>
-bool StartMinLessThan(Task* const w1, Task* const w2) {
+bool StartMinLessThan(Task* w1, Task* w2) {
   return (w1->interval->StartMin() < w2->interval->StartMin());
 }
 
@@ -59,23 +60,23 @@ bool StartMinLessThan(Task* const w1, Task* const w2) {
 // using the shortest duration possible. This comparator can be used when
 // sorting the tasks before they are inserted to a Theta-tree.
 template <class Task>
-bool ShortestDurationStartMinLessThan(Task* const w1, Task* const w2) {
+bool ShortestDurationStartMinLessThan(Task* w1, Task* w2) {
   return w1->interval->EndMin() - w1->interval->DurationMin() <
          w2->interval->EndMin() - w2->interval->DurationMin();
 }
 
 template <class Task>
-bool StartMaxLessThan(Task* const w1, Task* const w2) {
+bool StartMaxLessThan(Task* w1, Task* w2) {
   return (w1->interval->StartMax() < w2->interval->StartMax());
 }
 
 template <class Task>
-bool EndMinLessThan(Task* const w1, Task* const w2) {
+bool EndMinLessThan(Task* w1, Task* w2) {
   return (w1->interval->EndMin() < w2->interval->EndMin());
 }
 
 template <class Task>
-bool EndMaxLessThan(Task* const w1, Task* const w2) {
+bool EndMaxLessThan(Task* w1, Task* w2) {
   return (w1->interval->EndMax() < w2->interval->EndMax());
 }
 
@@ -90,7 +91,7 @@ bool IntervalStartMinLessThan(IntervalVar* i1, IntervalVar* i2) {
 // any other interval of a DisjunctiveTask sharing the same resource.
 // It is indexed, that is it is aware of its position in a reference array.
 struct DisjunctiveTask {
-  explicit DisjunctiveTask(IntervalVar* const interval_)
+  explicit DisjunctiveTask(IntervalVar* interval_)
       : interval(interval_), index(-1) {}
 
   std::string DebugString() const { return interval->DebugString(); }
@@ -105,14 +106,14 @@ struct DisjunctiveTask {
 // intervals contain any integer t cannot exceed c.
 // It is indexed, that is it is aware of its position in a reference array.
 struct CumulativeTask {
-  CumulativeTask(IntervalVar* const interval_, int64_t demand_)
+  CumulativeTask(IntervalVar* interval_, int64_t demand_)
       : interval(interval_), demand(demand_), index(-1) {}
 
   int64_t EnergyMin() const { return interval->DurationMin() * demand; }
 
   int64_t DemandMin() const { return demand; }
 
-  void WhenAnything(Demon* const demon) { interval->WhenAnything(demon); }
+  void WhenAnything(Demon* demon) { interval->WhenAnything(demon); }
 
   std::string DebugString() const {
     return absl::StrFormat("Task{ %s, demand: %d }", interval->DebugString(),
@@ -131,14 +132,14 @@ struct CumulativeTask {
 // intervals contain any integer t cannot exceed c.  It is indexed,
 // that is it is aware of its position in a reference array.
 struct VariableCumulativeTask {
-  VariableCumulativeTask(IntervalVar* const interval_, IntVar* demand_)
+  VariableCumulativeTask(IntervalVar* interval_, IntVar* demand_)
       : interval(interval_), demand(demand_), index(-1) {}
 
   int64_t EnergyMin() const { return interval->DurationMin() * demand->Min(); }
 
   int64_t DemandMin() const { return demand->Min(); }
 
-  void WhenAnything(Demon* const demon) {
+  void WhenAnything(Demon* demon) {
     interval->WhenAnything(demon);
     demand->WhenRange(demon);
   }
@@ -165,7 +166,7 @@ struct ThetaNode {
       : total_processing(0), total_ect(std::numeric_limits<int64_t>::min()) {}
 
   // Single interval element
-  explicit ThetaNode(const IntervalVar* const interval)
+  explicit ThetaNode(const IntervalVar* interval)
       : total_processing(interval->DurationMin()),
         total_ect(interval->EndMin()) {
     // NOTE(user): Petr Vilim's thesis assumes that all tasks in the
@@ -211,13 +212,13 @@ class ThetaTree : public MonoidOperationTree<ThetaNode> {
 
   int64_t Ect() const { return result().total_ect; }
 
-  void Insert(const DisjunctiveTask* const task) {
+  void Insert(const DisjunctiveTask* task) {
     Set(task->index, ThetaNode(task->interval));
   }
 
-  void Remove(const DisjunctiveTask* const task) { Reset(task->index); }
+  void Remove(const DisjunctiveTask* task) { Reset(task->index); }
 
-  bool IsInserted(const DisjunctiveTask* const task) const {
+  bool IsInserted(const DisjunctiveTask* task) const {
     return !GetOperand(task->index).IsIdentity();
   }
 };
@@ -285,7 +286,7 @@ struct LambdaThetaNode {
   }
 
   // Constructor for a single interval in the Theta set
-  explicit LambdaThetaNode(const IntervalVar* const interval)
+  explicit LambdaThetaNode(const IntervalVar* interval)
       : energy(interval->DurationMin()),
         energetic_end_min(interval->EndMin()),
         energy_opt(interval->DurationMin()),
@@ -295,7 +296,7 @@ struct LambdaThetaNode {
 
   // Constructor for a single interval in the Lambda set
   // 'index' is the index of the given interval in the est vector
-  LambdaThetaNode(const IntervalVar* const interval, int index)
+  LambdaThetaNode(const IntervalVar* interval, int index)
       : energy(0LL),
         energetic_end_min(std::numeric_limits<int64_t>::min()),
         energy_opt(interval->DurationMin()),
@@ -462,9 +463,8 @@ class NotLast {
   const bool strict_;
 };
 
-NotLast::NotLast(Solver* const solver,
-                 const std::vector<IntervalVar*>& intervals, bool mirror,
-                 bool strict)
+NotLast::NotLast(Solver* solver, const std::vector<IntervalVar*>& intervals,
+                 bool mirror, bool strict)
     : theta_tree_(intervals.size()),
       by_start_min_(intervals.size()),
       by_end_max_(intervals.size()),
@@ -587,8 +587,8 @@ class EdgeFinderAndDetectablePrecedences {
 };
 
 EdgeFinderAndDetectablePrecedences::EdgeFinderAndDetectablePrecedences(
-    Solver* const solver, const std::vector<IntervalVar*>& intervals,
-    bool mirror, bool strict)
+    Solver* solver, const std::vector<IntervalVar*>& intervals, bool mirror,
+    bool strict)
     : solver_(solver),
       theta_tree_(intervals.size()),
       lt_tree_(intervals.size()),
@@ -729,10 +729,10 @@ bool EdgeFinderAndDetectablePrecedences::EdgeFinder() {
 
 class RankedPropagator : public Constraint {
  public:
-  RankedPropagator(Solver* const solver, const std::vector<IntVar*>& nexts,
+  RankedPropagator(Solver* solver, const std::vector<IntVar*>& nexts,
                    const std::vector<IntervalVar*>& intervals,
                    const std::vector<IntVar*>& slacks,
-                   DisjunctiveConstraint* const disjunctive)
+                   DisjunctiveConstraint* disjunctive)
       : Constraint(solver),
         nexts_(nexts),
         intervals_(intervals),
@@ -928,7 +928,7 @@ class RankedPropagator : public Constraint {
         JoinDebugStringPtr(intervals_, ", "));
   }
 
-  void Accept(ModelVisitor* const visitor) const override {
+  void Accept(ModelVisitor* visitor) const override {
     LOG(FATAL) << "Not yet implemented";
     // TODO(user): IMPLEMENT ME.
   }
@@ -947,7 +947,7 @@ class RankedPropagator : public Constraint {
 
 class FullDisjunctiveConstraint : public DisjunctiveConstraint {
  public:
-  FullDisjunctiveConstraint(Solver* const s,
+  FullDisjunctiveConstraint(Solver* s,
                             const std::vector<IntervalVar*>& intervals,
                             const std::string& name, bool strict)
       : DisjunctiveConstraint(s, intervals, name),
@@ -1014,7 +1014,7 @@ class FullDisjunctiveConstraint : public DisjunctiveConstraint {
     }
   }
 
-  bool Intersect(IntervalVar* const i1, IntervalVar* const i2) const {
+  bool Intersect(IntervalVar* i1, IntervalVar* i2) const {
     return i1->StartMin() < i2->EndMax() && i2->StartMin() < i1->EndMax();
   }
 
@@ -1056,7 +1056,7 @@ class FullDisjunctiveConstraint : public DisjunctiveConstraint {
     }
   }
 
-  void Accept(ModelVisitor* const visitor) const override {
+  void Accept(ModelVisitor* visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kDisjunctive, this);
     visitor->VisitIntervalArrayArgument(ModelVisitor::kIntervalsArgument,
                                         intervals_);
@@ -1406,8 +1406,7 @@ class UpdatesForADemand {
 template <class Task>
 class EdgeFinder : public Constraint {
  public:
-  EdgeFinder(Solver* const solver, const std::vector<Task*>& tasks,
-             IntVar* const capacity)
+  EdgeFinder(Solver* solver, const std::vector<Task*>& tasks, IntVar* capacity)
       : Constraint(solver),
         capacity_(capacity),
         tasks_(tasks),
@@ -1449,7 +1448,7 @@ class EdgeFinder : public Constraint {
     ApplyNewBounds();
   }
 
-  void Accept(ModelVisitor* const visitor) const override {
+  void Accept(ModelVisitor* visitor) const override {
     LOG(FATAL) << "Should Not Be Visited";
   }
 
@@ -1724,8 +1723,8 @@ bool TimeLessThan(const ProfileDelta& delta1, const ProfileDelta& delta2) {
 template <class Task>
 class CumulativeTimeTable : public Constraint {
  public:
-  CumulativeTimeTable(Solver* const solver, const std::vector<Task*>& tasks,
-                      IntVar* const capacity)
+  CumulativeTimeTable(Solver* solver, const std::vector<Task*>& tasks,
+                      IntVar* capacity)
       : Constraint(solver), by_start_min_(tasks), capacity_(capacity) {
     // There may be up to 2 delta's per interval (one on each side),
     // plus two sentinels
@@ -1757,7 +1756,7 @@ class CumulativeTimeTable : public Constraint {
     capacity_->WhenRange(demon);
   }
 
-  void Accept(ModelVisitor* const visitor) const override {
+  void Accept(ModelVisitor* visitor) const override {
     LOG(FATAL) << "Should not be visited";
   }
 
@@ -1837,7 +1836,7 @@ class CumulativeTimeTable : public Constraint {
   // that the profile usage for all tasks, excluding the current one, does not
   // exceed capacity_ - task->demand on the interval
   // [new_start_min, new_start_min + task->interval->DurationMin() ).
-  void PushTask(const Task* const task, int profile_index, int64_t usage) {
+  void PushTask(const Task* task, int profile_index, int64_t usage) {
     // Init
     const IntervalVar* const interval = task->interval;
     const int64_t demand_min = task->DemandMin();
@@ -1920,8 +1919,8 @@ class CumulativeTimeTable : public Constraint {
 template <class Task>
 class TimeTableSync : public Constraint {
  public:
-  TimeTableSync(Solver* const solver, const std::vector<Task*>& tasks,
-                IntVar* const capacity)
+  TimeTableSync(Solver* solver, const std::vector<Task*>& tasks,
+                IntVar* capacity)
       : Constraint(solver), tasks_(tasks), capacity_(capacity) {
     num_tasks_ = tasks_.size();
     gap_ = 0;
@@ -1967,7 +1966,7 @@ class TimeTableSync : public Constraint {
     capacity_->WhenRange(demon);
   }
 
-  void Accept(ModelVisitor* const visitor) const override {
+  void Accept(ModelVisitor* visitor) const override {
     LOG(FATAL) << "Should not be visited";
   }
 
@@ -2188,10 +2187,9 @@ class TimeTableSync : public Constraint {
 
 class CumulativeConstraint : public Constraint {
  public:
-  CumulativeConstraint(Solver* const s,
-                       const std::vector<IntervalVar*>& intervals,
-                       const std::vector<int64_t>& demands,
-                       IntVar* const capacity, absl::string_view name)
+  CumulativeConstraint(Solver* s, const std::vector<IntervalVar*>& intervals,
+                       const std::vector<int64_t>& demands, IntVar* capacity,
+                       absl::string_view name)
       : Constraint(s),
         capacity_(capacity),
         intervals_(intervals),
@@ -2236,7 +2234,7 @@ class CumulativeConstraint : public Constraint {
     // Nothing to do: this constraint delegates all the work to other classes
   }
 
-  void Accept(ModelVisitor* const visitor) const override {
+  void Accept(ModelVisitor* visitor) const override {
     // TODO(user): Build arrays on demand?
     visitor->BeginVisitConstraint(ModelVisitor::kCumulative, this);
     visitor->VisitIntervalArrayArgument(ModelVisitor::kIntervalsArgument,
@@ -2309,8 +2307,8 @@ class CumulativeConstraint : public Constraint {
 
   // Populate the given vector with useful tasks, meaning the ones on which
   // some propagation can be done
-  void PopulateVectorUsefulTasks(
-      bool mirror, std::vector<CumulativeTask*>* const useful_tasks) {
+  void PopulateVectorUsefulTasks(bool mirror,
+                                 std::vector<CumulativeTask*>* useful_tasks) {
     DCHECK(useful_tasks->empty());
     for (int i = 0; i < tasks_.size(); ++i) {
       const CumulativeTask& original_task = tasks_[i];
@@ -2383,11 +2381,10 @@ class CumulativeConstraint : public Constraint {
 
 class VariableDemandCumulativeConstraint : public Constraint {
  public:
-  VariableDemandCumulativeConstraint(Solver* const s,
+  VariableDemandCumulativeConstraint(Solver* s,
                                      const std::vector<IntervalVar*>& intervals,
                                      const std::vector<IntVar*>& demands,
-                                     IntVar* const capacity,
-                                     absl::string_view name)
+                                     IntVar* capacity, absl::string_view name)
       : Constraint(s),
         capacity_(capacity),
         intervals_(intervals),
@@ -2429,7 +2426,7 @@ class VariableDemandCumulativeConstraint : public Constraint {
     // Nothing to do: this constraint delegates all the work to other classes
   }
 
-  void Accept(ModelVisitor* const visitor) const override {
+  void Accept(ModelVisitor* visitor) const override {
     // TODO(user): Build arrays on demand?
     visitor->BeginVisitConstraint(ModelVisitor::kCumulative, this);
     visitor->VisitIntervalArrayArgument(ModelVisitor::kIntervalsArgument,
@@ -2505,7 +2502,7 @@ class VariableDemandCumulativeConstraint : public Constraint {
   // Populates the given vector with useful tasks, meaning the ones on which
   // some propagation can be done
   void PopulateVectorUsefulTasks(
-      bool mirror, std::vector<VariableCumulativeTask*>* const useful_tasks) {
+      bool mirror, std::vector<VariableCumulativeTask*>* useful_tasks) {
     DCHECK(useful_tasks->empty());
     for (int i = 0; i < tasks_.size(); ++i) {
       const VariableCumulativeTask& original_task = tasks_[i];
@@ -2579,7 +2576,7 @@ class VariableDemandCumulativeConstraint : public Constraint {
 // ----- Public class -----
 
 DisjunctiveConstraint::DisjunctiveConstraint(
-    Solver* const s, const std::vector<IntervalVar*>& intervals,
+    Solver* s, const std::vector<IntervalVar*>& intervals,
     const std::string& name)
     : Constraint(s), intervals_(intervals) {
   if (!name.empty()) {
@@ -2635,8 +2632,7 @@ Constraint* Solver::MakeCumulative(const std::vector<IntervalVar*>& intervals,
 
 Constraint* Solver::MakeCumulative(const std::vector<IntervalVar*>& intervals,
                                    const std::vector<int64_t>& demands,
-                                   IntVar* const capacity,
-                                   absl::string_view name) {
+                                   IntVar* capacity, absl::string_view name) {
   CHECK_EQ(intervals.size(), demands.size());
   for (int i = 0; i < intervals.size(); ++i) {
     CHECK_GE(demands[i], 0);
@@ -2647,8 +2643,7 @@ Constraint* Solver::MakeCumulative(const std::vector<IntervalVar*>& intervals,
 
 Constraint* Solver::MakeCumulative(const std::vector<IntervalVar*>& intervals,
                                    const std::vector<int>& demands,
-                                   IntVar* const capacity,
-                                   const std::string& name) {
+                                   IntVar* capacity, const std::string& name) {
   return MakeCumulative(intervals, ToInt64Vector(demands), capacity, name);
 }
 
@@ -2674,8 +2669,7 @@ Constraint* Solver::MakeCumulative(const std::vector<IntervalVar*>& intervals,
 
 Constraint* Solver::MakeCumulative(const std::vector<IntervalVar*>& intervals,
                                    const std::vector<IntVar*>& demands,
-                                   IntVar* const capacity,
-                                   const std::string& name) {
+                                   IntVar* capacity, const std::string& name) {
   CHECK_EQ(intervals.size(), demands.size());
   for (int i = 0; i < intervals.size(); ++i) {
     CHECK_GE(demands[i]->Min(), 0);

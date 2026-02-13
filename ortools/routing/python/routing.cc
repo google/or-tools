@@ -22,6 +22,7 @@
 
 #include "absl/algorithm/container.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/types/span.h"
 #include "google/protobuf/duration.pb.h"
 #include "ortools/constraint_solver/assignment.h"
 #include "ortools/constraint_solver/constraint_solver.h"
@@ -39,6 +40,7 @@
 #include "ortools/routing/types.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/optional_boolean.pb.h"
+#include "ortools/util/piecewise_linear_function.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "pybind11/cast.h"
 #include "pybind11/functional.h"
@@ -66,6 +68,7 @@ PYBIND11_MODULE(routing, m) {
   pybind11::module::import(
       "ortools.constraint_solver.python.constraint_solver");
   pybind11::module::import("ortools.util.python.sorted_interval_list");
+  pybind11::module::import("ortools.util.python.piecewise_linear_function");
 
   m.def("default_routing_model_parameters", &DefaultRoutingModelParameters,
         DOC(operations_research, routing, DefaultRoutingModelParameters));
@@ -79,22 +82,6 @@ PYBIND11_MODULE(routing, m) {
            py::arg("cost"))
       .def_readwrite("bound", &operations_research::routing::BoundCost::bound)
       .def_readwrite("cost", &operations_research::routing::BoundCost::cost);
-
-  pybind11::class_<operations_research::PiecewiseLinearFunction>(
-      m, "PiecewiseLinearFunction")
-      .def(pybind11::init([](std::vector<int64_t> points_x,
-                             std::vector<int64_t> points_y,
-                             std::vector<int64_t> slopes,
-                             std::vector<int64_t> other_points_x) {
-             return operations_research::PiecewiseLinearFunction::
-                 CreatePiecewiseLinearFunction(
-                     std::move(points_x), std::move(points_y),
-                     std::move(slopes), std::move(other_points_x));
-           }),
-           py::arg("points_x"), py::arg("points_y"), py::arg("slopes"),
-           py::arg("other_points_x"))
-      .def("value", &operations_research::PiecewiseLinearFunction::Value,
-           py::arg("x"));
 
   pybind11::class_<IndexManager>(
       m, "IndexManager", DOC(operations_research, routing, IndexManager))

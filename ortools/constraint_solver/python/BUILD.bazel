@@ -35,6 +35,7 @@ pybind_extension(
         "//ortools/constraint_solver:search_limit_cc_proto",
         "//ortools/util:piecewise_linear_function",
         "//ortools/util:tuple_set",
+        "//ortools/util/python:piecewise_linear_function_lib",
         "@abseil-cpp//absl/cleanup",
         "@abseil-cpp//absl/functional:function_ref",
         "@abseil-cpp//absl/strings",
@@ -53,6 +54,7 @@ pybind_library(
         "//ortools/constraint_solver:search_limit_cc_proto",
         "//ortools/util:piecewise_linear_function",
         "//ortools/util:tuple_set",
+        "//ortools/util/python:piecewise_linear_function_lib",
         "@abseil-cpp//absl/cleanup",
         "@abseil-cpp//absl/functional:function_ref",
         "@abseil-cpp//absl/strings",
@@ -67,6 +69,7 @@ py_test(
     deps = [
         ":constraint_solver",
         requirement("absl-py"),
+        "//ortools/util/python:piecewise_linear_function",
     ],
 )
 
@@ -79,5 +82,6 @@ py_test(
         requirement("absl-py"),
         "//ortools/constraint_solver:search_limit_py_pb2",
         "//ortools/constraint_solver:solver_parameters_py_pb2",
+        "//ortools/util/python:piecewise_linear_function",
     ],
 )

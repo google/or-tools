@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "ortools/constraint_solver/local_search.h"
+
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
@@ -44,7 +46,6 @@
 #include "ortools/base/timer.h"
 #include "ortools/constraint_solver/assignment.h"
 #include "ortools/constraint_solver/constraint_solver.h"
-#include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/graph/hamiltonian_path.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/saturated_arithmetic.h"
@@ -353,7 +354,7 @@ using NeighborAccessor =
     return solver->RevAlloc(new operator_class<false>(__VA_ARGS__));  \
   } while (false);
 
-// ----- 2Opt -----
+// ----- 2-Opt -----
 
 template <bool ignore_path_vars>
 class TwoOpt : public PathOperator<ignore_path_vars> {
@@ -1657,7 +1658,7 @@ class LinKernighan : public PathOperator<ignore_path_vars> {
   std::vector<int> old_path_starts_;
 };
 
-// While the accumulated local gain is positive, perform a 2opt or a 3opt move
+// While the accumulated local gain is positive, perform a 2-opt or a 3-opt move
 // followed by a series of 2opt moves. Return a neighbor for which the global
 // gain is positive.
 
@@ -1739,7 +1740,7 @@ bool LinKernighan<ignore_path_vars>::MakeNeighbor() {
     next = next_out;
     if (this->IsPathEnd(next)) return false;
   }
-  // Try 2opts
+  // Try 2-opts
   while (GetBestOut(node, next, &out, &gain)) {
     marked_.insert(next);
     marked_.insert(out);
@@ -4893,6 +4894,19 @@ Assignment* Solver::RunUncheckedLocalSearch(
                                                   filter_manager, ls_operator,
                                                   monitors, limit, touched);
   }
+}
+
+// ---------- Local Search Monitor -----------
+LocalSearchMonitor::LocalSearchMonitor(Solver* const solver)
+    : SearchMonitor(solver) {}
+
+LocalSearchMonitor::~LocalSearchMonitor() {}
+
+// A local search monitor listens to search events as well as local search
+// events.
+void LocalSearchMonitor::Install() {
+  SearchMonitor::Install();
+  solver()->AddLocalSearchMonitor(this);
 }
 
 }  // namespace operations_research

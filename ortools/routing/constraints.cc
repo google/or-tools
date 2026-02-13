@@ -29,7 +29,7 @@
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/constraint_solver/constraint_solver.h"
-#include "ortools/constraint_solver/constraint_solveri.h"
+#include "ortools/constraint_solver/constraints.h"
 #include "ortools/routing/breaks.h"
 #include "ortools/routing/filter_committables.h"
 #include "ortools/routing/filters.h"
@@ -50,7 +50,7 @@ class DifferentFromValues : public Constraint {
   void Post() override {}
   void InitialPropagate() override { var_->RemoveValues(values_); }
   std::string DebugString() const override { return "DifferentFromValues"; }
-  void Accept(operations_research::ModelVisitor* const visitor) const override {
+  void Accept(operations_research::ModelVisitor* visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kRemoveValues, this);
     visitor->VisitIntegerVariableArrayArgument(
         operations_research::ModelVisitor::kVarsArgument, {var_});
@@ -665,7 +665,7 @@ class LightRangeLessOrEqual : public Constraint {
     return solver()->MakeIsLessOrEqualVar(left_, right_);
   }
   // TODO(user): introduce a kLightLessOrEqual tag.
-  void Accept(operations_research::ModelVisitor* const visitor) const override {
+  void Accept(operations_research::ModelVisitor* visitor) const override {
     visitor->BeginVisitConstraint(
         operations_research::ModelVisitor::kLessOrEqual, this);
     visitor->VisitIntegerExpressionArgument(
@@ -684,8 +684,7 @@ class LightRangeLessOrEqual : public Constraint {
   Demon* demon_;
 };
 
-LightRangeLessOrEqual::LightRangeLessOrEqual(Solver* const s, IntExpr* const l,
-                                             IntExpr* const r)
+LightRangeLessOrEqual::LightRangeLessOrEqual(Solver* s, IntExpr* l, IntExpr* r)
     : Constraint(s), left_(l), right_(r), demon_(nullptr) {}
 
 void LightRangeLessOrEqual::Post() {

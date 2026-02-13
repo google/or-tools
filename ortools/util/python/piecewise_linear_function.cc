@@ -13,7 +13,12 @@
 
 #include "ortools/util/piecewise_linear_function.h"
 
+#include <cstdint>
+#include <utility>
+#include <vector>
+
 #include "pybind11/pybind11.h"
+#include "pybind11/stl.h"
 
 namespace py = pybind11;
 using ::operations_research::PiecewiseLinearFunction;
@@ -61,6 +66,17 @@ PYBIND11_MODULE(piecewise_linear_function, m) {
                   py::arg("early_slack"), py::arg("late_slack"),
                   py::arg("earliness_slope"), py::arg("tardiness_slope"),
                   py::return_value_policy::take_ownership)
+      .def(pybind11::init([](std::vector<int64_t> points_x,
+                             std::vector<int64_t> points_y,
+                             std::vector<int64_t> slopes,
+                             std::vector<int64_t> other_points_x) {
+             return operations_research::PiecewiseLinearFunction::
+                 CreatePiecewiseLinearFunction(
+                     std::move(points_x), std::move(points_y),
+                     std::move(slopes), std::move(other_points_x));
+           }),
+           py::arg("points_x"), py::arg("points_y"), py::arg("slopes"),
+           py::arg("other_points_x"))
       .def("in_domain", &PiecewiseLinearFunction::InDomain, py::arg("x"))
       .def("is_convex", &PiecewiseLinearFunction::IsConvex)
       .def("is_non_decreasing", &PiecewiseLinearFunction::IsNonDecreasing)

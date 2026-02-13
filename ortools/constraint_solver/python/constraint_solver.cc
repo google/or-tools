@@ -26,7 +26,7 @@
 #include "absl/strings/string_view.h"
 #include "ortools/constraint_solver/assignment.h"
 #include "ortools/constraint_solver/assignment.pb.h"
-#include "ortools/constraint_solver/constraint_solveri.h"
+#include "ortools/constraint_solver/local_search.h"
 #include "ortools/constraint_solver/python/constraint_solver_doc.h"
 #include "ortools/constraint_solver/search_limit.pb.h"
 #include "ortools/util/piecewise_linear_function.h"
@@ -430,6 +430,8 @@ std::vector<IntVar*> ToIntVarArray(
 
 PYBIND11_MODULE(constraint_solver, m) {
   pybind11_protobuf::ImportNativeProtoCasters();
+
+  pybind11::module::import("ortools.util.python.piecewise_linear_function");
 
   py::class_<Rev<bool>>(m, "RevBool")
       .def(py::init<bool>(), py::arg("val"))

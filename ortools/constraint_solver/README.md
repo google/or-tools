@@ -12,8 +12,6 @@ To begin, skim:
 
 *   [constraint_solver.h](../constraint_solver/constraint_solver.h):
     Declaration of the core objects for the constraint solver.
-*   [constraint_solveri.h](../constraint_solver/constraint_solveri.h):
-    Collection of objects used to extend the Constraint Solver library.
 
 ### Parameters
 

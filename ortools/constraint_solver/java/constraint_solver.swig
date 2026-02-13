@@ -51,7 +51,8 @@ class RegularLimitParameters;
 %{
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/assignment.h"
-#include "ortools/constraint_solver/constraint_solveri.h"
+#include "ortools/constraint_solver/local_search.h"
+#include "ortools/constraint_solver/search.h"
 #include "ortools/constraint_solver/java/javawrapcp_util.h"
 #include "ortools/constraint_solver/search_limit.pb.h"
 #include "ortools/constraint_solver/solver_parameters.pb.h"
@@ -144,7 +145,6 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
 
 #include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
-#include "ortools/constraint_solver/constraint_solveri.h"
 %}
 
 // Use to correctly wrap Solver::MakeScheduleOrPostpone.
@@ -482,7 +482,6 @@ namespace operations_research {
 %rename (size) RevPartialSequence::Size;
 
 // UnsortedNullableRevBitset
-// TODO(user): Remove from constraint_solveri.h (only use by table.cc)
 %ignore UnsortedNullableRevBitset;
 
 // Assignment
@@ -1649,8 +1648,9 @@ namespace operations_research {
 // TODO(user): Use ignoreall/unignoreall for this one. A lot of work.
 //swiglint: disable include-h-allglobals
 %include "ortools/constraint_solver/constraint_solver.h"
+%include "ortools/constraint_solver/local_search.h"
 %include "ortools/constraint_solver/assignment.h"
-%include "ortools/constraint_solver/constraint_solveri.h"
+%include "ortools/constraint_solver/search.h"
 %include "ortools/constraint_solver/java/javawrapcp_util.h"
 
 // Define templates instantiation after wrapping.

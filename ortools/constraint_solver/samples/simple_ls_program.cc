@@ -25,7 +25,7 @@
 #include "absl/log/log.h"
 #include "ortools/base/init_google.h"
 #include "ortools/constraint_solver/constraint_solver.h"
-#include "ortools/constraint_solver/constraint_solveri.h"
+#include "ortools/constraint_solver/local_search.h"
 
 namespace operations_research {
 class OneVarLns : public BaseLns {

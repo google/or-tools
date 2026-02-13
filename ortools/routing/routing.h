@@ -178,7 +178,8 @@ Keywords: Vehicle Routing, Traveling Salesman Problem, TSP, VRP, CVRPTW, PDP.
 #include "ortools/base/strong_vector.h"
 #include "ortools/constraint_solver/assignment.h"
 #include "ortools/constraint_solver/constraint_solver.h"
-#include "ortools/constraint_solver/constraint_solveri.h"
+#include "ortools/constraint_solver/local_search.h"
+#include "ortools/constraint_solver/utilities.h"
 #include "ortools/graph_base/graph.h"
 #include "ortools/routing/enums.pb.h"
 #include "ortools/routing/heuristic_parameters.pb.h"
@@ -2019,16 +2020,6 @@ class OR_DLL Model {
   std::string DebugOutputAssignment(
       const operations_research::Assignment& solution_assignment,
       const std::string& dimension_to_print) const;
-  /// Returns a vector cumul_bounds, for which cumul_bounds[i][j] is a pair
-  /// containing the minimum and maximum of the CumulVar of the jth node on
-  /// route i.
-  /// - cumul_bounds[i][j].first is the minimum.
-  /// - cumul_bounds[i][j].second is the maximum.
-#if !defined(SWIG)
-  std::vector<std::vector<std::pair<int64_t, int64_t>>> GetCumulBounds(
-      const operations_research::Assignment& solution_assignment,
-      const Dimension& dimension);
-#endif
   /// Checks if an assignment is feasible.
   bool CheckIfAssignmentIsFeasible(
       const operations_research::Assignment& assignment,

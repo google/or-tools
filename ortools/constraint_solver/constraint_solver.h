@@ -95,6 +95,7 @@ Solver(name = "pheasant",
 #include "absl/types/span.h"
 #include "ortools/base/base_export.h"
 #include "ortools/base/timer.h"
+#include "ortools/base/types.h"
 #include "ortools/constraint_solver/search_stats.pb.h"
 #include "ortools/constraint_solver/solver_parameters.pb.h"
 #include "ortools/util/piecewise_linear_function.h"
@@ -1260,10 +1261,7 @@ class Solver {
   /// possible values from the values function.
   template <typename F>
   Constraint* MakeLightElement(F values, IntVar* var, IntVar* index,
-                               std::function<bool()> deep_serialize = nullptr) {
-    return RevAlloc(new LightIntFunctionElementCt<F>(
-        this, var, index, std::move(values), std::move(deep_serialize)));
-  }
+                               std::function<bool()> deep_serialize = nullptr);
 
   /// Light two-dimension function-based element constraint ensuring
   /// var == values(index1, index2).
@@ -1274,11 +1272,7 @@ class Solver {
   template <typename F>
   Constraint* MakeLightElement(F values, IntVar* var, IntVar* index1,
                                IntVar* index2,
-                               std::function<bool()> deep_serialize = nullptr) {
-    return RevAlloc(new LightIntIntFunctionElementCt<F>(
-        this, var, index1, index2, std::move(values),
-        std::move(deep_serialize)));
-  }
+                               std::function<bool()> deep_serialize = nullptr);
 
   /// Light three-dimension function-based element constraint ensuring
   /// var == values(index1, index2, index3).
@@ -1286,10 +1280,7 @@ class Solver {
   /// until the index variables are bound.
   template <typename F>
   Constraint* MakeLightElement(F values, IntVar* var, IntVar* index1,
-                               IntVar* index2, IntVar* index3) {
-    return RevAlloc(new LightIntIntIntFunctionElementCt<F>(
-        this, var, index1, index2, index3, std::move(values)));
-  }
+                               IntVar* index2, IntVar* index3);
 
   /// Returns the expression expr such that vars[expr] == value.
   /// It assumes that vars are all different.
@@ -5272,6 +5263,270 @@ class SolutionPool : public BaseObject {
   /// an external one.
   virtual bool SyncNeeded(Assignment* local_assignment) = 0;
 };
+
+class PropagationMonitor : public SearchMonitor {
+ public:
+  explicit PropagationMonitor(Solver* solver);
+  ~PropagationMonitor() override;
+  std::string DebugString() const override { return "PropagationMonitor"; }
+
+  /// Propagation events.
+  virtual void BeginConstraintInitialPropagation(Constraint* constraint) = 0;
+  virtual void EndConstraintInitialPropagation(Constraint* constraint) = 0;
+  virtual void BeginNestedConstraintInitialPropagation(Constraint* parent,
+                                                       Constraint* nested) = 0;
+  virtual void EndNestedConstraintInitialPropagation(Constraint* parent,
+                                                     Constraint* nested) = 0;
+  virtual void RegisterDemon(Demon* demon) = 0;
+  virtual void BeginDemonRun(Demon* demon) = 0;
+  virtual void EndDemonRun(Demon* demon) = 0;
+  virtual void StartProcessingIntegerVariable(IntVar* var) = 0;
+  virtual void EndProcessingIntegerVariable(IntVar* var) = 0;
+  virtual void PushContext(const std::string& context) = 0;
+  virtual void PopContext() = 0;
+  /// IntExpr modifiers.
+  virtual void SetMin(IntExpr* expr, int64_t new_min) = 0;
+  virtual void SetMax(IntExpr* expr, int64_t new_max) = 0;
+  virtual void SetRange(IntExpr* expr, int64_t new_min, int64_t new_max) = 0;
+  /// IntVar modifiers.
+  virtual void SetMin(IntVar* var, int64_t new_min) = 0;
+  virtual void SetMax(IntVar* var, int64_t new_max) = 0;
+  virtual void SetRange(IntVar* var, int64_t new_min, int64_t new_max) = 0;
+  virtual void RemoveValue(IntVar* var, int64_t value) = 0;
+  virtual void SetValue(IntVar* var, int64_t value) = 0;
+  virtual void RemoveInterval(IntVar* var, int64_t imin, int64_t imax) = 0;
+  virtual void SetValues(IntVar* var, const std::vector<int64_t>& values) = 0;
+  virtual void RemoveValues(IntVar* var,
+                            const std::vector<int64_t>& values) = 0;
+  /// IntervalVar modifiers.
+  virtual void SetStartMin(IntervalVar* var, int64_t new_min) = 0;
+  virtual void SetStartMax(IntervalVar* var, int64_t new_max) = 0;
+  virtual void SetStartRange(IntervalVar* var, int64_t new_min,
+                             int64_t new_max) = 0;
+  virtual void SetEndMin(IntervalVar* var, int64_t new_min) = 0;
+  virtual void SetEndMax(IntervalVar* var, int64_t new_max) = 0;
+  virtual void SetEndRange(IntervalVar* var, int64_t new_min,
+                           int64_t new_max) = 0;
+  virtual void SetDurationMin(IntervalVar* var, int64_t new_min) = 0;
+  virtual void SetDurationMax(IntervalVar* var, int64_t new_max) = 0;
+  virtual void SetDurationRange(IntervalVar* var, int64_t new_min,
+                                int64_t new_max) = 0;
+  virtual void SetPerformed(IntervalVar* var, bool value) = 0;
+  /// SequenceVar modifiers
+  virtual void RankFirst(SequenceVar* var, int index) = 0;
+  virtual void RankNotFirst(SequenceVar* var, int index) = 0;
+  virtual void RankLast(SequenceVar* var, int index) = 0;
+  virtual void RankNotLast(SequenceVar* var, int index) = 0;
+  virtual void RankSequence(SequenceVar* var,
+                            const std::vector<int>& rank_first,
+                            const std::vector<int>& rank_last,
+                            const std::vector<int>& unperformed) = 0;
+  /// Install itself on the solver.
+  void Install() override;
+};
+
+}  // namespace operations_research
+
+// TODO(user): Remove this include when the refactor is complete.
+#include "ortools/constraint_solver/constraints.h"
+
+namespace operations_research {
+
+// ----- LightIntFunctionElementCt -----
+
+template <typename F>
+class LightIntFunctionElementCt : public Constraint {
+ public:
+  LightIntFunctionElementCt(Solver* solver, IntVar* var, IntVar* index,
+                            F values, std::function<bool()> deep_serialize)
+      : Constraint(solver),
+        var_(var),
+        index_(index),
+        values_(std::move(values)),
+        deep_serialize_(std::move(deep_serialize)) {}
+  ~LightIntFunctionElementCt() override = default;
+
+  void Post() override {
+    Demon* demon = MakeConstraintDemon0(
+        solver(), this, &LightIntFunctionElementCt::IndexBound, "IndexBound");
+    index_->WhenBound(demon);
+  }
+
+  void InitialPropagate() override {
+    if (index_->Bound()) {
+      IndexBound();
+    }
+  }
+
+  std::string DebugString() const override {
+    return absl::StrFormat("LightIntFunctionElementCt(%s, %s)",
+                           var_->DebugString(), index_->DebugString());
+  }
+
+  void Accept(ModelVisitor* visitor) const override {
+    visitor->BeginVisitConstraint(ModelVisitor::kLightElementEqual, this);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
+                                            var_);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kIndexArgument,
+                                            index_);
+    // Warning: This will expand all values into a vector.
+    if (deep_serialize_ == nullptr || deep_serialize_()) {
+      visitor->VisitInt64ToInt64Extension(values_, index_->Min(),
+                                          index_->Max());
+    }
+    visitor->EndVisitConstraint(ModelVisitor::kLightElementEqual, this);
+  }
+
+ private:
+  void IndexBound() { var_->SetValue(values_(index_->Min())); }
+
+  IntVar* const var_;
+  IntVar* const index_;
+  F values_;
+  std::function<bool()> deep_serialize_;
+};
+
+// ----- LightIntIntFunctionElementCt -----
+
+template <typename F>
+class LightIntIntFunctionElementCt : public Constraint {
+ public:
+  LightIntIntFunctionElementCt(Solver* solver, IntVar* var, IntVar* index1,
+                               IntVar* index2, F values,
+                               std::function<bool()> deep_serialize)
+      : Constraint(solver),
+        var_(var),
+        index1_(index1),
+        index2_(index2),
+        values_(std::move(values)),
+        deep_serialize_(std::move(deep_serialize)) {}
+  ~LightIntIntFunctionElementCt() override = default;
+  void Post() override {
+    Demon* demon = MakeConstraintDemon0(
+        solver(), this, &LightIntIntFunctionElementCt::IndexBound,
+        "IndexBound");
+    index1_->WhenBound(demon);
+    index2_->WhenBound(demon);
+  }
+  void InitialPropagate() override { IndexBound(); }
+
+  std::string DebugString() const override {
+    return "LightIntIntFunctionElementCt";
+  }
+
+  void Accept(ModelVisitor* visitor) const override {
+    visitor->BeginVisitConstraint(ModelVisitor::kLightElementEqual, this);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
+                                            var_);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kIndexArgument,
+                                            index1_);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kIndex2Argument,
+                                            index2_);
+    // Warning: This will expand all values into a vector.
+    const int64_t index1_min = index1_->Min();
+    const int64_t index1_max = index1_->Max();
+    visitor->VisitIntegerArgument(ModelVisitor::kMinArgument, index1_min);
+    visitor->VisitIntegerArgument(ModelVisitor::kMaxArgument, index1_max);
+    if (deep_serialize_ == nullptr || deep_serialize_()) {
+      for (int i = index1_min; i <= index1_max; ++i) {
+        visitor->VisitInt64ToInt64Extension(
+            [this, i](int64_t j) { return values_(i, j); }, index2_->Min(),
+            index2_->Max());
+      }
+    }
+    visitor->EndVisitConstraint(ModelVisitor::kLightElementEqual, this);
+  }
+
+ private:
+  void IndexBound() {
+    if (index1_->Bound() && index2_->Bound()) {
+      var_->SetValue(values_(index1_->Min(), index2_->Min()));
+    }
+  }
+
+  IntVar* const var_;
+  IntVar* const index1_;
+  IntVar* const index2_;
+  F values_;
+  std::function<bool()> deep_serialize_;
+};
+
+// ----- LightIntIntIntFunctionElementCt -----
+
+template <typename F>
+class LightIntIntIntFunctionElementCt : public Constraint {
+ public:
+  LightIntIntIntFunctionElementCt(Solver* solver, IntVar* var, IntVar* index1,
+                                  IntVar* index2, IntVar* index3, F values)
+      : Constraint(solver),
+        var_(var),
+        index1_(index1),
+        index2_(index2),
+        index3_(index3),
+        values_(std::move(values)) {}
+  ~LightIntIntIntFunctionElementCt() override = default;
+  void Post() override {
+    Demon* demon = MakeConstraintDemon0(
+        solver(), this, &LightIntIntIntFunctionElementCt::IndexBound,
+        "IndexBound");
+    index1_->WhenBound(demon);
+    index2_->WhenBound(demon);
+    index3_->WhenBound(demon);
+  }
+  void InitialPropagate() override { IndexBound(); }
+
+  std::string DebugString() const override {
+    return "LightIntIntFunctionElementCt";
+  }
+
+  void Accept(ModelVisitor* visitor) const override {
+    visitor->BeginVisitConstraint(ModelVisitor::kLightElementEqual, this);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
+                                            var_);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kIndexArgument,
+                                            index1_);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kIndex2Argument,
+                                            index2_);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kIndex3Argument,
+                                            index3_);
+    visitor->EndVisitConstraint(ModelVisitor::kLightElementEqual, this);
+  }
+
+ private:
+  void IndexBound() {
+    if (index1_->Bound() && index2_->Bound() && index3_->Bound()) {
+      var_->SetValue(values_(index1_->Min(), index2_->Min(), index3_->Min()));
+    }
+  }
+
+  IntVar* const var_;
+  IntVar* const index1_;
+  IntVar* const index2_;
+  IntVar* const index3_;
+  F values_;
+};
+
+template <typename F>
+Constraint* Solver::MakeLightElement(F values, IntVar* var, IntVar* index,
+                                     std::function<bool()> deep_serialize) {
+  return RevAlloc(new LightIntFunctionElementCt<F>(
+      this, var, index, std::move(values), std::move(deep_serialize)));
+}
+
+template <typename F>
+Constraint* Solver::MakeLightElement(F values, IntVar* var, IntVar* index1,
+                                     IntVar* index2,
+                                     std::function<bool()> deep_serialize) {
+  return RevAlloc(new LightIntIntFunctionElementCt<F>(
+      this, var, index1, index2, std::move(values), std::move(deep_serialize)));
+}
+
+template <typename F>
+Constraint* Solver::MakeLightElement(F values, IntVar* var, IntVar* index1,
+                                     IntVar* index2, IntVar* index3) {
+  return RevAlloc(new LightIntIntIntFunctionElementCt<F>(
+      this, var, index1, index2, index3, std::move(values)));
+}
 }  // namespace operations_research
 
 #endif  // ORTOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVER_H_

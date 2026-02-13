@@ -14,7 +14,6 @@
 //  Expression constraints
 
 #include <algorithm>
-#include <cstddef>
 #include <cstdint>
 #include <limits>
 #include <set>
@@ -22,14 +21,16 @@
 #include <utility>
 #include <vector>
 
+#include "absl/container/flat_hash_set.h"
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
-#include "ortools/base/commandlineflags.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
-#include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
-#include "ortools/constraint_solver/constraint_solveri.h"
+#include "ortools/constraint_solver/constraints.h"
+#include "ortools/constraint_solver/model_cache.h"
+#include "ortools/constraint_solver/utilities.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
 
@@ -54,7 +55,7 @@ class EqualityExprCst : public Constraint {
   }
   std::string DebugString() const override;
 
-  void Accept(ModelVisitor* const visitor) const override {
+  void Accept(ModelVisitor* visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kEquality, this);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
                                             expr_);
@@ -67,7 +68,7 @@ class EqualityExprCst : public Constraint {
   int64_t value_;
 };
 
-EqualityExprCst::EqualityExprCst(Solver* const s, IntExpr* const e, int64_t v)
+EqualityExprCst::EqualityExprCst(Solver* s, IntExpr* e, int64_t v)
     : Constraint(s), expr_(e), value_(v) {}
 
 void EqualityExprCst::Post() {
@@ -84,7 +85,7 @@ std::string EqualityExprCst::DebugString() const {
 }
 }  // namespace
 
-Constraint* Solver::MakeEquality(IntExpr* const e, int64_t v) {
+Constraint* Solver::MakeEquality(IntExpr* e, int64_t v) {
   CHECK_EQ(this, e->solver());
   IntExpr* left = nullptr;
   IntExpr* right = nullptr;
@@ -99,7 +100,7 @@ Constraint* Solver::MakeEquality(IntExpr* const e, int64_t v) {
   }
 }
 
-Constraint* Solver::MakeEquality(IntExpr* const e, int v) {
+Constraint* Solver::MakeEquality(IntExpr* e, int v) {
   CHECK_EQ(this, e->solver());
   IntExpr* left = nullptr;
   IntExpr* right = nullptr;
@@ -129,7 +130,7 @@ class GreaterEqExprCst : public Constraint {
     return solver()->MakeIsGreaterOrEqualCstVar(expr_->Var(), value_);
   }
 
-  void Accept(ModelVisitor* const visitor) const override {
+  void Accept(ModelVisitor* visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kGreaterOrEqual, this);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
                                             expr_);
@@ -143,7 +144,7 @@ class GreaterEqExprCst : public Constraint {
   Demon* demon_;
 };
 
-GreaterEqExprCst::GreaterEqExprCst(Solver* const s, IntExpr* const e, int64_t v)
+GreaterEqExprCst::GreaterEqExprCst(Solver* s, IntExpr* e, int64_t v)
     : Constraint(s), expr_(e), value_(v), demon_(nullptr) {}
 
 void GreaterEqExprCst::Post() {
@@ -168,7 +169,7 @@ std::string GreaterEqExprCst::DebugString() const {
 }
 }  // namespace
 
-Constraint* Solver::MakeGreaterOrEqual(IntExpr* const e, int64_t v) {
+Constraint* Solver::MakeGreaterOrEqual(IntExpr* e, int64_t v) {
   CHECK_EQ(this, e->solver());
   if (e->Min() >= v) {
     return MakeTrueConstraint();
@@ -179,7 +180,7 @@ Constraint* Solver::MakeGreaterOrEqual(IntExpr* const e, int64_t v) {
   }
 }
 
-Constraint* Solver::MakeGreaterOrEqual(IntExpr* const e, int v) {
+Constraint* Solver::MakeGreaterOrEqual(IntExpr* e, int v) {
   CHECK_EQ(this, e->solver());
   if (e->Min() >= v) {
     return MakeTrueConstraint();
@@ -190,7 +191,7 @@ Constraint* Solver::MakeGreaterOrEqual(IntExpr* const e, int v) {
   }
 }
 
-Constraint* Solver::MakeGreater(IntExpr* const e, int64_t v) {
+Constraint* Solver::MakeGreater(IntExpr* e, int64_t v) {
   CHECK_EQ(this, e->solver());
   if (e->Min() > v) {
     return MakeTrueConstraint();
@@ -201,7 +202,7 @@ Constraint* Solver::MakeGreater(IntExpr* const e, int64_t v) {
   }
 }
 
-Constraint* Solver::MakeGreater(IntExpr* const e, int v) {
+Constraint* Solver::MakeGreater(IntExpr* e, int v) {
   CHECK_EQ(this, e->solver());
   if (e->Min() > v) {
     return MakeTrueConstraint();
@@ -226,7 +227,7 @@ class LessEqExprCst : public Constraint {
   IntVar* Var() override {
     return solver()->MakeIsLessOrEqualCstVar(expr_->Var(), value_);
   }
-  void Accept(ModelVisitor* const visitor) const override {
+  void Accept(ModelVisitor* visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kLessOrEqual, this);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
                                             expr_);
@@ -240,7 +241,7 @@ class LessEqExprCst : public Constraint {
   Demon* demon_;
 };
 
-LessEqExprCst::LessEqExprCst(Solver* const s, IntExpr* const e, int64_t v)
+LessEqExprCst::LessEqExprCst(Solver* s, IntExpr* e, int64_t v)
     : Constraint(s), expr_(e), value_(v), demon_(nullptr) {}
 
 void LessEqExprCst::Post() {
@@ -265,7 +266,7 @@ std::string LessEqExprCst::DebugString() const {
 }
 }  // namespace
 
-Constraint* Solver::MakeLessOrEqual(IntExpr* const e, int64_t v) {
+Constraint* Solver::MakeLessOrEqual(IntExpr* e, int64_t v) {
   CHECK_EQ(this, e->solver());
   if (e->Max() <= v) {
     return MakeTrueConstraint();
@@ -276,7 +277,7 @@ Constraint* Solver::MakeLessOrEqual(IntExpr* const e, int64_t v) {
   }
 }
 
-Constraint* Solver::MakeLessOrEqual(IntExpr* const e, int v) {
+Constraint* Solver::MakeLessOrEqual(IntExpr* e, int v) {
   CHECK_EQ(this, e->solver());
   if (e->Max() <= v) {
     return MakeTrueConstraint();
@@ -287,7 +288,7 @@ Constraint* Solver::MakeLessOrEqual(IntExpr* const e, int v) {
   }
 }
 
-Constraint* Solver::MakeLess(IntExpr* const e, int64_t v) {
+Constraint* Solver::MakeLess(IntExpr* e, int64_t v) {
   CHECK_EQ(this, e->solver());
   if (e->Max() < v) {
     return MakeTrueConstraint();
@@ -298,7 +299,7 @@ Constraint* Solver::MakeLess(IntExpr* const e, int64_t v) {
   }
 }
 
-Constraint* Solver::MakeLess(IntExpr* const e, int v) {
+Constraint* Solver::MakeLess(IntExpr* e, int v) {
   CHECK_EQ(this, e->solver());
   if (e->Max() < v) {
     return MakeTrueConstraint();
@@ -324,7 +325,7 @@ class DiffCst : public Constraint {
   IntVar* Var() override {
     return solver()->MakeIsDifferentCstVar(var_, value_);
   }
-  void Accept(ModelVisitor* const visitor) const override {
+  void Accept(ModelVisitor* visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kNonEqual, this);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
                                             var_);
@@ -340,7 +341,7 @@ class DiffCst : public Constraint {
   Demon* demon_;
 };
 
-DiffCst::DiffCst(Solver* const s, IntVar* const var, int64_t value)
+DiffCst::DiffCst(Solver* s, IntVar* var, int64_t value)
     : Constraint(s), var_(var), value_(value), demon_(nullptr) {}
 
 void DiffCst::InitialPropagate() {
@@ -377,7 +378,7 @@ bool DiffCst::HasLargeDomain(IntVar* var) {
 }
 }  // namespace
 
-Constraint* Solver::MakeNonEquality(IntExpr* const e, int64_t v) {
+Constraint* Solver::MakeNonEquality(IntExpr* e, int64_t v) {
   CHECK_EQ(this, e->solver());
   IntExpr* left = nullptr;
   IntExpr* right = nullptr;
@@ -392,7 +393,7 @@ Constraint* Solver::MakeNonEquality(IntExpr* const e, int64_t v) {
   }
 }
 
-Constraint* Solver::MakeNonEquality(IntExpr* const e, int v) {
+Constraint* Solver::MakeNonEquality(IntExpr* e, int v) {
   CHECK_EQ(this, e->solver());
   IntExpr* left = nullptr;
   IntExpr* right = nullptr;
@@ -411,7 +412,7 @@ Constraint* Solver::MakeNonEquality(IntExpr* const e, int v) {
 namespace {
 class IsEqualCstCt : public CastConstraint {
  public:
-  IsEqualCstCt(Solver* const s, IntVar* const v, int64_t c, IntVar* const b)
+  IsEqualCstCt(Solver* s, IntVar* v, int64_t c, IntVar* b)
       : CastConstraint(s, b), var_(v), cst_(c), demon_(nullptr) {}
   void Post() override {
     demon_ = solver()->MakeConstraintInitialPropagateCallback(this);
@@ -443,7 +444,7 @@ class IsEqualCstCt : public CastConstraint {
                            cst_, target_var_->DebugString());
   }
 
-  void Accept(ModelVisitor* const visitor) const override {
+  void Accept(ModelVisitor* visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kIsEqual, this);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
                                             var_);
@@ -460,7 +461,7 @@ class IsEqualCstCt : public CastConstraint {
 };
 }  // namespace
 
-IntVar* Solver::MakeIsEqualCstVar(IntExpr* const var, int64_t value) {
+IntVar* Solver::MakeIsEqualCstVar(IntExpr* var, int64_t value) {
   IntExpr* left = nullptr;
   IntExpr* right = nullptr;
   if (IsADifference(var, &left, &right)) {
@@ -485,8 +486,8 @@ IntVar* Solver::MakeIsEqualCstVar(IntExpr* const var, int64_t value) {
   }
 }
 
-Constraint* Solver::MakeIsEqualCstCt(IntExpr* const var, int64_t value,
-                                     IntVar* const boolvar) {
+Constraint* Solver::MakeIsEqualCstCt(IntExpr* var, int64_t value,
+                                     IntVar* boolvar) {
   CHECK_EQ(this, var->solver());
   CHECK_EQ(this, boolvar->solver());
   if (value == var->Min()) {
@@ -526,7 +527,7 @@ Constraint* Solver::MakeIsEqualCstCt(IntExpr* const var, int64_t value,
 namespace {
 class IsDiffCstCt : public CastConstraint {
  public:
-  IsDiffCstCt(Solver* const s, IntVar* const v, int64_t c, IntVar* const b)
+  IsDiffCstCt(Solver* s, IntVar* v, int64_t c, IntVar* b)
       : CastConstraint(s, b), var_(v), cst_(c), demon_(nullptr) {}
 
   void Post() override {
@@ -561,7 +562,7 @@ class IsDiffCstCt : public CastConstraint {
                            target_var_->DebugString());
   }
 
-  void Accept(ModelVisitor* const visitor) const override {
+  void Accept(ModelVisitor* visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kIsDifferent, this);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
                                             var_);
@@ -578,7 +579,7 @@ class IsDiffCstCt : public CastConstraint {
 };
 }  // namespace
 
-IntVar* Solver::MakeIsDifferentCstVar(IntExpr* const var, int64_t value) {
+IntVar* Solver::MakeIsDifferentCstVar(IntExpr* var, int64_t value) {
   IntExpr* left = nullptr;
   IntExpr* right = nullptr;
   if (IsADifference(var, &left, &right)) {
@@ -587,8 +588,8 @@ IntVar* Solver::MakeIsDifferentCstVar(IntExpr* const var, int64_t value) {
   return var->Var()->IsDifferent(value);
 }
 
-Constraint* Solver::MakeIsDifferentCstCt(IntExpr* const var, int64_t value,
-                                         IntVar* const boolvar) {
+Constraint* Solver::MakeIsDifferentCstCt(IntExpr* var, int64_t value,
+                                         IntVar* boolvar) {
   CHECK_EQ(this, var->solver());
   CHECK_EQ(this, boolvar->solver());
   if (value == var->Min()) {
@@ -626,8 +627,7 @@ Constraint* Solver::MakeIsDifferentCstCt(IntExpr* const var, int64_t value,
 namespace {
 class IsGreaterEqualCstCt : public CastConstraint {
  public:
-  IsGreaterEqualCstCt(Solver* const s, IntExpr* const v, int64_t c,
-                      IntVar* const b)
+  IsGreaterEqualCstCt(Solver* s, IntExpr* v, int64_t c, IntVar* b)
       : CastConstraint(s, b), expr_(v), cst_(c), demon_(nullptr) {}
   void Post() override {
     demon_ = solver()->MakeConstraintInitialPropagateCallback(this);
@@ -660,7 +660,7 @@ class IsGreaterEqualCstCt : public CastConstraint {
                            target_var_->DebugString());
   }
 
-  void Accept(ModelVisitor* const visitor) const override {
+  void Accept(ModelVisitor* visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kIsGreaterOrEqual, this);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
                                             expr_);
@@ -677,7 +677,7 @@ class IsGreaterEqualCstCt : public CastConstraint {
 };
 }  // namespace
 
-IntVar* Solver::MakeIsGreaterOrEqualCstVar(IntExpr* const var, int64_t value) {
+IntVar* Solver::MakeIsGreaterOrEqualCstVar(IntExpr* var, int64_t value) {
   if (var->Min() >= value) {
     return MakeIntConst(int64_t{1});
   }
@@ -694,12 +694,12 @@ IntVar* Solver::MakeIsGreaterOrEqualCstVar(IntExpr* const var, int64_t value) {
   }
 }
 
-IntVar* Solver::MakeIsGreaterCstVar(IntExpr* const var, int64_t value) {
+IntVar* Solver::MakeIsGreaterCstVar(IntExpr* var, int64_t value) {
   return MakeIsGreaterOrEqualCstVar(var, value + 1);
 }
 
-Constraint* Solver::MakeIsGreaterOrEqualCstCt(IntExpr* const var, int64_t value,
-                                              IntVar* const boolvar) {
+Constraint* Solver::MakeIsGreaterOrEqualCstCt(IntExpr* var, int64_t value,
+                                              IntVar* boolvar) {
   if (boolvar->Bound()) {
     if (boolvar->Min() == 0) {
       return MakeLess(var, value);
@@ -714,8 +714,7 @@ Constraint* Solver::MakeIsGreaterOrEqualCstCt(IntExpr* const var, int64_t value,
   return RevAlloc(new IsGreaterEqualCstCt(this, var, value, boolvar));
 }
 
-Constraint* Solver::MakeIsGreaterCstCt(IntExpr* const v, int64_t c,
-                                       IntVar* const b) {
+Constraint* Solver::MakeIsGreaterCstCt(IntExpr* v, int64_t c, IntVar* b) {
   return MakeIsGreaterOrEqualCstCt(v, c + 1, b);
 }
 
@@ -724,8 +723,7 @@ Constraint* Solver::MakeIsGreaterCstCt(IntExpr* const v, int64_t c,
 namespace {
 class IsLessEqualCstCt : public CastConstraint {
  public:
-  IsLessEqualCstCt(Solver* const s, IntExpr* const v, int64_t c,
-                   IntVar* const b)
+  IsLessEqualCstCt(Solver* s, IntExpr* v, int64_t c, IntVar* b)
       : CastConstraint(s, b), expr_(v), cst_(c), demon_(nullptr) {}
 
   void Post() override {
@@ -760,7 +758,7 @@ class IsLessEqualCstCt : public CastConstraint {
                            cst_, target_var_->DebugString());
   }
 
-  void Accept(ModelVisitor* const visitor) const override {
+  void Accept(ModelVisitor* visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kIsLessOrEqual, this);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
                                             expr_);
@@ -777,7 +775,7 @@ class IsLessEqualCstCt : public CastConstraint {
 };
 }  // namespace
 
-IntVar* Solver::MakeIsLessOrEqualCstVar(IntExpr* const var, int64_t value) {
+IntVar* Solver::MakeIsLessOrEqualCstVar(IntExpr* var, int64_t value) {
   if (var->Max() <= value) {
     return MakeIntConst(int64_t{1});
   }
@@ -794,12 +792,12 @@ IntVar* Solver::MakeIsLessOrEqualCstVar(IntExpr* const var, int64_t value) {
   }
 }
 
-IntVar* Solver::MakeIsLessCstVar(IntExpr* const var, int64_t value) {
+IntVar* Solver::MakeIsLessCstVar(IntExpr* var, int64_t value) {
   return MakeIsLessOrEqualCstVar(var, value - 1);
 }
 
-Constraint* Solver::MakeIsLessOrEqualCstCt(IntExpr* const var, int64_t value,
-                                           IntVar* const boolvar) {
+Constraint* Solver::MakeIsLessOrEqualCstCt(IntExpr* var, int64_t value,
+                                           IntVar* boolvar) {
   if (boolvar->Bound()) {
     if (boolvar->Min() == 0) {
       return MakeGreater(var, value);
@@ -814,8 +812,7 @@ Constraint* Solver::MakeIsLessOrEqualCstCt(IntExpr* const var, int64_t value,
   return RevAlloc(new IsLessEqualCstCt(this, var, value, boolvar));
 }
 
-Constraint* Solver::MakeIsLessCstCt(IntExpr* const v, int64_t c,
-                                    IntVar* const b) {
+Constraint* Solver::MakeIsLessCstCt(IntExpr* v, int64_t c, IntVar* b) {
   return MakeIsLessOrEqualCstCt(v, c - 1, b);
 }
 
@@ -824,7 +821,7 @@ Constraint* Solver::MakeIsLessCstCt(IntExpr* const v, int64_t c,
 namespace {
 class BetweenCt : public Constraint {
  public:
-  BetweenCt(Solver* const s, IntExpr* const v, int64_t l, int64_t u)
+  BetweenCt(Solver* s, IntExpr* v, int64_t l, int64_t u)
       : Constraint(s), expr_(v), min_(l), max_(u), demon_(nullptr) {}
 
   void Post() override {
@@ -849,7 +846,7 @@ class BetweenCt : public Constraint {
                            max_);
   }
 
-  void Accept(ModelVisitor* const visitor) const override {
+  void Accept(ModelVisitor* visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kBetween, this);
     visitor->VisitIntegerArgument(ModelVisitor::kMinArgument, min_);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
@@ -869,7 +866,7 @@ class BetweenCt : public Constraint {
 
 class NotBetweenCt : public Constraint {
  public:
-  NotBetweenCt(Solver* const s, IntExpr* const v, int64_t l, int64_t u)
+  NotBetweenCt(Solver* s, IntExpr* v, int64_t l, int64_t u)
       : Constraint(s), expr_(v), min_(l), max_(u), demon_(nullptr) {}
 
   void Post() override {
@@ -897,7 +894,7 @@ class NotBetweenCt : public Constraint {
                            min_, max_);
   }
 
-  void Accept(ModelVisitor* const visitor) const override {
+  void Accept(ModelVisitor* visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kNotBetween, this);
     visitor->VisitIntegerArgument(ModelVisitor::kMinArgument, min_);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
@@ -980,8 +977,7 @@ Constraint* Solver::MakeNotBetweenCt(IntExpr* expr, int64_t l, int64_t u) {
 namespace {
 class IsBetweenCt : public Constraint {
  public:
-  IsBetweenCt(Solver* const s, IntExpr* const e, int64_t l, int64_t u,
-              IntVar* const b)
+  IsBetweenCt(Solver* s, IntExpr* e, int64_t l, int64_t u, IntVar* b)
       : Constraint(s),
         expr_(e),
         min_(l),
@@ -1029,7 +1025,7 @@ class IsBetweenCt : public Constraint {
                            min_, max_, boolvar_->DebugString());
   }
 
-  void Accept(ModelVisitor* const visitor) const override {
+  void Accept(ModelVisitor* visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kIsBetween, this);
     visitor->VisitIntegerArgument(ModelVisitor::kMinArgument, min_);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
@@ -1050,7 +1046,7 @@ class IsBetweenCt : public Constraint {
 }  // namespace
 
 Constraint* Solver::MakeIsBetweenCt(IntExpr* expr, int64_t l, int64_t u,
-                                    IntVar* const b) {
+                                    IntVar* b) {
   CHECK_EQ(this, expr->solver());
   CHECK_EQ(this, b->solver());
   // Catch empty and singleton intervals.
@@ -1085,7 +1081,7 @@ Constraint* Solver::MakeIsBetweenCt(IntExpr* expr, int64_t l, int64_t u,
   }
 }
 
-IntVar* Solver::MakeIsBetweenVar(IntExpr* const v, int64_t l, int64_t u) {
+IntVar* Solver::MakeIsBetweenVar(IntExpr* v, int64_t l, int64_t u) {
   CHECK_EQ(this, v->solver());
   IntVar* const b = MakeBoolVar();
   AddConstraint(MakeIsBetweenCt(v, l, u, b));
@@ -1100,8 +1096,7 @@ namespace {
 // TODO(user): Do not create holes on expressions.
 class MemberCt : public Constraint {
  public:
-  MemberCt(Solver* const s, IntVar* const v,
-           const std::vector<int64_t>& sorted_values)
+  MemberCt(Solver* s, IntVar* v, const std::vector<int64_t>& sorted_values)
       : Constraint(s), var_(v), values_(sorted_values) {
     DCHECK(v != nullptr);
     DCHECK(s != nullptr);
@@ -1116,7 +1111,7 @@ class MemberCt : public Constraint {
                            absl::StrJoin(values_, ", "));
   }
 
-  void Accept(ModelVisitor* const visitor) const override {
+  void Accept(ModelVisitor* visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kMember, this);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
                                             var_);
@@ -1131,8 +1126,7 @@ class MemberCt : public Constraint {
 
 class NotMemberCt : public Constraint {
  public:
-  NotMemberCt(Solver* const s, IntVar* const v,
-              const std::vector<int64_t>& sorted_values)
+  NotMemberCt(Solver* s, IntVar* v, const std::vector<int64_t>& sorted_values)
       : Constraint(s), var_(v), values_(sorted_values) {
     DCHECK(v != nullptr);
     DCHECK(s != nullptr);
@@ -1147,7 +1141,7 @@ class NotMemberCt : public Constraint {
                            absl::StrJoin(values_, ", "));
   }
 
-  void Accept(ModelVisitor* const visitor) const override {
+  void Accept(ModelVisitor* visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kMember, this);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
                                             var_);
@@ -1226,7 +1220,7 @@ Constraint* Solver::MakeMemberCt(IntExpr* expr,
   return RevAlloc(new MemberCt(this, expr->Var(), copied_values));
 }
 
-Constraint* Solver::MakeMemberCt(IntExpr* const expr,
+Constraint* Solver::MakeMemberCt(IntExpr* expr,
                                  const std::vector<int>& values) {
   return MakeMemberCt(expr, ToInt64Vector(values));
 }
@@ -1295,7 +1289,7 @@ Constraint* Solver::MakeNotMemberCt(IntExpr* expr,
   return RevAlloc(new NotMemberCt(this, expr->Var(), copied_values));
 }
 
-Constraint* Solver::MakeNotMemberCt(IntExpr* const expr,
+Constraint* Solver::MakeNotMemberCt(IntExpr* expr,
                                     const std::vector<int>& values) {
   return MakeNotMemberCt(expr, ToInt64Vector(values));
 }
@@ -1305,8 +1299,8 @@ Constraint* Solver::MakeNotMemberCt(IntExpr* const expr,
 namespace {
 class IsMemberCt : public Constraint {
  public:
-  IsMemberCt(Solver* const s, IntVar* const v,
-             const std::vector<int64_t>& sorted_values, IntVar* const b)
+  IsMemberCt(Solver* s, IntVar* v, const std::vector<int64_t>& sorted_values,
+             IntVar* b)
       : Constraint(s),
         var_(v),
         values_as_set_(sorted_values.begin(), sorted_values.end()),
@@ -1352,7 +1346,7 @@ class IsMemberCt : public Constraint {
                            boolvar_->DebugString());
   }
 
-  void Accept(ModelVisitor* const visitor) const override {
+  void Accept(ModelVisitor* visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kIsMember, this);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
                                             var_);
@@ -1423,9 +1417,8 @@ class IsMemberCt : public Constraint {
 };
 
 template <class T>
-Constraint* BuildIsMemberCt(Solver* const solver, IntExpr* const expr,
-                            const std::vector<T>& values,
-                            IntVar* const boolvar) {
+Constraint* BuildIsMemberCt(Solver* solver, IntExpr* expr,
+                            const std::vector<T>& values, IntVar* boolvar) {
   // TODO(user): optimize this by copying the code from MakeMemberCt.
   // Simplify and filter if expr is a product.
   IntExpr* sub = nullptr;
@@ -1481,27 +1474,26 @@ Constraint* BuildIsMemberCt(Solver* const solver, IntExpr* const expr,
 }
 }  // namespace
 
-Constraint* Solver::MakeIsMemberCt(IntExpr* const expr,
+Constraint* Solver::MakeIsMemberCt(IntExpr* expr,
                                    const std::vector<int64_t>& values,
-                                   IntVar* const boolvar) {
+                                   IntVar* boolvar) {
   return BuildIsMemberCt(this, expr, values, boolvar);
 }
 
-Constraint* Solver::MakeIsMemberCt(IntExpr* const expr,
+Constraint* Solver::MakeIsMemberCt(IntExpr* expr,
                                    const std::vector<int>& values,
-                                   IntVar* const boolvar) {
+                                   IntVar* boolvar) {
   return BuildIsMemberCt(this, expr, values, boolvar);
 }
 
-IntVar* Solver::MakeIsMemberVar(IntExpr* const expr,
+IntVar* Solver::MakeIsMemberVar(IntExpr* expr,
                                 const std::vector<int64_t>& values) {
   IntVar* const b = MakeBoolVar();
   AddConstraint(MakeIsMemberCt(expr, values, b));
   return b;
 }
 
-IntVar* Solver::MakeIsMemberVar(IntExpr* const expr,
-                                const std::vector<int>& values) {
+IntVar* Solver::MakeIsMemberVar(IntExpr* expr, const std::vector<int>& values) {
   IntVar* const b = MakeBoolVar();
   AddConstraint(MakeIsMemberCt(expr, values, b));
   return b;
@@ -1511,8 +1503,7 @@ namespace {
 class SortedDisjointForbiddenIntervalsConstraint : public Constraint {
  public:
   SortedDisjointForbiddenIntervalsConstraint(
-      Solver* const solver, IntVar* const var,
-      SortedDisjointIntervalList intervals)
+      Solver* solver, IntVar* var, SortedDisjointIntervalList intervals)
       : Constraint(solver), var_(var), intervals_(std::move(intervals)) {}
 
   ~SortedDisjointForbiddenIntervalsConstraint() override {}
@@ -1553,7 +1544,7 @@ class SortedDisjointForbiddenIntervalsConstraint : public Constraint {
                            intervals_.DebugString());
   }
 
-  void Accept(ModelVisitor* const visitor) const override {
+  void Accept(ModelVisitor* visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kNotMember, this);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
                                             var_);
@@ -1574,15 +1565,13 @@ class SortedDisjointForbiddenIntervalsConstraint : public Constraint {
 };
 }  // namespace
 
-Constraint* Solver::MakeNotMemberCt(IntExpr* const expr,
-                                    std::vector<int64_t> starts,
+Constraint* Solver::MakeNotMemberCt(IntExpr* expr, std::vector<int64_t> starts,
                                     std::vector<int64_t> ends) {
   return RevAlloc(new SortedDisjointForbiddenIntervalsConstraint(
       this, expr->Var(), {starts, ends}));
 }
 
-Constraint* Solver::MakeNotMemberCt(IntExpr* const expr,
-                                    std::vector<int> starts,
+Constraint* Solver::MakeNotMemberCt(IntExpr* expr, std::vector<int> starts,
                                     std::vector<int> ends) {
   return RevAlloc(new SortedDisjointForbiddenIntervalsConstraint(
       this, expr->Var(), {starts, ends}));

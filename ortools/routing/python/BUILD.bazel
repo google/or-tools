@@ -47,10 +47,13 @@ pybind_extension(
         "//ortools/routing:types",
         "//ortools/sat:sat_parameters_cc_proto",
         "//ortools/util:optional_boolean_cc_proto",
+        "//ortools/util:piecewise_linear_function",
         "//ortools/util:sorted_interval_list",
+        "//ortools/util/python:piecewise_linear_function_lib",
         "//ortools/util/python:sorted_interval_list_lib",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/types:span",
         "@protobuf//:duration_cc_proto",
         "@pybind11_abseil//pybind11_abseil:absl_casters",
         "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
@@ -68,6 +71,7 @@ py_test(
         "//ortools/constraint_solver/python:constraint_solver",
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
+        "//ortools/util/python:piecewise_linear_function",
         "//ortools/util/python:sorted_interval_list",
     ],
 )
@@ -82,6 +86,7 @@ py_test(
         "//ortools/constraint_solver/python:constraint_solver",
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
+        "//ortools/util/python:piecewise_linear_function",
         "//ortools/util/python:sorted_interval_list",
     ],
 )
@@ -96,6 +101,7 @@ py_test(
         "//ortools/constraint_solver/python:constraint_solver",
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
+        "//ortools/util/python:piecewise_linear_function",
         "//ortools/util/python:sorted_interval_list",
     ],
 )
@@ -111,6 +117,7 @@ py_test(
         "//ortools/routing:enums_py_pb2",
         "//ortools/routing:parameters_py_pb2",
         "//ortools/util:optional_boolean_py_pb2",
+        "//ortools/util/python:piecewise_linear_function",
         "//ortools/util/python:sorted_interval_list",
     ],
 )

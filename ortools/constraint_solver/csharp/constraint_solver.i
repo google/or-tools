@@ -51,7 +51,9 @@ class RegularLimitParameters;
 
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/assignment.h"
-#include "ortools/constraint_solver/constraint_solveri.h"
+#include "ortools/constraint_solver/local_search.h"
+#include "ortools/constraint_solver/search.h"
+#include "ortools/constraint_solver/java/javawrapcp_util.h"
 #include "ortools/constraint_solver/search_limit.pb.h"
 #include "ortools/constraint_solver/solver_parameters.pb.h"
 
@@ -251,7 +253,6 @@ namespace operations_research {
 %unignore SymmetryBreaker;
 
 // UnsortedNullableRevBitset
-// TODO(user) To removed from constraint_solveri.h (only use by table.cc)
 %ignore UnsortedNullableRevBitset;
 
 // Assignment
@@ -968,7 +969,11 @@ namespace operations_research {
 //swiglint: disable include-h-allglobals
 %include "ortools/constraint_solver/constraint_solver.h"
 %include "ortools/constraint_solver/assignment.h"
-%include "ortools/constraint_solver/constraint_solveri.h"
+%include "ortools/constraint_solver/local_search.h"
+%include "ortools/constraint_solver/search.h"
+%include "ortools/constraint_solver/java/javawrapcp_util.h"
+%include "ortools/constraint_solver/search_limit.pb.h"
+%include "ortools/constraint_solver/solver_parameters.pb.h"
 
 namespace operations_research {
 %template(RevInteger) Rev<int64_t>;

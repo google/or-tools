@@ -16,6 +16,7 @@
 
 from absl.testing import absltest
 from ortools.constraint_solver.python import constraint_solver as cp
+from ortools.util.python import piecewise_linear_function as pwl
 
 
 class ConstraintSolverTest(absltest.TestCase):
@@ -805,6 +806,75 @@ class ConstraintSolverTest(absltest.TestCase):
 
         count = self._solve_and_check(solver, [x, y], check_single_solution)
         self.assertEqual(count, 1)
+
+    def test_convex_piecewise_expr(self):
+        print("test_convex_piecewise_expr")
+        solver = cp.Solver("test_convex_piecewise_expr")
+        x = solver.new_int_var(-10, 10, "x")
+        # early_cost=2, early_date=5, late_date=8, late_cost=3
+        # if x <= 5: cost = (5 - x) * 2
+        # if 5 < x < 8: cost = 0
+        # if x >= 8: cost = (x - 8) * 3
+        expr = solver.convex_piecewise_expr(x, 2, 5, 8, 3)
+
+        def check_solution():
+            x_val = x.value()
+            expr_val = expr.min()
+            self.assertEqual(expr_val, expr.max())  # Expr is bound.
+            if x_val <= 5:
+                self.assertEqual((5 - x_val) * 2, expr_val)
+            elif x_val >= 8:
+                self.assertEqual((x_val - 8) * 3, expr_val)
+            else:
+                self.assertEqual(expr_val, 0)
+
+        count = self._solve_and_check(solver, [x], check_solution)
+        self.assertEqual(count, 21)
+
+    def test_semi_continuous_expr(self):
+        print("test_semi_continuous_expr")
+        solver = cp.Solver("test_semi_continuous_expr")
+        x = solver.new_int_var(-10, 10, "x")
+        # fixed_charge=5, step=2
+        # if x <= 0: 0
+        # if x > 0: 5 + x * 2
+        expr = solver.semi_continuous_expr(x, 5, 2)
+
+        def check_solution():
+            x_val = x.value()
+            expr_val = expr.min()
+            self.assertEqual(expr_val, expr.max())  # Expr is bound.
+            if x_val <= 0:
+                self.assertEqual(expr_val, 0)
+            else:
+                self.assertEqual(expr_val, 5 + x_val * 2)
+
+        count = self._solve_and_check(solver, [x], check_solution)
+        self.assertEqual(count, 21)
+
+    def test_piecewise_linear_expr(self):
+        print("test_piecewise_linear_expr")
+        solver = cp.Solver("test_piecewise_linear_expr")
+        x = solver.new_int_var(0, 10, "x")
+        # Create a simple function: (0, 0) -> (5, 10) -> (10, 5)
+        points_x = [0, 5]
+        points_y = [0, 10]
+        slopes = [2, -1]  # Slope 2 between 0 and 5, Slope -1 after 5
+        other_points_x = [5, 10]
+        f = pwl.PiecewiseLinearFunction(points_x, points_y, slopes, other_points_x)
+        expr = solver.piecewise_linear_expr(x, f)
+
+        def check_solution():
+            x_val = x.value()
+            expr_val = expr.min()
+            self.assertEqual(expr_val, expr.max())  # Expr is bound.
+            if x_val <= 5:
+                self.assertEqual(expr_val, x_val * 2)
+            else:
+                self.assertEqual(expr_val, 10 + (x_val - 5) * -1)
+
+        count = self._solve_and_check(solver, [x], check_solution)
+        self.assertEqual(count, 11)
 
     def test_solution_collector(self):
         solver = cp.Solver("test_solution_collector")

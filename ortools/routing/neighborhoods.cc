@@ -24,7 +24,6 @@
 #include "ortools/base/types.h"
 #include "ortools/constraint_solver/assignment.h"
 #include "ortools/constraint_solver/constraint_solver.h"
-#include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/routing/types.h"
 #include "ortools/routing/utils.h"
 #include "ortools/util/saturated_arithmetic.h"

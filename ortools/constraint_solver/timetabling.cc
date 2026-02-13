@@ -17,7 +17,7 @@
 #include "absl/log/check.h"
 #include "absl/strings/str_format.h"
 #include "ortools/constraint_solver/constraint_solver.h"
-#include "ortools/constraint_solver/constraint_solveri.h"
+#include "ortools/constraint_solver/constraints.h"
 
 namespace operations_research {
 
@@ -36,7 +36,7 @@ const char* kBinaryNames[] = {
 
 class IntervalUnaryRelation : public Constraint {
  public:
-  IntervalUnaryRelation(Solver* const s, IntervalVar* const t, int64_t d,
+  IntervalUnaryRelation(Solver* s, IntervalVar* const t, int64_t d,
                         Solver::UnaryIntervalRelation rel)
       : Constraint(s), t_(t), d_(d), rel_(rel) {}
   ~IntervalUnaryRelation() override {}
@@ -50,7 +50,7 @@ class IntervalUnaryRelation : public Constraint {
                            d_);
   }
 
-  void Accept(ModelVisitor* const visitor) const override {
+  void Accept(ModelVisitor* visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kIntervalUnaryRelation, this);
     visitor->VisitIntervalArgument(ModelVisitor::kIntervalArgument, t_);
     visitor->VisitIntegerArgument(ModelVisitor::kRelationArgument, rel_);
@@ -120,7 +120,7 @@ Constraint* Solver::MakeIntervalVarRelation(IntervalVar* const t,
 namespace {
 class IntervalBinaryRelation : public Constraint {
  public:
-  IntervalBinaryRelation(Solver* const s, IntervalVar* const t1,
+  IntervalBinaryRelation(Solver* s, IntervalVar* const t1,
                          IntervalVar* const t2,
                          Solver::BinaryIntervalRelation rel, int64_t delay)
       : Constraint(s), t1_(t1), t2_(t2), rel_(rel), delay_(delay) {}
@@ -135,7 +135,7 @@ class IntervalBinaryRelation : public Constraint {
                            t2_->DebugString());
   }
 
-  void Accept(ModelVisitor* const visitor) const override {
+  void Accept(ModelVisitor* visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kIntervalBinaryRelation, this);
     visitor->VisitIntervalArgument(ModelVisitor::kLeftArgument, t1_);
     visitor->VisitIntegerArgument(ModelVisitor::kRelationArgument, rel_);
@@ -247,8 +247,8 @@ class TemporalDisjunction : public Constraint {
  public:
   enum State { ONE_BEFORE_TWO, TWO_BEFORE_ONE, UNDECIDED };
 
-  TemporalDisjunction(Solver* const s, IntervalVar* const t1,
-                      IntervalVar* const t2, IntVar* const alt)
+  TemporalDisjunction(Solver* s, IntervalVar* const t1, IntervalVar* const t2,
+                      IntVar* const alt)
       : Constraint(s), t1_(t1), t2_(t2), alt_(alt), state_(UNDECIDED) {}
   ~TemporalDisjunction() override {}
 
@@ -262,7 +262,7 @@ class TemporalDisjunction : public Constraint {
   void Decide(State s);
   void TryToDecide();
 
-  void Accept(ModelVisitor* const visitor) const override {
+  void Accept(ModelVisitor* visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kIntervalDisjunction, this);
     visitor->VisitIntervalArgument(ModelVisitor::kLeftArgument, t1_);
     visitor->VisitIntervalArgument(ModelVisitor::kRightArgument, t2_);

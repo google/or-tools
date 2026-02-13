@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "ortools/constraint_solver/search.h"
+
 #include <algorithm>
 #include <cstdint>
 #include <functional>
@@ -43,8 +45,8 @@
 #include "ortools/base/types.h"
 #include "ortools/constraint_solver/assignment.h"
 #include "ortools/constraint_solver/constraint_solver.h"
-#include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/constraint_solver/search_limit.pb.h"
+#include "ortools/constraint_solver/utilities.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/stats.h"
@@ -252,7 +254,7 @@ void SearchLog::ApplyDecision(Decision* const) {
   }
 }
 
-void SearchLog::RefuteDecision(Decision* const decision) {
+void SearchLog::RefuteDecision(Decision* decision) {
   min_right_depth_ = std::min(min_right_depth_, solver()->SearchDepth());
   ApplyDecision(decision);
 }
@@ -382,7 +384,7 @@ SearchMonitor* Solver::MakeSearchLog(SearchLogParameters parameters) {
 namespace {
 class SearchTrace : public SearchMonitor {
  public:
-  SearchTrace(Solver* const s, const std::string& prefix)
+  SearchTrace(Solver* s, const std::string& prefix)
       : SearchMonitor(s), prefix_(prefix) {}
   ~SearchTrace() override {}
 
@@ -395,23 +397,23 @@ class SearchTrace : public SearchMonitor {
   void ExitSearch() override {
     LOG(INFO) << prefix_ << " ExitSearch(" << solver()->SolveDepth() << ")";
   }
-  void BeginNextDecision(DecisionBuilder* const b) override {
+  void BeginNextDecision(DecisionBuilder* b) override {
     LOG(INFO) << prefix_ << " BeginNextDecision(" << b << ") ";
   }
-  void EndNextDecision(DecisionBuilder* const b, Decision* const d) override {
+  void EndNextDecision(DecisionBuilder* b, Decision* d) override {
     if (d) {
       LOG(INFO) << prefix_ << " EndNextDecision(" << b << ", " << d << ") ";
     } else {
       LOG(INFO) << prefix_ << " EndNextDecision(" << b << ") ";
     }
   }
-  void ApplyDecision(Decision* const d) override {
+  void ApplyDecision(Decision* d) override {
     LOG(INFO) << prefix_ << " ApplyDecision(" << d << ") ";
   }
-  void RefuteDecision(Decision* const d) override {
+  void RefuteDecision(Decision* d) override {
     LOG(INFO) << prefix_ << " RefuteDecision(" << d << ") ";
   }
-  void AfterDecision(Decision* const d, bool apply) override {
+  void AfterDecision(Decision* d, bool apply) override {
     LOG(INFO) << prefix_ << " AfterDecision(" << d << ", " << apply << ") ";
   }
   void BeginFail() override {
@@ -453,7 +455,7 @@ SearchMonitor* Solver::MakeSearchTrace(const std::string& prefix) {
 namespace {
 class AtSolutionCallback : public SearchMonitor {
  public:
-  AtSolutionCallback(Solver* const solver, std::function<void()> callback)
+  AtSolutionCallback(Solver* solver, std::function<void()> callback)
       : SearchMonitor(solver), callback_(std::move(callback)) {}
   ~AtSolutionCallback() override {}
   bool AtSolution() override;
@@ -481,7 +483,7 @@ SearchMonitor* Solver::MakeAtSolutionCallback(std::function<void()> callback) {
 namespace {
 class EnterSearchCallback : public SearchMonitor {
  public:
-  EnterSearchCallback(Solver* const solver, std::function<void()> callback)
+  EnterSearchCallback(Solver* solver, std::function<void()> callback)
       : SearchMonitor(solver), callback_(std::move(callback)) {}
   ~EnterSearchCallback() override {}
   void EnterSearch() override;
@@ -506,7 +508,7 @@ SearchMonitor* Solver::MakeEnterSearchCallback(std::function<void()> callback) {
 namespace {
 class ExitSearchCallback : public SearchMonitor {
  public:
-  ExitSearchCallback(Solver* const solver, std::function<void()> callback)
+  ExitSearchCallback(Solver* solver, std::function<void()> callback)
       : SearchMonitor(solver), callback_(std::move(callback)) {}
   ~ExitSearchCallback() override {}
   void ExitSearch() override;
@@ -556,20 +558,20 @@ CompositeDecisionBuilder::CompositeDecisionBuilder(
 
 CompositeDecisionBuilder::~CompositeDecisionBuilder() {}
 
-void CompositeDecisionBuilder::Add(DecisionBuilder* const db) {
+void CompositeDecisionBuilder::Add(DecisionBuilder* db) {
   if (db != nullptr) {
     builders_.push_back(db);
   }
 }
 
 void CompositeDecisionBuilder::AppendMonitors(
-    Solver* const solver, std::vector<SearchMonitor*>* const monitors) {
+    Solver* solver, std::vector<SearchMonitor*>* monitors) {
   for (DecisionBuilder* const db : builders_) {
     db->AppendMonitors(solver, monitors);
   }
 }
 
-void CompositeDecisionBuilder::Accept(ModelVisitor* const visitor) const {
+void CompositeDecisionBuilder::Accept(ModelVisitor* visitor) const {
   for (DecisionBuilder* const db : builders_) {
     db->Accept(visitor);
   }
@@ -599,7 +601,7 @@ ComposeDecisionBuilder::ComposeDecisionBuilder(
 
 ComposeDecisionBuilder::~ComposeDecisionBuilder() {}
 
-Decision* ComposeDecisionBuilder::Next(Solver* const s) {
+Decision* ComposeDecisionBuilder::Next(Solver* s) {
   const int size = builders_.size();
   for (int i = start_index_; i < size; ++i) {
     Decision* d = builders_[i]->Next(s);
@@ -618,17 +620,15 @@ std::string ComposeDecisionBuilder::DebugString() const {
 }
 }  // namespace
 
-DecisionBuilder* Solver::Compose(DecisionBuilder* const db1,
-                                 DecisionBuilder* const db2) {
+DecisionBuilder* Solver::Compose(DecisionBuilder* db1, DecisionBuilder* db2) {
   ComposeDecisionBuilder* c = RevAlloc(new ComposeDecisionBuilder());
   c->Add(db1);
   c->Add(db2);
   return c;
 }
 
-DecisionBuilder* Solver::Compose(DecisionBuilder* const db1,
-                                 DecisionBuilder* const db2,
-                                 DecisionBuilder* const db3) {
+DecisionBuilder* Solver::Compose(DecisionBuilder* db1, DecisionBuilder* db2,
+                                 DecisionBuilder* db3) {
   ComposeDecisionBuilder* c = RevAlloc(new ComposeDecisionBuilder());
   c->Add(db1);
   c->Add(db2);
@@ -636,10 +636,8 @@ DecisionBuilder* Solver::Compose(DecisionBuilder* const db1,
   return c;
 }
 
-DecisionBuilder* Solver::Compose(DecisionBuilder* const db1,
-                                 DecisionBuilder* const db2,
-                                 DecisionBuilder* const db3,
-                                 DecisionBuilder* const db4) {
+DecisionBuilder* Solver::Compose(DecisionBuilder* db1, DecisionBuilder* db2,
+                                 DecisionBuilder* db3, DecisionBuilder* db4) {
   ComposeDecisionBuilder* c = RevAlloc(new ComposeDecisionBuilder());
   c->Add(db1);
   c->Add(db2);
@@ -664,9 +662,9 @@ class ClosureDecision : public Decision {
       : apply_(std::move(apply)), refute_(std::move(refute)) {}
   ~ClosureDecision() override {}
 
-  void Apply(Solver* const s) override { apply_(s); }
+  void Apply(Solver* s) override { apply_(s); }
 
-  void Refute(Solver* const s) override { refute_(s); }
+  void Refute(Solver* s) override { refute_(s); }
 
   std::string DebugString() const override { return "ClosureDecision"; }
 
@@ -713,14 +711,14 @@ class TryDecisionBuilder : public CompositeDecisionBuilder {
   bool start_new_builder_;
 };
 
-TryDecision::TryDecision(TryDecisionBuilder* const try_builder)
+TryDecision::TryDecision(TryDecisionBuilder* try_builder)
     : try_builder_(try_builder) {}
 
 TryDecision::~TryDecision() {}
 
-void TryDecision::Apply(Solver* const) {}
+void TryDecision::Apply(Solver*) {}
 
-void TryDecision::Refute(Solver* const solver) {
+void TryDecision::Refute(Solver* solver) {
   try_builder_->AdvanceToNextBuilder(solver);
 }
 
@@ -738,7 +736,7 @@ TryDecisionBuilder::TryDecisionBuilder(const std::vector<DecisionBuilder*>& dbs)
 
 TryDecisionBuilder::~TryDecisionBuilder() {}
 
-Decision* TryDecisionBuilder::Next(Solver* const solver) {
+Decision* TryDecisionBuilder::Next(Solver* solver) {
   if (current_builder_ < 0) {
     solver->SaveAndSetValue(&current_builder_, 0);
     start_new_builder_ = true;
@@ -756,7 +754,7 @@ std::string TryDecisionBuilder::DebugString() const {
                          JoinDebugStringPtr(builders_, ", "));
 }
 
-void TryDecisionBuilder::AdvanceToNextBuilder(Solver* const solver) {
+void TryDecisionBuilder::AdvanceToNextBuilder(Solver* solver) {
   ++current_builder_;
   start_new_builder_ = true;
   if (current_builder_ >= builders_.size()) {
@@ -766,17 +764,15 @@ void TryDecisionBuilder::AdvanceToNextBuilder(Solver* const solver) {
 
 }  // namespace
 
-DecisionBuilder* Solver::Try(DecisionBuilder* const db1,
-                             DecisionBuilder* const db2) {
+DecisionBuilder* Solver::Try(DecisionBuilder* db1, DecisionBuilder* db2) {
   TryDecisionBuilder* try_db = RevAlloc(new TryDecisionBuilder());
   try_db->Add(db1);
   try_db->Add(db2);
   return try_db;
 }
 
-DecisionBuilder* Solver::Try(DecisionBuilder* const db1,
-                             DecisionBuilder* const db2,
-                             DecisionBuilder* const db3) {
+DecisionBuilder* Solver::Try(DecisionBuilder* db1, DecisionBuilder* db2,
+                             DecisionBuilder* db3) {
   TryDecisionBuilder* try_db = RevAlloc(new TryDecisionBuilder());
   try_db->Add(db1);
   try_db->Add(db2);
@@ -784,10 +780,8 @@ DecisionBuilder* Solver::Try(DecisionBuilder* const db1,
   return try_db;
 }
 
-DecisionBuilder* Solver::Try(DecisionBuilder* const db1,
-                             DecisionBuilder* const db2,
-                             DecisionBuilder* const db3,
-                             DecisionBuilder* const db4) {
+DecisionBuilder* Solver::Try(DecisionBuilder* db1, DecisionBuilder* db2,
+                             DecisionBuilder* db3, DecisionBuilder* db4) {
   TryDecisionBuilder* try_db = RevAlloc(new TryDecisionBuilder());
   try_db->Add(db1);
   try_db->Add(db2);
@@ -841,7 +835,7 @@ class BaseVariableAssignmentSelector : public BaseObject {
     return ChooseVariable();
   }
 
-  void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* visitor) const {
     visitor->BeginVisitExtension(ModelVisitor::kVariableGroupExtension);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars_);
@@ -1053,7 +1047,7 @@ class HighestRegretSelectorOnMin : public BaseObject {
   std::vector<IntVarIterator*> iterators_;
 };
 
-int64_t HighestRegretSelectorOnMin::Choose(Solver* const,
+int64_t HighestRegretSelectorOnMin::Choose(Solver*,
                                            const std::vector<IntVar*>& vars,
                                            int64_t first_unbound,
                                            int64_t last_unbound) {
@@ -1102,8 +1096,7 @@ class CheapestVarSelector : public BaseObject {
   std::function<int64_t(int64_t)> var_evaluator_;
 };
 
-int64_t CheapestVarSelector::Choose(Solver* const,
-                                    const std::vector<IntVar*>& vars,
+int64_t CheapestVarSelector::Choose(Solver*, const std::vector<IntVar*>& vars,
                                     int64_t first_unbound,
                                     int64_t last_unbound) {
   int64_t best_eval = std::numeric_limits<int64_t>::max();
@@ -1137,8 +1130,7 @@ class PathSelector : public BaseObject {
   Rev<int64_t> first_;
 };
 
-int64_t PathSelector::Choose(Solver* const s,
-                             const std::vector<IntVar*>& vars) {
+int64_t PathSelector::Choose(Solver* s, const std::vector<IntVar*>& vars) {
   int64_t index = first_.Value();
   if (!UpdateIndex(vars, &index)) {
     return -1;
@@ -1601,7 +1593,7 @@ class AssignOneVariableValue : public Decision {
   void Apply(Solver* s) override;
   void Refute(Solver* s) override;
   std::string DebugString() const override;
-  void Accept(DecisionVisitor* const visitor) const override {
+  void Accept(DecisionVisitor* visitor) const override {
     visitor->VisitSetVariableValue(var_, value_);
   }
 
@@ -1610,7 +1602,7 @@ class AssignOneVariableValue : public Decision {
   int64_t value_;
 };
 
-AssignOneVariableValue::AssignOneVariableValue(IntVar* const v, int64_t val)
+AssignOneVariableValue::AssignOneVariableValue(IntVar* v, int64_t val)
     : var_(v), value_(val) {}
 
 std::string AssignOneVariableValue::DebugString() const {
@@ -1618,14 +1610,12 @@ std::string AssignOneVariableValue::DebugString() const {
                          value_, var_->DebugString(), value_);
 }
 
-void AssignOneVariableValue::Apply(Solver* const) { var_->SetValue(value_); }
+void AssignOneVariableValue::Apply(Solver*) { var_->SetValue(value_); }
 
-void AssignOneVariableValue::Refute(Solver* const) {
-  var_->RemoveValue(value_);
-}
+void AssignOneVariableValue::Refute(Solver*) { var_->RemoveValue(value_); }
 }  // namespace
 
-Decision* Solver::MakeAssignVariableValue(IntVar* const var, int64_t val) {
+Decision* Solver::MakeAssignVariableValue(IntVar* var, int64_t val) {
   return RevAlloc(new AssignOneVariableValue(var, val));
 }
 
@@ -1639,7 +1629,7 @@ class AssignOneVariableValueOrFail : public Decision {
   void Apply(Solver* s) override;
   void Refute(Solver* s) override;
   std::string DebugString() const override;
-  void Accept(DecisionVisitor* const visitor) const override {
+  void Accept(DecisionVisitor* visitor) const override {
     visitor->VisitSetVariableValue(var_, value_);
   }
 
@@ -1648,7 +1638,7 @@ class AssignOneVariableValueOrFail : public Decision {
   const int64_t value_;
 };
 
-AssignOneVariableValueOrFail::AssignOneVariableValueOrFail(IntVar* const v,
+AssignOneVariableValueOrFail::AssignOneVariableValueOrFail(IntVar* v,
                                                            int64_t value)
     : var_(v), value_(value) {}
 
@@ -1656,15 +1646,12 @@ std::string AssignOneVariableValueOrFail::DebugString() const {
   return absl::StrFormat("[%s == %d] or fail", var_->DebugString(), value_);
 }
 
-void AssignOneVariableValueOrFail::Apply(Solver* const) {
-  var_->SetValue(value_);
-}
+void AssignOneVariableValueOrFail::Apply(Solver*) { var_->SetValue(value_); }
 
-void AssignOneVariableValueOrFail::Refute(Solver* const s) { s->Fail(); }
+void AssignOneVariableValueOrFail::Refute(Solver* s) { s->Fail(); }
 }  // namespace
 
-Decision* Solver::MakeAssignVariableValueOrFail(IntVar* const var,
-                                                int64_t value) {
+Decision* Solver::MakeAssignVariableValueOrFail(IntVar* var, int64_t value) {
   return RevAlloc(new AssignOneVariableValueOrFail(var, value));
 }
 
@@ -1673,15 +1660,15 @@ Decision* Solver::MakeAssignVariableValueOrFail(IntVar* const var,
 namespace {
 class AssignOneVariableValueDoNothing : public Decision {
  public:
-  AssignOneVariableValueDoNothing(IntVar* const v, int64_t value)
+  AssignOneVariableValueDoNothing(IntVar* v, int64_t value)
       : var_(v), value_(value) {}
   ~AssignOneVariableValueDoNothing() override {}
-  void Apply(Solver* const) override { var_->SetValue(value_); }
-  void Refute(Solver* const) override {}
+  void Apply(Solver*) override { var_->SetValue(value_); }
+  void Refute(Solver*) override {}
   std::string DebugString() const override {
     return absl::StrFormat("[%s == %d] or []", var_->DebugString(), value_);
   }
-  void Accept(DecisionVisitor* const visitor) const override {
+  void Accept(DecisionVisitor* visitor) const override {
     visitor->VisitSetVariableValue(var_, value_);
   }
 
@@ -1692,7 +1679,7 @@ class AssignOneVariableValueDoNothing : public Decision {
 
 }  // namespace
 
-Decision* Solver::MakeAssignVariableValueOrDoNothing(IntVar* const var,
+Decision* Solver::MakeAssignVariableValueOrDoNothing(IntVar* var,
                                                      int64_t value) {
   return RevAlloc(new AssignOneVariableValueDoNothing(var, value));
 }
@@ -1707,7 +1694,7 @@ class SplitOneVariable : public Decision {
   void Apply(Solver* s) override;
   void Refute(Solver* s) override;
   std::string DebugString() const override;
-  void Accept(DecisionVisitor* const visitor) const override {
+  void Accept(DecisionVisitor* visitor) const override {
     visitor->VisitSplitVariableDomain(var_, value_, start_with_lower_half_);
   }
 
@@ -1717,7 +1704,7 @@ class SplitOneVariable : public Decision {
   const bool start_with_lower_half_;
 };
 
-SplitOneVariable::SplitOneVariable(IntVar* const v, int64_t val,
+SplitOneVariable::SplitOneVariable(IntVar* v, int64_t val,
                                    bool start_with_lower_half)
     : var_(v), value_(val), start_with_lower_half_(start_with_lower_half) {}
 
@@ -1729,7 +1716,7 @@ std::string SplitOneVariable::DebugString() const {
   }
 }
 
-void SplitOneVariable::Apply(Solver* const) {
+void SplitOneVariable::Apply(Solver*) {
   if (start_with_lower_half_) {
     var_->SetMax(value_);
   } else {
@@ -1737,7 +1724,7 @@ void SplitOneVariable::Apply(Solver* const) {
   }
 }
 
-void SplitOneVariable::Refute(Solver* const) {
+void SplitOneVariable::Refute(Solver*) {
   if (start_with_lower_half_) {
     var_->SetMin(value_ + 1);
   } else {
@@ -1746,18 +1733,16 @@ void SplitOneVariable::Refute(Solver* const) {
 }
 }  // namespace
 
-Decision* Solver::MakeSplitVariableDomain(IntVar* const var, int64_t val,
+Decision* Solver::MakeSplitVariableDomain(IntVar* var, int64_t val,
                                           bool start_with_lower_half) {
   return RevAlloc(new SplitOneVariable(var, val, start_with_lower_half));
 }
 
-Decision* Solver::MakeVariableLessOrEqualValue(IntVar* const var,
-                                               int64_t value) {
+Decision* Solver::MakeVariableLessOrEqualValue(IntVar* var, int64_t value) {
   return MakeSplitVariableDomain(var, value, true);
 }
 
-Decision* Solver::MakeVariableGreaterOrEqualValue(IntVar* const var,
-                                                  int64_t value) {
+Decision* Solver::MakeVariableGreaterOrEqualValue(IntVar* var, int64_t value) {
   return MakeSplitVariableDomain(var, value, false);
 }
 
@@ -1778,13 +1763,13 @@ class AssignVariablesValues : public Decision {
   void Apply(Solver* s) override;
   void Refute(Solver* s) override;
   std::string DebugString() const override;
-  void Accept(DecisionVisitor* const visitor) const override {
+  void Accept(DecisionVisitor* visitor) const override {
     for (int i = 0; i < vars_.size(); ++i) {
       visitor->VisitSetVariableValue(vars_[i], values_[i]);
     }
   }
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  virtual void Accept(ModelVisitor* visitor) const {
     visitor->BeginVisitExtension(ModelVisitor::kVariableGroupExtension);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars_);
@@ -1823,7 +1808,7 @@ std::string AssignVariablesValues::DebugString() const {
   return out;
 }
 
-void AssignVariablesValues::Apply(Solver* const) {
+void AssignVariablesValues::Apply(Solver*) {
   if (vars_.empty()) return;
   vars_[0]->FreezeQueue();
   for (int i = 0; i < vars_.size(); ++i) {
@@ -1832,7 +1817,7 @@ void AssignVariablesValues::Apply(Solver* const) {
   vars_[0]->UnfreezeQueue();
 }
 
-void AssignVariablesValues::Refute(Solver* const s) {
+void AssignVariablesValues::Refute(Solver* s) {
   switch (refutation_) {
     case RefutationBehavior::kForbidAssignment: {
       std::vector<IntVar*> terms;
@@ -1888,7 +1873,7 @@ class BaseAssignVariables : public DecisionBuilder {
     SPLIT_UPPER,
   };
 
-  BaseAssignVariables(BaseVariableAssignmentSelector* const selector, Mode mode)
+  BaseAssignVariables(BaseVariableAssignmentSelector* selector, Mode mode)
       : selector_(selector), mode_(mode) {}
 
   ~BaseAssignVariables() override;
@@ -1901,8 +1886,7 @@ class BaseAssignVariables : public DecisionBuilder {
       const std::string& value_selector_name, BaseAssignVariables::Mode mode);
 
   static Solver::VariableIndexSelector MakeVariableSelector(
-      Solver* const s, const std::vector<IntVar*>& vars,
-      Solver::IntVarStrategy str) {
+      Solver* s, const std::vector<IntVar*>& vars, Solver::IntVarStrategy str) {
     switch (str) {
       case Solver::INT_VAR_DEFAULT:
       case Solver::INT_VAR_SIMPLE:
@@ -1946,7 +1930,7 @@ class BaseAssignVariables : public DecisionBuilder {
   }
 
   static Solver::VariableValueSelector MakeValueSelector(
-      Solver* const, Solver::IntValueStrategy val_str) {
+      Solver*, Solver::IntValueStrategy val_str) {
     switch (val_str) {
       case Solver::INT_VALUE_DEFAULT:
       case Solver::INT_VALUE_SIMPLE:
@@ -1968,18 +1952,18 @@ class BaseAssignVariables : public DecisionBuilder {
     }
   }
 
-  void Accept(ModelVisitor* const visitor) const override {
+  void Accept(ModelVisitor* visitor) const override {
     selector_->Accept(visitor);
   }
 
  protected:
-  BaseVariableAssignmentSelector* const selector_;
+  BaseVariableAssignmentSelector* selector_;
   const Mode mode_;
 };
 
 BaseAssignVariables::~BaseAssignVariables() {}
 
-Decision* BaseAssignVariables::Next(Solver* const s) {
+Decision* BaseAssignVariables::Next(Solver* s) {
   const std::vector<IntVar*>& vars = selector_->vars();
   int id = selector_->ChooseVariableWrapper();
   if (id >= 0 && id < vars.size()) {
@@ -2002,7 +1986,7 @@ std::string BaseAssignVariables::DebugString() const {
 }
 
 BaseAssignVariables* BaseAssignVariables::MakePhase(
-    Solver* const s, const std::vector<IntVar*>& vars,
+    Solver* s, const std::vector<IntVar*>& vars,
     Solver::VariableIndexSelector var_selector,
     Solver::VariableValueSelector value_selector,
     const std::string& value_selector_name, BaseAssignVariables::Mode mode) {
@@ -2075,15 +2059,14 @@ std::string BuildHeuristicsName(Solver::IntVarStrategy var_str,
 }
 }  // namespace
 
-DecisionBuilder* Solver::MakePhase(IntVar* const v0,
-                                   Solver::IntVarStrategy var_str,
+DecisionBuilder* Solver::MakePhase(IntVar* v0, Solver::IntVarStrategy var_str,
                                    Solver::IntValueStrategy val_str) {
   std::vector<IntVar*> vars(1);
   vars[0] = v0;
   return MakePhase(vars, var_str, val_str);
 }
 
-DecisionBuilder* Solver::MakePhase(IntVar* const v0, IntVar* const v1,
+DecisionBuilder* Solver::MakePhase(IntVar* v0, IntVar* v1,
                                    Solver::IntVarStrategy var_str,
                                    Solver::IntValueStrategy val_str) {
   std::vector<IntVar*> vars(2);
@@ -2092,8 +2075,7 @@ DecisionBuilder* Solver::MakePhase(IntVar* const v0, IntVar* const v1,
   return MakePhase(vars, var_str, val_str);
 }
 
-DecisionBuilder* Solver::MakePhase(IntVar* const v0, IntVar* const v1,
-                                   IntVar* const v2,
+DecisionBuilder* Solver::MakePhase(IntVar* v0, IntVar* v1, IntVar* v2,
                                    Solver::IntVarStrategy var_str,
                                    Solver::IntValueStrategy val_str) {
   std::vector<IntVar*> vars(3);
@@ -2103,9 +2085,8 @@ DecisionBuilder* Solver::MakePhase(IntVar* const v0, IntVar* const v1,
   return MakePhase(vars, var_str, val_str);
 }
 
-DecisionBuilder* Solver::MakePhase(IntVar* const v0, IntVar* const v1,
-                                   IntVar* const v2, IntVar* const v3,
-                                   Solver::IntVarStrategy var_str,
+DecisionBuilder* Solver::MakePhase(IntVar* v0, IntVar* v1, IntVar* v2,
+                                   IntVar* v3, Solver::IntVarStrategy var_str,
                                    Solver::IntValueStrategy val_str) {
   std::vector<IntVar*> vars(4);
   vars[0] = v0;
@@ -2278,14 +2259,14 @@ DecisionBuilder* Solver::MakePhase(const std::vector<IntVar*>& vars,
 namespace {
 class AssignVariablesFromAssignment : public DecisionBuilder {
  public:
-  AssignVariablesFromAssignment(const Assignment* const assignment,
-                                DecisionBuilder* const db,
+  AssignVariablesFromAssignment(const Assignment* assignment,
+                                DecisionBuilder* db,
                                 const std::vector<IntVar*>& vars)
       : assignment_(assignment), db_(db), vars_(vars), iter_(0) {}
 
   ~AssignVariablesFromAssignment() override {}
 
-  Decision* Next(Solver* const s) override {
+  Decision* Next(Solver* s) override {
     if (iter_ < vars_.size()) {
       IntVar* const var = vars_[iter_++];
       return s->RevAlloc(
@@ -2295,7 +2276,7 @@ class AssignVariablesFromAssignment : public DecisionBuilder {
     }
   }
 
-  void Accept(ModelVisitor* const visitor) const override {
+  void Accept(ModelVisitor* visitor) const override {
     visitor->BeginVisitExtension(ModelVisitor::kVariableGroupExtension);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars_);
@@ -2311,7 +2292,7 @@ class AssignVariablesFromAssignment : public DecisionBuilder {
 }  // namespace
 
 DecisionBuilder* Solver::MakeDecisionBuilderFromAssignment(
-    Assignment* const assignment, DecisionBuilder* const db,
+    Assignment* assignment, DecisionBuilder* db,
     const std::vector<IntVar*>& vars) {
   return RevAlloc(new AssignVariablesFromAssignment(assignment, db, vars));
 }
@@ -2362,7 +2343,7 @@ void SolutionCollector::Install() {
   ListenToEvent(Solver::MonitorEvent::kEnterSearch);
 }
 
-void SolutionCollector::Add(IntVar* const var) {
+void SolutionCollector::Add(IntVar* var) {
   if (prototype_ != nullptr) {
     prototype_->Add(var);
   }
@@ -2374,7 +2355,7 @@ void SolutionCollector::Add(const std::vector<IntVar*>& vars) {
   }
 }
 
-void SolutionCollector::Add(IntervalVar* const var) {
+void SolutionCollector::Add(IntervalVar* var) {
   if (prototype_ != nullptr) {
     prototype_->Add(var);
   }
@@ -2386,7 +2367,7 @@ void SolutionCollector::Add(const std::vector<IntervalVar*>& vars) {
   }
 }
 
-void SolutionCollector::Add(SequenceVar* const var) {
+void SolutionCollector::Add(SequenceVar* var) {
   if (prototype_ != nullptr) {
     prototype_->Add(var);
   }
@@ -2398,7 +2379,7 @@ void SolutionCollector::Add(const std::vector<SequenceVar*>& vars) {
   }
 }
 
-void SolutionCollector::AddObjective(IntVar* const objective) {
+void SolutionCollector::AddObjective(IntVar* objective) {
   if (prototype_ != nullptr && objective != nullptr) {
     prototype_->AddObjective(objective);
   }
@@ -2550,11 +2531,10 @@ class FirstSolutionCollector : public SolutionCollector {
   bool done_;
 };
 
-FirstSolutionCollector::FirstSolutionCollector(Solver* const s,
-                                               const Assignment* const a)
+FirstSolutionCollector::FirstSolutionCollector(Solver* s, const Assignment* a)
     : SolutionCollector(s, a), done_(false) {}
 
-FirstSolutionCollector::FirstSolutionCollector(Solver* const s)
+FirstSolutionCollector::FirstSolutionCollector(Solver* s)
     : SolutionCollector(s), done_(false) {}
 
 FirstSolutionCollector::~FirstSolutionCollector() {}
@@ -2587,7 +2567,7 @@ std::string FirstSolutionCollector::DebugString() const {
 }  // namespace
 
 SolutionCollector* Solver::MakeFirstSolutionCollector(
-    const Assignment* const assignment) {
+    const Assignment* assignment) {
   return RevAlloc(new FirstSolutionCollector(this, assignment));
 }
 
@@ -2609,11 +2589,10 @@ class LastSolutionCollector : public SolutionCollector {
   std::string DebugString() const override;
 };
 
-LastSolutionCollector::LastSolutionCollector(Solver* const s,
-                                             const Assignment* const a)
+LastSolutionCollector::LastSolutionCollector(Solver* s, const Assignment* a)
     : SolutionCollector(s, a) {}
 
-LastSolutionCollector::LastSolutionCollector(Solver* const s)
+LastSolutionCollector::LastSolutionCollector(Solver* s)
     : SolutionCollector(s) {}
 
 LastSolutionCollector::~LastSolutionCollector() {}
@@ -2639,7 +2618,7 @@ std::string LastSolutionCollector::DebugString() const {
 }  // namespace
 
 SolutionCollector* Solver::MakeLastSolutionCollector(
-    const Assignment* const assignment) {
+    const Assignment* assignment) {
   return RevAlloc(new LastSolutionCollector(this, assignment));
 }
 
@@ -2740,7 +2719,7 @@ std::string BestValueSolutionCollector::DebugString() const {
 }  // namespace
 
 SolutionCollector* Solver::MakeBestValueSolutionCollector(
-    const Assignment* const assignment, bool maximize) {
+    const Assignment* assignment, bool maximize) {
   return RevAlloc(new BestValueSolutionCollector(this, assignment, {maximize}));
 }
 
@@ -2916,12 +2895,10 @@ class AllSolutionCollector : public SolutionCollector {
   std::string DebugString() const override;
 };
 
-AllSolutionCollector::AllSolutionCollector(Solver* const s,
-                                           const Assignment* const a)
+AllSolutionCollector::AllSolutionCollector(Solver* s, const Assignment* a)
     : SolutionCollector(s, a) {}
 
-AllSolutionCollector::AllSolutionCollector(Solver* const s)
-    : SolutionCollector(s) {}
+AllSolutionCollector::AllSolutionCollector(Solver* s) : SolutionCollector(s) {}
 
 AllSolutionCollector::~AllSolutionCollector() {}
 
@@ -2945,7 +2922,7 @@ std::string AllSolutionCollector::DebugString() const {
 }  // namespace
 
 SolutionCollector* Solver::MakeAllSolutionCollector(
-    const Assignment* const assignment) {
+    const Assignment* assignment) {
   return RevAlloc(new AllSolutionCollector(this, assignment));
 }
 
@@ -3158,7 +3135,7 @@ bool ObjectiveMonitor::AcceptDelta(Assignment* delta, Assignment*) {
   return true;
 }
 
-void ObjectiveMonitor::Accept(ModelVisitor* const visitor) const {
+void ObjectiveMonitor::Accept(ModelVisitor* visitor) const {
   visitor->BeginVisitExtension(ModelVisitor::kObjectiveExtension);
   visitor->VisitIntegerArrayArgument(ModelVisitor::kStepArgument, steps_);
   visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kExpressionArgument,
@@ -3271,16 +3248,15 @@ std::string OptimizeVar::DebugString() const {
   return out;
 }
 
-OptimizeVar* Solver::MakeMinimize(IntVar* const v, int64_t step) {
+OptimizeVar* Solver::MakeMinimize(IntVar* v, int64_t step) {
   return RevAlloc(new OptimizeVar(this, false, v, step));
 }
 
-OptimizeVar* Solver::MakeMaximize(IntVar* const v, int64_t step) {
+OptimizeVar* Solver::MakeMaximize(IntVar* v, int64_t step) {
   return RevAlloc(new OptimizeVar(this, true, v, step));
 }
 
-OptimizeVar* Solver::MakeOptimize(bool maximize, IntVar* const v,
-                                  int64_t step) {
+OptimizeVar* Solver::MakeOptimize(bool maximize, IntVar* v, int64_t step) {
   return RevAlloc(new OptimizeVar(this, maximize, v, step));
 }
 
@@ -3409,7 +3385,7 @@ class TabuSearch : public Metaheuristic {
   void BeginNextDecision(DecisionBuilder* const) override {
     if (stop_search_) solver()->Fail();
   }
-  void RefuteDecision(Decision* const d) override {
+  void RefuteDecision(Decision* d) override {
     Metaheuristic::RefuteDecision(d);
     if (stop_search_) solver()->Fail();
   }
@@ -3488,7 +3464,7 @@ void TabuSearch::EnterSearch() {
   stop_search_ = false;
 }
 
-void TabuSearch::ApplyDecision(Decision* const d) {
+void TabuSearch::ApplyDecision(Decision* d) {
   Solver* const s = solver();
   if (d == s->balancing_decision()) {
     return;
@@ -3728,7 +3704,7 @@ ObjectiveMonitor* Solver::MakeLexicographicTabuSearch(
 }
 
 ObjectiveMonitor* Solver::MakeGenericTabuSearch(
-    bool maximize, IntVar* const v, int64_t step,
+    bool maximize, IntVar* v, int64_t step,
     const std::vector<IntVar*>& tabu_vars, int64_t forbid_tenure) {
   return RevAlloc(
       new GenericTabuSearch(this, maximize, v, step, tabu_vars, forbid_tenure));
@@ -3771,7 +3747,7 @@ SimulatedAnnealing::SimulatedAnnealing(
       rand_(CpRandomSeed()) {}
 
 // As a reminder, if s is the current solution, s' the new solution, s' will be
-// accepted iff:
+// accepted if and only if:
 // 1) cost(s') ≤ cost(s) - step
 // or
 // 2) P(cost(s) - step, cost(s'), T) ≥ random(0, 1),
@@ -3783,7 +3759,7 @@ SimulatedAnnealing::SimulatedAnnealing(
 // 2) can therefore be expressed as:
 // cost(s') ≤ cost(s) - step - log(random(0, 1) * T.
 // Note that if 1) is true, 2) will be true too as exp(-(e' - e) / T) ≥ 1.
-void SimulatedAnnealing::ApplyDecision(Decision* const d) {
+void SimulatedAnnealing::ApplyDecision(Decision* d) {
   Solver* const s = solver();
   if (d == s->balancing_decision()) {
     return;
@@ -3823,7 +3799,7 @@ void SimulatedAnnealing::AcceptNeighbor() {
 }
 }  // namespace
 
-ObjectiveMonitor* Solver::MakeSimulatedAnnealing(bool maximize, IntVar* const v,
+ObjectiveMonitor* Solver::MakeSimulatedAnnealing(bool maximize, IntVar* v,
                                                  int64_t step,
                                                  int64_t initial_temperature) {
   return RevAlloc(new SimulatedAnnealing(this, {maximize}, {v}, {step},
@@ -4090,7 +4066,7 @@ void GuidedLocalSearch<P>::AddVars(const std::vector<IntVar*>& vars) {
 //      objective >= Min(current penalized cost - penalized_objective + step,
 //                       best solution cost + step)
 template <typename P>
-void GuidedLocalSearch<P>::ApplyDecision(Decision* const d) {
+void GuidedLocalSearch<P>::ApplyDecision(Decision* d) {
   if (d == solver()->balancing_decision()) {
     return;
   }
@@ -4282,7 +4258,7 @@ class BinaryGuidedLocalSearch : public GuidedLocalSearch<P> {
 
 template <typename P>
 BinaryGuidedLocalSearch<P>::BinaryGuidedLocalSearch(
-    Solver* const solver, IntVar* const objective,
+    Solver* solver, IntVar* objective,
     std::function<int64_t(int64_t, int64_t)> objective_function, bool maximize,
     int64_t step, const std::vector<IntVar*>& vars, double penalty_factor,
     std::function<std::vector<std::pair<int64_t, int64_t>>(int64_t, int64_t)>
@@ -4377,7 +4353,7 @@ class TernaryGuidedLocalSearch : public GuidedLocalSearch<P> {
 
 template <typename P>
 TernaryGuidedLocalSearch<P>::TernaryGuidedLocalSearch(
-    Solver* const solver, IntVar* const objective,
+    Solver* solver, IntVar* objective,
     std::function<int64_t(int64_t, int64_t, int64_t)> objective_function,
     bool maximize, int64_t step, const std::vector<IntVar*>& vars,
     const std::vector<IntVar*>& secondary_vars, double penalty_factor,
@@ -4481,7 +4457,7 @@ int64_t TernaryGuidedLocalSearch<P>::PenalizedValue(int64_t i, int64_t j,
 }  // namespace
 
 ObjectiveMonitor* Solver::MakeGuidedLocalSearch(
-    bool maximize, IntVar* const objective,
+    bool maximize, IntVar* objective,
     Solver::IndexEvaluator2 objective_function, int64_t step,
     const std::vector<IntVar*>& vars, double penalty_factor,
     std::function<std::vector<std::pair<int64_t, int64_t>>(int64_t, int64_t)>
@@ -4502,7 +4478,7 @@ ObjectiveMonitor* Solver::MakeGuidedLocalSearch(
 }
 
 ObjectiveMonitor* Solver::MakeGuidedLocalSearch(
-    bool maximize, IntVar* const objective,
+    bool maximize, IntVar* objective,
     Solver::IndexEvaluator3 objective_function, int64_t step,
     const std::vector<IntVar*>& vars,
     const std::vector<IntVar*>& secondary_vars, double penalty_factor,
@@ -4567,10 +4543,9 @@ void SearchLimit::TopPeriodicCheck() {
 
 // ----- Regular Limit -----
 
-RegularLimit::RegularLimit(Solver* const s, absl::Duration time,
-                           int64_t branches, int64_t failures,
-                           int64_t solutions, bool smart_time_check,
-                           bool cumulative)
+RegularLimit::RegularLimit(Solver* s, absl::Duration time, int64_t branches,
+                           int64_t failures, int64_t solutions,
+                           bool smart_time_check, bool cumulative)
     : SearchLimit(s),
       duration_limit_(time),
       solver_time_at_limit_start_(s->Now()),
@@ -4596,7 +4571,7 @@ void RegularLimit::Install() {
   ListenToEvent(Solver::MonitorEvent::kAccept);
 }
 
-void RegularLimit::Copy(const SearchLimit* const limit) {
+void RegularLimit::Copy(const SearchLimit* limit) {
   const RegularLimit* const regular =
       reinterpret_cast<const RegularLimit* const>(limit);
   duration_limit_ = regular->duration_limit_;
@@ -4681,7 +4656,7 @@ std::string RegularLimit::DebugString() const {
       solutions_, (cumulative_ ? "true" : "false"));
 }
 
-void RegularLimit::Accept(ModelVisitor* const visitor) const {
+void RegularLimit::Accept(ModelVisitor* visitor) const {
   visitor->BeginVisitExtension(ModelVisitor::kSearchLimitExtension);
   visitor->VisitIntegerArgument(ModelVisitor::kTimeLimitArgument, wall_time());
   visitor->VisitIntegerArgument(ModelVisitor::kBranchesLimitArgument,
@@ -4831,7 +4806,7 @@ void ImprovementSearchLimit::Init() {
   gradient_stage_ = true;
 }
 
-void ImprovementSearchLimit::Copy(const SearchLimit* const limit) {
+void ImprovementSearchLimit::Copy(const SearchLimit* limit) {
   const ImprovementSearchLimit* const improv =
       reinterpret_cast<const ImprovementSearchLimit* const>(limit);
   objective_vars_ = improv->objective_vars_;
@@ -5000,7 +4975,7 @@ class ORLimit : public SearchLimit {
     limit_1_->EnterSearch();
     limit_2_->EnterSearch();
   }
-  void BeginNextDecision(DecisionBuilder* const b) override {
+  void BeginNextDecision(DecisionBuilder* b) override {
     limit_1_->BeginNextDecision(b);
     limit_2_->BeginNextDecision(b);
   }
@@ -5008,7 +4983,7 @@ class ORLimit : public SearchLimit {
     limit_1_->PeriodicCheck();
     limit_2_->PeriodicCheck();
   }
-  void RefuteDecision(Decision* const d) override {
+  void RefuteDecision(Decision* d) override {
     limit_1_->RefuteDecision(d);
     limit_2_->RefuteDecision(d);
   }
@@ -5023,8 +4998,7 @@ class ORLimit : public SearchLimit {
 };
 }  // namespace
 
-SearchLimit* Solver::MakeLimit(SearchLimit* const limit_1,
-                               SearchLimit* const limit_2) {
+SearchLimit* Solver::MakeLimit(SearchLimit* limit_1, SearchLimit* limit_2) {
   return RevAlloc(new ORLimit(limit_1, limit_2));
 }
 
@@ -5041,7 +5015,7 @@ class CustomLimit : public SearchLimit {
   std::function<bool()> limiter_;
 };
 
-CustomLimit::CustomLimit(Solver* const s, std::function<bool()> limiter)
+CustomLimit::CustomLimit(Solver* s, std::function<bool()> limiter)
     : SearchLimit(s), limiter_(std::move(limiter)) {}
 
 bool CustomLimit::CheckWithOffset(absl::Duration) {
@@ -5052,7 +5026,7 @@ bool CustomLimit::CheckWithOffset(absl::Duration) {
 
 void CustomLimit::Init() {}
 
-void CustomLimit::Copy(const SearchLimit* const limit) {
+void CustomLimit::Copy(const SearchLimit* limit) {
   const CustomLimit* const custom =
       reinterpret_cast<const CustomLimit* const>(limit);
   limiter_ = custom->limiter_;
@@ -5072,12 +5046,9 @@ SearchLimit* Solver::MakeCustomLimit(std::function<bool()> limiter) {
 namespace {
 class SolveOnce : public DecisionBuilder {
  public:
-  explicit SolveOnce(DecisionBuilder* const db) : db_(db) {
-    CHECK(db != nullptr);
-  }
+  explicit SolveOnce(DecisionBuilder* db) : db_(db) { CHECK(db != nullptr); }
 
-  SolveOnce(DecisionBuilder* const db,
-            const std::vector<SearchMonitor*>& monitors)
+  SolveOnce(DecisionBuilder* db, const std::vector<SearchMonitor*>& monitors)
       : db_(db), monitors_(monitors) {
     CHECK(db != nullptr);
   }
@@ -5096,9 +5067,7 @@ class SolveOnce : public DecisionBuilder {
     return absl::StrFormat("SolveOnce(%s)", db_->DebugString());
   }
 
-  void Accept(ModelVisitor* const visitor) const override {
-    db_->Accept(visitor);
-  }
+  void Accept(ModelVisitor* visitor) const override { db_->Accept(visitor); }
 
  private:
   DecisionBuilder* const db_;
@@ -5106,30 +5075,30 @@ class SolveOnce : public DecisionBuilder {
 };
 }  // namespace
 
-DecisionBuilder* Solver::MakeSolveOnce(DecisionBuilder* const db) {
+DecisionBuilder* Solver::MakeSolveOnce(DecisionBuilder* db) {
   return RevAlloc(new SolveOnce(db));
 }
 
-DecisionBuilder* Solver::MakeSolveOnce(DecisionBuilder* const db,
-                                       SearchMonitor* const monitor1) {
+DecisionBuilder* Solver::MakeSolveOnce(DecisionBuilder* db,
+                                       SearchMonitor* monitor1) {
   std::vector<SearchMonitor*> monitors;
   monitors.push_back(monitor1);
   return RevAlloc(new SolveOnce(db, monitors));
 }
 
-DecisionBuilder* Solver::MakeSolveOnce(DecisionBuilder* const db,
-                                       SearchMonitor* const monitor1,
-                                       SearchMonitor* const monitor2) {
+DecisionBuilder* Solver::MakeSolveOnce(DecisionBuilder* db,
+                                       SearchMonitor* monitor1,
+                                       SearchMonitor* monitor2) {
   std::vector<SearchMonitor*> monitors;
   monitors.push_back(monitor1);
   monitors.push_back(monitor2);
   return RevAlloc(new SolveOnce(db, monitors));
 }
 
-DecisionBuilder* Solver::MakeSolveOnce(DecisionBuilder* const db,
-                                       SearchMonitor* const monitor1,
-                                       SearchMonitor* const monitor2,
-                                       SearchMonitor* const monitor3) {
+DecisionBuilder* Solver::MakeSolveOnce(DecisionBuilder* db,
+                                       SearchMonitor* monitor1,
+                                       SearchMonitor* monitor2,
+                                       SearchMonitor* monitor3) {
   std::vector<SearchMonitor*> monitors;
   monitors.push_back(monitor1);
   monitors.push_back(monitor2);
@@ -5137,11 +5106,11 @@ DecisionBuilder* Solver::MakeSolveOnce(DecisionBuilder* const db,
   return RevAlloc(new SolveOnce(db, monitors));
 }
 
-DecisionBuilder* Solver::MakeSolveOnce(DecisionBuilder* const db,
-                                       SearchMonitor* const monitor1,
-                                       SearchMonitor* const monitor2,
-                                       SearchMonitor* const monitor3,
-                                       SearchMonitor* const monitor4) {
+DecisionBuilder* Solver::MakeSolveOnce(DecisionBuilder* db,
+                                       SearchMonitor* monitor1,
+                                       SearchMonitor* monitor2,
+                                       SearchMonitor* monitor3,
+                                       SearchMonitor* monitor4) {
   std::vector<SearchMonitor*> monitors;
   monitors.push_back(monitor1);
   monitors.push_back(monitor2);
@@ -5151,7 +5120,7 @@ DecisionBuilder* Solver::MakeSolveOnce(DecisionBuilder* const db,
 }
 
 DecisionBuilder* Solver::MakeSolveOnce(
-    DecisionBuilder* const db, const std::vector<SearchMonitor*>& monitors) {
+    DecisionBuilder* db, const std::vector<SearchMonitor*>& monitors) {
   return RevAlloc(new SolveOnce(db, monitors));
 }
 
@@ -5160,8 +5129,8 @@ DecisionBuilder* Solver::MakeSolveOnce(
 namespace {
 class NestedOptimize : public DecisionBuilder {
  public:
-  NestedOptimize(DecisionBuilder* const db, Assignment* const solution,
-                 bool maximize, int64_t step)
+  NestedOptimize(DecisionBuilder* db, Assignment* solution, bool maximize,
+                 int64_t step)
       : db_(db),
         solution_(solution),
         maximize_(maximize),
@@ -5173,9 +5142,8 @@ class NestedOptimize : public DecisionBuilder {
     AddMonitors();
   }
 
-  NestedOptimize(DecisionBuilder* const db, Assignment* const solution,
-                 bool maximize, int64_t step,
-                 const std::vector<SearchMonitor*>& monitors)
+  NestedOptimize(DecisionBuilder* db, Assignment* solution, bool maximize,
+                 int64_t step, const std::vector<SearchMonitor*>& monitors)
       : db_(db),
         solution_(solution),
         maximize_(maximize),
@@ -5211,9 +5179,7 @@ class NestedOptimize : public DecisionBuilder {
                            db_->DebugString(), maximize_, step_);
   }
 
-  void Accept(ModelVisitor* const visitor) const override {
-    db_->Accept(visitor);
-  }
+  void Accept(ModelVisitor* visitor) const override { db_->Accept(visitor); }
 
  private:
   DecisionBuilder* const db_;
@@ -5225,38 +5191,35 @@ class NestedOptimize : public DecisionBuilder {
 };
 }  // namespace
 
-DecisionBuilder* Solver::MakeNestedOptimize(DecisionBuilder* const db,
-                                            Assignment* const solution,
-                                            bool maximize, int64_t step) {
+DecisionBuilder* Solver::MakeNestedOptimize(DecisionBuilder* db,
+                                            Assignment* solution, bool maximize,
+                                            int64_t step) {
   return RevAlloc(new NestedOptimize(db, solution, maximize, step));
 }
 
-DecisionBuilder* Solver::MakeNestedOptimize(DecisionBuilder* const db,
-                                            Assignment* const solution,
-                                            bool maximize, int64_t step,
-                                            SearchMonitor* const monitor1) {
+DecisionBuilder* Solver::MakeNestedOptimize(DecisionBuilder* db,
+                                            Assignment* solution, bool maximize,
+                                            int64_t step,
+                                            SearchMonitor* monitor1) {
   std::vector<SearchMonitor*> monitors;
   monitors.push_back(monitor1);
   return RevAlloc(new NestedOptimize(db, solution, maximize, step, monitors));
 }
 
-DecisionBuilder* Solver::MakeNestedOptimize(DecisionBuilder* const db,
-                                            Assignment* const solution,
-                                            bool maximize, int64_t step,
-                                            SearchMonitor* const monitor1,
-                                            SearchMonitor* const monitor2) {
+DecisionBuilder* Solver::MakeNestedOptimize(DecisionBuilder* db,
+                                            Assignment* solution, bool maximize,
+                                            int64_t step,
+                                            SearchMonitor* monitor1,
+                                            SearchMonitor* monitor2) {
   std::vector<SearchMonitor*> monitors;
   monitors.push_back(monitor1);
   monitors.push_back(monitor2);
   return RevAlloc(new NestedOptimize(db, solution, maximize, step, monitors));
 }
 
-DecisionBuilder* Solver::MakeNestedOptimize(DecisionBuilder* const db,
-                                            Assignment* const solution,
-                                            bool maximize, int64_t step,
-                                            SearchMonitor* const monitor1,
-                                            SearchMonitor* const monitor2,
-                                            SearchMonitor* const monitor3) {
+DecisionBuilder* Solver::MakeNestedOptimize(
+    DecisionBuilder* db, Assignment* solution, bool maximize, int64_t step,
+    SearchMonitor* monitor1, SearchMonitor* monitor2, SearchMonitor* monitor3) {
   std::vector<SearchMonitor*> monitors;
   monitors.push_back(monitor1);
   monitors.push_back(monitor2);
@@ -5265,9 +5228,9 @@ DecisionBuilder* Solver::MakeNestedOptimize(DecisionBuilder* const db,
 }
 
 DecisionBuilder* Solver::MakeNestedOptimize(
-    DecisionBuilder* const db, Assignment* const solution, bool maximize,
-    int64_t step, SearchMonitor* const monitor1, SearchMonitor* const monitor2,
-    SearchMonitor* const monitor3, SearchMonitor* const monitor4) {
+    DecisionBuilder* db, Assignment* solution, bool maximize, int64_t step,
+    SearchMonitor* monitor1, SearchMonitor* monitor2, SearchMonitor* monitor3,
+    SearchMonitor* monitor4) {
   std::vector<SearchMonitor*> monitors;
   monitors.push_back(monitor1);
   monitors.push_back(monitor2);
@@ -5277,8 +5240,8 @@ DecisionBuilder* Solver::MakeNestedOptimize(
 }
 
 DecisionBuilder* Solver::MakeNestedOptimize(
-    DecisionBuilder* const db, Assignment* const solution, bool maximize,
-    int64_t step, const std::vector<SearchMonitor*>& monitors) {
+    DecisionBuilder* db, Assignment* solution, bool maximize, int64_t step,
+    const std::vector<SearchMonitor*>& monitors) {
   return RevAlloc(new NestedOptimize(db, solution, maximize, step, monitors));
 }
 
@@ -5305,7 +5268,7 @@ int64_t NextLuby(int i) {
 
 class LubyRestart : public SearchMonitor {
  public:
-  LubyRestart(Solver* const s, int scale_factor)
+  LubyRestart(Solver* s, int scale_factor)
       : SearchMonitor(s),
         scale_factor_(scale_factor),
         iteration_(1),
@@ -5347,7 +5310,7 @@ SearchMonitor* Solver::MakeLubyRestart(int scale_factor) {
 namespace {
 class ConstantRestart : public SearchMonitor {
  public:
-  ConstantRestart(Solver* const s, int frequency)
+  ConstantRestart(Solver* s, int frequency)
       : SearchMonitor(s), frequency_(frequency), current_fails_(0) {
     CHECK_GE(frequency, 1);
   }
@@ -5396,8 +5359,7 @@ SearchMonitor* Solver::MakeConstantRestart(int frequency) {
 //
 class SymmetryManager : public SearchMonitor {
  public:
-  SymmetryManager(Solver* const s,
-                  const std::vector<SymmetryBreaker*>& visitors)
+  SymmetryManager(Solver* s, const std::vector<SymmetryBreaker*>& visitors)
       : SearchMonitor(s),
         visitors_(visitors),
         clauses_(visitors.size()),
@@ -5410,13 +5372,13 @@ class SymmetryManager : public SearchMonitor {
 
   ~SymmetryManager() override {}
 
-  void EndNextDecision(DecisionBuilder* const, Decision* const d) override {
+  void EndNextDecision(DecisionBuilder* const, Decision* d) override {
     if (d) {
       for (int i = 0; i < visitors_.size(); ++i) {
         const void* const last = clauses_[i].Last();
         d->Accept(visitors_[i]);
         if (last != clauses_[i].Last()) {
-          // Synchroneous push of decision as marker.
+          // Synchronous push of decision as marker.
           decisions_[i].Push(solver(), d);
           directions_[i].Push(solver(), false);
         }
@@ -5471,7 +5433,7 @@ class SymmetryManager : public SearchMonitor {
     solver()->AddConstraint(ct);
   }
 
-  void AddTermToClause(SymmetryBreaker* const visitor, IntVar* const term) {
+  void AddTermToClause(SymmetryBreaker* visitor, IntVar* term) {
     clauses_[visitor->index_in_symmetry_manager()].Push(solver(), term);
   }
 
@@ -5486,7 +5448,7 @@ class SymmetryManager : public SearchMonitor {
 
 // ----- Symmetry Breaker -----
 
-void SymmetryBreaker::AddIntegerVariableEqualValueClause(IntVar* const var,
+void SymmetryBreaker::AddIntegerVariableEqualValueClause(IntVar* var,
                                                          int64_t value) {
   CHECK(var != nullptr);
   Solver* const solver = var->solver();
@@ -5495,15 +5457,15 @@ void SymmetryBreaker::AddIntegerVariableEqualValueClause(IntVar* const var,
 }
 
 void SymmetryBreaker::AddIntegerVariableGreaterOrEqualValueClause(
-    IntVar* const var, int64_t value) {
+    IntVar* var, int64_t value) {
   CHECK(var != nullptr);
   Solver* const solver = var->solver();
   IntVar* const term = solver->MakeIsGreaterOrEqualCstVar(var, value);
   symmetry_manager()->AddTermToClause(this, term);
 }
 
-void SymmetryBreaker::AddIntegerVariableLessOrEqualValueClause(
-    IntVar* const var, int64_t value) {
+void SymmetryBreaker::AddIntegerVariableLessOrEqualValueClause(IntVar* var,
+                                                               int64_t value) {
   CHECK(var != nullptr);
   Solver* const solver = var->solver();
   IntVar* const term = solver->MakeIsLessOrEqualCstVar(var, value);
@@ -5517,23 +5479,23 @@ SearchMonitor* Solver::MakeSymmetryManager(
   return RevAlloc(new SymmetryManager(this, visitors));
 }
 
-SearchMonitor* Solver::MakeSymmetryManager(SymmetryBreaker* const v1) {
+SearchMonitor* Solver::MakeSymmetryManager(SymmetryBreaker* v1) {
   std::vector<SymmetryBreaker*> visitors;
   visitors.push_back(v1);
   return MakeSymmetryManager(visitors);
 }
 
-SearchMonitor* Solver::MakeSymmetryManager(SymmetryBreaker* const v1,
-                                           SymmetryBreaker* const v2) {
+SearchMonitor* Solver::MakeSymmetryManager(SymmetryBreaker* v1,
+                                           SymmetryBreaker* v2) {
   std::vector<SymmetryBreaker*> visitors;
   visitors.push_back(v1);
   visitors.push_back(v2);
   return MakeSymmetryManager(visitors);
 }
 
-SearchMonitor* Solver::MakeSymmetryManager(SymmetryBreaker* const v1,
-                                           SymmetryBreaker* const v2,
-                                           SymmetryBreaker* const v3) {
+SearchMonitor* Solver::MakeSymmetryManager(SymmetryBreaker* v1,
+                                           SymmetryBreaker* v2,
+                                           SymmetryBreaker* v3) {
   std::vector<SymmetryBreaker*> visitors;
   visitors.push_back(v1);
   visitors.push_back(v2);
@@ -5541,10 +5503,10 @@ SearchMonitor* Solver::MakeSymmetryManager(SymmetryBreaker* const v1,
   return MakeSymmetryManager(visitors);
 }
 
-SearchMonitor* Solver::MakeSymmetryManager(SymmetryBreaker* const v1,
-                                           SymmetryBreaker* const v2,
-                                           SymmetryBreaker* const v3,
-                                           SymmetryBreaker* const v4) {
+SearchMonitor* Solver::MakeSymmetryManager(SymmetryBreaker* v1,
+                                           SymmetryBreaker* v2,
+                                           SymmetryBreaker* v3,
+                                           SymmetryBreaker* v4) {
   std::vector<SymmetryBreaker*> visitors;
   visitors.push_back(v1);
   visitors.push_back(v2);

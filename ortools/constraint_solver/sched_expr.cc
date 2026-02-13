@@ -17,7 +17,7 @@
 
 #include "absl/strings/str_format.h"
 #include "ortools/constraint_solver/constraint_solver.h"
-#include "ortools/constraint_solver/constraint_solveri.h"
+#include "ortools/constraint_solver/expressions.h"
 
 #if defined(_MSC_VER)
 #pragma warning(disable : 4351 4355 4804 4805)
