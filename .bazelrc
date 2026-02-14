@@ -1,6 +1,12 @@
 # Enable logging rc options.
 common --announce_rc
 
+# Mitigate gLinux gcc-15.2.0-3 defaults to -Wa,-gsframe, causing:
+# "relocation refers to a discarded section: " linker error
+# see: https://github.com/llvm/llvm-project/issues/156667
+common:linux --copt=-Wa,--gsframe=no
+common:linux --host_copt=-Wa,--gsframe=no
+
 ###############################################################################
 # Global options for building OR-Tools.
 ###############################################################################
