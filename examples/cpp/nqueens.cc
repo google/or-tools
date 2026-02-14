@@ -29,7 +29,7 @@
 #include "ortools/base/map_util.h"
 #include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
-#include "ortools/constraint_solver/constraint_solveri.h"
+#include "ortools/constraint_solver/search.h"
 
 ABSL_FLAG(bool, print, false, "If true, print one of the solution.");
 ABSL_FLAG(bool, print_all, false, "If true, print all the solutions.");

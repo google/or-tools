@@ -43,7 +43,8 @@
 #include "ortools/base/init_google.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/types.h"
-#include "ortools/constraint_solver/constraint_solveri.h"
+#include "ortools/constraint_solver/constraint_solver.h"
+#include "ortools/constraint_solver/local_search.h"
 #include "ortools/util/bitset.h"
 
 ABSL_FLAG(int, symbols_per_card, 8, "Number of symbols per card.");
