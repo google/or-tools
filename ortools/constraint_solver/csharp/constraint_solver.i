@@ -234,6 +234,10 @@ DEFINE_ARGS_TO_R_CALLBACK(
 // Renaming
 namespace operations_research {
 
+// This method causes issues with our std::vector<int64_t> wrapping. It's not really
+// part of the public API anyway.
+%ignore ToInt64Vector;
+
 // Decision
 %feature("director") Decision;
 %unignore Decision;

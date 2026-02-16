@@ -21,17 +21,6 @@ namespace Google.OrTools.Tests
 public class ConstraintSolverTest
 {
     [Fact]
-    public void IntVectorToInt64Vector()
-    {
-        int[] input = { 5, 11, 17 };
-        long[] output = ToInt64Vector(input);
-        Assert.Equal(3, output.Length);
-        Assert.Equal(5, output[0]);
-        Assert.Equal(11, output[1]);
-        Assert.Equal(17, output[2]);
-    }
-
-    [Fact]
     public void IntVarConstructor()
     {
         Solver solver = new Solver("Solver");
