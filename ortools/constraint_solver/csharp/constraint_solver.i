@@ -53,7 +53,6 @@ class RegularLimitParameters;
 #include "ortools/constraint_solver/assignment.h"
 #include "ortools/constraint_solver/local_search.h"
 #include "ortools/constraint_solver/search.h"
-#include "ortools/constraint_solver/java/javawrapcp_util.h"
 #include "ortools/constraint_solver/search_limit.pb.h"
 #include "ortools/constraint_solver/solver_parameters.pb.h"
 
@@ -417,6 +416,10 @@ namespace operations_research {
 %rename (NewSearchAux) Solver::NewSearch;
 %rename (EndSearchAux) Solver::EndSearch;
 
+// BaseIntExpr
+%unignore BaseIntExpr;
+%unignore BaseIntExpr::CastToVar;
+
 // IntExpr
 %unignore IntExpr;
 %typemap(cscode) IntExpr %{
@@ -522,6 +525,9 @@ namespace operations_research {
 }
 
 %typemap(csinterfaces_derived) IntVarIterator "IEnumerable";
+
+// BooleanVar
+%unignore BooleanVar;
 
 // IntervalVar
 %unignore IntervalVar;
@@ -662,6 +668,33 @@ namespace operations_research {
 
 // ModelCache
 %unignore ModelCache;
+%unignore ModelCache::Clear;
+%unignore ModelCache::FindExprConstantExpression;
+%unignore ModelCache::FindExprExprConstantExpression;
+%unignore ModelCache::FindExprExprConstraint;
+%unignore ModelCache::FindExprExpression;
+%unignore ModelCache::FindExprExprExpression;
+%unignore ModelCache::FindVarArrayConstantArrayExpression;
+%unignore ModelCache::FindVarArrayConstantExpression;
+%unignore ModelCache::FindVarArrayExpression;
+%unignore ModelCache::FindVarConstantArrayExpression;
+%unignore ModelCache::FindVarConstantConstantConstraint;
+%unignore ModelCache::FindVarConstantConstantExpression;
+%unignore ModelCache::FindVarConstantConstraint;
+%unignore ModelCache::FindVoidConstraint;
+%unignore ModelCache::InsertExprConstantExpression;
+%unignore ModelCache::InsertExprExprConstantExpression;
+%unignore ModelCache::InsertExprExprConstraint;
+%unignore ModelCache::InsertExprExpression;
+%unignore ModelCache::InsertExprExprExpression;
+%unignore ModelCache::InsertVarArrayConstantArrayExpression;
+%unignore ModelCache::InsertVarArrayConstantExpression;
+%unignore ModelCache::InsertVarArrayExpression;
+%unignore ModelCache::InsertVarConstantArrayExpression;
+%unignore ModelCache::InsertVarConstantConstantConstraint;
+%unignore ModelCache::InsertVarConstantConstantExpression;
+%unignore ModelCache::InsertVarConstantConstraint;
+%unignore ModelCache::InsertVoidConstraint;
 
 // ObjectiveMonitor
 %unignore ObjectiveMonitor;
@@ -971,9 +1004,6 @@ namespace operations_research {
 %include "ortools/constraint_solver/assignment.h"
 %include "ortools/constraint_solver/local_search.h"
 %include "ortools/constraint_solver/search.h"
-%include "ortools/constraint_solver/java/javawrapcp_util.h"
-%include "ortools/constraint_solver/search_limit.pb.h"
-%include "ortools/constraint_solver/solver_parameters.pb.h"
 
 namespace operations_research {
 %template(RevInteger) Rev<int64_t>;
