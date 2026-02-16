@@ -36,7 +36,7 @@ jobs:
     - uses: actions/setup-python@v6
       with:
         python-version: ${{env.PYTHON_VERSION}}
-    - uses: bazel-contrib/setup-bazel@0.15.0
+    - uses: bazel-contrib/setup-bazel@0.18.0
     - name: Build
       run: bazel test --config=ci //ortools/...
       shell: bash

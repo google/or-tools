@@ -36,13 +36,13 @@ jobs:
 
       # RESTORING CACHES
       - name: Restore CMake dependency source code
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         id: deps_src_restore
         with:
           key: ${{env.deps_src_key}}-${{hashFiles('CMakeLists.txt', 'cmake/**')}}
           path: ${{github.workspace}}/build/_deps/*-src
       - name: Restore CMake dependency build
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         id: deps_build_restore
         with:
           key: ${{env.deps_build_key}}-${{hashFiles('CMakeLists.txt', 'cmake/**')}}
@@ -50,7 +50,7 @@ jobs:
             ${{github.workspace}}/build/_deps/*-build
             ${{github.workspace}}/build/_deps/*-subbuild
       - name: Restore CCache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         id: ccache_restore
         with:
           key: ${{env.ccache_key}}-${{github.sha}}
@@ -94,13 +94,13 @@ jobs:
       # SAVING CACHES
       - name: Save CCache
         if: github.ref == 'refs/heads/main'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           key: ${{steps.ccache_restore.outputs.cache-primary-key}}
           path: ${{env.CCACHE_DIR}}
       - name: Save CMake dependency build
         if: github.ref == 'refs/heads/main'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           key: ${{steps.deps_build_restore.outputs.cache-primary-key}}
           path: |
@@ -108,7 +108,7 @@ jobs:
             ${{github.workspace}}/build/_deps/*-subbuild
       - name: Save CMake dependency source code
         if: github.ref == 'refs/heads/main'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           key: ${{steps.deps_src_restore.outputs.cache-primary-key}}
           path: ${{github.workspace}}/build/_deps/*-src
