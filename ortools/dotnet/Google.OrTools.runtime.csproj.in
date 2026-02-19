@@ -33,6 +33,7 @@
       $<@need_windows_bzip2_lib@:;$<TARGET_FILE:BZip2::BZip2>>
 
       $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::base>>
+      $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::borrowed_fixup_buffer>>
       $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::city>>
       $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::civil_time>>
       $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::cord>>
@@ -103,7 +104,6 @@
       $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::statusor>>
       $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::str_format_internal>>
       $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::strerror>>
-      $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::string_view>>
       $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::strings>>
       $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::strings_internal>>
       $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::symbolize>>
