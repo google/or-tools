@@ -109,6 +109,7 @@
     "USE_GLOP",
     "USE_CLP",
     "USE_CBC",
+    "USE_HIGHS",
     "USE_PDLP",
     "USE_SCIP"
     ],
