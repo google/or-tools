@@ -603,6 +603,7 @@ detect_cpp:
 	@echo USE_COINOR = $(USE_COINOR)
 	@echo USE_SCIP = $(USE_SCIP)
 	@echo USE_GLPK = $(USE_GLPK)
+	@echo USE_HIGHS = $(USE_HIGHS)
 	@echo USE_CPLEX = $(USE_CPLEX)
 ifdef GLPK_ROOT
 	@echo GLPK_ROOT = $(GLPK_ROOT)
