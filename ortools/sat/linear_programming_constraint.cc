@@ -2628,7 +2628,7 @@ void LinearProgrammingConstraint::AdjustNewLinearConstraint(
 }
 
 bool LinearProgrammingConstraint::PropagateLpConstraint(LinearConstraint ct) {
-  DCHECK(constraint_manager_.DebugCheckConstraint(ct));
+  DCHECK(constraint_manager_.DebugCheckConstraint(ct, /*only_check_ub=*/true));
 
   // We need to cache this before we std::move() the constraint!
   const int num_terms = ct.num_terms;

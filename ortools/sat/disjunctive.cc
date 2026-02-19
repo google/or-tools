@@ -1801,14 +1801,24 @@ bool DisjunctiveEdgeFinding::PropagateSubwindow(
     // tasks in the tree actually), otherwise there will be no way to schedule
     // the critical_tasks inside their time window.
     while (theta_tree_.GetOptionalEnvelope() > non_gray_end_max) {
-      const IntegerValue end_min_with_gray = theta_tree_.GetOptionalEnvelope();
+      // Pick a gray event and critical set of task that are enough to have
+      // and end_min > non_gray_end_max.
       int critical_event_with_gray;
       int gray_event;
       IntegerValue available_energy;
       theta_tree_.GetEventsWithOptionalEnvelopeGreaterThan(
           non_gray_end_max, &critical_event_with_gray, &gray_event,
           &available_energy);
+
+      // We use the returned 'available_energy' to infer the end_min of that
+      // set.
       const int gray_task = window[gray_event].task_index;
+      const IntegerValue gray_size = event_size_[gray_event];
+      DCHECK_LE(available_energy, gray_size);
+      IntegerValue window_end =
+          non_gray_end_max + (gray_size - available_energy) - 1;
+      DCHECK_GE(window_end, non_gray_end_max);
+      DCHECK_LT(window_end, theta_tree_.GetOptionalEnvelope());
       DCHECK(is_gray_[gray_task]);
 
       // This might happen in the corner case where more than one interval are
@@ -1830,10 +1840,21 @@ bool DisjunctiveEdgeFinding::PropagateSubwindow(
         // going to explain the full non_gray_end_min, we can relax the
         // explanation.
         if (critical_event_with_gray > critical_event) {
-          critical_event_with_gray = critical_event;
+          if (window[gray_event].time <= non_gray_end_min) {
+            const IntegerValue new_end = non_gray_end_min + gray_size - 1;
+            CHECK_GE(new_end, window_end);
+            window_end = new_end;
+          } else {
+            // Note that technically we cannot relax the start of the gray task
+            // here, but we will fall back in the "use_energy_reason = false"
+            // case below.
+            CHECK_GT(helper_->EndMin(gray_task), non_gray_end_max);
+            CHECK_GT(helper_->EndMin(gray_task), window_end);
+          }
         }
 
-        const int first_event = critical_event_with_gray;
+        const int first_event =
+            std::min(critical_event, critical_event_with_gray);
         const int second_event = critical_event;
         const IntegerValue first_start = window[first_event].time;
         const IntegerValue second_start = window[second_event].time;
@@ -1844,7 +1865,6 @@ bool DisjunctiveEdgeFinding::PropagateSubwindow(
         // If gray_task is with variable duration, it is possible that it must
         // be last just because is end-min is large.
         bool use_energy_reason = true;
-        IntegerValue window_end;
         if (helper_->EndMin(gray_task) > non_gray_end_max) {
           // This is actually a form of detectable precedence.
           //
@@ -1852,8 +1872,6 @@ bool DisjunctiveEdgeFinding::PropagateSubwindow(
           // rarely it seems.
           use_energy_reason = false;
           window_end = helper_->EndMin(gray_task) - 1;
-        } else {
-          window_end = end_min_with_gray - 1;
         }
         CHECK_GE(window_end, non_gray_end_max);
 

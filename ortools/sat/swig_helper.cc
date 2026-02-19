@@ -19,8 +19,10 @@
 #include <memory>
 #include <string>
 
+#include "absl/flags/usage.h"  // IWYU pragma: keep
 #include "absl/log/check.h"
-#include "ortools/base/logging.h"
+#include "absl/log/globals.h"     // IWYU pragma: keep
+#include "absl/log/initialize.h"  // IWYU pragma: keep
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_checker.h"
 #include "ortools/sat/cp_model_solver.h"
@@ -164,7 +166,12 @@ void SolveWrapper::AddBestBoundCallbackFromClass(BestBoundCallback* callback) {
 
 operations_research::sat::CpSolverResponse SolveWrapper::Solve(
     const operations_research::sat::CpModelProto& model_proto) {
-  FixFlagsAndEnvironmentForSwig();
+  [[maybe_unused]] static const bool init_done = [] {
+    absl::InitializeLog();
+    absl::SetProgramUsageMessage("swig_helper");
+    return true;
+  }();
+  absl::EnableLogPrefix(false);
   return operations_research::sat::SolveCpModel(model_proto, &model_);
 }
 

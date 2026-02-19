@@ -651,7 +651,7 @@ bool ClauseManager::InprocessingCleanUpUnaryOrBinaryClause(SatClause* clause) {
 }
 
 SatClause* ClauseManager::InprocessingAddClause(
-    absl::Span<const Literal> new_clause) {
+    absl::Span<const Literal> new_clause, absl::Span<const ClausePtr> proof) {
   DCHECK(!new_clause.empty());
   DCHECK(!all_clauses_are_attached_);
   if (DEBUG_MODE) {
@@ -662,17 +662,24 @@ SatClause* ClauseManager::InprocessingAddClause(
 
   if (new_clause.size() == 1) {
     // TODO(user): We should return false...
-    if (!InprocessingFixLiteral(new_clause[0])) return nullptr;
+    if (!InprocessingFixLiteral(new_clause[0], proof)) return nullptr;
     return nullptr;
   }
 
   if (new_clause.size() == 2) {
+    if (lrat_proof_handler_ != nullptr) {
+      lrat_proof_handler_->AddInferredClause(
+          ClausePtr(new_clause[0], new_clause[1]), proof);
+    }
     implication_graph_->AddBinaryClause(new_clause[0], new_clause[1]);
     return nullptr;
   }
 
   SatClause* clause = SatClause::Create(new_clause);
   clauses_.push_back(clause);
+  if (lrat_proof_handler_ != nullptr) {
+    lrat_proof_handler_->AddInferredClause(ClausePtr(clause), proof);
+  }
   return clause;
 }
 
@@ -855,8 +862,8 @@ void ClauseManager::AppendClausesFixing(
     }
     const Literal level_decision = decisions[level - 1].literal;
     if (clause == kNullClausePtr &&
-        lrat_proof_handler_->HasImplicationGraphClause(level_decision.Negated(),
-                                                       marked_literal)) {
+        lrat_proof_handler_->HasBinaryClause(level_decision.Negated(),
+                                             marked_literal)) {
       clause = ClausePtr(level_decision.Negated(), marked_literal);
     }
     if (clause != kNullClausePtr) {
@@ -1701,6 +1708,17 @@ void BinaryImplicationGraph::RemoveFixedVariables() {
   CHECK(CleanUpAndAddAtMostOnes(/*base_index=*/0));
   DeleteUnusedLratImplications();
   DCHECK(InvariantsAreOk());
+}
+
+void BinaryImplicationGraph::RemoveFixedImplications(Literal lit) {
+  SCOPED_TIME_STAT(&stats_);
+  DCHECK_EQ(trail_->CurrentDecisionLevel(), 0);
+
+  const VariablesAssignment& assignment = trail_->Assignment();
+  RemoveImplicationsIf(lit, [&](Literal l) {
+    return is_removed_[l] || assignment.LiteralIsTrue(l);
+  });
+  DeleteUnusedLratImplications();
 }
 
 class SccGraph {
@@ -3429,7 +3447,8 @@ bool BinaryImplicationGraph::FindFailedLiteralAroundVar(BooleanVariable var,
   for (const Literal l : direct_implications_of_negated_literal_) {
     if (in_direct_implications_[l]) {
       // not(l) => literal => l.
-      if (!FixLiteral(l)) {
+      if (!FixLiteral(
+              l, {ClausePtr(l, literal), ClausePtr(literal.Negated(), l)})) {
         *is_unsat = true;
         return false;
       }
@@ -3474,7 +3493,12 @@ void BinaryImplicationGraph::RemoveBooleanVariable(
     for (const Literal a_negated : direct_implications_of_negated_literal_) {
       if (a_negated.Negated() == b) continue;
       if (is_removed_[a_negated]) continue;
-      AddImplication(a_negated.Negated(), b);
+      if (lrat_proof_handler_ != nullptr) {
+        lrat_proof_handler_->AddInferredClause(
+            ClausePtr(a_negated, b),
+            {ClausePtr(a_negated, literal), ClausePtr(literal.Negated(), b)});
+      }
+      AddBinaryClause(a_negated, b);
     }
   }
   for (const Literal a_negated : direct_implications_of_negated_literal_) {
@@ -3503,6 +3527,7 @@ void BinaryImplicationGraph::RemoveBooleanVariable(
       is_redundant_.Set(index);
     }
   }
+  DeleteUnusedLratImplications();
 }
 
 void BinaryImplicationGraph::RemoveAllRedundantVariables(
@@ -3649,8 +3674,9 @@ bool BinaryImplicationGraph::InvariantsAreOk() {
 
   // Check that we don't have more LRAT binary clauses than implications.
   if (lrat_proof_handler_ != nullptr) {
-    for (const ClausePtr binary_clause :
-         lrat_proof_handler_->ImplicationGraphClauses()) {
+    for (const auto [binary_clause, in_implication_graph] :
+         lrat_proof_handler_->BinaryClauses()) {
+      if (!in_implication_graph) continue;
       if (changed_reasons_on_trail_.contains(binary_clause)) continue;
       if (!seen.contains({binary_clause.GetFirstLiteral().Negated(),
                           binary_clause.GetSecondLiteral()})) {

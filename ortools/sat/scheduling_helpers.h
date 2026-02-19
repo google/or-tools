@@ -81,6 +81,14 @@ struct IntervalDefinition {
     return start == other.start && end == other.end && size == other.size &&
            is_present == other.is_present;
   }
+
+  template <typename Sink>
+  friend void AbslStringify(Sink& sink, const IntervalDefinition& i) {
+    absl::Format(&sink, "start=%v end=%v size=%v is_present=%v", i.start, i.end,
+                 i.size,
+                 i.is_present.has_value() ? absl::StrCat(i.is_present.value())
+                                          : "always");
+  }
 };
 
 // Helper class shared by the propagators that manage a given list of tasks.
@@ -243,6 +251,9 @@ class SchedulingConstraintHelper : public PropagatorInterface {
 
   // Returns a string with the current task bounds.
   std::string TaskDebugString(int t) const;
+
+  // Same as TaskDebugString() with also the affine expression.
+  std::string FullTaskDebugString(int t) const;
 
   // Sorts and returns the tasks in corresponding order at the time of the call.
   // Note that we do not mean strictly-increasing/strictly-decreasing, there

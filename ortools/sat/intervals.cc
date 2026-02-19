@@ -122,6 +122,15 @@ IntervalsRepository::GetOrCreateDisjunctivePrecedenceLiteralIfNonTrivial(
   if (b.is_present.has_value()) {
     enforcement_literals.push_back(b.is_present.value());
   }
+  if (enforcement_literals.size() == 2) {
+    if (enforcement_literals[0] == enforcement_literals[1]) {
+      enforcement_literals.pop_back();
+    } else if (enforcement_literals[0] == enforcement_literals[1].Negated()) {
+      // There is no point in creating precedences for two intervals that will
+      // never be present at the same time.
+      return kNoLiteralIndex;
+    }
+  }
 
   auto remove_fixed_at_root_level =
       [assignment = &assignment_,
@@ -163,8 +172,22 @@ IntervalsRepository::GetOrCreateDisjunctivePrecedenceLiteralIfNonTrivial(
       b_before_a_root_status != RelationStatus::IS_UNKNOWN &&
       a_before_b_root_status == b_before_a_root_status) {
     // We have "a before b" and "b before a" at root level (or similarly with
-    // "after"). This is UNSAT.
-    sat_solver_->NotifyThatModelIsUnsat();
+    // "after"). This is UNSAT, except for two zero-size intervals.
+    if ((a.size.IsConstant() && a.size.constant != 0) ||
+        (b.size.IsConstant() && b.size.constant != 0)) {
+      sat_solver_->NotifyThatModelIsUnsat();
+      return kNoLiteralIndex;
+    }
+    if (!a.size.IsConstant()) {
+      if (!integer_trail_->Enqueue(a.size.LowerOrEqual(0))) {
+        return kNoLiteralIndex;
+      }
+    }
+    if (!b.size.IsConstant()) {
+      if (!integer_trail_->Enqueue(b.size.LowerOrEqual(0))) {
+        return kNoLiteralIndex;
+      }
+    }
     return kNoLiteralIndex;
   }
 
@@ -230,8 +253,10 @@ IntervalsRepository::GetOrCreateDisjunctivePrecedenceLiteralIfNonTrivial(
                b_before_a_index == kNoLiteralIndex) {
       reified_precedences_->AddBoundEncodingIfNonTrivial(
           Literal(a_before_b_index).Negated(), expr_b_before_a, ub_b_before_a);
-    } else {
-      // We have both literals. One must be the negation of the other.
+    } else if (integer_trail_->LevelZeroLowerBound(a.size) > 0 ||
+               integer_trail_->LevelZeroLowerBound(b.size) > 0) {
+      // We have both literals. One must be the negation of the other if their
+      // size is positive.
       implications_->AddImplication(Literal(a_before_b_index),
                                     Literal(b_before_a_index).Negated());
       implications_->AddImplication(Literal(a_before_b_index).Negated(),

@@ -24,6 +24,7 @@
 #include "absl/log/log.h"
 #include "absl/types/span.h"
 #include "ortools/sat/2d_rectangle_presolve.h"
+#include "ortools/sat/debug_solution.h"
 #include "ortools/sat/diffn_util.h"
 #include "ortools/sat/enforcement.h"
 #include "ortools/sat/integer.h"
@@ -394,6 +395,34 @@ void NoOverlap2DConstraintHelper::RegisterWith(
       enforcement_helper_.Register(enforcement_literals, watcher, id);
   x_helper_->SetEnforcementId(enforcement_id_);
   y_helper_->SetEnforcementId(enforcement_id_);
+}
+
+Rectangle NoOverlap2DConstraintHelper::GetBoxInDebugSolution(int index) const {
+  DebugSolution* debug_solution = model_->GetOrCreate<DebugSolution>();
+  const auto& ivar_values = debug_solution->IntegerVariableValues();
+  if (ivar_values.empty()) {
+    return {};
+  }
+  const AffineExpression& x_start = x_helper_->Starts()[index];
+  const AffineExpression& x_size = x_helper_->Sizes()[index];
+  const AffineExpression& y_start = y_helper_->Starts()[index];
+  const AffineExpression& y_size = y_helper_->Sizes()[index];
+  const IntegerValue x_min = x_start.IsConstant()
+                                 ? x_start.constant
+                                 : x_start.ValueAt(ivar_values[x_start.var]);
+  const IntegerValue x_size_val = x_size.IsConstant()
+                                      ? x_size.constant
+                                      : x_size.ValueAt(ivar_values[x_size.var]);
+  const IntegerValue y_min = y_start.IsConstant()
+                                 ? y_start.constant
+                                 : y_start.ValueAt(ivar_values[y_start.var]);
+  const IntegerValue y_size_val = y_size.IsConstant()
+                                      ? y_size.constant
+                                      : y_size.ValueAt(ivar_values[y_size.var]);
+  return {.x_min = x_min,
+          .x_max = x_min + x_size_val,
+          .y_min = y_min,
+          .y_max = y_min + y_size_val};
 }
 
 }  // namespace sat

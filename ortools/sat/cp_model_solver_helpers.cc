@@ -56,6 +56,7 @@
 #include "ortools/sat/cp_model_solver_logging.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/cuts.h"
+#include "ortools/sat/debug_solution.h"
 #include "ortools/sat/feasibility_pump.h"
 #include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
@@ -135,193 +136,28 @@ void LoadDebugSolution([[maybe_unused]] const CpModelProto& model_proto,
 // This both copy the "main" DebugSolution to a local_model and also cache
 // the value of the integer variables in that solution.
 void InitializeDebugSolution(const CpModelProto& model_proto, Model* model) {
-  auto* shared_response = model->Get<SharedResponseManager>();
-  if (shared_response == nullptr) return;
-  if (shared_response->DebugSolution().empty()) return;
-
-  if (!SolutionIsFeasible(model_proto, shared_response->DebugSolution())) {
-    // TODO(user): we should probably CHECK-fail.
-    SOLVER_LOG(model->GetOrCreate<SolverLogger>(),
-               "Debug solution is not feasible.");
-    return;
-  }
-  SOLVER_LOG(model->GetOrCreate<SolverLogger>(), "Debug solution is feasible.");
-
-  // Copy the proto values.
-  DebugSolution& debug_sol = *model->GetOrCreate<DebugSolution>();
-  debug_sol.proto_values = shared_response->DebugSolution();
-
-  // Fill the values by integer variable.
-  const int num_integers =
-      model->GetOrCreate<IntegerTrail>()->NumIntegerVariables().value();
-  debug_sol.ivar_has_value.assign(num_integers, false);
-  debug_sol.ivar_values.assign(num_integers, 0);
-
-  std::vector<Literal> boolean_solution;
-
-  const auto& mapping = *model->GetOrCreate<CpModelMapping>();
-  for (int i = 0; i < debug_sol.proto_values.size(); ++i) {
-    if (mapping.IsBoolean(i)) {
-      Literal l = mapping.Literal(i);
-      if (debug_sol.proto_values[i] == 0) {
-        l = l.Negated();
-      }
-      boolean_solution.push_back(l);
-    }
-
-    // Also add the trivial literal that is sometimes created by the loader
-    if (model->GetOrCreate<TrivialLiterals>()
-            ->TrueLiteral()
-            .Variable()
-            .value() == debug_sol.proto_values.size()) {
-      boolean_solution.push_back(
-          model->GetOrCreate<TrivialLiterals>()->TrueLiteral());
-    }
-
-    if (!mapping.IsInteger(i)) continue;
-    const IntegerVariable var = mapping.Integer(i);
-    debug_sol.ivar_has_value[var] = true;
-    debug_sol.ivar_has_value[NegationOf(var)] = true;
-    debug_sol.ivar_values[var] = debug_sol.proto_values[i];
-    debug_sol.ivar_values[NegationOf(var)] = -debug_sol.proto_values[i];
-  }
+  if (model->Get<SharedResponseManager>()->DebugSolution().empty()) return;
+  DebugSolution* debug_solution = model->GetOrCreate<DebugSolution>();
+  debug_solution->SynchronizeWithShared(model_proto);
 
   // If the solution is fully boolean (there is no integer variable), and
   // we have a decision problem (so no new boolean should be created), we load
   // it in the sat solver for debugging too.
-  if (boolean_solution.size() == debug_sol.proto_values.size() &&
-      !model_proto.has_objective()) {
+  if (debug_solution->IsBooleanSolution() && !model_proto.has_objective()) {
     SOLVER_LOG(model->GetOrCreate<SolverLogger>(),
                "Loaded pure Boolean debugging solution.");
-    model->GetOrCreate<SatSolver>()->LoadDebugSolution(boolean_solution);
-  }
-
-  // The objective variable is usually not part of the proto, but it is still
-  // nice to have it, so we recompute it here.
-  auto* objective_def = model->Get<ObjectiveDefinition>();
-  if (objective_def != nullptr &&
-      objective_def->objective_var != kNoIntegerVariable) {
-    if (absl::c_all_of(objective_def->vars, [&debug_sol](IntegerVariable var) {
-          return var < debug_sol.ivar_has_value.end_index() &&
-                 debug_sol.ivar_has_value[var];
-        })) {
-      const IntegerVariable objective_var = objective_def->objective_var;
-      if (objective_var + 1 >= debug_sol.ivar_has_value.size()) {
-        debug_sol.ivar_has_value.resize(objective_var + 2, false);
-        debug_sol.ivar_values.resize(objective_var + 2, 0);
-      }
-      IntegerValue objective_value = 0;
-      for (int i = 0; i < objective_def->vars.size(); ++i) {
-        objective_value += objective_def->coeffs[i] *
-                           debug_sol.ivar_values[objective_def->vars[i]];
-      }
-      SOLVER_LOG(
-          model->GetOrCreate<SolverLogger>(),
-          absl::StrCat("Debug solution objective value: ",
-                       objective_def->ScaleIntegerObjective(objective_value)));
-      debug_sol.ivar_has_value[objective_var] = true;
-      debug_sol.ivar_has_value[NegationOf(objective_var)] = true;
-      debug_sol.ivar_values[objective_var] = objective_value;
-      debug_sol.ivar_values[NegationOf(objective_var)] = -objective_value;
-      debug_sol.inner_objective_value = objective_value;
-    }
+    model->GetOrCreate<SatSolver>()->LoadDebugSolution(
+        debug_solution->boolean_solution());
   }
 
   // We also register a DEBUG callback to check our reasons.
-  auto* encoder = model->GetOrCreate<IntegerEncoder>();
-  const auto checker = [mapping = &mapping, encoder, model](
+  const auto checker = [debug_solution](
                            absl::Span<const Literal> clause,
                            absl::Span<const IntegerLiteral> integers) {
-    const DebugSolution* debug_sol = model->Get<DebugSolution>();
-    if (!debug_sol || debug_sol->proto_values.empty()) return true;
-
-    bool is_satisfied = false;
-    std::vector<std::tuple<Literal, IntegerLiteral, IntegerValue>> to_print;
-    for (const Literal l : clause) {
-      // First case, this Boolean is mapped.
-      {
-        const int proto_var =
-            mapping->GetProtoVariableFromBooleanVariable(l.Variable());
-        if (proto_var != -1) {
-          CHECK_LT(proto_var, debug_sol->proto_values.size());
-          to_print.push_back(
-              {l, IntegerLiteral(), debug_sol->proto_values[proto_var]});
-          if (debug_sol->proto_values[proto_var] == (l.IsPositive() ? 1 : 0)) {
-            is_satisfied = true;
-            break;
-          }
-          continue;
-        }
-      }
-
-      // Second case, it is associated to IntVar >= value.
-      // We can use any of them, so if one is false, we use this one.
-      bool all_true = true;
-      for (const IntegerLiteral associated : encoder->GetIntegerLiterals(l)) {
-        if (associated.var >= debug_sol->ivar_has_value.end_index() ||
-            !debug_sol->ivar_has_value[associated.var]) {
-          continue;
-        }
-        const IntegerValue value = debug_sol->ivar_values[associated.var];
-        to_print.push_back({l, associated, value});
-
-        if (value < associated.bound) {
-          all_true = false;
-          break;
-        }
-      }
-      if (all_true) {
-        is_satisfied = true;
-        break;
-      }
-    }
-    for (const IntegerLiteral i_lit : integers) {
-      DCHECK(!i_lit.IsAlwaysFalse());
-      if (i_lit.IsAlwaysTrue()) continue;
-      if (i_lit.var >= debug_sol->ivar_has_value.end_index() ||
-          !debug_sol->ivar_has_value[i_lit.var]) {
-        is_satisfied = true;
-        break;
-      }
-
-      const IntegerValue value = debug_sol->ivar_values[i_lit.var];
-      to_print.push_back({Literal(kNoLiteralIndex), i_lit, value});
-
-      // This is a bit confusing, but since the i_lit in the reason are
-      // not "negated", we need at least one to be FALSE, for the reason to
-      // be valid.
-      if (value < i_lit.bound) {
-        is_satisfied = true;
-        break;
-      }
-    }
-    if (!is_satisfied) {
-      LOG(INFO) << "Reason clause is not satisfied by loaded solution:";
-      LOG(INFO) << "Worker '" << model->Name() << "', level="
-                << model->GetOrCreate<SatSolver>()->CurrentDecisionLevel();
-      LOG(INFO) << "literals (neg): " << clause;
-      LOG(INFO) << "integer literals: " << integers;
-      for (const auto [l, i_lit, solution_value] : to_print) {
-        if (i_lit.IsAlwaysTrue()) {
-          const int proto_var =
-              mapping->GetProtoVariableFromBooleanVariable(l.Variable());
-          LOG(INFO) << l << " (bool in model) proto_var=" << proto_var
-                    << " value_in_sol=" << solution_value;
-        } else {
-          const int proto_var = mapping->GetProtoVariableFromIntegerVariable(
-              PositiveVariable(i_lit.var));
-          LOG(INFO) << l << " " << i_lit << " proto_var="
-                    << (proto_var == -1 ? "none" : absl::StrCat(proto_var))
-                    << (VariableIsPositive(i_lit.var) ? "" : " (negated)")
-                    << " value_in_sol=" << solution_value;
-        }
-      }
-    }
-    return is_satisfied;
+    return debug_solution->CheckClause(clause, integers);
   };
-  const auto lit_checker = [checker =
-                                checker](absl::Span<const Literal> clause) {
-    return checker(clause, {});
+  const auto lit_checker = [debug_solution](absl::Span<const Literal> clause) {
+    return debug_solution->CheckClause(clause, {});
   };
 
   model->GetOrCreate<Trail>()->RegisterDebugChecker(lit_checker);
@@ -1036,14 +872,6 @@ void RegisterObjectiveBoundsImport(
     const IntegerValue current_ub =
         integer_trail->UpperBound(objective->objective_var);
     if (external_ub < current_ub) {
-      if (DEBUG_MODE) {
-        // If the current solution is as good or better than the debug one,
-        // the debug solution is not a solution anymore for the improving
-        // problem.
-        if (debug_sol && external_ub <= debug_sol->inner_objective_value) {
-          debug_sol->Clear();
-        }
-      }
       if (!integer_trail->Enqueue(IntegerLiteral::LowerOrEqual(
                                       objective->objective_var, external_ub),
                                   {}, {})) {
@@ -1156,7 +984,7 @@ int RegisterClausesLevelZeroImport(int id,
     for (const auto& [ref1, ref2] : new_binary_clauses) {
       const Literal l1 = mapping->Literal(ref1);
       const Literal l2 = mapping->Literal(ref2);
-      if (!sat_solver->AddProblemClause({l1, l2}, /*shared=*/true)) {
+      if (!sat_solver->AddProblemClause({l1, l2})) {
         return false;
       }
     }
@@ -1180,8 +1008,8 @@ int RegisterClausesLevelZeroImport(int id,
           local_clause[i] = mapping->Literal(shared_clause[i]);
         }
         if (!sat_solver->AddProblemClause(
-                absl::MakeSpan(local_clause).subspan(0, shared_clause.size()),
-                /*shared=*/true)) {
+                absl::MakeSpan(local_clause)
+                    .subspan(0, shared_clause.size()))) {
           return false;
         }
       }
@@ -1505,6 +1333,9 @@ void LoadCpModel(const CpModelProto& model_proto, Model* model) {
     if (!sat_solver->FinishPropagation()) return unsat();
   }
 
+  // Try to extract some structure before we start anything else.
+  model->GetOrCreate<GateCongruenceClosure>()->EarlyGateDetection();
+
   // Note that this is already done in the presolve, but it is important to redo
   // it here to collect literal => integer >= bound constraints that are used in
   // many places. Without it, we don't detect them if they depends on long chain
@@ -1522,7 +1353,8 @@ void LoadCpModel(const CpModelProto& model_proto, Model* model) {
     if (!prober->ProbeBooleanVariables(/*deterministic_time_limit=*/1.0)) {
       return unsat();
     }
-    if (!model->GetOrCreate<BinaryImplicationGraph>()
+    if (parameters.inprocessing_use_transitive_reduction() &&
+        !model->GetOrCreate<BinaryImplicationGraph>()
              ->ComputeTransitiveReduction()) {
       return unsat();
     }
@@ -1717,9 +1549,18 @@ void LoadCpModel(const CpModelProto& model_proto, Model* model) {
     };
 
     const auto& objective = *model->GetOrCreate<ObjectiveDefinition>();
+    auto solve_cp_model_callback = [](CpModelProto& cp_model_proto,
+                                      Model* model) {
+      auto* response_manager = model->GetOrCreate<SharedResponseManager>();
+      response_manager->InitializeObjective(cp_model_proto);
+      LoadCpModel(cp_model_proto, model);
+      SolveLoadedCpModel(cp_model_proto, model);
+      return model->GetOrCreate<SharedResponseManager>()->GetResponse();
+    };
     if (parameters.optimize_with_max_hs()) {
-      HittingSetOptimizer* max_hs = new HittingSetOptimizer(
-          model_proto, objective, solution_observer, model);
+      HittingSetOptimizer* max_hs =
+          new HittingSetOptimizer(model_proto, objective, solution_observer,
+                                  solve_cp_model_callback, model);
       model->Register<HittingSetOptimizer>(max_hs);
       model->TakeOwnership(max_hs);
     } else {
@@ -1934,17 +1775,6 @@ void QuickSolveWithHint(const CpModelProto& model_proto, Model* model) {
       const IntegerVariable objective_var =
           model->GetOrCreate<ObjectiveDefinition>()->objective_var;
       IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
-      if (DEBUG_MODE) {
-        // If we try to improve the hint but the hint is already as good as the
-        // debug solution, we are trying to solve a problem for which the debug
-        // solution is not a solution anymore.
-        const DebugSolution* debug_sol = model->Get<DebugSolution>();
-        if (debug_sol &&
-            shared_response_manager->GetInnerObjectiveUpperBound() <=
-                debug_sol->inner_objective_value) {
-          model->GetOrCreate<DebugSolution>()->Clear();
-        }
-      }
       model->GetOrCreate<SatSolver>()->Backtrack(0);
       if (!integer_trail->Enqueue(
               IntegerLiteral::LowerOrEqual(

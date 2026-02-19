@@ -512,71 +512,84 @@ Constraint Constraint::OnlyEnforceIf(BoolVar literal) {
   return *this;
 }
 
-void CircuitConstraint::AddArc(int tail, int head, BoolVar literal) {
+CircuitConstraint& CircuitConstraint::AddArc(int tail, int head,
+                                             BoolVar literal) {
   proto_->mutable_circuit()->add_tails(tail);
   proto_->mutable_circuit()->add_heads(head);
   proto_->mutable_circuit()->add_literals(literal.index());
+  return *this;
 }
 
-void MultipleCircuitConstraint::AddArc(int tail, int head, BoolVar literal) {
+MultipleCircuitConstraint& MultipleCircuitConstraint::AddArc(int tail, int head,
+                                                             BoolVar literal) {
   proto_->mutable_routes()->add_tails(tail);
   proto_->mutable_routes()->add_heads(head);
   proto_->mutable_routes()->add_literals(literal.index());
+  return *this;
 }
 
-void TableConstraint::AddTuple(absl::Span<const int64_t> tuple) {
+TableConstraint& TableConstraint::AddTuple(absl::Span<const int64_t> tuple) {
   CHECK_EQ(tuple.size(), proto_->table().exprs_size());
   for (const int64_t t : tuple) {
     proto_->mutable_table()->add_values(t);
   }
+  return *this;
 }
 
 ReservoirConstraint::ReservoirConstraint(ConstraintProto* proto,
                                          CpModelBuilder* builder)
     : Constraint(proto), builder_(builder) {}
 
-void ReservoirConstraint::AddEvent(LinearExpr time, int64_t level_change) {
+ReservoirConstraint& ReservoirConstraint::AddEvent(LinearExpr time,
+                                                   int64_t level_change) {
   *proto_->mutable_reservoir()->add_time_exprs() =
       builder_->LinearExprToProto(time);
   proto_->mutable_reservoir()->add_level_changes()->set_offset(level_change);
   proto_->mutable_reservoir()->add_active_literals(
       builder_->IndexFromConstant(1));
+  return *this;
 }
 
-void ReservoirConstraint::AddOptionalEvent(LinearExpr time,
-                                           int64_t level_change,
-                                           BoolVar is_active) {
+ReservoirConstraint& ReservoirConstraint::AddOptionalEvent(LinearExpr time,
+                                                           int64_t level_change,
+                                                           BoolVar is_active) {
   *proto_->mutable_reservoir()->add_time_exprs() =
       builder_->LinearExprToProto(time);
   proto_->mutable_reservoir()->add_level_changes()->set_offset(level_change);
   proto_->mutable_reservoir()->add_active_literals(is_active.index());
+  return *this;
 }
 
-void AutomatonConstraint::AddTransition(int tail, int head,
-                                        int64_t transition_label) {
+AutomatonConstraint& AutomatonConstraint::AddTransition(
+    int tail, int head, int64_t transition_label) {
   proto_->mutable_automaton()->add_transition_tail(tail);
   proto_->mutable_automaton()->add_transition_head(head);
   proto_->mutable_automaton()->add_transition_label(transition_label);
+  return *this;
 }
 
-void NoOverlapConstraint::AddInterval(IntervalVar interval) {
+NoOverlapConstraint& NoOverlapConstraint::AddInterval(IntervalVar interval) {
   proto_->mutable_no_overlap()->add_intervals(interval.index());
+  return *this;
 }
 
-void NoOverlap2DConstraint::AddRectangle(IntervalVar x_coordinate,
-                                         IntervalVar y_coordinate) {
+NoOverlap2DConstraint& NoOverlap2DConstraint::AddRectangle(
+    IntervalVar x_coordinate, IntervalVar y_coordinate) {
   proto_->mutable_no_overlap_2d()->add_x_intervals(x_coordinate.index());
   proto_->mutable_no_overlap_2d()->add_y_intervals(y_coordinate.index());
+  return *this;
 }
 
 CumulativeConstraint::CumulativeConstraint(ConstraintProto* proto,
                                            CpModelBuilder* builder)
     : Constraint(proto), builder_(builder) {}
 
-void CumulativeConstraint::AddDemand(IntervalVar interval, LinearExpr demand) {
+CumulativeConstraint& CumulativeConstraint::AddDemand(IntervalVar interval,
+                                                      LinearExpr demand) {
   proto_->mutable_cumulative()->add_intervals(interval.index());
   *proto_->mutable_cumulative()->add_demands() =
       builder_->LinearExprToProto(demand);
+  return *this;
 }
 
 IntervalVar::IntervalVar() : builder_(nullptr), index_() {}

@@ -28,7 +28,8 @@ using SmallBitset = uint32_t;
 
 // This works for num_bits == 32 too.
 inline SmallBitset GetNumBitsAtOne(int num_bits) {
-  return ~SmallBitset(0) >> (32 - (1 << num_bits));
+  DCHECK_GT(num_bits, 0);
+  return ~SmallBitset(0) >> (32 - num_bits);
 }
 
 // Sort the key and modify the truth table accordingly.
@@ -75,7 +76,7 @@ inline void FillKeyAndBitmask(absl::Span<const Literal> clause,
     bit_to_remove |= (clause[i].IsPositive() ? 0 : 1) << i;
   }
   CHECK_LT(bit_to_remove, (1 << num_bits));
-  bitmask = GetNumBitsAtOne(num_bits);
+  bitmask = GetNumBitsAtOne(1 << num_bits);
   bitmask ^= SmallBitset(1) << bit_to_remove;
   CanonicalizeTruthTable<BooleanVariable>(key, bitmask);
 }
@@ -98,8 +99,7 @@ inline int AddHoleAtPosition(int i, int bitset) {
   return (bitset & ((1 << i) - 1)) + ((bitset >> i) << (i + 1));
 }
 
-inline int RemoveFixedInput(int i, bool at_true,
-                            absl::Span<LiteralIndex> inputs,
+inline int RemoveFixedInput(int i, bool at_true, absl::Span<Literal> inputs,
                             int& int_function_values) {
   DCHECK_LT(i, inputs.size());
   const int value = at_true ? 1 : 0;
@@ -120,40 +120,37 @@ inline int RemoveFixedInput(int i, bool at_true,
   return new_size;
 }
 
-// The function is target = function_values[inputs as bit position].
-//
-// TODO(user): This can be optimized with more bit twiddling if needed.
-inline int CanonicalizeFunctionTruthTable(LiteralIndex& target,
-                                          absl::Span<LiteralIndex> inputs,
-                                          int& int_function_values) {
-  // We want to fit on an int.
-  CHECK_LE(inputs.size(), 4);
-
-  // We assume smaller type.
-  SmallBitset function_values = int_function_values;
-
+inline void MakeAllInputsPositive(absl::Span<Literal> inputs,
+                                  SmallBitset& bitmask) {
+  // We want to fit on a SmallBitset.
   const int num_bits = inputs.size();
-  CHECK_LE(num_bits, 4);  // Truth table must fit on an int.
+  CHECK_LE(num_bits, 5);
 
   // Make sure all inputs are positive.
   for (int i = 0; i < num_bits; ++i) {
-    if (Literal(inputs[i]).IsPositive()) continue;
+    if (inputs[i].IsPositive()) continue;
 
-    inputs[i] = Literal(inputs[i]).NegatedIndex();
+    inputs[i] = inputs[i].Negated();
 
     // Position p go to position (p ^ (1 << i)).
     SmallBitset new_truth_table = 0;
     const SmallBitset to_xor = 1 << i;
     for (int p = 0; p < (1 << num_bits); ++p) {
-      new_truth_table |= ((function_values >> p) & 1) << (p ^ to_xor);
+      new_truth_table |= ((bitmask >> p) & 1) << (p ^ to_xor);
     }
-    function_values = new_truth_table;
-    CHECK_EQ(function_values >> (1 << num_bits), 0);
+    bitmask = new_truth_table;
   }
+}
+
+// Similar to CanonicalizeTruthTable, but perform more canonicalization.
+//
+// TODO(user): This can be optimized with more bit twiddling if needed.
+inline int FullyCanonicalizeTruthTable(absl::Span<Literal> inputs,
+                                       SmallBitset& bitmask) {
+  MakeAllInputsPositive(inputs, bitmask);
 
   // Sort the inputs now.
-  CanonicalizeTruthTable<LiteralIndex>(inputs, function_values);
-  CHECK_EQ(function_values >> (1 << num_bits), 0);
+  CanonicalizeTruthTable<Literal>(inputs, bitmask);
 
   // Merge identical variables.
   for (int i = 0; i < inputs.size(); ++i) {
@@ -167,9 +164,9 @@ inline int CanonicalizeFunctionTruthTable(LiteralIndex& target,
         for (int p = 0; p < (1 << inputs.size()); ++p) {
           int extended_p = AddHoleAtPosition(j, p);
           extended_p |= ((p >> i) & 1) << j;  // fill it with bit i.
-          new_truth_table |= ((function_values >> extended_p) & 1) << p;
+          new_truth_table |= ((bitmask >> extended_p) & 1) << p;
         }
-        function_values = new_truth_table;
+        bitmask = new_truth_table;
       } else {
         ++j;
       }
@@ -181,8 +178,7 @@ inline int CanonicalizeFunctionTruthTable(LiteralIndex& target,
   for (int i = 0; i < inputs.size();) {
     bool remove = true;
     for (int p = 0; p < (1 << inputs.size()); ++p) {
-      if (((function_values >> p) & 1) !=
-          ((function_values >> (p ^ (1 << i))) & 1)) {
+      if (((bitmask >> p) & 1) != ((bitmask >> (p ^ (1 << i))) & 1)) {
         remove = false;
         break;
       }
@@ -195,27 +191,39 @@ inline int CanonicalizeFunctionTruthTable(LiteralIndex& target,
       SmallBitset new_truth_table = 0;
       for (int p = 0; p < (1 << inputs.size()); ++p) {
         const int extended_p = AddHoleAtPosition(i, p);
-        new_truth_table |= ((function_values >> extended_p) & 1) << p;
+        new_truth_table |= ((bitmask >> extended_p) & 1) << p;
       }
-      function_values = new_truth_table;
+      bitmask = new_truth_table;
     } else {
       ++i;
     }
   }
 
+  return inputs.size();
+}
+
+// The function is target = function_values[inputs as bit position].
+inline int CanonicalizeFunctionTruthTable(Literal& target,
+                                          absl::Span<Literal> inputs,
+                                          int& int_function_values) {
+  // We want to fit on an int.
+  CHECK_LE(inputs.size(), 4);
+  SmallBitset function_values = int_function_values;
+  const int new_size = FullyCanonicalizeTruthTable(inputs, function_values);
+
   // If we have x = f(a,b,c) and not(y) = f(a,b,c) with the same f, we have an
   // equivalence, so we need to canonicallize both f() and not(f()) to the same
   // function. For that we just always choose to have the lowest bit at zero.
   if (function_values & 1) {
-    target = Literal(target).Negated();
-    const SmallBitset all_one = GetNumBitsAtOne(inputs.size());
+    target = target.Negated();
+    const SmallBitset all_one = GetNumBitsAtOne(1 << new_size);
     function_values = function_values ^ all_one;
-    DCHECK_EQ(function_values >> (1 << inputs.size()), 0);
+    DCHECK_EQ(function_values >> (1 << new_size), 0);
   }
   DCHECK_EQ(function_values & 1, 0);
 
   int_function_values = function_values;
-  return inputs.size();
+  return new_size;
 }
 
 }  // namespace operations_research::sat

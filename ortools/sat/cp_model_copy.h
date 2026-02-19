@@ -40,8 +40,7 @@ namespace sat {
 // that generates partial assignments.
 class ModelCopy {
  public:
-  explicit ModelCopy(PresolveContext* context,
-                     LratProofHandler* lrat_proof_handler = nullptr);
+  explicit ModelCopy(PresolveContext* context);
 
   // Copies all constraints from in_model to working model of the context.
   //
@@ -177,9 +176,8 @@ class ModelCopy {
 // This should only be called on the first copy of the user given model.
 // Note that this reorder all constraints that use intervals last. We loose the
 // user-defined order, but hopefully that should not matter too much.
-bool ImportModelWithBasicPresolveIntoContext(
-    const CpModelProto& in_model, PresolveContext* context,
-    LratProofHandler* lrat_proof_handler = nullptr);
+bool ImportModelWithBasicPresolveIntoContext(const CpModelProto& in_model,
+                                             PresolveContext* context);
 
 // Same as ImportModelWithBasicPresolveIntoContext() except that variable
 // domains are read from domains and constraint might be filtered.

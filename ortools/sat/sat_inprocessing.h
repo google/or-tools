@@ -352,7 +352,8 @@ class BoundedVariableElimination {
         clause_manager_(model->GetOrCreate<ClauseManager>()),
         postsolve_(model->GetOrCreate<PostsolveClauses>()),
         trail_(model->GetOrCreate<Trail>()),
-        time_limit_(model->GetOrCreate<TimeLimit>()) {}
+        time_limit_(model->GetOrCreate<TimeLimit>()),
+        lrat_proof_handler_(model->Mutable<LratProofHandler>()) {}
 
   bool DoOneRound(bool log_info);
 
@@ -362,9 +363,13 @@ class BoundedVariableElimination {
   bool CrossProduct(BooleanVariable var);
   void DeleteClause(SatClause* sat_clause);
   void DeleteAllClausesContaining(Literal literal);
-  void AddClause(absl::Span<const Literal> clause);
-  bool RemoveLiteralFromClause(Literal lit, SatClause* sat_clause);
-  bool Propagate();
+  void DeleteAllRemovableClausesContaining(Literal literal);
+  void AddClause(absl::Span<const Literal> clause,
+                 absl::Span<const ClausePtr> proof);
+  // `proof` is completed with the current clause to get a full proof.
+  bool RemoveLiteralFromClause(Literal lit, SatClause* sat_clause,
+                               ClausePtr proof);
+  bool PropagateFixedVariables();
 
   // The actual clause elimination algo. We have two versions, one just compute
   // the "score" of what will be the final state. The other perform the
@@ -384,6 +389,8 @@ class BoundedVariableElimination {
 
   int propagation_index_;
 
+  LratProofHandler* lrat_proof_handler_;
+
   double dtime_ = 0.0;
   int64_t num_inspected_literals_ = 0;
   int64_t num_simplifications_ = 0;
@@ -398,6 +405,9 @@ class BoundedVariableElimination {
   // Temporary vector to mark literal of a clause and compute its resolvant.
   util_intops::StrongVector<LiteralIndex, bool> marked_;
   std::vector<Literal> resolvant_;
+
+  // Temporary vector to store LRAT proofs.
+  std::vector<ClausePtr> tmp_proof_;
 
   // Priority queue of variable to process.
   // We will process highest priority first.
@@ -422,8 +432,11 @@ class BoundedVariableElimination {
   // clauses.
   DEFINE_STRONG_INDEX_TYPE(ClauseIndex);
   util_intops::StrongVector<ClauseIndex, SatClause*> clauses_;
+  util_intops::StrongVector<ClauseIndex, SatClause*> removable_clauses_;
   util_intops::StrongVector<LiteralIndex, std::vector<ClauseIndex>>
       literal_to_clauses_;
+  util_intops::StrongVector<LiteralIndex, std::vector<ClauseIndex>>
+      literal_to_removable_clauses_;
   util_intops::StrongVector<LiteralIndex, int> literal_to_num_clauses_;
 };
 
@@ -461,23 +474,27 @@ class GateCongruenceClosure {
 
   bool DoOneRound(bool log_info);
 
+  // This is meant to be called as soon as possible, before any inprocessing is
+  // run to try to keep the structural information from the model.
+  void EarlyGateDetection();
+
  private:
   DEFINE_STRONG_INDEX_TYPE(TruthTableId);
 
   struct GateHash {
     explicit GateHash(util_intops::StrongVector<GateId, int>* t,
-                      CompactVectorVector<GateId, LiteralIndex>* g)
+                      CompactVectorVector<GateId, Literal>* g)
         : gates_type(t), gates_inputs(g) {}
     std::size_t operator()(GateId gate_id) const {
       return absl::HashOf((*gates_type)[gate_id], (*gates_inputs)[gate_id]);
     }
     const util_intops::StrongVector<GateId, int>* gates_type;
-    const CompactVectorVector<GateId, LiteralIndex>* gates_inputs;
+    const CompactVectorVector<GateId, Literal>* gates_inputs;
   };
 
   struct GateEq {
     explicit GateEq(util_intops::StrongVector<GateId, int>* t,
-                    CompactVectorVector<GateId, LiteralIndex>* g)
+                    CompactVectorVector<GateId, Literal>* g)
         : gates_type(t), gates_inputs(g) {}
     bool operator()(GateId gate_a, GateId gate_b) const {
       if (gate_a == gate_b) return true;
@@ -487,8 +504,20 @@ class GateCongruenceClosure {
              ((*gates_inputs)[gate_a] == (*gates_inputs)[gate_b]);
     }
     const util_intops::StrongVector<GateId, int>* gates_type;
-    const CompactVectorVector<GateId, LiteralIndex>* gates_inputs;
+    const CompactVectorVector<GateId, Literal>* gates_inputs;
   };
+
+  // Display one line with all the gate info.
+  std::string GateDebugString(GateId id) const;
+
+  // As we presolve the model, some clause can be shrinked and we can loose
+  // some structural information. This seeds the small truth-table detection
+  // with information we already had.
+  void ProcessPreviousTruthTables(PresolveTimer& timer);
+
+  // Initialize data-structures and call
+  // ExtractAndGatesAndFillShortTruthTables() then ExtractShortGates().
+  void StructureExtraction(PresolveTimer& timer);
 
   // Recovers "target_literal = and(literals)" from the model.
   //
@@ -554,9 +583,9 @@ class GateCongruenceClosure {
   // infer it. We will thus only store the base clause used, if we have a =
   // and(x,y,...) we only store the clause "x and y and ... => a".
   static constexpr int kAndGateType = -1;
-  util_intops::StrongVector<GateId, LiteralIndex> gates_target_;
+  util_intops::StrongVector<GateId, Literal> gates_target_;
   util_intops::StrongVector<GateId, int> gates_type_;
-  CompactVectorVector<GateId, LiteralIndex> gates_inputs_;
+  CompactVectorVector<GateId, Literal> gates_inputs_;
   CompactVectorVector<GateId, const SatClause*> gates_clauses_;
 
   // Truth tables on 2 variables are handled differently, and we don't use
@@ -579,6 +608,9 @@ class GateCongruenceClosure {
   CompactVectorVector<TruthTableId, BooleanVariable> truth_tables_inputs_;
   util_intops::StrongVector<TruthTableId, SmallBitset> truth_tables_bitset_;
   CompactVectorVector<TruthTableId, SatClause*> truth_tables_clauses_;
+
+  // Only used for logs.
+  util_intops::StrongVector<TruthTableId, SmallBitset> old_truth_tables_bitset_;
 
   // Temporary vector used to construct truth_tables_clauses_.
   std::vector<TruthTableId> tmp_ids_;

@@ -2593,19 +2593,20 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   auto context = std::make_unique<PresolveContext>(model, new_cp_model_proto,
                                                    mapping_proto);
 
-  std::unique_ptr<LratProofHandler> lrat_proof_handler =
-      LratProofHandler::MaybeCreate(model);
-  if (!ImportModelWithBasicPresolveIntoContext(model_proto, context.get(),
-                                               lrat_proof_handler.get())) {
-    const std::string info = "Problem proven infeasible during initial copy.";
+  if (!ImportModelWithBasicPresolveIntoContext(model_proto, context.get())) {
+    const std::string info = "Problem proved infeasible during initial copy.";
     SOLVER_LOG(logger, info);
-    if (lrat_proof_handler != nullptr) {
-      lrat_proof_handler->Close(/*model_is_unsat=*/true);
+    if (context->lrat_proof_handler != nullptr) {
+      context->lrat_proof_handler->Close(/*model_is_unsat=*/true);
     }
     CpSolverResponse status_response;
     status_response.set_status(CpSolverStatus::INFEASIBLE);
     status_response.set_solution_info(info);
     shared_response_manager->AppendResponseToBeMerged(status_response);
+    SharedLratProofStatus* lrat_proof_status =
+        model->GetOrCreate<SharedLratProofStatus>();
+    LratMerger(model).Merge(lrat_proof_status->GetProofFilenames());
+    lrat_proof_status->Log(logger);
     return shared_response_manager->GetResponse();
   }
 
@@ -2770,11 +2771,11 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
 
   // Delete the context as soon as the presolve is done. Note that only
   // postsolve_mapping and mapping_proto are needed for postsolve.
-  context.reset(nullptr);
-  if (lrat_proof_handler != nullptr) {
-    lrat_proof_handler->Close(presolve_status == CpSolverStatus::INFEASIBLE);
-    lrat_proof_handler.reset();
+  if (context->lrat_proof_handler != nullptr) {
+    context->lrat_proof_handler->Close(presolve_status ==
+                                       CpSolverStatus::INFEASIBLE);
   }
+  context.reset(nullptr);
 
   if (presolve_status != CpSolverStatus::UNKNOWN) {
     if (presolve_status == CpSolverStatus::INFEASIBLE &&
@@ -2788,6 +2789,10 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
     status_response.set_status(presolve_status);
     shared_response_manager->FillSolveStatsInResponse(model, &status_response);
     shared_response_manager->AppendResponseToBeMerged(status_response);
+    SharedLratProofStatus* lrat_proof_status =
+        model->GetOrCreate<SharedLratProofStatus>();
+    LratMerger(model).Merge(lrat_proof_status->GetProofFilenames());
+    lrat_proof_status->Log(logger);
     return shared_response_manager->GetResponse();
   }
 
@@ -3068,7 +3073,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   }
 
   return shared_response_manager->GetResponse();
-}
+}  // NOLINT(readability/fn_size)
 
 CpSolverResponse Solve(const CpModelProto& model_proto) {
   Model model;

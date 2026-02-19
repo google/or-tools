@@ -153,8 +153,7 @@ bool ApplyLiteralMapping(
 bool BooleanLinearExpressionIsCanonical(
     absl::Span<const Literal> enforcement_literals,
     absl::Span<const LiteralWithCoeff> cst) {
-  if (!std::is_sorted(enforcement_literals.begin(),
-                      enforcement_literals.end())) {
+  if (!absl::c_is_sorted(enforcement_literals)) {
     return false;
   }
   Coefficient previous(1);

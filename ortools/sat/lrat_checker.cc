@@ -56,6 +56,11 @@ void LratChecker::EnableRatProofs() {
   rat_enabled_ = true;
 }
 
+void LratChecker::DisableRatProofs() {
+  rat_enabled_ = false;
+  occurrences_.clear();
+}
+
 bool LratChecker::AddProblemClause(ClausePtr clause) {
   ++num_problem_clauses_;
   return AddClauseInternal(kProblemClause, clause, clause.GetLiterals(),
@@ -81,9 +86,11 @@ bool LratChecker::RewriteClause(ClausePtr clause,
 
 void LratChecker::DeleteClauses(absl::Span<const ClausePtr> clauses) {
   ++num_deleted_clauses_;
-  if constexpr (kDebugCheckProofClauses) {
+  if (!valid_ || complete_) return;
+  if constexpr (DEBUG_MODE) {
     for (const ClausePtr clause : clauses) {
-      CHECK(debug_clause_by_ptr_.contains(clause));
+      CHECK(debug_clause_by_ptr_.contains(clause))
+          << clause << " " << clause.GetLiterals();
       debug_clause_by_ptr_.erase(clause);
     }
   }
@@ -161,7 +168,7 @@ bool LratChecker::AddClauseInternal(ClauseType type, ClausePtr ptr,
       // Early return for unit clauses made of a new variable. The following
       // code would validate this proof with the RAT property, but would also
       // require `rat_enabled_`, which is unnecessary here.
-      if constexpr (kDebugCheckProofClauses) {
+      if constexpr (DEBUG_MODE) {
         debug_clause_by_ptr_[ptr] = clause;
       }
       return true;
@@ -177,7 +184,7 @@ bool LratChecker::AddClauseInternal(ClauseType type, ClausePtr ptr,
       // prove it again, instead of proving the new version from the old one).
       // Hence we only allow this with the explicit RewriteClause() method.
       DCHECK(type == kRewrittenClause || !EqualSatClausePtrs(rup_clause, ptr));
-      if constexpr (kDebugCheckProofClauses) {
+      if constexpr (DEBUG_MODE) {
         if (!DebugCheckProofClauseId(ptr, rup_clause)) return false;
       }
       ++num_processed_rup_clauses_;
@@ -209,7 +216,7 @@ bool LratChecker::AddClauseInternal(ClauseType type, ClausePtr ptr,
       for (const RatClauses& rat_clauses : rat_clauses) {
         const ClausePtr resolvant = rat_clauses.resolvant;
         DCHECK(type == kRewrittenClause || !EqualSatClausePtrs(resolvant, ptr));
-        if constexpr (kDebugCheckProofClauses) {
+        if constexpr (DEBUG_MODE) {
           if (!DebugCheckProofClauseId(ptr, resolvant)) return false;
         }
         // resolvants must not contain duplicate resolvant clause pointers.
@@ -242,7 +249,7 @@ bool LratChecker::AddClauseInternal(ClauseType type, ClausePtr ptr,
           const ClausePtr rup_clause = rat_clauses.rup_clauses[j];
           DCHECK(type == kRewrittenClause ||
                  !EqualSatClausePtrs(rup_clause, ptr));
-          if constexpr (kDebugCheckProofClauses) {
+          if constexpr (DEBUG_MODE) {
             if (!DebugCheckProofClauseId(ptr, rup_clause)) return false;
           }
           ++num_processed_rat_clauses_;
@@ -284,7 +291,7 @@ bool LratChecker::AddClauseInternal(ClauseType type, ClausePtr ptr,
       }
     }
   }
-  if constexpr (kDebugCheckProofClauses) {
+  if constexpr (DEBUG_MODE) {
     debug_clause_by_ptr_[ptr] = clause;
   }
   if (clause.empty()) {
@@ -295,6 +302,9 @@ bool LratChecker::AddClauseInternal(ClauseType type, ClausePtr ptr,
 
 bool LratChecker::DebugCheckProofClauseId(ClausePtr clause,
                                           ClausePtr proof_clause) {
+  if (proof_clause == kNullClausePtr) {
+    return Error(clause, "null proof clause pointer");
+  }
   auto it = debug_clause_by_ptr_.find(proof_clause);
   if (it == debug_clause_by_ptr_.end()) {
     return Error(clause,

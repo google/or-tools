@@ -213,7 +213,7 @@ bool Inprocessing::PresolveLoop(SatPresolveOptions options) {
   SOLVER_LOG(
       logger_, "[Pure SAT presolve]",
       " num_fixed: ", FormatCounter(trail_->Index()), " num_equiv: ",
-      FormatCounter(implication_graph_->num_current_equivalences() / 2), "/",
+      FormatCounter(implication_graph_->num_redundant_literals() / 2), "/",
       FormatCounter(sat_solver_->NumVariables()), " num_implications: ",
       FormatCounter(implication_graph_->ComputeNumImplicationsForLog()),
       " num_watched_clauses: ",
@@ -278,7 +278,8 @@ bool Inprocessing::InprocessingRound() {
   decision_policy_->MaybeEnablePhaseSaving(/*save_phase=*/false);
 
   RETURN_IF_FALSE(implication_graph_->RemoveDuplicatesAndFixedVariables());
-  RETURN_IF_FALSE(DetectEquivalencesAndStamp(true, log_round_info));
+  RETURN_IF_FALSE(DetectEquivalencesAndStamp(
+      params_.inprocessing_use_transitive_reduction(), log_round_info));
   RETURN_IF_FALSE(RemoveFixedAndEquivalentVariables(log_round_info));
   RETURN_IF_FALSE(LevelZeroPropagate());
 
@@ -301,7 +302,8 @@ bool Inprocessing::InprocessingRound() {
     probing_time += wall_timer.Get() - saved_wtime;
   }
 
-  RETURN_IF_FALSE(DetectEquivalencesAndStamp(true, log_round_info));
+  RETURN_IF_FALSE(DetectEquivalencesAndStamp(
+      params_.inprocessing_use_transitive_reduction(), log_round_info));
   RETURN_IF_FALSE(RemoveFixedAndEquivalentVariables(log_round_info));
   RETURN_IF_FALSE(LevelZeroPropagate());
 
@@ -1209,6 +1211,9 @@ bool StampingSimplifier::ProcessClauses() {
           // top_entry. See TODO below.
           if (top_entry.is_negated) {
             num_subsumed_clauses_++;
+
+            // TODO(user): For structural purpose, we should make sure the
+            // binary clause that subsume this is added to the binary graph...
             clause_manager_->LazyDelete(
                 clause, DeletionSourceForStat::SUBSUMPTION_INPROCESSING);
             break;
@@ -1498,23 +1503,34 @@ bool BoundedVariableElimination::DoOneRound(bool log_info) {
   num_simplifications_ = 0;
   num_blocked_clauses_ = 0;
 
+  const int num_literals = clause_manager_->literal_size();
+  const int num_variables = num_literals / 2;
+
+  literal_to_clauses_.clear();
+  literal_to_clauses_.resize(num_literals);
+  literal_to_removable_clauses_.clear();
+  literal_to_removable_clauses_.resize(num_literals);
+  literal_to_num_clauses_.assign(num_literals, 0);
+
   clauses_.clear();
+  removable_clauses_.clear();
   clause_manager_->DeleteRemovedClauses();
   clause_manager_->DetachAllClauses();
   for (SatClause* c : clause_manager_->AllClausesInCreationOrder()) {
     // We ignore redundant clause. This shouldn't cause any validity issue.
     // TODO(user): but we shouldn't keep clauses containing removed literals.
     // It is still valid to do so, but it should be less efficient.
-    if (clause_manager_->IsRemovable(c)) continue;
+    if (clause_manager_->IsRemovable(c)) {
+      for (const Literal l : c->AsSpan()) {
+        literal_to_removable_clauses_[l].push_back(
+            ClauseIndex(removable_clauses_.size()));
+      }
+      removable_clauses_.push_back(c);
+      continue;
+    }
 
     clauses_.push_back(c);
   }
-  const int num_literals = clause_manager_->literal_size();
-  const int num_variables = num_literals / 2;
-
-  literal_to_clauses_.clear();
-  literal_to_clauses_.resize(num_literals);
-  literal_to_num_clauses_.assign(num_literals, 0);
   for (ClauseIndex i(0); i < clauses_.size(); ++i) {
     for (const Literal l : clauses_[i]->AsSpan()) {
       literal_to_clauses_[l].push_back(i);
@@ -1552,9 +1568,9 @@ bool BoundedVariableElimination::DoOneRound(bool log_info) {
     // TODO(user): we might also find new equivalent variable l => var => l
     // here, but for now we ignore those.
     bool is_unsat = false;
-    if (!Propagate()) return false;
+    if (!PropagateFixedVariables()) return false;
     while (implication_graph_->FindFailedLiteralAroundVar(top, &is_unsat)) {
-      if (!Propagate()) return false;
+      if (!PropagateFixedVariables()) return false;
     }
     if (is_unsat) return false;
 
@@ -1569,7 +1585,7 @@ bool BoundedVariableElimination::DoOneRound(bool log_info) {
     need_to_be_updated_.clear();
   }
 
-  if (!Propagate()) return false;
+  if (!PropagateFixedVariables()) return false;
   implication_graph_->CleanupAllRemovedAndFixedVariables();
 
   // Remove all redundant clause containing a removed literal. This avoid to
@@ -1605,13 +1621,18 @@ bool BoundedVariableElimination::DoOneRound(bool log_info) {
   return true;
 }
 
-bool BoundedVariableElimination::RemoveLiteralFromClause(
-    Literal lit, SatClause* sat_clause) {
+bool BoundedVariableElimination::RemoveLiteralFromClause(Literal lit,
+                                                         SatClause* sat_clause,
+                                                         ClausePtr proof) {
   num_literals_diff_ -= sat_clause->size();
   resolvant_.clear();
+  tmp_proof_.clear();
   for (const Literal l : sat_clause->AsSpan()) {
     if (l == lit || assignment_.LiteralIsFalse(l)) {
       literal_to_num_clauses_[l]--;
+      if (lrat_proof_handler_ != nullptr && l != lit) {
+        tmp_proof_.push_back(ClausePtr(l.Negated()));
+      }
       continue;
     }
     if (assignment_.LiteralIsTrue(l)) {
@@ -1622,7 +1643,12 @@ bool BoundedVariableElimination::RemoveLiteralFromClause(
     }
     resolvant_.push_back(l);
   }
-  if (!clause_manager_->InprocessingRewriteClause(sat_clause, resolvant_)) {
+  if (lrat_proof_handler_ != nullptr) {
+    tmp_proof_.push_back(proof);
+    tmp_proof_.push_back(ClausePtr(sat_clause));
+  }
+  if (!clause_manager_->InprocessingRewriteClause(sat_clause, resolvant_,
+                                                  tmp_proof_)) {
     return false;
   }
   if (sat_clause->IsRemoved()) {
@@ -1634,7 +1660,7 @@ bool BoundedVariableElimination::RemoveLiteralFromClause(
   return true;
 }
 
-bool BoundedVariableElimination::Propagate() {
+bool BoundedVariableElimination::PropagateFixedVariables() {
   for (; propagation_index_ < trail_->Index(); ++propagation_index_) {
     // Make sure we always propagate the binary clauses first.
     if (!implication_graph_->Propagate(trail_)) return false;
@@ -1650,7 +1676,10 @@ bool BoundedVariableElimination::Propagate() {
     literal_to_clauses_[l].clear();
     for (const ClauseIndex index : literal_to_clauses_[l.NegatedIndex()]) {
       if (clauses_[index]->IsRemoved()) continue;
-      if (!RemoveLiteralFromClause(l.Negated(), clauses_[index])) return false;
+      if (!RemoveLiteralFromClause(l.Negated(), clauses_[index],
+                                   ClausePtr(l))) {
+        return false;
+      }
     }
     literal_to_clauses_[l.NegatedIndex()].clear();
   }
@@ -1707,8 +1736,18 @@ void BoundedVariableElimination::DeleteAllClausesContaining(Literal literal) {
   literal_to_clauses_[literal].clear();
 }
 
-void BoundedVariableElimination::AddClause(absl::Span<const Literal> clause) {
-  SatClause* pt = clause_manager_->InprocessingAddClause(clause);
+void BoundedVariableElimination::DeleteAllRemovableClausesContaining(
+    Literal literal) {
+  for (const ClauseIndex i : literal_to_removable_clauses_[literal]) {
+    clause_manager_->LazyDelete(removable_clauses_[i],
+                                DeletionSourceForStat::ELIMINATED);
+  }
+  literal_to_removable_clauses_[literal].clear();
+}
+
+void BoundedVariableElimination::AddClause(absl::Span<const Literal> clause,
+                                           absl::Span<const ClausePtr> proof) {
+  SatClause* pt = clause_manager_->InprocessingAddClause(clause, proof);
   if (pt == nullptr) return;
 
   num_clauses_diff_++;
@@ -1732,9 +1771,9 @@ bool BoundedVariableElimination::ResolveAllClauseContaining(Literal lit) {
 
   const std::vector<Literal>& implications =
       implication_graph_->DirectImplications(lit);
-  auto& clause_containing_lit = literal_to_clauses_[lit];
-  for (int i = 0; i < clause_containing_lit.size(); ++i) {
-    const ClauseIndex clause_index = clause_containing_lit[i];
+  auto& clauses_containing_lit = literal_to_clauses_[lit];
+  for (int i = 0; i < clauses_containing_lit.size(); ++i) {
+    const ClauseIndex clause_index = clauses_containing_lit[i];
     const auto clause = clauses_[clause_index]->AsSpan();
     if (clause.empty()) continue;
 
@@ -1749,6 +1788,7 @@ bool BoundedVariableElimination::ResolveAllClauseContaining(Literal lit) {
     // If this is true, then "clause" is subsumed by one of its resolvant and we
     // can just remove lit from it. Then it doesn't need to be acounted at all.
     bool clause_can_be_simplified = false;
+    ClausePtr simplification_proof = kNullClausePtr;
     const int64_t saved_score = new_score_;
 
     // Resolution with binary clauses.
@@ -1757,19 +1797,22 @@ bool BoundedVariableElimination::ResolveAllClauseContaining(Literal lit) {
       if (marked_[l.NegatedIndex()]) continue;  // trivial.
       if (marked_[l]) {
         clause_can_be_simplified = true;
+        simplification_proof = ClausePtr(lit.Negated(), l);
         break;
       } else {
         if (score_only) {
           new_score_ += clause_weight + clause.size();
         } else {
           resolvant_.push_back(l);
-          AddClause(resolvant_);
+          AddClause(resolvant_, {ClausePtr(clauses_[clause_index]),
+                                 ClausePtr(lit.Negated(), l)});
           resolvant_.pop_back();
         }
       }
     }
 
     // Resolution with non-binary clauses.
+    SatClause* double_self_subsumption_clause = nullptr;
     if (!with_binary_only && !clause_can_be_simplified) {
       auto& clause_containing_not_lit = literal_to_clauses_[lit.NegatedIndex()];
       for (int j = 0; j < clause_containing_not_lit.size(); ++j) {
@@ -1815,11 +1858,13 @@ bool BoundedVariableElimination::ResolveAllClauseContaining(Literal lit) {
           if (extra_size == 0) {
             // We have a double self-subsumption. We can just remove this
             // clause since it will be subsumed by the clause created in the
-            // "clause_can_be_simplified" case below.
-            DeleteClause(clauses_[other_index]);
+            // "clause_can_be_simplified" case below. We delete it after this
+            // new clause is created, since we need it for the proof.
+            DCHECK_EQ(double_self_subsumption_clause, nullptr);
+            double_self_subsumption_clause = clauses_[other_index];
           } else {
-            if (!RemoveLiteralFromClause(lit.Negated(),
-                                         clauses_[other_index])) {
+            if (!RemoveLiteralFromClause(lit.Negated(), clauses_[other_index],
+                                         ClausePtr(clauses_[clause_index]))) {
               return false;
             }
             std::swap(clause_containing_not_lit[j],
@@ -1832,6 +1877,7 @@ bool BoundedVariableElimination::ResolveAllClauseContaining(Literal lit) {
 
         if (extra_size == 0) {
           clause_can_be_simplified = true;
+          simplification_proof = ClausePtr(clauses_[other_index]);
           break;
         } else {
           if (score_only) {
@@ -1843,7 +1889,8 @@ bool BoundedVariableElimination::ResolveAllClauseContaining(Literal lit) {
 
             new_score_ += clause_weight + clause.size() - 1 + extra_size;
           } else {
-            AddClause(resolvant_);
+            AddClause(resolvant_, {ClausePtr(clauses_[clause_index]),
+                                   ClausePtr(clauses_[other_index])});
             resolvant_.resize(resolvant_.size() - extra_size);
           }
         }
@@ -1861,9 +1908,16 @@ bool BoundedVariableElimination::ResolveAllClauseContaining(Literal lit) {
       new_score_ = saved_score;
       score_threshold_ -= clause_weight + clause.size();
 
-      if (!RemoveLiteralFromClause(lit, clauses_[clause_index])) return false;
-      std::swap(clause_containing_lit[i], clause_containing_lit.back());
-      clause_containing_lit.pop_back();
+      if (!RemoveLiteralFromClause(lit, clauses_[clause_index],
+                                   simplification_proof)) {
+        return false;
+      }
+      if (double_self_subsumption_clause != nullptr) {
+        DeleteClause(double_self_subsumption_clause);
+        double_self_subsumption_clause = nullptr;
+      }
+      std::swap(clauses_containing_lit[i], clauses_containing_lit.back());
+      clauses_containing_lit.pop_back();
       --i;  // Reprocess the new position.
     }
 
@@ -1902,12 +1956,22 @@ bool BoundedVariableElimination::CrossProduct(BooleanVariable var) {
     if (s1 == 0 && s2 == 0) return true;
     if (s1 > 0 && s2 == 0) {
       num_eliminated_variables_++;
+      // An empty RUP and RAP proof is sufficient to prove that `lit` can be set
+      // to true since there are no clauses containing `not_lit`. In fact the
+      // LRAT proof can still contain such clauses because `s2` does not count
+      // the implications containing fixed literals, nor removable SatClause(s).
+      // Hence we must delete them here before fixing `lit`.
+      implication_graph_->RemoveFixedImplications(lit);
+      DeleteAllRemovableClausesContaining(not_lit);
       if (!clause_manager_->InprocessingFixLiteral(lit)) return false;
       DeleteAllClausesContaining(lit);
       return true;
     }
     if (s1 == 0 && s2 > 0) {
       num_eliminated_variables_++;
+      // Same comment as above.
+      implication_graph_->RemoveFixedImplications(not_lit);
+      DeleteAllRemovableClausesContaining(lit);
       if (!clause_manager_->InprocessingFixLiteral(not_lit)) return false;
       DeleteAllClausesContaining(not_lit);
       return true;
@@ -2051,16 +2115,82 @@ void AppendBinaryClausesFromTruthTable(
 
 }  // namespace
 
-// Note that this is the "hot" part of the algo, once we have the and gates,
-// the congruence closure should be quite fast.
-void GateCongruenceClosure::ExtractAndGatesAndFillShortTruthTables(
-    PresolveTimer& timer) {
+void GateCongruenceClosure::EarlyGateDetection() {
+  PresolveTimer timer("EarlyGateDetection", logger_, time_limit_);
+  timer.OverrideLogging(VLOG_IS_ON(1));
+
+  // Allow to fill old_truth_tables_bitset_ with tight value.
+  // Note that this change dtime and the solver behavior.
+  StructureExtraction(timer);
+  tmp_binary_clauses_.clear();
+  if (lrat_proof_handler_ != nullptr) {
+    lrat_proof_handler_->DeleteTemporaryBinaryClauses();
+  }
+}
+
+// For now, we only keep size3 truth tables.
+//
+// Note that we include fixed variables. That is actually the point, since when
+// only the target of a function is fixed, we can still infer reduction by using
+// that function.
+void GateCongruenceClosure::ProcessPreviousTruthTables(PresolveTimer& timer) {
   ids2_.clear();
   ids3_.clear();
   ids4_.clear();
   ids5_.clear();
-  truth_tables_inputs_.clear();
+
+  CompactVectorVector<TruthTableId, BooleanVariable> new_inputs;
+  std::vector<Literal> tmp_literals;
+  old_truth_tables_bitset_.clear();
+  const int old_num_tables = truth_tables_inputs_.size();
+  for (TruthTableId i(0); i < old_num_tables; ++i) {
+    // For now, we only keep size 3.
+    if (truth_tables_inputs_[i].size() != 3) continue;
+
+    tmp_literals.clear();
+    for (const BooleanVariable var : truth_tables_inputs_[i]) {
+      tmp_literals.push_back(
+          implication_graph_->RepresentativeOf(Literal(var, true)));
+    }
+    SmallBitset bitmask = truth_tables_bitset_[i];
+
+    // TODO(user): FullyCanonicalizeTruthTable() loose some info, it isn't
+    // completely clear why, and if we integrate ids2_ info as we canonicalize
+    // gate, that might not be necessary.
+    MakeAllInputsPositive(absl::MakeSpan(tmp_literals), bitmask);
+    CanonicalizeTruthTable<Literal>(absl::MakeSpan(tmp_literals), bitmask);
+
+    std::array<BooleanVariable, 3> new_key;
+    for (int i = 0; i < 3; ++i) {
+      CHECK(tmp_literals[i].IsPositive());
+      new_key[i] = tmp_literals[i].Variable();
+    }
+    const TruthTableId new_id(new_inputs.size());
+    auto [it, inserted] = ids3_.insert({new_key, new_id});
+    if (inserted) {
+      new_inputs.Add(new_key);
+      old_truth_tables_bitset_.push_back(bitmask);
+    } else {
+      old_truth_tables_bitset_[it->second] &= bitmask;
+    }
+  }
+
+  timer.AddCounter("old_t3", new_inputs.size());
+  std::swap(truth_tables_inputs_, new_inputs);
+
+  // TODO(user): We don't keep the actual bitmask, as it might be tricky
+  // for the Lrat proof to keep the clauses needed for it. We expect to be
+  // able to recover the same information using the current clause database.
+  const SmallBitset all_one = GetNumBitsAtOne(8);
   truth_tables_bitset_.clear();
+  truth_tables_bitset_.resize(truth_tables_inputs_.size(), all_one);
+}
+
+// Note that this is the "hot" part of the algo, once we have the and gates,
+// the congruence closure should be quite fast.
+void GateCongruenceClosure::ExtractAndGatesAndFillShortTruthTables(
+    PresolveTimer& timer) {
+  ProcessPreviousTruthTables(timer);
   truth_tables_clauses_.clear();
   tmp_ids_.clear();
   tmp_clauses_.clear();
@@ -2072,7 +2202,6 @@ void GateCongruenceClosure::ExtractAndGatesAndFillShortTruthTables(
   //
   // TODO(user): Ideally the detection code should be robust to that.
   // TODO(user): Maybe we should always have an hash-map of binary up to date?
-  int num_fn1 = 0;
   std::vector<std::pair<Literal, Literal>> binary_used;
   for (LiteralIndex a(0); a < implication_graph_->literal_size(); ++a) {
     // TODO(user): If we know we have too many implications for the time limit
@@ -2109,13 +2238,11 @@ void GateCongruenceClosure::ExtractAndGatesAndFillShortTruthTables(
           const int num_added =
               ProcessTruthTable(key2, bitset2, {}, binary_used);
           CHECK_GE(num_added, 1) << std::bitset<4>(bitset2);
-          num_fn1 += num_added;
         }
       }
     }
   }
   timer.AddCounter("t2", ids2_.size());
-  timer.AddCounter("fn1", num_fn1);
 
   std::vector<Literal> candidates;
   for (SatClause* clause : clause_manager_->AllClausesInCreationOrder()) {
@@ -2245,13 +2372,13 @@ void GateCongruenceClosure::ExtractAndGatesAndFillShortTruthTables(
       // We have an and_gate !
       // Add the detected gate (its inputs are the negation of each clause
       // literal other than the target).
-      gates_target_.push_back(target.Index());
+      gates_target_.push_back(target);
       gates_type_.push_back(kAndGateType);
 
       const GateId gate_id = GateId(gates_inputs_.Add({}));
       for (const Literal l : clause->AsSpan()) {
         if (l == target) continue;
-        gates_inputs_.AppendToLastVector(l.NegatedIndex());
+        gates_inputs_.AppendToLastVector(l.Negated());
       }
       if (lrat_proof_handler_ != nullptr) {
         gates_clauses_.Add({clause});
@@ -2266,7 +2393,7 @@ void GateCongruenceClosure::ExtractAndGatesAndFillShortTruthTables(
       }
 
       // Canonicalize.
-      absl::Span<LiteralIndex> gate = gates_inputs_[gate_id];
+      absl::Span<Literal> gate = gates_inputs_[gate_id];
       std::sort(gate.begin(), gate.end());
 
       // Even if we detected an and_gate from a base clause, we keep going
@@ -2280,7 +2407,7 @@ void GateCongruenceClosure::ExtractAndGatesAndFillShortTruthTables(
 
 int GateCongruenceClosure::CanonicalizeShortGate(GateId id) {
   // Deals with fixed input variable.
-  absl::Span<LiteralIndex> inputs = gates_inputs_[id];
+  absl::Span<Literal> inputs = gates_inputs_[id];
   int new_size = inputs.size();
 
   for (int i = 0; i < new_size;) {
@@ -2294,6 +2421,11 @@ int GateCongruenceClosure::CanonicalizeShortGate(GateId id) {
   }
 
   // Now canonicalize.
+  //
+  // Tricky: We always assume size 1 to be an "equivalence", so we do
+  // need to lower the arity if the type is not an equivalence. Maybe a better
+  // alternative would be to not always declare equivalence if we have x = f(y)
+  // as x could be fixed...
   new_size = CanonicalizeFunctionTruthTable(
       gates_target_[id], inputs.subspan(0, new_size), gates_type_[id]);
 
@@ -2301,7 +2433,7 @@ int GateCongruenceClosure::CanonicalizeShortGate(GateId id) {
   if (new_size < gates_inputs_[id].size()) {
     gates_inputs_.Shrink(id, new_size);
   }
-  DCHECK_EQ(gates_type_[id] >> (1 << (gates_inputs_[id].size())), 0);
+  CHECK_EQ(gates_type_[id] >> (1 << (gates_inputs_[id].size())), 0);
   return new_size;
 }
 
@@ -2315,18 +2447,9 @@ int GateCongruenceClosure::ProcessTruthTable(
     const int num_bits = inputs.size() - 1;
     ++num_detected;
 
-    const GateId new_id(gates_target_.size());
-    gates_target_.push_back(Literal(inputs[i], true));
-    gates_inputs_.Add({});
-    for (int j = 0; j < inputs.size(); ++j) {
-      if (i != j) {
-        gates_inputs_.AppendToLastVector(Literal(inputs[j], true));
-      }
-    }
-
     // Generate the function truth table as a type.
-    // We will canonicalize it further in the main loop.
     unsigned int type = 0;
+    unsigned int not_important = 0;
     for (int p = 0; p < (1 << num_bits); ++p) {
       // Expand from (num_bits == inputs.size() - 1) bits to (inputs.size())
       // bits.
@@ -2342,27 +2465,51 @@ int GateCongruenceClosure::ProcessTruthTable(
         //
         // Here we could learn smaller clause, but also we don't really care
         // what is the value of the target at that point p, so we use zero.
-        //
-        // TODO(user): This is not ideal if another function has a value of 1 at
-        // point p, we could still merge it with this one. Shall we create two
-        // gate type? or change the algo?
+        if (((truth_table >> bigger_p) & 1) == 0) {
+          not_important |= 1 << p;
+        }
       }
     }
 
-    gates_type_.push_back(type);
-    if (lrat_proof_handler_ != nullptr) {
-      gates_clauses_.Add({});
-      for (const TruthTableId id : ids_for_proof) {
-        gates_clauses_.AppendToLastVector(truth_tables_clauses_[id]);
+    // If not_important != 0, we might create many version of the "same"
+    // function.
+    SmallBitset mask = 0;
+    while (true) {
+      const GateId new_id(gates_target_.size());
+      gates_target_.push_back(Literal(inputs[i], true));
+      gates_inputs_.Add({});
+      for (int j = 0; j < inputs.size(); ++j) {
+        if (i != j) {
+          gates_inputs_.AppendToLastVector(Literal(inputs[j], true));
+        }
       }
-      for (const auto [a, b] : binary_used) {
-        tmp_binary_clauses_.emplace_back(SatClause::Create({a, b}));
-        gates_clauses_.AppendToLastVector(tmp_binary_clauses_.back().get());
+      gates_type_.push_back(type | mask);
+      if (lrat_proof_handler_ != nullptr) {
+        gates_clauses_.Add({});
+        for (const TruthTableId id : ids_for_proof) {
+          gates_clauses_.AppendToLastVector(truth_tables_clauses_[id]);
+        }
+        for (const auto [a, b] : binary_used) {
+          tmp_binary_clauses_.emplace_back(SatClause::Create({a, b}));
+          gates_clauses_.AppendToLastVector(tmp_binary_clauses_.back().get());
+        }
       }
-    }
 
-    // Canonicalize right away to deal with corner case.
-    CanonicalizeShortGate(new_id);
+      // Canonicalize right away to deal with corner case.
+      CanonicalizeShortGate(new_id);
+
+      if (num_bits != 2) break;
+      if (mask == not_important) break;
+      if (not_important == 0b1111) break;
+
+      // If some position do not matter, for now we add "duplicate" versions
+      // for all the other possibilities. At most x8 here, but hopefully this
+      // should be rare.
+      //
+      // TODO(user): Better design is probably to incorporate table2 info as
+      // we canonicalize tables...
+      mask = ((mask | ~not_important) + 1) & not_important;
+    }
   }
   return num_detected;
 }
@@ -2406,7 +2553,6 @@ void GateCongruenceClosure::ExtractShortGates(PresolveTimer& timer) {
   // Counters.
   // We only fill a subset of the entries, but that make the code shorter.
   std::vector<int> num_tables(6);
-  std::vector<int> num_functions(6);
 
   // Note that using the indirection via TruthTableId allow this code to
   // be deterministic.
@@ -2502,6 +2648,40 @@ void GateCongruenceClosure::ExtractShortGates(PresolveTimer& timer) {
     const absl::Span<const BooleanVariable> inputs = truth_tables_inputs_[t_id];
     SmallBitset truth_table = truth_tables_bitset_[t_id];
 
+    // Deal with fixed variables.
+    for (int i = 0; i < inputs.size(); ++i) {
+      const Literal lit(inputs[i], true);
+      if (trail_->Assignment().LiteralIsAssigned(lit)) {
+        const bool at_true = trail_->Assignment().LiteralIsTrue(lit);
+        for (int p = 0; p < (1 << inputs.size()); ++p) {
+          if ((p >> i) & 1) {
+            // i true at position p.
+            if (!at_true) truth_table &= ~(1 << p);
+          } else {
+            // i false at position p.
+            if (at_true) truth_table &= ~(1 << p);
+          }
+        }
+      }
+    }
+
+    // Deal with equal variable.
+    // TODO(user): understand this a bit better, it only happen with
+    // ProcessPreviousTruthTables() when we don't simplify the truth table.
+    if (inputs.size() == 3) {
+      for (int i = 0; i < inputs.size(); ++i) {
+        for (int j = i + 1; j < inputs.size(); ++j) {
+          if (inputs[i] == inputs[j]) {
+            for (int p = 0; p < (1 << inputs.size()); ++p) {
+              if (((p >> i) & 1) != ((p >> j) & 1)) {
+                truth_table &= ~(1 << p);
+              }
+            }
+          }
+        }
+      }
+    }
+
     // TODO(user): it is unclear why this is useful. Understand a bit more the
     // set of possible Boolean functions of 2 and 3 variables and their clause
     // encoding.
@@ -2514,14 +2694,34 @@ void GateCongruenceClosure::ExtractShortGates(PresolveTimer& timer) {
       merge3_into_4(inputs, truth_table, ids_for_proof);
     }
 
+    // Write back the most recent data.
+    truth_tables_bitset_[t_id] = truth_table;
+
+    // Only for investigating inefficiency: if truth_table is not included in
+    // old_truth_tables_bitset_[t_id], the we lost some information somewhere.
+    if (VLOG_IS_ON(2) && t_id < old_truth_tables_bitset_.size() &&
+        (truth_table & ~old_truth_tables_bitset_[t_id])) {
+      std::vector<Literal> tmp;
+      for (const BooleanVariable var : inputs) {
+        tmp.push_back(Literal(var, true));
+      }
+      LOG(INFO) << "Lost info " << tmp << " " << std::bitset<8>(truth_table)
+                << " " << std::bitset<8>(old_truth_tables_bitset_[t_id]);
+    }
+
     ++num_tables[inputs.size()];
     const int num_detected =
         ProcessTruthTable(inputs, truth_table, ids_for_proof, binary_used);
-    num_functions[inputs.size() - 1] += num_detected;
 
     // If this is not a function and of size 3, lets try to combine it with
     // another truth table of size 3 to get a table of size 4.
     if (inputs.size() == 3 && num_detected == 0) {
+      // Skip entry with duplicates, since we are sorted, no need to test
+      // position 0 and 2. This can only happen via
+      // ProcessPreviousTruthTables().
+      if (inputs[0] == inputs[1]) continue;
+      if (inputs[1] == inputs[2]) continue;
+
       for (int i = 0; i < 3; ++i) {
         std::array<BooleanVariable, 2> key{inputs[i != 0 ? 0 : 1],
                                            inputs[i != 2 ? 2 : 1]};
@@ -2560,7 +2760,7 @@ void GateCongruenceClosure::ExtractShortGates(PresolveTimer& timer) {
         CHECK_NE(key[3], kNoBooleanVariable);
 
         // Add an all allowed entry.
-        SmallBitset bitmask = GetNumBitsAtOne(4);
+        SmallBitset bitmask = GetNumBitsAtOne(1 << 4);
         CanonicalizeTruthTable<BooleanVariable>(absl::MakeSpan(key), bitmask);
 
         // If the key was not processed before, process it now.
@@ -2576,8 +2776,7 @@ void GateCongruenceClosure::ExtractShortGates(PresolveTimer& timer) {
           binary_used.clear();
           merge2_into_n(key, bitmask, binary_used);
           merge3_into_4(key, bitmask, ids_for_proof);
-          num_functions[3] +=
-              ProcessTruthTable(key, bitmask, ids_for_proof, binary_used);
+          ProcessTruthTable(key, bitmask, ids_for_proof, binary_used);
         }
       }
     }
@@ -2591,6 +2790,14 @@ void GateCongruenceClosure::ExtractShortGates(PresolveTimer& timer) {
   for (int i = 0; i < num_tables.size(); ++i) {
     timer.AddCounter(absl::StrCat("t", i), num_tables[i]);
   }
+
+  std::vector<int> num_functions(6);
+  for (GateId id(0); id < gates_inputs_.size(); ++id) {
+    const int size = gates_inputs_[id].size();
+    if (size < num_functions.size()) {
+      num_functions[size]++;
+    }
+  }
   for (int i = 0; i < num_functions.size(); ++i) {
     timer.AddCounter(absl::StrCat("fn", i), num_functions[i]);
   }
@@ -2603,7 +2810,7 @@ class LratGateCongruenceHelper {
   LratGateCongruenceHelper(
       const Trail* trail, ClauseManager* clause_manager,
       LratProofHandler* lrat_proof_handler,
-      const util_intops::StrongVector<GateId, LiteralIndex>& gates_target,
+      const util_intops::StrongVector<GateId, Literal>& gates_target,
       const CompactVectorVector<GateId, const SatClause*>& gates_clauses,
       DenseConnectedComponentsFinder& union_find)
       : trail_(trail),
@@ -2675,8 +2882,8 @@ class LratGateCongruenceHelper {
   // Returns an LRAT clause rep(gates_target[gate_a_id]) =>
   // rep(gates_target[gate_b_id]).
   ClausePtr AddAndGateTargetImplication(GateId gate_a_id, GateId gate_b_id) {
-    const Literal a = Literal(gates_target_[gate_a_id]);
-    const Literal b = Literal(gates_target_[gate_b_id]);
+    const Literal a = gates_target_[gate_a_id];
+    const Literal b = gates_target_[gate_b_id];
     const Literal rep_a = GetRepresentativeWithProofSupport(a);
     const Literal rep_b = GetRepresentativeWithProofSupport(b);
     DCHECK(IsRepresentative(rep_a));
@@ -2742,6 +2949,7 @@ class LratGateCongruenceHelper {
   void AddGateClausesToTemporaryProof(GateId id) {
     CHECK(lrat_proof_handler_ != nullptr);
     const auto& assignment = trail_->Assignment();
+
     for (const SatClause* clause : gates_clauses_[id]) {
       // We rewrite each clause using new equivalences or fixed literals found.
       marked_.ResetAllToFalse();
@@ -2896,7 +3104,7 @@ class LratGateCongruenceHelper {
   // rep(m) = not(rep) must exist.
   void AppendFixAndGateTargetClauses(GateId gate_id, Literal rep,
                                      absl::InlinedVector<ClausePtr, 5>& proof) {
-    const Literal target = Literal(gates_target_[gate_id]);
+    const Literal target = gates_target_[gate_id];
     LiteralIndex l_index = kNoLiteralIndex;
     LiteralIndex m_index = kNoLiteralIndex;
     // Find l and m in the original inputs (the negation of each gate clause
@@ -2956,7 +3164,7 @@ class LratGateCongruenceHelper {
   const Trail* trail_;
   ClauseManager* clause_manager_;
   LratProofHandler* lrat_proof_handler_;
-  const util_intops::StrongVector<GateId, LiteralIndex>& gates_target_;
+  const util_intops::StrongVector<GateId, Literal>& gates_target_;
   const CompactVectorVector<GateId, const SatClause*>& gates_clauses_;
   DenseConnectedComponentsFinder& union_find_;
 
@@ -2979,14 +3187,28 @@ class LratGateCongruenceHelper {
 
 }  // namespace
 
-bool GateCongruenceClosure::DoOneRound(bool log_info) {
-  // TODO(user): Remove this condition, it is possible there are no binary
-  // and still gates!
-  if (implication_graph_->IsEmpty()) return true;
+std::string GateCongruenceClosure::GateDebugString(GateId id) const {
+  std::string result;
+  absl::StrAppend(&result, "[");
+  for (int i = 0; i < gates_inputs_[id].size(); ++i) {
+    const Literal lit = gates_inputs_[id][i];
+    absl::StrAppend(&result, (i == 0 ? "" : ","), lit, " ",
+                    assignment_.LiteralIsTrue(lit)    ? "T"
+                    : assignment_.LiteralIsFalse(lit) ? "F"
+                                                      : "?");
+  }
+  absl::StrAppend(&result, "]");
+  const Literal target(gates_target_[id]);
+  absl::StrAppend(&result, " target ", target);
+  absl::StrAppend(&result, " ",
+                  assignment_.LiteralIsTrue(target)    ? "T"
+                  : assignment_.LiteralIsFalse(target) ? "F"
+                                                       : "?");
+  absl::StrAppend(&result, " ", std::bitset<8>(gates_type_[id]).to_string());
+  return result;
+}
 
-  PresolveTimer timer("GateCongruenceClosure", logger_, time_limit_);
-  timer.OverrideLogging(log_info);
-
+void GateCongruenceClosure::StructureExtraction(PresolveTimer& timer) {
   const int num_variables(sat_solver_->NumVariables());
   const int num_literals(num_variables * 2);
   marked_.ClearAndResize(Literal(num_literals));
@@ -2998,15 +3220,6 @@ bool GateCongruenceClosure::DoOneRound(bool log_info) {
   gates_type_.clear();
   gates_clauses_.clear();
 
-  // Lets release the memory on exit.
-  CHECK(tmp_binary_clauses_.empty());
-  absl::Cleanup binary_cleanup = [this] {
-    tmp_binary_clauses_.clear();
-    if (lrat_proof_handler_ != nullptr) {
-      lrat_proof_handler_->DeleteTemporaryBinaryClauses();
-    }
-  };
-
   ExtractAndGatesAndFillShortTruthTables(timer);
   ExtractShortGates(timer);
 
@@ -3017,6 +3230,32 @@ bool GateCongruenceClosure::DoOneRound(bool log_info) {
   if (lrat_proof_handler_ != nullptr) {
     CHECK_EQ(gates_target_.size(), gates_clauses_.size());
   }
+}
+
+bool GateCongruenceClosure::DoOneRound(bool log_info) {
+  // TODO(user): Remove this condition, it is possible there are no binary
+  // and still gates!
+  if (implication_graph_->IsEmpty()) return true;
+
+  // We will fully propagate newly fixed variables.
+  CHECK_EQ(trail_->CurrentDecisionLevel(), 0);
+  clause_manager_->AttachAllClauses();
+
+  PresolveTimer timer("GateCongruenceClosure", logger_, time_limit_);
+  timer.OverrideLogging(log_info);
+
+  // Lets release the memory on exit.
+  CHECK(tmp_binary_clauses_.empty());
+  absl::Cleanup binary_cleanup = [this] {
+    tmp_binary_clauses_.clear();
+    if (lrat_proof_handler_ != nullptr) {
+      lrat_proof_handler_->DeleteTemporaryBinaryClauses();
+    }
+  };
+
+  const int num_variables(sat_solver_->NumVariables());
+  const int num_literals(num_variables * 2);
+  StructureExtraction(timer);
 
   // If two gates have the same type and the same inputs, their targets are
   // equivalent. We use an hash set to detect that the inputs are the same.
@@ -3037,9 +3276,7 @@ bool GateCongruenceClosure::DoOneRound(bool log_info) {
   // set of gate inputs.
   MergeableOccurrenceList<BooleanVariable, GateId> input_var_to_gate;
   struct GetVarMapper {
-    BooleanVariable operator()(LiteralIndex l) const {
-      return Literal(l).Variable();
-    }
+    BooleanVariable operator()(Literal l) const { return l.Variable(); }
   };
   input_var_to_gate.ResetFromTransposeMap<GetVarMapper>(gates_inputs_,
                                                         num_variables);
@@ -3077,9 +3314,10 @@ bool GateCongruenceClosure::DoOneRound(bool log_info) {
                                      absl::Span<const ClausePtr> proof) {
     DCHECK_EQ(to_fix, lrat_helper.GetRepresentativeWithProofSupport(to_fix));
     if (assignment_.LiteralIsTrue(to_fix)) return true;
-    if (!clause_manager_->InprocessingFixLiteral(to_fix, proof)) {
-      return false;
-    }
+    if (!clause_manager_->InprocessingFixLiteral(to_fix, proof)) return false;
+
+    // Also propagate all the clauses.
+    if (!sat_solver_->FinishPropagation()) return false;
 
     // This is quite tricky: as we fix a literal, we propagate right away
     // everything implied by it in the binary implication graph. So we need to
@@ -3281,15 +3519,15 @@ bool GateCongruenceClosure::DoOneRound(bool log_info) {
       if (pass > 0) continue;
 
       if (gates_type_[id] == kAndGateType) {
-        absl::Span<LiteralIndex> inputs = gates_inputs_[id];
+        absl::Span<Literal> inputs = gates_inputs_[id];
         marked_.ResetAllToFalse();
         int new_size = 0;
         bool is_unit = false;
-        for (const LiteralIndex l : inputs) {
+        for (const Literal lit : inputs) {
           if (lrat_proof_handler_ != nullptr) {
-            lrat_helper.ShortenEquivalencesWithRepresentative(Literal(l));
+            lrat_helper.ShortenEquivalencesWithRepresentative(lit);
           }
-          const LiteralIndex rep(union_find.FindRoot(l.value()));
+          const LiteralIndex rep(union_find.FindRoot(lit.Index().value()));
           if (marked_[rep]) continue;
 
           // This only works for and-gate, if both lit and not(lit) are input,
@@ -3298,7 +3536,7 @@ bool GateCongruenceClosure::DoOneRound(bool log_info) {
             is_unit = true;
             input_var_to_gate.RemoveFromFutureOutput(id);
 
-            const Literal initial_to_fix = Literal(gates_target_[id]).Negated();
+            const Literal initial_to_fix = gates_target_[id].Negated();
             const Literal to_fix =
                 lrat_helper.GetRepresentativeWithProofSupport(initial_to_fix);
             if (!assignment_.LiteralIsTrue(to_fix)) {
@@ -3313,7 +3551,7 @@ bool GateCongruenceClosure::DoOneRound(bool log_info) {
           }
 
           marked_.Set(rep);
-          inputs[new_size++] = rep;
+          inputs[new_size++] = Literal(rep);
         }
 
         if (is_unit) {
@@ -3349,18 +3587,38 @@ bool GateCongruenceClosure::DoOneRound(bool log_info) {
       // We just take the representative and re-canonicalize.
       DCHECK_GE(gates_type_[id], 0);
       DCHECK_EQ(gates_type_[id] >> (1 << (gates_inputs_[id].size())), 0);
-      for (LiteralIndex& lit_ref : gates_inputs_[id]) {
-        lit_ref =
-            lrat_helper.GetRepresentativeWithProofSupport(Literal(lit_ref))
-                .Index();
+
+      for (Literal& lit_ref : gates_inputs_[id]) {
+        lit_ref = lrat_helper.GetRepresentativeWithProofSupport(lit_ref);
       }
 
+      // Note that the test below assume canonicalization.
       const int new_size = CanonicalizeShortGate(id);
-      if (new_size == 1) {
+      if (new_size == 2 && gates_type_[id] == 0b0110) {
+        // TODO(user): we can also have 0b0100 which correspond to a binary
+        // clause worth of info (or fixing both variables).
+        const Literal target(gates_target_[id]);
+        if (assignment_.LiteralIsAssigned(target)) {
+          // We have an equivalence between the two inputs!
+          input_var_to_gate.RemoveFromFutureOutput(id);
+          const Literal a = gates_inputs_[id][0];
+          Literal b = gates_inputs_[id][1];
+          if (assignment_.LiteralIsTrue(target)) {
+            b = b.Negated();
+          }
+          const auto [a_to_b, b_to_a] =
+              lrat_helper.AddShortGateEquivalence(a, b, {id});
+          if (!new_equivalence(a, b, a_to_b, b_to_a)) {
+            return false;
+          }
+          break;
+        }
+      } else if (new_size == 1) {
         // We have a function of size 1! This is an equivalence.
+        CHECK_EQ(gates_type_[id], 0b10);
         input_var_to_gate.RemoveFromFutureOutput(id);
-        const Literal a = Literal(gates_target_[id]);
-        const Literal b = Literal(gates_inputs_[id][0]);
+        const Literal a = gates_target_[id];
+        const Literal b = gates_inputs_[id][0];
         const Literal rep_a = lrat_helper.GetRepresentativeWithProofSupport(a);
         const Literal rep_b = lrat_helper.GetRepresentativeWithProofSupport(b);
         if (rep_a != rep_b) {
@@ -3375,9 +3633,9 @@ bool GateCongruenceClosure::DoOneRound(bool log_info) {
       } else if (new_size == 0) {
         // We have a fixed function! Just fix the literal.
         input_var_to_gate.RemoveFromFutureOutput(id);
-        const Literal initial_to_fix =
-            (gates_type_[id] & 1) == 1 ? Literal(gates_target_[id])
-                                       : Literal(gates_target_[id]).Negated();
+        const Literal initial_to_fix = (gates_type_[id] & 1) == 1
+                                           ? gates_target_[id]
+                                           : gates_target_[id].Negated();
         const Literal to_fix =
             lrat_helper.GetRepresentativeWithProofSupport(initial_to_fix);
         if (!assignment_.LiteralIsTrue(to_fix)) {
@@ -3393,6 +3651,7 @@ bool GateCongruenceClosure::DoOneRound(bool log_info) {
 
   // DEBUG check that we reached the fix point correctly.
   if (DEBUG_MODE) {
+    CHECK(sat_solver_->Propagate());
     CHECK(queue.empty());
     gate_set.clear();
     for (GateId id(0); id < num_gates; ++id) {
@@ -3406,22 +3665,21 @@ bool GateCongruenceClosure::DoOneRound(bool log_info) {
         const Literal to_fix =
             lrat_helper.GetRepresentativeWithProofSupport(initial_to_fix);
         CHECK(assignment_.LiteralIsTrue(to_fix));
-      } else if (new_size == 1) {
-        CHECK(!assignment_.LiteralIsAssigned(Literal(gates_target_[id])));
-        CHECK(!assignment_.LiteralIsAssigned(Literal(gates_inputs_[id][0])));
-        CHECK_EQ(lrat_helper.GetRepresentativeWithProofSupport(
-                     Literal(gates_target_[id])),
-                 lrat_helper.GetRepresentativeWithProofSupport(
-                     Literal(gates_inputs_[id][0])))
+      } else if (new_size == 1 && gates_type_[id] == 0b10) {
+        CHECK(!assignment_.LiteralIsAssigned(gates_target_[id]));
+        CHECK(!assignment_.LiteralIsAssigned(gates_inputs_[id][0]));
+        CHECK_EQ(
+            lrat_helper.GetRepresentativeWithProofSupport(gates_target_[id]),
+            lrat_helper.GetRepresentativeWithProofSupport(gates_inputs_[id][0]))
             << id << " ";
       } else {
         const auto [it, inserted] = gate_set.insert(id);
         if (!inserted) {
           const GateId other_id = *it;
-          CHECK_EQ(lrat_helper.GetRepresentativeWithProofSupport(
-                       Literal(gates_target_[id])),
-                   lrat_helper.GetRepresentativeWithProofSupport(
-                       Literal(gates_target_[other_id])))
+          CHECK_EQ(
+              lrat_helper.GetRepresentativeWithProofSupport(gates_target_[id]),
+              lrat_helper.GetRepresentativeWithProofSupport(
+                  gates_target_[other_id]))
               << id << " " << gates_inputs_[id] << " " << other_id << " "
               << gates_inputs_[other_id];
         }

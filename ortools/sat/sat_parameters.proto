@@ -24,7 +24,7 @@ option java_multiple_files = true;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 361
+// NEXT TAG: 362
 message SatParameters {
   // In some context, like in a portfolio of search, it makes sense to name a
   // given parameters set for logging purpose.
@@ -700,6 +700,12 @@ message SatParameters {
   // 2025.
   optional bool inprocessing_use_sat_sweeping = 354 [default = false];
 
+  // Whether we perform transitive reduction of the binary implication graph.
+  // This might reduce the number of implication significantly, but it might
+  // also loose some structure used by our detection algorithm like the logical
+  // gates detection.
+  optional bool inprocessing_use_transitive_reduction = 361 [default = true];
+
   // ==========================================================================
   // Multithread
   // ==========================================================================
@@ -820,9 +826,9 @@ message SatParameters {
 
   // If true, inferred clauses are checked with an LRAT checker as they are
   // learned, in presolve (reduced to trivial simplifications if
-  // cp_model_presolve is false), and in each worker. As of December 2025, this
+  // cp_model_presolve is false), and in each worker. As of February 2026, this
   // only works with pure SAT problems, with
-  //  - cp_model_presolve = false,
+  //  - cp_model_pure_sat_presolve = true if cp_model_presolve = true,
   //  - linearization_level <= 1,
   //  - symmetry_level <= 1.
   optional bool check_lrat_proof = 344 [default = false];
@@ -830,16 +836,16 @@ message SatParameters {
   // If true, and if output_lrat_proof is true and the problem is UNSAT, check
   // that the merged proof file is valid, i.e., that clause sharing between
   // workers is correct. This checks each inferred clause, so you might want to
-  // disable check_lrat_proof to avoid redundant work. As of November 2025, this
-  // only works for pure SAT problems, with num_workers = 1.
+  // disable check_lrat_proof to avoid redundant work. As of February 2026, this
+  // only works for pure SAT problems.
   optional bool check_merged_lrat_proof = 352 [default = false];
 
   // If true, an LRAT proof that all the clauses inferred by the solver are
   // valid is output to several files (one for presolve -- reduced to trivial
   // simplifications if cp_model_presolve is false, one per worker, and one for
-  // the merged proof). As of December 2025, this only works for pure SAT
+  // the merged proof). As of February 2026, this only works for pure SAT
   // problems, with
-  //  - cp_model_presolve = false,
+  //  - cp_model_pure_sat_presolve = true if cp_model_presolve = true,
   //  - linearization_level <= 1,
   //  - symmetry_level <= 1.
   optional bool output_lrat_proof = 345 [default = false];
@@ -1270,11 +1276,11 @@ message SatParameters {
   // on some problems.
   optional int32 binary_search_num_conflicts = 99 [default = -1];
 
-  // This has no effect if optimize_with_core is false. If true, use a different
-  // core-based algorithm similar to the max-HS algo for max-SAT. This is a
-  // hybrid MIP/CP approach and it uses a MIP solver in addition to the CP/SAT
-  // one. This is also related to the PhD work of tobyodavies@
-  // "Automatic Logic-Based Benders Decomposition with MiniZinc"
+  // This requires setting optimize_with_core to true. If true, use a different
+  // core-based algorithm similar to the max-HS algo for max-SAT. This uses an
+  // inner CP-SAT solver to solve a linear subproblem extracted from the main
+  // one. This is related to the PhD work of tobyodavies@ "Automatic Logic-Based
+  // Benders Decomposition with MiniZinc"
   // http://aaai.org/ocs/index.php/AAAI/AAAI17/paper/view/14489
   optional bool optimize_with_max_hs = 85 [default = false];
 

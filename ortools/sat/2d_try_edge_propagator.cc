@@ -253,11 +253,14 @@ bool TryEdgeRectanglePropagator::Propagate() {
     found_propagations.push_back({i, new_x_min});
   }
 
+  if (found_propagations.empty()) {
+    return true;
+  }
   return ExplainAndPropagate(found_propagations);
 }
 
 std::vector<int> TryEdgeRectanglePropagator::GetMinimumProblemWithPropagation(
-    int box_index, IntegerValue new_x_min) {
+    int box_index, std::optional<IntegerValue> new_x_min) {
   // We know that we can't place the box at x < new_x_min (which can be
   // start_max for a conflict). The explanation for the propagation is complex:
   // we tried a lot of positions, and each one overlaps with the mandatory part
@@ -290,8 +293,14 @@ std::vector<int> TryEdgeRectanglePropagator::GetMinimumProblemWithPropagation(
     if (potential_x_positions_[j] < box.bounding_area.x_min) {
       continue;
     }
-    if (potential_x_positions_[j] >= new_x_min) {
-      continue;
+    if (new_x_min.has_value()) {
+      if (potential_x_positions_[j] >= *new_x_min) {
+        continue;
+      }
+    } else {
+      if (potential_x_positions_[j] > box.bounding_area.x_max - box.x_size) {
+        continue;
+      }
     }
     CHECK(!CanPlace(box_index,
                     {potential_x_positions_[j], box.bounding_area.y_min},
@@ -368,14 +377,10 @@ bool TryEdgeRectanglePropagator::ExplainAndPropagate(
     const std::vector<std::pair<int, std::optional<IntegerValue>>>&
         found_propagations) {
   for (const auto& [box_index, new_x_min] : found_propagations) {
-    const RectangleInRange& box = active_box_ranges_[box_index];
     helper_.ResetReason();
 
     const std::vector<int> minimum_problem_with_propagator =
-        GetMinimumProblemWithPropagation(
-            box_index, new_x_min.has_value()
-                           ? *new_x_min
-                           : box.bounding_area.x_max - box.x_size);
+        GetMinimumProblemWithPropagation(box_index, new_x_min);
     for (const int j : minimum_problem_with_propagator) {
       DCHECK(is_active_[j]);
       // Important: we also add to the reason the actual box we are changing the

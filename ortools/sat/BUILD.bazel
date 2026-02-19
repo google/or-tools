@@ -427,6 +427,30 @@ cc_test(
     ],
 )
 
+cc_library(
+    name = "debug_solution",
+    srcs = ["debug_solution.cc"],
+    hdrs = ["debug_solution.h"],
+    deps = [
+        ":cp_model_checker",
+        ":cp_model_mapping",
+        ":integer",
+        ":integer_base",
+        ":linear_constraint",
+        ":model",
+        ":sat_base",
+        ":sat_solver",
+        ":synchronization",
+        "//ortools/base:strong_vector",
+        "//ortools/util:logging",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/numeric:int128",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
 cc_proto_library(
     name = "cp_model_cc_proto",
     visibility = ["//visibility:public"],
@@ -819,6 +843,7 @@ cc_library(
         ":cp_model_symmetries",
         ":cp_model_utils",
         ":cuts",
+        ":debug_solution",
         ":feasibility_jump",
         ":feasibility_pump",
         ":implied_bounds",
@@ -2357,6 +2382,7 @@ cc_library(
     deps = [
         ":2d_rectangle_presolve",
         ":diffn_util",
+        ":debug_solution",
         ":enforcement",
         ":enforcement_helper",
         ":integer",
@@ -3090,6 +3116,7 @@ cc_library(
     srcs = ["linear_constraint_manager.cc"],
     hdrs = ["linear_constraint_manager.h"],
     deps = [
+        ":debug_solution",
         ":integer",
         ":integer_base",
         ":linear_constraint",

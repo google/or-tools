@@ -59,6 +59,8 @@ class LratWriter {
 
   void DeleteClause(ClausePtr clause);
 
+  void RemapBooleanVariables(absl::Span<const int32_t> new_to_old_var);
+
  private:
   void WriteDeletedClauses();
 
@@ -96,8 +98,14 @@ class LratMerger {
   // imported from an individual proof file.
   void SortAndAddSharedClause(GlobalId id, std::vector<Literal>& literals);
 
+  // Remaps the given literal indices to global indices, and stores the result
+  // in `literals`. Also updates `literal_indices` if it is not const.
+  template <typename T>
+  void RemapLiteralIndices(T& literal_indices, std::vector<Literal>* literals);
+
   // Remaps the local clause IDs in the given inferred clause to global IDs, in
-  // place. Returns true on success, false otherwise.
+  // place. Returns true on success, false otherwise. Literals indices must be
+  // remapped before calling this function.
   bool RemapInferredClause(int proof_index, const std::string& filename,
                            LratInferredClause& inferred_clause,
                            GlobalId global_id);
@@ -131,6 +139,11 @@ class LratMerger {
   std::vector<LratProofStep> last_read_steps_;
 
   absl::flat_hash_map<GlobalId, ClausePtr> global_id_to_clause_;
+
+  // Remapping of local to global variable indices (possibly empty).
+  std::vector<int> local_to_global_var_;
+  // The maximum global variable index of the remapped variables.
+  int max_global_var_ = 0;
 
   std::vector<Literal> tmp_literals_;
   std::vector<ClausePtr> tmp_proof_;
@@ -209,6 +222,15 @@ class LratProofHandler {
   // `clause` is a SatClause pointer, then this SatClause* is deleted.
   void DeleteClause(ClausePtr clause, bool delete_sat_clause = true);
 
+  // Defines a mapping of variable indices for the next clauses added to the
+  // merged proof. This mapping is only used in LratMerger. For efficiency, it
+  // is currently not used during on-the-fly checks if `lrat_check_enabled()` is
+  // true (hence no new clauses should be added to this handler after this
+  // method has been called; but new proof handlers directly using the new
+  // variables can be created). A variable index i in a next clause will be
+  // remapped to `new_to_old_var[i]`.
+  void RemapBooleanVariables(absl::Span<const int32_t> new_to_old_var);
+
   // Returns VALID if all the inferred clauses were successfully checked with
   // LRAT. Returns INVALID if at least one of them was not. Returns UNKNOWN if
   // LRAT checks are not enabled.
@@ -221,6 +243,10 @@ class LratProofHandler {
 
   void Close(bool model_is_unsat);
 
+  // Returns true if the given binary clause has been added to the LRAT proof,
+  // and has not been deleted yet.
+  bool HasBinaryClause(Literal a, Literal b) const;
+
   // Returns true if the given binary clause is in the BinaryImplicationGraph.
   // By hypothesis, it is also in the LRAT proof.
   bool HasImplicationGraphClause(Literal a, Literal b) const;
@@ -232,13 +258,10 @@ class LratProofHandler {
   // - marks a clause as no longer being in the BinaryImplicationGraph, and
   // deletes it from the LRAT proof.
   void DeleteImplicationGraphClause(ClausePtr clause);
-  // - returns the binary clauses in the LRAT proof which are currently marked
-  // as being in the BinaryImplicationGraph.
-  const absl::flat_hash_set<ClausePtr>& ImplicationGraphClauses();
-
-  // Returns true if the LRAT proof currently contains the given binary clause,
-  // and if this clause is not in the BinaryImplicationGraph.
-  bool HasTemporaryBinaryClause(Literal a, Literal b) const;
+  // - returns all the binary clauses which have been added to the LRAT proof
+  // and which have not been deleted, together with a boolean indicating whether
+  // they are in the BinaryImplicationGraph.
+  const absl::flat_hash_map<ClausePtr, bool>& BinaryClauses();
 
   // Deletes the binary clauses which have been added with AddProblemClause() or
   // AddInferredClause() since the last call to this method, if they have not
@@ -264,20 +287,14 @@ class LratProofHandler {
   bool all_problem_clauses_loaded_ = false;
   int64_t num_assumed_clauses_ = 0;
 
-  // TODO(user): other implementations of the sets below could be used. For
-  // instance, a map from ClausePtr to is_temporary Booleans, plus a lazily
-  // updated vector of the temporary clauses. Test if one is more efficient than
-  // the others.
+  // The binary clauses which have been added to the LRAT proof and have not
+  // been deleted yet, and whether they are also in the BinaryImplicationGraph.
+  // All these clause pointers are of ClausePtr::kBinaryClause type.
+  absl::flat_hash_map<ClausePtr, bool> binary_clauses_;
 
-  // The binary clauses which are in the BinaryImplicationGraph. By hypothesis,
-  // they are also in the LRAT proof and have not been deleted from it. All
-  // these clause pointers are of ClausePtr::kBinaryClause type.
-  absl::flat_hash_set<ClausePtr> implication_graph_clauses_;
-
-  // The binary clauses added to the LRAT proof which are not in the
-  // BinaryImplicationGraph and have not been deleted from the proof yet. All
-  // these clause pointers are of ClausePtr::kBinaryClause type.
-  absl::flat_hash_set<ClausePtr> temporary_binary_clauses_;
+  // The clauses in `binary_clauses_` which might not be in the
+  // BinaryImplicationGraph.
+  std::vector<ClausePtr> temporary_binary_clauses_;
 };
 
 }  // namespace sat

@@ -825,6 +825,18 @@ std::string SchedulingConstraintHelper::TaskDebugString(int t) const {
                       ",", EndMax(t).value(), "]");
 }
 
+std::string SchedulingConstraintHelper::FullTaskDebugString(int t) const {
+  return absl::StrCat(
+      "t=", t, " is_present=(", Literal(reason_for_presence_[t]), ")",
+      (IsPresent(t)  ? "1"
+       : IsAbsent(t) ? "0"
+                     : "?"),
+      " size=", sizes_[t], "[", SizeMin(t).value(), ",", SizeMax(t).value(),
+      "]", " start=", starts_[t], "[", StartMin(t).value(), ",",
+      StartMax(t).value(), "]", " end=", ends_[t], "[", EndMin(t).value(), ",",
+      EndMax(t).value(), "]");
+}
+
 IntegerValue SchedulingConstraintHelper::GetMinOverlap(int t,
                                                        IntegerValue start,
                                                        IntegerValue end) const {

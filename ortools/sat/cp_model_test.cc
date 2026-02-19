@@ -882,7 +882,7 @@ TEST(CpModelTest, TestForbiddenAssignments) {
 
   int num_solutions = 0;
   model.Add(NewFeasibleSolutionObserver(
-      [&](const CpSolverResponse& r) { num_solutions++; }));
+      [&](const CpSolverResponse&) { num_solutions++; }));
   const CpSolverResponse response = SolveCpModel(cp_model.Build(), &model);
   EXPECT_EQ(num_solutions, 4 * 4 * 4 - 3);
 }
@@ -1408,7 +1408,7 @@ TEST(CpModelTest, Min) {
 
   int num_solutions = 0;
   model.Add(NewFeasibleSolutionObserver(
-      [&](const CpSolverResponse& r) { num_solutions++; }));
+      [&](const CpSolverResponse&) { num_solutions++; }));
 
   const CpSolverResponse& response = SolveCpModel(cp_model.Build(), &model);
   EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
@@ -1458,7 +1458,7 @@ TEST(CpModelTest, Min2) {
 
   int num_solutions = 0;
   model.Add(NewFeasibleSolutionObserver(
-      [&](const CpSolverResponse& r) { num_solutions++; }));
+      [&](const CpSolverResponse&) { num_solutions++; }));
 
   const CpSolverResponse& response = SolveCpModel(cp_model.Build(), &model);
   EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
@@ -1512,7 +1512,7 @@ TEST(CpModelTest, Max) {
 
   int num_solutions = 0;
   model.Add(NewFeasibleSolutionObserver(
-      [&](const CpSolverResponse& r) { num_solutions++; }));
+      [&](const CpSolverResponse&) { num_solutions++; }));
 
   const CpSolverResponse& response = SolveCpModel(cp_model.Build(), &model);
   EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
@@ -1567,7 +1567,7 @@ TEST(CpModelTest, MinExpression) {
 
   int num_solutions = 0;
   model.Add(NewFeasibleSolutionObserver(
-      [&](const CpSolverResponse& r) { num_solutions++; }));
+      [&](const CpSolverResponse&) { num_solutions++; }));
 
   const CpSolverResponse& response = SolveCpModel(cp_model.Build(), &model);
   EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
@@ -1622,7 +1622,7 @@ TEST(CpModelTest, MaxExpression) {
 
   int num_solutions = 0;
   model.Add(NewFeasibleSolutionObserver(
-      [&](const CpSolverResponse& r) { num_solutions++; }));
+      [&](const CpSolverResponse&) { num_solutions++; }));
 
   const CpSolverResponse& response = SolveCpModel(cp_model.Build(), &model);
   EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
@@ -1972,6 +1972,47 @@ TEST(Hints, HintObjectiveValue) {
   EXPECT_THAT(response.solve_log(),
               HasSubstr("The solution hint is complete and is feasible. Its "
                         "objective value is 28."));
+}
+
+TEST(CpModelTest, TestChaining) {
+  CpModelBuilder cp_model;
+  const BoolVar bool_var = cp_model.NewBoolVar();
+  const IntVar int_var = cp_model.NewIntVar({0, 10});
+  const LinearExpr expr = int_var;
+  const IntervalVar interval_var = cp_model.NewIntervalVar(0, 10, 10);
+
+  // Circuit
+  cp_model.AddCircuitConstraint().AddArc(0, 1, bool_var).AddArc(1, 0, bool_var);
+
+  // MultipleCircuit
+  cp_model.AddMultipleCircuitConstraint()
+      .AddArc(0, 1, bool_var)
+      .AddArc(1, 0, bool_var);
+
+  // Table
+  cp_model.AddAllowedAssignments({int_var}).AddTuple({0}).AddTuple({1});
+
+  // Reservoir
+  cp_model.AddReservoirConstraint(0, 10).AddEvent(expr, 5).AddOptionalEvent(
+      expr, -5, bool_var);
+
+  // Automaton
+  cp_model.AddAutomaton({int_var}, 0, {1})
+      .AddTransition(0, 1, 0)
+      .AddTransition(1, 0, 1);
+
+  // NoOverlap
+  cp_model.AddNoOverlap().AddInterval(interval_var).AddInterval(interval_var);
+
+  // NoOverlap2D
+  cp_model.AddNoOverlap2D()
+      .AddRectangle(interval_var, interval_var)
+      .AddRectangle(interval_var, interval_var);
+
+  // Cumulative
+  cp_model.AddCumulative(10)
+      .AddDemand(interval_var, 5)
+      .AddDemand(interval_var, 5);
 }
 
 }  // namespace

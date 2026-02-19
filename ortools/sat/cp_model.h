@@ -572,7 +572,7 @@ class CircuitConstraint : public Constraint {
    * @param head the index of the head node.
    * @param literal it will be set to true if the arc is selected.
    */
-  void AddArc(int tail, int head, BoolVar literal);
+  CircuitConstraint& AddArc(int tail, int head, BoolVar literal);
 
  private:
   friend class CpModelBuilder;
@@ -595,7 +595,7 @@ class MultipleCircuitConstraint : public Constraint {
    * @param head the index of the head node.
    * @param literal it will be set to true if the arc is selected.
    */
-  void AddArc(int tail, int head, BoolVar literal);
+  MultipleCircuitConstraint& AddArc(int tail, int head, BoolVar literal);
 
  private:
   friend class CpModelBuilder;
@@ -612,7 +612,7 @@ class MultipleCircuitConstraint : public Constraint {
 class TableConstraint : public Constraint {
  public:
   /// Adds a tuple of possible values to the constraint.
-  void AddTuple(absl::Span<const int64_t> tuple);
+  TableConstraint& AddTuple(absl::Span<const int64_t> tuple);
 
  private:
   friend class CpModelBuilder;
@@ -634,7 +634,7 @@ class ReservoirConstraint : public Constraint {
    * It will increase the used capacity by `level_change` at time `time`.
    * `time` must be an affine expression.
    */
-  void AddEvent(LinearExpr time, int64_t level_change);
+  ReservoirConstraint& AddEvent(LinearExpr time, int64_t level_change);
 
   /**
    * Adds an optional event
@@ -642,8 +642,8 @@ class ReservoirConstraint : public Constraint {
    * If `is_active` is true, It will increase the used capacity by
    * `level_change` at time `time. `time` must be an affine expression.
    */
-  void AddOptionalEvent(LinearExpr time, int64_t level_change,
-                        BoolVar is_active);
+  ReservoirConstraint& AddOptionalEvent(LinearExpr time, int64_t level_change,
+                                        BoolVar is_active);
 
  private:
   friend class CpModelBuilder;
@@ -662,7 +662,8 @@ class ReservoirConstraint : public Constraint {
 class AutomatonConstraint : public Constraint {
  public:
   /// Adds a transitions to the automaton.
-  void AddTransition(int tail, int head, int64_t transition_label);
+  AutomatonConstraint& AddTransition(int tail, int head,
+                                     int64_t transition_label);
 
  private:
   friend class CpModelBuilder;
@@ -679,7 +680,7 @@ class AutomatonConstraint : public Constraint {
 class NoOverlapConstraint : public Constraint {
  public:
   /// Adds an interval to the constraint.
-  void AddInterval(IntervalVar interval);
+  NoOverlapConstraint& AddInterval(IntervalVar interval);
 
  private:
   friend class CpModelBuilder;
@@ -696,7 +697,8 @@ class NoOverlapConstraint : public Constraint {
 class NoOverlap2DConstraint : public Constraint {
  public:
   /// Adds a rectangle (parallel to the axis) to the constraint.
-  void AddRectangle(IntervalVar x_coordinate, IntervalVar y_coordinate);
+  NoOverlap2DConstraint& AddRectangle(IntervalVar x_coordinate,
+                                      IntervalVar y_coordinate);
 
  private:
   friend class CpModelBuilder;
@@ -716,7 +718,7 @@ class NoOverlap2DConstraint : public Constraint {
 class CumulativeConstraint : public Constraint {
  public:
   /// Adds a pair (interval, demand) to the constraint.
-  void AddDemand(IntervalVar interval, LinearExpr demand);
+  CumulativeConstraint& AddDemand(IntervalVar interval, LinearExpr demand);
 
  private:
   friend class CpModelBuilder;

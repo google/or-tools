@@ -72,6 +72,7 @@
 #include "ortools/sat/inclusion.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
+#include "ortools/sat/lrat_proof_handler.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/precedences.h"
 #include "ortools/sat/presolve_context.h"
@@ -6826,10 +6827,19 @@ bool CpModelPresolver::PresolveNoOverlap2D(int /*c*/, ConstraintProto* ct) {
          IntegerValue(context_->EndMax(x_interval_index)),
          IntegerValue(context_->StartMin(y_interval_index)),
          IntegerValue(context_->EndMax(y_interval_index))});
+    const IntegerValue size_max_x =
+        IntegerValue(context_->SizeMax(x_interval_index));
+    const IntegerValue size_max_y =
+        IntegerValue(context_->SizeMax(y_interval_index));
     if (context_->IntervalIsConstant(x_interval_index) &&
-        context_->IntervalIsConstant(y_interval_index) &&
-        context_->SizeMax(x_interval_index) > 0 &&
-        context_->SizeMax(y_interval_index) > 0) {
+        context_->IntervalIsConstant(y_interval_index) && size_max_x > 0 &&
+        size_max_y > 0) {
+      if (bounding_boxes.back().SizeX() != size_max_x ||
+          bounding_boxes.back().SizeY() != size_max_y) {
+        // This is probably unsat, but this presolve is not the right place
+        // to deal with it.
+        return true;
+      }
       fixed_boxes.push_back(bounding_boxes.back());
       fixed_item_indexes.insert(i);
     } else {
@@ -8945,31 +8955,14 @@ bool CpModelPresolver::PresolvePureSatProblem() {
   if (context_->ModelIsUnsat()) return true;
   if (context_->params().keep_all_feasible_solutions_in_presolve()) return true;
 
-  // Crash if the problem is not pure SAT.
-  const int num_variables = context_->working_model->variables().size();
-  const int num_constraints = context_->working_model->constraints().size();
-  const std::string error_msg =
-      "cp_model_pure_sat_presolve can only be used with pure SAT problems.";
-  if (context_->working_model->has_objective()) {
-    LOG(FATAL) << error_msg;
-  }
-  for (int i = 0; i < num_variables; ++i) {
-    if (!context_->CanBeUsedAsLiteral(i)) {
-      LOG(FATAL) << error_msg;
-    }
-  }
-  for (int i = 0; i < num_constraints; ++i) {
-    const ConstraintProto& ct = context_->working_model->constraints(i);
-    if (!(ct.constraint_case() == ConstraintProto::kBoolOr ||
-          ct.constraint_case() == ConstraintProto::kBoolAnd ||
-          ct.constraint_case() == ConstraintProto::CONSTRAINT_NOT_SET)) {
-      LOG(FATAL) << error_msg;
-    }
-  }
-
   Model local_model;
+  LratProofHandler* lrat_proof_handler = context_->lrat_proof_handler.get();
+  if (lrat_proof_handler != nullptr) {
+    local_model.Register<LratProofHandler>(lrat_proof_handler);
+  }
   local_model.GetOrCreate<TimeLimit>()->MergeWithGlobalTimeLimit(time_limit_);
   auto* sat_solver = local_model.GetOrCreate<SatSolver>();
+  const int num_variables = context_->working_model->variables().size();
   sat_solver->SetNumVariables(num_variables);
 
   std::vector<int> new_to_old_index;
@@ -8979,48 +8972,21 @@ bool CpModelPresolver::PresolvePureSatProblem() {
   }
 
   // 1) Load the problem in the SAT solver.
-  // 1.1) Fix variables if any.
   auto ref_to_literal = [](int ref) {
     return Literal(BooleanVariable(PositiveRef(ref)), RefIsPositive(ref));
   };
-  for (int var = 0; var < num_variables; ++var) {
-    if (context_->IsFixed(var)) {
-      if (context_->LiteralIsTrue(var)) {
-        if (!sat_solver->AddUnitClause({ref_to_literal(var)})) return false;
-      } else {
-        if (!sat_solver->AddUnitClause({ref_to_literal(NegatedRef(var))})) {
-          return false;
-        }
-      }
-    }
-  }
-  // 1.2) Load the clauses.
   std::vector<Literal> clause;
   for (int i = 0; i < context_->working_model->constraints_size(); ++i) {
     const ConstraintProto& ct = context_->working_model->constraints(i);
-    if (ct.constraint_case() == ConstraintProto::kBoolOr) {
-      clause.clear();
-      for (const int ref : ct.enforcement_literal()) {
-        clause.push_back(ref_to_literal(ref).Negated());
-      }
-      for (const int ref : ct.bool_or().literals()) {
-        clause.push_back(ref_to_literal(ref));
-      }
-      sat_solver->AddProblemClause(clause);
-    } else if (ct.constraint_case() == ConstraintProto::kBoolAnd) {
-      clause.clear();
-      for (const int ref : ct.enforcement_literal()) {
-        clause.push_back(ref_to_literal(ref).Negated());
-      }
-      clause.push_back(Literal(kNoLiteralIndex));  // will be replaced below.
-      for (const int ref : ct.bool_and().literals()) {
-        clause.back() = ref_to_literal(ref);
-        sat_solver->AddProblemClause(clause);
-      }
-    } else {
-      DCHECK_EQ(ct.constraint_case(), ConstraintProto::CONSTRAINT_NOT_SET);
-      continue;
+    CHECK_EQ(ct.constraint_case(), ConstraintProto::kBoolOr);
+    clause.clear();
+    for (const int ref : ct.enforcement_literal()) {
+      clause.push_back(ref_to_literal(ref).Negated());
     }
+    for (const int ref : ct.bool_or().literals()) {
+      clause.push_back(ref_to_literal(ref));
+    }
+    sat_solver->AddProblemClause(clause, /*one_based_cnf_index=*/i + 1);
     context_->working_model->mutable_constraints(i)->Clear();
     context_->UpdateConstraintVariableUsage(i);
   }
@@ -14225,6 +14191,10 @@ CpSolverStatus CpModelPresolver::Presolve() {
     ApplyVariableMapping(absl::MakeSpan(mapping), context_->working_model,
                          postsolve_mapping_);
     CHECK_EQ(old_size, postsolve_mapping_->size());
+    if (context_->lrat_proof_handler != nullptr) {
+      context_->lrat_proof_handler->RemapBooleanVariables(
+          absl::MakeSpan(*postsolve_mapping_));
+    }
 
     // Compact all non-empty constraint at the beginning.
     RemoveEmptyConstraints();

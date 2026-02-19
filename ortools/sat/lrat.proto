@@ -60,6 +60,9 @@ message LratInferredClause {
   // clause cannot be imported if it is not previously exported). This is not
   // needed for unary and binary clauses, which are always exported.
   optional bool exported = 5;
+
+  // Whether this is a rewritten clause.
+  optional bool rewritten = 6;
 }
 
 // A clause to export, so that it can be imported from any worker. This is not
@@ -76,11 +79,24 @@ message LratDeletedClauses {
   repeated int64 clause_ids = 1 [packed = true];
 }
 
+// A remapping of all the Boolean variables of the model. This remapping is
+// applied to the next clauses added to the proof. It maps their variables to
+// those of the input problem, if it is the first remapping, or to those of the
+// last remapping. If several remappings m_1, m_2, ..., m_n are defined they are
+// composed together in reverse order: a variable index is mapped through m_n,
+// ..., m_2, and finally m_1 to obtain the corresponding variable in the input
+// problem.
+message BooleanVariableRemapping {
+  // The old index of each variable of the model.
+  repeated int32 new_to_old_var = 1 [packed = true];
+}
+
 // An LRAT UNSAT proof is a sequence of steps, starting from imported clauses
 // and ending with the empty clause. At each step new clauses can be inferred
 // from previous ones (with an explicit proof), or imported from another proof
 // built by another thread. A proof step can also delete clauses which are no
-// longer needed, or export a clause for other workers to import. Each clause is
+// longer needed, export a clause for other workers to import, or define a
+// remapping of the variables to be applied to the next clauses. Each clause is
 // identified by a unique clause ID.
 message LratProofStep {
   oneof step {
@@ -88,5 +104,6 @@ message LratProofStep {
     LratInferredClause inferred_clause = 2;
     LratExportedClause exported_clause = 3;
     LratDeletedClauses deleted_clauses = 4;
+    BooleanVariableRemapping remapping = 5;
   }
 }

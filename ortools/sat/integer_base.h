@@ -538,34 +538,6 @@ class BestBinaryRelationBounds {
 struct IntegerDomains
     : public util_intops::StrongVector<PositiveOnlyIndex, Domain> {};
 
-// A model singleton used for debugging. If this is set in the model, then we
-// can check that various derived constraint do not exclude this solution (if it
-// is a known optimal solution for instance).
-struct DebugSolution {
-  void Clear() {
-    proto_values.clear();
-    ivar_has_value.clear();
-    ivar_values.clear();
-  }
-
-  // This is the value of all proto variables.
-  // It should be of the same size of the PRESOLVED model and should correspond
-  // to a solution to the presolved model.
-  std::vector<int64_t> proto_values;
-
-  IntegerValue inner_objective_value = kMinIntegerValue;
-
-  // This is filled from proto_values at load-time, and using the
-  // cp_model_mapping, we cache the solution of the integer variables that are
-  // mapped. Note that it is possible that not all integer variable are mapped.
-  //
-  // TODO(user): When this happen we should be able to infer the value of these
-  // derived variable in the solution. For now, we only do that for the
-  // objective variable.
-  util_intops::StrongVector<IntegerVariable, bool> ivar_has_value;
-  util_intops::StrongVector<IntegerVariable, IntegerValue> ivar_values;
-};
-
 // A value and a literal.
 struct ValueLiteralPair {
   struct CompareByLiteral {

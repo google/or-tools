@@ -17,22 +17,18 @@
 #include <cmath>
 #include <cstdint>
 #include <functional>
-#include <limits>
 #include <utility>
 #include <vector>
 
 #include "absl/cleanup/cleanup.h"
 #include "absl/container/flat_hash_map.h"
-#include "absl/container/flat_hash_set.h"
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/random/random.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/base/macros/os_support.h"
 #include "ortools/base/strong_vector.h"
-#include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/integer.h"
@@ -51,15 +47,6 @@
 #include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
 
-#if defined(USE_SCIP)
-#if defined(ORTOOLS_TARGET_OS_SUPPORTS_THREADS)
-static_assert(operations_research::kTargetOsSupportsThreads);
-#include "ortools/linear_solver/solve_mp_model.h"
-#else   // defined(ORTOOLS_TARGET_OS_SUPPORTS_THREADS)
-static_assert(!operations_research::kTargetOsSupportsThreads);
-#endif  // defined(ORTOOLS_TARGET_OS_SUPPORTS_THREADS)
-#endif  // USE_SCIP
-
 // TODO(user): Remove this flag when experiments are stable.
 ABSL_FLAG(
     int, max_hs_strategy, 0,
@@ -73,10 +60,14 @@ namespace sat {
 HittingSetOptimizer::HittingSetOptimizer(
     const CpModelProto& model_proto,
     const ObjectiveDefinition& objective_definition,
-    const std::function<void()>& feasible_solution_observer, Model* model)
+    const std::function<void()>& feasible_solution_observer,
+    const std::function<CpSolverResponse(CpModelProto&, Model* model)>&
+        solve_cp_model_callback,
+    Model* model)
     : model_proto_(model_proto),
       objective_definition_(objective_definition),
       feasible_solution_observer_(feasible_solution_observer),
+      solve_cp_model_callback_(solve_cp_model_callback),
       model_(model),
       sat_solver_(model->GetOrCreate<SatSolver>()),
       time_limit_(model->GetOrCreate<TimeLimit>()),
@@ -84,12 +75,10 @@ HittingSetOptimizer::HittingSetOptimizer(
       random_(model->GetOrCreate<ModelRandomGenerator>()),
       shared_response_(model->GetOrCreate<SharedResponseManager>()),
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
-      integer_encoder_(model_->GetOrCreate<IntegerEncoder>()) {
-  request_.set_solver_specific_parameters("limits/gap = 0");
-  request_.set_solver_type(MPModelRequest::SCIP_MIXED_INTEGER_PROGRAMMING);
-}
+      integer_encoder_(model_->GetOrCreate<IntegerEncoder>()) {}
 
 bool HittingSetOptimizer::ImportFromOtherWorkers() {
+  if (sat_solver_->CurrentDecisionLevel() != 0) return true;
   auto* level_zero_callbacks = model_->GetOrCreate<LevelZeroCallbackHelper>();
   for (const auto& cb : level_zero_callbacks->callbacks) {
     if (!cb()) {
@@ -156,21 +145,26 @@ SatSolver::Status HittingSetOptimizer::FindMultipleCoresForMaxHs(
 }
 
 int HittingSetOptimizer::GetExtractedIndex(IntegerVariable var) const {
-  if (var.value() >= sat_var_to_mp_var_.size()) return kUnextracted;
-  return sat_var_to_mp_var_[var];
+  if (var.value() >= sat_var_to_hs_var_.size()) return kUnextracted;
+  return sat_var_to_hs_var_[var];
 }
 
 void HittingSetOptimizer::ExtractObjectiveVariables() {
   const std::vector<IntegerVariable>& variables = objective_definition_.vars;
   const std::vector<IntegerValue>& coefficients = objective_definition_.coeffs;
-  MPModelProto* hs_model = request_.mutable_model();
+  CpModelProto* hs_model = &hitting_set_linear_model_;
 
+  CHECK_NE(objective_definition_.objective_var, kNoIntegerVariable);
   // Create the initial objective constraint.
   // It is used to constraint the objective during search.
   if (obj_constraint_ == nullptr) {
-    obj_constraint_ = hs_model->add_constraint();
-    obj_constraint_->set_lower_bound(-std::numeric_limits<double>::infinity());
-    obj_constraint_->set_upper_bound(std::numeric_limits<double>::infinity());
+    obj_constraint_ = hs_model->mutable_objective();
+    obj_constraint_->add_domain(
+        integer_trail_->LevelZeroLowerBound(objective_definition_.objective_var)
+            .value());
+    obj_constraint_->add_domain(
+        integer_trail_->LevelZeroUpperBound(objective_definition_.objective_var)
+            .value());
   }
 
   // Extract the objective variables.
@@ -194,30 +188,28 @@ void HittingSetOptimizer::ExtractObjectiveVariables() {
     }
 
     // Extract.
-    const int index = hs_model->variable_size();
-    obj_constraint_->add_var_index(index);
-    obj_constraint_->add_coefficient(ToDouble(coeff));
+    const int index = hs_model->variables_size();
+    obj_constraint_->add_vars(index);
+    obj_constraint_->add_coeffs(coeff.value());
 
-    MPVariableProto* var_proto = hs_model->add_variable();
-    var_proto->set_lower_bound(ToDouble(integer_trail_->LowerBound(var)));
-    var_proto->set_upper_bound(ToDouble(integer_trail_->UpperBound(var)));
-    var_proto->set_objective_coefficient(ToDouble(coeff));
-    var_proto->set_is_integer(true);
+    IntegerVariableProto* var_proto = hs_model->add_variables();
+    var_proto->add_domain(integer_trail_->LowerBound(var).value());
+    var_proto->add_domain(integer_trail_->UpperBound(var).value());
 
     // Store extraction info.
     const int max_index = std::max(var.value(), NegationOf(var).value());
-    if (max_index >= sat_var_to_mp_var_.size()) {
-      sat_var_to_mp_var_.resize(max_index + 1, -1);
+    if (max_index >= sat_var_to_hs_var_.size()) {
+      sat_var_to_hs_var_.resize(max_index + 1, -1);
     }
-    sat_var_to_mp_var_[var] = index;
-    sat_var_to_mp_var_[NegationOf(var)] = index;
+    sat_var_to_hs_var_[var] = index;
+    sat_var_to_hs_var_[NegationOf(var)] = index;
     extracted_variables_info_.push_back({var, var_proto});
   }
 }
 
 void HittingSetOptimizer::ExtractAdditionalVariables(
     absl::Span<const IntegerVariable> to_extract) {
-  MPModelProto* hs_model = request_.mutable_model();
+  CpModelProto* hs_model = &hitting_set_linear_model_;
 
   VLOG(2) << "Extract " << to_extract.size() << " additional variables";
   for (IntegerVariable tmp_var : to_extract) {
@@ -226,19 +218,18 @@ void HittingSetOptimizer::ExtractAdditionalVariables(
     // Use the positive variable for the domain.
     const IntegerVariable var = PositiveVariable(tmp_var);
 
-    const int index = hs_model->variable_size();
-    MPVariableProto* var_proto = hs_model->add_variable();
-    var_proto->set_lower_bound(ToDouble(integer_trail_->LowerBound(var)));
-    var_proto->set_upper_bound(ToDouble(integer_trail_->UpperBound(var)));
-    var_proto->set_is_integer(true);
+    const int index = hs_model->variables_size();
+    IntegerVariableProto* var_proto = hs_model->add_variables();
+    var_proto->add_domain(integer_trail_->LowerBound(var).value());
+    var_proto->add_domain(integer_trail_->UpperBound(var).value());
 
     // Store extraction info.
     const int max_index = std::max(var.value(), NegationOf(var).value());
-    if (max_index >= sat_var_to_mp_var_.size()) {
-      sat_var_to_mp_var_.resize(max_index + 1, -1);
+    if (max_index >= sat_var_to_hs_var_.size()) {
+      sat_var_to_hs_var_.resize(max_index + 1, -1);
     }
-    sat_var_to_mp_var_[var] = index;
-    sat_var_to_mp_var_[NegationOf(var)] = index;
+    sat_var_to_hs_var_[var] = index;
+    sat_var_to_hs_var_[NegationOf(var)] = index;
     extracted_variables_info_.push_back({var, var_proto});
   }
 }
@@ -310,7 +301,7 @@ void HittingSetOptimizer::ProjectAndAddAtMostOne(
   }
 }
 
-MPConstraintProto* HittingSetOptimizer::ProjectAndAddLinear(
+LinearConstraintProto* HittingSetOptimizer::ProjectAndAddLinear(
     const LinearConstraint& linear) {
   int num_extracted_variables = 0;
   for (int i = 0; i < linear.num_terms; ++i) {
@@ -320,13 +311,14 @@ MPConstraintProto* HittingSetOptimizer::ProjectAndAddLinear(
   }
   if (num_extracted_variables <= 1) return nullptr;
 
-  MPConstraintProto* ct = request_.mutable_model()->add_constraint();
+  LinearConstraintProto* ct =
+      hitting_set_linear_model_.add_constraints()->mutable_linear();
   ProjectLinear(linear, ct);
   return ct;
 }
 
 void HittingSetOptimizer::ProjectLinear(const LinearConstraint& linear,
-                                        MPConstraintProto* ct) {
+                                        LinearConstraintProto* ct) {
   IntegerValue lb = linear.lb;
   IntegerValue ub = linear.ub;
 
@@ -336,8 +328,8 @@ void HittingSetOptimizer::ProjectLinear(const LinearConstraint& linear,
     const int index = GetExtractedIndex(PositiveVariable(var));
     const bool negated = !VariableIsPositive(var);
     if (index != kUnextracted) {
-      ct->add_var_index(index);
-      ct->add_coefficient(negated ? -ToDouble(coeff) : ToDouble(coeff));
+      ct->add_vars(index);
+      ct->add_coeffs(negated ? -coeff.value() : coeff.value());
     } else {
       const IntegerValue var_lb = integer_trail_->LevelZeroLowerBound(var);
       const IntegerValue var_ub = integer_trail_->LevelZeroUpperBound(var);
@@ -352,12 +344,13 @@ void HittingSetOptimizer::ProjectLinear(const LinearConstraint& linear,
     }
   }
 
-  ct->set_lower_bound(ToDouble(lb));
-  ct->set_upper_bound(ToDouble(ub));
+  ct->add_domain(lb.value());
+  ct->add_domain(ub.value());
 }
 
-bool HittingSetOptimizer::ComputeInitialMpModel() {
+bool HittingSetOptimizer::ComputeInitialLinearModel() {
   if (!ImportFromOtherWorkers()) return false;
+  if (model_->GetOrCreate<SatSolver>()->ModelIsUnsat()) return false;
 
   ExtractObjectiveVariables();
 
@@ -371,7 +364,7 @@ bool HittingSetOptimizer::ComputeInitialMpModel() {
 
   ExtractAdditionalVariables(ComputeAdditionalVariablesToExtract());
 
-  // Build the MPModel from the linear relaxation.
+  // Build the inner model from the linear relaxation.
   for (const auto& literals : relaxation_.at_most_ones) {
     ProjectAndAddAtMostOne(literals);
   }
@@ -381,7 +374,7 @@ bool HittingSetOptimizer::ComputeInitialMpModel() {
   }
 
   for (int i = 0; i < relaxation_.linear_constraints.size(); ++i) {
-    MPConstraintProto* ct =
+    LinearConstraintProto* ct =
         ProjectAndAddLinear(relaxation_.linear_constraints[i]);
     if (ct != nullptr) linear_extract_info_.push_back({i, ct});
   }
@@ -392,20 +385,20 @@ bool HittingSetOptimizer::ComputeInitialMpModel() {
   return true;
 }
 
-void HittingSetOptimizer::TightenMpModel() {
-  // Update the MP variables bounds from the SAT level 0 bounds.
+void HittingSetOptimizer::TightenHitSetModel() {
+  // Update the variables bounds from the SAT level 0 bounds.
   for (const auto& [var, var_proto] : extracted_variables_info_) {
-    var_proto->set_lower_bound(ToDouble(integer_trail_->LowerBound(var)));
-    var_proto->set_upper_bound(ToDouble(integer_trail_->UpperBound(var)));
+    var_proto->add_domain(integer_trail_->LowerBound(var).value());
+    var_proto->add_domain(integer_trail_->UpperBound(var).value());
   }
 
   int tightened = 0;
   for (const auto& [index, ct] : linear_extract_info_) {
-    const double original_lb = ct->lower_bound();
-    const double original_ub = ct->upper_bound();
+    const int64_t original_lb = ct->domain(0);
+    const int64_t original_ub = ct->domain(1);
     ct->Clear();
     ProjectLinear(relaxation_.linear_constraints[index], ct);
-    if (original_lb != ct->lower_bound() || original_ub != ct->upper_bound()) {
+    if (original_lb != ct->domain(0) || original_ub != ct->domain(1)) {
       tightened++;
     }
   }
@@ -447,71 +440,70 @@ bool HittingSetOptimizer::ProcessSolution() {
   return true;
 }
 
-void HittingSetOptimizer::AddCoresToTheMpModel(
+void HittingSetOptimizer::AddCoresToHittingSetModel(
     absl::Span<const std::vector<Literal>> cores) {
-  MPModelProto* hs_model = request_.mutable_model();
+  CpModelProto* hs_model = &hitting_set_linear_model_;
 
   for (const std::vector<Literal>& core : cores) {
     // For cores of size 1, we can just constrain the bound of the variable.
     if (core.size() == 1) {
       for (const int index : assumption_to_indices_.at(core.front().Index())) {
         const IntegerVariable var = normalized_objective_variables_[index];
-        const double new_bound = ToDouble(integer_trail_->LowerBound(var));
+        const IntegerValue new_bound = integer_trail_->LowerBound(var);
         if (VariableIsPositive(var)) {
-          hs_model->mutable_variable(index)->set_lower_bound(new_bound);
+          hs_model->mutable_variables(index)->set_domain(0, new_bound.value());
         } else {
-          hs_model->mutable_variable(index)->set_upper_bound(-new_bound);
+          hs_model->mutable_variables(index)->set_domain(1, -new_bound.value());
         }
       }
       continue;
     }
 
     // Add the corresponding constraint to hs_model.
-    MPConstraintProto* at_least_one = hs_model->add_constraint();
-    at_least_one->set_lower_bound(1.0);
+    LinearConstraintProto* at_least_one =
+        hs_model->add_constraints()->mutable_linear();
+    at_least_one->add_domain(1);
+    at_least_one->add_domain(kMaxIntegerValue.value());
     for (const Literal lit : core) {
       for (const int index : assumption_to_indices_.at(lit.Index())) {
         const IntegerVariable var = normalized_objective_variables_[index];
-        const double sat_lb = ToDouble(integer_trail_->LowerBound(var));
+        const IntegerValue sat_lb = integer_trail_->LowerBound(var);
         // normalized_objective_variables_[index] is mapped onto
         //     hs_model.variable[index] * sign.
-        const double sign = VariableIsPositive(var) ? 1.0 : -1.0;
+        const int sign = VariableIsPositive(var) ? 1 : -1;
         // We round hs_value to the nearest integer. This should help in the
         // hash_map part.
-        const double hs_value =
-            std::round(response_.variable_value(index)) * sign;
+        const int64_t hs_value = response_.solution(index) * sign;
 
         if (hs_value == sat_lb) {
-          at_least_one->add_var_index(index);
-          at_least_one->add_coefficient(sign);
-          at_least_one->set_lower_bound(at_least_one->lower_bound() + hs_value);
+          at_least_one->add_vars(index);
+          at_least_one->add_coeffs(sign);
+          at_least_one->set_domain(0, at_least_one->domain(0) + hs_value);
         } else {
           // The operation type (< or >) is consistent for the same variable,
           // so we do not need this information in the key.
-          const std::pair<int, int64_t> key = {index,
-                                               static_cast<int64_t>(hs_value)};
-          const int new_bool_var_index = hs_model->variable_size();
+          const std::pair<int, int64_t> key = {index, hs_value};
+          const int new_bool_var_index = hs_model->variables_size();
           const auto [it, inserted] =
-              mp_integer_literals_.insert({key, new_bool_var_index});
+              hs_integer_literals_.insert({key, new_bool_var_index});
 
-          at_least_one->add_var_index(it->second);
-          at_least_one->add_coefficient(1.0);
+          at_least_one->add_vars(it->second);
+          at_least_one->add_coeffs(1);
 
           if (inserted) {
             // Creates the implied bound constraint.
-            MPVariableProto* bool_var = hs_model->add_variable();
-            bool_var->set_lower_bound(0);
-            bool_var->set_upper_bound(1);
-            bool_var->set_is_integer(true);
+            IntegerVariableProto* bool_var = hs_model->add_variables();
+            bool_var->add_domain(0);
+            bool_var->add_domain(1);
 
-            // (bool_var == 1) => x * sign > hs_value.
-            // (x * sign - sat_lb) - (hs_value - sat_lb + 1) * bool_var >= 0.
-            MPConstraintProto* implied_bound = hs_model->add_constraint();
-            implied_bound->set_lower_bound(sat_lb);
-            implied_bound->add_var_index(index);
-            implied_bound->add_coefficient(sign);
-            implied_bound->add_var_index(new_bool_var_index);
-            implied_bound->add_coefficient(sat_lb - hs_value - 1.0);
+            // Add the constraint:
+            //   bool_var => x * sign > hs_value.
+            ConstraintProto* ct = hs_model->add_constraints();
+            ct->add_enforcement_literal(new_bool_var_index);
+            ct->mutable_linear()->add_vars(index);
+            ct->mutable_linear()->add_coeffs(sign);
+            ct->mutable_linear()->add_domain(hs_value + 1);
+            ct->mutable_linear()->add_domain(kMaxIntegerValue.value());
           }
         }
       }
@@ -532,9 +524,9 @@ std::vector<Literal> HittingSetOptimizer::BuildAssumptions(
     // Correct the sign of the value queried from the MP solution.
     // Note that normalized_objective_variables_[i] is mapped onto
     //     hs_model.variable[i] * sign.
-    const IntegerValue hs_value(
-        static_cast<int64_t>(std::round(response_.variable_value(i))) *
-        (VariableIsPositive(var) ? 1 : -1));
+    const IntegerValue hs_value = VariableIsPositive(var)
+                                      ? response_.solution(i)
+                                      : -response_.solution(i);
 
     // Non binding, ignoring.
     if (hs_value == integer_trail_->UpperBound(var)) continue;
@@ -558,10 +550,7 @@ std::vector<Literal> HittingSetOptimizer::BuildAssumptions(
 //
 // TODO(user): remove code duplication with MinimizeWithCoreAndLazyEncoding();
 SatSolver::Status HittingSetOptimizer::Optimize() {
-#if defined(USE_SCIP)
-#if defined(ORTOOLS_TARGET_OS_SUPPORTS_THREADS)
-  static_assert(operations_research::kTargetOsSupportsThreads);
-  if (!ComputeInitialMpModel()) return SatSolver::INFEASIBLE;
+  if (!ComputeInitialLinearModel()) return SatSolver::INFEASIBLE;
 
   // This is used by the "stratified" approach. We will only consider terms with
   // a weight not lower than this threshold. The threshold will decrease as the
@@ -576,19 +565,27 @@ SatSolver::Status HittingSetOptimizer::Optimize() {
     //
     // TODO(user): deal with time limit.
 
-    // Get the best external bound and constraint the objective of the MPModel.
+    // Get the best external bound and constraint the objective of the inner
+    // model.
     if (shared_response_ != nullptr) {
       const IntegerValue best_lower_bound =
           shared_response_->GetInnerObjectiveLowerBound();
-      obj_constraint_->set_lower_bound(ToDouble(best_lower_bound));
+      obj_constraint_->set_domain(0, best_lower_bound.value());
     }
 
     if (!ImportFromOtherWorkers()) return SatSolver::INFEASIBLE;
-    TightenMpModel();
+    TightenHitSetModel();
 
-    // TODO(user): C^c is broken when using SCIP.
-    response_ = SolveMPModel(request_);
-    if (response_.status() != MPSolverResponseStatus::MPSOLVER_OPTIMAL) {
+    Model inner_model;
+    SatParameters* hs_params = inner_model.GetOrCreate<SatParameters>();
+    hs_params->set_linearization_level(2);
+    hs_params->set_optimize_with_max_hs(false);
+    hs_params->set_optimize_with_core(false);
+
+    inner_model.GetOrCreate<TimeLimit>()->MergeWithGlobalTimeLimit(time_limit_);
+    response_ =
+        solve_cp_model_callback_(hitting_set_linear_model_, &inner_model);
+    if (response_.status() != CpSolverStatus::OPTIMAL) {
       // We currently abort if we have a non-optimal result.
       // This is correct if we had a limit reached, but not in the other
       // cases.
@@ -599,17 +596,14 @@ SatSolver::Status HittingSetOptimizer::Optimize() {
       // bound.
       return SatSolver::LIMIT_REACHED;
     }
-    if (response_.status() != MPSolverResponseStatus::MPSOLVER_OPTIMAL) {
-      continue;
-    }
 
-    const IntegerValue mip_objective(
+    const IntegerValue hs_objective(
         static_cast<int64_t>(std::round(response_.objective_value())));
     VLOG(2) << "--" << iter
-            << "-- constraints:" << request_.mutable_model()->constraint_size()
-            << " variables:" << request_.mutable_model()->variable_size()
+            << "-- constraints:" << hitting_set_linear_model_.constraints_size()
+            << " variables:" << hitting_set_linear_model_.variables_size()
             << " hs_lower_bound:"
-            << objective_definition_.ScaleIntegerObjective(mip_objective)
+            << objective_definition_.ScaleIntegerObjective(hs_objective)
             << " strat:" << stratified_threshold;
 
     // Update the objective lower bound with our current bound.
@@ -618,7 +612,7 @@ SatSolver::Status HittingSetOptimizer::Optimize() {
     // more propagation and is nice to have for reporting/logging purpose.
     if (!integer_trail_->Enqueue(
             IntegerLiteral::GreaterOrEqual(objective_definition_.objective_var,
-                                           mip_objective),
+                                           hs_objective),
             {}, {})) {
       result = SatSolver::INFEASIBLE;
       break;
@@ -641,7 +635,8 @@ SatSolver::Status HittingSetOptimizer::Optimize() {
 
     // TODO(user): Use the real weights and exploit the extra cores.
     // TODO(user): If we extract more than the objective variables, we could
-    // use the solution values from the MPModel as hints to the SAT model.
+    // use the solution values from the hitting set model as hints to the SAT
+    // model.
     result = FindMultipleCoresForMaxHs(assumptions, &temp_cores_);
     if (result == SatSolver::FEASIBLE) {
       if (!ProcessSolution()) return SatSolver::INFEASIBLE;
@@ -666,14 +661,9 @@ SatSolver::Status HittingSetOptimizer::Optimize() {
 
     sat_solver_->Backtrack(0);
     sat_solver_->SetAssumptionLevel(0);
-    AddCoresToTheMpModel(temp_cores_);
+    AddCoresToHittingSetModel(temp_cores_);
   }
   return result;
-#else   // defined(ORTOOLS_TARGET_OS_SUPPORTS_THREADS)
-  static_assert(!kTargetOsSupportsThreads);
-#endif  // defined(ORTOOLS_TARGET_OS_SUPPORTS_THREADS)
-#endif  // defined(USE_SCIP)
-  LOG(FATAL) << "Not supported.";
 }
 
 }  // namespace sat

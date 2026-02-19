@@ -84,8 +84,8 @@ class TryEdgeRectanglePropagator : public PropagatorInterface {
   // `box_index` cannot be placed to the left of new_x_min. It returns a list of
   // indices of boxes that defines a subproblem where the propagation is still
   // valid, including `box_index` itself.
-  std::vector<int> GetMinimumProblemWithPropagation(int box_index,
-                                                    IntegerValue new_x_min);
+  std::vector<int> GetMinimumProblemWithPropagation(
+      int box_index, std::optional<IntegerValue> new_x_min);
 
  private:
   void PopulateActiveBoxRanges();

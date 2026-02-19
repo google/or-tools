@@ -175,6 +175,11 @@ std::string ValidateParameters(const SatParameters& params) {
     return "use_shared_tree_search must only be set on workers' parameters";
   }
 
+  if (params.optimize_with_max_hs() && !params.optimize_with_core()) {
+    // TODO(user): untangle those two heuristics.
+    return "optimize_with_max_hs requires optimize_with_core";
+  }
+
   if (params.enumerate_all_solutions() && params.interleave_search()) {
     return "Enumerating all solutions does not work with interleaved search";
   }
@@ -182,6 +187,22 @@ std::string ValidateParameters(const SatParameters& params) {
   for (const SatParameters& new_subsolver : params.subsolver_params()) {
     if (new_subsolver.name().empty()) {
       return "New subsolver parameter defined without a name";
+    }
+  }
+
+  if (params.output_lrat_proof() && params.cp_model_presolve() &&
+      !params.cp_model_pure_sat_presolve()) {
+    return "output_lrat_proof is only supported with "
+           "cp_model_pure_sat_presolve if cp_model_presolve is true";
+  }
+  if (params.check_lrat_proof() || params.output_lrat_proof()) {
+    if (params.linearization_level() > 1) {
+      return "check_lrat_proof and output_lrat_proof are only supported with "
+             "linearization_level <= 1";
+    }
+    if (params.symmetry_level() > 1) {
+      return "check_lrat_proof and output_lrat_proof are only supported with "
+             "symmetry_level <= 1";
     }
   }
 

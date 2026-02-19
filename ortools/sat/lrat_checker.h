@@ -45,7 +45,7 @@ class LratChecker {
   // Tautology (RAT) property. See AddInferredClause() for more details.
   struct RatClauses {
     ClausePtr resolvant;
-    absl::Span<const ClausePtr> rup_clauses;
+    std::vector<ClausePtr> rup_clauses;
   };
 
   // Enables the support of inferred clauses with RAT proofs (disabled by
@@ -53,6 +53,10 @@ class LratChecker {
   // Adds a memory and time overhead to the verification of all proofs, even if
   // they do not use RAT.
   void EnableRatProofs();
+
+  // Disables the support of inferred clauses with RAT proofs. This saves some
+  // memory and time overheads for the verification of the next clauses.
+  void DisableRatProofs();
 
   // Adds a clause of the problem. Does nothing if a previous step failed or if
   // the proof is already complete, or if the clause contains a literal and its
@@ -137,11 +141,6 @@ class LratChecker {
   std::string_view error_message() const { return error_message_; }
 
  private:
-  // Set this to true to check that clauses used in proofs have already been
-  // added as problem or inferred clauses before, and have not been modified or
-  // deleted since. This can be used to debug invalid LRAT proofs.
-  static constexpr bool kDebugCheckProofClauses = false;
-
   enum UnitPropagationStatus {
     kUnit = 1,
     kConflict = 2,
@@ -203,7 +202,7 @@ class LratChecker {
   // Temporary set used to check the RAT property of an inferred clause.
   absl::flat_hash_set<ClausePtr> tmp_clauses_;
 
-  // Only used if kDebugCheckProofClauses is true.
+  // Only used if DEBUG_MODE is true.
   absl::flat_hash_map<ClausePtr, std::vector<Literal>> debug_clause_by_ptr_;
 
   SharedStatistics* stats_;

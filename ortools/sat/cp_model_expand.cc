@@ -773,6 +773,7 @@ void ExpandInverse(ConstraintProto* ct, PresolveContext* context) {
         // We have f[i] == j <=> r[j] == i;
         int r_j_i;
         if (enforced_domains.DomainContains(r_j, i) &&
+            context->VarCanTakeValue(r_j, i) &&
             context->HasVarValueEncoding(r_j, i, &r_j_i)) {
           if (!context->InsertVarValueEncoding(r_j_i, f_i, j)) {
             return;

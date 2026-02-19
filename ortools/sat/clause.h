@@ -281,7 +281,8 @@ class ClauseManager : public SatPropagator {
   // This can return nullptr if new_clause was of size one or two as these are
   // treated differently. Note that none of the variable should be fixed in the
   // given new clause.
-  SatClause* InprocessingAddClause(absl::Span<const Literal> new_clause);
+  SatClause* InprocessingAddClause(absl::Span<const Literal> new_clause,
+                                   absl::Span<const ClausePtr> proof = {});
 
   // Contains, for each literal, the list of clauses that need to be inspected
   // when the corresponding literal becomes false.
@@ -623,6 +624,9 @@ class BinaryImplicationGraph : public SatPropagator {
   // - Removes the variable at true from the implications lists.
   // - Frees the propagation list of the assigned literals.
   void RemoveFixedVariables();
+
+  // Removes the literals at true from the implication list of `lit`.
+  void RemoveFixedImplications(Literal lit);
 
   // Returns false if the model is unsat, otherwise detects equivalent variable
   // (with respect to the implications only) and reorganize the propagation

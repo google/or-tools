@@ -102,7 +102,10 @@ class PresolveContext {
         logger_(model->GetOrCreate<SolverLogger>()),
         params_(*model->GetOrCreate<SatParameters>()),
         time_limit_(model->GetOrCreate<TimeLimit>()),
-        random_(model->GetOrCreate<ModelRandomGenerator>()) {}
+        random_(model->GetOrCreate<ModelRandomGenerator>()) {
+    lrat_proof_handler = LratProofHandler::MaybeCreate(
+        model, /*enable_rat_proofs=*/params_.cp_model_pure_sat_presolve());
+  }
 
   // Helpers to adds new variables to the presolved model.
 
@@ -684,6 +687,10 @@ class PresolveContext {
 
   CpModelProto* working_model = nullptr;
   CpModelProto* mapping_model = nullptr;
+
+  // Used for the LRAT proof of inferred clauses during model copy and, if
+  // applicable, during the pure SAT presolve.
+  std::unique_ptr<LratProofHandler> lrat_proof_handler = nullptr;
 
   // Number of "rules" applied. This should be equal to the sum of all numbers
   // in stats_by_rule_name. This is used to decide if we should do one more pass

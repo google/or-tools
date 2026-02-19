@@ -38,6 +38,7 @@
 #include "ortools/base/strong_vector.h"
 #include "ortools/glop/variables_info.h"
 #include "ortools/lp_data/lp_types.h"
+#include "ortools/sat/debug_solution.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/linear_constraint.h"
@@ -317,7 +318,7 @@ LinearConstraintManager::ConstraintIndex LinearConstraintManager::Add(
   DivideByGCD(&ct);
   MakeAllVariablesPositive(&ct);
   MakeFirstCoefficientPositive(&ct);
-  DCHECK(DebugCheckConstraint(ct));
+  DCHECK(DebugCheckConstraint(ct, /*only_check_ub=*/false));
 
   // If configured, store instead the folded version of this constraint.
   // TODO(user): Shall we simplify again?
@@ -731,7 +732,8 @@ bool LinearConstraintManager::ChangeLp(glop::BasisState* solution_state,
       // reduce the coefficients at both end of the spectrum.
       DivideByGCD(&constraint_infos_[i].constraint);
       MakeFirstCoefficientPositive(&constraint_infos_[i].constraint);
-      DCHECK(DebugCheckConstraint(constraint_infos_[i].constraint));
+      DCHECK(DebugCheckConstraint(constraint_infos_[i].constraint,
+                                  /*only_check_ub=*/false));
 
       constraint_infos_[i].objective_parallelism_computed = false;
       constraint_infos_[i].l2_norm =
@@ -957,31 +959,13 @@ void LinearConstraintManager::AddAllConstraintsToLp() {
   }
 }
 
-bool LinearConstraintManager::DebugCheckConstraint(
-    const LinearConstraint& cut) {
+bool LinearConstraintManager::DebugCheckConstraint(const LinearConstraint& cut,
+                                                   bool only_check_ub) {
   const DebugSolution* debug_solution = model_->Get<DebugSolution>();
-  if (debug_solution == nullptr || debug_solution->proto_values.empty()) {
+  if (debug_solution == nullptr) {
     return true;
   }
-
-  absl::int128 activity(0);
-  for (int i = 0; i < cut.num_terms; ++i) {
-    const IntegerVariable var = cut.vars[i];
-    const IntegerValue coeff = cut.coeffs[i];
-    if (var >= debug_solution->ivar_has_value.size() ||
-        !debug_solution->ivar_has_value[var]) {
-      return true;
-    }
-    activity +=
-        absl::int128(coeff.value()) * debug_solution->ivar_values[var].value();
-  }
-  if (activity > cut.ub.value() || activity < cut.lb.value()) {
-    LOG(INFO) << cut.DebugString();
-    LOG(INFO) << "activity " << activity << " not in [" << cut.lb << ","
-              << cut.ub << "]";
-    return false;
-  }
-  return true;
+  return debug_solution->CheckCut(cut, only_check_ub);
 }
 
 void LinearConstraintManager::CacheReducedCostsInfo() {

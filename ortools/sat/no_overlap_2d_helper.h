@@ -166,6 +166,8 @@ class NoOverlap2DConstraintHelper : public PropagatorInterface {
     AddYSizeMinReason(index);
   }
 
+  Rectangle GetBoxInDebugSolution(int index) const;
+
   // Push the explanation that the left edge of this box is to the right of the
   // vertical line x=lower_bound.
   //

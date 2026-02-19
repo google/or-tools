@@ -135,8 +135,8 @@ class TrailCopy {
       }
       const Literal level_decision = decisions_[level - 1];
       ClausePtr clause = kNullClausePtr;
-      if (lrat_proof_handler_->HasTemporaryBinaryClause(
-              level_decision.Negated(), marked_literal)) {
+      if (lrat_proof_handler_->HasBinaryClause(level_decision.Negated(),
+                                               marked_literal)) {
         clause = ClausePtr(level_decision.Negated(), marked_literal);
       }
       if (clause != kNullClausePtr) {
@@ -325,17 +325,8 @@ bool Prober::ProbeOneVariableInternal(BooleanVariable b) {
     if (lrat_proof_handler_ != nullptr) {
       for (const Literal l : new_implied_or_fixed_literals_) {
         tmp_proof_.clear();
-        clause_manager_->AppendClausesFixing(
-            {l}, &tmp_proof_, decision.Index(),
-            [&](int level, int trail_index) {
-              const Literal decision = trail_.Decisions()[level - 1].literal;
-              const Literal lit = trail_[trail_index];
-              if (lrat_proof_handler_->HasTemporaryBinaryClause(
-                      decision.Negated(), lit)) {
-                return ClausePtr(decision.Negated(), lit);
-              }
-              return kNullClausePtr;
-            });
+        clause_manager_->AppendClausesFixing({l}, &tmp_proof_,
+                                             decision.Index());
         if (l == decision.Negated()) {
           lrat_proof_handler_->AddInferredClause(ClausePtr(l), tmp_proof_);
         } else {
@@ -349,9 +340,7 @@ bool Prober::ProbeOneVariableInternal(BooleanVariable b) {
         trail_copy_->CopyTrail(saved_index);
       } else {
         for (const Literal l : to_fix_at_true_) {
-          if (lrat_proof_handler_->HasImplicationGraphClause(decision, l)) {
-            continue;
-          }
+          if (lrat_proof_handler_->HasBinaryClause(decision, l)) continue;
           tmp_proof_.clear();
           trail_copy_->AppendClausesFixing({l}, &tmp_proof_,
                                            decision.NegatedIndex());
@@ -1699,6 +1688,10 @@ void FailedLiteralProbing::SubsumeWithBinaryClauseUsingBlockingLiteral(
     if (w.clause->IsRemoved()) continue;
 
     // This should be enough for proof correctness.
+    //
+    // TODO(user): Always extract the binary otherwise we might loose structural
+    // property, or do not subsume size 3 clauses.
+    DCHECK_NE(last_decision, w.blocking_literal);
     if (clause_manager_->ClauseIsUsedAsReason(w.clause)) {
       MaybeExtractImplication(last_decision, w.blocking_literal);
 

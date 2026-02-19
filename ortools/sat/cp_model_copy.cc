@@ -59,9 +59,9 @@ int LiteralToRef(Literal lit) {
 }
 }  // namespace
 
-ModelCopy::ModelCopy(PresolveContext* context,
-                     LratProofHandler* lrat_proof_handler)
-    : context_(context), lrat_proof_handler_(lrat_proof_handler) {}
+ModelCopy::ModelCopy(PresolveContext* context)
+    : context_(context),
+      lrat_proof_handler_(context->lrat_proof_handler.get()) {}
 
 void ModelCopy::ImportVariablesAndMaybeIgnoreNames(
     const CpModelProto& in_model) {
@@ -106,6 +106,46 @@ bool ModelCopy::ImportAndSimplifyConstraints(
   if (first_copy && lrat_proof_handler_ != nullptr) {
     lrat_proof_handler_->proof_status()->SetMaxOneBasedCnfIndex(
         in_model.constraints_size());
+  }
+  if (first_copy && context_->params().cp_model_pure_sat_presolve()) {
+    // In this case, just copy all the constraints as is (just with duplicate
+    // literals removed). If LRAT is enabled we cannot simply drop a constraint,
+    // otherwise the occurrence counts in the LRAT checker would be incorrect.
+    // To handle this, the easiest is to rely on the SatSolver used later on in
+    // the presolve. And to get the same behavior when LRAT is disabled, we
+    // always use this direct copy when pure SAT presolve is enabled.
+    const std::string error_msg =
+        "cp_model_pure_sat_presolve can only be used with pure SAT problems.";
+    if (context_->working_model->has_objective()) {
+      LOG(FATAL) << error_msg;
+    }
+    for (int i = 0; i < in_model.variables_size(); ++i) {
+      if (!context_->CanBeUsedAsLiteral(i)) {
+        LOG(FATAL) << error_msg;
+      }
+    }
+    for (int c = 0; c < in_model.constraints_size(); ++c) {
+      const ConstraintProto& ct = in_model.constraints(c);
+      if (ct.constraint_case() != ConstraintProto::kBoolOr) {
+        LOG(FATAL) << error_msg;
+      }
+      temp_literals_.clear();
+      temp_literals_set_.clear();
+      for (const int enforcement_lit : ct.enforcement_literal()) {
+        const int lit = NegatedRef(enforcement_lit);
+        const auto [it, inserted] = temp_literals_set_.insert(lit);
+        if (inserted) temp_literals_.push_back(lit);
+      }
+      for (const int lit : ct.bool_or().literals()) {
+        const auto [it, inserted] = temp_literals_set_.insert(lit);
+        if (inserted) temp_literals_.push_back(lit);
+      }
+      context_->working_model->add_constraints()
+          ->mutable_bool_or()
+          ->mutable_literals()
+          ->Add(temp_literals_.begin(), temp_literals_.end());
+    }
+    return true;
   }
 
   starting_constraint_index_ = context_->working_model->constraints_size();
@@ -1213,10 +1253,9 @@ void ModelCopy::MaybeExpandNonAffineExpressions(
   }
 }
 
-bool ImportModelWithBasicPresolveIntoContext(
-    const CpModelProto& in_model, PresolveContext* context,
-    LratProofHandler* lrat_proof_handler) {
-  ModelCopy copier(context, lrat_proof_handler);
+bool ImportModelWithBasicPresolveIntoContext(const CpModelProto& in_model,
+                                             PresolveContext* context) {
+  ModelCopy copier(context);
   copier.ImportVariablesAndMaybeIgnoreNames(in_model);
   if (copier.ImportAndSimplifyConstraints(in_model, /*first_copy=*/true)) {
     CopyEverythingExceptVariablesAndConstraintsFieldsIntoContext(in_model,

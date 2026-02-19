@@ -124,14 +124,14 @@ class SatSolver {
   // We call this a "problem" clause just because we will never delete such
   // clause unless it is proven to always be satisfied. So this can be called
   // with the initial clause of a problem, but also an inferred clause that we
-  // don't want to delete (`shared` must be true iff the clause was inferred by
-  // another solver, from the same initial clauses).
+  // don't want to delete (`one_based_cnf_index` must be positive for an initial
+  // problem clause).
   //
   // TODO(user): Rename this to AddClause() ? Also get rid of the specialized
   // AddUnitClause(), AddBinaryClause() and AddTernaryClause() since they
   // just end up calling this?
   bool AddProblemClause(absl::Span<const Literal> literals,
-                        bool shared = false);
+                        int64_t one_based_cnf_index = 0);
 
   // Adds a pseudo-Boolean constraint to the problem. Returns false if the
   // problem is detected to be UNSAT. If the constraint is always true, this

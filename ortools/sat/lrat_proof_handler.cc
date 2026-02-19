@@ -127,6 +127,7 @@ void LratWriter::RewriteClause(
     }
   }
   if (exported) inferred_clause->set_exported(true);
+  inferred_clause->set_rewritten(true);
   CHECK(writer_.WriteRecord(step));
 }
 
@@ -145,6 +146,16 @@ void LratWriter::DeleteClause(ClausePtr clause) {
   deleted_clauses_.push_back(clause);
 }
 
+void LratWriter::RemapBooleanVariables(
+    absl::Span<const int32_t> new_to_old_var) {
+  WriteDeletedClauses();
+  LratProofStep step;
+  BooleanVariableRemapping* remapping = step.mutable_remapping();
+  remapping->mutable_new_to_old_var()->Add(new_to_old_var.begin(),
+                                           new_to_old_var.end());
+  CHECK(writer_.WriteRecord(step));
+}
+
 void LratWriter::WriteDeletedClauses() {
   if (deleted_clauses_.empty()) return;
   LratProofStep step;
@@ -154,30 +165,6 @@ void LratWriter::WriteDeletedClauses() {
   CHECK(writer_.WriteRecord(step));
   deleted_clauses_.clear();
 }
-
-namespace {
-ClausePtr NewClausePtr(absl::Span<const Literal> literals) {
-  switch (literals.size()) {
-    case 0:
-      return ClausePtr::EmptyClausePtr();
-    case 1:
-      return ClausePtr(literals[0]);
-    case 2:
-      return ClausePtr(literals[0], literals[1]);
-    default:
-      return ClausePtr(literals);
-  }
-}
-
-void IndicesToLiterals(absl::Span<const int> literal_indices,
-                       std::vector<Literal>* literals) {
-  literals->clear();
-  literals->reserve(literal_indices.size());
-  for (const int lit : literal_indices) {
-    literals->push_back(Literal(LiteralIndex(lit)));
-  }
-}
-}  //  namespace
 
 LratMerger::LratMerger(Model* model)
     : id_(model->GetOrCreate<SharedLratProofStatus>()->NewSubSolverId()),
@@ -253,7 +240,9 @@ bool LratMerger::Merge(absl::Span<const std::string> proof_filenames) {
         switch (step.step_case()) {
           case LratProofStep::kImportedClause: {
             const int64_t local_id = step.imported_clause().clause_id();
-            IndicesToLiterals(step.imported_clause().literals(), &clause);
+            // If the import is missing this step will be analyzed again, hence
+            // we must not modify it to avoid a double remapping.
+            RemapLiteralIndices(step.imported_clause().literals(), &clause);
             std::sort(clause.begin(), clause.end());
             auto it = shared_global_id_.find(clause);
             if (it != shared_global_id_.end()) {
@@ -269,15 +258,22 @@ bool LratMerger::Merge(absl::Span<const std::string> proof_filenames) {
             const GlobalId old_global_id =
                 it == local_to_global_ids_[proof_index].end() ? GlobalId(-1)
                                                               : it->second;
+            RemapLiteralIndices(
+                *step.mutable_inferred_clause()->mutable_literals(), &clause);
             if (!RemapInferredClause(proof_index, filename,
                                      *step.mutable_inferred_clause(),
                                      NextGlobalId())) {
               return false;
             }
             if (!WriteInferredClause(step.inferred_clause())) return false;
-            if (old_global_id != GlobalId(-1)) {
+            if (step.inferred_clause().rewritten()) {
               // Case of a clause rewritten without changing its local ID.
               // We can delete the old one via its old global ID.
+              if (old_global_id == GlobalId(-1)) {
+                return Error(
+                    absl::StrCat("no old global ID for rewritten clause ",
+                                 local_id, " in ", filename));
+              }
               if (shared_global_ids_.contains(old_global_id)) {
                 // TODO(user): implement this case. We should delete the
                 // clause from `shared_global_ids_`, but only after we are sure
@@ -290,7 +286,6 @@ bool LratMerger::Merge(absl::Span<const std::string> proof_filenames) {
             if (step.inferred_clause().literals().empty()) return true;
             if (step.inferred_clause().exported() ||
                 step.inferred_clause().literals_size() <= 2) {
-              IndicesToLiterals(step.inferred_clause().literals(), &clause);
               SortAndAddSharedClause(
                   GlobalId(step.inferred_clause().clause_id()), clause);
             }
@@ -304,7 +299,8 @@ bool LratMerger::Merge(absl::Span<const std::string> proof_filenames) {
                                         " in ", filename));
             }
             const GlobalId global_id = it->second;
-            IndicesToLiterals(step.exported_clause().literals(), &clause);
+            RemapLiteralIndices(
+                *step.mutable_exported_clause()->mutable_literals(), &clause);
             SortAndAddSharedClause(global_id, clause);
             break;
           }
@@ -327,6 +323,13 @@ bool LratMerger::Merge(absl::Span<const std::string> proof_filenames) {
             WriteDeletedClauses(global_ids_to_delete);
             break;
           }
+          case LratProofStep::kRemapping: {
+            // This is easy to do (it requires one remapping array per worker)
+            // but is not needed right now.
+            return Error(
+                "Variable remapping is not supported other than in the "
+                "presolve proof.");
+          }
           default:
             return Error(absl::StrCat("unknown step type ", step.step_case(),
                                       " in ", filename));
@@ -345,7 +348,7 @@ bool LratMerger::Merge(absl::Span<const std::string> proof_filenames) {
       if (worker_with_missing_import >= 0) {
         const LratImportedClause& missing_import =
             last_read_steps_[worker_with_missing_import].imported_clause();
-        IndicesToLiterals(missing_import.literals(), &clause);
+        RemapLiteralIndices(missing_import.literals(), &clause);
         return Error(
             absl::StrCat("imported clause not found in ",
                          proof_filenames[worker_with_missing_import + 1],
@@ -373,14 +376,15 @@ bool LratMerger::ReadPresolveProof(const std::string& filename) {
     switch (step.step_case()) {
       case LratProofStep::kImportedClause: {
         const int64_t local_id = step.imported_clause().clause_id();
+        RemapLiteralIndices(*step.mutable_imported_clause()->mutable_literals(),
+                            &literals);
         const GlobalId global_id =
             GlobalId(step.imported_clause().one_based_cnf_index());
         local_to_global_ids_[0][local_id] = global_id;
-        IndicesToLiterals(step.imported_clause().literals(), &literals);
         std::sort(literals.begin(), literals.end());
         shared_clauses[global_id] = literals;
         if (lrat_checker_ != nullptr) {
-          const ClausePtr clause = NewClausePtr(literals);
+          const ClausePtr clause = ClausePtr(literals);
           DCHECK(!global_id_to_clause_.contains(global_id));
           global_id_to_clause_[global_id] = clause;
           if (!lrat_checker_->AddProblemClause(clause)) {
@@ -391,16 +395,31 @@ bool LratMerger::ReadPresolveProof(const std::string& filename) {
       }
       case LratProofStep::kInferredClause: {
         const int64_t local_id = step.inferred_clause().clause_id();
+        const auto it = local_to_global_ids_[0].find(local_id);
+        const GlobalId old_global_id =
+            it == local_to_global_ids_[0].end() ? GlobalId(-1) : it->second;
         GlobalId global_id = NextGlobalId();
+        RemapLiteralIndices(*step.mutable_inferred_clause()->mutable_literals(),
+                            &literals);
         if (!RemapInferredClause(/*proof_index=*/0, filename,
                                  *step.mutable_inferred_clause(), global_id)) {
           return false;
         }
         local_to_global_ids_[0][local_id] = global_id;
-        IndicesToLiterals(step.inferred_clause().literals(), &literals);
         std::sort(literals.begin(), literals.end());
         shared_clauses[global_id] = literals;
         if (!WriteInferredClause(step.inferred_clause())) return false;
+        if (step.inferred_clause().rewritten()) {
+          // Case of a clause rewritten without changing its local ID.
+          // We can delete the old one via its old global ID.
+          if (old_global_id == GlobalId(-1)) {
+            return Error(absl::StrCat("no old global ID for rewritten clause ",
+                                      local_id, " in ", filename));
+          }
+
+          WriteDeletedClauses({old_global_id});
+          shared_clauses.erase(old_global_id);
+        }
         break;
       }
       case LratProofStep::kExportedClause: {
@@ -415,9 +434,23 @@ bool LratMerger::ReadPresolveProof(const std::string& filename) {
             const GlobalId global_id = it->second;
             shared_clauses.erase(global_id);
             global_ids_to_delete.push_back(global_id);
+            local_to_global_ids_[0].erase(it);
           }
         }
         WriteDeletedClauses(global_ids_to_delete);
+        break;
+      }
+      case LratProofStep::kRemapping: {
+        // It would be easy to combine a new remapping with the previous ones,
+        // but this is not needed right now.
+        if (!local_to_global_var_.empty()) {
+          return Error(absl::StrCat(
+              "in ", filename, ": multiple remappings are not supported."));
+        }
+        local_to_global_var_.reserve(step.remapping().new_to_old_var_size());
+        for (int old_var : step.remapping().new_to_old_var()) {
+          local_to_global_var_.push_back(old_var);
+        }
         break;
       }
       default:
@@ -430,6 +463,10 @@ bool LratMerger::ReadPresolveProof(const std::string& filename) {
     shared_global_ids_.insert(global_id);
   }
   local_to_global_ids_[0].clear();
+  if (lrat_checker_ != nullptr) {
+    // For now, RAT proofs are only used during presolve.
+    lrat_checker_->DisableRatProofs();
+  }
   return true;
 }
 
@@ -470,11 +507,43 @@ bool LratMerger::RemapInferredClause(int proof_index,
   inferred_clause.set_clause_id(global_id.value());
   local_to_global_ids_[proof_index][local_id] = global_id;
   if (lrat_checker_ != nullptr) {
-    IndicesToLiterals(inferred_clause.literals(), &tmp_literals_);
+    tmp_literals_.clear();
+    for (const int index : inferred_clause.literals()) {
+      // The literal indices have already been remapped.
+      tmp_literals_.push_back(Literal(LiteralIndex(index)));
+    }
     DCHECK(!global_id_to_clause_.contains(global_id));
-    global_id_to_clause_[global_id] = NewClausePtr(tmp_literals_);
+    global_id_to_clause_[global_id] = ClausePtr(tmp_literals_);
   }
   return true;
+}
+
+template <typename T>
+void LratMerger::RemapLiteralIndices(T& literal_indices,
+                                     std::vector<Literal>* literals) {
+  literals->clear();
+  literals->reserve(literal_indices.size());
+  if (local_to_global_var_.empty()) {
+    for (const int index : literal_indices) {
+      const Literal lit = Literal(LiteralIndex(index));
+      max_global_var_ = std::max(max_global_var_, lit.Variable().value());
+      literals->push_back(lit);
+    }
+  } else {
+    for (int i = 0; i < literal_indices.size(); ++i) {
+      const Literal lit = Literal(LiteralIndex(literal_indices[i]));
+      const int var = lit.Variable().value();
+      while (var >= local_to_global_var_.size()) {
+        local_to_global_var_.push_back(++max_global_var_);
+      }
+      const int global_var = local_to_global_var_[var];
+      const Literal global_lit(BooleanVariable(global_var), lit.IsPositive());
+      literals->push_back(global_lit);
+      if constexpr (!std::is_const_v<T>) {
+        literal_indices[i] = global_lit.Index().value();
+      }
+    }
+  }
 }
 
 bool LratMerger::RemapClauseIds(
@@ -632,11 +701,15 @@ bool LratProofHandler::AddProblemClause(ClausePtr clause,
                   "EndProblemClauses()";
   }
   if (clause.IsBinaryClausePtr()) {
-    if (implication_graph_clauses_.contains(clause) ||
-        temporary_binary_clauses_.contains(clause)) {
+    if (!binary_clauses_.insert({clause, false}).second) {
+      if (lrat_writer_ != nullptr && one_based_cnf_index > 0) {
+        const ClausePtr clause_ptr = ClausePtr(clause.GetLiterals());
+        lrat_writer_->AddImportedClause(clause_ptr, one_based_cnf_index);
+        lrat_writer_->DeleteClause(clause_ptr);
+      }
       return true;
     }
-    temporary_binary_clauses_.insert(clause);
+    temporary_binary_clauses_.push_back(clause);
   }
   if (lrat_checker_ != nullptr && !lrat_checker_->AddProblemClause(clause)) {
     return LratError("In AddProblemClause.");
@@ -659,11 +732,8 @@ bool LratProofHandler::AddInferredClause(
           << " proof=" << absl::StrJoin(proof, ",") << " rat_proof={"
           << absl::StrJoin(rat_proof, " ") << "}";
   if (clause.IsBinaryClausePtr()) {
-    if (implication_graph_clauses_.contains(clause) ||
-        temporary_binary_clauses_.contains(clause)) {
-      return true;
-    }
-    temporary_binary_clauses_.insert(clause);
+    if (!binary_clauses_.insert({clause, false}).second) return true;
+    temporary_binary_clauses_.push_back(clause);
   }
   if (lrat_checker_ != nullptr &&
       !lrat_checker_->AddInferredClause(clause, proof, rat_proof)) {
@@ -735,10 +805,10 @@ void LratProofHandler::DeleteClause(ClausePtr clause, bool delete_sat_clause) {
   VLOG(2) << "DeleteClause: ptr=" << clause
           << " literals=" << absl::StrJoin(clause.GetLiterals(), ",");
   if (clause.IsBinaryClausePtr()) {
-    auto it = temporary_binary_clauses_.find(clause);
-    if (it == temporary_binary_clauses_.end()) return;
-    DCHECK(!implication_graph_clauses_.contains(clause));
-    temporary_binary_clauses_.erase(it);
+    auto it = binary_clauses_.find(clause);
+    // Do not delete binary clauses which are in the BinaryImplicationGraph.
+    if (it == binary_clauses_.end() || it->second) return;
+    binary_clauses_.erase(it);
   }
   DeleteClauseInternal(clause);
   if (delete_sat_clause && clause.IsSatClausePtr()) {
@@ -752,6 +822,13 @@ void LratProofHandler::DeleteClauseInternal(ClausePtr clause) {
   }
   if (lrat_writer_ != nullptr) {
     lrat_writer_->DeleteClause(clause);
+  }
+}
+
+void LratProofHandler::RemapBooleanVariables(
+    absl::Span<const int32_t> new_to_old_var) {
+  if (lrat_writer_ != nullptr) {
+    lrat_writer_->RemapBooleanVariables(new_to_old_var);
   }
 }
 
@@ -787,11 +864,10 @@ bool LratProofHandler::LratError(absl::string_view message) const {
 }
 
 void LratProofHandler::Close(bool model_is_unsat) {
-  const bool valid = model_is_unsat ? Check() : Valid();
-  proof_status_->NewSubsolverProofStatus(
-      valid ? SharedLratProofStatus::Status::VALID
-            : SharedLratProofStatus::Status::INVALID,
-      lrat_check_enabled(), num_assumed_clauses());
+  const SharedLratProofStatus::Status status =
+      model_is_unsat ? Check() : Valid();
+  proof_status_->NewSubsolverProofStatus(status, lrat_check_enabled(),
+                                         num_assumed_clauses());
   if (lrat_checker_ != nullptr) {
     lrat_checker_->AddStats();
   }
@@ -800,40 +876,45 @@ void LratProofHandler::Close(bool model_is_unsat) {
   }
 }
 
+bool LratProofHandler::HasBinaryClause(Literal a, Literal b) const {
+  return binary_clauses_.contains(ClausePtr(a, b));
+}
+
 bool LratProofHandler::HasImplicationGraphClause(Literal a, Literal b) const {
-  return implication_graph_clauses_.contains(ClausePtr(a, b));
+  const auto it = binary_clauses_.find(ClausePtr(a, b));
+  return it != binary_clauses_.end() && it->second;
 }
 
 bool LratProofHandler::AddImplicationGraphClause(Literal a, Literal b) {
   DCHECK_NE(a, b);
-  const bool result = implication_graph_clauses_.insert(ClausePtr(a, b)).second;
-  temporary_binary_clauses_.erase(ClausePtr(a, b));
-  return result;
+  auto [it, inserted] = binary_clauses_.insert({ClausePtr(a, b), true});
+  if (inserted) return true;
+  if (it->second) return false;
+  it->second = true;
+  return false;
 }
 
 void LratProofHandler::DeleteImplicationGraphClause(ClausePtr clause) {
-  auto it = implication_graph_clauses_.find(clause);
-  if (it != implication_graph_clauses_.end()) {
-    DCHECK(!temporary_binary_clauses_.contains(clause));
-    implication_graph_clauses_.erase(it);
+  auto it = binary_clauses_.find(clause);
+  if (it != binary_clauses_.end() && it->second) {
+    binary_clauses_.erase(it);
     DeleteClauseInternal(clause);
   }
 }
 
-const absl::flat_hash_set<ClausePtr>&
-LratProofHandler::ImplicationGraphClauses() {
-  return implication_graph_clauses_;
-}
-
-bool LratProofHandler::HasTemporaryBinaryClause(Literal a, Literal b) const {
-  return temporary_binary_clauses_.contains(ClausePtr(a, b));
+const absl::flat_hash_map<ClausePtr, bool>& LratProofHandler::BinaryClauses() {
+  return binary_clauses_;
 }
 
 int LratProofHandler::DeleteTemporaryBinaryClauses() {
-  const int num_deleted = temporary_binary_clauses_.size();
+  int num_deleted = 0;
   for (const ClausePtr clause : temporary_binary_clauses_) {
-    DCHECK(!implication_graph_clauses_.contains(clause));
-    DeleteClauseInternal(clause);
+    auto it = binary_clauses_.find(clause);
+    if (it != binary_clauses_.end() && !it->second) {
+      binary_clauses_.erase(it);
+      DeleteClauseInternal(clause);
+      ++num_deleted;
+    }
   }
   temporary_binary_clauses_.clear();
   return num_deleted;

@@ -28,6 +28,13 @@
 namespace operations_research::sat {
 namespace {
 
+TEST(GetNumBitsAtOneTest, BasicTest) {
+  EXPECT_EQ(GetNumBitsAtOne(1), 1);
+  EXPECT_EQ(GetNumBitsAtOne(2), 3);
+  EXPECT_EQ(GetNumBitsAtOne(8), 255);
+  EXPECT_EQ(GetNumBitsAtOne(32), ~SmallBitset(0));
+}
+
 TEST(CanonicalizeTruthTableTest, BasicBehavior1) {
   std::array<int, 3> key = {0, 2, 1};
 
@@ -76,8 +83,8 @@ TEST(AddHoleAtPositionTest, BasicTest) {
 }
 
 TEST(CanonicalizeFunctionTruthTableTest, AndGateWithXAndNotX) {
-  LiteralIndex output = Literal(+1).Index();
-  std::vector<LiteralIndex> inputs{Literal(+2).Index(), Literal(-2).Index()};
+  Literal output = Literal(+1);
+  std::vector<Literal> inputs{Literal(+2), Literal(-2)};
   int table = 0b1000;
   const int new_size =
       CanonicalizeFunctionTruthTable(output, absl::MakeSpan(inputs), table);
@@ -85,31 +92,29 @@ TEST(CanonicalizeFunctionTruthTableTest, AndGateWithXAndNotX) {
 }
 
 TEST(RemoveFixedInputTest, BasicTest1) {
-  std::vector<LiteralIndex> inputs{Literal(+1).Index(), Literal(+2).Index(),
-                                   Literal(+3).Index()};
+  std::vector<Literal> inputs{Literal(+1), Literal(+2), Literal(+3)};
   int table = 0b01011010;
   const int new_size = RemoveFixedInput(1, true, absl::MakeSpan(inputs), table);
   EXPECT_EQ(new_size, 2);
-  EXPECT_EQ(inputs[0], Literal(+1).Index());
-  EXPECT_EQ(inputs[1], Literal(+3).Index());
+  EXPECT_EQ(inputs[0], Literal(+1));
+  EXPECT_EQ(inputs[1], Literal(+3));
   EXPECT_EQ(table, 0b0110) << std::bitset<4>(table);
 }
 
 TEST(RemoveFixedInputTest, BasicTest2) {
-  std::vector<LiteralIndex> inputs{Literal(+1).Index(), Literal(+2).Index(),
-                                   Literal(+3).Index()};
+  std::vector<Literal> inputs{Literal(+1), Literal(+2), Literal(+3)};
   int table = 0b01011010;
   const int new_size =
       RemoveFixedInput(1, false, absl::MakeSpan(inputs), table);
   EXPECT_EQ(new_size, 2);
-  EXPECT_EQ(inputs[0], Literal(+1).Index());
-  EXPECT_EQ(inputs[1], Literal(+3).Index());
+  EXPECT_EQ(inputs[0], Literal(+1));
+  EXPECT_EQ(inputs[1], Literal(+3));
   EXPECT_EQ(table, 0b0110) << std::bitset<4>(table);
 }
 
 TEST(CanonicalizeFunctionTruthTableTest, AndGateWithXAndNotX2) {
-  LiteralIndex output = Literal(+1).Index();
-  std::vector<LiteralIndex> inputs{Literal(-2).Index(), Literal(+2).Index()};
+  Literal output = Literal(+1);
+  std::vector<Literal> inputs{Literal(-2), Literal(+2)};
   int table = 0b1000;
   const int new_size =
       CanonicalizeFunctionTruthTable(output, absl::MakeSpan(inputs), table);
@@ -132,26 +137,18 @@ TEST(CanonicalizeFunctionTruthTableTest, RandomTest) {
                   absl::Bernoulli(random, 0.5)));
     }
 
-    LiteralIndex new_output_index = output.Index();
+    Literal new_output = output;
     std::vector<Literal> new_inputs = inputs;
-    std::vector<LiteralIndex> new_inputs_index;
-    for (const Literal lit : new_inputs) {
-      new_inputs_index.push_back(lit.Index());
-    }
     int new_table = table;
     const int new_size = CanonicalizeFunctionTruthTable(
-        new_output_index, absl::MakeSpan(new_inputs_index), new_table);
-    new_inputs_index.resize(new_size);
-    new_inputs.clear();
-    for (const LiteralIndex lit_index : new_inputs_index) {
-      new_inputs.push_back(Literal(lit_index));
-    }
+        new_output, absl::MakeSpan(new_inputs), new_table);
+    new_inputs.resize(new_size);
 
     // Log before potential failure.
     LOG(INFO) << "IN  arity=" << k << " " << output << " = f(" << inputs << ") "
               << std::bitset<16>(table);
-    LOG(INFO) << "OUT arity=" << new_size << " " << Literal(new_output_index)
-              << " = f(" << new_inputs << ") " << std::bitset<16>(new_table);
+    LOG(INFO) << "OUT arity=" << new_size << " " << new_output << " = f("
+              << new_inputs << ") " << std::bitset<16>(new_table);
 
     // Now check that both function always take the same value.
     for (int m = 0; m < (1 << num_vars); ++m) {
@@ -173,10 +170,10 @@ TEST(CanonicalizeFunctionTruthTableTest, RandomTest) {
       }
       const int new_target_value = (new_table >> new_index) & 1;
 
-      if (output == Literal(new_output_index)) {
+      if (output == new_output) {
         ASSERT_EQ(target_value, new_target_value) << index << " " << new_index;
       } else {
-        ASSERT_EQ(output, Literal(new_output_index).Negated());
+        ASSERT_EQ(output, new_output.Negated());
         ASSERT_EQ(target_value, 1 - new_target_value)
             << index << " " << new_index;
       }

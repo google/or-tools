@@ -479,108 +479,80 @@ std::function<BooleanOrIntegerLiteral()> PseudoCost(Model* model) {
   };
 }
 
-// A simple heuristic for scheduling models.
-std::function<BooleanOrIntegerLiteral()> SchedulingSearchHeuristic(
-    Model* model) {
-  auto* repo = model->GetOrCreate<IntervalsRepository>();
-  auto* heuristic = model->GetOrCreate<SearchHeuristics>();
-  auto* trail = model->GetOrCreate<Trail>();
-  auto* watcher = model->GetOrCreate<GenericLiteralWatcher>();
-  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
-  const int64_t randomization_size = std::max<int64_t>(
-      1,
-      model->GetOrCreate<SatParameters>()->search_random_variable_pool_size());
-  auto* random = model->GetOrCreate<ModelRandomGenerator>();
+class SchedulingSearchHeuristicHelper {
+ public:
+  explicit SchedulingSearchHeuristicHelper(Model* model)
+      : assignment_(model->GetOrCreate<Trail>()->Assignment()),
+        repo_(model->GetOrCreate<IntervalsRepository>()),
+        heuristic_(model->GetOrCreate<SearchHeuristics>()),
+        watcher_(model->GetOrCreate<GenericLiteralWatcher>()),
+        integer_trail_(model->GetOrCreate<IntegerTrail>()),
+        random_(model->GetOrCreate<ModelRandomGenerator>()),
+        rev_int_repo_(model->GetOrCreate<RevIntRepository>()) {
+    // To avoid to scan already fixed intervals, we use a simple reversible int.
+    const int num_intervals = repo_->NumIntervals();
+    intervals_.resize(num_intervals);
+    cached_start_mins_.resize(num_intervals);
+    for (IntervalVariable i(0); i < num_intervals; ++i) {
+      intervals_[i.value()] = i;
+    }
 
-  // To avoid to scan already fixed intervals, we use a simple reversible int.
-  auto* rev_int_repo = model->GetOrCreate<RevIntRepository>();
-  const int num_intervals = repo->NumIntervals();
-  int rev_fixed = 0;
-  bool rev_is_in_dive = false;
-  std::vector<IntervalVariable> intervals(num_intervals);
-  std::vector<IntegerValue> cached_start_mins(num_intervals);
-  for (IntervalVariable i(0); i < num_intervals; ++i) {
-    intervals[i.value()] = i;
+    // Fix the max size of random choices.
+    randomization_size_ =
+        std::max<int>(1, model->GetOrCreate<SatParameters>()
+                             ->search_random_variable_pool_size());
   }
 
-  // Note(user): only the model is captured for no reason.
-  return [=]() mutable {
-    struct ToSchedule {
-      // Variable to fix.
-      LiteralIndex presence = kNoLiteralIndex;
-      AffineExpression start;
-      AffineExpression end;
-
-      // Information to select best.
-      IntegerValue size_min = kMaxIntegerValue;
-      IntegerValue start_min = kMaxIntegerValue;
-      IntegerValue start_max = kMaxIntegerValue;
-      double noise = 0.5;
-
-      // We want to pack interval to the left. If two have the same start_min,
-      // we want to choose the one that will likely leave an easier problem for
-      // the other tasks.
-      bool operator<(const ToSchedule& other) const {
-        return std::tie(start_min, start_max, size_min, noise) <
-               std::tie(other.start_min, other.start_max, other.size_min,
-                        other.noise);
-      }
-
-      // Generating random noise can take time, so we use this function to
-      // delay it.
-      bool MightBeBetter(const ToSchedule& other) const {
-        return std::tie(start_min, start_max) <=
-               std::tie(other.start_min, other.start_max);
-      }
-    };
+  BooleanOrIntegerLiteral NextDecision() {
     std::vector<ToSchedule> top_decisions;
-    top_decisions.reserve(randomization_size);
+    top_decisions.reserve(randomization_size_);
     top_decisions.resize(1);
 
     // Save rev_fixed before we modify it.
-    rev_int_repo->SaveState(&rev_fixed);
+    rev_int_repo_->SaveState(&rev_fixed_);
 
     // TODO(user): we should also precompute fixed precedences and only fix
-    // interval that have all their predecessors fixed.
-    for (int i = rev_fixed; i < num_intervals; ++i) {
+    // interval that have all their predecessos fixed.
+    const int num_intervals = intervals_.size();
+    for (int i = rev_fixed_; i < num_intervals; ++i) {
       const ToSchedule& worst = top_decisions.back();
-      if (rev_is_in_dive && cached_start_mins[i] > worst.start_min) {
+      if (rev_is_in_dive_ && cached_start_mins_[i] > worst.start_min) {
         continue;
       }
 
-      const IntervalVariable interval = intervals[i];
-      if (repo->IsAbsent(interval)) {
-        std::swap(intervals[i], intervals[rev_fixed]);
-        std::swap(cached_start_mins[i], cached_start_mins[rev_fixed]);
-        ++rev_fixed;
+      const IntervalVariable interval = intervals_[i];
+      if (repo_->IsAbsent(interval)) {
+        std::swap(intervals_[i], intervals_[rev_fixed_]);
+        std::swap(cached_start_mins_[i], cached_start_mins_[rev_fixed_]);
+        ++rev_fixed_;
         continue;
       }
 
-      const AffineExpression start = repo->Start(interval);
-      const AffineExpression end = repo->End(interval);
-      if (repo->IsPresent(interval) && integer_trail->IsFixed(start) &&
-          integer_trail->IsFixed(end)) {
-        std::swap(intervals[i], intervals[rev_fixed]);
-        std::swap(cached_start_mins[i], cached_start_mins[rev_fixed]);
-        ++rev_fixed;
+      const AffineExpression start = repo_->Start(interval);
+      const AffineExpression end = repo_->End(interval);
+      if (repo_->IsPresent(interval) && integer_trail_->IsFixed(start) &&
+          integer_trail_->IsFixed(end)) {
+        std::swap(intervals_[i], intervals_[rev_fixed_]);
+        std::swap(cached_start_mins_[i], cached_start_mins_[rev_fixed_]);
+        ++rev_fixed_;
         continue;
       }
 
       ToSchedule candidate;
-      if (repo->IsOptional(interval)) {
+      if (repo_->IsOptional(interval)) {
         // For task whose presence is still unknown, our propagators should
         // have propagated the minimum time as if it was present. So this
         // should reflect the earliest time at which this interval can be
         // scheduled.
-        const Literal lit = repo->PresenceLiteral(interval);
-        candidate.start_min = integer_trail->ConditionalLowerBound(lit, start);
-        candidate.start_max = integer_trail->ConditionalUpperBound(lit, start);
+        const Literal lit = repo_->PresenceLiteral(interval);
+        candidate.start_min = integer_trail_->ConditionalLowerBound(lit, start);
+        candidate.start_max = integer_trail_->ConditionalUpperBound(lit, start);
       } else {
-        candidate.start_min = integer_trail->LowerBound(start);
-        candidate.start_max = integer_trail->UpperBound(start);
+        candidate.start_min = integer_trail_->LowerBound(start);
+        candidate.start_max = integer_trail_->UpperBound(start);
       }
-      cached_start_mins[i] = candidate.start_min;
-      if (top_decisions.size() < randomization_size ||
+      cached_start_mins_[i] = candidate.start_min;
+      if (top_decisions.size() < randomization_size_ ||
           candidate.MightBeBetter(worst)) {
         // Finish filling candidate.
         //
@@ -590,15 +562,15 @@ std::function<BooleanOrIntegerLiteral()> SchedulingSearchHeuristic(
         // need to be scheduled.
         candidate.start = start;
         candidate.end = end;
-        candidate.presence = repo->IsOptional(interval)
-                                 ? repo->PresenceLiteral(interval).Index()
+        candidate.presence = repo_->IsOptional(interval)
+                                 ? repo_->PresenceLiteral(interval).Index()
                                  : kNoLiteralIndex;
         candidate.size_min =
-            std::max(integer_trail->LowerBound(repo->Size(interval)),
-                     integer_trail->LowerBound(end) - candidate.start_min);
-        candidate.noise = absl::Uniform(*random, 0.0, 1.0);
+            std::max(integer_trail_->LowerBound(repo_->Size(interval)),
+                     integer_trail_->LowerBound(end) - candidate.start_min);
+        candidate.noise = absl::Uniform(*random_, 0.0, 1.0);
 
-        if (top_decisions.size() == randomization_size) {
+        if (top_decisions.size() == randomization_size_) {
           // Do not replace if we have a strict inequality now.
           if (worst < candidate) continue;
           top_decisions.pop_back();
@@ -612,13 +584,13 @@ std::function<BooleanOrIntegerLiteral()> SchedulingSearchHeuristic(
 
     // Setup rev_is_in_dive to be true on the next call only if there was no
     // backtrack since the previous call.
-    watcher->SetUntilNextBacktrack(&rev_is_in_dive);
+    watcher_->SetUntilNextBacktrack(&rev_is_in_dive_);
 
     const ToSchedule best =
         top_decisions.size() == 1
             ? top_decisions.front()
             : top_decisions[absl::Uniform(
-                  *random, 0, static_cast<int>(top_decisions.size()))];
+                  *random_, 0, static_cast<int>(top_decisions.size()))];
     if (top_decisions.size() > 1) {
       VLOG(2) << "Choose among " << top_decisions.size() << " "
               << best.start_min << " " << best.size_min
@@ -632,8 +604,7 @@ std::function<BooleanOrIntegerLiteral()> SchedulingSearchHeuristic(
     // Use the next_decision_override to fix in turn all the variables from
     // the selected interval.
     int num_times = 0;
-    heuristic->next_decision_override = [trail, integer_trail, best,
-                                         num_times]() mutable {
+    heuristic_->next_decision_override = [this, best, num_times]() mutable {
       if (++num_times > 5) {
         // We have been trying to fix this interval for a while. Do we miss
         // some propagation? In any case, try to see if the heuristic above
@@ -644,34 +615,34 @@ std::function<BooleanOrIntegerLiteral()> SchedulingSearchHeuristic(
 
       // First make sure the interval is present.
       if (best.presence != kNoLiteralIndex) {
-        if (!trail->Assignment().LiteralIsAssigned(Literal(best.presence))) {
+        if (!assignment_.LiteralIsAssigned(Literal(best.presence))) {
           VLOG(3) << "assign " << best.presence;
           return BooleanOrIntegerLiteral(best.presence);
         }
-        if (trail->Assignment().LiteralIsFalse(Literal(best.presence))) {
+        if (assignment_.LiteralIsFalse(Literal(best.presence))) {
           VLOG(2) << "unperformed.";
           return BooleanOrIntegerLiteral();
         }
       }
 
       // We assume that start_min is propagated by now.
-      if (!integer_trail->IsFixed(best.start)) {
-        const IntegerValue start_min = integer_trail->LowerBound(best.start);
+      if (!integer_trail_->IsFixed(best.start)) {
+        const IntegerValue start_min = integer_trail_->LowerBound(best.start);
         VLOG(3) << "start == " << start_min;
         return BooleanOrIntegerLiteral(best.start.LowerOrEqual(start_min));
       }
 
       // We assume that end_min is propagated by now.
-      if (!integer_trail->IsFixed(best.end)) {
-        const IntegerValue end_min = integer_trail->LowerBound(best.end);
+      if (!integer_trail_->IsFixed(best.end)) {
+        const IntegerValue end_min = integer_trail_->LowerBound(best.end);
         VLOG(3) << "end == " << end_min;
         return BooleanOrIntegerLiteral(best.end.LowerOrEqual(end_min));
       }
 
       // Everything is fixed, detach the override.
-      const IntegerValue start = integer_trail->LowerBound(best.start);
+      const IntegerValue start = integer_trail_->LowerBound(best.start);
       VLOG(2) << "Fixed @[" << start << ","
-              << integer_trail->LowerBound(best.end) << "]"
+              << integer_trail_->LowerBound(best.end) << "]"
               << (best.presence != kNoLiteralIndex
                       ? absl::StrCat(" presence=",
                                      Literal(best.presence).DebugString())
@@ -682,8 +653,59 @@ std::function<BooleanOrIntegerLiteral()> SchedulingSearchHeuristic(
       return BooleanOrIntegerLiteral();
     };
 
-    return heuristic->next_decision_override();
+    return heuristic_->next_decision_override();
+  }
+
+ private:
+  struct ToSchedule {
+    // Variable to fix.
+    LiteralIndex presence = kNoLiteralIndex;
+    AffineExpression start;
+    AffineExpression end;
+
+    // Information to select best.
+    IntegerValue size_min = kMaxIntegerValue;
+    IntegerValue start_min = kMaxIntegerValue;
+    IntegerValue start_max = kMaxIntegerValue;
+    double noise = 0.5;
+
+    // We want to pack interval to the left. If two have the same start_min,
+    // we want to choose the one that will likely leave an easier problem for
+    // the other tasks.
+    bool operator<(const ToSchedule& other) const {
+      return std::tie(start_min, start_max, size_min, noise) <
+             std::tie(other.start_min, other.start_max, other.size_min,
+                      other.noise);
+    }
+
+    // Generating random noise can take time, so we use this function to
+    // delay it.
+    bool MightBeBetter(const ToSchedule& other) const {
+      return std::tie(start_min, start_max) <=
+             std::tie(other.start_min, other.start_max);
+    }
   };
+
+  const VariablesAssignment& assignment_;
+  IntervalsRepository* repo_;
+  SearchHeuristics* heuristic_;
+  GenericLiteralWatcher* watcher_;
+  IntegerTrail* integer_trail_;
+  ModelRandomGenerator* random_;
+  RevIntRepository* rev_int_repo_;
+
+  int rev_fixed_ = 0;
+  bool rev_is_in_dive_ = false;
+  int randomization_size_ = 1;
+  std::vector<IntervalVariable> intervals_;
+  std::vector<IntegerValue> cached_start_mins_;
+};
+
+// A simple heuristic for scheduling models.
+std::function<BooleanOrIntegerLiteral()> SchedulingSearchHeuristic(
+    Model* model) {
+  auto* helper = model->GetOrCreate<SchedulingSearchHeuristicHelper>();
+  return [helper]() { return helper->NextDecision(); };
 }
 
 namespace {

@@ -230,10 +230,18 @@ ClausePtr NewClausePtr(absl::Span<const Literal> literals) {
 // to over-optimize this. In particular, presolve might be disabled or
 // incomplete, so such unclean clause might find their way here.
 bool SatSolver::AddProblemClause(absl::Span<const Literal> literals,
-                                 bool shared) {
+                                 int64_t one_based_cnf_index) {
   SCOPED_TIME_STAT(&stats_);
   DCHECK_EQ(CurrentDecisionLevel(), 0);
   if (model_is_unsat_) return false;
+
+  auto maybe_delete_lrat_problem_clause = [&]() {
+    if (lrat_proof_handler_ != nullptr && one_based_cnf_index > 0) {
+      const ClausePtr clause = ClausePtr(literals);
+      lrat_proof_handler_->AddProblemClause(clause, one_based_cnf_index);
+      lrat_proof_handler_->DeleteClause(clause);
+    }
+  };
 
   // Filter already assigned literals. Note that we also remap literal in case
   // we discovered equivalence later in the search.
@@ -242,7 +250,14 @@ bool SatSolver::AddProblemClause(absl::Span<const Literal> literals,
     tmp_proof_.clear();
     for (const Literal l : literals) {
       const Literal rep = binary_implication_graph_->RepresentativeOf(l);
-      if (trail_->Assignment().LiteralIsTrue(rep)) return true;
+      if (trail_->Assignment().LiteralIsTrue(rep)) {
+        maybe_delete_lrat_problem_clause();
+        return true;
+      }
+      if (trail_->Assignment().LiteralIsFalse(l)) {
+        tmp_proof_.push_back(ClausePtr(l.Negated()));
+        continue;
+      }
       if (trail_->Assignment().LiteralIsFalse(rep)) {
         tmp_proof_.push_back(ClausePtr(rep.Negated()));
       }
@@ -266,6 +281,7 @@ bool SatSolver::AddProblemClause(absl::Span<const Literal> literals,
   gtl::STLSortAndRemoveDuplicates(&tmp_literals_);
   for (int i = 0; i + 1 < tmp_literals_.size(); ++i) {
     if (tmp_literals_[i] == tmp_literals_[i + 1].Negated()) {
+      maybe_delete_lrat_problem_clause();
       return true;
     }
   }
@@ -275,10 +291,11 @@ bool SatSolver::AddProblemClause(absl::Span<const Literal> literals,
     // Add the original problem clause.
     const ClausePtr original_clause =
         tmp_proof_.empty() ? clause : NewClausePtr(literals);
-    if (shared) {
-      lrat_proof_handler_->AddImportedClause(original_clause);
+    if (one_based_cnf_index > 0) {
+      lrat_proof_handler_->AddProblemClause(original_clause,
+                                            one_based_cnf_index);
     } else {
-      lrat_proof_handler_->AddProblemClause(original_clause);
+      lrat_proof_handler_->AddImportedClause(original_clause);
     }
     // If the filtered clause is different, add it (with proof), and delete the
     // original one.
