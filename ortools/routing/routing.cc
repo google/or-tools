@@ -1115,9 +1115,11 @@ ResourceGroup::Attributes::Attributes()
   /// The default attributes have unconstrained start/end domains.
 }
 
-ResourceGroup::Attributes::Attributes(Domain start_domain, Domain end_domain)
+ResourceGroup::Attributes::Attributes(Domain start_domain, Domain end_domain,
+                                      int64_t span_upper_bound)
     : start_domain_(std::move(start_domain)),
-      end_domain_(std::move(end_domain)) {}
+      end_domain_(std::move(end_domain)),
+      span_upper_bound_(span_upper_bound) {}
 
 void ResourceGroup::Resource::SetDimensionAttributes(
     Attributes attributes, const Dimension* dimension) {
@@ -2763,7 +2765,7 @@ void Model::CloseModelWithParameters(
     }
   }
   // Dimension span constraints: cost and limits.
-  for (const Dimension* dimension : dimensions_) {
+  for (Dimension* dimension : dimensions_) {
     dimension->SetupGlobalSpanCost(&cost_elements);
     dimension->SetupSlackAndDependentTransitCosts();
     const std::vector<int64_t>& span_costs =
@@ -2772,6 +2774,8 @@ void Model::CloseModelWithParameters(
         dimension->vehicle_slack_cost_coefficients();
     const std::vector<int64_t>& span_ubs =
         dimension->vehicle_span_upper_bounds();
+    const std::vector<int>& rg_indices =
+        dimension_resource_group_indices_[dimension->index()];
     const bool has_span_constraint =
         std::any_of(span_costs.begin(), span_costs.end(),
                     [](int64_t coeff) { return coeff != 0; }) ||
@@ -2781,10 +2785,28 @@ void Model::CloseModelWithParameters(
                     [](int64_t value) {
                       return value < std::numeric_limits<int64_t>::max();
                     }) ||
+        std::any_of(
+            rg_indices.begin(), rg_indices.end(),
+            [this, dimension](int64_t rg_index) {
+              const ResourceGroup& resource_group = *resource_groups_[rg_index];
+              if (resource_group.GetVehiclesRequiringAResource().empty()) {
+                return false;
+              }
+              for (const ResourceGroup::Resource& resource :
+                   resource_group.GetResources()) {
+                if (resource.GetDimensionAttributes(dimension->index())
+                        .span_upper_bound() <
+                    std::numeric_limits<int64_t>::max()) {
+                  return true;
+                }
+              }
+              return false;
+            }) ||
         dimension->HasSoftSpanUpperBounds() ||
         dimension->HasQuadraticCostSoftSpanUpperBounds();
     if (has_span_constraint) {
-      std::vector<IntVar*> spans(vehicles(), nullptr);
+      std::vector<IntVar*>& spans =
+          *(dimension->mutable_vehicle_span_variables());
       std::vector<IntVar*> total_slacks(vehicles(), nullptr);
       // Generate variables only where needed.
       for (int vehicle = 0; vehicle < vehicles(); ++vehicle) {
@@ -2810,6 +2832,14 @@ void Model::CloseModelWithParameters(
           const BoundCost bound_cost =
               dimension->GetQuadraticCostSoftSpanUpperBoundForVehicle(vehicle);
           if (bound_cost.cost == 0) continue;
+          spans[vehicle] = solver_->MakeIntVar(0, span_ubs[vehicle]);
+        }
+      }
+      for (int rg_index :
+           dimension_resource_group_indices_[dimension->index()]) {
+        const ResourceGroup& resource_group = *resource_groups_[rg_index];
+        for (int vehicle : resource_group.GetVehiclesRequiringAResource()) {
+          if (spans[vehicle]) continue;
           spans[vehicle] = solver_->MakeIntVar(0, span_ubs[vehicle]);
         }
       }
@@ -3240,6 +3270,57 @@ void Model::LogSolution(const RoutingSearchParameters& parameters,
       solver_->wall_time() - start_time_ms, memory_str);
 }
 
+bool Model::UpdateLimits(const RoutingSearchParameters& parameters,
+                         int64_t start_time_ms,
+                         bool leave_secondary_solve_buffer) {
+  const absl::Duration elapsed_time =
+      absl::Milliseconds(solver_->wall_time() - start_time_ms);
+  const absl::Duration time_left = GetTimeLimit(parameters) - elapsed_time;
+
+  if (time_left < absl::ZeroDuration()) return false;
+
+  const bool perform_secondary_ls =
+      GetTimeLimit(parameters) != absl::InfiniteDuration() &&
+      parameters.secondary_ls_time_limit_ratio() > 0;
+
+  const absl::Duration secondary_solve_buffer =
+      !leave_secondary_solve_buffer || !perform_secondary_ls
+          ? absl::ZeroDuration()
+          : parameters.secondary_ls_time_limit_ratio() * time_left;
+  const absl::Duration time_limit = time_left - secondary_solve_buffer;
+  limit_->UpdateLimits(time_limit, std::numeric_limits<int64_t>::max(),
+                       std::numeric_limits<int64_t>::max(),
+                       parameters.solution_limit());
+  DCHECK_NE(ls_limit_, nullptr);
+  ls_limit_->UpdateLimits(time_limit, std::numeric_limits<int64_t>::max(),
+                          std::numeric_limits<int64_t>::max(), 1);
+  // TODO(user): Come up with a better formula. Ideally this should be
+  // calibrated in the first solution strategies.
+  time_buffer_ = std::min(absl::Seconds(1), time_limit * 0.05);
+  return true;
+};
+
+std::optional<int64_t> Model::InitializeSearch(
+    const RoutingSearchParameters& search_parameters) {
+  const int64_t start_time_ms = solver_->wall_time();
+  QuietCloseModelWithParameters(search_parameters);
+  UpdateSearchFromParametersIfNeeded(search_parameters);
+  if (status_ == RoutingSearchStatus::ROUTING_INVALID) return std::nullopt;
+  status_ = RoutingSearchStatus::ROUTING_NOT_SOLVED;
+  return start_time_ms;
+}
+
+void Model::UpdateStatusOnFailure(
+    const RoutingSearchParameters& search_parameters, int64_t start_time_ms) {
+  const absl::Duration elapsed_time =
+      absl::Milliseconds(solver_->wall_time() - start_time_ms);
+  if (elapsed_time >= GetTimeLimit(search_parameters)) {
+    status_ = RoutingSearchStatus::ROUTING_FAIL_TIMEOUT;
+  } else {
+    status_ = RoutingSearchStatus::ROUTING_FAIL;
+  }
+}
+
 const Assignment* Model::SolveFromAssignmentWithParameters(
     const Assignment* assignment, const RoutingSearchParameters& parameters,
     std::vector<const Assignment*>* solutions) {
@@ -3259,12 +3340,9 @@ const Assignment* Model::FastSolveFromAssignmentWithParameters(
                 << search_parameters.local_search_metaheuristic();
     return nullptr;
   }
-  const int64_t start_time_ms = solver_->wall_time();
-  QuietCloseModelWithParameters(search_parameters);
-  UpdateSearchFromParametersIfNeeded(search_parameters);
-
-  if (status_ == RoutingSearchStatus::ROUTING_INVALID) return nullptr;
-  status_ = RoutingSearchStatus::ROUTING_NOT_SOLVED;
+  const std::optional<int64_t> start_time_ms =
+      InitializeSearch(search_parameters);
+  if (!start_time_ms.has_value()) return nullptr;
   if (assignment == nullptr) return nullptr;
   limit_->UpdateLimits(
       GetTimeLimit(search_parameters), std::numeric_limits<int64_t>::max(),
@@ -3277,8 +3355,6 @@ const Assignment* Model::FastSolveFromAssignmentWithParameters(
                                           {/*filter_objective=*/true,
                                            /*filter_with_cp_solver=*/false}),
       primary_ls_operator_, monitors, limit_, touched);
-  const absl::Duration elapsed_time =
-      absl::Milliseconds(solver_->wall_time() - start_time_ms);
   if (solution != nullptr) {
     if (!check_solution_in_cp ||
         CheckIfAssignmentIsFeasible(*solution,
@@ -3287,27 +3363,99 @@ const Assignment* Model::FastSolveFromAssignmentWithParameters(
     }
   }
   if (status_ != RoutingSearchStatus::ROUTING_SUCCESS) {
-    if (elapsed_time >= GetTimeLimit(search_parameters)) {
-      status_ = RoutingSearchStatus::ROUTING_FAIL_TIMEOUT;
-    } else {
-      status_ = RoutingSearchStatus::ROUTING_FAIL;
-    }
+    UpdateStatusOnFailure(search_parameters, *start_time_ms);
   }
   return solution;
+}
+
+const Assignment* Model::InsertNodesInAssignmentWithParameters(
+    const Assignment& assignment, const RoutingSearchParameters& parameters) {
+  std::optional<int64_t> start_time_ms = InitializeSearch(parameters);
+  if (!start_time_ms.has_value()) return nullptr;
+
+  // Detect infeasibilities at the root of the search tree.
+  if (!solver_->CheckConstraint(solver_->MakeTrueConstraint())) {
+    status_ = RoutingSearchStatus::ROUTING_INFEASIBLE;
+    return nullptr;
+  }
+
+  if (!UpdateLimits(parameters, *start_time_ms)) {
+    status_ = RoutingSearchStatus::ROUTING_FAIL_TIMEOUT;
+    return nullptr;
+  }
+
+  // Inserting nodes with LCI, using filter costs.
+  if (insertion_db_ == nullptr) {
+    DCHECK_EQ(insertion_assignment_, nullptr);
+    insertion_assignment_ = solver_->MakeAssignment();
+    std::vector<DecisionBuilder*> first_solution_dbs;
+    for (bool filter_with_cp_solver : {false, true}) {
+      first_solution_dbs.push_back(
+          CreateRoutingFilteredDecisionBuilderWithRoutes<
+              LocalCheapestInsertionFilteredHeuristic>(
+              [this](int64_t i) {
+                return insertion_assignment_->Value(NextVar(i));
+              },
+              /*evaluator=*/nullptr,
+              parameters.local_cheapest_insertion_parameters(),
+              GetOrCreateLocalSearchFilterManager(
+                  parameters,
+                  {/*filter_objective=*/true, filter_with_cp_solver}),
+              /*use_first_solution_hint=*/false, bin_capacities_.get(),
+              /*optimize_on_insertion=*/nullptr));
+    }
+    DecisionBuilder* const first_solution_db =
+        solver_->MakeSolveOnce(solver_->Try(first_solution_dbs));
+    SearchLimit* first_solution_lns_limit =
+        GetOrCreateFirstSolutionLargeNeighborhoodSearchLimit();
+    DecisionBuilder* const first_solution_sub_decision_builder =
+        solver_->MakeSolveOnce(CreateSolutionFinalizer(parameters),
+                               first_solution_lns_limit);
+    insertion_db_ = solver_->Compose(first_solution_db,
+                                     first_solution_sub_decision_builder);
+  }
+
+  // Check malformed routes and close open routes.
+  insertion_assignment_->Copy(&assignment);
+  std::vector<bool> visited(Nexts().size(), false);
+  for (int vehicle = 0; vehicle < vehicles(); ++vehicle) {
+    int64_t current = Start(vehicle);
+    while (!IsEnd(current)) {
+      if (visited[current]) return nullptr;
+      visited[current] = true;
+      if (!insertion_assignment_->Contains(NextVar(current))) {
+        insertion_assignment_->Add(NextVar(current))->SetValue(End(vehicle));
+      }
+      current = insertion_assignment_->Value(NextVar(current));
+    }
+    // The route ending at another vehicle's end node.
+    if (current != End(vehicle)) return nullptr;
+  }
+  for (int i = 0; i < Nexts().size(); ++i) {
+    if (!visited[i] && insertion_assignment_->Contains(NextVar(i))) {
+      if (!insertion_assignment_->Bound(NextVar(i)) ||
+          insertion_assignment_->Value(NextVar(i)) != i) {
+        return nullptr;
+      }
+    }
+  }
+
+  solver_->Solve(insertion_db_, monitors_);
+  if (collect_assignments_->has_solution()) {
+    status_ = RoutingSearchStatus::ROUTING_SUCCESS;
+  } else {
+    UpdateStatusOnFailure(parameters, *start_time_ms);
+  }
+  return collect_assignments_->last_solution_or_null();
 }
 
 const Assignment* Model::SolveFromAssignmentsWithParameters(
     const std::vector<const Assignment*>& assignments,
     const RoutingSearchParameters& parameters,
     std::vector<const Assignment*>* solutions) {
-  const int64_t start_time_ms = solver_->wall_time();
-  QuietCloseModelWithParameters(parameters);
-  UpdateSearchFromParametersIfNeeded(parameters);
+  const std::optional<int64_t> start_time_ms = InitializeSearch(parameters);
+  if (!start_time_ms.has_value()) return nullptr;
   if (solutions != nullptr) solutions->clear();
-  if (status_ == RoutingSearchStatus::ROUTING_INVALID) {
-    return nullptr;
-  }
-  status_ = RoutingSearchStatus::ROUTING_NOT_SOLVED;
 
   // Detect infeasibilities at the root of the search tree.
   if (!solver_->CheckConstraint(solver_->MakeTrueConstraint())) {
@@ -3318,33 +3466,7 @@ const Assignment* Model::SolveFromAssignmentsWithParameters(
   const bool perform_secondary_ls =
       GetTimeLimit(parameters) != absl::InfiniteDuration() &&
       parameters.secondary_ls_time_limit_ratio() > 0;
-  const auto update_time_limits =
-      [this, start_time_ms, perform_secondary_ls,
-       &parameters](bool leave_secondary_solve_buffer = true) {
-        const absl::Duration elapsed_time =
-            absl::Milliseconds(solver_->wall_time() - start_time_ms);
-        const absl::Duration time_left =
-            GetTimeLimit(parameters) - elapsed_time;
-
-        if (time_left < absl::ZeroDuration()) return false;
-
-        const absl::Duration secondary_solve_buffer =
-            !leave_secondary_solve_buffer || !perform_secondary_ls
-                ? absl::ZeroDuration()
-                : parameters.secondary_ls_time_limit_ratio() * time_left;
-        const absl::Duration time_limit = time_left - secondary_solve_buffer;
-        limit_->UpdateLimits(time_limit, std::numeric_limits<int64_t>::max(),
-                             std::numeric_limits<int64_t>::max(),
-                             parameters.solution_limit());
-        DCHECK_NE(ls_limit_, nullptr);
-        ls_limit_->UpdateLimits(time_limit, std::numeric_limits<int64_t>::max(),
-                                std::numeric_limits<int64_t>::max(), 1);
-        // TODO(user): Come up with a better formula. Ideally this should be
-        // calibrated in the first solution strategies.
-        time_buffer_ = std::min(absl::Seconds(1), time_limit * 0.05);
-        return true;
-      };
-  if (!update_time_limits()) {
+  if (!UpdateLimits(parameters, *start_time_ms)) {
     status_ = RoutingSearchStatus::ROUTING_FAIL_TIMEOUT;
     return nullptr;
   }
@@ -3373,10 +3495,11 @@ const Assignment* Model::SolveFromAssignmentsWithParameters(
   local_optimum_reached_ = false;
   objective_lower_bound_ = kint64min;
   if (parameters.use_cp() == BOOL_TRUE) {
-    const auto run_secondary_ls = [this, perform_secondary_ls,
-                                   &update_time_limits]() {
+    const auto run_secondary_ls = [this, perform_secondary_ls, &parameters,
+                                   &start_time_ms]() {
       if (collect_assignments_->has_solution() && perform_secondary_ls &&
-          update_time_limits(/*leave_secondary_solve_buffer=*/false)) {
+          UpdateLimits(parameters, *start_time_ms,
+                       /*leave_secondary_solve_buffer=*/false)) {
         assignment_->CopyIntersection(
             collect_assignments_->last_solution_or_null());
         solver_->Solve(secondary_ls_db_, secondary_ls_monitors_);
@@ -3388,11 +3511,12 @@ const Assignment* Model::SolveFromAssignmentsWithParameters(
         Assignment matching(solver_.get());
         // TODO(user): Pass time limits to the flow.
         if (SolveMatchingModel(&matching, parameters) &&
-            update_time_limits(/*leave_secondary_solve_buffer=*/false) &&
+            UpdateLimits(parameters, *start_time_ms,
+                         /*leave_secondary_solve_buffer=*/false) &&
             AppendAssignmentIfFeasible(matching, &solution_pool)) {
           if (parameters.log_search()) {
             LogSolution(parameters, "Min-Cost Flow Solution",
-                        solution_pool.back()->ObjectiveValue(), start_time_ms);
+                        solution_pool.back()->ObjectiveValue(), *start_time_ms);
           }
           solution_found = true;
           local_optimum_reached_ = true;
@@ -3403,14 +3527,15 @@ const Assignment* Model::SolveFromAssignmentsWithParameters(
         // solver does not manage to build something better.
         Assignment unperformed(solver_.get());
         MakeAllUnperformedInAssignment(this, &unperformed);
-        if (update_time_limits(/*leave_secondary_solve_buffer=*/false) &&
+        if (UpdateLimits(parameters, *start_time_ms,
+                         /*leave_secondary_solve_buffer=*/false) &&
             AppendAssignmentIfFeasible(unperformed, &solution_pool, false) &&
             parameters.log_search()) {
           LogSolution(parameters, "All Unperformed Solution",
-                      solution_pool.back()->ObjectiveValue(), start_time_ms);
+                      solution_pool.back()->ObjectiveValue(), *start_time_ms);
         }
         local_optimum_reached_ = false;
-        if (update_time_limits()) {
+        if (UpdateLimits(parameters, *start_time_ms)) {
           solver_->Solve(solve_db_, monitors_);
           run_secondary_ls();
         }
@@ -3421,12 +3546,12 @@ const Assignment* Model::SolveFromAssignmentsWithParameters(
         solver_->Solve(improve_db_, monitors_);
         run_secondary_ls();
         if (collect_assignments_->solution_count() >= 1 ||
-            !update_time_limits()) {
+            !UpdateLimits(parameters, *start_time_ms)) {
           break;
         }
       }
-      if (collect_assignments_->solution_count() == 0 && update_time_limits() &&
-          hint_ != nullptr) {
+      if (collect_assignments_->solution_count() == 0 &&
+          UpdateLimits(parameters, *start_time_ms) && hint_ != nullptr) {
         solver_->Solve(solve_db_, monitors_);
         run_secondary_ls();
       }
@@ -3438,7 +3563,8 @@ const Assignment* Model::SolveFromAssignmentsWithParameters(
           ? collect_secondary_ls_assignments_
           : collect_assignments_;
 
-  if (update_time_limits(/*leave_secondary_solve_buffer=*/false) &&
+  if (UpdateLimits(parameters, *start_time_ms,
+                   /*leave_secondary_solve_buffer=*/false) &&
       (parameters.use_cp_sat() == BOOL_TRUE ||
        parameters.use_generalized_cp_sat() == BOOL_TRUE ||
        (parameters.fallback_to_cp_sat_size_threshold() >= Size() &&
@@ -3448,11 +3574,12 @@ const Assignment* Model::SolveFromAssignmentsWithParameters(
     Assignment sat_solution(solver_.get());
     if (SolveModelWithSat(this, &search_stats_, parameters, cp_solution,
                           &sat_solution) &&
-        update_time_limits(/*leave_secondary_solve_buffer=*/false) &&
+        UpdateLimits(parameters, *start_time_ms,
+                     /*leave_secondary_solve_buffer=*/false) &&
         AppendAssignmentIfFeasible(sat_solution, &solution_pool)) {
       if (parameters.log_search()) {
         LogSolution(parameters, "SAT", solution_pool.back()->ObjectiveValue(),
-                    start_time_ms);
+                    *start_time_ms);
       }
       local_optimum_reached_ = true;
       if (sat_solution.HasObjective()) {
@@ -3462,8 +3589,6 @@ const Assignment* Model::SolveFromAssignmentsWithParameters(
     }
   }
   VLOG(1) << "Objective lower bound: " << objective_lower_bound_;
-  const absl::Duration elapsed_time =
-      absl::Milliseconds(solver_->wall_time() - start_time_ms);
 
   if (solution_collector->has_solution() || !solution_pool.empty()) {
     status_ = local_optimum_reached_
@@ -3529,11 +3654,7 @@ const Assignment* Model::SolveFromAssignmentsWithParameters(
     }
     return solver_->MakeAssignment(best_assignment);
   } else {
-    if (elapsed_time >= GetTimeLimit(parameters)) {
-      status_ = RoutingSearchStatus::ROUTING_FAIL_TIMEOUT;
-    } else {
-      status_ = RoutingSearchStatus::ROUTING_FAIL;
-    }
+    UpdateStatusOnFailure(parameters, *start_time_ms);
     return nullptr;
   }
 }
@@ -3570,10 +3691,12 @@ const Assignment* Model::SolveWithIteratedLocalSearch(
                                           {/*filter_objective=*/false,
                                            /*filter_with_cp_solver=*/false});
 
+  IteratedLocalSearchEventManager event_manager;
+
   std::mt19937 rnd(/*seed=*/0);
 
   DecisionBuilder* perturbation_db = MakePerturbationDecisionBuilder(
-      parameters, this, &rnd, last_accepted_solution,
+      parameters, this, &event_manager, &rnd, last_accepted_solution,
       [this]() { return CheckLimit(time_buffer_); }, filter_manager);
 
   // TODO(user): This lambda can probably be refactored into a function as a
@@ -3610,13 +3733,15 @@ const Assignment* Model::SolveWithIteratedLocalSearch(
 
   std::unique_ptr<NeighborAcceptanceCriterion> reference_acceptance_criterion =
       MakeNeighborAcceptanceCriterion(
-          *this, ils_parameters.reference_solution_acceptance_policy(),
+          *this, &event_manager,
+          ils_parameters.reference_solution_acceptance_policy(),
           final_search_state, &rnd);
 
   std::unique_ptr<NeighborAcceptanceCriterion> best_acceptance_criterion =
       MakeNeighborAcceptanceCriterion(
-          *this, ils_parameters.best_solution_acceptance_policy(),
-          final_search_state, &rnd);
+          *this, &event_manager,
+          ils_parameters.best_solution_acceptance_policy(), final_search_state,
+          &rnd);
 
   const bool improve_perturbed_solution =
       ils_parameters.improve_perturbed_solution();
@@ -3644,6 +3769,8 @@ const Assignment* Model::SolveWithIteratedLocalSearch(
       }
     }
 
+    event_manager.OnLocalOptimumReached(neighbor_solution);
+
     absl::Duration elapsed_time =
         absl::Milliseconds(solver_->wall_time() - start_time_ms);
 
@@ -3659,6 +3786,7 @@ const Assignment* Model::SolveWithIteratedLocalSearch(
       // reference assignment. By updating last_accepted_solution here we thus
       // also keep the perturbation_db reference assignment up to date.
       last_accepted_solution->CopyIntersection(neighbor_solution);
+      event_manager.OnReferenceSolutionUpdated(last_accepted_solution);
     }
   }
 
@@ -6187,6 +6315,16 @@ IntVarFilteredDecisionBuilder* Model::CreateIntVarFilteredDecisionBuilder(
           this, [this]() { return CheckLimit(time_buffer_); }, args...)));
 }
 
+template <typename Heuristic, typename... Args>
+RoutingFilteredDecisionBuilder*
+Model::CreateRoutingFilteredDecisionBuilderWithRoutes(
+    std::function<int64_t(int64_t)> next_accessor, const Args&... args) {
+  return solver_->RevAlloc(new RoutingFilteredDecisionBuilder(
+      std::make_unique<Heuristic>(
+          this, [this]() { return CheckLimit(time_buffer_); }, args...),
+      std::move(next_accessor)));
+}
+
 LocalSearchPhaseParameters* Model::CreateLocalSearchParameters(
     const RoutingSearchParameters& search_parameters, bool secondary_ls) {
   SearchLimit* lns_limit = GetOrCreateLargeNeighborhoodSearchLimit();
@@ -6626,6 +6764,7 @@ Dimension::Dimension(Model* model, std::vector<int64_t> vehicle_capacities,
                                     std::numeric_limits<int64_t>::max());
   vehicle_span_cost_coefficients_.assign(model->vehicles(), 0);
   vehicle_slack_cost_coefficients_.assign(model->vehicles(), 0);
+  vehicle_span_vars_.resize(model->vehicles(), nullptr);
 }
 
 Dimension::Dimension(Model* model, std::vector<int64_t> vehicle_capacities,

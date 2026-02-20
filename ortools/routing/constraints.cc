@@ -263,6 +263,10 @@ class ResourceAssignmentConstraint : public Constraint {
       dim->CumulVar(model_.End(vehicle))
           ->SetRange(attributes.end_domain().Min(),
                      attributes.end_domain().Max());
+      if (attributes.span_upper_bound() < std::numeric_limits<int64_t>::max()) {
+        dim->vehicle_span_variables()[vehicle]->SetMax(
+            attributes.span_upper_bound());
+      }
     }
   }
 
