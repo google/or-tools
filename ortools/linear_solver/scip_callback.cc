@@ -20,8 +20,8 @@
 #include <utility>
 #include <vector>
 
+#include "absl/log/check.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/scip_helper_macros.h"
 #include "scip/cons_linear.h"

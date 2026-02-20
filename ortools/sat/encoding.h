@@ -28,7 +28,6 @@
 
 #include "absl/log/check.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
 #include "ortools/sat/boolean_problem.pb.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/model.h"

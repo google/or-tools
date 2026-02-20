@@ -34,7 +34,6 @@
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/hash.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/glop/variables_info.h"
 #include "ortools/lp_data/lp_types.h"

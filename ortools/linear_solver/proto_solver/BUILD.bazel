@@ -76,7 +76,6 @@ cc_library(
     srcs = ["pdlp_proto_solver.cc"],
     hdrs = ["pdlp_proto_solver.h"],
     deps = [
-        "//ortools/base:logging",
         "//ortools/base:status_macros",
         "//ortools/linear_solver:linear_solver_cc_proto",
         "//ortools/linear_solver:model_validator",
@@ -87,6 +86,7 @@ cc_library(
         "//ortools/pdlp:solvers_cc_proto",
         "//ortools/port:proto_utils",
         "//ortools/util:lazy_mutable_copy",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status:statusor",
     ],
 )
@@ -143,8 +143,9 @@ cc_library(
     srcs = ["scip_params.cc"],
     hdrs = ["scip_params.h"],
     deps = [
-        "//ortools/base",
         "//ortools/linear_solver:scip_helper_macros",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",

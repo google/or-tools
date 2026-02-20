@@ -24,7 +24,7 @@ cc_test(
     deps = [
         "//ortools/algorithms:knapsack_solver_lib",
         "//ortools/base",
-        "@abseil-cpp//absl/base:log_severity",
+        "//ortools/base:log_severity",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:globals",
     ],
@@ -43,7 +43,8 @@ cc_test(
     deps = [
         "//ortools/algorithms:knapsack_solver_lib",
         "//ortools/base",
-        "@abseil-cpp//absl/base:log_severity",
+        "//ortools/base:log_severity",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:globals",
     ],
 )

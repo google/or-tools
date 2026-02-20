@@ -331,7 +331,7 @@ inline void CapSubFrom(int64_t amount, int64_t* target) {
 
 inline int64_t CapProd(int64_t x, int64_t y) {
 #if defined(__GNUC__) && defined(__x86_64__)
-  // On x86_64, the product of two 64-bit registeres is a 128-bit integer,
+  // On x86_64, the product of two 64-bit registers is a 128-bit integer,
   // stored in two 64-bit registers. It's the carry flag that is set when the
   // result exceeds 64 bits, not the overflow flag. We therefore have to resort
   // to the assembly-based version of the code.

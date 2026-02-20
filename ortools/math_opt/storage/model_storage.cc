@@ -26,6 +26,7 @@
 #include "absl/memory/memory.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/status_macros.h"
@@ -259,6 +260,13 @@ void ModelStorage::AddAuxiliaryObjectives(
       set_linear_objective_coefficient(id, VariableId(raw_var_id), coeff);
     }
   }
+}
+
+std::string ModelStorage::ModelSizeDebugString() const {
+  // If you want the objective size in this string, please just add it.
+  return absl::StrFormat("%d vars, %d lin. constraints with %d non-zeros",
+                         num_variables(), num_linear_constraints(),
+                         linear_constraint_matrix().size());
 }
 
 // TODO: b/315974557 - Return an error if any of the Proto() methods called

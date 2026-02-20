@@ -20,7 +20,7 @@
 #include <cstdint>
 
 #include "absl/container/flat_hash_map.h"
-#include "ortools/base/logging.h"
+#include "absl/log/check.h"
 #include "ortools/math_opt/constraints/quadratic/quadratic_constraint.h"
 #include "ortools/math_opt/cpp/basis_status.h"
 #include "ortools/math_opt/cpp/linear_constraint.h"

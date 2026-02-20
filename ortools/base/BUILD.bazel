@@ -54,7 +54,6 @@ cc_library(
     }),
     deps = [
         ":commandlineflags",
-        ":logging",
         ":types",
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/flags:parse",
@@ -197,7 +196,7 @@ cc_library(
     hdrs = ["gzipfile.h"],
     deps = [
         ":file",
-        ":logging",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/strings:string_view",
         "@zlib",
     ],
@@ -207,7 +206,6 @@ cc_library(
     name = "gzipstring",
     hdrs = ["gzipstring.h"],
     deps = [
-        ":logging",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/strings:string_view",
         "@zlib",
@@ -240,39 +238,18 @@ cc_library(
     name = "linked_hash_map",
     hdrs = ["linked_hash_map.h"],
     deps = [
-        "//ortools/base",
+        "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/container:common",
         "@abseil-cpp//absl/container:flat_hash_set",
-    ],
-)
-
-cc_library(
-    name = "logging",
-    srcs = ["logging.cc"],
-    hdrs = ["logging.h"],
-    deps = [
-        ":base_export",
-        "@abseil-cpp//absl/base:core_headers",
-        "@abseil-cpp//absl/base:log_severity",
-        "@abseil-cpp//absl/flags:flag",
-        "@abseil-cpp//absl/flags:usage",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
-        "@abseil-cpp//absl/log:die_if_null",
-        "@abseil-cpp//absl/log:globals",
-        "@abseil-cpp//absl/log:initialize",
-        "@abseil-cpp//absl/log:vlog_is_on",
-        "@abseil-cpp//absl/memory",
-        "@abseil-cpp//absl/status",
-        "@abseil-cpp//absl/strings",
-        "@abseil-cpp//absl/strings:string_view",
     ],
 )
 
 cc_library(
     name = "map_util",
     hdrs = ["map_util.h"],
-    deps = ["//ortools/base:logging"],
+    deps = ["@abseil-cpp//absl/log:check"],
 )
 
 cc_library(
@@ -280,7 +257,6 @@ cc_library(
     srcs = ["mathutil.cc"],
     hdrs = ["mathutil.h"],
     deps = [
-        "//ortools/base:logging",
         "@abseil-cpp//absl/base",
         "@abseil-cpp//absl/log:check",
     ],
@@ -443,12 +419,12 @@ cc_test(
     timeout = "long",
     srcs = ["strong_int_test.cc"],
     deps = [
-        ":logging",
         ":strong_int",
         "//ortools/base:gmock_main",
         "@abseil-cpp//absl/container:node_hash_map",
         "@abseil-cpp//absl/flags:marshalling",
         "@abseil-cpp//absl/hash:hash_testing",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/numeric:int128",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
@@ -460,7 +436,7 @@ cc_library(
     hdrs = ["strong_vector.h"],
     deps = [
         ":intops",
-        "//ortools/base:logging",
+        "@abseil-cpp//absl/log:check",
     ],
 )
 
@@ -543,7 +519,6 @@ cc_library(
 cc_library(
     name = "top_n",
     hdrs = ["top_n.h"],
-    deps = [":logging"],
 )
 
 cc_library(
@@ -556,9 +531,15 @@ cc_library(
     srcs = ["zipfile.cc"],
     hdrs = ["zipfile.h"],
     deps = [
-        ":file",
-        ":logging",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/strings:string_view",
-        "@zlib",
+    ],
+)
+
+cc_library(
+    name = "log_severity",
+    hdrs = ["log_severity.h"],
+    deps = [
+        "@abseil-cpp//absl/base:log_severity",
     ],
 )

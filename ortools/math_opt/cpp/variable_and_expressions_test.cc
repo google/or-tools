@@ -310,7 +310,7 @@ MATCHER_P4(BoundedQuadraticExpressionEquiv, lower_bound, quadratic_terms,
         {term.GetKey(), negation ? -term.coefficient() : term.coefficient()});
   }
   return ExplainMatchResult(ContainerEq(expected_linear_terms),
-                            arg.expression.linear_terms(), result_listener) &
+                            arg.expression.linear_terms(), result_listener) &&
          ExplainMatchResult(ContainerEq(expected_quadratic_terms),
                             arg.expression.quadratic_terms(), result_listener);
 }

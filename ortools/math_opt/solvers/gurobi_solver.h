@@ -302,7 +302,7 @@ class GurobiSolver : public SolverInterface {
   absl::Status ResetQuadraticObjectiveTerms(
       const SparseDoubleMatrixProto& terms);
   // Updates objective so that it is the sum of everything in terms, plus all
-  // other terms prexisting in the objective that are not overwritten by terms.
+  // other terms preexisting in the objective that are not overwritten by terms.
   absl::Status UpdateQuadraticObjectiveTerms(
       const SparseDoubleMatrixProto& terms);
   absl::Status LoadModel(const ModelProto& input_model);

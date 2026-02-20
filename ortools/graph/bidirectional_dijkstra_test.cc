@@ -20,13 +20,13 @@
 #include <utility>
 #include <vector>
 
-#include "absl/base/log_severity.h"
 #include "absl/random/distributions.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/iterator_adaptors.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/graph/bounded_dijkstra.h"
 #include "ortools/graph_base/graph.h"
 

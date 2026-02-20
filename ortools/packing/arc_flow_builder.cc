@@ -20,11 +20,9 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
-#include "absl/strings/str_cat.h"
-#include "absl/strings/str_join.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/types/span.h"
-#include "ortools/base/commandlineflags.h"
-#include "ortools/base/map_util.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/graph_base/topologicalsorter.h"
 

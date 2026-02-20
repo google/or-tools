@@ -23,7 +23,6 @@ pybind_extension(
     srcs = ["model_builder_helper.cc"],
     visibility = ["//visibility:public"],
     deps = [
-        "//ortools/base:logging",
         "//ortools/linear_solver:linear_solver_cc_proto",
         "//ortools/linear_solver:model_exporter",
         "//ortools/linear_solver/wrappers:model_builder_helper",
@@ -48,6 +47,7 @@ py_test(
         requirement("absl-py"),
         requirement("numpy"),
         requirement("scipy"),
+        "//ortools/linear_solver:linear_solver_glop",
         "//ortools/linear_solver:linear_solver_py_pb2",
     ],
 )
@@ -88,6 +88,7 @@ py_test(
         requirement("absl-py"),
         requirement("numpy"),
         requirement("pandas"),
+        "//ortools/linear_solver:linear_solver_glop",
         "//ortools/linear_solver:linear_solver_py_pb2",
     ],
 )

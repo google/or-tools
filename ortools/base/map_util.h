@@ -16,7 +16,7 @@
 
 #include <utility>
 
-#include "ortools/base/logging.h"
+#include "absl/log/check.h"
 
 namespace gtl {
 template <typename M>

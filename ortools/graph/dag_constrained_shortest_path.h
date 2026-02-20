@@ -20,10 +20,10 @@
 #include <vector>
 
 #include "absl/algorithm/container.h"
-#include "absl/base/log_severity.h"
 #include "absl/log/check.h"
 #include "absl/strings/str_format.h"
 #include "absl/types/span.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/base/threadpool.h"
 #include "ortools/graph/dag_shortest_path.h"
 #include "ortools/graph_base/graph.h"

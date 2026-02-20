@@ -20,7 +20,6 @@
 #include "absl/log/check.h"
 #include "absl/strings/str_join.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
 #include "ortools/sat/cumulative_energy.h"
 #include "ortools/sat/disjunctive.h"
 #include "ortools/sat/integer.h"

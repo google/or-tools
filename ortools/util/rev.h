@@ -20,7 +20,7 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
-#include "ortools/base/logging.h"
+#include "absl/log/check.h"
 #include "ortools/base/strong_vector.h"
 
 namespace operations_research {

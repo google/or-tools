@@ -50,6 +50,7 @@
 #include "absl/time/time.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/base/accurate_sum.h"
+#include "ortools/base/macros/os_support.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/threadpool.h"
@@ -2190,15 +2191,17 @@ int MPSolverParameters::GetIntegerParam(
 std::string MPSolver::GetMPModelRequestLoggingInfo(
     const MPModelRequest& request) {
   std::string out;
-#if !defined(__PORTABLE_PLATFORM__)
+#if defined(ORTOOLS_TARGET_OS_SUPPORTS_PROTO_DESCRIPTOR)
+  static_assert(kTargetOsSupportsProtoDescriptor);
   MPModelRequest abbreviated_request;
   abbreviated_request = request;
   abbreviated_request.clear_model();
   abbreviated_request.clear_model_delta();
   google::protobuf::TextFormat::PrintToString(abbreviated_request, &out);
-#else   // __PORTABLE_PLATFORM__
-  out = "<Info unavailable because: __PORTABLE_PLATFORM__>\n";
-#endif  // __PORTABLE_PLATFORM__
+#else   // ORTOOLS_TARGET_OS_SUPPORTS_PROTO_DESCRIPTOR
+  static_assert(!kTargetOsSupportsProtoDescriptor);
+  out = "<Info unavailable because proto descriptor is not supported.>\n";
+#endif  // ORTOOLS_TARGET_OS_SUPPORTS_PROTO_DESCRIPTOR
   if (request.model().has_name()) {
     absl::StrAppendFormat(&out, "model_name: '%s'\n", request.model().name());
   }

@@ -17,7 +17,7 @@
 #include <string>
 #include <vector>
 
-#include "ortools/base/logging.h"
+#include "absl/log/check.h"
 #include "ortools/glop/lu_factorization.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/glop/rank_one_update.h"

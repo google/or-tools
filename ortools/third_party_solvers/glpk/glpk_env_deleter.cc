@@ -13,7 +13,8 @@
 
 #include "ortools/third_party_solvers/glpk/glpk_env_deleter.h"
 
-#include "ortools/base/logging.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 
 extern "C" {
 #include <glpk.h>

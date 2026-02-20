@@ -23,7 +23,7 @@ cc_library(
         "//conditions:default": [],
     }),
     deps = [
-        "//ortools/base:logging",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings:string_view",
     ],
 )
@@ -34,8 +34,9 @@ cc_library(
     hdrs = ["gurobi_environment.h"],
     deps = [
         ":dynamic_library",
-        "//ortools/base",
         "@abseil-cpp//absl/base:no_destructor",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:string_view",
@@ -52,6 +53,7 @@ cc_library(
         "//ortools/base:status_builder",
         "@abseil-cpp//absl/base",
         "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/synchronization",

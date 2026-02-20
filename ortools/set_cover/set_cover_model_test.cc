@@ -17,6 +17,7 @@
 #include <vector>
 
 #include "absl/log/log.h"
+#include "absl/random/random.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/set_cover/base_types.h"

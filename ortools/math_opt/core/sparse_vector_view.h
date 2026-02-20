@@ -52,9 +52,9 @@
 #include <utility>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "google/protobuf/message.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/types.h"
 #include "ortools/math_opt/core/arrow_operator_proxy.h"  // IWYU pragma: export

@@ -22,7 +22,6 @@
 #include <utility>
 #include <vector>
 
-#include "absl/base/log_severity.h"
 #include "absl/cleanup/cleanup.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
@@ -32,6 +31,7 @@
 #include "absl/numeric/int128.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/enforcement.h"
 #include "ortools/sat/integer.h"

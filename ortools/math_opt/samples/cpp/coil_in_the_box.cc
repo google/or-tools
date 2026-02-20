@@ -142,12 +142,12 @@
 
 #include "absl/algorithm/container.h"
 #include "absl/flags/flag.h"
+#include "absl/log/check.h"
 #include "absl/status/status.h"
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
 #include "base/context.h"
 #include "ortools/base/init_google.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/base/strong_int.h"
 #include "ortools/base/strong_vector.h"

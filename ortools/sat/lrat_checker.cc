@@ -23,9 +23,11 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
+#include "absl/log/vlog_is_on.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "absl/types/span.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/util/bitset.h"
 

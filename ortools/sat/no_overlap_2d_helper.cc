@@ -18,11 +18,11 @@
 #include <utility>
 #include <vector>
 
-#include "absl/base/log_severity.h"
 #include "absl/base/optimization.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/types/span.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/sat/2d_rectangle_presolve.h"
 #include "ortools/sat/debug_solution.h"
 #include "ortools/sat/diffn_util.h"

@@ -42,7 +42,6 @@
 #include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "google/protobuf/repeated_ptr_field.h"
-#include "ortools/base/linked_hash_map.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/protoutil.h"
 #include "ortools/base/status_macros.h"
@@ -74,6 +73,19 @@
 namespace operations_research {
 namespace math_opt {
 namespace {
+
+// In Gurobi, infinite bounds are converted to finite bounds of value
+// ±GRB_INFINITY (±1e100). But it actually ignores finite bounds which absolute
+// value is greater than kGurobiInfBound (1e20).
+//
+// For linear constraint we reject bounds that would be considered infinite.
+//
+// TODO: b/474064903 - Reject variables with bounds that would be considered
+//       infinite.
+//
+// Here we simply want to make sure kGurobiInfBound is indeed a finite value
+// from the point of view of GRB_INFINITY.
+static_assert(kGurobiInfBound < GRB_INFINITY);
 
 constexpr SupportedProblemStructures kGurobiSupportedStructures = {
     .integer_variables = SupportType::kSupported,
@@ -476,10 +488,18 @@ std::vector<std::string> TruncateNames(
   return result;
 }
 
-absl::Status SafeGurobiDouble(const double d) {
-  if (std::isfinite(d) && std::abs(d) >= GRB_INFINITY) {
+// Returns an error if the input value is not safe as a bound value for a
+// variable or a constraint, that is when d if finite but abs(d) >=
+// kGurobiInfBound.
+//
+// Note that here `d` is expected to be the MathOpt value of the bound as Gurobi
+// converts infinite bounds to ±GRB_INFINITY, which are finite values.
+//
+// See kGurobiInfBound documentation for details.
+absl::Status SafeGurobiBound(const double d) {
+  if (std::isfinite(d) && std::abs(d) >= kGurobiInfBound) {
     return util::InvalidArgumentErrorBuilder()
-           << "finite value: " << d << " will be treated as infinite by Gurobi";
+           << "finite bound: " << d << " will be treated as infinite by Gurobi";
   }
   return absl::OkStatus();
 }
@@ -1666,6 +1686,21 @@ absl::Status GurobiSolver::AddNewVariables(
   std::vector<char> variable_type(num_new_variables);
   for (int j = 0; j < num_new_variables; ++j) {
     const VariableId id = new_variables.ids(j);
+    // Reject bounds that would be ignored (considered infinite) by Gurobi.
+    //
+    // Note that contrary to equality constraints (constraints with identical
+    // finite bounds), where Gurobi accept values outside [-kGurobiInfBound,
+    // kGurobiInfBound], variable bounds outside this range are discarded and
+    // replaced by GRB_INFINITY. So there is no need to have a special case
+    // here.
+    RETURN_IF_ERROR(SafeGurobiBound(new_variables.lower_bounds(j)))
+        << "lower bound for variable " << id << ": "
+        << EscapedNameForLogging(
+               new_variables.names().empty() ? "" : new_variables.names(j));
+    RETURN_IF_ERROR(SafeGurobiBound(new_variables.upper_bounds(j)))
+        << "upper bound for variable " << id << ": "
+        << EscapedNameForLogging(
+               new_variables.names().empty() ? "" : new_variables.names(j));
     gtl::InsertOrDie(&variables_map_, id, j + num_gurobi_variables_);
     variable_type[j] = new_variables.integers(j) ? GRB_INTEGER : GRB_CONTINUOUS;
   }
@@ -1822,11 +1857,19 @@ absl::Status GurobiSolver::AddNewLinearConstraints(
         gtl::InsertKeyOrDie(&linear_constraints_map_, id);
     const double lb = constraints.lower_bounds(i);
     const double ub = constraints.upper_bounds(i);
-    RETURN_IF_ERROR(SafeGurobiDouble(lb))
+    // Note that here we reject cases where:
+    // * lb = ub
+    // * and kGurobiInfBound ≤ abs(lb) < GRB_INFINITY.
+    //
+    // Gurobi would accept those values though (as these would be RHS values of
+    // equality constraints). But to support this use-case properly, we would
+    // need to test for bounds before solving instead of testing them here as
+    // updates could make bounds equal or different later.
+    RETURN_IF_ERROR(SafeGurobiBound(lb))
         << "lower bound for linear constraint " << id << ": "
         << EscapedNameForLogging(
                constraints.names().empty() ? "" : constraints.names(i));
-    RETURN_IF_ERROR(SafeGurobiDouble(ub))
+    RETURN_IF_ERROR(SafeGurobiBound(ub))
         << "upper bound for linear constraint " << id << ": "
         << EscapedNameForLogging(
                constraints.names().empty() ? "" : constraints.names(i));
@@ -1883,10 +1926,11 @@ absl::Status GurobiSolver::AddNewQuadraticConstraints(
     double rhs = 0.0;
     const double lb = constraint.lower_bound();
     const double ub = constraint.upper_bound();
-    RETURN_IF_ERROR(SafeGurobiDouble(lb))
+    // See comment in AddNewLinearConstraints() about case where lb == ub.
+    RETURN_IF_ERROR(SafeGurobiBound(lb))
         << "lower bound for quadratic constraint " << id << ": "
         << EscapedNameForLogging(constraint.name());
-    RETURN_IF_ERROR(SafeGurobiDouble(ub))
+    RETURN_IF_ERROR(SafeGurobiBound(ub))
         << "upper bound for quadratic constraint " << id << ": "
         << EscapedNameForLogging(constraint.name());
     const bool lb_is_grb_neg_inf = lb <= -GRB_INFINITY;
@@ -2086,10 +2130,11 @@ absl::Status GurobiSolver::AddNewIndicatorConstraints(
     double rhs = 0.0;
     const double lb = constraint.lower_bound();
     const double ub = constraint.upper_bound();
-    RETURN_IF_ERROR(SafeGurobiDouble(lb))
+    // See comment in AddNewLinearConstraints() about case where lb == ub.
+    RETURN_IF_ERROR(SafeGurobiBound(lb))
         << "lower bound for indicator constraint " << id << ": "
         << EscapedNameForLogging(constraint.name());
-    RETURN_IF_ERROR(SafeGurobiDouble(ub))
+    RETURN_IF_ERROR(SafeGurobiBound(ub))
         << "upper bound for indicator constraint " << id << ": "
         << EscapedNameForLogging(constraint.name());
     const bool lb_is_grb_neg_inf = lb <= -GRB_INFINITY;
@@ -2340,6 +2385,15 @@ absl::Status GurobiSolver::UpdateLinearConstraints(
         ((update_data.source.upper_bound >= GRB_INFINITY) &&
          (update_data.new_upper_bound >= GRB_INFINITY));
     if (same_upper_bound && same_lower_bound) continue;
+
+    // Validate the new bounds.
+    //
+    // See comment in AddNewLinearConstraints() about case where lb == ub.
+    RETURN_IF_ERROR(SafeGurobiBound(update_data.new_lower_bound))
+        << "lower bound for linear constraint " << update_data.constraint_id;
+    RETURN_IF_ERROR(SafeGurobiBound(update_data.new_upper_bound))
+        << "upper bound for linear constraint " << update_data.constraint_id;
+
     // Save into linear_constraints_map_[id] the new bounds for the linear
     // constraint.
     update_data.source.lower_bound = update_data.new_lower_bound;
@@ -2594,6 +2648,16 @@ absl::StatusOr<bool> GurobiSolver::Update(
 
   RETURN_IF_ERROR(UpdateQuadraticObjectiveTerms(
       model_update.objective_updates().quadratic_coefficients()));
+
+  // Validate the new bounds.
+  for (const auto [id, lb] :
+       MakeView(model_update.variable_updates().lower_bounds())) {
+    RETURN_IF_ERROR(SafeGurobiBound(lb)) << "lower bound for variable " << id;
+  }
+  for (const auto [id, ub] :
+       MakeView(model_update.variable_updates().upper_bounds())) {
+    RETURN_IF_ERROR(SafeGurobiBound(ub)) << "upper bound for variable " << id;
+  }
 
   RETURN_IF_ERROR(
       UpdateDoubleListAttribute(model_update.variable_updates().lower_bounds(),
