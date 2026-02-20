@@ -15,6 +15,9 @@ syntax = "proto3";
 
 package operations_research;
 
+option java_package = "com.google.ortools";
+option java_multiple_files = true;
+
 // Contains both the "SCIP parameters" and gSCIP only configuration. For the
 // SCIP parameters, the order of application is:
 //   1. Emphasis
