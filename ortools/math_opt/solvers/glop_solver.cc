@@ -59,7 +59,6 @@
 #include "ortools/math_opt/solution.pb.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
 #include "ortools/math_opt/validators/callback_validator.h"
-#include "ortools/port/proto_utils.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/solve_interrupter.h"
 #include "ortools/util/strong_integers.h"
@@ -358,7 +357,7 @@ absl::StatusOr<glop::GlopParameters> GlopSolver::MergeSolveParameters(
       default:
         warnings.emplace_back(absl::StrCat(
             "GLOP does not support the 'lp_algorithm' parameter value: ",
-            ProtoEnumToString(solve_parameters.lp_algorithm())));
+            LPAlgorithmProto_Name(solve_parameters.lp_algorithm())));
     }
   }
   if (!result.has_use_scaling() && !result.has_scaling_method() &&
@@ -376,7 +375,7 @@ absl::StatusOr<glop::GlopParameters> GlopSolver::MergeSolveParameters(
         break;
       default:
         LOG(FATAL) << "Scaling emphasis: "
-                   << ProtoEnumToString(solve_parameters.scaling())
+                   << EmphasisProto_Name(solve_parameters.scaling())
                    << " unknown, error setting GLOP parameters";
     }
   }
@@ -396,20 +395,20 @@ absl::StatusOr<glop::GlopParameters> GlopSolver::MergeSolveParameters(
         break;
       default:
         LOG(FATAL) << "Presolve emphasis: "
-                   << ProtoEnumToString(solve_parameters.presolve())
+                   << EmphasisProto_Name(solve_parameters.presolve())
                    << " unknown, error setting GLOP parameters";
     }
   }
   if (solve_parameters.cuts() != EMPHASIS_UNSPECIFIED) {
     warnings.push_back(absl::StrCat(
         "GLOP does not support 'cuts' parameters, but cuts was set to: ",
-        ProtoEnumToString(solve_parameters.cuts())));
+        EmphasisProto_Name(solve_parameters.cuts())));
   }
   if (solve_parameters.heuristics() != EMPHASIS_UNSPECIFIED) {
     warnings.push_back(
         absl::StrCat("GLOP does not support 'heuristics' parameter, but "
                      "heuristics was set to: ",
-                     ProtoEnumToString(solve_parameters.heuristics())));
+                     EmphasisProto_Name(solve_parameters.heuristics())));
   }
   if (solve_parameters.has_cutoff_limit()) {
     warnings.push_back("GLOP does not support 'cutoff_limit' parameter");

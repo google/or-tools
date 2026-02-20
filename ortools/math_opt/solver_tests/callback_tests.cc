@@ -894,9 +894,10 @@ TEST_P(CallbackTest, UnsupportedEvents) {
         .callback_registration = {.events = {event}},
         .callback = [](const CallbackData&) { return CallbackResult{}; }};
 
-    EXPECT_THAT(Solve(model, GetParam().solver_type, args),
-                StatusIs(absl::StatusCode::kInvalidArgument,
-                         HasSubstr(ProtoEnumToString(EnumToProto(event)))));
+    EXPECT_THAT(
+        Solve(model, GetParam().solver_type, args),
+        StatusIs(absl::StatusCode::kInvalidArgument,
+                 HasSubstr(CallbackEventProto_Name(EnumToProto(event)))));
   }
 }
 

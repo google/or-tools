@@ -20,7 +20,6 @@
 #include "ortools/base/status_macros.h"
 #include "ortools/math_opt/result.pb.h"
 #include "ortools/math_opt/validators/bounds_and_status_validator.h"
-#include "ortools/port/proto_utils.h"
 
 namespace operations_research {
 namespace math_opt {
@@ -115,7 +114,7 @@ absl::Status ValidateTerminationReasonConsistency(
     }
       return absl::OkStatus();
     default:
-      LOG(FATAL) << ProtoEnumToString(termination.reason())
+      LOG(FATAL) << TerminationReasonProto_Name(termination.reason())
                  << " not implemented";
   }
 
@@ -132,9 +131,9 @@ absl::Status ValidateTermination(const TerminationProto& termination,
   if (termination.reason() == TERMINATION_REASON_FEASIBLE ||
       termination.reason() == TERMINATION_REASON_NO_SOLUTION_FOUND) {
     if (termination.limit() == LIMIT_UNSPECIFIED) {
-      return absl::InvalidArgumentError(
-          absl::StrCat("for reason ", ProtoEnumToString(termination.reason()),
-                       ", limit must be specified"));
+      return absl::InvalidArgumentError(absl::StrCat(
+          "for reason ", TerminationReasonProto_Name(termination.reason()),
+          ", limit must be specified"));
     }
     if (termination.limit() == LIMIT_CUTOFF &&
         termination.reason() == TERMINATION_REASON_FEASIBLE) {
@@ -143,10 +142,10 @@ absl::Status ValidateTermination(const TerminationProto& termination,
     }
   } else {
     if (termination.limit() != LIMIT_UNSPECIFIED) {
-      return absl::InvalidArgumentError(
-          absl::StrCat("for reason:", ProtoEnumToString(termination.reason()),
-                       ", limit should be unspecified, but was set to: ",
-                       ProtoEnumToString(termination.limit())));
+      return absl::InvalidArgumentError(absl::StrCat(
+          "for reason:", TerminationReasonProto_Name(termination.reason()),
+          ", limit should be unspecified, but was set to: ",
+          LimitProto_Name(termination.limit())));
     }
   }
   RETURN_IF_ERROR(ValidateObjectiveBounds(termination.objective_bounds()));
@@ -155,7 +154,8 @@ absl::Status ValidateTermination(const TerminationProto& termination,
                                                  termination.problem_status(),
                                                  is_maximize));
   RETURN_IF_ERROR(ValidateTerminationReasonConsistency(termination))
-      << "for termination reason " << ProtoEnumToString(termination.reason());
+      << "for termination reason "
+      << TerminationReasonProto_Name(termination.reason());
   return absl::OkStatus();
 }
 

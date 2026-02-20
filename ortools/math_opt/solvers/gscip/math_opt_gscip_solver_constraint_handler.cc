@@ -28,7 +28,6 @@
 #include "ortools/math_opt/solvers/gscip/gscip_callback_result.h"
 #include "ortools/math_opt/solvers/gscip/gscip_constraint_handler.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
-#include "ortools/port/proto_utils.h"
 #include "scip/type_var.h"
 
 namespace operations_research::math_opt {
@@ -204,7 +203,7 @@ absl::StatusOr<CallbackDataProto> GScipSolverConstraintHandler::MakeCbData(
     return util::InternalErrorBuilder()
            << "Only events MIP_NODE and MIP_SOLUTION are supported, but was "
               "invoked on event: "
-           << ProtoEnumToString(event);
+           << CallbackEventProto_Name(event);
   }
   CallbackDataProto cb_data;
   cb_data.set_event(event);
