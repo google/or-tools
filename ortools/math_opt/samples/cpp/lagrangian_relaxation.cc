@@ -94,7 +94,6 @@
 #include "absl/strings/string_view.h"
 #include "ortools/base/container_logging.h"
 #include "ortools/base/init_google.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/base/status_builder.h"
 #include "ortools/base/status_macros.h"

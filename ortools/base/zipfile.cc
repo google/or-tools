@@ -21,8 +21,8 @@
 
 #include <memory>
 
+#include "absl/log/log.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/logging.h"
 
 namespace zipfile {
 

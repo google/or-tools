@@ -541,6 +541,10 @@ class ModelStorage {
   // Export
   //////////////////////////////////////////////////////////////////////////////
 
+  // Returns a human-readable description of the size of the model (variables,
+  // constraints, etc.).
+  std::string ModelSizeDebugString() const;
+
   // Returns a proto representation of the optimization model.
   //
   // See FromModelProto() to build a ModelStorage from a proto.

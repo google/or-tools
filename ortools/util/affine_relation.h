@@ -18,8 +18,8 @@
 #include <cstdint>
 #include <vector>
 
+#include "absl/log/check.h"
 #include "ortools/base/iterator_adaptors.h"
-#include "ortools/base/logging.h"
 
 namespace operations_research {
 

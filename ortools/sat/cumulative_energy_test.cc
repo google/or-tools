@@ -28,7 +28,6 @@
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "gtest/gtest.h"
-#include "ortools/base/logging.h"
 #include "ortools/sat/2d_orthogonal_packing_testing.h"
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/cumulative.h"

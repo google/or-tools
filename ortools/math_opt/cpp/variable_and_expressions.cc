@@ -20,7 +20,7 @@
 #include <vector>
 
 #include "absl/base/attributes.h"
-#include "ortools/base/logging.h"
+#include "absl/log/check.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/strong_int.h"
 #include "ortools/math_opt/cpp/formatters.h"

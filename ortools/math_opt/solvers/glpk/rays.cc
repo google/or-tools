@@ -21,7 +21,6 @@
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/third_party_solvers/glpk/glpk_computational_form.h"
 #include "ortools/third_party_solvers/glpk/glpk_formatters.h"

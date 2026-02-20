@@ -30,7 +30,6 @@
 #include "absl/types/span.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
-#include "ortools/base/logging.h"
 #include "ortools/math_opt/cpp/math_opt.h"
 #include "ortools/math_opt/cpp/update_result.h"
 #include "ortools/math_opt/cpp/variable_and_expressions.h"

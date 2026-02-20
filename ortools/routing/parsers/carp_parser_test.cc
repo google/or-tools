@@ -15,10 +15,10 @@
 
 #include <string>
 
-#include "absl/base/log_severity.h"
 #include "absl/log/scoped_mock_log.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/base/path.h"
 
 #define ROOT_DIR "_main/"

@@ -65,7 +65,6 @@ cc_library(
         ":update_row",
         ":variable_values",
         ":variables_info",
-        "//ortools/base",
         "//ortools/base:strong_vector",
         "//ortools/base:types",
         "//ortools/graph_base:iterators",
@@ -144,6 +143,7 @@ cc_library(
         ":markowitz",
         ":parameters_cc_proto",
         ":status",
+        "//ortools/base:log_severity",
         "//ortools/lp_data:base",
         "//ortools/lp_data:lp_utils",
         "//ortools/lp_data:permutation",
@@ -151,6 +151,7 @@ cc_library(
         "//ortools/lp_data:sparse",
         "//ortools/lp_data:sparse_column",
         "//ortools/util:stats",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/types:span",
     ],
@@ -164,7 +165,6 @@ cc_library(
     deps = [
         ":parameters_cc_proto",
         ":status",
-        "//ortools/base",
         "//ortools/base:strong_vector",
         "//ortools/lp_data:base",
         "//ortools/lp_data:lp_utils",
@@ -173,6 +173,7 @@ cc_library(
         "//ortools/lp_data:sparse_column",
         "//ortools/util:stats",
         "@abseil-cpp//absl/container:inlined_vector",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings:str_format",
     ],
 )
@@ -189,7 +190,6 @@ cc_library(
         ":parameters_cc_proto",
         ":rank_one_update",
         ":status",
-        "//ortools/base",
         "//ortools/base:stl_util",
         "//ortools/lp_data:base",
         "//ortools/lp_data:lp_utils",
@@ -197,6 +197,7 @@ cc_library(
         "//ortools/lp_data:scattered_vector",
         "//ortools/lp_data:sparse",
         "//ortools/util:stats",
+        "@abseil-cpp//absl/log:check",
     ],
 )
 
@@ -205,11 +206,11 @@ cc_library(
     hdrs = ["rank_one_update.h"],
     copts = SAFE_FP_CODE,
     deps = [
-        "//ortools/base",
         "//ortools/lp_data:base",
         "//ortools/lp_data:lp_utils",
         "//ortools/lp_data:scattered_vector",
         "//ortools/lp_data:sparse",
+        "@abseil-cpp//absl/log:check",
     ],
 )
 
@@ -240,7 +241,10 @@ cc_library(
     srcs = ["status.cc"],
     hdrs = ["status.h"],
     copts = SAFE_FP_CODE,
-    deps = ["//ortools/base"],
+    deps = [
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+    ],
 )
 
 # Glop parameters.
@@ -373,13 +377,12 @@ cc_library(
         ":status",
         ":update_row",
         ":variables_info",
-        "//ortools/base:timer",
         "//ortools/lp_data",
         "//ortools/lp_data:base",
-        "//ortools/lp_data:lp_utils",
-        "//ortools/port:proto_utils",
         "//ortools/util:bitset",
         "//ortools/util:stats",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/random:bit_gen_ref",
     ],
 )
@@ -403,6 +406,13 @@ cc_library(
         "//ortools/lp_data:lp_utils",
         "//ortools/lp_data:matrix_scaler",
         "//ortools/lp_data:matrix_utils",
+        "//ortools/lp_data:sparse",
+        "//ortools/lp_data:sparse_column",
+        "//ortools/util:fp_utils",
+        "//ortools/util:logging",
+        "//ortools/util:time_limit",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
     ],
@@ -422,8 +432,7 @@ cc_library(
         ":status",
         ":variables_info",
         "//ortools/base",
-        "//ortools/base:numbers",
-        "//ortools/base:timer",
+        "//ortools/base/macros:os_support",
         "//ortools/linear_solver:linear_solver_cc_proto",
         "//ortools/lp_data",
         "//ortools/lp_data:base",
@@ -439,7 +448,6 @@ cc_library(
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:vlog_is_on",
-        "@abseil-cpp//absl/memory",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
         "@protobuf",

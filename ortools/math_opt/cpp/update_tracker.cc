@@ -16,10 +16,10 @@
 #include <memory>
 #include <optional>
 
+#include "absl/log/check.h"
 #include "absl/log/die_if_null.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
-#include "ortools/base/logging.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/storage/model_storage.h"
 

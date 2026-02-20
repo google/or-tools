@@ -14,18 +14,23 @@
 // Initial version of this code was provided by RTE
 
 #include <algorithm>
+#include <cctype>
 #include <clocale>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
 #include <fstream>
 #include <istream>
 #include <limits>
 #include <memory>
 #include <mutex>
 #include <numeric>
+#include <sstream>
 #include <string>
 
+#include "absl/log/log.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_format.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/third_party_solvers/xpress_environment.h"

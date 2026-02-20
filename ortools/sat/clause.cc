@@ -35,6 +35,7 @@
 #include "absl/log/vlog_is_on.h"
 #include "absl/random/distributions.h"
 #include "absl/types/span.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/base/timer.h"

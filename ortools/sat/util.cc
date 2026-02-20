@@ -24,7 +24,6 @@
 #include <vector>
 
 #include "absl/algorithm/container.h"
-#include "absl/base/log_severity.h"
 #include "absl/container/btree_set.h"
 #include "absl/log/check.h"
 #include "absl/numeric/bits.h"
@@ -34,6 +33,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "google/protobuf/descriptor.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/base/macros/os_support.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/sat/sat_base.h"

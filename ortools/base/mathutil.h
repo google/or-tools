@@ -23,7 +23,7 @@
 #include <vector>
 
 #include "absl/base/casts.h"
-#include "ortools/base/logging.h"
+#include "absl/log/check.h"
 
 namespace operations_research {
 class MathUtil {

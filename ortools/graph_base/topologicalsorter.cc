@@ -16,17 +16,13 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
-#include <limits>
-#include <map>
 #include <queue>
-#include <string>
 #include <utility>
 #include <vector>
 
-#include "absl/status/status.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/types/span.h"
-#include "ortools/base/map_util.h"
-#include "ortools/base/stl_util.h"
 
 namespace util {
 namespace internal {

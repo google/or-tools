@@ -147,11 +147,10 @@ cc_test(
     deps = [
         ":validator",
         "//ortools/base:gmock_main",
-        "//ortools/base:logging",
-        "//ortools/base:status_macros",
         "//ortools/math_opt:model_cc_proto",
         "//ortools/math_opt:sparse_containers_cc_proto",
         "//ortools/math_opt/core:model_summary",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/types:span",
     ],

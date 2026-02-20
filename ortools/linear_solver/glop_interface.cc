@@ -20,7 +20,6 @@
 
 #include "absl/base/attributes.h"
 #include "absl/log/check.h"
-#include "ortools/base/logging.h"
 #include "ortools/glop/lp_solver.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/linear_solver/glop_utils.h"

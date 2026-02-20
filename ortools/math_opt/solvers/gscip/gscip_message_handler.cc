@@ -18,8 +18,10 @@
 #include <atomic>
 #include <memory>
 
+#include "absl/log/check.h"
+#include "absl/log/die_if_null.h"
+#include "absl/log/log.h"
 #include "absl/status/statusor.h"
-#include "ortools/base/logging.h"
 #include "ortools/linear_solver/scip_helper_macros.h"
 #include "scip/pub_message.h"
 #include "scip/type_message.h"
@@ -69,7 +71,7 @@ void SCIPMessageHandlerPrinter(const GScipMessageType message_type,
   // src/scip/message.c calls this function with an empty message when the
   // handler's buffer is flushed but was empty.
   //
-  // This typically happenbs when the handler is freed since messagehdlrFree()
+  // This typically happens when the handler is freed since messagehdlrFree()
   // calls messagePrintWarning(), messagePrintDialog() and messagePrintInfo()
   // will NULL message just before calling the handler free function (which is
   // SCIPMessageHandlerFree() above). So this function is usually called three

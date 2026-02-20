@@ -42,11 +42,11 @@
 
 #include "absl/algorithm/container.h"
 #include "absl/base/casts.h"
-#include "absl/base/log_severity.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/numeric/bits.h"
 #include "absl/types/span.h"
+#include "ortools/base/log_severity.h"
 
 namespace operations_research {
 

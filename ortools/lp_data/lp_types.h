@@ -26,7 +26,6 @@
 #include <vector>
 
 #include "absl/log/check.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/strong_integers.h"

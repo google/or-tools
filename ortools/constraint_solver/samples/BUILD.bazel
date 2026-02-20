@@ -19,8 +19,8 @@ cc_test(
     srcs = ["cp_is_fun_cp.cc"],
     deps = [
         "//ortools/base",
+        "//ortools/base:log_severity",
         "//ortools/constraint_solver:cp",
-        "@abseil-cpp//absl/base:log_severity",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:globals",
@@ -41,8 +41,8 @@ cc_test(
     srcs = ["minimal_jobshop_cp.cc"],
     deps = [
         "//ortools/base",
+        "//ortools/base:log_severity",
         "//ortools/constraint_solver:cp",
-        "@abseil-cpp//absl/base:log_severity",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:globals",
     ],
@@ -53,10 +53,10 @@ cc_test(
     srcs = ["nqueens_cp.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/base:logging",
+        "//ortools/base:log_severity",
         "//ortools/base:strtoint",
         "//ortools/constraint_solver:cp",
-        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:globals",
     ],
 )
@@ -75,8 +75,8 @@ cc_test(
     srcs = ["nurses_cp.cc"],
     deps = [
         "//ortools/base",
+        "//ortools/base:log_severity",
         "//ortools/constraint_solver:cp",
-        "@abseil-cpp//absl/base:log_severity",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:globals",
     ],
@@ -87,8 +87,8 @@ cc_test(
     srcs = ["rabbits_and_pheasants_cp.cc"],
     deps = [
         "//ortools/base",
+        "//ortools/base:log_severity",
         "//ortools/constraint_solver:cp",
-        "@abseil-cpp//absl/base:log_severity",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:globals",
     ],
@@ -99,8 +99,8 @@ cc_test(
     srcs = ["simple_cp_program.cc"],
     deps = [
         "//ortools/base",
+        "//ortools/base:log_severity",
         "//ortools/constraint_solver:cp",
-        "@abseil-cpp//absl/base:log_severity",
         "@abseil-cpp//absl/log:globals",
     ],
 )
@@ -119,8 +119,8 @@ cc_test(
     srcs = ["simple_ls_program.cc"],
     deps = [
         "//ortools/base",
+        "//ortools/base:log_severity",
         "//ortools/constraint_solver:cp",
-        "@abseil-cpp//absl/base:log_severity",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:globals",

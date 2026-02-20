@@ -55,13 +55,13 @@ cc_library(
     hdrs = ["solomon_parser.h"],
     deps = [
         ":simple_graph",
-        "//ortools/base",
         "//ortools/base:map_util",
         "//ortools/base:numbers",
         "//ortools/base:path",
         "//ortools/base:zipfile",
         "//ortools/util:filelineiter",
         "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings",
         "@re2",
     ],
@@ -152,8 +152,8 @@ cc_test(
     deps = [
         ":carp_parser",
         "//ortools/base:gmock_main",
+        "//ortools/base:log_severity",
         "//ortools/base:path",
-        "@abseil-cpp//absl/base:log_severity",
         "@abseil-cpp//absl/log:scoped_mock_log",
     ],
 )
@@ -344,12 +344,12 @@ cc_library(
     srcs = ["cvrptw_lib.cc"],
     hdrs = ["cvrptw_lib.h"],
     deps = [
-        "//ortools/base",
         "//ortools/base:strong_vector",
         "//ortools/constraint_solver:cp",
         "//ortools/routing",
         "//ortools/routing:index_manager",
         "@abseil-cpp//absl/container:btree",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/random:distributions",
         "@abseil-cpp//absl/strings",

@@ -33,10 +33,10 @@
 #include <utility>
 #include <vector>
 
+#include "absl/log/check.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
-#include "ortools/base/logging.h"
 #include "ortools/graph/eulerian_path.h"
 #include "ortools/graph/minimum_spanning_tree.h"
 #include "ortools/graph/perfect_matching.h"

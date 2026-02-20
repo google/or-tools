@@ -25,8 +25,8 @@ cc_test(
     srcs = ["assignment_linear_sum_assignment.cc"],
     deps = [
         "//ortools/base",
+        "//ortools/base:log_severity",
         "//ortools/graph:assignment",
-        "@abseil-cpp//absl/base:log_severity",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:globals",
     ],
@@ -63,8 +63,8 @@ cc_test(
     srcs = ["assignment_min_flow.cc"],
     deps = [
         "//ortools/base",
+        "//ortools/base:log_severity",
         "//ortools/graph:min_cost_flow",
-        "@abseil-cpp//absl/base:log_severity",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:globals",
     ],
@@ -98,8 +98,8 @@ cc_test(
     srcs = ["balance_min_flow.cc"],
     deps = [
         "//ortools/base",
+        "//ortools/base:log_severity",
         "//ortools/graph:min_cost_flow",
-        "@abseil-cpp//absl/base:log_severity",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:globals",
     ],
@@ -133,8 +133,8 @@ cc_test(
     srcs = ["simple_max_flow_program.cc"],
     deps = [
         "//ortools/base",
+        "//ortools/base:log_severity",
         "//ortools/graph:max_flow",
-        "@abseil-cpp//absl/base:log_severity",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:globals",
     ],
@@ -171,8 +171,8 @@ cc_test(
     srcs = ["simple_min_cost_flow_program.cc"],
     deps = [
         "//ortools/base",
+        "//ortools/base:log_severity",
         "//ortools/graph:min_cost_flow",
-        "@abseil-cpp//absl/base:log_severity",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:globals",
     ],

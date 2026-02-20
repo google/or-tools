@@ -21,6 +21,7 @@
 #include "absl/status/statusor.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
+#include "ortools/base/macros/os.h"
 #include "ortools/math_opt/cpp/matchers.h"
 #include "ortools/math_opt/cpp/math_opt.h"
 #include "ortools/math_opt/solver_tests/callback_tests.h"
@@ -98,10 +99,23 @@ std::vector<QpTestParameters> GetGscipQpTestParameters() {
                            /*supports_qp_incrementalism=*/false,
                            /*use_integer_variables=*/true)};
 }
+// In WASM we fail because of an assertion due to SCIP trying to change the
+// rounding mode to SCIP_ROUND_DOWNWARDS in scip/src/scip/intervalarith.c.
+//
+// Note that it seems to not reproduce in `-c opt`.
+#if defined(ORTOOLS_TARGET_OS_IS_EMSCRIPTEN)
+static_assert(kTargetOs == TargetOs::kEmscripten);  // See comment below.
+GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(SimpleQpTest);
+GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(IncrementalQpTest);
+#else   // ORTOOLS_TARGET_OS_IS_EMSCRIPTEN
+// Make sure we include the header the defines ORTOOLS_TARGET_OS_IS_EMSCRIPTEN
+// by asserting the constexpr from the same header is defined.
+static_assert(kTargetOs != TargetOs::kEmscripten);
 INSTANTIATE_TEST_SUITE_P(GscipSimpleQpTest, SimpleQpTest,
                          ValuesIn(GetGscipQpTestParameters()));
 INSTANTIATE_TEST_SUITE_P(GscipIncrementalQpTest, IncrementalQpTest,
                          ValuesIn(GetGscipQpTestParameters()));
+#endif  // ORTOOLS_TARGET_OS_IS_EMSCRIPTEN
 GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(QpDualsTest);
 
 std::vector<QcTestParameters> GetGscipQcTestParameters() {
@@ -116,10 +130,19 @@ std::vector<QcTestParameters> GetGscipQcTestParameters() {
                            /*supports_incremental_variable_deletions=*/false,
                            /*use_integer_variables=*/true)};
 }
+// In WASM we fail because of an assertion due to SCIP trying to change the
+// rounding mode to SCIP_ROUND_DOWNWARDS in scip/src/scip/intervalarith.c.
+#if defined(ORTOOLS_TARGET_OS_IS_EMSCRIPTEN)
+static_assert(kTargetOs == TargetOs::kEmscripten);  // See comment above.
+GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(SimpleQcTest);
+GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(IncrementalQcTest);
+#else   // ORTOOLS_TARGET_OS_IS_EMSCRIPTEN
+static_assert(kTargetOs != TargetOs::kEmscripten);  // See comment above.
 INSTANTIATE_TEST_SUITE_P(GscipSimpleQcTest, SimpleQcTest,
                          ValuesIn(GetGscipQcTestParameters()));
 INSTANTIATE_TEST_SUITE_P(GscipIncrementalQcTest, IncrementalQcTest,
                          ValuesIn(GetGscipQcTestParameters()));
+#endif  // ORTOOLS_TARGET_OS_IS_EMSCRIPTEN
 GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(QcDualsTest);
 
 SecondOrderConeTestParameters GetGscipSecondOrderConeTestParameters() {

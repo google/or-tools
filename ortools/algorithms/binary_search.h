@@ -19,12 +19,12 @@
 #include <functional>
 #include <utility>
 
-#include "absl/base/log_severity.h"
 #include "absl/functional/function_ref.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/numeric/int128.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
+#include "ortools/base/log_severity.h"
 
 namespace operations_research {
 // Finds a point in [x_true, x_false) where f changes from true to false.

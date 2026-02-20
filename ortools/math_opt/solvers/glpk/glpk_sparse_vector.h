@@ -20,7 +20,6 @@
 #include <vector>
 
 #include "absl/log/check.h"
-#include "ortools/base/logging.h"
 
 namespace operations_research::math_opt {
 

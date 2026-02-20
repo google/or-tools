@@ -18,9 +18,7 @@
 #include <string>
 
 #include "absl/strings/string_view.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/version.h"
-#include "ortools/sat/cp_model_solver_helpers.h"
 
 namespace operations_research {
 
