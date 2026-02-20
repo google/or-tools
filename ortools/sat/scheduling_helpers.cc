@@ -22,7 +22,6 @@
 #include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
 #include "ortools/sat/enforcement.h"
 #include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"

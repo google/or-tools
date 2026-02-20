@@ -11,26 +11,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/base/logging.h"
+#include "ortools/math_opt/cpp/update_result.h"
 
-#include <mutex>  // for std::call_once and std::once_flag.  // NOLINT
+#include <ostream>
 
-#include "absl/flags/usage.h"
-#include "absl/log/globals.h"
-#include "absl/log/initialize.h"
+namespace operations_research::math_opt {
 
-namespace operations_research {
-
-namespace {
-std::once_flag init_done;
-}  // namespace
-
-void FixFlagsAndEnvironmentForSwig() {
-  std::call_once(init_done, [] {
-    absl::InitializeLog();
-    absl::SetProgramUsageMessage("swig_helper");
-  });
-  absl::EnableLogPrefix(false);
+std::ostream& operator<<(std::ostream& out, const UpdateResult& result) {
+  out << "{did_update: " << (result.did_update ? "true" : "false") << "}";
+  return out;
 }
 
-}  // namespace operations_research
+}  // namespace operations_research::math_opt

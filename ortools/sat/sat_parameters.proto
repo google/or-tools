@@ -830,7 +830,9 @@ message SatParameters {
   // only works with pure SAT problems, with
   //  - cp_model_pure_sat_presolve = true if cp_model_presolve = true,
   //  - linearization_level <= 1,
-  //  - symmetry_level <= 1.
+  //  - symmetry_level <= 1,
+  //  - use_chronological_backtracking = false,
+  //  - inprocessing_use_sat_sweeping = false.
   optional bool check_lrat_proof = 344 [default = false];
 
   // If true, and if output_lrat_proof is true and the problem is UNSAT, check
@@ -847,7 +849,9 @@ message SatParameters {
   // problems, with
   //  - cp_model_pure_sat_presolve = true if cp_model_presolve = true,
   //  - linearization_level <= 1,
-  //  - symmetry_level <= 1.
+  //  - symmetry_level <= 1,
+  //  - use_chronological_backtracking = false,
+  //  - inprocessing_use_sat_sweeping = false.
   optional bool output_lrat_proof = 345 [default = false];
 
   // ==========================================================================

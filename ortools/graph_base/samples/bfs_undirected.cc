@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// [START program]
+// [START imports]
 #include <iostream>
 #include <utility>
 #include <vector>
@@ -21,6 +23,7 @@
 #include "ortools/base/init_google.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/graph_base/bfs.h"
+// [END imports]
 
 namespace {
 
@@ -64,3 +67,4 @@ int main(int argc, char** argv) {
   QCHECK_OK(Main());
   return 0;
 }
+// [END program]

@@ -36,7 +36,6 @@
 #include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
-#include "ortools/base/logging.h"
 #include "ortools/graph_base/connected_components.h"
 #include "ortools/graph_base/strongly_connected_components.h"
 #include "ortools/sat/2d_orthogonal_packing_testing.h"

@@ -82,7 +82,6 @@ Solver(name = "pheasant",
 #include <vector>
 
 #include "absl/base/attributes.h"
-#include "absl/base/log_severity.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/flags/declare.h"
@@ -94,6 +93,7 @@ Solver(name = "pheasant",
 #include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "ortools/base/base_export.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/base/timer.h"
 #include "ortools/base/types.h"
 #include "ortools/constraint_solver/search_stats.pb.h"

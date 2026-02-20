@@ -40,7 +40,7 @@
 #include "ortools/routing/types.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/optional_boolean.pb.h"
-#include "ortools/util/piecewise_linear_function.h"
+#include "ortools/util/piecewise_linear_function.h"  // IWYU pragma: keep
 #include "ortools/util/sorted_interval_list.h"
 #include "pybind11/cast.h"
 #include "pybind11/functional.h"

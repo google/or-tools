@@ -18,9 +18,9 @@
 #include <utility>
 #include <vector>
 
+#include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/base/container_logging.h"
-#include "ortools/base/logging.h"
 #include "ortools/graph_base/topologicalsorter.h"
 
 namespace operations_research {

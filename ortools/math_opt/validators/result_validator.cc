@@ -27,7 +27,6 @@
 #include "ortools/math_opt/validators/solution_validator.h"
 #include "ortools/math_opt/validators/solve_stats_validator.h"
 #include "ortools/math_opt/validators/termination_validator.h"
-#include "ortools/port/proto_utils.h"
 
 namespace operations_research {
 namespace math_opt {
@@ -298,12 +297,12 @@ absl::Status ValidateResult(const SolveResultProto& result,
       termination.reason() == TERMINATION_REASON_FEASIBLE) {
     RETURN_IF_ERROR(CheckHasPrimalSolution(result))
         << "inconsistent termination reason "
-        << ProtoEnumToString(termination.reason());
+        << TerminationReasonProto_Name(termination.reason());
   }
   if (termination.reason() == TERMINATION_REASON_NO_SOLUTION_FOUND) {
     RETURN_IF_ERROR(RequireNoPrimalFeasibleSolution(result))
         << "inconsistent termination reason "
-        << ProtoEnumToString(termination.reason());
+        << TerminationReasonProto_Name(termination.reason());
   }
 
   RETURN_IF_ERROR(CheckPrimalSolutionAndTerminationConsistency(

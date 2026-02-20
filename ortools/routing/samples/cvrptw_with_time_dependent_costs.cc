@@ -21,14 +21,14 @@
 #include <string>
 #include <vector>
 
-#include "absl/base/log_severity.h"
 #include "absl/flags/flag.h"
 #include "absl/functional/bind_front.h"
+#include "absl/log/check.h"
 #include "absl/log/globals.h"
 #include "absl/random/random.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/base/init_google.h"
-#include "ortools/base/logging.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/routing/index_manager.h"
 #include "ortools/routing/parameters.h"
@@ -37,6 +37,7 @@
 #include "ortools/routing/routing.h"
 #include "ortools/routing/types.h"
 #include "ortools/util/step_function.h"
+#include "util/functional/from_callback.h"
 
 using operations_research::Assignment;
 using operations_research::StepFunction;

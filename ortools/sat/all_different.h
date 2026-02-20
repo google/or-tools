@@ -21,7 +21,6 @@
 
 #include "absl/log/check.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
 #include "ortools/sat/enforcement.h"
 #include "ortools/sat/enforcement_helper.h"
 #include "ortools/sat/integer.h"

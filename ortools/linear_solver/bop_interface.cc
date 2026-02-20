@@ -19,7 +19,7 @@
 #include <vector>
 
 #include "absl/base/attributes.h"
-#include "ortools/base/logging.h"
+#include "absl/log/check.h"
 #include "ortools/bop/bop_parameters.pb.h"
 #include "ortools/bop/integral_solver.h"
 #include "ortools/linear_solver/linear_solver.h"

@@ -22,10 +22,10 @@ cc_binary(
     srcs = ["set_cover.cc"],
     deps = [
         "//ortools/base",
+        "//ortools/base:log_severity",
         "//ortools/set_cover:set_cover_heuristics",
         "//ortools/set_cover:set_cover_invariant",
         "//ortools/set_cover:set_cover_model",
-        "@abseil-cpp//absl/base:log_severity",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:globals",
     ],

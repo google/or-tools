@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// [START program]
 // [START imports]
 #include <cstdint>
 #include <iostream>
@@ -118,3 +119,4 @@ int main(int argc, char** argv) {
   // [END more-paths]
   return 0;
 }
+// [END program]

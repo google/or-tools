@@ -17,9 +17,9 @@
 
 #include "ortools/base/gzipfile.h"
 
+#include "absl/log/log.h"
 #include "absl/strings/string_view.h"
 #include "ortools/base/file.h"
-#include "ortools/base/logging.h"
 
 // public entry points
 File* GZipFileReader(const absl::string_view name, File* file,

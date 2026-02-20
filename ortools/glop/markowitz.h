@@ -79,7 +79,7 @@
 #include <vector>
 
 #include "absl/container/inlined_vector.h"
-#include "ortools/base/logging.h"
+#include "absl/log/check.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/glop/status.h"

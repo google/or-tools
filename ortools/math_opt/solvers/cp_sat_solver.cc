@@ -63,7 +63,6 @@
 #include "ortools/math_opt/solution.pb.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
 #include "ortools/math_opt/validators/callback_validator.h"
-#include "ortools/port/proto_utils.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/solve_interrupter.h"
 
@@ -180,7 +179,7 @@ std::vector<std::string> SetSolveParameters(
   if (parameters.lp_algorithm() != LP_ALGORITHM_UNSPECIFIED) {
     warnings.push_back(
         absl::StrCat("Setting lp_algorithm (was set to ",
-                     ProtoEnumToString(parameters.lp_algorithm()),
+                     LPAlgorithmProto_Name(parameters.lp_algorithm()),
                      ") is not supported for CP_SAT solver"));
   }
   if (parameters.presolve() != EMPHASIS_UNSPECIFIED) {
@@ -196,13 +195,13 @@ std::vector<std::string> SetSolveParameters(
         break;
       default:
         LOG(FATAL) << "Presolve emphasis: "
-                   << ProtoEnumToString(parameters.presolve())
+                   << EmphasisProto_Name(parameters.presolve())
                    << " unknown, error setting CP-SAT parameters";
     }
   }
   if (parameters.scaling() != EMPHASIS_UNSPECIFIED) {
     warnings.push_back(absl::StrCat("Setting the scaling (was set to ",
-                                    ProtoEnumToString(parameters.scaling()),
+                                    EmphasisProto_Name(parameters.scaling()),
                                     ") is not supported for CP_SAT solver"));
   }
   if (parameters.cuts() != EMPHASIS_UNSPECIFIED) {
@@ -223,13 +222,13 @@ std::vector<std::string> SetSolveParameters(
       case EMPHASIS_VERY_HIGH:
         break;
       default:
-        LOG(FATAL) << "Cut emphasis: " << ProtoEnumToString(parameters.cuts())
+        LOG(FATAL) << "Cut emphasis: " << EmphasisProto_Name(parameters.cuts())
                    << " unknown, error setting CP-SAT parameters";
     }
   }
   if (parameters.heuristics() != EMPHASIS_UNSPECIFIED) {
     warnings.push_back(absl::StrCat("Setting the heuristics (was set to ",
-                                    ProtoEnumToString(parameters.heuristics()),
+                                    EmphasisProto_Name(parameters.heuristics()),
                                     ") is not supported for CP_SAT solver"));
   }
   sat_parameters.MergeFrom(parameters.cp_sat());

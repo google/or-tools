@@ -28,6 +28,7 @@
 #include "absl/numeric/bits.h"
 #include "absl/random/distributions.h"
 #include "absl/random/random.h"
+#include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "ortools/algorithms/adjustable_k_ary_heap.h"
 #include "ortools/base/adjustable_priority_queue-inl.h"

@@ -15,6 +15,7 @@
 #define ORTOOLS_SAT_PRESOLVE_CONTEXT_H_
 
 #include <cstdint>
+#include <memory>
 #include <optional>
 #include <string>
 #include <tuple>

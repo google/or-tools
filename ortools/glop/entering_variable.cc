@@ -16,13 +16,18 @@
 #include <algorithm>
 #include <cstdlib>
 #include <limits>
-#include <queue>
+#include <random>
 #include <vector>
 
-#include "ortools/base/timer.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
+#include "absl/random/bit_gen_ref.h"
+#include "ortools/glop/reduced_costs.h"
+#include "ortools/glop/status.h"
+#include "ortools/glop/update_row.h"
+#include "ortools/glop/variables_info.h"
 #include "ortools/lp_data/lp_types.h"
-#include "ortools/lp_data/lp_utils.h"
-#include "ortools/port/proto_utils.h"
+#include "ortools/util/stats.h"
 
 namespace operations_research {
 namespace glop {

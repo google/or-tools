@@ -20,18 +20,25 @@
 #ifndef ORTOOLS_GLOP_PREPROCESSOR_H_
 #define ORTOOLS_GLOP_PREPROCESSOR_H_
 
+#include <cstdint>
 #include <deque>
 #include <memory>
-#include <string>
 #include <vector>
 
+#include "absl/container/flat_hash_map.h"
+#include "absl/log/log.h"
 #include "absl/strings/string_view.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/glop/parameters.pb.h"
-#include "ortools/glop/revised_simplex.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"
+#include "ortools/lp_data/lp_utils.h"
 #include "ortools/lp_data/matrix_scaler.h"
+#include "ortools/lp_data/sparse.h"
+#include "ortools/lp_data/sparse_column.h"
+#include "ortools/util/fp_utils.h"
+#include "ortools/util/logging.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace glop {

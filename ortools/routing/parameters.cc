@@ -19,6 +19,7 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
@@ -28,7 +29,6 @@
 #include "google/protobuf/duration.pb.h"
 #include "google/protobuf/extension_set.h"
 #include "google/protobuf/message.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/proto_enum_utils.h"
 #include "ortools/base/protoutil.h"
 #include "ortools/base/types.h"

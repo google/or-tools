@@ -33,6 +33,7 @@
 #include <vector>
 
 #include "absl/base/no_destructor.h"
+#include "absl/base/nullability.h"
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/status/status.h"
@@ -44,7 +45,6 @@
 #include "absl/time/time.h"
 #include "ortools/base/helpers.h"
 #include "ortools/base/init_google.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/options.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/math_opt/core/solver_interface.h"
@@ -100,6 +100,8 @@ ABSL_FLAG(operations_research::math_opt::SolverType, solver_type,
 ABSL_FLAG(bool, remote, false,
           "solve by RPC instead of locally, using ~twice the time limit as the "
           "RPC deadline, requires a time limit is set, see --time_limit");
+ABSL_FLAG(std::optional<std::string>, remote_target, std::nullopt,
+          "RPC server address");
 ABSL_FLAG(operations_research::math_opt::SolveParameters, solve_parameters, {},
           "SolveParameters in text-proto format. Note that the time limit is "
           "overridden by the --time_limit flag.");
@@ -278,7 +280,8 @@ absl::Status PrintSummary(const Model& model, const SolveResult& result,
 absl::StatusOr<SolveResult> LocalOrRemoteSolve(
     const Model& model, const SolverType solver_type,
     const SolveParameters& params, const ModelSolveParameters& model_params,
-    MessageCallback msg_cb, const SolveInterrupter* const interrupter) {
+    MessageCallback msg_cb,
+    const SolveInterrupter* absl_nullable const interrupter) {
   if (absl::GetFlag(FLAGS_remote)) {
     return absl::UnimplementedError("remote not yet supported.");
   } else {

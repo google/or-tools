@@ -219,7 +219,7 @@ ENDATA
         solver.log_callback = log_lines.append
         solver.enable_output(True)
         self.assertEqual(solver.solve(model), mb.SolveStatus.OPTIMAL)
-        self.assertGreater(len(log_lines), 0, "Log callback should receive output")
+        self.assertNotEmpty(len(log_lines), "Log callback should receive output")
         self.assertIn("Model", "".join(log_lines))
 
     def test_class_api(self):
@@ -521,7 +521,7 @@ ENDATA
 
         for j in range(total_unique_products):
             for i in range(len(standalone_features)):
-                v[i, j] = model.new_bool_var(f"v_{(i,j)}")
+                v[i, j] = model.new_bool_var(f"v_{(i, j)}")
                 model.add(
                     v[i, j]
                     == (

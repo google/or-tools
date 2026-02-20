@@ -30,12 +30,13 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "ortools/base/dump_vars.h"
-#include "ortools/base/logging.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/base/strong_vector.h"
@@ -834,6 +835,13 @@ bool TightenStartEndVariableBoundsWithResource(
     LinearSolverWrapper* solver) {
   const ResourceGroup::Attributes& attributes =
       resource.GetDimensionAttributes(dimension.index());
+  if (attributes.span_upper_bound() < kint64max) {
+    // end_cumul - start_cumul <= bound
+    const int ct =
+        solver->CreateNewConstraint(kint64min, attributes.span_upper_bound());
+    solver->SetCoefficient(ct, end_index, 1);
+    solver->SetCoefficient(ct, start_index, -1);
+  }
   ClosedInterval new_start_bounds;
   ClosedInterval new_end_bounds;
   return GetIntervalIntersectionWithOffsetDomain(start_bounds,
@@ -2734,6 +2742,8 @@ bool DimensionCumulOptimizerCore::SetGlobalConstraintsForResourceAssignment(
     //     A.start_domain.Min() <= cumul[Start(v)] <= A.start_domain.Max()
     // and
     //        A.end_domain.Min() <= cumul[End(v)] <= A.end_domain.Max()
+    // and
+    //   cumul[End(v)] - cumul[Start(v)] <= A.span_upper_bound
     const ResourceGroup& resource_group = *resource_groups[rg_index];
     DCHECK(!resource_group.GetVehiclesRequiringAResource().empty());
 
@@ -2885,10 +2895,18 @@ bool DimensionCumulOptimizerCore::SetGlobalConstraintsForResourceAssignment(
         const ResourceGroup::Attributes& attributes =
             resource_group.GetDimensionAttributesForClass(dimension_->index(),
                                                           rc_index);
-        add_domain_constraint(attributes.start_domain(),
-                              index_to_cumul_variable_[model.Start(v)]);
-        add_domain_constraint(attributes.end_domain(),
-                              index_to_cumul_variable_[model.End(v)]);
+        const int start_index = index_to_cumul_variable_[model.Start(v)];
+        const int end_index = index_to_cumul_variable_[model.End(v)];
+        add_domain_constraint(attributes.start_domain(), start_index);
+        add_domain_constraint(attributes.end_domain(), end_index);
+        if (attributes.span_upper_bound() < kint64max) {
+          // end_cumul - start_cumul <= bound
+          const int ct = solver->CreateNewConstraint(
+              kint64min, attributes.span_upper_bound());
+          solver->SetEnforcementLiteral(ct, assign_rc_to_v);
+          solver->SetCoefficient(ct, end_index, 1);
+          solver->SetCoefficient(ct, start_index, -1);
+        }
       }
     }
   }

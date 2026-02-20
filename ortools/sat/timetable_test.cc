@@ -24,7 +24,6 @@
 #include "absl/strings/str_join.h"
 #include "absl/types/span.h"
 #include "gtest/gtest.h"
-#include "ortools/base/logging.h"
 #include "ortools/sat/all_different.h"
 #include "ortools/sat/cumulative.h"
 #include "ortools/sat/integer.h"

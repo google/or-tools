@@ -16,9 +16,9 @@
 #include <memory>
 #include <vector>
 
-#include "absl/base/log_severity.h"
 #include "absl/log/globals.h"
 #include "ortools/base/init_google.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/linear_solver/linear_solver.h"
 // [END import]
 

@@ -21,7 +21,6 @@
 #include <utility>
 #include <vector>
 
-#include "absl/base/log_severity.h"
 #include "absl/hash/hash.h"
 #include "absl/numeric/int128.h"
 #include "absl/random/distributions.h"
@@ -33,6 +32,7 @@
 #include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
+#include "ortools/base/log_severity.h"
 
 namespace operations_research {
 

@@ -12,6 +12,7 @@
 # limitations under the License.
 
 load("@protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
+load("@protobuf//bazel:java_proto_library.bzl", "java_proto_library")
 load("@protobuf//bazel:proto_library.bzl", "proto_library")
 load("@protobuf//bazel:py_proto_library.bzl", "py_proto_library")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
@@ -52,7 +53,6 @@ cc_library(
         "//ortools/math_opt/solvers/gscip:gscip_parameters",
         "//ortools/math_opt/solvers/gscip:math_opt_gscip_solver_constraint_handler",
         "//ortools/math_opt/validators:callback_validator",
-        "//ortools/port:proto_utils",
         "//ortools/util:solve_interrupter",
         "@abseil-cpp//absl/base:nullability",
         "@abseil-cpp//absl/cleanup",
@@ -80,7 +80,6 @@ cc_library(
     deps = [
         ":message_callback_data",
         "//ortools/base:linked_hash_map",
-        "//ortools/base:logging",
         "//ortools/base:protoutil",
         "//ortools/base:status_macros",
         "//ortools/math_opt:callback_cc_proto",
@@ -92,6 +91,8 @@ cc_library(
         "//ortools/math_opt/solvers/gurobi:g_gurobi",
         "//ortools/util:solve_interrupter",
         "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
@@ -138,7 +139,6 @@ cc_library(
         "//ortools/math_opt/core:sparse_vector_view",
         "//ortools/math_opt/solvers/gurobi:g_gurobi",
         "//ortools/math_opt/validators:callback_validator",
-        "//ortools/port:proto_utils",
         "//ortools/util:solve_interrupter",
         "//ortools/util:testing_utils",
         "@abseil-cpp//absl/algorithm:container",
@@ -189,7 +189,6 @@ cc_library(
         "//ortools/math_opt/core:solver_interface",
         "//ortools/math_opt/core:sparse_vector_view",
         "//ortools/math_opt/validators:callback_validator",
-        "//ortools/port:proto_utils",
         "//ortools/util:logging",
         "//ortools/util:solve_interrupter",
         "//ortools/util:strong_integers",
@@ -237,7 +236,6 @@ cc_library(
         "//ortools/math_opt/core:sparse_vector_view",
         "//ortools/math_opt/io:proto_converter",
         "//ortools/math_opt/validators:callback_validator",
-        "//ortools/port:proto_utils",
         "//ortools/sat:sat_parameters_cc_proto",
         "//ortools/util:solve_interrupter",
         "@abseil-cpp//absl/base:core_headers",
@@ -387,7 +385,6 @@ cc_library(
         "//ortools/pdlp:quadratic_program",
         "//ortools/pdlp:solve_log_cc_proto",
         "//ortools/pdlp:solvers_cc_proto",
-        "//ortools/port:proto_utils",
         "//ortools/util:solve_interrupter",
         "@abseil-cpp//absl/base:nullability",
         "@abseil-cpp//absl/log",
@@ -448,7 +445,6 @@ cc_library(
         ":message_callback_data",
         "//ortools/base:protoutil",
         "//ortools/base:status_macros",
-        "//ortools/base:sysinfo",
         "//ortools/math_opt:callback_cc_proto",
         "//ortools/math_opt:infeasible_subsystem_cc_proto",
         "//ortools/math_opt:model_cc_proto",
@@ -468,7 +464,6 @@ cc_library(
         "//ortools/math_opt/solvers/glpk:glpk_sparse_vector",
         "//ortools/math_opt/solvers/glpk:rays",
         "//ortools/math_opt/validators:callback_validator",
-        "//ortools/port:proto_utils",
         "//ortools/third_party_solvers/glpk:glpk_env_deleter",
         "//ortools/third_party_solvers/glpk:glpk_formatters",
         "//ortools/util:solve_interrupter",
@@ -529,6 +524,12 @@ cc_test(
 proto_library(
     name = "osqp_proto",
     srcs = ["osqp.proto"],
+)
+
+java_proto_library(
+    name = "osqp_java_proto",
+    visibility = ["//visibility:public"],
+    deps = [":osqp_proto"],
 )
 
 cc_proto_library(
@@ -619,6 +620,12 @@ proto_library(
     srcs = ["gurobi.proto"],
 )
 
+java_proto_library(
+    name = "gurobi_java_proto",
+    visibility = ["//visibility:public"],
+    deps = [":gurobi_proto"],
+)
+
 cc_proto_library(
     name = "gurobi_cc_proto",
     visibility = ["//visibility:public"],
@@ -636,6 +643,11 @@ proto_library(
     srcs = ["glpk.proto"],
 )
 
+java_proto_library(
+    name = "glpk_java_proto",
+    deps = [":glpk_proto"],
+)
+
 cc_proto_library(
     name = "glpk_cc_proto",
     deps = [":glpk_proto"],
@@ -650,6 +662,11 @@ proto_library(
     name = "highs_proto",
     srcs = ["highs.proto"],
     visibility = ["//visibility:public"],
+)
+
+java_proto_library(
+    name = "highs_java_proto",
+    deps = [":highs_proto"],
 )
 
 cc_proto_library(
@@ -705,7 +722,7 @@ cc_library(
         "//ortools/math_opt/core:math_opt_proto_utils",
         "//ortools/math_opt/core:solver_interface",
         "//ortools/math_opt/core:sparse_vector_view",
-	"//ortools/math_opt/cpp:math_opt",
+        "//ortools/math_opt/cpp:math_opt",
         "//ortools/math_opt/solvers/xpress:g_xpress",
         "//ortools/math_opt/validators:callback_validator",
         "//ortools/port:proto_utils",

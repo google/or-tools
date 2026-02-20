@@ -13,11 +13,11 @@
 
 #include "ortools/linear_solver/samples/network_design_ilph.h"
 
-#include "absl/base/log_severity.h"
 #include "absl/status/status.h"
 #include "absl/time/time.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/base/path.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/routing/parsers/capacity_planning.pb.h"

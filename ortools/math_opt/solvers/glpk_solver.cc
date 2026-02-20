@@ -23,7 +23,6 @@
 #include <memory>
 #include <optional>
 #include <string>
-#include <thread>  // IWYU pragma: keep
 #include <utility>
 #include <vector>
 
@@ -64,7 +63,6 @@
 #include "ortools/math_opt/solvers/message_callback_data.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
 #include "ortools/math_opt/validators/callback_validator.h"
-#include "ortools/port/proto_utils.h"
 #include "ortools/third_party_solvers/glpk/glpk_env_deleter.h"
 #include "ortools/third_party_solvers/glpk/glpk_formatters.h"
 #include "ortools/util/solve_interrupter.h"
@@ -477,10 +475,10 @@ absl::Status SetLPParameters(const SolveParametersProto& parameters,
       glpk_parameters.meth = GLP_DUALP;
       break;
     default:
-      warnings.push_back(absl::StrCat(
-          "GLPK does not support ",
-          operations_research::ProtoEnumToString(parameters.lp_algorithm()),
-          " for parameters.lp_algorithm"));
+      warnings.push_back(
+          absl::StrCat("GLPK does not support ",
+                       LPAlgorithmProto_Name(parameters.lp_algorithm()),
+                       " for parameters.lp_algorithm"));
       break;
   }
   if (!warnings.empty()) {

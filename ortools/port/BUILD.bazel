@@ -17,6 +17,32 @@ load("@rules_cc//cc:cc_test.bzl", "cc_test")
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
+    name = "proto_utils",
+    srcs = ["proto_utils.cc"],
+    hdrs = ["proto_utils.h"],
+    deps = [
+        "//ortools/base/macros:os_support",
+        "//ortools/util:parse_proto",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:string_view",
+        "@protobuf",
+    ],
+)
+
+cc_library(
+    name = "file",
+    srcs = ["file.cc"],
+    hdrs = ["file.h"],
+    deps = [
+        "//ortools/base:file",
+        "//ortools/base/macros:os_support",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/strings:string_view",
+    ],
+)
+
+cc_library(
     name = "sysinfo",
     srcs = ["sysinfo.cc"],
     hdrs = ["sysinfo.h"],
@@ -34,33 +60,12 @@ cc_test(
 )
 
 cc_library(
-    name = "proto_utils",
-    srcs = ["proto_utils.cc"],
-    hdrs = ["proto_utils.h"],
-    deps = [
-        "//ortools/base/macros:os_support",
-        "//ortools/util:parse_proto",
-        "@abseil-cpp//absl/base:core_headers",
-        "@abseil-cpp//absl/log",
-        "@abseil-cpp//absl/strings",
-        "@protobuf",
-    ],
-)
-
-cc_library(
-    name = "file",
-    srcs = ["file.cc"],
-    hdrs = ["file.h"],
-    deps = [
-        "//ortools/base:file",
-        "//ortools/base/macros:os_support",
-        "@abseil-cpp//absl/status",
-        "@abseil-cpp//absl/strings",
-    ],
-)
-
-cc_library(
     name = "scoped_std_stream_capture",
     testonly = True,
+    srcs = ["scoped_std_stream_capture.cc"],
     hdrs = ["scoped_std_stream_capture.h"],
+    deps = [
+        "//ortools/base:gmock",
+        "@abseil-cpp//absl/log:check",
+    ],
 )

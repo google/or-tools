@@ -27,7 +27,6 @@
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "google/protobuf/wrappers.pb.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/path.h"
 #include "ortools/scheduling/jobshop_scheduling.pb.h"
 #include "ortools/util/filelineiter.h"
