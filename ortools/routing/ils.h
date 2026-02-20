@@ -22,6 +22,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/container/flat_hash_set.h"
 #include "absl/time/time.h"
 #include "ortools/constraint_solver/assignment.h"
 #include "ortools/constraint_solver/constraint_solver.h"
@@ -98,8 +99,46 @@ class Solution {
   const Assignment* assignment_ = nullptr;
 };
 
+// Interface for ILS event subscribers to be notified of ILS events.
+class IteratedLocalSearchEventSubscriber {
+ public:
+  virtual ~IteratedLocalSearchEventSubscriber() = default;
+
+  // Called when the ILS algorithm reaches a local optimum, i.e., after the
+  // perturbation and the optional local search phases.
+  virtual void OnLocalOptimumReached(const Assignment*) {
+    // No-op by default.
+  }
+
+  // Called when the reference solution is updated, i.e., when a candidate
+  // solution is accepted according to the reference solution acceptance
+  // criterion.
+  virtual void OnReferenceSolutionUpdated(const Assignment*) {
+    // No-op by default.
+  }
+};
+
+// Manages a set of ILS event subscribers, notifying them of ILS events.
+class IteratedLocalSearchEventManager {
+ public:
+  // Adds a subscriber to the list of subscribers.
+  bool AddSubscriber(IteratedLocalSearchEventSubscriber* subscriber);
+
+  // Removes a subscriber from the list of subscribers.
+  bool RemoveSubscriber(IteratedLocalSearchEventSubscriber* subscriber);
+
+  // Notifies all subscribers that a local optimum has been reached.
+  void OnLocalOptimumReached(const Assignment* assignment);
+
+  // Notifies all subscribers that the reference solution has been updated.
+  void OnReferenceSolutionUpdated(const Assignment* assignment);
+
+ private:
+  absl::flat_hash_set<IteratedLocalSearchEventSubscriber*> subscribers_;
+};
+
 // Ruin interface.
-class RuinProcedure {
+class RuinProcedure : public IteratedLocalSearchEventSubscriber {
  public:
   virtual ~RuinProcedure() = default;
 
@@ -141,17 +180,58 @@ class RandomWalkRemovalRuinProcedure : public RuinProcedure {
 
   std::function<int64_t(int64_t)> Ruin(const Assignment* assignment) override;
 
+ protected:
+  // Returns the seed node and the length of the random walk.
+  virtual std::pair<int64_t, int> GetWalkSeedAndLength(
+      const Assignment* assignment);
+
+  // Called when a node is removed from the solution.
+  virtual void OnNodeRemoved(int64_t) {
+    // No-op by default.
+  }
+
+  const Model& model_;
+  std::mt19937& rnd_;
+  std::uniform_int_distribution<int64_t> node_dist_;
+
  private:
   // Returns the next node towards which the random walk is extended.
   int64_t GetNextNodeToRemove(const Assignment* assignment, int node);
 
-  const Model& model_;
   Solution routing_solution_;
   const Model::NodeNeighborsByCostClass* const neighbors_manager_;
-  std::mt19937& rnd_;
   const int walk_length_;
-  std::uniform_int_distribution<int64_t> node_dist_;
   std::bernoulli_distribution boolean_dist_;
+};
+
+class AdaptiveRandomWalkRemovalRuinProcedure
+    : public RandomWalkRemovalRuinProcedure {
+ public:
+  AdaptiveRandomWalkRemovalRuinProcedure(Model* model,
+                                         const Assignment* reference_assignment,
+                                         std::mt19937* rnd,
+                                         int num_neighbors_for_route_selection,
+                                         double strengthening_factor,
+                                         double weakening_factor);
+
+  std::function<int64_t(int64_t)> Ruin(const Assignment* assignment) override;
+  void OnLocalOptimumReached(const Assignment* assignment) override;
+  void OnReferenceSolutionUpdated(const Assignment* assignment) override;
+
+ private:
+  std::pair<int64_t, int> GetWalkSeedAndLength(
+      const Assignment* assignment) override;
+  void OnNodeRemoved(int64_t node) override;
+
+  const Assignment* reference_assignment_;
+  double strengthening_factor_;
+  double weakening_factor_;
+  int64_t weakening_threshold_;
+  int64_t strengthening_threshold_;
+  std::uniform_int_distribution<int> random_choice_;
+  std::vector<int> walk_lengths_;
+
+  std::vector<int64_t> removed_nodes_;
 };
 
 // Applies one or more ruin procedures according to the selected composition
@@ -177,6 +257,10 @@ class CompositeRuinProcedure : public RuinProcedure {
       RuinCompositionStrategy::Value composition_strategy, std::mt19937* rnd);
 
   std::function<int64_t(int64_t)> Ruin(const Assignment* assignment) override;
+
+  void OnLocalOptimumReached(const Assignment* assignment) override;
+
+  void OnReferenceSolutionUpdated(const Assignment* assignment) override;
 
  private:
   // Creates a new assignment from the given next accessor.
@@ -243,12 +327,13 @@ class SISRRuinProcedure : public RuinProcedure {
 // Returns a DecisionBuilder implementing a perturbation step of an Iterated
 // Local Search approach.
 DecisionBuilder* MakePerturbationDecisionBuilder(
-    const RoutingSearchParameters& parameters, Model* model, std::mt19937* rnd,
+    const RoutingSearchParameters& parameters, Model* model,
+    IteratedLocalSearchEventManager* event_manager, std::mt19937* rnd,
     const Assignment* assignment, std::function<bool()> stop_search,
     LocalSearchFilterManager* filter_manager);
 
 // Neighbor acceptance criterion interface.
-class NeighborAcceptanceCriterion {
+class NeighborAcceptanceCriterion : public IteratedLocalSearchEventSubscriber {
  public:
   // Representation of the search process state.
   struct SearchState {
@@ -274,7 +359,8 @@ class NeighborAcceptanceCriterion {
 
 // Returns a neighbor acceptance criterion based on the given parameters.
 std::unique_ptr<NeighborAcceptanceCriterion> MakeNeighborAcceptanceCriterion(
-    const Model& model, const AcceptancePolicy& acceptance_policy,
+    const Model& model, IteratedLocalSearchEventManager* event_manager,
+    const AcceptancePolicy& acceptance_policy,
     const NeighborAcceptanceCriterion::SearchState& final_search_state,
     std::mt19937* rnd);
 

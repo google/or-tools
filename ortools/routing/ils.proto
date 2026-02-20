@@ -51,6 +51,46 @@ message RandomWalkRuinStrategy {
   optional uint32 num_removed_visits = 7;
 }
 
+// Adaptive version of the RandomWalkRuinStrategy where the walk length is
+// automatically adjusted based on the cost of the local optimum found with
+// respect to the reference solution (i.e., the cost of the solution before the
+// ruin application).
+//
+// In particular, the walk length for all nodes involved in the ruin application
+// is decreased by 1 if the cost of the local optimum is greater than the cost
+// of the reference solution plus a threshold value (strengthening threshold,
+// defined as strengthening_factor * average cost of an arc in the reference
+// solution).
+//
+// On the other hand, the walk length for all nodes involved in the ruin
+// application is increased by 1 if the cost of the local optimum is greater or
+// equal than the cost of the reference solution but lower than the cost of the
+// reference solution plus a threshold value (weakening threshold, defined as
+// weakening_factor * average cost of an arc in the reference solution).
+//
+// Finally, the walk length for the nodes involved in the ruin application is
+// randomly increased or decreased by 1 with equal probability if the cost of
+// the local optimum is lower than the cost of the reference solution or it is
+// between the strengthening and weakening thresholds.
+//
+// In all cases, the walk length is never increased or decreased more than the
+// value of the seed node walk length after the update. As for the
+// RandomWalkRuinStrategy, the seed node is chosen randomly among all performed
+// visits of the underlying routing solution at every ruin application.
+//
+// Initially, the walk length for all non start/end nodes is set to ceil(log(N))
+// where N is the number of non start/end nodes in the problem instance.
+//
+// For more details, see "A Fast and Scalable Heuristic for the Solution of
+// Large-Scale Capacitated Vehicle Routing Problems", Luca Accorsi and
+// Daniele Vigo, Transportation Science 2021.
+message AdaptiveRandomWalkRuinStrategy {
+  // Factor used to compute the strengthening threshold.
+  optional double strengthening_factor = 1;
+  // Factor used to compute the weakening threshold.
+  optional double weakening_factor = 2;
+}
+
 // Ruin strategy based on the "Slack Induction by String Removals for Vehicle
 // Routing Problems" by Jan Christiaens and Greet Vanden Berghe, Transportation
 // Science 2020.
@@ -142,6 +182,7 @@ message RuinStrategy {
     SpatiallyCloseRoutesRuinStrategy spatially_close_routes = 1;
     RandomWalkRuinStrategy random_walk = 2;
     SISRRuinStrategy sisr = 3;
+    AdaptiveRandomWalkRuinStrategy adaptive_random_walk = 4;
   }
 }
 

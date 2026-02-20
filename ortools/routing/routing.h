@@ -200,6 +200,7 @@ class GlobalDimensionCumulOptimizer;
 class LocalDimensionCumulOptimizer;
 #if !defined(SWIG)
 class IntVarFilteredDecisionBuilder;
+class RoutingFilteredDecisionBuilder;
 using util::ReverseArcListGraph;
 class SweepArranger;
 #endif  // !defined(SWIG)
@@ -418,19 +419,23 @@ class OR_DLL Model {
     class Attributes {
      public:
       Attributes();
-      Attributes(Domain start_domain, Domain end_domain);
+      Attributes(
+          Domain start_domain, Domain end_domain,
+          int64_t span_upper_bound = std::numeric_limits<int64_t>::max());
 
       const Domain& start_domain() const { return start_domain_; }
       const Domain& end_domain() const { return end_domain_; }
+      int64_t span_upper_bound() const { return span_upper_bound_; }
 
       friend bool operator==(const Attributes& a, const Attributes& b) {
         return a.start_domain_ == b.start_domain_ &&
-               a.end_domain_ == b.end_domain_;
+               a.end_domain_ == b.end_domain_ &&
+               a.span_upper_bound_ == b.span_upper_bound_;
       }
       template <typename H>
       friend H AbslHashValue(H h, const Attributes& attributes) {
         return H::combine(std::move(h), attributes.start_domain_,
-                          attributes.end_domain_);
+                          attributes.end_domain_, attributes.span_upper_bound_);
       }
 
      private:
@@ -440,6 +445,10 @@ class OR_DLL Model {
       Domain start_domain_;
       /// end_domain_.Min() <= cumul[End(v)] <= end_domain_.Max()
       Domain end_domain_;
+      /// The span upper bound constrains the dimension span of the vehicle
+      /// assigned to this resource: cumul[End(v)] - cumul[Start(v)] <=
+      /// span_upper_bound
+      int64_t span_upper_bound_ = std::numeric_limits<int64_t>::max();
     };
 
     /// A Resource sets attributes (costs/constraints) for a set of dimensions.
@@ -1442,6 +1451,12 @@ class OR_DLL Model {
       const RoutingSearchParameters& search_parameters,
       bool check_solution_in_cp,
       absl::flat_hash_set<operations_research::IntVar*>* touched = nullptr);
+  /// Inserts nodes not present in 'assignment' in the routes defined by
+  /// 'assignment'. The assignment should contain well-formed routes using
+  /// next variables of the model. Open routes will be closed.
+  const operations_research::Assignment* InsertNodesInAssignmentWithParameters(
+      const operations_research::Assignment& assignment,
+      const RoutingSearchParameters& parameters);
   /// Same as above but will try all assignments in order as first solutions
   /// until one succeeds.
   const operations_research::Assignment* SolveFromAssignmentsWithParameters(
@@ -2049,6 +2064,21 @@ class OR_DLL Model {
                         limit->solutions());
   }
 
+  /// Helper method to update time limits.
+  bool UpdateLimits(const RoutingSearchParameters& parameters,
+                    int64_t start_time_ms,
+                    bool leave_secondary_solve_buffer = true);
+
+  /// Helper method to initialize the search. Returns the start time of the
+  /// search in milliseconds or std::nullopt if the search could not be
+  /// started.
+  std::optional<int64_t> InitializeSearch(
+      const RoutingSearchParameters& search_parameters);
+
+  /// Helper method to update the status on a search failure.
+  void UpdateStatusOnFailure(const RoutingSearchParameters& parameters,
+                             int64_t start_time_ms);
+
   /// Returns the time buffer to safely return a solution.
   absl::Duration TimeBuffer() const { return time_buffer_; }
 
@@ -2488,6 +2518,10 @@ class OR_DLL Model {
   template <typename Heuristic, typename... Args>
   IntVarFilteredDecisionBuilder* CreateIntVarFilteredDecisionBuilder(
       const Args&... args);
+  template <typename Heuristic, typename... Args>
+  RoutingFilteredDecisionBuilder*
+  CreateRoutingFilteredDecisionBuilderWithRoutes(
+      std::function<int64_t(int64_t)> next_accessor, const Args&... args);
 #endif  // !defined(SWIG)
   LocalSearchPhaseParameters* CreateLocalSearchParameters(
       const RoutingSearchParameters& search_parameters, bool secondary_ls);
@@ -2746,9 +2780,11 @@ class OR_DLL Model {
   DecisionBuilder* secondary_ls_db_ = nullptr;
   DecisionBuilder* restore_assignment_ = nullptr;
   DecisionBuilder* restore_tmp_assignment_ = nullptr;
+  DecisionBuilder* insertion_db_ = nullptr;
   operations_research::Assignment* assignment_ = nullptr;
   operations_research::Assignment* preassignment_ = nullptr;
   operations_research::Assignment* tmp_assignment_ = nullptr;
+  operations_research::Assignment* insertion_assignment_ = nullptr;
   LocalSearchOperator* primary_ls_operator_ = nullptr;
   LocalSearchOperator* secondary_ls_operator_ = nullptr;
   std::vector<operations_research::IntVar*> extra_vars_;
@@ -3507,6 +3543,13 @@ class Dimension {
   const std::vector<int64_t>& vehicle_slack_cost_coefficients() const {
     return vehicle_slack_cost_coefficients_;
   }
+  std::vector<IntVar*>* mutable_vehicle_span_variables() {
+    return &vehicle_span_vars_;
+  }
+  const std::vector<IntVar*>& vehicle_span_variables() const {
+    return vehicle_span_vars_;
+  }
+
 #endif  // !defined(SWIG)
   int64_t global_span_cost_coefficient() const {
     return global_span_cost_coefficient_;
@@ -3668,6 +3711,7 @@ class Dimension {
   int64_t global_span_cost_coefficient_;
   std::vector<int64_t> vehicle_span_cost_coefficients_;
   std::vector<int64_t> vehicle_slack_cost_coefficients_;
+  std::vector<IntVar*> vehicle_span_vars_;
   std::vector<BoundCost> soft_upper_bound_of_cumul_;
   std::vector<BoundCost> soft_lower_bound_of_cumul_;
   std::vector<PiecewiseLinearCost> cumul_var_piecewise_linear_cost_;

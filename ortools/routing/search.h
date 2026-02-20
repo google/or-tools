@@ -92,6 +92,8 @@ const Assignment* SolveFromAssignmentWithAlternativeSolversAndParameters(
     int max_non_improving_iterations);
 
 class IntVarFilteredHeuristic;
+class RoutingFilteredHeuristic;
+
 #ifndef SWIG
 /// Helper class that manages vehicles. This class is based on the
 /// Model::VehicleTypeContainer that sorts and stores vehicles based on
@@ -208,6 +210,27 @@ class IntVarFilteredDecisionBuilder : public DecisionBuilder {
 
  private:
   const std::unique_ptr<IntVarFilteredHeuristic> heuristic_;
+};
+
+class RoutingFilteredDecisionBuilder : public DecisionBuilder {
+ public:
+  explicit RoutingFilteredDecisionBuilder(
+      std::unique_ptr<RoutingFilteredHeuristic> heuristic,
+      std::function<int64_t(int64_t)> next_accessor);
+
+  ~RoutingFilteredDecisionBuilder() override = default;
+
+  Decision* Next(Solver* solver) override;
+
+  std::string DebugString() const override;
+
+  /// Returns statistics from its underlying heuristic.
+  int64_t number_of_decisions() const;
+  int64_t number_of_rejects() const;
+
+ private:
+  const std::unique_ptr<RoutingFilteredHeuristic> heuristic_;
+  std::function<int64_t(int64_t)> next_accessor_;
 };
 
 /// Generic filter-based heuristic applied to IntVars.
