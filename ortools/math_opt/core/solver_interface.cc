@@ -35,7 +35,6 @@
 #include "ortools/base/status_builder.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/parameters.pb.h"
-#include "ortools/port/proto_utils.h"
 
 namespace operations_research {
 namespace math_opt {
@@ -119,7 +118,7 @@ void AllSolversRegistry::Register(const SolverTypeProto solver_type,
     inserted =
         registered_solvers_.emplace(solver_type, std::move(factory)).second;
   }
-  CHECK(inserted) << "Solver type: " << ProtoEnumToString(solver_type)
+  CHECK(inserted) << "Solver type: " << SolverTypeName(solver_type)
                   << " already registered.";
 }
 
@@ -162,7 +161,7 @@ std::string AllSolversRegistry::RegisteredSolversToString() const {
   {
     const absl::MutexLock lock(mutex_);
     for (const auto& kv_pair : registered_solvers_) {
-      solver_names.push_back(ProtoEnumToString(kv_pair.first));
+      solver_names.push_back(SolverTypeName(kv_pair.first));
     }
   }
   std::sort(solver_names.begin(), solver_names.end());

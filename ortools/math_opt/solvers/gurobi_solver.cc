@@ -66,7 +66,6 @@
 #include "ortools/math_opt/solvers/gurobi_init_arguments.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
 #include "ortools/math_opt/validators/callback_validator.h"
-#include "ortools/port/proto_utils.h"
 #include "ortools/util/solve_interrupter.h"
 #include "ortools/util/testing_utils.h"
 
@@ -304,7 +303,7 @@ absl::StatusOr<GurobiParametersProto> MergeParameters(
             "lp_algorithm FIRST_ORDER is not supported for gurobi");
       default:
         LOG(FATAL) << "LPAlgorithm: "
-                   << ProtoEnumToString(solve_parameters.lp_algorithm())
+                   << LPAlgorithmProto_Name(solve_parameters.lp_algorithm())
                    << " unknown, error setting Gurobi parameters";
     }
   }
@@ -329,7 +328,7 @@ absl::StatusOr<GurobiParametersProto> MergeParameters(
         break;
       default:
         LOG(FATAL) << "Scaling emphasis: "
-                   << ProtoEnumToString(solve_parameters.scaling())
+                   << EmphasisProto_Name(solve_parameters.scaling())
                    << " unknown, error setting Gurobi parameters";
     }
   }
@@ -354,7 +353,7 @@ absl::StatusOr<GurobiParametersProto> MergeParameters(
         break;
       default:
         LOG(FATAL) << "Cuts emphasis: "
-                   << ProtoEnumToString(solve_parameters.cuts())
+                   << EmphasisProto_Name(solve_parameters.cuts())
                    << " unknown, error setting Gurobi parameters";
     }
   }
@@ -383,7 +382,7 @@ absl::StatusOr<GurobiParametersProto> MergeParameters(
         break;
       default:
         LOG(FATAL) << "Heuristics emphasis: "
-                   << ProtoEnumToString(solve_parameters.heuristics())
+                   << EmphasisProto_Name(solve_parameters.heuristics())
                    << " unknown, error setting Gurobi parameters";
     }
   }
@@ -406,7 +405,7 @@ absl::StatusOr<GurobiParametersProto> MergeParameters(
         break;
       default:
         LOG(FATAL) << "Presolve emphasis: "
-                   << ProtoEnumToString(solve_parameters.presolve())
+                   << EmphasisProto_Name(solve_parameters.presolve())
                    << " unknown, error setting Gurobi parameters";
     }
   }

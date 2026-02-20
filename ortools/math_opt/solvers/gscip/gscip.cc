@@ -52,7 +52,6 @@
 #include "ortools/math_opt/solvers/gscip/gscip.pb.h"
 #include "ortools/math_opt/solvers/gscip/gscip_event_handler.h"
 #include "ortools/math_opt/solvers/gscip/gscip_parameters.h"
-#include "ortools/port/proto_utils.h"
 #include "ortools/util/status_macros.h"
 #include "scip/cons_sos1.h"
 #include "scip/cons_sos2.h"
@@ -184,7 +183,7 @@ SCIP_PARAMEMPHASIS ConvertEmphasis(
       return SCIP_PARAMEMPHASIS_PHASEPROOF;
     default:
       LOG(FATAL) << "Unrecognized gscip_emphasis: "
-                 << ProtoEnumToString(gscip_emphasis);
+                 << GScipParameters::Emphasis_Name(gscip_emphasis);
   }
 }
 
@@ -201,7 +200,8 @@ SCIP_PARAMSETTING ConvertMetaParamValue(
       return SCIP_PARAMSETTING_OFF;
     default:
       LOG(FATAL) << "Unrecognized gscip_meta_param_value: "
-                 << ProtoEnumToString(gscip_meta_param_value);
+                 << GScipParameters::MetaParamValue_Name(
+                        gscip_meta_param_value);
   }
 }
 

@@ -66,7 +66,6 @@
 #include "ortools/math_opt/solvers/message_callback_data.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
 #include "ortools/math_opt/validators/callback_validator.h"
-#include "ortools/port/proto_utils.h"
 #include "ortools/util/solve_interrupter.h"
 #include "scip/type_cons.h"
 #include "scip/type_var.h"
@@ -617,7 +616,7 @@ GScipParameters::MetaParamValue ConvertMathOptEmphasis(EmphasisProto emphasis) {
       return GScipParameters::AGGRESSIVE;
     default:
       LOG(FATAL) << "Unsupported MathOpt Emphasis value: "
-                 << ProtoEnumToString(emphasis)
+                 << EmphasisProto_Name(emphasis)
                  << " unknown, error setting gSCIP parameters";
   }
 }
@@ -717,7 +716,7 @@ absl::StatusOr<GScipParameters> GScipSolver::MergeParameters(
         break;
       default:
         LOG(FATAL) << "LPAlgorithm: "
-                   << ProtoEnumToString(solve_parameters.lp_algorithm())
+                   << LPAlgorithmProto_Name(solve_parameters.lp_algorithm())
                    << " unknown, error setting gSCIP parameters";
     }
     (*result.mutable_char_params())["lp/initalgorithm"] = alg;
@@ -748,7 +747,7 @@ absl::StatusOr<GScipParameters> GScipSolver::MergeParameters(
         break;
       default:
         LOG(FATAL) << "Scaling emphasis: "
-                   << ProtoEnumToString(solve_parameters.scaling())
+                   << EmphasisProto_Name(solve_parameters.scaling())
                    << " unknown, error setting gSCIP parameters";
     }
     (*result.mutable_int_params())["lp/scaling"] = scaling_value;
@@ -920,9 +919,10 @@ absl::StatusOr<TerminationProto> ConvertTerminationReason(
       return absl::InternalError(JoinDetails(
           gscip_status_detail, "Unexpected GScipOutput.status: UNKNOWN"));
     default:
-      return absl::InternalError(JoinDetails(
-          gscip_status_detail, absl::StrCat("Missing GScipOutput.status case: ",
-                                            ProtoEnumToString(gscip_status))));
+      return absl::InternalError(
+          JoinDetails(gscip_status_detail,
+                      absl::StrCat("Missing GScipOutput.status case: ",
+                                   GScipOutput::Status_Name(gscip_status))));
   }
 }
 
