@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# [START program]
 """Code sample to demonstrates how to detect if two intervals overlap."""
 
 from ortools.sat.python import cp_model
@@ -94,3 +95,4 @@ def overlapping_interval_sample_sat():
 
 
 overlapping_interval_sample_sat()
+# [END program]

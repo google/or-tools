@@ -14,8 +14,8 @@
 // IWYU pragma: private, include "ortools/math_opt/cpp/math_opt.h"
 // IWYU pragma: friend "ortools/math_opt/cpp/.*"
 
-#ifndef OR_TOOLS_MATH_OPT_CPP_MODEL_SOLVE_PARAMETERS_H_
-#define OR_TOOLS_MATH_OPT_CPP_MODEL_SOLVE_PARAMETERS_H_
+#ifndef ORTOOLS_MATH_OPT_CPP_MODEL_SOLVE_PARAMETERS_H_
+#define ORTOOLS_MATH_OPT_CPP_MODEL_SOLVE_PARAMETERS_H_
 
 #include <sys/types.h>
 
@@ -244,4 +244,4 @@ ModelSolveParameters ModelSolveParameters::OnlySomePrimalVariables(
 }  // namespace math_opt
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_MATH_OPT_CPP_MODEL_SOLVE_PARAMETERS_H_
+#endif  // ORTOOLS_MATH_OPT_CPP_MODEL_SOLVE_PARAMETERS_H_

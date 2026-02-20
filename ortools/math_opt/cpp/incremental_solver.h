@@ -14,8 +14,8 @@
 // IWYU pragma: private, include "ortools/math_opt/cpp/math_opt.h"
 // IWYU pragma: friend "ortools/math_opt/cpp/.*"
 
-#ifndef OR_TOOLS_MATH_OPT_CPP_INCREMENTAL_SOLVER_H_
-#define OR_TOOLS_MATH_OPT_CPP_INCREMENTAL_SOLVER_H_
+#ifndef ORTOOLS_MATH_OPT_CPP_INCREMENTAL_SOLVER_H_
+#define ORTOOLS_MATH_OPT_CPP_INCREMENTAL_SOLVER_H_
 
 #include "absl/status/statusor.h"
 #include "ortools/math_opt/cpp/compute_infeasible_subsystem_arguments.h"  // IWYU pragma: export
@@ -112,21 +112,14 @@ class IncrementalSolver {
   //
   // See callback.h for documentation on arguments.callback and
   // arguments.callback_registration.
-  virtual absl::StatusOr<SolveResult> Solve(
-      const SolveArguments& arguments) = 0;
-  absl::StatusOr<SolveResult> Solve() { return Solve({}); }
+  absl::StatusOr<SolveResult> Solve(const SolveArguments& arguments = {});
 
   // Updates the underlying solver with latest model changes and runs the
   // computation.
   //
   // Same as Solve() but compute the infeasible subsystem.
-  virtual absl::StatusOr<ComputeInfeasibleSubsystemResult>
-  ComputeInfeasibleSubsystem(
-      const ComputeInfeasibleSubsystemArguments& arguments) = 0;
-  absl::StatusOr<ComputeInfeasibleSubsystemResult>
-  ComputeInfeasibleSubsystem() {
-    return ComputeInfeasibleSubsystem({});
-  }
+  absl::StatusOr<ComputeInfeasibleSubsystemResult> ComputeInfeasibleSubsystem(
+      const ComputeInfeasibleSubsystemArguments& arguments = {});
 
   // Updates the model to solve.
   //
@@ -173,4 +166,4 @@ class IncrementalSolver {
 
 }  // namespace operations_research::math_opt
 
-#endif  // OR_TOOLS_MATH_OPT_CPP_INCREMENTAL_SOLVER_H_
+#endif  // ORTOOLS_MATH_OPT_CPP_INCREMENTAL_SOLVER_H_

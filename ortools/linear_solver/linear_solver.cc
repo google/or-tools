@@ -374,100 +374,15 @@ bool MPSolver::SetSolverSpecificParametersAsString(
 
 // ----- Solver -----
 
-#if defined(USE_BOP)
-extern MPSolverInterface* BuildBopInterface(MPSolver* const solver);
-#endif
-#if defined(USE_CBC)
-extern MPSolverInterface* BuildCBCInterface(MPSolver* const solver);
-#endif
-#if defined(USE_CLP) || defined(USE_CBC)
-extern MPSolverInterface* BuildCLPInterface(MPSolver* const solver);
-#endif
-#if defined(USE_GLOP)
-extern MPSolverInterface* BuildGLOPInterface(MPSolver* const solver);
-#endif
-#if defined(USE_GLPK)
-extern MPSolverInterface* BuildGLPKInterface(bool mip, MPSolver* const solver);
-#endif
-#if defined(USE_HIGHS)
-extern MPSolverInterface* BuildHighsInterface(bool mip, MPSolver* const solver);
-#endif
-#if defined(USE_PDLP)
-extern MPSolverInterface* BuildPdlpInterface(MPSolver* const solver);
-#endif
-extern MPSolverInterface* BuildSatInterface(MPSolver* const solver);
-#if defined(USE_SCIP)
-extern MPSolverInterface* BuildSCIPInterface(MPSolver* const solver);
-#endif
-extern MPSolverInterface* BuildGurobiInterface(bool mip,
-                                               MPSolver* const solver);
-#if defined(USE_CPLEX)
-extern MPSolverInterface* BuildCplexInterface(bool mip, MPSolver* const solver);
-#endif
-extern MPSolverInterface* BuildXpressInterface(bool mip,
-                                               MPSolver* const solver);
-
 namespace {
 MPSolverInterface* BuildSolverInterface(MPSolver* const solver) {
   DCHECK(solver != nullptr);
-  switch (solver->ProblemType()) {
-#if defined(USE_BOP)
-    case MPSolver::BOP_INTEGER_PROGRAMMING:
-      return BuildBopInterface(solver);
-#endif
-#if defined(USE_CBC)
-    case MPSolver::CBC_MIXED_INTEGER_PROGRAMMING:
-      return BuildCBCInterface(solver);
-#endif
-#if defined(USE_CLP) || defined(USE_CBC)
-    case MPSolver::CLP_LINEAR_PROGRAMMING:
-      return BuildCLPInterface(solver);
-#endif
-#if defined(USE_GLOP)
-    case MPSolver::GLOP_LINEAR_PROGRAMMING:
-      return BuildGLOPInterface(solver);
-#endif
-#if defined(USE_GLPK)
-    case MPSolver::GLPK_LINEAR_PROGRAMMING:
-      return BuildGLPKInterface(false, solver);
-    case MPSolver::GLPK_MIXED_INTEGER_PROGRAMMING:
-      return BuildGLPKInterface(true, solver);
-#endif
-#if defined(USE_HIGHS)
-    case MPSolver::HIGHS_LINEAR_PROGRAMMING:
-      return BuildHighsInterface(false, solver);
-    case MPSolver::HIGHS_MIXED_INTEGER_PROGRAMMING:
-      return BuildHighsInterface(true, solver);
-#endif
-#if defined(USE_PDLP)
-    case MPSolver::PDLP_LINEAR_PROGRAMMING:
-      return BuildPdlpInterface(solver);
-#endif
-    case MPSolver::SAT_INTEGER_PROGRAMMING:
-      return BuildSatInterface(solver);
-#if defined(USE_SCIP)
-    case MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING:
-      return BuildSCIPInterface(solver);
-#endif
-    case MPSolver::GUROBI_LINEAR_PROGRAMMING:
-      return BuildGurobiInterface(false, solver);
-    case MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING:
-      return BuildGurobiInterface(true, solver);
-#if defined(USE_CPLEX)
-    case MPSolver::CPLEX_LINEAR_PROGRAMMING:
-      return BuildCplexInterface(false, solver);
-    case MPSolver::CPLEX_MIXED_INTEGER_PROGRAMMING:
-      return BuildCplexInterface(true, solver);
-#endif
-    case MPSolver::XPRESS_MIXED_INTEGER_PROGRAMMING:
-      return BuildXpressInterface(true, solver);
-    case MPSolver::XPRESS_LINEAR_PROGRAMMING:
-      return BuildXpressInterface(false, solver);
-    default:
-      // TODO(user): Revert to the best *available* interface.
-      LOG(FATAL) << "Linear solver not recognized.";
-  }
-  return nullptr;
+  MPSolverInterface* interface =
+      MPSolverInterfaceFactoryRepository::GetInstance()->Create(solver);
+  QCHECK(interface != nullptr)
+      << "Unsupported problem type: '" << solver->ProblemType()
+      << "'. Did you forget to link the library for this solver?";
+  return interface;
 }
 }  // namespace
 
@@ -497,58 +412,10 @@ MPSolver::MPSolver(const std::string& name,
 
 MPSolver::~MPSolver() { Clear(); }
 
-extern bool GurobiIsCorrectlyInstalled();
-extern bool XpressIsCorrectlyInstalled();
-
 // static
 bool MPSolver::SupportsProblemType(OptimizationProblemType problem_type) {
-#ifdef USE_BOP
-  if (problem_type == BOP_INTEGER_PROGRAMMING) return true;
-#endif
-#ifdef USE_CBC
-  if (problem_type == CBC_MIXED_INTEGER_PROGRAMMING) return true;
-#endif
-#ifdef USE_CLP
-  if (problem_type == CLP_LINEAR_PROGRAMMING) return true;
-#endif
-#ifdef USE_GLOP
-  if (problem_type == GLOP_LINEAR_PROGRAMMING) return true;
-#endif
-#ifdef USE_GLPK
-  if (problem_type == GLPK_LINEAR_PROGRAMMING ||
-      problem_type == GLPK_MIXED_INTEGER_PROGRAMMING) {
-    return true;
-  }
-#endif
-#ifdef USE_HIGHS
-  if (problem_type == HIGHS_MIXED_INTEGER_PROGRAMMING ||
-      problem_type == HIGHS_LINEAR_PROGRAMMING) {
-    return true;
-  }
-#endif
-#ifdef USE_PDLP
-  if (problem_type == PDLP_LINEAR_PROGRAMMING) return true;
-#endif
-  if (problem_type == GUROBI_LINEAR_PROGRAMMING ||
-      problem_type == GUROBI_MIXED_INTEGER_PROGRAMMING) {
-    return GurobiIsCorrectlyInstalled();
-  }
-  if (problem_type == SAT_INTEGER_PROGRAMMING) return true;
-#ifdef USE_SCIP
-  if (problem_type == SCIP_MIXED_INTEGER_PROGRAMMING) return true;
-#endif
-#ifdef USE_CPLEX
-  if (problem_type == CPLEX_LINEAR_PROGRAMMING ||
-      problem_type == CPLEX_MIXED_INTEGER_PROGRAMMING) {
-    return true;
-  }
-#endif
-  if (problem_type == XPRESS_MIXED_INTEGER_PROGRAMMING ||
-      problem_type == XPRESS_LINEAR_PROGRAMMING) {
-    return XpressIsCorrectlyInstalled();
-  }
-
-  return false;
+  return MPSolverInterfaceFactoryRepository::GetInstance()->Supports(
+      problem_type);
 }
 
 // TODO(user): post c++ 14, instead use
@@ -633,7 +500,6 @@ absl::string_view ToString(
   }
   LOG(FATAL) << "Unrecognized solver type: "
              << static_cast<int>(optimization_problem_type);
-  return "";
 }
 
 bool AbslParseFlag(const absl::string_view text,
@@ -740,7 +606,7 @@ class MPVariableNamesIterator {
   int index_ = 0;
 };
 
-// Iterates over all the constraint and general_constaint names. See usage.
+// Iterates over all the constraint and general_constraint names. See usage.
 class MPConstraintNamesIterator {
  public:
   explicit MPConstraintNamesIterator(const MPModelProto& model)
@@ -1155,7 +1021,6 @@ void MPSolver::SolveLazyMutableRequest(LazyMutableCopy<MPModelRequest> request,
       // the user. They shouldn't matter for polling, but for solving we might
       // e.g. use a larger stack.
       ThreadPool thread_pool(/*num_threads=*/1);
-      thread_pool.StartWorkers();
       thread_pool.Schedule(polling_func);
 
       // Make sure the interruption notification didn't arrive while waiting to
@@ -1376,7 +1241,7 @@ absl::Status MPSolver::LoadSolutionFromProto(const MPSolutionResponse& response,
 
 void MPSolver::Clear() {
   {
-    absl::MutexLock lock(&global_count_mutex_);
+    absl::MutexLock lock(global_count_mutex_);
     global_num_variables_ += variables_.size();
     global_num_constraints_ += constraints_.size();
   }
@@ -1909,13 +1774,13 @@ int64_t MPSolver::global_num_constraints_ = 0;
 
 // static
 int64_t MPSolver::global_num_variables() {
-  absl::MutexLock lock(&global_count_mutex_);
+  absl::MutexLock lock(global_count_mutex_);
   return global_num_variables_;
 }
 
 // static
 int64_t MPSolver::global_num_constraints() {
-  absl::MutexLock lock(&global_count_mutex_);
+  absl::MutexLock lock(global_count_mutex_);
   return global_num_constraints_;
 }
 
@@ -2336,6 +2201,78 @@ std::string MPSolver::GetMPModelRequestLoggingInfo(
 #endif  // __PORTABLE_PLATFORM__
   if (request.model().has_name()) {
     absl::StrAppendFormat(&out, "model_name: '%s'\n", request.model().name());
+  }
+  return out;
+}
+
+MPSolverInterfaceFactoryRepository*
+MPSolverInterfaceFactoryRepository::GetInstance() {
+  static auto* const kInstance = new MPSolverInterfaceFactoryRepository();
+  return kInstance;
+}
+
+// This can't be covered by unit test coverage framework, because the Singleton
+// destruction occurs after it finished collecting coverage.
+// COV_NF_START
+MPSolverInterfaceFactoryRepository::~MPSolverInterfaceFactoryRepository() {
+  absl::MutexLock lock(mutex_);
+  map_.clear();
+}
+// COV_NF_END
+
+void MPSolverInterfaceFactoryRepository::Register(
+    MPSolverInterfaceFactory factory,
+    MPSolver::OptimizationProblemType problem_type,
+    std::function<bool()> is_runtime_ready) {
+  absl::MutexLock lock(mutex_);
+  if (!is_runtime_ready) is_runtime_ready = []() { return true; };
+  map_[problem_type] = Entry{
+      .factory = std::move(factory),
+      .is_runtime_ready = std::move(is_runtime_ready),
+  };
+}
+
+bool MPSolverInterfaceFactoryRepository::Unregister(
+    MPSolver::OptimizationProblemType problem_type) {
+  absl::MutexLock lock(mutex_);
+  return map_.erase(problem_type) == 1;
+}
+
+MPSolverInterface* MPSolverInterfaceFactoryRepository::Create(
+    MPSolver* solver) const {
+  absl::MutexLock lock(mutex_);
+  const Entry* entry = gtl::FindOrNull(map_, solver->ProblemType());
+  CHECK(entry != nullptr) << "No factory registered for problem type "
+                          << ToString(solver->ProblemType());
+  CHECK(entry->is_runtime_ready())
+      << "Solver for problem type " << ToString(solver->ProblemType())
+      << " is not ready.";
+  return entry->factory(solver);
+}
+
+bool MPSolverInterfaceFactoryRepository::Supports(
+    MPSolver::OptimizationProblemType problem_type) const {
+  const Entry* entry = gtl::FindOrNull(map_, problem_type);
+  if (entry == nullptr) return false;
+  return entry->is_runtime_ready();
+}
+
+std::vector<MPSolver::OptimizationProblemType>
+MPSolverInterfaceFactoryRepository::ListAllRegisteredProblemTypes() const {
+  std::vector<MPSolver::OptimizationProblemType> out;
+  for (auto it = map_.begin(); it != map_.end(); ++it) {
+    out.push_back(it->first);
+  }
+  return out;
+}
+
+std::string MPSolverInterfaceFactoryRepository  // NOLINT
+    ::PrettyPrintAllRegisteredProblemTypes() const {
+  std::string out;
+  for (auto it = map_.begin(); it != map_.end(); ++it) {
+    out += ProtoEnumToString<MPModelRequest::SolverType>(
+               static_cast<MPModelRequest::SolverType>(it->first)) +
+           "\n";
   }
   return out;
 }

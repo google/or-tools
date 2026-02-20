@@ -13,8 +13,8 @@
 
 // Basic utility functions on Fractional or row/column of Fractional.
 
-#ifndef OR_TOOLS_LP_DATA_LP_UTILS_H_
-#define OR_TOOLS_LP_DATA_LP_UTILS_H_
+#ifndef ORTOOLS_LP_DATA_LP_UTILS_H_
+#define ORTOOLS_LP_DATA_LP_UTILS_H_
 
 #include <cmath>
 #include <cstdlib>
@@ -398,4 +398,4 @@ typedef SumWithOneMissing<false> SumWithNegativeInfiniteAndOneMissing;
 }  // namespace glop
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_LP_DATA_LP_UTILS_H_
+#endif  // ORTOOLS_LP_DATA_LP_UTILS_H_

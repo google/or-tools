@@ -13,7 +13,9 @@
 
 load("@protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
 load("@protobuf//bazel:proto_library.bzl", "proto_library")
-load("@rules_cc//cc:defs.bzl", "cc_library")
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -27,24 +29,26 @@ cc_library(
         "//ortools/base",
         "//ortools/base:map_util",
         "//ortools/base:stl_util",
+        "//ortools/base:types",
         "//ortools/graph:topologicalsorter",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
 cc_library(
     name = "arc_flow_solver",
-    srcs = [
-        "arc_flow_solver.cc",
-    ],
+    srcs = ["arc_flow_solver.cc"],
     hdrs = ["arc_flow_solver.h"],
     deps = [
         ":arc_flow_builder",
+        ":vector_bin_packing_cc_proto",
         "//ortools/base",
         "//ortools/base:file",
+        "//ortools/base:timer",
         "//ortools/linear_solver",
-        "//ortools/packing:vector_bin_packing_cc_proto",
+        "@abseil-cpp//absl/container:btree",
         "@abseil-cpp//absl/flags:flag",
     ],
 )
@@ -54,12 +58,10 @@ cc_library(
 proto_library(
     name = "vector_bin_packing_proto",
     srcs = ["vector_bin_packing.proto"],
-    visibility = ["//visibility:public"],
 )
 
 cc_proto_library(
     name = "vector_bin_packing_cc_proto",
-    visibility = ["//visibility:public"],
     deps = [":vector_bin_packing_proto"],
 )
 
@@ -67,10 +69,9 @@ cc_library(
     name = "vector_bin_packing_parser",
     srcs = ["vector_bin_packing_parser.cc"],
     hdrs = ["vector_bin_packing_parser.h"],
-    visibility = ["//visibility:public"],
     deps = [
         ":vector_bin_packing_cc_proto",
-        "//ortools/base",
+        "//ortools/base:types",
         "//ortools/util:filelineiter",
         "@abseil-cpp//absl/strings",
     ],
@@ -78,18 +79,17 @@ cc_library(
 
 cc_binary(
     name = "vector_bin_packing",
-    srcs = [
-        "vector_bin_packing_main.cc",
-    ],
+    srcs = ["vector_bin_packing_main.cc"],
     deps = [
+        ":arc_flow_solver",
+        ":vector_bin_packing_cc_proto",
+        ":vector_bin_packing_parser",
         "//ortools/base",
         "//ortools/base:file",
-        "//ortools/packing:arc_flow_builder",
-        "//ortools/packing:arc_flow_solver",
-        "//ortools/packing:vector_bin_packing_cc_proto",
-        "//ortools/packing:vector_bin_packing_parser",
+        "//ortools/linear_solver",
         "@abseil-cpp//absl/flags:flag",
-        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:globals",
         "@abseil-cpp//absl/strings",
     ],
 )
@@ -97,9 +97,7 @@ cc_binary(
 cc_test(
     name = "vector_bin_packing_test",
     size = "medium",
-    srcs = [
-        "vector_bin_packing_main.cc",
-    ],
+    srcs = ["vector_bin_packing_main.cc"],
     args = ["--input $(rootpath //ortools/packing/testdata:1D__bpp_scholl__bin2data.N2W2B1R0.vbp)"],
     data = ["//ortools/packing/testdata:1D__bpp_scholl__bin2data.N2W2B1R0.vbp"],
     deps = [
@@ -120,12 +118,10 @@ cc_test(
 proto_library(
     name = "multiple_dimensions_bin_packing_proto",
     srcs = ["multiple_dimensions_bin_packing.proto"],
-    visibility = ["//visibility:public"],
 )
 
 cc_proto_library(
     name = "multiple_dimensions_bin_packing_cc_proto",
-    visibility = ["//visibility:public"],
     deps = [":multiple_dimensions_bin_packing_proto"],
 )
 
@@ -133,10 +129,10 @@ cc_library(
     name = "binpacking_2d_parser",
     srcs = ["binpacking_2d_parser.cc"],
     hdrs = ["binpacking_2d_parser.h"],
-    visibility = ["//visibility:public"],
     deps = [
         ":multiple_dimensions_bin_packing_cc_proto",
         "//ortools/base",
+        "//ortools/base:types",
         "//ortools/util:filelineiter",
         "@abseil-cpp//absl/strings",
     ],

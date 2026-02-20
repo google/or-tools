@@ -11,17 +11,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_SAT_CP_MODEL_SOLVER_HELPERS_H_
-#define OR_TOOLS_SAT_CP_MODEL_SOLVER_HELPERS_H_
+#ifndef ORTOOLS_SAT_CP_MODEL_SOLVER_HELPERS_H_
+#define ORTOOLS_SAT_CP_MODEL_SOLVER_HELPERS_H_
 
 #include <cstdint>
 #include <memory>
-#include <utility>
+#include <tuple>
 #include <vector>
 
 #include "absl/types/span.h"
 #include "ortools/base/timer.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_solver_logging.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -54,18 +55,23 @@ struct SharedClasses {
   SharedResponseManager* const response;
   SharedTreeManager* const shared_tree_manager;
   SharedLsSolutionRepository* const ls_hints;
+  SolverProgressLogger* const progress_logger;
+  SharedLratProofStatus* const lrat_proof_status;
 
   // These can be nullptr depending on the options.
   std::unique_ptr<SharedBoundsManager> bounds;
   std::unique_ptr<SharedLPSolutionRepository> lp_solutions;
   std::unique_ptr<SharedIncompleteSolutionManager> incomplete_solutions;
   std::unique_ptr<SharedClausesManager> clauses;
+  std::unique_ptr<SharedLinear2Bounds> linear2_bounds;
 
   // call local_model->Register() on most of the class here, this allow to
   // more easily depends on one of the shared class deep within the solver.
   void RegisterSharedClassesInLocalModel(Model* local_model);
 
   bool SearchIsDone();
+
+  void LogFinalStatistics();
 };
 
 // Loads a CpModelProto inside the given model.
@@ -119,6 +125,11 @@ int RegisterClausesLevelZeroImport(int id,
                                    SharedClausesManager* shared_clauses_manager,
                                    Model* model);
 
+// This will register a level zero callback to imports new linear2 from the
+// SharedLinear2Bounds.
+void RegisterLinear2BoundsImport(SharedLinear2Bounds* shared_linear2_bounds,
+                                 Model* model);
+
 void PostsolveResponseWrapper(const SatParameters& params,
                               int num_variable_in_original_model,
                               const CpModelProto& mapping_proto,
@@ -146,4 +157,4 @@ void LoadDebugSolution(const CpModelProto& model_proto, Model* model);
 }  // namespace sat
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_CP_MODEL_SOLVER_HELPERS_H_
+#endif  // ORTOOLS_SAT_CP_MODEL_SOLVER_HELPERS_H_

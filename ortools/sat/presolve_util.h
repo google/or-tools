@@ -11,12 +11,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_SAT_PRESOLVE_UTIL_H_
-#define OR_TOOLS_SAT_PRESOLVE_UTIL_H_
+#ifndef ORTOOLS_SAT_PRESOLVE_UTIL_H_
+#define ORTOOLS_SAT_PRESOLVE_UTIL_H_
 
 #include <array>
 #include <cstdint>
-#include <string>
 #include <utility>
 #include <vector>
 
@@ -25,60 +24,15 @@
 #include "absl/random/bit_gen_ref.h"
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
-#include "ortools/base/timer.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
-#include "ortools/util/logging.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/strong_integers.h"
-#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
-
-// Simple helper class to:
-// - log in an uniform way a "time-consuming" presolve operation.
-// - track a deterministic work limit.
-// - update the deterministic time on finish.
-class PresolveTimer {
- public:
-  PresolveTimer(std::string name, SolverLogger* logger, TimeLimit* time_limit)
-      : name_(std::move(name)), logger_(logger), time_limit_(time_limit) {
-    timer_.Start();
-  }
-
-  // Track the work done (which is also the deterministic time).
-  // By default we want a limit of around 1 deterministic seconds.
-  void AddToWork(double dtime) { work_ += dtime; }
-  void TrackSimpleLoop(int size) { work_ += 5e-9 * size; }
-  bool WorkLimitIsReached() const { return work_ >= 1.0; }
-
-  // Extra stats=value to display at the end.
-  // We filter value of zero to have less clutter.
-  void AddCounter(std::string name, int64_t count) {
-    if (count == 0) return;
-    counters_.emplace_back(std::move(name), count);
-  }
-
-  // Extra info at the end of the log line.
-  void AddMessage(std::string name) { extra_infos_.push_back(std::move(name)); }
-
-  // Update dtime and log operation summary.
-  ~PresolveTimer();
-
- private:
-  const std::string name_;
-
-  WallTimer timer_;
-  SolverLogger* logger_;
-  TimeLimit* time_limit_;
-
-  double work_ = 0;
-  std::vector<std::pair<std::string, int64_t>> counters_;
-  std::vector<std::string> extra_infos_;
-};
 
 // If for each literal of a clause, we can infer a domain on an integer
 // variable, then we know that this variable domain is included in the union of
@@ -271,7 +225,7 @@ class ActivityBoundHelper {
                            absl::flat_hash_set<int>* literals_at_true);
 
   // For each enforcement literal enf, if not(enf) implies that the constraint
-  // is trivial, then we can just remove not(enf) from the list.
+  // is trivial, then we can just remove enf from the list.
   //
   // Actually, we could even "lift" such enforcement so that if it is negative
   // the constraint is still trivial but tighter.
@@ -301,7 +255,7 @@ class ActivityBoundHelper {
     return Index(ref >= 0 ? 2 * ref : -2 * ref - 1);
   }
 
-  bool AppearInTriggeredAmo(int literal);
+  bool AppearInTriggeredAmo(int literal) const;
 
   int64_t ComputeActivity(
       bool compute_min, absl::Span<const std::pair<int, int64_t>> terms,
@@ -340,6 +294,7 @@ class ActivityBoundHelper {
 
   absl::flat_hash_set<int> triggered_amo_;
   absl::flat_hash_set<int> tmp_set_;
+  std::vector<int> tmp_boolean_terms_in_some_amo_;
 };
 
 // Class to help detects clauses that differ on a single literal.
@@ -411,4 +366,4 @@ inline bool LinearsDifferAtOneTerm(const LinearConstraintProto& lin1,
 }  // namespace sat
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_PRESOLVE_UTIL_H_
+#endif  // ORTOOLS_SAT_PRESOLVE_UTIL_H_

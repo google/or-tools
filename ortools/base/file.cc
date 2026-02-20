@@ -27,6 +27,9 @@
 #include <unistd.h>
 #endif
 
+#include <bzlib.h>
+#include <zlib.h>
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -38,11 +41,9 @@
 #include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
-#include "bzlib.h"
 #include "google/protobuf/io/tokenizer.h"
 #include "google/protobuf/message.h"
 #include "google/protobuf/text_format.h"
-#include "zlib.h"
 
 namespace {
 enum class Format { NORMAL_FILE, GZIP_FILE, BZIP2_FILE };

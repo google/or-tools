@@ -318,6 +318,7 @@ struct Edge {
                 .y_start = rectangle.y_min,
                 .size = rectangle.SizeY()};
     }
+    LOG(FATAL) << "Invalid edge position: " << static_cast<int>(pos);
   }
 
   template <typename H>
@@ -598,6 +599,7 @@ IntegerValue GetClockwiseStart(EdgePosition edge, const Rectangle& rectangle) {
     case EdgePosition::TOP:
       return rectangle.x_min;
   }
+  LOG(FATAL) << "Invalid edge position: " << static_cast<int>(edge);
 }
 
 IntegerValue GetClockwiseEnd(EdgePosition edge, const Rectangle& rectangle) {
@@ -611,6 +613,7 @@ IntegerValue GetClockwiseEnd(EdgePosition edge, const Rectangle& rectangle) {
     case EdgePosition::TOP:
       return rectangle.x_max;
   }
+  LOG(FATAL) << "Invalid edge position: " << static_cast<int>(edge);
 }
 
 // Given a list of rectangles and their neighbours graph, find the list of
@@ -1524,7 +1527,6 @@ Disjoint2dPackingResult DetectDisjointRegionIn2dPacking(
   // If we are here, that means that the space where boxes can be placed is not
   // connected.
   Disjoint2dPackingResult result;
-  absl::flat_hash_set<int> component_set;
   for (const std::vector<int>& component : space_components) {
     Rectangle bin_bounding_box = occupiable_space[component[0]];
     for (int i = 1; i < component.size(); ++i) {

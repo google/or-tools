@@ -60,6 +60,7 @@ void SolveQap() {
   // Occupy each location exactly once.
   for (int l = 0; l < n; ++l) {
     std::vector<BoolVar> tmp;
+    tmp.reserve(n);
     for (int f = 0; f < n; ++f) {
       tmp.push_back(place_vars[f][l]);
     }

@@ -22,8 +22,9 @@ import (
 
 	log "github.com/golang/glog"
 	"github.com/google/go-cmp/cmp"
-	cmpb "github.com/google/or-tools/ortools/sat/proto/cpmodel"
 	"google.golang.org/protobuf/testing/protocmp"
+
+	cmpb "github.com/google/or-tools/ortools/sat/proto/cpmodel"
 )
 
 func Example() {

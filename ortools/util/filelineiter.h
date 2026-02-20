@@ -22,8 +22,8 @@
 // * Options are available to keep the trailing '\n' for each line, to remove
 //   carriage-return characters ('\r'), and to remove blank lines.
 //
-#ifndef OR_TOOLS_UTIL_FILELINEITER_H_
-#define OR_TOOLS_UTIL_FILELINEITER_H_
+#ifndef ORTOOLS_UTIL_FILELINEITER_H_
+#define ORTOOLS_UTIL_FILELINEITER_H_
 
 #include <algorithm>
 #include <cstdint>
@@ -173,4 +173,4 @@ class FileLines {
   const int options_;
 };
 
-#endif  // OR_TOOLS_UTIL_FILELINEITER_H_
+#endif  // ORTOOLS_UTIL_FILELINEITER_H_

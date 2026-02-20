@@ -72,8 +72,8 @@
 // parser is always 0-based. Users of this parser should never see any 1-based
 // index; only 0-based index should be used to query values.
 
-#ifndef OR_TOOLS_ROUTING_PARSERS_NEARP_PARSER_H_
-#define OR_TOOLS_ROUTING_PARSERS_NEARP_PARSER_H_
+#ifndef ORTOOLS_ROUTING_PARSERS_NEARP_PARSER_H_
+#define ORTOOLS_ROUTING_PARSERS_NEARP_PARSER_H_
 
 #include <algorithm>
 #include <string>
@@ -255,4 +255,4 @@ class NearpParser {
 };
 }  // namespace operations_research::routing
 
-#endif  // OR_TOOLS_ROUTING_PARSERS_NEARP_PARSER_H_
+#endif  // ORTOOLS_ROUTING_PARSERS_NEARP_PARSER_H_

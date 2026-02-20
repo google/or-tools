@@ -171,6 +171,13 @@ TEST_P(SimpleQcTest, SolveHalfEllipseQc) {
 // Additionally, if we impose integrality on x, then the optimal solution is
 // x = 0 with objective value 1.
 TEST_P(IncrementalQcTest, LinearToQuadraticUpdate) {
+  if (GetParam().solver_type == SolverType::kXpress) {
+    // This test suffers from a bug in Xpress 9.6.0 (bug introduced in 9.6.0,
+    // fixed in 9.6.1).
+    // We have no easy way to check the Xpress version here, so we just skip
+    // the test.
+    GTEST_SKIP() << "Skip test due to bug in Xpress 9.6.0.";
+  }
   Model model;
   const Variable x =
       model.AddVariable(0.0, 1.0, GetParam().use_integer_variables, "x");

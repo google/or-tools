@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# [START program]
 """Solves a scheduling problem with a min and max profile for the work load."""
 
 import io
@@ -22,6 +23,7 @@ import pandas as pd
 from ortools.sat.python import cp_model
 
 
+# [START data_model]
 def create_data_model() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Creates the dataframes that describes the model."""
 
@@ -281,3 +283,4 @@ def main(_) -> None:
 
 if __name__ == "__main__":
     app.run(main)
+# [END program]

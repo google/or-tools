@@ -17,7 +17,6 @@ import math
 
 from absl.testing import absltest
 from ortools.pdlp import solve_log_pb2
-from ortools.gscip import gscip_pb2
 from ortools.math_opt import result_pb2
 from ortools.math_opt import solution_pb2
 from ortools.math_opt import sparse_containers_pb2
@@ -26,6 +25,7 @@ from ortools.math_opt.python import result
 from ortools.math_opt.python import solution
 from ortools.math_opt.python.testing import compare_proto
 from ortools.math_opt.solvers import osqp_pb2
+from ortools.math_opt.solvers.gscip import gscip_pb2
 
 
 class TerminationTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
@@ -209,7 +209,7 @@ class SolveResultAuxiliaryFunctionsTest(absltest.TestCase):
         with self.assertRaisesRegex(KeyError, ".*string"):
             res.variable_values([y, "string"])
         with self.assertRaisesRegex(TypeError, ".*int"):
-            res.variable_values(20)  # pytype: disable=wrong-arg-types
+            res.variable_values(20)
 
     def test_primal_solution_no_feasible(self) -> None:
         mod = model.Model(name="test_model")
@@ -293,7 +293,7 @@ class SolveResultAuxiliaryFunctionsTest(absltest.TestCase):
         with self.assertRaisesRegex(KeyError, ".*string"):
             res.reduced_costs([y, "string"])
         with self.assertRaisesRegex(TypeError, ".*int"):
-            res.reduced_costs(20)  # pytype: disable=wrong-arg-types
+            res.reduced_costs(20)
         # Dual values.
         self.assertDictEqual(res.dual_values(), {c: 3.0, d: 4.0})
         self.assertEqual(res.dual_values()[c], 3.0)
@@ -305,7 +305,7 @@ class SolveResultAuxiliaryFunctionsTest(absltest.TestCase):
         with self.assertRaisesRegex(KeyError, ".*string"):
             res.dual_values([d, "string"])
         with self.assertRaisesRegex(TypeError, ".*int"):
-            res.dual_values(20)  # pytype: disable=wrong-arg-types
+            res.dual_values(20)
 
     def test_dual_solution_no_feasible(self) -> None:
         mod = model.Model(name="test_model")
@@ -391,7 +391,7 @@ class SolveResultAuxiliaryFunctionsTest(absltest.TestCase):
         with self.assertRaisesRegex(KeyError, ".*string"):
             res.ray_variable_values([y, "string"])
         with self.assertRaisesRegex(TypeError, ".*int"):
-            res.ray_variable_values(20)  # pytype: disable=wrong-arg-types
+            res.ray_variable_values(20)
 
     def test_primal_ray_no_ray(self) -> None:
         res = result.SolveResult()
@@ -426,7 +426,7 @@ class SolveResultAuxiliaryFunctionsTest(absltest.TestCase):
         with self.assertRaisesRegex(KeyError, ".*string"):
             res.ray_reduced_costs([y, "string"])
         with self.assertRaisesRegex(TypeError, ".*int"):
-            res.ray_reduced_costs(20)  # pytype: disable=wrong-arg-types
+            res.ray_reduced_costs(20)
         # Dual values.
         self.assertDictEqual(res.ray_dual_values(), {c: 3.0, d: 4.0})
         self.assertEqual(res.ray_dual_values()[c], 3.0)
@@ -438,7 +438,7 @@ class SolveResultAuxiliaryFunctionsTest(absltest.TestCase):
         with self.assertRaisesRegex(KeyError, ".*string"):
             res.ray_dual_values([d, "string"])
         with self.assertRaisesRegex(TypeError, ".*int"):
-            res.ray_dual_values(20)  # pytype: disable=wrong-arg-types
+            res.ray_dual_values(20)
 
     def test_dual_ray_no_ray(self) -> None:
         res = result.SolveResult()
@@ -496,7 +496,7 @@ class SolveResultAuxiliaryFunctionsTest(absltest.TestCase):
         with self.assertRaisesRegex(KeyError, ".*string"):
             res.variable_status([y, "string"])
         with self.assertRaisesRegex(TypeError, ".*int"):
-            res.variable_status(20)  # pytype: disable=wrong-arg-types
+            res.variable_status(20)
         # Constraint status
         self.assertDictEqual(
             res.constraint_status(),
@@ -514,7 +514,7 @@ class SolveResultAuxiliaryFunctionsTest(absltest.TestCase):
         with self.assertRaisesRegex(KeyError, ".*string"):
             res.constraint_status([d, "string"])
         with self.assertRaisesRegex(TypeError, ".*int"):
-            res.constraint_status(20)  # pytype: disable=wrong-arg-types
+            res.constraint_status(20)
 
     def test_basis_no_basis_in_best_solution(self) -> None:
         mod = model.Model(name="test_model")

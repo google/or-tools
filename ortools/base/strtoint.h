@@ -38,8 +38,8 @@
 // to provide the right overflow and errno behavior.
 //
 
-#ifndef OR_TOOLS_BASE_STRTOINT_H_
-#define OR_TOOLS_BASE_STRTOINT_H_
+#ifndef ORTOOLS_BASE_STRTOINT_H_
+#define ORTOOLS_BASE_STRTOINT_H_
 
 #include <cstdint>
 #include <string>
@@ -58,4 +58,4 @@ inline int64_t atoi64(absl::string_view word) { return strtoint64(word); }
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_BASE_STRTOINT_H_
+#endif  // ORTOOLS_BASE_STRTOINT_H_

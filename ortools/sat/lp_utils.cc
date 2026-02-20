@@ -22,6 +22,7 @@
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
@@ -189,13 +190,14 @@ double GetIntegralityMultiplier(const MPModelProto& mp_model,
   }
   DCHECK_NE(var_coeff, 0.0);
 
-  // The constraint bound need to be infinite or integer.
+  // Makes sure that the constraint bound is infinite or integer.
   for (const double bound : {ct.lower_bound(), ct.upper_bound()}) {
     if (!std::isfinite(bound)) continue;
-    if (std::abs(std::round(bound * multiplier) - bound * multiplier) >
-        tolerance * multiplier) {
-      return 0.0;
-    }
+
+    const double scaled_bound = multiplier * bound;
+    multiplier *=
+        FindRationalFactor(scaled_bound, /*limit=*/100, multiplier * tolerance);
+    if (multiplier == 0 || multiplier > max_multiplier) return 0.0;
   }
   return std::abs(multiplier * var_coeff);
 }
@@ -725,39 +727,29 @@ std::vector<double> DetectImpliedIntegers(MPModelProto* mp_model,
   return var_scaling;
 }
 
-namespace {
-
-// We use a class to reuse the temporary memory.
-struct ConstraintScaler {
-  // Scales an individual constraint.
-  ConstraintProto* AddConstraint(const MPModelProto& mp_model,
-                                 const MPConstraintProto& mp_constraint,
-                                 CpModelProto* cp_model);
-
-  bool keep_names = false;
-  double max_relative_coeff_error = 0.0;
-  double max_absolute_rhs_error = 0.0;
-  double max_scaling_factor = 0.0;
-  double min_scaling_factor = std::numeric_limits<double>::infinity();
-
-  double wanted_precision = 1e-6;
-  int64_t scaling_target = int64_t{1} << 50;
-  std::vector<int> var_indices;
-  std::vector<double> coefficients;
-  std::vector<double> lower_bounds;
-  std::vector<double> upper_bounds;
-};
-
-ConstraintProto* ConstraintScaler::AddConstraint(
-    const MPModelProto& mp_model, const MPConstraintProto& mp_constraint,
-    CpModelProto* cp_model) {
-  if (mp_constraint.lower_bound() == -kInfinity &&
-      mp_constraint.upper_bound() == kInfinity) {
-    return nullptr;
+absl::Status ConstraintScaler::ScaleAndAddConstraint(
+    const MPConstraintProto& mp_constraint, CpModelProto* cp_model) {
+  absl::Span<const IntegerVariableProto* const> var_domains =
+      absl::MakeSpan(cp_model->variables());
+  const absl::Status status = ScaleAndAddConstraint(
+      absl::MakeConstSpan(mp_constraint.var_index()),
+      absl::MakeConstSpan(mp_constraint.coefficient()),
+      mp_constraint.lower_bound(), mp_constraint.upper_bound(),
+      mp_constraint.name(), var_domains, cp_model->add_constraints());
+  if (!status.ok()) {
+    return absl::InvalidArgumentError(
+        absl::StrCat("Scaling factor of zero while scaling constraint: ",
+                     ProtobufShortDebugString(mp_constraint)));
   }
+  return absl::OkStatus();
+}
 
-  auto* constraint = cp_model->add_constraints();
-  if (keep_names) constraint->set_name(mp_constraint.name());
+absl::Status ConstraintScaler::ScaleAndAddConstraint(
+    absl::Span<const int> vars, absl::Span<const double> coeffs,
+    double lower_bound, double upper_bound, absl::string_view name,
+    absl::Span<const IntegerVariableProto* const> var_domains,
+    ConstraintProto* constraint) {
+  if (keep_names && !name.empty()) constraint->set_name(name);
   auto* arg = constraint->mutable_linear();
 
   // First scale the coefficients of the constraints so that the constraint
@@ -766,17 +758,17 @@ ConstraintProto* ConstraintScaler::AddConstraint(
   coefficients.clear();
   lower_bounds.clear();
   upper_bounds.clear();
-  const int num_coeffs = mp_constraint.coefficient_size();
+  const int num_coeffs = vars.size();
   for (int i = 0; i < num_coeffs; ++i) {
-    const auto& var_proto = cp_model->variables(mp_constraint.var_index(i));
-    const int64_t lb = var_proto.domain(0);
-    const int64_t ub = var_proto.domain(var_proto.domain_size() - 1);
+    const auto& var_proto = var_domains[vars[i]];
+    const int64_t lb = var_proto->domain(0);
+    const int64_t ub = var_proto->domain(var_proto->domain_size() - 1);
     if (lb == 0 && ub == 0) continue;
 
-    const double coeff = mp_constraint.coefficient(i);
+    const double coeff = coeffs[i];
     if (coeff == 0.0) continue;
 
-    var_indices.push_back(mp_constraint.var_index(i));
+    var_indices.push_back(vars[i]);
     coefficients.push_back(coeff);
     lower_bounds.push_back(lb);
     upper_bounds.push_back(ub);
@@ -788,12 +780,8 @@ ConstraintProto* ConstraintScaler::AddConstraint(
       coefficients, lower_bounds, upper_bounds, scaling_target,
       wanted_precision, &relative_coeff_error, &scaled_sum_error);
   if (scaling_factor == 0.0) {
-    // TODO(user): Report error properly instead of ignoring constraint. Note
-    // however that this likely indicate a coefficient of inf in the constraint,
-    // so we should probably abort before reaching here.
-    LOG(DFATAL) << "Scaling factor of zero while scaling constraint: "
-                << ProtobufShortDebugString(mp_constraint);
-    return nullptr;
+    return absl::InvalidArgumentError(
+        "Scaling factor of zero while scaling constraint");
   }
 
   const int64_t gcd = ComputeGcdOfRoundedDoubles(coefficients, scaling_factor);
@@ -821,8 +809,8 @@ ConstraintProto* ConstraintScaler::AddConstraint(
   // but absolute is usually what is used in the MIP world. Also if the problem
   // was a pure integer problem, and a user asked for sum == 10k, we want to
   // stay exact here.
-  const Fractional lb = mp_constraint.lower_bound() - wanted_precision;
-  const Fractional ub = mp_constraint.upper_bound() + wanted_precision;
+  const Fractional lb = lower_bound - wanted_precision;
+  const Fractional ub = upper_bound + wanted_precision;
 
   // Add the constraint bounds. Because we are sure the scaled constraint fit
   // on an int64_t, if the scaled bounds are too large, the constraint is either
@@ -853,7 +841,14 @@ ConstraintProto* ConstraintScaler::AddConstraint(
                         .value());
   }
 
-  return constraint;
+  return absl::OkStatus();
+}
+
+namespace {
+
+bool ConstraintIsAlwaysTrue(const MPConstraintProto& mp_constraint) {
+  return mp_constraint.lower_bound() == -kInfinity &&
+         mp_constraint.upper_bound() == kInfinity;
 }
 
 // TODO(user): unit test this.
@@ -1031,7 +1026,14 @@ bool ConvertMPModelProtoToCpModelProto(const SatParameters& params,
 
   // Add the constraints. We scale each of them individually.
   for (const MPConstraintProto& mp_constraint : mp_model.constraint()) {
-    scaler.AddConstraint(mp_model, mp_constraint, cp_model);
+    if (ConstraintIsAlwaysTrue(mp_constraint)) continue;
+
+    const absl::Status status =
+        scaler.ScaleAndAddConstraint(mp_constraint, cp_model);
+    if (!status.ok()) {
+      SOLVER_LOG(logger, "Error while scaling constraint. ", status.message());
+      return false;
+    }
   }
   for (const MPGeneralConstraintProto& general_constraint :
        mp_model.general_constraint()) {
@@ -1041,14 +1043,22 @@ bool ConvertMPModelProtoToCpModelProto(const SatParameters& params,
             general_constraint.indicator_constraint();
         const MPConstraintProto& mp_constraint =
             indicator_constraint.constraint();
-        ConstraintProto* ct =
-            scaler.AddConstraint(mp_model, mp_constraint, cp_model);
-        if (ct == nullptr) continue;
+        if (ConstraintIsAlwaysTrue(mp_constraint)) continue;
+
+        const int new_ct_index = cp_model->constraints().size();
+        const absl::Status status =
+            scaler.ScaleAndAddConstraint(mp_constraint, cp_model);
+        if (!status.ok()) {
+          SOLVER_LOG(logger, "Error while scaling constraint. ",
+                     status.message());
+          return false;
+        }
 
         // Add the indicator.
         const int var = indicator_constraint.var_index();
         const int value = indicator_constraint.var_value();
-        ct->add_enforcement_literal(value == 1 ? var : NegatedRef(var));
+        cp_model->mutable_constraints(new_ct_index)
+            ->add_enforcement_literal(value == 1 ? var : NegatedRef(var));
         break;
       }
       case MPGeneralConstraintProto::kAndConstraint: {

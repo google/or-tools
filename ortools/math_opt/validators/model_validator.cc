@@ -147,8 +147,22 @@ absl::Status AuxiliaryObjectivesUpdatesValid(
     const AuxiliaryObjectivesUpdatesProto& objectives,
     const IdNameBiMap& variable_ids, const IdNameBiMap& objective_ids) {
   for (const auto& [id, new_objective] : objectives.new_objectives()) {
+    if (objectives.objective_updates().contains(id)) {
+      return util::InvalidArgumentErrorBuilder()
+             << "objective update on new auxiliary objective with "
+                "id: "
+             << id;
+    }
     RETURN_IF_ERROR(ObjectiveValid(new_objective, variable_ids))
         << "bad new auxiliary objective with id: " << id;
+  }
+  for (const auto& id : objectives.deleted_objective_ids()) {
+    if (objectives.objective_updates().contains(id)) {
+      return util::InvalidArgumentErrorBuilder()
+             << "objective update on deleted auxiliary objective with "
+                "id: "
+             << id;
+    }
   }
   for (const auto& [id, objective_update] : objectives.objective_updates()) {
     if (!objective_ids.HasId(id)) {

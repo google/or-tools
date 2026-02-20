@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// [START program]
 // The earliness_tardiness_cost_sample_sat command is an example of an implementation of a convex
 // piecewise linear function.
 package main
@@ -20,9 +21,10 @@ import (
 
 	log "github.com/golang/glog"
 	"github.com/google/or-tools/ortools/sat/go/cpmodel"
+	"google.golang.org/protobuf/proto"
+
 	cmpb "github.com/google/or-tools/ortools/sat/proto/cpmodel"
 	sppb "github.com/google/or-tools/ortools/sat/proto/satparameters"
-	"google.golang.org/protobuf/proto"
 )
 
 const (
@@ -88,3 +90,5 @@ func main() {
 		log.Exitf("earlinessTardinessCostSampleSat returned with error: %v", err)
 	}
 }
+
+// [END program]

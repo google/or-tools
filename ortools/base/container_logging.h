@@ -31,8 +31,8 @@
 //
 // See below for further details on policies.
 
-#ifndef OR_TOOLS_BASE_CONTAINER_LOGGING_H_
-#define OR_TOOLS_BASE_CONTAINER_LOGGING_H_
+#ifndef ORTOOLS_BASE_CONTAINER_LOGGING_H_
+#define ORTOOLS_BASE_CONTAINER_LOGGING_H_
 
 #include <cstdint>
 #include <limits>
@@ -40,8 +40,6 @@
 #include <sstream>
 #include <string>
 #include <type_traits>
-
-#include "absl/base/port.h"
 
 namespace gtl {
 
@@ -301,4 +299,4 @@ detail::EnumLogger<E> LogEnum(E e) {
 
 }  // namespace gtl
 
-#endif  // OR_TOOLS_BASE_CONTAINER_LOGGING_H_
+#endif  // ORTOOLS_BASE_CONTAINER_LOGGING_H_

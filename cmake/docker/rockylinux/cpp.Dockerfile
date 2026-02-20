@@ -6,6 +6,9 @@ FROM env AS devel
 WORKDIR /home/project
 COPY . .
 
+ARG CMAKE_BUILD_PARALLEL_LEVEL
+ENV CMAKE_BUILD_PARALLEL_LEVEL=${CMAKE_BUILD_PARALLEL_LEVEL:-4}
+
 FROM devel AS build
 RUN cmake -S. -Bbuild -DBUILD_DEPS=ON
 RUN cmake --build build --target all -v

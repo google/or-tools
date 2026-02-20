@@ -25,6 +25,7 @@
 #include <vector>
 
 #include "absl/algorithm/container.h"
+#include "absl/base/nullability.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/flags/flag.h"
@@ -63,8 +64,8 @@ namespace operations_research {
 // Utility methods to ensure the communication between local search and the
 // search.
 
-// Returns true if a local optimum has been reached and cannot be improved.
-bool LocalOptimumReached(Search* search);
+// Returns true if the search must continue after reaching the local optimum.
+bool ContinueAtLocalOptimum(Search* search);
 
 // Returns true if the search accepts the delta (actually checking this by
 // calling AcceptDelta on the monitors of the search).
@@ -4130,7 +4131,9 @@ Decision* FindOneNeighbor::Next(Solver* const solver) {
         if (solutions_since_last_check_ >= check_period_) {
           solutions_since_last_check_ = 0;
         }
-        const bool accept = !check_solution || solver->SolveAndCommit(restore);
+        const bool accept = !check_solution ||
+                            (solver->SolveAndCommit(restore) &&
+                             solver->AcceptSolution(solver->TopLevelSearch()));
         solver->GetLocalSearchMonitor()->EndAcceptNeighbor(ls_operator_,
                                                            accept);
         if (accept) {
@@ -4370,7 +4373,7 @@ namespace {
 // ----- NestedSolve decision wrapper -----
 
 // This decision calls a nested Solve on the given DecisionBuilder in its
-// left branch; does nothing in the left branch.
+// left branch; does nothing in the right branch.
 // The state of the decision corresponds to the result of the nested Solve:
 // DECISION_PENDING - Nested Solve not called yet
 // DECISION_FAILED  - Nested Solve failed
@@ -4381,9 +4384,9 @@ class NestedSolveDecision : public Decision {
   // This enum is used internally to tag states in the local search tree.
   enum StateType { DECISION_PENDING, DECISION_FAILED, DECISION_FOUND };
 
-  NestedSolveDecision(DecisionBuilder* db, bool restore,
+  NestedSolveDecision(DecisionBuilder* absl_nonnull db, bool restore,
                       const std::vector<SearchMonitor*>& monitors);
-  NestedSolveDecision(DecisionBuilder* db, bool restore);
+  NestedSolveDecision(DecisionBuilder* absl_nonnull db, bool restore);
   ~NestedSolveDecision() override {}
   void Apply(Solver* solver) override;
   void Refute(Solver* solver) override;
@@ -4392,26 +4395,22 @@ class NestedSolveDecision : public Decision {
 
  private:
   DecisionBuilder* const db_;
-  bool restore_;
-  std::vector<SearchMonitor*> monitors_;
+  const bool restore_;
+  const std::vector<SearchMonitor*> monitors_;
   int state_;
 };
 
 NestedSolveDecision::NestedSolveDecision(
-    DecisionBuilder* const db, bool restore,
+    DecisionBuilder* absl_nonnull db, bool restore,
     const std::vector<SearchMonitor*>& monitors)
     : db_(db),
       restore_(restore),
       monitors_(monitors),
-      state_(DECISION_PENDING) {
-  CHECK(nullptr != db);
-}
+      state_(DECISION_PENDING) {}
 
-NestedSolveDecision::NestedSolveDecision(DecisionBuilder* const db,
+NestedSolveDecision::NestedSolveDecision(DecisionBuilder* absl_nonnull db,
                                          bool restore)
-    : db_(db), restore_(restore), state_(DECISION_PENDING) {
-  CHECK(nullptr != db);
-}
+    : NestedSolveDecision(db, restore, {}) {}
 
 void NestedSolveDecision::Apply(Solver* const solver) {
   CHECK(nullptr != solver);
@@ -4647,15 +4646,21 @@ Decision* LocalSearch::Next(Solver* const solver) {
   const int state = decision->state();
   switch (state) {
     case NestedSolveDecision::DECISION_FAILED: {
-      const bool local_optimum_reached =
-          LocalOptimumReached(solver->ActiveSearch());
-      if (local_optimum_reached) {
+      // NOTE: The DECISION_FAILED state can be reached when no first solution
+      // was found by the solver, so we should only consider to be at a local
+      // optimum and call ContinueAtLocalOptimum() when we've reached the last
+      // nested decision.
+      const bool continue_at_local_optimum =
+          nested_decision_index_ == nested_decisions_.size() - 1 &&
+          ContinueAtLocalOptimum(solver->ActiveSearch());
+      if (continue_at_local_optimum) {
         // A local optimum has been reached. The search will continue only if we
         // accept up-hill moves (due to metaheuristics). In this case we need to
         // reset neighborhood optimal routes.
         ls_operator_->Reset();
       }
-      if (!local_optimum_reached || solver->IsUncheckedSolutionLimitReached()) {
+      if (!continue_at_local_optimum ||
+          solver->IsUncheckedSolutionLimitReached()) {
         nested_decision_index_ = -1;  // Stop the search
       }
       solver->Fail();

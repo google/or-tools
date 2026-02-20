@@ -1,0 +1,1 @@
+RUN: $(mps_driver) --input $(maximization.mps)

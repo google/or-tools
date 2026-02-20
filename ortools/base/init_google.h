@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_BASE_INIT_GOOGLE_H_
-#define OR_TOOLS_BASE_INIT_GOOGLE_H_
+#ifndef ORTOOLS_BASE_INIT_GOOGLE_H_
+#define ORTOOLS_BASE_INIT_GOOGLE_H_
 
 #include "absl/flags/declare.h"  // IWYU pragma: keep
 #include "absl/flags/flag.h"     // IWYU pragma: keep
@@ -57,4 +57,4 @@ inline void InitGoogle(const char* usage, int* argc, char*** argv,
   InitGoogle(absl::NullSafeStringView(usage), argc, argv, deprecated);
 }
 
-#endif  // OR_TOOLS_BASE_INIT_GOOGLE_H_
+#endif  // ORTOOLS_BASE_INIT_GOOGLE_H_

@@ -30,8 +30,8 @@
 //     provide an API fo setting parameters on the primary environment, only on
 //     the child environment created by GRBnewmodel (for details see
 //     https://www.gurobi.com/documentation/9.1/refman/c_newmodel.html ).
-#ifndef OR_TOOLS_MATH_OPT_SOLVERS_GUROBI_G_GUROBI_H_
-#define OR_TOOLS_MATH_OPT_SOLVERS_GUROBI_G_GUROBI_H_
+#ifndef ORTOOLS_MATH_OPT_SOLVERS_GUROBI_G_GUROBI_H_
+#define ORTOOLS_MATH_OPT_SOLVERS_GUROBI_G_GUROBI_H_
 
 #include <functional>
 #include <memory>
@@ -43,8 +43,8 @@
 #include "absl/status/statusor.h"
 #include "absl/types/span.h"
 #include "ortools/base/source_location.h"
-#include "ortools/gurobi/environment.h"
 #include "ortools/gurobi/isv_public/gurobi_isv.h"
+#include "ortools/third_party_solvers/gurobi_environment.h"
 
 namespace operations_research::math_opt {
 
@@ -596,4 +596,4 @@ class Gurobi {
 
 }  // namespace operations_research::math_opt
 
-#endif  // OR_TOOLS_MATH_OPT_SOLVERS_GUROBI_G_GUROBI_H_
+#endif  // ORTOOLS_MATH_OPT_SOLVERS_GUROBI_G_GUROBI_H_

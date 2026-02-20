@@ -12,8 +12,8 @@
 // limitations under the License.
 
 // Tools to extract some sub-components of sparse matrices.
-#ifndef OR_TOOLS_MATH_OPT_CORE_SPARSE_SUBMATRIX_H_
-#define OR_TOOLS_MATH_OPT_CORE_SPARSE_SUBMATRIX_H_
+#ifndef ORTOOLS_MATH_OPT_CORE_SPARSE_SUBMATRIX_H_
+#define ORTOOLS_MATH_OPT_CORE_SPARSE_SUBMATRIX_H_
 
 #include <cstdint>
 #include <optional>
@@ -85,4 +85,4 @@ std::vector<std::pair<int64_t, SparseVector<double>>> TransposeSparseSubmatrix(
 
 }  // namespace operations_research::math_opt
 
-#endif  // OR_TOOLS_MATH_OPT_CORE_SPARSE_SUBMATRIX_H_
+#endif  // ORTOOLS_MATH_OPT_CORE_SPARSE_SUBMATRIX_H_

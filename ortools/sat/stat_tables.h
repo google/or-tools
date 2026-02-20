@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_SAT_STAT_TABLES_H_
-#define OR_TOOLS_SAT_STAT_TABLES_H_
+#ifndef ORTOOLS_SAT_STAT_TABLES_H_
+#define ORTOOLS_SAT_STAT_TABLES_H_
 
 #include <cstdint>
 #include <string>
@@ -61,7 +61,12 @@ class SharedStatTables {
 
   std::vector<std::vector<std::string>> timing_table_ ABSL_GUARDED_BY(mutex_);
   std::vector<std::vector<std::string>> search_table_ ABSL_GUARDED_BY(mutex_);
+
+  std::vector<std::vector<std::string>> bool_var_table_ ABSL_GUARDED_BY(mutex_);
   std::vector<std::vector<std::string>> clauses_table_ ABSL_GUARDED_BY(mutex_);
+  std::vector<std::vector<std::string>> vivify_table_ ABSL_GUARDED_BY(mutex_);
+  std::vector<std::vector<std::string>> clauses_deletion_table_
+      ABSL_GUARDED_BY(mutex_);
 
   std::vector<std::vector<std::string>> lp_table_ ABSL_GUARDED_BY(mutex_);
   std::vector<std::vector<std::string>> lp_dim_table_ ABSL_GUARDED_BY(mutex_);
@@ -79,4 +84,4 @@ class SharedStatTables {
 
 }  // namespace operations_research::sat
 
-#endif  // OR_TOOLS_SAT_STAT_TABLES_H_
+#endif  // ORTOOLS_SAT_STAT_TABLES_H_

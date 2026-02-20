@@ -1,7 +1,13 @@
 # ref: https://github.com/actions/runner-images
 name: amd64 CMake Glop C++
 
-on: [push, pull_request, workflow_dispatch]
+on:
+  push:
+    branches:
+      - main
+      - v99bugfix
+  pull_request:
+  workflow_dispatch:
 
 concurrency:
   group: ${{github.workflow}}-${{github.ref}}
@@ -12,7 +18,7 @@ jobs:
     name: amd64•Docker•CMake•Glop
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Build env image
         run: make --directory=cmake glop_env
       - name: Build devel image
@@ -46,7 +52,7 @@ jobs:
           },
           {
             platform: amd64,
-            runner: "macos-13", # last macos intel based runner
+            runner: "macos-15-intel",
             generator: "Xcode",
             config: Release,
             build_target: ALL_BUILD,
@@ -76,7 +82,7 @@ jobs:
     name: ${{matrix.cmake.platform}}•${{matrix.cmake.runner}}•CMake•Glop
     runs-on: ${{matrix.cmake.runner}}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Check cmake
         run: cmake --version
       - name: Configure

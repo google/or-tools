@@ -1,0 +1,2 @@
+RUN: $(pdptw_with_alternatives) --pdp_file=$(lc102.txt) --reduce_vehicle_cost_model=false --routing_search_parameters='first_solution_strategy:BEST_INSERTION local_search_operators { use_node_pair_swap_active:BOOL_FALSE }' 2>&1
+CHECK: "Cost: 362934"

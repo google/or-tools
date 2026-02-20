@@ -14,8 +14,8 @@
 // The header defines an interface for functions taking and returning an int64_t
 // and supporting range queries over their domain and codomain.
 
-#ifndef OR_TOOLS_UTIL_RANGE_QUERY_FUNCTION_H_
-#define OR_TOOLS_UTIL_RANGE_QUERY_FUNCTION_H_
+#ifndef ORTOOLS_UTIL_RANGE_QUERY_FUNCTION_H_
+#define ORTOOLS_UTIL_RANGE_QUERY_FUNCTION_H_
 
 #include <cstdint>
 #include <functional>
@@ -84,4 +84,4 @@ RangeMinMaxIndexFunction* MakeCachedRangeMinMaxIndexFunction(
     int64_t domain_end);
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_UTIL_RANGE_QUERY_FUNCTION_H_
+#endif  // ORTOOLS_UTIL_RANGE_QUERY_FUNCTION_H_

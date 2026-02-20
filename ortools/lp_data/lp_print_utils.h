@@ -13,8 +13,8 @@
 
 // Utilities to display linear expression in a human-readable way.
 
-#ifndef OR_TOOLS_LP_DATA_LP_PRINT_UTILS_H_
-#define OR_TOOLS_LP_DATA_LP_PRINT_UTILS_H_
+#ifndef ORTOOLS_LP_DATA_LP_PRINT_UTILS_H_
+#define ORTOOLS_LP_DATA_LP_PRINT_UTILS_H_
 
 #include <string>
 
@@ -56,4 +56,4 @@ std::string StringifyMonomial(Fractional a, absl::string_view x, bool fraction);
 }  // namespace glop
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_LP_DATA_LP_PRINT_UTILS_H_
+#endif  // ORTOOLS_LP_DATA_LP_PRINT_UTILS_H_

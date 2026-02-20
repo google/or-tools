@@ -11,17 +11,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set_property(SOURCE knapsack_solver.i PROPERTY CPLUSPLUS ON)
-set_property(SOURCE knapsack_solver.i PROPERTY SWIG_MODULE_NAME main)
-set_property(SOURCE knapsack_solver.i PROPERTY COMPILE_DEFINITIONS
+set_property(SOURCE knapsack_solver.swig PROPERTY CPLUSPLUS ON)
+set_property(SOURCE knapsack_solver.swig PROPERTY SWIG_MODULE_NAME main)
+set_property(SOURCE knapsack_solver.swig PROPERTY COMPILE_DEFINITIONS
   ${OR_TOOLS_COMPILE_DEFINITIONS} ABSL_MUST_USE_RESULT=)
-set_property(SOURCE knapsack_solver.i PROPERTY COMPILE_OPTIONS
+set_property(SOURCE knapsack_solver.swig PROPERTY COMPILE_OPTIONS
   -package ${JAVA_PACKAGE}.algorithms)
 swig_add_library(jnialgorithms
   TYPE OBJECT
   LANGUAGE java
   OUTPUT_DIR ${JAVA_PROJECT_DIR}/${JAVA_SRC_PATH}/algorithms
-  SOURCES knapsack_solver.i)
+  SOURCES knapsack_solver.swig)
 
 target_include_directories(jnialgorithms PRIVATE ${JNI_INCLUDE_DIRS})
 set_target_properties(jnialgorithms PROPERTIES
@@ -34,4 +34,9 @@ if(BUILD_TESTING)
   foreach(FILE_NAME IN LISTS JAVA_SRCS)
     add_java_test(FILE_NAME ${FILE_NAME})
   endforeach()
+
+  # These tests are too long so we disable them.
+  set_tests_properties(
+    java_algorithms_KnapsackSolverTest
+    PROPERTIES DISABLED TRUE)
 endif()

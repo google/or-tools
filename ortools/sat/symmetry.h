@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_SAT_SYMMETRY_H_
-#define OR_TOOLS_SAT_SYMMETRY_H_
+#ifndef ORTOOLS_SAT_SYMMETRY_H_
+#define ORTOOLS_SAT_SYMMETRY_H_
 
 #include <cstdint>
 #include <memory>
@@ -92,6 +92,27 @@ class SymmetryPropagator : public SatPropagator {
   void AddSymmetry(std::unique_ptr<SparsePermutation> permutation);
   int num_permutations() const { return permutations_.size(); }
 
+  // When the loader runs the symmetry detection code, it can only take into
+  // account the variables that existed at that time, even if some code paths
+  // will create new booleans later. Those new booleans might not be invariant
+  // under the symmetry that were detected, which might lead this propagator to
+  // propagate wrong clauses. This method allows to specify that all literals
+  // from 0 to `num_literals-1` were known when the symmetry detection code ran.
+  //
+  // For example, suppose we have a model with three literals: lit0, lit1 and
+  // lit2 and it's symmetrical with respect to swapping lit0 and lit1. Thus if
+  // (lit0, lit2) is a clause, we can deduce (lit1, lit2).
+  //
+  // Then, suppose we add a new literal: lit3 = lit0 & lit2.
+  //
+  // Now we can still deduce (lit1, lit2) from (lit0, lit2), but we cannot
+  // deduce (lit1, lit3) from (lit0, lit3). `num_literals` being set to 3 would
+  // allow the propagator to handle lit2 and lit3 differently, even if both are
+  // not part of any symmetry permutation.
+  void SetNumLiterals(int num_literals) {
+    num_literals_with_knonw_symmetry_ = num_literals;
+  }
+
   // Visible for testing.
   //
   // Permutes a list of literals from input into output using the permutation
@@ -158,9 +179,10 @@ class SymmetryPropagator : public SatPropagator {
   mutable StatsGroup stats_;
   int num_propagations_;
   int num_conflicts_;
+  int num_literals_with_knonw_symmetry_;
 };
 
 }  // namespace sat
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_SYMMETRY_H_
+#endif  // ORTOOLS_SAT_SYMMETRY_H_

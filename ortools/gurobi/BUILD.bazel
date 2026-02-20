@@ -11,40 +11,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+
 package(default_visibility = ["//visibility:public"])
-
-cc_library(
-    name = "environment",
-    srcs = [
-        "environment.cc",
-    ],
-    hdrs = [
-        "environment.h",
-    ],
-    deps = [
-        "//ortools/base",
-        "//ortools/base:dynamic_library",
-        "//ortools/base:file",
-        "//ortools/base:status_macros",
-        "@abseil-cpp//absl/flags:flag",
-        "@abseil-cpp//absl/status",
-        "@abseil-cpp//absl/status:statusor",
-        "@abseil-cpp//absl/strings",
-        "@abseil-cpp//absl/synchronization",
-        "@abseil-cpp//absl/types:optional",
-    ],
-)
-
-cc_library(
-    name = "gurobi_util",
-    srcs = ["gurobi_util.cc"],
-    hdrs = ["gurobi_util.h"],
-    deps = [
-        ":environment",
-        "@abseil-cpp//absl/strings",
-        "@abseil-cpp//absl/strings:str_format",
-    ],
-)
 
 cc_library(
     name = "gurobi_stdout_matchers",

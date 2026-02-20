@@ -1,0 +1,89 @@
+// Copyright 2010-2025 Google LLC
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Proto used to store LRAT proofs (https://arxiv.org/abs/1612.02353) with some
+// extensions to support multi-threading (with one output file per file). This
+// proto is only used internally to store partial proofs on disk before merging
+// them. It can be changed without backward compatibility, and should not be
+// used directly by users.
+
+// LINT: LEGACY_NAMES
+syntax = "proto2";
+
+package operations_research.sat;
+
+// A clause imported from the input problem, or from another worker.
+message LratImportedClause {
+  optional int64 clause_id = 1;
+  repeated int32 literals = 2 [packed = true];
+}
+
+// An LRAT inferred clause.
+message LratInferredClause {
+  optional int64 clause_id = 1;
+  // Literals are represented with LiteralIndex values.
+  repeated int32 literals = 2 [packed = true];
+  // Clauses which become unit and possibly empty if all the `literals` are
+  // assumed to be false (verification stops at the first empty clause). This
+  // list must be in unit propagation order. See LratChecker for more details.
+  repeated int64 unit_ids = 3 [packed = true];
+
+  // If `rat_infos` is empty, the last `unit_ids` clause must become empty after
+  // unit propagation. If the last `unit_ids` clause does not become empty by
+  // unit propagation, then `rat_infos` must contain all the clauses which
+  // contain the negation of the first `literals` (called the pivot 'p') -- and
+  // no other clauses. Moreover, for each r in `rat_infos`, all the `r.unit_ids`
+  // clauses must become unit and eventually empty if all the literals of the
+  // `r.resolvant_id` clause (minus ~p), plus those in `literals`, are assumed
+  // to be false (this list must be in unit propagation order; verification
+  // stops at the first empty clause). See LratChecker for more details.
+  message RatInfo {
+    optional int64 resolvant_id = 1;
+    repeated int64 unit_ids = 2 [packed = true];
+  }
+  repeated RatInfo rat_infos = 4;
+
+  // Whether the clause must be exported, so that other workers can import it (a
+  // clause cannot be imported if it is not previously exported). This is not
+  // needed for unary and binary clauses, which are always exported.
+  optional bool exported = 5;
+}
+
+// A clause to export, so that it can be imported from any worker. This is not
+// needed for unary and binary clauses, which are always exported.
+message LratExportedClause {
+  optional int64 clause_id = 1;
+  repeated int32 literals = 2 [packed = true];
+}
+
+// A list of clauses to delete.
+message LratDeletedClauses {
+  // IDs of the imported or inferred clauses to delete. A deleted clause can no
+  // longer be used to infer clauses.
+  repeated int64 clause_ids = 1 [packed = true];
+}
+
+// An LRAT UNSAT proof is a sequence of steps, starting from imported clauses
+// and ending with the empty clause. At each step new clauses can be inferred
+// from previous ones (with an explicit proof), or imported from another proof
+// built by another thread. A proof step can also delete clauses which are no
+// longer needed, or export a clause for other workers to import. Each clause is
+// identified by a unique clause ID.
+message LratProofStep {
+  oneof step {
+    LratImportedClause imported_clause = 1;
+    LratInferredClause inferred_clause = 2;
+    LratExportedClause exported_clause = 3;
+    LratDeletedClauses deleted_clauses = 4;
+  }
+}

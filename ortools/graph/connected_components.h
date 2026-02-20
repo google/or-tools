@@ -11,19 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//    http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 // Finds the connected components in an undirected graph:
 // https://en.wikipedia.org/wiki/Connected_component_(graph_theory)
 //
@@ -87,7 +74,7 @@ std::vector<int> GetConnectedComponents(int num_nodes,
 // A connected components finder that only works on dense ints.
 class DenseConnectedComponentsFinder {
  public:
-  DenseConnectedComponentsFinder() {}
+  DenseConnectedComponentsFinder() = default;
 
   // We support copy and move construction.
   DenseConnectedComponentsFinder(const DenseConnectedComponentsFinder&) =
@@ -120,6 +107,10 @@ class DenseConnectedComponentsFinder {
   // [0;GetNumberOfNodes()-1].
   // Non-const because it does path compression internally.
   int FindRoot(int node);
+
+  // Returns the parent of the given node, in the chain towards the root of the
+  // set for this node. Returns the node itself if it is a root.
+  int GetParent(int node) const { return parent_[node]; }
 
   // Returns the same as GetConnectedComponents().
   std::vector<int> GetComponentIds();
@@ -233,7 +224,7 @@ class ConnectedComponentsFinder {
                                                        Eq>::Set;
 
   // Constructs a connected components finder.
-  ConnectedComponentsFinder() {}
+  ConnectedComponentsFinder() = default;
 
   ConnectedComponentsFinder(const ConnectedComponentsFinder&) = delete;
   ConnectedComponentsFinder& operator=(const ConnectedComponentsFinder&) =

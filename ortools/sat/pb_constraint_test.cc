@@ -17,12 +17,12 @@
 #include <utility>
 #include <vector>
 
-#include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/sat/enforcement.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/util/strong_integers.h"
@@ -128,7 +128,7 @@ TEST(ComputeBooleanLinearExpressionCanonicalForm, BigIntCase) {
 TEST(ApplyLiteralMappingTest, BasicTest) {
   Coefficient bound_shift, max_value;
 
-  // This is needed to initizalize the ITIVector below.
+  // This is needed to initialize the ITIVector below.
   std::vector<LiteralIndex> temp{
       kTrueLiteralIndex,   kFalseLiteralIndex,    // var1 fixed to true.
       Literal(-1).Index(), Literal(+1).Index(),   // var2 mapped to not(var1)
@@ -208,7 +208,7 @@ TEST(CanonicalBooleanLinearProblem, OverflowCases) {
       reference = MakePb({{+1, 10}, {-1, 10}});
     }
 
-    // All These constraint are trivially satisfiables, so no new constraints
+    // All these constraints are trivially satisfiable, so no new constraints
     // should be added.
     cst = reference;
     EXPECT_TRUE(problem.AddLinearConstraint(true, -kCoefficientMax, true,
@@ -252,15 +252,18 @@ TEST(UpperBoundedLinearConstraintTest, ConstructionAndBasicPropagation) {
   trail.Resize(10);
 
   UpperBoundedLinearConstraint cst(
+      /*enforcement_literals=*/{},
       MakePb({{+1, 4}, {+2, 4}, {-3, 5}, {+4, 10}}));
-  cst.InitializeRhs(Coefficient(7), 0, &threshold, &trail, &helper);
+  cst.InitializeRhs(EnforcementStatus::IS_ENFORCED, /*enforcement_literals=*/{},
+                    Coefficient(7), 0, &threshold, &trail, &helper);
   EXPECT_EQ(threshold, 2);
   EXPECT_THAT(TrailToVector(trail), LiteralsAre(-4));
 
   trail.Enqueue(Literal(-3), AssignmentType::kSearchDecision);
   threshold -= 5;  // The coeff of -3 in cst.
   EXPECT_TRUE(cst.Propagate(trail.Info(Literal(-3).Variable()).trail_index,
-                            &threshold, &trail, &helper));
+                            &threshold, &trail, EnforcementStatus::IS_ENFORCED,
+                            /*enforcement_literals=*/{}, &helper));
   EXPECT_EQ(threshold, 2);
   EXPECT_THAT(TrailToVector(trail), LiteralsAre(-4, -3, -1, -2));
 
@@ -280,20 +283,21 @@ TEST(UpperBoundedLinearConstraintTest, Conflict) {
 
   // At most one constraint.
   UpperBoundedLinearConstraint cst(
+      /*enforcement_literals=*/{},
       MakePb({{+1, 1}, {+2, 1}, {+3, 1}, {+4, 1}}));
-  cst.InitializeRhs(Coefficient(1), 0, &threshold, &trail, &helper);
+  cst.InitializeRhs(EnforcementStatus::IS_ENFORCED, /*enforcement_literals=*/{},
+                    Coefficient(1), 0, &threshold, &trail, &helper);
   EXPECT_EQ(threshold, 0);
 
   // Two assignment from other part of the solver.
-  trail.SetDecisionLevel(1);
-  trail.Enqueue(Literal(+1), AssignmentType::kSearchDecision);
-  trail.SetDecisionLevel(2);
-  trail.Enqueue(Literal(+2), AssignmentType::kSearchDecision);
+  trail.EnqueueSearchDecision(Literal(+1));
+  trail.EnqueueSearchDecision(Literal(+2));
 
   // We propagate only +1.
   threshold -= 1;
   EXPECT_FALSE(cst.Propagate(trail.Info(Literal(+1).Variable()).trail_index,
-                             &threshold, &trail, &helper));
+                             &threshold, &trail, EnforcementStatus::IS_ENFORCED,
+                             /*enforcement_literals=*/{}, &helper));
   EXPECT_THAT(helper.conflict, LiteralsAre(-1, -2));
 }
 
@@ -304,32 +308,142 @@ TEST(UpperBoundedLinearConstraintTest, CompactReason) {
   PbConstraintsEnqueueHelper helper;
   helper.reasons.resize(10);
 
-  // At most one constraint.
   UpperBoundedLinearConstraint cst(
+      /*enforcement_literals=*/{},
       MakePb({{+1, 1}, {+2, 2}, {+3, 3}, {+4, 4}}));
-  cst.InitializeRhs(Coefficient(7), 0, &threshold, &trail, &helper);
+  cst.InitializeRhs(EnforcementStatus::IS_ENFORCED, /*enforcement_literals=*/{},
+                    Coefficient(7), 0, &threshold, &trail, &helper);
   EXPECT_EQ(threshold, 3);
 
   // Two assignment from other part of the solver.
-  trail.SetDecisionLevel(1);
-  trail.Enqueue(Literal(+1), AssignmentType::kSearchDecision);
-  trail.SetDecisionLevel(2);
-  trail.Enqueue(Literal(+2), AssignmentType::kSearchDecision);
-  trail.SetDecisionLevel(3);
-  trail.Enqueue(Literal(+3), AssignmentType::kSearchDecision);
+  trail.EnqueueSearchDecision(Literal(+1));
+  trail.EnqueueSearchDecision(Literal(+2));
+  trail.EnqueueSearchDecision(Literal(+3));
 
   // We propagate when +3 is processed.
   threshold = -3;
   const int source_trail_index = trail.Info(Literal(+3).Variable()).trail_index;
-  EXPECT_TRUE(cst.Propagate(source_trail_index, &threshold, &trail, &helper));
+  EXPECT_TRUE(cst.Propagate(source_trail_index, &threshold, &trail,
+                            EnforcementStatus::IS_ENFORCED,
+                            /*enforcement_literals=*/{}, &helper));
   EXPECT_EQ(trail.Index(), 4);
   EXPECT_EQ(trail[3], Literal(-4));
 
-  // -1 do not need to be in the reason since {-3, -2} propagates exactly
+  // -2 do not need to be in the reason since {-3, -1} propagates exactly
   // the same way.
-  cst.FillReason(trail, source_trail_index, Literal(-4).Variable(),
+  cst.FillReason(trail, source_trail_index, /*enforcement_literals=*/{},
+                 Literal(-4).Variable(), &helper.temporary_tuples,
                  &helper.conflict);
-  EXPECT_THAT(helper.conflict, LiteralsAre(-3, -2));
+  EXPECT_THAT(helper.conflict, LiteralsAre(-3, -1));
+}
+
+TEST(UpperBoundedLinearConstraintTest, ConflictAfterEnforcementStatusChange) {
+  Coefficient threshold;
+  Trail trail;
+  trail.Resize(10);
+  PbConstraintsEnqueueHelper helper;
+  helper.reasons.resize(10);
+
+  std::vector<Literal> enforcement_literals = {Literal(+9)};
+  UpperBoundedLinearConstraint cst(
+      enforcement_literals, MakePb({{+1, 1}, {+2, 2}, {+3, 3}, {+4, 4}}));
+  cst.InitializeRhs(EnforcementStatus::IS_FALSE, enforcement_literals,
+                    Coefficient(7), 0, &threshold, &trail, &helper);
+  EXPECT_EQ(threshold, 3);
+
+  // Some assignments from other parts of the solver.
+  trail.EnqueueSearchDecision(Literal(+1));
+  trail.EnqueueSearchDecision(Literal(+2));
+  trail.EnqueueSearchDecision(Literal(+3));
+  trail.EnqueueSearchDecision(Literal(+4));
+  trail.EnqueueSearchDecision(Literal(+9));
+
+  // We detect a conflict when +9 is processed.
+  threshold = -7;
+  const int source_trail_index = trail.Info(Literal(+9).Variable()).trail_index;
+  EXPECT_FALSE(cst.Propagate(source_trail_index, &threshold, &trail,
+                             EnforcementStatus::IS_ENFORCED,
+                             enforcement_literals, &helper));
+
+  // -2 do not need to be in the reason since {-4, -3, -1} propagates exactly
+  // the same way.
+  EXPECT_THAT(helper.conflict, LiteralsAre(-9, -4, -3, -1));
+}
+
+TEST(UpperBoundedLinearConstraintTest, PropagateEnforcementAfterStatusChange) {
+  Coefficient threshold;
+  Trail trail;
+  trail.Resize(10);
+  PbConstraintsEnqueueHelper helper;
+  helper.reasons.resize(10);
+
+  std::vector<Literal> enforcement_literals = {Literal(+8), Literal(+9)};
+  UpperBoundedLinearConstraint cst(
+      enforcement_literals, MakePb({{+1, 1}, {+2, 2}, {+3, 3}, {+4, 4}}));
+  cst.InitializeRhs(EnforcementStatus::IS_FALSE, enforcement_literals,
+                    Coefficient(7), 0, &threshold, &trail, &helper);
+  EXPECT_EQ(threshold, 3);
+
+  // Some assignments from other parts of the solver.
+  trail.EnqueueSearchDecision(Literal(+1));
+  trail.EnqueueSearchDecision(Literal(+2));
+  trail.EnqueueSearchDecision(Literal(+3));
+  trail.EnqueueSearchDecision(Literal(+4));
+  trail.EnqueueSearchDecision(Literal(+9));
+
+  // We should propagate -8 when +9 is processed.
+  threshold = -7;
+  const int source_trail_index = trail.Info(Literal(+9).Variable()).trail_index;
+  EXPECT_TRUE(cst.Propagate(source_trail_index, &threshold, &trail,
+                            EnforcementStatus::CAN_PROPAGATE_ENFORCEMENT,
+                            enforcement_literals, &helper));
+  EXPECT_EQ(trail.Index(), 6);
+  EXPECT_EQ(trail[5], Literal(-8));
+
+  // -2 do not need to be in the reason since {-4, -3, -1} propagates exactly
+  // the same way.
+  const PbConstraintsEnqueueHelper::ReasonInfo& reason = helper.reasons[5];
+  cst.FillReason(trail, reason.source_trail_index, enforcement_literals,
+                 Literal(-8).Variable(), &helper.temporary_tuples,
+                 &helper.conflict);
+  EXPECT_THAT(helper.conflict, LiteralsAre(-9, -4, -3, -1));
+}
+
+TEST(UpperBoundedLinearConstraintTest,
+     PropagateEnforcementAfterTermAssignment) {
+  Coefficient threshold;
+  Trail trail;
+  trail.Resize(10);
+  PbConstraintsEnqueueHelper helper;
+  helper.reasons.resize(10);
+
+  // At most one constraint with enforcement literal.
+  std::vector<Literal> enforcement_literals = {Literal(+9)};
+  UpperBoundedLinearConstraint cst(
+      enforcement_literals, MakePb({{+1, 1}, {+2, 1}, {+3, 1}, {+4, 1}}));
+  cst.InitializeRhs(EnforcementStatus::CAN_PROPAGATE_ENFORCEMENT,
+                    enforcement_literals, Coefficient(1), 0, &threshold, &trail,
+                    &helper);
+  EXPECT_EQ(threshold, 0);
+
+  // Some assignments from other parts of the solver.
+  trail.EnqueueSearchDecision(Literal(+1));
+  trail.EnqueueSearchDecision(Literal(+2));
+
+  // We should propagate -9 when +2 is processed.
+  const int source_trail_index = trail.Info(Literal(+1).Variable()).trail_index;
+  threshold = -1;
+  EXPECT_TRUE(cst.Propagate(source_trail_index, &threshold, &trail,
+                            EnforcementStatus::CAN_PROPAGATE_ENFORCEMENT,
+                            enforcement_literals, &helper));
+  EXPECT_EQ(trail.Index(), 3);
+  EXPECT_EQ(trail[2], Literal(-9));
+
+  const PbConstraintsEnqueueHelper::ReasonInfo& reason = helper.reasons[2];
+  cst.FillReason(trail, reason.source_trail_index, enforcement_literals,
+                 Literal(-9).Variable(), &helper.temporary_tuples,
+                 &helper.conflict);
+  EXPECT_THAT(helper.conflict, LiteralsAre(-2, -1));
 }
 
 TEST(PbConstraintsTest, Duplicates) {
@@ -366,8 +480,7 @@ TEST(PbConstraintsTest, BasicPropagation) {
   Trail& trail = *(model.GetOrCreate<Trail>());
 
   trail.Resize(10);
-  trail.SetDecisionLevel(1);
-  trail.Enqueue(Literal(-1), AssignmentType::kSearchDecision);
+  trail.EnqueueSearchDecision(Literal(-1));
 
   csts.Resize(10);
   csts.AddConstraint(MakePb({{-1, 1}, {+2, 1}}), Coefficient(1), &trail);
@@ -382,13 +495,13 @@ TEST(PbConstraintsTest, BasicPropagation) {
 
   // Test the reason for each assignment.
   EXPECT_THAT(trail.Reason(Literal(-2).Variable()), LiteralsAre(+1));
-  EXPECT_THAT(trail.Reason(Literal(-3).Variable()), LiteralsAre(+2, +1));
-  EXPECT_THAT(trail.Reason(Literal(-4).Variable()), LiteralsAre(+3, +2, +1));
+  EXPECT_THAT(trail.Reason(Literal(-3).Variable()), LiteralsAre(+1, +2));
+  EXPECT_THAT(trail.Reason(Literal(-4).Variable()), LiteralsAre(+1, +2, +3));
 
   // Untrail, and repropagate everything.
   csts.Untrail(trail, 0);
   trail.Untrail(0);
-  trail.Enqueue(Literal(-1), AssignmentType::kSearchDecision);
+  trail.EnqueueSearchDecision(Literal(-1));
   while (!csts.PropagationIsDone(trail)) EXPECT_TRUE(csts.Propagate(&trail));
   EXPECT_THAT(TrailToVector(trail), LiteralsAre(-1, -2, -3, -4));
 }
@@ -401,7 +514,6 @@ TEST(PbConstraintsTest, BasicDeletion) {
   PbConstraintsEnqueueHelper helper;
   helper.reasons.resize(10);
   trail.Resize(10);
-  trail.SetDecisionLevel(0);
   csts.Resize(10);
   csts.AddConstraint(MakePb({{-1, 1}, {+2, 1}}), Coefficient(1), &trail);
   csts.AddConstraint(MakePb({{-1, 7}, {-2, 7}, {+3, 7}}), Coefficient(20),
@@ -419,7 +531,7 @@ TEST(PbConstraintsTest, BasicDeletion) {
   while (!csts.PropagationIsDone(trail)) EXPECT_TRUE(csts.Propagate(&trail));
   EXPECT_EQ("-1", trail.DebugString());
 
-  // But also enqueing -2 should.
+  // But also enqueuing -2 should.
   trail.Enqueue(Literal(-2), AssignmentType::kSearchDecision);
   while (!csts.PropagationIsDone(trail)) EXPECT_TRUE(csts.Propagate(&trail));
   EXPECT_EQ("-1 -2 -3 -4", trail.DebugString());
@@ -453,8 +565,7 @@ TEST(PbConstraintsTest, UnsatAtConstruction) {
   Trail& trail = *(model.GetOrCreate<Trail>());
 
   trail.Resize(10);
-  trail.SetDecisionLevel(1);
-  trail.Enqueue(Literal(+1), AssignmentType::kUnitReason);
+  trail.EnqueueSearchDecision(Literal(+1));
   trail.Enqueue(Literal(+2), AssignmentType::kUnitReason);
   trail.Enqueue(Literal(+3), AssignmentType::kUnitReason);
 
@@ -479,7 +590,6 @@ TEST(PbConstraintsTest, AddConstraintWithLevel0Propagation) {
   Trail& trail = *(model.GetOrCreate<Trail>());
 
   trail.Resize(10);
-  trail.SetDecisionLevel(0);
   csts.Resize(10);
 
   EXPECT_TRUE(csts.AddConstraint(MakePb({{+1, 1}, {+2, 3}, {+3, 7}}),
@@ -491,7 +601,7 @@ TEST(PbConstraintsTest, AddConstraintWithLevel0Propagation) {
 
 TEST(PbConstraintsTest, AddConstraintUMR) {
   const auto cst = MakePb({{+3, 7}});
-  UpperBoundedLinearConstraint c(cst);
+  UpperBoundedLinearConstraint c(/*enforcement_literals=*/{}, cst);
   // Calling hashing on c generates an UMR that is triggered during the hash_map
   // lookup below.
   const uint64_t ct_hash = c.hash();
@@ -506,7 +616,7 @@ TEST(PbConstraintsDeathTest, AddConstraintWithLevel0PropagationInSearch) {
   Trail& trail = *(model.GetOrCreate<Trail>());
 
   trail.Resize(10);
-  trail.SetDecisionLevel(10);
+  trail.EnqueueSearchDecision(Literal(+10));
   csts.Resize(10);
 
   // If the decision level is not 0, this will fail.
@@ -521,11 +631,10 @@ TEST(PbConstraintsDeathTest, AddConstraintPrecondition) {
   Trail& trail = *(model.GetOrCreate<Trail>());
 
   trail.Resize(10);
-  trail.SetDecisionLevel(1);
-  trail.Enqueue(Literal(+1), AssignmentType::kSearchDecision);
+  trail.EnqueueSearchDecision(Literal(+1));
   trail.Enqueue(Literal(+2), AssignmentType::kUnitReason);
-  trail.SetDecisionLevel(2);
-  trail.Enqueue(Literal(+3), AssignmentType::kSearchDecision);
+  trail.EnqueueSearchDecision(Literal(+4));  // dummy.
+  trail.Enqueue(Literal(+3), AssignmentType::kUnitReason);
   csts.Resize(10);
 
   // We can't add this constraint since it is conflicting under the current
@@ -534,8 +643,8 @@ TEST(PbConstraintsDeathTest, AddConstraintPrecondition) {
                                   Coefficient(2), &trail));
 
   trail.Untrail(trail.Index() - 1);  //  Remove the +3.
-  EXPECT_EQ(trail.Index(), 2);
-  csts.Untrail(trail, 2);
+  EXPECT_EQ(trail.Index(), 3);
+  csts.Untrail(trail, 3);
 
   // Adding this one at a decision level of 2 will also fail because it will
   // propagate 3 from decision level 1.
@@ -545,7 +654,7 @@ TEST(PbConstraintsDeathTest, AddConstraintPrecondition) {
 
   // However, adding the same constraint while the decision level is 1 is ok.
   // It will propagate -3 at the correct decision level.
-  trail.SetDecisionLevel(1);
+  trail.Untrail(trail.PrepareBacktrack(1));
   EXPECT_TRUE(csts.AddConstraint(MakePb({{+1, 1}, {+2, 1}, {+3, 2}}),
                                  Coefficient(3), &trail));
   EXPECT_EQ(trail.Index(), 3);

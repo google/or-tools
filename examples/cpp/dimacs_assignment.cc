@@ -20,7 +20,7 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/flags/flag.h"
-#include "absl/strings/str_format.h"
+#include "absl/strings/string_view.h"
 #include "examples/cpp/parse_dimacs_assignment.h"
 #include "examples/cpp/print_dimacs_assignment.h"
 #include "ortools/algorithms/hungarian.h"
@@ -42,6 +42,8 @@ ABSL_FLAG(bool, assignment_static_graph, true,
           "Use the StaticGraph representation, "
           "otherwise ListGraph or ReverseArcListGraph according "
           "to --assignment_reverse_arcs.");
+ABSL_FLAG(bool, assignment_maximize_cost, false,
+          "Negate costs so a max-cost assignment is found.");
 
 namespace operations_research {
 
@@ -117,7 +119,8 @@ int SolveDimacsAssignment(int argc, char* argv[]) {
   // Handle on the graph we will need to delete because the
   // LinearSumAssignment object does not take ownership of it.
   GraphType* graph = nullptr;
-  DimacsAssignmentParser<GraphType> parser(argv[1]);
+  DimacsAssignmentParser<GraphType> parser(
+      argv[1], absl::GetFlag(FLAGS_assignment_maximize_cost));
   LinearSumAssignment<GraphType>* assignment =
       parser.Parse(&error_message, &graph);
   if (assignment == nullptr) {
@@ -156,25 +159,18 @@ int SolveDimacsAssignment(int argc, char* argv[]) {
 }
 }  // namespace operations_research
 
-static const char* const kUsageTemplate = "usage: %s <filename>";
-
 using ::operations_research::ArcIndex;
 using ::operations_research::NodeIndex;
 using ::operations_research::SolveDimacsAssignment;
 
 int main(int argc, char* argv[]) {
-  std::string usage;
-  if (argc < 1) {
-    usage = absl::StrFormat(kUsageTemplate, "solve_dimacs_assignment");
-  } else {
-    usage = absl::StrFormat(kUsageTemplate, argv[0]);
-  }
-  InitGoogle(usage.c_str(), &argc, &argv, true);
+  InitGoogle(argv[0], &argc, &argv, true);
 
   if (argc < 2) {
-    LOG(FATAL) << usage;
+    LOG(FATAL) << "Missing input file.";
   }
 
+  absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
   if (absl::GetFlag(FLAGS_assignment_static_graph)) {
     return SolveDimacsAssignment<::util::StaticGraph<NodeIndex, ArcIndex>>(
         argc, argv);

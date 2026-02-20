@@ -17,8 +17,8 @@
 // mp_callback.h should be sufficient (in fact, SCIP's mp_callback.h
 // implementation is built on top of this).
 
-#ifndef OR_TOOLS_LINEAR_SOLVER_SCIP_CALLBACK_H_
-#define OR_TOOLS_LINEAR_SOLVER_SCIP_CALLBACK_H_
+#ifndef ORTOOLS_LINEAR_SOLVER_SCIP_CALLBACK_H_
+#define ORTOOLS_LINEAR_SOLVER_SCIP_CALLBACK_H_
 
 #include <cstdint>
 #include <memory>
@@ -271,4 +271,4 @@ void AddCallbackConstraint(SCIP* scip,
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_LINEAR_SOLVER_SCIP_CALLBACK_H_
+#endif  // ORTOOLS_LINEAR_SOLVER_SCIP_CALLBACK_H_

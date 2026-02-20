@@ -1,4 +1,4 @@
-# CP/SAT
+# CP-SAT
 
 This directory contains a next-gen Constraint Programming (CP) solver with
 clause learning. It is built on top of an efficient SAT/max-SAT solver whose

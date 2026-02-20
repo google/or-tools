@@ -24,6 +24,8 @@
 #include <utility>
 #include <vector>
 
+#include "absl/algorithm/container.h"
+#include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
@@ -67,6 +69,16 @@ void SolutionCrush::MaybeSetLiteralToValueEncoding(int literal, int var,
   if (!solution_is_loaded_) return;
   if (!HasValue(PositiveRef(literal)) && HasValue(var)) {
     SetLiteralValue(literal, GetVarValue(var) == value);
+  }
+}
+
+void SolutionCrush::MaybeSetLiteralToOrderEncoding(int literal, int var,
+                                                   int64_t value, bool is_le) {
+  DCHECK(RefIsPositive(var));
+  if (!solution_is_loaded_) return;
+  if (!HasValue(PositiveRef(literal)) && HasValue(var)) {
+    SetLiteralValue(
+        literal, is_le ? GetVarValue(var) <= value : GetVarValue(var) >= value);
   }
 }
 
@@ -224,6 +236,32 @@ void SolutionCrush::SetOrUpdateVarToDomain(int var, const Domain& domain) {
   }
 }
 
+void SolutionCrush::SetOrUpdateVarToDomainWithOptionalEscapeValue(
+    int var, const Domain& reduced_var_domain,
+    std::optional<int64_t> unique_escape_value,
+    bool push_down_when_not_in_domain,
+    const absl::btree_map<int64_t, int>& encoding) {
+  if (!solution_is_loaded_) return;
+  if (HasValue(var)) {
+    const int64_t old_value = GetVarValue(var);
+    int64_t new_value = old_value;
+    if (reduced_var_domain.Contains(old_value)) return;
+    if (unique_escape_value.has_value()) {
+      new_value = unique_escape_value.value();
+    } else if (push_down_when_not_in_domain) {
+      DCHECK_GT(old_value, reduced_var_domain.Min());
+      new_value = reduced_var_domain.ValueAtOrBefore(old_value);
+    } else {
+      DCHECK_LT(old_value, reduced_var_domain.Max());
+      new_value = reduced_var_domain.ValueAtOrAfter(old_value);
+    }
+
+    SetLiteralValue(encoding.at(new_value), true);
+    CHECK(!encoding.contains(old_value));
+    SetVarValue(var, new_value);
+  }
+}
+
 void SolutionCrush::UpdateLiteralsToFalseIfDifferent(int lit1, int lit2) {
   // Set lit1 and lit2 to false if "lit1 - lit2 == 0" is violated.
   const int sign1 = RefIsPositive(lit1) ? 1 : -1;
@@ -281,6 +319,40 @@ void SolutionCrush::MaybeUpdateVarWithSymmetriesToValue(
   DCHECK_EQ(GetVarValue(var), value);
 }
 
+void SolutionCrush::MaybeSwapOrbitopeColumns(
+    absl::Span<const std::vector<int>> orbitope, int row, int pivot_col,
+    bool value) {
+  if (!solution_is_loaded_) return;
+  int col = -1;
+  for (int c = 0; c < orbitope[row].size(); ++c) {
+    if (GetLiteralValue(orbitope[row][c]) == value) {
+      if (col != -1) {
+        VLOG(2) << "Multiple literals in row with given value";
+        return;
+      }
+      col = c;
+    }
+  }
+  if (col < pivot_col) {
+    // Nothing to do.
+    return;
+  }
+  // Swap the value of the literals in column `col` with the value of the ones
+  // in column `pivot_col`, if they all have a value.
+  for (int i = 0; i < orbitope.size(); ++i) {
+    if (!HasValue(PositiveRef(orbitope[i][col]))) return;
+    if (!HasValue(PositiveRef(orbitope[i][pivot_col]))) return;
+  }
+  for (int i = 0; i < orbitope.size(); ++i) {
+    const int src_lit = orbitope[i][col];
+    const int dst_lit = orbitope[i][pivot_col];
+    const bool src_value = GetLiteralValue(src_lit);
+    const bool dst_value = GetLiteralValue(dst_lit);
+    SetLiteralValue(src_lit, dst_value);
+    SetLiteralValue(dst_lit, src_value);
+  }
+}
+
 void SolutionCrush::UpdateRefsWithDominance(
     int ref, int64_t min_value, int64_t max_value,
     absl::Span<const std::pair<int, Domain>> dominating_refs) {
@@ -313,11 +385,25 @@ void SolutionCrush::UpdateRefsWithDominance(
 }
 
 void SolutionCrush::SetVarToLinearConstraintSolution(
-    std::optional<int> var_index, absl::Span<const int> vars,
+    absl::Span<const int> enforcement_lits, std::optional<int> var_index,
+    absl::Span<const int> vars, absl::Span<const int64_t> default_values,
     absl::Span<const int64_t> coeffs, int64_t rhs) {
   DCHECK_EQ(vars.size(), coeffs.size());
   DCHECK(!var_index.has_value() || var_index.value() < vars.size());
   if (!solution_is_loaded_) return;
+  bool constraint_is_enforced = true;
+  for (const int lit : enforcement_lits) {
+    if (!HasValue(PositiveRef(lit))) return;
+    constraint_is_enforced = constraint_is_enforced && GetLiteralValue(lit);
+  }
+  if (!constraint_is_enforced) {
+    for (int i = 0; i < vars.size(); ++i) {
+      if (!HasValue(vars[i])) {
+        SetVarValue(vars[i], default_values[i]);
+      }
+    }
+    return;
+  }
   int64_t term_value = rhs;
   for (int i = 0; i < vars.size(); ++i) {
     if (HasValue(vars[i])) {
@@ -409,6 +495,13 @@ void SolutionCrush::SetReservoirCircuitVars(
   for (int i = 0; i < active_event_values.size(); ++i) {
     active_event_value_index[active_event_values[i].index] = i;
   }
+  // Set the level vars of inactive events to an arbitrary value.
+  for (int i = 0; i < num_events; ++i) {
+    if (active_event_value_index[i] == -1) {
+      SetVarValue(level_vars[i], min_level);
+    }
+  }
+
   for (int i = 0; i < circuit.literals_size(); ++i) {
     const int head = circuit.heads(i);
     const int tail = circuit.tails(i);
@@ -458,12 +551,12 @@ void SolutionCrush::SetIntModExpandedVars(const ConstraintProto& ct,
                                           int64_t default_div_value,
                                           int64_t default_prod_value) {
   if (!solution_is_loaded_) return;
-  bool enforced_value = true;
+  bool constraint_is_enforced = true;
   for (const int lit : ct.enforcement_literal()) {
     if (!HasValue(PositiveRef(lit))) return;
-    enforced_value = enforced_value && GetLiteralValue(lit);
+    constraint_is_enforced = constraint_is_enforced && GetLiteralValue(lit);
   }
-  if (!enforced_value) {
+  if (!constraint_is_enforced) {
     SetVarValue(div_var, default_div_value);
     SetVarValue(prod_var, default_prod_value);
     return;
@@ -580,8 +673,8 @@ void SolutionCrush::SetTableExpandedVars(
     for (int var_index = 0; var_index < num_vars; ++var_index) {
       const auto& values = var_values[var_index];
       if (!values.empty() &&
-          std::find(values.begin(), values.end(),
-                    GetVarValue(column_vars[var_index])) == values.end()) {
+          absl::c_find(values, GetVarValue(column_vars[var_index])) ==
+              values.end()) {
         row_lit_value = false;
         break;
       }

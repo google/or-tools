@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_SCHEDULING_JOBSHOP_SCHEDULING_PARSER_H_
-#define OR_TOOLS_SCHEDULING_JOBSHOP_SCHEDULING_PARSER_H_
+#ifndef ORTOOLS_SCHEDULING_JOBSHOP_SCHEDULING_PARSER_H_
+#define ORTOOLS_SCHEDULING_JOBSHOP_SCHEDULING_PARSER_H_
 
 #include <cstdint>
 #include <string>
@@ -92,4 +92,4 @@ class JsspParser {
 }  // namespace scheduling
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_SCHEDULING_JOBSHOP_SCHEDULING_PARSER_H_
+#endif  // ORTOOLS_SCHEDULING_JOBSHOP_SCHEDULING_PARSER_H_

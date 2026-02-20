@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// [START program]
 // The step_function_sample_sat command is an example of an implementation of a step function.
 package main
 
@@ -19,9 +20,10 @@ import (
 
 	log "github.com/golang/glog"
 	"github.com/google/or-tools/ortools/sat/go/cpmodel"
+	"google.golang.org/protobuf/proto"
+
 	cmpb "github.com/google/or-tools/ortools/sat/proto/cpmodel"
 	sppb "github.com/google/or-tools/ortools/sat/proto/satparameters"
-	"google.golang.org/protobuf/proto"
 )
 
 func stepFunctionSampleSat() error {
@@ -97,3 +99,5 @@ func main() {
 		log.Exitf("stepFunctionSampleSat returned with error: %v", err)
 	}
 }
+
+// [END program]

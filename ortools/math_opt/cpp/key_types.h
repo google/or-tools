@@ -35,8 +35,8 @@
 // TODO(b/396580721): Those requirements are those of `ModelStorageElement`.
 // Once we've migrated most key types to `ModelStorageElement`, we should be
 // able to simplify this code.
-#ifndef OR_TOOLS_MATH_OPT_CPP_KEY_TYPES_H_
-#define OR_TOOLS_MATH_OPT_CPP_KEY_TYPES_H_
+#ifndef ORTOOLS_MATH_OPT_CPP_KEY_TYPES_H_
+#define ORTOOLS_MATH_OPT_CPP_KEY_TYPES_H_
 
 #include <type_traits>
 #include <vector>
@@ -181,4 +181,4 @@ inline absl::Status CheckModelStorage(const NullableModelStorageCPtr storage,
 }  // namespace internal
 }  // namespace operations_research::math_opt
 
-#endif  // OR_TOOLS_MATH_OPT_CPP_KEY_TYPES_H_
+#endif  // ORTOOLS_MATH_OPT_CPP_KEY_TYPES_H_

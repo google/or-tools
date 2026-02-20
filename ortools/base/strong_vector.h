@@ -13,7 +13,7 @@
 
 // This file provides the StrongVector container that wraps around the STL
 // vector. The wrapper restrict indexing to a pre-specified type-safe integer
-// type or StrongInt (see util/intops/strong_int.h).  It prevents accidental
+// type or StrongInt (see ortools/base/strong_int.h).  It prevents accidental
 // indexing by different "logical" integer-like types (e.g. another StrongInt)
 // or native integer types.  The wrapper is useful as C++ and the standard
 // template library allows the user to mix "logical" integral indices that might
@@ -26,7 +26,7 @@
 //
 // where type_name is the desired name for the "logical" integer-like type
 // and the value_type is a supported native integer type such as int or
-// uint64_t (see util/intops/strong_int.h for details).
+// uint64_t (see ortools/base/strong_int.h for details).
 //
 // The wrapper exposes all public methods of STL vector and behaves mostly as
 // pass-through.  The only methods modified to ensure type-safety are the
@@ -58,8 +58,8 @@
 // indexable by the index type in debug mode. In optimized mode the
 // user can CHECK IsValidSize() when deemed important.
 
-#ifndef OR_TOOLS_BASE_STRONG_VECTOR_H_
-#define OR_TOOLS_BASE_STRONG_VECTOR_H_
+#ifndef ORTOOLS_BASE_STRONG_VECTOR_H_
+#define ORTOOLS_BASE_STRONG_VECTOR_H_
 
 #include <limits>
 #include <type_traits>
@@ -333,4 +333,4 @@ class StrongVector : protected std::vector<NativeType, Alloc> {
 
 }  // namespace util_intops
 
-#endif  // OR_TOOLS_BASE_STRONG_VECTOR_H_
+#endif  // ORTOOLS_BASE_STRONG_VECTOR_H_

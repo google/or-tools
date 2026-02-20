@@ -9,7 +9,6 @@ import argparse
 import collections
 
 from ortools.sat.python import cp_model
-from google.protobuf import text_format
 
 #----------------------------------------------------------------------------
 # Command line arguments.
@@ -295,7 +294,7 @@ def main(args):
   solver = cp_model.CpSolver()
   solver.parameters.max_time_in_seconds = 60 * 60 * 2
   if parameters:
-    text_format.Merge(parameters, solver.parameters)
+    solver.parameters.merge_text_format(parameters)
   solution_printer = SolutionPrinter(makespan)
   status = solver.Solve(model, solution_printer)
 

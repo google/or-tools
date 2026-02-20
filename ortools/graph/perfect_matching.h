@@ -23,8 +23,8 @@
 // yet. The initial version is closer to Blossom IV since we update the dual
 // values for all trees at once with the same delta.
 
-#ifndef OR_TOOLS_GRAPH_PERFECT_MATCHING_H_
-#define OR_TOOLS_GRAPH_PERFECT_MATCHING_H_
+#ifndef ORTOOLS_GRAPH_PERFECT_MATCHING_H_
+#define ORTOOLS_GRAPH_PERFECT_MATCHING_H_
 
 #include <cstdint>
 #include <functional>
@@ -494,4 +494,4 @@ class BlossomGraph {
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_GRAPH_PERFECT_MATCHING_H_
+#endif  // ORTOOLS_GRAPH_PERFECT_MATCHING_H_

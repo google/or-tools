@@ -12,8 +12,8 @@
 // limitations under the License.
 
 // Language-agnostic utilities for `Elemental` codegen.
-#ifndef OR_TOOLS_MATH_OPT_ELEMENTAL_CODEGEN_GEN_H_
-#define OR_TOOLS_MATH_OPT_ELEMENTAL_CODEGEN_GEN_H_
+#ifndef ORTOOLS_MATH_OPT_ELEMENTAL_CODEGEN_GEN_H_
+#define ORTOOLS_MATH_OPT_ELEMENTAL_CODEGEN_GEN_H_
 
 #include <array>
 #include <memory>
@@ -140,4 +140,4 @@ class CodeGenerator {
 
 }  // namespace operations_research::math_opt::codegen
 
-#endif  // OR_TOOLS_MATH_OPT_ELEMENTAL_CODEGEN_GEN_H_
+#endif  // ORTOOLS_MATH_OPT_ELEMENTAL_CODEGEN_GEN_H_

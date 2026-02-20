@@ -15,7 +15,6 @@
 
 #include <limits>
 #include <string>
-#include <vector>
 
 #include "absl/types/span.h"
 #include "gtest/gtest.h"
@@ -42,7 +41,7 @@ DratChecker::Status CheckOptimizedProof(const DratChecker& drat_checker) {
     optimized_proof_checker.AddProblemClause(clause);
   }
   for (const auto& clause : drat_checker.GetOptimizedProof()) {
-    optimized_proof_checker.AddInferedClause(clause);
+    optimized_proof_checker.AddInferredClause(clause);
   }
   return optimized_proof_checker.Check(kMaxTimeInSeconds);
 }
@@ -57,8 +56,8 @@ TEST(DratCheckerTest, CheckBasicSuccess) {
   checker.AddProblemClause(Literals({+1, -2}));
   checker.AddProblemClause(Literals({+2, -3}));
 
-  checker.AddInferedClause(Literals({-2}));
-  checker.AddInferedClause(Literals({}));
+  checker.AddInferredClause(Literals({-2}));
+  checker.AddInferredClause(Literals({}));
 
   EXPECT_EQ(DratChecker::Status::VALID, checker.Check(kMaxTimeInSeconds));
   EXPECT_EQ(DratChecker::Status::VALID, CheckOptimizedProof(checker));
@@ -75,10 +74,10 @@ TEST(DratCheckerTest, CheckBasicSuccessWithClauseAddedSeveralTimes) {
 
   // Add a clause two times and deletes it on)e time, there should still be one
   // copy left, which is needed for the rest )of the proof.
-  checker.AddInferedClause(Literals({-2}));
-  checker.AddInferedClause(Literals({-2}));
+  checker.AddInferredClause(Literals({-2}));
+  checker.AddInferredClause(Literals({-2}));
   checker.DeleteClause(Literals({-2}));
-  checker.AddInferedClause(Literals({}));
+  checker.AddInferredClause(Literals({}));
 
   EXPECT_EQ(DratChecker::Status::VALID, checker.Check(kMaxTimeInSeconds));
   EXPECT_EQ(DratChecker::Status::VALID, CheckOptimizedProof(checker));
@@ -96,15 +95,15 @@ TEST(DratCheckerTest, CheckSimpleSuccess) {
   checker.AddProblemClause(Literals({-1, +2, +4}));
   checker.AddProblemClause(Literals({+1, -2, -4}));
 
-  checker.AddInferedClause(Literals({+1, +2}));
+  checker.AddInferredClause(Literals({+1, +2}));
   checker.DeleteClause(Literals({+1, +2, -3, +2}));  // Duplicate literals.
-  checker.AddInferedClause(Literals({+1, +1}));      // Duplicate literals.
+  checker.AddInferredClause(Literals({+1, +1}));     // Duplicate literals.
   checker.DeleteClause(Literals({+1, +3, +4}));
   checker.DeleteClause(
       Literals({-4, -2, +1}));  // Different order from clause #8.
-  checker.AddInferedClause(Literals({+2}));
+  checker.AddInferredClause(Literals({+2}));
   checker.DeleteClause(Literals({+2, +3, -4}));
-  checker.AddInferedClause(Literals({}));
+  checker.AddInferredClause(Literals({}));
 
   EXPECT_EQ(DratChecker::Status::VALID, checker.Check(kMaxTimeInSeconds));
   EXPECT_EQ(DratChecker::Status::VALID, CheckOptimizedProof(checker));
@@ -125,14 +124,14 @@ TEST(DratCheckerTest, CheckComplexSuccessRupProof) {
     }
   }
 
-  checker.AddInferedClause(Literals({1, 2, 3}));
-  checker.AddInferedClause(Literals({1, 2}));
-  checker.AddInferedClause(Literals({1, 3}));
-  checker.AddInferedClause(Literals({1}));
-  checker.AddInferedClause(Literals({2, 3}));
-  checker.AddInferedClause(Literals({2}));
-  checker.AddInferedClause(Literals({3}));
-  checker.AddInferedClause(Literals({}));
+  checker.AddInferredClause(Literals({1, 2, 3}));
+  checker.AddInferredClause(Literals({1, 2}));
+  checker.AddInferredClause(Literals({1, 3}));
+  checker.AddInferredClause(Literals({1}));
+  checker.AddInferredClause(Literals({2, 3}));
+  checker.AddInferredClause(Literals({2}));
+  checker.AddInferredClause(Literals({3}));
+  checker.AddInferredClause(Literals({}));
 
   EXPECT_EQ(DratChecker::Status::VALID, checker.Check(kMaxTimeInSeconds));
   EXPECT_EQ(DratChecker::Status::VALID, CheckOptimizedProof(checker));
@@ -153,10 +152,10 @@ TEST(DratCheckerTest, CheckComplexSuccessRapProof) {
     }
   }
 
-  checker.AddInferedClause(Literals({1}));
-  checker.AddInferedClause(Literals({2}));
-  checker.AddInferedClause(Literals({3}));
-  checker.AddInferedClause(Literals({}));
+  checker.AddInferredClause(Literals({1}));
+  checker.AddInferredClause(Literals({2}));
+  checker.AddInferredClause(Literals({3}));
+  checker.AddInferredClause(Literals({}));
 
   EXPECT_EQ(DratChecker::Status::VALID, checker.Check(kMaxTimeInSeconds));
   EXPECT_EQ(DratChecker::Status::VALID, CheckOptimizedProof(checker));
@@ -178,18 +177,18 @@ TEST(DratCheckerTest, CheckComplexSuccessRapProofWithExtendedResolution) {
   }
 
   // Proof using additional variables not used in the problem clauses.
-  checker.AddInferedClause(Literals({5, 1, 2}));
-  checker.AddInferedClause(Literals({5, 1, -2}));
-  checker.AddInferedClause(Literals({5, -1, 2}));
-  checker.AddInferedClause(Literals({5, -1, -2}));
-  checker.AddInferedClause(Literals({-5, 3, 4}));
-  checker.AddInferedClause(Literals({-5, 3, -4}));
-  checker.AddInferedClause(Literals({-5, -3, 4}));
-  checker.AddInferedClause(Literals({-5, -3, -4}));
-  checker.AddInferedClause(Literals({5, 1}));
-  checker.AddInferedClause(Literals({5}));
-  checker.AddInferedClause(Literals({3}));
-  checker.AddInferedClause(Literals({}));
+  checker.AddInferredClause(Literals({5, 1, 2}));
+  checker.AddInferredClause(Literals({5, 1, -2}));
+  checker.AddInferredClause(Literals({5, -1, 2}));
+  checker.AddInferredClause(Literals({5, -1, -2}));
+  checker.AddInferredClause(Literals({-5, 3, 4}));
+  checker.AddInferredClause(Literals({-5, 3, -4}));
+  checker.AddInferredClause(Literals({-5, -3, 4}));
+  checker.AddInferredClause(Literals({-5, -3, -4}));
+  checker.AddInferredClause(Literals({5, 1}));
+  checker.AddInferredClause(Literals({5}));
+  checker.AddInferredClause(Literals({3}));
+  checker.AddInferredClause(Literals({}));
 
   EXPECT_EQ(DratChecker::Status::VALID, checker.Check(kMaxTimeInSeconds));
   EXPECT_EQ(DratChecker::Status::VALID, CheckOptimizedProof(checker));
@@ -209,10 +208,10 @@ TEST(DratCheckerTest, CheckBasicSuccessWithoutDeletedClauses) {
   checker.AddProblemClause(Literals({-1, +2, +4}));
   checker.AddProblemClause(Literals({+1, -2, -4}));
 
-  checker.AddInferedClause(Literals({+1, +2}));
-  checker.AddInferedClause(Literals({+1}));
-  checker.AddInferedClause(Literals({+2}));
-  checker.AddInferedClause(Literals({}));
+  checker.AddInferredClause(Literals({+1, +2}));
+  checker.AddInferredClause(Literals({+1}));
+  checker.AddInferredClause(Literals({+2}));
+  checker.AddInferredClause(Literals({}));
 
   EXPECT_EQ(DratChecker::Status::VALID, checker.Check(kMaxTimeInSeconds));
   EXPECT_EQ(DratChecker::Status::VALID, CheckOptimizedProof(checker));
@@ -231,8 +230,8 @@ TEST(DratCheckerTest, CheckBasicFailure) {
   checker.AddProblemClause(Literals({-1, +2, +4}));
   checker.AddProblemClause(Literals({+1, -2, -4}));
 
-  checker.AddInferedClause(Literals({+2}));
-  checker.AddInferedClause(Literals({}));
+  checker.AddInferredClause(Literals({+2}));
+  checker.AddInferredClause(Literals({}));
 
   EXPECT_EQ(DratChecker::Status::INVALID, checker.Check(kMaxTimeInSeconds));
 }
@@ -250,14 +249,14 @@ TEST(DratCheckerTest, CheckFailureClauseNeededForProofDeleted) {
   checker.AddProblemClause(Literals({-1, +2, +4}));
   checker.AddProblemClause(Literals({+1, -2, -4}));
 
-  checker.AddInferedClause(Literals({+1, +2}));
+  checker.AddInferredClause(Literals({+1, +2}));
   checker.DeleteClause(Literals({+1, +2, -3}));
-  checker.AddInferedClause(Literals({+1}));
+  checker.AddInferredClause(Literals({+1}));
   checker.DeleteClause(Literals({+1, +3, +4}));
   checker.DeleteClause(Literals({+1, -2, -4}));
   checker.DeleteClause(Literals({+2, +3, -4}));
-  checker.AddInferedClause(Literals({+2}));
-  checker.AddInferedClause(Literals({}));
+  checker.AddInferredClause(Literals({+2}));
+  checker.AddInferredClause(Literals({}));
 
   EXPECT_EQ(DratChecker::Status::INVALID, checker.Check(kMaxTimeInSeconds));
 }
@@ -275,11 +274,11 @@ TEST(DratCheckerTest,
   // Add and delete a clause two times, there should still be no copy left,
   // yielding an invalid proof because this clause is needed for the rest of the
   // proof.
-  checker.AddInferedClause(Literals({-2}));
+  checker.AddInferredClause(Literals({-2}));
   checker.DeleteClause(Literals({-2}));
-  checker.AddInferedClause(Literals({-2}));
+  checker.AddInferredClause(Literals({-2}));
   checker.DeleteClause(Literals({-2}));
-  checker.AddInferedClause(Literals({}));
+  checker.AddInferredClause(Literals({}));
 
   EXPECT_EQ(DratChecker::Status::INVALID, checker.Check(kMaxTimeInSeconds));
 }
@@ -297,11 +296,11 @@ TEST(DratCheckerTest,
   // Add and delete a clause two times, there should still be no copy left,
   // yielding an invalid proof because this clause is needed for the rest of the
   // proof.
-  checker.AddInferedClause(Literals({-2}));
-  checker.AddInferedClause(Literals({-2}));
+  checker.AddInferredClause(Literals({-2}));
+  checker.AddInferredClause(Literals({-2}));
   checker.DeleteClause(Literals({-2}));
   checker.DeleteClause(Literals({-2}));
-  checker.AddInferedClause(Literals({}));
+  checker.AddInferredClause(Literals({}));
 
   EXPECT_EQ(DratChecker::Status::INVALID, checker.Check(kMaxTimeInSeconds));
 }
@@ -310,7 +309,7 @@ TEST(DratCheckerTest, CheckBasicFailureTimeOut) {
   DratChecker checker;
   checker.AddProblemClause(Literals({+1}));
   checker.AddProblemClause(Literals({-1}));
-  checker.AddInferedClause(Literals({}));
+  checker.AddInferredClause(Literals({}));
 
   EXPECT_EQ(DratChecker::Status::UNKNOWN, checker.Check(-1.0));
 }
@@ -373,7 +372,7 @@ d 2  3 -4  0
                               file::Defaults()));
 
   EXPECT_TRUE(AddProblemClauses(cnf_file_path, &checker));
-  EXPECT_TRUE(AddInferedAndDeletedClauses(drat_file_path, &checker));
+  EXPECT_TRUE(AddInferredAndDeletedClauses(drat_file_path, &checker));
   EXPECT_EQ(DratChecker::Status::VALID, checker.Check(kMaxTimeInSeconds));
 }
 

@@ -11,11 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#if defined(USE_GLPK)
-
 #include <algorithm>
 #include <cmath>
-#include <cstddef>
 #include <cstdint>
 #include <limits>
 #include <memory>
@@ -24,14 +21,11 @@
 #include <vector>
 
 #include "absl/base/attributes.h"
-#include "absl/memory/memory.h"
 #include "absl/strings/str_format.h"
-#include "ortools/base/commandlineflags.h"
-#include "ortools/base/hash.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
-#include "ortools/glpk/glpk_env_deleter.h"
 #include "ortools/linear_solver/linear_solver.h"
+#include "ortools/third_party_solvers/glpk/glpk_env_deleter.h"
 
 extern "C" {
 #include "glpk.h"
@@ -961,9 +955,24 @@ void GLPKInterface::SetLpAlgorithm(int value) {
   }
 }
 
-MPSolverInterface* BuildGLPKInterface(bool mip, MPSolver* const solver) {
-  return new GLPKInterface(solver, mip);
-}
+namespace {
+
+// See MpSolverInterfaceFactoryRepository for details.
+const void* const kRegisterGLPKLP ABSL_ATTRIBUTE_UNUSED = [] {
+  MPSolverInterfaceFactoryRepository::GetInstance()->Register(
+      [](MPSolver* solver) { return new GLPKInterface(solver, false); },
+      MPSolver::GLPK_LINEAR_PROGRAMMING);
+  return nullptr;
+}();
+
+// See MpSolverInterfaceFactoryRepository for details.
+const void* const kRegisterGLPKMIP ABSL_ATTRIBUTE_UNUSED = [] {
+  MPSolverInterfaceFactoryRepository::GetInstance()->Register(
+      [](MPSolver* solver) { return new GLPKInterface(solver, true); },
+      MPSolver::GLPK_MIXED_INTEGER_PROGRAMMING);
+  return nullptr;
+}();
+
+}  // namespace
 
 }  // namespace operations_research
-#endif  //  #if defined(USE_GLPK)

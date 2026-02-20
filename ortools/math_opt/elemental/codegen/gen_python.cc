@@ -17,6 +17,7 @@
 #include <set>
 #include <string>
 
+#include "absl/base/optimization.h"
 #include "absl/strings/ascii.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
@@ -55,6 +56,7 @@ absl::string_view GetAttrPyValueType(
     case CodegenAttrTypeDescriptor::ValueType::kDouble:
       return "float";
   }
+  ABSL_UNREACHABLE();
 }
 
 // Returns the python type for the given value type.
@@ -68,6 +70,7 @@ absl::string_view GetAttrNumpyValueType(
     case CodegenAttrTypeDescriptor::ValueType::kDouble:
       return "np.float64";
   }
+  ABSL_UNREACHABLE();
 }
 
 class PythonEnumsGenerator : public CodeGenerator {

@@ -14,6 +14,8 @@
 #include "ortools/constraint_solver/routing_utils.h"
 
 #include <algorithm>
+#include <cstddef>
+#include <cstdint>
 #include <functional>
 #include <queue>
 #include <tuple>

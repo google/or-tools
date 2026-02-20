@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_MATH_OPT_IO_LP_MODEL_UTILS_H_
-#define OR_TOOLS_MATH_OPT_IO_LP_MODEL_UTILS_H_
+#ifndef ORTOOLS_MATH_OPT_IO_LP_MODEL_UTILS_H_
+#define ORTOOLS_MATH_OPT_IO_LP_MODEL_UTILS_H_
 
 #include <string>
 
@@ -56,4 +56,4 @@ absl::StatusOr<LpModel> PermuteVariables(
 
 }  // namespace operations_research::lp_format
 
-#endif  // OR_TOOLS_MATH_OPT_IO_LP_MODEL_UTILS_H_
+#endif  // ORTOOLS_MATH_OPT_IO_LP_MODEL_UTILS_H_

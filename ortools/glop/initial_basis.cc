@@ -20,8 +20,14 @@
 #include <queue>
 #include <vector>
 
+#include "absl/base/optimization.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "ortools/glop/markowitz.h"
+#include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/lp_utils.h"
+#include "ortools/lp_data/sparse.h"
+#include "ortools/lp_data/sparse_column.h"
 
 namespace operations_research {
 namespace glop {
@@ -219,6 +225,8 @@ int InitialBasis::GetMarosPriority(ColIndex col) const {
     case VariableType::FIXED_VARIABLE:
       return 0;
   }
+  LOG(FATAL) << "Invalid variable type: "
+             << static_cast<int>(variable_type_[col]);
 }
 
 int InitialBasis::GetMarosPriority(RowIndex row) const {
@@ -388,6 +396,7 @@ int InitialBasis::GetColumnCategory(ColIndex col) const {
     case VariableType::FIXED_VARIABLE:
       return 5;
   }
+  ABSL_UNREACHABLE();
 }
 
 Fractional InitialBasis::GetColumnPenalty(ColIndex col) const {

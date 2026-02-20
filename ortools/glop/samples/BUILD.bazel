@@ -11,6 +11,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load(":code_samples.bzl", "code_sample_cc")
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+load("//tools/testing:bintest.bzl", "bintest")
 
-code_sample_cc(name = "simple_glop_program")
+package(default_visibility = ["//visibility:public"])
+
+cc_binary(
+    name = "simple_glop_program_cc",
+    srcs = ["simple_glop_program.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:numbers",
+        "//ortools/glop:lp_solver",
+        "//ortools/lp_data",
+        "//ortools/lp_data:base",
+    ],
+)
+
+bintest(
+    name = "simple_glop_program_cc_test",
+    size = "small",
+    srcs = [":simple_glop_program_cc_test.bintest"],
+    named_data = {"simple_glop_program_cc": ":simple_glop_program_cc"},
+)

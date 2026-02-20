@@ -17,8 +17,8 @@
 // refuse. The functions in this header can be use to mitigate that.
 //
 // These functions can also be used to anonymize models before saving them.
-#ifndef OR_TOOLS_MATH_OPT_IO_NAMES_REMOVAL_H_
-#define OR_TOOLS_MATH_OPT_IO_NAMES_REMOVAL_H_
+#ifndef ORTOOLS_MATH_OPT_IO_NAMES_REMOVAL_H_
+#define ORTOOLS_MATH_OPT_IO_NAMES_REMOVAL_H_
 
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/model_update.pb.h"
@@ -33,4 +33,4 @@ void RemoveNames(ModelUpdateProto& update);
 
 }  // namespace operations_research::math_opt
 
-#endif  // OR_TOOLS_MATH_OPT_IO_NAMES_REMOVAL_H_
+#endif  // ORTOOLS_MATH_OPT_IO_NAMES_REMOVAL_H_

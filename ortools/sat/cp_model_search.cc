@@ -351,7 +351,7 @@ std::function<BooleanOrIntegerLiteral()> ConstructUserSearchStrategy(
   };
 }
 
-// TODO(user): Implement a routing search.
+// TODO(user): Implement a routing search strategy.
 std::function<BooleanOrIntegerLiteral()> ConstructHeuristicSearchStrategy(
     const CpModelProto& cp_model_proto, Model* model) {
   if (ModelHasSchedulingConstraints(cp_model_proto)) {
@@ -379,7 +379,7 @@ std::function<BooleanOrIntegerLiteral()> ConstructHeuristicSearchStrategy(
     heuristics.push_back(SchedulingSearchHeuristic(model));
     return SequentialSearch(std::move(heuristics));
   }
-  return PseudoCost(model);
+  return nullptr;
 }
 
 std::function<BooleanOrIntegerLiteral()>
@@ -427,23 +427,22 @@ std::function<BooleanOrIntegerLiteral()> ConstructHintSearchStrategy(
   return FollowHint(vars, values, model);
 }
 
-std::function<BooleanOrIntegerLiteral()> ConstructFixedSearchStrategy(
-    std::function<BooleanOrIntegerLiteral()> user_search,
-    std::function<BooleanOrIntegerLiteral()> heuristic_search,
-    std::function<BooleanOrIntegerLiteral()> integer_completion) {
+void ConstructFixedSearchStrategy(SearchHeuristics* h, Model* model) {
   // We start by the user specified heuristic.
   std::vector<std::function<BooleanOrIntegerLiteral()>> heuristics;
-  if (user_search != nullptr) {
-    heuristics.push_back(user_search);
+  if (h->user_search != nullptr) {
+    heuristics.push_back(h->user_search);
   }
-  if (heuristic_search != nullptr) {
-    heuristics.push_back(heuristic_search);
+  if (h->heuristic_search != nullptr) {
+    heuristics.push_back(h->heuristic_search);
+  } else {
+    heuristics.push_back(PseudoCost(model));
   }
-  if (integer_completion != nullptr) {
-    heuristics.push_back(integer_completion);
+  if (h->integer_completion_search != nullptr) {
+    heuristics.push_back(h->integer_completion_search);
   }
 
-  return SequentialSearch(heuristics);
+  h->fixed_search = SequentialSearch(std::move(heuristics));
 }
 
 std::function<BooleanOrIntegerLiteral()> InstrumentSearchStrategy(
@@ -678,6 +677,29 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     new_params.set_use_dynamic_precedence_in_disjunctive(false);
     new_params.set_use_dynamic_precedence_in_cumulative(false);
     strategies["fixed"] = new_params;
+
+    new_params.set_linearization_level(0);
+    strategies["fixed_no_lp"] = new_params;
+
+    new_params.set_linearization_level(2);
+    new_params.set_add_lp_constraints_lazily(false);
+    new_params.set_root_lp_iterations(100'000);
+    strategies["fixed_max_lp"] = new_params;
+  }
+
+  // Portfolio search.
+  {
+    SatParameters new_params = base_params;
+    new_params.set_search_branching(SatParameters::PORTFOLIO_SEARCH);
+    strategies["portfolio"] = new_params;
+
+    new_params.set_linearization_level(0);
+    strategies["portfolio_no_lp"] = new_params;
+
+    new_params.set_linearization_level(2);
+    new_params.set_add_lp_constraints_lazily(false);
+    new_params.set_root_lp_iterations(100'000);
+    strategies["portfolio_max_lp"] = new_params;
   }
 
   // Quick restart.
@@ -726,7 +748,6 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     SatParameters new_params = base_params;
     new_params.set_use_shared_tree_search(true);
     new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
-    new_params.set_linearization_level(0);
 
     // These settings don't make sense with shared tree search, turn them off as
     // they can break things.
@@ -755,10 +776,12 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     lns_params.set_cp_model_probing_level(0);
     lns_params.set_symmetry_level(0);
     lns_params.set_find_big_linear_overlap(false);
+    lns_params.set_find_clauses_that_are_exactly_one(false);
 
     lns_params.set_log_search_progress(false);
     lns_params.set_debug_crash_on_bad_hint(false);  // Can happen in lns.
-    lns_params.set_solution_pool_size(1);  // Keep the best solution found.
+    lns_params.set_solution_pool_size(1);     // Keep the best solution found.
+    lns_params.set_alternative_pool_size(0);  // Disable.
     strategies["lns"] = lns_params;
 
     // Note that we only do this for the derived parameters. The strategy "lns"
@@ -835,9 +858,6 @@ std::vector<SatParameters> GetFullWorkerParameters(
                                   ModelHasSchedulingConstraints(cp_model);
 
   // Our current set of strategies
-  //
-  // TODO(user): Avoid launching two strategies if they are the same,
-  // like if there is no lp, or everything is already linearized at level 1.
   std::vector<std::string> names;
 
   // Starts by adding user specified ones.
@@ -909,6 +929,13 @@ std::vector<SatParameters> GetFullWorkerParameters(
     // Do some filtering.
     if (!use_fixed_strategy &&
         params.search_branching() == SatParameters::FIXED_SEARCH) {
+      continue;
+    }
+    // As of November 2025, we don't support any LP reasoning when producing an
+    // UNSAT proof.
+    if ((params.check_lrat_proof() || params.output_lrat_proof() ||
+         params.check_drat_proof() || params.output_drat_proof()) &&
+        params.linearization_level() > 1) {
       continue;
     }
 
@@ -991,7 +1018,15 @@ std::vector<SatParameters> GetFullWorkerParameters(
 
   if (result.size() > num_to_keep) {
     result.resize(std::max(0, num_to_keep));
+  } else if (!result.empty() && num_to_keep >= 0) {
+    // If we have less parameters, duplicate the first one until we have enough.
+    // This is a bit hacky but easily allow to do experiment with n times the
+    // same subsolver.
+    while (result.size() < num_to_keep) {
+      result.push_back(result[0]);
+    }
   }
+
   return result;
 }
 

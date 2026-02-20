@@ -11,6 +11,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+load("@rules_java//java:java_library.bzl", "java_library")
+
 # Utilities to load native libraries in java or-tools.
 cc_binary(
     name = "libjniortools.so",
@@ -75,7 +78,5 @@ java_library(
         "@platforms//os:osx": ["//ortools/java/com/google/ortools:libjniortools.dylib"],
         "@platforms//os:windows": ["//ortools/java/com/google/ortools:jniortools.dll"],
     }),
-    deps = [
-        "@maven//:net_java_dev_jna_jna",
-    ],
+    deps = ["@maven//:net_java_dev_jna_jna"],
 )

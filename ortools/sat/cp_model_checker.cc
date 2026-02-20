@@ -29,7 +29,6 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
-#include "absl/meta/type_traits.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
@@ -285,24 +284,6 @@ std::string ValidateLinearExpression(const CpModelProto& model,
   return "";
 }
 
-std::string ValidateAffineExpression(const CpModelProto& model,
-                                     const LinearExpressionProto& expr) {
-  if (expr.vars_size() > 1) {
-    return absl::StrCat("expression must be affine: ",
-                        ProtobufShortDebugString(expr));
-  }
-  return ValidateLinearExpression(model, expr);
-}
-
-std::string ValidateConstantAffineExpression(
-    const CpModelProto& model, const LinearExpressionProto& expr) {
-  if (!expr.vars().empty()) {
-    return absl::StrCat("expression must be constant: ",
-                        ProtobufShortDebugString(expr));
-  }
-  return ValidateLinearExpression(model, expr);
-}
-
 std::string ValidateLinearConstraint(const CpModelProto& model,
                                      const ConstraintProto& ct) {
   if (!DomainInProtoIsValid(ct.linear())) {
@@ -338,9 +319,9 @@ std::string ValidateIntModConstraint(const CpModelProto& model,
                         ProtobufShortDebugString(ct));
   }
 
-  RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, ct.int_mod().exprs(0)));
-  RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, ct.int_mod().exprs(1)));
-  RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, ct.int_mod().target()));
+  RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, ct.int_mod().exprs(0)));
+  RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, ct.int_mod().exprs(1)));
+  RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, ct.int_mod().target()));
 
   const LinearExpressionProto mod_expr = ct.int_mod().exprs(1);
   if (MinOfExpression(model, mod_expr) <= 0) {
@@ -360,9 +341,9 @@ std::string ValidateIntProdConstraint(const CpModelProto& model,
   }
 
   for (const LinearExpressionProto& expr : ct.int_prod().exprs()) {
-    RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, expr));
+    RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, expr));
   }
-  RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, ct.int_prod().target()));
+  RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, ct.int_prod().target()));
 
   // Detect potential overflow.
   Domain product_domain(1);
@@ -406,9 +387,9 @@ std::string ValidateIntDivConstraint(const CpModelProto& model,
                         ProtobufShortDebugString(ct));
   }
 
-  RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, ct.int_div().exprs(0)));
-  RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, ct.int_div().exprs(1)));
-  RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, ct.int_div().target()));
+  RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, ct.int_div().exprs(0)));
+  RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, ct.int_div().exprs(1)));
+  RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, ct.int_div().target()));
 
   const LinearExpressionProto& denom = ct.int_div().exprs(1);
   const int64_t offset = denom.offset();
@@ -498,11 +479,11 @@ std::string ValidateElementConstraint(const CpModelProto& model,
 
   if (in_linear_format) {
     RETURN_IF_NOT_EMPTY(
-        ValidateAffineExpression(model, element.linear_index()));
+        ValidateLinearExpression(model, element.linear_index()));
     RETURN_IF_NOT_EMPTY(
-        ValidateAffineExpression(model, element.linear_target()));
+        ValidateLinearExpression(model, element.linear_target()));
     for (const LinearExpressionProto& expr : element.exprs()) {
-      RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, expr));
+      RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, expr));
       LinearExpressionProto overflow_detection = ct.element().linear_target();
       AppendToOverflowValidator(expr, &overflow_detection, -1);
       const int64_t offset = CapSub(overflow_detection.offset(), expr.offset());
@@ -517,6 +498,24 @@ std::string ValidateElementConstraint(const CpModelProto& model,
     }
   }
 
+  return "";
+}
+
+std::string ValidateInverseConstraint(const CpModelProto& model,
+                                      const ConstraintProto& ct) {
+  if (ct.inverse().f_direct().size() != ct.inverse().f_inverse().size()) {
+    return absl::StrCat("Non-matching fields size in inverse: ",
+                        ProtobufShortDebugString(ct));
+  }
+  const InverseConstraintProto& inverse = ct.inverse();
+  for (const auto* vars : {&inverse.f_direct(), &inverse.f_inverse()}) {
+    for (const int var : *vars) {
+      if (!VariableIndexIsValid(model, var)) {
+        return absl::StrCat("Invalid variable index in inverse constraint: ",
+                            var);
+      }
+    }
+  }
   return "";
 }
 
@@ -549,7 +548,7 @@ std::string ValidateTableConstraint(const CpModelProto& model,
     }
   }
   for (const LinearExpressionProto& expr : arg.exprs()) {
-    RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, expr));
+    RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, expr));
   }
   return "";
 }
@@ -576,7 +575,7 @@ std::string ValidateAutomatonConstraint(const CpModelProto& model,
     }
   }
   for (const LinearExpressionProto& expr : automaton.exprs()) {
-    RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, expr));
+    RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, expr));
   }
   absl::flat_hash_map<std::pair<int64_t, int64_t>, int64_t> tail_label_to_head;
   for (int i = 0; i < num_transistions; ++i) {
@@ -670,7 +669,7 @@ std::string ValidateRoutesConstraint(const CpModelProto& model,
                               ProtobufShortDebugString(ct));
         }
       }
-      RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, expr));
+      RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, expr));
     }
   }
 
@@ -679,12 +678,6 @@ std::string ValidateRoutesConstraint(const CpModelProto& model,
 
 std::string ValidateIntervalConstraint(const CpModelProto& model,
                                        const ConstraintProto& ct) {
-  if (ct.enforcement_literal().size() > 1) {
-    return absl::StrCat(
-        "Interval with more than one enforcement literals are currently not "
-        "supported: ",
-        ProtobufShortDebugString(ct));
-  }
   const IntervalConstraintProto& arg = ct.interval();
 
   if (!arg.has_start()) {
@@ -809,9 +802,6 @@ std::string ValidateNoOverlap2DConstraint(const CpModelProto& model,
 
 std::string ValidateReservoirConstraint(const CpModelProto& model,
                                         const ConstraintProto& ct) {
-  if (ct.enforcement_literal_size() > 0) {
-    return "Reservoir does not support enforcement literals.";
-  }
   if (ct.reservoir().time_exprs().size() !=
       ct.reservoir().level_changes().size()) {
     return absl::StrCat(
@@ -819,7 +809,7 @@ std::string ValidateReservoirConstraint(const CpModelProto& model,
         ProtobufShortDebugString(ct));
   }
   for (const LinearExpressionProto& expr : ct.reservoir().time_exprs()) {
-    RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, expr));
+    RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, expr));
     // We want to be able to safely put time_exprs[i]-time_exprs[j] in a linear.
     if (MinOfExpression(model, expr) <=
             -std::numeric_limits<int64_t>::max() / 4 ||
@@ -831,7 +821,7 @@ std::string ValidateReservoirConstraint(const CpModelProto& model,
     }
   }
   for (const LinearExpressionProto& expr : ct.reservoir().level_changes()) {
-    RETURN_IF_NOT_EMPTY(ValidateConstantAffineExpression(model, expr));
+    RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, expr));
   }
   if (ct.reservoir().min_level() > 0) {
     return absl::StrCat(
@@ -1002,13 +992,17 @@ std::string ValidateSearchStrategies(const CpModelProto& model) {
       }
     }
     for (const LinearExpressionProto& expr : strategy.exprs()) {
+      if (expr.vars_size() > 1) {
+        return absl::StrCat("expression must be affine in strategy: ",
+                            ProtobufShortDebugString(strategy));
+      }
       for (const int var : expr.vars()) {
         if (!VariableReferenceIsValid(model, var)) {
           return absl::StrCat("Invalid variable reference in strategy: ",
                               ProtobufShortDebugString(strategy));
         }
       }
-      if (!ValidateAffineExpression(model, expr).empty()) {
+      if (!ValidateLinearExpression(model, expr).empty()) {
         return absl::StrCat("Invalid affine expr in strategy: ",
                             ProtobufShortDebugString(strategy));
       }
@@ -1132,21 +1126,16 @@ std::string ValidateCpModel(const CpModelProto& model, bool after_presolve) {
   for (int c = 0; c < model.constraints_size(); ++c) {
     RETURN_IF_NOT_EMPTY(ValidateVariablesUsedInConstraint(model, c));
 
-    // By default, a constraint does not support enforcement literals except if
-    // explicitly stated by setting this to true below.
-    bool support_enforcement = false;
-
     // Other non-generic validations.
     const ConstraintProto& ct = model.constraints(c);
     switch (ct.constraint_case()) {
       case ConstraintProto::ConstraintCase::kBoolOr:
-        support_enforcement = true;
-        break;
       case ConstraintProto::ConstraintCase::kBoolAnd:
-        support_enforcement = true;
+      case ConstraintProto::ConstraintCase::kAtMostOne:
+      case ConstraintProto::ConstraintCase::kExactlyOne:
+      case ConstraintProto::ConstraintCase::kBoolXor:
         break;
       case ConstraintProto::ConstraintCase::kLinear:
-        support_enforcement = true;
         RETURN_IF_NOT_EMPTY(ValidateLinearConstraint(model, ct));
         break;
       case ConstraintProto::ConstraintCase::kLinMax: {
@@ -1167,14 +1156,11 @@ std::string ValidateCpModel(const CpModelProto& model, bool after_presolve) {
         RETURN_IF_NOT_EMPTY(ValidateIntModConstraint(model, ct));
         break;
       case ConstraintProto::ConstraintCase::kInverse:
-        if (ct.inverse().f_direct().size() != ct.inverse().f_inverse().size()) {
-          return absl::StrCat("Non-matching fields size in inverse: ",
-                              ProtobufShortDebugString(ct));
-        }
+        RETURN_IF_NOT_EMPTY(ValidateInverseConstraint(model, ct));
         break;
       case ConstraintProto::ConstraintCase::kAllDiff:
         for (const LinearExpressionProto& expr : ct.all_diff().exprs()) {
-          RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, expr));
+          RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, expr));
         }
         break;
       case ConstraintProto::ConstraintCase::kElement:
@@ -1182,7 +1168,6 @@ std::string ValidateCpModel(const CpModelProto& model, bool after_presolve) {
         break;
       case ConstraintProto::ConstraintCase::kTable:
         RETURN_IF_NOT_EMPTY(ValidateTableConstraint(model, ct));
-        support_enforcement = true;
         break;
       case ConstraintProto::ConstraintCase::kAutomaton:
         RETURN_IF_NOT_EMPTY(ValidateAutomatonConstraint(model, ct));
@@ -1196,7 +1181,6 @@ std::string ValidateCpModel(const CpModelProto& model, bool after_presolve) {
         break;
       case ConstraintProto::ConstraintCase::kInterval:
         RETURN_IF_NOT_EMPTY(ValidateIntervalConstraint(model, ct));
-        support_enforcement = true;
         break;
       case ConstraintProto::ConstraintCase::kCumulative:
         constraints_using_intervals.push_back(c);
@@ -1214,21 +1198,6 @@ std::string ValidateCpModel(const CpModelProto& model, bool after_presolve) {
         return "The dummy constraint should never appear in a model.";
       default:
         break;
-    }
-
-    // Because some client set fixed enforcement literal which are supported
-    // in the presolve for all constraints, we just check that there is no
-    // non-fixed enforcement.
-    if (!support_enforcement && !ct.enforcement_literal().empty()) {
-      for (const int ref : ct.enforcement_literal()) {
-        const int var = PositiveRef(ref);
-        const Domain domain = ReadDomainFromProto(model.variables(var));
-        if (domain.Size() != 1) {
-          return absl::StrCat(
-              "Enforcement literal not supported in constraint: ",
-              ProtobufShortDebugString(ct));
-        }
-      }
     }
   }
 
@@ -1398,8 +1367,8 @@ class ConstraintChecker {
   bool LinearConstraintIsFeasible(const ConstraintProto& ct) {
     int64_t sum = 0;
     const int num_variables = ct.linear().coeffs_size();
-    const int* const vars = ct.linear().vars().data();
-    const int64_t* const coeffs = ct.linear().coeffs().data();
+    absl::Span<const int> vars = absl::MakeSpan(ct.linear().vars());
+    absl::Span<const int64_t> coeffs = absl::MakeSpan(ct.linear().coeffs());
     for (int i = 0; i < num_variables; ++i) {
       // We know we only have positive reference now.
       DCHECK(RefIsPositive(vars[i]));

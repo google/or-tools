@@ -18,6 +18,7 @@ import time
 
 from absl import app
 from absl import flags
+
 from ortools.sat.python import cp_model
 
 _SIZE = flags.DEFINE_integer("size", 8, "Number of queens.")

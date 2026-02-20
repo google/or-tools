@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// [START program]
 // The interval_sample_sat_go command is a simple example of the Interval variable.
 package main
 
@@ -56,3 +57,5 @@ func main() {
 		log.Exitf("intervalSampleSat returned with error: %v", err)
 	}
 }
+
+// [END program]

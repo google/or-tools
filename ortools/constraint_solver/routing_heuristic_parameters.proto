@@ -1,0 +1,141 @@
+// Copyright 2010-2025 Google LLC
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Protocol buffer used to parametrize the local cheapest insertion heuristics.
+
+syntax = "proto3";
+
+option java_package = "com.google.ortools.constraintsolver";
+option java_multiple_files = true;
+option csharp_namespace = "Google.OrTools.ConstraintSolver";
+
+package operations_research;
+
+// Parameters used to configure local cheapest insertion heuristics.
+message LocalCheapestInsertionParameters {
+  // In insertion-based heuristics, describes what positions must be considered
+  // when inserting a pickup/delivery pair, and in what order they are
+  // considered.
+  enum PairInsertionStrategy {
+    // Let the solver decide the set of positions and its ordering.
+    AUTOMATIC = 0;
+    // Consider all positions, by increasing (cost(pickup), cost(delivery)).
+    BEST_PICKUP_THEN_BEST_DELIVERY = 1;
+    // Consider all positions, by increasing by cost(pickup) + cost(delivery).
+    BEST_PICKUP_DELIVERY_PAIR = 2;
+    // Only consider insertion positions that are compatible with the multitour
+    // property, meaning a series of pickups may only start when the vehicle
+    // is not carrying any delivery. This setting is designed to explore much
+    // less possibilities than the full BEST_PICKUP_DELIVERY_PAIR.
+    // Order by increasing by cost(pickup) + cost(delivery).
+    BEST_PICKUP_DELIVERY_PAIR_MULTITOUR = 3;
+  }
+
+  // Choice of insertion strategy for pickup/delivery pairs, used in local
+  // cheapest insertion, both first solution heuristic and LNS.
+  PairInsertionStrategy pickup_delivery_strategy = 1;
+
+  // Properties used to select in which order nodes or node pairs are considered
+  // in insertion heuristics.
+  enum InsertionSortingProperty {
+    // Invalid property.
+    SORTING_PROPERTY_UNSPECIFIED = 0;
+    // Selects nodes with the least number of allowed vehicles.
+    SORTING_PROPERTY_ALLOWED_VEHICLES = 1;
+    // Selects nodes with the highest penalty.
+    SORTING_PROPERTY_PENALTY = 2;
+    // Selects nodes with the highest penalty / number of allowed vehicles
+    // ratio.
+    SORTING_PROPERTY_PENALTY_OVER_ALLOWED_VEHICLES_RATIO = 3;
+    // Selects nodes that are on average the farthest from vehicles.
+    SORTING_PROPERTY_HIGHEST_AVG_ARC_COST_TO_VEHICLE_START_ENDS = 4;
+    // Selects nodes that are on average the closest to vehicles.
+    SORTING_PROPERTY_LOWEST_AVG_ARC_COST_TO_VEHICLE_START_ENDS = 5;
+    // Select nodes with the smallest distance to the closest vehicle.
+    SORTING_PROPERTY_LOWEST_MIN_ARC_COST_TO_VEHICLE_START_ENDS = 6;
+    // Selects nodes that have a higher dimension usage on average, where the
+    // usage is determined as the ratio of node demand over vehicle capacity.
+    // Currently, this property only supports unary dimensions.
+    SORTING_PROPERTY_HIGHEST_DIMENSION_USAGE = 7;
+    // Selects nodes in random order.
+    // This property cannot be used in conjunction with other properties.
+    SORTING_PROPERTY_RANDOM = 8;
+  }
+
+  // The properties used to sort insertion entries in the local cheapest
+  // insertion heuristic, in *decreasing* order of priority. The properties
+  // listed here are applied hierarchically, from highest to lowest priority.
+  // When no properties are provided
+  //        (SORTING_PROPERTY_ALLOWED_VEHICLES, SORTING_PROPERTY_PENALTY)
+  // is used by default.
+  repeated InsertionSortingProperty insertion_sorting_properties = 2;
+}
+
+// Parameters used to configure savings heuristics.
+message SavingsParameters {
+  // Ratio (in ]0, 1]) of neighbors to consider for each node when constructing
+  // the savings. If unspecified, its value is considered to be 1.0.
+  double neighbors_ratio = 1;
+  // The number of neighbors considered for each node in the Savings heuristic
+  // is chosen so that the space used to store the savings doesn't exceed
+  // max_memory_usage_bytes, which must be in ]0, 1e10].
+  // NOTE: If both neighbors_ratio and max_memory_usage_bytes
+  // are specified, the number of neighbors considered for each node will be the
+  // minimum of the two numbers determined by these parameters.
+  double max_memory_usage_bytes = 2;
+  // Add savings related to reverse arcs when finding the nearest neighbors
+  // of the nodes.
+  bool add_reverse_arcs = 3;
+  // Coefficient of the cost of the arc for which the saving value is being
+  // computed:
+  // Saving(a-->b) = Cost(a-->end) + Cost(start-->b)
+  //                 - arc_coefficient * Cost(a-->b)
+  // This parameter must be greater than 0, and its default value is 1.
+  double arc_coefficient = 4;
+}
+
+// Parameters used to configure global cheapest insertion heuristics.
+message GlobalCheapestInsertionParameters {
+  // Ratio (between 0 and 1) of available vehicles in the model on which
+  // farthest nodes of the model are inserted as seeds.
+  double farthest_seeds_ratio = 1;
+
+  // Ratio (in ]0, 1]) of closest non start/end nodes to consider as neighbors
+  // for each node when creating new insertions in the parallel/sequential
+  // cheapest insertion heuristic.
+  // If not overridden, its default value is 1, meaning all neighbors will be
+  // considered.
+  // The neighborhood ratio is coupled with the corresponding min_neighbors
+  // integer, indicating the minimum number of neighbors to consider for each
+  // node:
+  // num_closest_neighbors =
+  //        max(min_neighbors, neighbors_ratio * NUM_NON_START_END_NODES)
+  // This minimum number of neighbors must be greater or equal to 1, its
+  // default value.
+  double neighbors_ratio = 2;
+  int32 min_neighbors = 3;
+
+  // Whether or not to only consider closest neighbors when initializing the
+  // assignment. More precisely, if true, only closest neighbors (see
+  // neighbors_ratio and min_neighbors) are considered as insertion positions
+  // during initialization. Otherwise, all possible insertion positions are
+  // considered.
+  bool use_neighbors_ratio_for_initialization = 6;
+
+  // Whether or not to consider entries making the nodes/pairs unperformed.
+  // More precisely, if true, entries are created for making the nodes/pairs
+  // unperformed, and when the cost of making a node unperformed is lower than
+  // all insertions, the node/pair will be made unperformed. If false, only
+  // entries making a node/pair performed are considered.
+  bool add_unperformed_entries = 7;
+}

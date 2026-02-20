@@ -13,8 +13,8 @@
 
 // Defines the random engine type to use within operations_research code.
 
-#ifndef OR_TOOLS_UTIL_RANDOM_ENGINE_H_
-#define OR_TOOLS_UTIL_RANDOM_ENGINE_H_
+#ifndef ORTOOLS_UTIL_RANDOM_ENGINE_H_
+#define ORTOOLS_UTIL_RANDOM_ENGINE_H_
 
 #include <random>
 
@@ -24,4 +24,4 @@ using random_engine_t = std::mt19937_64;
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_UTIL_RANDOM_ENGINE_H_
+#endif  // ORTOOLS_UTIL_RANDOM_ENGINE_H_

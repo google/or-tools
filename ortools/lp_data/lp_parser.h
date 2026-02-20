@@ -71,8 +71,8 @@
 //   take. Similarly, "min x; bin x; x <= 0.5" results in bounding the x
 //   variable between 0.0 and 0.5, despite the only value it can take is 0.
 
-#ifndef OR_TOOLS_LP_DATA_LP_PARSER_H_
-#define OR_TOOLS_LP_DATA_LP_PARSER_H_
+#ifndef ORTOOLS_LP_DATA_LP_PARSER_H_
+#define ORTOOLS_LP_DATA_LP_PARSER_H_
 
 #include <string>
 #include <vector>
@@ -123,4 +123,4 @@ absl::StatusOr<ParsedConstraint> ParseConstraint(absl::string_view constraint);
 }  // namespace glop
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_LP_DATA_LP_PARSER_H_
+#endif  // ORTOOLS_LP_DATA_LP_PARSER_H_

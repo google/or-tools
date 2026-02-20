@@ -140,7 +140,7 @@ QuadraticConstraintProto QuadraticConstraintFromMPModelToMathOpt(
   QuadraticConstraintProto out_constraint;
   out_constraint.set_lower_bound(in_constraint.lower_bound());
   out_constraint.set_upper_bound(in_constraint.upper_bound());
-  out_constraint.set_name(std::string(name));
+  out_constraint.set_name(name);
   LinearTermsFromMPModelToMathOpt(
       in_constraint.var_index(), in_constraint.coefficient(),
       *out_constraint.mutable_linear_terms()->mutable_ids(),
@@ -155,7 +155,7 @@ QuadraticConstraintProto QuadraticConstraintFromMPModelToMathOpt(
 SosConstraintProto SosConstraintFromMPModelToMathOpt(
     const MPSosConstraint& in_constraint, const absl::string_view name) {
   SosConstraintProto out_constraint;
-  out_constraint.set_name(std::string(name));
+  out_constraint.set_name(name);
   for (const int j : in_constraint.var_index()) {
     LinearExpressionProto& expr = *out_constraint.add_expressions();
     expr.add_ids(j);
@@ -172,7 +172,7 @@ absl::StatusOr<IndicatorConstraintProto>
 IndicatorConstraintFromMPModelToMathOpt(
     const MPIndicatorConstraint& in_constraint, const absl::string_view name) {
   IndicatorConstraintProto out_constraint;
-  out_constraint.set_name(std::string(name));
+  out_constraint.set_name(name);
   out_constraint.set_indicator_id(in_constraint.var_index());
   out_constraint.set_activate_on_zero(in_constraint.has_var_value() &&
                                       in_constraint.var_value() == 0);

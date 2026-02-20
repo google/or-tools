@@ -338,7 +338,10 @@ TEST(ConvertCpModelProtoToCnfTest, BasicExample) {
     variables { domain: [ 0, 1 ] }
     constraints { bool_or { literals: [ 0, 1, 2 ] } }
     constraints { bool_or { literals: [ -1, -2 ] } }
-    constraints { bool_or { literals: [ -1, -2 ] } }
+    constraints {
+      enforcement_literal: [ 2 ]
+      bool_or { literals: [ -1, -2 ] }
+    }
     constraints {
       enforcement_literal: [ 0, 1 ]
       bool_and { literals: [ -1, -2 ] }
@@ -347,9 +350,47 @@ TEST(ConvertCpModelProtoToCnfTest, BasicExample) {
   const std::string expected = R"(p cnf 3 5
 1 2 3 0
 -1 -2 0
--1 -2 0
+-3 -1 -2 0
 -1 -2 -1 0
 -1 -2 -2 0
+)";
+  std::string cnf;
+  EXPECT_TRUE(ConvertCpModelProtoToCnf(model_proto, &cnf));
+  EXPECT_EQ(expected, cnf);
+}
+
+TEST(ConvertCpModelProtoToCnfTest, FixedVariables) {
+  const CpModelProto model_proto = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 0 ] }
+    variables { domain: [ 1, 1 ] }
+    constraints { bool_or { literals: [ 0, 1, 2 ] } }
+    constraints { bool_or { literals: [ -1, -2 ] } }
+    constraints { bool_or { literals: [ -1, -2 ] } }
+  )pb");
+  const std::string expected = R"(p cnf 3 5
+-2 0
+3 0
+1 2 3 0
+-1 -2 0
+-1 -2 0
+)";
+  std::string cnf;
+  EXPECT_TRUE(ConvertCpModelProtoToCnf(model_proto, &cnf));
+  EXPECT_EQ(expected, cnf);
+}
+
+TEST(ConvertCpModelProtoToCnfTest, BoolAnd) {
+  const CpModelProto model_proto = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints { bool_and { literals: [ 0, 1, 2 ] } }
+  )pb");
+  const std::string expected = R"(p cnf 3 3
+1 0
+2 0
+3 0
 )";
   std::string cnf;
   EXPECT_TRUE(ConvertCpModelProtoToCnf(model_proto, &cnf));

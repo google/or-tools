@@ -15,10 +15,7 @@ load("@protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
 load("@protobuf//bazel:proto_library.bzl", "proto_library")
 load("@protobuf//bazel:py_proto_library.bzl", "py_proto_library")
 
-package(default_visibility = [
-    "//ortools/math_opt:__subpackages__",
-    "//ortools/service:__subpackages__",
-])
+package(default_visibility = ["//ortools/math_opt:__subpackages__"])
 
 proto_library(
     name = "optimization_proto",

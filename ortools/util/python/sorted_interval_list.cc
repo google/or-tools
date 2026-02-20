@@ -28,6 +28,8 @@ PYBIND11_MODULE(sorted_interval_list, m) {
   pybind11::class_<Domain>(m, "Domain", DOC(operations_research, Domain))
       .def_static("all_values", &Domain::AllValues,
                   DOC(operations_research, Domain, AllValues))
+      .def_static("greater_or_equal", &Domain::GreaterOrEqual, arg("value"),
+                  DOC(operations_research, Domain, GreaterOrEqual))
       .def_static("from_values", &Domain::FromValues,
                   DOC(operations_research, Domain, FromValues), arg("values"))
       .def_static("from_intervals", &Domain::FromVectorIntervals,
@@ -36,6 +38,8 @@ PYBIND11_MODULE(sorted_interval_list, m) {
       .def_static("from_flat_intervals", &Domain::FromFlatIntervals,
                   DOC(operations_research, Domain, FromFlatIntervals),
                   arg("flat_intervals"))
+      .def_static("lower_or_equal", &Domain::LowerOrEqual, arg("value"),
+                  DOC(operations_research, Domain, LowerOrEqual))
       .def(pybind11::init<int64_t, int64_t>(),
            DOC(operations_research, Domain, Domain))
       .def("addition_with", &Domain::AdditionWith,
@@ -50,11 +54,15 @@ PYBIND11_MODULE(sorted_interval_list, m) {
            DOC(operations_research, Domain, IntersectionWith), arg("domain"))
       .def("is_empty", &Domain::IsEmpty,
            DOC(operations_research, Domain, IsEmpty))
+      .def("is_included_in", &Domain::IsIncludedIn,
+           DOC(operations_research, Domain, IsIncludedIn), arg("domain"))
       .def("size", &Domain::Size, DOC(operations_research, Domain, Size))
       .def("max", &Domain::Max, DOC(operations_research, Domain, Max))
       .def("min", &Domain::Min, DOC(operations_research, Domain, Min))
       .def("negation", &Domain::Negation,
            DOC(operations_research, Domain, Negation))
+      .def("overlaps_with", &Domain::OverlapsWith,
+           DOC(operations_research, Domain, OverlapsWith), arg("domain"))
       .def("union_with", &Domain::UnionWith,
            DOC(operations_research, Domain, UnionWith), arg("domain"))
       .def("__str__", &Domain::ToString)
@@ -62,6 +70,9 @@ PYBIND11_MODULE(sorted_interval_list, m) {
            [](const Domain& domain) {
              return absl::StrCat("Domain(", domain.ToString(), ")");
            })
+      .def("__copy__", [](const Domain& self) { return Domain(self); })
+      .def("__deepcopy__",
+           [](const Domain& self, pybind11::dict) { return Domain(self); })
       // Compatibility with pre PEP8 APIs.
       .def_static("AllValues", &Domain::AllValues,
                   DOC(operations_research, Domain, AllValues))

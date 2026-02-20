@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_GRAPH_MINIMUM_SPANNING_TREE_H_
-#define OR_TOOLS_GRAPH_MINIMUM_SPANNING_TREE_H_
+#ifndef ORTOOLS_GRAPH_MINIMUM_SPANNING_TREE_H_
+#define ORTOOLS_GRAPH_MINIMUM_SPANNING_TREE_H_
 
 #include <limits>
 #include <vector>
@@ -50,7 +50,6 @@ BuildKruskalMinimumSpanningTreeFromSortedArcs(
     const Graph& graph,
     absl::Span<const typename Graph::ArcIndex> sorted_arcs) {
   using ArcIndex = typename Graph::ArcIndex;
-  using NodeIndex = typename Graph::NodeIndex;
   const int num_arcs = graph.num_arcs();
   int arc_index = 0;
   std::vector<ArcIndex> tree_arcs;
@@ -182,4 +181,4 @@ std::vector<typename Graph::ArcIndex> BuildPrimMinimumSpanningTree(
 }
 
 }  // namespace operations_research
-#endif  // OR_TOOLS_GRAPH_MINIMUM_SPANNING_TREE_H_
+#endif  // ORTOOLS_GRAPH_MINIMUM_SPANNING_TREE_H_

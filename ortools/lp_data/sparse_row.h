@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_LP_DATA_SPARSE_ROW_H_
-#define OR_TOOLS_LP_DATA_SPARSE_ROW_H_
+#ifndef ORTOOLS_LP_DATA_SPARSE_ROW_H_
+#define ORTOOLS_LP_DATA_SPARSE_ROW_H_
 
 #include "ortools/base/strong_vector.h"
 #include "ortools/lp_data/sparse_vector.h"
@@ -63,4 +63,4 @@ typedef util_intops::StrongVector<RowIndex, SparseRow> RowMajorSparseMatrix;
 }  // namespace glop
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_LP_DATA_SPARSE_ROW_H_
+#endif  // ORTOOLS_LP_DATA_SPARSE_ROW_H_

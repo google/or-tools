@@ -11,15 +11,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_TYPES_H_
-#define OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_TYPES_H_
+#ifndef ORTOOLS_CONSTRAINT_SOLVER_ROUTING_TYPES_H_
+#define ORTOOLS_CONSTRAINT_SOLVER_ROUTING_TYPES_H_
 
 #include <cstdint>
 #include <functional>
 #include <vector>
 
-#include "ortools/base/int_type.h"
 #include "ortools/util/piecewise_linear_function.h"
+#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 
@@ -32,12 +32,12 @@ namespace operations_research {
 ///
 /// Users that depend on routing.{h,cc} should just use the
 /// RoutingModel:: equivalent, eg. RoutingModel::NodeIndex.
-DEFINE_INT_TYPE(RoutingNodeIndex, int);
-DEFINE_INT_TYPE(RoutingCostClassIndex, int);
-DEFINE_INT_TYPE(RoutingDimensionIndex, int);
-DEFINE_INT_TYPE(RoutingDisjunctionIndex, int);
-DEFINE_INT_TYPE(RoutingVehicleClassIndex, int);
-DEFINE_INT_TYPE(RoutingResourceClassIndex, int);
+DEFINE_STRONG_INDEX_TYPE(RoutingNodeIndex);
+DEFINE_STRONG_INDEX_TYPE(RoutingCostClassIndex);
+DEFINE_STRONG_INDEX_TYPE(RoutingDimensionIndex);
+DEFINE_STRONG_INDEX_TYPE(RoutingDisjunctionIndex);
+DEFINE_STRONG_INDEX_TYPE(RoutingVehicleClassIndex);
+DEFINE_STRONG_INDEX_TYPE(RoutingResourceClassIndex);
 
 /// Pickup and delivery pair representation, including alternatives for pickups
 /// and deliveries respectively.
@@ -54,4 +54,4 @@ typedef std::function<const FloatSlopePiecewiseLinearFunction*(int64_t,
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_TYPES_H_
+#endif  // ORTOOLS_CONSTRAINT_SOLVER_ROUTING_TYPES_H_

@@ -14,7 +14,6 @@
 // Unimplemented features:
 //  * Quadratic objective
 //  * TODO(b/272767311): initial basis, more precise returned basis.
-//  * Starting solution
 //  * TODO(b/271104776): Returning rays
 
 #include "ortools/math_opt/solvers/highs_solver.h"
@@ -32,6 +31,7 @@
 
 #include "Highs.h"
 #include "absl/algorithm/container.h"
+#include "absl/base/nullability.h"
 #include "absl/cleanup/cleanup.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
@@ -220,7 +220,7 @@ absl::StatusOr<std::unique_ptr<HighsOptions>> MakeOptions(
   if (parameters.has_threads()) {
     // Do not assign result.threads = parameters.threads() here, this is
     // requires global synchronization. See
-    // cs/highs/src/lp_data/Highs.cpp:607
+    // highs/src/lp_data/Highs.cpp:607
     return util::InvalidArgumentErrorBuilder()
            << "threads not supported for HiGHS solver, this must be set using "
               "globals, see HiGHS documentation";
@@ -544,30 +544,35 @@ absl::StatusOr<TerminationProto> HighsSolver::MakeTermination(
                                    optional_finite_primal_objective,
                                    optional_dual_objective);
     case HighsModelStatus::kIterationLimit: {
-      if (is_integer) {
-        if (had_node_limit && had_solution_limit) {
-          return LimitTerminationProto(
-              is_maximize, LIMIT_UNDETERMINED, optional_finite_primal_objective,
-              optional_dual_objective,
-              "Both node limit and solution limit were requested, cannot "
-              "determine reason for termination");
-        } else if (had_node_limit) {
-          return LimitTerminationProto(is_maximize, LIMIT_NODE,
-                                       optional_finite_primal_objective,
-                                       optional_dual_objective);
-        } else if (had_solution_limit) {
-          return LimitTerminationProto(is_maximize, LIMIT_SOLUTION,
-                                       optional_finite_primal_objective,
-                                       optional_dual_objective);
-        }
-      } else {
-        // For LP, only the MathOpt iteration limit can cause highs to return
-        // HighsModelStatus::kIterationLimit.
-        return LimitTerminationProto(is_maximize, LIMIT_ITERATION,
+      return LimitTerminationProto(is_maximize, LIMIT_ITERATION,
+                                   optional_finite_primal_objective,
+                                   optional_dual_objective);
+    }
+    case HighsModelStatus::kSolutionLimit: {
+      if (had_node_limit && !had_solution_limit) {
+        return LimitTerminationProto(is_maximize, LIMIT_NODE,
                                      optional_finite_primal_objective,
                                      optional_dual_objective);
+      } else if (had_solution_limit && !had_node_limit) {
+        return LimitTerminationProto(is_maximize, LIMIT_SOLUTION,
+                                     optional_finite_primal_objective,
+                                     optional_dual_objective);
+      } else {
+        return LimitTerminationProto(
+            is_maximize, LIMIT_UNDETERMINED, optional_finite_primal_objective,
+            optional_dual_objective,
+            "HighsModelStatus was kSolutionLimit but cannot infer a MathOpt "
+            "Limit, could be NODE_LIMIT or SOLUTION_LIMIT");
       }
     }
+    case HighsModelStatus::kInterrupt:
+      return LimitTerminationProto(is_maximize, LIMIT_INTERRUPTED,
+                                   optional_finite_primal_objective,
+                                   optional_dual_objective);
+    case HighsModelStatus::kMemoryLimit:
+      return LimitTerminationProto(
+          is_maximize, LIMIT_OTHER, optional_finite_primal_objective,
+          optional_dual_objective, "Highs hit kMemoryLimit");
   }
   return util::InternalErrorBuilder() << "HighsModelStatus unimplemented: "
                                       << static_cast<int>(highs_model_status);
@@ -908,7 +913,7 @@ absl::StatusOr<SolveResultProto> HighsSolver::Solve(
     const SolveParametersProto& parameters,
     const ModelSolveParametersProto& model_parameters,
     MessageCallback message_cb, const CallbackRegistrationProto&, Callback,
-    const SolveInterrupter* const) {
+    const SolveInterrupter* absl_nullable const) {
   RETURN_IF_ERROR(ModelSolveParametersAreSupported(
       model_parameters, kHighsSupportedStructures, "Highs"));
   const absl::Time start = absl::Now();
@@ -919,6 +924,22 @@ absl::StatusOr<SolveResultProto> HighsSolver::Solve(
                          _ << "error encoding solve_stats.solve_time");
     return absl::OkStatus();
   };
+
+  if (!model_parameters.solution_hints().empty()) {
+    // Take the first solution hint and set the solution.
+    const SolutionHintProto& hint = model_parameters.solution_hints(0);
+    int num_entries = hint.variable_values().ids_size();
+    std::vector<HighsInt> index;
+    index.reserve(num_entries);
+    std::vector<double> value;
+    value.reserve(num_entries);
+    for (const auto [id, val] : MakeView(hint.variable_values())) {
+      index.push_back(variable_data_.at(id).index);
+      value.push_back(val);
+    }
+    RETURN_IF_ERROR(ToStatus(highs_->setSolution(
+        static_cast<HighsInt>(num_entries), index.data(), value.data())));
+  }
 
   RETURN_IF_ERROR(ListInvertedBounds().ToStatus());
   // TODO(b/271595607): delete this code once we upgrade HiGHS, if HiGHS does
@@ -1011,7 +1032,7 @@ absl::StatusOr<bool> HighsSolver::Update(const ModelUpdateProto&) {
 absl::StatusOr<ComputeInfeasibleSubsystemResultProto>
 HighsSolver::ComputeInfeasibleSubsystem(const SolveParametersProto&,
                                         MessageCallback,
-                                        const SolveInterrupter*) {
+                                        const SolveInterrupter* absl_nullable) {
   return absl::UnimplementedError(
       "HiGHS does not provide a method to compute an infeasible subsystem");
 }

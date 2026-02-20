@@ -27,7 +27,6 @@ import numpy as np
 
 from absl import app
 from absl import flags
-from google.protobuf import text_format
 from ortools.sat.python import cp_model
 
 _PARAMS = flags.DEFINE_string(
@@ -149,7 +148,7 @@ def permutation_flow_shop(
 
     solver = cp_model.CpSolver()
     if params:
-        text_format.Parse(params, solver.parameters)
+        solver.parameters.parse_text_format(params)
     solver.parameters.log_search_progress = log
     solver.parameters.max_time_in_seconds = time_limit
 

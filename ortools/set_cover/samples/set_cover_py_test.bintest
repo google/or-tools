@@ -1,0 +1,1 @@
+RUN: $(set_cover_py3)

@@ -88,8 +88,8 @@
 //   blaze test experimental/users/rander/math_opt:matchers_error_messages
 // which is a fork of matchers_test.cc where the assertions are all negated
 // (note that every test should fail).
-#ifndef OR_TOOLS_MATH_OPT_CPP_MATCHERS_H_
-#define OR_TOOLS_MATH_OPT_CPP_MATCHERS_H_
+#ifndef ORTOOLS_MATH_OPT_CPP_MATCHERS_H_
+#define ORTOOLS_MATH_OPT_CPP_MATCHERS_H_
 
 #include <optional>
 #include <ostream>
@@ -121,11 +121,11 @@ constexpr double kMatcherDefaultTolerance = 1e-5;
 testing::Matcher<VariableMap<double>> IsNear(
     VariableMap<double> expected, double tolerance = kMatcherDefaultTolerance);
 
-// Checks that the keys of actual are a subset of the keys of expected, and that
-// for all shared keys, the values are within tolerance. This factory will
+// Checks that the keys of actual are a superset of the keys of expected, and
+// that for all shared keys, the values are within tolerance. This factory will
 // CHECK-fail if expected contains any NaN values, and any NaN values in the
 // expression compared against will result in the matcher failing.
-testing::Matcher<VariableMap<double>> IsNearlySubsetOf(
+testing::Matcher<VariableMap<double>> IsNearlySupersetOf(
     VariableMap<double> expected, double tolerance = kMatcherDefaultTolerance);
 
 // Checks that the maps have identical keys and values within tolerance. This
@@ -135,11 +135,11 @@ testing::Matcher<LinearConstraintMap<double>> IsNear(
     LinearConstraintMap<double> expected,
     double tolerance = kMatcherDefaultTolerance);
 
-// Checks that the keys of actual are a subset of the keys of expected, and that
-// for all shared keys, the values are within tolerance. This factory will
+// Checks that the keys of actual are a superset of the keys of expected, and
+// that for all shared keys, the values are within tolerance. This factory will
 // CHECK-fail if expected contains any NaN values, and any NaN values in the
 // expression compared against will result in the matcher failing.
-testing::Matcher<LinearConstraintMap<double>> IsNearlySubsetOf(
+testing::Matcher<LinearConstraintMap<double>> IsNearlySupersetOf(
     LinearConstraintMap<double> expected,
     double tolerance = kMatcherDefaultTolerance);
 
@@ -149,13 +149,13 @@ testing::Matcher<absl::flat_hash_map<QuadraticConstraint, double>> IsNear(
     absl::flat_hash_map<QuadraticConstraint, double> expected,
     double tolerance = kMatcherDefaultTolerance);
 
-// Checks that the keys of actual are a subset of the keys of expected, and that
-// for all shared keys, the values are within tolerance. This factory will
+// Checks that the keys of actual are a superset of the keys of expected, and
+// that for all shared keys, the values are within tolerance. This factory will
 // CHECK-fail if expected contains any NaN values, and any NaN values in the
 // expression compared against will result in the matcher failing.
 testing::Matcher<absl::flat_hash_map<QuadraticConstraint, double>>
-IsNearlySubsetOf(absl::flat_hash_map<QuadraticConstraint, double> expected,
-                 double tolerance = kMatcherDefaultTolerance);
+IsNearlySupersetOf(absl::flat_hash_map<QuadraticConstraint, double> expected,
+                   double tolerance = kMatcherDefaultTolerance);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Matchers for various Variable expressions (e.g. LinearExpression)
@@ -550,4 +550,4 @@ void PrintTo(const absl::flat_hash_map<K, V>& id_map, std::ostream* const os) {
 }  // namespace math_opt
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_MATH_OPT_CPP_MATCHERS_H_
+#endif  // ORTOOLS_MATH_OPT_CPP_MATCHERS_H_

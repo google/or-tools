@@ -14,8 +14,8 @@
 // IWYU pragma: private, include "ortools/math_opt/cpp/math_opt.h"
 // IWYU pragma: friend "ortools/math_opt/cpp/.*"
 
-#ifndef OR_TOOLS_MATH_OPT_CPP_MODEL_H_
-#define OR_TOOLS_MATH_OPT_CPP_MODEL_H_
+#ifndef ORTOOLS_MATH_OPT_CPP_MODEL_H_
+#define ORTOOLS_MATH_OPT_CPP_MODEL_H_
 
 #include <cstdint>
 #include <memory>
@@ -137,7 +137,7 @@ class Model {
   // This constructor is used when loading a model, for example from a
   // ModelProto or an MPS file. Note that in those cases the FromModelProto()
   // should be used.
-  explicit Model(absl::Nonnull<std::unique_ptr<ModelStorage>> storage);
+  explicit Model(absl_nonnull std::unique_ptr<ModelStorage> storage);
 
   Model(const Model&) = delete;
   Model& operator=(const Model&) = delete;
@@ -159,7 +159,7 @@ class Model {
   //   * in an arbitrary order using Variables() and LinearConstraints().
   //
   // Note that the returned model does not have any update tracker.
-  absl::Nonnull<std::unique_ptr<Model>> Clone(
+  absl_nonnull std::unique_ptr<Model> Clone(
       std::optional<absl::string_view> new_name = std::nullopt) const;
 
   inline absl::string_view name() const;
@@ -481,6 +481,8 @@ class Model {
   // The `weights` are an implementation detail in the solver used to order the
   // `expressions`; see the Gurobi documentation for more detail:
   // https://www.gurobi.com/documentation/9.5/refman/constraints.html#subsubsection:SOSConstraints
+  // For Xpress see
+  // https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/HTML/XPRSaddsets.html
   //
   // These `weights` must either be empty or the same length as `expressions`.
   // If it is empty, default weights of 1, 2, ... will be used.
@@ -540,6 +542,8 @@ class Model {
   // The `weights` are an implementation detail in the solver used to order the
   // `expressions`; see the Gurobi documentation for more detail:
   // https://www.gurobi.com/documentation/9.5/refman/constraints.html#subsubsection:SOSConstraints
+  // For Xpress see
+  // https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/HTML/XPRSaddsets.html
   //
   // These `weights` must either be empty or the same length as `expressions`.
   // If it is empty, default weights of 1, 2, ... will be used.
@@ -925,7 +929,7 @@ class Model {
   // We use a shared_ptr here so that the UpdateTracker class can have a
   // weak_ptr on the ModelStorage. This let it have a destructor that don't
   // crash when called after the destruction of the associated Model.
-  const absl::Nonnull<std::shared_ptr<ModelStorage>> storage_;
+  const absl_nonnull std::shared_ptr<ModelStorage> storage_;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1639,4 +1643,4 @@ void Model::CheckModel(const ModelStorageCPtr other_storage) const {
 }  // namespace math_opt
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_MATH_OPT_CPP_MODEL_H_
+#endif  // ORTOOLS_MATH_OPT_CPP_MODEL_H_

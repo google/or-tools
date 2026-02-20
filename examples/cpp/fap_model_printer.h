@@ -11,13 +11,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//
 // Prints a model of Frequency Assignment Problem.
 // Format: http://www.inra.fr/mia/T/schiex/Doc/CELAR.shtml#synt
-//
 
-#ifndef OR_TOOLS_EXAMPLES_FAP_MODEL_PRINTER_H_
-#define OR_TOOLS_EXAMPLES_FAP_MODEL_PRINTER_H_
+#ifndef ORTOOLS_EXAMPLES_FAP_MODEL_PRINTER_H_
+#define ORTOOLS_EXAMPLES_FAP_MODEL_PRINTER_H_
 
 #include <string>
 #include <vector>
@@ -53,4 +51,4 @@ class FapModelPrinter {
 };
 
 }  // namespace operations_research
-#endif  // OR_TOOLS_EXAMPLES_FAP_MODEL_PRINTER_H_
+#endif  // ORTOOLS_EXAMPLES_FAP_MODEL_PRINTER_H_

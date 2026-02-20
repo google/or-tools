@@ -26,6 +26,7 @@ option java_multiple_files = true;
 option csharp_namespace = "Google.OrTools.ConstraintSolver";
 
 import "ortools/constraint_solver/routing_enums.proto";
+import "ortools/constraint_solver/routing_heuristic_parameters.proto";
 
 package operations_research;
 
@@ -35,7 +36,7 @@ message SpatiallyCloseRoutesRuinStrategy {
   optional uint32 num_ruined_routes = 3;
 }
 
-// Ruin strategy that removes a number of customers by performing a random walk
+// Ruin strategy that removes a number of nodes by performing a random walk
 // on the underlying routing solution. More precisely, starting from a randomly
 // selected seed visit, the walk is extended by either moving within the
 // same route or by jumping to a visit served by a different neighboring
@@ -53,8 +54,6 @@ message RandomWalkRuinStrategy {
 // Ruin strategy based on the "Slack Induction by String Removals for Vehicle
 // Routing Problems" by Jan Christiaens and Greet Vanden Berghe, Transportation
 // Science 2020.
-// Link to paper:
-// https://kuleuven.limo.libis.be/discovery/fulldisplay?docid=lirias1988666&context=SearchWebhook&vid=32KUL_KUL:Lirias&lang=en&search_scope=lirias_profile&adaptor=SearchWebhook&tab=LIRIAS&query=any,contains,LIRIAS1988666&offset=0
 //
 // Note that, in this implementation, the notion of "string" is replaced by
 // "sequence".
@@ -131,7 +130,7 @@ message SISRRuinStrategy {
   // paper is \bar{c} and the suggested value is 10.
   optional uint32 avg_num_removed_visits = 2;
 
-  // Value in [0, 1] ruling the number of preserved customers in the split
+  // Value in [0, 1] ruling the number of preserved nodes in the split
   // sequence removal. The parameter name in the paper is \alpha and the
   // suggested value is 0.01.
   optional double bypass_factor = 3;
@@ -144,6 +143,23 @@ message RuinStrategy {
     RandomWalkRuinStrategy random_walk = 2;
     SISRRuinStrategy sisr = 3;
   }
+}
+
+// Parameters to customize a recreate strategy.
+message RecreateParameters {
+  oneof parameters {
+    LocalCheapestInsertionParameters local_cheapest_insertion = 1;
+    SavingsParameters savings = 2;
+    GlobalCheapestInsertionParameters global_cheapest_insertion = 3;
+  }
+}
+
+// Strategy defining how a solution is recreated.
+message RecreateStrategy {
+  optional FirstSolutionStrategy.Value heuristic = 1;
+  // The selected parameters should match the chosen recreate heuristic.
+  // If not set, the default parameters from the RoutingModel are used.
+  optional RecreateParameters parameters = 2;
 }
 
 // The ruin composition strategies specifies how ruin are selected at every ILS
@@ -175,7 +191,7 @@ message RuinRecreateParameters {
   RuinCompositionStrategy.Value ruin_composition_strategy = 2;
 
   // Strategy defining how a reference solution is recreated.
-  FirstSolutionStrategy.Value recreate_strategy = 3;
+  RecreateStrategy recreate_strategy = 3;
 
   // Ratio in [0, 1] of non start/end nodes to consider as neighbors for the
   // identification of routes spatially close to a non start/end seed node.
@@ -245,8 +261,12 @@ message CoolingScheduleStrategy {
   }
 }
 
-// Specifies the behavior of a simulated annealing acceptance strategy.
-message SimulatedAnnealingParameters {
+// Acceptance strategy in which only improving solutions are accepted.
+message GreedyDescentAcceptanceStrategy {}
+
+// Acceptance strategy in which solutions are accepted with a probability that
+// depends on its quality and on the current state of the search.
+message SimulatedAnnealingAcceptanceStrategy {
   // Determines the speed at which the temperature changes from initial to
   // final.
   CoolingScheduleStrategy.Value cooling_schedule_strategy = 1;
@@ -270,21 +290,47 @@ message SimulatedAnnealingParameters {
   optional bool automatic_temperatures = 4;
 }
 
-// Determines when a neighbor solution, obtained by the application of a
-// perturbation and improvement step to a reference solution, is used to
-// replace the reference solution.
+// Acceptance strategy in which a solution is accepted only if all nodes
+// are performed. Disjunctions are respected when several nodes can be
+// performed.
+message AllNodesPerformedAcceptanceStrategy {}
+
+// Acceptance strategy in which a solution is accepted only if it performs at
+// least one more node than the reference solution.
+message MoreNodesPerformedAcceptanceStrategy {}
+
+// Acceptance strategy in which a solution is accepted only if it has less
+// absences than the reference solution (see Slack Induction by String Removals
+// for Vehicle Routing Problems" Christiaens and Vanden Berghe, Transportation
+// Science 2020).
+//
+// In particular, for each node n, the number of solutions where n was not
+// performed by any route is tracked by a counter absences[n]. A candidate is
+// accepted if
+//          sum(absences[n]) < sum(absences[m])
+// with
+//          n in unperformed(candidate)
+//          m in unperformed(reference)
+//
+// The counter absences is increased after every ILS iteration for the
+// unperformed nodes in the reference solution. In addition, when
+// remove_route_with_lowest_absences is true and a new best found solution is
+// found, the route with the lowest sum of absences is removed from the
+// reference solution.
+message AbsencesBasedAcceptanceStrategy {
+  // If true, when a new best solution is found, the route with the lowest sum
+  // of absences is removed from the reference solution.
+  optional bool remove_route_with_lowest_absences = 1;
+}
+
+// Determines when a candidate solution replaces another one.
 message AcceptanceStrategy {
-  enum Value {
-    // Unspecified value.
-    UNSET = 0;
-
-    // Accepts only solutions that are improving with respect to the reference
-    // one.
-    GREEDY_DESCENT = 1;
-
-    // Accepts a candidate solution with a probability that depends on its
-    // quality and on the current state of the search.
-    SIMULATED_ANNEALING = 2;
+  oneof strategy {
+    GreedyDescentAcceptanceStrategy greedy_descent = 1;
+    SimulatedAnnealingAcceptanceStrategy simulated_annealing = 2;
+    AllNodesPerformedAcceptanceStrategy all_nodes_performed = 3;
+    MoreNodesPerformedAcceptanceStrategy more_nodes_performed = 4;
+    AbsencesBasedAcceptanceStrategy absences_based = 5;
   }
 }
 
@@ -303,9 +349,9 @@ message IteratedLocalSearchParameters {
 
   // Determines when the neighbor solution S', possibly improved if
   // `improve_perturbed_solution` is true, replaces the reference solution S.
-  AcceptanceStrategy.Value acceptance_strategy = 4;
+  AcceptanceStrategy reference_solution_acceptance_strategy = 4;
 
-  // Parameters to customize a simulated annealing acceptance strategy. These
-  // parameters are required iff the acceptance_strategy is SIMULATED_ANNEALING.
-  SimulatedAnnealingParameters simulated_annealing_parameters = 5;
+  // Determines when the neighbor solution S' replaces the best solution found
+  // so far.
+  AcceptanceStrategy best_solution_acceptance_strategy = 5;
 }

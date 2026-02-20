@@ -1,7 +1,12 @@
 # ref: https://github.com/docker-library/official-images
 name: amd64 Docker Bazel
 
-on: [push, pull_request, workflow_dispatch]
+on:
+  push:
+    branches:
+      - main
+      - v99bugfix
+  workflow_dispatch:
 
 concurrency:
   group: ${{github.workflow}}-${{github.ref}}
@@ -25,7 +30,7 @@ jobs:
     name: amd64•${{matrix.distro}}•Bazel
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Check docker
         run: |
           docker info

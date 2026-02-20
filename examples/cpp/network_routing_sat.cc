@@ -377,9 +377,11 @@ class NetworkRoutingSolver {
     CpModelBuilder cp_model;
     std::vector<IntVar> arc_vars;
     std::vector<IntVar> node_vars;
+    node_vars.reserve(max_length);
     for (int i = 0; i < max_length; ++i) {
       node_vars.push_back(cp_model.NewIntVar(Domain(0, num_nodes() - 1)));
     }
+    arc_vars.reserve(max_length - 1);
     for (int i = 0; i < max_length - 1; ++i) {
       arc_vars.push_back(cp_model.NewIntVar(Domain(-1, count_arcs() - 1)));
     }

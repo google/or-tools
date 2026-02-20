@@ -15,11 +15,12 @@
 //
 // See linear_solver.proto for further documentation.
 
-#ifndef OR_TOOLS_LINEAR_SOLVER_SOLVE_MP_MODEL_H_
-#define OR_TOOLS_LINEAR_SOLVER_SOLVE_MP_MODEL_H_
+#ifndef ORTOOLS_LINEAR_SOLVER_SOLVE_MP_MODEL_H_
+#define ORTOOLS_LINEAR_SOLVER_SOLVE_MP_MODEL_H_
 
 #include <string>
 
+#include "absl/base/nullability.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/util/lazy_mutable_copy.h"
 #include "ortools/util/solve_interrupter.h"
@@ -41,8 +42,9 @@ namespace operations_research {
  * Passing a non-null pointer with any other solver type immediately returns an
  * MPSOLVER_INCOMPATIBLE_OPTIONS error.
  */
-MPSolutionResponse SolveMPModel(LazyMutableCopy<MPModelRequest> request,
-                                const SolveInterrupter* interrupter = nullptr);
+MPSolutionResponse SolveMPModel(
+    LazyMutableCopy<MPModelRequest> request,
+    const SolveInterrupter* absl_nullable interrupter = nullptr);
 
 bool SolverTypeSupportsInterruption(MPModelRequest::SolverType solver);
 
@@ -52,4 +54,4 @@ std::string MPModelRequestLoggingInfo(const MPModelRequest& request);
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_LINEAR_SOLVER_SOLVE_MP_MODEL_H_
+#endif  // ORTOOLS_LINEAR_SOLVER_SOLVE_MP_MODEL_H_

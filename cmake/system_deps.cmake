@@ -96,6 +96,10 @@ endif()
 if(USE_SCIP)
   if(NOT BUILD_SCIP AND NOT TARGET SCIP::libscip)
     find_package(SCIP REQUIRED)
+    if(TARGET libscip AND NOT TARGET SCIP::libscip)
+      message(WARNING "SCIP::libscip not provided")
+      add_library(SCIP::libscip ALIAS libscip)
+    endif()
   endif()
 endif()
 
@@ -107,12 +111,6 @@ if(BUILD_TESTING)
 
   if(NOT BUILD_benchmark AND NOT TARGET benchmark::benchmark)
     find_package(benchmark REQUIRED)
-  endif()
-
-  if(USE_fuzztest)
-    if(NOT BUILD_fuzztest AND NOT TARGET fuzztest::fuzztest)
-      find_package(fuzztest REQUIRED)
-    endif()
   endif()
 endif()
 

@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_SAT_DIFFN_UTIL_H_
-#define OR_TOOLS_SAT_DIFFN_UTIL_H_
+#ifndef ORTOOLS_SAT_DIFFN_UTIL_H_
+#define ORTOOLS_SAT_DIFFN_UTIL_H_
 
 #include <algorithm>
 #include <cmath>
@@ -28,14 +28,13 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/container/inlined_vector.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/strings/str_format.h"
-#include "absl/types/optional.h"
 #include "absl/types/span.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/scheduling_helpers.h"
 #include "ortools/sat/util.h"
-#include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/strong_integers.h"
 
 namespace operations_research {
@@ -471,6 +470,7 @@ struct RectangleInRange {
                          .y_min = bounding_area.y_max - y_size,
                          .y_max = bounding_area.y_max};
     }
+    LOG(FATAL) << "Invalid corner: " << static_cast<int>(p);
   }
 
   Rectangle GetBoudingBox() const { return bounding_area; }
@@ -743,4 +743,4 @@ std::optional<std::pair<int, int>> FindOneIntersectionIfPresentWithZeroArea(
 }  // namespace sat
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_DIFFN_UTIL_H_
+#endif  // ORTOOLS_SAT_DIFFN_UTIL_H_

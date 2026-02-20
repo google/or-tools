@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_BASE_PATH_H_
-#define OR_TOOLS_BASE_PATH_H_
+#ifndef ORTOOLS_BASE_PATH_H_
+#define ORTOOLS_BASE_PATH_H_
 
 #include <initializer_list>
 #include <string>
@@ -170,4 +170,4 @@ std::string CollapseSlashes(absl::string_view path);
 
 }  // namespace file
 
-#endif  // OR_TOOLS_BASE_PATH_H_
+#endif  // ORTOOLS_BASE_PATH_H_

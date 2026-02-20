@@ -11,14 +11,60 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Routing utilities, mostly parsers for routing problems.
+
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
+load("//tools/testing:bintest.bzl", "bintest")
+
+package(default_visibility = ["//visibility:public"])
+
+# cvrptw samples
+cc_binary(
+    name = "cvrptw_soft_capacity",
+    srcs = ["cvrptw_soft_capacity.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/constraint_solver:cp",
+        "//ortools/constraint_solver:routing",
+        "//ortools/constraint_solver:routing_index_manager",
+        "//ortools/constraint_solver:routing_parameters",
+        "//ortools/constraint_solver:routing_parameters_cc_proto",
+        "//ortools/constraint_solver:routing_types",
+        "//ortools/routing/parsers:cvrptw_lib",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log:globals",
+        "@abseil-cpp//absl/random",
+        "@protobuf",
+    ],
+)
+
 cc_binary(
     name = "cvrptw",
     srcs = ["cvrptw.cc"],
     deps = [
         "//ortools/base",
+        "//ortools/constraint_solver:cp",
         "//ortools/constraint_solver:routing",
+        "//ortools/constraint_solver:routing_index_manager",
+        "//ortools/constraint_solver:routing_parameters",
+        "//ortools/constraint_solver:routing_parameters_cc_proto",
+        "//ortools/constraint_solver:routing_types",
         "//ortools/routing/parsers:cvrptw_lib",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log:globals",
+        "@abseil-cpp//absl/random",
+        "@protobuf",
     ],
+)
+
+bintest(
+    name = "cvrptw_test",
+    size = "large",
+    srcs = ["cvrptw_test.bintest"],
+    named_data = {"cvrptw": ":cvrptw"},
 )
 
 cc_binary(
@@ -26,20 +72,56 @@ cc_binary(
     srcs = ["cvrp_disjoint_tw.cc"],
     deps = [
         "//ortools/base",
+        "//ortools/constraint_solver:cp",
         "//ortools/constraint_solver:routing",
+        "//ortools/constraint_solver:routing_index_manager",
+        "//ortools/constraint_solver:routing_parameters",
+        "//ortools/constraint_solver:routing_parameters_cc_proto",
+        "//ortools/constraint_solver:routing_types",
         "//ortools/routing/parsers:cvrptw_lib",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log:globals",
+        "@abseil-cpp//absl/random",
+        "@protobuf",
     ],
 )
+
+bintest(
+    name = "cvrp_disjoint_tw_test",
+    size = "large",
+    srcs = ["cvrp_disjoint_tw_test.bintest"],
+    named_data = {"cvrp_disjoint_tw": ":cvrp_disjoint_tw"},
+)
+
+# This test is temporarily down because the time dependent functionality is
+# being revised.
+# bintest(
+#     name = "cvrptw_with_time_dependent_costs_test",
+#     srcs = ["cvrptw_with_time_dependent_costs_test.bintest"],
+#     size = "large",
+#     named_data = {"cvrptw_with_time_dependent_costs": ":cvrptw_with_time_dependent_costs"},
+# )
 
 cc_binary(
     name = "cvrptw_with_breaks",
     srcs = ["cvrptw_with_breaks.cc"],
     deps = [
         "//ortools/base",
+        "//ortools/constraint_solver:cp",
         "//ortools/constraint_solver:routing",
         "//ortools/constraint_solver:routing_enums_cc_proto",
+        "//ortools/constraint_solver:routing_index_manager",
+        "//ortools/constraint_solver:routing_parameters",
+        "//ortools/constraint_solver:routing_parameters_cc_proto",
+        "//ortools/constraint_solver:routing_types",
         "//ortools/routing/parsers:cvrptw_lib",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log:globals",
+        "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/strings",
+        "@protobuf",
     ],
 )
 
@@ -48,9 +130,26 @@ cc_binary(
     srcs = ["cvrptw_with_resources.cc"],
     deps = [
         "//ortools/base",
+        "//ortools/constraint_solver:cp",
         "//ortools/constraint_solver:routing",
+        "//ortools/constraint_solver:routing_index_manager",
+        "//ortools/constraint_solver:routing_parameters",
+        "//ortools/constraint_solver:routing_parameters_cc_proto",
+        "//ortools/constraint_solver:routing_types",
         "//ortools/routing/parsers:cvrptw_lib",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log:globals",
+        "@abseil-cpp//absl/random",
+        "@protobuf",
     ],
+)
+
+bintest(
+    name = "cvrptw_with_resources_test",
+    size = "large",
+    srcs = ["cvrptw_with_resources_test.bintest"],
+    named_data = {"cvrptw_with_resources": ":cvrptw_with_resources"},
 )
 
 cc_binary(
@@ -58,10 +157,27 @@ cc_binary(
     srcs = ["cvrptw_with_stop_times_and_resources.cc"],
     deps = [
         "//ortools/base",
+        "//ortools/constraint_solver:cp",
         "//ortools/constraint_solver:routing",
+        "//ortools/constraint_solver:routing_index_manager",
+        "//ortools/constraint_solver:routing_parameters",
+        "//ortools/constraint_solver:routing_parameters_cc_proto",
+        "//ortools/constraint_solver:routing_types",
         "//ortools/routing/parsers:cvrptw_lib",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log:globals",
+        "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/strings",
+        "@protobuf",
     ],
+)
+
+bintest(
+    name = "cvrptw_with_stop_times_and_resources_test",
+    size = "large",
+    srcs = ["cvrptw_with_stop_times_and_resources_test.bintest"],
+    named_data = {"cvrptw_with_stop_times_and_resources": ":cvrptw_with_stop_times_and_resources"},
 )
 
 cc_binary(
@@ -69,7 +185,24 @@ cc_binary(
     srcs = ["cvrptw_with_refueling.cc"],
     deps = [
         "//ortools/base",
+        "//ortools/constraint_solver:cp",
         "//ortools/constraint_solver:routing",
+        "//ortools/constraint_solver:routing_index_manager",
+        "//ortools/constraint_solver:routing_parameters",
+        "//ortools/constraint_solver:routing_parameters_cc_proto",
+        "//ortools/constraint_solver:routing_types",
         "//ortools/routing/parsers:cvrptw_lib",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log:globals",
+        "@abseil-cpp//absl/random",
+        "@protobuf",
     ],
+)
+
+bintest(
+    name = "cvrptw_with_refueling_test",
+    size = "large",
+    srcs = ["cvrptw_with_refueling_test.bintest"],
+    named_data = {"cvrptw_with_refueling": ":cvrptw_with_refueling"},
 )

@@ -12,8 +12,8 @@
 // limitations under the License.
 
 // Common code between python & C bindings.
-#ifndef OR_TOOLS_MATH_OPT_ELEMENTAL_SAFE_ATTR_OPS_H_
-#define OR_TOOLS_MATH_OPT_ELEMENTAL_SAFE_ATTR_OPS_H_
+#ifndef ORTOOLS_MATH_OPT_ELEMENTAL_SAFE_ATTR_OPS_H_
+#define ORTOOLS_MATH_OPT_ELEMENTAL_SAFE_ATTR_OPS_H_
 
 #include <cstdint>
 #include <vector>
@@ -70,4 +70,4 @@ struct AttrOp {
 
 }  // namespace operations_research::math_opt
 
-#endif  // OR_TOOLS_MATH_OPT_ELEMENTAL_SAFE_ATTR_OPS_H_
+#endif  // ORTOOLS_MATH_OPT_ELEMENTAL_SAFE_ATTR_OPS_H_

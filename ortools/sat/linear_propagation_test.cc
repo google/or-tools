@@ -15,12 +15,15 @@
 
 #include <stdint.h>
 
+#include <iterator>
 #include <vector>
 
+#include "absl/algorithm/container.h"
 #include "absl/log/check.h"
+#include "absl/random/distributions.h"
+#include "absl/random/random.h"
 #include "absl/types/span.h"
 #include "gtest/gtest.h"
-#include "ortools/base/gmock.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
@@ -31,120 +34,6 @@
 namespace operations_research {
 namespace sat {
 namespace {
-
-using ::testing::ElementsAre;
-
-TEST(EnforcementPropagatorTest, BasicTest) {
-  Model model;
-  auto* sat_solver = model.GetOrCreate<SatSolver>();
-  auto* trail = model.GetOrCreate<Trail>();
-  auto* propag = model.GetOrCreate<EnforcementPropagator>();
-  sat_solver->SetNumVariables(10);
-
-  const EnforcementId id1 = propag->Register(Literals({+1}));
-  const EnforcementId id2 = propag->Register(Literals({+1, +2}));
-  const EnforcementId id3 = propag->Register(Literals({-2}));
-
-  EXPECT_TRUE(propag->Propagate(trail));
-  EXPECT_EQ(propag->Status(id1), EnforcementStatus::CAN_PROPAGATE);
-  EXPECT_EQ(propag->Status(id2), EnforcementStatus::CANNOT_PROPAGATE);
-  EXPECT_EQ(propag->Status(id3), EnforcementStatus::CAN_PROPAGATE);
-
-  sat_solver->EnqueueDecisionIfNotConflicting(Literal(+1));
-  EXPECT_TRUE(propag->Propagate(trail));
-  EXPECT_EQ(propag->Status(id1), EnforcementStatus::IS_ENFORCED);
-  EXPECT_EQ(propag->Status(id2), EnforcementStatus::CAN_PROPAGATE);
-  EXPECT_EQ(propag->Status(id3), EnforcementStatus::CAN_PROPAGATE);
-
-  sat_solver->EnqueueDecisionIfNotConflicting(Literal(+2));
-  EXPECT_EQ(propag->Status(id1), EnforcementStatus::IS_ENFORCED);
-  EXPECT_EQ(propag->Status(id2), EnforcementStatus::IS_ENFORCED);
-  EXPECT_EQ(propag->Status(id3), EnforcementStatus::IS_FALSE);
-
-  CHECK(sat_solver->ResetToLevelZero());
-  EXPECT_EQ(propag->Status(id1), EnforcementStatus::CAN_PROPAGATE);
-  EXPECT_EQ(propag->Status(id2), EnforcementStatus::CANNOT_PROPAGATE);
-  EXPECT_EQ(propag->Status(id3), EnforcementStatus::CAN_PROPAGATE);
-}
-
-TEST(EnforcementPropagatorTest, UntrailWork) {
-  Model model;
-  auto* sat_solver = model.GetOrCreate<SatSolver>();
-  auto* trail = model.GetOrCreate<Trail>();
-  auto* propag = model.GetOrCreate<EnforcementPropagator>();
-  sat_solver->SetNumVariables(10);
-
-  const EnforcementId id1 = propag->Register(Literals({+1}));
-  const EnforcementId id2 = propag->Register(Literals({+2}));
-  const EnforcementId id3 = propag->Register(Literals({+3}));
-
-  EXPECT_TRUE(propag->Propagate(trail));
-  EXPECT_EQ(propag->Status(id1), EnforcementStatus::CAN_PROPAGATE);
-  EXPECT_EQ(propag->Status(id2), EnforcementStatus::CAN_PROPAGATE);
-  EXPECT_EQ(propag->Status(id3), EnforcementStatus::CAN_PROPAGATE);
-
-  sat_solver->EnqueueDecisionIfNotConflicting(Literal(+1));
-  EXPECT_TRUE(propag->Propagate(trail));
-  EXPECT_EQ(propag->Status(id1), EnforcementStatus::IS_ENFORCED);
-  EXPECT_EQ(propag->Status(id2), EnforcementStatus::CAN_PROPAGATE);
-  EXPECT_EQ(propag->Status(id3), EnforcementStatus::CAN_PROPAGATE);
-
-  sat_solver->EnqueueDecisionIfNotConflicting(Literal(+2));
-  EXPECT_TRUE(propag->Propagate(trail));
-  EXPECT_EQ(propag->Status(id1), EnforcementStatus::IS_ENFORCED);
-  EXPECT_EQ(propag->Status(id2), EnforcementStatus::IS_ENFORCED);
-  EXPECT_EQ(propag->Status(id3), EnforcementStatus::CAN_PROPAGATE);
-  const int level = sat_solver->CurrentDecisionLevel();
-
-  sat_solver->EnqueueDecisionIfNotConflicting(Literal(+3));
-  EXPECT_TRUE(propag->Propagate(trail));
-  EXPECT_EQ(propag->Status(id1), EnforcementStatus::IS_ENFORCED);
-  EXPECT_EQ(propag->Status(id2), EnforcementStatus::IS_ENFORCED);
-  EXPECT_EQ(propag->Status(id3), EnforcementStatus::IS_ENFORCED);
-
-  sat_solver->Backtrack(level);
-  EXPECT_EQ(propag->Status(id1), EnforcementStatus::IS_ENFORCED);
-  EXPECT_EQ(propag->Status(id2), EnforcementStatus::IS_ENFORCED);
-  EXPECT_EQ(propag->Status(id3), EnforcementStatus::CAN_PROPAGATE);
-}
-
-TEST(EnforcementPropagatorTest, AddingAtPositiveLevelTrue) {
-  Model model;
-  auto* sat_solver = model.GetOrCreate<SatSolver>();
-  auto* trail = model.GetOrCreate<Trail>();
-  auto* propag = model.GetOrCreate<EnforcementPropagator>();
-  sat_solver->SetNumVariables(10);
-
-  EXPECT_TRUE(propag->Propagate(trail));
-  sat_solver->EnqueueDecisionIfNotConflicting(Literal(+1));
-  EXPECT_TRUE(propag->Propagate(trail));
-
-  const EnforcementId id = propag->Register(std::vector<Literal>{+1});
-  EXPECT_EQ(propag->Status(id), EnforcementStatus::IS_ENFORCED);
-
-  sat_solver->Backtrack(0);
-  EXPECT_TRUE(propag->Propagate(trail));
-  EXPECT_EQ(propag->Status(id), EnforcementStatus::CAN_PROPAGATE);
-}
-
-TEST(EnforcementPropagatorTest, AddingAtPositiveLevelFalse) {
-  Model model;
-  auto* sat_solver = model.GetOrCreate<SatSolver>();
-  auto* trail = model.GetOrCreate<Trail>();
-  auto* propag = model.GetOrCreate<EnforcementPropagator>();
-  sat_solver->SetNumVariables(10);
-
-  EXPECT_TRUE(propag->Propagate(trail));
-  sat_solver->EnqueueDecisionIfNotConflicting(Literal(-1));
-  EXPECT_TRUE(propag->Propagate(trail));
-
-  const EnforcementId id = propag->Register(std::vector<Literal>{+1});
-  EXPECT_EQ(propag->Status(id), EnforcementStatus::IS_FALSE);
-
-  sat_solver->Backtrack(0);
-  EXPECT_TRUE(propag->Propagate(trail));
-  EXPECT_EQ(propag->Status(id), EnforcementStatus::CAN_PROPAGATE);
-}
 
 // TEST copied from integer_expr test with little modif to use the new propag.
 IntegerVariable AddWeightedSum(const absl::Span<const IntegerVariable> vars,
@@ -314,6 +203,71 @@ TEST(ReifiedWeightedSumTest, BoundToReifFalseLe) {
   AddWeightedSumLowerOrEqualReified(r, {var}, {1}, 3, &model);
   EXPECT_TRUE(model.GetOrCreate<SatSolver>()->Propagate());
   EXPECT_FALSE(model.Get(Value(r)));
+}
+
+TEST(AddWeightedSumLowerOrEqual, RandomTest) {
+  const int kNumTests = 10000;
+  absl::BitGen random;
+  for (int test = 0; test < kNumTests; ++test) {
+    const int num_variables = absl::Uniform(random, 1, 20);
+    std::vector<int> solution(num_variables, 0);
+    for (int i = 0; i < num_variables; ++i) {
+      solution[i] = absl::Uniform(random, 0, 100);
+    }
+    Model model;
+    std::vector<IntegerVariable> all_variables(num_variables);
+    std::vector<int> all_variables_idx(num_variables);
+    for (int i = 0; i < num_variables; ++i) {
+      all_variables_idx[i] = i;
+      all_variables[i] = model.Add(
+          NewIntegerVariable(solution[i] - absl::Uniform(random, 0, 100),
+                             solution[i] + absl::Uniform(random, 0, 100)));
+    }
+    const int num_constraints = absl::Uniform(random, 1, 100);
+    for (int j = 0; j < num_constraints; ++j) {
+      const int num_vars = absl::Uniform(random, 1, num_variables);
+      std::vector<int> var_idx;
+      absl::c_sample(all_variables_idx, std::back_inserter(var_idx), num_vars,
+                     random);
+      std::vector<IntegerVariable> vars(num_vars);
+      for (int k = 0; k < num_vars; ++k) {
+        vars[k] = all_variables[var_idx[k]];
+      }
+      std::vector<int> coeffs(num_vars);
+      int64_t activity = 0;
+      for (int k = 0; k < num_vars; ++k) {
+        coeffs[k] = absl::Uniform(random, -10, 9);
+        if (coeffs[k] == 0) coeffs[k]++;
+        activity += coeffs[k] * solution[var_idx[k]];
+      }
+      CHECK_EQ(coeffs.size(), vars.size());
+      AddWeightedSumLowerOrEqual(
+          vars, coeffs, activity + absl::Uniform(random, 0, 40), &model);
+      if (absl::Bernoulli(random, 0.1)) {
+        CHECK(model.GetOrCreate<SatSolver>()->Propagate());
+      }
+      if (absl::Bernoulli(random, 0.1)) {
+        CHECK(model.GetOrCreate<LinearPropagator>()->Propagate());
+      }
+      if (absl::Bernoulli(random, 0.1)) {
+        IntegerTrail* integer_trail = model.GetOrCreate<IntegerTrail>();
+        const int var_idx = absl::Uniform(random, 0, num_variables);
+        const IntegerVariable var = all_variables[var_idx];
+        if (absl::Bernoulli(random, 0.5)) {
+          if (integer_trail->UpperBound(var) > solution[var_idx]) {
+            CHECK(integer_trail->Enqueue(IntegerLiteral::LowerOrEqual(
+                var, integer_trail->UpperBound(var) - 1)));
+          }
+        } else {
+          if (integer_trail->LowerBound(var) < solution[var_idx]) {
+            CHECK(integer_trail->Enqueue(IntegerLiteral::GreaterOrEqual(
+                var, integer_trail->LowerBound(var) + 1)));
+          }
+        }
+      }
+      CHECK(!model.GetOrCreate<SatSolver>()->ModelIsUnsat());
+    }
+  }
 }
 
 }  // namespace

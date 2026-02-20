@@ -1,4 +1,4 @@
-// Copyright 2019-2023 RTE
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -28,7 +28,7 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
 #include "ortools/linear_solver/linear_solver.h"
-#include "ortools/xpress/environment.h"
+#include "ortools/third_party_solvers/xpress_environment.h"
 
 #define XPRS_INTEGER 'I'
 #define XPRS_CONTINUOUS 'C'
@@ -232,8 +232,8 @@ class XpressMPCallbackContext : public MPCallbackContext {
     LOG(WARNING) << "AddCut is not implemented yet in XPRESS interface";
   };
   void AddLazyConstraint(const LinearRange& lazy_constraint) override {
-    LOG(WARNING)
-        << "AddLazyConstraint is not implemented yet in XPRESS interface";
+    LOG(WARNING) << "AddLazyConstraint inside Callback is not implemented yet "
+                    "in XPRESS interface";
   };
   double SuggestSolution(
       const absl::flat_hash_map<const MPVariable*, double>& solution) override;
@@ -1541,7 +1541,7 @@ void XpressInterface::ExtractNewConstraints() {
       unique_ptr<char[]> sense(new char[chunk]);
       unique_ptr<double[]> rhs(new double[chunk]);
       unique_ptr<double[]> rngval(new double[chunk]);
-
+      std::vector<int> delayedRows;
       // Loop over the new constraints, collecting rows for up to
       // CHUNK constraints into the arrays so that adding constraints
       // is faster.
@@ -1575,11 +1575,18 @@ void XpressInterface::ExtractNewConstraints() {
               ++nextNz;
             }
           }
+          if (ct->is_lazy()) {
+            delayedRows.push_back(offset + c);
+          }
         }
         if (nextRow > 0) {
           CHECK_STATUS(XPRSaddrows(mLp, nextRow, nextNz, sense.get(), rhs.get(),
                                    rngval.get(), rmatbeg.get(), rmatind.get(),
                                    rmatval.get()));
+        }
+        if (!delayedRows.empty()) {
+          CHECK_STATUS(XPRSloaddelayedrows(
+              mLp, static_cast<int>(delayedRows.size()), delayedRows.data()));
         }
       }
     } catch (...) {
@@ -2091,10 +2098,6 @@ void XpressInterface::Write(const std::string& filename) {
     LOG(ERROR) << "Xpress: Failed to write MPS!";
   }
 }
-
-MPSolverInterface* BuildXpressInterface(bool mip, MPSolver* const solver) {
-  return new XpressInterface(solver, mip);
-}
 // TODO useless ?
 template <class Container>
 void splitMyString(const std::string& str, Container& cont, char delim = ' ') {
@@ -2279,5 +2282,27 @@ double XpressMPCallbackContext::SuggestSolution(
   // So we return NaN because we can't know the actual objective value.
   return NAN;
 }
+
+namespace {
+
+// See MpSolverInterfaceFactoryRepository for details.
+const void* const kRegisterXpress ABSL_ATTRIBUTE_UNUSED = [] {
+  MPSolverInterfaceFactoryRepository::GetInstance()->Register(
+      [](MPSolver* const solver) { return new XpressInterface(solver, false); },
+      MPSolver::XPRESS_LINEAR_PROGRAMMING,
+      []() { return XpressIsCorrectlyInstalled(); });
+  return nullptr;
+}();
+
+// See MpSolverInterfaceFactoryRepository for details.
+const void* const kRegisterXpressMip ABSL_ATTRIBUTE_UNUSED = [] {
+  MPSolverInterfaceFactoryRepository::GetInstance()->Register(
+      [](MPSolver* const solver) { return new XpressInterface(solver, true); },
+      MPSolver::XPRESS_MIXED_INTEGER_PROGRAMMING,
+      []() { return XpressIsCorrectlyInstalled(); });
+  return nullptr;
+}();
+
+}  // namespace
 
 }  // namespace operations_research

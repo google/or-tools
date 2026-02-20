@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Sample to test or-tools installation."""
+
 import ortools
 
 # from ortools.algorithms import knapsack_solver

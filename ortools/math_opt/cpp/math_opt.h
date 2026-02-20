@@ -13,11 +13,11 @@
 
 // Global include for math_opt C++ API that includes anything necessary to
 // create a math problem and solve it in-process.
-#ifndef OR_TOOLS_MATH_OPT_CPP_MATH_OPT_H_
-#define OR_TOOLS_MATH_OPT_CPP_MATH_OPT_H_
+#ifndef ORTOOLS_MATH_OPT_CPP_MATH_OPT_H_
+#define ORTOOLS_MATH_OPT_CPP_MATH_OPT_H_
 
 #include "ortools/math_opt/cpp/model.h"             // IWYU pragma: export
 #include "ortools/math_opt/cpp/solve.h"             // IWYU pragma: export
 #include "ortools/math_opt/cpp/solver_resources.h"  // IWYU pragma: export
 
-#endif  // OR_TOOLS_MATH_OPT_CPP_MATH_OPT_H_
+#endif  // ORTOOLS_MATH_OPT_CPP_MATH_OPT_H_

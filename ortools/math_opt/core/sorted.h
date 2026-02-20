@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_MATH_OPT_CORE_SORTED_H_
-#define OR_TOOLS_MATH_OPT_CORE_SORTED_H_
+#ifndef ORTOOLS_MATH_OPT_CORE_SORTED_H_
+#define ORTOOLS_MATH_OPT_CORE_SORTED_H_
 
 #include <algorithm>
 #include <vector>
@@ -67,4 +67,4 @@ std::vector<K> SortedMapKeys(const google::protobuf::Map<K, V>& in_map) {
 
 }  // namespace operations_research::math_opt
 
-#endif  // OR_TOOLS_MATH_OPT_CORE_SORTED_H_
+#endif  // ORTOOLS_MATH_OPT_CORE_SORTED_H_

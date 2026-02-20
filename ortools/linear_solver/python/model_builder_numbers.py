@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Copyright 2010-2025 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,8 +14,9 @@
 
 """helpers methods for the cp_model_builder module on numbers."""
 
+from collections.abc import Sequence
 import numbers
-from typing import Any, Sequence, Union
+from typing import Any, Union
 import numpy as np
 import numpy.typing as npt
 

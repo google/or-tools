@@ -17,27 +17,20 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.google.ortools.Loader;
-import com.google.ortools.init.CppBridge;
-import com.google.ortools.init.CppFlags;
-import com.google.ortools.init.OrToolsVersion;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /** Tests the Init java interface. */
 public final class InitTest {
-  @BeforeEach
-  public void setUp() {
-    Loader.loadNativeLibraries();
-  }
-
   @Test
   public void testLogging() {
+    Loader.loadNativeLibraries();
     CppBridge.initLogging("init");
     CppBridge.shutdownLogging();
   }
 
   @Test
   public void testFlags() {
+    Loader.loadNativeLibraries();
     final CppFlags cppFlags = new CppFlags();
     assertNotNull(cppFlags);
     cppFlags.setStderrthreshold(0);
@@ -51,6 +44,7 @@ public final class InitTest {
 
   @Test
   public void testVersion() {
+    Loader.loadNativeLibraries();
     final OrToolsVersion v = new OrToolsVersion();
     assertNotNull(v);
     final int major = v.getMajorNumber();

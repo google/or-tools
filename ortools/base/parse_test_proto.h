@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_BASE_PARSE_TEST_PROTO_H_
-#define OR_TOOLS_BASE_PARSE_TEST_PROTO_H_
+#ifndef ORTOOLS_BASE_PARSE_TEST_PROTO_H_
+#define ORTOOLS_BASE_PARSE_TEST_PROTO_H_
 
 #include <string>
 #include <string_view>
@@ -43,10 +43,11 @@ class ParseProtoHelper {
 
 }  // namespace parse_proto_internal
 
-parse_proto_internal::ParseProtoHelper ParseTestProto(std::string_view input) {
+inline parse_proto_internal::ParseProtoHelper ParseTestProto(
+    std::string_view input) {
   return parse_proto_internal::ParseProtoHelper(input);
 }
 
 }  // namespace google::protobuf::contrib::parse_proto
 
-#endif  // OR_TOOLS_BASE_PARSE_TEST_PROTO_H_
+#endif  // ORTOOLS_BASE_PARSE_TEST_PROTO_H_

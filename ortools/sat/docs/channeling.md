@@ -1,5 +1,5 @@
 [home](README.md) | [boolean logic](boolean_logic.md) | [integer arithmetic](integer_arithmetic.md) | [channeling constraints](channeling.md) | [scheduling](scheduling.md) | [Using the CP-SAT solver](solver.md) | [Model manipulation](model.md) | [Troubleshooting](troubleshooting.md) | [Python API](https://or-tools.github.io/docs/pdoc/ortools/sat/python/cp_model.html)
------------------ | --------------------------------- | ------------------------------------------- | --------------------------------------- | --------------------------- | ------------------------------------ | ------------------------------ | ------------------------------------- | ---------------------------------------------------------------------------------------
+----------------- | --------------------------------- | ------------------------------------------- | --------------------------------------- | --------------------------- | ------------------------------------ | ------------------------------ | ------------------------------------- | -----------------------------------------------------------------------------------
 # Channeling constraints
 
 https://developers.google.com/optimization/
@@ -28,7 +28,7 @@ These are implemented using the `OnlyEnforceIf` method as shown below.
 ### Python code
 
 ```python
-#!/usr/bin/env python3
+# Snippet from ortools/sat/samples/channeling_sample_sat.py
 """Link integer constraints together."""
 
 
@@ -36,55 +36,57 @@ from ortools.sat.python import cp_model
 
 
 class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
-    """Print intermediate solutions."""
+  """Print intermediate solutions."""
 
-    def __init__(self, variables: list[cp_model.IntVar]):
-        cp_model.CpSolverSolutionCallback.__init__(self)
-        self.__variables = variables
+  def __init__(self, variables: list[cp_model.IntVar]):
+    cp_model.CpSolverSolutionCallback.__init__(self)
+    self.__variables = variables
 
-    def on_solution_callback(self) -> None:
-        for v in self.__variables:
-            print(f"{v}={self.value(v)}", end=" ")
-        print()
+  def on_solution_callback(self) -> None:
+    for v in self.__variables:
+      print(f'{v}={self.value(v)}', end=' ')
+    print()
 
 
 def channeling_sample_sat():
-    """Demonstrates how to link integer constraints together."""
+  """Demonstrates how to link integer constraints together."""
 
-    # Create the CP-SAT model.
-    model = cp_model.CpModel()
+  # Create the CP-SAT model.
+  model = cp_model.CpModel()
 
-    # Declare our two primary variables.
-    x = model.new_int_var(0, 10, "x")
-    y = model.new_int_var(0, 10, "y")
+  # Declare our two primary variables.
+  x = model.new_int_var(0, 10, 'x')
+  y = model.new_int_var(0, 10, 'y')
 
-    # Declare our intermediate boolean variable.
-    b = model.new_bool_var("b")
+  # Declare our intermediate boolean variable.
+  b = model.new_bool_var('b')
 
-    # Implement b == (x >= 5).
-    model.add(x >= 5).only_enforce_if(b)
-    model.add(x < 5).only_enforce_if(~b)
+  # Implement b == (x >= 5).
+  model.add(x >= 5).only_enforce_if(b)
+  model.add(x < 5).only_enforce_if(~b)
 
-    # Create our two half-reified constraints.
-    # First, b implies (y == 10 - x).
-    model.add(y == 10 - x).only_enforce_if(b)
-    # Second, not(b) implies y == 0.
-    model.add(y == 0).only_enforce_if(~b)
+  # Create our two half-reified constraints.
+  # First, b implies (y == 10 - x).
+  model.add(y == 10 - x).only_enforce_if(b)
+  # Second, not(b) implies y == 0.
+  model.add(y == 0).only_enforce_if(~b)
 
-    # Search for x values in increasing order.
-    model.add_decision_strategy([x], cp_model.CHOOSE_FIRST, cp_model.SELECT_MIN_VALUE)
+  # Search for x values in increasing order.
+  model.add_decision_strategy(
+      [x], cp_model.CHOOSE_FIRST, cp_model.SELECT_MIN_VALUE
+  )
 
-    # Create a solver and solve with a fixed search.
-    solver = cp_model.CpSolver()
+  # Create a solver and solve with a fixed search.
+  solver = cp_model.CpSolver()
 
-    # Force the solver to follow the decision strategy exactly.
-    solver.parameters.search_branching = cp_model.FIXED_SEARCH
-    # Enumerate all solutions.
-    solver.parameters.enumerate_all_solutions = True
+  # Force the solver to follow the decision strategy exactly.
+  solver.parameters.search_branching = cp_model.FIXED_SEARCH
+  # Enumerate all solutions.
+  solver.parameters.enumerate_all_solutions = True
 
-    # Search and print out all solutions.
-    solution_printer = VarArraySolutionPrinter([x, y, b])
-    solver.solve(model, solution_printer)
+  # Search and print out all solutions.
+  solution_printer = VarArraySolutionPrinter([x, y, b])
+  solver.solve(model, solution_printer)
 
 
 channeling_sample_sat()
@@ -93,13 +95,14 @@ channeling_sample_sat()
 ### C++ code
 
 ```cpp
+// Snippet from ortools/sat/samples/channeling_sample_sat.cc
 #include <stdlib.h>
 
+#include "ortools/base/init_google.h"
+#include "ortools/base/logging.h"
 #include "absl/base/log_severity.h"
 #include "absl/log/globals.h"
 #include "absl/types/span.h"
-#include "ortools/base/init_google.h"
-#include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
@@ -162,18 +165,19 @@ int main(int argc, char* argv[]) {
 ### Java code
 
 ```java
+// Snippet from ortools/sat/samples/ChannelingSampleSat.java
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.Loader;
+import com.google.ortools.sat.CpSolverStatus;
+import com.google.ortools.sat.DecisionStrategyProto;
+import com.google.ortools.sat.SatParameters;
 import com.google.ortools.sat.BoolVar;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverSolutionCallback;
-import com.google.ortools.sat.CpSolverStatus;
-import com.google.ortools.sat.DecisionStrategyProto;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.LinearExpr;
-import com.google.ortools.sat.SatParameters;
 
 /** Link integer constraints together. */
 public final class ChannelingSampleSat {
@@ -199,7 +203,8 @@ public final class ChannelingSampleSat {
     model.addEquality(vars[1], 0).onlyEnforceIf(b.not());
 
     // Search for x values in increasing order.
-    model.addDecisionStrategy(new IntVar[] {vars[0]},
+    model.addDecisionStrategy(
+        new IntVar[] {vars[0]},
         DecisionStrategyProto.VariableSelectionStrategy.CHOOSE_FIRST,
         DecisionStrategyProto.DomainReductionStrategy.SELECT_MIN_VALUE);
 
@@ -212,22 +217,25 @@ public final class ChannelingSampleSat {
     solver.getParameters().setEnumerateAllSolutions(true);
 
     // Solve the problem with the printer callback.
-    CpSolverStatus unusedStatus = solver.solve(model, new CpSolverSolutionCallback() {
-      public CpSolverSolutionCallback init(IntVar[] variables) {
-        variableArray = variables;
-        return this;
-      }
+    CpSolverStatus unusedStatus =
+        solver.solve(
+            model,
+            new CpSolverSolutionCallback() {
+              public CpSolverSolutionCallback init(IntVar[] variables) {
+                variableArray = variables;
+                return this;
+              }
 
-      @Override
-      public void onSolutionCallback() {
-        for (IntVar v : variableArray) {
-          System.out.printf("%s=%d ", v.getName(), value(v));
-        }
-        System.out.println();
-      }
+              @Override
+              public void onSolutionCallback() {
+                for (IntVar v : variableArray) {
+                  System.out.printf("%s=%d ", v.getName(), value(v));
+                }
+                System.out.println();
+              }
 
-      private IntVar[] variableArray;
-    }.init(new IntVar[] {vars[0], vars[1], b}));
+              private IntVar[] variableArray;
+            }.init(new IntVar[] {vars[0], vars[1], b}));
   }
 
   private ChannelingSampleSat() {}
@@ -236,7 +244,8 @@ public final class ChannelingSampleSat {
 
 ### C\# code
 
-```cs
+```csharp
+// Snippet from ortools/sat/samples/ChannelingSampleSat.cs
 using System;
 using Google.OrTools.Sat;
 using Google.OrTools.Util;
@@ -305,7 +314,8 @@ public class ChannelingSampleSat
 
 ### Go code
 
-```cs
+```go
+// Snippet from ortools/sat/samples/channeling_sample_sat.go
 // The channeling_sample_sat command is a simple example of a channeling constraint.
 package main
 
@@ -313,10 +323,11 @@ import (
 	"fmt"
 
 	log "github.com/golang/glog"
+	"google.golang.org/protobuf/proto"
 	"github.com/google/or-tools/ortools/sat/go/cpmodel"
+
 	cmpb "github.com/google/or-tools/ortools/sat/proto/cpmodel"
 	sppb "github.com/google/or-tools/ortools/sat/proto/satparameters"
-	"google.golang.org/protobuf/proto"
 )
 
 func channelingSampleSat() error {
@@ -348,7 +359,7 @@ func channelingSampleSat() error {
 	if err != nil {
 		return fmt.Errorf("failed to instantiate the CP model: %w", err)
 	}
-	params := &sppb.SatParameters{
+		params := &sppb.SatParameters{
 		FillAdditionalSolutionsInResponse: proto.Bool(true),
 		EnumerateAllSolutions:             proto.Bool(true),
 		SolutionPoolSize:                  proto.Int32(11),
@@ -374,6 +385,7 @@ func main() {
 		log.Exitf("channelingSampleSat returned with error: %v", err)
 	}
 }
+
 ```
 
 This displays the following:
@@ -401,63 +413,63 @@ to the number of Boolean variables if they are all false.
 ### Python code
 
 ```python
-#!/usr/bin/env python3
+# Snippet from ortools/sat/samples/index_first_boolvar_true_sample_sat.py
 """Compute the index of the first Boolean variable set to true."""
 
 from ortools.sat.python import cp_model
 
 
 class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
-    """Print intermediate solutions."""
+  """Print intermediate solutions."""
 
-    def __init__(self, index: cp_model.IntVar, boolvars: list[cp_model.IntVar]):
-        cp_model.CpSolverSolutionCallback.__init__(self)
-        self.__index = index
-        self.__boolvars = boolvars
+  def __init__(self, index: cp_model.IntVar, boolvars: list[cp_model.IntVar]):
+    cp_model.CpSolverSolutionCallback.__init__(self)
+    self.__index = index
+    self.__boolvars = boolvars
 
-    def on_solution_callback(self) -> None:
-        line = ""
-        for v in self.__boolvars:
-            line += f"{self.value(v)}"
-        line += f" -> {self.value(self.__index)}"
-        print(line)
+  def on_solution_callback(self) -> None:
+    line = ''
+    for v in self.__boolvars:
+      line += f'{self.value(v)}'
+    line += f' -> {self.value(self.__index)}'
+    print(line)
 
 
 def index_of_first_bool_at_true_sample_sat():
-    """Compute the index of the first Boolean variable set to true."""
+  """Compute the index of the first Boolean variable set to true."""
 
-    # Model.
-    model = cp_model.CpModel()
+  # Model.
+  model = cp_model.CpModel()
 
-    # Variables
-    num_bool_vars = 5
-    bool_vars = [model.new_bool_var(f"{i}") for i in range(num_bool_vars)]
-    index = model.new_int_var(0, num_bool_vars, "index")
+  # Variables
+  num_bool_vars = 5
+  bool_vars = [model.new_bool_var(f'{i}') for i in range(num_bool_vars)]
+  index = model.new_int_var(0, num_bool_vars, 'index')
 
-    # Channeling between the index and the Boolean variables.
-    model.add_min_equality(
-        index,
-        [
-            num_bool_vars - bool_vars[i] * (num_bool_vars - i)
-            for i in range(num_bool_vars)
-        ],
-    )
+  # Channeling between the index and the Boolean variables.
+  model.add_min_equality(
+      index,
+      [
+          num_bool_vars - bool_vars[i] * (num_bool_vars - i)
+          for i in range(num_bool_vars)
+      ],
+  )
 
-    # Flip bool_vars in increasing order.
-    model.add_decision_strategy(
-        bool_vars, cp_model.CHOOSE_FIRST, cp_model.SELECT_MIN_VALUE
-    )
+  # Flip bool_vars in increasing order.
+  model.add_decision_strategy(
+      bool_vars, cp_model.CHOOSE_FIRST, cp_model.SELECT_MIN_VALUE
+  )
 
-    # Create a solver and solve with a fixed search.
-    solver = cp_model.CpSolver()
+  # Create a solver and solve with a fixed search.
+  solver = cp_model.CpSolver()
 
-    # Force the solver to follow the decision strategy exactly.
-    solver.parameters.search_branching = cp_model.FIXED_SEARCH
+  # Force the solver to follow the decision strategy exactly.
+  solver.parameters.search_branching = cp_model.FIXED_SEARCH
 
-    # Search and print out all solutions.
-    solver.parameters.enumerate_all_solutions = True
-    solution_printer = VarArraySolutionPrinter(index, bool_vars)
-    solver.solve(model, solution_printer)
+  # Search and print out all solutions.
+  solver.parameters.enumerate_all_solutions = True
+  solution_printer = VarArraySolutionPrinter(index, bool_vars)
+  solver.solve(model, solution_printer)
 
 
 index_of_first_bool_at_true_sample_sat()
@@ -512,14 +524,14 @@ To make this more concrete, let's say you have 10 bins of capacity 100, and
 items to pack into the bins. You would like to maximize the number of bins that
 can accept one emergency load of size 20.
 
-To do this, you need to maximize the number of bins that have a load less
-than 80.  In the code below, channeling is used to link the *load* and *slack*
+To do this, you need to maximize the number of bins that have a load less than
+80. In the code below, channeling is used to link the *load* and *slack*
 variables together:
 
 ### Python code
 
 ```python
-#!/usr/bin/env python3
+# Snippet from ortools/sat/samples/binpacking_problem_sat.py
 """Solves a binpacking problem using the CP-SAT solver."""
 
 
@@ -527,62 +539,62 @@ from ortools.sat.python import cp_model
 
 
 def binpacking_problem_sat():
-    """Solves a bin-packing problem using the CP-SAT solver."""
-    # Data.
-    bin_capacity = 100
-    slack_capacity = 20
-    num_bins = 5
-    all_bins = range(num_bins)
+  """Solves a bin-packing problem using the CP-SAT solver."""
+  # Data.
+  bin_capacity = 100
+  slack_capacity = 20
+  num_bins = 5
+  all_bins = range(num_bins)
 
-    items = [(20, 6), (15, 6), (30, 4), (45, 3)]
-    num_items = len(items)
-    all_items = range(num_items)
+  items = [(20, 6), (15, 6), (30, 4), (45, 3)]
+  num_items = len(items)
+  all_items = range(num_items)
 
-    # Model.
-    model = cp_model.CpModel()
+  # Model.
+  model = cp_model.CpModel()
 
-    # Main variables.
-    x = {}
-    for i in all_items:
-        num_copies = items[i][1]
-        for b in all_bins:
-            x[(i, b)] = model.new_int_var(0, num_copies, f"x[{i},{b}]")
-
-    # Load variables.
-    load = [model.new_int_var(0, bin_capacity, f"load[{b}]") for b in all_bins]
-
-    # Slack variables.
-    slacks = [model.new_bool_var(f"slack[{b}]") for b in all_bins]
-
-    # Links load and x.
+  # Main variables.
+  x = {}
+  for i in all_items:
+    num_copies = items[i][1]
     for b in all_bins:
-        model.add(load[b] == sum(x[(i, b)] * items[i][0] for i in all_items))
+      x[(i, b)] = model.new_int_var(0, num_copies, f'x[{i},{b}]')
 
-    # Place all items.
-    for i in all_items:
-        model.add(sum(x[(i, b)] for b in all_bins) == items[i][1])
+  # Load variables.
+  load = [model.new_int_var(0, bin_capacity, f'load[{b}]') for b in all_bins]
 
-    # Links load and slack through an equivalence relation.
-    safe_capacity = bin_capacity - slack_capacity
-    for b in all_bins:
-        # slack[b] => load[b] <= safe_capacity.
-        model.add(load[b] <= safe_capacity).only_enforce_if(slacks[b])
-        # not(slack[b]) => load[b] > safe_capacity.
-        model.add(load[b] > safe_capacity).only_enforce_if(~slacks[b])
+  # Slack variables.
+  slacks = [model.new_bool_var(f'slack[{b}]') for b in all_bins]
 
-    # Maximize sum of slacks.
-    model.maximize(sum(slacks))
+  # Links load and x.
+  for b in all_bins:
+    model.add(load[b] == sum(x[(i, b)] * items[i][0] for i in all_items))
 
-    # Solves and prints out the solution.
-    solver = cp_model.CpSolver()
-    status = solver.solve(model)
-    print(f"solve status: {solver.status_name(status)}")
-    if status == cp_model.OPTIMAL:
-        print(f"Optimal objective value: {solver.objective_value}")
-    print("Statistics")
-    print(f"  - conflicts : {solver.num_conflicts}")
-    print(f"  - branches  : {solver.num_branches}")
-    print(f"  - wall time : {solver.wall_time}s")
+  # Place all items.
+  for i in all_items:
+    model.add(sum(x[(i, b)] for b in all_bins) == items[i][1])
+
+  # Links load and slack through an equivalence relation.
+  safe_capacity = bin_capacity - slack_capacity
+  for b in all_bins:
+    # slack[b] => load[b] <= safe_capacity.
+    model.add(load[b] <= safe_capacity).only_enforce_if(slacks[b])
+    # not(slack[b]) => load[b] > safe_capacity.
+    model.add(load[b] > safe_capacity).only_enforce_if(~slacks[b])
+
+  # Maximize sum of slacks.
+  model.maximize(sum(slacks))
+
+  # Solves and prints out the solution.
+  solver = cp_model.CpSolver()
+  status = solver.solve(model)
+  print(f'solve status: {solver.status_name(status)}')
+  if status == cp_model.OPTIMAL:
+    print(f'Optimal objective value: {solver.objective_value}')
+  print('Statistics')
+  print(f'  - conflicts : {solver.num_conflicts}')
+  print(f'  - branches  : {solver.num_branches}')
+  print(f'  - wall time : {solver.wall_time}s')
 
 
 binpacking_problem_sat()
@@ -591,14 +603,15 @@ binpacking_problem_sat()
 ### C++ code
 
 ```cpp
+// Snippet from ortools/sat/samples/binpacking_problem_sat.cc
 #include <stdlib.h>
 
 #include <vector>
 
-#include "absl/base/log_severity.h"
-#include "absl/log/globals.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
+#include "absl/base/log_severity.h"
+#include "absl/log/globals.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
@@ -685,12 +698,13 @@ int main(int argc, char* argv[]) {
 ### Java code
 
 ```java
+// Snippet from ortools/sat/samples/BinPackingProblemSat.java
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.Loader;
+import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
-import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.LinearExpr;
 import com.google.ortools.sat.LinearExprBuilder;
@@ -785,7 +799,8 @@ public class BinPackingProblemSat {
 
 ### C\# code
 
-```cs
+```csharp
+// Snippet from ortools/sat/samples/BinPackingProblemSat.cs
 using System;
 using Google.OrTools.Sat;
 
@@ -895,7 +910,8 @@ public class BinPackingProblemSat
 
 ### Go code
 
-```cs
+```go
+// Snippet from ortools/sat/samples/binpacking_problem_sat.go
 // The binpacking_problem_sat command is an example of a bin packing problem that uses channeling
 // constraints.
 package main
@@ -1004,4 +1020,5 @@ func main() {
 		log.Exitf("binpackingProblemSat returned with error: %v", err)
 	}
 }
+
 ```

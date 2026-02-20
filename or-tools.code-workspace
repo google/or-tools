@@ -109,11 +109,12 @@
     "USE_GLOP",
     "USE_CLP",
     "USE_CBC",
+    "USE_HIGHS",
     "USE_PDLP",
     "USE_SCIP"
     ],
     "C_Cpp.clang_format_style": "Google",
-    "python.formatting.provider": "yapf",
+    "python.formatting.provider": "black",
     "python.pythonPath": "python3",
     "python.autoComplete.extraPaths": [
       "${workspaceRoot}",

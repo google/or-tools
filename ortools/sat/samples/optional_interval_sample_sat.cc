@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// [START program]
 #include <stdlib.h>
 
 #include "absl/base/log_severity.h"
@@ -65,3 +66,4 @@ int main(int argc, char* argv[]) {
   operations_research::sat::OptionalIntervalSampleSat();
   return EXIT_SUCCESS;
 }
+// [END program]

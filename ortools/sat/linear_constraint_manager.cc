@@ -29,6 +29,7 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/log/vlog_is_on.h"
+#include "absl/numeric/int128.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
@@ -41,6 +42,7 @@
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
@@ -955,23 +957,62 @@ void LinearConstraintManager::AddAllConstraintsToLp() {
 
 bool LinearConstraintManager::DebugCheckConstraint(
     const LinearConstraint& cut) {
-  if (model_->Get<DebugSolution>() == nullptr) return true;
-  const auto& debug_solution = *(model_->Get<DebugSolution>());
+  const DebugSolution* debug_solution = model_->Get<DebugSolution>();
+  if (debug_solution == nullptr || debug_solution->proto_values.empty()) {
+    return true;
+  }
 
-  IntegerValue activity(0);
+  absl::int128 activity(0);
   for (int i = 0; i < cut.num_terms; ++i) {
     const IntegerVariable var = cut.vars[i];
     const IntegerValue coeff = cut.coeffs[i];
-    CHECK(debug_solution.ivar_has_value[var]);
-    activity += coeff * debug_solution.ivar_values[var];
+    if (var >= debug_solution->ivar_has_value.size() ||
+        !debug_solution->ivar_has_value[var]) {
+      return true;
+    }
+    activity +=
+        absl::int128(coeff.value()) * debug_solution->ivar_values[var].value();
   }
-  if (activity > cut.ub || activity < cut.lb) {
+  if (activity > cut.ub.value() || activity < cut.lb.value()) {
     LOG(INFO) << cut.DebugString();
     LOG(INFO) << "activity " << activity << " not in [" << cut.lb << ","
               << cut.ub << "]";
     return false;
   }
   return true;
+}
+
+void LinearConstraintManager::CacheReducedCostsInfo() {
+  if (reduced_costs_is_cached_) return;
+  reduced_costs_is_cached_ = true;
+
+  const absl::int128 ub = reduced_cost_constraint_.ub.value();
+  absl::int128 level_zero_lb = 0;
+  for (int i = 0; i < reduced_cost_constraint_.num_terms; ++i) {
+    IntegerVariable var = reduced_cost_constraint_.vars[i];
+    IntegerValue coeff = reduced_cost_constraint_.coeffs[i];
+    if (coeff < 0) {
+      coeff = -coeff;
+      var = NegationOf(var);
+    }
+
+    const IntegerValue lb = integer_trail_.LevelZeroLowerBound(var);
+    level_zero_lb += absl::int128(coeff.value()) * absl::int128(lb.value());
+
+    if (lb == integer_trail_.LevelZeroUpperBound(var)) continue;
+    const LiteralIndex lit = integer_encoder_.GetAssociatedLiteral(
+        IntegerLiteral::GreaterOrEqual(var, lb + 1));
+    if (lit != kNoLiteralIndex) {
+      reduced_costs_map_[Literal(lit)] = coeff;
+    }
+  }
+  const absl::int128 gap = ub - level_zero_lb;
+  if (gap > 0) {
+    reduced_costs_gap_ = gap;
+  } else {
+    reduced_costs_gap_ = 0;
+    reduced_costs_map_.clear();
+  }
 }
 
 void TopNCuts::AddCut(

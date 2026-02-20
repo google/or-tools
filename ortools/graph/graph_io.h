@@ -17,7 +17,9 @@
 #define UTIL_GRAPH_IO_H_
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
+#include <cstdio>
 #include <memory>
 #include <numeric>
 #include <string>
@@ -29,10 +31,9 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
-#include "absl/strings/str_split.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/numbers.h"
-#include "ortools/graph/graph.h"
 #include "ortools/util/filelineiter.h"
 
 namespace util {
@@ -164,12 +165,12 @@ absl::Status WriteGraphToFile(const Graph& graph, const std::string& filename,
       }
     }
   }
-
+  // COV_NF_START
   if (fclose(f) != 0) {
     return absl::Status(absl::StatusCode::kInternal,
                         "Could not close file '" + filename + "'");
   }
-
+  // COV_NF_END
   return ::absl::OkStatus();
 }
 

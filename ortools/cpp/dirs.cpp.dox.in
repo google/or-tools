@@ -1,0 +1,76 @@
+/*! @dir @PROJECT_SOURCE_DIR@/ortools/base
+This directory provides fundamental utilities for file I/O, logging, and basic data structures that support the other operations research tools.
+*/
+
+/*! @dir @PROJECT_SOURCE_DIR@/ortools/init
+This directory provides the core library initialization function (InitGoogle) and its language-specific wrappers for
+C#, Java, and Python.
+*/
+
+/*! @dir @PROJECT_SOURCE_DIR@/ortools/algorithms
+Non-graph dedicated algorithms, like our Knapsack solver.
+*/
+
+/*! @dir @PROJECT_SOURCE_DIR@/ortools/graph
+Graph and Network Flows.
+*/
+
+/*! @dir @PROJECT_SOURCE_DIR@/ortools/bop
+Google's Boolean Optimization Programming solver (BOP) for binary programs, a specific form of integer programming (MIP).
+*/
+
+/*! @dir @PROJECT_SOURCE_DIR@/ortools/glop
+Google's Linear Optimization Programming solver (GLOP) for continuous linear programs (LP).
+*/
+
+/*! @dir @PROJECT_SOURCE_DIR@/ortools/linear_solver
+A unified wrapper (MPsolver) around different linear (LP) and integer (MIP) solvers (Glop, Bop, CP-SAT, SCIP, Gurobi, etc.). Use MathOpt instead for new applications.
+*/
+
+/*! @dir @PROJECT_SOURCE_DIR@/ortools/math_opt
+Our next-generation unified wrapper for LP and MIP solvers.
+
+@warning Wrappers for C# and Java are not available.
+*/
+
+/*! @dir @PROJECT_SOURCE_DIR@/ortools/sat
+Our next-gen constraint programming (CP) solver, CP-SAT.
+*/
+
+/*! @dir @PROJECT_SOURCE_DIR@/ortools/pdlp
+This directory contains PDLP, a library for solving linear programming (LP) and
+quadratic programming (QP) problems using first-order methods.
+*/
+
+/*! @dir @PROJECT_SOURCE_DIR@/ortools/constraint_solver
+Google's deprecated constraint programming (CP) solver.
+*/
+
+/*! @dir @PROJECT_SOURCE_DIR@/ortools/routing
+Google's routing solver based on the constraint solver.
+*/
+
+/*! @dir @PROJECT_SOURCE_DIR@/ortools/packing
+Google's packing solver.
+*/
+
+/*! @dir @PROJECT_SOURCE_DIR@/ortools/scheduling
+Parsers for various standard scheduling problem formats, such as those from the PSP-LIB project scheduling library.
+*/
+
+/*! @dir @PROJECT_SOURCE_DIR@/ortols/set_cover
+Our advanced set-covering solver with innovative greedy algorithms.
+*/
+
+/*! @dir @PROJECT_SOURCE_DIR@/ortools/lp_data
+  This directory contains a rich collection of C++ libraries for handling Linear
+  Programming (LP) data structures.
+*/
+
+/*! @dir @PROJECT_SOURCE_DIR@/ortools/util
+Code shared between the different tools and libraries.
+*/
+
+/*! @dir @PROJECT_SOURCE_DIR@/ortools/flatzinc
+This directory holds a parser and solver for the FlatZinc modeling language, enabling it to be solved using the CP-SAT solver.
+*/

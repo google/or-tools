@@ -19,11 +19,12 @@ package operations_research.math_opt;
 import "google/protobuf/duration.proto";
 import "ortools/pdlp/solvers.proto";
 import "ortools/glop/parameters.proto";
-import "ortools/gscip/gscip.proto";
 import "ortools/math_opt/solvers/glpk.proto";
+import "ortools/math_opt/solvers/gscip/gscip.proto";
 import "ortools/math_opt/solvers/gurobi.proto";
 import "ortools/math_opt/solvers/highs.proto";
 import "ortools/math_opt/solvers/osqp.proto";
+import "ortools/math_opt/solvers/xpress.proto";
 import "ortools/sat/sat_parameters.proto";
 
 option java_package = "com.google.ortools.mathopt";
@@ -176,6 +177,7 @@ message StrictnessProto {
 message SolverInitializerProto {
   GurobiInitializerProto gurobi = 1;
   reserved 2;
+  XpressInitializerProto xpress = 3;
 }
 
 // Parameters to control a single solve.
@@ -375,6 +377,8 @@ message SolveParametersProto {
   GlpkParametersProto glpk = 26;
 
   HighsOptionsProto highs = 27;
+
+  XpressParametersProto xpress = 28;
 
   reserved 11;  // Deleted
 }

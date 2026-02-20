@@ -14,8 +14,8 @@
 // IWYU pragma: private, include "ortools/math_opt/cpp/math_opt.h"
 // IWYU pragma: friend "ortools/math_opt/cpp/.*"
 
-#ifndef OR_TOOLS_MATH_OPT_CPP_SOLVE_RESULT_H_
-#define OR_TOOLS_MATH_OPT_CPP_SOLVE_RESULT_H_
+#ifndef ORTOOLS_MATH_OPT_CPP_SOLVE_RESULT_H_
+#define ORTOOLS_MATH_OPT_CPP_SOLVE_RESULT_H_
 
 #include <initializer_list>
 #include <optional>
@@ -27,12 +27,12 @@
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/time/time.h"
-#include "ortools/gscip/gscip.pb.h"
 #include "ortools/math_opt/cpp/enums.h"  // IWYU pragma: export
 #include "ortools/math_opt/cpp/linear_constraint.h"
 #include "ortools/math_opt/cpp/solution.h"  // IWYU pragma: export
 #include "ortools/math_opt/cpp/variable_and_expressions.h"
 #include "ortools/math_opt/result.pb.h"  // IWYU pragma: export
+#include "ortools/math_opt/solvers/gscip/gscip.pb.h"
 #include "ortools/math_opt/storage/model_storage.h"
 
 namespace operations_research {
@@ -648,4 +648,4 @@ std::ostream& operator<<(std::ostream& out, const SolveResult& result);
 }  // namespace math_opt
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_MATH_OPT_CPP_SOLVE_RESULT_H_
+#endif  // ORTOOLS_MATH_OPT_CPP_SOLVE_RESULT_H_

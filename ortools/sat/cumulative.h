@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_SAT_CUMULATIVE_H_
-#define OR_TOOLS_SAT_CUMULATIVE_H_
+#ifndef ORTOOLS_SAT_CUMULATIVE_H_
+#define ORTOOLS_SAT_CUMULATIVE_H_
 
 #include <functional>
 #include <vector>
@@ -21,6 +21,8 @@
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/sat_base.h"
+#include "ortools/sat/scheduling_helpers.h"
 
 namespace operations_research {
 namespace sat {
@@ -44,6 +46,7 @@ namespace sat {
 // Optimization: If one already have an helper constructed from the interval
 // variable, it can be passed as last argument.
 std::function<void(Model*)> Cumulative(
+    const std::vector<Literal>& enforcement_literals,
     const std::vector<IntervalVariable>& vars,
     absl::Span<const AffineExpression> demands, AffineExpression capacity,
     SchedulingConstraintHelper* helper = nullptr);
@@ -54,12 +57,14 @@ std::function<void(Model*)> Cumulative(
 // This constraint assumes that task demands and the resource capacity are fixed
 // to non-negative number.
 std::function<void(Model*)> CumulativeTimeDecomposition(
+    absl::Span<const Literal> enforcement_literals,
     absl::Span<const IntervalVariable> vars,
     absl::Span<const AffineExpression> demands, AffineExpression capacity,
     SchedulingConstraintHelper* helper = nullptr);
 
 // Another testing code, same assumptions as the CumulativeTimeDecomposition().
 std::function<void(Model*)> CumulativeUsingReservoir(
+    absl::Span<const Literal> enforcement_literals,
     absl::Span<const IntervalVariable> vars,
     absl::Span<const AffineExpression> demands, AffineExpression capacity,
     SchedulingConstraintHelper* helper = nullptr);
@@ -67,4 +72,4 @@ std::function<void(Model*)> CumulativeUsingReservoir(
 }  // namespace sat
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_CUMULATIVE_H_
+#endif  // ORTOOLS_SAT_CUMULATIVE_H_

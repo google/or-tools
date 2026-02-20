@@ -1,0 +1,2 @@
+RUN: $(rcpsp_sat_py3) --input=$(rip1.sch)
+CHECK: "objective: 100"

@@ -98,6 +98,7 @@ void CostasHard(const int dim) {
   // create the variables
   std::vector<IntVar> vars;
   Domain domain(1, dim);
+  vars.reserve(dim);
   for (int i = 0; i < dim; ++i) {
     vars.push_back(
         cp_model.NewIntVar(domain).WithName(absl::StrCat("var_", i)));

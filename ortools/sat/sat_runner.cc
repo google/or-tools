@@ -16,9 +16,11 @@
 #include <functional>
 #include <iostream>
 #include <limits>
+#include <memory>
 #include <string>
 #include <vector>
 
+#include "absl/base/thread_annotations.h"
 #include "absl/flags/flag.h"
 #include "absl/flags/parse.h"
 #include "absl/flags/usage.h"
@@ -30,6 +32,8 @@
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
+#include "absl/synchronization/mutex.h"
+#include "absl/types/span.h"
 #include "google/protobuf/arena.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/base/helpers.h"
@@ -45,6 +49,7 @@
 #include "ortools/sat/synchronization.h"
 #include "ortools/util/file_util.h"
 #include "ortools/util/logging.h"
+#include "ortools/util/sigint.h"
 #include "ortools/util/sorted_interval_list.h"
 
 ABSL_FLAG(
@@ -102,8 +107,69 @@ std::string ExtractName(absl::string_view full_filename) {
   return filename;
 }
 
-void LogInPbCompetitionFormat(int num_variables, bool has_objective,
-                              Model* model, SatParameters* parameters) {
+class LastSolutionPrinter {
+ public:
+  // Note that is prints the solution in the PB competition format.
+  void MaybePrintLastSolution() {
+    absl::MutexLock lock(mutex_);
+    if (last_solution_printed_) return;
+    last_solution_printed_ = true;
+
+    if (last_solution_.empty()) {
+      std::cout << "s UNKNOWN" << std::endl;
+    } else {
+      std::cout << "s SATISFIABLE" << std::endl;
+      std::string line;
+      for (int i = 0; i < num_variables_; ++i) {
+        if (last_solution_[i]) {
+          absl::StrAppend(&line, "x", i + 1, " ");
+        } else {
+          absl::StrAppend(&line, "-x", i + 1, " ");
+        }
+        if (line.size() >= 75) {
+          std::cout << "v " << line << std::endl;
+          line.clear();
+        }
+      }
+      if (!line.empty()) {
+        std::cout << "v " << line << std::endl;
+      }
+    }
+  }
+
+  void set_num_variables(int num_variables) { num_variables_ = num_variables; }
+
+  void set_last_solution(absl::Span<const int64_t> solution) {
+    absl::MutexLock lock(mutex_);
+    if (last_solution_printed_) return;
+    last_solution_.assign(solution.begin(), solution.end());
+  }
+
+  // Returns false if the solution has already been printed, else mark it as
+  // printed by caller code.
+  bool mark_last_solution_printed() {
+    const absl::MutexLock lock(mutex_);
+    if (last_solution_printed_) {
+      return false;
+    }
+    last_solution_printed_ = true;
+    return true;
+  }
+
+ private:
+  int num_variables_ = 0;
+  std::vector<int64_t> last_solution_ ABSL_GUARDED_BY(mutex_);
+  bool last_solution_printed_ ABSL_GUARDED_BY(mutex_) = false;
+  absl::Mutex mutex_;
+};
+
+void LogInPbCompetitionFormat(
+    int num_variables, bool has_objective, Model* model,
+    SatParameters* parameters,
+    std::shared_ptr<LastSolutionPrinter> last_solution_printer) {
+  CHECK(last_solution_printer != nullptr);
+  last_solution_printer->set_num_variables(num_variables);
+
   const auto log_callback = [](const std::string& multi_line_input) {
     if (multi_line_input.empty()) {
       std::cout << "c" << std::endl;
@@ -118,55 +184,60 @@ void LogInPbCompetitionFormat(int num_variables, bool has_objective,
   model->GetOrCreate<SolverLogger>()->AddInfoLoggingCallback(log_callback);
   parameters->set_log_to_stdout(false);
 
-  const auto response_callback = [](const CpSolverResponse& r) {
+  const auto response_callback = [last_solution_printer](
+                                     const CpSolverResponse& r) {
     std::cout << "o " << static_cast<int64_t>(r.objective_value()) << std::endl;
+    last_solution_printer->set_last_solution(r.solution());
   };
   model->Add(NewFeasibleSolutionObserver(response_callback));
 
-  const auto final_response_callback = [num_variables,
-                                        has_objective](CpSolverResponse* r) {
-    switch (r->status()) {
-      case CpSolverStatus::OPTIMAL:
-        if (has_objective) {
-          std::cout << "s OPTIMUM FOUND " << std::endl;
-        } else {
-          std::cout << "s SATISFIABLE" << std::endl;
+  const auto final_response_callback =
+      [num_variables, has_objective,
+       last_solution_printer](CpSolverResponse* r) {
+        if (!last_solution_printer->mark_last_solution_printed()) return;
+
+        switch (r->status()) {
+          case CpSolverStatus::OPTIMAL:
+            if (has_objective) {
+              std::cout << "s OPTIMUM FOUND " << std::endl;
+            } else {
+              std::cout << "s SATISFIABLE" << std::endl;
+            }
+            break;
+          case CpSolverStatus::FEASIBLE:
+            std::cout << "s SATISFIABLE" << std::endl;
+            break;
+          case CpSolverStatus::INFEASIBLE:
+            std::cout << "s UNSATISFIABLE" << std::endl;
+            break;
+          case CpSolverStatus::MODEL_INVALID:
+            std::cout << "s UNSUPPORTED" << std::endl;
+            break;
+          case CpSolverStatus::UNKNOWN:
+            std::cout << "s UNKNOWN" << std::endl;
+            break;
+          default:
+            break;
         }
-        break;
-      case CpSolverStatus::FEASIBLE:
-        std::cout << "s SATISFIABLE" << std::endl;
-        break;
-      case CpSolverStatus::INFEASIBLE:
-        std::cout << "s UNSATISFIABLE" << std::endl;
-        break;
-      case CpSolverStatus::MODEL_INVALID:
-        std::cout << "s UNSUPPORTED" << std::endl;
-        break;
-      case CpSolverStatus::UNKNOWN:
-        std::cout << "s UNKNOWN" << std::endl;
-        break;
-      default:
-        break;
-    }
-    if (r->status() == CpSolverStatus::OPTIMAL ||
-        r->status() == CpSolverStatus::FEASIBLE) {
-      std::string line;
-      for (int i = 0; i < num_variables; ++i) {
-        if (r->solution(i)) {
-          absl::StrAppend(&line, "x", i + 1, " ");
-        } else {
-          absl::StrAppend(&line, "-x", i + 1, " ");
+        if (r->status() == CpSolverStatus::OPTIMAL ||
+            r->status() == CpSolverStatus::FEASIBLE) {
+          std::string line;
+          for (int i = 0; i < num_variables; ++i) {
+            if (r->solution(i)) {
+              absl::StrAppend(&line, "x", i + 1, " ");
+            } else {
+              absl::StrAppend(&line, "-x", i + 1, " ");
+            }
+            if (line.size() >= 75) {
+              std::cout << "v " << line << std::endl;
+              line.clear();
+            }
+          }
+          if (!line.empty()) {
+            std::cout << "v " << line << std::endl;
+          }
         }
-        if (line.size() >= 75) {
-          std::cout << "v " << line << std::endl;
-          line.clear();
-        }
-      }
-      if (!line.empty()) {
-        std::cout << "v " << line << std::endl;
-      }
-    }
-  };
+      };
   model->GetOrCreate<SharedResponseManager>()->AddFinalResponsePostprocessor(
       final_response_callback);
 }
@@ -186,7 +257,8 @@ void SetInterleavedWorkers(SatParameters* parameters) {
 
 bool LoadProblem(const std::string& filename, absl::string_view hint_file,
                  absl::string_view domain_file, CpModelProto* cp_model,
-                 Model* model, SatParameters* parameters) {
+                 Model* model, SatParameters* parameters,
+                 std::shared_ptr<LastSolutionPrinter> last_solution_printer) {
   if (absl::EndsWith(filename, ".opb") ||
       absl::EndsWith(filename, ".opb.bz2") ||
       absl::EndsWith(filename, ".opb.gz") || absl::EndsWith(filename, ".wbo") ||
@@ -217,7 +289,7 @@ bool LoadProblem(const std::string& filename, absl::string_view hint_file,
       const int num_variables =
           reader.model_is_supported() ? reader.num_variables() : 1;
       LogInPbCompetitionFormat(num_variables, cp_model->has_objective(), model,
-                               parameters);
+                               parameters, last_solution_printer);
     }
     if (absl::GetFlag(FLAGS_force_interleave_search)) {
       SetInterleavedWorkers(parameters);
@@ -310,9 +382,13 @@ int Run() {
   google::protobuf::Arena arena;
   CpModelProto* cp_model =
       google::protobuf::Arena::Create<CpModelProto>(&arena);
+  std::shared_ptr<LastSolutionPrinter> last_solution_printer;
+  if (absl::GetFlag(FLAGS_competition_mode)) {
+    last_solution_printer = std::make_shared<LastSolutionPrinter>();
+  }
   if (!LoadProblem(absl::GetFlag(FLAGS_input), absl::GetFlag(FLAGS_hint_file),
                    absl::GetFlag(FLAGS_domain_file), cp_model, &model,
-                   &parameters)) {
+                   &parameters, last_solution_printer)) {
     if (!absl::GetFlag(FLAGS_competition_mode)) {
       LOG(FATAL) << "Cannot load file '" << absl::GetFlag(FLAGS_input) << "'.";
     }
@@ -329,6 +405,14 @@ int Run() {
           FingerprintRepeatedField(r.solution(), kDefaultFingerprintSeed));
     }));
   }
+
+  if (absl::GetFlag(FLAGS_competition_mode)) {
+    model.GetOrCreate<SigtermHandler>()->Register([last_solution_printer]() {
+      last_solution_printer->MaybePrintLastSolution();
+      exit(EXIT_SUCCESS);
+    });
+  }
+
   const CpSolverResponse response = SolveCpModel(*cp_model, &model);
 
   if (!absl::GetFlag(FLAGS_output).empty()) {

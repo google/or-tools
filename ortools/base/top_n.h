@@ -27,8 +27,8 @@
 // If n is a constant, the total storage required is a constant and the running
 // time is linear in p.
 
-#ifndef OR_TOOLS_BASE_TOP_N_H_
-#define OR_TOOLS_BASE_TOP_N_H_
+#ifndef ORTOOLS_BASE_TOP_N_H_
+#define ORTOOLS_BASE_TOP_N_H_
 
 #include <stddef.h>
 
@@ -324,4 +324,4 @@ void TopN<T, Cmp>::Reset() {
 }
 }  // namespace gtl
 }  // namespace operations_research
-#endif  // OR_TOOLS_BASE_TOP_N_H_
+#endif  // ORTOOLS_BASE_TOP_N_H_

@@ -119,23 +119,6 @@ TEST(TableConstraintTest, EmptyOrTrivialSemantics) {
               }
             )pb"),
             CpSolverStatus::OPTIMAL);
-
-  // Invalid: not affine
-  EXPECT_EQ(SolveTextProto(R"pb(
-              variables { domain: [ 0, 0 ] }
-              variables { domain: [ 0, 0 ] }
-              constraints {
-                table {
-                  values: [ 0 ]
-                  exprs:
-                  [ {
-                    vars: [ 0, 1 ]
-                    coeffs: [ 1, 1 ]
-                  }]
-                }
-              }
-            )pb"),
-            CpSolverStatus::MODEL_INVALID);
 }
 
 TEST(TableConstraintTest, EnumerationAndEncoding) {

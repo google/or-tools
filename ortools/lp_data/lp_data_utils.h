@@ -14,8 +14,8 @@
 // Utility helpers for manipulating LinearProgram and other types defined in
 // lp_data.
 
-#ifndef OR_TOOLS_LP_DATA_LP_DATA_UTILS_H_
-#define OR_TOOLS_LP_DATA_LP_DATA_UTILS_H_
+#ifndef ORTOOLS_LP_DATA_LP_DATA_UTILS_H_
+#define ORTOOLS_LP_DATA_LP_DATA_UTILS_H_
 
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/lp_data/lp_data.h"
@@ -25,17 +25,6 @@
 
 namespace operations_research {
 namespace glop {
-
-// For all constraints in linear_program, if the constraint has a slack
-// variable, change its value in *values so that the constraints itself is
-// satisfied.
-// Note that this obviously won't always imply that the bounds of the slack
-// variable itself will be satisfied.
-// The code assumes (and DCHECKs) that all constraints with a slack variable
-// have their upper and lower bounds both set to 0. This is ensured by
-// LinearProgram::AddSlackVariablesWhereNecessary().
-void ComputeSlackVariablesValues(const LinearProgram& linear_program,
-                                 DenseRow* values);
 
 // This is separated from LinearProgram class because of a cyclic dependency
 // when scaling as an LP.
@@ -124,4 +113,4 @@ class LpScalingHelper {
 }  // namespace glop
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_LP_DATA_LP_DATA_UTILS_H_
+#endif  // ORTOOLS_LP_DATA_LP_DATA_UTILS_H_

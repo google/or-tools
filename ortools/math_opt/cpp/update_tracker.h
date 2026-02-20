@@ -14,8 +14,8 @@
 // IWYU pragma: private, include "ortools/math_opt/cpp/math_opt.h"
 // IWYU pragma: friend "ortools/math_opt/cpp/.*"
 
-#ifndef OR_TOOLS_MATH_OPT_CPP_UPDATE_TRACKER_H_
-#define OR_TOOLS_MATH_OPT_CPP_UPDATE_TRACKER_H_
+#ifndef ORTOOLS_MATH_OPT_CPP_UPDATE_TRACKER_H_
+#define ORTOOLS_MATH_OPT_CPP_UPDATE_TRACKER_H_
 
 #include <memory>
 #include <optional>
@@ -115,4 +115,4 @@ constexpr absl::string_view kModelIsDestroyed =
 }  // namespace math_opt
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_MATH_OPT_CPP_UPDATE_TRACKER_H_
+#endif  // ORTOOLS_MATH_OPT_CPP_UPDATE_TRACKER_H_

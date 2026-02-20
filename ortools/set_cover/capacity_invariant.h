@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_SET_COVER_CAPACITY_INVARIANT_H_
-#define OR_TOOLS_SET_COVER_CAPACITY_INVARIANT_H_
+#ifndef ORTOOLS_SET_COVER_CAPACITY_INVARIANT_H_
+#define ORTOOLS_SET_COVER_CAPACITY_INVARIANT_H_
 
 #include "absl/log/check.h"
 #include "ortools/set_cover/base_types.h"
@@ -93,4 +93,4 @@ class CapacityInvariant {
 };
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_SET_COVER_CAPACITY_INVARIANT_H_
+#endif  // ORTOOLS_SET_COVER_CAPACITY_INVARIANT_H_

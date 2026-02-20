@@ -296,29 +296,6 @@ void DivideByGCD(LinearConstraint* constraint) {
   }
 }
 
-void RemoveZeroTerms(LinearConstraint* constraint) {
-  int new_size = 0;
-  const int size = constraint->num_terms;
-  for (int i = 0; i < size; ++i) {
-    if (constraint->coeffs[i] == 0) continue;
-    constraint->vars[new_size] = constraint->vars[i];
-    constraint->coeffs[new_size] = constraint->coeffs[i];
-    ++new_size;
-  }
-  constraint->resize(new_size);
-}
-
-void MakeAllCoefficientsPositive(LinearConstraint* constraint) {
-  const int size = constraint->num_terms;
-  for (int i = 0; i < size; ++i) {
-    const IntegerValue coeff = constraint->coeffs[i];
-    if (coeff < 0) {
-      constraint->coeffs[i] = -coeff;
-      constraint->vars[i] = NegationOf(constraint->vars[i]);
-    }
-  }
-}
-
 void MakeAllVariablesPositive(LinearConstraint* constraint) {
   const int size = constraint->num_terms;
   for (int i = 0; i < size; ++i) {

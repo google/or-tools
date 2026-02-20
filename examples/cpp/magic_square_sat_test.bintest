@@ -1,0 +1,1 @@
+RUN: $(magic_square_sat)

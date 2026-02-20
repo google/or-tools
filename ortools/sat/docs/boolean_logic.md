@@ -1,5 +1,5 @@
 [home](README.md) | [boolean logic](boolean_logic.md) | [integer arithmetic](integer_arithmetic.md) | [channeling constraints](channeling.md) | [scheduling](scheduling.md) | [Using the CP-SAT solver](solver.md) | [Model manipulation](model.md) | [Troubleshooting](troubleshooting.md) | [Python API](https://or-tools.github.io/docs/pdoc/ortools/sat/python/cp_model.html)
------------------ | --------------------------------- | ------------------------------------------- | --------------------------------------- | --------------------------- | ------------------------------------ | ------------------------------ | ------------------------------------- | ---------------------------------------------------------------------------------------
+----------------- | --------------------------------- | ------------------------------------------- | --------------------------------------- | --------------------------- | ------------------------------------ | ------------------------------ | ------------------------------------- | -----------------------------------------------------------------------------------
 # Boolean logic recipes for the CP-SAT solver.
 
 https://developers.google.com/optimization/
@@ -8,8 +8,8 @@ https://developers.google.com/optimization/
 
 The CP-SAT solver can express Boolean variables and constraints. A **Boolean
 variable** is an integer variable constrained to be either 0 or 1. A **literal**
-is either a Boolean variable or its negation: 0 negated is 1, and vice versa.
-See
+is either a Boolean variable or its negation: 0 negated is 1, and 1 negated is
+0. See
 https://en.wikipedia.org/wiki/Boolean_satisfiability_problem#Basic_definitions_and_terminology.
 
 ## Boolean variables and literals
@@ -20,7 +20,7 @@ negation of `x`.
 ### Python code
 
 ```python
-#!/usr/bin/env python3
+# Snippet from ortools/sat/samples/literal_sample_sat.py
 """Code sample to demonstrate Boolean variable and literals."""
 
 
@@ -28,11 +28,11 @@ from ortools.sat.python import cp_model
 
 
 def literal_sample_sat():
-    model = cp_model.CpModel()
-    x = model.new_bool_var("x")
-    not_x = ~x
-    print(x)
-    print(not_x)
+  model = cp_model.CpModel()
+  x = model.new_bool_var('x')
+  not_x = ~x
+  print(x)
+  print(not_x)
 
 
 literal_sample_sat()
@@ -41,12 +41,13 @@ literal_sample_sat()
 ### C++ code
 
 ```cpp
+// Snippet from ortools/sat/samples/literal_sample_sat.cc
 #include <stdlib.h>
 
-#include "absl/base/log_severity.h"
-#include "absl/log/globals.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
+#include "absl/base/log_severity.h"
+#include "absl/log/globals.h"
 #include "ortools/sat/cp_model.h"
 
 namespace operations_research {
@@ -74,12 +75,13 @@ int main(int argc, char* argv[]) {
 ### Java code
 
 ```java
+// Snippet from ortools/sat/samples/LiteralSampleSat.java
 package com.google.ortools.sat.samples;
 
-import com.google.ortools.Loader;
 import com.google.ortools.sat.BoolVar;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.Literal;
+import com.google.ortools.Loader;
 
 /** Code sample to demonstrate Boolean variable and literals. */
 public class LiteralSampleSat {
@@ -95,7 +97,8 @@ public class LiteralSampleSat {
 
 ### C\# code
 
-```cs
+```csharp
+// Snippet from ortools/sat/samples/LiteralSampleSat.cs
 using System;
 using Google.OrTools.Sat;
 
@@ -112,7 +115,8 @@ public class LiteralSampleSat
 
 ### Go code
 
-```cs
+```go
+// Snippet from ortools/sat/samples/literal_sample_sat.go
 // The literal_sample_sat command is a simple example of literals.
 package main
 
@@ -133,6 +137,7 @@ func literalSampleSat() {
 func main() {
 	literalSampleSat()
 }
+
 ```
 
 ## Boolean constraints
@@ -150,7 +155,7 @@ constraints. For instance, we can add a constraint Or(x, not(y)).
 ### Python code
 
 ```python
-#!/usr/bin/env python3
+# Snippet from ortools/sat/samples/bool_or_sample_sat.py
 """Code sample to demonstrates a simple Boolean constraint."""
 
 
@@ -158,15 +163,15 @@ from ortools.sat.python import cp_model
 
 
 def bool_or_sample_sat():
-    model = cp_model.CpModel()
+  model = cp_model.CpModel()
 
-    x = model.new_bool_var("x")
-    y = model.new_bool_var("y")
+  x = model.new_bool_var('x')
+  y = model.new_bool_var('y')
 
-    model.add_bool_or([x, y.negated()])
-    # The [] is not mandatory.
-    # ~y is equivalent to y.negated()
-    model.add_bool_or(x, ~y)
+  model.add_bool_or([x, y.negated()])
+  # The [] is not mandatory.
+  # ~y is equivalent to y.negated()
+  model.add_bool_or(x, ~y)
 
 
 bool_or_sample_sat()
@@ -175,12 +180,13 @@ bool_or_sample_sat()
 ### C++ code
 
 ```cpp
+// Snippet from ortools/sat/samples/bool_or_sample_sat.cc
 #include <stdlib.h>
 
+#include "ortools/base/init_google.h"
 #include "absl/base/log_severity.h"
 #include "absl/log/globals.h"
 #include "absl/types/span.h"
-#include "ortools/base/init_google.h"
 #include "ortools/sat/cp_model.h"
 
 namespace operations_research {
@@ -210,6 +216,7 @@ int main(int argc, char* argv[]) {
 ### Java code
 
 ```java
+// Snippet from ortools/sat/samples/BoolOrSampleSat.java
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.Loader;
@@ -231,7 +238,8 @@ public class BoolOrSampleSat {
 
 ### C\# code
 
-```cs
+```csharp
+// Snippet from ortools/sat/samples/BoolOrSampleSat.cs
 using System;
 using Google.OrTools.Sat;
 
@@ -251,7 +259,8 @@ public class BoolOrSampleSat
 
 ### Go code
 
-```cs
+```go
+// Snippet from ortools/sat/samples/bool_or_sample_sat.go
 // The bool_or_sample_sat command is simple example of the BoolOr constraint.
 package main
 
@@ -271,6 +280,7 @@ func boolOrSampleSat() {
 func main() {
 	boolOrSampleSat()
 }
+
 ```
 
 ## Reified constraints
@@ -278,12 +288,14 @@ func main() {
 The CP-SAT solver supports *half-reified* constraints, also called
 *implications*, which are of the form:
 
-    x implies constraint
+```
+x implies constraint
+```
 
 where the constraint must hold if `x` is true.
 
-Please note that this is not an equivalence relation. The constraint can still
-be true if `x` is false.
+Note that this is not an equivalence relation. The constraint can still be true
+if `x` is false.
 
 So we can write b => And(x, not y). That is, if b is true, then x is true and y
 is false. Note that in this particular example, there are multiple ways to
@@ -293,30 +305,30 @@ then is written as Or(not b, x) and Or(not b, not y).
 ### Python code
 
 ```python
-#!/usr/bin/env python3
+# Snippet from ortools/sat/samples/reified_sample_sat.py
 """Simple model with a reified constraint."""
 
 from ortools.sat.python import cp_model
 
 
 def reified_sample_sat():
-    """Showcase creating a reified constraint."""
-    model = cp_model.CpModel()
+  """Showcase creating a reified constraint."""
+  model = cp_model.CpModel()
 
-    x = model.new_bool_var("x")
-    y = model.new_bool_var("y")
-    b = model.new_bool_var("b")
+  x = model.new_bool_var('x')
+  y = model.new_bool_var('y')
+  b = model.new_bool_var('b')
 
-    # First version using a half-reified bool and.
-    model.add_bool_and(x, ~y).only_enforce_if(b)
+  # First version using a half-reified bool and.
+  model.add_bool_and(x, ~y).only_enforce_if(b)
 
-    # Second version using implications.
-    model.add_implication(b, x)
-    model.add_implication(b, ~y)
+  # Second version using implications.
+  model.add_implication(b, x)
+  model.add_implication(b, ~y)
 
-    # Third version using bool or.
-    model.add_bool_or(~b, x)
-    model.add_bool_or(~b, ~y)
+  # Third version using bool or.
+  model.add_bool_or(~b, x)
+  model.add_bool_or(~b, ~y)
 
 
 reified_sample_sat()
@@ -325,12 +337,13 @@ reified_sample_sat()
 ### C++ code
 
 ```cpp
+// Snippet from ortools/sat/samples/reified_sample_sat.cc
 #include <stdlib.h>
 
+#include "ortools/base/init_google.h"
 #include "absl/base/log_severity.h"
 #include "absl/log/globals.h"
 #include "absl/types/span.h"
-#include "ortools/base/init_google.h"
 #include "ortools/sat/cp_model.h"
 
 namespace operations_research {
@@ -369,6 +382,7 @@ int main(int argc, char* argv[]) {
 ### Java code
 
 ```java
+// Snippet from ortools/sat/samples/ReifiedSampleSat.java
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.Loader;
@@ -411,7 +425,8 @@ public class ReifiedSampleSat {
 
 ### C\# code
 
-```cs
+```csharp
+// Snippet from ortools/sat/samples/ReifiedSampleSat.cs
 using System;
 using Google.OrTools.Sat;
 
@@ -441,7 +456,8 @@ public class ReifiedSampleSat
 
 ### Go code
 
-```cs
+```go
+// Snippet from ortools/sat/samples/reified_sample_sat.go
 // The reified_sample_sat command is a simple example of implication constraints.
 package main
 
@@ -471,30 +487,37 @@ func reifiedSampleSat() {
 func main() {
 	reifiedSampleSat()
 }
+
 ```
 
 ## Product of two Boolean Variables
 
 A useful construct is the product `p` of two Boolean variables `x` and `y`.
 
-    p == x * y
+```
+p == x * y
+```
 
 This is equivalent to the logical relation
 
-    p <=> x and y
+```
+p <=> x and y
+```
 
 This is encoded using one bool_or constraint and two implications. The following
 code samples output this truth table:
 
-    x = 0   y = 0   p = 0
-    x = 1   y = 0   p = 0
-    x = 0   y = 1   p = 0
-    x = 1   y = 1   p = 1
+```
+x = 0   y = 0   p = 0
+x = 1   y = 0   p = 0
+x = 0   y = 1   p = 0
+x = 1   y = 1   p = 1
+```
 
 ### Python code
 
 ```python
-#!/usr/bin/env python3
+# Snippet from ortools/sat/samples/boolean_product_sample_sat.py
 """Code sample that encodes the product of two Boolean variables."""
 
 
@@ -502,27 +525,27 @@ from ortools.sat.python import cp_model
 
 
 def boolean_product_sample_sat():
-    """Encoding of the product of two Boolean variables.
+  """Encoding of the product of two Boolean variables.
 
-    p == x * y, which is the same as p <=> x and y
-    """
-    model = cp_model.CpModel()
-    x = model.new_bool_var("x")
-    y = model.new_bool_var("y")
-    p = model.new_bool_var("p")
+  p == x * y, which is the same as p <=> x and y
+  """
+  model = cp_model.CpModel()
+  x = model.new_bool_var('x')
+  y = model.new_bool_var('y')
+  p = model.new_bool_var('p')
 
-    # x and y implies p, rewrite as not(x and y) or p.
-    model.add_bool_or(~x, ~y, p)
+  # x and y implies p, rewrite as not(x and y) or p.
+  model.add_bool_or(~x, ~y, p)
 
-    # p implies x and y, expanded into two implications.
-    model.add_implication(p, x)
-    model.add_implication(p, y)
+  # p implies x and y, expanded into two implications.
+  model.add_implication(p, x)
+  model.add_implication(p, y)
 
-    # Create a solver and solve.
-    solver = cp_model.CpSolver()
-    solution_printer = cp_model.VarArraySolutionPrinter([x, y, p])
-    solver.parameters.enumerate_all_solutions = True
-    solver.solve(model, solution_printer)
+  # Create a solver and solve.
+  solver = cp_model.CpSolver()
+  solution_printer = cp_model.VarArraySolutionPrinter([x, y, p])
+  solver.parameters.enumerate_all_solutions = True
+  solver.solve(model, solution_printer)
 
 
 boolean_product_sample_sat()
@@ -530,7 +553,8 @@ boolean_product_sample_sat()
 
 ### Go code
 
-```cs
+```go
+// Snippet from ortools/sat/samples/boolean_product_sample_sat.go
 // The boolean_product_sample_sat command is a simple example of the product of two literals.
 package main
 
@@ -538,9 +562,10 @@ import (
 	"fmt"
 
 	log "github.com/golang/glog"
-	"github.com/google/or-tools/ortools/sat/go/cpmodel"
-	sppb "github.com/google/or-tools/ortools/sat/proto/satparameters"
 	"google.golang.org/protobuf/proto"
+	"github.com/google/or-tools/ortools/sat/go/cpmodel"
+
+	sppb "github.com/google/or-tools/ortools/sat/proto/satparameters"
 )
 
 func booleanProductSample() error {
@@ -564,7 +589,7 @@ func booleanProductSample() error {
 	}
 	// Set `fill_additional_solutions_in_response` and `enumerate_all_solutions` to true so
 	// the solver returns all solutions found.
-	params := &sppb.SatParameters{
+		params := &sppb.SatParameters{
 		FillAdditionalSolutionsInResponse: proto.Bool(true),
 		EnumerateAllSolutions:             proto.Bool(true),
 		SolutionPoolSize:                  proto.Int32(4),
@@ -591,4 +616,5 @@ func main() {
 		log.Exitf("booleanProductSample returned with error: %v", err)
 	}
 }
+
 ```

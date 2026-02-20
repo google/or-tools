@@ -496,6 +496,14 @@ PYBIND11_MODULE(cpp_elemental, py_module) {
       },
       py::kw_only(), arg("remove_names") = false);
 
+  elemental.def_static(
+      "from_model_proto",
+      [](const ModelProto& proto) {
+        return std::make_unique<Elemental>(
+            ThrowIfError(Elemental::FromModelProto(proto)));
+      },
+      arg("proto"));
+
   elemental.def("add_diff", [](Elemental& e) { return e.AddDiff().id(); });
 
   elemental.def("delete_diff", [](Elemental& e, const int64_t diff_handle) {

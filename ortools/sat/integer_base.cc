@@ -13,11 +13,15 @@
 
 #include "ortools/sat/integer_base.h"
 
+#include <algorithm>
 #include <cstdint>
 #include <numeric>
+#include <tuple>
 #include <utility>
+#include <vector>
 
 #include "absl/log/check.h"
+#include "ortools/util/bitset.h"
 
 namespace operations_research::sat {
 
@@ -26,7 +30,8 @@ void LinearExpression2::SimpleCanonicalization() {
   if (coeffs[1] == 0) vars[1] = kNoIntegerVariable;
 
   // Corner case when the underlying variable is the same.
-  if (PositiveVariable(vars[0]) == PositiveVariable(vars[1])) {
+  if (vars[0] != kNoIntegerVariable && vars[1] != kNoIntegerVariable &&
+      PositiveVariable(vars[0]) == PositiveVariable(vars[1])) {
     // Make sure variable are positive before merging.
     for (int i = 0; i < 2; ++i) {
       if (!VariableIsPositive(vars[i])) {
@@ -79,22 +84,19 @@ bool LinearExpression2::NegateForCanonicalization() {
   return negate;
 }
 
-void LinearExpression2::CanonicalizeAndUpdateBounds(IntegerValue& lb,
-                                                    IntegerValue& ub,
-                                                    bool allow_negation) {
+bool LinearExpression2::CanonicalizeAndUpdateBounds(IntegerValue& lb,
+                                                    IntegerValue& ub) {
   SimpleCanonicalization();
-  if (coeffs[0] == 0 || coeffs[1] == 0) return;  // abort.
+  if (coeffs[0] == 0 || coeffs[1] == 0) return false;  // abort.
 
-  if (allow_negation) {
-    const bool negated = NegateForCanonicalization();
-    if (negated) {
-      // We need to be able to negate without overflow.
-      CHECK_GE(lb, kMinIntegerValue);
-      CHECK_LE(ub, kMaxIntegerValue);
-      std::swap(lb, ub);
-      lb = -lb;
-      ub = -ub;
-    }
+  const bool negated = NegateForCanonicalization();
+  if (negated) {
+    // We need to be able to negate without overflow.
+    CHECK_GE(lb, kMinIntegerValue);
+    CHECK_LE(ub, kMaxIntegerValue);
+    std::swap(lb, ub);
+    lb = -lb;
+    ub = -ub;
   }
 
   // Do gcd division.
@@ -108,27 +110,115 @@ void LinearExpression2::CanonicalizeAndUpdateBounds(IntegerValue& lb,
 
   CHECK(coeffs[0] != 0 || vars[0] == kNoIntegerVariable);
   CHECK(coeffs[1] != 0 || vars[1] == kNoIntegerVariable);
+
+  return negated;
 }
 
-bool BestBinaryRelationBounds::Add(LinearExpression2 expr, IntegerValue lb,
-                                   IntegerValue ub) {
-  expr.CanonicalizeAndUpdateBounds(lb, ub);
-  if (expr.coeffs[0] == 0 || expr.coeffs[1] == 0) return false;
+bool LinearExpression2::IsCanonicalized() const {
+  for (int i : {0, 1}) {
+    if ((vars[i] == kNoIntegerVariable) != (coeffs[i] == 0)) {
+      return false;
+    }
+  }
+  if (vars[0] >= vars[1]) {
+    if (vars[0] == kNoIntegerVariable && vars[1] == kNoIntegerVariable) {
+      return true;
+    }
+    return false;
+  }
+
+  if (vars[0] == kNoIntegerVariable) return true;
+
+  return coeffs[0] > 0 && coeffs[1] > 0;
+}
+
+AffineExpression LinearExpression2::GetAffineLowerBound(
+    int var_index, IntegerValue expr_lb, IntegerValue other_var_lb) const {
+  DCHECK_GE(var_index, 0);
+  DCHECK_LT(var_index, 2);
+  const IntegerValue coeff = coeffs[var_index];
+  const IntegerVariable var = vars[var_index];
+  DCHECK_NE(var, kNoIntegerVariable);
+  const IntegerVariable other_var = vars[1 - var_index];
+  const IntegerValue other_coeff = coeffs[1 - var_index];
+  if (other_var == kNoIntegerVariable) {
+    return AffineExpression(expr_lb);
+  }
+  DCHECK_GT(other_coeff, 0);
+
+  if (coeff == 1) {
+    return AffineExpression(other_var, -other_coeff, expr_lb);
+  }
+  DCHECK_GT(coeff, 1);
+  DCHECK_EQ(std::gcd(other_coeff.value(), coeff.value()), 1);
+
+  // We need to handle the case where the coefficient is not unit. We have
+  // a * x + b * y >= expr_lb  (with a > 1 and b >= 1).
+  // x >= expr_lb / a - (b / a) * y
+  //
+  // We write b = ceil(b / a) * a - residual, with residual > 0 (since
+  // GCD(a, b)==1). Then we have:
+  // x >= expr_lb / a - ceil(b / a) * y + residual * y / a
+  // x >= expr_lb / a - ceil(b / a) * y + residual * y_lb / a
+  // x >= -ceil(b / a) * y + (expr_lb + residual * y_lb) / a
+  // But now we have
+  // x + ceil(b / a) * y >= (expr_lb + residual * y_lb) / a
+  // And since the lhs is an integer value, this is equivalent to
+  // x + ceil(b / a) * y >= ceil((expr_lb + residual * y_lb) / a)
+  const IntegerValue ceil_coeff_ratio = CeilRatio(other_coeff, coeff);
+  const IntegerValue residual = coeff * ceil_coeff_ratio - other_coeff;
+  return AffineExpression(other_var, -ceil_coeff_ratio,
+                          CeilRatio(expr_lb + residual * other_var_lb, coeff));
+}
+
+void LinearExpression2::MakeVariablesPositive() {
+  SimpleCanonicalization();
+  for (int i = 0; i < 2; ++i) {
+    if (vars[i] != kNoIntegerVariable && !VariableIsPositive(vars[i])) {
+      coeffs[i] = -coeffs[i];
+      vars[i] = NegationOf(vars[i]);
+    }
+  }
+}
+
+std::pair<BestBinaryRelationBounds::AddResult,
+          BestBinaryRelationBounds::AddResult>
+BestBinaryRelationBounds::Add(LinearExpression2 expr, IntegerValue lb,
+                              IntegerValue ub) {
+  const bool negated = expr.CanonicalizeAndUpdateBounds(lb, ub);
+
+  // We only store proper linear2.
+  if (expr.coeffs[0] == 0 || expr.coeffs[1] == 0) {
+    return {AddResult::INVALID, AddResult::INVALID};
+  }
 
   auto [it, inserted] = best_bounds_.insert({expr, {lb, ub}});
-  if (inserted) return true;
+  if (inserted) {
+    std::pair<AddResult, AddResult> result = {
+        lb > kMinIntegerValue ? AddResult::ADDED : AddResult::INVALID,
+        ub < kMaxIntegerValue ? AddResult::ADDED : AddResult::INVALID};
+    if (negated) std::swap(result.first, result.second);
+    return result;
+  }
 
   const auto [known_lb, known_ub] = it->second;
-  bool restricted = false;
+
+  std::pair<AddResult, AddResult> result = {
+      lb > kMinIntegerValue ? AddResult::NOT_BETTER : AddResult::INVALID,
+      ub < kMaxIntegerValue ? AddResult::NOT_BETTER : AddResult::INVALID};
   if (lb > known_lb) {
+    result.first = (it->second.first == kMinIntegerValue) ? AddResult::ADDED
+                                                          : AddResult::UPDATED;
     it->second.first = lb;
-    restricted = true;
   }
   if (ub < known_ub) {
+    result.second = (it->second.second == kMaxIntegerValue)
+                        ? AddResult::ADDED
+                        : AddResult::UPDATED;
     it->second.second = ub;
-    restricted = true;
   }
-  return restricted;
+  if (negated) std::swap(result.first, result.second);
+  return result;
 }
 
 RelationStatus BestBinaryRelationBounds::GetStatus(LinearExpression2 expr,
@@ -148,21 +238,34 @@ RelationStatus BestBinaryRelationBounds::GetStatus(LinearExpression2 expr,
   return RelationStatus::IS_UNKNOWN;
 }
 
-IntegerValue BestBinaryRelationBounds::GetUpperBound(
-    LinearExpression2 expr) const {
-  expr.SimpleCanonicalization();
-  const IntegerValue gcd = expr.DivideByGcd();
-  const bool negated = expr.NegateForCanonicalization();
-  const auto it = best_bounds_.find(expr);
-  if (it != best_bounds_.end()) {
-    const auto [known_lb, known_ub] = it->second;
-    if (negated) {
-      return CapProdI(gcd, -known_lb);
-    } else {
-      return CapProdI(gcd, known_ub);
+std::vector<std::pair<LinearExpression2, IntegerValue>>
+BestBinaryRelationBounds::GetSortedNonTrivialUpperBounds() const {
+  std::vector<std::pair<LinearExpression2, IntegerValue>> root_relations_sorted;
+  root_relations_sorted.reserve(2 * best_bounds_.size());
+  for (const auto& [expr, bounds] : best_bounds_) {
+    if (bounds.first != kMinIntegerValue) {
+      LinearExpression2 negated_expr = expr;
+      negated_expr.Negate();
+      root_relations_sorted.push_back({negated_expr, -bounds.first});
+    }
+    if (bounds.second != kMaxIntegerValue) {
+      root_relations_sorted.push_back({expr, bounds.second});
     }
   }
-  return kMaxIntegerValue;
+  std::sort(root_relations_sorted.begin(), root_relations_sorted.end());
+  return root_relations_sorted;
+}
+
+std::vector<std::tuple<LinearExpression2, IntegerValue, IntegerValue>>
+BestBinaryRelationBounds::GetSortedNonTrivialBounds() const {
+  std::vector<std::tuple<LinearExpression2, IntegerValue, IntegerValue>>
+      root_relations_sorted;
+  root_relations_sorted.reserve(best_bounds_.size());
+  for (const auto& [expr, bounds] : best_bounds_) {
+    root_relations_sorted.push_back({expr, bounds.first, bounds.second});
+  }
+  std::sort(root_relations_sorted.begin(), root_relations_sorted.end());
+  return root_relations_sorted;
 }
 
 }  // namespace operations_research::sat

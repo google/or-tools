@@ -17,8 +17,8 @@ load("@protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
 load("@protobuf//bazel:java_proto_library.bzl", "java_proto_library")
 load("@protobuf//bazel:proto_library.bzl", "proto_library")
 load("@protobuf//bazel:py_proto_library.bzl", "py_proto_library")
-load("@rules_cc//cc:defs.bzl", "cc_library")
-load("@rules_python//python:defs.bzl", "py_library")
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_python//python:py_library.bzl", "py_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -40,95 +40,114 @@ config_setting(
 proto_library(
     name = "assignment_proto",
     srcs = ["assignment.proto"],
+    visibility = ["//visibility:public"],
 )
 
 cc_proto_library(
     name = "assignment_cc_proto",
+    visibility = ["//visibility:public"],
     deps = [":assignment_proto"],
 )
 
 proto_library(
     name = "search_limit_proto",
     srcs = ["search_limit.proto"],
+    visibility = ["//visibility:public"],
 )
 
 cc_proto_library(
     name = "search_limit_cc_proto",
+    visibility = ["//visibility:public"],
     deps = [":search_limit_proto"],
 )
 
 java_proto_library(
     name = "search_limit_java_proto",
+    visibility = ["//visibility:public"],
     deps = [":search_limit_proto"],
 )
 
 proto_library(
     name = "demon_profiler_proto",
     srcs = ["demon_profiler.proto"],
+    visibility = ["//visibility:public"],
 )
 
 cc_proto_library(
     name = "demon_profiler_cc_proto",
+    visibility = ["//visibility:public"],
     deps = [":demon_profiler_proto"],
 )
 
 proto_library(
     name = "search_stats_proto",
     srcs = ["search_stats.proto"],
+    visibility = ["//visibility:public"],
 )
 
 cc_proto_library(
     name = "search_stats_cc_proto",
+    visibility = ["//visibility:public"],
     deps = [":search_stats_proto"],
 )
 
 java_proto_library(
     name = "search_stats_java_proto",
+    visibility = ["//visibility:public"],
     deps = [":search_stats_proto"],
 )
 
 proto_library(
     name = "solver_parameters_proto",
     srcs = ["solver_parameters.proto"],
+    visibility = ["//visibility:public"],
 )
 
 cc_proto_library(
     name = "solver_parameters_cc_proto",
+    visibility = ["//visibility:public"],
     deps = [":solver_parameters_proto"],
 )
 
 java_proto_library(
     name = "solver_parameters_java_proto",
+    visibility = ["//visibility:public"],
     deps = [":solver_parameters_proto"],
 )
 
 py_proto_library(
     name = "assignment_py_pb2",
+    visibility = ["//visibility:public"],
     deps = [":assignment_proto"],
 )
 
 py_proto_library(
     name = "search_limit_py_pb2",
+    visibility = ["//visibility:public"],
     deps = [":search_limit_proto"],
 )
 
 py_proto_library(
     name = "demon_profiler_py_pb2",
+    visibility = ["//visibility:public"],
     deps = [":demon_profiler_proto"],
 )
 
 py_proto_library(
     name = "search_stats_py_pb2",
+    visibility = ["//visibility:public"],
     deps = [":search_stats_proto"],
 )
 
 py_proto_library(
     name = "solver_parameters_py_pb2",
+    visibility = ["//visibility:public"],
     deps = [":solver_parameters_proto"],
 )
 
 py_library(
     name = "constraint_solver_py_pb2",
+    visibility = ["//visibility:public"],
     deps = [
         ":assignment_py_pb2",
         ":demon_profiler_py_pb2",
@@ -180,13 +199,13 @@ cc_library(
         "constraint_solver.h",
         "constraint_solveri.h",
     ],
+    visibility = ["//visibility:public"],
     deps = [
         ":assignment_cc_proto",
         ":demon_profiler_cc_proto",
         ":search_limit_cc_proto",
         ":search_stats_cc_proto",
         ":solver_parameters_cc_proto",
-        ":routing_parameters_cc_proto",
         "//ortools/base",
         "//ortools/base:base_export",
         "//ortools/base:bitmap",
@@ -196,6 +215,7 @@ cc_library(
         "//ortools/base:iterator_adaptors",
         "//ortools/base:map_util",
         "//ortools/base:mathutil",
+        "//ortools/base:numbers",
         "//ortools/base:recordio",
         "//ortools/base:stl_util",
         "//ortools/base:strong_vector",
@@ -215,6 +235,7 @@ cc_library(
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/base:nullability",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/flags:flag",
@@ -228,6 +249,7 @@ cc_library(
         "@abseil-cpp//absl/strings:str_format",
         "@abseil-cpp//absl/time",
         "@abseil-cpp//absl/types:span",
+        "@zlib",
     ],
 )
 
@@ -251,7 +273,10 @@ java_proto_library(
 proto_library(
     name = "routing_ils_proto",
     srcs = ["routing_ils.proto"],
-    deps = [":routing_enums_proto"],
+    deps = [
+        ":routing_enums_proto",
+        ":routing_heuristic_parameters_proto"
+    ],
 )
 
 cc_proto_library(
@@ -274,6 +299,7 @@ proto_library(
     srcs = ["routing_parameters.proto"],
     deps = [
         ":routing_enums_proto",
+        ":routing_heuristic_parameters_proto",
         ":routing_ils_proto",
         ":solver_parameters_proto",
         "//ortools/sat:sat_parameters_proto",
@@ -309,7 +335,9 @@ cc_library(
     deps = [
         ":cp",
         ":routing_enums_cc_proto",
+        ":routing_heuristic_parameters_cc_proto",
         ":routing_ils_cc_proto",
+        ":routing_ils_parameters_utils",
         ":routing_parameters_cc_proto",
         ":routing_parameters_utils",
         ":solver_parameters_cc_proto",
@@ -322,10 +350,12 @@ cc_library(
         "//ortools/util:optional_boolean_cc_proto",
         "//ortools/util:testing_utils",
         "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
         "@abseil-cpp//absl/time",
-        "@protobuf//:protobuf",
+        "@protobuf",
+        "@protobuf//:duration_cc_proto",
     ],
 )
 
@@ -334,6 +364,7 @@ cc_library(
     srcs = ["routing_parameters_utils.cc"],
     hdrs = ["routing_parameters_utils.h"],
     deps = [
+        ":routing_heuristic_parameters_cc_proto",
         ":routing_parameters_cc_proto",
         "//ortools/util:optional_boolean_cc_proto",
         "@abseil-cpp//absl/types:span",
@@ -341,11 +372,24 @@ cc_library(
 )
 
 cc_library(
+    name = "routing_ils_parameters_utils",
+    srcs = ["routing_ils_parameters_utils.cc"],
+    hdrs = ["routing_ils_parameters_utils.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":routing_enums_cc_proto",
+        ":routing_ils_cc_proto",
+        "@abseil-cpp//absl/base:core_headers",
+    ],
+)
+
+cc_library(
     name = "routing_types",
     hdrs = ["routing_types.h"],
+    visibility = ["//visibility:public"],
     deps = [
-        "//ortools/base:int_type",
         "//ortools/util:piecewise_linear_function",
+        "//ortools/util:strong_integers",
     ],
 )
 
@@ -382,12 +426,26 @@ cc_library(
     name = "routing_index_manager",
     srcs = ["routing_index_manager.cc"],
     hdrs = ["routing_index_manager.h"],
+    visibility = ["//visibility:public"],
     deps = [
         ":routing_types",
         "//ortools/base",
+        "//ortools/base:base_export",
         "//ortools/base:strong_vector",
-        "//ortools/base:types",
         "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_library(
+    name = "routing_breaks",
+    srcs = ["routing_breaks.cc"],
+    hdrs = ["routing_breaks.h"],
+    deps = [
+        ":routing_filter_committables",
+        "//ortools/algorithms:binary_search",
+        "//ortools/util:saturated_arithmetic",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/types:span",
     ],
@@ -397,7 +455,6 @@ cc_library(
     name = "routing",
     srcs = [
         "routing.cc",
-        "routing_breaks.cc",
         "routing_constraints.cc",
         "routing_decision_builders.cc",
         "routing_filters.cc",
@@ -425,19 +482,25 @@ cc_library(
         "on_windows": ["/Zc:preprocessor"],
         "//conditions:default": [],
     }),
+    visibility = ["//visibility:public"],
     deps = [
         ":cp",
+        ":routing_breaks",
         ":routing_enums_cc_proto",
+        ":routing_filter_committables",
+        ":routing_heuristic_parameters_cc_proto",
+        ":routing_ils_cc_proto",
         ":routing_index_manager",
         ":routing_neighborhoods",
         ":routing_parameters",
         ":routing_parameters_cc_proto",
+        ":routing_parameters_utils",
         ":routing_types",
         ":routing_utils",
         ":solver_parameters_cc_proto",
         "//ortools/base",
+        "//ortools/base:adjustable_priority_queue",
         "//ortools/base:dump_vars",
-        "//ortools/base:int_type",
         "//ortools/base:map_util",
         "//ortools/base:mathutil",
         "//ortools/base:protoutil",
@@ -456,7 +519,7 @@ cc_library(
         "//ortools/port:proto_utils",
         "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:cp_model_solver",
-        "//ortools/sat:integer",
+        "//ortools/sat:integer_base",
         "//ortools/sat:lp_utils",
         "//ortools/sat:model",
         "//ortools/sat:sat_parameters_cc_proto",
@@ -468,7 +531,6 @@ cc_library(
         "//ortools/util:range_query_function",
         "//ortools/util:saturated_arithmetic",
         "//ortools/util:sorted_interval_list",
-        "//ortools/util:scheduling",
         "//ortools/util:time_limit",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/base:core_headers",
@@ -477,6 +539,7 @@ cc_library(
         "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/container:inlined_vector",
         "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/functional:any_invocable",
         "@abseil-cpp//absl/functional:bind_front",
         "@abseil-cpp//absl/hash",
         "@abseil-cpp//absl/log",
@@ -488,7 +551,38 @@ cc_library(
         "@abseil-cpp//absl/strings:str_format",
         "@abseil-cpp//absl/time",
         "@abseil-cpp//absl/types:span",
-        "@protobuf//:protobuf",
+        "@protobuf",
     ],
 )
 
+cc_library(
+    name = "routing_filter_committables",
+    srcs = ["routing_filter_committables.cc"],
+    hdrs = ["routing_filter_committables.h"],
+    deps = [
+        "//ortools/util:bitset",
+        "//ortools/util:saturated_arithmetic",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+proto_library(
+    name = "routing_heuristic_parameters_proto",
+    srcs = ["routing_heuristic_parameters.proto"],
+)
+
+java_proto_library(
+    name = "routing_heuristic_parameters_java_proto",
+    deps = [":routing_heuristic_parameters_proto"],
+)
+
+cc_proto_library(
+    name = "routing_heuristic_parameters_cc_proto",
+    deps = [":routing_heuristic_parameters_proto"],
+)
+
+py_proto_library(
+    name = "routing_heuristic_parameters_py_pb2",
+    deps = [":routing_heuristic_parameters_proto"],
+)

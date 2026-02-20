@@ -16,6 +16,7 @@
 #include <string>
 
 #include "absl/status/status.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/logging.h"
 
 #if !defined(__PORTABLE_PLATFORM__)
@@ -25,7 +26,6 @@
 
 #include "absl/strings/str_format.h"
 #include "absl/time/clock.h"
-#include "ortools/base/file.h"
 #include "ortools/base/helpers.h"
 #include "ortools/base/options.h"
 #endif  // !defined(__PORTABLE_PLATFORM__)
@@ -49,29 +49,6 @@ namespace operations_research {
                       "File io is not implemented for this platform.");
 #else   // defined(__PORTABLE_PLATFORM__)
   return file::GetContents(file_name, output, file::Defaults());
-#endif  // !defined(__PORTABLE_PLATFORM__)
-}
-
-bool PortableTemporaryFile(const char* directory_prefix,
-                           std::string* filename_out) {
-#if defined(__PORTABLE_PLATFORM__)
-  LOG(ERROR) << "Temporary files are not implemented for this platform.";
-  return false;
-#else  // defined(__PORTABLE_PLATFORM__)
-#if defined(__linux)
-  int32_t tid = static_cast<int32_t>(pthread_self());
-#else   // defined(__linux__)
-  int32_t tid = 123;
-#endif  // defined(__linux__)
-#if !defined(_MSC_VER)
-  int32_t pid = static_cast<int32_t>(getpid());
-#else   // _MSC_VER
-  int32_t pid = 456;
-#endif  // _MSC_VER
-  int64_t now = absl::GetCurrentTimeNanos();
-  std::string filename =
-      absl::StrFormat("/tmp/parameters-tempfile-%x-%d-%llx", tid, pid, now);
-  return true;
 #endif  // !defined(__PORTABLE_PLATFORM__)
 }
 

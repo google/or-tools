@@ -337,14 +337,14 @@ BopOptimizerBase::Status BopRandomFirstSolutionGenerator::Optimize(
   // to do any extra work in these cases since the sat_propagator_ will not be
   // used anymore.
   CHECK_EQ(0, sat_propagator_->AssumptionLevel());
-  sat_propagator_->RestoreSolverToAssumptionLevel();
+  (void)sat_propagator_->ResetToLevelZero();
   sat_propagator_->SetParameters(saved_params);
   sat_propagator_->ResetDecisionHeuristic();
   for (const auto [literal, weight] : saved_prefs) {
     sat_propagator_->SetAssignmentPreference(literal, weight);
   }
 
-  // This can be proved during the call to RestoreSolverToAssumptionLevel().
+  // This can be proved during the call to ResetToLevelZero().
   if (sat_propagator_->ModelIsUnsat()) {
     // The solution is proved optimal (if any).
     learned_info->lower_bound = best_cost;

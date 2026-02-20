@@ -17,6 +17,7 @@
 #include <string>
 #include <utility>
 
+#include "absl/base/nullability.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/util/lazy_mutable_copy.h"
@@ -26,8 +27,9 @@ namespace operations_research {
 
 // TODO(b/311704821): this function should not delegate to MPSolver, also true
 // for the functions below.
-MPSolutionResponse SolveMPModel(LazyMutableCopy<MPModelRequest> request,
-                                const SolveInterrupter* interrupter) {
+MPSolutionResponse SolveMPModel(
+    LazyMutableCopy<MPModelRequest> request,
+    const SolveInterrupter* absl_nullable interrupter) {
   MPSolutionResponse response;
   if (interrupter != nullptr) {
     std::atomic<bool> atomic_bool = false;

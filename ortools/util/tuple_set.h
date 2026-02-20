@@ -30,8 +30,8 @@
 // This class is thread hostile as the copy and reference counter are
 // not protected by a mutex.
 
-#ifndef OR_TOOLS_UTIL_TUPLE_SET_H_
-#define OR_TOOLS_UTIL_TUPLE_SET_H_
+#ifndef ORTOOLS_UTIL_TUPLE_SET_H_
+#define ORTOOLS_UTIL_TUPLE_SET_H_
 
 #include <algorithm>
 #include <cstdint>
@@ -419,4 +419,4 @@ inline IntTupleSet IntTupleSet::SortedLexicographically() const {
 }
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_UTIL_TUPLE_SET_H_
+#endif  // ORTOOLS_UTIL_TUPLE_SET_H_

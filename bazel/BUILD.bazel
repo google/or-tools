@@ -13,33 +13,33 @@
 
 load("@rules_python//python:pip.bzl", "compile_pip_requirements")
 
-exports_files([
-    "archive_helper.bzl",
-    "notebook_requirements.in",
-    "notebook_requirements.txt",
-    "ortools_requirements.in",
-    "ortools_requirements.txt",
-    "scip-v920.patch",
-])
+extra_args = [
+    "--no-emit-index-url",  # Prevent emitting url in .txt file when using a proxy.
+    "--reuse-hashes",  # Improve the speed of --generate-hashes by reusing the hashes from an existing output file.
+    "--verbose",
+]
 
 compile_pip_requirements(
     name = "ortools_requirements",
-    extra_args = [
-        "--allow-unsafe",  # Pin packages considered unsafe
-        "--resolver=backtracking",  # Avoid warning, new default
-    ],
-    generate_hashes = False,
-    requirements_in = "ortools_requirements.in",
+    src = "ortools_requirements.in",
+    extra_args = extra_args,
+    generate_hashes = True,
     requirements_txt = "ortools_requirements.txt",
 )
 
 compile_pip_requirements(
     name = "notebook_requirements",
-    extra_args = [
-        "--allow-unsafe",  # Pin packages considered unsafe
-        "--resolver=backtracking",  # Avoid warning, new default
-    ],
-    generate_hashes = False,
-    requirements_in = "notebook_requirements.in",
+    src = "notebook_requirements.in",
+    data = ["ortools_requirements.in"],
+    extra_args = extra_args,
+    generate_hashes = True,
     requirements_txt = "notebook_requirements.txt",
 )
+
+# To fully update `requirements.txt` files run the following commands:
+# cat /dev/null > bazel/ortools_requirements.txt
+# cat /dev/null > bazel/notebook_requirements.txt
+# bazelisk-linux-amd64 run --config=ci //bazel:ortools_requirements.update
+# bazelisk-linux-amd64 run --config=ci //bazel:notebook_requirements.update
+
+package(default_visibility = ["//visibility:public"])

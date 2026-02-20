@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_UTIL_PYTHON_SORTED_INTERVAL_LIST_DOC_H_
-#define OR_TOOLS_UTIL_PYTHON_SORTED_INTERVAL_LIST_DOC_H_
+#ifndef ORTOOLS_UTIL_PYTHON_SORTED_INTERVAL_LIST_DOC_H_
+#define ORTOOLS_UTIL_PYTHON_SORTED_INTERVAL_LIST_DOC_H_
 
 /*
   This file contains docstrings for use in the Python bindings.
@@ -221,6 +221,9 @@ static const char* __doc_operations_research_Domain_FromVectorIntervals =
 a Domain object from a list of intervals (long[][] in Java and .NET,
 [[0, 2], [5, 5], [8, 10]] in python).)doc";
 
+static const char* __doc_operations_research_Domain_GreaterOrEqual =
+    R"doc(Returns the domain [value., int_max].)doc";
+
 static const char* __doc_operations_research_Domain_HasTwoValues =
     R"doc(Returns true if the domain has just two values. This often mean a non-
 fixed Boolean variable.)doc";
@@ -242,6 +245,9 @@ must not be empty.)doc";
 
 static const char* __doc_operations_research_Domain_IsIncludedIn =
     R"doc(Returns true iff D is included in the given domain.)doc";
+
+static const char* __doc_operations_research_Domain_LowerOrEqual =
+    R"doc(Returns the domain [int_min, value].)doc";
 
 static const char* __doc_operations_research_Domain_Max =
     R"doc(Returns the max value of the domain. The domain must not be empty.)doc";
@@ -271,6 +277,10 @@ static const char* __doc_operations_research_Domain_NumIntervals =
     R"doc(Basic read-only std::vector<> wrapping to view a Domain as a sorted
 list of non-adjacent intervals. Note that we don't expose size() which
 might be confused with the number of values in the domain.)doc";
+
+static const char* __doc_operations_research_Domain_OverlapsWith =
+    R"doc(   * Returns true iff D overlaps with the given domain, that is, the
+intersection of the two domains is not empty.)doc";
 
 static const char* __doc_operations_research_Domain_PositiveDivisionBySuperset =
     R"doc(Returns a superset of {x ∈ Int64, ∃ e ∈ D, ∃ d ∈ divisor, x = e / d }.
@@ -499,4 +509,4 @@ static const char* __doc_operations_research_operator_lshift_3 = R"doc()doc";
 #pragma GCC diagnostic pop
 #endif
 
-#endif  // OR_TOOLS_UTIL_PYTHON_SORTED_INTERVAL_LIST_DOC_H_
+#endif  // ORTOOLS_UTIL_PYTHON_SORTED_INTERVAL_LIST_DOC_H_

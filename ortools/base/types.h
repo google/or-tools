@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_BASE_TYPES_H_
-#define OR_TOOLS_BASE_TYPES_H_
+#ifndef ORTOOLS_BASE_TYPES_H_
+#define ORTOOLS_BASE_TYPES_H_
 
 #include <cinttypes>
 #include <cstdint>
@@ -31,4 +31,4 @@ static const int32_t kint32max = INT32_MAX;
 static const int64_t kint64min = INT64_MIN;
 static const int64_t kint64max = INT64_MAX;
 
-#endif  // OR_TOOLS_BASE_TYPES_H_
+#endif  // ORTOOLS_BASE_TYPES_H_

@@ -20,7 +20,6 @@ from typing import List
 from absl import app
 from absl import flags
 
-from google.protobuf import text_format
 from ortools.sat.python import cp_model
 
 
@@ -72,7 +71,7 @@ def solve_hard_model(output_proto: str, params: str) -> bool:
 
     solver = cp_model.CpSolver()
     if params:
-        text_format.Parse(params, solver.parameters)
+        solver.parameters.parse_text_format(params)
     status = solver.solve(model)
     print(solver.response_stats())
 
@@ -158,7 +157,7 @@ def solve_soft_model_with_maximization(params: str) -> None:
 
     solver = cp_model.CpSolver()
     if params:
-        text_format.Parse(params, solver.parameters)
+        solver.parameters.parse_text_format(params)
     status = solver.solve(model)
     print(solver.response_stats())
     if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:

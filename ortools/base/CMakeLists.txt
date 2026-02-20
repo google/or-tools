@@ -12,8 +12,9 @@
 # limitations under the License.
 
 file(GLOB _SRCS "*.h" "*.cc")
-list(FILTER _SRCS EXCLUDE REGEX ".*/.*_test.cc")
-list(FILTER _SRCS EXCLUDE REGEX "/status_matchers\\.h")
+list(FILTER _SRCS EXCLUDE REGEX "/.*_test.cc")
+list(FILTER _SRCS EXCLUDE REGEX "/gmock\.h")
+
 set(NAME ${PROJECT_NAME}_base)
 
 # Will be merge in libortools.so
@@ -44,6 +45,24 @@ target_link_libraries(${NAME} PRIVATE
 #add_library(${PROJECT_NAMESPACE}::base ALIAS ${NAME})
 
 if(BUILD_TESTING)
+ortools_cxx_library(
+  NAME
+    base_gmock
+  SOURCES
+    "gmock.h"
+  TYPE
+    INTERFACE
+  LINK_LIBRARIES
+    absl::log
+    absl::strings
+    absl::status_matchers
+    GTest::gtest
+    GTest::gmock
+    protobuf::libprotobuf
+    protobuf-matchers
+  TESTING
+)
+
   file(GLOB _TEST_SRCS "*_test.cc")
   foreach(_FULL_FILE_NAME IN LISTS _TEST_SRCS)
     get_filename_component(_NAME ${_FULL_FILE_NAME} NAME_WE)
@@ -55,9 +74,9 @@ if(BUILD_TESTING)
         ${_FILE_NAME}
       LINK_LIBRARIES
         benchmark::benchmark
+        base_gmock
         GTest::gtest
         GTest::gtest_main
-        GTest::gmock
     )
   endforeach()
 endif()

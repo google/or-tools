@@ -13,8 +13,8 @@
 
 // Various utility functions on bitsets.
 
-#ifndef OR_TOOLS_UTIL_BITSET_H_
-#define OR_TOOLS_UTIL_BITSET_H_
+#ifndef ORTOOLS_UTIL_BITSET_H_
+#define ORTOOLS_UTIL_BITSET_H_
 
 #include <string.h>
 
@@ -882,8 +882,17 @@ class SparseBitset {
     }
   }
 
+  void CopyFrom(const SparseBitset& other) {
+    bitset_.ClearAndResize(other.size());
+    bitset_.SetContentFromBitsetOfSameSize(other.bitset_);
+    to_clear_.assign(other.to_clear_.begin(), other.to_clear_.end());
+  }
+
   // A bit hacky for really hot loop.
   typename Bitset64<IntegerType>::View BitsetView() { return bitset_.view(); }
+  typename Bitset64<IntegerType>::ConstView BitsetConstView() {
+    return bitset_.const_view();
+  }
   void SetUnsafe(typename Bitset64<IntegerType>::View view, IntegerType index) {
     view.Set(index);
     to_clear_.push_back(index);
@@ -921,4 +930,4 @@ class SparseBitset {
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_UTIL_BITSET_H_
+#endif  // ORTOOLS_UTIL_BITSET_H_

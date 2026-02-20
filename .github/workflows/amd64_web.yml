@@ -1,7 +1,8 @@
 # ref: https://github.com/docker-library/official-images
 name: amd64 Web
 
-on: [push, pull_request, workflow_dispatch]
+# still experimental
+on: [workflow_dispatch]
 
 concurrency:
   group: ${{github.workflow}}-${{github.ref}}
@@ -12,7 +13,7 @@ jobs:
     name: amd64•Linux•Emscripten
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     - name: Check docker
       run: |
         docker info

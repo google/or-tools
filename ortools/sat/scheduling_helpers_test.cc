@@ -43,7 +43,7 @@ TEST(SchedulingConstraintHelperTest, PushConstantBoundWithOptionalIntervals) {
       repo->CreateInterval(start, end, size, presence2.Index(), false);
 
   SchedulingConstraintHelper* helper =
-      repo->GetOrCreateHelper({inter1, inter2});
+      repo->GetOrCreateHelper(/*enforcement_literals=*/{}, {inter1, inter2});
 
   EXPECT_TRUE(helper->IncreaseStartMin(1, IntegerValue(20)));
   EXPECT_FALSE(model.Get(Value(presence2)));
@@ -61,7 +61,8 @@ TEST(SchedulingDemandHelperTest, EnergyInWindow) {
 
   const AffineExpression demand(model.Add(NewIntegerVariable(2, 10)));
 
-  SchedulingConstraintHelper* helper = repo->GetOrCreateHelper({inter});
+  SchedulingConstraintHelper* helper =
+      repo->GetOrCreateHelper(/*enforcement_literals=*/{}, {inter});
   SchedulingDemandHelper demands_helper({demand}, helper, &model);
   demands_helper.CacheAllEnergyValues();
   EXPECT_EQ(demands_helper.EnergyMin(0), IntegerValue(4));
@@ -93,7 +94,8 @@ TEST(SchedulingDemandHelperTest, EnergyInWindowTakeIntoAccountWindowSize) {
 
   const AffineExpression demand(model.Add(NewIntegerVariable(6, 10)));
 
-  SchedulingConstraintHelper* helper = repo->GetOrCreateHelper({inter});
+  SchedulingConstraintHelper* helper =
+      repo->GetOrCreateHelper(/*enforcement_literals=*/{}, {inter});
   SchedulingDemandHelper demands_helper({demand}, helper, &model);
   demands_helper.CacheAllEnergyValues();
 
@@ -121,13 +123,14 @@ TEST(SchedulingDemandHelperTest, LinearizedDemandWithAffineExpression) {
   const AffineExpression demand(
       AffineExpression(model.Add(NewIntegerVariable(2, 10)), 2, 5));
 
-  SchedulingConstraintHelper* helper = repo->GetOrCreateHelper({inter});
+  SchedulingConstraintHelper* helper =
+      repo->GetOrCreateHelper(/*enforcement_literals=*/{}, {inter});
   SchedulingDemandHelper demands_helper({demand}, helper, &model);
   demands_helper.CacheAllEnergyValues();
 
   LinearConstraintBuilder builder(&model);
   ASSERT_TRUE(demands_helper.AddLinearizedDemand(0, &builder));
-  EXPECT_EQ(builder.BuildExpression().DebugString(), "2*X3 + 5");
+  EXPECT_EQ(builder.BuildExpression().DebugString(), "2*I3 + 5");
 }
 
 TEST(SchedulingDemandHelperTest, LinearizedDemandWithDecomposedEnergy) {
@@ -142,7 +145,8 @@ TEST(SchedulingDemandHelperTest, LinearizedDemandWithDecomposedEnergy) {
 
   const AffineExpression demand(model.Add(NewIntegerVariable(2, 10)));
 
-  SchedulingConstraintHelper* helper = repo->GetOrCreateHelper({inter});
+  SchedulingConstraintHelper* helper =
+      repo->GetOrCreateHelper(/*enforcement_literals=*/{}, {inter});
   SchedulingDemandHelper demands_helper({demand}, helper, &model);
   demands_helper.CacheAllEnergyValues();
   EXPECT_EQ(demands_helper.EnergyMin(0), IntegerValue(4));
@@ -162,7 +166,7 @@ TEST(SchedulingDemandHelperTest, LinearizedDemandWithDecomposedEnergy) {
   demands_helper.CacheAllEnergyValues();
   LinearConstraintBuilder builder(&model);
   ASSERT_TRUE(demands_helper.AddLinearizedDemand(0, &builder));
-  EXPECT_EQ(builder.BuildExpression().DebugString(), "4*X4 2*X5");
+  EXPECT_EQ(builder.BuildExpression().DebugString(), "4*I4 2*I5");
 }
 
 TEST(SchedulingDemandHelperTest, FilteredDecomposedEnergy) {
@@ -179,7 +183,8 @@ TEST(SchedulingDemandHelperTest, FilteredDecomposedEnergy) {
 
   const AffineExpression demand(model.Add(NewIntegerVariable(2, 10)));
 
-  SchedulingConstraintHelper* helper = repo->GetOrCreateHelper({inter});
+  SchedulingConstraintHelper* helper =
+      repo->GetOrCreateHelper(/*enforcement_literals=*/{}, {inter});
   SchedulingDemandHelper demands_helper({demand}, helper, &model);
   demands_helper.CacheAllEnergyValues();
   EXPECT_EQ(demands_helper.EnergyMin(0), IntegerValue(4));
@@ -222,7 +227,8 @@ TEST(SchedulingDemandHelperTest, FilteredDecomposedEnergyWithFalseLiteral) {
 
   const AffineExpression demand(model.Add(NewIntegerVariable(2, 10)));
 
-  SchedulingConstraintHelper* helper = repo->GetOrCreateHelper({inter});
+  SchedulingConstraintHelper* helper =
+      repo->GetOrCreateHelper(/*enforcement_literals=*/{}, {inter});
   SchedulingDemandHelper demands_helper({demand}, helper, &model);
   demands_helper.CacheAllEnergyValues();
   EXPECT_EQ(demands_helper.EnergyMin(0), IntegerValue(4));

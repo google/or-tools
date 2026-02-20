@@ -13,14 +13,12 @@
 
 #include <atomic>
 #include <cstdint>
-#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include "absl/base/attributes.h"
 #include "absl/status/status.h"
-#include "absl/status/statusor.h"
 #include "ortools/base/logging.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
@@ -271,9 +269,16 @@ void SatInterface::NonIncrementalChange() {
   sync_status_ = MUST_RELOAD;
 }
 
-// Register Sat in the global linear solver factory.
-MPSolverInterface* BuildSatInterface(MPSolver* const solver) {
-  return new SatInterface(solver);
-}
+namespace {
+
+// See MpSolverInterfaceFactoryRepository for details.
+const void* const kRegisterSat ABSL_ATTRIBUTE_UNUSED = [] {
+  MPSolverInterfaceFactoryRepository::GetInstance()->Register(
+      [](MPSolver* const solver) { return new SatInterface(solver); },
+      MPSolver::SAT_INTEGER_PROGRAMMING);
+  return nullptr;
+}();
+
+}  // namespace
 
 }  // namespace operations_research

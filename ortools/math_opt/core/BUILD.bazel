@@ -11,6 +11,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
+
 package(default_visibility = ["//ortools/math_opt:__subpackages__"])
 
 cc_library(
@@ -39,6 +42,24 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "math_opt_proto_utils_test",
+    srcs = ["math_opt_proto_utils_test.cc"],
+    deps = [
+        ":math_opt_proto_utils",
+        ":sparse_collection_matchers",
+        "//ortools/base",
+        "//ortools/base:gmock_main",
+        "//ortools/math_opt:model_cc_proto",
+        "//ortools/math_opt:model_parameters_cc_proto",
+        "//ortools/math_opt:model_update_cc_proto",
+        "//ortools/math_opt:result_cc_proto",
+        "//ortools/math_opt:solution_cc_proto",
+        "//ortools/math_opt:sparse_containers_cc_proto",
+        "@abseil-cpp//absl/status",
+    ],
+)
+
 cc_library(
     name = "sparse_vector_view",
     hdrs = ["sparse_vector_view.h"],
@@ -51,6 +72,24 @@ cc_library(
         "//ortools/math_opt:sparse_containers_cc_proto",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/types:span",
+        "@protobuf",
+    ],
+)
+
+cc_test(
+    name = "sparse_vector_view_test",
+    srcs = ["sparse_vector_view_test.cc"],
+    deps = [
+        ":sparse_vector",
+        ":sparse_vector_view",
+        "//ortools/base:gmock_main",
+        "//ortools/base:intops",
+        "//ortools/base:logging",
+        "//ortools/base:types",
+        "//ortools/math_opt:model_cc_proto",
+        "//ortools/math_opt:sparse_containers_cc_proto",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/strings",
         "@protobuf",
     ],
 )
@@ -74,6 +113,21 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "model_summary_test",
+    srcs = ["model_summary_test.cc"],
+    deps = [
+        ":model_summary",
+        "//ortools/base:gmock",
+        "//ortools/base:gmock_main",
+        "//ortools/base:parse_text_proto",
+        "//ortools/math_opt:model_cc_proto",
+        "//ortools/math_opt:model_update_cc_proto",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
 cc_library(
     name = "solver_interface",
     srcs = ["solver_interface.cc"],
@@ -92,7 +146,10 @@ cc_library(
         "//ortools/port:proto_utils",
         "//ortools/util:solve_interrupter",
         "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/base:nullability",
         "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
@@ -136,10 +193,69 @@ cc_library(
 )
 
 cc_library(
+    name = "solver_interface_mock",
+    testonly = True,
+    srcs = ["solver_interface_mock.cc"],
+    hdrs = ["solver_interface_mock.h"],
+    deps = [
+        ":solver_interface",
+        ":solver_interface_testing",
+        "//ortools/base:gmock",
+        "//ortools/math_opt:callback_cc_proto",
+        "//ortools/math_opt:infeasible_subsystem_cc_proto",
+        "//ortools/math_opt:model_cc_proto",
+        "//ortools/math_opt:model_parameters_cc_proto",
+        "//ortools/math_opt:model_update_cc_proto",
+        "//ortools/math_opt:parameters_cc_proto",
+        "//ortools/math_opt:result_cc_proto",
+        "//ortools/util:solve_interrupter",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/base:nullability",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/log:die_if_null",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/synchronization",
+    ],
+)
+
+cc_library(
+    name = "sparse_collection_matchers",
+    testonly = True,
+    srcs = ["sparse_collection_matchers.cc"],
+    hdrs = ["sparse_collection_matchers.h"],
+    deps = [
+        ":sparse_vector_view",
+        "//ortools/base:gmock",
+        "//ortools/math_opt:sparse_containers_cc_proto",
+    ],
+)
+
+cc_test(
+    name = "sparse_collection_matchers_test",
+    srcs = ["sparse_collection_matchers_test.cc"],
+    deps = [
+        ":sparse_collection_matchers",
+        "//ortools/base:gmock_main",
+        "//ortools/math_opt:sparse_containers_cc_proto",
+    ],
+)
+
+cc_library(
     name = "non_streamable_solver_init_arguments",
     srcs = ["non_streamable_solver_init_arguments.cc"],
     hdrs = ["non_streamable_solver_init_arguments.h"],
     deps = ["//ortools/math_opt:parameters_cc_proto"],
+)
+
+cc_test(
+    name = "non_streamable_solver_init_arguments_test",
+    srcs = ["non_streamable_solver_init_arguments_test.cc"],
+    deps = [
+        ":non_streamable_solver_init_arguments",
+        "//ortools/base:gmock_main",
+    ],
 )
 
 cc_library(
@@ -173,6 +289,46 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "sparse_submatrix_test",
+    srcs = ["sparse_submatrix_test.cc"],
+    deps = [
+        ":sparse_collection_matchers",
+        ":sparse_submatrix",
+        ":sparse_vector",
+        ":sparse_vector_view",
+        "//ortools/base:gmock_main",
+        "//ortools/math_opt:sparse_containers_cc_proto",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_library(
+    name = "solver_interface_testing",
+    testonly = True,
+    srcs = ["solver_interface_testing.cc"],
+    hdrs = ["solver_interface_testing.h"],
+    deps = [
+        ":solver_interface",
+        "@abseil-cpp//absl/base:nullability",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:flat_hash_set",
+    ],
+)
+
+cc_test(
+    name = "solver_interface_testing_test",
+    srcs = ["solver_interface_testing_test.cc"],
+    deps = [
+        ":solver_interface",
+        ":solver_interface_testing",
+        "//ortools/base:gmock",
+        "@abseil-cpp//absl/base:nullability",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+    ],
+)
+
 cc_library(
     name = "inverted_bounds",
     srcs = ["inverted_bounds.cc"],
@@ -185,6 +341,16 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "inverted_bounds_test",
+    srcs = ["inverted_bounds_test.cc"],
+    deps = [
+        ":inverted_bounds",
+        "//ortools/base:gmock_main",
+        "@abseil-cpp//absl/status",
+    ],
+)
+
 cc_library(
     name = "invalid_indicators",
     srcs = ["invalid_indicators.cc"],
@@ -194,6 +360,16 @@ cc_library(
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/strings",
+    ],
+)
+
+cc_test(
+    name = "invalid_indicators_test",
+    srcs = ["invalid_indicators_test.cc"],
+    deps = [
+        ":invalid_indicators",
+        "//ortools/base:gmock_main",
+        "@abseil-cpp//absl/status",
     ],
 )
 
@@ -210,6 +386,19 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "concurrent_calls_guard_test",
+    srcs = ["concurrent_calls_guard_test.cc"],
+    deps = [
+        ":concurrent_calls_guard",
+        "//ortools/base:gmock_main",
+        "//ortools/base:status_macros",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
 cc_library(
     name = "empty_bounds",
     srcs = ["empty_bounds.cc"],
@@ -221,6 +410,17 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "empty_bounds_test",
+    srcs = ["empty_bounds_test.cc"],
+    deps = [
+        ":empty_bounds",
+        ":model_summary",
+        "//ortools/base:gmock_main",
+        "//ortools/math_opt/validators:result_validator",
+    ],
+)
+
 cc_library(
     name = "sorted",
     hdrs = ["sorted.h"],
@@ -228,6 +428,17 @@ cc_library(
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/container:flat_hash_set",
+        "@protobuf",
+    ],
+)
+
+cc_test(
+    name = "sorted_test",
+    srcs = ["sorted_test.cc"],
+    deps = [
+        ":sorted",
+        "//ortools/base:gmock_main",
+        "@abseil-cpp//absl/container:flat_hash_map",
         "@protobuf",
     ],
 )
@@ -245,6 +456,7 @@ cc_library(
         "//ortools/math_opt:parameters_cc_proto",
         "//ortools/math_opt:result_cc_proto",
         "//ortools/util:solve_interrupter",
+        "@abseil-cpp//absl/base:nullability",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:string_view",

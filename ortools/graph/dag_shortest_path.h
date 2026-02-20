@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_GRAPH_DAG_SHORTEST_PATH_H_
-#define OR_TOOLS_GRAPH_DAG_SHORTEST_PATH_H_
+#ifndef ORTOOLS_GRAPH_DAG_SHORTEST_PATH_H_
+#define ORTOOLS_GRAPH_DAG_SHORTEST_PATH_H_
 
 #include <cmath>
 #include <cstddef>
@@ -83,7 +83,7 @@ std::vector<PathWithLength> KShortestPathsOnDag(
 // A wrapper that holds the memory needed to run many shortest path computations
 // efficiently on the given DAG. One call of `RunShortestPathOnDag()` has time
 // complexity O(|E| + |V|) and space complexity O(|V|).
-// `GraphType` can use any of the interfaces defined in `util/graph/graph.h`.
+// `GraphType` can use any of the interfaces defined in `ortools/graph/graph.h`.
 // `ArcLengthContainer` can be any container of doubles.
 template <class GraphType, typename ArcLengthContainer = std::vector<double>>
 class ShortestPathsOnDagWrapper {
@@ -160,7 +160,7 @@ class ShortestPathsOnDagWrapper {
 // computations efficiently on the given DAG. One call of
 // `RunKShortestPathOnDag()` has time complexity O(|E| + k|V|log(d)) where d is
 // the mean degree of the graph and space complexity O(k|V|).
-// `GraphType` can use any of the interfaces defined in `util/graph/graph.h`.
+// `GraphType` can use any of the interfaces defined in `ortools/graph/graph.h`.
 // IMPORTANT: Only use if `path_count > 1` (k > 1) otherwise use
 // `ShortestPathsOnDagWrapper`.
 template <class GraphType, typename ArcLengthContainer = std::vector<double>>
@@ -668,4 +668,4 @@ KShortestPathsOnDagWrapper<GraphType, ArcLengths>::NodePathsTo(
 }
 
 }  // namespace operations_research
-#endif  // OR_TOOLS_GRAPH_DAG_SHORTEST_PATH_H_
+#endif  // ORTOOLS_GRAPH_DAG_SHORTEST_PATH_H_

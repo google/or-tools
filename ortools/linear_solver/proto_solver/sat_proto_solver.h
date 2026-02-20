@@ -11,14 +11,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_LINEAR_SOLVER_PROTO_SOLVER_SAT_PROTO_SOLVER_H_
-#define OR_TOOLS_LINEAR_SOLVER_PROTO_SOLVER_SAT_PROTO_SOLVER_H_
+#ifndef ORTOOLS_LINEAR_SOLVER_PROTO_SOLVER_SAT_PROTO_SOLVER_H_
+#define ORTOOLS_LINEAR_SOLVER_PROTO_SOLVER_SAT_PROTO_SOLVER_H_
 
 #include <atomic>
 #include <functional>
 #include <string>
 
 #include "ortools/linear_solver/linear_solver.pb.h"
+#include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/model.h"
 #include "ortools/util/lazy_mutable_copy.h"
 #include "ortools/util/logging.h"
 
@@ -49,15 +51,29 @@ namespace operations_research {
 // found by the solver. The solver may call solution_callback from multiple
 // threads, but it will ensure that at most one thread executes
 // solution_callback at a time.
+//
+// The optional best_bound_callback will be called each time the best bound is
+// improved. The solver may call solution_callback from multiple
+// threads, but it will ensure that at most one thread executes
+// solution_callback at a time. It is guaranteed that the best bound is strictly
+// improving.
 MPSolutionResponse SatSolveProto(
     LazyMutableCopy<MPModelRequest> request,
     std::atomic<bool>* interrupt_solve = nullptr,
     std::function<void(const std::string&)> logging_callback = nullptr,
-    std::function<void(const MPSolution&)> solution_callback = nullptr);
+    std::function<void(const MPSolution&)> solution_callback = nullptr,
+    std::function<void(const double)> best_bound_callback = nullptr);
 
 // Returns a string that describes the version of the CP-SAT solver.
 std::string SatSolverVersion();
 
+// Internal version of SatSolveProto that can configure a sat::Model object
+// before the solve and return the CpSolverResponse proto to extract statistics.
+MPSolutionResponse SatSolveProtoInternal(
+    LazyMutableCopy<MPModelRequest> request, sat::Model* sat_model,
+    sat::CpSolverResponse* cp_response,
+    std::function<void(const MPSolution&)> solution_callback = nullptr);
+
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_LINEAR_SOLVER_PROTO_SOLVER_SAT_PROTO_SOLVER_H_
+#endif  // ORTOOLS_LINEAR_SOLVER_PROTO_SOLVER_SAT_PROTO_SOLVER_H_

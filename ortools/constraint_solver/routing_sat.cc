@@ -33,7 +33,7 @@
 #include "ortools/constraint_solver/routing_types.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
-#include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/bitset.h"
@@ -53,8 +53,6 @@ using operations_research::sat::CpObjectiveProto;
 using operations_research::sat::CpSolverResponse;
 using operations_research::sat::CpSolverStatus;
 using operations_research::sat::IntegerVariableProto;
-using operations_research::sat::kMaxIntegerValue;
-using operations_research::sat::kMinIntegerValue;
 using operations_research::sat::LinearConstraintProto;
 using operations_research::sat::Model;
 using operations_research::sat::NewSatParameters;
@@ -176,21 +174,22 @@ void AddDimensions(const RoutingModel& model, const ArcVarMap& arc_vars,
     // Only a single vehicle class.
     const RoutingModel::TransitCallback2& transit =
         dimension->transit_evaluator(0);
-    std::vector<int> cumuls(dimension->cumuls().size(), -1);
+    const int num_cumuls = dimension->cumuls().size();
+    std::vector<int> cumuls(num_cumuls, -1);
     const int64_t min_start = dimension->cumuls()[model.Start(0)]->Min();
     const int64_t max_end = std::min(dimension->cumuls()[model.End(0)]->Max(),
                                      dimension->vehicle_capacities()[0]);
     for (int i = 0; i < cumuls.size(); ++i) {
       if (model.IsStart(i) || model.IsEnd(i)) continue;
       // Reducing bounds supposing the triangular inequality.
-      const int64_t cumul_min =
-          std::max(sat::kMinIntegerValue.value(),
-                   std::max(dimension->cumuls()[i]->Min(),
-                            CapAdd(transit(model.Start(0), i), min_start)));
-      const int64_t cumul_max =
-          std::min(sat::kMaxIntegerValue.value(),
-                   std::min(dimension->cumuls()[i]->Max(),
-                            CapSub(max_end, transit(i, model.End(0)))));
+      const int64_t cumul_min = std::max<int64_t>(
+          std::numeric_limits<int64_t>::min() / num_cumuls,
+          std::max(dimension->cumuls()[i]->Min(),
+                   CapAdd(transit(model.Start(0), i), min_start)));
+      const int64_t cumul_max = std::min<int64_t>(
+          std::numeric_limits<int64_t>::max() / num_cumuls,
+          std::min(dimension->cumuls()[i]->Max(),
+                   CapSub(max_end, transit(i, model.End(0)))));
       cumuls[i] = AddVariable(cp_model, cumul_min, cumul_max);
       AddSoftCumulBounds(dimension, i, cumuls[i], cumul_min, cumul_max,
                          cp_model);
@@ -505,7 +504,9 @@ void AddGeneralizedDimensions(
     for (int cp_node = 1; cp_node < num_cp_nodes; ++cp_node) {
       const int node = cp_node - 1;
       int64_t cumul_min = dimension->cumuls()[node]->Min();
-      int64_t cumul_max = dimension->cumuls()[node]->Max();
+      int64_t cumul_max =
+          std::min(dimension->cumuls()[node]->Max(),
+                   std::numeric_limits<int64_t>::max() / (2 * num_cp_nodes));
       if (model.IsStart(node) || model.IsEnd(node)) {
         const int vehicle = model.VehicleIndex(node);
         cumul_max =
@@ -547,7 +548,10 @@ void AddGeneralizedDimensions(
               cp_tail - 1 < dimension->slacks().size()
                   ? dimension->slacks()[cp_tail - 1]->Max()
                   : 0;
-          slack[cp_tail] = AddVariable(cp_model, 0, slack_max);
+          slack[cp_tail] = AddVariable(
+              cp_model, 0,
+              std::min(slack_max, std::numeric_limits<int64_t>::max() /
+                                      (2 * num_cp_nodes)));
           if (slack_max > 0 && slack_cost > 0) {
             cp_model->mutable_objective()->add_vars(slack[cp_tail]);
             cp_model->mutable_objective()->add_coeffs(slack_cost);
@@ -815,6 +819,7 @@ ArcVarMap PopulateGeneralizedRouteModelFromRoutingModel(
                         {{num_performed, 1}, {num_violated, 1}});
   }
   // Create "arc" variables.
+  std::vector<std::pair<int, double>> first_to_end_arcs;
   for (int tail = 0; tail < num_nodes; ++tail) {
     const int cp_tail = tail + 1;
     std::unique_ptr<IntVarIterator> iter(
@@ -845,7 +850,18 @@ ArcVarMap PopulateGeneralizedRouteModelFromRoutingModel(
       DCHECK(!arc_vars.contains(arc));
       const int arc_var = AddVariable(cp_model, 0, 1);
       arc_vars.insert({arc, arc_var});
+      if (model.IsStart(tail) && model.IsEnd(head)) {
+        first_to_end_arcs.push_back({arc_var, 1});
+      }
     }
+  }
+  // Limit the number of routes to the maximum number of vehicles.
+  {
+    AddLinearConstraint(
+        cp_model,
+        std::max(model.vehicles() - model.GetMaximumNumberOfActiveVehicles(),
+                 0),
+        model.vehicles(), first_to_end_arcs);
   }
 
   // Set literals for vehicle performing node.
@@ -1154,11 +1170,12 @@ bool IsFeasibleArcVarMap(const ArcVarMap& arc_vars, int max_node_index) {
 
 // Solves a RoutingModel using the CP-SAT solver. Returns false if no solution
 // was found.
-bool SolveModelWithSat(RoutingModel* model,
+bool SolveModelWithSat(RoutingModel* model, RoutingSearchStats* search_stats,
                        const RoutingSearchParameters& search_parameters,
                        const Assignment* initial_solution,
                        Assignment* solution) {
-  const absl::Duration remaining_time = model->RemainingTime();
+  // Adding a bit of slack to the time limit for the CP-SAT solver.
+  const absl::Duration remaining_time = model->RemainingTime() * 0.95;
   const absl::Time deadline = model->solver()->Now() + remaining_time;
   sat::CpModelProto cp_model;
   cp_model.mutable_objective()->set_scaling_factor(
@@ -1167,7 +1184,8 @@ bool SolveModelWithSat(RoutingModel* model,
   const sat::CpObjectiveProto& objective = cp_model.objective();
   const std::function<void(const sat::CpSolverResponse& response)>
       null_observer;
-  if (search_parameters.use_generalized_cp_sat() == BOOL_TRUE) {
+  if (search_parameters.use_generalized_cp_sat() == BOOL_TRUE ||
+      !sat::RoutingModelCanBeSolvedBySat(*model)) {
     const sat::ArcVarMap arc_vars =
         sat::PopulateGeneralizedRouteModelFromRoutingModel(*model, &cp_model);
     const int max_node_index = model->Nexts().size() + model->vehicles();
@@ -1189,13 +1207,14 @@ bool SolveModelWithSat(RoutingModel* model,
               *solution,
               /*call_at_solution_monitors=*/true);
         } : null_observer;
+    if (search_stats) search_stats->num_generalized_cp_sat_calls_in_routing++;
     return sat::ConvertGeneralizedResponseToSolution(
         sat::SolveRoutingModel(cp_model, remaining_time,
                                model->GetMutableCPSatInterrupt(),
                                search_parameters, observer),
         objective, *model, arc_vars, solution);
   }
-  if (!sat::RoutingModelCanBeSolvedBySat(*model)) return false;
+  DCHECK(sat::RoutingModelCanBeSolvedBySat(*model));
   const sat::ArcVarMap arc_vars =
       sat::PopulateModelFromRoutingModel(*model, &cp_model);
   sat::AddSolutionAsHintToModel(initial_solution, *model, arc_vars, &cp_model);
@@ -1212,6 +1231,7 @@ bool SolveModelWithSat(RoutingModel* model,
         model->CheckIfAssignmentIsFeasible(*solution,
                                            /*call_at_solution_monitors=*/true);
       } : null_observer;
+  if (search_stats) search_stats->num_cp_sat_calls_in_routing++;
   return sat::ConvertToSolution(
       sat::SolveRoutingModel(cp_model, remaining_time,
                              model->GetMutableCPSatInterrupt(),

@@ -26,6 +26,7 @@ from ortools.math_opt.python import result
 from ortools.math_opt.python import solve
 from ortools.math_opt.python import sparse_containers
 from ortools.math_opt.python import variables
+from ortools.util.python import solve_interrupter
 
 VarOrConstraintDict = Union[
     Dict[variables.Variable, float],
@@ -233,11 +234,72 @@ class SolveTest(absltest.TestCase):
         )
         self.assertIn("problem is solved", logs.getvalue())
 
+    def test_solve_interrupter(self):
+        opt_model = model.Model()
+        x = opt_model.add_binary_variable(name="x")
+        opt_model.objective.is_maximize = True
+        opt_model.objective.set_linear_coefficient(x, 2.0)
+
+        interrupter = solve_interrupter.SolveInterrupter()
+        interrupter.interrupt()
+        res = solve.solve(
+            opt_model,
+            parameters.SolverType.GSCIP,
+            interrupter=interrupter,
+        )
+
+        self.assertEqual(
+            res.termination.reason,
+            result.TerminationReason.NO_SOLUTION_FOUND,
+            msg=res.termination,
+        )
+        self.assertEqual(
+            res.termination.limit,
+            result.Limit.INTERRUPTED,
+            msg=res.termination,
+        )
+
+    def test_solve_duplicated_names(self):
+        opt_model = model.Model()
+        opt_model.add_binary_variable(name="x")
+        opt_model.add_binary_variable(name="x")
+
+        with self.assertRaisesRegex(ValueError, "duplicate name"):
+            solve.solve(
+                opt_model,
+                parameters.SolverType.GSCIP,
+            )
+
+    def test_solve_remove_names(self):
+        opt_model = model.Model()
+        opt_model.add_binary_variable(name="x")
+        opt_model.add_binary_variable(name="x")
+
+        # We test that remove_names was taken into account by testing that no error
+        # is raised.
+        solve.solve(
+            opt_model,
+            parameters.SolverType.GSCIP,
+            remove_names=True,
+        )
+
+    def test_incremental_solve_remove_names(self) -> None:
+        """Here we expect no errors dues to duplicated names.
+
+        See test_incremental_solve_init_error for test of duplicated names.
+        """
+        mod = model.Model(name="test_model")
+        mod.add_variable(lb=1.0, ub=1.0, name="x1")
+        mod.add_variable(lb=1.0, ub=1.0, name="x1")
+        # We test that remove_names was taken into account by testing that no error
+        # is raised.
+        solve.IncrementalSolver(mod, parameters.SolverType.GLOP, remove_names=True)
+
     def test_incremental_solve_init_error(self) -> None:
         mod = model.Model(name="test_model")
         mod.add_variable(lb=1.0, ub=1.0, name="x1")
         mod.add_variable(lb=1.0, ub=1.0, name="x1")
-        with self.assertRaisesRegex(ValueError, "duplicate name*"):
+        with self.assertRaisesRegex(ValueError, "duplicate name"):
             solve.IncrementalSolver(mod, parameters.SolverType.GLOP)
 
     def test_incremental_solve_error(self) -> None:
@@ -272,7 +334,7 @@ class SolveTest(absltest.TestCase):
         )
 
         opt_model.add_binary_variable(name="x")
-        with self.assertRaisesRegex(ValueError, "duplicate name*"):
+        with self.assertRaisesRegex(ValueError, "duplicate name"):
             solver.solve(
                 msg_cb=message_callback.printer_message_callback(prefix="[solve 2] ")
             )
@@ -404,6 +466,33 @@ class SolveTest(absltest.TestCase):
             {x: 1.0, y: 1.0}, res2.solutions[0].primal_solution.variable_values
         )
         self.assertIn(_SCIP_LOG_SOLVE_WAS_INCREMENTAL, logs.getvalue())
+
+    def test_incremental_solve_interrupter(self) -> None:
+        opt_model = model.Model()
+        x = opt_model.add_binary_variable(name="x")
+        y = opt_model.add_binary_variable(name="y")
+        c = opt_model.add_linear_constraint(ub=1.0, name="c")
+        c.set_coefficient(x, 1.0)
+        c.set_coefficient(y, 1.0)
+        opt_model.objective.set_linear_coefficient(x, 2.0)
+        opt_model.objective.set_linear_coefficient(y, 3.0)
+        opt_model.objective.is_maximize = True
+        solver = solve.IncrementalSolver(opt_model, parameters.SolverType.GSCIP)
+
+        interrupter = solve_interrupter.SolveInterrupter()
+        interrupter.interrupt()
+        res = solver.solve(interrupter=interrupter)
+
+        self.assertEqual(
+            res.termination.reason,
+            result.TerminationReason.NO_SOLUTION_FOUND,
+            msg=res.termination,
+        )
+        self.assertEqual(
+            res.termination.limit,
+            result.Limit.INTERRUPTED,
+            msg=res.termination,
+        )
 
     def test_incremental_solve_rejected(self) -> None:
         opt_model = model.Model()

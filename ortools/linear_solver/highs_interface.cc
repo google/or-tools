@@ -11,10 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#if defined(USE_HIGHS)
-
 #include <atomic>
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -102,6 +101,7 @@ class HighsInterface : public MPSolverInterface {
   void NonIncrementalChange();
 
   const bool solve_as_a_mip_;
+  std::optional<HighsSolveInfo> solve_info_;
 };
 
 HighsInterface::HighsInterface(MPSolver* const solver, bool solve_as_a_mip)
@@ -113,23 +113,6 @@ MPSolver::ResultStatus HighsInterface::Solve(const MPSolverParameters& param) {
   // Reset extraction as this interface is not incremental yet.
   Reset();
   ExtractModel();
-
-  SetParameters(param);
-  if (quiet_) {
-    // parameters_.set_verbosity_level(0);
-  } else {
-    // parameters_.set_verbosity_level(3);
-  }
-
-  solver_->SetSolverSpecificParametersAsString(
-      solver_->solver_specific_parameter_string_);
-
-  // Time limit.
-  if (solver_->time_limit()) {
-    VLOG(1) << "Setting time limit = " << solver_->time_limit() << " ms.";
-    // parameters_.mutable_termination_criteria()->set_time_sec_limit(
-    //     static_cast<double>(solver_->time_limit()) / 1000.0);
-  }
 
   // Mark variables and constraints as extracted.
   for (int i = 0; i < solver_->variables_.size(); ++i) {
@@ -147,9 +130,19 @@ MPSolver::ResultStatus HighsInterface::Solve(const MPSolverParameters& param) {
                               ? MPModelRequest::HIGHS_MIXED_INTEGER_PROGRAMMING
                               : MPModelRequest::HIGHS_LINEAR_PROGRAMMING);
 
+  SetParameters(param);
+  request.set_enable_internal_solver_output(!quiet_);
+  request.set_solver_specific_parameters(
+      solver_->solver_specific_parameter_string_);
+  if (solver_->time_limit()) {
+    request.set_solver_time_limit_seconds(
+        static_cast<double>(solver_->time_limit()) / 1000.0);
+  }
+
   // Set parameters.
+  solve_info_ = HighsSolveInfo();
   absl::StatusOr<MPSolutionResponse> response =
-      HighsSolveProto(std::move(request));
+      HighsSolveProto(std::move(request), &*solve_info_);
 
   if (!response.ok()) {
     LOG(ERROR) << "Unexpected error solving with Highs: " << response.status();
@@ -171,7 +164,10 @@ MPSolver::ResultStatus HighsInterface::Solve(const MPSolverParameters& param) {
   return result_status_;
 }
 
-void HighsInterface::Reset() { ResetExtractionInformation(); }
+void HighsInterface::Reset() {
+  ResetExtractionInformation();
+  solve_info_.reset();
+}
 
 void HighsInterface::SetOptimizationDirection(bool maximize) {
   NonIncrementalChange();
@@ -223,18 +219,19 @@ int64_t HighsInterface::iterations() const {
 }
 
 int64_t HighsInterface::nodes() const {
-  LOG(DFATAL) << "Number of nodes only available for discrete problems";
-  return MPSolverInterface::kUnknownNumberOfNodes;
+  QCHECK(solve_info_.has_value())
+      << "Number of nodes only available after solve";
+  return solve_info_->mip_node_count;
 }
 
 MPSolver::BasisStatus HighsInterface::row_status(int constraint_index) const {
-  // TODO(user): While basis status isn't well defined for PDLP, we could
+  // TODO(user): While basis status isn't well defined for HiGHS, we could
   // guess statuses that might be useful.
   return MPSolver::BasisStatus::FREE;
 }
 
 MPSolver::BasisStatus HighsInterface::column_status(int variable_index) const {
-  // TODO(user): While basis status isn't well defined for PDLP, we could
+  // TODO(user): While basis status isn't well defined for HiGHS, we could
   // guess statuses that might be useful.
   return MPSolver::BasisStatus::FREE;
 }
@@ -245,10 +242,10 @@ bool HighsInterface::IsLP() const { return true; }
 
 bool HighsInterface::IsMIP() const { return solve_as_a_mip_; }
 
-std::string HighsInterface::SolverVersion() const { return "PDLP Solver"; }
+std::string HighsInterface::SolverVersion() const { return "HiGHS Solver"; }
 
 // TODO(user): Consider returning the SolveLog here, as it could be essential
-// for interpreting the PDLP solution.
+// for interpreting the HiGHS solution.
 void* HighsInterface::underlying_solver() { return nullptr; }
 
 void HighsInterface::ExtractNewVariables() { NonIncrementalChange(); }
@@ -289,10 +286,24 @@ void HighsInterface::NonIncrementalChange() {
   sync_status_ = MUST_RELOAD;
 }
 
-// Register PDLP in the global linear solver factory.
-MPSolverInterface* BuildHighsInterface(bool mip, MPSolver* const solver) {
-  return new HighsInterface(solver, mip);
-}
+namespace {
+
+// See MpSolverInterfaceFactoryRepository for details.
+const void* const kRegisterHighsLp ABSL_ATTRIBUTE_UNUSED = [] {
+  MPSolverInterfaceFactoryRepository::GetInstance()->Register(
+      [](MPSolver* solver) { return new HighsInterface(solver, false); },
+      MPSolver::HIGHS_LINEAR_PROGRAMMING);
+  return nullptr;
+}();
+
+// See MpSolverInterfaceFactoryRepository for details.
+const void* const kRegisterHighsMip ABSL_ATTRIBUTE_UNUSED = [] {
+  MPSolverInterfaceFactoryRepository::GetInstance()->Register(
+      [](MPSolver* solver) { return new HighsInterface(solver, true); },
+      MPSolver::HIGHS_MIXED_INTEGER_PROGRAMMING);
+  return nullptr;
+}();
+
+}  // namespace
 
 }  // namespace operations_research
-#endif  //  #if defined(USE_HIGHS)

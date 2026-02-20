@@ -1,0 +1,25 @@
+c Simple example file demonstrating the DIMACS data format, and for testing.
+c Source: Invented from scratch by viger@google.com on 2019-05-22.
+c Lines starting with 'c' (like this one) are comments.
+c
+c Graph description: (number of nodes) (number of arcs)
+p asn 6 9
+c Note that the problems are 'perfect assignment' problems, where
+c there are as many 'left' nodes as 'right' nodes, and we want to assign
+c each 'left' node to exactly one 'right' node.
+c
+c "Left" nodes.
+n 1
+n 2
+n 3
+c
+c Arcs: left node, right node, cost of assigning left to right.
+a 1  4 12
+a 1  5 53
+a 1  6 36
+a 2  4 14
+a 2  5 37
+a 2  6 46
+a 3  4 11
+a 3  5 52
+a 3  6 35

@@ -1,7 +1,7 @@
 # ref: https://codescape.mips.com/components/toolchain/2021.09-01/downloads.html
 name: mips Toolchain
 
-on: [push, pull_request, workflow_dispatch]
+on: [workflow_dispatch]
 
 concurrency:
   group: ${{github.workflow}}-${{github.ref}}
@@ -17,7 +17,7 @@ jobs:
     name: Linux•Toolchain ${{matrix.targets}}
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     - name: Build env stage
       run: make --directory=cmake toolchain_${{matrix.targets}}_env
     - name: Build devel stage

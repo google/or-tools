@@ -62,7 +62,7 @@ int CountAllTwoBoxesSolutions(int n) {
   // fixed. So to not count too many solution with our code here, we disable
   // that. Note that alternatively, we could have used the cp_model.proto API
   // to do the same, and that should works even with this on.
-  AddNonOverlappingRectangles(x, y, &model);
+  AddNonOverlappingRectangles(/*enforcement_literals=*/{}, x, y, &model);
 
   int num_solutions_found = 0;
   auto* integer_trail = model.GetOrCreate<IntegerTrail>();
@@ -129,7 +129,7 @@ TEST(NonOverlappingRectanglesTest, SimpleCountingWithOptional) {
   // that. Note that alternatively, we could have used the cp_model.proto API
   // to do the same, and that should works even with this on.
   // TODO(user): Fix and run with add_cumulative_relaxation = true.
-  AddNonOverlappingRectangles(x, y, &model);
+  AddNonOverlappingRectangles(/*enforcement_literals=*/{}, x, y, &model);
 
   int num_solutions_found = 0;
   while (true) {

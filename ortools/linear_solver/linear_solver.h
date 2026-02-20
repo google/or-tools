@@ -131,8 +131,8 @@
  *   depends on the modification applied and on the underlying solver.
  */
 
-#ifndef OR_TOOLS_LINEAR_SOLVER_LINEAR_SOLVER_H_
-#define OR_TOOLS_LINEAR_SOLVER_LINEAR_SOLVER_H_
+#ifndef ORTOOLS_LINEAR_SOLVER_LINEAR_SOLVER_H_
+#define ORTOOLS_LINEAR_SOLVER_LINEAR_SOLVER_H_
 
 #include <atomic>
 #include <cstdint>
@@ -152,12 +152,12 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/flags/declare.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
-#include "absl/types/optional.h"
 #include "ortools/base/base_export.h"
 #include "ortools/base/logging.h"
 #include "ortools/linear_solver/linear_expr.h"
@@ -166,9 +166,11 @@
 #include "ortools/port/proto_utils.h"
 #include "ortools/util/lazy_mutable_copy.h"
 
+#ifndef SWIG
 OR_DLL ABSL_DECLARE_FLAG(bool, linear_solver_enable_verbose_output);
 OR_DLL ABSL_DECLARE_FLAG(bool, log_verification_errors);
 OR_DLL ABSL_DECLARE_FLAG(bool, verify_solution);
+#endif
 
 namespace operations_research {
 
@@ -863,9 +865,10 @@ class MPSolver {
   static int64_t global_num_variables();
   static int64_t global_num_constraints();
 
-  // DEPRECATED: Use TimeLimit() and SetTimeLimit(absl::Duration) instead.
-  // NOTE: These deprecated functions used the convention time_limit = 0 to mean
-  // "no limit", which now corresponds to time_limit_ = InfiniteDuration().
+  /// @deprecated Use TimeLimit() and SetTimeLimit(absl::Duration) instead.
+  /// @note These deprecated functions used the convention `time_limit = 0` to
+  /// mean "no limit", which now corresponds to
+  /// `time_limit_ = InfiniteDuration()`.
   int64_t time_limit() const {
     return time_limit_ == absl::InfiniteDuration()
                ? 0
@@ -880,7 +883,7 @@ class MPSolver {
     return static_cast<double>(time_limit()) / 1000.0;
   }
 
-  // DEPRECATED: Use DurationSinceConstruction() instead.
+  /// @deprecated Use DurationSinceConstruction() instead.
   int64_t wall_time() const {
     return absl::ToInt64Milliseconds(DurationSinceConstruction());
   }
@@ -1228,23 +1231,23 @@ class MPVariable {
   void SetBranchingPriority(int priority);
 
  protected:
-  friend class MPSolver;
-  friend class MPSolverInterface;
+  friend class BopInterface;
   friend class CBCInterface;
   friend class CLPInterface;
-  friend class GLPKInterface;
-  friend class SCIPInterface;
-  friend class SLMInterface;
-  friend class GurobiInterface;
   friend class CplexInterface;
-  friend class XpressInterface;
   friend class GLOPInterface;
-  friend class MPVariableSolutionValueTest;
-  friend class BopInterface;
-  friend class SatInterface;
-  friend class PdlpInterface;
+  friend class GLPKInterface;
+  friend class GurobiInterface;
   friend class HighsInterface;
   friend class KnapsackInterface;
+  friend class MPSolver;
+  friend class MPSolverInterface;
+  friend class MPVariableSolutionValueTest;
+  friend class PdlpInterface;
+  friend class SatInterface;
+  friend class SCIPInterface;
+  friend class SLMInterface;
+  friend class XpressInterface;
 
   // Constructor. A variable points to a single MPSolverInterface that
   // is specified in the constructor. A variable cannot belong to
@@ -1470,7 +1473,11 @@ class MPConstraint {
  * instead. We need to figure out how to deal with the subtleties of
  * the default values.
  */
-class OR_DLL MPSolverParameters {
+class
+#ifndef SWIG
+    OR_DLL
+#endif
+    MPSolverParameters {
  public:
   /// Enumeration of parameters that take continuous values.
   enum DoubleParam {
@@ -1922,6 +1929,79 @@ class MPSolverInterface {
   virtual void SetLpAlgorithm(int value) = 0;
 };
 
+// Handy type name for callbacks that create a fresh MPSolverInterface tied
+// to the given MPSolver. The underlying callback should *always* be permanent.
+typedef std::function<MPSolverInterface*(MPSolver*)> MPSolverInterfaceFactory;
+
+// This class must be instantiated only once, through GetInstance(). It is
+// thread-safe.
+//
+// - To register an existing MPSolverInterface in the global repository:
+//
+//    MPSolverInterfaceFactory cbc_solver_interface_factory =
+//        CreateCBCInterface;
+//    MPSolverInterfaceFactoryRepository::GetInstance()->Register(
+//        cbc_solver_interface_factory, CBC_MIXED_INTEGER_PROGRAMMING);
+//
+// - To get the MPSolverInterfaceFactory associated to a given problem type:
+//
+//    MPSolverInterface* my_solver_interface =
+//        MPSolverInterfaceFactoryRepository::GetInstance()->Create(
+//            CBC_MIXED_INTEGER_PROGRAMMING);
+//    CHECK(my_solver_interface != NULL) << "CBC not supported.";
+//
+// The implementations of MPSolverInterface defined here (e.g. ScipInterface)
+// are registered at with the MPSolverInterfaceFactoryRepository Singleton
+// automatically at link time, as long as the cc file where they are defined
+// (e.g. scip_interface.cc) is included in your binary (i.e. you have a
+// transitive dependency on the build rule ":linear_solver_scip", which sets
+// alwayslink=1).
+class MPSolverInterfaceFactoryRepository {
+ public:
+  static MPSolverInterfaceFactoryRepository* GetInstance();
+
+  // Maps the given factory to the given problem type. For solver needing
+  // runtime checks an additional `is_runtime_ready` argument can be set. If
+  // a factory was already assigned to this problem type, it will be replaced.
+  void Register(MPSolverInterfaceFactory factory,
+                MPSolver::OptimizationProblemType problem_type,
+                std::function<bool()> is_runtime_ready = {});
+
+  // Invokes the factory associated to the given solver's problem type and fails
+  // if no factory is registered or its runtime is not ready.
+  // Use `Supports` below to check if `Create` succeeds.
+  MPSolverInterface* Create(MPSolver* solver) const;
+
+  // Whether the implementation associated to the given problem type is
+  // available and ready to use.
+  bool Supports(MPSolver::OptimizationProblemType problem_type) const;
+
+  // List all the problem types.
+  std::vector<MPSolver::OptimizationProblemType> ListAllRegisteredProblemTypes()
+      const;
+
+  // Returns a human-readable list of supported OptimizationProblemType.
+  std::string PrettyPrintAllRegisteredProblemTypes() const;
+
+  // FOR TESTING ONLY.
+  bool Unregister(MPSolver::OptimizationProblemType problem_type);
+
+ private:
+  // The constructor / destructor are private to prevent this class from ever
+  // being instantiated outside GetInstance().
+  // TODO(user): consider adding the GLOP factory by default, and then expose
+  // it via a CreateDefault() method.
+  MPSolverInterfaceFactoryRepository() = default;
+  ~MPSolverInterfaceFactoryRepository();
+
+  mutable absl::Mutex mutex_;
+  struct Entry {
+    MPSolverInterfaceFactory factory;
+    std::function<bool()> is_runtime_ready;
+  };
+  std::map<MPSolver::OptimizationProblemType, Entry> map_;
+};
+
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_LINEAR_SOLVER_LINEAR_SOLVER_H_
+#endif  // ORTOOLS_LINEAR_SOLVER_LINEAR_SOLVER_H_

@@ -32,9 +32,9 @@
 
 namespace operations_research {
 
-::absl::Status Convert(const CapacityPlanningInstance& request,
+::absl::Status Convert(const routing::CapacityPlanningInstance& request,
                        CapacityPlanningProblem* problem) {
-  const NetworkTopology& topology = request.topology();
+  const routing::NetworkTopology& topology = request.topology();
   const int num_arcs = topology.from_node_size();
   CHECK_EQ(num_arcs, topology.to_node_size());
   CHECK_EQ(num_arcs, topology.variable_cost_size());
@@ -51,7 +51,7 @@ namespace operations_research {
   }
   const int num_nodes = problem->graph.num_nodes();
   problem->demands_at_node_per_commodity.resize(num_nodes);
-  const Commodities& commodities = request.commodities();
+  const routing::Commodities& commodities = request.commodities();
   const int num_commodities = commodities.from_node_size();
   problem->num_commodities = num_commodities;
   CHECK_EQ(commodities.to_node_size(), num_commodities);

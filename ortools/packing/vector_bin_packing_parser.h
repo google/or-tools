@@ -17,8 +17,8 @@
 //   - vector packing solver: (.vbp files)
 //         http://www.dcc.fc.up.pt/~fdabrandao/Vector_Packing_Solver
 
-#ifndef OR_TOOLS_PACKING_VECTOR_BIN_PACKING_PARSER_H_
-#define OR_TOOLS_PACKING_VECTOR_BIN_PACKING_PARSER_H_
+#ifndef ORTOOLS_PACKING_VECTOR_BIN_PACKING_PARSER_H_
+#define ORTOOLS_PACKING_VECTOR_BIN_PACKING_PARSER_H_
 
 #include <cstdint>
 #include <string>
@@ -69,4 +69,4 @@ class VbpParser {
 }  // namespace packing
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_PACKING_VECTOR_BIN_PACKING_PARSER_H_
+#endif  // ORTOOLS_PACKING_VECTOR_BIN_PACKING_PARSER_H_

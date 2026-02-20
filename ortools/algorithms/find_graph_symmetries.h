@@ -21,8 +21,8 @@
 //
 // See the comments on the class below for more details.
 
-#ifndef OR_TOOLS_ALGORITHMS_FIND_GRAPH_SYMMETRIES_H_
-#define OR_TOOLS_ALGORITHMS_FIND_GRAPH_SYMMETRIES_H_
+#ifndef ORTOOLS_ALGORITHMS_FIND_GRAPH_SYMMETRIES_H_
+#define ORTOOLS_ALGORITHMS_FIND_GRAPH_SYMMETRIES_H_
 
 #include <cstdint>
 #include <memory>
@@ -353,4 +353,4 @@ void LocalBfs(const ::util::StaticGraph<int, int>& graph, int source,
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_ALGORITHMS_FIND_GRAPH_SYMMETRIES_H_
+#endif  // ORTOOLS_ALGORITHMS_FIND_GRAPH_SYMMETRIES_H_

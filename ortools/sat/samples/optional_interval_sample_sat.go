@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// [START program]
 // The optional_interval_sample_sat command is an example of an Interval variable that is
 // marked as optional.
 package main
@@ -54,3 +55,5 @@ func main() {
 		log.Exitf("optionalIntervalSampleSat returned with error: %v", err)
 	}
 }
+
+// [END program]

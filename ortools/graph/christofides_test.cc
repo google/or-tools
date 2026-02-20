@@ -21,14 +21,20 @@
 #include <string>
 #include <vector>
 
+#include "absl/status/status.h"
 #include "absl/strings/str_format.h"
-#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
+#include "ortools/base/gmock.h"
 #include "ortools/base/logging.h"
 
 namespace operations_research {
+
+using ::testing::ElementsAre;
+using ::testing::IsEmpty;
+using ::testing::status::IsOkAndHolds;
+using ::testing::status::StatusIs;
 
 // Displays the path.
 std::string PathToString(absl::Span<const int> path) {
@@ -44,16 +50,17 @@ std::string PathToString(absl::Span<const int> path) {
 template <typename C>
 void ComputeAndShow(const std::string& name,
                     ChristofidesPathSolver<C>* chris_solver) {
-  LOG(INFO) << name << " TSP cost = " << chris_solver->TravelingSalesmanCost();
+  LOG(INFO) << name
+            << " TSP cost = " << chris_solver->TravelingSalesmanCost().value();
   LOG(INFO) << name << " TSP path = "
-            << PathToString(chris_solver->TravelingSalesmanPath());
+            << PathToString(chris_solver->TravelingSalesmanPath().value());
 }
 
 void TestChristofides(const std::string& name, const int size,
                       absl::Span<const int> cost_data,
                       bool use_minimal_matching, bool use_mip,
                       const int expected_cost,
-                      absl::string_view expected_solution) {
+                      const std::vector<int>& expected_solution) {
   using MatchingAlgorithm = ChristofidesPathSolver<int>::MatchingAlgorithm;
   std::vector<std::vector<int>> cost_mat(size);
   for (int i = 0; i < size; ++i) {
@@ -89,9 +96,10 @@ void TestChristofides(const std::string& name, const int size,
         MatchingAlgorithm::MINIMAL_WEIGHT_MATCHING);
   }
   ComputeAndShow(name, &chris_solver);
-  EXPECT_EQ(expected_cost, chris_solver.TravelingSalesmanCost());
-  EXPECT_EQ(expected_solution,
-            PathToString(chris_solver.TravelingSalesmanPath()));
+  EXPECT_THAT(chris_solver.TravelingSalesmanCost(),
+              IsOkAndHolds(expected_cost));
+  EXPECT_THAT(chris_solver.TravelingSalesmanPath(),
+              IsOkAndHolds(expected_solution));
 }
 
 // Gr17 as taken from TSPLIB:
@@ -113,12 +121,15 @@ TEST(HamiltonianPathTest, Gr17) {
       165, 383, 240, 140, 448, 202, 57,  0,   246, 745, 472, 237, 528, 364,
       332, 349, 202, 685, 542, 157, 289, 426, 483, 0,   121, 518, 142, 84,
       297, 35,  29,  36,  236, 390, 238, 301, 55,  96,  153, 336, 0};
-  TestChristofides("Gr17", kGr17Size, gr17_data, false, /*use_mip=*/true, 2190,
-                   "0 12 6 7 5 10 4 1 9 2 14 13 16 3 8 11 15 0 ");
-  TestChristofides("Gr17", kGr17Size, gr17_data, false, /*use_mip=*/false, 2190,
-                   "0 12 6 7 5 10 4 1 9 2 14 13 16 3 8 11 15 0 ");
-  TestChristofides("Gr17", kGr17Size, gr17_data, true, /*use_mip=*/false, 2421,
-                   "0 12 3 8 11 15 1 4 10 9 2 14 13 16 6 7 5 0 ");
+  TestChristofides(
+      "Gr17", kGr17Size, gr17_data, false, /*use_mip=*/true, 2190,
+      {0, 12, 6, 7, 5, 10, 4, 1, 9, 2, 14, 13, 16, 3, 8, 11, 15, 0});
+  TestChristofides(
+      "Gr17", kGr17Size, gr17_data, false, /*use_mip=*/false, 2190,
+      {0, 12, 6, 7, 5, 10, 4, 1, 9, 2, 14, 13, 16, 3, 8, 11, 15, 0});
+  TestChristofides(
+      "Gr17", kGr17Size, gr17_data, true, /*use_mip=*/false, 2421,
+      {0, 12, 3, 8, 11, 15, 1, 4, 10, 9, 2, 14, 13, 16, 6, 7, 5, 0});
 }
 
 // Gr24 as taken from TSPLIB:
@@ -149,15 +160,15 @@ TEST(HamiltonianPathTest, Gr24) {
       235, 108, 119, 165, 178, 154, 71,  136, 262, 110, 74,  96,  264, 187, 182,
       261, 239, 165, 151, 221, 0,   121, 142, 99,  84,  35,  29,  42,  36,  220,
       70,  126, 55,  249, 104, 178, 60,  96,  175, 153, 146, 47,  135, 169, 0};
-  TestChristofides(
-      "Gr24", kGr24Size, gr24_data, false, /*use_mip=*/true, 1407,
-      "0 15 5 6 2 10 7 20 4 9 16 21 17 18 1 14 19 12 8 22 13 23 11 3 0 ");
-  TestChristofides(
-      "Gr24", kGr24Size, gr24_data, false, /*use_mip=*/false, 1407,
-      "0 15 5 6 2 10 7 20 4 9 16 21 17 18 1 14 19 12 8 22 13 23 11 3 0 ");
-  TestChristofides(
-      "Gr24", kGr24Size, gr24_data, true, /*use_mip=*/false, 1607,
-      "0 15 5 6 7 20 4 9 16 21 17 18 1 19 14 13 22 8 12 10 2 23 11 3 0 ");
+  TestChristofides("Gr24", kGr24Size, gr24_data, false, /*use_mip=*/true, 1407,
+                   {0,  15, 5,  6,  2,  10, 7,  20, 4,  9,  16, 21, 17,
+                    18, 1,  14, 19, 12, 8,  22, 13, 23, 11, 3,  0});
+  TestChristofides("Gr24", kGr24Size, gr24_data, false, /*use_mip=*/false, 1407,
+                   {0,  15, 5,  6,  2,  10, 7,  20, 4,  9,  16, 21, 17,
+                    18, 1,  14, 19, 12, 8,  22, 13, 23, 11, 3,  0});
+  TestChristofides("Gr24", kGr24Size, gr24_data, true, /*use_mip=*/false, 1607,
+                   {0,  15, 5,  6,  7, 20, 4,  9, 16, 21, 17, 18, 1,
+                    19, 14, 13, 22, 8, 12, 10, 2, 23, 11, 3,  0});
 }
 
 // This is the geographic distance as defined in TSPLIB. It is used here to
@@ -208,35 +219,53 @@ TEST(HamiltonianPathTest, Ulysses) {
       ChristofidesPathSolver<
           double>::MatchingAlgorithm::MINIMUM_WEIGHT_MATCHING);
   ComputeAndShow("Ulysses22", &chris_solver);
-  EXPECT_EQ(7448, chris_solver.TravelingSalesmanCost());
-  EXPECT_EQ("0 7 21 16 1 2 3 17 12 13 14 4 10 8 9 18 19 20 11 6 5 15 0 ",
-            PathToString(chris_solver.TravelingSalesmanPath()));
+  EXPECT_THAT(chris_solver.TravelingSalesmanCost(), IsOkAndHolds(7448));
+  EXPECT_THAT(chris_solver.TravelingSalesmanPath(),
+              IsOkAndHolds(ElementsAre(0, 7, 21, 16, 1, 2, 3, 17, 12, 13, 14, 4,
+                                       10, 8, 9, 18, 19, 20, 11, 6, 5, 15, 0)));
 }
 
 TEST(ChristofidesTest, EmptyModel) {
   ChristofidesPathSolver<int> chris_solver(0, [](int, int) { return 0; });
-  EXPECT_EQ(0, chris_solver.TravelingSalesmanCost());
-  EXPECT_TRUE(chris_solver.TravelingSalesmanPath().empty());
+  EXPECT_THAT(chris_solver.TravelingSalesmanCost(), IsOkAndHolds(0));
+  EXPECT_THAT(chris_solver.TravelingSalesmanPath(), IsOkAndHolds(IsEmpty()));
 }
 
 TEST(ChristofidesTest, SingleNodeModel) {
   ChristofidesPathSolver<int> chris_solver(1, [](int, int) { return 0; });
-  EXPECT_EQ(0, chris_solver.TravelingSalesmanCost());
-  EXPECT_EQ("0 0 ", PathToString(chris_solver.TravelingSalesmanPath()));
+  EXPECT_THAT(chris_solver.TravelingSalesmanCost(), IsOkAndHolds(0));
+  EXPECT_THAT(chris_solver.TravelingSalesmanPath(),
+              IsOkAndHolds(ElementsAre(0, 0)));
 }
 
-TEST(ChristofidesTest, Int64Overflow) {
+TEST(ChristofidesTest, Int64OverflowMinimalMatching) {
   ChristofidesPathSolver<int64_t> chris_solver(
       10, [](int, int) { return std::numeric_limits<int64_t>::max() / 2; });
-  EXPECT_EQ(std::numeric_limits<int64_t>::max(),
-            chris_solver.TravelingSalesmanCost());
+  chris_solver.SetMatchingAlgorithm(
+      ChristofidesPathSolver<
+          int64_t>::MatchingAlgorithm::MINIMAL_WEIGHT_MATCHING);
+  EXPECT_THAT(chris_solver.TravelingSalesmanCost(),
+              IsOkAndHolds(std::numeric_limits<int64_t>::max()));
 }
 
-TEST(ChristofidesTest, SaturatedDouble) {
+TEST(ChristofidesTest, Int64OverflowMinimumMatching) {
+  ChristofidesPathSolver<int64_t> chris_solver(
+      10, [](int, int) { return std::numeric_limits<int64_t>::max() / 2; });
+  chris_solver.SetMatchingAlgorithm(
+      ChristofidesPathSolver<
+          int64_t>::MatchingAlgorithm::MINIMUM_WEIGHT_MATCHING);
+  EXPECT_THAT(chris_solver.Solve(),
+              StatusIs(absl::StatusCode::kInvalidArgument));
+}
+
+TEST(ChristofidesTest, SaturatedDoubleWithMinimalMatching) {
   ChristofidesPathSolver<double> chris_solver(
       10, [](int, int) { return std::numeric_limits<double>::max() / 2.0; });
-  EXPECT_EQ(std::numeric_limits<double>::infinity(),
-            chris_solver.TravelingSalesmanCost());
+  chris_solver.SetMatchingAlgorithm(
+      ChristofidesPathSolver<
+          double>::MatchingAlgorithm::MINIMAL_WEIGHT_MATCHING);
+  EXPECT_THAT(chris_solver.TravelingSalesmanCost(),
+              IsOkAndHolds(std::numeric_limits<double>::infinity()));
 }
 
 TEST(ChristofidesTest, NoPerfectMatching) {
@@ -253,7 +282,8 @@ TEST(ChristofidesTest, NoPerfectMatching) {
   chris_solver.SetMatchingAlgorithm(
       ChristofidesPathSolver<
           int64_t>::MatchingAlgorithm::MINIMUM_WEIGHT_MATCHING);
-  EXPECT_FALSE(chris_solver.Solve());
+  EXPECT_THAT(chris_solver.Solve(),
+              StatusIs(absl::StatusCode::kInvalidArgument));
 }
 
 // Benchmark for the Christofides algorithm on a 'size' by 'size' grid of nodes.
@@ -273,7 +303,7 @@ void BM_ChristofidesPathSolver(benchmark::State& state) {
     }
   }
   auto cost = [&costs](int i, int j) { return costs[i][j]; };
-  // TODO: MSVC v19.41 can't convert lambda to std::function.
+  // TODO(user) MSVC v19.41 can't convert lambda to std::function.
 #if defined(_MSC_VER)
   using Cost = std::function<int(int, int)>;
 #else
@@ -290,11 +320,12 @@ void BM_ChristofidesPathSolver(benchmark::State& state) {
       chris_solver.SetMatchingAlgorithm(
           MatchingAlgorithm::MINIMUM_WEIGHT_MATCHING);
     }
-    EXPECT_NE(0, chris_solver.TravelingSalesmanCost());
+    EXPECT_THAT(chris_solver.TravelingSalesmanCost(),
+                IsOkAndHolds(testing::Gt(0)));
   }
 }
 
 BENCHMARK_TEMPLATE(BM_ChristofidesPathSolver, true)->Range(2, 1 << 5);
-BENCHMARK_TEMPLATE(BM_ChristofidesPathSolver, false)->Range(2, 1 << 4);
+BENCHMARK_TEMPLATE(BM_ChristofidesPathSolver, false)->Range(2, 1 << 5);
 
 }  // namespace operations_research

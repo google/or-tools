@@ -14,8 +14,8 @@
 // A Project Scheduling Library parser.
 // See: http://www.om-db.wi.tum.de/psplib/  # PSP-Lib homepage.
 
-#ifndef OR_TOOLS_SCHEDULING_RCPSP_PARSER_H_
-#define OR_TOOLS_SCHEDULING_RCPSP_PARSER_H_
+#ifndef ORTOOLS_SCHEDULING_RCPSP_PARSER_H_
+#define ORTOOLS_SCHEDULING_RCPSP_PARSER_H_
 
 #include <cstdint>
 #include <string>
@@ -82,4 +82,4 @@ class RcpspParser {
 }  // namespace scheduling
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_SCHEDULING_RCPSP_PARSER_H_
+#endif  // ORTOOLS_SCHEDULING_RCPSP_PARSER_H_

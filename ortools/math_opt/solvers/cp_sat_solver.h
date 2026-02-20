@@ -11,13 +11,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_MATH_OPT_SOLVERS_CP_SAT_SOLVER_H_
-#define OR_TOOLS_MATH_OPT_SOLVERS_CP_SAT_SOLVER_H_
+#ifndef ORTOOLS_MATH_OPT_SOLVERS_CP_SAT_SOLVER_H_
+#define ORTOOLS_MATH_OPT_SOLVERS_CP_SAT_SOLVER_H_
 
 #include <cstdint>
 #include <memory>
 #include <vector>
 
+#include "absl/base/nullability.h"
 #include "absl/status/statusor.h"
 #include "absl/types/span.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
@@ -46,12 +47,12 @@ class CpSatSolver : public SolverInterface {
       const ModelSolveParametersProto& model_parameters,
       MessageCallback message_cb,
       const CallbackRegistrationProto& callback_registration, Callback cb,
-      const SolveInterrupter* interrupter) override;
+      const SolveInterrupter* absl_nullable interrupter) override;
   absl::StatusOr<bool> Update(const ModelUpdateProto& model_update) override;
   absl::StatusOr<ComputeInfeasibleSubsystemResultProto>
-  ComputeInfeasibleSubsystem(const SolveParametersProto& parameters,
-                             MessageCallback message_cb,
-                             const SolveInterrupter* interrupter) override;
+  ComputeInfeasibleSubsystem(
+      const SolveParametersProto& parameters, MessageCallback message_cb,
+      const SolveInterrupter* absl_nullable interrupter) override;
 
  private:
   CpSatSolver(MPModelProto cp_sat_model, std::vector<int64_t> variable_ids,
@@ -80,4 +81,4 @@ class CpSatSolver : public SolverInterface {
 }  // namespace math_opt
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_MATH_OPT_SOLVERS_CP_SAT_SOLVER_H_
+#endif  // ORTOOLS_MATH_OPT_SOLVERS_CP_SAT_SOLVER_H_

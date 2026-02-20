@@ -20,8 +20,8 @@
 // Parameters that can't be streamed (for example instances of C/C++ types that
 // only exist in the process memory) are dealt with implementations of
 // the NonStreamableSolverInitArguments.
-#ifndef OR_TOOLS_MATH_OPT_CPP_STREAMABLE_SOLVER_INIT_ARGUMENTS_H_
-#define OR_TOOLS_MATH_OPT_CPP_STREAMABLE_SOLVER_INIT_ARGUMENTS_H_
+#ifndef ORTOOLS_MATH_OPT_CPP_STREAMABLE_SOLVER_INIT_ARGUMENTS_H_
+#define ORTOOLS_MATH_OPT_CPP_STREAMABLE_SOLVER_INIT_ARGUMENTS_H_
 
 #include <cstdint>
 #include <optional>
@@ -77,6 +77,22 @@ struct StreamableGurobiInitArguments {
       const GurobiInitializerProto& args_proto);
 };
 
+// Streamable Xpress specific parameters for solver instantiation.
+struct StreamableXpressInitArguments {
+  // If present and set to true then variable and constraint names are
+  // extracted into the underlying Xpress instance. This can help debugging
+  // (especially if models are exported to disk) but also incurs runtime and
+  // memory overhead.
+  std::optional<bool> extract_names;
+
+  // Returns the proto corresponding to these parameters.
+  XpressInitializerProto Proto() const;
+
+  // Parses the proto corresponding to these parameters.
+  static StreamableXpressInitArguments FromProto(
+      const XpressInitializerProto& args_proto);
+};
+
 // Solver initialization parameters that can be streamed to be exchanged with
 // another process.
 //
@@ -89,6 +105,7 @@ struct StreamableSolverInitArguments {
   std::optional<StreamableGlopInitArguments> glop;
   std::optional<StreamableGlpkInitArguments> glpk;
   std::optional<StreamableGurobiInitArguments> gurobi;
+  std::optional<StreamableXpressInitArguments> xpress;
 
   // Returns the proto corresponding to these parameters.
   SolverInitializerProto Proto() const;
@@ -101,4 +118,4 @@ struct StreamableSolverInitArguments {
 }  // namespace math_opt
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_MATH_OPT_CPP_STREAMABLE_SOLVER_INIT_ARGUMENTS_H_
+#endif  // ORTOOLS_MATH_OPT_CPP_STREAMABLE_SOLVER_INIT_ARGUMENTS_H_

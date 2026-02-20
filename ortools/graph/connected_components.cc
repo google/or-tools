@@ -11,19 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//    http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 // The following uses disjoint-sets algorithms, see:
 // https://en.wikipedia.org/wiki/Disjoint-set_data_structure#Disjoint-set_forests
 
@@ -33,6 +20,7 @@
 #include <numeric>
 #include <vector>
 
+#include "absl/log/check.h"
 #include "ortools/base/stl_util.h"
 
 void DenseConnectedComponentsFinder::SetNumberOfNodes(int num_nodes) {
@@ -40,6 +28,7 @@ void DenseConnectedComponentsFinder::SetNumberOfNodes(int num_nodes) {
   if (num_nodes == old_num_nodes) {
     return;
   }
+  CHECK_GE(num_nodes, 0) << "Number of nodes overflowed the `int` type.";
   CHECK_GT(num_nodes, old_num_nodes);
   // Each new node starts as an isolated component:
   // It has itself as root.

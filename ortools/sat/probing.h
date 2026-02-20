@@ -11,9 +11,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_SAT_PROBING_H_
-#define OR_TOOLS_SAT_PROBING_H_
+#ifndef ORTOOLS_SAT_PROBING_H_
+#define ORTOOLS_SAT_PROBING_H_
 
+#include <cstdint>
 #include <functional>
 #include <string>
 #include <utility>
@@ -21,16 +22,20 @@
 
 #include "absl/container/btree_map.h"
 #include "absl/container/btree_set.h"
+#include "absl/container/flat_hash_map.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
+#include "ortools/sat/lrat_proof_handler.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/time_limit.h"
@@ -38,9 +43,12 @@
 namespace operations_research {
 namespace sat {
 
+class TrailCopy;
+
 class Prober {
  public:
   explicit Prober(Model* model);
+  ~Prober();
 
   // Fixes Booleans variables to true/false and see what is propagated. This
   // can:
@@ -87,8 +95,25 @@ class Prober {
   // Probes the given problem DNF (disjunction of conjunctions). Since one of
   // the conjunction must be true, we might be able to fix literal or improve
   // integer bounds if all conjunction propagate the same thing.
+  enum DnfType {
+    // DNF is an existing clause 'dnf_clause' = (l1) OR ... (ln), minus its
+    // literals which are already assigned.
+    kAtLeastOne,
+    // DNF is the tautology "either at least one of n literals is true, or all
+    // of them are false": (l1) OR ... (ln) OR (not(l1) AND ... not(ln)). The
+    // single literal conjunctions must be listed first.
+    kAtLeastOneOrZero,
+    // DNF is the tautology "one of the 2^n possible assignments of n Boolean
+    // variables is true". The n variables must be in the same order in each
+    // conjunction, and their assignment in the i-th conjunction must be the
+    // binary representation of i. For instance, if the variables are b0 and b1,
+    // the conjunctions must be (not(b0) AND not(b1)), (not(b0) AND b1),
+    // (b0 AND not(b1)), and (b0 AND b1), in this order.
+    kAtLeastOneCombination,
+  };
   bool ProbeDnf(absl::string_view name,
-                absl::Span<const std::vector<Literal>> dnf);
+                absl::Span<const std::vector<Literal>> dnf, DnfType type,
+                const SatClause* dnf_clause = nullptr);
 
   // Statistics.
   // They are reset each time ProbleBooleanVariables() is called.
@@ -107,6 +132,23 @@ class Prober {
  private:
   bool ProbeOneVariableInternal(BooleanVariable b);
 
+  // Computes the LRAT proofs that all the `propagated_literals` can be fixed to
+  // true, and fixes them.
+  bool FixProbedDnfLiterals(
+      absl::Span<const std::vector<Literal>> dnf,
+      const absl::btree_set<LiteralIndex>& propagated_literals, DnfType type,
+      ClauseId dnf_clause_id, absl::Span<const Literal> dnf_clause_literals);
+
+  // Computes the LRAT proof that `propagated_lit` can be fixed to true, and
+  // fixes it. `conjunctions` must have the property described for
+  // DnfType::kAtLeastOneCombination. `clause_ids` must contain the IDs of the
+  // LRAT clauses "conjunctions[i] => propagated_lit" (some IDs can be
+  // kNoClauseId, if a conjunction contains `propagated_lit`). Deletes all
+  // `clause_ids` and replaces these IDs with kNoClauseId values.
+  bool FixLiteralImpliedByAnAtLeastOneCombinationDnf(
+      absl::Span<const std::vector<Literal>> conjunctions,
+      absl::Span<ClauseId> clause_ids, Literal propagated_lit);
+
   // Model owned classes.
   const Trail& trail_;
   const VariablesAssignment& assignment_;
@@ -116,6 +158,11 @@ class Prober {
   SatSolver* sat_solver_;
   TimeLimit* time_limit_;
   BinaryImplicationGraph* implication_graph_;
+  ClauseManager* clause_manager_;
+  ClauseIdGenerator* clause_id_generator_;
+  LratProofHandler* lrat_proof_handler_;
+  TrailCopy* trail_copy_;
+  const bool drat_enabled_;
 
   // To detect literal x that must be true because b => x and not(b) => x.
   // When probing b, we add all propagated literal to propagated, and when
@@ -125,11 +172,18 @@ class Prober {
   // Modifications found during probing.
   std::vector<Literal> to_fix_at_true_;
   std::vector<IntegerLiteral> new_integer_bounds_;
-  std::vector<std::pair<Literal, Literal>> new_binary_clauses_;
+  std::vector<Literal> new_literals_implied_by_decision_;
+  std::vector<Literal> new_implied_or_fixed_literals_;
   absl::btree_set<LiteralIndex> new_propagated_literals_;
   absl::btree_set<LiteralIndex> always_propagated_literals_;
   absl::btree_map<IntegerVariable, IntegerValue> new_propagated_bounds_;
   absl::btree_map<IntegerVariable, IntegerValue> always_propagated_bounds_;
+
+  absl::flat_hash_map<std::pair<Literal, Literal>, ClauseId>
+      tmp_binary_clause_ids_;
+  std::vector<ClauseId> tmp_clause_ids_;
+  std::vector<Literal> tmp_literals_;
+  CompactVectorVector<int, ClauseId> tmp_dnf_clause_ids_;
 
   // Probing statistics.
   int num_decisions_ = 0;
@@ -137,6 +191,9 @@ class Prober {
   int num_new_binary_ = 0;
   int num_new_integer_bounds_ = 0;
   int num_new_literals_fixed_ = 0;
+  int num_lrat_clauses_ = 0;
+  int num_lrat_proof_clauses_ = 0;
+  int num_unneeded_lrat_clauses_ = 0;
 
   std::function<void(Literal decision)> callback_ = nullptr;
 
@@ -256,9 +313,143 @@ struct ProbingOptions {
 //
 // It will add any detected binary clause (via hyper binary resolution) to
 // the implication graph. See the option comments for more details.
-bool FailedLiteralProbingRound(ProbingOptions options, Model* model);
+class FailedLiteralProbing {
+ public:
+  explicit FailedLiteralProbing(Model* model);
+
+  bool DoOneRound(ProbingOptions options);
+
+ private:
+  struct SavedNextLiteral {
+    LiteralIndex literal_index;  // kNoLiteralIndex if we need to backtrack.
+    int rank;  // Cached position_in_order, we prefer lower positions.
+
+    bool operator<(const SavedNextLiteral& o) const { return rank < o.rank; }
+  };
+
+  // Returns true if we can skip this candidate decision.
+  // This factor out some code used by the functions below.
+  bool SkipCandidate(Literal last_decision, Literal candidate);
+
+  // Sets `next_decision` to the unassigned literal which implies the last
+  // decision and which comes first in the probing order (which itself can be
+  // the topological order of the implication graph, or the reverse).
+  bool ComputeNextDecisionInOrder(LiteralIndex& next_decision);
+
+  // Sets `next_decision` to the first unassigned literal we find which implies
+  // the last decision, in no particular order.
+  bool GetNextDecisionInNoParticularOrder(LiteralIndex& next_decision);
+
+  // Sets `next_decision` to the first unassigned literal in probing_order (if
+  // there is no last decision we can use any literal as first decision).
+  bool GetFirstDecision(LiteralIndex& next_decision);
+
+  // Enqueues `next_decision`. Backjumps and sets `next_decision` to false in
+  // case of conflict. Returns false if the problem was proved UNSAT.
+  bool EnqueueDecisionAndBackjumpOnConflict(LiteralIndex next_decision,
+                                            bool use_queue,
+                                            int& first_new_trail_index);
+
+  // If we can extract a binary clause that subsume the reason clause, we do add
+  // the binary and remove the subsumed clause.
+  //
+  // TODO(user): We could be slightly more generic and subsume some clauses that
+  // do not contain last_decision.Negated().
+  void MaybeSubsumeWithBinaryClause(Literal last_decision, Literal l);
+
+  // Functions to add "last_decision => l" to the repository if not already
+  // done. The Maybe() version just calls Extract() if ShouldExtract() is true.
+  bool ShouldExtractImplication(Literal l);
+  void ExtractImplication(Literal last_decision, Literal l,
+                          bool lrat_only = false);
+  void MaybeExtractImplication(Literal last_decision, Literal l);
+
+  // Extracts an implication "`last_decision` => l" for each literal l in
+  // `literals`. This is more efficient than calling ExtractImplication() for
+  // each literal when LRAT is enabled.
+  void ExtractImplications(Literal last_decision,
+                           absl::Span<const Literal> literals);
+
+  // Inspect the watcher list for last_decision, If we have a blocking
+  // literal at true (implied by last decision), then we have subsumptions.
+  //
+  // The intuition behind this is that if a binary clause (a,b) subsume a
+  // clause, and we watch a.Negated() for this clause with a blocking
+  // literal b, then this watch entry will never change because we always
+  // propagate binary clauses first and the blocking literal will always be
+  // true. So after many propagations, we hope to have such configuration
+  // which is quite cheap to test here.
+  void SubsumeWithBinaryClauseUsingBlockingLiteral(Literal last_decision);
+
+  // Adds 'not(literal)' to `to_fix_`, assuming that 'literal' directly implies
+  // the current decision, which itself implies all the previous decisions, with
+  // some of them propagating 'not(literal)'.
+  void AddFailedLiteralToFix(Literal literal);
+
+  // Fixes all the literals in to_fix_, and finish propagation.
+  bool ProcessLiteralsToFix();
+
+  // Deletes the temporary LRAT clauses in trail_implication_clauses_ for all
+  // trail indices greater than the current trail index.
+  void DeleteTemporaryLratImplicationsAfterBacktrack();
+
+  SatSolver* sat_solver_;
+  BinaryImplicationGraph* implication_graph_;
+  TimeLimit* time_limit_;
+  const Trail& trail_;
+  const VariablesAssignment& assignment_;
+  ClauseManager* clause_manager_;
+  ClauseIdGenerator* clause_id_generator_;
+  LratProofHandler* lrat_proof_handler_;
+  int binary_propagator_id_;
+  int clause_propagator_id_;
+
+  int num_variables_;
+  std::vector<LiteralIndex> probing_order_;
+  int order_index_ = 0;
+  SparseBitset<LiteralIndex> processed_;
+
+  // This is only needed when options.use_queue is true.
+  std::vector<SavedNextLiteral> queue_;
+  util_intops::StrongVector<LiteralIndex, int> position_in_order_;
+
+  // This is only needed when options use_queue is false;
+  util_intops::StrongVector<LiteralIndex, int> starts_;
+
+  // We delay fixing of already assigned literals once we go back to level 0.
+  std::vector<Literal> to_fix_;
+  // For each literal in to_fix_, the ID of the corresponding LRAT unit clause.
+  std::vector<ClauseId> to_fix_unit_id_;
+  // The literals for which we want to extract "last_decision => l" clauses.
+  std::vector<Literal> binary_clauses_to_extract_;
+
+  // For each literal 'l' in the trail, whether a binary clause "d => l" has
+  // been extracted, with 'd' the decision at the same level as 'l'.
+  std::vector<bool> binary_clause_extracted_;
+
+  // For each literal on the trail, the ID of the LRAT clause stating that this
+  // literal is implied by the previous decisions on the trail (or kNoClauseId
+  // if there is no such clause), plus a Boolean indicating whether this clause
+  // is temporary (i.e., is not an extracted binary clause).
+  std::vector<std::pair<ClauseId, bool>> trail_implication_clauses_;
+
+  // Temporary data structures used for LRAT proofs.
+  std::vector<ClauseId> tmp_clause_ids_;
+  SparseBitset<BooleanVariable> tmp_mark_;
+  std::vector<int> tmp_heap_;
+  std::vector<Literal> tmp_marked_literals_;
+
+  // Stats.
+  int64_t num_probed_ = 0;
+  int64_t num_explicit_fix_ = 0;
+  int64_t num_conflicts_ = 0;
+  int64_t num_new_binary_ = 0;
+  int64_t num_subsumed_ = 0;
+  int64_t num_lrat_clauses_ = 0;
+  int64_t num_lrat_proof_clauses_ = 0;
+};
 
 }  // namespace sat
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_PROBING_H_
+#endif  // ORTOOLS_SAT_PROBING_H_

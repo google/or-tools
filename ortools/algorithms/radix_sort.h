@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_ALGORITHMS_RADIX_SORT_H_
-#define OR_TOOLS_ALGORITHMS_RADIX_SORT_H_
+#ifndef ORTOOLS_ALGORITHMS_RADIX_SORT_H_
+#define ORTOOLS_ALGORITHMS_RADIX_SORT_H_
 
 // This can be MUCH faster than std::sort() on numerical arrays (int32_t, float,
 // int64_t, double, ..), when the size is ≥8k:
@@ -51,7 +51,7 @@
 namespace operations_research {
 
 // Sorts an array of int, double, or other numeric types. Up to ~10x faster than
-// std::sort() when size ≥ 8k: go/radix-sort-bench. See file-level comment.
+// std::sort() when size ≥ 8k. See file-level comment for more details.
 template <typename T>
 void RadixSort(
     absl::Span<T> values,
@@ -348,4 +348,4 @@ void RadixSort(absl::Span<T> values, int num_bits) {
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_ALGORITHMS_RADIX_SORT_H_
+#endif  // ORTOOLS_ALGORITHMS_RADIX_SORT_H_

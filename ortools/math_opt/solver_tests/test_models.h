@@ -12,8 +12,8 @@
 // limitations under the License.
 
 // Holds MathOpt models that are shared across tests from this directory.
-#ifndef OR_TOOLS_MATH_OPT_SOLVER_TESTS_TEST_MODELS_H_
-#define OR_TOOLS_MATH_OPT_SOLVER_TESTS_TEST_MODELS_H_
+#ifndef ORTOOLS_MATH_OPT_SOLVER_TESTS_TEST_MODELS_H_
+#define ORTOOLS_MATH_OPT_SOLVER_TESTS_TEST_MODELS_H_
 
 #include <memory>
 
@@ -84,4 +84,4 @@ std::unique_ptr<Model> IndependentSetCompleteGraph(bool integer, int n = 10);
 
 }  // namespace operations_research::math_opt
 
-#endif  // OR_TOOLS_MATH_OPT_SOLVER_TESTS_TEST_MODELS_H_
+#endif  // ORTOOLS_MATH_OPT_SOLVER_TESTS_TEST_MODELS_H_

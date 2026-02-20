@@ -14,15 +14,21 @@
 #include "ortools/math_opt/solvers/cp_sat_solver.h"
 
 #include <atomic>
+#include <cmath>
 #include <cstdint>
 #include <functional>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "absl/base/attributes.h"
+#include "absl/base/nullability.h"
+#include "absl/base/thread_annotations.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/functional/any_invocable.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/memory/memory.h"
@@ -33,6 +39,7 @@
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
+#include "absl/synchronization/mutex.h"
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
@@ -64,6 +71,8 @@ namespace operations_research {
 namespace math_opt {
 
 namespace {
+
+constexpr double kInf = std::numeric_limits<double>::infinity();
 
 constexpr SupportedProblemStructures kCpSatSupportedStructures = {
     .integer_variables = SupportType::kSupported,
@@ -137,7 +146,7 @@ std::vector<std::string> SetSolveParameters(
     sat_parameters.set_random_seed(parameters.random_seed());
   }
   if (parameters.has_threads()) {
-    sat_parameters.set_num_search_workers(parameters.threads());
+    sat_parameters.set_num_workers(parameters.threads());
   }
   if (parameters.has_relative_gap_tolerance()) {
     sat_parameters.set_relative_gap_limit(parameters.relative_gap_tolerance());
@@ -316,6 +325,162 @@ absl::StatusOr<TerminationProto> GetTermination(
       absl::StrCat("unimplemented solve status: ", response.status()));
 }
 
+// This class gathers the solution callback and best bound callback together
+// with some solver state that we need to update as the solver progresses.
+class CpSatCallbacks {
+ public:
+  CpSatCallbacks(const absl_nullable SolverInterface::Callback& cb
+                     ABSL_ATTRIBUTE_LIFETIME_BOUND,
+                 SolveInterrupter* absl_nonnull local_interrupter
+                     ABSL_ATTRIBUTE_LIFETIME_BOUND,
+                 absl_nonnull absl::AnyInvocable<
+                     SparseDoubleVectorProto(absl::Span<const double>) const>
+                     extract_solution,
+                 absl::flat_hash_set<CallbackEventProto> events,
+                 bool is_maximize);
+
+  // CpSatCallbacks is neither copyable nor movable as callbacks point to it.
+  CpSatCallbacks(const CpSatCallbacks&) = delete;
+  CpSatCallbacks& operator=(const CpSatCallbacks&) = delete;
+
+  // Returns a solution callback that wraps the user callback and updates the
+  // state of CpSatCallbacks. Returns nullptr if it is not needed.
+  absl_nullable std::function<void(const MPSolution&)> MakeSolutionCallback();
+
+  // Returns a best bound callback that wraps the user callback and updates the
+  // state of CpSatCallbacks. Returns nullptr if it is not needed.
+  absl_nullable std::function<void(const double)> MakeBestBoundCallback();
+
+  absl::Status error() const {
+    absl::MutexLock lock(mutex_);
+    return error_;
+  }
+
+ private:
+  void ExecuteCallback(const CallbackDataProto& cb_data);
+  void UpdateMipStatsFromNewSolution(const MPSolution& mp_solution)
+      ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
+
+  const SolverInterface::Callback& cb_;
+  SolveInterrupter* absl_nonnull const local_interrupter_;
+  const absl::AnyInvocable<SparseDoubleVectorProto(absl::Span<const double>)
+                               const>
+      extract_solution_;
+  const bool has_mip_solution_event_;
+  const bool has_mip_event_;
+  const bool is_maximize_;
+
+  mutable absl::Mutex mutex_;
+  absl::Status error_ ABSL_GUARDED_BY(mutex_) = absl::OkStatus();
+  CallbackDataProto::MipStats current_mip_stats_ ABSL_GUARDED_BY(mutex_);
+};
+
+CpSatCallbacks::CpSatCallbacks(
+    const SolverInterface::Callback& cb ABSL_ATTRIBUTE_LIFETIME_BOUND,
+    SolveInterrupter* absl_nonnull local_interrupter
+        ABSL_ATTRIBUTE_LIFETIME_BOUND,
+    absl_nonnull
+    absl::AnyInvocable<SparseDoubleVectorProto(absl::Span<const double>) const>
+        extract_solution ABSL_ATTRIBUTE_LIFETIME_BOUND,
+    absl::flat_hash_set<CallbackEventProto> events, const bool is_maximize)
+    : cb_(cb),
+      local_interrupter_(local_interrupter),
+      extract_solution_(std::move(extract_solution)),
+      // If there is no user callback, we make sure not calling it.
+      has_mip_solution_event_(cb != nullptr &&
+                              events.contains(CALLBACK_EVENT_MIP_SOLUTION)),
+      has_mip_event_(cb != nullptr && events.contains(CALLBACK_EVENT_MIP)),
+      is_maximize_(is_maximize) {
+  current_mip_stats_.set_primal_bound(is_maximize ? -kInf : kInf);
+  current_mip_stats_.set_dual_bound(is_maximize ? kInf : -kInf);
+  current_mip_stats_.set_number_of_solutions_found(0);
+}
+
+std::function<void(const MPSolution&)> absl_nullable
+CpSatCallbacks::MakeSolutionCallback() {
+  if (!has_mip_solution_event_ && !has_mip_event_) {
+    return nullptr;
+  }
+  if (!has_mip_solution_event_) {
+    return [this](const MPSolution& mp_solution) {
+      absl::MutexLock lock(mutex_);
+      UpdateMipStatsFromNewSolution(mp_solution);
+    };
+  }
+  return [this](const MPSolution& mp_solution) {
+    CallbackDataProto cb_data;
+    cb_data.set_event(CALLBACK_EVENT_MIP_SOLUTION);
+    *cb_data.mutable_primal_solution_vector() =
+        extract_solution_(mp_solution.variable_value());
+    {
+      absl::MutexLock lock(mutex_);
+      UpdateMipStatsFromNewSolution(mp_solution);
+      *cb_data.mutable_mip_stats() = current_mip_stats_;
+    }
+    ExecuteCallback(cb_data);
+  };
+}
+
+std::function<void(const double)> absl_nullable
+CpSatCallbacks::MakeBestBoundCallback() {
+  if (!has_mip_solution_event_ && !has_mip_event_) {
+    return nullptr;
+  }
+  if (!has_mip_event_) {
+    return [this](const double best_bound) {
+      absl::MutexLock lock(mutex_);
+      current_mip_stats_.set_dual_bound(best_bound);
+    };
+  }
+  return [this](const double best_bound) {
+    CallbackDataProto cb_data;
+    cb_data.set_event(CALLBACK_EVENT_MIP);
+    {
+      absl::MutexLock lock(mutex_);
+      current_mip_stats_.set_dual_bound(best_bound);
+      *cb_data.mutable_mip_stats() = current_mip_stats_;
+    }
+    ExecuteCallback(cb_data);
+  };
+}
+
+void CpSatCallbacks::ExecuteCallback(const CallbackDataProto& cb_data) {
+  {
+    absl::MutexLock lock(mutex_);
+    if (!error_.ok()) {
+      // A previous callback failed.
+      return;
+    }
+  }
+  const absl::StatusOr<CallbackResultProto> cb_result = cb_(cb_data);
+  // Note cb_result.cuts and cb_result.suggested solutions are not supported
+  // by CP-SAT and we have validated they are empty.
+  if (!cb_result.ok()) {
+    {
+      absl::MutexLock lock(mutex_);
+      error_ = cb_result.status();
+    }
+    // Note: we will be returning a status error, we do not need to worry
+    // about interpreting this as TERMINATION_REASON_INTERRUPTED.
+    local_interrupter_->Interrupt();
+  } else if (cb_result->terminate()) {
+    local_interrupter_->Interrupt();
+  }
+}
+
+void CpSatCallbacks::UpdateMipStatsFromNewSolution(
+    const MPSolution& mp_solution) ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_) {
+  if (is_maximize_) {
+    current_mip_stats_.set_primal_bound(std::fmax(
+        current_mip_stats_.primal_bound(), mp_solution.objective_value()));
+  } else {
+    current_mip_stats_.set_primal_bound(std::fmin(
+        current_mip_stats_.primal_bound(), mp_solution.objective_value()));
+  }
+  current_mip_stats_.set_number_of_solutions_found(
+      current_mip_stats_.number_of_solutions_found() + 1);
+}
+
 }  // namespace
 
 absl::StatusOr<std::unique_ptr<SolverInterface>> CpSatSolver::New(
@@ -338,14 +503,14 @@ absl::StatusOr<SolveResultProto> CpSatSolver::Solve(
     const ModelSolveParametersProto& model_parameters,
     const MessageCallback message_cb,
     const CallbackRegistrationProto& callback_registration, const Callback cb,
-    const SolveInterrupter* const interrupter) {
+    const SolveInterrupter* absl_nullable interrupter) {
   RETURN_IF_ERROR(ModelSolveParametersAreSupported(
       model_parameters, kCpSatSupportedStructures, "CP-SAT"));
   const absl::Time start = absl::Now();
 
   RETURN_IF_ERROR(CheckRegisteredCallbackEvents(
       callback_registration,
-      /*supported_events=*/{CALLBACK_EVENT_MIP_SOLUTION}));
+      /*supported_events=*/{CALLBACK_EVENT_MIP_SOLUTION, CALLBACK_EVENT_MIP}));
   if (callback_registration.add_lazy_constraints()) {
     return absl::InvalidArgumentError(
         "CallbackRegistrationProto.add_lazy_constraints=true is not supported "
@@ -392,7 +557,7 @@ absl::StatusOr<SolveResultProto> CpSatSolver::Solve(
   }
 
   // We need to chain the user interrupter through a local interrupter, because
-  // if we termiante early from a callback request, we don't want to incorrectly
+  // if we terminate early from a callback request, we don't want to incorrectly
   // modify the input state.
   SolveInterrupter local_interrupter;
   std::atomic<bool> interrupt_solve = false;
@@ -411,41 +576,21 @@ absl::StatusOr<SolveResultProto> CpSatSolver::Solve(
 
   const absl::flat_hash_set<CallbackEventProto> events =
       EventSet(callback_registration);
-  std::function<void(const MPSolution&)> solution_callback;
-  absl::Status callback_error = absl::OkStatus();
-  if (events.contains(CALLBACK_EVENT_MIP_SOLUTION)) {
-    solution_callback =
-        [this, &cb, &callback_error, &local_interrupter,
-         &callback_registration](const MPSolution& mp_solution) {
-          if (!callback_error.ok()) {
-            // A previous callback failed.
-            return;
-          }
-          CallbackDataProto cb_data;
-          cb_data.set_event(CALLBACK_EVENT_MIP_SOLUTION);
-          *cb_data.mutable_primal_solution_vector() =
-              ExtractSolution(mp_solution.variable_value(),
-                              callback_registration.mip_solution_filter());
-          const absl::StatusOr<CallbackResultProto> cb_result = cb(cb_data);
-          if (!cb_result.ok()) {
-            callback_error = cb_result.status();
-            // Note: we will be returning a status error, we do not need to
-            // worry about interpreting this as TERMINATION_REASON_INTERRUPTED.
-            local_interrupter.Interrupt();
-          } else if (cb_result->terminate()) {
-            local_interrupter.Interrupt();
-          }
-          // Note cb_result.cuts and cb_result.suggested solutions are not
-          // supported by CP-SAT and we have validated they are empty.
-        };
-  }
+  absl::AnyInvocable<SparseDoubleVectorProto(absl::Span<const double>) const>
+      extract_solution = [&](absl::Span<const double> cp_sat_variable_values) {
+        return ExtractSolution(cp_sat_variable_values,
+                               callback_registration.mip_solution_filter());
+      };
+  CpSatCallbacks callbacks(cb, &local_interrupter, std::move(extract_solution),
+                           events, cp_sat_model_.maximize());
 
   // CP-SAT returns "infeasible" for inverted bounds.
   RETURN_IF_ERROR(ListInvertedBounds().ToStatus());
 
   const MPSolutionResponse response = SatSolveProto(
-      std::move(req), &interrupt_solve, logging_callback, solution_callback);
-  RETURN_IF_ERROR(callback_error) << "error in callback";
+      std::move(req), &interrupt_solve, logging_callback,
+      callbacks.MakeSolutionCallback(), callbacks.MakeBestBoundCallback());
+  RETURN_IF_ERROR(callbacks.error()) << "error in callback";
   ASSIGN_OR_RETURN(*result.mutable_termination(),
                    GetTermination(local_interrupter.IsInterrupted(),
                                   /*maximize=*/cp_sat_model_.maximize(),
@@ -530,7 +675,7 @@ InvertedBounds CpSatSolver::ListInvertedBounds() const {
 absl::StatusOr<ComputeInfeasibleSubsystemResultProto>
 CpSatSolver::ComputeInfeasibleSubsystem(const SolveParametersProto&,
                                         MessageCallback,
-                                        const SolveInterrupter*) {
+                                        const SolveInterrupter* absl_nullable) {
   return absl::UnimplementedError(
       "CPSAT does not provide a method to compute an infeasible subsystem");
 }

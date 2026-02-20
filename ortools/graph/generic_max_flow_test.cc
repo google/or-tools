@@ -294,6 +294,7 @@ constexpr bool operator>=(StrongUint16 a, StrongUint16 b) { return a.v >= b.v; }
 constexpr bool operator>(StrongUint16 a, StrongUint16 b) { return a.v > b.v; }
 constexpr bool operator<(StrongUint16 a, StrongUint16 b) { return a.v < b.v; }
 constexpr bool operator==(StrongUint16 a, StrongUint16 b) { return a.v == b.v; }
+constexpr bool operator!=(StrongUint16 a, StrongUint16 b) { return a.v != b.v; }
 
 // This is a bit hacky, but we need to define the overload in the std namespace.
 }  // namespace
@@ -333,8 +334,10 @@ TYPED_TEST(GenericMaxFlowTest, SmallFlowTypes) {
     max_flow_A.SetArcCapacity(arc, capa);
     max_flow_B.SetArcCapacity(arc, capa);
   }
-  EXPECT_EQ(max_flow_A.Solve(), MaxFlowA::OPTIMAL);
-  EXPECT_EQ(max_flow_B.Solve(), MaxFlowB::OPTIMAL);
+  EXPECT_TRUE(max_flow_A.Solve());
+  EXPECT_EQ(max_flow_A.status(), MaxFlowA::OPTIMAL);
+  EXPECT_TRUE(max_flow_B.Solve());
+  EXPECT_EQ(max_flow_B.status(), MaxFlowB::OPTIMAL);
   EXPECT_EQ(max_flow_A.GetOptimalFlow(), max_flow_B.GetOptimalFlow());
 }
 

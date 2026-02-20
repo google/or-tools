@@ -11,14 +11,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_MATH_OPT_CORE_BASE_SOLVER_H_
-#define OR_TOOLS_MATH_OPT_CORE_BASE_SOLVER_H_
+#ifndef ORTOOLS_MATH_OPT_CORE_BASE_SOLVER_H_
+#define ORTOOLS_MATH_OPT_CORE_BASE_SOLVER_H_
 
 #include <functional>
 #include <ostream>
 #include <string>
 #include <vector>
 
+#include "absl/base/nullability.h"
 #include "absl/status/statusor.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/infeasible_subsystem.pb.h"
@@ -33,8 +34,9 @@ namespace operations_research::math_opt {
 
 // The API of solvers (in-process, sub-process and streaming RPC ones).
 //
-// Thread-safety: methods Solve() and Update() must not be called concurrently;
-// they should immediately return with an error status if this happens.
+// Thread-safety: methods Solve(), ComputeInfeasibleSubsystem() and Update()
+// must not be called concurrently; they should immediately return with an error
+// status if this happens.
 //
 // TODO: b/350984134 - Rename `Solver` into `InProcessSolver` and then rename
 // `BaseSolver` into `Solver`.
@@ -65,12 +67,19 @@ class BaseSolver {
     // printed on stdout/stderr/logs anymore.
     MessageCallback message_callback = nullptr;
 
+    // Registration parameter controlling calls to user_cb.
     CallbackRegistrationProto callback_registration;
+
+    // An optional MIP/LP callback. Only called for events registered in
+    // callback_registration.
+    //
+    // Solve() returns an error if called without a user_cb but with some
+    // non-empty callback_registration.request_registration.
     Callback user_cb = nullptr;
 
     // An optional interrupter that the solver can use to interrupt the solve
     // early.
-    const SolveInterrupter* interrupter = nullptr;
+    const SolveInterrupter* absl_nullable interrupter = nullptr;
 
     friend std::ostream& operator<<(std::ostream& out, const SolveArgs& args);
   };
@@ -88,7 +97,7 @@ class BaseSolver {
 
     // An optional interrupter that the solver can use to interrupt the solve
     // early.
-    const SolveInterrupter* interrupter = nullptr;
+    const SolveInterrupter* absl_nullable interrupter = nullptr;
 
     friend std::ostream& operator<<(std::ostream& out,
                                     const ComputeInfeasibleSubsystemArgs& args);
@@ -126,4 +135,4 @@ class BaseSolver {
 
 }  // namespace operations_research::math_opt
 
-#endif  // OR_TOOLS_MATH_OPT_CORE_BASE_SOLVER_H_
+#endif  // ORTOOLS_MATH_OPT_CORE_BASE_SOLVER_H_

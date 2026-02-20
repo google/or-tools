@@ -33,10 +33,10 @@
 #include "ortools/base/strong_vector.h"
 #include "ortools/base/timer.h"
 #include "ortools/graph/strongly_connected_components.h"
-#include "ortools/sat/drat_proof_handler.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
@@ -204,11 +204,6 @@ void SatPresolver::AddClause(absl::Span<const Literal> clause) {
   signatures_.push_back(ComputeSignatureOfClauseVariables(ci));
   DCHECK_EQ(signatures_.size(), clauses_.size());
 
-  if (drat_proof_handler_ != nullptr && changed) {
-    drat_proof_handler_->AddClause(clause_ref);
-    drat_proof_handler_->DeleteClause(clause);
-  }
-
   const Literal max_literal = clause_ref.back();
   const int required_size = std::max(max_literal.Index().value(),
                                      max_literal.NegatedIndex().value()) +
@@ -244,8 +239,6 @@ void SatPresolver::RebuildLiteralToClauses() {
 }
 
 void SatPresolver::AddClauseInternal(std::vector<Literal>* clause) {
-  if (drat_proof_handler_ != nullptr) drat_proof_handler_->AddClause(*clause);
-
   DCHECK(std::is_sorted(clause->begin(), clause->end()));
   DCHECK_GT(clause->size(), 0) << "TODO(user): Unsat during presolve?";
   const ClauseIndex ci(clauses_.size());
@@ -354,11 +347,11 @@ bool SatPresolver::Presolve(const std::vector<bool>& can_be_removed) {
     for (const bool b : can_be_removed) {
       if (b) ++num_removable;
     }
-    SOLVER_LOG(logger_,
-               "[SAT presolve] num removable Booleans: ", num_removable, " / ",
-               can_be_removed.size());
-    SOLVER_LOG(logger_,
-               "[SAT presolve] num trivial clauses: ", num_trivial_clauses_);
+    SOLVER_LOG(logger_, "[SAT presolve] num removable Booleans: ",
+               FormatCounter(num_removable), " / ",
+               FormatCounter(can_be_removed.size()));
+    SOLVER_LOG(logger_, "[SAT presolve] num trivial clauses: ",
+               FormatCounter(num_trivial_clauses_));
     DisplayStats(0);
   }
 
@@ -506,7 +499,6 @@ void SatPresolver::SimpleBva(LiteralIndex l) {
   bva_pq_elements_[x_false.value()].literal = x_false;
 
   // Add the new clauses.
-  if (drat_proof_handler_ != nullptr) drat_proof_handler_->AddOneVariable();
   for (const LiteralIndex lit : m_lit_) {
     tmp_new_clause_ = {Literal(lit), Literal(x_true)};
     AddClauseInternal(&tmp_new_clause_);
@@ -611,10 +603,6 @@ bool SatPresolver::ProcessClauseToSimplifyOthersUsingLiteral(
       } else {
         DCHECK_NE(opposite_literal, lit.Index());
         if (clauses_[ci].empty()) return false;  // UNSAT.
-        if (drat_proof_handler_ != nullptr) {
-          // TODO(user): remove the old clauses_[ci] afterwards.
-          drat_proof_handler_->AddClause(clauses_[ci]);
-        }
 
         // Recompute signature.
         signatures_[ci] = ComputeSignatureOfClauseVariables(ci);
@@ -691,10 +679,6 @@ bool SatPresolver::ProcessClauseToSimplifyOthers(ClauseIndex clause_index) {
                          &num_inspected_literals_)) {
         DCHECK_EQ(opposite_literal, lit.NegatedIndex());
         if (clauses_[ci].empty()) return false;  // UNSAT.
-        if (drat_proof_handler_ != nullptr) {
-          // TODO(user): remove the old clauses_[ci] afterwards.
-          drat_proof_handler_->AddClause(clauses_[ci]);
-        }
 
         // Recompute signature.
         signatures_[ci] = ComputeSignatureOfClauseVariables(ci);
@@ -849,9 +833,6 @@ void SatPresolver::Remove(ClauseIndex ci) {
     UpdateBvaPriorityQueue(Literal(e.Variable(), true).Index());
     UpdateBvaPriorityQueue(Literal(e.Variable(), false).Index());
   }
-  if (drat_proof_handler_ != nullptr) {
-    drat_proof_handler_->DeleteClause(clauses_[ci]);
-  }
   gtl::STLClearObject(&clauses_[ci]);
 }
 
@@ -975,10 +956,11 @@ void SatPresolver::DisplayStats(double elapsed_seconds) {
     }
   }
   SOLVER_LOG(logger_, "[SAT presolve] [", elapsed_seconds, "s]",
-             " clauses:", num_clauses, " literals:", num_literals,
-             " vars:", num_vars, " one_side_vars:", num_one_side,
-             " simple_definition:", num_simple_definition,
-             " singleton_clauses:", num_singleton_clauses);
+             " clauses:", FormatCounter(num_clauses),
+             " literals:", FormatCounter(num_literals),
+             " vars:", FormatCounter(num_vars), " one_side_vars:", num_one_side,
+             " simple_definition:", FormatCounter(num_simple_definition),
+             " singleton_clauses:", FormatCounter(num_singleton_clauses));
 }
 
 bool SimplifyClause(const std::vector<Literal>& a, std::vector<Literal>* b,
@@ -1183,7 +1165,6 @@ class PropagationGraph {
 
 void ProbeAndFindEquivalentLiteral(
     SatSolver* solver, SatPostsolver* postsolver,
-    DratProofHandler* drat_proof_handler,
     util_intops::StrongVector<LiteralIndex, LiteralIndex>* mapping,
     SolverLogger* logger) {
   WallTimer timer;
@@ -1253,9 +1234,6 @@ void ProbeAndFindEquivalentLiteral(
                                      ? Literal(rep)
                                      : Literal(rep).Negated();
         if (!solver->AddUnitClause(true_lit)) return;
-        if (drat_proof_handler != nullptr) {
-          drat_proof_handler->AddClause({true_lit});
-        }
       }
     }
     for (LiteralIndex i(0); i < size; ++i) {
@@ -1267,9 +1245,6 @@ void ProbeAndFindEquivalentLiteral(
                                        ? Literal(i)
                                        : Literal(i).Negated();
           if (!solver->AddUnitClause(true_lit)) return;
-          if (drat_proof_handler != nullptr) {
-            drat_proof_handler->AddClause({true_lit});
-          }
         }
       } else if (assignment.LiteralIsAssigned(Literal(i))) {
         if (!assignment.LiteralIsAssigned(Literal(rep))) {
@@ -1277,25 +1252,21 @@ void ProbeAndFindEquivalentLiteral(
                                        ? Literal(rep)
                                        : Literal(rep).Negated();
           if (!solver->AddUnitClause(true_lit)) return;
-          if (drat_proof_handler != nullptr) {
-            drat_proof_handler->AddClause({true_lit});
-          }
         }
       } else if (rep != i) {
         ++num_equiv;
         postsolver->Add(Literal(i), {Literal(i), Literal(rep).Negated()});
-        if (drat_proof_handler != nullptr) {
-          drat_proof_handler->AddClause({Literal(i), Literal(rep).Negated()});
-        }
       }
     }
   }
 
   if (logger != nullptr) {
-    SOLVER_LOG(logger, "[Pure SAT probing] fixed ", num_already_fixed_vars,
-               " + ", solver->LiteralTrail().Index() - num_already_fixed_vars,
-               " equiv ", num_equiv / 2, " total ", solver->NumVariables(),
-               " wtime: ", timer.Get());
+    SOLVER_LOG(
+        logger, "[Pure SAT probing] fixed ",
+        FormatCounter(num_already_fixed_vars), " + ",
+        FormatCounter(solver->LiteralTrail().Index() - num_already_fixed_vars),
+        " equiv ", FormatCounter(num_equiv / 2), " total ",
+        FormatCounter(solver->NumVariables()), " wtime: ", timer.Get());
   } else {
     const bool log_info =
         solver->parameters().log_search_progress() || VLOG_IS_ON(1);

@@ -15,8 +15,9 @@
 
 #include <stdint.h>
 
+#include <algorithm>
+#include <memory>
 #include <optional>
-#include <string>
 #include <vector>
 
 #include "absl/base/log_severity.h"
@@ -70,7 +71,8 @@ TEST(CumulativeEnergyCutGenerator, TestCutTimeTableGenerator) {
   const IntegerVariable demand2 = model.Add(NewIntegerVariable(3, 10));
   const IntegerVariable capacity = model.Add(NewIntegerVariable(10, 10));
   SchedulingConstraintHelper* helper =
-      model.GetOrCreate<IntervalsRepository>()->GetOrCreateHelper({i1, i2});
+      model.GetOrCreate<IntervalsRepository>()->GetOrCreateHelper(
+          /*enforcement_literals=*/{}, {i1, i2});
   SchedulingDemandHelper* demands_helper =
       new SchedulingDemandHelper({demand1, demand2}, helper, &model);
   model.TakeOwnership(demands_helper);
@@ -97,9 +99,9 @@ TEST(CumulativeEnergyCutGenerator, TestCutTimeTableGenerator) {
   cumulative.generate_cuts(manager);
   ASSERT_EQ(1, manager->num_cuts());
 
-  // 3*X3 1*X7 -1*X9 <= 0 -> Normalized to 3*X3 1*X7 <= 10
+  // 3*I3 1*I7 -1*I9 <= 0 -> Normalized to 3*I3 1*I7 <= 10
   EXPECT_THAT(manager->AllConstraints().front().constraint.DebugString(),
-              EndsWith("3*X3 1*X7 <= 10"));
+              EndsWith("3*I3 1*I7 <= 10"));
 }
 
 TEST(CumulativeEnergyCutGenerator, SameDemand) {
@@ -132,7 +134,8 @@ TEST(CumulativeEnergyCutGenerator, SameDemand) {
   e2.coeffs.push_back(IntegerValue(7));
 
   SchedulingConstraintHelper* helper =
-      model.GetOrCreate<IntervalsRepository>()->GetOrCreateHelper({i1, i2, i3});
+      model.GetOrCreate<IntervalsRepository>()->GetOrCreateHelper(
+          /*enforcement_literals=*/{}, {i1, i2, i3});
   SchedulingDemandHelper* demands_helper =
       new SchedulingDemandHelper({demand, demand, demand2}, helper, &model);
   model.TakeOwnership(demands_helper);
@@ -167,23 +170,23 @@ TEST(CumulativeEnergyCutGenerator, SameDemand) {
   EXPECT_THAT(
       manager->AllConstraints()[LinearConstraintManager::ConstraintIndex(0)]
           .constraint.DebugString(),
-      EndsWith("1*X9 <= 5"));
+      EndsWith("1*I9 <= 5"));
   EXPECT_THAT(
       manager->AllConstraints()[LinearConstraintManager::ConstraintIndex(1)]
           .constraint.DebugString(),
-      EndsWith("1*X9 1*X10 <= 10"));
+      EndsWith("1*I9 1*I10 <= 10"));
   EXPECT_THAT(
       manager->AllConstraints()[LinearConstraintManager::ConstraintIndex(2)]
           .constraint.DebugString(),
-      EndsWith("3*X9 2*X10 <= 30"));
+      EndsWith("3*I9 2*I10 <= 30"));
   EXPECT_THAT(
       manager->AllConstraints()[LinearConstraintManager::ConstraintIndex(3)]
           .constraint.DebugString(),
-      EndsWith("5*X9 2*X10 <= 40"));
+      EndsWith("5*I9 2*I10 <= 40"));
   EXPECT_THAT(
       manager->AllConstraints()[LinearConstraintManager::ConstraintIndex(4)]
           .constraint.DebugString(),
-      EndsWith("2*X9 3*X10 <= 30"));
+      EndsWith("2*I9 3*I10 <= 30"));
 }
 
 TEST(CumulativeEnergyCutGenerator, SameDemandTimeTableGenerator) {
@@ -209,7 +212,8 @@ TEST(CumulativeEnergyCutGenerator, SameDemandTimeTableGenerator) {
   const IntegerVariable capacity = model.Add(NewIntegerVariable(10, 10));
 
   SchedulingConstraintHelper* helper =
-      model.GetOrCreate<IntervalsRepository>()->GetOrCreateHelper({i1, i2, i3});
+      model.GetOrCreate<IntervalsRepository>()->GetOrCreateHelper(
+          /*enforcement_literals=*/{}, {i1, i2, i3});
   SchedulingDemandHelper* demands_helper =
       new SchedulingDemandHelper({demand, demand, demand2}, helper, &model);
   model.TakeOwnership(demands_helper);
@@ -238,12 +242,12 @@ TEST(CumulativeEnergyCutGenerator, SameDemandTimeTableGenerator) {
   cumulative.generate_cuts(manager);
   ASSERT_EQ(2, manager->num_cuts());
 
-  // 1*X9 1*X9 <= X11 -> Normalized to 1*X9 <= 5
+  // 1*I9 1*I9 <= I11 -> Normalized to 1*I9 <= 5
   EXPECT_THAT(manager->AllConstraints().front().constraint.DebugString(),
-              EndsWith("1*X9 <= 5"));
-  // 1*X9 1*X10 <= X11 -> Normalized to 1*X9 1*X10 <= 10
+              EndsWith("1*I9 <= 5"));
+  // 1*I9 1*I10 <= I11 -> Normalized to 1*I9 1*I10 <= 10
   EXPECT_THAT(manager->AllConstraints().back().constraint.DebugString(),
-              EndsWith("1*X9 1*X10 <= 10"));
+              EndsWith("1*I9 1*I10 <= 10"));
 }
 
 TEST(CumulativeEnergyCutGenerator, DetectedPrecedence) {
@@ -263,10 +267,11 @@ TEST(CumulativeEnergyCutGenerator, DetectedPrecedence) {
       start2, AffineExpression(start2, one, size2), AffineExpression(size2),
       kNoLiteralIndex, /*add_linear_relation=*/false);
   CutGenerator disjunctive = CreateNoOverlapPrecedenceCutGenerator(
-      intervals_repository->GetOrCreateHelper({
-          i1,
-          i2,
-      }),
+      intervals_repository->GetOrCreateHelper(/*enforcement_literals=*/{},
+                                              {
+                                                  i1,
+                                                  i2,
+                                              }),
       &model);
   LinearConstraintManager* const manager =
       model.GetOrCreate<LinearConstraintManager>();
@@ -284,7 +289,7 @@ TEST(CumulativeEnergyCutGenerator, DetectedPrecedence) {
   ASSERT_EQ(1, manager->num_cuts());
 
   EXPECT_THAT(manager->AllConstraints().front().constraint.DebugString(),
-              EndsWith("1*X0 -1*X1 <= -3"));
+              EndsWith("1*I0 -1*I1 <= -3"));
 }
 
 TEST(CumulativeEnergyCutGenerator, DetectedPrecedenceRev) {
@@ -305,10 +310,11 @@ TEST(CumulativeEnergyCutGenerator, DetectedPrecedenceRev) {
       kNoLiteralIndex, /*add_linear_relation=*/false);
 
   CutGenerator disjunctive = CreateNoOverlapPrecedenceCutGenerator(
-      intervals_repository->GetOrCreateHelper({
-          i2,
-          i1,
-      }),
+      intervals_repository->GetOrCreateHelper(/*enforcement_literals=*/{},
+                                              {
+                                                  i2,
+                                                  i1,
+                                              }),
       &model);
   LinearConstraintManager* const manager =
       model.GetOrCreate<LinearConstraintManager>();
@@ -326,7 +332,7 @@ TEST(CumulativeEnergyCutGenerator, DetectedPrecedenceRev) {
   ASSERT_EQ(1, manager->num_cuts());
 
   EXPECT_THAT(manager->AllConstraints().front().constraint.DebugString(),
-              EndsWith("1*X0 -1*X1 <= -3"));
+              EndsWith("1*I0 -1*I1 <= -3"));
 }
 
 TEST(CumulativeEnergyCutGenerator, DisjunctionOnStart) {
@@ -347,10 +353,11 @@ TEST(CumulativeEnergyCutGenerator, DisjunctionOnStart) {
       kNoLiteralIndex, /*add_linear_relation=*/false);
 
   CutGenerator disjunctive = CreateNoOverlapPrecedenceCutGenerator(
-      intervals_repository->GetOrCreateHelper({
-          i2,
-          i1,
-      }),
+      intervals_repository->GetOrCreateHelper(/*enforcement_literals=*/{},
+                                              {
+                                                  i2,
+                                                  i1,
+                                              }),
       &model);
   LinearConstraintManager* const manager =
       model.GetOrCreate<LinearConstraintManager>();
@@ -368,7 +375,7 @@ TEST(CumulativeEnergyCutGenerator, DisjunctionOnStart) {
   ASSERT_EQ(1, manager->num_cuts());
 
   EXPECT_THAT(manager->AllConstraints().front().constraint.DebugString(),
-              StartsWith("15 <= 2*X0 5*X1"));
+              StartsWith("15 <= 2*I0 5*I1"));
 }
 
 TEST(ComputeMinSumOfEndMinsTest, CombinationOf3) {
@@ -397,25 +404,33 @@ TEST(ComputeMinSumOfEndMinsTest, CombinationOf3) {
       /*add_linear_relation=*/false);
 
   SchedulingConstraintHelper* helper =
-      model.GetOrCreate<IntervalsRepository>()->GetOrCreateHelper({i1, i2, i3});
+      model.GetOrCreate<IntervalsRepository>()->GetOrCreateHelper(
+          /*enforcement_literals=*/{}, {i1, i2, i3});
   SchedulingDemandHelper* demands_helper =
       new SchedulingDemandHelper({two, one, one}, helper, &model);
   model.TakeOwnership(demands_helper);
-  CompletionTimeEvent e1(0, helper, demands_helper);
-  CompletionTimeEvent e2(1, helper, demands_helper);
-  CompletionTimeEvent e3(2, helper, demands_helper);
-  const std::vector<CompletionTimeEvent> events = {e1, e2, e3};
+  std::vector<std::unique_ptr<CompletionTimeEvent>> events;
+  events.push_back(
+      std::make_unique<CompletionTimeEvent>(0, helper, demands_helper));
+  events.push_back(
+      std::make_unique<CompletionTimeEvent>(1, helper, demands_helper));
+  events.push_back(
+      std::make_unique<CompletionTimeEvent>(2, helper, demands_helper));
 
   double min_sum_of_end_mins = 0;
   double min_sum_of_weighted_end_mins = 0;
   CtExhaustiveHelper ct_helper;
-  ct_helper.Init(events, &model);
+  ct_helper.Init(absl::MakeSpan(events), &model);
   bool cut_use_precedences = false;
   int exploration_credit = 1000;
+
+  std::vector<CompletionTimeEvent*> events_ptr(events.size());
+  for (int i = 0; i < events.size(); ++i) events_ptr[i] = events[i].get();
+
   ASSERT_EQ(ComputeMinSumOfWeightedEndMins(
-                events, two, 0.01, 0.01, ct_helper, min_sum_of_end_mins,
-                min_sum_of_weighted_end_mins, cut_use_precedences,
-                exploration_credit),
+                absl::MakeSpan(events_ptr), two, 0.01, 0.01, ct_helper,
+                min_sum_of_end_mins, min_sum_of_weighted_end_mins,
+                cut_use_precedences, exploration_credit),
             CompletionTimeExplorationStatus::FINISHED);
   EXPECT_EQ(min_sum_of_end_mins, 17);
   EXPECT_EQ(min_sum_of_weighted_end_mins, 86);
@@ -448,27 +463,34 @@ TEST(ComputeMinSumOfEndMinsTest, CombinationOf3ConstraintStart) {
       /*add_linear_relation=*/false);
 
   SchedulingConstraintHelper* helper =
-      model.GetOrCreate<IntervalsRepository>()->GetOrCreateHelper({i1, i2, i3});
+      model.GetOrCreate<IntervalsRepository>()->GetOrCreateHelper(
+          /*enforcement_literals=*/{}, {i1, i2, i3});
   SchedulingDemandHelper* demands_helper =
       new SchedulingDemandHelper({two, one, one}, helper, &model);
   model.TakeOwnership(demands_helper);
 
-  CompletionTimeEvent e1(0, helper, demands_helper);
-  CompletionTimeEvent e2(1, helper, demands_helper);
-  CompletionTimeEvent e3(2, helper, demands_helper);
-  const std::vector<CompletionTimeEvent> events = {e1, e2, e3};
+  std::vector<std::unique_ptr<CompletionTimeEvent>> events;
+  events.push_back(
+      std::make_unique<CompletionTimeEvent>(0, helper, demands_helper));
+  events.push_back(
+      std::make_unique<CompletionTimeEvent>(1, helper, demands_helper));
+  events.push_back(
+      std::make_unique<CompletionTimeEvent>(2, helper, demands_helper));
 
   double min_sum_of_end_mins = 0;
   double min_sum_of_weighted_end_mins = 0;
   CtExhaustiveHelper ct_helper;
-  ct_helper.Init(events, &model);
+  ct_helper.Init(absl::MakeSpan(events), &model);
   bool cut_use_precedences = false;
   int exploration_credit = 1000;
 
+  std::vector<CompletionTimeEvent*> events_ptr(events.size());
+  for (int i = 0; i < events.size(); ++i) events_ptr[i] = events[i].get();
+
   ASSERT_EQ(ComputeMinSumOfWeightedEndMins(
-                events, two, 0.01, 0.01, ct_helper, min_sum_of_end_mins,
-                min_sum_of_weighted_end_mins, cut_use_precedences,
-                exploration_credit),
+                absl::MakeSpan(events_ptr), two, 0.01, 0.01, ct_helper,
+                min_sum_of_end_mins, min_sum_of_weighted_end_mins,
+                cut_use_precedences, exploration_credit),
             CompletionTimeExplorationStatus::FINISHED);
   EXPECT_EQ(min_sum_of_end_mins, 18);
   EXPECT_EQ(min_sum_of_weighted_end_mins, 86);
@@ -500,27 +522,34 @@ TEST(ComputeMinSumOfEndMinsTest, Abort) {
       /*add_linear_relation=*/false);
 
   SchedulingConstraintHelper* helper =
-      model.GetOrCreate<IntervalsRepository>()->GetOrCreateHelper({i1, i2, i3});
+      model.GetOrCreate<IntervalsRepository>()->GetOrCreateHelper(
+          /*enforcement_literals=*/{}, {i1, i2, i3});
   SchedulingDemandHelper* demands_helper =
       new SchedulingDemandHelper({two, one, one}, helper, &model);
   model.TakeOwnership(demands_helper);
 
-  CompletionTimeEvent e1(0, helper, demands_helper);
-  CompletionTimeEvent e2(1, helper, demands_helper);
-  CompletionTimeEvent e3(2, helper, demands_helper);
-  const std::vector<CompletionTimeEvent> events = {e1, e2, e3};
+  std::vector<std::unique_ptr<CompletionTimeEvent>> events;
+  events.push_back(
+      std::make_unique<CompletionTimeEvent>(0, helper, demands_helper));
+  events.push_back(
+      std::make_unique<CompletionTimeEvent>(1, helper, demands_helper));
+  events.push_back(
+      std::make_unique<CompletionTimeEvent>(2, helper, demands_helper));
 
   double min_sum_of_end_mins = 0;
   double min_sum_of_weighted_end_mins = 0;
   CtExhaustiveHelper ct_helper;
-  ct_helper.Init(events, &model);
+  ct_helper.Init(absl::MakeSpan(events), &model);
   bool cut_use_precedences = false;
   int exploration_credit = 2;
 
+  std::vector<CompletionTimeEvent*> events_ptr(events.size());
+  for (int i = 0; i < events.size(); ++i) events_ptr[i] = events[i].get();
+
   ASSERT_EQ(ComputeMinSumOfWeightedEndMins(
-                events, two, 0.01, 0.01, ct_helper, min_sum_of_end_mins,
-                min_sum_of_weighted_end_mins, cut_use_precedences,
-                exploration_credit),
+                absl::MakeSpan(events_ptr), two, 0.01, 0.01, ct_helper,
+                min_sum_of_end_mins, min_sum_of_weighted_end_mins,
+                cut_use_precedences, exploration_credit),
             CompletionTimeExplorationStatus::ABORTED);
 }
 
@@ -550,26 +579,34 @@ TEST(ComputeMinSumOfEndMinsTest, Infeasible) {
       /*add_linear_relation=*/false);
 
   SchedulingConstraintHelper* helper =
-      model.GetOrCreate<IntervalsRepository>()->GetOrCreateHelper({i1, i2, i3});
+      model.GetOrCreate<IntervalsRepository>()->GetOrCreateHelper(
+          /*enforcement_literals=*/{}, {i1, i2, i3});
   SchedulingDemandHelper* demands_helper =
       new SchedulingDemandHelper({two, one, one}, helper, &model);
   model.TakeOwnership(demands_helper);
 
-  CompletionTimeEvent e1(0, helper, demands_helper);
-  CompletionTimeEvent e2(1, helper, demands_helper);
-  CompletionTimeEvent e3(2, helper, demands_helper);
-  const std::vector<CompletionTimeEvent> events = {e1, e2, e3};
+  std::vector<std::unique_ptr<CompletionTimeEvent>> events;
+  events.push_back(
+      std::make_unique<CompletionTimeEvent>(0, helper, demands_helper));
+  events.push_back(
+      std::make_unique<CompletionTimeEvent>(1, helper, demands_helper));
+  events.push_back(
+      std::make_unique<CompletionTimeEvent>(2, helper, demands_helper));
 
   double min_sum_of_end_mins = 0;
   double min_sum_of_weighted_end_mins = 0;
   CtExhaustiveHelper ct_helper;
-  ct_helper.Init(events, &model);
+  ct_helper.Init(absl::MakeSpan(events), &model);
   bool cut_use_precedences = false;
   int exploration_credit = 1000;
+
+  std::vector<CompletionTimeEvent*> events_ptr(events.size());
+  for (int i = 0; i < events.size(); ++i) events_ptr[i] = events[i].get();
+
   ASSERT_EQ(ComputeMinSumOfWeightedEndMins(
-                events, two, 0.01, 0.01, ct_helper, min_sum_of_end_mins,
-                min_sum_of_weighted_end_mins, cut_use_precedences,
-                exploration_credit),
+                absl::MakeSpan(events_ptr), two, 0.01, 0.01, ct_helper,
+                min_sum_of_end_mins, min_sum_of_weighted_end_mins,
+                cut_use_precedences, exploration_credit),
             CompletionTimeExplorationStatus::NO_VALID_PERMUTATION);
 }
 
@@ -587,7 +624,7 @@ double ExactMakespan(absl::Span<const int> sizes, std::vector<int>& demands,
   }
   builder.Minimize(obj);
   const CpSolverResponse response =
-      SolveWithParameters(builder.Build(), "num_search_workers:8");
+      SolveWithParameters(builder.Build(), "num_workers:8");
   EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
   return response.objective_value();
 }
@@ -610,7 +647,8 @@ double ExactMakespanBruteForce(absl::Span<const int> sizes,
   }
 
   SchedulingConstraintHelper* helper =
-      model.GetOrCreate<IntervalsRepository>()->GetOrCreateHelper(intervals);
+      model.GetOrCreate<IntervalsRepository>()->GetOrCreateHelper(
+          /*enforcement_literals=*/{}, intervals);
   std::vector<AffineExpression> demands_expr;
   for (int i = 0; i < demands.size(); ++i) {
     demands_expr.push_back(AffineExpression(demands[i]));
@@ -619,22 +657,26 @@ double ExactMakespanBruteForce(absl::Span<const int> sizes,
       new SchedulingDemandHelper(demands_expr, helper, &model);
   model.TakeOwnership(demands_helper);
 
-  std::vector<CompletionTimeEvent> events;
+  std::vector<std::unique_ptr<CompletionTimeEvent>> events;
   for (int i = 0; i < demands.size(); ++i) {
-    CompletionTimeEvent e(i, helper, demands_helper);
-    events.push_back(e);
+    events.push_back(
+        std::make_unique<CompletionTimeEvent>(i, helper, demands_helper));
   }
 
   double min_sum_of_end_mins = 0;
   double min_sum_of_weighted_end_mins = 0;
   CtExhaustiveHelper ct_helper;
-  ct_helper.Init(events, &model);
+  ct_helper.Init(absl::MakeSpan(events), &model);
   bool cut_use_precedences = false;
   int exploration_credit = 10000;
+
+  std::vector<CompletionTimeEvent*> events_ptr(events.size());
+  for (int i = 0; i < events.size(); ++i) events_ptr[i] = events[i].get();
+
   EXPECT_EQ(ComputeMinSumOfWeightedEndMins(
-                events, capacity, 0.01, 0.01, ct_helper, min_sum_of_end_mins,
-                min_sum_of_weighted_end_mins, cut_use_precedences,
-                exploration_credit),
+                absl::MakeSpan(events_ptr), capacity, 0.01, 0.01, ct_helper,
+                min_sum_of_end_mins, min_sum_of_weighted_end_mins,
+                cut_use_precedences, exploration_credit),
             CompletionTimeExplorationStatus::FINISHED);
   return min_sum_of_end_mins;
 }
@@ -655,6 +697,39 @@ TEST(ComputeMinSumOfEndMinsTest, RandomCases) {
     EXPECT_NEAR(ExactMakespan(sizes, demands, capacity),
                 ExactMakespanBruteForce(sizes, demands, capacity), 1e-6);
   }
+}
+
+struct SimpleEvent {
+  IntegerValue start_min;
+  IntegerValue end_max;
+  bool operator==(const SimpleEvent& other) const {
+    return start_min == other.start_min && end_max == other.end_max;
+  }
+};
+
+SimpleEvent ConvexHull(absl::Span<std::unique_ptr<SimpleEvent>> events) {
+  SimpleEvent result = *events[0];
+  for (int i = 1; i < events.size(); ++i) {
+    result.start_min = std::min(result.start_min, events[i]->start_min);
+    result.end_max = std::max(result.end_max, events[i]->end_max);
+  }
+  return result;
+}
+
+TEST(SplitEventsInIndendentSetsTest, BasicTest) {
+  std::vector<SimpleEvent> events_arena = {{0, 10},  {2, 12},  {3, 5},
+                                           {15, 20}, {12, 21}, {30, 35}};
+  std::vector<std::unique_ptr<SimpleEvent>> events;
+  events.reserve(events_arena.size());
+  for (SimpleEvent& event : events_arena)
+    events.push_back(std::make_unique<SimpleEvent>(event));
+  const std::vector<absl::Span<std::unique_ptr<SimpleEvent>>> sets =
+      SplitEventsInIndendentSets(events);
+  EXPECT_EQ(sets.size(), 2);
+  EXPECT_EQ(sets[0].size(), 3);
+  EXPECT_EQ(ConvexHull(sets[0]), SimpleEvent({0, 12}));
+  EXPECT_EQ(sets[1].size(), 2);
+  EXPECT_EQ(ConvexHull(sets[1]), SimpleEvent({12, 21}));
 }
 
 }  // namespace

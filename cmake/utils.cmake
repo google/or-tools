@@ -17,7 +17,7 @@ function(get_patch_from_git VERSION_PATCH VERSION_MAJOR)
     message(STATUS "Did not find git package.")
     set(PATCH 9999)
   else()
-    # If no tags can be found, it is a git shallow clone
+    # If no tags can be found, it is a git shallow clone or a new major
     execute_process(COMMAND
       ${GIT_EXECUTABLE} rev-list --count v${VERSION_MAJOR}.0..HEAD
       RESULT_VARIABLE RESULT_VAR
@@ -25,8 +25,20 @@ function(get_patch_from_git VERSION_PATCH VERSION_MAJOR)
       ERROR_QUIET
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
     if(RESULT_VAR) # since 0 is success, need invert it
-      message(STATUS "Did not be able to compute patch from v${VERSION_MAJOR}.0.")
-      set(PATCH 9999)
+      message(STATUS "Did not be able to compute patch from 'v${VERSION_MAJOR}.0'.")
+      execute_process(COMMAND
+        ${GIT_EXECUTABLE} rev-parse --is-shallow-repository
+        OUTPUT_VARIABLE IS_SHALLOW_VAR
+        ERROR_QUIET
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+      )
+      if(${IS_SHALLOW_VAR} MATCHES "false")
+        message(STATUS "Repo is not shallow, use 0 as patch.")
+        set(PATCH 0)
+      else()
+        message(STATUS "Repo is shallow, use 9999 as patch.")
+        set(PATCH 9999)
+      endif()
     endif()
     STRING(STRIP PATCH ${PATCH})
     STRING(REGEX REPLACE "\n$" "" PATCH ${PATCH})
@@ -35,19 +47,23 @@ function(get_patch_from_git VERSION_PATCH VERSION_MAJOR)
   set(${VERSION_PATCH} ${PATCH} PARENT_SCOPE)
 endfunction()
 
-function(set_version VERSION)
+function(set_version VERSION RELEASE)
   if(DEFINED ENV{OR_TOOLS_MAJOR} AND DEFINED ENV{OR_TOOLS_MINOR})
     set(MAJOR $ENV{OR_TOOLS_MAJOR})
     set(MINOR $ENV{OR_TOOLS_MINOR})
   else()
     # Get Major and Minor from Version.txt
     file(STRINGS "Version.txt" VERSION_STR)
+    set(IS_RELEASE TRUE)
     foreach(STR ${VERSION_STR})
       if(${STR} MATCHES "OR_TOOLS_MAJOR=(.*)")
         set(MAJOR ${CMAKE_MATCH_1})
       endif()
       if(${STR} MATCHES "OR_TOOLS_MINOR=(.*)")
         set(MINOR ${CMAKE_MATCH_1})
+      endif()
+      if(${STR} MATCHES "^RELEASE_CANDIDATE=YES\$")
+        set(IS_RELEASE FALSE)
       endif()
     endforeach()
   endif()
@@ -64,6 +80,7 @@ function(set_version VERSION)
     endif()
   endif()
   set(${VERSION} "${MAJOR}.${MINOR}.${PATCH}" PARENT_SCOPE)
+  set(${RELEASE} ${IS_RELEASE} PARENT_SCOPE)
 endfunction()
 
 

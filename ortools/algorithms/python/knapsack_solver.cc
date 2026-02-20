@@ -67,19 +67,15 @@ PYBIND11_MODULE(knapsack_solver, m) {
              KnapsackSolver::SolverType::KNAPSACK_DYNAMIC_PROGRAMMING_SOLVER,
              DOC(operations_research, KnapsackSolver, SolverType,
                  KNAPSACK_DYNAMIC_PROGRAMMING_SOLVER))
-#if defined(USE_CBC)
       .value("KNAPSACK_MULTIDIMENSION_CBC_MIP_SOLVER",
              KnapsackSolver::SolverType::KNAPSACK_MULTIDIMENSION_CBC_MIP_SOLVER,
              DOC(operations_research, KnapsackSolver, SolverType,
                  KNAPSACK_MULTIDIMENSION_CBC_MIP_SOLVER))
-#endif  // USE_CBC
-#if defined(USE_SCIP)
       .value(
           "KNAPSACK_MULTIDIMENSION_SCIP_MIP_SOLVER",
           KnapsackSolver::SolverType::KNAPSACK_MULTIDIMENSION_SCIP_MIP_SOLVER,
           DOC(operations_research, KnapsackSolver, SolverType,
               KNAPSACK_MULTIDIMENSION_SCIP_MIP_SOLVER))
-#endif  // USE_SCIP
       .value("KNAPSACK_DIVIDE_AND_CONQUER_SOLVER",
              KnapsackSolver::SolverType::KNAPSACK_DIVIDE_AND_CONQUER_SOLVER,
              DOC(operations_research, KnapsackSolver, SolverType,

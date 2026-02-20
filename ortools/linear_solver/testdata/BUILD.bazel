@@ -11,10 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Test files for the linear_solver packages.
+# Test files for the linear_solver component.
+package(default_visibility = ["//visibility:public"])
 
-exports_files([
-    "maximization.mps",
-    "small_model.lp",
-    "large_model.mps.gz",
-])
+exports_files(glob(["*"]))

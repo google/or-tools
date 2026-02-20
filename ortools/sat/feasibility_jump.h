@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_SAT_FEASIBILITY_JUMP_H_
-#define OR_TOOLS_SAT_FEASIBILITY_JUMP_H_
+#ifndef ORTOOLS_SAT_FEASIBILITY_JUMP_H_
+#define ORTOOLS_SAT_FEASIBILITY_JUMP_H_
 
 #include <algorithm>
 #include <atomic>
@@ -375,7 +375,7 @@ class SharedLsStates {
   // This is thread safe. If we respect the max_parallelism guarantee, then
   // all states should be independent.
   LsState* GetNextState() {
-    absl::MutexLock mutex_lock(&mutex_);
+    absl::MutexLock mutex_lock(mutex_);
     int next = -1;
     const int num_states = states_.size();
     for (int i = 0; i < num_states; ++i) {
@@ -400,7 +400,7 @@ class SharedLsStates {
   }
 
   void Release(LsState* state) {
-    absl::MutexLock mutex_lock(&mutex_);
+    absl::MutexLock mutex_lock(mutex_);
     for (int i = 0; i < states_.size(); ++i) {
       if (state == states_[i].get()) {
         taken_[i] = false;
@@ -410,7 +410,7 @@ class SharedLsStates {
   }
 
   void ResetLubyCounter() {
-    absl::MutexLock mutex_lock(&mutex_);
+    absl::MutexLock mutex_lock(mutex_);
     luby_counter_ = 0;
   }
 
@@ -421,7 +421,7 @@ class SharedLsStates {
   // Also if options.use_restart, then num_batches_before_change is only
   // modified under lock, so this code should be thread safe.
   void ConfigureNextLubyRestart(LsState* state) {
-    absl::MutexLock mutex_lock(&mutex_);
+    absl::MutexLock mutex_lock(mutex_);
     const int factor = std::max(1, params_.feasibility_jump_restart_factor());
     CHECK(state->options.use_restart);
     const int64_t next = factor * SUniv(++luby_counter_);
@@ -432,7 +432,7 @@ class SharedLsStates {
   void CollectStatistics(const LsState& state) {
     if (state.counters.num_batches == 0) return;
 
-    absl::MutexLock mutex_lock(&mutex_);
+    absl::MutexLock mutex_lock(mutex_);
     options_to_stats_[state.options].AddFrom(state.counters);
     options_to_num_restarts_[state.options]++;
   }
@@ -510,7 +510,7 @@ class FeasibilityJumpSolver : public SubSolver {
     if (shared_response_->ProblemIsSolved()) return false;
     if (shared_time_limit_->LimitReached()) return false;
 
-    return (shared_response_->SolutionsRepository().NumSolutions() > 0) ==
+    return shared_response_->HasFeasibleSolution() ==
            (type() == SubSolver::INCOMPLETE);
   }
 
@@ -695,4 +695,4 @@ class CompoundMoveBuilder {
 
 }  // namespace operations_research::sat
 
-#endif  // OR_TOOLS_SAT_FEASIBILITY_JUMP_H_
+#endif  // ORTOOLS_SAT_FEASIBILITY_JUMP_H_

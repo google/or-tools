@@ -14,22 +14,23 @@
 // Utilities to serialize VRP-like solutions in standardised formats: either
 // TSPLIB or CVRPLIB.
 
-#ifndef OR_TOOLS_ROUTING_PARSERS_SOLUTION_SERIALIZER_H_
-#define OR_TOOLS_ROUTING_PARSERS_SOLUTION_SERIALIZER_H_
+#ifndef ORTOOLS_ROUTING_PARSERS_SOLUTION_SERIALIZER_H_
+#define ORTOOLS_ROUTING_PARSERS_SOLUTION_SERIALIZER_H_
 
+#include <cstdint>
 #include <optional>
 #include <string>
 #include <string_view>
 #include <utility>
 #include <vector>
 
+#include "absl/base/attributes.h"
+#include "absl/base/optimization.h"
+#include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/base/file.h"
-#include "ortools/base/helpers.h"
-#include "ortools/base/logging.h"
 #include "ortools/routing/parsers/simple_graph.h"
 
 namespace operations_research::routing {
@@ -162,6 +163,7 @@ class RoutingSolution {
       case RoutingOutputFormat::kNEARPLIB:
         return SerializeToNEARPLIBString();
     }
+    ABSL_UNREACHABLE();
   }
 
   // Serializes the full solution to the given file, including metadata like
@@ -180,6 +182,7 @@ class RoutingSolution {
       case RoutingOutputFormat::kNEARPLIB:
         return SerializeToNEARPLIBSolutionFile();
     }
+    ABSL_UNREACHABLE();
   }
 
   // Serializes the full solution to the given file, including metadata like
@@ -263,6 +266,7 @@ std::string FormatStatistic(absl::string_view name, T value,
     case RoutingOutputFormat::kNEARPLIB:
       return absl::StrCat(name, " : ", value);
   }
+  ABSL_UNREACHABLE();
 }
 
 // Specialization for doubles to show a higher precision: without this
@@ -282,6 +286,7 @@ inline std::string FormatStatistic(absl::string_view name, double value,
     case RoutingOutputFormat::kNEARPLIB:
       return absl::StrFormat("%s : %f", name, value);
   }
+  ABSL_UNREACHABLE();
 }
 
 // Prints a formatted solution or solver statistic according to the given
@@ -293,4 +298,4 @@ void PrintStatistic(absl::string_view name, T value,
 }
 }  // namespace operations_research::routing
 
-#endif  // OR_TOOLS_ROUTING_PARSERS_SOLUTION_SERIALIZER_H_
+#endif  // ORTOOLS_ROUTING_PARSERS_SOLUTION_SERIALIZER_H_

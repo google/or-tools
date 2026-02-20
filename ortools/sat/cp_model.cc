@@ -413,8 +413,9 @@ DoubleLinearExpr& DoubleLinearExpr::AddExpression(const LinearExpr& expr,
   const std::vector<int64_t> coefficients = expr.coefficients();
   for (int i = 0; i < indices.size(); ++i) {
     variables_.push_back(indices[i]);
-    coefficients_.push_back(1.0 * static_cast<double>(coefficients[i]) * coeff);
+    coefficients_.push_back(static_cast<double>(coefficients[i]) * coeff);
   }
+  constant_ += static_cast<double>(expr.constant()) * coeff;
 
   return *this;
 }

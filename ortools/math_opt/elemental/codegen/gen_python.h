@@ -12,8 +12,8 @@
 // limitations under the License.
 
 // The python code generator.
-#ifndef OR_TOOLS_MATH_OPT_ELEMENTAL_CODEGEN_GEN_PYTHON_H_
-#define OR_TOOLS_MATH_OPT_ELEMENTAL_CODEGEN_GEN_PYTHON_H_
+#ifndef ORTOOLS_MATH_OPT_ELEMENTAL_CODEGEN_GEN_PYTHON_H_
+#define ORTOOLS_MATH_OPT_ELEMENTAL_CODEGEN_GEN_PYTHON_H_
 
 #include <memory>
 
@@ -27,4 +27,4 @@ std::unique_ptr<CodeGenerator> PythonEnums();
 
 }  // namespace operations_research::math_opt::codegen
 
-#endif  // OR_TOOLS_MATH_OPT_ELEMENTAL_CODEGEN_GEN_PYTHON_H_
+#endif  // ORTOOLS_MATH_OPT_ELEMENTAL_CODEGEN_GEN_PYTHON_H_

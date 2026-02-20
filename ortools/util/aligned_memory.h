@@ -24,8 +24,8 @@
 // - AlignUp and AlignDown are functions that align a pointer to the given
 //   number of bytes.
 
-#ifndef OR_TOOLS_UTIL_ALIGNED_MEMORY_H_
-#define OR_TOOLS_UTIL_ALIGNED_MEMORY_H_
+#ifndef ORTOOLS_UTIL_ALIGNED_MEMORY_H_
+#define ORTOOLS_UTIL_ALIGNED_MEMORY_H_
 
 #include <cstddef>
 #include <cstdint>
@@ -98,4 +98,4 @@ using MisalignedVector =
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_UTIL_ALIGNED_MEMORY_H_
+#endif  // ORTOOLS_UTIL_ALIGNED_MEMORY_H_

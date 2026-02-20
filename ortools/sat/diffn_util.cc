@@ -40,14 +40,13 @@
 #include "absl/log/log.h"
 #include "absl/log/vlog_is_on.h"
 #include "absl/random/bit_gen_ref.h"
-#include "absl/types/optional.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/graph/connected_components.h"
 #include "ortools/graph/strongly_connected_components.h"
 #include "ortools/sat/integer_base.h"
+#include "ortools/sat/scheduling_helpers.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/fixed_shape_binary_tree.h"
 #include "ortools/util/integer_pq.h"
@@ -139,8 +138,8 @@ CompactVectorVector<int> GetOverlappingRectangleComponents(
 bool ReportEnergyConflict(Rectangle bounding_box, absl::Span<const int> boxes,
                           SchedulingConstraintHelper* x,
                           SchedulingConstraintHelper* y) {
-  x->ClearReason();
-  y->ClearReason();
+  x->ResetReason();
+  y->ResetReason();
   IntegerValue total_energy(0);
   for (const int b : boxes) {
     const IntegerValue x_min = x->ShiftedStartMin(b);
@@ -164,7 +163,7 @@ bool ReportEnergyConflict(Rectangle bounding_box, absl::Span<const int> boxes,
   }
 
   CHECK_GT(total_energy, bounding_box.Area());
-  x->ImportOtherReasons(*y);
+  x->ImportReasonsFromOther(*y);
   return x->ReportConflict();
 }
 
@@ -1114,6 +1113,7 @@ constexpr const EdgeInfo& GetEdgeInfo(ProbingRectangle::Edge edge) {
     case Edge::TOP:
       return EdgeInfoHolder::kTop;
   }
+  LOG(FATAL) << "Invalid edge: " << static_cast<int>(edge);
 }
 
 IntegerValue GetSmallest1DIntersection(ProbingRectangle::Direction direction,
@@ -1129,6 +1129,7 @@ IntegerValue GetSmallest1DIntersection(ProbingRectangle::Direction direction,
                                     range.bounding_area.y_max, range.y_size,
                                     rectangle.y_min, rectangle.y_max);
   }
+  LOG(FATAL) << "Invalid direction: " << static_cast<int>(direction);
 }
 
 }  // namespace
@@ -1391,6 +1392,7 @@ IntegerValue ProbingRectangle::GetShrinkDeltaArea(Edge edge) const {
     case Edge::TOP:
       return (current_rectangle.y_max - coordinate) * current_rectangle.SizeX();
   }
+  LOG(FATAL) << "Invalid edge: " << static_cast<int>(edge);
 }
 
 void ProbingRectangle::CacheShrinkDeltaEnergy(int dimension) {
@@ -1493,6 +1495,7 @@ bool ProbingRectangle::CanShrink(Edge edge) const {
     case Edge::TOP:
       return (indexes_[Edge::TOP] > next_indexes_[Edge::BOTTOM]);
   }
+  LOG(FATAL) << "Invalid edge: " << static_cast<int>(edge);
 }
 
 namespace {

@@ -30,6 +30,7 @@
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
+#include "ortools/sat/scheduling_helpers.h"
 #include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
@@ -69,7 +70,7 @@ TEST(AppendRelaxationForEqualityEncodingTest, DomainOfSize2) {
 
   // The variable (0) is equal to 8 - 4 * [var == 4].
   EXPECT_EQ(relaxation.linear_constraints[1].DebugString(),
-            "8 <= 1*X0 4*X1 <= 8");
+            "8 <= 1*I0 4*I1 <= 8");
 }
 
 // Convert the at_most_one to a linear constraint and call DebugString().
@@ -103,13 +104,13 @@ TEST(AppendRelaxationForEqualityEncodingTest, DomainOfSize4) {
 
   EXPECT_EQ(relaxation.linear_constraints.size(), 2);
   EXPECT_EQ(relaxation.linear_constraints[0].DebugString(),
-            "1 <= 1*X1 1*X2 1*X3 1*X4");
+            "1 <= 1*I1 1*I2 1*I3 1*I4");
   EXPECT_EQ(relaxation.linear_constraints[1].DebugString(),
-            "1 <= 1*X0 -4*X2 -7*X3 -8*X4 <= 1");
+            "1 <= 1*I0 -4*I2 -7*I3 -8*I4 <= 1");
 
   EXPECT_EQ(relaxation.at_most_ones.size(), 1);
   EXPECT_EQ(AtMostOneAsString(relaxation.at_most_ones[0], &model),
-            "1*X1 1*X2 1*X3 1*X4 <= 1");
+            "1*I1 1*I2 1*I3 1*I4 <= 1");
 }
 
 TEST(AppendRelaxationForEqualityEncodingTest, PartialEncoding) {
@@ -139,13 +140,13 @@ TEST(AppendRelaxationForEqualityEncodingTest, PartialEncoding) {
 
   EXPECT_EQ(relaxation.linear_constraints.size(), 2);
   EXPECT_EQ(relaxation.linear_constraints[0].DebugString(),
-            "2 <= 1*X0 2*X1 1*X2 -3*X3");
+            "2 <= 1*I0 2*I1 1*I2 -3*I3");
   EXPECT_EQ(relaxation.linear_constraints[1].DebugString(),
-            "1*X0 10*X1 9*X2 5*X3 <= 10");
+            "1*I0 10*I1 9*I2 5*I3 <= 10");
 
   EXPECT_EQ(relaxation.at_most_ones.size(), 1);
   EXPECT_EQ(AtMostOneAsString(relaxation.at_most_ones[0], &model),
-            "1*X1 1*X2 1*X3 <= 1");
+            "1*I1 1*I2 1*I3 <= 1");
 }
 
 TEST(AppendPartialGreaterThanEncodingRelaxationTest, FullEncoding) {
@@ -166,17 +167,17 @@ TEST(AppendPartialGreaterThanEncodingRelaxationTest, FullEncoding) {
   // The implications.
   EXPECT_EQ(relaxation.at_most_ones.size(), 2);
   EXPECT_EQ(AtMostOneAsString(relaxation.at_most_ones[0], &model),
-            "-1*X1 1*X2 <= 0");
+            "-1*I1 1*I2 <= 0");
   EXPECT_EQ(AtMostOneAsString(relaxation.at_most_ones[1], &model),
-            "-1*X2 1*X3 <= 0");
+            "-1*I2 1*I3 <= 0");
 
   // The "diffs" are 4,3,1.
   // Because here we have a full encoding, we actually have == 1.
   EXPECT_EQ(relaxation.linear_constraints.size(), 2);
   EXPECT_EQ(relaxation.linear_constraints[0].DebugString(),
-            "1 <= 1*X0 -4*X1 -3*X2 -1*X3");
+            "1 <= 1*I0 -4*I1 -3*I2 -1*I3");
   EXPECT_EQ(relaxation.linear_constraints[1].DebugString(),
-            "-1 <= -1*X0 4*X1 3*X2 1*X3");
+            "-1 <= -1*I0 4*I1 3*I2 1*I3");
 }
 
 TEST(AppendPartialGreaterThanEncodingRelaxationTest, PartialEncoding) {
@@ -202,19 +203,19 @@ TEST(AppendPartialGreaterThanEncodingRelaxationTest, PartialEncoding) {
   // The implications.
   EXPECT_EQ(relaxation.at_most_ones.size(), 2);
   EXPECT_EQ(AtMostOneAsString(relaxation.at_most_ones[0], &model),
-            "-1*X1 1*X2 <= 0");
+            "-1*I1 1*I2 <= 0");
   EXPECT_EQ(AtMostOneAsString(relaxation.at_most_ones[1], &model),
-            "-1*X2 1*X3 <= 0");
+            "-1*I2 1*I3 <= 0");
 
   // The first constraint is var >= 0 + (>=1) + (>=2) + 4*(>=6)
   EXPECT_EQ(relaxation.linear_constraints.size(), 2);
   EXPECT_EQ(relaxation.linear_constraints[0].DebugString(),
-            "0 <= 1*X0 -1*X1 -1*X2 -4*X3");
+            "0 <= 1*I0 -1*I1 -1*I2 -4*I3");
 
   // The second is var <= (>=1) + 4*(>=2) + 5*(>=6) which gives the bounds
   // <=0,<=1,<=5 and <=10.
   EXPECT_EQ(relaxation.linear_constraints[1].DebugString(),
-            "0 <= -1*X0 1*X1 4*X2 5*X3");
+            "0 <= -1*I0 1*I1 4*I2 5*I3");
 }
 
 TEST(TryToLinearizeConstraint, BoolOr) {
@@ -237,7 +238,7 @@ TEST(TryToLinearizeConstraint, BoolOr) {
 
   EXPECT_EQ(relaxation.linear_constraints.size(), 1);
   EXPECT_EQ(relaxation.linear_constraints[0].DebugString(),
-            "-1 <= -1*X0 -1*X1 1*X2");
+            "-1 <= -1*I0 -1*I1 1*I2");
 }
 
 TEST(TryToLinearizeConstraint, BoolOrLevel1) {
@@ -282,9 +283,9 @@ TEST(TryToLinearizeConstraint, BoolAndSingleEnforcement) {
 
   EXPECT_EQ(relaxation.at_most_ones.size(), 2);
   EXPECT_EQ(AtMostOneAsString(relaxation.at_most_ones[0], &model),
-            "1*X0 1*X1 <= 1");
+            "1*I0 1*I1 <= 1");
   EXPECT_EQ(AtMostOneAsString(relaxation.at_most_ones[1], &model),
-            "1*X0 -1*X2 <= 0");
+            "1*I0 -1*I2 <= 0");
 }
 
 TEST(TryToLinearizeConstraint, BoolAndMultipleEnforcement) {
@@ -306,12 +307,12 @@ TEST(TryToLinearizeConstraint, BoolAndMultipleEnforcement) {
   TryToLinearizeConstraint(initial_model, initial_model.constraints(0),
                            /*linearization_level=*/2, &model, &relaxation);
 
-  // X0 & X3 => X2 ==1 & not(X1) == 1;
+  // I0 & I3 => I2 ==1 & not(I1) == 1;
   EXPECT_EQ(relaxation.linear_constraints.size(), 2);
   EXPECT_EQ(relaxation.linear_constraints[0].DebugString(),
-            "1*X0 1*X1 1*X3 <= 2");
+            "1*I0 1*I1 1*I3 <= 2");
   EXPECT_EQ(relaxation.linear_constraints[1].DebugString(),
-            "1*X0 -1*X2 1*X3 <= 1");
+            "1*I0 -1*I2 1*I3 <= 1");
 }
 
 TEST(TryToLinearizeConstraint, BoolAndNoEnforcement) {
@@ -381,9 +382,44 @@ TEST(TryToLinearizeConstraint, LinMaxLevel1Bis) {
                            /*linearization_level=*/1, &model, &relaxation);
 
   EXPECT_EQ(relaxation.linear_constraints.size(), 3);
-  EXPECT_EQ(relaxation.linear_constraints[0].DebugString(), "1*X0 -1*X3 <= 0");
-  EXPECT_EQ(relaxation.linear_constraints[1].DebugString(), "1*X1 -1*X3 <= 0");
-  EXPECT_EQ(relaxation.linear_constraints[2].DebugString(), "-1*X2 -1*X3 <= 0");
+  EXPECT_EQ(relaxation.linear_constraints[0].DebugString(), "1*I0 -1*I3 <= 0");
+  EXPECT_EQ(relaxation.linear_constraints[1].DebugString(), "1*I1 -1*I3 <= 0");
+  EXPECT_EQ(relaxation.linear_constraints[2].DebugString(), "-1*I2 -1*I3 <= 0");
+}
+
+TEST(TryToLinearizeConstraint, EnforcedLinMaxLevel2) {
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 5 ] }
+    variables { domain: [ -1, 7 ] }
+    variables { domain: [ -2, 9 ] }
+    variables { domain: [ -5, 10 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      enforcement_literal: 4
+      lin_max {
+        target: { vars: 3 coeffs: 1 }
+        exprs: { vars: 0 coeffs: 1 }
+        exprs: { vars: 1 coeffs: 1 }
+        exprs: { vars: 2 coeffs: -1 }
+      }
+    }
+  )pb");
+
+  Model model;
+  model.GetOrCreate<SatParameters>()->set_linearization_level(2);
+  LoadVariables(initial_model, true, &model);
+
+  LinearRelaxation relaxation;
+  TryToLinearizeConstraint(initial_model, initial_model.constraints(0),
+                           /*linearization_level=*/2, &model, &relaxation);
+
+  EXPECT_EQ(relaxation.linear_constraints.size(), 3);
+  EXPECT_EQ(relaxation.linear_constraints[0].DebugString(),
+            "1*I0 -1*I3 10*I4 <= 10");
+  EXPECT_EQ(relaxation.linear_constraints[1].DebugString(),
+            "1*I1 -1*I3 12*I4 <= 12");
+  EXPECT_EQ(relaxation.linear_constraints[2].DebugString(),
+            "-1*I2 -1*I3 7*I4 <= 7");
 }
 
 TEST(TryToLinearizeConstraint, LinMaxSmall) {
@@ -409,8 +445,8 @@ TEST(TryToLinearizeConstraint, LinMaxSmall) {
 
   // Take into account the constraints added by the cut generator.
   EXPECT_GE(relaxation.linear_constraints.size(), 2);
-  EXPECT_EQ(relaxation.linear_constraints[0].DebugString(), "1*X0 -1*X2 <= 0");
-  EXPECT_EQ(relaxation.linear_constraints[1].DebugString(), "1*X1 -1*X2 <= 0");
+  EXPECT_EQ(relaxation.linear_constraints[0].DebugString(), "1*I0 -1*I2 <= 0");
+  EXPECT_EQ(relaxation.linear_constraints[1].DebugString(), "1*I1 -1*I2 <= 0");
 }
 
 TEST(TryToLinearizeConstraint, IntSquare) {
@@ -435,10 +471,10 @@ TEST(TryToLinearizeConstraint, IntSquare) {
 
   EXPECT_EQ(relaxation.linear_constraints.size(), 3);
   EXPECT_EQ(relaxation.linear_constraints[0].DebugString(),
-            "-11*X0 1*X1 <= -10");
-  EXPECT_EQ(relaxation.linear_constraints[1].DebugString(), "-2 <= -3*X0 1*X1");
+            "-11*I0 1*I1 <= -10");
+  EXPECT_EQ(relaxation.linear_constraints[1].DebugString(), "-2 <= -3*I0 1*I1");
   EXPECT_EQ(relaxation.linear_constraints[2].DebugString(),
-            "-90 <= -19*X0 1*X1");
+            "-90 <= -19*I0 1*I1");
 }
 
 TEST(TryToLinearizeConstraint, IntAbs) {
@@ -462,10 +498,10 @@ TEST(TryToLinearizeConstraint, IntAbs) {
                            /*linearization_level=*/1, &model, &relaxation);
 
   EXPECT_EQ(relaxation.linear_constraints.size(), 3);
-  EXPECT_EQ(relaxation.linear_constraints[0].DebugString(), "-1*X0 1*X1 <= 0");
-  EXPECT_EQ(relaxation.linear_constraints[1].DebugString(), "-1*X0 -1*X1 <= 0");
+  EXPECT_EQ(relaxation.linear_constraints[0].DebugString(), "-1*I0 1*I1 <= 0");
+  EXPECT_EQ(relaxation.linear_constraints[1].DebugString(), "-1*I0 -1*I1 <= 0");
   EXPECT_EQ(relaxation.linear_constraints[2].DebugString(),
-            "50*X0 -10*X1 <= 1200");
+            "50*I0 -10*I1 <= 1200");
 }
 
 TEST(TryToLinearizeConstraint, LinMaxLevel1) {
@@ -508,9 +544,9 @@ TEST(TryToLinearizeConstraint, LinMaxLevel1) {
                            /*linearization_level=*/1, &model, &relaxation);
 
   EXPECT_EQ(relaxation.linear_constraints.size(), 3);
-  EXPECT_EQ(relaxation.linear_constraints[0].DebugString(), "-1*X0 2*X1 <= 2");
-  EXPECT_EQ(relaxation.linear_constraints[1].DebugString(), "-1*X0 -1*X2 <= 1");
-  EXPECT_EQ(relaxation.linear_constraints[2].DebugString(), "-1*X0 3*X3 <= 0");
+  EXPECT_EQ(relaxation.linear_constraints[0].DebugString(), "-1*I0 2*I1 <= 2");
+  EXPECT_EQ(relaxation.linear_constraints[1].DebugString(), "-1*I0 -1*I2 <= 1");
+  EXPECT_EQ(relaxation.linear_constraints[2].DebugString(), "-1*I0 3*I3 <= 0");
 }
 
 TEST(AppendLinMaxRelaxation, BasicBehavior) {
@@ -539,13 +575,13 @@ TEST(AppendLinMaxRelaxation, BasicBehavior) {
   EXPECT_EQ(literals.size(), 3);
   ASSERT_EQ(relaxation.linear_constraints.size(), 4);
   EXPECT_EQ(relaxation.linear_constraints[0].DebugString(),
-            "1 <= 1*X4 1*X5 1*X6 <= 1");
+            "1 <= 1*I4 1*I5 1*I6 <= 1");
   EXPECT_EQ(relaxation.linear_constraints[1].DebugString(),
-            "-1*X0 1*X3 -7*X5 -2*X6 <= 0");
+            "-1*I0 1*I3 -7*I5 -2*I6 <= 0");
   EXPECT_EQ(relaxation.linear_constraints[2].DebugString(),
-            "-1*X1 1*X3 -6*X4 -3*X6 <= 0");
+            "-1*I1 1*I3 -6*I4 -3*I6 <= 0");
   EXPECT_EQ(relaxation.linear_constraints[3].DebugString(),
-            "1*X2 1*X3 -14*X4 -16*X5 <= 0");
+            "1*I2 1*I3 -14*I4 -16*I5 <= 0");
 }
 
 TEST(AppendLinMaxRelaxation, BasicBehaviorExprs) {
@@ -572,13 +608,13 @@ TEST(AppendLinMaxRelaxation, BasicBehaviorExprs) {
   EXPECT_EQ(literals.size(), 3);
   ASSERT_EQ(relaxation.linear_constraints.size(), 4);
   EXPECT_EQ(relaxation.linear_constraints[0].DebugString(),
-            "1 <= 1*X3 1*X4 1*X5 <= 1");
+            "1 <= 1*I3 1*I4 1*I5 <= 1");
   EXPECT_EQ(relaxation.linear_constraints[1].DebugString(),
-            "1*X2 -1*X3 -3*X4 -2*X5 <= 0");
+            "1*I2 -1*I3 -3*I4 -2*I5 <= 0");
   EXPECT_EQ(relaxation.linear_constraints[2].DebugString(),
-            "1*X0 2*X1 1*X2 -4*X3 -3*X5 <= 0");
+            "1*I0 2*I1 1*I2 -4*I3 -3*I5 <= 0");
   EXPECT_EQ(relaxation.linear_constraints[3].DebugString(),
-            "1*X0 -1*X1 1*X2 -3*X3 -3*X4 <= 0");
+            "1*I0 -1*I1 1*I2 -3*I3 -3*I4 <= 0");
 }
 
 TEST(AppendLinMaxRelaxation, BasicBehaviorExprs2) {
@@ -610,13 +646,13 @@ TEST(AppendLinMaxRelaxation, BasicBehaviorExprs2) {
   EXPECT_EQ(literals.size(), 3);
   ASSERT_EQ(relaxation.linear_constraints.size(), 4);
   EXPECT_EQ(relaxation.linear_constraints[0].DebugString(),
-            "1 <= 1*X4 1*X5 1*X6 <= 1");
+            "1 <= 1*I4 1*I5 1*I6 <= 1");
   EXPECT_EQ(relaxation.linear_constraints[1].DebugString(),
-            "2*X0 3*X1 -1*X3 -5*X4 -9*X5 -9*X6 <= 0");
+            "2*I0 3*I1 -1*I3 -5*I4 -9*I5 -9*I6 <= 0");
   EXPECT_EQ(relaxation.linear_constraints[2].DebugString(),
-            "2*X1 5*X2 -1*X3 2*X4 6*X5 2*X6 <= 0");
+            "2*I1 5*I2 -1*I3 2*I4 6*I5 2*I6 <= 0");
   EXPECT_EQ(relaxation.linear_constraints[3].DebugString(),
-            "2*X0 3*X2 -1*X3 -2*X4 -2*X5 <= 0");
+            "2*I0 3*I2 -1*I3 -2*I4 -2*I5 <= 0");
 }
 
 void AppendNoOverlapRelaxation(const ConstraintProto& ct, Model* model,
@@ -627,7 +663,8 @@ void AppendNoOverlapRelaxation(const ConstraintProto& ct, Model* model,
   const IntegerValue one(1);
   std::vector<AffineExpression> demands(intervals.size(), one);
   IntervalsRepository* repository = model->GetOrCreate<IntervalsRepository>();
-  SchedulingConstraintHelper* helper = repository->GetOrCreateHelper(intervals);
+  SchedulingConstraintHelper* helper =
+      repository->GetOrCreateHelper(/*enforcement_literals=*/{}, intervals);
   SchedulingDemandHelper* demands_helper =
       new SchedulingDemandHelper(demands, helper, model);
   model->TakeOwnership(demands_helper);
@@ -668,7 +705,7 @@ TEST(AppendNoOverlapRelaxation, IntersectingIntervals) {
   AppendNoOverlapRelaxation(initial_model.constraints(0), &model, &relaxation);
 
   EXPECT_EQ(relaxation.linear_constraints.size(), 1);
-  EXPECT_EQ(relaxation.linear_constraints[0].DebugString(), "1*X1 1*X4 <= 12");
+  EXPECT_EQ(relaxation.linear_constraints[0].DebugString(), "1*I1 1*I4 <= 12");
 }
 
 TEST(AppendNoOverlapRelaxation, NoIntersection) {
@@ -703,7 +740,7 @@ TEST(AppendNoOverlapRelaxation, NoIntersection) {
   AppendNoOverlapRelaxation(initial_model.constraints(2), &model, &relaxation);
 
   EXPECT_EQ(relaxation.linear_constraints.size(), 1);
-  EXPECT_EQ(relaxation.linear_constraints[0].DebugString(), "1*X4 <= 11");
+  EXPECT_EQ(relaxation.linear_constraints[0].DebugString(), "1*I4 <= 11");
 }
 
 TEST(AppendNoOverlapRelaxation, IntervalWithEnforcement) {
@@ -740,7 +777,7 @@ TEST(AppendNoOverlapRelaxation, IntervalWithEnforcement) {
   AppendNoOverlapRelaxation(initial_model.constraints(2), &model, &relaxation);
 
   EXPECT_EQ(relaxation.linear_constraints.size(), 1);
-  EXPECT_EQ(relaxation.linear_constraints[0].DebugString(), "1*X1 1*X6 <= 10");
+  EXPECT_EQ(relaxation.linear_constraints[0].DebugString(), "1*I1 1*I6 <= 10");
 }
 
 TEST(AppendNoOverlapRelaxation, ZeroMinEnergy) {
@@ -814,7 +851,8 @@ void AppendCumulativeRelaxation(const ConstraintProto& ct, Model* model,
       mapping->Affines(ct.cumulative().demands());
   const AffineExpression capacity = mapping->Affine(ct.cumulative().capacity());
   IntervalsRepository* repository = model->GetOrCreate<IntervalsRepository>();
-  SchedulingConstraintHelper* helper = repository->GetOrCreateHelper(intervals);
+  SchedulingConstraintHelper* helper =
+      repository->GetOrCreateHelper(/*enforcement_literals=*/{}, intervals);
   SchedulingDemandHelper* demands_helper =
       new SchedulingDemandHelper(demands, helper, model);
   model->TakeOwnership(demands_helper);
@@ -871,7 +909,7 @@ TEST(AppendCumulativeRelaxation, GcdOnFixedDemandsSizesAndCapacity) {
   AppendCumulativeRelaxation(initial_model.constraints(3), &model, &relaxation);
 
   EXPECT_EQ(relaxation.linear_constraints.size(), 1);
-  EXPECT_EQ(relaxation.linear_constraints[0].DebugString(), "4*X3 1*X4 <= 6");
+  EXPECT_EQ(relaxation.linear_constraints[0].DebugString(), "4*I3 1*I4 <= 6");
 }
 
 TEST(AppendCumulativeRelaxation, IgnoreZeroDemandOrSize) {
@@ -942,7 +980,7 @@ TEST(AppendCumulativeRelaxation, IgnoreZeroDemandOrSize) {
   AppendCumulativeRelaxation(initial_model.constraints(5), &model, &relaxation);
 
   EXPECT_EQ(relaxation.linear_constraints.size(), 1);
-  EXPECT_EQ(relaxation.linear_constraints[0].DebugString(), "4*X3 1*X4 <= 6");
+  EXPECT_EQ(relaxation.linear_constraints[0].DebugString(), "4*I3 1*I4 <= 6");
 }
 
 TEST(AppendLinearConstraintRelaxation, NoEnforcementLiteral) {
@@ -960,16 +998,16 @@ TEST(AppendLinearConstraintRelaxation, NoEnforcementLiteral) {
   )pb");
 
   Model model;
+  model.GetOrCreate<SatParameters>()->set_linearization_level(2);
   LoadVariables(initial_model, true, &model);
 
   LinearRelaxation relaxation;
-  AppendLinearConstraintRelaxation(initial_model.constraints(0),
-                                   /*linearize_enforced_constraints=*/true,
-                                   &model, &relaxation);
+  AppendLinearConstraintRelaxation(initial_model.constraints(0), &model,
+                                   &relaxation);
 
   EXPECT_EQ(relaxation.linear_constraints.size(), 1);
   EXPECT_EQ(relaxation.linear_constraints[0].DebugString(),
-            "3 <= 2*X0 1*X2 <= 4");
+            "3 <= 2*I0 1*I2 <= 4");
 }
 
 TEST(AppendLinearConstraintRelaxation, SmallLinearizationLevel) {
@@ -991,9 +1029,8 @@ TEST(AppendLinearConstraintRelaxation, SmallLinearizationLevel) {
   LoadVariables(initial_model, true, &model);
 
   LinearRelaxation relaxation;
-  AppendLinearConstraintRelaxation(initial_model.constraints(0),
-                                   /*linearize_enforced_constraints=*/false,
-                                   &model, &relaxation);
+  AppendLinearConstraintRelaxation(initial_model.constraints(0), &model,
+                                   &relaxation);
   EXPECT_EQ(relaxation.linear_constraints.size(), 0);
 }
 
@@ -1015,12 +1052,11 @@ TEST(AppendLinearConstraintRelaxation, PbConstraint) {
   LoadVariables(initial_model, false, &model);
 
   LinearRelaxation relaxation;
-  AppendLinearConstraintRelaxation(initial_model.constraints(0),
-                                   /*linearize_enforced_constraints=*/false,
-                                   &model, &relaxation);
+  AppendLinearConstraintRelaxation(initial_model.constraints(0), &model,
+                                   &relaxation);
   EXPECT_EQ(relaxation.linear_constraints.size(), 1);
   EXPECT_EQ(relaxation.linear_constraints[0].DebugString(),
-            "3 <= 2*X0 1*X1 3*X2 <= 5");
+            "3 <= 2*I0 1*I1 3*I2 <= 5");
 }
 
 TEST(AppendLinearConstraintRelaxation, SmallConstraint) {
@@ -1038,12 +1074,12 @@ TEST(AppendLinearConstraintRelaxation, SmallConstraint) {
   )pb");
 
   Model model;
+  model.GetOrCreate<SatParameters>()->set_linearization_level(2);
   LoadVariables(initial_model, true, &model);
 
   LinearRelaxation relaxation;
-  AppendLinearConstraintRelaxation(initial_model.constraints(0),
-                                   /*linearize_enforced_constraints=*/true,
-                                   &model, &relaxation);
+  AppendLinearConstraintRelaxation(initial_model.constraints(0), &model,
+                                   &relaxation);
 
   EXPECT_EQ(relaxation.linear_constraints.size(), 0);
 }
@@ -1064,16 +1100,16 @@ TEST(AppendLinearConstraintRelaxation, SingleEnforcementLiteralLowerBound) {
   )pb");
 
   Model model;
+  model.GetOrCreate<SatParameters>()->set_linearization_level(2);
   LoadVariables(initial_model, true, &model);
 
   LinearRelaxation relaxation;
-  AppendLinearConstraintRelaxation(initial_model.constraints(0),
-                                   /*linearize_enforced_constraints=*/true,
-                                   &model, &relaxation);
+  AppendLinearConstraintRelaxation(initial_model.constraints(0), &model,
+                                   &relaxation);
 
   EXPECT_EQ(relaxation.linear_constraints.size(), 1);
   EXPECT_EQ(relaxation.linear_constraints[0].DebugString(),
-            "0 <= 2*X0 -3*X1 1*X2");
+            "0 <= 2*I0 -3*I1 1*I2");
 }
 
 TEST(AppendLinearConstraintRelaxation, SingleEnforcementLiteralUpperBound) {
@@ -1092,16 +1128,16 @@ TEST(AppendLinearConstraintRelaxation, SingleEnforcementLiteralUpperBound) {
   )pb");
 
   Model model;
+  model.GetOrCreate<SatParameters>()->set_linearization_level(2);
   LoadVariables(initial_model, true, &model);
 
   LinearRelaxation relaxation;
-  AppendLinearConstraintRelaxation(initial_model.constraints(0),
-                                   /*linearize_enforced_constraints=*/true,
-                                   &model, &relaxation);
+  AppendLinearConstraintRelaxation(initial_model.constraints(0), &model,
+                                   &relaxation);
 
   EXPECT_EQ(relaxation.linear_constraints.size(), 1);
   EXPECT_EQ(relaxation.linear_constraints[0].DebugString(),
-            "2*X0 1*X1 1*X2 <= 4");
+            "2*I0 1*I1 1*I2 <= 4");
 }
 
 TEST(AppendLinearConstraintRelaxation, SingleEnforcementLiteralBothBounds) {
@@ -1120,18 +1156,18 @@ TEST(AppendLinearConstraintRelaxation, SingleEnforcementLiteralBothBounds) {
   )pb");
 
   Model model;
+  model.GetOrCreate<SatParameters>()->set_linearization_level(2);
   LoadVariables(initial_model, true, &model);
 
   LinearRelaxation relaxation;
-  AppendLinearConstraintRelaxation(initial_model.constraints(0),
-                                   /*linearize_enforced_constraints=*/true,
-                                   &model, &relaxation);
+  AppendLinearConstraintRelaxation(initial_model.constraints(0), &model,
+                                   &relaxation);
 
   EXPECT_EQ(relaxation.linear_constraints.size(), 2);
   EXPECT_EQ(relaxation.linear_constraints[0].DebugString(),
-            "0 <= 2*X0 -2*X1 1*X2");
+            "0 <= 2*I0 -2*I1 1*I2");
   EXPECT_EQ(relaxation.linear_constraints[1].DebugString(),
-            "2*X0 1*X1 1*X2 <= 4");
+            "2*I0 1*I1 1*I2 <= 4");
 }
 
 TEST(AppendLinearConstraintRelaxation, MultipleEnforcementLiteral) {
@@ -1152,22 +1188,22 @@ TEST(AppendLinearConstraintRelaxation, MultipleEnforcementLiteral) {
   )pb");
 
   Model model;
+  model.GetOrCreate<SatParameters>()->set_linearization_level(2);
   LoadVariables(initial_model, true, &model);
 
   LinearRelaxation relaxation;
-  AppendLinearConstraintRelaxation(initial_model.constraints(0),
-                                   /*linearize_enforced_constraints=*/true,
-                                   &model, &relaxation);
+  AppendLinearConstraintRelaxation(initial_model.constraints(0), &model,
+                                   &relaxation);
 
   EXPECT_EQ(relaxation.linear_constraints.size(), 2);
   EXPECT_EQ(relaxation.linear_constraints[0].DebugString(),
-            "-4 <= 2*X0 -2*X1 1*X2 -2*X3 -2*X4");
+            "-4 <= 2*I0 -2*I1 1*I2 -2*I3 -2*I4");
   EXPECT_EQ(relaxation.linear_constraints[1].DebugString(),
-            "2*X0 1*X1 1*X2 1*X3 1*X4 <= 6");
+            "2*I0 1*I1 1*I2 1*I3 1*I4 <= 6");
 }
 
 // This used to generate the completely wrong constraint:
-// 1*X0 -8*X1 1*X2 -8*X3 <= -6 before.
+// 1*I0 -8*I1 1*I2 -8*I3 <= -6 before.
 TEST(AppendLinearConstraintRelaxation, BoundsNotTight) {
   const CpModelProto initial_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 1 ] }
@@ -1186,12 +1222,12 @@ TEST(AppendLinearConstraintRelaxation, BoundsNotTight) {
   )pb");
 
   Model model;
+  model.GetOrCreate<SatParameters>()->set_linearization_level(2);
   LoadVariables(initial_model, true, &model);
 
   LinearRelaxation relaxation;
-  AppendLinearConstraintRelaxation(initial_model.constraints(0),
-                                   /*linearize_enforced_constraints=*/true,
-                                   &model, &relaxation);
+  AppendLinearConstraintRelaxation(initial_model.constraints(0), &model,
+                                   &relaxation);
 
   EXPECT_EQ(relaxation.linear_constraints.size(), 0);
 }

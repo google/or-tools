@@ -54,6 +54,7 @@ TEST(SymmetryPropagatorTest, Permute) {
 
   std::vector<Literal> literals = Literals({+1, +2, -2, +3});
   std::vector<Literal> output;
+  propagator.SetNumLiterals(num_literals);
   propagator.Permute(0, literals, &output);
   EXPECT_THAT(output,
               ElementsAre(Literal(+1), Literal(-4), Literal(+4), Literal(+2)));
@@ -82,6 +83,7 @@ TEST(SymmetryPropagatorTest, BasicTest) {
   SymmetryPropagator propagator;
   propagator.AddSymmetry(std::move(perm));
   trail.RegisterPropagator(&propagator);
+  propagator.SetNumLiterals(num_literals);
 
   // We need a mock propagator to inject a reason.
   struct MockPropagator : SatPropagator {

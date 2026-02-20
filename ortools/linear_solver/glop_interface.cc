@@ -11,8 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#if defined(USE_GLOP)
-
 #include <atomic>
 #include <cstdint>
 #include <memory>
@@ -34,8 +32,6 @@
 #include "ortools/util/lazy_mutable_copy.h"
 #include "ortools/util/time_limit.h"
 namespace operations_research {
-
-namespace {}  // Anonymous namespace
 
 class GLOPInterface : public MPSolverInterface {
  public:
@@ -437,10 +433,16 @@ void GLOPInterface::NonIncrementalChange() {
   sync_status_ = MUST_RELOAD;
 }
 
-// Register GLOP in the global linear solver factory.
-MPSolverInterface* BuildGLOPInterface(MPSolver* const solver) {
-  return new GLOPInterface(solver);
-}
+namespace {
+
+// See MpSolverInterfaceFactoryRepository for details.
+const void* const kRegisterGlop ABSL_ATTRIBUTE_UNUSED = [] {
+  MPSolverInterfaceFactoryRepository::GetInstance()->Register(
+      [](MPSolver* const solver) { return new GLOPInterface(solver); },
+      MPSolver::GLOP_LINEAR_PROGRAMMING);
+  return nullptr;
+}();
+
+}  // namespace
 
 }  // namespace operations_research
-#endif  // #if defined(USE_GLOP)

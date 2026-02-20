@@ -279,6 +279,7 @@ void CreateAlternativeTasks(
 
         // Exactly one alternative interval is present.
         std::vector<BoolVar> interval_presences;
+        interval_presences.reserve(alternatives.size());
         for (const AlternativeTaskData& alternative : alternatives) {
           interval_presences.push_back(alternative.presence);
         }

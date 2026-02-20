@@ -18,7 +18,6 @@
 #include <cstdint>
 #include <cstdlib>
 #include <functional>
-#include <map>
 #include <string>
 #include <utility>
 #include <vector>
@@ -3883,9 +3882,10 @@ void RevisedSimplex::DisplayVariableBounds() {
           VLOG(3) << variable_name_[col] << " = "
                   << StringifyWithFlags(lower_bounds[col]) << ";";
           break;
-        default:  // This should never happen.
-          LOG(DFATAL) << "Column " << col << " has no meaningful status.";
-          break;
+        default:                           // This should never happen.
+          LOG(DFATAL) << "Column " << col  // COV_NF_LINE
+                      << " has no meaningful status.";  // COV_NF_LINE
+          break;                                        // COV_NF_LINE
       }
     }
   }

@@ -21,6 +21,7 @@ import "ortools/service/v1/mathopt/sparse_containers.proto";
 
 option java_multiple_files = true;
 option java_package = "com.google.ortools.service.v1.mathopt";
+
 option csharp_namespace = "Google.OrTools.Service";
 
 // As used below, we define "#variables" = size(VariablesProto.ids).

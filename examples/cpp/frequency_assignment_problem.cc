@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//
 // Frequency Assignment Problem
 // The Radio Link Frequency Assignment Problem consists in assigning frequencies
 // to a set of radio links defined between pairs of sites in order to avoid
@@ -568,6 +567,7 @@ void HardFapSolver(const absl::btree_map<int, FapVariable>& data_variables,
                            static_cast<int>(variables.size()), &cardinality);
     solver.AddConstraint(solver.MakeDistribute(variables, values, cardinality));
     std::vector<IntVar*> value_not_assigned;
+    value_not_assigned.reserve(values.size());
     for (int val = 0; val < values.size(); ++val) {
       value_not_assigned.push_back(
           solver.MakeIsEqualCstVar(cardinality[val], 0));

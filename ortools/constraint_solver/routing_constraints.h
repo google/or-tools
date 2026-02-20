@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_CONSTRAINTS_H_
-#define OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_CONSTRAINTS_H_
+#ifndef ORTOOLS_CONSTRAINT_SOLVER_ROUTING_CONSTRAINTS_H_
+#define ORTOOLS_CONSTRAINT_SOLVER_ROUTING_CONSTRAINTS_H_
 
 #include <cstdint>
 #include <functional>
@@ -49,6 +49,18 @@ Constraint* MakeRouteConstraint(
     std::function<std::optional<int64_t>(const std::vector<int64_t>&)>
         route_evaluator);
 
+Constraint* MakeGlobalVehicleBreaksConstraint(
+    Solver* solver, const RoutingDimension* dimension);
+
+/// Makes inactive the vehicles which cannot cover the demand resulting from
+/// the transit variables of the active nodes given the maximum number of
+/// vehicles which can be active.
+Constraint* MakeNumActiveVehiclesCapacityConstraint(
+    Solver* solver, std::vector<IntVar*> transit_vars,
+    std::vector<IntVar*> active_vars, std::vector<IntVar*> vehicle_active_vars,
+    std::vector<int64_t> vehicle_capacities, int max_active_vehicles,
+    bool enforce_active_vehicles = false);
+
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_CONSTRAINTS_H_
+#endif  // ORTOOLS_CONSTRAINT_SOLVER_ROUTING_CONSTRAINTS_H_

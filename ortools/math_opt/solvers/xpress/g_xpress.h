@@ -22,11 +22,12 @@
 //   * Use std::string instead of null terminated char* for string values (note
 //     that attribute names are still char*).
 //   * When setting array data, accept const data (absl::Span<const T>).
-#ifndef OR_TOOLS_MATH_OPT_SOLVERS_XPRESS_G_XPRESS_H_
-#define OR_TOOLS_MATH_OPT_SOLVERS_XPRESS_G_XPRESS_H_
+#ifndef ORTOOLS_MATH_OPT_SOLVERS_XPRESS_G_XPRESS_H_
+#define ORTOOLS_MATH_OPT_SOLVERS_XPRESS_G_XPRESS_H_
 
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -34,7 +35,7 @@
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/xpress/environment.h"
+#include "ortools/third_party_solvers/xpress_environment.h"
 
 namespace operations_research::math_opt {
 
@@ -49,23 +50,32 @@ class Xpress {
 
   ~Xpress();
 
+  absl::Status GetControlInfo(char const* name, int* p_id, int* p_type) const;
+
   absl::StatusOr<int> GetIntControl(int control) const;
   absl::Status SetIntControl(int control, int value);
   absl::Status ResetIntControl(int control);  // reset to default value
 
+  absl::StatusOr<int64_t> GetIntControl64(int control) const;
+  absl::Status SetIntControl64(int control, int64_t value);
+
+  absl::StatusOr<double> GetDblControl(int control) const;
+  absl::Status SetDblControl(int control, double value);
+
+  absl::StatusOr<std::string> GetStrControl(int control) const;
+  absl::Status SetStrControl(int control, std::string const& value);
+
   absl::StatusOr<int> GetIntAttr(int attribute) const;
 
   absl::StatusOr<double> GetDoubleAttr(int attribute) const;
+  absl::StatusOr<double> GetObjectiveDoubleAttr(int objidx,
+                                                int attribute) const;
 
-  absl::Status AddVars(absl::Span<const double> obj,
+  absl::Status AddVars(std::size_t count, absl::Span<const double> obj,
                        absl::Span<const double> lb, absl::Span<const double> ub,
                        absl::Span<const char> vtype);
-
-  absl::Status AddVars(absl::Span<const int> vbegin, absl::Span<const int> vind,
-                       absl::Span<const double> vval,
-                       absl::Span<const double> obj,
-                       absl::Span<const double> lb, absl::Span<const double> ub,
-                       absl::Span<const char> vtype);
+  absl::Status AddNames(int type, absl::Span<const char> names, int first,
+                        int last);
 
   absl::Status AddConstrs(absl::Span<const char> sense,
                           absl::Span<const double> rhs,
@@ -95,8 +105,20 @@ class Xpress {
   // size (nVars, nCons, and nVars respectively)
   absl::Status GetLpSol(absl::Span<double> primals, absl::Span<double> duals,
                         absl::Span<double> reducedCosts);
-  absl::Status MipOptimize();
+  absl::Status Optimize(std::string const& flags = "",
+                        int* p_solvestatus = nullptr,
+                        int* p_solstatus = nullptr);
   absl::Status PostSolve();
+
+  absl::Status GetLB(absl::Span<double> lb, int first, int last);
+  absl::Status GetUB(absl::Span<double> ub, int first, int last);
+  absl::Status GetColType(absl::Span<char> ctype, int first, int last);
+
+  absl::Status ChgBounds(absl::Span<int const> colind,
+                         absl::Span<char const> bndtype,
+                         absl::Span<double const> bndval);
+  absl::Status ChgColType(absl::Span<int const> colind,
+                          absl::Span<char const> coltype);
 
   void Terminate();
 
@@ -106,15 +128,72 @@ class Xpress {
   absl::Status SetStartingBasis(std::vector<int>& rowBasis,
                                 std::vector<int>& colBasis) const;
 
-  static void XPRS_CC printXpressMessage(XPRSprob prob, void* data,
-                                         const char* sMsg, int nLen,
-                                         int nMsgLvl);
-
-  int GetNumberOfConstraints() const;
-  int GetNumberOfVariables() const;
+  absl::Status AddCbMessage(void(XPRS_CC* cb)(XPRSprob, void*, char const*, int,
+                                              int),
+                            void* cbdata, int prio = 0);
+  absl::Status RemoveCbMessage(void(XPRS_CC* cb)(XPRSprob, void*, char const*,
+                                                 int, int),
+                               void* cbdata = nullptr);
+  absl::Status AddCbChecktime(int(XPRS_CC* cb)(XPRSprob, void*), void* cbdata,
+                              int prio = 0);
+  absl::Status RemoveCbChecktime(int(XPRS_CC* cb)(XPRSprob, void*),
+                                 void* cbdata = nullptr);
 
   absl::StatusOr<std::vector<double>> GetVarLb() const;
   absl::StatusOr<std::vector<double>> GetVarUb() const;
+
+  absl::Status Interrupt(int reason);
+
+  absl::StatusOr<bool> IsMIP() const;
+  absl::Status GetDuals(int* p_status,
+                        std::optional<absl::Span<double>> const& duals,
+                        int first, int last);
+  absl::Status GetSolution(int* p_status,
+                           std::optional<absl::Span<double>> const& x,
+                           int first, int last);
+  absl::Status GetRedCosts(int* p_status,
+                           std::optional<absl::Span<double>> const& dj,
+                           int first, int last);
+
+  absl::Status AddMIPSol(absl::Span<double const> vals,
+                         absl::Span<int const> colind,
+                         char const* name = nullptr);
+  absl::Status LoadDelayedRows(absl::Span<int const> rows);
+  absl::Status LoadDirs(absl::Span<int const> cols,
+                        std::optional<absl::Span<int const>> const& prio,
+                        std::optional<absl::Span<char const>> const& dir,
+                        std::optional<absl::Span<double const>> const& up,
+                        std::optional<absl::Span<double const>> const& down);
+
+  absl::Status SetObjectiveIntControl(int obj, int control, int value);
+  absl::Status SetObjectiveDoubleControl(int obj, int control, double value);
+  absl::StatusOr<int> AddObjective(double constant, int ncols,
+                                   absl::Span<int const> colind,
+                                   absl::Span<double const> objcoef,
+                                   int priority, double weight);
+  absl::StatusOr<double> CalculateObjectiveN(int objidx,
+                                             double const* solution);
+  absl::Status AddSets(absl::Span<char const> settype,
+                       absl::Span<XPRSint64 const> start,
+                       absl::Span<int const> colind,
+                       absl::Span<double const> refval);
+  absl::Status SetIndicators(absl::Span<int const> rowind,
+                             absl::Span<int const> colind,
+                             absl::Span<int const> complement);
+  absl::Status AddRows(absl::Span<char const> rowtype,
+                       absl::Span<double const> rhs,
+                       absl::Span<double const> rng,
+                       absl::Span<XPRSint64 const> start,
+                       absl::Span<int const> colind,
+                       absl::Span<double const> rowcoef);
+  absl::Status AddQRow(char sense, double rhs, double rng,
+                       absl::Span<int const> colind,
+                       absl::Span<double const> rowcoef,
+                       absl::Span<int const> qcol1, absl::Span<int const> qcol2,
+                       absl::Span<double const> qcoef);
+  absl::Status WriteProb(std::string const& filename,
+                         std::string const& flags = "");
+  absl::Status SaveAs(std::string const& filename);
 
  private:
   XPRSprob xpress_model_;
@@ -131,4 +210,4 @@ class Xpress {
 
 }  // namespace operations_research::math_opt
 
-#endif  // OR_TOOLS_MATH_OPT_SOLVERS_XPRESS_G_XPRESS_H_
+#endif  // ORTOOLS_MATH_OPT_SOLVERS_XPRESS_G_XPRESS_H_
