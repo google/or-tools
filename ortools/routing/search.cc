@@ -456,6 +456,41 @@ std::string IntVarFilteredDecisionBuilder::DebugString() const {
                       heuristic_->DebugString(), ")");
 }
 
+// RoutingFilteredDecisionBuilder
+
+RoutingFilteredDecisionBuilder::RoutingFilteredDecisionBuilder(
+    std::unique_ptr<RoutingFilteredHeuristic> heuristic,
+    std::function<int64_t(int64_t)> next_accessor)
+    : heuristic_(std::move(heuristic)),
+      next_accessor_(std::move(next_accessor)) {}
+
+Decision* RoutingFilteredDecisionBuilder::Next(Solver* solver) {
+  Assignment* const assignment =
+      heuristic_->BuildSolutionFromRoutes(next_accessor_);
+  if (assignment != nullptr) {
+    VLOG(2) << "Number of decisions: " << heuristic_->number_of_decisions();
+    VLOG(2) << "Number of rejected decisions: "
+            << heuristic_->number_of_rejects();
+    assignment->Restore();
+  } else {
+    solver->Fail();
+  }
+  return nullptr;
+}
+
+int64_t RoutingFilteredDecisionBuilder::number_of_decisions() const {
+  return heuristic_->number_of_decisions();
+}
+
+int64_t RoutingFilteredDecisionBuilder::number_of_rejects() const {
+  return heuristic_->number_of_rejects();
+}
+
+std::string RoutingFilteredDecisionBuilder::DebugString() const {
+  return absl::StrCat("RoutingFilteredDecisionBuilder(",
+                      heuristic_->DebugString(), ")");
+}
+
 // --- First solution heuristics ---
 
 // IntVarFilteredHeuristic
