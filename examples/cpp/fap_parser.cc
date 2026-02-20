@@ -17,6 +17,10 @@
 #include <string>
 #include <vector>
 
+#include "absl/container/btree_map.h"
+#include "absl/container/flat_hash_map.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/match.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_split.h"
@@ -24,6 +28,7 @@
 #include "absl/types/span.h"
 #include "ortools/base/helpers.h"
 #include "ortools/base/map_util.h"
+#include "ortools/base/options.h"
 
 namespace operations_research {
 namespace {

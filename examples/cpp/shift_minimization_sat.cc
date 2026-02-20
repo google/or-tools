@@ -31,7 +31,6 @@
 #include <string>
 #include <vector>
 
-#include "absl/base/log_severity.h"
 #include "absl/container/btree_set.h"
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
@@ -41,6 +40,7 @@
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "ortools/base/init_google.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/model.h"
 #include "ortools/util/filelineiter.h"
