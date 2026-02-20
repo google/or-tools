@@ -24,7 +24,6 @@
 #include "ortools/base/status_macros.h"
 #include "ortools/math_opt/result.pb.h"
 #include "ortools/math_opt/validators/scalar_validator.h"
-#include "ortools/port/proto_utils.h"
 
 namespace operations_research::math_opt {
 namespace {
@@ -53,8 +52,9 @@ absl::Status ValidateProblemStatus(const ProblemStatusProto& status) {
         "primal_or_dual_infeasible can be true only when primal status = dual "
         "status = FEASIBILITY_STATUS_UNDETERMINED, and we have primal status "
         "= ",
-        ProtoEnumToString(status.primal_status()),
-        " and dual status = ", ProtoEnumToString(status.dual_status())));
+        FeasibilityStatusProto_Name(status.primal_status()),
+        " and dual status = ",
+        FeasibilityStatusProto_Name(status.dual_status())));
   }
   return absl::OkStatus();
 }
@@ -68,8 +68,8 @@ absl::Status CheckPrimalStatusIs(const ProblemStatusProto& status,
   }
   return absl::InvalidArgumentError(
       absl::StrCat("expected problem_status.primal_status = ",
-                   ProtoEnumToString(required_status), ", but was ",
-                   ProtoEnumToString(actual_status)));
+                   FeasibilityStatusProto_Name(required_status), ", but was ",
+                   FeasibilityStatusProto_Name(actual_status)));
 }
 
 // Assumes ValidateProblemStatus(status) is ok.
@@ -82,7 +82,7 @@ absl::Status CheckPrimalStatusIsNot(
   }
   return absl::InvalidArgumentError(
       absl::StrCat("expected problem_status.primal_status != ",
-                   ProtoEnumToString(forbidden_status)));
+                   FeasibilityStatusProto_Name(forbidden_status)));
 }
 
 // Assumes ValidateProblemStatus(status) is ok.
@@ -95,7 +95,7 @@ absl::Status CheckDualStatusIsNot(
   }
   return absl::InvalidArgumentError(
       absl::StrCat("expected problem_status.dual_status != ",
-                   ProtoEnumToString(forbidden_status)));
+                   FeasibilityStatusProto_Name(forbidden_status)));
 }
 
 // Assumes ValidateProblemStatus(status) is ok.
@@ -114,15 +114,15 @@ absl::Status CheckDualStatusIs(const ProblemStatusProto& status,
   if (primal_or_dual_infeasible_also_ok) {
     return absl::InvalidArgumentError(absl::StrCat(
         "expected either problem_status.dual_status = ",
-        ProtoEnumToString(required_status), " (and was ",
-        ProtoEnumToString(actual_status),
+        FeasibilityStatusProto_Name(required_status), " (and was ",
+        FeasibilityStatusProto_Name(actual_status),
         ") or problem_status.primal_or_dual_infeasible = true (and "
         "was false)"));
   }
   return absl::InvalidArgumentError(
       absl::StrCat("expected problem_status.dual_status = ",
-                   ProtoEnumToString(required_status), ", but was ",
-                   ProtoEnumToString(actual_status)));
+                   FeasibilityStatusProto_Name(required_status), ", but was ",
+                   FeasibilityStatusProto_Name(actual_status)));
 }
 
 absl::Status ValidateObjectiveBounds(const ObjectiveBoundsProto& bounds) {
@@ -157,7 +157,7 @@ absl::Status ValidateFiniteBoundImpliesFeasibleStatus(
          << "expected " << first_name
          << " status = FEASIBILITY_STATUS_FEASIBLE for finite " << first_name
          << " bound = " << first_bound << ", but found " << first_name
-         << " status = " << ProtoEnumToString(first_status);
+         << " status = " << FeasibilityStatusProto_Name(first_status);
 }
 
 absl::Status ValidateNotUnboundedBoundImpliesNotUnboundedStatus(
@@ -191,14 +191,16 @@ absl::Status ValidateUnboundedBoundImpliesUnboundedStatus(
            << "expected " << first_name
            << " status = FEASIBILITY_STATUS_FEASIBLE for unbounded "
            << first_name << " bound = " << first_bound << ", but found "
-           << first_name << " status = " << ProtoEnumToString(first_status);
+           << first_name
+           << " status = " << FeasibilityStatusProto_Name(first_status);
   }
   if (second_status != FEASIBILITY_STATUS_INFEASIBLE) {
     return util::InvalidArgumentErrorBuilder()
            << "expected " << second_name
            << " status = FEASIBILITY_STATUS_INFEASIBLE for unbounded "
            << first_name << " bound = " << first_bound << ", but found "
-           << second_name << " status = " << ProtoEnumToString(second_status);
+           << second_name
+           << " status = " << FeasibilityStatusProto_Name(second_status);
   }
   if (second_bound != first_bound) {
     return util::InvalidArgumentErrorBuilder()
