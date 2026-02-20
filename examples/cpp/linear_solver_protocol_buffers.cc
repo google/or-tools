@@ -14,8 +14,8 @@
 #include <limits>
 #include <string>
 
+#include "absl/log/check.h"
 #include "ortools/base/init_google.h"
-#include "ortools/base/logging.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/solve_mp_model.h"
 

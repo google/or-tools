@@ -16,9 +16,12 @@
 #include <string>
 #include <vector>
 
+#include "absl/container/btree_map.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/logging.h"
+#include "examples/cpp/fap_parser.h"
 
 namespace operations_research {
 
