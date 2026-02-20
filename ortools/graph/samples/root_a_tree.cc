@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// [START program]
+// [START imports]
 #include <cstdint>
 #include <iostream>
 #include <utility>
@@ -23,6 +25,7 @@
 #include "ortools/base/status_macros.h"
 #include "ortools/graph/rooted_tree.h"
 #include "ortools/graph_base/graph.h"
+// [END imports]
 
 namespace {
 
@@ -84,3 +87,4 @@ int main(int argc, char** argv) {
   QCHECK_OK(Main());
   return 0;
 }
+// [END program]

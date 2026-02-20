@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// [START program]
+// [START imports]
 #include <iostream>
 #include <utility>
 #include <vector>
@@ -18,6 +20,7 @@
 #include "absl/strings/str_join.h"
 #include "ortools/base/init_google.h"
 #include "ortools/graph/bounded_dijkstra.h"
+// [END imports]
 
 namespace {
 struct Arc {
@@ -59,3 +62,4 @@ int main(int argc, char** argv) {
             << std::endl;
   return 0;
 }
+// [END program]
