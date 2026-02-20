@@ -65,7 +65,7 @@
 #include <type_traits>
 #include <vector>
 
-#include "ortools/base/logging.h"
+#include "absl/log/check.h"
 #include "ortools/base/strong_int.h"
 
 namespace util_intops {

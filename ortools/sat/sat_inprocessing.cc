@@ -20,6 +20,7 @@
 #include <cstdint>
 #include <deque>
 #include <limits>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -33,6 +34,7 @@
 #include "absl/log/log.h"
 #include "absl/log/vlog_is_on.h"
 #include "absl/types/span.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/base/timer.h"

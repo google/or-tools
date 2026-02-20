@@ -19,7 +19,6 @@
 
 #include "absl/log/check.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/util.h"

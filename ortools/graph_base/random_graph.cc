@@ -20,10 +20,10 @@
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
+#include "absl/log/check.h"
 #include "absl/memory/memory.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/random/random.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/types.h"
 
 namespace util {

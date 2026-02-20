@@ -15,6 +15,7 @@
 
 #include <cassert>
 #include <cmath>
+#include <functional>
 #include <limits>
 #include <optional>
 #include <string>
@@ -262,6 +263,7 @@ absl::StatusOr<MPSolutionResponse> HighsSolveProto(
     highs.stopCallback(kCallbackLogging);
     highs.setCallback(nullptr, nullptr);
   }
+
   VLOG(2) << "run_status: " << highsStatusToString(run_status);
   if (run_status == HighsStatus::kError) {
     response.set_status(MPSOLVER_NOT_SOLVED);

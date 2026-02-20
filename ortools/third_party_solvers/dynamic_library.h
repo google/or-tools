@@ -17,8 +17,8 @@
 #include <functional>
 #include <string>
 
+#include "absl/log/check.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/logging.h"
 
 #if defined(_MSC_VER)
 #define WIN32_LEAN_AND_MEAN  // disables several conflicting macros

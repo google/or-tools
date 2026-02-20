@@ -21,6 +21,8 @@
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
@@ -28,7 +30,6 @@
 #include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "ortools/base/linked_hash_map.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/protoutil.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/math_opt/callback.pb.h"
@@ -36,6 +37,7 @@
 #include "ortools/math_opt/core/solver_interface.h"
 #include "ortools/math_opt/core/sparse_vector_view.h"
 #include "ortools/math_opt/solution.pb.h"
+#include "ortools/math_opt/solvers/gurobi/g_gurobi.h"
 #include "ortools/math_opt/solvers/message_callback_data.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
 #include "ortools/third_party_solvers/gurobi_environment.h"

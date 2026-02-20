@@ -17,14 +17,17 @@
 #include <string>
 #include <vector>
 
-#include "absl/memory/memory.h"
 #include "absl/status/status.h"
+#include "absl/status/statusor.h"
+#include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/math_opt/solvers/gscip/gscip.h"
 #include "ortools/math_opt/solvers/gscip/gscip_ext.h"
+#include "scip/type_var.h"
 #include "ortools/port/proto_utils.h"
 
 namespace operations_research {

@@ -48,6 +48,7 @@
 #include "absl/synchronization/mutex.h"
 #include "absl/types/span.h"
 #include "ortools/algorithms/sparse_permutation.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/base/macros/os_support.h"
 #include "ortools/base/timer.h"
 #include "ortools/sat/cp_model.pb.h"

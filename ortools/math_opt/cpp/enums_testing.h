@@ -20,11 +20,11 @@
 #include <type_traits>
 #include <vector>
 
+#include "absl/log/check.h"
 #include "absl/numeric/int128.h"
 #include "absl/strings/string_view.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
-#include "ortools/base/logging.h"
 #include "ortools/math_opt/cpp/enums.h"
 
 namespace operations_research::math_opt {

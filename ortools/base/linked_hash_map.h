@@ -27,14 +27,20 @@
 #ifndef ORTOOLS_BASE_LINKED_HASH_MAP_H_
 #define ORTOOLS_BASE_LINKED_HASH_MAP_H_
 
+#include <cstddef>
+#include <initializer_list>
 #include <list>
+#include <memory>
 #include <tuple>
 #include <type_traits>
 #include <utility>
 
+#include "absl/base/attributes.h"
+#include "absl/base/optimization.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/container/internal/common.h"
-#include "ortools/base/logging.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 
 namespace gtl {
 

@@ -17,6 +17,7 @@
 #include <cinttypes>
 #include <cmath>
 #include <cstdint>
+#include <cstdio>
 #include <map>
 #include <memory>
 #include <numeric>
@@ -26,12 +27,19 @@
 #include <utility>
 #include <vector>
 
+#include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/numeric/bits.h"
+#include "absl/numeric/int128.h"
+#include "absl/random/bit_gen_ref.h"
 #include "absl/random/distributions.h"
 #include "absl/random/random.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
@@ -45,10 +53,13 @@
 #include "ortools/base/dump_vars.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/helpers.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/base/map_util.h"
+#include "ortools/base/options.h"
 #include "ortools/base/path.h"
 #include "ortools/graph_base/io.h"
 #include "ortools/graph_base/util.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace {
@@ -487,7 +498,7 @@ TEST_F(FindSymmetriesTest, Clique) {
 }
 
 TEST_F(FindSymmetriesTest, DirectedStar) {
-  // Note(user): as of 2014-01-22, the symetry finder is extremely inefficient
+  // Note(user): as of 2014-01-22, the symmetry finder is extremely inefficient
   // on this test for size = 6 (and relatively too, for size = 5): it takes only
   // a fraction of time for larger sizes, but about 16s in fastbuild mode for 6.
   // TODO(user): fix this inefficiency and enlarge the test space.

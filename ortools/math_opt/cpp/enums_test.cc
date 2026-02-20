@@ -18,11 +18,11 @@
 #include <string>
 #include <type_traits>
 
+#include "absl/log/check.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
-#include "ortools/base/logging.h"
 #include "ortools/math_opt/cpp/enums_test.pb.h"
 #include "ortools/math_opt/cpp/enums_testing.h"
 #include "ortools/math_opt/testing/stream.h"

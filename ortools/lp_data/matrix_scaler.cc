@@ -22,7 +22,6 @@
 
 #include "absl/log/check.h"
 #include "absl/strings/str_format.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/glop/revised_simplex.h"

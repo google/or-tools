@@ -26,6 +26,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "google/protobuf/text_format.h"
+#include "ortools/base/macros/os_support.h"
 #include "ortools/base/version.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/glop/preprocessor.h"
@@ -41,9 +42,12 @@
 #include "ortools/util/fp_utils.h"
 #include "ortools/util/logging.h"
 
-#ifndef __PORTABLE_PLATFORM__
+#if defined(ORTOOLS_TARGET_OS_SUPPORTS_FILE)
+static_assert(operations_research::kTargetOsSupportsFile);
 // TODO(user): abstract this in some way to the port directory.
 #include "ortools/util/file_util.h"
+#else
+static_assert(!operations_research::kTargetOsSupportsFile);
 #endif
 
 ABSL_FLAG(bool, lp_dump_to_proto_file, false,
@@ -80,12 +84,8 @@ namespace {
 void DumpLinearProgramIfRequiredByFlags(const LinearProgram& linear_program,
                                         int num) {
   if (!absl::GetFlag(FLAGS_lp_dump_to_proto_file)) return;
-#ifdef __PORTABLE_PLATFORM__
-  LOG(WARNING) << "DumpLinearProgramIfRequiredByFlags(linear_program, num) "
-                  "requested for linear_program.name()='"
-               << linear_program.name() << "', num=" << num
-               << " but is not implemented for this platform.";
-#else
+#if defined(ORTOOLS_TARGET_OS_SUPPORTS_FILE)
+  static_assert(kTargetOsSupportsFile);
   std::string filename = absl::GetFlag(FLAGS_lp_dump_file_basename);
   if (filename.empty()) {
     if (linear_program.name().empty()) {
@@ -107,6 +107,12 @@ void DumpLinearProgramIfRequiredByFlags(const LinearProgram& linear_program,
                                             : ProtoWriteFormat::kProtoText;
   CHECK_OK(WriteProtoToFile(filespec, proto, write_format,
                             absl::GetFlag(FLAGS_lp_dump_compressed_file)));
+#else
+  static_assert(!kTargetOsSupportsFile);
+  LOG(WARNING) << "DumpLinearProgramIfRequiredByFlags(linear_program, num) "
+                  "requested for linear_program.name()='"
+               << linear_program.name() << "', num=" << num
+               << " but is not implemented for this platform.";
 #endif
 }
 
@@ -124,13 +130,16 @@ std::string LPSolver::GlopVersion() {
 
 void LPSolver::SetParameters(const GlopParameters& parameters) {
   parameters_ = parameters;
-#ifndef __PORTABLE_PLATFORM__
+#if defined(ORTOOLS_TARGET_OS_SUPPORTS_PROTO_DESCRIPTOR)
+  static_assert(kTargetOsSupportsProtoDescriptor);
   if (!absl::GetFlag(FLAGS_glop_params).empty()) {
     GlopParameters flag_params;
     CHECK(google::protobuf::TextFormat::ParseFromString(
         absl::GetFlag(FLAGS_glop_params), &flag_params));
     parameters_.MergeFrom(flag_params);
   }
+#else
+  static_assert(!kTargetOsSupportsProtoDescriptor);
 #endif
 }
 
@@ -908,12 +917,12 @@ double LPSolver::ComputeObjective(const LinearProgram& lp) {
 }
 
 // By the duality theorem, the dual "objective" is a bound on the primal
-// objective obtained by taking the linear combinaison of the constraints
+// objective obtained by taking the linear combination of the constraints
 // given by dual_values_.
 //
 // As it is written now, this has no real precise meaning since we ignore
 // infeasible reduced costs. This is almost the same as computing the objective
-// to the perturbed problem, but then we don't use the pertubed rhs. It is just
+// to the perturbed problem, but then we don't use the perturbed rhs. It is just
 // here as an extra "consistency" check.
 //
 // Note(user): We could actually compute an EXACT lower bound for the cost of

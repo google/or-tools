@@ -31,7 +31,6 @@
 #include "absl/log/vlog_is_on.h"
 #include "absl/meta/type_traits.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/sat/clause.h"

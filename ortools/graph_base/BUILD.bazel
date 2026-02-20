@@ -37,7 +37,6 @@ cc_library(
     hdrs = ["graph.h"],
     deps = [
         ":iterators",
-        "//ortools/base",
         "//ortools/base:constant_divisor",
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/debugging:leak_check",
@@ -53,9 +52,9 @@ cc_library(
     hdrs = ["random_graph.h"],
     deps = [
         ":graph",
-        "//ortools/base",
         "//ortools/base:types",
         "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/memory",
         "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/random:bit_gen_ref",
@@ -85,6 +84,7 @@ cc_library(
         ":connected_components",
         ":graph",
         ":iterators",
+        "//ortools/base:log_severity",
         "//ortools/base:map_util",
         "@abseil-cpp//absl/container:btree",
         "@abseil-cpp//absl/container:flat_hash_map",
@@ -164,7 +164,6 @@ cc_library(
     hdrs = ["topologicalsorter.h"],
     deps = [
         ":graph",
-        "//ortools/base",
         "//ortools/base:container_logging",
         "//ortools/base:map_util",
         "//ortools/base:status_macros",
@@ -172,6 +171,8 @@ cc_library(
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/container:inlined_vector",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings:str_format",
@@ -184,7 +185,6 @@ cc_library(
     srcs = ["connected_components.cc"],
     hdrs = ["connected_components.h"],
     deps = [
-        "//ortools/base",
         "//ortools/base:map_util",
         "//ortools/base:stl_util",
         "@abseil-cpp//absl/container:btree",

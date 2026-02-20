@@ -26,13 +26,13 @@
 #include <utility>
 #include <vector>
 
-#include "absl/base/log_severity.h"
 #include "absl/flags/flag.h"
+#include "absl/log/check.h"
 #include "absl/log/globals.h"
 #include "absl/random/random.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/base/init_google.h"
-#include "ortools/base/logging.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/graph_base/graph_builder.h"
 #include "ortools/routing/index_manager.h"
