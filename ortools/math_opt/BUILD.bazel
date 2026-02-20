@@ -12,6 +12,7 @@
 # limitations under the License.
 
 load("@protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
+load("@protobuf//bazel:java_proto_library.bzl", "java_proto_library")
 load("@protobuf//bazel:proto_library.bzl", "proto_library")
 load("@protobuf//bazel:py_proto_library.bzl", "py_proto_library")
 
@@ -38,6 +39,11 @@ py_proto_library(
     deps = [":callback_proto"],
 )
 
+java_proto_library(
+    name = "callback_java_proto",
+    deps = [":callback_proto"],
+)
+
 proto_library(
     name = "model_proto",
     srcs = ["model.proto"],
@@ -55,6 +61,11 @@ cc_proto_library(
 
 py_proto_library(
     name = "model_py_pb2",
+    deps = [":model_proto"],
+)
+
+java_proto_library(
+    name = "model_java_proto",
     deps = [":model_proto"],
 )
 
@@ -80,6 +91,11 @@ py_proto_library(
     deps = [":model_parameters_proto"],
 )
 
+java_proto_library(
+    name = "model_parameters_java_proto",
+    deps = [":model_parameters_proto"],
+)
+
 proto_library(
     name = "model_update_proto",
     srcs = ["model_update.proto"],
@@ -98,6 +114,11 @@ cc_proto_library(
 
 py_proto_library(
     name = "model_update_py_pb2",
+    deps = [":model_update_proto"],
+)
+
+java_proto_library(
+    name = "model_update_java_proto",
     deps = [":model_update_proto"],
 )
 
@@ -130,6 +151,11 @@ py_proto_library(
     deps = [":parameters_proto"],
 )
 
+java_proto_library(
+    name = "parameters_java_proto",
+    deps = [":parameters_proto"],
+)
+
 proto_library(
     name = "result_proto",
     srcs = ["result.proto"],
@@ -154,6 +180,11 @@ py_proto_library(
     deps = [":result_proto"],
 )
 
+java_proto_library(
+    name = "result_java_proto",
+    deps = [":result_proto"],
+)
+
 proto_library(
     name = "solution_proto",
     srcs = ["solution.proto"],
@@ -174,6 +205,11 @@ py_proto_library(
     deps = [":solution_proto"],
 )
 
+java_proto_library(
+    name = "solution_java_proto",
+    deps = [":solution_proto"],
+)
+
 proto_library(
     name = "sparse_containers_proto",
     srcs = ["sparse_containers.proto"],
@@ -188,6 +224,11 @@ cc_proto_library(
 
 py_proto_library(
     name = "sparse_containers_py_pb2",
+    deps = [":sparse_containers_proto"],
+)
+
+java_proto_library(
+    name = "sparse_containers_java_proto",
     deps = [":sparse_containers_proto"],
 )
 
@@ -208,6 +249,11 @@ cc_proto_library(
 
 py_proto_library(
     name = "infeasible_subsystem_py_pb2",
+    deps = [":infeasible_subsystem_proto"],
+)
+
+java_proto_library(
+    name = "infeasible_subsystem_java_proto",
     deps = [":infeasible_subsystem_proto"],
 )
 
@@ -232,5 +278,10 @@ py_proto_library(
 
 cc_proto_library(
     name = "rpc_cc_proto",
+    deps = [":rpc_proto"],
+)
+
+java_proto_library(
+    name = "rpc_java_proto",
     deps = [":rpc_proto"],
 )

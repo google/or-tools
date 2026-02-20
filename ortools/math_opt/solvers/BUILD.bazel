@@ -12,6 +12,7 @@
 # limitations under the License.
 
 load("@protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
+load("@protobuf//bazel:java_proto_library.bzl", "java_proto_library")
 load("@protobuf//bazel:proto_library.bzl", "proto_library")
 load("@protobuf//bazel:py_proto_library.bzl", "py_proto_library")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
@@ -531,6 +532,12 @@ proto_library(
     srcs = ["osqp.proto"],
 )
 
+java_proto_library(
+    name = "osqp_java_proto",
+    visibility = ["//visibility:public"],
+    deps = [":osqp_proto"],
+)
+
 cc_proto_library(
     name = "osqp_cc_proto",
     deps = [":osqp_proto"],
@@ -619,6 +626,12 @@ proto_library(
     srcs = ["gurobi.proto"],
 )
 
+java_proto_library(
+    name = "gurobi_java_proto",
+    visibility = ["//visibility:public"],
+    deps = [":gurobi_proto"],
+)
+
 cc_proto_library(
     name = "gurobi_cc_proto",
     visibility = ["//visibility:public"],
@@ -636,6 +649,11 @@ proto_library(
     srcs = ["glpk.proto"],
 )
 
+java_proto_library(
+    name = "glpk_java_proto",
+    deps = [":glpk_proto"],
+)
+
 cc_proto_library(
     name = "glpk_cc_proto",
     deps = [":glpk_proto"],
@@ -650,6 +668,11 @@ proto_library(
     name = "highs_proto",
     srcs = ["highs.proto"],
     visibility = ["//visibility:public"],
+)
+
+java_proto_library(
+    name = "highs_java_proto",
+    deps = [":highs_proto"],
 )
 
 cc_proto_library(

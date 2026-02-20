@@ -15,6 +15,9 @@ syntax = "proto3";
 
 package operations_research.math_opt;
 
+option java_package = "com.google.ortools.mathopt";
+option java_multiple_files = true;
+
 // This proto mirrors the fields of OsqpSettings in
 // osqp_cpp/include/osqp++.h, which in turn (nearly) mirrors the
 // fields of OSQPSettings in osqp/include/types.h. See also

@@ -20,6 +20,7 @@ import "ortools/math_opt/sparse_containers.proto";
 
 option java_package = "com.google.ortools.mathopt";
 option java_multiple_files = true;
+option java_outer_classname = "SolutionProtobuf";
 
 // Feasibility of a primal or dual solution as claimed by the solver.
 enum SolutionStatusProto {
