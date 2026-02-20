@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// [START program]
+// [START imports]
 #include <cstdint>
 #include <iostream>
 #include <limits>
@@ -20,6 +22,7 @@
 #include "ortools/base/init_google.h"
 #include "ortools/graph/bounded_dijkstra.h"
 #include "ortools/graph_base/graph.h"
+// [END imports]
 
 int main(int argc, char** argv) {
   InitGoogle(argv[0], &argc, &argv, true);
@@ -61,3 +64,4 @@ int main(int argc, char** argv) {
               << std::endl;
   }
 }
+// [END program]
