@@ -65,7 +65,6 @@
 #include "absl/strings/str_format.h"
 #include "absl/types/span.h"
 #include "ortools/base/init_google.h"
-#include "ortools/base/logging.h"
 #include "ortools/linear_solver/linear_solver.h"
 
 ABSL_FLAG(bool, colgen_verbose, false, "print verbosely");

@@ -25,12 +25,12 @@
 #include <utility>
 
 #include "absl/flags/flag.h"
+#include "absl/log/check.h"
 #include "absl/strings/str_format.h"
 #include "absl/time/time.h"
 #include "examples/cpp/cgc.h"
 #include "examples/cpp/cgc_data.h"
 #include "ortools/base/init_google.h"
-#include "ortools/base/logging.h"
 
 ABSL_FLAG(std::string, input_file, "", "Input data file");
 ABSL_FLAG(int, time_limit_in_ms, 0,
