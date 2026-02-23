@@ -219,7 +219,7 @@ ENDATA
         solver.log_callback = log_lines.append
         solver.enable_output(True)
         self.assertEqual(solver.solve(model), mb.SolveStatus.OPTIMAL)
-        self.assertNotEmpty(len(log_lines), "Log callback should receive output")
+        self.assertNotEmpty(log_lines, "Log callback should receive output")
         self.assertIn("Model", "".join(log_lines))
 
     def test_class_api(self):
