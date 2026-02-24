@@ -5,13 +5,21 @@ version = "0.0.1"
 [deps]
 MathOptInterface = "b8f27783-ece8-5eb3-8dc8-9495eed66fee"
 ORToolsGenerated = "6b269722-41d3-11ee-be56-0242ac120002"
-ORTools_jll = "717719f8-c30c-5086-8f3c-70cd6a1e3a46"
 ProtoBuf = "3349acd9-ac6a-5e09-bcdb-63829b23a429"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[weakdeps]
+ORTools_jll = "717719f8-c30c-5086-8f3c-70cd6a1e3a46"
+ORToolsBinaries = "594ad865-6a17-49ee-8f22-76ed020c7c08"
+
+[extensions]
+ORToolsJllExt = "ORTools_jll"
+ORToolsBinariesExt = "ORToolsBinaries"
 
 [compat]
 julia = "1.9"
 ORTools_jll = "9.14.0"
+ORToolsBinaries = "0.0.1"
 ORToolsGenerated = "0.0.2"
 ProtoBuf = "1.0.15"
 MathOptInterface = "1.42.0"

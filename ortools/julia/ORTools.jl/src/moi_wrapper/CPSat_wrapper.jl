@@ -157,7 +157,7 @@ function MOI.get(optimizer::CPSATOptimizer, param::MOI.RawOptimizerAttribute)
     return getfield!(optimizer.parameters, Symbol(param.name))
 end
 
-MOI.supports(model::Optimizer, param::MOI.RawOptimizerAttribute) = true
+MOI.supports(model::CPSATOptimizer, param::MOI.RawOptimizerAttribute) = true
 
 
 """

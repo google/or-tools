@@ -2038,22 +2038,17 @@ function MOI.get(model::Optimizer, ::MOI.TerminationStatus)::MOI.TerminationStat
     elseif model.solve_result.termination.limit == LimitProto.LIMIT_UNDETERMINED
         # TODO: b/411325865 Follow up on support for LIMIT_UNDETERMINED in MOI.jl
         # A fallback as there's currently no associated MOI.LIMIT_* that can represent this.
-        @info "The underlying solver does not expose which limit was reached and the actual limit is LIMIT_UNDETERMINED " \
-              "However, LIMIT_UNDETERMINED is not associated with a MOI.LIMIT_* hence the returned LIMIT is MOI.OTHER_LIMIT."
+        @info "The underlying solver does not expose which limit was reached and the actual limit is LIMIT_UNDETERMINED. However, LIMIT_UNDETERMINED is not associated with a MOI.LIMIT_* hence the returned LIMIT is MOI.OTHER_LIMIT."
         return MOI.OTHER_LIMIT
     elseif model.solve_result.termination.limit == LimitProto.LIMIT_CUTOFF
         # TODO: b/411328356 Follow up on support for LIMIT_CUTOFF in MOI.jl
         # A fallback as there's currently no associated MOI.LIMIT_* that can represent this.
-        @info "The solver was run with a cutoff on the objective, indicating that the user did not want any solution " \
-              "worse than the cutoff, and the solver concluded there were no solutions at least as good as the cutoff. " \
-              "Typically no further solution information is provided. The actual limit is LIMIT_CUTOFF. " \
-              "However, LIMIT_CUTOFF is not associated with a MOI.LIMIT_* hence the returned LIMIT is MOI.OTHER_LIMIT."
+        @info "The solver was run with a cutoff on the objective, indicating that the user did not want any solution worse than the cutoff, and the solver concluded there were no solutions at least as good as the cutoff. Typically no further solution information is provided. The actual limit is LIMIT_CUTOFF. However, LIMIT_CUTOFF is not associated with a MOI.LIMIT_* hence the returned LIMIT is MOI.OTHER_LIMIT."
         return MOI.OTHER_LIMIT
     else
         # TODO: b/411328207 Add attribute to capture more information about the limit when LIMIT_UNSPECIFIED is the returned limit.
         # The else bit falls back to MOI.LIMIT_UNSPECIFIED if the termination reason wasn't TERMINATION_REASON_OPTIMAL
-        @info "The solver terminated but not from a limit and the actual limit is LIMIT_UNSPECIFIED, which is used as a null. " \
-              "However, LIMIT_UNSPECIFIED is not associated with a MOI.LIMIT_* hence the returned LIMIT is MOI.OTHER_LIMIT."
+        @info "The solver terminated but not from a limit and the actual limit is LIMIT_UNSPECIFIED, which is used as a null. However, LIMIT_UNSPECIFIED is not associated with a MOI.LIMIT_* hence the returned LIMIT is MOI.OTHER_LIMIT."
         return MOI.OTHER_LIMIT
     end
 end
