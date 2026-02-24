@@ -14,6 +14,7 @@
 
 # [START program]
 """Example of a simple nurse scheduling problem."""
+
 # [START import]
 from ortools.sat.python import cp_model
 

@@ -14,8 +14,10 @@
 
 # [START program]
 """OR-Tools solution to the N-queens problem."""
+
 # [START import]
 import sys
+
 from ortools.constraint_solver.python import constraint_solver as cp
 
 # [END import]

@@ -30,9 +30,9 @@ fleet:
 
 # [START import]
 from typing import Any, Dict
+
 from ortools.constraint_solver.python import constraint_solver
-from ortools.routing import enums_pb2
-from ortools.routing import parameters_pb2
+from ortools.routing import enums_pb2, parameters_pb2
 from ortools.routing.python import routing
 
 # [END import]

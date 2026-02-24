@@ -15,7 +15,6 @@
 # [START program]
 """Link integer constraints together."""
 
-
 from ortools.sat.python import cp_model
 
 

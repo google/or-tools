@@ -15,9 +15,10 @@
 """Simple unit tests for python/linear_solver.swig. Not exhaustive."""
 
 import unittest
-from ortools.linear_solver import linear_solver_pb2
-from ortools.linear_solver import pywraplp
+
 from google.protobuf import text_format
+
+from ortools.linear_solver import linear_solver_pb2, pywraplp
 
 TEXT_MODEL = """
 variable {

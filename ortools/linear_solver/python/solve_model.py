@@ -16,8 +16,7 @@
 
 from collections.abc import Sequence
 
-from absl import app
-from absl import flags
+from absl import app, flags
 
 from ortools.linear_solver.python import model_builder
 

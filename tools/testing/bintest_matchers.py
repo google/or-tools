@@ -14,8 +14,8 @@
 
 """Matchers for the bintest framework."""
 
-from collections.abc import Callable, Sequence
 import re
+from collections.abc import Callable, Sequence
 
 
 class MatchError(Exception):

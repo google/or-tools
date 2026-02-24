@@ -14,8 +14,10 @@
 
 # [START program]
 """Minimal jobshop example."""
+
 # [START import]
 import collections
+
 from ortools.sat.python import cp_model
 
 # [END import]
