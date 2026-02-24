@@ -155,7 +155,6 @@ file(GLOB_RECURSE OR_TOOLS_PROTO_PY_FILES RELATIVE ${PROJECT_SOURCE_DIR}
   "ortools/set_cover/*.proto"
   "ortools/util/*.proto"
   )
-list(REMOVE_ITEM OR_TOOLS_PROTO_PY_FILES "ortools/constraint_solver/demon_profiler.proto")
 
 if(BUILD_MATH_OPT)
   file(GLOB_RECURSE MATH_OPT_PROTO_PY_FILES RELATIVE ${PROJECT_SOURCE_DIR}
