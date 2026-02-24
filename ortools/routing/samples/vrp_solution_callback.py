@@ -27,8 +27,7 @@ Distances are in meters.
 from typing import Any, Dict
 import weakref
 
-from ortools.routing import enums_pb2
-from ortools.routing import parameters_pb2
+from ortools.routing import enums_pb2, parameters_pb2
 from ortools.routing.python import routing
 
 # [END import]

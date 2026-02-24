@@ -15,6 +15,7 @@
 """Test for constraint_solver pybind11 layer."""
 
 from absl.testing import absltest
+
 from ortools.constraint_solver.python import constraint_solver as cp
 from ortools.util.python import piecewise_linear_function as pwl
 

@@ -13,8 +13,9 @@
 # limitations under the License.
 
 from absl.testing import absltest
-from ortools.util.python import pybind_solve_interrupter
-from ortools.util.python import pybind_solve_interrupter_testing
+
+from ortools.util.python import (pybind_solve_interrupter,
+                                 pybind_solve_interrupter_testing)
 
 
 class PybindPySolveInterrupterTest(absltest.TestCase):

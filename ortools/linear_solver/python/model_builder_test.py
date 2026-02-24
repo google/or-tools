@@ -12,20 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections.abc import Callable, Mapping
 import math
+import os
 import sys
+from collections.abc import Callable, Mapping
 from typing import Any, Union
 
-from absl.testing import absltest
-from absl.testing import parameterized
 import numpy as np
 import numpy.testing as np_testing
 import pandas as pd
-
-import os
-
+from absl.testing import absltest, parameterized
 from google.protobuf import text_format
+
 from ortools.linear_solver import linear_solver_pb2
 from ortools.linear_solver.python import model_builder as mb
 from ortools.linear_solver.python import model_builder_helper as mbh

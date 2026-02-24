@@ -15,6 +15,7 @@
 """Simple unit tests for python/init.swig. Not exhaustive."""
 
 from absl.testing import absltest
+
 from ortools.init.python import init
 
 

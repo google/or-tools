@@ -23,8 +23,7 @@ http://en.wikipedia.org/wiki/Travelling_salesperson_problem.
 from typing import Any, Callable, Dict
 
 from ortools.constraint_solver.python import constraint_solver
-from ortools.routing import enums_pb2
-from ortools.routing import parameters_pb2
+from ortools.routing import enums_pb2, parameters_pb2
 from ortools.routing.python import routing
 
 FirstSolutionStrategy = enums_pb2.FirstSolutionStrategy

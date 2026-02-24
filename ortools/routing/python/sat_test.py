@@ -15,6 +15,7 @@
 """Tests for CP-SAT routing."""
 
 from absl.testing import absltest
+
 from ortools.routing import enums_pb2
 from ortools.routing.python import routing
 from ortools.util import optional_boolean_pb2

@@ -14,8 +14,8 @@
 
 """Python interrupter for solves."""
 
-from collections.abc import Callable, Iterator
 import contextlib
+from collections.abc import Callable, Iterator
 from typing import Optional
 
 from absl import logging

@@ -13,7 +13,9 @@
 # limitations under the License.
 
 import os
+
 from absl.testing import absltest
+
 from ortools.scheduling.python import rcpsp
 
 

@@ -17,9 +17,9 @@
 import sys
 
 from absl.testing import absltest
-from ortools.constraint_solver import search_limit_pb2
-from ortools.constraint_solver import solver_parameters_pb2
-from ortools.constraint_solver import pywrapcp
+
+from ortools.constraint_solver import (pywrapcp, search_limit_pb2,
+                                       solver_parameters_pb2)
 
 
 def inc_callback(i):

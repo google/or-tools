@@ -13,13 +13,13 @@
 # limitations under the License.
 
 """Transform any Python sample or example to Python NoteBook."""
+
 import ast
 import os
 import re
 import sys
 
-from nbformat import v3
-from nbformat import v4
+from nbformat import v3, v4
 
 input_file = sys.argv[1]
 print(f"reading {input_file}")

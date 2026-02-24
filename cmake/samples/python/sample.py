@@ -15,10 +15,8 @@
 """Sample to test or-tools installation."""
 
 import ortools
-
 # from ortools.algorithms import knapsack_solver
 from ortools.constraint_solver import pywrapcp
-
 # from ortools.graph.python import linear_sum_assignment
 # from ortools.graph.python import max_flow
 # from ortools.graph.python import min_cost_flow

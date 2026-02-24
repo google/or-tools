@@ -16,8 +16,8 @@
 
 # [START import]
 import argparse
-from ortools.routing import enums_pb2
-from ortools.routing import pywraprouting
+
+from ortools.routing import enums_pb2, pywraprouting
 
 FirstSolutionStrategy = enums_pb2.FirstSolutionStrategy
 RoutingSearchStatus = enums_pb2.RoutingSearchStatus
