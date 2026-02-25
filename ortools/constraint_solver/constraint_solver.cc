@@ -19,17 +19,21 @@
 #include <algorithm>
 #include <csetjmp>
 #include <cstdint>
+#include <cstdlib>
 #include <deque>
 #include <iosfwd>
 #include <limits>
 #include <memory>
+#include <numeric>
 #include <ostream>
 #include <string>
 #include <type_traits>
 #include <utility>
 #include <vector>
 
+#include "absl/algorithm/container.h"
 #include "absl/base/attributes.h"
+#include "absl/container/flat_hash_map.h"
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
@@ -42,13 +46,26 @@
 #include "ortools/constraint_solver/assignment.h"
 #include "ortools/constraint_solver/constraints.h"
 #include "ortools/constraint_solver/count_cst.h"
+#include "ortools/constraint_solver/default_search.h"
 #include "ortools/constraint_solver/deviation.h"
 #include "ortools/constraint_solver/diffn.h"
 #include "ortools/constraint_solver/element.h"
+#include "ortools/constraint_solver/expr_array.h"
+#include "ortools/constraint_solver/expr_cst.h"
+#include "ortools/constraint_solver/expressions.h"
+#include "ortools/constraint_solver/graph_constraints.h"
+#include "ortools/constraint_solver/interval.h"
 #include "ortools/constraint_solver/local_search.h"
 #include "ortools/constraint_solver/model_cache.h"
+#include "ortools/constraint_solver/table.h"
+#include "ortools/constraint_solver/timetabling.h"
+#include "ortools/constraint_solver/trace.h"
 #include "ortools/constraint_solver/utilities.h"
+#include "ortools/constraint_solver/variables.h"
 #include "ortools/port/sysinfo.h"
+#include "ortools/util/piecewise_linear_function.h"
+#include "ortools/util/saturated_arithmetic.h"
+#include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/string_array.h"
 #include "ortools/util/tuple_set.h"
 #include "zlib.h"
@@ -105,9 +122,12 @@ ABSL_FLAG(int64_t, cp_random_seed, 12345,
           "Random seed used in several (but not all) random number "
           "generators used by the CP solver. Use -1 to auto-generate an"
           "undeterministic random seed.");
-
 ABSL_FLAG(bool, cp_disable_element_cache, true,
           "If true, caching for IntElement is disabled.");
+ABSL_FLAG(bool, cp_disable_expression_optimization, false,
+          "Disable special optimization when creating expressions.");
+ABSL_FLAG(bool, cp_share_int_consts, true,
+          "Share IntConst's with the same value.");
 
 void ConstraintSolverFailsHere() { VLOG(3) << "Fail"; }
 
@@ -145,11 +165,9 @@ ConstraintSolverParameters Solver::DefaultSolverParameters() {
   params.set_trail_block_size(8000);
   params.set_array_split_size(16);
   params.set_store_names(true);
-  params.set_profile_propagation(!absl::GetFlag(FLAGS_cp_profile_file).empty());
   params.set_trace_propagation(absl::GetFlag(FLAGS_cp_trace_propagation));
   params.set_trace_search(absl::GetFlag(FLAGS_cp_trace_search));
   params.set_name_all_variables(absl::GetFlag(FLAGS_cp_name_variables));
-  params.set_profile_file(absl::GetFlag(FLAGS_cp_profile_file));
   params.set_profile_local_search(
       absl::GetFlag(FLAGS_cp_print_local_search_profile));
   params.set_print_local_search_profile(
@@ -180,9 +198,6 @@ ConstraintSolverParameters Solver::DefaultSolverParameters() {
 }
 
 // ----- Forward Declarations and Profiling Support -----
-extern void InstallDemonProfiler(DemonProfiler* monitor);
-extern DemonProfiler* BuildDemonProfiler(Solver* solver);
-extern void DeleteDemonProfiler(DemonProfiler* monitor);
 extern void InstallLocalSearchProfiler(LocalSearchProfiler* monitor);
 extern LocalSearchProfiler* BuildLocalSearchProfiler(Solver* solver);
 extern void DeleteLocalSearchProfiler(LocalSearchProfiler* monitor);
@@ -190,14 +205,7 @@ extern void DeleteLocalSearchProfiler(LocalSearchProfiler* monitor);
 // TODO(user): remove this complex logic.
 // We need the double test because parameters are set too late when using
 // python in the open source. This is the cheapest work-around.
-bool Solver::InstrumentsDemons() const {
-  return IsProfilingEnabled() || InstrumentsVariables();
-}
-
-bool Solver::IsProfilingEnabled() const {
-  return parameters_.profile_propagation() ||
-         !parameters_.profile_file().empty();
-}
+bool Solver::InstrumentsDemons() const { return InstrumentsVariables(); }
 
 bool Solver::IsLocalSearchProfilingEnabled() const {
   return parameters_.profile_local_search() ||
@@ -478,39 +486,39 @@ struct StateMarker {
   friend struct Trail;
 
  private:
-  Solver::MarkerType type_;
-  int rev_int_index_;
-  int rev_int64_index_;
-  int rev_uint64_index_;
-  int rev_double_index_;
-  int rev_ptr_index_;
-  int rev_boolvar_list_index_;
-  int rev_bools_index_;
-  int rev_int_memory_index_;
-  int rev_int64_memory_index_;
-  int rev_double_memory_index_;
-  int rev_object_memory_index_;
-  int rev_object_array_memory_index_;
-  int rev_memory_index_;
-  int rev_memory_array_index_;
-  StateInfo info_;
+  Solver::MarkerType type;
+  int rev_int_index;
+  int rev_int64_index;
+  int rev_uint64_index;
+  int rev_double_index;
+  int rev_ptr_index;
+  int rev_boolvar_list_index;
+  int rev_bools_index;
+  int rev_int_memory_index;
+  int rev_int64_memory_index;
+  int rev_double_memory_index;
+  int rev_object_memory_index;
+  int rev_object_array_memory_index;
+  int rev_memory_index;
+  int rev_memory_array_index;
+  StateInfo info;
 };
 
-StateMarker::StateMarker(Solver::MarkerType t, const StateInfo& info)
-    : type_(t),
-      rev_int_index_(0),
-      rev_int64_index_(0),
-      rev_uint64_index_(0),
-      rev_double_index_(0),
-      rev_ptr_index_(0),
-      rev_boolvar_list_index_(0),
-      rev_bools_index_(0),
-      rev_int_memory_index_(0),
-      rev_int64_memory_index_(0),
-      rev_double_memory_index_(0),
-      rev_object_memory_index_(0),
-      rev_object_array_memory_index_(0),
-      info_(info) {}
+StateMarker::StateMarker(Solver::MarkerType t, const StateInfo& i)
+    : type(t),
+      rev_int_index(0),
+      rev_int64_index(0),
+      rev_uint64_index(0),
+      rev_double_index(0),
+      rev_ptr_index(0),
+      rev_boolvar_list_index(0),
+      rev_bools_index(0),
+      rev_int_memory_index(0),
+      rev_int64_memory_index(0),
+      rev_double_memory_index(0),
+      rev_object_memory_index(0),
+      rev_object_array_memory_index(0),
+      info(i) {}
 
 // ---------- Trail and Reversibility ----------
 
@@ -522,13 +530,13 @@ namespace {
 template <class T>
 struct addrval {
  public:
-  addrval() : address_(nullptr) {}
-  explicit addrval(T* adr) : address_(adr), old_value_(*adr) {}
-  void restore() const { (*address_) = old_value_; }
+  addrval() : address(nullptr) {}
+  explicit addrval(T* adr) : address(adr), old_value(*adr) {}
+  void restore() const { (*address) = old_value; }
 
  private:
-  T* address_;
-  T old_value_;
+  T* address;
+  T old_value;
 };
 
 // ----- Compressed trail -----
@@ -752,199 +760,199 @@ class CompressedTrail {
 extern void RestoreBoolValue(IntVar* var);
 
 struct Trail {
-  CompressedTrail<int> rev_ints_;
-  CompressedTrail<int64_t> rev_int64s_;
-  CompressedTrail<uint64_t> rev_uint64s_;
-  CompressedTrail<double> rev_doubles_;
-  CompressedTrail<void*> rev_ptrs_;
-  std::vector<IntVar*> rev_boolvar_list_;
-  std::vector<bool*> rev_bools_;
-  std::vector<bool> rev_bool_value_;
-  std::vector<int*> rev_int_memory_;
-  std::vector<int64_t*> rev_int64_memory_;
-  std::vector<double*> rev_double_memory_;
-  std::vector<BaseObject*> rev_object_memory_;
-  std::vector<BaseObject**> rev_object_array_memory_;
-  std::vector<void*> rev_memory_;
-  std::vector<void**> rev_memory_array_;
+  CompressedTrail<int> rev_ints;
+  CompressedTrail<int64_t> rev_int64s;
+  CompressedTrail<uint64_t> rev_uint64s;
+  CompressedTrail<double> rev_doubles;
+  CompressedTrail<void*> rev_ptrs;
+  std::vector<IntVar*> rev_boolvar_list;
+  std::vector<bool*> rev_bools;
+  std::vector<bool> rev_bool_value;
+  std::vector<int*> rev_int_memory;
+  std::vector<int64_t*> rev_int64_memory;
+  std::vector<double*> rev_double_memory;
+  std::vector<BaseObject*> rev_object_memory;
+  std::vector<BaseObject**> rev_object_array_memory;
+  std::vector<void*> rev_memory;
+  std::vector<void**> rev_memory_array;
 
   Trail(int block_size,
         ConstraintSolverParameters::TrailCompression compression_level)
-      : rev_ints_(block_size, compression_level),
-        rev_int64s_(block_size, compression_level),
-        rev_uint64s_(block_size, compression_level),
-        rev_doubles_(block_size, compression_level),
-        rev_ptrs_(block_size, compression_level) {}
+      : rev_ints(block_size, compression_level),
+        rev_int64s(block_size, compression_level),
+        rev_uint64s(block_size, compression_level),
+        rev_doubles(block_size, compression_level),
+        rev_ptrs(block_size, compression_level) {}
 
   void BacktrackTo(StateMarker* m) {
-    int target = m->rev_int_index_;
-    for (int curr = rev_ints_.size(); curr > target; --curr) {
-      const addrval<int>& cell = rev_ints_.Back();
+    int target = m->rev_int_index;
+    for (int curr = rev_ints.size(); curr > target; --curr) {
+      const addrval<int>& cell = rev_ints.Back();
       cell.restore();
-      rev_ints_.PopBack();
+      rev_ints.PopBack();
     }
-    DCHECK_EQ(rev_ints_.size(), target);
+    DCHECK_EQ(rev_ints.size(), target);
     // Incorrect trail size after backtrack.
-    target = m->rev_int64_index_;
-    for (int curr = rev_int64s_.size(); curr > target; --curr) {
-      const addrval<int64_t>& cell = rev_int64s_.Back();
+    target = m->rev_int64_index;
+    for (int curr = rev_int64s.size(); curr > target; --curr) {
+      const addrval<int64_t>& cell = rev_int64s.Back();
       cell.restore();
-      rev_int64s_.PopBack();
+      rev_int64s.PopBack();
     }
-    DCHECK_EQ(rev_int64s_.size(), target);
+    DCHECK_EQ(rev_int64s.size(), target);
     // Incorrect trail size after backtrack.
-    target = m->rev_uint64_index_;
-    for (int curr = rev_uint64s_.size(); curr > target; --curr) {
-      const addrval<uint64_t>& cell = rev_uint64s_.Back();
+    target = m->rev_uint64_index;
+    for (int curr = rev_uint64s.size(); curr > target; --curr) {
+      const addrval<uint64_t>& cell = rev_uint64s.Back();
       cell.restore();
-      rev_uint64s_.PopBack();
+      rev_uint64s.PopBack();
     }
-    DCHECK_EQ(rev_uint64s_.size(), target);
+    DCHECK_EQ(rev_uint64s.size(), target);
     // Incorrect trail size after backtrack.
-    target = m->rev_double_index_;
-    for (int curr = rev_doubles_.size(); curr > target; --curr) {
-      const addrval<double>& cell = rev_doubles_.Back();
+    target = m->rev_double_index;
+    for (int curr = rev_doubles.size(); curr > target; --curr) {
+      const addrval<double>& cell = rev_doubles.Back();
       cell.restore();
-      rev_doubles_.PopBack();
+      rev_doubles.PopBack();
     }
-    DCHECK_EQ(rev_doubles_.size(), target);
+    DCHECK_EQ(rev_doubles.size(), target);
     // Incorrect trail size after backtrack.
-    target = m->rev_ptr_index_;
-    for (int curr = rev_ptrs_.size(); curr > target; --curr) {
-      const addrval<void*>& cell = rev_ptrs_.Back();
+    target = m->rev_ptr_index;
+    for (int curr = rev_ptrs.size(); curr > target; --curr) {
+      const addrval<void*>& cell = rev_ptrs.Back();
       cell.restore();
-      rev_ptrs_.PopBack();
+      rev_ptrs.PopBack();
     }
-    DCHECK_EQ(rev_ptrs_.size(), target);
+    DCHECK_EQ(rev_ptrs.size(), target);
     // Incorrect trail size after backtrack.
-    target = m->rev_boolvar_list_index_;
-    for (int curr = rev_boolvar_list_.size() - 1; curr >= target; --curr) {
-      IntVar* const var = rev_boolvar_list_[curr];
+    target = m->rev_boolvar_list_index;
+    for (int curr = rev_boolvar_list.size() - 1; curr >= target; --curr) {
+      IntVar* const var = rev_boolvar_list[curr];
       RestoreBoolValue(var);
     }
-    rev_boolvar_list_.resize(target);
+    rev_boolvar_list.resize(target);
 
-    DCHECK_EQ(rev_bools_.size(), rev_bool_value_.size());
-    target = m->rev_bools_index_;
-    for (int curr = rev_bools_.size() - 1; curr >= target; --curr) {
-      *(rev_bools_[curr]) = rev_bool_value_[curr];
+    DCHECK_EQ(rev_bools.size(), rev_bool_value.size());
+    target = m->rev_bools_index;
+    for (int curr = rev_bools.size() - 1; curr >= target; --curr) {
+      *(rev_bools[curr]) = rev_bool_value[curr];
     }
-    rev_bools_.resize(target);
-    rev_bool_value_.resize(target);
+    rev_bools.resize(target);
+    rev_bool_value.resize(target);
 
-    target = m->rev_int_memory_index_;
-    for (int curr = rev_int_memory_.size() - 1; curr >= target; --curr) {
-      delete[] rev_int_memory_[curr];
+    target = m->rev_int_memory_index;
+    for (int curr = rev_int_memory.size() - 1; curr >= target; --curr) {
+      delete[] rev_int_memory[curr];
     }
-    rev_int_memory_.resize(target);
+    rev_int_memory.resize(target);
 
-    target = m->rev_int64_memory_index_;
-    for (int curr = rev_int64_memory_.size() - 1; curr >= target; --curr) {
-      delete[] rev_int64_memory_[curr];
+    target = m->rev_int64_memory_index;
+    for (int curr = rev_int64_memory.size() - 1; curr >= target; --curr) {
+      delete[] rev_int64_memory[curr];
     }
-    rev_int64_memory_.resize(target);
+    rev_int64_memory.resize(target);
 
-    target = m->rev_double_memory_index_;
-    for (int curr = rev_double_memory_.size() - 1; curr >= target; --curr) {
-      delete[] rev_double_memory_[curr];
+    target = m->rev_double_memory_index;
+    for (int curr = rev_double_memory.size() - 1; curr >= target; --curr) {
+      delete[] rev_double_memory[curr];
     }
-    rev_double_memory_.resize(target);
+    rev_double_memory.resize(target);
 
-    target = m->rev_object_memory_index_;
-    for (int curr = rev_object_memory_.size() - 1; curr >= target; --curr) {
-      delete rev_object_memory_[curr];
+    target = m->rev_object_memory_index;
+    for (int curr = rev_object_memory.size() - 1; curr >= target; --curr) {
+      delete rev_object_memory[curr];
     }
-    rev_object_memory_.resize(target);
+    rev_object_memory.resize(target);
 
-    target = m->rev_object_array_memory_index_;
-    for (int curr = rev_object_array_memory_.size() - 1; curr >= target;
+    target = m->rev_object_array_memory_index;
+    for (int curr = rev_object_array_memory.size() - 1; curr >= target;
          --curr) {
-      delete[] rev_object_array_memory_[curr];
+      delete[] rev_object_array_memory[curr];
     }
-    rev_object_array_memory_.resize(target);
+    rev_object_array_memory.resize(target);
 
-    target = m->rev_memory_index_;
-    for (int curr = rev_memory_.size() - 1; curr >= target; --curr) {
+    target = m->rev_memory_index;
+    for (int curr = rev_memory.size() - 1; curr >= target; --curr) {
       // Explicitly call unsized delete
-      ::operator delete(reinterpret_cast<char*>(rev_memory_[curr]));
+      ::operator delete(reinterpret_cast<char*>(rev_memory[curr]));
       // The previous cast is necessary to deallocate generic memory
       // described by a void* when passed to the RevAlloc procedure
       // We cannot do a delete[] there
       // This is useful for cells of RevFIFO and should not be used outside
       // of the product
     }
-    rev_memory_.resize(target);
+    rev_memory.resize(target);
 
-    target = m->rev_memory_array_index_;
-    for (int curr = rev_memory_array_.size() - 1; curr >= target; --curr) {
-      delete[] rev_memory_array_[curr];
+    target = m->rev_memory_array_index;
+    for (int curr = rev_memory_array.size() - 1; curr >= target; --curr) {
+      delete[] rev_memory_array[curr];
       // delete [] version of the previous unsafe case.
     }
-    rev_memory_array_.resize(target);
+    rev_memory_array.resize(target);
   }
 };
 
 void Solver::InternalSaveValue(int* valptr) {
-  trail_->rev_ints_.PushBack(addrval<int>(valptr));
+  trail_->rev_ints.PushBack(addrval<int>(valptr));
 }
 
 void Solver::InternalSaveValue(int64_t* valptr) {
-  trail_->rev_int64s_.PushBack(addrval<int64_t>(valptr));
+  trail_->rev_int64s.PushBack(addrval<int64_t>(valptr));
 }
 
 void Solver::InternalSaveValue(uint64_t* valptr) {
-  trail_->rev_uint64s_.PushBack(addrval<uint64_t>(valptr));
+  trail_->rev_uint64s.PushBack(addrval<uint64_t>(valptr));
 }
 
 void Solver::InternalSaveValue(double* valptr) {
-  trail_->rev_doubles_.PushBack(addrval<double>(valptr));
+  trail_->rev_doubles.PushBack(addrval<double>(valptr));
 }
 
 void Solver::InternalSaveValue(void** valptr) {
-  trail_->rev_ptrs_.PushBack(addrval<void*>(valptr));
+  trail_->rev_ptrs.PushBack(addrval<void*>(valptr));
 }
 
 // TODO(user) : this code is unsafe if you save the same alternating
 // bool multiple times.
 // The correct code should use a bitset and a single list.
 void Solver::InternalSaveValue(bool* valptr) {
-  trail_->rev_bools_.push_back(valptr);
-  trail_->rev_bool_value_.push_back(*valptr);
+  trail_->rev_bools.push_back(valptr);
+  trail_->rev_bool_value.push_back(*valptr);
 }
 
 BaseObject* Solver::SafeRevAlloc(BaseObject* ptr) {
   check_alloc_state();
-  trail_->rev_object_memory_.push_back(ptr);
+  trail_->rev_object_memory.push_back(ptr);
   return ptr;
 }
 
 int* Solver::SafeRevAllocArray(int* ptr) {
   check_alloc_state();
-  trail_->rev_int_memory_.push_back(ptr);
+  trail_->rev_int_memory.push_back(ptr);
   return ptr;
 }
 
 int64_t* Solver::SafeRevAllocArray(int64_t* ptr) {
   check_alloc_state();
-  trail_->rev_int64_memory_.push_back(ptr);
+  trail_->rev_int64_memory.push_back(ptr);
   return ptr;
 }
 
 double* Solver::SafeRevAllocArray(double* ptr) {
   check_alloc_state();
-  trail_->rev_double_memory_.push_back(ptr);
+  trail_->rev_double_memory.push_back(ptr);
   return ptr;
 }
 
 uint64_t* Solver::SafeRevAllocArray(uint64_t* ptr) {
   check_alloc_state();
-  trail_->rev_int64_memory_.push_back(reinterpret_cast<int64_t*>(ptr));
+  trail_->rev_int64_memory.push_back(reinterpret_cast<int64_t*>(ptr));
   return ptr;
 }
 
 BaseObject** Solver::SafeRevAllocArray(BaseObject** ptr) {
   check_alloc_state();
-  trail_->rev_object_array_memory_.push_back(ptr);
+  trail_->rev_object_array_memory.push_back(ptr);
   return ptr;
 }
 
@@ -965,18 +973,18 @@ Constraint** Solver::SafeRevAllocArray(Constraint** ptr) {
 
 void* Solver::UnsafeRevAllocAux(void* ptr) {
   check_alloc_state();
-  trail_->rev_memory_.push_back(ptr);
+  trail_->rev_memory.push_back(ptr);
   return ptr;
 }
 
 void** Solver::UnsafeRevAllocArrayAux(void** ptr) {
   check_alloc_state();
-  trail_->rev_memory_array_.push_back(ptr);
+  trail_->rev_memory_array.push_back(ptr);
   return ptr;
 }
 
 void InternalSaveBooleanVarValue(Solver* solver, IntVar* var) {
-  solver->trail_->rev_boolvar_list_.push_back(var);
+  solver->trail_->rev_boolvar_list.push_back(var);
 }
 
 // ------------------ Search class -----------------
@@ -1452,7 +1460,7 @@ Solver::Solver(const std::string& name,
     : name_(name),
       parameters_(parameters),
       random_(CpRandomSeed()),
-      demon_profiler_(BuildDemonProfiler(this)),
+
       use_fast_local_search_(true),
       local_search_profiler_(BuildLocalSearchProfiler(this)) {
   Init();
@@ -1462,7 +1470,7 @@ Solver::Solver(const std::string& name)
     : name_(name),
       parameters_(DefaultSolverParameters()),
       random_(CpRandomSeed()),
-      demon_profiler_(BuildDemonProfiler(this)),
+
       use_fast_local_search_(true),
       local_search_profiler_(BuildLocalSearchProfiler(this)) {
   Init();
@@ -1507,7 +1515,7 @@ void Solver::Init() {
   InitCachedConstraint();    // Cache the true constraint.
   timer_->Restart();
   model_cache_.reset(BuildModelCache(this));
-  AddPropagationMonitor(reinterpret_cast<PropagationMonitor*>(demon_profiler_));
+
   AddLocalSearchMonitor(
       reinterpret_cast<LocalSearchMonitor*>(local_search_profiler_));
 }
@@ -1524,7 +1532,7 @@ Solver::~Solver() {
   // Not popping initial SENTINEL in Solver destructor.
   DCHECK_EQ(info.int_info, SOLVER_CTOR_SENTINEL);
   gtl::STLDeleteElements(&searches_);
-  DeleteDemonProfiler(demon_profiler_);
+
   DeleteLocalSearchProfiler(local_search_profiler_);
 }
 
@@ -1615,20 +1623,20 @@ void Solver::PopState() {
 void Solver::PushState(Solver::MarkerType t, const StateInfo& info) {
   StateMarker* m = new StateMarker(t, info);
   if (t != REVERSIBLE_ACTION || info.int_info == 0) {
-    m->rev_int_index_ = trail_->rev_ints_.size();
-    m->rev_int64_index_ = trail_->rev_int64s_.size();
-    m->rev_uint64_index_ = trail_->rev_uint64s_.size();
-    m->rev_double_index_ = trail_->rev_doubles_.size();
-    m->rev_ptr_index_ = trail_->rev_ptrs_.size();
-    m->rev_boolvar_list_index_ = trail_->rev_boolvar_list_.size();
-    m->rev_bools_index_ = trail_->rev_bools_.size();
-    m->rev_int_memory_index_ = trail_->rev_int_memory_.size();
-    m->rev_int64_memory_index_ = trail_->rev_int64_memory_.size();
-    m->rev_double_memory_index_ = trail_->rev_double_memory_.size();
-    m->rev_object_memory_index_ = trail_->rev_object_memory_.size();
-    m->rev_object_array_memory_index_ = trail_->rev_object_array_memory_.size();
-    m->rev_memory_index_ = trail_->rev_memory_.size();
-    m->rev_memory_array_index_ = trail_->rev_memory_array_.size();
+    m->rev_int_index = trail_->rev_ints.size();
+    m->rev_int64_index = trail_->rev_int64s.size();
+    m->rev_uint64_index = trail_->rev_uint64s.size();
+    m->rev_double_index = trail_->rev_doubles.size();
+    m->rev_ptr_index = trail_->rev_ptrs.size();
+    m->rev_boolvar_list_index = trail_->rev_boolvar_list.size();
+    m->rev_bools_index = trail_->rev_bools.size();
+    m->rev_int_memory_index = trail_->rev_int_memory.size();
+    m->rev_int64_memory_index = trail_->rev_int64_memory.size();
+    m->rev_double_memory_index = trail_->rev_double_memory.size();
+    m->rev_object_memory_index = trail_->rev_object_memory.size();
+    m->rev_object_array_memory_index = trail_->rev_object_array_memory.size();
+    m->rev_memory_index = trail_->rev_memory.size();
+    m->rev_memory_array_index = trail_->rev_memory_array.size();
   }
   searches_.back()->marker_stack_.push_back(m);
   queue_->increase_stamp();
@@ -1644,11 +1652,11 @@ Solver::MarkerType Solver::PopState(StateInfo* info) {
       << "PopState() on an empty stack";
   CHECK(info != nullptr);
   StateMarker* const m = searches_.back()->marker_stack_.back();
-  if (m->type_ != REVERSIBLE_ACTION || m->info_.int_info == 0) {
+  if (m->type != REVERSIBLE_ACTION || m->info.int_info == 0) {
     trail_->BacktrackTo(m);
   }
-  Solver::MarkerType t = m->type_;
-  (*info) = m->info_;
+  Solver::MarkerType t = m->type;
+  (*info) = m->info;
   searches_.back()->marker_stack_.pop_back();
   delete m;
   queue_->increase_stamp();
@@ -1883,9 +1891,7 @@ void Solver::NewSearch(DecisionBuilder* db,
 
   // Always install the main propagation and local search monitors.
   propagation_monitor_->Install();
-  if (demon_profiler_ != nullptr) {
-    InstallDemonProfiler(demon_profiler_);
-  }
+
   local_search_monitor_->Install();
   if (local_search_profiler_ != nullptr) {
     InstallLocalSearchProfiler(local_search_profiler_);
@@ -2055,10 +2061,10 @@ void Solver::JumpToSentinelWhenNested() {
   bool found = false;
   while (!c->marker_stack_.empty()) {
     StateMarker* const m = c->marker_stack_.back();
-    if (m->type_ == REVERSIBLE_ACTION) {
+    if (m->type == REVERSIBLE_ACTION) {
       p->marker_stack_.push_back(m);
     } else {
-      if (m->type_ == SENTINEL) {
+      if (m->type == SENTINEL) {
         CHECK_EQ(c->marker_stack_.size(), 1) << "Sentinel found too early";
         found = true;
       }
@@ -2285,12 +2291,7 @@ void Solver::EndSearch() {
   if (2 == searches_.size()) {  // Ending top level search.
     // Restores the state.
     state_ = OUTSIDE_SEARCH;
-    // Checks if we want to export the profile info.
-    if (!parameters_.profile_file().empty()) {
-      const std::string& file_name = parameters_.profile_file();
-      LOG(INFO) << "Exporting profile to " << file_name;
-      ExportProfilingOverview(file_name);
-    }
+
     if (parameters_.print_local_search_profile()) {
       const std::string profile = LocalSearchProfile();
       if (!profile.empty()) LOG(INFO) << profile;
@@ -3318,7 +3319,7 @@ bool Constraint::IsCastConstraint() const {
 
 IntVar* Constraint::Var() { return nullptr; }
 
-// ----- Class IntExpr -----
+// ---------- IntExpr ----------
 
 void IntExpr::Accept(ModelVisitor* visitor) const {
   visitor->BeginVisitIntegerExpression("unknown", this);
@@ -3326,9 +3327,154 @@ void IntExpr::Accept(ModelVisitor* visitor) const {
   visitor->EndVisitIntegerExpression("unknown", this);
 }
 
+IntVar* IntExpr::VarWithName(const std::string& name) {
+  IntVar* var = Var();
+  var->set_name(name);
+  return var;
+}
+
+// ---------- IntVar ----------
+
+IntVar::IntVar(Solver* s) : IntExpr(s), index_(s->GetNewIntVarIndex()) {}
+
+IntVar::IntVar(Solver* s, const std::string& name)
+    : IntExpr(s), index_(s->GetNewIntVarIndex()) {
+  set_name(name);
+}
+
+void IntVar::Accept(ModelVisitor* visitor) const {
+  IntExpr* const casted = solver()->CastExpression(this);
+  visitor->VisitIntegerVariable(this, casted);
+}
+
+int IntVar::VarType() const { return UNSPECIFIED; }
+
+void IntVar::SetValues(const std::vector<int64_t>& values) {
+  switch (values.size()) {
+    case 0: {
+      solver()->Fail();
+      break;
+    }
+    case 1: {
+      SetValue(values.back());
+      break;
+    }
+    case 2: {
+      if (Contains(values[0])) {
+        if (Contains(values[1])) {
+          const int64_t l = std::min(values[0], values[1]);
+          const int64_t u = std::max(values[0], values[1]);
+          SetRange(l, u);
+          if (u > l + 1) {
+            RemoveInterval(l + 1, u - 1);
+          }
+        } else {
+          SetValue(values[0]);
+        }
+      } else {
+        SetValue(values[1]);
+      }
+      break;
+    }
+    default: {
+      // TODO(user): use a clean and safe SortedUniqueCopy() class
+      // that uses a global, static shared (and locked) storage.
+      // TODO(user): We could filter out values not in the var.
+      std::vector<int64_t>& tmp = solver()->tmp_vector_;
+      tmp.clear();
+      tmp.insert(tmp.end(), values.begin(), values.end());
+      std::sort(tmp.begin(), tmp.end());
+      tmp.erase(std::unique(tmp.begin(), tmp.end()), tmp.end());
+      const int size = tmp.size();
+      const int64_t vmin = Min();
+      const int64_t vmax = Max();
+      int first = 0;
+      int last = size - 1;
+      if (tmp.front() > vmax || tmp.back() < vmin) {
+        solver()->Fail();
+      }
+      // TODO(user) : We could find the first position >= vmin by dichotomy.
+      while (tmp[first] < vmin || !Contains(tmp[first])) {
+        ++first;
+        if (first > last || tmp[first] > vmax) {
+          solver()->Fail();
+        }
+      }
+      while (last > first && (tmp[last] > vmax || !Contains(tmp[last]))) {
+        // Note that last >= first implies tmp[last] >= vmin.
+        --last;
+      }
+      DCHECK_GE(last, first);
+      SetRange(tmp[first], tmp[last]);
+      while (first < last) {
+        const int64_t start = tmp[first] + 1;
+        const int64_t end = tmp[first + 1] - 1;
+        if (start <= end) {
+          RemoveInterval(start, end);
+        }
+        first++;
+      }
+    }
+  }
+}
+
+void IntVar::RemoveValues(const std::vector<int64_t>& values) {
+  // TODO(user): Check and maybe inline this code.
+  const int size = values.size();
+  DCHECK_GE(size, 0);
+  switch (size) {
+    case 0: {
+      return;
+    }
+    case 1: {
+      RemoveValue(values[0]);
+      return;
+    }
+    case 2: {
+      RemoveValue(values[0]);
+      RemoveValue(values[1]);
+      return;
+    }
+    case 3: {
+      RemoveValue(values[0]);
+      RemoveValue(values[1]);
+      RemoveValue(values[2]);
+      return;
+    }
+    default: {
+      // 4 values, let's start doing some more clever things.
+      // TODO(user) : Sort values!
+      int start_index = 0;
+      int64_t new_min = Min();
+      if (values[start_index] <= new_min) {
+        while (start_index < size - 1 &&
+               values[start_index + 1] == values[start_index] + 1) {
+          new_min = values[start_index + 1] + 1;
+          start_index++;
+        }
+      }
+      int end_index = size - 1;
+      int64_t new_max = Max();
+      if (values[end_index] >= new_max) {
+        while (end_index > start_index + 1 &&
+               values[end_index - 1] == values[end_index] - 1) {
+          new_max = values[end_index - 1] - 1;
+          end_index--;
+        }
+      }
+      SetRange(new_min, new_max);
+      for (int i = start_index; i <= end_index; ++i) {
+        RemoveValue(values[i]);
+      }
+    }
+  }
+}
+
 #undef CP_TRY  // We no longer need those.
 #undef CP_ON_FAIL
 #undef CP_DO_FAIL
+
+// ---------- Solver Factory ----------
 
 Constraint* Solver::MakeAllDifferent(const std::vector<IntVar*>& vars) {
   return MakeAllDifferent(vars, true);
@@ -3817,14 +3963,14 @@ IntExpr* BuildElement(Solver* solver, const std::vector<int64_t>& values,
     } else if (IsIncreasingContiguous(values)) {
       result = solver->MakeSum(index, values[0]);
     } else if (IsIncreasing(values)) {
-      result = solver->RegisterIntExpr(solver->RevAlloc(
+      result = RegisterIntExpr(solver->RevAlloc(
           new IncreasingIntExprElement(solver, values, index)));
     } else {
       if (solver->parameters().use_element_rmq()) {
-        result = solver->RegisterIntExpr(solver->RevAlloc(
+        result = RegisterIntExpr(solver->RevAlloc(
             new RangeMinimumQueryExprElement(solver, values, index)));
       } else {
-        result = solver->RegisterIntExpr(
+        result = RegisterIntExpr(
             solver->RevAlloc(new IntExprElement(solver, values, index)));
       }
     }
@@ -3883,8 +4029,8 @@ IntExpr* Solver::MakeElement(const std::vector<IntVar*>& vars, IntVar* index) {
     IntVar* scaled_index = MakeSum(index, -index->Min())->Var();
     IntVar* zero = vars[index->Min()];
     IntVar* one = vars[index->Max()];
-    const std::string name = absl::StrFormat(
-        "ElementVar([%s], %s)", JoinNamePtr(vars, ", "), index->name());
+    const std::string name = absl::StrFormat("ElementVar([%s], %s)",
+                                             JoinNamePtr(vars), index->name());
     IntVar* target = MakeIntVar(std::min(zero->Min(), one->Min()),
                                 std::max(zero->Max(), one->Max()), name);
     AddConstraint(
@@ -3903,8 +4049,8 @@ IntExpr* Solver::MakeElement(const std::vector<IntVar*>& vars, IntVar* index) {
   const std::string vname =
       size > 10 ? absl::StrFormat("ElementVar(var array of size %d, %s)", size,
                                   index->DebugString())
-                : absl::StrFormat("ElementVar([%s], %s)",
-                                  JoinNamePtr(vars, ", "), index->name());
+                : absl::StrFormat("ElementVar([%s], %s)", JoinNamePtr(vars),
+                                  index->name());
   IntVar* element_var = MakeIntVar(emin, emax, vname);
   AddConstraint(
       RevAlloc(new IntExprArrayElementCt(this, vars, index, element_var)));
@@ -4010,7 +4156,7 @@ IntExpr* Solver::MakeIndexExpression(const std::vector<IntVar*>& vars,
     return cache->Var();
   } else {
     const std::string name =
-        absl::StrFormat("Index(%s, %d)", JoinNamePtr(vars, ", "), value);
+        absl::StrFormat("Index(%s, %d)", JoinNamePtr(vars), value);
     IntVar* index = MakeIntVar(0, vars.size() - 1, name);
     AddConstraint(MakeIndexOfConstraint(vars, index, value));
     model_cache_->InsertVarArrayConstantExpression(
@@ -4065,6 +4211,2697 @@ IntExpr* Solver::MakeElement(Solver::IndexEvaluator2 values, IntVar* index1,
   CHECK_EQ(this, index2->solver());
   return RegisterIntExpr(RevAlloc(
       new IntIntExprFunctionElement(this, std::move(values), index1, index2)));
+}
+
+DecisionBuilder* Solver::MakeDefaultPhase(const std::vector<IntVar*>& vars) {
+  DefaultPhaseParameters parameters;
+  return MakeDefaultPhase(vars, parameters);
+}
+
+DecisionBuilder* Solver::MakeDefaultPhase(
+    const std::vector<IntVar*>& vars,
+    const DefaultPhaseParameters& parameters) {
+  return RevAlloc(new DefaultIntegerSearch(this, vars, parameters));
+}
+
+Demon* Solver::RegisterDemon(Demon* demon) {
+  CHECK(demon != nullptr);
+  if (InstrumentsDemons()) {
+    propagation_monitor_->RegisterDemon(demon);
+  }
+  return demon;
+}
+
+Constraint* Solver::MakeEquality(IntExpr* e, int64_t v) {
+  CHECK_EQ(this, e->solver());
+  IntExpr* left = nullptr;
+  IntExpr* right = nullptr;
+  if (IsADifference(e, &left, &right)) {
+    return MakeEquality(left, MakeSum(right, v));
+  } else if (e->IsVar() && !e->Var()->Contains(v)) {
+    return MakeFalseConstraint();
+  } else if (e->Min() == e->Max() && e->Min() == v) {
+    return MakeTrueConstraint();
+  } else {
+    return RevAlloc(new EqualityExprCst(this, e, v));
+  }
+}
+
+Constraint* Solver::MakeEquality(IntExpr* e, int v) {
+  CHECK_EQ(this, e->solver());
+  IntExpr* left = nullptr;
+  IntExpr* right = nullptr;
+  if (IsADifference(e, &left, &right)) {
+    return MakeEquality(left, MakeSum(right, v));
+  } else if (e->IsVar() && !e->Var()->Contains(v)) {
+    return MakeFalseConstraint();
+  } else if (e->Min() == e->Max() && e->Min() == v) {
+    return MakeTrueConstraint();
+  } else {
+    return RevAlloc(new EqualityExprCst(this, e, v));
+  }
+}
+
+Constraint* Solver::MakeGreaterOrEqual(IntExpr* e, int64_t v) {
+  CHECK_EQ(this, e->solver());
+  if (e->Min() >= v) {
+    return MakeTrueConstraint();
+  } else if (e->Max() < v) {
+    return MakeFalseConstraint();
+  } else {
+    return RevAlloc(new GreaterEqExprCst(this, e, v));
+  }
+}
+
+Constraint* Solver::MakeGreaterOrEqual(IntExpr* e, int v) {
+  CHECK_EQ(this, e->solver());
+  if (e->Min() >= v) {
+    return MakeTrueConstraint();
+  } else if (e->Max() < v) {
+    return MakeFalseConstraint();
+  } else {
+    return RevAlloc(new GreaterEqExprCst(this, e, v));
+  }
+}
+
+Constraint* Solver::MakeGreater(IntExpr* e, int64_t v) {
+  CHECK_EQ(this, e->solver());
+  if (e->Min() > v) {
+    return MakeTrueConstraint();
+  } else if (e->Max() <= v) {
+    return MakeFalseConstraint();
+  } else {
+    return RevAlloc(new GreaterEqExprCst(this, e, v + 1));
+  }
+}
+
+Constraint* Solver::MakeGreater(IntExpr* e, int v) {
+  CHECK_EQ(this, e->solver());
+  if (e->Min() > v) {
+    return MakeTrueConstraint();
+  } else if (e->Max() <= v) {
+    return MakeFalseConstraint();
+  } else {
+    return RevAlloc(new GreaterEqExprCst(this, e, v + 1));
+  }
+}
+
+Constraint* Solver::MakeLessOrEqual(IntExpr* e, int64_t v) {
+  CHECK_EQ(this, e->solver());
+  if (e->Max() <= v) {
+    return MakeTrueConstraint();
+  } else if (e->Min() > v) {
+    return MakeFalseConstraint();
+  } else {
+    return RevAlloc(new LessEqExprCst(this, e, v));
+  }
+}
+
+Constraint* Solver::MakeLessOrEqual(IntExpr* e, int v) {
+  CHECK_EQ(this, e->solver());
+  if (e->Max() <= v) {
+    return MakeTrueConstraint();
+  } else if (e->Min() > v) {
+    return MakeFalseConstraint();
+  } else {
+    return RevAlloc(new LessEqExprCst(this, e, v));
+  }
+}
+
+Constraint* Solver::MakeLess(IntExpr* e, int64_t v) {
+  CHECK_EQ(this, e->solver());
+  if (e->Max() < v) {
+    return MakeTrueConstraint();
+  } else if (e->Min() >= v) {
+    return MakeFalseConstraint();
+  } else {
+    return RevAlloc(new LessEqExprCst(this, e, v - 1));
+  }
+}
+
+Constraint* Solver::MakeLess(IntExpr* e, int v) {
+  CHECK_EQ(this, e->solver());
+  if (e->Max() < v) {
+    return MakeTrueConstraint();
+  } else if (e->Min() >= v) {
+    return MakeFalseConstraint();
+  } else {
+    return RevAlloc(new LessEqExprCst(this, e, v - 1));
+  }
+}
+
+Constraint* Solver::MakeNonEquality(IntExpr* e, int64_t v) {
+  CHECK_EQ(this, e->solver());
+  IntExpr* left = nullptr;
+  IntExpr* right = nullptr;
+  if (IsADifference(e, &left, &right)) {
+    return MakeNonEquality(left, MakeSum(right, v));
+  } else if (e->IsVar() && !e->Var()->Contains(v)) {
+    return MakeTrueConstraint();
+  } else if (e->Bound() && e->Min() == v) {
+    return MakeFalseConstraint();
+  } else {
+    return RevAlloc(new DiffCst(this, e->Var(), v));
+  }
+}
+
+Constraint* Solver::MakeNonEquality(IntExpr* e, int v) {
+  CHECK_EQ(this, e->solver());
+  IntExpr* left = nullptr;
+  IntExpr* right = nullptr;
+  if (IsADifference(e, &left, &right)) {
+    return MakeNonEquality(left, MakeSum(right, v));
+  } else if (e->IsVar() && !e->Var()->Contains(v)) {
+    return MakeTrueConstraint();
+  } else if (e->Bound() && e->Min() == v) {
+    return MakeFalseConstraint();
+  } else {
+    return RevAlloc(new DiffCst(this, e->Var(), v));
+  }
+}
+
+IntVar* Solver::MakeIsEqualCstVar(IntExpr* var, int64_t value) {
+  IntExpr* left = nullptr;
+  IntExpr* right = nullptr;
+  if (IsADifference(var, &left, &right)) {
+    return MakeIsEqualVar(left, MakeSum(right, value));
+  }
+  if (CapSub(var->Max(), var->Min()) == 1) {
+    if (value == var->Min()) {
+      return MakeDifference(value + 1, var)->Var();
+    } else if (value == var->Max()) {
+      return MakeSum(var, -value + 1)->Var();
+    } else {
+      return MakeIntConst(0);
+    }
+  }
+  if (var->IsVar()) {
+    return var->Var()->IsEqual(value);
+  } else {
+    IntVar* const boolvar =
+        MakeBoolVar(absl::StrFormat("Is(%s == %d)", var->DebugString(), value));
+    AddConstraint(MakeIsEqualCstCt(var, value, boolvar));
+    return boolvar;
+  }
+}
+
+Constraint* Solver::MakeIsEqualCstCt(IntExpr* var, int64_t value,
+                                     IntVar* boolvar) {
+  CHECK_EQ(this, var->solver());
+  CHECK_EQ(this, boolvar->solver());
+  if (value == var->Min()) {
+    if (CapSub(var->Max(), var->Min()) == 1) {
+      return MakeEquality(MakeDifference(value + 1, var), boolvar);
+    }
+    return MakeIsLessOrEqualCstCt(var, value, boolvar);
+  }
+  if (value == var->Max()) {
+    if (CapSub(var->Max(), var->Min()) == 1) {
+      return MakeEquality(MakeSum(var, -value + 1), boolvar);
+    }
+    return MakeIsGreaterOrEqualCstCt(var, value, boolvar);
+  }
+  if (boolvar->Bound()) {
+    if (boolvar->Min() == 0) {
+      return MakeNonEquality(var, value);
+    } else {
+      return MakeEquality(var, value);
+    }
+  }
+  // TODO(user) : what happens if the constraint is not posted?
+  // The cache becomes tainted.
+  model_cache_->InsertExprConstantExpression(
+      boolvar, var, value, ModelCache::EXPR_CONSTANT_IS_EQUAL);
+  IntExpr* left = nullptr;
+  IntExpr* right = nullptr;
+  if (IsADifference(var, &left, &right)) {
+    return MakeIsEqualCt(left, MakeSum(right, value), boolvar);
+  } else {
+    return RevAlloc(new IsEqualCstCt(this, var->Var(), value, boolvar));
+  }
+}
+
+IntVar* Solver::MakeIsDifferentCstVar(IntExpr* var, int64_t value) {
+  IntExpr* left = nullptr;
+  IntExpr* right = nullptr;
+  if (IsADifference(var, &left, &right)) {
+    return MakeIsDifferentVar(left, MakeSum(right, value));
+  }
+  return var->Var()->IsDifferent(value);
+}
+
+Constraint* Solver::MakeIsDifferentCstCt(IntExpr* var, int64_t value,
+                                         IntVar* boolvar) {
+  CHECK_EQ(this, var->solver());
+  CHECK_EQ(this, boolvar->solver());
+  if (value == var->Min()) {
+    return MakeIsGreaterOrEqualCstCt(var, value + 1, boolvar);
+  }
+  if (value == var->Max()) {
+    return MakeIsLessOrEqualCstCt(var, value - 1, boolvar);
+  }
+  if (var->IsVar() && !var->Var()->Contains(value)) {
+    return MakeEquality(boolvar, int64_t{1});
+  }
+  if (var->Bound() && var->Min() == value) {
+    return MakeEquality(boolvar, Zero());
+  }
+  if (boolvar->Bound()) {
+    if (boolvar->Min() == 0) {
+      return MakeEquality(var, value);
+    } else {
+      return MakeNonEquality(var, value);
+    }
+  }
+  model_cache_->InsertExprConstantExpression(
+      boolvar, var, value, ModelCache::EXPR_CONSTANT_IS_NOT_EQUAL);
+  IntExpr* left = nullptr;
+  IntExpr* right = nullptr;
+  if (IsADifference(var, &left, &right)) {
+    return MakeIsDifferentCt(left, MakeSum(right, value), boolvar);
+  } else {
+    return RevAlloc(new IsDiffCstCt(this, var->Var(), value, boolvar));
+  }
+}
+
+IntVar* Solver::MakeIsGreaterOrEqualCstVar(IntExpr* var, int64_t value) {
+  if (var->Min() >= value) {
+    return MakeIntConst(int64_t{1});
+  }
+  if (var->Max() < value) {
+    return MakeIntConst(int64_t{0});
+  }
+  if (var->IsVar()) {
+    return var->Var()->IsGreaterOrEqual(value);
+  } else {
+    IntVar* const boolvar =
+        MakeBoolVar(absl::StrFormat("Is(%s >= %d)", var->DebugString(), value));
+    AddConstraint(MakeIsGreaterOrEqualCstCt(var, value, boolvar));
+    return boolvar;
+  }
+}
+
+IntVar* Solver::MakeIsGreaterCstVar(IntExpr* var, int64_t value) {
+  return MakeIsGreaterOrEqualCstVar(var, value + 1);
+}
+
+Constraint* Solver::MakeIsGreaterOrEqualCstCt(IntExpr* var, int64_t value,
+                                              IntVar* boolvar) {
+  if (boolvar->Bound()) {
+    if (boolvar->Min() == 0) {
+      return MakeLess(var, value);
+    } else {
+      return MakeGreaterOrEqual(var, value);
+    }
+  }
+  CHECK_EQ(this, var->solver());
+  CHECK_EQ(this, boolvar->solver());
+  model_cache_->InsertExprConstantExpression(
+      boolvar, var, value, ModelCache::EXPR_CONSTANT_IS_GREATER_OR_EQUAL);
+  return RevAlloc(new IsGreaterEqualCstCt(this, var, value, boolvar));
+}
+
+Constraint* Solver::MakeIsGreaterCstCt(IntExpr* v, int64_t c, IntVar* b) {
+  return MakeIsGreaterOrEqualCstCt(v, c + 1, b);
+}
+
+IntVar* Solver::MakeIsLessOrEqualCstVar(IntExpr* var, int64_t value) {
+  if (var->Max() <= value) {
+    return MakeIntConst(int64_t{1});
+  }
+  if (var->Min() > value) {
+    return MakeIntConst(int64_t{0});
+  }
+  if (var->IsVar()) {
+    return var->Var()->IsLessOrEqual(value);
+  } else {
+    IntVar* const boolvar =
+        MakeBoolVar(absl::StrFormat("Is(%s <= %d)", var->DebugString(), value));
+    AddConstraint(MakeIsLessOrEqualCstCt(var, value, boolvar));
+    return boolvar;
+  }
+}
+
+IntVar* Solver::MakeIsLessCstVar(IntExpr* var, int64_t value) {
+  return MakeIsLessOrEqualCstVar(var, value - 1);
+}
+
+Constraint* Solver::MakeIsLessOrEqualCstCt(IntExpr* var, int64_t value,
+                                           IntVar* boolvar) {
+  if (boolvar->Bound()) {
+    if (boolvar->Min() == 0) {
+      return MakeGreater(var, value);
+    } else {
+      return MakeLessOrEqual(var, value);
+    }
+  }
+  CHECK_EQ(this, var->solver());
+  CHECK_EQ(this, boolvar->solver());
+  model_cache_->InsertExprConstantExpression(
+      boolvar, var, value, ModelCache::EXPR_CONSTANT_IS_LESS_OR_EQUAL);
+  return RevAlloc(new IsLessEqualCstCt(this, var, value, boolvar));
+}
+
+Constraint* Solver::MakeIsLessCstCt(IntExpr* v, int64_t c, IntVar* b) {
+  return MakeIsLessOrEqualCstCt(v, c - 1, b);
+}
+
+Constraint* Solver::MakeBetweenCt(IntExpr* expr, int64_t l, int64_t u) {
+  DCHECK_EQ(this, expr->solver());
+  // Catch empty and singleton intervals.
+  if (l >= u) {
+    if (l > u) return MakeFalseConstraint();
+    return MakeEquality(expr, l);
+  }
+  int64_t emin = 0;
+  int64_t emax = 0;
+  expr->Range(&emin, &emax);
+  // Catch the trivial cases first.
+  if (emax < l || emin > u) return MakeFalseConstraint();
+  if (emin >= l && emax <= u) return MakeTrueConstraint();
+  // Catch one-sided constraints.
+  if (emax <= u) return MakeGreaterOrEqual(expr, l);
+  if (emin >= l) return MakeLessOrEqual(expr, u);
+  // Simplify the common factor, if any.
+  int64_t coeff = ExtractExprProductCoeff(&expr);
+  if (coeff != 1) {
+    CHECK_NE(coeff, 0);  // Would have been caught by the trivial cases already.
+    if (coeff < 0) {
+      std::swap(u, l);
+      u = -u;
+      l = -l;
+      coeff = -coeff;
+    }
+    return MakeBetweenCt(expr, PosIntDivUp(l, coeff), PosIntDivDown(u, coeff));
+  } else {
+    // No further reduction is possible.
+    return RevAlloc(new BetweenCt(this, expr, l, u));
+  }
+}
+
+Constraint* Solver::MakeNotBetweenCt(IntExpr* expr, int64_t l, int64_t u) {
+  DCHECK_EQ(this, expr->solver());
+  // Catch empty interval.
+  if (l > u) {
+    return MakeTrueConstraint();
+  }
+
+  int64_t emin = 0;
+  int64_t emax = 0;
+  expr->Range(&emin, &emax);
+  // Catch the trivial cases first.
+  if (emax < l || emin > u) return MakeTrueConstraint();
+  if (emin >= l && emax <= u) return MakeFalseConstraint();
+  // Catch one-sided constraints.
+  if (emin >= l) return MakeGreater(expr, u);
+  if (emax <= u) return MakeLess(expr, l);
+  // TODO(user): Add back simplification code if expr is constant *
+  // other_expr.
+  return RevAlloc(new NotBetweenCt(this, expr, l, u));
+}
+
+Constraint* Solver::MakeIsBetweenCt(IntExpr* expr, int64_t l, int64_t u,
+                                    IntVar* b) {
+  CHECK_EQ(this, expr->solver());
+  CHECK_EQ(this, b->solver());
+  // Catch empty and singleton intervals.
+  if (l >= u) {
+    if (l > u) return MakeEquality(b, Zero());
+    return MakeIsEqualCstCt(expr, l, b);
+  }
+  int64_t emin = 0;
+  int64_t emax = 0;
+  expr->Range(&emin, &emax);
+  // Catch the trivial cases first.
+  if (emax < l || emin > u) return MakeEquality(b, Zero());
+  if (emin >= l && emax <= u) return MakeEquality(b, 1);
+  // Catch one-sided constraints.
+  if (emax <= u) return MakeIsGreaterOrEqualCstCt(expr, l, b);
+  if (emin >= l) return MakeIsLessOrEqualCstCt(expr, u, b);
+  // Simplify the common factor, if any.
+  int64_t coeff = ExtractExprProductCoeff(&expr);
+  if (coeff != 1) {
+    CHECK_NE(coeff, 0);  // Would have been caught by the trivial cases already.
+    if (coeff < 0) {
+      std::swap(u, l);
+      u = -u;
+      l = -l;
+      coeff = -coeff;
+    }
+    return MakeIsBetweenCt(expr, PosIntDivUp(l, coeff), PosIntDivDown(u, coeff),
+                           b);
+  } else {
+    // No further reduction is possible.
+    return RevAlloc(new IsBetweenCt(this, expr, l, u, b));
+  }
+}
+
+IntVar* Solver::MakeIsBetweenVar(IntExpr* v, int64_t l, int64_t u) {
+  CHECK_EQ(this, v->solver());
+  IntVar* const b = MakeBoolVar();
+  AddConstraint(MakeIsBetweenCt(v, l, u, b));
+  return b;
+}
+
+Constraint* Solver::MakeMemberCt(IntExpr* expr,
+                                 const std::vector<int64_t>& values) {
+  const int64_t coeff = ExtractExprProductCoeff(&expr);
+  if (coeff == 0) {
+    return absl::c_find(values, 0) == values.end() ? MakeFalseConstraint()
+                                                   : MakeTrueConstraint();
+  }
+  std::vector<int64_t> copied_values = values;
+  // If the expression is a non-trivial product, we filter out the values that
+  // aren't multiples of "coeff", and divide them.
+  if (coeff != 1) {
+    int num_kept = 0;
+    for (const int64_t v : copied_values) {
+      if (v % coeff == 0) copied_values[num_kept++] = v / coeff;
+    }
+    copied_values.resize(num_kept);
+  }
+  // Filter out the values that are outside the [Min, Max] interval.
+  int num_kept = 0;
+  int64_t emin;
+  int64_t emax;
+  expr->Range(&emin, &emax);
+  for (const int64_t v : copied_values) {
+    if (v >= emin && v <= emax) copied_values[num_kept++] = v;
+  }
+  copied_values.resize(num_kept);
+  // Catch empty set.
+  if (copied_values.empty()) return MakeFalseConstraint();
+  // Sort and remove duplicates.
+  gtl::STLSortAndRemoveDuplicates(&copied_values);
+  // Special case for singleton.
+  if (copied_values.size() == 1) return MakeEquality(expr, copied_values[0]);
+  // Catch contiguous intervals.
+  if (copied_values.size() ==
+      copied_values.back() - copied_values.front() + 1) {
+    // Note: MakeBetweenCt() has a fast-track for trivially true constraints.
+    return MakeBetweenCt(expr, copied_values.front(), copied_values.back());
+  }
+  // If the set of values in [expr.Min(), expr.Max()] that are *not* in
+  // "values" is smaller than "values", then it's more efficient to use
+  // NotMemberCt. Catch that case here.
+  if (emax - emin < 2 * copied_values.size()) {
+    // Convert "copied_values" to list the values *not* allowed.
+    std::vector<bool> is_among_input_values(emax - emin + 1, false);
+    for (const int64_t v : copied_values)
+      is_among_input_values[v - emin] = true;
+    // We use the zero valued indices of is_among_input_values to build the
+    // complement of copied_values.
+    copied_values.clear();
+    for (int64_t v_off = 0; v_off < is_among_input_values.size(); ++v_off) {
+      if (!is_among_input_values[v_off]) copied_values.push_back(v_off + emin);
+    }
+    // The empty' case (all values in range [expr.Min(), expr.Max()] are in the
+    // "values" input) was caught earlier, by the "contiguous interval" case.
+    DCHECK_GE(copied_values.size(), 1);
+    if (copied_values.size() == 1) {
+      return MakeNonEquality(expr, copied_values[0]);
+    }
+    return RevAlloc(new NotMemberCt(this, expr->Var(), copied_values));
+  }
+  // Otherwise, just use MemberCt. No further reduction is possible.
+  return RevAlloc(new MemberCt(this, expr->Var(), copied_values));
+}
+
+Constraint* Solver::MakeMemberCt(IntExpr* expr,
+                                 const std::vector<int>& values) {
+  return MakeMemberCt(expr, ToInt64Vector(values));
+}
+
+Constraint* Solver::MakeNotMemberCt(IntExpr* expr,
+                                    const std::vector<int64_t>& values) {
+  const int64_t coeff = ExtractExprProductCoeff(&expr);
+  if (coeff == 0) {
+    return absl::c_find(values, 0) == values.end() ? MakeTrueConstraint()
+                                                   : MakeFalseConstraint();
+  }
+  std::vector<int64_t> copied_values = values;
+  // If the expression is a non-trivial product, we filter out the values that
+  // aren't multiples of "coeff", and divide them.
+  if (coeff != 1) {
+    int num_kept = 0;
+    for (const int64_t v : copied_values) {
+      if (v % coeff == 0) copied_values[num_kept++] = v / coeff;
+    }
+    copied_values.resize(num_kept);
+  }
+  // Filter out the values that are outside the [Min, Max] interval.
+  int num_kept = 0;
+  int64_t emin;
+  int64_t emax;
+  expr->Range(&emin, &emax);
+  for (const int64_t v : copied_values) {
+    if (v >= emin && v <= emax) copied_values[num_kept++] = v;
+  }
+  copied_values.resize(num_kept);
+  // Catch empty set.
+  if (copied_values.empty()) return MakeTrueConstraint();
+  // Sort and remove duplicates.
+  gtl::STLSortAndRemoveDuplicates(&copied_values);
+  // Special case for singleton.
+  if (copied_values.size() == 1) return MakeNonEquality(expr, copied_values[0]);
+  // Catch contiguous intervals.
+  if (copied_values.size() ==
+      copied_values.back() - copied_values.front() + 1) {
+    return MakeNotBetweenCt(expr, copied_values.front(), copied_values.back());
+  }
+  // If the set of values in [expr.Min(), expr.Max()] that are *not* in
+  // "values" is smaller than "values", then it's more efficient to use
+  // MemberCt. Catch that case here.
+  if (emax - emin < 2 * copied_values.size()) {
+    // Convert "copied_values" to a dense boolean vector.
+    std::vector<bool> is_among_input_values(emax - emin + 1, false);
+    for (const int64_t v : copied_values)
+      is_among_input_values[v - emin] = true;
+    // Use zero valued indices for is_among_input_values to build the
+    // complement of copied_values.
+    copied_values.clear();
+    for (int64_t v_off = 0; v_off < is_among_input_values.size(); ++v_off) {
+      if (!is_among_input_values[v_off]) copied_values.push_back(v_off + emin);
+    }
+    // The empty' case (all values in range [expr.Min(), expr.Max()] are in the
+    // "values" input) was caught earlier, by the "contiguous interval" case.
+    DCHECK_GE(copied_values.size(), 1);
+    if (copied_values.size() == 1) {
+      return MakeEquality(expr, copied_values[0]);
+    }
+    return RevAlloc(new MemberCt(this, expr->Var(), copied_values));
+  }
+  // Otherwise, just use NotMemberCt. No further reduction is possible.
+  return RevAlloc(new NotMemberCt(this, expr->Var(), copied_values));
+}
+
+Constraint* Solver::MakeNotMemberCt(IntExpr* expr,
+                                    const std::vector<int>& values) {
+  return MakeNotMemberCt(expr, ToInt64Vector(values));
+}
+
+Constraint* Solver::MakeIsMemberCt(IntExpr* expr,
+                                   const std::vector<int64_t>& values,
+                                   IntVar* boolvar) {
+  return BuildIsMemberCt(this, expr, values, boolvar);
+}
+
+Constraint* Solver::MakeIsMemberCt(IntExpr* expr,
+                                   const std::vector<int>& values,
+                                   IntVar* boolvar) {
+  return BuildIsMemberCt(this, expr, values, boolvar);
+}
+
+IntVar* Solver::MakeIsMemberVar(IntExpr* expr,
+                                const std::vector<int64_t>& values) {
+  IntVar* const b = MakeBoolVar();
+  AddConstraint(MakeIsMemberCt(expr, values, b));
+  return b;
+}
+
+IntVar* Solver::MakeIsMemberVar(IntExpr* expr, const std::vector<int>& values) {
+  IntVar* const b = MakeBoolVar();
+  AddConstraint(MakeIsMemberCt(expr, values, b));
+  return b;
+}
+
+Constraint* Solver::MakeNotMemberCt(IntExpr* expr, std::vector<int64_t> starts,
+                                    std::vector<int64_t> ends) {
+  return RevAlloc(new SortedDisjointForbiddenIntervalsConstraint(
+      this, expr->Var(), {starts, ends}));
+}
+
+Constraint* Solver::MakeNotMemberCt(IntExpr* expr, std::vector<int> starts,
+                                    std::vector<int> ends) {
+  return RevAlloc(new SortedDisjointForbiddenIntervalsConstraint(
+      this, expr->Var(), {starts, ends}));
+}
+
+Constraint* Solver::MakeNotMemberCt(IntExpr* expr,
+                                    SortedDisjointIntervalList intervals) {
+  return RevAlloc(new SortedDisjointForbiddenIntervalsConstraint(
+      this, expr->Var(), std::move(intervals)));
+}
+
+Constraint* Solver::MakeNoCycle(const std::vector<IntVar*>& nexts,
+                                const std::vector<IntVar*>& active,
+                                Solver::IndexFilter1 sink_handler,
+                                bool assume_paths) {
+  CHECK_EQ(nexts.size(), active.size());
+  if (sink_handler == nullptr) {
+    const int64_t size = nexts.size();
+    sink_handler = [size](int64_t index) { return index >= size; };
+  }
+  return RevAlloc(
+      new NoCycle(this, nexts, active, std::move(sink_handler), assume_paths));
+}
+
+Constraint* Solver::MakeNoCycle(const std::vector<IntVar*>& nexts,
+                                const std::vector<IntVar*>& active,
+                                Solver::IndexFilter1 sink_handler) {
+  return MakeNoCycle(nexts, active, std::move(sink_handler), true);
+}
+
+// TODO(user): Merge NoCycle and Circuit.
+Constraint* Solver::MakeCircuit(const std::vector<IntVar*>& nexts) {
+  return RevAlloc(new Circuit(this, nexts, false));
+}
+
+Constraint* Solver::MakeSubCircuit(const std::vector<IntVar*>& nexts) {
+  return RevAlloc(new Circuit(this, nexts, true));
+}
+
+Constraint* Solver::MakePathCumul(const std::vector<IntVar*>& nexts,
+                                  const std::vector<IntVar*>& active,
+                                  const std::vector<IntVar*>& cumuls,
+                                  const std::vector<IntVar*>& transits) {
+  CHECK_EQ(nexts.size(), active.size());
+  CHECK_EQ(transits.size(), nexts.size());
+  return RevAlloc(new PathCumul(this, nexts, active, cumuls, transits));
+}
+
+Constraint* Solver::MakePathCumul(const std::vector<IntVar*>& nexts,
+                                  const std::vector<IntVar*>& active,
+                                  const std::vector<IntVar*>& cumuls,
+                                  Solver::IndexEvaluator2 transit_evaluator) {
+  CHECK_EQ(nexts.size(), active.size());
+  return RevAlloc(new IndexEvaluator2PathCumul(this, nexts, active, cumuls,
+                                               std::move(transit_evaluator)));
+}
+
+Constraint* Solver::MakePathCumul(const std::vector<IntVar*>& nexts,
+                                  const std::vector<IntVar*>& active,
+                                  const std::vector<IntVar*>& cumuls,
+                                  const std::vector<IntVar*>& slacks,
+                                  Solver::IndexEvaluator2 transit_evaluator) {
+  CHECK_EQ(nexts.size(), active.size());
+  return RevAlloc(new IndexEvaluator2SlackPathCumul(
+      this, nexts, active, cumuls, slacks, std::move(transit_evaluator)));
+}
+
+Constraint* Solver::MakeDelayedPathCumul(const std::vector<IntVar*>& nexts,
+                                         const std::vector<IntVar*>& active,
+                                         const std::vector<IntVar*>& cumuls,
+                                         const std::vector<IntVar*>& transits) {
+  CHECK_EQ(nexts.size(), active.size());
+  CHECK_EQ(transits.size(), nexts.size());
+  return RevAlloc(new DelayedPathCumul(this, nexts, active, cumuls, transits));
+}
+
+Constraint* Solver::MakePathConnected(std::vector<IntVar*> nexts,
+                                      std::vector<int64_t> sources,
+                                      std::vector<int64_t> sinks,
+                                      std::vector<IntVar*> status) {
+  return RevAlloc(new PathConnectedConstraint(
+      this, std::move(nexts), sources, std::move(sinks), std::move(status)));
+}
+
+Constraint* Solver::MakePathPrecedenceConstraint(
+    std::vector<IntVar*> nexts,
+    const std::vector<std::pair<int, int>>& precedences) {
+  return MakePathTransitPrecedenceConstraint(std::move(nexts), {}, precedences);
+}
+
+Constraint* Solver::MakePathPrecedenceConstraint(
+    std::vector<IntVar*> nexts,
+    const std::vector<std::pair<int, int>>& precedences,
+    absl::Span<const int> lifo_path_starts,
+    absl::Span<const int> fifo_path_starts) {
+  absl::flat_hash_map<int, PathTransitPrecedenceConstraint::PrecedenceType>
+      precedence_types;
+  for (int start : lifo_path_starts) {
+    precedence_types[start] = PathTransitPrecedenceConstraint::LIFO;
+  }
+  for (int start : fifo_path_starts) {
+    precedence_types[start] = PathTransitPrecedenceConstraint::FIFO;
+  }
+  return MakePathTransitTypedPrecedenceConstraint(
+      this, std::move(nexts), {}, precedences, std::move(precedence_types));
+}
+
+Constraint* Solver::MakePathTransitPrecedenceConstraint(
+    std::vector<IntVar*> nexts, std::vector<IntVar*> transits,
+    const std::vector<std::pair<int, int>>& precedences) {
+  return MakePathTransitTypedPrecedenceConstraint(
+      this, std::move(nexts), std::move(transits), precedences, {{}});
+}
+
+Constraint* Solver::MakePathEnergyCostConstraint(
+    PathEnergyCostConstraintSpecification specification) {
+  return RevAlloc(new PathEnergyCostConstraint(this, std::move(specification)));
+}
+
+namespace {
+void DeepLinearize(Solver* solver, const std::vector<IntVar*>& pre_vars,
+                   absl::Span<const int64_t> pre_coefs,
+                   std::vector<IntVar*>* vars, std::vector<int64_t>* coefs,
+                   int64_t* constant) {
+  CHECK(solver != nullptr);
+  CHECK(vars != nullptr);
+  CHECK(coefs != nullptr);
+  CHECK(constant != nullptr);
+  *constant = 0;
+  vars->reserve(pre_vars.size());
+  coefs->reserve(pre_coefs.size());
+  // Try linear scan of the variables to check if there is nothing to do.
+  bool need_linearization = false;
+  for (int i = 0; i < pre_vars.size(); ++i) {
+    IntVar* const variable = pre_vars[i];
+    const int64_t coefficient = pre_coefs[i];
+    if (variable->Bound()) {
+      *constant = CapAdd(*constant, CapProd(coefficient, variable->Min()));
+    } else if (solver->CastExpression(variable) == nullptr) {
+      vars->push_back(variable);
+      coefs->push_back(coefficient);
+    } else {
+      need_linearization = true;
+      vars->clear();
+      coefs->clear();
+      break;
+    }
+  }
+  if (need_linearization) {
+    // Introspect the variables to simplify the sum.
+    absl::flat_hash_map<IntVar*, int64_t> variables_to_coefficients;
+    ExprLinearizer linearizer(&variables_to_coefficients);
+    for (int i = 0; i < pre_vars.size(); ++i) {
+      linearizer.Visit(pre_vars[i], pre_coefs[i]);
+    }
+    *constant = linearizer.Constant();
+    for (const auto& variable_to_coefficient : variables_to_coefficients) {
+      if (variable_to_coefficient.second != 0) {
+        vars->push_back(variable_to_coefficient.first);
+        coefs->push_back(variable_to_coefficient.second);
+      }
+    }
+  }
+}
+
+Constraint* MakeScalProdEqualityFct(Solver* solver,
+                                    const std::vector<IntVar*>& pre_vars,
+                                    absl::Span<const int64_t> pre_coefs,
+                                    int64_t cst) {
+  int64_t constant = 0;
+  std::vector<IntVar*> vars;
+  std::vector<int64_t> coefs;
+  DeepLinearize(solver, pre_vars, pre_coefs, &vars, &coefs, &constant);
+  cst = CapSub(cst, constant);
+
+  const int size = vars.size();
+  if (size == 0 || AreAllNull(coefs)) {
+    return cst == 0 ? solver->MakeTrueConstraint()
+                    : solver->MakeFalseConstraint();
+  }
+  if (AreAllBoundOrNull(vars, coefs)) {
+    int64_t sum = 0;
+    for (int i = 0; i < size; ++i) {
+      sum = CapAdd(sum, CapProd(coefs[i], vars[i]->Min()));
+    }
+    return sum == cst ? solver->MakeTrueConstraint()
+                      : solver->MakeFalseConstraint();
+  }
+  if (AreAllOnes(coefs)) {
+    return solver->MakeSumEquality(vars, cst);
+  }
+  if (AreAllBooleans(vars) && size > 2) {
+    if (AreAllPositive(coefs)) {
+      return solver->RevAlloc(
+          new PositiveBooleanScalProdEqCst(solver, vars, coefs, cst));
+    }
+    if (AreAllNegative(coefs)) {
+      std::vector<int64_t> opp_coefs(coefs.size());
+      for (int i = 0; i < coefs.size(); ++i) {
+        opp_coefs[i] = -coefs[i];
+      }
+      return solver->RevAlloc(
+          new PositiveBooleanScalProdEqCst(solver, vars, opp_coefs, -cst));
+    }
+  }
+
+  // Simplications.
+  int constants = 0;
+  int positives = 0;
+  int negatives = 0;
+  for (int i = 0; i < size; ++i) {
+    if (coefs[i] == 0 || vars[i]->Bound()) {
+      constants++;
+    } else if (coefs[i] > 0) {
+      positives++;
+    } else {
+      negatives++;
+    }
+  }
+  if (positives > 0 && negatives > 0) {
+    std::vector<IntVar*> pos_terms;
+    std::vector<IntVar*> neg_terms;
+    int64_t rhs = cst;
+    for (int i = 0; i < size; ++i) {
+      if (coefs[i] == 0 || vars[i]->Bound()) {
+        rhs = CapSub(rhs, CapProd(coefs[i], vars[i]->Min()));
+      } else if (coefs[i] > 0) {
+        pos_terms.push_back(solver->MakeProd(vars[i], coefs[i])->Var());
+      } else {
+        neg_terms.push_back(solver->MakeProd(vars[i], -coefs[i])->Var());
+      }
+    }
+    if (negatives == 1) {
+      if (rhs != 0) {
+        pos_terms.push_back(solver->MakeIntConst(-rhs));
+      }
+      return solver->MakeSumEquality(pos_terms, neg_terms[0]);
+    } else if (positives == 1) {
+      if (rhs != 0) {
+        neg_terms.push_back(solver->MakeIntConst(rhs));
+      }
+      return solver->MakeSumEquality(neg_terms, pos_terms[0]);
+    } else {
+      if (rhs != 0) {
+        neg_terms.push_back(solver->MakeIntConst(rhs));
+      }
+      return solver->MakeEquality(solver->MakeSum(pos_terms),
+                                  solver->MakeSum(neg_terms));
+    }
+  } else if (positives == 1) {
+    IntExpr* pos_term = nullptr;
+    int64_t rhs = cst;
+    for (int i = 0; i < size; ++i) {
+      if (coefs[i] == 0 || vars[i]->Bound()) {
+        rhs = CapSub(rhs, CapProd(coefs[i], vars[i]->Min()));
+      } else if (coefs[i] > 0) {
+        pos_term = solver->MakeProd(vars[i], coefs[i]);
+      } else {
+        LOG(FATAL) << "Should not be here";
+      }
+    }
+    return solver->MakeEquality(pos_term, rhs);
+  } else if (negatives == 1) {
+    IntExpr* neg_term = nullptr;
+    int64_t rhs = cst;
+    for (int i = 0; i < size; ++i) {
+      if (coefs[i] == 0 || vars[i]->Bound()) {
+        rhs = CapSub(rhs, CapProd(coefs[i], vars[i]->Min()));
+      } else if (coefs[i] > 0) {
+        LOG(FATAL) << "Should not be here";
+      } else {
+        neg_term = solver->MakeProd(vars[i], -coefs[i]);
+      }
+    }
+    return solver->MakeEquality(neg_term, -rhs);
+  } else if (positives > 1) {
+    std::vector<IntVar*> pos_terms;
+    int64_t rhs = cst;
+    for (int i = 0; i < size; ++i) {
+      if (coefs[i] == 0 || vars[i]->Bound()) {
+        rhs = CapSub(rhs, CapProd(coefs[i], vars[i]->Min()));
+      } else if (coefs[i] > 0) {
+        pos_terms.push_back(solver->MakeProd(vars[i], coefs[i])->Var());
+      } else {
+        LOG(FATAL) << "Should not be here";
+      }
+    }
+    return solver->MakeSumEquality(pos_terms, rhs);
+  } else if (negatives > 1) {
+    std::vector<IntVar*> neg_terms;
+    int64_t rhs = cst;
+    for (int i = 0; i < size; ++i) {
+      if (coefs[i] == 0 || vars[i]->Bound()) {
+        rhs = CapSub(rhs, CapProd(coefs[i], vars[i]->Min()));
+      } else if (coefs[i] > 0) {
+        LOG(FATAL) << "Should not be here";
+      } else {
+        neg_terms.push_back(solver->MakeProd(vars[i], -coefs[i])->Var());
+      }
+    }
+    return solver->MakeSumEquality(neg_terms, -rhs);
+  }
+  std::vector<IntVar*> terms;
+  for (int i = 0; i < size; ++i) {
+    terms.push_back(solver->MakeProd(vars[i], coefs[i])->Var());
+  }
+  return solver->MakeSumEquality(terms, solver->MakeIntConst(cst));
+}
+
+Constraint* MakeScalProdEqualityVarFct(Solver* solver,
+                                       const std::vector<IntVar*>& pre_vars,
+                                       absl::Span<const int64_t> pre_coefs,
+                                       IntVar* target) {
+  int64_t constant = 0;
+  std::vector<IntVar*> vars;
+  std::vector<int64_t> coefs;
+  DeepLinearize(solver, pre_vars, pre_coefs, &vars, &coefs, &constant);
+
+  const int size = vars.size();
+  if (size == 0 || AreAllNull<int64_t>(coefs)) {
+    return solver->MakeEquality(target, constant);
+  }
+  if (AreAllOnes(coefs)) {
+    return solver->MakeSumEquality(vars,
+                                   solver->MakeSum(target, -constant)->Var());
+  }
+  if (AreAllBooleans(vars) && AreAllPositive<int64_t>(coefs)) {
+    // TODO(user) : bench BooleanScalProdEqVar with IntConst.
+    return solver->RevAlloc(new PositiveBooleanScalProdEqVar(
+        solver, vars, coefs, solver->MakeSum(target, -constant)->Var()));
+  }
+  std::vector<IntVar*> terms;
+  for (int i = 0; i < size; ++i) {
+    terms.push_back(solver->MakeProd(vars[i], coefs[i])->Var());
+  }
+  return solver->MakeSumEquality(terms,
+                                 solver->MakeSum(target, -constant)->Var());
+}
+
+Constraint* MakeScalProdGreaterOrEqualFct(Solver* solver,
+                                          const std::vector<IntVar*>& pre_vars,
+                                          absl::Span<const int64_t> pre_coefs,
+                                          int64_t cst) {
+  int64_t constant = 0;
+  std::vector<IntVar*> vars;
+  std::vector<int64_t> coefs;
+  DeepLinearize(solver, pre_vars, pre_coefs, &vars, &coefs, &constant);
+  cst = CapSub(cst, constant);
+
+  const int size = vars.size();
+  if (size == 0 || AreAllNull<int64_t>(coefs)) {
+    return cst <= 0 ? solver->MakeTrueConstraint()
+                    : solver->MakeFalseConstraint();
+  }
+  if (AreAllOnes(coefs)) {
+    return solver->MakeSumGreaterOrEqual(vars, cst);
+  }
+  if (cst == 1 && AreAllBooleans(vars) && AreAllPositive(coefs)) {
+    // can move all coefs to 1.
+    std::vector<IntVar*> terms;
+    for (int i = 0; i < size; ++i) {
+      if (coefs[i] > 0) {
+        terms.push_back(vars[i]);
+      }
+    }
+    return solver->MakeSumGreaterOrEqual(terms, 1);
+  }
+  std::vector<IntVar*> terms;
+  for (int i = 0; i < size; ++i) {
+    terms.push_back(solver->MakeProd(vars[i], coefs[i])->Var());
+  }
+  return solver->MakeSumGreaterOrEqual(terms, cst);
+}
+
+Constraint* MakeScalProdLessOrEqualFct(Solver* solver,
+                                       const std::vector<IntVar*>& pre_vars,
+                                       absl::Span<const int64_t> pre_coefs,
+                                       int64_t upper_bound) {
+  int64_t constant = 0;
+  std::vector<IntVar*> vars;
+  std::vector<int64_t> coefs;
+  DeepLinearize(solver, pre_vars, pre_coefs, &vars, &coefs, &constant);
+  upper_bound = CapSub(upper_bound, constant);
+
+  const int size = vars.size();
+  if (size == 0 || AreAllNull<int64_t>(coefs)) {
+    return upper_bound >= 0 ? solver->MakeTrueConstraint()
+                            : solver->MakeFalseConstraint();
+  }
+  // TODO(user) : compute constant on the fly.
+  if (AreAllBoundOrNull(vars, coefs)) {
+    int64_t cst = 0;
+    for (int i = 0; i < size; ++i) {
+      cst = CapAdd(cst, CapProd(vars[i]->Min(), coefs[i]));
+    }
+    return cst <= upper_bound ? solver->MakeTrueConstraint()
+                              : solver->MakeFalseConstraint();
+  }
+  if (AreAllOnes(coefs)) {
+    return solver->MakeSumLessOrEqual(vars, upper_bound);
+  }
+  if (AreAllBooleans(vars) && AreAllPositive<int64_t>(coefs)) {
+    return solver->RevAlloc(
+        new BooleanScalProdLessConstant(solver, vars, coefs, upper_bound));
+  }
+  // Some simplifications
+  int constants = 0;
+  int positives = 0;
+  int negatives = 0;
+  for (int i = 0; i < size; ++i) {
+    if (coefs[i] == 0 || vars[i]->Bound()) {
+      constants++;
+    } else if (coefs[i] > 0) {
+      positives++;
+    } else {
+      negatives++;
+    }
+  }
+  if (positives > 0 && negatives > 0) {
+    std::vector<IntVar*> pos_terms;
+    std::vector<IntVar*> neg_terms;
+    int64_t rhs = upper_bound;
+    for (int i = 0; i < size; ++i) {
+      if (coefs[i] == 0 || vars[i]->Bound()) {
+        rhs = CapSub(rhs, CapProd(coefs[i], vars[i]->Min()));
+      } else if (coefs[i] > 0) {
+        pos_terms.push_back(solver->MakeProd(vars[i], coefs[i])->Var());
+      } else {
+        neg_terms.push_back(solver->MakeProd(vars[i], -coefs[i])->Var());
+      }
+    }
+    if (negatives == 1) {
+      IntExpr* const neg_term = solver->MakeSum(neg_terms[0], rhs);
+      return solver->MakeLessOrEqual(solver->MakeSum(pos_terms), neg_term);
+    } else if (positives == 1) {
+      IntExpr* const pos_term = solver->MakeSum(pos_terms[0], -rhs);
+      return solver->MakeGreaterOrEqual(solver->MakeSum(neg_terms), pos_term);
+    } else {
+      if (rhs != 0) {
+        neg_terms.push_back(solver->MakeIntConst(rhs));
+      }
+      return solver->MakeLessOrEqual(solver->MakeSum(pos_terms),
+                                     solver->MakeSum(neg_terms));
+    }
+  } else if (positives == 1) {
+    IntExpr* pos_term = nullptr;
+    int64_t rhs = upper_bound;
+    for (int i = 0; i < size; ++i) {
+      if (coefs[i] == 0 || vars[i]->Bound()) {
+        rhs = CapSub(rhs, CapProd(coefs[i], vars[i]->Min()));
+      } else if (coefs[i] > 0) {
+        pos_term = solver->MakeProd(vars[i], coefs[i]);
+      } else {
+        LOG(FATAL) << "Should not be here";
+      }
+    }
+    return solver->MakeLessOrEqual(pos_term, rhs);
+  } else if (negatives == 1) {
+    IntExpr* neg_term = nullptr;
+    int64_t rhs = upper_bound;
+    for (int i = 0; i < size; ++i) {
+      if (coefs[i] == 0 || vars[i]->Bound()) {
+        rhs = CapSub(rhs, CapProd(coefs[i], vars[i]->Min()));
+      } else if (coefs[i] > 0) {
+        LOG(FATAL) << "Should not be here";
+      } else {
+        neg_term = solver->MakeProd(vars[i], -coefs[i]);
+      }
+    }
+    return solver->MakeGreaterOrEqual(neg_term, -rhs);
+  } else if (positives > 1) {
+    std::vector<IntVar*> pos_terms;
+    int64_t rhs = upper_bound;
+    for (int i = 0; i < size; ++i) {
+      if (coefs[i] == 0 || vars[i]->Bound()) {
+        rhs = CapSub(rhs, CapProd(coefs[i], vars[i]->Min()));
+      } else if (coefs[i] > 0) {
+        pos_terms.push_back(solver->MakeProd(vars[i], coefs[i])->Var());
+      } else {
+        LOG(FATAL) << "Should not be here";
+      }
+    }
+    return solver->MakeSumLessOrEqual(pos_terms, rhs);
+  } else if (negatives > 1) {
+    std::vector<IntVar*> neg_terms;
+    int64_t rhs = upper_bound;
+    for (int i = 0; i < size; ++i) {
+      if (coefs[i] == 0 || vars[i]->Bound()) {
+        rhs = CapSub(rhs, CapProd(coefs[i], vars[i]->Min()));
+      } else if (coefs[i] > 0) {
+        LOG(FATAL) << "Should not be here";
+      } else {
+        neg_terms.push_back(solver->MakeProd(vars[i], -coefs[i])->Var());
+      }
+    }
+    return solver->MakeSumGreaterOrEqual(neg_terms, -rhs);
+  }
+  std::vector<IntVar*> terms;
+  for (int i = 0; i < size; ++i) {
+    terms.push_back(solver->MakeProd(vars[i], coefs[i])->Var());
+  }
+  return solver->MakeLessOrEqual(solver->MakeSum(terms), upper_bound);
+}
+
+IntExpr* MakeSumArrayAux(Solver* solver, const std::vector<IntVar*>& vars,
+                         int64_t constant) {
+  const int size = vars.size();
+  DCHECK_GT(size, 2);
+  int64_t new_min = 0;
+  int64_t new_max = 0;
+  for (int i = 0; i < size; ++i) {
+    if (new_min != std::numeric_limits<int64_t>::min()) {
+      new_min = CapAdd(vars[i]->Min(), new_min);
+    }
+    if (new_max != std::numeric_limits<int64_t>::max()) {
+      new_max = CapAdd(vars[i]->Max(), new_max);
+    }
+  }
+  IntExpr* const cache =
+      solver->Cache()->FindVarArrayExpression(vars, ModelCache::VAR_ARRAY_SUM);
+  if (cache != nullptr) {
+    return solver->MakeSum(cache, constant);
+  } else {
+    const std::string name = absl::StrFormat("Sum([%s])", JoinNamePtr(vars));
+    IntVar* const sum_var = solver->MakeIntVar(new_min, new_max, name);
+    if (AreAllBooleans(vars)) {
+      solver->AddConstraint(
+          solver->RevAlloc(new SumBooleanEqualToVar(solver, vars, sum_var)));
+    } else if (size <= solver->parameters().array_split_size()) {
+      solver->AddConstraint(
+          solver->RevAlloc(new SmallSumConstraint(solver, vars, sum_var)));
+    } else {
+      solver->AddConstraint(
+          solver->RevAlloc(new SumConstraint(solver, vars, sum_var)));
+    }
+    solver->Cache()->InsertVarArrayExpression(sum_var, vars,
+                                              ModelCache::VAR_ARRAY_SUM);
+    return solver->MakeSum(sum_var, constant);
+  }
+}
+
+IntExpr* MakeSumAux(Solver* solver, const std::vector<IntVar*>& vars,
+                    int64_t constant) {
+  const int size = vars.size();
+  if (size == 0) {
+    return solver->MakeIntConst(constant);
+  } else if (size == 1) {
+    return solver->MakeSum(vars[0], constant);
+  } else if (size == 2) {
+    return solver->MakeSum(solver->MakeSum(vars[0], vars[1]), constant);
+  } else {
+    return MakeSumArrayAux(solver, vars, constant);
+  }
+}
+
+IntExpr* MakeScalProdAux(Solver* solver, const std::vector<IntVar*>& vars,
+                         const std::vector<int64_t>& coefs, int64_t constant) {
+  if (AreAllOnes(coefs)) {
+    return MakeSumAux(solver, vars, constant);
+  }
+
+  const int size = vars.size();
+  if (size == 0) {
+    return solver->MakeIntConst(constant);
+  } else if (size == 1) {
+    return solver->MakeSum(solver->MakeProd(vars[0], coefs[0]), constant);
+  } else if (size == 2) {
+    if (coefs[0] > 0 && coefs[1] < 0) {
+      return solver->MakeSum(
+          solver->MakeDifference(solver->MakeProd(vars[0], coefs[0]),
+                                 solver->MakeProd(vars[1], -coefs[1])),
+          constant);
+    } else if (coefs[0] < 0 && coefs[1] > 0) {
+      return solver->MakeSum(
+          solver->MakeDifference(solver->MakeProd(vars[1], coefs[1]),
+                                 solver->MakeProd(vars[0], -coefs[0])),
+          constant);
+    } else {
+      return solver->MakeSum(
+          solver->MakeSum(solver->MakeProd(vars[0], coefs[0]),
+                          solver->MakeProd(vars[1], coefs[1])),
+          constant);
+    }
+  } else {
+    if (AreAllBooleans(vars)) {
+      if (AreAllPositive(coefs)) {
+        if (vars.size() > 8) {
+          return solver->MakeSum(
+              RegisterIntExpr(solver->RevAlloc(new PositiveBooleanScalProd(
+                                  solver, vars, coefs)))
+                  ->Var(),
+              constant);
+        } else {
+          return solver->MakeSum(
+              RegisterIntExpr(solver->RevAlloc(
+                  new PositiveBooleanScalProd(solver, vars, coefs))),
+              constant);
+        }
+      } else {
+        // If some coefficients are non-positive, partition coefficients in two
+        // sets, one for the positive coefficients P and one for the negative
+        // ones N.
+        // Create two PositiveBooleanScalProd expressions, one on P (s1), the
+        // other on Opposite(N) (s2).
+        // The final expression is then s1 - s2.
+        // If P is empty, the expression is Opposite(s2).
+        std::vector<int64_t> positive_coefs;
+        std::vector<int64_t> negative_coefs;
+        std::vector<IntVar*> positive_coef_vars;
+        std::vector<IntVar*> negative_coef_vars;
+        for (int i = 0; i < size; ++i) {
+          const int coef = coefs[i];
+          if (coef > 0) {
+            positive_coefs.push_back(coef);
+            positive_coef_vars.push_back(vars[i]);
+          } else if (coef < 0) {
+            negative_coefs.push_back(-coef);
+            negative_coef_vars.push_back(vars[i]);
+          }
+        }
+        CHECK_GT(negative_coef_vars.size(), 0);
+        IntExpr* const negatives =
+            MakeScalProdAux(solver, negative_coef_vars, negative_coefs, 0);
+        if (!positive_coef_vars.empty()) {
+          IntExpr* const positives = MakeScalProdAux(solver, positive_coef_vars,
+                                                     positive_coefs, constant);
+          return solver->MakeDifference(positives, negatives);
+        } else {
+          return solver->MakeDifference(constant, negatives);
+        }
+      }
+    }
+  }
+  std::vector<IntVar*> terms;
+  for (int i = 0; i < size; ++i) {
+    terms.push_back(solver->MakeProd(vars[i], coefs[i])->Var());
+  }
+  return MakeSumArrayAux(solver, terms, constant);
+}
+
+IntExpr* MakeScalProdFct(Solver* solver, const std::vector<IntVar*>& pre_vars,
+                         absl::Span<const int64_t> pre_coefs) {
+  int64_t constant = 0;
+  std::vector<IntVar*> vars;
+  std::vector<int64_t> coefs;
+  DeepLinearize(solver, pre_vars, pre_coefs, &vars, &coefs, &constant);
+
+  if (vars.empty()) {
+    return solver->MakeIntConst(constant);
+  }
+  // Can we simplify using some gcd computation.
+  int64_t gcd = std::abs(coefs[0]);
+  for (int i = 1; i < coefs.size(); ++i) {
+    gcd = std::gcd(gcd, std::abs(coefs[i]));
+    if (gcd == 1) {
+      break;
+    }
+  }
+  if (constant != 0 && gcd != 1) {
+    gcd = std::gcd(gcd, std::abs(constant));
+  }
+  if (gcd > 1) {
+    for (int i = 0; i < coefs.size(); ++i) {
+      coefs[i] /= gcd;
+    }
+    return solver->MakeProd(
+        MakeScalProdAux(solver, vars, coefs, constant / gcd), gcd);
+  }
+  return MakeScalProdAux(solver, vars, coefs, constant);
+}
+
+IntExpr* MakeSumFct(Solver* solver, const std::vector<IntVar*>& pre_vars) {
+  absl::flat_hash_map<IntVar*, int64_t> variables_to_coefficients;
+  ExprLinearizer linearizer(&variables_to_coefficients);
+  for (int i = 0; i < pre_vars.size(); ++i) {
+    linearizer.Visit(pre_vars[i], 1);
+  }
+  const int64_t constant = linearizer.Constant();
+  std::vector<IntVar*> vars;
+  std::vector<int64_t> coefs;
+  for (const auto& variable_to_coefficient : variables_to_coefficients) {
+    if (variable_to_coefficient.second != 0) {
+      vars.push_back(variable_to_coefficient.first);
+      coefs.push_back(variable_to_coefficient.second);
+    }
+  }
+  return MakeScalProdAux(solver, vars, coefs, constant);
+}
+}  // namespace
+
+// ----- API -----
+
+IntExpr* Solver::MakeSum(const std::vector<IntVar*>& vars) {
+  const int size = vars.size();
+  if (size == 0) {
+    return MakeIntConst(int64_t{0});
+  } else if (size == 1) {
+    return vars[0];
+  } else if (size == 2) {
+    return MakeSum(vars[0], vars[1]);
+  } else {
+    IntExpr* const cache =
+        model_cache_->FindVarArrayExpression(vars, ModelCache::VAR_ARRAY_SUM);
+    if (cache != nullptr) {
+      return cache;
+    } else {
+      int64_t new_min = 0;
+      int64_t new_max = 0;
+      for (int i = 0; i < size; ++i) {
+        if (new_min != std::numeric_limits<int64_t>::min()) {
+          new_min = CapAdd(vars[i]->Min(), new_min);
+        }
+        if (new_max != std::numeric_limits<int64_t>::max()) {
+          new_max = CapAdd(vars[i]->Max(), new_max);
+        }
+      }
+      IntExpr* sum_expr = nullptr;
+      const bool all_booleans = AreAllBooleans(vars);
+      if (all_booleans) {
+        const std::string name =
+            absl::StrFormat("BooleanSum([%s])", JoinNamePtr(vars));
+        sum_expr = MakeIntVar(new_min, new_max, name);
+        AddConstraint(
+            RevAlloc(new SumBooleanEqualToVar(this, vars, sum_expr->Var())));
+      } else if (new_min != std::numeric_limits<int64_t>::min() &&
+                 new_max != std::numeric_limits<int64_t>::max()) {
+        sum_expr = MakeSumFct(this, vars);
+      } else {
+        const std::string name =
+            absl::StrFormat("Sum([%s])", JoinNamePtr(vars));
+        sum_expr = MakeIntVar(new_min, new_max, name);
+        AddConstraint(
+            RevAlloc(new SafeSumConstraint(this, vars, sum_expr->Var())));
+      }
+      model_cache_->InsertVarArrayExpression(sum_expr, vars,
+                                             ModelCache::VAR_ARRAY_SUM);
+      return sum_expr;
+    }
+  }
+}
+
+IntExpr* Solver::MakeMin(const std::vector<IntVar*>& vars) {
+  const int size = vars.size();
+  if (size == 0) {
+    LOG(WARNING) << "operations_research::Solver::MakeMin() was called with an "
+                    "empty list of variables. Was this intentional?";
+    return MakeIntConst(std::numeric_limits<int64_t>::max());
+  } else if (size == 1) {
+    return vars[0];
+  } else if (size == 2) {
+    return MakeMin(vars[0], vars[1]);
+  } else {
+    IntExpr* const cache =
+        model_cache_->FindVarArrayExpression(vars, ModelCache::VAR_ARRAY_MIN);
+    if (cache != nullptr) {
+      return cache;
+    } else {
+      if (AreAllBooleans(vars)) {
+        IntVar* const new_var = MakeBoolVar();
+        AddConstraint(RevAlloc(new ArrayBoolAndEq(this, vars, new_var)));
+        model_cache_->InsertVarArrayExpression(new_var, vars,
+                                               ModelCache::VAR_ARRAY_MIN);
+        return new_var;
+      } else {
+        int64_t new_min = std::numeric_limits<int64_t>::max();
+        int64_t new_max = std::numeric_limits<int64_t>::max();
+        for (int i = 0; i < size; ++i) {
+          new_min = std::min(new_min, vars[i]->Min());
+          new_max = std::min(new_max, vars[i]->Max());
+        }
+        IntVar* const new_var = MakeIntVar(new_min, new_max);
+        if (size <= parameters_.array_split_size()) {
+          AddConstraint(RevAlloc(new SmallMinConstraint(this, vars, new_var)));
+        } else {
+          AddConstraint(RevAlloc(new MinConstraint(this, vars, new_var)));
+        }
+        model_cache_->InsertVarArrayExpression(new_var, vars,
+                                               ModelCache::VAR_ARRAY_MIN);
+        return new_var;
+      }
+    }
+  }
+}
+
+IntExpr* Solver::MakeMax(const std::vector<IntVar*>& vars) {
+  const int size = vars.size();
+  if (size == 0) {
+    LOG(WARNING) << "operations_research::Solver::MakeMax() was called with an "
+                    "empty list of variables. Was this intentional?";
+    return MakeIntConst(std::numeric_limits<int64_t>::min());
+  } else if (size == 1) {
+    return vars[0];
+  } else if (size == 2) {
+    return MakeMax(vars[0], vars[1]);
+  } else {
+    IntExpr* const cache =
+        model_cache_->FindVarArrayExpression(vars, ModelCache::VAR_ARRAY_MAX);
+    if (cache != nullptr) {
+      return cache;
+    } else {
+      if (AreAllBooleans(vars)) {
+        IntVar* const new_var = MakeBoolVar();
+        AddConstraint(RevAlloc(new ArrayBoolOrEq(this, vars, new_var)));
+        model_cache_->InsertVarArrayExpression(new_var, vars,
+                                               ModelCache::VAR_ARRAY_MIN);
+        return new_var;
+      } else {
+        int64_t new_min = std::numeric_limits<int64_t>::min();
+        int64_t new_max = std::numeric_limits<int64_t>::min();
+        for (int i = 0; i < size; ++i) {
+          new_min = std::max(new_min, vars[i]->Min());
+          new_max = std::max(new_max, vars[i]->Max());
+        }
+        IntVar* const new_var = MakeIntVar(new_min, new_max);
+        if (size <= parameters_.array_split_size()) {
+          AddConstraint(RevAlloc(new SmallMaxConstraint(this, vars, new_var)));
+        } else {
+          AddConstraint(RevAlloc(new MaxConstraint(this, vars, new_var)));
+        }
+        model_cache_->InsertVarArrayExpression(new_var, vars,
+                                               ModelCache::VAR_ARRAY_MAX);
+        return new_var;
+      }
+    }
+  }
+}
+
+Constraint* Solver::MakeMinEquality(const std::vector<IntVar*>& vars,
+                                    IntVar* min_var) {
+  const int size = vars.size();
+  if (size > 2) {
+    if (AreAllBooleans(vars)) {
+      return RevAlloc(new ArrayBoolAndEq(this, vars, min_var));
+    } else if (size <= parameters_.array_split_size()) {
+      return RevAlloc(new SmallMinConstraint(this, vars, min_var));
+    } else {
+      return RevAlloc(new MinConstraint(this, vars, min_var));
+    }
+  } else if (size == 2) {
+    return MakeEquality(MakeMin(vars[0], vars[1]), min_var);
+  } else if (size == 1) {
+    return MakeEquality(vars[0], min_var);
+  } else {
+    LOG(WARNING) << "operations_research::Solver::MakeMinEquality() was called "
+                    "with an empty list of variables. Was this intentional?";
+    return MakeEquality(min_var, std::numeric_limits<int64_t>::max());
+  }
+}
+
+Constraint* Solver::MakeMaxEquality(const std::vector<IntVar*>& vars,
+                                    IntVar* max_var) {
+  const int size = vars.size();
+  if (size > 2) {
+    if (AreAllBooleans(vars)) {
+      return RevAlloc(new ArrayBoolOrEq(this, vars, max_var));
+    } else if (size <= parameters_.array_split_size()) {
+      return RevAlloc(new SmallMaxConstraint(this, vars, max_var));
+    } else {
+      return RevAlloc(new MaxConstraint(this, vars, max_var));
+    }
+  } else if (size == 2) {
+    return MakeEquality(MakeMax(vars[0], vars[1]), max_var);
+  } else if (size == 1) {
+    return MakeEquality(vars[0], max_var);
+  } else {
+    LOG(WARNING) << "operations_research::Solver::MakeMaxEquality() was called "
+                    "with an empty list of variables. Was this intentional?";
+    return MakeEquality(max_var, std::numeric_limits<int64_t>::min());
+  }
+}
+
+Constraint* Solver::MakeSumLessOrEqual(const std::vector<IntVar*>& vars,
+                                       int64_t cst) {
+  const int size = vars.size();
+  if (cst == 1LL && AreAllBooleans(vars) && size > 2) {
+    return RevAlloc(new SumBooleanLessOrEqualToOne(this, vars));
+  } else {
+    return MakeLessOrEqual(MakeSum(vars), cst);
+  }
+}
+
+Constraint* Solver::MakeSumGreaterOrEqual(const std::vector<IntVar*>& vars,
+                                          int64_t cst) {
+  const int size = vars.size();
+  if (cst == 1LL && AreAllBooleans(vars) && size > 2) {
+    return RevAlloc(new SumBooleanGreaterOrEqualToOne(this, vars));
+  } else {
+    return MakeGreaterOrEqual(MakeSum(vars), cst);
+  }
+}
+
+Constraint* Solver::MakeSumEquality(const std::vector<IntVar*>& vars,
+                                    int64_t cst) {
+  const int size = vars.size();
+  if (size == 0) {
+    return cst == 0 ? MakeTrueConstraint() : MakeFalseConstraint();
+  }
+  if (AreAllBooleans(vars) && size > 2) {
+    if (cst == 1) {
+      return RevAlloc(new SumBooleanEqualToOne(this, vars));
+    } else if (cst < 0 || cst > size) {
+      return MakeFalseConstraint();
+    } else {
+      return RevAlloc(new SumBooleanEqualToVar(this, vars, MakeIntConst(cst)));
+    }
+  } else {
+    if (vars.size() == 1) {
+      return MakeEquality(vars[0], cst);
+    } else if (vars.size() == 2) {
+      return MakeEquality(vars[0], MakeDifference(cst, vars[1]));
+    }
+    if (DetectSumOverflow(vars)) {
+      return RevAlloc(new SafeSumConstraint(this, vars, MakeIntConst(cst)));
+    } else if (size <= parameters_.array_split_size()) {
+      return RevAlloc(new SmallSumConstraint(this, vars, MakeIntConst(cst)));
+    } else {
+      return RevAlloc(new SumConstraint(this, vars, MakeIntConst(cst)));
+    }
+  }
+}
+
+Constraint* Solver::MakeSumEquality(const std::vector<IntVar*>& vars,
+                                    IntVar* var) {
+  const int size = vars.size();
+  if (size == 0) {
+    return MakeEquality(var, Zero());
+  }
+  if (AreAllBooleans(vars) && size > 2) {
+    return RevAlloc(new SumBooleanEqualToVar(this, vars, var));
+  } else if (size == 0) {
+    return MakeEquality(var, Zero());
+  } else if (size == 1) {
+    return MakeEquality(vars[0], var);
+  } else if (size == 2) {
+    return MakeEquality(MakeSum(vars[0], vars[1]), var);
+  } else {
+    if (DetectSumOverflow(vars)) {
+      return RevAlloc(new SafeSumConstraint(this, vars, var));
+    } else if (size <= parameters_.array_split_size()) {
+      return RevAlloc(new SmallSumConstraint(this, vars, var));
+    } else {
+      return RevAlloc(new SumConstraint(this, vars, var));
+    }
+  }
+}
+
+Constraint* Solver::MakeScalProdEquality(
+    const std::vector<IntVar*>& vars, const std::vector<int64_t>& coefficients,
+    int64_t cst) {
+  DCHECK_EQ(vars.size(), coefficients.size());
+  return MakeScalProdEqualityFct(this, vars, coefficients, cst);
+}
+
+Constraint* Solver::MakeScalProdEquality(const std::vector<IntVar*>& vars,
+                                         const std::vector<int>& coefficients,
+                                         int64_t cst) {
+  DCHECK_EQ(vars.size(), coefficients.size());
+  return MakeScalProdEqualityFct(this, vars, ToInt64Vector(coefficients), cst);
+}
+
+Constraint* Solver::MakeScalProdEquality(
+    const std::vector<IntVar*>& vars, const std::vector<int64_t>& coefficients,
+    IntVar* target) {
+  DCHECK_EQ(vars.size(), coefficients.size());
+  return MakeScalProdEqualityVarFct(this, vars, coefficients, target);
+}
+
+Constraint* Solver::MakeScalProdEquality(const std::vector<IntVar*>& vars,
+                                         const std::vector<int>& coefficients,
+                                         IntVar* target) {
+  DCHECK_EQ(vars.size(), coefficients.size());
+  return MakeScalProdEqualityVarFct(this, vars, ToInt64Vector(coefficients),
+                                    target);
+}
+
+Constraint* Solver::MakeScalProdGreaterOrEqual(
+    const std::vector<IntVar*>& vars, const std::vector<int64_t>& coeffs,
+    int64_t cst) {
+  DCHECK_EQ(vars.size(), coeffs.size());
+  return MakeScalProdGreaterOrEqualFct(this, vars, coeffs, cst);
+}
+
+Constraint* Solver::MakeScalProdGreaterOrEqual(const std::vector<IntVar*>& vars,
+                                               const std::vector<int>& coeffs,
+                                               int64_t cst) {
+  DCHECK_EQ(vars.size(), coeffs.size());
+  return MakeScalProdGreaterOrEqualFct(this, vars, ToInt64Vector(coeffs), cst);
+}
+
+Constraint* Solver::MakeScalProdLessOrEqual(
+    const std::vector<IntVar*>& vars, const std::vector<int64_t>& coefficients,
+    int64_t cst) {
+  DCHECK_EQ(vars.size(), coefficients.size());
+  return MakeScalProdLessOrEqualFct(this, vars, coefficients, cst);
+}
+
+Constraint* Solver::MakeScalProdLessOrEqual(
+    const std::vector<IntVar*>& vars, const std::vector<int>& coefficients,
+    int64_t cst) {
+  DCHECK_EQ(vars.size(), coefficients.size());
+  return MakeScalProdLessOrEqualFct(this, vars, ToInt64Vector(coefficients),
+                                    cst);
+}
+
+IntExpr* Solver::MakeScalProd(const std::vector<IntVar*>& vars,
+                              const std::vector<int64_t>& coefs) {
+  DCHECK_EQ(vars.size(), coefs.size());
+  return MakeScalProdFct(this, vars, coefs);
+}
+
+IntExpr* Solver::MakeScalProd(const std::vector<IntVar*>& vars,
+                              const std::vector<int>& coefs) {
+  DCHECK_EQ(vars.size(), coefs.size());
+  return MakeScalProdFct(this, vars, ToInt64Vector(coefs));
+}
+
+IntExpr* Solver::MakeSum(IntExpr* left, IntExpr* right) {
+  CHECK_EQ(this, left->solver());
+  CHECK_EQ(this, right->solver());
+  if (right->Bound()) {
+    return MakeSum(left, right->Min());
+  }
+  if (left->Bound()) {
+    return MakeSum(right, left->Min());
+  }
+  if (left == right) {
+    return MakeProd(left, 2);
+  }
+  IntExpr* cache = model_cache_->FindExprExprExpression(
+      left, right, ModelCache::EXPR_EXPR_SUM);
+  if (cache == nullptr) {
+    cache = model_cache_->FindExprExprExpression(right, left,
+                                                 ModelCache::EXPR_EXPR_SUM);
+  }
+  if (cache != nullptr) {
+    return cache;
+  } else {
+    bool may_overflow = false;
+    may_overflow |= AddOverflows(left->Max(), right->Max());
+    may_overflow |= AddOverflows(left->Min(), right->Min());
+    if (!may_overflow) {
+      // The result itself would not overflow, but intermediate computations
+      // could, needing a safe implementation.
+      // For example: l in [kint64min, 0], r in [0, 5].
+      // sum->SetMax(4) implies r->SetMax(4 - left->Min()), which overflows.
+      const int64_t min_sum = left->Min() + right->Min();
+      const int64_t max_sum = left->Max() + right->Max();
+      may_overflow |= SubOverflows(max_sum, left->Min());
+      may_overflow |= SubOverflows(max_sum, right->Min());
+      may_overflow |= SubOverflows(min_sum, left->Max());
+      may_overflow |= SubOverflows(min_sum, right->Max());
+    }
+    IntExpr* const result =
+        may_overflow
+            ? RegisterIntExpr(RevAlloc(new SafePlusIntExpr(this, left, right)))
+            : RegisterIntExpr(RevAlloc(new PlusIntExpr(this, left, right)));
+    model_cache_->InsertExprExprExpression(result, left, right,
+                                           ModelCache::EXPR_EXPR_SUM);
+    return result;
+  }
+}
+
+IntExpr* Solver::MakeSum(IntExpr* expr, int64_t value) {
+  CHECK_EQ(this, expr->solver());
+  if (expr->Bound()) {
+    return MakeIntConst(CapAdd(expr->Min(), value));
+  }
+  if (value == 0) {
+    return expr;
+  }
+  IntExpr* result = Cache()->FindExprConstantExpression(
+      expr, value, ModelCache::EXPR_CONSTANT_SUM);
+  if (result == nullptr) {
+    if (expr->IsVar() && !AddOverflows(value, expr->Max()) &&
+        !AddOverflows(value, expr->Min())) {
+      result = NewVarPlusInt(this, expr->Var(), value);
+    } else {
+      result = RegisterIntExpr(RevAlloc(new PlusIntCstExpr(this, expr, value)));
+    }
+    Cache()->InsertExprConstantExpression(result, expr, value,
+                                          ModelCache::EXPR_CONSTANT_SUM);
+  }
+  return result;
+}
+
+IntExpr* Solver::MakeDifference(IntExpr* left, IntExpr* right) {
+  CHECK_EQ(this, left->solver());
+  CHECK_EQ(this, right->solver());
+  if (left->Bound()) {
+    return MakeDifference(left->Min(), right);
+  }
+  if (right->Bound()) {
+    return MakeSum(left, -right->Min());
+  }
+  IntExpr* sub_left = nullptr;
+  IntExpr* sub_right = nullptr;
+  int64_t left_coef = 1;
+  int64_t right_coef = 1;
+  if (IsExprProduct(left, &sub_left, &left_coef) &&
+      IsExprProduct(right, &sub_right, &right_coef)) {
+    const int64_t abs_gcd = std::gcd(std::abs(left_coef), std::abs(right_coef));
+    if (abs_gcd != 0 && abs_gcd != 1) {
+      return MakeProd(MakeDifference(MakeProd(sub_left, left_coef / abs_gcd),
+                                     MakeProd(sub_right, right_coef / abs_gcd)),
+                      abs_gcd);
+    }
+  }
+
+  IntExpr* result = Cache()->FindExprExprExpression(
+      left, right, ModelCache::EXPR_EXPR_DIFFERENCE);
+  if (result == nullptr) {
+    if (!SubOverflows(left->Min(), right->Max()) &&
+        !SubOverflows(left->Max(), right->Min())) {
+      result = RegisterIntExpr(RevAlloc(new SubIntExpr(this, left, right)));
+    } else {
+      result = RegisterIntExpr(RevAlloc(new SafeSubIntExpr(this, left, right)));
+    }
+    Cache()->InsertExprExprExpression(result, left, right,
+                                      ModelCache::EXPR_EXPR_DIFFERENCE);
+  }
+  return result;
+}
+
+// warning: this is 'value - expr'.
+IntExpr* Solver::MakeDifference(int64_t value, IntExpr* expr) {
+  CHECK_EQ(this, expr->solver());
+  if (expr->Bound()) {
+    return MakeIntConst(value - expr->Min());
+  }
+  if (value == 0) {
+    return MakeOpposite(expr);
+  }
+  IntExpr* result = Cache()->FindExprConstantExpression(
+      expr, value, ModelCache::EXPR_CONSTANT_DIFFERENCE);
+  if (result == nullptr) {
+    if (expr->IsVar() && expr->Min() != std::numeric_limits<int64_t>::min() &&
+        !SubOverflows(value, expr->Min()) &&
+        !SubOverflows(value, expr->Max())) {
+      result = NewIntMinusVar(this, value, expr->Var());
+    } else {
+      result = RegisterIntExpr(RevAlloc(new SubIntCstExpr(this, expr, value)));
+    }
+    Cache()->InsertExprConstantExpression(result, expr, value,
+                                          ModelCache::EXPR_CONSTANT_DIFFERENCE);
+  }
+  return result;
+}
+
+IntExpr* Solver::MakeOpposite(IntExpr* expr) {
+  CHECK_EQ(this, expr->solver());
+  if (expr->Bound()) {
+    return MakeIntConst(CapOpp(expr->Min()));
+  }
+  IntExpr* result =
+      Cache()->FindExprExpression(expr, ModelCache::EXPR_OPPOSITE);
+  if (result == nullptr) {
+    if (expr->IsVar()) {
+      result = RegisterIntVar(RevAlloc(new OppIntExpr(this, expr))->Var());
+    } else {
+      result = RegisterIntExpr(RevAlloc(new OppIntExpr(this, expr)));
+    }
+    Cache()->InsertExprExpression(result, expr, ModelCache::EXPR_OPPOSITE);
+  }
+  return result;
+}
+
+IntExpr* Solver::MakeProd(IntExpr* expr, int64_t value) {
+  CHECK_EQ(this, expr->solver());
+  IntExpr* result = Cache()->FindExprConstantExpression(
+      expr, value, ModelCache::EXPR_CONSTANT_PROD);
+  if (result != nullptr) {
+    return result;
+  } else {
+    IntExpr* m_expr = nullptr;
+    int64_t coefficient = 1;
+    if (IsExprProduct(expr, &m_expr, &coefficient)) {
+      coefficient = CapProd(coefficient, value);
+    } else {
+      m_expr = expr;
+      coefficient = value;
+    }
+    if (m_expr->Bound()) {
+      return MakeIntConst(CapProd(coefficient, m_expr->Min()));
+    } else if (coefficient == 1) {
+      return m_expr;
+    } else if (coefficient == -1) {
+      return MakeOpposite(m_expr);
+    } else if (coefficient > 0) {
+      if (m_expr->Max() > std::numeric_limits<int64_t>::max() / coefficient ||
+          m_expr->Min() < std::numeric_limits<int64_t>::min() / coefficient) {
+        result = RegisterIntExpr(
+            RevAlloc(new SafeTimesPosIntCstExpr(this, m_expr, coefficient)));
+      } else {
+        result = RegisterIntExpr(
+            RevAlloc(new TimesPosIntCstExpr(this, m_expr, coefficient)));
+      }
+    } else if (coefficient == 0) {
+      result = MakeIntConst(0);
+    } else {  // coefficient < 0.
+      result = RegisterIntExpr(
+          RevAlloc(new TimesIntNegCstExpr(this, m_expr, coefficient)));
+    }
+    if (m_expr->IsVar() &&
+        !absl::GetFlag(FLAGS_cp_disable_expression_optimization)) {
+      result = result->Var();
+    }
+    Cache()->InsertExprConstantExpression(result, expr, value,
+                                          ModelCache::EXPR_CONSTANT_PROD);
+    return result;
+  }
+}
+
+IntExpr* Solver::MakeProd(IntExpr* left, IntExpr* right) {
+  if (left->Bound()) {
+    return MakeProd(right, left->Min());
+  }
+
+  if (right->Bound()) {
+    return MakeProd(left, right->Min());
+  }
+
+  // ----- Discover squares and powers -----
+
+  IntExpr* tmp_left = left;
+  IntExpr* tmp_right = right;
+  int64_t left_exponant = 1;
+  int64_t right_exponant = 1;
+  IsExprPower(left, &tmp_left, &left_exponant);
+  IsExprPower(right, &tmp_right, &right_exponant);
+
+  if (tmp_left == tmp_right) {
+    return MakePower(tmp_left, left_exponant + right_exponant);
+  }
+
+  // ----- Discover nested products -----
+
+  tmp_left = left;
+  tmp_right = right;
+  int64_t coefficient = 1;
+
+  // Parse left.
+  for (;;) {
+    IntExpr* sub_expr = nullptr;
+    int64_t sub_coefficient = 1;
+    if (IsExprProduct(tmp_left, &sub_expr, &sub_coefficient)) {
+      coefficient = CapProd(coefficient, sub_coefficient);
+      tmp_left = sub_expr;
+    } else {
+      break;
+    }
+  }
+
+  // Parse right.
+  for (;;) {
+    IntExpr* sub_expr = nullptr;
+    int64_t sub_coefficient = 1;
+    if (IsExprProduct(tmp_right, &sub_expr, &sub_coefficient)) {
+      coefficient = CapProd(coefficient, sub_coefficient);
+      tmp_right = sub_expr;
+    } else {
+      break;
+    }
+  }
+
+  if (coefficient != 1) {
+    return MakeProd(MakeProd(tmp_left, tmp_right), coefficient);
+  }
+
+  // ----- Standard build -----
+
+  CHECK_EQ(this, left->solver());
+  CHECK_EQ(this, right->solver());
+  IntExpr* result = model_cache_->FindExprExprExpression(
+      left, right, ModelCache::EXPR_EXPR_PROD);
+  if (result == nullptr) {
+    result = model_cache_->FindExprExprExpression(right, left,
+                                                  ModelCache::EXPR_EXPR_PROD);
+  }
+  if (result != nullptr) {
+    return result;
+  }
+  if (left->IsVar() && left->Var()->VarType() == IntVar::BOOLEAN_VAR) {
+    if (right->Min() >= 0) {
+      result = RegisterIntExpr(RevAlloc(new TimesBooleanPosIntExpr(
+          this, reinterpret_cast<BooleanVar*>(left), right)));
+    } else {
+      result = RegisterIntExpr(RevAlloc(new TimesBooleanIntExpr(
+          this, reinterpret_cast<BooleanVar*>(left), right)));
+    }
+  } else if (right->IsVar() && reinterpret_cast<IntVar*>(right)->VarType() ==
+                                   IntVar::BOOLEAN_VAR) {
+    if (left->Min() >= 0) {
+      result = RegisterIntExpr(RevAlloc(new TimesBooleanPosIntExpr(
+          this, reinterpret_cast<BooleanVar*>(right), left)));
+    } else {
+      result = RegisterIntExpr(RevAlloc(new TimesBooleanIntExpr(
+          this, reinterpret_cast<BooleanVar*>(right), left)));
+    }
+  } else if (left->Min() >= 0 && right->Min() >= 0) {
+    if (CapProd(left->Max(), right->Max()) ==
+        std::numeric_limits<int64_t>::max()) {  // Potential overflow.
+      result =
+          RegisterIntExpr(RevAlloc(new SafeTimesPosIntExpr(this, left, right)));
+    } else {
+      result =
+          RegisterIntExpr(RevAlloc(new TimesPosIntExpr(this, left, right)));
+    }
+  } else {
+    result = RegisterIntExpr(RevAlloc(new TimesIntExpr(this, left, right)));
+  }
+  model_cache_->InsertExprExprExpression(result, left, right,
+                                         ModelCache::EXPR_EXPR_PROD);
+  return result;
+}
+
+IntExpr* Solver::MakeDiv(IntExpr* numerator, IntExpr* denominator) {
+  CHECK(numerator != nullptr);
+  CHECK(denominator != nullptr);
+  if (denominator->Bound()) {
+    return MakeDiv(numerator, denominator->Min());
+  }
+  IntExpr* result = model_cache_->FindExprExprExpression(
+      numerator, denominator, ModelCache::EXPR_EXPR_DIV);
+  if (result != nullptr) {
+    return result;
+  }
+
+  if (denominator->Min() <= 0 && denominator->Max() >= 0) {
+    AddConstraint(MakeNonEquality(denominator, 0));
+  }
+
+  if (denominator->Min() >= 0) {
+    if (numerator->Min() >= 0) {
+      result = RevAlloc(new DivPosPosIntExpr(this, numerator, denominator));
+    } else {
+      result = RevAlloc(new DivPosIntExpr(this, numerator, denominator));
+    }
+  } else if (denominator->Max() <= 0) {
+    if (numerator->Max() <= 0) {
+      result = RevAlloc(new DivPosPosIntExpr(this, MakeOpposite(numerator),
+                                             MakeOpposite(denominator)));
+    } else {
+      result = MakeOpposite(RevAlloc(
+          new DivPosIntExpr(this, numerator, MakeOpposite(denominator))));
+    }
+  } else {
+    result = RevAlloc(new DivIntExpr(this, numerator, denominator));
+  }
+  model_cache_->InsertExprExprExpression(result, numerator, denominator,
+                                         ModelCache::EXPR_EXPR_DIV);
+  return result;
+}
+
+IntExpr* Solver::MakeDiv(IntExpr* expr, int64_t value) {
+  CHECK(expr != nullptr);
+  CHECK_EQ(this, expr->solver());
+  if (expr->Bound()) {
+    return MakeIntConst(expr->Min() / value);
+  } else if (value == 1) {
+    return expr;
+  } else if (value == -1) {
+    return MakeOpposite(expr);
+  } else if (value > 0) {
+    return RegisterIntExpr(RevAlloc(new DivPosIntCstExpr(this, expr, value)));
+  } else if (value == 0) {
+    LOG(FATAL) << "Cannot divide by 0";
+    return nullptr;
+  } else {
+    return RegisterIntExpr(
+        MakeOpposite(RevAlloc(new DivPosIntCstExpr(this, expr, -value))));
+    // TODO(user) : implement special case.
+  }
+}
+
+Constraint* Solver::MakeAbsEquality(IntVar* var, IntVar* abs_var) {
+  if (Cache()->FindExprExpression(var, ModelCache::EXPR_ABS) == nullptr) {
+    Cache()->InsertExprExpression(abs_var, var, ModelCache::EXPR_ABS);
+  }
+  return RevAlloc(new IntAbsConstraint(this, var, abs_var));
+}
+
+IntExpr* Solver::MakeAbs(IntExpr* e) {
+  CHECK_EQ(this, e->solver());
+  if (e->Min() >= 0) {
+    return e;
+  } else if (e->Max() <= 0) {
+    return MakeOpposite(e);
+  }
+  IntExpr* result = Cache()->FindExprExpression(e, ModelCache::EXPR_ABS);
+  if (result == nullptr) {
+    int64_t coefficient = 1;
+    IntExpr* expr = nullptr;
+    if (IsExprProduct(e, &expr, &coefficient)) {
+      result = MakeProd(MakeAbs(expr), std::abs(coefficient));
+    } else {
+      result = RegisterIntExpr(RevAlloc(new IntAbs(this, e)));
+    }
+    Cache()->InsertExprExpression(result, e, ModelCache::EXPR_ABS);
+  }
+  return result;
+}
+
+IntExpr* Solver::MakeSquare(IntExpr* expr) {
+  CHECK_EQ(this, expr->solver());
+  if (expr->Bound()) {
+    const int64_t v = expr->Min();
+    return MakeIntConst(v * v);
+  }
+  IntExpr* result = Cache()->FindExprExpression(expr, ModelCache::EXPR_SQUARE);
+  if (result == nullptr) {
+    if (expr->Min() >= 0) {
+      result = RegisterIntExpr(RevAlloc(new PosIntSquare(this, expr)));
+    } else {
+      result = RegisterIntExpr(RevAlloc(new IntSquare(this, expr)));
+    }
+    Cache()->InsertExprExpression(result, expr, ModelCache::EXPR_SQUARE);
+  }
+  return result;
+}
+
+IntExpr* Solver::MakePower(IntExpr* expr, int64_t n) {
+  CHECK_EQ(this, expr->solver());
+  CHECK_GE(n, 0);
+  if (expr->Bound()) {
+    const int64_t v = expr->Min();
+    if (v >= IntPowerOverflowLimit(n)) {  // Overflow.
+      return MakeIntConst(std::numeric_limits<int64_t>::max());
+    }
+    return MakeIntConst(IntPowerValue(v, n));
+  }
+  switch (n) {
+    case 0:
+      return MakeIntConst(1);
+    case 1:
+      return expr;
+    case 2:
+      return MakeSquare(expr);
+    default: {
+      IntExpr* result = nullptr;
+      if (n % 2 == 0) {  // even.
+        if (expr->Min() >= 0) {
+          result =
+              RegisterIntExpr(RevAlloc(new PosIntEvenPower(this, expr, n)));
+        } else {
+          result = RegisterIntExpr(RevAlloc(new IntEvenPower(this, expr, n)));
+        }
+      } else {
+        result = RegisterIntExpr(RevAlloc(new IntOddPower(this, expr, n)));
+      }
+      return result;
+    }
+  }
+}
+
+IntExpr* Solver::MakeMin(IntExpr* left, IntExpr* right) {
+  CHECK_EQ(this, left->solver());
+  CHECK_EQ(this, right->solver());
+  if (left->Bound()) {
+    return MakeMin(right, left->Min());
+  }
+  if (right->Bound()) {
+    return MakeMin(left, right->Min());
+  }
+  if (left->Min() >= right->Max()) {
+    return right;
+  }
+  if (right->Min() >= left->Max()) {
+    return left;
+  }
+  return RegisterIntExpr(RevAlloc(new MinIntExpr(this, left, right)));
+}
+
+IntExpr* Solver::MakeMin(IntExpr* expr, int64_t value) {
+  CHECK_EQ(this, expr->solver());
+  if (value <= expr->Min()) {
+    return MakeIntConst(value);
+  }
+  if (expr->Bound()) {
+    return MakeIntConst(std::min(expr->Min(), value));
+  }
+  if (expr->Max() <= value) {
+    return expr;
+  }
+  return RegisterIntExpr(RevAlloc(new MinCstIntExpr(this, expr, value)));
+}
+
+IntExpr* Solver::MakeMin(IntExpr* expr, int value) {
+  return MakeMin(expr, static_cast<int64_t>(value));
+}
+
+IntExpr* Solver::MakeMax(IntExpr* left, IntExpr* right) {
+  CHECK_EQ(this, left->solver());
+  CHECK_EQ(this, right->solver());
+  if (left->Bound()) {
+    return MakeMax(right, left->Min());
+  }
+  if (right->Bound()) {
+    return MakeMax(left, right->Min());
+  }
+  if (left->Min() >= right->Max()) {
+    return left;
+  }
+  if (right->Min() >= left->Max()) {
+    return right;
+  }
+  return RegisterIntExpr(RevAlloc(new MaxIntExpr(this, left, right)));
+}
+
+IntExpr* Solver::MakeMax(IntExpr* expr, int64_t value) {
+  CHECK_EQ(this, expr->solver());
+  if (expr->Bound()) {
+    return MakeIntConst(std::max(expr->Min(), value));
+  }
+  if (value <= expr->Min()) {
+    return expr;
+  }
+  if (expr->Max() <= value) {
+    return MakeIntConst(value);
+  }
+  return RegisterIntExpr(RevAlloc(new MaxCstIntExpr(this, expr, value)));
+}
+
+IntExpr* Solver::MakeMax(IntExpr* expr, int value) {
+  return MakeMax(expr, static_cast<int64_t>(value));
+}
+
+IntExpr* Solver::MakeConvexPiecewiseExpr(IntExpr* expr, int64_t early_cost,
+                                         int64_t early_date, int64_t late_date,
+                                         int64_t late_cost) {
+  return RegisterIntExpr(RevAlloc(new SimpleConvexPiecewiseExpr(
+      this, expr, early_cost, early_date, late_date, late_cost)));
+}
+
+IntExpr* Solver::MakeSemiContinuousExpr(IntExpr* expr, int64_t fixed_charge,
+                                        int64_t step) {
+  if (step == 0) {
+    if (fixed_charge == 0) {
+      return MakeIntConst(int64_t{0});
+    } else {
+      return RegisterIntExpr(
+          RevAlloc(new SemiContinuousStepZeroExpr(this, expr, fixed_charge)));
+    }
+  } else if (step == 1) {
+    return RegisterIntExpr(
+        RevAlloc(new SemiContinuousStepOneExpr(this, expr, fixed_charge)));
+  } else {
+    return RegisterIntExpr(
+        RevAlloc(new SemiContinuousExpr(this, expr, fixed_charge, step)));
+  }
+  // TODO(user) : benchmark with virtualization of
+  // PosIntDivDown and PosIntDivUp - or function pointers.
+}
+
+IntExpr* Solver::MakePiecewiseLinearExpr(IntExpr* expr,
+                                         const PiecewiseLinearFunction& f) {
+  return RegisterIntExpr(RevAlloc(new PiecewiseLinearExpr(this, expr, f)));
+}
+
+// ----- Conditional Expression -----
+
+IntExpr* Solver::MakeConditionalExpression(IntVar* condition, IntExpr* expr,
+                                           int64_t unperformed_value) {
+  if (condition->Min() == 1) {
+    return expr;
+  } else if (condition->Max() == 0) {
+    return MakeIntConst(unperformed_value);
+  } else {
+    IntExpr* cache = Cache()->FindExprExprConstantExpression(
+        condition, expr, unperformed_value,
+        ModelCache::EXPR_EXPR_CONSTANT_CONDITIONAL);
+    if (cache == nullptr) {
+      cache = RevAlloc(
+          new ExprWithEscapeValue(this, condition, expr, unperformed_value));
+      Cache()->InsertExprExprConstantExpression(
+          cache, condition, expr, unperformed_value,
+          ModelCache::EXPR_EXPR_CONSTANT_CONDITIONAL);
+    }
+    return cache;
+  }
+}
+
+// ----- Modulo -----
+
+IntExpr* Solver::MakeModulo(IntExpr* x, int64_t mod) {
+  IntVar* const result =
+      MakeDifference(x, MakeProd(MakeDiv(x, mod), mod))->Var();
+  if (mod >= 0) {
+    AddConstraint(MakeBetweenCt(result, 0, mod - 1));
+  } else {
+    AddConstraint(MakeBetweenCt(result, mod + 1, 0));
+  }
+  return result;
+}
+
+IntExpr* Solver::MakeModulo(IntExpr* x, IntExpr* mod) {
+  if (mod->Bound()) {
+    return MakeModulo(x, mod->Min());
+  }
+  IntVar* const result =
+      MakeDifference(x, MakeProd(MakeDiv(x, mod), mod))->Var();
+  AddConstraint(MakeLess(result, MakeAbs(mod)));
+  AddConstraint(MakeGreater(result, MakeOpposite(MakeAbs(mod))));
+  return result;
+}
+
+// It's good to have the two extreme values being symmetrical around zero:
+// it makes mirroring easier.
+const int64_t IntervalVar::kMaxValidValue =
+    std::numeric_limits<int64_t>::max() >> 2;
+const int64_t IntervalVar::kMinValidValue = -kMaxValidValue;
+
+void IntervalVar::WhenAnything(Demon* d) {
+  WhenStartRange(d);
+  WhenDurationRange(d);
+  WhenEndRange(d);
+  WhenPerformedBound(d);
+}
+
+IntervalVar* Solver::MakeMirrorInterval(IntervalVar* interval_var) {
+  return RegisterIntervalVar(
+      RevAlloc(new MirrorIntervalVar(this, interval_var)));
+}
+
+IntervalVar* Solver::MakeIntervalRelaxedMax(IntervalVar* interval_var) {
+  if (interval_var->MustBePerformed()) {
+    return interval_var;
+  } else {
+    return RegisterIntervalVar(
+        RevAlloc(new IntervalVarRelaxedMax(interval_var)));
+  }
+}
+
+IntervalVar* Solver::MakeIntervalRelaxedMin(IntervalVar* interval_var) {
+  if (interval_var->MustBePerformed()) {
+    return interval_var;
+  } else {
+    return RegisterIntervalVar(
+        RevAlloc(new IntervalVarRelaxedMin(interval_var)));
+  }
+}
+
+IntervalVar* Solver::MakeFixedInterval(int64_t start, int64_t duration,
+                                       const std::string& name) {
+  return RevAlloc(new FixedInterval(this, start, duration, name));
+}
+
+IntervalVar* Solver::MakeFixedDurationIntervalVar(int64_t start_min,
+                                                  int64_t start_max,
+                                                  int64_t duration,
+                                                  bool optional,
+                                                  const std::string& name) {
+  if (start_min == start_max && !optional) {
+    return MakeFixedInterval(start_min, duration, name);
+  } else if (!optional) {
+    return RegisterIntervalVar(RevAlloc(new FixedDurationPerformedIntervalVar(
+        this, start_min, start_max, duration, name)));
+  }
+  return RegisterIntervalVar(RevAlloc(new FixedDurationIntervalVar(
+      this, start_min, start_max, duration, optional, name)));
+}
+
+void Solver::MakeFixedDurationIntervalVarArray(
+    int count, int64_t start_min, int64_t start_max, int64_t duration,
+    bool optional, absl::string_view name, std::vector<IntervalVar*>* array) {
+  CHECK_GT(count, 0);
+  CHECK(array != nullptr);
+  array->clear();
+  for (int i = 0; i < count; ++i) {
+    const std::string var_name = absl::StrCat(name, i);
+    array->push_back(MakeFixedDurationIntervalVar(
+        start_min, start_max, duration, optional, var_name));
+  }
+}
+
+IntervalVar* Solver::MakeFixedDurationIntervalVar(IntVar* start_variable,
+                                                  int64_t duration,
+                                                  const std::string& name) {
+  CHECK(start_variable != nullptr);
+  CHECK_GE(duration, 0);
+  return RegisterIntervalVar(RevAlloc(
+      new StartVarPerformedIntervalVar(this, start_variable, duration, name)));
+}
+
+// Creates an interval var with a fixed duration, and performed var.
+// The duration must be greater than 0.
+IntervalVar* Solver::MakeFixedDurationIntervalVar(IntVar* start_variable,
+                                                  int64_t duration,
+                                                  IntVar* performed_variable,
+                                                  const std::string& name) {
+  CHECK(start_variable != nullptr);
+  CHECK(performed_variable != nullptr);
+  CHECK_GE(duration, 0);
+  if (!performed_variable->Bound()) {
+    StartVarIntervalVar* const interval =
+        reinterpret_cast<StartVarIntervalVar*>(
+            RegisterIntervalVar(RevAlloc(new StartVarIntervalVar(
+                this, start_variable, duration, performed_variable, name))));
+    AddConstraint(RevAlloc(new LinkStartVarIntervalVar(
+        this, interval, start_variable, performed_variable)));
+    return interval;
+  } else if (performed_variable->Min() == 1) {
+    return RegisterIntervalVar(RevAlloc(new StartVarPerformedIntervalVar(
+        this, start_variable, duration, name)));
+  }
+  return nullptr;
+}
+
+void Solver::MakeFixedDurationIntervalVarArray(
+    const std::vector<IntVar*>& start_variables, int64_t duration,
+    absl::string_view name, std::vector<IntervalVar*>* array) {
+  CHECK(array != nullptr);
+  array->clear();
+  for (int i = 0; i < start_variables.size(); ++i) {
+    const std::string var_name = absl::StrCat(name, i);
+    array->push_back(
+        MakeFixedDurationIntervalVar(start_variables[i], duration, var_name));
+  }
+}
+
+// This method fills the vector with interval variables built with
+// the corresponding start variables.
+void Solver::MakeFixedDurationIntervalVarArray(
+    const std::vector<IntVar*>& start_variables,
+    absl::Span<const int64_t> durations, absl::string_view name,
+    std::vector<IntervalVar*>* array) {
+  CHECK(array != nullptr);
+  CHECK_EQ(start_variables.size(), durations.size());
+  array->clear();
+  for (int i = 0; i < start_variables.size(); ++i) {
+    const std::string var_name = absl::StrCat(name, i);
+    array->push_back(MakeFixedDurationIntervalVar(start_variables[i],
+                                                  durations[i], var_name));
+  }
+}
+
+void Solver::MakeFixedDurationIntervalVarArray(
+    const std::vector<IntVar*>& start_variables,
+    absl::Span<const int> durations, absl::string_view name,
+    std::vector<IntervalVar*>* array) {
+  CHECK(array != nullptr);
+  CHECK_EQ(start_variables.size(), durations.size());
+  array->clear();
+  for (int i = 0; i < start_variables.size(); ++i) {
+    const std::string var_name = absl::StrCat(name, i);
+    array->push_back(MakeFixedDurationIntervalVar(start_variables[i],
+                                                  durations[i], var_name));
+  }
+}
+
+void Solver::MakeFixedDurationIntervalVarArray(
+    const std::vector<IntVar*>& start_variables,
+    absl::Span<const int> durations,
+    const std::vector<IntVar*>& performed_variables, absl::string_view name,
+    std::vector<IntervalVar*>* array) {
+  CHECK(array != nullptr);
+  array->clear();
+  for (int i = 0; i < start_variables.size(); ++i) {
+    const std::string var_name = absl::StrCat(name, i);
+    array->push_back(MakeFixedDurationIntervalVar(
+        start_variables[i], durations[i], performed_variables[i], var_name));
+  }
+}
+
+void Solver::MakeFixedDurationIntervalVarArray(
+    const std::vector<IntVar*>& start_variables,
+    absl::Span<const int64_t> durations,
+    const std::vector<IntVar*>& performed_variables, absl::string_view name,
+    std::vector<IntervalVar*>* array) {
+  CHECK(array != nullptr);
+  array->clear();
+  for (int i = 0; i < start_variables.size(); ++i) {
+    const std::string var_name = absl::StrCat(name, i);
+    array->push_back(MakeFixedDurationIntervalVar(
+        start_variables[i], durations[i], performed_variables[i], var_name));
+  }
+}
+
+// Variable Duration Interval Var
+
+IntervalVar* Solver::MakeIntervalVar(int64_t start_min, int64_t start_max,
+                                     int64_t duration_min, int64_t duration_max,
+                                     int64_t end_min, int64_t end_max,
+                                     bool optional, const std::string& name) {
+  return RegisterIntervalVar(RevAlloc(new VariableDurationIntervalVar(
+      this, start_min, start_max, duration_min, duration_max, end_min, end_max,
+      optional, name)));
+}
+
+void Solver::MakeIntervalVarArray(int count, int64_t start_min,
+                                  int64_t start_max, int64_t duration_min,
+                                  int64_t duration_max, int64_t end_min,
+                                  int64_t end_max, bool optional,
+                                  absl::string_view name,
+                                  std::vector<IntervalVar*>* array) {
+  CHECK_GT(count, 0);
+  CHECK(array != nullptr);
+  array->clear();
+  for (int i = 0; i < count; ++i) {
+    const std::string var_name = absl::StrCat(name, i);
+    array->push_back(MakeIntervalVar(start_min, start_max, duration_min,
+                                     duration_max, end_min, end_max, optional,
+                                     var_name));
+  }
+}
+
+// Synced Interval Vars
+IntervalVar* Solver::MakeFixedDurationStartSyncedOnStartIntervalVar(
+    IntervalVar* interval_var, int64_t duration, int64_t offset) {
+  return RegisterIntervalVar(
+      RevAlloc(new FixedDurationIntervalVarStartSyncedOnStart(
+          interval_var, duration, offset)));
+}
+
+IntervalVar* Solver::MakeFixedDurationStartSyncedOnEndIntervalVar(
+    IntervalVar* interval_var, int64_t duration, int64_t offset) {
+  return RegisterIntervalVar(
+      RevAlloc(new FixedDurationIntervalVarStartSyncedOnEnd(interval_var,
+                                                            duration, offset)));
+}
+
+IntervalVar* Solver::MakeFixedDurationEndSyncedOnStartIntervalVar(
+    IntervalVar* interval_var, int64_t duration, int64_t offset) {
+  return RegisterIntervalVar(
+      RevAlloc(new FixedDurationIntervalVarStartSyncedOnStart(
+          interval_var, duration, CapSub(offset, duration))));
+}
+
+IntervalVar* Solver::MakeFixedDurationEndSyncedOnEndIntervalVar(
+    IntervalVar* interval_var, int64_t duration, int64_t offset) {
+  return RegisterIntervalVar(
+      RevAlloc(new FixedDurationIntervalVarStartSyncedOnEnd(
+          interval_var, duration, CapSub(offset, duration))));
+}
+
+// ----- Factories from timetabling.cc and table.cc -----
+
+Constraint* Solver::MakeIntervalVarRelation(IntervalVar* const t,
+                                            Solver::UnaryIntervalRelation r,
+                                            int64_t d) {
+  return RevAlloc(new IntervalUnaryRelation(this, t, d, r));
+}
+
+Constraint* Solver::MakeIntervalVarRelation(IntervalVar* const t1,
+                                            Solver::BinaryIntervalRelation r,
+                                            IntervalVar* const t2) {
+  return RevAlloc(new IntervalBinaryRelation(this, t1, t2, r, 0));
+}
+
+Constraint* Solver::MakeIntervalVarRelationWithDelay(
+    IntervalVar* const t1, Solver::BinaryIntervalRelation r,
+    IntervalVar* const t2, int64_t delay) {
+  return RevAlloc(new IntervalBinaryRelation(this, t1, t2, r, delay));
+}
+
+Constraint* Solver::MakeTemporalDisjunction(IntervalVar* const t1,
+                                            IntervalVar* const t2,
+                                            IntVar* const alt) {
+  return RevAlloc(new TemporalDisjunction(this, t1, t2, alt));
+}
+
+Constraint* Solver::MakeTemporalDisjunction(IntervalVar* const t1,
+                                            IntervalVar* const t2) {
+  return RevAlloc(new TemporalDisjunction(this, t1, t2, nullptr));
+}
+
+Constraint* Solver::MakeAllowedAssignments(const std::vector<IntVar*>& vars,
+                                           const IntTupleSet& tuples) {
+  if (HasCompactDomains(vars)) {
+    if (tuples.NumTuples() < kBitsInUint64 && parameters_.use_small_table()) {
+      return RevAlloc(
+          new SmallCompactPositiveTableConstraint(this, vars, tuples));
+    } else {
+      return RevAlloc(new CompactPositiveTableConstraint(this, vars, tuples));
+    }
+  }
+  return RevAlloc(new PositiveTableConstraint(this, vars, tuples));
+}
+
+Constraint* Solver::MakeTransitionConstraint(
+    const std::vector<IntVar*>& vars, const IntTupleSet& transition_table,
+    int64_t initial_state, const std::vector<int64_t>& final_states) {
+  return RevAlloc(new TransitionConstraint(this, vars, transition_table,
+                                           initial_state, final_states));
+}
+
+Constraint* Solver::MakeTransitionConstraint(
+    const std::vector<IntVar*>& vars, const IntTupleSet& transition_table,
+    int64_t initial_state, const std::vector<int>& final_states) {
+  return RevAlloc(new TransitionConstraint(this, vars, transition_table,
+                                           initial_state, final_states));
+}
+
+IntVar* Solver::MakeIntVar(int64_t min, int64_t max, const std::string& name) {
+  if (min == max) {
+    return MakeIntConst(min, name);
+  }
+  if (min == 0 && max == 1) {
+    return RegisterIntVar(RevAlloc(new ConcreteBooleanVar(this, name)));
+  } else if (CapSub(max, min) == 1) {
+    const std::string inner_name = "inner_" + name;
+    return RegisterIntVar(
+        MakeSum(RevAlloc(new ConcreteBooleanVar(this, inner_name)), min)
+            ->VarWithName(name));
+  } else {
+    return RegisterIntVar(RevAlloc(new DomainIntVar(this, min, max, name)));
+  }
+}
+
+IntVar* Solver::MakeIntVar(int64_t min, int64_t max) {
+  return MakeIntVar(min, max, "");
+}
+
+IntVar* Solver::MakeBoolVar(const std::string& name) {
+  return RegisterIntVar(RevAlloc(new ConcreteBooleanVar(this, name)));
+}
+
+IntVar* Solver::MakeBoolVar() {
+  return RegisterIntVar(RevAlloc(new ConcreteBooleanVar(this, "")));
+}
+
+IntVar* Solver::MakeIntVar(const std::vector<int64_t>& values,
+                           const std::string& name) {
+  DCHECK(!values.empty());
+  // Fast-track the case where we have a single value.
+  if (values.size() == 1) return MakeIntConst(values[0], name);
+  // Sort and remove duplicates.
+  std::vector<int64_t> unique_sorted_values = values;
+  gtl::STLSortAndRemoveDuplicates(&unique_sorted_values);
+  // Case when we have a single value, after clean-up.
+  if (unique_sorted_values.size() == 1) return MakeIntConst(values[0], name);
+  // Case when the values are a dense interval of integers.
+  if (unique_sorted_values.size() ==
+      unique_sorted_values.back() - unique_sorted_values.front() + 1) {
+    return MakeIntVar(unique_sorted_values.front(), unique_sorted_values.back(),
+                      name);
+  }
+  // Compute the GCD: if it's not 1, we can express the variable's domain as
+  // the product of the GCD and of a domain with smaller values.
+  int64_t gcd = 0;
+  for (const int64_t v : unique_sorted_values) {
+    if (gcd == 0) {
+      gcd = std::abs(v);
+    } else {
+      gcd = std::gcd(gcd, std::abs(v));  // Supports v==0.
+    }
+    if (gcd == 1) {
+      // If it's 1, though, we can't do anything special, so we
+      // immediately return a new DomainIntVar.
+      return RegisterIntVar(
+          RevAlloc(new DomainIntVar(this, unique_sorted_values, name)));
+    }
+  }
+  DCHECK_GT(gcd, 1);
+  for (int64_t& v : unique_sorted_values) {
+    DCHECK_EQ(0, v % gcd);
+    v /= gcd;
+  }
+  const std::string new_name = name.empty() ? "" : "inner_" + name;
+  // Catch the case where the divided values are a dense set of integers.
+  IntVar* inner_intvar = nullptr;
+  if (unique_sorted_values.size() ==
+      unique_sorted_values.back() - unique_sorted_values.front() + 1) {
+    inner_intvar = MakeIntVar(unique_sorted_values.front(),
+                              unique_sorted_values.back(), new_name);
+  } else {
+    inner_intvar = RegisterIntVar(
+        RevAlloc(new DomainIntVar(this, unique_sorted_values, new_name)));
+  }
+  return MakeProd(inner_intvar, gcd)->Var();
+}
+
+IntVar* Solver::MakeIntVar(const std::vector<int64_t>& values) {
+  return MakeIntVar(values, "");
+}
+
+IntVar* Solver::MakeIntVar(const std::vector<int>& values,
+                           const std::string& name) {
+  return MakeIntVar(ToInt64Vector(values), name);
+}
+
+IntVar* Solver::MakeIntVar(const std::vector<int>& values) {
+  return MakeIntVar(values, "");
+}
+
+IntVar* Solver::MakeIntConst(int64_t val, const std::string& name) {
+  // If IntConst is going to be named after its creation,
+  // cp_share_int_consts should be set to false otherwise names can potentially
+  // be overwritten.
+  if (absl::GetFlag(FLAGS_cp_share_int_consts) && name.empty() &&
+      val >= MIN_CACHED_INT_CONST && val <= MAX_CACHED_INT_CONST) {
+    return cached_constants_[val - MIN_CACHED_INT_CONST];
+  }
+  return RevAlloc(new IntConst(this, val, name));
+}
+
+IntVar* Solver::MakeIntConst(int64_t val) { return MakeIntConst(val, ""); }
+
+namespace {
+std::string IndexedName(absl::string_view prefix, int index, int max_index) {
+#if 0
+#if defined(_MSC_VER)
+  const int digits = max_index > 0 ?
+      static_cast<int>(log(1.0L * max_index) / log(10.0L)) + 1 :
+      1;
+#else
+  const int digits = max_index > 0 ? static_cast<int>(log10(max_index)) + 1: 1;
+#endif
+  return absl::StrFormat("%s%0*d", prefix, digits, index);
+#else
+  return absl::StrCat(prefix, index);
+#endif
+}
+}  // namespace
+
+void Solver::MakeIntVarArray(int var_count, int64_t vmin, int64_t vmax,
+                             const std::string& name,
+                             std::vector<IntVar*>* vars) {
+  for (int i = 0; i < var_count; ++i) {
+    vars->push_back(MakeIntVar(vmin, vmax, IndexedName(name, i, var_count)));
+  }
+}
+
+void Solver::MakeIntVarArray(int var_count, int64_t vmin, int64_t vmax,
+                             std::vector<IntVar*>* vars) {
+  for (int i = 0; i < var_count; ++i) {
+    vars->push_back(MakeIntVar(vmin, vmax));
+  }
+}
+
+IntVar** Solver::MakeIntVarArray(int var_count, int64_t vmin, int64_t vmax,
+                                 const std::string& name) {
+  IntVar** vars = new IntVar*[var_count];
+  for (int i = 0; i < var_count; ++i) {
+    vars[i] = MakeIntVar(vmin, vmax, IndexedName(name, i, var_count));
+  }
+  return vars;
+}
+
+void Solver::MakeBoolVarArray(int var_count, const std::string& name,
+                              std::vector<IntVar*>* vars) {
+  for (int i = 0; i < var_count; ++i) {
+    vars->push_back(MakeBoolVar(IndexedName(name, i, var_count)));
+  }
+}
+
+void Solver::MakeBoolVarArray(int var_count, std::vector<IntVar*>* vars) {
+  for (int i = 0; i < var_count; ++i) {
+    vars->push_back(MakeBoolVar());
+  }
+}
+
+IntVar** Solver::MakeBoolVarArray(int var_count, const std::string& name) {
+  IntVar** vars = new IntVar*[var_count];
+  for (int i = 0; i < var_count; ++i) {
+    vars[i] = MakeBoolVar(IndexedName(name, i, var_count));
+  }
+  return vars;
+}
+
+void Solver::InitCachedIntConstants() {
+  for (int i = MIN_CACHED_INT_CONST; i <= MAX_CACHED_INT_CONST; ++i) {
+    cached_constants_[i - MIN_CACHED_INT_CONST] =
+        RevAlloc(new IntConst(this, i, ""));  // note the empty name
+  }
+}
+
+Assignment* Solver::MakeAssignment() { return RevAlloc(new Assignment(this)); }
+
+Assignment* Solver::MakeAssignment(const Assignment* const a) {
+  return RevAlloc(new Assignment(a));
 }
 
 }  // namespace operations_research

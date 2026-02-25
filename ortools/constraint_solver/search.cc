@@ -616,7 +616,7 @@ Decision* ComposeDecisionBuilder::Next(Solver* s) {
 
 std::string ComposeDecisionBuilder::DebugString() const {
   return absl::StrFormat("ComposeDecisionBuilder(%s)",
-                         JoinDebugStringPtr(builders_, ", "));
+                         JoinDebugStringPtr(builders_));
 }
 }  // namespace
 
@@ -751,7 +751,7 @@ Decision* TryDecisionBuilder::Next(Solver* solver) {
 
 std::string TryDecisionBuilder::DebugString() const {
   return absl::StrFormat("TryDecisionBuilder(%s)",
-                         JoinDebugStringPtr(builders_, ", "));
+                         JoinDebugStringPtr(builders_));
 }
 
 void TryDecisionBuilder::AdvanceToNextBuilder(Solver* solver) {
@@ -1396,7 +1396,7 @@ class VariableAssignmentSelector : public BaseVariableAssignmentSelector {
 };
 
 std::string VariableAssignmentSelector::DebugString() const {
-  return absl::StrFormat("%s(%s)", name_, JoinDebugStringPtr(vars_, ", "));
+  return absl::StrFormat("%s(%s)", name_, JoinDebugStringPtr(vars_));
 }
 
 // ----- Base Global Evaluator-based selector -----
@@ -1416,7 +1416,7 @@ class BaseEvaluatorSelector : public BaseVariableAssignmentSelector {
   };
 
   std::string DebugStringInternal(absl::string_view name) const {
-    return absl::StrFormat("%s(%s)", name, JoinDebugStringPtr(vars_, ", "));
+    return absl::StrFormat("%s(%s)", name, JoinDebugStringPtr(vars_));
   }
 
   std::function<int64_t(int64_t, int64_t)> evaluator_;

@@ -1510,7 +1510,7 @@ class PathOperator : public IntVarLocalSearchOperator {
 };
 
 #ifndef SWIG
-/// ----- 2Opt -----
+/// ----- 2-Opt -----
 
 /// Reverses a sub-chain of a path. It is called 2Opt because it breaks
 /// 2 arcs on the path; resulting paths are called 2-optimal.

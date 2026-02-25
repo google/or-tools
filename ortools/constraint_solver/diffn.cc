@@ -95,10 +95,9 @@ void Diffn::InitialPropagate() {
 }
 
 std::string Diffn::DebugString() const {
-  return absl::StrFormat(
-      "Diffn(x = [%s], y = [%s], dx = [%s], dy = [%s]))",
-      JoinDebugStringPtr(x_, ", "), JoinDebugStringPtr(y_, ", "),
-      JoinDebugStringPtr(dx_, ", "), JoinDebugStringPtr(dy_, ", "));
+  return absl::StrFormat("Diffn(x = [%s], y = [%s], dx = [%s], dy = [%s]))",
+                         JoinDebugStringPtr(x_), JoinDebugStringPtr(y_),
+                         JoinDebugStringPtr(dx_), JoinDebugStringPtr(dy_));
 }
 
 void Diffn::Accept(ModelVisitor* visitor) const {

@@ -14,7 +14,6 @@
 
 # [START program]
 """OR-Tools solution to the N-queens problem."""
-
 # [START import]
 import sys
 

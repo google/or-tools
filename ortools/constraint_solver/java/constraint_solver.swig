@@ -49,6 +49,7 @@ class RegularLimitParameters;
 
 // Include the files we want to wrap a first time.
 %{
+#include "ortools/base/base_export.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/assignment.h"
 #include "ortools/constraint_solver/local_search.h"
@@ -145,6 +146,14 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
 
 #include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
+
+class RAIIExceptionChecker {
+  public:
+    RAIIExceptionChecker(JNIEnv* jenv) : jenv_(jenv) {}
+    ~RAIIExceptionChecker() { assert(jenv_->ExceptionCheck() == 0); }
+  private:
+    JNIEnv* const jenv_;
+};
 %}
 
 // Use to correctly wrap Solver::MakeScheduleOrPostpone.
@@ -163,10 +172,12 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
   LAMBDA_RETURN, JNI_METHOD, LAMBDA_PARAM, LAMBDA_CALL)
   %typemap(in) TYPE %{
     jclass $input_object_class = jenv->GetObjectClass($input);
-    if (nullptr == $input_object_class) return $null;
+    if (nullptr == $input_object_class || jenv->ExceptionCheck()) return $null;
+
     jmethodID $input_method_id = jenv->GetMethodID(
       $input_object_class, JAVA_METHOD, JAVA_SIGN);
-    assert($input_method_id != nullptr);
+    if (nullptr == $input_method_id || jenv->ExceptionCheck()) return $null;
+
     // $input will be deleted once this function return.
     jobject $input_object = jenv->NewGlobalRef($input);
 
@@ -178,6 +189,7 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
       $input_guard = std::make_shared<GlobalRefGuard>(jvm, $input_object);
     }
     $1 = [jenv, $input_object, $input_method_id, $input_guard](LAMBDA_PARAM) -> LAMBDA_RETURN {
+      RAIIExceptionChecker exception_checker(jenv);
       return jenv->JNI_METHOD($input_object, $input_method_id, LAMBDA_CALL);
     };
   %}
@@ -195,10 +207,10 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
   LAMBDA_RETURN, JNI_METHOD)
   %typemap(in) TYPE %{
     jclass $input_object_class = jenv->GetObjectClass($input);
-    if (nullptr == $input_object_class) return $null;
+    if (nullptr == $input_object_class || jenv->ExceptionCheck()) return $null;
     jmethodID $input_method_id = jenv->GetMethodID(
       $input_object_class, JAVA_METHOD, JAVA_SIGN);
-    assert($input_method_id != nullptr);
+    if (nullptr == $input_method_id || jenv->ExceptionCheck()) return $null;
     // $input will be deleted once this function return.
     jobject $input_object = jenv->NewGlobalRef($input);
 
@@ -210,6 +222,7 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
       $input_guard = std::make_shared<GlobalRefGuard>(jvm, $input_object);
     }
     $1 = [jenv, $input_object, $input_method_id, $input_guard]() -> LAMBDA_RETURN {
+      RAIIExceptionChecker exception_checker(jenv);
       return jenv->JNI_METHOD($input_object, $input_method_id);
     };
   %}
@@ -226,10 +239,10 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
   JAVA_TYPE, JAVA_METHOD, JAVA_SIGN)
   %typemap(in) TYPE %{
     jclass $input_object_class = jenv->GetObjectClass($input);
-    if (nullptr == $input_object_class) return $null;
+    if (nullptr == $input_object_class || jenv->ExceptionCheck()) return $null;
     jmethodID $input_method_id = jenv->GetMethodID(
       $input_object_class, JAVA_METHOD, JAVA_SIGN);
-    assert($input_method_id != nullptr);
+    if (nullptr == $input_method_id || jenv->ExceptionCheck()) return $null;
     // $input will be deleted once this function return.
     jobject $input_object = jenv->NewGlobalRef($input);
 
@@ -242,13 +255,18 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
     }
     $1 = [jenv, $input_object, $input_method_id, $input_guard]() -> std::string {
       jstring js = (jstring) jenv->CallObjectMethod($input_object, $input_method_id);
-      // convert the Java String to const char* C string.
-      const char* c_str(jenv->GetStringUTFChars(js, 0));
-      // copy the C string to std::string
-      std::string str(c_str);
-      // release the C string.
-      jenv->ReleaseStringUTFChars(js, c_str);
-      return str;
+      assert(!jenv->ExceptionCheck());
+      if (js == nullptr) {
+        return "";
+      } else {
+        // convert the Java String to const char* C string.
+        const char* c_str(jenv->GetStringUTFChars(js, 0));
+        // copy the C string to std::string
+        std::string str(c_str);
+        // release the C string.
+        jenv->ReleaseStringUTFChars(js, c_str);
+        return str;
+      }
     };
   %}
   // These 4 typemaps tell SWIG which JNI and Java types to use.
@@ -264,10 +282,10 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
   JAVA_TYPE, JAVA_METHOD, JAVA_SIGN)
   %typemap(in) TYPE %{
     jclass $input_object_class = jenv->GetObjectClass($input);
-    if (nullptr == $input_object_class) return $null;
+    if (nullptr == $input_object_class || jenv->ExceptionCheck()) return $null;
     jmethodID $input_method_id = jenv->GetMethodID(
       $input_object_class, JAVA_METHOD, JAVA_SIGN);
-    assert($input_method_id != nullptr);
+    if (nullptr == $input_method_id || jenv->ExceptionCheck()) return $null;
     // $input will be deleted once this function return.
     jobject $input_object = jenv->NewGlobalRef($input);
 
@@ -292,6 +310,7 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
 
       // Call the java Callback passing the Java Solver object.
       jenv->CallVoidMethod($input_object, $input_method_id, solver_object);
+      assert(!jenv->ExceptionCheck());
     };
   %}
   // These 4 typemaps tell SWIG which JNI and Java types to use.
@@ -890,7 +909,7 @@ import java.util.HashSet;
 %ignore Solver::MakeApplyBranchSelector;
 %ignore Solver::MakeAtMost;
 %ignore Solver::Now;
-%ignore Solver::demon_profiler;
+
 %ignore Solver::set_fail_intercept;
 %unignore Solver::Solver;
 %rename (acceptedNeighbors) Solver::accepted_neighbors;
@@ -909,7 +928,7 @@ import java.util.HashSet;
 %rename (currentlyInSolve) Solver::CurrentlyInSolve;
 %rename (defaultSolverParameters) Solver::DefaultSolverParameters;
 %rename (endSearch) Solver::EndSearch;
-%rename (exportProfilingOverview) Solver::ExportProfilingOverview;
+
 %rename (fail) Solver::Fail;
 %rename (filteredNeighbors) Solver::filtered_neighbors;
 %rename (finishCurrentSearch) Solver::FinishCurrentSearch;
@@ -920,7 +939,6 @@ import java.util.HashSet;
 %rename (instrumentsDemons) Solver::InstrumentsDemons;
 %rename (instrumentsVariables) Solver::InstrumentsVariables;
 %rename (isLocalSearchProfilingEnabled) Solver::IsLocalSearchProfilingEnabled;
-%rename (isProfilingEnabled) Solver::IsProfilingEnabled;
 %rename (localSearchProfile) Solver::LocalSearchProfile;
 %rename (makeAbs) Solver::MakeAbs;
 %rename (makeAbsEquality) Solver::MakeAbsEquality;
@@ -1647,6 +1665,7 @@ namespace operations_research {
 // Wrap cp includes
 // TODO(user): Use ignoreall/unignoreall for this one. A lot of work.
 //swiglint: disable include-h-allglobals
+%include "ortools/base/base_export.h"
 %include "ortools/constraint_solver/constraint_solver.h"
 %include "ortools/constraint_solver/assignment.h"
 %include "ortools/constraint_solver/local_search.h"

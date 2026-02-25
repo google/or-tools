@@ -77,7 +77,7 @@ void AtMost::CheckCount() {
 }
 
 std::string AtMost::DebugString() const {
-  return absl::StrFormat("AtMost(%s, %d, %d)", JoinDebugStringPtr(vars_, ", "),
+  return absl::StrFormat("AtMost(%s, %d, %d)", JoinDebugStringPtr(vars_),
                          value_, max_count_);
 }
 
@@ -212,9 +212,9 @@ void Distribute::CardMax(int cindex) {
 
 std::string Distribute::DebugString() const {
   return absl::StrFormat("Distribute(vars = [%s], values = [%s], cards = [%s])",
-                         JoinDebugStringPtr(vars_, ", "),
+                         JoinDebugStringPtr(vars_),
                          absl::StrJoin(values_, ", "),
-                         JoinDebugStringPtr(cards_, ", "));
+                         JoinDebugStringPtr(cards_));
 }
 
 void Distribute::Accept(ModelVisitor* visitor) const {
@@ -243,8 +243,7 @@ FastDistribute::FastDistribute(Solver* s, const std::vector<IntVar*>& vars,
 
 std::string FastDistribute::DebugString() const {
   return absl::StrFormat("FastDistribute(vars = [%s], cards = [%s])",
-                         JoinDebugStringPtr(vars_, ", "),
-                         JoinDebugStringPtr(cards_, ", "));
+                         JoinDebugStringPtr(vars_), JoinDebugStringPtr(cards_));
 }
 
 void FastDistribute::Post() {
@@ -408,7 +407,7 @@ std::string BoundedDistribute::DebugString() const {
   return absl::StrFormat(
       "BoundedDistribute([%s], values = [%s], card_min = [%s], card_max = "
       "[%s]",
-      JoinDebugStringPtr(vars_, ", "), absl::StrJoin(values_, ", "),
+      JoinDebugStringPtr(vars_), absl::StrJoin(values_, ", "),
       absl::StrJoin(card_min_, ", "), absl::StrJoin(card_max_, ", "));
 }
 
@@ -577,7 +576,7 @@ BoundedFastDistribute::BoundedFastDistribute(
 std::string BoundedFastDistribute::DebugString() const {
   return absl::StrFormat(
       "BoundedFastDistribute([%s], card_min = [%s], card_max = [%s]",
-      JoinDebugStringPtr(vars_, ", "), absl::StrJoin(card_min_, ", "),
+      JoinDebugStringPtr(vars_), absl::StrJoin(card_min_, ", "),
       absl::StrJoin(card_max_, ", "));
 }
 

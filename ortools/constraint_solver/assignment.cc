@@ -969,12 +969,6 @@ void SetAssignmentFromAssignment(Assignment* target_assignment,
   }
 }
 
-Assignment* Solver::MakeAssignment() { return RevAlloc(new Assignment(this)); }
-
-Assignment* Solver::MakeAssignment(const Assignment* const a) {
-  return RevAlloc(new Assignment(a));
-}
-
 // ----- Storing and Restoring assignments -----
 namespace {
 class RestoreAssignment : public DecisionBuilder {

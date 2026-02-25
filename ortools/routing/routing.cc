@@ -66,6 +66,7 @@
 #include "ortools/constraint_solver/expressions.h"
 #include "ortools/constraint_solver/local_search.h"
 #include "ortools/constraint_solver/solver_parameters.pb.h"
+#include "ortools/constraint_solver/trace.h"
 #include "ortools/constraint_solver/utilities.h"
 #include "ortools/graph/linear_assignment.h"
 #include "ortools/graph_base/connected_components.h"
@@ -949,7 +950,7 @@ class RangeMakeElementExpr : public BaseIntExpr {
 
 IntExpr* MakeRangeMakeElementExpr(const RangeIntToIntFunction* callback,
                                   IntVar* index, Solver* s) {
-  return s->RegisterIntExpr(
+  return RegisterIntExpr(
       s->RevAlloc(new RangeMakeElementExpr(callback, index, s)));
 }
 }  // namespace

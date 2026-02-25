@@ -13,7 +13,6 @@
 
 #include "ortools/constraint_solver/visitor.h"
 
-#include <cstddef>
 #include <cstdint>
 #include <string>
 #include <utility>

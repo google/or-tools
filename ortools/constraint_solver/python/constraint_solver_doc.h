@@ -3346,10 +3346,6 @@ possible anymore due to propagation since the first to call.)doc";
 
 static const char* __doc_operations_research_Solver_ExecuteAll = R"doc()doc";
 
-static const char* __doc_operations_research_Solver_ExportProfilingOverview =
-    R"doc(Exports the profiling information in a human readable overview. The
-parameter profile_level used to create the solver must be set to true.)doc";
-
 static const char* __doc_operations_research_Solver_Fail =
     R"doc(Abandon the current branch in the search tree. A backtrack will
 follow.)doc";
@@ -5977,12 +5973,6 @@ static const char* __doc_operations_research_Solver_context =
 static const char* __doc_operations_research_Solver_context_2 = R"doc()doc";
 
 static const char* __doc_operations_research_Solver_decisions = R"doc()doc";
-
-static const char* __doc_operations_research_Solver_demon_profiler =
-    R"doc(Access to demon profiler.)doc";
-
-static const char* __doc_operations_research_Solver_demon_profiler_2 =
-    R"doc(Demon monitor)doc";
 
 static const char* __doc_operations_research_Solver_demon_runs =
     R"doc(The number of demons executed during search for a given priority.)doc";

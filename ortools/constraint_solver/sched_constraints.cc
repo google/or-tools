@@ -62,8 +62,9 @@ class TreeArrayConstraint : public Constraint {
     root_node_ = &tree_[0][0];
   }
 
-  std::string DebugStringInternal(absl::string_view name) const {
-    return absl::StrFormat("Cover(%s) == %s", JoinDebugStringPtr(vars_, ", "),
+  std::string DebugStringInternal(
+      [[maybe_unused]] absl::string_view name) const {
+    return absl::StrFormat("Cover(%s) == %s", JoinDebugStringPtr(vars_),
                            target_var_->DebugString());
   }
 

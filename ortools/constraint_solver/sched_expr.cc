@@ -13,11 +13,11 @@
 
 #include <cstdint>
 #include <string>
-#include <vector>
 
 #include "absl/strings/str_format.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/expressions.h"
+#include "ortools/constraint_solver/trace.h"
 
 #if defined(_MSC_VER)
 #pragma warning(disable : 4351 4355 4804 4805)
@@ -161,7 +161,7 @@ class IntervalVarDurationExpr : public BaseIntExpr {
 IntExpr* BuildStartExpr(IntervalVar* var) {
   Solver* const s = var->solver();
   IntExpr* const expr =
-      s->RegisterIntExpr(s->RevAlloc(new IntervalVarStartExpr(var)));
+      RegisterIntExpr(s->RevAlloc(new IntervalVarStartExpr(var)));
   if (var->HasName()) {
     expr->set_name(absl::StrFormat("start<%s>", var->name()));
   }
@@ -171,7 +171,7 @@ IntExpr* BuildStartExpr(IntervalVar* var) {
 IntExpr* BuildDurationExpr(IntervalVar* var) {
   Solver* const s = var->solver();
   IntExpr* const expr =
-      s->RegisterIntExpr(s->RevAlloc(new IntervalVarDurationExpr(var)));
+      RegisterIntExpr(s->RevAlloc(new IntervalVarDurationExpr(var)));
   if (var->HasName()) {
     expr->set_name(absl::StrFormat("duration<%s>", var->name()));
   }
@@ -181,7 +181,7 @@ IntExpr* BuildDurationExpr(IntervalVar* var) {
 IntExpr* BuildEndExpr(IntervalVar* var) {
   Solver* const s = var->solver();
   IntExpr* const expr =
-      s->RegisterIntExpr(s->RevAlloc(new IntervalVarEndExpr(var)));
+      RegisterIntExpr(s->RevAlloc(new IntervalVarEndExpr(var)));
   if (var->HasName()) {
     expr->set_name(absl::StrFormat("end<%s>", var->name()));
   }

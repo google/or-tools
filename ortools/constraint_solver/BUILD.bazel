@@ -51,18 +51,6 @@ java_proto_library(
 )
 
 proto_library(
-    name = "demon_profiler_proto",
-    srcs = ["demon_profiler.proto"],
-    visibility = ["//visibility:public"],
-)
-
-cc_proto_library(
-    name = "demon_profiler_cc_proto",
-    visibility = ["//visibility:public"],
-    deps = [":demon_profiler_proto"],
-)
-
-proto_library(
     name = "search_stats_proto",
     srcs = ["search_stats.proto"],
     visibility = ["//visibility:public"],
@@ -111,12 +99,6 @@ py_proto_library(
 )
 
 py_proto_library(
-    name = "demon_profiler_py_pb2",
-    visibility = ["//visibility:public"],
-    deps = [":demon_profiler_proto"],
-)
-
-py_proto_library(
     name = "search_stats_py_pb2",
     visibility = ["//visibility:public"],
     deps = [":search_stats_proto"],
@@ -133,7 +115,6 @@ py_library(
     visibility = ["//visibility:public"],
     deps = [
         ":assignment_py_pb2",
-        ":demon_profiler_py_pb2",
         ":search_limit_py_pb2",
         ":search_stats_py_pb2",
         ":solver_parameters_py_pb2",
@@ -154,7 +135,6 @@ cc_library(
         "constraints.cc",
         "count_cst.cc",
         "default_search.cc",
-        "demon_profiler.cc",
         "deviation.cc",
         "diffn.cc",
         "element.cc",
@@ -176,6 +156,7 @@ cc_library(
         "timetabling.cc",
         "trace.cc",
         "utilities.cc",
+        "variables.cc",
         "visitor.cc",
     ],
     hdrs = [
@@ -184,24 +165,32 @@ cc_library(
         "constraint_solver.h",
         "constraints.h",
         "count_cst.h",
+        "default_search.h",
         "deviation.h",
         "diffn.h",
         "element.h",
+        "expr_array.h",
+        "expr_cst.h",
         "expressions.h",
+        "graph_constraints.h",
+        "interval.h",
         "local_search.h",
         "model_cache.h",
+        "sched_expr.h",
         "search.h",
+        "table.h",
+        "timetabling.h",
+        "trace.h",
         "utilities.h",
+        "variables.h",
         "visitor.h",
     ],
     visibility = ["//visibility:public"],
     deps = [
         ":assignment_cc_proto",
-        ":demon_profiler_cc_proto",
         ":search_limit_cc_proto",
         ":search_stats_cc_proto",
         ":solver_parameters_cc_proto",
-        "//ortools/base",
         "//ortools/base:base_export",
         "//ortools/base:bitmap",
         "//ortools/base:file",
@@ -241,7 +230,6 @@ cc_library(
         "@abseil-cpp//absl/log:vlog_is_on",
         "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/random:distributions",
-        "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
         "@abseil-cpp//absl/time",

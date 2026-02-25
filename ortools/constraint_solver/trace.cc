@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "ortools/constraint_solver/trace.h"
+
 #include <cstdint>
 #include <stack>
 #include <string>
@@ -22,7 +24,6 @@
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
 #include "ortools/constraint_solver/constraint_solver.h"
-#include "ortools/constraint_solver/expressions.h"
 
 ABSL_FLAG(bool, cp_full_trace, false,
           "Display all trace information, even if the modifiers has no effect");
@@ -208,7 +209,7 @@ class TraceIntExpr : public IntExpr {
     return false;
   }
 
-  IntVar* Var() override { return solver()->RegisterIntVar(inner_->Var()); }
+  IntVar* Var() override { return RegisterIntVar(inner_->Var()); }
 
   void WhenRange(Demon* d) override { inner_->WhenRange(d); }
 
@@ -842,30 +843,33 @@ class PrintTrace : public PropagationMonitor {
 };
 }  // namespace
 
-IntExpr* Solver::RegisterIntExpr(IntExpr* const expr) {
-  if (InstrumentsVariables()) {
+IntExpr* RegisterIntExpr(IntExpr* const expr) {
+  Solver* const s = expr->solver();
+  if (s->InstrumentsVariables()) {
     if (expr->IsVar()) {
       return RegisterIntVar(expr->Var());
     } else {
-      return RevAlloc(new TraceIntExpr(this, expr));
+      return s->RevAlloc(new TraceIntExpr(s, expr));
     }
   } else {
     return expr;
   }
 }
 
-IntVar* Solver::RegisterIntVar(IntVar* const var) {
-  if (InstrumentsVariables() && var->VarType() != TRACE_VAR) {  // Not already a
-                                                                // trace var.
-    return RevAlloc(new TraceIntVar(this, var));
+IntVar* RegisterIntVar(IntVar* const var) {
+  Solver* const s = var->solver();
+  if (s->InstrumentsVariables() &&
+      var->VarType() != IntVar::TRACE_VAR) {  // Not already a trace var.
+    return s->RevAlloc(new TraceIntVar(s, var));
   } else {
     return var;
   }
 }
 
-IntervalVar* Solver::RegisterIntervalVar(IntervalVar* const var) {
-  if (InstrumentsVariables()) {
-    return RevAlloc(new TraceIntervalVar(this, var));
+IntervalVar* RegisterIntervalVar(IntervalVar* const var) {
+  Solver* const s = var->solver();
+  if (s->InstrumentsVariables()) {
+    return s->RevAlloc(new TraceIntervalVar(s, var));
   } else {
     return var;
   }

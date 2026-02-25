@@ -121,7 +121,6 @@ class Decision;
 class DecisionBuilder;
 class DecisionVisitor;
 class Demon;
-class DemonProfiler;
 class Dimension;
 class DisjunctiveConstraint;
 class ImprovementSearchLimit;
@@ -3064,11 +3063,6 @@ class Solver {
   /// Reseed the solver random generator.
   void ReSeed(int32_t seed) { random_.seed(seed); }
 
-  /// Exports the profiling information in a human readable overview.
-  /// The parameter profile_level used to create the solver must be
-  /// set to true.
-  void ExportProfilingOverview(const std::string& filename);
-
   /// Returns local search profiling information in a human readable format.
   // TODO(user): Merge demon and local search profiles.
   std::string LocalSearchProfile() const;
@@ -3101,8 +3095,6 @@ class Solver {
   }
   void clear_fail_intercept() { fail_intercept_ = nullptr; }
 #endif  // !defined(SWIG)
-  /// Access to demon profiler.
-  DemonProfiler* demon_profiler() const { return demon_profiler_; }
   // TODO(user): Get rid of the following methods once fast local search is
   /// enabled for metaheuristics.
   /// Disables/enables fast local search.
@@ -3115,13 +3107,6 @@ class Solver {
   bool HasName(const PropagationBaseObject* object) const;
   /// Adds a new demon and wraps it inside a DemonProfiler if necessary.
   Demon* RegisterDemon(Demon* demon);
-  /// Registers a new IntExpr and wraps it inside a TraceIntExpr if necessary.
-  IntExpr* RegisterIntExpr(IntExpr* expr);
-  /// Registers a new IntVar and wraps it inside a TraceIntVar if necessary.
-  IntVar* RegisterIntVar(IntVar* var);
-  /// Registers a new IntervalVar and wraps it inside a TraceIntervalVar
-  /// if necessary.
-  IntervalVar* RegisterIntervalVar(IntervalVar* var);
 
   /// Returns the active search, nullptr outside search.
   Search* ActiveSearch() const;
@@ -3129,8 +3114,6 @@ class Solver {
   ModelCache* Cache() const;
   /// Returns whether we are instrumenting demons.
   bool InstrumentsDemons() const;
-  /// Returns whether we are profiling the solver.
-  bool IsProfilingEnabled() const;
   /// Returns whether we are profiling local search.
   bool IsLocalSearchProfilingEnabled() const;
   /// Returns whether we are tracing variables.
@@ -3167,7 +3150,6 @@ class Solver {
 
   friend class BaseIntExpr;
   friend class Constraint;
-  friend class DemonProfiler;
   friend class FindOneNeighbor;
   friend class IntVar;
   friend class PropagationBaseObject;
@@ -3184,18 +3166,6 @@ class Solver {
   friend class SimpleRevFIFO;
   template <class K, class V>
   friend class RevImmutableMultiMap;
-
-  /// Returns true if expr represents either boolean_var or 1 -
-  /// boolean_var.  In that case, it fills inner_var and is_negated to be
-  /// true if the expression is 1 - boolean_var -- equivalent to
-  /// not(boolean_var).
-  bool IsBooleanVar(IntExpr* expr, IntVar** inner_var, bool* is_negated) const;
-
-  /// Returns true if expr represents a product of a expr and a
-  /// constant.  In that case, it fills inner_expr and coefficient with
-  /// these, and returns true. In the other case, it fills inner_expr
-  /// with expr, coefficient with 1, and returns false.
-  bool IsProduct(IntExpr* expr, IntExpr** inner_expr, int64_t* coefficient);
 #endif  /// !defined(SWIG)
 
   /// Internal. If the variables is the result of expr->Var(), this
@@ -3309,8 +3279,6 @@ class Solver {
   int GetNewIntVarIndex() { return num_int_vars_++; }
 
   /// Internal.
-  bool IsADifference(IntExpr* expr, IntExpr** left, IntExpr** right);
-
   const std::string name_;
   const ConstraintSolverParameters parameters_;
   absl::flat_hash_map<const PropagationBaseObject*, std::string>
@@ -3341,8 +3309,6 @@ class Solver {
   std::unique_ptr<Decision> balancing_decision_;
   /// intercept failures
   std::function<void()> fail_intercept_;
-  /// Demon monitor
-  DemonProfiler* const demon_profiler_;
   /// Local search mode
   bool use_fast_local_search_;
   /// Local search profiler monitor
@@ -3616,11 +3582,7 @@ class Demon : public BaseObject {
 };
 
 /// Model visitor.
-class
-#ifndef SWIG
-    OR_DLL
-#endif
-    ModelVisitor : public BaseObject {
+class OR_DLL ModelVisitor : public BaseObject {
  public:
   /// Constraint and Expression types.
   static const char kAbs[];
@@ -4302,6 +4264,20 @@ class InitAndGetValues {
 /// and a finer model for events.
 class IntVar : public IntExpr {
  public:
+  /// This enum is used internally to do dynamic typing on subclasses of integer
+  /// variables.
+  enum VarTypes {
+    UNSPECIFIED,
+    DOMAIN_INT_VAR,
+    BOOLEAN_VAR,
+    CONST_VAR,
+    VAR_ADD_CST,
+    VAR_TIMES_CST,
+    CST_SUB_VAR,
+    OPP_VAR,
+    TRACE_VAR
+  };
+
   explicit IntVar(Solver* s);
   IntVar(Solver* s, const std::string& name);
 
@@ -4846,11 +4822,7 @@ class ImprovementSearchLimit : public SearchLimit {
 /// cannot be accessed any more. An interval var is automatically marked
 /// as unperformed when it is not consistent anymore (start greater
 /// than end, duration < 0...)
-class
-#ifndef SWIG
-    OR_DLL
-#endif
-    IntervalVar : public PropagationBaseObject {
+class OR_DLL IntervalVar : public PropagationBaseObject {
  public:
   /// The smallest acceptable value to be returned by StartMin()
   static const int64_t kMinValidValue;
@@ -5007,7 +4979,7 @@ class
 /// returns the list of interval variables that can be ranked first or
 /// last; and RankFirst/RankNotFirst/RankLast/RankNotLast, which can be
 /// used to create the search decision.
-class SequenceVar : public PropagationBaseObject {
+class OR_DLL SequenceVar : public PropagationBaseObject {
  public:
   SequenceVar(Solver* s, const std::vector<IntervalVar*>& intervals,
               const std::vector<IntVar*>& nexts, const std::string& name);
@@ -5201,7 +5173,7 @@ class Pack : public Constraint {
   bool in_process_;
 };
 
-class DisjunctiveConstraint : public Constraint {
+class OR_DLL DisjunctiveConstraint : public Constraint {
  public:
   DisjunctiveConstraint(Solver* s, const std::vector<IntervalVar*>& intervals,
                         const std::string& name);

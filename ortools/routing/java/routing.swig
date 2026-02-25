@@ -52,6 +52,14 @@ class RoutingSearchParameters;
 #include "ortools/routing/parameters.h"
 #include "ortools/routing/routing.h"
 #include "ortools/util/optional_boolean.pb.h"
+
+class RAIIExceptionChecker {
+  public:
+    RAIIExceptionChecker(JNIEnv* jenv) : jenv_(jenv) {}
+    ~RAIIExceptionChecker() { assert(jenv_->ExceptionCheck() == 0); }
+  private:
+    JNIEnv* const jenv_;
+};
 %}
 
 // Add needed import to GlobalsJNI.java

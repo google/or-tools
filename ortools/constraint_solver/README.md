@@ -25,9 +25,6 @@ important for performance.
 
 *   [assignment.proto](../constraint_solver/assignment.proto):
     Holds the solution of a CP problem.
-*   [demon_profiler.proto](../constraint_solver/demon_profiler.proto):
-    Holds the timeline and execution profile of constraints and demons
-    (daemons).
 
 ## Routing solver
 

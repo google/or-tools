@@ -924,11 +924,11 @@ class RankedPropagator : public Constraint {
   std::string DebugString() const override {
     return absl::StrFormat(
         "RankedPropagator([%s], nexts = [%s], intervals = [%s])",
-        partial_sequence_.DebugString(), JoinDebugStringPtr(nexts_, ", "),
-        JoinDebugStringPtr(intervals_, ", "));
+        partial_sequence_.DebugString(), JoinDebugStringPtr(nexts_),
+        JoinDebugStringPtr(intervals_));
   }
 
-  void Accept(ModelVisitor* visitor) const override {
+  void Accept([[maybe_unused]] ModelVisitor* visitor) const override {
     LOG(FATAL) << "Not yet implemented";
     // TODO(user): IMPLEMENT ME.
   }
@@ -1079,7 +1079,7 @@ class FullDisjunctiveConstraint : public DisjunctiveConstraint {
 
   std::string DebugString() const override {
     return absl::StrFormat("FullDisjunctiveConstraint([%s], %i)",
-                           JoinDebugStringPtr(intervals_, ", "), strict_);
+                           JoinDebugStringPtr(intervals_), strict_);
   }
 
   const std::vector<IntVar*>& nexts() const override { return nexts_; }
@@ -1195,9 +1195,6 @@ class FullDisjunctiveConstraint : public DisjunctiveConstraint {
 // A cumulative Theta node, where two energies, corresponding to 2 capacities,
 // are stored.
 struct DualCapacityThetaNode {
-  // Special value for task indices meaning 'no such task'.
-  static const int kNone;
-
   // Identity constructor
   DualCapacityThetaNode()
       : energy(0LL),
@@ -1247,14 +1244,10 @@ struct DualCapacityThetaNode {
   int64_t residual_energetic_end_min;
 };
 
-const int DualCapacityThetaNode::kNone = -1;
-
 // A tree for dual capacity theta nodes
 class DualCapacityThetaTree
     : public MonoidOperationTree<DualCapacityThetaNode> {
  public:
-  static const int64_t kNotInitialized;
-
   explicit DualCapacityThetaTree(int size)
       : MonoidOperationTree<DualCapacityThetaNode>(size),
         capacity_max_(-1),
@@ -1289,8 +1282,6 @@ class DualCapacityThetaTree
   int64_t residual_capacity_;
 };
 
-const int64_t DualCapacityThetaTree::kNotInitialized = -1LL;
-
 // An object that can dive down a branch of a DualCapacityThetaTree to compute
 // Env(j, c) in Petr Vilim's notations.
 //
@@ -1308,15 +1299,16 @@ class EnvJCComputeDiver {
       : energy_threshold_(energy_threshold),
         energy_alpha_(kNotAvailable),
         energetic_end_min_alpha_(kNotAvailable) {}
-  void OnArgumentReached(int index, const DualCapacityThetaNode& argument) {
+  void OnArgumentReached([[maybe_unused]] int index,
+                         const DualCapacityThetaNode& argument) {
     energy_alpha_ = argument.energy;
     energetic_end_min_alpha_ = argument.energetic_end_min;
     // We should reach a leaf that is not the identity
     // DCHECK_GT(energetic_end_min_alpha_, kint64min);
     // TODO(user): Check me.
   }
-  bool ChooseGoLeft(const DualCapacityThetaNode& current,
-                    const DualCapacityThetaNode& left_child,
+  bool ChooseGoLeft([[maybe_unused]] const DualCapacityThetaNode& current,
+                    [[maybe_unused]] const DualCapacityThetaNode& left_child,
                     const DualCapacityThetaNode& right_child) {
     if (right_child.residual_energetic_end_min > energy_threshold_) {
       return false;  // enough energy on right
@@ -1325,17 +1317,19 @@ class EnvJCComputeDiver {
       return true;
     }
   }
-  void OnComeBackFromLeft(const DualCapacityThetaNode& current,
-                          const DualCapacityThetaNode& left_child,
-                          const DualCapacityThetaNode& right_child) {
+  void OnComeBackFromLeft(
+      [[maybe_unused]] const DualCapacityThetaNode& current,
+      [[maybe_unused]] const DualCapacityThetaNode& left_child,
+      [[maybe_unused]] const DualCapacityThetaNode& right_child) {
     // The left subtree intersects the alpha set.
     // The right subtree does not intersect the alpha set.
     // The energy_alpha_ and energetic_end_min_alpha_ previously
     // computed are valid for this node too: there's nothing to do.
   }
-  void OnComeBackFromRight(const DualCapacityThetaNode& current,
-                           const DualCapacityThetaNode& left_child,
-                           const DualCapacityThetaNode& right_child) {
+  void OnComeBackFromRight(
+      [[maybe_unused]] const DualCapacityThetaNode& current,
+      const DualCapacityThetaNode& left_child,
+      [[maybe_unused]] const DualCapacityThetaNode& right_child) {
     // The left subtree is included in the alpha set.
     // The right subtree intersects the alpha set.
     energetic_end_min_alpha_ =
@@ -1448,7 +1442,7 @@ class EdgeFinder : public Constraint {
     ApplyNewBounds();
   }
 
-  void Accept(ModelVisitor* visitor) const override {
+  void Accept([[maybe_unused]] ModelVisitor* visitor) const override {
     LOG(FATAL) << "Should Not Be Visited";
   }
 
@@ -1756,7 +1750,7 @@ class CumulativeTimeTable : public Constraint {
     capacity_->WhenRange(demon);
   }
 
-  void Accept(ModelVisitor* visitor) const override {
+  void Accept([[maybe_unused]] ModelVisitor* visitor) const override {
     LOG(FATAL) << "Should not be visited";
   }
 
@@ -1966,7 +1960,7 @@ class TimeTableSync : public Constraint {
     capacity_->WhenRange(demon);
   }
 
-  void Accept(ModelVisitor* visitor) const override {
+  void Accept([[maybe_unused]] ModelVisitor* visitor) const override {
     LOG(FATAL) << "Should not be visited";
   }
 
@@ -2189,7 +2183,7 @@ class CumulativeConstraint : public Constraint {
  public:
   CumulativeConstraint(Solver* s, const std::vector<IntervalVar*>& intervals,
                        const std::vector<int64_t>& demands, IntVar* capacity,
-                       absl::string_view name)
+                       [[maybe_unused]] absl::string_view name)
       : Constraint(s),
         capacity_(capacity),
         intervals_(intervals),
@@ -2248,8 +2242,7 @@ class CumulativeConstraint : public Constraint {
 
   std::string DebugString() const override {
     return absl::StrFormat("CumulativeConstraint([%s], %s)",
-                           JoinDebugString(tasks_, ", "),
-                           capacity_->DebugString());
+                           JoinDebugString(tasks_), capacity_->DebugString());
   }
 
  private:
@@ -2384,7 +2377,8 @@ class VariableDemandCumulativeConstraint : public Constraint {
   VariableDemandCumulativeConstraint(Solver* s,
                                      const std::vector<IntervalVar*>& intervals,
                                      const std::vector<IntVar*>& demands,
-                                     IntVar* capacity, absl::string_view name)
+                                     IntVar* capacity,
+                                     [[maybe_unused]] absl::string_view name)
       : Constraint(s),
         capacity_(capacity),
         intervals_(intervals),
@@ -2440,8 +2434,7 @@ class VariableDemandCumulativeConstraint : public Constraint {
 
   std::string DebugString() const override {
     return absl::StrFormat("VariableDemandCumulativeConstraint([%s], %s)",
-                           JoinDebugString(tasks_, ", "),
-                           capacity_->DebugString());
+                           JoinDebugString(tasks_), capacity_->DebugString());
   }
 
  private:
@@ -2582,7 +2575,8 @@ DisjunctiveConstraint::DisjunctiveConstraint(
   if (!name.empty()) {
     set_name(name);
   }
-  transition_time_ = [](int64_t x, int64_t y) { return 0; };
+  transition_time_ = []([[maybe_unused]] int64_t x,
+                        [[maybe_unused]] int64_t y) { return 0; };
 }
 
 DisjunctiveConstraint::~DisjunctiveConstraint() {}
@@ -2592,7 +2586,8 @@ void DisjunctiveConstraint::SetTransitionTime(
   if (transition_time != nullptr) {
     transition_time_ = std::move(transition_time);
   } else {
-    transition_time_ = [](int64_t x, int64_t y) { return 0; };
+    transition_time_ = []([[maybe_unused]] int64_t x,
+                          [[maybe_unused]] int64_t y) { return 0; };
   }
 }
 

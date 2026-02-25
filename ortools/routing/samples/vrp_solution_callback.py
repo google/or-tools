@@ -23,9 +23,9 @@ The solver stop after improving its solution 15 times or after 5 seconds.
 Distances are in meters.
 """
 
+import weakref
 # [START import]
 from typing import Any, Dict
-import weakref
 
 from ortools.routing import enums_pb2, parameters_pb2
 from ortools.routing.python import routing

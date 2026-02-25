@@ -44,7 +44,7 @@ void Deviation::InitialPropagate() {
 
 std::string Deviation::DebugString() const {
   return absl::StrFormat("Deviation([%s], deviation_var = %s, sum = %d)",
-                         JoinDebugStringPtr(vars_, ", "),
+                         JoinDebugStringPtr(vars_),
                          deviation_var_->DebugString(), total_sum_);
 }
 

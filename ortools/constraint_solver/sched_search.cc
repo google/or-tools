@@ -68,7 +68,7 @@ std::string SequenceVar::DebugString() const {
       "%s(horizon = %d..%d, duration = %d..%d, not ranked = %d, ranked = %d, "
       "nexts = [%s])",
       name(), hmin, hmax, dmin, dmax, not_ranked, ranked,
-      JoinDebugStringPtr(nexts_, ", "));
+      JoinDebugStringPtr(nexts_));
 }
 
 void SequenceVar::Accept(ModelVisitor* const visitor) const {

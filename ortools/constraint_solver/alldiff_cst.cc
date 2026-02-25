@@ -32,7 +32,7 @@ namespace operations_research {
 
 std::string BaseAllDifferent::DebugStringInternal(
     absl::string_view name) const {
-  return absl::StrFormat("%s(%s)", name, JoinDebugStringPtr(vars_, ", "));
+  return absl::StrFormat("%s(%s)", name, JoinDebugStringPtr(vars_));
 }
 
 void ValueAllDifferent::Post() {
@@ -400,8 +400,8 @@ void SortConstraint::Accept(ModelVisitor* visitor) const {
 }
 
 std::string SortConstraint::DebugString() const {
-  return absl::StrFormat("Sort(%s, %s)", JoinDebugStringPtr(ovars_, ", "),
-                         JoinDebugStringPtr(svars_, ", "));
+  return absl::StrFormat("Sort(%s, %s)", JoinDebugStringPtr(ovars_),
+                         JoinDebugStringPtr(svars_));
 }
 
 void SortConstraint::FindIntersectionRange(int index, int64_t* const range_min,
@@ -458,7 +458,7 @@ void AllDifferentExcept::Propagate(int index) {
 
 std::string AllDifferentExcept::DebugString() const {
   return absl::StrFormat("AllDifferentExcept([%s], %d",
-                         JoinDebugStringPtr(vars_, ", "), escape_value_);
+                         JoinDebugStringPtr(vars_), escape_value_);
 }
 
 void AllDifferentExcept::Accept(ModelVisitor* visitor) const {
@@ -519,8 +519,8 @@ void NullIntersectArrayExcept::PropagateSecond(int index) {
 
 std::string NullIntersectArrayExcept::DebugString() const {
   return absl::StrFormat("NullIntersectArray([%s], [%s], escape = %d",
-                         JoinDebugStringPtr(first_vars_, ", "),
-                         JoinDebugStringPtr(second_vars_, ", "), escape_value_);
+                         JoinDebugStringPtr(first_vars_),
+                         JoinDebugStringPtr(second_vars_), escape_value_);
 }
 
 void NullIntersectArrayExcept::Accept(ModelVisitor* visitor) const {

@@ -49,6 +49,7 @@ class RegularLimitParameters;
 #include <vector>
 #include <functional>
 
+#include "ortools/base/base_export.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/assignment.h"
 #include "ortools/constraint_solver/local_search.h"
@@ -410,7 +411,7 @@ namespace operations_research {
 %ignore Solver::MakeApplyBranchSelector;
 %ignore Solver::MakeAtMost;
 %ignore Solver::Now;
-%ignore Solver::demon_profiler;
+
 %ignore Solver::set_fail_intercept;
 %ignore Solver::tmp_vector_;
 // Methods:
@@ -1004,6 +1005,7 @@ namespace operations_research {
 // Wrap cp includes
 // TODO(user): Replace with %ignoreall/%unignoreall
 //swiglint: disable include-h-allglobals
+%include "ortools/base/base_export.h"
 %include "ortools/constraint_solver/constraint_solver.h"
 %include "ortools/constraint_solver/assignment.h"
 %include "ortools/constraint_solver/local_search.h"

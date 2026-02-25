@@ -73,6 +73,8 @@ struct FailureProtect {
 };
 
 // This #includes constraint_solver.h, and inlines some C++ helpers.
+#include "ortools/base/base_export.h"
+#include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/assignment.h"
 #include "ortools/constraint_solver/search.h"
 #include "ortools/constraint_solver/local_search.h"
@@ -1100,12 +1102,10 @@ namespace operations_research {
 // - SaveAndSetValue()
 // - SaveAndAdd()
 //
-// - ExportProfilingOverview()
 // - CurrentlyInSolve()
 // - balancing_decision()
 // - set_fail_intercept()
 // - clear_fail_intercept()
-// - demon_profiler()
 // - HasName()
 //
 // - RegisterDemon()
@@ -1116,7 +1116,6 @@ namespace operations_research {
 // - ActiveSearch()
 // - Cache()
 // - InstrumentsDemons()
-// - IsProfilingEnabled()
 // - InstrumentsVariables()
 // - NameAllVariables()
 // - model_name()
@@ -1174,10 +1173,6 @@ namespace operations_research {
 %unignore ConstraintSolverParameters::set_name_cast_variables;
 %unignore ConstraintSolverParameters::name_all_variables;
 %unignore ConstraintSolverParameters::set_name_all_variables;
-%unignore ConstraintSolverParameters::profile_propagation;
-%unignore ConstraintSolverParameters::set_profile_propagation;
-%unignore ConstraintSolverParameters::profile_file;
-%unignore ConstraintSolverParameters::set_profile_file;
 %unignore ConstraintSolverParameters::trace_propagation;
 %unignore ConstraintSolverParameters::set_trace_propagation;
 %unignore ConstraintSolverParameters::trace_search;
@@ -1867,7 +1862,7 @@ PY_PROTO_TYPEMAP(ortools.constraint_solver.solver_parameters_pb2,
 PY_PROTO_TYPEMAP(ortools.constraint_solver.search_limit_pb2,
                  RegularLimitParameters,
                  operations_research::RegularLimitParameters)
-
+%include "ortools/base/base_export.h"
 %include "ortools/constraint_solver/constraint_solver.h"
 %include "ortools/constraint_solver/assignment.h"
 %include "ortools/constraint_solver/search.h"

@@ -11,21 +11,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "ortools/constraint_solver/interval.h"
+
 #include <algorithm>
 #include <cstdint>
-#include <limits>
 #include <string>
 
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
-#include "absl/strings/string_view.h"
-#include "absl/types/span.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraints.h"
-#include "ortools/constraint_solver/expressions.h"
+#include "ortools/constraint_solver/sched_expr.h"
 #include "ortools/constraint_solver/utilities.h"
+#include "ortools/constraint_solver/variables.h"
 #include "ortools/util/saturated_arithmetic.h"
 
 #if defined(_MSC_VER)
@@ -33,315 +33,296 @@
 #endif
 
 namespace operations_research {
-// Generic code for start/end/duration expressions.
-// This is not done in a superclass as this is not compatible with the current
-// class hierarchy.
-
-// ----- Expression builders ------
-
-IntExpr* BuildStartExpr(IntervalVar* var);
-IntExpr* BuildDurationExpr(IntervalVar* var);
-IntExpr* BuildEndExpr(IntervalVar* var);
-IntExpr* BuildSafeStartExpr(IntervalVar* var, int64_t unperformed_value);
-IntExpr* BuildSafeDurationExpr(IntervalVar* var, int64_t unperformed_value);
-IntExpr* BuildSafeEndExpr(IntervalVar* var, int64_t unperformed_value);
-void LinkVarExpr(Solver* s, IntExpr* expr, IntVar* var);
-
-// It's good to have the two extreme values being symmetrical around zero: it
-// makes mirroring easier.
-const int64_t IntervalVar::kMaxValidValue =
-    std::numeric_limits<int64_t>::max() >> 2;
-const int64_t IntervalVar::kMinValidValue = -kMaxValidValue;
-
-namespace {
-enum IntervalField { START, DURATION, END };
 
 IntervalVar* NullInterval() { return nullptr; }
+
 // ----- MirrorIntervalVar -----
 
-class MirrorIntervalVar : public IntervalVar {
- public:
-  MirrorIntervalVar(Solver* s, IntervalVar* t)
-      : IntervalVar(s, "Mirror<" + t->name() + ">"), t_(t) {}
+MirrorIntervalVar::MirrorIntervalVar(Solver* s, IntervalVar* t)
+    : IntervalVar(s, "Mirror<" + t->name() + ">"), t_(t) {}
 
-  // This type is neither copyable nor movable.
-  MirrorIntervalVar(const MirrorIntervalVar&) = delete;
-  MirrorIntervalVar& operator=(const MirrorIntervalVar&) = delete;
-  ~MirrorIntervalVar() override {}
+MirrorIntervalVar::~MirrorIntervalVar() {}
 
-  // These methods query, set and watch the start position of the
-  // interval var.
-  int64_t StartMin() const override { return -t_->EndMax(); }
-  int64_t StartMax() const override { return -t_->EndMin(); }
-  void SetStartMin(int64_t m) override { t_->SetEndMax(-m); }
-  void SetStartMax(int64_t m) override { t_->SetEndMin(-m); }
-  void SetStartRange(int64_t mi, int64_t ma) override {
-    t_->SetEndRange(-ma, -mi);
-  }
-  int64_t OldStartMin() const override { return -t_->OldEndMax(); }
-  int64_t OldStartMax() const override { return -t_->OldEndMin(); }
-  void WhenStartRange(Demon* d) override { t_->WhenEndRange(d); }
-  void WhenStartBound(Demon* d) override { t_->WhenEndBound(d); }
+// These methods query, set and watch the start position of the
+// interval var.
+int64_t MirrorIntervalVar::StartMin() const { return -t_->EndMax(); }
+int64_t MirrorIntervalVar::StartMax() const { return -t_->EndMin(); }
+void MirrorIntervalVar::SetStartMin(int64_t m) { t_->SetEndMax(-m); }
+void MirrorIntervalVar::SetStartMax(int64_t m) { t_->SetEndMin(-m); }
+void MirrorIntervalVar::SetStartRange(int64_t mi, int64_t ma) {
+  t_->SetEndRange(-ma, -mi);
+}
+int64_t MirrorIntervalVar::OldStartMin() const { return -t_->OldEndMax(); }
+int64_t MirrorIntervalVar::OldStartMax() const { return -t_->OldEndMin(); }
+void MirrorIntervalVar::WhenStartRange(Demon* d) { t_->WhenEndRange(d); }
+void MirrorIntervalVar::WhenStartBound(Demon* d) { t_->WhenEndBound(d); }
 
-  // These methods query, set and watch the duration of the interval var.
-  int64_t DurationMin() const override { return t_->DurationMin(); }
-  int64_t DurationMax() const override { return t_->DurationMax(); }
-  void SetDurationMin(int64_t m) override { t_->SetDurationMin(m); }
-  void SetDurationMax(int64_t m) override { t_->SetDurationMax(m); }
-  void SetDurationRange(int64_t mi, int64_t ma) override {
-    t_->SetDurationRange(mi, ma);
-  }
-  int64_t OldDurationMin() const override { return t_->OldDurationMin(); }
-  int64_t OldDurationMax() const override { return t_->OldDurationMax(); }
-  void WhenDurationRange(Demon* d) override { t_->WhenDurationRange(d); }
-  void WhenDurationBound(Demon* d) override { t_->WhenDurationBound(d); }
+// These methods query, set and watch the duration of the interval var.
+int64_t MirrorIntervalVar::DurationMin() const { return t_->DurationMin(); }
+int64_t MirrorIntervalVar::DurationMax() const { return t_->DurationMax(); }
+void MirrorIntervalVar::SetDurationMin(int64_t m) { t_->SetDurationMin(m); }
+void MirrorIntervalVar::SetDurationMax(int64_t m) { t_->SetDurationMax(m); }
+void MirrorIntervalVar::SetDurationRange(int64_t mi, int64_t ma) {
+  t_->SetDurationRange(mi, ma);
+}
+int64_t MirrorIntervalVar::OldDurationMin() const {
+  return t_->OldDurationMin();
+}
+int64_t MirrorIntervalVar::OldDurationMax() const {
+  return t_->OldDurationMax();
+}
+void MirrorIntervalVar::WhenDurationRange(Demon* d) {
+  t_->WhenDurationRange(d);
+}
+void MirrorIntervalVar::WhenDurationBound(Demon* d) {
+  t_->WhenDurationBound(d);
+}
 
-  // These methods query, set and watch the end position of the interval var.
-  int64_t EndMin() const override { return -t_->StartMax(); }
-  int64_t EndMax() const override { return -t_->StartMin(); }
-  void SetEndMin(int64_t m) override { t_->SetStartMax(-m); }
-  void SetEndMax(int64_t m) override { t_->SetStartMin(-m); }
-  void SetEndRange(int64_t mi, int64_t ma) override {
-    t_->SetStartRange(-ma, -mi);
-  }
-  int64_t OldEndMin() const override { return -t_->OldStartMax(); }
-  int64_t OldEndMax() const override { return -t_->OldStartMin(); }
-  void WhenEndRange(Demon* d) override { t_->WhenStartRange(d); }
-  void WhenEndBound(Demon* d) override { t_->WhenStartBound(d); }
+// These methods query, set and watch the end position of the interval var.
+int64_t MirrorIntervalVar::EndMin() const { return -t_->StartMax(); }
+int64_t MirrorIntervalVar::EndMax() const { return -t_->StartMin(); }
+void MirrorIntervalVar::SetEndMin(int64_t m) { t_->SetStartMax(-m); }
+void MirrorIntervalVar::SetEndMax(int64_t m) { t_->SetStartMin(-m); }
+void MirrorIntervalVar::SetEndRange(int64_t mi, int64_t ma) {
+  t_->SetStartRange(-ma, -mi);
+}
+int64_t MirrorIntervalVar::OldEndMin() const { return -t_->OldStartMax(); }
+int64_t MirrorIntervalVar::OldEndMax() const { return -t_->OldStartMin(); }
+void MirrorIntervalVar::WhenEndRange(Demon* d) { t_->WhenStartRange(d); }
+void MirrorIntervalVar::WhenEndBound(Demon* d) { t_->WhenStartBound(d); }
 
-  // These methods query, set and watches the performed status of the
-  // interval var.
-  bool MustBePerformed() const override { return t_->MustBePerformed(); }
-  bool MayBePerformed() const override { return t_->MayBePerformed(); }
-  void SetPerformed(bool val) override { t_->SetPerformed(val); }
-  bool WasPerformedBound() const override { return t_->WasPerformedBound(); }
-  void WhenPerformedBound(Demon* d) override { t_->WhenPerformedBound(d); }
+// These methods query, set and watches the performed status of the
+// interval var.
+bool MirrorIntervalVar::MustBePerformed() const {
+  return t_->MustBePerformed();
+}
+bool MirrorIntervalVar::MayBePerformed() const { return t_->MayBePerformed(); }
+void MirrorIntervalVar::SetPerformed(bool val) { t_->SetPerformed(val); }
+bool MirrorIntervalVar::WasPerformedBound() const {
+  return t_->WasPerformedBound();
+}
+void MirrorIntervalVar::WhenPerformedBound(Demon* d) {
+  t_->WhenPerformedBound(d);
+}
 
-  void Accept(ModelVisitor* visitor) const override {
-    visitor->VisitIntervalVariable(this, ModelVisitor::kMirrorOperation, 0, t_);
-  }
+void MirrorIntervalVar::Accept(ModelVisitor* visitor) const {
+  visitor->VisitIntervalVariable(this, ModelVisitor::kMirrorOperation, 0, t_);
+}
 
-  std::string DebugString() const override {
-    return absl::StrFormat("MirrorInterval(%s)", t_->DebugString());
-  }
+std::string MirrorIntervalVar::DebugString() const {
+  return absl::StrFormat("MirrorInterval(%s)", t_->DebugString());
+}
 
-  IntExpr* StartExpr() override {
-    return solver()->MakeOpposite(t_->EndExpr());
-  }
-  IntExpr* DurationExpr() override { return t_->DurationExpr(); }
-  IntExpr* EndExpr() override {
-    return solver()->MakeOpposite(t_->StartExpr());
-  }
-  IntExpr* PerformedExpr() override { return t_->PerformedExpr(); }
-  // These methods create expressions encapsulating the start, end
-  // and duration of the interval var. If the interval var is
-  // unperformed, they will return the unperformed_value.
-  IntExpr* SafeStartExpr(int64_t unperformed_value) override {
-    return solver()->MakeOpposite(t_->SafeEndExpr(-unperformed_value));
-  }
-  IntExpr* SafeDurationExpr(int64_t unperformed_value) override {
-    return t_->SafeDurationExpr(unperformed_value);
-  }
-  IntExpr* SafeEndExpr(int64_t unperformed_value) override {
-    return solver()->MakeOpposite(t_->SafeStartExpr(-unperformed_value));
-  }
+IntExpr* MirrorIntervalVar::StartExpr() {
+  return solver()->MakeOpposite(t_->EndExpr());
+}
+IntExpr* MirrorIntervalVar::DurationExpr() { return t_->DurationExpr(); }
+IntExpr* MirrorIntervalVar::EndExpr() {
+  return solver()->MakeOpposite(t_->StartExpr());
+}
+IntExpr* MirrorIntervalVar::PerformedExpr() { return t_->PerformedExpr(); }
 
- private:
-  IntervalVar* const t_;
-};
+// These methods create expressions encapsulating the start, end
+// and duration of the interval var. If the interval var is
+// unperformed, they will return the unperformed_value.
+IntExpr* MirrorIntervalVar::SafeStartExpr(int64_t unperformed_value) {
+  return solver()->MakeOpposite(t_->SafeEndExpr(-unperformed_value));
+}
+IntExpr* MirrorIntervalVar::SafeDurationExpr(int64_t unperformed_value) {
+  return t_->SafeDurationExpr(unperformed_value);
+}
+IntExpr* MirrorIntervalVar::SafeEndExpr(int64_t unperformed_value) {
+  return solver()->MakeOpposite(t_->SafeStartExpr(-unperformed_value));
+}
 
-// An IntervalVar that passes all function calls to an underlying interval
-// variable as long as it is not prohibited, and that interprets prohibited
-// intervals as intervals of duration 0 that must be executed between
-// [kMinValidValue and kMaxValidValue].
-//
-// Such interval variables have a very similar behavior to others.
-// Invariants such as StartMin() + DurationMin() <= EndMin() that are maintained
-// for traditional interval variables are maintained for instances of
-// AlwaysPerformedIntervalVarWrapper. However, there is no monotonicity of the
-// values returned by the start/end getters. For example, during a given
-// propagation, three successive calls to StartMin could return,
-// in this order, 1, 2, and kMinValidValue.
-//
+// ----- AlwaysPerformedIntervalVarWrapper -----
 
-// This class exists so that we can easily implement the
-// IntervalVarRelaxedMax and IntervalVarRelaxedMin classes below.
-class AlwaysPerformedIntervalVarWrapper : public IntervalVar {
- public:
-  explicit AlwaysPerformedIntervalVarWrapper(IntervalVar* t)
-      : IntervalVar(t->solver(),
-                    absl::StrFormat("AlwaysPerformed<%s>", t->name())),
-        t_(t),
-        start_expr_(nullptr),
-        duration_expr_(nullptr),
-        end_expr_(nullptr) {}
+AlwaysPerformedIntervalVarWrapper::AlwaysPerformedIntervalVarWrapper(
+    IntervalVar* t)
+    : IntervalVar(t->solver(),
+                  absl::StrFormat("AlwaysPerformed<%s>", t->name())),
+      t_(t),
+      start_expr_(nullptr),
+      duration_expr_(nullptr),
+      end_expr_(nullptr) {}
 
-  // This type is neither copyable nor movable.
-  AlwaysPerformedIntervalVarWrapper(const AlwaysPerformedIntervalVarWrapper&) =
-      delete;
-  AlwaysPerformedIntervalVarWrapper& operator=(
-      const AlwaysPerformedIntervalVarWrapper&) = delete;
+AlwaysPerformedIntervalVarWrapper::~AlwaysPerformedIntervalVarWrapper() {}
 
-  ~AlwaysPerformedIntervalVarWrapper() override {}
-  int64_t StartMin() const override {
-    return MayUnderlyingBePerformed() ? t_->StartMin() : kMinValidValue;
+int64_t AlwaysPerformedIntervalVarWrapper::StartMin() const {
+  return MayUnderlyingBePerformed() ? t_->StartMin() : kMinValidValue;
+}
+int64_t AlwaysPerformedIntervalVarWrapper::StartMax() const {
+  return MayUnderlyingBePerformed() ? t_->StartMax() : kMaxValidValue;
+}
+void AlwaysPerformedIntervalVarWrapper::SetStartMin(int64_t m) {
+  t_->SetStartMin(m);
+}
+void AlwaysPerformedIntervalVarWrapper::SetStartMax(int64_t m) {
+  t_->SetStartMax(m);
+}
+void AlwaysPerformedIntervalVarWrapper::SetStartRange(int64_t mi, int64_t ma) {
+  t_->SetStartRange(mi, ma);
+}
+int64_t AlwaysPerformedIntervalVarWrapper::OldStartMin() const {
+  return MayUnderlyingBePerformed() ? t_->OldStartMin() : kMinValidValue;
+}
+int64_t AlwaysPerformedIntervalVarWrapper::OldStartMax() const {
+  return MayUnderlyingBePerformed() ? t_->OldStartMax() : kMaxValidValue;
+}
+void AlwaysPerformedIntervalVarWrapper::WhenStartRange(Demon* d) {
+  t_->WhenStartRange(d);
+}
+void AlwaysPerformedIntervalVarWrapper::WhenStartBound(Demon* d) {
+  t_->WhenStartBound(d);
+}
+int64_t AlwaysPerformedIntervalVarWrapper::DurationMin() const {
+  return MayUnderlyingBePerformed() ? t_->DurationMin() : 0LL;
+}
+int64_t AlwaysPerformedIntervalVarWrapper::DurationMax() const {
+  return MayUnderlyingBePerformed() ? t_->DurationMax() : 0LL;
+}
+void AlwaysPerformedIntervalVarWrapper::SetDurationMin(int64_t m) {
+  t_->SetDurationMin(m);
+}
+void AlwaysPerformedIntervalVarWrapper::SetDurationMax(int64_t m) {
+  t_->SetDurationMax(m);
+}
+void AlwaysPerformedIntervalVarWrapper::SetDurationRange(int64_t mi,
+                                                         int64_t ma) {
+  t_->SetDurationRange(mi, ma);
+}
+int64_t AlwaysPerformedIntervalVarWrapper::OldDurationMin() const {
+  return MayUnderlyingBePerformed() ? t_->OldDurationMin() : 0LL;
+}
+int64_t AlwaysPerformedIntervalVarWrapper::OldDurationMax() const {
+  return MayUnderlyingBePerformed() ? t_->OldDurationMax() : 0LL;
+}
+void AlwaysPerformedIntervalVarWrapper::WhenDurationRange(Demon* d) {
+  t_->WhenDurationRange(d);
+}
+void AlwaysPerformedIntervalVarWrapper::WhenDurationBound(Demon* d) {
+  t_->WhenDurationBound(d);
+}
+int64_t AlwaysPerformedIntervalVarWrapper::EndMin() const {
+  return MayUnderlyingBePerformed() ? t_->EndMin() : kMinValidValue;
+}
+int64_t AlwaysPerformedIntervalVarWrapper::EndMax() const {
+  return MayUnderlyingBePerformed() ? t_->EndMax() : kMaxValidValue;
+}
+void AlwaysPerformedIntervalVarWrapper::SetEndMin(int64_t m) {
+  t_->SetEndMin(m);
+}
+void AlwaysPerformedIntervalVarWrapper::SetEndMax(int64_t m) {
+  t_->SetEndMax(m);
+}
+void AlwaysPerformedIntervalVarWrapper::SetEndRange(int64_t mi, int64_t ma) {
+  t_->SetEndRange(mi, ma);
+}
+int64_t AlwaysPerformedIntervalVarWrapper::OldEndMin() const {
+  return MayUnderlyingBePerformed() ? t_->OldEndMin() : kMinValidValue;
+}
+int64_t AlwaysPerformedIntervalVarWrapper::OldEndMax() const {
+  return MayUnderlyingBePerformed() ? t_->OldEndMax() : kMaxValidValue;
+}
+void AlwaysPerformedIntervalVarWrapper::WhenEndRange(Demon* d) {
+  t_->WhenEndRange(d);
+}
+void AlwaysPerformedIntervalVarWrapper::WhenEndBound(Demon* d) {
+  t_->WhenEndBound(d);
+}
+bool AlwaysPerformedIntervalVarWrapper::MustBePerformed() const { return true; }
+bool AlwaysPerformedIntervalVarWrapper::MayBePerformed() const { return true; }
+void AlwaysPerformedIntervalVarWrapper::SetPerformed(bool val) {
+  // An AlwaysPerformedIntervalVarWrapper interval variable is always
+  // performed. So setting it to be performed does not change anything,
+  // and setting it not to be performed is inconsistent and should cause
+  // a failure.
+  if (!val) {
+    solver()->Fail();
   }
-  int64_t StartMax() const override {
-    return MayUnderlyingBePerformed() ? t_->StartMax() : kMaxValidValue;
+}
+bool AlwaysPerformedIntervalVarWrapper::WasPerformedBound() const {
+  return true;
+}
+void AlwaysPerformedIntervalVarWrapper::WhenPerformedBound(Demon* d) {
+  t_->WhenPerformedBound(d);
+}
+IntExpr* AlwaysPerformedIntervalVarWrapper::StartExpr() {
+  if (start_expr_ == nullptr) {
+    solver()->SaveValue(reinterpret_cast<void**>(&start_expr_));
+    start_expr_ = BuildStartExpr(this);
   }
-  void SetStartMin(int64_t m) override { t_->SetStartMin(m); }
-  void SetStartMax(int64_t m) override { t_->SetStartMax(m); }
-  void SetStartRange(int64_t mi, int64_t ma) override {
-    t_->SetStartRange(mi, ma);
+  return start_expr_;
+}
+IntExpr* AlwaysPerformedIntervalVarWrapper::DurationExpr() {
+  if (duration_expr_ == nullptr) {
+    solver()->SaveValue(reinterpret_cast<void**>(&duration_expr_));
+    duration_expr_ = BuildDurationExpr(this);
   }
-  int64_t OldStartMin() const override {
-    return MayUnderlyingBePerformed() ? t_->OldStartMin() : kMinValidValue;
+  return duration_expr_;
+}
+IntExpr* AlwaysPerformedIntervalVarWrapper::EndExpr() {
+  if (end_expr_ == nullptr) {
+    solver()->SaveValue(reinterpret_cast<void**>(&end_expr_));
+    end_expr_ = BuildEndExpr(this);
   }
-  int64_t OldStartMax() const override {
-    return MayUnderlyingBePerformed() ? t_->OldStartMax() : kMaxValidValue;
-  }
-  void WhenStartRange(Demon* d) override { t_->WhenStartRange(d); }
-  void WhenStartBound(Demon* d) override { t_->WhenStartBound(d); }
-  int64_t DurationMin() const override {
-    return MayUnderlyingBePerformed() ? t_->DurationMin() : 0LL;
-  }
-  int64_t DurationMax() const override {
-    return MayUnderlyingBePerformed() ? t_->DurationMax() : 0LL;
-  }
-  void SetDurationMin(int64_t m) override { t_->SetDurationMin(m); }
-  void SetDurationMax(int64_t m) override { t_->SetDurationMax(m); }
-  void SetDurationRange(int64_t mi, int64_t ma) override {
-    t_->SetDurationRange(mi, ma);
-  }
-  int64_t OldDurationMin() const override {
-    return MayUnderlyingBePerformed() ? t_->OldDurationMin() : 0LL;
-  }
-  int64_t OldDurationMax() const override {
-    return MayUnderlyingBePerformed() ? t_->OldDurationMax() : 0LL;
-  }
-  void WhenDurationRange(Demon* d) override { t_->WhenDurationRange(d); }
-  void WhenDurationBound(Demon* d) override { t_->WhenDurationBound(d); }
-  int64_t EndMin() const override {
-    return MayUnderlyingBePerformed() ? t_->EndMin() : kMinValidValue;
-  }
-  int64_t EndMax() const override {
-    return MayUnderlyingBePerformed() ? t_->EndMax() : kMaxValidValue;
-  }
-  void SetEndMin(int64_t m) override { t_->SetEndMin(m); }
-  void SetEndMax(int64_t m) override { t_->SetEndMax(m); }
-  void SetEndRange(int64_t mi, int64_t ma) override { t_->SetEndRange(mi, ma); }
-  int64_t OldEndMin() const override {
-    return MayUnderlyingBePerformed() ? t_->OldEndMin() : kMinValidValue;
-  }
-  int64_t OldEndMax() const override {
-    return MayUnderlyingBePerformed() ? t_->OldEndMax() : kMaxValidValue;
-  }
-  void WhenEndRange(Demon* d) override { t_->WhenEndRange(d); }
-  void WhenEndBound(Demon* d) override { t_->WhenEndBound(d); }
-  bool MustBePerformed() const override { return true; }
-  bool MayBePerformed() const override { return true; }
-  void SetPerformed(bool val) override {
-    // An AlwaysPerformedIntervalVarWrapper interval variable is always
-    // performed. So setting it to be performed does not change anything,
-    // and setting it not to be performed is inconsistent and should cause
-    // a failure.
-    if (!val) {
-      solver()->Fail();
-    }
-  }
-  bool WasPerformedBound() const override { return true; }
-  void WhenPerformedBound(Demon* d) override { t_->WhenPerformedBound(d); }
-  IntExpr* StartExpr() override {
-    if (start_expr_ == nullptr) {
-      solver()->SaveValue(reinterpret_cast<void**>(&start_expr_));
-      start_expr_ = BuildStartExpr(this);
-    }
-    return start_expr_;
-  }
-  IntExpr* DurationExpr() override {
-    if (duration_expr_ == nullptr) {
-      solver()->SaveValue(reinterpret_cast<void**>(&duration_expr_));
-      duration_expr_ = BuildDurationExpr(this);
-    }
-    return duration_expr_;
-  }
-  IntExpr* EndExpr() override {
-    if (end_expr_ == nullptr) {
-      solver()->SaveValue(reinterpret_cast<void**>(&end_expr_));
-      end_expr_ = BuildEndExpr(this);
-    }
-    return end_expr_;
-  }
-  IntExpr* PerformedExpr() override { return solver()->MakeIntConst(1); }
-  IntExpr* SafeStartExpr(int64_t unperformed_value) override {
-    return StartExpr();
-  }
-  IntExpr* SafeDurationExpr(int64_t unperformed_value) override {
-    return DurationExpr();
-  }
-  IntExpr* SafeEndExpr(int64_t unperformed_value) override { return EndExpr(); }
+  return end_expr_;
+}
+IntExpr* AlwaysPerformedIntervalVarWrapper::PerformedExpr() {
+  return solver()->MakeIntConst(1);
+}
+IntExpr* AlwaysPerformedIntervalVarWrapper::SafeStartExpr(
+    int64_t unperformed_value) {
+  return StartExpr();
+}
+IntExpr* AlwaysPerformedIntervalVarWrapper::SafeDurationExpr(
+    int64_t unperformed_value) {
+  return DurationExpr();
+}
+IntExpr* AlwaysPerformedIntervalVarWrapper::SafeEndExpr(
+    int64_t unperformed_value) {
+  return EndExpr();
+}
 
- protected:
-  IntervalVar* underlying() const { return t_; }
-  bool MayUnderlyingBePerformed() const {
-    return underlying()->MayBePerformed();
-  }
+IntervalVar* AlwaysPerformedIntervalVarWrapper::underlying() const {
+  return t_;
+}
+bool AlwaysPerformedIntervalVarWrapper::MayUnderlyingBePerformed() const {
+  return underlying()->MayBePerformed();
+}
 
- private:
-  IntervalVar* const t_;
-  IntExpr* start_expr_;
-  IntExpr* duration_expr_;
-  IntExpr* end_expr_;
-};
+IntervalVarRelaxedMax::IntervalVarRelaxedMax(IntervalVar* t)
+    : AlwaysPerformedIntervalVarWrapper(t) {}
+IntervalVarRelaxedMax::~IntervalVarRelaxedMax() {}
+int64_t IntervalVarRelaxedMax::StartMax() const {
+  // It matters to use DurationMin() and not underlying()->DurationMin() here.
+  return underlying()->MustBePerformed() ? underlying()->StartMax()
+                                         : (kMaxValidValue - DurationMin());
+}
+void IntervalVarRelaxedMax::SetStartMax(int64_t m) {
+  LOG(FATAL)
+      << "Calling SetStartMax on a IntervalVarRelaxedMax is not supported, "
+      << "as it seems there is no legitimate use case.";
+}
+int64_t IntervalVarRelaxedMax::EndMax() const {
+  return underlying()->MustBePerformed() ? underlying()->EndMax()
+                                         : kMaxValidValue;
+}
+void IntervalVarRelaxedMax::SetEndMax(int64_t m) {
+  LOG(FATAL)
+      << "Calling SetEndMax on a IntervalVarRelaxedMax is not supported, "
+      << "as it seems there is no legitimate use case.";
+}
 
-// An interval variable that wraps around an underlying one, relaxing the max
-// start and end. Relaxing means making unbounded when optional.
-//
-// More precisely, such an interval variable behaves as follows:
-// * When the underlying must be performed, this interval variable behaves
-//     exactly as the underlying;
-// * When the underlying may or may not be performed, this interval variable
-//     behaves like the underlying, except that it is unbounded on the max side;
-// * When the underlying cannot be performed, this interval variable is of
-//      duration 0 and must be performed in an interval unbounded on both sides.
-//
-// This class is very useful to implement propagators that may only modify
-// the start min or end min.
-class IntervalVarRelaxedMax : public AlwaysPerformedIntervalVarWrapper {
- public:
-  explicit IntervalVarRelaxedMax(IntervalVar* t)
-      : AlwaysPerformedIntervalVarWrapper(t) {}
-  ~IntervalVarRelaxedMax() override {}
-  int64_t StartMax() const override {
-    // It matters to use DurationMin() and not underlying()->DurationMin() here.
-    return underlying()->MustBePerformed() ? underlying()->StartMax()
-                                           : (kMaxValidValue - DurationMin());
-  }
-  void SetStartMax(int64_t m) override {
-    LOG(FATAL)
-        << "Calling SetStartMax on a IntervalVarRelaxedMax is not supported, "
-        << "as it seems there is no legitimate use case.";
-  }
-  int64_t EndMax() const override {
-    return underlying()->MustBePerformed() ? underlying()->EndMax()
-                                           : kMaxValidValue;
-  }
-  void SetEndMax(int64_t m) override {
-    LOG(FATAL)
-        << "Calling SetEndMax on a IntervalVarRelaxedMax is not supported, "
-        << "as it seems there is no legitimate use case.";
-  }
+void IntervalVarRelaxedMax::Accept(ModelVisitor* visitor) const {
+  visitor->VisitIntervalVariable(this, ModelVisitor::kRelaxedMaxOperation, 0,
+                                 underlying());
+}
 
-  void Accept(ModelVisitor* visitor) const override {
-    visitor->VisitIntervalVariable(this, ModelVisitor::kRelaxedMaxOperation, 0,
-                                   underlying());
-  }
-
-  std::string DebugString() const override {
-    return absl::StrFormat("IntervalVarRelaxedMax(%s)",
-                           underlying()->DebugString());
-  }
-};
+std::string IntervalVarRelaxedMax::DebugString() const {
+  return absl::StrFormat("IntervalVarRelaxedMax(%s)",
+                         underlying()->DebugString());
+}
 
 // An interval variable that wraps around an underlying one, relaxing the min
 // start and end. Relaxing means making unbounded when optional.
@@ -357,488 +338,403 @@ class IntervalVarRelaxedMax : public AlwaysPerformedIntervalVarWrapper {
 
 // This class is very useful to implement propagators that may only modify
 // the start max or end max.
-class IntervalVarRelaxedMin : public AlwaysPerformedIntervalVarWrapper {
- public:
-  explicit IntervalVarRelaxedMin(IntervalVar* t)
-      : AlwaysPerformedIntervalVarWrapper(t) {}
-  ~IntervalVarRelaxedMin() override {}
-  int64_t StartMin() const override {
-    return underlying()->MustBePerformed() ? underlying()->StartMin()
-                                           : kMinValidValue;
-  }
-  void SetStartMin(int64_t m) override {
-    LOG(FATAL)
-        << "Calling SetStartMin on a IntervalVarRelaxedMin is not supported, "
-        << "as it seems there is no legitimate use case.";
-  }
-  int64_t EndMin() const override {
-    // It matters to use DurationMin() and not underlying()->DurationMin() here.
-    return underlying()->MustBePerformed() ? underlying()->EndMin()
-                                           : (kMinValidValue + DurationMin());
-  }
-  void SetEndMin(int64_t m) override {
-    LOG(FATAL)
-        << "Calling SetEndMin on a IntervalVarRelaxedMin is not supported, "
-        << "as it seems there is no legitimate use case.";
-  }
+IntervalVarRelaxedMin::IntervalVarRelaxedMin(IntervalVar* t)
+    : AlwaysPerformedIntervalVarWrapper(t) {}
+IntervalVarRelaxedMin::~IntervalVarRelaxedMin() {}
+int64_t IntervalVarRelaxedMin::StartMin() const {
+  return underlying()->MustBePerformed() ? underlying()->StartMin()
+                                         : kMinValidValue;
+}
+void IntervalVarRelaxedMin::SetStartMin(int64_t m) {
+  LOG(FATAL)
+      << "Calling SetStartMin on a IntervalVarRelaxedMin is not supported, "
+      << "as it seems there is no legitimate use case.";
+}
+int64_t IntervalVarRelaxedMin::EndMin() const {
+  // It matters to use DurationMin() and not underlying()->DurationMin() here.
+  return underlying()->MustBePerformed() ? underlying()->EndMin()
+                                         : (kMinValidValue + DurationMin());
+}
+void IntervalVarRelaxedMin::SetEndMin(int64_t m) {
+  LOG(FATAL)
+      << "Calling SetEndMin on a IntervalVarRelaxedMin is not supported, "
+      << "as it seems there is no legitimate use case.";
+}
 
-  void Accept(ModelVisitor* visitor) const override {
-    visitor->VisitIntervalVariable(this, ModelVisitor::kRelaxedMinOperation, 0,
-                                   underlying());
-  }
+void IntervalVarRelaxedMin::Accept(ModelVisitor* visitor) const {
+  visitor->VisitIntervalVariable(this, ModelVisitor::kRelaxedMinOperation, 0,
+                                 underlying());
+}
 
-  std::string DebugString() const override {
-    return absl::StrFormat("IntervalVarRelaxedMin(%s)",
-                           underlying()->DebugString());
-  }
-};
+std::string IntervalVarRelaxedMin::DebugString() const {
+  return absl::StrFormat("IntervalVarRelaxedMin(%s)",
+                         underlying()->DebugString());
+}
 
 // ----- BaseIntervalVar -----
 
-class BaseIntervalVar : public IntervalVar {
- public:
-  class Handler : public Demon {
-   public:
-    explicit Handler(BaseIntervalVar* var) : var_(var) {}
-    ~Handler() override {}
-    void Run(Solver* s) override { var_->Process(); }
-    Solver::DemonPriority priority() const override {
-      return Solver::VAR_PRIORITY;
+BaseIntervalVar::Handler::Handler(BaseIntervalVar* var) : var_(var) {}
+BaseIntervalVar::Handler::~Handler() {}
+void BaseIntervalVar::Handler::Run(Solver* s) { var_->Process(); }
+Solver::DemonPriority BaseIntervalVar::Handler::priority() const {
+  return Solver::VAR_PRIORITY;
+}
+std::string BaseIntervalVar::Handler::DebugString() const {
+  return absl::StrFormat("Handler(%s)", var_->DebugString());
+}
+
+BaseIntervalVar::BaseIntervalVar(Solver* s, const std::string& name)
+    : IntervalVar(s, name),
+      in_process_(false),
+      handler_(this),
+      cleaner_([this](Solver* s) { CleanInProcess(); }) {}
+
+BaseIntervalVar::~BaseIntervalVar() {}
+
+void BaseIntervalVar::CleanInProcess() { in_process_ = false; }
+
+std::string BaseIntervalVar::BaseName() const { return "IntervalVar"; }
+
+bool BaseIntervalVar::InProcess() const { return in_process_; }
+
+// ----- RangeVar -----
+
+RangeVar::RangeVar(Solver* s, BaseIntervalVar* var, int64_t mi, int64_t ma)
+    : IntExpr(s),
+      min_(mi),
+      max_(ma),
+      var_(var),
+      postponed_min_(mi),
+      postponed_max_(ma),
+      previous_min_(mi),
+      previous_max_(ma),
+      cast_var_(nullptr) {}
+
+RangeVar::~RangeVar() {}
+
+bool RangeVar::Bound() const { return min_.Value() == max_.Value(); }
+
+int64_t RangeVar::Min() const { return min_.Value(); }
+
+int64_t RangeVar::Max() const { return max_.Value(); }
+
+void RangeVar::SetMin(int64_t m) {
+  // No Op.
+  if (m <= min_.Value()) {
+    return;
+  }
+  // Inconsistent value.
+  if (m > max_.Value()) {
+    var_->SetPerformed(false);
+    return;
+  }
+  if (var_->InProcess()) {
+    // In process, postpone modifications.
+    if (m > postponed_max_) {
+      var_->SetPerformed(false);
     }
-    std::string DebugString() const override {
-      return absl::StrFormat("Handler(%s)", var_->DebugString());
+    if (m > postponed_min_) {
+      postponed_min_ = m;
     }
+  } else {
+    // Not in process.
+    SyncPreviousBounds();
+    min_.SetValue(solver(), m);
+    var_->Push();
+  }
+}
 
-   private:
-    BaseIntervalVar* const var_;
-  };
+int64_t RangeVar::OldMin() const {
+  DCHECK(var_->InProcess());
+  return previous_min_;
+}
 
-  BaseIntervalVar(Solver* s, const std::string& name)
-      : IntervalVar(s, name),
-        in_process_(false),
-        handler_(this),
-        cleaner_([this](Solver* s) { CleanInProcess(); }) {}
+void RangeVar::SetMax(int64_t m) {
+  if (m >= max_.Value()) {
+    return;
+  }
+  if (m < min_.Value()) {
+    var_->SetPerformed(false);
+    return;
+  }
+  if (var_->InProcess()) {
+    // In process, postpone modifications.
+    if (m < postponed_min_) {
+      var_->SetPerformed(false);
+    }
+    if (m < postponed_max_) {
+      postponed_max_ = m;
+    }
+  } else {
+    // Not in process.
+    SyncPreviousBounds();
+    max_.SetValue(solver(), m);
+    var_->Push();
+  }
+}
 
-  ~BaseIntervalVar() override {}
+int64_t RangeVar::OldMax() const { return previous_min_; }
 
-  virtual void Process() = 0;
-
-  virtual void Push() = 0;
-
-  void CleanInProcess() { in_process_ = false; }
-
-  std::string BaseName() const override { return "IntervalVar"; }
-
-  bool InProcess() const { return in_process_; }
-
- protected:
-  bool in_process_;
-  Handler handler_;
-  Solver::Action cleaner_;
-};
-
-class RangeVar : public IntExpr {
- public:
-  RangeVar(Solver* s, BaseIntervalVar* var, int64_t mi, int64_t ma)
-      : IntExpr(s),
-        min_(mi),
-        max_(ma),
-        var_(var),
-        postponed_min_(mi),
-        postponed_max_(ma),
-        previous_min_(mi),
-        previous_max_(ma),
-        cast_var_(nullptr) {}
-
-  ~RangeVar() override {}
-
-  bool Bound() const override { return min_.Value() == max_.Value(); }
-
-  int64_t Min() const override { return min_.Value(); }
-
-  int64_t Max() const override { return max_.Value(); }
-
-  void SetMin(int64_t m) override {
+void RangeVar::SetRange(int64_t mi, int64_t ma) {
+  if (mi <= min_.Value() && ma >= max_.Value()) {
     // No Op.
-    if (m <= min_.Value()) {
-      return;
-    }
-    // Inconsistent value.
-    if (m > max_.Value()) {
-      var_->SetPerformed(false);
-      return;
-    }
-    if (var_->InProcess()) {
-      // In process, postpone modifications.
-      if (m > postponed_max_) {
-        var_->SetPerformed(false);
-      }
-      if (m > postponed_min_) {
-        postponed_min_ = m;
-      }
-    } else {
-      // Not in process.
-      SyncPreviousBounds();
-      min_.SetValue(solver(), m);
-      var_->Push();
-    }
+    return;
   }
-
-  int64_t OldMin() const {
-    DCHECK(var_->InProcess());
-    return previous_min_;
+  if (mi > max_.Value() || ma < min_.Value() || mi > ma) {
+    var_->SetPerformed(false);
   }
-
-  void SetMax(int64_t m) override {
-    if (m >= max_.Value()) {
-      return;
-    }
-    if (m < min_.Value()) {
-      var_->SetPerformed(false);
-      return;
-    }
-    if (var_->InProcess()) {
-      // In process, postpone modifications.
-      if (m < postponed_min_) {
-        var_->SetPerformed(false);
-      }
-      if (m < postponed_max_) {
-        postponed_max_ = m;
-      }
-    } else {
-      // Not in process.
-      SyncPreviousBounds();
-      max_.SetValue(solver(), m);
-      var_->Push();
-    }
-  }
-
-  int64_t OldMax() const { return previous_min_; }
-
-  void SetRange(int64_t mi, int64_t ma) override {
-    if (mi <= min_.Value() && ma >= max_.Value()) {
-      // No Op.
-      return;
-    }
-    if (mi > max_.Value() || ma < min_.Value() || mi > ma) {
+  if (var_->InProcess()) {
+    if (mi > postponed_max_ || ma < postponed_min_) {
       var_->SetPerformed(false);
     }
-    if (var_->InProcess()) {
-      if (mi > postponed_max_ || ma < postponed_min_) {
-        var_->SetPerformed(false);
-      }
-      if (mi > postponed_min_) {
-        postponed_min_ = mi;
-      }
-      if (ma < postponed_max_) {
-        postponed_max_ = ma;
-      }
+    if (mi > postponed_min_) {
+      postponed_min_ = mi;
+    }
+    if (ma < postponed_max_) {
+      postponed_max_ = ma;
+    }
+  } else {
+    // Not in process.
+    SyncPreviousBounds();
+    if (mi > min_.Value()) {
+      min_.SetValue(solver(), mi);
+    }
+    if (ma < max_.Value()) {
+      max_.SetValue(solver(), ma);
+    }
+    var_->Push();
+  }
+}
+
+void RangeVar::WhenRange(Demon* demon) {
+  if (!Bound()) {
+    if (demon->priority() == Solver::DELAYED_PRIORITY) {
+      delayed_range_demons_.PushIfNotTop(solver(),
+                                         solver()->RegisterDemon(demon));
     } else {
-      // Not in process.
-      SyncPreviousBounds();
-      if (mi > min_.Value()) {
-        min_.SetValue(solver(), mi);
-      }
-      if (ma < max_.Value()) {
-        max_.SetValue(solver(), ma);
-      }
-      var_->Push();
+      range_demons_.PushIfNotTop(solver(), solver()->RegisterDemon(demon));
     }
   }
+}
 
-  void WhenRange(Demon* demon) override {
-    if (!Bound()) {
-      if (demon->priority() == Solver::DELAYED_PRIORITY) {
-        delayed_range_demons_.PushIfNotTop(solver(),
-                                           solver()->RegisterDemon(demon));
-      } else {
-        range_demons_.PushIfNotTop(solver(), solver()->RegisterDemon(demon));
-      }
+void RangeVar::WhenBound(Demon* demon) {
+  if (!Bound()) {
+    if (demon->priority() == Solver::DELAYED_PRIORITY) {
+      delayed_bound_demons_.PushIfNotTop(solver(),
+                                         solver()->RegisterDemon(demon));
+    } else {
+      bound_demons_.PushIfNotTop(solver(), solver()->RegisterDemon(demon));
     }
   }
+}
 
-  virtual void WhenBound(Demon* demon) {
-    if (!Bound()) {
-      if (demon->priority() == Solver::DELAYED_PRIORITY) {
-        delayed_bound_demons_.PushIfNotTop(solver(),
-                                           solver()->RegisterDemon(demon));
-      } else {
-        bound_demons_.PushIfNotTop(solver(), solver()->RegisterDemon(demon));
-      }
+void RangeVar::UpdatePostponedBounds() {
+  postponed_min_ = min_.Value();
+  postponed_max_ = max_.Value();
+}
+
+void RangeVar::ProcessDemons() {
+  if (Bound()) {
+    ExecuteAll(bound_demons_);
+    EnqueueAll(delayed_bound_demons_);
+  }
+  if (min_.Value() != previous_min_ || max_.Value() != previous_max_) {
+    ExecuteAll(range_demons_);
+    EnqueueAll(delayed_range_demons_);
+  }
+}
+
+void RangeVar::UpdatePreviousBounds() {
+  previous_min_ = min_.Value();
+  previous_max_ = max_.Value();
+}
+
+// TODO(user): Remove this interval field enum.
+void RangeVar::ApplyPostponedBounds(IntervalField which) {
+  if (min_.Value() < postponed_min_ || max_.Value() > postponed_max_) {
+    switch (which) {
+      case START:
+        var_->SetStartRange(std::max(postponed_min_, min_.Value()),
+                            std::min(postponed_max_, max_.Value()));
+        break;
+      case DURATION:
+        var_->SetDurationRange(std::max(postponed_min_, min_.Value()),
+                               std::min(postponed_max_, max_.Value()));
+        break;
+      case END:
+        var_->SetEndRange(std::max(postponed_min_, min_.Value()),
+                          std::min(postponed_max_, max_.Value()));
+        break;
     }
   }
+}
 
-  void UpdatePostponedBounds() {
-    postponed_min_ = min_.Value();
-    postponed_max_ = max_.Value();
+IntVar* RangeVar::Var() {
+  if (cast_var_ == nullptr) {
+    solver()->SaveValue(reinterpret_cast<void**>(&cast_var_));
+    cast_var_ = solver()->MakeIntVar(min_.Value(), max_.Value());
+    LinkVarExpr(solver(), this, cast_var_);
   }
+  return cast_var_;
+}
 
-  void ProcessDemons() {
-    if (Bound()) {
-      ExecuteAll(bound_demons_);
-      EnqueueAll(delayed_bound_demons_);
-    }
-    if (min_.Value() != previous_min_ || max_.Value() != previous_max_) {
-      ExecuteAll(range_demons_);
-      EnqueueAll(delayed_range_demons_);
-    }
+std::string RangeVar::DebugString() const {
+  std::string out = absl::StrCat(min_.Value());
+  if (!Bound()) {
+    absl::StrAppendFormat(&out, " .. %d", max_.Value());
   }
+  return out;
+}
 
-  void UpdatePreviousBounds() {
+void RangeVar::SyncPreviousBounds() {
+  if (previous_min_ > min_.Value()) {
     previous_min_ = min_.Value();
+  }
+  if (previous_max_ < max_.Value()) {
     previous_max_ = max_.Value();
   }
-
-  // TODO(user): Remove this interval field enum.
-  void ApplyPostponedBounds(IntervalField which) {
-    if (min_.Value() < postponed_min_ || max_.Value() > postponed_max_) {
-      switch (which) {
-        case START:
-          var_->SetStartRange(std::max(postponed_min_, min_.Value()),
-                              std::min(postponed_max_, max_.Value()));
-          break;
-        case DURATION:
-          var_->SetDurationRange(std::max(postponed_min_, min_.Value()),
-                                 std::min(postponed_max_, max_.Value()));
-          break;
-        case END:
-          var_->SetEndRange(std::max(postponed_min_, min_.Value()),
-                            std::min(postponed_max_, max_.Value()));
-          break;
-      }
-    }
-  }
-
-  IntVar* Var() override {
-    if (cast_var_ == nullptr) {
-      solver()->SaveValue(reinterpret_cast<void**>(&cast_var_));
-      cast_var_ = solver()->MakeIntVar(min_.Value(), max_.Value());
-      LinkVarExpr(solver(), this, cast_var_);
-    }
-    return cast_var_;
-  }
-
-  std::string DebugString() const override {
-    std::string out = absl::StrCat(min_.Value());
-    if (!Bound()) {
-      absl::StrAppendFormat(&out, " .. %d", max_.Value());
-    }
-    return out;
-  }
-
- private:
-  // The previous bounds are maintained lazily and non reversibly.
-  // When going down in the search tree, the modifications are
-  // monotonic, thus SyncPreviousBounds is a no-op because they are
-  // correctly updated at the end of the ProcessDemons() call. After
-  // a fail, if they are inconsistent, then they will be outside the
-  // current interval, thus this check.
-  void SyncPreviousBounds() {
-    if (previous_min_ > min_.Value()) {
-      previous_min_ = min_.Value();
-    }
-    if (previous_max_ < max_.Value()) {
-      previous_max_ = max_.Value();
-    }
-  }
-
-  // The current reversible bounds of the interval.
-  NumericalRev<int64_t> min_;
-  NumericalRev<int64_t> max_;
-  BaseIntervalVar* const var_;
-  // When in process, the modifications are postponed and stored in
-  // these 2 fields.
-  int64_t postponed_min_;
-  int64_t postponed_max_;
-  // The previous bounds stores the bounds since the last time
-  // ProcessDemons() was run. These are maintained lazily.
-  int64_t previous_min_;
-  int64_t previous_max_;
-  // Demons attached to the 'bound' event (min == max).
-  SimpleRevFIFO<Demon*> bound_demons_;
-  SimpleRevFIFO<Demon*> delayed_bound_demons_;
-  // Demons attached to a modification of bounds.
-  SimpleRevFIFO<Demon*> range_demons_;
-  SimpleRevFIFO<Demon*> delayed_range_demons_;
-  IntVar* cast_var_;
-};  // class RangeVar
+}
 
 // ----- PerformedVar -----
 
-class PerformedVar : public BooleanVar {
- public:
-  // Optional = true -> var = [0..1], Optional = false -> var = [1].
-  PerformedVar(Solver* s, BaseIntervalVar* var, bool optional)
-      : BooleanVar(s, ""),
-        var_(var),
-        previous_value_(optional ? kUnboundBooleanVarValue : 1),
-        postponed_value_(optional ? kUnboundBooleanVarValue : 1) {
-    if (!optional) {
-      value_ = 1;
-    }
-  }
-  // var = [0] (always unperformed).
-  PerformedVar(Solver* s, BaseIntervalVar* var)
-      : BooleanVar(s, ""), var_(var), previous_value_(0), postponed_value_(0) {
+PerformedVar::PerformedVar(Solver* s, BaseIntervalVar* var, bool optional)
+    : BooleanVar(s, ""),
+      var_(var),
+      previous_value_(optional ? kUnboundBooleanVarValue : 1),
+      postponed_value_(optional ? kUnboundBooleanVarValue : 1) {
+  if (!optional) {
     value_ = 1;
   }
+}
 
-  ~PerformedVar() override {}
+PerformedVar::PerformedVar(Solver* s, BaseIntervalVar* var)
+    : BooleanVar(s, ""), var_(var), previous_value_(0), postponed_value_(0) {
+  value_ = 1;
+}
 
-  void SetValue(int64_t v) override {
-    if ((v & 0xfffffffffffffffe) != 0 ||  // Not 0 or 1.
-        (value_ != kUnboundBooleanVarValue && v != value_)) {
+PerformedVar::~PerformedVar() {}
+
+void PerformedVar::SetValue(int64_t v) {
+  if ((v & 0xfffffffffffffffe) != 0 ||  // Not 0 or 1.
+      (value_ != kUnboundBooleanVarValue && v != value_)) {
+    solver()->Fail();
+  }
+  if (var_->InProcess()) {
+    if (postponed_value_ != kUnboundBooleanVarValue &&
+        v != postponed_value_) {  // Fail early.
       solver()->Fail();
+    } else {
+      postponed_value_ = v;
     }
-    if (var_->InProcess()) {
-      if (postponed_value_ != kUnboundBooleanVarValue &&
-          v != postponed_value_) {  // Fail early.
-        solver()->Fail();
-      } else {
-        postponed_value_ = v;
-      }
-    } else if (value_ == kUnboundBooleanVarValue) {
-      previous_value_ = kUnboundBooleanVarValue;
-      InternalSaveBooleanVarValue(solver(), this);
-      value_ = static_cast<int>(v);
-      var_->Push();
-    }
-  }
-
-  int64_t OldMin() const override { return previous_value_ == 1; }
-
-  int64_t OldMax() const override { return previous_value_ != 0; }
-
-  void RestoreValue() override {
+  } else if (value_ == kUnboundBooleanVarValue) {
     previous_value_ = kUnboundBooleanVarValue;
-    value_ = kUnboundBooleanVarValue;
-    postponed_value_ = kUnboundBooleanVarValue;
+    InternalSaveBooleanVarValue(solver(), this);
+    value_ = static_cast<int>(v);
+    var_->Push();
   }
+}
 
-  void Process() {
-    if (previous_value_ != value_) {
-      ExecuteAll(bound_demons_);
-      EnqueueAll(delayed_bound_demons_);
-    }
+int64_t PerformedVar::OldMin() const { return previous_value_ == 1; }
+
+int64_t PerformedVar::OldMax() const { return previous_value_ != 0; }
+
+void PerformedVar::RestoreValue() {
+  previous_value_ = kUnboundBooleanVarValue;
+  value_ = kUnboundBooleanVarValue;
+  postponed_value_ = kUnboundBooleanVarValue;
+}
+
+void PerformedVar::Process() {
+  if (previous_value_ != value_) {
+    ExecuteAll(bound_demons_);
+    EnqueueAll(delayed_bound_demons_);
   }
+}
 
-  void UpdatePostponedValue() { postponed_value_ = value_; }
+void PerformedVar::UpdatePostponedValue() { postponed_value_ = value_; }
 
-  void UpdatePreviousValueAndApplyPostponedValue() {
-    previous_value_ = value_;
-    if (value_ != postponed_value_) {
-      DCHECK_NE(kUnboundBooleanVarValue, postponed_value_);
-      SetValue(postponed_value_);
-    }
+void PerformedVar::UpdatePreviousValueAndApplyPostponedValue() {
+  previous_value_ = value_;
+  if (value_ != postponed_value_) {
+    DCHECK_NE(kUnboundBooleanVarValue, postponed_value_);
+    SetValue(postponed_value_);
   }
+}
 
-  std::string DebugString() const override {
-    switch (value_) {
-      case 0:
-        return "false";
-      case 1:
-        return "true";
-      default:
-        return "undecided";
-    }
+std::string PerformedVar::DebugString() const {
+  switch (value_) {
+    case 0:
+      return "false";
+    case 1:
+      return "true";
+    default:
+      return "undecided";
   }
-
- private:
-  BaseIntervalVar* const var_;
-  int previous_value_;
-  int postponed_value_;
-};
+}
 
 // ----- FixedDurationIntervalVar -----
 
-class FixedDurationIntervalVar : public BaseIntervalVar {
- public:
-  FixedDurationIntervalVar(Solver* s, int64_t start_min, int64_t start_max,
-                           int64_t duration, bool optional,
-                           const std::string& name);
-  // Unperformed interval.
-  FixedDurationIntervalVar(Solver* s, const std::string& name);
-  ~FixedDurationIntervalVar() override {}
+FixedDurationIntervalVar::~FixedDurationIntervalVar() {}
 
-  int64_t StartMin() const override;
-  int64_t StartMax() const override;
-  void SetStartMin(int64_t m) override;
-  void SetStartMax(int64_t m) override;
-  void SetStartRange(int64_t mi, int64_t ma) override;
-  int64_t OldStartMin() const override { return start_.OldMin(); }
-  int64_t OldStartMax() const override { return start_.OldMax(); }
-  void WhenStartRange(Demon* d) override {
-    if (performed_.Max() == 1) {
-      start_.WhenRange(d);
-    }
+int64_t FixedDurationIntervalVar::OldStartMin() const {
+  return start_.OldMin();
+}
+int64_t FixedDurationIntervalVar::OldStartMax() const {
+  return start_.OldMax();
+}
+void FixedDurationIntervalVar::WhenStartRange(Demon* d) {
+  if (performed_.Max() == 1) {
+    start_.WhenRange(d);
   }
-  void WhenStartBound(Demon* d) override {
-    if (performed_.Max() == 1) {
-      start_.WhenBound(d);
-    }
+}
+void FixedDurationIntervalVar::WhenStartBound(Demon* d) {
+  if (performed_.Max() == 1) {
+    start_.WhenBound(d);
   }
+}
 
-  int64_t DurationMin() const override;
-  int64_t DurationMax() const override;
-  void SetDurationMin(int64_t m) override;
-  void SetDurationMax(int64_t m) override;
-  void SetDurationRange(int64_t mi, int64_t ma) override;
-  int64_t OldDurationMin() const override { return duration_; }
-  int64_t OldDurationMax() const override { return duration_; }
-  void WhenDurationRange(Demon* d) override {}
-  void WhenDurationBound(Demon* d) override {}
+int64_t FixedDurationIntervalVar::OldDurationMin() const { return duration_; }
+int64_t FixedDurationIntervalVar::OldDurationMax() const { return duration_; }
+void FixedDurationIntervalVar::WhenDurationRange(Demon* d) {}
+void FixedDurationIntervalVar::WhenDurationBound(Demon* d) {}
 
-  int64_t EndMin() const override;
-  int64_t EndMax() const override;
-  void SetEndMin(int64_t m) override;
-  void SetEndMax(int64_t m) override;
-  void SetEndRange(int64_t mi, int64_t ma) override;
-  int64_t OldEndMin() const override {
-    return CapAdd(OldStartMin(), duration_);
-  }
-  int64_t OldEndMax() const override {
-    return CapAdd(OldStartMax(), duration_);
-  }
-  void WhenEndRange(Demon* d) override { WhenStartRange(d); }
-  void WhenEndBound(Demon* d) override { WhenStartBound(d); }
+int64_t FixedDurationIntervalVar::OldEndMin() const {
+  return CapAdd(OldStartMin(), duration_);
+}
+int64_t FixedDurationIntervalVar::OldEndMax() const {
+  return CapAdd(OldStartMax(), duration_);
+}
+void FixedDurationIntervalVar::WhenEndRange(Demon* d) { WhenStartRange(d); }
+void FixedDurationIntervalVar::WhenEndBound(Demon* d) { WhenStartBound(d); }
 
-  bool MustBePerformed() const override;
-  bool MayBePerformed() const override;
-  void SetPerformed(bool val) override;
-  bool WasPerformedBound() const override {
-    return performed_.OldMin() == performed_.OldMax();
-  }
-  void WhenPerformedBound(Demon* d) override { performed_.WhenBound(d); }
-  void Process() override;
-  std::string DebugString() const override;
+bool FixedDurationIntervalVar::WasPerformedBound() const {
+  return performed_.OldMin() == performed_.OldMax();
+}
+void FixedDurationIntervalVar::WhenPerformedBound(Demon* d) {
+  performed_.WhenBound(d);
+}
 
-  void Accept(ModelVisitor* visitor) const override {
-    visitor->VisitIntervalVariable(this, "", 0, NullInterval());
-  }
+void FixedDurationIntervalVar::Accept(ModelVisitor* visitor) const {
+  visitor->VisitIntervalVariable(this, "", 0, NullInterval());
+}
 
-  IntExpr* StartExpr() override { return &start_; }
-  IntExpr* DurationExpr() override { return solver()->MakeIntConst(duration_); }
-  IntExpr* EndExpr() override {
-    return solver()->MakeSum(StartExpr(), duration_);
-  }
-  IntExpr* PerformedExpr() override { return &performed_; }
-  IntExpr* SafeStartExpr(int64_t unperformed_value) override {
-    return BuildSafeStartExpr(this, unperformed_value);
-  }
-  IntExpr* SafeDurationExpr(int64_t unperformed_value) override {
-    return BuildSafeDurationExpr(this, unperformed_value);
-  }
-  IntExpr* SafeEndExpr(int64_t unperformed_value) override {
-    return BuildSafeEndExpr(this, unperformed_value);
-  }
-
-  void Push() override;
-
- private:
-  RangeVar start_;
-  int64_t duration_;
-  PerformedVar performed_;
-};
+IntExpr* FixedDurationIntervalVar::StartExpr() { return &start_; }
+IntExpr* FixedDurationIntervalVar::DurationExpr() {
+  return solver()->MakeIntConst(duration_);
+}
+IntExpr* FixedDurationIntervalVar::EndExpr() {
+  return solver()->MakeSum(StartExpr(), duration_);
+}
+IntExpr* FixedDurationIntervalVar::PerformedExpr() { return &performed_; }
+IntExpr* FixedDurationIntervalVar::SafeStartExpr(int64_t unperformed_value) {
+  return BuildSafeStartExpr(this, unperformed_value);
+}
+IntExpr* FixedDurationIntervalVar::SafeDurationExpr(int64_t unperformed_value) {
+  return BuildSafeDurationExpr(this, unperformed_value);
+}
+IntExpr* FixedDurationIntervalVar::SafeEndExpr(int64_t unperformed_value) {
+  return BuildSafeEndExpr(this, unperformed_value);
+}
 
 FixedDurationIntervalVar::FixedDurationIntervalVar(Solver* s, int64_t start_min,
                                                    int64_t start_max,
@@ -994,82 +890,76 @@ std::string FixedDurationIntervalVar::DebugString() const {
 
 // ----- FixedDurationPerformedIntervalVar -----
 
-class FixedDurationPerformedIntervalVar : public BaseIntervalVar {
- public:
-  FixedDurationPerformedIntervalVar(Solver* s, int64_t start_min,
-                                    int64_t start_max, int64_t duration,
-                                    const std::string& name);
-  // Unperformed interval.
-  FixedDurationPerformedIntervalVar(Solver* s, const std::string& name);
-  ~FixedDurationPerformedIntervalVar() override {}
+FixedDurationPerformedIntervalVar::~FixedDurationPerformedIntervalVar() {}
 
-  int64_t StartMin() const override;
-  int64_t StartMax() const override;
-  void SetStartMin(int64_t m) override;
-  void SetStartMax(int64_t m) override;
-  void SetStartRange(int64_t mi, int64_t ma) override;
-  int64_t OldStartMin() const override { return start_.OldMin(); }
-  int64_t OldStartMax() const override { return start_.OldMax(); }
-  void WhenStartRange(Demon* d) override { start_.WhenRange(d); }
-  void WhenStartBound(Demon* d) override { start_.WhenBound(d); }
+int64_t FixedDurationPerformedIntervalVar::OldStartMin() const {
+  return start_.OldMin();
+}
+int64_t FixedDurationPerformedIntervalVar::OldStartMax() const {
+  return start_.OldMax();
+}
+void FixedDurationPerformedIntervalVar::WhenStartRange(Demon* d) {
+  start_.WhenRange(d);
+}
+void FixedDurationPerformedIntervalVar::WhenStartBound(Demon* d) {
+  start_.WhenBound(d);
+}
 
-  int64_t DurationMin() const override;
-  int64_t DurationMax() const override;
-  void SetDurationMin(int64_t m) override;
-  void SetDurationMax(int64_t m) override;
-  void SetDurationRange(int64_t mi, int64_t ma) override;
-  int64_t OldDurationMin() const override { return duration_; }
-  int64_t OldDurationMax() const override { return duration_; }
-  void WhenDurationRange(Demon* d) override {}
-  void WhenDurationBound(Demon* d) override {}
+int64_t FixedDurationPerformedIntervalVar::OldDurationMin() const {
+  return duration_;
+}
+int64_t FixedDurationPerformedIntervalVar::OldDurationMax() const {
+  return duration_;
+}
+void FixedDurationPerformedIntervalVar::WhenDurationRange(Demon* d) {}
+void FixedDurationPerformedIntervalVar::WhenDurationBound(Demon* d) {}
 
-  int64_t EndMin() const override;
-  int64_t EndMax() const override;
-  void SetEndMin(int64_t m) override;
-  void SetEndMax(int64_t m) override;
-  void SetEndRange(int64_t mi, int64_t ma) override;
-  int64_t OldEndMin() const override {
-    return CapAdd(OldStartMin(), duration_);
-  }
-  int64_t OldEndMax() const override {
-    return CapAdd(OldStartMax(), duration_);
-  }
-  void WhenEndRange(Demon* d) override { WhenStartRange(d); }
-  void WhenEndBound(Demon* d) override { WhenEndRange(d); }
+int64_t FixedDurationPerformedIntervalVar::OldEndMin() const {
+  return CapAdd(OldStartMin(), duration_);
+}
+int64_t FixedDurationPerformedIntervalVar::OldEndMax() const {
+  return CapAdd(OldStartMax(), duration_);
+}
+void FixedDurationPerformedIntervalVar::WhenEndRange(Demon* d) {
+  WhenStartRange(d);
+}
+void FixedDurationPerformedIntervalVar::WhenEndBound(Demon* d) {
+  WhenEndRange(d);
+}
 
-  bool MustBePerformed() const override;
-  bool MayBePerformed() const override;
-  void SetPerformed(bool val) override;
-  bool WasPerformedBound() const override { return true; }
-  void WhenPerformedBound(Demon* d) override {}
-  void Process() override;
-  std::string DebugString() const override;
+bool FixedDurationPerformedIntervalVar::WasPerformedBound() const {
+  return true;
+}
+void FixedDurationPerformedIntervalVar::WhenPerformedBound(Demon* d) {}
 
-  void Accept(ModelVisitor* visitor) const override {
-    visitor->VisitIntervalVariable(this, "", 0, NullInterval());
-  }
+void FixedDurationPerformedIntervalVar::Accept(ModelVisitor* visitor) const {
+  visitor->VisitIntervalVariable(this, "", 0, NullInterval());
+}
 
-  IntExpr* StartExpr() override { return &start_; }
-  IntExpr* DurationExpr() override { return solver()->MakeIntConst(duration_); }
-  IntExpr* EndExpr() override {
-    return solver()->MakeSum(StartExpr(), duration_);
-  }
-  IntExpr* PerformedExpr() override { return solver()->MakeIntConst(1); }
-  IntExpr* SafeStartExpr(int64_t unperformed_value) override {
-    return StartExpr();
-  }
-  IntExpr* SafeDurationExpr(int64_t unperformed_value) override {
-    return DurationExpr();
-  }
-  IntExpr* SafeEndExpr(int64_t unperformed_value) override { return EndExpr(); }
+IntExpr* FixedDurationPerformedIntervalVar::StartExpr() { return &start_; }
+IntExpr* FixedDurationPerformedIntervalVar::DurationExpr() {
+  return solver()->MakeIntConst(duration_);
+}
+IntExpr* FixedDurationPerformedIntervalVar::EndExpr() {
+  return solver()->MakeSum(StartExpr(), duration_);
+}
+IntExpr* FixedDurationPerformedIntervalVar::PerformedExpr() {
+  return solver()->MakeIntConst(1);
+}
+IntExpr* FixedDurationPerformedIntervalVar::SafeStartExpr(
+    int64_t unperformed_value) {
+  return StartExpr();
+}
+IntExpr* FixedDurationPerformedIntervalVar::SafeDurationExpr(
+    int64_t unperformed_value) {
+  return DurationExpr();
+}
+IntExpr* FixedDurationPerformedIntervalVar::SafeEndExpr(
+    int64_t unperformed_value) {
+  return EndExpr();
+}
 
- private:
-  void CheckOldPerformed() {}
-  void Push() override;
-
-  RangeVar start_;
-  int64_t duration_;
-};
+void FixedDurationPerformedIntervalVar::CheckOldPerformed() {}
 
 FixedDurationPerformedIntervalVar::FixedDurationPerformedIntervalVar(
     Solver* s, int64_t start_min, int64_t start_max, int64_t duration,
@@ -1191,75 +1081,71 @@ std::string FixedDurationPerformedIntervalVar::DebugString() const {
 
 // ----- StartVarPerformedIntervalVar -----
 
-class StartVarPerformedIntervalVar : public IntervalVar {
- public:
-  StartVarPerformedIntervalVar(Solver* s, IntVar* var, int64_t duration,
-                               const std::string& name);
-  ~StartVarPerformedIntervalVar() override {}
+StartVarPerformedIntervalVar::~StartVarPerformedIntervalVar() {}
 
-  int64_t StartMin() const override;
-  int64_t StartMax() const override;
-  void SetStartMin(int64_t m) override;
-  void SetStartMax(int64_t m) override;
-  void SetStartRange(int64_t mi, int64_t ma) override;
-  int64_t OldStartMin() const override { return start_var_->OldMin(); }
-  int64_t OldStartMax() const override { return start_var_->OldMax(); }
-  void WhenStartRange(Demon* d) override { start_var_->WhenRange(d); }
-  void WhenStartBound(Demon* d) override { start_var_->WhenBound(d); }
+int64_t StartVarPerformedIntervalVar::OldStartMin() const {
+  return start_var_->OldMin();
+}
+int64_t StartVarPerformedIntervalVar::OldStartMax() const {
+  return start_var_->OldMax();
+}
+void StartVarPerformedIntervalVar::WhenStartRange(Demon* d) {
+  start_var_->WhenRange(d);
+}
+void StartVarPerformedIntervalVar::WhenStartBound(Demon* d) {
+  start_var_->WhenBound(d);
+}
 
-  int64_t DurationMin() const override;
-  int64_t DurationMax() const override;
-  void SetDurationMin(int64_t m) override;
-  void SetDurationMax(int64_t m) override;
-  void SetDurationRange(int64_t mi, int64_t ma) override;
-  int64_t OldDurationMin() const override { return duration_; }
-  int64_t OldDurationMax() const override { return duration_; }
-  void WhenDurationRange(Demon* d) override {}
-  void WhenDurationBound(Demon* d) override {}
+int64_t StartVarPerformedIntervalVar::OldDurationMin() const {
+  return duration_;
+}
+int64_t StartVarPerformedIntervalVar::OldDurationMax() const {
+  return duration_;
+}
+void StartVarPerformedIntervalVar::WhenDurationRange(Demon* d) {}
+void StartVarPerformedIntervalVar::WhenDurationBound(Demon* d) {}
 
-  int64_t EndMin() const override;
-  int64_t EndMax() const override;
-  void SetEndMin(int64_t m) override;
-  void SetEndMax(int64_t m) override;
-  void SetEndRange(int64_t mi, int64_t ma) override;
-  int64_t OldEndMin() const override {
-    return CapAdd(OldStartMin(), duration_);
-  }
-  int64_t OldEndMax() const override {
-    return CapAdd(OldStartMax(), duration_);
-  }
-  void WhenEndRange(Demon* d) override { start_var_->WhenRange(d); }
-  void WhenEndBound(Demon* d) override { start_var_->WhenBound(d); }
+int64_t StartVarPerformedIntervalVar::OldEndMin() const {
+  return CapAdd(OldStartMin(), duration_);
+}
+int64_t StartVarPerformedIntervalVar::OldEndMax() const {
+  return CapAdd(OldStartMax(), duration_);
+}
+void StartVarPerformedIntervalVar::WhenEndRange(Demon* d) {
+  start_var_->WhenRange(d);
+}
+void StartVarPerformedIntervalVar::WhenEndBound(Demon* d) {
+  start_var_->WhenBound(d);
+}
 
-  bool MustBePerformed() const override;
-  bool MayBePerformed() const override;
-  void SetPerformed(bool val) override;
-  bool WasPerformedBound() const override { return true; }
-  void WhenPerformedBound(Demon* d) override {}
-  std::string DebugString() const override;
+bool StartVarPerformedIntervalVar::WasPerformedBound() const { return true; }
+void StartVarPerformedIntervalVar::WhenPerformedBound(Demon* d) {}
 
-  IntExpr* StartExpr() override { return start_var_; }
-  IntExpr* DurationExpr() override { return solver()->MakeIntConst(duration_); }
-  IntExpr* EndExpr() override {
-    return solver()->MakeSum(start_var_, duration_);
-  }
-  IntExpr* PerformedExpr() override { return solver()->MakeIntConst(1); }
-  IntExpr* SafeStartExpr(int64_t unperformed_value) override {
-    return StartExpr();
-  }
-  IntExpr* SafeDurationExpr(int64_t unperformed_value) override {
-    return DurationExpr();
-  }
-  IntExpr* SafeEndExpr(int64_t unperformed_value) override { return EndExpr(); }
+IntExpr* StartVarPerformedIntervalVar::StartExpr() { return start_var_; }
+IntExpr* StartVarPerformedIntervalVar::DurationExpr() {
+  return solver()->MakeIntConst(duration_);
+}
+IntExpr* StartVarPerformedIntervalVar::EndExpr() {
+  return solver()->MakeSum(start_var_, duration_);
+}
+IntExpr* StartVarPerformedIntervalVar::PerformedExpr() {
+  return solver()->MakeIntConst(1);
+}
+IntExpr* StartVarPerformedIntervalVar::SafeStartExpr(
+    int64_t unperformed_value) {
+  return StartExpr();
+}
+IntExpr* StartVarPerformedIntervalVar::SafeDurationExpr(
+    int64_t unperformed_value) {
+  return DurationExpr();
+}
+IntExpr* StartVarPerformedIntervalVar::SafeEndExpr(int64_t unperformed_value) {
+  return EndExpr();
+}
 
-  void Accept(ModelVisitor* visitor) const override {
-    visitor->VisitIntervalVariable(this, "", 0, NullInterval());
-  }
-
- private:
-  IntVar* const start_var_;
-  int64_t duration_;
-};
+void StartVarPerformedIntervalVar::Accept(ModelVisitor* visitor) const {
+  visitor->VisitIntervalVariable(this, "", 0, NullInterval());
+}
 
 // TODO(user): Take care of overflows.
 StartVarPerformedIntervalVar::StartVarPerformedIntervalVar(
@@ -1356,97 +1242,68 @@ std::string StartVarPerformedIntervalVar::DebugString() const {
 
 // ----- StartVarIntervalVar -----
 
-class StartVarIntervalVar : public BaseIntervalVar {
- public:
-  StartVarIntervalVar(Solver* s, IntVar* start, int64_t duration,
-                      IntVar* performed, const std::string& name);
-  ~StartVarIntervalVar() override {}
-
-  int64_t StartMin() const override;
-  int64_t StartMax() const override;
-  void SetStartMin(int64_t m) override;
-  void SetStartMax(int64_t m) override;
-  void SetStartRange(int64_t mi, int64_t ma) override;
-  int64_t OldStartMin() const override { return start_->OldMin(); }
-  int64_t OldStartMax() const override { return start_->OldMax(); }
-  void WhenStartRange(Demon* d) override {
-    if (performed_->Max() == 1) {
-      start_->WhenRange(d);
-    }
+int64_t StartVarIntervalVar::OldStartMin() const { return start_->OldMin(); }
+int64_t StartVarIntervalVar::OldStartMax() const { return start_->OldMax(); }
+void StartVarIntervalVar::WhenStartRange(Demon* d) {
+  if (performed_->Max() == 1) {
+    start_->WhenRange(d);
   }
-  void WhenStartBound(Demon* d) override {
-    if (performed_->Max() == 1) {
-      start_->WhenBound(d);
-    }
+}
+void StartVarIntervalVar::WhenStartBound(Demon* d) {
+  if (performed_->Max() == 1) {
+    start_->WhenBound(d);
   }
+}
 
-  int64_t DurationMin() const override;
-  int64_t DurationMax() const override;
-  void SetDurationMin(int64_t m) override;
-  void SetDurationMax(int64_t m) override;
-  void SetDurationRange(int64_t mi, int64_t ma) override;
-  int64_t OldDurationMin() const override { return duration_; }
-  int64_t OldDurationMax() const override { return duration_; }
-  void WhenDurationRange(Demon* d) override {}
-  void WhenDurationBound(Demon* d) override {}
+int64_t StartVarIntervalVar::OldDurationMin() const { return duration_; }
+int64_t StartVarIntervalVar::OldDurationMax() const { return duration_; }
+void StartVarIntervalVar::WhenDurationRange(Demon* d) {}
+void StartVarIntervalVar::WhenDurationBound(Demon* d) {}
 
-  int64_t EndMin() const override;
-  int64_t EndMax() const override;
-  void SetEndMin(int64_t m) override;
-  void SetEndMax(int64_t m) override;
-  void SetEndRange(int64_t mi, int64_t ma) override;
-  int64_t OldEndMin() const override {
-    return CapAdd(OldStartMin(), duration_);
-  }
-  int64_t OldEndMax() const override {
-    return CapAdd(OldStartMax(), duration_);
-  }
-  void WhenEndRange(Demon* d) override { WhenStartRange(d); }
-  void WhenEndBound(Demon* d) override { WhenStartBound(d); }
+int64_t StartVarIntervalVar::OldEndMin() const {
+  return CapAdd(OldStartMin(), duration_);
+}
+int64_t StartVarIntervalVar::OldEndMax() const {
+  return CapAdd(OldStartMax(), duration_);
+}
+void StartVarIntervalVar::WhenEndRange(Demon* d) { WhenStartRange(d); }
+void StartVarIntervalVar::WhenEndBound(Demon* d) { WhenStartBound(d); }
 
-  bool MustBePerformed() const override;
-  bool MayBePerformed() const override;
-  void SetPerformed(bool val) override;
-  bool WasPerformedBound() const override {
-    return performed_->OldMin() == performed_->OldMax();
-  }
-  void WhenPerformedBound(Demon* d) override { performed_->WhenBound(d); }
-  std::string DebugString() const override;
+bool StartVarIntervalVar::WasPerformedBound() const {
+  return performed_->OldMin() == performed_->OldMax();
+}
+void StartVarIntervalVar::WhenPerformedBound(Demon* d) {
+  performed_->WhenBound(d);
+}
 
-  void Accept(ModelVisitor* visitor) const override {
-    visitor->VisitIntervalVariable(this, "", 0, NullInterval());
-  }
+void StartVarIntervalVar::Accept(ModelVisitor* visitor) const {
+  visitor->VisitIntervalVariable(this, "", 0, NullInterval());
+}
 
-  IntExpr* StartExpr() override { return start_; }
-  IntExpr* DurationExpr() override { return solver()->MakeIntConst(duration_); }
-  IntExpr* EndExpr() override {
-    return solver()->MakeSum(StartExpr(), duration_);
-  }
-  IntExpr* PerformedExpr() override { return performed_; }
-  IntExpr* SafeStartExpr(int64_t unperformed_value) override {
-    return BuildSafeStartExpr(this, unperformed_value);
-  }
-  IntExpr* SafeDurationExpr(int64_t unperformed_value) override {
-    return BuildSafeDurationExpr(this, unperformed_value);
-  }
-  IntExpr* SafeEndExpr(int64_t unperformed_value) override {
-    return BuildSafeEndExpr(this, unperformed_value);
-  }
+IntExpr* StartVarIntervalVar::StartExpr() { return start_; }
+IntExpr* StartVarIntervalVar::DurationExpr() {
+  return solver()->MakeIntConst(duration_);
+}
+IntExpr* StartVarIntervalVar::EndExpr() {
+  return solver()->MakeSum(StartExpr(), duration_);
+}
+IntExpr* StartVarIntervalVar::PerformedExpr() { return performed_; }
+IntExpr* StartVarIntervalVar::SafeStartExpr(int64_t unperformed_value) {
+  return BuildSafeStartExpr(this, unperformed_value);
+}
+IntExpr* StartVarIntervalVar::SafeDurationExpr(int64_t unperformed_value) {
+  return BuildSafeDurationExpr(this, unperformed_value);
+}
+IntExpr* StartVarIntervalVar::SafeEndExpr(int64_t unperformed_value) {
+  return BuildSafeEndExpr(this, unperformed_value);
+}
 
-  void Process() override { LOG(FATAL) << "Should not be here"; }
+void StartVarIntervalVar::Process() { LOG(FATAL) << "Should not be here"; }
 
-  void Push() override { LOG(FATAL) << "Should not be here"; }
+void StartVarIntervalVar::Push() { LOG(FATAL) << "Should not be here"; }
 
-  int64_t StoredMin() const { return start_min_.Value(); }
-  int64_t StoredMax() const { return start_max_.Value(); }
-
- private:
-  IntVar* const start_;
-  int64_t duration_;
-  IntVar* const performed_;
-  Rev<int64_t> start_min_;
-  Rev<int64_t> start_max_;
-};
+int64_t StartVarIntervalVar::StoredMin() const { return start_min_.Value(); }
+int64_t StartVarIntervalVar::StoredMax() const { return start_max_.Value(); }
 
 StartVarIntervalVar::StartVarIntervalVar(Solver* s, IntVar* start,
                                          int64_t duration, IntVar* performed,
@@ -1591,109 +1448,89 @@ std::string StartVarIntervalVar::DebugString() const {
   }
 }
 
-class LinkStartVarIntervalVar : public Constraint {
- public:
-  LinkStartVarIntervalVar(Solver* solver, StartVarIntervalVar* interval,
-                          IntVar* start, IntVar* performed)
-      : Constraint(solver),
-        interval_(interval),
-        start_(start),
-        performed_(performed) {}
+// ----- LinkStartVarIntervalVar -----
 
-  ~LinkStartVarIntervalVar() override {}
+LinkStartVarIntervalVar::LinkStartVarIntervalVar(Solver* solver,
+                                                 StartVarIntervalVar* interval,
+                                                 IntVar* start,
+                                                 IntVar* performed)
+    : Constraint(solver),
+      interval_(interval),
+      start_(start),
+      performed_(performed) {}
 
-  void Post() override {
-    Demon* const demon = MakeConstraintDemon0(
-        solver(), this, &LinkStartVarIntervalVar::PerformedBound,
-        "PerformedBound");
-    performed_->WhenBound(demon);
+LinkStartVarIntervalVar::~LinkStartVarIntervalVar() {}
+
+void LinkStartVarIntervalVar::Post() {
+  Demon* const demon = MakeConstraintDemon0(
+      solver(), this, &LinkStartVarIntervalVar::PerformedBound,
+      "PerformedBound");
+  performed_->WhenBound(demon);
+}
+
+void LinkStartVarIntervalVar::InitialPropagate() {
+  if (performed_->Bound()) {
+    PerformedBound();
   }
+}
 
-  void InitialPropagate() override {
-    if (performed_->Bound()) {
-      PerformedBound();
-    }
+void LinkStartVarIntervalVar::PerformedBound() {
+  if (performed_->Min() == 1) {
+    start_->SetRange(interval_->StoredMin(), interval_->StoredMax());
   }
-
-  void PerformedBound() {
-    if (performed_->Min() == 1) {
-      start_->SetRange(interval_->StoredMin(), interval_->StoredMax());
-    }
-  }
-
- private:
-  StartVarIntervalVar* const interval_;
-  IntVar* const start_;
-  IntVar* const performed_;
-};
+}
 
 // ----- FixedInterval -----
 
-class FixedInterval : public IntervalVar {
- public:
-  FixedInterval(Solver* s, int64_t start, int64_t duration,
-                const std::string& name);
-  ~FixedInterval() override {}
+FixedInterval::~FixedInterval() {}
 
-  int64_t StartMin() const override { return start_; }
-  int64_t StartMax() const override { return start_; }
-  void SetStartMin(int64_t m) override;
-  void SetStartMax(int64_t m) override;
-  void SetStartRange(int64_t mi, int64_t ma) override;
-  int64_t OldStartMin() const override { return start_; }
-  int64_t OldStartMax() const override { return start_; }
-  void WhenStartRange(Demon* d) override {}
-  void WhenStartBound(Demon* d) override {}
+int64_t FixedInterval::StartMin() const { return start_; }
+int64_t FixedInterval::StartMax() const { return start_; }
+int64_t FixedInterval::OldStartMin() const { return start_; }
+int64_t FixedInterval::OldStartMax() const { return start_; }
+void FixedInterval::WhenStartRange(Demon* d) {}
+void FixedInterval::WhenStartBound(Demon* d) {}
 
-  int64_t DurationMin() const override { return duration_; }
-  int64_t DurationMax() const override { return duration_; }
-  void SetDurationMin(int64_t m) override;
-  void SetDurationMax(int64_t m) override;
-  void SetDurationRange(int64_t mi, int64_t ma) override;
-  int64_t OldDurationMin() const override { return duration_; }
-  int64_t OldDurationMax() const override { return duration_; }
-  void WhenDurationRange(Demon* d) override {}
-  void WhenDurationBound(Demon* d) override {}
+int64_t FixedInterval::DurationMin() const { return duration_; }
+int64_t FixedInterval::DurationMax() const { return duration_; }
+int64_t FixedInterval::OldDurationMin() const { return duration_; }
+int64_t FixedInterval::OldDurationMax() const { return duration_; }
+void FixedInterval::WhenDurationRange(Demon* d) {}
+void FixedInterval::WhenDurationBound(Demon* d) {}
 
-  int64_t EndMin() const override { return start_ + duration_; }
-  int64_t EndMax() const override { return start_ + duration_; }
-  void SetEndMin(int64_t m) override;
-  void SetEndMax(int64_t m) override;
-  void SetEndRange(int64_t mi, int64_t ma) override;
-  int64_t OldEndMin() const override { return start_ + duration_; }
-  int64_t OldEndMax() const override { return start_ + duration_; }
-  void WhenEndRange(Demon* d) override {}
-  void WhenEndBound(Demon* d) override {}
+int64_t FixedInterval::EndMin() const { return start_ + duration_; }
+int64_t FixedInterval::EndMax() const { return start_ + duration_; }
+int64_t FixedInterval::OldEndMin() const { return start_ + duration_; }
+int64_t FixedInterval::OldEndMax() const { return start_ + duration_; }
+void FixedInterval::WhenEndRange(Demon* d) {}
+void FixedInterval::WhenEndBound(Demon* d) {}
 
-  bool MustBePerformed() const override { return true; }
-  bool MayBePerformed() const override { return true; }
-  void SetPerformed(bool val) override;
-  bool WasPerformedBound() const override { return true; }
-  void WhenPerformedBound(Demon* d) override {}
-  std::string DebugString() const override;
+bool FixedInterval::MustBePerformed() const { return true; }
+bool FixedInterval::MayBePerformed() const { return true; }
+bool FixedInterval::WasPerformedBound() const { return true; }
+void FixedInterval::WhenPerformedBound(Demon* d) {}
 
-  void Accept(ModelVisitor* visitor) const override {
-    visitor->VisitIntervalVariable(this, "", 0, NullInterval());
-  }
+void FixedInterval::Accept(ModelVisitor* visitor) const {
+  visitor->VisitIntervalVariable(this, "", 0, NullInterval());
+}
 
-  IntExpr* StartExpr() override { return solver()->MakeIntConst(start_); }
-  IntExpr* DurationExpr() override { return solver()->MakeIntConst(duration_); }
-  IntExpr* EndExpr() override {
-    return solver()->MakeIntConst(start_ + duration_);
-  }
-  IntExpr* PerformedExpr() override { return solver()->MakeIntConst(1); }
-  IntExpr* SafeStartExpr(int64_t unperformed_value) override {
-    return StartExpr();
-  }
-  IntExpr* SafeDurationExpr(int64_t unperformed_value) override {
-    return DurationExpr();
-  }
-  IntExpr* SafeEndExpr(int64_t unperformed_value) override { return EndExpr(); }
-
- private:
-  const int64_t start_;
-  const int64_t duration_;
-};
+IntExpr* FixedInterval::StartExpr() { return solver()->MakeIntConst(start_); }
+IntExpr* FixedInterval::DurationExpr() {
+  return solver()->MakeIntConst(duration_);
+}
+IntExpr* FixedInterval::EndExpr() {
+  return solver()->MakeIntConst(start_ + duration_);
+}
+IntExpr* FixedInterval::PerformedExpr() { return solver()->MakeIntConst(1); }
+IntExpr* FixedInterval::SafeStartExpr(int64_t unperformed_value) {
+  return StartExpr();
+}
+IntExpr* FixedInterval::SafeDurationExpr(int64_t unperformed_value) {
+  return DurationExpr();
+}
+IntExpr* FixedInterval::SafeEndExpr(int64_t unperformed_value) {
+  return EndExpr();
+}
 
 FixedInterval::FixedInterval(Solver* s, int64_t start, int64_t duration,
                              const std::string& name)
@@ -1774,691 +1611,521 @@ std::string FixedInterval::DebugString() const {
 
 // ----- VariableDurationIntervalVar -----
 
-class VariableDurationIntervalVar : public BaseIntervalVar {
- public:
-  VariableDurationIntervalVar(Solver* s, int64_t start_min, int64_t start_max,
-                              int64_t duration_min, int64_t duration_max,
-                              int64_t end_min, int64_t end_max, bool optional,
-                              const std::string& name)
-      : BaseIntervalVar(s, name),
-        start_(s, this, std::max(start_min, CapSub(end_min, duration_max)),
-               std::min(start_max, CapSub(end_max, duration_min))),
-        duration_(s, this, std::max(duration_min, CapSub(end_min, start_max)),
-                  std::min(duration_max, CapSub(end_max, start_min))),
-        end_(s, this, std::max(end_min, CapAdd(start_min, duration_min)),
-             std::min(end_max, CapAdd(start_max, duration_max))),
-        performed_(s, this, optional) {}
+VariableDurationIntervalVar::VariableDurationIntervalVar(
+    Solver* s, int64_t start_min, int64_t start_max, int64_t duration_min,
+    int64_t duration_max, int64_t end_min, int64_t end_max, bool optional,
+    const std::string& name)
+    : BaseIntervalVar(s, name),
+      start_(s, this, std::max(start_min, CapSub(end_min, duration_max)),
+             std::min(start_max, CapSub(end_max, duration_min))),
+      duration_(s, this, std::max(duration_min, CapSub(end_min, start_max)),
+                std::min(duration_max, CapSub(end_max, start_min))),
+      end_(s, this, std::max(end_min, CapAdd(start_min, duration_min)),
+           std::min(end_max, CapAdd(start_max, duration_max))),
+      performed_(s, this, optional) {}
 
-  ~VariableDurationIntervalVar() override {}
+VariableDurationIntervalVar::~VariableDurationIntervalVar() {}
 
-  int64_t StartMin() const override {
-    CHECK_EQ(performed_.Max(), 1);
-    return start_.Min();
+int64_t VariableDurationIntervalVar::StartMin() const {
+  CHECK_EQ(performed_.Max(), 1);
+  return start_.Min();
+}
+
+int64_t VariableDurationIntervalVar::StartMax() const {
+  CHECK_EQ(performed_.Max(), 1);
+  return start_.Max();
+}
+
+void VariableDurationIntervalVar::SetStartMin(int64_t m) {
+  if (performed_.Max() == 1) {
+    start_.SetMin(m);
   }
+}
 
-  int64_t StartMax() const override {
-    CHECK_EQ(performed_.Max(), 1);
-    return start_.Max();
+void VariableDurationIntervalVar::SetStartMax(int64_t m) {
+  if (performed_.Max() == 1) {
+    start_.SetMax(m);
   }
+}
 
-  void SetStartMin(int64_t m) override {
-    if (performed_.Max() == 1) {
-      start_.SetMin(m);
-    }
+void VariableDurationIntervalVar::SetStartRange(int64_t mi, int64_t ma) {
+  if (performed_.Max() == 1) {
+    start_.SetRange(mi, ma);
   }
+}
 
-  void SetStartMax(int64_t m) override {
-    if (performed_.Max() == 1) {
-      start_.SetMax(m);
-    }
+int64_t VariableDurationIntervalVar::OldStartMin() const {
+  CHECK_EQ(performed_.Max(), 1);
+  CHECK(in_process_);
+  return start_.OldMin();
+}
+
+int64_t VariableDurationIntervalVar::OldStartMax() const {
+  CHECK_EQ(performed_.Max(), 1);
+  CHECK(in_process_);
+  return start_.OldMax();
+}
+
+void VariableDurationIntervalVar::WhenStartRange(Demon* d) {
+  if (performed_.Max() == 1) {
+    start_.WhenRange(d);
   }
+}
 
-  void SetStartRange(int64_t mi, int64_t ma) override {
-    if (performed_.Max() == 1) {
-      start_.SetRange(mi, ma);
-    }
+void VariableDurationIntervalVar::WhenStartBound(Demon* d) {
+  if (performed_.Max() == 1) {
+    start_.WhenBound(d);
   }
+}
 
-  int64_t OldStartMin() const override {
-    CHECK_EQ(performed_.Max(), 1);
-    CHECK(in_process_);
-    return start_.OldMin();
+int64_t VariableDurationIntervalVar::DurationMin() const {
+  CHECK_EQ(performed_.Max(), 1);
+  return duration_.Min();
+}
+
+int64_t VariableDurationIntervalVar::DurationMax() const {
+  CHECK_EQ(performed_.Max(), 1);
+  return duration_.Max();
+}
+
+void VariableDurationIntervalVar::SetDurationMin(int64_t m) {
+  if (performed_.Max() == 1) {
+    duration_.SetMin(m);
   }
+}
 
-  int64_t OldStartMax() const override {
-    CHECK_EQ(performed_.Max(), 1);
-    CHECK(in_process_);
-    return start_.OldMax();
+void VariableDurationIntervalVar::SetDurationMax(int64_t m) {
+  if (performed_.Max() == 1) {
+    duration_.SetMax(m);
   }
+}
 
-  void WhenStartRange(Demon* d) override {
-    if (performed_.Max() == 1) {
-      start_.WhenRange(d);
-    }
+void VariableDurationIntervalVar::SetDurationRange(int64_t mi, int64_t ma) {
+  if (performed_.Max() == 1) {
+    duration_.SetRange(mi, ma);
   }
+}
 
-  void WhenStartBound(Demon* d) override {
-    if (performed_.Max() == 1) {
-      start_.WhenBound(d);
-    }
+int64_t VariableDurationIntervalVar::OldDurationMin() const {
+  CHECK_EQ(performed_.Max(), 1);
+  CHECK(in_process_);
+  return duration_.OldMin();
+}
+
+int64_t VariableDurationIntervalVar::OldDurationMax() const {
+  CHECK_EQ(performed_.Max(), 1);
+  CHECK(in_process_);
+  return duration_.OldMax();
+}
+
+void VariableDurationIntervalVar::WhenDurationRange(Demon* d) {
+  if (performed_.Max() == 1) {
+    duration_.WhenRange(d);
   }
+}
 
-  int64_t DurationMin() const override {
-    CHECK_EQ(performed_.Max(), 1);
-    return duration_.Min();
+void VariableDurationIntervalVar::WhenDurationBound(Demon* d) {
+  if (performed_.Max() == 1) {
+    duration_.WhenBound(d);
   }
+}
 
-  int64_t DurationMax() const override {
-    CHECK_EQ(performed_.Max(), 1);
-    return duration_.Max();
+int64_t VariableDurationIntervalVar::EndMin() const {
+  CHECK_EQ(performed_.Max(), 1);
+  return end_.Min();
+}
+
+int64_t VariableDurationIntervalVar::EndMax() const {
+  CHECK_EQ(performed_.Max(), 1);
+  return end_.Max();
+}
+
+void VariableDurationIntervalVar::SetEndMin(int64_t m) {
+  if (performed_.Max() == 1) {
+    end_.SetMin(m);
   }
+}
 
-  void SetDurationMin(int64_t m) override {
-    if (performed_.Max() == 1) {
-      duration_.SetMin(m);
-    }
+void VariableDurationIntervalVar::SetEndMax(int64_t m) {
+  if (performed_.Max() == 1) {
+    end_.SetMax(m);
   }
+}
 
-  void SetDurationMax(int64_t m) override {
-    if (performed_.Max() == 1) {
-      duration_.SetMax(m);
-    }
+void VariableDurationIntervalVar::SetEndRange(int64_t mi, int64_t ma) {
+  if (performed_.Max() == 1) {
+    end_.SetRange(mi, ma);
   }
+}
 
-  void SetDurationRange(int64_t mi, int64_t ma) override {
-    if (performed_.Max() == 1) {
-      duration_.SetRange(mi, ma);
-    }
+int64_t VariableDurationIntervalVar::OldEndMin() const {
+  CHECK_EQ(performed_.Max(), 1);
+  DCHECK(in_process_);
+  return end_.OldMin();
+}
+
+int64_t VariableDurationIntervalVar::OldEndMax() const {
+  CHECK_EQ(performed_.Max(), 1);
+  DCHECK(in_process_);
+  return end_.OldMax();
+}
+
+void VariableDurationIntervalVar::WhenEndRange(Demon* d) {
+  if (performed_.Max() == 1) {
+    end_.WhenRange(d);
   }
+}
 
-  int64_t OldDurationMin() const override {
-    CHECK_EQ(performed_.Max(), 1);
-    CHECK(in_process_);
-    return duration_.OldMin();
+void VariableDurationIntervalVar::WhenEndBound(Demon* d) {
+  if (performed_.Max() == 1) {
+    end_.WhenBound(d);
   }
+}
 
-  int64_t OldDurationMax() const override {
-    CHECK_EQ(performed_.Max(), 1);
-    CHECK(in_process_);
-    return duration_.OldMax();
+bool VariableDurationIntervalVar::MustBePerformed() const {
+  return (performed_.Min() == 1);
+}
+
+bool VariableDurationIntervalVar::MayBePerformed() const {
+  return (performed_.Max() == 1);
+}
+
+void VariableDurationIntervalVar::SetPerformed(bool val) {
+  performed_.SetValue(val);
+}
+
+bool VariableDurationIntervalVar::WasPerformedBound() const {
+  CHECK(in_process_);
+  return performed_.OldMin() == performed_.OldMax();
+}
+
+void VariableDurationIntervalVar::WhenPerformedBound(Demon* d) {
+  performed_.WhenBound(d);
+}
+
+void VariableDurationIntervalVar::Process() {
+  CHECK(!in_process_);
+  in_process_ = true;
+  start_.UpdatePostponedBounds();
+  duration_.UpdatePostponedBounds();
+  end_.UpdatePostponedBounds();
+  performed_.UpdatePostponedValue();
+  set_action_on_fail(cleaner_);
+  if (performed_.Max() == 1) {
+    start_.ProcessDemons();
+    duration_.ProcessDemons();
+    end_.ProcessDemons();
   }
+  performed_.Process();
+  reset_action_on_fail();
+  CleanInProcess();
+  // TODO(user): Replace this enum by a callback.
+  start_.UpdatePreviousBounds();
+  start_.ApplyPostponedBounds(START);
+  duration_.UpdatePreviousBounds();
+  duration_.ApplyPostponedBounds(DURATION);
+  end_.UpdatePreviousBounds();
+  end_.ApplyPostponedBounds(END);
+  performed_.UpdatePreviousValueAndApplyPostponedValue();
+}
 
-  void WhenDurationRange(Demon* d) override {
-    if (performed_.Max() == 1) {
-      duration_.WhenRange(d);
-    }
-  }
-
-  void WhenDurationBound(Demon* d) override {
-    if (performed_.Max() == 1) {
-      duration_.WhenBound(d);
-    }
-  }
-
-  int64_t EndMin() const override {
-    CHECK_EQ(performed_.Max(), 1);
-    return end_.Min();
-  }
-
-  int64_t EndMax() const override {
-    CHECK_EQ(performed_.Max(), 1);
-    return end_.Max();
-  }
-
-  void SetEndMin(int64_t m) override {
-    if (performed_.Max() == 1) {
-      end_.SetMin(m);
-    }
-  }
-
-  void SetEndMax(int64_t m) override {
-    if (performed_.Max() == 1) {
-      end_.SetMax(m);
-    }
-  }
-
-  void SetEndRange(int64_t mi, int64_t ma) override {
-    if (performed_.Max() == 1) {
-      end_.SetRange(mi, ma);
-    }
-  }
-
-  int64_t OldEndMin() const override {
-    CHECK_EQ(performed_.Max(), 1);
-    DCHECK(in_process_);
-    return end_.OldMin();
-  }
-
-  int64_t OldEndMax() const override {
-    CHECK_EQ(performed_.Max(), 1);
-    DCHECK(in_process_);
-    return end_.OldMax();
-  }
-
-  void WhenEndRange(Demon* d) override {
-    if (performed_.Max() == 1) {
-      end_.WhenRange(d);
-    }
-  }
-
-  void WhenEndBound(Demon* d) override {
-    if (performed_.Max() == 1) {
-      end_.WhenBound(d);
-    }
-  }
-
-  bool MustBePerformed() const override { return (performed_.Min() == 1); }
-
-  bool MayBePerformed() const override { return (performed_.Max() == 1); }
-
-  void SetPerformed(bool val) override { performed_.SetValue(val); }
-
-  bool WasPerformedBound() const override {
-    CHECK(in_process_);
-    return performed_.OldMin() == performed_.OldMax();
-  }
-
-  void WhenPerformedBound(Demon* d) override { performed_.WhenBound(d); }
-
-  void Process() override {
-    CHECK(!in_process_);
-    in_process_ = true;
-    start_.UpdatePostponedBounds();
-    duration_.UpdatePostponedBounds();
-    end_.UpdatePostponedBounds();
-    performed_.UpdatePostponedValue();
-    set_action_on_fail(cleaner_);
-    if (performed_.Max() == 1) {
-      start_.ProcessDemons();
-      duration_.ProcessDemons();
-      end_.ProcessDemons();
-    }
-    performed_.Process();
-    reset_action_on_fail();
-    CleanInProcess();
-    // TODO(user): Replace this enum by a callback.
-    start_.UpdatePreviousBounds();
-    start_.ApplyPostponedBounds(START);
-    duration_.UpdatePreviousBounds();
-    duration_.ApplyPostponedBounds(DURATION);
-    end_.UpdatePreviousBounds();
-    end_.ApplyPostponedBounds(END);
-    performed_.UpdatePreviousValueAndApplyPostponedValue();
-  }
-
-  std::string DebugString() const override {
-    const std::string& var_name = name();
-    if (performed_.Max() != 1) {
-      if (!var_name.empty()) {
-        return absl::StrFormat("%s(performed = false)", var_name);
-      } else {
-        return "IntervalVar(performed = false)";
-      }
+std::string VariableDurationIntervalVar::DebugString() const {
+  const std::string& var_name = name();
+  if (performed_.Max() != 1) {
+    if (!var_name.empty()) {
+      return absl::StrFormat("%s(performed = false)", var_name);
     } else {
-      std::string out;
-      if (!var_name.empty()) {
-        out = var_name + "(start = ";
-      } else {
-        out = "IntervalVar(start = ";
-      }
-
-      absl::StrAppendFormat(&out,
-                            "%s, duration = %s, end = %s, performed = %s)",
-                            start_.DebugString(), duration_.DebugString(),
-                            end_.DebugString(), performed_.DebugString());
-      return out;
+      return "IntervalVar(performed = false)";
     }
-  }
-
-  void Accept(ModelVisitor* visitor) const override {
-    visitor->VisitIntervalVariable(this, "", 0, NullInterval());
-  }
-
-  IntExpr* StartExpr() override { return &start_; }
-  IntExpr* DurationExpr() override { return &duration_; }
-  IntExpr* EndExpr() override { return &end_; }
-  IntExpr* PerformedExpr() override { return &performed_; }
-  IntExpr* SafeStartExpr(int64_t unperformed_value) override {
-    return BuildSafeStartExpr(this, unperformed_value);
-  }
-  IntExpr* SafeDurationExpr(int64_t unperformed_value) override {
-    return BuildSafeDurationExpr(this, unperformed_value);
-  }
-  IntExpr* SafeEndExpr(int64_t unperformed_value) override {
-    return BuildSafeEndExpr(this, unperformed_value);
-  }
-
- private:
-  void Push() override {
-    DCHECK(!in_process_);
-    if (performed_.Max() == 1) {
-      // Performs the intersection on all intervals before pushing the
-      // variable onto the queue. This way, we make sure the interval variable
-      // is always in a consistent minimal state.
-      start_.SetRange(CapSub(end_.Min(), duration_.Max()),
-                      CapSub(end_.Max(), duration_.Min()));
-      duration_.SetRange(CapSub(end_.Min(), start_.Max()),
-                         CapSub(end_.Max(), start_.Min()));
-      end_.SetRange(CapAdd(start_.Min(), duration_.Min()),
-                    CapAdd(start_.Max(), duration_.Max()));
+  } else {
+    std::string out;
+    if (!var_name.empty()) {
+      out = var_name + "(start = ";
+    } else {
+      out = "IntervalVar(start = ";
     }
-    EnqueueVar(&handler_);
-    DCHECK(!in_process_);
-  }
 
-  RangeVar start_;
-  RangeVar duration_;
-  RangeVar end_;
-  PerformedVar performed_;
-};
+    absl::StrAppendFormat(&out, "%s, duration = %s, end = %s, performed = %s)",
+                          start_.DebugString(), duration_.DebugString(),
+                          end_.DebugString(), performed_.DebugString());
+    return out;
+  }
+}
+
+void VariableDurationIntervalVar::Accept(ModelVisitor* visitor) const {
+  visitor->VisitIntervalVariable(this, "", 0, NullInterval());
+}
+
+IntExpr* VariableDurationIntervalVar::StartExpr() { return &start_; }
+IntExpr* VariableDurationIntervalVar::DurationExpr() { return &duration_; }
+IntExpr* VariableDurationIntervalVar::EndExpr() { return &end_; }
+IntExpr* VariableDurationIntervalVar::PerformedExpr() { return &performed_; }
+IntExpr* VariableDurationIntervalVar::SafeStartExpr(int64_t unperformed_value) {
+  return BuildSafeStartExpr(this, unperformed_value);
+}
+IntExpr* VariableDurationIntervalVar::SafeDurationExpr(
+    int64_t unperformed_value) {
+  return BuildSafeDurationExpr(this, unperformed_value);
+}
+IntExpr* VariableDurationIntervalVar::SafeEndExpr(int64_t unperformed_value) {
+  return BuildSafeEndExpr(this, unperformed_value);
+}
+
+void VariableDurationIntervalVar::Push() {
+  DCHECK(!in_process_);
+  if (performed_.Max() == 1) {
+    // Performs the intersection on all intervals before pushing the
+    // variable onto the queue. This way, we make sure the interval variable
+    // is always in a consistent minimal state.
+    start_.SetRange(CapSub(end_.Min(), duration_.Max()),
+                    CapSub(end_.Max(), duration_.Min()));
+    duration_.SetRange(CapSub(end_.Min(), start_.Max()),
+                       CapSub(end_.Max(), start_.Min()));
+    end_.SetRange(CapAdd(start_.Min(), duration_.Min()),
+                  CapAdd(start_.Max(), duration_.Max()));
+  }
+  EnqueueVar(&handler_);
+  DCHECK(!in_process_);
+}
 
 // ----- Base synced interval var -----
 
-class FixedDurationSyncedIntervalVar : public IntervalVar {
- public:
-  FixedDurationSyncedIntervalVar(IntervalVar* t, int64_t duration,
-                                 int64_t offset, const std::string& name)
-      : IntervalVar(t->solver(), name),
-        t_(t),
-        duration_(duration),
-        offset_(offset) {}
+// ----- Base synced interval var -----
 
-  // This type is neither copyable nor movable.
-  FixedDurationSyncedIntervalVar(const FixedDurationSyncedIntervalVar&) =
-      delete;
-  FixedDurationSyncedIntervalVar& operator=(
-      const FixedDurationSyncedIntervalVar&) = delete;
-  ~FixedDurationSyncedIntervalVar() override {}
-  int64_t DurationMin() const override { return duration_; }
-  int64_t DurationMax() const override { return duration_; }
-  void SetDurationMin(int64_t m) override {
-    if (m > duration_) {
-      solver()->Fail();
-    }
-  }
-  void SetDurationMax(int64_t m) override {
-    if (m < duration_) {
-      solver()->Fail();
-    }
-  }
-  void SetDurationRange(int64_t mi, int64_t ma) override {
-    if (mi > duration_ || ma < duration_ || mi > ma) {
-      solver()->Fail();
-    }
-  }
-  int64_t OldDurationMin() const override { return duration_; }
-  int64_t OldDurationMax() const override { return duration_; }
-  void WhenDurationRange(Demon* d) override {}
-  void WhenDurationBound(Demon* d) override {}
-  int64_t EndMin() const override { return CapAdd(StartMin(), duration_); }
-  int64_t EndMax() const override { return CapAdd(StartMax(), duration_); }
-  void SetEndMin(int64_t m) override { SetStartMin(CapSub(m, duration_)); }
-  void SetEndMax(int64_t m) override { SetStartMax(CapSub(m, duration_)); }
-  void SetEndRange(int64_t mi, int64_t ma) override {
-    SetStartRange(CapSub(mi, duration_), CapSub(ma, duration_));
-  }
-  int64_t OldEndMin() const override {
-    return CapAdd(OldStartMin(), duration_);
-  }
-  int64_t OldEndMax() const override {
-    return CapAdd(OldStartMax(), duration_);
-  }
-  void WhenEndRange(Demon* d) override { WhenStartRange(d); }
-  void WhenEndBound(Demon* d) override { WhenStartBound(d); }
-  bool MustBePerformed() const override { return t_->MustBePerformed(); }
-  bool MayBePerformed() const override { return t_->MayBePerformed(); }
-  void SetPerformed(bool val) override { t_->SetPerformed(val); }
-  bool WasPerformedBound() const override { return t_->WasPerformedBound(); }
-  void WhenPerformedBound(Demon* d) override { t_->WhenPerformedBound(d); }
+FixedDurationSyncedIntervalVar::FixedDurationSyncedIntervalVar(
+    IntervalVar* t, int64_t duration, int64_t offset, const std::string& name)
+    : IntervalVar(t->solver(), name),
+      t_(t),
+      duration_(duration),
+      offset_(offset) {}
 
- protected:
-  IntervalVar* const t_;
-  const int64_t duration_;
-  const int64_t offset_;
-};
+FixedDurationSyncedIntervalVar::~FixedDurationSyncedIntervalVar() {}
+
+int64_t FixedDurationSyncedIntervalVar::DurationMin() const {
+  return duration_;
+}
+int64_t FixedDurationSyncedIntervalVar::DurationMax() const {
+  return duration_;
+}
+void FixedDurationSyncedIntervalVar::SetDurationMin(int64_t m) {
+  if (m > duration_) {
+    solver()->Fail();
+  }
+}
+void FixedDurationSyncedIntervalVar::SetDurationMax(int64_t m) {
+  if (m < duration_) {
+    solver()->Fail();
+  }
+}
+void FixedDurationSyncedIntervalVar::SetDurationRange(int64_t mi, int64_t ma) {
+  if (mi > duration_ || ma < duration_ || mi > ma) {
+    solver()->Fail();
+  }
+}
+int64_t FixedDurationSyncedIntervalVar::OldDurationMin() const {
+  return duration_;
+}
+int64_t FixedDurationSyncedIntervalVar::OldDurationMax() const {
+  return duration_;
+}
+void FixedDurationSyncedIntervalVar::WhenDurationRange(Demon* d) {}
+void FixedDurationSyncedIntervalVar::WhenDurationBound(Demon* d) {}
+int64_t FixedDurationSyncedIntervalVar::EndMin() const {
+  return CapAdd(StartMin(), duration_);
+}
+int64_t FixedDurationSyncedIntervalVar::EndMax() const {
+  return CapAdd(StartMax(), duration_);
+}
+void FixedDurationSyncedIntervalVar::SetEndMin(int64_t m) {
+  SetStartMin(CapSub(m, duration_));
+}
+void FixedDurationSyncedIntervalVar::SetEndMax(int64_t m) {
+  SetStartMax(CapSub(m, duration_));
+}
+void FixedDurationSyncedIntervalVar::SetEndRange(int64_t mi, int64_t ma) {
+  SetStartRange(CapSub(mi, duration_), CapSub(ma, duration_));
+}
+int64_t FixedDurationSyncedIntervalVar::OldEndMin() const {
+  return CapAdd(OldStartMin(), duration_);
+}
+int64_t FixedDurationSyncedIntervalVar::OldEndMax() const {
+  return CapAdd(OldStartMax(), duration_);
+}
+void FixedDurationSyncedIntervalVar::WhenEndRange(Demon* d) {
+  WhenStartRange(d);
+}
+void FixedDurationSyncedIntervalVar::WhenEndBound(Demon* d) {
+  WhenStartBound(d);
+}
+bool FixedDurationSyncedIntervalVar::MustBePerformed() const {
+  return t_->MustBePerformed();
+}
+bool FixedDurationSyncedIntervalVar::MayBePerformed() const {
+  return t_->MayBePerformed();
+}
+void FixedDurationSyncedIntervalVar::SetPerformed(bool val) {
+  t_->SetPerformed(val);
+}
+bool FixedDurationSyncedIntervalVar::WasPerformedBound() const {
+  return t_->WasPerformedBound();
+}
+void FixedDurationSyncedIntervalVar::WhenPerformedBound(Demon* d) {
+  t_->WhenPerformedBound(d);
+}
 
 // ----- Fixed duration interval var synced on start -----
 
-class FixedDurationIntervalVarStartSyncedOnStart
-    : public FixedDurationSyncedIntervalVar {
- public:
-  FixedDurationIntervalVarStartSyncedOnStart(IntervalVar* t, int64_t duration,
-                                             int64_t offset)
-      : FixedDurationSyncedIntervalVar(
-            t, duration, offset,
-            absl::StrFormat(
-                "IntervalStartSyncedOnStart(%s, duration = %d, offset = %d)",
-                t->name(), duration, offset)) {}
-  ~FixedDurationIntervalVarStartSyncedOnStart() override {}
-  int64_t StartMin() const override { return CapAdd(t_->StartMin(), offset_); }
-  int64_t StartMax() const override { return CapAdd(t_->StartMax(), offset_); }
-  void SetStartMin(int64_t m) override { t_->SetStartMin(CapSub(m, offset_)); }
-  void SetStartMax(int64_t m) override { t_->SetStartMax(CapSub(m, offset_)); }
-  void SetStartRange(int64_t mi, int64_t ma) override {
-    t_->SetStartRange(CapSub(mi, offset_), CapSub(ma, offset_));
-  }
-  int64_t OldStartMin() const override {
-    return CapAdd(t_->OldStartMin(), offset_);
-  }
-  int64_t OldStartMax() const override {
-    return CapAdd(t_->OldStartMax(), offset_);
-  }
-  void WhenStartRange(Demon* d) override { t_->WhenStartRange(d); }
-  void WhenStartBound(Demon* d) override { t_->WhenStartBound(d); }
-  IntExpr* StartExpr() override {
-    return solver()->MakeSum(t_->StartExpr(), offset_);
-  }
-  IntExpr* DurationExpr() override { return solver()->MakeIntConst(duration_); }
-  IntExpr* EndExpr() override {
-    return solver()->MakeSum(t_->StartExpr(), offset_ + duration_);
-  }
-  IntExpr* PerformedExpr() override { return t_->PerformedExpr(); }
-  // These methods create expressions encapsulating the start, end
-  // and duration of the interval var. If the interval var is
-  // unperformed, they will return the unperformed_value.
-  IntExpr* SafeStartExpr(int64_t unperformed_value) override {
-    return BuildSafeStartExpr(t_, unperformed_value);
-  }
-  IntExpr* SafeDurationExpr(int64_t unperformed_value) override {
-    return BuildSafeDurationExpr(t_, unperformed_value);
-  }
-  IntExpr* SafeEndExpr(int64_t unperformed_value) override {
-    return BuildSafeEndExpr(t_, unperformed_value);
-  }
-  void Accept(ModelVisitor* visitor) const override {
-    visitor->VisitIntervalVariable(
-        this, ModelVisitor::kStartSyncOnStartOperation, offset_, t_);
-  }
-  std::string DebugString() const override {
-    return absl::StrFormat(
-        "IntervalStartSyncedOnStart(%s, duration = %d, offset = %d)",
-        t_->DebugString(), duration_, offset_);
-  }
-};
+FixedDurationIntervalVarStartSyncedOnStart::
+    FixedDurationIntervalVarStartSyncedOnStart(IntervalVar* t, int64_t duration,
+                                               int64_t offset)
+    : FixedDurationSyncedIntervalVar(
+          t, duration, offset,
+          absl::StrFormat(
+              "IntervalStartSyncedOnStart(%s, duration = %d, offset = %d)",
+              t->name(), duration, offset)) {}
+
+FixedDurationIntervalVarStartSyncedOnStart::
+    ~FixedDurationIntervalVarStartSyncedOnStart() {}
+
+int64_t FixedDurationIntervalVarStartSyncedOnStart::StartMin() const {
+  return CapAdd(t_->StartMin(), offset_);
+}
+int64_t FixedDurationIntervalVarStartSyncedOnStart::StartMax() const {
+  return CapAdd(t_->StartMax(), offset_);
+}
+void FixedDurationIntervalVarStartSyncedOnStart::SetStartMin(int64_t m) {
+  t_->SetStartMin(CapSub(m, offset_));
+}
+void FixedDurationIntervalVarStartSyncedOnStart::SetStartMax(int64_t m) {
+  t_->SetStartMax(CapSub(m, offset_));
+}
+void FixedDurationIntervalVarStartSyncedOnStart::SetStartRange(int64_t mi,
+                                                               int64_t ma) {
+  t_->SetStartRange(CapSub(mi, offset_), CapSub(ma, offset_));
+}
+int64_t FixedDurationIntervalVarStartSyncedOnStart::OldStartMin() const {
+  return CapAdd(t_->OldStartMin(), offset_);
+}
+int64_t FixedDurationIntervalVarStartSyncedOnStart::OldStartMax() const {
+  return CapAdd(t_->OldStartMax(), offset_);
+}
+void FixedDurationIntervalVarStartSyncedOnStart::WhenStartRange(Demon* d) {
+  t_->WhenStartRange(d);
+}
+void FixedDurationIntervalVarStartSyncedOnStart::WhenStartBound(Demon* d) {
+  t_->WhenStartBound(d);
+}
+IntExpr* FixedDurationIntervalVarStartSyncedOnStart::StartExpr() {
+  return solver()->MakeSum(t_->StartExpr(), offset_);
+}
+IntExpr* FixedDurationIntervalVarStartSyncedOnStart::DurationExpr() {
+  return solver()->MakeIntConst(duration_);
+}
+IntExpr* FixedDurationIntervalVarStartSyncedOnStart::EndExpr() {
+  return solver()->MakeSum(t_->StartExpr(), offset_ + duration_);
+}
+IntExpr* FixedDurationIntervalVarStartSyncedOnStart::PerformedExpr() {
+  return t_->PerformedExpr();
+}
+IntExpr* FixedDurationIntervalVarStartSyncedOnStart::SafeStartExpr(
+    int64_t unperformed_value) {
+  return BuildSafeStartExpr(t_, unperformed_value);
+}
+IntExpr* FixedDurationIntervalVarStartSyncedOnStart::SafeDurationExpr(
+    int64_t unperformed_value) {
+  return BuildSafeDurationExpr(t_, unperformed_value);
+}
+IntExpr* FixedDurationIntervalVarStartSyncedOnStart::SafeEndExpr(
+    int64_t unperformed_value) {
+  return BuildSafeEndExpr(t_, unperformed_value);
+}
+void FixedDurationIntervalVarStartSyncedOnStart::Accept(
+    ModelVisitor* visitor) const {
+  visitor->VisitIntervalVariable(this, ModelVisitor::kStartSyncOnStartOperation,
+                                 offset_, t_);
+}
+std::string FixedDurationIntervalVarStartSyncedOnStart::DebugString() const {
+  return absl::StrFormat(
+      "IntervalStartSyncedOnStart(%s, duration = %d, offset = %d)",
+      t_->DebugString(), duration_, offset_);
+}
 
 // ----- Fixed duration interval start synced on end -----
 
-class FixedDurationIntervalVarStartSyncedOnEnd
-    : public FixedDurationSyncedIntervalVar {
- public:
-  FixedDurationIntervalVarStartSyncedOnEnd(IntervalVar* t, int64_t duration,
-                                           int64_t offset)
-      : FixedDurationSyncedIntervalVar(
-            t, duration, offset,
-            absl::StrFormat(
-                "IntervalStartSyncedOnEnd(%s, duration = %d, offset = %d)",
-                t->name(), duration, offset)) {}
-  ~FixedDurationIntervalVarStartSyncedOnEnd() override {}
-  int64_t StartMin() const override { return CapAdd(t_->EndMin(), offset_); }
-  int64_t StartMax() const override { return CapAdd(t_->EndMax(), offset_); }
-  void SetStartMin(int64_t m) override { t_->SetEndMin(CapSub(m, offset_)); }
-  void SetStartMax(int64_t m) override { t_->SetEndMax(CapSub(m, offset_)); }
-  void SetStartRange(int64_t mi, int64_t ma) override {
-    t_->SetEndRange(CapSub(mi, offset_), CapSub(ma, offset_));
-  }
-  int64_t OldStartMin() const override {
-    return CapAdd(t_->OldEndMin(), offset_);
-  }
-  int64_t OldStartMax() const override {
-    return CapAdd(t_->OldEndMax(), offset_);
-  }
-  void WhenStartRange(Demon* d) override { t_->WhenEndRange(d); }
-  void WhenStartBound(Demon* d) override { t_->WhenEndBound(d); }
-  IntExpr* StartExpr() override {
-    return solver()->MakeSum(t_->EndExpr(), offset_);
-  }
-  IntExpr* DurationExpr() override { return solver()->MakeIntConst(duration_); }
-  IntExpr* EndExpr() override {
-    return solver()->MakeSum(t_->EndExpr(), offset_ + duration_);
-  }
-  IntExpr* PerformedExpr() override { return t_->PerformedExpr(); }
-  // These methods create expressions encapsulating the start, end
-  // and duration of the interval var. If the interval var is
-  // unperformed, they will return the unperformed_value.
-  IntExpr* SafeStartExpr(int64_t unperformed_value) override {
-    return BuildSafeStartExpr(t_, unperformed_value);
-  }
-  IntExpr* SafeDurationExpr(int64_t unperformed_value) override {
-    return BuildSafeDurationExpr(t_, unperformed_value);
-  }
-  IntExpr* SafeEndExpr(int64_t unperformed_value) override {
-    return BuildSafeEndExpr(t_, unperformed_value);
-  }
+FixedDurationIntervalVarStartSyncedOnEnd::
+    FixedDurationIntervalVarStartSyncedOnEnd(IntervalVar* t, int64_t duration,
+                                             int64_t offset)
+    : FixedDurationSyncedIntervalVar(
+          t, duration, offset,
+          absl::StrFormat(
+              "IntervalStartSyncedOnEnd(%s, duration = %d, offset = %d)",
+              t->name(), duration, offset)) {}
 
-  void Accept(ModelVisitor* visitor) const override {
-    visitor->VisitIntervalVariable(this, ModelVisitor::kStartSyncOnEndOperation,
-                                   offset_, t_);
-  }
-  std::string DebugString() const override {
-    return absl::StrFormat(
-        "IntervalStartSyncedOnEnd(%s, duration = %d, offset = %d)",
-        t_->DebugString(), duration_, offset_);
-  }
-};
-}  // namespace
+FixedDurationIntervalVarStartSyncedOnEnd::
+    ~FixedDurationIntervalVarStartSyncedOnEnd() {}
 
-// ----- API -----
-
-IntervalVar* Solver::MakeMirrorInterval(IntervalVar* interval_var) {
-  return RegisterIntervalVar(
-      RevAlloc(new MirrorIntervalVar(this, interval_var)));
+int64_t FixedDurationIntervalVarStartSyncedOnEnd::StartMin() const {
+  return CapAdd(t_->EndMin(), offset_);
+}
+int64_t FixedDurationIntervalVarStartSyncedOnEnd::StartMax() const {
+  return CapAdd(t_->EndMax(), offset_);
+}
+void FixedDurationIntervalVarStartSyncedOnEnd::SetStartMin(int64_t m) {
+  t_->SetEndMin(CapSub(m, offset_));
+}
+void FixedDurationIntervalVarStartSyncedOnEnd::SetStartMax(int64_t m) {
+  t_->SetEndMax(CapSub(m, offset_));
+}
+void FixedDurationIntervalVarStartSyncedOnEnd::SetStartRange(int64_t mi,
+                                                             int64_t ma) {
+  t_->SetEndRange(CapSub(mi, offset_), CapSub(ma, offset_));
+}
+int64_t FixedDurationIntervalVarStartSyncedOnEnd::OldStartMin() const {
+  return CapAdd(t_->OldEndMin(), offset_);
+}
+int64_t FixedDurationIntervalVarStartSyncedOnEnd::OldStartMax() const {
+  return CapAdd(t_->OldEndMax(), offset_);
+}
+void FixedDurationIntervalVarStartSyncedOnEnd::WhenStartRange(Demon* d) {
+  t_->WhenEndRange(d);
+}
+void FixedDurationIntervalVarStartSyncedOnEnd::WhenStartBound(Demon* d) {
+  t_->WhenEndBound(d);
+}
+IntExpr* FixedDurationIntervalVarStartSyncedOnEnd::StartExpr() {
+  return solver()->MakeSum(t_->EndExpr(), offset_);
+}
+IntExpr* FixedDurationIntervalVarStartSyncedOnEnd::DurationExpr() {
+  return solver()->MakeIntConst(duration_);
+}
+IntExpr* FixedDurationIntervalVarStartSyncedOnEnd::EndExpr() {
+  return solver()->MakeSum(t_->EndExpr(), offset_ + duration_);
+}
+IntExpr* FixedDurationIntervalVarStartSyncedOnEnd::PerformedExpr() {
+  return t_->PerformedExpr();
+}
+IntExpr* FixedDurationIntervalVarStartSyncedOnEnd::SafeStartExpr(
+    int64_t unperformed_value) {
+  return BuildSafeStartExpr(t_, unperformed_value);
+}
+IntExpr* FixedDurationIntervalVarStartSyncedOnEnd::SafeDurationExpr(
+    int64_t unperformed_value) {
+  return BuildSafeDurationExpr(t_, unperformed_value);
+}
+IntExpr* FixedDurationIntervalVarStartSyncedOnEnd::SafeEndExpr(
+    int64_t unperformed_value) {
+  return BuildSafeEndExpr(t_, unperformed_value);
 }
 
-IntervalVar* Solver::MakeIntervalRelaxedMax(IntervalVar* interval_var) {
-  if (interval_var->MustBePerformed()) {
-    return interval_var;
-  } else {
-    return RegisterIntervalVar(
-        RevAlloc(new IntervalVarRelaxedMax(interval_var)));
-  }
+void FixedDurationIntervalVarStartSyncedOnEnd::Accept(
+    ModelVisitor* visitor) const {
+  visitor->VisitIntervalVariable(this, ModelVisitor::kStartSyncOnEndOperation,
+                                 offset_, t_);
+}
+std::string FixedDurationIntervalVarStartSyncedOnEnd::DebugString() const {
+  return absl::StrFormat(
+      "IntervalStartSyncedOnEnd(%s, duration = %d, offset = %d)",
+      t_->DebugString(), duration_, offset_);
 }
 
-IntervalVar* Solver::MakeIntervalRelaxedMin(IntervalVar* interval_var) {
-  if (interval_var->MustBePerformed()) {
-    return interval_var;
-  } else {
-    return RegisterIntervalVar(
-        RevAlloc(new IntervalVarRelaxedMin(interval_var)));
-  }
-}
-
-void IntervalVar::WhenAnything(Demon* d) {
-  WhenStartRange(d);
-  WhenDurationRange(d);
-  WhenEndRange(d);
-  WhenPerformedBound(d);
-}
-
-IntervalVar* Solver::MakeFixedInterval(int64_t start, int64_t duration,
-                                       const std::string& name) {
-  return RevAlloc(new FixedInterval(this, start, duration, name));
-}
-
-IntervalVar* Solver::MakeFixedDurationIntervalVar(int64_t start_min,
-                                                  int64_t start_max,
-                                                  int64_t duration,
-                                                  bool optional,
-                                                  const std::string& name) {
-  if (start_min == start_max && !optional) {
-    return MakeFixedInterval(start_min, duration, name);
-  } else if (!optional) {
-    return RegisterIntervalVar(RevAlloc(new FixedDurationPerformedIntervalVar(
-        this, start_min, start_max, duration, name)));
-  }
-  return RegisterIntervalVar(RevAlloc(new FixedDurationIntervalVar(
-      this, start_min, start_max, duration, optional, name)));
-}
-
-void Solver::MakeFixedDurationIntervalVarArray(
-    int count, int64_t start_min, int64_t start_max, int64_t duration,
-    bool optional, absl::string_view name, std::vector<IntervalVar*>* array) {
-  CHECK_GT(count, 0);
-  CHECK(array != nullptr);
-  array->clear();
-  for (int i = 0; i < count; ++i) {
-    const std::string var_name = absl::StrCat(name, i);
-    array->push_back(MakeFixedDurationIntervalVar(
-        start_min, start_max, duration, optional, var_name));
-  }
-}
-
-IntervalVar* Solver::MakeFixedDurationIntervalVar(IntVar* start_variable,
-                                                  int64_t duration,
-                                                  const std::string& name) {
-  CHECK(start_variable != nullptr);
-  CHECK_GE(duration, 0);
-  return RegisterIntervalVar(RevAlloc(
-      new StartVarPerformedIntervalVar(this, start_variable, duration, name)));
-}
-
-// Creates an interval var with a fixed duration, and performed var.
-// The duration must be greater than 0.
-IntervalVar* Solver::MakeFixedDurationIntervalVar(IntVar* start_variable,
-                                                  int64_t duration,
-                                                  IntVar* performed_variable,
-                                                  const std::string& name) {
-  CHECK(start_variable != nullptr);
-  CHECK(performed_variable != nullptr);
-  CHECK_GE(duration, 0);
-  if (!performed_variable->Bound()) {
-    StartVarIntervalVar* const interval =
-        reinterpret_cast<StartVarIntervalVar*>(
-            RegisterIntervalVar(RevAlloc(new StartVarIntervalVar(
-                this, start_variable, duration, performed_variable, name))));
-    AddConstraint(RevAlloc(new LinkStartVarIntervalVar(
-        this, interval, start_variable, performed_variable)));
-    return interval;
-  } else if (performed_variable->Min() == 1) {
-    return RegisterIntervalVar(RevAlloc(new StartVarPerformedIntervalVar(
-        this, start_variable, duration, name)));
-  }
-  return nullptr;
-}
-
-void Solver::MakeFixedDurationIntervalVarArray(
-    const std::vector<IntVar*>& start_variables, int64_t duration,
-    absl::string_view name, std::vector<IntervalVar*>* array) {
-  CHECK(array != nullptr);
-  array->clear();
-  for (int i = 0; i < start_variables.size(); ++i) {
-    const std::string var_name = absl::StrCat(name, i);
-    array->push_back(
-        MakeFixedDurationIntervalVar(start_variables[i], duration, var_name));
-  }
-}
-
-// This method fills the vector with interval variables built with
-// the corresponding start variables.
-void Solver::MakeFixedDurationIntervalVarArray(
-    const std::vector<IntVar*>& start_variables,
-    absl::Span<const int64_t> durations, absl::string_view name,
-    std::vector<IntervalVar*>* array) {
-  CHECK(array != nullptr);
-  CHECK_EQ(start_variables.size(), durations.size());
-  array->clear();
-  for (int i = 0; i < start_variables.size(); ++i) {
-    const std::string var_name = absl::StrCat(name, i);
-    array->push_back(MakeFixedDurationIntervalVar(start_variables[i],
-                                                  durations[i], var_name));
-  }
-}
-
-void Solver::MakeFixedDurationIntervalVarArray(
-    const std::vector<IntVar*>& start_variables,
-    absl::Span<const int> durations, absl::string_view name,
-    std::vector<IntervalVar*>* array) {
-  CHECK(array != nullptr);
-  CHECK_EQ(start_variables.size(), durations.size());
-  array->clear();
-  for (int i = 0; i < start_variables.size(); ++i) {
-    const std::string var_name = absl::StrCat(name, i);
-    array->push_back(MakeFixedDurationIntervalVar(start_variables[i],
-                                                  durations[i], var_name));
-  }
-}
-
-void Solver::MakeFixedDurationIntervalVarArray(
-    const std::vector<IntVar*>& start_variables,
-    absl::Span<const int> durations,
-    const std::vector<IntVar*>& performed_variables, absl::string_view name,
-    std::vector<IntervalVar*>* array) {
-  CHECK(array != nullptr);
-  array->clear();
-  for (int i = 0; i < start_variables.size(); ++i) {
-    const std::string var_name = absl::StrCat(name, i);
-    array->push_back(MakeFixedDurationIntervalVar(
-        start_variables[i], durations[i], performed_variables[i], var_name));
-  }
-}
-
-void Solver::MakeFixedDurationIntervalVarArray(
-    const std::vector<IntVar*>& start_variables,
-    absl::Span<const int64_t> durations,
-    const std::vector<IntVar*>& performed_variables, absl::string_view name,
-    std::vector<IntervalVar*>* array) {
-  CHECK(array != nullptr);
-  array->clear();
-  for (int i = 0; i < start_variables.size(); ++i) {
-    const std::string var_name = absl::StrCat(name, i);
-    array->push_back(MakeFixedDurationIntervalVar(
-        start_variables[i], durations[i], performed_variables[i], var_name));
-  }
-}
-
-// Variable Duration Interval Var
-
-IntervalVar* Solver::MakeIntervalVar(int64_t start_min, int64_t start_max,
-                                     int64_t duration_min, int64_t duration_max,
-                                     int64_t end_min, int64_t end_max,
-                                     bool optional, const std::string& name) {
-  return RegisterIntervalVar(RevAlloc(new VariableDurationIntervalVar(
-      this, start_min, start_max, duration_min, duration_max, end_min, end_max,
-      optional, name)));
-}
-
-void Solver::MakeIntervalVarArray(int count, int64_t start_min,
-                                  int64_t start_max, int64_t duration_min,
-                                  int64_t duration_max, int64_t end_min,
-                                  int64_t end_max, bool optional,
-                                  absl::string_view name,
-                                  std::vector<IntervalVar*>* array) {
-  CHECK_GT(count, 0);
-  CHECK(array != nullptr);
-  array->clear();
-  for (int i = 0; i < count; ++i) {
-    const std::string var_name = absl::StrCat(name, i);
-    array->push_back(MakeIntervalVar(start_min, start_max, duration_min,
-                                     duration_max, end_min, end_max, optional,
-                                     var_name));
-  }
-}
-
-// Synced Interval Vars
-IntervalVar* Solver::MakeFixedDurationStartSyncedOnStartIntervalVar(
-    IntervalVar* interval_var, int64_t duration, int64_t offset) {
-  return RegisterIntervalVar(
-      RevAlloc(new FixedDurationIntervalVarStartSyncedOnStart(
-          interval_var, duration, offset)));
-}
-
-IntervalVar* Solver::MakeFixedDurationStartSyncedOnEndIntervalVar(
-    IntervalVar* interval_var, int64_t duration, int64_t offset) {
-  return RegisterIntervalVar(
-      RevAlloc(new FixedDurationIntervalVarStartSyncedOnEnd(interval_var,
-                                                            duration, offset)));
-}
-
-IntervalVar* Solver::MakeFixedDurationEndSyncedOnStartIntervalVar(
-    IntervalVar* interval_var, int64_t duration, int64_t offset) {
-  return RegisterIntervalVar(
-      RevAlloc(new FixedDurationIntervalVarStartSyncedOnStart(
-          interval_var, duration, CapSub(offset, duration))));
-}
-
-IntervalVar* Solver::MakeFixedDurationEndSyncedOnEndIntervalVar(
-    IntervalVar* interval_var, int64_t duration, int64_t offset) {
-  return RegisterIntervalVar(
-      RevAlloc(new FixedDurationIntervalVarStartSyncedOnEnd(
-          interval_var, duration, CapSub(offset, duration))));
-}
 }  // namespace operations_research

@@ -31,7 +31,7 @@ namespace operations_research {
 
 void ActionDemon::Run(Solver* solver) { action_(solver); }
 
-void ClosureDemon::Run(Solver* solver) { closure_(); }
+void ClosureDemon::Run([[maybe_unused]] Solver* solver) { closure_(); }
 
 void TrueConstraint::Post() {}
 void TrueConstraint::InitialPropagate() {}
@@ -128,7 +128,7 @@ void MapDomain::VarBound() {
 }
 std::string MapDomain::DebugString() const {
   return absl::StrFormat("MapDomain(%s, [%s])", var_->DebugString(),
-                         JoinDebugStringPtr(actives_, ", "));
+                         JoinDebugStringPtr(actives_));
 }
 
 void MapDomain::Accept(ModelVisitor* visitor) const {
@@ -175,9 +175,9 @@ void LexicalLessOrEqual::InitialPropagate() {
 }
 
 std::string LexicalLessOrEqual::DebugString() const {
-  return absl::StrFormat(
-      "LexicalLessOrEqual([%s], [%s], [%s])", JoinDebugStringPtr(left_, ", "),
-      JoinDebugStringPtr(right_, ", "), absl::StrJoin(offsets_, ", "));
+  return absl::StrFormat("LexicalLessOrEqual([%s], [%s], [%s])",
+                         JoinDebugStringPtr(left_), JoinDebugStringPtr(right_),
+                         absl::StrJoin(offsets_, ", "));
 }
 
 void LexicalLessOrEqual::Accept(ModelVisitor* visitor) const {
@@ -248,8 +248,7 @@ void InversePermutationConstraint::PropagateHolesOfRightVarToLeft(int index) {
 
 std::string InversePermutationConstraint::DebugString() const {
   return absl::StrFormat("InversePermutationConstraint([%s], [%s])",
-                         JoinDebugStringPtr(left_, ", "),
-                         JoinDebugStringPtr(right_, ", "));
+                         JoinDebugStringPtr(left_), JoinDebugStringPtr(right_));
 }
 
 void InversePermutationConstraint::Accept(ModelVisitor* visitor) const {
@@ -344,10 +343,11 @@ void IndexOfFirstMaxValue::InitialPropagate() {
 
 std::string IndexOfFirstMaxValue::DebugString() const {
   return absl::StrFormat("IndexMax(%s, [%s])", index_->DebugString(),
-                         JoinDebugStringPtr(vars_, ", "));
+                         JoinDebugStringPtr(vars_));
 }
 
-void IndexOfFirstMaxValue::Accept(ModelVisitor* visitor) const {
+void IndexOfFirstMaxValue::Accept(
+    [[maybe_unused]] ModelVisitor* visitor) const {
   // TODO(user): Implement me.
 }
 

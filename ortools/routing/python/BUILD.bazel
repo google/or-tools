@@ -62,7 +62,7 @@ pybind_extension(
 )
 
 py_library(
-    name = "routing_lib",
+    name = "routing_py",
     visibility = ["//visibility:public"],
     deps = [
         ":routing",
@@ -83,7 +83,7 @@ py_test(
     size = "medium",
     srcs = ["routing_test.py"],
     deps = [
-        ":routing_lib",
+        ":routing_py",
         requirement("absl-py"),
     ],
 )
@@ -93,7 +93,7 @@ py_test(
     size = "small",
     srcs = ["dimension_test.py"],
     deps = [
-        ":routing_lib",
+        ":routing_py",
         requirement("absl-py"),
     ],
 )
@@ -103,7 +103,7 @@ py_test(
     size = "small",
     srcs = ["index_manager_test.py"],
     deps = [
-        ":routing_lib",
+        ":routing_py",
         requirement("absl-py"),
     ],
 )
@@ -113,7 +113,7 @@ py_test(
     size = "medium",
     srcs = ["sat_test.py"],
     deps = [
-        ":routing_lib",
+        ":routing_py",
         requirement("absl-py"),
     ],
 )

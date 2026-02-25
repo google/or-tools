@@ -17,20 +17,16 @@
 #include <cstdint>
 #include <functional>
 #include <limits>
-#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraints.h"
 #include "ortools/constraint_solver/expressions.h"
-#include "ortools/constraint_solver/model_cache.h"
-#include "ortools/constraint_solver/utilities.h"
 #include "ortools/util/range_minimum_query.h"
 #include "ortools/util/string_array.h"
 
@@ -993,8 +989,8 @@ std::string IntExprArrayElementCt::DebugString() const {
         index_->DebugString(), target_var_->DebugString());
   } else {
     return absl::StrFormat("IntExprArrayElement([%s], %s) == %s",
-                           JoinDebugStringPtr(vars_, ", "),
-                           index_->DebugString(), target_var_->DebugString());
+                           JoinDebugStringPtr(vars_), index_->DebugString(),
+                           target_var_->DebugString());
   }
 }
 
@@ -1050,7 +1046,7 @@ void IntExprArrayElementCstCt::PropagateIndex() {
 
 std::string IntExprArrayElementCstCt::DebugString() const {
   return absl::StrFormat("IntExprArrayElement([%s], %s) == %d",
-                         JoinDebugStringPtr(vars_, ", "), index_->DebugString(),
+                         JoinDebugStringPtr(vars_), index_->DebugString(),
                          target_);
 }
 
@@ -1129,7 +1125,7 @@ void IntExprIndexOfCt::PropagateIndex() {
 
 std::string IntExprIndexOfCt::DebugString() const {
   return absl::StrFormat("IntExprIndexOf([%s], %s) == %d",
-                         JoinDebugStringPtr(vars_, ", "), index_->DebugString(),
+                         JoinDebugStringPtr(vars_), index_->DebugString(),
                          target_);
 }
 
