@@ -3619,90 +3619,84 @@ void LinkVarExpr(Solver* s, IntExpr* expr, IntVar* var) {
 }
 
 IntVar* NewVarPlusInt(Solver* s, IntVar* var, int64_t value) {
+  if (value == 0) return var;
   switch (var->VarType()) {
     case IntVar::DOMAIN_INT_VAR: {
-      return RegisterIntExpr(
-                 s->RevAlloc(new PlusCstDomainIntVar(
-                     s, reinterpret_cast<DomainIntVar*>(var), value)))
-          ->Var();
+      return RegisterIntVar(s->RevAlloc(new PlusCstDomainIntVar(
+          s, reinterpret_cast<DomainIntVar*>(var), value)));
     }
     case IntVar::CONST_VAR: {
       DCHECK(!AddOverflows(var->Min(), value));
-      return RegisterIntExpr(s->MakeIntConst(var->Min() + value))->Var();
+      return RegisterIntVar(s->MakeIntConst(var->Min() + value));
     }
     case IntVar::VAR_ADD_CST: {
-      PlusCstVar* const add_var = reinterpret_cast<PlusCstVar*>(var);
-      IntVar* const sub_var = add_var->SubVar();
-      const int64_t new_constant = value + add_var->Constant();
+      PlusCstVar* const var_add_cst = reinterpret_cast<PlusCstVar*>(var);
+      IntVar* const sub_var = var_add_cst->SubVar();
+      DCHECK(!AddOverflows(value, var_add_cst->Constant()));
+      const int64_t new_constant = value + var_add_cst->Constant();
       if (new_constant == 0) {
         return sub_var;
       } else {
         if (sub_var->VarType() == IntVar::DOMAIN_INT_VAR) {
           DomainIntVar* const dvar = reinterpret_cast<DomainIntVar*>(sub_var);
-          return RegisterIntExpr(s->RevAlloc(new PlusCstDomainIntVar(
-                                     s, dvar, new_constant)))
-              ->Var();
+          return RegisterIntVar(
+              s->RevAlloc(new PlusCstDomainIntVar(s, dvar, new_constant)));
         } else {
-          return RegisterIntExpr(
-                     s->RevAlloc(new PlusCstIntVar(s, sub_var, new_constant)))
-              ->Var();
+          return RegisterIntVar(
+              s->RevAlloc(new PlusCstIntVar(s, sub_var, new_constant)));
         }
       }
-      break;
     }
     case IntVar::CST_SUB_VAR: {
-      SubCstIntVar* const add_var = reinterpret_cast<SubCstIntVar*>(var);
-      IntVar* const sub_var = add_var->SubVar();
-      const int64_t new_constant = value + add_var->Constant();
-      return RegisterIntExpr(
-                 s->RevAlloc(new SubCstIntVar(s, sub_var, new_constant)))
-          ->Var();
-      break;
+      SubCstIntVar* const cst_sub_var = reinterpret_cast<SubCstIntVar*>(var);
+      IntVar* const sub_var = cst_sub_var->SubVar();
+      DCHECK(!AddOverflows(value, cst_sub_var->Constant()));
+      const int64_t new_constant = value + cst_sub_var->Constant();
+      return NewIntMinusVar(s, new_constant, sub_var);
     }
     case IntVar::OPP_VAR: {
-      OppIntVar* const add_var = reinterpret_cast<OppIntVar*>(var);
-      IntVar* const sub_var = add_var->SubVar();
-      return RegisterIntExpr(s->RevAlloc(new SubCstIntVar(s, sub_var, value)))
-          ->Var();
-      break;
+      OppIntVar* const opp_var = reinterpret_cast<OppIntVar*>(var);
+      IntVar* const sub_var = opp_var->SubVar();
+      return NewIntMinusVar(s, value, sub_var);
     }
     default:
-      return RegisterIntExpr(s->RevAlloc(new PlusCstIntVar(s, var, value)))
-          ->Var();
+      return RegisterIntVar(s->RevAlloc(new PlusCstIntVar(s, var, value)));
   }
 }
 
 IntVar* NewIntMinusVar(Solver* s, int64_t value, IntVar* var) {
   switch (var->VarType()) {
     case IntVar::VAR_ADD_CST: {
-      PlusCstVar* const add_var = reinterpret_cast<PlusCstVar*>(var);
-      IntVar* const sub_var = add_var->SubVar();
-      const int64_t new_constant = value - add_var->Constant();
+      PlusCstVar* const cst_add_var = reinterpret_cast<PlusCstVar*>(var);
+      IntVar* const sub_var = cst_add_var->SubVar();
+      DCHECK(!SubOverflows(value, cst_add_var->Constant()));
+      const int64_t new_constant = value - cst_add_var->Constant();
       if (new_constant == 0) {
         return sub_var;
       } else {
-        return RegisterIntExpr(
-                   s->RevAlloc(new SubCstIntVar(s, sub_var, new_constant)))
-            ->Var();
+        return RegisterIntVar(
+            s->RevAlloc(new SubCstIntVar(s, sub_var, new_constant)));
       }
-      break;
     }
     case IntVar::CST_SUB_VAR: {
-      SubCstIntVar* const add_var = reinterpret_cast<SubCstIntVar*>(var);
-      IntVar* const sub_var = add_var->SubVar();
-      const int64_t new_constant = value - add_var->Constant();
-      return s->MakeSum(sub_var, new_constant)->Var();
-      break;
+      SubCstIntVar* const cst_sub_var = reinterpret_cast<SubCstIntVar*>(var);
+      IntVar* const sub_var = cst_sub_var->SubVar();
+      DCHECK(!SubOverflows(value, cst_sub_var->Constant()));
+      const int64_t new_constant = value - cst_sub_var->Constant();
+      return NewVarPlusInt(s, sub_var, new_constant);
     }
     case IntVar::OPP_VAR: {
       OppIntVar* const add_var = reinterpret_cast<OppIntVar*>(var);
       IntVar* const sub_var = add_var->SubVar();
-      return s->MakeSum(sub_var, value)->Var();
-      break;
+      return NewVarPlusInt(s, sub_var, value);
     }
-    default:
-      return RegisterIntExpr(s->RevAlloc(new SubCstIntVar(s, var, value)))
-          ->Var();
+    default: {
+      if (value == 0) {
+        return RegisterIntVar(s->RevAlloc(new OppIntVar(s, var)));
+      } else {
+        return RegisterIntVar(s->RevAlloc(new SubCstIntVar(s, var, value)));
+      }
+    }
   }
 }
 

@@ -5959,6 +5959,7 @@ IntExpr* Solver::MakeDifference(IntExpr* left, IntExpr* right) {
 IntExpr* Solver::MakeDifference(int64_t value, IntExpr* expr) {
   CHECK_EQ(this, expr->solver());
   if (expr->Bound()) {
+    DCHECK(!SubOverflows(value, expr->Min()));
     return MakeIntConst(value - expr->Min());
   }
   if (value == 0) {
@@ -5989,7 +5990,7 @@ IntExpr* Solver::MakeOpposite(IntExpr* expr) {
       Cache()->FindExprExpression(expr, ModelCache::EXPR_OPPOSITE);
   if (result == nullptr) {
     if (expr->IsVar()) {
-      result = RegisterIntVar(RevAlloc(new OppIntExpr(this, expr))->Var());
+      result = NewIntMinusVar(this, 0, expr->Var());
     } else {
       result = RegisterIntExpr(RevAlloc(new OppIntExpr(this, expr)));
     }

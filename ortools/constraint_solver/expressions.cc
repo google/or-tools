@@ -1588,11 +1588,11 @@ void IntSquare::SetMax(int64_t m) {
 bool IntSquare::Bound() const { return expr_->Bound(); }
 
 std::string IntSquare::name() const {
-  return absl::StrFormat("Square(%s)", expr_->name());
+  return absl::StrFormat("IntSquare(%s)", expr_->name());
 }
 
 std::string IntSquare::DebugString() const {
-  return absl::StrFormat("Square(%s)", expr_->DebugString());
+  return absl::StrFormat("IntSquare(%s)", expr_->DebugString());
 }
 
 void IntSquare::WhenRange(Demon* d) { expr_->WhenRange(d); }
