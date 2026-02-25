@@ -670,7 +670,7 @@ std::vector<Literal> CreateAlternativeLiteralsWithView(
     literals.push_back(lit);
     CHECK(lc_builder.AddLiteralTerm(lit, IntegerValue(1)));
   }
-  model->Add(ExactlyOneConstraint(literals));
+  AddExactlyOneConstraint(literals, model);
   relaxation->linear_constraints.push_back(lc_builder.Build());
   return literals;
 }

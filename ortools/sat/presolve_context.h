@@ -33,6 +33,7 @@
 #include "ortools/base/base_export.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
+#include "ortools/sat/lrat_proof_handler.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/presolve_util.h"
 #include "ortools/sat/sat_parameters.pb.h"

@@ -606,7 +606,7 @@ TEST(LiteralTableConstraint, PropagationFromLiterals) {
     for (int j = 0; j < 3; ++j) {
       literals[i].push_back(Literal(model.Add(NewBooleanVariable()), true));
     }
-    model.Add(ExactlyOneConstraint(literals[i]));
+    AddExactlyOneConstraint(literals[i], &model);
   }
 
   // Tuples (0, 0, 0), (1, 1, 1), (2, 2, 2), (0, 1, 2).
@@ -641,7 +641,7 @@ TEST(LiteralTableConstraint, PropagationFromSelected) {
     for (int j = 0; j < 3; ++j) {
       literals[i].push_back(Literal(model.Add(NewBooleanVariable()), true));
     }
-    model.Add(ExactlyOneConstraint(literals[i]));
+    AddExactlyOneConstraint(literals[i], &model);
   }
 
   // Tuples (0, 0, 0), (1, 1, 1), (2, 2, 2), (0, 1, 2).

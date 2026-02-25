@@ -15,6 +15,7 @@
 # [START program]
 """Encodes a convex piecewise linear function."""
 
+
 from ortools.sat.python import cp_model
 
 

@@ -52,7 +52,6 @@
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/solution_crush.h"
 #include "ortools/sat/symmetry_util.h"
-#include "ortools/sat/util.h"
 #include "ortools/util/affine_relation.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/saturated_arithmetic.h"

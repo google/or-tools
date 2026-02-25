@@ -113,9 +113,9 @@ py_library(
     visibility = ["//visibility:public"],
     deps = [
         ":cp_model_helper",
+        "//ortools/util/python:sorted_interval_list",
         requirement("numpy"),
         requirement("pandas"),
-        "//ortools/util/python:sorted_interval_list",
     ],
 )
 

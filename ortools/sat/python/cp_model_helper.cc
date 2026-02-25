@@ -30,12 +30,16 @@
 #include <tuple>
 #include <vector>
 
+#define RunningOnValgrind AbslRunningOnValgrind
+#define ValgrindSlowdown AbslValgrindSlowdown
 #include "absl/container/flat_hash_map.h"
 #include "absl/functional/any_invocable.h"
 #include "absl/log/check.h"
 #include "absl/strings/escaping.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
+#undef RunningOnValgrind
+#undef ValgrindSlowdown
 #include "ortools/port/proto_utils.h"  // IWYU: keep
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"

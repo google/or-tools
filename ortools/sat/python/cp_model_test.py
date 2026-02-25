@@ -18,9 +18,9 @@ import itertools
 import sys
 import time
 
-from absl.testing import absltest
 import numpy as np
 import pandas as pd
+from absl.testing import absltest
 
 from ortools.sat.python import cp_model
 from ortools.sat.python import cp_model_helper as cmh

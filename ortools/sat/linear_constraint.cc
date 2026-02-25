@@ -18,6 +18,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <limits>
+#include <numeric>
 #include <string>
 #include <utility>
 #include <vector>
@@ -27,7 +28,6 @@
 #include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
-#include "ortools/base/mathutil.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
@@ -270,7 +270,7 @@ IntegerValue ComputeGcd(absl::Span<const IntegerValue> values) {
   if (values.empty()) return IntegerValue(1);
   int64_t gcd = 0;
   for (const IntegerValue value : values) {
-    gcd = MathUtil::GCD64(gcd, std::abs(value.value()));
+    gcd = std::gcd(gcd, std::abs(value.value()));
     if (gcd == 1) break;
   }
   if (gcd < 0) return IntegerValue(1);  // Can happen with kint64min.

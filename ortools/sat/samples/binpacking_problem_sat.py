@@ -15,6 +15,7 @@
 # [START program]
 """Solves a binpacking problem using the CP-SAT solver."""
 
+
 from ortools.sat.python import cp_model
 
 

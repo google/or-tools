@@ -104,7 +104,7 @@ bool SolveUsingConstraint(const EnergyInstance& instance) {
       energy_literals.push_back(lit);
       energy_literals_values_values.push_back({lit, e, 1});
     }
-    model.Add(ExactlyOneConstraint(energy_literals));
+    AddExactlyOneConstraint(energy_literals, &model);
     decomposed_energies.push_back(energy_literals_values_values);
   }
 

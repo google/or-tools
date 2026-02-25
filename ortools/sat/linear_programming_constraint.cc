@@ -40,7 +40,6 @@
 #include "absl/types/span.h"
 #include "ortools/algorithms/binary_search.h"
 #include "ortools/base/log_severity.h"
-#include "ortools/base/mathutil.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/glop/revised_simplex.h"
@@ -2014,7 +2013,7 @@ void LinearProgrammingConstraint::AddMirCuts() {
       }
 
       const IntegerValue gcd = IntegerValue(
-          MathUtil::GCD64(std::abs(mult1.value()), std::abs(mult2.value())));
+          std::gcd(std::abs(mult1.value()), std::abs(mult2.value())));
       CHECK_NE(gcd, 0);
       mult1 /= gcd;
       mult2 /= gcd;
@@ -2952,7 +2951,8 @@ LinearProgrammingConstraint::HeuristicLpReducedCostAverageBranching() {
 }
 
 IntegerLiteral LinearProgrammingConstraint::LPReducedCostAverageDecision() {
-  // Select noninstantiated variable with highest positive average reduced cost.
+  // Select non-instantiated variable with highest positive average reduced
+  // cost.
   int selected_index = -1;
   const int size = positions_by_decreasing_rc_score_.size();
   rc_rev_int_repository_.SaveState(&rev_rc_start_);

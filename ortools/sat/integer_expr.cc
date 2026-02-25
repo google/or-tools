@@ -18,10 +18,12 @@
 #include <cstdlib>
 #include <cstring>
 #include <limits>
+#include <numeric>
 #include <utility>
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/numeric/int128.h"
 #include "absl/types/span.h"
 #include "ortools/base/mathutil.h"
@@ -497,7 +499,7 @@ bool LevelZeroEquality::Propagate() {
       sum += coeffs_[i] * integer_trail_->LowerBound(vars_[i]);
       continue;
     }
-    gcd = MathUtil::GCD64(gcd, std::abs(coeffs_[i].value()));
+    gcd = std::gcd(gcd, std::abs(coeffs_[i].value()));
     if (gcd == 1) break;
   }
   if (gcd == 0) return true;  // All fixed.

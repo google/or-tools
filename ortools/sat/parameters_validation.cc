@@ -204,6 +204,14 @@ std::string ValidateParameters(const SatParameters& params) {
       return "check_lrat_proof and output_lrat_proof are only supported with "
              "symmetry_level <= 1";
     }
+    if (params.use_chronological_backtracking()) {
+      return "check_lrat_proof and output_lrat_proof are only supported with "
+             "use_chronological_backtracking = false";
+    }
+    if (params.inprocessing_use_sat_sweeping()) {
+      return "check_lrat_proof and output_lrat_proof are only supported with "
+             "inprocessing_use_sat_sweeping = false";
+    }
   }
 
   if (!params.subsolvers().empty() || !params.extra_subsolvers().empty()) {

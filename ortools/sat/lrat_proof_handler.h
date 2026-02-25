@@ -247,10 +247,6 @@ class LratProofHandler {
   // and has not been deleted yet.
   bool HasBinaryClause(Literal a, Literal b) const;
 
-  // Returns true if the given binary clause is in the BinaryImplicationGraph.
-  // By hypothesis, it is also in the LRAT proof.
-  bool HasImplicationGraphClause(Literal a, Literal b) const;
-
   // Reserved for the BinaryImplicationGraph implementation:
   // - marks a clause as being in the BinaryImplicationGraph. The clause must
   // be added to the LRAT proof first.

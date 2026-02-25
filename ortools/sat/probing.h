@@ -384,10 +384,9 @@ class FailedLiteralProbing {
   // Fixes all the literals in to_fix_, and finish propagation.
   bool ProcessLiteralsToFix();
 
-  // Deletes the temporary LRAT clauses in trail_implication_clauses_ for all
-  // trail indices greater than the current trail index.
-  void DeleteTemporaryLratImplicationsAfterBacktrack();
-  void DeleteTemporaryLratImplicationsStartingFrom(int trail_index);
+  // Resizes trail_implication_clauses_ to the current or given trail index.
+  void ClearTrailImplicationClausesAfterBacktrack();
+  void ClearTrailImplicationClausesStartingFrom(int trail_index);
 
   SatSolver* sat_solver_;
   BinaryImplicationGraph* implication_graph_;

@@ -1018,9 +1018,8 @@ bool BinaryImplicationGraph::HasNoDuplicates() {
 // use them here to maintains invariant? Explore this when we start cleaning our
 // clauses using equivalence during search. We can easily do it for every
 // conflict we learn instead of here.
-bool BinaryImplicationGraph::AddBinaryClauseInternal(
-    Literal a, Literal b, bool change_reason,
-    bool delete_non_representative_id) {
+bool BinaryImplicationGraph::AddBinaryClauseInternal(Literal a, Literal b,
+                                                     bool change_reason) {
   SCOPED_TIME_STAT(&stats_);
   DCHECK_GE(a.Index(), 0);
   DCHECK_GE(b.Index(), 0);
@@ -1051,13 +1050,7 @@ bool BinaryImplicationGraph::AddBinaryClauseInternal(
       lrat_proof_handler_->AddInferredClause(
           rep_a == rep_b ? ClausePtr(rep_a) : ClausePtr(rep_a, rep_b), proof);
       if (a != b) {
-        if (change_reason) {
-          // Remember the non-canonical clause so we can delete it on restart.
-          changed_reasons_on_trail_.insert(ClausePtr(a, b));
-          lrat_proof_handler_->AddImplicationGraphClause(a, b);
-        } else if (delete_non_representative_id) {
-          lrat_proof_handler_->DeleteImplicationGraphClause(old_clause);
-        }
+        lrat_proof_handler_->DeleteImplicationGraphClause(old_clause);
       }
     }
     if (rep_a != rep_b) {
@@ -2104,13 +2097,6 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
   WallTimer wall_timer;
   wall_timer.Start();
   log_info |= VLOG_IS_ON(1);
-
-  if (trail_->CurrentDecisionLevel() == 0) {
-    for (const ClausePtr clause : changed_reasons_on_trail_) {
-      lrat_proof_handler_->DeleteImplicationGraphClause(clause);
-    }
-    changed_reasons_on_trail_.clear();
-  }
 
   // Lets remove all fixed/duplicate variables first.
   if (!RemoveDuplicatesAndFixedVariables()) return false;
@@ -3589,6 +3575,9 @@ bool BinaryImplicationGraph::InvariantsAreOk() {
   int num_redundant = 0;
   int num_fixed = 0;
   TimeLimitCheckEveryNCalls time_limit_check(100, time_limit_);
+  const absl::flat_hash_map<ClausePtr, bool>* binary_clauses =
+      lrat_proof_handler_ != nullptr ? &lrat_proof_handler_->BinaryClauses()
+                                     : nullptr;
   for (LiteralIndex a_index(0); a_index < implications_and_amos_.size();
        ++a_index) {
     if (time_limit_check.LimitReached()) return true;
@@ -3619,12 +3608,14 @@ bool BinaryImplicationGraph::InvariantsAreOk() {
     }
     for (const Literal b : implications_and_amos_[a_index].literals()) {
       seen.insert({a_index, b.Index()});
-      if (!is_removed_[b.Index()] && lrat_proof_handler_ != nullptr &&
-          !lrat_proof_handler_->HasImplicationGraphClause(
-              Literal(a_index).Negated(), b)) {
-        LOG(ERROR) << "No LRAT binary clause for " << Literal(a_index) << " => "
-                   << b;
-        return false;
+      if (binary_clauses != nullptr && !is_removed_[b.Index()]) {
+        const auto it =
+            binary_clauses->find(ClausePtr(Literal(a_index).Negated(), b));
+        if (it == binary_clauses->end() || !it->second) {
+          LOG(ERROR) << "No LRAT binary clause for " << Literal(a_index)
+                     << " => " << b;
+          return false;
+        }
       }
     }
   }
@@ -3674,11 +3665,9 @@ bool BinaryImplicationGraph::InvariantsAreOk() {
   }
 
   // Check that we don't have more LRAT binary clauses than implications.
-  if (lrat_proof_handler_ != nullptr) {
-    for (const auto [binary_clause, in_implication_graph] :
-         lrat_proof_handler_->BinaryClauses()) {
+  if (binary_clauses != nullptr) {
+    for (const auto [binary_clause, in_implication_graph] : *binary_clauses) {
       if (!in_implication_graph) continue;
-      if (changed_reasons_on_trail_.contains(binary_clause)) continue;
       if (!seen.contains({binary_clause.GetFirstLiteral().Negated(),
                           binary_clause.GetSecondLiteral()})) {
         LOG(ERROR) << "No implication for LRAT binary clause "

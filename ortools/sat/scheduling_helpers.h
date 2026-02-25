@@ -650,6 +650,8 @@ class SchedulingDemandHelper {
   // after the creation of the helper.
   void InitDecomposedEnergies();
 
+  std::string TaskDebugString(int t) const;
+
  private:
   IntegerValue SimpleEnergyMin(int t) const;
   IntegerValue SimpleEnergyMax(int t) const;

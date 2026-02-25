@@ -372,17 +372,7 @@ bool Prober::ProbeOneVariableInternal(BooleanVariable b) {
       if (trail_.Assignment().LiteralIsAssigned(decision)) break;
       if (trail_.Assignment().LiteralIsAssigned(l)) continue;
       num_new_binary_++;
-      // Tricky: by default AddBinaryClause() can delete the LRAT original
-      // clause and create a new one between the representatives. But the
-      // original clause, registered in tmp_binary_clauses_, can be needed in
-      // the next iteration for the proof of a new fixed literal. Hence we must
-      // not delete it here. Instead, it is deleted at the end of this method,
-      // with the other non-longer needed clauses.
-      // TODO(user): can we maintain a one to one correspondence of clauses
-      // in LRAT and in the binary implication graph to avoid this?
-      if (!implication_graph_->AddBinaryClause(
-              decision.Negated(), l,
-              /*delete_non_representative_id=*/false)) {
+      if (!implication_graph_->AddBinaryClause(decision.Negated(), l)) {
         return false;
       }
     }
@@ -1145,13 +1135,13 @@ bool FailedLiteralProbing::DoOneRound(ProbingOptions options) {
   }
 
   binary_clause_extracted_.assign(trail_.Index(), false);
-  DeleteTemporaryLratImplicationsStartingFrom(0);
+  ClearTrailImplicationClausesStartingFrom(0);
   trail_implication_clauses_.resize(trail_.Index());
   auto cleanup = absl::MakeCleanup([this]() {
     if (lrat_proof_handler_ != nullptr) {
       lrat_proof_handler_->DeleteTemporaryBinaryClauses();
     }
-    DeleteTemporaryLratImplicationsStartingFrom(0);
+    ClearTrailImplicationClausesStartingFrom(0);
   });
 
   while (!time_limit_->LimitReached() &&
@@ -1159,7 +1149,7 @@ bool FailedLiteralProbing::DoOneRound(ProbingOptions options) {
     // We only enqueue literal at level zero if we don't use "tree look".
     if (!options.use_tree_look) {
       if (!sat_solver_->BacktrackAndPropagateReimplications(0)) return false;
-      DeleteTemporaryLratImplicationsAfterBacktrack();
+      ClearTrailImplicationClausesAfterBacktrack();
     }
 
     // Probing works by taking a series of decisions, and by analyzing what
@@ -1242,7 +1232,9 @@ bool FailedLiteralProbing::DoOneRound(ProbingOptions options) {
 
   if (!sat_solver_->ResetToLevelZero()) return false;
   if (!ProcessLiteralsToFix()) return false;
-  DeleteTemporaryLratImplicationsAfterBacktrack();
+  if (lrat_proof_handler_ != nullptr) {
+    lrat_proof_handler_->DeleteTemporaryBinaryClauses();
+  }
   clause_manager_->CleanUpWatchers();
 
   // Display stats.
@@ -1326,7 +1318,7 @@ bool FailedLiteralProbing::ComputeNextDecisionInOrder(
               sat_solver_->CurrentDecisionLevel() - 1)) {
         return false;
       }
-      DeleteTemporaryLratImplicationsAfterBacktrack();
+      ClearTrailImplicationClausesAfterBacktrack();
       continue;
     }
     const Literal candidate(index);
@@ -1362,7 +1354,7 @@ bool FailedLiteralProbing::GetNextDecisionInNoParticularOrder(
     if (!sat_solver_->BacktrackAndPropagateReimplications(level - 1)) {
       return false;
     }
-    DeleteTemporaryLratImplicationsAfterBacktrack();
+    ClearTrailImplicationClausesAfterBacktrack();
   }
   return true;
 }
@@ -1398,7 +1390,7 @@ bool FailedLiteralProbing::EnqueueDecisionAndBackjumpOnConflict(
   ClausePtr fixed_decision_clause = kNullClausePtr;
   auto conflict_callback = [&](ClausePtr conflict,
                                absl::Span<const Literal> conflict_clause) {
-    DeleteTemporaryLratImplicationsAfterBacktrack();
+    ClearTrailImplicationClausesAfterBacktrack();
     if (fixed_decision_clause != kNullClausePtr) return;
     fixed_decision_clause = ClausePtr(Literal(next_decision).Negated());
     if (fixed_decision_clause == conflict) return;
@@ -1419,7 +1411,7 @@ bool FailedLiteralProbing::EnqueueDecisionAndBackjumpOnConflict(
   if (first_new_trail_index == kUnsatTrailIndex) return false;
   binary_clause_extracted_.resize(first_new_trail_index);
   binary_clause_extracted_.resize(trail_.Index(), false);
-  DeleteTemporaryLratImplicationsStartingFrom(first_new_trail_index);
+  ClearTrailImplicationClausesStartingFrom(first_new_trail_index);
   trail_implication_clauses_.resize(trail_.Index());
 
   // This is tricky, depending on the parameters, and for integer problem,
@@ -1513,13 +1505,7 @@ void FailedLiteralProbing::ExtractImplication(const Literal last_decision,
 
   if (lrat_proof_handler_ != nullptr) {
     if (trail_implication_clauses_[info.trail_index] == kNullClausePtr) {
-      // Temporary binary clauses only must have a distinct pointer from
-      // permanent ones, otherwise deleting them in
-      // DeleteTemporaryLratImplicationsAfterBacktrack() could delete
-      // "permanent" ones which are identical to temporary ones.
-      const ClausePtr clause =
-          lrat_only ? ClausePtr(SatClause::Create({last_decision.Negated(), l}))
-                    : ClausePtr(last_decision.Negated(), l);
+      const ClausePtr clause = ClausePtr(last_decision.Negated(), l);
       tmp_proof_.clear();
       clause_manager_->AppendClausesFixing(
           {l}, &tmp_proof_, last_decision, [&](int /*level*/, int trail_index) {
@@ -1534,21 +1520,6 @@ void FailedLiteralProbing::ExtractImplication(const Literal last_decision,
       lrat_proof_handler_->AddInferredClause(clause, tmp_proof_);
       num_lrat_clauses_++;
       num_lrat_proof_clauses_ += tmp_proof_.size();
-    } else {
-      const ClausePtr clause = trail_implication_clauses_[info.trail_index];
-      // If we have a temporary clause but need a permanent one, convert it. In
-      // the opposite case there is nothing to do.
-      if (!lrat_only && clause.IsSatClausePtr()) {
-        const ClausePtr new_clause = ClausePtr(last_decision.Negated(), l);
-        lrat_proof_handler_->AddInferredClause(new_clause, {clause});
-        lrat_proof_handler_->DeleteClause(clause);
-        if (info.level == sat_solver_->CurrentDecisionLevel()) {
-          trail_implication_clauses_[info.trail_index] = new_clause;
-        }
-        num_lrat_clauses_++;
-        num_lrat_proof_clauses_++;
-      } else {
-      }
     }
   }
   if (lrat_only) return;
@@ -1735,20 +1706,12 @@ bool FailedLiteralProbing::ProcessLiteralsToFix() {
   return sat_solver_->FinishPropagation();
 }
 
-void FailedLiteralProbing::DeleteTemporaryLratImplicationsAfterBacktrack() {
-  DeleteTemporaryLratImplicationsStartingFrom(trail_.Index());
+void FailedLiteralProbing::ClearTrailImplicationClausesAfterBacktrack() {
+  ClearTrailImplicationClausesStartingFrom(trail_.Index());
 }
 
-void FailedLiteralProbing::DeleteTemporaryLratImplicationsStartingFrom(
+void FailedLiteralProbing::ClearTrailImplicationClausesStartingFrom(
     int trail_index) {
-  if (lrat_proof_handler_ != nullptr) {
-    for (int i = trail_index; i < trail_implication_clauses_.size(); ++i) {
-      const ClausePtr clause = trail_implication_clauses_[i];
-      if (clause.IsSatClausePtr()) {
-        lrat_proof_handler_->DeleteClause(clause);
-      }
-    }
-  }
   trail_implication_clauses_.resize(trail_index);
 }
 

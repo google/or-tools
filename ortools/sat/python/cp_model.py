@@ -46,17 +46,12 @@ Other methods and functions listed are primarily used for developing OR-Tools,
 rather than for solving specific optimization problems.
 """
 
-from collections.abc import Callable, Iterable, Sequence
 import copy
 import threading
 import time
-from typing import (
-    Any,
-    Optional,
-    Union,
-    overload,
-)
 import warnings
+from collections.abc import Callable, Iterable, Sequence
+from typing import Any, Optional, Union, overload
 
 import numpy as np
 import pandas as pd

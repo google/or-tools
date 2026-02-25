@@ -97,7 +97,7 @@ PROTO2_RETURN(operations_research::sat::CpSolverResponse,
 
   jmethodID $input_method_id = jenv->GetMethodID(
     $input_object_class, "accept", "(Ljava/lang/Object;)V");
-  assert($input_method_id != nullptr);
+  if ($input_method_id == nullptr || jenv->ExceptionCheck()) return $null;
 
   // When the lambda will be destroyed, input_guard's destructor will be called.
   $1 = [jvm, $input_object, $input_method_id, $input_guard](
@@ -108,7 +108,14 @@ PROTO2_RETURN(operations_research::sat::CpSolverResponse,
         args.name = NULL;
         args.group = NULL;
         jvm->AttachCurrentThread((void**)&jenv, &args);
-        jenv->CallVoidMethod($input_object, $input_method_id, (jenv)->NewStringUTF(message.c_str()));
+        if (jenv->ExceptionCheck()) return;
+
+        jstring jmsg = jenv->NewStringUTF(message.c_str());
+        if (jmsg == nullptr || jenv->ExceptionCheck()) return;
+
+        jenv->CallVoidMethod($input_object, $input_method_id, jmsg);
+        if (jenv->ExceptionCheck()) return;
+
         jvm->DetachCurrentThread();
   };
 %}
@@ -120,7 +127,7 @@ PROTO2_RETURN(operations_research::sat::CpSolverResponse,
 %typemap(in) std::function<void(double)> %{
   // Catch nullptr inputs.
   jclass $input_object_class = jenv->GetObjectClass($input);
-  if (nullptr == $input_object_class) return $null;
+  if (nullptr == $input_object_class || jenv->ExceptionCheck()) return $null;
 
   // $input will be deleted once this function return.
   // So we create a JNI global reference to keep it alive.
@@ -133,27 +140,30 @@ PROTO2_RETURN(operations_research::sat::CpSolverResponse,
 
   jmethodID $input_method_id = jenv->GetMethodID(
     $input_object_class, "accept", "(Ljava/lang/Double;)V");
-  assert($input_method_id != nullptr);
-
-  // We will need to box double before calling the java method.
-  jclass $input_doubleClass = jenv->FindClass("java/lang/Double");
-  jmethodID $input_doubleConstructor =
-    jenv->GetMethodID($input_doubleClass, "<init>", "(D)V");
+  if ( $input_method_id == nullptr || jenv->ExceptionCheck()) return $null;
 
   // When the lambda will be destroyed, input_guard's destructor will be called.
-  $1 = [jvm, $input_object, $input_method_id, $input_guard, $input_doubleClass,
-        $input_doubleConstructor](double bound) -> void {
+  $1 = [jvm, $input_object, $input_method_id, $input_guard](double bound) -> void {
         JNIEnv *jenv = NULL;
         JavaVMAttachArgs args;
         args.version = JNI_VERSION_1_2;
         args.name = NULL;
         args.group = NULL;
         jvm->AttachCurrentThread((void**)&jenv, &args);
+        if (jenv->ExceptionCheck()) return;
 
-        jobject doubleObj = jenv->NewObject(
-          $input_doubleClass, $input_doubleConstructor, (jdouble)bound);
+        jclass doubleClass = jenv->FindClass("java/lang/Double");
+        if (doubleClass == nullptr || jenv->ExceptionCheck()) return;
+
+        jmethodID valueOfMethod = jenv->GetStaticMethodID(doubleClass, "valueOf", "(D)Ljava/lang/Double;");
+        if (valueOfMethod == nullptr || jenv->ExceptionCheck()) return;
+
+        jobject doubleObj = jenv->CallStaticObjectMethod(doubleClass, valueOfMethod, (jdouble)bound);
+        if (jenv->ExceptionCheck() || doubleObj == nullptr) return;
 
         jenv->CallVoidMethod($input_object, $input_method_id, doubleObj);
+        if (jenv->ExceptionCheck()) return;
+
         jvm->DetachCurrentThread();
   };
 %}

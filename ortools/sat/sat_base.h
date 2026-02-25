@@ -18,7 +18,6 @@
 
 #include <algorithm>
 #include <array>
-#include <bit>
 #include <cstdint>
 #include <deque>
 #include <functional>
@@ -556,6 +555,10 @@ class ClausePtr {
 
 // The null clause pointer.
 constexpr ClausePtr kNullClausePtr = ClausePtr();
+
+// Creates a clause pointer for the given literals. If there are more than 2
+// literals, allocates a SatClause and returns its pointer.
+ClausePtr NewClausePtr(absl::Span<const Literal> literals);
 
 // Information about a variable assignment.
 struct AssignmentInfo {

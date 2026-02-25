@@ -208,23 +208,6 @@ bool SatSolver::AddTernaryClause(Literal a, Literal b, Literal c) {
   return AddProblemClause({a, b, c});
 }
 
-namespace {
-// Creates a clause pointer for the given literals. If there are more than 2
-// literals, allocates a SatClause and returns its pointer.
-ClausePtr NewClausePtr(absl::Span<const Literal> literals) {
-  switch (literals.size()) {
-    case 0:
-      return ClausePtr::EmptyClausePtr();
-    case 1:
-      return ClausePtr(literals[0]);
-    case 2:
-      return ClausePtr(literals[0], literals[1]);
-    default:
-      return ClausePtr(SatClause::Create(literals));
-  }
-}
-}  // namespace
-
 // Note that we will do a bit of presolve here, which might not always be
 // necessary if we know we are already adding a "clean" clause with no
 // duplicates or literal equivalent to others. However, we found that it is

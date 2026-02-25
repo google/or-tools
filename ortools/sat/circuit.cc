@@ -693,7 +693,7 @@ std::function<void(Model*)> ExactlyOnePerRowAndPerColumn(
           exactly_one_constraint.push_back(transpose ? graph[j][i]
                                                      : graph[i][j]);
         }
-        model->Add(ExactlyOneConstraint(exactly_one_constraint));
+        AddExactlyOneConstraint(exactly_one_constraint, model);
       }
     }
   };

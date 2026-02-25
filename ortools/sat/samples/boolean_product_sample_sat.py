@@ -15,6 +15,7 @@
 # [START program]
 """Code sample that encodes the product of two Boolean variables."""
 
+
 from ortools.sat.python import cp_model
 
 

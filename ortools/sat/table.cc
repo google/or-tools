@@ -63,7 +63,7 @@ std::function<void(Model*)> LiteralTableConstraint(
     }
 
     // Exactly one selected literal is true.
-    model->Add(ExactlyOneConstraint(line_literals));
+    AddExactlyOneConstraint(line_literals, model);
 
     // If all selected literals of the lines containing a literal are false,
     // then the literal is false.

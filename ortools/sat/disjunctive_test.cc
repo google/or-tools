@@ -36,6 +36,7 @@
 #include "ortools/sat/integer_search.h"
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/old_precedences_propagator.h"
 #include "ortools/sat/precedences.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
@@ -395,7 +396,7 @@ void AddDisjunctiveTimeDecomposition(
       }
       model->Add(ReifiedBoolAnd(presence_condition, presence_at_time.back()));
     }
-    model->Add(AtMostOneConstraint(presence_at_time));
+    AddAtMostOneConstraint(presence_at_time, model);
 
     // Abort if UNSAT.
     if (model->GetOrCreate<SatSolver>()->ModelIsUnsat()) return;

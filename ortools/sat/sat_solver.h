@@ -958,34 +958,28 @@ inline std::function<void(Model*)> CardinalityConstraint(
   };
 }
 
-inline std::function<void(Model*)> ExactlyOneConstraint(
-    absl::Span<const Literal> literals) {
-  return [=, literals = std::vector<Literal>(literals.begin(), literals.end())](
-             Model* model) {
-    std::vector<LiteralWithCoeff> cst;
-    cst.reserve(literals.size());
-    for (const Literal l : literals) {
-      cst.emplace_back(l, Coefficient(1));
-    }
-    model->GetOrCreate<SatSolver>()->AddLinearConstraint(
-        /*use_lower_bound=*/true, Coefficient(1),
-        /*use_upper_bound=*/true, Coefficient(1), &cst);
-  };
+inline void AddExactlyOneConstraint(absl::Span<const Literal> literals,
+                                    Model* model) {
+  std::vector<LiteralWithCoeff> cst;
+  cst.reserve(literals.size());
+  for (const Literal l : literals) {
+    cst.emplace_back(l, Coefficient(1));
+  }
+  model->GetOrCreate<SatSolver>()->AddLinearConstraint(
+      /*use_lower_bound=*/true, Coefficient(1),
+      /*use_upper_bound=*/true, Coefficient(1), &cst);
 }
 
-inline std::function<void(Model*)> AtMostOneConstraint(
-    absl::Span<const Literal> literals) {
-  return [=, literals = std::vector<Literal>(literals.begin(), literals.end())](
-             Model* model) {
-    std::vector<LiteralWithCoeff> cst;
-    cst.reserve(literals.size());
-    for (const Literal l : literals) {
-      cst.emplace_back(l, Coefficient(1));
-    }
-    model->GetOrCreate<SatSolver>()->AddLinearConstraint(
-        /*use_lower_bound=*/false, Coefficient(0),
-        /*use_upper_bound=*/true, Coefficient(1), &cst);
-  };
+inline void AddAtMostOneConstraint(absl::Span<const Literal> literals,
+                                   Model* model) {
+  std::vector<LiteralWithCoeff> cst;
+  cst.reserve(literals.size());
+  for (const Literal l : literals) {
+    cst.emplace_back(l, Coefficient(1));
+  }
+  model->GetOrCreate<SatSolver>()->AddLinearConstraint(
+      /*use_lower_bound=*/false, Coefficient(0),
+      /*use_upper_bound=*/true, Coefficient(1), &cst);
 }
 
 inline std::function<void(Model*)> ClauseConstraint(

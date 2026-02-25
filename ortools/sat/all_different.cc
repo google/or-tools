@@ -57,7 +57,7 @@ std::function<void(Model*)> AllDifferentBinary(
     // Add an at most one constraint for each value.
     for (const auto& entry : value_to_literals) {
       if (entry.second.size() > 1) {
-        model->Add(AtMostOneConstraint(entry.second));
+        AddAtMostOneConstraint(entry.second, model);
       }
     }
 

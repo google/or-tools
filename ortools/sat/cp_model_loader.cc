@@ -1038,7 +1038,7 @@ void LoadExactlyOneConstraint(const ConstraintProto& ct, Model* m) {
   auto* mapping = m->GetOrCreate<CpModelMapping>();
   CHECK(!HasEnforcementLiteral(ct)) << "Not supported.";
   const auto& literals = mapping->Literals(ct.exactly_one().literals());
-  m->Add(ExactlyOneConstraint(literals));
+  AddExactlyOneConstraint(literals, m);
   if (literals.size() == 3) {
     m->GetOrCreate<ProductDetector>()->ProcessTernaryExactlyOne(literals);
   }

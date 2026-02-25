@@ -551,8 +551,7 @@ class BinaryImplicationGraph : public SatPropagator {
   // Note that it is also equivalent to (not b => a). More precisely, adds the
   // binary clause (rep(a) OR rep(b)), where rep(l) is the representative of l.
   // If they are different from a and b, a new inferred LRAT clause is also
-  // added (if an LRAT proof handler is set; the old LRAT clause is deleted,
-  // unless `delete_non_representative_id` is false).
+  // added (if an LRAT proof handler is set).
   //
   // Preconditions:
   // - If we are at root node, then none of the literal should be assigned.
@@ -561,10 +560,8 @@ class BinaryImplicationGraph : public SatPropagator {
   // - If we are at a positive decision level, we will propagate something if
   //   we can. However, if both literal are false, we will just return false
   //   and do nothing. In all other case, we will return true.
-  bool AddBinaryClause(Literal a, Literal b,
-                       bool delete_non_representative_id = true) {
-    return AddBinaryClauseInternal(a, b, /*change_reason=*/false,
-                                   delete_non_representative_id);
+  bool AddBinaryClause(Literal a, Literal b) {
+    return AddBinaryClauseInternal(a, b, /*change_reason=*/false);
   }
   bool AddImplication(Literal a, Literal b) {
     return AddBinaryClause(a.Negated(), b);
@@ -903,8 +900,8 @@ class BinaryImplicationGraph : public SatPropagator {
  private:
   friend class LratEquivalenceHelper;
 
-  bool AddBinaryClauseInternal(Literal a, Literal b, bool change_reason = false,
-                               bool delete_non_representative_id = true);
+  bool AddBinaryClauseInternal(Literal a, Literal b,
+                               bool change_reason = false);
 
   // Marks implications_[a] for cleanup in RemoveDuplicatesAndFixedVariables().
   void NotifyPossibleDuplicate(Literal a);
@@ -992,11 +989,6 @@ class BinaryImplicationGraph : public SatPropagator {
   // Binary reasons by trail_index. We need a deque because we kept pointers to
   // elements of this array and this can dynamically change size.
   std::deque<Literal> reasons_;
-
-  // Stores a set of clauses added to lrat_binary_clauses_ that are only needed
-  // due to ChangeReason calls. Once we backtrack past the first literal in the
-  // clause we delete them.
-  absl::flat_hash_set<ClausePtr> changed_reasons_on_trail_;
 
   // This is indexed by the Index() of a literal. Each entry stores two lists:
   //  - A list of literals that are implied if the index literal becomes true.

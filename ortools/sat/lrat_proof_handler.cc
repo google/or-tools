@@ -880,11 +880,6 @@ bool LratProofHandler::HasBinaryClause(Literal a, Literal b) const {
   return binary_clauses_.contains(ClausePtr(a, b));
 }
 
-bool LratProofHandler::HasImplicationGraphClause(Literal a, Literal b) const {
-  const auto it = binary_clauses_.find(ClausePtr(a, b));
-  return it != binary_clauses_.end() && it->second;
-}
-
 bool LratProofHandler::AddImplicationGraphClause(Literal a, Literal b) {
   DCHECK_NE(a, b);
   auto [it, inserted] = binary_clauses_.insert({ClausePtr(a, b), true});

@@ -16,6 +16,7 @@ package com.google.ortools.sat;
 import static com.google.common.truth.Truth.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.google.ortools.Loader;
 import com.google.ortools.sat.CpSolverStatus;
@@ -221,6 +222,41 @@ public final class CpSolverTest {
     assertThat(cb.getBestBound()).isEqualTo(2.6);
   }
 
+  static class BestBoundRuntimeExceptionCallback implements Consumer<Double> {
+    public BestBoundRuntimeExceptionCallback() {}
+
+    @Override
+    public void accept(Double bound) {
+      throw new RuntimeException("testCpSolver_bestBoundRuntimeExceptionCallback");
+    }
+  }
+
+  @Test
+  public void testCpSolver_bestBoundRuntimeExceptionCallback() throws Exception {
+    System.out.println("testCpSolver_bestBoundRuntimeExceptionCallback");
+    final CpModel model = new CpModel();
+    assertNotNull(model);
+    // Creates the variables.
+    final BoolVar b0 = model.newBoolVar("x0");
+    final BoolVar b1 = model.newBoolVar("x1");
+    final BoolVar b2 = model.newBoolVar("x2");
+    final BoolVar b3 = model.newBoolVar("x3");
+
+    model.addBoolOr(new Literal[] {b0, b1, b2, b3});
+    model.minimize(DoubleLinearExpr.weightedSumWithOffset(
+        new Literal[] {b0, b1, b2, b3}, new double[] {3, 2, 4, 5}, 0.6));
+
+    // Creates a solver and solves the model.
+    final CpSolver solver = new CpSolver();
+    assertNotNull(solver);
+    solver.getParameters().setNumWorkers(1);
+    solver.getParameters().setLinearizationLevel(2);
+    BestBoundRuntimeExceptionCallback cb = new BestBoundRuntimeExceptionCallback();
+    solver.setBestBoundCallback(cb);
+
+    assertThrows(RuntimeException.class, () -> solver.solve(model));
+  }
+
   @Test
   public void testCpSolver_objectiveValue() throws Exception {
     System.out.println("testCpSolver_objectiveValue");
@@ -303,6 +339,29 @@ public final class CpSolverTest {
     assertThat(log).contains("Parameters");
     assertThat(log).contains("log_to_stdout: false");
     assertThat(log).contains("OPTIMAL");
+  }
+
+  @Test
+  public void testCpSolver_runtimeExceptionLog() throws Exception {
+    System.out.println("testCpSolver_runtimeExceptionLog");
+    final CpModel model = new CpModel();
+    assertNotNull(model);
+    // Creates the variables.
+    final int numVals = 3;
+    final IntVar x = model.newIntVar(0, numVals - 1, "x");
+    final IntVar y = model.newIntVar(0, numVals - 1, "y");
+    // Creates the constraints.
+    model.addDifferent(x, y);
+
+    // Creates a solver and solves the model.
+    final CpSolver solver = new CpSolver();
+    assertNotNull(solver);
+    Consumer<String> runtimeExceptionLog = (String message) -> {
+      throw new RuntimeException("testCpSolver_runtimeExceptionLog");
+    };
+    solver.setLogCallback(runtimeExceptionLog);
+    solver.getParameters().setLogToStdout(false).setLogSearchProgress(true);
+    assertThrows(RuntimeException.class, () -> solver.solve(model));
   }
 
   @Test

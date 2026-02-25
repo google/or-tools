@@ -894,6 +894,11 @@ SchedulingDemandHelper::SchedulingDemandHelper(
   InitDecomposedEnergies();
 }
 
+std::string SchedulingDemandHelper::TaskDebugString(int t) const {
+  return absl::StrCat("t=", t, " demand=", demands_[t], " [", DemandMin(t), ",",
+                      DemandMax(t), "]");
+}
+
 void SchedulingDemandHelper::InitDecomposedEnergies() {
   // For the special case were demands is empty.
   const int num_tasks = helper_->NumTasks();

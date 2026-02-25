@@ -154,8 +154,7 @@ bool LratChecker::AddClauseInternal(ClauseType type, ClausePtr ptr,
   for (const Literal literal : literals) {
     if (tmp_false_literals_set_[literal]) continue;
     if (tmp_false_literals_set_[literal.Negated()]) {
-      if (type == kProblemClause) ++num_inferred_clauses_always_true_;
-      return true;
+      if (type != kProblemClause) ++num_inferred_clauses_always_true_;
     }
     tmp_false_literals_set_.Set(literal);
     clause.push_back(literal);

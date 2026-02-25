@@ -366,23 +366,6 @@ bool ModelCopy::CopyBoolOr(const ConstraintProto& ct) {
   return FinishBoolOrCopy();
 }
 
-namespace {
-// Returns the pointer of a new SatClause with the given literals, or an
-// "inlined literals" pointer if there is at most two literals.
-ClausePtr NewClausePtr(absl::Span<const Literal> literals) {
-  switch (literals.size()) {
-    case 0:
-      return ClausePtr::EmptyClausePtr();
-    case 1:
-      return ClausePtr(literals[0]);
-    case 2:
-      return ClausePtr(literals[0], literals[1]);
-    default:
-      return ClausePtr(SatClause::Create(literals));
-  }
-}
-}  // namespace
-
 bool ModelCopy::CopyBoolOrWithDupSupport(const ConstraintProto& ct,
                                          int one_based_cnf_index) {
   temp_literals_.clear();

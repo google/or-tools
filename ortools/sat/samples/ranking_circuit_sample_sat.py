@@ -15,6 +15,7 @@
 # [START program]
 """Code sample to demonstrates how to rank intervals using a circuit."""
 
+
 from collections.abc import Sequence
 
 from ortools.sat.python import cp_model

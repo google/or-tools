@@ -36,6 +36,7 @@
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/boolean_problem.pb.h"
 #include "ortools/sat/clause.h"
+#include "ortools/sat/debug_solution.h"
 #include "ortools/sat/encoding.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"

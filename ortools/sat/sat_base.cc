@@ -80,5 +80,18 @@ std::string SatClause::DebugString() const {
   return result;
 }
 
+ClausePtr NewClausePtr(absl::Span<const Literal> literals) {
+  switch (literals.size()) {
+    case 0:
+      return ClausePtr::EmptyClausePtr();
+    case 1:
+      return ClausePtr(literals[0]);
+    case 2:
+      return ClausePtr(literals[0], literals[1]);
+    default:
+      return ClausePtr(literals);
+  }
+}
+
 }  // namespace sat
 }  // namespace operations_research
