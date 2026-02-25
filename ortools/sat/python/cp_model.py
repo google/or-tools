@@ -2016,9 +2016,9 @@ class CpSolver:
 
     @deprecated("Use solve() method instead.")
     def Solve(
-        self, model: CpModel, callback: "CpSolverSolutionCallback" = None
+        self, model: CpModel, solution_callback: "CpSolverSolutionCallback" = None
     ) -> cmh.CpSolverStatus:
-        return self.solve(model, callback)
+        return self.solve(model, solution_callback)
 
     @deprecated("Use solution_info() method instead.")
     def SolutionInfo(self) -> str:

@@ -1691,6 +1691,19 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(cp_model.OPTIMAL, status)
         self.assertEqual(6, solution_sum.sum)
 
+    def test_Solve_with_solution_callback(self) -> None:
+        model = cp_model.CpModel()
+        x = model.new_int_var(0, 5, "x")
+        y = model.new_int_var(0, 5, "y")
+        model.add_linear_constraint(x + y, 6, 6)
+
+        solver = cp_model.CpSolver()
+        solution_sum = SolutionSum([x, y])
+        self.assertRaises(RuntimeError, solution_sum.value, x)
+        status = solver.Solve(model, solution_callback=solution_sum)
+        self.assertEqual(cp_model.OPTIMAL, status)
+        self.assertEqual(6, solution_sum.sum)
+
     def test_solve_with_float_value_in_callback(self) -> None:
         model = cp_model.CpModel()
         x = model.new_int_var(0, 5, "x")
