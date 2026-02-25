@@ -13,7 +13,6 @@
 # limitations under the License.
 
 """A simple knapsack problem."""
-
 # [START program]
 # [START import]
 from ortools.algorithms.python import knapsack_solver

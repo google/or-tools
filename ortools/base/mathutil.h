@@ -64,28 +64,6 @@ class MathUtil {
     return floor_of_ratio;
   }
 
-  // Returns the greatest common divisor of two unsigned integers x and y.
-  static unsigned int GCD(unsigned int x, unsigned int y) {
-    while (y != 0) {
-      unsigned int r = x % y;
-      x = y;
-      y = r;
-    }
-    return x;
-  }
-
-  // Returns the least common multiple of two unsigned integers.  Returns zero
-  // if either is zero.
-  static unsigned int LeastCommonMultiple(unsigned int a, unsigned int b) {
-    if (a > b) {
-      return (a / MathUtil::GCD(a, b)) * b;
-    } else if (a < b) {
-      return (b / MathUtil::GCD(b, a)) * a;
-    } else {
-      return a;
-    }
-  }
-
   // Absolute value of x.
   // Works correctly for unsigned types and
   // for special floating point values.
@@ -100,19 +78,6 @@ class MathUtil {
   template <typename T>
   static T Square(const T x) {
     return x * x;
-  }
-
-  // Euclid's Algorithm.
-  // Returns: the greatest common divisor of two unsigned integers x and y.
-  static int64_t GCD64(int64_t x, int64_t y) {
-    DCHECK_GE(x, 0);
-    DCHECK_GE(y, 0);
-    while (y != 0) {
-      int64_t r = x % y;
-      x = y;
-      y = r;
-    }
-    return x;
   }
 
   template <typename T>

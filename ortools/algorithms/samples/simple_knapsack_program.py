@@ -14,7 +14,6 @@
 
 # [START program]
 """A simple knapsack problem."""
-
 # [START import]
 from ortools.algorithms.python import knapsack_solver
 

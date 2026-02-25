@@ -595,7 +595,7 @@ std::string Argument::DebugString() const {
     case INT_LIST:
       return absl::StrFormat("[%s]", absl::StrJoin(values, ", "));
     case DOMAIN_LIST:
-      return absl::StrFormat("[%s]", JoinDebugString(domains, ", "));
+      return absl::StrFormat("[%s]", JoinDebugString(domains));
     case VAR_REF:
       return variables[0]->name;
     case VAR_REF_ARRAY: {
@@ -809,7 +809,7 @@ std::string Constraint::DebugString() const {
   const std::string symmetric_breaking_str =
       is_symmetric_breaking ? " symmetric breaking" : "";
   const std::string redundant_str = is_redundant ? " redundant" : "";
-  return absl::StrCat(type, "(", JoinDebugString(arguments, ", "), ")", strong,
+  return absl::StrCat(type, "(", JoinDebugString(arguments), ")", strong,
                       presolve_status_str, symmetric_breaking_str,
                       redundant_str);
 }
@@ -938,11 +938,11 @@ void Annotation::AppendAllVariables(std::vector<Variable*>* const vars) const {
 std::string Annotation::DebugString() const {
   switch (type) {
     case ANNOTATION_LIST:
-      return absl::StrFormat("[%s]", JoinDebugString(annotations, ", "));
+      return absl::StrFormat("[%s]", JoinDebugString(annotations));
     case IDENTIFIER:
       return id;
     case FUNCTION_CALL:
-      return absl::StrFormat("%s(%s)", id, JoinDebugString(annotations, ", "));
+      return absl::StrFormat("%s(%s)", id, JoinDebugString(annotations));
     case INTERVAL:
       return absl::StrFormat("%d..%d", interval_min, interval_max);
     case INT_VALUE:
@@ -1004,9 +1004,8 @@ std::string SolutionOutputSpecs::DebugString() const {
   if (variable != nullptr) {
     return absl::StrFormat("output_var(%s)", variable->name);
   } else {
-    return absl::StrFormat("output_array([%s] [%s])",
-                           JoinDebugString(bounds, ", "),
-                           JoinNameFieldPtr(flat_variables, ", "));
+    return absl::StrFormat("output_array([%s] [%s])", JoinDebugString(bounds),
+                           JoinNameFieldPtr(flat_variables));
   }
 }
 
@@ -1092,18 +1091,18 @@ std::string Model::DebugString() const {
   if (objective_ != nullptr) {
     absl::StrAppendFormat(&output, "%s %s\n  %s\n",
                           maximize_ ? "Maximize" : "Minimize", objective_->name,
-                          JoinDebugString(search_annotations_, ", "));
+                          JoinDebugString(search_annotations_));
   } else if (!float_objective_variables_.empty()) {
     absl::StrAppendFormat(&output, "%s [%s] * [%s] + %f\n  %s\n",
                           maximize_ ? "Maximize" : "Minimize",
-                          JoinDebugStringPtr(float_objective_variables_, ", "),
+                          JoinDebugStringPtr(float_objective_variables_),
                           absl::StrJoin(float_objective_coefficients_, ", "),
                           float_objective_offset_,
-                          JoinDebugString(search_annotations_, ", "));
+                          JoinDebugString(search_annotations_));
 
   } else {
     absl::StrAppendFormat(&output, "Satisfy\n  %s\n",
-                          JoinDebugString(search_annotations_, ", "));
+                          JoinDebugString(search_annotations_));
   }
   output.append("Output\n");
   for (int i = 0; i < output_.size(); ++i) {
