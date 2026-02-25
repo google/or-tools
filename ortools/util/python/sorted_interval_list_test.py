@@ -109,6 +109,14 @@ class SortedIntervalListTest(absltest.TestCase):
             )
         )
 
+    def testEq(self):
+        d1 = sil.Domain(0, 5)
+        d2 = sil.Domain(0, 5)
+        d3 = sil.Domain(0, 6)
+        self.assertIsNot(d1, d2)
+        self.assertEqual(d1, d2)
+        self.assertNotEqual(d1, d3)
+
     def testStr(self):
         d1 = sil.Domain(0, 5)
         self.assertEqual(str(d1), "[0,5]")

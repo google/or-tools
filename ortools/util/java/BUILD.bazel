@@ -18,6 +18,8 @@ load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_cc//cc:cc_test.bzl", "cc_test")
 load("//bazel:swig_java.bzl", "java_wrap_cc")
 
+package(default_visibility = ["//visibility:public"])
+
 # These .swig files are currently just included in other .swig files.
 # TODO(user): Create dedicated java_wrap_cc rules and unit tests.
 exports_files(

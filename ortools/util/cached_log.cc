@@ -13,6 +13,8 @@
 
 #include "ortools/util/cached_log.h"
 
+#include <cstdint>
+
 #include "absl/log/check.h"
 
 namespace operations_research {

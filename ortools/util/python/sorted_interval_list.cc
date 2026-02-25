@@ -65,6 +65,7 @@ PYBIND11_MODULE(sorted_interval_list, m) {
            DOC(operations_research, Domain, OverlapsWith), arg("domain"))
       .def("union_with", &Domain::UnionWith,
            DOC(operations_research, Domain, UnionWith), arg("domain"))
+      .def("__eq__", &Domain::operator==)
       .def("__str__", &Domain::ToString)
       .def("__repr__",
            [](const Domain& domain) {

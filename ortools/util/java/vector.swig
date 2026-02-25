@@ -119,6 +119,7 @@ VECTOR_AS_JAVA_ARRAY(double, double, Double);
   for (int i = 0; i < jenv->GetArrayLength($input); i++) {
     jobject elem = jenv->GetObjectArrayElement($input, i);
     jlong ptr_value = jenv->CallStaticLongMethod(object_class, method_id, elem);
+    assert(!jenv->ExceptionCheck());
     result.push_back(CastOp(CType, ptr_value));
   }
   $1 = &result;
@@ -158,6 +159,7 @@ VECTOR_AS_JAVA_ARRAY(double, double, Double);
   for (int i = 0; i < jenv->GetArrayLength($input); i++) {
     jobject elem = jenv->GetObjectArrayElement($input, i);
     jlong ptr_value = jenv->CallStaticLongMethod(object_class, method_id, elem);
+    assert(!jenv->ExceptionCheck());
     result.push_back(CastOp(CType, ptr_value));
   }
   $1 = result;
