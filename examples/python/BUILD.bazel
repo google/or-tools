@@ -432,7 +432,7 @@ py_binary(
     srcs = ["prize_collecting_tsp.py"],
     main = "prize_collecting_tsp.py",
     deps = [
-        "//ortools/routing/python:routing_lib",
+        "//ortools/routing/python:routing_py",
     ],
 )
 
@@ -448,7 +448,7 @@ py_binary(
     srcs = ["prize_collecting_vrp.py"],
     main = "prize_collecting_vrp.py",
     deps = [
-        "//ortools/routing/python:routing_lib",
+        "//ortools/routing/python:routing_py",
     ],
 )
 
