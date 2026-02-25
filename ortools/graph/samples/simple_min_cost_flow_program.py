@@ -14,7 +14,6 @@
 
 # [START program]
 """From Bradley, Hax and Maganti, 'Applied Mathematical Programming', figure 8.1."""
-
 # [START import]
 import numpy as np
 

@@ -13,7 +13,6 @@
 # limitations under the License.
 
 """Solve a simple bin packing problem using a MIP solver."""
-
 # [START program]
 # [START import]
 from ortools.linear_solver import pywraplp

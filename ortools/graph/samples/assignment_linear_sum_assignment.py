@@ -14,7 +14,6 @@
 
 # [START program]
 """Solve assignment problem using linear assignment solver."""
-
 # [START import]
 import numpy as np
 

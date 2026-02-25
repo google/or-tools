@@ -13,7 +13,6 @@
 # limitations under the License.
 
 """Minimal example to call the GLOP solver."""
-
 # [START program]
 # [START import]
 from ortools.init.python import init

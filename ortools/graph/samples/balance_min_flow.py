@@ -14,7 +14,6 @@
 
 # [START program]
 """Assignment with teams of workers."""
-
 # [START import]
 from ortools.graph.python import min_cost_flow
 

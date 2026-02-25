@@ -1834,7 +1834,7 @@ MPSolverInterface::MPSolverInterface(MPSolver* const solver)
 
 MPSolverInterface::~MPSolverInterface() {}
 
-void MPSolverInterface::Write(const std::string& filename) {
+void MPSolverInterface::Write([[maybe_unused]] const std::string& filename) {
   LOG(WARNING) << "Writing model not implemented in this solver interface.";
 }
 
@@ -1981,7 +1981,8 @@ void MPSolverInterface::SetIntegerParamToUnsupportedValue(
                << " to an unsupported value: " << value;
 }
 
-absl::Status MPSolverInterface::SetNumThreads(int num_threads) {
+absl::Status MPSolverInterface::SetNumThreads(
+    [[maybe_unused]] int num_threads) {
   return absl::UnimplementedError(
       absl::StrFormat("SetNumThreads() not supported by %s.", SolverVersion()));
 }

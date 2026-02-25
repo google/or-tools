@@ -21,7 +21,7 @@
 #include <cstdlib>
 #include <fstream>
 #include <istream>
-#include <limits>
+#include <locale>
 #include <memory>
 #include <mutex>
 #include <numeric>

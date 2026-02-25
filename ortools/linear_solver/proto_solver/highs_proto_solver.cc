@@ -99,30 +99,6 @@ absl::StatusOr<MPSolutionResponse> HighsSolveProto(
     }
   }
 
-  // Logging.
-  if (request->enable_internal_solver_output()) {
-    highs.setOptionValue("log_to_console", true);
-    highs.setOptionValue("output_flag", true);
-    if (logging_callback != nullptr && *logging_callback) {
-      if (highs.setCallback(
-              HighsCallbackAdapter,
-              const_cast<std::function<void(const std::string&)>*>(
-                  logging_callback)) != HighsStatus::kOk) {
-        response.set_status(MPSOLVER_ABNORMAL);
-        response.set_status_str("HiGHS setCallback failed");
-        return response;
-      }
-      if (highs.startCallback(kCallbackLogging) != HighsStatus::kOk) {
-        response.set_status(MPSOLVER_ABNORMAL);
-        response.set_status_str("HiGHS startCallback(kCallbackLogging) failed");
-        return response;
-      }
-    }
-  } else {
-    highs.setOptionValue("log_to_console", false);
-    highs.setOptionValue("output_flag", false);
-  }
-
   const int variable_size = model.variable_size();
   bool has_integer_variables = false;
   {
@@ -251,6 +227,30 @@ absl::StatusOr<MPSolutionResponse> HighsSolveProto(
   if (model.objective_offset()) {
     const double offset = model.objective_offset();
     highs.changeObjectiveOffset(offset);
+  }
+
+  // Logging.
+  if (request->enable_internal_solver_output()) {
+    highs.setOptionValue("log_to_console", true);
+    highs.setOptionValue("output_flag", true);
+    if (logging_callback != nullptr && *logging_callback) {
+      if (highs.setCallback(
+              HighsCallbackAdapter,
+              const_cast<std::function<void(const std::string&)>*>(
+                  logging_callback)) != HighsStatus::kOk) {
+        response.set_status(MPSOLVER_ABNORMAL);
+        response.set_status_str("HiGHS setCallback failed");
+        return response;
+      }
+      if (highs.startCallback(kCallbackLogging) != HighsStatus::kOk) {
+        response.set_status(MPSOLVER_ABNORMAL);
+        response.set_status_str("HIGHS startCallback(kCallbackLogging) failed");
+        return response;
+      }
+    }
+  } else {
+    highs.setOptionValue("log_to_console", false);
+    highs.setOptionValue("output_flag", false);
   }
 
   const absl::Time time_before = absl::Now();

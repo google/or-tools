@@ -14,7 +14,6 @@
 
 # [START program]
 """From Taha 'Introduction to Operations Research', example 6.4-2."""
-
 # [START import]
 import numpy as np
 

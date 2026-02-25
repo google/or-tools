@@ -18,7 +18,6 @@
 A description of the problem can be found here:
 https://en.wikipedia.org/wiki/Stigler_diet.
 """
-
 # [START import]
 from ortools.linear_solver import pywraplp
 

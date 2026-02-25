@@ -13,7 +13,6 @@
 # limitations under the License.
 
 """Integer programming examples that show how to use the APIs."""
-
 # [START program]
 # [START import]
 from ortools.linear_solver import pywraplp
