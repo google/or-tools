@@ -13,9 +13,9 @@
 
 // A pybind11 wrapper for model_builder_helper.
 
-#include <Python.h>
-
 #include "ortools/linear_solver/wrappers/model_builder_helper.h"
+
+#include <Python.h>
 #if PY_VERSION_HEX >= 0x030E00A7 && !defined(PYPY_VERSION)
 #define Py_BUILD_CORE
 #include "internal/pycore_frame.h"
