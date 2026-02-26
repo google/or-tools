@@ -1821,6 +1821,7 @@ void CpModelProtoWithMapping::OrToolsArgMax(const fz::Constraint& fz_ct,
   for (const auto& [value, literal] : GetFullEncoding(z)) {
     if (value < min_index || value >= min_index + num_vars) {
       AddImplication({}, NegatedRef(literal));
+      continue;
     }
     const int64_t index = value - min_index;
     AddLinearConstraint({literal}, Domain(index - num_vars),
