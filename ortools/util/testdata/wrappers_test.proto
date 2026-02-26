@@ -47,4 +47,9 @@ message WrappersTestMessage {
   repeated int32 repeated_int32_field = 12;
   repeated string repeated_string_field = 13;
   repeated NestedMessage repeated_nested_message_field = 14;
+
+  oneof oneof_field {
+    string oneof_string = 15;
+    int32 oneof_int = 16;
+  }
 }

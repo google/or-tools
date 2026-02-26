@@ -74,6 +74,7 @@ class Generator {
         GenerateMessageDecl(*msg);
       }
       GenerateMessageFields(*msg);
+      GenerateOneofs(*msg);
       for (int i = 0; i < msg->nested_type_count(); ++i) {
         message_stack_.push_back(msg->nested_type(i));
       }
@@ -437,6 +438,18 @@ class Generator {
       } else {
         GenerateSingularField(field);
       }
+    }
+  }
+
+  void GenerateOneofs(const google::protobuf::Descriptor& msg) {
+    for (int i = 0; i < msg.oneof_decl_count(); ++i) {
+      const google::protobuf::OneofDescriptor& oneof =
+          *ABSL_DIE_IF_NULL(msg.oneof_decl(i));
+      absl::SubstituteAndAppend(&out_,
+                                R"(
+    .def("clear_$0", []($1 self) { self->clear_$0(); }))",
+                                oneof.name(),
+                                current_context_.self_mutable_name);
     }
   }
 

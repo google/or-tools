@@ -65,6 +65,11 @@ class WrappersTest(absltest.TestCase):
         nested.nested_int_field = 100
         self.assertEqual(msg.repeated_nested_message_field[0].nested_int_field, 100)
 
+        msg.oneof_string = "test"
+        self.assertEqual(msg.oneof_string, "test")
+        msg.clear_oneof_string()
+        self.assertEmpty(msg.oneof_string)
+
     def test_copy_from(self):
         msg1 = wrappers_test_extension.WrappersTestMessage()
         msg1.int32_field = 10
