@@ -483,10 +483,10 @@ inline void AddWeightedSumLowerOrEqual(
     }
     const IntegerValue rhs = FloorRatio(IntegerValue(upper_bound), coeff);
     if (enforcement_literals.empty()) {
-      model->Add(LowerOrEqual(var, rhs.value()));
+      AddLowerOrEqual(var, rhs.value(), model);
     } else {
-      model->Add(Implication(enforcement_literals,
-                             IntegerLiteral::LowerOrEqual(var, rhs)));
+      AddImplication(enforcement_literals,
+                     IntegerLiteral::LowerOrEqual(var, rhs), model);
     }
     return;
   }
@@ -538,13 +538,13 @@ inline void AddWeightedSumLowerOrEqual(
         if (coefficients[i] > 0) {
           const IntegerValue lb = integer_trail->LevelZeroLowerBound(vars[i]);
           non_cached_min += coefficients[i] * lb;
-          model->Add(Implication(enforcement_literals,
-                                 IntegerLiteral::LowerOrEqual(vars[i], lb)));
+          AddImplication(enforcement_literals,
+                         IntegerLiteral::LowerOrEqual(vars[i], lb), model);
         } else if (coefficients[i] < 0) {
           const IntegerValue ub = integer_trail->LevelZeroUpperBound(vars[i]);
           non_cached_min += coefficients[i] * ub;
-          model->Add(Implication(enforcement_literals,
-                                 IntegerLiteral::GreaterOrEqual(vars[i], ub)));
+          AddImplication(enforcement_literals,
+                         IntegerLiteral::GreaterOrEqual(vars[i], ub), model);
         }
       }
       if (non_cached_min > expression_min) {
@@ -552,7 +552,7 @@ inline void AddWeightedSumLowerOrEqual(
         for (const Literal l : enforcement_literals) {
           clause.push_back(l.Negated());
         }
-        model->Add(ClauseConstraint(clause));
+        AddClauseConstraint(clause, model);
       }
       return;
     }
@@ -595,69 +595,54 @@ inline void AddWeightedSumGreaterOrEqual(
 
 // Weighted sum <= constant.
 template <typename VectorInt>
-inline std::function<void(Model*)> WeightedSumLowerOrEqual(
-    absl::Span<const IntegerVariable> vars, const VectorInt& coefficients,
-    int64_t upper_bound) {
-  return [=, vars = std::vector<IntegerVariable>(vars.begin(), vars.end()),
-          coeffs = std::vector<IntegerValue>(
-              coefficients.begin(), coefficients.end())](Model* model) {
-    return AddWeightedSumLowerOrEqual({}, vars, coeffs, upper_bound, model);
-  };
+inline void AddWeightedSumLowerOrEqual(absl::Span<const IntegerVariable> vars,
+                                       const VectorInt& coefficients,
+                                       int64_t upper_bound, Model* model) {
+  std::vector<IntegerValue> local_coeffs(coefficients.begin(),
+                                         coefficients.end());
+  AddWeightedSumLowerOrEqual({}, vars, local_coeffs, upper_bound, model);
 }
 
 // Weighted sum >= constant.
 template <typename VectorInt>
-inline std::function<void(Model*)> WeightedSumGreaterOrEqual(
-    absl::Span<const IntegerVariable> vars, const VectorInt& coefficients,
-    int64_t lower_bound) {
+inline void AddWeightedSumGreaterOrEqual(absl::Span<const IntegerVariable> vars,
+                                         const VectorInt& coefficients,
+                                         int64_t lower_bound, Model* model) {
   // We just negate everything and use an <= constraints.
   std::vector<IntegerValue> negated_coeffs(coefficients.begin(),
                                            coefficients.end());
   for (IntegerValue& ref : negated_coeffs) ref = -ref;
-  return WeightedSumLowerOrEqual(vars, negated_coeffs, -lower_bound);
+  AddWeightedSumLowerOrEqual({}, vars, negated_coeffs, -lower_bound, model);
 }
 
 // Weighted sum == constant.
+// Weighted sum == constant.
 template <typename VectorInt>
-inline std::function<void(Model*)> FixedWeightedSum(
-    absl::Span<const IntegerVariable> vars, const VectorInt& coefficients,
-    int64_t value) {
-  return [=, vars = std::vector<IntegerVariable>(vars.begin(), vars.end())](
-             Model* model) {
-    model->Add(WeightedSumGreaterOrEqual(vars, coefficients, value));
-    model->Add(WeightedSumLowerOrEqual(vars, coefficients, value));
-  };
+inline void AddFixedWeightedSum(absl::Span<const IntegerVariable> vars,
+                                const VectorInt& coefficients, int64_t value,
+                                Model* model) {
+  AddWeightedSumGreaterOrEqual(vars, coefficients, value, model);
+  AddWeightedSumLowerOrEqual(vars, coefficients, value, model);
 }
 
-// TODO(user): Delete once Telamon use new function.
-inline std::function<void(Model*)> ConditionalWeightedSumLowerOrEqual(
+inline void AddConditionalWeightedSumLowerOrEqual(
     absl::Span<const Literal> enforcement_literals,
     absl::Span<const IntegerVariable> vars,
-    absl::Span<const int64_t> coefficients, int64_t upper_bound) {
-  return [=, vars = std::vector<IntegerVariable>(vars.begin(), vars.end()),
-          coeffs = std::vector<IntegerValue>(coefficients.begin(),
-                                             coefficients.end()),
-          enforcement_literals =
-              std::vector<Literal>(enforcement_literals.begin(),
-                                   enforcement_literals.end())](Model* model) {
-    AddWeightedSumLowerOrEqual(enforcement_literals, vars, coeffs, upper_bound,
-                               model);
-  };
+    absl::Span<const int64_t> coefficients, int64_t upper_bound, Model* model) {
+  std::vector<IntegerValue> local_coeffs(coefficients.begin(),
+                                         coefficients.end());
+  AddWeightedSumLowerOrEqual(enforcement_literals, vars, local_coeffs,
+                             upper_bound, model);
 }
-inline std::function<void(Model*)> ConditionalWeightedSumGreaterOrEqual(
+
+inline void AddConditionalWeightedSumGreaterOrEqual(
     absl::Span<const Literal> enforcement_literals,
     absl::Span<const IntegerVariable> vars,
-    absl::Span<const int64_t> coefficients, int64_t upper_bound) {
-  return [=,
-          coeffs = std::vector<IntegerValue>(coefficients.begin(),
-                                             coefficients.end()),
-          vars = std::vector<IntegerVariable>(vars.begin(), vars.end()),
-          enforcement_literals =
-              std::vector<Literal>(enforcement_literals.begin(),
-                                   enforcement_literals.end())](Model* model) {
-    AddWeightedSumGreaterOrEqual(enforcement_literals, vars, coeffs,
-                                 upper_bound, model);
-  };
+    absl::Span<const int64_t> coefficients, int64_t upper_bound, Model* model) {
+  std::vector<IntegerValue> local_coeffs(coefficients.begin(),
+                                         coefficients.end());
+  AddWeightedSumGreaterOrEqual(enforcement_literals, vars, local_coeffs,
+                               upper_bound, model);
 }
 
 // LinearConstraint version.
@@ -672,7 +657,7 @@ inline void LoadConditionalLinearConstraint(
     for (const Literal lit : enforcement_literals) {
       clause.push_back(lit.Negated());
     }
-    return model->Add(ClauseConstraint(clause));
+    return AddClauseConstraint(clause, model);
   }
 
   if (cst.ub < kMaxIntegerValue) {
@@ -706,33 +691,32 @@ inline void AddConditionalAffinePrecedence(
 //
 // TODO(user): invert the coefficients/vars arguments.
 template <typename VectorInt>
-inline std::function<IntegerVariable(Model*)> NewWeightedSum(
-    const VectorInt& coefficients, const std::vector<IntegerVariable>& vars) {
-  return [=](Model* model) {
-    std::vector<IntegerVariable> new_vars = vars;
-    // To avoid overflow in the FixedWeightedSum() constraint, we need to
-    // compute the basic bounds on the sum.
-    //
-    // TODO(user): deal with overflow here too!
-    int64_t sum_lb(0);
-    int64_t sum_ub(0);
-    for (int i = 0; i < new_vars.size(); ++i) {
-      if (coefficients[i] > 0) {
-        sum_lb += coefficients[i] * model->Get(LowerBound(new_vars[i]));
-        sum_ub += coefficients[i] * model->Get(UpperBound(new_vars[i]));
-      } else {
-        sum_lb += coefficients[i] * model->Get(UpperBound(new_vars[i]));
-        sum_ub += coefficients[i] * model->Get(LowerBound(new_vars[i]));
-      }
+inline IntegerVariable AddNewWeightedSum(
+    const VectorInt& coefficients, const std::vector<IntegerVariable>& vars,
+    Model* model) {
+  std::vector<IntegerVariable> new_vars = vars;
+  // To avoid overflow in the FixedWeightedSum() constraint, we need to
+  // compute the basic bounds on the sum.
+  //
+  // TODO(user): deal with overflow here too!
+  int64_t sum_lb(0);
+  int64_t sum_ub(0);
+  for (int i = 0; i < new_vars.size(); ++i) {
+    if (coefficients[i] > 0) {
+      sum_lb += coefficients[i] * model->Get(LowerBound(new_vars[i]));
+      sum_ub += coefficients[i] * model->Get(UpperBound(new_vars[i]));
+    } else {
+      sum_lb += coefficients[i] * model->Get(UpperBound(new_vars[i]));
+      sum_ub += coefficients[i] * model->Get(LowerBound(new_vars[i]));
     }
+  }
 
-    const IntegerVariable sum = model->Add(NewIntegerVariable(sum_lb, sum_ub));
-    new_vars.push_back(sum);
-    std::vector<int64_t> new_coeffs(coefficients.begin(), coefficients.end());
-    new_coeffs.push_back(-1);
-    model->Add(FixedWeightedSum(new_vars, new_coeffs, 0));
-    return sum;
-  };
+  const IntegerVariable sum = model->Add(NewIntegerVariable(sum_lb, sum_ub));
+  new_vars.push_back(sum);
+  std::vector<int64_t> new_coeffs(coefficients.begin(), coefficients.end());
+  new_coeffs.push_back(-1);
+  AddFixedWeightedSum(new_vars, new_coeffs, 0, model);
+  return sum;
 }
 
 // Expresses the fact that an existing integer variable is equal to the minimum
@@ -780,81 +764,63 @@ inline void AddIsEqualToMinOf(
   model->TakeOwnership(constraint);
 }
 
-ABSL_DEPRECATED("Use AddIsEqualToMinOf() instead.")
-inline std::function<void(Model*)> IsEqualToMinOf(
-    const LinearExpression& min_expr,
-    const std::vector<LinearExpression>& exprs) {
-  return [&](Model* model) {
-    AddIsEqualToMinOf(/*enforcement_literals=*/{}, min_expr, exprs, model);
-  };
-}
-
 // Adds the constraint: a * b = p.
-inline std::function<void(Model*)> ProductConstraint(
-    absl::Span<const Literal> enforcement_literals, AffineExpression a,
-    AffineExpression b, AffineExpression p) {
-  return [=](Model* model) {
-    const IntegerTrail& integer_trail = *model->GetOrCreate<IntegerTrail>();
-    // TODO(user): return early if constraint is never enforced.
-    if (a == b) {
-      if (integer_trail.LowerBound(a) >= 0) {
-        model->TakeOwnership(
-            new SquarePropagator(enforcement_literals, a, p, model));
-        return;
-      }
-      if (integer_trail.UpperBound(a) <= 0) {
-        model->TakeOwnership(
-            new SquarePropagator(enforcement_literals, a.Negated(), p, model));
-        return;
-      }
+inline void AddProductConstraint(absl::Span<const Literal> enforcement_literals,
+                                 AffineExpression a, AffineExpression b,
+                                 AffineExpression p, Model* model) {
+  const IntegerTrail& integer_trail = *model->GetOrCreate<IntegerTrail>();
+  // TODO(user): return early if constraint is never enforced.
+  if (a == b) {
+    if (integer_trail.LowerBound(a) >= 0) {
+      model->TakeOwnership(
+          new SquarePropagator(enforcement_literals, a, p, model));
+      return;
     }
-    model->TakeOwnership(
-        new ProductPropagator(enforcement_literals, a, b, p, model));
-  };
+    if (integer_trail.UpperBound(a) <= 0) {
+      model->TakeOwnership(
+          new SquarePropagator(enforcement_literals, a.Negated(), p, model));
+      return;
+    }
+  }
+  model->TakeOwnership(
+      new ProductPropagator(enforcement_literals, a, b, p, model));
 }
 
 // Adds the constraint: num / denom = div. (denom > 0).
-inline std::function<void(Model*)> DivisionConstraint(
+inline void AddDivisionConstraint(
     absl::Span<const Literal> enforcement_literals, AffineExpression num,
-    AffineExpression denom, AffineExpression div) {
-  return [=](Model* model) {
-    const IntegerTrail& integer_trail = *model->GetOrCreate<IntegerTrail>();
-    // TODO(user): return early if constraint is never enforced.
-    DivisionPropagator* constraint;
-    if (integer_trail.UpperBound(denom) < 0) {
-      constraint = new DivisionPropagator(enforcement_literals, num.Negated(),
-                                          denom.Negated(), div, model);
-    } else {
-      constraint =
-          new DivisionPropagator(enforcement_literals, num, denom, div, model);
-    }
-    model->TakeOwnership(constraint);
-  };
+    AffineExpression denom, AffineExpression div, Model* model) {
+  const IntegerTrail& integer_trail = *model->GetOrCreate<IntegerTrail>();
+  // TODO(user): return early if constraint is never enforced.
+  DivisionPropagator* constraint;
+  if (integer_trail.UpperBound(denom) < 0) {
+    constraint = new DivisionPropagator(enforcement_literals, num.Negated(),
+                                        denom.Negated(), div, model);
+  } else {
+    constraint =
+        new DivisionPropagator(enforcement_literals, num, denom, div, model);
+  }
+  model->TakeOwnership(constraint);
 }
 
 // Adds the constraint: a / b = c where b is a constant.
-inline std::function<void(Model*)> FixedDivisionConstraint(
+inline void AddFixedDivisionConstraint(
     absl::Span<const Literal> enforcement_literals, AffineExpression a,
-    IntegerValue b, AffineExpression c) {
-  return [=](Model* model) {
-    // TODO(user): return early if constraint is never enforced.
-    FixedDivisionPropagator* constraint =
-        b > 0
-            ? new FixedDivisionPropagator(enforcement_literals, a, b, c, model)
+    IntegerValue b, AffineExpression c, Model* model) {
+  // TODO(user): return early if constraint is never enforced.
+  FixedDivisionPropagator* constraint =
+      b > 0 ? new FixedDivisionPropagator(enforcement_literals, a, b, c, model)
             : new FixedDivisionPropagator(enforcement_literals, a.Negated(), -b,
                                           c, model);
-    model->TakeOwnership(constraint);
-  };
+  model->TakeOwnership(constraint);
 }
 
 // Adds the constraint: a % b = c where b is a constant.
-inline std::function<void(Model*)> FixedModuloConstraint(
+inline void AddFixedModuloConstraint(
     absl::Span<const Literal> enforcement_literals, AffineExpression a,
-    IntegerValue b, AffineExpression c) {
-  return [=](Model* model) {
-    model->TakeOwnership(
-        new FixedModuloPropagator(enforcement_literals, a, b, c, model));
-  };
+    IntegerValue b, AffineExpression c, Model* model) {
+  model->TakeOwnership(
+      new FixedModuloPropagator(enforcement_literals, a, b, c, model));
 }
 
 }  // namespace sat

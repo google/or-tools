@@ -37,77 +37,66 @@
 namespace operations_research {
 namespace sat {
 
-std::function<void(Model*)> AllDifferentBinary(
-    absl::Span<const IntegerVariable> vars) {
-  return [=, vars = std::vector<IntegerVariable>(vars.begin(), vars.end())](
-             Model* model) {
-    // Fully encode all the given variables and construct a mapping value ->
-    // List of literal each indicating that a given variable takes this value.
-    //
-    // Note that we use a map to always add the constraints in the same order.
-    absl::btree_map<IntegerValue, std::vector<Literal>> value_to_literals;
-    IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
-    for (const IntegerVariable var : vars) {
-      model->Add(FullyEncodeVariable(var));
-      for (const auto& entry : encoder->FullDomainEncoding(var)) {
-        value_to_literals[entry.value].push_back(entry.literal);
-      }
+void AddAllDifferentBinary(absl::Span<const IntegerVariable> vars,
+                           Model* model) {
+  // Fully encode all the given variables and construct a mapping value ->
+  // List of literal each indicating that a given variable takes this value.
+  //
+  // Note that we use a map to always add the constraints in the same order.
+  absl::btree_map<IntegerValue, std::vector<Literal>> value_to_literals;
+  IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
+  for (const IntegerVariable var : vars) {
+    model->Add(FullyEncodeVariable(var));
+    for (const auto& entry : encoder->FullDomainEncoding(var)) {
+      value_to_literals[entry.value].push_back(entry.literal);
     }
+  }
 
-    // Add an at most one constraint for each value.
+  // Add an at most one constraint for each value.
+  for (const auto& entry : value_to_literals) {
+    if (entry.second.size() > 1) {
+      AddAtMostOneConstraint(entry.second, model);
+    }
+  }
+
+  // If the number of values is equal to the number of variables, we have
+  // a permutation. We can add a bool_or for each literals attached to a
+  // value.
+  if (value_to_literals.size() == vars.size()) {
     for (const auto& entry : value_to_literals) {
-      if (entry.second.size() > 1) {
-        AddAtMostOneConstraint(entry.second, model);
-      }
+      AddClauseConstraint(entry.second, model);
     }
-
-    // If the number of values is equal to the number of variables, we have
-    // a permutation. We can add a bool_or for each literals attached to a
-    // value.
-    if (value_to_literals.size() == vars.size()) {
-      for (const auto& entry : value_to_literals) {
-        model->Add(ClauseConstraint(entry.second));
-      }
-    }
-  };
+  }
 }
 
-std::function<void(Model*)> AllDifferentOnBounds(
-    absl::Span<const Literal> enforcement_literals,
-    absl::Span<const AffineExpression> expressions) {
-  return [=, expressions = std::vector<AffineExpression>(
-                 expressions.begin(), expressions.end())](Model* model) {
-    if (expressions.empty()) return;
-    model->TakeOwnership(new AllDifferentBoundsPropagator(enforcement_literals,
-                                                          expressions, model));
-  };
+void AddAllDifferentOnBounds(absl::Span<const Literal> enforcement_literals,
+                             absl::Span<const AffineExpression> expressions,
+                             Model* model) {
+  if (expressions.empty()) return;
+  model->TakeOwnership(new AllDifferentBoundsPropagator(enforcement_literals,
+                                                        expressions, model));
 }
 
-std::function<void(Model*)> AllDifferentOnBounds(
-    absl::Span<const IntegerVariable> vars) {
-  return [=, vars = std::vector<IntegerVariable>(vars.begin(), vars.end())](
-             Model* model) {
-    if (vars.empty()) return;
-    std::vector<AffineExpression> expressions;
-    expressions.reserve(vars.size());
-    for (const IntegerVariable var : vars) {
-      expressions.push_back(AffineExpression(var));
-    }
-    model->TakeOwnership(new AllDifferentBoundsPropagator(
-        /*enforcement_literals=*/{}, expressions, model));
-  };
+void AddAllDifferentOnBounds(absl::Span<const IntegerVariable> vars,
+                             Model* model) {
+  if (vars.empty()) return;
+  std::vector<AffineExpression> expressions;
+  expressions.reserve(vars.size());
+  for (const IntegerVariable var : vars) {
+    expressions.push_back(AffineExpression(var));
+  }
+  model->TakeOwnership(new AllDifferentBoundsPropagator(
+      /*enforcement_literals=*/{}, expressions, model));
 }
 
-std::function<void(Model*)> AllDifferentAC(
-    absl::Span<const IntegerVariable> variables) {
-  return [variables](Model* model) {
-    if (variables.size() < 3) return;
+void AddAllDifferentAC(absl::Span<const IntegerVariable> variables,
+                       Model* model) {
+  if (variables.size() < 3) return;
 
-    AllDifferentConstraint* constraint =
-        new AllDifferentConstraint(variables, model);
-    constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
-    model->TakeOwnership(constraint);
-  };
+  AllDifferentConstraint* constraint =
+      new AllDifferentConstraint(variables, model);
+  constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
+  model->TakeOwnership(constraint);
 }
 
 AllDifferentConstraint::AllDifferentConstraint(

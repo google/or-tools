@@ -38,8 +38,8 @@ namespace sat {
 // Enforces that the given tuple of variables takes different values. This fully
 // encodes all the variables and simply enforces a <= 1 constraint on each
 // possible values.
-std::function<void(Model*)> AllDifferentBinary(
-    absl::Span<const IntegerVariable> vars);
+void AddAllDifferentBinary(absl::Span<const IntegerVariable> vars,
+                           Model* model);
 
 // Enforces that the given tuple of variables takes different values.
 // Same as AllDifferentBinary() but use a different propagator that only enforce
@@ -49,11 +49,11 @@ std::function<void(Model*)> AllDifferentBinary(
 // variables and it is also quite fast. Note that the propagation is different,
 // this will not remove already taken values from inside a domain, but it will
 // propagates more the domain bounds.
-std::function<void(Model*)> AllDifferentOnBounds(
-    absl::Span<const IntegerVariable> vars);
-std::function<void(Model*)> AllDifferentOnBounds(
-    absl::Span<const Literal> enforcement_literals,
-    absl::Span<const AffineExpression> expressions);
+void AddAllDifferentOnBounds(absl::Span<const IntegerVariable> vars,
+                             Model* model);
+void AddAllDifferentOnBounds(absl::Span<const Literal> enforcement_literals,
+                             absl::Span<const AffineExpression> expressions,
+                             Model* model);
 
 // This constraint forces all variables to take different values. This is meant
 // to be used as a complement to an alldifferent decomposition like
@@ -65,8 +65,8 @@ std::function<void(Model*)> AllDifferentOnBounds(
 // "A filtering algorithm for constraints of difference in CSPs".
 //
 // This will fully encode variables.
-std::function<void(Model*)> AllDifferentAC(
-    absl::Span<const IntegerVariable> variables);
+void AddAllDifferentAC(absl::Span<const IntegerVariable> variables,
+                       Model* model);
 
 // Implementation of AllDifferentAC().
 class AllDifferentConstraint : PropagatorInterface {

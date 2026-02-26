@@ -394,7 +394,7 @@ void AddDisjunctiveTimeDecomposition(
       if (repository->IsOptional(var)) {
         presence_condition.push_back(repository->PresenceLiteral(var));
       }
-      model->Add(ReifiedBoolAnd(presence_condition, presence_at_time.back()));
+      AddReifiedBoolAnd(presence_condition, presence_at_time.back(), model);
     }
     AddAtMostOneConstraint(presence_at_time, model);
 

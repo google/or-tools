@@ -121,33 +121,28 @@ inline std::vector<IntegerValue> ToIntegerValueVector(
 }
 
 // Enforces the XOR of a set of literals to be equal to the given value.
-inline std::function<void(Model*)> LiteralXorIs(
-    absl::Span<const Literal> enforcement_literals,
-    const std::vector<Literal>& literals, bool value) {
-  return [=, enforcement_literals = std::vector<Literal>(
-                 enforcement_literals.begin(), enforcement_literals.end())](
-             Model* model) {
-    model->TakeOwnership(
-        new BooleanXorPropagator(enforcement_literals, literals, value, model));
-  };
+inline void AddLiteralXorIs(absl::Span<const Literal> enforcement_literals,
+                            const std::vector<Literal>& literals, bool value,
+                            Model* model) {
+  model->TakeOwnership(
+      new BooleanXorPropagator(enforcement_literals, literals, value, model));
 }
 
-inline std::function<void(Model*)> GreaterThanAtLeastOneOf(
+inline void AddGreaterThanAtLeastOneOf(
     IntegerVariable target_var, const absl::Span<const IntegerVariable> vars,
     const absl::Span<const IntegerValue> offsets,
     const absl::Span<const Literal> selectors,
-    const absl::Span<const Literal> enforcements) {
-  return [=](Model* model) {
-    std::vector<AffineExpression> exprs;
-    for (int i = 0; i < vars.size(); ++i) {
-      exprs.push_back(AffineExpression(vars[i], 1, offsets[i]));
-    }
-    GreaterThanAtLeastOneOfPropagator* constraint =
-        new GreaterThanAtLeastOneOfPropagator(target_var, exprs, selectors,
-                                              enforcements, model);
-    constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
-    model->TakeOwnership(constraint);
-  };
+    const absl::Span<const Literal> enforcements, Model* model) {
+  std::vector<AffineExpression> exprs;
+  exprs.reserve(vars.size());
+  for (int i = 0; i < vars.size(); ++i) {
+    exprs.push_back(AffineExpression(vars[i], 1, offsets[i]));
+  }
+  GreaterThanAtLeastOneOfPropagator* constraint =
+      new GreaterThanAtLeastOneOfPropagator(target_var, exprs, selectors,
+                                            enforcements, model);
+  constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
+  model->TakeOwnership(constraint);
 }
 
 // The target variable is equal to exactly one of the candidate variable. The
@@ -159,26 +154,22 @@ inline std::function<void(Model*)> GreaterThanAtLeastOneOf(
 //
 // Note(user): If there is just one or two candidates, this doesn't add
 // anything.
-inline std::function<void(Model*)> PartialIsOneOfVar(
-    IntegerVariable target_var, absl::Span<const IntegerVariable> vars,
-    absl::Span<const Literal> selectors) {
+inline void AddPartialIsOneOfVar(IntegerVariable target_var,
+                                 absl::Span<const IntegerVariable> vars,
+                                 absl::Span<const Literal> selectors,
+                                 Model* model) {
   CHECK_EQ(vars.size(), selectors.size());
-  return [=,
-          selectors = std::vector<Literal>(selectors.begin(), selectors.end()),
-          vars = std::vector<IntegerVariable>(vars.begin(), vars.end())](
-             Model* model) {
-    const std::vector<IntegerValue> offsets(vars.size(), IntegerValue(0));
-    if (vars.size() > 2) {
-      // Propagate the min.
-      model->Add(
-          GreaterThanAtLeastOneOf(target_var, vars, offsets, selectors, {}));
-    }
-    if (vars.size() > 2) {
-      // Propagate the max.
-      model->Add(GreaterThanAtLeastOneOf(
-          NegationOf(target_var), NegationOf(vars), offsets, selectors, {}));
-    }
-  };
+  const std::vector<IntegerValue> offsets(vars.size(), IntegerValue(0));
+  if (vars.size() > 2) {
+    // Propagate the min.
+    AddGreaterThanAtLeastOneOf(target_var, vars, offsets, selectors, {}, model);
+  }
+  if (vars.size() > 2) {
+    // Propagate the max.
+    const std::vector<IntegerVariable> negated_vars = NegationOf(vars);
+    AddGreaterThanAtLeastOneOf(NegationOf(target_var), negated_vars, offsets,
+                               selectors, {}, model);
+  }
 }
 
 }  // namespace sat

@@ -616,7 +616,7 @@ TEST(LiteralTableConstraint, PropagationFromLiterals) {
       {literals[0][2], literals[1][2], literals[2][2]},
       {literals[0][0], literals[1][1], literals[2][2]}};
 
-  model.Add(LiteralTableConstraint(tuples, selected));
+  AddLiteralTableConstraint(tuples, selected, &model);
   SatSolver* sat_solver = model.GetOrCreate<SatSolver>();
 
   EXPECT_TRUE(sat_solver->EnqueueDecisionIfNotConflicting(literals[0][0]));
@@ -651,7 +651,7 @@ TEST(LiteralTableConstraint, PropagationFromSelected) {
       {literals[0][2], literals[1][2], literals[2][2]},
       {literals[0][0], literals[1][1], literals[2][2]}};
 
-  model.Add(LiteralTableConstraint(tuples, selected));
+  AddLiteralTableConstraint(tuples, selected, &model);
   Trail* trail = model.GetOrCreate<Trail>();
   SatSolver* sat_solver = model.GetOrCreate<SatSolver>();
 

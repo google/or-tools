@@ -218,8 +218,8 @@ TEST(TimeTablingSolve, FindAll) {
     demand_exprs[i] = AffineExpression(IntegerValue(demands[i]));
   }
 
-  model.Add(Cumulative(/*enforcement_literals=*/{}, intervals, demand_exprs,
-                       capacity_expr));
+  AddCumulative(/*enforcement_literals=*/{}, intervals, demand_exprs,
+                capacity_expr, &model);
 
   int num_solutions_found = 0;
   auto* integer_trail = model.GetOrCreate<IntegerTrail>();
@@ -266,8 +266,8 @@ TEST(TimeTablingSolve, FindAllWithVaryingCapacity) {
       demand_exprs[i] = AffineExpression(IntegerValue(demands[i]));
     }
 
-    model.Add(Cumulative(/*enforcement_literals=*/{}, intervals, demand_exprs,
-                         capacity_expr));
+    AddCumulative(/*enforcement_literals=*/{}, intervals, demand_exprs,
+                  capacity_expr, &model);
 
     int num_solutions_found = 0;
     auto* integer_trail = model.GetOrCreate<IntegerTrail>();
@@ -307,8 +307,8 @@ TEST(TimeTablingSolve, FindAllWithVaryingCapacity) {
     demand_exprs[i] = AffineExpression(IntegerValue(demands[i]));
   }
 
-  model.Add(Cumulative(/*enforcement_literals=*/{}, intervals, demand_exprs,
-                       capacity_expr));
+  AddCumulative(/*enforcement_literals=*/{}, intervals, demand_exprs,
+                capacity_expr, &model);
 
   int num_solutions_found = 0;
   auto* integer_trail = model.GetOrCreate<IntegerTrail>();
@@ -358,8 +358,8 @@ TEST(TimeTablingSolve, FindAllWithOptionals) {
     demand_exprs[i] = AffineExpression(IntegerValue(demands[i]));
   }
 
-  model.Add(Cumulative(/*enforcement_literals=*/{}, intervals, demand_exprs,
-                       capacity_expr));
+  AddCumulative(/*enforcement_literals=*/{}, intervals, demand_exprs,
+                capacity_expr, &model);
 
   int num_solutions_found = 0;
   auto* integer_trail = model.GetOrCreate<IntegerTrail>();
@@ -408,7 +408,7 @@ TEST(ReservoirTest, FindAllParenthesis) {
   const Literal true_lit = model.GetOrCreate<TrivialLiterals>()->TrueLiteral();
   std::vector<Literal> all_true(size, true_lit);
 
-  model.Add(AllDifferentOnBounds(vars));
+  AddAllDifferentOnBounds(vars, &model);
   AddReservoirConstraint(/*enforcement_literals=*/{}, times, deltas, all_true,
                          0, size, &model);
 
@@ -465,7 +465,7 @@ TEST(ReservoirTest, FindAllParenthesisWithOptionality) {
     present[i] = Literal(model.Add(NewBooleanVariable()), true);
   }
 
-  model.Add(AllDifferentOnBounds(vars));
+  AddAllDifferentOnBounds(vars, &model);
   AddReservoirConstraint(/*enforcement_literals=*/{}, times, deltas, present, 0,
                          size, &model);
 

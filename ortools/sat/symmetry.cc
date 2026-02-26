@@ -101,7 +101,7 @@ bool SymmetryPropagator::PropagateNext(Trail* trail) {
       const absl::Span<const Literal> initial_reason =
           trail->Reason(non_symmetric.literal.Variable());
       if (absl::c_any_of(initial_reason, [this](Literal literal) {
-            return literal.Index() >= num_literals_with_knonw_symmetry_;
+            return literal.Index() >= num_literals_with_known_symmetry_;
           })) {
         continue;
       }

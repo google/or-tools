@@ -71,7 +71,7 @@ void AddDisjunctive(const std::vector<Literal>& enforcement_literals,
     for (const IntervalVariable interval : intervals) {
       starts.push_back(repository->Start(interval));
     }
-    model->Add(AllDifferentOnBounds(enforcement_literals, starts));
+    AddAllDifferentOnBounds(enforcement_literals, starts, model);
     return;
   }
 

@@ -468,7 +468,7 @@ TEST(IntegerTrailTest, VariableWithHole) {
   Model model;
   IntegerVariable a =
       model.Add(NewIntegerVariable(Domain::FromIntervals({{1, 3}, {6, 7}})));
-  model.Add(GreaterOrEqual(a, 4));
+  AddGreaterOrEqual(a, 4, &model);
   EXPECT_EQ(model.Get(LowerBound(a)), 6);
 }
 
@@ -679,7 +679,7 @@ TEST(IntegerEncoderTest, BasicInequalityEncoding) {
 
   // Test the other way around.
   model.GetOrCreate<SatSolver>()->Backtrack(0);
-  model.Add(GreaterOrEqual(var, 4));
+  AddGreaterOrEqual(var, 4, &model);
   EXPECT_EQ(SatSolver::FEASIBLE, model.GetOrCreate<SatSolver>()->Solve());
   EXPECT_TRUE(model.Get(Value(l3)));
   EXPECT_FALSE(model.Get(Value(l5)));
@@ -1263,8 +1263,8 @@ TEST(SolveIntegerProblemWithLazyEncodingTest, Sat) {
 TEST(SolveIntegerProblemWithLazyEncodingTest, Unsat) {
   Model model;
   const IntegerVariable var = model.Add(NewIntegerVariable(-100, 100));
-  model.Add(LowerOrEqual(var, -10));
-  model.Add(GreaterOrEqual(var, 10));
+  AddLowerOrEqual(var, -10, &model);
+  AddGreaterOrEqual(var, 10, &model);
   model.GetOrCreate<SearchHeuristics>()->fixed_search =
       FirstUnassignedVarAtItsMinHeuristic({var}, &model);
   ConfigureSearchHeuristics(&model);

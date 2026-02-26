@@ -110,7 +110,7 @@ class SymmetryPropagator : public SatPropagator {
   // allow the propagator to handle lit2 and lit3 differently, even if both are
   // not part of any symmetry permutation.
   void SetNumLiterals(int num_literals) {
-    num_literals_with_knonw_symmetry_ = num_literals;
+    num_literals_with_known_symmetry_ = num_literals;
   }
 
   // Visible for testing.
@@ -179,7 +179,7 @@ class SymmetryPropagator : public SatPropagator {
   mutable StatsGroup stats_;
   int num_propagations_;
   int num_conflicts_;
-  int num_literals_with_knonw_symmetry_;
+  int num_literals_with_known_symmetry_;
 };
 
 }  // namespace sat

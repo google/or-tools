@@ -136,8 +136,8 @@ int CountAllSolutions(const RcpspInstance& instance, SatParameters parameters,
     demands[t] = IntegerValue(instance.demands[t]);
   }
 
-  model.Add(cumulative(/*enforcement_literals=*/{}, intervals, demands,
-                       capacity, nullptr));
+  cumulative(/*enforcement_literals=*/{}, intervals, demands, capacity, &model,
+             nullptr);
 
   // Make sure that every Boolean variable is considered as a decision variable
   // to be fixed.
@@ -172,7 +172,8 @@ TEST(CumulativeTimeDecompositionTest, AllPermutations) {
   instance.capacity = 1;
   instance.min_start = 0;
   instance.max_end = 5;
-  ASSERT_EQ(120, CountAllSolutions(instance, {}, CumulativeTimeDecomposition));
+  ASSERT_EQ(120,
+            CountAllSolutions(instance, {}, AddCumulativeTimeDecomposition));
 }
 
 TEST(CumulativeTimeDecompositionTest, FindAll) {
@@ -183,8 +184,9 @@ TEST(CumulativeTimeDecompositionTest, FindAll) {
   instance.capacity = 4;
   instance.min_start = 0;
   instance.max_end = 11;
-  ASSERT_EQ(2040, CountAllSolutions(instance, {}, CumulativeTimeDecomposition));
-  ASSERT_EQ(2040, CountAllSolutions(instance, {}, CumulativeUsingReservoir));
+  ASSERT_EQ(2040,
+            CountAllSolutions(instance, {}, AddCumulativeTimeDecomposition));
+  ASSERT_EQ(2040, CountAllSolutions(instance, {}, AddCumulativeUsingReservoir));
 }
 
 TEST(CumulativeTimeDecompositionTest, OptionalTasks1) {
@@ -195,8 +197,8 @@ TEST(CumulativeTimeDecompositionTest, OptionalTasks1) {
   instance.capacity = 7;
   instance.min_start = 0;
   instance.max_end = 2;
-  ASSERT_EQ(25, CountAllSolutions(instance, {}, Cumulative));
-  ASSERT_EQ(25, CountAllSolutions(instance, {}, CumulativeUsingReservoir));
+  ASSERT_EQ(25, CountAllSolutions(instance, {}, AddCumulative));
+  ASSERT_EQ(25, CountAllSolutions(instance, {}, AddCumulativeUsingReservoir));
 }
 
 // Up to two tasks can be scheduled at the same time.
@@ -208,8 +210,8 @@ TEST(CumulativeTimeDecompositionTest, OptionalTasks2) {
   instance.capacity = 7;
   instance.min_start = 0;
   instance.max_end = 3;
-  ASSERT_EQ(7, CountAllSolutions(instance, {}, CumulativeTimeDecomposition));
-  ASSERT_EQ(7, CountAllSolutions(instance, {}, CumulativeUsingReservoir));
+  ASSERT_EQ(7, CountAllSolutions(instance, {}, AddCumulativeTimeDecomposition));
+  ASSERT_EQ(7, CountAllSolutions(instance, {}, AddCumulativeUsingReservoir));
 }
 
 TEST(CumulativeTimeDecompositionTest, RegressionTest1) {
@@ -220,7 +222,7 @@ TEST(CumulativeTimeDecompositionTest, RegressionTest1) {
   instance.capacity = 5;
   instance.min_start = 0;
   instance.max_end = 2;
-  ASSERT_EQ(0, CountAllSolutions(instance, {}, CumulativeTimeDecomposition));
+  ASSERT_EQ(0, CountAllSolutions(instance, {}, AddCumulativeTimeDecomposition));
 }
 
 // Cumulative was pruning too many solutions on that instance.
@@ -235,16 +237,16 @@ TEST(CumulativeTimeDecompositionTest, RegressionTest2) {
   instance.capacity = 6;
   instance.min_start = 0;
   instance.max_end = 5;
-  ASSERT_EQ(
-      22, CountAllSolutions(instance, parameters, CumulativeTimeDecomposition));
+  ASSERT_EQ(22, CountAllSolutions(instance, parameters,
+                                  AddCumulativeTimeDecomposition));
 }
 
 bool CheckCumulative(const SatParameters& parameters,
                      const RcpspInstance& instance) {
   const int64_t num_solutions_ref =
-      CountAllSolutions(instance, parameters, CumulativeTimeDecomposition);
+      CountAllSolutions(instance, parameters, AddCumulativeTimeDecomposition);
   const int64_t num_solutions_test =
-      CountAllSolutions(instance, parameters, Cumulative);
+      CountAllSolutions(instance, parameters, AddCumulative);
   if (num_solutions_ref != num_solutions_test) {
     LOG(INFO) << "Want: " << num_solutions_ref
               << " solutions, got: " << num_solutions_test << " solutions.";
@@ -252,7 +254,7 @@ bool CheckCumulative(const SatParameters& parameters,
     return false;
   }
   const int64_t num_solutions_reservoir =
-      CountAllSolutions(instance, parameters, CumulativeUsingReservoir);
+      CountAllSolutions(instance, parameters, AddCumulativeUsingReservoir);
   if (num_solutions_ref != num_solutions_reservoir) {
     LOG(INFO) << "Want: " << num_solutions_ref
               << " solutions, got: " << num_solutions_reservoir
@@ -272,8 +274,8 @@ TEST(CumulativeTest, CapacityAndDemand) {
   const IntegerVariable demand = model.Add(NewIntegerVariable(5, 15));
   const IntegerVariable capacity = model.Add(NewIntegerVariable(0, 10));
   const IntegerTrail* integer_trail = model.GetOrCreate<IntegerTrail>();
-  model.Add(Cumulative(/*enforcement_literals=*/{}, {interval},
-                       {AffineExpression(demand)}, AffineExpression(capacity)));
+  AddCumulative(/*enforcement_literals=*/{}, {interval},
+                {AffineExpression(demand)}, AffineExpression(capacity), &model);
   ASSERT_TRUE(sat_solver->Propagate());
   ASSERT_EQ(integer_trail->LowerBound(capacity), 5);
   ASSERT_EQ(integer_trail->UpperBound(capacity), 10);
@@ -293,8 +295,8 @@ TEST(CumulativeTest, CapacityAndZeroDemand) {
   const IntegerVariable demand = model.Add(NewIntegerVariable(11, 15));
   const IntegerVariable capacity = model.Add(NewIntegerVariable(0, 10));
   const IntegerTrail* integer_trail = model.GetOrCreate<IntegerTrail>();
-  model.Add(Cumulative(/*enforcement_literals=*/{}, {interval},
-                       {AffineExpression(demand)}, AffineExpression(capacity)));
+  AddCumulative(/*enforcement_literals=*/{}, {interval},
+                {AffineExpression(demand)}, AffineExpression(capacity), &model);
   ASSERT_TRUE(sat_solver->Propagate());
   ASSERT_EQ(integer_trail->LowerBound(capacity), 0);
   ASSERT_EQ(integer_trail->UpperBound(capacity), 10);
@@ -313,8 +315,8 @@ TEST(CumulativeTest, CapacityAndOptionalTask) {
       model.Add(NewOptionalInterval(-1000, 1000, 1, l));
   const IntegerVariable demand = model.Add(ConstantIntegerVariable(15));
   const IntegerVariable capacity = model.Add(ConstantIntegerVariable(10));
-  model.Add(Cumulative(/*enforcement_literals=*/{}, {interval},
-                       {AffineExpression(demand)}, AffineExpression(capacity)));
+  AddCumulative(/*enforcement_literals=*/{}, {interval},
+                {AffineExpression(demand)}, AffineExpression(capacity), &model);
   ASSERT_TRUE(sat_solver->Propagate());
   ASSERT_FALSE(model.Get(Value(l)));
 }
@@ -331,7 +333,7 @@ TEST(CumulativeTest, RegressionTest1) {
   instance.capacity = 6;
   instance.min_start = 0;
   instance.max_end = 5;
-  ASSERT_EQ(22, CountAllSolutions(instance, parameters, Cumulative));
+  ASSERT_EQ(22, CountAllSolutions(instance, parameters, AddCumulative));
 }
 
 // Cumulative was pruning too many solutions on that instance.
@@ -346,7 +348,7 @@ TEST(CumulativeTest, RegressionTest2) {
   instance.capacity = 6;
   instance.min_start = 0;
   instance.max_end = 7;
-  ASSERT_EQ(9, CountAllSolutions(instance, parameters, Cumulative));
+  ASSERT_EQ(9, CountAllSolutions(instance, parameters, AddCumulative));
 }
 
 // ========================================================================

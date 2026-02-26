@@ -140,10 +140,10 @@ void LoadVariables(const CpModelProto& model_proto,
 
     sat_solver->SetNumVariables(new_var.value());
     for (const BooleanVariable var : true_variables) {
-      m->Add(ClauseConstraint({sat::Literal(var, true)}));
+      AddClauseConstraint({sat::Literal(var, true)}, m);
     }
     for (const BooleanVariable var : false_variables) {
-      m->Add(ClauseConstraint({sat::Literal(var, false)}));
+      AddClauseConstraint({sat::Literal(var, false)}, m);
     }
 
     auto* trivial_literals = m->GetOrCreate<TrivialLiterals>();
@@ -557,9 +557,8 @@ void ExtractEncoding(const CpModelProto& model_proto, Model* m) {
   int num_half_inequalities = 0;
   for (const auto inequality : inequalities) {
     if (mapping->ConstraintIsAlreadyLoaded(inequality.ct)) continue;
-    m->Add(
-        Implication(inequality.literal,
-                    encoder->GetOrCreateAssociatedLiteral(inequality.i_lit)));
+    AddImplication(inequality.literal,
+                   encoder->GetOrCreateAssociatedLiteral(inequality.i_lit), m);
     if (sat_solver->ModelIsUnsat()) return;
 
     ++num_half_inequalities;
@@ -629,18 +628,18 @@ void ExtractEncoding(const CpModelProto& model_proto, Model* m) {
         // TODO(user): It is not 100% clear what is the best encoding and if
         // we should create equivalent literal or rely on propagator instead
         // to push bounds.
-        m->Add(Implication(
-            equality.literal,
-            encoder->GetOrCreateAssociatedLiteral(
-                IntegerLiteral::GreaterOrEqual(var, equality.value))));
-        m->Add(Implication(
-            equality.literal,
-            encoder->GetOrCreateAssociatedLiteral(
-                IntegerLiteral::LowerOrEqual(var, equality.value))));
+        AddImplication(equality.literal,
+                       encoder->GetOrCreateAssociatedLiteral(
+                           IntegerLiteral::GreaterOrEqual(var, equality.value)),
+                       m);
+        AddImplication(equality.literal,
+                       encoder->GetOrCreateAssociatedLiteral(
+                           IntegerLiteral::LowerOrEqual(var, equality.value)),
+                       m);
       } else {
         const Literal eq = encoder->GetOrCreateLiteralAssociatedToEquality(
             var, equality.value);
-        m->Add(Implication(equality.literal, eq.Negated()));
+        AddImplication(equality.literal, eq.Negated(), m);
       }
 
       ++num_half_equalities;
@@ -1046,8 +1045,8 @@ void LoadExactlyOneConstraint(const ConstraintProto& ct, Model* m) {
 
 void LoadBoolXorConstraint(const ConstraintProto& ct, Model* m) {
   auto* mapping = m->GetOrCreate<CpModelMapping>();
-  m->Add(LiteralXorIs(mapping->Literals(ct.enforcement_literal()),
-                      mapping->Literals(ct.bool_xor().literals()), true));
+  AddLiteralXorIs(mapping->Literals(ct.enforcement_literal()),
+                  mapping->Literals(ct.bool_xor().literals()), true, m);
 }
 
 namespace {
@@ -1070,14 +1069,14 @@ void LoadEquivalenceAC(const std::vector<Literal> enforcement_literal,
   for (const auto value_literal : copy) {
     const IntegerValue target = rhs - value_literal.value * coeff2;
     if (!term1_value_to_literal.contains(target)) {
-      m->Add(EnforcedClause(enforcement_literal,
-                            {value_literal.literal.Negated()}));
+      AddEnforcedClause(enforcement_literal, {value_literal.literal.Negated()},
+                        m);
     } else {
       const Literal target_literal = term1_value_to_literal[target];
-      m->Add(EnforcedClause(enforcement_literal,
-                            {value_literal.literal.Negated(), target_literal}));
-      m->Add(EnforcedClause(enforcement_literal,
-                            {value_literal.literal, target_literal.Negated()}));
+      AddEnforcedClause(enforcement_literal,
+                        {value_literal.literal.Negated(), target_literal}, m);
+      AddEnforcedClause(enforcement_literal,
+                        {value_literal.literal, target_literal.Negated()}, m);
 
       // This "target" can never be reached again, so it is safe to remove it.
       // We do that so we know the term1 values that are never reached.
@@ -1093,7 +1092,7 @@ void LoadEquivalenceAC(const std::vector<Literal> enforcement_literal,
   }
   std::sort(implied_false.begin(), implied_false.end());
   for (const Literal l : implied_false) {
-    m->Add(EnforcedClause(enforcement_literal, {l.Negated()}));
+    AddEnforcedClause(enforcement_literal, {l.Negated()}, m);
   }
 }
 
@@ -1117,9 +1116,9 @@ void LoadEquivalenceNeqAC(const std::vector<Literal> enforcement_literal,
     const auto& it = term1_value_to_literal.find(target_value);
     if (it != term1_value_to_literal.end()) {
       const Literal target_literal = it->second;
-      m->Add(EnforcedClause(
+      AddEnforcedClause(
           enforcement_literal,
-          {value_literal.literal.Negated(), target_literal.Negated()}));
+          {value_literal.literal.Negated(), target_literal.Negated()}, m);
     }
   }
 }
@@ -1230,11 +1229,11 @@ void SplitAndLoadIntermediateConstraints(bool lb_required, bool ub_required,
 
     if (lb_required) {
       // We have sum bucket_var >= lb, so we need local_vars >= bucket_var.
-      m->Add(WeightedSumGreaterOrEqual(local_vars, local_coeffs, 0));
+      AddWeightedSumGreaterOrEqual(local_vars, local_coeffs, 0, m);
     }
     if (ub_required) {
       // Similarly, bucket_var <= ub, so we need local_vars <= bucket_var
-      m->Add(WeightedSumLowerOrEqual(local_vars, local_coeffs, 0));
+      AddWeightedSumLowerOrEqual(local_vars, local_coeffs, 0, m);
     }
   }
 
@@ -1254,7 +1253,7 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
       for (const int ref : ct.enforcement_literal()) {
         clause.push_back(mapping->Literal(ref).Negated());
       }
-      m->Add(ClauseConstraint(clause));
+      AddClauseConstraint(clause, m);
     } else {
       VLOG(1) << "Trivially UNSAT constraint: " << ct;
       m->GetOrCreate<SatSolver>()->NotifyThatModelIsUnsat();
@@ -1495,14 +1494,14 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
       linear_is_enforced = Literal(m->Add(NewBooleanVariable()), true);
       std::vector<Literal> maintain_linear_is_enforced;
       for (const Literal e_lit : enforcement_literals) {
-        m->Add(Implication(e_lit.Negated(), linear_is_enforced.Negated()));
+        AddImplication(e_lit.Negated(), linear_is_enforced.Negated(), m);
         maintain_linear_is_enforced.push_back(e_lit.Negated());
       }
       maintain_linear_is_enforced.push_back(linear_is_enforced);
-      m->Add(ClauseConstraint(maintain_linear_is_enforced));
+      AddClauseConstraint(maintain_linear_is_enforced, m);
     }
     for (const Literal lit : for_enumeration) {
-      m->Add(Implication(linear_is_enforced.Negated(), lit.Negated()));
+      AddImplication(linear_is_enforced.Negated(), lit.Negated(), m);
       if (special_case) break;  // For the unique Boolean var to be false.
     }
   }
@@ -1511,7 +1510,7 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
     for (const Literal e_lit : enforcement_literals) {
       clause.push_back(e_lit.Negated());
     }
-    m->Add(ClauseConstraint(clause));
+    AddClauseConstraint(clause, m);
   }
 }
 
@@ -1521,7 +1520,7 @@ void LoadAllDiffConstraint(const ConstraintProto& ct, Model* m) {
       mapping->Literals(ct.enforcement_literal());
   const std::vector<AffineExpression> expressions =
       mapping->Affines(ct.all_diff().exprs());
-  m->Add(AllDifferentOnBounds(enforcement_literals, expressions));
+  AddAllDifferentOnBounds(enforcement_literals, expressions, m);
 }
 
 void LoadAlwaysFalseConstraint(const ConstraintProto& ct, Model* m) {
@@ -1573,7 +1572,7 @@ void LoadIntProdConstraint(const ConstraintProto& ct, Model* m) {
       break;
     }
     case 2: {
-      m->Add(ProductConstraint(enforcement_literals, terms[0], terms[1], prod));
+      AddProductConstraint(enforcement_literals, terms[0], terms[1], prod, m);
       break;
     }
     default: {
@@ -1592,8 +1591,8 @@ void LoadIntDivConstraint(const ConstraintProto& ct, Model* m) {
   const AffineExpression num = mapping->Affine(ct.int_div().exprs(0));
   const AffineExpression denom = mapping->Affine(ct.int_div().exprs(1));
   if (integer_trail->IsFixed(denom)) {
-    m->Add(FixedDivisionConstraint(enforcement_literals, num,
-                                   integer_trail->FixedValue(denom), div));
+    AddFixedDivisionConstraint(enforcement_literals, num,
+                               integer_trail->FixedValue(denom), div, m);
   } else {
     if (VLOG_IS_ON(1)) {
       LinearConstraintBuilder builder(m);
@@ -1602,7 +1601,7 @@ void LoadIntDivConstraint(const ConstraintProto& ct, Model* m) {
         VLOG(1) << "Division " << ct << " can be linearized";
       }
     }
-    m->Add(DivisionConstraint(enforcement_literals, num, denom, div));
+    AddDivisionConstraint(enforcement_literals, num, denom, div, m);
   }
 }
 
@@ -1617,8 +1616,7 @@ void LoadIntModConstraint(const ConstraintProto& ct, Model* m) {
   const AffineExpression mod = mapping->Affine(ct.int_mod().exprs(1));
   CHECK(integer_trail->IsFixed(mod));
   const IntegerValue fixed_modulo = integer_trail->FixedValue(mod);
-  m->Add(
-      FixedModuloConstraint(enforcement_literals, expr, fixed_modulo, target));
+  AddFixedModuloConstraint(enforcement_literals, expr, fixed_modulo, target, m);
 }
 
 void LoadLinMaxConstraint(const ConstraintProto& ct, Model* m) {
@@ -1668,7 +1666,7 @@ void LoadCumulativeConstraint(const ConstraintProto& ct, Model* m) {
   const AffineExpression capacity = mapping->Affine(ct.cumulative().capacity());
   const std::vector<AffineExpression> demands =
       mapping->Affines(ct.cumulative().demands());
-  m->Add(Cumulative(enforcement_literals, intervals, demands, capacity));
+  AddCumulative(enforcement_literals, intervals, demands, capacity, m);
 }
 
 void LoadReservoirConstraint(const ConstraintProto& ct, Model* m) {

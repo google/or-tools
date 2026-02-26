@@ -24,7 +24,7 @@
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/integer_search.h"
 #include "ortools/sat/model.h"
-#include "ortools/sat/precedences.h"
+#include "ortools/sat/old_precedences_propagator.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
 
@@ -36,8 +36,8 @@ TEST(LiteralXorIsTest, OneVariable) {
   Model model;
   const BooleanVariable a = model.Add(NewBooleanVariable());
   const BooleanVariable b = model.Add(NewBooleanVariable());
-  model.Add(LiteralXorIs({}, {Literal(a, true)}, true));
-  model.Add(LiteralXorIs({}, {Literal(b, true)}, false));
+  AddLiteralXorIs({}, {Literal(a, true)}, true, &model);
+  AddLiteralXorIs({}, {Literal(b, true)}, false, &model);
   SatSolver* solver = model.GetOrCreate<SatSolver>();
   EXPECT_TRUE(solver->Propagate());
   EXPECT_TRUE(solver->Assignment().LiteralIsTrue(Literal(a, true)));
@@ -48,8 +48,8 @@ TEST(LiteralXorIsTest, OneEnforcedVariable) {
   Model model;
   const BooleanVariable e = model.Add(NewBooleanVariable());
   const BooleanVariable f = model.Add(NewBooleanVariable());
-  model.Add(LiteralXorIs({Literal(e, true)}, {}, true));
-  model.Add(LiteralXorIs({Literal(f, false)}, {}, true));
+  AddLiteralXorIs({Literal(e, true)}, {}, true, &model);
+  AddLiteralXorIs({Literal(f, false)}, {}, true, &model);
   SatSolver* solver = model.GetOrCreate<SatSolver>();
   EXPECT_TRUE(solver->Propagate());
   EXPECT_TRUE(solver->Assignment().LiteralIsFalse(Literal(e, true)));
@@ -70,20 +70,20 @@ TEST(PartialIsOneOfVarTest, MinMaxPropagation) {
     vars.push_back(model.Add(ConstantIntegerVariable(i)));
     selectors.push_back(Literal(model.Add(NewBooleanVariable()), true));
   }
-  model.Add(PartialIsOneOfVar(target_var, vars, selectors));
+  AddPartialIsOneOfVar(target_var, vars, selectors, &model);
 
   EXPECT_TRUE(model.GetOrCreate<SatSolver>()->Propagate());
   EXPECT_BOUNDS_EQ(target_var, 0, 9);
 
-  model.Add(ClauseConstraint({selectors[0].Negated()}));
+  AddClauseConstraint({selectors[0].Negated()}, &model);
   EXPECT_TRUE(model.GetOrCreate<SatSolver>()->Propagate());
   EXPECT_BOUNDS_EQ(target_var, 1, 9);
 
-  model.Add(ClauseConstraint({selectors[8].Negated()}));
+  AddClauseConstraint({selectors[8].Negated()}, &model);
   EXPECT_TRUE(model.GetOrCreate<SatSolver>()->Propagate());
   EXPECT_BOUNDS_EQ(target_var, 1, 9);
 
-  model.Add(ClauseConstraint({selectors[9].Negated()}));
+  AddClauseConstraint({selectors[9].Negated()}, &model);
   EXPECT_TRUE(model.GetOrCreate<SatSolver>()->Propagate());
   EXPECT_BOUNDS_EQ(target_var, 1, 7);
 }
@@ -99,12 +99,12 @@ TEST(GreaterThanAtLeastOneOfPropagatorTest, BasicTest) {
     const IntegerVariable c = model.Add(NewIntegerVariable(0, 3));
     const Literal ac = Literal(model.Add(NewBooleanVariable()), true);
     const Literal bc = Literal(model.Add(NewBooleanVariable()), true);
-    model.Add(ConditionalLowerOrEqualWithOffset(a, c, 3, ac));
-    model.Add(ConditionalLowerOrEqualWithOffset(b, c, 2, bc));
-    model.Add(ClauseConstraint({ac, bc}));
+    AddConditionalLowerOrEqualWithOffset(a, c, 3, ac, &model);
+    AddConditionalLowerOrEqualWithOffset(b, c, 2, bc, &model);
+    AddClauseConstraint({ac, bc}, &model);
     if (i == 1) {
-      model.Add(GreaterThanAtLeastOneOf(
-          c, {a, b}, {IntegerValue(3), IntegerValue(2)}, {ac, bc}, {}));
+      AddGreaterThanAtLeastOneOf(c, {a, b}, {IntegerValue(3), IntegerValue(2)},
+                                 {ac, bc}, {}, &model);
     }
 
     // Test that we do propagate more with the extra propagator.

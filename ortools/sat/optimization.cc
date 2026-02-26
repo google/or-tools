@@ -1173,8 +1173,8 @@ SatSolver::Status CoreBasedOptimizer::Optimize() {
           constraint_coeffs.push_back(objective_coeff);
         }
         if (!constraint_vars.empty()) {
-          model_->Add(WeightedSumLowerOrEqual(
-              constraint_vars, constraint_coeffs, -objective_offset.value()));
+          AddWeightedSumLowerOrEqual(constraint_vars, constraint_coeffs,
+                                     -objective_offset.value(), model_);
         }
       }
 
@@ -1306,8 +1306,8 @@ SatSolver::Status CoreBasedOptimizer::Optimize() {
         }
         constraint_vars.push_back(new_var);
         constraint_coeffs.push_back(-1);
-        model_->Add(
-            WeightedSumLowerOrEqual(constraint_vars, constraint_coeffs, 0));
+        AddWeightedSumLowerOrEqual(constraint_vars, constraint_coeffs, 0,
+                                   model_);
       }
     }
 

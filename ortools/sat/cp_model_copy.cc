@@ -59,8 +59,12 @@ int LiteralToRef(Literal lit) {
 }
 }  // namespace
 
-ModelCopy::ModelCopy(PresolveContext* context)
+ModelCopy::ModelCopy(PresolveContext* context,
+                     absl::Span<const int> variable_mapping,
+                     absl::Span<const int> reverse_mapping)
     : context_(context),
+      variable_mapping_(variable_mapping),
+      reverse_mapping_(reverse_mapping),
       lrat_proof_handler_(context->lrat_proof_handler.get()) {}
 
 void ModelCopy::ImportVariablesAndMaybeIgnoreNames(
@@ -291,6 +295,25 @@ bool ModelCopy::ImportAndSimplifyConstraints(
   return true;
 }
 
+void ModelCopy::RemapVariables() {
+  if (variable_mapping_.empty()) return;
+  google::protobuf::RepeatedPtrField<IntegerVariableProto> mapped_variables;
+  for (const int reverse_mapped_var : reverse_mapping_) {
+    Domain domain = context_->DomainOf(PositiveRef(reverse_mapped_var));
+    if (!RefIsPositive(reverse_mapped_var)) {
+      // A variable can only be reverse mapped to a negative variable reference
+      // if it is a Boolean variable, in which case the remapped domain is
+      // unchanged (unless it is fixed).
+      DCHECK(domain.IsIncludedIn(Domain(0, 1)));
+      if (domain.IsFixed()) {
+        domain = Domain(1 - domain.Min());
+      }
+    }
+    FillDomainInProto(domain, mapped_variables.Add());
+  }
+  context_->working_model->mutable_variables()->Swap(&mapped_variables);
+}
+
 bool ModelCopy::PrepareEnforcementCopy(const ConstraintProto& ct) {
   temp_enforcement_literals_.clear();
   for (const int lit : ct.enforcement_literal()) {
@@ -299,7 +322,7 @@ bool ModelCopy::PrepareEnforcementCopy(const ConstraintProto& ct) {
       context_->UpdateRuleStats("enforcement: always false");
       return false;
     }
-    temp_enforcement_literals_.push_back(lit);
+    temp_enforcement_literals_.push_back(MapLiteral(lit));
   }
   return true;  // Continue processing.
 }
@@ -309,23 +332,23 @@ bool ModelCopy::PrepareEnforcementCopyWithDup(const ConstraintProto& ct) {
   temp_enforcement_literals_set_.clear();
   for (const int lit : ct.enforcement_literal()) {
     if (context_->LiteralIsTrue(lit)) continue;
-    if (temp_enforcement_literals_set_.contains(lit)) {
-      context_->UpdateRuleStats("enforcement: removed duplicate literal");
-      continue;
-    }
-
     // Cannot be satisfied.
     if (context_->LiteralIsFalse(lit)) {
       context_->UpdateRuleStats("enforcement: always false");
       return false;
     }
-    if (temp_enforcement_literals_set_.contains(NegatedRef(lit))) {
+    const int mapped_lit = MapLiteral(lit);
+    if (temp_enforcement_literals_set_.contains(mapped_lit)) {
+      context_->UpdateRuleStats("enforcement: removed duplicate literal");
+      continue;
+    }
+    if (temp_enforcement_literals_set_.contains(NegatedRef(mapped_lit))) {
       context_->UpdateRuleStats("enforcement: contains x and not(x)");
       return false;
     }
 
-    temp_enforcement_literals_.push_back(lit);
-    temp_enforcement_literals_set_.insert(lit);
+    temp_enforcement_literals_.push_back(mapped_lit);
+    temp_enforcement_literals_set_.insert(mapped_lit);
   }
   return true;  // Continue processing.
 }
@@ -340,7 +363,8 @@ bool ModelCopy::FinishBoolOrCopy() {
 
   if (temp_literals_.size() == 1) {
     context_->UpdateRuleStats("bool_or: only one literal");
-    return context_->SetLiteralToTrue(temp_literals_[0]);
+    const int lit = ReverseMapLiteral(temp_literals_[0]);
+    return context_->SetLiteralToTrue(lit);
   }
 
   context_->working_model->add_constraints()
@@ -360,7 +384,7 @@ bool ModelCopy::CopyBoolOr(const ConstraintProto& ct) {
       return true;
     }
     if (!context_->LiteralIsFalse(lit)) {
-      temp_literals_.push_back(lit);
+      temp_literals_.push_back(MapLiteral(lit));
     }
   }
   return FinishBoolOrCopy();
@@ -386,15 +410,17 @@ bool ModelCopy::CopyBoolOrWithDupSupport(const ConstraintProto& ct,
       return true;
     }
     if (context_->LiteralIsFalse(lit)) continue;
-    if (temp_literals_set_.contains(NegatedRef(lit))) {
+    const int mapped_lit = MapLiteral(lit);
+    if (temp_literals_set_.contains(NegatedRef(mapped_lit))) {
       context_->UpdateRuleStats("bool_or: always true");
       return true;
     }
-    const auto [it, inserted] = temp_literals_set_.insert(lit);
-    if (inserted) temp_literals_.push_back(lit);
+    const auto [it, inserted] = temp_literals_set_.insert(mapped_lit);
+    if (inserted) temp_literals_.push_back(mapped_lit);
   }
   DCHECK_EQ(temp_literals_.size(), temp_literals_set_.size());
   if (lrat_proof_handler_ != nullptr) {
+    CHECK(variable_mapping_.empty());
     // Add the original clause as a problem clause, and its simplified version
     // as an inferred clause (only if it is different), with proof.
     temp_clause_.clear();
@@ -478,24 +504,25 @@ bool ModelCopy::CopyBoolAndWithDupSupport(const ConstraintProto& ct) {
       at_least_one_false = true;
       break;
     }
-    if (temp_literals_set_.contains(NegatedRef(lit))) {
+    if (context_->LiteralIsTrue(lit)) continue;
+    const int mapped_lit = MapLiteral(lit);
+    if (temp_literals_set_.contains(NegatedRef(mapped_lit))) {
       context_->UpdateRuleStats("bool and: => x and not(x) ");
       at_least_one_false = true;
       break;
     }
-    if (temp_enforcement_literals_set_.contains(NegatedRef(lit))) {
+    if (temp_enforcement_literals_set_.contains(NegatedRef(mapped_lit))) {
       context_->UpdateRuleStats("bool and: not(x) => x");
       at_least_one_false = true;
       break;
     }
 
-    if (context_->LiteralIsTrue(lit)) continue;
-    if (temp_enforcement_literals_set_.contains(lit)) {
+    if (temp_enforcement_literals_set_.contains(mapped_lit)) {
       context_->UpdateRuleStats("bool and: x => x");
       continue;
     }
-    const auto [it, inserted] = temp_literals_set_.insert(lit);
-    if (inserted) temp_literals_.push_back(lit);
+    const auto [it, inserted] = temp_literals_set_.insert(mapped_lit);
+    if (inserted) temp_literals_.push_back(mapped_lit);
   }
 
   if (at_least_one_false) {

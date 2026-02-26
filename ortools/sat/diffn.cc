@@ -150,9 +150,9 @@ void AddDiffnCumulativeRelationOnX(
                   integer_trail->LowerBound(min_start_var).value())));
     const std::vector<int64_t> coeffs = {-capacity.coeff.value(), -1, 1};
     // TODO(user): is the conditional really needed?
-    model->Add(ConditionalWeightedSumGreaterOrEqual(
+    AddConditionalWeightedSumGreaterOrEqual(
         enforcement_literals, {capacity.var, min_start_var, max_end_var},
-        coeffs, capacity.constant.value()));
+        coeffs, capacity.constant.value(), model);
   }
 
   SchedulingDemandHelper* demands =
@@ -361,7 +361,7 @@ void AddNonOverlappingRectangles(
         if (repository->IsOptional(y[j])) {
           clause.push_back(repository->PresenceLiteral(y[j]).Negated());
         }
-        model->Add(EnforcedClause(enforcement_literals, clause));
+        AddEnforcedClause(enforcement_literals, clause, model);
         if (sat_solver->ModelIsUnsat()) return;
       }
     }

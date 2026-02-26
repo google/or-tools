@@ -932,30 +932,25 @@ void MinimizeCore(SatSolver* solver, std::vector<Literal>* core);
 // TODO(user): move them in another file, and unit-test them.
 // ============================================================================
 
-inline std::function<void(Model*)> BooleanLinearConstraint(
-    int64_t lower_bound, int64_t upper_bound,
-    std::vector<LiteralWithCoeff>* cst) {
-  return [=](Model* model) {
-    model->GetOrCreate<SatSolver>()->AddLinearConstraint(
-        /*use_lower_bound=*/true, Coefficient(lower_bound),
-        /*use_upper_bound=*/true, Coefficient(upper_bound), cst);
-  };
+inline void AddBooleanLinearConstraint(int64_t lower_bound, int64_t upper_bound,
+                                       std::vector<LiteralWithCoeff>* cst,
+                                       Model* model) {
+  model->GetOrCreate<SatSolver>()->AddLinearConstraint(
+      /*use_lower_bound=*/true, Coefficient(lower_bound),
+      /*use_upper_bound=*/true, Coefficient(upper_bound), cst);
 }
 
-inline std::function<void(Model*)> CardinalityConstraint(
-    int64_t lower_bound, int64_t upper_bound,
-    absl::Span<const Literal> literals) {
-  return [=, literals = std::vector<Literal>(literals.begin(), literals.end())](
-             Model* model) {
-    std::vector<LiteralWithCoeff> cst;
-    cst.reserve(literals.size());
-    for (int i = 0; i < literals.size(); ++i) {
-      cst.emplace_back(literals[i], 1);
-    }
-    model->GetOrCreate<SatSolver>()->AddLinearConstraint(
-        /*use_lower_bound=*/true, Coefficient(lower_bound),
-        /*use_upper_bound=*/true, Coefficient(upper_bound), &cst);
-  };
+inline void AddCardinalityConstraint(int64_t lower_bound, int64_t upper_bound,
+                                     absl::Span<const Literal> literals,
+                                     Model* model) {
+  std::vector<LiteralWithCoeff> cst;
+  cst.reserve(literals.size());
+  for (int i = 0; i < literals.size(); ++i) {
+    cst.emplace_back(literals[i], 1);
+  }
+  model->GetOrCreate<SatSolver>()->AddLinearConstraint(
+      /*use_lower_bound=*/true, Coefficient(lower_bound),
+      /*use_upper_bound=*/true, Coefficient(upper_bound), &cst);
 }
 
 inline void AddExactlyOneConstraint(absl::Span<const Literal> literals,
@@ -982,88 +977,70 @@ inline void AddAtMostOneConstraint(absl::Span<const Literal> literals,
       /*use_upper_bound=*/true, Coefficient(1), &cst);
 }
 
-inline std::function<void(Model*)> ClauseConstraint(
-    absl::Span<const Literal> literals) {
-  return [=](Model* model) {
-    model->GetOrCreate<SatSolver>()->AddProblemClause(literals);
-  };
+inline void AddClauseConstraint(absl::Span<const Literal> literals,
+                                Model* model) {
+  model->GetOrCreate<SatSolver>()->AddProblemClause(literals);
 }
 
 // a => b.
-inline std::function<void(Model*)> Implication(Literal a, Literal b) {
-  return [=](Model* model) {
-    model->GetOrCreate<SatSolver>()->AddBinaryClause(a.Negated(), b);
-  };
+inline void AddImplication(Literal a, Literal b, Model* model) {
+  model->GetOrCreate<SatSolver>()->AddBinaryClause(a.Negated(), b);
 }
 
 // a == b.
-inline std::function<void(Model*)> Equality(Literal a, Literal b) {
-  return [=](Model* model) {
-    model->GetOrCreate<SatSolver>()->AddBinaryClause(a.Negated(), b);
-    model->GetOrCreate<SatSolver>()->AddBinaryClause(a, b.Negated());
-  };
+inline void AddEquality(Literal a, Literal b, Model* model) {
+  model->GetOrCreate<SatSolver>()->AddBinaryClause(a.Negated(), b);
+  model->GetOrCreate<SatSolver>()->AddBinaryClause(a, b.Negated());
 }
 
 // r <=> (at least one literal is true). This is a reified clause.
-inline std::function<void(Model*)> ReifiedBoolOr(
-    absl::Span<const Literal> literals, Literal r) {
-  return [=, literals = std::vector<Literal>(literals.begin(), literals.end())](
-             Model* model) {
-    std::vector<Literal> clause;
-    for (const Literal l : literals) {
-      model->Add(Implication(l, r));  // l => r.
-      clause.push_back(l);
-    }
+inline void AddReifiedBoolOr(absl::Span<const Literal> literals, Literal r,
+                             Model* model) {
+  std::vector<Literal> clause;
+  for (const Literal l : literals) {
+    AddImplication(l, r, model);  // l => r.
+    clause.push_back(l);
+  }
 
-    // All false => r false.
-    clause.push_back(r.Negated());
-    model->Add(ClauseConstraint(clause));
-  };
+  // All false => r false.
+  clause.push_back(r.Negated());
+  AddClauseConstraint(clause, model);
 }
 
 // enforcement_literals => clause.
-inline std::function<void(Model*)> EnforcedClause(
-    absl::Span<const Literal> enforcement_literals,
-    absl::Span<const Literal> clause) {
-  return [=](Model* model) {
-    std::vector<Literal> tmp;
-    for (const Literal l : enforcement_literals) {
-      tmp.push_back(l.Negated());
-    }
-    for (const Literal l : clause) {
-      tmp.push_back(l);
-    }
-    model->Add(ClauseConstraint(tmp));
-  };
+inline void AddEnforcedClause(absl::Span<const Literal> enforcement_literals,
+                              absl::Span<const Literal> clause, Model* model) {
+  std::vector<Literal> tmp;
+  for (const Literal l : enforcement_literals) {
+    tmp.push_back(l.Negated());
+  }
+  for (const Literal l : clause) {
+    tmp.push_back(l);
+  }
+  AddClauseConstraint(tmp, model);
 }
 
 // r <=> (all literals are true).
 //
 // Note(user): we could have called ReifiedBoolOr() with everything negated.
-inline std::function<void(Model*)> ReifiedBoolAnd(
-    absl::Span<const Literal> literals, Literal r) {
-  return [=, literals = std::vector<Literal>(literals.begin(), literals.end())](
-             Model* model) {
-    std::vector<Literal> clause;
-    for (const Literal l : literals) {
-      model->Add(Implication(r, l));  // r => l.
-      clause.push_back(l.Negated());
-    }
+inline void AddReifiedBoolAnd(absl::Span<const Literal> literals, Literal r,
+                              Model* model) {
+  std::vector<Literal> clause;
+  for (const Literal l : literals) {
+    AddImplication(r, l, model);  // r => l.
+    clause.push_back(l.Negated());
+  }
 
-    // All true => r true.
-    clause.push_back(r);
-    model->Add(ClauseConstraint(clause));
-  };
+  // All true => r true.
+  clause.push_back(r);
+  AddClauseConstraint(clause, model);
 }
 
 // r <=> (a <= b).
-inline std::function<void(Model*)> ReifiedBoolLe(Literal a, Literal b,
-                                                 Literal r) {
-  return [=](Model* model) {
-    // r <=> (a <= b) is the same as r <=> not(a=1 and b=0).
-    // So r <=> a=0 OR b=1.
-    model->Add(ReifiedBoolOr({a.Negated(), b}, r));
-  };
+inline void AddReifiedBoolLe(Literal a, Literal b, Literal r, Model* model) {
+  // r <=> (a <= b) is the same as r <=> not(a=1 and b=0).
+  // So r <=> a=0 OR b=1.
+  AddReifiedBoolOr({a.Negated(), b}, r, model);
 }
 
 // This checks that the variable is fixed.
@@ -1102,7 +1079,7 @@ inline std::function<void(Model*)> ExcludeCurrentSolutionAndBacktrack() {
       clause_to_exclude_solution.push_back(decisions[i].literal.Negated());
     }
     sat_solver->Backtrack(0);
-    model->Add(ClauseConstraint(clause_to_exclude_solution));
+    AddClauseConstraint(clause_to_exclude_solution, model);
   };
 }
 

@@ -16,13 +16,16 @@
 
 #include <cstdint>
 #include <functional>
+#include <limits>
 #include <utility>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/lrat_proof_handler.h"
 #include "ortools/sat/presolve_context.h"
 #include "ortools/sat/sat_base.h"
@@ -32,6 +35,10 @@
 namespace operations_research {
 namespace sat {
 
+// A variable which is removed from the model during copy.
+// This can only be done if the variable is fixed.
+constexpr int kNoVariableMapping = std::numeric_limits<int>::min();
+
 // This helper class perform copy with simplification from a model and a
 // partial assignment to another model. The purpose is to minimize the size of
 // the copied model, as well as to reduce the pressure on the memory sub-system.
@@ -40,7 +47,29 @@ namespace sat {
 // that generates partial assignments.
 class ModelCopy {
  public:
-  explicit ModelCopy(PresolveContext* context);
+  // If `variable_mapping` is not empty, it is applied to all variable
+  // references in all the copied constraints. In this case, `context` must
+  // describe the variables before mapping. A fixed variable can be removed by
+  // setting its mapped value to `kNoVariableMapping`. Several variables can be
+  // mapped to the same variable. As of 2025-03-25, non Boolean variables
+  // remapped to a negative variable reference are not supported.
+  explicit ModelCopy(PresolveContext* context,
+                     absl::Span<const int> variable_mapping = {},
+                     absl::Span<const int> reverse_mapping = {});
+
+  // Copy variables from the in_model to the working model. It reads the
+  // 'ignore_names' parameters from the context, and keeps or deletes names
+  // accordingly. This must be done before importing constraints. The imported
+  // variables must be the ones before variable mapping, if any. They are not
+  // remapped in the context's working model (this must be done at the end, with
+  // RemapVariables()).
+  void ImportVariablesAndMaybeIgnoreNames(const CpModelProto& in_model);
+
+  // Setup new variables from a vector of domains. This must be done before
+  // importing constraints. The imported variables must be the ones before
+  // variable mapping, if any. They are not remapped in the context's working
+  // model (this must be done at the end, with RemapVariables()).
+  void CreateVariablesFromDomains(absl::Span<const Domain> domains);
 
   // Copies all constraints from in_model to working model of the context.
   //
@@ -60,17 +89,13 @@ class ModelCopy {
       const CpModelProto& in_model, bool first_copy = false,
       std::function<bool(int)> active_constraints = nullptr);
 
-  // Copy variables from the in_model to the working model.
-  // It reads the 'ignore_names' parameters from the context, and keeps or
-  // deletes names accordingly.
-  void ImportVariablesAndMaybeIgnoreNames(const CpModelProto& in_model);
+  // Remaps all variables in the context's working model using the variable
+  // mapping passed at construction time. This must be done after all
+  // constraints have been imported. After that the context is no longer valid.
+  void RemapVariables();
 
-  // Setup new variables from a vector of domains.
-  // Inactive variables will be fixed to their lower bound.
-  void CreateVariablesFromDomains(absl::Span<const Domain> domains);
-
-  // Advanced usage. When a model was copied, interval_mapping[i] will contain
-  // for a copied interval with original index i, its new index.
+  // Advanced usage. When a model was copied, interval_mapping[i] will
+  // contain for a copied interval with original index i, its new index.
   absl::Span<const int64_t> InternalIntervalMapping() const {
     return interval_mapping_;
   }
@@ -137,7 +162,22 @@ class ModelCopy {
   void MaybeExpandNonAffineExpression(LinearExpressionProto* expr);
   void MaybeExpandNonAffineExpressions(LinearArgumentProto* linear_argument);
 
+  int MapLiteral(int literal) const {
+    if (variable_mapping_.empty()) return literal;
+    const int mapped_lit = variable_mapping_[PositiveRef(literal)];
+    DCHECK_NE(mapped_lit, kNoVariableMapping);
+    return RefIsPositive(literal) ? mapped_lit : NegatedRef(mapped_lit);
+  }
+
+  int ReverseMapLiteral(int literal) const {
+    if (variable_mapping_.empty()) return literal;
+    const int mapped_lit = reverse_mapping_[PositiveRef(literal)];
+    return RefIsPositive(literal) ? mapped_lit : NegatedRef(mapped_lit);
+  }
+
   PresolveContext* context_;
+  absl::Span<const int> variable_mapping_;
+  absl::Span<const int> reverse_mapping_;
   LratProofHandler* lrat_proof_handler_;
 
   // Temp vectors.
@@ -146,9 +186,9 @@ class ModelCopy {
   std::vector<int64_t> interval_mapping_;
   int starting_constraint_index_ = 0;
 
+  // These contain mapped literals.
   std::vector<int> temp_enforcement_literals_;
   absl::flat_hash_set<int> temp_enforcement_literals_set_;
-
   std::vector<int> temp_literals_;
   absl::flat_hash_set<int> temp_literals_set_;
 

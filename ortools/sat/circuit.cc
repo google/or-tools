@@ -679,24 +679,20 @@ bool CircuitCoveringPropagator::Propagate() {
   return true;
 }
 
-std::function<void(Model*)> ExactlyOnePerRowAndPerColumn(
-    absl::Span<const std::vector<Literal>> graph) {
-  return [=, graph = std::vector<std::vector<Literal>>(
-                 graph.begin(), graph.end())](Model* model) {
-    const int n = graph.size();
-    std::vector<Literal> exactly_one_constraint;
-    exactly_one_constraint.reserve(n);
-    for (const bool transpose : {false, true}) {
-      for (int i = 0; i < n; ++i) {
-        exactly_one_constraint.clear();
-        for (int j = 0; j < n; ++j) {
-          exactly_one_constraint.push_back(transpose ? graph[j][i]
-                                                     : graph[i][j]);
-        }
-        AddExactlyOneConstraint(exactly_one_constraint, model);
+void AddExactlyOnePerRowAndPerColumn(
+    absl::Span<const std::vector<Literal>> graph, Model* model) {
+  const int n = graph.size();
+  std::vector<Literal> exactly_one_constraint;
+  exactly_one_constraint.reserve(n);
+  for (const bool transpose : {false, true}) {
+    for (int i = 0; i < n; ++i) {
+      exactly_one_constraint.clear();
+      for (int j = 0; j < n; ++j) {
+        exactly_one_constraint.push_back(transpose ? graph[j][i] : graph[i][j]);
       }
+      AddExactlyOneConstraint(exactly_one_constraint, model);
     }
-  };
+  }
 }
 
 namespace {
@@ -746,7 +742,7 @@ void LoadSubcircuitConstraint(int num_nodes, absl::Span<const int> tails,
       sat_solver->NotifyThatModelIsUnsat();
       return;
     }
-    model->Add(EnforcedClause(enforcement_literals, exactly_one_incoming[i]));
+    AddEnforcedClause(enforcement_literals, exactly_one_incoming[i], model);
     if (sat_solver->ModelIsUnsat()) return;
   }
   for (int i = 0; i < exactly_one_outgoing.size(); ++i) {
@@ -755,7 +751,7 @@ void LoadSubcircuitConstraint(int num_nodes, absl::Span<const int> tails,
       sat_solver->NotifyThatModelIsUnsat();
       return;
     }
-    model->Add(EnforcedClause(enforcement_literals, exactly_one_outgoing[i]));
+    AddEnforcedClause(enforcement_literals, exactly_one_outgoing[i], model);
     if (sat_solver->ModelIsUnsat()) return;
   }
 
@@ -777,19 +773,14 @@ void LoadSubcircuitConstraint(int num_nodes, absl::Span<const int> tails,
   }
 }
 
-std::function<void(Model*)> CircuitCovering(
-    absl::Span<const std::vector<Literal>> graph,
-    absl::Span<const int> distinguished_nodes) {
-  return [=,
-          distinguished_nodes = std::vector<int>(distinguished_nodes.begin(),
-                                                 distinguished_nodes.end()),
-          graph = std::vector<std::vector<Literal>>(
-              graph.begin(), graph.end())](Model* model) {
-    CircuitCoveringPropagator* constraint =
-        new CircuitCoveringPropagator(graph, distinguished_nodes, model);
-    constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
-    model->TakeOwnership(constraint);
-  };
+void AddCircuitCovering(absl::Span<const std::vector<Literal>> graph,
+                        absl::Span<const int> distinguished_nodes,
+                        Model* model) {
+  CircuitCoveringPropagator* constraint = new CircuitCoveringPropagator(
+      std::vector<std::vector<Literal>>(graph.begin(), graph.end()),
+      distinguished_nodes, model);
+  constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
+  model->TakeOwnership(constraint);
 }
 
 }  // namespace sat

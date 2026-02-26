@@ -33,20 +33,20 @@ TEST(ProbeBooleanVariablesTest, IntegerBoundInference) {
   const IntegerVariable c = model.Add(NewIntegerVariable(0, 10));
 
   // Bound restriction.
-  model.Add(Implication({Literal(a, true)},
-                        IntegerLiteral::GreaterOrEqual(b, IntegerValue(2))));
-  model.Add(Implication({Literal(a, false)},
-                        IntegerLiteral::GreaterOrEqual(b, IntegerValue(3))));
-  model.Add(Implication({Literal(a, true)},
-                        IntegerLiteral::LowerOrEqual(b, IntegerValue(7))));
-  model.Add(Implication({Literal(a, false)},
-                        IntegerLiteral::LowerOrEqual(b, IntegerValue(9))));
+  AddImplication({Literal(a, true)},
+                 IntegerLiteral::GreaterOrEqual(b, IntegerValue(2)), &model);
+  AddImplication({Literal(a, false)},
+                 IntegerLiteral::GreaterOrEqual(b, IntegerValue(3)), &model);
+  AddImplication({Literal(a, true)},
+                 IntegerLiteral::LowerOrEqual(b, IntegerValue(7)), &model);
+  AddImplication({Literal(a, false)},
+                 IntegerLiteral::LowerOrEqual(b, IntegerValue(9)), &model);
 
   // Hole.
-  model.Add(Implication({Literal(a, true)},
-                        IntegerLiteral::GreaterOrEqual(c, IntegerValue(7))));
-  model.Add(Implication({Literal(a, false)},
-                        IntegerLiteral::LowerOrEqual(c, IntegerValue(4))));
+  AddImplication({Literal(a, true)},
+                 IntegerLiteral::GreaterOrEqual(c, IntegerValue(7)), &model);
+  AddImplication({Literal(a, false)},
+                 IntegerLiteral::LowerOrEqual(c, IntegerValue(4)), &model);
 
   Prober* prober = model.GetOrCreate<Prober>();
   prober->ProbeBooleanVariables(/*deterministic_time_limit=*/1.0);
@@ -62,9 +62,11 @@ TEST(FailedLiteralProbingRoundTest, TrivialExample) {
   const Literal c(model.Add(NewBooleanVariable()), true);
 
   // Setting a to false will result in a constradiction, so a must be true.
-  model.Add(ClauseConstraint({a, b, c}));
-  model.Add(Implication(a.Negated(), b.Negated()));
-  model.Add(Implication(c, a));
+  AddClauseConstraint({a, b, c}, &model);
+  // AddImplication({a.Negated()}, IntegerLiteral::TrueLiteral(), &model);
+  AddClauseConstraint({b.Negated(), c}, &model);
+  AddClauseConstraint({a.Negated(), b.Negated()}, &model);
+  AddClauseConstraint({c.Negated(), a}, &model);
 
   auto* sat_soler = model.GetOrCreate<SatSolver>();
   EXPECT_TRUE(sat_soler->Propagate());

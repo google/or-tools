@@ -263,11 +263,11 @@ void LoadSubcircuitConstraint(int num_nodes, absl::Span<const int> tails,
                               bool multiple_subcircuit_through_zero = false);
 
 // TODO(user): Change to a sparse API like for the function above.
-std::function<void(Model*)> ExactlyOnePerRowAndPerColumn(
-    absl::Span<const std::vector<Literal>> graph);
-std::function<void(Model*)> CircuitCovering(
-    absl::Span<const std::vector<Literal>> graph,
-    absl::Span<const int> distinguished_nodes);
+void AddExactlyOnePerRowAndPerColumn(
+    absl::Span<const std::vector<Literal>> graph, Model* model);
+void AddCircuitCovering(absl::Span<const std::vector<Literal>> graph,
+                        absl::Span<const int> distinguished_nodes,
+                        Model* model);
 
 }  // namespace sat
 }  // namespace operations_research

@@ -42,12 +42,12 @@ class AllDifferentTest : public ::testing::TestWithParam<std::string> {
     return [=, vars = std::vector<IntegerVariable>(vars.begin(), vars.end())](
                Model* model) {
       if (GetParam() == "binary") {
-        model->Add(AllDifferentBinary(vars));
+        AddAllDifferentBinary(vars, model);
       } else if (GetParam() == "ac") {
-        model->Add(AllDifferentBinary(vars));
-        model->Add(AllDifferentAC(vars));
+        AddAllDifferentBinary(vars, model);
+        AddAllDifferentAC(vars, model);
       } else if (GetParam() == "bounds") {
-        model->Add(AllDifferentOnBounds(vars));
+        AddAllDifferentOnBounds(vars, model);
       } else {
         LOG(FATAL) << "Unknown implementation " << GetParam();
       }
@@ -167,9 +167,11 @@ TEST(AllDifferentOnBoundsTest, AlwaysFalseWithUnassignedEnforcementLiteral) {
   integer_trail->UpdateInitialDomain(vars[0], Domain::FromValues({1, 1}));
   integer_trail->UpdateInitialDomain(vars[1], Domain::FromValues({0, 0}));
   // b => all_diff(x, y+1, 2-z), x=y=1 (always false if enforced).
-  model.Add(AllDifferentOnBounds(
-      {b}, {AffineExpression(vars[0], 1), AffineExpression(vars[1], 1, 1),
-            AffineExpression(vars[2], -1, 3)}));
+  AddAllDifferentOnBounds(
+      {b},
+      {AffineExpression(vars[0], 1), AffineExpression(vars[1], 1, 1),
+       AffineExpression(vars[2], -1, 3)},
+      &model);
   EXPECT_TRUE(model.GetOrCreate<SatSolver>()->Propagate());
   EXPECT_TRUE(model.GetOrCreate<Trail>()->Assignment().LiteralIsFalse(b));
   EXPECT_EQ(model.GetOrCreate<IntegerTrail>()->num_enqueues(), 0);
@@ -182,9 +184,11 @@ TEST(AllDifferentOnBoundsTest, NotAlwaysFalseWithUnassignedEnforcementLiteral) {
                                     model.Add(NewIntegerVariable(1, 3))};
   const Literal b = Literal(model.Add(NewBooleanVariable()), true);
   // b => all_diff(x, y+1, 2-z), x,y+1,3-z in [1, 3].
-  model.Add(AllDifferentOnBounds(
-      {b}, {AffineExpression(vars[0], 1), AffineExpression(vars[1], 1, 1),
-            AffineExpression(vars[2], -1, 3)}));
+  AddAllDifferentOnBounds(
+      {b},
+      {AffineExpression(vars[0], 1), AffineExpression(vars[1], 1, 1),
+       AffineExpression(vars[2], -1, 3)},
+      &model);
   EXPECT_TRUE(model.GetOrCreate<SatSolver>()->Propagate());
   EXPECT_FALSE(model.GetOrCreate<Trail>()->Assignment().LiteralIsAssigned(b));
   EXPECT_EQ(model.GetOrCreate<IntegerTrail>()->num_enqueues(), 0);
