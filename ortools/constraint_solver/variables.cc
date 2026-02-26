@@ -1425,6 +1425,7 @@ Constraint* DomainIntVar::SetIsEqual(absl::Span<const int64_t> values,
     solver()->SaveAndSetValue(reinterpret_cast<void**>(&value_watcher_),
                               reinterpret_cast<void*>(solver()->RevAlloc(
                                   new ValueWatcher(solver(), this))));
+    DCHECK(value_watcher_ != nullptr);
     for (int i = 0; i < vars.size(); ++i) {
       value_watcher_->SetValueWatcher(vars[i], values[i]);
     }
@@ -1501,11 +1502,13 @@ Constraint* DomainIntVar::SetIsGreaterOrEqual(
           reinterpret_cast<void**>(&bound_watcher_),
           reinterpret_cast<void*>(
               solver()->RevAlloc(new DenseUpperBoundWatcher(solver(), this))));
+      DCHECK(bound_watcher_ != nullptr);
       solver()->AddConstraint(bound_watcher_);
     } else {
       solver()->SaveAndSetValue(reinterpret_cast<void**>(&bound_watcher_),
                                 reinterpret_cast<void*>(solver()->RevAlloc(
                                     new UpperBoundWatcher(solver(), this))));
+      DCHECK(bound_watcher_ != nullptr);
       solver()->AddConstraint(bound_watcher_);
     }
     for (int i = 0; i < values.size(); ++i) {

@@ -57,6 +57,7 @@
 #include "ortools/constraint_solver/interval.h"
 #include "ortools/constraint_solver/local_search.h"
 #include "ortools/constraint_solver/model_cache.h"
+#include "ortools/constraint_solver/sequence_var.h"
 #include "ortools/constraint_solver/table.h"
 #include "ortools/constraint_solver/timetabling.h"
 #include "ortools/constraint_solver/trace.h"

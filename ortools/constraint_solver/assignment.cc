@@ -34,6 +34,7 @@
 #include "ortools/base/safe_hash_map.h"
 #include "ortools/constraint_solver/assignment.pb.h"
 #include "ortools/constraint_solver/constraint_solver.h"
+#include "ortools/constraint_solver/sequence_var.h"
 
 namespace operations_research {
 
@@ -386,6 +387,12 @@ void SequenceVarElement::SetBackwardSequence(
 
 void SequenceVarElement::SetUnperformed(const std::vector<int>& unperformed) {
   unperformed_ = unperformed;
+}
+
+bool SequenceVarElement::Bound() const {
+  return forward_sequence_.size() + backward_sequence_.size() +
+             unperformed_.size() ==
+         var_->size();
 }
 
 bool SequenceVarElement::CheckClassInvariants() {

@@ -78,6 +78,7 @@ struct FailureProtect {
 #include "ortools/constraint_solver/assignment.h"
 #include "ortools/constraint_solver/search.h"
 #include "ortools/constraint_solver/local_search.h"
+#include "ortools/constraint_solver/sequence_var.h"
 #include "ortools/constraint_solver/utilities.h"
 #include "ortools/constraint_solver/assignment.pb.h"
 #include "ortools/constraint_solver/search_limit.pb.h"
@@ -1866,6 +1867,7 @@ PY_PROTO_TYPEMAP(ortools.constraint_solver.search_limit_pb2,
 %include "ortools/constraint_solver/constraint_solver.h"
 %include "ortools/constraint_solver/assignment.h"
 %include "ortools/constraint_solver/search.h"
+%include "ortools/constraint_solver/sequence_var.h"
 %include "ortools/constraint_solver/utilities.h"
 
 // Define templates instantiation after wrapping.

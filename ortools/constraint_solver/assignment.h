@@ -30,6 +30,7 @@ class AssignmentProto;
 class IntVarAssignment;
 class IntervalVarAssignment;
 class SequenceVarAssignment;
+class SequenceVar;
 
 class AssignmentElement {
  public:
@@ -219,9 +220,7 @@ class SequenceVarElement : public AssignmentElement {
   void SetForwardSequence(const std::vector<int>& forward_sequence);
   void SetBackwardSequence(const std::vector<int>& backward_sequence);
   void SetUnperformed(const std::vector<int>& unperformed);
-  bool Bound() const {
-    return forward_sequence_.size() + unperformed_.size() == var_->size();
-  }
+  bool Bound() const;
 
   std::string DebugString() const;
 

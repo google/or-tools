@@ -46,6 +46,7 @@
 #include "ortools/base/timer.h"
 #include "ortools/constraint_solver/assignment.h"
 #include "ortools/constraint_solver/constraint_solver.h"
+#include "ortools/constraint_solver/sequence_var.h"
 #include "ortools/graph/hamiltonian_path.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/saturated_arithmetic.h"

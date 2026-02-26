@@ -26,6 +26,7 @@
 #include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
 #include "ortools/constraint_solver/constraint_solver.h"
+#include "ortools/constraint_solver/sequence_var.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/tuple_set.h"
 

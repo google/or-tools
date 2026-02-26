@@ -29,6 +29,7 @@
 #include "ortools/constraint_solver/local_search.h"
 #include "ortools/constraint_solver/python/constraint_solver_doc.h"
 #include "ortools/constraint_solver/search_limit.pb.h"
+#include "ortools/constraint_solver/sequence_var.h"
 #include "ortools/util/piecewise_linear_function.h"
 #include "ortools/util/tuple_set.h"
 #include "pybind11/cast.h"

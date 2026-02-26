@@ -24,6 +24,7 @@
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
 #include "ortools/constraint_solver/constraint_solver.h"
+#include "ortools/constraint_solver/sequence_var.h"
 
 ABSL_FLAG(bool, cp_full_trace, false,
           "Display all trace information, even if the modifiers has no effect");

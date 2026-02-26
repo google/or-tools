@@ -54,6 +54,7 @@ class RegularLimitParameters;
 #include "ortools/constraint_solver/assignment.h"
 #include "ortools/constraint_solver/local_search.h"
 #include "ortools/constraint_solver/search.h"
+#include "ortools/constraint_solver/sequence_var.h"
 #include "ortools/constraint_solver/java/javawrapcp_util.h"
 #include "ortools/constraint_solver/search_limit.pb.h"
 #include "ortools/constraint_solver/solver_parameters.pb.h"
@@ -1670,6 +1671,7 @@ namespace operations_research {
 %include "ortools/constraint_solver/assignment.h"
 %include "ortools/constraint_solver/local_search.h"
 %include "ortools/constraint_solver/search.h"
+%include "ortools/constraint_solver/sequence_var.h"
 %include "ortools/constraint_solver/java/javawrapcp_util.h"
 
 // Define templates instantiation after wrapping.

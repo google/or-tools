@@ -22,6 +22,7 @@
 #include "absl/log/check.h"
 #include "ortools/base/map_util.h"
 #include "ortools/constraint_solver/constraint_solver.h"
+#include "ortools/constraint_solver/sequence_var.h"
 #include "ortools/util/tuple_set.h"
 
 namespace operations_research {
