@@ -21,18 +21,24 @@
 namespace operations_research {
 namespace {
 
-#ifdef OPERATIONS_RESEARCH_OUTPUT_CAPTURE_SUPPORTED
-
 TEST(ScopedStdStreamCaptureTest, CaptureStdout) {
   ScopedStdStreamCapture capture(CapturedStream::kStdout);
   std::cout << "something";
-  EXPECT_EQ(std::move(capture).StopCaptureAndReturnContents(), "something");
+  if (ScopedStdStreamCapture::kIsSupported) {
+    EXPECT_EQ(std::move(capture).StopCaptureAndReturnContents(), "something");
+  } else {
+    EXPECT_EQ(std::move(capture).StopCaptureAndReturnContents(), "");
+  }
 }
 
 TEST(ScopedStdStreamCaptureTest, CaptureStderr) {
   ScopedStdStreamCapture capture(CapturedStream::kStderr);
   std::cerr << "something";
-  EXPECT_EQ(std::move(capture).StopCaptureAndReturnContents(), "something");
+  if (ScopedStdStreamCapture::kIsSupported) {
+    EXPECT_EQ(std::move(capture).StopCaptureAndReturnContents(), "something");
+  } else {
+    EXPECT_EQ(std::move(capture).StopCaptureAndReturnContents(), "");
+  }
 }
 
 TEST(ScopedStdStreamCaptureTest, EarlyExitThenCaptureStdout) {
@@ -43,8 +49,10 @@ TEST(ScopedStdStreamCaptureTest, EarlyExitThenCaptureStdout) {
   {
     ScopedStdStreamCapture capture(CapturedStream::kStdout);
     std::cout << "another thing";
-    EXPECT_EQ(std::move(capture).StopCaptureAndReturnContents(),
-              "another thing");
+    if (ScopedStdStreamCapture::kIsSupported) {
+      EXPECT_EQ(std::move(capture).StopCaptureAndReturnContents(),
+                "another thing");
+    }
   }
 }
 
@@ -56,8 +64,10 @@ TEST(ScopedStdStreamCaptureTest, EarlyExitThenCaptureStderr) {
   {
     ScopedStdStreamCapture capture(CapturedStream::kStderr);
     std::cerr << "another thing";
-    EXPECT_EQ(std::move(capture).StopCaptureAndReturnContents(),
-              "another thing");
+    if (ScopedStdStreamCapture::kIsSupported) {
+      EXPECT_EQ(std::move(capture).StopCaptureAndReturnContents(),
+                "another thing");
+    }
   }
 }
 
@@ -68,8 +78,12 @@ TEST(ScopedStdStreamCaptureTest, CaptureStdoutAndStderr) {
   std::cout << "stdout";
   std::cerr << "stderr";
 
-  EXPECT_EQ(std::move(stdout_capture).StopCaptureAndReturnContents(), "stdout");
-  EXPECT_EQ(std::move(stderr_capture).StopCaptureAndReturnContents(), "stderr");
+  if (ScopedStdStreamCapture::kIsSupported) {
+    EXPECT_EQ(std::move(stdout_capture).StopCaptureAndReturnContents(),
+              "stdout");
+    EXPECT_EQ(std::move(stderr_capture).StopCaptureAndReturnContents(),
+              "stderr");
+  }
 }
 
 TEST(ScopedStdStreamCaptureDeathTest, TwoCalls) {
@@ -88,15 +102,6 @@ TEST(ScopedStdStreamCaptureDeathTest, TwoCalls) {
       },
       "twice");
 }
-
-#else  // OPERATIONS_RESEARCH_OUTPUT_CAPTURE_SUPPORTED
-
-TEST(ScopedStdStreamCaptureTest, NotSupported) {
-  // This unit test is intentionally empty since iOS test fails when zero tests
-  // are executed.
-}
-
-#endif  // OPERATIONS_RESEARCH_OUTPUT_CAPTURE_SUPPORTED
 
 }  // namespace
 }  // namespace operations_research

@@ -13,51 +13,23 @@
 
 #include "ortools/port/scoped_std_stream_capture.h"
 
-#ifdef OPERATIONS_RESEARCH_OUTPUT_CAPTURE_SUPPORTED
-
 #include <string>
 
 #include "absl/log/check.h"
-#include "testing/base/public/googletest.h"
 
 namespace operations_research {
 
-ScopedStdStreamCapture::ScopedStdStreamCapture(const CapturedStream stream)
-    : stream_(stream) {
-  switch (stream) {
-    case CapturedStream::kStdout:
-      CaptureTestStdout();
-      break;
-    case CapturedStream::kStderr:
-      CaptureTestStderr();
-      break;
-  }
-}
+const bool ScopedStdStreamCapture::kIsSupported = false;
 
-ScopedStdStreamCapture::~ScopedStdStreamCapture() {
-  if (!capture_released_) {
-    switch (stream_) {
-      case CapturedStream::kStdout:
-        GetCapturedTestStdout();
-        break;
-      case CapturedStream::kStderr:
-        GetCapturedTestStderr();
-        break;
-    }
-  }
-}
+ScopedStdStreamCapture::ScopedStdStreamCapture(const CapturedStream stream)
+    : stream_(stream) {}
+
+ScopedStdStreamCapture::~ScopedStdStreamCapture() {}
 
 std::string ScopedStdStreamCapture::StopCaptureAndReturnContents() && {
   CHECK(!capture_released_) << "Can't call this function twice.";
   capture_released_ = true;
-  switch (stream_) {
-    case CapturedStream::kStdout:
-      return GetCapturedTestStdout();
-    case CapturedStream::kStderr:
-      return GetCapturedTestStderr();
-  }
+  return {};
 }
 
 }  // namespace operations_research
-
-#endif  // OPERATIONS_RESEARCH_OUTPUT_CAPTURE_SUPPORTED

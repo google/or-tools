@@ -69,3 +69,12 @@ cc_library(
         "@abseil-cpp//absl/log:check",
     ],
 )
+
+cc_test(
+    name = "scoped_std_stream_capture_test",
+    srcs = ["scoped_std_stream_capture_test.cc"],
+    deps = [
+        ":scoped_std_stream_capture",
+        "//ortools/base:gmock_main",
+    ],
+)
