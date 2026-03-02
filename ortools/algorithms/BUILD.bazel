@@ -175,19 +175,18 @@ cc_library(
     srcs = ["knapsack_solver.cc"],
     hdrs = ["knapsack_solver.h"],
     deps = [
-        "@abseil-cpp//absl/log",
-        "@abseil-cpp//absl/log:check",
-        "@abseil-cpp//absl/strings",
-        "@abseil-cpp//absl/time",
         "//ortools/base:stl_util",
-        # We don't link any underlying solver to let the linear_solver_knapsack
-        # decide what solvers to include.
         "//ortools/linear_solver",
+        "//ortools/linear_solver:linear_solver_scip",
         "//ortools/sat:cp_model",
         "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:cp_model_solver",
         "//ortools/util:bitset",
         "//ortools/util:time_limit",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/time",
     ],
 )
 
@@ -196,7 +195,7 @@ cc_test(
     size = "medium",
     srcs = ["knapsack_solver_test.cc"],
     deps = [
-        ":knapsack_solver_lib",  # buildcleaner: keep
+        ":knapsack_solver_lib",
         "//ortools/base:gmock_main",
         "//ortools/util:time_limit",
         "@abseil-cpp//absl/base:core_headers",
