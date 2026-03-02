@@ -72,7 +72,6 @@ cc_library(
 
 cc_library(
     name = "bitmap",
-    srcs = ["bitmap.cc"],
     hdrs = ["bitmap.h"],
 )
 
