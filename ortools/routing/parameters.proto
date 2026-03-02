@@ -17,9 +17,11 @@
 
 syntax = "proto3";
 
+// clang-format off
+option csharp_namespace = "Google.OrTools.Routing";
 option java_package = "com.google.ortools.routing";
 option java_multiple_files = true;
-option csharp_namespace = "Google.OrTools.Routing";
+// clang-format on
 
 import "google/protobuf/duration.proto";
 import "ortools/util/optional_boolean.proto";
