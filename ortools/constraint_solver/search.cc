@@ -3888,17 +3888,17 @@ class GuidedLocalSearchPenaltiesMap {
   void Reset();
 
  private:
-  Bitmap penalized_;
+  operations_research::Bitmap penalized_;
   absl::flat_hash_map<VarValue, int64_t> penalties_;
 };
 
 GuidedLocalSearchPenaltiesMap::GuidedLocalSearchPenaltiesMap(int num_vars)
-    : penalized_(num_vars, false) {}
+    : penalized_(num_vars) {}
 
 void GuidedLocalSearchPenaltiesMap::IncrementPenalty(
     const VarValue& var_value) {
   ++penalties_[var_value];
-  penalized_.Set(var_value.var, true);
+  penalized_.Set(var_value.var);
 }
 
 void GuidedLocalSearchPenaltiesMap::Reset() {
