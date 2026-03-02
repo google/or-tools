@@ -13,86 +13,51 @@
 
 //  Range constraints
 
+#include "ortools/constraint_solver/range_cst.h"
+
 #include <stddef.h>
 
 #include <string>
 
-#include "absl/log/check.h"
 #include "absl/strings/str_format.h"
 #include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraints.h"
-#include "ortools/constraint_solver/model_cache.h"
 
 namespace operations_research {
 
 //-----------------------------------------------------------------------------
 // RangeEquality
 
-namespace {
-class RangeEquality : public Constraint {
- public:
-  RangeEquality(Solver* s, IntExpr* l, IntExpr* r)
-      : Constraint(s), left_(l), right_(r) {}
+RangeEquality::RangeEquality(Solver* s, IntExpr* l, IntExpr* r)
+    : Constraint(s), left_(l), right_(r) {}
 
-  ~RangeEquality() override {}
+void RangeEquality::Post() {
+  Demon* const d = solver()->MakeConstraintInitialPropagateCallback(this);
+  left_->WhenRange(d);
+  right_->WhenRange(d);
+}
 
-  void Post() override {
-    Demon* const d = solver()->MakeConstraintInitialPropagateCallback(this);
-    left_->WhenRange(d);
-    right_->WhenRange(d);
-  }
+void RangeEquality::InitialPropagate() {
+  left_->SetRange(right_->Min(), right_->Max());
+  right_->SetRange(left_->Min(), left_->Max());
+}
 
-  void InitialPropagate() override {
-    left_->SetRange(right_->Min(), right_->Max());
-    right_->SetRange(left_->Min(), left_->Max());
-  }
+std::string RangeEquality::DebugString() const {
+  return left_->DebugString() + " == " + right_->DebugString();
+}
 
-  std::string DebugString() const override {
-    return left_->DebugString() + " == " + right_->DebugString();
-  }
+IntVar* RangeEquality::Var() { return solver()->MakeIsEqualVar(left_, right_); }
 
-  IntVar* Var() override { return solver()->MakeIsEqualVar(left_, right_); }
-
-  void Accept(ModelVisitor* visitor) const override {
-    visitor->BeginVisitConstraint(ModelVisitor::kEquality, this);
-    visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument, left_);
-    visitor->VisitIntegerExpressionArgument(ModelVisitor::kRightArgument,
-                                            right_);
-    visitor->EndVisitConstraint(ModelVisitor::kEquality, this);
-  }
-
- private:
-  IntExpr* const left_;
-  IntExpr* const right_;
-};
+void RangeEquality::Accept(ModelVisitor* visitor) const {
+  visitor->BeginVisitConstraint(ModelVisitor::kEquality, this);
+  visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument, left_);
+  visitor->VisitIntegerExpressionArgument(ModelVisitor::kRightArgument, right_);
+  visitor->EndVisitConstraint(ModelVisitor::kEquality, this);
+}
 
 //-----------------------------------------------------------------------------
 // RangeLessOrEqual
-
-class RangeLessOrEqual : public Constraint {
- public:
-  RangeLessOrEqual(Solver* s, IntExpr* l, IntExpr* r);
-  ~RangeLessOrEqual() override {}
-  void Post() override;
-  void InitialPropagate() override;
-  std::string DebugString() const override;
-  IntVar* Var() override {
-    return solver()->MakeIsLessOrEqualVar(left_, right_);
-  }
-  void Accept(ModelVisitor* visitor) const override {
-    visitor->BeginVisitConstraint(ModelVisitor::kLessOrEqual, this);
-    visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument, left_);
-    visitor->VisitIntegerExpressionArgument(ModelVisitor::kRightArgument,
-                                            right_);
-    visitor->EndVisitConstraint(ModelVisitor::kLessOrEqual, this);
-  }
-
- private:
-  IntExpr* const left_;
-  IntExpr* const right_;
-  Demon* demon_;
-};
 
 RangeLessOrEqual::RangeLessOrEqual(Solver* s, IntExpr* l, IntExpr* r)
     : Constraint(s), left_(l), right_(r), demon_(nullptr) {}
@@ -115,30 +80,19 @@ std::string RangeLessOrEqual::DebugString() const {
   return left_->DebugString() + " <= " + right_->DebugString();
 }
 
+IntVar* RangeLessOrEqual::Var() {
+  return solver()->MakeIsLessOrEqualVar(left_, right_);
+}
+
+void RangeLessOrEqual::Accept(ModelVisitor* visitor) const {
+  visitor->BeginVisitConstraint(ModelVisitor::kLessOrEqual, this);
+  visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument, left_);
+  visitor->VisitIntegerExpressionArgument(ModelVisitor::kRightArgument, right_);
+  visitor->EndVisitConstraint(ModelVisitor::kLessOrEqual, this);
+}
+
 //-----------------------------------------------------------------------------
 // RangeLess
-
-class RangeLess : public Constraint {
- public:
-  RangeLess(Solver* s, IntExpr* l, IntExpr* r);
-  ~RangeLess() override {}
-  void Post() override;
-  void InitialPropagate() override;
-  std::string DebugString() const override;
-  IntVar* Var() override { return solver()->MakeIsLessVar(left_, right_); }
-  void Accept(ModelVisitor* visitor) const override {
-    visitor->BeginVisitConstraint(ModelVisitor::kLess, this);
-    visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument, left_);
-    visitor->VisitIntegerExpressionArgument(ModelVisitor::kRightArgument,
-                                            right_);
-    visitor->EndVisitConstraint(ModelVisitor::kLess, this);
-  }
-
- private:
-  IntExpr* const left_;
-  IntExpr* const right_;
-  Demon* demon_;
-};
 
 RangeLess::RangeLess(Solver* s, IntExpr* l, IntExpr* r)
     : Constraint(s), left_(l), right_(r), demon_(nullptr) {}
@@ -163,32 +117,17 @@ std::string RangeLess::DebugString() const {
   return left_->DebugString() + " < " + right_->DebugString();
 }
 
+IntVar* RangeLess::Var() { return solver()->MakeIsLessVar(left_, right_); }
+
+void RangeLess::Accept(ModelVisitor* visitor) const {
+  visitor->BeginVisitConstraint(ModelVisitor::kLess, this);
+  visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument, left_);
+  visitor->VisitIntegerExpressionArgument(ModelVisitor::kRightArgument, right_);
+  visitor->EndVisitConstraint(ModelVisitor::kLess, this);
+}
+
 //-----------------------------------------------------------------------------
 // DiffVar
-
-class DiffVar : public Constraint {
- public:
-  DiffVar(Solver* s, IntVar* l, IntVar* r);
-  ~DiffVar() override {}
-  void Post() override;
-  void InitialPropagate() override;
-  std::string DebugString() const override;
-  IntVar* Var() override { return solver()->MakeIsDifferentVar(left_, right_); }
-  void LeftBound();
-  void RightBound();
-
-  void Accept(ModelVisitor* visitor) const override {
-    visitor->BeginVisitConstraint(ModelVisitor::kNonEqual, this);
-    visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument, left_);
-    visitor->VisitIntegerExpressionArgument(ModelVisitor::kRightArgument,
-                                            right_);
-    visitor->EndVisitConstraint(ModelVisitor::kNonEqual, this);
-  }
-
- private:
-  IntVar* const left_;
-  IntVar* const right_;
-};
 
 DiffVar::DiffVar(Solver* s, IntVar* l, IntVar* r)
     : Constraint(s), left_(l), right_(r) {}
@@ -232,566 +171,243 @@ std::string DiffVar::DebugString() const {
   return left_->DebugString() + " != " + right_->DebugString();
 }
 
+IntVar* DiffVar::Var() { return solver()->MakeIsDifferentVar(left_, right_); }
+
+void DiffVar::Accept(ModelVisitor* visitor) const {
+  visitor->BeginVisitConstraint(ModelVisitor::kNonEqual, this);
+  visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument, left_);
+  visitor->VisitIntegerExpressionArgument(ModelVisitor::kRightArgument, right_);
+  visitor->EndVisitConstraint(ModelVisitor::kNonEqual, this);
+}
+
 // --------------------- Reified API -------------------
-// A reified API transforms a constraint into a status variables.
-// For example x == y is transformed into IsEqual(x, y, b) where
-// b is a boolean variable which is true if and only if x is equal to b.
 
 // IsEqualCt
 
-class IsEqualCt : public CastConstraint {
- public:
-  IsEqualCt(Solver* s, IntExpr* l, IntExpr* r, IntVar* b)
-      : CastConstraint(s, b), left_(l), right_(r), range_demon_(nullptr) {}
+IsEqualCt::IsEqualCt(Solver* s, IntExpr* l, IntExpr* r, IntVar* b)
+    : CastConstraint(s, b), left_(l), right_(r), range_demon_(nullptr) {}
 
-  ~IsEqualCt() override {}
+void IsEqualCt::Post() {
+  range_demon_ = solver()->MakeConstraintInitialPropagateCallback(this);
+  left_->WhenRange(range_demon_);
+  right_->WhenRange(range_demon_);
+  Demon* const target_demon = MakeConstraintDemon0(
+      solver(), this, &IsEqualCt::PropagateTarget, "PropagateTarget");
+  target_var_->WhenBound(target_demon);
+}
 
-  void Post() override {
-    range_demon_ = solver()->MakeConstraintInitialPropagateCallback(this);
-    left_->WhenRange(range_demon_);
-    right_->WhenRange(range_demon_);
-    Demon* const target_demon = MakeConstraintDemon0(
-        solver(), this, &IsEqualCt::PropagateTarget, "PropagateTarget");
-    target_var_->WhenBound(target_demon);
+void IsEqualCt::InitialPropagate() {
+  if (target_var_->Bound()) {
+    PropagateTarget();
+    return;
   }
-
-  void InitialPropagate() override {
-    if (target_var_->Bound()) {
-      PropagateTarget();
-      return;
-    }
-    if (left_->Min() > right_->Max() || left_->Max() < right_->Min()) {
-      target_var_->SetValue(0);
-      range_demon_->inhibit(solver());
-    } else if (left_->Bound()) {
-      if (right_->Bound()) {
-        target_var_->SetValue(left_->Min() == right_->Min());
-      } else if (right_->IsVar() && !right_->Var()->Contains(left_->Min())) {
-        range_demon_->inhibit(solver());
-        target_var_->SetValue(0);
-      }
-    } else if (right_->Bound() && left_->IsVar() &&
-               !left_->Var()->Contains(right_->Min())) {
+  if (left_->Min() > right_->Max() || left_->Max() < right_->Min()) {
+    target_var_->SetValue(0);
+    range_demon_->inhibit(solver());
+  } else if (left_->Bound()) {
+    if (right_->Bound()) {
+      target_var_->SetValue(left_->Min() == right_->Min());
+    } else if (right_->IsVar() && !right_->Var()->Contains(left_->Min())) {
       range_demon_->inhibit(solver());
       target_var_->SetValue(0);
     }
+  } else if (right_->Bound() && left_->IsVar() &&
+             !left_->Var()->Contains(right_->Min())) {
+    range_demon_->inhibit(solver());
+    target_var_->SetValue(0);
   }
+}
 
-  void PropagateTarget() {
-    if (target_var_->Min() == 0) {
-      if (left_->Bound()) {
-        range_demon_->inhibit(solver());
-        if (right_->IsVar()) {
-          right_->Var()->RemoveValue(left_->Min());
-        } else {
-          solver()->AddConstraint(
-              solver()->MakeNonEquality(right_, left_->Min()));
-        }
-      } else if (right_->Bound()) {
-        range_demon_->inhibit(solver());
-        if (left_->IsVar()) {
-          left_->Var()->RemoveValue(right_->Min());
-        } else {
-          solver()->AddConstraint(
-              solver()->MakeNonEquality(left_, right_->Min()));
-        }
-      }
-    } else {  // Var is true.
-      left_->SetRange(right_->Min(), right_->Max());
-      right_->SetRange(left_->Min(), left_->Max());
-    }
-  }
-
-  std::string DebugString() const override {
-    return absl::StrFormat("IsEqualCt(%s, %s, %s)", left_->DebugString(),
-                           right_->DebugString(), target_var_->DebugString());
-  }
-
-  void Accept(ModelVisitor* visitor) const override {
-    visitor->BeginVisitConstraint(ModelVisitor::kIsEqual, this);
-    visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument, left_);
-    visitor->VisitIntegerExpressionArgument(ModelVisitor::kRightArgument,
-                                            right_);
-    visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
-                                            target_var_);
-    visitor->EndVisitConstraint(ModelVisitor::kIsEqual, this);
-  }
-
- private:
-  IntExpr* const left_;
-  IntExpr* const right_;
-  Demon* range_demon_;
-};
-
-// IsDifferentCt
-
-class IsDifferentCt : public CastConstraint {
- public:
-  IsDifferentCt(Solver* s, IntExpr* l, IntExpr* r, IntVar* b)
-      : CastConstraint(s, b), left_(l), right_(r), range_demon_(nullptr) {}
-
-  ~IsDifferentCt() override {}
-
-  void Post() override {
-    range_demon_ = solver()->MakeConstraintInitialPropagateCallback(this);
-    left_->WhenRange(range_demon_);
-    right_->WhenRange(range_demon_);
-    Demon* const target_demon = MakeConstraintDemon0(
-        solver(), this, &IsDifferentCt::PropagateTarget, "PropagateTarget");
-    target_var_->WhenBound(target_demon);
-  }
-
-  void InitialPropagate() override {
-    if (target_var_->Bound()) {
-      PropagateTarget();
-      return;
-    }
-    if (left_->Min() > right_->Max() || left_->Max() < right_->Min()) {
-      target_var_->SetValue(1);
+void IsEqualCt::PropagateTarget() {
+  if (target_var_->Min() == 0) {
+    if (left_->Bound()) {
       range_demon_->inhibit(solver());
-    } else if (left_->Bound()) {
-      if (right_->Bound()) {
-        target_var_->SetValue(left_->Min() != right_->Min());
-      } else if (right_->IsVar() && !right_->Var()->Contains(left_->Min())) {
-        range_demon_->inhibit(solver());
-        target_var_->SetValue(1);
-      }
-    } else if (right_->Bound() && left_->IsVar() &&
-               !left_->Var()->Contains(right_->Min())) {
-      range_demon_->inhibit(solver());
-      target_var_->SetValue(1);
-    }
-  }
-
-  void PropagateTarget() {
-    if (target_var_->Min() == 0) {
-      left_->SetRange(right_->Min(), right_->Max());
-      right_->SetRange(left_->Min(), left_->Max());
-    } else {  // Var is true.
-      if (left_->Bound()) {
-        range_demon_->inhibit(solver());
+      if (right_->IsVar()) {
+        right_->Var()->RemoveValue(left_->Min());
+      } else {
         solver()->AddConstraint(
             solver()->MakeNonEquality(right_, left_->Min()));
-      } else if (right_->Bound()) {
-        range_demon_->inhibit(solver());
+      }
+    } else if (right_->Bound()) {
+      range_demon_->inhibit(solver());
+      if (left_->IsVar()) {
+        left_->Var()->RemoveValue(right_->Min());
+      } else {
         solver()->AddConstraint(
             solver()->MakeNonEquality(left_, right_->Min()));
       }
     }
+  } else {  // Var is true.
+    left_->SetRange(right_->Min(), right_->Max());
+    right_->SetRange(left_->Min(), left_->Max());
   }
+}
 
-  std::string DebugString() const override {
-    return absl::StrFormat("IsDifferentCt(%s, %s, %s)", left_->DebugString(),
-                           right_->DebugString(), target_var_->DebugString());
+std::string IsEqualCt::DebugString() const {
+  return absl::StrFormat("IsEqualCt(%s, %s, %s)", left_->DebugString(),
+                         right_->DebugString(), target_var_->DebugString());
+}
+
+void IsEqualCt::Accept(ModelVisitor* visitor) const {
+  visitor->BeginVisitConstraint(ModelVisitor::kIsEqual, this);
+  visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument, left_);
+  visitor->VisitIntegerExpressionArgument(ModelVisitor::kRightArgument, right_);
+  visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
+                                          target_var_);
+  visitor->EndVisitConstraint(ModelVisitor::kIsEqual, this);
+}
+
+// IsDifferentCt
+
+IsDifferentCt::IsDifferentCt(Solver* s, IntExpr* l, IntExpr* r, IntVar* b)
+    : CastConstraint(s, b), left_(l), right_(r), range_demon_(nullptr) {}
+
+void IsDifferentCt::Post() {
+  range_demon_ = solver()->MakeConstraintInitialPropagateCallback(this);
+  left_->WhenRange(range_demon_);
+  right_->WhenRange(range_demon_);
+  Demon* const target_demon = MakeConstraintDemon0(
+      solver(), this, &IsDifferentCt::PropagateTarget, "PropagateTarget");
+  target_var_->WhenBound(target_demon);
+}
+
+void IsDifferentCt::InitialPropagate() {
+  if (target_var_->Bound()) {
+    PropagateTarget();
+    return;
   }
-
-  void Accept(ModelVisitor* visitor) const override {
-    visitor->BeginVisitConstraint(ModelVisitor::kIsDifferent, this);
-    visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument, left_);
-    visitor->VisitIntegerExpressionArgument(ModelVisitor::kRightArgument,
-                                            right_);
-    visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
-                                            target_var_);
-    visitor->EndVisitConstraint(ModelVisitor::kIsDifferent, this);
-  }
-
- private:
-  IntExpr* const left_;
-  IntExpr* const right_;
-  Demon* range_demon_;
-};
-
-class IsLessOrEqualCt : public CastConstraint {
- public:
-  IsLessOrEqualCt(Solver* s, IntExpr* l, IntExpr* r, IntVar* b)
-      : CastConstraint(s, b), left_(l), right_(r), demon_(nullptr) {}
-
-  ~IsLessOrEqualCt() override {}
-
-  void Post() override {
-    demon_ = solver()->MakeConstraintInitialPropagateCallback(this);
-    left_->WhenRange(demon_);
-    right_->WhenRange(demon_);
-    target_var_->WhenBound(demon_);
-  }
-
-  void InitialPropagate() override {
-    if (target_var_->Bound()) {
-      if (target_var_->Min() == 0) {
-        right_->SetMax(left_->Max() - 1);
-        left_->SetMin(right_->Min() + 1);
-      } else {  // Var is true.
-        right_->SetMin(left_->Min());
-        left_->SetMax(right_->Max());
-      }
-    } else if (right_->Min() >= left_->Max()) {
-      demon_->inhibit(solver());
+  if (left_->Min() > right_->Max() || left_->Max() < right_->Min()) {
+    target_var_->SetValue(1);
+    range_demon_->inhibit(solver());
+  } else if (left_->Bound()) {
+    if (right_->Bound()) {
+      target_var_->SetValue(left_->Min() != right_->Min());
+    } else if (right_->IsVar() && !right_->Var()->Contains(left_->Min())) {
+      range_demon_->inhibit(solver());
       target_var_->SetValue(1);
-    } else if (right_->Max() < left_->Min()) {
-      demon_->inhibit(solver());
-      target_var_->SetValue(0);
+    }
+  } else if (right_->Bound() && left_->IsVar() &&
+             !left_->Var()->Contains(right_->Min())) {
+    range_demon_->inhibit(solver());
+    target_var_->SetValue(1);
+  }
+}
+
+void IsDifferentCt::PropagateTarget() {
+  if (target_var_->Min() == 0) {
+    left_->SetRange(right_->Min(), right_->Max());
+    right_->SetRange(left_->Min(), left_->Max());
+  } else {  // Var is true.
+    if (left_->Bound()) {
+      range_demon_->inhibit(solver());
+      solver()->AddConstraint(solver()->MakeNonEquality(right_, left_->Min()));
+    } else if (right_->Bound()) {
+      range_demon_->inhibit(solver());
+      solver()->AddConstraint(solver()->MakeNonEquality(left_, right_->Min()));
     }
   }
+}
 
-  std::string DebugString() const override {
-    return absl::StrFormat("IsLessOrEqualCt(%s, %s, %s)", left_->DebugString(),
-                           right_->DebugString(), target_var_->DebugString());
-  }
+std::string IsDifferentCt::DebugString() const {
+  return absl::StrFormat("IsDifferentCt(%s, %s, %s)", left_->DebugString(),
+                         right_->DebugString(), target_var_->DebugString());
+}
 
-  void Accept(ModelVisitor* visitor) const override {
-    visitor->BeginVisitConstraint(ModelVisitor::kIsLessOrEqual, this);
-    visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument, left_);
-    visitor->VisitIntegerExpressionArgument(ModelVisitor::kRightArgument,
-                                            right_);
-    visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
-                                            target_var_);
-    visitor->EndVisitConstraint(ModelVisitor::kIsLessOrEqual, this);
-  }
+void IsDifferentCt::Accept(ModelVisitor* visitor) const {
+  visitor->BeginVisitConstraint(ModelVisitor::kIsDifferent, this);
+  visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument, left_);
+  visitor->VisitIntegerExpressionArgument(ModelVisitor::kRightArgument, right_);
+  visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
+                                          target_var_);
+  visitor->EndVisitConstraint(ModelVisitor::kIsDifferent, this);
+}
 
- private:
-  IntExpr* const left_;
-  IntExpr* const right_;
-  Demon* demon_;
-};
+// IsLessOrEqualCt
 
-class IsLessCt : public CastConstraint {
- public:
-  IsLessCt(Solver* s, IntExpr* l, IntExpr* r, IntVar* b)
-      : CastConstraint(s, b), left_(l), right_(r), demon_(nullptr) {}
+IsLessOrEqualCt::IsLessOrEqualCt(Solver* s, IntExpr* l, IntExpr* r, IntVar* b)
+    : CastConstraint(s, b), left_(l), right_(r), demon_(nullptr) {}
 
-  ~IsLessCt() override {}
+void IsLessOrEqualCt::Post() {
+  demon_ = solver()->MakeConstraintInitialPropagateCallback(this);
+  left_->WhenRange(demon_);
+  right_->WhenRange(demon_);
+  target_var_->WhenBound(demon_);
+}
 
-  void Post() override {
-    demon_ = solver()->MakeConstraintInitialPropagateCallback(this);
-    left_->WhenRange(demon_);
-    right_->WhenRange(demon_);
-    target_var_->WhenBound(demon_);
-  }
-
-  void InitialPropagate() override {
-    if (target_var_->Bound()) {
-      if (target_var_->Min() == 0) {
-        right_->SetMax(left_->Max());
-        left_->SetMin(right_->Min());
-      } else {  // Var is true.
-        right_->SetMin(left_->Min() + 1);
-        left_->SetMax(right_->Max() - 1);
-      }
-    } else if (right_->Min() > left_->Max()) {
-      demon_->inhibit(solver());
-      target_var_->SetValue(1);
-    } else if (right_->Max() <= left_->Min()) {
-      demon_->inhibit(solver());
-      target_var_->SetValue(0);
+void IsLessOrEqualCt::InitialPropagate() {
+  if (target_var_->Bound()) {
+    if (target_var_->Min() == 0) {
+      right_->SetMax(left_->Max() - 1);
+      left_->SetMin(right_->Min() + 1);
+    } else {  // Var is true.
+      right_->SetMin(left_->Min());
+      left_->SetMax(right_->Max());
     }
-  }
-
-  std::string DebugString() const override {
-    return absl::StrFormat("IsLessCt(%s, %s, %s)", left_->DebugString(),
-                           right_->DebugString(), target_var_->DebugString());
-  }
-
-  void Accept(ModelVisitor* visitor) const override {
-    visitor->BeginVisitConstraint(ModelVisitor::kIsLess, this);
-    visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument, left_);
-    visitor->VisitIntegerExpressionArgument(ModelVisitor::kRightArgument,
-                                            right_);
-    visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
-                                            target_var_);
-    visitor->EndVisitConstraint(ModelVisitor::kIsLess, this);
-  }
-
- private:
-  IntExpr* const left_;
-  IntExpr* const right_;
-  Demon* demon_;
-};
-}  // namespace
-
-Constraint* Solver::MakeEquality(IntExpr* l, IntExpr* r) {
-  CHECK(l != nullptr) << "left expression nullptr, maybe a bad cast";
-  CHECK(r != nullptr) << "left expression nullptr, maybe a bad cast";
-  CHECK_EQ(this, l->solver());
-  CHECK_EQ(this, r->solver());
-  if (l->Bound()) {
-    return MakeEquality(r, l->Min());
-  } else if (r->Bound()) {
-    return MakeEquality(l, r->Min());
-  } else {
-    return RevAlloc(new RangeEquality(this, l, r));
+  } else if (right_->Min() >= left_->Max()) {
+    demon_->inhibit(solver());
+    target_var_->SetValue(1);
+  } else if (right_->Max() < left_->Min()) {
+    demon_->inhibit(solver());
+    target_var_->SetValue(0);
   }
 }
 
-Constraint* Solver::MakeLessOrEqual(IntExpr* l, IntExpr* r) {
-  CHECK(l != nullptr) << "left expression nullptr, maybe a bad cast";
-  CHECK(r != nullptr) << "left expression nullptr, maybe a bad cast";
-  CHECK_EQ(this, l->solver());
-  CHECK_EQ(this, r->solver());
-  if (l == r) {
-    return MakeTrueConstraint();
-  } else if (l->Bound()) {
-    return MakeGreaterOrEqual(r, l->Min());
-  } else if (r->Bound()) {
-    return MakeLessOrEqual(l, r->Min());
-  } else {
-    return RevAlloc(new RangeLessOrEqual(this, l, r));
-  }
+std::string IsLessOrEqualCt::DebugString() const {
+  return absl::StrFormat("IsLessOrEqualCt(%s, %s, %s)", left_->DebugString(),
+                         right_->DebugString(), target_var_->DebugString());
 }
 
-Constraint* Solver::MakeGreaterOrEqual(IntExpr* l, IntExpr* r) {
-  return MakeLessOrEqual(r, l);
+void IsLessOrEqualCt::Accept(ModelVisitor* visitor) const {
+  visitor->BeginVisitConstraint(ModelVisitor::kIsLessOrEqual, this);
+  visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument, left_);
+  visitor->VisitIntegerExpressionArgument(ModelVisitor::kRightArgument, right_);
+  visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
+                                          target_var_);
+  visitor->EndVisitConstraint(ModelVisitor::kIsLessOrEqual, this);
 }
 
-Constraint* Solver::MakeLess(IntExpr* l, IntExpr* r) {
-  CHECK(l != nullptr) << "left expression nullptr, maybe a bad cast";
-  CHECK(r != nullptr) << "left expression nullptr, maybe a bad cast";
-  CHECK_EQ(this, l->solver());
-  CHECK_EQ(this, r->solver());
-  if (l->Bound()) {
-    return MakeGreater(r, l->Min());
-  } else if (r->Bound()) {
-    return MakeLess(l, r->Min());
-  } else {
-    return RevAlloc(new RangeLess(this, l, r));
-  }
+// IsLessCt
+
+IsLessCt::IsLessCt(Solver* s, IntExpr* l, IntExpr* r, IntVar* b)
+    : CastConstraint(s, b), left_(l), right_(r), demon_(nullptr) {}
+
+void IsLessCt::Post() {
+  demon_ = solver()->MakeConstraintInitialPropagateCallback(this);
+  left_->WhenRange(demon_);
+  right_->WhenRange(demon_);
+  target_var_->WhenBound(demon_);
 }
 
-Constraint* Solver::MakeGreater(IntExpr* l, IntExpr* r) {
-  return MakeLess(r, l);
-}
-
-Constraint* Solver::MakeNonEquality(IntExpr* l, IntExpr* r) {
-  CHECK(l != nullptr) << "left expression nullptr, maybe a bad cast";
-  CHECK(r != nullptr) << "left expression nullptr, maybe a bad cast";
-  CHECK_EQ(this, l->solver());
-  CHECK_EQ(this, r->solver());
-  if (l->Bound()) {
-    return MakeNonEquality(r, l->Min());
-  } else if (r->Bound()) {
-    return MakeNonEquality(l, r->Min());
-  }
-  return RevAlloc(new DiffVar(this, l->Var(), r->Var()));
-}
-
-IntVar* Solver::MakeIsEqualVar(IntExpr* v1, IntExpr* v2) {
-  CHECK_EQ(this, v1->solver());
-  CHECK_EQ(this, v2->solver());
-  if (v1->Bound()) {
-    return MakeIsEqualCstVar(v2, v1->Min());
-  } else if (v2->Bound()) {
-    return MakeIsEqualCstVar(v1, v2->Min());
-  }
-  IntExpr* cache = model_cache_->FindExprExprExpression(
-      v1, v2, ModelCache::EXPR_EXPR_IS_EQUAL);
-  if (cache == nullptr) {
-    cache = model_cache_->FindExprExprExpression(
-        v2, v1, ModelCache::EXPR_EXPR_IS_EQUAL);
-  }
-  if (cache != nullptr) {
-    return cache->Var();
-  } else {
-    IntVar* boolvar = nullptr;
-    IntExpr* reverse_cache = model_cache_->FindExprExprExpression(
-        v1, v2, ModelCache::EXPR_EXPR_IS_NOT_EQUAL);
-    if (reverse_cache == nullptr) {
-      reverse_cache = model_cache_->FindExprExprExpression(
-          v2, v1, ModelCache::EXPR_EXPR_IS_NOT_EQUAL);
+void IsLessCt::InitialPropagate() {
+  if (target_var_->Bound()) {
+    if (target_var_->Min() == 0) {
+      right_->SetMax(left_->Max());
+      left_->SetMin(right_->Min());
+    } else {  // Var is true.
+      right_->SetMin(left_->Min() + 1);
+      left_->SetMax(right_->Max() - 1);
     }
-    if (reverse_cache != nullptr) {
-      boolvar = MakeDifference(1, reverse_cache)->Var();
-    } else {
-      std::string name1 = v1->name();
-      if (name1.empty()) {
-        name1 = v1->DebugString();
-      }
-      std::string name2 = v2->name();
-      if (name2.empty()) {
-        name2 = v2->DebugString();
-      }
-      boolvar =
-          MakeBoolVar(absl::StrFormat("IsEqualVar(%s, %s)", name1, name2));
-      AddConstraint(MakeIsEqualCt(v1, v2, boolvar));
-      model_cache_->InsertExprExprExpression(boolvar, v1, v2,
-                                             ModelCache::EXPR_EXPR_IS_EQUAL);
-    }
-    return boolvar;
+  } else if (right_->Min() > left_->Max()) {
+    demon_->inhibit(solver());
+    target_var_->SetValue(1);
+  } else if (right_->Max() <= left_->Min()) {
+    demon_->inhibit(solver());
+    target_var_->SetValue(0);
   }
 }
 
-Constraint* Solver::MakeIsEqualCt(IntExpr* v1, IntExpr* v2, IntVar* b) {
-  CHECK_EQ(this, v1->solver());
-  CHECK_EQ(this, v2->solver());
-  if (v1->Bound()) {
-    return MakeIsEqualCstCt(v2, v1->Min(), b);
-  } else if (v2->Bound()) {
-    return MakeIsEqualCstCt(v1, v2->Min(), b);
-  }
-  if (b->Bound()) {
-    if (b->Min() == 0) {
-      return MakeNonEquality(v1, v2);
-    } else {
-      return MakeEquality(v1, v2);
-    }
-  }
-  return RevAlloc(new IsEqualCt(this, v1, v2, b));
+std::string IsLessCt::DebugString() const {
+  return absl::StrFormat("IsLessCt(%s, %s, %s)", left_->DebugString(),
+                         right_->DebugString(), target_var_->DebugString());
 }
 
-IntVar* Solver::MakeIsDifferentVar(IntExpr* v1, IntExpr* v2) {
-  CHECK_EQ(this, v1->solver());
-  CHECK_EQ(this, v2->solver());
-  if (v1->Bound()) {
-    return MakeIsDifferentCstVar(v2, v1->Min());
-  } else if (v2->Bound()) {
-    return MakeIsDifferentCstVar(v1, v2->Min());
-  }
-  IntExpr* cache = model_cache_->FindExprExprExpression(
-      v1, v2, ModelCache::EXPR_EXPR_IS_NOT_EQUAL);
-  if (cache == nullptr) {
-    cache = model_cache_->FindExprExprExpression(
-        v2, v1, ModelCache::EXPR_EXPR_IS_NOT_EQUAL);
-  }
-  if (cache != nullptr) {
-    return cache->Var();
-  } else {
-    IntVar* boolvar = nullptr;
-    IntExpr* reverse_cache = model_cache_->FindExprExprExpression(
-        v1, v2, ModelCache::EXPR_EXPR_IS_EQUAL);
-    if (reverse_cache == nullptr) {
-      reverse_cache = model_cache_->FindExprExprExpression(
-          v2, v1, ModelCache::EXPR_EXPR_IS_EQUAL);
-    }
-    if (reverse_cache != nullptr) {
-      boolvar = MakeDifference(1, reverse_cache)->Var();
-    } else {
-      std::string name1 = v1->name();
-      if (name1.empty()) {
-        name1 = v1->DebugString();
-      }
-      std::string name2 = v2->name();
-      if (name2.empty()) {
-        name2 = v2->DebugString();
-      }
-      boolvar =
-          MakeBoolVar(absl::StrFormat("IsDifferentVar(%s, %s)", name1, name2));
-      AddConstraint(MakeIsDifferentCt(v1, v2, boolvar));
-    }
-    model_cache_->InsertExprExprExpression(boolvar, v1, v2,
-                                           ModelCache::EXPR_EXPR_IS_NOT_EQUAL);
-    return boolvar;
-  }
-}
-
-Constraint* Solver::MakeIsDifferentCt(IntExpr* v1, IntExpr* v2, IntVar* b) {
-  CHECK_EQ(this, v1->solver());
-  CHECK_EQ(this, v2->solver());
-  if (v1->Bound()) {
-    return MakeIsDifferentCstCt(v2, v1->Min(), b);
-  } else if (v2->Bound()) {
-    return MakeIsDifferentCstCt(v1, v2->Min(), b);
-  }
-  return RevAlloc(new IsDifferentCt(this, v1, v2, b));
-}
-
-IntVar* Solver::MakeIsLessOrEqualVar(IntExpr* left, IntExpr* right) {
-  CHECK_EQ(this, left->solver());
-  CHECK_EQ(this, right->solver());
-  if (left->Bound()) {
-    return MakeIsGreaterOrEqualCstVar(right, left->Min());
-  } else if (right->Bound()) {
-    return MakeIsLessOrEqualCstVar(left, right->Min());
-  }
-  IntExpr* const cache = model_cache_->FindExprExprExpression(
-      left, right, ModelCache::EXPR_EXPR_IS_LESS_OR_EQUAL);
-  if (cache != nullptr) {
-    return cache->Var();
-  } else {
-    std::string name1 = left->name();
-    if (name1.empty()) {
-      name1 = left->DebugString();
-    }
-    std::string name2 = right->name();
-    if (name2.empty()) {
-      name2 = right->DebugString();
-    }
-    IntVar* const boolvar =
-        MakeBoolVar(absl::StrFormat("IsLessOrEqual(%s, %s)", name1, name2));
-
-    AddConstraint(RevAlloc(new IsLessOrEqualCt(this, left, right, boolvar)));
-    model_cache_->InsertExprExprExpression(
-        boolvar, left, right, ModelCache::EXPR_EXPR_IS_LESS_OR_EQUAL);
-    return boolvar;
-  }
-}
-
-Constraint* Solver::MakeIsLessOrEqualCt(IntExpr* left, IntExpr* right,
-                                        IntVar* b) {
-  CHECK_EQ(this, left->solver());
-  CHECK_EQ(this, right->solver());
-  if (left->Bound()) {
-    return MakeIsGreaterOrEqualCstCt(right, left->Min(), b);
-  } else if (right->Bound()) {
-    return MakeIsLessOrEqualCstCt(left, right->Min(), b);
-  }
-  return RevAlloc(new IsLessOrEqualCt(this, left, right, b));
-}
-
-IntVar* Solver::MakeIsLessVar(IntExpr* left, IntExpr* right) {
-  CHECK_EQ(this, left->solver());
-  CHECK_EQ(this, right->solver());
-  if (left->Bound()) {
-    return MakeIsGreaterCstVar(right, left->Min());
-  } else if (right->Bound()) {
-    return MakeIsLessCstVar(left, right->Min());
-  }
-  IntExpr* const cache = model_cache_->FindExprExprExpression(
-      left, right, ModelCache::EXPR_EXPR_IS_LESS);
-  if (cache != nullptr) {
-    return cache->Var();
-  } else {
-    std::string name1 = left->name();
-    if (name1.empty()) {
-      name1 = left->DebugString();
-    }
-    std::string name2 = right->name();
-    if (name2.empty()) {
-      name2 = right->DebugString();
-    }
-    IntVar* const boolvar =
-        MakeBoolVar(absl::StrFormat("IsLessOrEqual(%s, %s)", name1, name2));
-
-    AddConstraint(RevAlloc(new IsLessCt(this, left, right, boolvar)));
-    model_cache_->InsertExprExprExpression(boolvar, left, right,
-                                           ModelCache::EXPR_EXPR_IS_LESS);
-    return boolvar;
-  }
-}
-
-Constraint* Solver::MakeIsLessCt(IntExpr* left, IntExpr* right, IntVar* b) {
-  CHECK_EQ(this, left->solver());
-  CHECK_EQ(this, right->solver());
-  if (left->Bound()) {
-    return MakeIsGreaterCstCt(right, left->Min(), b);
-  } else if (right->Bound()) {
-    return MakeIsLessCstCt(left, right->Min(), b);
-  }
-  return RevAlloc(new IsLessCt(this, left, right, b));
-}
-
-IntVar* Solver::MakeIsGreaterOrEqualVar(IntExpr* left, IntExpr* right) {
-  return MakeIsLessOrEqualVar(right, left);
-}
-
-Constraint* Solver::MakeIsGreaterOrEqualCt(IntExpr* left, IntExpr* right,
-                                           IntVar* b) {
-  return MakeIsLessOrEqualCt(right, left, b);
-}
-
-IntVar* Solver::MakeIsGreaterVar(IntExpr* left, IntExpr* right) {
-  return MakeIsLessVar(right, left);
-}
-
-Constraint* Solver::MakeIsGreaterCt(IntExpr* left, IntExpr* right, IntVar* b) {
-  return MakeIsLessCt(right, left, b);
+void IsLessCt::Accept(ModelVisitor* visitor) const {
+  visitor->BeginVisitConstraint(ModelVisitor::kIsLess, this);
+  visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument, left_);
+  visitor->VisitIntegerExpressionArgument(ModelVisitor::kRightArgument, right_);
+  visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
+                                          target_var_);
+  visitor->EndVisitConstraint(ModelVisitor::kIsLess, this);
 }
 
 }  // namespace operations_research

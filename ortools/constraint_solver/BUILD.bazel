@@ -177,6 +177,8 @@ cc_library(
         "interval.h",
         "local_search.h",
         "model_cache.h",
+        "pack.h",
+        "range_cst.h",
         "sched_expr.h",
         "search.h",
         "sequence_var.h",
