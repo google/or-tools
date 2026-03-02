@@ -94,8 +94,8 @@ This software suite has been tested under:
 *   Apple macOS Mojave with Xcode 9.x (64-bit);
 *   Microsoft Windows with Visual Studio 2022 (64-bit).
 
-OR-Tools currently builds with a Makefile, but also provides Bazel and CMake
-support.
+OR-Tools currently provides Bazel and CMake support. (Makefiles are no longer
+available.)
 
 For installation instructions (both source and binary), please visit
 https://developers.google.com/optimization/introduction/installing.
