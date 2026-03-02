@@ -190,7 +190,8 @@ void BM_Divide(benchmark::State& state) {
     Divisor divisor(ChooseDenominator<T>(gen));
     state.ResumeTiming();
     for (T value : values) {
-      benchmark::DoNotOptimize(divisor.div(value));
+      auto result = divisor.div(value);
+      benchmark::DoNotOptimize(result);
     }
   }
 }
@@ -218,7 +219,8 @@ void BM_Modulo(benchmark::State& state) {
     Divisor divisor(ChooseDenominator<T>(gen));
     state.ResumeTiming();
     for (T value : values) {
-      benchmark::DoNotOptimize(divisor.mod(value));
+      auto result = divisor.mod(value);
+      benchmark::DoNotOptimize(result);
     }
   }
 }
@@ -245,7 +247,8 @@ void BM_ConstructDivisor(benchmark::State& state) {
   int i = 0;
   for (auto _ : state) {
     Divisor divisor(values[i & mask]);
-    benchmark::DoNotOptimize(divisor.div(values[(i + 1) & mask]));
+    auto result = divisor.div(values[(i + 1) & mask]);
+    benchmark::DoNotOptimize(result);
     i++;
   }
 }
