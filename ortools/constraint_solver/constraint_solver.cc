@@ -57,6 +57,8 @@
 #include "ortools/constraint_solver/interval.h"
 #include "ortools/constraint_solver/local_search.h"
 #include "ortools/constraint_solver/model_cache.h"
+#include "ortools/constraint_solver/pack.h"
+#include "ortools/constraint_solver/range_cst.h"
 #include "ortools/constraint_solver/sequence_var.h"
 #include "ortools/constraint_solver/table.h"
 #include "ortools/constraint_solver/timetabling.h"
@@ -3875,6 +3877,10 @@ Constraint* Solver::MakeNonOverlappingNonStrictBoxesConstraint(
   return RevAlloc(new Diffn(this, x_vars, y_vars, dx, dy, false));
 }
 
+Pack* Solver::MakePack(const std::vector<IntVar*>& vars, int number_of_bins) {
+  return RevAlloc(new Pack(this, vars, number_of_bins));
+}
+
 namespace {
 std::string StringifyEvaluatorBare(const Solver::Int64ToIntVar& evaluator,
                                    int64_t range_start, int64_t range_end) {
@@ -6904,6 +6910,292 @@ Assignment* Solver::MakeAssignment() { return RevAlloc(new Assignment(this)); }
 
 Assignment* Solver::MakeAssignment(const Assignment* const a) {
   return RevAlloc(new Assignment(a));
+}
+
+Constraint* Solver::MakeEquality(IntExpr* l, IntExpr* r) {
+  CHECK(l != nullptr) << "left expression nullptr, maybe a bad cast";
+  CHECK(r != nullptr) << "left expression nullptr, maybe a bad cast";
+  CHECK_EQ(this, l->solver());
+  CHECK_EQ(this, r->solver());
+  if (l->Bound()) {
+    return MakeEquality(r, l->Min());
+  } else if (r->Bound()) {
+    return MakeEquality(l, r->Min());
+  } else {
+    return RevAlloc(new RangeEquality(this, l, r));
+  }
+}
+
+Constraint* Solver::MakeLessOrEqual(IntExpr* l, IntExpr* r) {
+  CHECK(l != nullptr) << "left expression nullptr, maybe a bad cast";
+  CHECK(r != nullptr) << "left expression nullptr, maybe a bad cast";
+  CHECK_EQ(this, l->solver());
+  CHECK_EQ(this, r->solver());
+  if (l == r) {
+    return MakeTrueConstraint();
+  } else if (l->Bound()) {
+    return MakeGreaterOrEqual(r, l->Min());
+  } else if (r->Bound()) {
+    return MakeLessOrEqual(l, r->Min());
+  } else {
+    return RevAlloc(new RangeLessOrEqual(this, l, r));
+  }
+}
+
+Constraint* Solver::MakeGreaterOrEqual(IntExpr* l, IntExpr* r) {
+  return MakeLessOrEqual(r, l);
+}
+
+Constraint* Solver::MakeLess(IntExpr* l, IntExpr* r) {
+  CHECK(l != nullptr) << "left expression nullptr, maybe a bad cast";
+  CHECK(r != nullptr) << "left expression nullptr, maybe a bad cast";
+  CHECK_EQ(this, l->solver());
+  CHECK_EQ(this, r->solver());
+  if (l->Bound()) {
+    return MakeGreater(r, l->Min());
+  } else if (r->Bound()) {
+    return MakeLess(l, r->Min());
+  } else {
+    return RevAlloc(new RangeLess(this, l, r));
+  }
+}
+
+Constraint* Solver::MakeGreater(IntExpr* l, IntExpr* r) {
+  return MakeLess(r, l);
+}
+
+Constraint* Solver::MakeNonEquality(IntExpr* l, IntExpr* r) {
+  CHECK(l != nullptr) << "left expression nullptr, maybe a bad cast";
+  CHECK(r != nullptr) << "left expression nullptr, maybe a bad cast";
+  CHECK_EQ(this, l->solver());
+  CHECK_EQ(this, r->solver());
+  if (l->Bound()) {
+    return MakeNonEquality(r, l->Min());
+  } else if (r->Bound()) {
+    return MakeNonEquality(l, r->Min());
+  }
+  return RevAlloc(new DiffVar(this, l->Var(), r->Var()));
+}
+
+IntVar* Solver::MakeIsEqualVar(IntExpr* v1, IntExpr* v2) {
+  CHECK_EQ(this, v1->solver());
+  CHECK_EQ(this, v2->solver());
+  if (v1->Bound()) {
+    return MakeIsEqualCstVar(v2, v1->Min());
+  } else if (v2->Bound()) {
+    return MakeIsEqualCstVar(v1, v2->Min());
+  }
+  IntExpr* cache = model_cache_->FindExprExprExpression(
+      v1, v2, ModelCache::EXPR_EXPR_IS_EQUAL);
+  if (cache == nullptr) {
+    cache = model_cache_->FindExprExprExpression(
+        v2, v1, ModelCache::EXPR_EXPR_IS_EQUAL);
+  }
+  if (cache != nullptr) {
+    return cache->Var();
+  } else {
+    IntVar* boolvar = nullptr;
+    IntExpr* reverse_cache = model_cache_->FindExprExprExpression(
+        v1, v2, ModelCache::EXPR_EXPR_IS_NOT_EQUAL);
+    if (reverse_cache == nullptr) {
+      reverse_cache = model_cache_->FindExprExprExpression(
+          v2, v1, ModelCache::EXPR_EXPR_IS_NOT_EQUAL);
+    }
+    if (reverse_cache != nullptr) {
+      boolvar = MakeDifference(1, reverse_cache)->Var();
+    } else {
+      std::string name1 = v1->name();
+      if (name1.empty()) {
+        name1 = v1->DebugString();
+      }
+      std::string name2 = v2->name();
+      if (name2.empty()) {
+        name2 = v2->DebugString();
+      }
+      boolvar =
+          MakeBoolVar(absl::StrFormat("IsEqualVar(%s, %s)", name1, name2));
+      AddConstraint(MakeIsEqualCt(v1, v2, boolvar));
+      model_cache_->InsertExprExprExpression(boolvar, v1, v2,
+                                             ModelCache::EXPR_EXPR_IS_EQUAL);
+    }
+    return boolvar;
+  }
+}
+
+Constraint* Solver::MakeIsEqualCt(IntExpr* v1, IntExpr* v2, IntVar* b) {
+  CHECK_EQ(this, v1->solver());
+  CHECK_EQ(this, v2->solver());
+  if (v1->Bound()) {
+    return MakeIsEqualCstCt(v2, v1->Min(), b);
+  } else if (v2->Bound()) {
+    return MakeIsEqualCstCt(v1, v2->Min(), b);
+  }
+  if (b->Bound()) {
+    if (b->Min() == 0) {
+      return MakeNonEquality(v1, v2);
+    } else {
+      return MakeEquality(v1, v2);
+    }
+  }
+  return RevAlloc(new IsEqualCt(this, v1, v2, b));
+}
+
+IntVar* Solver::MakeIsDifferentVar(IntExpr* v1, IntExpr* v2) {
+  CHECK_EQ(this, v1->solver());
+  CHECK_EQ(this, v2->solver());
+  if (v1->Bound()) {
+    return MakeIsDifferentCstVar(v2, v1->Min());
+  } else if (v2->Bound()) {
+    return MakeIsDifferentCstVar(v1, v2->Min());
+  }
+  IntExpr* cache = model_cache_->FindExprExprExpression(
+      v1, v2, ModelCache::EXPR_EXPR_IS_NOT_EQUAL);
+  if (cache == nullptr) {
+    cache = model_cache_->FindExprExprExpression(
+        v2, v1, ModelCache::EXPR_EXPR_IS_NOT_EQUAL);
+  }
+  if (cache != nullptr) {
+    return cache->Var();
+  } else {
+    IntVar* boolvar = nullptr;
+    IntExpr* reverse_cache = model_cache_->FindExprExprExpression(
+        v1, v2, ModelCache::EXPR_EXPR_IS_EQUAL);
+    if (reverse_cache == nullptr) {
+      reverse_cache = model_cache_->FindExprExprExpression(
+          v2, v1, ModelCache::EXPR_EXPR_IS_EQUAL);
+    }
+    if (reverse_cache != nullptr) {
+      boolvar = MakeDifference(1, reverse_cache)->Var();
+    } else {
+      std::string name1 = v1->name();
+      if (name1.empty()) {
+        name1 = v1->DebugString();
+      }
+      std::string name2 = v2->name();
+      if (name2.empty()) {
+        name2 = v2->DebugString();
+      }
+      boolvar =
+          MakeBoolVar(absl::StrFormat("IsDifferentVar(%s, %s)", name1, name2));
+      AddConstraint(MakeIsDifferentCt(v1, v2, boolvar));
+    }
+    model_cache_->InsertExprExprExpression(boolvar, v1, v2,
+                                           ModelCache::EXPR_EXPR_IS_NOT_EQUAL);
+    return boolvar;
+  }
+}
+
+Constraint* Solver::MakeIsDifferentCt(IntExpr* v1, IntExpr* v2, IntVar* b) {
+  CHECK_EQ(this, v1->solver());
+  CHECK_EQ(this, v2->solver());
+  if (v1->Bound()) {
+    return MakeIsDifferentCstCt(v2, v1->Min(), b);
+  } else if (v2->Bound()) {
+    return MakeIsDifferentCstCt(v1, v2->Min(), b);
+  }
+  return RevAlloc(new IsDifferentCt(this, v1, v2, b));
+}
+
+IntVar* Solver::MakeIsLessOrEqualVar(IntExpr* left, IntExpr* right) {
+  CHECK_EQ(this, left->solver());
+  CHECK_EQ(this, right->solver());
+  if (left->Bound()) {
+    return MakeIsGreaterOrEqualCstVar(right, left->Min());
+  } else if (right->Bound()) {
+    return MakeIsLessOrEqualCstVar(left, right->Min());
+  }
+  IntExpr* const cache = model_cache_->FindExprExprExpression(
+      left, right, ModelCache::EXPR_EXPR_IS_LESS_OR_EQUAL);
+  if (cache != nullptr) {
+    return cache->Var();
+  } else {
+    std::string name1 = left->name();
+    if (name1.empty()) {
+      name1 = left->DebugString();
+    }
+    std::string name2 = right->name();
+    if (name2.empty()) {
+      name2 = right->DebugString();
+    }
+    IntVar* const boolvar =
+        MakeBoolVar(absl::StrFormat("IsLessOrEqual(%s, %s)", name1, name2));
+
+    AddConstraint(RevAlloc(new IsLessOrEqualCt(this, left, right, boolvar)));
+    model_cache_->InsertExprExprExpression(
+        boolvar, left, right, ModelCache::EXPR_EXPR_IS_LESS_OR_EQUAL);
+    return boolvar;
+  }
+}
+
+Constraint* Solver::MakeIsLessOrEqualCt(IntExpr* left, IntExpr* right,
+                                        IntVar* b) {
+  CHECK_EQ(this, left->solver());
+  CHECK_EQ(this, right->solver());
+  if (left->Bound()) {
+    return MakeIsGreaterOrEqualCstCt(right, left->Min(), b);
+  } else if (right->Bound()) {
+    return MakeIsLessOrEqualCstCt(left, right->Min(), b);
+  }
+  return RevAlloc(new IsLessOrEqualCt(this, left, right, b));
+}
+
+IntVar* Solver::MakeIsLessVar(IntExpr* left, IntExpr* right) {
+  CHECK_EQ(this, left->solver());
+  CHECK_EQ(this, right->solver());
+  if (left->Bound()) {
+    return MakeIsGreaterCstVar(right, left->Min());
+  } else if (right->Bound()) {
+    return MakeIsLessCstVar(left, right->Min());
+  }
+  IntExpr* const cache = model_cache_->FindExprExprExpression(
+      left, right, ModelCache::EXPR_EXPR_IS_LESS);
+  if (cache != nullptr) {
+    return cache->Var();
+  } else {
+    std::string name1 = left->name();
+    if (name1.empty()) {
+      name1 = left->DebugString();
+    }
+    std::string name2 = right->name();
+    if (name2.empty()) {
+      name2 = right->DebugString();
+    }
+    IntVar* const boolvar =
+        MakeBoolVar(absl::StrFormat("IsLessOrEqual(%s, %s)", name1, name2));
+
+    AddConstraint(RevAlloc(new IsLessCt(this, left, right, boolvar)));
+    model_cache_->InsertExprExprExpression(boolvar, left, right,
+                                           ModelCache::EXPR_EXPR_IS_LESS);
+    return boolvar;
+  }
+}
+
+Constraint* Solver::MakeIsLessCt(IntExpr* left, IntExpr* right, IntVar* b) {
+  CHECK_EQ(this, left->solver());
+  CHECK_EQ(this, right->solver());
+  if (left->Bound()) {
+    return MakeIsGreaterCstCt(right, left->Min(), b);
+  } else if (right->Bound()) {
+    return MakeIsLessCstCt(left, right->Min(), b);
+  }
+  return RevAlloc(new IsLessCt(this, left, right, b));
+}
+
+IntVar* Solver::MakeIsGreaterOrEqualVar(IntExpr* left, IntExpr* right) {
+  return MakeIsLessOrEqualVar(right, left);
+}
+
+Constraint* Solver::MakeIsGreaterOrEqualCt(IntExpr* left, IntExpr* right,
+                                           IntVar* b) {
+  return MakeIsLessOrEqualCt(right, left, b);
+}
+
+IntVar* Solver::MakeIsGreaterVar(IntExpr* left, IntExpr* right) {
+  return MakeIsLessVar(right, left);
+}
+
+Constraint* Solver::MakeIsGreaterCt(IntExpr* left, IntExpr* right, IntVar* b) {
+  return MakeIsLessCt(right, left, b);
 }
 
 }  // namespace operations_research

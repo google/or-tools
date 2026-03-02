@@ -4685,7 +4685,7 @@ absl::Duration RegularLimit::TimeElapsed() {
     absl::Duration elapsed = s->Now() - solver_time_at_limit_start_;
     if (smart_time_check_ && check_count_ > kCheckWarmupIterations &&
         elapsed > absl::ZeroDuration()) {
-      const int64_t estimated_check_count_at_limit = MathUtil::FastInt64Round(
+      const int64_t estimated_check_count_at_limit = MathUtil::Round<int64_t>(
           check_count_ * absl::FDivDuration(duration_limit_, elapsed));
       next_check_ =
           std::min(check_count_ + kMaxSkip, estimated_check_count_at_limit);

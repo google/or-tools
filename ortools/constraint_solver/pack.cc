@@ -13,6 +13,8 @@
 
 //  Packing constraints
 
+#include "ortools/constraint_solver/pack.h"
+
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
@@ -1608,7 +1610,4 @@ void Pack::AddCountAssignedItemsDimension(IntVar* count_var) {
   dims_.push_back(dim);
 }
 
-Pack* Solver::MakePack(const std::vector<IntVar*>& vars, int number_of_bins) {
-  return RevAlloc(new Pack(this, vars, number_of_bins));
-}
 }  // namespace operations_research

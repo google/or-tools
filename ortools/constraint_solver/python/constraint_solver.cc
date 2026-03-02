@@ -27,6 +27,7 @@
 #include "ortools/constraint_solver/assignment.h"
 #include "ortools/constraint_solver/assignment.pb.h"
 #include "ortools/constraint_solver/local_search.h"
+#include "ortools/constraint_solver/pack.h"
 #include "ortools/constraint_solver/python/constraint_solver_doc.h"
 #include "ortools/constraint_solver/search_limit.pb.h"
 #include "ortools/constraint_solver/sequence_var.h"
