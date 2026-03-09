@@ -99,7 +99,6 @@ bool SolverTypeIsMip(MPModelRequest::SolverType solver_type) {
     case MPModelRequest::GLPK_MIXED_INTEGER_PROGRAMMING:
     case MPModelRequest::CBC_MIXED_INTEGER_PROGRAMMING:
     case MPModelRequest::GUROBI_MIXED_INTEGER_PROGRAMMING:
-    case MPModelRequest::KNAPSACK_MIXED_INTEGER_PROGRAMMING:
     case MPModelRequest::BOP_INTEGER_PROGRAMMING:
     case MPModelRequest::SAT_INTEGER_PROGRAMMING:
     case MPModelRequest::HIGHS_MIXED_INTEGER_PROGRAMMING:
@@ -450,7 +449,6 @@ constexpr
         {MPSolver::GLPK_MIXED_INTEGER_PROGRAMMING, "glpk"},
         {MPSolver::HIGHS_MIXED_INTEGER_PROGRAMMING, "highs"},
         {MPSolver::PDLP_LINEAR_PROGRAMMING, "pdlp"},
-        {MPSolver::KNAPSACK_MIXED_INTEGER_PROGRAMMING, "knapsack"},
         {MPSolver::CPLEX_MIXED_INTEGER_PROGRAMMING, "cplex"},
         {MPSolver::XPRESS_MIXED_INTEGER_PROGRAMMING, "xpress"},
 };

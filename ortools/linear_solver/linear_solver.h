@@ -227,9 +227,6 @@ class MPSolver {
     // Recommended default value for pure integral problems problems.
     SAT_INTEGER_PROGRAMMING = 14,
 
-    // Dedicated knapsack solvers.
-    KNAPSACK_MIXED_INTEGER_PROGRAMMING = 13,
-
     // Commercial software (need license).
     GUROBI_LINEAR_PROGRAMMING = 6,
     GUROBI_MIXED_INTEGER_PROGRAMMING = 7,

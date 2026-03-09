@@ -224,14 +224,10 @@ int64_t HighsInterface::nodes() const {
 }
 
 MPSolver::BasisStatus HighsInterface::row_status(int constraint_index) const {
-  // TODO(user): While basis status isn't well defined for PDLP, we could
-  // guess statuses that might be useful.
   return MPSolver::BasisStatus::FREE;
 }
 
 MPSolver::BasisStatus HighsInterface::column_status(int variable_index) const {
-  // TODO(user): While basis status isn't well defined for PDLP, we could
-  // guess statuses that might be useful.
   return MPSolver::BasisStatus::FREE;
 }
 
@@ -241,10 +237,8 @@ bool HighsInterface::IsLP() const { return true; }
 
 bool HighsInterface::IsMIP() const { return solve_as_a_mip_; }
 
-std::string HighsInterface::SolverVersion() const { return "PDLP Solver"; }
+std::string HighsInterface::SolverVersion() const { return "HiGHS Solver"; }
 
-// TODO(user): Consider returning the SolveLog here, as it could be essential
-// for interpreting the PDLP solution.
 void* HighsInterface::underlying_solver() { return nullptr; }
 
 void HighsInterface::ExtractNewVariables() { NonIncrementalChange(); }

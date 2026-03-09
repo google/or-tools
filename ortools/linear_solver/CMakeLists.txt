@@ -23,9 +23,10 @@ list(APPEND _SRCS
   model_exporter.h
   model_validator.cc
   model_validator.h
+  sat_interface.cc
+  scip_helper_macros.cc
   solve_mp_model.cc
   solve_mp_model.h
-  sat_interface.cc
 )
 
 if(USE_BOP)

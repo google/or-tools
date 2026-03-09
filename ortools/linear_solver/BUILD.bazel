@@ -18,8 +18,6 @@ load("@protobuf//bazel:py_proto_library.bzl", "py_proto_library")
 load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 
-# For all the linear_solver_interface_tests rules.
-
 package(default_visibility = ["//visibility:public"])
 
 # OSS solvers
@@ -582,11 +580,18 @@ cc_binary(
 
 cc_library(
     name = "scip_helper_macros",
+    srcs = ["scip_helper_macros.cc"],
     hdrs = ["scip_helper_macros.h"],
     deps = [
         "//ortools/base:status_macros",
+        "@abseil-cpp//absl/base",
+        "@abseil-cpp//absl/base:nullability",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
-        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:string_view",
+        "@scip",
     ],
 )
 
