@@ -74,10 +74,13 @@ struct FailureProtect {
 
 // This #includes constraint_solver.h, and inlines some C++ helpers.
 #include "ortools/base/base_export.h"
+#include "ortools/constraint_solver/reversible_engine.h"
+#include "ortools/constraint_solver/reversible_data.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/assignment.h"
-#include "ortools/constraint_solver/search.h"
+#include "ortools/constraint_solver/interval.h"
 #include "ortools/constraint_solver/local_search.h"
+#include "ortools/constraint_solver/search.h"
 #include "ortools/constraint_solver/sequence_var.h"
 #include "ortools/constraint_solver/utilities.h"
 #include "ortools/constraint_solver/assignment.pb.h"
@@ -720,6 +723,14 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
 %unignore operations_research;
 
 namespace operations_research {
+
+
+// ReversibleEngine: Basic API.
+%unignore ReversibleEngine;
+%unignore ReversibleEngine::ReversibleEngine;
+%unignore ReversibleEngine::~ReversibleEngine;
+%unignore ReversibleEngine::state;
+%unignore ReversibleEngine::stamp;
 
 // Solver: Basic API.
 %unignore Solver;
@@ -1864,8 +1875,11 @@ PY_PROTO_TYPEMAP(ortools.constraint_solver.search_limit_pb2,
                  RegularLimitParameters,
                  operations_research::RegularLimitParameters)
 %include "ortools/base/base_export.h"
+%include "ortools/constraint_solver/reversible_engine.h"
+%include "ortools/constraint_solver/reversible_data.h"
 %include "ortools/constraint_solver/constraint_solver.h"
 %include "ortools/constraint_solver/assignment.h"
+%include "ortools/constraint_solver/interval.h"
 %include "ortools/constraint_solver/search.h"
 %include "ortools/constraint_solver/sequence_var.h"
 %include "ortools/constraint_solver/utilities.h"

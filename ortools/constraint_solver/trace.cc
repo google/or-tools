@@ -24,7 +24,9 @@
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
 #include "ortools/constraint_solver/constraint_solver.h"
+#include "ortools/constraint_solver/interval.h"
 #include "ortools/constraint_solver/sequence_var.h"
+#include "ortools/constraint_solver/utilities.h"
 
 ABSL_FLAG(bool, cp_full_trace, false,
           "Display all trace information, even if the modifiers has no effect");
@@ -34,8 +36,7 @@ namespace {
 // ---------- Code Instrumentation ----------
 class TraceIntVar : public IntVar {
  public:
-  TraceIntVar(Solver* const solver, IntVar* const inner)
-      : IntVar(solver), inner_(inner) {
+  TraceIntVar(Solver* solver, IntVar* inner) : IntVar(solver), inner_(inner) {
     if (inner->HasName()) {
       set_name(inner->name());
     }
@@ -135,7 +136,7 @@ class TraceIntVar : public IntVar {
 
   int VarType() const override { return TRACE_VAR; }
 
-  void Accept(ModelVisitor* const visitor) const override {
+  void Accept(ModelVisitor* visitor) const override {
     IntExpr* const cast_expr =
         solver()->CastExpression(const_cast<TraceIntVar*>(this));
     if (cast_expr != nullptr) {
@@ -170,7 +171,7 @@ class TraceIntVar : public IntVar {
 
 class TraceIntExpr : public IntExpr {
  public:
-  TraceIntExpr(Solver* const solver, IntExpr* const inner)
+  TraceIntExpr(Solver* solver, IntExpr* inner)
       : IntExpr(solver), inner_(inner) {
     CHECK(!inner->IsVar());
     if (inner->HasName()) {
@@ -214,7 +215,7 @@ class TraceIntExpr : public IntExpr {
 
   void WhenRange(Demon* d) override { inner_->WhenRange(d); }
 
-  void Accept(ModelVisitor* const visitor) const override {
+  void Accept(ModelVisitor* visitor) const override {
     visitor->BeginVisitIntegerExpression(ModelVisitor::kTrace, this);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
                                             inner_);
@@ -229,7 +230,7 @@ class TraceIntExpr : public IntExpr {
 
 class TraceIntervalVar : public IntervalVar {
  public:
-  TraceIntervalVar(Solver* const solver, IntervalVar* const inner)
+  TraceIntervalVar(Solver* solver, IntervalVar* inner)
       : IntervalVar(solver, ""), inner_(inner) {
     if (inner->HasName()) {
       set_name(inner->name());
@@ -267,9 +268,9 @@ class TraceIntervalVar : public IntervalVar {
 
   int64_t OldStartMax() const override { return inner_->OldStartMax(); }
 
-  void WhenStartRange(Demon* const d) override { inner_->WhenStartRange(d); }
+  void WhenStartRange(Demon* d) override { inner_->WhenStartRange(d); }
 
-  void WhenStartBound(Demon* const d) override { inner_->WhenStartBound(d); }
+  void WhenStartBound(Demon* d) override { inner_->WhenStartBound(d); }
 
   int64_t EndMin() const override { return inner_->EndMin(); }
 
@@ -301,9 +302,9 @@ class TraceIntervalVar : public IntervalVar {
 
   int64_t OldEndMax() const override { return inner_->OldEndMax(); }
 
-  void WhenEndRange(Demon* const d) override { inner_->WhenEndRange(d); }
+  void WhenEndRange(Demon* d) override { inner_->WhenEndRange(d); }
 
-  void WhenEndBound(Demon* const d) override { inner_->WhenStartBound(d); }
+  void WhenEndBound(Demon* d) override { inner_->WhenStartBound(d); }
 
   int64_t DurationMin() const override { return inner_->DurationMin(); }
 
@@ -335,13 +336,9 @@ class TraceIntervalVar : public IntervalVar {
 
   int64_t OldDurationMax() const override { return inner_->OldDurationMax(); }
 
-  void WhenDurationRange(Demon* const d) override {
-    inner_->WhenDurationRange(d);
-  }
+  void WhenDurationRange(Demon* d) override { inner_->WhenDurationRange(d); }
 
-  void WhenDurationBound(Demon* const d) override {
-    inner_->WhenDurationBound(d);
-  }
+  void WhenDurationBound(Demon* d) override { inner_->WhenDurationBound(d); }
 
   bool MustBePerformed() const override { return inner_->MustBePerformed(); }
 
@@ -359,9 +356,7 @@ class TraceIntervalVar : public IntervalVar {
     return inner_->WasPerformedBound();
   }
 
-  void WhenPerformedBound(Demon* const d) override {
-    inner_->WhenPerformedBound(d);
-  }
+  void WhenPerformedBound(Demon* d) override { inner_->WhenPerformedBound(d); }
 
   IntExpr* StartExpr() override { return inner_->StartExpr(); }
   IntExpr* DurationExpr() override { return inner_->DurationExpr(); }
@@ -377,9 +372,7 @@ class TraceIntervalVar : public IntervalVar {
     return inner_->SafeEndExpr(unperformed_value);
   }
 
-  void Accept(ModelVisitor* const visitor) const override {
-    inner_->Accept(visitor);
-  }
+  void Accept(ModelVisitor* visitor) const override { inner_->Accept(visitor); }
 
   std::string DebugString() const override { return inner_->DebugString(); }
 
@@ -438,7 +431,7 @@ class PrintTrace : public PropagationMonitor {
     std::vector<Info> delayed_info;
   };
 
-  explicit PrintTrace(Solver* const s) : PropagationMonitor(s) {
+  explicit PrintTrace(Solver* s) : PropagationMonitor(s) {
     contexes_.push(Context());
   }
 
@@ -456,14 +449,14 @@ class PrintTrace : public PropagationMonitor {
     DisplaySearch("Starting Tree Search");
   }
 
-  void BeginNextDecision(DecisionBuilder* const b) override {
+  void BeginNextDecision(DecisionBuilder* b) override {
     DisplaySearch(absl::StrFormat("DecisionBuilder(%s)", b->DebugString()));
     IncreaseIndent();
     contexes_.top().in_decision_builder = true;
   }
 
   // After calling DecisionBuilder::Next, along with the returned decision.
-  void EndNextDecision(DecisionBuilder* const b, Decision* const d) override {
+  void EndNextDecision(DecisionBuilder*, Decision*) override {
     contexes_.top().in_decision_builder = false;
     DecreaseIndent();
   }
@@ -484,14 +477,14 @@ class PrintTrace : public PropagationMonitor {
     return false;
   }
 
-  void ApplyDecision(Decision* const decision) override {
+  void ApplyDecision(Decision* decision) override {
     DisplaySearch(
         absl::StrFormat("ApplyDecision(%s)", decision->DebugString()));
     IncreaseIndent();
     contexes_.top().in_decision = true;
   }
 
-  void RefuteDecision(Decision* const decision) override {
+  void RefuteDecision(Decision* decision) override {
     if (contexes_.top().in_objective) {
       DecreaseIndent();
       contexes_.top().in_objective = false;
@@ -502,7 +495,7 @@ class PrintTrace : public PropagationMonitor {
     contexes_.top().in_decision = true;
   }
 
-  void AfterDecision(Decision* const decision, bool direction) override {
+  void AfterDecision(Decision*, bool) override {
     DecreaseIndent();
     contexes_.top().in_decision = false;
   }
@@ -530,20 +523,19 @@ class PrintTrace : public PropagationMonitor {
 
   // ----- Propagation events -----
 
-  void BeginConstraintInitialPropagation(
-      Constraint* const constraint) override {
+  void BeginConstraintInitialPropagation(Constraint* constraint) override {
     PushDelayedInfo(
         absl::StrFormat("Constraint(%s)", constraint->DebugString()));
     contexes_.top().in_constraint = true;
   }
 
-  void EndConstraintInitialPropagation(Constraint* const constraint) override {
+  void EndConstraintInitialPropagation(Constraint*) override {
     PopDelayedInfo();
     contexes_.top().in_constraint = false;
   }
 
-  void BeginNestedConstraintInitialPropagation(
-      Constraint* const parent, Constraint* const nested) override {
+  void BeginNestedConstraintInitialPropagation(Constraint*,
+                                               Constraint* nested) override {
     PushDelayedInfo(absl::StrFormat("Constraint(%s)", nested->DebugString()));
     contexes_.top().in_constraint = true;
   }
@@ -553,29 +545,27 @@ class PrintTrace : public PropagationMonitor {
     contexes_.top().in_constraint = false;
   }
 
-  void RegisterDemon(Demon* const demon) override {}
+  void RegisterDemon(Demon*) override {}
 
-  void BeginDemonRun(Demon* const demon) override {
+  void BeginDemonRun(Demon* demon) override {
     if (demon->priority() != Solver::VAR_PRIORITY) {
       contexes_.top().in_demon = true;
       PushDelayedInfo(absl::StrFormat("Demon(%s)", demon->DebugString()));
     }
   }
 
-  void EndDemonRun(Demon* const demon) override {
+  void EndDemonRun(Demon* demon) override {
     if (demon->priority() != Solver::VAR_PRIORITY) {
       contexes_.top().in_demon = false;
       PopDelayedInfo();
     }
   }
 
-  void StartProcessingIntegerVariable(IntVar* const var) override {
+  void StartProcessingIntegerVariable(IntVar* var) override {
     PushDelayedInfo(absl::StrFormat("StartProcessing(%s)", var->DebugString()));
   }
 
-  void EndProcessingIntegerVariable(IntVar* const var) override {
-    PopDelayedInfo();
-  }
+  void EndProcessingIntegerVariable(IntVar*) override { PopDelayedInfo(); }
 
   void PushContext(const std::string& context) override {
     PushDelayedInfo(context);
@@ -585,62 +575,59 @@ class PrintTrace : public PropagationMonitor {
 
   // ----- IntExpr modifiers -----
 
-  void SetMin(IntExpr* const expr, int64_t new_min) override {
+  void SetMin(IntExpr* expr, int64_t new_min) override {
     DisplayModification(
         absl::StrFormat("SetMin(%s, %d)", expr->DebugString(), new_min));
   }
 
-  void SetMax(IntExpr* const expr, int64_t new_max) override {
+  void SetMax(IntExpr* expr, int64_t new_max) override {
     DisplayModification(
         absl::StrFormat("SetMax(%s, %d)", expr->DebugString(), new_max));
   }
 
-  void SetRange(IntExpr* const expr, int64_t new_min,
-                int64_t new_max) override {
+  void SetRange(IntExpr* expr, int64_t new_min, int64_t new_max) override {
     DisplayModification(absl::StrFormat("SetRange(%s, [%d .. %d])",
                                         expr->DebugString(), new_min, new_max));
   }
 
   // ----- IntVar modifiers -----
 
-  void SetMin(IntVar* const var, int64_t new_min) override {
+  void SetMin(IntVar* var, int64_t new_min) override {
     DisplayModification(
         absl::StrFormat("SetMin(%s, %d)", var->DebugString(), new_min));
   }
 
-  void SetMax(IntVar* const var, int64_t new_max) override {
+  void SetMax(IntVar* var, int64_t new_max) override {
     DisplayModification(
         absl::StrFormat("SetMax(%s, %d)", var->DebugString(), new_max));
   }
 
-  void SetRange(IntVar* const var, int64_t new_min, int64_t new_max) override {
+  void SetRange(IntVar* var, int64_t new_min, int64_t new_max) override {
     DisplayModification(absl::StrFormat("SetRange(%s, [%d .. %d])",
                                         var->DebugString(), new_min, new_max));
   }
 
-  void RemoveValue(IntVar* const var, int64_t value) override {
+  void RemoveValue(IntVar* var, int64_t value) override {
     DisplayModification(
         absl::StrFormat("RemoveValue(%s, %d)", var->DebugString(), value));
   }
 
-  void SetValue(IntVar* const var, int64_t value) override {
+  void SetValue(IntVar* var, int64_t value) override {
     DisplayModification(
         absl::StrFormat("SetValue(%s, %d)", var->DebugString(), value));
   }
 
-  void RemoveInterval(IntVar* const var, int64_t imin, int64_t imax) override {
+  void RemoveInterval(IntVar* var, int64_t imin, int64_t imax) override {
     DisplayModification(absl::StrFormat("RemoveInterval(%s, [%d .. %d])",
                                         var->DebugString(), imin, imax));
   }
 
-  void SetValues(IntVar* const var,
-                 const std::vector<int64_t>& values) override {
+  void SetValues(IntVar* var, const std::vector<int64_t>& values) override {
     DisplayModification(absl::StrFormat("SetValues(%s, %s)", var->DebugString(),
                                         absl::StrJoin(values, ", ")));
   }
 
-  void RemoveValues(IntVar* const var,
-                    const std::vector<int64_t>& values) override {
+  void RemoveValues(IntVar* var, const std::vector<int64_t>& values) override {
     DisplayModification(absl::StrFormat("RemoveValues(%s, %s)",
                                         var->DebugString(),
                                         absl::StrJoin(values, ", ")));
@@ -648,80 +635,80 @@ class PrintTrace : public PropagationMonitor {
 
   // ----- IntervalVar modifiers -----
 
-  void SetStartMin(IntervalVar* const var, int64_t new_min) override {
+  void SetStartMin(IntervalVar* var, int64_t new_min) override {
     DisplayModification(
         absl::StrFormat("SetStartMin(%s, %d)", var->DebugString(), new_min));
   }
 
-  void SetStartMax(IntervalVar* const var, int64_t new_max) override {
+  void SetStartMax(IntervalVar* var, int64_t new_max) override {
     DisplayModification(
         absl::StrFormat("SetStartMax(%s, %d)", var->DebugString(), new_max));
   }
 
-  void SetStartRange(IntervalVar* const var, int64_t new_min,
+  void SetStartRange(IntervalVar* var, int64_t new_min,
                      int64_t new_max) override {
     DisplayModification(absl::StrFormat("SetStartRange(%s, [%d .. %d])",
                                         var->DebugString(), new_min, new_max));
   }
 
-  void SetEndMin(IntervalVar* const var, int64_t new_min) override {
+  void SetEndMin(IntervalVar* var, int64_t new_min) override {
     DisplayModification(
         absl::StrFormat("SetEndMin(%s, %d)", var->DebugString(), new_min));
   }
 
-  void SetEndMax(IntervalVar* const var, int64_t new_max) override {
+  void SetEndMax(IntervalVar* var, int64_t new_max) override {
     DisplayModification(
         absl::StrFormat("SetEndMax(%s, %d)", var->DebugString(), new_max));
   }
 
-  void SetEndRange(IntervalVar* const var, int64_t new_min,
+  void SetEndRange(IntervalVar* var, int64_t new_min,
                    int64_t new_max) override {
     DisplayModification(absl::StrFormat("SetEndRange(%s, [%d .. %d])",
                                         var->DebugString(), new_min, new_max));
   }
 
-  void SetDurationMin(IntervalVar* const var, int64_t new_min) override {
+  void SetDurationMin(IntervalVar* var, int64_t new_min) override {
     DisplayModification(
         absl::StrFormat("SetDurationMin(%s, %d)", var->DebugString(), new_min));
   }
 
-  void SetDurationMax(IntervalVar* const var, int64_t new_max) override {
+  void SetDurationMax(IntervalVar* var, int64_t new_max) override {
     DisplayModification(
         absl::StrFormat("SetDurationMax(%s, %d)", var->DebugString(), new_max));
   }
 
-  void SetDurationRange(IntervalVar* const var, int64_t new_min,
+  void SetDurationRange(IntervalVar* var, int64_t new_min,
                         int64_t new_max) override {
     DisplayModification(absl::StrFormat("SetDurationRange(%s, [%d .. %d])",
                                         var->DebugString(), new_min, new_max));
   }
 
-  void SetPerformed(IntervalVar* const var, bool value) override {
+  void SetPerformed(IntervalVar* var, bool value) override {
     DisplayModification(
         absl::StrFormat("SetPerformed(%s, %d)", var->DebugString(), value));
   }
 
-  void RankFirst(SequenceVar* const var, int index) override {
+  void RankFirst(SequenceVar* var, int index) override {
     DisplayModification(
         absl::StrFormat("RankFirst(%s, %d)", var->DebugString(), index));
   }
 
-  void RankNotFirst(SequenceVar* const var, int index) override {
+  void RankNotFirst(SequenceVar* var, int index) override {
     DisplayModification(
         absl::StrFormat("RankNotFirst(%s, %d)", var->DebugString(), index));
   }
 
-  void RankLast(SequenceVar* const var, int index) override {
+  void RankLast(SequenceVar* var, int index) override {
     DisplayModification(
         absl::StrFormat("RankLast(%s, %d)", var->DebugString(), index));
   }
 
-  void RankNotLast(SequenceVar* const var, int index) override {
+  void RankNotLast(SequenceVar* var, int index) override {
     DisplayModification(
         absl::StrFormat("RankNotLast(%s, %d)", var->DebugString(), index));
   }
 
-  void RankSequence(SequenceVar* const var, const std::vector<int>& rank_first,
+  void RankSequence(SequenceVar* var, const std::vector<int>& rank_first,
                     const std::vector<int>& rank_last,
                     const std::vector<int>& unperformed) override {
     DisplayModification(absl::StrFormat(
@@ -844,7 +831,7 @@ class PrintTrace : public PropagationMonitor {
 };
 }  // namespace
 
-IntExpr* RegisterIntExpr(IntExpr* const expr) {
+IntExpr* RegisterIntExpr(IntExpr* expr) {
   Solver* const s = expr->solver();
   if (s->InstrumentsVariables()) {
     if (expr->IsVar()) {
@@ -857,7 +844,7 @@ IntExpr* RegisterIntExpr(IntExpr* const expr) {
   }
 }
 
-IntVar* RegisterIntVar(IntVar* const var) {
+IntVar* RegisterIntVar(IntVar* var) {
   Solver* const s = var->solver();
   if (s->InstrumentsVariables() &&
       var->VarType() != IntVar::TRACE_VAR) {  // Not already a trace var.
@@ -867,7 +854,7 @@ IntVar* RegisterIntVar(IntVar* const var) {
   }
 }
 
-IntervalVar* RegisterIntervalVar(IntervalVar* const var) {
+IntervalVar* RegisterIntervalVar(IntervalVar* var) {
   Solver* const s = var->solver();
   if (s->InstrumentsVariables()) {
     return s->RevAlloc(new TraceIntervalVar(s, var));
@@ -879,4 +866,218 @@ IntervalVar* RegisterIntervalVar(IntervalVar* const var) {
 PropagationMonitor* BuildPrintTrace(Solver* s) {
   return s->RevAlloc(new PrintTrace(s));
 }
+
+// ---------- Trace ----------
+
+class Trace : public PropagationMonitor {
+ public:
+  explicit Trace(Solver* s) : PropagationMonitor(s) {}
+
+  ~Trace() override {}
+
+  void BeginConstraintInitialPropagation(Constraint* constraint) override {
+    ForAll(monitors_, &PropagationMonitor::BeginConstraintInitialPropagation,
+           constraint);
+  }
+
+  void EndConstraintInitialPropagation(Constraint* constraint) override {
+    ForAll(monitors_, &PropagationMonitor::EndConstraintInitialPropagation,
+           constraint);
+  }
+
+  void BeginNestedConstraintInitialPropagation(Constraint* parent,
+                                               Constraint* nested) override {
+    ForAll(monitors_,
+           &PropagationMonitor::BeginNestedConstraintInitialPropagation, parent,
+           nested);
+  }
+
+  void EndNestedConstraintInitialPropagation(Constraint* parent,
+                                             Constraint* nested) override {
+    ForAll(monitors_,
+           &PropagationMonitor::EndNestedConstraintInitialPropagation, parent,
+           nested);
+  }
+
+  void RegisterDemon(Demon* demon) override {
+    ForAll(monitors_, &PropagationMonitor::RegisterDemon, demon);
+  }
+
+  void BeginDemonRun(Demon* demon) override {
+    ForAll(monitors_, &PropagationMonitor::BeginDemonRun, demon);
+  }
+
+  void EndDemonRun(Demon* demon) override {
+    ForAll(monitors_, &PropagationMonitor::EndDemonRun, demon);
+  }
+
+  void StartProcessingIntegerVariable(IntVar* var) override {
+    ForAll(monitors_, &PropagationMonitor::StartProcessingIntegerVariable, var);
+  }
+
+  void EndProcessingIntegerVariable(IntVar* var) override {
+    ForAll(monitors_, &PropagationMonitor::EndProcessingIntegerVariable, var);
+  }
+
+  void PushContext(const std::string& context) override {
+    ForAll(monitors_, &PropagationMonitor::PushContext, context);
+  }
+
+  void PopContext() override {
+    ForAll(monitors_, &PropagationMonitor::PopContext);
+  }
+
+  // IntExpr modifiers.
+  void SetMin(IntExpr* expr, int64_t new_min) override {
+    for (PropagationMonitor* const monitor : monitors_) {
+      monitor->SetMin(expr, new_min);
+    }
+  }
+
+  void SetMax(IntExpr* expr, int64_t new_max) override {
+    for (PropagationMonitor* const monitor : monitors_) {
+      monitor->SetMax(expr, new_max);
+    }
+  }
+
+  void SetRange(IntExpr* expr, int64_t new_min, int64_t new_max) override {
+    for (PropagationMonitor* const monitor : monitors_) {
+      monitor->SetRange(expr, new_min, new_max);
+    }
+  }
+
+  // IntVar modifiers.
+  void SetMin(IntVar* var, int64_t new_min) override {
+    for (PropagationMonitor* const monitor : monitors_) {
+      monitor->SetMin(var, new_min);
+    }
+  }
+
+  void SetMax(IntVar* var, int64_t new_max) override {
+    for (PropagationMonitor* const monitor : monitors_) {
+      monitor->SetMax(var, new_max);
+    }
+  }
+
+  void SetRange(IntVar* var, int64_t new_min, int64_t new_max) override {
+    for (PropagationMonitor* const monitor : monitors_) {
+      monitor->SetRange(var, new_min, new_max);
+    }
+  }
+
+  void RemoveValue(IntVar* var, int64_t value) override {
+    ForAll(monitors_, &PropagationMonitor::RemoveValue, var, value);
+  }
+
+  void SetValue(IntVar* var, int64_t value) override {
+    ForAll(monitors_, &PropagationMonitor::SetValue, var, value);
+  }
+
+  void RemoveInterval(IntVar* var, int64_t imin, int64_t imax) override {
+    ForAll(monitors_, &PropagationMonitor::RemoveInterval, var, imin, imax);
+  }
+
+  void SetValues(IntVar* var, const std::vector<int64_t>& values) override {
+    ForAll(monitors_, &PropagationMonitor::SetValues, var, values);
+  }
+
+  void RemoveValues(IntVar* var, const std::vector<int64_t>& values) override {
+    ForAll(monitors_, &PropagationMonitor::RemoveValues, var, values);
+  }
+
+  // IntervalVar modifiers.
+  void SetStartMin(IntervalVar* var, int64_t new_min) override {
+    ForAll(monitors_, &PropagationMonitor::SetStartMin, var, new_min);
+  }
+
+  void SetStartMax(IntervalVar* var, int64_t new_max) override {
+    ForAll(monitors_, &PropagationMonitor::SetStartMax, var, new_max);
+  }
+
+  void SetStartRange(IntervalVar* var, int64_t new_min,
+                     int64_t new_max) override {
+    ForAll(monitors_, &PropagationMonitor::SetStartRange, var, new_min,
+           new_max);
+  }
+
+  void SetEndMin(IntervalVar* var, int64_t new_min) override {
+    ForAll(monitors_, &PropagationMonitor::SetEndMin, var, new_min);
+  }
+
+  void SetEndMax(IntervalVar* var, int64_t new_max) override {
+    ForAll(monitors_, &PropagationMonitor::SetEndMax, var, new_max);
+  }
+
+  void SetEndRange(IntervalVar* var, int64_t new_min,
+                   int64_t new_max) override {
+    ForAll(monitors_, &PropagationMonitor::SetEndRange, var, new_min, new_max);
+  }
+
+  void SetDurationMin(IntervalVar* var, int64_t new_min) override {
+    ForAll(monitors_, &PropagationMonitor::SetDurationMin, var, new_min);
+  }
+
+  void SetDurationMax(IntervalVar* var, int64_t new_max) override {
+    ForAll(monitors_, &PropagationMonitor::SetDurationMax, var, new_max);
+  }
+
+  void SetDurationRange(IntervalVar* var, int64_t new_min,
+                        int64_t new_max) override {
+    ForAll(monitors_, &PropagationMonitor::SetDurationRange, var, new_min,
+           new_max);
+  }
+
+  void SetPerformed(IntervalVar* var, bool value) override {
+    ForAll(monitors_, &PropagationMonitor::SetPerformed, var, value);
+  }
+
+  void RankFirst(SequenceVar* var, int index) override {
+    ForAll(monitors_, &PropagationMonitor::RankFirst, var, index);
+  }
+
+  void RankNotFirst(SequenceVar* var, int index) override {
+    ForAll(monitors_, &PropagationMonitor::RankNotFirst, var, index);
+  }
+
+  void RankLast(SequenceVar* var, int index) override {
+    ForAll(monitors_, &PropagationMonitor::RankLast, var, index);
+  }
+
+  void RankNotLast(SequenceVar* var, int index) override {
+    ForAll(monitors_, &PropagationMonitor::RankNotLast, var, index);
+  }
+
+  void RankSequence(SequenceVar* var, const std::vector<int>& rank_first,
+                    const std::vector<int>& rank_last,
+                    const std::vector<int>& unperformed) override {
+    ForAll(monitors_, &PropagationMonitor::RankSequence, var, rank_first,
+           rank_last, unperformed);
+  }
+
+  // Does not take ownership of monitor.
+  void Add(PropagationMonitor* monitor) {
+    if (monitor != nullptr) {
+      monitors_.push_back(monitor);
+    }
+  }
+
+  // The trace will dispatch propagation events. It needs to listen to search
+  // events.
+  void Install() override { SearchMonitor::Install(); }
+
+  std::string DebugString() const override { return "Trace"; }
+
+ private:
+  std::vector<PropagationMonitor*> monitors_;
+};
+
+PropagationMonitor* BuildTrace(Solver* s) { return new Trace(s); }
+
+void AppendPropagationMonitor(Solver* s, SearchMonitor* monitor) {
+  Trace* trace = dynamic_cast<Trace*>(s->GetPropagationMonitor());
+  if (trace != nullptr) {
+    trace->Add(dynamic_cast<PropagationMonitor*>(monitor));
+  }
+}
+
 }  // namespace operations_research

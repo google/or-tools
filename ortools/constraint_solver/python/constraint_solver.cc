@@ -26,9 +26,12 @@
 #include "absl/strings/string_view.h"
 #include "ortools/constraint_solver/assignment.h"
 #include "ortools/constraint_solver/assignment.pb.h"
+#include "ortools/constraint_solver/interval.h"
 #include "ortools/constraint_solver/local_search.h"
 #include "ortools/constraint_solver/pack.h"
 #include "ortools/constraint_solver/python/constraint_solver_doc.h"
+#include "ortools/constraint_solver/reversible_data.h"
+#include "ortools/constraint_solver/reversible_engine.h"
 #include "ortools/constraint_solver/search_limit.pb.h"
 #include "ortools/constraint_solver/sequence_var.h"
 #include "ortools/util/piecewise_linear_function.h"
@@ -72,6 +75,7 @@ using ::operations_research::PropagationBaseObject;
 using ::operations_research::RegularLimit;
 using ::operations_research::RegularLimitParameters;
 using ::operations_research::Rev;
+using ::operations_research::ReversibleEngine;
 using ::operations_research::SearchLimit;
 using ::operations_research::SearchMonitor;
 using ::operations_research::SequenceVar;
@@ -201,9 +205,9 @@ class PyDecision : public Decision {
  public:
   using Decision::Decision;  // Inherit constructors
   virtual ~PyDecision() = default;
-  virtual void apply(Solver* s) {}
-  virtual void refute(Solver* s) {}
-  virtual void accept(DecisionVisitor* v) const {}
+  virtual void apply(Solver*) {}
+  virtual void refute(Solver*) {}
+  virtual void accept(DecisionVisitor*) const {}
   virtual std::string debug_string() const { return "PyDecision"; }
   void Apply(Solver* s) override {
     try {
@@ -255,7 +259,7 @@ class PyDecisionBuilder : public DecisionBuilder {
  public:
   using DecisionBuilder::DecisionBuilder;
   virtual ~PyDecisionBuilder() = default;
-  virtual Decision* next(Solver* s) { return nullptr; }
+  virtual Decision* next(Solver*) { return nullptr; }
   virtual std::string debug_string() const { return "PyDecisionBuilder"; }
   Decision* Next(Solver* s) override {
     try {
@@ -962,7 +966,10 @@ PYBIND11_MODULE(constraint_solver, m) {
       .def("__eq__", &Assignment::SequenceContainer::operator==)
       .def("__ne__", &Assignment::SequenceContainer::operator!=);
 
-  py::class_<Solver>(m, "Solver", DOC(operations_research, Solver))
+  py::class_<ReversibleEngine>(m, "ReversibleEngine").def(py::init<>());
+
+  py::class_<Solver, ReversibleEngine>(
+    m, "Solver", DOC(operations_research, Solver))
       .def(py::init<const std::string&>())
       .def(py::init<const std::string&,
                           const ConstraintSolverParameters&>())

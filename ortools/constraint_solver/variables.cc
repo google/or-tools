@@ -30,6 +30,8 @@
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraints.h"
 #include "ortools/constraint_solver/model_cache.h"
+#include "ortools/constraint_solver/reversible_data.h"
+#include "ortools/constraint_solver/reversible_engine.h"
 #include "ortools/constraint_solver/trace.h"
 #include "ortools/constraint_solver/utilities.h"
 #include "ortools/util/bitset.h"
@@ -332,7 +334,7 @@ std::string DomainIntVar::QueueHandler::DebugString() const {
 template <class T>
 class DomainIntVar::RevIntPtrMap {
  public:
-  RevIntPtrMap(Solver* solver, int64_t rmin, int64_t rmax)
+  RevIntPtrMap(Solver* solver, int64_t rmin, int64_t)
       : solver_(solver), range_min_(rmin), start_(0) {}
 
   ~RevIntPtrMap() {}
@@ -347,7 +349,7 @@ class DomainIntVar::RevIntPtrMap {
   void UnsafeRevInsert(int64_t value, T* elem) {
     elements_.push_back(std::make_pair(value, elem));
     if (solver_->state() != Solver::OUTSIDE_SEARCH) {
-      solver_->AddBacktrackAction([this, value](Solver* s) { Uninsert(value); },
+      solver_->AddBacktrackAction([this, value](Solver*) { Uninsert(value); },
                                   false);
     }
   }
@@ -435,7 +437,7 @@ class DomainIntVar::ValueWatcher : public DomainIntVar::BaseValueWatcher {
         : value_watcher_(watcher), value_(value), var_(var) {}
     ~WatchDemon() override {}
 
-    void Run(Solver* solver) override {
+    void Run(Solver*) override {
       value_watcher_->ProcessValueWatcher(value_, var_);
     }
 
@@ -451,7 +453,7 @@ class DomainIntVar::ValueWatcher : public DomainIntVar::BaseValueWatcher {
 
     ~VarDemon() override {}
 
-    void Run(Solver* solver) override { value_watcher_->ProcessVar(); }
+    void Run(Solver*) override { value_watcher_->ProcessVar(); }
 
    private:
     ValueWatcher* const value_watcher_;
@@ -660,7 +662,7 @@ class DomainIntVar::DenseValueWatcher : public DomainIntVar::BaseValueWatcher {
         : value_watcher_(watcher), value_(value), var_(var) {}
     ~WatchDemon() override {}
 
-    void Run(Solver* solver) override {
+    void Run(Solver*) override {
       value_watcher_->ProcessValueWatcher(value_, var_);
     }
 
@@ -676,7 +678,7 @@ class DomainIntVar::DenseValueWatcher : public DomainIntVar::BaseValueWatcher {
 
     ~VarDemon() override {}
 
-    void Run(Solver* solver) override { value_watcher_->ProcessVar(); }
+    void Run(Solver*) override { value_watcher_->ProcessVar(); }
 
    private:
     DenseValueWatcher* const value_watcher_;
@@ -917,7 +919,7 @@ class DomainIntVar::UpperBoundWatcher
         : value_watcher_(watcher), index_(index), var_(var) {}
     ~WatchDemon() override {}
 
-    void Run(Solver* solver) override {
+    void Run(Solver*) override {
       value_watcher_->ProcessUpperBoundWatcher(index_, var_);
     }
 
@@ -932,7 +934,7 @@ class DomainIntVar::UpperBoundWatcher
     explicit VarDemon(UpperBoundWatcher* watcher) : value_watcher_(watcher) {}
     ~VarDemon() override {}
 
-    void Run(Solver* solver) override { value_watcher_->ProcessVar(); }
+    void Run(Solver*) override { value_watcher_->ProcessVar(); }
 
    private:
     UpperBoundWatcher* const value_watcher_;
@@ -1159,7 +1161,7 @@ class DomainIntVar::DenseUpperBoundWatcher
         : value_watcher_(watcher), value_(value), var_(var) {}
     ~WatchDemon() override {}
 
-    void Run(Solver* solver) override {
+    void Run(Solver*) override {
       value_watcher_->ProcessUpperBoundWatcher(value_, var_);
     }
 
@@ -1176,7 +1178,7 @@ class DomainIntVar::DenseUpperBoundWatcher
 
     ~VarDemon() override {}
 
-    void Run(Solver* solver) override { value_watcher_->ProcessVar(); }
+    void Run(Solver*) override { value_watcher_->ProcessVar(); }
 
    private:
     DenseUpperBoundWatcher* const value_watcher_;
@@ -2449,7 +2451,7 @@ ConcreteBooleanVar::~ConcreteBooleanVar() {}
 void ConcreteBooleanVar::SetValue(int64_t v) {
   if (value_ == kUnboundBooleanVarValue) {
     if ((v & 0xfffffffffffffffe) == 0) {
-      InternalSaveBooleanVarValue(solver(), this);
+      solver()->InternalSaveBooleanVarValue(this);
       value_ = static_cast<int>(v);
       EnqueueVar(&handler_);
       return;
@@ -2471,7 +2473,9 @@ void ConcreteBooleanVar::Process() {
 
 int64_t ConcreteBooleanVar::OldMin() const { return 0LL; }
 int64_t ConcreteBooleanVar::OldMax() const { return 1LL; }
-void ConcreteBooleanVar::RestoreValue() { value_ = kUnboundBooleanVarValue; }
+void ConcreteBooleanVar::RestoreBooleanValue() {
+  value_ = kUnboundBooleanVarValue;
+}
 
 // ----- IntConst -----
 
@@ -2513,9 +2517,9 @@ void IntConst::RemoveInterval(int64_t l, int64_t u) {
     solver()->Fail();
   }
 }
-void IntConst::WhenBound(Demon* d) {}
-void IntConst::WhenRange(Demon* d) {}
-void IntConst::WhenDomain(Demon* d) {}
+void IntConst::WhenBound(Demon*) {}
+void IntConst::WhenRange(Demon*) {}
+void IntConst::WhenDomain(Demon*) {}
 uint64_t IntConst::Size() const { return 1; }
 bool IntConst::Contains(int64_t v) const { return (v == value_); }
 IntVarIterator* IntConst::MakeHoleIterator(bool reversible) const {
@@ -3598,12 +3602,6 @@ Constraint* SetIsGreaterOrEqual(IntVar* var, absl::Span<const int64_t> values,
   DomainIntVar* const dvar = reinterpret_cast<DomainIntVar*>(var);
   CHECK(dvar != nullptr);
   return dvar->SetIsGreaterOrEqual(values, vars);
-}
-
-void RestoreBoolValue(IntVar* var) {
-  DCHECK_EQ(IntVar::BOOLEAN_VAR, var->VarType());
-  BooleanVar* const boolean_var = reinterpret_cast<BooleanVar*>(var);
-  boolean_var->RestoreValue();
 }
 
 // --------- IntVar ---------

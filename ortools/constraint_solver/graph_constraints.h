@@ -24,6 +24,7 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/types/span.h"
 #include "ortools/constraint_solver/constraint_solver.h"
+#include "ortools/constraint_solver/reversible_data.h"
 #include "ortools/util/bitset.h"
 
 namespace operations_research {

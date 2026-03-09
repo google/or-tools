@@ -29,10 +29,6 @@
 
 namespace operations_research {
 
-void ActionDemon::Run(Solver* solver) { action_(solver); }
-
-void ClosureDemon::Run([[maybe_unused]] Solver* solver) { closure_(); }
-
 void TrueConstraint::Post() {}
 void TrueConstraint::InitialPropagate() {}
 std::string TrueConstraint::DebugString() const { return "TrueConstraint()"; }

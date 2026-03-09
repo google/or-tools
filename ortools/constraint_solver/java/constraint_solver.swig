@@ -50,11 +50,14 @@ class RegularLimitParameters;
 // Include the files we want to wrap a first time.
 %{
 #include "ortools/base/base_export.h"
+#include "ortools/constraint_solver/reversible_engine.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/assignment.h"
+#include "ortools/constraint_solver/interval.h"
 #include "ortools/constraint_solver/local_search.h"
 #include "ortools/constraint_solver/search.h"
 #include "ortools/constraint_solver/sequence_var.h"
+#include "ortools/constraint_solver/variables.h"
 #include "ortools/constraint_solver/java/javawrapcp_util.h"
 #include "ortools/constraint_solver/search_limit.pb.h"
 #include "ortools/constraint_solver/solver_parameters.pb.h"
@@ -409,6 +412,10 @@ namespace operations_research {
 // This method causes issues with our std::vector<int64_t> wrapping. It's not really
 // part of the public API anyway.
 %ignore ToInt64Vector;
+
+// StateInfo
+%ignore StateInfo;
+%ignore StateMarker;
 
 // Decision
 %feature("director") Decision;
@@ -1127,8 +1134,8 @@ import java.util.HashSet;
 %rename (nameAllVariables) Solver::NameAllVariables;
 %rename (newSearch) Solver::NewSearch;
 %rename (nextSolution) Solver::NextSolution;
-%rename (popState) Solver::PopState;
-%rename (pushState) Solver::PushState;
+%rename (popState) Solver::PopState();
+%rename (pushState) Solver::PushState();
 %rename (rand32) Solver::Rand32;
 %rename (rand64) Solver::Rand64;
 %rename (randomConcatenateOperators) Solver::RandomConcatenateOperators;
@@ -1667,8 +1674,11 @@ namespace operations_research {
 // TODO(user): Use ignoreall/unignoreall for this one. A lot of work.
 //swiglint: disable include-h-allglobals
 %include "ortools/base/base_export.h"
+%include "ortools/constraint_solver/reversible_engine.h"
+%include "ortools/constraint_solver/reversible_data.h"
 %include "ortools/constraint_solver/constraint_solver.h"
 %include "ortools/constraint_solver/assignment.h"
+%include "ortools/constraint_solver/interval.h"
 %include "ortools/constraint_solver/local_search.h"
 %include "ortools/constraint_solver/search.h"
 %include "ortools/constraint_solver/sequence_var.h"

@@ -33,6 +33,8 @@
 #include "absl/strings/string_view.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraints.h"
+#include "ortools/constraint_solver/interval.h"
+#include "ortools/constraint_solver/reversible_data.h"
 #include "ortools/util/string_array.h"
 
 namespace operations_research {

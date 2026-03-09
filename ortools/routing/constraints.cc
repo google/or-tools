@@ -30,6 +30,7 @@
 #include "ortools/base/strong_vector.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraints.h"
+#include "ortools/constraint_solver/interval.h"
 #include "ortools/routing/breaks.h"
 #include "ortools/routing/filter_committables.h"
 #include "ortools/routing/filters.h"

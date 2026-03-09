@@ -34,6 +34,7 @@
 #include "ortools/base/safe_hash_map.h"
 #include "ortools/constraint_solver/assignment.pb.h"
 #include "ortools/constraint_solver/constraint_solver.h"
+#include "ortools/constraint_solver/interval.h"
 #include "ortools/constraint_solver/sequence_var.h"
 
 namespace operations_research {

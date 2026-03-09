@@ -40,6 +40,7 @@
 #include "ortools/base/init_google.h"
 #include "ortools/base/log_severity.h"
 #include "ortools/constraint_solver/constraint_solver.h"
+#include "ortools/constraint_solver/interval.h"
 #include "ortools/routing/enums.pb.h"
 #include "ortools/routing/index_manager.h"
 #include "ortools/routing/parameters.h"

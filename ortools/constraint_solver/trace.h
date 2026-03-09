@@ -29,6 +29,10 @@ IntervalVar* RegisterIntervalVar(IntervalVar* var);
 
 PropagationMonitor* BuildPrintTrace(Solver* s);
 
+PropagationMonitor* BuildTrace(Solver* s);
+
+void AppendPropagationMonitor(Solver* s, SearchMonitor* monitor);
+
 }  // namespace operations_research
 
 #endif  // ORTOOLS_CONSTRAINT_SOLVER_TRACE_H_

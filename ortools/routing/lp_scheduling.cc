@@ -41,6 +41,7 @@
 #include "ortools/base/mathutil.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/constraint_solver/constraint_solver.h"
+#include "ortools/constraint_solver/interval.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/graph/min_cost_flow.h"
 #include "ortools/port/proto_utils.h"

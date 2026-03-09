@@ -39,6 +39,8 @@
 #include "ortools/base/stl_util.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraints.h"
+#include "ortools/constraint_solver/interval.h"
+#include "ortools/constraint_solver/reversible_data.h"
 #include "ortools/constraint_solver/sequence_var.h"
 #include "ortools/constraint_solver/utilities.h"
 #include "ortools/util/monoid_operation_tree.h"

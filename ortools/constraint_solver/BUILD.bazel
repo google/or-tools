@@ -124,14 +124,72 @@ py_library(
 # ----- Constraint Programming core engine -----
 
 # This is the main library.
-# TODO(user): split this monolithic library into independent components.
-# Do the same for others.
+cc_library(
+    name = "hash",
+    hdrs = ["hash.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "@abseil-cpp//absl/hash",
+        "@abseil-cpp//absl/log:check",
+    ],
+)
+
+cc_library(
+    name = "model_cache",
+    srcs = ["model_cache.cc"],
+    hdrs = ["model_cache.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":hash",
+        "//ortools/base:stl_util",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log:check",
+    ],
+)
+
+cc_library(
+    name = "reversible_engine",
+    srcs = ["reversible_engine.cc"],
+    hdrs = ["reversible_engine.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":solver_parameters_cc_proto",
+        "//ortools/base:gzipstring",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings:string_view",
+        "@zlib",
+    ],
+)
+
+cc_library(
+    name = "reversible_data",
+    srcs = ["reversible_data.cc"],
+    hdrs = ["reversible_data.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":reversible_engine",
+        "//ortools/util:bitset",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
+cc_library(
+    name = "utilities",
+    srcs = ["utilities.cc"],
+    hdrs = ["utilities.h"],
+    visibility = ["//visibility:public"],
+    deps = ["@abseil-cpp//absl/log:check"],
+)
+
 cc_library(
     name = "cp",
     srcs = [
         "alldiff_cst.cc",
         "assignment.cc",
         "constraint_solver.cc",
+        "constraint_solver_factory.cc",
         "constraints.cc",
         "count_cst.cc",
         "default_search.cc",
@@ -144,7 +202,6 @@ cc_library(
         "graph_constraints.cc",
         "interval.cc",
         "local_search.cc",
-        "model_cache.cc",
         "pack.cc",
         "range_cst.cc",
         "resource.cc",
@@ -156,7 +213,6 @@ cc_library(
         "table.cc",
         "timetabling.cc",
         "trace.cc",
-        "utilities.cc",
         "variables.cc",
         "visitor.cc",
     ],
@@ -176,7 +232,6 @@ cc_library(
         "graph_constraints.h",
         "interval.h",
         "local_search.h",
-        "model_cache.h",
         "pack.h",
         "range_cst.h",
         "sched_expr.h",
@@ -185,16 +240,19 @@ cc_library(
         "table.h",
         "timetabling.h",
         "trace.h",
-        "utilities.h",
         "variables.h",
         "visitor.h",
     ],
     visibility = ["//visibility:public"],
     deps = [
         ":assignment_cc_proto",
+        ":model_cache",
+        ":reversible_data",
+        ":reversible_engine",
         ":search_limit_cc_proto",
         ":search_stats_cc_proto",
         ":solver_parameters_cc_proto",
+        ":utilities",
         "//ortools/base:base_export",
         "//ortools/base:bitmap",
         "//ortools/base:file",
@@ -228,7 +286,6 @@ cc_library(
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/flags:flag",
-        "@abseil-cpp//absl/hash",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:vlog_is_on",
@@ -238,6 +295,5 @@ cc_library(
         "@abseil-cpp//absl/strings:str_format",
         "@abseil-cpp//absl/time",
         "@abseil-cpp//absl/types:span",
-        "@zlib",
     ],
 )

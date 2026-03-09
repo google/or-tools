@@ -22,7 +22,8 @@
 
 #include "absl/strings/string_view.h"
 #include "ortools/constraint_solver/constraint_solver.h"
-#include "ortools/constraint_solver/utilities.h"
+#include "ortools/constraint_solver/reversible_data.h"
+#include "ortools/constraint_solver/visitor.h"
 
 namespace operations_research {
 

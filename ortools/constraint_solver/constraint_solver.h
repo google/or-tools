@@ -88,6 +88,7 @@ Solver(name = "pheasant",
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/random/random.h"
+#include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
 #include "absl/time/time.h"
@@ -96,6 +97,7 @@ Solver(name = "pheasant",
 #include "ortools/base/log_severity.h"
 #include "ortools/base/timer.h"
 #include "ortools/base/types.h"
+#include "ortools/constraint_solver/reversible_engine.h"
 #include "ortools/constraint_solver/search_stats.pb.h"
 #include "ortools/constraint_solver/solver_parameters.pb.h"
 #include "ortools/util/piecewise_linear_function.h"
@@ -114,7 +116,6 @@ namespace operations_research {
 
 class Assignment;
 class AssignmentProto;
-class BaseObject;
 class CastConstraint;
 class Constraint;
 class Decision;
@@ -137,7 +138,6 @@ class LocalSearchMonitor;
 class LocalSearchOperator;
 class LocalSearchPhaseParameters;
 class LocalSearchProfiler;
-class ModelCache;
 class ModelVisitor;
 class ObjectiveMonitor;
 class BaseObjectiveMonitor;
@@ -253,7 +253,7 @@ Usually, Constraint Programming code consists of
 - the launch of the solve() method with the decision builder.
 
 For the time being, Solver is neither MT_SAFE nor MT_HOT. */
-class Solver {
+class Solver : public ReversibleEngine {
  public:
   /// Holds semantic information stating that the 'expression' has been
   /// cast into 'variable' using the Var() method, and that
@@ -746,26 +746,6 @@ class Solver {
     SWITCH_BRANCHES
   };
 
-  /// This enum is used internally in private methods Solver::PushState and
-  /// Solver::PopState to tag states in the search tree.
-  enum MarkerType { SENTINEL, SIMPLE_MARKER, CHOICE_POINT, REVERSIBLE_ACTION };
-
-  /// This enum represents the state of the solver w.r.t. the search.
-  enum SolverState {
-    /// Before search, after search.
-    OUTSIDE_SEARCH,
-    /// Executing the root node.
-    IN_ROOT_NODE,
-    /// Executing the search code.
-    IN_SEARCH,
-    /// After successful NextSolution and before EndSearch.
-    AT_SOLUTION,
-    /// After failed NextSolution and before EndSearch.
-    NO_MORE_SOLUTIONS,
-    /// After search, the model is infeasible.
-    PROBLEM_INFEASIBLE
-  };
-
   /// Optimization directions.
   enum OptimizationDirection { NOT_SET, MAXIMIZATION, MINIMIZATION };
 
@@ -800,6 +780,9 @@ class Solver {
   };
 #endif  // SWIG
 
+  typedef ::operations_research::SolverAction Action;
+  typedef ::operations_research::SolverClosure Closure;
+
   /// Callback typedefs
   typedef std::function<int64_t(int64_t)> IndexEvaluator1;
   typedef std::function<int64_t(int64_t, int64_t)> IndexEvaluator2;
@@ -819,9 +802,6 @@ class Solver {
   typedef std::function<bool(int64_t, int64_t, int64_t)>
       VariableValueComparator;
   typedef std::function<DecisionModification()> BranchSelector;
-  // TODO(user): wrap in swig.
-  typedef std::function<void(Solver*)> Action;
-  typedef std::function<void()> Closure;
 
   /// Solver API
   explicit Solver(const std::string& name);
@@ -844,44 +824,6 @@ class Solver {
   /// Create a ConstraintSolverParameters proto with all the default values.
   // TODO(user): Move to constraint_solver_parameters.h.
   static ConstraintSolverParameters DefaultSolverParameters();
-
-  /// reversibility
-
-  /// SaveValue() saves the value of the corresponding object. It must be
-  /// called before modifying the object. The value will be restored upon
-  /// backtrack.
-  template <class T>
-  void SaveValue(T* o) {
-    InternalSaveValue(o);
-  }
-
-  /// Registers the given object as being reversible. By calling this method,
-  /// the caller gives ownership of the object to the solver, which will
-  /// delete it when there is a backtrack out of the current state.
-  ///
-  /// Returns the argument for convenience: this way, the caller may directly
-  /// invoke a constructor in the argument, without having to store the pointer
-  /// first.
-  ///
-  /// This function is only for users that define their own subclasses of
-  /// BaseObject: for all subclasses predefined in the library, the
-  /// corresponding factory methods (e.g., MakeIntVar(...),
-  /// MakeAllDifferent(...) already take care of the registration.
-  template <typename T>
-  T* RevAlloc(T* object) {
-    return reinterpret_cast<T*>(SafeRevAlloc(object));
-  }
-
-  /// Like RevAlloc() above, but for an array of objects: the array
-  /// must have been allocated with the new[] operator. The entire array
-  /// will be deleted when backtracking out of the current state.
-  ///
-  /// This method is valid for arrays of int, int64_t, uint64_t, bool,
-  /// BaseObject*, IntVar*, IntExpr*, and Constraint*.
-  template <typename T>
-  T* RevAllocArray(T* object) {
-    return reinterpret_cast<T*>(SafeRevAllocArray(object));
-  }
 
   /// Adds the constraint 'c' to the model.
   ///
@@ -1023,9 +965,6 @@ class Solver {
   /// adding the constraint makes it inconsistent.
   bool CheckConstraint(Constraint* ct);
 
-  /// State of the solver.
-  SolverState state() const { return state_; }
-
   /// Abandon the current branch in the search tree. A backtrack will follow.
   void Fail();
 
@@ -1082,10 +1021,6 @@ class Solver {
 
   /// The number of accepted neighbors.
   int64_t accepted_neighbors() const { return accepted_neighbors_; }
-
-  /// The stamp indicates how many moves in the search tree we have performed.
-  /// It is useful to detect if we need to update same lazy structures.
-  uint64_t stamp() const;
 
   /// The fail_stamp() is incremented after each backtrack.
   uint64_t fail_stamp() const;
@@ -3030,24 +2965,6 @@ class Solver {
   /// Creates a decision builder that will set the branch selector.
   DecisionBuilder* MakeApplyBranchSelector(BranchSelector bs);
 
-  /// All-in-one SaveAndSetValue.
-  template <class T>
-  void SaveAndSetValue(T* adr, T val) {
-    if (*adr != val) {
-      InternalSaveValue(adr);
-      *adr = val;
-    }
-  }
-
-  /// All-in-one SaveAndAdd_value.
-  template <class T>
-  void SaveAndAdd(T* adr, T val) {
-    if (val != 0) {
-      InternalSaveValue(adr);
-      (*adr) += val;
-    }
-  }
-
   /// Returns a random value between 0 and 'size' - 1;
   int64_t Rand64(int64_t size) {
     DCHECK_GT(size, 0);
@@ -3164,8 +3081,6 @@ class Solver {
   friend void InternalSaveBooleanVarValue(Solver*, IntVar*);
   template <class>
   friend class SimpleRevFIFO;
-  template <class K, class V>
-  friend class RevImmutableMultiMap;
 #endif  /// !defined(SWIG)
 
   /// Internal. If the variables is the result of expr->Var(), this
@@ -3190,15 +3105,14 @@ class Solver {
 
  private:
   void Init();  /// Initialization. To be called by the constructors only.
-  void PushState(MarkerType t, const StateInfo& info);
-  MarkerType PopState(StateInfo* info);
+  void PushState(TrailMarkerType t, const StateInfo& info);
+  TrailMarkerType PopState(StateInfo* info);
   void PushSentinel(int magic_code);
   void BacktrackToSentinel(int magic_code);
   void ProcessConstraints();
   bool BacktrackOneLevel(Decision** fail_decision);
   void JumpToSentinelWhenNested();
   void JumpToSentinel();
-  void check_alloc_state();
   void FreezeQueue();
   void EnqueueVar(Demon* d);
   void EnqueueDelayedDemon(Demon* d);
@@ -3210,41 +3124,6 @@ class Solver {
   void set_variable_to_clean_on_fail(IntVar* v);
   void IncrementUncheckedSolutionCounter();
   bool IsUncheckedSolutionLimitReached();
-
-  void InternalSaveValue(int* valptr);
-  void InternalSaveValue(int64_t* valptr);
-  void InternalSaveValue(uint64_t* valptr);
-  void InternalSaveValue(double* valptr);
-  void InternalSaveValue(bool* valptr);
-  void InternalSaveValue(void** valptr);
-  void InternalSaveValue(int64_t** valptr) {
-    InternalSaveValue(reinterpret_cast<void**>(valptr));
-  }
-
-  BaseObject* SafeRevAlloc(BaseObject* ptr);
-
-  int* SafeRevAllocArray(int* ptr);
-  int64_t* SafeRevAllocArray(int64_t* ptr);
-  uint64_t* SafeRevAllocArray(uint64_t* ptr);
-  double* SafeRevAllocArray(double* ptr);
-  BaseObject** SafeRevAllocArray(BaseObject** ptr);
-  IntVar** SafeRevAllocArray(IntVar** ptr);
-  IntExpr** SafeRevAllocArray(IntExpr** ptr);
-  Constraint** SafeRevAllocArray(Constraint** ptr);
-  /// UnsafeRevAlloc is used internally for cells in SimpleRevFIFO
-  /// and other structures like this.
-  void* UnsafeRevAllocAux(void* ptr);
-  template <class T>
-  T* UnsafeRevAlloc(T* ptr) {
-    return reinterpret_cast<T*>(
-        UnsafeRevAllocAux(reinterpret_cast<void*>(ptr)));
-  }
-  void** UnsafeRevAllocArrayAux(void** ptr);
-  template <class T>
-  T** UnsafeRevAllocArray(T** ptr) {
-    return reinterpret_cast<T**>(
-        UnsafeRevAllocArrayAux(reinterpret_cast<void**>(ptr)));
-  }
 
   void InitCachedIntConstants();
   void InitCachedConstraint();
@@ -3288,11 +3167,9 @@ class Solver {
   absl::flat_hash_set<const Constraint*> cast_constraints_;
   const std::string empty_name_;
   std::unique_ptr<Queue> queue_;
-  std::unique_ptr<Trail> trail_;
   std::vector<Constraint*> constraints_list_;
   std::vector<Constraint*> additional_constraints_list_;
   std::vector<int> additional_constraints_parent_list_;
-  SolverState state_;
   int64_t branches_;
   int64_t fails_;
   int64_t decisions_;
@@ -3348,24 +3225,6 @@ inline int64_t Zero() { return 0; }
 
 /// This method returns 1
 inline int64_t One() { return 1; }
-
-/// A BaseObject is the root of all reversibly allocated objects.
-/// A DebugString method and the associated << operator are implemented
-/// as a convenience.
-class BaseObject {
- public:
-  BaseObject() {}
-
-#ifndef SWIG
-  // This type is neither copyable nor movable.
-  BaseObject(const BaseObject&) = delete;
-  BaseObject& operator=(const BaseObject&) = delete;
-#endif
-  virtual ~BaseObject() = default;
-  virtual std::string DebugString() const { return "BaseObject"; }
-};
-
-std::ostream& operator<<(std::ostream& out, const BaseObject* o);  /// NOLINT
 
 /// The PropagationBaseObject is a subclass of BaseObject that is also
 /// friend to the Solver class. It allows accessing methods useful when
@@ -3581,252 +3440,6 @@ class Demon : public BaseObject {
   uint64_t stamp_;
 };
 
-/// Model visitor.
-class OR_DLL ModelVisitor : public BaseObject {
- public:
-  /// Constraint and Expression types.
-  static const char kAbs[];
-  static const char kAbsEqual[];
-  static const char kAllDifferent[];
-  static const char kAllowedAssignments[];
-  static const char kAtMost[];
-  static const char kIndexOf[];
-  static const char kBetween[];
-  static const char kConditionalExpr[];
-  static const char kCircuit[];
-  static const char kConvexPiecewise[];
-  static const char kCountEqual[];
-  static const char kCover[];
-  static const char kCumulative[];
-  static const char kDeviation[];
-  static const char kDifference[];
-  static const char kDisjunctive[];
-  static const char kDistribute[];
-  static const char kDivide[];
-  static const char kDurationExpr[];
-  static const char kElement[];
-  static const char kLightElementEqual[];
-  static const char kElementEqual[];
-  static const char kEndExpr[];
-  static const char kEquality[];
-  static const char kFalseConstraint[];
-  static const char kGlobalCardinality[];
-  static const char kGreater[];
-  static const char kGreaterOrEqual[];
-  static const char kIntegerVariable[];
-  static const char kIntervalBinaryRelation[];
-  static const char kIntervalDisjunction[];
-  static const char kIntervalUnaryRelation[];
-  static const char kIntervalVariable[];
-  static const char kInversePermutation[];
-  static const char kIsBetween[];
-  static const char kIsDifferent[];
-  static const char kIsEqual[];
-  static const char kIsGreater[];
-  static const char kIsGreaterOrEqual[];
-  static const char kIsLess[];
-  static const char kIsLessOrEqual[];
-  static const char kIsMember[];
-  static const char kLess[];
-  static const char kLessOrEqual[];
-  static const char kLexLess[];
-  static const char kLinkExprVar[];
-  static const char kMapDomain[];
-  static const char kMax[];
-  static const char kMaxEqual[];
-  static const char kMember[];
-  static const char kMin[];
-  static const char kMinEqual[];
-  static const char kModulo[];
-  static const char kNoCycle[];
-  static const char kNonEqual[];
-  static const char kNotBetween[];
-  static const char kNotMember[];
-  static const char kNullIntersect[];
-  static const char kOpposite[];
-  static const char kPack[];
-  static const char kPathCumul[];
-  static const char kDelayedPathCumul[];
-  static const char kPerformedExpr[];
-  static const char kPower[];
-  static const char kProduct[];
-  static const char kScalProd[];
-  static const char kScalProdEqual[];
-  static const char kScalProdGreaterOrEqual[];
-  static const char kScalProdLessOrEqual[];
-  static const char kSemiContinuous[];
-  static const char kSequenceVariable[];
-  static const char kSortingConstraint[];
-  static const char kSquare[];
-  static const char kStartExpr[];
-  static const char kSum[];
-  static const char kSumEqual[];
-  static const char kSumGreaterOrEqual[];
-  static const char kSumLessOrEqual[];
-  static const char kTrace[];
-  static const char kTransition[];
-  static const char kTrueConstraint[];
-  static const char kVarBoundWatcher[];
-  static const char kVarValueWatcher[];
-
-  /// Extension names:
-  static const char kCountAssignedItemsExtension[];
-  static const char kCountUsedBinsExtension[];
-  static const char kInt64ToBoolExtension[];
-  static const char kInt64ToInt64Extension[];
-  static const char kObjectiveExtension[];
-  static const char kSearchLimitExtension[];
-  static const char kUsageEqualVariableExtension[];
-
-  static const char kUsageLessConstantExtension[];
-  static const char kVariableGroupExtension[];
-  static const char kVariableUsageLessConstantExtension[];
-  static const char kWeightedSumOfAssignedEqualVariableExtension[];
-
-  /// argument names:
-  static const char kActiveArgument[];
-  static const char kAssumePathsArgument[];
-  static const char kBranchesLimitArgument[];
-  static const char kCapacityArgument[];
-  static const char kCardsArgument[];
-  static const char kCoefficientsArgument[];
-  static const char kCountArgument[];
-  static const char kCumulativeArgument[];
-  static const char kCumulsArgument[];
-  static const char kDemandsArgument[];
-  static const char kDurationMaxArgument[];
-  static const char kDurationMinArgument[];
-  static const char kEarlyCostArgument[];
-  static const char kEarlyDateArgument[];
-  static const char kEndMaxArgument[];
-  static const char kEndMinArgument[];
-  static const char kEndsArgument[];
-  static const char kExpressionArgument[];
-  static const char kFailuresLimitArgument[];
-  static const char kFinalStatesArgument[];
-  static const char kFixedChargeArgument[];
-  static const char kIndex2Argument[];
-  static const char kIndex3Argument[];
-  static const char kIndexArgument[];
-  static const char kInitialState[];
-  static const char kIntervalArgument[];
-  static const char kIntervalsArgument[];
-  static const char kLateCostArgument[];
-  static const char kLateDateArgument[];
-  static const char kLeftArgument[];
-  static const char kMaxArgument[];
-  static const char kMaximizeArgument[];
-  static const char kMinArgument[];
-  static const char kModuloArgument[];
-  static const char kNextsArgument[];
-  static const char kOptionalArgument[];
-  static const char kPartialArgument[];
-  static const char kPositionXArgument[];
-  static const char kPositionYArgument[];
-  static const char kRangeArgument[];
-  static const char kRelationArgument[];
-  static const char kRightArgument[];
-  static const char kSequenceArgument[];
-  static const char kSequencesArgument[];
-  static const char kSizeArgument[];
-  static const char kSizeXArgument[];
-  static const char kSizeYArgument[];
-  static const char kSmartTimeCheckArgument[];
-  static const char kSolutionLimitArgument[];
-  static const char kStartMaxArgument[];
-  static const char kStartMinArgument[];
-  static const char kStartsArgument[];
-  static const char kStepArgument[];
-  static const char kTargetArgument[];
-  static const char kTimeLimitArgument[];
-  static const char kTransitsArgument[];
-  static const char kTuplesArgument[];
-  static const char kValueArgument[];
-  static const char kValuesArgument[];
-  static const char kVariableArgument[];
-  static const char kVarsArgument[];
-  static const char kEvaluatorArgument[];
-
-  /// Operations.
-  static const char kMirrorOperation[];
-  static const char kRelaxedMaxOperation[];
-  static const char kRelaxedMinOperation[];
-  static const char kSumOperation[];
-  static const char kDifferenceOperation[];
-  static const char kProductOperation[];
-  static const char kStartSyncOnStartOperation[];
-  static const char kStartSyncOnEndOperation[];
-  static const char kTraceOperation[];
-
-  ~ModelVisitor() override;
-
-  /// ----- Virtual methods for visitors -----
-
-  /// Begin/End visit element.
-  virtual void BeginVisitModel(const std::string& type_name);
-  virtual void EndVisitModel(const std::string& type_name);
-  virtual void BeginVisitConstraint(const std::string& type_name,
-                                    const Constraint* constraint);
-  virtual void EndVisitConstraint(const std::string& type_name,
-                                  const Constraint* constraint);
-  virtual void BeginVisitExtension(const std::string& type);
-  virtual void EndVisitExtension(const std::string& type);
-  virtual void BeginVisitIntegerExpression(const std::string& type_name,
-                                           const IntExpr* expr);
-  virtual void EndVisitIntegerExpression(const std::string& type_name,
-                                         const IntExpr* expr);
-  virtual void VisitIntegerVariable(const IntVar* variable, IntExpr* delegate);
-  virtual void VisitIntegerVariable(const IntVar* variable,
-                                    const std::string& operation, int64_t value,
-                                    IntVar* delegate);
-  virtual void VisitIntervalVariable(const IntervalVar* variable,
-                                     const std::string& operation,
-                                     int64_t value, IntervalVar* delegate);
-  virtual void VisitSequenceVariable(const SequenceVar* variable);
-
-  /// Visit integer arguments.
-  virtual void VisitIntegerArgument(const std::string& arg_name, int64_t value);
-  virtual void VisitIntegerArrayArgument(const std::string& arg_name,
-                                         const std::vector<int64_t>& values);
-  virtual void VisitIntegerMatrixArgument(const std::string& arg_name,
-                                          const IntTupleSet& tuples);
-
-  /// Visit integer expression argument.
-  virtual void VisitIntegerExpressionArgument(const std::string& arg_name,
-                                              IntExpr* argument);
-
-  virtual void VisitIntegerVariableArrayArgument(
-      const std::string& arg_name, const std::vector<IntVar*>& arguments);
-
-  /// Visit interval argument.
-  virtual void VisitIntervalArgument(const std::string& arg_name,
-                                     IntervalVar* argument);
-
-  virtual void VisitIntervalArrayArgument(
-      const std::string& arg_name, const std::vector<IntervalVar*>& arguments);
-  /// Visit sequence argument.
-  virtual void VisitSequenceArgument(const std::string& arg_name,
-                                     SequenceVar* argument);
-
-  virtual void VisitSequenceArrayArgument(
-      const std::string& arg_name, const std::vector<SequenceVar*>& arguments);
-#if !defined(SWIG)
-  /// Helpers.
-  virtual void VisitIntegerVariableEvaluatorArgument(
-      const std::string& arg_name, const Solver::Int64ToIntVar& arguments);
-
-  /// Using SWIG on callbacks is troublesome, so we hide these methods during
-  /// the wrapping.
-  void VisitInt64ToBoolExtension(Solver::IndexFilter1 filter, int64_t index_min,
-                                 int64_t index_max);
-  void VisitInt64ToInt64Extension(const Solver::IndexEvaluator1& eval,
-                                  int64_t index_min, int64_t index_max);
-  /// Expands function as array when index min is 0.
-  void VisitInt64ToInt64AsArray(const Solver::IndexEvaluator1& eval,
-                                const std::string& arg_name, int64_t index_max);
-#endif  // #if !defined(SWIG)
-};
-
 /// A constraint is the main modeling object. It provides two methods:
 ///   - Post() is responsible for creating the demons and attaching them to
 ///     immediate demons().
@@ -3988,106 +3601,6 @@ class SearchMonitor : public BaseObject {
 
  private:
   Solver* const solver_;
-};
-
-/// This class adds reversibility to a POD type.
-/// It contains the stamp optimization. i.e. the SaveValue call is done
-/// only once per node of the search tree.  Please note that actual
-/// stamps always starts at 1, thus an initial value of 0 will always
-/// trigger the first SaveValue.
-template <class T>
-class Rev {
- public:
-  explicit Rev(const T& val) : stamp_(0), value_(val) {}
-
-  const T& Value() const { return value_; }
-
-  void SetValue(Solver* s, const T& val) {
-    if (val != value_) {
-      if (stamp_ < s->stamp()) {
-        s->SaveValue(&value_);
-        stamp_ = s->stamp();
-      }
-      value_ = val;
-    }
-  }
-
- private:
-  uint64_t stamp_;
-  T value_;
-};
-
-/// Subclass of Rev<T> which adds numerical operations.
-template <class T>
-class NumericalRev : public Rev<T> {
- public:
-  explicit NumericalRev(const T& val) : Rev<T>(val) {}
-
-  void Add(Solver* s, const T& to_add) {
-    this->SetValue(s, this->Value() + to_add);
-  }
-
-  void Incr(Solver* s) { Add(s, 1); }
-
-  void Decr(Solver* s) { Add(s, -1); }
-};
-
-/// Reversible array of POD types.
-/// It contains the stamp optimization. I.e., the SaveValue call is done only
-/// once per node of the search tree.
-/// Please note that actual stamp always starts at 1, thus an initial value of
-/// 0 always triggers the first SaveValue.
-template <class T>
-class RevArray {
- public:
-  RevArray(int size, const T& val)
-      : stamps_(new uint64_t[size]), values_(new T[size]), size_(size) {
-    for (int i = 0; i < size; ++i) {
-      stamps_[i] = 0;
-      values_[i] = val;
-    }
-  }
-
-  ~RevArray() {}
-
-  int64_t size() const { return size_; }
-
-  const T& Value(int index) const { return values_[index]; }
-
-#if !defined(SWIG)
-  const T& operator[](int index) const { return values_[index]; }
-#endif
-
-  void SetValue(Solver* s, int index, const T& val) {
-    DCHECK_LT(index, size_);
-    if (val != values_[index]) {
-      if (stamps_[index] < s->stamp()) {
-        s->SaveValue(&values_[index]);
-        stamps_[index] = s->stamp();
-      }
-      values_[index] = val;
-    }
-  }
-
- private:
-  std::unique_ptr<uint64_t[]> stamps_;
-  std::unique_ptr<T[]> values_;
-  const int size_;
-};
-
-/// Subclass of RevArray<T> which adds numerical operations.
-template <class T>
-class NumericalRevArray : public RevArray<T> {
- public:
-  NumericalRevArray(int size, const T& val) : RevArray<T>(size, val) {}
-
-  void Add(Solver* s, int index, const T& to_add) {
-    this->SetValue(s, index, this->Value(index) + to_add);
-  }
-
-  void Incr(Solver* s, int index) { Add(s, index, 1); }
-
-  void Decr(Solver* s, int index) { Add(s, index, -1); }
 };
 
 /// The class IntExpr is the base of all integer expressions in
@@ -4369,6 +3882,9 @@ class IntVar : public IntExpr {
 
   /// Accepts the given visitor.
   void Accept(ModelVisitor* visitor) const override;
+
+  /// Special method for restoring the value of a boolean var.
+  virtual void RestoreBooleanValue() {}
 
   /// IsEqual
   virtual IntVar* IsEqual(int64_t constant) = 0;
@@ -4812,167 +4328,6 @@ class ImprovementSearchLimit : public SearchLimit {
   bool gradient_stage_;
 };
 
-/// Interval variables are often used in scheduling. The main characteristics
-/// of an IntervalVar are the start position, duration, and end
-/// date. All these characteristics can be queried and set, and demons can
-/// be posted on their modifications.
-///
-/// An important aspect is optionality: an IntervalVar can be performed or not.
-/// If unperformed, then it simply does not exist, and its characteristics
-/// cannot be accessed any more. An interval var is automatically marked
-/// as unperformed when it is not consistent anymore (start greater
-/// than end, duration < 0...)
-class OR_DLL IntervalVar : public PropagationBaseObject {
- public:
-  /// The smallest acceptable value to be returned by StartMin()
-  static const int64_t kMinValidValue;
-  /// The largest acceptable value to be returned by EndMax()
-  static const int64_t kMaxValidValue;
-  IntervalVar(Solver* solver, const std::string& name)
-      : PropagationBaseObject(solver) {
-    set_name(name);
-  }
-
-#ifndef SWIG
-  // This type is neither copyable nor movable.
-  IntervalVar(const IntervalVar&) = delete;
-  IntervalVar& operator=(const IntervalVar&) = delete;
-#endif
-  ~IntervalVar() override {}
-
-  /// These methods query, set, and watch the start position of the
-  /// interval var.
-  virtual int64_t StartMin() const = 0;
-  virtual int64_t StartMax() const = 0;
-  virtual void SetStartMin(int64_t m) = 0;
-  virtual void SetStartMax(int64_t m) = 0;
-  virtual void SetStartRange(int64_t mi, int64_t ma) = 0;
-  virtual int64_t OldStartMin() const = 0;
-  virtual int64_t OldStartMax() const = 0;
-  virtual void WhenStartRange(Demon* d) = 0;
-  void WhenStartRange(Solver::Closure closure) {
-    WhenStartRange(solver()->MakeClosureDemon(std::move(closure)));
-  }
-#if !defined(SWIG)
-  void WhenStartRange(Solver::Action action) {
-    WhenStartRange(solver()->MakeActionDemon(std::move(action)));
-  }
-#endif  // SWIG
-  virtual void WhenStartBound(Demon* d) = 0;
-  void WhenStartBound(Solver::Closure closure) {
-    WhenStartBound(solver()->MakeClosureDemon(std::move(closure)));
-  }
-#if !defined(SWIG)
-  void WhenStartBound(Solver::Action action) {
-    WhenStartBound(solver()->MakeActionDemon(std::move(action)));
-  }
-#endif  // SWIG
-
-  /// These methods query, set, and watch the duration of the interval var.
-  virtual int64_t DurationMin() const = 0;
-  virtual int64_t DurationMax() const = 0;
-  virtual void SetDurationMin(int64_t m) = 0;
-  virtual void SetDurationMax(int64_t m) = 0;
-  virtual void SetDurationRange(int64_t mi, int64_t ma) = 0;
-  virtual int64_t OldDurationMin() const = 0;
-  virtual int64_t OldDurationMax() const = 0;
-  virtual void WhenDurationRange(Demon* d) = 0;
-  void WhenDurationRange(Solver::Closure closure) {
-    WhenDurationRange(solver()->MakeClosureDemon(std::move(closure)));
-  }
-#if !defined(SWIG)
-  void WhenDurationRange(Solver::Action action) {
-    WhenDurationRange(solver()->MakeActionDemon(std::move(action)));
-  }
-#endif  // SWIG
-  virtual void WhenDurationBound(Demon* d) = 0;
-  void WhenDurationBound(Solver::Closure closure) {
-    WhenDurationBound(solver()->MakeClosureDemon(std::move(closure)));
-  }
-#if !defined(SWIG)
-  void WhenDurationBound(Solver::Action action) {
-    WhenDurationBound(solver()->MakeActionDemon(std::move(action)));
-  }
-#endif  // SWIG
-
-  /// These methods query, set, and watch the end position of the interval var.
-  virtual int64_t EndMin() const = 0;
-  virtual int64_t EndMax() const = 0;
-  virtual void SetEndMin(int64_t m) = 0;
-  virtual void SetEndMax(int64_t m) = 0;
-  virtual void SetEndRange(int64_t mi, int64_t ma) = 0;
-  virtual int64_t OldEndMin() const = 0;
-  virtual int64_t OldEndMax() const = 0;
-  virtual void WhenEndRange(Demon* d) = 0;
-  void WhenEndRange(Solver::Closure closure) {
-    WhenEndRange(solver()->MakeClosureDemon(std::move(closure)));
-  }
-#if !defined(SWIG)
-  void WhenEndRange(Solver::Action action) {
-    WhenEndRange(solver()->MakeActionDemon(std::move(action)));
-  }
-#endif  // SWIG
-  virtual void WhenEndBound(Demon* d) = 0;
-  void WhenEndBound(Solver::Closure closure) {
-    WhenEndBound(solver()->MakeClosureDemon(std::move(closure)));
-  }
-#if !defined(SWIG)
-  void WhenEndBound(Solver::Action action) {
-    WhenEndBound(solver()->MakeActionDemon(std::move(action)));
-  }
-#endif  // SWIG
-
-  /// These methods query, set, and watch the performed status of the
-  /// interval var.
-  virtual bool MustBePerformed() const = 0;
-  virtual bool MayBePerformed() const = 0;
-  bool CannotBePerformed() const { return !MayBePerformed(); }
-  bool IsPerformedBound() const {
-    return MustBePerformed() || !MayBePerformed();
-  }
-  virtual void SetPerformed(bool val) = 0;
-  virtual bool WasPerformedBound() const = 0;
-  virtual void WhenPerformedBound(Demon* d) = 0;
-  void WhenPerformedBound(Solver::Closure closure) {
-    WhenPerformedBound(solver()->MakeClosureDemon(std::move(closure)));
-  }
-#if !defined(SWIG)
-  void WhenPerformedBound(Solver::Action action) {
-    WhenPerformedBound(solver()->MakeActionDemon(std::move(action)));
-  }
-#endif  // SWIG
-
-  /// Attaches a demon awakened when anything about this interval changes.
-  void WhenAnything(Demon* d);
-  /// Attaches a closure awakened when anything about this interval changes.
-  void WhenAnything(Solver::Closure closure) {
-    WhenAnything(solver()->MakeClosureDemon(std::move(closure)));
-  }
-#if !defined(SWIG)
-  /// Attaches an action awakened when anything about this interval changes.
-  void WhenAnything(Solver::Action action) {
-    WhenAnything(solver()->MakeActionDemon(std::move(action)));
-  }
-#endif  // SWIG
-
-  /// These methods create expressions encapsulating the start, end
-  /// and duration of the interval var. Please note that these must not
-  /// be used if the interval var is unperformed.
-  virtual IntExpr* StartExpr() = 0;
-  virtual IntExpr* DurationExpr() = 0;
-  virtual IntExpr* EndExpr() = 0;
-  virtual IntExpr* PerformedExpr() = 0;
-  /// These methods create expressions encapsulating the start, end
-  /// and duration of the interval var. If the interval var is
-  /// unperformed, they will return the unperformed_value.
-  virtual IntExpr* SafeStartExpr(int64_t unperformed_value) = 0;
-  virtual IntExpr* SafeDurationExpr(int64_t unperformed_value) = 0;
-  virtual IntExpr* SafeEndExpr(int64_t unperformed_value) = 0;
-
-  /// Accepts the given visitor.
-  virtual void Accept(ModelVisitor* visitor) const = 0;
-};
-
 class OR_DLL DisjunctiveConstraint : public Constraint {
  public:
   DisjunctiveConstraint(Solver* s, const std::vector<IntervalVar*>& intervals,
@@ -5100,9 +4455,283 @@ class PropagationMonitor : public SearchMonitor {
 }  // namespace operations_research
 
 // TODO(user): Remove this include when the refactor is complete.
-#include "ortools/constraint_solver/constraints.h"
+#include "ortools/constraint_solver/visitor.h"
 
 namespace operations_research {
+
+#ifndef SWIG
+
+/// @{
+/// These methods represent generic demons that will call back a
+/// method on the constraint during their Run method.
+/// This way, all propagation methods are members of the constraint class,
+/// and demons are just proxies with a priority of NORMAL_PRIORITY.
+
+/// Demon proxy to a method on the constraint with no arguments.
+template <class T>
+class CallMethod0 : public Demon {
+ public:
+  CallMethod0(T* ct, void (T::*method)(), const std::string& name)
+      : constraint_(ct), method_(method), name_(name) {}
+
+  ~CallMethod0() override = default;
+
+  void Run(Solver*) override { (constraint_->*method_)(); }
+
+  std::string DebugString() const override {
+    return "CallMethod_" + name_ + "(" + constraint_->DebugString() + ")";
+  }
+
+ private:
+  T* constraint_;
+  void (T::*method_)();
+  const std::string name_;
+};
+
+template <class T>
+Demon* MakeConstraintDemon0(Solver* s, T* ct, void (T::*method)(),
+                            const std::string& name) {
+  return s->RevAlloc(new CallMethod0<T>(ct, method, name));
+}
+
+template <class P>
+std::string ParameterDebugString(P param) {
+  return absl::StrCat(param);
+}
+
+/// Support limited to pointers to classes which define DebugString().
+template <class P>
+std::string ParameterDebugString(P* param) {
+  return param->DebugString();
+}
+
+/// Demon proxy to a method on the constraint with one argument.
+template <class T, class P>
+class CallMethod1 : public Demon {
+ public:
+  CallMethod1(T* ct, void (T::*method)(P), const std::string& name, P param1)
+      : constraint_(ct), method_(method), name_(name), param1_(param1) {}
+
+  ~CallMethod1() override = default;
+
+  void Run(Solver*) override { (constraint_->*method_)(param1_); }
+
+  std::string DebugString() const override {
+    return absl::StrCat("CallMethod_", name_, "(", constraint_->DebugString(),
+                        ", ", ParameterDebugString(param1_), ")");
+  }
+
+ private:
+  T* constraint_;
+  void (T::*method_)(P);
+  const std::string name_;
+  P param1_;
+};
+
+template <class T, class P>
+Demon* MakeConstraintDemon1(Solver* s, T* ct, void (T::*method)(P),
+                            const std::string& name, P param1) {
+  return s->RevAlloc(new CallMethod1<T, P>(ct, method, name, param1));
+}
+
+/// Demon proxy to a method on the constraint with two arguments.
+template <class T, class P, class Q>
+class CallMethod2 : public Demon {
+ public:
+  CallMethod2(T* ct, void (T::*method)(P, Q), const std::string& name, P param1,
+              Q param2)
+      : constraint_(ct),
+        method_(method),
+        name_(name),
+        param1_(param1),
+        param2_(param2) {}
+
+  ~CallMethod2() override = default;
+
+  void Run(Solver*) override { (constraint_->*method_)(param1_, param2_); }
+
+  std::string DebugString() const override {
+    return absl::StrCat("CallMethod_", name_, "(", constraint_->DebugString(),
+                        ", ", ParameterDebugString(param1_), ", ",
+                        ParameterDebugString(param2_), ")");
+  }
+
+ private:
+  T* constraint_;
+  void (T::*method_)(P, Q);
+  const std::string name_;
+  P param1_;
+  Q param2_;
+};
+
+template <class T, class P, class Q>
+Demon* MakeConstraintDemon2(Solver* s, T* ct, void (T::*method)(P, Q),
+                            const std::string& name, P param1, Q param2) {
+  return s->RevAlloc(
+      new CallMethod2<T, P, Q>(ct, method, name, param1, param2));
+}
+/// Demon proxy to a method on the constraint with three arguments.
+template <class T, class P, class Q, class R>
+class CallMethod3 : public Demon {
+ public:
+  CallMethod3(T* ct, void (T::*method)(P, Q, R), const std::string& name,
+              P param1, Q param2, R param3)
+      : constraint_(ct),
+        method_(method),
+        name_(name),
+        param1_(param1),
+        param2_(param2),
+        param3_(param3) {}
+
+  ~CallMethod3() override = default;
+
+  void Run(Solver*) override {
+    (constraint_->*method_)(param1_, param2_, param3_);
+  }
+
+  std::string DebugString() const override {
+    return absl::StrCat(absl::StrCat("CallMethod_", name_),
+                        absl::StrCat("(", constraint_->DebugString()),
+                        absl::StrCat(", ", ParameterDebugString(param1_)),
+                        absl::StrCat(", ", ParameterDebugString(param2_)),
+                        absl::StrCat(", ", ParameterDebugString(param3_), ")"));
+  }
+
+ private:
+  T* constraint_;
+  void (T::*method_)(P, Q, R);
+  const std::string name_;
+  P param1_;
+  Q param2_;
+  R param3_;
+};
+
+template <class T, class P, class Q, class R>
+Demon* MakeConstraintDemon3(Solver* s, T* ct, void (T::*method)(P, Q, R),
+                            const std::string& name, P param1, Q param2,
+                            R param3) {
+  return s->RevAlloc(
+      new CallMethod3<T, P, Q, R>(ct, method, name, param1, param2, param3));
+}
+/// @}
+
+/// @{
+/// These methods represents generic demons that will call back a
+/// method on the constraint during their Run method. This demon will
+/// have a priority DELAYED_PRIORITY.
+
+/// Low-priority demon proxy to a method on the constraint with no arguments.
+template <class T>
+class DelayedCallMethod0 : public Demon {
+ public:
+  DelayedCallMethod0(T* ct, void (T::*method)(), const std::string& name)
+      : constraint_(ct), method_(method), name_(name) {}
+
+  ~DelayedCallMethod0() override = default;
+
+  void Run(Solver*) override { (constraint_->*method_)(); }
+
+  Solver::DemonPriority priority() const override {
+    return Solver::DELAYED_PRIORITY;
+  }
+
+  std::string DebugString() const override {
+    return "DelayedCallMethod_" + name_ + "(" + constraint_->DebugString() +
+           ")";
+  }
+
+ private:
+  T* constraint_;
+  void (T::*method_)();
+  const std::string name_;
+};
+
+template <class T>
+Demon* MakeDelayedConstraintDemon0(Solver* s, T* ct, void (T::*method)(),
+                                   const std::string& name) {
+  return s->RevAlloc(new DelayedCallMethod0<T>(ct, method, name));
+}
+
+/// Low-priority demon proxy to a method on the constraint with one argument.
+template <class T, class P>
+class DelayedCallMethod1 : public Demon {
+ public:
+  DelayedCallMethod1(T* ct, void (T::*method)(P), const std::string& name,
+                     P param1)
+      : constraint_(ct), method_(method), name_(name), param1_(param1) {}
+
+  ~DelayedCallMethod1() override = default;
+
+  void Run(Solver*) override { (constraint_->*method_)(param1_); }
+
+  Solver::DemonPriority priority() const override {
+    return Solver::DELAYED_PRIORITY;
+  }
+
+  std::string DebugString() const override {
+    return absl::StrCat("DelayedCallMethod_", name_, "(",
+                        constraint_->DebugString(), ", ",
+                        ParameterDebugString(param1_), ")");
+  }
+
+ private:
+  T* constraint_;
+  void (T::*method_)(P);
+  const std::string name_;
+  P param1_;
+};
+
+template <class T, class P>
+Demon* MakeDelayedConstraintDemon1(Solver* s, T* ct, void (T::*method)(P),
+                                   const std::string& name, P param1) {
+  return s->RevAlloc(new DelayedCallMethod1<T, P>(ct, method, name, param1));
+}
+
+/// Low-priority demon proxy to a method on the constraint with two arguments.
+template <class T, class P, class Q>
+class DelayedCallMethod2 : public Demon {
+ public:
+  DelayedCallMethod2(T* ct, void (T::*method)(P, Q), const std::string& name,
+                     P param1, Q param2)
+      : constraint_(ct),
+        method_(method),
+        name_(name),
+        param1_(param1),
+        param2_(param2) {}
+
+  ~DelayedCallMethod2() override = default;
+
+  void Run(Solver*) override { (constraint_->*method_)(param1_, param2_); }
+
+  Solver::DemonPriority priority() const override {
+    return Solver::DELAYED_PRIORITY;
+  }
+
+  std::string DebugString() const override {
+    return absl::StrCat(absl::StrCat("DelayedCallMethod_", name_),
+                        absl::StrCat("(", constraint_->DebugString()),
+                        absl::StrCat(", ", ParameterDebugString(param1_)),
+                        absl::StrCat(", ", ParameterDebugString(param2_), ")"));
+  }
+
+ private:
+  T* constraint_;
+  void (T::*method_)(P, Q);
+  const std::string name_;
+  P param1_;
+  Q param2_;
+};
+
+template <class T, class P, class Q>
+Demon* MakeDelayedConstraintDemon2(Solver* s, T* ct, void (T::*method)(P, Q),
+                                   const std::string& name, P param1,
+                                   Q param2) {
+  return s->RevAlloc(
+      new DelayedCallMethod2<T, P, Q>(ct, method, name, param1, param2));
+}
+/// @}
+
+#endif  // !defined(SWIG)
 
 // ----- LightIntFunctionElementCt -----
 

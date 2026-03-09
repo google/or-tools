@@ -21,7 +21,7 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/types/span.h"
 #include "ortools/constraint_solver/constraint_solver.h"
-#include "ortools/constraint_solver/utilities.h"
+#include "ortools/constraint_solver/reversible_data.h"
 #include "ortools/constraint_solver/visitor.h"
 #include "ortools/util/tuple_set.h"
 

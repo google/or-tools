@@ -22,7 +22,7 @@
 #include "absl/types/span.h"
 #include "ortools/base/base_export.h"
 #include "ortools/constraint_solver/constraint_solver.h"
-#include "ortools/constraint_solver/utilities.h"
+#include "ortools/constraint_solver/reversible_data.h"
 
 namespace operations_research {
 
@@ -30,7 +30,7 @@ class OR_DLL BooleanVar : public IntVar {
  public:
   static constexpr int kUnboundBooleanVarValue = 2;
 
-  explicit BooleanVar(Solver* const s, const std::string& name = "")
+  explicit BooleanVar(Solver* s, const std::string& name = "")
       : IntVar(s, name), value_(kUnboundBooleanVarValue) {}
 
   ~BooleanVar() override {}
@@ -62,7 +62,6 @@ class OR_DLL BooleanVar : public IntVar {
   IntVar* IsGreaterOrEqual(int64_t constant) override;
   IntVar* IsLessOrEqual(int64_t constant) override;
 
-  virtual void RestoreValue() = 0;
   std::string BaseName() const override { return "BooleanVar"; }
 
   int RawValue() const { return value_; }
@@ -133,7 +132,7 @@ class OR_DLL ConcreteBooleanVar : public BooleanVar {
   void Process();
   int64_t OldMin() const override;
   int64_t OldMax() const override;
-  void RestoreValue() override;
+  void RestoreBooleanValue() override;
 
  private:
   Handler handler_;

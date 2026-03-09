@@ -15,70 +15,16 @@
 #define ORTOOLS_CONSTRAINT_SOLVER_MODEL_CACHE_H_
 
 #include <cstdint>
+#include <functional>
 #include <vector>
 
-#include "ortools/constraint_solver/constraint_solver.h"
+#include "ortools/constraint_solver/hash.h"
 
 namespace operations_research {
 
-inline uint64_t Hash1(uint64_t value) {
-  value = (~value) + (value << 21);  /// value = (value << 21) - value - 1;
-  value ^= value >> 24;
-  value += (value << 3) + (value << 8);  /// value * 265
-  value ^= value >> 14;
-  value += (value << 2) + (value << 4);  /// value * 21
-  value ^= value >> 28;
-  value += (value << 31);
-  return value;
-}
-
-inline uint64_t Hash1(uint32_t value) {
-  uint64_t a = value;
-  a = (a + 0x7ed55d16) + (a << 12);
-  a = (a ^ 0xc761c23c) ^ (a >> 19);
-  a = (a + 0x165667b1) + (a << 5);
-  a = (a + 0xd3a2646c) ^ (a << 9);
-  a = (a + 0xfd7046c5) + (a << 3);
-  a = (a ^ 0xb55a4f09) ^ (a >> 16);
-  return a;
-}
-
-inline uint64_t Hash1(int64_t value) {
-  return Hash1(static_cast<uint64_t>(value));
-}
-
-inline uint64_t Hash1(int value) { return Hash1(static_cast<uint32_t>(value)); }
-
-inline uint64_t Hash1(void* const ptr) {
-#if defined(__x86_64__) || defined(_M_X64) || defined(__powerpc64__) ||      \
-    defined(__aarch64__) || (defined(_MIPS_SZPTR) && (_MIPS_SZPTR == 64)) || \
-    (defined(INTPTR_MAX) && defined(INT64_MAX) && (INTPTR_MAX == INT64_MAX))
-  return Hash1(reinterpret_cast<uint64_t>(ptr));
-#else
-  return Hash1(reinterpret_cast<uint32_t>(ptr));
-#endif
-}
-
-template <class T>
-uint64_t Hash1(const std::vector<T*>& ptrs) {
-  if (ptrs.empty()) return 0;
-  if (ptrs.size() == 1) return Hash1(ptrs[0]);
-  uint64_t hash = Hash1(ptrs[0]);
-  for (int i = 1; i < ptrs.size(); ++i) {
-    hash = hash * i + Hash1(ptrs[i]);
-  }
-  return hash;
-}
-
-inline uint64_t Hash1(const std::vector<int64_t>& ptrs) {
-  if (ptrs.empty()) return 0;
-  if (ptrs.size() == 1) return Hash1(ptrs[0]);
-  uint64_t hash = Hash1(ptrs[0]);
-  for (int i = 1; i < ptrs.size(); ++i) {
-    hash = hash * i + Hash1(ptrs[i]);
-  }
-  return hash;
-}
+class Constraint;
+class IntExpr;
+class IntVar;
 
 /// Implements a complete cache for model elements: expressions and
 /// constraints.  Caching is based on the signatures of the elements, as
@@ -86,14 +32,37 @@ inline uint64_t Hash1(const std::vector<int64_t>& ptrs) {
 /// duplicate objects.
 class ModelCache {
  public:
+  // Cache templates.
+  typedef Cache1<IntExpr, IntExpr*> ExprIntExprCache;
+  typedef Cache1<IntExpr, std::vector<IntVar*>> VarArrayIntExprCache;
+
+  typedef Cache2<Constraint, IntVar*, int64_t> VarConstantConstraintCache;
+  typedef Cache2<Constraint, IntExpr*, IntExpr*> ExprExprConstraintCache;
+  typedef Cache2<IntExpr, IntVar*, int64_t> VarConstantIntExprCache;
+  typedef Cache2<IntExpr, IntExpr*, int64_t> ExprConstantIntExprCache;
+  typedef Cache2<IntExpr, IntExpr*, IntExpr*> ExprExprIntExprCache;
+  typedef Cache2<IntExpr, IntVar*, const std::vector<int64_t>&>
+      VarConstantArrayIntExprCache;
+  typedef Cache2<IntExpr, std::vector<IntVar*>, const std::vector<int64_t>&>
+      VarArrayConstantArrayIntExprCache;
+  typedef Cache2<IntExpr, std::vector<IntVar*>, int64_t>
+      VarArrayConstantIntExprCache;
+
+  typedef Cache3<IntExpr, IntVar*, int64_t, int64_t>
+      VarConstantConstantIntExprCache;
+  typedef Cache3<Constraint, IntVar*, int64_t, int64_t>
+      VarConstantConstantConstraintCache;
+  typedef Cache3<IntExpr, IntExpr*, IntExpr*, int64_t>
+      ExprExprConstantIntExprCache;
+
   enum VoidConstraintType {
-    VOID_FALSE_CONSTRAINT = 0,
+    VOID_FALSE_CONSTRAINT,
     VOID_TRUE_CONSTRAINT,
     VOID_CONSTRAINT_MAX,
   };
 
   enum VarConstantConstraintType {
-    VAR_CONSTANT_EQUALITY = 0,
+    VAR_CONSTANT_EQUALITY,
     VAR_CONSTANT_GREATER_OR_EQUAL,
     VAR_CONSTANT_LESS_OR_EQUAL,
     VAR_CONSTANT_NON_EQUALITY,
@@ -101,12 +70,12 @@ class ModelCache {
   };
 
   enum VarConstantConstantConstraintType {
-    VAR_CONSTANT_CONSTANT_BETWEEN = 0,
+    VAR_CONSTANT_CONSTANT_BETWEEN,
     VAR_CONSTANT_CONSTANT_CONSTRAINT_MAX,
   };
 
   enum ExprExprConstraintType {
-    EXPR_EXPR_EQUALITY = 0,
+    EXPR_EXPR_EQUALITY,
     EXPR_EXPR_GREATER,
     EXPR_EXPR_GREATER_OR_EQUAL,
     EXPR_EXPR_LESS,
@@ -116,14 +85,14 @@ class ModelCache {
   };
 
   enum ExprExpressionType {
-    EXPR_OPPOSITE = 0,
+    EXPR_OPPOSITE,
     EXPR_ABS,
     EXPR_SQUARE,
     EXPR_EXPRESSION_MAX,
   };
 
   enum ExprExprExpressionType {
-    EXPR_EXPR_DIFFERENCE = 0,
+    EXPR_EXPR_DIFFERENCE,
     EXPR_EXPR_PROD,
     EXPR_EXPR_DIV,
     EXPR_EXPR_MAX,
@@ -137,12 +106,12 @@ class ModelCache {
   };
 
   enum ExprExprConstantExpressionType {
-    EXPR_EXPR_CONSTANT_CONDITIONAL = 0,
+    EXPR_EXPR_CONSTANT_CONDITIONAL,
     EXPR_EXPR_CONSTANT_EXPRESSION_MAX,
   };
 
   enum ExprConstantExpressionType {
-    EXPR_CONSTANT_DIFFERENCE = 0,
+    EXPR_CONSTANT_DIFFERENCE,
     EXPR_CONSTANT_DIVIDE,
     EXPR_CONSTANT_PROD,
     EXPR_CONSTANT_MAX,
@@ -155,161 +124,171 @@ class ModelCache {
     EXPR_CONSTANT_EXPRESSION_MAX,
   };
   enum VarConstantConstantExpressionType {
-    VAR_CONSTANT_CONSTANT_SEMI_CONTINUOUS = 0,
+    VAR_CONSTANT_CONSTANT_SEMI_CONTINUOUS,
     VAR_CONSTANT_CONSTANT_EXPRESSION_MAX,
   };
 
   enum VarConstantArrayExpressionType {
-    VAR_CONSTANT_ARRAY_ELEMENT = 0,
+    VAR_CONSTANT_ARRAY_ELEMENT,
     VAR_CONSTANT_ARRAY_EXPRESSION_MAX,
   };
 
   enum VarArrayConstantArrayExpressionType {
-    VAR_ARRAY_CONSTANT_ARRAY_SCAL_PROD = 0,
+    VAR_ARRAY_CONSTANT_ARRAY_SCAL_PROD,
     VAR_ARRAY_CONSTANT_ARRAY_EXPRESSION_MAX,
   };
 
   enum VarArrayExpressionType {
-    VAR_ARRAY_MAX = 0,
+    VAR_ARRAY_MAX,
     VAR_ARRAY_MIN,
     VAR_ARRAY_SUM,
     VAR_ARRAY_EXPRESSION_MAX,
   };
 
   enum VarArrayConstantExpressionType {
-    VAR_ARRAY_CONSTANT_INDEX = 0,
+    VAR_ARRAY_CONSTANT_INDEX,
     VAR_ARRAY_CONSTANT_EXPRESSION_MAX,
   };
 
-  explicit ModelCache(Solver* solver);
-  virtual ~ModelCache();
+  explicit ModelCache(std::function<bool()> is_outside_search);
+  ~ModelCache();
 
-  virtual void Clear() = 0;
+  void Clear();
 
   /// Void constraints.
 
-  virtual Constraint* FindVoidConstraint(VoidConstraintType type) const = 0;
+  Constraint* FindVoidConstraint(VoidConstraintType type) const;
 
-  virtual void InsertVoidConstraint(Constraint* ct,
-                                    VoidConstraintType type) = 0;
+  void InsertVoidConstraint(Constraint* ct, VoidConstraintType type);
 
   /// Var Constant Constraints.
-  virtual Constraint* FindVarConstantConstraint(
-      IntVar* var, int64_t value, VarConstantConstraintType type) const = 0;
+  Constraint* FindVarConstantConstraint(IntVar* var, int64_t value,
+                                        VarConstantConstraintType type) const;
 
-  virtual void InsertVarConstantConstraint(Constraint* ct, IntVar* var,
-                                           int64_t value,
-                                           VarConstantConstraintType type) = 0;
+  void InsertVarConstantConstraint(Constraint* ct, IntVar* var, int64_t value,
+                                   VarConstantConstraintType type);
 
   /// Var Constant Constant Constraints.
 
-  virtual Constraint* FindVarConstantConstantConstraint(
+  Constraint* FindVarConstantConstantConstraint(
       IntVar* var, int64_t value1, int64_t value2,
-      VarConstantConstantConstraintType type) const = 0;
+      VarConstantConstantConstraintType type) const;
 
-  virtual void InsertVarConstantConstantConstraint(
+  void InsertVarConstantConstantConstraint(
       Constraint* ct, IntVar* var, int64_t value1, int64_t value2,
-      VarConstantConstantConstraintType type) = 0;
+      VarConstantConstantConstraintType type);
 
   /// Expr Expr Constraints.
 
-  virtual Constraint* FindExprExprConstraint(
-      IntExpr* expr1, IntExpr* expr2, ExprExprConstraintType type) const = 0;
+  Constraint* FindExprExprConstraint(IntExpr* expr1, IntExpr* expr2,
+                                     ExprExprConstraintType type) const;
 
-  virtual void InsertExprExprConstraint(Constraint* ct, IntExpr* expr1,
-                                        IntExpr* expr2,
-                                        ExprExprConstraintType type) = 0;
+  void InsertExprExprConstraint(Constraint* ct, IntExpr* expr1, IntExpr* expr2,
+                                ExprExprConstraintType type);
 
   /// Expr Expressions.
 
-  virtual IntExpr* FindExprExpression(IntExpr* expr,
-                                      ExprExpressionType type) const = 0;
+  IntExpr* FindExprExpression(IntExpr* expr, ExprExpressionType type) const;
 
-  virtual void InsertExprExpression(IntExpr* expression, IntExpr* expr,
-                                    ExprExpressionType type) = 0;
+  void InsertExprExpression(IntExpr* expression, IntExpr* expr,
+                            ExprExpressionType type);
 
   /// Expr Constant Expressions.
 
-  virtual IntExpr* FindExprConstantExpression(
-      IntExpr* expr, int64_t value, ExprConstantExpressionType type) const = 0;
+  IntExpr* FindExprConstantExpression(IntExpr* expr, int64_t value,
+                                      ExprConstantExpressionType type) const;
 
-  virtual void InsertExprConstantExpression(
-      IntExpr* expression, IntExpr* var, int64_t value,
-      ExprConstantExpressionType type) = 0;
+  void InsertExprConstantExpression(IntExpr* expression, IntExpr* expr,
+                                    int64_t value,
+                                    ExprConstantExpressionType type);
 
   /// Expr Expr Expressions.
 
-  virtual IntExpr* FindExprExprExpression(
-      IntExpr* var1, IntExpr* var2, ExprExprExpressionType type) const = 0;
+  IntExpr* FindExprExprExpression(IntExpr* expr1, IntExpr* expr2,
+                                  ExprExprExpressionType type) const;
 
-  virtual void InsertExprExprExpression(IntExpr* expression, IntExpr* var1,
-                                        IntExpr* var2,
-                                        ExprExprExpressionType type) = 0;
+  void InsertExprExprExpression(IntExpr* expression, IntExpr* expr1,
+                                IntExpr* expr2, ExprExprExpressionType type);
 
   /// Expr Expr Constant Expressions.
 
-  virtual IntExpr* FindExprExprConstantExpression(
-      IntExpr* var1, IntExpr* var2, int64_t constant,
-      ExprExprConstantExpressionType type) const = 0;
+  IntExpr* FindExprExprConstantExpression(
+      IntExpr* expr1, IntExpr* expr2, int64_t constant,
+      ExprExprConstantExpressionType type) const;
 
-  virtual void InsertExprExprConstantExpression(
-      IntExpr* expression, IntExpr* var1, IntExpr* var2, int64_t constant,
-      ExprExprConstantExpressionType type) = 0;
+  void InsertExprExprConstantExpression(IntExpr* expression, IntExpr* expr1,
+                                        IntExpr* expr2, int64_t constant,
+                                        ExprExprConstantExpressionType type);
 
   /// Var Constant Constant Expressions.
 
-  virtual IntExpr* FindVarConstantConstantExpression(
+  IntExpr* FindVarConstantConstantExpression(
       IntVar* var, int64_t value1, int64_t value2,
-      VarConstantConstantExpressionType type) const = 0;
+      VarConstantConstantExpressionType type) const;
 
-  virtual void InsertVarConstantConstantExpression(
+  void InsertVarConstantConstantExpression(
       IntExpr* expression, IntVar* var, int64_t value1, int64_t value2,
-      VarConstantConstantExpressionType type) = 0;
+      VarConstantConstantExpressionType type);
 
   /// Var Constant Array Expressions.
 
-  virtual IntExpr* FindVarConstantArrayExpression(
+  IntExpr* FindVarConstantArrayExpression(
       IntVar* var, const std::vector<int64_t>& values,
-      VarConstantArrayExpressionType type) const = 0;
+      VarConstantArrayExpressionType type) const;
 
-  virtual void InsertVarConstantArrayExpression(
-      IntExpr* expression, IntVar* var, const std::vector<int64_t>& values,
-      VarConstantArrayExpressionType type) = 0;
+  void InsertVarConstantArrayExpression(IntExpr* expression, IntVar* var,
+                                        const std::vector<int64_t>& values,
+                                        VarConstantArrayExpressionType type);
 
   /// Var Array Expressions.
 
-  virtual IntExpr* FindVarArrayExpression(
-      const std::vector<IntVar*>& vars, VarArrayExpressionType type) const = 0;
+  IntExpr* FindVarArrayExpression(const std::vector<IntVar*>& vars,
+                                  VarArrayExpressionType type) const;
 
-  virtual void InsertVarArrayExpression(IntExpr* expression,
-                                        const std::vector<IntVar*>& vars,
-                                        VarArrayExpressionType type) = 0;
+  void InsertVarArrayExpression(IntExpr* expression,
+                                const std::vector<IntVar*>& vars,
+                                VarArrayExpressionType type);
 
   /// Var Array Constant Array Expressions.
 
-  virtual IntExpr* FindVarArrayConstantArrayExpression(
+  IntExpr* FindVarArrayConstantArrayExpression(
       const std::vector<IntVar*>& vars, const std::vector<int64_t>& values,
-      VarArrayConstantArrayExpressionType type) const = 0;
+      VarArrayConstantArrayExpressionType type) const;
 
-  virtual void InsertVarArrayConstantArrayExpression(
+  void InsertVarArrayConstantArrayExpression(
       IntExpr* expression, const std::vector<IntVar*>& var,
       const std::vector<int64_t>& values,
-      VarArrayConstantArrayExpressionType type) = 0;
+      VarArrayConstantArrayExpressionType type);
 
   /// Var Array Constant Expressions.
 
-  virtual IntExpr* FindVarArrayConstantExpression(
+  IntExpr* FindVarArrayConstantExpression(
       const std::vector<IntVar*>& vars, int64_t value,
-      VarArrayConstantExpressionType type) const = 0;
+      VarArrayConstantExpressionType type) const;
 
-  virtual void InsertVarArrayConstantExpression(
-      IntExpr* expression, const std::vector<IntVar*>& var, int64_t value,
-      VarArrayConstantExpressionType type) = 0;
-
-  Solver* solver() const;
+  void InsertVarArrayConstantExpression(IntExpr* expression,
+                                        const std::vector<IntVar*>& var,
+                                        int64_t value,
+                                        VarArrayConstantExpressionType type);
 
  private:
-  Solver* const solver_;
+  std::function<bool()> is_outside_search_;
+  std::vector<Constraint*> void_constraints_;
+  std::vector<VarConstantConstraintCache*> var_constant_constraints_;
+  std::vector<ExprExprConstraintCache*> expr_expr_constraints_;
+  std::vector<VarConstantConstantConstraintCache*>
+      var_constant_constant_constraints_;
+  std::vector<ExprIntExprCache*> expr_expressions_;
+  std::vector<ExprConstantIntExprCache*> expr_constant_expressions_;
+  std::vector<ExprExprIntExprCache*> expr_expr_expressions_;
+  std::vector<VarConstantConstantIntExprCache*>
+      var_constant_constant_expressions_;
+  std::vector<VarConstantArrayIntExprCache*> var_constant_array_expressions_;
+  std::vector<VarArrayIntExprCache*> var_array_expressions_;
+  std::vector<VarArrayConstantArrayIntExprCache*>
+      var_array_constant_array_expressions_;
+  std::vector<VarArrayConstantIntExprCache*> var_array_constant_expressions_;
+  std::vector<ExprExprConstantIntExprCache*> expr_expr_constant_expressions_;
 };
 
 }  // namespace operations_research

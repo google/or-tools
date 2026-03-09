@@ -20,6 +20,7 @@
 #include "absl/strings/str_format.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraints.h"
+#include "ortools/constraint_solver/interval.h"
 
 namespace operations_research {
 

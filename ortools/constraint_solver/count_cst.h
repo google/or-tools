@@ -20,7 +20,7 @@
 #include <vector>
 
 #include "ortools/constraint_solver/constraint_solver.h"
-#include "ortools/constraint_solver/utilities.h"
+#include "ortools/constraint_solver/reversible_data.h"
 
 namespace operations_research {
 

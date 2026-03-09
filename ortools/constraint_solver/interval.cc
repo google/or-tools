@@ -24,7 +24,6 @@
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraints.h"
 #include "ortools/constraint_solver/sched_expr.h"
-#include "ortools/constraint_solver/utilities.h"
 #include "ortools/constraint_solver/variables.h"
 #include "ortools/util/saturated_arithmetic.h"
 
@@ -33,6 +32,11 @@
 #endif
 
 namespace operations_research {
+
+IntervalVar::IntervalVar(Solver* solver, const std::string& name)
+    : PropagationBaseObject(solver) {
+  set_name(name);
+}
 
 IntervalVar* NullInterval() { return nullptr; }
 
@@ -271,16 +275,13 @@ IntExpr* AlwaysPerformedIntervalVarWrapper::EndExpr() {
 IntExpr* AlwaysPerformedIntervalVarWrapper::PerformedExpr() {
   return solver()->MakeIntConst(1);
 }
-IntExpr* AlwaysPerformedIntervalVarWrapper::SafeStartExpr(
-    int64_t unperformed_value) {
+IntExpr* AlwaysPerformedIntervalVarWrapper::SafeStartExpr(int64_t) {
   return StartExpr();
 }
-IntExpr* AlwaysPerformedIntervalVarWrapper::SafeDurationExpr(
-    int64_t unperformed_value) {
+IntExpr* AlwaysPerformedIntervalVarWrapper::SafeDurationExpr(int64_t) {
   return DurationExpr();
 }
-IntExpr* AlwaysPerformedIntervalVarWrapper::SafeEndExpr(
-    int64_t unperformed_value) {
+IntExpr* AlwaysPerformedIntervalVarWrapper::SafeEndExpr(int64_t) {
   return EndExpr();
 }
 
@@ -299,7 +300,7 @@ int64_t IntervalVarRelaxedMax::StartMax() const {
   return underlying()->MustBePerformed() ? underlying()->StartMax()
                                          : (kMaxValidValue - DurationMin());
 }
-void IntervalVarRelaxedMax::SetStartMax(int64_t m) {
+void IntervalVarRelaxedMax::SetStartMax(int64_t) {
   LOG(FATAL)
       << "Calling SetStartMax on a IntervalVarRelaxedMax is not supported, "
       << "as it seems there is no legitimate use case.";
@@ -308,7 +309,7 @@ int64_t IntervalVarRelaxedMax::EndMax() const {
   return underlying()->MustBePerformed() ? underlying()->EndMax()
                                          : kMaxValidValue;
 }
-void IntervalVarRelaxedMax::SetEndMax(int64_t m) {
+void IntervalVarRelaxedMax::SetEndMax(int64_t) {
   LOG(FATAL)
       << "Calling SetEndMax on a IntervalVarRelaxedMax is not supported, "
       << "as it seems there is no legitimate use case.";
@@ -345,7 +346,7 @@ int64_t IntervalVarRelaxedMin::StartMin() const {
   return underlying()->MustBePerformed() ? underlying()->StartMin()
                                          : kMinValidValue;
 }
-void IntervalVarRelaxedMin::SetStartMin(int64_t m) {
+void IntervalVarRelaxedMin::SetStartMin(int64_t) {
   LOG(FATAL)
       << "Calling SetStartMin on a IntervalVarRelaxedMin is not supported, "
       << "as it seems there is no legitimate use case.";
@@ -355,7 +356,7 @@ int64_t IntervalVarRelaxedMin::EndMin() const {
   return underlying()->MustBePerformed() ? underlying()->EndMin()
                                          : (kMinValidValue + DurationMin());
 }
-void IntervalVarRelaxedMin::SetEndMin(int64_t m) {
+void IntervalVarRelaxedMin::SetEndMin(int64_t) {
   LOG(FATAL)
       << "Calling SetEndMin on a IntervalVarRelaxedMin is not supported, "
       << "as it seems there is no legitimate use case.";
@@ -375,7 +376,7 @@ std::string IntervalVarRelaxedMin::DebugString() const {
 
 BaseIntervalVar::Handler::Handler(BaseIntervalVar* var) : var_(var) {}
 BaseIntervalVar::Handler::~Handler() {}
-void BaseIntervalVar::Handler::Run(Solver* s) { var_->Process(); }
+void BaseIntervalVar::Handler::Run(Solver*) { var_->Process(); }
 Solver::DemonPriority BaseIntervalVar::Handler::priority() const {
   return Solver::VAR_PRIORITY;
 }
@@ -387,7 +388,7 @@ BaseIntervalVar::BaseIntervalVar(Solver* s, const std::string& name)
     : IntervalVar(s, name),
       in_process_(false),
       handler_(this),
-      cleaner_([this](Solver* s) { CleanInProcess(); }) {}
+      cleaner_([this](Solver*) { CleanInProcess(); }) {}
 
 BaseIntervalVar::~BaseIntervalVar() {}
 
@@ -628,7 +629,7 @@ void PerformedVar::SetValue(int64_t v) {
     }
   } else if (value_ == kUnboundBooleanVarValue) {
     previous_value_ = kUnboundBooleanVarValue;
-    InternalSaveBooleanVarValue(solver(), this);
+    solver()->InternalSaveBooleanVarValue(this);
     value_ = static_cast<int>(v);
     var_->Push();
   }
@@ -638,7 +639,7 @@ int64_t PerformedVar::OldMin() const { return previous_value_ == 1; }
 
 int64_t PerformedVar::OldMax() const { return previous_value_ != 0; }
 
-void PerformedVar::RestoreValue() {
+void PerformedVar::RestoreBooleanValue() {
   previous_value_ = kUnboundBooleanVarValue;
   value_ = kUnboundBooleanVarValue;
   postponed_value_ = kUnboundBooleanVarValue;
@@ -695,8 +696,8 @@ void FixedDurationIntervalVar::WhenStartBound(Demon* d) {
 
 int64_t FixedDurationIntervalVar::OldDurationMin() const { return duration_; }
 int64_t FixedDurationIntervalVar::OldDurationMax() const { return duration_; }
-void FixedDurationIntervalVar::WhenDurationRange(Demon* d) {}
-void FixedDurationIntervalVar::WhenDurationBound(Demon* d) {}
+void FixedDurationIntervalVar::WhenDurationRange(Demon*) {}
+void FixedDurationIntervalVar::WhenDurationBound(Demon*) {}
 
 int64_t FixedDurationIntervalVar::OldEndMin() const {
   return CapAdd(OldStartMin(), duration_);
@@ -911,8 +912,8 @@ int64_t FixedDurationPerformedIntervalVar::OldDurationMin() const {
 int64_t FixedDurationPerformedIntervalVar::OldDurationMax() const {
   return duration_;
 }
-void FixedDurationPerformedIntervalVar::WhenDurationRange(Demon* d) {}
-void FixedDurationPerformedIntervalVar::WhenDurationBound(Demon* d) {}
+void FixedDurationPerformedIntervalVar::WhenDurationRange(Demon*) {}
+void FixedDurationPerformedIntervalVar::WhenDurationBound(Demon*) {}
 
 int64_t FixedDurationPerformedIntervalVar::OldEndMin() const {
   return CapAdd(OldStartMin(), duration_);
@@ -930,7 +931,7 @@ void FixedDurationPerformedIntervalVar::WhenEndBound(Demon* d) {
 bool FixedDurationPerformedIntervalVar::WasPerformedBound() const {
   return true;
 }
-void FixedDurationPerformedIntervalVar::WhenPerformedBound(Demon* d) {}
+void FixedDurationPerformedIntervalVar::WhenPerformedBound(Demon*) {}
 
 void FixedDurationPerformedIntervalVar::Accept(ModelVisitor* visitor) const {
   visitor->VisitIntervalVariable(this, "", 0, NullInterval());
@@ -946,16 +947,13 @@ IntExpr* FixedDurationPerformedIntervalVar::EndExpr() {
 IntExpr* FixedDurationPerformedIntervalVar::PerformedExpr() {
   return solver()->MakeIntConst(1);
 }
-IntExpr* FixedDurationPerformedIntervalVar::SafeStartExpr(
-    int64_t unperformed_value) {
+IntExpr* FixedDurationPerformedIntervalVar::SafeStartExpr(int64_t) {
   return StartExpr();
 }
-IntExpr* FixedDurationPerformedIntervalVar::SafeDurationExpr(
-    int64_t unperformed_value) {
+IntExpr* FixedDurationPerformedIntervalVar::SafeDurationExpr(int64_t) {
   return DurationExpr();
 }
-IntExpr* FixedDurationPerformedIntervalVar::SafeEndExpr(
-    int64_t unperformed_value) {
+IntExpr* FixedDurationPerformedIntervalVar::SafeEndExpr(int64_t) {
   return EndExpr();
 }
 
@@ -1102,8 +1100,8 @@ int64_t StartVarPerformedIntervalVar::OldDurationMin() const {
 int64_t StartVarPerformedIntervalVar::OldDurationMax() const {
   return duration_;
 }
-void StartVarPerformedIntervalVar::WhenDurationRange(Demon* d) {}
-void StartVarPerformedIntervalVar::WhenDurationBound(Demon* d) {}
+void StartVarPerformedIntervalVar::WhenDurationRange(Demon*) {}
+void StartVarPerformedIntervalVar::WhenDurationBound(Demon*) {}
 
 int64_t StartVarPerformedIntervalVar::OldEndMin() const {
   return CapAdd(OldStartMin(), duration_);
@@ -1119,7 +1117,7 @@ void StartVarPerformedIntervalVar::WhenEndBound(Demon* d) {
 }
 
 bool StartVarPerformedIntervalVar::WasPerformedBound() const { return true; }
-void StartVarPerformedIntervalVar::WhenPerformedBound(Demon* d) {}
+void StartVarPerformedIntervalVar::WhenPerformedBound(Demon*) {}
 
 IntExpr* StartVarPerformedIntervalVar::StartExpr() { return start_var_; }
 IntExpr* StartVarPerformedIntervalVar::DurationExpr() {
@@ -1131,15 +1129,13 @@ IntExpr* StartVarPerformedIntervalVar::EndExpr() {
 IntExpr* StartVarPerformedIntervalVar::PerformedExpr() {
   return solver()->MakeIntConst(1);
 }
-IntExpr* StartVarPerformedIntervalVar::SafeStartExpr(
-    int64_t unperformed_value) {
+IntExpr* StartVarPerformedIntervalVar::SafeStartExpr(int64_t) {
   return StartExpr();
 }
-IntExpr* StartVarPerformedIntervalVar::SafeDurationExpr(
-    int64_t unperformed_value) {
+IntExpr* StartVarPerformedIntervalVar::SafeDurationExpr(int64_t) {
   return DurationExpr();
 }
-IntExpr* StartVarPerformedIntervalVar::SafeEndExpr(int64_t unperformed_value) {
+IntExpr* StartVarPerformedIntervalVar::SafeEndExpr(int64_t) {
   return EndExpr();
 }
 
@@ -1257,8 +1253,8 @@ void StartVarIntervalVar::WhenStartBound(Demon* d) {
 
 int64_t StartVarIntervalVar::OldDurationMin() const { return duration_; }
 int64_t StartVarIntervalVar::OldDurationMax() const { return duration_; }
-void StartVarIntervalVar::WhenDurationRange(Demon* d) {}
-void StartVarIntervalVar::WhenDurationBound(Demon* d) {}
+void StartVarIntervalVar::WhenDurationRange(Demon*) {}
+void StartVarIntervalVar::WhenDurationBound(Demon*) {}
 
 int64_t StartVarIntervalVar::OldEndMin() const {
   return CapAdd(OldStartMin(), duration_);
@@ -1488,27 +1484,27 @@ int64_t FixedInterval::StartMin() const { return start_; }
 int64_t FixedInterval::StartMax() const { return start_; }
 int64_t FixedInterval::OldStartMin() const { return start_; }
 int64_t FixedInterval::OldStartMax() const { return start_; }
-void FixedInterval::WhenStartRange(Demon* d) {}
-void FixedInterval::WhenStartBound(Demon* d) {}
+void FixedInterval::WhenStartRange(Demon*) {}
+void FixedInterval::WhenStartBound(Demon*) {}
 
 int64_t FixedInterval::DurationMin() const { return duration_; }
 int64_t FixedInterval::DurationMax() const { return duration_; }
 int64_t FixedInterval::OldDurationMin() const { return duration_; }
 int64_t FixedInterval::OldDurationMax() const { return duration_; }
-void FixedInterval::WhenDurationRange(Demon* d) {}
-void FixedInterval::WhenDurationBound(Demon* d) {}
+void FixedInterval::WhenDurationRange(Demon*) {}
+void FixedInterval::WhenDurationBound(Demon*) {}
 
 int64_t FixedInterval::EndMin() const { return start_ + duration_; }
 int64_t FixedInterval::EndMax() const { return start_ + duration_; }
 int64_t FixedInterval::OldEndMin() const { return start_ + duration_; }
 int64_t FixedInterval::OldEndMax() const { return start_ + duration_; }
-void FixedInterval::WhenEndRange(Demon* d) {}
-void FixedInterval::WhenEndBound(Demon* d) {}
+void FixedInterval::WhenEndRange(Demon*) {}
+void FixedInterval::WhenEndBound(Demon*) {}
 
 bool FixedInterval::MustBePerformed() const { return true; }
 bool FixedInterval::MayBePerformed() const { return true; }
 bool FixedInterval::WasPerformedBound() const { return true; }
-void FixedInterval::WhenPerformedBound(Demon* d) {}
+void FixedInterval::WhenPerformedBound(Demon*) {}
 
 void FixedInterval::Accept(ModelVisitor* visitor) const {
   visitor->VisitIntervalVariable(this, "", 0, NullInterval());
@@ -1522,15 +1518,9 @@ IntExpr* FixedInterval::EndExpr() {
   return solver()->MakeIntConst(start_ + duration_);
 }
 IntExpr* FixedInterval::PerformedExpr() { return solver()->MakeIntConst(1); }
-IntExpr* FixedInterval::SafeStartExpr(int64_t unperformed_value) {
-  return StartExpr();
-}
-IntExpr* FixedInterval::SafeDurationExpr(int64_t unperformed_value) {
-  return DurationExpr();
-}
-IntExpr* FixedInterval::SafeEndExpr(int64_t unperformed_value) {
-  return EndExpr();
-}
+IntExpr* FixedInterval::SafeStartExpr(int64_t) { return StartExpr(); }
+IntExpr* FixedInterval::SafeDurationExpr(int64_t) { return DurationExpr(); }
+IntExpr* FixedInterval::SafeEndExpr(int64_t) { return EndExpr(); }
 
 FixedInterval::FixedInterval(Solver* s, int64_t start, int64_t duration,
                              const std::string& name)
@@ -1928,8 +1918,8 @@ int64_t FixedDurationSyncedIntervalVar::OldDurationMin() const {
 int64_t FixedDurationSyncedIntervalVar::OldDurationMax() const {
   return duration_;
 }
-void FixedDurationSyncedIntervalVar::WhenDurationRange(Demon* d) {}
-void FixedDurationSyncedIntervalVar::WhenDurationBound(Demon* d) {}
+void FixedDurationSyncedIntervalVar::WhenDurationRange(Demon*) {}
+void FixedDurationSyncedIntervalVar::WhenDurationBound(Demon*) {}
 int64_t FixedDurationSyncedIntervalVar::EndMin() const {
   return CapAdd(StartMin(), duration_);
 }

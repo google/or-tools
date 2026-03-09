@@ -29,6 +29,7 @@
 #include "ortools/base/map_util.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/constraint_solver/constraint_solver.h"
+#include "ortools/constraint_solver/interval.h"
 #include "ortools/routing/lp_scheduling.h"
 #include "ortools/routing/routing.h"
 #include "ortools/routing/types.h"
