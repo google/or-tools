@@ -621,6 +621,96 @@ class TableConstraint : public Constraint {
 };
 
 /**
+ * Specialized BoolOr constraint.
+ *
+ * This constraint allows adding literals to the BoolOr constraint
+ * incrementally.
+ */
+class BoolOrConstraint : public Constraint {
+ public:
+  /// Adds a literal to the constraint.
+  BoolOrConstraint& AddLiteral(BoolVar literal);
+
+  /// Adds a set of literals to the constraint.
+  BoolOrConstraint& AddLiterals(absl::Span<const BoolVar> literals);
+
+ private:
+  using Constraint::Constraint;
+};
+
+/**
+ * Specialized BoolAnd constraint.
+ *
+ * This constraint allows adding literals to the BoolAnd constraint
+ * incrementally.
+ */
+class BoolAndConstraint : public Constraint {
+ public:
+  /// Adds a literal to the constraint.
+  BoolAndConstraint& AddLiteral(BoolVar literal);
+
+  /// Adds a set of literals to the constraint.
+  BoolAndConstraint& AddLiterals(absl::Span<const BoolVar> literals);
+
+ private:
+  using Constraint::Constraint;
+};
+
+/**
+ * Specialized AtMostOne constraint.
+ *
+ * This constraint allows adding literals to the AtMostOne constraint
+ * incrementally.
+ */
+class AtMostOneConstraint : public Constraint {
+ public:
+  /// Adds a literal to the constraint.
+  AtMostOneConstraint& AddLiteral(BoolVar literal);
+
+  /// Adds a set of literals to the constraint.
+  AtMostOneConstraint& AddLiterals(absl::Span<const BoolVar> literals);
+
+ private:
+  using Constraint::Constraint;
+};
+
+/**
+ * Specialized ExactlyOne constraint.
+ *
+ * This constraint allows adding literals to the ExactlyOne constraint
+ * incrementally.
+ */
+class ExactlyOneConstraint : public Constraint {
+ public:
+  /// Adds a literal to the constraint.
+  ExactlyOneConstraint& AddLiteral(BoolVar literal);
+
+  /// Adds a set of literals to the constraint.
+  ExactlyOneConstraint& AddLiterals(absl::Span<const BoolVar> literals);
+
+ private:
+  using Constraint::Constraint;
+};
+
+/**
+ * Specialized BoolXor constraint.
+ *
+ * This constraint allows adding literals to the BoolXor constraint
+ * incrementally.
+ */
+class BoolXorConstraint : public Constraint {
+ public:
+  /// Adds a literal to the constraint.
+  BoolXorConstraint& AddLiteral(BoolVar literal);
+
+  /// Adds a set of literals to the constraint.
+  BoolXorConstraint& AddLiterals(absl::Span<const BoolVar> literals);
+
+ private:
+  using Constraint::Constraint;
+};
+
+/**
  * Specialized reservoir constraint.
  *
  * This constraint allows adding emptying/refilling events to the reservoir
@@ -791,22 +881,22 @@ class CpModelBuilder {
   void FixVariable(BoolVar var, bool value);
 
   /// Adds the constraint that at least one of the literals must be true.
-  Constraint AddBoolOr(absl::Span<const BoolVar> literals);
+  BoolOrConstraint AddBoolOr(absl::Span<const BoolVar> literals);
 
   /// Same as AddBoolOr(). Sum literals >= 1.
-  Constraint AddAtLeastOne(absl::Span<const BoolVar> literals);
+  BoolOrConstraint AddAtLeastOne(absl::Span<const BoolVar> literals);
 
   /// At most one literal is true. Sum literals <= 1.
-  Constraint AddAtMostOne(absl::Span<const BoolVar> literals);
+  AtMostOneConstraint AddAtMostOne(absl::Span<const BoolVar> literals);
 
   /// Exactly one literal is true. Sum literals == 1.
-  Constraint AddExactlyOne(absl::Span<const BoolVar> literals);
+  ExactlyOneConstraint AddExactlyOne(absl::Span<const BoolVar> literals);
 
   /// Adds the constraint that all literals must be true.
-  Constraint AddBoolAnd(absl::Span<const BoolVar> literals);
+  BoolAndConstraint AddBoolAnd(absl::Span<const BoolVar> literals);
 
   /// Adds the constraint that an odd number of literals is true.
-  Constraint AddBoolXor(absl::Span<const BoolVar> literals);
+  BoolXorConstraint AddBoolXor(absl::Span<const BoolVar> literals);
 
   /// Adds a => b.
   Constraint AddImplication(BoolVar a, BoolVar b) {

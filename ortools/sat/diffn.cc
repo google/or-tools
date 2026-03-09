@@ -327,11 +327,19 @@ void AddNonOverlappingRectangles(
             repository->End(x[i]), repository->Start(x[j]));
         const Literal x_ji = repository->GetOrCreatePrecedenceLiteral(
             repository->End(x[j]), repository->Start(x[i]));
-        if ((integer_trail->LowerBound(repository->Size(x[i])) > 0 ||
-             integer_trail->LowerBound(repository->Size(x[j])) > 0) &&
-            !AddAtMostOne(enforcement_literals, {x_ij, x_ji}, model)) {
-          sat_solver->NotifyThatModelIsUnsat();
-          return;
+        if (((integer_trail->LowerBound(repository->Size(x[i])) > 0 ||
+              integer_trail->LowerBound(repository->Size(x[j])) > 0))) {
+          std::vector<Literal> enforcement = enforcement_literals;
+          if (repository->IsOptional(x[i])) {
+            enforcement.push_back(repository->PresenceLiteral(x[i]));
+          }
+          if (repository->IsOptional(x[j])) {
+            enforcement.push_back(repository->PresenceLiteral(x[j]));
+          }
+          if (!AddAtMostOne(enforcement, {x_ij, x_ji}, model)) {
+            sat_solver->NotifyThatModelIsUnsat();
+            return;
+          }
         }
 
         // At most one of these two y options is true if the sizes are fixed or
@@ -341,10 +349,18 @@ void AddNonOverlappingRectangles(
         const Literal y_ji = repository->GetOrCreatePrecedenceLiteral(
             repository->End(y[j]), repository->Start(y[i]));
         if ((integer_trail->LowerBound(repository->Size(y[i])) > 0 ||
-             integer_trail->LowerBound(repository->Size(y[j])) > 0) &&
-            !AddAtMostOne(enforcement_literals, {y_ij, y_ji}, model)) {
-          sat_solver->NotifyThatModelIsUnsat();
-          return;
+             integer_trail->LowerBound(repository->Size(y[j])) > 0)) {
+          std::vector<Literal> enforcement = enforcement_literals;
+          if (repository->IsOptional(y[i])) {
+            enforcement.push_back(repository->PresenceLiteral(y[i]));
+          }
+          if (repository->IsOptional(y[j])) {
+            enforcement.push_back(repository->PresenceLiteral(y[j]));
+          }
+          if (!AddAtMostOne(enforcement, {y_ij, y_ji}, model)) {
+            sat_solver->NotifyThatModelIsUnsat();
+            return;
+          }
         }
 
         // At least one of the 4 options is true if all boxes are present.

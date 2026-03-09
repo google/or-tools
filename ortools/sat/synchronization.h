@@ -42,10 +42,12 @@
 #include "absl/synchronization/mutex.h"
 #include "absl/types/span.h"
 #include "ortools/base/stl_util.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/base/timer.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
@@ -857,6 +859,11 @@ class SharedClausesManager {
   explicit SharedClausesManager(bool always_synchronize);
   void AddBinaryClause(int id, int lit1, int lit2);
 
+  // Returns the representative of each Boolean variable for the equivalence
+  // classes of the binary clauses. The representative can be the negation of a
+  // variable.
+  std::vector<int> GetRepresentatives();
+
   // Returns new glue clauses.
   // The spans are guaranteed to remain valid until the next call to
   // SyncClauses().
@@ -890,6 +897,15 @@ class SharedClausesManager {
   bool ShouldReadBatch(int reader_id, int writer_id)
       ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
+  // Connects a and b in the `parents_` union find data structure.
+  void AddEdge(LiteralIndex a, LiteralIndex b)
+      ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
+
+  // Returns the representative of a for the equivalence relations found in the
+  // binary clauses. Also shortens the parents_ links found on the way.
+  LiteralIndex GetRepresentative(LiteralIndex a)
+      ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
+
   static constexpr int kMinBatches = 64;
   mutable absl::Mutex mutex_;
 
@@ -918,6 +934,11 @@ class SharedClausesManager {
   int num_full_workers_ ABSL_GUARDED_BY(mutex_) = 0;
 
   const bool always_synchronize_ = true;
+
+  // The parent of each literal in a union find data structure, used to find the
+  // representatives for the equivalence relations found in the binary clauses.
+  util_intops::StrongVector<LiteralIndex, LiteralIndex> parents_
+      ABSL_GUARDED_BY(mutex_);
 
   // Stats:
   std::vector<int64_t> id_to_num_exported_ ABSL_GUARDED_BY(mutex_);

@@ -706,6 +706,7 @@ bool LratProofHandler::AddProblemClause(ClausePtr clause,
         const ClausePtr clause_ptr = ClausePtr(clause.GetLiterals());
         lrat_writer_->AddImportedClause(clause_ptr, one_based_cnf_index);
         lrat_writer_->DeleteClause(clause_ptr);
+        delete clause_ptr.GetSatClause();
       }
       return true;
     }

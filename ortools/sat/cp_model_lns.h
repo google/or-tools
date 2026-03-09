@@ -132,10 +132,6 @@ class NeighborhoodGeneratorHelper : public SubSolver {
       const CpSolverResponse& initial_solution,
       absl::Span<const int> relaxed_variables) const;
 
-  // Returns a trivial model by fixing all active variables to the initial
-  // solution values.
-  Neighborhood FixAllVariables(const CpSolverResponse& initial_solution) const;
-
   // Returns a neighborhood that correspond to the full problem.
   Neighborhood FullNeighborhood() const;
 

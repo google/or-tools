@@ -1216,18 +1216,6 @@ Neighborhood NeighborhoodGeneratorHelper::RelaxGivenVariables(
   return FixGivenVariables(initial_solution, fixed_variables);
 }
 
-Neighborhood NeighborhoodGeneratorHelper::FixAllVariables(
-    const CpSolverResponse& initial_solution) const {
-  Bitset64<int> fixed_variables(NumVariables());
-  {
-    absl::ReaderMutexLock graph_lock(graph_mutex_);
-    for (const int i : active_variables_) {
-      fixed_variables.Set(i);
-    }
-  }
-  return FixGivenVariables(initial_solution, fixed_variables);
-}
-
 CpModelProto NeighborhoodGeneratorHelper::UpdatedModelProtoCopy() const {
   CpModelProto updated_model = model_proto_;
   {

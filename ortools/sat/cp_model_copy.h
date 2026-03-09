@@ -16,7 +16,7 @@
 
 #include <cstdint>
 #include <functional>
-#include <limits>
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -35,10 +35,6 @@
 namespace operations_research {
 namespace sat {
 
-// A variable which is removed from the model during copy.
-// This can only be done if the variable is fixed.
-constexpr int kNoVariableMapping = std::numeric_limits<int>::min();
-
 // This helper class perform copy with simplification from a model and a
 // partial assignment to another model. The purpose is to minimize the size of
 // the copied model, as well as to reduce the pressure on the memory sub-system.
@@ -50,12 +46,15 @@ class ModelCopy {
   // If `variable_mapping` is not empty, it is applied to all variable
   // references in all the copied constraints. In this case, `context` must
   // describe the variables before mapping. A fixed variable can be removed by
-  // setting its mapped value to `kNoVariableMapping`. Several variables can be
+  // setting its mapped value to `kNoVariableMapping`. If some Boolean variables
+  // are fixed, at least one of them must not be removed. A variable appearing
+  // in an InverseConstraintProto must not be removed. Several variables can be
   // mapped to the same variable. As of 2025-03-25, non Boolean variables
   // remapped to a negative variable reference are not supported.
+  // `variable_mapping` must remain valid and unchanged during the lifetime of
+  // the constructed instance.
   explicit ModelCopy(PresolveContext* context,
-                     absl::Span<const int> variable_mapping = {},
-                     absl::Span<const int> reverse_mapping = {});
+                     absl::Span<const int> variable_mapping = {});
 
   // Copy variables from the in_model to the working model. It reads the
   // 'ignore_names' parameters from the context, and keeps or deletes names
@@ -89,10 +88,18 @@ class ModelCopy {
       const CpModelProto& in_model, bool first_copy = false,
       std::function<bool(int)> active_constraints = nullptr);
 
+  void ImportSolutionHint(const CpModelProto& in_model);
+
+  // Copies the non constraint, non variables part of the model. `copy_symmetry`
+  // is only supported if there is no variable mapping.
+  void ImportEverythingExceptVariablesConstraintsAndHint(
+      const CpModelProto& in_model, bool copy_symmetry = true);
+
   // Remaps all variables in the context's working model using the variable
   // mapping passed at construction time. This must be done after all
-  // constraints have been imported. After that the context is no longer valid.
-  void RemapVariables();
+  // constraints have been imported.
+  // Returns false iff the model is proven infeasible.
+  bool RemapVariablesInProtoAndContext();
 
   // Advanced usage. When a model was copied, interval_mapping[i] will
   // contain for a copied interval with original index i, its new index.
@@ -121,19 +128,28 @@ class ModelCopy {
 
   bool CopyAtMostOne(const ConstraintProto& ct);
   bool CopyExactlyOne(const ConstraintProto& ct);
+  bool CopyBoolXor(const ConstraintProto& ct);
 
   bool CopyElement(const ConstraintProto& ct);
   bool CopyIntProd(const ConstraintProto& ct, bool ignore_names);
   bool CopyIntDiv(const ConstraintProto& ct, bool ignore_names);
   bool CopyIntMod(const ConstraintProto& ct, bool ignore_names);
   bool CopyLinear(const ConstraintProto& ct, bool canonicalize);
-  bool CopyLinearExpression(const LinearExpressionProto& expr,
-                            LinearExpressionProto* dst,
-                            absl::Span<const int> enforcement_literals = {});
+  bool CopyLinearExpression(
+      const LinearExpressionProto& expr, LinearExpressionProto* dst,
+      const absl::flat_hash_set<int>* mapped_enforcement_literals = nullptr);
+  template <typename T>
+  void CanonicalizeLinearExpression(
+      const absl::flat_hash_set<int>* enforcement_literals,
+      std::vector<std::pair<int, T>>& terms, T& offset) const;
   bool CopyAutomaton(const ConstraintProto& ct);
   bool CopyTable(const ConstraintProto& ct);
   bool CopyAllDiff(const ConstraintProto& ct);
   bool CopyLinMax(const ConstraintProto& ct);
+  bool CopyCircuit(const ConstraintProto& ct);
+  bool CopyRoutes(const ConstraintProto& ct);
+  bool CopyInverse(const ConstraintProto& ct);
+  bool CopyReservoir(const ConstraintProto& ct);
 
   // If we "copy" an interval for a first time, we make sure to create the
   // linear constraint between the start, size and end. This allow to simplify
@@ -151,6 +167,10 @@ class ModelCopy {
   void CopyAndMapNoOverlap2D(const ConstraintProto& ct);
   bool CopyAndMapCumulative(const ConstraintProto& ct);
 
+  void CopyObjective(const CpObjectiveProto& objective);
+  void CopyFloatingPointObjective(const FloatObjectiveProto& objective);
+  void CopySolutionHint(const PartialVariableAssignment& hint);
+
   // Expands linear expressions with more than one variable in constraints which
   // internally only support affine expressions (such as all_diff, element,
   // interval, reservoir, table, etc). This creates new variables for each such
@@ -162,27 +182,53 @@ class ModelCopy {
   void MaybeExpandNonAffineExpression(LinearExpressionProto* expr);
   void MaybeExpandNonAffineExpressions(LinearArgumentProto* linear_argument);
 
-  int MapLiteral(int literal) const {
-    if (variable_mapping_.empty()) return literal;
-    const int mapped_lit = variable_mapping_[PositiveRef(literal)];
-    DCHECK_NE(mapped_lit, kNoVariableMapping);
-    return RefIsPositive(literal) ? mapped_lit : NegatedRef(mapped_lit);
+  int MapLiteral(int lit) {
+    if (variable_mapping_.empty()) return lit;
+    if (context_->IsFixed(lit)) {
+      const int true_mapped_lit = GetTrueMappedLiteral();
+      return context_->LiteralIsTrue(lit) ? true_mapped_lit
+                                          : NegatedRef(true_mapped_lit);
+    }
+    return MapRef(lit);
   }
 
-  int ReverseMapLiteral(int literal) const {
-    if (variable_mapping_.empty()) return literal;
-    const int mapped_lit = reverse_mapping_[PositiveRef(literal)];
-    return RefIsPositive(literal) ? mapped_lit : NegatedRef(mapped_lit);
+  // `ref` must not have a fixed value, otherwise it might have no mapping.
+  int MapRef(int ref) const {
+    if (variable_mapping_.empty()) return ref;
+    const int mapped_ref = variable_mapping_[PositiveRef(ref)];
+    DCHECK_NE(mapped_ref, kNoVariableMapping);
+    return RefIsPositive(ref) ? mapped_ref : NegatedRef(mapped_ref);
   }
+
+  int ReverseMapRef(int mapped_ref) const {
+    if (variable_mapping_.empty()) return mapped_ref;
+    const int ref = reverse_mapping_[PositiveRef(mapped_ref)];
+    return RefIsPositive(mapped_ref) ? ref : NegatedRef(ref);
+  }
+
+  // Normalizes `ref` to a positive reference, replaces fixed terms with an
+  // updated `offset` and a 0 `coeff`, and remaps the variable if a variable
+  // mapping is present.
+  template <typename T>
+  void MapTerm(int& ref, T& coeff, T& offset) const;
+
+  // Returns the domain of `mapped_var`, computed from the domain of the
+  // original variable mapped to `mapped_var` (as stored in the context).
+  const Domain& MappedVarDomain(int mapped_var) const;
+
+  int GetTrueMappedLiteral();
 
   PresolveContext* context_;
   absl::Span<const int> variable_mapping_;
-  absl::Span<const int> reverse_mapping_;
+  std::vector<int> reverse_mapping_;
+  // If some original Boolean variables are fixed at least one of them must not
+  // be removed by the variable mapping, from which we compute this always true
+  // mapped literal.
+  std::optional<int> true_mapped_literal_;
   LratProofHandler* lrat_proof_handler_;
 
   // Temp vectors.
-  std::vector<int> non_fixed_variables_;
-  std::vector<int64_t> non_fixed_coefficients_;
+  std::vector<std::pair<int, int64_t>> non_fixed_terms_;
   std::vector<int64_t> interval_mapping_;
   int starting_constraint_index_ = 0;
 
@@ -206,6 +252,9 @@ class ModelCopy {
   // variables for the identical non affine expressions.
   absl::flat_hash_map<std::vector<std::pair<int, int64_t>>, int>
       non_affine_expression_to_new_var_;
+
+  const Domain domain0_ = Domain(0);
+  const Domain domain1_ = Domain(1);
 };
 
 // Copy in_model to the model in the presolve context.
@@ -225,10 +274,6 @@ bool ImportModelAndDomainsWithBasicPresolveIntoContext(
     const CpModelProto& in_model, absl::Span<const Domain> domains,
     std::function<bool(int)> active_constraints, PresolveContext* context,
     std::vector<int>* interval_mapping);
-
-// Copies the non constraint, non variables part of the model.
-void CopyEverythingExceptVariablesAndConstraintsFieldsIntoContext(
-    const CpModelProto& in_model, PresolveContext* context);
 
 }  // namespace sat
 }  // namespace operations_research

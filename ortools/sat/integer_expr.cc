@@ -1624,6 +1624,7 @@ int FixedDivisionPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
   const int id = watcher->Register(this);
   watcher->WatchAffineExpression(a_, id);
   watcher->WatchAffineExpression(c_, id);
+  watcher->NotifyThatPropagatorMayNotReachFixedPointInOnePass(id);
   return id;
 }
 

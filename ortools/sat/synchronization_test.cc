@@ -26,6 +26,7 @@
 #include "ortools/base/gmock.h"
 #include "ortools/base/parse_test_proto.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/util.h"
@@ -830,6 +831,19 @@ TEST(SharedResponseManagerTest, Callback) {
     shared_response->NewSolution(solution.solution(), solution.solution_info());
     EXPECT_EQ(num_solutions, 2);
   }
+}
+
+TEST(SharedClausesManagerTest, GetRepresentatives) {
+  SharedClausesManager manager(/*always_synchronize=*/true);
+  EXPECT_EQ(0, manager.RegisterNewId("", /*may_terminate_early=*/false));
+
+  // 1 is equivalent to NegatedRef(2).
+  manager.AddBinaryClause(/*id=*/0, 2, 1);
+  manager.AddBinaryClause(/*id=*/0, 3, 1);
+  manager.AddBinaryClause(/*id=*/0, NegatedRef(1), NegatedRef(2));
+
+  EXPECT_THAT(manager.GetRepresentatives(),
+              ::testing::ElementsAre(0, 1, NegatedRef(1)));
 }
 
 TEST(SharedClausesManagerTest, SyncApi) {

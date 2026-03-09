@@ -426,6 +426,10 @@ TEST(CpModelTest, TestBoolOr) {
   ASSERT_EQ(1, cp_model.Proto().constraints_size());
   EXPECT_EQ(3, cp_model.Proto().constraints(0).bool_or().literals_size());
   ASSERT_EQ(1, cp_model.Proto().constraints(0).enforcement_literal_size());
+
+  cp_model.AddBoolOr({b1}).AddLiteral(b2.Not()).AddLiterals({b3, b4});
+  ASSERT_EQ(2, cp_model.Proto().constraints_size());
+  EXPECT_EQ(4, cp_model.Proto().constraints(1).bool_or().literals_size());
 }
 
 TEST(CpModelTest, TestAtMostOne) {
@@ -433,9 +437,14 @@ TEST(CpModelTest, TestAtMostOne) {
   const BoolVar b1 = cp_model.NewBoolVar().WithName("b1");
   const BoolVar b2 = cp_model.NewBoolVar().WithName("b2");
   const BoolVar b3 = cp_model.NewBoolVar().WithName("b3");
+  const BoolVar b4 = cp_model.NewBoolVar().WithName("b4");
   cp_model.AddAtMostOne({b1, b2.Not(), b3});
   ASSERT_EQ(1, cp_model.Proto().constraints_size());
   EXPECT_EQ(3, cp_model.Proto().constraints(0).at_most_one().literals_size());
+
+  cp_model.AddAtMostOne({b1}).AddLiteral(b2.Not()).AddLiterals({b3, b4});
+  ASSERT_EQ(2, cp_model.Proto().constraints_size());
+  EXPECT_EQ(4, cp_model.Proto().constraints(1).at_most_one().literals_size());
 }
 
 TEST(CpModelTest, TestExactlyOne) {
@@ -443,9 +452,14 @@ TEST(CpModelTest, TestExactlyOne) {
   const BoolVar b1 = cp_model.NewBoolVar().WithName("b1");
   const BoolVar b2 = cp_model.NewBoolVar().WithName("b2");
   const BoolVar b3 = cp_model.NewBoolVar().WithName("b3");
+  const BoolVar b4 = cp_model.NewBoolVar().WithName("b4");
   cp_model.AddExactlyOne({b1, b2.Not(), b3});
   ASSERT_EQ(1, cp_model.Proto().constraints_size());
   EXPECT_EQ(3, cp_model.Proto().constraints(0).exactly_one().literals_size());
+
+  cp_model.AddExactlyOne({b1}).AddLiteral(b2.Not()).AddLiterals({b3, b4});
+  ASSERT_EQ(2, cp_model.Proto().constraints_size());
+  EXPECT_EQ(4, cp_model.Proto().constraints(1).exactly_one().literals_size());
 }
 
 TEST(CpModelTest, TestBoolAnd) {
@@ -458,6 +472,10 @@ TEST(CpModelTest, TestBoolAnd) {
   ASSERT_EQ(1, cp_model.Proto().constraints_size());
   EXPECT_EQ(4, cp_model.Proto().constraints(0).bool_and().literals_size());
   EXPECT_EQ(0, cp_model.Proto().constraints(0).enforcement_literal_size());
+
+  cp_model.AddBoolAnd({b1}).AddLiteral(b2).AddLiterals({b3, b4});
+  ASSERT_EQ(2, cp_model.Proto().constraints_size());
+  EXPECT_EQ(4, cp_model.Proto().constraints(1).bool_and().literals_size());
 }
 
 TEST(CpModelTest, TestBoolXor) {
@@ -470,6 +488,10 @@ TEST(CpModelTest, TestBoolXor) {
   ASSERT_EQ(1, cp_model.Proto().constraints_size());
   EXPECT_EQ(4, cp_model.Proto().constraints(0).bool_xor().literals_size());
   EXPECT_EQ(0, cp_model.Proto().constraints(0).enforcement_literal_size());
+
+  cp_model.AddBoolXor({b1}).AddLiteral(b2).AddLiterals({b3, b4});
+  ASSERT_EQ(2, cp_model.Proto().constraints_size());
+  EXPECT_EQ(4, cp_model.Proto().constraints(1).bool_xor().literals_size());
 }
 
 TEST(CpModelTest, TestLinearizedBoolAndEqual) {

@@ -53,12 +53,6 @@ int64_t ExprValue(const LinearExpressionProto& expr,
   return result;
 }
 
-int64_t AffineValue(const ViewOfAffineLinearExpressionProto& affine,
-                    absl::Span<const int64_t> solution) {
-  if (affine.coeff == 0) return affine.offset;
-  return affine.coeff * solution[affine.var] + affine.offset;
-}
-
 LinearExpressionProto LinearExprSum(LinearExpressionProto a,
                                     LinearExpressionProto b) {
   LinearExpressionProto result;
@@ -70,15 +64,6 @@ LinearExpressionProto LinearExprSum(LinearExpressionProto a,
       result.add_vars(p.vars(i));
       result.add_coeffs(p.coeffs(i));
     }
-  }
-  return result;
-}
-
-LinearExpressionProto NegatedLinearExpression(LinearExpressionProto a) {
-  LinearExpressionProto result = a;
-  result.set_offset(-a.offset());
-  for (int64_t& coeff : *result.mutable_coeffs()) {
-    coeff = -coeff;
   }
   return result;
 }
@@ -906,8 +891,6 @@ void LinearIncrementalEvaluator::PrecomputeCompactView(
     }
   }
 
-  cached_deltas_.assign(columns_.size(), 0);
-  cached_scores_.assign(columns_.size(), 0);
   last_affected_variables_.ClearAndResize(columns_.size());
 }
 
@@ -915,6 +898,176 @@ bool LinearIncrementalEvaluator::ViolationChangeIsConvex(int var) const {
   for (const int c : VarToConstraints(var)) {
     if (domains_[c].NumIntervals() > 2) return false;
   }
+  return true;
+}
+
+bool LinearIncrementalEvaluator::RemapVariables(
+    absl::Span<const int> variable_mapping,
+    absl::Span<const int64_t> fixed_values) {
+  // Update the compact view computed in PrecomputeCompactView(), in place.
+  bool changed = false;
+
+  // These are recomputed below while updating the rows.
+  for (auto& column : columns_) {
+    column.num_pos_literal = 0;
+    column.num_neg_literal = 0;
+    column.num_linear_entries = 0;
+  }
+
+  // Temporary new value of the current row in the following loop.
+  std::vector<int> new_positive_literals;
+  std::vector<int> new_negative_literals;
+  std::vector<std::pair<int, int64_t>> new_linear_terms;
+
+  // Update each row in place, without changing the start and linear_start of
+  // each span. This is possible because the number of variables in each row can
+  // only decrease. This can lead to "holes" in row_var_buffer_ and
+  // row_coeff_buffer_ but this is faster than recomputing a new compact view.
+  for (int c = 0; c < rows_.size(); ++c) {
+    SpanData& row = rows_[c];
+    if (row.empty()) continue;
+    int* var_indices = &row_var_buffer_[row.start];
+
+    new_positive_literals.clear();
+    new_negative_literals.clear();
+    const int num_literals = row.num_pos_literal + row.num_neg_literal;
+    for (int i = 0; i < num_literals; ++i) {
+      const bool is_positive = i < row.num_pos_literal;
+      const int var = var_indices[i];
+      const int mapped_ref = variable_mapping[var];
+      changed |= (mapped_ref != var);
+      if (mapped_ref == kNoVariableMapping) {
+        if (is_positive != (fixed_values[var] == 1)) {
+          // Constraint is never enforced and thus always true. Remove all the
+          // variables and keep a trivial constraint "min(domain) \in domain".
+          new_positive_literals.clear();
+          new_negative_literals.clear();
+          row.num_linear_entries = 0;
+          offsets_[c] = domains_[c].Min();
+          break;
+        } else {
+          // Remove this always true enforcement literal.
+        }
+      } else if (RefIsPositive(mapped_ref) == is_positive) {
+        new_positive_literals.push_back(PositiveRef(mapped_ref));
+      } else {
+        new_negative_literals.push_back(PositiveRef(mapped_ref));
+      }
+    }
+    // TODO(user): detect if a Boolean variable appears both as a positive
+    // and a negative literal (and clear this always false row)?
+    gtl::STLSortAndRemoveDuplicates(&new_positive_literals);
+    gtl::STLSortAndRemoveDuplicates(&new_negative_literals);
+
+    new_linear_terms.clear();
+    const int num_linear_entries = row.num_linear_entries;
+    for (int i = 0; i < num_linear_entries; ++i) {
+      const int var = var_indices[num_literals + i];
+      const int64_t coeff = row_coeff_buffer_[row.linear_start + i];
+      const int mapped_ref = variable_mapping[var];
+      changed |= (mapped_ref != var);
+      // TODO(user): what to do if, after remapping, a Boolean variable
+      // appears both in the enforcement literals and in the linear part (see
+      // the comment of `AddEnforcementLiteral`)?
+      if (mapped_ref == kNoVariableMapping) {
+        offsets_[c] += fixed_values[var] * coeff;
+      } else if (RefIsPositive(mapped_ref)) {
+        new_linear_terms.emplace_back(mapped_ref, coeff);
+      } else {
+        // Only Boolean variables can be mapped to a negative reference.
+        new_linear_terms.emplace_back(PositiveRef(mapped_ref), -coeff);
+        offsets_[c] += coeff;
+      }
+    }
+    if (new_linear_terms.size() > 1) {
+      // Merge terms with identical variables.
+      std::sort(new_linear_terms.begin(), new_linear_terms.end());
+      int new_num_terms = 1;
+      for (int i = 1; i < new_linear_terms.size(); ++i) {
+        auto& [var, coeff] = new_linear_terms[i];
+        auto& [last_var, last_coeff] = new_linear_terms[new_num_terms - 1];
+        if (var == last_var) {
+          last_coeff += coeff;
+        } else {
+          new_linear_terms[new_num_terms++] = {var, coeff};
+        }
+      }
+      new_linear_terms.resize(new_num_terms);
+    }
+
+    row.num_pos_literal = new_positive_literals.size();
+    row.num_neg_literal = new_negative_literals.size();
+    row.num_linear_entries = new_linear_terms.size();
+    for (int i = 0; i < row.num_pos_literal; ++i) {
+      var_indices[i] = new_positive_literals[i];
+      columns_[new_positive_literals[i]].num_pos_literal++;
+    }
+    for (int i = 0; i < row.num_neg_literal; ++i) {
+      var_indices[row.num_pos_literal + i] = new_negative_literals[i];
+      columns_[new_negative_literals[i]].num_neg_literal++;
+    }
+    for (int i = 0; i < row.num_linear_entries; ++i) {
+      var_indices[row.num_pos_literal + row.num_neg_literal + i] =
+          new_linear_terms[i].first;
+      row_coeff_buffer_[row.linear_start + i] = new_linear_terms[i].second;
+      columns_[new_linear_terms[i].first].num_linear_entries++;
+    }
+  }
+  if (!changed) return false;
+
+  // Update the columns from the updated rows. First recompute the new start and
+  // linear_start of each column. This is necessary because the number of
+  // elements per column can increase or decrease. However, the total number of
+  // elements in ct_buffer_ and coeff_buffer_ can only decrease.
+  int new_start = 0;
+  int new_linear_start = 0;
+  for (auto& column : columns_) {
+    column.start = new_start;
+    column.linear_start = new_linear_start;
+    new_start += column.num_pos_literal + column.num_neg_literal +
+                 column.num_linear_entries;
+    new_linear_start += column.num_linear_entries;
+  }
+
+  // Then update the columns by transposing the rows.
+  std::vector<int> column_num_pos_literals(columns_.size(), 0);
+  std::vector<int> column_num_neg_literals(columns_.size(), 0);
+  std::vector<int> column_num_linear_entries(columns_.size(), 0);
+  for (int c = 0; c < rows_.size(); ++c) {
+    SpanData& row = rows_[c];
+    if (row.empty()) continue;
+    new_positive_literals.clear();
+    new_negative_literals.clear();
+    new_linear_terms.clear();
+    int* var_indices = &row_var_buffer_[row.start];
+    for (int i = 0; i < row.num_pos_literal; ++i) {
+      const int var = var_indices[i];
+      new_positive_literals.push_back(var);
+      const int start = columns_[var].start;
+      ct_buffer_[start + column_num_pos_literals[var]++] = c;
+    }
+    for (int i = 0; i < row.num_neg_literal; ++i) {
+      const int var = var_indices[i + row.num_pos_literal];
+      new_negative_literals.push_back(var);
+      const int start = columns_[var].start + columns_[var].num_pos_literal;
+      ct_buffer_[start + column_num_neg_literals[var]++] = c;
+    }
+    for (int i = 0; i < row.num_linear_entries; ++i) {
+      const int var =
+          var_indices[i + row.num_pos_literal + row.num_neg_literal];
+      const int64_t coeff = row_coeff_buffer_[row.linear_start + i];
+      new_linear_terms.push_back(
+          {var, row_coeff_buffer_[row.linear_start + i]});
+      const int start = columns_[var].start + columns_[var].num_pos_literal +
+                        columns_[var].num_neg_literal;
+      const int linear_start = columns_[var].linear_start;
+      ct_buffer_[start + column_num_linear_entries[var]] = c;
+      coeff_buffer_[linear_start + column_num_linear_entries[var]++] = coeff;
+    }
+  }
+
+  // TODO(user): are there any other fields to update? For instance
+  // row_max_variations_?
   return true;
 }
 
@@ -936,15 +1089,46 @@ int64_t CompiledConstraint::ViolationDelta(int, int64_t,
   return ComputeViolation(solution) - violation_;
 }
 
+bool CompiledConstraint::RemapEnforcementLiterals(
+    absl::Span<const int> variable_mapping,
+    absl::Span<const int64_t> fixed_values) {
+  int new_size = 0;
+  bool changed = false;
+  for (const int lit : enforcement_literals_) {
+    const int var = PositiveRef(lit);
+    const int mapped_ref = variable_mapping[var];
+    changed |= (mapped_ref != lit);
+    if (mapped_ref == kNoVariableMapping) {
+      DCHECK(fixed_values[var] == 0 || fixed_values[var] == 1);
+      const int64_t fixed_value =
+          RefIsPositive(lit) ? fixed_values[var] : 1 - fixed_values[var];
+      if (fixed_value == 0) {
+        // Constraint is never enforced. Keep this false literal unmapped and
+        // remove the others.
+        // TODO(user): also make UsedVariables() return an empty vector?
+        enforcement_literals_.clear();
+        enforcement_literals_.push_back(lit);
+        return changed;
+      }
+    } else {
+      enforcement_literals_[new_size++] =
+          RefIsPositive(lit) ? mapped_ref : NegatedRef(mapped_ref);
+    }
+  }
+  enforcement_literals_.resize(new_size);
+  gtl::STLSortAndRemoveDuplicates(&enforcement_literals_);
+  return changed;
+}
+
 // ----- CompiledConstraintWithProto -----
 
 CompiledConstraintWithProto::CompiledConstraintWithProto(
     const ConstraintProto& ct_proto)
-    : ct_proto_(ct_proto) {}
+    : CompiledConstraint(ct_proto.enforcement_literal()) {}
 
 int64_t CompiledConstraintWithProto::ComputeViolation(
     absl::Span<const int64_t> solution) {
-  for (const int lit : ct_proto_.enforcement_literal()) {
+  for (const int lit : enforcement_literals_) {
     if (!LiteralValue(lit, solution)) return 0;
   }
   return ComputeViolationWhenEnforced(solution);
@@ -955,7 +1139,7 @@ int64_t CompiledConstraintWithProto::ViolationDelta(
     absl::Span<const int64_t> solution_with_new_value) {
   bool becomes_enforced = false;
   bool becomes_unenforced = false;
-  for (const int lit : ct_proto().enforcement_literal()) {
+  for (const int lit : enforcement_literals_) {
     if (var == PositiveRef(lit)) {
       if (LiteralValue(lit, solution_with_new_value) == 1) {
         becomes_enforced = true;
@@ -978,20 +1162,6 @@ int64_t CompiledConstraintWithProto::ViolationDelta(
   return ViolationDeltaWhenEnforced(var, old_value, solution_with_new_value);
 }
 
-std::vector<int> CompiledConstraintWithProto::UsedVariables(
-    const CpModelProto& model_proto) const {
-  std::vector<int> result = sat::UsedVariables(ct_proto_);
-  for (const int i_var : UsedIntervals(ct_proto_)) {
-    const ConstraintProto& interval_proto = model_proto.constraints(i_var);
-    for (const int var : sat::UsedVariables(interval_proto)) {
-      result.push_back(var);
-    }
-  }
-  gtl::STLSortAndRemoveDuplicates(&result);
-  result.shrink_to_fit();
-  return result;
-}
-
 int64_t CompiledConstraintWithProto::ViolationDeltaWhenEnforced(
     int /*var*/, int64_t /*old_value*/,
     absl::Span<const int64_t> solution_with_new_value) {
@@ -1002,12 +1172,14 @@ int64_t CompiledConstraintWithProto::ViolationDeltaWhenEnforced(
 
 CompiledBoolXorConstraint::CompiledBoolXorConstraint(
     const ConstraintProto& ct_proto)
-    : CompiledConstraintWithProto(ct_proto) {}
+    : CompiledConstraintWithProto(ct_proto),
+      literals_(ct_proto.bool_xor().literals().begin(),
+                ct_proto.bool_xor().literals().end()) {}
 
 int64_t CompiledBoolXorConstraint::ComputeViolationWhenEnforced(
     absl::Span<const int64_t> solution) {
-  int64_t sum_of_literals = 0;
-  for (const int lit : ct_proto().bool_xor().literals()) {
+  int64_t sum_of_literals = sum_of_fixed_literals_;
+  for (const int lit : literals_) {
     sum_of_literals += LiteralValue(lit, solution);
   }
   return 1 - (sum_of_literals % 2);
@@ -1019,71 +1191,172 @@ int64_t CompiledBoolXorConstraint::ViolationDeltaWhenEnforced(
   return violation() == 0 ? 1 : -1;
 }
 
+std::vector<int> CompiledBoolXorConstraint::UsedVariables() const {
+  std::vector<int> result;
+  for (const int lit : literals_) {
+    result.push_back(PositiveRef(lit));
+  }
+  return AddEnforcementLiterals(std::move(result));
+}
+
+bool CompiledBoolXorConstraint::RemapVariablesIfSupported(
+    absl::Span<const int> variable_mapping,
+    absl::Span<const int64_t> fixed_values) {
+  bool changed = false;
+  int new_size = 0;
+  for (int i = 0; i < literals_.size(); ++i) {
+    const int lit = literals_[i];
+    const int var = PositiveRef(lit);
+    const int mapped_ref = variable_mapping[var];
+    changed |= (mapped_ref != lit);
+    if (mapped_ref == kNoVariableMapping) {
+      DCHECK(fixed_values[var] == 0 || fixed_values[var] == 1);
+      sum_of_fixed_literals_ +=
+          RefIsPositive(lit) ? fixed_values[var] : 1 - fixed_values[var];
+    } else {
+      literals_[new_size++] =
+          RefIsPositive(lit) ? mapped_ref : NegatedRef(mapped_ref);
+    }
+  }
+  literals_.resize(new_size);
+  gtl::STLSortAndRemoveDuplicates(&literals_);
+  return changed;
+}
+
 // ----- CompiledLinMaxConstraint -----
 
 CompiledLinMaxConstraint::CompiledLinMaxConstraint(
     const ConstraintProto& ct_proto)
-    : CompiledConstraintWithProto(ct_proto) {}
+    : CompiledConstraintWithProto(ct_proto),
+      target_(ct_proto.lin_max().target()) {
+  for (const LinearExpressionProto& expr : ct_proto.lin_max().exprs()) {
+    exprs_.emplace_back(expr);
+  }
+}
 
 int64_t CompiledLinMaxConstraint::ComputeViolationWhenEnforced(
     absl::Span<const int64_t> solution) {
-  const int64_t target_value =
-      ExprValue(ct_proto().lin_max().target(), solution);
+  const int64_t target_value = target_.GetValue(solution);
   int64_t max_of_expressions = std::numeric_limits<int64_t>::min();
-  for (const LinearExpressionProto& expr : ct_proto().lin_max().exprs()) {
-    const int64_t expr_value = ExprValue(expr, solution);
+  for (const CompiledExpression<1>& expr : exprs_) {
+    const int64_t expr_value = expr.GetValue(solution);
     max_of_expressions = std::max(max_of_expressions, expr_value);
   }
   return std::max(target_value - max_of_expressions, int64_t{0});
+}
+
+std::vector<int> CompiledLinMaxConstraint::UsedVariables() const {
+  std::vector<int> result;
+  target_.AppendVarsTo(result);
+  for (const CompiledExpression<1>& expr : exprs_) {
+    expr.AppendVarsTo(result);
+  }
+  return AddEnforcementLiterals(std::move(result));
+}
+
+bool CompiledLinMaxConstraint::RemapVariablesIfSupported(
+    absl::Span<const int> variable_mapping,
+    absl::Span<const int64_t> fixed_values) {
+  bool changed = target_.RemapVariables(variable_mapping, fixed_values);
+  for (CompiledExpression<1>& expr : exprs_) {
+    changed |= expr.RemapVariables(variable_mapping, fixed_values);
+  }
+  return changed;
 }
 
 // ----- CompiledIntProdConstraint -----
 
 CompiledIntProdConstraint::CompiledIntProdConstraint(
     const ConstraintProto& ct_proto)
-    : CompiledConstraintWithProto(ct_proto) {}
+    : CompiledConstraintWithProto(ct_proto),
+      target_(ct_proto.int_prod().target()) {
+  for (const LinearExpressionProto& expr : ct_proto.int_prod().exprs()) {
+    exprs_.emplace_back(expr);
+  }
+}
 
 int64_t CompiledIntProdConstraint::ComputeViolationWhenEnforced(
     absl::Span<const int64_t> solution) {
-  const int64_t target_value =
-      ExprValue(ct_proto().int_prod().target(), solution);
+  const int64_t target_value = target_.GetValue(solution);
   int64_t prod_value = 1;
-  for (const LinearExpressionProto& expr : ct_proto().int_prod().exprs()) {
-    prod_value *= ExprValue(expr, solution);
+  for (const CompiledExpression<1>& expr : exprs_) {
+    prod_value *= expr.GetValue(solution);
   }
   return std::abs(target_value - prod_value);
+}
+
+std::vector<int> CompiledIntProdConstraint::UsedVariables() const {
+  std::vector<int> result;
+  target_.AppendVarsTo(result);
+  for (const CompiledExpression<1>& expr : exprs_) {
+    expr.AppendVarsTo(result);
+  }
+  return AddEnforcementLiterals(std::move(result));
+}
+
+bool CompiledIntProdConstraint::RemapVariablesIfSupported(
+    absl::Span<const int> variable_mapping,
+    absl::Span<const int64_t> fixed_values) {
+  bool changed = target_.RemapVariables(variable_mapping, fixed_values);
+  for (CompiledExpression<1>& expr : exprs_) {
+    changed |= expr.RemapVariables(variable_mapping, fixed_values);
+  }
+  return changed;
 }
 
 // ----- CompiledIntDivConstraint -----
 
 CompiledIntDivConstraint::CompiledIntDivConstraint(
     const ConstraintProto& ct_proto)
-    : CompiledConstraintWithProto(ct_proto) {}
+    : CompiledConstraintWithProto(ct_proto),
+      target_(ct_proto.int_div().target()),
+      expr1_(ct_proto.int_div().exprs(0)),
+      expr2_(ct_proto.int_div().exprs(1)) {
+  DCHECK_EQ(ct_proto.int_div().exprs_size(), 2);
+}
 
 int64_t CompiledIntDivConstraint::ComputeViolationWhenEnforced(
     absl::Span<const int64_t> solution) {
-  const int64_t target_value =
-      ExprValue(ct_proto().int_div().target(), solution);
-  DCHECK_EQ(ct_proto().int_div().exprs_size(), 2);
-  const int64_t div_value = ExprValue(ct_proto().int_div().exprs(0), solution) /
-                            ExprValue(ct_proto().int_div().exprs(1), solution);
+  const int64_t target_value = target_.GetValue(solution);
+  const int64_t div_value =
+      expr1_.GetValue(solution) / expr2_.GetValue(solution);
   return std::abs(target_value - div_value);
+}
+
+std::vector<int> CompiledIntDivConstraint::UsedVariables() const {
+  std::vector<int> result;
+  target_.AppendVarsTo(result);
+  expr1_.AppendVarsTo(result);
+  expr2_.AppendVarsTo(result);
+  return AddEnforcementLiterals(std::move(result));
+}
+
+bool CompiledIntDivConstraint::RemapVariablesIfSupported(
+    absl::Span<const int> variable_mapping,
+    absl::Span<const int64_t> fixed_values) {
+  bool changed = target_.RemapVariables(variable_mapping, fixed_values);
+  changed |= expr1_.RemapVariables(variable_mapping, fixed_values);
+  changed |= expr2_.RemapVariables(variable_mapping, fixed_values);
+  return changed;
 }
 
 // ----- CompiledIntModConstraint -----
 
 CompiledIntModConstraint::CompiledIntModConstraint(
     const ConstraintProto& ct_proto)
-    : CompiledConstraintWithProto(ct_proto) {}
+    : CompiledConstraintWithProto(ct_proto),
+      target_(ct_proto.int_mod().target()),
+      expr_(ct_proto.int_mod().exprs(0)),
+      mod_(ct_proto.int_mod().exprs(1)) {
+  DCHECK_EQ(ct_proto.int_mod().exprs_size(), 2);
+}
 
 int64_t CompiledIntModConstraint::ComputeViolationWhenEnforced(
     absl::Span<const int64_t> solution) {
-  const int64_t target_value =
-      ExprValue(ct_proto().int_mod().target(), solution);
-  DCHECK_EQ(ct_proto().int_mod().exprs_size(), 2);
+  const int64_t target_value = target_.GetValue(solution);
   // Note: The violation computation assumes the modulo is constant.
-  const int64_t expr_value = ExprValue(ct_proto().int_mod().exprs(0), solution);
-  const int64_t mod_value = ExprValue(ct_proto().int_mod().exprs(1), solution);
+  const int64_t expr_value = expr_.GetValue(solution);
+  const int64_t mod_value = mod_.GetValue(solution);
   const int64_t rhs = expr_value % mod_value;
   if ((expr_value >= 0 && target_value >= 0) ||
       (expr_value <= 0 && target_value <= 0)) {
@@ -1099,17 +1372,38 @@ int64_t CompiledIntModConstraint::ComputeViolationWhenEnforced(
   }
 }
 
+std::vector<int> CompiledIntModConstraint::UsedVariables() const {
+  std::vector<int> result;
+  target_.AppendVarsTo(result);
+  expr_.AppendVarsTo(result);
+  mod_.AppendVarsTo(result);
+  return AddEnforcementLiterals(std::move(result));
+}
+
+bool CompiledIntModConstraint::RemapVariablesIfSupported(
+    absl::Span<const int> variable_mapping,
+    absl::Span<const int64_t> fixed_values) {
+  bool changed = target_.RemapVariables(variable_mapping, fixed_values);
+  changed |= expr_.RemapVariables(variable_mapping, fixed_values);
+  changed |= mod_.RemapVariables(variable_mapping, fixed_values);
+  return changed;
+}
+
 // ----- CompiledAllDiffConstraint -----
 
 CompiledAllDiffConstraint::CompiledAllDiffConstraint(
     const ConstraintProto& ct_proto)
-    : CompiledConstraintWithProto(ct_proto) {}
+    : CompiledConstraintWithProto(ct_proto) {
+  for (const LinearExpressionProto& expr : ct_proto.all_diff().exprs()) {
+    exprs_.emplace_back(expr);
+  }
+}
 
 int64_t CompiledAllDiffConstraint::ComputeViolationWhenEnforced(
     absl::Span<const int64_t> solution) {
   values_.clear();
-  for (const LinearExpressionProto& expr : ct_proto().all_diff().exprs()) {
-    values_.push_back(ExprValue(expr, solution));
+  for (const CompiledExpression<1>& expr : exprs_) {
+    values_.push_back(expr.GetValue(solution));
   }
   std::sort(values_.begin(), values_.end());
 
@@ -1130,21 +1424,39 @@ int64_t CompiledAllDiffConstraint::ComputeViolationWhenEnforced(
   return violation;
 }
 
+std::vector<int> CompiledAllDiffConstraint::UsedVariables() const {
+  std::vector<int> result;
+  for (const CompiledExpression<1>& expr : exprs_) {
+    expr.AppendVarsTo(result);
+  }
+  return AddEnforcementLiterals(std::move(result));
+}
+
+bool CompiledAllDiffConstraint::RemapVariablesIfSupported(
+    absl::Span<const int> variable_mapping,
+    absl::Span<const int64_t> fixed_values) {
+  bool changed = false;
+  for (CompiledExpression<1>& expr : exprs_) {
+    changed |= expr.RemapVariables(variable_mapping, fixed_values);
+  }
+  return changed;
+}
+
 // ----- CompiledNoOverlapWithTwoIntervals -----
 
 template <bool has_enforcement>
 int64_t CompiledNoOverlapWithTwoIntervals<has_enforcement>::ViolationDelta(
     int /*var*/, int64_t /*old_value*/, absl::Span<const int64_t> solution) {
   if (has_enforcement) {
-    for (const int lit : enforcements_) {
+    for (const int lit : enforcement_literals_) {
       if (!LiteralValue(lit, solution)) return -violation_;
     }
   }
 
-  const int64_t s1 = AffineValue(interval1_.start, solution);
-  const int64_t e1 = AffineValue(interval1_.end, solution);
-  const int64_t s2 = AffineValue(interval2_.start, solution);
-  const int64_t e2 = AffineValue(interval2_.end, solution);
+  const int64_t s1 = interval1_.start.GetValue(solution);
+  const int64_t e1 = interval1_.end.GetValue(solution);
+  const int64_t s2 = interval2_.start.GetValue(solution);
+  const int64_t e2 = interval2_.end.GetValue(solution);
   const int64_t repair = std::min(e2 - s1, e1 - s2);
   if (repair <= 0) return -violation_;  // disjoint
   return repair - violation_;
@@ -1152,19 +1464,25 @@ int64_t CompiledNoOverlapWithTwoIntervals<has_enforcement>::ViolationDelta(
 
 template <bool has_enforcement>
 std::vector<int>
-CompiledNoOverlapWithTwoIntervals<has_enforcement>::UsedVariables(
-    const CpModelProto& /*model_proto*/) const {
+CompiledNoOverlapWithTwoIntervals<has_enforcement>::UsedVariables() const {
   std::vector<int> result;
-  if (has_enforcement) {
-    for (const int ref : enforcements_) result.push_back(PositiveRef(ref));
-  }
-  interval1_.start.AppendVarTo(result);
-  interval1_.end.AppendVarTo(result);
-  interval2_.start.AppendVarTo(result);
-  interval2_.end.AppendVarTo(result);
-  gtl::STLSortAndRemoveDuplicates(&result);
-  result.shrink_to_fit();
-  return result;
+  interval1_.start.AppendVarsTo(result);
+  interval1_.end.AppendVarsTo(result);
+  interval2_.start.AppendVarsTo(result);
+  interval2_.end.AppendVarsTo(result);
+  return AddEnforcementLiterals(std::move(result));
+}
+
+template <bool has_enforcement>
+bool CompiledNoOverlapWithTwoIntervals<has_enforcement>::
+    RemapVariablesIfSupported(absl::Span<const int> variable_mapping,
+                              absl::Span<const int64_t> fixed_values) {
+  bool changed = false;
+  changed |= interval1_.start.RemapVariables(variable_mapping, fixed_values);
+  changed |= interval1_.end.RemapVariables(variable_mapping, fixed_values);
+  changed |= interval2_.start.RemapVariables(variable_mapping, fixed_values);
+  changed |= interval2_.end.RemapVariables(variable_mapping, fixed_values);
+  return changed;
 }
 
 // ----- CompiledNoOverlap2dConstraint -----
@@ -1215,24 +1533,26 @@ int64_t NoOverlapMinRepairDistance(const ConstraintProto& interval1,
 
 CompiledNoOverlap2dConstraint::CompiledNoOverlap2dConstraint(
     const ConstraintProto& ct_proto, const CpModelProto& cp_model)
-    : CompiledConstraintWithProto(ct_proto), cp_model_(cp_model) {}
+    : CompiledConstraintWithProto(ct_proto),
+      ct_proto_(ct_proto),
+      cp_model_(cp_model) {}
 
 int64_t CompiledNoOverlap2dConstraint::ComputeViolationWhenEnforced(
     absl::Span<const int64_t> solution) {
-  DCHECK_GE(ct_proto().no_overlap_2d().x_intervals_size(), 2);
-  const int size = ct_proto().no_overlap_2d().x_intervals_size();
+  DCHECK_GE(ct_proto_.no_overlap_2d().x_intervals_size(), 2);
+  const int size = ct_proto_.no_overlap_2d().x_intervals_size();
 
   int64_t violation = 0;
   for (int i = 0; i + 1 < size; ++i) {
     const ConstraintProto& x_i =
-        cp_model_.constraints(ct_proto().no_overlap_2d().x_intervals(i));
+        cp_model_.constraints(ct_proto_.no_overlap_2d().x_intervals(i));
     const ConstraintProto& y_i =
-        cp_model_.constraints(ct_proto().no_overlap_2d().y_intervals(i));
+        cp_model_.constraints(ct_proto_.no_overlap_2d().y_intervals(i));
     for (int j = i + 1; j < size; ++j) {
       const ConstraintProto& x_j =
-          cp_model_.constraints(ct_proto().no_overlap_2d().x_intervals(j));
+          cp_model_.constraints(ct_proto_.no_overlap_2d().x_intervals(j));
       const ConstraintProto& y_j =
-          cp_model_.constraints(ct_proto().no_overlap_2d().y_intervals(j));
+          cp_model_.constraints(ct_proto_.no_overlap_2d().y_intervals(j));
 
       // TODO(user): Experiment with
       // violation +=
@@ -1251,26 +1571,47 @@ int64_t CompiledNoOverlap2dConstraint::ComputeViolationWhenEnforced(
   return violation;
 }
 
+std::vector<int> CompiledNoOverlap2dConstraint::UsedVariables() const {
+  std::vector<int> result = sat::UsedVariables(ct_proto_);
+  for (const int i_var : UsedIntervals(ct_proto_)) {
+    const ConstraintProto& interval_proto = cp_model_.constraints(i_var);
+    for (const int var : sat::UsedVariables(interval_proto)) {
+      result.push_back(var);
+    }
+  }
+  gtl::STLSortAndRemoveDuplicates(&result);
+  result.shrink_to_fit();
+  return result;
+}
+
+bool CompiledNoOverlap2dConstraint::RemapVariablesIfSupported(
+    absl::Span<const int> /*variable_mapping*/,
+    absl::Span<const int64_t> /*fixed_values*/) {
+  // TODO(user): store a copy of the proto inside the instance so that we
+  // can remap the variables here?
+  return false;
+}
+
 template <bool has_enforcement>
 int64_t CompiledNoOverlap2dWithTwoBoxes<has_enforcement>::ViolationDelta(
     int /*var*/, int64_t /*old_value*/, absl::Span<const int64_t> solution) {
   if (has_enforcement) {
-    for (const int lit : enforcements_) {
+    for (const int lit : enforcement_literals_) {
       if (!LiteralValue(lit, solution)) return -violation_;
     }
   }
 
-  const int64_t x1 = AffineValue(box1_.x_min, solution);
-  const int64_t X1 = AffineValue(box1_.x_max, solution);
-  const int64_t x2 = AffineValue(box2_.x_min, solution);
-  const int64_t X2 = AffineValue(box2_.x_max, solution);
+  const int64_t x1 = box1_.x_min.GetValue(solution);
+  const int64_t X1 = box1_.x_max.GetValue(solution);
+  const int64_t x2 = box2_.x_min.GetValue(solution);
+  const int64_t X2 = box2_.x_max.GetValue(solution);
   const int64_t repair_x = std::min(X2 - x1, X1 - x2);
   if (repair_x <= 0) return -violation_;  // disjoint
 
-  const int64_t y1 = AffineValue(box1_.y_min, solution);
-  const int64_t Y1 = AffineValue(box1_.y_max, solution);
-  const int64_t y2 = AffineValue(box2_.y_min, solution);
-  const int64_t Y2 = AffineValue(box2_.y_max, solution);
+  const int64_t y1 = box1_.y_min.GetValue(solution);
+  const int64_t Y1 = box1_.y_max.GetValue(solution);
+  const int64_t y2 = box2_.y_min.GetValue(solution);
+  const int64_t Y2 = box2_.y_max.GetValue(solution);
   const int64_t repair_y = std::min(Y2 - y1, Y1 - y2);
   if (repair_y <= 0) return -violation_;  // disjoint
 
@@ -1283,23 +1624,33 @@ int64_t CompiledNoOverlap2dWithTwoBoxes<has_enforcement>::ViolationDelta(
 
 template <bool has_enforcement>
 std::vector<int>
-CompiledNoOverlap2dWithTwoBoxes<has_enforcement>::UsedVariables(
-    const CpModelProto& /*model_proto*/) const {
+CompiledNoOverlap2dWithTwoBoxes<has_enforcement>::UsedVariables() const {
   std::vector<int> result;
-  if (has_enforcement) {
-    for (const int ref : enforcements_) result.push_back(PositiveRef(ref));
-  }
-  box1_.x_min.AppendVarTo(result);
-  box1_.x_max.AppendVarTo(result);
-  box1_.y_min.AppendVarTo(result);
-  box1_.y_max.AppendVarTo(result);
-  box2_.x_min.AppendVarTo(result);
-  box2_.x_max.AppendVarTo(result);
-  box2_.y_min.AppendVarTo(result);
-  box2_.y_max.AppendVarTo(result);
-  gtl::STLSortAndRemoveDuplicates(&result);
-  result.shrink_to_fit();
-  return result;
+  box1_.x_min.AppendVarsTo(result);
+  box1_.x_max.AppendVarsTo(result);
+  box1_.y_min.AppendVarsTo(result);
+  box1_.y_max.AppendVarsTo(result);
+  box2_.x_min.AppendVarsTo(result);
+  box2_.x_max.AppendVarsTo(result);
+  box2_.y_min.AppendVarsTo(result);
+  box2_.y_max.AppendVarsTo(result);
+  return AddEnforcementLiterals(std::move(result));
+}
+
+template <bool has_enforcement>
+bool CompiledNoOverlap2dWithTwoBoxes<has_enforcement>::
+    RemapVariablesIfSupported(absl::Span<const int> variable_mapping,
+                              absl::Span<const int64_t> fixed_values) {
+  bool changed = false;
+  changed |= box1_.x_min.RemapVariables(variable_mapping, fixed_values);
+  changed |= box1_.x_max.RemapVariables(variable_mapping, fixed_values);
+  changed |= box1_.y_min.RemapVariables(variable_mapping, fixed_values);
+  changed |= box1_.y_max.RemapVariables(variable_mapping, fixed_values);
+  changed |= box2_.x_min.RemapVariables(variable_mapping, fixed_values);
+  changed |= box2_.x_max.RemapVariables(variable_mapping, fixed_values);
+  changed |= box2_.y_min.RemapVariables(variable_mapping, fixed_values);
+  changed |= box2_.y_max.RemapVariables(variable_mapping, fixed_values);
+  return changed;
 }
 
 // ----- CompiledCircuitConstraint -----
@@ -1326,6 +1677,10 @@ class CompiledCircuitConstraint : public CompiledConstraintWithProto {
   int64_t ViolationDeltaWhenEnforced(
       int var, int64_t old_value,
       absl::Span<const int64_t> solution_with_new_value) override;
+  std::vector<int> UsedVariables() const override;
+  bool RemapVariablesIfSupported(
+      absl::Span<const int> variable_mapping,
+      absl::Span<const int64_t> fixed_values) override;
 
  private:
   struct SccOutput {
@@ -1340,8 +1695,9 @@ class CompiledCircuitConstraint : public CompiledConstraintWithProto {
   bool UpdateGraph(int var, int64_t value);
   int64_t ViolationForCurrentGraph();
 
+  bool has_routes_;
   absl::flat_hash_map<int, std::vector<int>> arcs_by_lit_;
-  absl::Span<const int> literals_;
+  std::vector<int> literals_;
   absl::Span<const int> tails_;
   absl::Span<const int> heads_;
   // Stores the currently active arcs per tail node.
@@ -1376,12 +1732,17 @@ void CompiledCircuitConstraint::SccOutput::reset(int num_nodes) {
 CompiledCircuitConstraint::CompiledCircuitConstraint(
     const ConstraintProto& ct_proto)
     : CompiledConstraintWithProto(ct_proto) {
-  const bool routes = ct_proto.has_routes();
-  tails_ = routes ? ct_proto.routes().tails() : ct_proto.circuit().tails();
-  heads_ = absl::MakeConstSpan(routes ? ct_proto.routes().heads()
-                                      : ct_proto.circuit().heads());
-  literals_ = absl::MakeConstSpan(routes ? ct_proto.routes().literals()
-                                         : ct_proto.circuit().literals());
+  has_routes_ = ct_proto.has_routes();
+  tails_ = has_routes_ ? ct_proto.routes().tails() : ct_proto.circuit().tails();
+  heads_ = absl::MakeConstSpan(has_routes_ ? ct_proto.routes().heads()
+                                           : ct_proto.circuit().heads());
+  if (has_routes_) {
+    literals_ = {ct_proto.routes().literals().begin(),
+                 ct_proto.routes().literals().end()};
+  } else {
+    literals_ = {ct_proto.circuit().literals().begin(),
+                 ct_proto.circuit().literals().end()};
+  }
   graph_.resize(*absl::c_max_element(tails_) + 1);
   for (int i = 0; i < literals_.size(); ++i) {
     arcs_by_lit_[literals_[i]].push_back(i);
@@ -1472,11 +1833,35 @@ int64_t CompiledCircuitConstraint::ViolationForCurrentGraph() {
   }
   const int64_t violation = sccs_.num_components - 1 + sccs_.num_components -
                             num_half_connected_components - 1 +
-                            (ct_proto().has_routes() ? sccs_.skipped[0] : 0);
+                            (has_routes_ ? sccs_.skipped[0] : 0);
   VLOG(2) << "#SCCs=" << sccs_.num_components << " #nodes=" << num_nodes
           << " #half_connected_components=" << num_half_connected_components
           << " violation=" << violation;
   return violation;
+}
+
+std::vector<int> CompiledCircuitConstraint::UsedVariables() const {
+  std::vector<int> result;
+  for (const int lit : literals_) {
+    result.push_back(PositiveRef(lit));
+  }
+  return AddEnforcementLiterals(std::move(result));
+}
+
+bool CompiledCircuitConstraint::RemapVariablesIfSupported(
+    absl::Span<const int> variable_mapping,
+    absl::Span<const int64_t> /*fixed_values*/) {
+  bool changed = false;
+  for (int& lit : literals_) {
+    const int var = PositiveRef(lit);
+    const int mapped_ref = variable_mapping[var];
+    changed |= (mapped_ref != lit);
+    // Keep the fixed literals unmapped. It is not easy to remove them.
+    if (mapped_ref != kNoVariableMapping) {
+      lit = RefIsPositive(lit) ? mapped_ref : NegatedRef(mapped_ref);
+    }
+  }
+  return changed;
 }
 
 void AddCircuitFlowConstraints(LinearIncrementalEvaluator& linear_evaluator,
@@ -1563,8 +1948,7 @@ void LsEvaluator::BuildVarConstraintGraph() {
 
   // Build the var <-> constraint graph.
   for (int ct_index = 0; ct_index < constraints_.size(); ++ct_index) {
-    constraint_to_vars_[ct_index] =
-        constraints_[ct_index]->UsedVariables(cp_model_);
+    constraint_to_vars_[ct_index] = constraints_[ct_index]->UsedVariables();
 
     const double dtime = 1e-8 * constraint_to_vars_[ct_index].size();
     for (const int var : constraint_to_vars_[ct_index]) {
@@ -1700,15 +2084,9 @@ void LsEvaluator::CompileOneConstraint(const ConstraintProto& ct) {
       if (size > params_.feasibility_jump_max_expanded_constraint_size()) {
         // Similar code to the kCumulative constraint.
         // The violation will be the area above the capacity.
-        LinearExpressionProto one;
-        one.set_offset(1);
-        std::vector<int> enforcement_literals;
-        for (const int lit : ct.enforcement_literal()) {
-          enforcement_literals.push_back(lit);
-        }
         std::vector<std::optional<int>> is_active;
-        std::vector<LinearExpressionProto> times;
-        std::vector<LinearExpressionProto> demands;
+        std::vector<CompiledExpression<2>> times;
+        std::vector<CompiledExpression<1>> demands;
         const int num_intervals = ct.no_overlap().intervals().size();
         for (int i = 0; i < num_intervals; ++i) {
           const ConstraintProto& interval_ct =
@@ -1722,14 +2100,15 @@ void LsEvaluator::CompileOneConstraint(const ConstraintProto& ct) {
             is_active.push_back(interval_ct.enforcement_literal(0));
           }
 
-          times.push_back(interval_ct.interval().start());
-          times.push_back(LinearExprSum(interval_ct.interval().start(),
-                                        interval_ct.interval().size()));
-          demands.push_back(one);
-          demands.push_back(NegatedLinearExpression(one));
+          times.push_back(
+              CompiledExpression<2>(interval_ct.interval().start()));
+          times.push_back(CompiledExpression<2>(LinearExprSum(
+              interval_ct.interval().start(), interval_ct.interval().size())));
+          demands.push_back(CompiledExpression<1>(1));
+          demands.push_back(CompiledExpression<1>(-1));
         }
         constraints_.emplace_back(new CompiledReservoirConstraint(
-            std::move(enforcement_literals), std::move(one),
+            ct.enforcement_literal(), CompiledExpression<1>(1),
             std::move(is_active), std::move(times), std::move(demands)));
       } else {
         // We expand the no_overlap constraints into a quadratic number of
@@ -1767,14 +2146,11 @@ void LsEvaluator::CompileOneConstraint(const ConstraintProto& ct) {
       break;
     }
     case ConstraintProto::ConstraintCase::kCumulative: {
-      LinearExpressionProto capacity = ct.cumulative().capacity();
-      std::vector<int> enforcement_literals;
-      for (const int lit : ct.enforcement_literal()) {
-        enforcement_literals.push_back(lit);
-      }
+      CompiledExpression<1> capacity =
+          CompiledExpression<1>(ct.cumulative().capacity());
       std::vector<std::optional<int>> is_active;
-      std::vector<LinearExpressionProto> times;
-      std::vector<LinearExpressionProto> demands;
+      std::vector<CompiledExpression<2>> times;
+      std::vector<CompiledExpression<1>> demands;
       const int num_intervals = ct.cumulative().intervals().size();
       for (int i = 0; i < num_intervals; ++i) {
         const ConstraintProto& interval_ct =
@@ -1789,8 +2165,8 @@ void LsEvaluator::CompileOneConstraint(const ConstraintProto& ct) {
         }
 
         // Start.
-        times.push_back(interval_ct.interval().start());
-        demands.push_back(ct.cumulative().demands(i));
+        times.push_back(CompiledExpression<2>(interval_ct.interval().start()));
+        demands.push_back(CompiledExpression<1>(ct.cumulative().demands(i)));
 
         // End.
         // I tried 3 alternatives: end, max(end, start+size) and just start +
@@ -1800,14 +2176,15 @@ void LsEvaluator::CompileOneConstraint(const ConstraintProto& ct) {
         // Note that for fixed size, this do not matter. It is easy enough to
         // try any expression by creating a small wrapper class to use instead
         // of a LinearExpressionProto for time.
-        times.push_back(LinearExprSum(interval_ct.interval().start(),
-                                      interval_ct.interval().size()));
-        demands.push_back(NegatedLinearExpression(ct.cumulative().demands(i)));
+        times.push_back(CompiledExpression<2>(LinearExprSum(
+            interval_ct.interval().start(), interval_ct.interval().size())));
+        demands.push_back(
+            CompiledExpression<1>(ct.cumulative().demands(i)).Negated());
       }
 
       constraints_.emplace_back(new CompiledReservoirConstraint(
-          std::move(enforcement_literals), std::move(capacity),
-          std::move(is_active), std::move(times), std::move(demands)));
+          ct.enforcement_literal(), std::move(capacity), std::move(is_active),
+          std::move(times), std::move(demands)));
       break;
     }
     case ConstraintProto::ConstraintCase::kNoOverlap2D: {
@@ -2132,6 +2509,20 @@ void LsEvaluator::UpdateViolatedList(const int c) {
   }
 }
 
+bool LsEvaluator::RemapVariables(absl::Span<const int> variable_mapping,
+                                 absl::Span<const int64_t> fixed_values) {
+  bool changed =
+      linear_evaluator_.RemapVariables(variable_mapping, fixed_values);
+  for (auto& constraint : constraints_) {
+    changed |=
+        constraint->RemapEnforcementLiterals(variable_mapping, fixed_values);
+    changed |=
+        constraint->RemapVariablesIfSupported(variable_mapping, fixed_values);
+  }
+  if (changed) BuildVarConstraintGraph();
+  return changed;
+}
+
 // Note that since we have our own ViolationDelta() implementation this is
 // only used for initialization and our PerformMove(). It is why we set
 // violations_ here.
@@ -2150,16 +2541,16 @@ int64_t CompiledReservoirConstraint::ComputeViolation(
 int64_t CompiledReservoirConstraint::BuildProfileAndReturnViolation(
     absl::Span<const int64_t> solution) {
   // Starts by filling the cache and profile_.
-  capacity_value_ = ExprValue(capacity_, solution);
+  capacity_value_ = capacity_.GetValue(solution);
   const int num_events = time_values_.size();
   profile_.clear();
   for (int i = 0; i < num_events; ++i) {
-    time_values_[i] = ExprValue(times_[i], solution);
+    time_values_[i] = times_[i].GetValue(solution);
     if (is_active_[i] != std::nullopt &&
         LiteralValue(*is_active_[i], solution) == 0) {
       demand_values_[i] = 0;
     } else {
-      demand_values_[i] = ExprValue(demands_[i], solution);
+      demand_values_[i] = demands_[i].GetValue(solution);
       if (demand_values_[i] != 0) {
         profile_.push_back({time_values_[i], demand_values_[i]});
       }
@@ -2206,15 +2597,15 @@ int64_t CompiledReservoirConstraint::IncrementalViolation(
       return 0;
     }
   }
-  const int64_t capacity = ExprValue(capacity_, solution);
+  const int64_t capacity = capacity_.GetValue(solution);
   profile_delta_.clear();
   CHECK(RefIsPositive(var));
   for (const int i : dense_index_to_events_[var_to_dense_index_.at(var)]) {
-    const int64_t time = ExprValue(times_[i], solution);
+    const int64_t time = times_[i].GetValue(solution);
     int64_t demand = 0;
     if (is_active_[i] == std::nullopt ||
         LiteralValue(*is_active_[i], solution) == 1) {
-      demand = ExprValue(demands_[i], solution);
+      demand = demands_[i].GetValue(solution);
     }
 
     if (time == time_values_[i]) {
@@ -2297,21 +2688,21 @@ void CompiledReservoirConstraint::AppendVariablesForEvent(
   if (is_active_[i] != std::nullopt) {
     result->push_back(PositiveRef(*is_active_[i]));
   }
-  for (const int var : times_[i].vars()) {
-    result->push_back(PositiveRef(var));
-  }
-  for (const int var : demands_[i].vars()) {
-    result->push_back(PositiveRef(var));
-  }
+  times_[i].AppendVarsTo(*result);
+  demands_[i].AppendVarsTo(*result);
 }
 
 void CompiledReservoirConstraint::InitializeDenseIndexToEvents() {
   // We scan the constraint a few times, but this is called once, so we don't
   // care too much.
-  CpModelProto unused;
   int num_dense_indices = 0;
-  for (const int var : UsedVariables(unused)) {
+  var_to_dense_index_.clear();
+  for (const int var : UsedVariables()) {
     var_to_dense_index_[var] = num_dense_indices++;
+  }
+  if (var_to_dense_index_.empty()) {
+    dense_index_to_events_.clear();
+    return;
   }
 
   CompactVectorVector<int, int> event_to_dense_indices;
@@ -2336,19 +2727,48 @@ void CompiledReservoirConstraint::InitializeDenseIndexToEvents() {
                                             num_dense_indices);
 }
 
-std::vector<int> CompiledReservoirConstraint::UsedVariables(
-    const CpModelProto& /*model_proto*/) const {
+std::vector<int> CompiledReservoirConstraint::UsedVariables() const {
   std::vector<int> result;
   const int num_events = times_.size();
   for (int i = 0; i < num_events; ++i) {
     AppendVariablesForEvent(i, &result);
   }
-  for (const int var : capacity_.vars()) {
-    result.push_back(PositiveRef(var));
+  capacity_.AppendVarsTo(result);
+  return AddEnforcementLiterals(std::move(result));
+}
+
+bool CompiledReservoirConstraint::RemapVariablesIfSupported(
+    absl::Span<const int> variable_mapping,
+    absl::Span<const int64_t> fixed_values) {
+  bool changed = capacity_.RemapVariables(variable_mapping, fixed_values);
+  for (int i = 0; i < times_.size(); ++i) {
+    if (is_active_[i].has_value()) {
+      const int lit = *is_active_[i];
+      const int var = PositiveRef(lit);
+      const int mapped_ref = variable_mapping[var];
+      changed |= (mapped_ref != lit);
+      if (mapped_ref == kNoVariableMapping) {
+        DCHECK(fixed_values[var] == 0 || fixed_values[var] == 1);
+        const int64_t fixed_value =
+            RefIsPositive(lit) ? fixed_values[var] : 1 - fixed_values[var];
+        if (fixed_value == 1) {
+          is_active_[i] = std::nullopt;
+        } else {
+          // TODO(user): remove this always false entry and recompute the
+          // other fields accordingly (var_to_dense_index_, etc)?
+        }
+      } else {
+        is_active_[i] =
+            RefIsPositive(lit) ? mapped_ref : NegatedRef(mapped_ref);
+      }
+    }
+    changed |= times_[i].RemapVariables(variable_mapping, fixed_values);
+    changed |= demands_[i].RemapVariables(variable_mapping, fixed_values);
   }
-  gtl::STLSortAndRemoveDuplicates(&result);
-  result.shrink_to_fit();
-  return result;
+  if (changed) {
+    InitializeDenseIndexToEvents();
+  }
+  return changed;
 }
 
 }  // namespace sat

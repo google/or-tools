@@ -143,7 +143,8 @@ void InitializeDebugSolution(const CpModelProto& model_proto, Model* model) {
   // If the solution is fully boolean (there is no integer variable), and
   // we have a decision problem (so no new boolean should be created), we load
   // it in the sat solver for debugging too.
-  if (debug_solution->IsBooleanSolution() && !model_proto.has_objective()) {
+  if (debug_solution->IsBooleanSolution() && !model_proto.has_objective() &&
+      !model_proto.has_floating_point_objective()) {
     SOLVER_LOG(model->GetOrCreate<SolverLogger>(),
                "Loaded pure Boolean debugging solution.");
     model->GetOrCreate<SatSolver>()->LoadDebugSolution(

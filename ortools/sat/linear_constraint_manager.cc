@@ -24,6 +24,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/algorithm/container.h"
 #include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
@@ -842,12 +843,11 @@ bool LinearConstraintManager::ChangeLp(glop::BasisState* solution_state,
   }
   VLOG(3) << "   - size = " << current_size << ", limit = " << constraint_limit;
 
-  std::stable_sort(new_constraints_by_score.begin(),
-                   new_constraints_by_score.end(),
-                   [&](std::pair<ConstraintIndex, double> a,
-                       std::pair<ConstraintIndex, double> b) {
-                     return a.second > b.second;
-                   });
+  absl::c_stable_sort(new_constraints_by_score,
+                      [&](std::pair<ConstraintIndex, double> a,
+                          std::pair<ConstraintIndex, double> b) {
+                        return a.second > b.second;
+                      });
   if (new_constraints_by_score.size() > kBlowupFactor * constraint_limit) {
     VLOG(3) << "Resize candidate constraints from "
             << new_constraints_by_score.size() << " down to "
@@ -859,11 +859,67 @@ bool LinearConstraintManager::ChangeLp(glop::BasisState* solution_state,
   TimeLimitCheckEveryNCalls time_limit_check(1000, time_limit_);
   ConstraintIndex last_added_candidate = kInvalidConstraintIndex;
   std::vector<double> orthogonality_score(new_constraints_by_score.size(), 1.0);
+
+  // We want to quickly compute the scalar product between two constraints. To
+  // use the fact that the constraints are sparse, we build a representation of
+  // the constraints indexed by variable. Concretely, if we have
+  //     ct_0 = 2*var_0 + var_1
+  //     ct_1 = -var_0 + 3*var_2
+  // we will have:
+  //     constraint_terms_by_var[var_0] = {(ct_0, 2), (ct_1, -1)}
+  //     constraint_terms_by_var[var_1] = {(ct_0, 1)}
+  //     constraint_terms_by_var[var_2] = {(ct_1, 3)}
+  CompactVectorVector<IntegerVariable, std::pair<ConstraintIndex, IntegerValue>>
+      constraint_terms_by_var;
+  {
+    std::vector<
+        std::pair<IntegerVariable, std::pair<ConstraintIndex, IntegerValue>>>
+        constraint_terms;
+    constraint_terms.reserve(absl::c_accumulate(
+        new_constraints_by_score, 0,
+        [constraint_infos = &constraint_infos_](
+            int sum, const std::pair<ConstraintIndex, double>& candidate) {
+          return sum +
+                 (*constraint_infos)[candidate.first].constraint.num_terms;
+        }));
+    for (int i = 0; i < new_constraints_by_score.size(); ++i) {
+      const ConstraintIndex index = new_constraints_by_score[i].first;
+      for (int j = 0; j < constraint_infos_[index].constraint.num_terms; ++j) {
+        constraint_terms.push_back(
+            {constraint_infos_[index].constraint.vars[j],
+             {index, constraint_infos_[index].constraint.coeffs[j]}});
+      }
+    }
+    constraint_terms_by_var.ResetFromPairs(constraint_terms);
+    // Since we will do a potentially O(n^2) operation below, let's sort our
+    // lists so we update our `products` vector in a more cache-friendly way.
+    for (IntegerVariable var{0}; var < constraint_terms_by_var.size(); ++var) {
+      absl::Span<std::pair<ConstraintIndex, IntegerValue>> terms =
+          constraint_terms_by_var[var];
+      absl::c_sort(terms);
+    }
+  }
+  util_intops::StrongVector<ConstraintIndex, double> products;
+  products.reserve(constraint_infos_.size());
   for (int i = 0; i < constraint_limit; ++i) {
+    // Compute the scalar product between the last added constraint and the new
+    // constraints.
+    if (last_added_candidate != kInvalidConstraintIndex) {
+      products.clear();
+      products.resize(constraint_infos_.size(), 0.0);
+      const LinearConstraint& constraint =
+          constraint_infos_[last_added_candidate].constraint;
+      for (int j = 0; j < constraint.num_terms; ++j) {
+        const IntegerVariable var = constraint.vars[j];
+        const double cur_coeff =
+            static_cast<double>(constraint.coeffs[j].value());
+        for (const auto& [index, coeff] : constraint_terms_by_var[var]) {
+          products[index] += coeff.value() * cur_coeff;
+        }
+      }
+    }
     // Iterate through all new constraints and select the one with the best
     // score.
-    //
-    // TODO(user): find better algo, this does 1000 * 4000 scalar product!
     double best_score = 0.0;
     ConstraintIndex best_candidate = kInvalidConstraintIndex;
     for (int j = 0; j < new_constraints_by_score.size(); ++j) {
@@ -874,10 +930,9 @@ bool LinearConstraintManager::ChangeLp(glop::BasisState* solution_state,
       if (constraint_infos_[new_index].is_in_lp) continue;
 
       if (last_added_candidate != kInvalidConstraintIndex) {
+        const double product = products[new_constraints_by_score[j].first];
         const double current_orthogonality =
-            1.0 - (std::abs(ScalarProduct(
-                       constraint_infos_[last_added_candidate].constraint,
-                       constraint_infos_[new_index].constraint)) /
+            1.0 - (std::abs(product) /
                    (constraint_infos_[last_added_candidate].l2_norm *
                     constraint_infos_[new_index].l2_norm));
         orthogonality_score[j] =

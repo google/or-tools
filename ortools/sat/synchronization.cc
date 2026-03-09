@@ -25,6 +25,7 @@
 #include <functional>
 #include <limits>
 #include <memory>
+#include <numeric>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -55,6 +56,7 @@
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/symmetry_util.h"
 #include "ortools/sat/util.h"
@@ -1377,8 +1379,7 @@ bool SharedClausesManager::ShouldReadBatch(int reader_id, int writer_id) {
 }
 
 void SharedClausesManager::AddBinaryClause(int id, int lit1, int lit2) {
-  if (lit2 < lit1) std::swap(lit1, lit2);
-  const auto p = std::make_pair(lit1, lit2);
+  const auto p = std::minmax(lit1, lit2);
 
   absl::MutexLock mutex_lock(mutex_);
   const auto [unused_it, inserted] = added_binary_clauses_set_.insert(p);
@@ -1393,7 +1394,71 @@ void SharedClausesManager::AddBinaryClause(int id, int lit1, int lit2) {
         added_binary_clauses_.size() - 1) {
       id_to_last_processed_binary_clause_[id]++;
     }
+
+    const int lit1_negated = NegatedRef(lit1);
+    const int lit2_negated = NegatedRef(lit2);
+    const auto q = std::minmax(lit1_negated, lit2_negated);
+    if (added_binary_clauses_set_.contains(q)) {
+      // We have not(l1) => l2 and not(l2) => l1.
+      const Literal l1 =
+          Literal(BooleanVariable(PositiveRef(lit1)), RefIsPositive(lit1));
+      const Literal l2 =
+          Literal(BooleanVariable(PositiveRef(lit2)), RefIsPositive(lit2));
+      AddEdge(l1.NegatedIndex(), l2.Index());
+      AddEdge(l1.Index(), l2.NegatedIndex());
+    }
   }
+}
+
+void SharedClausesManager::AddEdge(LiteralIndex a, LiteralIndex b) {
+  const size_t size = parents_.size();
+  const size_t new_size = std::max(a, b).value() + 1;
+  if (new_size > size) {
+    parents_.resize(new_size);
+    std::iota(parents_.begin() + size, parents_.end(), size);
+  }
+  const LiteralIndex rep_a = GetRepresentative(a);
+  const LiteralIndex rep_b = GetRepresentative(b);
+  // Always use the min as the new parent, in order to guarantee that the
+  // representative of not(a) is the negation of the representative of a. On the
+  // other hand, this does not give the shallowest new tree. This gives a less
+  // good algorithmic complexity compared with the classic union-find algorithm.
+  if (rep_a < rep_b) {
+    parents_[rep_b] = rep_a;
+  } else if (rep_b < rep_a) {
+    parents_[rep_a] = rep_b;
+  }
+}
+
+LiteralIndex SharedClausesManager::GetRepresentative(LiteralIndex a) {
+  if (a >= parents_.size()) return a;
+  // Find the representative.
+  LiteralIndex representative = a;
+  while (parents_[representative] != representative) {
+    representative = parents_[representative];
+  }
+  // Shorten the links.
+  while (a != representative) {
+    const LiteralIndex prev_parent = parents_[a];
+    parents_[a] = representative;
+    a = prev_parent;
+  }
+  return representative;
+}
+
+std::vector<int> SharedClausesManager::GetRepresentatives() {
+  absl::MutexLock mutex_lock(mutex_);
+  std::vector<int> representatives;
+  const int num_vars = parents_.size() / 2;
+  representatives.reserve(num_vars);
+  for (int i = 0; i < num_vars; ++i) {
+    const Literal lit = Literal(BooleanVariable(i), /*is_positive=*/true);
+    const Literal rep = Literal(GetRepresentative(lit.Index()));
+    DCHECK_EQ(GetRepresentative(lit.NegatedIndex()), rep.NegatedIndex());
+    const int rep_var = rep.Variable().value();
+    representatives.push_back(rep.IsPositive() ? rep_var : NegatedRef(rep_var));
+  }
+  return representatives;
 }
 
 void SharedClausesManager::AddBatch(int id, CompactVectorVector<int> batch) {

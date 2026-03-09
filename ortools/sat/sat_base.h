@@ -30,6 +30,7 @@
 #include "absl/base/casts.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
+#include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/types/span.h"
 #include "ortools/base/log_severity.h"
@@ -231,6 +232,19 @@ class VariablesAssignment {
   // Expose internal for performance critical code.
   // You should not use this in normal code.
   Bitset64<LiteralIndex>::View GetBitsetView() { return assignment_.view(); }
+
+  std::string DebugString() const {
+    std::string result;
+    for (int i = 0; i < NumberOfVariables(); ++i) {
+      const BooleanVariable var(i);
+      if (VariableIsAssigned(var)) {
+        absl::StrAppend(&result, LiteralIsTrue(Literal(var, true)) ? "1" : "0");
+      } else {
+        absl::StrAppend(&result, "?");
+      }
+    }
+    return result;
+  }
 
  private:
   // The encoding is as follows:

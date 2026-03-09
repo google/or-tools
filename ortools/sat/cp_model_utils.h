@@ -54,6 +54,10 @@ OR_DLL ABSL_DECLARE_FLAG(bool, cp_model_dump_submodels);
 namespace operations_research {
 namespace sat {
 
+// A variable which is mapped to nothing when remapping variables. This can only
+// be done if the variable is fixed.
+constexpr int kNoVariableMapping = std::numeric_limits<int>::min();
+
 // Small utility functions to deal with negative variable/literal references.
 inline int NegatedRef(int ref) { return -ref - 1; }
 inline int PositiveRef(int ref) { return std::max(ref, NegatedRef(ref)); }

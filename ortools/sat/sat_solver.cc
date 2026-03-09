@@ -586,8 +586,10 @@ void SatSolver::SaveDebugAssignment() {
 }
 
 void SatSolver::LoadDebugSolution(absl::Span<const Literal> solution) {
-  debug_assignment_.Resize(num_variables_.value());
-  for (BooleanVariable var(0); var < num_variables_; ++var) {
+  // Loading the constraints can create new literals, so we cannot expect that
+  // the solution has the same size as the model.
+  debug_assignment_.Resize(solution.size());
+  for (BooleanVariable var(0); var < solution.size(); ++var) {
     if (!debug_assignment_.VariableIsAssigned(var)) continue;
     debug_assignment_.UnassignLiteral(Literal(var, true));
   }
@@ -596,7 +598,7 @@ void SatSolver::LoadDebugSolution(absl::Span<const Literal> solution) {
   }
 
   // We should only call this with complete solution.
-  for (BooleanVariable var(0); var < num_variables_; ++var) {
+  for (BooleanVariable var(0); var < solution.size(); ++var) {
     CHECK(debug_assignment_.VariableIsAssigned(var));
   }
 }

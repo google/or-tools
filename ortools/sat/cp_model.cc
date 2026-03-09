@@ -528,6 +528,79 @@ MultipleCircuitConstraint& MultipleCircuitConstraint::AddArc(int tail, int head,
   return *this;
 }
 
+BoolOrConstraint& BoolOrConstraint::AddLiteral(BoolVar literal) {
+  proto_->mutable_bool_or()->add_literals(literal.index());
+  return *this;
+}
+
+BoolOrConstraint& BoolOrConstraint::AddLiterals(
+    absl::Span<const BoolVar> literals) {
+  auto* const ct = proto_->mutable_bool_or();
+  ct->mutable_literals()->Reserve(ct->literals_size() + literals.size());
+  for (const BoolVar& literal : literals) {
+    ct->add_literals(literal.index());
+  }
+  return *this;
+}
+
+BoolAndConstraint& BoolAndConstraint::AddLiteral(BoolVar literal) {
+  proto_->mutable_bool_and()->add_literals(literal.index());
+  return *this;
+}
+
+BoolAndConstraint& BoolAndConstraint::AddLiterals(
+    absl::Span<const BoolVar> literals) {
+  auto* const ct = proto_->mutable_bool_and();
+  ct->mutable_literals()->Reserve(ct->literals_size() + literals.size());
+  for (const BoolVar& literal : literals) {
+    ct->add_literals(literal.index());
+  }
+  return *this;
+}
+
+AtMostOneConstraint& AtMostOneConstraint::AddLiteral(BoolVar literal) {
+  proto_->mutable_at_most_one()->add_literals(literal.index());
+  return *this;
+}
+
+AtMostOneConstraint& AtMostOneConstraint::AddLiterals(
+    absl::Span<const BoolVar> literals) {
+  auto* const ct = proto_->mutable_at_most_one();
+  ct->mutable_literals()->Reserve(ct->literals_size() + literals.size());
+  for (const BoolVar& literal : literals) {
+    ct->add_literals(literal.index());
+  }
+  return *this;
+}
+
+ExactlyOneConstraint& ExactlyOneConstraint::AddLiteral(BoolVar literal) {
+  proto_->mutable_exactly_one()->add_literals(literal.index());
+  return *this;
+}
+
+ExactlyOneConstraint& ExactlyOneConstraint::AddLiterals(
+    absl::Span<const BoolVar> literals) {
+  auto* const ct = proto_->mutable_exactly_one();
+  ct->mutable_literals()->Reserve(ct->literals_size() + literals.size());
+  for (const BoolVar& literal : literals) {
+    ct->add_literals(literal.index());
+  }
+  return *this;
+}
+
+BoolXorConstraint& BoolXorConstraint::AddLiteral(BoolVar literal) {
+  proto_->mutable_bool_xor()->add_literals(literal.index());
+  return *this;
+}
+
+BoolXorConstraint& BoolXorConstraint::AddLiterals(
+    absl::Span<const BoolVar> literals) {
+  for (const BoolVar& literal : literals) {
+    proto_->mutable_bool_xor()->add_literals(literal.index());
+  }
+  return *this;
+}
+
 TableConstraint& TableConstraint::AddTuple(absl::Span<const int64_t> tuple) {
   CHECK_EQ(tuple.size(), proto_->table().exprs_size());
   for (const int64_t t : tuple) {
@@ -795,46 +868,59 @@ void CpModelBuilder::FixVariable(BoolVar var, bool value) {
   }
 }
 
-Constraint CpModelBuilder::AddBoolOr(absl::Span<const BoolVar> literals) {
+BoolOrConstraint CpModelBuilder::AddBoolOr(absl::Span<const BoolVar> literals) {
   ConstraintProto* const proto = cp_model_.add_constraints();
   BoolArgumentProto* const bool_or = proto->mutable_bool_or();
+  bool_or->mutable_literals()->Reserve(literals.size());
   for (const BoolVar& lit : literals) bool_or->add_literals(lit.index());
-  return Constraint(proto);
+  return BoolOrConstraint(proto);
 }
 
-Constraint CpModelBuilder::AddAtLeastOne(absl::Span<const BoolVar> literals) {
+BoolOrConstraint CpModelBuilder::AddAtLeastOne(
+    absl::Span<const BoolVar> literals) {
   return AddBoolOr(literals);
 }
 
-Constraint CpModelBuilder::AddAtMostOne(absl::Span<const BoolVar> literals) {
+AtMostOneConstraint CpModelBuilder::AddAtMostOne(
+    absl::Span<const BoolVar> literals) {
   ConstraintProto* const proto = cp_model_.add_constraints();
+  BoolArgumentProto* const at_most_one = proto->mutable_at_most_one();
+  at_most_one->mutable_literals()->Reserve(literals.size());
   for (const BoolVar& lit : literals) {
-    proto->mutable_at_most_one()->add_literals(lit.index());
+    at_most_one->add_literals(lit.index());
   }
-  return Constraint(proto);
+  return AtMostOneConstraint(proto);
 }
 
-Constraint CpModelBuilder::AddExactlyOne(absl::Span<const BoolVar> literals) {
+ExactlyOneConstraint CpModelBuilder::AddExactlyOne(
+    absl::Span<const BoolVar> literals) {
   ConstraintProto* const proto = cp_model_.add_constraints();
   BoolArgumentProto* const exactly_one = proto->mutable_exactly_one();
+  exactly_one->mutable_literals()->Reserve(literals.size());
   for (const BoolVar& lit : literals) exactly_one->add_literals(lit.index());
-  return Constraint(proto);
+  return ExactlyOneConstraint(proto);
 }
 
-Constraint CpModelBuilder::AddBoolAnd(absl::Span<const BoolVar> literals) {
+BoolAndConstraint CpModelBuilder::AddBoolAnd(
+    absl::Span<const BoolVar> literals) {
   ConstraintProto* const proto = cp_model_.add_constraints();
+  BoolArgumentProto* const bool_and = proto->mutable_bool_and();
+  bool_and->mutable_literals()->Reserve(literals.size());
   for (const BoolVar& lit : literals) {
-    proto->mutable_bool_and()->add_literals(lit.index());
+    bool_and->add_literals(lit.index());
   }
-  return Constraint(proto);
+  return BoolAndConstraint(proto);
 }
 
-Constraint CpModelBuilder::AddBoolXor(absl::Span<const BoolVar> literals) {
+BoolXorConstraint CpModelBuilder::AddBoolXor(
+    absl::Span<const BoolVar> literals) {
   ConstraintProto* const proto = cp_model_.add_constraints();
+  BoolArgumentProto* const bool_xor = proto->mutable_bool_xor();
+  bool_xor->mutable_literals()->Reserve(literals.size());
   for (const BoolVar& lit : literals) {
-    proto->mutable_bool_xor()->add_literals(lit.index());
+    bool_xor->add_literals(lit.index());
   }
-  return Constraint(proto);
+  return BoolXorConstraint(proto);
 }
 
 void CpModelBuilder::FillLinearTerms(const LinearExpr& left,

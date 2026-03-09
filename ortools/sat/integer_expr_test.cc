@@ -1537,6 +1537,27 @@ TEST(DivisionConstraintTest, CheckAllPropagationsRandomProblem) {
   }
 }
 
+TEST(DivisionConstraintTest, ConstantDivisionNeedsPropagatingMoreThanOnce) {
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: 0 domain: 2 }
+    variables { domain: -1 domain: 0 }
+    constraints {
+      int_div {
+        target { vars: 0 coeffs: -4096 offset: -651 }
+        exprs { vars: 1 coeffs: -4096 offset: -4096 }
+        exprs { offset: 1 }
+      }
+    }
+    solution_hint { vars: 1 values: 1 }
+    objective { vars: 1 coeffs: 1 }
+  )pb");
+  absl::btree_set<std::vector<int>> solutions;
+  Model model;
+  model.GetOrCreate<SatParameters>()->set_cp_model_presolve(false);
+  const CpSolverResponse response = SolveCpModel(initial_model, &model);
+  EXPECT_EQ(INFEASIBLE, response.status());
+}
+
 TEST(DivisionConstraintTest, AlwaysFalseWithUnassignedEnforcementLiteral) {
   Model model;
   const Literal b = Literal(model.Add(NewBooleanVariable()), true);

@@ -756,7 +756,7 @@ std::string LinearPropagator::ConstraintDebugString(int id) {
       rhs_correction += term;
     }
     implied_lb += term;
-    absl::StrAppend(&result, " +", coeffs[i].value(), "*X", vars[i].value());
+    absl::StrAppend(&result, " +", IntegerTermDebugString(vars[i], coeffs[i]));
   }
   const IntegerValue original_rhs = info.rev_rhs + rhs_correction;
   absl::StrAppend(&result, " <= ", original_rhs.value(),

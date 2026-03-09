@@ -24,6 +24,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
@@ -41,6 +42,7 @@
 #include "ortools/sat/presolve_context.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
@@ -60,12 +62,26 @@ int LiteralToRef(Literal lit) {
 }  // namespace
 
 ModelCopy::ModelCopy(PresolveContext* context,
-                     absl::Span<const int> variable_mapping,
-                     absl::Span<const int> reverse_mapping)
+                     absl::Span<const int> variable_mapping)
     : context_(context),
       variable_mapping_(variable_mapping),
-      reverse_mapping_(reverse_mapping),
-      lrat_proof_handler_(context->lrat_proof_handler.get()) {}
+      lrat_proof_handler_(context->lrat_proof_handler.get()) {
+  if (!variable_mapping.empty()) {
+    int max_mapped_var = 0;
+    for (int mapped_ref : variable_mapping) {
+      if (mapped_ref == kNoVariableMapping) continue;
+      max_mapped_var = std::max(max_mapped_var, PositiveRef(mapped_ref));
+    }
+    reverse_mapping_.resize(max_mapped_var + 1, kNoVariableMapping);
+    for (int i = 0; i < variable_mapping.size(); ++i) {
+      if (variable_mapping[i] == kNoVariableMapping) continue;
+      int& reverse_ref = reverse_mapping_[PositiveRef(variable_mapping[i])];
+      if (reverse_ref == kNoVariableMapping) {
+        reverse_ref = RefIsPositive(variable_mapping[i]) ? i : NegatedRef(i);
+      }
+    }
+  }
+}
 
 void ModelCopy::ImportVariablesAndMaybeIgnoreNames(
     const CpModelProto& in_model) {
@@ -222,11 +238,26 @@ bool ModelCopy::ImportAndSimplifyConstraints(
       case ConstraintProto::kLinMax:
         if (!CopyLinMax(ct)) return CreateUnsatModel(c, ct);
         break;
+      case ConstraintProto::kCircuit:
+        if (!CopyCircuit(ct)) return CreateUnsatModel(c, ct);
+        break;
+      case ConstraintProto::kRoutes:
+        if (!CopyRoutes(ct)) return CreateUnsatModel(c, ct);
+        break;
+      case ConstraintProto::kInverse:
+        if (!CopyInverse(ct)) return CreateUnsatModel(c, ct);
+        break;
+      case ConstraintProto::kReservoir:
+        if (!CopyReservoir(ct)) return CreateUnsatModel(c, ct);
+        break;
       case ConstraintProto::kAtMostOne:
         if (!CopyAtMostOne(ct)) return CreateUnsatModel(c, ct);
         break;
       case ConstraintProto::kExactlyOne:
         if (!CopyExactlyOne(ct)) return CreateUnsatModel(c, ct);
+        break;
+      case ConstraintProto::kBoolXor:
+        if (!CopyBoolXor(ct)) return CreateUnsatModel(c, ct);
         break;
       case ConstraintProto::kInterval:
         if (!CopyInterval(ct, c, ignore_names)) return CreateUnsatModel(c, ct);
@@ -256,16 +287,9 @@ bool ModelCopy::ImportAndSimplifyConstraints(
           if (!CopyAndMapCumulative(ct)) return CreateUnsatModel(c, ct);
         }
         break;
-      default: {
-        ConstraintProto* new_ct = context_->working_model->add_constraints();
-        *new_ct = ct;
-        new_ct->mutable_enforcement_literal()->Clear();
-        FinishEnforcementCopy(new_ct);
-        if (ignore_names) {
-          // TODO(user): find a better way than copy then clear_name()?
-          new_ct->clear_name();
-        }
-      }
+      default:
+        LOG(FATAL) << "Unsupported constraint: " << ct.constraint_case();
+        break;
     }
   }
 
@@ -295,23 +319,115 @@ bool ModelCopy::ImportAndSimplifyConstraints(
   return true;
 }
 
-void ModelCopy::RemapVariables() {
-  if (variable_mapping_.empty()) return;
-  google::protobuf::RepeatedPtrField<IntegerVariableProto> mapped_variables;
-  for (const int reverse_mapped_var : reverse_mapping_) {
-    Domain domain = context_->DomainOf(PositiveRef(reverse_mapped_var));
-    if (!RefIsPositive(reverse_mapped_var)) {
-      // A variable can only be reverse mapped to a negative variable reference
-      // if it is a Boolean variable, in which case the remapped domain is
-      // unchanged (unless it is fixed).
-      DCHECK(domain.IsIncludedIn(Domain(0, 1)));
-      if (domain.IsFixed()) {
-        domain = Domain(1 - domain.Min());
+void ModelCopy::ImportSolutionHint(const CpModelProto& in_model) {
+  if (in_model.has_solution_hint()) {
+    CopySolutionHint(in_model.solution_hint());
+  }
+}
+
+void ModelCopy::ImportEverythingExceptVariablesConstraintsAndHint(
+    const CpModelProto& in_model, bool copy_symmetry) {
+  if (!in_model.name().empty()) {
+    context_->working_model->set_name(in_model.name());
+  }
+  if (in_model.has_objective()) {
+    CopyObjective(in_model.objective());
+  }
+  if (in_model.has_floating_point_objective()) {
+    CopyFloatingPointObjective(in_model.floating_point_objective());
+  }
+  if (!in_model.search_strategy().empty()) {
+    *context_->working_model->mutable_search_strategy() =
+        in_model.search_strategy();
+    for (DecisionStrategyProto& strategy :
+         *context_->working_model->mutable_search_strategy()) {
+      google::protobuf::util::RemoveIf(strategy.mutable_exprs(),
+                                       [](const LinearExpressionProto* expr) {
+                                         return expr->vars().empty();
+                                       });
+      // We make sure we do not use the old variables field.
+      if (!strategy.variables().empty()) {
+        CHECK(strategy.exprs().empty());
+        for (const int ref : strategy.variables()) {
+          LinearExpressionProto* expr = strategy.add_exprs();
+          expr->add_vars(PositiveRef(ref));
+          expr->add_coeffs(RefIsPositive(ref) ? 1 : -1);
+        }
+        strategy.clear_variables();
+      }
+      if (!variable_mapping_.empty()) {
+        google::protobuf::RepeatedPtrField<LinearExpressionProto> mapped_exprs;
+        for (LinearExpressionProto& expr : *strategy.mutable_exprs()) {
+          CopyLinearExpression(expr, mapped_exprs.Add());
+          // The expression can be canonicalized to a constant.
+          if (mapped_exprs.rbegin()->vars().empty()) {
+            mapped_exprs.RemoveLast();
+          }
+        }
+        strategy.mutable_exprs()->Swap(&mapped_exprs);
       }
     }
-    FillDomainInProto(domain, mapped_variables.Add());
   }
-  context_->working_model->mutable_variables()->Swap(&mapped_variables);
+  if (!in_model.assumptions().empty()) {
+    for (const int lit : in_model.assumptions()) {
+      context_->working_model->add_assumptions(MapLiteral(lit));
+    }
+  }
+  if (in_model.has_symmetry() && copy_symmetry) {
+    CHECK(variable_mapping_.empty());
+    *context_->working_model->mutable_symmetry() = in_model.symmetry();
+  }
+}
+
+bool ModelCopy::RemapVariablesInProtoAndContext() {
+  if (variable_mapping_.empty()) {
+    for (int i = 0; i < context_->working_model->variables_size(); ++i) {
+      FillDomainInProto(context_->DomainOf(i),
+                        context_->working_model->mutable_variables(i));
+    }
+    return true;
+  }
+  // Make sure that equivalent variables have the same value if one of them is
+  // fixed (some variables can be fixed in ImportAndSimplifyConstraints, but the
+  // equivalent ones are not necessarily fixed too).
+  auto get_representative = [&](int var) {
+    const int mapped_ref = variable_mapping_[var];
+    if (mapped_ref == kNoVariableMapping) return var;
+    const int rep = reverse_mapping_[PositiveRef(mapped_ref)];
+    return RefIsPositive(mapped_ref) ? rep : NegatedRef(rep);
+  };
+  auto fix_to_value_of = [&](int dst_ref, int src_ref) {
+    if (!context_->IsFixed(src_ref)) return true;
+    const int src_var = PositiveRef(src_ref);
+    const int dst_var = PositiveRef(dst_ref);
+    const int64_t src_var_value = context_->FixedValue(src_var);
+    if (RefIsPositive(dst_ref) == RefIsPositive(src_ref)) {
+      return context_->IntersectDomainWith(dst_var, Domain(src_var_value));
+    } else {
+      // Only Boolean variables can be mapped to a negative ref.
+      DCHECK(src_var_value == 0 || src_var_value == 1);
+      return context_->IntersectDomainWith(dst_var, Domain(1 - src_var_value));
+    }
+  };
+  const int num_vars = context_->working_model->variables_size();
+  for (int i = 0; i < num_vars; ++i) {
+    const int rep = get_representative(i);
+    if (rep != i && !fix_to_value_of(rep, i)) return false;
+  }
+  for (int i = 0; i < num_vars; ++i) {
+    const int rep = get_representative(i);
+    if (rep != i && !fix_to_value_of(i, rep)) return false;
+  }
+  context_->working_model->mutable_variables()->Clear();
+  context_->working_model->mutable_variables()->Reserve(
+      reverse_mapping_.size());
+  for (int i = 0; i < reverse_mapping_.size(); ++i) {
+    FillDomainInProto(MappedVarDomain(i),
+                      context_->working_model->add_variables());
+  }
+  context_->ResetAfterCopy();
+  context_->InitializeNewDomains();
+  return true;
 }
 
 bool ModelCopy::PrepareEnforcementCopy(const ConstraintProto& ct) {
@@ -322,7 +438,7 @@ bool ModelCopy::PrepareEnforcementCopy(const ConstraintProto& ct) {
       context_->UpdateRuleStats("enforcement: always false");
       return false;
     }
-    temp_enforcement_literals_.push_back(MapLiteral(lit));
+    temp_enforcement_literals_.push_back(MapRef(lit));
   }
   return true;  // Continue processing.
 }
@@ -337,7 +453,7 @@ bool ModelCopy::PrepareEnforcementCopyWithDup(const ConstraintProto& ct) {
       context_->UpdateRuleStats("enforcement: always false");
       return false;
     }
-    const int mapped_lit = MapLiteral(lit);
+    const int mapped_lit = MapRef(lit);
     if (temp_enforcement_literals_set_.contains(mapped_lit)) {
       context_->UpdateRuleStats("enforcement: removed duplicate literal");
       continue;
@@ -363,7 +479,7 @@ bool ModelCopy::FinishBoolOrCopy() {
 
   if (temp_literals_.size() == 1) {
     context_->UpdateRuleStats("bool_or: only one literal");
-    const int lit = ReverseMapLiteral(temp_literals_[0]);
+    const int lit = ReverseMapRef(temp_literals_[0]);
     return context_->SetLiteralToTrue(lit);
   }
 
@@ -384,7 +500,7 @@ bool ModelCopy::CopyBoolOr(const ConstraintProto& ct) {
       return true;
     }
     if (!context_->LiteralIsFalse(lit)) {
-      temp_literals_.push_back(MapLiteral(lit));
+      temp_literals_.push_back(MapRef(lit));
     }
   }
   return FinishBoolOrCopy();
@@ -410,7 +526,7 @@ bool ModelCopy::CopyBoolOrWithDupSupport(const ConstraintProto& ct,
       return true;
     }
     if (context_->LiteralIsFalse(lit)) continue;
-    const int mapped_lit = MapLiteral(lit);
+    const int mapped_lit = MapRef(lit);
     if (temp_literals_set_.contains(NegatedRef(mapped_lit))) {
       context_->UpdateRuleStats("bool_or: always true");
       return true;
@@ -486,7 +602,7 @@ bool ModelCopy::CopyBoolAnd(const ConstraintProto& ct) {
     bool_and->mutable_literals()->Reserve(num_non_fixed_literals);
     for (const int lit : ct.bool_and().literals()) {
       if (context_->LiteralIsTrue(lit)) continue;
-      bool_and->add_literals(lit);
+      bool_and->add_literals(MapRef(lit));
     }
   }
   return true;
@@ -505,7 +621,7 @@ bool ModelCopy::CopyBoolAndWithDupSupport(const ConstraintProto& ct) {
       break;
     }
     if (context_->LiteralIsTrue(lit)) continue;
-    const int mapped_lit = MapLiteral(lit);
+    const int mapped_lit = MapRef(lit);
     if (temp_literals_set_.contains(NegatedRef(mapped_lit))) {
       context_->UpdateRuleStats("bool and: => x and not(x) ");
       at_least_one_false = true;
@@ -550,73 +666,59 @@ bool ModelCopy::CopyBoolAndWithDupSupport(const ConstraintProto& ct) {
 
 bool ModelCopy::CopyLinearExpression(
     const LinearExpressionProto& expr, LinearExpressionProto* dst,
-    absl::Span<const int> enforcement_literals) {
-  non_fixed_variables_.clear();
-  non_fixed_coefficients_.clear();
+    const absl::flat_hash_set<int>* mapped_enforcement_literals) {
+  non_fixed_terms_.clear();
   int64_t offset = expr.offset();
   for (int i = 0; i < expr.vars_size(); ++i) {
-    const int ref = expr.vars(i);
-    const int64_t coeff = expr.coeffs(i);
+    int ref = expr.vars(i);
+    int64_t coeff = expr.coeffs(i);
+    MapTerm(ref, coeff, offset);
     if (coeff == 0) continue;
-    if (context_->IsFixed(ref)) {
-      offset += coeff * context_->MinOf(ref);
-      continue;
-    }
-
-    // Make sure we never have negative ref in a linear constraint.
-    if (RefIsPositive(ref)) {
-      non_fixed_variables_.push_back(ref);
-      non_fixed_coefficients_.push_back(coeff);
-    } else {
-      non_fixed_variables_.push_back(NegatedRef(ref));
-      non_fixed_coefficients_.push_back(-coeff);
-    }
+    DCHECK(RefIsPositive(ref));
+    non_fixed_terms_.push_back({ref, coeff});
   }
+  // TODO(user): We could save work by doing this only for the first copy.
+  CanonicalizeLinearExpression(mapped_enforcement_literals, non_fixed_terms_,
+                               offset);
 
   dst->set_offset(offset);
-  dst->mutable_vars()->Add(non_fixed_variables_.begin(),
-                           non_fixed_variables_.end());
-  dst->mutable_coeffs()->Add(non_fixed_coefficients_.begin(),
-                             non_fixed_coefficients_.end());
-  // TODO(user): We could save work by only doing this if this is the first
-  // copy.
-  context_->CanonicalizeLinearExpression(enforcement_literals, dst);
+  for (const auto& [var, coeff] : non_fixed_terms_) {
+    dst->add_vars(var);
+    dst->add_coeffs(coeff);
+  }
   return true;
 }
 
 bool ModelCopy::CopyLinear(const ConstraintProto& ct, bool canonicalize) {
-  non_fixed_variables_.clear();
-  non_fixed_coefficients_.clear();
+  non_fixed_terms_.clear();
   int64_t offset = 0;
-  int64_t min_activity = 0;
-  int64_t max_activity = 0;
   for (int i = 0; i < ct.linear().vars_size(); ++i) {
-    const int ref = ct.linear().vars(i);
-    const int64_t coeff = ct.linear().coeffs(i);
+    int ref = ct.linear().vars(i);
+    int64_t coeff = ct.linear().coeffs(i);
+    MapTerm(ref, coeff, offset);
     if (coeff == 0) continue;
-    if (context_->IsFixed(ref)) {
-      offset += coeff * context_->MinOf(ref);
-      continue;
-    }
-
-    if (coeff > 0) {
-      min_activity += coeff * context_->MinOf(ref);
-      max_activity += coeff * context_->MaxOf(ref);
-    } else {
-      min_activity += coeff * context_->MaxOf(ref);
-      max_activity += coeff * context_->MinOf(ref);
-    }
-
-    // Make sure we never have negative ref in a linear constraint.
-    if (RefIsPositive(ref)) {
-      non_fixed_variables_.push_back(ref);
-      non_fixed_coefficients_.push_back(coeff);
-    } else {
-      non_fixed_variables_.push_back(NegatedRef(ref));
-      non_fixed_coefficients_.push_back(-coeff);
-    }
+    DCHECK(RefIsPositive(ref));
+    non_fixed_terms_.push_back({ref, coeff});
   }
 
+  if (canonicalize) {
+    CanonicalizeLinearExpression(&temp_enforcement_literals_set_,
+                                 non_fixed_terms_, offset);
+  }
+
+  int64_t min_activity = 0;
+  int64_t max_activity = 0;
+  for (const auto& [ref, coeff] : non_fixed_terms_) {
+    DCHECK_NE(coeff, 0);
+    const Domain& domain = MappedVarDomain(ref);
+    if (coeff > 0) {
+      min_activity += coeff * domain.Min();
+      max_activity += coeff * domain.Max();
+    } else {
+      min_activity += coeff * domain.Max();
+      max_activity += coeff * domain.Min();
+    }
+  }
   const Domain implied(min_activity, max_activity);
   const Domain new_rhs =
       ReadDomainFromProto(ct.linear()).AdditionWith(Domain(-offset));
@@ -630,58 +732,106 @@ bool ModelCopy::CopyLinear(const ConstraintProto& ct, bool canonicalize) {
   // Constraint is false?
   const Domain tight_domain = implied.IntersectionWith(new_rhs);
   if (tight_domain.IsEmpty()) {
-    if (ct.enforcement_literal().empty()) return false;
+    if (temp_enforcement_literals_.empty()) return false;
     temp_literals_.clear();
-    for (const int literal : ct.enforcement_literal()) {
-      if (!context_->LiteralIsTrue(literal)) {
-        temp_literals_.push_back(NegatedRef(literal));
-      }
+    for (const int literal : temp_enforcement_literals_) {
+      temp_literals_.push_back(NegatedRef(literal));
     }
     context_->working_model->add_constraints()
         ->mutable_bool_or()
         ->mutable_literals()
         ->Add(temp_literals_.begin(), temp_literals_.end());
-    return !temp_literals_.empty();
+    return true;
   }
 
-  DCHECK(!non_fixed_variables_.empty());
+  DCHECK(!non_fixed_terms_.empty());
 
-  if (non_fixed_variables_.size() == 1 && ct.enforcement_literal().empty()) {
+  if (non_fixed_terms_.size() == 1 && temp_enforcement_literals_.empty()) {
     context_->UpdateRuleStats("linear1: x in domain");
-    return context_->IntersectDomainWith(
-        non_fixed_variables_[0],
-        new_rhs.InverseMultiplicationBy(non_fixed_coefficients_[0]));
+    auto [single_var, coeff] = non_fixed_terms_[0];
+    Domain new_var_domain = new_rhs.InverseMultiplicationBy(coeff);
+    if (!variable_mapping_.empty()) {
+      single_var = reverse_mapping_[single_var];
+      if (!RefIsPositive(single_var)) {
+        // A variable can only be reverse mapped to a negative variable
+        // reference if it is a Boolean variable, in which case the remapped
+        // domain is 1 minus the original domain.
+        DCHECK(context_->CanBeUsedAsLiteral(single_var));
+        single_var = NegatedRef(single_var);
+        new_var_domain = new_var_domain.Negation().AdditionWith(Domain(1));
+      }
+    }
+    return context_->IntersectDomainWith(single_var, new_var_domain);
   }
 
   ConstraintProto* new_ct = context_->working_model->add_constraints();
   FinishEnforcementCopy(new_ct);
   LinearConstraintProto* linear = new_ct->mutable_linear();
-  linear->mutable_vars()->Add(non_fixed_variables_.begin(),
-                              non_fixed_variables_.end());
-  linear->mutable_coeffs()->Add(non_fixed_coefficients_.begin(),
-                                non_fixed_coefficients_.end());
+  for (const auto& [var, coeff] : non_fixed_terms_) {
+    linear->add_vars(var);
+    linear->add_coeffs(coeff);
+  }
   FillDomainInProto(tight_domain, linear);
-  if (canonicalize) {
-    context_->CanonicalizeLinearConstraint(new_ct);
-    // We checked if the constraint was trivial above, but canonicalization can
-    // make it trivial again by simplifying expressions like (x - x).
-    if (new_ct->linear().vars().empty() &&
-        ReadDomainFromProto(new_ct->linear()).Contains(0)) {
-      context_->UpdateRuleStats("linear: trivial 0=0");
-      context_->working_model->mutable_constraints()->RemoveLast();
-      return true;
+  return true;
+}
+
+template <typename T>
+void ModelCopy::CanonicalizeLinearExpression(
+    const absl::flat_hash_set<int>* enforcement_literals,
+    std::vector<std::pair<int, T>>& terms, T& offset) const {
+  // Merge terms with the same variable, remove terms with a zero coefficient
+  // and replace the enforcement literals with their value.
+  int current_var = 0;
+  T current_coeff = 0;
+  int new_size = 0;
+  auto maybe_add_current_term = [&]() {
+    if (enforcement_literals != nullptr) {
+      if (enforcement_literals->contains(current_var)) {
+        // If the constraint is enforced, we can assume the variable is at 1.
+        offset += current_coeff;
+        context_->UpdateRuleStats("linear: enforcement literal in expression");
+        return;
+      } else if (enforcement_literals->contains(NegatedRef(current_var))) {
+        // We can assume the variable is at 0.
+        context_->UpdateRuleStats("linear: enforcement literal in expression");
+        return;
+      }
+    }
+    terms[new_size++] = {current_var, current_coeff};
+  };
+  std::sort(terms.begin(), terms.end());
+  for (const auto [var, coeff] : terms) {
+    if (var == current_var) {
+      current_coeff += coeff;
+    } else {
+      if (current_coeff != 0) {
+        maybe_add_current_term();
+      }
+      current_var = var;
+      current_coeff = coeff;
     }
   }
-  return true;
+  if (current_coeff != 0) {
+    maybe_add_current_term();
+  }
+  if (new_size < terms.size()) {
+    context_->UpdateRuleStats("linear: fixed or dup variables");
+  }
+  terms.resize(new_size);
 }
 
 bool ModelCopy::CopyElement(const ConstraintProto& ct) {
   ConstraintProto* new_ct = context_->working_model->add_constraints();
   if (ct.element().vars().empty() && !ct.element().exprs().empty()) {
-    // New format, just copy.
-    *new_ct = ct;
-    new_ct->mutable_enforcement_literal()->Clear();
+    // New format, just copy and remap variables.
     FinishEnforcementCopy(new_ct);
+    CopyLinearExpression(ct.element().linear_index(),
+                         new_ct->mutable_element()->mutable_linear_index());
+    CopyLinearExpression(ct.element().linear_target(),
+                         new_ct->mutable_element()->mutable_linear_target());
+    for (const LinearExpressionProto& expr : ct.element().exprs()) {
+      CopyLinearExpression(expr, new_ct->mutable_element()->add_exprs());
+    }
     return true;
   }
 
@@ -692,7 +842,7 @@ bool ModelCopy::CopyElement(const ConstraintProto& ct) {
       DCHECK(RefIsPositive(var));
       expr->mutable_vars()->Reserve(1);
       expr->mutable_coeffs()->Reserve(1);
-      expr->add_vars(var);
+      expr->add_vars(MapRef(var));
       expr->add_coeffs(1);
     }
   };
@@ -732,7 +882,7 @@ bool ModelCopy::CopyAutomaton(const ConstraintProto& ct) {
       DCHECK(RefIsPositive(var));
       expr->mutable_vars()->Reserve(1);
       expr->mutable_coeffs()->Reserve(1);
-      expr->add_vars(var);
+      expr->add_vars(MapRef(var));
       expr->add_coeffs(1);
     }
   };
@@ -747,10 +897,13 @@ bool ModelCopy::CopyAutomaton(const ConstraintProto& ct) {
 bool ModelCopy::CopyTable(const ConstraintProto& ct) {
   ConstraintProto* new_ct = context_->working_model->add_constraints();
   if (ct.table().vars().empty() && !ct.table().exprs().empty()) {
-    // New format, just copy.
-    *new_ct = ct;
-    new_ct->mutable_enforcement_literal()->Clear();
+    // New format, just copy and remap variables.
     FinishEnforcementCopy(new_ct);
+    *new_ct->mutable_table()->mutable_values() = ct.table().values();
+    for (const LinearExpressionProto& expr : ct.table().exprs()) {
+      CopyLinearExpression(expr, new_ct->mutable_table()->add_exprs());
+    }
+    new_ct->mutable_table()->set_negated(ct.table().negated());
     return true;
   }
 
@@ -761,7 +914,7 @@ bool ModelCopy::CopyTable(const ConstraintProto& ct) {
       DCHECK(RefIsPositive(var));
       expr->mutable_vars()->Reserve(1);
       expr->mutable_coeffs()->Reserve(1);
-      expr->add_vars(var);
+      expr->add_vars(MapRef(var));
       expr->add_coeffs(1);
     }
   };
@@ -772,7 +925,6 @@ bool ModelCopy::CopyTable(const ConstraintProto& ct) {
   }
   *new_ct->mutable_table()->mutable_values() = ct.table().values();
   new_ct->mutable_table()->set_negated(ct.table().negated());
-  *new_ct->mutable_enforcement_literal() = ct.enforcement_literal();
 
   return true;
 }
@@ -807,8 +959,8 @@ bool ModelCopy::CopyLinMax(const ConstraintProto& ct) {
   }
 
   // If we have no non-fixed expression, we can just fix the target when it
-  // involve at most one variable.
-  if (new_ct == nullptr && ct.enforcement_literal().empty() &&
+  // involves at most one variable.
+  if (new_ct == nullptr && temp_enforcement_literals_.empty() &&
       ct.lin_max().target().vars().size() <= 1) {
     context_->UpdateRuleStats("lin_max: all exprs fixed during copy");
     return context_->IntersectDomainWith(ct.lin_max().target(),
@@ -831,6 +983,83 @@ bool ModelCopy::CopyLinMax(const ConstraintProto& ct) {
   return true;
 }
 
+bool ModelCopy::CopyCircuit(const ConstraintProto& ct) {
+  ConstraintProto* new_ct = context_->working_model->add_constraints();
+  FinishEnforcementCopy(new_ct);
+  *new_ct->mutable_circuit()->mutable_tails() = ct.circuit().tails();
+  *new_ct->mutable_circuit()->mutable_heads() = ct.circuit().heads();
+  new_ct->mutable_circuit()->mutable_literals()->Reserve(
+      ct.circuit().literals_size());
+  for (const int lit : ct.circuit().literals()) {
+    new_ct->mutable_circuit()->add_literals(MapLiteral(lit));
+  }
+  return true;
+}
+
+bool ModelCopy::CopyRoutes(const ConstraintProto& ct) {
+  ConstraintProto* new_ct = context_->working_model->add_constraints();
+  FinishEnforcementCopy(new_ct);
+  *new_ct->mutable_routes()->mutable_tails() = ct.routes().tails();
+  *new_ct->mutable_routes()->mutable_heads() = ct.routes().heads();
+  new_ct->mutable_routes()->mutable_literals()->Reserve(
+      ct.routes().literals_size());
+  for (const int lit : ct.routes().literals()) {
+    new_ct->mutable_routes()->add_literals(MapLiteral(lit));
+  }
+  new_ct->mutable_routes()->mutable_dimensions()->Reserve(
+      ct.routes().dimensions_size());
+  for (const RoutesConstraintProto::NodeExpressions& exprs :
+       ct.routes().dimensions()) {
+    auto* new_exprs =
+        new_ct->mutable_routes()->add_dimensions()->mutable_exprs();
+    new_exprs->Reserve(exprs.exprs_size());
+    for (const LinearExpressionProto& expr : exprs.exprs()) {
+      CopyLinearExpression(expr, new_exprs->Add());
+    }
+  }
+  return true;
+}
+
+bool ModelCopy::CopyInverse(const ConstraintProto& ct) {
+  ConstraintProto* new_ct = context_->working_model->add_constraints();
+  FinishEnforcementCopy(new_ct);
+  new_ct->mutable_inverse()->mutable_f_direct()->Reserve(
+      ct.inverse().f_direct_size());
+  for (const int f : ct.inverse().f_direct()) {
+    new_ct->mutable_inverse()->add_f_direct(MapRef(f));
+  }
+  new_ct->mutable_inverse()->mutable_f_inverse()->Reserve(
+      ct.inverse().f_inverse_size());
+  for (const int f : ct.inverse().f_inverse()) {
+    new_ct->mutable_inverse()->add_f_inverse(MapRef(f));
+  }
+  return true;
+}
+
+bool ModelCopy::CopyReservoir(const ConstraintProto& ct) {
+  ConstraintProto* new_ct = context_->working_model->add_constraints();
+  FinishEnforcementCopy(new_ct);
+  new_ct->mutable_reservoir()->set_min_level(ct.reservoir().min_level());
+  new_ct->mutable_reservoir()->set_max_level(ct.reservoir().max_level());
+  new_ct->mutable_reservoir()->mutable_time_exprs()->Reserve(
+      ct.reservoir().time_exprs_size());
+  for (const LinearExpressionProto& expr : ct.reservoir().time_exprs()) {
+    CopyLinearExpression(expr, new_ct->mutable_reservoir()->add_time_exprs());
+  }
+  new_ct->mutable_reservoir()->mutable_level_changes()->Reserve(
+      ct.reservoir().level_changes_size());
+  for (const LinearExpressionProto& expr : ct.reservoir().level_changes()) {
+    CopyLinearExpression(expr,
+                         new_ct->mutable_reservoir()->add_level_changes());
+  }
+  new_ct->mutable_reservoir()->mutable_active_literals()->Reserve(
+      ct.reservoir().active_literals_size());
+  for (const int lit : ct.reservoir().active_literals()) {
+    new_ct->mutable_reservoir()->add_active_literals(MapLiteral(lit));
+  }
+  return true;
+}
+
 bool ModelCopy::CopyAtMostOne(const ConstraintProto& ct) {
   if (!ct.enforcement_literal().empty()) {
     ConstraintProto new_ct;
@@ -843,14 +1072,22 @@ bool ModelCopy::CopyAtMostOne(const ConstraintProto& ct) {
   temp_literals_.clear();
   for (const int lit : ct.at_most_one().literals()) {
     if (context_->LiteralIsFalse(lit)) continue;
-    temp_literals_.push_back(lit);
-    if (context_->LiteralIsTrue(lit)) num_true++;
+    if (context_->LiteralIsTrue(lit)) {
+      num_true++;
+      continue;
+    }
+    temp_literals_.push_back(MapRef(lit));
   }
 
-  if (temp_literals_.size() <= 1) return true;
   if (num_true > 1) return false;
+  if (num_true == 1) {
+    for (int lit : temp_literals_) {
+      if (!context_->SetLiteralToFalse(ReverseMapRef(lit))) return false;
+    }
+    return true;
+  }
+  if (temp_literals_.size() <= 1) return true;
 
-  // TODO(user): presolve if num_true == 1.
   ConstraintProto* new_ct = context_->working_model->add_constraints();
   new_ct->mutable_at_most_one()->mutable_literals()->Add(temp_literals_.begin(),
                                                          temp_literals_.end());
@@ -869,17 +1106,50 @@ bool ModelCopy::CopyExactlyOne(const ConstraintProto& ct) {
   temp_literals_.clear();
   for (const int lit : ct.exactly_one().literals()) {
     if (context_->LiteralIsFalse(lit)) continue;
-    temp_literals_.push_back(lit);
-    if (context_->LiteralIsTrue(lit)) num_true++;
+    if (context_->LiteralIsTrue(lit)) {
+      num_true++;
+      continue;
+    }
+    temp_literals_.push_back(MapRef(lit));
   }
 
-  if (temp_literals_.empty() || num_true > 1) return false;
-  if (temp_literals_.size() == 1 && num_true == 1) return true;
+  if (num_true > 1) return false;
+  if (num_true == 1) {
+    for (int lit : temp_literals_) {
+      if (!context_->SetLiteralToFalse(ReverseMapRef(lit))) return false;
+    }
+    return true;
+  }
+  if (temp_literals_.empty()) return false;
+  if (temp_literals_.size() == 1) {
+    return context_->SetLiteralToTrue(ReverseMapRef(temp_literals_[0]));
+  }
 
-  // TODO(user): presolve if num_true == 1 and not everything is false.
   ConstraintProto* new_ct = context_->working_model->add_constraints();
   new_ct->mutable_exactly_one()->mutable_literals()->Add(temp_literals_.begin(),
                                                          temp_literals_.end());
+  return true;
+}
+
+bool ModelCopy::CopyBoolXor(const ConstraintProto& ct) {
+  ConstraintProto* new_ct = context_->working_model->add_constraints();
+  FinishEnforcementCopy(new_ct);
+
+  int num_true = 0;
+  temp_literals_.clear();
+  for (const int lit : ct.bool_xor().literals()) {
+    if (context_->LiteralIsFalse(lit)) continue;
+    if (context_->LiteralIsTrue(lit)) {
+      num_true++;
+      continue;
+    }
+    temp_literals_.push_back(MapRef(lit));
+  }
+  if (num_true % 2 == 1) {
+    temp_literals_.push_back(GetTrueMappedLiteral());
+  }
+  new_ct->mutable_bool_xor()->mutable_literals()->Add(temp_literals_.begin(),
+                                                      temp_literals_.end());
   return true;
 }
 
@@ -896,17 +1166,18 @@ bool ModelCopy::CopyInterval(const ConstraintProto& ct, int c,
   if (temp_enforcement_literals_.size() > 1) {
     temp_enforcement_literals_ = {
         GetOrCreateVariableForConjunction(&temp_enforcement_literals_)};
+    temp_enforcement_literals_set_ = {temp_enforcement_literals_.front()};
   }
   FinishEnforcementCopy(new_ct);
   CopyLinearExpression(ct.interval().start(),
                        new_ct->mutable_interval()->mutable_start(),
-                       ct.enforcement_literal());
+                       &temp_enforcement_literals_set_);
   CopyLinearExpression(ct.interval().size(),
                        new_ct->mutable_interval()->mutable_size(),
-                       ct.enforcement_literal());
+                       &temp_enforcement_literals_set_);
   CopyLinearExpression(ct.interval().end(),
                        new_ct->mutable_interval()->mutable_end(),
-                       ct.enforcement_literal());
+                       &temp_enforcement_literals_set_);
   return true;
 }
 
@@ -995,6 +1266,12 @@ bool ModelCopy::AddLinearConstraintForInterval(const ConstraintProto& ct) {
 }
 
 int ModelCopy::GetOrCreateVariableForConjunction(std::vector<int>* literals) {
+  // Variable mapping is only used to copy models where multiple enforcement
+  // literals in constraints which do not support them have already been
+  // replaced with their conjunction. Otherwise we would need to extend the
+  // variable mapping (if there is one) and to make sure the solution crush
+  // works with a variable mapping.
+  CHECK(variable_mapping_.empty());
   std::sort(literals->begin(), literals->end());
   auto it = boolean_product_encoding_.find(*literals);
   if (it != boolean_product_encoding_.end()) return it->second;
@@ -1084,6 +1361,108 @@ bool ModelCopy::CopyAndMapCumulative(const ConstraintProto& ct) {
   }
 
   return true;
+}
+
+void ModelCopy::CopyObjective(const CpObjectiveProto& objective) {
+  non_fixed_terms_.clear();
+  int64_t offset = 0;
+  for (int i = 0; i < objective.vars_size(); ++i) {
+    int ref = objective.vars(i);
+    int64_t coeff = objective.coeffs(i);
+    MapTerm(ref, coeff, offset);
+    if (coeff == 0) continue;
+    DCHECK(RefIsPositive(ref));
+    non_fixed_terms_.push_back({ref, coeff});
+  }
+  CanonicalizeLinearExpression(/*enforcement_literals=*/nullptr,
+                               non_fixed_terms_, offset);
+
+  CpObjectiveProto& new_objective =
+      *context_->working_model->mutable_objective();
+  new_objective = objective;
+  new_objective.clear_vars();
+  new_objective.clear_coeffs();
+  for (const auto [ref, coeff] : non_fixed_terms_) {
+    new_objective.add_vars(ref);
+    new_objective.add_coeffs(coeff);
+  }
+  new_objective.set_offset(new_objective.offset() +
+                           static_cast<double>(offset));
+  for (int64_t& domain : *new_objective.mutable_domain()) {
+    domain = CapSub(domain, offset);
+  }
+  new_objective.set_integer_before_offset(
+      new_objective.integer_before_offset() + offset);
+}
+
+void ModelCopy::CopyFloatingPointObjective(
+    const FloatObjectiveProto& objective) {
+  std::vector<std::pair<int, double>> non_fixed_terms;
+  double offset = 0;
+  for (int i = 0; i < objective.vars_size(); ++i) {
+    int ref = objective.vars(i);
+    double coeff = objective.coeffs(i);
+    MapTerm(ref, coeff, offset);
+    if (coeff == 0) continue;
+    DCHECK(RefIsPositive(ref));
+    non_fixed_terms.push_back({ref, coeff});
+  }
+  CanonicalizeLinearExpression(/*enforcement_literals=*/nullptr,
+                               non_fixed_terms, offset);
+
+  FloatObjectiveProto& new_objective =
+      *context_->working_model->mutable_floating_point_objective();
+  new_objective = objective;
+  new_objective.clear_vars();
+  new_objective.clear_coeffs();
+  for (const auto [ref, coeff] : non_fixed_terms) {
+    new_objective.add_vars(ref);
+    new_objective.add_coeffs(coeff);
+  }
+  new_objective.set_offset(new_objective.offset() + offset);
+}
+
+void ModelCopy::CopySolutionHint(const PartialVariableAssignment& hint) {
+  PartialVariableAssignment& new_hint =
+      *context_->working_model->mutable_solution_hint();
+  if (variable_mapping_.empty()) {
+    new_hint = hint;
+  } else {
+    std::vector<bool> hint_added(reverse_mapping_.size(), false);
+    for (int i = 0; i < hint.vars_size(); ++i) {
+      const int mapped_ref = variable_mapping_[hint.vars(i)];
+      if (mapped_ref == kNoVariableMapping) continue;
+      const int mapped_var = PositiveRef(mapped_ref);
+      if (hint_added[mapped_var]) continue;
+      hint_added[mapped_var] = true;
+      new_hint.add_vars(mapped_var);
+      const int64_t hint_value = hint.values(i);
+      if (RefIsPositive(mapped_ref)) {
+        new_hint.add_values(hint.values(i));
+      } else {
+        DCHECK(context_->CanBeUsedAsLiteral(hint.vars(i)));
+        DCHECK(hint_value == 0 || hint_value == 1);
+        new_hint.add_values(1 - hint_value);
+      }
+    }
+  }
+
+  // We make sure the hint is within the variables domain.
+  //
+  // This allows to avoid overflow because we know evaluating constraints on
+  // the variables domains should be safe thanks to the initial validation.
+  const int num_terms = new_hint.vars().size();
+  for (int i = 0; i < num_terms; ++i) {
+    const int var = new_hint.vars(i);
+    const int64_t value = new_hint.values(i);
+    const Domain& domain = MappedVarDomain(var);
+    if (domain.IsEmpty()) continue;  // UNSAT.
+    const int64_t closest_domain_value = domain.ClosestValue(value);
+    if (closest_domain_value != value) {
+      context_->UpdateRuleStats("hint: moved var hint within its domain");
+      new_hint.set_values(i, closest_domain_value);
+    }
+  }
 }
 
 bool ModelCopy::CreateUnsatModel(int c, const ConstraintProto& ct) {
@@ -1204,6 +1583,11 @@ void ModelCopy::MaybeExpandNonAffineExpression(LinearExpressionProto* expr) {
   expr->mutable_coeffs()->Truncate(new_size);
   if (expr->vars_size() < 2) return;
 
+  // Variable mapping is only used to copy models where non affine expressions
+  // in constraints which do not support them have already been expanded.
+  // Otherwise we would need to extend the variable mapping (if there is one)
+  // and to make sure the solution crush works with a variable mapping.
+  CHECK(variable_mapping_.empty());
   int64_t gcd = std::abs(expr->coeffs(0));
   for (int i = 1; i < expr->coeffs().size(); ++i) {
     gcd = std::gcd(gcd, std::abs(expr->coeffs(i)));
@@ -1263,13 +1647,74 @@ void ModelCopy::MaybeExpandNonAffineExpressions(
   }
 }
 
+template <typename T>
+void ModelCopy::MapTerm(int& ref, T& coeff, T& offset) const {
+  CHECK(RefIsPositive(ref));
+  if (context_->IsFixed(ref)) {
+    offset += coeff * context_->MinOf(ref);
+    coeff = 0;
+    return;
+  }
+  if (variable_mapping_.empty()) return;
+  const int mapped_ref = variable_mapping_[ref];
+  if (RefIsPositive(mapped_ref)) {
+    ref = mapped_ref;
+  } else {
+    // Only Boolean variables can be mapped to a negated ref. If x is mapped to
+    // NegatedRef(y), then coeff * x = coeff * (1 - y).
+    DCHECK(context_->CanBeUsedAsLiteral(ref));
+    offset += coeff;
+    coeff = -coeff;
+    ref = NegatedRef(mapped_ref);
+  }
+}
+
+const Domain& ModelCopy::MappedVarDomain(int mapped_var) const {
+  if (variable_mapping_.empty()) return context_->DomainOf(mapped_var);
+  const int ref = reverse_mapping_[mapped_var];
+  const Domain& domain = context_->DomainOf(PositiveRef(ref));
+  // A variable can only be reverse mapped to a negative variable reference
+  // if it is a Boolean variable, in which case the remapped domain is
+  // unchanged (unless it is fixed).
+  if (RefIsPositive(ref) || !domain.IsFixed()) {
+    return domain;
+  }
+  DCHECK(domain.IsIncludedIn(Domain(0, 1)));
+  return domain.Min() == 0 ? domain1_ : domain0_;
+}
+
+int ModelCopy::GetTrueMappedLiteral() {
+  if (!true_mapped_literal_.has_value()) {
+    true_mapped_literal_ = kNoVariableMapping;
+    if (variable_mapping_.empty()) {
+      for (int i = 0; i < context_->working_model->variables_size(); ++i) {
+        if (context_->CanBeUsedAsLiteral(i) && context_->IsFixed(i)) {
+          true_mapped_literal_ = context_->LiteralIsTrue(i) ? i : NegatedRef(i);
+          break;
+        }
+      }
+    } else {
+      for (int i = 0; i < reverse_mapping_.size(); ++i) {
+        const int ref = reverse_mapping_[i];
+        if (context_->CanBeUsedAsLiteral(ref) && context_->IsFixed(ref)) {
+          true_mapped_literal_ =
+              context_->LiteralIsTrue(ref) ? i : NegatedRef(i);
+          break;
+        }
+      }
+    }
+    DCHECK_NE(*true_mapped_literal_, kNoVariableMapping);
+  }
+  return *true_mapped_literal_;
+}
+
 bool ImportModelWithBasicPresolveIntoContext(const CpModelProto& in_model,
                                              PresolveContext* context) {
   ModelCopy copier(context);
   copier.ImportVariablesAndMaybeIgnoreNames(in_model);
   if (copier.ImportAndSimplifyConstraints(in_model, /*first_copy=*/true)) {
-    CopyEverythingExceptVariablesAndConstraintsFieldsIntoContext(in_model,
-                                                                 context);
+    copier.ImportSolutionHint(in_model);
+    copier.ImportEverythingExceptVariablesConstraintsAndHint(in_model);
     return true;
   }
   return !context->ModelIsUnsat();
@@ -1284,75 +1729,13 @@ bool ImportModelAndDomainsWithBasicPresolveIntoContext(
   copier.CreateVariablesFromDomains(domains);
   if (copier.ImportAndSimplifyConstraints(in_model, /*first_copy=*/false,
                                           active_constraints)) {
-    CopyEverythingExceptVariablesAndConstraintsFieldsIntoContext(in_model,
-                                                                 context);
+    copier.ImportSolutionHint(in_model);
+    copier.ImportEverythingExceptVariablesConstraintsAndHint(in_model);
     interval_mapping->assign(copier.InternalIntervalMapping().begin(),
                              copier.InternalIntervalMapping().end());
     return true;
   }
   return !context->ModelIsUnsat();
-}
-
-void CopyEverythingExceptVariablesAndConstraintsFieldsIntoContext(
-    const CpModelProto& in_model, PresolveContext* context) {
-  if (!in_model.name().empty()) {
-    context->working_model->set_name(in_model.name());
-  }
-  if (in_model.has_objective()) {
-    *context->working_model->mutable_objective() = in_model.objective();
-  }
-  if (in_model.has_floating_point_objective()) {
-    *context->working_model->mutable_floating_point_objective() =
-        in_model.floating_point_objective();
-  }
-  if (!in_model.search_strategy().empty()) {
-    // We make sure we do not use the old variables field.
-    *context->working_model->mutable_search_strategy() =
-        in_model.search_strategy();
-    for (DecisionStrategyProto& strategy :
-         *context->working_model->mutable_search_strategy()) {
-      google::protobuf::util::RemoveIf(strategy.mutable_exprs(),
-                                       [](const LinearExpressionProto* expr) {
-                                         return expr->vars().empty();
-                                       });
-      if (!strategy.variables().empty()) {
-        CHECK(strategy.exprs().empty());
-        for (const int ref : strategy.variables()) {
-          LinearExpressionProto* expr = strategy.add_exprs();
-          expr->add_vars(PositiveRef(ref));
-          expr->add_coeffs(RefIsPositive(ref) ? 1 : -1);
-        }
-        strategy.clear_variables();
-      }
-    }
-  }
-  if (!in_model.assumptions().empty()) {
-    *context->working_model->mutable_assumptions() = in_model.assumptions();
-  }
-  if (in_model.has_symmetry()) {
-    *context->working_model->mutable_symmetry() = in_model.symmetry();
-  }
-  if (in_model.has_solution_hint()) {
-    *context->working_model->mutable_solution_hint() = in_model.solution_hint();
-
-    // We make sure the hint is within the variables domain.
-    //
-    // This allows to avoid overflow because we know evaluating constraints on
-    // the variables domains should be safe thanks to the initial validation.
-    const int num_terms = in_model.solution_hint().vars().size();
-    for (int i = 0; i < num_terms; ++i) {
-      const int var = in_model.solution_hint().vars(i);
-      const int64_t value = in_model.solution_hint().values(i);
-      const Domain& domain = ReadDomainFromProto(in_model.variables(var));
-      if (domain.IsEmpty()) continue;  // UNSAT.
-      const int64_t closest_domain_value = domain.ClosestValue(value);
-      if (closest_domain_value != value) {
-        context->UpdateRuleStats("hint: moved var hint within its domain");
-        context->working_model->mutable_solution_hint()->set_values(
-            i, closest_domain_value);
-      }
-    }
-  }
 }
 
 }  // namespace sat

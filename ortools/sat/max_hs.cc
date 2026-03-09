@@ -17,20 +17,24 @@
 #include <cmath>
 #include <cstdint>
 #include <functional>
+#include <string>
 #include <utility>
 #include <vector>
 
 #include "absl/cleanup/cleanup.h"
 #include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/random/random.h"
+#include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_mapping.h"
+#include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/integer_search.h"
@@ -193,8 +197,8 @@ void HittingSetOptimizer::ExtractObjectiveVariables() {
     obj_constraint_->add_coeffs(coeff.value());
 
     IntegerVariableProto* var_proto = hs_model->add_variables();
-    var_proto->add_domain(integer_trail_->LowerBound(var).value());
-    var_proto->add_domain(integer_trail_->UpperBound(var).value());
+    var_proto->add_domain(integer_trail_->LevelZeroLowerBound(var).value());
+    var_proto->add_domain(integer_trail_->LevelZeroUpperBound(var).value());
 
     // Store extraction info.
     const int max_index = std::max(var.value(), NegationOf(var).value());
@@ -220,8 +224,8 @@ void HittingSetOptimizer::ExtractAdditionalVariables(
 
     const int index = hs_model->variables_size();
     IntegerVariableProto* var_proto = hs_model->add_variables();
-    var_proto->add_domain(integer_trail_->LowerBound(var).value());
-    var_proto->add_domain(integer_trail_->UpperBound(var).value());
+    var_proto->add_domain(integer_trail_->LevelZeroLowerBound(var).value());
+    var_proto->add_domain(integer_trail_->LevelZeroUpperBound(var).value());
 
     // Store extraction info.
     const int max_index = std::max(var.value(), NegationOf(var).value());
@@ -388,8 +392,9 @@ bool HittingSetOptimizer::ComputeInitialLinearModel() {
 void HittingSetOptimizer::TightenHitSetModel() {
   // Update the variables bounds from the SAT level 0 bounds.
   for (const auto& [var, var_proto] : extracted_variables_info_) {
-    var_proto->add_domain(integer_trail_->LowerBound(var).value());
-    var_proto->add_domain(integer_trail_->UpperBound(var).value());
+    var_proto->mutable_domain()->Resize(2, 0);
+    var_proto->set_domain(0, integer_trail_->LevelZeroLowerBound(var).value());
+    var_proto->set_domain(1, integer_trail_->LevelZeroUpperBound(var).value());
   }
 
   int tightened = 0;
@@ -418,8 +423,8 @@ bool HittingSetOptimizer::ProcessSolution() {
     objective +=
         coefficients[i] * IntegerValue(model_->Get(Value(variables[i])));
   }
-  if (objective >
-      integer_trail_->UpperBound(objective_definition_.objective_var)) {
+  if (objective > integer_trail_->LevelZeroUpperBound(
+                      objective_definition_.objective_var)) {
     return true;
   }
 
@@ -449,7 +454,7 @@ void HittingSetOptimizer::AddCoresToHittingSetModel(
     if (core.size() == 1) {
       for (const int index : assumption_to_indices_.at(core.front().Index())) {
         const IntegerVariable var = normalized_objective_variables_[index];
-        const IntegerValue new_bound = integer_trail_->LowerBound(var);
+        const IntegerValue new_bound = integer_trail_->LevelZeroLowerBound(var);
         if (VariableIsPositive(var)) {
           hs_model->mutable_variables(index)->set_domain(0, new_bound.value());
         } else {
@@ -467,7 +472,7 @@ void HittingSetOptimizer::AddCoresToHittingSetModel(
     for (const Literal lit : core) {
       for (const int index : assumption_to_indices_.at(lit.Index())) {
         const IntegerVariable var = normalized_objective_variables_[index];
-        const IntegerValue sat_lb = integer_trail_->LowerBound(var);
+        const IntegerValue sat_lb = integer_trail_->LevelZeroLowerBound(var);
         // normalized_objective_variables_[index] is mapped onto
         //     hs_model.variable[index] * sign.
         const int sign = VariableIsPositive(var) ? 1 : -1;
@@ -529,7 +534,7 @@ std::vector<Literal> HittingSetOptimizer::BuildAssumptions(
                                       : -response_.solution(i);
 
     // Non binding, ignoring.
-    if (hs_value == integer_trail_->UpperBound(var)) continue;
+    if (hs_value == integer_trail_->LevelZeroUpperBound(var)) continue;
 
     // Only consider the terms above the threshold.
     if (coeff < stratified_threshold) {
@@ -581,6 +586,14 @@ SatSolver::Status HittingSetOptimizer::Optimize() {
     hs_params->set_linearization_level(2);
     hs_params->set_optimize_with_max_hs(false);
     hs_params->set_optimize_with_core(false);
+
+    if (absl::GetFlag(FLAGS_cp_model_dump_submodels)) {
+      const std::string dump_name =
+          absl::StrCat(absl::GetFlag(FLAGS_cp_model_dump_prefix),
+                       model_->Name(), "_", iter, ".pb.txt");
+      LOG(INFO) << "Dumping max hitting set model to '" << dump_name << "'.";
+      CHECK(WriteModelProtoToFile(hitting_set_linear_model_, dump_name));
+    }
 
     inner_model.GetOrCreate<TimeLimit>()->MergeWithGlobalTimeLimit(time_limit_);
     response_ =

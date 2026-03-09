@@ -14,6 +14,7 @@
 #include "ortools/sat/constraint_violation.h"
 
 #include <cstdint>
+#include <limits>
 #include <vector>
 
 #include "absl/types/span.h"
@@ -33,6 +34,8 @@ namespace {
 
 using ::google::protobuf::contrib::parse_proto::ParseTestProto;
 using ::testing::ElementsAre;
+using ::testing::IsEmpty;
+using ::testing::UnorderedElementsAre;
 
 TEST(LinearEvaluatorTest, TestAPI) {
   LinearIncrementalEvaluator evaluator;
@@ -118,6 +121,77 @@ TEST(LinearEvaluatorTest, EmptyConstraintDoNotCrash) {
   evaluator.ComputeInitialActivities(solution);
   evaluator.UpdateScoreOnWeightUpdate(1, jump_deltas,
                                       absl::MakeSpan(jump_scores));
+}
+
+TEST(LinearEvaluatorTest, RemapVariables) {
+  LinearIncrementalEvaluator evaluator;
+  // b0 and b2 => 4*x3 + 7*x4 - 11*x5 \in [10, 20]
+  const int c1 = evaluator.NewConstraint({10, 20});
+  evaluator.AddEnforcementLiteral(c1, 0);
+  evaluator.AddEnforcementLiteral(c1, 2);
+  evaluator.AddTerm(c1, 3, 4);
+  evaluator.AddTerm(c1, 4, 7);
+  evaluator.AddTerm(c1, 5, -11);
+  // b0 => 5*x3 - 13*x4 - 7*b2 \in [0, 10]
+  const int c2 = evaluator.NewConstraint({0, 10});
+  evaluator.AddEnforcementLiteral(c2, 0);
+  evaluator.AddTerm(c2, 3, 5);
+  evaluator.AddTerm(c2, 4, -13);
+  evaluator.AddLiteral(c2, 2, -7);
+  evaluator.PrecomputeCompactView({1, 1, 1, 10, 15, 20});
+
+  // Remap b2 to not(b1), x3 to -1 and x4 to x5.
+  evaluator.RemapVariables({0, 1, NegatedRef(1), kNoVariableMapping, 5, 5},
+                           {0, 0, 0, -1, 0, 0});
+  // Initial activity for b0 = 1, b1 = 0, x5 = -3
+  // (the value of the other variables does not matter).
+  constexpr int64_t kNoValue = std::numeric_limits<int64_t>::min();
+  evaluator.ComputeInitialActivities({1, 0, kNoValue, kNoValue, kNoValue, -3});
+
+  // The constraints are now:
+  // b0 and not(b1) => -4*x5 - 4 \in [10, 20]
+  // b0 => -13*x5 + 7*b1 - 12 \in [0, 10]
+  EXPECT_THAT(evaluator.ConstraintToVars(c1), UnorderedElementsAre(0, 1, 5));
+  EXPECT_THAT(evaluator.ConstraintToVars(c2), UnorderedElementsAre(0, 1, 5));
+  EXPECT_EQ(evaluator.Activity(c1), 8);
+  EXPECT_EQ(evaluator.Activity(c2), 27);
+  EXPECT_EQ(evaluator.Violation(c1), 2);
+  EXPECT_EQ(evaluator.Violation(c2), 17);
+}
+
+TEST(LinearEvaluatorTest, RemapVariables_FixedEnforcementLiteral) {
+  LinearIncrementalEvaluator evaluator;
+  // b0 and b2 => 4*x3 + 7*x4 - 11*x5 \in [10, 20]
+  const int c1 = evaluator.NewConstraint({10, 20});
+  evaluator.AddEnforcementLiteral(c1, 0);
+  evaluator.AddEnforcementLiteral(c1, 2);
+  evaluator.AddTerm(c1, 3, 4);
+  evaluator.AddTerm(c1, 4, 7);
+  evaluator.AddTerm(c1, 5, -11);
+  // b1 => 5*x3 - 13*x4 - 7*b2 \in [0, 10]
+  const int c2 = evaluator.NewConstraint({0, 10});
+  evaluator.AddEnforcementLiteral(c2, 1);
+  evaluator.AddTerm(c2, 3, 5);
+  evaluator.AddTerm(c2, 4, -13);
+  evaluator.AddLiteral(c2, 2, -7);
+  evaluator.PrecomputeCompactView({1, 1, 1, 10, 15, 20});
+
+  // Remap b0 to 0, and b1 to 1.
+  evaluator.RemapVariables({kNoVariableMapping, kNoVariableMapping, 2, 3, 4, 5},
+                           {0, 1, 0, 0, 0, 0});
+  // Initial activity for b2 = 1, x3 = 1, x4 = 2
+  constexpr int64_t kNoValue = std::numeric_limits<int64_t>::min();
+  evaluator.ComputeInitialActivities({0, kNoValue, 1, 1, 2, kNoValue});
+
+  // The constraints are now:
+  // 10 \in [10, 20]
+  // 5*x3 - 13*x4 - 7 \in [0, 10]
+  EXPECT_THAT(evaluator.ConstraintToVars(c1), IsEmpty());
+  EXPECT_THAT(evaluator.ConstraintToVars(c2), UnorderedElementsAre(2, 3, 4));
+  EXPECT_EQ(evaluator.Activity(c1), 10);
+  EXPECT_EQ(evaluator.Activity(c2), -28);
+  EXPECT_EQ(evaluator.Violation(c1), 0);
+  EXPECT_EQ(evaluator.Violation(c2), 28);
 }
 
 TEST(ConstraintViolationTest, BasicExactlyOneExampleNonViolated) {
