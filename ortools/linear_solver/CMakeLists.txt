@@ -24,7 +24,6 @@ list(APPEND _SRCS
   model_validator.cc
   model_validator.h
   sat_interface.cc
-  scip_helper_macros.cc
   solve_mp_model.cc
   solve_mp_model.h
 )
@@ -65,6 +64,7 @@ if(USE_SCIP)
   list(APPEND _SRCS
     scip_callback.cc
     scip_callback.h
+    scip_helper_macros.cc
     scip_helper_macros.h
     scip_interface.cc
     ${LPI_GLOP_SRC})
