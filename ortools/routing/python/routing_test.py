@@ -639,6 +639,53 @@ class ModelTest(absltest.TestCase):
 
         self.assertIsNotNone(solution)
 
+    def test_issue5083(self):
+
+        class MyLocalSearch(constraint_solver.IntVarLocalSearchOperator):
+
+            def __init__(self, int_vars):
+                constraint_solver.IntVarLocalSearchOperator.__init__(self, int_vars)
+                self.__index = 0
+
+            def one_neighbor(self):
+                current_value = self.old_value(self.__index)
+                self.set_value(self.__index, 1 - current_value)
+                self.__index = (self.__index + 1) % self.Size()
+                return True
+
+            def on_start(self):
+                pass
+
+            def is_incremental(self):
+                return False
+
+        manager = routing.IndexManager(3, 1, 0)
+        model = routing.Model(manager)
+        model.add_to_assignment(model.active_var(manager.node_to_index(1)))
+        model.add_to_assignment(model.active_var(manager.node_to_index(2)))
+        model.add_disjunction([manager.node_to_index(1)], 1)
+        model.add_disjunction([manager.node_to_index(2)], 1)
+
+        model.add_local_search_operator(
+            MyLocalSearch(
+                [
+                    model.active_var(manager.node_to_index(1)),
+                    model.active_var(manager.node_to_index(2)),
+                ]
+            )
+        )
+
+        search_parameters = routing.default_routing_search_parameters()
+        search_parameters.first_solution_strategy = (
+            enums_pb2.FirstSolutionStrategy.AUTOMATIC
+        )
+        search_parameters.local_search_metaheuristic = (
+            enums_pb2.LocalSearchMetaheuristic.AUTOMATIC
+        )
+
+        solution = model.solve_with_parameters(search_parameters)
+        print(solution)
+
 
 if __name__ == "__main__":
     absltest.main()

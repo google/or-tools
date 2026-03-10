@@ -226,6 +226,7 @@ class ConstraintSolverTest(absltest.TestCase):
         ]
 
         solver.add_cumulative(intervals, demands, capacity, "cumul")
+
         # Since capacity is 1 and demands are 1, they cannot overlap.
 
         def check_single_solution():
@@ -623,6 +624,7 @@ class ConstraintSolverTest(absltest.TestCase):
         solver = cp.Solver("test_sub_circuit")
         x = [solver.new_int_var(0, 2, f"x{i}") for i in range(3)]
         solver.add_sub_circuit(x)
+
         # SubCircuit allows partial circuits (if x[i] == i, it's not in the
         # circuit). But if in circuit, must form a single circuit.
 
@@ -1028,6 +1030,55 @@ class ConstraintSolverTest(absltest.TestCase):
         t = solver.new_fixed_duration_interval_var(s, 5, "t")
         r = solver.new_interval_relaxed_max(t)
         self.assertIsNotNone(r)
+
+
+class IntVarLocalSearchOperatorTest(absltest.TestCase):
+
+    def test_subclass_int_var_local_search_operator(self):
+        class MoveOneVar(cp.IntVarLocalSearchOperator):
+
+            def __init__(self, int_vars):
+                super().__init__(int_vars)
+                self.__index = 0
+                self.__up = False
+
+            def one_neighbor(self):
+                current_value = self.old_value(self.__index)
+                if self.__up:
+                    self.set_value(self.__index, current_value + 1)
+                    self.__index = (self.__index + 1) % self.size()
+                else:
+                    self.set_value(self.__index, current_value - 1)
+                self.__up = not self.__up
+                return True
+
+            def on_start(self):
+                pass
+
+        solver = cp.Solver("test_subclass")
+        x = solver.new_int_var(0, 10, "x")
+        y = solver.new_int_var(0, 10, "y")
+        move_one_var = MoveOneVar([x, y])
+        self.assertIsNotNone(move_one_var)
+
+
+class LocalSearchOperatorTest(absltest.TestCase):
+
+    def test_subclass_local_search_operator(self):
+        class CustomLSOperator(cp.LocalSearchOperator):
+
+            def __init__(self):
+                super().__init__()
+
+            def next_neighbor(self, delta, deltadelta):
+                return False
+
+            def start(self, assignment):
+                pass
+
+        solver = cp.Solver("test_subclass_ls")
+        op = CustomLSOperator()
+        self.assertIsNotNone(op)
 
 
 if __name__ == "__main__":

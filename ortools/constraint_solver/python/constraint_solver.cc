@@ -64,6 +64,8 @@ using ::operations_research::IntTupleSet;
 using ::operations_research::IntVar;
 using ::operations_research::IntVarElement;
 using ::operations_research::IntVarIterator;
+using ::operations_research::IntVarLocalSearchOperator;
+using ::operations_research::LocalSearchFilter;
 using ::operations_research::LocalSearchFilterManager;
 using ::operations_research::LocalSearchOperator;
 using ::operations_research::LocalSearchPhaseParameters;
@@ -296,6 +298,48 @@ class PyDecisionBuilderHelper : public PyDecisionBuilder {
   }
   std::string debug_string() const override {
     PYBIND11_OVERRIDE(std::string, PyDecisionBuilder, debug_string, );
+  }
+};
+
+class PyLocalSearchOperator : public LocalSearchOperator {
+ public:
+  using LocalSearchOperator::LocalSearchOperator;
+  bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta) override {
+    PYBIND11_OVERRIDE_PURE_NAME(bool, LocalSearchOperator, "next_neighbor",
+                                MakeNextNeighbor, delta, deltadelta);
+  }
+  void Start(const Assignment* assignment) override {
+    PYBIND11_OVERRIDE_PURE_NAME(void, LocalSearchOperator, "start", Start,
+                                assignment);
+  }
+  void EnterSearch() override {
+    PYBIND11_OVERRIDE_NAME(void, LocalSearchOperator, "enter_search",
+                           EnterSearch, );
+  }
+  void Reset() override {
+    PYBIND11_OVERRIDE_NAME(void, LocalSearchOperator, "reset", Reset, );
+  }
+  bool HasFragments() const override {
+    PYBIND11_OVERRIDE_NAME(bool, LocalSearchOperator, "has_fragments",
+                           HasFragments, );
+  }
+  bool HoldsDelta() const override {
+    PYBIND11_OVERRIDE_NAME(bool, LocalSearchOperator, "holds_delta",
+                           HoldsDelta, );
+  }
+};
+
+class PyIntVarLocalSearchOperator : public IntVarLocalSearchOperator {
+ public:
+  using IntVarLocalSearchOperator::IntVarLocalSearchOperator;
+  using IntVarLocalSearchOperator::MakeOneNeighbor;
+  bool MakeOneNeighbor() override {
+    PYBIND11_OVERRIDE_NAME(bool, IntVarLocalSearchOperator, "one_neighbor",
+                           MakeOneNeighbor, );
+  }
+  void OnStart() override {
+    PYBIND11_OVERRIDE_NAME(void, IntVarLocalSearchOperator, "on_start",
+                           OnStart, );
   }
 };
 
@@ -2539,6 +2583,41 @@ PYBIND11_MODULE(constraint_solver, m) {
             return c->solver()->MakeLess(c->Var(), other->Var());
           },
           py::return_value_policy::reference_internal);
+
+  py::class_<LocalSearchOperator, BaseObject, PyLocalSearchOperator>(
+      m, "LocalSearchOperator", DOC(operations_research, LocalSearchOperator))
+      .def(py::init<>())
+      .def("next_neighbor", &LocalSearchOperator::MakeNextNeighbor,
+           py::arg("delta"), py::arg("deltadelta"))
+      .def("start", &LocalSearchOperator::Start, py::arg("assignment"))
+      .def("enter_search", &LocalSearchOperator::EnterSearch)
+      .def("reset", &LocalSearchOperator::Reset)
+      .def("has_fragments", &LocalSearchOperator::HasFragments)
+      .def("holds_delta", &LocalSearchOperator::HoldsDelta);
+
+  py::class_<IntVarLocalSearchOperator, LocalSearchOperator,
+             PyIntVarLocalSearchOperator>(m, "IntVarLocalSearchOperator", "")
+      .def(py::init<const std::vector<IntVar*>&, bool>(), py::arg("vars"),
+           py::arg("keep_inverse_values") = false)
+      .def("size", &IntVarLocalSearchOperator::Size)
+      .def("var", &IntVarLocalSearchOperator::Var, py::arg("index"),
+           py::return_value_policy::reference_internal)
+      .def("is_incremental", &IntVarLocalSearchOperator::IsIncremental)
+      .def("value", &IntVarLocalSearchOperator::Value, py::arg("index"))
+      .def("old_value", &IntVarLocalSearchOperator::OldValue, py::arg("index"))
+      .def("prev_value", &IntVarLocalSearchOperator::PrevValue,
+           py::arg("index"))
+      .def("set_value", &IntVarLocalSearchOperator::SetValue, py::arg("index"),
+           py::arg("value"))
+      .def("activate", &IntVarLocalSearchOperator::Activate, py::arg("index"))
+      .def("deactivate", &IntVarLocalSearchOperator::Deactivate,
+           py::arg("index"))
+      .def("activated", &IntVarLocalSearchOperator::Activated, py::arg("index"))
+      .def("add_vars", &IntVarLocalSearchOperator::AddVars, py::arg("vars"))
+      .def(
+          "one_neighbor",
+          [](PyIntVarLocalSearchOperator* op) { return op->MakeOneNeighbor(); })
+      .def("on_start", &IntVarLocalSearchOperator::OnStart);
 
   py::class_<DecisionBuilder, BaseObject>(
       m, "DecisionBuilderBase", DOC(operations_research, DecisionBuilder))

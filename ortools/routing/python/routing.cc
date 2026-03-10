@@ -897,10 +897,12 @@ PYBIND11_MODULE(routing, m) {
 
   rm.def("add_local_search_operator", &Model::AddLocalSearchOperator,
          py::arg("ls_operator"),
-         DOC(operations_research, routing, Model, AddLocalSearchOperator));
+         DOC(operations_research, routing, Model, AddLocalSearchOperator),
+         py::keep_alive<1, 2>());
   rm.def("add_local_search_filter", &Model::AddLocalSearchFilter,
          py::arg("filter"),
-         DOC(operations_research, routing, Model, AddLocalSearchFilter));
+         DOC(operations_research, routing, Model, AddLocalSearchFilter),
+         py::keep_alive<1, 2>());
   rm.def(
       "apply_locks",
       [](Model* model, const std::vector<int64_t>& locks) {
