@@ -50,11 +50,16 @@ class RegularLimitParameters;
 #include <functional>
 
 #include "ortools/base/base_export.h"
+#include "ortools/constraint_solver/reversible_engine.h"
+#include "ortools/constraint_solver/reversible_data.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/assignment.h"
+#include "ortools/constraint_solver/interval.h"
 #include "ortools/constraint_solver/local_search.h"
 #include "ortools/constraint_solver/search.h"
 #include "ortools/constraint_solver/sequence_var.h"
+#include "ortools/constraint_solver/variables.h"
+
 #include "ortools/constraint_solver/search_limit.pb.h"
 #include "ortools/constraint_solver/solver_parameters.pb.h"
 
@@ -239,6 +244,10 @@ namespace operations_research {
 // This method causes issues with our std::vector<int64_t> wrapping. It's not really
 // part of the public API anyway.
 %ignore ToInt64Vector;
+
+// StateInfo
+%ignore StateInfo;
+%ignore StateMarker;
 
 // Decision
 %feature("director") Decision;
@@ -1007,11 +1016,15 @@ namespace operations_research {
 // TODO(user): Replace with %ignoreall/%unignoreall
 //swiglint: disable include-h-allglobals
 %include "ortools/base/base_export.h"
+%include "ortools/constraint_solver/reversible_engine.h"
+%include "ortools/constraint_solver/reversible_data.h"
 %include "ortools/constraint_solver/constraint_solver.h"
 %include "ortools/constraint_solver/assignment.h"
+%include "ortools/constraint_solver/interval.h"
 %include "ortools/constraint_solver/local_search.h"
 %include "ortools/constraint_solver/search.h"
 %include "ortools/constraint_solver/sequence_var.h"
+%include "ortools/constraint_solver/variables.h"
 
 namespace operations_research {
 %template(RevInteger) Rev<int64_t>;
