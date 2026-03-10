@@ -59,7 +59,6 @@ class RegularLimitParameters;
 #include "ortools/constraint_solver/search.h"
 #include "ortools/constraint_solver/sequence_var.h"
 #include "ortools/constraint_solver/variables.h"
-
 #include "ortools/constraint_solver/search_limit.pb.h"
 #include "ortools/constraint_solver/solver_parameters.pb.h"
 
@@ -1026,11 +1025,13 @@ namespace operations_research {
 %include "ortools/constraint_solver/sequence_var.h"
 %include "ortools/constraint_solver/variables.h"
 
+// Define templates instantiation after wrapping.
 namespace operations_research {
-%template(RevInteger) Rev<int64_t>;
+%template(RevInteger) Rev<int>;
+%template(RevLong) Rev<int64_t>;
 %template(RevBool) Rev<bool>;
 typedef Assignment::AssignmentContainer AssignmentContainer;
 %template(AssignmentIntContainer) AssignmentContainer<IntVar, IntVarElement>;
 %template(AssignmentIntervalContainer) AssignmentContainer<IntervalVar, IntervalVarElement>;
 %template(AssignmentSequenceContainer) AssignmentContainer<SequenceVar, SequenceVarElement>;
-}
+}  // namespace operations_research
