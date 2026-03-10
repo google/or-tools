@@ -16,9 +16,11 @@
 
 #include <cstdint>
 #include <functional>
+#include <tuple>
+#include <utility>
 #include <vector>
 
-#include "ortools/constraint_solver/hash.h"
+#include "ortools/base/safe_hash_map.h"
 
 namespace operations_research {
 
@@ -32,27 +34,36 @@ class IntVar;
 /// duplicate objects.
 class ModelCache {
  public:
-  // Cache templates.
-  typedef Cache1<IntExpr, IntExpr*> ExprIntExprCache;
-  typedef Cache1<IntExpr, std::vector<IntVar*>> VarArrayIntExprCache;
+  template <typename K, typename V>
+  using cache_map = safe_hash_map<K, V>;
 
-  typedef Cache2<Constraint, IntVar*, int64_t> VarConstantConstraintCache;
-  typedef Cache2<Constraint, IntExpr*, IntExpr*> ExprExprConstraintCache;
-  typedef Cache2<IntExpr, IntVar*, int64_t> VarConstantIntExprCache;
-  typedef Cache2<IntExpr, IntExpr*, int64_t> ExprConstantIntExprCache;
-  typedef Cache2<IntExpr, IntExpr*, IntExpr*> ExprExprIntExprCache;
-  typedef Cache2<IntExpr, IntVar*, const std::vector<int64_t>&>
+  // Cache templates.
+  typedef cache_map<IntExpr*, IntExpr*> ExprIntExprCache;
+  typedef cache_map<std::vector<IntVar*>, IntExpr*> VarArrayIntExprCache;
+
+  typedef cache_map<std::pair<IntVar*, int64_t>, Constraint*>
+      VarConstantConstraintCache;
+  typedef cache_map<std::pair<IntExpr*, IntExpr*>, Constraint*>
+      ExprExprConstraintCache;
+  typedef cache_map<std::pair<IntVar*, int64_t>, IntExpr*>
+      VarConstantIntExprCache;
+  typedef cache_map<std::pair<IntExpr*, int64_t>, IntExpr*>
+      ExprConstantIntExprCache;
+  typedef cache_map<std::pair<IntExpr*, IntExpr*>, IntExpr*>
+      ExprExprIntExprCache;
+  typedef cache_map<std::pair<IntVar*, std::vector<int64_t>>, IntExpr*>
       VarConstantArrayIntExprCache;
-  typedef Cache2<IntExpr, std::vector<IntVar*>, const std::vector<int64_t>&>
+  typedef cache_map<std::pair<std::vector<IntVar*>, std::vector<int64_t>>,
+                    IntExpr*>
       VarArrayConstantArrayIntExprCache;
-  typedef Cache2<IntExpr, std::vector<IntVar*>, int64_t>
+  typedef cache_map<std::pair<std::vector<IntVar*>, int64_t>, IntExpr*>
       VarArrayConstantIntExprCache;
 
-  typedef Cache3<IntExpr, IntVar*, int64_t, int64_t>
+  typedef cache_map<std::tuple<IntVar*, int64_t, int64_t>, IntExpr*>
       VarConstantConstantIntExprCache;
-  typedef Cache3<Constraint, IntVar*, int64_t, int64_t>
+  typedef cache_map<std::tuple<IntVar*, int64_t, int64_t>, Constraint*>
       VarConstantConstantConstraintCache;
-  typedef Cache3<IntExpr, IntExpr*, IntExpr*, int64_t>
+  typedef cache_map<std::tuple<IntExpr*, IntExpr*, int64_t>, IntExpr*>
       ExprExprConstantIntExprCache;
 
   enum VoidConstraintType {

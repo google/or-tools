@@ -724,12 +724,10 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
 
 namespace operations_research {
 
-
 // ReversibleEngine: Basic API.
 %unignore ReversibleEngine;
 %unignore ReversibleEngine::ReversibleEngine;
 %unignore ReversibleEngine::~ReversibleEngine;
-%unignore ReversibleEngine::state;
 %unignore ReversibleEngine::stamp;
 
 // Solver: Basic API.

@@ -125,22 +125,12 @@ py_library(
 
 # This is the main library.
 cc_library(
-    name = "hash",
-    hdrs = ["hash.h"],
-    visibility = ["//visibility:public"],
-    deps = [
-        "@abseil-cpp//absl/hash",
-        "@abseil-cpp//absl/log:check",
-    ],
-)
-
-cc_library(
     name = "model_cache",
     srcs = ["model_cache.cc"],
     hdrs = ["model_cache.h"],
     visibility = ["//visibility:public"],
     deps = [
-        ":hash",
+        "//ortools/base:safe_hash_map",
         "//ortools/base:stl_util",
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/log:check",

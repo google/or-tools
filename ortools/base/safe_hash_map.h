@@ -110,6 +110,7 @@ The first values are: 0: 0.60653066 1: 0.30326533 2: 0.07581633 3: 0.01263606 4:
 #include <string>
 #include <type_traits>
 #include <utility>
+#include <vector>
 
 #ifdef EMH_NEW
 #undef EMH_KEY
@@ -1664,5 +1665,50 @@ class safe_hash_map {
       sizeof(PairT) >= sizeof(size_t) == 0 ? 1 : 2;  // > 1
 };
 }  // namespace operations_research
+
+namespace std {
+
+template <class T>
+struct hash<std::vector<T*>> {
+  size_t operator()(const std::vector<T*>& v) const {
+    size_t x = 0;
+    for (T* ptr : v) {
+      x ^= std::hash<T*>()(ptr) + 0x9e3779b9 + (x << 6) + (x >> 2);
+    }
+    return x;
+  }
+};
+
+template <>
+struct hash<std::vector<int64_t>> {
+  size_t operator()(const std::vector<int64_t>& v) const {
+    size_t x = 0;
+    for (int64_t val : v) {
+      x ^= std::hash<int64_t>()(val) + 0x9e3779b9 + (x << 6) + (x >> 2);
+    }
+    return x;
+  }
+};
+
+template <class T1, class T2>
+struct hash<std::pair<T1, T2>> {
+  size_t operator()(const std::pair<T1, T2>& p) const {
+    size_t x = std::hash<T1>()(p.first);
+    x ^= std::hash<T2>()(p.second) + 0x9e3779b9 + (x << 6) + (x >> 2);
+    return x;
+  }
+};
+
+template <class T1, class T2, class T3>
+struct hash<std::tuple<T1, T2, T3>> {
+  size_t operator()(const std::tuple<T1, T2, T3>& t) const {
+    size_t x = std::hash<T1>()(std::get<0>(t));
+    x ^= std::hash<T2>()(std::get<1>(t)) + 0x9e3779b9 + (x << 6) + (x >> 2);
+    x ^= std::hash<T3>()(std::get<2>(t)) + 0x9e3779b9 + (x << 6) + (x >> 2);
+    return x;
+  }
+};
+
+}  // namespace std
 
 #endif  // ORTOOLS_BASE_SAFE_HASH_MAP_H_
