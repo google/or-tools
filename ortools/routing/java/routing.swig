@@ -19,7 +19,6 @@
 %include "std_pair.i"
 %template(IntBoolPair) std::pair<int, bool>;
 
-%include "ortools/base/base.i"
 %include "ortools/util/java/vector.swig"
 %include "ortools/util/java/proto.i"
 %import "ortools/constraint_solver/java/constraint_solver.swig"
