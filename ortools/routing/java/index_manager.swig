@@ -37,9 +37,18 @@ namespace operations_research::routing {
 %rename (getNumberOfNodes) IndexManager::num_nodes;
 %rename (getNumberOfVehicles) IndexManager::num_vehicles;
 %rename (getNumberOfIndices) IndexManager::num_indices;
+%rename (getNumberOfUniqueDepots) IndexManager::num_unique_depots;
 %rename (indexToNode) IndexManager::IndexToNode;
 %rename (nodeToIndex) IndexManager::NodeToIndex;
+%unignore IndexManager::indicesToNodes(const std::vector<int64_t>&);
+%extend IndexManager {
+  std::vector<NodeIndex> indicesToNodes(
+    const std::vector<int64_t>& indices) {
+      return $self->IndicesToNodes(absl::Span<const int64_t>(indices));
+  }
+}
 %rename (nodesToIndices) IndexManager::NodesToIndices;
+%unignore IndexManager::kUnassigned;
 
 }  // namespace operations_research::routing
 
