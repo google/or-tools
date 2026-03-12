@@ -67,7 +67,8 @@
 %}
 
 %typemap(out) std::vector<TYPE> %{
-  $result = new std::vector< CTYPE >((const std::vector< CTYPE> &)$1);
+  const std::vector< TYPE >& vec = $1;
+  $result = new std::vector< TYPE >(vec);
 %}
 %typemap(csout, excode=SWIGEXCODE) std::vector<TYPE> {
   global::System.IntPtr cPtr = $imcall;$excode
