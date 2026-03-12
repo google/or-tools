@@ -2,7 +2,7 @@
 absl-py==2.3.1
 immutabledict==4.2.2
 numpy==2.3.5
-protobuf==6.32.0
+protobuf==6.33.5
 requests==2.32.4
 scipy==1.16.3
 typing-extensions==4.15.0
@@ -10,7 +10,7 @@ typing-extensions==4.15.0
 # OR-Tools build dependencies
 mypy==1.6.1
 mypy-protobuf==3.5.0
-virtualenv==20.35.4
+virtualenv==20.36.1
 
 # Example dependencies
 pandas==2.3.3
