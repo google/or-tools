@@ -273,7 +273,8 @@ absl::StatusOr<MPSolutionResponse> HighsSolveProto(
   response.mutable_solve_info()->set_solve_user_time_seconds(
       absl::ToDoubleSeconds(user_timer.GetDuration()));
 
-  if (response.status() == MPSOLVER_OPTIMAL) {
+  if (response.status() == MPSOLVER_OPTIMAL ||
+      response.status() == MPSOLVER_FEASIBLE) {
     double objective_value = highs.getObjectiveValue();
     response.set_objective_value(objective_value);
     response.set_best_objective_bound(objective_value);
