@@ -229,17 +229,10 @@ if(BUILD_PYTHON)
     FetchContent_Declare(
       pybind11
       GIT_REPOSITORY "https://github.com/pybind/pybind11.git"
-      #GIT_TAG "master" # COMPILE FAIL
-      #GIT_TAG "f365314" # 2025/03/24 COMPILE FAIL
-      #GIT_TAG "48eb5ad" # 2025/03/23 TEST PASS
-      # ...
-      #GIT_TAG "a1d00916" # 2024/08/15 TEST PASS
-      #GIT_TAG "bd5951b6" # 2024/08/14 TEST FAIL
-      GIT_TAG "v2.13.6" # TEST PASS with a1d00916 patch apply
-      #GIT_SHALLOW TRUE
+      #GIT_TAG "v3.0.2" # 2026/02/17
+      GIT_TAG "v3.0.1" # 2025/08/22
+      GIT_SHALLOW TRUE
       UPDATE_COMMAND git reset --hard
-      PATCH_COMMAND git apply --ignore-whitespace
-      "${CMAKE_CURRENT_LIST_DIR}/../../patches/pybind11-v2.13.6.patch"
       SYSTEM
     )
     set(PYBIND11_FINDPYTHON ON)
