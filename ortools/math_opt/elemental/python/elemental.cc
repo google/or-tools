@@ -300,6 +300,16 @@ struct type_caster<ElementId<element_type>> {
   }
 };
 
+#if defined(PYBIND11_HAS_NATIVE_ENUM)
+// We must first disable the default pybind11 handler for enums to make our
+// specialization non-ambiguous:
+// https://pybind11.readthedocs.io/en/stable/classes.html#enumerations-and-internal-types
+template <typename AttrType>
+struct type_caster_enum_type_enabled<
+    AttrType, enable_if_t<(GetIndexIfAttr<AttrType>() >= 0)>>
+    : std::false_type {};
+#endif
+
 // Type caster for casting enum values from python enums to C++ `Elemental`
 // enums.
 template <typename AttrType>
