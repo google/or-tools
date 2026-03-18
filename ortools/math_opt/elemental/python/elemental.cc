@@ -117,20 +117,9 @@ bool PyToCppEnum(PyObject* const py_enum, EnumT& cpp_enum,
 // the latter).
 template <const absl::string_view& name>
 struct AsArray {
-  constexpr AsArray() {
-#if __cplusplus >= 202002L
-    std::copy(name.begin(), name.end(), array);
-#else
-    // `std::copy` is not constexpr before C++20.
-    char* p = array;
-    for (const char c : name) {
-      *p++ = c;
-    }
-    *p = '\0';
-#endif
-  }
+  char array[name.size() + 1];
 
-  char array[name.size() + 1] = {};
+  constexpr AsArray() { std::copy(name.begin(), name.end(), array); }
 };
 
 // An RAII object that allows creating a UTF8 string from a numpy unicode
