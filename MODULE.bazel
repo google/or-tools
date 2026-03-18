@@ -52,19 +52,16 @@ bazel_dep(name = "zlib", version = "1.3.1.bcr.8")
 
 # OR-Tools wrappers dependencies
 bazel_dep(name = "gazelle", version = "0.43.0")
-bazel_dep(name = "pybind11_abseil", version = "202402.0")
 bazel_dep(name = "pybind11_bazel", version = "2.13.6")
-bazel_dep(name = "pybind11_protobuf", version = "0.0.0-20240524-1d7a729")
-bazel_dep(name = "swig", version = "4.3.0")
-
 git_override(
     module_name = "pybind11_bazel",
-    commit = "2b6082a4d9d163a52299718113fa41e4b7978db5",
-    patch_strip = 1,
-    patches = ["//:patches/pybind11_bazel.patch"],
+    commit = "d5f6a112138c672daec4ca279f33baae95ca10ec", # Incomming 3.0.1 2026/03
+    #commit = "2b6082a4d9d163a52299718113fa41e4b7978db5", # 2024/09
+    #patch_strip = 1,
+    #patches = ["//:patches/pybind11_bazel.patch"], # patch for 2024/09
     remote = "https://github.com/pybind/pybind11_bazel.git",
 )
-
+bazel_dep(name = "pybind11_abseil", version = "202402.0")
 git_override(
     module_name = "pybind11_abseil",
     commit = "70f8b693b3b70573ca785ef62d9f48054f45d786",
@@ -72,12 +69,13 @@ git_override(
     patches = ["//:patches/pybind11_abseil.patch"],
     remote = "https://github.com/pybind/pybind11_abseil.git",
 )
-
+bazel_dep(name = "pybind11_protobuf", version = "0.0.0-20240524-1d7a729")
 git_override(
     module_name = "pybind11_protobuf",
     commit = "f02a2b7653bc50eb5119d125842a3870db95d251",
     remote = "https://github.com/pybind/pybind11_protobuf.git",
 )
+bazel_dep(name = "swig", version = "4.3.0")
 
 # Python
 # https://rules-python.readthedocs.io/en/latest/toolchains.html#library-modules-with-dev-only-python-usage
