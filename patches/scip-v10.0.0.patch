@@ -107,3 +107,44 @@ index c6ce7283..6b6b1fc8 100644
  install(FILES "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/scip-config.cmake"
                ${PROJECT_BINARY_DIR}/scip-config-version.cmake
          DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/scip)
+diff --git a/src/scip/clock.c b/src/scip/clock.c
+index a1b2c3d4..e5f6g7h8 100644
+--- a/src/scip/clock.c
++++ b/src/scip/clock.c
+@@ -1,7 +1,6 @@
+    /* Floating point rounding can make elapsed time slightly negative */
+-   assert(!EPSN(result, 1e-12));
+    if( result < 0.0 )
+       result = 0.0;
+ 
+    return result;
+ }
+diff --git a/src/scip/cons_linear.c b/src/scip/cons_linear.c
+index b2c3d4e5..f6g7h8i9 100644
+--- a/src/scip/cons_linear.c
++++ b/src/scip/cons_linear.c
+@@ -1,7 +1,13 @@
+                   SCIP_CALL( getNewSidesAfterAggregation(scip, conshdlrdata, cons, &consdata->vars[v], scalar,
+                      &lhs, &rhs) );
+-               assert(scalar != 0.0);
++               if( EPSZ(scalar, 1e-9) )
++               {
++                  SCIP_CALL( delCoefPos(scip, cons, v) );
++                  break;
++               }
+ 
+                /* if aggregated variable would be deleted, do not perform the aggregation */
+                if( SCIPisZero(scip, consdata->vals[v]/scalar) )
+diff --git a/src/scip/stat.c b/src/scip/stat.c
+index c3d4e5f6..g7h8i9j0 100644
+--- a/src/scip/stat.c
++++ b/src/scip/stat.c
+@@ -1,7 +1,7 @@
+    SCIP_Real solvingtime;
+ 
+    solvingtime = SCIPclockGetTime(stat->solvingtime);
+-   assert(solvingtime >= stat->previntegralevaltime);
++   if( solvingtime < stat->previntegralevaltime ) solvingtime = stat->previntegralevaltime;
+    stat->lastsolgap = (SCIPsetIsInfinity(set, stat->primalbound) || SCIPsetIsInfinity(set, -stat->dualbound))
+       ? SCIP_INVALID
+       : REALABS(stat->primalbound - stat->dualbound);

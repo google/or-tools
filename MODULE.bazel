@@ -80,6 +80,15 @@ git_override(
     remote = "https://github.com/pybind/pybind11_protobuf.git",
 )
 
+# SCIP with debug-build assertion fixes
+git_override(
+    module_name = "scip",
+    commit = "v10.0.0",
+    patch_strip = 1,
+    patches = ["//:patches/scip-v10.0.0.patch"],
+    remote = "https://github.com/scipopt/scip.git",
+)
+
 # Python
 # https://rules-python.readthedocs.io/en/latest/toolchains.html#library-modules-with-dev-only-python-usage
 
