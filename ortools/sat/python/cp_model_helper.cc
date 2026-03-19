@@ -1871,8 +1871,7 @@ PYBIND11_MODULE(cp_model_helper, m) {
       .def(py::init<std::shared_ptr<CpModelProto>, int>())
       .def(py::init<std::shared_ptr<CpModelProto>>())  // new variable.
       .def_property_readonly(
-          "proto", &IntVar::proto, py::return_value_policy::reference,
-          py::keep_alive<1, 0>(),
+          "proto", &IntVar::proto, py::return_value_policy::reference_internal,
           "Returns the IntegerVariableProto of this variable.")
       .def_property_readonly("model_proto", &IntVar::model_proto,
                              "Returns the CP model protobuf")
@@ -2120,8 +2119,7 @@ PYBIND11_MODULE(cp_model_helper, m) {
       .def_property_readonly("model_proto", &Constraint::model_proto,
                              "Returns the model protobuf.")
       .def_property_readonly("proto", &Constraint::proto,
-                             py::return_value_policy::reference,
-                             py::keep_alive<1, 0>(),
+                             py::return_value_policy::reference_internal,
                              "Returns the ConstraintProto of this constraint.")
       .def_property("name", &Constraint::name, &Constraint::SetName,
                     "The name of the constraint.")
@@ -2236,9 +2234,9 @@ Raises:
                              "Returns the index of the interval variable.")
       .def_property_readonly("model_proto", &IntervalVar::model_proto,
                              "Returns the model protobuf.")
-      .def_property_readonly(
-          "proto", &IntervalVar::proto, py::return_value_policy::reference,
-          py::keep_alive<1, 0>(), "Returns the interval constraint protobuf.")
+      .def_property_readonly("proto", &IntervalVar::proto,
+                             py::return_value_policy::reference_internal,
+                             "Returns the interval constraint protobuf.")
       .def_property("name", &IntervalVar::name, &IntervalVar::SetName,
                     "The name of the interval variable.")
       .def(
