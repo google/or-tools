@@ -370,7 +370,7 @@ class Generator {
     .def_property_readonly(
         "$0",
         []($1 self) { return self->mutable_$2(); },
-        py::return_value_policy::reference, py::keep_alive<0, 1>()))",
+        py::return_value_policy::reference_internal))",
           field.name(), current_context_.self_mutable_name, field.name());
       // We'll need to generate the wrapping for
       // `google::protobuf::RepeatedPtrField<$3>`.
@@ -383,7 +383,7 @@ class Generator {
     .def_property_readonly(
         "$0",
         []($1 self) { return self->mutable_$0(); },
-        py::return_value_policy::reference, py::keep_alive<0, 1>()))",
+        py::return_value_policy::reference_internal))",
                                 field.name(),
                                 current_context_.self_mutable_name);
       // We'll need to generate the wrapping for
