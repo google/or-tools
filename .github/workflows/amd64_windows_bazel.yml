@@ -47,7 +47,7 @@ jobs:
           python-version: ${{matrix.python.version}}
       - name: Check Python
         run: python --version
-      - uses: bazel-contrib/setup-bazel@0.15.0
+      - uses: bazel-contrib/setup-bazel@0.18.0
       - name: Check Bazel
         run: bazel version
       - name: Restore bazel cache
