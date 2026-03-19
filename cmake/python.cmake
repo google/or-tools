@@ -780,7 +780,7 @@ add_custom_command(
   COMMAND ${stubgen_EXECUTABLE} -p ortools.math_opt.core.python.solver --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.pdlp.python.pdlp --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.routing.pywraprouting --output .
-  COMMAND ${stubgen_EXECUTABLE} -p ortools.routing.python.model --output .
+  COMMAND ${stubgen_EXECUTABLE} -p ortools.routing.python.routing --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.sat.python.cp_model_helper --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.scheduling.python.rcpsp --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.set_cover.python.set_cover --output .
