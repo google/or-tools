@@ -14,15 +14,13 @@
 
 import datetime
 
-from google.protobuf import duration_pb2
 from absl.testing import absltest
-from ortools.math_opt import model_parameters_pb2
-from ortools.math_opt import solution_pb2
-from ortools.math_opt import sparse_containers_pb2
-from ortools.math_opt.python import model
-from ortools.math_opt.python import model_parameters
-from ortools.math_opt.python import solution
-from ortools.math_opt.python import sparse_containers
+from google.protobuf import duration_pb2
+
+from ortools.math_opt import (model_parameters_pb2, solution_pb2,
+                              sparse_containers_pb2)
+from ortools.math_opt.python import (model, model_parameters, solution,
+                                     sparse_containers)
 from ortools.math_opt.python.testing import compare_proto
 
 

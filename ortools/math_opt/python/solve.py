@@ -13,23 +13,20 @@
 # limitations under the License.
 
 """Solve optimization problems, as defined by Model in model.py."""
+
 import types
 from typing import Callable, Optional
 
-from ortools.math_opt import parameters_pb2
-from ortools.math_opt import rpc_pb2
-from ortools.math_opt.core.python import solver
-from ortools.math_opt.python import callback
-from ortools.math_opt.python import compute_infeasible_subsystem_result
-from ortools.math_opt.python import errors
-from ortools.math_opt.python import init_arguments
-from ortools.math_opt.python import message_callback
-from ortools.math_opt.python import model
-from ortools.math_opt.python import model_parameters
-from ortools.math_opt.python import parameters
-from ortools.math_opt.python import result
-from ortools.util.python import solve_interrupter
 from pybind11_abseil.status import StatusNotOk
+
+from ortools.math_opt import parameters_pb2, rpc_pb2
+from ortools.math_opt.core.python import solver
+from ortools.math_opt.python import (callback,
+                                     compute_infeasible_subsystem_result,
+                                     errors, init_arguments, message_callback,
+                                     model, model_parameters, parameters,
+                                     result)
+from ortools.util.python import solve_interrupter
 
 SolveCallback = Callable[[callback.CallbackData], callback.CallbackResult]
 

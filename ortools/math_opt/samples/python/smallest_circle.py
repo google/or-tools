@@ -50,12 +50,11 @@ perspective, e.g., see "The minimum covering sphere problem" (1972). See
 https://en.wikipedia.org/wiki/Smallest-circle_problem for more details.
 """
 
-from collections.abc import Sequence
 import math
+from collections.abc import Sequence
 
-from absl import app
-from absl import flags
 import numpy as np
+from absl import app, flags
 
 from ortools.math_opt.python import mathopt
 

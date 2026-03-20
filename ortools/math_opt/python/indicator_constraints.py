@@ -17,8 +17,7 @@
 from typing import Any, Iterator, Optional
 
 from ortools.math_opt.elemental.python import enums
-from ortools.math_opt.python import from_model
-from ortools.math_opt.python import variables
+from ortools.math_opt.python import from_model, variables
 from ortools.math_opt.python.elemental import elemental
 
 

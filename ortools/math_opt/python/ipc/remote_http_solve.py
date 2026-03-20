@@ -16,12 +16,14 @@
 
 import json
 from typing import Optional
-from google.protobuf import json_format
+
 import requests
-from ortools.service.v1 import optimization_pb2
+from google.protobuf import json_format
+
 from ortools.math_opt import rpc_pb2
 from ortools.math_opt.python import mathopt
 from ortools.math_opt.python.ipc import proto_converter
+from ortools.service.v1 import optimization_pb2
 
 _DEFAULT_DEADLINE_SEC = 10
 _DEFAULT_ENDPOINT = "https://optimization.googleapis.com/v1/mathopt:solveMathOptModel"

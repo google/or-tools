@@ -16,14 +16,13 @@
 
 Analogous to sparse_containers.proto, with bidirectional conversion.
 """
-from typing import Dict, FrozenSet, Generic, Iterable, Mapping, Optional, Set, TypeVar
+
+from typing import (Dict, FrozenSet, Generic, Iterable, Mapping, Optional, Set,
+                    TypeVar)
 
 from ortools.math_opt import sparse_containers_pb2
-from ortools.math_opt.python import linear_constraints
-from ortools.math_opt.python import model
-from ortools.math_opt.python import quadratic_constraints
-from ortools.math_opt.python import variables
-
+from ortools.math_opt.python import (linear_constraints, model,
+                                     quadratic_constraints, variables)
 
 VarOrConstraintType = TypeVar(
     "VarOrConstraintType",

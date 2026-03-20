@@ -16,11 +16,9 @@ import datetime
 import math
 
 from absl.testing import absltest
-from ortools.math_opt import callback_pb2
-from ortools.math_opt import sparse_containers_pb2
-from ortools.math_opt.python import callback
-from ortools.math_opt.python import model
-from ortools.math_opt.python import sparse_containers
+
+from ortools.math_opt import callback_pb2, sparse_containers_pb2
+from ortools.math_opt.python import callback, model, sparse_containers
 from ortools.math_opt.python.testing import compare_proto
 
 

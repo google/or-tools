@@ -20,9 +20,9 @@ from typing import FrozenSet, Mapping
 import immutabledict
 
 from ortools.math_opt import infeasible_subsystem_pb2
-from ortools.math_opt.python import linear_constraints as linear_constraints_mod
-from ortools.math_opt.python import model
-from ortools.math_opt.python import result
+from ortools.math_opt.python import \
+    linear_constraints as linear_constraints_mod
+from ortools.math_opt.python import model, result
 from ortools.math_opt.python import variables as variables_mod
 
 

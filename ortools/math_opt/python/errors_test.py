@@ -15,6 +15,7 @@
 """Tests of the `errors` package."""
 
 from absl.testing import absltest
+
 from ortools.math_opt import rpc_pb2
 from ortools.math_opt.python import errors
 

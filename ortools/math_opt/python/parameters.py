@@ -19,14 +19,12 @@ import datetime
 import enum
 from typing import Dict, Optional
 
-from ortools.pdlp import solvers_pb2 as pdlp_solvers_pb2
 from ortools.glop import parameters_pb2 as glop_parameters_pb2
 from ortools.math_opt import parameters_pb2 as math_opt_parameters_pb2
-from ortools.math_opt.solvers import glpk_pb2
-from ortools.math_opt.solvers import gurobi_pb2
-from ortools.math_opt.solvers import highs_pb2
-from ortools.math_opt.solvers import osqp_pb2
+from ortools.math_opt.solvers import (glpk_pb2, gurobi_pb2, highs_pb2,
+                                      osqp_pb2, xpress_pb2)
 from ortools.math_opt.solvers.gscip import gscip_pb2
+from ortools.pdlp import solvers_pb2 as pdlp_solvers_pb2
 from ortools.sat import sat_parameters_pb2
 
 
@@ -162,7 +160,9 @@ def lp_algorithm_to_proto(
 
 @enum.unique
 class Emphasis(enum.Enum):
-    """Effort level applied to an optional task while solving (see SolveParameters for use).
+    """Effort level applied to an optional task while solving.
+
+    See SolveParameters for use.
 
     - OFF: disable this task.
     - LOW: apply reduced effort.
@@ -217,8 +217,8 @@ class GurobiParameters:
     of possible parameters.
 
     Example use:
-      gurobi=GurobiParameters();
-      gurobi.param_values["BarIterLimit"] = "10";
+      gurobi = GurobiParameters();
+      gurobi.param_values['BarIterLimit'] = '10';
 
     With Gurobi, the order that parameters are applied can have an impact in rare
     situations. Parameters are applied in the following order:
@@ -238,6 +238,18 @@ class GurobiParameters:
                 for key, val in self.param_values.items()
             ]
         )
+
+
+def parse_gurobi_parameters(
+    proto: gurobi_pb2.GurobiParametersProto,
+) -> GurobiParameters:
+    """Returns the GurobiParameters equivalent to the input proto."""
+    param_values = {}
+    for param in proto.parameters:
+        if param.name in param_values:
+            raise ValueError(f"Duplicate Gurobi parameter name: {param.name}.")
+        param_values[param.name] = param.value
+    return GurobiParameters(param_values=param_values)
 
 
 @dataclasses.dataclass
@@ -267,6 +279,18 @@ class GlpkParameters:
         return glpk_pb2.GlpkParametersProto(
             compute_unbound_rays_if_possible=self.compute_unbound_rays_if_possible
         )
+
+
+def parse_glpk_parameters(
+    proto: glpk_pb2.GlpkParametersProto,
+) -> GlpkParameters:
+    """Returns the GlpkParameters equivalent to the input proto."""
+    compute_rays = (
+        proto.compute_unbound_rays_if_possible
+        if proto.HasField("compute_unbound_rays_if_possible")
+        else None
+    )
+    return GlpkParameters(compute_unbound_rays_if_possible=compute_rays)
 
 
 @dataclasses.dataclass
@@ -378,6 +402,7 @@ class SolveParameters:
       SolveParameters.scaling to OsqpSettingsProto.
     glpk: GLPK specific solve parameters.
     highs: HiGHS specific solve parameters.
+    xpress: XPRESS specific solve parameters.
   """  # fmt: skip
 
     time_limit: Optional[datetime.timedelta] = None
@@ -418,6 +443,9 @@ class SolveParameters:
     highs: highs_pb2.HighsOptionsProto = dataclasses.field(
         default_factory=highs_pb2.HighsOptionsProto
     )
+    xpress: xpress_pb2.XpressParametersProto = dataclasses.field(
+        default_factory=xpress_pb2.XpressParametersProto
+    )
 
     def to_proto(self) -> math_opt_parameters_pb2.SolveParametersProto:
         """Returns a protocol buffer equivalent to this."""
@@ -436,6 +464,7 @@ class SolveParameters:
             osqp=self.osqp,
             glpk=self.glpk.to_proto(),
             highs=self.highs,
+            xpress=self.xpress,
         )
         if self.time_limit is not None:
             result.time_limit.FromTimedelta(self.time_limit)
@@ -462,3 +491,51 @@ class SolveParameters:
         if self.solution_pool_size is not None:
             result.solution_pool_size = self.solution_pool_size
         return result
+
+
+def parse_solve_parameters(
+    proto: math_opt_parameters_pb2.SolveParametersProto,
+) -> SolveParameters:
+    """Returns the SolveParameters equivalent to the input proto."""
+    result = SolveParameters(
+        enable_output=proto.enable_output,
+        lp_algorithm=lp_algorithm_from_proto(proto.lp_algorithm),
+        presolve=emphasis_from_proto(proto.presolve),
+        cuts=emphasis_from_proto(proto.cuts),
+        heuristics=emphasis_from_proto(proto.heuristics),
+        scaling=emphasis_from_proto(proto.scaling),
+        gscip=proto.gscip,
+        gurobi=parse_gurobi_parameters(proto.gurobi),
+        glop=proto.glop,
+        cp_sat=proto.cp_sat,
+        pdlp=proto.pdlp,
+        osqp=proto.osqp,
+        glpk=parse_glpk_parameters(proto.glpk),
+        highs=proto.highs,
+        xpress=proto.xpress,
+    )
+    if proto.HasField("time_limit"):
+        result.time_limit = proto.time_limit.ToTimedelta()
+    if proto.HasField("iteration_limit"):
+        result.iteration_limit = proto.iteration_limit
+    if proto.HasField("node_limit"):
+        result.node_limit = proto.node_limit
+    if proto.HasField("cutoff_limit"):
+        result.cutoff_limit = proto.cutoff_limit
+    if proto.HasField("objective_limit"):
+        result.objective_limit = proto.objective_limit
+    if proto.HasField("best_bound_limit"):
+        result.best_bound_limit = proto.best_bound_limit
+    if proto.HasField("solution_limit"):
+        result.solution_limit = proto.solution_limit
+    if proto.HasField("threads"):
+        result.threads = proto.threads
+    if proto.HasField("random_seed"):
+        result.random_seed = proto.random_seed
+    if proto.HasField("absolute_gap_tolerance"):
+        result.absolute_gap_tolerance = proto.absolute_gap_tolerance
+    if proto.HasField("relative_gap_tolerance"):
+        result.relative_gap_tolerance = proto.relative_gap_tolerance
+    if proto.HasField("solution_pool_size"):
+        result.solution_pool_size = proto.solution_pool_size
+    return result

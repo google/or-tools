@@ -20,6 +20,7 @@ instead implemented in Python. This will give Python users a more familiar API.
 
 import enum
 from typing import Optional, Type
+
 from ortools.math_opt import rpc_pb2
 
 

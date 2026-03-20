@@ -19,29 +19,14 @@ import collections
 import dataclasses
 import math
 import typing
-from typing import (
-    Any,
-    DefaultDict,
-    Deque,
-    Generic,
-    Iterable,
-    Mapping,
-    NoReturn,
-    Optional,
-    Protocol,
-    Tuple,
-    Type,
-    TypeVar,
-    Union,
-)
+from typing import (Any, DefaultDict, Deque, Generic, Iterable, Mapping,
+                    NoReturn, Optional, Protocol, Tuple, Type, TypeVar, Union)
 
 import immutabledict
 
 from ortools.math_opt.elemental.python import enums
-from ortools.math_opt.python import bounded_expressions
-from ortools.math_opt.python import from_model
+from ortools.math_opt.python import bounded_expressions, from_model
 from ortools.math_opt.python.elemental import elemental
-
 
 LinearTypes = Union[int, float, "LinearBase"]
 QuadraticTypes = Union[int, float, "LinearBase", "QuadraticBase"]
