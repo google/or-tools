@@ -19,8 +19,8 @@ cc_library(
     hdrs = ["lp_model.h"],
     deps = [
         ":lp_name",
-        "//ortools/base:intops",
         "//ortools/base:status_macros",
+        "//ortools/base:strong_int",
         "//ortools/base:strong_vector",
         "//ortools/util:fp_roundtrip_conv",
         "@abseil-cpp//absl/container:flat_hash_map",

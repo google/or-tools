@@ -82,7 +82,7 @@ cc_test(
         ":sparse_vector",
         ":sparse_vector_view",
         "//ortools/base:gmock_main",
-        "//ortools/base:intops",
+        "//ortools/base:strong_int",
         "//ortools/base:types",
         "//ortools/math_opt:model_cc_proto",
         "//ortools/math_opt:sparse_containers_cc_proto",

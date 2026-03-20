@@ -21,7 +21,7 @@ cc_library(
     srcs = ["model_util.cc"],
     hdrs = ["model_util.h"],
     deps = [
-        "//ortools/base:intops",
+        "//ortools/base:strong_int",
         "//ortools/math_opt/cpp:variable_and_expressions",
         "//ortools/math_opt/storage:linear_expression_data",
         "//ortools/math_opt/storage:model_storage",
@@ -37,7 +37,7 @@ cc_test(
     deps = [
         ":model_util",
         "//ortools/base:gmock_main",
-        "//ortools/base:intops",
+        "//ortools/base:strong_int",
         "//ortools/math_opt/constraints/quadratic:storage",
         "//ortools/math_opt/cpp:math_opt",
         "//ortools/math_opt/storage:linear_expression_data",

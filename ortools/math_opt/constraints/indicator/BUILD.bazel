@@ -37,7 +37,7 @@ cc_test(
         ":indicator_constraint",
         "//ortools/base:gmock",
         "//ortools/base:gmock_main",
-        "//ortools/base:intops",
+        "//ortools/base:strong_int",
         "//ortools/math_opt/cpp:math_opt",
         "//ortools/math_opt/storage:model_storage",
         "//ortools/math_opt/storage:sparse_coefficient_map",
@@ -50,7 +50,7 @@ cc_library(
     srcs = ["storage.cc"],
     hdrs = ["storage.h"],
     deps = [
-        "//ortools/base:intops",
+        "//ortools/base:strong_int",
         "//ortools/math_opt:model_cc_proto",
         "//ortools/math_opt:model_update_cc_proto",
         "//ortools/math_opt:sparse_containers_cc_proto",
@@ -68,7 +68,7 @@ cc_test(
     deps = [
         ":storage",
         "//ortools/base:gmock_main",
-        "//ortools/base:intops",
+        "//ortools/base:strong_int",
         "//ortools/math_opt:model_cc_proto",
         "//ortools/math_opt:sparse_containers_cc_proto",
         "//ortools/math_opt/cpp:math_opt",
