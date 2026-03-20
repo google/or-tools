@@ -40,6 +40,7 @@ ortools_cxx_library(
     absl::log
     absl::status
     absl::strings
+    ortools::gurobi_stdout_matchers
     ortools::math_opt_matchers
     ortools::math_opt_base_solver_test
     ortools::math_opt_test_models
@@ -349,6 +350,7 @@ ortools_cxx_library(
   LINK_LIBRARIES
     ortools::base_gmock
     absl::log
+    ortools::gurobi_stdout_matchers
     ortools::math_opt_matchers
     ortools::math_opt_test_models
   TESTING
@@ -368,6 +370,7 @@ ortools_cxx_library(
     absl::status
     absl::strings
     absl::time
+    ortools::gurobi_stdout_matchers
     ortools::math_opt_matchers
   TESTING
 )
