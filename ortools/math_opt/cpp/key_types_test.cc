@@ -33,9 +33,12 @@ using ::testing::HasSubstr;
 using ::testing::IsEmpty;
 using ::testing::status::StatusIs;
 
-// We disable this check under asan because asan helpfully detects the error of
-// passing null to a function expecting a non-nullable pointer.
-#if !defined(ABSL_HAVE_ADDRESS_SANITIZER)
+#if defined(__clang__) || defined(__GNUC__)
+#define NO_SANITIZE_NULLABILITY_ATTR __attribute__((no_sanitize("nullability")))
+#else
+#define NO_SANITIZE_NULLABILITY_ATTR
+#endif
+
 TEST(CheckModelStorageTest, NullExpected) {
   ModelStorage model;
   // The compiler will prevent us from passing nullptr to a function expecting
@@ -43,16 +46,18 @@ TEST(CheckModelStorageTest, NullExpected) {
   // `CheckModelStorage()` in that case.
   ModelStorage* laundered_nullptr = nullptr;
   benchmark::DoNotOptimize(laundered_nullptr);
-  EXPECT_THAT(
-      CheckModelStorage(/*storage=*/nullptr,
-                        /*expected_storage=*/laundered_nullptr),
-      StatusIs(absl::StatusCode::kInternal, HasSubstr("expected_storage")));
-  EXPECT_THAT(
-      CheckModelStorage(/*storage=*/&model,
-                        /*expected_storage=*/laundered_nullptr),
-      StatusIs(absl::StatusCode::kInternal, HasSubstr("expected_storage")));
+
+  [&]() NO_SANITIZE_NULLABILITY_ATTR {
+    EXPECT_THAT(
+        CheckModelStorage(/*storage=*/nullptr,
+                          /*expected_storage=*/laundered_nullptr),
+        StatusIs(absl::StatusCode::kInternal, HasSubstr("expected_storage")));
+    EXPECT_THAT(
+        CheckModelStorage(/*storage=*/&model,
+                          /*expected_storage=*/laundered_nullptr),
+        StatusIs(absl::StatusCode::kInternal, HasSubstr("expected_storage")));
+  }();
 }
-#endif  // !defined(ABSL_HAVE_ADDRESS_SANITIZER)
 
 TEST(CheckModelStorageTest, SingleModel) {
   ModelStorage model;

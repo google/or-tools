@@ -186,17 +186,15 @@ TEST_P(MessageCallbackTest, ObjectiveValueAndEndingSubstring) {
   // First test with enable_output being false.
   args.parameters.enable_output = false;
   {
-#ifdef OPERATIONS_RESEARCH_OUTPUT_CAPTURE_SUPPORTED
     ScopedStdStreamCapture stdout_capture(CapturedStream::kStdout);
-#endif  // OPERATIONS_RESEARCH_OUTPUT_CAPTURE_SUPPORTED
     ASSERT_OK_AND_ASSIGN(const SolveResult result,
                          Solve(model, GetParam().solver_type, args));
-#ifdef OPERATIONS_RESEARCH_OUTPUT_CAPTURE_SUPPORTED
-    EXPECT_THAT(
-        std::move(stdout_capture).StopCaptureAndReturnContents(),
-        EmptyOrGurobiLicenseWarningIfGurobi(
-            /*is_gurobi=*/GetParam().solver_type == SolverType::kGurobi));
-#endif  // OPERATIONS_RESEARCH_OUTPUT_CAPTURE_SUPPORTED
+    if (ScopedStdStreamCapture::kIsSupported) {
+      EXPECT_THAT(
+          std::move(stdout_capture).StopCaptureAndReturnContents(),
+          EmptyOrGurobiLicenseWarningIfGurobi(
+              /*is_gurobi=*/GetParam().solver_type == SolverType::kGurobi));
+    }
     ASSERT_THAT(result, IsOptimal(42.0));
     EXPECT_THAT(callback_messages, Each(Not(HasSubstr("\n"))));
     if (GetParam().support_message_callback) {
@@ -212,17 +210,15 @@ TEST_P(MessageCallbackTest, ObjectiveValueAndEndingSubstring) {
   callback_messages.clear();
   args.parameters.enable_output = true;
   {
-#ifdef OPERATIONS_RESEARCH_OUTPUT_CAPTURE_SUPPORTED
     ScopedStdStreamCapture stdout_capture(CapturedStream::kStdout);
-#endif  // OPERATIONS_RESEARCH_OUTPUT_CAPTURE_SUPPORTED
     ASSERT_OK_AND_ASSIGN(const SolveResult result,
                          Solve(model, GetParam().solver_type, args));
-#ifdef OPERATIONS_RESEARCH_OUTPUT_CAPTURE_SUPPORTED
-    EXPECT_THAT(
-        std::move(stdout_capture).StopCaptureAndReturnContents(),
-        EmptyOrGurobiLicenseWarningIfGurobi(
-            /*is_gurobi=*/GetParam().solver_type == SolverType::kGurobi));
-#endif  // OPERATIONS_RESEARCH_OUTPUT_CAPTURE_SUPPORTED
+    if (ScopedStdStreamCapture::kIsSupported) {
+      EXPECT_THAT(
+          std::move(stdout_capture).StopCaptureAndReturnContents(),
+          EmptyOrGurobiLicenseWarningIfGurobi(
+              /*is_gurobi=*/GetParam().solver_type == SolverType::kGurobi));
+    }
     ASSERT_THAT(result, IsOptimal(42.0));
     EXPECT_THAT(callback_messages, Each(Not(HasSubstr("\n"))));
     if (GetParam().support_message_callback) {
@@ -239,16 +235,14 @@ TEST_P(MessageCallbackTest, ObjectiveValueAndEndingSubstring) {
   args.message_callback = nullptr;
   callback_messages.clear();
 
-#ifdef OPERATIONS_RESEARCH_OUTPUT_CAPTURE_SUPPORTED
   ScopedStdStreamCapture stdout_capture(CapturedStream::kStdout);
-#endif  // OPERATIONS_RESEARCH_OUTPUT_CAPTURE_SUPPORTED
   ASSERT_OK_AND_ASSIGN(const SolveResult result,
                        Solve(model, GetParam().solver_type, args));
-#ifdef OPERATIONS_RESEARCH_OUTPUT_CAPTURE_SUPPORTED
-  EXPECT_THAT(std::move(stdout_capture).StopCaptureAndReturnContents(),
-              AllOf(AnyOf(HasSubstr("42"), HasSubstr("4.2")),
-                    HasSubstr(GetParam().ending_substring)));
-#endif  // OPERATIONS_RESEARCH_OUTPUT_CAPTURE_SUPPORTED
+  if (ScopedStdStreamCapture::kIsSupported) {
+    EXPECT_THAT(std::move(stdout_capture).StopCaptureAndReturnContents(),
+                AllOf(AnyOf(HasSubstr("42"), HasSubstr("4.2")),
+                      HasSubstr(GetParam().ending_substring)));
+  }
   ASSERT_THAT(result, IsOptimal(42.0));
   EXPECT_THAT(callback_messages, IsEmpty());
 }

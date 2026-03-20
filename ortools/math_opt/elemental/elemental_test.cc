@@ -1085,12 +1085,12 @@ TEST(ElementalDeathTest, DiePolicy) {
   const VariableId x = elemental.AddElement<ElementType::kVariable>("x");
   elemental.GetAttr(DoubleAttr1::kVarLb, AttrKey(x));
 
-  EXPECT_DEATH(elemental.GetAttr(DoubleAttr1::kVarLb, AttrKey(-1)),
-               "no element with id -1 for element type variable");
-  EXPECT_DEATH(
+  EXPECT_DEATH_IF_SUPPORTED(elemental.GetAttr(DoubleAttr1::kVarLb, AttrKey(-1)),
+                            "no element with id -1 for element type variable");
+  EXPECT_DEATH_IF_SUPPORTED(
       (elemental.Slice<0, Elemental::DiePolicy>(DoubleAttr1::kVarLb, 4)),
       "no element with id 4");
-  EXPECT_DEATH(
+  EXPECT_DEATH_IF_SUPPORTED(
       (elemental.GetSliceSize<0, Elemental::DiePolicy>(DoubleAttr1::kVarLb, 4)),
       "no element with id 4");
 }

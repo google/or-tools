@@ -211,7 +211,7 @@ TEST(GScipEventHandlerDeathTest, ErrorReturnedByInit) {
   // fails with the expected error.
   const std::string kMarker = "FailingHandler failed as expected";
 
-  EXPECT_DEATH(
+  EXPECT_DEATH_IF_SUPPORTED(
       {
         const std::unique_ptr<GScip> gscip =
             GScip::Create("event_handler_test").value();
@@ -239,7 +239,7 @@ TEST(GScipEventHandlerDeathTest, ErrorReturnedByExit) {
   // See the comment in ErrorReturnedByInit test.
   const std::string kMarker = "FailingHandler failed as expected";
 
-  EXPECT_DEATH(
+  EXPECT_DEATH_IF_SUPPORTED(
       {
         const std::unique_ptr<GScip> gscip =
             GScip::Create("event_handler_test").value();
@@ -273,7 +273,7 @@ TEST(GScipEventHandlerDeathTest, ErrorReturnedByExecute) {
   // See the comment in ErrorReturnedByInit test.
   const std::string kMarker = "FailingHandler failed as expected";
 
-  EXPECT_DEATH(
+  EXPECT_DEATH_IF_SUPPORTED(
       {
         const std::unique_ptr<GScip> gscip =
             GScip::Create("event_handler_test").value();

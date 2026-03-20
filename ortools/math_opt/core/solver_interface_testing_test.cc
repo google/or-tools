@@ -84,7 +84,8 @@ TEST(WithAlternateAllSolversRegistryTest, Default) {
 
 TEST(WithAlternateAllSolversRegistryDeathTest, TwoInstances) {
   const WithAlternateAllSolversRegistry alternate_registry({});
-  EXPECT_DEATH(WithAlternateAllSolversRegistry({}), "temporary_test_instance");
+  EXPECT_DEATH_IF_SUPPORTED(WithAlternateAllSolversRegistry({}),
+                            "temporary_test_instance");
 }
 
 TEST(WithAlternateAllSolversRegistryTest, KeepRegisteredSolver) {
@@ -107,18 +108,19 @@ TEST(WithAlternateAllSolversRegistryTest, KeepRegisteredSolver) {
 }
 
 TEST(WithAlternateAllSolversRegistryDeathTest, KeepUnregisteredSolver) {
-  EXPECT_DEATH(WithAlternateAllSolversRegistry({
-                   .kept = {SOLVER_TYPE_GUROBI},
-               }),
-               "SOLVER_TYPE_GUROBI was not registered");
+  EXPECT_DEATH_IF_SUPPORTED(WithAlternateAllSolversRegistry({
+                                .kept = {SOLVER_TYPE_GUROBI},
+                            }),
+                            "SOLVER_TYPE_GUROBI was not registered");
 }
 
 TEST(WithAlternateAllSolversRegistryDeathTest, KeepAndOverrideSolver) {
-  EXPECT_DEATH(WithAlternateAllSolversRegistry({
-                   .kept = {SOLVER_TYPE_CP_SAT},
-                   .overridden = {{SOLVER_TYPE_CP_SAT, OverriddenFactory}},
-               }),
-               "SOLVER_TYPE_CP_SAT already registered");
+  EXPECT_DEATH_IF_SUPPORTED(
+      WithAlternateAllSolversRegistry({
+          .kept = {SOLVER_TYPE_CP_SAT},
+          .overridden = {{SOLVER_TYPE_CP_SAT, OverriddenFactory}},
+      }),
+      "SOLVER_TYPE_CP_SAT already registered");
 }
 
 TEST(WithAlternateAllSolversRegistryTest, KeepAndOverrideRegisteredSolvers) {

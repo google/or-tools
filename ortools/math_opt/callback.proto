@@ -181,7 +181,7 @@ message CallbackResultProto {
   // GeneratedLinearConstraint::is_lazy for details.
   repeated GeneratedLinearConstraint cuts = 4;
 
-  // Use only for CALLBACK_EVENT_MIP_NODE.
+  // Use only for CALLBACK_EVENT_MIP_NODE or CALLBACK_EVENT_MIP_SOLUTION.
   //
   // Note that some solvers (e.g. Gurobi) support partially-defined solutions.
   // The most common use case is to specify a value for each variable in the

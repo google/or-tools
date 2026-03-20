@@ -891,7 +891,8 @@ TEST(SparseVectorFilterPredicateDeathTest, UnsortedFilteredIds) {
   filter.mutable_filtered_ids()->Add(2);
   filter.mutable_filtered_ids()->Add(5);
 
-  EXPECT_DEATH(SparseVectorFilterPredicate{filter}, "strictly increasing");
+  EXPECT_DEATH_IF_SUPPORTED(SparseVectorFilterPredicate{filter},
+                            "strictly increasing");
 }
 
 TEST(SparseVectorFilterPredicateDeathTest, DuplicatedFilteredIds) {
@@ -909,7 +910,8 @@ TEST(SparseVectorFilterPredicateDeathTest, DuplicatedFilteredIds) {
   filter.mutable_filtered_ids()->Add(5);
   filter.mutable_filtered_ids()->Add(6);
 
-  EXPECT_DEATH(SparseVectorFilterPredicate{filter}, "strictly increasing");
+  EXPECT_DEATH_IF_SUPPORTED(SparseVectorFilterPredicate{filter},
+                            "strictly increasing");
 }
 
 TEST(SparseVectorFilterPredicateDeathTest, UnsortedInputIds) {
@@ -924,7 +926,8 @@ TEST(SparseVectorFilterPredicateDeathTest, UnsortedInputIds) {
 
   SparseVectorFilterPredicate predicate(filter);
   EXPECT_TRUE(predicate.AcceptsAndUpdate(2, 0.0));
-  EXPECT_DEATH(predicate.AcceptsAndUpdate(1, 0.0), "strictly increasing");
+  EXPECT_DEATH_IF_SUPPORTED(predicate.AcceptsAndUpdate(1, 0.0),
+                            "strictly increasing");
 }
 
 TEST(SparseVectorFilterPredicateDeathTest, DuplicatedInputIds) {
@@ -939,7 +942,8 @@ TEST(SparseVectorFilterPredicateDeathTest, DuplicatedInputIds) {
 
   SparseVectorFilterPredicate predicate(filter);
   EXPECT_TRUE(predicate.AcceptsAndUpdate(2, 0.0));
-  EXPECT_DEATH(predicate.AcceptsAndUpdate(2, 0.0), "strictly increasing");
+  EXPECT_DEATH_IF_SUPPORTED(predicate.AcceptsAndUpdate(2, 0.0),
+                            "strictly increasing");
 }
 
 TEST(FilterSparseVectorTest, SimpleFilter) {

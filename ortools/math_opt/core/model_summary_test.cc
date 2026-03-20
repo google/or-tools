@@ -295,13 +295,15 @@ TEST(IdNameBiMapTest, InitializerList) {
 }
 
 TEST(IdNameBiMapDeathTest, InitializerListNotSorted) {
-  EXPECT_DEATH(IdNameBiMap({{5, ""}, {4, "not_in_order"}, {8, ""}, {9, "y"}}),
-               "strictly increasing");
+  EXPECT_DEATH_IF_SUPPORTED(
+      IdNameBiMap({{5, ""}, {4, "not_in_order"}, {8, ""}, {9, "y"}}),
+      "strictly increasing");
 }
 
 TEST(IdNameBiMapDeathTest, InitializerListDuplicates) {
-  EXPECT_DEATH(IdNameBiMap({{5, ""}, {5, "is_duplicated"}, {8, ""}, {9, "y"}}),
-               "strictly increasing");
+  EXPECT_DEATH_IF_SUPPORTED(
+      IdNameBiMap({{5, ""}, {5, "is_duplicated"}, {8, ""}, {9, "y"}}),
+      "strictly increasing");
 }
 
 TEST(IdNameBiMapTest, SetNextFreeIdNegative) {

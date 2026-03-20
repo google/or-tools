@@ -13,12 +13,12 @@
 
 #include "ortools/math_opt/cpp/message_callback.h"
 
-#include <algorithm>
 #include <memory>
 #include <ostream>
 #include <string>
 #include <vector>
 
+#include "absl/algorithm/container.h"
 #include "absl/base/thread_annotations.h"
 #include "absl/log/check.h"
 #include "absl/log/die_if_null.h"
@@ -26,7 +26,6 @@
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/types/span.h"
-#include "google/protobuf/repeated_field.h"
 #include "google/protobuf/repeated_ptr_field.h"
 #include "ortools/base/source_location.h"
 
@@ -60,8 +59,7 @@ void PushBack(absl::Span<const std::string> messages,
 
 void PushBack(absl::Span<const std::string> messages,
               google::protobuf::RepeatedPtrField<std::string>* const sink) {
-  std::copy(messages.begin(), messages.end(),
-            google::protobuf::RepeatedFieldBackInserter(sink));
+  absl::c_copy(messages, google::protobuf::RepeatedFieldBackInserter(sink));
 }
 
 template <typename Sink>

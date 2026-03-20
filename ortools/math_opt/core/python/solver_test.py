@@ -12,19 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections.abc import Callable, Sequence
 import sys
 import threading
+from collections.abc import Callable, Sequence
 from typing import Optional
-from absl.testing import absltest
-from absl.testing import parameterized
+
+from absl.testing import absltest, parameterized
 from pybind11_abseil import status
-from ortools.math_opt import callback_pb2
-from ortools.math_opt import model_parameters_pb2
-from ortools.math_opt import model_pb2
-from ortools.math_opt import model_update_pb2
-from ortools.math_opt import parameters_pb2
-from ortools.math_opt import result_pb2
+
+from ortools.math_opt import (callback_pb2, model_parameters_pb2, model_pb2,
+                              model_update_pb2, parameters_pb2, result_pb2)
 from ortools.math_opt.core.python import solver
 from ortools.util.python import pybind_solve_interrupter
 

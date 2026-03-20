@@ -94,6 +94,28 @@ cc_test(
 )
 
 cc_library(
+    name = "message_callback_testing",
+    testonly = True,
+    srcs = ["message_callback_testing.cc"],
+    hdrs = ["message_callback_testing.h"],
+    deps = [
+        ":base_solver",
+        "@abseil-cpp//absl/base:nullability",
+        "@abseil-cpp//absl/synchronization",
+    ],
+)
+
+cc_test(
+    name = "message_callback_testing_test",
+    srcs = ["message_callback_testing_test.cc"],
+    deps = [
+        ":base_solver",
+        ":message_callback_testing",
+        "//ortools/base:gmock_main",
+    ],
+)
+
+cc_library(
     name = "model_summary",
     srcs = ["model_summary.cc"],
     hdrs = ["model_summary.h"],
@@ -142,7 +164,6 @@ cc_library(
         "//ortools/math_opt:model_update_cc_proto",
         "//ortools/math_opt:parameters_cc_proto",
         "//ortools/math_opt:result_cc_proto",
-        "//ortools/port:proto_utils",
         "//ortools/util:solve_interrupter",
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/base:nullability",
@@ -182,7 +203,6 @@ cc_library(
         "//ortools/math_opt/validators:model_validator",
         "//ortools/math_opt/validators:result_validator",
         "//ortools/math_opt/validators:solve_parameters_validator",
-        "//ortools/port:proto_utils",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/memory",
         "@abseil-cpp//absl/status",

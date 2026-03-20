@@ -25,6 +25,7 @@
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/synchronization/mutex.h"
+#include "google/protobuf/message.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/math_opt/core/base_solver.h"
 #include "ortools/math_opt/cpp/compute_infeasible_subsystem_arguments.h"
@@ -83,6 +84,9 @@ absl::StatusOr<SolveResult> CallSolve(BaseSolver& solver,
 
   ASSIGN_OR_RETURN(ModelSolveParametersProto model_parameters,
                    arguments.model_parameters.Proto());
+  VLOG(1) << "Solving with parameters:\n"
+          << google::protobuf::ShortFormat(model_parameters)
+          << "\nModel with: " << expected_storage->ModelSizeDebugString();
   const absl::StatusOr<SolveResultProto> solve_result_proto = solver.Solve(
       {.parameters = arguments.parameters.Proto(),
        .model_parameters = std::move(model_parameters),
@@ -103,7 +107,12 @@ absl::StatusOr<SolveResult> CallSolve(BaseSolver& solver,
     return solve_result_proto.status();
   }
 
-  return SolveResult::FromProto(expected_storage, solve_result_proto.value());
+  OR_ASSIGN_OR_RETURN3(
+      SolveResult result,
+      SolveResult::FromProto(expected_storage, solve_result_proto.value()),
+      _.SetCode(absl::StatusCode::kInternal)
+          << "error building SolveResult from proto");
+  return result;
 }
 
 absl::StatusOr<ComputeInfeasibleSubsystemResult> CallComputeInfeasibleSubsystem(
@@ -117,8 +126,12 @@ absl::StatusOr<ComputeInfeasibleSubsystemResult> CallComputeInfeasibleSubsystem(
            .message_callback = arguments.message_callback,
            .interrupter = arguments.interrupter}));
 
-  return ComputeInfeasibleSubsystemResult::FromProto(expected_storage,
-                                                     compute_result_proto);
+  OR_ASSIGN_OR_RETURN3(ComputeInfeasibleSubsystemResult result,
+                       ComputeInfeasibleSubsystemResult::FromProto(
+                           expected_storage, compute_result_proto),
+                       _.SetCode(absl::StatusCode::kInternal)
+                           << "error building SolveResult from proto");
+  return result;
 }
 
 }  // namespace

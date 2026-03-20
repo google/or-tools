@@ -193,8 +193,12 @@ TEST(LinearExpressionMatcherDeathTest, IsIdenticalWithNaNs) {
   Model model;
   const Variable x = model.AddBinaryVariable();
 
-  EXPECT_DEATH(IsIdentical(LinearExpression({}, kNaN)), "Illegal NaN");
-  EXPECT_DEATH(IsIdentical(LinearExpression({{x, kNaN}}, 0)), "Illegal NaN");
+  EXPECT_DEATH_IF_SUPPORTED(
+      [[maybe_unused]] auto _ = IsIdentical(LinearExpression({}, kNaN)),
+      "Illegal NaN");
+  EXPECT_DEATH_IF_SUPPORTED(
+      [[maybe_unused]] auto _ = IsIdentical(LinearExpression({{x, kNaN}}, 0)),
+      "Illegal NaN");
 }
 
 TEST(LinearExpressionMatcherTest, IsIdenticalMatchedAgainstNaNs) {
@@ -310,11 +314,15 @@ TEST(QuadraticExpressionMatcherDeathTest, IsIdenticalWithNaNs) {
   Model model;
   const Variable x = model.AddBinaryVariable();
 
-  EXPECT_DEATH(IsIdentical(QuadraticExpression({}, {}, kNaN)), "Illegal NaN");
-  EXPECT_DEATH(IsIdentical(QuadraticExpression({}, {{x, kNaN}}, 0)),
-               "Illegal NaN");
-  EXPECT_DEATH(IsIdentical(QuadraticExpression({{x, x, kNaN}}, {}, 0)),
-               "Illegal NaN");
+  EXPECT_DEATH_IF_SUPPORTED(
+      [[maybe_unused]] auto _ = IsIdentical(QuadraticExpression({}, {}, kNaN)),
+      "Illegal NaN");
+  EXPECT_DEATH_IF_SUPPORTED([[maybe_unused]] auto _ = IsIdentical(
+                                QuadraticExpression({}, {{x, kNaN}}, 0)),
+                            "Illegal NaN");
+  EXPECT_DEATH_IF_SUPPORTED([[maybe_unused]] auto _ = IsIdentical(
+                                QuadraticExpression({{x, x, kNaN}}, {}, 0)),
+                            "Illegal NaN");
 }
 
 TEST(QuadraticExpressionMatcherTest, IsIdenticalMatchedAgainstNaNs) {

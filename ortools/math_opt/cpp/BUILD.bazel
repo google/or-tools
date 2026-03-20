@@ -363,6 +363,26 @@ cc_test(
 )
 
 cc_library(
+    name = "solve_impl_testing",
+    testonly = True,
+    hdrs = ["solve_impl_testing.h"],
+    deps = [
+        ":compute_infeasible_subsystem_arguments",
+        ":compute_infeasible_subsystem_result",
+        ":incremental_solver",
+        ":model",
+        ":solve_arguments",
+        ":solve_result",
+        "//ortools/base:status_macros",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/base:nullability",
+        "@abseil-cpp//absl/functional:function_ref",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+    ],
+)
+
+cc_library(
     name = "solve_result",
     srcs = ["solve_result.cc"],
     hdrs = ["solve_result.h"],
@@ -610,6 +630,7 @@ cc_library(
     deps = [
         "//ortools/math_opt:parameters_cc_proto",
         "//ortools/math_opt/solvers:gurobi_cc_proto",
+        "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/status:statusor",
     ],
 )
@@ -773,6 +794,16 @@ cc_library(
     srcs = ["update_result.cc"],
     hdrs = ["update_result.h"],
     deps = ["//ortools/math_opt:model_update_cc_proto"],
+)
+
+cc_test(
+    name = "update_result_test",
+    srcs = ["update_result_test.cc"],
+    deps = [
+        ":update_result",
+        "//ortools/base:gmock_main",
+        "//ortools/math_opt/testing:stream",
+    ],
 )
 
 cc_library(

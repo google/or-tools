@@ -212,8 +212,11 @@ TEST_P(GenericTest, InterrupterNeverTriggered) {
   EXPECT_THAT(result, IsOptimal());
 }
 
-#ifdef OPERATIONS_RESEARCH_OUTPUT_CAPTURE_SUPPORTED
 TEST_P(GenericTest, NoStdoutOutputByDefault) {
+  if (!ScopedStdStreamCapture::kIsSupported) {
+    GTEST_SKIP() << "Stdout can't be captured.";
+  }
+
   Model model("model");
   const Variable x =
       model.AddVariable(0, 21.0, GetParam().integer_variables, "x");
@@ -240,10 +243,11 @@ TEST_P(GenericTest, EnableOutputPrintsToStdOut) {
   EXPECT_THAT(Solve(model, GetParam().solver_type, {.parameters = params}),
               IsOkAndHolds(IsOptimal(42.0)));
 
-  EXPECT_THAT(std::move(stdout_capture).StopCaptureAndReturnContents(),
-              HasSubstr(GetParam().expected_log));
+  if (ScopedStdStreamCapture::kIsSupported) {
+    EXPECT_THAT(std::move(stdout_capture).StopCaptureAndReturnContents(),
+                HasSubstr(GetParam().expected_log));
+  }
 }
-#endif  // OPERATIONS_RESEARCH_OUTPUT_CAPTURE_SUPPORTED
 
 // Returns a string containing all ASCII 7-bits characters (but 0); i.e. all
 // characters in [1, 0x7f].

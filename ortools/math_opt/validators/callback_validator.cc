@@ -272,7 +272,8 @@ absl::Status ValidateCallbackResultProto(
     }
   }
   if (!callback_result.suggested_solutions().empty()) {
-    if (callback_event != CALLBACK_EVENT_MIP_NODE) {
+    if (callback_event != CALLBACK_EVENT_MIP_NODE &&
+        callback_event != CALLBACK_EVENT_MIP_SOLUTION) {
       return absl::InvalidArgumentError(absl::StrCat(
           "invalid CallbackResultProto, can't return suggested solutions for "
           "callback_event ",

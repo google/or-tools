@@ -333,14 +333,11 @@ INSTANTIATE_TEST_SUITE_P(GscipInfeasibleSubsystemTest, InfeasibleSubsystemTest,
                          testing::Values(InfeasibleSubsystemTestParameters(
                              {.solver_type = SolverType::kGscip})));
 
-#ifdef OPERATIONS_RESEARCH_OUTPUT_CAPTURE_SUPPORTED
-// TODO(b/207472017): Enable this test once the issue of warning/error messages
-// redirection has been addressed.
-TEST(GScipSolverTest, DISABLED_WarningsDuringModelBuilding) {
+TEST(GScipSolverTest, WarningsDuringModelBuilding) {
   // Using an unknown parameters triggers calls to SCIPerrorMessage() and before
   // return of SCIP_PARAMETERUNKNOWN error.
   GScipParameters gscip_params;
-  (*gscip_params.mutable_bool_params())["unknown"] = false;
+  (*gscip_params.mutable_bool_params())["the_unknown"] = false;
   Model model;
   ScopedStdStreamCapture stdout_capture(CapturedStream::kStdout);
   ScopedStdStreamCapture stderr_capture(CapturedStream::kStderr);
@@ -348,11 +345,11 @@ TEST(GScipSolverTest, DISABLED_WarningsDuringModelBuilding) {
       Solve(model, SolverType::kGscip, {.parameters = {.gscip = gscip_params}});
   EXPECT_EQ(std::move(stdout_capture).StopCaptureAndReturnContents(), "");
   EXPECT_EQ(std::move(stderr_capture).StopCaptureAndReturnContents(), "");
-  // TODO(b/207474460): Update the test to validate that the offending parameter
-  // is listed in the error (it is not at the time of writing this).
-  EXPECT_THAT(result, StatusIs(absl::StatusCode::kInvalidArgument));
+  EXPECT_THAT(result,
+              StatusIs(absl::StatusCode::kInvalidArgument,
+                       AllOf(HasSubstr("SCIP_PARAMETERUNKNOWN"),
+                             HasSubstr("parameter <the_unknown> unknown"))));
 }
-#endif  // OPERATIONS_RESEARCH_OUTPUT_CAPTURE_SUPPORTED
 
 TEST(GScipSolverTest, InvalidCoefficient) {
   Model model;

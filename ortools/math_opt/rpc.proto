@@ -110,6 +110,37 @@ message SolveResponse {
   repeated string messages = 2;
 }
 
+message ComputeInfeasibleSubsystemRequest {
+  SolverTypeProto solver_type = 1;
+  ModelProto model = 2;
+
+  // Hints on resources requested for the solve.
+  SolverResourcesProto resources = 5;
+  SolverInitializerProto initializer = 3;
+
+  // The enable_output parameter is handled specifically. For solvers that
+  // support messages callbacks, setting it to true will have the server
+  // register a message callback. The resulting messages will be returned in
+  // ComputeInfeasibleSubsystemResponse.messages. For other solvers, setting
+  // enable_output to true will result in an error.
+  SolveParametersProto parameters = 4;
+}
+
+message ComputeInfeasibleSubsystemResponse {
+  // Either `result` or `status` must be set. This is equivalent to C++
+  // StatusOr<ComputeInfeasibleSubsystemResult>.
+  oneof status_or {
+    ComputeInfeasibleSubsystemResultProto result = 1;
+
+    // The absl::Status returned by the solver. It should never be OK when set.
+    StatusProto status = 3;
+  }
+
+  // If SolveParametersProto.enable_output has been used, this will contain log
+  // messages for solvers that support message callbacks.
+  repeated string messages = 2;
+}
+
 // The streamed version of absl::Status.
 message StatusProto {
   // The status code, one of the absl::StatusCode.

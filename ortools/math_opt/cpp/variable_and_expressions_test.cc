@@ -833,8 +833,8 @@ TEST(LinearExpressionDeathTest, TermsFromDifferentModels) {
   ModelStorage model_b;
   const Variable b(&model_b, model_b.AddVariable("b"));
 
-  EXPECT_DEATH(LinearExpression({{a, 3}, {b, 5}}, -1),
-               kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_IF_SUPPORTED(LinearExpression({{a, 3}, {b, 5}}, -1),
+                            kObjectsFromOtherModelStorage);
 }
 
 TEST(LinearExpressionTest, ReassignDifferentModels) {
@@ -1006,7 +1006,7 @@ TEST(LinearExpressionDeathTest, EvaluateMisingVariable) {
   const LinearExpression expr = 3.0 * a + 5.0 * b - 2.0;
   VariableMap<double> variable_values;
   variable_values[b] = 100.0;
-  EXPECT_DEATH(expr.Evaluate(variable_values), "");
+  EXPECT_DEATH_IF_SUPPORTED(expr.Evaluate(variable_values), "");
 }
 
 TEST(LinearExpressionDeathTest, EvaluateDifferentModels) {
@@ -1019,7 +1019,8 @@ TEST(LinearExpressionDeathTest, EvaluateDifferentModels) {
   VariableMap<double> variable_values;
   variable_values[b] = 100.0;
 
-  EXPECT_DEATH(expr.Evaluate(variable_values), kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_IF_SUPPORTED(expr.Evaluate(variable_values),
+                            kObjectsFromOtherModelStorage);
 }
 
 TEST(LinearExpressionDeathTest, EvaluateWithDefaultZeroDifferentModels) {
@@ -1155,7 +1156,7 @@ TEST(LinearExpressionDeathTest, AdditionAssignmentVariableOtherModel) {
 
   LinearExpression expr;
   expr += a;
-  EXPECT_DEATH(expr += b, kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_IF_SUPPORTED(expr += b, kObjectsFromOtherModelStorage);
 }
 
 TEST(LinearExpressionTest, AdditionAssignmentLinearTerm) {
@@ -1193,7 +1194,8 @@ TEST(LinearExpressionDeathTest, AdditionAssignmentLinearTermOtherModel) {
 
   LinearExpression expr;
   expr += LinearTerm(a, 3);
-  EXPECT_DEATH(expr += LinearTerm(b, 2), kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_IF_SUPPORTED(expr += LinearTerm(b, 2),
+                            kObjectsFromOtherModelStorage);
 }
 
 TEST(LinearExpressionTest, AdditionAssignmentSelf) {
@@ -1240,7 +1242,7 @@ TEST(LinearExpressionDeathTest, AdditionAssignmentOtherExpressionAndModel) {
 
   LinearExpression expr({{a, 1}}, 0);
   const LinearExpression other({{b, 1}}, 0);
-  EXPECT_DEATH(expr += other, kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_IF_SUPPORTED(expr += other, kObjectsFromOtherModelStorage);
 }
 
 TEST(LinearExpressionTest, SubtractionAssignmentDouble) {
@@ -1292,7 +1294,7 @@ TEST(LinearExpressionDeathTest, SubtractionAssignmentVariableOtherModel) {
 
   LinearExpression expr;
   expr -= a;
-  EXPECT_DEATH(expr -= b, kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_IF_SUPPORTED(expr -= b, kObjectsFromOtherModelStorage);
 }
 
 TEST(LinearExpressionTest, SubtractionAssignmentLinearTerm) {
@@ -1330,7 +1332,8 @@ TEST(LinearExpressionDeathTest, SubtractionAssignmentLinearTermOtherModel) {
 
   LinearExpression expr;
   expr -= LinearTerm(a, 3);
-  EXPECT_DEATH(expr -= LinearTerm(b, 2), kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_IF_SUPPORTED(expr -= LinearTerm(b, 2),
+                            kObjectsFromOtherModelStorage);
 }
 
 TEST(LinearExpressionTest, SubtractionAssignmentOtherExpression) {
@@ -1377,7 +1380,7 @@ TEST(LinearExpressionDeathTest, SubtractionAssignmentOtherExpressionAndModel) {
 
   LinearExpression expr({{a, 1}}, 0);
   const LinearExpression other({{b, 1}}, 0);
-  EXPECT_DEATH(expr -= other, kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_IF_SUPPORTED(expr -= other, kObjectsFromOtherModelStorage);
 }
 
 TEST(LinearExpressionTest, VariablePlusDouble) {
@@ -1949,14 +1952,15 @@ TEST(LinearExpressionDeathTest, AddInnerProductSizeMismatchLeftMore) {
   const std::vector<double> left = {2.0, 3.0, 4.0};
   const std::vector<double> right = {1.0, -1.0};
   LinearExpression expr;
-  EXPECT_DEATH(expr.AddInnerProduct(left, right), "left had more");
+  EXPECT_DEATH_IF_SUPPORTED(expr.AddInnerProduct(left, right), "left had more");
 }
 
 TEST(LinearExpressionDeathTest, AddInnerProductSizeMismatchRightMore) {
   const std::vector<double> left = {2.0, 3.0};
   const std::vector<double> right = {1.0, -1.0, 10.0};
   LinearExpression expr;
-  EXPECT_DEATH(expr.AddInnerProduct(left, right), "right had more");
+  EXPECT_DEATH_IF_SUPPORTED(expr.AddInnerProduct(left, right),
+                            "right had more");
 }
 
 TEST(LinearExpressionTest, ExpressionGreaterEqualDouble) {
@@ -2833,7 +2837,8 @@ TEST(QuadraticTermKeyDeathTest, ConstructorChecksOnDifferentModels) {
   ModelStorage other_storage;
   const Variable b(&other_storage, storage.AddVariable("b"));
 
-  EXPECT_DEATH(QuadraticTermKey(a, b), internal::kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_IF_SUPPORTED(QuadraticTermKey(a, b),
+                            internal::kObjectsFromOtherModelStorage);
 }
 
 TEST(QuadraticTermKeyTest, Accessors) {
@@ -3033,14 +3038,15 @@ TEST(QuadraticExpressionDeathTest, TermsFromDifferentModelsFail) {
   const Variable b(&second_model, second_model.AddVariable("b"));
   const Variable c(&second_model, second_model.AddVariable("c"));
 
-  EXPECT_DEATH(QuadraticExpression({}, {{a, 3.0}, {b, 5.0}}, 0.0),
-               kObjectsFromOtherModelStorage);
-  EXPECT_DEATH(QuadraticExpression({{a, b, 1.2}}, {}, 0.0),
-               kObjectsFromOtherModelStorage);
-  EXPECT_DEATH(QuadraticExpression({{a, a, 1.4}, {b, c, 1.3}}, {}, 0.0),
-               kObjectsFromOtherModelStorage);
-  EXPECT_DEATH(QuadraticExpression({{b, c, 1.3}}, {{a, 1.4}}, 0.0),
-               kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_IF_SUPPORTED(QuadraticExpression({}, {{a, 3.0}, {b, 5.0}}, 0.0),
+                            kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_IF_SUPPORTED(QuadraticExpression({{a, b, 1.2}}, {}, 0.0),
+                            kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_IF_SUPPORTED(
+      QuadraticExpression({{a, a, 1.4}, {b, c, 1.3}}, {}, 0.0),
+      kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_IF_SUPPORTED(QuadraticExpression({{b, c, 1.3}}, {{a, 1.4}}, 0.0),
+                            kObjectsFromOtherModelStorage);
 }
 
 TEST(QuadraticExpressionTest, ReassignDifferentModels) {
@@ -3241,7 +3247,7 @@ TEST(QuadraticExpressionDeathTest, EvaluateMissingVariable) {
   const QuadraticExpression expr({{b, a, 1.0}}, {{b, 5.0}, {a, 3.0}}, 2.0);
   VariableMap<double> variable_values;
   variable_values[a] = 10.0;
-  EXPECT_DEATH(expr.Evaluate(variable_values), "");
+  EXPECT_DEATH_IF_SUPPORTED(expr.Evaluate(variable_values), "");
 }
 
 TEST(QuadraticExpressionDeathTest, EvaluateDifferentModels) {
@@ -3255,7 +3261,8 @@ TEST(QuadraticExpressionDeathTest, EvaluateDifferentModels) {
   VariableMap<double> variable_values;
   variable_values[c] = 100.0;
 
-  EXPECT_DEATH(expr.Evaluate(variable_values), kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_IF_SUPPORTED(expr.Evaluate(variable_values),
+                            kObjectsFromOtherModelStorage);
 }
 
 TEST(QuadraticExpressionTest, EvaluateWithDefaultZeroDifferentModels) {
@@ -3372,7 +3379,7 @@ TEST(QuadraticExpressionDeathTest, VariablePlusQuadraticTermOtherModel) {
   const Variable c(&other_storage, other_storage.AddVariable("c"));
   const QuadraticTerm other_term(b, c, 1.2);
 
-  EXPECT_DEATH(a + other_term, kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_IF_SUPPORTED(a + other_term, kObjectsFromOtherModelStorage);
 }
 
 TEST(QuadraticExpressionTest, VariablePlusQuadraticExpression) {
@@ -3403,7 +3410,7 @@ TEST(QuadraticExpressionDeathTest, VariablePlusQuadraticExpressionOtherModel) {
   const Variable c(&other_storage, other_storage.AddVariable("c"));
   const QuadraticExpression other_expr({{b, c, 1.2}}, {{b, 3.4}}, 5.6);
 
-  EXPECT_DEATH(a + other_expr, kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_IF_SUPPORTED(a + other_expr, kObjectsFromOtherModelStorage);
 }
 
 TEST(QuadraticExpressionTest, LinearTermPlusQuadraticTerm) {
@@ -3436,7 +3443,7 @@ TEST(QuadraticExpressionDeathTest, LinearTermPlusQuadraticTermOtherModel) {
   const Variable c(&other_storage, other_storage.AddVariable("c"));
   const LinearTerm other_term(c, 1.2);
 
-  EXPECT_DEATH(term + other_term, kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_IF_SUPPORTED(term + other_term, kObjectsFromOtherModelStorage);
 }
 
 TEST(QuadraticExpressionTest, LinearTermPlusQuadraticExpression) {
@@ -3470,7 +3477,7 @@ TEST(QuadraticExpressionDeathTest,
   const Variable c(&other_storage, other_storage.AddVariable("c"));
   const QuadraticExpression other_expr({{b, c, 3.4}}, {{b, 5.6}}, 7.8);
 
-  EXPECT_DEATH(term + other_expr, kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_IF_SUPPORTED(term + other_expr, kObjectsFromOtherModelStorage);
 }
 
 TEST(QuadraticExpressionTest, LinearExpressionPlusQuadraticTerm) {
@@ -3507,7 +3514,7 @@ TEST(QuadraticExpressionDeathTest,
   const Variable c(&other_storage, other_storage.AddVariable("c"));
   const QuadraticTerm other_term(c, c, 5.6);
 
-  EXPECT_DEATH(expr + other_term, kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_IF_SUPPORTED(expr + other_term, kObjectsFromOtherModelStorage);
 }
 
 TEST(QuadraticExpressionTest, LinearExpressionPlusQuadraticExpression) {
@@ -3541,7 +3548,7 @@ TEST(QuadraticExpressionDeathTest,
   const Variable c(&other_storage, other_storage.AddVariable("c"));
   const QuadraticExpression other_expr({{b, c, 5.6}}, {{b, 7.8}}, 9.0);
 
-  EXPECT_DEATH(expr + other_expr, kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_IF_SUPPORTED(expr + other_expr, kObjectsFromOtherModelStorage);
 }
 
 TEST(QuadraticExpressionTest, QuadraticTermPlusDouble) {
@@ -3590,7 +3597,7 @@ TEST(QuadraticExpressionDeathTest, QuadraticTermPlusVariableOtherModel) {
   ModelStorage other_storage;
   const Variable other_var(&other_storage, other_storage.AddVariable("c"));
 
-  EXPECT_DEATH(term + other_var, kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_IF_SUPPORTED(term + other_var, kObjectsFromOtherModelStorage);
 }
 
 TEST(QuadraticExpressionTest, QuadraticTermPlusLinearTerm) {
@@ -3623,7 +3630,7 @@ TEST(QuadraticExpressionDeathTest, QuadraticTermPlusLinearTermOtherModel) {
   const Variable c(&other_storage, other_storage.AddVariable("c"));
   const LinearTerm other_term({c, 3.4});
 
-  EXPECT_DEATH(term + other_term, kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_IF_SUPPORTED(term + other_term, kObjectsFromOtherModelStorage);
 }
 
 TEST(QuadraticExpressionTest, QuadraticTermPlusLinearExpression) {
@@ -3660,7 +3667,7 @@ TEST(QuadraticExpressionDeathTest,
   const Variable c(&other_storage, other_storage.AddVariable("c"));
   const LinearExpression other_expr({{c, 1.2}}, 1.3);
 
-  EXPECT_DEATH(term + other_expr, kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_IF_SUPPORTED(term + other_expr, kObjectsFromOtherModelStorage);
 }
 
 TEST(QuadraticExpressionTest, QuadraticTermPlusQuadraticTerm) {
@@ -3693,7 +3700,7 @@ TEST(QuadraticExpressionDeathTest, QuadraticTermPlusQuadraticTermOtherModel) {
   const Variable c(&other_storage, other_storage.AddVariable("c"));
   const QuadraticTerm other_term(c, c, 1.2);
 
-  EXPECT_DEATH(term + other_term, kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_IF_SUPPORTED(term + other_term, kObjectsFromOtherModelStorage);
 }
 
 TEST(QuadraticExpressionTest, QuadraticTermPlusQuadraticExpression) {
@@ -3727,7 +3734,7 @@ TEST(QuadraticExpressionDeathTest,
   const Variable c(&other_storage, other_storage.AddVariable("c"));
   const QuadraticExpression other_expr({{b, c, 1.2}}, {{b, 1.3}}, 1.4);
 
-  EXPECT_DEATH(term + other_expr, kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_IF_SUPPORTED(term + other_expr, kObjectsFromOtherModelStorage);
 }
 
 TEST(QuadraticExpressionTest, QuadraticExpressionPlusDouble) {
@@ -3777,7 +3784,7 @@ TEST(QuadraticExpressionDeathTest, QuadraticExpressionPlusVariableOtherModel) {
   ModelStorage other_storage;
   const Variable other_var(&other_storage, other_storage.AddVariable("c"));
 
-  EXPECT_DEATH(expr + other_var, kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_IF_SUPPORTED(expr + other_var, kObjectsFromOtherModelStorage);
 }
 
 TEST(QuadraticExpressionTest, QuadraticExpressionPlusLinearTerm) {
@@ -3811,7 +3818,7 @@ TEST(QuadraticExpressionDeathTest,
   const Variable c(&other_storage, other_storage.AddVariable("c"));
   const LinearTerm other_term(c, 7.8);
 
-  EXPECT_DEATH(expr + other_term, kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_IF_SUPPORTED(expr + other_term, kObjectsFromOtherModelStorage);
 }
 
 TEST(QuadraticExpressionTest, QuadraticExpressionPlusLinearExpression) {
@@ -3845,7 +3852,7 @@ TEST(QuadraticExpressionDeathTest,
   const Variable c(&other_storage, other_storage.AddVariable("c"));
   const LinearExpression other_expr({{c, 7.8}}, 9.0);
 
-  EXPECT_DEATH(expr + other_expr, kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_IF_SUPPORTED(expr + other_expr, kObjectsFromOtherModelStorage);
 }
 
 TEST(QuadraticExpressionTest, QuadraticExpressionPlusQuadraticTerm) {
@@ -3879,7 +3886,7 @@ TEST(QuadraticExpressionDeathTest,
   const Variable c(&other_storage, other_storage.AddVariable("c"));
   const QuadraticTerm other_term(c, c, 7.8);
 
-  EXPECT_DEATH(expr + other_term, kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_IF_SUPPORTED(expr + other_term, kObjectsFromOtherModelStorage);
 }
 
 TEST(QuadraticExpressionTest, QuadraticExpressionPlusQuadraticExpression) {
@@ -3915,7 +3922,7 @@ TEST(QuadraticExpressionDeathTest,
   const Variable c(&other_storage, other_storage.AddVariable("c"));
   const QuadraticExpression other_expr({{c, c, 1.2}}, {{c, 3.4}}, 5.6);
 
-  EXPECT_DEATH(expr + other_expr, kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_IF_SUPPORTED(expr + other_expr, kObjectsFromOtherModelStorage);
 }
 
 // --------------------------- Subtraction (-) ---------------------------------
@@ -4018,7 +4025,7 @@ TEST(QuadraticExpressionDeathTest, VariableMinusQuadraticTermOtherModel) {
   const Variable c(&other_storage, other_storage.AddVariable("c"));
   const QuadraticTerm other_term(b, c, 1.2);
 
-  EXPECT_DEATH(a - other_term, kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_IF_SUPPORTED(a - other_term, kObjectsFromOtherModelStorage);
 }
 
 TEST(QuadraticExpressionTest, VariableMinusQuadraticExpression) {
@@ -4049,7 +4056,7 @@ TEST(QuadraticExpressionDeathTest, VariableMinusQuadraticExpressionOtherModel) {
   const Variable c(&other_storage, other_storage.AddVariable("c"));
   const QuadraticExpression other_expr({{b, c, 1.2}}, {{b, 1.3}}, 1.4);
 
-  EXPECT_DEATH(a - other_expr, kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_IF_SUPPORTED(a - other_expr, kObjectsFromOtherModelStorage);
 }
 
 TEST(QuadraticExpressionTest, LinearTermMinusQuadraticTerm) {
@@ -4082,7 +4089,7 @@ TEST(QuadraticExpressionDeathTest, LinearTermMinusQuadraticTermOtherModel) {
   const Variable c(&other_storage, other_storage.AddVariable("c"));
   const QuadraticTerm other_term(b, c, 1.2);
 
-  EXPECT_DEATH(term - other_term, kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_IF_SUPPORTED(term - other_term, kObjectsFromOtherModelStorage);
 }
 
 TEST(QuadraticExpressionTest, LinearTermMinusQuadraticExpression) {
@@ -4116,7 +4123,7 @@ TEST(QuadraticExpressionDeathTest,
   const Variable c(&other_storage, other_storage.AddVariable("c"));
   const QuadraticExpression other_expr({{b, c, 1.2}}, {{b, 1.3}}, 1.4);
 
-  EXPECT_DEATH(term - other_expr, kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_IF_SUPPORTED(term - other_expr, kObjectsFromOtherModelStorage);
 }
 
 TEST(QuadraticExpressionTest, LinearExpressionMinusQuadraticTerm) {
@@ -4153,7 +4160,7 @@ TEST(QuadraticExpressionDeathTest,
   const Variable c(&other_storage, other_storage.AddVariable("c"));
   const QuadraticTerm other_term(b, c, 5.6);
 
-  EXPECT_DEATH(expr - other_term, kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_IF_SUPPORTED(expr - other_term, kObjectsFromOtherModelStorage);
 }
 
 TEST(QuadraticExpressionTest, LinearExpressionMinusQuadraticExpression) {
@@ -4187,7 +4194,7 @@ TEST(QuadraticExpressionDeathTest,
   const Variable c(&other_storage, other_storage.AddVariable("c"));
   const QuadraticExpression other_expr({{b, c, 1.2}}, {{b, 1.3}}, 1.4);
 
-  EXPECT_DEATH(expr - other_expr, kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_IF_SUPPORTED(expr - other_expr, kObjectsFromOtherModelStorage);
 }
 
 TEST(QuadraticExpressionTest, QuadraticTermMinusDouble) {
@@ -4237,7 +4244,7 @@ TEST(QuadraticExpressionDeathTest, QuadraticTermMinusVariableOtherModel) {
   ModelStorage other_storage;
   const Variable other_var(&other_storage, other_storage.AddVariable("c"));
 
-  EXPECT_DEATH(term - other_var, kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_IF_SUPPORTED(term - other_var, kObjectsFromOtherModelStorage);
 }
 
 TEST(QuadraticExpressionTest, QuadraticTermMinusLinearTerm) {
@@ -4270,7 +4277,7 @@ TEST(QuadraticExpressionDeathTest, QuadraticTermMinusLinearTermOtherModel) {
   const Variable c(&other_storage, other_storage.AddVariable("c"));
   const LinearTerm other_term({c, 3.4});
 
-  EXPECT_DEATH(term - other_term, kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_IF_SUPPORTED(term - other_term, kObjectsFromOtherModelStorage);
 }
 
 TEST(QuadraticExpressionTest, QuadraticTermMinusLinearExpression) {
@@ -4307,7 +4314,7 @@ TEST(QuadraticExpressionDeathTest,
   const Variable c(&other_storage, other_storage.AddVariable("c"));
   const LinearExpression other_expr({{c, 1.2}}, 1.3);
 
-  EXPECT_DEATH(term - other_expr, kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_IF_SUPPORTED(term - other_expr, kObjectsFromOtherModelStorage);
 }
 
 TEST(QuadraticExpressionTest, QuadraticTermMinusQuadraticTerm) {
@@ -4340,7 +4347,7 @@ TEST(QuadraticExpressionDeathTest, QuadraticTermMinusQuadraticTermOtherModel) {
   const Variable c(&other_storage, other_storage.AddVariable("c"));
   const QuadraticTerm other_term(c, c, 1.2);
 
-  EXPECT_DEATH(term - other_term, kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_IF_SUPPORTED(term - other_term, kObjectsFromOtherModelStorage);
 }
 
 TEST(QuadraticExpressionTest, QuadraticTermMinusQuadraticExpression) {
@@ -4374,7 +4381,7 @@ TEST(QuadraticExpressionDeathTest,
   const Variable c(&other_storage, other_storage.AddVariable("c"));
   const QuadraticExpression other_expr({{c, c, 1.2}}, {{c, 1.3}}, 1.4);
 
-  EXPECT_DEATH(term - other_expr, kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_IF_SUPPORTED(term - other_expr, kObjectsFromOtherModelStorage);
 }
 
 TEST(QuadraticExpressionTest, QuadraticExpressionMinusDouble) {
@@ -4424,7 +4431,7 @@ TEST(QuadraticExpressionDeathTest, QuadraticExpressionMinusVariableOtherModel) {
   ModelStorage other_storage;
   const Variable other_var(&other_storage, other_storage.AddVariable("c"));
 
-  EXPECT_DEATH(expr - other_var, kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_IF_SUPPORTED(expr - other_var, kObjectsFromOtherModelStorage);
 }
 
 TEST(QuadraticExpressionTest, QuadraticExpressionMinusLinearTerm) {
@@ -4458,7 +4465,7 @@ TEST(QuadraticExpressionDeathTest,
   const Variable c(&other_storage, other_storage.AddVariable("c"));
   const LinearTerm other_term(c, 7.8);
 
-  EXPECT_DEATH(expr - other_term, kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_IF_SUPPORTED(expr - other_term, kObjectsFromOtherModelStorage);
 }
 
 TEST(QuadraticExpressionTest, QuadraticExpressionMinusLinearExpression) {
@@ -4492,7 +4499,7 @@ TEST(QuadraticExpressionDeathTest,
   const Variable c(&other_storage, other_storage.AddVariable("c"));
   const LinearExpression other_expr({{c, 7.8}}, 9.0);
 
-  EXPECT_DEATH(expr - other_expr, kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_IF_SUPPORTED(expr - other_expr, kObjectsFromOtherModelStorage);
 }
 
 TEST(QuadraticExpressionTest, QuadraticExpressionMinusQuadraticTerm) {
@@ -4526,7 +4533,7 @@ TEST(QuadraticExpressionDeathTest,
   const Variable c(&other_storage, other_storage.AddVariable("c"));
   const QuadraticTerm other_term(c, c, 7.8);
 
-  EXPECT_DEATH(expr - other_term, kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_IF_SUPPORTED(expr - other_term, kObjectsFromOtherModelStorage);
 }
 
 TEST(QuadraticExpressionTest, QuadraticExpressionMinusQuadraticExpression) {
@@ -4562,7 +4569,7 @@ TEST(QuadraticExpressionDeathTest,
   const Variable c(&other_storage, other_storage.AddVariable("c"));
   const QuadraticExpression other_expr({{c, c, 1.2}}, {{c, 3.4}}, 5.6);
 
-  EXPECT_DEATH(expr - other_expr, kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_IF_SUPPORTED(expr - other_expr, kObjectsFromOtherModelStorage);
 }
 
 // ---------------------------- Multiplication (*) -----------------------------
@@ -4618,7 +4625,7 @@ TEST(QuadraticTermDeathTest, VariableTimesVariableOtherModel) {
   ModelStorage other_storage;
   const Variable other_var(&other_storage, other_storage.AddVariable("c"));
 
-  EXPECT_DEATH(var * other_var, kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_IF_SUPPORTED(var * other_var, kObjectsFromOtherModelStorage);
 }
 
 TEST(QuadraticTermTest, VariableTimesLinearTerm) {
@@ -4642,7 +4649,7 @@ TEST(QuadraticTermDeathTest, VariableTimesLinearTermOtherModel) {
   const Variable b(&other_storage, other_storage.AddVariable("b"));
   const LinearTerm other_term(b, 1.2);
 
-  EXPECT_DEATH(a * other_term, kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_IF_SUPPORTED(a * other_term, kObjectsFromOtherModelStorage);
 }
 
 TEST(QuadraticExpressionTest, VariableTimesLinearExpression) {
@@ -4691,7 +4698,7 @@ TEST(QuadraticExpressionDeathTest, VariableTimesLinearExpressionOtherModel) {
   const Variable b(&other_storage, other_storage.AddVariable("b"));
   const LinearExpression other_expr({{b, 1.2}}, 3.4);
 
-  EXPECT_DEATH(a * other_expr, kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_IF_SUPPORTED(a * other_expr, kObjectsFromOtherModelStorage);
 }
 
 TEST(QuadraticTermTest, LinearTermTimesVariable) {
@@ -4716,7 +4723,7 @@ TEST(QuadraticTermDeathTest, LinearTermTimesVariableOtherModel) {
   const Variable other_var(&other_storage,
                            other_storage.AddVariable("other_var"));
 
-  EXPECT_DEATH(term * other_var, kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_IF_SUPPORTED(term * other_var, kObjectsFromOtherModelStorage);
 }
 
 TEST(QuadraticTermTest, LinearTermTimesLinearTerm) {
@@ -4742,7 +4749,7 @@ TEST(QuadraticTermDeathTest, LinearTermTimesLinearTermOtherModel) {
   const Variable b(&other_storage, other_storage.AddVariable("b"));
   const LinearTerm other_term(b, 1.2);
 
-  EXPECT_DEATH(term * other_term, kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_IF_SUPPORTED(term * other_term, kObjectsFromOtherModelStorage);
 }
 
 TEST(QuadraticExpressionTest, LinearTermTimesLinearExpression) {
@@ -4795,7 +4802,7 @@ TEST(QuadraticExpressionDeathTest, LinearTermTimesLinearExpressionOtherModel) {
   const Variable b(&other_storage, other_storage.AddVariable("b"));
   const LinearExpression other_expr({{b, 3.4}}, 5.6);
 
-  EXPECT_DEATH(term * other_expr, kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_IF_SUPPORTED(term * other_expr, kObjectsFromOtherModelStorage);
 }
 
 TEST(QuadraticExpressionTest, LinearExpressionTimesVariable) {
@@ -4844,7 +4851,7 @@ TEST(QuadraticExpressionDeathTest, LinearExpressionTimesVariableOtherModel) {
   ModelStorage other_storage;
   const Variable b(&other_storage, other_storage.AddVariable("b"));
 
-  EXPECT_DEATH(expr * b, kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_IF_SUPPORTED(expr * b, kObjectsFromOtherModelStorage);
 }
 
 TEST(QuadraticExpressionTest, LinearExpressionTimesLinearTerm) {
@@ -4897,7 +4904,7 @@ TEST(QuadraticExpressionDeathTest, LinearExpressionTimesLinearTermOtherModel) {
   const Variable b(&other_storage, other_storage.AddVariable("b"));
   const LinearTerm other_term(b, 5.6);
 
-  EXPECT_DEATH(expr * other_term, kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_IF_SUPPORTED(expr * other_term, kObjectsFromOtherModelStorage);
 }
 
 TEST(QuadraticExpressionTest, LinearExpressionTimesLinearExpression) {
@@ -4977,7 +4984,7 @@ TEST(QuadraticExpressionDeathTest,
   const Variable b(&other_storage, other_storage.AddVariable("b"));
   const LinearExpression other_expr({{b, 5.6}}, 7.8);
 
-  EXPECT_DEATH(expr * other_expr, kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_IF_SUPPORTED(expr * other_expr, kObjectsFromOtherModelStorage);
 }
 
 TEST(QuadraticTermTest, QuadraticTermTimesDouble) {
@@ -5110,7 +5117,7 @@ TEST(QuadraticExpressionDeathTest, AdditionAssignmentVariableOtherModel) {
   const Variable other_var(&other_storage,
                            other_storage.AddVariable("other_var"));
 
-  EXPECT_DEATH(expr += other_var, kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_IF_SUPPORTED(expr += other_var, kObjectsFromOtherModelStorage);
 }
 
 TEST(QuadraticExpressionTest, AdditionAssignmentLinearTerm) {
@@ -5156,7 +5163,7 @@ TEST(QuadraticExpressionDeathTest, AdditionAssignmentLinearTermOtherModel) {
   const Variable c(&other_storage, other_storage.AddVariable("c"));
   const LinearTerm other_term(c, 1.0);
 
-  EXPECT_DEATH(expr += other_term, kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_IF_SUPPORTED(expr += other_term, kObjectsFromOtherModelStorage);
 }
 
 TEST(QuadraticExpressionTest, AdditionAssignmentLinearExpression) {
@@ -5210,7 +5217,7 @@ TEST(QuadraticExpressionDeathTest,
   const Variable c(&other_storage, other_storage.AddVariable("c"));
   const LinearExpression other_expr({{c, 1.0}}, 2.0);
 
-  EXPECT_DEATH(expr += other_expr, kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_IF_SUPPORTED(expr += other_expr, kObjectsFromOtherModelStorage);
 }
 
 TEST(QuadraticExpressionTest, AdditionAssignmentQuadraticTerm) {
@@ -5258,7 +5265,7 @@ TEST(QuadraticExpressionDeathTest, AdditionAssignmentQuadraticTermOtherModel) {
   const Variable c(&other_storage, other_storage.AddVariable("c"));
   const QuadraticTerm other_term(c, c, 1.2);
 
-  EXPECT_DEATH(expr += other_term, kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_IF_SUPPORTED(expr += other_term, kObjectsFromOtherModelStorage);
 }
 
 TEST(QuadraticExpressionTest, AdditionAssignmentQuadraticExpression) {
@@ -5317,7 +5324,7 @@ TEST(QuadraticExpressionDeathTest,
   const Variable c(&other_storage, other_storage.AddVariable("c"));
   const QuadraticExpression other_term({{c, c, 1.2}}, {{c, 3.4}}, 5.6);
 
-  EXPECT_DEATH(expr += other_term, kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_IF_SUPPORTED(expr += other_term, kObjectsFromOtherModelStorage);
 }
 
 TEST(QuadraticExpressionTest, AdditionAssignmentSelf) {
@@ -5394,7 +5401,7 @@ TEST(QuadraticExpressionDeathTest, SubtractionAssignmentVariableOtherModel) {
   ModelStorage other_storage;
   const Variable c(&other_storage, other_storage.AddVariable("c"));
 
-  EXPECT_DEATH(expr -= c, kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_IF_SUPPORTED(expr -= c, kObjectsFromOtherModelStorage);
 }
 
 TEST(QuadraticExpressionTest, SubtractionAssignmentLinearTerm) {
@@ -5440,7 +5447,7 @@ TEST(QuadraticExpressionDeathTest, SubtractionAssignmentLinearTermOtherModel) {
   const Variable c(&other_storage, other_storage.AddVariable("c"));
   const LinearTerm other_term(c, 1.0);
 
-  EXPECT_DEATH(expr -= other_term, kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_IF_SUPPORTED(expr -= other_term, kObjectsFromOtherModelStorage);
 }
 
 TEST(QuadraticExpressionTest, SubtractionAssignmentLinearExpression) {
@@ -5495,7 +5502,7 @@ TEST(QuadraticExpressionDeathTest,
   const Variable c(&other_storage, other_storage.AddVariable("c"));
   const LinearExpression other_expr({{c, 1.0}}, 2.0);
 
-  EXPECT_DEATH(expr -= other_expr, kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_IF_SUPPORTED(expr -= other_expr, kObjectsFromOtherModelStorage);
 }
 
 TEST(QuadraticExpressionTest, SubtractionAssignmentQuadraticTerm) {
@@ -5543,7 +5550,7 @@ TEST(QuadraticExpressionDeathTest,
   const Variable c(&other_storage, other_storage.AddVariable("c"));
   const QuadraticTerm other_term(c, c, 1.2);
 
-  EXPECT_DEATH(expr -= other_term, kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_IF_SUPPORTED(expr -= other_term, kObjectsFromOtherModelStorage);
 }
 
 TEST(QuadraticExpressionTest, SubtractionAssignmentQuadraticExpression) {
@@ -5601,7 +5608,7 @@ TEST(QuadraticExpressionDeathTest,
   const Variable c(&other_storage, other_storage.AddVariable("c"));
   const QuadraticExpression other_term({{c, c, 1.2}}, {{c, 3.4}}, 5.6);
 
-  EXPECT_DEATH(expr -= other_term, kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_IF_SUPPORTED(expr -= other_term, kObjectsFromOtherModelStorage);
 }
 
 TEST(QuadraticExpressionTest, SubtractionAssignmentSelf) {
@@ -5925,14 +5932,15 @@ TEST(QuadraticExpressionDeathTest, AddInnerProductSizeMismatchLeftMore) {
   const std::vector<double> left = {2.0, 3.0, 4.0};
   const std::vector<double> right = {1.0, -1.0};
   QuadraticExpression expr;
-  EXPECT_DEATH(expr.AddInnerProduct(left, right), "left had more");
+  EXPECT_DEATH_IF_SUPPORTED(expr.AddInnerProduct(left, right), "left had more");
 }
 
 TEST(QuadraticExpressionDeathTest, AddInnerProductSizeMismatchRightMore) {
   const std::vector<double> left = {2.0, 3.0};
   const std::vector<double> right = {1.0, -1.0, 10.0};
   QuadraticExpression expr;
-  EXPECT_DEATH(expr.AddInnerProduct(left, right), "right had more");
+  EXPECT_DEATH_IF_SUPPORTED(expr.AddInnerProduct(left, right),
+                            "right had more");
 }
 
 ////////////////////////////////////////////////////////////////////////////////
