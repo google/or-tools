@@ -21,6 +21,7 @@
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
+#include "absl/container/linked_hash_map.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/status/status.h"
@@ -29,7 +30,6 @@
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
-#include "ortools/base/linked_hash_map.h"
 #include "ortools/base/protoutil.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/math_opt/callback.pb.h"
@@ -81,7 +81,7 @@ inline int GurobiEvent(CallbackEventProto event) {
 
 SparseDoubleVectorProto ApplyFilter(
     absl::Span<const double> grb_solution,
-    const gtl::linked_hash_map<int64_t, int>& var_ids,
+    const absl::linked_hash_map<int64_t, int>& var_ids,
     const SparseVectorFilterProto& filter) {
   SparseVectorFilterPredicate predicate(filter);
   SparseDoubleVectorProto result;

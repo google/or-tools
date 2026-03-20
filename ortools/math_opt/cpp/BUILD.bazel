@@ -652,7 +652,6 @@ cc_library(
     hdrs = ["parameters.h"],
     deps = [
         ":enums",
-        "//ortools/base:linked_hash_map",
         "//ortools/base:protoutil",
         "//ortools/base:status_macros",
         "//ortools/glop:parameters_cc_proto",
@@ -665,6 +664,7 @@ cc_library(
         "//ortools/port:proto_utils",
         "//ortools/sat:sat_parameters_cc_proto",
         "//ortools/util:status_macros",
+        "@abseil-cpp//absl/container:linked_hash_map",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",

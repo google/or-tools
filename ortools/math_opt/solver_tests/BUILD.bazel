@@ -23,7 +23,6 @@ cc_library(
     hdrs = ["base_solver_test.h"],
     deps = [
         "//ortools/base:gmock",
-        "//ortools/base:linked_hash_map",
         "//ortools/math_opt/cpp:math_opt",
         "@abseil-cpp//absl/log",
     ],

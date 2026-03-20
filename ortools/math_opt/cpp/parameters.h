@@ -21,10 +21,10 @@
 #include <optional>
 #include <string>
 
+#include "absl/container/linked_hash_map.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "absl/time/time.h"
-#include "ortools/base/linked_hash_map.h"
 #include "ortools/glop/parameters.pb.h"  // IWYU pragma: export
 #include "ortools/math_opt/cpp/enums.h"  // IWYU pragma: export
 #include "ortools/math_opt/parameters.pb.h"
@@ -218,7 +218,7 @@ std::string AbslUnparseFlag(Emphasis value);
 // output.
 struct GurobiParameters {
   // Parameter name-value pairs to set in insertion order.
-  gtl::linked_hash_map<std::string, std::string> param_values;
+  absl::linked_hash_map<std::string, std::string> param_values;
 
   GurobiParametersProto Proto() const;
   static GurobiParameters FromProto(const GurobiParametersProto& proto);
@@ -284,7 +284,7 @@ struct GlpkParameters {
 //  * param_values in iteration order (insertion order).
 struct XpressParameters {
   // Parameter name-value pairs to set in insertion order.
-  gtl::linked_hash_map<std::string, std::string> param_values;
+  absl::linked_hash_map<std::string, std::string> param_values;
 
   XpressParametersProto Proto() const;
   static XpressParameters FromProto(const XpressParametersProto& proto);

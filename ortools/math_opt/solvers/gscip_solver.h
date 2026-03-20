@@ -23,10 +23,10 @@
 #include "absl/base/nullability.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/container/linked_hash_map.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/types/span.h"
-#include "ortools/base/linked_hash_map.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/invalid_indicators.h"
 #include "ortools/math_opt/core/inverted_bounds.h"
@@ -165,7 +165,7 @@ class GScipSolver : public SolverInterface {
   const std::unique_ptr<GScip> gscip_;
   GScipSolverConstraintHandler constraint_handler_;
 
-  gtl::linked_hash_map<int64_t, SCIP_VAR*> variables_;
+  absl::linked_hash_map<int64_t, SCIP_VAR*> variables_;
   bool has_quadratic_objective_ = false;
   absl::flat_hash_map<int64_t, SCIP_CONS*> linear_constraints_;
   absl::flat_hash_map<int64_t, SCIP_CONS*> quadratic_constraints_;

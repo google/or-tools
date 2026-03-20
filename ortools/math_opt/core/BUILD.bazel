@@ -120,12 +120,12 @@ cc_library(
     srcs = ["model_summary.cc"],
     hdrs = ["model_summary.h"],
     deps = [
-        "//ortools/base:linked_hash_map",
         "//ortools/base:status_macros",
         "//ortools/math_opt:model_cc_proto",
         "//ortools/math_opt:model_update_cc_proto",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:linked_hash_map",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",

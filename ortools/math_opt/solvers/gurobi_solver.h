@@ -24,11 +24,11 @@
 #include "absl/base/nullability.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/container/linked_hash_map.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
-#include "ortools/base/linked_hash_map.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/invalid_indicators.h"
 #include "ortools/math_opt/core/inverted_bounds.h"
@@ -190,7 +190,7 @@ class GurobiSolver : public SolverInterface {
     bool feasible_solution_exists = false;
   };
 
-  using IdHashMap = gtl::linked_hash_map<int64_t, int>;
+  using IdHashMap = absl::linked_hash_map<int64_t, int>;
 
   absl::StatusOr<SolveResultProto> ExtractSolveResultProto(
       absl::Time start, const ModelSolveParametersProto& model_parameters);
@@ -405,7 +405,7 @@ class GurobiSolver : public SolverInterface {
 
   // Internal correspondence from variable proto IDs to Gurobi-numbered
   // variables.
-  gtl::linked_hash_map<VariableId, GurobiVariableIndex> variables_map_;
+  absl::linked_hash_map<VariableId, GurobiVariableIndex> variables_map_;
   // An unset key corresponds to the `ModelProto.objective` field; all other
   // entries come from `ModelProto.auxiliary_objectives`.
   absl::flat_hash_map<std::optional<AuxiliaryObjectiveId>,
@@ -413,7 +413,7 @@ class GurobiSolver : public SolverInterface {
       multi_objectives_map_;
   // Internal correspondence from linear constraint proto IDs to
   // Gurobi-numbered linear constraint and extra information.
-  gtl::linked_hash_map<LinearConstraintId, LinearConstraintData>
+  absl::linked_hash_map<LinearConstraintId, LinearConstraintData>
       linear_constraints_map_;
   // Internal correspondence from quadratic constraint proto IDs to
   // Gurobi-numbered quadratic constraint.

@@ -231,18 +231,6 @@ cc_library(
 )
 
 cc_library(
-    name = "linked_hash_map",
-    hdrs = ["linked_hash_map.h"],
-    deps = [
-        "@abseil-cpp//absl/base:core_headers",
-        "@abseil-cpp//absl/container:common",
-        "@abseil-cpp//absl/container:flat_hash_set",
-        "@abseil-cpp//absl/log",
-        "@abseil-cpp//absl/log:check",
-    ],
-)
-
-cc_library(
     name = "map_util",
     hdrs = ["map_util.h"],
     deps = ["@abseil-cpp//absl/log:check"],

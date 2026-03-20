@@ -80,10 +80,10 @@
 #include <string_view>
 #include <vector>
 
+#include "absl/container/linked_hash_map.h"
 #include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/linked_hash_map.h"
 #include "ortools/routing/parsers/simple_graph.h"
 
 namespace operations_research::routing {
@@ -147,37 +147,38 @@ class NearpParser {
   }
 
   // Returns the servicing demands of the arcs in the current routing problem.
-  const gtl::linked_hash_map<Arc, int64_t>& arc_servicing_demands() const {
+  const absl::linked_hash_map<Arc, int64_t>& arc_servicing_demands() const {
     return arc_servicing_demands_;
   }
   // Returns the servicing demands of the edges in the current routing problem.
-  const gtl::linked_hash_map<Edge, int64_t>& edge_servicing_demands() const {
+  const absl::linked_hash_map<Edge, int64_t>& edge_servicing_demands() const {
     return edge_servicing_demands_;
   }
   // Returns the servicing demands of the nodes in the current routing problem.
-  const gtl::linked_hash_map<int64_t, int64_t>& node_servicing_demands() const {
+  const absl::linked_hash_map<int64_t, int64_t>& node_servicing_demands()
+      const {
     return node_servicing_demands_;
   }
 
   // Returns the servicing costs of the arcs in the current routing problem.
-  const gtl::linked_hash_map<Arc, int64_t>& arc_servicing_costs() const {
+  const absl::linked_hash_map<Arc, int64_t>& arc_servicing_costs() const {
     return arc_servicing_costs_;
   }
   // Returns the servicing costs of the edges in the current routing problem.
-  const gtl::linked_hash_map<Edge, int64_t>& edge_servicing_costs() const {
+  const absl::linked_hash_map<Edge, int64_t>& edge_servicing_costs() const {
     return edge_servicing_costs_;
   }
   // Returns the servicing costs of the nodes in the current routing problem.
-  const gtl::linked_hash_map<int64_t, int64_t>& node_servicing_costs() const {
+  const absl::linked_hash_map<int64_t, int64_t>& node_servicing_costs() const {
     return node_servicing_costs_;
   }
 
   // Returns the traversing costs of the arcs in the current routing problem.
-  const gtl::linked_hash_map<Arc, int64_t>& arc_traversing_costs() const {
+  const absl::linked_hash_map<Arc, int64_t>& arc_traversing_costs() const {
     return arc_traversing_costs_;
   }
   // Returns the traversing costs of the edges in the current routing problem.
-  const gtl::linked_hash_map<Edge, int64_t>& edge_traversing_costs() const {
+  const absl::linked_hash_map<Edge, int64_t>& edge_traversing_costs() const {
     return edge_traversing_costs_;
   }
 
@@ -239,16 +240,16 @@ class NearpParser {
   //   which are indices when iterating through these maps.
   //   Specifically, for nodes, a vector is not suitable, as indices are not
   //   necessarily contiguous.
-  gtl::linked_hash_map<Arc, int64_t> arc_traversing_costs_;
-  gtl::linked_hash_map<Edge, int64_t> edge_traversing_costs_;
+  absl::linked_hash_map<Arc, int64_t> arc_traversing_costs_;
+  absl::linked_hash_map<Edge, int64_t> edge_traversing_costs_;
 
-  gtl::linked_hash_map<Arc, int64_t> arc_servicing_demands_;
-  gtl::linked_hash_map<Edge, int64_t> edge_servicing_demands_;
-  gtl::linked_hash_map<int64_t, int64_t> node_servicing_demands_;
+  absl::linked_hash_map<Arc, int64_t> arc_servicing_demands_;
+  absl::linked_hash_map<Edge, int64_t> edge_servicing_demands_;
+  absl::linked_hash_map<int64_t, int64_t> node_servicing_demands_;
 
-  gtl::linked_hash_map<Arc, int64_t> arc_servicing_costs_;
-  gtl::linked_hash_map<Edge, int64_t> edge_servicing_costs_;
-  gtl::linked_hash_map<int64_t, int64_t> node_servicing_costs_;
+  absl::linked_hash_map<Arc, int64_t> arc_servicing_costs_;
+  absl::linked_hash_map<Edge, int64_t> edge_servicing_costs_;
+  absl::linked_hash_map<int64_t, int64_t> node_servicing_costs_;
 
   // - vehicles
   int num_vehicles_;

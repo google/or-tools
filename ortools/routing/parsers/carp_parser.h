@@ -59,10 +59,10 @@
 #include <string>
 #include <string_view>
 
+#include "absl/container/linked_hash_map.h"
 #include "absl/log/check.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/base/linked_hash_map.h"
 #include "ortools/routing/parsers/simple_graph.h"
 
 namespace operations_research::routing {
@@ -104,11 +104,11 @@ class CarpParser {
   // Returns the total servicing cost for all arcs.
   int64_t TotalServicingCost() const { return total_servicing_cost_; }
   // Returns the servicing of the edges in the current routing problem.
-  const gtl::linked_hash_map<Edge, int64_t>& servicing_demands() const {
+  const absl::linked_hash_map<Edge, int64_t>& servicing_demands() const {
     return servicing_demands_;
   }
   // Returns the traversing costs of the edges in the current routing problem.
-  const gtl::linked_hash_map<Edge, int64_t>& traversing_costs() const {
+  const absl::linked_hash_map<Edge, int64_t>& traversing_costs() const {
     return traversing_costs_;
   }
   // Returns the maximum number of vehicles to use.
@@ -175,8 +175,8 @@ class CarpParser {
   // - graph costs and servicing demands. Keep track of the order of the
   //   demands: the output format requires to use the servicing-demands IDs,
   //   which are indices when iterating over this map.
-  gtl::linked_hash_map<Edge, int64_t> traversing_costs_;
-  gtl::linked_hash_map<Edge, int64_t> servicing_demands_;
+  absl::linked_hash_map<Edge, int64_t> traversing_costs_;
+  absl::linked_hash_map<Edge, int64_t> servicing_demands_;
   // - vehicles
   int64_t n_vehicles_;
   int64_t capacity_;

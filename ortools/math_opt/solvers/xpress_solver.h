@@ -19,11 +19,11 @@
 #include <optional>
 #include <string>
 
+#include "absl/container/linked_hash_map.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
-#include "ortools/base/linked_hash_map.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/inverted_bounds.h"
 #include "ortools/math_opt/core/solver_interface.h"
@@ -176,32 +176,32 @@ class XpressSolver : public SolverInterface {
 
   // Internal correspondence from variable proto IDs to Xpress-numbered
   // variables.
-  gtl::linked_hash_map<VarId, XpressVariableIndex> variables_map_;
+  absl::linked_hash_map<VarId, XpressVariableIndex> variables_map_;
   // Internal correspondence from linear constraint proto IDs to
   // Xpress-numbered linear constraint and extra information.
-  gtl::linked_hash_map<LinearConstraintId, LinearConstraintData>
+  absl::linked_hash_map<LinearConstraintId, LinearConstraintData>
       linear_constraints_map_;
   // Internal correspondence from objective proto IDs to Xpress-numbered
   // objectives.
-  gtl::linked_hash_map<AuxiliaryObjectiveId, XpressMultiObjectiveIndex>
+  absl::linked_hash_map<AuxiliaryObjectiveId, XpressMultiObjectiveIndex>
       objectives_map_;
   // Internal correspondence from SOS1 proto IDs to Xpress-numbered
   // SOS1 constraints.
-  gtl::linked_hash_map<Sos1ConstraintId, XpressSosConstraintIndex> sos1_map_;
+  absl::linked_hash_map<Sos1ConstraintId, XpressSosConstraintIndex> sos1_map_;
   // Internal correspondence from SOS2 proto IDs to Xpress-numbered
   // SOS2 constraints.
-  gtl::linked_hash_map<Sos2ConstraintId, XpressSosConstraintIndex> sos2_map_;
+  absl::linked_hash_map<Sos2ConstraintId, XpressSosConstraintIndex> sos2_map_;
   // Internal correspondence from indicator proto IDs to Xpress-numbered
   // indicators.
-  gtl::linked_hash_map<IndicatorConstraintId, LinearConstraintData>
+  absl::linked_hash_map<IndicatorConstraintId, LinearConstraintData>
       indicator_map_;
   // Internal correspondence from quadratic proto IDs to Xpress-numbered
   // rows.
-  gtl::linked_hash_map<QuadraticConstraintId, LinearConstraintData>
+  absl::linked_hash_map<QuadraticConstraintId, LinearConstraintData>
       quad_constraints_map_;
   // Internal correspondence from second order cone constraint proto IDs to
   // Xpress-numbered rows.
-  gtl::linked_hash_map<QuadraticConstraintId, LinearConstraintData> soc_map_;
+  absl::linked_hash_map<QuadraticConstraintId, LinearConstraintData> soc_map_;
 
   int get_model_index(XpressVariableIndex index) const { return index; }
   int get_model_index(const LinearConstraintData& index) const {

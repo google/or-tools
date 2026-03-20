@@ -139,7 +139,7 @@ IntVarLocalSearchFilter* MakeCPFeasibilityFilter(Model* routing_model);
 // local search setting, the description is compact, allowing for incremental
 // filters to be efficient.
 //
-// In order to describe G1 in terms of G0 succintly, we describe each path of
+// In order to describe G1 in terms of G0 succinctly, we describe each path of
 // G1 as a sequence of chains of G0. A chain of G0 is either a nonempty sequence
 // of consecutive nodes of a path of G0, or a node that was a loop in G0.
 // For instance, a path that was not modified from G0 to G1 has one chain,

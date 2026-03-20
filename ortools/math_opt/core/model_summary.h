@@ -25,12 +25,12 @@
 
 #include "absl/algorithm/container.h"
 #include "absl/container/flat_hash_map.h"
+#include "absl/container/linked_hash_map.h"
 #include "absl/log/check.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/base/linked_hash_map.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/model_update.pb.h"
@@ -99,7 +99,7 @@ class IdNameBiMap {
   inline absl::Status SetNextFreeId(int64_t new_next_free_id);
 
   // Iteration order is in increasing id order.
-  const gtl::linked_hash_map<int64_t, std::string>& id_to_name() const {
+  const absl::linked_hash_map<int64_t, std::string>& id_to_name() const {
     return id_to_name_;
   }
 
@@ -120,7 +120,7 @@ class IdNameBiMap {
 
   // Pointer stability for name strings and iterating in insertion order are
   // both needed (so we do not use flat_hash_map).
-  gtl::linked_hash_map<int64_t, std::string> id_to_name_;
+  absl::linked_hash_map<int64_t, std::string> id_to_name_;
   std::optional<absl::flat_hash_map<absl::string_view, int64_t>>
       nonempty_name_to_id_;
 };
