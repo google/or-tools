@@ -22,7 +22,6 @@
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/log_severity.h"
-#include "ortools/math_opt/core/sparse_collection_matchers.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/model_parameters.pb.h"
 #include "ortools/math_opt/model_update.pb.h"
@@ -748,44 +747,6 @@ TEST(FirstLinearConstraintIdTest, NonEmpty) {
   linear_constraints.add_ids(5);
   linear_constraints.add_ids(7);
   EXPECT_THAT(FirstLinearConstraintId(linear_constraints), Optional(3));
-}
-
-TEST(RemoveSparseDoubleVectorZerosTest, Empty) {
-  SparseDoubleVectorProto v;
-  RemoveSparseDoubleVectorZeros(v);
-  EXPECT_THAT(v, SparseVectorMatcher(Pairs<double>{}));
-}
-
-TEST(RemoveSparseDoubleVectorZerosTest, NoZeros) {
-  SparseDoubleVectorProto v = MakeSparseDoubleVector({{3, 2.5}, {4, 4.0}});
-  RemoveSparseDoubleVectorZeros(v);
-  EXPECT_THAT(v, SparseVectorMatcher(Pairs<double>{{3, 2.5}, {4, 4.0}}));
-}
-
-TEST(RemoveSparseDoubleVectorZerosTest, NaN) {
-  SparseDoubleVectorProto v = MakeSparseDoubleVector({{3, std::nan("")}});
-  RemoveSparseDoubleVectorZeros(v);
-  ASSERT_EQ(v.values_size(), 1);
-  EXPECT_TRUE(std::isnan(v.values(0)));
-}
-
-TEST(RemoveSparseDoubleVectorZerosTest, SomeZeros) {
-  SparseDoubleVectorProto v = MakeSparseDoubleVector(
-      {{1, 0.0}, {3, 2.5}, {5, 0.0}, {6, 4.0}, {9, 0.0}});
-  RemoveSparseDoubleVectorZeros(v);
-  EXPECT_THAT(v, SparseVectorMatcher(Pairs<double>{{3, 2.5}, {6, 4.0}}));
-}
-
-TEST(RemoveSparseDoubleVectorZerosTest, AllZeros) {
-  SparseDoubleVectorProto v = MakeSparseDoubleVector({{3, 0.0}, {4, 0.0}});
-  RemoveSparseDoubleVectorZeros(v);
-  EXPECT_THAT(v, SparseVectorMatcher(Pairs<double>{}));
-}
-
-TEST(RemoveSparseDoubleVectorZerosDeathTest, Invalid) {
-  SparseDoubleVectorProto v = MakeSparseDoubleVector({{3, 0.0}, {4, 0.0}});
-  v.mutable_ids()->RemoveLast();
-  EXPECT_DEATH(RemoveSparseDoubleVectorZeros(v), "ids");
 }
 
 // Returns the result of calling AcceptsAndUpdate() with the input parameters on

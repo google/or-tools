@@ -47,7 +47,6 @@ cc_test(
     srcs = ["math_opt_proto_utils_test.cc"],
     deps = [
         ":math_opt_proto_utils",
-        ":sparse_collection_matchers",
         "//ortools/base:gmock_main",
         "//ortools/base:log_severity",
         "//ortools/math_opt:model_cc_proto",

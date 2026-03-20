@@ -19,7 +19,6 @@
 #include <functional>
 #include <limits>
 #include <optional>
-#include <string>
 
 #include "absl/base/optimization.h"
 #include "absl/container/flat_hash_set.h"
@@ -68,26 +67,6 @@ ProblemStatusProto GetProblemStatus(const SolveResultProto& solve_result) {
   problem_status.set_primal_or_dual_infeasible(
       solve_result.solve_stats().problem_status().primal_or_dual_infeasible());
   return problem_status;
-}
-
-void RemoveSparseDoubleVectorZeros(SparseDoubleVectorProto& sparse_vector) {
-  CHECK_EQ(sparse_vector.ids_size(), sparse_vector.values_size());
-  // Keep track of the next index that has not yet been used for a non zero
-  // value.
-  int next = 0;
-  for (const auto [id, value] : MakeView(sparse_vector)) {
-    // Se use `!(== 0.0)` here so that we keep NaN values for which both `v ==
-    // 0` and `v != 0` returns false.
-    if (!(value == 0.0)) {
-      sparse_vector.set_ids(next, id);
-      sparse_vector.set_values(next, value);
-      ++next;
-    }
-  }
-  // At the end of the iteration, `next` contains the index of the first unused
-  // index. This means it contains the number of used elements.
-  sparse_vector.mutable_ids()->Truncate(next);
-  sparse_vector.mutable_values()->Truncate(next);
 }
 
 SparseVectorFilterPredicate::SparseVectorFilterPredicate(
