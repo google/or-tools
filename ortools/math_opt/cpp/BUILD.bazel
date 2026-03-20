@@ -652,6 +652,7 @@ cc_library(
     deps = [
         "//ortools/math_opt:parameters_cc_proto",
         "//ortools/math_opt/solvers:gurobi_cc_proto",
+        "//ortools/math_opt/solvers:xpress_cc_proto",
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/status:statusor",
     ],
@@ -665,6 +666,7 @@ cc_test(
         "//ortools/base:gmock_main",
         "//ortools/math_opt:parameters_cc_proto",
         "//ortools/math_opt/solvers:gurobi_cc_proto",
+        "//ortools/math_opt/solvers:xpress_cc_proto",
     ],
 )
 
@@ -681,6 +683,7 @@ cc_library(
         "//ortools/math_opt/solvers:glpk_cc_proto",
         "//ortools/math_opt/solvers:gurobi_cc_proto",
         "//ortools/math_opt/solvers:highs_cc_proto",
+        "//ortools/math_opt/solvers:xpress_cc_proto",
         "//ortools/math_opt/solvers/gscip:gscip_cc_proto",
         "//ortools/pdlp:solvers_cc_proto",
         "//ortools/port:proto_utils",

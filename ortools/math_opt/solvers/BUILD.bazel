@@ -688,6 +688,11 @@ proto_library(
     srcs = ["xpress.proto"],
 )
 
+java_proto_library(
+    name = "xpress_java_proto",
+    deps = [":xpress_proto"],
+)
+
 cc_proto_library(
     name = "xpress_cc_proto",
     deps = [":xpress_proto"],

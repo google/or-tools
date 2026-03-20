@@ -27,9 +27,11 @@
 #include <optional>
 #include <string>
 
+#include "absl/base/attributes.h"
 #include "absl/status/statusor.h"
 #include "ortools/math_opt/parameters.pb.h"
 #include "ortools/math_opt/solvers/gurobi.pb.h"
+#include "ortools/math_opt/solvers/xpress.pb.h"
 
 namespace operations_research {
 namespace math_opt {
@@ -77,13 +79,19 @@ struct StreamableGurobiInitArguments {
       const GurobiInitializerProto& args_proto);
 };
 
+// A license key for the Xpress solver.
+struct XpressLicenseKey {
+  std::string path ABSL_REQUIRE_EXPLICIT_INIT;
+
+  XpressInitializerProto::License Proto() const;
+  static XpressLicenseKey FromProto(
+      const XpressInitializerProto::License& license_proto);
+};
+
 // Streamable Xpress specific parameters for solver instantiation.
 struct StreamableXpressInitArguments {
-  // If present and set to true then variable and constraint names are
-  // extracted into the underlying Xpress instance. This can help debugging
-  // (especially if models are exported to disk) but also incurs runtime and
-  // memory overhead.
-  std::optional<bool> extract_names;
+  // An optional license key to use to instantiate the solver.
+  std::optional<XpressLicenseKey> license;
 
   // Returns the proto corresponding to these parameters.
   XpressInitializerProto Proto() const;

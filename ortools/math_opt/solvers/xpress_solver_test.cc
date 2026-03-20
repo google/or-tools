@@ -278,14 +278,13 @@ LogicalConstraintTestParameters GetXpressLogicalConstraintTestParameters() {
       //       solely of variables (not expressions) and it does not support
       //       duplicate entries. Many of the SOS tests construct things
       //       like this, so we skip them.
-      /*supports_sos1=*/false,
-      /*supports_sos2=*/false,
+      /*supports_sos1=*/true,
+      /*supports_sos2=*/true,
       /*supports_indicator_constraints=*/true,
       /*supports_incremental_add_and_deletes=*/false,
       /*supports_incremental_variable_deletions=*/false,
       /*supports_deleting_indicator_variables=*/false,
-      /*supports_updating_binary_variables=*/false,
-      /*supports_sos_on_expressions=*/false);
+      /*supports_updating_binary_variables=*/false);
 }
 
 INSTANTIATE_TEST_SUITE_P(

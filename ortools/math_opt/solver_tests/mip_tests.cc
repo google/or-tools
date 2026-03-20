@@ -146,6 +146,7 @@ TEST_P(SimpleMipTest, FractionalBoundsContainNoInteger) {
     // Xpress rounds bounds of integer variables on input, so the bounds
     // specified here result in [1,0]. Xpress also checks that bounds are
     // not contradicting, so it rejects creation of such a variable.
+    // see https://github.com/google/or-tools/issues/5085
     GTEST_SKIP() << "Xpress does not support contradictory bounds.";
   }
   Model model;

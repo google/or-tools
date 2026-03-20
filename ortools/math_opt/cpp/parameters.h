@@ -31,6 +31,7 @@
 #include "ortools/math_opt/solvers/gscip/gscip.pb.h"  // IWYU pragma: export
 #include "ortools/math_opt/solvers/gurobi.pb.h"       // IWYU pragma: export
 #include "ortools/math_opt/solvers/highs.pb.h"        // IWYU pragma: export
+#include "ortools/math_opt/solvers/xpress.pb.h"       // IWYU pragma: export
 #include "ortools/pdlp/solvers.pb.h"                  // IWYU pragma: export
 #include "ortools/sat/sat_parameters.pb.h"            // IWYU pragma: export
 
@@ -287,7 +288,8 @@ struct XpressParameters {
   absl::linked_hash_map<std::string, std::string> param_values;
 
   XpressParametersProto Proto() const;
-  static XpressParameters FromProto(const XpressParametersProto& proto);
+  static absl::StatusOr<XpressParameters> FromProto(
+      const XpressParametersProto& proto);
 
   bool empty() const { return param_values.empty(); }
 };

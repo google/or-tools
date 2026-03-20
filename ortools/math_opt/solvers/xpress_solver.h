@@ -17,8 +17,9 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
-#include <string>
+#include <vector>
 
+#include "absl/base/nullability.h"
 #include "absl/container/linked_hash_map.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
@@ -53,23 +54,20 @@ class XpressSolver : public SolverInterface {
   absl::StatusOr<SolveResultProto> Solve(
       const SolveParametersProto& parameters,
       const ModelSolveParametersProto& model_parameters,
-      MessageCallback message_cb,
-      const CallbackRegistrationProto& callback_registration, Callback cb,
-      const SolveInterrupter* interrupter) override;
+      SolverInterface::MessageCallback message_callback,
+      const CallbackRegistrationProto& callback_registration, Callback callback,
+      const SolveInterrupter* absl_nullable interrupter) override;
 
   // Updates the problem (not implemented yet)
   absl::StatusOr<bool> Update(const ModelUpdateProto& model_update) override;
 
   // Computes the infeasible subsystem (not implemented yet)
   absl::StatusOr<ComputeInfeasibleSubsystemResultProto>
-  ComputeInfeasibleSubsystem(const SolveParametersProto& parameters,
-                             MessageCallback message_cb,
-                             const SolveInterrupter* interrupter) override;
+  ComputeInfeasibleSubsystem(
+      const SolveParametersProto& parameters,
+      SolverInterface::MessageCallback message_callback,
+      const SolveInterrupter* absl_nullable interrupter) override;
 
- private:
-  explicit XpressSolver(std::unique_ptr<Xpress> g_xpress, bool extract_names);
-
- public:
   // For easing reading the code, we declare these types:
   using VarId = int64_t;
   using AuxiliaryObjectiveId = int64_t;
@@ -88,7 +86,16 @@ class XpressSolver : public SolverInterface {
   using XpressGeneralConstraintIndex = int;
   using XpressAnyConstraintIndex = int;
 
+  // Data associated with each linear constraint
+  struct LinearConstraintData {
+    XpressLinearConstraintIndex constraint_index = kUnspecifiedConstraint;
+    double lower_bound = kMinusInf;
+    double upper_bound = kPlusInf;
+  };
+
  private:
+  explicit XpressSolver(std::unique_ptr<Xpress> g_xpress);
+
   static constexpr XpressVariableIndex kUnspecifiedIndex = -1;
   static constexpr XpressAnyConstraintIndex kUnspecifiedConstraint = -2;
   static constexpr double kPlusInf = XPRS_PLUSINFINITY;
@@ -98,15 +105,6 @@ class XpressSolver : public SolverInterface {
     return value < kPlusInf && value > kMinusInf;
   }
 
-  // Data associated with each linear constraint
- public:
-  struct LinearConstraintData {
-    XpressLinearConstraintIndex constraint_index = kUnspecifiedConstraint;
-    double lower_bound = kMinusInf;
-    double upper_bound = kPlusInf;
-  };
-
- private:
   absl::StatusOr<SolveResultProto> ExtractSolveResultProto(
       absl::Time start, const ModelSolveParametersProto& model_parameters,
       const SolveParametersProto& solve_parameters);
@@ -172,7 +170,6 @@ class XpressSolver : public SolverInterface {
       const SparseVectorFilterProto& filter) const;
 
   const std::unique_ptr<Xpress> xpress_;
-  bool const extract_names_;
 
   // Internal correspondence from variable proto IDs to Xpress-numbered
   // variables.
