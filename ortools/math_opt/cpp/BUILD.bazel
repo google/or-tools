@@ -138,7 +138,12 @@ cc_library(
 cc_test(
     name = "model_test",
     srcs = ["model_test.cc"],
-    tags = ["noci"],
+    # TODO: b/475196802 - Stop using EquivToProto().
+    tags = [
+        "no_test_android",
+        "no_test_wasm",
+        "noci",
+    ],
     deps = [
         ":key_types",
         ":linear_constraint",
@@ -236,6 +241,18 @@ cc_test(
     name = "variable_and_expressions_with_counters_test",
     srcs = ["variable_and_expressions_test.cc"],
     defines = ["MATH_OPT_USE_EXPRESSION_COUNTERS"],
+    # Does not build with WASM, darwin_x86_64 or Android with duplicated symbols
+    # error in:
+    # * _objs/variable_and_expressions/variable_and_expressions.pic.o
+    # * _objs/variable_and_expressions_with_counters/variable_and_expressions.pic.o
+    #
+    # It seems likely that WASM links all tests in the same binary, and thus
+    # fails. We keep only variable_and_expressions_test.
+    tags = [
+        "no_test_android",
+        "no_test_darwin_x86_64",
+        "no_test_wasm",
+    ],
     deps = [
         ":matchers",
         ":variable_and_expressions_with_counters",
@@ -432,6 +449,11 @@ cc_library(
 cc_test(
     name = "map_filter_test",
     srcs = ["map_filter_test.cc"],
+    # TODO: b/475196802 - Stop using EquivToProto().
+    tags = [
+        "no_test_android",
+        "no_test_wasm",
+    ],
     deps = [
         ":linear_constraint",
         ":map_filter",

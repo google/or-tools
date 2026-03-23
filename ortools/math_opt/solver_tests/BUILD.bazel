@@ -156,6 +156,9 @@ cc_test(
     name = "unregistered_solver_test",
     size = "small",
     srcs = ["unregistered_solver_test.cc"],
+    # SCIP depends on strerror_r() returning a `char*` which is GNU
+    # specific. Android returns an `int`.
+    tags = ["no_test_android"],
     deps = [
         "//ortools/base:gmock",
         "//ortools/base:gmock_main",
@@ -420,6 +423,9 @@ cc_library(
 cc_test(
     name = "test_models_test",
     srcs = ["test_models_test.cc"],
+    # SCIP depends on strerror_r() returning a `char*` which is GNU
+    # specific. Android returns an `int`.
+    tags = ["no_test_android"],
     deps = [
         ":test_models",
         "//ortools/base:gmock_main",

@@ -17,6 +17,10 @@ load("@rules_python//python:py_binary.bzl", "py_binary")
 py_binary(
     name = "tsp",
     srcs = ["tsp.py"],
+    tags = [
+        "not_build:arm",
+        "not_run:arm",
+    ],
     deps = [
         requirement("absl-py"),
         requirement("svgwrite"),
@@ -72,6 +76,10 @@ py_binary(
 py_binary(
     name = "facility_lp_benders",
     srcs = ["facility_lp_benders.py"],
+    tags = [
+        "not_build:arm",
+        "not_run:arm",
+    ],
     deps = [
         requirement("absl-py"),
         requirement("numpy"),
@@ -82,6 +90,10 @@ py_binary(
 py_binary(
     name = "linear_regression",
     srcs = ["linear_regression.py"],
+    tags = [
+        "not_build:arm",
+        "not_run:arm",
+    ],
     deps = [
         requirement("absl-py"),
         requirement("numpy"),
@@ -92,6 +104,10 @@ py_binary(
 py_binary(
     name = "smallest_circle",
     srcs = ["smallest_circle.py"],
+    tags = [
+        "not_build:arm",
+        "not_run:arm",
+    ],
     deps = [
         requirement("absl-py"),
         requirement("numpy"),
@@ -120,6 +136,10 @@ py_binary(
 py_binary(
     name = "writing_seminar",
     srcs = ["writing_seminar.py"],
+    tags = [
+        "not_build:arm",
+        "not_run:arm",
+    ],
     deps = [
         requirement("absl-py"),
         "//ortools/math_opt/python:mathopt",
@@ -129,6 +149,10 @@ py_binary(
 py_binary(
     name = "hierarchical_objectives",
     srcs = ["hierarchical_objectives.py"],
+    tags = [
+        "not_build:arm",
+        "not_run:arm",
+    ],
     deps = [
         requirement("absl-py"),
         "//ortools/math_opt/python:mathopt",

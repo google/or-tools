@@ -110,6 +110,10 @@ cc_binary(
 cc_binary(
     name = "facility_lp_benders",
     srcs = ["facility_lp_benders.cc"],
+    tags = [
+        "not_build:arm",
+        "not_run:arm",
+    ],
     deps = [
         "//ortools/base",
         "//ortools/base:status_macros",
@@ -157,6 +161,10 @@ cc_binary(
 cc_binary(
     name = "linear_regression",
     srcs = ["linear_regression.cc"],
+    tags = [
+        "not_build:arm",
+        "not_run:arm",
+    ],
     deps = [
         "//ortools/base",
         "//ortools/base:status_macros",
@@ -176,6 +184,10 @@ cc_binary(
 cc_binary(
     name = "mathopt_info",
     srcs = ["mathopt_info.cc"],
+    tags = [
+        "not_build:arm",
+        "not_run:arm",
+    ],
     deps = [
         "//ortools/base",
         "//ortools/math_opt/core:solver_interface",
@@ -192,6 +204,10 @@ cc_binary(
 cc_binary(
     name = "tsp",
     srcs = ["tsp.cc"],
+    tags = [
+        "not_build:arm",
+        "not_run:arm",
+    ],
     deps = [
         "//ortools/base",
         "//ortools/base:file",
@@ -228,6 +244,10 @@ cc_binary(
 cc_binary(
     name = "time_indexed_scheduling",
     srcs = ["time_indexed_scheduling.cc"],
+    tags = [
+        "not_build:arm",
+        "not_run:arm",
+    ],
     deps = [
         "//ortools/base",
         "//ortools/base:status_macros",

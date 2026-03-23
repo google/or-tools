@@ -76,6 +76,10 @@ cc_library(
     name = "gurobi_callback",
     srcs = ["gurobi_callback.cc"],
     hdrs = ["gurobi_callback.h"],
+    tags = [
+        "not_build:arm",
+        "not_run:arm",
+    ],
     deps = [
         ":message_callback_data",
         "//ortools/base:protoutil",
@@ -109,6 +113,10 @@ cc_library(
     ],
     hdrs = [
         "gurobi_init_arguments.h",
+    ],
+    tags = [
+        "not_build:arm",
+        "not_run:arm",
     ],
     deps = [
         ":gurobi_callback",
@@ -281,7 +289,12 @@ cc_test(
     name = "cp_sat_solver_test",
     timeout = "eternal",
     srcs = ["cp_sat_solver_test.cc"],
-    tags = ["manual"],
+    tags = [
+        # `--config=android_arm` and `--config=android_arm64` both timeout on
+        # this test.
+        "no_test_android",
+        "noci",
+    ],
     deps = [
         ":cp_sat_solver",
         "//ortools/base:gmock_main",
@@ -545,6 +558,8 @@ cc_library(
         "highs_solver.cc",
         "highs_solver.h",
     ],
+    # Highs does not compile on WASM.
+    tags = ["no_test_wasm"],
     deps = [
         ":highs_cc_proto",
         ":message_callback_data",
@@ -584,8 +599,8 @@ cc_test(
     name = "highs_solver_test",
     srcs = ["highs_solver_test.cc"],
     flaky = 1,
-    # See note above ":highs_solver" rule.
-    tags = ["nosan"],
+    # Highs fails to build with WASM in third_party/zstr.
+    tags = ["no_test_wasm"],
     deps = [
         ":highs_cc_proto",
         ":highs_solver",

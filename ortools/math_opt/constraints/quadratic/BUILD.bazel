@@ -71,6 +71,11 @@ cc_library(
 cc_test(
     name = "storage_test",
     srcs = ["storage_test.cc"],
+    # TODO: b/475196802 - Stop using EquivToProto().
+    tags = [
+        "no_test_android",
+        "no_test_wasm",
+    ],
     deps = [
         ":storage",
         "//ortools/base:gmock_main",

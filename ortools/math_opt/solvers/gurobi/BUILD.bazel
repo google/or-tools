@@ -21,6 +21,10 @@ cc_library(
     hdrs = [
         "g_gurobi.h",
     ],
+    tags = [
+        "not_build:arm",
+        "not_run:arm",
+    ],
     visibility = [
         "//ortools/gurobi:__subpackages__",
         "//ortools/math_opt:__subpackages__",

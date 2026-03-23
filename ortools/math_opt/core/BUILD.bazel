@@ -45,6 +45,11 @@ cc_library(
 cc_test(
     name = "math_opt_proto_utils_test",
     srcs = ["math_opt_proto_utils_test.cc"],
+    # TODO: b/475196802 - Stop using EquivToProto().
+    tags = [
+        "no_test_android",
+        "no_test_wasm",
+    ],
     deps = [
         ":math_opt_proto_utils",
         "//ortools/base:gmock_main",
@@ -78,6 +83,11 @@ cc_library(
 cc_test(
     name = "sparse_vector_view_test",
     srcs = ["sparse_vector_view_test.cc"],
+    # TODO: b/475194473 - Stop using ParseFromString().
+    tags = [
+        "no_test_android",
+        "no_test_wasm",
+    ],
     deps = [
         ":sparse_vector",
         ":sparse_vector_view",
@@ -137,6 +147,11 @@ cc_library(
 cc_test(
     name = "model_summary_test",
     srcs = ["model_summary_test.cc"],
+    # TODO: b/475194473 - Stop using ParseTextProtoOrDie().
+    tags = [
+        "no_test_android",
+        "no_test_wasm",
+    ],
     deps = [
         ":model_summary",
         "//ortools/base:gmock",
