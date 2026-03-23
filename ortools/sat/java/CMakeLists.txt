@@ -69,7 +69,11 @@ swig_add_library(jnicp_model_proto
   TYPE OBJECT
   LANGUAGE java
   OUTPUT_DIR ${JAVA_PROJECT_DIR}/${JAVA_SRC_PATH}/sat
-  SOURCES "${CMAKE_CURRENT_BINARY_DIR}/cp_model_proto.swig")
+  SOURCES
+    "${CMAKE_CURRENT_BINARY_DIR}/cp_model_proto.swig"
+    ${PROJECT_SOURCE_DIR}/ortools/util/java/jni_helper.h
+    ${PROJECT_SOURCE_DIR}/ortools/util/java/jni_helper.cc
+  )
 
 target_include_directories(jnicp_model_proto PRIVATE
   ${JNI_INCLUDE_DIRS}
