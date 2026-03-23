@@ -65,6 +65,7 @@ cc_library(
     srcs = ["scoped_std_stream_capture.cc"],
     hdrs = ["scoped_std_stream_capture.h"],
     deps = [
+        "//ortools/base:base_export",
         "//ortools/base:gmock",
         "@abseil-cpp//absl/log:check",
     ],

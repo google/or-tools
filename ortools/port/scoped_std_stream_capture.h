@@ -16,6 +16,8 @@
 
 #include <string>
 
+#include "ortools/base/base_export.h"
+
 namespace operations_research {
 
 // The stream to capture for
@@ -39,7 +41,7 @@ enum class CapturedStream { kStdout, kStderr };
 //                   HasSubstr("..."));
 //     }
 //   }
-class ScopedStdStreamCapture {
+class OR_DLL ScopedStdStreamCapture {
  public:
   // True if the capture is supported by the configuration.
   //
