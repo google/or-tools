@@ -82,7 +82,7 @@ target_include_directories(jnicp_model_proto PRIVATE
 set_target_properties(jnicp_model_proto PROPERTIES
   SWIG_USE_TARGET_INCLUDE_DIRECTORIES ON
   POSITION_INDEPENDENT_CODE ON)
-target_link_libraries(jnicp_model_proto PRIVATE ortools::ortools)
+target_link_libraries(jnicp_model_proto PRIVATE JNI::JNI ortools::ortools)
 target_link_libraries(jni${JAVA_ARTIFACT} PRIVATE jnicp_model_proto)
 
 # sat
