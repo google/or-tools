@@ -75,7 +75,7 @@ if(BUILD_TESTING)
       GTest::gtest_main
       GTest::gmock
     COMPILE_DEFINITIONS
-    -DROOT_DIR="${CMAKE_SOURCE_DIR}"
+    -DROOT_DIR="${CMAKE_SOURCE_DIR}/"
   )
 
   # These tests are too long so we disable them.
