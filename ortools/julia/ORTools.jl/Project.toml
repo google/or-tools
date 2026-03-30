@@ -1,6 +1,6 @@
 name = "ORTools"
 uuid = "b7d69b34-a827-4671-8cfa-f7e1eec930c7"
-version = "0.0.3"
+version = "0.1.0"
 
 [deps]
 MathOptInterface = "b8f27783-ece8-5eb3-8dc8-9495eed66fee"
@@ -20,7 +20,7 @@ ORToolsBinariesExt = "ORToolsBinaries"
 julia = "1.9"
 ORTools_jll = "9.14.0"
 ORToolsBinaries = "0.1.0"
-ORToolsGenerated = "0.0.3"
+ORToolsGenerated = "0.1.0"
 ProtoBuf = "1.0.15"
 MathOptInterface = "1.42.0"
 
