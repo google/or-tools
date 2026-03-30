@@ -92,7 +92,7 @@ The circuit constraint takes a graph and forces the arcs present (with arc
 presence indicated by a literal) to form a unique cycle.
 """
 const CircuitConstraintProto = Sat.CircuitConstraintProto
-const CircuitConstraint =
+const NewCircuitConstraint =
     () -> CircuitConstraintProto(
         Vector{Int32}(), # tails
         Vector{Int32}(), # heads
@@ -2207,12 +2207,15 @@ end
     Mutable wrapper struct for the LinearArgumentProto struct.
 """
 mutable struct LinearArgument
-    target::Union{Nothing,LinearExpression}
-    exprs::Vector{LinearExpression}
+    target::Union{Nothing,CPSatLinearExpression}
+    exprs::Vector{CPSatLinearExpression}
 end
 
 function to_proto_struct(linear_argument::LinearArgument)::Sat.LinearArgumentProto
-    return Sat.LinearArgumentProto(linear_argument.target, linear_argument.exprs)
+    return Sat.LinearArgumentProto(
+        to_proto_struct(linear_argument.target),
+        to_proto_struct.(linear_argument.exprs),
+    )
 end
 
 """
@@ -2221,8 +2224,8 @@ end
 mutable struct AllDifferentConstraint
     exprs::Vector{CPSatLinearExpression}
 
-    function AllDifferentConstraint()
-        new(Vector{CPSatLinearExpression}())
+    function AllDifferentConstraint(; exprs = Vector{CPSatLinearExpression}())
+        new(exprs)
     end
 end
 
@@ -2252,7 +2255,7 @@ mutable struct ElementConstraint
         linear_target = nothing,
         exprs = Vector{CPSatLinearExpression}(),
     )
-        new(nothing, nothing, Vector{CPSatLinearExpression}())
+        new(linear_index, linear_target, exprs)
     end
 end
 
@@ -2310,8 +2313,13 @@ mutable struct RoutesConstraint
     literals::Vector{Int32}
     dimensions::Vector{NodeExpressions}
 
-    function RoutesConstraint()
-        new(Vector{Int32}(), Vector{Int32}(), Vector{Int32}(), Vector{NodeExpressions}())
+    function RoutesConstraint(;
+        tails = Vector{Int32}(),
+        heads = Vector{Int32}(),
+        literals = Vector{Int32}(),
+        dimensions = Vector{NodeExpressions}(),
+    )
+        new(tails, heads, literals, dimensions)
     end
 end
 
@@ -2336,12 +2344,15 @@ mutable struct TableConstraint
     exprs::Vector{CPSatLinearExpression}
     negated::Bool
 
-    function TableConstraint()
+    function TableConstraint(;
+        values::Vector{Int64} = Vector{Int64}(),
+        exprs = Vector{CPSatLinearExpression}(),
+        negated = false,
+    )
         new(
-            Vector{Int32}(), # [Deprecated] vars
-            Vector{Int64}(),
-            Vector{CPSatLinearExpression}(),
-            false,  # negated is falase by default
+            values,
+            exprs,
+            negated,  # negated is false by default
         )
     end
 end
@@ -2350,7 +2361,12 @@ end
 function to_proto_struct(table_constraint::TableConstraint)::Sat.TableConstraintProto
     exprs = to_proto_struct.(table_constraint.exprs)
 
-    return Sat.TableConstraintProto(vars, exprs, negated)
+    return Sat.TableConstraintProto(
+        Vector{Int32}(), # [Deprecated] vars
+        table_constraint.values,
+        table_constraint.exprs,
+        table_constraint.negated,
+    )
 end
 
 """
@@ -2368,14 +2384,21 @@ mutable struct AutomatonConstraint
     transition_label::Vector{Int64}
     exprs::Vector{CPSatLinearExpression}
 
-    function AutomatonConstraint()
+    function AutomatonConstraint(;
+        starting_state = zero(Int64),
+        final_states = Vector{Int64}(),
+        transition_tail = Vector{Int64}(),
+        transition_head = Vector{Int64}(),
+        transition_label = Vector{Int64}(),
+        exprs = Vector{CPSatLinearExpression}(),
+    )
         new(
-            zero(Int64),
-            Vector{Int64}(),
-            Vector{Int64}(),
-            Vector{Int64}(),
-            Vector{Int64}(),
-            Vector{CPSatLinearExpression}(),
+            starting_state,
+            final_states,
+            transition_tail,
+            transition_head,
+            transition_label,
+            exprs,
         )
     end
 end
@@ -2422,14 +2445,14 @@ mutable struct ReservoirConstraint
     level_changes::Vector{CPSatLinearExpression}
     active_literals::Vector{Int32}
 
-    function ReservoirConstraint()
-        new(
-            zero(Int64), # min_level
-            zero(Int64), # max_level
-            Vector{CPSatLinearExpression}(), # time_exprs
-            Vector{CPSatLinearExpression}(), # level_changes
-            Vector{Int32}(), # active_literals
-        )
+    function ReservoirConstraint(;
+        min_level = zero(Int64),
+        max_level = zero(Int64),
+        time_exprs = Vector{CPSatLinearExpression}(),
+        level_changes = Vector{CPSatLinearExpression}(),
+        active_literals = Vector{Int32}(),
+    )
+        new(min_level, max_level, time_exprs, level_changes, active_literals)
     end
 end
 
@@ -2544,49 +2567,13 @@ function to_proto_struct(
 end
 
 """
-  Alias for the `ListOfVariablesProto` struct.
-  
-  This is a list of variables, without any semantics.
-
-  This constraint is not meant to be used and will be rejected by the
-  solver. It is meant to mark variable when testing the presolve code.
-"""
-const ListOfVariablesProto = Sat.ListOfVariablesProto
-const ListOfVariables = () -> ListOfVariablesProto(
-    Vector{Int32}(), # vars
-)
-
-
-"""
   Mutable wrapper for the `ConstraintProto` in CPSat.
 """
 mutable struct CPSATConstraint
     name::String
     enforcement_literal::Vector{Int32}
-    constraint::Union{
-        Nothing,
-        PB.OneOf{
-            <:Union{
-                AllDifferentConstraint,
-                CPSatLinearConstraintProto,
-                LinearArgument,
-                BoolArgument,
-                InverseConstraintProto,
-                ListOfVariablesProto,
-                ElementConstraint,
-                CircuitConstraintProto,
-                RoutesConstraint,
-                TableConstraint,
-                AutomatonConstraint,
-                ReservoirConstraint,
-                ReservoirConstraint,
-                IntervalConstraint,
-                NoOverlapConstraintProto,
-                NoOverlap2DConstraintProto,
-                CumulativeConstraint,
-            },
-        },
-    }
+    constraint::Union{Nothing,NamedTuple}
+
     function CPSATConstraint(;
         name = "",
         enforcement_literal = Vector{Int32}(),
@@ -2706,13 +2693,13 @@ end
   Define the strategy to follow when the solver needs to take a new decision.
   Note that this strategy is only defined on a subset of variables.
 """
-mutable struct DecisionStrategy
+mutable struct CPSATDecisionStrategy
     variables::Vector{Int32}
     exprs::Vector{CPSatLinearExpression}
     variable_selection_strategy::CPSATVariableSelectionStrategy.T
     domain_reduction_strategy::CPSATDomainReductionStrategy.T
 
-    function DecisionStrategy(;
+    function CPSATDecisionStrategy(;
         variables = Vector{Int32}(),
         exprs = Vector{CPSatLinearExpression}(),
         variable_selection_strategy = CPSATVariableSelectionStrategy.CHOOSE_FIRST,
@@ -2722,8 +2709,10 @@ mutable struct DecisionStrategy
     end
 end
 
-function to_proto_struct(decision_strategy::DecisionStrategy)::Sat.DecisionStrategyProto
-    return Sat.DecisionStrategyProto(
+function to_proto_struct(
+    decision_strategy::CPSATDecisionStrategy,
+)::Sat.DecisionStrategyProto
+    return Sat.CPSATDecisionStrategyProto(
         decision_strategy.variables,
         to_proto_struct.(decision_strategy.exprs),
         decision_strategy.variable_selection_strategy,
@@ -2742,7 +2731,7 @@ mutable struct CpModel
     constraints::Vector{CPSATConstraint}
     objective::Union{Nothing,CpObjective}
     floating_point_objective::Union{Nothing,FloatObjective}
-    search_strategy::Vector{DecisionStrategy}
+    search_strategy::Vector{CPSATDecisionStrategy}
     solution_hint::Union{Nothing,CPSATPartialVariableAssignment}
     assumptions::Vector{Int32}
     symmetry::Union{Nothing,CPSATExperimentalSymmetry}
@@ -2753,7 +2742,7 @@ mutable struct CpModel
         constraints = Vector{CPSATConstraint}(),
         objective = nothing,
         floating_point_objective = nothing,
-        search_strategy = Vector{DecisionStrategy}(),
+        search_strategy = Vector{CPSATDecisionStrategy}(),
         solution_hint = nothing,
         assumptions = Vector{Int32}(),
     )
