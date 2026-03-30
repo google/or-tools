@@ -37,7 +37,7 @@ add_library(${PROJECT_NAMESPACE}::routing_pybind11 ALIAS routing_pybind11)
 set_property(SOURCE routing.swig PROPERTY CPLUSPLUS ON)
 set_property(SOURCE routing.swig PROPERTY SWIG_MODULE_NAME pywraprouting)
 set_property(SOURCE routing.swig PROPERTY COMPILE_DEFINITIONS
-  ${OR_TOOLS_COMPILE_DEFINITIONS} ABSL_MUST_USE_RESULT=)
+  ${OR_TOOLS_COMPILE_DEFINITIONS})
 set_property(SOURCE routing.swig PROPERTY COMPILE_OPTIONS -nofastunpack)
 swig_add_library(pywraprouting
   TYPE MODULE

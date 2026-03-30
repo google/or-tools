@@ -35,7 +35,7 @@ add_library(${PROJECT_NAMESPACE}::constraint_solver_pybind11 ALIAS constraint_so
 set_property(SOURCE constraint_solver.swig PROPERTY CPLUSPLUS ON)
 set_property(SOURCE constraint_solver.swig PROPERTY SWIG_MODULE_NAME pywrapcp)
 set_property(SOURCE constraint_solver.swig PROPERTY COMPILE_DEFINITIONS
-  ${OR_TOOLS_COMPILE_DEFINITIONS} ABSL_MUST_USE_RESULT=)
+  ${OR_TOOLS_COMPILE_DEFINITIONS})
 set_property(SOURCE constraint_solver.swig PROPERTY COMPILE_OPTIONS -nofastunpack)
 swig_add_library(pywrapcp
   TYPE MODULE

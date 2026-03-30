@@ -14,7 +14,7 @@
 set_property(SOURCE routing.i PROPERTY CPLUSPLUS ON)
 set_property(SOURCE routing.i PROPERTY SWIG_MODULE_NAME RoutingGlobals)
 set_property(SOURCE routing.i PROPERTY COMPILE_DEFINITIONS
-  ${OR_TOOLS_COMPILE_DEFINITIONS} ABSL_MUST_USE_RESULT=)
+  ${OR_TOOLS_COMPILE_DEFINITIONS})
 set_property(SOURCE routing.i PROPERTY COMPILE_OPTIONS
   -namespace ${DOTNET_PROJECT}.Routing
   -dllimport google-ortools-native)

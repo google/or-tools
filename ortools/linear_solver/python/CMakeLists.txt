@@ -14,7 +14,7 @@
 set_property(SOURCE linear_solver.swig PROPERTY CPLUSPLUS ON)
 set_property(SOURCE linear_solver.swig PROPERTY SWIG_MODULE_NAME pywraplp)
 set_property(SOURCE linear_solver.swig PROPERTY COMPILE_DEFINITIONS
-  ${OR_TOOLS_COMPILE_DEFINITIONS} ABSL_MUST_USE_RESULT=)
+  ${OR_TOOLS_COMPILE_DEFINITIONS})
 swig_add_library(pywraplp
   TYPE MODULE
   LANGUAGE python

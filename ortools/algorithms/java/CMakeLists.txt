@@ -14,7 +14,7 @@
 set_property(SOURCE knapsack_solver.swig PROPERTY CPLUSPLUS ON)
 set_property(SOURCE knapsack_solver.swig PROPERTY SWIG_MODULE_NAME main)
 set_property(SOURCE knapsack_solver.swig PROPERTY COMPILE_DEFINITIONS
-  ${OR_TOOLS_COMPILE_DEFINITIONS} ABSL_MUST_USE_RESULT=)
+  ${OR_TOOLS_COMPILE_DEFINITIONS})
 set_property(SOURCE knapsack_solver.swig PROPERTY COMPILE_OPTIONS
   -package ${JAVA_PACKAGE}.algorithms)
 swig_add_library(jnialgorithms

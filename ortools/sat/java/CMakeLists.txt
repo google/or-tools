@@ -14,7 +14,7 @@
 set_property(SOURCE sat.swig PROPERTY CPLUSPLUS ON)
 set_property(SOURCE sat.swig PROPERTY SWIG_MODULE_NAME main)
 set_property(SOURCE sat.swig PROPERTY COMPILE_DEFINITIONS
-  ${OR_TOOLS_COMPILE_DEFINITIONS} ABSL_MUST_USE_RESULT=)
+  ${OR_TOOLS_COMPILE_DEFINITIONS})
 set_property(SOURCE sat.swig PROPERTY COMPILE_OPTIONS
   -package ${JAVA_PACKAGE}.sat)
 
@@ -60,7 +60,7 @@ add_custom_target(java_cp_model_proto
 set_property(SOURCE "${CMAKE_CURRENT_BINARY_DIR}/cp_model_proto.swig" PROPERTY CPLUSPLUS ON)
 set_property(SOURCE "${CMAKE_CURRENT_BINARY_DIR}/cp_model_proto.swig" PROPERTY SWIG_MODULE_NAME cp_model_proto)
 set_property(SOURCE "${CMAKE_CURRENT_BINARY_DIR}/cp_model_proto.swig" PROPERTY COMPILE_DEFINITIONS
-  ${OR_TOOLS_COMPILE_DEFINITIONS} ABSL_MUST_USE_RESULT=)
+  ${OR_TOOLS_COMPILE_DEFINITIONS})
 set_property(SOURCE "${CMAKE_CURRENT_BINARY_DIR}/cp_model_proto.swig" PROPERTY COMPILE_OPTIONS
   -package ${JAVA_PACKAGE}.sat)
 

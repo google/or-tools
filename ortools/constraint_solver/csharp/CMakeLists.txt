@@ -14,7 +14,7 @@
 set_property(SOURCE constraint_solver.i PROPERTY CPLUSPLUS ON)
 set_property(SOURCE constraint_solver.i PROPERTY SWIG_MODULE_NAME ConstraintSolverGlobals)
 set_property(SOURCE constraint_solver.i PROPERTY COMPILE_DEFINITIONS
-  ${OR_TOOLS_COMPILE_DEFINITIONS} ABSL_MUST_USE_RESULT=)
+  ${OR_TOOLS_COMPILE_DEFINITIONS})
 set_property(SOURCE constraint_solver.i PROPERTY COMPILE_OPTIONS
   -namespace ${DOTNET_PROJECT}.ConstraintSolver
   -dllimport google-ortools-native)
