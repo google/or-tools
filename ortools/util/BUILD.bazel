@@ -135,6 +135,7 @@ cc_library(
     deps = [
         ":saturated_arithmetic",
         "//ortools/base:types",
+        "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/container:inlined_vector",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",

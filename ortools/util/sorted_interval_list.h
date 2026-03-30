@@ -23,6 +23,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/base/attributes.h"
 #include "absl/container/inlined_vector.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
@@ -367,7 +368,7 @@ class Domain {
   /**
    * Returns the set Int64 ∖ D.
    */
-  Domain Complement() const;
+  ABSL_MUST_USE_RESULT Domain Complement() const;
 
   /**
    * Returns {x ∈ Int64, ∃ e ∈ D, x = -e}.
@@ -375,22 +376,22 @@ class Domain {
    * Note in particular that if the negation of Int64 is not Int64 but
    * Int64 \ {kint64min} !!
    */
-  Domain Negation() const;
+  ABSL_MUST_USE_RESULT Domain Negation() const;
 
   /**
    * Returns the intersection of D and domain.
    */
-  Domain IntersectionWith(const Domain& domain) const;
+  ABSL_MUST_USE_RESULT Domain IntersectionWith(const Domain& domain) const;
 
   /**
    * Returns the union of D and domain.
    */
-  Domain UnionWith(const Domain& domain) const;
+  ABSL_MUST_USE_RESULT Domain UnionWith(const Domain& domain) const;
 
   /**
    * Returns {x ∈ Int64, ∃ a ∈ D, ∃ b ∈ domain, x = a + b}.
    */
-  Domain AdditionWith(const Domain& domain) const;
+  ABSL_MUST_USE_RESULT Domain AdditionWith(const Domain& domain) const;
 
   /**
    * Returns {x ∈ Int64, ∃ e ∈ D, x = e * coeff}.
@@ -403,12 +404,13 @@ class Domain {
    * Note that if you multiply by a negative coeff, kint64min will be dropped
    * from the result even if it was here due to how this is implemented.
    */
-  Domain MultiplicationBy(int64_t coeff, bool* exact = nullptr) const;
+  ABSL_MUST_USE_RESULT Domain MultiplicationBy(int64_t coeff,
+                                               bool* exact = nullptr) const;
 
   /**
    * If NumIntervals() is too large, this return a superset of the domain.
    */
-  Domain RelaxIfTooComplex() const;
+  ABSL_MUST_USE_RESULT Domain RelaxIfTooComplex() const;
 
   /**
    * Returns a superset of MultiplicationBy() to avoid the explosion in the
@@ -422,7 +424,7 @@ class Domain {
    * look for {x ∈ Int64, ∃ e ∈ D, x / coeff = e}, then we will get [2, 201] in
    * the case above.
    */
-  Domain ContinuousMultiplicationBy(int64_t coeff) const;
+  ABSL_MUST_USE_RESULT Domain ContinuousMultiplicationBy(int64_t coeff) const;
 
   /**
    * Returns a superset of MultiplicationBy() to avoid the explosion in the
@@ -436,21 +438,22 @@ class Domain {
    * look for {x ∈ Int64, ∃ e ∈ D, x / coeff = e}, then we will get [2, 201] in
    * the case above.
    */
-  Domain ContinuousMultiplicationBy(const Domain& domain) const;
+  ABSL_MUST_USE_RESULT Domain
+  ContinuousMultiplicationBy(const Domain& domain) const;
 
   /**
    * Returns {x ∈ Int64, ∃ e ∈ D, x = e / coeff}.
    *
    * For instance Domain(1, 7).DivisionBy(2) == Domain(0, 3).
    */
-  Domain DivisionBy(int64_t coeff) const;
+  ABSL_MUST_USE_RESULT Domain DivisionBy(int64_t coeff) const;
 
   /**
    * Returns {x ∈ Int64, ∃ e ∈ D, x * coeff = e}.
    *
    * For instance Domain(1, 7).InverseMultiplicationBy(2) == Domain(1, 3).
    */
-  Domain InverseMultiplicationBy(int64_t coeff) const;
+  ABSL_MUST_USE_RESULT Domain InverseMultiplicationBy(int64_t coeff) const;
 
   /**
    * Returns a superset of {x ∈ Int64, ∃ e ∈ D, ∃ m ∈ modulo, x = e % m }.
@@ -460,7 +463,8 @@ class Domain {
    * We compute the exact min/max if the modulo is fixed, otherwise we will
    * just return a superset.
    */
-  Domain PositiveModuloBySuperset(const Domain& modulo) const;
+  ABSL_MUST_USE_RESULT Domain
+  PositiveModuloBySuperset(const Domain& modulo) const;
 
   /**
    * Returns a superset of {x ∈ Int64, ∃ e ∈ D, ∃ d ∈ divisor, x = e / d }.
@@ -468,17 +472,19 @@ class Domain {
    * We check that divisor is strictly positive.
    * For now we just intersect with the min/max possible value.
    */
-  Domain PositiveDivisionBySuperset(const Domain& divisor) const;
+  ABSL_MUST_USE_RESULT Domain
+  PositiveDivisionBySuperset(const Domain& divisor) const;
 
   /**
    * Returns a superset of {x ∈ Int64, ∃ y ∈ D, x = y * y }.
    */
-  Domain SquareSuperset() const;
+  ABSL_MUST_USE_RESULT Domain SquareSuperset() const;
 
   /**
    * Returns a superset of {x ∈ Int64, ∃ y ∈ D, x = (a*y + b)*(c*y + d) }.
    */
-  Domain QuadraticSuperset(int64_t a, int64_t b, int64_t c, int64_t d) const;
+  ABSL_MUST_USE_RESULT Domain QuadraticSuperset(int64_t a, int64_t b, int64_t c,
+                                                int64_t d) const;
 
   /**
    * Advanced usage. Given some \e implied information on this domain that is
@@ -500,7 +506,8 @@ class Domain {
    * [domain.Min(), domain.Max()]. This is meant to be applied to the right-hand
    * side of a constraint to make its propagation more efficient.
    */
-  Domain SimplifyUsingImpliedDomain(const Domain& implied_domain) const;
+  ABSL_MUST_USE_RESULT Domain
+  SimplifyUsingImpliedDomain(const Domain& implied_domain) const;
 
   /**
    * Returns a compact string of a vector of intervals like "[1,4][6][10,20]".
