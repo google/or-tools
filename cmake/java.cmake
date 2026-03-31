@@ -113,6 +113,7 @@ if(USE_PDLP)
   list(APPEND proto_java_files ${pdlp_proto_java_files})
 endif()
 list(REMOVE_ITEM proto_java_files "ortools/constraint_solver/assignment.proto")
+list(REMOVE_ITEM proto_java_files "ortools/util/testdata/wrappers_test_message.proto")
 foreach(PROTO_FILE IN LISTS proto_java_files)
   #message(STATUS "protoc proto(java): ${PROTO_FILE}")
   get_filename_component(PROTO_DIR ${PROTO_FILE} DIRECTORY)
@@ -261,18 +262,20 @@ list(APPEND CMAKE_SWIG_FLAGS "-I${PROJECT_SOURCE_DIR}")
 
 # Swig wrap all libraries
 foreach(SUBPROJECT IN ITEMS
- util
  algorithms
  graph
  init
  linear_solver
  constraint_solver
  routing
- sat)
+ sat
+ util)
   add_subdirectory(ortools/${SUBPROJECT}/java)
   target_link_libraries(jni${JAVA_ARTIFACT} PRIVATE jni${SUBPROJECT})
 endforeach()
 target_link_libraries(jni${JAVA_ARTIFACT} PRIVATE jnimodelbuilder)
+target_link_libraries(jni${JAVA_ARTIFACT} PRIVATE ortools::util_java_jni_helper)
+target_link_libraries(jni${JAVA_ARTIFACT} PRIVATE jni_cp_model_proto)
 
 #################################
 ##  Java Native Maven Package  ##

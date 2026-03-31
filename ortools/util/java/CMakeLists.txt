@@ -48,7 +48,7 @@ set_target_properties(util_java_jni_helper PROPERTIES
 target_include_directories(util_java_jni_helper PUBLIC
   ${PROJECT_SOURCE_DIR}
   ${PROJECT_BINARY_DIR})
-target_include_directories (util_java_jni_helper PRIVATE ${JNI_INCLUDE_DIRS})
-target_link_libraries (util_java_jni_helper PRIVATE ${JNI_LIBRARIES})
+target_include_directories(util_java_jni_helper PRIVATE ${JNI_INCLUDE_DIRS})
+target_link_libraries(util_java_jni_helper PRIVATE ${JNI_LIBRARIES})
 add_library(${PROJECT_NAMESPACE}::util_java_jni_helper ALIAS util_java_jni_helper)
 

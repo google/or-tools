@@ -79,8 +79,6 @@ set_target_properties(jni_cp_model_proto PROPERTIES
   SWIG_USE_TARGET_INCLUDE_DIRECTORIES ON
   POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(jni_cp_model_proto PRIVATE ortools::ortools)
-target_link_libraries(jni_cp_model_proto PRIVATE ortools::util_java_jni_helper)
-target_link_libraries(jni${JAVA_ARTIFACT} PRIVATE jni_cp_model_proto)
 
 # sat
 set(SWIG_MODULE_jnisat_EXTRA_DEPS java_cp_model_proto)
