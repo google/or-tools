@@ -7,7 +7,7 @@
 absl-py==2.3.1 \
     --hash=sha256:a97820526f7fbfd2ec1bce83f3f25e3a14840dac0d8e02a0b71cd75db3f77fc9 \
     --hash=sha256:eeecf07f0c2a93ace0772c92e596ace6d3d3996c042b2128459aaae2a76de11d
-    # via -r bazel/ortools_requirements.in
+    # via -r ortools_requirements.in
 anyio==4.13.0 \
     --hash=sha256:08b310f9e24a9594186fd75b4f73f4a4152069e3853f1ed8bfbf58369f4ad708 \
     --hash=sha256:334b70e641fd2221c1505b3890c69882fe4a2df910cba14d97019b90b24439dc
@@ -387,7 +387,7 @@ idna==3.11 \
 immutabledict==4.2.2 \
     --hash=sha256:97c31d098a2c850e93a958badeef765e4736ed7942ec73e439facd764a3a7217 \
     --hash=sha256:cb6ed3090df593148f94cb407d218ca526fd2639694afdb553dc4f50ce6feeca
-    # via -r bazel/ortools_requirements.in
+    # via -r ortools_requirements.in
 ipykernel==7.2.0 \
     --hash=sha256:18ed160b6dee2cbb16e5f3575858bc19d8f1fe6046a9a680c708494ce31d909e \
     --hash=sha256:3bbd4420d2b3cc105cbdf3756bfc04500b1e52f090a90716851f3916c62e1661
@@ -412,7 +412,7 @@ jinja2==3.1.6 \
     --hash=sha256:0137fb05990d35f1275a587e9aee6d56da821fc83491a0fb838183be43f66d6d \
     --hash=sha256:85ece4451f492d0c13c5dd7c13a64681a86afae63a5f347908daf103ce6d2f67
     # via
-    #   -r bazel/notebook_requirements.in
+    #   -r notebook_requirements.in
     #   jupyter-server
     #   jupyterlab
     #   jupyterlab-server
@@ -429,7 +429,7 @@ jsonschema[format-nongpl]==4.23.0 \
     --hash=sha256:d71497fef26351a33265337fa77ffeb82423f3ea21283cd9467bb03999266bc4 \
     --hash=sha256:fbadb6f8b144a8f8cf9f0b89ba94501d143e50411a1278633f56a7acf7fd5566
     # via
-    #   -r bazel/notebook_requirements.in
+    #   -r notebook_requirements.in
     #   jupyter-events
     #   jupyterlab-server
     #   nbformat
@@ -467,7 +467,7 @@ jupyter-server==2.17.0 \
     --hash=sha256:c38ea898566964c888b4772ae1ed58eca84592e88251d2cfc4d171f81f7e99d5 \
     --hash=sha256:e8cb9c7db4251f51ed307e329b81b72ccf2056ff82d50524debde1ee1870e13f
     # via
-    #   -r bazel/notebook_requirements.in
+    #   -r notebook_requirements.in
     #   jupyter-lsp
     #   jupyterlab
     #   jupyterlab-server
@@ -481,7 +481,7 @@ jupyterlab==4.4.8 \
     --hash=sha256:81b56f33f35be15150e7ccd43440963a93d2b115ffa614a06d38b91e4d650f92 \
     --hash=sha256:a89e5a2e9f9295ae039356fc5247e5bfac64936126ab805e3ff8e47f385b0c7e
     # via
-    #   -r bazel/notebook_requirements.in
+    #   -r notebook_requirements.in
     #   notebook
 jupyterlab-pygments==0.3.0 \
     --hash=sha256:721aca4d9029252b11cfa9d185e5b5af4d54772bb8072f9b7036f4170054d35d \
@@ -624,7 +624,7 @@ mypy==1.6.1 \
     --hash=sha256:d8fbb68711905f8912e5af474ca8b78d077447d8f3918997fecbf26943ff3cbb \
     --hash=sha256:e5012e5cc2ac628177eaac0e83d622b2dd499e28253d4107a08ecc59ede3fc2c \
     --hash=sha256:eb4f18589d196a4cbe5290b435d135dee96567e07c2b2d43b5c4621b6501531a
-    # via -r bazel/ortools_requirements.in
+    # via -r ortools_requirements.in
 mypy-extensions==1.1.0 \
     --hash=sha256:1be4cccdb0f2482337c4743e60421de3a356cd97508abadd57d47403e94f5505 \
     --hash=sha256:52e68efc3284861e772bbcd66823fde5ae21fd2fdb51c62a211403730b916558
@@ -632,7 +632,7 @@ mypy-extensions==1.1.0 \
 mypy-protobuf==3.5.0 \
     --hash=sha256:0d0548c6b9a6faf14ce1a9ce2831c403a5c1f2a9363e85b1e2c51d5d57aa8393 \
     --hash=sha256:21f270da0a9792a9dac76b0df463c027e561664ab6973c59be4e4d064dfe67dc
-    # via -r bazel/ortools_requirements.in
+    # via -r ortools_requirements.in
 nbclient==0.10.4 \
     --hash=sha256:1e54091b16e6da39e297b0ece3e10f6f29f4ac4e8ee515d29f8a7099bd6553c9 \
     --hash=sha256:9162df5a7373d70d606527300a95a975a47c137776cd942e52d9c7e29ff83440
@@ -655,7 +655,7 @@ nest-asyncio==1.6.0 \
 notebook==7.4.2 \
     --hash=sha256:9ccef602721aaa5530852e3064710b8ae5415c4e2ce26f8896d0433222755259 \
     --hash=sha256:e739defd28c3f615a6bfb0a2564bd75018a9cc6613aa00bbd9c15e68eed2de1b
-    # via -r bazel/notebook_requirements.in
+    # via -r notebook_requirements.in
 notebook-shim==0.2.4 \
     --hash=sha256:411a5be4e9dc882a074ccbcae671eda64cceb068767e9a3419096986560e1cef \
     --hash=sha256:b4b2cfa1b65d98307ca24361f5b30fe785b53c3fd07b7a47e89acb5e6ac638cb
@@ -738,7 +738,7 @@ numpy==2.3.5 \
     --hash=sha256:ffe22d2b05504f786c867c8395de703937f934272eb67586817b46188b4ded6d \
     --hash=sha256:fffe29a1ef00883599d1dc2c51aa2e5d80afe49523c261a74933df395c15c520
     # via
-    #   -r bazel/ortools_requirements.in
+    #   -r ortools_requirements.in
     #   pandas
     #   scipy
 packaging==26.0 \
@@ -808,7 +808,7 @@ pandas==2.3.3 \
     --hash=sha256:ee67acbbf05014ea6c763beb097e03cd629961c8a632075eeb34247120abcb4b \
     --hash=sha256:f086f6fe114e19d92014a1966f43a3e62285109afe874f067f5abbdcbb10e59c \
     --hash=sha256:f8bfc0e12dc78f777f323f55c58649591b2cd0c43534e8355c51d3fede5f4dee
-    # via -r bazel/ortools_requirements.in
+    # via -r ortools_requirements.in
 pandocfilters==1.5.1 \
     --hash=sha256:002b4a555ee4ebc03f8b66307e287fa492e4a77b4ea14d3f934328297bb4939e \
     --hash=sha256:93be382804a9cdb0a7267585f157e5d1731bbe5545a85b268d6f5fe6232de2bc
@@ -830,7 +830,7 @@ platformdirs==4.9.4 \
 plotly==5.15.0 \
     --hash=sha256:3508876bbd6aefb8a692c21a7128ca87ce42498dd041efa5c933ee44b55aab24 \
     --hash=sha256:822eabe53997d5ebf23c77e1d1fcbf3bb6aa745eb05d532afd4b6f9a2e2ab02f
-    # via -r bazel/notebook_requirements.in
+    # via -r notebook_requirements.in
 prometheus-client==0.24.1 \
     --hash=sha256:150db128af71a5c2482b36e588fc8a6b95e498750da4b17065947c16070f4055 \
     --hash=sha256:7e0ced7fbbd40f7b84962d5d2ab6f17ef88a72504dcf7c0b40737b43b2a461f9
@@ -839,18 +839,19 @@ prompt-toolkit==3.0.52 \
     --hash=sha256:28cde192929c8e7321de85de1ddbe736f1375148b02f2e17edd840042b1be855 \
     --hash=sha256:9aac639a3bbd33284347de5ad8d68ecc044b91a762dc39b7c21095fcd6a19955
     # via ipython
-protobuf==6.32.0 \
-    --hash=sha256:15eba1b86f193a407607112ceb9ea0ba9569aed24f93333fe9a497cf2fda37d3 \
-    --hash=sha256:501fe6372fd1c8ea2a30b4d9be8f87955a64d6be9c88a973996cef5ef6f0abf1 \
-    --hash=sha256:75a2aab2bd1aeb1f5dc7c5f33bcb11d82ea8c055c9becbb41c26a8c43fd7092c \
-    --hash=sha256:7db8ed09024f115ac877a1427557b838705359f047b2ff2f2b2364892d19dacb \
-    --hash=sha256:84f9e3c1ff6fb0308dbacb0950d8aa90694b0d0ee68e75719cb044b7078fe741 \
-    --hash=sha256:a81439049127067fc49ec1d36e25c6ee1d1a2b7be930675f919258d03c04e7d2 \
-    --hash=sha256:a8bdbb2f009cfc22a36d031f22a625a38b615b5e19e558a7b756b3279723e68e \
-    --hash=sha256:ba377e5b67b908c8f3072a57b63e2c6a4cbd18aea4ed98d2584350dbf46f2783 \
-    --hash=sha256:d52691e5bee6c860fff9a1c86ad26a13afbeb4b168cd4445c922b7e2cf85aaf0
+protobuf==6.33.5 \
+    --hash=sha256:3093804752167bcab3998bec9f1048baae6e29505adaf1afd14a37bddede533c \
+    --hash=sha256:69915a973dd0f60f31a08b8318b73eab2bd6a392c79184b3612226b0a3f8ec02 \
+    --hash=sha256:6ddcac2a081f8b7b9642c09406bc6a4290128fce5f471cddd165960bb9119e5c \
+    --hash=sha256:8afa18e1d6d20af15b417e728e9f60f3aa108ee76f23c3b2c07a2c3b546d3afd \
+    --hash=sha256:8f04fa32763dcdb4973d537d6b54e615cc61108c7cb38fe59310c3192d29510a \
+    --hash=sha256:9b71e0281f36f179d00cbcb119cb19dec4d14a81393e5ea220f64b286173e190 \
+    --hash=sha256:a3157e62729aafb8df6da2c03aa5c0937c7266c626ce11a278b6eb7963c4e37c \
+    --hash=sha256:a5cb85982d95d906df1e2210e58f8e4f1e3cdc088e52c921a041f9c9a0386de5 \
+    --hash=sha256:cbf16ba3350fb7b889fca858fb215967792dc125b35c7976ca4818bee3521cf0 \
+    --hash=sha256:d71b040839446bac0f4d162e758bea99c8251161dae9d0983a3b88dee345153b
     # via
-    #   -r bazel/ortools_requirements.in
+    #   -r ortools_requirements.in
     #   mypy-protobuf
 psutil==7.2.2 \
     --hash=sha256:0746f5f8d406af344fd547f1c8daa5f5c33dbc293bb8d6a16d80b4bb88f59372 \
@@ -893,7 +894,7 @@ pygments==2.19.1 \
     --hash=sha256:61c16d2a8576dc0649d9f39e089b5f02bcd27fba10d8fb4dcc28173f7a45151f \
     --hash=sha256:9ea1544ad55cecf4b8242fab6dd35a93bbce657034b0611ee383099054ab6d8c
     # via
-    #   -r bazel/notebook_requirements.in
+    #   -r notebook_requirements.in
     #   ipython
     #   ipython-pygments-lexers
     #   nbconvert
@@ -1095,7 +1096,7 @@ requests==2.33.0 \
     --hash=sha256:3324635456fa185245e24865e810cecec7b4caf933d7eb133dcde67d48cee69b \
     --hash=sha256:c7ebc5e8b0f21837386ad0e1c8fe8b829fa5f544d8df3b2253bff14ef29d7652
     # via
-    #   -r bazel/ortools_requirements.in
+    #   -r ortools_requirements.in
     #   jupyterlab-server
 rfc3339-validator==0.1.4 \
     --hash=sha256:138a2abdf93304ad60530167e51d2dfb9549521a836871b88d7f4695d0022f6b \
@@ -1290,7 +1291,7 @@ scipy==1.16.3 \
     --hash=sha256:f667a4542cc8917af1db06366d3f78a5c8e83badd56409f94d1eac8d8d9133fa \
     --hash=sha256:fb4b29f4cf8cc5a8d628bc8d8e26d12d7278cd1f219f22698a378c3d67db5e4b \
     --hash=sha256:ffa6eea95283b2b8079b821dc11f50a17d0571c92b43e2b5b12764dc5f9b285d
-    # via -r bazel/ortools_requirements.in
+    # via -r ortools_requirements.in
 send2trash==2.1.0 \
     --hash=sha256:0da2f112e6d6bb22de6aa6daa7e144831a4febf2a87261451c4ad849fe9a873c \
     --hash=sha256:1c72b39f09457db3c05ce1d19158c2cbef4c32b8bedd02c155e49282b7ea7459
@@ -1312,7 +1313,7 @@ stack-data==0.6.3 \
 svgwrite==1.4.3 \
     --hash=sha256:a8fbdfd4443302a6619a7f76bc937fc683daf2628d9b737c891ec08b8ce524c3 \
     --hash=sha256:bb6b2b5450f1edbfa597d924f9ac2dd099e625562e492021d7dd614f65f8a22d
-    # via -r bazel/ortools_requirements.in
+    # via -r ortools_requirements.in
 tenacity==9.1.4 \
     --hash=sha256:6095a360c919085f28c6527de529e76a06ad89b23659fa881ae0649b867a9d55 \
     --hash=sha256:adb31d4c263f2bd041081ab33b498309a57c77f9acf2db65aadf0898179cf93a
@@ -1339,7 +1340,7 @@ tornado==6.5.5 \
     --hash=sha256:dd3eafaaeec1c7f2f8fdcd5f964e8907ad788fe8a5a32c4426fbbdda621223b7 \
     --hash=sha256:e74c92e8e65086b338fd56333fb9a68b9f6f2fe7ad532645a290a464bcf46be5
     # via
-    #   -r bazel/notebook_requirements.in
+    #   -r notebook_requirements.in
     #   ipykernel
     #   jupyter-client
     #   jupyter-server
@@ -1369,7 +1370,7 @@ typing-extensions==4.15.0 \
     --hash=sha256:0cea48d173cc12fa28ecabc3b837ea3cf6f38c6d1136f85cbaaf598984861466 \
     --hash=sha256:f0fa19c6845758ab08074a0cfa8b7aecb71c999ca73d62883bc25cc018c4e548
     # via
-    #   -r bazel/ortools_requirements.in
+    #   -r ortools_requirements.in
     #   anyio
     #   beautifulsoup4
     #   mypy
@@ -1391,7 +1392,7 @@ urllib3==2.6.3 \
 virtualenv==20.36.1 \
     --hash=sha256:575a8d6b124ef88f6f51d56d656132389f961062a9177016a50e4f507bbcc19f \
     --hash=sha256:8befb5c81842c641f8ee658481e42641c68b5eab3521d8e092d18320902466ba
-    # via -r bazel/ortools_requirements.in
+    # via -r ortools_requirements.in
 wcwidth==0.6.0 \
     --hash=sha256:1a3a1e510b553315f8e146c54764f4fb6264ffad731b3d78088cdb1478ffbdad \
     --hash=sha256:cdc4e4262d6ef9a1a57e018384cbeb1208d8abbc64176027e2c2455c81313159
