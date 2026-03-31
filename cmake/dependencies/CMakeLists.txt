@@ -72,6 +72,7 @@ if(BUILD_ZLIB)
     UPDATE_COMMAND git reset --hard
     PATCH_COMMAND git apply --ignore-whitespace
     "${CMAKE_CURRENT_LIST_DIR}/../../patches/ZLIB-v1.3.1.patch"
+    OVERRIDE_FIND_PACKAGE
     SYSTEM
   )
   set(ZLIB_BUILD_EXAMPLES OFF)
