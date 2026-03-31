@@ -15,9 +15,12 @@ syntax = "proto2";
 
 package operations_research.bop;
 
+// clang-format off
+option csharp_namespace = "Google.OrTools.Bop";
 option java_package = "com.google.ortools.bop";
 option java_multiple_files = true;
-option csharp_namespace = "Google.OrTools.Bop";
+// clang-format on
+
 // Method used to optimize a solution in Bop.
 //
 // NEXT TAG: 16

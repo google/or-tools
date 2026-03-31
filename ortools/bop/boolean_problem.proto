@@ -17,6 +17,12 @@ syntax = "proto2";
 
 package operations_research.bop;
 
+// clang-format off
+option csharp_namespace = "Google.OrTools.Bop";
+option java_package = "com.google.ortools.bop";
+option java_multiple_files = true;
+// clang-format on
+
 // A linear Boolean constraint which is a bounded sum of linear terms. Each term
 // beeing a literal times an integer coefficient. If we assume that a literal
 // takes the value 1 if it is true and 0 otherwise, the constraint is:

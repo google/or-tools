@@ -15,6 +15,12 @@ syntax = "proto2";
 
 package operations_research.util;
 
+// clang-format off
+option csharp_namespace = "Google.OrTools.Util";
+option java_package = "com.google.ortools.util";
+option java_multiple_files = true;
+// clang-format on
+
 message WrappersTestMessage {
   optional int32 int32_field = 1;
   optional int64 int64_field = 2;
