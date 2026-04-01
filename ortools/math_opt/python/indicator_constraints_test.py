@@ -16,9 +16,8 @@ import math
 from typing import Dict
 
 from absl.testing import absltest
-from ortools.math_opt.python import indicator_constraints
-from ortools.math_opt.python import model
-from ortools.math_opt.python import variables
+
+from ortools.math_opt.python import indicator_constraints, model, variables
 
 
 def _terms_dict(

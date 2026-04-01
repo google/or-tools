@@ -13,9 +13,8 @@
 # limitations under the License.
 
 from absl.testing import absltest
-from ortools.math_opt.python import expressions
-from ortools.math_opt.python import model
-from ortools.math_opt.python import variables
+
+from ortools.math_opt.python import expressions, model, variables
 
 
 def _type_check_linear_sum(x: variables.LinearSum) -> None:

@@ -13,15 +13,15 @@
 # limitations under the License.
 
 """Testing correctness of the code snippets in the comments of model.py."""
-from collections.abc import Sequence
-import datetime
 
-from absl import app
-from absl import flags
+import datetime
+from collections.abc import Sequence
+
+from absl import app, flags
 
 from ortools.math_opt.python import mathopt
-from ortools.math_opt.python.ipc import remote_solve
-from ortools.math_opt.python.ipc import solve_service_stubby_client
+from ortools.math_opt.python.ipc import (remote_solve,
+                                         solve_service_stubby_client)
 
 _SOLVER = flags.DEFINE_enum_class(
     "solver", mathopt.SolverType.GSCIP, mathopt.SolverType, "The solver to use."

@@ -18,6 +18,7 @@ package operations_research.math_opt;
 
 option java_package = "com.google.ortools.mathopt";
 option java_multiple_files = true;
+option java_outer_classname = "SparseContainersProtobuf";
 
 // A sparse representation of a vector of doubles.
 message SparseDoubleVectorProto {

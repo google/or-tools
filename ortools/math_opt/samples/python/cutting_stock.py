@@ -72,8 +72,9 @@ Note: this problem is equivalent to symmetric bin packing:
 but typically in bin packing it is not assumed that you should exploit having
 multiple items of the same size.
 """
-from collections.abc import Sequence
+
 import dataclasses
+from collections.abc import Sequence
 
 from absl import app
 

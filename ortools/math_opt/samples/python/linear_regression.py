@@ -40,12 +40,12 @@ After solving the optimization problem above to recover values for beta, the
 in sample and out of sample loss (average squared prediction error) for the
 learned model are printed.
 """
-from collections.abc import Sequence
-import dataclasses
 
-from absl import app
-from absl import flags
+import dataclasses
+from collections.abc import Sequence
+
 import numpy as np
+from absl import app, flags
 
 from ortools.math_opt.python import mathopt
 

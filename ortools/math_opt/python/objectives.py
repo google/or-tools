@@ -17,9 +17,10 @@
 import abc
 from typing import Any, Iterator
 
+import numpy as np
+
 from ortools.math_opt.elemental.python import enums
-from ortools.math_opt.python import from_model
-from ortools.math_opt.python import variables
+from ortools.math_opt.python import from_model, variables
 from ortools.math_opt.python.elemental import elemental
 
 
@@ -532,10 +533,18 @@ class AuxiliaryObjective(Objective):
 
     def clear(self) -> None:
         """Clears objective coefficients and offset. Does not change direction."""
-        self._elemental.clear_attr(enums.DoubleAttr1.AUXILIARY_OBJECTIVE_OFFSET)
-        self._elemental.clear_attr(
-            enums.DoubleAttr2.AUXILIARY_OBJECTIVE_LINEAR_COEFFICIENT
+        self._elemental.set_attr(
+            enums.DoubleAttr1.AUXILIARY_OBJECTIVE_OFFSET, (self._id,), 0.0
         )
+        keys = self._elemental.slice_attr(
+            enums.DoubleAttr2.AUXILIARY_OBJECTIVE_LINEAR_COEFFICIENT, 0, self._id
+        )
+        if keys.size > 0:
+            self._elemental.set_attrs(
+                enums.DoubleAttr2.AUXILIARY_OBJECTIVE_LINEAR_COEFFICIENT,
+                keys,
+                np.zeros(len(keys)),
+            )
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, AuxiliaryObjective):

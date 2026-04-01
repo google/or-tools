@@ -20,16 +20,12 @@ machine.
 
 from absl.testing import absltest
 from ortools.gurobi.isv.secret import gurobi_test_isv_key
-from ortools.math_opt.python import callback
-from ortools.math_opt.python import compute_infeasible_subsystem_result
-from ortools.math_opt.python import init_arguments
-from ortools.math_opt.python import model
-from ortools.math_opt.python import model_parameters
-from ortools.math_opt.python import parameters
-from ortools.math_opt.python import result
-from ortools.math_opt.python import solve
-from ortools.math_opt.python import sparse_containers
 
+from ortools.math_opt.python import (callback,
+                                     compute_infeasible_subsystem_result,
+                                     init_arguments, model, model_parameters,
+                                     parameters, result, solve,
+                                     sparse_containers)
 
 _Bounds = compute_infeasible_subsystem_result.ModelSubsetBounds
 

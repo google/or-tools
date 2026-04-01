@@ -248,51 +248,54 @@ TEST(GlpkSparseVectorTest, SetLoad) {
 }
 
 TEST(GlpkSparseVectorDeathTest, NegativeCapacity) {
-  EXPECT_DEATH(GlpkSparseVector(-1), "capacity");
+  EXPECT_DEATH_IF_SUPPORTED(GlpkSparseVector(-1), "capacity");
 }
 
 TEST(GlpkSparseVectorDeathTest, Get) {
   GlpkSparseVector v(5);
   v.Set(2, 3.2);
 
-  EXPECT_DEATH(v.Get(0), "index");
-  EXPECT_DEATH(v.Get(6), "index");
+  EXPECT_DEATH_IF_SUPPORTED(v.Get(0), "index");
+  EXPECT_DEATH_IF_SUPPORTED(v.Get(6), "index");
 }
 
 TEST(GlpkSparseVectorDeathTest, Set) {
   GlpkSparseVector v(5);
   v.Set(2, 3.2);
 
-  EXPECT_DEATH(v.Set(0, 1.0), "index");
-  EXPECT_DEATH(v.Set(6, 3.25), "index");
+  EXPECT_DEATH_IF_SUPPORTED(v.Set(0, 1.0), "index");
+  EXPECT_DEATH_IF_SUPPORTED(v.Set(6, 3.25), "index");
 }
 
 TEST(GlpkSparseVectorDeathTest, Load) {
   GlpkSparseVector v(5);
   v.Set(2, 3.2);
 
-  EXPECT_DEATH(
+  EXPECT_DEATH_IF_SUPPORTED(
       v.Load([](int* const indices, double* const values) { return -1; }),
       "size");
-  EXPECT_DEATH(
+  EXPECT_DEATH_IF_SUPPORTED(
       v.Load([](int* const indices, double* const values) { return 6; }),
       "size");
-  EXPECT_DEATH(v.Load([](int* const indices, double* const values) {
-    indices[1] = 0;
-    return 1;
-  }),
-               "index");
-  EXPECT_DEATH(v.Load([](int* const indices, double* const values) {
-    indices[1] = 6;
-    return 1;
-  }),
-               "index");
-  EXPECT_DEATH(v.Load([](int* const indices, double* const values) {
-    indices[1] = 3;
-    indices[2] = 3;
-    return 2;
-  }),
-               "duplicated");
+  EXPECT_DEATH_IF_SUPPORTED(
+      v.Load([](int* const indices, double* const values) {
+        indices[1] = 0;
+        return 1;
+      }),
+      "index");
+  EXPECT_DEATH_IF_SUPPORTED(
+      v.Load([](int* const indices, double* const values) {
+        indices[1] = 6;
+        return 1;
+      }),
+      "index");
+  EXPECT_DEATH_IF_SUPPORTED(
+      v.Load([](int* const indices, double* const values) {
+        indices[1] = 3;
+        indices[2] = 3;
+        return 2;
+      }),
+      "duplicated");
 }
 
 }  // namespace

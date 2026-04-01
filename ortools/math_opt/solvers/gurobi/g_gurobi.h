@@ -48,6 +48,23 @@
 
 namespace operations_research::math_opt {
 
+// The bounds of variables and constraints are considered infinite when their
+// absolute value is ≥ kGurobiInfBound.
+//
+// This is a Gurobi behavior, this is not something implemented by g_gurobi.
+//
+// For example a linear constraint `RHS` parameter (Right-Hand-Side) which
+// absolute value is ≥ kGurobiInfBound is treated as always being satisfied.
+//
+// Note that this value is smaller than GRB_INFINITY (1e100).
+//
+// See documentation of those parameters:
+// https://docs.gurobi.com/projects/optimizer/en/current/reference/attributes/variable.html#lb
+// https://docs.gurobi.com/projects/optimizer/en/current/reference/attributes/variable.html#ub
+// https://docs.gurobi.com/projects/optimizer/en/current/reference/attributes/constraintlinear.html#rhs
+// https://docs.gurobi.com/projects/optimizer/en/current/reference/attributes/constraintquadratic.html#qcrhs
+constexpr double kGurobiInfBound = 1.0e20;
+
 // Functor to use as deleter for std::unique_ptr that stores a primary GRBenv,
 // used by GRBenvUniquePtr. Most users will not use this directly.
 struct GurobiFreeEnv {

@@ -74,15 +74,6 @@ inline std::optional<int64_t> FirstLinearConstraintId(
              : std::make_optional(linear_constraints.ids()[0]);
 }
 
-// Removes the items in the sparse double vector for all indices whose value is
-// exactly 0.0.
-//
-// NaN values are kept in place.
-//
-// The function asserts that input is a valid sparse vector, i.e. that the
-// number of values and ids match.
-void RemoveSparseDoubleVectorZeros(SparseDoubleVectorProto& sparse_vector);
-
 // A utility class that tests if a pair (id, value) should be filtered based on
 // an input SparseVectorFilterProto.
 //

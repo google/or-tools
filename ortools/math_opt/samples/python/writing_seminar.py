@@ -43,16 +43,14 @@ Warning: this method is not strategy proof, students can get a better assignment
 by not submitting their true preferences over the seminars.
 """
 
-from collections.abc import Sequence
 import dataclasses
 import datetime
 import random
+from collections.abc import Sequence
 
-from absl import app
-from absl import flags
+from absl import app, flags
 
 from ortools.math_opt.python import mathopt
-
 
 _SOLVER_TYPE = flags.DEFINE_enum_class(
     "solver_type",

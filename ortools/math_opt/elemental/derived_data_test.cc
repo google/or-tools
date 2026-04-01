@@ -81,7 +81,6 @@ TEST(GetElementTypesTest, Attr2HasElements) {
 
 TEST(AllAttrsTest, Indexing) {
   ForEachIndex<AllAttrs::kNumAttrTypes>(
-      // NOLINTNEXTLINE(clang-diagnostic-pre-c++20-compat)
       []<int i>() { EXPECT_EQ((AllAttrs::GetIndex<AllAttrs::Type<i>>()), i); });
 }
 
@@ -140,7 +139,6 @@ TEST(AttrMapTest, Iteration) {
 
   // We should have `NumAttrs()` values `i` per attribute.
   std::vector<int> expected_values;
-  // NOLINTNEXTLINE(clang-diagnostic-pre-c++20-compat)
   ForEachIndex<AllAttrs::kNumAttrTypes>([&expected_values]<int i>() {
     for (int k = 0; k < AllAttrs::TypeDescriptor<i>::NumAttrs(); ++k) {
       expected_values.push_back(i);
@@ -151,7 +149,6 @@ TEST(AttrMapTest, Iteration) {
 
 TEST(CallForAttrTest, Works) {
   EXPECT_EQ(CallForAttr(DoubleAttr1::kVarUb,
-                        // NOLINTNEXTLINE(clang-diagnostic-pre-c++20-compat)
                         []<DoubleAttr1 a>() { return static_cast<int>(a); }),
             static_cast<int>(DoubleAttr1::kVarUb));
 }

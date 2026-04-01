@@ -43,7 +43,6 @@
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/helpers.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/options.h"
 #include "ortools/base/temp_file.h"
 #include "ortools/math_opt/solvers/gscip/gscip.pb.h"

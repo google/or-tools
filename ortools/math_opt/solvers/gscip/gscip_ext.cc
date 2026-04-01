@@ -18,9 +18,9 @@
 #include <string>
 #include <vector>
 
+#include "absl/log/check.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/status_macros.h"
 
 namespace operations_research {

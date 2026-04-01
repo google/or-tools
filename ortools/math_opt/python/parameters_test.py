@@ -15,61 +15,55 @@
 import datetime
 from typing import Any
 
-from absl.testing import absltest
-from absl.testing import parameterized
-from ortools.pdlp import solvers_pb2 as pdlp_solvers_pb2
+from absl.testing import absltest, parameterized
+
 from ortools.glop import parameters_pb2 as glop_parameters_pb2
 from ortools.math_opt import parameters_pb2 as math_opt_parameters_pb2
 from ortools.math_opt.python import parameters
 from ortools.math_opt.python.testing import compare_proto
-from ortools.math_opt.solvers import glpk_pb2
-from ortools.math_opt.solvers import gurobi_pb2
-from ortools.math_opt.solvers import highs_pb2
-from ortools.math_opt.solvers import osqp_pb2
+from ortools.math_opt.solvers import glpk_pb2, gurobi_pb2, highs_pb2, osqp_pb2
 from ortools.math_opt.solvers.gscip import gscip_pb2
+from ortools.pdlp import solvers_pb2 as pdlp_solvers_pb2
 from ortools.sat import sat_parameters_pb2
 
 
 class GurobiParameters(absltest.TestCase):
 
-    def test_to_proto(self) -> None:
-        gurobi_proto = parameters.GurobiParameters(
-            param_values={"x": "dog", "ab": "7"}
-        ).to_proto()
-        expected_proto = gurobi_pb2.GurobiParametersProto(
+    def test_to_proto_round_trip(self) -> None:
+        params = parameters.GurobiParameters(param_values={"x": "dog", "ab": "7"})
+        proto = gurobi_pb2.GurobiParametersProto(
             parameters=[
                 gurobi_pb2.GurobiParametersProto.Parameter(name="x", value="dog"),
                 gurobi_pb2.GurobiParametersProto.Parameter(name="ab", value="7"),
             ]
         )
-        self.assertEqual(expected_proto, gurobi_proto)
+        self.assertEqual(params.to_proto(), proto)
+        self.assertEqual(parameters.parse_gurobi_parameters(proto), params)
+
+    def test_parse_proto_fails_repeated_key(self) -> None:
+        proto = gurobi_pb2.GurobiParametersProto(
+            parameters=[
+                gurobi_pb2.GurobiParametersProto.Parameter(name="xyz", value="dog"),
+                gurobi_pb2.GurobiParametersProto.Parameter(name="xyz", value="dog"),
+            ]
+        )
+        with self.assertRaisesRegex(ValueError, "Duplicate.*xyz"):
+            parameters.parse_gurobi_parameters(proto)
 
 
-class GlpkParameters(absltest.TestCase):
+class GlpkParameters(parameterized.TestCase):
 
-    def test_to_proto(self) -> None:
+    @parameterized.parameters(True, False, None)
+    def test_to_proto_round_trip(self, compute_rays: bool | None) -> None:
         # Test with `optional bool` set to true.
-        glpk_proto = parameters.GlpkParameters(
-            compute_unbound_rays_if_possible=True
-        ).to_proto()
-        expected_proto = glpk_pb2.GlpkParametersProto(
-            compute_unbound_rays_if_possible=True
+        params = parameters.GlpkParameters(
+            compute_unbound_rays_if_possible=compute_rays
         )
-        self.assertEqual(glpk_proto, expected_proto)
-
-        # Test with `optional bool` set to false.
-        glpk_proto = parameters.GlpkParameters(
-            compute_unbound_rays_if_possible=False
-        ).to_proto()
-        expected_proto = glpk_pb2.GlpkParametersProto(
-            compute_unbound_rays_if_possible=False
+        proto = glpk_pb2.GlpkParametersProto(
+            compute_unbound_rays_if_possible=compute_rays
         )
-        self.assertEqual(glpk_proto, expected_proto)
-
-        # Test with `optional bool` unset.
-        glpk_proto = parameters.GlpkParameters().to_proto()
-        expected_proto = glpk_pb2.GlpkParametersProto()
-        self.assertEqual(glpk_proto, expected_proto)
+        self.assertEqual(params.to_proto(), proto)
+        self.assertEqual(parameters.parse_glpk_parameters(proto), params)
 
 
 class ProtoRoundTrip(absltest.TestCase):
@@ -149,13 +143,14 @@ class SolveParametersTest(compare_proto.MathOptProtoAssertions, parameterized.Te
             heuristics=parameters.Emphasis.MEDIUM,
             scaling=parameters.Emphasis.HIGH,
         )
-        expected = math_opt_parameters_pb2.SolveParametersProto(
+        proto = math_opt_parameters_pb2.SolveParametersProto(
             iteration_limit=7,
             node_limit=3,
             cutoff_limit=9.5,
             objective_limit=10.5,
             best_bound_limit=11.5,
             solution_limit=2,
+            time_limit=datetime.timedelta(seconds=10),
             enable_output=True,
             threads=3,
             random_seed=12,
@@ -168,13 +163,14 @@ class SolveParametersTest(compare_proto.MathOptProtoAssertions, parameterized.Te
             heuristics=math_opt_parameters_pb2.EMPHASIS_MEDIUM,
             scaling=math_opt_parameters_pb2.EMPHASIS_HIGH,
         )
-        expected.time_limit.FromTimedelta(datetime.timedelta(seconds=10))
-        self.assert_protos_equiv(expected, params.to_proto())
+        self.assert_protos_equiv(proto, params.to_proto())
+        self.assertEqual(parameters.parse_solve_parameters(proto), params)
 
     def test_to_proto_with_none(self) -> None:
         params = parameters.SolveParameters()
-        expected = math_opt_parameters_pb2.SolveParametersProto()
-        self.assert_protos_equiv(expected, params.to_proto())
+        proto = math_opt_parameters_pb2.SolveParametersProto()
+        self.assert_protos_equiv(proto, params.to_proto())
+        self.assertEqual(parameters.parse_solve_parameters(proto), params)
 
     @parameterized.named_parameters(
         (
@@ -214,19 +210,21 @@ class SolveParametersTest(compare_proto.MathOptProtoAssertions, parameterized.Te
     ) -> None:
         solve_params = parameters.SolveParameters(threads=3)
         setattr(solve_params, field, solver_specific_param)
-        expected = math_opt_parameters_pb2.SolveParametersProto(threads=3)
+        proto = math_opt_parameters_pb2.SolveParametersProto(threads=3)
         proto_solver_specific_param = (
             solver_specific_param.to_proto()
             if field in ("gurobi", "glpk")
             else solver_specific_param
         )
-        getattr(expected, field).CopyFrom(proto_solver_specific_param)
-        self.assert_protos_equiv(expected, solve_params.to_proto())
+        getattr(proto, field).CopyFrom(proto_solver_specific_param)
+        self.assert_protos_equiv(proto, solve_params.to_proto())
+        self.assertEqual(parameters.parse_solve_parameters(proto), solve_params)
 
     def test_to_proto_no_specifics(self) -> None:
         solve_params = parameters.SolveParameters(threads=3)
-        expected = math_opt_parameters_pb2.SolveParametersProto(threads=3)
-        self.assert_protos_equiv(expected, solve_params.to_proto())
+        proto = math_opt_parameters_pb2.SolveParametersProto(threads=3)
+        self.assert_protos_equiv(proto, solve_params.to_proto())
+        self.assertEqual(parameters.parse_solve_parameters(proto), solve_params)
 
 
 if __name__ == "__main__":

@@ -22,6 +22,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/container/linked_hash_map.h"
 #include "absl/log/check.h"
 #include "absl/memory/memory.h"
 #include "absl/status/status.h"
@@ -557,14 +558,14 @@ class ScopedSolverContext {
   }
   absl::Status ApplyModelParameters(
       ModelSolveParametersProto const& model_parameters,
-      gtl::linked_hash_map<XpressSolver::VarId,
-                           XpressSolver::XpressVariableIndex> const&
+      absl::linked_hash_map<XpressSolver::VarId,
+                            XpressSolver::XpressVariableIndex> const&
           variables_map,
-      gtl::linked_hash_map<XpressSolver::LinearConstraintId,
-                           XpressSolver::LinearConstraintData> const&
+      absl::linked_hash_map<XpressSolver::LinearConstraintId,
+                            XpressSolver::LinearConstraintData> const&
           linear_constraints_map,
-      gtl::linked_hash_map<XpressSolver::AuxiliaryObjectiveId,
-                           XpressSolver::XpressMultiObjectiveIndex> const&
+      absl::linked_hash_map<XpressSolver::AuxiliaryObjectiveId,
+                            XpressSolver::XpressMultiObjectiveIndex> const&
           objectives_map) {
     ASSIGN_OR_RETURN(int const cols,
                      shared_ctx.xpress->GetIntAttr(XPRS_ORIGINALCOLS));

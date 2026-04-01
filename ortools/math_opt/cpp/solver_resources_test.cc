@@ -18,6 +18,7 @@
 
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
+#include "ortools/base/macros/os_support.h"
 
 namespace operations_research::math_opt {
 namespace {
@@ -68,6 +69,11 @@ TEST(SolverResourcesTest, FromProto) {
 }
 
 TEST(SolverResourcesTest, AbslParseFlag) {
+  if constexpr (!kTargetOsSupportsProtoDescriptor) {
+    GTEST_SKIP()
+        << "Parsing text protos is not supported on portable plateforms.";
+  }
+
   // Empty value.
   {
     SolverResources resources;
@@ -95,6 +101,11 @@ TEST(SolverResourcesTest, AbslParseFlag) {
 }
 
 TEST(SolverResourcesTest, AbslUnparseFlag) {
+  if constexpr (!kTargetOsSupportsProtoDescriptor) {
+    GTEST_SKIP()
+        << "Writing text protos is not supported on portable plateforms.";
+  }
+
   EXPECT_EQ(AbslUnparseFlag({}), "");
   EXPECT_EQ(AbslUnparseFlag({.cpu = 3.5}), "cpu: 3.5");
 }

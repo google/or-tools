@@ -609,11 +609,14 @@ TEST_P(InfeasibleSubsystemTest,
   EXPECT_THAT(absl::StrJoin(logs, "\n"), HasSubstr("IIS computed"));
 }
 
-#ifdef OPERATIONS_RESEARCH_OUTPUT_CAPTURE_SUPPORTED
 TEST_P(InfeasibleSubsystemTest, NoStdoutOutputByDefault) {
   if (!GetParam().support_menu.supports_infeasible_subsystems) {
     return;
   }
+  if (!ScopedStdStreamCapture::kIsSupported) {
+    GTEST_SKIP() << "Stdout can't be captured.";
+  }
+
   const NontrivialInfeasibleIp ip;
   absl::StatusOr<ComputeInfeasibleSubsystemResult> result;
   // DO NOT ASSERT until after calling StopCaptureAndReturnContents.
@@ -670,7 +673,5 @@ TEST_P(InfeasibleSubsystemTest, EnableOutputIgnoredWithMessageCallback) {
   EXPECT_EQ(result->feasibility, FeasibilityStatus::kInfeasible);
   EXPECT_THAT(absl::StrJoin(logs, "\n"), HasSubstr("IIS computed"));
 }
-
-#endif  // OPERATIONS_RESEARCH_OUTPUT_CAPTURE_SUPPORTED
 
 }  // namespace operations_research::math_opt

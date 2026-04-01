@@ -55,7 +55,6 @@
 #include "ortools/pdlp/quadratic_program.h"
 #include "ortools/pdlp/solve_log.pb.h"
 #include "ortools/pdlp/solvers.pb.h"
-#include "ortools/port/proto_utils.h"
 #include "ortools/util/solve_interrupter.h"
 
 namespace operations_research {
@@ -210,8 +209,9 @@ absl::StatusOr<TerminationProto> ConvertReason(
       return TerminateForReason(is_maximize, TERMINATION_REASON_OTHER_ERROR,
                                 pdlp_detail);
   }
-  return absl::InvalidArgumentError(absl::StrCat(
-      "PDLP status: ", ProtoEnumToString(pdlp_reason), " not implemented."));
+  return absl::InvalidArgumentError(
+      absl::StrCat("PDLP status: ", pdlp::TerminationReason_Name(pdlp_reason),
+                   " not implemented."));
 }
 
 }  // namespace

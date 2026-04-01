@@ -18,12 +18,10 @@ from collections.abc import Sequence
 from typing import Optional, Protocol
 
 import numpy as np
-
 # typing.Self is only in python 3.11+, for OR-tools supports down to 3.8.
 from typing_extensions import Self
 
-from ortools.math_opt import model_pb2
-from ortools.math_opt import model_update_pb2
+from ortools.math_opt import model_pb2, model_update_pb2
 from ortools.math_opt.elemental.python import enums
 
 

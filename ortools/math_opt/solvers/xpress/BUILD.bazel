@@ -21,10 +21,9 @@ cc_library(
     srcs = ["g_xpress.cc"],
     hdrs = ["g_xpress.h"],
     deps = [
-        "//ortools/base:logging",
-        "//ortools/base:source_location",
         "//ortools/base:status_macros",
         "//ortools/third_party_solvers:xpress_environment",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:die_if_null",
         "@abseil-cpp//absl/memory",

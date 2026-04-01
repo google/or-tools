@@ -244,6 +244,7 @@ py_library(
     deps = [
         ":from_model",
         ":variables",
+        requirement("numpy"),
         "//ortools/math_opt/elemental/python:enums",
         "//ortools/math_opt/python/elemental",
     ],

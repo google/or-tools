@@ -21,6 +21,10 @@ package(default_visibility = ["//visibility:private"])
 cc_binary(
     name = "mathopt_solve",
     srcs = ["mathopt_solve.cc"],
+    tags = [
+        "not_build:arm",
+        "not_run:arm",
+    ],
     deps = [
         ":file_format_flags",
         "//ortools/base",

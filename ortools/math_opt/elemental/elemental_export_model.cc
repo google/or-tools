@@ -64,7 +64,6 @@ absl::Status CanExportToProto(int64_t num_entries) {
 template <int n, typename Fn>
 absl::Status ForEachIndexUntilError(Fn&& fn) {
   absl::Status result = absl::OkStatus();
-  // NOLINTNEXTLINE(clang-diagnostic-pre-c++20-compat)
   ForEachIndex<n>([&result, &fn]<int i>() {
     if (!result.ok()) {
       return;
@@ -101,7 +100,6 @@ absl::Status ForEachAttrUntilError(Fn&& fn) {
 // in `model`.
 absl::Status ValidateElementsFitInProto(const Elemental& model) {
   return ForEachIndexUntilError<kNumElements>(
-      // NOLINTNEXTLINE(clang-diagnostic-pre-c++20-compat)
       [&model]<int e>() -> absl::Status {
         constexpr auto element_type = static_cast<ElementType>(e);
         RETURN_IF_ERROR(CanExportToProto(model.NumElements(element_type)))
@@ -540,7 +538,6 @@ absl::Status ValidateElementUpdatesFitInProto(
     const Diff& diff,
     const std::array<std::vector<int64_t>, kNumElements>& new_elements) {
   return ForEachIndexUntilError<kNumElements>(
-      // NOLINTNEXTLINE(clang-diagnostic-pre-c++20-compat)
       [&diff, &new_elements]<int e>() -> absl::Status {
         constexpr auto element_type = static_cast<ElementType>(e);
         RETURN_IF_ERROR(

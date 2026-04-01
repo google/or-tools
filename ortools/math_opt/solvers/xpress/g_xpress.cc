@@ -22,12 +22,12 @@
 
 #include "absl/log/check.h"
 #include "absl/log/die_if_null.h"
+#include "absl/log/log.h"
 #include "absl/memory/memory.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/status_builder.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/third_party_solvers/xpress_environment.h"

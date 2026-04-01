@@ -143,7 +143,7 @@ TEST(ObjectiveDeathTest, QuadraticObjectiveAsLinearExpression) {
       Objective::Auxiliary(&storage, storage.AddAuxiliaryObjective(12));
   storage.set_quadratic_objective_coefficient(o.typed_id(), x.typed_id(),
                                               x.typed_id(), 1.0);
-  EXPECT_DEATH(o.AsLinearExpression(), "quadratic");
+  EXPECT_DEATH_IF_SUPPORTED(o.AsLinearExpression(), "quadratic");
 }
 
 TEST(ObjectiveTest, AsQuadraticExpression) {
@@ -221,12 +221,14 @@ TEST(ObjectiveDeathTest, CoefficientDifferentModel) {
   const Variable y_b = Variable(&storage_b, storage_b.AddVariable("y"));
   const Objective o_b = Objective::Primary(&storage_b);
 
-  EXPECT_DEATH(o_b.coefficient(x_a), "another model");
-  EXPECT_DEATH(o_b.coefficient(x_a, y_b), "another model");
-  EXPECT_DEATH(o_b.coefficient(y_b, x_a), "another model");
-  EXPECT_DEATH(o_b.is_coefficient_nonzero(x_a), "another model");
-  EXPECT_DEATH(o_b.is_coefficient_nonzero(x_a, y_b), "another model");
-  EXPECT_DEATH(o_b.is_coefficient_nonzero(y_b, x_a), "another model");
+  EXPECT_DEATH_IF_SUPPORTED(o_b.coefficient(x_a), "another model");
+  EXPECT_DEATH_IF_SUPPORTED(o_b.coefficient(x_a, y_b), "another model");
+  EXPECT_DEATH_IF_SUPPORTED(o_b.coefficient(y_b, x_a), "another model");
+  EXPECT_DEATH_IF_SUPPORTED(o_b.is_coefficient_nonzero(x_a), "another model");
+  EXPECT_DEATH_IF_SUPPORTED(o_b.is_coefficient_nonzero(x_a, y_b),
+                            "another model");
+  EXPECT_DEATH_IF_SUPPORTED(o_b.is_coefficient_nonzero(y_b, x_a),
+                            "another model");
 }
 
 }  // namespace

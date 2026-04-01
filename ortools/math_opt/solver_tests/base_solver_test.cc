@@ -16,7 +16,6 @@
 #include <optional>
 
 #include "absl/log/log.h"
-#include "ortools/base/linked_hash_map.h"
 #include "ortools/math_opt/cpp/math_opt.h"
 
 namespace operations_research {

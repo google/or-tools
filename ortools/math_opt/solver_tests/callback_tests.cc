@@ -25,6 +25,7 @@
 
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/escaping.h"
@@ -35,7 +36,6 @@
 #include "absl/types/span.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/gurobi/gurobi_stdout_matchers.h"
@@ -186,17 +186,15 @@ TEST_P(MessageCallbackTest, ObjectiveValueAndEndingSubstring) {
   // First test with enable_output being false.
   args.parameters.enable_output = false;
   {
-#ifdef OPERATIONS_RESEARCH_OUTPUT_CAPTURE_SUPPORTED
     ScopedStdStreamCapture stdout_capture(CapturedStream::kStdout);
-#endif  // OPERATIONS_RESEARCH_OUTPUT_CAPTURE_SUPPORTED
     ASSERT_OK_AND_ASSIGN(const SolveResult result,
                          Solve(model, GetParam().solver_type, args));
-#ifdef OPERATIONS_RESEARCH_OUTPUT_CAPTURE_SUPPORTED
-    EXPECT_THAT(
-        std::move(stdout_capture).StopCaptureAndReturnContents(),
-        EmptyOrGurobiLicenseWarningIfGurobi(
-            /*is_gurobi=*/GetParam().solver_type == SolverType::kGurobi));
-#endif  // OPERATIONS_RESEARCH_OUTPUT_CAPTURE_SUPPORTED
+    if (ScopedStdStreamCapture::kIsSupported) {
+      EXPECT_THAT(
+          std::move(stdout_capture).StopCaptureAndReturnContents(),
+          EmptyOrGurobiLicenseWarningIfGurobi(
+              /*is_gurobi=*/GetParam().solver_type == SolverType::kGurobi));
+    }
     ASSERT_THAT(result, IsOptimal(42.0));
     EXPECT_THAT(callback_messages, Each(Not(HasSubstr("\n"))));
     if (GetParam().support_message_callback) {
@@ -212,17 +210,15 @@ TEST_P(MessageCallbackTest, ObjectiveValueAndEndingSubstring) {
   callback_messages.clear();
   args.parameters.enable_output = true;
   {
-#ifdef OPERATIONS_RESEARCH_OUTPUT_CAPTURE_SUPPORTED
     ScopedStdStreamCapture stdout_capture(CapturedStream::kStdout);
-#endif  // OPERATIONS_RESEARCH_OUTPUT_CAPTURE_SUPPORTED
     ASSERT_OK_AND_ASSIGN(const SolveResult result,
                          Solve(model, GetParam().solver_type, args));
-#ifdef OPERATIONS_RESEARCH_OUTPUT_CAPTURE_SUPPORTED
-    EXPECT_THAT(
-        std::move(stdout_capture).StopCaptureAndReturnContents(),
-        EmptyOrGurobiLicenseWarningIfGurobi(
-            /*is_gurobi=*/GetParam().solver_type == SolverType::kGurobi));
-#endif  // OPERATIONS_RESEARCH_OUTPUT_CAPTURE_SUPPORTED
+    if (ScopedStdStreamCapture::kIsSupported) {
+      EXPECT_THAT(
+          std::move(stdout_capture).StopCaptureAndReturnContents(),
+          EmptyOrGurobiLicenseWarningIfGurobi(
+              /*is_gurobi=*/GetParam().solver_type == SolverType::kGurobi));
+    }
     ASSERT_THAT(result, IsOptimal(42.0));
     EXPECT_THAT(callback_messages, Each(Not(HasSubstr("\n"))));
     if (GetParam().support_message_callback) {
@@ -239,16 +235,14 @@ TEST_P(MessageCallbackTest, ObjectiveValueAndEndingSubstring) {
   args.message_callback = nullptr;
   callback_messages.clear();
 
-#ifdef OPERATIONS_RESEARCH_OUTPUT_CAPTURE_SUPPORTED
   ScopedStdStreamCapture stdout_capture(CapturedStream::kStdout);
-#endif  // OPERATIONS_RESEARCH_OUTPUT_CAPTURE_SUPPORTED
   ASSERT_OK_AND_ASSIGN(const SolveResult result,
                        Solve(model, GetParam().solver_type, args));
-#ifdef OPERATIONS_RESEARCH_OUTPUT_CAPTURE_SUPPORTED
-  EXPECT_THAT(std::move(stdout_capture).StopCaptureAndReturnContents(),
-              AllOf(AnyOf(HasSubstr("42"), HasSubstr("4.2")),
-                    HasSubstr(GetParam().ending_substring)));
-#endif  // OPERATIONS_RESEARCH_OUTPUT_CAPTURE_SUPPORTED
+  if (ScopedStdStreamCapture::kIsSupported) {
+    EXPECT_THAT(std::move(stdout_capture).StopCaptureAndReturnContents(),
+                AllOf(AnyOf(HasSubstr("42"), HasSubstr("4.2")),
+                      HasSubstr(GetParam().ending_substring)));
+  }
   ASSERT_THAT(result, IsOptimal(42.0));
   EXPECT_THAT(callback_messages, IsEmpty());
 }
@@ -894,9 +888,10 @@ TEST_P(CallbackTest, UnsupportedEvents) {
         .callback_registration = {.events = {event}},
         .callback = [](const CallbackData&) { return CallbackResult{}; }};
 
-    EXPECT_THAT(Solve(model, GetParam().solver_type, args),
-                StatusIs(absl::StatusCode::kInvalidArgument,
-                         HasSubstr(ProtoEnumToString(EnumToProto(event)))));
+    EXPECT_THAT(
+        Solve(model, GetParam().solver_type, args),
+        StatusIs(absl::StatusCode::kInvalidArgument,
+                 HasSubstr(CallbackEventProto_Name(EnumToProto(event)))));
   }
 }
 

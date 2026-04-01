@@ -24,6 +24,7 @@
 #include "absl/time/time.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
+#include "ortools/base/macros/os_support.h"
 #include "ortools/base/protoutil.h"
 #include "ortools/math_opt/core/math_opt_proto_utils.h"
 #include "ortools/math_opt/cpp/enums_testing.h"
@@ -803,6 +804,11 @@ TEST(SolveResultTest, RoundTripPdlpOutput) {
 }
 
 TEST(SolveResultTest, StringTestOptimal) {
+  if constexpr (!kTargetOsSupportsProtoDescriptor) {
+    GTEST_SKIP()
+        << "Writing text protos is not supported on portable plateforms.";
+  }
+
   SolveResult solve_result(Termination::Optimal(10.0));
 
   // One solution.
@@ -829,6 +835,11 @@ TEST(SolveResultTest, StringTestOptimal) {
 }
 
 TEST(SolveResultTest, StringTestUnbounded) {
+  if constexpr (!kTargetOsSupportsProtoDescriptor) {
+    GTEST_SKIP()
+        << "Writing text protos is not supported on portable plateforms.";
+  }
+
   SolveResult solve_result(Termination::Unbounded(/*is_maximize=*/true));
 
   // One ray.
@@ -855,6 +866,11 @@ TEST(SolveResultTest, StringTestUnbounded) {
 }
 
 TEST(SolveResultTest, StringTestInfeasible) {
+  if constexpr (!kTargetOsSupportsProtoDescriptor) {
+    GTEST_SKIP()
+        << "Writing text protos is not supported on portable plateforms.";
+  }
+
   SolveResult solve_result(Termination::Infeasible(
       /*is_maximize=*/true, FeasibilityStatus::kFeasible));
 

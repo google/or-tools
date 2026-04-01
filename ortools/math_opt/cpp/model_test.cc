@@ -353,9 +353,10 @@ TEST(ModelTest, ValidateExistingVariableOfThisModel) {
 TEST(ModelDeathTest, VariableByIdOutOfBounds) {
   Model model;
   model.AddBinaryVariable("x0");
-  EXPECT_DEATH(model.variable(-1),
-               AllOf(HasSubstr("variable"), HasSubstr("-1")));
-  EXPECT_DEATH(model.variable(2), AllOf(HasSubstr("variable"), HasSubstr("2")));
+  EXPECT_DEATH_IF_SUPPORTED(model.variable(-1),
+                            AllOf(HasSubstr("variable"), HasSubstr("-1")));
+  EXPECT_DEATH_IF_SUPPORTED(model.variable(2),
+                            AllOf(HasSubstr("variable"), HasSubstr("2")));
 }
 
 TEST(ModelDeathTest, VariableByIdDeleted) {
@@ -363,15 +364,16 @@ TEST(ModelDeathTest, VariableByIdDeleted) {
   const Variable x = model.AddBinaryVariable("x");
   EXPECT_EQ(model.variable(x.id()).name(), "x");
   model.DeleteVariable(x);
-  EXPECT_DEATH(model.variable(x.id()),
-               AllOf(HasSubstr("variable"), HasSubstr("0")));
+  EXPECT_DEATH_IF_SUPPORTED(model.variable(x.id()),
+                            AllOf(HasSubstr("variable"), HasSubstr("0")));
 }
 
 // Old versions of `EXPECT_DEATH` don't support `absl::string_view`.
 // `absl::string_view::str()` does not guarantee null terminated string so we
 // create a copy for the purpose of the test.
 #define EXPECT_DEATH_OBJECT_FROM_OTHER_STORAGE(expression) \
-  EXPECT_DEATH(expression, std::string(internal::kObjectsFromOtherModelStorage))
+  EXPECT_DEATH_IF_SUPPORTED(                               \
+      expression, std::string(internal::kObjectsFromOtherModelStorage))
 
 TEST(ModelDeathTest, VariableAccessorsInvalidModel) {
   Model model_a("a");
@@ -505,10 +507,12 @@ TEST(ModelTest, ValidateExistingLinearConstraintOfThisModel) {
 TEST(ModelDeathTest, LinearConstraintByIdOutOfBounds) {
   Model model;
   model.AddLinearConstraint("c");
-  EXPECT_DEATH(model.linear_constraint(-1),
-               AllOf(HasSubstr("linear constraint"), HasSubstr("-1")));
-  EXPECT_DEATH(model.linear_constraint(2),
-               AllOf(HasSubstr("linear constraint"), HasSubstr("2")));
+  EXPECT_DEATH_IF_SUPPORTED(
+      model.linear_constraint(-1),
+      AllOf(HasSubstr("linear constraint"), HasSubstr("-1")));
+  EXPECT_DEATH_IF_SUPPORTED(
+      model.linear_constraint(2),
+      AllOf(HasSubstr("linear constraint"), HasSubstr("2")));
 }
 
 TEST(ModelDeathTest, LinearConstraintByIdDeleted) {
@@ -516,8 +520,9 @@ TEST(ModelDeathTest, LinearConstraintByIdDeleted) {
   const LinearConstraint c = model.AddLinearConstraint("c");
   EXPECT_EQ(model.linear_constraint(c.id()).name(), "c");
   model.DeleteLinearConstraint(c);
-  EXPECT_DEATH(model.linear_constraint(c.id()),
-               AllOf(HasSubstr("linear constraint"), HasSubstr("0")));
+  EXPECT_DEATH_IF_SUPPORTED(
+      model.linear_constraint(c.id()),
+      AllOf(HasSubstr("linear constraint"), HasSubstr("0")));
 }
 
 TEST(ModelDeathTest, LinearConstraintAccessorsInvalidModel) {
@@ -883,7 +888,8 @@ TEST(ModelDeathTest, ObjectiveAsLinearExpressionWhenObjectiveIsQuadratic) {
   const Variable y = model.AddVariable("y");
   model.set_objective_coefficient(x, y, 3.0);
 
-  EXPECT_DEATH(model.ObjectiveAsLinearExpression(), "quadratic terms");
+  EXPECT_DEATH_IF_SUPPORTED(model.ObjectiveAsLinearExpression(),
+                            "quadratic terms");
 }
 
 TEST(ModelTest, AddToObjective) {
@@ -1884,10 +1890,12 @@ TEST_F(SimpleAuxiliaryObjectiveTest, Streaming) {
 TEST(AuxiliaryObjectiveDeathTest, ObjectiveByIdOutOfBounds) {
   Model model;
   model.AddAuxiliaryObjective(1);
-  EXPECT_DEATH(model.auxiliary_objective(-1),
-               AllOf(HasSubstr("auxiliary objective"), HasSubstr("-1")));
-  EXPECT_DEATH(model.auxiliary_objective(2),
-               AllOf(HasSubstr("auxiliary objective"), HasSubstr("2")));
+  EXPECT_DEATH_IF_SUPPORTED(
+      model.auxiliary_objective(-1),
+      AllOf(HasSubstr("auxiliary objective"), HasSubstr("-1")));
+  EXPECT_DEATH_IF_SUPPORTED(
+      model.auxiliary_objective(2),
+      AllOf(HasSubstr("auxiliary objective"), HasSubstr("2")));
 }
 
 TEST(AuxiliaryObjectiveDeathTest, ObjectiveByIdDeleted) {
@@ -1895,30 +1903,32 @@ TEST(AuxiliaryObjectiveDeathTest, ObjectiveByIdDeleted) {
   const Objective o = model.AddAuxiliaryObjective(1, "o");
   EXPECT_EQ(model.auxiliary_objective(o.id().value()).name(), "o");
   model.DeleteAuxiliaryObjective(o);
-  EXPECT_DEATH(model.auxiliary_objective(o.id().value()),
-               AllOf(HasSubstr("auxiliary objective"), HasSubstr("0")));
+  EXPECT_DEATH_IF_SUPPORTED(
+      model.auxiliary_objective(o.id().value()),
+      AllOf(HasSubstr("auxiliary objective"), HasSubstr("0")));
 }
 
 TEST(AuxiliaryObjectiveDeathTest, DeletePrimaryObjective) {
   Model model;
-  EXPECT_DEATH(model.DeleteAuxiliaryObjective(model.primary_objective()),
-               HasSubstr("primary objective"));
+  EXPECT_DEATH_IF_SUPPORTED(
+      model.DeleteAuxiliaryObjective(model.primary_objective()),
+      HasSubstr("primary objective"));
 }
 
 TEST(AuxiliaryObjectiveDeathTest, DoubleDeleteObjective) {
   Model model;
   const Objective o = model.AddAuxiliaryObjective(3, "o");
   model.DeleteAuxiliaryObjective(o);
-  EXPECT_DEATH(model.DeleteAuxiliaryObjective(o),
-               HasSubstr("unrecognized auxiliary objective"));
+  EXPECT_DEATH_IF_SUPPORTED(model.DeleteAuxiliaryObjective(o),
+                            HasSubstr("unrecognized auxiliary objective"));
 }
 
 TEST(AuxiliaryObjectiveDeathTest, DeleteInvalidObjective) {
   Model model;
   const Objective o =
       Objective::Auxiliary(model.storage(), AuxiliaryObjectiveId(0));
-  EXPECT_DEATH(model.DeleteAuxiliaryObjective(o),
-               HasSubstr("unrecognized auxiliary objective"));
+  EXPECT_DEATH_IF_SUPPORTED(model.DeleteAuxiliaryObjective(o),
+                            HasSubstr("unrecognized auxiliary objective"));
 }
 
 TEST(AuxiliaryObjectiveDeathTest, SetObjectiveOtherModel) {
@@ -2081,10 +2091,12 @@ TEST(QuadraticConstraintTest, AddQuadraticConstraintWithoutVariables) {
 TEST(QuadraticConstraintDeathTest, ConstraintByIdOutOfBounds) {
   Model model;
   model.AddQuadraticConstraint(BoundedQuadraticExpression(0, 0, 0));
-  EXPECT_DEATH(model.quadratic_constraint(-1),
-               AllOf(HasSubstr("quadratic constraint"), HasSubstr("-1")));
-  EXPECT_DEATH(model.quadratic_constraint(2),
-               AllOf(HasSubstr("quadratic constraint"), HasSubstr("2")));
+  EXPECT_DEATH_IF_SUPPORTED(
+      model.quadratic_constraint(-1),
+      AllOf(HasSubstr("quadratic constraint"), HasSubstr("-1")));
+  EXPECT_DEATH_IF_SUPPORTED(
+      model.quadratic_constraint(2),
+      AllOf(HasSubstr("quadratic constraint"), HasSubstr("2")));
 }
 
 TEST(QuadraticConstraintDeathTest, ConstraintByIdDeleted) {
@@ -2093,8 +2105,9 @@ TEST(QuadraticConstraintDeathTest, ConstraintByIdDeleted) {
       model.AddQuadraticConstraint(BoundedQuadraticExpression(0, 0, 0), "c");
   EXPECT_EQ(model.quadratic_constraint(c.id()).name(), "c");
   model.DeleteQuadraticConstraint(c);
-  EXPECT_DEATH(model.quadratic_constraint(c.id()),
-               AllOf(HasSubstr("quadratic constraint"), HasSubstr("0")));
+  EXPECT_DEATH_IF_SUPPORTED(
+      model.quadratic_constraint(c.id()),
+      AllOf(HasSubstr("quadratic constraint"), HasSubstr("0")));
 }
 
 TEST(QuadraticConstraintDeathTest, AddConstraintOtherModel) {
@@ -2244,10 +2257,10 @@ TEST(SecondOrderConeConstraintTest,
 TEST(SecondOrderConeConstraintDeathTest, ConstraintByIdOutOfBounds) {
   Model model;
   model.AddSecondOrderConeConstraint({}, 1.0, "c");
-  EXPECT_DEATH(
+  EXPECT_DEATH_IF_SUPPORTED(
       model.second_order_cone_constraint(-1),
       AllOf(HasSubstr("second-order cone constraint"), HasSubstr("-1")));
-  EXPECT_DEATH(
+  EXPECT_DEATH_IF_SUPPORTED(
       model.second_order_cone_constraint(2),
       AllOf(HasSubstr("second-order cone constraint"), HasSubstr("2")));
 }
@@ -2258,7 +2271,7 @@ TEST(SecondOrderConeConstraintDeathTest, ConstraintByIdDeleted) {
       model.AddSecondOrderConeConstraint({}, 1.0, "c");
   EXPECT_EQ(model.second_order_cone_constraint(c.id()).name(), "c");
   model.DeleteSecondOrderConeConstraint(c);
-  EXPECT_DEATH(
+  EXPECT_DEATH_IF_SUPPORTED(
       model.second_order_cone_constraint(c.id()),
       AllOf(HasSubstr("second-order cone constraint"), HasSubstr("0")));
 }
@@ -2341,10 +2354,12 @@ TEST_F(SimpleSos1ConstraintTest, Streaming) {
 TEST(SimpleSos1ConstraintDeathTest, ConstraintByIdOutOfBounds) {
   Model model;
   model.AddSos1Constraint({}, {});
-  EXPECT_DEATH(model.sos1_constraint(-1),
-               AllOf(HasSubstr("SOS1 constraint"), HasSubstr("-1")));
-  EXPECT_DEATH(model.sos1_constraint(2),
-               AllOf(HasSubstr("SOS1 constraint"), HasSubstr("2")));
+  EXPECT_DEATH_IF_SUPPORTED(
+      model.sos1_constraint(-1),
+      AllOf(HasSubstr("SOS1 constraint"), HasSubstr("-1")));
+  EXPECT_DEATH_IF_SUPPORTED(
+      model.sos1_constraint(2),
+      AllOf(HasSubstr("SOS1 constraint"), HasSubstr("2")));
 }
 
 TEST(SimpleSos1ConstraintDeathTest, ConstraintByIdDeleted) {
@@ -2352,8 +2367,9 @@ TEST(SimpleSos1ConstraintDeathTest, ConstraintByIdDeleted) {
   const Sos1Constraint c = model.AddSos1Constraint({}, {}, "c");
   EXPECT_EQ(model.sos1_constraint(c.id()).name(), "c");
   model.DeleteSos1Constraint(c);
-  EXPECT_DEATH(model.sos1_constraint(c.id()),
-               AllOf(HasSubstr("SOS1 constraint"), HasSubstr("0")));
+  EXPECT_DEATH_IF_SUPPORTED(
+      model.sos1_constraint(c.id()),
+      AllOf(HasSubstr("SOS1 constraint"), HasSubstr("0")));
 }
 
 TEST(SimpleSos1ConstraintDeathTest, AddConstraintOtherModel) {
@@ -2431,10 +2447,12 @@ TEST_F(SimpleSos2ConstraintTest, Streaming) {
 TEST(SimpleSos2ConstraintDeathTest, ConstraintByIdOutOfBounds) {
   Model model;
   model.AddSos2Constraint({}, {});
-  EXPECT_DEATH(model.sos2_constraint(-1),
-               AllOf(HasSubstr("SOS2 constraint"), HasSubstr("-1")));
-  EXPECT_DEATH(model.sos2_constraint(2),
-               AllOf(HasSubstr("SOS2 constraint"), HasSubstr("2")));
+  EXPECT_DEATH_IF_SUPPORTED(
+      model.sos2_constraint(-1),
+      AllOf(HasSubstr("SOS2 constraint"), HasSubstr("-1")));
+  EXPECT_DEATH_IF_SUPPORTED(
+      model.sos2_constraint(2),
+      AllOf(HasSubstr("SOS2 constraint"), HasSubstr("2")));
 }
 
 TEST(SimpleSos2ConstraintDeathTest, ConstraintByIdDeleted) {
@@ -2442,8 +2460,9 @@ TEST(SimpleSos2ConstraintDeathTest, ConstraintByIdDeleted) {
   const Sos2Constraint c = model.AddSos2Constraint({}, {}, "c");
   EXPECT_EQ(model.sos2_constraint(c.id()).name(), "c");
   model.DeleteSos2Constraint(c);
-  EXPECT_DEATH(model.sos2_constraint(c.id()),
-               AllOf(HasSubstr("SOS2 constraint"), HasSubstr("0")));
+  EXPECT_DEATH_IF_SUPPORTED(
+      model.sos2_constraint(c.id()),
+      AllOf(HasSubstr("SOS2 constraint"), HasSubstr("0")));
 }
 
 TEST(SimpleSos2ConstraintDeathTest, AddConstraintOtherModel) {
@@ -2529,10 +2548,12 @@ TEST(SimpleIndicatorConstraintDeathTest, ConstraintByIdOutOfBounds) {
   const Variable x = model.AddBinaryVariable("x");
   model.AddIndicatorConstraint(x, x <= 1);
 
-  EXPECT_DEATH(model.indicator_constraint(-1),
-               AllOf(HasSubstr("indicator_constraint"), HasSubstr("-1")));
-  EXPECT_DEATH(model.indicator_constraint(2),
-               AllOf(HasSubstr("indicator_constraint"), HasSubstr("2")));
+  EXPECT_DEATH_IF_SUPPORTED(
+      model.indicator_constraint(-1),
+      AllOf(HasSubstr("indicator_constraint"), HasSubstr("-1")));
+  EXPECT_DEATH_IF_SUPPORTED(
+      model.indicator_constraint(2),
+      AllOf(HasSubstr("indicator_constraint"), HasSubstr("2")));
 }
 
 TEST(SimpleIndicatorConstraintDeathTest, ConstraintByIdDeleted) {
@@ -2543,8 +2564,9 @@ TEST(SimpleIndicatorConstraintDeathTest, ConstraintByIdDeleted) {
 
   EXPECT_EQ(model.indicator_constraint(c.id()).name(), "c");
   model.DeleteIndicatorConstraint(c);
-  EXPECT_DEATH(model.indicator_constraint(c.id()),
-               AllOf(HasSubstr("indicator constraint"), HasSubstr("0")));
+  EXPECT_DEATH_IF_SUPPORTED(
+      model.indicator_constraint(c.id()),
+      AllOf(HasSubstr("indicator constraint"), HasSubstr("0")));
 }
 
 TEST(SimpleIndicatorConstraintDeathTest, AddConstraintOtherModel) {

@@ -40,22 +40,11 @@
 #include "ortools/math_opt/validators/model_validator.h"
 #include "ortools/math_opt/validators/result_validator.h"
 #include "ortools/math_opt/validators/solve_parameters_validator.h"
-#include "ortools/port/proto_utils.h"
 
 namespace operations_research {
 namespace math_opt {
 
 namespace {
-
-// Returns an InternalError with the input status message if the input status is
-// not OK.
-absl::Status ToInternalError(absl::Status original) {
-  if (original.ok()) {
-    return original;
-  }
-
-  return absl::InternalError(original.message());
-}
 
 // Returns the Status returned by Solve() & Update() when called after a
 // previous call to one of them failed.
@@ -154,8 +143,9 @@ absl::StatusOr<SolveResultProto> Solver::Solve(const SolveArgs& arguments) {
   // We consider errors in `result` to be internal errors, but
   // `ValidateResult()` will return an InvalidArgumentError. So here we convert
   // the error.
-  RETURN_IF_ERROR(ToInternalError(
-      ValidateResult(result, arguments.model_parameters, model_summary_)));
+  RETURN_IF_ERROR(
+      ValidateResult(result, arguments.model_parameters, model_summary_))
+      .SetCode(absl::StatusCode::kInternal);
 
   fatal_failure_occurred_ = false;
   return result;
@@ -215,8 +205,9 @@ Solver::ComputeInfeasibleSubsystem(
   // We consider errors in `result` to be internal errors, but
   // `ValidateInfeasibleSubsystemResult()` will return an InvalidArgumentError.
   // So here we convert the error.
-  RETURN_IF_ERROR(ToInternalError(
-      ValidateComputeInfeasibleSubsystemResult(result, model_summary_)));
+  RETURN_IF_ERROR(
+      ValidateComputeInfeasibleSubsystemResult(result, model_summary_))
+      .SetCode(absl::StatusCode::kInternal);
 
   fatal_failure_occurred_ = false;
   return result;
@@ -243,10 +234,10 @@ absl::Status ValidateInitArgs(const Solver::InitArgs& init_args,
 
   if (init_args.non_streamable != nullptr &&
       init_args.non_streamable->solver_type() != solver_type) {
-    return absl::InvalidArgumentError(
-        absl::StrCat("input non_streamable init arguments are for ",
-                     ProtoEnumToString(init_args.non_streamable->solver_type()),
-                     " but solver_type is ", ProtoEnumToString(solver_type)));
+    return absl::InvalidArgumentError(absl::StrCat(
+        "input non_streamable init arguments are for ",
+        SolverTypeProto_Name(init_args.non_streamable->solver_type()),
+        " but solver_type is ", SolverTypeProto_Name(solver_type)));
   }
 
   return absl::OkStatus();

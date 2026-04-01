@@ -45,7 +45,6 @@ TEST(ToStringTests, EachTypeCanConvert) {
 // with element types.
 TEST(SymmetryTest, AllSymmetricTypesAreCorrect) {
   ForEach(
-      // NOLINTNEXTLINE(clang-diagnostic-pre-c++20-compat)
       []<typename Descriptor>(const Descriptor&) {
         for (const auto& attr : Descriptor::kAttrDescriptors) {
           Descriptor::Symmetry::CheckElementTypes(attr.key_types);

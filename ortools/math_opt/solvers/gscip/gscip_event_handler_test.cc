@@ -19,13 +19,14 @@
 #include <utility>
 #include <vector>
 
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/match.h"
 #include "absl/strings/string_view.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
-#include "ortools/base/logging.h"
 #include "ortools/math_opt/solvers/gscip/gscip.h"
 #include "ortools/math_opt/solvers/gscip/gscip.pb.h"
 #include "scip/def.h"
@@ -210,7 +211,7 @@ TEST(GScipEventHandlerDeathTest, ErrorReturnedByInit) {
   // fails with the expected error.
   const std::string kMarker = "FailingHandler failed as expected";
 
-  EXPECT_DEATH(
+  EXPECT_DEATH_IF_SUPPORTED(
       {
         const std::unique_ptr<GScip> gscip =
             GScip::Create("event_handler_test").value();
@@ -238,7 +239,7 @@ TEST(GScipEventHandlerDeathTest, ErrorReturnedByExit) {
   // See the comment in ErrorReturnedByInit test.
   const std::string kMarker = "FailingHandler failed as expected";
 
-  EXPECT_DEATH(
+  EXPECT_DEATH_IF_SUPPORTED(
       {
         const std::unique_ptr<GScip> gscip =
             GScip::Create("event_handler_test").value();
@@ -272,7 +273,7 @@ TEST(GScipEventHandlerDeathTest, ErrorReturnedByExecute) {
   // See the comment in ErrorReturnedByInit test.
   const std::string kMarker = "FailingHandler failed as expected";
 
-  EXPECT_DEATH(
+  EXPECT_DEATH_IF_SUPPORTED(
       {
         const std::unique_ptr<GScip> gscip =
             GScip::Create("event_handler_test").value();

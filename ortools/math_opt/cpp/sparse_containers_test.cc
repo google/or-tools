@@ -202,7 +202,7 @@ TEST(AuxiliaryObjectiveValuesToProtoDeathTest, PrimaryObjectiveInMap) {
   const Objective o = Objective::Primary(&model);
 
   const absl::flat_hash_map<Objective, double> input = {{o, 3.0}};
-  EXPECT_DEATH(AuxiliaryObjectiveValuesToProto(input), "primary");
+  EXPECT_DEATH_IF_SUPPORTED(AuxiliaryObjectiveValuesToProto(input), "primary");
 }
 
 TEST(LinearConstraintValuesFromProtoTest, EmptySuccess) {

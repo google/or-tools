@@ -25,6 +25,7 @@ import "ortools/math_opt/result.proto";
 
 option java_package = "com.google.ortools.mathopt";
 option java_multiple_files = true;
+option java_outer_classname = "RpcProtobuf";
 
 // This message is used to specify some hints on the resources a remote solve is
 // expected to use. These parameters are hints and may be ignored by the remote
@@ -99,6 +100,37 @@ message SolveResponse {
   oneof status_or {
     // Description of the output of solving the model in the request.
     SolveResultProto result = 1;
+
+    // The absl::Status returned by the solver. It should never be OK when set.
+    StatusProto status = 3;
+  }
+
+  // If SolveParametersProto.enable_output has been used, this will contain log
+  // messages for solvers that support message callbacks.
+  repeated string messages = 2;
+}
+
+message ComputeInfeasibleSubsystemRequest {
+  SolverTypeProto solver_type = 1;
+  ModelProto model = 2;
+
+  // Hints on resources requested for the solve.
+  SolverResourcesProto resources = 5;
+  SolverInitializerProto initializer = 3;
+
+  // The enable_output parameter is handled specifically. For solvers that
+  // support messages callbacks, setting it to true will have the server
+  // register a message callback. The resulting messages will be returned in
+  // ComputeInfeasibleSubsystemResponse.messages. For other solvers, setting
+  // enable_output to true will result in an error.
+  SolveParametersProto parameters = 4;
+}
+
+message ComputeInfeasibleSubsystemResponse {
+  // Either `result` or `status` must be set. This is equivalent to C++
+  // StatusOr<ComputeInfeasibleSubsystemResult>.
+  oneof status_or {
+    ComputeInfeasibleSubsystemResultProto result = 1;
 
     // The absl::Status returned by the solver. It should never be OK when set.
     StatusProto status = 3;

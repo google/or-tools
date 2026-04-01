@@ -52,14 +52,14 @@ any cycle as S produces a violated cutset constraint.
 Note that this is a minimal TSP solution, more sophisticated MIP methods are
 possible.
 """
+
 import itertools
 import math
 import random
 from typing import Optional
 
-from absl import app
-from absl import flags
 import svgwrite
+from absl import app, flags
 
 from ortools.math_opt.python import mathopt
 

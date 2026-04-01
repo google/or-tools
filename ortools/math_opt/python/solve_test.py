@@ -16,16 +16,12 @@ import io
 from typing import Dict, List, Union
 
 from absl.testing import absltest
+
 from ortools.math_opt.core.python import solver as core_solver
-from ortools.math_opt.python import linear_constraints
-from ortools.math_opt.python import message_callback
-from ortools.math_opt.python import model
-from ortools.math_opt.python import model_parameters
-from ortools.math_opt.python import parameters
-from ortools.math_opt.python import result
-from ortools.math_opt.python import solve
-from ortools.math_opt.python import sparse_containers
-from ortools.math_opt.python import variables
+from ortools.math_opt.python import (linear_constraints, message_callback,
+                                     model, model_parameters, parameters,
+                                     result, solve, sparse_containers,
+                                     variables)
 from ortools.util.python import solve_interrupter
 
 VarOrConstraintDict = Union[

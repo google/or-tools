@@ -50,7 +50,6 @@
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/init_google.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/math_opt/cpp/math_opt.h"

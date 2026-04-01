@@ -56,12 +56,11 @@ This example is motivated by the Cloudy problem, see go/fluid-model.
 MOE:end_strip
 """
 
-from collections.abc import Sequence
 import dataclasses
 import random
+from collections.abc import Sequence
 
-from absl import app
-from absl import flags
+from absl import app, flags
 
 from ortools.math_opt.python import mathopt
 

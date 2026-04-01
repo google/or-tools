@@ -21,7 +21,7 @@ cc_library(
     srcs = ["quadratic_constraint.cc"],
     hdrs = ["quadratic_constraint.h"],
     deps = [
-        "//ortools/base:intops",
+        "//ortools/base:strong_int",
         "//ortools/math_opt/constraints/util:model_util",
         "//ortools/math_opt/cpp:key_types",
         "//ortools/math_opt/cpp:variable_and_expressions",
@@ -42,7 +42,7 @@ cc_test(
         ":quadratic_constraint",
         "//ortools/base:gmock",
         "//ortools/base:gmock_main",
-        "//ortools/base:intops",
+        "//ortools/base:strong_int",
         "//ortools/math_opt/cpp:math_opt",
         "//ortools/math_opt/storage:model_storage",
         "//ortools/math_opt/storage:sparse_coefficient_map",
@@ -71,10 +71,15 @@ cc_library(
 cc_test(
     name = "storage_test",
     srcs = ["storage_test.cc"],
+    # TODO: b/475196802 - Stop using EquivToProto().
+    tags = [
+        "no_test_android",
+        "no_test_wasm",
+    ],
     deps = [
         ":storage",
         "//ortools/base:gmock_main",
-        "//ortools/base:intops",
+        "//ortools/base:strong_int",
         "//ortools/math_opt:model_cc_proto",
         "//ortools/math_opt:sparse_containers_cc_proto",
         "//ortools/math_opt/storage:model_storage_types",

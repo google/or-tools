@@ -14,14 +14,11 @@
 
 import math
 from typing import Optional
-from absl.testing import absltest
-from absl.testing import parameterized
-from ortools.math_opt import model_pb2
-from ortools.math_opt import model_update_pb2
-from ortools.math_opt import sparse_containers_pb2
-from ortools.math_opt.python import linear_constraints
-from ortools.math_opt.python import model
-from ortools.math_opt.python import variables
+
+from absl.testing import absltest, parameterized
+
+from ortools.math_opt import model_pb2, model_update_pb2, sparse_containers_pb2
+from ortools.math_opt.python import linear_constraints, model, variables
 from ortools.math_opt.python.testing import compare_proto
 
 

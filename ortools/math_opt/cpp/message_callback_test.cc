@@ -21,13 +21,14 @@
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
+#include "absl/flags/declare.h"
 #include "absl/flags/flag.h"
+#include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/status/statusor.h"
 #include "google/protobuf/repeated_ptr_field.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
-#include "ortools/base/logging.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/solver_interface.h"
 #include "ortools/math_opt/core/solver_interface_mock.h"
@@ -36,6 +37,8 @@
 #include "ortools/math_opt/solution.pb.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
 #include "testing/base/public/mock-log.h"
+
+ABSL_DECLARE_FLAG(std::string, vmodule);
 
 namespace operations_research::math_opt {
 namespace {
@@ -213,7 +216,7 @@ TEST(VLoggerMessageCallbackTest, VisibleLog) {
                                    VLoggerMessageCallback(1, "logs| ")};
 
   // Flags local to each test, see go/gunitprimer#invoking-the-tests.
-  absl::SetFlag(&FLAGS_v, true);
+  absl::SetFlag(&FLAGS_vmodule, "message_callback=1");
 
   const auto fake_solve =
       [&](const SolveParametersProto&, const ModelSolveParametersProto&,

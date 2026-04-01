@@ -29,18 +29,17 @@ with Matplotlib. Otherwise, the solutions are printed to standard output.
 Adapted from: https://youtu.be/H9EhVIxyLt8
 """
 
-from collections.abc import Sequence
 import dataclasses
 import math
 import os
 import queue
 import random
 import threading
+from collections.abc import Sequence
 
-from absl import app
-from absl import flags
 import matplotlib
 import matplotlib.pyplot as plt  # pylint:disable=g-import-not-at-top
+from absl import app, flags
 
 from ortools.math_opt.python import mathopt
 

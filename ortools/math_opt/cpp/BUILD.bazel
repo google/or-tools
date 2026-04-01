@@ -65,7 +65,6 @@ cc_library(
         ":linear_constraint",
         ":objective",
         ":variable_and_expressions",
-        "//ortools/base:logging",
         "//ortools/base:status_macros",
         "//ortools/math_opt:solution_cc_proto",
         "//ortools/math_opt:sparse_containers_cc_proto",
@@ -76,6 +75,7 @@ cc_library(
         "//ortools/math_opt/validators:sparse_vector_validator",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/types:span",
@@ -108,8 +108,8 @@ cc_library(
         ":objective",
         ":update_tracker",
         ":variable_and_expressions",
-        "//ortools/base:intops",
         "//ortools/base:status_macros",
+        "//ortools/base:strong_int",
         "//ortools/math_opt:model_cc_proto",
         "//ortools/math_opt:model_update_cc_proto",
         "//ortools/math_opt/constraints/indicator:indicator_constraint",
@@ -138,7 +138,12 @@ cc_library(
 cc_test(
     name = "model_test",
     srcs = ["model_test.cc"],
-    tags = ["noci"],
+    # TODO: b/475196802 - Stop using EquivToProto().
+    tags = [
+        "no_test_android",
+        "no_test_wasm",
+        "noci",
+    ],
     deps = [
         ":key_types",
         ":linear_constraint",
@@ -172,9 +177,8 @@ cc_library(
     deps = [
         ":formatters",
         ":key_types",
-        "//ortools/base",
-        "//ortools/base:intops",
         "//ortools/base:map_util",
+        "//ortools/base:strong_int",
         "//ortools/math_opt/storage:model_storage",
         "//ortools/math_opt/storage:model_storage_item",
         "//ortools/math_opt/storage:model_storage_types",
@@ -198,9 +202,8 @@ cc_library(
     deps = [
         ":formatters",
         ":key_types",
-        "//ortools/base",
-        "//ortools/base:intops",
         "//ortools/base:map_util",
+        "//ortools/base:strong_int",
         "//ortools/math_opt/storage:model_storage",
         "//ortools/math_opt/storage:model_storage_item",
         "//ortools/math_opt/storage:model_storage_types",
@@ -238,6 +241,18 @@ cc_test(
     name = "variable_and_expressions_with_counters_test",
     srcs = ["variable_and_expressions_test.cc"],
     defines = ["MATH_OPT_USE_EXPRESSION_COUNTERS"],
+    # Does not build with WASM, darwin_x86_64 or Android with duplicated symbols
+    # error in:
+    # * _objs/variable_and_expressions/variable_and_expressions.pic.o
+    # * _objs/variable_and_expressions_with_counters/variable_and_expressions.pic.o
+    #
+    # It seems likely that WASM links all tests in the same binary, and thus
+    # fails. We keep only variable_and_expressions_test.
+    tags = [
+        "no_test_android",
+        "no_test_darwin_x86_64",
+        "no_test_wasm",
+    ],
     deps = [
         ":matchers",
         ":variable_and_expressions_with_counters",
@@ -308,7 +323,7 @@ cc_test(
         ":variable_and_expressions",
         "//ortools/base:gmock",
         "//ortools/base:gmock_main",
-        "//ortools/base:intops",
+        "//ortools/base:strong_int",
         "//ortools/math_opt/constraints/util:model_util",
         "//ortools/math_opt/storage:model_storage",
         "//ortools/math_opt/storage:model_storage_types",
@@ -365,6 +380,26 @@ cc_test(
 )
 
 cc_library(
+    name = "solve_impl_testing",
+    testonly = True,
+    hdrs = ["solve_impl_testing.h"],
+    deps = [
+        ":compute_infeasible_subsystem_arguments",
+        ":compute_infeasible_subsystem_result",
+        ":incremental_solver",
+        ":model",
+        ":solve_arguments",
+        ":solve_result",
+        "//ortools/base:status_macros",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/base:nullability",
+        "@abseil-cpp//absl/functional:function_ref",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+    ],
+)
+
+cc_library(
     name = "solve_result",
     srcs = ["solve_result.cc"],
     hdrs = ["solve_result.h"],
@@ -414,6 +449,11 @@ cc_library(
 cc_test(
     name = "map_filter_test",
     srcs = ["map_filter_test.cc"],
+    # TODO: b/475196802 - Stop using EquivToProto().
+    tags = [
+        "no_test_android",
+        "no_test_wasm",
+    ],
     deps = [
         ":linear_constraint",
         ":map_filter",
@@ -436,7 +476,6 @@ cc_library(
         ":model",
         ":sparse_containers",
         ":variable_and_expressions",
-        "//ortools/base",
         "//ortools/base:protoutil",
         "//ortools/base:status_macros",
         "//ortools/math_opt:callback_cc_proto",
@@ -444,6 +483,7 @@ cc_library(
         "//ortools/math_opt/storage:model_storage",
         "//ortools/util:status_macros",
         "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
@@ -513,10 +553,10 @@ cc_library(
     srcs = ["update_tracker.cc"],
     hdrs = ["update_tracker.h"],
     deps = [
-        "//ortools/base:logging",
         "//ortools/math_opt:model_cc_proto",
         "//ortools/math_opt:model_update_cc_proto",
         "//ortools/math_opt/storage:model_storage",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:die_if_null",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
@@ -529,9 +569,11 @@ cc_library(
     srcs = ["message_callback.cc"],
     hdrs = ["message_callback.h"],
     deps = [
-        "//ortools/base:logging",
         "//ortools/base:source_location",
+        "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:die_if_null",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/synchronization",
@@ -610,6 +652,7 @@ cc_library(
     deps = [
         "//ortools/math_opt:parameters_cc_proto",
         "//ortools/math_opt/solvers:gurobi_cc_proto",
+        "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/status:statusor",
     ],
 )
@@ -631,7 +674,6 @@ cc_library(
     hdrs = ["parameters.h"],
     deps = [
         ":enums",
-        "//ortools/base:linked_hash_map",
         "//ortools/base:protoutil",
         "//ortools/base:status_macros",
         "//ortools/glop:parameters_cc_proto",
@@ -644,6 +686,7 @@ cc_library(
         "//ortools/port:proto_utils",
         "//ortools/sat:sat_parameters_cc_proto",
         "//ortools/util:status_macros",
+        "@abseil-cpp//absl/container:linked_hash_map",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
@@ -665,7 +708,6 @@ cc_library(
         ":update_result",
         ":variable_and_expressions",
         "//ortools/base:gmock",
-        "//ortools/base:logging",
         "//ortools/math_opt/constraints/quadratic:quadratic_constraint",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/log",
@@ -720,8 +762,8 @@ cc_test(
         ":enums_test_cc_proto",
         ":enums_testing",
         "//ortools/base:gmock_main",
-        "//ortools/base:logging",
         "//ortools/math_opt/testing:stream",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",
     ],
@@ -734,7 +776,7 @@ cc_library(
     deps = [
         ":enums",
         "//ortools/base:gmock",
-        "//ortools/base:logging",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/numeric:int128",
         "@abseil-cpp//absl/strings",
     ],
@@ -771,8 +813,19 @@ cc_library(
 
 cc_library(
     name = "update_result",
+    srcs = ["update_result.cc"],
     hdrs = ["update_result.h"],
     deps = ["//ortools/math_opt:model_update_cc_proto"],
+)
+
+cc_test(
+    name = "update_result_test",
+    srcs = ["update_result_test.cc"],
+    deps = [
+        ":update_result",
+        "//ortools/base:gmock_main",
+        "//ortools/math_opt/testing:stream",
+    ],
 )
 
 cc_library(
@@ -843,6 +896,7 @@ cc_library(
         ":message_callback",
         ":parameters",
         "//ortools/util:solve_interrupter",
+        "@abseil-cpp//absl/base:nullability",
     ],
 )
 
@@ -865,6 +919,7 @@ cc_test(
     deps = [
         ":solver_resources",
         "//ortools/base:gmock_main",
+        "//ortools/base/macros:os_support",
     ],
 )
 
@@ -887,12 +942,15 @@ cc_library(
         "//ortools/math_opt/storage:model_storage",
         "//ortools/util:solve_interrupter",
         "//ortools/util:status_macros",
+        "@abseil-cpp//absl/base:nullability",
         "@abseil-cpp//absl/functional:any_invocable",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/memory",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/synchronization",
+        "@protobuf",
     ],
 )
 

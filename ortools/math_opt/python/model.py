@@ -48,16 +48,13 @@ from typing import Iterator, Optional, Tuple, Union
 # typing.Self is only in python 3.11+, for OR-tools supports down to 3.8.
 from typing_extensions import Self
 
-from ortools.math_opt import model_pb2
-from ortools.math_opt import model_update_pb2
-from ortools.math_opt.elemental.python import cpp_elemental
-from ortools.math_opt.elemental.python import enums
-from ortools.math_opt.python import from_model
-from ortools.math_opt.python import indicator_constraints
-from ortools.math_opt.python import linear_constraints as linear_constraints_mod
-from ortools.math_opt.python import normalized_inequality
-from ortools.math_opt.python import objectives
-from ortools.math_opt.python import quadratic_constraints
+from ortools.math_opt import model_pb2, model_update_pb2
+from ortools.math_opt.elemental.python import cpp_elemental, enums
+from ortools.math_opt.python import from_model, indicator_constraints
+from ortools.math_opt.python import \
+    linear_constraints as linear_constraints_mod
+from ortools.math_opt.python import (normalized_inequality, objectives,
+                                     quadratic_constraints)
 from ortools.math_opt.python import variables as variables_mod
 from ortools.math_opt.python.elemental import elemental
 

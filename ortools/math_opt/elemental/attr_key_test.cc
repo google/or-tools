@@ -128,11 +128,11 @@ TEST(AttrKeyDeathTest, AddRemoveSymmetric) {
   EXPECT_THAT((AttrKey(0, 2).AddElement<1, Sym01>(1)), ElementsAre(0, 1, 2));
   EXPECT_THAT((AttrKey(0, 1).AddElement<2, Sym01>(2)), ElementsAre(0, 1, 2));
 #ifndef NDEBUG
-  EXPECT_DEATH(
+  EXPECT_DEATH_IF_SUPPORTED(
       (AttrKey(0, 1).AddElement<1, Sym01>(2)),
       HasSubstr(
           "AttrKey(0, 2, 1) does not have `ElementSymmetry<1, 2>` symmetry"));
-  EXPECT_DEATH(
+  EXPECT_DEATH_IF_SUPPORTED(
       (AttrKey(0, 2).AddElement<2, Sym01>(1)),
       HasSubstr(
           "AttrKey(0, 2, 1) does not have `ElementSymmetry<1, 2>` symmetry"));
