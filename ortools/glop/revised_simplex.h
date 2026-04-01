@@ -91,6 +91,7 @@
 #ifndef ORTOOLS_GLOP_REVISED_SIMPLEX_H_
 #define ORTOOLS_GLOP_REVISED_SIMPLEX_H_
 
+#include <cstddef>
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -99,7 +100,6 @@
 #include "absl/log/die_if_null.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/random/random.h"
-#include "ortools/base/types.h"
 #include "ortools/glop/basis_representation.h"
 #include "ortools/glop/dual_edge_norms.h"
 #include "ortools/glop/entering_variable.h"
@@ -113,7 +113,6 @@
 #include "ortools/glop/variable_values.h"
 #include "ortools/glop/variables_info.h"
 #include "ortools/lp_data/lp_data.h"
-#include "ortools/lp_data/lp_print_utils.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/scattered_vector.h"
 #include "ortools/lp_data/sparse.h"

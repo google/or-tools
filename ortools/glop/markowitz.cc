@@ -20,11 +20,15 @@
 #include <string>
 #include <vector>
 
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_format.h"
+#include "ortools/glop/status.h"
 #include "ortools/lp_data/lp_types.h"
-#include "ortools/lp_data/lp_utils.h"
+#include "ortools/lp_data/permutation.h"
 #include "ortools/lp_data/sparse.h"
 #include "ortools/lp_data/sparse_column.h"
+#include "ortools/util/stats.h"
 
 namespace operations_research {
 namespace glop {

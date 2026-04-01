@@ -16,7 +16,6 @@
 
 #include <vector>
 
-#include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/sparse.h"
 
@@ -35,7 +34,7 @@ namespace glop {
 // good numerical stability.
 //
 // Robert E. Bixby, "Implementing the Simplex Method: The Initial Basis"
-// ORSA Jounal on Computing, Vol. 4, No. 3, Summer 1992.
+// ORSA Journal on Computing, Vol. 4, No. 3, Summer 1992.
 // http://joc.journal.informs.org/content/4/3/267.abstract
 //
 // The second algorithm is is similar to the "advanced initial basis" that GLPK

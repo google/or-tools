@@ -20,11 +20,9 @@ cc_binary(
     name = "simple_glop_program_cc",
     srcs = ["simple_glop_program.cc"],
     deps = [
-        "//ortools/base",
-        "//ortools/base:numbers",
         "//ortools/glop:lp_solver",
         "//ortools/lp_data",
-        "//ortools/lp_data:base",
+        "//ortools/lp_data:lp_types",
     ],
 )
 

@@ -18,17 +18,14 @@
 #include <string>
 #include <vector>
 
+#include "absl/base/attributes.h"
 #include "absl/random/bit_gen_ref.h"
-#include "ortools/glop/basis_representation.h"
 #include "ortools/glop/parameters.pb.h"
-#include "ortools/glop/primal_edge_norms.h"
 #include "ortools/glop/reduced_costs.h"
 #include "ortools/glop/status.h"
 #include "ortools/glop/update_row.h"
 #include "ortools/glop/variables_info.h"
-#include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"
-#include "ortools/util/bitset.h"
 #include "ortools/util/stats.h"
 
 #if !SWIG
