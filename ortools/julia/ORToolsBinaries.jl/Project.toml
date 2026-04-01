@@ -1,6 +1,6 @@
 name = "ORToolsBinaries"
 uuid = "594ad865-6a17-49ee-8f22-76ed020c7c08"
-version = "0.0.1"
+version = "0.1.0"
 
 [deps]
 Downloads = "f43a241f-c20a-4ad4-852c-f6b1247861c6"
