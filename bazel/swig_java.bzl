@@ -54,7 +54,7 @@ def _java_wrap_cc_impl(ctx):
         if target.label.workspace_root:
             include_path_sets.append(depset([target.label.workspace_root]))
 
-    java_files_dir = ctx.actions.declare_directory("java_files")
+    java_files_dir = ctx.actions.declare_directory("java_files_%s" % ctx.label.name)
 
     swig_args = ctx.actions.args()
     swig_args.add("-c++")
@@ -66,6 +66,13 @@ def _java_wrap_cc_impl(ctx):
     swig_args.add("-o", outfile)
     if ctx.attr.module:
         swig_args.add("-module", ctx.attr.module)
+
+    # Add the workspace root to the include path.
+    swig_args.add("-I.")
+
+    # Add the bin_dir to the include path for generated files.
+    swig_args.add("-I" + ctx.bin_dir.path)
+
     for include_path in depset(transitive = include_path_sets).to_list():
         swig_args.add("-I" + include_path)
     swig_args.add(swig_src.path)
