@@ -14,13 +14,13 @@
 
 """Base class for binary tests."""
 
-from collections.abc import Sequence
 import re
 import subprocess
+from collections.abc import Sequence
 
 from absl.testing import absltest
-from tools.testing import bintest_matchers
-from tools.testing import bintest_run_utils
+
+from tools.testing import bintest_matchers, bintest_run_utils
 
 
 class BinaryTestCase(absltest.TestCase):

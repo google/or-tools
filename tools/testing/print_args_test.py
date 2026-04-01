@@ -14,8 +14,7 @@
 
 """Tests for testing/binary_test.py."""
 
-from tools.testing import binary_test
-from tools.testing import bintest_run_utils
+from tools.testing import binary_test, bintest_run_utils
 
 
 # [START program]
@@ -42,7 +41,7 @@ class BinaryTestingPyTest(binary_test.BinaryTestCase):
     def test_check_extract_several_floats(self):
         # Running the binary with arguments also prints the arguments verbatim.
         out = self.assert_binary_succeeds("$(print_args)", "a=1", "b=54.7", "c=12")
-        (a, b, c) = self.assert_extract(out, "a=@num()", "b=@num()", "c=@num()")
+        a, b, c = self.assert_extract(out, "a=@num()", "b=@num()", "c=@num()")
         self.assertGreater(a, 0)
         self.assertAlmostEqual(b, 55, delta=1)
         self.assertBetween(c, 10, 15)

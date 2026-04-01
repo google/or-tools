@@ -107,3 +107,33 @@ index c6ce7283..6b6b1fc8 100644
  install(FILES "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/scip-config.cmake"
                ${PROJECT_BINARY_DIR}/scip-config-version.cmake
          DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/scip)
+diff --git a/src/tinycthread/tinycthread.h b/src/tinycthread/tinycthread.h
+index e0f4823c..29ca4f1e 100644
+--- a/src/tinycthread/tinycthread.h
++++ b/src/tinycthread/tinycthread.h
+@@ -450,8 +450,12 @@ int tss_set(tss_t key, void *val);
+   } once_flag;
+   #define ONCE_FLAG_INIT {0,}
+ #else
+-  #define once_flag pthread_once_t
+-  #define ONCE_FLAG_INIT PTHREAD_ONCE_INIT
++  /* Check if the system already provides C11 threads or once_flag */
++  #if !defined(__once_flag_defined)
++    typedef pthread_once_t once_flag;
++    #define ONCE_FLAG_INIT PTHREAD_ONCE_INIT
++    #define __once_flag_defined
++  #endif
+ #endif
+ 
+ /** Invoke a callback exactly once
+@@ -462,7 +466,9 @@ int tss_set(tss_t key, void *val);
+ #if defined(_TTHREAD_WIN32_)
+   void call_once(once_flag *flag, void (*func)(void));
+ #else
+-  #define call_once(flag,func) pthread_once(flag,func)
++  inline void call_once(once_flag *flag, void (*func)(void)) {
++    pthread_once(flag, func);
++  }
+ #endif
+ 
+ #ifdef __cplusplus

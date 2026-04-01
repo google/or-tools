@@ -19,6 +19,7 @@ import subprocess
 from unittest import mock
 
 from absl.testing import absltest
+
 from tools.testing import bintest_run_utils
 
 

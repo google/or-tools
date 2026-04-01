@@ -18,6 +18,5 @@ import sys
 
 from tools.testing import bintest_script_runner
 
-
 if __name__ == "__main__":
     bintest_script_runner.main(sys.argv)

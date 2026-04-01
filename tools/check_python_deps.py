@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Check user python installation."""
+
 import inspect
 import logging
 import optparse
@@ -20,43 +21,28 @@ import sys
 
 # try to import setuptools
 try:
-    from setuptools import setup  # pylint: disable=g-import-not-at-top,unused-import
-    from setuptools import (
-        Extension,
-    )  # pylint: disable=g-import-not-at-top,unused-import
-    from setuptools.command import (
-        easy_install,
-    )  # pylint: disable=g-import-not-at-top,unused-import
+    from setuptools import \
+        setup  # pylint: disable=g-import-not-at-top,unused-import
+    from setuptools import \
+        Extension  # pylint: disable=g-import-not-at-top,unused-import
+    from setuptools.command import \
+        easy_install  # pylint: disable=g-import-not-at-top,unused-import
 except ImportError:
-    raise ImportError(
-        """setuptools is not installed for \""""
-        + sys.executable
-        + """\"
+    raise ImportError("""setuptools is not installed for \"""" + sys.executable + """\"
 Follow this link for installing instructions :
 https://pypi.python.org/pypi/setuptools
-make sure you use \""""
-        + sys.executable
-        + """\" during the installation"""
-    )
+make sure you use \"""" + sys.executable + """\" during the installation""")
 
-from pkg_resources import (
-    parse_version,
-)  # pylint: disable=g-import-not-at-top,unused-import
+from pkg_resources import \
+    parse_version  # pylint: disable=g-import-not-at-top,unused-import
 
 required_ortools_version = "VVVV"
 required_protobuf_version = "PROTOBUF_TAG"
 
 
 def notinstalled(modulename):
-    return (
-        modulename
-        + """ is not installed for \""""
-        + sys.executable
-        + """\"
-Run \""""
-        + sys.executable
-        + """ setup.py install --user\" to install it"""
-    )
+    return modulename + """ is not installed for \"""" + sys.executable + """\"
+Run \"""" + sys.executable + """ setup.py install --user\" to install it"""
 
 
 def absent_version(module, modulename):
@@ -197,15 +183,11 @@ if __name__ == "__main__":
     # this is useful when the library architecture is not compatible with the
     # python executable, or when the library's dependencies are not available or
     # not compatible.
-    from ortools.constraint_solver import (
-        _pywrapcp,
-    )  # pylint: disable=g-import-not-at-top,unused-import
-    from ortools.linear_solver import (
-        _pywraplp,
-    )  # pylint: disable=g-import-not-at-top,unused-import
-    from ortools.algorithms.python import (
-        knapsack_solver,
-    )  # pylint: disable=g-import-not-at-top,unused-import
-    from ortools.graph import (
-        _pywrapgraph,
-    )  # pylint: disable=g-import-not-at-top,unused-import
+    from ortools.algorithms.python import \
+        knapsack_solver  # pylint: disable=g-import-not-at-top,unused-import
+    from ortools.constraint_solver import \
+        _pywrapcp  # pylint: disable=g-import-not-at-top,unused-import
+    from ortools.graph import \
+        _pywrapgraph  # pylint: disable=g-import-not-at-top,unused-import
+    from ortools.linear_solver import \
+        _pywraplp  # pylint: disable=g-import-not-at-top,unused-import
