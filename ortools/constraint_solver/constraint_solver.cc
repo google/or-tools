@@ -29,17 +29,24 @@
 #include <utility>
 #include <vector>
 
+#include "absl/base/attributes.h"
+#include "absl/container/flat_hash_map.h"
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/time/time.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/stl_util.h"
-#include "ortools/base/sysinfo.h"
 #include "ortools/base/timer.h"
-#include "ortools/constraint_solver/constraint_solveri.h"
-#include "ortools/util/tuple_set.h"
-#include "zlib.h"
+#include "ortools/constraint_solver/assignment.h"
+#include "ortools/constraint_solver/constraints.h"
+#include "ortools/constraint_solver/local_search.h"
+#include "ortools/constraint_solver/model_cache.h"
+#include "ortools/constraint_solver/reversible_engine.h"
+#include "ortools/constraint_solver/sequence_var.h"
+#include "ortools/constraint_solver/trace.h"
+#include "ortools/constraint_solver/utilities.h"
+#include "ortools/port/sysinfo.h"
 
 // These flags are used to set the fields in the DefaultSolverParameters proto.
 ABSL_FLAG(bool, cp_trace_propagation, false,
@@ -54,8 +61,6 @@ ABSL_FLAG(bool, cp_model_stats, false,
           "use StatisticsModelVisitor on model before solving.");
 ABSL_FLAG(bool, cp_disable_solve, false,
           "Force failure at the beginning of a search.");
-ABSL_FLAG(std::string, cp_profile_file, "",
-          "Export profiling overview to file.");
 ABSL_FLAG(bool, cp_print_local_search_profile, false,
           "Print local search profiling data after solving.");
 ABSL_FLAG(bool, cp_name_variables, false, "Force all variables to have names.");
@@ -93,6 +98,12 @@ ABSL_FLAG(int64_t, cp_random_seed, 12345,
           "Random seed used in several (but not all) random number "
           "generators used by the CP solver. Use -1 to auto-generate an"
           "undeterministic random seed.");
+ABSL_FLAG(bool, cp_disable_element_cache, true,
+          "If true, caching for IntElement is disabled.");
+ABSL_FLAG(bool, cp_disable_expression_optimization, false,
+          "Disable special optimization when creating expressions.");
+ABSL_FLAG(bool, cp_share_int_consts, true,
+          "Share IntConst's with the same value.");
 
 void ConstraintSolverFailsHere() { VLOG(3) << "Fail"; }
 
@@ -103,17 +114,6 @@ void ConstraintSolverFailsHere() { VLOG(3) << "Fail"; }
 namespace operations_research {
 
 namespace {
-// Calls the given method with the provided arguments on all objects in the
-// collection.
-template <typename T, typename MethodPointer, typename... Args>
-void ForAll(const std::vector<T*>& objects, MethodPointer method,
-            const Args&... args) {
-  for (T* const object : objects) {
-    DCHECK(object != nullptr);
-    (object->*method)(args...);
-  }
-}
-
 // Converts a scoped enum to its underlying type.
 template <typename E>
 constexpr typename std::underlying_type<E>::type to_underlying(E e) {
@@ -130,11 +130,9 @@ ConstraintSolverParameters Solver::DefaultSolverParameters() {
   params.set_trail_block_size(8000);
   params.set_array_split_size(16);
   params.set_store_names(true);
-  params.set_profile_propagation(!absl::GetFlag(FLAGS_cp_profile_file).empty());
   params.set_trace_propagation(absl::GetFlag(FLAGS_cp_trace_propagation));
   params.set_trace_search(absl::GetFlag(FLAGS_cp_trace_search));
   params.set_name_all_variables(absl::GetFlag(FLAGS_cp_name_variables));
-  params.set_profile_file(absl::GetFlag(FLAGS_cp_profile_file));
   params.set_profile_local_search(
       absl::GetFlag(FLAGS_cp_print_local_search_profile));
   params.set_print_local_search_profile(
@@ -164,10 +162,9 @@ ConstraintSolverParameters Solver::DefaultSolverParameters() {
   return params;
 }
 
+ModelCache* Solver::Cache() const { return model_cache_.get(); }
+
 // ----- Forward Declarations and Profiling Support -----
-extern void InstallDemonProfiler(DemonProfiler* monitor);
-extern DemonProfiler* BuildDemonProfiler(Solver* solver);
-extern void DeleteDemonProfiler(DemonProfiler* monitor);
 extern void InstallLocalSearchProfiler(LocalSearchProfiler* monitor);
 extern LocalSearchProfiler* BuildLocalSearchProfiler(Solver* solver);
 extern void DeleteLocalSearchProfiler(LocalSearchProfiler* monitor);
@@ -175,14 +172,7 @@ extern void DeleteLocalSearchProfiler(LocalSearchProfiler* monitor);
 // TODO(user): remove this complex logic.
 // We need the double test because parameters are set too late when using
 // python in the open source. This is the cheapest work-around.
-bool Solver::InstrumentsDemons() const {
-  return IsProfilingEnabled() || InstrumentsVariables();
-}
-
-bool Solver::IsProfilingEnabled() const {
-  return parameters_.profile_propagation() ||
-         !parameters_.profile_file().empty();
-}
+bool Solver::InstrumentsDemons() const { return InstrumentsVariables(); }
 
 bool Solver::IsLocalSearchProfilingEnabled() const {
   return parameters_.profile_local_search() ||
@@ -205,13 +195,13 @@ Solver::DemonPriority Demon::priority() const {
 
 std::string Demon::DebugString() const { return "Demon"; }
 
-void Demon::inhibit(Solver* const s) {
+void Demon::inhibit(Solver* s) {
   if (stamp_ < std::numeric_limits<uint64_t>::max()) {
     s->SaveAndSetValue(&stamp_, std::numeric_limits<uint64_t>::max());
   }
 }
 
-void Demon::desinhibit(Solver* const s) {
+void Demon::desinhibit(Solver* s) {
   if (stamp_ == std::numeric_limits<uint64_t>::max()) {
     s->SaveAndSetValue(&stamp_, s->stamp() - 1);
   }
@@ -225,9 +215,9 @@ class Queue {
  public:
   static constexpr int64_t kTestPeriod = 10000;
 
-  explicit Queue(Solver* const s)
+  explicit Queue(Solver* s)
       : solver_(s),
-        stamp_(1),
+        stamp_(s->stamp_ref()),
         freeze_level_(0),
         in_process_(false),
         clean_action_(nullptr),
@@ -248,7 +238,7 @@ class Queue {
     }
   }
 
-  void ProcessOneDemon(Demon* const demon) {
+  void ProcessOneDemon(Demon* demon) {
     demon->set_stamp(stamp_ - 1);
     if (!instruments_demons_) {
       if (++solver_->demon_runs_[demon->priority()] % kTestPeriod == 0) {
@@ -324,7 +314,7 @@ class Queue {
     }
   }
 
-  void EnqueueVar(Demon* const demon) {
+  void EnqueueVar(Demon* demon) {
     DCHECK(demon->priority() == Solver::VAR_PRIORITY);
     if (demon->stamp() < stamp_) {
       demon->set_stamp(stamp_);
@@ -335,7 +325,7 @@ class Queue {
     }
   }
 
-  void EnqueueDelayedDemon(Demon* const demon) {
+  void EnqueueDelayedDemon(Demon* demon) {
     DCHECK(demon->priority() == Solver::DELAYED_PRIORITY);
     if (demon->stamp() < stamp_) {
       demon->set_stamp(stamp_);
@@ -382,7 +372,7 @@ class Queue {
     clean_action_ = nullptr;
   }
 
-  void AddConstraint(Constraint* const c) {
+  void AddConstraint(Constraint* c) {
     to_add_.push_back(c);
     ProcessConstraints();
   }
@@ -407,7 +397,7 @@ class Queue {
   Solver* const solver_;
   std::deque<Demon*> var_queue_;
   std::deque<Demon*> delayed_queue_;
-  uint64_t stamp_;
+  uint64_t& stamp_;
   // The number of nested freeze levels. The queue is frozen if and only if
   // freeze_level_ > 0.
   uint32_t freeze_level_;
@@ -419,556 +409,11 @@ class Queue {
   const bool instruments_demons_;
 };
 
-// ------------------ StateMarker / StateInfo struct -----------
-
-struct StateInfo {  // This is an internal structure to store
-                    // additional information on the choice point.
- public:
-  StateInfo()
-      : ptr_info(nullptr),
-        int_info(0),
-        depth(0),
-        left_depth(0),
-        reversible_action(nullptr) {}
-  StateInfo(void* pinfo, int iinfo)
-      : ptr_info(pinfo),
-        int_info(iinfo),
-        depth(0),
-        left_depth(0),
-        reversible_action(nullptr) {}
-  StateInfo(void* pinfo, int iinfo, int d, int ld)
-      : ptr_info(pinfo),
-        int_info(iinfo),
-        depth(d),
-        left_depth(ld),
-        reversible_action(nullptr) {}
-  StateInfo(Solver::Action a, bool fast)
-      : ptr_info(nullptr),
-        int_info(static_cast<int>(fast)),
-        depth(0),
-        left_depth(0),
-        reversible_action(std::move(a)) {}
-
-  void* ptr_info;
-  int int_info;
-  int depth;
-  int left_depth;
-  Solver::Action reversible_action;
-};
-
-struct StateMarker {
- public:
-  StateMarker(Solver::MarkerType t, const StateInfo& info);
-  friend class Solver;
-  friend struct Trail;
-
- private:
-  Solver::MarkerType type_;
-  int rev_int_index_;
-  int rev_int64_index_;
-  int rev_uint64_index_;
-  int rev_double_index_;
-  int rev_ptr_index_;
-  int rev_boolvar_list_index_;
-  int rev_bools_index_;
-  int rev_int_memory_index_;
-  int rev_int64_memory_index_;
-  int rev_double_memory_index_;
-  int rev_object_memory_index_;
-  int rev_object_array_memory_index_;
-  int rev_memory_index_;
-  int rev_memory_array_index_;
-  StateInfo info_;
-};
-
-StateMarker::StateMarker(Solver::MarkerType t, const StateInfo& info)
-    : type_(t),
-      rev_int_index_(0),
-      rev_int64_index_(0),
-      rev_uint64_index_(0),
-      rev_double_index_(0),
-      rev_ptr_index_(0),
-      rev_boolvar_list_index_(0),
-      rev_bools_index_(0),
-      rev_int_memory_index_(0),
-      rev_int64_memory_index_(0),
-      rev_double_memory_index_(0),
-      rev_object_memory_index_(0),
-      rev_object_array_memory_index_(0),
-      info_(info) {}
-
-// ---------- Trail and Reversibility ----------
-
-namespace {
-// ----- addrval struct -----
-
-// This template class is used internally to implement reversibility.
-// It stores an address and the value that was at the address.
-template <class T>
-struct addrval {
- public:
-  addrval() : address_(nullptr) {}
-  explicit addrval(T* adr) : address_(adr), old_value_(*adr) {}
-  void restore() const { (*address_) = old_value_; }
-
- private:
-  T* address_;
-  T old_value_;
-};
-
-// ----- Compressed trail -----
-
-// ---------- Trail Packer ---------
-// Abstract class to pack trail blocks.
-
-template <class T>
-class TrailPacker {
- public:
-  explicit TrailPacker(int block_size) : block_size_(block_size) {}
-
-  // This type is neither copyable nor movable.
-  TrailPacker(const TrailPacker&) = delete;
-  TrailPacker& operator=(const TrailPacker&) = delete;
-  virtual ~TrailPacker() {}
-  int input_size() const { return block_size_ * sizeof(addrval<T>); }
-  virtual void Pack(const addrval<T>* block, std::string* packed_block) = 0;
-  virtual void Unpack(const std::string& packed_block, addrval<T>* block) = 0;
-
- private:
-  const int block_size_;
-};
-
-template <class T>
-class NoCompressionTrailPacker : public TrailPacker<T> {
- public:
-  explicit NoCompressionTrailPacker(int block_size)
-      : TrailPacker<T>(block_size) {}
-
-  // This type is neither copyable nor movable.
-  NoCompressionTrailPacker(const NoCompressionTrailPacker&) = delete;
-  NoCompressionTrailPacker& operator=(const NoCompressionTrailPacker&) = delete;
-  ~NoCompressionTrailPacker() override {}
-  void Pack(const addrval<T>* block, std::string* packed_block) override {
-    DCHECK(block != nullptr);
-    DCHECK(packed_block != nullptr);
-    absl::string_view block_str(reinterpret_cast<const char*>(block),
-                                this->input_size());
-    packed_block->assign(block_str.data(), block_str.size());
-  }
-  void Unpack(const std::string& packed_block, addrval<T>* block) override {
-    DCHECK(block != nullptr);
-    memcpy(block, packed_block.c_str(), packed_block.size());
-  }
-};
-
-template <class T>
-class ZlibTrailPacker : public TrailPacker<T> {
- public:
-  explicit ZlibTrailPacker(int block_size)
-      : TrailPacker<T>(block_size),
-        tmp_size_(compressBound(this->input_size())),
-        tmp_block_(new char[tmp_size_]) {}
-
-  // This type is neither copyable nor movable.
-  ZlibTrailPacker(const ZlibTrailPacker&) = delete;
-  ZlibTrailPacker& operator=(const ZlibTrailPacker&) = delete;
-
-  ~ZlibTrailPacker() override {}
-
-  void Pack(const addrval<T>* block, std::string* packed_block) override {
-    DCHECK(block != nullptr);
-    DCHECK(packed_block != nullptr);
-    uLongf size = tmp_size_;
-    const int result =
-        compress(reinterpret_cast<Bytef*>(tmp_block_.get()), &size,
-                 reinterpret_cast<const Bytef*>(block), this->input_size());
-    CHECK_EQ(Z_OK, result);
-    absl::string_view block_str;
-    block_str = absl::string_view(tmp_block_.get(), size);
-    packed_block->assign(block_str.data(), block_str.size());
-  }
-
-  void Unpack(const std::string& packed_block, addrval<T>* block) override {
-    DCHECK(block != nullptr);
-    uLongf size = this->input_size();
-    const int result =
-        uncompress(reinterpret_cast<Bytef*>(block), &size,
-                   reinterpret_cast<const Bytef*>(packed_block.c_str()),
-                   packed_block.size());
-    CHECK_EQ(Z_OK, result);
-  }
-
- private:
-  const uint64_t tmp_size_;
-  std::unique_ptr<char[]> tmp_block_;
-};
-
-template <class T>
-class CompressedTrail {
- public:
-  CompressedTrail(
-      int block_size,
-      ConstraintSolverParameters::TrailCompression compression_level)
-      : block_size_(block_size),
-        blocks_(nullptr),
-        free_blocks_(nullptr),
-        data_(new addrval<T>[block_size]),
-        buffer_(new addrval<T>[block_size]),
-        buffer_used_(false),
-        current_(0),
-        size_(0) {
-    switch (compression_level) {
-      case ConstraintSolverParameters::NO_COMPRESSION: {
-        packer_.reset(new NoCompressionTrailPacker<T>(block_size));
-        break;
-      }
-      case ConstraintSolverParameters::COMPRESS_WITH_ZLIB: {
-        packer_.reset(new ZlibTrailPacker<T>(block_size));
-        break;
-      }
-      default: {
-        LOG(ERROR) << "Should not be here";
-      }
-    }
-
-    // We zero all memory used by addrval arrays.
-    // Because of padding, all bytes may not be initialized, while compression
-    // will read them all, even if the uninitialized bytes are never used.
-    // This makes valgrind happy.
-
-    memset(data_.get(), 0, sizeof(*data_.get()) * block_size);
-    memset(buffer_.get(), 0, sizeof(*buffer_.get()) * block_size);
-  }
-  ~CompressedTrail() {
-    FreeBlocks(blocks_);
-    FreeBlocks(free_blocks_);
-  }
-  const addrval<T>& Back() const {
-    // Back of empty trail.
-    DCHECK_GT(current_, 0);
-    return data_[current_ - 1];
-  }
-  void PopBack() {
-    if (size_ > 0) {
-      --current_;
-      if (current_ <= 0) {
-        if (buffer_used_) {
-          data_.swap(buffer_);
-          current_ = block_size_;
-          buffer_used_ = false;
-        } else if (blocks_ != nullptr) {
-          packer_->Unpack(blocks_->compressed, data_.get());
-          FreeTopBlock();
-          current_ = block_size_;
-        }
-      }
-      --size_;
-    }
-  }
-  void PushBack(const addrval<T>& addr_val) {
-    if (current_ >= block_size_) {
-      if (buffer_used_) {  // Buffer is used.
-        NewTopBlock();
-        packer_->Pack(buffer_.get(), &blocks_->compressed);
-        // O(1) operation.
-        data_.swap(buffer_);
-      } else {
-        data_.swap(buffer_);
-        buffer_used_ = true;
-      }
-      current_ = 0;
-    }
-    data_[current_] = addr_val;
-    ++current_;
-    ++size_;
-  }
-  int64_t size() const { return size_; }
-
- private:
-  struct Block {
-    std::string compressed;
-    Block* next;
-  };
-
-  void FreeTopBlock() {
-    Block* block = blocks_;
-    blocks_ = block->next;
-    block->compressed.clear();
-    block->next = free_blocks_;
-    free_blocks_ = block;
-  }
-  void NewTopBlock() {
-    Block* block = nullptr;
-    if (free_blocks_ != nullptr) {
-      block = free_blocks_;
-      free_blocks_ = block->next;
-    } else {
-      block = new Block;
-    }
-    block->next = blocks_;
-    blocks_ = block;
-  }
-  void FreeBlocks(Block* blocks) {
-    while (nullptr != blocks) {
-      Block* next = blocks->next;
-      delete blocks;
-      blocks = next;
-    }
-  }
-
-  std::unique_ptr<TrailPacker<T>> packer_;
-  const int block_size_;
-  Block* blocks_;
-  Block* free_blocks_;
-  std::unique_ptr<addrval<T>[]> data_;
-  std::unique_ptr<addrval<T>[]> buffer_;
-  bool buffer_used_;
-  int current_;
-  int size_;
-};
-}  // namespace
-
-// ----- Trail -----
-
-// Object are explicitly copied using the copy ctor instead of
-// passing and storing a pointer. As objects are small, copying is
-// much faster than allocating (around 35% on a complete solve).
-
-extern void RestoreBoolValue(IntVar* var);
-
-struct Trail {
-  CompressedTrail<int> rev_ints_;
-  CompressedTrail<int64_t> rev_int64s_;
-  CompressedTrail<uint64_t> rev_uint64s_;
-  CompressedTrail<double> rev_doubles_;
-  CompressedTrail<void*> rev_ptrs_;
-  std::vector<IntVar*> rev_boolvar_list_;
-  std::vector<bool*> rev_bools_;
-  std::vector<bool> rev_bool_value_;
-  std::vector<int*> rev_int_memory_;
-  std::vector<int64_t*> rev_int64_memory_;
-  std::vector<double*> rev_double_memory_;
-  std::vector<BaseObject*> rev_object_memory_;
-  std::vector<BaseObject**> rev_object_array_memory_;
-  std::vector<void*> rev_memory_;
-  std::vector<void**> rev_memory_array_;
-
-  Trail(int block_size,
-        ConstraintSolverParameters::TrailCompression compression_level)
-      : rev_ints_(block_size, compression_level),
-        rev_int64s_(block_size, compression_level),
-        rev_uint64s_(block_size, compression_level),
-        rev_doubles_(block_size, compression_level),
-        rev_ptrs_(block_size, compression_level) {}
-
-  void BacktrackTo(StateMarker* m) {
-    int target = m->rev_int_index_;
-    for (int curr = rev_ints_.size(); curr > target; --curr) {
-      const addrval<int>& cell = rev_ints_.Back();
-      cell.restore();
-      rev_ints_.PopBack();
-    }
-    DCHECK_EQ(rev_ints_.size(), target);
-    // Incorrect trail size after backtrack.
-    target = m->rev_int64_index_;
-    for (int curr = rev_int64s_.size(); curr > target; --curr) {
-      const addrval<int64_t>& cell = rev_int64s_.Back();
-      cell.restore();
-      rev_int64s_.PopBack();
-    }
-    DCHECK_EQ(rev_int64s_.size(), target);
-    // Incorrect trail size after backtrack.
-    target = m->rev_uint64_index_;
-    for (int curr = rev_uint64s_.size(); curr > target; --curr) {
-      const addrval<uint64_t>& cell = rev_uint64s_.Back();
-      cell.restore();
-      rev_uint64s_.PopBack();
-    }
-    DCHECK_EQ(rev_uint64s_.size(), target);
-    // Incorrect trail size after backtrack.
-    target = m->rev_double_index_;
-    for (int curr = rev_doubles_.size(); curr > target; --curr) {
-      const addrval<double>& cell = rev_doubles_.Back();
-      cell.restore();
-      rev_doubles_.PopBack();
-    }
-    DCHECK_EQ(rev_doubles_.size(), target);
-    // Incorrect trail size after backtrack.
-    target = m->rev_ptr_index_;
-    for (int curr = rev_ptrs_.size(); curr > target; --curr) {
-      const addrval<void*>& cell = rev_ptrs_.Back();
-      cell.restore();
-      rev_ptrs_.PopBack();
-    }
-    DCHECK_EQ(rev_ptrs_.size(), target);
-    // Incorrect trail size after backtrack.
-    target = m->rev_boolvar_list_index_;
-    for (int curr = rev_boolvar_list_.size() - 1; curr >= target; --curr) {
-      IntVar* const var = rev_boolvar_list_[curr];
-      RestoreBoolValue(var);
-    }
-    rev_boolvar_list_.resize(target);
-
-    DCHECK_EQ(rev_bools_.size(), rev_bool_value_.size());
-    target = m->rev_bools_index_;
-    for (int curr = rev_bools_.size() - 1; curr >= target; --curr) {
-      *(rev_bools_[curr]) = rev_bool_value_[curr];
-    }
-    rev_bools_.resize(target);
-    rev_bool_value_.resize(target);
-
-    target = m->rev_int_memory_index_;
-    for (int curr = rev_int_memory_.size() - 1; curr >= target; --curr) {
-      delete[] rev_int_memory_[curr];
-    }
-    rev_int_memory_.resize(target);
-
-    target = m->rev_int64_memory_index_;
-    for (int curr = rev_int64_memory_.size() - 1; curr >= target; --curr) {
-      delete[] rev_int64_memory_[curr];
-    }
-    rev_int64_memory_.resize(target);
-
-    target = m->rev_double_memory_index_;
-    for (int curr = rev_double_memory_.size() - 1; curr >= target; --curr) {
-      delete[] rev_double_memory_[curr];
-    }
-    rev_double_memory_.resize(target);
-
-    target = m->rev_object_memory_index_;
-    for (int curr = rev_object_memory_.size() - 1; curr >= target; --curr) {
-      delete rev_object_memory_[curr];
-    }
-    rev_object_memory_.resize(target);
-
-    target = m->rev_object_array_memory_index_;
-    for (int curr = rev_object_array_memory_.size() - 1; curr >= target;
-         --curr) {
-      delete[] rev_object_array_memory_[curr];
-    }
-    rev_object_array_memory_.resize(target);
-
-    target = m->rev_memory_index_;
-    for (int curr = rev_memory_.size() - 1; curr >= target; --curr) {
-      // Explicitly call unsized delete
-      ::operator delete(reinterpret_cast<char*>(rev_memory_[curr]));
-      // The previous cast is necessary to deallocate generic memory
-      // described by a void* when passed to the RevAlloc procedure
-      // We cannot do a delete[] there
-      // This is useful for cells of RevFIFO and should not be used outside
-      // of the product
-    }
-    rev_memory_.resize(target);
-
-    target = m->rev_memory_array_index_;
-    for (int curr = rev_memory_array_.size() - 1; curr >= target; --curr) {
-      delete[] rev_memory_array_[curr];
-      // delete [] version of the previous unsafe case.
-    }
-    rev_memory_array_.resize(target);
-  }
-};
-
-void Solver::InternalSaveValue(int* valptr) {
-  trail_->rev_ints_.PushBack(addrval<int>(valptr));
-}
-
-void Solver::InternalSaveValue(int64_t* valptr) {
-  trail_->rev_int64s_.PushBack(addrval<int64_t>(valptr));
-}
-
-void Solver::InternalSaveValue(uint64_t* valptr) {
-  trail_->rev_uint64s_.PushBack(addrval<uint64_t>(valptr));
-}
-
-void Solver::InternalSaveValue(double* valptr) {
-  trail_->rev_doubles_.PushBack(addrval<double>(valptr));
-}
-
-void Solver::InternalSaveValue(void** valptr) {
-  trail_->rev_ptrs_.PushBack(addrval<void*>(valptr));
-}
-
-// TODO(user) : this code is unsafe if you save the same alternating
-// bool multiple times.
-// The correct code should use a bitset and a single list.
-void Solver::InternalSaveValue(bool* valptr) {
-  trail_->rev_bools_.push_back(valptr);
-  trail_->rev_bool_value_.push_back(*valptr);
-}
-
-BaseObject* Solver::SafeRevAlloc(BaseObject* ptr) {
-  check_alloc_state();
-  trail_->rev_object_memory_.push_back(ptr);
-  return ptr;
-}
-
-int* Solver::SafeRevAllocArray(int* ptr) {
-  check_alloc_state();
-  trail_->rev_int_memory_.push_back(ptr);
-  return ptr;
-}
-
-int64_t* Solver::SafeRevAllocArray(int64_t* ptr) {
-  check_alloc_state();
-  trail_->rev_int64_memory_.push_back(ptr);
-  return ptr;
-}
-
-double* Solver::SafeRevAllocArray(double* ptr) {
-  check_alloc_state();
-  trail_->rev_double_memory_.push_back(ptr);
-  return ptr;
-}
-
-uint64_t* Solver::SafeRevAllocArray(uint64_t* ptr) {
-  check_alloc_state();
-  trail_->rev_int64_memory_.push_back(reinterpret_cast<int64_t*>(ptr));
-  return ptr;
-}
-
-BaseObject** Solver::SafeRevAllocArray(BaseObject** ptr) {
-  check_alloc_state();
-  trail_->rev_object_array_memory_.push_back(ptr);
-  return ptr;
-}
-
-IntVar** Solver::SafeRevAllocArray(IntVar** ptr) {
-  BaseObject** in = SafeRevAllocArray(reinterpret_cast<BaseObject**>(ptr));
-  return reinterpret_cast<IntVar**>(in);
-}
-
-IntExpr** Solver::SafeRevAllocArray(IntExpr** ptr) {
-  BaseObject** in = SafeRevAllocArray(reinterpret_cast<BaseObject**>(ptr));
-  return reinterpret_cast<IntExpr**>(in);
-}
-
-Constraint** Solver::SafeRevAllocArray(Constraint** ptr) {
-  BaseObject** in = SafeRevAllocArray(reinterpret_cast<BaseObject**>(ptr));
-  return reinterpret_cast<Constraint**>(in);
-}
-
-void* Solver::UnsafeRevAllocAux(void* ptr) {
-  check_alloc_state();
-  trail_->rev_memory_.push_back(ptr);
-  return ptr;
-}
-
-void** Solver::UnsafeRevAllocArrayAux(void** ptr) {
-  check_alloc_state();
-  trail_->rev_memory_array_.push_back(ptr);
-  return ptr;
-}
-
-void InternalSaveBooleanVarValue(Solver* const solver, IntVar* const var) {
-  solver->trail_->rev_boolvar_list_.push_back(var);
-}
-
 // ------------------ Search class -----------------
 
 class Search {
  public:
-  explicit Search(Solver* const s)
+  explicit Search(Solver* s)
       : solver_(s),
         marker_stack_(),
         monitor_event_listeners_(to_underlying(Solver::MonitorEvent::kLast)),
@@ -988,7 +433,7 @@ class Search {
   // Constructor for a dummy search. The only difference between a dummy search
   // and a regular one is that the search depth and left search depth is
   // initialized to -1 instead of zero.
-  Search(Solver* const s, int /* dummy_argument */)
+  Search(Solver* s, int /* dummy_argument */)
       : solver_(s),
         marker_stack_(),
         monitor_event_listeners_(to_underlying(Solver::MonitorEvent::kLast)),
@@ -1046,9 +491,7 @@ class Search {
   int64_t unchecked_solution_counter() const {
     return unchecked_solution_counter_;
   }
-  void set_decision_builder(DecisionBuilder* const db) {
-    decision_builder_ = db;
-  }
+  void set_decision_builder(DecisionBuilder* db) { decision_builder_ = db; }
   DecisionBuilder* decision_builder() const { return decision_builder_; }
   void set_created_by_solve(bool c) { created_by_solve_ = c; }
   bool created_by_solve() const { return created_by_solve_; }
@@ -1159,7 +602,7 @@ class ApplyBranchSelector : public DecisionBuilder {
       : selector_(std::move(bs)) {}
   ~ApplyBranchSelector() override {}
 
-  Decision* Next(Solver* const s) override {
+  Decision* Next(Solver* s) override {
     s->SetBranchSelector(selector_);
     return nullptr;
   }
@@ -1242,31 +685,31 @@ void Search::ExitSearch() {
 
 void Search::RestartSearch() { CALL_EVENT_LISTENERS(RestartSearch); }
 
-void Search::BeginNextDecision(DecisionBuilder* const db) {
+void Search::BeginNextDecision(DecisionBuilder* db) {
   ForAll(GetEventListeners(Solver::MonitorEvent::kBeginNextDecision),
          &SearchMonitor::BeginNextDecision, db);
   CheckFail();
 }
 
-void Search::EndNextDecision(DecisionBuilder* const db, Decision* const d) {
+void Search::EndNextDecision(DecisionBuilder* db, Decision* d) {
   ForAll(GetEventListeners(Solver::MonitorEvent::kEndNextDecision),
          &SearchMonitor::EndNextDecision, db, d);
   CheckFail();
 }
 
-void Search::ApplyDecision(Decision* const d) {
+void Search::ApplyDecision(Decision* d) {
   ForAll(GetEventListeners(Solver::MonitorEvent::kApplyDecision),
          &SearchMonitor::ApplyDecision, d);
   CheckFail();
 }
 
-void Search::AfterDecision(Decision* const d, bool apply) {
+void Search::AfterDecision(Decision* d, bool apply) {
   ForAll(GetEventListeners(Solver::MonitorEvent::kAfterDecision),
          &SearchMonitor::AfterDecision, d, apply);
   CheckFail();
 }
 
-void Search::RefuteDecision(Decision* const d) {
+void Search::RefuteDecision(Decision* d) {
   ForAll(GetEventListeners(Solver::MonitorEvent::kRefuteDecision),
          &SearchMonitor::RefuteDecision, d);
   CheckFail();
@@ -1393,8 +836,8 @@ namespace {
 
 class FailDecision : public Decision {
  public:
-  void Apply(Solver* const s) override { s->Fail(); }
-  void Refute(Solver* const s) override { s->Fail(); }
+  void Apply(Solver* s) override { s->Fail(); }
+  void Refute(Solver* s) override { s->Fail(); }
 };
 
 // Balancing decision
@@ -1402,8 +845,8 @@ class FailDecision : public Decision {
 class BalancingDecision : public Decision {
  public:
   ~BalancingDecision() override {}
-  void Apply(Solver* const /*s*/) override {}
-  void Refute(Solver* const /*s*/) override {}
+  void Apply(Solver* /*s*/) override {}
+  void Refute(Solver* /*s*/) override {}
 };
 }  // namespace
 
@@ -1411,19 +854,8 @@ Decision* Solver::MakeFailDecision() { return fail_decision_.get(); }
 
 // ------------------ Solver class -----------------
 
-// These magic numbers are there to make sure we pop the correct
-// sentinels throughout the search.
-namespace {
-enum SentinelMarker {
-  INITIAL_SEARCH_SENTINEL = 10000000,
-  ROOT_NODE_SENTINEL = 20000000,
-  SOLVER_CTOR_SENTINEL = 40000000
-};
-}  // namespace
-
 extern PropagationMonitor* BuildTrace(Solver* s);
 extern LocalSearchMonitor* BuildLocalSearchMonitorPrimary(Solver* s);
-extern ModelCache* BuildModelCache(Solver* solver);
 
 std::string Solver::model_name() const { return name_; }
 
@@ -1432,6 +864,15 @@ void CheckSolverParameters(const ConstraintSolverParameters& parameters) {
   CHECK_GT(parameters.array_split_size(), 0)
       << "Were parameters built using Solver::DefaultSolverParameters() ?";
 }
+
+// These magic numbers are there to make sure we pop the correct
+// sentinels throughout the search.
+enum SentinelMarker {
+  INITIAL_SEARCH_SENTINEL = 10000000,
+  ROOT_NODE_SENTINEL = 20000000,
+  SOLVER_CTOR_SENTINEL = 40000000
+};
+
 }  // namespace
 
 Solver::Solver(const std::string& name,
@@ -1439,7 +880,7 @@ Solver::Solver(const std::string& name,
     : name_(name),
       parameters_(parameters),
       random_(CpRandomSeed()),
-      demon_profiler_(BuildDemonProfiler(this)),
+
       use_fast_local_search_(true),
       local_search_profiler_(BuildLocalSearchProfiler(this)) {
   Init();
@@ -1449,7 +890,7 @@ Solver::Solver(const std::string& name)
     : name_(name),
       parameters_(DefaultSolverParameters()),
       random_(CpRandomSeed()),
-      demon_profiler_(BuildDemonProfiler(this)),
+
       use_fast_local_search_(true),
       local_search_profiler_(BuildLocalSearchProfiler(this)) {
   Init();
@@ -1457,10 +898,9 @@ Solver::Solver(const std::string& name)
 
 void Solver::Init() {
   CheckSolverParameters(parameters_);
+  ReversibleEngine::Init(parameters_.trail_block_size(),
+                         parameters_.compress_trail());
   queue_ = std::make_unique<Queue>(this);
-  trail_ = std::make_unique<Trail>(parameters_.trail_block_size(),
-                                   parameters_.compress_trail());
-  state_ = OUTSIDE_SEARCH;
   branches_ = 0;
   fails_ = 0;
   decisions_ = 0;
@@ -1493,10 +933,12 @@ void Solver::Init() {
   InitCachedIntConstants();  // to be called after the SENTINEL is set.
   InitCachedConstraint();    // Cache the true constraint.
   timer_->Restart();
-  model_cache_.reset(BuildModelCache(this));
-  AddPropagationMonitor(reinterpret_cast<PropagationMonitor*>(demon_profiler_));
+  model_cache_ = std::make_unique<ModelCache>(
+      [this]() { return state_ == OUTSIDE_SEARCH; });
+
   AddLocalSearchMonitor(
       reinterpret_cast<LocalSearchMonitor*>(local_search_profiler_));
+  SetRestoreBooleanVarValue([](IntVar* var) { var->RestoreBooleanValue(); });
 }
 
 Solver::~Solver() {
@@ -1505,13 +947,13 @@ Solver::~Solver() {
   BacktrackToSentinel(INITIAL_SEARCH_SENTINEL);
 
   StateInfo info;
-  Solver::MarkerType finalType = PopState(&info);
+  TrailMarkerType finalType = PopState(&info);
   // Not popping a SENTINEL in Solver destructor.
   DCHECK_EQ(finalType, SENTINEL);
   // Not popping initial SENTINEL in Solver destructor.
   DCHECK_EQ(info.int_info, SOLVER_CTOR_SENTINEL);
   gtl::STLDeleteElements(&searches_);
-  DeleteDemonProfiler(demon_profiler_);
+
   DeleteLocalSearchProfiler(local_search_profiler_);
 }
 
@@ -1546,7 +988,9 @@ std::string Solver::DebugString() const {
   return out;
 }
 
-int64_t Solver::MemoryUsage() { return GetProcessMemoryUsage(); }
+int64_t Solver::MemoryUsage() {
+  return operations_research::sysinfo::MemoryUsageProcess().value_or(-1);
+}
 
 int64_t Solver::wall_time() const {
   return absl::ToInt64Milliseconds(timer_->GetDuration());
@@ -1593,27 +1037,14 @@ void Solver::PushState() {
 
 void Solver::PopState() {
   StateInfo info;
-  Solver::MarkerType t = PopState(&info);
+  TrailMarkerType t = PopState(&info);
   CHECK_EQ(SIMPLE_MARKER, t);
 }
 
-void Solver::PushState(Solver::MarkerType t, const StateInfo& info) {
+void Solver::PushState(TrailMarkerType t, const StateInfo& info) {
   StateMarker* m = new StateMarker(t, info);
   if (t != REVERSIBLE_ACTION || info.int_info == 0) {
-    m->rev_int_index_ = trail_->rev_ints_.size();
-    m->rev_int64_index_ = trail_->rev_int64s_.size();
-    m->rev_uint64_index_ = trail_->rev_uint64s_.size();
-    m->rev_double_index_ = trail_->rev_doubles_.size();
-    m->rev_ptr_index_ = trail_->rev_ptrs_.size();
-    m->rev_boolvar_list_index_ = trail_->rev_boolvar_list_.size();
-    m->rev_bools_index_ = trail_->rev_bools_.size();
-    m->rev_int_memory_index_ = trail_->rev_int_memory_.size();
-    m->rev_int64_memory_index_ = trail_->rev_int64_memory_.size();
-    m->rev_double_memory_index_ = trail_->rev_double_memory_.size();
-    m->rev_object_memory_index_ = trail_->rev_object_memory_.size();
-    m->rev_object_array_memory_index_ = trail_->rev_object_array_memory_.size();
-    m->rev_memory_index_ = trail_->rev_memory_.size();
-    m->rev_memory_array_index_ = trail_->rev_memory_array_.size();
+    FillStateMarker(m);
   }
   searches_.back()->marker_stack_.push_back(m);
   queue_->increase_stamp();
@@ -1624,46 +1055,28 @@ void Solver::AddBacktrackAction(Action a, bool fast) {
   PushState(REVERSIBLE_ACTION, info);
 }
 
-Solver::MarkerType Solver::PopState(StateInfo* info) {
+TrailMarkerType Solver::PopState(StateInfo* info) {
   CHECK(!searches_.back()->marker_stack_.empty())
       << "PopState() on an empty stack";
   CHECK(info != nullptr);
   StateMarker* const m = searches_.back()->marker_stack_.back();
-  if (m->type_ != REVERSIBLE_ACTION || m->info_.int_info == 0) {
-    trail_->BacktrackTo(m);
+  if (m->type != REVERSIBLE_ACTION || m->info.int_info == 0) {
+    BacktrackTo(m);
   }
-  Solver::MarkerType t = m->type_;
-  (*info) = m->info_;
+  TrailMarkerType t = m->type;
+  (*info) = m->info;
   searches_.back()->marker_stack_.pop_back();
   delete m;
   queue_->increase_stamp();
   return t;
 }
-
-void Solver::check_alloc_state() {
-  switch (state_) {
-    case OUTSIDE_SEARCH:
-    case IN_ROOT_NODE:
-    case IN_SEARCH:
-    case NO_MORE_SOLUTIONS:
-    case PROBLEM_INFEASIBLE:
-      break;
-    case AT_SOLUTION:
-      LOG(FATAL) << "allocating at a leaf node";
-    default:
-      LOG(FATAL) << "This switch was supposed to be exhaustive, but it is not!";
-  }
-}
-
 void Solver::FreezeQueue() { queue_->Freeze(); }
 
 void Solver::UnfreezeQueue() { queue_->Unfreeze(); }
 
-void Solver::EnqueueVar(Demon* const d) { queue_->EnqueueVar(d); }
+void Solver::EnqueueVar(Demon* d) { queue_->EnqueueVar(d); }
 
-void Solver::EnqueueDelayedDemon(Demon* const d) {
-  queue_->EnqueueDelayedDemon(d);
-}
+void Solver::EnqueueDelayedDemon(Demon* d) { queue_->EnqueueDelayedDemon(d); }
 
 void Solver::ExecuteAll(const SimpleRevFIFO<Demon*>& demons) {
   queue_->ExecuteAll(demons);
@@ -1672,8 +1085,6 @@ void Solver::ExecuteAll(const SimpleRevFIFO<Demon*>& demons) {
 void Solver::EnqueueAll(const SimpleRevFIFO<Demon*>& demons) {
   queue_->EnqueueAll(demons);
 }
-
-uint64_t Solver::stamp() const { return queue_->stamp(); }
 
 uint64_t Solver::fail_stamp() const { return fail_stamp_; }
 
@@ -1687,7 +1098,7 @@ void Solver::set_variable_to_clean_on_fail(IntVar* v) {
 
 void Solver::reset_action_on_fail() { queue_->reset_action_on_fail(); }
 
-void Solver::AddConstraint(Constraint* const c) {
+void Solver::AddConstraint(Constraint* c) {
   DCHECK(c != nullptr);
   if (c == true_constraint_) {
     return;
@@ -1711,8 +1122,8 @@ void Solver::AddConstraint(Constraint* const c) {
   }
 }
 
-void Solver::AddCastConstraint(CastConstraint* const constraint,
-                               IntVar* const target_var, IntExpr* const expr) {
+void Solver::AddCastConstraint(CastConstraint* constraint, IntVar* target_var,
+                               IntExpr* expr) {
   if (constraint != nullptr) {
     if (state_ != IN_SEARCH) {
       cast_constraints_.insert(constraint);
@@ -1723,7 +1134,7 @@ void Solver::AddCastConstraint(CastConstraint* const constraint,
   }
 }
 
-void Solver::Accept(ModelVisitor* const visitor) const {
+void Solver::Accept(ModelVisitor* visitor) const {
   visitor->BeginVisitModel(name_);
   ForAll(constraints_list_, &Constraint::Accept, visitor);
   visitor->EndVisitModel(name_);
@@ -1782,29 +1193,27 @@ bool Solver::CurrentlyInSolve() const {
   return searches_.back()->created_by_solve();
 }
 
-bool Solver::Solve(DecisionBuilder* const db, SearchMonitor* const m1) {
+bool Solver::Solve(DecisionBuilder* db, SearchMonitor* m1) {
   return Solve(db, std::vector<SearchMonitor*>{m1});
 }
 
-bool Solver::Solve(DecisionBuilder* const db) { return Solve(db, {}); }
+bool Solver::Solve(DecisionBuilder* db) { return Solve(db, {}); }
 
-bool Solver::Solve(DecisionBuilder* const db, SearchMonitor* const m1,
-                   SearchMonitor* const m2) {
+bool Solver::Solve(DecisionBuilder* db, SearchMonitor* m1, SearchMonitor* m2) {
   return Solve(db, {m1, m2});
 }
 
-bool Solver::Solve(DecisionBuilder* const db, SearchMonitor* const m1,
-                   SearchMonitor* const m2, SearchMonitor* const m3) {
+bool Solver::Solve(DecisionBuilder* db, SearchMonitor* m1, SearchMonitor* m2,
+                   SearchMonitor* m3) {
   return Solve(db, {m1, m2, m3});
 }
 
-bool Solver::Solve(DecisionBuilder* const db, SearchMonitor* const m1,
-                   SearchMonitor* const m2, SearchMonitor* const m3,
-                   SearchMonitor* const m4) {
+bool Solver::Solve(DecisionBuilder* db, SearchMonitor* m1, SearchMonitor* m2,
+                   SearchMonitor* m3, SearchMonitor* m4) {
   return Solve(db, {m1, m2, m3, m4});
 }
 
-bool Solver::Solve(DecisionBuilder* const db,
+bool Solver::Solve(DecisionBuilder* db,
                    const std::vector<SearchMonitor*>& monitors) {
   NewSearch(db, monitors);
   searches_.back()->set_created_by_solve(true);  // Overwrites default.
@@ -1814,32 +1223,32 @@ bool Solver::Solve(DecisionBuilder* const db,
   return solution_found;
 }
 
-void Solver::NewSearch(DecisionBuilder* const db, SearchMonitor* const m1) {
+void Solver::NewSearch(DecisionBuilder* db, SearchMonitor* m1) {
   return NewSearch(db, std::vector<SearchMonitor*>{m1});
 }
 
-void Solver::NewSearch(DecisionBuilder* const db) { return NewSearch(db, {}); }
+void Solver::NewSearch(DecisionBuilder* db) { return NewSearch(db, {}); }
 
-void Solver::NewSearch(DecisionBuilder* const db, SearchMonitor* const m1,
-                       SearchMonitor* const m2) {
+void Solver::NewSearch(DecisionBuilder* db, SearchMonitor* m1,
+                       SearchMonitor* m2) {
   return NewSearch(db, {m1, m2});
 }
 
-void Solver::NewSearch(DecisionBuilder* const db, SearchMonitor* const m1,
-                       SearchMonitor* const m2, SearchMonitor* const m3) {
+void Solver::NewSearch(DecisionBuilder* db, SearchMonitor* m1,
+                       SearchMonitor* m2, SearchMonitor* m3) {
   return NewSearch(db, {m1, m2, m3});
 }
 
-void Solver::NewSearch(DecisionBuilder* const db, SearchMonitor* const m1,
-                       SearchMonitor* const m2, SearchMonitor* const m3,
-                       SearchMonitor* const m4) {
+void Solver::NewSearch(DecisionBuilder* db, SearchMonitor* m1,
+                       SearchMonitor* m2, SearchMonitor* m3,
+                       SearchMonitor* m4) {
   return NewSearch(db, {m1, m2, m3, m4});
 }
 
 extern PropagationMonitor* BuildPrintTrace(Solver* s);
 
 // Opens a new top level search.
-void Solver::NewSearch(DecisionBuilder* const db,
+void Solver::NewSearch(DecisionBuilder* db,
                        const std::vector<SearchMonitor*>& monitors) {
   // TODO(user) : reset statistics
 
@@ -1872,9 +1281,7 @@ void Solver::NewSearch(DecisionBuilder* const db,
 
   // Always install the main propagation and local search monitors.
   propagation_monitor_->Install();
-  if (demon_profiler_ != nullptr) {
-    InstallDemonProfiler(demon_profiler_);
-  }
+
   local_search_monitor_->Install();
   if (local_search_profiler_ != nullptr) {
     InstallLocalSearchProfiler(local_search_profiler_);
@@ -1906,7 +1313,7 @@ void Solver::NewSearch(DecisionBuilder* const db,
       print_trace_->Install();
     } else if (parameters_.trace_search()) {
       // This is useful to trace the exact behavior of the search.
-      // The '######## ' prefix is the same as the progagation trace.
+      // The '######## ' prefix is the same as the propagation trace.
       // Search trace is subsumed by propagation trace, thus only one
       // is necessary.
       SearchMonitor* const trace = MakeSearchTrace("######## ");
@@ -1925,12 +1332,12 @@ void Solver::NewSearch(DecisionBuilder* const db,
 
 // Backtrack to the last open right branch in the search tree.
 // It returns true in case the search tree has been completely explored.
-bool Solver::BacktrackOneLevel(Decision** const fail_decision) {
+bool Solver::BacktrackOneLevel(Decision** fail_decision) {
   bool no_more_solutions = false;
   bool end_loop = false;
   while (!end_loop) {
     StateInfo info;
-    Solver::MarkerType t = PopState(&info);
+    TrailMarkerType t = PopState(&info);
     switch (t) {
       case SENTINEL:
         CHECK_EQ(info.ptr_info, this) << "Wrong sentinel found";
@@ -2010,7 +1417,7 @@ void Solver::BacktrackToSentinel(int magic_code) {
   bool end_loop = search->sentinel_pushed_ == 0;
   while (!end_loop) {
     StateInfo info;
-    Solver::MarkerType t = PopState(&info);
+    TrailMarkerType t = PopState(&info);
     switch (t) {
       case SENTINEL: {
         CHECK_EQ(info.ptr_info, this) << "Wrong sentinel found";
@@ -2044,10 +1451,10 @@ void Solver::JumpToSentinelWhenNested() {
   bool found = false;
   while (!c->marker_stack_.empty()) {
     StateMarker* const m = c->marker_stack_.back();
-    if (m->type_ == REVERSIBLE_ACTION) {
+    if (m->type == REVERSIBLE_ACTION) {
       p->marker_stack_.push_back(m);
     } else {
-      if (m->type_ == SENTINEL) {
+      if (m->type == SENTINEL) {
         CHECK_EQ(c->marker_stack_.size(), 1) << "Sentinel found too early";
         found = true;
       }
@@ -2068,11 +1475,11 @@ class ReverseDecision : public Decision {
   }
   ~ReverseDecision() override {}
 
-  void Apply(Solver* const s) override { decision_->Refute(s); }
+  void Apply(Solver* s) override { decision_->Refute(s); }
 
-  void Refute(Solver* const s) override { decision_->Apply(s); }
+  void Refute(Solver* s) override { decision_->Apply(s); }
 
-  void Accept(DecisionVisitor* const visitor) const override {
+  void Accept(DecisionVisitor* visitor) const override {
     decision_->Accept(visitor);
   }
 
@@ -2274,12 +1681,7 @@ void Solver::EndSearch() {
   if (2 == searches_.size()) {  // Ending top level search.
     // Restores the state.
     state_ = OUTSIDE_SEARCH;
-    // Checks if we want to export the profile info.
-    if (!parameters_.profile_file().empty()) {
-      const std::string& file_name = parameters_.profile_file();
-      LOG(INFO) << "Exporting profile to " << file_name;
-      ExportProfilingOverview(file_name);
-    }
+
     if (parameters_.print_local_search_profile()) {
       const std::string profile = LocalSearchProfile();
       if (!profile.empty()) LOG(INFO) << profile;
@@ -2290,7 +1692,7 @@ void Solver::EndSearch() {
   }
 }
 
-bool Solver::CheckAssignment(Assignment* const solution) {
+bool Solver::CheckAssignment(Assignment* solution) {
   CHECK(solution);
   if (state_ == IN_SEARCH || state_ == IN_ROOT_NODE) {
     LOG(FATAL) << "CheckAssignment is only available at the top level.";
@@ -2343,14 +1745,13 @@ bool Solver::CheckAssignment(Assignment* const solution) {
 namespace {
 class AddConstraintDecisionBuilder : public DecisionBuilder {
  public:
-  explicit AddConstraintDecisionBuilder(Constraint* const ct)
-      : constraint_(ct) {
+  explicit AddConstraintDecisionBuilder(Constraint* ct) : constraint_(ct) {
     CHECK(ct != nullptr);
   }
 
   ~AddConstraintDecisionBuilder() override {}
 
-  Decision* Next(Solver* const solver) override {
+  Decision* Next(Solver* solver) override {
     solver->AddConstraint(constraint_);
     return nullptr;
   }
@@ -2365,34 +1766,33 @@ class AddConstraintDecisionBuilder : public DecisionBuilder {
 };
 }  // namespace
 
-DecisionBuilder* Solver::MakeConstraintAdder(Constraint* const ct) {
+DecisionBuilder* Solver::MakeConstraintAdder(Constraint* ct) {
   return RevAlloc(new AddConstraintDecisionBuilder(ct));
 }
 
-bool Solver::CheckConstraint(Constraint* const ct) {
+bool Solver::CheckConstraint(Constraint* ct) {
   return Solve(MakeConstraintAdder(ct));
 }
 
-bool Solver::SolveAndCommit(DecisionBuilder* const db,
-                            SearchMonitor* const m1) {
+bool Solver::SolveAndCommit(DecisionBuilder* db, SearchMonitor* m1) {
   return SolveAndCommit(db, std::vector<SearchMonitor*>{m1});
 }
 
-bool Solver::SolveAndCommit(DecisionBuilder* const db) {
+bool Solver::SolveAndCommit(DecisionBuilder* db) {
   return SolveAndCommit(db, {});
 }
 
-bool Solver::SolveAndCommit(DecisionBuilder* const db, SearchMonitor* const m1,
-                            SearchMonitor* const m2) {
+bool Solver::SolveAndCommit(DecisionBuilder* db, SearchMonitor* m1,
+                            SearchMonitor* m2) {
   return SolveAndCommit(db, {m1, m2});
 }
 
-bool Solver::SolveAndCommit(DecisionBuilder* const db, SearchMonitor* const m1,
-                            SearchMonitor* const m2, SearchMonitor* const m3) {
+bool Solver::SolveAndCommit(DecisionBuilder* db, SearchMonitor* m1,
+                            SearchMonitor* m2, SearchMonitor* m3) {
   return SolveAndCommit(db, {m1, m2, m3});
 }
 
-bool Solver::SolveAndCommit(DecisionBuilder* const db,
+bool Solver::SolveAndCommit(DecisionBuilder* db,
                             const std::vector<SearchMonitor*>& monitors) {
   NewSearch(db, monitors);
   searches_.back()->set_created_by_solve(true);  // Overwrites default.
@@ -2424,7 +1824,7 @@ void Solver::RestartCurrentSearch() {
 
 // ----- Cast Expression -----
 
-IntExpr* Solver::CastExpression(const IntVar* const var) const {
+IntExpr* Solver::CastExpression(const IntVar* var) const {
   const IntegerCastInfo* const cast_info =
       gtl::FindOrNull(cast_information_, var);
   if (cast_info != nullptr) {
@@ -2472,7 +1872,7 @@ void Solver::SetName(const PropagationBaseObject* object,
   }
 }
 
-bool Solver::HasName(const PropagationBaseObject* const object) const {
+bool Solver::HasName(const PropagationBaseObject* object) const {
   return propagation_object_names_.contains(
              const_cast<PropagationBaseObject*>(object)) ||
          (!object->BaseName().empty() && parameters_.name_all_variables());
@@ -2480,12 +1880,12 @@ bool Solver::HasName(const PropagationBaseObject* const object) const {
 
 // ------------------ Useful Operators ------------------
 
-std::ostream& operator<<(std::ostream& out, const Solver* const s) {
+std::ostream& operator<<(std::ostream& out, const Solver* s) {
   out << s->DebugString();
   return out;
 }
 
-std::ostream& operator<<(std::ostream& out, const BaseObject* const o) {
+std::ostream& operator<<(std::ostream& out, const BaseObject* o) {
   out << o->DebugString();
   return out;
 }
@@ -2520,361 +1920,32 @@ std::string DecisionBuilder::GetName() const {
   return name_.empty() ? DebugString() : name_;
 }
 
-void DecisionBuilder::AppendMonitors(
-    Solver* const /*solver*/, std::vector<SearchMonitor*>* const /*extras*/) {}
+void DecisionBuilder::AppendMonitors(Solver* /*solver*/,
+                                     std::vector<SearchMonitor*>* /*extras*/) {}
 
-void DecisionBuilder::Accept(ModelVisitor* const /*visitor*/) const {}
+void DecisionBuilder::Accept(ModelVisitor* /*visitor*/) const {}
 
 // ---------- Decision and DecisionVisitor ----------
 
-void Decision::Accept(DecisionVisitor* const visitor) const {
+void Decision::Accept(DecisionVisitor* visitor) const {
   visitor->VisitUnknownDecision();
 }
 
-void DecisionVisitor::VisitSetVariableValue([[maybe_unused]] IntVar* const var,
+void DecisionVisitor::VisitSetVariableValue([[maybe_unused]] IntVar* var,
                                             [[maybe_unused]] int64_t value) {}
 void DecisionVisitor::VisitSplitVariableDomain(
-    [[maybe_unused]] IntVar* const var, [[maybe_unused]] int64_t value,
+    [[maybe_unused]] IntVar* var, [[maybe_unused]] int64_t value,
     [[maybe_unused]] bool start_with_lower_half) {}
 void DecisionVisitor::VisitUnknownDecision() {}
-void DecisionVisitor::VisitScheduleOrPostpone(
-    [[maybe_unused]] IntervalVar* const var, [[maybe_unused]] int64_t est) {}
-void DecisionVisitor::VisitScheduleOrExpedite(
-    [[maybe_unused]] IntervalVar* const var, [[maybe_unused]] int64_t est) {}
+void DecisionVisitor::VisitScheduleOrPostpone([[maybe_unused]] IntervalVar* var,
+                                              [[maybe_unused]] int64_t est) {}
+void DecisionVisitor::VisitScheduleOrExpedite([[maybe_unused]] IntervalVar* var,
+                                              [[maybe_unused]] int64_t est) {}
 void DecisionVisitor::VisitRankFirstInterval(
-    [[maybe_unused]] SequenceVar* const sequence, [[maybe_unused]] int index) {}
+    [[maybe_unused]] SequenceVar* sequence, [[maybe_unused]] int index) {}
 
 void DecisionVisitor::VisitRankLastInterval(
-    [[maybe_unused]] SequenceVar* const sequence, [[maybe_unused]] int index) {}
-
-// ---------- ModelVisitor ----------
-
-// Tags for constraints, arguments, extensions.
-
-const char ModelVisitor::kAbs[] = "Abs";
-const char ModelVisitor::kAbsEqual[] = "AbsEqual";
-const char ModelVisitor::kAllDifferent[] = "AllDifferent";
-const char ModelVisitor::kAllowedAssignments[] = "AllowedAssignments";
-const char ModelVisitor::kAtMost[] = "AtMost";
-const char ModelVisitor::kBetween[] = "Between";
-const char ModelVisitor::kConditionalExpr[] = "ConditionalExpr";
-const char ModelVisitor::kCircuit[] = "Circuit";
-const char ModelVisitor::kConvexPiecewise[] = "ConvexPiecewise";
-const char ModelVisitor::kCountEqual[] = "CountEqual";
-const char ModelVisitor::kCover[] = "Cover";
-const char ModelVisitor::kCumulative[] = "Cumulative";
-const char ModelVisitor::kDeviation[] = "Deviation";
-const char ModelVisitor::kDifference[] = "Difference";
-const char ModelVisitor::kDisjunctive[] = "Disjunctive";
-const char ModelVisitor::kDistribute[] = "Distribute";
-const char ModelVisitor::kDivide[] = "Divide";
-const char ModelVisitor::kDurationExpr[] = "DurationExpression";
-const char ModelVisitor::kElement[] = "Element";
-const char ModelVisitor::kLightElementEqual[] = "LightElementEqual";
-const char ModelVisitor::kElementEqual[] = "ElementEqual";
-const char ModelVisitor::kEndExpr[] = "EndExpression";
-const char ModelVisitor::kEquality[] = "Equal";
-const char ModelVisitor::kFalseConstraint[] = "FalseConstraint";
-const char ModelVisitor::kGlobalCardinality[] = "GlobalCardinality";
-const char ModelVisitor::kGreater[] = "Greater";
-const char ModelVisitor::kGreaterOrEqual[] = "GreaterOrEqual";
-const char ModelVisitor::kIndexOf[] = "IndexOf";
-const char ModelVisitor::kIntegerVariable[] = "IntegerVariable";
-const char ModelVisitor::kIntervalBinaryRelation[] = "IntervalBinaryRelation";
-const char ModelVisitor::kIntervalDisjunction[] = "IntervalDisjunction";
-const char ModelVisitor::kIntervalUnaryRelation[] = "IntervalUnaryRelation";
-const char ModelVisitor::kIntervalVariable[] = "IntervalVariable";
-const char ModelVisitor::kInversePermutation[] = "InversePermutation";
-const char ModelVisitor::kIsBetween[] = "IsBetween;";
-const char ModelVisitor::kIsDifferent[] = "IsDifferent";
-const char ModelVisitor::kIsEqual[] = "IsEqual";
-const char ModelVisitor::kIsGreater[] = "IsGreater";
-const char ModelVisitor::kIsGreaterOrEqual[] = "IsGreaterOrEqual";
-const char ModelVisitor::kIsLess[] = "IsLess";
-const char ModelVisitor::kIsLessOrEqual[] = "IsLessOrEqual";
-const char ModelVisitor::kIsMember[] = "IsMember;";
-const char ModelVisitor::kLess[] = "Less";
-const char ModelVisitor::kLessOrEqual[] = "LessOrEqual";
-const char ModelVisitor::kLexLess[] = "LexLess";
-const char ModelVisitor::kLinkExprVar[] = "CastExpressionIntoVariable";
-const char ModelVisitor::kMapDomain[] = "MapDomain";
-const char ModelVisitor::kMax[] = "Max";
-const char ModelVisitor::kMaxEqual[] = "MaxEqual";
-const char ModelVisitor::kMember[] = "Member";
-const char ModelVisitor::kMin[] = "Min";
-const char ModelVisitor::kMinEqual[] = "MinEqual";
-const char ModelVisitor::kModulo[] = "Modulo";
-const char ModelVisitor::kNoCycle[] = "NoCycle";
-const char ModelVisitor::kNonEqual[] = "NonEqual";
-const char ModelVisitor::kNotBetween[] = "NotBetween";
-const char ModelVisitor::kNotMember[] = "NotMember";
-const char ModelVisitor::kNullIntersect[] = "NullIntersect";
-const char ModelVisitor::kOpposite[] = "Opposite";
-const char ModelVisitor::kPack[] = "Pack";
-const char ModelVisitor::kPathCumul[] = "PathCumul";
-const char ModelVisitor::kDelayedPathCumul[] = "DelayedPathCumul";
-const char ModelVisitor::kPerformedExpr[] = "PerformedExpression";
-const char ModelVisitor::kPower[] = "Power";
-const char ModelVisitor::kProduct[] = "Product";
-const char ModelVisitor::kScalProd[] = "ScalarProduct";
-const char ModelVisitor::kScalProdEqual[] = "ScalarProductEqual";
-const char ModelVisitor::kScalProdGreaterOrEqual[] =
-    "ScalarProductGreaterOrEqual";
-const char ModelVisitor::kScalProdLessOrEqual[] = "ScalarProductLessOrEqual";
-const char ModelVisitor::kSemiContinuous[] = "SemiContinuous";
-const char ModelVisitor::kSequenceVariable[] = "SequenceVariable";
-const char ModelVisitor::kSortingConstraint[] = "SortingConstraint";
-const char ModelVisitor::kSquare[] = "Square";
-const char ModelVisitor::kStartExpr[] = "StartExpression";
-const char ModelVisitor::kSum[] = "Sum";
-const char ModelVisitor::kSumEqual[] = "SumEqual";
-const char ModelVisitor::kSumGreaterOrEqual[] = "SumGreaterOrEqual";
-const char ModelVisitor::kSumLessOrEqual[] = "SumLessOrEqual";
-const char ModelVisitor::kTransition[] = "Transition";
-const char ModelVisitor::kTrace[] = "Trace";
-const char ModelVisitor::kTrueConstraint[] = "TrueConstraint";
-const char ModelVisitor::kVarBoundWatcher[] = "VarBoundWatcher";
-const char ModelVisitor::kVarValueWatcher[] = "VarValueWatcher";
-
-const char ModelVisitor::kCountAssignedItemsExtension[] = "CountAssignedItems";
-const char ModelVisitor::kCountUsedBinsExtension[] = "CountUsedBins";
-const char ModelVisitor::kInt64ToBoolExtension[] = "Int64ToBoolFunction";
-const char ModelVisitor::kInt64ToInt64Extension[] = "Int64ToInt64Function";
-const char ModelVisitor::kObjectiveExtension[] = "Objective";
-const char ModelVisitor::kSearchLimitExtension[] = "SearchLimit";
-const char ModelVisitor::kUsageEqualVariableExtension[] = "UsageEqualVariable";
-
-const char ModelVisitor::kUsageLessConstantExtension[] = "UsageLessConstant";
-const char ModelVisitor::kVariableGroupExtension[] = "VariableGroup";
-const char ModelVisitor::kVariableUsageLessConstantExtension[] =
-    "VariableUsageLessConstant";
-const char ModelVisitor::kWeightedSumOfAssignedEqualVariableExtension[] =
-    "WeightedSumOfAssignedEqualVariable";
-
-const char ModelVisitor::kActiveArgument[] = "active";
-const char ModelVisitor::kAssumePathsArgument[] = "assume_paths";
-const char ModelVisitor::kBranchesLimitArgument[] = "branches_limit";
-const char ModelVisitor::kCapacityArgument[] = "capacity";
-const char ModelVisitor::kCardsArgument[] = "cardinalities";
-const char ModelVisitor::kCoefficientsArgument[] = "coefficients";
-const char ModelVisitor::kCountArgument[] = "count";
-const char ModelVisitor::kCumulativeArgument[] = "cumulative";
-const char ModelVisitor::kCumulsArgument[] = "cumuls";
-const char ModelVisitor::kDemandsArgument[] = "demands";
-const char ModelVisitor::kDurationMinArgument[] = "duration_min";
-const char ModelVisitor::kDurationMaxArgument[] = "duration_max";
-const char ModelVisitor::kEarlyCostArgument[] = "early_cost";
-const char ModelVisitor::kEarlyDateArgument[] = "early_date";
-const char ModelVisitor::kEndMinArgument[] = "end_min";
-const char ModelVisitor::kEndMaxArgument[] = "end_max";
-const char ModelVisitor::kEndsArgument[] = "ends";
-const char ModelVisitor::kExpressionArgument[] = "expression";
-const char ModelVisitor::kFailuresLimitArgument[] = "failures_limit";
-const char ModelVisitor::kFinalStatesArgument[] = "final_states";
-const char ModelVisitor::kFixedChargeArgument[] = "fixed_charge";
-const char ModelVisitor::kIndex2Argument[] = "index2";
-const char ModelVisitor::kIndex3Argument[] = "index3";
-const char ModelVisitor::kIndexArgument[] = "index";
-const char ModelVisitor::kInitialState[] = "initial_state";
-const char ModelVisitor::kIntervalArgument[] = "interval";
-const char ModelVisitor::kIntervalsArgument[] = "intervals";
-const char ModelVisitor::kLateCostArgument[] = "late_cost";
-const char ModelVisitor::kLateDateArgument[] = "late_date";
-const char ModelVisitor::kLeftArgument[] = "left";
-const char ModelVisitor::kMaxArgument[] = "max_value";
-const char ModelVisitor::kMaximizeArgument[] = "maximize";
-const char ModelVisitor::kMinArgument[] = "min_value";
-const char ModelVisitor::kModuloArgument[] = "modulo";
-const char ModelVisitor::kNextsArgument[] = "nexts";
-const char ModelVisitor::kOptionalArgument[] = "optional";
-const char ModelVisitor::kPartialArgument[] = "partial";
-const char ModelVisitor::kPositionXArgument[] = "position_x";
-const char ModelVisitor::kPositionYArgument[] = "position_y";
-const char ModelVisitor::kRangeArgument[] = "range";
-const char ModelVisitor::kRelationArgument[] = "relation";
-const char ModelVisitor::kRightArgument[] = "right";
-const char ModelVisitor::kSequenceArgument[] = "sequence";
-const char ModelVisitor::kSequencesArgument[] = "sequences";
-const char ModelVisitor::kSmartTimeCheckArgument[] = "smart_time_check";
-const char ModelVisitor::kSizeArgument[] = "size";
-const char ModelVisitor::kSizeXArgument[] = "size_x";
-const char ModelVisitor::kSizeYArgument[] = "size_y";
-const char ModelVisitor::kSolutionLimitArgument[] = "solutions_limit";
-const char ModelVisitor::kStartMinArgument[] = "start_min";
-const char ModelVisitor::kStartMaxArgument[] = "start_max";
-const char ModelVisitor::kStartsArgument[] = "starts";
-const char ModelVisitor::kStepArgument[] = "step";
-const char ModelVisitor::kTargetArgument[] = "target_variable";
-const char ModelVisitor::kTimeLimitArgument[] = "time_limit";
-const char ModelVisitor::kTransitsArgument[] = "transits";
-const char ModelVisitor::kTuplesArgument[] = "tuples";
-const char ModelVisitor::kValueArgument[] = "value";
-const char ModelVisitor::kValuesArgument[] = "values";
-const char ModelVisitor::kVarsArgument[] = "variables";
-const char ModelVisitor::kEvaluatorArgument[] = "evaluator";
-
-const char ModelVisitor::kVariableArgument[] = "variable";
-
-const char ModelVisitor::kMirrorOperation[] = "mirror";
-const char ModelVisitor::kRelaxedMaxOperation[] = "relaxed_max";
-const char ModelVisitor::kRelaxedMinOperation[] = "relaxed_min";
-const char ModelVisitor::kSumOperation[] = "sum";
-const char ModelVisitor::kDifferenceOperation[] = "difference";
-const char ModelVisitor::kProductOperation[] = "product";
-const char ModelVisitor::kStartSyncOnStartOperation[] = "start_synced_on_start";
-const char ModelVisitor::kStartSyncOnEndOperation[] = "start_synced_on_end";
-const char ModelVisitor::kTraceOperation[] = "trace";
-
-// Methods
-
-ModelVisitor::~ModelVisitor() {}
-
-void ModelVisitor::BeginVisitModel(
-    [[maybe_unused]] const std::string& type_name) {}
-void ModelVisitor::EndVisitModel(
-    [[maybe_unused]] const std::string& type_name) {}
-
-void ModelVisitor::BeginVisitConstraint(
-    [[maybe_unused]] const std::string& type_name,
-    [[maybe_unused]] const Constraint* const constraint) {}
-void ModelVisitor::EndVisitConstraint(
-    [[maybe_unused]] const std::string& type_name,
-    [[maybe_unused]] const Constraint* const constraint) {}
-
-void ModelVisitor::BeginVisitExtension(
-    [[maybe_unused]] const std::string& type) {}
-void ModelVisitor::EndVisitExtension([[maybe_unused]] const std::string& type) {
-}
-
-void ModelVisitor::BeginVisitIntegerExpression(
-    [[maybe_unused]] const std::string& type_name,
-    [[maybe_unused]] const IntExpr* const expr) {}
-void ModelVisitor::EndVisitIntegerExpression(
-    [[maybe_unused]] const std::string& type_name,
-    [[maybe_unused]] const IntExpr* const expr) {}
-
-void ModelVisitor::VisitIntegerVariable(
-    [[maybe_unused]] const IntVar* const variable, IntExpr* const delegate) {
-  if (delegate != nullptr) {
-    delegate->Accept(this);
-  }
-}
-
-void ModelVisitor::VisitIntegerVariable(
-    [[maybe_unused]] const IntVar* const variable,
-    [[maybe_unused]] const std::string& operation,
-    [[maybe_unused]] int64_t value, IntVar* const delegate) {
-  if (delegate != nullptr) {
-    delegate->Accept(this);
-  }
-}
-
-void ModelVisitor::VisitIntervalVariable(
-    [[maybe_unused]] const IntervalVar* const variable,
-    [[maybe_unused]] const std::string& operation,
-    [[maybe_unused]] int64_t value, IntervalVar* const delegate) {
-  if (delegate != nullptr) {
-    delegate->Accept(this);
-  }
-}
-
-void ModelVisitor::VisitSequenceVariable(const SequenceVar* const variable) {
-  for (int i = 0; i < variable->size(); ++i) {
-    variable->Interval(i)->Accept(this);
-  }
-}
-
-void ModelVisitor::VisitIntegerArgument(
-    [[maybe_unused]] const std::string& arg_name,
-    [[maybe_unused]] int64_t value) {}
-
-void ModelVisitor::VisitIntegerArrayArgument(
-    [[maybe_unused]] const std::string& arg_name,
-    [[maybe_unused]] const std::vector<int64_t>& values) {}
-
-void ModelVisitor::VisitIntegerMatrixArgument(
-    [[maybe_unused]] const std::string& arg_name,
-    [[maybe_unused]] const IntTupleSet& tuples) {}
-
-void ModelVisitor::VisitIntegerExpressionArgument(
-    [[maybe_unused]] const std::string& arg_name, IntExpr* const argument) {
-  argument->Accept(this);
-}
-
-void ModelVisitor::VisitIntegerVariableEvaluatorArgument(
-    [[maybe_unused]] const std::string& arg_name,
-    [[maybe_unused]] const Solver::Int64ToIntVar& arguments) {}
-
-void ModelVisitor::VisitIntegerVariableArrayArgument(
-    [[maybe_unused]] const std::string& arg_name,
-    const std::vector<IntVar*>& arguments) {
-  ForAll(arguments, &IntVar::Accept, this);
-}
-
-void ModelVisitor::VisitIntervalArgument(
-    [[maybe_unused]] const std::string& arg_name, IntervalVar* const argument) {
-  argument->Accept(this);
-}
-
-void ModelVisitor::VisitIntervalArrayArgument(
-    [[maybe_unused]] const std::string& arg_name,
-    const std::vector<IntervalVar*>& arguments) {
-  ForAll(arguments, &IntervalVar::Accept, this);
-}
-
-void ModelVisitor::VisitSequenceArgument(
-    [[maybe_unused]] const std::string& arg_name, SequenceVar* const argument) {
-  argument->Accept(this);
-}
-
-void ModelVisitor::VisitSequenceArrayArgument(
-    [[maybe_unused]] const std::string& arg_name,
-    const std::vector<SequenceVar*>& arguments) {
-  ForAll(arguments, &SequenceVar::Accept, this);
-}
-
-// ----- Helpers -----
-
-void ModelVisitor::VisitInt64ToBoolExtension(Solver::IndexFilter1 filter,
-                                             int64_t index_min,
-                                             int64_t index_max) {
-  if (filter != nullptr) {
-    std::vector<int64_t> cached_results;
-    for (int i = index_min; i <= index_max; ++i) {
-      cached_results.push_back(filter(i));
-    }
-    BeginVisitExtension(kInt64ToBoolExtension);
-    VisitIntegerArgument(kMinArgument, index_min);
-    VisitIntegerArgument(kMaxArgument, index_max);
-    VisitIntegerArrayArgument(kValuesArgument, cached_results);
-    EndVisitExtension(kInt64ToBoolExtension);
-  }
-}
-
-void ModelVisitor::VisitInt64ToInt64Extension(
-    const Solver::IndexEvaluator1& eval, int64_t index_min, int64_t index_max) {
-  CHECK(eval != nullptr);
-  std::vector<int64_t> cached_results;
-  for (int i = index_min; i <= index_max; ++i) {
-    cached_results.push_back(eval(i));
-  }
-  BeginVisitExtension(kInt64ToInt64Extension);
-  VisitIntegerArgument(kMinArgument, index_min);
-  VisitIntegerArgument(kMaxArgument, index_max);
-  VisitIntegerArrayArgument(kValuesArgument, cached_results);
-  EndVisitExtension(kInt64ToInt64Extension);
-}
-
-void ModelVisitor::VisitInt64ToInt64AsArray(const Solver::IndexEvaluator1& eval,
-                                            const std::string& arg_name,
-                                            int64_t index_max) {
-  CHECK(eval != nullptr);
-  std::vector<int64_t> cached_results;
-  for (int i = 0; i <= index_max; ++i) {
-    cached_results.push_back(eval(i));
-  }
-  VisitIntegerArrayArgument(arg_name, cached_results);
-}
+    [[maybe_unused]] SequenceVar* sequence, [[maybe_unused]] int index) {}
 
 // ---------- Search Monitor ----------
 
@@ -2902,8 +1973,7 @@ bool SearchMonitor::AcceptDelta([[maybe_unused]] Assignment* delta,
 void SearchMonitor::AcceptNeighbor() {}
 void SearchMonitor::AcceptUncheckedNeighbor() {}
 void SearchMonitor::PeriodicCheck() {}
-void SearchMonitor::Accept([[maybe_unused]] ModelVisitor* const visitor) const {
-}
+void SearchMonitor::Accept([[maybe_unused]] ModelVisitor* visitor) const {}
 // A search monitors adds itself on the active search.
 void SearchMonitor::Install() {
   for (std::underlying_type<Solver::MonitorEvent>::type event = 0;
@@ -2917,7 +1987,7 @@ void SearchMonitor::ListenToEvent(Solver::MonitorEvent event) {
 }
 
 // ---------- Propagation Monitor -----------
-PropagationMonitor::PropagationMonitor(Solver* const solver)
+PropagationMonitor::PropagationMonitor(Solver* solver)
     : SearchMonitor(solver) {}
 
 PropagationMonitor::~PropagationMonitor() {}
@@ -2928,232 +1998,8 @@ void PropagationMonitor::Install() {
   solver()->AddPropagationMonitor(this);
 }
 
-// ---------- Local Search Monitor -----------
-LocalSearchMonitor::LocalSearchMonitor(Solver* const solver)
-    : SearchMonitor(solver) {}
-
-LocalSearchMonitor::~LocalSearchMonitor() {}
-
-// A local search monitor listens to search events as well as local search
-// events.
-void LocalSearchMonitor::Install() {
-  SearchMonitor::Install();
-  solver()->AddLocalSearchMonitor(this);
-}
-
-// ---------- Trace ----------
-
-class Trace : public PropagationMonitor {
- public:
-  explicit Trace(Solver* const s) : PropagationMonitor(s) {}
-
-  ~Trace() override {}
-
-  void BeginConstraintInitialPropagation(
-      Constraint* const constraint) override {
-    ForAll(monitors_, &PropagationMonitor::BeginConstraintInitialPropagation,
-           constraint);
-  }
-
-  void EndConstraintInitialPropagation(Constraint* const constraint) override {
-    ForAll(monitors_, &PropagationMonitor::EndConstraintInitialPropagation,
-           constraint);
-  }
-
-  void BeginNestedConstraintInitialPropagation(
-      Constraint* const parent, Constraint* const nested) override {
-    ForAll(monitors_,
-           &PropagationMonitor::BeginNestedConstraintInitialPropagation, parent,
-           nested);
-  }
-
-  void EndNestedConstraintInitialPropagation(
-      Constraint* const parent, Constraint* const nested) override {
-    ForAll(monitors_,
-           &PropagationMonitor::EndNestedConstraintInitialPropagation, parent,
-           nested);
-  }
-
-  void RegisterDemon(Demon* const demon) override {
-    ForAll(monitors_, &PropagationMonitor::RegisterDemon, demon);
-  }
-
-  void BeginDemonRun(Demon* const demon) override {
-    ForAll(monitors_, &PropagationMonitor::BeginDemonRun, demon);
-  }
-
-  void EndDemonRun(Demon* const demon) override {
-    ForAll(monitors_, &PropagationMonitor::EndDemonRun, demon);
-  }
-
-  void StartProcessingIntegerVariable(IntVar* const var) override {
-    ForAll(monitors_, &PropagationMonitor::StartProcessingIntegerVariable, var);
-  }
-
-  void EndProcessingIntegerVariable(IntVar* const var) override {
-    ForAll(monitors_, &PropagationMonitor::EndProcessingIntegerVariable, var);
-  }
-
-  void PushContext(const std::string& context) override {
-    ForAll(monitors_, &PropagationMonitor::PushContext, context);
-  }
-
-  void PopContext() override {
-    ForAll(monitors_, &PropagationMonitor::PopContext);
-  }
-
-  // IntExpr modifiers.
-  void SetMin(IntExpr* const expr, int64_t new_min) override {
-    for (PropagationMonitor* const monitor : monitors_) {
-      monitor->SetMin(expr, new_min);
-    }
-  }
-
-  void SetMax(IntExpr* const expr, int64_t new_max) override {
-    for (PropagationMonitor* const monitor : monitors_) {
-      monitor->SetMax(expr, new_max);
-    }
-  }
-
-  void SetRange(IntExpr* const expr, int64_t new_min,
-                int64_t new_max) override {
-    for (PropagationMonitor* const monitor : monitors_) {
-      monitor->SetRange(expr, new_min, new_max);
-    }
-  }
-
-  // IntVar modifiers.
-  void SetMin(IntVar* const var, int64_t new_min) override {
-    for (PropagationMonitor* const monitor : monitors_) {
-      monitor->SetMin(var, new_min);
-    }
-  }
-
-  void SetMax(IntVar* const var, int64_t new_max) override {
-    for (PropagationMonitor* const monitor : monitors_) {
-      monitor->SetMax(var, new_max);
-    }
-  }
-
-  void SetRange(IntVar* const var, int64_t new_min, int64_t new_max) override {
-    for (PropagationMonitor* const monitor : monitors_) {
-      monitor->SetRange(var, new_min, new_max);
-    }
-  }
-
-  void RemoveValue(IntVar* const var, int64_t value) override {
-    ForAll(monitors_, &PropagationMonitor::RemoveValue, var, value);
-  }
-
-  void SetValue(IntVar* const var, int64_t value) override {
-    ForAll(monitors_, &PropagationMonitor::SetValue, var, value);
-  }
-
-  void RemoveInterval(IntVar* const var, int64_t imin, int64_t imax) override {
-    ForAll(monitors_, &PropagationMonitor::RemoveInterval, var, imin, imax);
-  }
-
-  void SetValues(IntVar* const var,
-                 const std::vector<int64_t>& values) override {
-    ForAll(monitors_, &PropagationMonitor::SetValues, var, values);
-  }
-
-  void RemoveValues(IntVar* const var,
-                    const std::vector<int64_t>& values) override {
-    ForAll(monitors_, &PropagationMonitor::RemoveValues, var, values);
-  }
-
-  // IntervalVar modifiers.
-  void SetStartMin(IntervalVar* const var, int64_t new_min) override {
-    ForAll(monitors_, &PropagationMonitor::SetStartMin, var, new_min);
-  }
-
-  void SetStartMax(IntervalVar* const var, int64_t new_max) override {
-    ForAll(monitors_, &PropagationMonitor::SetStartMax, var, new_max);
-  }
-
-  void SetStartRange(IntervalVar* const var, int64_t new_min,
-                     int64_t new_max) override {
-    ForAll(monitors_, &PropagationMonitor::SetStartRange, var, new_min,
-           new_max);
-  }
-
-  void SetEndMin(IntervalVar* const var, int64_t new_min) override {
-    ForAll(monitors_, &PropagationMonitor::SetEndMin, var, new_min);
-  }
-
-  void SetEndMax(IntervalVar* const var, int64_t new_max) override {
-    ForAll(monitors_, &PropagationMonitor::SetEndMax, var, new_max);
-  }
-
-  void SetEndRange(IntervalVar* const var, int64_t new_min,
-                   int64_t new_max) override {
-    ForAll(monitors_, &PropagationMonitor::SetEndRange, var, new_min, new_max);
-  }
-
-  void SetDurationMin(IntervalVar* const var, int64_t new_min) override {
-    ForAll(monitors_, &PropagationMonitor::SetDurationMin, var, new_min);
-  }
-
-  void SetDurationMax(IntervalVar* const var, int64_t new_max) override {
-    ForAll(monitors_, &PropagationMonitor::SetDurationMax, var, new_max);
-  }
-
-  void SetDurationRange(IntervalVar* const var, int64_t new_min,
-                        int64_t new_max) override {
-    ForAll(monitors_, &PropagationMonitor::SetDurationRange, var, new_min,
-           new_max);
-  }
-
-  void SetPerformed(IntervalVar* const var, bool value) override {
-    ForAll(monitors_, &PropagationMonitor::SetPerformed, var, value);
-  }
-
-  void RankFirst(SequenceVar* const var, int index) override {
-    ForAll(monitors_, &PropagationMonitor::RankFirst, var, index);
-  }
-
-  void RankNotFirst(SequenceVar* const var, int index) override {
-    ForAll(monitors_, &PropagationMonitor::RankNotFirst, var, index);
-  }
-
-  void RankLast(SequenceVar* const var, int index) override {
-    ForAll(monitors_, &PropagationMonitor::RankLast, var, index);
-  }
-
-  void RankNotLast(SequenceVar* const var, int index) override {
-    ForAll(monitors_, &PropagationMonitor::RankNotLast, var, index);
-  }
-
-  void RankSequence(SequenceVar* const var, const std::vector<int>& rank_first,
-                    const std::vector<int>& rank_last,
-                    const std::vector<int>& unperformed) override {
-    ForAll(monitors_, &PropagationMonitor::RankSequence, var, rank_first,
-           rank_last, unperformed);
-  }
-
-  // Does not take ownership of monitor.
-  void Add(PropagationMonitor* const monitor) {
-    if (monitor != nullptr) {
-      monitors_.push_back(monitor);
-    }
-  }
-
-  // The trace will dispatch propagation events. It needs to listen to search
-  // events.
-  void Install() override { SearchMonitor::Install(); }
-
-  std::string DebugString() const override { return "Trace"; }
-
- private:
-  std::vector<PropagationMonitor*> monitors_;
-};
-
-PropagationMonitor* BuildTrace(Solver* const s) { return new Trace(s); }
-
-void Solver::AddPropagationMonitor(PropagationMonitor* const monitor) {
-  // TODO(user): Check solver state?
-  reinterpret_cast<class Trace*>(propagation_monitor_.get())->Add(monitor);
+void Solver::AddPropagationMonitor(PropagationMonitor* monitor) {
+  AppendPropagationMonitor(this, monitor);
 }
 
 PropagationMonitor* Solver::GetPropagationMonitor() const {
@@ -3225,11 +2071,11 @@ class LocalSearchMonitorPrimary : public LocalSearchMonitor {
   std::vector<LocalSearchMonitor*> monitors_;
 };
 
-LocalSearchMonitor* BuildLocalSearchMonitorPrimary(Solver* const s) {
+LocalSearchMonitor* BuildLocalSearchMonitorPrimary(Solver* s) {
   return new LocalSearchMonitorPrimary(s);
 }
 
-void Solver::AddLocalSearchMonitor(LocalSearchMonitor* const monitor) {
+void Solver::AddLocalSearchMonitor(LocalSearchMonitor* monitor) {
   reinterpret_cast<class LocalSearchMonitorPrimary*>(
       local_search_monitor_.get())
       ->Add(monitor);
@@ -3263,12 +2109,14 @@ Assignment* Solver::GetOrCreateLocalSearchState() {
   return local_search_state_.get();
 }
 
+void Solver::ClearLocalSearchState() { local_search_state_.reset(nullptr); }
+
 // ----------------- ProfiledDecisionBuilder ------------
 
 ProfiledDecisionBuilder::ProfiledDecisionBuilder(DecisionBuilder* db)
     : db_(db), name_(db_->GetName()), seconds_(0) {}
 
-Decision* ProfiledDecisionBuilder::Next(Solver* const solver) {
+Decision* ProfiledDecisionBuilder::Next(Solver* solver) {
   timer_.Start();
   solver->set_context(name());
   // In case db_->Next() fails, gathering the running time on backtrack.
@@ -3293,11 +2141,11 @@ std::string ProfiledDecisionBuilder::DebugString() const {
 }
 
 void ProfiledDecisionBuilder::AppendMonitors(
-    Solver* const solver, std::vector<SearchMonitor*>* const extras) {
+    Solver* solver, std::vector<SearchMonitor*>* extras) {
   db_->AppendMonitors(solver, extras);
 }
 
-void ProfiledDecisionBuilder::Accept(ModelVisitor* const visitor) const {
+void ProfiledDecisionBuilder::Accept(ModelVisitor* visitor) const {
   db_->Accept(visitor);
 }
 
@@ -3313,7 +2161,7 @@ void Constraint::PostAndPropagate() {
   UnfreezeQueue();
 }
 
-void Constraint::Accept(ModelVisitor* const visitor) const {
+void Constraint::Accept(ModelVisitor* visitor) const {
   visitor->BeginVisitConstraint("unknown", this);
   VLOG(3) << "Unknown constraint " << DebugString();
   visitor->EndVisitConstraint("unknown", this);
@@ -3325,16 +2173,212 @@ bool Constraint::IsCastConstraint() const {
 
 IntVar* Constraint::Var() { return nullptr; }
 
-// ----- Class IntExpr -----
+// ---------- IntExpr ----------
 
-void IntExpr::Accept(ModelVisitor* const visitor) const {
+void IntExpr::Accept(ModelVisitor* visitor) const {
   visitor->BeginVisitIntegerExpression("unknown", this);
   VLOG(3) << "Unknown expression " << DebugString();
   visitor->EndVisitIntegerExpression("unknown", this);
 }
 
+IntVar* IntExpr::VarWithName(const std::string& name) {
+  IntVar* var = Var();
+  var->set_name(name);
+  return var;
+}
+
+// ---------- IntVar ----------
+
+IntVar::IntVar(Solver* s) : IntExpr(s), index_(s->GetNewIntVarIndex()) {}
+
+IntVar::IntVar(Solver* s, const std::string& name)
+    : IntExpr(s), index_(s->GetNewIntVarIndex()) {
+  set_name(name);
+}
+
+void IntVar::Accept(ModelVisitor* visitor) const {
+  IntExpr* const casted = solver()->CastExpression(this);
+  visitor->VisitIntegerVariable(this, casted);
+}
+
+int IntVar::VarType() const { return UNSPECIFIED; }
+
+void IntVar::SetValues(const std::vector<int64_t>& values) {
+  switch (values.size()) {
+    case 0: {
+      solver()->Fail();
+      break;
+    }
+    case 1: {
+      SetValue(values.back());
+      break;
+    }
+    case 2: {
+      if (Contains(values[0])) {
+        if (Contains(values[1])) {
+          const int64_t l = std::min(values[0], values[1]);
+          const int64_t u = std::max(values[0], values[1]);
+          SetRange(l, u);
+          if (u > l + 1) {
+            RemoveInterval(l + 1, u - 1);
+          }
+        } else {
+          SetValue(values[0]);
+        }
+      } else {
+        SetValue(values[1]);
+      }
+      break;
+    }
+    default: {
+      // TODO(user): use a clean and safe SortedUniqueCopy() class
+      // that uses a global, static shared (and locked) storage.
+      // TODO(user): We could filter out values not in the var.
+      std::vector<int64_t>& tmp = solver()->tmp_vector_;
+      tmp.clear();
+      tmp.insert(tmp.end(), values.begin(), values.end());
+      std::sort(tmp.begin(), tmp.end());
+      tmp.erase(std::unique(tmp.begin(), tmp.end()), tmp.end());
+      const int size = tmp.size();
+      const int64_t vmin = Min();
+      const int64_t vmax = Max();
+      int first = 0;
+      int last = size - 1;
+      if (tmp.front() > vmax || tmp.back() < vmin) {
+        solver()->Fail();
+      }
+      // TODO(user) : We could find the first position >= vmin by dichotomy.
+      while (tmp[first] < vmin || !Contains(tmp[first])) {
+        ++first;
+        if (first > last || tmp[first] > vmax) {
+          solver()->Fail();
+        }
+      }
+      while (last > first && (tmp[last] > vmax || !Contains(tmp[last]))) {
+        // Note that last >= first implies tmp[last] >= vmin.
+        --last;
+      }
+      DCHECK_GE(last, first);
+      SetRange(tmp[first], tmp[last]);
+      while (first < last) {
+        const int64_t start = tmp[first] + 1;
+        const int64_t end = tmp[first + 1] - 1;
+        if (start <= end) {
+          RemoveInterval(start, end);
+        }
+        first++;
+      }
+    }
+  }
+}
+
+void IntVar::RemoveValues(const std::vector<int64_t>& values) {
+  // TODO(user): Check and maybe inline this code.
+  const int size = values.size();
+  DCHECK_GE(size, 0);
+  switch (size) {
+    case 0: {
+      return;
+    }
+    case 1: {
+      RemoveValue(values[0]);
+      return;
+    }
+    case 2: {
+      RemoveValue(values[0]);
+      RemoveValue(values[1]);
+      return;
+    }
+    case 3: {
+      RemoveValue(values[0]);
+      RemoveValue(values[1]);
+      RemoveValue(values[2]);
+      return;
+    }
+    default: {
+      // 4 values, let's start doing some more clever things.
+      // TODO(user) : Sort values!
+      int start_index = 0;
+      int64_t new_min = Min();
+      if (values[start_index] <= new_min) {
+        while (start_index < size - 1 &&
+               values[start_index + 1] == values[start_index] + 1) {
+          new_min = values[start_index + 1] + 1;
+          start_index++;
+        }
+      }
+      int end_index = size - 1;
+      int64_t new_max = Max();
+      if (values[end_index] >= new_max) {
+        while (end_index > start_index + 1 &&
+               values[end_index - 1] == values[end_index] - 1) {
+          new_max = values[end_index - 1] - 1;
+          end_index--;
+        }
+      }
+      SetRange(new_min, new_max);
+      for (int i = start_index; i <= end_index; ++i) {
+        RemoveValue(values[i]);
+      }
+    }
+  }
+}
+
 #undef CP_TRY  // We no longer need those.
 #undef CP_ON_FAIL
 #undef CP_DO_FAIL
+
+class ActionDemon : public Demon {
+ public:
+  explicit ActionDemon(const Solver::Action& action) : action_(action) {
+    CHECK(action != nullptr);
+  }
+
+  ~ActionDemon() override = default;
+
+  void Run(Solver* solver) override { action_(solver); }
+
+ private:
+  Solver::Action action_;
+};
+
+class ClosureDemon : public Demon {
+ public:
+  explicit ClosureDemon(const Solver::Closure& closure) : closure_(closure) {
+    CHECK(closure != nullptr);
+  }
+
+  ~ClosureDemon() override = default;
+
+  void Run(Solver*) override { closure_(); }
+
+ private:
+  Solver::Closure closure_;
+};
+
+Demon* Solver::MakeConstraintInitialPropagateCallback(Constraint* ct) {
+  return MakeConstraintDemon0(this, ct, &Constraint::InitialPropagate,
+                              "InitialPropagate");
+}
+
+Demon* Solver::MakeDelayedConstraintInitialPropagateCallback(Constraint* ct) {
+  return MakeDelayedConstraintDemon0(this, ct, &Constraint::InitialPropagate,
+                                     "InitialPropagate");
+}
+
+Demon* Solver::MakeActionDemon(Solver::Action action) {
+  return RevAlloc(new ActionDemon(action));
+}
+
+Demon* Solver::MakeClosureDemon(Solver::Closure closure) {
+  return RevAlloc(new ClosureDemon(closure));
+}
+
+void Solver::InitCachedConstraint() {
+  DCHECK(true_constraint_ == nullptr);
+  true_constraint_ = RevAlloc(new TrueConstraint(this));
+  DCHECK(false_constraint_ == nullptr);
+  false_constraint_ = RevAlloc(new FalseConstraint(this));
+}
 
 }  // namespace operations_research

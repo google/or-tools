@@ -33,6 +33,9 @@ SWIG_JAVABODY_PROXY(/*PTRCTOR_VISIBILITY=*/public,
 
 // Remove swig warnings
 %warnfilter(473) operations_research::DecisionBuilder;
+// Explicit template instantiation ignored
+#pragma SWIG nowarn=320
+
 // TODO(user): Remove this warnfilter.
 
 // We need to forward-declare the proto here, so that PROTO_INPUT involving it
@@ -46,9 +49,15 @@ class RegularLimitParameters;
 
 // Include the files we want to wrap a first time.
 %{
+#include "ortools/base/base_export.h"
+#include "ortools/constraint_solver/reversible_engine.h"
 #include "ortools/constraint_solver/constraint_solver.h"
-#include "ortools/constraint_solver/constraint_solveri.h"
-#include "ortools/constraint_solver/java/javawrapcp_util.h"
+#include "ortools/constraint_solver/assignment.h"
+#include "ortools/constraint_solver/interval.h"
+#include "ortools/constraint_solver/local_search.h"
+#include "ortools/constraint_solver/search.h"
+#include "ortools/constraint_solver/sequence_var.h"
+#include "ortools/constraint_solver/variables.h"
 #include "ortools/constraint_solver/search_limit.pb.h"
 #include "ortools/constraint_solver/solver_parameters.pb.h"
 
@@ -103,7 +112,7 @@ class GlobalRefGuard {
     return $null;
   }
 }
-%enddef
+%enddef  // PROTECT_FROM_FAILURE
 
 namespace operations_research {
 PROTECT_FROM_FAILURE(IntExpr::SetValue(int64_t v), arg1->solver());
@@ -126,7 +135,7 @@ PROTECT_FROM_FAILURE(IntervalVar::SetEndMax(int64_t m), arg1->solver());
 PROTECT_FROM_FAILURE(IntervalVar::SetEndRange(int64_t mi, int64_t ma),
                      arg1->solver());
 PROTECT_FROM_FAILURE(IntervalVar::SetPerformed(bool val), arg1->solver());
-PROTECT_FROM_FAILURE(Solver::AddConstraint(Constraint* const c), arg1);
+PROTECT_FROM_FAILURE(Solver::AddConstraint(Constraint* c), arg1);
 PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
 #undef PROTECT_FROM_FAILURE
 }  // namespace operations_research
@@ -140,11 +149,18 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
 
 #include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
-#include "ortools/constraint_solver/constraint_solveri.h"
+
+class RAIIExceptionChecker {
+  public:
+    RAIIExceptionChecker(JNIEnv* jenv) : jenv_(jenv) {}
+    ~RAIIExceptionChecker() { assert(jenv_->ExceptionCheck() == 0); }
+  private:
+    JNIEnv* const jenv_;
+};
 %}
 
 // Use to correctly wrap Solver::MakeScheduleOrPostpone.
-%apply int64_t * INOUT { int64_t *const marker };
+%apply int64_t * INOUT { int64_t * marker };
 // Use to correctly wrap arguments otherwise SWIG will wrap them as
 // SWIGTYPE_p_long_long opaque pointer.
 %apply int64_t * OUTPUT { int64_t *l, int64_t *u, int64_t *value };
@@ -159,10 +175,12 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
   LAMBDA_RETURN, JNI_METHOD, LAMBDA_PARAM, LAMBDA_CALL)
   %typemap(in) TYPE %{
     jclass $input_object_class = jenv->GetObjectClass($input);
-    if (nullptr == $input_object_class) return $null;
+    if (nullptr == $input_object_class || jenv->ExceptionCheck()) return $null;
+
     jmethodID $input_method_id = jenv->GetMethodID(
       $input_object_class, JAVA_METHOD, JAVA_SIGN);
-    assert($input_method_id != nullptr);
+    if (nullptr == $input_method_id || jenv->ExceptionCheck()) return $null;
+
     // $input will be deleted once this function return.
     jobject $input_object = jenv->NewGlobalRef($input);
 
@@ -174,6 +192,7 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
       $input_guard = std::make_shared<GlobalRefGuard>(jvm, $input_object);
     }
     $1 = [jenv, $input_object, $input_method_id, $input_guard](LAMBDA_PARAM) -> LAMBDA_RETURN {
+      RAIIExceptionChecker exception_checker(jenv);
       return jenv->JNI_METHOD($input_object, $input_method_id, LAMBDA_CALL);
     };
   %}
@@ -191,10 +210,10 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
   LAMBDA_RETURN, JNI_METHOD)
   %typemap(in) TYPE %{
     jclass $input_object_class = jenv->GetObjectClass($input);
-    if (nullptr == $input_object_class) return $null;
+    if (nullptr == $input_object_class || jenv->ExceptionCheck()) return $null;
     jmethodID $input_method_id = jenv->GetMethodID(
       $input_object_class, JAVA_METHOD, JAVA_SIGN);
-    assert($input_method_id != nullptr);
+    if (nullptr == $input_method_id || jenv->ExceptionCheck()) return $null;
     // $input will be deleted once this function return.
     jobject $input_object = jenv->NewGlobalRef($input);
 
@@ -206,6 +225,7 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
       $input_guard = std::make_shared<GlobalRefGuard>(jvm, $input_object);
     }
     $1 = [jenv, $input_object, $input_method_id, $input_guard]() -> LAMBDA_RETURN {
+      RAIIExceptionChecker exception_checker(jenv);
       return jenv->JNI_METHOD($input_object, $input_method_id);
     };
   %}
@@ -222,10 +242,10 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
   JAVA_TYPE, JAVA_METHOD, JAVA_SIGN)
   %typemap(in) TYPE %{
     jclass $input_object_class = jenv->GetObjectClass($input);
-    if (nullptr == $input_object_class) return $null;
+    if (nullptr == $input_object_class || jenv->ExceptionCheck()) return $null;
     jmethodID $input_method_id = jenv->GetMethodID(
       $input_object_class, JAVA_METHOD, JAVA_SIGN);
-    assert($input_method_id != nullptr);
+    if (nullptr == $input_method_id || jenv->ExceptionCheck()) return $null;
     // $input will be deleted once this function return.
     jobject $input_object = jenv->NewGlobalRef($input);
 
@@ -238,13 +258,18 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
     }
     $1 = [jenv, $input_object, $input_method_id, $input_guard]() -> std::string {
       jstring js = (jstring) jenv->CallObjectMethod($input_object, $input_method_id);
-      // convert the Java String to const char* C string.
-      const char* c_str(jenv->GetStringUTFChars(js, 0));
-      // copy the C string to std::string
-      std::string str(c_str);
-      // release the C string.
-      jenv->ReleaseStringUTFChars(js, c_str);
-      return str;
+      assert(!jenv->ExceptionCheck());
+      if (js == nullptr) {
+        return "";
+      } else {
+        // convert the Java String to const char* C string.
+        const char* c_str(jenv->GetStringUTFChars(js, 0));
+        // copy the C string to std::string
+        std::string str(c_str);
+        // release the C string.
+        jenv->ReleaseStringUTFChars(js, c_str);
+        return str;
+      }
     };
   %}
   // These 4 typemaps tell SWIG which JNI and Java types to use.
@@ -260,10 +285,10 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
   JAVA_TYPE, JAVA_METHOD, JAVA_SIGN)
   %typemap(in) TYPE %{
     jclass $input_object_class = jenv->GetObjectClass($input);
-    if (nullptr == $input_object_class) return $null;
+    if (nullptr == $input_object_class || jenv->ExceptionCheck()) return $null;
     jmethodID $input_method_id = jenv->GetMethodID(
       $input_object_class, JAVA_METHOD, JAVA_SIGN);
-    assert($input_method_id != nullptr);
+    if (nullptr == $input_method_id || jenv->ExceptionCheck()) return $null;
     // $input will be deleted once this function return.
     jobject $input_object = jenv->NewGlobalRef($input);
 
@@ -288,6 +313,7 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
 
       // Call the java Callback passing the Java Solver object.
       jenv->CallVoidMethod($input_object, $input_method_id, solver_object);
+      assert(!jenv->ExceptionCheck());
     };
   %}
   // These 4 typemaps tell SWIG which JNI and Java types to use.
@@ -386,6 +412,10 @@ namespace operations_research {
 // part of the public API anyway.
 %ignore ToInt64Vector;
 
+// StateInfo
+%ignore StateInfo;
+%ignore StateMarker;
+
 // Decision
 %feature("director") Decision;
 %unignore Decision;
@@ -478,7 +508,6 @@ namespace operations_research {
 %rename (size) RevPartialSequence::Size;
 
 // UnsortedNullableRevBitset
-// TODO(user): Remove from constraint_solveri.h (only use by table.cc)
 %ignore UnsortedNullableRevBitset;
 
 // Assignment
@@ -837,18 +866,25 @@ import java.util.HashSet;
   public void keepAliveDecisionBuilder(DecisionBuilder db) {}
 %}
 
-%typemap(javaimports) DefaultPhaseParameters %{
-// Used to keep alive java references to objects passed to the C++ layer.
-import java.util.HashSet;
-%}
-
 %typemap(javacode) DefaultPhaseParameters %{
   // Ensure that the GC doesn't collect any DecisionBuilder set from Java
   // as the underlying C++ class stores a shallow copy
-  private HashSet<DecisionBuilder> keepAliveDecisionBuilders;
+  private java.util.HashSet<DecisionBuilder> keepAliveDecisionBuilders;
   public void keepAliveDecisionBuilder(DecisionBuilder db) {
     if (keepAliveDecisionBuilders == null) {
-      keepAliveDecisionBuilders = new HashSet<DecisionBuilder>();
+      keepAliveDecisionBuilders = new java.util.HashSet<DecisionBuilder>();
+    }
+    keepAliveDecisionBuilders.add(db);
+  }
+%}
+
+%typemap(javacode) LocalSearchPhaseParameters %{
+  // Ensure that the GC doesn't collect any DecisionBuilder set from Java
+  // as the underlying C++ class stores a shallow copy
+  private java.util.HashSet<DecisionBuilder> keepAliveDecisionBuilders;
+  public void keepAliveDecisionBuilder(DecisionBuilder db) {
+    if (keepAliveDecisionBuilders == null) {
+      keepAliveDecisionBuilders = new java.util.HashSet<DecisionBuilder>();
     }
     keepAliveDecisionBuilders.add(db);
   }
@@ -867,12 +903,29 @@ import java.util.HashSet;
 %}
 
 %typemap(javain,
-         post="      keepAliveDecisionBuilder($javainput);"
+         post=""
          ) DecisionBuilder* "DecisionBuilder.getCPtr($javainput)"
 
 %typemap(javain,
          post="      keepAliveDecisionBuilder($javainput);"
+         ) DecisionBuilder* Solver::*,
+           DecisionBuilder* DefaultPhaseParameters::*,
+           DecisionBuilder* LocalSearchPhaseParameters::*,
+           DecisionBuilder* SearchMonitor::*,
+           DecisionBuilder* SearchLimit::*,
+           DecisionBuilder* OptimizeVar::*
+         "DecisionBuilder.getCPtr($javainput)"
+
+%typemap(javain,
+         post=""
          ) const std::vector<DecisionBuilder*>& dbs "$javainput"
+
+%typemap(javain,
+         post="      keepAliveDecisionBuilder($javainput);"
+         ) const std::vector<DecisionBuilder*>& Solver::dbs,
+           const std::vector<DecisionBuilder*>& DefaultPhaseParameters::dbs,
+           const std::vector<DecisionBuilder*>& LocalSearchPhaseParameters::dbs
+         "$javainput"
 
 %ignore Solver::SearchLogParameters;
 %ignore Solver::ActiveSearch;
@@ -887,7 +940,7 @@ import java.util.HashSet;
 %ignore Solver::MakeApplyBranchSelector;
 %ignore Solver::MakeAtMost;
 %ignore Solver::Now;
-%ignore Solver::demon_profiler;
+
 %ignore Solver::set_fail_intercept;
 %unignore Solver::Solver;
 %rename (acceptedNeighbors) Solver::accepted_neighbors;
@@ -906,7 +959,7 @@ import java.util.HashSet;
 %rename (currentlyInSolve) Solver::CurrentlyInSolve;
 %rename (defaultSolverParameters) Solver::DefaultSolverParameters;
 %rename (endSearch) Solver::EndSearch;
-%rename (exportProfilingOverview) Solver::ExportProfilingOverview;
+
 %rename (fail) Solver::Fail;
 %rename (filteredNeighbors) Solver::filtered_neighbors;
 %rename (finishCurrentSearch) Solver::FinishCurrentSearch;
@@ -917,7 +970,6 @@ import java.util.HashSet;
 %rename (instrumentsDemons) Solver::InstrumentsDemons;
 %rename (instrumentsVariables) Solver::InstrumentsVariables;
 %rename (isLocalSearchProfilingEnabled) Solver::IsLocalSearchProfilingEnabled;
-%rename (isProfilingEnabled) Solver::IsProfilingEnabled;
 %rename (localSearchProfile) Solver::LocalSearchProfile;
 %rename (makeAbs) Solver::MakeAbs;
 %rename (makeAbsEquality) Solver::MakeAbsEquality;
@@ -1105,8 +1157,8 @@ import java.util.HashSet;
 %rename (nameAllVariables) Solver::NameAllVariables;
 %rename (newSearch) Solver::NewSearch;
 %rename (nextSolution) Solver::NextSolution;
-%rename (popState) Solver::PopState;
-%rename (pushState) Solver::PushState;
+%rename (popState) Solver::PopState();
+%rename (pushState) Solver::PushState();
 %rename (rand32) Solver::Rand32;
 %rename (rand64) Solver::Rand64;
 %rename (randomConcatenateOperators) Solver::RandomConcatenateOperators;
@@ -1644,9 +1696,16 @@ namespace operations_research {
 // Wrap cp includes
 // TODO(user): Use ignoreall/unignoreall for this one. A lot of work.
 //swiglint: disable include-h-allglobals
+%include "ortools/base/base_export.h"
+%include "ortools/constraint_solver/reversible_engine.h"
+%include "ortools/constraint_solver/reversible_data.h"
 %include "ortools/constraint_solver/constraint_solver.h"
-%include "ortools/constraint_solver/constraint_solveri.h"
-%include "ortools/constraint_solver/java/javawrapcp_util.h"
+%include "ortools/constraint_solver/assignment.h"
+%include "ortools/constraint_solver/interval.h"
+%include "ortools/constraint_solver/local_search.h"
+%include "ortools/constraint_solver/search.h"
+%include "ortools/constraint_solver/sequence_var.h"
+%include "ortools/constraint_solver/variables.h"
 
 // Define templates instantiation after wrapping.
 namespace operations_research {

@@ -63,10 +63,10 @@ message ConstraintSolverParameters {
   //
 
   // Activate propagation profiling.
-  bool profile_propagation = 7;
+  reserved 7;  // was profile_propagation
 
   // Export propagation profiling data to file.
-  string profile_file = 8;
+  reserved 8;  // was profile_file
 
   // Activate local search profiling.
   bool profile_local_search = 16;

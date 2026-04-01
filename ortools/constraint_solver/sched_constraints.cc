@@ -32,7 +32,9 @@
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
 #include "ortools/constraint_solver/constraint_solver.h"
-#include "ortools/constraint_solver/constraint_solveri.h"
+#include "ortools/constraint_solver/constraints.h"
+#include "ortools/constraint_solver/interval.h"
+#include "ortools/constraint_solver/reversible_data.h"
 #include "ortools/util/string_array.h"
 
 namespace operations_research {
@@ -41,9 +43,8 @@ class TreeArrayConstraint : public Constraint {
  public:
   enum PerformedStatus { UNPERFORMED, PERFORMED, UNDECIDED };
 
-  TreeArrayConstraint(Solver* const solver,
-                      const std::vector<IntervalVar*>& vars,
-                      IntervalVar* const target_var)
+  TreeArrayConstraint(Solver* solver, const std::vector<IntervalVar*>& vars,
+                      IntervalVar* target_var)
       : Constraint(solver),
         vars_(vars),
         target_var_(target_var),
@@ -63,13 +64,13 @@ class TreeArrayConstraint : public Constraint {
     root_node_ = &tree_[0][0];
   }
 
-  std::string DebugStringInternal(absl::string_view name) const {
-    return absl::StrFormat("Cover(%s) == %s", JoinDebugStringPtr(vars_, ", "),
+  std::string DebugStringInternal(
+      [[maybe_unused]] absl::string_view name) const {
+    return absl::StrFormat("Cover(%s) == %s", JoinDebugStringPtr(vars_),
                            target_var_->DebugString());
   }
 
-  void AcceptInternal(const std::string& name,
-                      ModelVisitor* const visitor) const {
+  void AcceptInternal(const std::string& name, ModelVisitor* visitor) const {
     visitor->BeginVisitConstraint(name, this);
     visitor->VisitIntervalArrayArgument(ModelVisitor::kIntervalsArgument,
                                         vars_);
@@ -248,7 +249,7 @@ class TreeArrayConstraint : public Constraint {
     Rev<int> performed;
   };
 
-  std::vector<std::vector<NodeInfo> > tree_;
+  std::vector<std::vector<NodeInfo>> tree_;
   const int block_size_;
   NodeInfo* root_node_;
 };
@@ -256,8 +257,8 @@ class TreeArrayConstraint : public Constraint {
 // This constraint implements cover(vars) == cover_var.
 class CoverConstraint : public TreeArrayConstraint {
  public:
-  CoverConstraint(Solver* const solver, const std::vector<IntervalVar*>& vars,
-                  IntervalVar* const cover_var)
+  CoverConstraint(Solver* solver, const std::vector<IntervalVar*>& vars,
+                  IntervalVar* cover_var)
       : TreeArrayConstraint(solver, vars, cover_var), cover_demon_(nullptr) {}
 
   ~CoverConstraint() override {}
@@ -480,16 +481,16 @@ class CoverConstraint : public TreeArrayConstraint {
     return DebugStringInternal(ModelVisitor::kCover);
   }
 
-  void Accept(ModelVisitor* const visitor) const override {
+  void Accept(ModelVisitor* visitor) const override {
     AcceptInternal(ModelVisitor::kCover, visitor);
   }
 
  private:
   PerformedStatus ComputePropagationUp(int parent_depth, int parent_position,
-                                       int64_t* const bucket_start_min,
-                                       int64_t* const bucket_start_max,
-                                       int64_t* const bucket_end_min,
-                                       int64_t* const bucket_end_max,
+                                       int64_t* bucket_start_min,
+                                       int64_t* bucket_start_max,
+                                       int64_t* bucket_end_min,
+                                       int64_t* bucket_end_max,
                                        bool* one_undecided) {
     *bucket_start_min = std::numeric_limits<int64_t>::max();
     *bucket_start_max = std::numeric_limits<int64_t>::max();
@@ -531,8 +532,7 @@ class CoverConstraint : public TreeArrayConstraint {
 
 class IntervalEquality : public Constraint {
  public:
-  IntervalEquality(Solver* const solver, IntervalVar* const var1,
-                   IntervalVar* const var2)
+  IntervalEquality(Solver* solver, IntervalVar* var1, IntervalVar* var2)
       : Constraint(solver), var1_(var1), var2_(var2) {}
 
   ~IntervalEquality() override {}
@@ -572,7 +572,7 @@ class IntervalEquality : public Constraint {
                            var2_->DebugString());
   }
 
-  void Accept(ModelVisitor* const visitor) const override {
+  void Accept(ModelVisitor* visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kEquality, this);
     visitor->VisitIntervalArgument(ModelVisitor::kLeftArgument, var1_);
     visitor->VisitIntervalArgument(ModelVisitor::kRightArgument, var2_);
@@ -586,7 +586,7 @@ class IntervalEquality : public Constraint {
 }  // namespace
 
 Constraint* Solver::MakeCover(const std::vector<IntervalVar*>& vars,
-                              IntervalVar* const target_var) {
+                              IntervalVar* target_var) {
   CHECK(!vars.empty());
   if (vars.size() == 1) {
     return MakeEquality(vars[0], target_var);
@@ -595,8 +595,7 @@ Constraint* Solver::MakeCover(const std::vector<IntervalVar*>& vars,
   }
 }
 
-Constraint* Solver::MakeEquality(IntervalVar* const var1,
-                                 IntervalVar* const var2) {
+Constraint* Solver::MakeEquality(IntervalVar* var1, IntervalVar* var2) {
   return RevAlloc(new IntervalEquality(this, var1, var2));
 }
 }  // namespace operations_research
