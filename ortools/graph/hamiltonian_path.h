@@ -86,6 +86,7 @@
 #include <stddef.h>
 
 #include <algorithm>
+#include <bit>
 #include <cmath>
 #include <cstdint>
 #include <limits>
@@ -96,11 +97,23 @@
 
 #include "absl/log/check.h"
 #include "absl/types/span.h"
-#include "ortools/util/bitset.h"
+#include "ortools/util/flat_matrix.h"
 #include "ortools/util/saturated_arithmetic.h"
-#include "ortools/util/vector_or_function.h"
 
 namespace operations_research {
+
+template <typename ScalarType>
+void CheckSquareMatrix(const std::vector<std::vector<ScalarType>>& matrix) {
+  if (matrix.empty()) return;
+  const int size = matrix.size();
+  const char* msg = "Matrix must be square.";
+  for (const std::vector<ScalarType>& row : matrix) {
+    CHECK_EQ(size, row.size()) << msg;
+  }
+}
+
+template <typename ScalarType>
+void CheckSquareMatrix(const FlatMatrix<ScalarType>&) {}
 
 // TODO(user): Move the Set-related classbelow to util/bitset.h
 // Iterates over the elements of a set represented as an unsigned integer,
@@ -213,12 +226,12 @@ class Set {
 
 template <>
 inline int Set<uint64_t>::SmallestElement() const {
-  return LeastSignificantBitPosition64(value_);
+  return std::countr_zero(value_);
 }
 
 template <>
 inline int Set<uint64_t>::Cardinality() const {
-  return BitCount64(value_);
+  return std::popcount(value_);
 }
 
 // An iterator for sets of increasing corresponding values that have the same
@@ -557,7 +570,7 @@ class HamiltonianPathSolver {
   using Saturated = SaturatedArithmetic<T>;
 
   // Returns the cost value between two nodes.
-  CostType Cost(int i, int j) { return cost_(i, j); }
+  CostType Cost(int i, int j) { return cost_[i][j]; }
 
   // Does all the Dynamic Programming iterations.
   void Solve();
@@ -569,7 +582,7 @@ class HamiltonianPathSolver {
   bool PathIsValid(absl::Span<const int> path, CostType cost);
 
   // Cost function used to build Hamiltonian paths.
-  MatrixOrFunction<CostType, CostFunction, true> cost_;
+  CostFunction cost_;
 
   // The number of nodes in the problem.
   int num_nodes_;
@@ -625,7 +638,7 @@ HamiltonianPathSolver<CostType, CostFunction>::HamiltonianPathSolver(
       triangle_inequality_checked_(false),
       solved_(false) {
   CHECK_GE(NodeSet::kMaxCardinality, num_nodes_);
-  CHECK(cost_.Check());
+  CheckSquareMatrix(cost_);
 }
 
 template <typename CostType, typename CostFunction>
@@ -640,10 +653,10 @@ void HamiltonianPathSolver<CostType, CostFunction>::ChangeCostMatrix(
   robustness_checked_ = false;
   triangle_inequality_checked_ = false;
   solved_ = false;
-  cost_.Reset(cost);
+  cost_ = std::move(cost);
   num_nodes_ = num_nodes;
   CHECK_GE(NodeSet::kMaxCardinality, num_nodes_);
-  CHECK(cost_.Check());
+  CheckSquareMatrix(cost_);
 }
 
 template <typename CostType, typename CostFunction>
@@ -909,7 +922,7 @@ class PruningHamiltonianSolver {
 
  private:
   // Returns the cost value between two nodes.
-  CostType Cost(int i, int j) { return cost_(i, j); }
+  CostType Cost(int i, int j) { return cost_[i][j]; }
 
   // Solve and get TSP cost.
   void Solve(int end_node);
@@ -918,7 +931,7 @@ class PruningHamiltonianSolver {
   CostType ComputeFutureLowerBound(NodeSet current_set, int last_visited);
 
   // Cost function used to build Hamiltonian paths.
-  MatrixOrFunction<CostType, CostFunction, true> cost_;
+  CostFunction cost_;
 
   // The number of nodes in the problem.
   int num_nodes_;

@@ -11,22 +11,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/graph/topologicalsorter.h"
+#include "ortools/graph_base/topologicalsorter.h"
 
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
-#include <limits>
-#include <map>
 #include <queue>
-#include <string>
 #include <utility>
 #include <vector>
 
-#include "absl/status/status.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/types/span.h"
-#include "ortools/base/map_util.h"
-#include "ortools/base/stl_util.h"
 
 namespace util {
 namespace internal {

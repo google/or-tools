@@ -21,7 +21,7 @@
 
 #include "absl/memory/memory.h"
 #include "ortools/base/types.h"
-#include "ortools/graph/graph.h"
+#include "ortools/graph_base/graph.h"
 
 namespace util {
 

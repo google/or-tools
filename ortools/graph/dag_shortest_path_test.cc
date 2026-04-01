@@ -31,8 +31,8 @@
 #include "ortools/base/gmock.h"
 #include "ortools/base/strong_int.h"
 #include "ortools/base/strong_vector.h"
-#include "ortools/graph/graph.h"
-#include "ortools/graph/graph_io.h"
+#include "ortools/graph_base/graph.h"
+#include "ortools/graph_base/io.h"
 #include "ortools/util/flat_matrix.h"
 
 namespace operations_research {
@@ -1230,6 +1230,29 @@ BENCHMARK(BM_RandomDag_K)
     ->Args({1 << 16, 16, 16})
     ->Args({1 << 22, 4, 4})
     ->Args({1 << 22, 4, 16});
+
+TEST(ShortestPathOnDagIncrementalTest, ChangeSources) {
+  util::ListGraph<> graph(4, /*arc_capacity=*/4);
+  int a = 0;
+  int b = 1;
+  int s = 2;
+  int t = 3;
+  const std::vector<int> topological_order = {s, a, b, t};
+  int sa = graph.AddArc(s, a);
+  int sb = graph.AddArc(s, b);
+  int at = graph.AddArc(a, t);
+  int bt = graph.AddArc(b, t);
+  std::vector<double> arc_lengths(4);
+  arc_lengths[sa] = 3;
+  arc_lengths[at] = 4;
+  arc_lengths[sb] = 5;
+  arc_lengths[bt] = 6;
+  ShortestPathsOnDagWrapper<util::ListGraph<>> shortest_paths_on_dag(
+      &graph, &arc_lengths, topological_order);
+  shortest_paths_on_dag.RunShortestPathOnDag({s});
+  shortest_paths_on_dag.RunShortestPathOnDag({a});
+  EXPECT_THAT(shortest_paths_on_dag.ArcPathTo(t), ElementsAre(at));
+}
 
 }  // namespace
 }  // namespace operations_research

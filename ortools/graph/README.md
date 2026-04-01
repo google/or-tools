@@ -30,7 +30,7 @@ Specific algorithms for paths:
   acyclic graphs. If you have such a graph, this implementation is likely to be
   the fastest. Unlike most implementations, these algorithms have two interfaces
   : a "simple" one (list of edges and weights) and a standard one (taking as
-  input a graph data structure from [`//ortools/graph/graph.h`][graph_h]).
+  input a graph data structure from [`//util/graph/graph.h`][graph_h]).
 * [`dag_constrained_shortest_path.`][dag_constrained_shortest_path_h]: shortest
   paths on directed acyclic graphs with resource constraints.
 * [`hamiltonian_path.h`][hamiltonian_path_h]: entry point for computing minimum
@@ -202,18 +202,18 @@ You can find some canonical examples in [`samples`][samples].
 
 <!-- Links used throughout the document. -->
 [graph_h]: ../graph/graph.h
-[bounded_dijkstra_h]: ../graph/bounded_dijkstra.h
-[bidirectional_dijkstra_h]: ../graph/bidirectional_dijkstra.h
-[shortest_paths_h]: ../graph/shortest_paths.h
-[dag_shortest_path_h]: ../graph/dag_shortest_path.h
-[dag_constrained_shortest_path_h]: ../graph/dag_constrained_shortest_path.h
-[hamiltonian_path_h]: ../graph/hamiltonian_path.h
-[eulerian_path_h]: ../graph/eulerian_path.h
-[connected_components_h]: ../graph/connected_components.h
-[strongly_connected_components_h]: ../graph/strongly_connected_components.h
-[cliques_h]: ../graph/cliques.h
-[linear_assignment_h]: ../graph/linear_assignment.h
-[max_flow_h]: ../graph/max_flow.h
-[min_cost_flow_h]: ../graph/min_cost_flow.h
-[samples]: ../graph/samples/
+[bounded_dijkstra_h]: http://google3/third_party/ortools/ortools/graph/bounded_dijkstra.h
+[bidirectional_dijkstra_h]: http://google3/third_party/ortools/ortools/graph/bidirectional_dijkstra.h
+[shortest_paths_h]: http://google3/third_party/ortools/ortools/graph/shortest_paths.h
+[dag_shortest_path_h]: http://google3/third_party/ortools/ortools/graph/dag_shortest_path.h
+[dag_constrained_shortest_path_h]: http://google3/third_party/ortools/ortools/graph/dag_constrained_shortest_path.h
+[hamiltonian_path_h]: http://google3/third_party/ortools/ortools/graph/hamiltonian_path.h
+[eulerian_path_h]: http://google3/third_party/ortools/ortools/graph/eulerian_path.h
+[connected_components_h]: http://google3/third_party/ortools/ortools/graph/connected_components.h
+[strongly_connected_components_h]: http://google3/third_party/ortools/ortools/graph/strongly_connected_components.h
+[cliques_h]: http://google3/third_party/ortools/ortools/graph/cliques.h
+[linear_assignment_h]: http://google3/third_party/ortools/ortools/graph/linear_assignment.h
+[max_flow_h]: http://google3/third_party/ortools/ortools/graph/max_flow.h
+[min_cost_flow_h]: http://google3/third_party/ortools/ortools/graph/min_cost_flow.h
+[samples]: http://google3/third_party/ortools/ortools/graph/samples/
 [graph]: ../graph/

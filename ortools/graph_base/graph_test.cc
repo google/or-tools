@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/graph/graph.h"
+#include "ortools/graph_base/graph.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -25,7 +25,6 @@
 #include <vector>
 
 #include "absl/algorithm/container.h"
-#include "absl/base/log_severity.h"
 #include "absl/log/check.h"
 #include "absl/random/random.h"
 #include "absl/strings/str_cat.h"
@@ -33,6 +32,7 @@
 #include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/base/strong_int.h"
 #include "ortools/base/strong_vector.h"
 

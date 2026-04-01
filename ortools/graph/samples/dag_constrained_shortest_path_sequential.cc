@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// [START program]
 // [START imports]
 #include <cstdint>
 #include <iostream>
@@ -22,7 +23,7 @@
 #include "absl/strings/str_join.h"
 #include "ortools/base/init_google.h"
 #include "ortools/graph/dag_constrained_shortest_path.h"
-#include "ortools/graph/graph.h"
+#include "ortools/graph_base/graph.h"
 // [END imports]
 
 int main(int argc, char** argv) {
@@ -137,3 +138,4 @@ int main(int argc, char** argv) {
   // [END more-paths]
   return 0;
 }
+// [END program]

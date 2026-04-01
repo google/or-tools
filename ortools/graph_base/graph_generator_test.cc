@@ -11,13 +11,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/graph/graph_generator.h"
+#include "ortools/graph_base/graph_generator.h"
 
 #include <vector>
 
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
-#include "ortools/graph/graph.h"
+#include "ortools/graph_base/graph.h"
 
 namespace {
 

@@ -20,7 +20,7 @@
 
 #include "ortools/graph/flow_problem.pb.h"
 #include "ortools/graph/generic_max_flow.h"
-#include "ortools/graph/graph.h"
+#include "ortools/graph_base/graph.h"
 
 namespace operations_research {
 
@@ -104,7 +104,7 @@ class SimpleMaxFlow {
   void GetSourceSideMinCut(std::vector<NodeIndex>* result);
 
   // Returns the nodes that can reach the sink by non-saturated arcs, the
-  // outgoing arcs of this set form a minimum cut. Note that if this is the
+  // incoming arcs of this set form a minimum cut. Note that if this is the
   // complement set of GetNodeReachableFromSource(), then the min-cut is unique.
   // This works only if Solve() returned OPTIMAL.
   void GetSinkSideMinCut(std::vector<NodeIndex>* result);
@@ -132,7 +132,7 @@ class SimpleMaxFlow {
   // instance that uses it.
   typedef ::util::ReverseArcStaticGraph<NodeIndex, ArcIndex> Graph;
   std::unique_ptr<Graph> underlying_graph_;
-  std::unique_ptr<GenericMaxFlow<Graph> > underlying_max_flow_;
+  std::unique_ptr<GenericMaxFlow<Graph>> underlying_max_flow_;
 };
 
 }  // namespace operations_research

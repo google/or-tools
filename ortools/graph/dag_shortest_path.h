@@ -83,7 +83,7 @@ std::vector<PathWithLength> KShortestPathsOnDag(
 // A wrapper that holds the memory needed to run many shortest path computations
 // efficiently on the given DAG. One call of `RunShortestPathOnDag()` has time
 // complexity O(|E| + |V|) and space complexity O(|V|).
-// `GraphType` can use any of the interfaces defined in `ortools/graph/graph.h`.
+// `GraphType` can use any of the interfaces defined in `util/graph/graph.h`.
 // `ArcLengthContainer` can be any container of doubles.
 template <class GraphType, typename ArcLengthContainer = std::vector<double>>
 class ShortestPathsOnDagWrapper {
@@ -130,7 +130,7 @@ class ShortestPathsOnDagWrapper {
   double LengthTo(NodeIndex node) const {
     return length_from_sources_[static_cast<size_t>(node)];
   }
-  std::vector<double> LengthTo() const { return length_from_sources_; }
+  const std::vector<double>& LengthTo() const { return length_from_sources_; }
 
   // Returns the list of all the arcs in the shortest path from `node`'s
   // source to `node`. CHECKs if the node is reachable.
@@ -160,7 +160,7 @@ class ShortestPathsOnDagWrapper {
 // computations efficiently on the given DAG. One call of
 // `RunKShortestPathOnDag()` has time complexity O(|E| + k|V|log(d)) where d is
 // the mean degree of the graph and space complexity O(k|V|).
-// `GraphType` can use any of the interfaces defined in `ortools/graph/graph.h`.
+// `GraphType` can use any of the interfaces defined in `util/graph/graph.h`.
 // IMPORTANT: Only use if `path_count > 1` (k > 1) otherwise use
 // `ShortestPathsOnDagWrapper`.
 template <class GraphType, typename ArcLengthContainer = std::vector<double>>
@@ -364,10 +364,15 @@ void ShortestPathsOnDagWrapper<GraphType, ArcLengths>::RunShortestPathOnDag(
   // performance, so it only makes sense for nodes that are reachable from at
   // least one source, the other ones will contain junk.
   for (const NodeIndex node : reached_nodes_) {
-    length_from_sources[static_cast<size_t>(node)] = kInf;
+    const size_t node_index = static_cast<size_t>(node);
+    length_from_sources[node_index] = kInf;
+    incoming_shortest_path_arc_[node_index] = GraphType::kNilArc;
   }
   DCHECK(std::all_of(length_from_sources.begin(), length_from_sources.end(),
                      [](double l) { return l == kInf; }));
+  DCHECK(std::all_of(incoming_shortest_path_arc_.begin(),
+                     incoming_shortest_path_arc_.end(),
+                     [](ArcIndex arc) { return arc == GraphType::kNilArc; }));
   reached_nodes_.clear();
 
   for (const NodeIndex source : sources) {

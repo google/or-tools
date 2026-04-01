@@ -16,7 +16,7 @@
 // It sorts ancestor nodes before their descendants. Multi-arcs are fine.
 //
 // If your graph is not a DAG and you're reading this, you are probably
-// looking for ortools/graph/strongly_connected_components.h which does
+// looking for util/graph/strongly_connected_components.h which does
 // the topological decomposition of a directed graph.
 //
 // USAGE:
@@ -41,16 +41,15 @@
 #include "absl/base/attributes.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/inlined_vector.h"
+#include "absl/log/check.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_format.h"
 #include "absl/types/span.h"
 #include "ortools/base/container_logging.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
-#include "ortools/base/status_builder.h"
 #include "ortools/base/stl_util.h"
-#include "ortools/graph/graph.h"
+#include "ortools/graph_base/graph.h"
 
 namespace util {
 namespace graph {

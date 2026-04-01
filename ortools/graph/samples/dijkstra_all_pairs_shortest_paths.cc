@@ -42,7 +42,7 @@
 #include "absl/time/time.h"
 #include "ortools/base/init_google.h"
 #include "ortools/graph/bounded_dijkstra.h"
-#include "ortools/graph/graph.h"
+#include "ortools/graph_base/graph.h"
 
 ABSL_FLAG(int32_t, num_nodes, 50,
           "How many nodes to create in the random graph");

@@ -20,13 +20,13 @@
 #include <vector>
 
 #include "absl/algorithm/container.h"
-#include "absl/base/log_severity.h"
 #include "absl/log/check.h"
 #include "absl/strings/str_format.h"
 #include "absl/types/span.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/base/threadpool.h"
 #include "ortools/graph/dag_shortest_path.h"
-#include "ortools/graph/graph.h"
+#include "ortools/graph_base/graph.h"
 
 namespace operations_research {
 
@@ -92,7 +92,7 @@ struct GraphPathWithLength {
 
 // A wrapper that holds the memory needed to run many constrained shortest path
 // computations efficiently on the given DAG (on which resources do not change).
-// `GraphType` can use one of the interfaces defined in `ortools/graph/graph.h`.
+// `GraphType` can use one of the interfaces defined in `util/graph/graph.h`.
 template <class GraphType>
 class ConstrainedShortestPathsOnDagWrapper {
  public:

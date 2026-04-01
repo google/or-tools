@@ -31,9 +31,9 @@
 #include "ortools/base/dump_vars.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/strong_int.h"
-#include "ortools/graph/graph.h"
-#include "ortools/graph/graph_io.h"
-#include "ortools/graph/test_util.h"
+#include "ortools/graph_base/graph.h"
+#include "ortools/graph_base/io.h"
+#include "ortools/graph_base/test_util.h"
 #include "ortools/util/flat_matrix.h"
 
 namespace operations_research {

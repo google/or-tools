@@ -11,21 +11,31 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/graph/util.h"
+#include "ortools/graph_base/test_util.h"
 
-#include <vector>
-
-#include "absl/types/span.h"
+#include "gtest/gtest.h"
+#include "ortools/base/gmock.h"
+#include "ortools/graph_base/io.h"
 
 namespace util {
+namespace {
 
-bool IsSubsetOf0N(absl::Span<const int> v, int n) {
-  std::vector<bool> mask(n, false);
-  for (const int i : v) {
-    if (i < 0 || i >= n || mask[i]) return false;
-    mask[i] = true;
-  }
-  return true;
+TEST(Create2DGridGraphTest, Small) {
+  EXPECT_EQ(GraphToString(*Create2DGridGraph<ListGraph<>>(4, 3),
+                          PRINT_GRAPH_ADJACENCY_LISTS_SORTED),
+            R"(0: 1 4
+1: 0 2 5
+2: 1 3 6
+3: 2 7
+4: 0 5 8
+5: 1 4 6 9
+6: 2 5 7 10
+7: 3 6 11
+8: 4 9
+9: 5 8 10
+10: 6 9 11
+11: 7 10)");
 }
 
+}  // namespace
 }  // namespace util

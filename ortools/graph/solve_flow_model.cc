@@ -27,7 +27,6 @@
 #include <string>
 #include <vector>
 
-#include "absl/base/log_severity.h"
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/log/globals.h"
@@ -38,14 +37,15 @@
 #include "ortools/base/filesystem.h"
 #include "ortools/base/helpers.h"
 #include "ortools/base/init_google.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/base/options.h"
 #include "ortools/base/path.h"
 #include "ortools/base/timer.h"
-#include "ortools/graph/flow_graph.h"
 #include "ortools/graph/flow_problem.pb.h"
 #include "ortools/graph/generic_max_flow.h"
-#include "ortools/graph/graph.h"
 #include "ortools/graph/min_cost_flow.h"
+#include "ortools/graph_base/flow_graph.h"
+#include "ortools/graph_base/graph.h"
 #include "ortools/util/file_util.h"
 #include "ortools/util/filelineiter.h"
 #include "ortools/util/stats.h"

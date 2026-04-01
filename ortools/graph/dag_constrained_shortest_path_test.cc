@@ -28,8 +28,8 @@
 #include "gtest/gtest.h"
 #include "ortools/base/dump_vars.h"
 #include "ortools/base/gmock.h"
-#include "ortools/graph/graph.h"
-#include "ortools/graph/graph_io.h"
+#include "ortools/graph_base/graph.h"
+#include "ortools/graph_base/io.h"
 #include "ortools/math_opt/cpp/math_opt.h"
 
 namespace operations_research {

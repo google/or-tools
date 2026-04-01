@@ -29,9 +29,9 @@
 #include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
-#include "ortools/graph/graph.h"
-#include "ortools/graph/graph_io.h"
 #include "ortools/graph/shortest_paths.h"
+#include "ortools/graph_base/graph.h"
+#include "ortools/graph_base/io.h"
 
 namespace operations_research {
 namespace {

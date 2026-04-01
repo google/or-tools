@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// [START program]
+// [START imports]
 #include <iostream>
 #include <utility>
 #include <vector>
@@ -20,28 +22,27 @@
 #include "absl/strings/str_join.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/status_macros.h"
-#include "ortools/graph/bfs.h"
+#include "ortools/graph_base/bfs.h"
+// [END imports]
 
 namespace {
 
 absl::Status Main() {
-  // The edges of this undirected graph encoded as a list of pairs, where .first
-  // and .second are the endpoints of each edge (the order does not matter).
-  const std::vector<std::pair<int, int>> edges = {
-      {0, 1}, {0, 2}, {1, 2}, {2, 3}};
-  const int num_nodes = 4;
+  // The arcs of this directed graph are encoded as a list of pairs, where
+  // .first is the source and .second is the destination of each arc.
+  const std::vector<std::pair<int, int>> arcs = {
+      {0, 1}, {0, 2}, {1, 3}, {2, 4}, {2, 5}, {3, 0}, {3, 5}, {4, 5}};
+  const int num_nodes = 6;
 
   // Transform the graph to an adjacency_list
   std::vector<std::vector<int>> adjacency_list(num_nodes);
-  for (const auto& [node1, node2] : edges) {
-    // Include both orientations of the edge
-    adjacency_list[node1].push_back(node2);
-    adjacency_list[node2].push_back(node1);
+  for (const auto& [start, end] : arcs) {
+    adjacency_list[start].push_back(end);
   }
 
-  // Solve the shortest path problem from 0 to 3.
+  // Solve the shortest path problem from 0 to 5.
   const int source = 0;
-  const int terminal = 3;
+  const int terminal = 5;
   ASSIGN_OR_RETURN(
       const std::vector<int> bfs_tree,
       util::graph::GetBFSRootedTree(adjacency_list, num_nodes, source));
@@ -64,3 +65,4 @@ int main(int argc, char** argv) {
   QCHECK_OK(Main());
   return 0;
 }
+// [END program]

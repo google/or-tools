@@ -19,8 +19,8 @@
 
 #include "absl/log/check.h"
 #include "absl/types/span.h"
-#include "ortools/graph/graph.h"
-#include "ortools/graph/topologicalsorter.h"
+#include "ortools/graph_base/graph.h"
+#include "ortools/graph_base/topologicalsorter.h"
 
 namespace operations_research {
 

@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// [START program]
+// [START imports]
 #include <iostream>
 #include <utility>
 #include <vector>
@@ -20,16 +22,17 @@
 #include "absl/strings/str_join.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/status_macros.h"
-#include "ortools/graph/bfs.h"
+#include "ortools/graph_base/bfs.h"
+// [END imports]
 
 namespace {
 
 absl::Status Main() {
   // The arcs of this directed graph are encoded as a list of pairs, where
   // .first is the source and .second is the destination of each arc.
-  const std::vector<std::pair<int, int>> arcs = {
-      {0, 1}, {0, 2}, {1, 3}, {2, 4}, {2, 5}, {3, 0}, {3, 5}, {4, 5}};
-  const int num_nodes = 6;
+  const std::vector<std::pair<int, int>> arcs = {{0, 1}, {1, 2}, {1, 3},
+                                                 {2, 3}, {3, 0}, {4, 2}};
+  const int num_nodes = 5;
 
   // Transform the graph to an adjacency_list
   std::vector<std::vector<int>> adjacency_list(num_nodes);
@@ -37,21 +40,29 @@ absl::Status Main() {
     adjacency_list[start].push_back(end);
   }
 
-  // Solve the shortest path problem from 0 to 5.
+  // Compute the shortest path from 0 to each reachable node.
   const int source = 0;
-  const int terminal = 5;
   ASSIGN_OR_RETURN(
       const std::vector<int> bfs_tree,
       util::graph::GetBFSRootedTree(adjacency_list, num_nodes, source));
-  ASSIGN_OR_RETURN(const std::vector<int> shortest_path,
-                   util::graph::GetBFSShortestPath(bfs_tree, terminal));
-
-  // Print to length of the path and then the nodes in the path.
-  std::cout << "Shortest path length (in arcs): " << shortest_path.size() - 1
-            << std::endl;
-  std::cout << "Shortest path nodes: " << absl::StrJoin(shortest_path, ", ")
-            << std::endl;
-
+  // Runs in O(num nodes). Nodes that are not reachable have distance -1.
+  ASSIGN_OR_RETURN(const std::vector<int> node_distances,
+                   util::graph::GetBFSDistances(bfs_tree));
+  for (int t = 0; t < num_nodes; ++t) {
+    if (t == source) {
+      continue;
+    }
+    if (node_distances[t] >= 0) {
+      ASSIGN_OR_RETURN(const std::vector<int> shortest_path,
+                       util::graph::GetBFSShortestPath(bfs_tree, t));
+      std::cout << "Shortest path from 0 to " << t
+                << " has length: " << node_distances[t] << std::endl;
+      std::cout << "Path is: " << absl::StrJoin(shortest_path, ", ")
+                << std::endl;
+    } else {
+      std::cout << "No path from 0 to " << t << std::endl;
+    }
+  }
   return absl::OkStatus();
 }
 
@@ -62,3 +73,4 @@ int main(int argc, char** argv) {
   QCHECK_OK(Main());
   return 0;
 }
+// [END program]

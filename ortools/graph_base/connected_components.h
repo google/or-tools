@@ -25,18 +25,18 @@
 #ifndef UTIL_GRAPH_CONNECTED_COMPONENTS_H_
 #define UTIL_GRAPH_CONNECTED_COMPONENTS_H_
 
+#include <cstddef>
 #include <functional>
-#include <map>
-#include <memory>
-#include <set>
 #include <type_traits>
 #include <vector>
 
+#include "absl/container/btree_map.h"
+#include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/hash/hash.h"
+#include "absl/log/check.h"
 #include "absl/meta/type_traits.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 
 namespace util {
@@ -142,8 +142,8 @@ struct ConnectedComponentsTypeHelper {
   // and ordered containers otherwise (= by default).
   template <typename U, typename V, typename E = void>
   struct SelectContainer {
-    using Set = std::set<T, CompareOrHashT>;
-    using Map = std::map<T, int, CompareOrHashT>;
+    using Set = absl::btree_set<T, CompareOrHashT>;
+    using Map = absl::btree_map<T, int, CompareOrHashT>;
   };
 
   // Specialization for when U is a hash functor and Eq is void (no custom

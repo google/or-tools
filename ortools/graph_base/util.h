@@ -17,6 +17,7 @@
 #define UTIL_GRAPH_UTIL_H_
 
 #include <algorithm>
+#include <climits>
 #include <cstdint>
 #include <limits>
 #include <memory>
@@ -29,10 +30,11 @@
 #include "absl/container/inlined_vector.h"
 #include "absl/log/check.h"
 #include "absl/types/span.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/base/map_util.h"
-#include "ortools/graph/connected_components.h"
-#include "ortools/graph/graph.h"
-#include "ortools/graph/iterators.h"
+#include "ortools/graph_base/connected_components.h"
+#include "ortools/graph_base/graph.h"
+#include "ortools/graph_base/iterators.h"
 
 namespace util {
 

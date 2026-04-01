@@ -22,13 +22,13 @@
 #include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/base/stl_util.h"
-#include "ortools/graph/graph.h"
-#include "ortools/graph/iterators.h"
+#include "ortools/graph_base/graph.h"
+#include "ortools/graph_base/iterators.h"
 
 namespace util {
 
 // Graph specialized for max-flow/min-cost-flow algorithms.
-// It follows the ortools/graph/graph.h interface.
+// It follows the util/graph/graph.h interface.
 //
 // For max-flow or min-cost-flow we need a directed graph where each arc from
 // tail to head has a "reverse" arc from head to tail. In practice many input

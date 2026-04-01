@@ -16,6 +16,8 @@
 load("@contrib_rules_jvm//java:defs.bzl", "java_junit5_test")
 load("//bazel:swig_java.bzl", "java_wrap_cc")
 
+package(default_visibility = ["//visibility:public"])
+
 java_wrap_cc(
     name = "graph",
     srcs = ["graph.swig"],

@@ -20,8 +20,8 @@
 #include "absl/status/statusor.h"
 #include "absl/types/span.h"
 #include "ortools/graph/dag_shortest_path.h"
-#include "ortools/graph/graph.h"
-#include "ortools/graph/topologicalsorter.h"
+#include "ortools/graph_base/graph.h"
+#include "ortools/graph_base/topologicalsorter.h"
 
 namespace operations_research {
 
