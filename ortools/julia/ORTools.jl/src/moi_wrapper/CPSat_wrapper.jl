@@ -1997,7 +1997,7 @@ end
 
 MOI.supports(::CPSATOptimizer, ::MOI.VariablePrimalStart, ::Type{MOI.VariableIndex}) = true
 
-MOI.get(optimizer::CPSATOptimizer, ::MOI.VariablePrimalStart, vi::MOI.VariableIndex)
+function MOI.get(optimizer::CPSATOptimizer, ::MOI.VariablePrimalStart, vi::MOI.VariableIndex)
     if isnothing(optimizer.model.solution_hint)
         return nothing
     end
@@ -2009,7 +2009,7 @@ MOI.get(optimizer::CPSATOptimizer, ::MOI.VariablePrimalStart, vi::MOI.VariableIn
     return optimizer.model.solution_hint.values[idx]
 end
 
-MOI.set(optimizer::CPSATOptimizer, ::MOI.VariablePrimalStart, vi::MOI.VariableIndex, value::Int)
+function MOI.set(optimizer::CPSATOptimizer, ::MOI.VariablePrimalStart, vi::MOI.VariableIndex, value::Int)
     if isnothing(optimizer.model.solution_hint)
         optimizer.model.solution_hint = NewCPSATPartialVariableAssignment()
     end
@@ -2018,7 +2018,7 @@ MOI.set(optimizer::CPSATOptimizer, ::MOI.VariablePrimalStart, vi::MOI.VariableIn
     push!(optimizer.model.solution_hint.values, value)
 
     return nothing
-end 
+end
 
 struct Assumptions <: MOI.AbstractModelAttribute end
 MOI.attribute_value_type(::Assumptions) = Union{Nothing,MOI.VectorOfVariables}
