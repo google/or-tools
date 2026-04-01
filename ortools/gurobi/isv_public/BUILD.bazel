@@ -19,6 +19,10 @@ cc_library(
     name = "gurobi_isv",
     srcs = ["gurobi_isv.cc"],
     hdrs = ["gurobi_isv.h"],
+    tags = [
+        "not_build:arm",
+        "not_run:arm",
+    ],
     deps = [
         "//ortools/base:status_macros",
         "//ortools/math_opt/solvers:gurobi_cc_proto",

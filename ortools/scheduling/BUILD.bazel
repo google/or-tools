@@ -94,7 +94,6 @@ cc_library(
     hdrs = ["jobshop_scheduling_parser.h"],
     deps = [
         ":jobshop_scheduling_cc_proto",
-        "//ortools/base",
         "//ortools/base:path",
         "//ortools/base:types",
         "//ortools/util:filelineiter",

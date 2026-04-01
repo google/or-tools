@@ -31,6 +31,10 @@ java_library(
         "Variable.java",
         "WeightedSumExpression.java",
     ],
+    tags = [
+        "not_build:arm",
+        "not_run:arm",
+    ],
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/linear_solver/java:modelbuilder",

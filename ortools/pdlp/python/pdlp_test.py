@@ -14,14 +14,13 @@
 
 """Tests for ortools.pdlp.python.quadratic_program."""
 
-from absl.testing import absltest
 import numpy as np
 import scipy.sparse
+from absl.testing import absltest
 
-from ortools.pdlp import solve_log_pb2
-from ortools.pdlp import solvers_pb2
-from ortools.pdlp.python import pdlp
 from ortools.linear_solver import linear_solver_pb2
+from ortools.pdlp import solve_log_pb2, solvers_pb2
+from ortools.pdlp.python import pdlp
 
 
 def small_proto_lp():

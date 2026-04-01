@@ -15,7 +15,9 @@ load("@rules_java//java:java_library.bzl", "java_library")
 
 package(default_visibility = ["//visibility:public"])
 
-# Additional dependency to use when using the wrapped sat solver library.
+# Entry point for the JAVA CP-SAT library.
+# This library wraps the C++ CP-SAT library, and exports needed java library.
+# Users should only depend on this library.
 java_library(
     name = "sat",
     srcs = [
@@ -43,10 +45,15 @@ java_library(
         "TableConstraint.java",
         "WeightedSumExpression.java",
     ],
+    exports = [
+        "//ortools/sat:sat_parameters_java_proto",
+        "//ortools/sat/java:cp_model_proto",
+        "//ortools/util/java:sorted_interval_list",
+    ],
     deps = [
         "//ortools/java/com/google/ortools:Loader",
-        "//ortools/sat:cp_model_java_proto",
         "//ortools/sat:sat_parameters_java_proto",
+        "//ortools/sat/java:cp_model_proto",
         "//ortools/sat/java:sat",
         "//ortools/util/java:sorted_interval_list",
     ],

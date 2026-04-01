@@ -12,29 +12,16 @@
 # limitations under the License.
 
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("//bazel:compilation_flags.bzl", "SAFE_FP_CODE")
 
-package(
-    default_visibility = [
-        "//visibility:public",
-    ],
-)
-
-# Floating-point code in this directory must not be compiled with
-# dangerous optimizations. For example do not assume that FP expressions
-# are associative. This is what -fno-fast-math is for.
-SAFE_FP_CODE = select({
-    "@platforms//os:linux": ["-fno-fast-math"],
-    "@platforms//os:macos": [],  # no_fast_math is the default.
-    "@platforms//os:windows": [],  # /fp:precise is the default.
-    "//conditions:default": [],
-})
+package(default_visibility = ["//visibility:public"])
 
 cc_library(
-    name = "base",
+    name = "lp_types",
     srcs = ["lp_types.cc"],
     hdrs = ["lp_types.h"],
+    copts = SAFE_FP_CODE,
     deps = [
-        "//ortools/base",
         "//ortools/base:strong_vector",
         "//ortools/util:bitset",
         "//ortools/util:strong_integers",
@@ -43,14 +30,12 @@ cc_library(
     ],
 )
 
-# Handling of permutations.
-
 cc_library(
     name = "permutation",
     hdrs = ["permutation.h"],
     copts = SAFE_FP_CODE,
     deps = [
-        ":base",
+        ":lp_types",
         "//ortools/base:strong_vector",
         "//ortools/util:return_macros",
         "@abseil-cpp//absl/log:check",
@@ -58,30 +43,28 @@ cc_library(
     ],
 )
 
-# Vectors that offer a sparse interface to dense storage.
 cc_library(
     name = "scattered_vector",
     hdrs = ["scattered_vector.h"],
+    copts = SAFE_FP_CODE,
     deps = [
-        ":base",
+        ":lp_types",
         "//ortools/util:bitset",
         "@abseil-cpp//absl/log:check",
     ],
 )
-
-# Compressed sparse columns.
 
 cc_library(
     name = "sparse_vector",
     hdrs = ["sparse_vector.h"],
     copts = SAFE_FP_CODE,
     deps = [
-        ":base",
+        ":lp_types",
         ":permutation",
-        "//ortools/base",
         "//ortools/base:types",
-        "//ortools/graph:iterators",
+        "//ortools/graph_base:iterators",
         "//ortools/util:return_macros",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings:str_format",
     ],
 )
@@ -92,7 +75,7 @@ cc_library(
     hdrs = ["sparse_column.h"],
     copts = SAFE_FP_CODE,
     deps = [
-        ":base",
+        ":lp_types",
         ":permutation",
         ":sparse_vector",
         "//ortools/util:return_macros",
@@ -113,17 +96,14 @@ cc_library(
 cc_library(
     name = "sparse",
     srcs = ["sparse.cc"],
-    hdrs = [
-        "sparse.h",
-    ],
+    hdrs = ["sparse.h"],
     copts = SAFE_FP_CODE,
     deps = [
-        ":base",
+        ":lp_types",
         ":permutation",
         ":scattered_vector",
         ":sparse_column",
-        "//ortools/base:types",
-        "//ortools/graph:iterators",
+        "//ortools/graph_base:iterators",
         "//ortools/util:bitset",
         "//ortools/util:return_macros",
         "@abseil-cpp//absl/log:check",
@@ -132,20 +112,17 @@ cc_library(
     ],
 )
 
-# Matrix scaler.
-
 cc_library(
     name = "matrix_scaler",
     srcs = ["matrix_scaler.cc"],
     hdrs = ["matrix_scaler.h"],
     copts = SAFE_FP_CODE,
     deps = [
-        ":base",
         ":lp_data",
+        ":lp_types",
         ":lp_utils",
         ":sparse",
         ":sparse_column",
-        "//ortools/base",
         "//ortools/base:strong_vector",
         "//ortools/base:types",
         "//ortools/glop:parameters_cc_proto",
@@ -158,32 +135,28 @@ cc_library(
     ],
 )
 
-# Linear Programming data storage.
-
 cc_library(
     name = "lp_data",
     srcs = ["lp_data.cc"],
     hdrs = ["lp_data.h"],
     copts = SAFE_FP_CODE,
     deps = [
-        ":base",
         ":lp_print_utils",
+        ":lp_types",
         ":lp_utils",
         ":matrix_utils",
         ":permutation",
         ":sparse",
         ":sparse_column",
-        "//ortools/base",
-        "//ortools/base:hash",
         "//ortools/base:strong_vector",
         "//ortools/glop:parameters_cc_proto",
         "//ortools/util:fp_utils",
         "//ortools/util:strong_integers",
         "@abseil-cpp//absl/container:flat_hash_map",
-        "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/strings:string_view",
     ],
 )
 
@@ -191,19 +164,17 @@ cc_library(
     name = "lp_data_utils",
     srcs = ["lp_data_utils.cc"],
     hdrs = ["lp_data_utils.h"],
+    copts = SAFE_FP_CODE,
     deps = [
-        ":base",
         ":lp_data",
+        ":lp_types",
         ":matrix_scaler",
         ":scattered_vector",
-        ":sparse_column",
         "//ortools/glop:parameters_cc_proto",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/types:span",
     ],
 )
-
-# Lp utilities.
 
 cc_library(
     name = "lp_utils",
@@ -211,7 +182,7 @@ cc_library(
     hdrs = ["lp_utils.h"],
     copts = SAFE_FP_CODE,
     deps = [
-        ":base",
+        ":lp_types",
         ":permutation",
         ":scattered_vector",
         ":sparse_column",
@@ -227,7 +198,7 @@ cc_library(
     hdrs = ["matrix_utils.h"],
     copts = SAFE_FP_CODE,
     deps = [
-        ":base",
+        ":lp_types",
         ":sparse",
         ":sparse_column",
         "//ortools/base:hash",
@@ -241,8 +212,8 @@ cc_library(
     hdrs = ["lp_parser.h"],
     copts = SAFE_FP_CODE,
     deps = [
-        ":base",
         ":lp_data",
+        ":lp_types",
         ":proto_utils",
         "//ortools/linear_solver:linear_solver_cc_proto",
         "@abseil-cpp//absl/base:core_headers",
@@ -252,11 +223,10 @@ cc_library(
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:string_view",
         "@re2",
     ],
 )
-
-# Linear Programming printing utilities.
 
 cc_library(
     name = "lp_print_utils",
@@ -264,25 +234,23 @@ cc_library(
     hdrs = ["lp_print_utils.h"],
     copts = SAFE_FP_CODE,
     deps = [
-        ":base",
+        ":lp_types",
         "//ortools/base:types",
         "//ortools/util:rational_approximation",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/strings:string_view",
     ],
 )
-
-# Proto conversion
 
 cc_library(
     name = "proto_utils",
     srcs = ["proto_utils.cc"],
     hdrs = ["proto_utils.h"],
     copts = SAFE_FP_CODE,
-    visibility = ["//visibility:public"],
     deps = [
-        ":base",
         ":lp_data",
+        ":lp_types",
         ":sparse",
         ":sparse_column",
         "//ortools/linear_solver:linear_solver_cc_proto",
@@ -290,13 +258,11 @@ cc_library(
     ],
 )
 
-# Test utilities.
-
-# MPS reader.
 cc_library(
     name = "mps_reader_template",
     srcs = ["mps_reader_template.cc"],
     hdrs = ["mps_reader_template.h"],
+    copts = SAFE_FP_CODE,
     deps = [
         "//ortools/base:file",
         "//ortools/base:status_macros",
@@ -309,6 +275,7 @@ cc_library(
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:string_view",
     ],
 )
 
@@ -318,8 +285,8 @@ cc_library(
     hdrs = ["mps_reader.h"],
     copts = SAFE_FP_CODE,
     deps = [
-        ":base",
         ":lp_data",
+        ":lp_types",
         ":mps_reader_template",
         "//ortools/base:protobuf_util",
         "//ortools/base:status_macros",
@@ -332,18 +299,18 @@ cc_library(
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:string_view",
     ],
 )
-
-# Utility to represent the MPS layout as a PNG.
 
 cc_library(
     name = "sol_reader",
     srcs = ["sol_reader.cc"],
     hdrs = ["sol_reader.h"],
+    copts = SAFE_FP_CODE,
     deps = [
-        ":base",
         ":lp_data",
+        ":lp_types",
         "//ortools/base:numbers",
         "//ortools/base:status_macros",
         "//ortools/linear_solver:linear_solver_cc_proto",
@@ -352,12 +319,9 @@ cc_library(
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:string_view",
     ],
 )
-
-# Library to show matrix fill-in as a PNG bitmap.
-
-# Decompose a LinearProgram into several independent LinearPrograms.
 
 cc_library(
     name = "lp_decomposer",
@@ -365,8 +329,8 @@ cc_library(
     hdrs = ["lp_decomposer.h"],
     copts = SAFE_FP_CODE,
     deps = [
-        ":base",
         ":lp_data",
+        ":lp_types",
         ":sparse",
         ":sparse_column",
         "//ortools/algorithms:dynamic_partition",

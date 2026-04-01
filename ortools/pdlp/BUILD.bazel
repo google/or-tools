@@ -12,6 +12,7 @@
 # limitations under the License.
 
 load("@protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
+load("@protobuf//bazel:java_proto_library.bzl", "java_proto_library")
 load("@protobuf//bazel:proto_library.bzl", "proto_library")
 load("@protobuf//bazel:py_proto_library.bzl", "py_proto_library")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
@@ -60,6 +61,11 @@ py_proto_library(
     deps = [":solve_log_proto"],
 )
 
+java_proto_library(
+    name = "solve_log_java_proto",
+    deps = [":solve_log_proto"],
+)
+
 proto_library(
     name = "solvers_proto",
     srcs = ["solvers.proto"],
@@ -73,6 +79,11 @@ cc_proto_library(
 
 py_proto_library(
     name = "solvers_py_pb2",
+    deps = [":solvers_proto"],
+)
+
+java_proto_library(
+    name = "solvers_java_proto",
     deps = [":solvers_proto"],
 )
 
@@ -131,7 +142,7 @@ cc_library(
         "//ortools/glop:preprocessor",
         "//ortools/linear_solver:linear_solver_cc_proto",
         "//ortools/lp_data",
-        "//ortools/lp_data:base",
+        "//ortools/lp_data:lp_types",
         "//ortools/lp_data:proto_utils",
         "//ortools/util:logging",
         "@abseil-cpp//absl/algorithm:container",
@@ -168,7 +179,7 @@ cc_test(
         "//ortools/glop:parameters_cc_proto",
         "//ortools/linear_solver:linear_solver_cc_proto",
         "//ortools/lp_data",
-        "//ortools/lp_data:base",
+        "//ortools/lp_data:lp_types",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",

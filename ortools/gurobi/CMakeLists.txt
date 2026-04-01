@@ -36,3 +36,17 @@ target_link_libraries(${NAME} PRIVATE
   ${PROJECT_NAMESPACE}::math_opt_proto
   $<$<BOOL:${USE_COINOR}>:Coin::Cbc>)
 #add_library(${PROJECT_NAMESPACE}::gurobi ALIAS ${NAME})
+
+ortools_cxx_library(
+  NAME
+  gurobi_stdout_matchers
+  SOURCES
+    "gurobi_stdout_matchers.cc"
+    "gurobi_stdout_matchers.h"
+  TYPE
+    STATIC
+  LINK_LIBRARIES
+    ortools::base_gmock
+    GTest::gtest
+  TESTING
+)

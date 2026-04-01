@@ -19,9 +19,14 @@
 
 #include "absl/container/btree_map.h"
 #include "absl/flags/flag.h"
-#include "ortools/base/commandlineflags.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
+#include "absl/strings/str_cat.h"
+#include "absl/time/time.h"
 #include "ortools/base/helpers.h"
+#include "ortools/base/options.h"
 #include "ortools/base/timer.h"
+#include "ortools/linear_solver/linear_solver.h"
 #include "ortools/packing/arc_flow_builder.h"
 #include "ortools/packing/vector_bin_packing.pb.h"
 

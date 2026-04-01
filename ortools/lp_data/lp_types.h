@@ -26,7 +26,6 @@
 #include <vector>
 
 #include "absl/log/check.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/strong_integers.h"
@@ -298,7 +297,7 @@ class StrictITIVector : public util_intops::StrongVector<IntType, T, Alloc> {
 
   // This allows for brace initialization, which is really useful in tests.
   // It is not 'explicit' by design, so one can do vector = {...};
-#if !defined(__ANDROID__) && (!defined(_MSC_VER) || (_MSC_VER >= 1800))
+#if !defined(__ANDROID__)
   StrictITIVector(std::initializer_list<T> init_list,
                   const Alloc& a = Alloc())  // NOLINT
       : ParentType(init_list.begin(), init_list.end(), a) {}
