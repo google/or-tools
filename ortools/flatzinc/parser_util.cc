@@ -16,17 +16,14 @@
 #include "ortools/flatzinc/parser_util.h"
 
 #include <cmath>
-#include <string>
+#include <cstdint>
 #include <vector>
 
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/logging.h"
-#include "ortools/base/mathutil.h"
-#include "ortools/base/stl_util.h"
-#include "ortools/base/types.h"
 #include "ortools/flatzinc/model.h"
 #include "ortools/flatzinc/parser.tab.hh"
-#include "ortools/util/string_array.h"
 
 extern int orfz_lex(YYSTYPE*, void* scanner);
 extern int orfz_get_lineno(void* scanner);

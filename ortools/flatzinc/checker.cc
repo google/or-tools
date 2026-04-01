@@ -326,6 +326,17 @@ bool CheckOrToolsArrayIntElement(
   return element == target;
 }
 
+bool CheckOrToolsArraySetElement(
+    const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
+    const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
+  const int64_t index = Eval(ct.arguments[0], evaluator);
+  const int64_t min_index = ct.arguments[1].values[0];
+  const std::vector<int64_t> element =
+      SetEvalAt(ct.arguments[2], index - min_index, set_evaluator);
+  const std::vector<int64_t> target = SetEval(ct.arguments[3], set_evaluator);
+  return element == target;
+}
+
 bool CheckAtMostInt(
     const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
     const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
@@ -1149,6 +1160,28 @@ bool CheckIntTimes(
   return target == left * right;
 }
 
+int64_t Int64Pow(int64_t x, int64_t p) {
+  DCHECK_GE(p, 0);
+  if (p == 0) return 1;
+  if (p == 1) return x;
+
+  int64_t tmp = Int64Pow(x, p / 2);
+  if (p % 2 == 0)
+    return tmp * tmp;
+  else
+    return x * tmp * tmp;
+}
+
+bool CheckIntPow(
+    const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
+    const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
+  const int64_t base = Eval(ct.arguments[0], evaluator);
+  const int64_t exp = Eval(ct.arguments[1], evaluator);
+  if (exp < 0) return false;
+  const int64_t target = Eval(ct.arguments[2], evaluator);
+  return target == Int64Pow(base, exp);
+}
+
 bool CheckOrToolsInverse(
     const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
     const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
@@ -1352,7 +1385,7 @@ bool CheckArraySetElement(
     const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
     const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
   const int64_t index = Eval(ct.arguments[0], evaluator);
-  const int64_t min_index = ct.arguments[0].Var()->domain.Min();
+  const int64_t min_index = 1;
   const std::vector<int64_t> element =
       SetEvalAt(ct.arguments[1], index - min_index, set_evaluator);
   const std::vector<int64_t> target = SetEval(ct.arguments[2], set_evaluator);
@@ -1844,6 +1877,7 @@ CallMap CreateCallMap() {
   m["int_not_in"] = CheckSetNotIn;
   m["int_plus"] = CheckIntPlus;
   m["int_times"] = CheckIntTimes;
+  m["int_pow"] = CheckIntPow;
   m["maximum_arg_int"] = CheckMaximumArgInt;
   m["maximum_int"] = CheckMaximumInt;
   m["minimum_arg_int"] = CheckMinimumArgInt;
@@ -1852,8 +1886,10 @@ CallMap CreateCallMap() {
   m["ortools_arg_max_int"] = CheckOrToolsArgMaxInt;
   m["ortools_array_bool_element"] = CheckOrToolsArrayIntElement;
   m["ortools_array_int_element"] = CheckOrToolsArrayIntElement;
+  m["ortools_array_set_element"] = CheckOrToolsArraySetElement;
   m["ortools_array_var_bool_element"] = CheckOrToolsArrayIntElement;
   m["ortools_array_var_int_element"] = CheckOrToolsArrayIntElement;
+  m["ortools_array_var_set_element"] = CheckOrToolsArraySetElement;
   m["ortools_bin_packing_capa"] = CheckOrToolsBinPackingCapa;
   m["ortools_bin_packing_load"] = CheckOrToolsBinPackingLoad;
   m["ortools_bin_packing"] = CheckOrToolsBinPacking;

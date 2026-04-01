@@ -51,6 +51,7 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/logging.h"
+#include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
 
 ABSL_FLAG(int64_t, fz_int_max, int64_t{1} << 40,
@@ -90,10 +91,10 @@ struct SetVariable {
 
 // Helper class to convert a flatzinc model to a CpModelProto.
 struct CpModelProtoWithMapping {
-  CpModelProtoWithMapping(bool sat_enumeration)
+  CpModelProtoWithMapping(bool enumerate)
       : arena(std::make_unique<google::protobuf::Arena>()),
         proto(*google::protobuf::Arena::Create<CpModelProto>(arena.get())),
-        sat_enumeration_(sat_enumeration) {}
+        sat_enumeration(enumerate) {}
 
   // Returns the index of a new boolean variable.
   int NewBoolVar();
@@ -253,6 +254,7 @@ struct CpModelProtoWithMapping {
   void IntAbsConstraint(const fz::Constraint& fz_ct, ConstraintProto* ct);
   void IntPlusConstraint(const fz::Constraint& fz_ct, ConstraintProto* ct);
   void IntDivConstraint(const fz::Constraint& fz_ct, ConstraintProto* ct);
+  void IntPowConstraint(const fz::Constraint& fz_ct, ConstraintProto* ct);
   void IntModConstraint(const fz::Constraint& fz_ct, ConstraintProto* ct);
   void ArrayElementConstraint(const fz::Constraint& fz_ct, ConstraintProto* ct);
   void OrToolsConstantElementConstraint(const fz::Constraint& fz_ct,
@@ -291,6 +293,7 @@ struct CpModelProtoWithMapping {
   // Methods to handle constraints on set variables.
   void ArraySetElementConstraint(const fz::Constraint& fz_ct);
   void ArrayVarSetElementConstraint(const fz::Constraint& fz_ct);
+  void OrToolsArrayVarSetElementConstraint(const fz::Constraint& fz_ct);
   void FznAllDifferentSetConstraint(const fz::Constraint& fz_ct);
   void FznAllDisjointConstraint(const fz::Constraint& fz_ct);
   void FznDisjointConstraint(const fz::Constraint& fz_ct);
@@ -321,7 +324,8 @@ struct CpModelProtoWithMapping {
   std::unique_ptr<google::protobuf::Arena> arena;
   CpModelProto& proto;
   SatParameters parameters;
-  const bool sat_enumeration_;
+  const bool sat_enumeration;
+  std::string error_message;  // Model invalid if not empty.
 
   // Mapping from flatzinc variables to CpModelProto variables.
   absl::flat_hash_map<fz::Variable*, int> fz_var_to_index;
@@ -510,10 +514,27 @@ std::shared_ptr<SetVariable> CpModelProtoWithMapping::LookupSetVarAt(
   if (argument.type == fz::Argument::VAR_REF_ARRAY) {
     CHECK(argument.variables[pos]->domain.is_a_set);
     return set_variables[argument.variables[pos]];
+  } else if (argument.type == fz::Argument::DOMAIN_LIST) {
+    std::shared_ptr<SetVariable> result = std::make_shared<SetVariable>();
+    const int true_literal = LookupConstant(1);
+    const fz::Domain domain = argument.domains[pos];
+    if (domain.is_interval) {
+      for (int64_t value = domain.values[0]; value <= domain.values[1]; ++value) {
+        result->sorted_values.push_back(value);
+        result->var_indices.push_back(true_literal);
+      }
+    } else {
+      for (const int64_t value : domain.values) {
+        result->sorted_values.push_back(value);
+        result->var_indices.push_back(true_literal);
+      }
+    }
+    return result;
   } else {
     LOG(FATAL) << "LookupSetVarAt:Unsupported argument type '" << argument.type
                << "'";
   }
+  return std::make_shared<SetVariable>();
 }
 
 ConstraintProto* CpModelProtoWithMapping::AddEnforcedConstraint(int literal) {
@@ -572,7 +593,7 @@ void CpModelProtoWithMapping::AddLexOrdering(absl::Span<const int> x,
       x.size() < y.size() || (x.size() == y.size() && accepts_equals);
   hold[min_size] = LookupConstant(hold_sentinel_is_true ? 1 : 0);
 
-  if (!sat_enumeration_ && absl::GetFlag(FLAGS_fz_use_light_encoding)) {
+  if (!sat_enumeration && absl::GetFlag(FLAGS_fz_use_light_encoding)) {
     // Faster version, but can produce duplicate solutions.
     const Domain le_domain(std::numeric_limits<int64_t>::min(), 0);
     const Domain lt_domain(std::numeric_limits<int64_t>::min(), -1);
@@ -623,7 +644,7 @@ void CpModelProtoWithMapping::AddLiteralVectorsNotEqual(
     absl::Span<const int> x_array, absl::Span<const int> y_array) {
   const int size = x_array.size();
   CHECK_EQ(size, y_array.size());
-  if (sat_enumeration_ || !absl::GetFlag(FLAGS_fz_use_light_encoding)) {
+  if (sat_enumeration || !absl::GetFlag(FLAGS_fz_use_light_encoding)) {
     BoolArgumentProto* at_least_one_different =
         proto.add_constraints()->mutable_bool_or();
     for (int i = 0; i < x_array.size(); ++i) {
@@ -1539,6 +1560,108 @@ void CpModelProtoWithMapping::IntDivConstraint(const fz::Constraint& fz_ct,
   *arg->mutable_target() = LookupExpr(fz_ct.arguments[2]);
 }
 
+int64_t CappedIntPow(int64_t x, int64_t p) {
+  DCHECK_GE(p, 0);
+  DCHECK(p > 0 || x > 0);
+  if (p == 0) return 1;
+  if (p == 1) return x;
+  if (x == 0) return 0;
+  if (x == 1) return 1;
+
+  const int64_t tmp = CappedIntPow(x, p / 2);
+  const int64_t square_tmp = CapProd(tmp, tmp);
+  if (p % 2 == 0) {
+    return square_tmp;
+  } else {
+    return CapProd(x, square_tmp);
+  }
+}
+
+void CpModelProtoWithMapping::IntPowConstraint(const fz::Constraint& fz_ct,
+                                               ConstraintProto* ct) {
+  if (fz_ct.arguments[1].IsVariable()) {
+    if (fz_ct.arguments[0].IsVariable()) {
+      const int var0 = LookupVar(fz_ct.arguments[0]);
+      const int var1 = LookupVar(fz_ct.arguments[1]);
+      const Domain domain0 = ReadDomainFromProto(proto.variables(var0));
+      const Domain domain1 = ReadDomainFromProto(proto.variables(var1));
+      if (domain1.Min() < 0) {
+        error_message.append("int_pow does not support negative exponent");
+        return;
+      }
+
+      *ct->mutable_table()->add_exprs() = LookupExpr(fz_ct.arguments[0]);
+      *ct->mutable_table()->add_exprs() = LookupExpr(fz_ct.arguments[1]);
+      *ct->mutable_table()->add_exprs() = LookupExpr(fz_ct.arguments[2]);
+
+      // We expand into a table.
+      for (const int64_t v0 : domain0.Values()) {
+        for (const int64_t v1 : domain1.Values()) {
+          const int64_t v2 = CappedIntPow(v0, v1);
+          if (AtMinOrMaxInt64(v2)) {
+            error_message.append("int_pow overflows");
+            return;
+          }
+          ct->mutable_table()->add_values(v0);
+          ct->mutable_table()->add_values(v1);
+          ct->mutable_table()->add_values(v2);
+        }
+      }
+    } else {  // Base is fixed.
+      const int64_t base = fz_ct.arguments[0].Value();
+      const int var1 = LookupVar(fz_ct.arguments[1]);
+      const Domain domain1 = ReadDomainFromProto(proto.variables(var1));
+      if (domain1.Min() < 0) {
+        error_message.append("int_pow does not support negative exponent");
+        return;
+      }
+
+      *ct->mutable_table()->add_exprs() = LookupExpr(fz_ct.arguments[1]);
+      *ct->mutable_table()->add_exprs() = LookupExpr(fz_ct.arguments[2]);
+
+      // We expand into a table.
+      for (const int64_t v1 : domain1.Values()) {
+        const int64_t v2 = CappedIntPow(base, v1);
+        if (AtMinOrMaxInt64(v2)) {
+          error_message.append("int_pow overflows");
+          return;
+        }
+        ct->mutable_table()->add_values(v1);
+        ct->mutable_table()->add_values(v2);
+      }
+    }
+  } else {
+    const int64_t exp = fz_ct.arguments[1].Value();
+    if (exp < 0) {
+      error_message.append("int_pow does not support negative exponent");
+      return;
+    }
+    switch (exp) {
+      case 0: {
+        auto* arg = ct->mutable_linear();
+        FillDomainInProto(1, arg);
+        AddTermToLinearConstraint(LookupVar(fz_ct.arguments[2]), 1, arg);
+        break;
+      }
+      case 1: {
+        auto* arg = ct->mutable_linear();
+        FillDomainInProto(0, arg);
+        AddTermToLinearConstraint(LookupVar(fz_ct.arguments[0]), 1, arg);
+        AddTermToLinearConstraint(LookupVar(fz_ct.arguments[2]), -1, arg);
+        break;
+      }
+      default: {
+        auto* arg = ct->mutable_int_prod();
+        const LinearExpressionProto base = LookupExpr(fz_ct.arguments[0]);
+        for (int i = 0; i < exp; ++i) {
+          *arg->add_exprs() = base;
+        }
+        *arg->mutable_target() = LookupExpr(fz_ct.arguments[2]);
+      }
+    }
+  }
+}
+
 void CpModelProtoWithMapping::IntModConstraint(const fz::Constraint& fz_ct,
                                                ConstraintProto* ct) {
   auto* arg = ct->mutable_int_mod();
@@ -1716,6 +1839,7 @@ void CpModelProtoWithMapping::OrToolsArgMax(const fz::Constraint& fz_ct,
   for (const auto& [value, literal] : GetFullEncoding(z)) {
     if (value < min_index || value >= min_index + num_vars) {
       AddImplication({}, NegatedRef(literal));
+      continue;
     }
     const int64_t index = value - min_index;
     AddLinearConstraint({literal}, Domain(index - num_vars),
@@ -1746,7 +1870,7 @@ void CpModelProtoWithMapping::FznValuePrecedeInt(const fz::Constraint& fz_ct,
   hold[0] = LookupConstant(0);
   for (int i = 1; i < x.size(); ++i) hold[i] = NewBoolVar();
 
-  if (absl::GetFlag(FLAGS_fz_use_light_encoding) && !sat_enumeration_) {
+  if (absl::GetFlag(FLAGS_fz_use_light_encoding) && !sat_enumeration) {
     for (int i = 0; i < x.size(); ++i) {
       const int is_before = GetOrCreateEncodingLiteral(x[i], before);
       if (i + 1 < x.size()) {
@@ -2444,6 +2568,7 @@ const ConstraintToMethodMapType& GetConstraintMap() {
       {"int_abs", &MPMap::IntAbsConstraint},
       {"int_plus", &MPMap::IntPlusConstraint},
       {"int_div", &MPMap::IntDivConstraint},
+      {"int_pow", &MPMap::IntPowConstraint},
       {"int_mod", &MPMap::IntModConstraint},
       {"array_int_element", &MPMap::ArrayElementConstraint},
       {"array_bool_element", &MPMap::ArrayElementConstraint},
@@ -2625,6 +2750,55 @@ void CpModelProtoWithMapping::ArrayVarSetElementConstraint(
 
     std::shared_ptr<SetVariable> set_var =
         LookupSetVarAt(fz_ct.arguments[1], value - min_index);
+    absl::btree_map<int64_t, int> set_values_to_literals;
+    for (int i = 0; i < set_var->sorted_values.size(); ++i) {
+      set_values_to_literals[set_var->sorted_values[i]] =
+          set_var->var_indices[i];
+    }
+
+    for (const auto& [value, set_literal] : set_values_to_literals) {
+      const auto it = target_values_to_literals.find(value);
+      if (it == target_values_to_literals.end()) {
+        // index is selected => set_literal[value] is false.
+        AddImplication({index_literal}, NegatedRef(set_literal));
+      } else {
+        // index is selected => set_literal[value] == target_literal[value].
+        AddImplication({index_literal, set_literal}, it->second);
+        AddImplication({index_literal, it->second}, set_literal);
+      }
+    }
+
+    // Properly handle the case where not all target literals are reached.
+    for (const auto& [value, target_literal] : target_values_to_literals) {
+      if (!set_values_to_literals.contains(value)) {
+        AddImplication({index_literal}, NegatedRef(target_literal));
+      }
+    }
+  }
+}
+
+void CpModelProtoWithMapping::OrToolsArrayVarSetElementConstraint(
+    const fz::Constraint& fz_ct) {
+  const int index = LookupVar(fz_ct.arguments[0]);
+  std::shared_ptr<SetVariable> array_index_set =
+      LookupSetVar(fz_ct.arguments[1]);
+  const int64_t min_index = array_index_set->sorted_values.front();
+  const std::shared_ptr<SetVariable> target_var =
+      LookupSetVar(fz_ct.arguments[3]);
+  absl::btree_map<int64_t, int> target_values_to_literals;
+  for (int i = 0; i < target_var->sorted_values.size(); ++i) {
+    target_values_to_literals[target_var->sorted_values[i]] =
+        target_var->var_indices[i];
+  }
+
+  BoolArgumentProto* exactly_one =
+      proto.add_constraints()->mutable_exactly_one();
+  for (const int64_t value : array_index_set->sorted_values) {
+    const int index_literal = GetOrCreateEncodingLiteral(index, value);
+    exactly_one->add_literals(index_literal);
+
+    std::shared_ptr<SetVariable> set_var =
+        LookupSetVarAt(fz_ct.arguments[2], value - min_index);
     absl::btree_map<int64_t, int> set_values_to_literals;
     for (int i = 0; i < set_var->sorted_values.size(); ++i) {
       set_values_to_literals[set_var->sorted_values[i]] =
@@ -3070,6 +3244,8 @@ const ConstraintToSetMethodMapType& GetSetConstraintMap() {
   static const absl::NoDestructor<ConstraintToSetMethodMapType> kConstraintMap({
       {"array_set_element", &MPMap::ArraySetElementConstraint},
       {"array_var_set_element", &MPMap::ArrayVarSetElementConstraint},
+      {"ortools_array_var_set_element",
+       &MPMap::OrToolsArrayVarSetElementConstraint},
       {"fzn_all_different_set", &MPMap::FznAllDifferentSetConstraint},
       {"fzn_all_disjoint", &MPMap::FznAllDisjointConstraint},
       {"fzn_disjoint", &MPMap::FznDisjointConstraint},
@@ -3837,6 +4013,15 @@ CpSolverResponse SolveFzWithCpModelProto(const fz::Model& fz_model,
     }
     objective->set_offset(fz_model.float_objective_offset());
     objective->set_maximize(fz_model.maximize());
+  }
+
+  if (!m.error_message.empty()) {
+    SOLVER_LOG(logger, "Model invalid: ", m.error_message);
+    SOLVER_LOG(solution_logger, "=====MODEL INVALID=====");
+    CpSolverResponse response;
+    response.set_status(CpSolverStatus::MODEL_INVALID);
+    response.set_solution_info(m.error_message);
+    return response;
   }
 
   // Fill the search order.

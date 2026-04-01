@@ -52,5 +52,15 @@ predicate array_var_int_element_nonshifted(var int: idx,
 predicate array_var_float_element_nonshifted(var int: idx, array[int] of var float: x, var float: c) =
   array_var_float_element((idx-(min(index_set(x))-1))::domain,array1d(x),c);
 
-predicate array_var_set_element_nonshifted(var int: idx, array[int] of var set of int: x, var set of int: c) =
-  array_var_set_element((idx-(min(index_set(x))-1))::domain,array1d(x),c);  
+% set element.
+
+predicate ortools_array_var_set_element(var int: idx,
+                                        set of int: index_set_of_x,
+                                        array[int] of var set of int: x,
+                                        var set of int: c);
+
+predicate array_var_set_element_nonshifted(var int: idx,
+                                           array[int] of var set of int: x,
+                                           var set of int: c) =
+  ortools_array_var_set_element(idx, index_set(x), array1d(x), c);  
+

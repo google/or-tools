@@ -17,6 +17,8 @@
 
 #include <cstdlib>
 #include <cstring>
+
+#include "ortools/base/log_severity.h"
 #if defined(__GNUC__)  // Linux or Mac OS X.
 #include <signal.h>
 #endif  // __GNUC__
@@ -38,7 +40,6 @@
 #include "absl/strings/string_view.h"
 #include "absl/time/time.h"
 #include "google/protobuf/text_format.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/path.h"
 #include "ortools/base/timer.h"
 #include "ortools/flatzinc/cp_model_fz_solver.h"
