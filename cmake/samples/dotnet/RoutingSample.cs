@@ -27,8 +27,10 @@ public class RoutingSolverTest
     {
         // Create Routing Index Manager
         RoutingIndexManager manager = new RoutingIndexManager(5 /*locations*/, 1 /*vehicle*/, 0 /*depot*/);
+        Assert.NotNull(manager);
         // Create Routing Model.
         RoutingModel routing = new RoutingModel(manager);
+        Assert.NotNull(routing);
         // Create a distance callback.
         int transitCallbackIndex = routing.RegisterTransitCallback((long fromIndex, long toIndex) =>
                                                                    {

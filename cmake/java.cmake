@@ -35,7 +35,7 @@ endif()
 list(APPEND CMAKE_SWIG_FLAGS "-DOR_DLL=")
 
 # Find Java and JNI
-find_package(Java 1.8 COMPONENTS Development REQUIRED)
+find_package(Java 21 COMPONENTS Development REQUIRED)
 find_package(JNI REQUIRED)
 
 # Find maven
@@ -113,6 +113,7 @@ if(USE_PDLP)
 endif()
 list(REMOVE_ITEM proto_java_files "ortools/constraint_solver/demon_profiler.proto")
 list(REMOVE_ITEM proto_java_files "ortools/constraint_solver/assignment.proto")
+list(REMOVE_ITEM proto_java_files "ortools/util/testdata/wrappers_test_message.proto")
 foreach(PROTO_FILE IN LISTS proto_java_files)
   #message(STATUS "protoc proto(java): ${PROTO_FILE}")
   get_filename_component(PROTO_DIR ${PROTO_FILE} DIRECTORY)
@@ -272,6 +273,8 @@ foreach(SUBPROJECT IN ITEMS
   target_link_libraries(jni${JAVA_ARTIFACT} PRIVATE jni${SUBPROJECT})
 endforeach()
 target_link_libraries(jni${JAVA_ARTIFACT} PRIVATE jnimodelbuilder)
+target_link_libraries(jni${JAVA_ARTIFACT} PRIVATE ortools::util_java_jni_helper)
+target_link_libraries(jni${JAVA_ARTIFACT} PRIVATE jni_cp_model_proto)
 
 #################################
 ##  Java Native Maven Package  ##
@@ -334,6 +337,7 @@ add_custom_command(
   COMMAND ${CMAKE_COMMAND} -E
     $<IF:$<BOOL:${BUILD_absl}>,copy,true>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::base>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::borrowed_fixup_buffer>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::city>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::civil_time>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::cord>>
@@ -404,7 +408,6 @@ add_custom_command(
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::statusor>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::str_format_internal>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::strerror>>
-    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::string_view>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::strings>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::strings_internal>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::symbolize>>

@@ -72,6 +72,7 @@ if(BUILD_ZLIB)
     UPDATE_COMMAND git reset --hard
     PATCH_COMMAND git apply --ignore-whitespace
     "${CMAKE_CURRENT_LIST_DIR}/../../patches/ZLIB-v1.3.1.patch"
+    OVERRIDE_FIND_PACKAGE
     SYSTEM
   )
   set(ZLIB_BUILD_EXAMPLES OFF)
@@ -113,11 +114,11 @@ if(BUILD_absl)
   FetchContent_Declare(
     absl
     GIT_REPOSITORY "https://github.com/abseil/abseil-cpp.git"
-    GIT_TAG "20250814.1"
+    GIT_TAG "20260107.1"
     GIT_SHALLOW TRUE
     UPDATE_COMMAND git reset --hard
     PATCH_COMMAND git apply --ignore-whitespace
-    "${CMAKE_CURRENT_LIST_DIR}/../../patches/abseil-cpp-20250814.1.patch"
+    "${CMAKE_CURRENT_LIST_DIR}/../../patches/abseil-cpp-20260107.1.patch"
     OVERRIDE_FIND_PACKAGE
     SYSTEM
   )
@@ -229,17 +230,10 @@ if(BUILD_PYTHON)
     FetchContent_Declare(
       pybind11
       GIT_REPOSITORY "https://github.com/pybind/pybind11.git"
-      #GIT_TAG "master" # COMPILE FAIL
-      #GIT_TAG "f365314" # 2025/03/24 COMPILE FAIL
-      #GIT_TAG "48eb5ad" # 2025/03/23 TEST PASS
-      # ...
-      #GIT_TAG "a1d00916" # 2024/08/15 TEST PASS
-      #GIT_TAG "bd5951b6" # 2024/08/14 TEST FAIL
-      GIT_TAG "v2.13.6" # TEST PASS with a1d00916 patch apply
-      #GIT_SHALLOW TRUE
+      #GIT_TAG "v3.0.2" # 2026/02/17
+      GIT_TAG "v3.0.1" # 2025/08/22
+      GIT_SHALLOW TRUE
       UPDATE_COMMAND git reset --hard
-      PATCH_COMMAND git apply --ignore-whitespace
-      "${CMAKE_CURRENT_LIST_DIR}/../../patches/pybind11-v2.13.6.patch"
       SYSTEM
     )
     set(PYBIND11_FINDPYTHON ON)
@@ -318,7 +312,7 @@ if(BUILD_HIGHS)
   FetchContent_Declare(
     highs
     GIT_REPOSITORY "https://github.com/ERGO-Code/HiGHS.git"
-    GIT_TAG        "v1.12.0"
+    GIT_TAG        "v1.13.0"
     GIT_SHALLOW TRUE
     UPDATE_COMMAND git reset --hard
     SYSTEM
@@ -534,13 +528,11 @@ if(BUILD_Cbc)
   message(CHECK_PASS "fetched")
 endif()
 
+# End of Coin-OR dependencies, setting the properties back to their previous
+# values.
+set(CMAKE_CXX_STANDARD 20)
 if(WIN32)
   set(BUILD_SHARED_LIBS ON)
-endif()
-if(MSVC)
-  set(CMAKE_CXX_STANDARD 20)
-else()
-  set(CMAKE_CXX_STANDARD 17)
 endif()
 
 ###############

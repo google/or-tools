@@ -27,6 +27,9 @@ RUN cmake -S. -Bbuild -DBUILD_DEPS=OFF \
  -DUSE_SCIP=ON \
  -DBUILD_PYTHON=ON \
  -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF \
+ -DBUILD_absl=ON \
+ -DBUILD_Protobuf=ON \
+ -DBUILD_re2=ON \
  -DBUILD_googletest=ON
 RUN cmake --build build --target all -v
 RUN cmake --build build --target install

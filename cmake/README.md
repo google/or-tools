@@ -77,23 +77,23 @@ CMake as a standalone project or incorporate it into an existing CMake project.
 ## Requirement
 You'll need:
 
-* `CMake >= 3.24`.
-* A C++20 compiler (GCC 10 or above)
+*   `CMake >= 3.24`.
+*   A C++20 compiler (GCC 10 or later, MSVC 2022 or later).
 
-## Solvers supported
+## Supported solvers
 
 Here the list of supported solvers:
 
-* CBC
-* CLP
-* CP-SAT
-* CPLEX\*
-* GLOP
-* GLPK\*
-* HiGHS\*
-* PDLP
-* SCIP
-* XPRESS
+*   CBC
+*   CLP
+*   CP-SAT
+*   CPLEX\*
+*   GLOP
+*   GLPK\*
+*   HiGHS\*
+*   PDLP
+*   SCIP
+*   XPRESS
 
 \*: these solvers are disabled by default.
 

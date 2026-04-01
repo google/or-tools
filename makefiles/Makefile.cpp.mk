@@ -248,7 +248,7 @@ else
 endif
 endef
 
-CPP_SAMPLES := algorithms graph glop constraint_solver linear_solver math_opt model_builder pdlp routing sat set_cover
+CPP_SAMPLES := algorithms graph graph_base glop constraint_solver linear_solver math_opt model_builder pdlp routing sat set_cover
 $(foreach sample,$(CPP_SAMPLES),$(eval $(call cpp-sample-target,$(sample))))
 
 # Examples
