@@ -23,6 +23,10 @@ build --define absl=1
 # Fix the python version
 build --@rules_python//python/config_settings:python_version=3.12
 
+# Fix the Java version
+build --java_language_version=21 # Version of the source files
+build --java_runtime_version=remotejdk_21 # Hermetic JRE
+
 ###############################################################################
 # Per plaform options
 ###############################################################################
@@ -34,7 +38,7 @@ build --enable_platform_specific_config
 # Options for Linux.
 ###############################################################################
 
-build:linux --cxxopt=-std=c++17 --host_cxxopt=-std=c++17
+build:linux --cxxopt=-std=c++20 --host_cxxopt=-std=c++20
 build:linux --cxxopt=-Wno-sign-compare --host_cxxopt=-Wno-sign-compare
 build:linux --cxxopt=-Wno-range-loop-construct --host_cxxopt=-Wno-range-loop-construct
 
@@ -45,7 +49,7 @@ build:linux --cxxopt=-Wno-range-loop-construct --host_cxxopt=-Wno-range-loop-con
 # Sets the default Apple platform to macOS.
 build --apple_platform_type=macos
 build:macos --features=-supports_dynamic_linker
-build:macos --cxxopt=-std=c++17 --host_cxxopt=-std=c++17
+build:macos --cxxopt=-std=c++20 --host_cxxopt=-std=c++20
 build:macos --cxxopt=-Wno-sign-compare --host_cxxopt=-Wno-sign-compare
 build:macos --cxxopt=-Wno-dangling-field --host_cxxopt=-Wno-dangling-field
 build:macos --cxxopt=-Wno-range-loop-construct --host_cxxopt=-Wno-range-loop-construct
@@ -56,6 +60,8 @@ build:macos --cxxopt=-mmacos-version-min=10.15 --host_cxxopt=-mmacos-version-min
 ###############################################################################
 
 build:windows --cxxopt=/std:c++20 --host_cxxopt=/std:c++20
+# Enable preprocessor conformance mode needed to correctly support __VA_OPT__
+build:windows --cxxopt=/Zc:preprocessor --host_cxxopt=/Zc:preprocessor
 
 # Enable the runfiles symlink tree on Windows. This makes it possible to build
 # the pip package on Windows without an intermediate data-file archive, as the

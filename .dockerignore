@@ -54,6 +54,10 @@ objs
 packages
 build/
 build_cmake/
+build_all/
+build_dotnet/
+build_java/
+build_python/
 build_cross/
 build_make/
 install_make/
