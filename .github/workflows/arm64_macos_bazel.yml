@@ -33,11 +33,11 @@ jobs:
     runs-on: macos-latest # macos arm64 based runner
     steps:
       - uses: actions/checkout@v6
-      - name: Set Java to OpenJDK 17 (Temurin)
+      - name: Set Java to OpenJDK 21 (Temurin)
         uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '21'
       - name: Check mvn
         run: mvn --version
       - name: Setup Python
@@ -57,17 +57,17 @@ jobs:
           sed -i '' -e 's/\(DEFAULT_PYTHON =\) "3.[0-9]*"/\1 "${{matrix.python.version}}"/g' MODULE.bazel
           cat MODULE.bazel
       - name: Restore bazel cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         id: bazel-cache-restore
         with:
           key: ${{env.cache-name}}
           path: ${{env.cache-root}}
       - name: Build
-        run: bazel --output_user_root=${{env.cache-root}} build --config=ci //ortools/... //examples/...
+        run: bazel --output_user_root=${{env.cache-root}} build --config=ci //...
       - name: Test
-        run: bazel --output_user_root=${{env.cache-root}} test --config=ci //ortools/... //examples/...
+        run: bazel --output_user_root=${{env.cache-root}} test --config=ci //...
       - name: Save Bazel cache for branch main even when Build and Test fail.
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         # https://docs.github.com/en/actions/reference/workflows-and-actions/dependency-caching#restrictions-for-accessing-a-cache
         if: always() && github.ref == 'refs/heads/main'
         with:

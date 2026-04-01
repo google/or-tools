@@ -36,7 +36,7 @@ jobs:
       - uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '21'
       - name: Check java
         run: java -version
       - name: Check mvn
@@ -47,22 +47,21 @@ jobs:
           python-version: ${{matrix.python.version}}
       - name: Check Python
         run: python --version
-      - name: Install Bazel
-        run: choco install bazel
+      - uses: bazel-contrib/setup-bazel@0.19.0
       - name: Check Bazel
         run: bazel version
       - name: Restore bazel cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         id: bazel-cache-restore
         with:
           key: ${{env.cache-name}}
           path: ${{env.cache-root}}
       - name: Build
-        run: bazel --output_user_root=${{env.cache-root}} build --config=ci //ortools/... //examples/...
+        run: bazel --output_user_root=${{env.cache-root}} build --config=ci //...
       - name: Test
-        run: bazel --output_user_root=${{env.cache-root}} test --config=ci //ortools/... //examples/...
+        run: bazel --output_user_root=${{env.cache-root}} test --config=ci //...
       - name: Save Bazel cache for branch main even when Build and Test fail.
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         # https://docs.github.com/en/actions/reference/workflows-and-actions/dependency-caching#restrictions-for-accessing-a-cache
         if: always() && github.ref == 'refs/heads/main'
         with:

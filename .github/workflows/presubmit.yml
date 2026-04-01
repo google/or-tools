@@ -13,7 +13,7 @@ concurrency:
 env:
   PYTHON_VERSION: '3.12'
   JAVA_DISTRIBUTION: 'temurin'
-  JAVA_VERSION: '17'
+  JAVA_VERSION: '21'
 
 jobs:
 ###############################################################################
@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v6
-    - uses: jidicula/clang-format-action@v4.16.0
+    - uses: jidicula/clang-format-action@v4.18.0
       with:
         exclude-regex: '\.tab\.hh$'
 ###############################################################################
@@ -33,14 +33,10 @@ jobs:
     runs-on: ${{matrix.os}}
     steps:
     - uses: actions/checkout@v6
-    - uses: actions/setup-java@v5
-      with:
-        distribution: ${{env.JAVA_DISTRIBUTION}}
-        java-version: ${{env.JAVA_VERSION}}
     - uses: actions/setup-python@v6
       with:
         python-version: ${{env.PYTHON_VERSION}}
-    - uses: bazel-contrib/setup-bazel@0.15.0
+    - uses: bazel-contrib/setup-bazel@0.19.0
     - name: Build
       run: bazel test --config=ci //ortools/...
       shell: bash

@@ -21,8 +21,7 @@ jobs:
           {name: "VS2022", generator: "Visual Studio 17 2022", config: Release},
         ]
         python: [
-          {version: "3.9", dir: Python309},
-          #{version: "3.10", dir: Python310},
+          {version: "3.10", dir: Python310},
           #{version: "3.11", dir: Python311},
           #{version: "3.12", dir: Python312},
           {version: "3.13", dir: Python313},
@@ -49,12 +48,12 @@ jobs:
 
       # CONFIGURING CACHES
       - name: Cache CMake dependency source code
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           key: ${{env.deps_src_key}}-${{hashFiles('CMakeLists.txt', 'cmake/**')}}
           path: ${{github.workspace}}/build/_deps/*-src
       - name: Cache CMake dependency build
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           key: ${{env.deps_build_key}}-${{hashFiles('CMakeLists.txt', 'cmake/**')}}
           path: |
