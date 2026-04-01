@@ -18,9 +18,9 @@
 #include <string>
 #include <string_view>
 
+#include "absl/log/check.h"
 #include "absl/strings/ascii.h"
 #include "absl/strings/str_cat.h"
-#include "ortools/base/logging.h"
 
 extern "C" {
 #include <glpk.h>

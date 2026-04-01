@@ -29,7 +29,8 @@ cc_library(
             "//conditions:default": ["@platforms//:incompatible"],
         }),
     deps = [
-        "//ortools/base:logging",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
         "@glpk",
     ],
 )
@@ -44,7 +45,7 @@ cc_library(
             "//conditions:default": ["@platforms//:incompatible"],
         }),
     deps = [
-        "//ortools/base:logging",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings",
         "@glpk",
     ],

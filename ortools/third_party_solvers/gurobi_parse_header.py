@@ -48,6 +48,7 @@ to copy in the assign part of environment.cc
 
 import re
 from typing import Sequence
+
 from absl import app
 
 EXPORTED_FUNCTIONS = frozenset(
