@@ -18,12 +18,11 @@ package(default_visibility = ["//visibility:public"])
 
 cc_library(
     name = "binary_search",
-    srcs = [],
     hdrs = ["binary_search.h"],
     deps = [
-        "//ortools/base",
-        "@abseil-cpp//absl/base:log_severity",
+        "//ortools/base:log_severity",
         "@abseil-cpp//absl/functional:function_ref",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/numeric:int128",
         "@abseil-cpp//absl/types:span",
@@ -36,12 +35,13 @@ cc_test(
     deps = [
         ":binary_search",
         "//ortools/base:gmock_main",
-        "//ortools/base:murmur",
-        "@abseil-cpp//absl/base:log_severity",
+        "//ortools/base:log_severity",
+        "@abseil-cpp//absl/hash",
         "@abseil-cpp//absl/numeric:int128",
         "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/random:distributions",
         "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/strings:string_view",
         "@abseil-cpp//absl/time",
         "@google_benchmark//:benchmark",
     ],
@@ -49,12 +49,11 @@ cc_test(
 
 cc_library(
     name = "radix_sort",
-    srcs = [],
     hdrs = ["radix_sort.h"],
     deps = [
+        "//ortools/base:log_severity",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/base",
-        "@abseil-cpp//absl/base:log_severity",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/numeric:bits",
@@ -101,14 +100,14 @@ cc_library(
     ],
 )
 
-# Hungarian algorithm
 cc_library(
     name = "hungarian",
     srcs = ["hungarian.cc"],
     hdrs = ["hungarian.h"],
     deps = [
-        "//ortools/base",
         "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings:str_format",
         "@abseil-cpp//absl/types:span",
     ],
@@ -132,7 +131,11 @@ cc_test(
 cc_library(
     name = "adjustable_k_ary_heap",
     hdrs = ["adjustable_k_ary_heap.h"],
-    deps = ["@abseil-cpp//absl/log:check"],
+    deps = [
+        "//ortools/base:strong_int",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/types:span",
+    ],
 )
 
 cc_test(
@@ -142,6 +145,9 @@ cc_test(
     deps = [
         ":adjustable_k_ary_heap",
         "//ortools/base:gmock_main",
+        "//ortools/base:strong_int",
+        "//ortools/base:strong_vector",
+        "@abseil-cpp//absl/random",
     ],
 )
 
@@ -162,23 +168,22 @@ cc_test(
 )
 
 cc_library(
-    name = "knapsack_solver_lib",
+    name = "knapsack_solver",
     srcs = ["knapsack_solver.cc"],
     hdrs = ["knapsack_solver.h"],
     deps = [
-        "@abseil-cpp//absl/log",
-        "@abseil-cpp//absl/log:check",
-        "@abseil-cpp//absl/strings",
-        "@abseil-cpp//absl/time",
         "//ortools/base:stl_util",
-        # We don't link any underlying solver to let the linear_solver_knapsack
-        # decide what solvers to include.
-        "//ortools/linear_solver",
+        "//ortools/linear_solver:linear_solver_base",
+        "//ortools/linear_solver:linear_solver_scip",
         "//ortools/sat:cp_model",
         "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:cp_model_solver",
         "//ortools/util:bitset",
         "//ortools/util:time_limit",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings:string_view",
+        "@abseil-cpp//absl/time",
     ],
 )
 
@@ -187,7 +192,7 @@ cc_test(
     size = "medium",
     srcs = ["knapsack_solver_test.cc"],
     deps = [
-        ":knapsack_solver_lib",  # buildcleaner: keep
+        ":knapsack_solver",
         "//ortools/base:gmock_main",
         "//ortools/util:time_limit",
         "@abseil-cpp//absl/base:core_headers",
@@ -195,16 +200,12 @@ cc_test(
     ],
 )
 
-# Partitioning and splitting of vector<int64_t>.
-
-# query matching library.
-
-# Graph automorphism libraries.
 cc_library(
     name = "dense_doubly_linked_list",
     hdrs = ["dense_doubly_linked_list.h"],
     deps = [
-        "//ortools/base",
+        "//ortools/base:log_severity",
+        "@abseil-cpp//absl/log:check",
     ],
 )
 
@@ -235,8 +236,8 @@ cc_test(
     deps = [
         ":dynamic_partition",
         "//ortools/base:gmock_main",
+        "//ortools/base:log_severity",
         "//ortools/base:stl_util",
-        "@abseil-cpp//absl/base:log_severity",
         "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/random:bit_gen_ref",
         "@abseil-cpp//absl/types:span",
@@ -276,8 +277,7 @@ cc_library(
     srcs = ["sparse_permutation.cc"],
     hdrs = ["sparse_permutation.h"],
     deps = [
-        "//ortools/base",
-        "//ortools/base:numbers",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",
     ],
@@ -300,17 +300,8 @@ cc_library(
     hdrs = ["dynamic_permutation.h"],
     deps = [
         ":sparse_permutation",
-        "//ortools/base",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/types:span",
-    ],
-)
-
-cc_test(
-    name = "dynamic_permutation_test",
-    srcs = ["dynamic_permutation_test.cc"],
-    deps = [
-        ":dynamic_permutation",
-        "//ortools/base:gmock_main",
     ],
 )
 
@@ -323,14 +314,14 @@ cc_library(
         ":dynamic_partition",
         ":dynamic_permutation",
         ":sparse_permutation",
+        "//ortools/base:log_severity",
         "//ortools/base:murmur",
-        "//ortools/graph",
-        "//ortools/graph:iterators",
-        "//ortools/graph:util",
+        "//ortools/graph_base:graph",
+        "//ortools/graph_base:iterators",
+        "//ortools/graph_base:util",
         "//ortools/util:stats",
         "//ortools/util:time_limit",
         "@abseil-cpp//absl/algorithm:container",
-        "@abseil-cpp//absl/base:log_severity",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/flags:flag",
@@ -356,16 +347,26 @@ cc_test(
         "//ortools/base:dump_vars",
         "//ortools/base:file",
         "//ortools/base:gmock_main",
+        "//ortools/base:log_severity",
         "//ortools/base:map_util",
         "//ortools/base:path",
-        "//ortools/graph:io",
-        "//ortools/graph:random_graph",
-        "//ortools/graph:util",
+        "//ortools/graph_base:io",
+        "//ortools/graph_base:random_graph",
+        "//ortools/graph_base:util",
+        "//ortools/util:time_limit",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/numeric:bits",
+        "@abseil-cpp//absl/numeric:int128",
         "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/random:bit_gen_ref",
         "@abseil-cpp//absl/random:distributions",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/strings:string_view",
         "@abseil-cpp//absl/time",
         "@abseil-cpp//absl/types:span",
     ],
@@ -374,9 +375,7 @@ cc_test(
 cc_library(
     name = "binary_indexed_tree",
     hdrs = ["binary_indexed_tree.h"],
-    deps = [
-        "@abseil-cpp//absl/log:check",
-    ],
+    deps = ["@abseil-cpp//absl/log:check"],
 )
 
 cc_test(
@@ -384,6 +383,15 @@ cc_test(
     srcs = ["binary_indexed_tree_test.cc"],
     deps = [
         ":binary_indexed_tree",
+        "//ortools/base:gmock_main",
+    ],
+)
+
+cc_test(
+    name = "dynamic_permutation_test",
+    srcs = ["dynamic_permutation_test.cc"],
+    deps = [
+        ":dynamic_permutation",
         "//ortools/base:gmock_main",
     ],
 )
@@ -418,6 +426,5 @@ cc_test(
         "@abseil-cpp//absl/random:distributions",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
-        "@google_benchmark//:benchmark",
     ],
 )

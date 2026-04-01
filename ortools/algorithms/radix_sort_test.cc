@@ -347,7 +347,8 @@ void BM_Sort(benchmark::State& state) {
 }
 
 // For std::sort(), we don't benchmark with much detail past 32k, because it
-// reaches its "very" slow part where the item/s throuput is almost horizontal.
+// reaches its "very" slow part where the item/s throughput is almost
+// horizontal.
 BENCHMARK(BM_Sort<kStdSort, int, kRandom, 1, 1>)
     ->RangeMultiplier(2)
     ->Range(1, 32 << 10)

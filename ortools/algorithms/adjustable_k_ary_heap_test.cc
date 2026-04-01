@@ -13,21 +13,24 @@
 
 #include "ortools/algorithms/adjustable_k_ary_heap.h"
 
+#include <cstdint>
 #include <limits>
 #include <queue>
 #include <random>
 #include <utility>
 #include <vector>
 
+#include "absl/random/random.h"
 #include "gtest/gtest.h"
+#include "ortools/base/strong_int.h"
+#include "ortools/base/strong_vector.h"
 
 namespace operations_research {
 
 TEST(AdjustableKAryHeapTest, RandomDataStrongCheck) {
   const int kSize = 10'000;
   const double priority_range = kSize / 100;
-  std::random_device rd;
-  std::mt19937 generator(rd());  // Mersenne Twister generator
+  absl::BitGen generator;
   std::uniform_real_distribution<float> priority_dist(0, priority_range);
   std::vector<std::pair<float, int>> subsets_and_values(kSize);
   for (int i = 0; i < kSize; ++i) {
@@ -50,8 +53,7 @@ TEST(AdjustableKAryHeapTest, RandomDataStrongCheck) {
 TEST(AdjustableKAryHeapTest, RandomDataSpeed) {
   const int kSize = 1'000'000;
   const double priority_range = kSize / 100;
-  std::random_device rd;
-  std::mt19937 generator(rd());  // Mersenne Twister generator
+  absl::BitGen generator;
   std::uniform_real_distribution<float> priority_dist(0, priority_range);
   std::vector<std::pair<float, int>> subsets_and_values(kSize);
   for (int i = 0; i < kSize; ++i) {
@@ -71,8 +73,7 @@ TEST(AdjustableKAryHeapTest, UpdateStrongCheck) {
   const int kSize = 10'000;
   const int kNumUpdates = kSize / 100;
   const double priority_range = kSize / 100;
-  std::random_device rd;
-  std::mt19937 generator(rd());  // Mersenne Twister generator
+  absl::BitGen generator;
   std::uniform_real_distribution<float> priority_dist(0, priority_range);
   std::uniform_int_distribution<int> index_dist(0, kSize - 1);
   std::vector<std::pair<float, int>> subsets_and_values(kSize);
@@ -91,8 +92,7 @@ TEST(AdjustableKAryHeapTest, RemoveStrongCheck) {
   const int kSize = 10'000;
   const int kNumRemovals = kSize;
   const double priority_range = kSize / 10;
-  std::random_device rd;
-  std::mt19937 generator(rd());  // Mersenne Twister generator
+  absl::BitGen generator;
   std::uniform_real_distribution<float> priority_dist(0, priority_range);
   std::uniform_int_distribution<int> index_dist(0, kSize - 1);
   std::vector<std::pair<float, int>> subsets_and_values(kSize);
@@ -111,8 +111,7 @@ TEST(AdjustableKAryHeapTest, OneByOneStrongCheck) {
   const int kSize = 10'000;
   const int kNumInsertions = kSize;
   const double priority_range = kSize / 10;
-  std::random_device rd;
-  std::mt19937 generator(rd());  // Mersenne Twister generator
+  absl::BitGen generator;
   std::uniform_real_distribution<float> priority_dist(0, priority_range);
   std::uniform_int_distribution<int> index_dist(0, kSize - 1);
   std::vector<std::pair<float, int>> subsets_and_values;
@@ -128,8 +127,7 @@ TEST(AdjustableKAryHeapTest, OneByOneStrongSpeed) {
   const int kSize = 1'000'000;
   const int kNumInsertions = kSize;
   const double priority_range = kSize / 10;
-  std::random_device rd;
-  std::mt19937 generator(rd());  // Mersenne Twister generator
+  absl::BitGen generator;
   std::uniform_real_distribution<float> priority_dist(0, priority_range);
   std::uniform_int_distribution<int> index_dist(0, kSize - 1);
   std::vector<std::pair<float, int>> subsets_and_values;
@@ -144,8 +142,7 @@ TEST(AdjustableKAryHeapTest, OneByOneStrongSpeed) {
 TEST(StandardHeapTest, RandomDataSpeed) {
   const int kSize = 1'000'000;
   const double priority_range = kSize / 100;
-  std::random_device rd;
-  std::mt19937 generator(rd());  // Mersenne Twister generator
+  absl::BitGen generator;
   std::uniform_real_distribution<float> priority_dist(0, priority_range);
 
   std::vector<float> values(kSize);
@@ -170,5 +167,74 @@ TEST(AdjustableKAryHeapTest, DoubleInsertionOneRemoval) {
     EXPECT_FALSE(heap.Contains(i));
   }
   EXPECT_TRUE(heap.CheckHeapProperty());
+}
+
+TEST(AdjustableKAryHeapTest, TopBottomIndexPrioritySimple) {
+  // In this test, the element with the lowest priority is the last one.
+  AdjustableKAryHeap<int, int, 4, /*IsMaxHeap=*/true> heap;
+
+  heap.Insert({10, 0});
+  EXPECT_EQ(heap.TopIndex(), 0);
+  EXPECT_EQ(heap.TopPriority(), 10);
+  EXPECT_EQ(heap.BottomIndex(), 0);
+  EXPECT_EQ(heap.BottomPriority(), 10);
+
+  heap.Insert({20, 1});
+  EXPECT_EQ(heap.TopIndex(), 1);
+  EXPECT_EQ(heap.TopPriority(), 20);
+  EXPECT_EQ(heap.BottomIndex(), 0);
+  EXPECT_EQ(heap.BottomPriority(), 10);
+
+  EXPECT_TRUE(heap.Remove(0));
+  EXPECT_EQ(heap.TopIndex(), 1);
+  EXPECT_EQ(heap.TopPriority(), 20);
+  EXPECT_EQ(heap.BottomIndex(), 1);
+  EXPECT_EQ(heap.BottomPriority(), 20);
+}
+
+TEST(AdjustableKAryHeapTest, BottomIndexPriority) {
+  // In this test, the element with the lowest priority is not the last one in
+  // the heap representation. A wrong implementation of the
+  // `GetLowestPriorityChild()` could lead to a wrong result here (and did so).
+  std::vector<std::pair<int, int>> elements = {
+      {10, 0}, {5, 1}, {8, 2}, {1, 3}, {2, 4}};
+  AdjustableKAryHeap<int, int, 4, /*IsMaxHeap=*/true> heap;
+  heap.Load(elements, /*universe_size=*/5);
+
+  EXPECT_EQ(heap.BottomIndex(), 3);
+  EXPECT_EQ(heap.BottomPriority(), 1);
+}
+
+DEFINE_STRONG_INT_TYPE(NodeIndex, int32_t);
+
+TEST(AdjustableKAryHeapTest, StrongIntIndex) {
+  // As most of the implementation is based on templates, check that it compiles
+  // with StrongInt. Hence, this test should use all the public methods at least
+  // once.
+  AdjustableKAryHeap<int, NodeIndex, 4, true> heap;
+
+  heap.Load(/*indices=*/std::vector{NodeIndex(0)},
+            /*priorities=*/std::vector{1},
+            /*universe_size=*/NodeIndex(1));
+  EXPECT_FALSE(heap.IsEmpty());
+  heap.Clear();
+  EXPECT_TRUE(heap.IsEmpty());
+
+  heap.Insert({1, NodeIndex(1)});
+  heap.Update({2, NodeIndex(1)});
+  EXPECT_TRUE(heap.CheckHeapProperty());
+  EXPECT_FALSE(heap.IsEmpty());
+
+  EXPECT_TRUE(heap.Remove(NodeIndex(1)));
+  EXPECT_FALSE(heap.Contains(NodeIndex(1)));
+  EXPECT_EQ(heap.heap_size(), NodeIndex(0));
+  heap.Clear();
+
+  heap.Insert({1, NodeIndex(1)});
+  EXPECT_EQ(heap.TopPriority(), 1);
+  EXPECT_EQ(heap.TopIndex(), NodeIndex(1));
+  EXPECT_EQ(heap.BottomPriority(), 1);
+  EXPECT_EQ(heap.BottomIndex(), NodeIndex(1));
+  heap.Pop();
 }
 }  // namespace operations_research

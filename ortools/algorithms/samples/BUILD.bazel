@@ -22,9 +22,9 @@ cc_test(
     name = "simple_knapsack_program_test",
     srcs = ["simple_knapsack_program.cc"],
     deps = [
-        "//ortools/algorithms:knapsack_solver_lib",
+        "//ortools/algorithms:knapsack_solver",
         "//ortools/base",
-        "@abseil-cpp//absl/base:log_severity",
+        "//ortools/base:log_severity",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:globals",
     ],
@@ -41,9 +41,10 @@ cc_test(
     name = "knapsack_test",
     srcs = ["knapsack.cc"],
     deps = [
-        "//ortools/algorithms:knapsack_solver_lib",
+        "//ortools/algorithms:knapsack_solver",
         "//ortools/base",
-        "@abseil-cpp//absl/base:log_severity",
+        "//ortools/base:log_severity",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:globals",
     ],
 )

@@ -195,7 +195,7 @@ class KnapsackSolver {
 
   /// Initializes the solver and enters the problem to be solved.
   void Init(const std::vector<int64_t>& profits,
-            const std::vector<std::vector<int64_t> >& weights,
+            const std::vector<std::vector<int64_t>>& weights,
             const std::vector<int64_t>& capacities);
 
   /// Solves the problem and returns the profit of the optimal solution.
@@ -222,14 +222,14 @@ class KnapsackSolver {
   /// Trivial reduction of capacity constraints when the capacity is higher than
   /// the sum of the weights of the items. Returns the number of reduced items.
   int ReduceCapacities(int num_items,
-                       const std::vector<std::vector<int64_t> >& weights,
+                       const std::vector<std::vector<int64_t>>& weights,
                        const std::vector<int64_t>& capacities,
-                       std::vector<std::vector<int64_t> >* reduced_weights,
+                       std::vector<std::vector<int64_t>>* reduced_weights,
                        std::vector<int64_t>* reduced_capacities);
   int ReduceProblem(int num_items);
   void ComputeAdditionalProfit(const std::vector<int64_t>& profits);
   void InitReducedProblem(const std::vector<int64_t>& profits,
-                          const std::vector<std::vector<int64_t> >& weights,
+                          const std::vector<std::vector<int64_t>>& weights,
                           const std::vector<int64_t>& capacities);
 
   std::unique_ptr<BaseKnapsackSolver> solver_;
@@ -582,7 +582,7 @@ class BaseKnapsackSolver {
 
   /// Initializes the solver and enters the problem to be solved.
   virtual void Init(const std::vector<int64_t>& profits,
-                    const std::vector<std::vector<int64_t> >& weights,
+                    const std::vector<std::vector<int64_t>>& weights,
                     const std::vector<int64_t>& capacities) = 0;
 
   // Gets the lower and upper bound when the item is in or out of the knapsack.
@@ -628,7 +628,7 @@ class KnapsackGenericSolver : public BaseKnapsackSolver {
 
   /// Initializes the solver and enters the problem to be solved.
   void Init(const std::vector<int64_t>& profits,
-            const std::vector<std::vector<int64_t> >& weights,
+            const std::vector<std::vector<int64_t>>& weights,
             const std::vector<int64_t>& capacities) override;
   int GetNumberOfItems() const { return state_.GetNumberOfItems(); }
   void GetLowerAndUpperBoundWhenItem(int item_id, bool is_item_in,
