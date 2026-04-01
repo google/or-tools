@@ -140,7 +140,6 @@ const SatParameters_ConflictMinimizationAlgorithm =
     Sat.var"SatParameters.ConflictMinimizationAlgorithm"
 const SatParameters_BinaryMinizationAlgorithm =
     Sat.var"SatParameters.BinaryMinizationAlgorithm"
-const SatParameters_ClauseProtection = Sat.var"SatParameters.ClauseProtection"
 const SatParameters_ClauseOrdering =
     OperationsResearch.sat.var"SatParameters.ClauseOrdering"
 const SatParameters_RestartAlgorithm = Sat.var"SatParameters.RestartAlgorithm"
@@ -875,7 +874,6 @@ mutable struct SatParameters
     clause_cleanup_period::Int32
     clause_cleanup_target::Int32
     clause_cleanup_ratio::Float64
-    clause_cleanup_protection::SatParameters_ClauseProtection.T
     clause_cleanup_lbd_bound::Int32
     clause_cleanup_ordering::SatParameters_ClauseOrdering.T
     pb_cleanup_increment::Int32
@@ -1091,12 +1089,11 @@ mutable struct SatParameters
         initial_variables_activity = Float64(0.0),
         also_bump_variables_in_conflict_reasons = false,
         minimization_algorithm = SatParameters_ConflictMinimizationAlgorithm.RECURSIVE,
-        binary_minimization_algorithm = SatParameters_BinaryMinizationAlgorithm.BINARY_MINIMIZATION_FIRST,
+        binary_minimization_algorithm = SatParameters_BinaryMinizationAlgorithm.BINARY_MINIMIZATION_FROM_UIP_AND_DECISIONS,
         subsumption_during_conflict_analysis = true,
         clause_cleanup_period = Int32(10000),
         clause_cleanup_target = Int32(0),
         clause_cleanup_ratio = Float64(0.5),
-        clause_cleanup_protection = SatParameters_ClauseProtection.PROTECTION_NONE,
         clause_cleanup_lbd_bound = Int32(5),
         clause_cleanup_ordering = SatParameters_ClauseOrdering.CLAUSE_ACTIVITY,
         pb_cleanup_increment = Int32(200),
@@ -1317,7 +1314,6 @@ mutable struct SatParameters
             clause_cleanup_period,
             clause_cleanup_target,
             clause_cleanup_ratio,
-            clause_cleanup_protection,
             clause_cleanup_lbd_bound,
             clause_cleanup_ordering,
             pb_cleanup_increment,
@@ -1545,7 +1541,6 @@ function to_proto_struct(
         sat_parameters.clause_cleanup_period,
         sat_parameters.clause_cleanup_target,
         sat_parameters.clause_cleanup_ratio,
-        sat_parameters.clause_cleanup_protection,
         sat_parameters.clause_cleanup_lbd_bound,
         sat_parameters.clause_cleanup_ordering,
         sat_parameters.pb_cleanup_increment,

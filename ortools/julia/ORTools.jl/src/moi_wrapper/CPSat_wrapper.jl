@@ -766,6 +766,7 @@ function get_variable_indices(
     start_index::Int,
     end_index::Int,
 )::Vector{Int32}
+    start_index > end_index && return Vector{Int32}()
     return Int32.(map(v -> v.value, vi.variables[start_index:end_index]))
 end
 
@@ -1524,7 +1525,7 @@ function MOI.add_constraint(
             ArgumentError(
                 """The dimension of the Inverse constraint must be even; the first half should contain the direct function (variables) and
                 the second half the inverse function (variables).
-                """
+                """,
             ),
         )
     end
@@ -1536,7 +1537,7 @@ function MOI.add_constraint(
 
     for i = 1:var_size
         f_direct_variable_indices[i] = vi.variables[i].value
-        f_inverse_variable_indices[i] = vi.variables[i + var_size].value
+        f_inverse_variable_indices[i] = vi.variables[i+var_size].value
     end
 
     append!(inverse_constraint.f_direct, f_direct_variable_indices)
@@ -1948,12 +1949,19 @@ function MOI.supports(::CPSATOptimizer, ::Type{DecisionStrategyList})
     return true
 end
 
-function MOI.set(optimizer::CPSATOptimizer, ::DecisionStrategyList, decision_strategy_list::Vector{DecisionStrategy})
+function MOI.set(
+    optimizer::CPSATOptimizer,
+    ::DecisionStrategyList,
+    decision_strategy_list::Vector{DecisionStrategy},
+)
     optimizer.model.search_strategy = to_cp_sat_decision_strategy.(decision_strategy_list)
     return nothing
 end
 
-function MOI.get(optimizer::CPSATOptimizer, ::DecisionStrategyList)::Vector{DecisionStrategy}
+function MOI.get(
+    optimizer::CPSATOptimizer,
+    ::DecisionStrategyList,
+)::Vector{DecisionStrategy}
     decision_strategies = Vector{DecisionStrategy}()
 
     for strategy in optimizer.model.search_strategy
@@ -1985,4 +1993,63 @@ function MOI.get(optimizer::CPSATOptimizer, ::DecisionStrategyList)::Vector{Deci
     end
 
     return decision_strategies
+end
+
+MOI.supports(::CPSATOptimizer, ::MOI.VariablePrimalStart, ::Type{MOI.VariableIndex}) = true
+
+MOI.get(optimizer::CPSATOptimizer, ::MOI.VariablePrimalStart, vi::MOI.VariableIndex)
+    if isnothing(optimizer.model.solution_hint)
+        return nothing
+    end
+
+    idx = findfirst(==(vi.value), optimizer.model.solution_hint.vars)
+
+    isnothing(idx) && return nothing
+
+    return optimizer.model.solution_hint.values[idx]
+end
+
+MOI.set(optimizer::CPSATOptimizer, ::MOI.VariablePrimalStart, vi::MOI.VariableIndex, value::Int)
+    if isnothing(optimizer.model.solution_hint)
+        optimizer.model.solution_hint = NewCPSATPartialVariableAssignment()
+    end
+
+    push!(optimizer.model.solution_hint.vars, vi.value)
+    push!(optimizer.model.solution_hint.values, value)
+
+    return nothing
+end 
+
+struct Assumptions <: MOI.AbstractModelAttribute end
+MOI.attribute_value_type(::Assumptions) = Union{Nothing,MOI.VectorOfVariables}
+
+function MOI.supports(::CPSATOptimizer, ::Type{Assumptions})
+    return true
+end
+
+function MOI.set(
+    optimizer::CPSATOptimizer,
+    ::Assumptions,
+    assumptions::Union{Nothing,MOI.VectorOfVariables},
+)
+    if isnothing(assumptions)
+        optimizer.model.assumptions = Vector{Int32}()
+    else
+        optimizer.model.assumptions =
+            get_variable_indices(assumptions, 1, MOI.output_dimension(assumptions))
+    end
+    return nothing
+end
+
+function MOI.get(
+    optimizer::CPSATOptimizer,
+    ::Assumptions,
+)::Union{Nothing,MOI.VectorOfVariables}
+    return isempty(optimizer.model.assumptions) ? nothing :
+           MOI.VectorOfVariables(
+        map(
+            i -> MOI.VariableIndex(optimizer.model.assumptions[i]),
+            1:length(optimizer.model.assumptions),
+        ),
+    )
 end
