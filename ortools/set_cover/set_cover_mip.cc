@@ -18,6 +18,7 @@
 
 #include "absl/log/check.h"
 #include "absl/log/log.h"
+#include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/lp_data/lp_types.h"
@@ -135,12 +136,24 @@ bool SetCoverMip::NextSolution(absl::Span<const SubsetIndex> focus) {
   if (use_integers_) {
     using CL = SetCoverInvariant::ConsistencyLevel;
     for (const SubsetIndex subset : focus) {
-      if (vars[subset]->solution_value() > 0.9 &&
-          !inv()->is_selected()[subset]) {
-        inv()->Select(subset, CL::kCostAndCoverage);
+      if (vars[subset]->solution_value() > 0.9) {
+        if (!inv()->is_selected()[subset]) {
+          inv()->Select(subset, CL::kCostAndCoverage);
+        }
+      } else {
+        CHECK_LT(vars[subset]->solution_value(), 0.1)
+            << "Solution must be either near 0 or near 1 but got "
+            << vars[subset]->solution_value();
+        if (inv()->is_selected()[subset]) {
+          inv()->Deselect(subset, CL::kCostAndCoverage);
+        }
       }
     }
   } else {
+    solution_weights_.assign(num_subsets.value(), 0.0);
+    for (const SubsetIndex subset : focus) {
+      solution_weights_[subset] = vars[subset]->solution_value();
+    }
     // Report the objective value as a lower bound, and mention that the cost is
     // not consistent with the solution.
     inv()->ReportLowerBound(solver.Objective().Value(), false);

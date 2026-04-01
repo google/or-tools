@@ -25,6 +25,7 @@
 
 #include "absl/log/check.h"
 #include "absl/log/log.h"
+#include "absl/strings/match.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
@@ -40,6 +41,98 @@
 #include "ortools/util/filelineiter.h"
 
 namespace operations_research {
+
+SetCoverFormat ParseFileFormat(absl::string_view format_name) {
+  if (format_name.empty()) {
+    return SetCoverFormat::EMPTY;
+  } else if (absl::EqualsIgnoreCase(format_name, "orlib")) {
+    return SetCoverFormat::ORLIB;
+  } else if (absl::EqualsIgnoreCase(format_name, "rail")) {
+    return SetCoverFormat::RAIL;
+  } else if (absl::EqualsIgnoreCase(format_name, "fimi")) {
+    return SetCoverFormat::FIMI;
+  } else if (absl::EqualsIgnoreCase(format_name, "proto")) {
+    return SetCoverFormat::PROTO;
+  } else if (absl::EqualsIgnoreCase(format_name, "proto_bin")) {
+    return SetCoverFormat::PROTO_BIN;
+  } else if (absl::EqualsIgnoreCase(format_name, "txt")) {
+    return SetCoverFormat::TXT;
+  } else {
+    LOG(FATAL) << "Unsupported input format: " << format_name;
+  }
+}
+
+SetCoverModel ReadModel(absl::string_view filename, SetCoverFormat format) {
+  switch (format) {
+    case SetCoverFormat::ORLIB:
+      return ReadOrlibScp(filename);
+    case SetCoverFormat::RAIL:
+      return ReadOrlibRail(filename);
+    case SetCoverFormat::FIMI:
+      return ReadFimiDat(filename);
+    case SetCoverFormat::PROTO:
+      return ReadSetCoverProto(filename, /*binary=*/false);
+    case SetCoverFormat::PROTO_BIN:
+      return ReadSetCoverProto(filename, /*binary=*/true);
+    default:
+      LOG(FATAL) << "Unsupported input format: " << static_cast<int>(format);
+  }
+}
+
+SubsetBoolVector ReadSolution(absl::string_view filename,
+                              SetCoverFormat format) {
+  switch (format) {
+    case SetCoverFormat::TXT:
+      return ReadSetCoverSolutionText(filename);
+    case SetCoverFormat::PROTO:
+      return ReadSetCoverSolutionProto(filename, /*binary=*/false);
+    case SetCoverFormat::PROTO_BIN:
+      return ReadSetCoverSolutionProto(filename, /*binary=*/true);
+    default:
+      LOG(FATAL) << "Unsupported input format: " << static_cast<int>(format);
+  }
+}
+
+void WriteModel(const SetCoverModel& model, absl::string_view filename,
+                SetCoverFormat format) {
+  LOG(INFO) << "Writing model to " << filename;
+  switch (format) {
+    case SetCoverFormat::ORLIB:
+      WriteOrlibScp(model, filename);
+      break;
+    case SetCoverFormat::RAIL:
+      WriteOrlibRail(model, filename);
+      break;
+    case SetCoverFormat::PROTO:
+      WriteSetCoverProto(model, filename, /*binary=*/false);
+      break;
+    case SetCoverFormat::PROTO_BIN:
+      WriteSetCoverProto(model, filename, /*binary=*/true);
+      break;
+    default:
+      LOG(FATAL) << "Unsupported output format: " << static_cast<int>(format);
+  }
+}
+
+// TODO(user): Move this to set_cover_reader
+void WriteSolution(const SetCoverModel& model, const SubsetBoolVector& solution,
+                   absl::string_view filename, SetCoverFormat format) {
+  switch (format) {
+    case SetCoverFormat::TXT:
+      WriteSetCoverSolutionText(model, solution, filename);
+      break;
+    case SetCoverFormat::PROTO:
+      WriteSetCoverSolutionProto(model, solution, filename,
+                                 /*binary=*/false);
+      break;
+    case SetCoverFormat::PROTO_BIN:
+      WriteSetCoverSolutionProto(model, solution, filename,
+                                 /*binary=*/true);
+      break;
+    default:
+      LOG(FATAL) << "Unsupported output format: " << static_cast<int>(format);
+  }
+}
 
 class SetCoverReader {
  public:
@@ -216,7 +309,8 @@ SetCoverModel ReadFimiDat(absl::string_view filename) {
       BaseInt raw_element;
       CHECK(absl::SimpleAtoi(number_str, &raw_element));
       // Re-index the elements starting from 0.
-      ElementIndex element(raw_element - smallest_element);
+      const ElementIndex element(raw_element - smallest_element);
+      DCHECK_GE(element.value(), 0);
       if (element_seen[element]) {
         DLOG(INFO) << "Element " << element << " already in subset "
                    << subset.value();
@@ -224,7 +318,6 @@ SetCoverModel ReadFimiDat(absl::string_view filename) {
       }
       element_seen[element] = true;
       elements_list.push_back(element);
-      CHECK_GE(element.value(), 0);
       model.AddElementToLastSubset(element);
     }
     // Clean up the list of elements.

@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <algorithm>
 #include <limits>
 #include <string>
 #include <vector>
@@ -18,6 +19,7 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
+#include "absl/time/time.h"
 #include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
@@ -33,6 +35,9 @@ namespace operations_research {
 namespace {
 using google::protobuf::contrib::parse_proto::ParseTextProtoOrDie;
 using CL = SetCoverInvariant::ConsistencyLevel;
+using ::testing::DoubleEq;
+using ::testing::ElementsAre;
+using ::testing::Pointwise;
 
 TEST(SetCoverTest, GuidedLocalSearchVerySmall) {
   SetCoverProto proto = ParseTextProtoOrDie(R"pb(
@@ -357,7 +362,7 @@ TEST(SetCoverTest, KnightsCoverGreedyRandomClear) {
   // The best solution found until 2023-08 has a cost of 350.
   // http://www.contestcen.com/kn50.htm
   if (BoardSize == 50) {
-    CHECK_GE(inv.cost(), 350);
+    EXPECT_GE(inv.cost(), 350);
   }
 }
 
@@ -398,7 +403,7 @@ TEST(SetCoverTest, KnightsCoverElementDegreeRandomClear) {
   // The best solution found until 2023-08 has a cost of 350.
   // http://www.contestcen.com/kn50.htm
   if (BoardSize == 50) {
-    CHECK_GE(inv.cost(), 350);
+    EXPECT_GE(inv.cost(), 350);
   }
 }
 
@@ -448,7 +453,7 @@ TEST(SetCoverTest, KnightsCoverElementDegreeRadiusClear) {
   // The best solution found until 2023-08 has a cost of 350.
   // http://www.contestcen.com/kn50.htm
   if (BoardSize == 50) {
-    CHECK_GE(inv.cost(), 350);
+    EXPECT_GE(inv.cost(), 350);
   }
 }
 
@@ -486,11 +491,6 @@ TEST(SetCoverTest, KnightsCoverRandomClearMip) {
   }
   knights.DisplaySolution(best_choices);
   LOG(INFO) << "RandomClearMip cost: " << best_cost;
-  // The best solution found until 2023-08 has a cost of 350.
-  // http://www.contestcen.com/kn50.htm
-  // if (BoardSize == 50) {
-  //   CHECK_GE(inv.cost(), 350);
-  // }
 }
 
 TEST(SetCoverTest, KnightsCoverMip) {
@@ -507,8 +507,47 @@ TEST(SetCoverTest, KnightsCoverMip) {
   LOG(INFO) << "Mip cost: " << inv.cost();
   knights.DisplaySolution(inv.is_selected());
   if (BoardSize == 50) {
-    CHECK_GE(inv.cost(), 350);
+    EXPECT_GE(inv.cost(), 350);
   }
+}
+
+TEST(SetCoverTest, FractionalSolution) {
+  SetCoverModel model;
+  model.AddEmptySubset(1);
+  model.AddElementToLastSubset(0);
+  model.AddElementToLastSubset(1);
+  model.AddEmptySubset(1);
+  model.AddElementToLastSubset(1);
+  model.AddElementToLastSubset(2);
+  model.AddEmptySubset(1);
+  model.AddElementToLastSubset(2);
+  model.AddElementToLastSubset(0);
+  SetCoverInvariant inv(&model);
+  SetCoverMip mip(&inv);
+
+  mip.UseMipSolver(SetCoverMipSolver::GLOP)
+      .SetTimeLimitInSeconds(1.0)
+      .NextSolution();
+
+  EXPECT_THAT(mip.solution_weights(), Pointwise(DoubleEq(), {0.5, 0.5, 0.5}));
+  EXPECT_THAT(inv.LowerBound(), DoubleEq(1.5));
+}
+
+TEST(SetCoverTest, MipErasePreviousSubsets) {
+  SetCoverProto proto = ParseTextProtoOrDie(R"pb(
+    subset { cost: 1 element: 0 element: 1 }
+    subset { cost: 1 element: 0 }
+    subset { cost: 1 element: 1 })pb");
+  SetCoverModel model;
+  model.ImportModelFromProto(proto);
+  SetCoverInvariant inv(&model);
+  inv.Select(SubsetIndex(1), CL::kCostAndCoverage);
+  inv.Select(SubsetIndex(2), CL::kCostAndCoverage);
+  SetCoverMip mip(&inv);
+
+  mip.UseIntegers(true).SetTimeLimitInSeconds(0.5).NextSolution();
+
+  EXPECT_THAT(inv.is_selected(), ElementsAre(true, false, false));
 }
 
 void BM_Steepest(benchmark::State& state) {

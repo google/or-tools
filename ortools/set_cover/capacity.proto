@@ -17,6 +17,7 @@ package operations_research;
 
 option java_package = "com.google.ortools.setcover";
 option java_multiple_files = true;
+option java_outer_classname = "Capacity";
 
 // Represents a capacity constraint to be used in conjunction with a
 // SetCoverProto. This constraint only considers one dimension.

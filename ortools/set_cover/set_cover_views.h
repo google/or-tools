@@ -1,4 +1,5 @@
 // Copyright 2025 Francesco Cavaliere
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -11,14 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ORTOOLS_SET_COVER_SET_COVER_VIEWS_H
-#define ORTOOLS_SET_COVER_SET_COVER_VIEWS_H
+#ifndef ORTOOLS_SET_COVER_SET_COVER_VIEWS_H_
+#define ORTOOLS_SET_COVER_SET_COVER_VIEWS_H_
 
-#include <absl/meta/type_traits.h>
+#include <vector>
 
+#include "absl/log/check.h"
+#include "ortools/base/strong_int.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/set_cover/base_types.h"
 #include "ortools/set_cover/set_cover_model.h"
-#include "views.h"
+#include "ortools/set_cover/views.h"
 
 namespace operations_research {
 
@@ -28,7 +32,7 @@ namespace operations_research {
 // these indices:
 // 1. Full-model strong-typed indices + {Subset,Element}Index for the core model
 // 2. Core-model strong-typed indices + {Subset,Element}Index for the full model
-// 3. Define new strong-typed indices both full-model and core-model
+// 3. Define new strong-typed indices for both full-model and core-model
 // Introducing a new set of strong-typed indices, however, can lead to a
 // cascade of code duplication (or template proliferation). It also requires
 // additional "view" boilerplate to properly handle the different types,
@@ -41,17 +45,17 @@ namespace operations_research {
 DEFINE_STRONG_INT_TYPE(FullSubsetIndex, BaseInt);
 DEFINE_STRONG_INT_TYPE(FullElementIndex, BaseInt);
 
-// Syntactic sugar to define strong typed indices casts.
+// Syntactic sugar to define strong-typed indices casts.
 // Note: look at `strong_int.h` for more details about `StrongIntConvert`
 #define ENABLE_EXPLICIT_STRONG_TYPE_CAST(FROM, TO)        \
   constexpr TO StrongIntConvert(FROM j, TO* /*unused*/) { \
     return TO(static_cast<FROM::ValueType>(j));           \
   }
-
 ENABLE_EXPLICIT_STRONG_TYPE_CAST(SubsetIndex, FullSubsetIndex);
 ENABLE_EXPLICIT_STRONG_TYPE_CAST(FullSubsetIndex, SubsetIndex);
 ENABLE_EXPLICIT_STRONG_TYPE_CAST(ElementIndex, FullElementIndex);
 ENABLE_EXPLICIT_STRONG_TYPE_CAST(FullElementIndex, ElementIndex);
+#undef ENABLE_EXPLICIT_STRONG_TYPE_CAST
 
 using FullElementCostVector = util_intops::StrongVector<FullElementIndex, Cost>;
 using FullSubsetCostVector = util_intops::StrongVector<FullSubsetIndex, Cost>;
@@ -62,8 +66,8 @@ using FullElementToIntVector =
 using FullSubsetToIntVector =
     util_intops::StrongVector<FullSubsetIndex, BaseInt>;
 
-// When a sub-model is created, indicies are compacted to be consecutive and
-// strarting from 0 (to reduce memory usage). Core ElementIndex to original
+// When a sub-model is created, indices are compacted to be consecutive and
+// starting from 0 (to reduce memory usage). Core ElementIndex to original
 // ElementIndex mappings are stored to translate back to the original model
 // space.
 using FullToCoreElementMapVector =
@@ -82,47 +86,49 @@ class StrongModelView {
  private:
   // Transformations to convert between the core and full model columns.
   struct SparseColTransform {
-    auto operator()(const SparseColumn& column) const
-        -> util_intops::TransformView<
-            ElementIndex, ColumnEntryIndex,
-            util_intops::TypeCastTransform<ElementIndex, FullElementIndex>> {
-      return {&column};
+    TransformView<ElementIndex, ColumnEntryIndex,
+                  TypeCastTransform<ElementIndex, FullElementIndex>>
+    operator()(const SparseColumn& column) const {
+      return TransformView<ElementIndex, ColumnEntryIndex,
+                           TypeCastTransform<ElementIndex, FullElementIndex>>(
+          &column);
     }
   };
 
   // Transformations to convert between the core and full model rows.
   struct SparseRowTransform {
-    auto operator()(const SparseRow& row) const -> util_intops::TransformView<
-        SubsetIndex, RowEntryIndex,
-        util_intops::TypeCastTransform<SubsetIndex, FullSubsetIndex>> {
-      return {&row};
+    TransformView<SubsetIndex, RowEntryIndex,
+                  TypeCastTransform<SubsetIndex, FullSubsetIndex>>
+    operator()(const SparseRow& row) const {
+      return TransformView<SubsetIndex, RowEntryIndex,
+                           TypeCastTransform<SubsetIndex, FullSubsetIndex>>(
+          &row);
     }
   };
 
  public:
   StrongModelView() = default;
-  StrongModelView(const SetCoverModel* model) : model_(model) {}
+  explicit StrongModelView(const SetCoverModel* model) : model_(model) {}
 
   BaseInt num_subsets() const { return model_->num_subsets(); }
   BaseInt num_elements() const { return model_->num_elements(); }
 
-  auto subset_costs() const
-      -> util_intops::TransformView<Cost, FullSubsetIndex> {
-    return {&model_->subset_costs()};
+  TransformView<Cost, FullSubsetIndex> subset_costs() const {
+    return TransformView<Cost, FullSubsetIndex>(&model_->subset_costs());
   }
-  auto columns() const
-      -> util_intops::TransformView<SparseColumn, FullSubsetIndex,
-                                    SparseColTransform> {
-    return {&model_->columns()};
+  TransformView<SparseColumn, FullSubsetIndex, SparseColTransform> columns()
+      const {
+    return TransformView<SparseColumn, FullSubsetIndex, SparseColTransform>(
+        &model_->columns());
   }
-  auto rows() const -> util_intops::TransformView<SparseRow, FullElementIndex,
-                                                  SparseRowTransform> {
-    return {&model_->rows()};
+  TransformView<SparseRow, FullElementIndex, SparseRowTransform> rows() const {
+    return TransformView<SparseRow, FullElementIndex, SparseRowTransform>(
+        &model_->rows());
   }
-  auto SubsetRange() const -> util_intops::StrongIntRange<FullSubsetIndex> {
+  util_intops::StrongIntRange<FullSubsetIndex> SubsetRange() const {
     return {FullSubsetIndex(), FullSubsetIndex(num_subsets())};
   }
-  auto ElementRange() const -> util_intops::StrongIntRange<FullElementIndex> {
+  util_intops::StrongIntRange<FullElementIndex> ElementRange() const {
     return {FullElementIndex(), FullElementIndex(num_elements())};
   }
   const SetCoverModel& base() const { return *model_; }
@@ -150,16 +156,15 @@ class IndexListModelView {
   BaseInt num_focus_subsets() const { return cols_focus_->size(); }
   BaseInt num_focus_elements() const { return rows_focus_->size(); }
 
-  auto subset_costs() const -> util_intops::IndexListView<Cost, SubsetIndex> {
+  IndexListView<Cost, SubsetIndex> subset_costs() const {
     return {&model_->subset_costs(), cols_focus_};
   }
-  auto columns() const -> util_intops::TwoLevelsView<
-      util_intops::IndexListView<SparseColumn, SubsetIndex>,
-      ElementToIntVector> {
+  TwoLevelsView<IndexListView<SparseColumn, SubsetIndex>, ElementToIntVector>
+  columns() const {
     return {{&model_->columns(), cols_focus_}, rows_sizes_};
   }
-  auto rows() const -> util_intops::TwoLevelsView<
-      util_intops::IndexListView<SparseRow, ElementIndex>, SubsetToIntVector> {
+  TwoLevelsView<IndexListView<SparseRow, ElementIndex>, SubsetToIntVector>
+  rows() const {
     return {{&model_->rows(), rows_focus_}, cols_sizes_};
   }
   const std::vector<SubsetIndex>& SubsetRange() const { return *cols_focus_; }
@@ -217,27 +222,23 @@ class FilterModelView {
   BaseInt num_focus_subsets() const { return num_subsets_; }
   BaseInt num_focus_elements() const { return num_elements_; }
 
-  auto subset_costs() const
-      -> util_intops::IndexFilterView<Cost, SubsetBoolVector> {
+  IndexFilterView<Cost, SubsetBoolVector> subset_costs() const {
     return {&model_->subset_costs(), is_focus_col_};
   }
-  auto columns() const -> util_intops::TwoLevelsView<
-      util_intops::IndexFilterView<SparseColumn, SubsetBoolVector>,
-      ElementBoolVector> {
+  TwoLevelsView<IndexFilterView<SparseColumn, SubsetBoolVector>,
+                ElementBoolVector>
+  columns() const {
     return {{&model_->columns(), is_focus_col_}, is_focus_row_};
   }
-  auto rows() const -> util_intops::TwoLevelsView<
-      util_intops::IndexFilterView<SparseRow, ElementBoolVector>,
-      SubsetBoolVector> {
+  TwoLevelsView<IndexFilterView<SparseRow, ElementBoolVector>, SubsetBoolVector>
+  rows() const {
     return {{&model_->rows(), is_focus_row_}, is_focus_col_};
   }
-  auto SubsetRange() const
-      -> util_intops::FilterIndexRangeView<SubsetIndex, SubsetBoolVector> {
-    return {is_focus_col_};
+  FilterIndexRangeView<SubsetIndex, SubsetBoolVector> SubsetRange() const {
+    return FilterIndexRangeView<SubsetIndex, SubsetBoolVector>{is_focus_col_};
   }
-  auto ElementRange() const
-      -> util_intops::FilterIndexRangeView<ElementIndex, ElementBoolVector> {
-    return {is_focus_row_};
+  FilterIndexRangeView<ElementIndex, ElementBoolVector> ElementRange() const {
+    return FilterIndexRangeView<ElementIndex, ElementBoolVector>{is_focus_row_};
   }
   bool IsFocusCol(SubsetIndex j) const { return (*is_focus_col_)[j]; }
   bool IsFocusRow(ElementIndex i) const { return (*is_focus_row_)[i]; }
@@ -254,4 +255,4 @@ class FilterModelView {
 
 }  // namespace operations_research
 
-#endif /* ORTOOLS_SET_COVER_SET_COVER_VIEWS_H */
+#endif  // ORTOOLS_SET_COVER_SET_COVER_VIEWS_H_

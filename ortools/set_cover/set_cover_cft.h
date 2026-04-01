@@ -1,4 +1,5 @@
 // Copyright 2025 Francesco Cavaliere
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -11,20 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ORTOOLS_SET_COVER_SET_COVER_CFT_H
-#define ORTOOLS_SET_COVER_SET_COVER_CFT_H
+#ifndef ORTOOLS_SET_COVER_SET_COVER_CFT_H_
+#define ORTOOLS_SET_COVER_SET_COVER_CFT_H_
 
-#include <absl/algorithm/container.h>
-#include <absl/base/internal/pretty_function.h>
-#include <absl/status/status.h>
-
+#include <cmath>
 #include <limits>
+#include <vector>
 
+#include "absl/log/check.h"
 #include "ortools/set_cover/base_types.h"
+#include "ortools/set_cover/set_cover_model.h"
 #include "ortools/set_cover/set_cover_submodel.h"
 #include "ortools/set_cover/set_cover_views.h"
 
-namespace operations_research::scp {
+namespace operations_research {
 
 // Implementation of:
 // Caprara, Alberto, Matteo Fischetti, and Paolo Toth. 1999. “A Heuristic
@@ -74,18 +75,16 @@ namespace operations_research::scp {
 //   problem-dependent and cannot be implemented here, the architecture of this
 //   implementation is designed to be extensible, allowing for such a procedure
 //   to be added in the future.
-//
 
-////////////////////////////////////////////////////////////////////////
-////////////////////////// COMMON DEFINITIONS //////////////////////////
-////////////////////////////////////////////////////////////////////////
+// Common Definitions
 
 // Small class to store the solution of a sub-model. It contains the cost and
 // the subset list.
 class Solution {
  public:
   Solution() = default;
-  Solution(const SubModel& model, const std::vector<SubsetIndex>& core_subsets);
+  Solution(const CoreModel& model,
+           const std::vector<SubsetIndex>& core_subsets);
 
   double cost() const { return cost_; }
   const std::vector<FullSubsetIndex>& subsets() const { return subsets_; }
@@ -109,16 +108,14 @@ class Solution {
 // specific cases, the denominator should always be greater than the
 // numerator. This function checks that.
 inline Cost DivideIfGE0(Cost numerator, Cost denominator) {
+  CHECK_GE(numerator, denominator);  // NOTE(user): should become a DCHECK.
   DCHECK_GE(numerator, -1e-6);
-  if (numerator < 1e-6) {
-    return 0.0;
-  }
-  return numerator / denominator;
+  return numerator < 1e-6 ? 0.0 : numerator / denominator;
 }
 
-// Dual information related to a SubModel.
+// Dual information related to a CoreModel.
 // Stores multipliers, reduced costs, and the lower bound, and provides an
-// interface that keeps them alligned.
+// interface that keeps them aligned.
 class DualState {
  public:
   DualState() = default;
@@ -135,6 +132,7 @@ class DualState {
   const SubsetCostVector& reduced_costs() const { return reduced_costs_; }
 
   // NOTE: This function contains one of the two O(nnz) subgradient steps
+  // NOTE(user): why is Op a template parameter? SubModelT?
   template <typename SubModelT, typename Op>
   void DualUpdate(const SubModelT& model, Op multiplier_operator) {
     multipliers_.resize(model.num_elements());
@@ -181,17 +179,16 @@ struct PrimalDualState {
   DualState dual_state;
 };
 
-///////////////////////////////////////////////////////////////////////
-///////////////////////////// SUBGRADIENT /////////////////////////////
-///////////////////////////////////////////////////////////////////////
+// Subgradient
 
-// Utilitiy aggregate used by the SubgradientOptimization procedure to
-// communicate pass the needed information to the SubgradientCBs interface.
+// Utility aggregate used by the SubgradientOptimization procedure to
+// pass the needed information to the SubgradientCBs interface.
 struct SubgradientContext {
-  const SubModel& model;
+  const CoreModel& model;
   const DualState& current_dual_state;
 
-  // Avoid copying unused reduced cost during subgradient
+  // Avoid copying unused reduced cost during subgradient NOTE(user): is this a
+  // TODO?
   const Cost& best_lower_bound;
   const ElementCostVector& best_multipliers;
 
@@ -199,7 +196,7 @@ struct SubgradientContext {
   const ElementCostVector& subgradient;
 };
 
-// Generic set of callbacks hooks used to specialized the behavior of the
+// Generic set of callback hooks used to specialize the behavior of the
 // subgradient optimization
 class SubgradientCBs {
  public:
@@ -208,13 +205,13 @@ class SubgradientCBs {
   virtual void ComputeMultipliersDelta(const SubgradientContext&,
                                        ElementCostVector& delta_mults) = 0;
   virtual bool UpdateCoreModel(SubgradientContext context,
-                               CoreModel& core_model, bool force = false) = 0;
+                               CoreModel& core_model, bool force) = 0;
   virtual ~SubgradientCBs() = default;
 };
 
 // Subgradient optimization procedure. Optimizes the Lagrangian relaxation of
-// the Set-Covering problem until a termination criterion si met.
-void SubgradientOptimization(SubModel& core_model, SubgradientCBs& cbs,
+// the Set-Covering problem until a termination criterion is met.
+void SubgradientOptimization(CoreModel& core_model, SubgradientCBs& cbs,
                              PrimalDualState& best_state);
 
 // Subgradient callbacks implementation focused on improving the current best
@@ -223,15 +220,18 @@ class BoundCBs : public SubgradientCBs {
  public:
   static constexpr Cost kTol = 1e-6;
 
-  BoundCBs(const SubModel& model);
+  explicit BoundCBs(const CoreModel& model);
   Cost step_size() const { return step_size_; }
   bool ExitCondition(const SubgradientContext& context) override;
   void ComputeMultipliersDelta(const SubgradientContext& context,
                                ElementCostVector& delta_mults) override;
   void RunHeuristic(const SubgradientContext& context,
-                    Solution& solution) override {}
+                    Solution& solution) override {
+    (void)context;
+    (void)solution;
+  }
   bool UpdateCoreModel(SubgradientContext context, CoreModel& core_model,
-                       bool force = false) override;
+                       bool force) override;
 
  private:
   void MakeMinimalCoverageSubgradient(const SubgradientContext& context,
@@ -258,32 +258,28 @@ class BoundCBs : public SubgradientCBs {
   BaseInt step_size_update_period_;
 };
 
-////////////////////////////////////////////////////////////////////////
-/////////////////////// MULTIPLIERS BASED GREEDY ///////////////////////
-////////////////////////////////////////////////////////////////////////
+// Multiplier-based greedy heuristic.
 
-// Higher level function that return a function obtained by the dual multiplier
-// based greedy.
+// Higher level function that returns a solution obtained by the dual multiplier
+// based greedy heuristic.
 Solution RunMultiplierBasedGreedy(
-    const SubModel& model, const DualState& dual_state,
+    const CoreModel& model, const DualState& dual_state,
     Cost cost_cutoff = std::numeric_limits<BaseInt>::max());
 
 // Lower level greedy function which creates or completes a "solution" (seen as
-// set of subsets of the current SubModel) until a cutoff size or cost is
+// set of subsets of the current CoreModel) until a cutoff size or cost is
 // reached.
 // Note: since the cutoff might be reached, the returned solution might not be
 // feasible.
-Cost CoverGreedly(const SubModel& model, const DualState& dual_state,
-                  Cost cost_cutoff, BaseInt size_cutoff,
-                  std::vector<SubsetIndex>& sol_subsets);
+Cost ComputeGreedyCover(const CoreModel& model, const DualState& dual_state,
+                        Cost cost_cutoff, BaseInt size_cutoff,
+                        std::vector<SubsetIndex>& sol_subsets);
 
-///////////////////////////////////////////////////////////////////////
-//////////////////////// THREE PHASE ALGORITHM ////////////////////////
-///////////////////////////////////////////////////////////////////////
-
+// Three-phase algorithm.
 // Subgradient callbacks implementation focused on wandering near the optimal
-// multipliers and invoke the multipliers based greedy heuristic at each
+// multipliers and invoking the multiplier-based greedy heuristic at each
 // iteration.
+
 class HeuristicCBs : public SubgradientCBs {
  public:
   HeuristicCBs() : step_size_(0.1), countdown_(250) {};
@@ -292,6 +288,7 @@ class HeuristicCBs : public SubgradientCBs {
     Cost upper_bound =
         context.best_solution.cost() - context.model.fixed_cost();
     Cost lower_bound = context.best_lower_bound;
+    // NOTE(user): why 0.999? TODO(user): add a kParameter for this.
     return upper_bound - .999 < lower_bound || --countdown_ <= 0;
   }
   void RunHeuristic(const SubgradientContext& context,
@@ -299,7 +296,10 @@ class HeuristicCBs : public SubgradientCBs {
   void ComputeMultipliersDelta(const SubgradientContext& context,
                                ElementCostVector& delta_mults) override;
   bool UpdateCoreModel(SubgradientContext context, CoreModel& core_model,
-                       bool force = false) override {
+                       bool force) override {
+    (void)context;
+    (void)core_model;
+    (void)force;
     return false;
   }
 
@@ -308,28 +308,23 @@ class HeuristicCBs : public SubgradientCBs {
   BaseInt countdown_;
 };
 
-PrimalDualState RunThreePhase(SubModel& model,
+PrimalDualState RunThreePhase(CoreModel& model,
                               const Solution& init_solution = {});
 
-///////////////////////////////////////////////////////////////////////
-///////////////////// OUTER REFINEMENT PROCEDURE //////////////////////
-///////////////////////////////////////////////////////////////////////
+// Outer refinement procedure.
 
-PrimalDualState RunCftHeuristic(SubModel& model,
+PrimalDualState RunCftHeuristic(CoreModel& model,
                                 const Solution& init_solution = {});
 
-///////////////////////////////////////////////////////////////////////
-//////////////////////// FULL TO CORE PRICING /////////////////////////
-///////////////////////////////////////////////////////////////////////
+// Full to Core Model.
 
 // Coverage counter to decide the number of columns to keep in the core model.
 static constexpr BaseInt kMinCov = 5;
 
-// CoreModel extractor. Stores a pointer to the full model and specilized
-// UpdateCore in such a way to updated the SubModel (stored as base class) and
-// focus the search on a small windows of the full model.
-class FullToCoreModel : public SubModel {
-  using base = SubModel;
+// CoreModel extractor. Stores a pointer to the full model and specialized
+// UpdateCore in such a way to update the CoreModel (stored as base class) and
+// focus the search on a small window of the full model.
+class FullToCoreModel : public CoreModel {
   struct UpdateTrigger {
     BaseInt countdown;
     BaseInt period;
@@ -349,6 +344,7 @@ class FullToCoreModel : public SubModel {
   // implementation to support incremental updates to the row view as new
   // columns are added. This approach would reduce overhead while enabling a
   // simpler and more efficient column selection process.
+  // TODO(user): implement the above NOTE.
   //
   // NOTE: The row-view based approach is available at commit:
   // a598cf83930629853f72b964ebcff01f7a9378e0
@@ -378,7 +374,7 @@ class FullToCoreModel : public SubModel {
 
  public:
   FullToCoreModel() = default;
-  FullToCoreModel(const Model* full_model);
+  explicit FullToCoreModel(const SetCoverModel* full_model);
   Cost FixMoreColumns(const std::vector<SubsetIndex>& columns_to_fix) override;
   void ResetColumnFixing(const std::vector<FullSubsetIndex>& columns_to_fix,
                          const DualState& state) override;
@@ -423,7 +419,7 @@ class FullToCoreModel : public SubModel {
       const std::vector<FullSubsetIndex>& forced_columns = {});
 
  private:
-  const Model* full_model_;
+  const SetCoverModel* full_model_;
 
   // Note: The `is_focus_col_` vector duplicates information already present in
   // `SubModelView::cols_sizes_`. However, it does not overlap with any data
@@ -452,6 +448,6 @@ class FullToCoreModel : public SubModel {
   ColumnSelector col_selector_;  // Here to avoid reallocations
 };
 
-}  // namespace operations_research::scp
+}  // namespace operations_research
 
-#endif /* ORTOOLS_SET_COVER_SET_COVER_CFT_H */
+#endif  // ORTOOLS_SET_COVER_SET_COVER_CFT_H_

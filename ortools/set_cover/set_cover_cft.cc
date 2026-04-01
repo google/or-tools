@@ -1,4 +1,5 @@
 // Copyright 2025 Francesco Cavaliere
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,36 +14,35 @@
 
 #include "ortools/set_cover/set_cover_cft.h"
 
-#include <absl/algorithm/container.h>
-#include <absl/log/globals.h>
-#include <absl/log/log.h>
-#include <absl/random/random.h>
-#include <absl/status/status.h>
-#include <absl/strings/str_join.h>
-#include <absl/time/time.h>
-#include <absl/types/span.h>
-
-#include <iostream>
+#include <algorithm>
+#include <cmath>
+#include <cstdio>
 #include <limits>
 #include <random>
+#include <utility>
+#include <vector>
 
+#include "absl/algorithm/container.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
+#include "absl/random/distributions.h"
+#include "absl/strings/str_cat.h"
 #include "ortools/base/stl_util.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/set_cover/base_types.h"
+#include "ortools/set_cover/set_cover_model.h"
 #include "ortools/set_cover/set_cover_submodel.h"
 #include "ortools/set_cover/set_cover_views.h"
-#include "ortools/set_cover/views.h"
 
-namespace operations_research::scp {
+namespace operations_research {
 
 // Minimum distance between lower and upper bounds to consider them different.
-// If cost are all integral, can be set neear to 1.0
-#define CFT_BOUND_EPSILON .999
-#define CFT_MAX_MULTIPLIER 1e9
-#define CFT_MEASURE_TIME
+static constexpr Cost kBoundMinDiffDistance = .999;
+// If costs are all integral, can be set closer to 1.0
 
-////////////////////////////////////////////////////////////////////////
-////////////////////////// COMMON DEFINITIONS //////////////////////////
-////////////////////////////////////////////////////////////////////////
+static constexpr Cost kMaxMultiplier = 1e9;
+
+// Common definitions
 namespace {
 
 #ifdef CFT_MEASURE_TIME
@@ -58,31 +58,42 @@ thread_local WallTimer refinement_time;
 #define CFT_MEASURE_SCOPE_DURATION(Timer)
 #endif
 
-// StopWatch does not add up duration of multiple invocations, Defer is a lower
-// level construct useful in this case.
-template <typename T>
-struct Defer : T {
-  Defer(T&& t) : T(std::forward<T>(t)) {}
-  ~Defer() { T::operator()(); }
+// StopWatch does not add up the duration of multiple invocations, Defer is a
+// lower level construct useful in this case.
+template <typename Callable>
+class Defer {
+ public:
+  explicit Defer(Callable callable) : callable_(std::move(callable)) {}
+  ~Defer() { callable_(); }
+
+ private:
+  Callable callable_;
 };
+
+// Deduction guide for Defer.
+template <typename Callable>
+Defer(Callable) -> Defer<Callable>;
+
+// CoverCounters.
+// TODO(user): see how this can be replaced by SetCoverInvariant.
 
 template <typename IndexT = ElementIndex>
 class CoverCountersImpl {
  public:
-  CoverCountersImpl(BaseInt nelems = 0) : cov_counters(nelems, 0) {}
-  void Reset(BaseInt nelems) { cov_counters.assign(nelems, 0); }
-  BaseInt Size() const { return cov_counters.size(); }
+  explicit CoverCountersImpl(BaseInt nelems = 0) : cov_counters_(nelems, 0) {}
+  void Reset(BaseInt nelems) { cov_counters_.assign(nelems, 0); }
+  BaseInt Size() const { return cov_counters_.size(); }
   BaseInt operator[](IndexT i) const {
-    assert(i < IndexT(cov_counters.size()));
-    return cov_counters[i];
+    CHECK_LT(i, IndexT(cov_counters_.size()));
+    return cov_counters_[i];
   }
 
   template <typename IterableT>
   BaseInt Cover(const IterableT& subset) {
     BaseInt covered = 0;
     for (IndexT i : subset) {
-      covered += cov_counters[i] == 0 ? 1ULL : 0ULL;
-      cov_counters[i]++;
+      covered += cov_counters_[i] == 0 ? 1ULL : 0ULL;
+      cov_counters_[i]++;
     }
     return covered;
   }
@@ -91,8 +102,8 @@ class CoverCountersImpl {
   BaseInt Uncover(const IterableT& subset) {
     BaseInt uncovered = 0;
     for (IndexT i : subset) {
-      --cov_counters[i];
-      uncovered += cov_counters[i] == 0 ? 1ULL : 0ULL;
+      --cov_counters_[i];
+      uncovered += cov_counters_[i] == 0 ? 1ULL : 0ULL;
     }
     return uncovered;
   }
@@ -101,25 +112,26 @@ class CoverCountersImpl {
   template <typename IterableT>
   bool IsRedundantCover(IterableT const& subset) const {
     return absl::c_all_of(subset,
-                          [&](IndexT i) { return cov_counters[i] > 0; });
+                          [&](IndexT i) { return cov_counters_[i] > 0; });
   }
 
-  // Check if all the elements would still be covered if the subset was removed.
+  // Check if all the elements would still be covered if the subset were
+  // removed.
   template <typename IterableT>
   bool IsRedundantUncover(IterableT const& subset) const {
     return absl::c_all_of(subset,
-                          [&](IndexT i) { return cov_counters[i] > 1; });
+                          [&](IndexT i) { return cov_counters_[i] > 1; });
   }
 
  private:
-  util_intops::StrongVector<IndexT, BaseInt> cov_counters;
+  util_intops::StrongVector<IndexT, BaseInt> cov_counters_;
 };
 
 using CoverCounters = CoverCountersImpl<ElementIndex>;
 using FullCoverCounters = CoverCountersImpl<FullElementIndex>;
 }  // namespace
 
-Solution::Solution(const SubModel& model,
+Solution::Solution(const CoreModel& model,
                    const std::vector<SubsetIndex>& core_subsets)
     : cost_(), subsets_() {
   subsets_.reserve(core_subsets.size() + model.fixed_columns().size());
@@ -133,11 +145,9 @@ Solution::Solution(const SubModel& model,
   }
 }
 
-///////////////////////////////////////////////////////////////////////
-///////////////////////////// SUBGRADIENT /////////////////////////////
-///////////////////////////////////////////////////////////////////////
+// Subgradient.
 
-BoundCBs::BoundCBs(const SubModel& model)
+BoundCBs::BoundCBs(const CoreModel& model)
     : squared_norm_(static_cast<Cost>(model.num_elements())),
       direction_(ElementCostVector(model.num_elements(), .0)),
       prev_best_lb_(std::numeric_limits<Cost>::lowest()),
@@ -162,7 +172,7 @@ bool BoundCBs::ExitCondition(const SubgradientContext& context) {
   if (--exit_test_countdown_ > 0) {
     return false;
   }
-  if (prev_best_lb_ >= best_ub - CFT_BOUND_EPSILON) {
+  if (prev_best_lb_ >= best_ub - kBoundMinDiffDistance) {
     return true;
   }
   exit_test_countdown_ = exit_test_period_;
@@ -193,7 +203,7 @@ void BoundCBs::ComputeMultipliersDelta(const SubgradientContext& context,
   for (ElementIndex i : context.model.ElementRange()) {
     Cost curr_i_mult = context.current_dual_state.multipliers()[i];
     if ((curr_i_mult <= .0 && direction_[i] < .0) ||
-        (curr_i_mult > CFT_MAX_MULTIPLIER && direction_[i] > .0)) {
+        (curr_i_mult > kMaxMultiplier && direction_[i] > .0)) {
       direction_[i] = 0;
     }
 
@@ -227,11 +237,11 @@ void BoundCBs::UpdateStepSize(SubgradientContext context) {
 
     Cost delta = last_max_lb_seen_ - last_min_lb_seen_;
     Cost gap = DivideIfGE0(delta, last_max_lb_seen_);
-    if (gap <= .001) {    // Arbitray from [1]
-      step_size_ *= 1.5;  // Arbitray from [1]
+    if (gap <= .001) {    // Arbitrary from [1]
+      step_size_ *= 1.5;  // Arbitrary from [1]
       VLOG(4) << "[SUBG] Sep size set at " << step_size_;
-    } else if (gap > .01) {  // Arbitray from [1]
-      step_size_ /= 2.0;     // Arbitray from [1]
+    } else if (gap > .01) {  // Arbitrary from [1]
+      step_size_ /= 2.0;     // Arbitrary from [1]
       VLOG(4) << "[SUBG] Sep size set at " << step_size_;
     }
     last_min_lb_seen_ = std::numeric_limits<Cost>::max();
@@ -277,7 +287,7 @@ bool BoundCBs::UpdateCoreModel(SubgradientContext context,
   return false;
 }
 
-void SubgradientOptimization(SubModel& model, SubgradientCBs& cbs,
+void SubgradientOptimization(CoreModel& model, SubgradientCBs& cbs,
                              PrimalDualState& best_state) {
   CFT_MEASURE_SCOPE_DURATION(subgradient_time);
   DCHECK(ValidateSubModel(model));
@@ -299,11 +309,13 @@ void SubgradientOptimization(SubModel& model, SubgradientCBs& cbs,
   for (size_t iter = 1; !cbs.ExitCondition(context); ++iter) {
     // Poor multipliers can lead to wasted iterations or stagnation in the
     // subgradient method. To address this, we adjust the multipliers to
-    // get closer the trivial lower bound (= 0).
+    // get closer to the trivial lower bound (= 0).
     if (dual_state.lower_bound() < .0) {
       VLOG(4) << "[SUBG] Dividing multipliers by 10";
-      dual_state.DualUpdate(
-          model, [&](ElementIndex i, Cost& i_mult) { i_mult /= 10.0; });
+      dual_state.DualUpdate(model, [&](ElementIndex i, Cost& i_mult) {
+        (void)i;
+        i_mult /= 10.0;
+      });
     }
 
     // Compute subgradient (O(nnz))
@@ -318,8 +330,8 @@ void SubgradientOptimization(SubModel& model, SubgradientCBs& cbs,
 
     cbs.ComputeMultipliersDelta(context, multipliers_delta);
     dual_state.DualUpdate(model, [&](ElementIndex i, Cost& i_mult) {
-      i_mult = std::clamp<Cost>(i_mult + multipliers_delta[i], .0,
-                                CFT_MAX_MULTIPLIER);
+      i_mult =
+          std::clamp<Cost>(i_mult + multipliers_delta[i], .0, kMaxMultiplier);
     });
     if (dual_state.lower_bound() > best_lower_bound) {
       best_lower_bound = dual_state.lower_bound();
@@ -338,7 +350,7 @@ void SubgradientOptimization(SubModel& model, SubgradientCBs& cbs,
                          << best_state.solution.cost() - model.fixed_cost()
                          << ", global " << best_state.solution.cost();
 
-    if (cbs.UpdateCoreModel(context, model)) {
+    if (cbs.UpdateCoreModel(context, model, false)) {
       dual_state.DualUpdate(model, [&](ElementIndex i, Cost& i_mult) {
         i_mult = best_multipliers[i];
       });
@@ -363,9 +375,7 @@ void SubgradientOptimization(SubModel& model, SubgradientCBs& cbs,
           << best_state.solution.cost();
 }
 
-////////////////////////////////////////////////////////////////////////
-/////////////////////// MULTIPLIERS BASED GREEDY ///////////////////////
-////////////////////////////////////////////////////////////////////////
+// Multiplier-based Greedy Heuristic.
 namespace {
 struct Score {
   Cost score;
@@ -374,10 +384,10 @@ struct Score {
 
 class GreedyScores {
  public:
-  static constexpr BaseInt removed_idx = -1;
-  static constexpr Cost max_score = std::numeric_limits<Cost>::max();
+  static constexpr BaseInt kRemovedIndex = -1;
+  static constexpr Cost kMaxScore = std::numeric_limits<Cost>::max();
 
-  GreedyScores(const SubModel& model, const DualState& dual_state)
+  GreedyScores(const CoreModel& model, const DualState& dual_state)
       : bad_size_(),
         worst_good_score_(std::numeric_limits<Cost>::lowest()),
         scores_(),
@@ -386,7 +396,7 @@ class GreedyScores {
         score_map_(model.num_subsets()) {
     BaseInt s = 0;
     for (SubsetIndex j : model.SubsetRange()) {
-      DCHECK(model.column_size(j) > 0);
+      DCHECK_GT(model.column_size(j), 0);
       covering_counts_[j] = model.column_size(j);
       Cost j_score = ComputeScore(reduced_costs_[j], covering_counts_[j]);
       scores_.push_back({j_score, j});
@@ -397,8 +407,9 @@ class GreedyScores {
     bad_size_ = scores_.size();
   }
 
-  SubsetIndex FindMinScoreColumn(const SubModel& model,
+  SubsetIndex FindMinScoreColumn(const CoreModel& model,
                                  const DualState& dual_state) {
+    (void)dual_state;
     // Check if the bad/good partition should be updated
     if (bad_size_ == scores_.size()) {
       if (bad_size_ > model.num_focus_elements()) {
@@ -411,16 +422,16 @@ class GreedyScores {
         }
       } else {
         bad_size_ = 0;
-        worst_good_score_ = max_score;
+        worst_good_score_ = kMaxScore;
       }
-      DCHECK(bad_size_ > 0 || worst_good_score_ == max_score);
+      DCHECK(bad_size_ > 0 || worst_good_score_ == kMaxScore);
     }
 
     Score min_score =
         *std::min_element(scores_.begin() + bad_size_, scores_.end(),
                           [](Score a, Score b) { return a.score < b.score; });
     SubsetIndex j_star = min_score.idx;
-    DCHECK_LT(min_score.score, max_score);
+    DCHECK_LT(min_score.score, kMaxScore);
     return j_star;
   }
 
@@ -443,7 +454,7 @@ class GreedyScores {
         reduced_costs_[j] += multipliers[i];
 
         BaseInt s = score_map_[j];
-        DCHECK_NE(s, removed_idx) << "Column is not in the score map";
+        DCHECK_NE(s, kRemovedIndex) << "Column is not in the score map";
         scores_[s].score = ComputeScore(reduced_costs_[j], covering_counts_[j]);
 
         if (covering_counts_[j] == 0) {
@@ -476,7 +487,7 @@ class GreedyScores {
                            BaseInt num_rows_covered) {
     DCHECK(std::isfinite(adjusted_reduced_cost)) << "Gamma is not finite";
     return num_rows_covered == 0
-               ? max_score
+               ? kMaxScore
                : (adjusted_reduced_cost > .0
                       ? adjusted_reduced_cost / num_rows_covered
                       : adjusted_reduced_cost * num_rows_covered);
@@ -505,7 +516,7 @@ class GreedyScores {
 // Stores the redundancy set and related information
 class RedundancyRemover {
  public:
-  RedundancyRemover(const SubModel& model, CoverCounters& total_coverage)
+  RedundancyRemover(const CoreModel& model, CoverCounters& total_coverage)
       : redund_set_(),
         total_coverage_(total_coverage),
         partial_coverage_(model.num_elements()),
@@ -514,12 +525,12 @@ class RedundancyRemover {
         partial_cov_count_(0),
         cols_to_remove_() {}
 
-  Cost TryRemoveRedundantCols(const SubModel& model, Cost cost_cutoff,
+  Cost TryRemoveRedundantCols(const CoreModel& model, Cost cost_cutoff,
                               std::vector<SubsetIndex>& sol_subsets) {
     for (SubsetIndex j : sol_subsets) {
-      if (total_coverage_.IsRedundantUncover(model.columns()[j]))
+      if (total_coverage_.IsRedundantUncover(model.columns()[j])) {
         redund_set_.push_back({model.subset_costs()[j], j});
-      else {
+      } else {
         ++partial_size_;
         partial_cost_ += model.subset_costs()[j];
         partial_cov_count_ += partial_coverage_.Cover(model.columns()[j]);
@@ -544,7 +555,7 @@ class RedundancyRemover {
       }
     }
 
-    // Note: In [1], an enumeration to selected the best redundant columns to
+    // Note: In [1], an enumeration to select the best redundant columns to
     // remove is performed when the number of redundant columns is <= 10.
     // However, based on experiments with github.com/c4v4/cft/, it appears
     // that this enumeration does not provide significant benefits to justify
@@ -561,7 +572,8 @@ class RedundancyRemover {
 
  private:
   // Remove redundant columns from the redundancy set using a heuristic
-  void HeuristicRedundancyRemoval(const SubModel& model, Cost cost_cutoff) {
+  void HeuristicRedundancyRemoval(const CoreModel& model, Cost cost_cutoff) {
+    (void)cost_cutoff;
     while (!redund_set_.empty()) {
       if (partial_cov_count_ == model.num_focus_elements()) {
         return;
@@ -605,18 +617,18 @@ class RedundancyRemover {
 
 }  // namespace
 
-Solution RunMultiplierBasedGreedy(const SubModel& model,
+Solution RunMultiplierBasedGreedy(const CoreModel& model,
                                   const DualState& dual_state,
                                   Cost cost_cutoff) {
   std::vector<SubsetIndex> sol_subsets;
-  CoverGreedly(model, dual_state, cost_cutoff,
-               std::numeric_limits<BaseInt>::max(), sol_subsets);
+  ComputeGreedyCover(model, dual_state, cost_cutoff,
+                     std::numeric_limits<BaseInt>::max(), sol_subsets);
   return Solution(model, sol_subsets);
 }
 
-Cost CoverGreedly(const SubModel& model, const DualState& dual_state,
-                  Cost cost_cutoff, BaseInt stop_size,
-                  std::vector<SubsetIndex>& sol_subsets) {
+Cost ComputeGreedyCover(const CoreModel& model, const DualState& dual_state,
+                        Cost cost_cutoff, BaseInt size_cutoff,
+                        std::vector<SubsetIndex>& sol_subsets) {
   CFT_MEASURE_SCOPE_DURATION(greedy_time);
 
   Cost sol_cost = .0;
@@ -627,7 +639,7 @@ Cost CoverGreedly(const SubModel& model, const DualState& dual_state,
     sol_subsets.clear();
     return std::numeric_limits<Cost>::max();
   }
-  if (sol_subsets.size() >= stop_size) {
+  if (sol_subsets.size() >= size_cutoff) {
     // Solution already has required size -> early exit
     return sol_cost;
   }
@@ -642,8 +654,8 @@ Cost CoverGreedly(const SubModel& model, const DualState& dual_state,
     }
   }
 
-  // Initialize column scores taking into account rows already covered
-  GreedyScores scores(model, dual_state);  // TODO(?): cache it!
+  // Initialize column scores taking into account the rows already covered
+  GreedyScores scores(model, dual_state);  // TODO(user): cache it!
   if (!sol_subsets.empty()) {
     scores.UpdateColumnsScoreOfRowsIf(
         model.rows(), dual_state.multipliers(), model.ElementRange(),
@@ -651,7 +663,7 @@ Cost CoverGreedly(const SubModel& model, const DualState& dual_state,
   }
 
   // Fill up partial solution
-  while (num_rows_to_cover > 0 && sol_subsets.size() < stop_size) {
+  while (num_rows_to_cover > 0 && sol_subsets.size() < size_cutoff) {
     SubsetIndex j_star = scores.FindMinScoreColumn(model, dual_state);
     const auto& column = model.columns()[j_star];
     num_rows_to_cover -= scores.UpdateColumnsScoreOfRowsIf(
@@ -662,17 +674,16 @@ Cost CoverGreedly(const SubModel& model, const DualState& dual_state,
   }
 
   // Either remove redundant columns or discard solution
-  RedundancyRemover remover(model, covered_rows);  // TODO(?): cache it!
+  RedundancyRemover remover(model, covered_rows);  // TODO(user): cache it!
 
   return remover.TryRemoveRedundantCols(model, cost_cutoff, sol_subsets);
 }
 
-///////////////////////////////////////////////////////////////////////
-//////////////////////// THREE PHASE ALGORITHM ////////////////////////
-///////////////////////////////////////////////////////////////////////
+// 3-phase algorithm
+
 namespace {
 
-DualState MakeTentativeDualState(const SubModel& model) {
+DualState MakeTentativeDualState(const CoreModel& model) {
   DualState tentative_dual_state(model);
   tentative_dual_state.DualUpdate(
       model, [&](ElementIndex i, Cost& i_multiplier) {
@@ -685,7 +696,7 @@ DualState MakeTentativeDualState(const SubModel& model) {
   return tentative_dual_state;
 }
 
-void FixBestColumns(SubModel& model, PrimalDualState& state) {
+void FixBestColumns(CoreModel& model, PrimalDualState& state) {
   auto& [best_sol, dual_state] = state;
 
   // This approach is not the most efficient but prioritizes clarity and the
@@ -711,17 +722,17 @@ void FixBestColumns(SubModel& model, PrimalDualState& state) {
     }
   }
 
-  // Remove columns that overlap between each other
+  // Remove columns that overlap with each other
   gtl::STLEraseAllFromSequenceIf(&cols_to_fix, [&](SubsetIndex j) {
     return absl::c_any_of(model.columns()[j],
                           [&](ElementIndex i) { return row_coverage[i] > 1; });
   });
 
-  // Ensure at least a minimum number of columns are fixed
+  // Ensure at least a minimum number of columns is fixed
   BaseInt fix_at_least =
       cols_to_fix.size() + std::max<BaseInt>(1, model.num_elements() / 200);
-  CoverGreedly(model, state.dual_state, std::numeric_limits<Cost>::max(),
-               fix_at_least, cols_to_fix);
+  ComputeGreedyCover(model, state.dual_state, std::numeric_limits<Cost>::max(),
+                     fix_at_least, cols_to_fix);
 
   // Fix columns and update the model
   Cost fixed_cost_delta = model.FixMoreColumns(cols_to_fix);
@@ -739,7 +750,7 @@ void FixBestColumns(SubModel& model, PrimalDualState& state) {
   });
 }
 
-void RandomizeDualState(const SubModel& model, DualState& dual_state,
+void RandomizeDualState(const CoreModel& model, DualState& dual_state,
                         std::mt19937& rnd) {
   // In [1] this step is described, not completely sure if it actually helps
   // or not. Seems to me one of those "throw in some randomness, it never hurts"
@@ -774,7 +785,7 @@ void HeuristicCBs::ComputeMultipliersDelta(const SubgradientContext& context,
   }
 }
 
-PrimalDualState RunThreePhase(SubModel& model, const Solution& init_solution) {
+PrimalDualState RunThreePhase(CoreModel& model, const Solution& init_solution) {
   CFT_MEASURE_SCOPE_DURATION(three_phase_time);
   DCHECK(ValidateSubModel(model));
 
@@ -806,8 +817,9 @@ PrimalDualState RunThreePhase(SubModel& model, const Solution& init_solution) {
     if (iter_count == 1) {
       best_state.dual_state = curr_state.dual_state;
     }
-    if (curr_state.dual_state.lower_bound() >=
-        best_state.solution.cost() - model.fixed_cost() - CFT_BOUND_EPSILON) {
+    if (curr_state.dual_state.lower_bound() >= best_state.solution.cost() -
+                                                   model.fixed_cost() -
+                                                   kBoundMinDiffDistance) {
       break;
     }
 
@@ -823,8 +835,9 @@ PrimalDualState RunThreePhase(SubModel& model, const Solution& init_solution) {
     if (curr_state.solution.cost() < best_state.solution.cost()) {
       best_state.solution = curr_state.solution;
     }
-    if (curr_state.dual_state.lower_bound() >=
-        best_state.solution.cost() - model.fixed_cost() - CFT_BOUND_EPSILON) {
+    if (curr_state.dual_state.lower_bound() >= best_state.solution.cost() -
+                                                   model.fixed_cost() -
+                                                   kBoundMinDiffDistance) {
       break;
     }
 
@@ -845,9 +858,7 @@ PrimalDualState RunThreePhase(SubModel& model, const Solution& init_solution) {
   return best_state;
 }
 
-///////////////////////////////////////////////////////////////////////
-///////////////////// OUTER REFINEMENT PROCEDURE //////////////////////
-///////////////////////////////////////////////////////////////////////
+// Outer refinement procedure.
 
 namespace {
 
@@ -857,7 +868,7 @@ struct GapContribution {
 };
 
 std::vector<FullSubsetIndex> SelectColumnByGapContribution(
-    const SubModel& model, const PrimalDualState& best_state,
+    const CoreModel& model, const PrimalDualState& best_state,
     BaseInt nrows_to_fix) {
   const auto& [solution, dual_state] = best_state;
 
@@ -898,7 +909,7 @@ std::vector<FullSubsetIndex> SelectColumnByGapContribution(
 }
 }  // namespace
 
-PrimalDualState RunCftHeuristic(SubModel& model,
+PrimalDualState RunCftHeuristic(CoreModel& model,
                                 const Solution& init_solution) {
   CFT_MEASURE_SCOPE_DURATION(refinement_time);
 
@@ -918,19 +929,24 @@ PrimalDualState RunCftHeuristic(SubModel& model,
     VLOG(1) << "[CFTH] Refinement iteration: " << iter_counter;
     Cost fixed_cost_before = model.fixed_cost();
     auto [solution, dual_state] = RunThreePhase(model, best_state.solution);
+
+    // Keep the best dual state found so far, because the `dual_state` might
+    // move.
+    const Cost dual_lower_bound = dual_state.lower_bound();
     if (iter_counter == 0) {
       best_state.dual_state = std::move(dual_state);
     }
+
     if (solution.cost() < best_state.solution.cost()) {
       best_state.solution = solution;
       fix_fraction = fix_minimum;
     }
-    cost_cutoff = std::max<Cost>(cost_cutoff,
-                                 fixed_cost_before + dual_state.lower_bound());
+    cost_cutoff =
+        std::max<Cost>(cost_cutoff, fixed_cost_before + dual_lower_bound);
     VLOG(1) << "[CFTH] Refinement Bounds: Residual Lower " << cost_cutoff
-            << ", Real Lower " << best_state.dual_state.lower_bound()
-            << ", Upper " << best_state.solution.cost();
-    if (best_state.solution.cost() - CFT_BOUND_EPSILON <= cost_cutoff) {
+            << ", Real Lower " << dual_lower_bound << ", Upper "
+            << best_state.solution.cost();
+    if (best_state.solution.cost() - kBoundMinDiffDistance <= cost_cutoff) {
       break;
     }
 
@@ -943,9 +959,9 @@ PrimalDualState RunCftHeuristic(SubModel& model,
     }
     VLOG(1) << "[CFTH] Fixed " << cols_to_fix.size()
             << " new columns with cost: " << model.fixed_cost();
-    VLOG(1) << "[CFTH] Model sizes: rows " << model.num_focus_elements() << "/"
-            << model.num_elements() << ", columns " << model.num_focus_subsets()
-            << "/" << model.num_subsets();
+    VLOG(1) << "[CFTH] SetCoverModel sizes: rows " << model.num_focus_elements()
+            << "/" << model.num_elements() << ", columns "
+            << model.num_focus_subsets() << "/" << model.num_subsets();
   }
 
 #ifdef CFT_MEASURE_TIME
@@ -970,9 +986,7 @@ PrimalDualState RunCftHeuristic(SubModel& model,
   return best_state;
 }
 
-///////////////////////////////////////////////////////////////////////
-//////////////////////// FULL TO CORE PRICING /////////////////////////
-///////////////////////////////////////////////////////////////////////
+// Full To Core Pricing.
 
 namespace {
 std::vector<FullSubsetIndex> ComputeTentativeFocus(StrongModelView full_model) {
@@ -1000,7 +1014,7 @@ std::vector<FullSubsetIndex> ComputeTentativeFocus(StrongModelView full_model) {
       }
     }
   }
-  // NOTE: unnecessary, but it keeps equivalence between SubModelView/SubModel
+  // NOTE: unnecessary, but it keeps equivalence between SubModelView/CoreModel
   absl::c_sort(columns_focus);
   return columns_focus;
 }
@@ -1017,7 +1031,7 @@ FullToCoreModel::ColumnSelector::ComputeNewSelection(
   selection_.clear();
   candidates_.clear();
 
-  // Always retain best solution in the core model (if possible)
+  // Always retain the best solution in the core model (if possible)
   for (FullSubsetIndex full_j : forced_columns) {
     SubsetIndex j = static_cast<SubsetIndex>(full_j);
     if (full_model.IsFocusCol(j)) {
@@ -1049,7 +1063,7 @@ bool FullToCoreModel::ColumnSelector::SelectColumn(FilterModelView full_model,
       --rows_left_to_cover_;
     }
   }
-  if (selected_[j]) {  // Skip empty comlumns
+  if (selected_[j]) {  // Skip empty columns
     selection_.push_back(static_cast<FullSubsetIndex>(j));
   }
   return selected_[j];
@@ -1069,6 +1083,7 @@ void FullToCoreModel::ColumnSelector::SelecteMinRedCostColumns(
 
 void FullToCoreModel::ColumnSelector::SelectMinRedCostByRow(
     FilterModelView full_model, const SubsetCostVector& reduced_costs) {
+  (void)reduced_costs;
   auto it = first_unselected_;
   while (it != candidates_.end() && rows_left_to_cover_ > 0) {
     SubsetIndex j = *it++;
@@ -1086,8 +1101,8 @@ void FullToCoreModel::ColumnSelector::SelectMinRedCostByRow(
   }
 }
 
-FullToCoreModel::FullToCoreModel(const Model* full_model)
-    : SubModel(full_model, ComputeTentativeFocus(StrongModelView(full_model))),
+FullToCoreModel::FullToCoreModel(const SetCoverModel* full_model)
+    : CoreModel(full_model, ComputeTentativeFocus(StrongModelView(full_model))),
       full_model_(full_model),
       is_focus_col_(full_model->num_subsets(), true),
       is_focus_row_(full_model->num_elements(), true),
@@ -1109,7 +1124,7 @@ Cost FullToCoreModel::FixMoreColumns(
     const std::vector<SubsetIndex>& columns_to_fix) {
   StrongModelView typed_full_model = StrongTypedFullModelView();
   for (SubsetIndex core_j : columns_to_fix) {
-    FullSubsetIndex full_j = SubModel::MapCoreToFullSubsetIndex(core_j);
+    FullSubsetIndex full_j = CoreModel::MapCoreToFullSubsetIndex(core_j);
     DCHECK(IsFocusCol(full_j));
     IsFocusCol(full_j) = false;
     bool any_active = false;
@@ -1133,7 +1148,7 @@ Cost FullToCoreModel::FixMoreColumns(
   }
 
   ResetPricingPeriod();
-  Cost fixed_cost = base::FixMoreColumns(columns_to_fix);
+  Cost fixed_cost = CoreModel::FixMoreColumns(columns_to_fix);
   DCHECK(FullToSubModelInvariantCheck());
   return fixed_cost;
 }
@@ -1146,17 +1161,17 @@ void FullToCoreModel::ResetColumnFixing(
 
   full_dual_state_ = dual_state;
 
-  // We could implement and in-place core-model update that removes old fixings,
-  // set the new one while also updating the column focus. This solution is much
-  // simpler. It just create a new core-model object from scratch and then uses
-  // the existing interface.
+  // We could implement an in-place core-model update that removes old fixings,
+  // sets the new fixings while also updating the column focus. This solution is
+  // much simpler. It just creates a new core-model object from scratch and then
+  // uses the existing interface.
   const auto& selection = col_selector_.ComputeNewSelection(
       FixingFullModelView(), full_columns_to_fix,
       full_dual_state_.reduced_costs());
-  static_cast<SubModel&>(*this) = SubModel(full_model_, selection);
+  static_cast<CoreModel&>(*this) = CoreModel(full_model_, selection);
 
-  // TODO(anyone): Improve this. It's Inefficient but hardly a botleneck and it
-  // also avoid storing a full->core column map.
+  // TODO(user): Improve this. It's inefficient but hardly a bottleneck and it
+  // also avoids storing a full->core column map.
   std::vector<SubsetIndex> columns_to_fix;
   for (SubsetIndex core_j : SubsetRange()) {
     for (FullSubsetIndex full_j : full_columns_to_fix) {
@@ -1191,7 +1206,7 @@ void FullToCoreModel::ComputeAndSetFocus(Cost best_lower_bound,
   const auto& selection = col_selector_.ComputeNewSelection(
       FixingFullModelView(), best_solution.subsets(),
       full_dual_state_.reduced_costs());
-  base::SetFocus(selection);
+  CoreModel::SetFocus(selection);
   UpdatePricingPeriod(full_dual_state_, best_lower_bound,
                       best_solution.cost() - fixed_cost());
   VLOG(3) << "[F2CU] Core-update: Lower bounds: real "
@@ -1261,39 +1276,40 @@ Cost FullToCoreModel::UpdateMultipliers(
 }
 
 bool FullToCoreModel::FullToSubModelInvariantCheck() {
-  const SubModel& sub_model = *this;
+  const CoreModel& sub_model = *this;
   StrongModelView typed_full_model = StrongTypedFullModelView();
 
   if (typed_full_model.num_subsets() < sub_model.num_subsets()) {
-    std::cerr << absl::StrCat("SubModelView has ", sub_model.num_subsets(),
-                              " subsets, but the full model has ",
-                              typed_full_model.num_subsets(), " subsets.\n");
+    LOG(WARNING) << absl::StrCat("SubModelView has ", sub_model.num_subsets(),
+                                 " subsets, but the full model has ",
+                                 typed_full_model.num_subsets(), " subsets.\n");
     return false;
   }
   if (typed_full_model.num_elements() != sub_model.num_elements()) {
-    std::cerr << absl::StrCat("SubModelView has ", sub_model.num_elements(),
-                              " elements, but the full model has ",
-                              typed_full_model.num_elements(), " elements.\n");
+    LOG(WARNING) << absl::StrCat("SubModelView has ", sub_model.num_elements(),
+                                 " elements, but the full model has ",
+                                 typed_full_model.num_elements(),
+                                 " elements.\n");
     return false;
   }
   for (SubsetIndex core_j : sub_model.SubsetRange()) {
     FullSubsetIndex full_j = sub_model.MapCoreToFullSubsetIndex(core_j);
     if (!is_focus_col_[static_cast<SubsetIndex>(full_j)]) {
-      std::cerr << absl::StrCat("Subset ", core_j,
-                                " in sub-model but its mapped subset ", full_j,
-                                " not found in full model view.\n");
+      LOG(WARNING) << absl::StrCat("Subset ", core_j,
+                                   " in sub-model but its mapped subset ",
+                                   full_j, " not found in full model view.\n");
       return false;
     }
 
     const auto& core_column = sub_model.columns()[core_j];
     if (core_column.begin() == core_column.end()) {
-      std::cerr << absl::StrCat("Core subset ", core_j, " empty.\n");
+      LOG(WARNING) << absl::StrCat("Core subset ", core_j, " empty.\n");
       return false;
     }
 
     const auto& full_column = typed_full_model.columns()[full_j];
     if (full_column.begin() == full_column.end()) {
-      std::cerr << absl::StrCat("Full subset ", full_j, " empty.\n");
+      LOG(WARNING) << absl::StrCat("Full subset ", full_j, " empty.\n");
       return false;
     }
 
@@ -1304,7 +1320,7 @@ bool FullToCoreModel::FullToSubModelInvariantCheck() {
         continue;
       }
       if (sub_model.MapCoreToFullElementIndex(*core_it) != full_i) {
-        std::cerr << absl::StrCat(
+        LOG(WARNING) << absl::StrCat(
             "Subset ", core_j, " in sub-model has mapped element ", *core_it,
             " but it is not the same as the full model.\n");
         return false;
@@ -1314,9 +1330,9 @@ bool FullToCoreModel::FullToSubModelInvariantCheck() {
       }
     }
     if (core_it != core_column.end()) {
-      std::cerr << absl::StrCat("Subset ", core_j,
-                                " in sub-model has no mapped element ",
-                                *core_it, " in full model view.\n");
+      LOG(WARNING) << absl::StrCat("Subset ", core_j,
+                                   " in sub-model has no mapped element ",
+                                   *core_it, " in full model view.\n");
       return false;
     }
   }
@@ -1324,15 +1340,15 @@ bool FullToCoreModel::FullToSubModelInvariantCheck() {
   for (ElementIndex core_i : sub_model.ElementRange()) {
     const auto& core_row = sub_model.rows()[core_i];
     if (core_row.begin() == core_row.end()) {
-      std::cerr << absl::StrCat("Core row ", core_i, " empty.\n");
+      LOG(WARNING) << absl::StrCat("Core row ", core_i, " empty.\n");
       return false;
     }
 
     FullElementIndex full_i = sub_model.MapCoreToFullElementIndex(core_i);
     if (!is_focus_row_[static_cast<ElementIndex>(full_i)]) {
-      std::cerr << absl::StrCat("Element ", core_i,
-                                " in sub-model but its mapped element ", full_i,
-                                " not found in full model view.\n");
+      LOG(WARNING) << absl::StrCat("Element ", core_i,
+                                   " in sub-model but its mapped element ",
+                                   full_i, " not found in full model view.\n");
       return false;
     }
   }
@@ -1344,7 +1360,7 @@ bool FullToCoreModel::FullToSubModelInvariantCheck() {
     ElementIndex core_i = sub_model.MapFullToCoreElementIndex(full_i);
     if (core_i < ElementIndex() ||
         ElementIndex(sub_model.num_elements()) < core_i) {
-      std::cerr << absl::StrCat(
+      LOG(WARNING) << absl::StrCat(
           "Element ", full_i,
           " in full model view but has no mapped element in sub-model.\n");
       return false;
@@ -1353,4 +1369,4 @@ bool FullToCoreModel::FullToSubModelInvariantCheck() {
   return true;
 }
 
-}  // namespace operations_research::scp
+}  // namespace operations_research

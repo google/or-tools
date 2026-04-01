@@ -64,6 +64,10 @@ class SetCoverMip : public SubsetListBasedSolutionGenerator {
   // indices are in focus.
   bool NextSolution(absl::Span<const SubsetIndex> focus) final;
 
+  const SubsetWeightVector& solution_weights() const {
+    return solution_weights_;
+  }
+
  private:
   // The MIP solver flavor used by the instance.
   SetCoverMipSolver mip_solver_;
@@ -73,6 +77,11 @@ class SetCoverMip : public SubsetListBasedSolutionGenerator {
 
   // The status of the last solve.
   MPSolver::ResultStatus solve_status_;
+
+  // The solution of the MIP solver, corresponding to the weights of each subset
+  // in the solution. The weights can be fractional and are in [0, 1].
+  // This vector is only populated if use_integers_ is false.
+  SubsetWeightVector solution_weights_;
 };
 }  // namespace operations_research
 
