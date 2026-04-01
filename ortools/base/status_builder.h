@@ -71,6 +71,11 @@ class StatusBuilder {
 
   StatusBuilder& SetAppend() { return *this; }
 
+  StatusBuilder& SetCode(const absl::StatusCode code) {
+    base_status_ = absl::Status(code, base_status_.message());
+    return *this;
+  }
+
  private:
   absl::Status base_status_;
   std::ostringstream ss_;

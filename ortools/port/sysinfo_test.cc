@@ -11,25 +11,39 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ORTOOLS_PORT_SYSINFO_H_
-#define ORTOOLS_PORT_SYSINFO_H_
+#include "ortools/port/sysinfo.h"
 
 #include <cstdint>
 #include <optional>
 
+#include "gtest/gtest.h"
+#include "ortools/base/gmock.h"
+#include "ortools/base/macros/os.h"
+
 namespace operations_research {
 namespace sysinfo {
+namespace {
 
-// Return the Resident Set Size (RSS) memory usage in bytes of the process if
-// available on the platform, `std::nullopt` otherwise.
-//
-// This is currently supported on Linux, MacOS, Windows, NetBSD, OpenBSD, and
-// FreeBSD. Android and IOS are not yet supported.
-// Note that when called from an interpreted language like Java, the reported
-// memory will include the virtual machine's memory usage.
-std::optional<uint64_t> MemoryUsageProcess();
+using ::testing::Gt;
+using ::testing::Optional;
 
+TEST(SysinfoTest, MemoryUsageProcess) {
+  const std::optional<int64_t> memory_usage = MemoryUsageProcess();
+  switch (kTargetOs) {
+    case TargetOs::kLinux:
+    case TargetOs::kMacOS:
+    case TargetOs::kFreeBsd:
+    case TargetOs::kNetBsd:
+    case TargetOs::kOpenBsd:
+    case TargetOs::kWindows:
+      ASSERT_THAT(memory_usage, Optional(Gt(0)));
+      break;
+    default:
+      ASSERT_EQ(memory_usage, std::nullopt);
+      break;
+  }
+}
+
+}  // namespace
 }  // namespace sysinfo
 }  // namespace operations_research
-
-#endif  // ORTOOLS_PORT_SYSINFO_H_

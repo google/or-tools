@@ -14,72 +14,54 @@
 #ifndef ORTOOLS_BASE_BITMAP_H_
 #define ORTOOLS_BASE_BITMAP_H_
 
+#include <bit>
+#include <bitset>
 #include <cassert>
 #include <cstdint>
-#include <cstring>
+#include <utility>
+#include <vector>
 
 namespace operations_research {
-namespace internal {
-inline uint64_t OneBit64(int pos) { return uint64_t{1} << pos; }
-inline uint64_t BitPos64(uint64_t pos) { return (pos & 63); }
-inline uint64_t BitOffset64(uint64_t pos) { return (pos >> 6); }
-inline uint64_t BitLength64(uint64_t size) { return ((size + 63) >> 6); }
-inline bool IsBitSet64(const uint64_t* const bitset, uint64_t pos) {
-  return (bitset[BitOffset64(pos)] & OneBit64(BitPos64(pos)));
-}
-inline void SetBit64(uint64_t* const bitset, uint64_t pos) {
-  bitset[BitOffset64(pos)] |= OneBit64(BitPos64(pos));
-}
-inline void ClearBit64(uint64_t* const bitset, uint64_t pos) {
-  bitset[BitOffset64(pos)] &= ~OneBit64(BitPos64(pos));
-}
-}  // namespace internal
 
 class Bitmap {
+  static constexpr uint32_t kBlockSize = 64;
+
+  static std::pair<uint32_t, uint32_t> DivMod(uint32_t index) {
+    return std::make_pair(index / kBlockSize, index % kBlockSize);
+  }
+
+  static uint32_t GetNumBlocks(uint32_t size) {
+    static_assert(std::has_single_bit(kBlockSize));
+    return (size + kBlockSize - 1) / kBlockSize;
+  }
+
  public:
   // Constructor : This allocates on a uint32_t boundary.
-  // fill: true = initialize with 1's, false = initialize with 0's.
-  explicit Bitmap(uint32_t size, bool fill = false)
-      : max_size_(size),
-        array_size_(internal::BitLength64(size)),
-        map_(new uint64_t[array_size_]) {
-    // initialize all of the bits
-    SetAll(fill);
-  }
-
-  // Destructor: clean up.
-  ~Bitmap() { delete[] map_; }
-
-  // Resizes the bitmap.
-  // If size < bits(), the extra bits will be discarded.
-  // If size > bits(), the extra bits will be filled with the fill value.
-  void Resize(uint32_t size, bool fill = false);
+  explicit Bitmap(uint32_t size) : bits_(size), map_(GetNumBlocks(size)) {}
 
   bool Get(uint32_t index) const {
-    assert(max_size_ == 0 || index < max_size_);
-    return internal::IsBitSet64(map_, index);
-  }
-  void Set(uint32_t index, bool value) {
-    assert(max_size_ == 0 || index < max_size_);
-    if (value) {
-      internal::SetBit64(map_, index);
-    } else {
-      internal::ClearBit64(map_, index);
-    }
+    assert(bits_ == 0 || index < bits_);
+    const auto [block, bit] = DivMod(index);
+    return map_[block].test(bit);
   }
 
-  // Sets all the bits to true or false
-  void SetAll(bool value) {
-    memset(map_, (value ? 0xFF : 0x00), array_size_ * sizeof(*map_));
+  // Sets the bit at the given index to the given value.
+  void Set(uint32_t index) {
+    assert(bits_ == 0 || index < bits_);
+    const auto [block, bit] = DivMod(index);
+    map_[block].set(bit);
   }
 
   // Clears all bits in the bitmap
-  void Clear() { SetAll(false); }
+  void Clear() {
+    for (auto& bitset : map_) {
+      bitset.reset();
+    }
+  }
 
  private:
-  uint32_t max_size_;  // the upper bound of the bitmap
-  uint32_t array_size_;
-  uint64_t* map_;  // the bitmap
+  uint32_t bits_;                             // the upper bound of the bitmap
+  std::vector<std::bitset<kBlockSize>> map_;  // the bitmap
 };
 
 }  // namespace operations_research

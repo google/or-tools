@@ -13,43 +13,41 @@
 
 #include "ortools/base/temp_file.h"
 
+#include <cstddef>
 #include <cstdint>
 #include <string>
+#include <thread>  // NOLINT
 
+#include "absl/hash/hash.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
 #include "absl/time/clock.h"
-#include "ortools/base/logging.h"
+#include "ortools/base/macros/os_support.h"
 
-#if !defined(__PORTABLE_PLATFORM__)
-#if !defined(_MSC_VER)
+#if defined(ORTOOLS_TARGET_OS_SUPPORTS_FILE)
+static_assert(operations_research::kTargetOsSupportsFile);
+#ifdef _WIN32
+#include <windows.h>
+#define GetPID() GetCurrentProcessId()
+#else
 #include <unistd.h>
+#define GetPID() getpid()
 #endif
-#endif  // !defined(__PORTABLE_PLATFORM__)
+#else
+static_assert(!operations_research::kTargetOsSupportsFile);
+#endif  // defined(ORTOOLS_TARGET_OS_SUPPORTS_FILE)
 
 namespace file {
 
 ::absl::StatusOr<std::string> MakeTempFilename(absl::string_view directory,
                                                absl::string_view file_prefix) {
   std::string filename;
-#if defined(__PORTABLE_PLATFORM__)
-  filename = "Temporary files are not implemented for this platform.";
-  LOG(ERROR) << filename;
-  return absl::UnavailableError(filename);
-#endif  // !defined(__PORTABLE_PLATFORM__)
-
-#if defined(__linux__)
-  int32_t tid = static_cast<int32_t>(pthread_self());
-#else   // defined(__linux__)
-  int32_t tid = 123;
-#endif  // defined(__linux__)
-#if !defined(_MSC_VER)
-  int32_t pid = static_cast<int32_t>(getpid());
-#else   // _MSC_VER
-  int32_t pid = 456;
-#endif  // _MSC_VER
-  int64_t now = absl::GetCurrentTimeNanos();
+#if defined(ORTOOLS_TARGET_OS_SUPPORTS_FILE)
+  static_assert(operations_research::kTargetOsSupportsFile);
+  const size_t tid = absl::HashOf(std::this_thread::get_id());
+  const size_t pid = absl::HashOf(GetPID());
+  const int64_t now = absl::GetCurrentTimeNanos();
 
   if (directory.empty()) {
     directory = "/tmp";
@@ -62,6 +60,11 @@ namespace file {
   filename = absl::StrFormat("%s/%s-%x-%d-%llx", directory, file_prefix, tid,
                              pid, now);
   return filename;
+#else   // defined(ORTOOLS_TARGET_OS_SUPPORTS_FILE)
+  static_assert(!operations_research::kTargetOsSupportsFile);
+  return absl::UnavailableError(
+      "Temporary files are not implemented for this platform.");
+#endif  // defined(ORTOOLS_TARGET_OS_SUPPORTS_FILE)
 }
 
 }  // namespace file

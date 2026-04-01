@@ -11,18 +11,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ORTOOLS_BASE_SYSINFO_H_
-#define ORTOOLS_BASE_SYSINFO_H_
+#ifndef ORTOOLS_BASE_LOG_SEVERITY_H_
+#define ORTOOLS_BASE_LOG_SEVERITY_H_
 
-#include <cstdint>
+#include "absl/base/log_severity.h"
 
-namespace operations_research {
-// Returns the memory usage of the process.
-int64_t GetProcessMemoryUsage();
-}  // namespace operations_research
+#ifndef NDEBUG
+const bool DEBUG_MODE = true;
+#else
+const bool DEBUG_MODE = false;
+#endif
 
-inline int64_t MemoryUsage(int unused) {
-  return operations_research::GetProcessMemoryUsage();
-}
-
-#endif  // ORTOOLS_BASE_SYSINFO_H_
+#endif  // ORTOOLS_BASE_LOG_SEVERITY_H_
