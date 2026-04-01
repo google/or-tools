@@ -30,19 +30,19 @@
 #include "absl/strings/string_view.h"
 #include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/bop/boolean_problem.h"
+#include "ortools/bop/boolean_problem.pb.h"
 #include "ortools/bop/bop_base.h"
 #include "ortools/bop/bop_parameters.pb.h"
 #include "ortools/bop/bop_solution.h"
 #include "ortools/bop/bop_types.h"
 #include "ortools/bop/bop_util.h"
+#include "ortools/bop/lp_utils.h"
 #include "ortools/glop/lp_solver.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"
-#include "ortools/sat/boolean_problem.h"
-#include "ortools/sat/boolean_problem.pb.h"
 #include "ortools/sat/clause.h"
-#include "ortools/sat/lp_utils.h"
 #include "ortools/sat/pb_constraint.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -120,8 +120,8 @@ BopOptimizerBase::Status GuidedSatFirstSolutionGenerator::SynchronizeIfNeeded(
     if (problem_state.GetParameters()
             .exploit_symmetry_in_sat_first_solution()) {
       std::vector<std::unique_ptr<SparsePermutation>> generators;
-      sat::FindLinearBooleanProblemSymmetries(problem_state.original_problem(),
-                                              &generators);
+      FindLinearBooleanProblemSymmetries(problem_state.original_problem(),
+                                         &generators);
       std::unique_ptr<sat::SymmetryPropagator> propagator(
           new sat::SymmetryPropagator);
       for (int i = 0; i < generators.size(); ++i) {
@@ -410,8 +410,8 @@ BopOptimizerBase::Status LinearRelaxation::SynchronizeIfNeeded(
   num_fixed_variables_ = num_fixed_variables;
   if (!lp_model_loaded_) {
     lp_model_.Clear();
-    sat::ConvertBooleanProblemToLinearProgram(problem_state.original_problem(),
-                                              &lp_model_);
+    ConvertBooleanProblemToLinearProgram(problem_state.original_problem(),
+                                         &lp_model_);
     lp_model_loaded_ = true;
   }
   for (VariableIndex var(0); var < problem_state.is_fixed().size(); ++var) {

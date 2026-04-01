@@ -21,11 +21,11 @@
 
 #include "absl/log/check.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/bop/boolean_problem.h"
+#include "ortools/bop/boolean_problem.pb.h"
 #include "ortools/bop/bop_base.h"
 #include "ortools/bop/bop_solution.h"
 #include "ortools/bop/bop_types.h"
-#include "ortools/sat/boolean_problem.h"
-#include "ortools/sat/boolean_problem.pb.h"
 #include "ortools/sat/pb_constraint.h"
 #include "ortools/sat/restart.h"
 #include "ortools/sat/sat_base.h"

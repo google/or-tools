@@ -25,19 +25,19 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
-#include "absl/meta/type_traits.h"
+#include "absl/log/log.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/bop/boolean_problem.pb.h"
 #include "ortools/bop/bop_base.h"
 #include "ortools/bop/bop_parameters.pb.h"
 #include "ortools/bop/bop_solution.h"
 #include "ortools/bop/bop_types.h"
 #include "ortools/bop/bop_util.h"
-#include "ortools/sat/boolean_problem.pb.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/util/strong_integers.h"
@@ -45,10 +45,6 @@
 
 namespace operations_research {
 namespace bop {
-
-using ::operations_research::sat::LinearBooleanConstraint;
-using ::operations_research::sat::LinearBooleanProblem;
-using ::operations_research::sat::LinearObjective;
 
 //------------------------------------------------------------------------------
 // LocalSearchOptimizer
@@ -108,7 +104,7 @@ BopOptimizerBase::Status LocalSearchOptimizer::Optimize(
     --num_assignments_to_explore;
   }
   if (sat_wrapper_.IsModelUnsat()) {
-    // TODO(user): we do that all the time, return an UNSAT satus instead and
+    // TODO(user): we do that all the time, return an UNSAT status instead and
     // do this only once.
     return problem_state.solution().IsFeasible()
                ? BopOptimizerBase::OPTIMAL_SOLUTION_FOUND
@@ -796,7 +792,7 @@ bool LocalSearchAssignmentIterator::NextAssignment() {
 
   // We only look for potential one flip repairs if we reached the end of the
   // LS tree. I tried to do that at every level, but it didn't change the
-  // result much on the set-partitionning example I was using.
+  // result much on the set-partitioning example I was using.
   //
   // TODO(user): Perform more experiments with this.
   if (use_potential_one_flip_repairs_ &&

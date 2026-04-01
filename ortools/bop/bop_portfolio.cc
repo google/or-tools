@@ -31,6 +31,8 @@
 #include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/bop/boolean_problem.h"
+#include "ortools/bop/boolean_problem.pb.h"
 #include "ortools/bop/bop_base.h"
 #include "ortools/bop/bop_fs.h"
 #include "ortools/bop/bop_lns.h"
@@ -41,8 +43,6 @@
 #include "ortools/bop/bop_util.h"
 #include "ortools/bop/complete_optimizer.h"
 #include "ortools/lp_data/lp_types.h"
-#include "ortools/sat/boolean_problem.h"
-#include "ortools/sat/boolean_problem.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/symmetry.h"
 #include "ortools/util/random_engine.h"
@@ -51,9 +51,6 @@
 
 namespace operations_research {
 namespace bop {
-
-using ::operations_research::sat::LinearBooleanProblem;
-using ::operations_research::sat::LinearObjective;
 
 namespace {
 void BuildObjectiveTerms(const LinearBooleanProblem& problem,
@@ -329,7 +326,7 @@ void PortfolioOptimizer::CreateOptimizers(
   if (parameters.use_symmetry()) {
     VLOG(1) << "Finding symmetries of the problem.";
     std::vector<std::unique_ptr<SparsePermutation>> generators;
-    sat::FindLinearBooleanProblemSymmetries(problem, &generators);
+    FindLinearBooleanProblemSymmetries(problem, &generators);
     std::unique_ptr<sat::SymmetryPropagator> propagator(
         new sat::SymmetryPropagator);
     for (int i = 0; i < generators.size(); ++i) {

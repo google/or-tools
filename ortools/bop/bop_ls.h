@@ -42,11 +42,11 @@
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/bop/boolean_problem.pb.h"
 #include "ortools/bop/bop_base.h"
 #include "ortools/bop/bop_parameters.pb.h"
 #include "ortools/bop/bop_solution.h"
 #include "ortools/bop/bop_types.h"
-#include "ortools/sat/boolean_problem.pb.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/util/strong_integers.h"
@@ -282,7 +282,7 @@ class AssignmentAndConstraintFeasibilityMaintainer {
   // Note that the constraint indices used in this class are not the same as
   // the one used in the given LinearBooleanProblem here.
   explicit AssignmentAndConstraintFeasibilityMaintainer(
-      const sat::LinearBooleanProblem& problem, absl::BitGenRef random);
+      const LinearBooleanProblem& problem, absl::BitGenRef random);
 
   // This type is neither copyable nor movable.
   AssignmentAndConstraintFeasibilityMaintainer(
@@ -458,7 +458,7 @@ class OneFlipConstraintRepairer {
   // TODO(user): maybe merge the two classes? maintaining this implicit indices
   // convention between the two classes sounds like a bad idea.
   OneFlipConstraintRepairer(
-      const sat::LinearBooleanProblem& problem,
+      const LinearBooleanProblem& problem,
       const AssignmentAndConstraintFeasibilityMaintainer& maintainer,
       const sat::VariablesAssignment& sat_assignment);
 

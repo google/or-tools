@@ -21,11 +21,11 @@
 #include "absl/random/bit_gen_ref.h"
 #include "absl/strings/string_view.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/bop/boolean_problem.pb.h"
 #include "ortools/bop/bop_base.h"
 #include "ortools/bop/bop_parameters.pb.h"
 #include "ortools/bop/bop_types.h"
 #include "ortools/bop/bop_util.h"
-#include "ortools/sat/boolean_problem.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/util/time_limit.h"
 
@@ -157,7 +157,7 @@ class ConstraintBasedNeighborhood final : public NeighborhoodGenerator {
 // if they appear in the same constraint.
 class RelationGraphBasedNeighborhood final : public NeighborhoodGenerator {
  public:
-  RelationGraphBasedNeighborhood(const sat::LinearBooleanProblem& problem,
+  RelationGraphBasedNeighborhood(const LinearBooleanProblem& problem,
                                  absl::BitGenRef random);
   ~RelationGraphBasedNeighborhood() final = default;
 

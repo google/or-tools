@@ -24,6 +24,8 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/strings/str_format.h"
+#include "ortools/bop/boolean_problem.h"
+#include "ortools/bop/boolean_problem.pb.h"
 #include "ortools/bop/bop_solver.h"
 #include "ortools/bop/bop_types.h"
 #include "ortools/lp_data/lp_data.h"
@@ -33,8 +35,6 @@
 #include "ortools/lp_data/sparse.h"
 #include "ortools/lp_data/sparse_column.h"
 #include "ortools/lp_data/sparse_vector.h"
-#include "ortools/sat/boolean_problem.h"
-#include "ortools/sat/boolean_problem.pb.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/fp_utils.h"
 #include "ortools/util/strong_integers.h"
@@ -52,9 +52,6 @@ using ::operations_research::glop::LPDecomposer;
 using ::operations_research::glop::RowIndex;
 using ::operations_research::glop::SparseColumn;
 using ::operations_research::glop::SparseMatrix;
-using ::operations_research::sat::LinearBooleanConstraint;
-using ::operations_research::sat::LinearBooleanProblem;
-using ::operations_research::sat::LinearObjective;
 
 namespace {
 // TODO(user): Use an existing one or move it to util.
@@ -178,7 +175,7 @@ void BuildBooleanProblemWithIntegralConstraints(
 
   // If the problem was a maximization one, we need to modify the objective.
   if (linear_problem.IsMaximizationProblem()) {
-    sat::ChangeOptimizationDirection(boolean_problem);
+    ChangeOptimizationDirection(boolean_problem);
   }
 
   // Fill the Boolean initial solution.
@@ -483,7 +480,7 @@ bool IntegralProblemConverter::ConvertToBooleanProblem(
 
   // A BooleanLinearProblem is always in the minimization form.
   if (linear_problem.IsMaximizationProblem()) {
-    sat::ChangeOptimizationDirection(boolean_problem);
+    ChangeOptimizationDirection(boolean_problem);
   }
 
   if (use_initial_solution) {

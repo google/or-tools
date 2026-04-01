@@ -36,11 +36,11 @@
 //   const BopSolveStatus solve_status = bop_solver.Solve();
 //   if (solve_status == BopSolveStatus::OPTIMAL_SOLUTION_FOUND) { ... }
 
+#include "ortools/bop/boolean_problem.pb.h"
 #include "ortools/bop/bop_base.h"
 #include "ortools/bop/bop_parameters.pb.h"
 #include "ortools/bop/bop_solution.h"
 #include "ortools/bop/bop_types.h"
-#include "ortools/sat/boolean_problem.pb.h"
 #include "ortools/util/stats.h"
 #include "ortools/util/time_limit.h"
 
@@ -49,7 +49,7 @@ namespace bop {
 // Solver of Boolean Optimization Problems based on Local Search.
 class BopSolver {
  public:
-  explicit BopSolver(const sat::LinearBooleanProblem& problem);
+  explicit BopSolver(const LinearBooleanProblem& problem);
   virtual ~BopSolver();
 
   // Parameters management.
@@ -82,7 +82,7 @@ class BopSolver {
   BopSolveStatus InternalMonothreadSolver(TimeLimit* time_limit);
   BopSolveStatus InternalMultithreadSolver(TimeLimit* time_limit);
 
-  const sat::LinearBooleanProblem& problem_;
+  const LinearBooleanProblem& problem_;
   ProblemState problem_state_;
   BopParameters parameters_;
 
