@@ -1,4 +1,4 @@
-// Copyright 2010-2025 Google LLC
+// Copyright 2010-2026 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -28,6 +28,7 @@
 #include "ortools/glop/parameters.pb.h"  // IWYU pragma: export
 #include "ortools/math_opt/cpp/enums.h"  // IWYU pragma: export
 #include "ortools/math_opt/parameters.pb.h"
+#include "ortools/math_opt/solvers/cplex.pb.h"        // IWYU pragma: export
 #include "ortools/math_opt/solvers/gscip/gscip.pb.h"  // IWYU pragma: export
 #include "ortools/math_opt/solvers/gurobi.pb.h"       // IWYU pragma: export
 #include "ortools/math_opt/solvers/highs.pb.h"        // IWYU pragma: export
@@ -114,6 +115,12 @@ enum class SolverType {
   // Supports LP, MIP, and nonconvex integer quadratic problems.
   // A fast option, but has special licensing.
   kXpress = SOLVER_TYPE_XPRESS,
+
+  // IBM ILOG CPLEX solver (third party).
+  //
+  // Supports LP, MIP problems (other types are unimplemented).
+  // A fast option, but has special licensing.
+  kCplex = SOLVER_TYPE_CPLEX,
 };
 
 MATH_OPT_DEFINE_ENUM(SolverType, SOLVER_TYPE_UNSPECIFIED);
@@ -292,6 +299,23 @@ struct XpressParameters {
   bool empty() const { return param_values.empty(); }
 };
 
+struct CplexParameters {
+  absl::linked_hash_map<std::string, double> param_double_values;
+  absl::linked_hash_map<std::string, bool> param_bool_values;
+  absl::linked_hash_map<std::string, int32_t> param_int32_values;
+  absl::linked_hash_map<std::string, int64_t> param_int64_values;
+  absl::linked_hash_map<std::string, std::string> param_string_values;
+
+  CplexParametersProto Proto() const;
+  static CplexParameters FromProto(const CplexParametersProto& proto);
+
+  bool empty() const {
+    return param_double_values.empty() && param_bool_values.empty() &&
+           param_int32_values.empty() && param_int64_values.empty() &&
+           param_string_values.empty();
+  }
+};
+
 // Parameters to control a single solve.
 //
 // Contains both parameters common to all solvers, e.g. time_limit, and
@@ -466,6 +490,7 @@ struct SolveParameters {
   GlpkParameters glpk;
   HighsOptionsProto highs;
   XpressParameters xpress;
+  CplexParameters cplex;
 
   SolveParametersProto Proto() const;
   static absl::StatusOr<SolveParameters> FromProto(

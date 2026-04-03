@@ -130,6 +130,11 @@ class StreamableHighsInitArguments:
 
 
 @dataclasses.dataclass
+class StreamableCplexInitArguments:
+    """Streamable Cplex specific parameters for solver instantiation."""
+
+
+@dataclasses.dataclass
 class StreamableSantoriniInitArguments:
     """Streamable Santorini specific parameters for solver instantiation."""
 
@@ -150,6 +155,7 @@ class StreamableSolverInitArguments:
       scs: Initialization parameters specific to SCS.
       highs: Initialization parameters specific to HiGHS.
       santorini: Initialization parameters specific to Santorini.
+      cplex: Initialization parameters specific to Cplex.
     """
 
     gscip: Optional[StreamableGScipInitArguments] = None
@@ -163,6 +169,7 @@ class StreamableSolverInitArguments:
     scs: Optional[StreamableScsInitArguments] = None
     highs: Optional[StreamableHighsInitArguments] = None
     santorini: Optional[StreamableSantoriniInitArguments] = None
+    cplex: Optional[StreamableCplexInitArguments] = None
 
     def to_proto(self) -> parameters_pb2.SolverInitializerProto:
         """Returns a protocol buffer equivalent of this."""

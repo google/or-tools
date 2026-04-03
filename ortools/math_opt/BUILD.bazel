@@ -127,6 +127,7 @@ proto_library(
     srcs = ["parameters.proto"],
     deps = [
         "//ortools/glop:parameters_proto",
+        "//ortools/math_opt/solvers:cplex_proto",
         "//ortools/math_opt/solvers:glpk_proto",
         "//ortools/math_opt/solvers:gurobi_proto",
         "//ortools/math_opt/solvers:highs_proto",

@@ -21,8 +21,8 @@ from typing import Dict, Optional
 
 from ortools.glop import parameters_pb2 as glop_parameters_pb2
 from ortools.math_opt import parameters_pb2 as math_opt_parameters_pb2
-from ortools.math_opt.solvers import (glpk_pb2, gurobi_pb2, highs_pb2,
-                                      osqp_pb2, xpress_pb2)
+from ortools.math_opt.solvers import (cplex_pb2, glpk_pb2, gurobi_pb2,
+                                      highs_pb2, osqp_pb2, xpress_pb2)
 from ortools.math_opt.solvers.gscip import gscip_pb2
 from ortools.pdlp import solvers_pb2 as pdlp_solvers_pb2
 from ortools.sat import sat_parameters_pb2
@@ -77,6 +77,8 @@ class SolverType(enum.Enum):
         do not use in production.
       XPRESS: FICO Xpress solver (third party). Supports LP, MIP, and QP/MIQP
         problems. Requires a local Xpress installation with XPRESSDIR set.
+      CPLEX: IBM ILOG CPLEX solver (third party). Supports LP, MIP. (other
+        problem-types are unimplemented) A fast option, but has special licensing.
     """
 
     GSCIP = math_opt_parameters_pb2.SOLVER_TYPE_GSCIP
@@ -91,6 +93,7 @@ class SolverType(enum.Enum):
     HIGHS = math_opt_parameters_pb2.SOLVER_TYPE_HIGHS
     SANTORINI = math_opt_parameters_pb2.SOLVER_TYPE_SANTORINI
     XPRESS = math_opt_parameters_pb2.SOLVER_TYPE_XPRESS
+    CPLEX = math_opt_parameters_pb2.SOLVER_TYPE_CPLEX
 
 
 def solver_type_from_proto(
@@ -403,6 +406,7 @@ class SolveParameters:
     glpk: GLPK specific solve parameters.
     highs: HiGHS specific solve parameters.
     xpress: XPRESS specific solve parameters.
+    cplex: CPLEX specific solve parameters.
   """  # fmt: skip
 
     time_limit: Optional[datetime.timedelta] = None
@@ -446,6 +450,9 @@ class SolveParameters:
     xpress: xpress_pb2.XpressParametersProto = dataclasses.field(
         default_factory=xpress_pb2.XpressParametersProto
     )
+    cplex: cplex_pb2.CplexParametersProto = dataclasses.field(
+        default_factory=cplex_pb2.CplexParametersProto
+    )
 
     def to_proto(self) -> math_opt_parameters_pb2.SolveParametersProto:
         """Returns a protocol buffer equivalent to this."""
@@ -465,6 +472,7 @@ class SolveParameters:
             glpk=self.glpk.to_proto(),
             highs=self.highs,
             xpress=self.xpress,
+            cplex=self.cplex,
         )
         if self.time_limit is not None:
             result.time_limit.FromTimedelta(self.time_limit)
@@ -513,6 +521,7 @@ def parse_solve_parameters(
         glpk=parse_glpk_parameters(proto.glpk),
         highs=proto.highs,
         xpress=proto.xpress,
+        cplex=proto.cplex,
     )
     if proto.HasField("time_limit"):
         result.time_limit = proto.time_limit.ToTimedelta()
