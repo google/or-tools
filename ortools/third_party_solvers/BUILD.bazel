@@ -59,3 +59,17 @@ cc_library(
         "@abseil-cpp//absl/synchronization",
     ],
 )
+
+cc_library(
+    name = "cplex_environment",
+    srcs = ["cplex_environment.cc"],
+    hdrs = ["cplex_environment.h"],
+    deps = [
+        ":dynamic_library",
+        "@abseil-cpp//absl/base",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:string_view",
+    ],
+)
