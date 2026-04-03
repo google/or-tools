@@ -17,8 +17,6 @@ load("@pip_deps//:requirements.bzl", "requirement")
 load("@pybind11_bazel//:build_defs.bzl", "pybind_extension")
 load("@rules_python//python:py_test.bzl", "py_test")
 
-package(default_visibility = ["//visibility:public"])
-
 pybind_extension(
     name = "set_cover",
     srcs = ["set_cover.cc"],
@@ -27,6 +25,7 @@ pybind_extension(
         "//ortools/set_cover:base_types",
         "//ortools/set_cover:set_cover_heuristics",
         "//ortools/set_cover:set_cover_invariant",
+        "//ortools/set_cover:set_cover_lagrangian",
         "//ortools/set_cover:set_cover_model",
         "//ortools/set_cover:set_cover_reader",
         "@abseil-cpp//absl/types:span",

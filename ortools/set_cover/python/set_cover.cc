@@ -23,6 +23,7 @@
 #include "ortools/set_cover/base_types.h"
 #include "ortools/set_cover/set_cover_heuristics.h"
 #include "ortools/set_cover/set_cover_invariant.h"
+#include "ortools/set_cover/set_cover_lagrangian.h"
 #include "ortools/set_cover/set_cover_model.h"
 #include "ortools/set_cover/set_cover_reader.h"
 #include "pybind11/numpy.h"
@@ -32,7 +33,10 @@
 #include "pybind11_protobuf/native_proto_caster.h"
 
 using ::operations_research::BaseInt;
+using ::operations_research::ClearMostCoveredElements;
 using ::operations_research::ClearRandomSubsets;
+using ::operations_research::Cost;
+using ::operations_research::ElementCostVector;
 using ::operations_research::ElementDegreeSolutionGenerator;
 using ::operations_research::ElementIndex;
 using ::operations_research::GreedySolutionGenerator;
@@ -54,6 +58,7 @@ using ::operations_research::WriteSetCoverSolutionText;
 
 using ::operations_research::SetCoverDecision;
 using ::operations_research::SetCoverInvariant;
+using ::operations_research::SetCoverLagrangian;
 using ::operations_research::SetCoverModel;
 using ::operations_research::SparseColumn;
 using ::operations_research::SparseRow;
@@ -71,7 +76,8 @@ using ::py::make_iterator;
 std::vector<SubsetIndex> VectorIntToVectorSubsetIndex(
     absl::Span<const BaseInt> ints) {
   std::vector<SubsetIndex> subs;
-  std::transform(ints.begin(), ints.end(), subs.begin(),
+  subs.reserve(ints.size());
+  std::transform(ints.begin(), ints.end(), std::back_inserter(subs),
                  [](int subset) -> SubsetIndex { return SubsetIndex(subset); });
   return subs;
 }
@@ -79,6 +85,12 @@ std::vector<SubsetIndex> VectorIntToVectorSubsetIndex(
 SubsetCostVector VectorDoubleToSubsetCostVector(
     absl::Span<const double> doubles) {
   SubsetCostVector costs(doubles.begin(), doubles.end());
+  return costs;
+}
+
+ElementCostVector VectorDoubleToElementCostVector(
+    absl::Span<const double> doubles) {
+  ElementCostVector costs(doubles.begin(), doubles.end());
   return costs;
 }
 
@@ -199,9 +211,11 @@ PYBIND11_MODULE(set_cover, m) {
       .def_property_readonly("all_subsets",
                              [](SetCoverModel& model) -> std::vector<BaseInt> {
                                std::vector<BaseInt> subsets;
+                               subsets.reserve(model.all_subsets().size());
                                std::transform(
                                    model.all_subsets().begin(),
-                                   model.all_subsets().end(), subsets.begin(),
+                                   model.all_subsets().end(),
+                                   std::back_inserter(subsets),
                                    [](const SubsetIndex element) -> BaseInt {
                                      return element.value();
                                    });
@@ -555,9 +569,9 @@ PYBIND11_MODULE(set_cover, m) {
              return heuristic.NextSolution(
                  BoolVectorToSubsetBoolVector(in_focus));
            })
-      .def("get_lagrangian_factor", &GuidedTabuSearch::SetLagrangianFactor,
+      .def("set_lagrangian_factor", &GuidedTabuSearch::SetLagrangianFactor,
            arg("factor"))
-      .def("set_lagrangian_factor", &GuidedTabuSearch::GetLagrangianFactor)
+      .def("get_lagrangian_factor", &GuidedTabuSearch::GetLagrangianFactor)
       .def("set_epsilon", &GuidedTabuSearch::SetEpsilon, arg("r"))
       .def("get_epsilon", &GuidedTabuSearch::GetEpsilon)
       .def("set_penalty_factor", &GuidedTabuSearch::SetPenaltyFactor,
@@ -611,5 +625,131 @@ PYBIND11_MODULE(set_cover, m) {
   m.def("read_set_cover_solution_proto", &ReadSetCoverSolutionProto);
 
   // set_cover_lagrangian.h
-  // TODO(user): add support for SetCoverLagrangian.
+  py::class_<SetCoverLagrangian>(m, "SetCoverLagrangian")
+      .def(py::init<SetCoverInvariant*>())
+      .def("use_num_threads", &SetCoverLagrangian::UseNumThreads,
+           arg("num_threads"), py::return_value_policy::reference_internal)
+      .def(
+          "initialize_lagrange_multipliers",
+          [](SetCoverLagrangian& lagrangian) -> std::vector<double> {
+            return lagrangian.InitializeLagrangeMultipliers().get();
+          })
+      .def(
+          "compute_reduced_costs",
+          [](SetCoverLagrangian& lagrangian,
+             absl::Span<const double> costs,
+             absl::Span<const double> multipliers) -> std::vector<double> {
+            return lagrangian
+                .ComputeReducedCosts(VectorDoubleToSubsetCostVector(costs),
+                                     VectorDoubleToElementCostVector(multipliers))
+                .get();
+          },
+          arg("costs"), arg("multipliers"))
+      .def(
+          "parallel_compute_reduced_costs",
+          [](SetCoverLagrangian& lagrangian,
+             absl::Span<const double> costs,
+             absl::Span<const double> multipliers) -> std::vector<double> {
+            return lagrangian
+                .ParallelComputeReducedCosts(
+                    VectorDoubleToSubsetCostVector(costs),
+                    VectorDoubleToElementCostVector(multipliers))
+                .get();
+          },
+          arg("costs"), arg("multipliers"))
+      .def(
+          "compute_subgradient",
+          [](SetCoverLagrangian& lagrangian,
+             absl::Span<const double> reduced_costs) -> std::vector<double> {
+            return lagrangian
+                .ComputeSubgradient(
+                    VectorDoubleToSubsetCostVector(reduced_costs))
+                .get();
+          },
+          arg("reduced_costs"))
+      .def(
+          "parallel_compute_subgradient",
+          [](SetCoverLagrangian& lagrangian,
+             absl::Span<const double> reduced_costs) -> std::vector<double> {
+            return lagrangian
+                .ParallelComputeSubgradient(
+                    VectorDoubleToSubsetCostVector(reduced_costs))
+                .get();
+          },
+          arg("reduced_costs"))
+      .def(
+          "compute_lagrangian_value",
+          [](SetCoverLagrangian& lagrangian,
+             absl::Span<const double> reduced_costs,
+             absl::Span<const double> multipliers) -> double {
+            return lagrangian.ComputeLagrangianValue(
+                VectorDoubleToSubsetCostVector(reduced_costs),
+                VectorDoubleToElementCostVector(multipliers));
+          },
+          arg("reduced_costs"), arg("multipliers"))
+      .def(
+          "parallel_compute_lagrangian_value",
+          [](SetCoverLagrangian& lagrangian,
+             absl::Span<const double> reduced_costs,
+             absl::Span<const double> multipliers) -> double {
+            return lagrangian.ParallelComputeLagrangianValue(
+                VectorDoubleToSubsetCostVector(reduced_costs),
+                VectorDoubleToElementCostVector(multipliers));
+          },
+          arg("reduced_costs"), arg("multipliers"))
+      .def(
+          "update_multipliers",
+          [](SetCoverLagrangian& lagrangian, double step_size,
+             double lagrangian_value, double upper_bound,
+             absl::Span<const double> reduced_costs,
+             std::vector<double> multipliers) -> std::vector<double> {
+            ElementCostVector mult =
+                VectorDoubleToElementCostVector(multipliers);
+            lagrangian.UpdateMultipliers(
+                step_size, lagrangian_value, upper_bound,
+                VectorDoubleToSubsetCostVector(reduced_costs), &mult);
+            return mult.get();
+          },
+          arg("step_size"), arg("lagrangian_value"), arg("upper_bound"),
+          arg("reduced_costs"), arg("multipliers"))
+      .def(
+          "parallel_update_multipliers",
+          [](SetCoverLagrangian& lagrangian, double step_size,
+             double lagrangian_value, double upper_bound,
+             absl::Span<const double> reduced_costs,
+             std::vector<double> multipliers) -> std::vector<double> {
+            ElementCostVector mult =
+                VectorDoubleToElementCostVector(multipliers);
+            lagrangian.ParallelUpdateMultipliers(
+                step_size, lagrangian_value, upper_bound,
+                VectorDoubleToSubsetCostVector(reduced_costs), &mult);
+            return mult.get();
+          },
+          arg("step_size"), arg("lagrangian_value"), arg("upper_bound"),
+          arg("reduced_costs"), arg("multipliers"))
+      .def(
+          "compute_gap",
+          [](SetCoverLagrangian& lagrangian,
+             absl::Span<const double> reduced_costs,
+             const std::vector<bool>& solution,
+             absl::Span<const double> multipliers) -> double {
+            return lagrangian.ComputeGap(
+                VectorDoubleToSubsetCostVector(reduced_costs),
+                BoolVectorToSubsetBoolVector(solution),
+                VectorDoubleToElementCostVector(multipliers));
+          },
+          arg("reduced_costs"), arg("solution"), arg("multipliers"))
+      .def("three_phase", &SetCoverLagrangian::ThreePhase, arg("upper_bound"))
+      .def(
+          "compute_lower_bound",
+          [](SetCoverLagrangian& lagrangian,
+             absl::Span<const double> costs,
+             double upper_bound)
+              -> std::tuple<double, std::vector<double>, std::vector<double>> {
+            auto [lb, reduced_costs, multipliers] =
+                lagrangian.ComputeLowerBound(
+                    VectorDoubleToSubsetCostVector(costs), upper_bound);
+            return {lb, reduced_costs.get(), multipliers.get()};
+          },
+          arg("costs"), arg("upper_bound"));
 }
