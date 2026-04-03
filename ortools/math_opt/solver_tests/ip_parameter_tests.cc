@@ -684,10 +684,10 @@ TEST_P(IpParameterTest, NodeLimit) {
 //
 // Then the LP relaxation is enough to validate any integer feasible solution to
 // a relative or absolute gap of k/2.
-absl::StatusOr<SolveResult> SolveForGapLimit(const int k, const int n,
+absl::StatusOr<SolveResult> SolveForGapLimit(Model& model, const int k,
+                                             const int n,
                                              const SolverType solver_type,
                                              const SolveParameters params) {
-  Model model("Absolute gap limit IP");
   std::vector<Variable> x;
   for (int i = 0; i < n; ++i) {
     x.push_back(model.AddBinaryVariable());
@@ -723,9 +723,10 @@ TEST_P(IpParameterTest, AbsoluteGapLimit) {
 
   // Check that best bound on default solve is close to ip_opt and hence
   // strictly smaller than best_bound_differentiator.
+  Model model("Absolute gap limit IP");
   ASSERT_OK_AND_ASSIGN(
       const SolveResult default_result,
-      SolveForGapLimit(k, n, TestedSolver(), SolveParameters{}));
+      SolveForGapLimit(model, k, n, TestedSolver(), SolveParameters{}));
   EXPECT_EQ(default_result.termination.reason, TerminationReason::kOptimal);
   EXPECT_LT(default_result.termination.objective_bounds.dual_bound,
             ip_opt + 0.1);
@@ -747,8 +748,9 @@ TEST_P(IpParameterTest, AbsoluteGapLimit) {
   if (GetParam().parameter_support.supports_cuts) {
     params.cuts = Emphasis::kOff;
   }
+  Model model2("Absolute gap limit IP");
   const absl::StatusOr<SolveResult> gap_tolerance_result =
-      SolveForGapLimit(k, n, TestedSolver(), params);
+      SolveForGapLimit(model2, k, n, TestedSolver(), params);
   if (!GetParam().parameter_support.supports_absolute_gap_tolerance) {
     EXPECT_THAT(gap_tolerance_result,
                 StatusIs(absl::StatusCode::kInvalidArgument,
@@ -790,9 +792,10 @@ TEST_P(IpParameterTest, RelativeGapLimit) {
 
   // Check that best bound on default solve is close to ip_opt and hence
   // strictly smaller than best_bound_differentiator.
+  Model model("Absolute gap limit IP");
   ASSERT_OK_AND_ASSIGN(
       const SolveResult default_result,
-      SolveForGapLimit(k, n, TestedSolver(), SolveParameters()));
+      SolveForGapLimit(model, k, n, TestedSolver(), SolveParameters()));
   EXPECT_THAT(default_result, IsOptimal());
   EXPECT_LT(default_result.termination.objective_bounds.dual_bound,
             ip_opt + 0.1);
@@ -814,8 +817,9 @@ TEST_P(IpParameterTest, RelativeGapLimit) {
   if (GetParam().parameter_support.supports_cuts) {
     params.cuts = Emphasis::kOff;
   }
+  Model model2("Absolute gap limit IP");
   ASSERT_OK_AND_ASSIGN(const SolveResult gap_tolerance_result,
-                       SolveForGapLimit(k, n, TestedSolver(), params));
+                       SolveForGapLimit(model2, k, n, TestedSolver(), params));
   EXPECT_EQ(gap_tolerance_result.termination.reason,
             TerminationReason::kOptimal);
 
