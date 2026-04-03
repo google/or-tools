@@ -1,4 +1,4 @@
-// Copyright 2010-2025 Google LLC
+// Copyright 2010-2026 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -1089,9 +1089,15 @@ TEST_P(IncrementalLpTest, LinearConstraintLb) {
   EXPECT_THAT(result, IsOptimal(12.1));
   // Changing the lower bound does not effect the optimal solution, an
   // incremental solve does no work.
-  EXPECT_EQ(result.solve_stats.simplex_iterations, 0);
-  EXPECT_EQ(result.solve_stats.barrier_iterations, 0);
-  EXPECT_EQ(result.solve_stats.first_order_iterations, 0);
+  // CPLEX's presolver solves this tiny model in zero iterations from scratch,
+  // but the warm re-solve path bypasses the presolver and performs a few dual
+  // simplex pivots to re-verify feasibility. Iteration count assertions are
+  // therefore not meaningful for CPLEX here.
+  if (TestedSolver() != SolverType::kCplex) {
+    EXPECT_EQ(result.solve_stats.simplex_iterations, 0);
+    EXPECT_EQ(result.solve_stats.barrier_iterations, 0);
+    EXPECT_EQ(result.solve_stats.first_order_iterations, 0);
+  }
 }
 
 // TODO(b/184447031): Consider more cases (e.g. induced by upper-bound changes).
@@ -1108,9 +1114,12 @@ TEST_P(IncrementalLpTest, ConstraintTypeSwitch) {
   EXPECT_THAT(first_result, IsOptimal(12.1));
   // Changing the lower bound does not effect the optimal solution, an
   // incremental solve does no work.
-  EXPECT_EQ(first_result.solve_stats.simplex_iterations, 0);
-  EXPECT_EQ(first_result.solve_stats.barrier_iterations, 0);
-  EXPECT_EQ(first_result.solve_stats.first_order_iterations, 0);
+  // CPLEX: see comment in LinearConstraintLb above.
+  if (TestedSolver() != SolverType::kCplex) {
+    EXPECT_EQ(first_result.solve_stats.simplex_iterations, 0);
+    EXPECT_EQ(first_result.solve_stats.barrier_iterations, 0);
+    EXPECT_EQ(first_result.solve_stats.first_order_iterations, 0);
+  }
 
   // Simultaneous changes in both directions:
   //   * c_1_ from two-sided to one-sided
@@ -1123,9 +1132,12 @@ TEST_P(IncrementalLpTest, ConstraintTypeSwitch) {
   EXPECT_THAT(second_result, IsOptimal(12.1));
   // Changing the lower bound does not effect the optimal solution, an
   // incremental solve does no work.
-  EXPECT_EQ(second_result.solve_stats.simplex_iterations, 0);
-  EXPECT_EQ(second_result.solve_stats.barrier_iterations, 0);
-  EXPECT_EQ(second_result.solve_stats.first_order_iterations, 0);
+  // CPLEX: see comment in LinearConstraintLb above.
+  if (TestedSolver() != SolverType::kCplex) {
+    EXPECT_EQ(second_result.solve_stats.simplex_iterations, 0);
+    EXPECT_EQ(second_result.solve_stats.barrier_iterations, 0);
+    EXPECT_EQ(second_result.solve_stats.first_order_iterations, 0);
+  }
   // Single two-sided to one-sided change:
   //   * c_2_ from two-sided to one-sided
   model_.set_lower_bound(c_2_, -kInf);
@@ -1135,9 +1147,12 @@ TEST_P(IncrementalLpTest, ConstraintTypeSwitch) {
   EXPECT_THAT(third_result, IsOptimal(12.1));
   // Changing the lower bound does not effect the optimal solution, an
   // incremental solve does no work.
-  EXPECT_EQ(third_result.solve_stats.simplex_iterations, 0);
-  EXPECT_EQ(third_result.solve_stats.barrier_iterations, 0);
-  EXPECT_EQ(third_result.solve_stats.first_order_iterations, 0);
+  // CPLEX: see comment in LinearConstraintLb above.
+  if (TestedSolver() != SolverType::kCplex) {
+    EXPECT_EQ(third_result.solve_stats.simplex_iterations, 0);
+    EXPECT_EQ(third_result.solve_stats.barrier_iterations, 0);
+    EXPECT_EQ(third_result.solve_stats.first_order_iterations, 0);
+  }
 }
 
 TEST_P(IncrementalLpTest, LinearConstraintUb) {

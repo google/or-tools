@@ -62,6 +62,32 @@ target_link_libraries(${NAME} PRIVATE
   $<$<BOOL:${USE_SCIP}>:SCIP::libscip>
   ${PROJECT_NAMESPACE}::math_opt_proto)
 
+if(USE_CPLEX)
+  ortools_cxx_test(
+    NAME
+      math_opt_solvers_cplex_solver_test
+    SOURCES
+      "cplex_solver_test.cc"
+    LINK_LIBRARIES
+      ortools::base_gmock
+      GTest::gmock_main
+      absl::status
+      ortools::math_opt_matchers
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_callback_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_generic_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_invalid_input_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_ip_model_solve_parameters_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_ip_multiple_solutions_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_ip_parameter_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_lp_incomplete_solve_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_lp_model_solve_parameters_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_lp_parameter_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_lp_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_mip_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_status_tests>"
+  )
+endif()
+
 if(USE_SCIP)
   ortools_cxx_test(
     NAME

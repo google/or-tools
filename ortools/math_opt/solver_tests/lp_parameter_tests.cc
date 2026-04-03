@@ -1,4 +1,4 @@
-// Copyright 2010-2025 Google LLC
+// Copyright 2010-2026 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -164,7 +164,11 @@ TEST_P(LpParameterTest, RandomSeedLp) {
   }
   // Drawing 20 items from a very large number with replacement, the probability
   // of getting at least 3 unique is very high.
-  EXPECT_GE(solutions_seen.size(), 3);
+  // CPLEX solves these small models deterministically regardless of the random
+  // seed value — the seed has no observable effect on solution diversity.
+  if (GetParam().solver_type != SolverType::kCplex) {
+    EXPECT_GE(solutions_seen.size(), 3);
+  }
 }
 
 SolveStats LPForPresolve(SolverType solver_type, Emphasis presolve_emphasis) {
@@ -266,7 +270,11 @@ TEST_P(LpParameterTest, LPAlgorithmBarrier) {
       const SolveStats stats,
       SolveForLpAlgorithm(TestedSolver(), LPAlgorithm::kBarrier));
   // As of 2023-11-30 ecos_solver does not set the iteration count.
-  if (GetParam().solver_type != SolverType::kEcos) {
+  // CPLEX's barrier-internal symmetry aggregator solves this small, highly
+  // symmetric problem without actual barrier iterations. This aggregator is
+  // not easily controlled via CPLEX parameters.
+  if (GetParam().solver_type != SolverType::kEcos &&
+      GetParam().solver_type != SolverType::kCplex) {
     EXPECT_GT(stats.barrier_iterations, 0);
   }
   // We make no assertions on simplex iterations, we do not specify if
@@ -347,6 +355,12 @@ TEST_P(LpParameterTest, IterationLimitDualSimplex) {
 TEST_P(LpParameterTest, IterationLimitBarrier) {
   if (!SupportsBarrier()) {
     GTEST_SKIP() << "Barrier not supported. Ignoring this test.";
+  }
+  // CPLEX's barrier-internal symmetry aggregator solves this small problem
+  // without actual barrier iterations. This aggregator is not easily
+  // controlled via CPLEX parameters.
+  if (GetParam().solver_type == SolverType::kCplex) {
+    GTEST_SKIP() << "CPLEX solves this model in barrier preprocessing.";
   }
   Model model("Iteration limit LP");
   ASSERT_OK_AND_ASSIGN(
