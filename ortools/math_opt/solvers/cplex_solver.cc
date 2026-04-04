@@ -776,10 +776,10 @@ absl::StatusOr<TerminationProto> CplexSolver::ConvertTerminationReason(
             "Terminated because of an error; no integer solution. As "
             "iteration_limit was set, it's probably the reason");
       }
-      return InfeasibleTerminationProto(
-          is_maximize, solution_claims.dual_feasible_solution_exists
-                           ? FEASIBILITY_STATUS_FEASIBLE
-                           : FEASIBILITY_STATUS_UNDETERMINED);
+      // Numerical error with no feasible solution found.  This is NOT a proof
+      // of infeasibility — the solver failed, it did not conclude infeasible.
+      return TerminateForReason(is_maximize,
+                                TERMINATION_REASON_NUMERICAL_ERROR);
     case 131:  // CPXMIP_DETTIME_LIM_FEAS
     case 132:  // CPXMIP_DETTIME_LIM_INFEAS
       return LimitTerminationProto(
