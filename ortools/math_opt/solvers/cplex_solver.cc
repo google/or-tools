@@ -999,9 +999,10 @@ absl::StatusOr<CplexSolver::SolutionsAndClaims> CplexSolver::GetMipSolutions(
                                        cpx_stat == CPXMIP_INFEASIBLE};
 
   // Check consistency of solutions, bounds and statuses.
-  if (cpx_stat == CPX_STAT_OPTIMAL && num_solutions == 0) {
+  if ((cpx_stat == CPXMIP_OPTIMAL || cpx_stat == CPXMIP_OPTIMAL_TOL) &&
+      num_solutions == 0) {
     return absl::InternalError(
-        "CPX Status == CPX_STAT_OPTIMAL, but solution pool is empty.");
+        "CPX MIP Status is optimal, but solution pool is empty.");
   }
 
   return SolutionsAndClaims{.solutions = std::move(solutions),
