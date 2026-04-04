@@ -224,30 +224,30 @@ std::vector<std::string> CplexDynamicLibraryPotentialPaths() {
   // Search for canonical places.
   for (const absl::string_view version : kCplexVersions) {
 
-    absl::string_view version_maybe_wo_traling_0 = version;
+    absl::string_view version_maybe_wo_trailing_0 = version;
     if(version.back() == '0')
-      version_maybe_wo_traling_0 = version.substr(0, version.size()-1);
+      version_maybe_wo_trailing_0 = version.substr(0, version.size()-1);
 
 #if defined(_MSC_VER)  // Windows
     potential_paths.push_back(absl::StrCat(
-        "C:\\Program Files\\IBM\\ILOG\\CPLEX_Studio", version_maybe_wo_traling_0,
+        "C:\\Program Files\\IBM\\ILOG\\CPLEX_Studio", version_maybe_wo_trailing_0,
         "\\cplex\\bin\\x64_win64\\cplex", version, ".dll"));
 #elif defined(__APPLE__)  // macOS
 #if defined(__arm64__) || defined(__aarch64__)
     potential_paths.push_back(absl::StrCat(
-        "/Applications/CPLEX_Studio", version_maybe_wo_traling_0,
+        "/Applications/CPLEX_Studio", version_maybe_wo_trailing_0,
         "/cplex/bin/arm64_osx/libcplex", version, ".dylib"));
 #endif
     potential_paths.push_back(absl::StrCat(
-        "/Applications/CPLEX_Studio", version_maybe_wo_traling_0,
+        "/Applications/CPLEX_Studio", version_maybe_wo_trailing_0,
         "/cplex/bin/x86-64_osx/libcplex", version, ".dylib"));
 #elif defined(__GNUC__)  // Linux
     potential_paths.push_back(absl::StrCat(
-        "/opt/ibm/ILOG/CPLEX_Studio", version_maybe_wo_traling_0,
+        "/opt/ibm/ILOG/CPLEX_Studio", version_maybe_wo_trailing_0,
         "/cplex/bin/x86-64_linux/libcplex", version, ".so"));
 #else
     LOG(ERROR) << "OS Not recognized by cplex_environment.cc."
-              << " You won't be able to CPLEX.";
+              << " You won't be able to use CPLEX.";
 #endif
   }
   return potential_paths;

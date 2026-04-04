@@ -38,7 +38,6 @@
 #include "ortools/math_opt/solver_tests/mip_tests.h"
 #include "ortools/math_opt/solver_tests/status_tests.h"
 #include "ortools/math_opt/testing/param_name.h"
-#include "ortools/port/scoped_std_stream_capture.h"
 
 namespace operations_research {
 namespace math_opt {
@@ -169,7 +168,7 @@ SolveResultSupport CplexSolveResultSupport() {
 }
 
 // NOTE: we should also be able to use the LP tests, but many of them don't work
-// for gSCIP.
+// for CPLEX.
 INSTANTIATE_TEST_SUITE_P(
     CplexIpParameterTest, IpParameterTest,
     Values(IpParameterTestParameters{
