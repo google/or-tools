@@ -14,6 +14,7 @@
 #ifndef ORTOOLS_THIRD_PARTY_SOLVERS_CPLEX_ENVIRONMENT_H_
 #define ORTOOLS_THIRD_PARTY_SOLVERS_CPLEX_ENVIRONMENT_H_
 
+#include <functional>
 #include <vector>
 
 #include "absl/status/status.h"
