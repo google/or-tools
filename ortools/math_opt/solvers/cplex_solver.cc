@@ -1369,6 +1369,11 @@ absl::Status CplexSolver::AddNewLinearConstraints(
       // less equal constraint
       rhs.push_back(ub);
       sense.push_back('L');
+    } else {
+      // Free constraint: -∞ ≤ a·x ≤ +∞.  Must still create a CPLEX row so
+      // that constraint indices stay synchronized.
+      rhs.push_back(-CPX_INFBOUND);
+      sense.push_back('G');
     }
   }
 
@@ -1515,7 +1520,14 @@ absl::Status CplexSolver::UpdateLinearConstraints(
       rhs_index.emplace_back(update_data.source.constraint_index);
       rhs_data.emplace_back(update_data.new_lower_bound);
       sense_data.emplace_back('E');
+    } else if (update_data.new_lower_bound <= -CPX_INFBOUND &&
+               update_data.new_upper_bound >= CPX_INFBOUND) {
+      // Free constraint: -∞ ≤ a·x ≤ +∞.
+      rhs_index.emplace_back(update_data.source.constraint_index);
+      rhs_data.emplace_back(-CPX_INFBOUND);
+      sense_data.emplace_back('G');
     } else {
+      // Range constraint (both bounds finite, lb != ub).
       range_cons_index.emplace_back(update_data.source.constraint_index);
       range_cons_diff.emplace_back(update_data.new_upper_bound -
                                    update_data.new_lower_bound);
