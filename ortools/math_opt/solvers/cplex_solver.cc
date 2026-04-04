@@ -182,6 +182,15 @@ absl::StatusOr<CplexParametersProto> MergeParameters(
   }
 
   {
+    // Default: show parameter-change messages.
+    // Overridden to false in Solve() when a message callback is registered.
+    // Including it here ensures it is restored on each Solve() call, preventing
+    // the override from leaking across calls.
+    AddCplexParameterProto<bool>(
+        merged_parameters, "CPXPARAM_ParamDisplay", true);
+  }
+
+  {
     absl::Duration time_limit = absl::InfiniteDuration();
     if (solve_parameters.has_time_limit()) {
       ASSIGN_OR_RETURN(time_limit, util_time::DecodeGoogleApiProto(
@@ -1745,7 +1754,14 @@ absl::StatusOr<SolveResultProto> CplexSolver::Solve(
   // Set parameters
   RETURN_IF_ERROR(SetParameters(parameters, model_parameters));
 
+  // Per the MathOpt spec (parameters.proto, enable_output):
+  //   "if the solver supports message callback and the user registers a
+  //    callback for it, then this parameter value is ignored and no traces
+  //    are printed."
+  // Suppress console output and parameter-change diagnostics when a message
+  // callback is registered, matching the behavior of Gurobi and Xpress.
   if (message_cb != nullptr) {
+    RETURN_IF_ERROR(cplex_->SetParamBool(CPXPARAM_ScreenOutput, false));
     RETURN_IF_ERROR(cplex_->SetParamBool(CPXPARAM_ParamDisplay, false));
   }
 
@@ -1770,12 +1786,43 @@ absl::StatusOr<SolveResultProto> CplexSolver::Solve(
     }
   };
 
-  // Register message callback if needed.
+  // Channel state — declared before the cleanup so they are destroyed after it.
   CPXCHANNELptr result_channel = nullptr;
   CPXCHANNELptr warning_channel = nullptr;
   CPXCHANNELptr error_channel = nullptr;
   CPXCHANNELptr log_channel = nullptr;
   std::unique_ptr<BufferedMessageCallback> buffered_message_callback;
+
+  bool result_attached = false;
+  bool warning_attached = false;
+  bool error_attached = false;
+  bool log_attached = false;
+
+  // IMPORTANT: The cleanup MUST be constructed BEFORE any AddFuncDest call.
+  // If an AddFuncDest call fails mid-way (via RETURN_IF_ERROR), the cleanup
+  // detaches every channel that was successfully attached, preventing a
+  // use-after-free when buffered_message_callback is destroyed on stack
+  // unwind.
+  absl::Cleanup clear_message_cb = [&]() {
+    if (buffered_message_callback == nullptr) return;
+    void* const handle = buffered_message_callback.get();
+    auto detach = [&](const bool attached, CPXCHANNELptr channel,
+                      const char* label) {
+      if (!attached) return;
+      const absl::Status status =
+          cplex_->DelFuncDest(channel, handle, MessageCallbackImpl);
+      if (!status.ok()) {
+        LOG(ERROR) << "Failed to remove CPLEX " << label
+                   << " message callback: " << status;
+      }
+    };
+    detach(result_attached, result_channel, "result");
+    detach(warning_attached, warning_channel, "warning");
+    detach(error_attached, error_channel, "error");
+    detach(log_attached, log_channel, "log");
+  };
+
+  // Register message callback destinations on all four CPLEX channels.
   if (message_cb != nullptr) {
     buffered_message_callback =
         std::make_unique<BufferedMessageCallback>(message_cb);
@@ -1785,64 +1832,20 @@ absl::StatusOr<SolveResultProto> CplexSolver::Solve(
 
     void* const handle = buffered_message_callback.get();
 
-    if (result_channel != nullptr) {
+    auto attach = [&](CPXCHANNELptr channel,
+                      bool& attached) -> absl::Status {
+      if (channel == nullptr) return absl::OkStatus();
       RETURN_IF_ERROR(
-          cplex_->AddFuncDest(result_channel, handle, MessageCallbackImpl));
-    }
-    if (warning_channel != nullptr) {
-      RETURN_IF_ERROR(
-          cplex_->AddFuncDest(warning_channel, handle, MessageCallbackImpl));
-    }
-    if (error_channel != nullptr) {
-      RETURN_IF_ERROR(
-          cplex_->AddFuncDest(error_channel, handle, MessageCallbackImpl));
-    }
-    if (log_channel != nullptr) {
-      RETURN_IF_ERROR(
-          cplex_->AddFuncDest(log_channel, handle, MessageCallbackImpl));
-    }
-  }
+          cplex_->AddFuncDest(channel, handle, MessageCallbackImpl));
+      attached = true;
+      return absl::OkStatus();
+    };
 
-  // Ensure we remove the message callback when we exit this function.
-  absl::Cleanup clear_message_cb = [this, result_channel, warning_channel,
-                                    error_channel, log_channel,
-                                    &buffered_message_callback]() {
-    if (buffered_message_callback != nullptr) {
-      void* const handle = buffered_message_callback.get();
-      if (result_channel != nullptr) {
-        const absl::Status status =
-            cplex_->DelFuncDest(result_channel, handle, MessageCallbackImpl);
-        if (!status.ok()) {
-          LOG(ERROR) << "Failed to remove CPLEX result message callback: "
-                     << status;
-        }
-      }
-      if (warning_channel != nullptr) {
-        const absl::Status status =
-            cplex_->DelFuncDest(warning_channel, handle, MessageCallbackImpl);
-        if (!status.ok()) {
-          LOG(ERROR) << "Failed to remove CPLEX warning message callback: "
-                     << status;
-        }
-      }
-      if (error_channel != nullptr) {
-        const absl::Status status =
-            cplex_->DelFuncDest(error_channel, handle, MessageCallbackImpl);
-        if (!status.ok()) {
-          LOG(ERROR) << "Failed to remove CPLEX error message callback: "
-                     << status;
-        }
-      }
-      if (log_channel != nullptr) {
-        const absl::Status status =
-            cplex_->DelFuncDest(log_channel, handle, MessageCallbackImpl);
-        if (!status.ok()) {
-          LOG(ERROR) << "Failed to remove CPLEX log message callback: "
-                     << status;
-        }
-      }
-    }
-  };
+    RETURN_IF_ERROR(attach(result_channel, result_attached));
+    RETURN_IF_ERROR(attach(warning_channel, warning_attached));
+    RETURN_IF_ERROR(attach(error_channel, error_attached));
+    RETURN_IF_ERROR(attach(log_channel, log_attached));
+  }
 
   if (callback_registration.request_registration_size() > 0 || cb != nullptr) {
     return absl::UnimplementedError(
@@ -1871,6 +1874,10 @@ absl::StatusOr<SolveResultProto> CplexSolver::Solve(
   // even though the return code is handled correctly. Disabling screen output
   // after the solve phase ensures all solve-time messages are visible while
   // extraction noise is suppressed.
+  //
+  // This is unconditional: when message_cb was set, ScreenOutput is already
+  // false (set above); this handles the case where message_cb is null but
+  // enable_output was true.
   RETURN_IF_ERROR(
       cplex_->SetParamBool(CPXPARAM_ScreenOutput, false));
 
