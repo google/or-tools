@@ -74,6 +74,9 @@ class Cplex {
   absl::Status SetParamInt64(int param_id, int64_t value);
   absl::Status SetParamString(int param_id, std::string value);
 
+  // Resets all CPLEX parameters to their default values.
+  absl::Status SetDefaults();
+
   absl::Status NewCols(absl::Span<const double> lb, absl::Span<const double> ub,
                        absl::Span<const char> xctype,
                        absl::Span<const std::string> names);

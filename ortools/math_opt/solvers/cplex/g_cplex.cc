@@ -284,6 +284,12 @@ absl::Status Cplex::SetParamString(int param_id, std::string value) {
   return absl::OkStatus();
 }
 
+absl::Status Cplex::SetDefaults() {
+  int status_code = CPXsetdefaults(cpx_env_);
+  RETURN_IF_CPX_ERROR_ON_NONZERO(cpx_env_, status_code, "SetDefaults");
+  return absl::OkStatus();
+}
+
 absl::Status Cplex::NewCols(absl::Span<const double> lb,
                             absl::Span<const double> ub,
                             absl::Span<const char> xctype,

@@ -149,6 +149,9 @@ std::function<int(CPXCENVptr env, int whichparam, CPXLONG newvalue)>
 std::function<int(CPXCENVptr env, int whichparam, char const * newvalue_str)> 
   CPXsetstrparam = nullptr;
 
+std::function<int(CPXENVptr env)>
+  CPXsetdefaults = nullptr;
+
 std::function<int(CPXCENVptr env, CPXLPptr lp, int cnt, int const * indices, char const * sense)>
   CPXchgsense = nullptr;
 
@@ -330,6 +333,8 @@ void LoadCplexFunctions(DynamicLibrary* cplex_dynamic_library) {
                                      "CPXsetlongparam");
   cplex_dynamic_library->GetFunction(&CPXsetstrparam,
                                      "CPXsetstrparam");
+  cplex_dynamic_library->GetFunction(&CPXsetdefaults,
+                                     "CPXsetdefaults");
   cplex_dynamic_library->GetFunction(&CPXchgsense,
                                      "CPXchgsense");
   cplex_dynamic_library->GetFunction(&CPXchgrhs,

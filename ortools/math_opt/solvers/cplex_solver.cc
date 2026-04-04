@@ -1902,6 +1902,9 @@ absl::StatusOr<SolveResultProto> CplexSolver::Solve(
       ExtractSolveResultProto(start, model_parameters, had_cutoff,
                               had_iteration_limit, had_objective_limit));
 
+  // Reset CPLEX parameters so that settings from this Solve() call do not
+  // leak into subsequent Solve() calls (mirrors Gurobi's ResetParameters).
+  RETURN_IF_ERROR(cplex_->SetDefaults());
   RETURN_IF_ERROR(ResetModelParameters(model_parameters));
 
   return solve_result;

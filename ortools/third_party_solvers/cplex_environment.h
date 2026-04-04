@@ -303,6 +303,8 @@ extern std::function<int(CPXCENVptr env, int whichparam, CPXLONG newvalue)> CPXs
 
 extern std::function<int(CPXCENVptr env, int whichparam, char const *)> CPXsetstrparam;
 
+extern std::function<int(CPXENVptr env)> CPXsetdefaults;
+
 extern std::function<int(CPXCENVptr env, CPXLPptr lp, int cnt, int const * indices, char const * sense)> CPXchgsense;
 
 extern std::function<int(CPXCENVptr env, CPXLPptr lp, int cnt, int const * indices, double const * values)> CPXchgrhs;
