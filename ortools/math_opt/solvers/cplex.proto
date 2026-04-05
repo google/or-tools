@@ -35,12 +35,12 @@ message CplexParametersProto {
 
   message ParameterInt32 {
     string name = 1;
-    fixed32 value = 2;
+    int32 value = 2;
   }
 
   message ParameterInt64 {
     string name = 1;
-    fixed64 value = 2;
+    int64 value = 2;
   }
 
   message ParameterString {
