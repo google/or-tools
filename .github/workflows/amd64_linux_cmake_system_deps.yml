@@ -4,6 +4,7 @@ name: amd64 Linux CMake System Dependencies
 on:
   push:
     branches:
+      - ci
       - main
       - v99bugfix
   workflow_dispatch:

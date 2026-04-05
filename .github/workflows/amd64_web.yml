@@ -2,7 +2,12 @@
 name: amd64 Web
 
 # still experimental
-on: [workflow_dispatch]
+on:
+  push:
+    branches:
+      - ci
+      - main
+  workflow_dispatch:
 
 concurrency:
   group: ${{github.workflow}}-${{github.ref}}

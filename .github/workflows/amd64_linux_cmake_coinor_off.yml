@@ -4,6 +4,7 @@ name: amd64 Linux CMake CoinOR OFF
 on:
   push:
     branches:
+      - ci
       - main
       - v99bugfix
   workflow_dispatch:

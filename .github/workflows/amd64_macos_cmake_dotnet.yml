@@ -4,6 +4,7 @@ name: amd64 MacOS CMake .Net
 on:
   push:
     branches:
+      - ci
       - main
       - v99bugfix
   workflow_dispatch:

@@ -5,6 +5,10 @@ on:
   pull_request:
     branches:
       - main
+  push:
+    branches:
+      - ci
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref_name }}

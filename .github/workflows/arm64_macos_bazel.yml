@@ -4,6 +4,7 @@ name: arm64 MacOS Bazel
 on:
   push:
     branches:
+      - ci
       - main
       - v99bugfix
   workflow_dispatch:

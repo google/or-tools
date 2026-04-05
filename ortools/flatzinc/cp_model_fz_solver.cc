@@ -519,7 +519,8 @@ std::shared_ptr<SetVariable> CpModelProtoWithMapping::LookupSetVarAt(
     const int true_literal = LookupConstant(1);
     const fz::Domain domain = argument.domains[pos];
     if (domain.is_interval) {
-      for (int64_t value = domain.values[0]; value <= domain.values[1]; ++value) {
+      for (int64_t value = domain.values[0]; value <= domain.values[1];
+           ++value) {
         result->sorted_values.push_back(value);
         result->var_indices.push_back(true_literal);
       }

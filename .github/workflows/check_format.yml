@@ -3,6 +3,7 @@ name: Check Format
 on:
   push:
     branches:
+      - ci
       - main
       - v99bugfix
   workflow_dispatch:
