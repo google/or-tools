@@ -305,12 +305,12 @@ class CplexParameters:
 
     Example use:
       cplex = CplexParameters()
-      cplex.int32_param_values['CPXPARAM_Threads'] = 8
+      cplex.int_param_values['CPXPARAM_Threads'] = 8
     """
 
     bool_param_values: Dict[str, bool] = dataclasses.field(default_factory=dict)
-    int32_param_values: Dict[str, int] = dataclasses.field(default_factory=dict)
-    int64_param_values: Dict[str, int] = dataclasses.field(default_factory=dict)
+    int_param_values: Dict[str, int] = dataclasses.field(default_factory=dict)
+    long_param_values: Dict[str, int] = dataclasses.field(default_factory=dict)
     double_param_values: Dict[str, float] = dataclasses.field(default_factory=dict)
     string_param_values: Dict[str, str] = dataclasses.field(default_factory=dict)
 
@@ -322,13 +322,13 @@ class CplexParameters:
                     parameter_bool=cplex_pb2.CplexParametersProto.ParameterBool(name=key, value=val)
                 )
             )
-        for key, val in self.int32_param_values.items():
+        for key, val in self.int_param_values.items():
             parameters.append(
                 cplex_pb2.CplexParametersProto.Parameter(
                     parameter_int32=cplex_pb2.CplexParametersProto.ParameterInt32(name=key, value=val)
                 )
             )
-        for key, val in self.int64_param_values.items():
+        for key, val in self.long_param_values.items():
             parameters.append(
                 cplex_pb2.CplexParametersProto.Parameter(
                     parameter_int64=cplex_pb2.CplexParametersProto.ParameterInt64(name=key, value=val)
@@ -354,8 +354,8 @@ def parse_cplex_parameters(
 ) -> CplexParameters:
     """Returns the CplexParameters equivalent to the input proto."""
     bool_param_values = {}
-    int32_param_values = {}
-    int64_param_values = {}
+    int_param_values = {}
+    long_param_values = {}
     double_param_values = {}
     string_param_values = {}
 
@@ -365,13 +365,13 @@ def parse_cplex_parameters(
                 raise ValueError(f"Duplicate Cplex bool parameter name: {param.parameter_bool.name}.")
             bool_param_values[param.parameter_bool.name] = param.parameter_bool.value
         elif param.HasField("parameter_int32"):
-            if param.parameter_int32.name in int32_param_values:
-                raise ValueError(f"Duplicate Cplex int32 parameter name: {param.parameter_int32.name}.")
-            int32_param_values[param.parameter_int32.name] = param.parameter_int32.value
+            if param.parameter_int32.name in int_param_values:
+                raise ValueError(f"Duplicate Cplex int parameter name: {param.parameter_int32.name}.")
+            int_param_values[param.parameter_int32.name] = param.parameter_int32.value
         elif param.HasField("parameter_int64"):
-            if param.parameter_int64.name in int64_param_values:
-                raise ValueError(f"Duplicate Cplex int64 parameter name: {param.parameter_int64.name}.")
-            int64_param_values[param.parameter_int64.name] = param.parameter_int64.value
+            if param.parameter_int64.name in long_param_values:
+                raise ValueError(f"Duplicate Cplex long parameter name: {param.parameter_int64.name}.")
+            long_param_values[param.parameter_int64.name] = param.parameter_int64.value
         elif param.HasField("parameter_double"):
             if param.parameter_double.name in double_param_values:
                 raise ValueError(f"Duplicate Cplex double parameter name: {param.parameter_double.name}.")
@@ -383,8 +383,8 @@ def parse_cplex_parameters(
 
     return CplexParameters(
         bool_param_values=bool_param_values,
-        int32_param_values=int32_param_values,
-        int64_param_values=int64_param_values,
+        int_param_values=int_param_values,
+        long_param_values=long_param_values,
         double_param_values=double_param_values,
         string_param_values=string_param_values,
     )
