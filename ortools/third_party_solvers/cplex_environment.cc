@@ -101,7 +101,7 @@ std::function<int(CPXCENVptr env, CPXCLPptr lp)>
 std::function<int(CPXCENVptr env, CPXCLPptr lp, int *solnmethod_p, int *solntype_p, int *pfeasind_p, int *dfeasind_p)>
   CPXsolninfo = nullptr;
 
-std::function<int(CPXCENVptr env, CPXCLPptr lp)> 
+std::function<int(CPXCENVptr env, CPXCLPptr lp)>
   CPXgetobjsen = nullptr;
 
 std::function<int(CPXCENVptr env, CPXLPptr lp, int numcoefs, int const *rowlist, int const *collist, double const *vallist)>
@@ -146,7 +146,7 @@ std::function<int(CPXCENVptr env, int whichparam, int newvalue)>
 std::function<int(CPXCENVptr env, int whichparam, CPXLONG newvalue)>
   CPXsetlongparam = nullptr;
 
-std::function<int(CPXCENVptr env, int whichparam, char const * newvalue_str)> 
+std::function<int(CPXCENVptr env, int whichparam, char const * newvalue_str)>
   CPXsetstrparam = nullptr;
 
 std::function<int(CPXENVptr env)>
@@ -155,7 +155,7 @@ std::function<int(CPXENVptr env)>
 std::function<int(CPXCENVptr env, CPXLPptr lp, int cnt, int const * indices, char const * sense)>
   CPXchgsense = nullptr;
 
-std::function<int(CPXCENVptr env, CPXLPptr lp, int cnt, int const * indices, double const * values)> 
+std::function<int(CPXCENVptr env, CPXLPptr lp, int cnt, int const * indices, double const * values)>
   CPXchgrhs = nullptr;
 
 std::function<int(CPXCENVptr env, CPXLPptr lp, int *delstat)>
@@ -164,28 +164,28 @@ std::function<int(CPXCENVptr env, CPXLPptr lp, int *delstat)>
 std::function<int(CPXCENVptr env, CPXLPptr lp, int *delstat)>
   CPXdelsetrows = nullptr;
 
-std::function<int(CPXCENVptr env, char const * name_str, int * whichparam_p)> 
+std::function<int(CPXCENVptr env, char const * name_str, int * whichparam_p)>
   CPXgetparamnum = nullptr;
 
-std::function<int(CPXCENVptr env, CPXCLPptr lp, double * lb, int begin, int end)> 
+std::function<int(CPXCENVptr env, CPXCLPptr lp, double * lb, int begin, int end)>
   CPXgetlb = nullptr;
 
-std::function<int(CPXCENVptr env, CPXCLPptr lp, double * lb, int begin, int end)> 
+std::function<int(CPXCENVptr env, CPXCLPptr lp, double * lb, int begin, int end)>
   CPXgetub = nullptr;
 
-std::function<int(CPXENVptr env, volatile int * terminate_p)> 
+std::function<int(CPXENVptr env, volatile int * terminate_p)>
   CPXsetterminate = nullptr;
 
-std::function<int(CPXCENVptr env, CPXCHANNELptr * cpxresults_p, CPXCHANNELptr * cpxwarning_p, CPXCHANNELptr * cpxerror_p, CPXCHANNELptr * cpxlog_p)> 
+std::function<int(CPXCENVptr env, CPXCHANNELptr * cpxresults_p, CPXCHANNELptr * cpxwarning_p, CPXCHANNELptr * cpxerror_p, CPXCHANNELptr * cpxlog_p)>
   CPXgetchannels = nullptr;
 
-std::function<int(CPXCENVptr env, CPXCHANNELptr channel, void * handle, void(CPXPUBLIC *msgfunction)(void *, const char *))> 
+std::function<int(CPXCENVptr env, CPXCHANNELptr channel, void * handle, void(CPXPUBLIC *msgfunction)(void *, const char *))>
   CPXaddfuncdest = nullptr;
 
-std::function<int(CPXCENVptr env, CPXCHANNELptr channel, void * handle, void(CPXPUBLIC *msgfunction)(void *, const char *))> 
+std::function<int(CPXCENVptr env, CPXCHANNELptr channel, void * handle, void(CPXPUBLIC *msgfunction)(void *, const char *))>
   CPXdelfuncdest = nullptr;
 
-std::function<int(CPXCENVptr env, CPXLPptr lp, int rcnt, double const * rhs, char const * sense, double const * rngval, char ** rowname)> 
+std::function<int(CPXCENVptr env, CPXLPptr lp, int rcnt, double const * rhs, char const * sense, double const * rngval, char ** rowname)>
   CPXnewrows = nullptr;
 
 std::function<CPXCCHARptr(CPXCENVptr env)>
@@ -373,7 +373,7 @@ absl::Status LoadCplexDynamicLibrary(std::string& cplexpath) {
   absl::MutexLock lock(&mutex);
 
   absl::call_once(cplex_loading_done, []() {
-    const std::vector<std::string> canonical_paths = 
+    const std::vector<std::string> canonical_paths =
       CplexDynamicLibraryPotentialPaths();
     for (const std::string& path : canonical_paths) {
       if (cplex_library->TryToLoad(path)) {

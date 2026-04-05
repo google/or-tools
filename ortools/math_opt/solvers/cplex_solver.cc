@@ -1677,8 +1677,7 @@ absl::StatusOr<bool> CplexSolver::Update(const ModelUpdateProto& model_update) {
   UpdateCplexIndices(deleted_indices);
 
   if (!deleted_indices.linear_constraints.empty()) {
-    RETURN_IF_ERROR(
-        cplex_->DelSetRows(deleted_indices.linear_constraints));
+    RETURN_IF_ERROR(cplex_->DelSetRows(deleted_indices.linear_constraints));
     num_cplex_lin_cons_ -= deleted_indices.linear_constraints.size();
   }
 
@@ -1852,8 +1851,7 @@ absl::StatusOr<SolveResultProto> CplexSolver::Solve(
 
     void* const handle = buffered_message_callback.get();
 
-    auto attach = [&](CPXCHANNELptr channel,
-                      bool& attached) -> absl::Status {
+    auto attach = [&](CPXCHANNELptr channel, bool& attached) -> absl::Status {
       if (channel == nullptr) return absl::OkStatus();
       RETURN_IF_ERROR(
           cplex_->AddFuncDest(channel, handle, MessageCallbackImpl));
@@ -1895,16 +1893,15 @@ absl::StatusOr<SolveResultProto> CplexSolver::Solve(
 
   // Suppress CPLEX's default stderr output during result extraction. CPLEX
   // prints error messages (e.g., "CPLEX Error 1217: No solution exists.") to
-  // stderr when querying stats that are inapplicable to the current solve state,
-  // even though the return code is handled correctly. Disabling screen output
-  // after the solve phase ensures all solve-time messages are visible while
-  // extraction noise is suppressed.
+  // stderr when querying stats that are inapplicable to the current solve
+  // state, even though the return code is handled correctly. Disabling screen
+  // output after the solve phase ensures all solve-time messages are visible
+  // while extraction noise is suppressed.
   //
   // This is unconditional: when message_cb was set, ScreenOutput is already
   // false (set above); this handles the case where message_cb is null but
   // enable_output was true.
-  RETURN_IF_ERROR(
-      cplex_->SetParamBool(CPXPARAM_ScreenOutput, false));
+  RETURN_IF_ERROR(cplex_->SetParamBool(CPXPARAM_ScreenOutput, false));
 
   const bool had_cutoff = parameters.has_cutoff_limit();
   const bool had_iteration_limit = parameters.has_iteration_limit();

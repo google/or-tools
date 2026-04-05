@@ -42,7 +42,7 @@
 // The three macros below correspond to these conventions.
 #define RETURN_IF_CPX_ERROR_ON_NONZERO(env, status, caller_string)            \
   if (status != 0) {                                                          \
-    char buffer[CPXMESSAGEBUFSIZE] = {};                                           \
+    char buffer[CPXMESSAGEBUFSIZE] = {};                                      \
     CPXgeterrorstring(env, status, buffer);                                   \
     return absl::InternalError(absl::StrCat("CPLEX Error in ", caller_string, \
                                             "-> ", status, ": ", buffer));    \
