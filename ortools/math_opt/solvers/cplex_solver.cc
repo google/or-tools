@@ -1502,6 +1502,12 @@ absl::Status CplexSolver::UpdateLinearConstraints(
         ((update_data.source.upper_bound >= CPX_INFBOUND) &&
          (update_data.new_upper_bound >= CPX_INFBOUND));
     if (same_upper_bound && same_lower_bound) continue;
+
+    // Validate the new bounds before mutating cached state, matching the
+    // initial-load validation in AddNewLinearConstraints().
+    RETURN_IF_ERROR(SafeCplexDouble(update_data.new_lower_bound));
+    RETURN_IF_ERROR(SafeCplexDouble(update_data.new_upper_bound));
+
     // Save into linear_constraints_map_[id] the new bounds for the linear
     // constraint.
     update_data.source.lower_bound = update_data.new_lower_bound;
@@ -1612,6 +1618,16 @@ absl::StatusOr<bool> CplexSolver::Update(const ModelUpdateProto& model_update) {
 
   // Update bounds
   const auto& var_updates = model_update.variable_updates();
+
+  // Validate all new variable bounds before passing them to CPLEX, matching
+  // the initial-load validation in AddNewVariables().
+  for (int i = 0; i < var_updates.lower_bounds().ids_size(); ++i) {
+    RETURN_IF_ERROR(SafeCplexDouble(var_updates.lower_bounds().values(i)));
+  }
+  for (int i = 0; i < var_updates.upper_bounds().ids_size(); ++i) {
+    RETURN_IF_ERROR(SafeCplexDouble(var_updates.upper_bounds().values(i)));
+  }
+
   if (!var_updates.lower_bounds().ids().empty()) {
     std::vector<int> indices;
     std::vector<double> values;
