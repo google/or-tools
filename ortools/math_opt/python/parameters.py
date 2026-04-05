@@ -297,6 +297,100 @@ def parse_glpk_parameters(
 
 
 @dataclasses.dataclass
+class CplexParameters:
+    """CPLEX specific parameters for solving.
+
+    See https://www.ibm.com/docs/en/cofz/22.1.2?topic=SS9UKU_22.1.2/com.ibm.cplex.zos.help/CPLEX/Parameters/topics/introAccess.htm
+    for a list of possible parameters.
+
+    Example use:
+      cplex = CplexParameters()
+      cplex.int32_param_values['CPXPARAM_Threads'] = 8
+    """
+
+    bool_param_values: Dict[str, bool] = dataclasses.field(default_factory=dict)
+    int32_param_values: Dict[str, int] = dataclasses.field(default_factory=dict)
+    int64_param_values: Dict[str, int] = dataclasses.field(default_factory=dict)
+    double_param_values: Dict[str, float] = dataclasses.field(default_factory=dict)
+    string_param_values: Dict[str, str] = dataclasses.field(default_factory=dict)
+
+    def to_proto(self) -> cplex_pb2.CplexParametersProto:
+        parameters = []
+        for key, val in self.bool_param_values.items():
+            parameters.append(
+                cplex_pb2.CplexParametersProto.Parameter(
+                    parameter_bool=cplex_pb2.CplexParametersProto.ParameterBool(name=key, value=val)
+                )
+            )
+        for key, val in self.int32_param_values.items():
+            parameters.append(
+                cplex_pb2.CplexParametersProto.Parameter(
+                    parameter_int32=cplex_pb2.CplexParametersProto.ParameterInt32(name=key, value=val)
+                )
+            )
+        for key, val in self.int64_param_values.items():
+            parameters.append(
+                cplex_pb2.CplexParametersProto.Parameter(
+                    parameter_int64=cplex_pb2.CplexParametersProto.ParameterInt64(name=key, value=val)
+                )
+            )
+        for key, val in self.double_param_values.items():
+            parameters.append(
+                cplex_pb2.CplexParametersProto.Parameter(
+                    parameter_double=cplex_pb2.CplexParametersProto.ParameterDouble(name=key, value=val)
+                )
+            )
+        for key, val in self.string_param_values.items():
+            parameters.append(
+                cplex_pb2.CplexParametersProto.Parameter(
+                    parameter_string=cplex_pb2.CplexParametersProto.ParameterString(name=key, value=val)
+                )
+            )
+        return cplex_pb2.CplexParametersProto(parameters=parameters)
+
+
+def parse_cplex_parameters(
+    proto: cplex_pb2.CplexParametersProto,
+) -> CplexParameters:
+    """Returns the CplexParameters equivalent to the input proto."""
+    bool_param_values = {}
+    int32_param_values = {}
+    int64_param_values = {}
+    double_param_values = {}
+    string_param_values = {}
+
+    for param in proto.parameters:
+        if param.HasField("parameter_bool"):
+            if param.parameter_bool.name in bool_param_values:
+                raise ValueError(f"Duplicate Cplex bool parameter name: {param.parameter_bool.name}.")
+            bool_param_values[param.parameter_bool.name] = param.parameter_bool.value
+        elif param.HasField("parameter_int32"):
+            if param.parameter_int32.name in int32_param_values:
+                raise ValueError(f"Duplicate Cplex int32 parameter name: {param.parameter_int32.name}.")
+            int32_param_values[param.parameter_int32.name] = param.parameter_int32.value
+        elif param.HasField("parameter_int64"):
+            if param.parameter_int64.name in int64_param_values:
+                raise ValueError(f"Duplicate Cplex int64 parameter name: {param.parameter_int64.name}.")
+            int64_param_values[param.parameter_int64.name] = param.parameter_int64.value
+        elif param.HasField("parameter_double"):
+            if param.parameter_double.name in double_param_values:
+                raise ValueError(f"Duplicate Cplex double parameter name: {param.parameter_double.name}.")
+            double_param_values[param.parameter_double.name] = param.parameter_double.value
+        elif param.HasField("parameter_string"):
+            if param.parameter_string.name in string_param_values:
+                raise ValueError(f"Duplicate Cplex string parameter name: {param.parameter_string.name}.")
+            string_param_values[param.parameter_string.name] = param.parameter_string.value
+
+    return CplexParameters(
+        bool_param_values=bool_param_values,
+        int32_param_values=int32_param_values,
+        int64_param_values=int64_param_values,
+        double_param_values=double_param_values,
+        string_param_values=string_param_values,
+    )
+
+
+@dataclasses.dataclass
 class SolveParameters:
     """Parameters to control a single solve.
 
@@ -450,8 +544,8 @@ class SolveParameters:
     xpress: xpress_pb2.XpressParametersProto = dataclasses.field(
         default_factory=xpress_pb2.XpressParametersProto
     )
-    cplex: cplex_pb2.CplexParametersProto = dataclasses.field(
-        default_factory=cplex_pb2.CplexParametersProto
+    cplex: CplexParameters = dataclasses.field(
+        default_factory=CplexParameters
     )
 
     def to_proto(self) -> math_opt_parameters_pb2.SolveParametersProto:
@@ -472,7 +566,7 @@ class SolveParameters:
             glpk=self.glpk.to_proto(),
             highs=self.highs,
             xpress=self.xpress,
-            cplex=self.cplex,
+            cplex=self.cplex.to_proto(),
         )
         if self.time_limit is not None:
             result.time_limit.FromTimedelta(self.time_limit)
@@ -521,7 +615,7 @@ def parse_solve_parameters(
         glpk=parse_glpk_parameters(proto.glpk),
         highs=proto.highs,
         xpress=proto.xpress,
-        cplex=proto.cplex,
+        cplex=parse_cplex_parameters(proto.cplex),
     )
     if proto.HasField("time_limit"):
         result.time_limit = proto.time_limit.ToTimedelta()
