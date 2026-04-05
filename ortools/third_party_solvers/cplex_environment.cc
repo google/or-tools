@@ -377,7 +377,7 @@ absl::Status LoadCplexDynamicLibrary(std::string& cplexpath) {
       CplexDynamicLibraryPotentialPaths();
     for (const std::string& path : canonical_paths) {
       if (cplex_library->TryToLoad(path)) {
-        LOG(INFO) << "Found the CPLEX library in " << path << ".";
+        VLOG(1) << "Found the CPLEX library in " << path << ".";
         cplex_lib_path->clear();
         std::filesystem::path p(path);
         p.remove_filename();
@@ -387,7 +387,7 @@ absl::Status LoadCplexDynamicLibrary(std::string& cplexpath) {
     }
 
     if (cplex_library->LibraryIsLoaded()) {
-      LOG(INFO) << "Loading all CPLEX functions";
+      VLOG(1) << "Loading all CPLEX functions";
       LoadCplexFunctions(cplex_library);
       *cplex_load_status = absl::OkStatus();
     }
