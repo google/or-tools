@@ -175,20 +175,10 @@ absl::StatusOr<CplexParametersProto> MergeParameters(
     const bool is_minimization, const bool supports_objective_limit) {
   CplexParametersProto merged_parameters;
 
-  {
-    AddCplexParameterProto<bool>(
-        merged_parameters, "CPXPARAM_ScreenOutput",
-        solve_parameters.enable_output() ? true : false);
-  }
-
-  {
-    // Default: show parameter-change messages.
-    // Overridden to false in Solve() when a message callback is registered.
-    // Including it here ensures it is restored on each Solve() call, preventing
-    // the override from leaking across calls.
-    AddCplexParameterProto<bool>(
-        merged_parameters, "CPXPARAM_ParamDisplay", true);
-  }
+  // NOTE: CPXPARAM_ScreenOutput and CPXPARAM_ParamDisplay are intentionally
+  // NOT set here.  They are output-routing concerns handled in Solve() before
+  // this parameter set is applied, so that console suppression is already in
+  // effect when CPLEX processes subsequent parameter changes.
 
   {
     absl::Duration time_limit = absl::InfiniteDuration();
@@ -1780,18 +1770,19 @@ absl::StatusOr<SolveResultProto> CplexSolver::Solve(
   ASSIGN_OR_RETURN(const InvertedBounds inverted_bounds, ListInvertedBounds());
   RETURN_IF_ERROR(inverted_bounds.ToStatus());
 
-  // Set parameters
-  RETURN_IF_ERROR(SetParameters(parameters, model_parameters));
-
+  // Set output-routing parameters before applying solver parameters, so that
+  // console suppression is in effect when CPLEX processes parameter changes.
   // Per the MathOpt spec (parameters.proto, enable_output):
   //   "if the solver supports message callback and the user registers a
   //    callback for it, then this parameter value is ignored and no traces
   //    are printed."
-  // Suppress console output and parameter-change diagnostics when a message
-  // callback is registered, matching the behavior of Gurobi and Xpress.
   if (message_cb != nullptr) {
     RETURN_IF_ERROR(cplex_->SetParamBool(CPXPARAM_ScreenOutput, false));
     RETURN_IF_ERROR(cplex_->SetParamBool(CPXPARAM_ParamDisplay, false));
+  } else {
+    RETURN_IF_ERROR(cplex_->SetParamBool(CPXPARAM_ScreenOutput,
+                                         parameters.enable_output()));
+    RETURN_IF_ERROR(cplex_->SetParamBool(CPXPARAM_ParamDisplay, true));
   }
 
   // We use a volatile int as the terminate flag for CPLEX.
@@ -1875,6 +1866,11 @@ absl::StatusOr<SolveResultProto> CplexSolver::Solve(
     RETURN_IF_ERROR(attach(error_channel, error_attached));
     RETURN_IF_ERROR(attach(log_channel, log_attached));
   }
+
+  // Set solver parameters (time limits, tolerances, algorithm choices, etc.)
+  // Applied after channel attachment so that any diagnostics CPLEX emits
+  // during parameter setup are routed through the user's message callback.
+  RETURN_IF_ERROR(SetParameters(parameters, model_parameters));
 
   if (callback_registration.request_registration_size() > 0 || cb != nullptr) {
     return absl::UnimplementedError(
