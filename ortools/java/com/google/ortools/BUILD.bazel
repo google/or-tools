@@ -44,6 +44,7 @@ cc_binary(
     }),
     visibility = ["//visibility:public"],
     deps = [
+        "@rules_jni//jni:libjvm",
         "//ortools/algorithms/java:knapsacksolver_cc",
         "//ortools/graph/java:graph_cc",
         "//ortools/init/java:init_cc",
@@ -64,6 +65,7 @@ cc_binary(
     }),
     visibility = ["//visibility:public"],
     deps = [
+        "@rules_jni//jni:libjvm",
         "//ortools/algorithms/java:knapsacksolver_cc",
         "//ortools/graph/java:graph_cc",
         "//ortools/init/java:init_cc",
