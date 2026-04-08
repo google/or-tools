@@ -54,26 +54,30 @@ jobs:
         include:
           # Map build to CMake
           - build: cpp
-            cmake: ''
+            cmake_options: '-DBUILD_DEPS=ON'
           - build: java
-            cmake: '-DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF -DBUILD_JAVA=ON -DSKIP_GPG=ON'
+            cmake_options: '-DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF -DBUILD_JAVA=ON -DSKIP_GPG=ON'
           - build: dotnet
-            cmake: '-DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF -DBUILD_DOTNET=ON'
+            cmake_options: '-DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF -DBUILD_DOTNET=ON'
           - build: python
-            cmake: '-DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF -DBUILD_PYTHON=ON'
+            cmake_options: '-DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF -DBUILD_PYTHON=ON'
           # Map os to platform / generator
           - os: ubuntu-latest
             platform: linux
             generator: Ninja
+            cmake_flags: '-DCMAKE_BUILD_TYPE=Release -DCMAKE_C_FLAGS_RELEASE="-O1 -DNDEBUG" -DCMAKE_CXX_FLAGS_RELEASE="-O1 -DNDEBUG"'
           - os: macos-15-intel
             platform: macos
             generator: Xcode
+            cmake_flags: '-DCMAKE_CONFIGURATION_TYPES="Release" -DCMAKE_C_FLAGS_RELEASE="-O1 -DNDEBUG" -DCMAKE_CXX_FLAGS_RELEASE="-O1 -DNDEBUG"'
           - os: macos-latest
             platform: macos
             generator: Xcode
+            cmake_flags: '-DCMAKE_CONFIGURATION_TYPES="Release" -DCMAKE_C_FLAGS_RELEASE="-O1 -DNDEBUG" -DCMAKE_CXX_FLAGS_RELEASE="-O1 -DNDEBUG"'
           - os: windows-2022
             platform: windows
             generator: 'Visual Studio 17 2022'
+            cmake_flags: '-DCMAKE_CONFIGURATION_TYPES="Release"'
     runs-on: ${{matrix.os}}
     steps:
     - uses: actions/checkout@v6
@@ -110,15 +114,13 @@ jobs:
         -S.
         -Bbuild
         -G "${{matrix.generator}}"
-        -DBUILD_DEPS=ON
-        -DCMAKE_BUILD_TYPE=Release
-        -DCMAKE_C_FLAGS_RELEASE="-O1 -DNDEBUG"
-        -DCMAKE_CXX_FLAGS_RELEASE="-O1 -DNDEBUG"
+        ${{matrix.cmake_options}}
+        ${{matrix.cmake_flags}}
         -DCMAKE_INSTALL_PREFIX=install
         -DUSE_COINOR=OFF
+        -DUSE_GLPK=OFF
         -DUSE_HIGHS=OFF
         -DUSE_SCIP=OFF
-        ${{matrix.cmake}}
     - name: Build
       run: cmake --build build --config Release -j --target ${{ matrix.generator == 'Ninja' && 'all' || 'ALL_BUILD'}}
     - name: Test
