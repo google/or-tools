@@ -102,30 +102,30 @@ target_link_libraries(${NAME} PRIVATE
   ${PROJECT_NAMESPACE}::ortools_proto)
 
 # solve
-add_executable(solve)
-target_sources(solve PRIVATE "solve.cc")
-target_include_directories(solve PRIVATE
-  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
-  $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>
-)
-target_compile_features(solve PRIVATE cxx_std_17)
-target_link_libraries(solve PRIVATE ${PROJECT_NAMESPACE}::ortools)
-
-include(GNUInstallDirs)
-if(APPLE)
-  set_target_properties(solve PROPERTIES INSTALL_RPATH
-    "@loader_path/../${CMAKE_INSTALL_LIBDIR};@loader_path")
-elseif(UNIX)
-  cmake_path(RELATIVE_PATH CMAKE_INSTALL_FULL_LIBDIR
-             BASE_DIRECTORY ${CMAKE_INSTALL_FULL_BINDIR}
-             OUTPUT_VARIABLE libdir_relative_path)
-  set_target_properties(solve PROPERTIES INSTALL_RPATH
-    "$ORIGIN/${libdir_relative_path}")
+if(NOT EMSCRIPTEN)
+  add_executable(solve)
+  target_sources(solve PRIVATE "solve.cc")
+  target_include_directories(solve PRIVATE
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
+    $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>
+  )
+  target_compile_features(solve PRIVATE cxx_std_17)
+  target_link_libraries(solve PRIVATE ${PROJECT_NAMESPACE}::ortools)
+  include(GNUInstallDirs)
+  if(APPLE)
+    set_target_properties(solve PROPERTIES INSTALL_RPATH
+      "@loader_path/../${CMAKE_INSTALL_LIBDIR};@loader_path")
+  elseif(UNIX)
+    cmake_path(RELATIVE_PATH CMAKE_INSTALL_FULL_LIBDIR
+      BASE_DIRECTORY ${CMAKE_INSTALL_FULL_BINDIR}
+      OUTPUT_VARIABLE libdir_relative_path)
+    set_target_properties(solve PROPERTIES INSTALL_RPATH
+      "$ORIGIN/${libdir_relative_path}")
+  endif()
+  install(TARGETS solve
+    EXPORT ${PROJECT_NAME}Targets
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 endif()
-
-install(TARGETS solve
-  EXPORT ${PROJECT_NAME}Targets
-  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 if(BUILD_TESTING)
   if (APPLE)

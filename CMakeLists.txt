@@ -110,7 +110,11 @@ include(CMakeDependentOption)
 
 # Optional components (enabled by default)
 ## Flatzinc
-option(BUILD_FLATZINC "Build flatzinc" ON)
+if(EMSCRIPTEN)
+  set(BUILD_FLATZINC OFF)
+else()
+  option(BUILD_FLATZINC "Build flatzinc" ON)
+endif()
 message(STATUS "Build Flatzinc: ${BUILD_FLATZINC}")
 
 ## MathOpt

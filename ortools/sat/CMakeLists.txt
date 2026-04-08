@@ -74,44 +74,44 @@ if(BUILD_TESTING)
 endif()
 
 # Sat Runner
-add_executable(sat_runner)
-target_sources(sat_runner PRIVATE "sat_runner.cc")
-target_include_directories(sat_runner PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_compile_features(sat_runner PRIVATE cxx_std_17)
-target_link_libraries(sat_runner PRIVATE ${PROJECT_NAMESPACE}::ortools)
+if(NOT EMSCRIPTEN)
+  add_executable(sat_runner)
+  target_sources(sat_runner PRIVATE "sat_runner.cc")
+  target_include_directories(sat_runner PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+  target_compile_features(sat_runner PRIVATE cxx_std_17)
+  target_link_libraries(sat_runner PRIVATE ${PROJECT_NAMESPACE}::ortools)
+  include(GNUInstallDirs)
+  if(APPLE)
+    set_target_properties(sat_runner PROPERTIES INSTALL_RPATH
+      "@loader_path/../${CMAKE_INSTALL_LIBDIR};@loader_path")
+  elseif(UNIX)
+    cmake_path(RELATIVE_PATH CMAKE_INSTALL_FULL_LIBDIR
+      BASE_DIRECTORY ${CMAKE_INSTALL_FULL_BINDIR}
+      OUTPUT_VARIABLE libdir_relative_path)
+    set_target_properties(sat_runner PROPERTIES
+      INSTALL_RPATH "$ORIGIN/${libdir_relative_path}")
+  endif()
+  install(TARGETS sat_runner
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
-include(GNUInstallDirs)
-if(APPLE)
-  set_target_properties(sat_runner PROPERTIES INSTALL_RPATH
-    "@loader_path/../${CMAKE_INSTALL_LIBDIR};@loader_path")
-elseif(UNIX)
-  cmake_path(RELATIVE_PATH CMAKE_INSTALL_FULL_LIBDIR
-             BASE_DIRECTORY ${CMAKE_INSTALL_FULL_BINDIR}
-             OUTPUT_VARIABLE libdir_relative_path)
-  set_target_properties(sat_runner PROPERTIES
-                        INSTALL_RPATH "$ORIGIN/${libdir_relative_path}")
+  # Circuit main
+  add_executable(circuit_main)
+  target_sources(circuit_main PRIVATE "circuit_main.cc")
+  target_include_directories(circuit_main PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+  target_compile_features(circuit_main PRIVATE cxx_std_17)
+  target_link_libraries(circuit_main PRIVATE ${PROJECT_NAMESPACE}::ortools)
+  include(GNUInstallDirs)
+  if(APPLE)
+    set_target_properties(circuit_main PROPERTIES INSTALL_RPATH
+      "@loader_path/../${CMAKE_INSTALL_LIBDIR};@loader_path")
+  elseif(UNIX)
+    cmake_path(RELATIVE_PATH CMAKE_INSTALL_FULL_LIBDIR
+      BASE_DIRECTORY ${CMAKE_INSTALL_FULL_BINDIR}
+      OUTPUT_VARIABLE libdir_relative_path)
+    set_target_properties(circuit_main PROPERTIES
+      INSTALL_RPATH "$ORIGIN/${libdir_relative_path}")
+  endif()
+  install(TARGETS circuit_main
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 endif()
-
-install(TARGETS sat_runner)
-
-# Circuit main
-add_executable(circuit_main)
-target_sources(circuit_main PRIVATE "circuit_main.cc")
-target_include_directories(circuit_main PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_compile_features(circuit_main PRIVATE cxx_std_17)
-target_link_libraries(circuit_main PRIVATE ${PROJECT_NAMESPACE}::ortools)
-
-include(GNUInstallDirs)
-if(APPLE)
-  set_target_properties(circuit_main PROPERTIES INSTALL_RPATH
-    "@loader_path/../${CMAKE_INSTALL_LIBDIR};@loader_path")
-elseif(UNIX)
-  cmake_path(RELATIVE_PATH CMAKE_INSTALL_FULL_LIBDIR
-             BASE_DIRECTORY ${CMAKE_INSTALL_FULL_BINDIR}
-             OUTPUT_VARIABLE libdir_relative_path)
-  set_target_properties(circuit_main PROPERTIES
-                        INSTALL_RPATH "$ORIGIN/${libdir_relative_path}")
-endif()
-
-install(TARGETS circuit_main)
 
