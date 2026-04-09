@@ -325,34 +325,6 @@ if(BUILD_HIGHS)
 endif()
 
 # ##############################################################################
-# BOOST
-# ##############################################################################
-if(BUILD_Boost)
-  message(CHECK_START "Fetching Boost")
-  list(APPEND CMAKE_MESSAGE_INDENT "  ")
-  FetchContent_Declare(
-    Boost
-    GIT_REPOSITORY "https://github.com/boostorg/boost.git"
-    GIT_TAG "boost-1.87.0"
-    GIT_SHALLOW TRUE
-    GIT_SUBMODULES_RECURSE TRUE
-    UPDATE_COMMAND git reset --hard --recurse-submodules
-    PATCH_COMMAND git apply --ignore-whitespace
-    "${CMAKE_CURRENT_LIST_DIR}/../../patches/boost-1.87.0.patch"
-    OVERRIDE_FIND_PACKAGE # Needed for Soplex
-    SYSTEM
-  )
-  set(BOOST_INCLUDE_LIBRARIES multiprecision serialization)
-  option(BOOST_SKIP_INSTALL_RULES NO)
-  set(BOOST_ENABLE_CMAKE ON)
-  set(BUILD_SHARED_LIBS OFF)
-  FetchContent_MakeAvailable(Boost)
-  set(BUILD_SHARED_LIBS ON)
-  list(POP_BACK CMAKE_MESSAGE_INDENT)
-  message(CHECK_PASS "fetched")
-endif()
-
-# ##############################################################################
 # SOPLEX
 # ##############################################################################
 if(BUILD_soplex)
@@ -361,17 +333,17 @@ if(BUILD_soplex)
   FetchContent_Declare(
     soplex
     GIT_REPOSITORY "https://github.com/scipopt/soplex.git"
-    GIT_TAG        "v8.0.0"
+    GIT_TAG        "v8.0.2"
     GIT_SHALLOW TRUE
     UPDATE_COMMAND git reset --hard
     PATCH_COMMAND git apply --ignore-whitespace
-    "${CMAKE_CURRENT_LIST_DIR}/../../patches/soplex-v8.0.0.patch"
+    "${CMAKE_CURRENT_LIST_DIR}/../../patches/soplex-v8.0.2.patch"
     SYSTEM
   )
   set(SHARED ON CACHE BOOL "Soplex param" FORCE)
   set(ZLIB ON CACHE BOOL "Soplex param" FORCE)
   set(GMP OFF CACHE BOOL "Soplex param" FORCE)
-  set(BOOST ON CACHE BOOL "Soplex param" FORCE)
+  set(BOOST OFF CACHE BOOL "Soplex param" FORCE)
   set(QUADMATH  OFF CACHE BOOL "Soplex param" FORCE)
   set(MPFR OFF CACHE BOOL "Soplex param" FORCE)
   set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON CACHE BOOL "Soplex param" FORCE)
@@ -392,11 +364,11 @@ if(BUILD_SCIP)
   FetchContent_Declare(
     scip
     GIT_REPOSITORY "https://github.com/scipopt/scip.git"
-    GIT_TAG        "v10.0.0"
+    GIT_TAG        "v10.0.2"
     GIT_SHALLOW TRUE
     UPDATE_COMMAND git reset --hard
     PATCH_COMMAND git apply --ignore-whitespace
-    "${CMAKE_CURRENT_LIST_DIR}/../../patches/scip-v10.0.0.patch"
+    "${CMAKE_CURRENT_LIST_DIR}/../../patches/scip-v10.0.2.patch"
     SYSTEM
   )
   set(SHARED ON CACHE BOOL "Scip param" FORCE)

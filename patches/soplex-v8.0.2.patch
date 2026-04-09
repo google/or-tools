@@ -1,5 +1,5 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 9511442..3993fc4 100644
+index 1c00fb3..6d2f282 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -1,4 +1,4 @@
@@ -49,7 +49,7 @@ index 9511442..3993fc4 100644
  
  # set function visibility default to hidden
  set(CMAKE_CXX_VISIBILITY_PRESET hidden)
-@@ -124,12 +136,11 @@ if(COVERAGE)
+@@ -127,12 +139,11 @@ if(COVERAGE)
  endif()
  
  if(ZLIB)
@@ -67,67 +67,7 @@ index 9511442..3993fc4 100644
  endif()
  
  if(GMP)
-@@ -171,42 +182,24 @@ else()
-     set(SOPLEX_WITH_PAPILO off)
- endif()
- 
--set(BOOST_MINIMUM_VERSION 1.65.0)
-+set(BOOST_MINIMUM_VERSION 1.65.0) # PaPILO requires at least Boost 1.65 (on mac 1.72)
- if(BOOST)
--    find_package(Boost ${BOOST_MINIMUM_VERSION}) # PaPILO requires at least Boost 1.65 (on mac 1.72)
--    if(Boost_FOUND)
--        set(SOPLEX_WITH_BOOST on)
--        if(NOT Boost_VERSION_MACRO)
--           set(Boost_VERSION_MACRO ${Boost_VERSION})
--        endif()
--        if(${Boost_VERSION_MACRO} LESS "107000")
--            if(NOT SOPLEX_WITH_GMP)
--               message(SEND_ERROR "If no GMP is linked, then the minimal Boost verion is 1.70. \
--                       Found Boost version is ${Boost_VERSION_STRING}. Either provide newer Boost, link GMP, or disable Boost by setting BOOST=off.")
--            else()
--               message(WARNING "The multiprecision and quadprecision features are disabled with Boost versions older than 1.70. \
--                       Found Boost version is ${Boost_VERSION_STRING}.")
--            endif()
--        endif()
--        if(Boost_DIR)
--            message(STATUS "Found Boost: ${Boost_DIR}")
--        endif()
--        set(libs ${libs} Boost::boost)
--        if(MPFR) # MPFR is used within boost multiprecision, so using it without Boost does not make sense
--            find_package(MPFR)
--        endif()
--        if(MPFR_FOUND)
--            message(STATUS "SoPlex with Boost MPFR ${MPFR_VERSION} libraries")
--            set(SOPLEX_WITH_MPFR on)
--            include_directories(${MPFR_INCLUDE_DIRS})
--            set(libs ${libs} ${MPFR_LIBRARIES})
--        else()
--            message(STATUS "SoPlex with Boost CPP multiprecision libraries")
--            set(SOPLEX_WITH_CPPMPF on)
--        endif()
--    else()
--        set(BOOST off)
--    endif()
-+  if(NOT TARGET Boost::multiprecision OR NOT TARGET Boost::serialization)
-+    message(FATAL_ERROR "Boost::multiprecision or Boost::serialization not available!!!")
-+    find_package(Boost ${BOOST_MINIMUM_VERSION} REQUIRED)
-+  endif()
-+  set(SOPLEX_WITH_BOOST on)
-+  set(libs ${libs} Boost::multiprecision Boost::serialization)
-+  if(MPFR) # MPFR is used within boost multiprecision, so using it without Boost does not make sense
-+    find_package(MPFR REQUIRED)
-+    message(STATUS "SoPlex with Boost MPFR libraries")
-+    set(SOPLEX_WITH_MPFR on)
-+    include_directories(${MPFR_INCLUDE_DIRS})
-+    set(libs ${libs} ${MPFR_LIBRARIES})
-+  else()
-+    message(STATUS "SoPlex with Boost CPP multiprecision libraries")
-+    set(SOPLEX_WITH_CPPMPF on)
-+  endif()
- endif()
- 
- # disable fused floating point contraction to enhance reproducibility across compilers and architectures
-@@ -251,7 +244,7 @@ set(EXTRA_CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/Modules)
+@@ -254,7 +265,7 @@ set(EXTRA_CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/Modules)
  configure_file(${PROJECT_SOURCE_DIR}/soplex-config.cmake.in "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/soplex-config.cmake" @ONLY)
  
  add_subdirectory(src)
@@ -140,7 +80,7 @@ index 9511442..3993fc4 100644
 +  add_subdirectory(check)
 +endif()
 diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
-index d57c5fe..11f914a 100644
+index f3758e1..ecde9ae 100644
 --- a/src/CMakeLists.txt
 +++ b/src/CMakeLists.txt
 @@ -193,28 +193,32 @@ target_link_libraries(libsoplexshared libsoplex ${libs})
