@@ -5170,7 +5170,9 @@ LocalSearchOperator* RoutingModel::GetNeighborhoodOperators(
     CP_ROUTING_PUSH_OPERATOR(EXCHANGE, exchange);
     CP_ROUTING_PUSH_OPERATOR(CROSS, cross);
   }
-  if (!pickup_delivery_pairs_.empty() ||
+  if ((!pickup_delivery_pairs_.empty() &&
+       search_parameters.local_search_operators().use_relocate_neighbors() !=
+           BOOL_FALSE) ||
       search_parameters.local_search_operators().use_relocate_neighbors() ==
           BOOL_TRUE) {
     operators.push_back(local_search_operators_[RELOCATE_NEIGHBORS]);
