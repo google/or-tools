@@ -32,6 +32,7 @@
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/status_macros.h"
+#include "ortools/base/types.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/model_update.pb.h"
 
@@ -44,7 +45,7 @@ namespace math_opt {
 // The following invariants are enforced:
 //  * Ids must be unique and increasing (in insertion order).
 //  * Ids are non-negative.
-//  * Ids are not equal to std::numeric_limits<int64_t>::max()
+//  * Ids are not equal to kint64max
 //  * Ids removed are never reused.
 //  * Names must be either empty or unique when built with check_names=true.
 class IdNameBiMap {
@@ -155,7 +156,7 @@ absl::Status IdNameBiMap::Insert(const int64_t id, std::string name) {
            << " (ids should be nonnegative and inserted in strictly increasing "
               "order)";
   }
-  if (id == std::numeric_limits<int64_t>::max()) {
+  if (id == kint64max) {
     return absl::InvalidArgumentError("id of max(int64_t) is not allowed");
   }
   next_free_id_ = id + 1;

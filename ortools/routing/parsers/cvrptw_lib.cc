@@ -29,6 +29,7 @@
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
+#include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/routing/index_manager.h"
 #include "ortools/routing/routing.h"
@@ -41,8 +42,7 @@ int32_t GetSeed(bool deterministic) {
   if (deterministic) {
     return 7777777;
   } else {
-    return absl::Uniform<int64_t>(absl::BitGen(), 0,
-                                  std::numeric_limits<int64_t>::max());
+    return absl::Uniform<int64_t>(absl::BitGen(), 0, kint64max);
   }
 }
 

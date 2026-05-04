@@ -36,6 +36,7 @@ cc_test(
         ":binary_search",
         "//ortools/base:gmock_main",
         "//ortools/base:log_severity",
+        "//ortools/base:types",
         "@abseil-cpp//absl/hash",
         "@abseil-cpp//absl/numeric:int128",
         "@abseil-cpp//absl/random",
@@ -52,6 +53,7 @@ cc_library(
     hdrs = ["radix_sort.h"],
     deps = [
         "//ortools/base:log_severity",
+        "//ortools/base:types",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/base",
         "@abseil-cpp//absl/log",
@@ -173,6 +175,7 @@ cc_library(
     hdrs = ["knapsack_solver.h"],
     deps = [
         "//ortools/base:stl_util",
+        "//ortools/base:types",
         "//ortools/linear_solver:linear_solver_base",
         "//ortools/linear_solver:linear_solver_scip",
         "//ortools/sat:cp_model",
@@ -403,6 +406,7 @@ cc_library(
     deps = [
         ":binary_search",
         "//ortools/base:mathutil",
+        "//ortools/base:types",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/numeric:int128",
@@ -413,6 +417,16 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "multikey_radix_sort",
+    hdrs = ["multikey_radix_sort.h"],
+    deps = [
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/numeric:bits",
+    ],
+)
+
 cc_test(
     name = "n_choose_k_test",
     srcs = ["n_choose_k_test.cc"],
@@ -420,11 +434,28 @@ cc_test(
         ":n_choose_k",
         "//ortools/base:dump_vars",
         "//ortools/base:gmock_main",
+        "//ortools/base:types",
         "//ortools/util:flat_matrix",
         "@abseil-cpp//absl/numeric:int128",
         "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/random:distributions",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
+    ],
+)
+
+cc_test(
+    name = "multikey_radix_sort_test",
+    srcs = ["multikey_radix_sort_test.cc"],
+    deps = [
+        ":multikey_radix_sort",
+        ":radix_sort",
+        "//ortools/base:gmock_main",
+        "//ortools/base:strong_int",
+        "//ortools/base:strong_vector",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/types:span",
     ],
 )

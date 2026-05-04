@@ -14,7 +14,6 @@
 #include <algorithm>
 #include <cstdint>
 #include <cstdlib>
-#include <limits>
 #include <string>
 #include <vector>
 
@@ -30,6 +29,7 @@
 #include "google/protobuf/wrappers.pb.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/log_severity.h"
+#include "ortools/base/types.h"
 #include "ortools/graph_base/connected_components.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -794,7 +794,7 @@ void Solve(const JsspInputProblem& problem) {
           problem.machines(m).transition_time_matrix();
 
       int last_job = -1;
-      int64_t last_start = std::numeric_limits<int64_t>::min();
+      int64_t last_start = kint64min;
       int64_t last_duration;
       for (const Data& d : schedule) {
         const int64_t transition =

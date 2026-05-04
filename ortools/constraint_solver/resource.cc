@@ -37,6 +37,7 @@
 #include "absl/strings/string_view.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/base/stl_util.h"
+#include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraints.h"
 #include "ortools/constraint_solver/interval.h"
@@ -165,8 +166,7 @@ struct VariableCumulativeTask {
 // Node of a Theta-tree
 struct ThetaNode {
   // Identity element
-  ThetaNode()
-      : total_processing(0), total_ect(std::numeric_limits<int64_t>::min()) {}
+  ThetaNode() : total_processing(0), total_ect(kint64min) {}
 
   // Single interval element
   explicit ThetaNode(const IntervalVar* interval)
@@ -189,8 +189,7 @@ struct ThetaNode {
   }
 
   bool IsIdentity() const {
-    return total_processing == 0LL &&
-           total_ect == std::numeric_limits<int64_t>::min();
+    return total_processing == 0LL && total_ect == kint64min;
   }
 
   std::string DebugString() const {
@@ -239,10 +238,10 @@ struct LambdaThetaNode {
   // Identity constructor
   LambdaThetaNode()
       : energy(0LL),
-        energetic_end_min(std::numeric_limits<int64_t>::min()),
+        energetic_end_min(kint64min),
         energy_opt(0LL),
         argmax_energy_opt(kNone),
-        energetic_end_min_opt(std::numeric_limits<int64_t>::min()),
+        energetic_end_min_opt(kint64min),
         argmax_energetic_end_min_opt(kNone) {}
 
   // Constructor for a single cumulative task in the Theta set
@@ -257,7 +256,7 @@ struct LambdaThetaNode {
   // Constructor for a single cumulative task in the Lambda set
   LambdaThetaNode(int64_t capacity, const CumulativeTask& task, int index)
       : energy(0LL),
-        energetic_end_min(std::numeric_limits<int64_t>::min()),
+        energetic_end_min(kint64min),
         energy_opt(task.EnergyMin()),
         argmax_energy_opt(index),
         energetic_end_min_opt(capacity * task.interval->StartMin() +
@@ -279,7 +278,7 @@ struct LambdaThetaNode {
   LambdaThetaNode(int64_t capacity, const VariableCumulativeTask& task,
                   int index)
       : energy(0LL),
-        energetic_end_min(std::numeric_limits<int64_t>::min()),
+        energetic_end_min(kint64min),
         energy_opt(task.EnergyMin()),
         argmax_energy_opt(index),
         energetic_end_min_opt(capacity * task.interval->StartMin() +
@@ -301,7 +300,7 @@ struct LambdaThetaNode {
   // 'index' is the index of the given interval in the est vector
   LambdaThetaNode(const IntervalVar* interval, int index)
       : energy(0LL),
-        energetic_end_min(std::numeric_limits<int64_t>::min()),
+        energetic_end_min(kint64min),
         energy_opt(interval->DurationMin()),
         argmax_energy_opt(index),
         energetic_end_min_opt(interval->EndMin()),
@@ -606,7 +605,7 @@ EdgeFinderAndDetectablePrecedences::EdgeFinderAndDetectablePrecedences(
     by_start_min_.push_back(task);
     by_end_max_.push_back(task);
     by_start_max_.push_back(task);
-    new_est_.push_back(std::numeric_limits<int64_t>::min());
+    new_est_.push_back(kint64min);
   }
 }
 
@@ -636,7 +635,7 @@ void EdgeFinderAndDetectablePrecedences::OverloadChecking() {
 bool EdgeFinderAndDetectablePrecedences::DetectablePrecedences() {
   // Initialization.
   UpdateEst();
-  new_est_.assign(size(), std::numeric_limits<int64_t>::min());
+  new_est_.assign(size(), kint64min);
 
   // Propagate in one direction
   std::sort(by_end_min_.begin(), by_end_min_.end(),
@@ -667,7 +666,7 @@ bool EdgeFinderAndDetectablePrecedences::DetectablePrecedences() {
     if (oesti > esti) {
       new_est_[task_i->index] = oesti;
     } else {
-      new_est_[task_i->index] = std::numeric_limits<int64_t>::min();
+      new_est_[task_i->index] = kint64min;
     }
   }
 
@@ -675,8 +674,7 @@ bool EdgeFinderAndDetectablePrecedences::DetectablePrecedences() {
   bool modified = false;
   for (int i = 0; i < size(); ++i) {
     IntervalVar* const var = by_start_min_[i]->interval;
-    if (new_est_[i] != std::numeric_limits<int64_t>::min() &&
-        (strict_ || var->DurationMin() > 0)) {
+    if (new_est_[i] != kint64min && (strict_ || var->DurationMin() > 0)) {
       modified = true;
       by_start_min_[i]->interval->SetStartMin(new_est_[i]);
     }
@@ -1201,8 +1199,8 @@ struct DualCapacityThetaNode {
   // Identity constructor
   DualCapacityThetaNode()
       : energy(0LL),
-        energetic_end_min(std::numeric_limits<int64_t>::min()),
-        residual_energetic_end_min(std::numeric_limits<int64_t>::min()) {}
+        energetic_end_min(kint64min),
+        residual_energetic_end_min(kint64min) {}
 
   // Constructor for a single cumulative task in the Theta set.
   DualCapacityThetaNode(int64_t capacity, int64_t residual_capacity,
@@ -1564,7 +1562,7 @@ class EdgeFinder : public Constraint {
   // See paragraph 6.2 in http://vilim.eu/petr/cp2009.pdf.
   void PropagateBasedOnEndMinGreaterThanEndMax() {
     int end_max_index = 0;
-    int64_t max_start_min = std::numeric_limits<int64_t>::min();
+    int64_t max_start_min = kint64min;
     for (Task* const task : by_end_min_) {
       const int64_t end_min = task->interval->EndMin();
       while (end_max_index < by_start_min_.size() &&
@@ -1781,7 +1779,7 @@ class CumulativeTimeTable : public Constraint {
               TimeLessThan);
     // Build profile with unique times
     profile_unique_time_.clear();
-    profile_unique_time_.emplace_back(std::numeric_limits<int64_t>::min(), 0);
+    profile_unique_time_.emplace_back(kint64min, 0);
     int64_t usage = 0;
     for (const ProfileDelta& step : profile_non_unique_time_) {
       if (step.time == profile_unique_time_.back().time) {
@@ -1805,7 +1803,7 @@ class CumulativeTimeTable : public Constraint {
     DCHECK_EQ(0, usage);
     capacity_->SetMin(max_usage);
     // Add a sentinel.
-    profile_unique_time_.emplace_back(std::numeric_limits<int64_t>::max(), 0);
+    profile_unique_time_.emplace_back(kint64max, 0);
   }
 
   // Update the start min for all tasks. Runs in O(n^2) and Omega(n).
@@ -1922,8 +1920,8 @@ class TimeTableSync : public Constraint {
     num_tasks_ = tasks_.size();
     gap_ = 0;
     prev_gap_ = 0;
-    pos_ = std::numeric_limits<int64_t>::min();
-    next_pos_ = std::numeric_limits<int64_t>::min();
+    pos_ = kint64min;
+    next_pos_ = kint64min;
     // Allocate vectors to contain no more than n_tasks.
     start_min_.reserve(num_tasks_);
     start_max_.reserve(num_tasks_);
@@ -1974,12 +1972,11 @@ class TimeTableSync : public Constraint {
   enum State { NONE, READY, CHECK, CONFLICT };
 
   inline int64_t NextScpTime() {
-    return !events_scp_.empty() ? events_scp_.top().first
-                                : std::numeric_limits<int64_t>::max();
+    return !events_scp_.empty() ? events_scp_.top().first : kint64max;
   }
 
   inline int64_t NextEventTime() {
-    int64_t time = std::numeric_limits<int64_t>::max();
+    int64_t time = kint64max;
     if (!events_pr_.empty()) {
       time = events_pr_.top().first;
     }
@@ -2105,8 +2102,8 @@ class TimeTableSync : public Constraint {
 
   void BuildEvents() {
     // Reset the sweep line.
-    pos_ = std::numeric_limits<int64_t>::min();
-    next_pos_ = std::numeric_limits<int64_t>::min();
+    pos_ = kint64min;
+    next_pos_ = kint64min;
     gap_ = capacity_->Max();
     prev_gap_ = capacity_->Max();
     // Reset dynamic states.

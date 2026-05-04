@@ -35,6 +35,7 @@
 #include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/base/macros/os_support.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/base/types.h"
 #include "ortools/bop/boolean_problem.pb.h"
 #include "ortools/graph_base/graph.h"
 #include "ortools/graph_base/util.h"
@@ -207,10 +208,10 @@ CpModelProto BooleanProblemToCpModelproto(const LinearBooleanProblem& problem) {
     }
     linear->add_domain(constraint.has_lower_bound()
                            ? constraint.lower_bound() + offset
-                           : std::numeric_limits<int32_t>::min() + offset);
+                           : kint32min + offset);
     linear->add_domain(constraint.has_upper_bound()
                            ? constraint.upper_bound() + offset
-                           : std::numeric_limits<int32_t>::max() + offset);
+                           : kint32max + offset);
   }
   if (problem.has_objective()) {
     sat::CpObjectiveProto* objective = result.mutable_objective();

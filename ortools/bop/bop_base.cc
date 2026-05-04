@@ -25,6 +25,7 @@
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/base/types.h"
 #include "ortools/bop/boolean_problem.pb.h"
 #include "ortools/bop/bop_parameters.pb.h"
 #include "ortools/bop/bop_solution.h"
@@ -84,8 +85,8 @@ ProblemState::ProblemState(const LinearBooleanProblem& problem)
       lp_values_(),
       solution_(problem, "AllZero"),
       assignment_preference_(),
-      lower_bound_(std::numeric_limits<int64_t>::min()),
-      upper_bound_(std::numeric_limits<int64_t>::max()) {
+      lower_bound_(kint64min),
+      upper_bound_(kint64max) {
   // TODO(user): Extract to a function used by all solvers.
   // Compute trivial unscaled lower bound.
   const LinearObjective& objective = problem.objective();
@@ -94,8 +95,7 @@ ProblemState::ProblemState(const LinearBooleanProblem& problem)
     // Fix template version for or-tools.
     lower_bound_ += std::min<int64_t>(int64_t{0}, objective.coefficients(i));
   }
-  upper_bound_ = solution_.IsFeasible() ? solution_.GetCost()
-                                        : std::numeric_limits<int64_t>::max();
+  upper_bound_ = solution_.IsFeasible() ? solution_.GetCost() : kint64max;
 }
 
 // TODO(user): refactor this to not rely on the optimization status.
@@ -248,9 +248,9 @@ void ProblemState::MarkAsOptimal() {
 void ProblemState::MarkAsInfeasible() {
   // Mark as infeasible, i.e. set a lower_bound greater than the upper_bound.
   CHECK(!solution_.IsFeasible());
-  if (upper_bound() == std::numeric_limits<int64_t>::max()) {
-    lower_bound_ = std::numeric_limits<int64_t>::max();
-    upper_bound_ = std::numeric_limits<int64_t>::max() - 1;
+  if (upper_bound() == kint64max) {
+    lower_bound_ = kint64max;
+    upper_bound_ = kint64max - 1;
   } else {
     lower_bound_ = upper_bound_ - 1;
   }

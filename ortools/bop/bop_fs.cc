@@ -30,6 +30,7 @@
 #include "absl/strings/string_view.h"
 #include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/base/types.h"
 #include "ortools/bop/boolean_problem.h"
 #include "ortools/bop/boolean_problem.pb.h"
 #include "ortools/bop/bop_base.h"
@@ -207,7 +208,7 @@ BopOptimizerBase::Status GuidedSatFirstSolutionGenerator::Optimize(
 
   if (sat_status == sat::SatSolver::INFEASIBLE) {
     if (policy_ != Policy::kNotGuided) abort_ = true;
-    if (problem_state.upper_bound() != std::numeric_limits<int64_t>::max()) {
+    if (problem_state.upper_bound() != kint64max) {
       // As the solution in the state problem is feasible, it is proved optimal.
       learned_info->lower_bound = problem_state.upper_bound();
       return BopOptimizerBase::OPTIMAL_SOLUTION_FOUND;
@@ -259,15 +260,14 @@ BopOptimizerBase::Status BopRandomFirstSolutionGenerator::Optimize(
   const int kMaxNumConflicts = 10;
   int64_t best_cost = problem_state.solution().IsFeasible()
                           ? problem_state.solution().GetCost()
-                          : std::numeric_limits<int64_t>::max();
+                          : kint64max;
   int64_t remaining_num_conflicts =
       parameters.max_number_of_conflicts_in_random_solution_generation();
   int64_t old_num_failures = 0;
 
   // Optimization: Since each Solve() is really fast, we want to limit as
   // much as possible the work around one.
-  bool objective_need_to_be_overconstrained =
-      (best_cost != std::numeric_limits<int64_t>::max());
+  bool objective_need_to_be_overconstrained = (best_cost != kint64max);
 
   bool solution_found = false;
   while (remaining_num_conflicts > 0 && !time_limit->LimitReached()) {
@@ -286,7 +286,7 @@ BopOptimizerBase::Status BopRandomFirstSolutionGenerator::Optimize(
               true, sat::Coefficient(best_cost) - 1, sat_propagator_)) {
         // The solution is proved optimal (if any).
         learned_info->lower_bound = best_cost;
-        return best_cost == std::numeric_limits<int64_t>::max()
+        return best_cost == kint64max
                    ? BopOptimizerBase::INFEASIBLE
                    : BopOptimizerBase::OPTIMAL_SOLUTION_FOUND;
       }
@@ -320,9 +320,8 @@ BopOptimizerBase::Status BopRandomFirstSolutionGenerator::Optimize(
     } else if (sat_status == sat::SatSolver::INFEASIBLE) {
       // The solution is proved optimal (if any).
       learned_info->lower_bound = best_cost;
-      return best_cost == std::numeric_limits<int64_t>::max()
-                 ? BopOptimizerBase::INFEASIBLE
-                 : BopOptimizerBase::OPTIMAL_SOLUTION_FOUND;
+      return best_cost == kint64max ? BopOptimizerBase::INFEASIBLE
+                                    : BopOptimizerBase::OPTIMAL_SOLUTION_FOUND;
     }
 
     // The number of failure is a good approximation of the number of conflicts.
@@ -348,9 +347,8 @@ BopOptimizerBase::Status BopRandomFirstSolutionGenerator::Optimize(
   if (sat_propagator_->ModelIsUnsat()) {
     // The solution is proved optimal (if any).
     learned_info->lower_bound = best_cost;
-    return best_cost == std::numeric_limits<int64_t>::max()
-               ? BopOptimizerBase::INFEASIBLE
-               : BopOptimizerBase::OPTIMAL_SOLUTION_FOUND;
+    return best_cost == kint64max ? BopOptimizerBase::INFEASIBLE
+                                  : BopOptimizerBase::OPTIMAL_SOLUTION_FOUND;
   }
 
   ExtractLearnedInfoFromSatSolver(sat_propagator_, learned_info);

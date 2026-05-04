@@ -53,6 +53,7 @@
 #include "ortools/base/protoutil.h"
 #include "ortools/base/status_builder.h"
 #include "ortools/base/status_macros.h"
+#include "ortools/base/types.h"
 #include "ortools/math_opt/core/empty_bounds.h"
 #include "ortools/math_opt/core/inverted_bounds.h"
 #include "ortools/math_opt/core/math_opt_proto_utils.h"
@@ -116,8 +117,8 @@ absl::StatusOr<int> SafeIntCast(const int64_t i, const absl::string_view name) {
   if constexpr (sizeof(int) >= sizeof(int64_t)) {
     return static_cast<int>(i);
   } else {
-    const int64_t kMin = static_cast<int64_t>(std::numeric_limits<int>::min());
-    const int64_t kMax = static_cast<int64_t>(std::numeric_limits<int>::max());
+    const int64_t kMin = static_cast<int64_t>(kint32min);
+    const int64_t kMax = static_cast<int64_t>(kint32max);
     if (i < kMin || i > kMax) {
       return util::InvalidArgumentErrorBuilder()
              << name << " has value " << i

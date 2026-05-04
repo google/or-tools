@@ -556,8 +556,8 @@ class NodeDisjunctionFilter : public IntVarLocalSearchFilter {
         routing_model_(routing_model),
         count_per_disjunction_(routing_model.GetNumberOfDisjunctions(),
                                {.active = 0, .inactive = 0}),
-        synchronized_objective_value_(std::numeric_limits<int64_t>::min()),
-        accepted_objective_value_(std::numeric_limits<int64_t>::min()),
+        synchronized_objective_value_(kint64min),
+        accepted_objective_value_(kint64min),
         filter_cost_(filter_cost),
         has_mandatory_disjunctions_(routing_model.HasMandatoryDisjunctions()) {}
 
@@ -2385,7 +2385,7 @@ bool PathCumulFilter::FinalizeAcceptPath(int64_t /*objective_min*/,
       int prev = -1;
       int rank = -1;
       for (const int node : dimension_values_.Nodes(path)) {
-        int64_t offset = std::numeric_limits<int64_t>::min();
+        int64_t offset = kint64min;
         // Check the "opposite" precedence constraint.
         if (gtl::FindCopy(precedence_offsets_, std::pair<int, int>{node, prev},
                           &offset) &&
@@ -2665,9 +2665,8 @@ bool DimensionHasPathCumulConstraint(const Dimension& dimension) {
   if (dimension.HasBreakConstraints()) return true;
   if (dimension.HasPickupToDeliveryLimits()) return true;
   if (absl::c_any_of(
-          dimension.vehicle_span_upper_bounds(), [](int64_t upper_bound) {
-            return upper_bound != std::numeric_limits<int64_t>::max();
-          })) {
+          dimension.vehicle_span_upper_bounds(),
+          [](int64_t upper_bound) { return upper_bound != kint64max; })) {
     return true;
   }
   if (absl::c_any_of(dimension.slacks(),
@@ -2677,8 +2676,7 @@ bool DimensionHasPathCumulConstraint(const Dimension& dimension) {
   const std::vector<IntVar*>& cumuls = dimension.cumuls();
   for (int i = 0; i < cumuls.size(); ++i) {
     IntVar* const cumul_var = cumuls[i];
-    if (cumul_var->Min() > 0 &&
-        cumul_var->Max() < std::numeric_limits<int64_t>::max() &&
+    if (cumul_var->Min() > 0 && cumul_var->Max() < kint64max &&
         !dimension.model()->IsEnd(i)) {
       return true;
     }
@@ -3313,7 +3311,7 @@ bool LPCumulFilter::Accept(const Assignment* delta,
   }
 
   if (status == DimensionSchedulingStatus::INFEASIBLE) {
-    delta_cost_without_transit_ = std::numeric_limits<int64_t>::max();
+    delta_cost_without_transit_ = kint64max;
     return false;
   }
   return delta_cost_without_transit_ <= objective_max;
@@ -4130,8 +4128,8 @@ PathStateFilter::PathStateFilter(std::unique_ptr<PathState> path_state,
                                  const std::vector<IntVar*>& nexts)
     : path_state_(std::move(path_state)) {
   {
-    int min_index = std::numeric_limits<int>::max();
-    int max_index = std::numeric_limits<int>::min();
+    int min_index = kint32max;
+    int max_index = kint32min;
     for (const IntVar* next : nexts) {
       const int index = next->index();
       min_index = std::min<int>(min_index, index);
@@ -4234,7 +4232,7 @@ void PathStateFilter::
       // Look for smallest non-visited tail_index that is no smaller than
       // current_index.
       int selected_arc = -1;
-      int selected_tail_index = std::numeric_limits<int>::max();
+      int selected_tail_index = kint32max;
       for (int i = num_visited_changed_arcs; i < num_changed_arcs; ++i) {
         const int tail_index = tail_head_indices_[i].tail_index;
         if (current_index <= tail_index && tail_index < selected_tail_index) {
@@ -4330,9 +4328,6 @@ LocalSearchFilter* MakePathStateFilter(Solver* solver,
 
 namespace {
 using EInterval = DimensionChecker::ExtendedInterval;
-
-constexpr int64_t kint64min = std::numeric_limits<int64_t>::min();
-constexpr int64_t kint64max = std::numeric_limits<int64_t>::max();
 
 EInterval operator&(const EInterval& i1, const EInterval& i2) {
   return {std::max(i1.num_negative_infinity == 0 ? i1.min : kint64min,

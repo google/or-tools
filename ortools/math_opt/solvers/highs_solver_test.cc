@@ -31,6 +31,7 @@
 #include "absl/status/status.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
+#include "ortools/base/types.h"
 #include "ortools/math_opt/cpp/matchers.h"
 #include "ortools/math_opt/cpp/math_opt.h"
 #include "ortools/math_opt/solver_tests/callback_tests.h"
@@ -272,12 +273,11 @@ TEST(HighsSolverTest, IterationLimitTooLarge) {
   Model model;
   const Variable x = model.AddContinuousVariable(0.0, 1.0);
   model.Maximize(x);
-  SolveParameters params = {.iteration_limit =
-                                std::numeric_limits<int64_t>::max()};
+  SolveParameters params = {.iteration_limit = kint64max};
   EXPECT_THAT(Solve(model, SolverType::kHighs, {.parameters = params}),
               StatusIs(absl::StatusCode::kInvalidArgument,
                        HasSubstr("iteration_limit")));
-  params.iteration_limit = std::numeric_limits<int32_t>::max();
+  params.iteration_limit = kint32max;
   EXPECT_THAT(Solve(model, SolverType::kHighs, {.parameters = params}),
               IsOkAndHolds(IsOptimal(1.0)));
 }

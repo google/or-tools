@@ -25,6 +25,7 @@
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/status_builder.h"
+#include "ortools/base/types.h"
 #include "ortools/math_opt/cpp/math_opt.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/result.pb.h"
@@ -90,7 +91,7 @@ absl::StatusOr<SolveResultProto> ParseMathOptSolveOutput(
                 "positive solve_result_size: "
              << solve_result_size;
     }
-    if (solve_result_size > std::numeric_limits<int>::max()) {
+    if (solve_result_size > kint32max) {
       return util::AbortedErrorBuilder()
              << "solve_result_size should be at most INT_MAX but found: "
              << solve_result_size;
@@ -153,9 +154,8 @@ TEST(ParseMathOptSolveOutputTest,
 TEST(ParseMathOptSolveOutputTest, CodeOkButResultMessageSizeTooLargeAborts) {
   const std::string fake_solve_result = "fakey fakey fakey";
   EXPECT_THAT(
-      ParseMathOptSolveOutput(
-          0, fake_solve_result.data(),
-          static_cast<size_t>(std::numeric_limits<int>::max()) + 1, nullptr),
+      ParseMathOptSolveOutput(0, fake_solve_result.data(),
+                              static_cast<size_t>(kint32max) + 1, nullptr),
       StatusIs(absl::StatusCode::kAborted,
                HasSubstr("solve_result_size should be at most INT_MAX")));
 }
@@ -292,8 +292,7 @@ TEST(MathOptSolveTest, NullModelWithNonzeroSizeError) {
 TEST(MathOptSolveTest, ModelProtoTooBigError) {
   std::string fake_model;
   EXPECT_THAT(
-      MathOptSolveCpp(fake_model.data(),
-                      static_cast<size_t>(std::numeric_limits<int>::max()) + 1),
+      MathOptSolveCpp(fake_model.data(), static_cast<size_t>(kint32max) + 1),
       StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("max int")));
 }
 

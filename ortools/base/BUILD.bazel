@@ -99,17 +99,18 @@ cc_test(
     deps = [
         ":constant_divisor",
         "//ortools/base:gmock_main",
+        "//ortools/base:types",
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/random:bit_gen_ref",
         "@abseil-cpp//absl/random:distributions",
-        "@google_benchmark//:benchmark",
     ],
 )
 
 cc_library(
     name = "container_logging",
     hdrs = ["container_logging.h"],
+    deps = ["//ortools/base:types"],
 )
 
 cc_library(
@@ -272,7 +273,7 @@ cc_library(
     srcs = ["numbers.cc"],
     hdrs = ["numbers.h"],
     deps = [
-        ":strtoint",
+        "//ortools/base:types",
         "@abseil-cpp//absl/strings",
     ],
 )
@@ -525,5 +526,18 @@ cc_library(
     hdrs = ["log_severity.h"],
     deps = [
         "@abseil-cpp//absl/base:log_severity",
+    ],
+)
+
+cc_library(
+    name = "unique_array",
+    srcs = ["unique_array.cc"],
+    hdrs = ["unique_array.h"],
+    deps = [
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/base:nullability",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings:str_format",
     ],
 )

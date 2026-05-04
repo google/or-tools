@@ -44,6 +44,7 @@
 #include "ortools/base/strong_int.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/base/timer.h"
+#include "ortools/base/types.h"
 #include "ortools/constraint_solver/assignment.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/sequence_var.h"
@@ -1783,7 +1784,7 @@ bool LinKernighan<ignore_path_vars>::MakeNeighbor() {
 template <bool ignore_path_vars>
 bool LinKernighan<ignore_path_vars>::GetBestOut(int64_t in_i, int64_t in_j,
                                                 int64_t* out, int64_t* gain) {
-  int64_t best_gain = std::numeric_limits<int64_t>::min();
+  int64_t best_gain = kint64min;
   const int64_t path = this->Path(in_i);
   const int64_t out_cost = evaluator_(in_i, in_j, path);
   const int64_t current_gain = CapAdd(*gain, out_cost);
@@ -1799,7 +1800,7 @@ bool LinKernighan<ignore_path_vars>::GetBestOut(int64_t in_i, int64_t in_j,
     }
   }
   *gain = best_gain;
-  return (best_gain > std::numeric_limits<int64_t>::min());
+  return (best_gain > kint64min);
 }
 
 LocalSearchOperator* MakeLinKernighan(
@@ -2241,7 +2242,7 @@ MultiArmedBanditCompoundOperator::MultiArmedBanditCompoundOperator(
       started_(operators_.size()),
       start_assignment_(nullptr),
       has_fragments_(false),
-      last_objective_(std::numeric_limits<int64_t>::max()),
+      last_objective_(kint64max),
       num_neighbors_(0),
       maximize_(maximize),
       memory_coefficient_(memory_coefficient),
@@ -2264,7 +2265,7 @@ MultiArmedBanditCompoundOperator::MultiArmedBanditCompoundOperator(
 }
 
 void MultiArmedBanditCompoundOperator::EnterSearch() {
-  last_objective_ = std::numeric_limits<int64_t>::max();
+  last_objective_ = kint64max;
   num_neighbors_ = 0;
   absl::c_iota(operator_indices_, 0);
   index_ = 0;
@@ -2297,7 +2298,7 @@ void MultiArmedBanditCompoundOperator::Start(const Assignment* assignment) {
 
   if (objective == last_objective_) return;
   // Skip a neighbor evaluation if last_objective_ hasn't been set yet.
-  if (last_objective_ == std::numeric_limits<int64_t>::max()) {
+  if (last_objective_ == kint64max) {
     last_objective_ = objective;
     return;
   }
@@ -2636,8 +2637,8 @@ class SumObjectiveFilter : public IntVarLocalSearchFilter {
         synchronized_costs_(vars.size()),
         delta_costs_(vars.size()),
         filter_(std::move(filter)),
-        synchronized_sum_(std::numeric_limits<int64_t>::min()),
-        delta_sum_(std::numeric_limits<int64_t>::min()),
+        synchronized_sum_(kint64min),
+        delta_sum_(kint64min),
         incremental_(false) {}
   ~SumObjectiveFilter() override {}
   bool Accept(const Assignment* delta, const Assignment* deltadelta,
@@ -3783,8 +3784,7 @@ void LocalSearchFilterManager::FindIncrementalEventEnd() {
 
 LocalSearchFilterManager::LocalSearchFilterManager(
     std::vector<LocalSearchFilter*> filters)
-    : synchronized_value_(std::numeric_limits<int64_t>::min()),
-      accepted_value_(std::numeric_limits<int64_t>::min()) {
+    : synchronized_value_(kint64min), accepted_value_(kint64min) {
   events_.reserve(2 * filters.size());
   int priority = 0;
   for (LocalSearchFilter* filter : filters) {
@@ -3799,8 +3799,8 @@ LocalSearchFilterManager::LocalSearchFilterManager(
 LocalSearchFilterManager::LocalSearchFilterManager(
     std::vector<FilterEvent> filter_events)
     : events_(std::move(filter_events)),
-      synchronized_value_(std::numeric_limits<int64_t>::min()),
-      accepted_value_(std::numeric_limits<int64_t>::min()) {
+      synchronized_value_(kint64min),
+      accepted_value_(kint64min) {
   std::sort(events_.begin(), events_.end(),
             [](const FilterEvent& e1, const FilterEvent& e2) {
               return e1.priority < e2.priority;
@@ -4089,8 +4089,8 @@ Decision* FindOneNeighbor::Next(Solver* const solver) {
         solver->GetLocalSearchMonitor()->BeginFilterNeighbor(ls_operator_);
         const bool mh_filter =
             AcceptDelta(solver->ParentSearch(), delta, deltadelta);
-        int64_t objective_min = std::numeric_limits<int64_t>::min();
-        int64_t objective_max = std::numeric_limits<int64_t>::max();
+        int64_t objective_min = kint64min;
+        int64_t objective_max = kint64max;
         if (objective_) {
           objective_min = objective_->Min();
           objective_max = objective_->Max();

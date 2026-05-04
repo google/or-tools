@@ -415,7 +415,11 @@ cc_library(
     hdrs = ["test_models.h"],
     deps = [
         "//ortools/math_opt/cpp:math_opt",
+        "@abseil-cpp//absl/base:nullability",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/random:distributions",
         "@abseil-cpp//absl/strings",
     ],
 )
@@ -444,12 +448,15 @@ cc_library(
     deps = [
         ":test_models",
         "//ortools/base:gmock",
+        "//ortools/base:types",
         "//ortools/gurobi:gurobi_stdout_matchers",
         "//ortools/math_opt/core:inverted_bounds",
         "//ortools/math_opt/cpp:matchers",
         "//ortools/math_opt/cpp:math_opt",
         "//ortools/port:proto_utils",
         "//ortools/port:scoped_std_stream_capture",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/base:nullability",
         "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",

@@ -16,10 +16,12 @@
 #include <cstdint>
 #include <iostream>
 #include <limits>
+#include <utility>
 #include <vector>
 
 #include "absl/strings/str_join.h"
 #include "ortools/base/init_google.h"
+#include "ortools/base/types.h"
 #include "ortools/graph/bounded_dijkstra.h"
 #include "ortools/graph_base/graph.h"
 // [END imports]
@@ -53,7 +55,7 @@ int main(int argc, char** argv) {
   operations_research::BoundedDijkstraWrapper<util::StaticGraph<>, int>
       dijkstra(&graph, &weights);
   const std::vector<int> reachable_from_zero = dijkstra.RunBoundedDijkstra(
-      /*source_node=*/0, /*distance_limit=*/std::numeric_limits<int>::max());
+      /*source_node=*/0, /*distance_limit=*/kint32max);
 
   // Print paths from zero to the reachable nodes ordered by distance.
   for (const int dest : reachable_from_zero) {

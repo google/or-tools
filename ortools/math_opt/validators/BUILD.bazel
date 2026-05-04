@@ -21,6 +21,7 @@ cc_library(
     hdrs = ["ids_validator.h"],
     deps = [
         "//ortools/base:status_macros",
+        "//ortools/base:types",
         "//ortools/math_opt/core:model_summary",
         "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/status",

@@ -31,6 +31,7 @@
 #include "absl/log/check.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
+#include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraints.h"
 #include "ortools/constraint_solver/interval.h"
@@ -288,10 +289,10 @@ class CoverConstraint : public TreeArrayConstraint {
     // Compute up.
     for (int i = MaxDepth() - 1; i >= 0; --i) {
       for (int j = 0; j < Width(i); ++j) {
-        int64_t bucket_start_min = std::numeric_limits<int64_t>::max();
-        int64_t bucket_start_max = std::numeric_limits<int64_t>::max();
-        int64_t bucket_end_min = std::numeric_limits<int64_t>::min();
-        int64_t bucket_end_max = std::numeric_limits<int64_t>::min();
+        int64_t bucket_start_min = kint64max;
+        int64_t bucket_start_max = kint64max;
+        int64_t bucket_end_min = kint64min;
+        int64_t bucket_end_max = kint64min;
         bool one_undecided = false;
         const PerformedStatus up_performed = ComputePropagationUp(
             i, j, &bucket_start_min, &bucket_start_max, &bucket_end_min,
@@ -446,10 +447,10 @@ class CoverConstraint : public TreeArrayConstraint {
     while (depth > 0) {
       const int parent = Parent(position);
       const int parent_depth = depth - 1;
-      int64_t bucket_start_min = std::numeric_limits<int64_t>::max();
-      int64_t bucket_start_max = std::numeric_limits<int64_t>::max();
-      int64_t bucket_end_min = std::numeric_limits<int64_t>::min();
-      int64_t bucket_end_max = std::numeric_limits<int64_t>::min();
+      int64_t bucket_start_min = kint64max;
+      int64_t bucket_start_max = kint64max;
+      int64_t bucket_end_min = kint64min;
+      int64_t bucket_end_max = kint64min;
       bool one_undecided = false;
       const PerformedStatus status_up = ComputePropagationUp(
           parent_depth, parent, &bucket_start_min, &bucket_start_max,
@@ -492,10 +493,10 @@ class CoverConstraint : public TreeArrayConstraint {
                                        int64_t* bucket_end_min,
                                        int64_t* bucket_end_max,
                                        bool* one_undecided) {
-    *bucket_start_min = std::numeric_limits<int64_t>::max();
-    *bucket_start_max = std::numeric_limits<int64_t>::max();
-    *bucket_end_min = std::numeric_limits<int64_t>::min();
-    *bucket_end_max = std::numeric_limits<int64_t>::min();
+    *bucket_start_min = kint64max;
+    *bucket_start_max = kint64max;
+    *bucket_end_min = kint64min;
+    *bucket_end_max = kint64min;
 
     int may_be_performed_count = 0;
     int must_be_performed_count = 0;

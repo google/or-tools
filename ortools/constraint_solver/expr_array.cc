@@ -25,6 +25,7 @@
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
+#include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraints.h"
 #include "ortools/constraint_solver/expressions.h"
@@ -251,14 +252,13 @@ void SumConstraint::InitialPropagate() {
 }
 
 void SumConstraint::SumChanged() {
-  if (target_var_->Max() == RootMin() &&
-      target_var_->Max() != std::numeric_limits<int64_t>::max()) {
+  if (target_var_->Max() == RootMin() && target_var_->Max() != kint64max) {
     // We can fix all terms to min.
     for (int i = 0; i < vars_.size(); ++i) {
       vars_[i]->SetValue(vars_[i]->Min());
     }
   } else if (target_var_->Min() == RootMax() &&
-             target_var_->Min() != std::numeric_limits<int64_t>::min()) {
+             target_var_->Min() != kint64min) {
     // We can fix all terms to max.
     for (int i = 0; i < vars_.size(); ++i) {
       vars_[i]->SetValue(vars_[i]->Max());
@@ -388,13 +388,12 @@ void SmallSumConstraint::SumChanged() {
   int64_t new_max = target_var_->Max();
   const int64_t sum_min = computed_min_.Value();
   const int64_t sum_max = computed_max_.Value();
-  if (new_max == sum_min && new_max != std::numeric_limits<int64_t>::max()) {
+  if (new_max == sum_min && new_max != kint64max) {
     // We can fix all terms to min.
     for (int i = 0; i < vars_.size(); ++i) {
       vars_[i]->SetValue(vars_[i]->Min());
     }
-  } else if (new_min == sum_max &&
-             new_min != std::numeric_limits<int64_t>::min()) {
+  } else if (new_min == sum_max && new_min != kint64min) {
     // We can fix all terms to max.
     for (int i = 0; i < vars_.size(); ++i) {
       vars_[i]->SetValue(vars_[i]->Max());
@@ -458,8 +457,7 @@ bool DetectSumOverflow(const std::vector<IntVar*>& vars) {
   for (int i = 0; i < vars.size(); ++i) {
     sum_min = CapAdd(sum_min, vars[i]->Min());
     sum_max = CapAdd(sum_max, vars[i]->Max());
-    if (sum_min == std::numeric_limits<int64_t>::min() ||
-        sum_max == std::numeric_limits<int64_t>::max()) {
+    if (sum_min == kint64min || sum_max == kint64max) {
       return true;
     }
   }
@@ -490,14 +488,13 @@ void SafeSumConstraint::SafeComputeNode(int depth, int position,
   const int block_start = ChildStart(position);
   const int block_end = ChildEnd(depth, position);
   for (int k = block_start; k <= block_end; ++k) {
-    if (*sum_min != std::numeric_limits<int64_t>::min()) {
+    if (*sum_min != kint64min) {
       *sum_min = CapAdd(*sum_min, Min(depth + 1, k));
     }
-    if (*sum_max != std::numeric_limits<int64_t>::max()) {
+    if (*sum_max != kint64max) {
       *sum_max = CapAdd(*sum_max, Max(depth + 1, k));
     }
-    if (*sum_min == std::numeric_limits<int64_t>::min() &&
-        *sum_max == std::numeric_limits<int64_t>::max()) {
+    if (*sum_min == kint64min && *sum_max == kint64max) {
       break;
     }
   }
@@ -575,20 +572,16 @@ void SafeSumConstraint::PushDown(int depth, int position, int64_t new_min,
   const int block_end = ChildEnd(depth, position);
   for (int pos = block_start; pos <= block_end; ++pos) {
     const int64_t target_var_min = Min(depth + 1, pos);
-    const int64_t residual_min = sum_min != std::numeric_limits<int64_t>::min()
-                                     ? CapSub(sum_min, target_var_min)
-                                     : std::numeric_limits<int64_t>::min();
+    const int64_t residual_min =
+        sum_min != kint64min ? CapSub(sum_min, target_var_min) : kint64min;
     const int64_t target_var_max = Max(depth + 1, pos);
-    const int64_t residual_max = sum_max != std::numeric_limits<int64_t>::max()
-                                     ? CapSub(sum_max, target_var_max)
-                                     : std::numeric_limits<int64_t>::max();
-    PushDown(depth + 1, pos,
-             (residual_max == std::numeric_limits<int64_t>::min()
-                  ? std::numeric_limits<int64_t>::min()
-                  : CapSub(new_min, residual_max)),
-             (residual_min == std::numeric_limits<int64_t>::max()
-                  ? std::numeric_limits<int64_t>::min()
-                  : CapSub(new_max, residual_min)));
+    const int64_t residual_max =
+        sum_max != kint64max ? CapSub(sum_max, target_var_max) : kint64max;
+    PushDown(
+        depth + 1, pos,
+        (residual_max == kint64min ? kint64min : CapSub(new_min, residual_max)),
+        (residual_min == kint64max ? kint64min
+                                   : CapSub(new_max, residual_min)));
   }
   // TODO(user) : Is the diameter optimization (see reference
   // above, rule 5) useful?
@@ -612,11 +605,9 @@ void SafeSumConstraint::PushUp(int position, int64_t delta_min,
   }
   bool delta_corrupted = false;
   for (int depth = MaxDepth(); depth >= 0; --depth) {
-    if (Min(depth, position) != std::numeric_limits<int64_t>::min() &&
-        Max(depth, position) != std::numeric_limits<int64_t>::max() &&
-        delta_min != std::numeric_limits<int64_t>::max() &&
-        delta_max != std::numeric_limits<int64_t>::max() &&
-        !delta_corrupted) {  // No overflow.
+    if (Min(depth, position) != kint64min &&
+        Max(depth, position) != kint64max && delta_min != kint64max &&
+        delta_max != kint64max && !delta_corrupted) {  // No overflow.
       ReduceRange(depth, position, delta_min, delta_max);
     } else if (depth == MaxDepth()) {  // Leaf.
       SetRange(depth, position, vars_[position]->Min(), vars_[position]->Max());
@@ -625,8 +616,7 @@ void SafeSumConstraint::PushUp(int position, int64_t delta_min,
       int64_t sum_min = 0;
       int64_t sum_max = 0;
       SafeComputeNode(depth, position, &sum_min, &sum_max);
-      if (sum_min == std::numeric_limits<int64_t>::min() &&
-          sum_max == std::numeric_limits<int64_t>::max()) {
+      if (sum_min == kint64min && sum_max == kint64max) {
         return;  // Nothing to do upward.
       }
       SetRange(depth, position, sum_min, sum_max);
@@ -701,8 +691,8 @@ void MinConstraint::InitialPropagate() {
   // Compute up.
   for (int i = MaxDepth() - 1; i >= 0; --i) {
     for (int j = 0; j < Width(i); ++j) {
-      int64_t min_min = std::numeric_limits<int64_t>::max();
-      int64_t min_max = std::numeric_limits<int64_t>::max();
+      int64_t min_min = kint64max;
+      int64_t min_max = kint64max;
       const int block_start = ChildStart(j);
       const int block_end = ChildEnd(i, j);
       for (int k = block_start; k <= block_end; ++k) {
@@ -793,8 +783,8 @@ void MinConstraint::PushUp(int position) {
   while (depth > 0) {
     const int parent = Parent(position);
     const int parent_depth = depth - 1;
-    int64_t min_min = std::numeric_limits<int64_t>::max();
-    int64_t min_max = std::numeric_limits<int64_t>::max();
+    int64_t min_min = kint64max;
+    int64_t min_max = kint64max;
     const int block_start = ChildStart(parent);
     const int block_end = ChildEnd(parent_depth, parent);
     for (int k = block_start; k <= block_end; ++k) {
@@ -850,8 +840,8 @@ void SmallMinConstraint::Post() {
 }
 
 void SmallMinConstraint::InitialPropagate() {
-  int64_t min_min = std::numeric_limits<int64_t>::max();
-  int64_t min_max = std::numeric_limits<int64_t>::max();
+  int64_t min_min = kint64max;
+  int64_t min_max = kint64max;
   for (IntVar* const var : vars_) {
     min_min = std::min(min_min, var->Min());
     min_max = std::min(min_max, var->Max());
@@ -886,8 +876,8 @@ void SmallMinConstraint::VarChanged(IntVar* var) {
   if ((old_min == computed_min_.Value() && old_min != var_min) ||
       var_max < computed_max_.Value()) {
     // Can influence the min var bounds.
-    int64_t min_min = std::numeric_limits<int64_t>::max();
-    int64_t min_max = std::numeric_limits<int64_t>::max();
+    int64_t min_min = kint64max;
+    int64_t min_max = kint64max;
     for (IntVar* const var : vars_) {
       min_min = std::min(min_min, var->Min());
       min_max = std::min(min_max, var->Max());
@@ -969,8 +959,8 @@ void MaxConstraint::InitialPropagate() {
   // Compute up.
   for (int i = MaxDepth() - 1; i >= 0; --i) {
     for (int j = 0; j < Width(i); ++j) {
-      int64_t max_min = std::numeric_limits<int64_t>::min();
-      int64_t max_max = std::numeric_limits<int64_t>::min();
+      int64_t max_min = kint64min;
+      int64_t max_max = kint64min;
       const int block_start = ChildStart(j);
       const int block_end = ChildEnd(i, j);
       for (int k = block_start; k <= block_end; ++k) {
@@ -1060,8 +1050,8 @@ void MaxConstraint::PushUp(int position) {
   while (depth > 0) {
     const int parent = Parent(position);
     const int parent_depth = depth - 1;
-    int64_t max_min = std::numeric_limits<int64_t>::min();
-    int64_t max_max = std::numeric_limits<int64_t>::min();
+    int64_t max_min = kint64min;
+    int64_t max_max = kint64min;
     const int block_start = ChildStart(parent);
     const int block_end = ChildEnd(parent_depth, parent);
     for (int k = block_start; k <= block_end; ++k) {
@@ -1117,8 +1107,8 @@ void SmallMaxConstraint::Post() {
 }
 
 void SmallMaxConstraint::InitialPropagate() {
-  int64_t max_min = std::numeric_limits<int64_t>::min();
-  int64_t max_max = std::numeric_limits<int64_t>::min();
+  int64_t max_min = kint64min;
+  int64_t max_max = kint64min;
   for (IntVar* const var : vars_) {
     max_min = std::max(max_min, var->Min());
     max_max = std::max(max_max, var->Max());
@@ -1153,8 +1143,8 @@ void SmallMaxConstraint::VarChanged(IntVar* var) {
   if ((old_max == computed_max_.Value() && old_max != var_max) ||
       var_min > computed_min_.Value()) {  // REWRITE
     // Can influence the min var bounds.
-    int64_t max_min = std::numeric_limits<int64_t>::min();
-    int64_t max_max = std::numeric_limits<int64_t>::min();
+    int64_t max_min = kint64min;
+    int64_t max_max = kint64min;
     for (IntVar* const var : vars_) {
       max_min = std::max(max_min, var->Min());
       max_max = std::max(max_max, var->Max());
@@ -2046,9 +2036,7 @@ int64_t PositiveBooleanScalProd::Min() const {
   return min;
 }
 
-void PositiveBooleanScalProd::SetMin(int64_t m) {
-  SetRange(m, std::numeric_limits<int64_t>::max());
-}
+void PositiveBooleanScalProd::SetMin(int64_t m) { SetRange(m, kint64max); }
 
 int64_t PositiveBooleanScalProd::Max() const {
   int64_t max = 0;
@@ -2060,9 +2048,7 @@ int64_t PositiveBooleanScalProd::Max() const {
   return max;
 }
 
-void PositiveBooleanScalProd::SetMax(int64_t m) {
-  SetRange(std::numeric_limits<int64_t>::min(), m);
-}
+void PositiveBooleanScalProd::SetMax(int64_t m) { SetRange(kint64min, m); }
 
 void PositiveBooleanScalProd::SetRange(int64_t l, int64_t u) {
   int64_t current_min = 0;

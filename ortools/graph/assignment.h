@@ -49,6 +49,7 @@
 #define ORTOOLS_GRAPH_ASSIGNMENT_H_
 
 #include <cstdint>
+#include <optional>
 #include <vector>
 
 namespace operations_research {

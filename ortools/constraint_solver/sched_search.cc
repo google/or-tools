@@ -20,6 +20,7 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/strings/str_format.h"
+#include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/interval.h"
 #include "ortools/constraint_solver/reversible_data.h"
@@ -68,14 +69,13 @@ class ScheduleOrPostpone : public Decision {
 class SetTimesForward : public DecisionBuilder {
  public:
   explicit SetTimesForward(const std::vector<IntervalVar*>& vars)
-      : vars_(vars),
-        markers_(vars.size(), std::numeric_limits<int64_t>::min()) {}
+      : vars_(vars), markers_(vars.size(), kint64min) {}
 
   ~SetTimesForward() override {}
 
   Decision* Next(Solver* s) override {
-    int64_t best_est = std::numeric_limits<int64_t>::max();
-    int64_t best_lct = std::numeric_limits<int64_t>::max();
+    int64_t best_est = kint64max;
+    int64_t best_lct = kint64max;
     int support = -1;
     // We are looking for the interval that has the smallest start min
     // (tie break with smallest end max) and is not postponed. And
@@ -94,7 +94,7 @@ class SetTimesForward : public DecisionBuilder {
     // TODO(user) : remove this crude quadratic loop with
     // reversibles range reduction.
     if (support == -1) {  // All intervals are either fixed or postponed.
-      UnperformPostponedTaskBefore(std::numeric_limits<int64_t>::max());
+      UnperformPostponedTaskBefore(kint64max);
       return nullptr;
     }
     UnperformPostponedTaskBefore(best_est);
@@ -179,14 +179,13 @@ class ScheduleOrExpedite : public Decision {
 class SetTimesBackward : public DecisionBuilder {
  public:
   explicit SetTimesBackward(const std::vector<IntervalVar*>& vars)
-      : vars_(vars),
-        markers_(vars.size(), std::numeric_limits<int64_t>::max()) {}
+      : vars_(vars), markers_(vars.size(), kint64max) {}
 
   ~SetTimesBackward() override {}
 
   Decision* Next(Solver* s) override {
-    int64_t best_end = std::numeric_limits<int64_t>::min();
-    int64_t best_start = std::numeric_limits<int64_t>::min();
+    int64_t best_end = kint64min;
+    int64_t best_start = kint64min;
     int support = -1;
     int refuted = 0;
     for (int i = 0; i < vars_.size(); ++i) {
@@ -325,7 +324,7 @@ class RankFirstIntervalVars : public DecisionBuilder {
   bool FindIntervalVarOnStartMin(Solver*, SequenceVar* best_sequence,
                                  int* best_interval_index) {
     int best_interval = -1;
-    int64_t best_start_min = std::numeric_limits<int64_t>::max();
+    int64_t best_start_min = kint64max;
     for (int index = 0; index < best_possible_firsts_.size(); ++index) {
       const int candidate = best_possible_firsts_[index];
       IntervalVar* const interval = best_sequence->Interval(candidate);
@@ -367,8 +366,8 @@ class RankFirstIntervalVars : public DecisionBuilder {
 
   // Selects the sequence var to start ranking.
   bool FindSequenceVarOnSlack(Solver* s, SequenceVar** best_sequence) {
-    int64_t best_slack = std::numeric_limits<int64_t>::max();
-    int64_t best_ahmin = std::numeric_limits<int64_t>::max();
+    int64_t best_slack = kint64max;
+    int64_t best_ahmin = kint64max;
     *best_sequence = nullptr;
     best_possible_firsts_.clear();
     for (int i = 0; i < sequences_.size(); ++i) {

@@ -23,6 +23,7 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/strings/str_format.h"
+#include "ortools/base/types.h"
 #include "ortools/glop/status.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/permutation.h"
@@ -394,7 +395,7 @@ int64_t Markowitz::FindPivot(const RowPermutation& row_perm,
 
   // Note(user): we use int64_t since this is a product of two ints, moreover
   // the ints should be relatively small, so that should be fine for a while.
-  int64_t min_markowitz_number = std::numeric_limits<int64_t>::max();
+  int64_t min_markowitz_number = kint64max;
   examined_col_.clear();
   const int num_columns_to_examine = parameters_.markowitz_zlatev_parameter();
   const Fractional threshold = parameters_.lu_factorization_pivot_threshold();

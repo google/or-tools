@@ -27,7 +27,7 @@
 #include "absl/strings/str_format.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/base/macros/os_support.h"
-#include "ortools/base/version.h"
+#include "ortools/base/version.h"  // IWYU pragma: keep
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/glop/preprocessor.h"
 #include "ortools/glop/revised_simplex.h"

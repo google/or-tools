@@ -27,6 +27,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/types/span.h"
+#include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraints.h"
 #include "ortools/constraint_solver/model_cache.h"
@@ -198,10 +199,7 @@ class EmptyIterator : public IntVarIterator {
 class RangeIterator : public IntVarIterator {
  public:
   explicit RangeIterator(const IntVar* var)
-      : var_(var),
-        min_(std::numeric_limits<int64_t>::max()),
-        max_(std::numeric_limits<int64_t>::min()),
-        current_(-1) {}
+      : var_(var), min_(kint64max), max_(kint64min), current_(-1) {}
 
   ~RangeIterator() override {}
 
@@ -238,10 +236,7 @@ IntVarIterator* BooleanVar::MakeDomainIterator(bool reversible) const {
 class DomainIntVar::BitSetIterator : public BaseObject {
  public:
   BitSetIterator(uint64_t* bitset, int64_t omin)
-      : bitset_(bitset),
-        omin_(omin),
-        max_(std::numeric_limits<int64_t>::min()),
-        current_(std::numeric_limits<int64_t>::max()) {}
+      : bitset_(bitset), omin_(omin), max_(kint64min), current_(kint64max) {}
 
   ~BitSetIterator() override {}
 
@@ -1843,7 +1838,7 @@ class SmallBitSet : public DomainIntVar::BitSet {
       return LeastSignificantBitPosition64(new_bits) + omin_;
     } else {  // == 0 -> Fail()
       solver_->Fail();
-      return std::numeric_limits<int64_t>::max();
+      return kint64max;
     }
   }
 
@@ -1867,7 +1862,7 @@ class SmallBitSet : public DomainIntVar::BitSet {
       return MostSignificantBitPosition64(new_bits) + omin_;
     } else {  // == 0 -> Fail()
       solver_->Fail();
-      return std::numeric_limits<int64_t>::min();
+      return kint64min;
     }
   }
 
@@ -2031,8 +2026,8 @@ class DomainIntVarDomainIterator : public IntVarIterator {
   explicit DomainIntVarDomainIterator(const DomainIntVar* v, bool reversible)
       : var_(v),
         bitset_iterator_(nullptr),
-        min_(std::numeric_limits<int64_t>::max()),
-        max_(std::numeric_limits<int64_t>::min()),
+        min_(kint64max),
+        max_(kint64min),
         current_(-1),
         reversible_(reversible) {}
 
@@ -2140,12 +2135,12 @@ DomainIntVar::DomainIntVar(Solver* s, int64_t vmin, int64_t vmax,
 DomainIntVar::DomainIntVar(Solver* s, absl::Span<const int64_t> sorted_values,
                            const std::string& name)
     : IntVar(s, name),
-      min_(std::numeric_limits<int64_t>::max()),
-      max_(std::numeric_limits<int64_t>::min()),
-      old_min_(std::numeric_limits<int64_t>::max()),
-      old_max_(std::numeric_limits<int64_t>::min()),
-      new_min_(std::numeric_limits<int64_t>::max()),
-      new_max_(std::numeric_limits<int64_t>::min()),
+      min_(kint64max),
+      max_(kint64min),
+      old_min_(kint64max),
+      old_max_(kint64min),
+      new_min_(kint64max),
+      new_max_(kint64min),
       handler_(this),
       in_process_(false),
       bits_(nullptr),
@@ -3160,7 +3155,7 @@ TimesPosCstIntVar::~TimesPosCstIntVar() {}
 int64_t TimesPosCstIntVar::Min() const { return CapProd(var_->Min(), cst_); }
 
 void TimesPosCstIntVar::SetMin(int64_t m) {
-  if (m != std::numeric_limits<int64_t>::min()) {
+  if (m != kint64min) {
     var_->SetMin(PosIntDivUp(m, cst_));
   }
 }
@@ -3168,7 +3163,7 @@ void TimesPosCstIntVar::SetMin(int64_t m) {
 int64_t TimesPosCstIntVar::Max() const { return CapProd(var_->Max(), cst_); }
 
 void TimesPosCstIntVar::SetMax(int64_t m) {
-  if (m != std::numeric_limits<int64_t>::max()) {
+  if (m != kint64max) {
     var_->SetMax(PosIntDivDown(m, cst_));
   }
 }
@@ -3425,7 +3420,7 @@ TimesNegCstIntVar::~TimesNegCstIntVar() {}
 int64_t TimesNegCstIntVar::Min() const { return CapProd(var_->Max(), cst_); }
 
 void TimesNegCstIntVar::SetMin(int64_t m) {
-  if (m != std::numeric_limits<int64_t>::min()) {
+  if (m != kint64min) {
     var_->SetMax(PosIntDivDown(-m, -cst_));
   }
 }
@@ -3433,7 +3428,7 @@ void TimesNegCstIntVar::SetMin(int64_t m) {
 int64_t TimesNegCstIntVar::Max() const { return CapProd(var_->Min(), cst_); }
 
 void TimesNegCstIntVar::SetMax(int64_t m) {
-  if (m != std::numeric_limits<int64_t>::max()) {
+  if (m != kint64max) {
     var_->SetMin(PosIntDivUp(-m, -cst_));
   }
 }
@@ -3527,8 +3522,8 @@ class LinkExprAndDomainIntVar : public CastConstraint {
   LinkExprAndDomainIntVar(Solver* s, IntExpr* expr, DomainIntVar* var)
       : CastConstraint(s, var),
         expr_(expr),
-        cached_min_(std::numeric_limits<int64_t>::min()),
-        cached_max_(std::numeric_limits<int64_t>::max()),
+        cached_min_(kint64min),
+        cached_max_(kint64max),
         fail_stamp_(uint64_t{0}) {}
 
   ~LinkExprAndDomainIntVar() override {}

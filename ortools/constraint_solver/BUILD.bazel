@@ -170,7 +170,10 @@ cc_library(
     srcs = ["utilities.cc"],
     hdrs = ["utilities.h"],
     visibility = ["//visibility:public"],
-    deps = ["@abseil-cpp//absl/log:check"],
+    deps = [
+        "//ortools/base:types",
+        "@abseil-cpp//absl/log:check",
+    ],
 )
 
 cc_library(

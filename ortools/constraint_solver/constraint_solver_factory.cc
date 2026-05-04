@@ -32,6 +32,7 @@
 #include "absl/log/log.h"
 #include "absl/types/span.h"
 #include "ortools/base/stl_util.h"
+#include "ortools/base/types.h"
 #include "ortools/constraint_solver/alldiff_cst.h"
 #include "ortools/constraint_solver/assignment.h"
 #include "ortools/constraint_solver/constraint_solver.h"
@@ -337,8 +338,8 @@ Constraint* Solver::MakeDistribute(const std::vector<IntVar*>& vars,
                                    const std::vector<int64_t>& card_max) {
   const int vsize = vars.size();
   CHECK_NE(vsize, 0);
-  int64_t cmax = std::numeric_limits<int64_t>::max();
-  int64_t cmin = std::numeric_limits<int64_t>::min();
+  int64_t cmax = kint64max;
+  int64_t cmin = kint64min;
   for (int i = 0; i < card_max.size(); ++i) {
     cmax = std::min(cmax, card_max[i]);
     cmin = std::max(cmin, card_min[i]);
@@ -615,8 +616,8 @@ IntExpr* Solver::MakeElement(const std::vector<IntVar*>& vars, IntVar* index) {
         RevAlloc(new IfThenElseCt(this, scaled_index, one, zero, target)));
     return target;
   }
-  int64_t emin = std::numeric_limits<int64_t>::max();
-  int64_t emax = std::numeric_limits<int64_t>::min();
+  int64_t emin = kint64max;
+  int64_t emax = kint64min;
   std::unique_ptr<IntVarIterator> iterator(index->MakeDomainIterator(false));
   for (const int64_t index_value : InitAndGetValues(iterator.get())) {
     if (index_value >= 0 && index_value < size) {
@@ -642,8 +643,7 @@ IntExpr* Solver::MakeElement(Int64ToIntVar vars, int64_t range_start,
   const std::string vname = absl::StrFormat(
       "ElementVar(%s, %s)",
       StringifyInt64ToIntVar(vars, range_start, range_end), index_name);
-  IntVar* element_var = MakeIntVar(std::numeric_limits<int64_t>::min(),
-                                   std::numeric_limits<int64_t>::max(), vname);
+  IntVar* element_var = MakeIntVar(kint64min, kint64max, vname);
   IntExprEvaluatorElementCt* evaluation_ct = new IntExprEvaluatorElementCt(
       this, std::move(vars), range_start, range_end, argument, element_var);
   AddConstraint(RevAlloc(evaluation_ct));
@@ -1921,10 +1921,10 @@ IntExpr* MakeSumArrayAux(Solver* solver, const std::vector<IntVar*>& vars,
   int64_t new_min = 0;
   int64_t new_max = 0;
   for (int i = 0; i < size; ++i) {
-    if (new_min != std::numeric_limits<int64_t>::min()) {
+    if (new_min != kint64min) {
       new_min = CapAdd(vars[i]->Min(), new_min);
     }
-    if (new_max != std::numeric_limits<int64_t>::max()) {
+    if (new_max != kint64max) {
       new_max = CapAdd(vars[i]->Max(), new_max);
     }
   }
@@ -2021,7 +2021,7 @@ IntExpr* MakeScalProdAux(Solver* solver, const std::vector<IntVar*>& vars,
         std::vector<IntVar*> positive_coef_vars;
         std::vector<IntVar*> negative_coef_vars;
         for (int i = 0; i < size; ++i) {
-          const int coef = coefs[i];
+          const int64_t coef = coefs[i];
           if (coef > 0) {
             positive_coefs.push_back(coef);
             positive_coef_vars.push_back(vars[i]);
@@ -2119,10 +2119,10 @@ IntExpr* Solver::MakeSum(const std::vector<IntVar*>& vars) {
       int64_t new_min = 0;
       int64_t new_max = 0;
       for (int i = 0; i < size; ++i) {
-        if (new_min != std::numeric_limits<int64_t>::min()) {
+        if (new_min != kint64min) {
           new_min = CapAdd(vars[i]->Min(), new_min);
         }
-        if (new_max != std::numeric_limits<int64_t>::max()) {
+        if (new_max != kint64max) {
           new_max = CapAdd(vars[i]->Max(), new_max);
         }
       }
@@ -2134,8 +2134,7 @@ IntExpr* Solver::MakeSum(const std::vector<IntVar*>& vars) {
         sum_expr = MakeIntVar(new_min, new_max, name);
         AddConstraint(
             RevAlloc(new SumBooleanEqualToVar(this, vars, sum_expr->Var())));
-      } else if (new_min != std::numeric_limits<int64_t>::min() &&
-                 new_max != std::numeric_limits<int64_t>::max()) {
+      } else if (new_min != kint64min && new_max != kint64max) {
         sum_expr = MakeSumFct(this, vars);
       } else {
         const std::string name =
@@ -2156,7 +2155,7 @@ IntExpr* Solver::MakeMin(const std::vector<IntVar*>& vars) {
   if (size == 0) {
     LOG(WARNING) << "operations_research::Solver::MakeMin() was called with an "
                     "empty list of variables. Was this intentional?";
-    return MakeIntConst(std::numeric_limits<int64_t>::max());
+    return MakeIntConst(kint64max);
   } else if (size == 1) {
     return vars[0];
   } else if (size == 2) {
@@ -2174,8 +2173,8 @@ IntExpr* Solver::MakeMin(const std::vector<IntVar*>& vars) {
                                                ModelCache::VAR_ARRAY_MIN);
         return new_var;
       } else {
-        int64_t new_min = std::numeric_limits<int64_t>::max();
-        int64_t new_max = std::numeric_limits<int64_t>::max();
+        int64_t new_min = kint64max;
+        int64_t new_max = kint64max;
         for (int i = 0; i < size; ++i) {
           new_min = std::min(new_min, vars[i]->Min());
           new_max = std::min(new_max, vars[i]->Max());
@@ -2199,7 +2198,7 @@ IntExpr* Solver::MakeMax(const std::vector<IntVar*>& vars) {
   if (size == 0) {
     LOG(WARNING) << "operations_research::Solver::MakeMax() was called with an "
                     "empty list of variables. Was this intentional?";
-    return MakeIntConst(std::numeric_limits<int64_t>::min());
+    return MakeIntConst(kint64min);
   } else if (size == 1) {
     return vars[0];
   } else if (size == 2) {
@@ -2217,8 +2216,8 @@ IntExpr* Solver::MakeMax(const std::vector<IntVar*>& vars) {
                                                ModelCache::VAR_ARRAY_MIN);
         return new_var;
       } else {
-        int64_t new_min = std::numeric_limits<int64_t>::min();
-        int64_t new_max = std::numeric_limits<int64_t>::min();
+        int64_t new_min = kint64min;
+        int64_t new_max = kint64min;
         for (int i = 0; i < size; ++i) {
           new_min = std::max(new_min, vars[i]->Min());
           new_max = std::max(new_max, vars[i]->Max());
@@ -2255,7 +2254,7 @@ Constraint* Solver::MakeMinEquality(const std::vector<IntVar*>& vars,
   } else {
     LOG(WARNING) << "operations_research::Solver::MakeMinEquality() was called "
                     "with an empty list of variables. Was this intentional?";
-    return MakeEquality(min_var, std::numeric_limits<int64_t>::max());
+    return MakeEquality(min_var, kint64max);
   }
 }
 
@@ -2277,7 +2276,7 @@ Constraint* Solver::MakeMaxEquality(const std::vector<IntVar*>& vars,
   } else {
     LOG(WARNING) << "operations_research::Solver::MakeMaxEquality() was called "
                     "with an empty list of variables. Was this intentional?";
-    return MakeEquality(max_var, std::numeric_limits<int64_t>::min());
+    return MakeEquality(max_var, kint64min);
   }
 }
 
@@ -2546,7 +2545,7 @@ IntExpr* Solver::MakeDifference(int64_t value, IntExpr* expr) {
   IntExpr* result = Cache()->FindExprConstantExpression(
       expr, value, ModelCache::EXPR_CONSTANT_DIFFERENCE);
   if (result == nullptr) {
-    if (expr->IsVar() && expr->Min() != std::numeric_limits<int64_t>::min() &&
+    if (expr->IsVar() && expr->Min() != kint64min &&
         !SubOverflows(value, expr->Min()) &&
         !SubOverflows(value, expr->Max())) {
       result = NewIntMinusVar(this, value, expr->Var());
@@ -2599,8 +2598,8 @@ IntExpr* Solver::MakeProd(IntExpr* expr, int64_t value) {
     } else if (coefficient == -1) {
       return MakeOpposite(m_expr);
     } else if (coefficient > 0) {
-      if (m_expr->Max() > std::numeric_limits<int64_t>::max() / coefficient ||
-          m_expr->Min() < std::numeric_limits<int64_t>::min() / coefficient) {
+      if (m_expr->Max() > kint64max / coefficient ||
+          m_expr->Min() < kint64min / coefficient) {
         result = RegisterIntExpr(
             RevAlloc(new SafeTimesPosIntCstExpr(this, m_expr, coefficient)));
       } else {
@@ -2711,7 +2710,7 @@ IntExpr* Solver::MakeProd(IntExpr* left, IntExpr* right) {
     }
   } else if (left->Min() >= 0 && right->Min() >= 0) {
     if (CapProd(left->Max(), right->Max()) ==
-        std::numeric_limits<int64_t>::max()) {  // Potential overflow.
+        kint64max) {  // Potential overflow.
       result =
           RegisterIntExpr(RevAlloc(new SafeTimesPosIntExpr(this, left, right)));
     } else {
@@ -2837,7 +2836,7 @@ IntExpr* Solver::MakePower(IntExpr* expr, int64_t n) {
   if (expr->Bound()) {
     const int64_t v = expr->Min();
     if (v >= IntPowerOverflowLimit(n)) {  // Overflow.
-      return MakeIntConst(std::numeric_limits<int64_t>::max());
+      return MakeIntConst(kint64max);
     }
     return MakeIntConst(IntPowerValue(v, n));
   }
@@ -3018,8 +3017,7 @@ IntExpr* Solver::MakeModulo(IntExpr* x, IntExpr* mod) {
 
 // It's good to have the two extreme values being symmetrical around zero:
 // it makes mirroring easier.
-const int64_t IntervalVar::kMaxValidValue =
-    std::numeric_limits<int64_t>::max() >> 2;
+const int64_t IntervalVar::kMaxValidValue = kint64max >> 2;
 const int64_t IntervalVar::kMinValidValue = -kMaxValidValue;
 
 void IntervalVar::WhenAnything(Demon* d) {

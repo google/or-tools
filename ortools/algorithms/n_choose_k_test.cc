@@ -15,7 +15,6 @@
 
 #include <cmath>
 #include <cstdint>
-#include <limits>
 
 #include "absl/numeric/int128.h"
 #include "absl/random/distributions.h"
@@ -25,6 +24,7 @@
 #include "gtest/gtest.h"
 #include "ortools/base/dump_vars.h"
 #include "ortools/base/gmock.h"
+#include "ortools/base/types.h"
 #include "ortools/util/flat_matrix.h"
 
 namespace operations_research {
@@ -32,8 +32,6 @@ namespace {
 using ::testing::HasSubstr;
 using ::testing::status::IsOkAndHolds;
 using ::testing::status::StatusIs;
-
-constexpr int64_t kint64max = std::numeric_limits<int64_t>::max();
 
 TEST(NChooseKTest, TrivialErrorCases) {
   absl::BitGen random;

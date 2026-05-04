@@ -28,6 +28,7 @@
 #include "absl/types/span.h"
 #include "ortools/base/status_builder.h"
 #include "ortools/base/status_macros.h"
+#include "ortools/base/types.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/model_update.pb.h"
 
@@ -40,7 +41,7 @@ absl::Status CheckIdsRangeAndStrictlyIncreasing2(
     absl::Span<const int64_t> ids) {
   int64_t previous{-1};
   for (int i = 0; i < ids.size(); previous = ids[i], ++i) {
-    if (ids[i] < 0 || ids[i] == std::numeric_limits<int64_t>::max()) {
+    if (ids[i] < 0 || ids[i] == kint64max) {
       return util::InvalidArgumentErrorBuilder()
              << "Expected ids to be nonnegative and not max(int64_t) but at "
                 "index "

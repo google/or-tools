@@ -24,6 +24,7 @@
 #include "absl/log/check.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
+#include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraints.h"
 #include "ortools/constraint_solver/expressions.h"
@@ -315,9 +316,8 @@ IncreasingIntExprElement::IncreasingIntExprElement(
 
 int64_t IncreasingIntExprElement::Min() const {
   const int64_t expression_min = std::max<int64_t>(0, index_->Min());
-  return (expression_min < values_.size()
-              ? values_[expression_min]
-              : std::numeric_limits<int64_t>::max());
+  return (expression_min < values_.size() ? values_[expression_min]
+                                          : kint64max);
 }
 
 void IncreasingIntExprElement::SetMin(int64_t m) {
@@ -338,8 +338,7 @@ void IncreasingIntExprElement::SetMin(int64_t m) {
 int64_t IncreasingIntExprElement::Max() const {
   const int64_t expression_max =
       std::min<int64_t>(values_.size() - 1, index_->Max());
-  return (expression_max >= 0 ? values_[expression_max]
-                              : std::numeric_limits<int64_t>::max());
+  return (expression_max >= 0 ? values_[expression_max] : kint64max);
 }
 
 void IncreasingIntExprElement::SetMax(int64_t m) {
@@ -791,8 +790,8 @@ void IfThenElseCt::InitialPropagate() {
   condition_->SetRange(0, 1);
   const int64_t target_var_min = target_var_->Min();
   const int64_t target_var_max = target_var_->Max();
-  int64_t new_min = std::numeric_limits<int64_t>::min();
-  int64_t new_max = std::numeric_limits<int64_t>::max();
+  int64_t new_min = kint64min;
+  int64_t new_max = kint64max;
   if (condition_->Max() == 0) {
     zero_->SetRange(target_var_min, target_var_max);
     zero_->Range(&new_min, &new_max);
@@ -896,8 +895,8 @@ void IntExprEvaluatorElementCt::Propagate() {
   if (min_support_ == -1 || max_support_ == -1) {
     int min_support = -1;
     int max_support = -1;
-    int64_t gmin = std::numeric_limits<int64_t>::max();
-    int64_t gmax = std::numeric_limits<int64_t>::min();
+    int64_t gmin = kint64max;
+    int64_t gmax = kint64min;
     for (int i = index_->Min(); i <= index_->Max(); ++i) {
       IntExpr* var_i = evaluator_(i);
       const int64_t vmin = var_i->Min();

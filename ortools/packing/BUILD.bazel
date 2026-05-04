@@ -27,7 +27,6 @@ cc_library(
     hdrs = ["arc_flow_builder.h"],
     deps = [
         "//ortools/base:stl_util",
-        "//ortools/base:types",
         "//ortools/graph_base:topologicalsorter",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/log",
@@ -74,7 +73,6 @@ cc_library(
     hdrs = ["vector_bin_packing_parser.h"],
     deps = [
         ":vector_bin_packing_cc_proto",
-        "//ortools/base:types",
         "//ortools/util:filelineiter",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
@@ -138,7 +136,6 @@ cc_library(
     hdrs = ["binpacking_2d_parser.h"],
     deps = [
         ":multiple_dimensions_bin_packing_cc_proto",
-        "//ortools/base:types",
         "//ortools/util:filelineiter",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings",

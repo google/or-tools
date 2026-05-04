@@ -14,7 +14,10 @@
 #include "ortools/graph/assignment.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <limits>
+#include <optional>
+#include <vector>
 
 #include "ortools/graph/linear_assignment.h"
 #include "ortools/graph_base/graph.h"

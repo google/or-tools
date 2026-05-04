@@ -29,10 +29,10 @@
 #include "absl/strings/string_view.h"
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
-#include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/log_severity.h"
+#include "ortools/base/types.h"
 
 namespace operations_research {
 
@@ -341,24 +341,6 @@ TEST(BinarySearchTest, NonDeterministicPredicateStillConverges) {
   }
 }
 
-template <typename T>
-void BM_BinarySearch(benchmark::State& state) {
-  auto functor = [](T x) { return x > std::numeric_limits<T>::max() / 2; };
-  for (const auto s : state) {
-    benchmark::DoNotOptimize(functor);
-    auto result = BinarySearch<T>(std::numeric_limits<T>::max(),
-                                  std::numeric_limits<T>::min(), functor);
-    benchmark::DoNotOptimize(result);
-  }
-}
-BENCHMARK(BM_BinarySearch<float>);
-BENCHMARK(BM_BinarySearch<double>);
-BENCHMARK(BM_BinarySearch<int>);
-BENCHMARK(BM_BinarySearch<unsigned>);
-BENCHMARK(BM_BinarySearch<int64_t>);
-BENCHMARK(BM_BinarySearch<uint64_t>);
-BENCHMARK(BM_BinarySearch<absl::int128>);
-
 TEST(ConvexMinimumTest, ExhaustiveTest) {
   const int n = 99;
   std::vector<int> points(n);
@@ -439,8 +421,7 @@ TEST(RangeConvexMinimumTest, HugeRangeTest) {
     for (int b2 = b1; b2 < b1 + 100; ++b2) {
       int num_queries = 0;
       const auto [point, value] = RangeConvexMinimum<int64_t, double>(
-          std::numeric_limits<int64_t>::min() / 2,
-          std::numeric_limits<int64_t>::max() / 2, [&](int64_t v) -> double {
+          kint64min / 2, kint64max / 2, [&](int64_t v) -> double {
             ++num_queries;
             if (v < b1) {
               return b1 - v;

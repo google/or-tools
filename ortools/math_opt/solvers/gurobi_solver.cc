@@ -45,6 +45,7 @@
 #include "ortools/base/map_util.h"
 #include "ortools/base/protoutil.h"
 #include "ortools/base/status_macros.h"
+#include "ortools/base/types.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/invalid_indicators.h"
 #include "ortools/math_opt/core/inverted_bounds.h"
@@ -418,8 +419,8 @@ absl::StatusOr<GurobiParametersProto> MergeParameters(
     GurobiParametersProto::Parameter* const bariterlimit =
         merged_parameters.add_parameters();
     bariterlimit->set_name(GRB_INT_PAR_BARITERLIMIT);
-    double val = std::min<double>(std::numeric_limits<int32_t>::max(),
-                                  solve_parameters.iteration_limit());
+    double val =
+        std::min<double>(kint32max, solve_parameters.iteration_limit());
     bariterlimit->set_value(absl::StrCat(val));
   }
 
@@ -2338,16 +2339,16 @@ absl::Status GurobiSolver::UpdateLinearConstraints(
   // changes into a vector of aggregated changes.
   for (int lower_index = 0, upper_index = 0;
        lower_index < lower_bounds_size || upper_index < upper_bounds_size;) {
-    VariableId lower_id = std::numeric_limits<int64_t>::max();
+    VariableId lower_id = kint64max;
     if (lower_index < lower_bounds_size) {
       lower_id = constraint_lower_bounds.ids(lower_index);
     }
-    VariableId upper_id = std::numeric_limits<int64_t>::max();
+    VariableId upper_id = kint64max;
     if (upper_index < upper_bounds_size) {
       upper_id = constraint_upper_bounds.ids(upper_index);
     }
     const VariableId id = std::min(lower_id, upper_id);
-    DCHECK(id < std::numeric_limits<int64_t>::max());
+    DCHECK(id < kint64max);
     UpdateConstraintData update(id, linear_constraints_map_.at(id));
     if (lower_id == upper_id) {
       update.new_lower_bound = constraint_lower_bounds.values(lower_index++);

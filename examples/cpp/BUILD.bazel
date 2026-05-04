@@ -257,8 +257,8 @@ cc_binary(
     name = "jobshop_sat",
     srcs = ["jobshop_sat.cc"],
     deps = [
-        "//ortools/base",
         "//ortools/base:log_severity",
+        "//ortools/base:types",
         "//ortools/graph_base:connected_components",
         "//ortools/sat:cp_model",
         "//ortools/sat:cp_model_cc_proto",

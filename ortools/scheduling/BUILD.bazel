@@ -95,7 +95,6 @@ cc_library(
     deps = [
         ":jobshop_scheduling_cc_proto",
         "//ortools/base:path",
-        "//ortools/base:types",
         "//ortools/util:filelineiter",
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/flags:flag",

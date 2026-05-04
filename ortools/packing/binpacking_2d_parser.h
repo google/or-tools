@@ -18,7 +18,6 @@
 #include <vector>
 
 #include "absl/strings/string_view.h"
-#include "ortools/base/types.h"
 #include "ortools/packing/multiple_dimensions_bin_packing.pb.h"
 
 namespace operations_research {

@@ -26,6 +26,7 @@
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
 #include "absl/types/span.h"
+#include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraints.h"
 #include "ortools/constraint_solver/utilities.h"
@@ -460,12 +461,12 @@ void CompactPositiveTableConstraint::Propagate() {
                   // Let's not collect all values below the first supported
                   // value as this can easily and more rapidly be taken care
                   // of by a SetRange() call.
-          new_min = std::numeric_limits<int64_t>::max();  // escape value.
+          new_min = kint64max;  // escape value.
           for (const int64_t value : InitAndGetValues(iterators_[var_index])) {
             if (!Supported(var_index, value - original_min)) {
               to_remove_.push_back(value);
             } else {
-              if (new_min == std::numeric_limits<int64_t>::max()) {
+              if (new_min == kint64max) {
                 new_min = value;
                 // This will be covered by the SetRange.
                 to_remove_.clear();
@@ -1068,8 +1069,8 @@ TransitionConstraint::~TransitionConstraint() {}
 
 void TransitionConstraint::Post() {
   Solver* const s = solver();
-  int64_t state_min = std::numeric_limits<int64_t>::max();
-  int64_t state_max = std::numeric_limits<int64_t>::min();
+  int64_t state_min = kint64max;
+  int64_t state_max = kint64min;
   const int nb_vars = vars_.size();
   for (int i = 0; i < transition_table_.NumTuples(); ++i) {
     state_max = std::max(state_max, transition_table_.Value(i, kStatePosition));

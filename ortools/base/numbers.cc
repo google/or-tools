@@ -23,6 +23,7 @@
 #include <limits>
 
 #include "absl/strings/ascii.h"
+#include "ortools/base/types.h"
 
 namespace strings {
 
@@ -56,10 +57,10 @@ int32_t ParseLeadingInt32Value(const char* str, int32_t deflt) {
   char* error = nullptr;
   long value = strtol(str, &error, 0);  // NOLINT
   // Limit long values to int32_t min/max.  Needed for lp64; no-op on 32 bits.
-  if (value > numeric_limits<int32_t>::max()) {
-    value = numeric_limits<int32_t>::max();
-  } else if (value < numeric_limits<int32_t>::min()) {
-    value = numeric_limits<int32_t>::min();
+  if (value > kint32max) {
+    value = kint32max;
+  } else if (value < kint32min) {
+    value = kint32min;
   }
   return (error == str) ? deflt : value;
 }
@@ -105,10 +106,10 @@ int32_t ParseLeadingDec32Value(const char* str, int32_t deflt) {
   char* error = nullptr;
   long value = strtol(str, &error, 10);  // NOLINT
   // Limit long values to int32_t min/max.  Needed for lp64; no-op on 32 bits.
-  if (value > numeric_limits<int32_t>::max()) {
-    value = numeric_limits<int32_t>::max();
-  } else if (value < numeric_limits<int32_t>::min()) {
-    value = numeric_limits<int32_t>::min();
+  if (value > kint32max) {
+    value = kint32max;
+  } else if (value < kint32min) {
+    value = kint32min;
   }
   return (error == str) ? deflt : value;
 }

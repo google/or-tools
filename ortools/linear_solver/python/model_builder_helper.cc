@@ -648,7 +648,7 @@ PYBIND11_MODULE(model_builder_helper, m) {
   py::class_<AffineExpr, std::shared_ptr<AffineExpr>, LinearExpr>(m,
                                                                   "AffineExpr")
       .def(py::init<std::shared_ptr<LinearExpr>, double, double>())
-      .def_property_readonly("expression", &AffineExpr ::expression)
+      .def_property_readonly("expression", &AffineExpr::expression)
       .def_property_readonly("coefficient", &AffineExpr::coefficient)
       .def_property_readonly("offset", &AffineExpr::offset);
 
