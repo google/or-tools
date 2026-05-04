@@ -1,5 +1,5 @@
 @echo off
-REM /!\ THIS SCRIPT SUPPOSE A FIXED PATH FOR PYTHON /!\
+REM /!\ THIS SCRIPT ASSUMES A FIXED PATH FOR PYTHON /!\
 REM run it as:
 REM cmd /c tools\release\publish_delivery_win.cmd all
 
