@@ -1,0 +1,28 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 1dc3a98f..1388c818 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -388,8 +388,14 @@ if (BUILD_CXX)
+             "IPO / LTO: disabled by default when building a static library; "
+             "set CMAKE_INTERPROCEDURAL_OPTIMIZATION=ON to enable")
+   else()
+-    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+-    message(STATUS "IPO / LTO: enabled")
++    if(EXISTS "/etc/alpine-release")
++      # LTO is known to cause issues with fortified functions on Alpine (musl)
++      set(CMAKE_INTERPROCEDURAL_OPTIMIZATION FALSE)
++      message(STATUS "IPO / LTO: disabled on Alpine to avoid conflicts with fortified functions")
++    else()
++      set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
++      message(STATUS "IPO / LTO: enabled")
++    endif()
+   endif()
+   if (CUPDLP_GPU AND CMAKE_INTERPROCEDURAL_OPTIMIZATION)
+       set(CMAKE_INTERPROCEDURAL_OPTIMIZATION FALSE)
+@@ -980,4 +986,4 @@ set(CPACK_COMPONENT_LIBS_DISPLAY_NAME "HiGHS Libraries")
+ 
+ if(NOT CPack_CMake_INCLUDED)
+   include(CPack)
+-endif()
+\ No newline at end of file
++endif()
