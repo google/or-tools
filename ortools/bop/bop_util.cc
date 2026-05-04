@@ -21,6 +21,7 @@
 
 #include "absl/log/check.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/base/types.h"
 #include "ortools/bop/boolean_problem.h"
 #include "ortools/bop/boolean_problem.pb.h"
 #include "ortools/bop/bop_base.h"
@@ -75,12 +76,12 @@ bool InternalLoadStateProblemToSatSolver(const ProblemState& problem_state,
   // bound constraint leads to an UNSAT problem, it means the current solution
   // is proved optimal (if the solution is feasible, else the problem is proved
   // infeasible).
-  if (!AddObjectiveConstraint(
-          problem_state.original_problem(),
-          problem_state.lower_bound() != std::numeric_limits<int64_t>::min(),
-          sat::Coefficient(problem_state.lower_bound()),
-          problem_state.upper_bound() != std::numeric_limits<int64_t>::max(),
-          sat::Coefficient(problem_state.upper_bound() - 1), sat_solver)) {
+  if (!AddObjectiveConstraint(problem_state.original_problem(),
+                              problem_state.lower_bound() != kint64min,
+                              sat::Coefficient(problem_state.lower_bound()),
+                              problem_state.upper_bound() != kint64max,
+                              sat::Coefficient(problem_state.upper_bound() - 1),
+                              sat_solver)) {
     return false;
   }
 

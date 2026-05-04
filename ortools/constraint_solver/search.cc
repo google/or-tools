@@ -79,9 +79,9 @@ SearchLog::SearchLog(Solver* solver, std::vector<IntVar*> vars,
       display_callback_(std::move(display_callback)),
       display_on_new_solutions_only_(display_on_new_solutions_only),
       nsol_(0),
-      objective_min_(vars_.size(), std::numeric_limits<int64_t>::max()),
-      objective_max_(vars_.size(), std::numeric_limits<int64_t>::min()),
-      min_right_depth_(std::numeric_limits<int32_t>::max()),
+      objective_min_(vars_.size(), kint64max),
+      objective_max_(vars_.size(), kint64min),
+      min_right_depth_(kint32max),
       max_depth_(0),
       sliding_min_depth_(0),
       sliding_max_depth_(0) {}
@@ -98,7 +98,7 @@ void SearchLog::EnterSearch() {
           : absl::StrFormat("Start search (%s)", MemoryUsage());
   OutputLine(buffer);
   timer_->Restart();
-  min_right_depth_ = std::numeric_limits<int32_t>::max();
+  min_right_depth_ = kint32max;
   neighbors_offset_ = solver()->accepted_neighbors();
   nsol_ = 0;
   last_objective_value_.clear();
@@ -264,8 +264,7 @@ void SearchLog::OutputDecision() {
   std::string buffer = absl::StrFormat(
       "%d branches, %d ms, %d failures", solver()->branches(),
       absl::ToInt64Milliseconds(timer_->GetDuration()), solver()->failures());
-  if (min_right_depth_ != std::numeric_limits<int32_t>::max() &&
-      max_depth_ != 0) {
+  if (min_right_depth_ != kint32max && max_depth_ != 0) {
     const int depth = solver()->SearchDepth();
     absl::StrAppendFormat(&buffer, ", tree pos=%d/%d/%d minref=%d max=%d",
                           sliding_min_depth_, depth, sliding_max_depth_,
@@ -273,9 +272,8 @@ void SearchLog::OutputDecision() {
     sliding_min_depth_ = depth;
     sliding_max_depth_ = depth;
   }
-  if (!objective_min_.empty() &&
-      objective_min_[0] != std::numeric_limits<int64_t>::max() &&
-      objective_max_[0] != std::numeric_limits<int64_t>::min()) {
+  if (!objective_min_.empty() && objective_min_[0] != kint64max &&
+      objective_max_[0] != kint64min) {
     const std::string name =
         vars_name_.empty() ? "" : absl::StrCat(" ", vars_name_);
     absl::StrAppendFormat(&buffer,
@@ -868,8 +866,8 @@ int64_t ChooseFirstUnbound(Solver*, const std::vector<IntVar*>& vars,
 
 int64_t ChooseMinSizeLowestMin(Solver*, const std::vector<IntVar*>& vars,
                                int64_t first_unbound, int64_t last_unbound) {
-  uint64_t best_size = std::numeric_limits<uint64_t>::max();
-  int64_t best_min = std::numeric_limits<int64_t>::max();
+  uint64_t best_size = kuint64max;
+  int64_t best_min = kint64max;
   int64_t best_index = -1;
   for (int64_t i = first_unbound; i <= last_unbound; ++i) {
     IntVar* const var = vars[i];
@@ -889,8 +887,8 @@ int64_t ChooseMinSizeLowestMin(Solver*, const std::vector<IntVar*>& vars,
 
 int64_t ChooseMinSizeHighestMin(Solver*, const std::vector<IntVar*>& vars,
                                 int64_t first_unbound, int64_t last_unbound) {
-  uint64_t best_size = std::numeric_limits<uint64_t>::max();
-  int64_t best_min = std::numeric_limits<int64_t>::min();
+  uint64_t best_size = kuint64max;
+  int64_t best_min = kint64min;
   int64_t best_index = -1;
   for (int64_t i = first_unbound; i <= last_unbound; ++i) {
     IntVar* const var = vars[i];
@@ -910,8 +908,8 @@ int64_t ChooseMinSizeHighestMin(Solver*, const std::vector<IntVar*>& vars,
 
 int64_t ChooseMinSizeLowestMax(Solver*, const std::vector<IntVar*>& vars,
                                int64_t first_unbound, int64_t last_unbound) {
-  uint64_t best_size = std::numeric_limits<uint64_t>::max();
-  int64_t best_max = std::numeric_limits<int64_t>::max();
+  uint64_t best_size = kuint64max;
+  int64_t best_max = kint64max;
   int64_t best_index = -1;
   for (int64_t i = first_unbound; i <= last_unbound; ++i) {
     IntVar* const var = vars[i];
@@ -931,8 +929,8 @@ int64_t ChooseMinSizeLowestMax(Solver*, const std::vector<IntVar*>& vars,
 
 int64_t ChooseMinSizeHighestMax(Solver*, const std::vector<IntVar*>& vars,
                                 int64_t first_unbound, int64_t last_unbound) {
-  uint64_t best_size = std::numeric_limits<uint64_t>::max();
-  int64_t best_max = std::numeric_limits<int64_t>::min();
+  uint64_t best_size = kuint64max;
+  int64_t best_max = kint64min;
   int64_t best_index = -1;
   for (int64_t i = first_unbound; i <= last_unbound; ++i) {
     IntVar* const var = vars[i];
@@ -952,7 +950,7 @@ int64_t ChooseMinSizeHighestMax(Solver*, const std::vector<IntVar*>& vars,
 
 int64_t ChooseLowestMin(Solver*, const std::vector<IntVar*>& vars,
                         int64_t first_unbound, int64_t last_unbound) {
-  int64_t best_min = std::numeric_limits<int64_t>::max();
+  int64_t best_min = kint64max;
   int64_t best_index = -1;
   for (int64_t i = first_unbound; i <= last_unbound; ++i) {
     IntVar* const var = vars[i];
@@ -970,7 +968,7 @@ int64_t ChooseLowestMin(Solver*, const std::vector<IntVar*>& vars,
 
 int64_t ChooseHighestMax(Solver*, const std::vector<IntVar*>& vars,
                          int64_t first_unbound, int64_t last_unbound) {
-  int64_t best_max = std::numeric_limits<int64_t>::min();
+  int64_t best_max = kint64min;
   int64_t best_index = -1;
   for (int64_t i = first_unbound; i <= last_unbound; ++i) {
     IntVar* const var = vars[i];
@@ -988,7 +986,7 @@ int64_t ChooseHighestMax(Solver*, const std::vector<IntVar*>& vars,
 
 int64_t ChooseMinSize(Solver*, const std::vector<IntVar*>& vars,
                       int64_t first_unbound, int64_t last_unbound) {
-  uint64_t best_size = std::numeric_limits<uint64_t>::max();
+  uint64_t best_size = kuint64max;
   int64_t best_index = -1;
   for (int64_t i = first_unbound; i <= last_unbound; ++i) {
     IntVar* const var = vars[i];
@@ -1100,7 +1098,7 @@ class CheapestVarSelector : public BaseObject {
 int64_t CheapestVarSelector::Choose(Solver*, const std::vector<IntVar*>& vars,
                                     int64_t first_unbound,
                                     int64_t last_unbound) {
-  int64_t best_eval = std::numeric_limits<int64_t>::max();
+  int64_t best_eval = kint64max;
   int64_t index = -1;
   for (int64_t i = first_unbound; i <= last_unbound; ++i) {
     if (!vars[i]->Bound()) {
@@ -1119,7 +1117,7 @@ int64_t CheapestVarSelector::Choose(Solver*, const std::vector<IntVar*>& vars,
 
 class PathSelector : public BaseObject {
  public:
-  PathSelector() : first_(std::numeric_limits<int64_t>::max()) {}
+  PathSelector() : first_(kint64max) {}
   ~PathSelector() override {};
   int64_t Choose(Solver* s, const std::vector<IntVar*>& vars);
   std::string DebugString() const override { return "ChooseNextOnPath"; }
@@ -1311,7 +1309,7 @@ class CheapestValueSelector : public BaseObject {
 
 int64_t CheapestValueSelector::Select(const IntVar* v, int64_t id) {
   cache_.clear();
-  int64_t best = std::numeric_limits<int64_t>::max();
+  int64_t best = kint64max;
   std::unique_ptr<IntVarIterator> it(v->MakeDomainIterator(false));
   for (const int64_t i : InitAndGetValues(it.get())) {
     int64_t eval = eval_(id, i);
@@ -1460,7 +1458,7 @@ int64_t DynamicEvaluatorSelector::SelectValue(const IntVar*, int64_t) {
 }
 
 int64_t DynamicEvaluatorSelector::ChooseVariable() {
-  int64_t best_evaluation = std::numeric_limits<int64_t>::max();
+  int64_t best_evaluation = kint64max;
   cache_.clear();
   for (int64_t i = 0; i < vars_.size(); ++i) {
     const IntVar* const var = vars_[i];
@@ -2644,8 +2642,7 @@ class BestValueSolutionCollector : public SolutionCollector {
  private:
   void ResetBestObjective() {
     for (int i = 0; i < maximize_.size(); ++i) {
-      best_[i] = maximize_[i] ? std::numeric_limits<int64_t>::min()
-                              : std::numeric_limits<int64_t>::max();
+      best_[i] = maximize_[i] ? kint64min : kint64max;
     }
   }
 
@@ -3048,8 +3045,8 @@ ObjectiveMonitor::ObjectiveMonitor(Solver* solver,
       minimization_vars_(objective_vars_),
       upper_bounds_(Size() + 1, nullptr),
       steps_(std::move(steps)),
-      best_values_(Size(), std::numeric_limits<int64_t>::max()),
-      current_values_(Size(), std::numeric_limits<int64_t>::max()) {
+      best_values_(Size(), kint64max),
+      current_values_(Size(), kint64max) {
   DCHECK_GT(Size(), 0);
   DCHECK_EQ(objective_vars_.size(), steps_.size());
   DCHECK_EQ(objective_vars_.size(), maximize.size());
@@ -3074,7 +3071,7 @@ ObjectiveMonitor::ObjectiveMonitor(Solver* solver,
 
 void ObjectiveMonitor::EnterSearch() {
   found_initial_solution_ = false;
-  best_values_.assign(Size(), std::numeric_limits<int64_t>::max());
+  best_values_.assign(Size(), kint64max);
   current_values_ = best_values_;
   solver()->SetUseFastLocalSearch(true);
 }
@@ -3149,7 +3146,7 @@ void ObjectiveMonitor::Accept(ModelVisitor* visitor) const {
 bool ObjectiveMonitor::CurrentInternalValuesAreConstraining() const {
   int num_values_at_max = 0;
   for (int i = 0; i < Size(); ++i) {
-    if (CurrentInternalValue(i) < std::numeric_limits<int64_t>::max()) {
+    if (CurrentInternalValue(i) < kint64max) {
       DCHECK_EQ(num_values_at_max, 0);
     } else {
       ++num_values_at_max;
@@ -3438,7 +3435,7 @@ TabuSearch::TabuSearch(Solver* solver, const std::vector<bool>& maximize,
                        int64_t forbid_tenure, double tabu_factor)
     : Metaheuristic(solver, maximize, std::move(objectives), std::move(steps)),
       vars_(vars),
-      last_values_(Size(), std::numeric_limits<int64_t>::max()),
+      last_values_(Size(), kint64max),
       keep_tenure_(keep_tenure),
       forbid_tenure_(forbid_tenure),
       tabu_factor_(tabu_factor),
@@ -3572,7 +3569,7 @@ bool TabuSearch::AtLocalOptimum() {
   solution_count_ = 0;
   AgeLists();
   for (int i = 0; i < Size(); ++i) {
-    SetCurrentInternalValue(i, std::numeric_limits<int64_t>::max());
+    SetCurrentInternalValue(i, kint64max);
   }
   return found_initial_solution_;
 }
@@ -3783,7 +3780,7 @@ void SimulatedAnnealing::ApplyDecision(Decision* d) {
 
 bool SimulatedAnnealing::AtLocalOptimum() {
   for (int i = 0; i < Size(); ++i) {
-    SetCurrentInternalValue(i, std::numeric_limits<int64_t>::max());
+    SetCurrentInternalValue(i, kint64max);
   }
   ++iteration_;
   if (!found_initial_solution_) return false;
@@ -4101,10 +4098,9 @@ void GuidedLocalSearch<P>::ApplyDecision(Decision* d) {
         solver()->MakeLessOrEqual(MinimizationVar(0), max_exp));
   } else {
     penalized_objective_ = nullptr;
-    const int64_t bound =
-        (CurrentInternalValue(0) < std::numeric_limits<int64_t>::max())
-            ? CapSub(CurrentInternalValue(0), Step(0))
-            : CurrentInternalValue(0);
+    const int64_t bound = (CurrentInternalValue(0) < kint64max)
+                              ? CapSub(CurrentInternalValue(0), Step(0))
+                              : CurrentInternalValue(0);
     MinimizationVar(0)->SetMax(bound);
   }
 }
@@ -4230,7 +4226,7 @@ bool GuidedLocalSearch<P>::AtLocalOptimum() {
       }
     }
   }
-  SetCurrentInternalValue(0, std::numeric_limits<int64_t>::max());
+  SetCurrentInternalValue(0, kint64max);
   return true;
 }
 
@@ -4320,10 +4316,9 @@ int64_t BinaryGuidedLocalSearch<P>::PenalizedValue(int64_t i, int64_t j) const {
   if (penalty == 0) return 0;
   const double penalized_value_fp =
       this->penalty_factor_ * penalty * objective_function_(i, j);
-  const int64_t penalized_value =
-      (penalized_value_fp <= std::numeric_limits<int64_t>::max())
-          ? static_cast<int64_t>(penalized_value_fp)
-          : std::numeric_limits<int64_t>::max();
+  const int64_t penalized_value = (penalized_value_fp <= kint64max)
+                                      ? static_cast<int64_t>(penalized_value_fp)
+                                      : kint64max;
   return penalized_value;
 }
 
@@ -4449,10 +4444,9 @@ int64_t TernaryGuidedLocalSearch<P>::PenalizedValue(int64_t i, int64_t j,
   if (penalty == 0) return 0;
   const double penalized_value_fp =
       this->penalty_factor_ * penalty * objective_function_(i, j, k);
-  const int64_t penalized_value =
-      (penalized_value_fp < std::numeric_limits<int64_t>::max())
-          ? static_cast<int64_t>(penalized_value_fp)
-          : std::numeric_limits<int64_t>::max();
+  const int64_t penalized_value = (penalized_value_fp < kint64max)
+                                      ? static_cast<int64_t>(penalized_value_fp)
+                                      : kint64max;
   return penalized_value;
 }
 }  // namespace
@@ -4697,30 +4691,22 @@ absl::Duration RegularLimit::TimeElapsed() {
 }
 
 RegularLimit* Solver::MakeTimeLimit(absl::Duration time) {
-  return MakeLimit(time, std::numeric_limits<int64_t>::max(),
-                   std::numeric_limits<int64_t>::max(),
-                   std::numeric_limits<int64_t>::max(),
+  return MakeLimit(time, kint64max, kint64max, kint64max,
                    /*smart_time_check=*/false, /*cumulative=*/false);
 }
 
 RegularLimit* Solver::MakeBranchesLimit(int64_t branches) {
-  return MakeLimit(absl::InfiniteDuration(), branches,
-                   std::numeric_limits<int64_t>::max(),
-                   std::numeric_limits<int64_t>::max(),
+  return MakeLimit(absl::InfiniteDuration(), branches, kint64max, kint64max,
                    /*smart_time_check=*/false, /*cumulative=*/false);
 }
 
 RegularLimit* Solver::MakeFailuresLimit(int64_t failures) {
-  return MakeLimit(absl::InfiniteDuration(),
-                   std::numeric_limits<int64_t>::max(), failures,
-                   std::numeric_limits<int64_t>::max(),
+  return MakeLimit(absl::InfiniteDuration(), kint64max, failures, kint64max,
                    /*smart_time_check=*/false, /*cumulative=*/false);
 }
 
 RegularLimit* Solver::MakeSolutionsLimit(int64_t solutions) {
-  return MakeLimit(absl::InfiniteDuration(),
-                   std::numeric_limits<int64_t>::max(),
-                   std::numeric_limits<int64_t>::max(), solutions,
+  return MakeLimit(absl::InfiniteDuration(), kint64max, kint64max, solutions,
                    /*smart_time_check=*/false, /*cumulative=*/false);
 }
 
@@ -4739,19 +4725,18 @@ RegularLimit* Solver::MakeLimit(absl::Duration time, int64_t branches,
 }
 
 RegularLimit* Solver::MakeLimit(const RegularLimitParameters& proto) {
-  return MakeLimit(proto.time() == std::numeric_limits<int64_t>::max()
-                       ? absl::InfiniteDuration()
-                       : absl::Milliseconds(proto.time()),
+  return MakeLimit(proto.time() == kint64max ? absl::InfiniteDuration()
+                                             : absl::Milliseconds(proto.time()),
                    proto.branches(), proto.failures(), proto.solutions(),
                    proto.smart_time_check(), proto.cumulative());
 }
 
 RegularLimitParameters Solver::MakeDefaultRegularLimitParameters() const {
   RegularLimitParameters proto;
-  proto.set_time(std::numeric_limits<int64_t>::max());
-  proto.set_branches(std::numeric_limits<int64_t>::max());
-  proto.set_failures(std::numeric_limits<int64_t>::max());
-  proto.set_solutions(std::numeric_limits<int64_t>::max());
+  proto.set_time(kint64max);
+  proto.set_branches(kint64max);
+  proto.set_failures(kint64max);
+  proto.set_solutions(kint64max);
   proto.set_smart_time_check(false);
   proto.set_cumulative(false);
   return proto;
@@ -5252,7 +5237,7 @@ namespace {
 // Luby Strategy
 int64_t NextLuby(int i) {
   DCHECK_GT(i, 0);
-  DCHECK_LT(i, std::numeric_limits<int32_t>::max());
+  DCHECK_LT(i, kint32max);
   int64_t power;
 
   // let's find the least power of 2 >= (i+1).

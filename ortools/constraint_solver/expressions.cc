@@ -24,6 +24,7 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/strings/str_format.h"
+#include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraints.h"
 #include "ortools/constraint_solver/utilities.h"
@@ -489,7 +490,7 @@ int64_t SafeTimesPosIntCstExpr::Min() const {
 }
 
 void SafeTimesPosIntCstExpr::SetMin(int64_t m) {
-  if (m != std::numeric_limits<int64_t>::min()) {
+  if (m != kint64min) {
     expr_->SetMin(PosIntDivUp(m, value_));
   }
 }
@@ -499,7 +500,7 @@ int64_t SafeTimesPosIntCstExpr::Max() const {
 }
 
 void SafeTimesPosIntCstExpr::SetMax(int64_t m) {
-  if (m != std::numeric_limits<int64_t>::max()) {
+  if (m != kint64max) {
     expr_->SetMax(PosIntDivDown(m, value_));
   }
 }
@@ -516,7 +517,7 @@ int64_t TimesIntNegCstExpr::Min() const {
 }
 
 void TimesIntNegCstExpr::SetMin(int64_t m) {
-  if (m != std::numeric_limits<int64_t>::min()) {
+  if (m != kint64min) {
     expr_->SetMax(PosIntDivDown(-m, -value_));
   }
 }
@@ -526,7 +527,7 @@ int64_t TimesIntNegCstExpr::Max() const {
 }
 
 void TimesIntNegCstExpr::SetMax(int64_t m) {
-  if (m != std::numeric_limits<int64_t>::max()) {
+  if (m != kint64max) {
     expr_->SetMin(PosIntDivUp(-m, -value_));
   }
 }
@@ -698,13 +699,13 @@ void TimesIntExpr::Accept(ModelVisitor* visitor) const {
 }
 
 void TimesIntExpr::SetMin(int64_t m) {
-  if (m != std::numeric_limits<int64_t>::min()) {
+  if (m != kint64min) {
     TimesSetMin(left_, right_, minus_left_, minus_right_, m);
   }
 }
 
 void TimesIntExpr::SetMax(int64_t m) {
-  if (m != std::numeric_limits<int64_t>::max()) {
+  if (m != kint64max) {
     TimesSetMin(left_, minus_right_, minus_left_, right_, CapOpp(m));
   }
 }
@@ -760,7 +761,7 @@ int64_t SafeTimesPosIntExpr::Min() const {
   return CapProd(left_->Min(), right_->Min());
 }
 void SafeTimesPosIntExpr::SetMin(int64_t m) {
-  if (m != std::numeric_limits<int64_t>::min()) {
+  if (m != kint64min) {
     SetPosPosMinExpr(left_, right_, m);
   }
 }
@@ -768,7 +769,7 @@ int64_t SafeTimesPosIntExpr::Max() const {
   return CapProd(left_->Max(), right_->Max());
 }
 void SafeTimesPosIntExpr::SetMax(int64_t m) {
-  if (m != std::numeric_limits<int64_t>::max()) {
+  if (m != kint64max) {
     SetPosPosMaxExpr(left_, right_, m);
   }
 }
@@ -1285,8 +1286,8 @@ int64_t DivIntExpr::Min() const {
   const int64_t denom_max = denom_->Max();
 
   if (denom_min == 0 && denom_max == 0) {
-    return std::numeric_limits<int64_t>::max();  // TODO(user): Check this
-                                                 // convention.
+    return kint64max;  // TODO(user): Check this
+                       // convention.
   }
 
   if (denom_min >= 0) {  // Denominator strictly positive.
@@ -1309,8 +1310,8 @@ int64_t DivIntExpr::Max() const {
   const int64_t denom_max = denom_->Max();
 
   if (denom_min == 0 && denom_max == 0) {
-    return std::numeric_limits<int64_t>::min();  // TODO(user): Check this
-                                                 // convention.
+    return kint64min;  // TODO(user): Check this
+                       // convention.
   }
 
   if (denom_min >= 0) {  // Denominator strictly positive.
@@ -1533,15 +1534,11 @@ IntSquare::IntSquare(Solver* s, IntExpr* e) : BaseIntExpr(s), expr_(e) {}
 int64_t IntSquare::Min() const {
   const int64_t emin = expr_->Min();
   if (emin >= 0) {
-    return emin >= std::numeric_limits<int32_t>::max()
-               ? std::numeric_limits<int64_t>::max()
-               : emin * emin;
+    return emin >= kint32max ? kint64max : emin * emin;
   }
   const int64_t emax = expr_->Max();
   if (emax < 0) {
-    return emax <= -std::numeric_limits<int32_t>::max()
-               ? std::numeric_limits<int64_t>::max()
-               : emax * emax;
+    return emax <= -kint32max ? kint64max : emax * emax;
   }
   return 0LL;
 }
@@ -1566,9 +1563,8 @@ void IntSquare::SetMin(int64_t m) {
 int64_t IntSquare::Max() const {
   const int64_t emax = expr_->Max();
   const int64_t emin = expr_->Min();
-  if (emax >= std::numeric_limits<int32_t>::max() ||
-      emin <= -std::numeric_limits<int32_t>::max()) {
-    return std::numeric_limits<int64_t>::max();
+  if (emax >= kint32max || emin <= -kint32max) {
+    return kint64max;
   }
   return std::max(emin * emin, emax * emax);
 }
@@ -1577,7 +1573,7 @@ void IntSquare::SetMax(int64_t m) {
   if (m < 0) {
     solver()->Fail();
   }
-  if (m == std::numeric_limits<int64_t>::max()) {
+  if (m == kint64max) {
     return;
   }
   const int64_t root =
@@ -1608,9 +1604,7 @@ PosIntSquare::PosIntSquare(Solver* s, IntExpr* e) : IntSquare(s, e) {}
 
 int64_t PosIntSquare::Min() const {
   const int64_t emin = expr_->Min();
-  return emin >= std::numeric_limits<int32_t>::max()
-             ? std::numeric_limits<int64_t>::max()
-             : emin * emin;
+  return emin >= kint32max ? kint64max : emin * emin;
 }
 void PosIntSquare::SetMin(int64_t m) {
   if (m <= 0) {
@@ -1625,15 +1619,13 @@ void PosIntSquare::SetMin(int64_t m) {
 
 int64_t PosIntSquare::Max() const {
   const int64_t emax = expr_->Max();
-  return emax >= std::numeric_limits<int32_t>::max()
-             ? std::numeric_limits<int64_t>::max()
-             : emax * emax;
+  return emax >= kint32max ? kint64max : emax * emax;
 }
 void PosIntSquare::SetMax(int64_t m) {
   if (m < 0) {
     solver()->Fail();
   }
-  if (m == std::numeric_limits<int64_t>::max()) {
+  if (m == kint64max) {
     return;
   }
   int64_t root = static_cast<int64_t>(floor(sqrt(static_cast<double>(m))));
@@ -1666,24 +1658,24 @@ void BasePower::Accept(ModelVisitor* visitor) const {
 
 int64_t BasePower::Pown(int64_t value) const {
   if (value >= limit_) {
-    return std::numeric_limits<int64_t>::max();
+    return kint64max;
   }
   if (value <= -limit_) {
     if (pow_ % 2 == 0) {
-      return std::numeric_limits<int64_t>::max();
+      return kint64max;
     } else {
-      return std::numeric_limits<int64_t>::min();
+      return kint64min;
     }
   }
   return IntPowerValue(value, pow_);
 }
 
 int64_t BasePower::SqrnDown(int64_t value) const {
-  if (value == std::numeric_limits<int64_t>::min()) {
-    return std::numeric_limits<int64_t>::min();
+  if (value == kint64min) {
+    return kint64min;
   }
-  if (value == std::numeric_limits<int64_t>::max()) {
-    return std::numeric_limits<int64_t>::max();
+  if (value == kint64max) {
+    return kint64max;
   }
   int64_t res = 0;
   const double d_value = static_cast<double>(value);
@@ -1704,11 +1696,11 @@ int64_t BasePower::SqrnDown(int64_t value) const {
 }
 
 int64_t BasePower::SqrnUp(int64_t value) const {
-  if (value == std::numeric_limits<int64_t>::min()) {
-    return std::numeric_limits<int64_t>::min();
+  if (value == kint64min) {
+    return kint64min;
   }
-  if (value == std::numeric_limits<int64_t>::max()) {
-    return std::numeric_limits<int64_t>::max();
+  if (value == kint64max) {
+    return kint64max;
   }
   int64_t res = 0;
   const double d_value = static_cast<double>(value);
@@ -1769,7 +1761,7 @@ void IntEvenPower::SetMax(int64_t m) {
   if (m < 0) {
     solver()->Fail();
   }
-  if (m == std::numeric_limits<int64_t>::max()) {
+  if (m == kint64max) {
     return;
   }
   const int64_t root = SqrnDown(m);
@@ -1791,7 +1783,7 @@ void PosIntEvenPower::SetMax(int64_t m) {
   if (m < 0) {
     solver()->Fail();
   }
-  if (m == std::numeric_limits<int64_t>::max()) {
+  if (m == kint64max) {
     return;
   }
   expr_->SetMax(SqrnDown(m));
@@ -1989,8 +1981,8 @@ SimpleConvexPiecewiseExpr::SimpleConvexPiecewiseExpr(Solver* s, IntExpr* e,
     : BaseIntExpr(s),
       expr_(e),
       early_cost_(ec),
-      early_date_(ec == 0 ? std::numeric_limits<int64_t>::min() : ed),
-      late_date_(lc == 0 ? std::numeric_limits<int64_t>::max() : ld),
+      early_date_(ec == 0 ? kint64min : ed),
+      late_date_(lc == 0 ? kint64max : ld),
       late_cost_(lc) {
   DCHECK_GE(ec, int64_t{0});
   DCHECK_GE(lc, int64_t{0});
@@ -2116,7 +2108,7 @@ void SemiContinuousExpr::SetMax(int64_t m) {
   if (m < 0) {
     solver()->Fail();
   }
-  if (m == std::numeric_limits<int64_t>::max()) {
+  if (m == kint64max) {
     return;
   }
   if (m < CapAdd(fixed_charge_, step_)) {
@@ -2485,8 +2477,8 @@ int64_t IntPowerValue(int64_t value, int64_t power) {
 }
 
 int64_t IntPowerOverflowLimit(int64_t power) {
-  return static_cast<int64_t>(floor(exp(
-      log(static_cast<double>(std::numeric_limits<int64_t>::max())) / power)));
+  return static_cast<int64_t>(
+      floor(exp(log(static_cast<double>(kint64max)) / power)));
 }
 
 }  // namespace operations_research

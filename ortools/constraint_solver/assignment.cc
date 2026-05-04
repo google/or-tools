@@ -32,6 +32,7 @@
 #include "ortools/base/options.h"
 #include "ortools/base/recordio.h"
 #include "ortools/base/safe_hash_map.h"
+#include "ortools/base/types.h"
 #include "ortools/constraint_solver/assignment.pb.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/interval.h"
@@ -51,8 +52,8 @@ IntVarElement::IntVarElement(IntVar* var) { Reset(var); }
 
 void IntVarElement::Reset(IntVar* var) {
   var_ = var;
-  min_ = std::numeric_limits<int64_t>::min();
-  max_ = std::numeric_limits<int64_t>::max();
+  min_ = kint64min;
+  max_ = kint64max;
 }
 
 IntVarElement* IntVarElement::Clone() {
@@ -125,12 +126,12 @@ IntervalVarElement::IntervalVarElement(IntervalVar* var) { Reset(var); }
 
 void IntervalVarElement::Reset(IntervalVar* var) {
   var_ = var;
-  start_min_ = std::numeric_limits<int64_t>::min();
-  start_max_ = std::numeric_limits<int64_t>::max();
-  duration_min_ = std::numeric_limits<int64_t>::min();
-  duration_max_ = std::numeric_limits<int64_t>::max();
-  end_min_ = std::numeric_limits<int64_t>::min();
-  end_max_ = std::numeric_limits<int64_t>::max();
+  start_min_ = kint64min;
+  start_max_ = kint64max;
+  duration_min_ = kint64min;
+  duration_max_ = kint64max;
+  end_min_ = kint64min;
+  end_max_ = kint64max;
   performed_min_ = 0;
   performed_max_ = 1;
 }

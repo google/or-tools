@@ -24,6 +24,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "ortools/base/init_google.h"
+#include "ortools/base/types.h"
 #include "ortools/graph/bounded_dijkstra.h"
 #include "ortools/graph_base/graph.h"
 // [END imports]
@@ -81,8 +82,8 @@ int main(int argc, char** argv) {
   // This function returns false if there is no path from `source` to `dest`
   // of length at most `distance_limit`. Avoid CHECK when you cannot prove a
   // path exists.
-  CHECK(dijkstra.OneToOneShortestPath(
-      source, dest, /*distance_limit=*/std::numeric_limits<int>::max()));
+  CHECK(dijkstra.OneToOneShortestPath(source, dest,
+                                      /*distance_limit=*/kint32max));
   std::cout << "Initial distance: " << dijkstra.distances()[dest] << std::endl;
   std::cout << "Initial path: "
             << absl::StrJoin(dijkstra.NodePathTo(dest), ", ") << std::endl;
@@ -97,8 +98,8 @@ int main(int argc, char** argv) {
     weights[permutation[free_from_source]] = 0;
     weights[permutation[2 * n + free_to_dest]] = 0;
 
-    CHECK(dijkstra.OneToOneShortestPath(
-        source, dest, /*distance_limit=*/std::numeric_limits<int>::max()));
+    CHECK(dijkstra.OneToOneShortestPath(source, dest,
+                                        /*distance_limit=*/kint32max));
     std::cout << "source -> " << free_from_source << " and " << free_to_dest
               << " -> dest are now free" << std::endl;
     std::string label = absl::StrCat("_", free_from_source, "_", free_to_dest);

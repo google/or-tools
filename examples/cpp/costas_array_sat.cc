@@ -36,7 +36,6 @@
 #include "absl/types/span.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/log_severity.h"
-#include "ortools/base/types.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/model.h"
 

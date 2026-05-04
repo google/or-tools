@@ -20,6 +20,7 @@
 #include <vector>
 
 #include "absl/log/check.h"
+#include "ortools/base/types.h"
 
 namespace operations_research::math_opt {
 
@@ -128,7 +129,7 @@ class GlpkSparseVector {
  private:
   // Guard value used in index_to_entry_ to identify indices not in the sparse
   // vector.
-  static constexpr int kNotPresent = std::numeric_limits<int>::max();
+  static constexpr int kNotPresent = kint32max;
 
   // Capacity.
   int capacity_;

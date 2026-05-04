@@ -24,6 +24,7 @@
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/parse_text_proto.h"
+#include "ortools/base/types.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/model_update.pb.h"
 
@@ -410,7 +411,7 @@ TEST(IdNameBiMapTest, BulkUpdateDeletesMaxValueId) {
   IdNameBiMap bimap;
   ASSERT_OK(bimap.Insert(3, "a"));
   EXPECT_THAT(
-      bimap.BulkUpdate({std::numeric_limits<int64_t>::max()}, {}, {}),
+      bimap.BulkUpdate({kint64max}, {}, {}),
       StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("max(int64_t)")));
 }
 

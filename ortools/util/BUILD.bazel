@@ -344,6 +344,7 @@ cc_library(
     hdrs = ["qap_reader.h"],
     deps = [
         ":filelineiter",
+        "//ortools/base:types",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:string_view",

@@ -24,6 +24,7 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/strings/str_format.h"
+#include "ortools/base/types.h"
 #include "ortools/bop/boolean_problem.h"
 #include "ortools/bop/boolean_problem.pb.h"
 #include "ortools/bop/bop_solver.h"
@@ -152,9 +153,8 @@ void BuildBooleanProblemWithIntegralConstraints(
   }
   double scaling_factor = 0.0;
   double relative_error = 0.0;
-  GetBestScalingOfDoublesToInt64(coefficients,
-                                 std::numeric_limits<int64_t>::max(),
-                                 &scaling_factor, &relative_error);
+  GetBestScalingOfDoublesToInt64(coefficients, kint64max, &scaling_factor,
+                                 &relative_error);
   const int64_t gcd = ComputeGcdOfRoundedDoubles(coefficients, scaling_factor);
   LinearObjective* const objective = boolean_problem->mutable_objective();
   objective->set_offset(linear_problem.objective_offset() * scaling_factor /
@@ -627,9 +627,8 @@ void IntegralProblemConverter::ConvertAllConstraints(
         coefficients.push_back(dense_weights[var]);
       }
     }
-    GetBestScalingOfDoublesToInt64(coefficients,
-                                   std::numeric_limits<int64_t>::max(),
-                                   &scaling_factor, &relative_error);
+    GetBestScalingOfDoublesToInt64(coefficients, kint64max, &scaling_factor,
+                                   &relative_error);
     const int64_t gcd =
         ComputeGcdOfRoundedDoubles(coefficients, scaling_factor);
     max_relative_error = std::max(relative_error, max_relative_error);
@@ -647,13 +646,11 @@ void IntegralProblemConverter::ConvertAllConstraints(
       const Fractional offset_lower_bound = lower_bound - offset;
       const double offset_scaled_lower_bound =
           round(offset_lower_bound * scaling_factor - bound_error);
-      if (offset_scaled_lower_bound >=
-          static_cast<double>(std::numeric_limits<int64_t>::max())) {
+      if (offset_scaled_lower_bound >= static_cast<double>(kint64max)) {
         LOG(WARNING) << "A constraint is trivially unsatisfiable.";
         return;
       }
-      if (offset_scaled_lower_bound >
-          -static_cast<double>(std::numeric_limits<int64_t>::max())) {
+      if (offset_scaled_lower_bound > -static_cast<double>(kint64max)) {
         // Otherwise, the constraint is not needed.
         constraint->set_lower_bound(
             static_cast<int64_t>(offset_scaled_lower_bound) / gcd);
@@ -665,13 +662,11 @@ void IntegralProblemConverter::ConvertAllConstraints(
       const Fractional offset_upper_bound = upper_bound - offset;
       const double offset_scaled_upper_bound =
           round(offset_upper_bound * scaling_factor + bound_error);
-      if (offset_scaled_upper_bound <=
-          -static_cast<double>(std::numeric_limits<int64_t>::max())) {
+      if (offset_scaled_upper_bound <= -static_cast<double>(kint64max)) {
         LOG(WARNING) << "A constraint is trivially unsatisfiable.";
         return;
       }
-      if (offset_scaled_upper_bound <
-          static_cast<double>(std::numeric_limits<int64_t>::max())) {
+      if (offset_scaled_upper_bound < static_cast<double>(kint64max)) {
         // Otherwise, the constraint is not needed.
         constraint->set_upper_bound(
             static_cast<int64_t>(offset_scaled_upper_bound) / gcd);
@@ -703,9 +698,8 @@ void IntegralProblemConverter::ConvertObjective(
   double scaling_factor = 0.0;
   double max_relative_error = 0.0;
   double relative_error = 0.0;
-  GetBestScalingOfDoublesToInt64(coefficients,
-                                 std::numeric_limits<int64_t>::max(),
-                                 &scaling_factor, &relative_error);
+  GetBestScalingOfDoublesToInt64(coefficients, kint64max, &scaling_factor,
+                                 &relative_error);
   const int64_t gcd = ComputeGcdOfRoundedDoubles(coefficients, scaling_factor);
   max_relative_error = std::max(relative_error, max_relative_error);
   VLOG(1) << "objective relative error: " << relative_error;

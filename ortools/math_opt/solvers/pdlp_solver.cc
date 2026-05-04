@@ -36,6 +36,7 @@
 #include "absl/time/time.h"
 #include "ortools/base/protoutil.h"
 #include "ortools/base/status_macros.h"
+#include "ortools/base/types.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/inverted_bounds.h"
 #include "ortools/math_opt/core/math_opt_proto_utils.h"
@@ -124,8 +125,8 @@ absl::StatusOr<PrimalDualHybridGradientParams> PdlpSolver::MergeParameters(
     warnings.push_back("parameter scaling not supported for PDLP");
   }
   if (parameters.has_iteration_limit()) {
-    const int64_t limit = std::min<int64_t>(std::numeric_limits<int32_t>::max(),
-                                            parameters.iteration_limit());
+    const int64_t limit =
+        std::min<int64_t>(kint32max, parameters.iteration_limit());
     result.mutable_termination_criteria()->set_iteration_limit(
         static_cast<int32_t>(limit));
   }

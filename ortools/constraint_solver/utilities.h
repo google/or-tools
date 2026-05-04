@@ -19,6 +19,7 @@
 #include <vector>
 
 #include "absl/log/check.h"
+#include "ortools/base/types.h"
 
 namespace operations_research {
 
@@ -43,7 +44,7 @@ bool IsArrayInRange(const std::vector<VarType*>& vars, ValType min,
 
 template <class VarType>
 int64_t MinVarArray(const std::vector<VarType*>& vars) {
-  int64_t min_val = std::numeric_limits<int64_t>::max();
+  int64_t min_val = kint64max;
   for (VarType* var : vars) {
     min_val = std::min(min_val, var->Min());
   }
@@ -52,7 +53,7 @@ int64_t MinVarArray(const std::vector<VarType*>& vars) {
 
 template <class VarType>
 int64_t MaxVarArray(const std::vector<VarType*>& vars) {
-  int64_t max_val = std::numeric_limits<int64_t>::min();
+  int64_t max_val = kint64min;
   for (VarType* var : vars) {
     max_val = std::max(max_val, var->Max());
   }

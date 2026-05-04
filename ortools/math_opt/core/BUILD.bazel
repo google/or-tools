@@ -131,6 +131,7 @@ cc_library(
     hdrs = ["model_summary.h"],
     deps = [
         "//ortools/base:status_macros",
+        "//ortools/base:types",
         "//ortools/math_opt:model_cc_proto",
         "//ortools/math_opt:model_update_cc_proto",
         "@abseil-cpp//absl/algorithm:container",
@@ -157,6 +158,7 @@ cc_test(
         "//ortools/base:gmock",
         "//ortools/base:gmock_main",
         "//ortools/base:parse_text_proto",
+        "//ortools/base:types",
         "//ortools/math_opt:model_cc_proto",
         "//ortools/math_opt:model_update_cc_proto",
         "@abseil-cpp//absl/status",

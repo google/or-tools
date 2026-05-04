@@ -42,6 +42,7 @@
 #include "google/protobuf/arena.h"
 #include "ortools/base/iterator_adaptors.h"
 #include "ortools/base/stl_util.h"
+#include "ortools/base/types.h"
 #include "ortools/flatzinc/checker.h"
 #include "ortools/flatzinc/model.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -68,7 +69,7 @@ namespace sat {
 
 namespace {
 
-static const int kNoVar = std::numeric_limits<int>::min();
+static const int kNoVar = kint32min;
 
 struct VarOrValue {
   int var = kNoVar;
@@ -573,8 +574,7 @@ void CpModelProtoWithMapping::AddTermToLinearConstraint(
     // We need to update the domain of the constraint.
     for (int i = 0; i < ct->domain_size(); ++i) {
       const int64_t b = ct->domain(i);
-      if (b == std::numeric_limits<int64_t>::min() ||
-          b == std::numeric_limits<int64_t>::max()) {
+      if (b == kint64min || b == kint64max) {
         continue;
       }
       ct->set_domain(i, b - coeff);
@@ -596,8 +596,8 @@ void CpModelProtoWithMapping::AddLexOrdering(absl::Span<const int> x,
 
   if (!sat_enumeration && absl::GetFlag(FLAGS_fz_use_light_encoding)) {
     // Faster version, but can produce duplicate solutions.
-    const Domain le_domain(std::numeric_limits<int64_t>::min(), 0);
-    const Domain lt_domain(std::numeric_limits<int64_t>::min(), -1);
+    const Domain le_domain(kint64min, 0);
+    const Domain lt_domain(kint64min, -1);
     for (int i = 0; i < min_size; ++i) {
       // hold[i] => x[i] <= y[i].
       AddLinearConstraint({hold[i]}, le_domain, {{x[i], 1}, {y[i], -1}});
@@ -872,7 +872,7 @@ void CpModelProtoWithMapping::AddAllEncodingConstraints() {
         }
       }
 
-      const Domain le_domain(std::numeric_limits<int64_t>::min(), value);
+      const Domain le_domain(kint64min, value);
       AddLinearConstraint({lit}, le_domain, {{var, 1}});
       AddLinearConstraint({NegatedRef(lit)}, le_domain.Complement(),
                           {{var, 1}});
@@ -993,11 +993,9 @@ void CpModelProtoWithMapping::AddVarLtVarLiteral(int var1, int var2, int lit) {
       is_ge->add_literals(var1);
       is_ge->add_literals(NegatedRef(var2));
     } else {
-      AddLinearConstraint({lit},
-                          Domain(std::numeric_limits<int64_t>::min(), -1),
+      AddLinearConstraint({lit}, Domain(kint64min, -1),
                           {{var1, 1}, {var2, -1}});
-      AddLinearConstraint({NegatedRef(lit)},
-                          Domain(0, std::numeric_limits<int64_t>::max()),
+      AddLinearConstraint({NegatedRef(lit)}, Domain(0, kint64max),
                           {{var1, 1}, {var2, -1}});
     }
   }
@@ -1204,8 +1202,7 @@ void CpModelProtoWithMapping::FillAMinusBInDomain(
     const int64_t value = fz_ct.arguments[1].Value();
     const int var_a = LookupVar(fz_ct.arguments[0]);
     for (const int64_t domain_bound : domain) {
-      if (domain_bound == std::numeric_limits<int64_t>::min() ||
-          domain_bound == std::numeric_limits<int64_t>::max()) {
+      if (domain_bound == kint64min || domain_bound == kint64max) {
         arg->add_domain(domain_bound);
       } else {
         arg->add_domain(domain_bound + value);
@@ -1216,10 +1213,10 @@ void CpModelProtoWithMapping::FillAMinusBInDomain(
     const int64_t value = fz_ct.arguments[0].Value();
     const int var_b = LookupVar(fz_ct.arguments[1]);
     for (int64_t domain_bound : gtl::reversed_view(domain)) {
-      if (domain_bound == std::numeric_limits<int64_t>::min()) {
-        arg->add_domain(std::numeric_limits<int64_t>::max());
-      } else if (domain_bound == std::numeric_limits<int64_t>::max()) {
-        arg->add_domain(std::numeric_limits<int64_t>::min());
+      if (domain_bound == kint64min) {
+        arg->add_domain(kint64max);
+      } else if (domain_bound == kint64max) {
+        arg->add_domain(kint64min);
       } else {
         arg->add_domain(value - domain_bound);
       }
@@ -1336,22 +1333,22 @@ void CpModelProtoWithMapping::ArrayBoolXorConstraint(
 
 void CpModelProtoWithMapping::BoolOrIntLeConstraint(const fz::Constraint& fz_ct,
                                                     ConstraintProto* ct) {
-  FillAMinusBInDomain({std::numeric_limits<int64_t>::min(), 0}, fz_ct, ct);
+  FillAMinusBInDomain({kint64min, 0}, fz_ct, ct);
 }
 
 void CpModelProtoWithMapping::BoolOrIntGeConstraint(const fz::Constraint& fz_ct,
                                                     ConstraintProto* ct) {
-  FillAMinusBInDomain({0, std::numeric_limits<int64_t>::max()}, fz_ct, ct);
+  FillAMinusBInDomain({0, kint64max}, fz_ct, ct);
 }
 
 void CpModelProtoWithMapping::BoolOrIntLtConstraint(const fz::Constraint& fz_ct,
                                                     ConstraintProto* ct) {
-  FillAMinusBInDomain({std::numeric_limits<int64_t>::min(), -1}, fz_ct, ct);
+  FillAMinusBInDomain({kint64min, -1}, fz_ct, ct);
 }
 
 void CpModelProtoWithMapping::BoolOrIntGtConstraint(const fz::Constraint& fz_ct,
                                                     ConstraintProto* ct) {
-  FillAMinusBInDomain({1, std::numeric_limits<int64_t>::max()}, fz_ct, ct);
+  FillAMinusBInDomain({1, kint64max}, fz_ct, ct);
 }
 
 void CpModelProtoWithMapping::BoolEqConstraint(const fz::Constraint& fz_ct,
@@ -1369,9 +1366,7 @@ void CpModelProtoWithMapping::BoolNeConstraint(const fz::Constraint& fz_ct,
 
 void CpModelProtoWithMapping::IntNeConstraint(const fz::Constraint& fz_ct,
                                               ConstraintProto* ct) {
-  FillAMinusBInDomain({std::numeric_limits<int64_t>::min(), -1, 1,
-                       std::numeric_limits<int64_t>::max()},
-                      fz_ct, ct);
+  FillAMinusBInDomain({kint64min, -1, 1, kint64max}, fz_ct, ct);
 }
 
 void CpModelProtoWithMapping::IntLinEqConstraint(const fz::Constraint& fz_ct,
@@ -1406,38 +1401,32 @@ void CpModelProtoWithMapping::BoolLinEqConstraint(const fz::Constraint& fz_ct,
 void CpModelProtoWithMapping::BoolOrIntLinLeConstraint(
     const fz::Constraint& fz_ct, ConstraintProto* ct) {
   const int64_t rhs = fz_ct.arguments[2].values[0];
-  FillLinearConstraintWithGivenDomain(
-      {std::numeric_limits<int64_t>::min(), rhs}, fz_ct, ct);
+  FillLinearConstraintWithGivenDomain({kint64min, rhs}, fz_ct, ct);
 }
 
 void CpModelProtoWithMapping::IntLinLtConstraint(const fz::Constraint& fz_ct,
                                                  ConstraintProto* ct) {
   const int64_t rhs = fz_ct.arguments[2].values[0];
-  FillLinearConstraintWithGivenDomain(
-      {std::numeric_limits<int64_t>::min(), rhs - 1}, fz_ct, ct);
+  FillLinearConstraintWithGivenDomain({kint64min, rhs - 1}, fz_ct, ct);
 }
 
 void CpModelProtoWithMapping::IntLinGeConstraint(const fz::Constraint& fz_ct,
                                                  ConstraintProto* ct) {
   const int64_t rhs = fz_ct.arguments[2].values[0];
-  FillLinearConstraintWithGivenDomain(
-      {rhs, std::numeric_limits<int64_t>::max()}, fz_ct, ct);
+  FillLinearConstraintWithGivenDomain({rhs, kint64max}, fz_ct, ct);
 }
 
 void CpModelProtoWithMapping::IntLinGtConstraint(const fz::Constraint& fz_ct,
                                                  ConstraintProto* ct) {
   const int64_t rhs = fz_ct.arguments[2].values[0];
-  FillLinearConstraintWithGivenDomain(
-      {rhs + 1, std::numeric_limits<int64_t>::max()}, fz_ct, ct);
+  FillLinearConstraintWithGivenDomain({rhs + 1, kint64max}, fz_ct, ct);
 }
 
 void CpModelProtoWithMapping::IntLinNeConstraint(const fz::Constraint& fz_ct,
                                                  ConstraintProto* ct) {
   const int64_t rhs = fz_ct.arguments[2].values[0];
-  FillLinearConstraintWithGivenDomain(
-      {std::numeric_limits<int64_t>::min(), rhs - 1, rhs + 1,
-       std::numeric_limits<int64_t>::max()},
-      fz_ct, ct);
+  FillLinearConstraintWithGivenDomain({kint64min, rhs - 1, rhs + 1, kint64max},
+                                      fz_ct, ct);
 }
 
 void CpModelProtoWithMapping::SetCardConstraint(const fz::Constraint& fz_ct,
@@ -1810,8 +1799,8 @@ void CpModelProtoWithMapping::OrToolsArgMax(const fz::Constraint& fz_ct,
   const int64_t min_index = fz_ct.arguments[2].Value();
   const int64_t multiplier = fz_ct.arguments[3].Value();
   DCHECK_EQ(std::abs(multiplier), 1);
-  int64_t min_range = std::numeric_limits<int64_t>::max();
-  int64_t max_range = std::numeric_limits<int64_t>::min();
+  int64_t min_range = kint64max;
+  int64_t max_range = kint64min;
   auto* max_array = ct->mutable_lin_max();
   for (int i = 0; i < num_vars; ++i) {
     const IntegerVariableProto& var_proto = proto.variables(x[i]);
@@ -1845,10 +1834,9 @@ void CpModelProtoWithMapping::OrToolsArgMax(const fz::Constraint& fz_ct,
     const int64_t index = value - min_index;
     AddLinearConstraint({literal}, Domain(index - num_vars),
                         {{x[index], num_vars * multiplier}, {max_var, -1}});
-    AddLinearConstraint(
-        {NegatedRef(literal)},
-        {std::numeric_limits<int64_t>::min(), index - num_vars - 1},
-        {{x[index], num_vars * multiplier}, {max_var, -1}});
+    AddLinearConstraint({NegatedRef(literal)},
+                        {kint64min, index - num_vars - 1},
+                        {{x[index], num_vars * multiplier}, {max_var, -1}});
   }
 }
 
@@ -1967,8 +1955,7 @@ void CpModelProtoWithMapping::OrToolsCircuit(const fz::Constraint& fz_ct,
     if (is_circuit) {
       // We simply make sure that the variable cannot take the value index.
       domain = domain.IntersectionWith(Domain::FromIntervals(
-          {{std::numeric_limits<int64_t>::min(), index - 1},
-           {index + 1, std::numeric_limits<int64_t>::max()}}));
+          {{kint64min, index - 1}, {index + 1, kint64max}}));
     }
     FillDomainInProto(domain, proto.mutable_variables(var));
 
@@ -2794,12 +2781,12 @@ void CpModelProtoWithMapping::OrToolsArrayVarSetElementConstraint(
 
   BoolArgumentProto* exactly_one =
       proto.add_constraints()->mutable_exactly_one();
-  for (const int64_t value : array_index_set->sorted_values) {
-    const int index_literal = GetOrCreateEncodingLiteral(index, value);
+  for (const int64_t pos : array_index_set->sorted_values) {
+    const int index_literal = GetOrCreateEncodingLiteral(index, pos);
     exactly_one->add_literals(index_literal);
 
     std::shared_ptr<SetVariable> set_var =
-        LookupSetVarAt(fz_ct.arguments[2], value - min_index);
+        LookupSetVarAt(fz_ct.arguments[2], pos - min_index);
     absl::btree_map<int64_t, int> set_values_to_literals;
     for (int i = 0; i < set_var->sorted_values.size(); ++i) {
       set_values_to_literals[set_var->sorted_values[i]] =
@@ -3407,21 +3394,17 @@ void CpModelProtoWithMapping::FillReifiedOrImpliedConstraint(
           AddImplication({}, NegatedRef(e));
         }
       } else {
-        AddLinearConstraint({e},
-                            {left.value, std::numeric_limits<int64_t>::max()},
-                            {{right.var, 1}});
+        AddLinearConstraint({e}, {left.value, kint64max}, {{right.var, 1}});
       }
     } else if (right.var == kNoVar) {
-      AddLinearConstraint({e},
-                          {std::numeric_limits<int64_t>::min(), right.value},
-                          {{left.var, 1}});
+      AddLinearConstraint({e}, {kint64min, right.value}, {{left.var, 1}});
     } else {
       const std::optional<int> lit = GetVarLeVarLiteral(left.var, right.var);
       if (lit.has_value()) {
         AddImplication({e}, lit.value());
         ++num_var_op_var_imp_cached;
       } else {
-        AddLinearConstraint({e}, {std::numeric_limits<int64_t>::min(), 0},
+        AddLinearConstraint({e}, {kint64min, 0},
                             {{left.var, 1}, {right.var, -1}});
       }
     }

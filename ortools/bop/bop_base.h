@@ -24,6 +24,7 @@
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/base/types.h"
 #include "ortools/bop/boolean_problem.pb.h"
 #include "ortools/bop/bop_parameters.pb.h"
 #include "ortools/bop/bop_solution.h"
@@ -255,7 +256,7 @@ struct LearnedInfo {
   explicit LearnedInfo(const LinearBooleanProblem& problem)
       : fixed_literals(),
         solution(problem, "AllZero"),
-        lower_bound(std::numeric_limits<int64_t>::min()),
+        lower_bound(kint64min),
         lp_values(),
         binary_clauses() {}
 
@@ -263,7 +264,7 @@ struct LearnedInfo {
   // to reduce the number of creation / deletion of objects.
   void Clear() {
     fixed_literals.clear();
-    lower_bound = std::numeric_limits<int64_t>::min();
+    lower_bound = kint64min;
     lp_values.clear();
     binary_clauses.clear();
   }

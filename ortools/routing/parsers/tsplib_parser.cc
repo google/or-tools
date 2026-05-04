@@ -17,7 +17,6 @@
 #include <cmath>
 #include <cstdint>
 #include <iterator>
-#include <limits>
 #include <memory>
 #include <string>
 #include <utility>
@@ -42,6 +41,7 @@
 #include "ortools/base/status_builder.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/base/strtoint.h"
+#include "ortools/base/types.h"
 #include "ortools/base/zipfile.h"
 #include "ortools/routing/parsers/simple_graph.h"
 #include "ortools/util/filelineiter.h"
@@ -169,8 +169,8 @@ std::shared_ptr<zipfile::ZipArchive> OpenZipArchiveIfItExists(
 
 TspLibParser::TspLibParser()
     : size_(0),
-      capacity_(std::numeric_limits<int64_t>::max()),
-      max_distance_(std::numeric_limits<int64_t>::max()),
+      capacity_(kint64max),
+      max_distance_(kint64max),
       distance_function_(nullptr),
       explicit_costs_(),
       depot_(0),
@@ -511,7 +511,7 @@ bool TspLibParser::ParseSections(absl::Span<const std::string> words) {
       break;
     }
     case FIXED_EDGES_SECTION: {
-      to_read_ = std::numeric_limits<int64_t>::max();
+      to_read_ = kint64max;
       break;
     }
     case NODE_COORD_TYPE: {
@@ -529,7 +529,7 @@ bool TspLibParser::ParseSections(absl::Span<const std::string> words) {
       break;
     }
     case DEPOT_SECTION: {
-      to_read_ = std::numeric_limits<int64_t>::max();
+      to_read_ = kint64max;
       break;
     }
     case DEMAND_SECTION: {

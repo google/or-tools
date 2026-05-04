@@ -797,7 +797,7 @@ class PathOperator : public IntVarLocalSearchOperator {
   virtual int64_t GetBaseNodeRestartPosition(int base_index) {
     return StartNode(base_index);
   }
-  /// Set the next base to increment on next iteration. All base > base_index
+  /// Sets the next base to increment on next iteration. All base > base_index
   /// will be reset to their start value.
   virtual void SetNextBaseToIncrement(int64_t base_index) {
     next_base_to_increment_ = base_index;

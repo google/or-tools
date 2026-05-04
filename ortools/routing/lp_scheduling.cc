@@ -40,6 +40,7 @@
 #include "ortools/base/map_util.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/interval.h"
 #include "ortools/glop/parameters.pb.h"
@@ -58,9 +59,6 @@
 namespace operations_research::routing {
 
 namespace {
-
-constexpr int64_t kint64min = std::numeric_limits<int64_t>::min();
-constexpr int64_t kint64max = std::numeric_limits<int64_t>::max();
 
 // The following sets of parameters give the fastest response time without
 // impacting solutions found negatively.

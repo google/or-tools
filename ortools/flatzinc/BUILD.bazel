@@ -30,6 +30,7 @@ cc_library(
     hdrs = ["model.h"],
     deps = [
         "//ortools/base:stl_util",
+        "//ortools/base:types",
         "//ortools/util:logging",
         "//ortools/util:string_array",
         "@abseil-cpp//absl/base:core_headers",
@@ -93,6 +94,7 @@ cc_library(
         "//ortools/base",
         "@abseil-cpp//absl/strings",
     ],
+    alwayslink = 1,
 )
 
 cc_library(
@@ -134,11 +136,13 @@ cc_library(
     hdrs = ["checker.h"],
     deps = [
         ":model",
+        "//ortools/base:types",
         "//ortools/util:logging",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -155,6 +159,7 @@ cc_library(
         ":model",
         "//ortools/base:iterator_adaptors",
         "//ortools/base:stl_util",
+        "//ortools/base:types",
         "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:cp_model_checker",
         "//ortools/sat:cp_model_solver",

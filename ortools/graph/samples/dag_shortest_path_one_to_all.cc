@@ -15,6 +15,7 @@
 // [START imports]
 #include <cstdint>
 #include <iostream>
+#include <utility>
 #include <vector>
 
 #include "absl/log/check.h"

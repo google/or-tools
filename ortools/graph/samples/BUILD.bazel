@@ -280,6 +280,7 @@ cc_binary(
     srcs = ["dijkstra_one_to_all.cc"],
     deps = [
         "//ortools/base",
+        "//ortools/base:types",
         "//ortools/graph:bounded_dijkstra",
         "//ortools/graph_base:graph",
         "@abseil-cpp//absl/strings",
@@ -297,6 +298,7 @@ cc_binary(
     srcs = ["dijkstra_sequential.cc"],
     deps = [
         "//ortools/base",
+        "//ortools/base:types",
         "//ortools/graph:bounded_dijkstra",
         "//ortools/graph_base:graph",
         "@abseil-cpp//absl/log:check",
@@ -315,6 +317,7 @@ cc_binary(
     srcs = ["dijkstra_all_pairs_shortest_paths.cc"],
     deps = [
         "//ortools/base",
+        "//ortools/base:types",
         "//ortools/graph:bounded_dijkstra",
         "//ortools/graph_base:graph",
         "@abseil-cpp//absl/algorithm:container",

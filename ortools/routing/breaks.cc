@@ -22,6 +22,7 @@
 #include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/algorithms/binary_search.h"
+#include "ortools/base/types.h"
 #include "ortools/routing/filter_committables.h"
 #include "ortools/util/saturated_arithmetic.h"
 
@@ -214,8 +215,6 @@ BreakPropagator::PropagationResult BreakPropagator::PropagateInterbreak(
   // We use fake breaks for start/end of path:
   // - start break: [kint64min, cumul[0])
   // - end break: [cumul[n-1], kint64max).
-  const int64_t kint64min = std::numeric_limits<int64_t>::min();
-  const int64_t kint64max = std::numeric_limits<int64_t>::max();
   vehicle_breaks.push_back({.start = {kint64min, kint64min},
                             .end = cumuls.front(),
                             .duration = {0, kint64max},

@@ -24,6 +24,7 @@
 #include "absl/log/check.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
+#include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraints.h"
 #include "ortools/constraint_solver/expressions.h"
@@ -597,7 +598,7 @@ IsMemberCt::IsMemberCt(Solver* s, IntVar* v,
       support_(0),
       demon_(nullptr),
       domain_(var_->MakeDomainIterator(true)),
-      neg_support_(std::numeric_limits<int64_t>::min()) {
+      neg_support_(kint64min) {
   DCHECK(v != nullptr);
   DCHECK(s != nullptr);
   DCHECK(b != nullptr);

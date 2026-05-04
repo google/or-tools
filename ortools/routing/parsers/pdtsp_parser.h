@@ -23,7 +23,6 @@
 #include <vector>
 
 #include "absl/strings/string_view.h"
-#include "ortools/base/types.h"
 
 namespace operations_research::routing {
 

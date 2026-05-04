@@ -27,6 +27,7 @@
 #include "absl/types/span.h"
 #include "ortools/base/status_builder.h"
 #include "ortools/base/status_macros.h"
+#include "ortools/base/types.h"
 #include "ortools/math_opt/elemental/attr_key.h"
 #include "ortools/math_opt/elemental/attributes.h"
 #include "ortools/math_opt/elemental/derived_data.h"
@@ -42,13 +43,11 @@ namespace operations_research::math_opt {
 
 namespace {
 
-constexpr int32_t kInt32Max = std::numeric_limits<int32_t>::max();
-
 absl::Status CanExportToProto(int64_t num_entries) {
-  if (num_entries > kInt32Max) {
+  if (num_entries > kint32max) {
     return util::InvalidArgumentErrorBuilder()
            << "Cannot export to proto, RepeatedField can hold at most "
-              "std::numeric_limits<int32_t>::max() = 2**31-1 = 2147483647 "
+              "kint32max = 2**31-1 = 2147483647 "
               "entries "
               "but found: "
            << num_entries << " entries";
@@ -153,7 +152,7 @@ std::optional<SparseDoubleVectorProto> ExportSparseDoubleVector(
   if (keys.empty()) {
     return std::nullopt;
   }
-  CHECK_LE(keys.size(), kInt32Max);
+  CHECK_LE(keys.size(), kint32max);
   SparseDoubleVectorProto result;
   const int32_t num_keys = static_cast<int32_t>(keys.size());
   result.mutable_ids()->Reserve(num_keys);
@@ -189,7 +188,7 @@ std::optional<SparseDoubleMatrixProto> ExportSparseDoubleMatrix(
   if (keys.empty()) {
     return std::nullopt;
   }
-  CHECK_LE(keys.size(), kInt32Max);
+  CHECK_LE(keys.size(), kint32max);
   SparseDoubleMatrixProto result;
   // See function level comment, the caller must ensure this is safe.
   const int nnz = static_cast<int>(keys.size());
@@ -217,7 +216,7 @@ std::optional<SparseDoubleVectorProto> ExportSparseDoubleMatrixSlice(
   if (slice.empty()) {
     return std::nullopt;
   }
-  CHECK_LE(slice.size(), kInt32Max);
+  CHECK_LE(slice.size(), kint32max);
   const int slice_size = static_cast<int>(slice.size());
   absl::c_sort(slice);
   SparseDoubleVectorProto vec;
@@ -315,7 +314,7 @@ ExportQuadraticConstraints(
     const ElementIdsSpan<ElementType::kQuadraticConstraint> quad_con_ids,
     const bool remove_names) {
   absl::flat_hash_map<QuadraticConstraintId, QuadraticConstraintProto> result;
-  CHECK_LE(quad_con_ids.size(), kInt32Max);
+  CHECK_LE(quad_con_ids.size(), kint32max);
   for (const QuadraticConstraintId id : quad_con_ids) {
     QuadraticConstraintProto quad_con;
     if (!remove_names) {
@@ -359,7 +358,7 @@ ExportIndicatorConstraints(
     const ElementIdsSpan<ElementType::kIndicatorConstraint> ind_con_ids,
     const bool remove_names) {
   absl::flat_hash_map<IndicatorConstraintId, IndicatorConstraintProto> result;
-  CHECK_LE(ind_con_ids.size(), kInt32Max);
+  CHECK_LE(ind_con_ids.size(), kint32max);
   for (const IndicatorConstraintId id : ind_con_ids) {
     IndicatorConstraintProto ind_con;
     if (!remove_names) {

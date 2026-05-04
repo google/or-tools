@@ -42,6 +42,7 @@
 #include "absl/types/span.h"
 #include "ortools/base/protoutil.h"
 #include "ortools/base/status_macros.h"
+#include "ortools/base/types.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/empty_bounds.h"
 #include "ortools/math_opt/core/inverted_bounds.h"
@@ -432,8 +433,8 @@ void SetTimeLimitParameter(const SolveParametersProto& parameters,
   if (parameters.has_time_limit()) {
     const int64_t time_limit_ms = absl::ToInt64Milliseconds(
         util_time::DecodeGoogleApiProto(parameters.time_limit()).value());
-    glpk_parameters.tm_lim = static_cast<int>(std::min(
-        static_cast<int64_t>(std::numeric_limits<int>::max()), time_limit_ms));
+    glpk_parameters.tm_lim = static_cast<int>(
+        std::min(static_cast<int64_t>(kint32max), time_limit_ms));
   }
 }
 
@@ -443,8 +444,8 @@ absl::Status SetLPParameters(const SolveParametersProto& parameters,
                              glp_smcp& glpk_parameters) {
   std::vector<std::string> warnings;
   if (parameters.has_iteration_limit()) {
-    int limit = static_cast<int>(std::min<int64_t>(
-        std::numeric_limits<int>::max(), parameters.iteration_limit()));
+    int limit = static_cast<int>(
+        std::min<int64_t>(kint32max, parameters.iteration_limit()));
     glpk_parameters.it_lim = limit;
   }
   switch (parameters.presolve()) {
