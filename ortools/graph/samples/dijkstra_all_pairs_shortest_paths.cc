@@ -25,13 +25,13 @@
 // The problem is naturally modeled on an undirected graph, but our APSP is
 // implemented for directed graphs, so we include each edge as two arcs.
 
-#include <memory>
 #define _USE_MATH_DEFINES  // Needed for visual studio for M_PI.
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <iostream>
 #include <limits>
+#include <memory>
 #include <utility>
 #include <vector>
 
