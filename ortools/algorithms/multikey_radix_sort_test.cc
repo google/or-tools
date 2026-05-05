@@ -361,7 +361,8 @@ TEST(MultikeyRadixSortTest, SortsEmptyVector) {
 
 TEST(RadixSortMinMaxTest, SortsEmptyVector) {
   std::vector<int64_t> values = {};
-  RadixSortMinMax(int64_t{0}, int64_t{0}, values, [](const auto& val) { return val; });
+  RadixSortMinMax(int64_t{0}, int64_t{0}, values,
+                  [](const auto& val) { return val; });
   EXPECT_THAT(values, testing::IsEmpty());
 }
 
