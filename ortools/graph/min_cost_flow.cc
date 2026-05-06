@@ -20,6 +20,7 @@
 #include <limits>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "absl/base/attributes.h"
@@ -1016,6 +1017,29 @@ template class GenericMinCostFlow<
     /*ArcFlowType=*/int16_t,
     /*ArcScaledCostType=*/int32_t>;
 
+absl::string_view StatusName(MinCostFlowBase::Status status) {
+  switch (status) {
+    case MinCostFlowBase::NOT_SOLVED:
+      return "NOT_SOLVED";
+    case MinCostFlowBase::OPTIMAL:
+      return "OPTIMAL";
+    case MinCostFlowBase::FEASIBLE:
+      return "FEASIBLE";
+    case MinCostFlowBase::INFEASIBLE:
+      return "INFEASIBLE";
+    case MinCostFlowBase::UNBALANCED:
+      return "UNBALANCED";
+    case MinCostFlowBase::BAD_RESULT:
+      return "BAD_RESULT";
+    case MinCostFlowBase::BAD_COST_RANGE:
+      return "BAD_COST_RANGE";
+    case MinCostFlowBase::BAD_CAPACITY_RANGE:
+      return "BAD_CAPACITY_RANGE";
+  }
+  LOG(DFATAL) << "Unknown MinCostFlow status: " << static_cast<int>(status);
+  return "UNKNOWN_STATUS";
+}
+
 SimpleMinCostFlow::SimpleMinCostFlow(NodeIndex reserve_num_nodes,
                                      ArcIndex reserve_num_arcs) {
   if (reserve_num_nodes > 0) {
@@ -1097,23 +1121,23 @@ SimpleMinCostFlow::Status SimpleMinCostFlow::SolveWithPossibleAdjustment(
   const NodeIndex sink = num_nodes + 1;
   const NodeIndex augmented_num_nodes = num_nodes + 2;
 
-  Graph graph(augmented_num_nodes, augmented_num_arcs);
+  Graph::Builder builder(augmented_num_nodes, augmented_num_arcs);
   for (ArcIndex arc = 0; arc < num_arcs; ++arc) {
-    graph.AddArc(arc_tail_[arc], arc_head_[arc]);
+    builder.AddArc(arc_tail_[arc], arc_head_[arc]);
   }
 
   for (NodeIndex node = 0; node < num_nodes; ++node) {
     if (node_supply_[node] > 0) {
-      graph.AddArc(source, node);
+      builder.AddArc(source, node);
     } else if (node_supply_[node] < 0) {
-      graph.AddArc(node, sink);
+      builder.AddArc(node, sink);
     }
   }
 
-  graph.Build(&arc_permutation_);
+  const auto graph = std::move(builder).Build(&arc_permutation_);
 
   {
-    GenericMaxFlow<Graph> max_flow(&graph, source, sink);
+    GenericMaxFlow<Graph> max_flow(graph.get(), source, sink);
     ArcIndex arc;
     for (arc = 0; arc < num_arcs; ++arc) {
       max_flow.SetArcCapacity(PermutedArc(arc), arc_capacity_[arc]);
@@ -1145,7 +1169,7 @@ SimpleMinCostFlow::Status SimpleMinCostFlow::SolveWithPossibleAdjustment(
     return INFEASIBLE;
   }
 
-  GenericMinCostFlow<Graph> min_cost_flow(&graph);
+  GenericMinCostFlow<Graph> min_cost_flow(graph.get());
   ArcIndex arc;
   for (arc = 0; arc < num_arcs; ++arc) {
     ArcIndex permuted_arc = PermutedArc(arc);

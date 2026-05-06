@@ -684,22 +684,21 @@ std::pair<DistanceType, std::vector<NodeIndex>> SimpleOneToOneShortestPath(
 
   // Build the graph. Note that this permutes arc indices for speed, but we
   // don't care here since we will return a node path.
-  util::StaticGraph<NodeIndex, ArcIndex> graph(num_nodes, num_arcs);
+  typename util::StaticGraph<NodeIndex, ArcIndex>::Builder builder(num_nodes,
+                                                                   num_arcs);
   std::vector<DistanceType> arc_lengths(lengths.begin(), lengths.end());
   for (ArcIndex a = 0; a < num_arcs; ++a) {
     // Negative length can cause the algo to loop forever and/or use a lot of
     // memory. So it should be validated.
     CHECK_GE(lengths[a], 0);
-    graph.AddArc(tails[a], heads[a]);
+    builder.AddArc(tails[a], heads[a]);
   }
-  std::vector<int> permutation;
-  graph.Build(&permutation);
-  util::Permute(permutation, &arc_lengths);
+  const auto graph = std::move(builder).BuildAndPermute(arc_lengths);
 
   // Compute a shortest path.
   // This should work for both float/double or integer distances.
-  BoundedDijkstraWrapper<util::StaticGraph<>, DistanceType> wrapper(
-      &graph, &arc_lengths);
+  BoundedDijkstraWrapper<util::StaticGraph<NodeIndex, ArcIndex>, DistanceType>
+      wrapper(graph.get(), &arc_lengths);
   if (!wrapper.OneToOneShortestPath(source, destination, limit)) {
     // No path exists, or shortest_distance >= limit.
     return {limit, {}};

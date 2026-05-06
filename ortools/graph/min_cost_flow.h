@@ -247,6 +247,9 @@ class MinCostFlowBase {
   };
 };
 
+// Returns a string representation of the Status enum.
+absl::string_view StatusName(MinCostFlowBase::Status status);
+
 // A simple and efficient min-cost flow interface. This is as fast as
 // GenericMinCostFlow<ReverseArcStaticGraph>, which is the fastest, but is uses
 // more memory in order to hide the somewhat involved construction of the

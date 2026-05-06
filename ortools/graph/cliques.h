@@ -37,6 +37,7 @@
 #include "absl/strings/str_cat.h"
 #include "ortools/base/strong_int.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/base/types.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/time_limit.h"
 
@@ -208,7 +209,7 @@ class BronKerboschAlgorithm {
   // it returns COMPLETED any subsequent call to the method will resume the
   // search from the beginning.
   BronKerboschAlgorithmStatus RunWithTimeLimit(TimeLimit* time_limit) {
-    return RunWithTimeLimit(std::numeric_limits<int64_t>::max(), time_limit);
+    return RunWithTimeLimit(kint64max, time_limit);
   }
 
  private:
@@ -415,7 +416,7 @@ class WeightedBronKerboschBitsetAlgorithm {
 
  private:
   int64_t work_ = 0;
-  int64_t work_limit_ = std::numeric_limits<int64_t>::max();
+  int64_t work_limit_ = kint64max;
   double weight_threshold_ = 0.0;
 
   std::vector<double> weights_;
@@ -641,7 +642,7 @@ BronKerboschAlgorithmStatus BronKerboschAlgorithm<NodeIndex>::RunIterations(
 
 template <typename NodeIndex>
 BronKerboschAlgorithmStatus BronKerboschAlgorithm<NodeIndex>::Run() {
-  return RunIterations(std::numeric_limits<int64_t>::max());
+  return RunIterations(kint64max);
 }
 
 template <typename NodeIndex>

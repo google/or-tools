@@ -16,15 +16,12 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
-#include <random>
+#include <utility>
 #include <vector>
 
-#include "absl/flags/declare.h"
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
-#include "absl/random/distributions.h"
 #include "absl/types/span.h"
-#include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/graph_base/graph.h"
@@ -44,7 +41,7 @@ struct AssignmentProblemSetup {
   // The usual constructor, for normal tests where the graph is balanced.
   AssignmentProblemSetup(NodeIndex num_left_nodes, ArcIndex num_arcs)
       : num_left_nodes(num_left_nodes),
-        graph(2 * num_left_nodes, num_arcs),
+        builder(2 * num_left_nodes, num_arcs),
         arc_costs(num_arcs) {}
 
   // A constructor with separate specification of the numbers of left and right
@@ -53,7 +50,7 @@ struct AssignmentProblemSetup {
   AssignmentProblemSetup(NodeIndex num_left_nodes, NodeIndex num_right_nodes,
                          ArcIndex num_arcs)
       : num_left_nodes(num_left_nodes),
-        graph(num_left_nodes + num_right_nodes, num_arcs),
+        builder(num_left_nodes + num_right_nodes, num_arcs),
         arc_costs(num_arcs) {}
 
   // This type is neither copyable nor movable.
@@ -61,24 +58,25 @@ struct AssignmentProblemSetup {
   AssignmentProblemSetup& operator=(const AssignmentProblemSetup&) = delete;
 
   ArcIndex CreateArcWithCost(NodeIndex tail, NodeIndex head, CostValue cost) {
-    const ArcIndex arc = graph.AddArc(tail, head);
+    const ArcIndex arc = builder.AddArc(tail, head);
     arc_costs[arc] = cost;
     return arc;
   }
 
   void Finalize() {
-    CHECK_EQ(graph.num_arcs(), arc_costs.size());
-    graph.Build(&arc_permutation);
+    CHECK_EQ(builder.num_arcs(), arc_costs.size());
+    graph = std::move(builder).Build(&arc_permutation);
     util::Permute(arc_permutation, &arc_costs);
     assignment = std::make_unique<LinearSumAssignment<GraphType, CostValue>>(
-        graph, num_left_nodes);
+        *graph, num_left_nodes);
     for (int arc = 0; arc < arc_costs.size(); ++arc) {
       assignment->SetArcCost(arc, arc_costs[arc]);
     }
   }
 
   const int num_left_nodes;
-  GraphType graph;
+  typename GraphType::Builder builder;
+  std::unique_ptr<const GraphType> graph;
   std::vector<CostValue> arc_costs;
   std::unique_ptr<LinearSumAssignment<GraphType, CostValue>> assignment;
   std::vector<ArcIndex> arc_permutation;
@@ -352,7 +350,7 @@ TYPED_TEST(LinearSumAssignmentTestWithGraphBuilder, InfeasibleProblems) {
 }
 
 // A helper function template for setting up assignment problems based on
-// dynamic graph types without a need to `Build()`.
+// dynamic graph types without a need to build.
 template <typename GraphType>
 static typename GraphType::ArcIndex CreateArcWithCost(
     typename GraphType::NodeIndex tail, typename GraphType::NodeIndex head,
@@ -465,106 +463,6 @@ INSTANTIATE_TEST_CASE_P(MacholWienProblems, MacholWien,
                                            ::testing::Bool()));
 #endif  // LARGE
 
-// Same as ConstructRandomAssignment, but for the new API.
-template <typename GraphType>
-void ConstructRandomAssignmentForNewGraphApi(
-    const int left_nodes, const int average_degree, const int cost_limit,
-    std::unique_ptr<GraphType>* graph,
-    std::unique_ptr<LinearSumAssignment<GraphType, int64_t>>* assignment) {
-  const int kNodes = 2 * left_nodes;
-  const int kArcs = left_nodes * average_degree;
-  const int kRandomSeed = 0;
-  std::mt19937 randomizer(kRandomSeed);
-  std::vector<int64_t> arc_costs;
-  arc_costs.reserve(kArcs);
-  graph->reset(new GraphType(kNodes, kArcs));
-  for (int i = 0; i < kArcs; ++i) {
-    const int left = absl::Uniform(randomizer, 0, left_nodes);
-    const int right = left_nodes + absl::Uniform(randomizer, 0, left_nodes);
-    const int64_t cost = absl::Uniform(randomizer, 0, cost_limit);
-    graph->get()->AddArc(left, right);
-    arc_costs.push_back(cost);
-  }
-
-  // Finalize the graph.
-  std::vector<typename GraphType::ArcIndex> permutation;
-  graph->get()->Build(&permutation);
-  util::Permute(permutation, &arc_costs);
-
-  // Create the assignment.
-  assignment->reset(
-      new LinearSumAssignment<GraphType, int64_t>(*(graph->get()), left_nodes));
-  for (int arc = 0; arc < kArcs; ++arc) {
-    assignment->get()->SetArcCost(arc, arc_costs[arc]);
-  }
-}
-
-template <typename GraphType>
-void BM_ConstructRandomAssignmentProblemWithNewGraphApi(
-    benchmark::State& state) {
-  const int kLeftNodes = 10000;
-  const int kAverageDegree = 250;
-  const int64_t kCostLimit = 1000000;
-  for (auto _ : state) {
-    std::unique_ptr<GraphType> graph;
-    std::unique_ptr<LinearSumAssignment<GraphType, int64_t>> assignment;
-    ConstructRandomAssignmentForNewGraphApi<GraphType>(
-        kLeftNodes, kAverageDegree, kCostLimit, &graph, &assignment);
-  }
-  state.SetItemsProcessed(static_cast<int64_t>(state.max_iterations) *
-                          kLeftNodes * kAverageDegree);
-}
-
-BENCHMARK_TEMPLATE(BM_ConstructRandomAssignmentProblemWithNewGraphApi,
-                   util::ListGraph<>);
-BENCHMARK_TEMPLATE(BM_ConstructRandomAssignmentProblemWithNewGraphApi,
-                   util::StaticGraph<>);
-
-template <typename GraphType>
-void BM_SolveRandomAssignmentProblemWithNewGraphApi(benchmark::State& state) {
-  const int kLeftNodes = 10000;
-  const int kAverageDegree = 250;
-  const int64_t kCostLimit = 1000000;
-  std::unique_ptr<GraphType> graph;
-  std::unique_ptr<LinearSumAssignment<GraphType, int64_t>> assignment;
-  ConstructRandomAssignmentForNewGraphApi<GraphType>(
-      kLeftNodes, kAverageDegree, kCostLimit, &graph, &assignment);
-  for (auto _ : state) {
-    assignment->ComputeAssignment();
-    EXPECT_EQ(65415697, assignment->GetCost());
-  }
-  state.SetItemsProcessed(static_cast<int64_t>(state.max_iterations) *
-                          kLeftNodes * kAverageDegree);
-}
-
-BENCHMARK_TEMPLATE(BM_SolveRandomAssignmentProblemWithNewGraphApi,
-                   util::ListGraph<>);
-BENCHMARK_TEMPLATE(BM_SolveRandomAssignmentProblemWithNewGraphApi,
-                   util::StaticGraph<>);
-
-template <typename GraphType>
-void BM_ConstructAndSolveRandomAssignmentProblemWithNewGraphApi(
-    benchmark::State& state) {
-  const int kLeftNodes = 10000;
-  const int kAverageDegree = 250;
-  const int64_t kCostLimit = 1000000;
-  for (auto _ : state) {
-    std::unique_ptr<GraphType> graph;
-    std::unique_ptr<LinearSumAssignment<GraphType, int64_t>> assignment;
-    ConstructRandomAssignmentForNewGraphApi<GraphType>(
-        kLeftNodes, kAverageDegree, kCostLimit, &graph, &assignment);
-    assignment->ComputeAssignment();
-    EXPECT_EQ(65415697, assignment->GetCost());
-  }
-  state.SetItemsProcessed(static_cast<int64_t>(state.max_iterations) *
-                          kLeftNodes * kAverageDegree);
-}
-
-BENCHMARK_TEMPLATE(BM_ConstructAndSolveRandomAssignmentProblemWithNewGraphApi,
-                   util::ListGraph<>);
-BENCHMARK_TEMPLATE(BM_ConstructAndSolveRandomAssignmentProblemWithNewGraphApi,
-                   util::StaticGraph<>);
-
 // The order of initializing the edges in the graph made the difference between
 // finding an optimal assignment and erroneously failing to finding one because
 // an unlucky order of edges could cause price reductions greater than the slack
@@ -582,22 +480,18 @@ class ReorderedGraphTest : public testing::Test {
   void TestMe(const size_t left_nodes, absl::Span<const Edge> ordered_edges) {
     std::vector<int64_t> edge_costs;
     typedef util::StaticGraph<size_t, size_t> GraphType;
-    GraphType graph(2 * left_nodes, ordered_edges.size());
+    GraphType::Builder builder(2 * left_nodes, ordered_edges.size());
 
     for (const auto& edge : ordered_edges) {
-      graph.AddArc(/* tail= */ edge.from_node,
-                   /* head= */ edge.to_node);
+      builder.AddArc(/* tail= */ edge.from_node,
+                     /* head= */ edge.to_node);
       edge_costs.push_back(edge.cost);
     }
-    ASSERT_THAT(edge_costs.size(), Eq(graph.num_arcs()));
+    ASSERT_THAT(edge_costs.size(), Eq(builder.num_arcs()));
 
-    {
-      std::vector<typename GraphType::ArcIndex> arc_permutation;
-      graph.Build(&arc_permutation);
-      util::Permute(arc_permutation, &edge_costs);
-    }
+    const auto graph = std::move(builder).BuildAndPermute(edge_costs);
 
-    LinearSumAssignment<GraphType> assignment(graph, left_nodes);
+    LinearSumAssignment<GraphType> assignment(*graph, left_nodes);
     for (size_t arc = 0; arc != edge_costs.size(); ++arc) {
       assignment.SetArcCost(arc, edge_costs[arc]);
     }

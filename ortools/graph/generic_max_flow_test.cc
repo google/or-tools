@@ -28,7 +28,6 @@
 #include "absl/random/random.h"
 #include "absl/strings/str_format.h"
 #include "absl/types/span.h"
-#include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/log_severity.h"
@@ -55,14 +54,14 @@ typename GenericMaxFlow<Graph>::Status MaxFlowTester(
         nullptr,
     const std::vector<typename Graph::NodeIndex>* expected_sink_min_cut =
         nullptr) {
-  Graph graph(num_nodes, num_arcs);
+  typename Graph::Builder graph_builder(num_nodes, num_arcs);
   for (int i = 0; i < num_arcs; ++i) {
-    graph.AddArc(tail[i], head[i]);
+    graph_builder.AddArc(tail[i], head[i]);
   }
   std::vector<typename Graph::ArcIndex> permutation;
-  graph.Build(&permutation);
+  const auto graph = std::move(graph_builder).Build(&permutation);
 
-  GenericMaxFlow<Graph> max_flow(&graph, 0, num_nodes - 1);
+  GenericMaxFlow<Graph> max_flow(graph.get(), 0, num_nodes - 1);
   for (typename Graph::ArcIndex arc = 0; arc < num_arcs; ++arc) {
     const int image = arc < permutation.size() ? permutation[arc] : arc;
 
@@ -317,17 +316,17 @@ TYPED_TEST(GenericMaxFlowTest, SmallFlowTypes) {
 
   // Lets generate and build a random graph.
   // We should have more than enough arc to make it fully connected.
-  TypeParam graph(num_nodes, num_arcs);
+  typename TypeParam::Builder graph_builder(num_nodes, num_arcs);
   for (int arc = 0; arc < num_arcs; ++arc) {
-    graph.AddArc(absl::Uniform(random, 0, num_nodes),
-                 absl::Uniform(random, 0, num_nodes));
+    graph_builder.AddArc(absl::Uniform(random, 0, num_nodes),
+                         absl::Uniform(random, 0, num_nodes));
   }
-  graph.Build();
+  const auto graph = std::move(graph_builder).Build(nullptr);
 
   typedef GenericMaxFlow<TypeParam, StrongUint16, int64_t> MaxFlowA;
   typedef GenericMaxFlow<TypeParam, int64_t, int64_t> MaxFlowB;
-  MaxFlowA max_flow_A(&graph, /*source=*/0, /*sink=*/num_nodes - 1);
-  MaxFlowB max_flow_B(&graph, /*source=*/0, /*sink=*/num_nodes - 1);
+  MaxFlowA max_flow_A(graph.get(), /*source=*/0, /*sink=*/num_nodes - 1);
+  MaxFlowB max_flow_B(graph.get(), /*source=*/0, /*sink=*/num_nodes - 1);
   for (int arc = 0; arc < num_arcs; ++arc) {
     const uint16_t capa =
         absl::Uniform(random, 0, std::numeric_limits<uint16_t>::max() / 2);
@@ -343,31 +342,33 @@ TYPED_TEST(GenericMaxFlowTest, SmallFlowTypes) {
 
 template <typename Graph>
 void AddSourceAndSink(const typename Graph::NodeIndex num_tails,
-                      const typename Graph::NodeIndex num_heads, Graph* graph) {
+                      const typename Graph::NodeIndex num_heads,
+                      typename Graph::Builder& graph_builder) {
   const typename Graph::NodeIndex source = num_tails + num_heads;
   const typename Graph::NodeIndex sink = num_tails + num_heads + 1;
   for (typename Graph::NodeIndex tail = 0; tail < num_tails; ++tail) {
-    graph->AddArc(source, tail);
+    graph_builder.AddArc(source, tail);
   }
   for (typename Graph::NodeIndex head = 0; head < num_heads; ++head) {
-    graph->AddArc(num_tails + head, sink);
+    graph_builder.AddArc(num_tails + head, sink);
   }
 }
 
 template <typename Graph>
 void GenerateCompleteGraphWithSourceAndSink(
     const typename Graph::NodeIndex num_tails,
-    const typename Graph::NodeIndex num_heads, Graph* graph) {
+    const typename Graph::NodeIndex num_heads,
+    typename Graph::Builder& graph_builder) {
   const typename Graph::NodeIndex num_nodes = num_tails + num_heads + 2;
   const typename Graph::ArcIndex num_arcs =
       num_tails * num_heads + num_tails + num_heads;
-  graph->Reserve(num_nodes, num_arcs);
+  graph_builder.Reserve(num_nodes, num_arcs);
   for (typename Graph::NodeIndex tail = 0; tail < num_tails; ++tail) {
     for (typename Graph::NodeIndex head = 0; head < num_heads; ++head) {
-      graph->AddArc(tail, head + num_tails);
+      graph_builder.AddArc(tail, head + num_tails);
     }
   }
-  AddSourceAndSink(num_tails, num_heads, graph);
+  AddSourceAndSink<Graph>(num_tails, num_heads, graph_builder);
 }
 
 // Generate a bipartite graph where each right node is connected to `degree`
@@ -377,28 +378,28 @@ void GeneratePartialRandomGraph(absl::BitGenRef random,
                                 const typename Graph::NodeIndex num_tails,
                                 const typename Graph::NodeIndex num_heads,
                                 const typename Graph::NodeIndex degree,
-                                Graph* graph) {
+                                typename Graph::Builder& graph_builder) {
   const typename Graph::NodeIndex num_nodes = num_tails + num_heads + 2;
   const typename Graph::ArcIndex num_arcs =
       num_tails * degree + num_tails + num_heads;
-  graph->Reserve(num_nodes, num_arcs);
+  graph_builder.Reserve(num_nodes, num_arcs);
   for (typename Graph::NodeIndex tail = 0; tail < num_tails; ++tail) {
     for (typename Graph::NodeIndex d = 0; d < degree; ++d) {
       const typename Graph::NodeIndex head =
           absl::Uniform(random, 0, num_heads);
-      graph->AddArc(tail, head + num_tails);
+      graph_builder.AddArc(tail, head + num_tails);
     }
   }
-  AddSourceAndSink(num_tails, num_heads, graph);
+  AddSourceAndSink<Graph>(num_tails, num_heads, graph_builder);
 }
 
 template <typename Graph>
-void GenerateRandomArcValuations(absl::BitGenRef random, const Graph& graph,
+void GenerateRandomArcValuations(absl::BitGenRef random,
+                                 const typename Graph::ArcIndex num_arcs,
                                  const int64_t max_range,
                                  std::vector<int64_t>* arc_valuation) {
-  const typename Graph::ArcIndex num_arcs = graph.num_arcs();
   arc_valuation->resize(num_arcs);
-  for (typename Graph::ArcIndex arc = 0; arc < graph.num_arcs(); ++arc) {
+  for (typename Graph::ArcIndex arc = 0; arc < num_arcs; ++arc) {
     (*arc_valuation)[arc] = absl::Uniform(random, 0, max_range);
   }
 }
@@ -472,12 +473,13 @@ void FullAssignment(std::optional<FlowQuantity> unused,
                     typename MaxFlowSolver<Graph>::Solver f,
                     typename Graph::NodeIndex num_tails,
                     typename Graph::NodeIndex num_heads) {
-  Graph graph;
-  GenerateCompleteGraphWithSourceAndSink(num_tails, num_heads, &graph);
-  graph.Build();
-  std::vector<int64_t> arc_capacity(graph.num_arcs(), 1);
+  typename Graph::Builder graph_builder;
+  GenerateCompleteGraphWithSourceAndSink<Graph>(num_tails, num_heads,
+                                                graph_builder);
+  const auto graph = std::move(graph_builder).Build(nullptr);
+  std::vector<int64_t> arc_capacity(graph->num_arcs(), 1);
   std::unique_ptr<GenericMaxFlow<Graph>> max_flow(new GenericMaxFlow<Graph>(
-      &graph, graph.num_nodes() - 2, graph.num_nodes() - 1));
+      graph.get(), graph->num_nodes() - 2, graph->num_nodes() - 1));
   SetUpNetworkData(arc_capacity, max_flow.get());
 
   // In a complete graph we should always reach the maximum flow.
@@ -497,17 +499,18 @@ void PartialRandomAssignment(std::optional<FlowQuantity> expected_flow,
                                : absl::BitGenRef(absl_random);
 
   const typename Graph::NodeIndex kDegree = 3;
-  Graph graph;
-  GeneratePartialRandomGraph(random, num_tails, num_heads, kDegree, &graph);
-  std::vector<int64_t> arc_capacity(graph.num_arcs(), 1);
+  typename Graph::Builder graph_builder;
+  GeneratePartialRandomGraph<Graph>(random, num_tails, num_heads, kDegree,
+                                    graph_builder);
+  std::vector<int64_t> arc_capacity(graph_builder.num_arcs(), 1);
 
   std::vector<int> permutation;
-  graph.Build(&permutation);
-  arc_capacity.resize(graph.num_arcs(), 0);
+  const auto graph = std::move(graph_builder).Build(&permutation);
+  arc_capacity.resize(graph->num_arcs(), 0);  // In case Build() adds more arcs.
   util::Permute(permutation, &arc_capacity);
 
   std::unique_ptr<GenericMaxFlow<Graph>> max_flow(new GenericMaxFlow<Graph>(
-      &graph, graph.num_nodes() - 2, graph.num_nodes() - 1));
+      graph.get(), graph->num_nodes() - 2, graph->num_nodes() - 1));
   SetUpNetworkData(arc_capacity, max_flow.get());
 
   const FlowQuantity flow = f(max_flow.get());
@@ -544,18 +547,20 @@ void PartialRandomFlow(std::optional<FlowQuantity> expected_flow,
   const typename Graph::NodeIndex kDegree = 10;
   const FlowQuantity kCapacityRange = 10000;
   const FlowQuantity kCapacityDelta = 1000;
-  Graph graph;
-  GeneratePartialRandomGraph(random, num_tails, num_heads, kDegree, &graph);
-  std::vector<int64_t> arc_capacity(graph.num_arcs());
-  GenerateRandomArcValuations(random, graph, kCapacityRange, &arc_capacity);
+  typename Graph::Builder graph_builder;
+  GeneratePartialRandomGraph<Graph>(random, num_tails, num_heads, kDegree,
+                                    graph_builder);
+  std::vector<int64_t> arc_capacity(graph_builder.num_arcs());
+  GenerateRandomArcValuations<Graph>(random, graph_builder.num_arcs(),
+                                     kCapacityRange, &arc_capacity);
 
   std::vector<typename Graph::ArcIndex> permutation;
-  graph.Build(&permutation);
-  arc_capacity.resize(graph.num_arcs(), 0);  // In case Build() adds more arcs.
+  const auto graph = std::move(graph_builder).Build(&permutation);
+  arc_capacity.resize(graph->num_arcs(), 0);  // In case Build() adds more arcs.
   util::Permute(permutation, &arc_capacity);
 
   std::unique_ptr<GenericMaxFlow<Graph>> max_flow(new GenericMaxFlow<Graph>(
-      &graph, graph.num_nodes() - 2, graph.num_nodes() - 1));
+      graph.get(), graph->num_nodes() - 2, graph->num_nodes() - 1));
   SetUpNetworkData(arc_capacity, max_flow.get());
 
   if (expected_flow != std::nullopt) {
@@ -592,18 +597,19 @@ void FullRandomFlow(std::optional<FlowQuantity> expected_flow,
 
   const FlowQuantity kCapacityRange = 10000;
   const FlowQuantity kCapacityDelta = 1000;
-  Graph graph;
-  GenerateCompleteGraphWithSourceAndSink(num_tails, num_heads, &graph);
-  std::vector<int64_t> arc_capacity(graph.num_arcs());
-  GenerateRandomArcValuations(random, graph, kCapacityRange, &arc_capacity);
-
+  typename Graph::Builder graph_builder;
+  GenerateCompleteGraphWithSourceAndSink<Graph>(num_tails, num_heads,
+                                                graph_builder);
+  std::vector<int64_t> arc_capacity(graph_builder.num_arcs());
+  GenerateRandomArcValuations<Graph>(random, graph_builder.num_arcs(),
+                                     kCapacityRange, &arc_capacity);
   std::vector<typename Graph::ArcIndex> permutation;
-  graph.Build(&permutation);
-  arc_capacity.resize(graph.num_arcs(), 0);  // In case Build() adds more arcs.
+  const auto graph = std::move(graph_builder).Build(&permutation);
+  arc_capacity.resize(graph->num_arcs(), 0);  // In case Build() adds more arcs.
   util::Permute(permutation, &arc_capacity);
 
   std::unique_ptr<GenericMaxFlow<Graph>> max_flow(new GenericMaxFlow<Graph>(
-      &graph, graph.num_nodes() - 2, graph.num_nodes() - 1));
+      graph.get(), graph->num_nodes() - 2, graph->num_nodes() - 1));
   SetUpNetworkData(arc_capacity, max_flow.get());
 
   if (expected_flow != std::nullopt) {
@@ -646,59 +652,6 @@ LP_AND_FLOW_TEST(PartialRandomAssignment, 100);
 LP_AND_FLOW_TEST(PartialRandomAssignment, 1000);
 LP_AND_FLOW_TEST(PartialRandomFlow, 400);
 LP_AND_FLOW_TEST(FullRandomFlow, 100);
-
-template <typename Graph>
-static void BM_FullRandomAssignment(benchmark::State& state) {
-  const int kSize = 3000;
-  for (auto _ : state) {
-    FullAssignment<Graph>(std::nullopt, SolveMaxFlow, kSize, kSize);
-  }
-  state.SetItemsProcessed(static_cast<int64_t>(state.max_iterations) * kSize);
-}
-
-template <typename Graph>
-static void BM_PartialRandomAssignment(benchmark::State& state) {
-  const int kSize = 10100;
-  for (auto _ : state) {
-    PartialRandomAssignment<Graph>(9512, SolveMaxFlow, kSize, kSize);
-  }
-  state.SetItemsProcessed(static_cast<int64_t>(state.max_iterations) * kSize);
-}
-
-template <typename Graph>
-static void BM_PartialRandomFlow(benchmark::State& state) {
-  const int kSize = 800;
-  for (auto _ : state) {
-    PartialRandomFlow<Graph>(3939172, SolveMaxFlow, kSize, kSize);
-  }
-  state.SetItemsProcessed(static_cast<int64_t>(state.max_iterations) * kSize);
-}
-
-template <typename Graph>
-static void BM_FullRandomFlow(benchmark::State& state) {
-  const int kSize = 800;
-  for (auto _ : state) {
-    FullRandomFlow<Graph>(3952652, SolveMaxFlow, kSize, kSize);
-  }
-  state.SetItemsProcessed(static_cast<int64_t>(state.max_iterations) * kSize);
-}
-
-// Note that these benchmark include the graph creation and generation...
-BENCHMARK_TEMPLATE(BM_FullRandomAssignment, util::FlowGraph<>);
-BENCHMARK_TEMPLATE(BM_FullRandomAssignment, util::ReverseArcListGraph<>);
-BENCHMARK_TEMPLATE(BM_FullRandomAssignment, util::ReverseArcStaticGraph<>);
-
-BENCHMARK_TEMPLATE(BM_PartialRandomFlow, util::FlowGraph<>);
-BENCHMARK_TEMPLATE(BM_PartialRandomFlow, util::ReverseArcListGraph<>);
-BENCHMARK_TEMPLATE(BM_PartialRandomFlow, util::ReverseArcStaticGraph<>);
-
-BENCHMARK_TEMPLATE(BM_FullRandomFlow, util::FlowGraph<>);
-BENCHMARK_TEMPLATE(BM_FullRandomFlow, util::ReverseArcListGraph<>);
-BENCHMARK_TEMPLATE(BM_FullRandomFlow, util::ReverseArcStaticGraph<>);
-
-BENCHMARK_TEMPLATE(BM_PartialRandomAssignment, util::FlowGraph<>);
-BENCHMARK_TEMPLATE(BM_PartialRandomAssignment, util::ReverseArcListGraph<>);
-BENCHMARK_TEMPLATE(BM_PartialRandomAssignment, util::ReverseArcStaticGraph<>);
 
 #undef LP_AND_FLOW_TEST
 

@@ -40,26 +40,22 @@
 //   const int num_nodes = ...
 //   const int num_arcs = ...
 //   const int num_left_nodes = num_nodes / 2;
-//   Graph graph(num_nodes, num_arcs);
+//   Graph::Builder builder(num_nodes, num_arcs);
 //   std::vector<operations_research::CostValue> arc_costs(num_arcs);
 //   for (int arc = 0; arc < num_arcs; ++arc) {
 //     const int arc_tail = ...   // must be in [0, num_left_nodes)
 //     const int arc_head = ...   // must be in [num_left_nodes, num_nodes)
-//     graph.AddArc(arc_tail, arc_head);
+//     builder.AddArc(arc_tail, arc_head);
 //     arc_costs[arc] = ...
 //   }
 //
 //   // Build the StaticGraph. You can skip this step by using a ListGraph<>
 //   // instead, but then the ComputeAssignment() below will be slower. It is
 //   // okay if your graph is small and performance is not critical though.
-//   {
-//     std::vector<Graph::ArcIndex> arc_permutation;
-//     graph.Build(&arc_permutation);
-//     util::Permute(arc_permutation, &arc_costs);
-//   }
+//   const auto graph = std::move(builder).BuildAndPermute(&arc_costs);
 //
 //   // Construct the LinearSumAssignment.
-//   ::operations_research::LinearSumAssignment<Graph> a(graph, num_left_nodes);
+//   operations_research::LinearSumAssignment<Graph> a(*graph, num_left_nodes);
 //   for (int arc = 0; arc < num_arcs; ++arc) {
 //      // You can also replace 'arc_costs[arc]' by something like
 //      //   ComputeArcCost(permutation.empty() ? arc : permutation[arc])

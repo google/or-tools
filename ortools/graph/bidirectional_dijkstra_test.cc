@@ -106,49 +106,50 @@ TEST(BidirectionalDijkstraTest, RandomizedCorrectnessTest) {
   const int kNumArcs = 10000;
   for (int graph_iter = 0; graph_iter < kNumGraphs; ++graph_iter) {
     // Build the random graphs.
-    StaticGraph<> forward_graph;
-    StaticGraph<> backward_graph;
+    StaticGraph<>::Builder forward_builder;
+    StaticGraph<>::Builder backward_builder;
     std::vector<double> forward_lengths;
     std::vector<double> backward_lengths;
     std::vector<int> forward_arc_of_backward_arc;
-    forward_graph.AddNode(kNumNodes - 1);
-    backward_graph.AddNode(kNumNodes - 1);
+    forward_builder.AddNode(kNumNodes - 1);
+    backward_builder.AddNode(kNumNodes - 1);
     for (int i = 0; i < kNumArcs; ++i) {
       const int a = absl::Uniform(random, 0, kNumNodes);
       const int b = absl::Uniform(random, 0, kNumNodes);
-      forward_graph.AddArc(a, b);
-      backward_graph.AddArc(b, a);
+      forward_builder.AddArc(a, b);
+      backward_builder.AddArc(b, a);
       forward_arc_of_backward_arc.push_back(i);
       const double length = absl::Uniform<double>(random, 0.0, 1.0);
       forward_lengths.push_back(length);
       backward_lengths.push_back(length);
     }
     std::vector<int> forward_perm;
-    forward_graph.Build(&forward_perm);
+    const auto forward_graph = std::move(forward_builder).Build(&forward_perm);
     util::Permute(forward_perm, &forward_lengths);
     for (int& a : forward_arc_of_backward_arc) {
       a = forward_perm[a];
     }
     std::vector<int> backward_perm;
-    backward_graph.Build(&backward_perm);
+    const auto backward_graph =
+        std::move(backward_builder).Build(&backward_perm);
     util::Permute(backward_perm, &backward_lengths);
     util::Permute(backward_perm, &forward_arc_of_backward_arc);
 
     // Initialize the tested Dijkstra and the reference Dijkstra.
     typedef BidirectionalDijkstra<StaticGraph<>, double> Dijkstra;
-    Dijkstra tested_dijkstra(&forward_graph, &forward_lengths, &backward_graph,
-                             &backward_lengths);
+    Dijkstra tested_dijkstra(forward_graph.get(), &forward_lengths,
+                             backward_graph.get(), &backward_lengths);
     BoundedDijkstraWrapper<StaticGraph<>, double> ref_dijkstra(
-        &forward_graph, &forward_lengths);
+        forward_graph.get(), &forward_lengths);
 
     // To print some debugging info in case the test fails.
     auto print_arc_path = [&](absl::Span<const int> arc_path) -> std::string {
       if (arc_path.empty()) return "<EMPTY>";
-      std::string out = absl::StrCat(forward_graph.Tail(arc_path[0]));
+      std::string out = absl::StrCat(forward_graph->Tail(arc_path[0]));
       double total_length = 0.0;
       for (const int arc : arc_path) {
         absl::StrAppend(&out, "--(#", arc, ":", (forward_lengths[arc]), ")-->",
-                        forward_graph.Head(arc));
+                        forward_graph->Head(arc));
         total_length += forward_lengths[arc];
       }
       absl::StrAppend(&out, "; Total length=", (total_length));

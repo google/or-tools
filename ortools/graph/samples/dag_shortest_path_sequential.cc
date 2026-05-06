@@ -45,29 +45,29 @@ int main(int argc, char** argv) {
   const int n = 10;
   const int source = n;
   const int dest = n + 1;
-  util::StaticGraph<> graph;
+  util::StaticGraph<>::Builder builder;
   // There are 3 types of arcs: (1) source to M, (2) M to dest, and (3) within
   // M. This vector stores all of them, first of type (1), then type (2),
   // then type (3). The arcs are ordered by i in M within each type.
   std::vector<double> weights(3 * n - 1);
 
   for (int i = 0; i < n; ++i) {
-    graph.AddArc(source, i);
+    builder.AddArc(source, i);
     weights[i] = 100.0;
   }
   for (int i = 0; i < n; ++i) {
-    graph.AddArc(i, dest);
+    builder.AddArc(i, dest);
     weights[n + i] = 100.0;
   }
   for (int i = 0; i + 1 < n; ++i) {
-    graph.AddArc(i, i + 1);
+    builder.AddArc(i, i + 1);
     weights[2 * n + i] = 1.0;
   }
 
   // Static graph reorders the arcs at Build() time, use permutation to get from
   // the old ordering to the new one.
   std::vector<int32_t> permutation;
-  graph.Build(&permutation);
+  const auto graph = std::move(builder).Build(&permutation);
   util::Permute(permutation, &weights);
   // [END graph]
 
@@ -82,7 +82,7 @@ int main(int argc, char** argv) {
   topological_order.push_back(dest);
 
   operations_research::ShortestPathsOnDagWrapper<util::StaticGraph<>>
-      shortest_path_on_dag(&graph, &weights, topological_order);
+      shortest_path_on_dag(graph.get(), &weights, topological_order);
   shortest_path_on_dag.RunShortestPathOnDag({source});
 
   std::cout << "Initial distance: " << shortest_path_on_dag.LengthTo(dest)

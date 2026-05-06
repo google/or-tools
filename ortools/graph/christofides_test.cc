@@ -15,19 +15,19 @@
 
 #include <cmath>
 #include <cstdint>
-#include <cstdlib>
 #include <functional>
 #include <limits>
 #include <string>
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/strings/str_format.h"
 #include "absl/types/span.h"
-#include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
+#include "ortools/base/types.h"
 
 namespace operations_research {
 
@@ -240,17 +240,16 @@ TEST(ChristofidesTest, SingleNodeModel) {
 
 TEST(ChristofidesTest, Int64OverflowMinimalMatching) {
   ChristofidesPathSolver<int64_t> chris_solver(
-      10, [](int, int) { return std::numeric_limits<int64_t>::max() / 2; });
+      10, [](int, int) { return kint64max / 2; });
   chris_solver.SetMatchingAlgorithm(
       ChristofidesPathSolver<
           int64_t>::MatchingAlgorithm::MINIMAL_WEIGHT_MATCHING);
-  EXPECT_THAT(chris_solver.TravelingSalesmanCost(),
-              IsOkAndHolds(std::numeric_limits<int64_t>::max()));
+  EXPECT_THAT(chris_solver.TravelingSalesmanCost(), IsOkAndHolds(kint64max));
 }
 
 TEST(ChristofidesTest, Int64OverflowMinimumMatching) {
   ChristofidesPathSolver<int64_t> chris_solver(
-      10, [](int, int) { return std::numeric_limits<int64_t>::max() / 2; });
+      10, [](int, int) { return kint64max / 2; });
   chris_solver.SetMatchingAlgorithm(
       ChristofidesPathSolver<
           int64_t>::MatchingAlgorithm::MINIMUM_WEIGHT_MATCHING);
@@ -271,11 +270,10 @@ TEST(ChristofidesTest, SaturatedDoubleWithMinimalMatching) {
 TEST(ChristofidesTest, NoPerfectMatching) {
   ChristofidesPathSolver<int64_t> chris_solver(4, [](int i, int j) {
     // 1 and 3 cannot be connected,
-    const int64_t cost[][4] = {
-        {0, 0, 0, 0},
-        {0, 0, 1, std::numeric_limits<int64_t>::max() / 2},
-        {0, 1, 0, 1},
-        {0, std::numeric_limits<int64_t>::max() / 2, 1, 0}};
+    const int64_t cost[][4] = {{0, 0, 0, 0},
+                               {0, 0, 1, kint64max / 2},
+                               {0, 1, 0, 1},
+                               {0, kint64max / 2, 1, 0}};
     return cost[i][j];
   });
   // NOTE(user): Add a test for which MIP matching fails too.
@@ -285,47 +283,5 @@ TEST(ChristofidesTest, NoPerfectMatching) {
   EXPECT_THAT(chris_solver.Solve(),
               StatusIs(absl::StatusCode::kInvalidArgument));
 }
-
-// Benchmark for the Christofides algorithm on a 'size' by 'size' grid of nodes.
-template <bool use_minimal_matching>
-void BM_ChristofidesPathSolver(benchmark::State& state) {
-  int size = state.range(0);
-  const int num_nodes = size * size;
-  std::vector<std::vector<int>> costs(num_nodes);
-  for (int i = 0; i < num_nodes; ++i) {
-    const int x_i = i / size;
-    const int y_i = i % size;
-    costs[i].resize(num_nodes, 0);
-    for (int j = 0; j < num_nodes; ++j) {
-      const int x_j = j / size;
-      const int y_j = j % size;
-      costs[i][j] = std::abs(x_i - x_j) + std::abs(y_i - y_j);
-    }
-  }
-  auto cost = [&costs](int i, int j) { return costs[i][j]; };
-  // TODO(user) MSVC v19.41 can't convert lambda to std::function.
-#if defined(_MSC_VER)
-  using Cost = std::function<int(int, int)>;
-#else
-  using Cost = decltype(cost);
-#endif
-  using MatchingAlgorithm =
-      typename ChristofidesPathSolver<int, int, int, Cost>::MatchingAlgorithm;
-  for (auto _ : state) {
-    ChristofidesPathSolver<int, int, int, Cost> chris_solver(num_nodes, cost);
-    if (use_minimal_matching) {
-      chris_solver.SetMatchingAlgorithm(
-          MatchingAlgorithm::MINIMAL_WEIGHT_MATCHING);
-    } else {
-      chris_solver.SetMatchingAlgorithm(
-          MatchingAlgorithm::MINIMUM_WEIGHT_MATCHING);
-    }
-    EXPECT_THAT(chris_solver.TravelingSalesmanCost(),
-                IsOkAndHolds(testing::Gt(0)));
-  }
-}
-
-BENCHMARK_TEMPLATE(BM_ChristofidesPathSolver, true)->Range(2, 1 << 5);
-BENCHMARK_TEMPLATE(BM_ChristofidesPathSolver, false)->Range(2, 1 << 5);
 
 }  // namespace operations_research

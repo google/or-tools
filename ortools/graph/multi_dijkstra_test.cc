@@ -113,8 +113,9 @@ TEST(MultiDijkstraTest, RandomizedStressTest) {
     const int num_nodes = absl::Uniform(random, 0, max_num_nodes);
     const int num_arcs =
         num_nodes == 0 ? 0 : absl::Uniform(random, 0, max_num_arcs);
-    std::unique_ptr<util::StaticGraph<>> graph = util::GenerateRandomMultiGraph(
-        num_nodes, num_arcs, /*finalized=*/true, random);
+    std::unique_ptr<util::StaticGraph<>> graph =
+        util::GenerateRandomMultiGraph(num_nodes, num_arcs, random)
+            .Build(nullptr);
 
     // Set up the input source sets.
     int num_sources =

@@ -44,7 +44,6 @@ TYPED_TEST_SUITE(GenerateCompleteUndirectedGraphTest,
 
 TYPED_TEST(GenerateCompleteUndirectedGraphTest, SimpleGraph) {
   TypeParam graph = GenerateCompleteUndirectedGraph<TypeParam>(3);
-  graph.Build();
 
   EXPECT_EQ(graph.num_nodes(), 3);
   EXPECT_EQ(graph.num_arcs(), 6);
@@ -58,7 +57,6 @@ TYPED_TEST(GenerateCompleteUndirectedGraphTest, SimpleGraph) {
 
 TYPED_TEST(GenerateCompleteUndirectedGraphTest, SmallestGraph) {
   TypeParam graph = GenerateCompleteUndirectedGraph<TypeParam>(1);
-  graph.Build();
 
   EXPECT_EQ(graph.num_nodes(), 1);
   EXPECT_EQ(graph.num_arcs(), 0);
@@ -75,7 +73,6 @@ TYPED_TEST_SUITE(GenerateCompleteUndirectedBipartiteGraphTest,
 
 TYPED_TEST(GenerateCompleteUndirectedBipartiteGraphTest, SimpleGraph) {
   TypeParam graph = GenerateCompleteUndirectedBipartiteGraph<TypeParam>(2, 3);
-  graph.Build();
 
   EXPECT_EQ(graph.num_nodes(), 5);
   EXPECT_EQ(graph.num_arcs(), 12);
@@ -96,7 +93,6 @@ TYPED_TEST_SUITE(GenerateCompleteDirectedBipartiteGraphTest,
 
 TYPED_TEST(GenerateCompleteDirectedBipartiteGraphTest, SimpleGraph) {
   TypeParam graph = GenerateCompleteDirectedBipartiteGraph<TypeParam>(2, 3);
-  graph.Build();
 
   EXPECT_EQ(graph.num_nodes(), 5);
   EXPECT_EQ(graph.num_arcs(), 6);
@@ -109,7 +105,6 @@ TYPED_TEST(GenerateCompleteDirectedBipartiteGraphTest, SimpleGraph) {
 
 TYPED_TEST(GenerateCompleteDirectedBipartiteGraphTest, SimplSmallestGraphLeft) {
   TypeParam graph = GenerateCompleteDirectedBipartiteGraph<TypeParam>(1, 0);
-  graph.Build();
 
   EXPECT_EQ(graph.num_nodes(), 1);
   EXPECT_EQ(graph.num_arcs(), 0);
@@ -119,7 +114,6 @@ TYPED_TEST(GenerateCompleteDirectedBipartiteGraphTest, SimplSmallestGraphLeft) {
 TYPED_TEST(GenerateCompleteDirectedBipartiteGraphTest,
            SimplSmallestGraphRight) {
   TypeParam graph = GenerateCompleteDirectedBipartiteGraph<TypeParam>(0, 1);
-  graph.Build();
 
   EXPECT_EQ(graph.num_nodes(), 1);
   EXPECT_EQ(graph.num_arcs(), 0);

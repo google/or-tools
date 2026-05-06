@@ -220,15 +220,15 @@ void TestShortestPathsFromGraph(
     const PathDistance arc_lengths[],
     const typename GraphType::NodeIndex expected_paths[],
     const PathDistance expected_distances[]) {
-  GraphType graph(num_nodes, num_arcs);
+  typename GraphType::Builder builder(num_nodes, num_arcs);
   std::vector<PathDistance> lengths(num_arcs);
   for (int i = 0; i < num_arcs; ++i) {
-    lengths[graph.AddArc(arcs[i][0], arcs[i][1])] = arc_lengths[i];
+    lengths[builder.AddArc(arcs[i][0], arcs[i][1])] = arc_lengths[i];
   }
   std::vector<typename GraphType::ArcIndex> permutation;
-  graph.Build(&permutation);
+  const auto graph = std::move(builder).Build(&permutation);
   util::Permute(permutation, &lengths);
-  TestShortestPathsFromGraph(graph, lengths, expected_paths,
+  TestShortestPathsFromGraph(*graph, lengths, expected_paths,
                              expected_distances);
 }
 
@@ -389,7 +389,7 @@ TYPED_TEST(GraphShortestPathsTest, DISABLED_LargeRandomShortestPaths) {
   const int max_distance = 50;
   const PathDistance kConnectionArcLength = 300;
   std::mt19937 randomizer(12345);
-  TypeParam graph(kSize, kSize + kSize * kDegree);
+  typename TypeParam::Builder builder(kSize, kSize + kSize * kDegree);
   std::vector<PathDistance> lengths;
   for (int i = 0; i < kSize; ++i) {
     const typename TypeParam::NodeIndex tail(
@@ -399,45 +399,48 @@ TYPED_TEST(GraphShortestPathsTest, DISABLED_LargeRandomShortestPaths) {
           absl::Uniform(randomizer, 0, kSize));
       const PathDistance length =
           1 + absl::Uniform(randomizer, 0, max_distance);
-      graph.AddArc(tail, head);
+      builder.AddArc(tail, head);
       lengths.push_back(length);
     }
   }
   typename TypeParam::NodeIndex prev_index = TypeParam::kNilNode;
   typename TypeParam::NodeIndex first_index = TypeParam::kNilNode;
-  for (const typename TypeParam::NodeIndex node_index : graph.AllNodes()) {
-    if (prev_index != TypeParam::kNilNode) {
-      graph.AddArc(prev_index, node_index);
-      lengths.push_back(kConnectionArcLength);
-    } else {
-      first_index = node_index;
+  {
+    const auto graph1 = typename TypeParam::Builder(builder).Build(nullptr);
+    for (const typename TypeParam::NodeIndex node_index : graph1->AllNodes()) {
+      if (prev_index != TypeParam::kNilNode) {
+        builder.AddArc(prev_index, node_index);
+        lengths.push_back(kConnectionArcLength);
+      } else {
+        first_index = node_index;
+      }
+      prev_index = node_index;
     }
-    prev_index = node_index;
   }
-  graph.AddArc(prev_index, first_index);
+  builder.AddArc(prev_index, first_index);
   lengths.push_back(kConnectionArcLength);
   std::vector<typename TypeParam::ArcIndex> permutation;
-  graph.Build(&permutation);
+  const auto graph = std::move(builder).Build(&permutation);
   util::Permute(permutation, &lengths);
   std::vector<std::vector<typename TypeParam::NodeIndex>> components;
-  ::FindStronglyConnectedComponents(graph.num_nodes(), graph, &components);
+  ::FindStronglyConnectedComponents(graph->num_nodes(), *graph, &components);
   CHECK_EQ(1, components.size());
   CHECK_EQ(kSize, components[0].size());
   const int kSourceSize = 10;
-  const int source_size = std::min(graph.num_nodes(), kSourceSize);
+  const int source_size = std::min(graph->num_nodes(), kSourceSize);
   std::vector<typename TypeParam::NodeIndex> sources(source_size, 0);
   for (int i = 0; i < source_size; ++i) {
-    sources[i] = absl::Uniform(randomizer, 0, graph.num_nodes());
+    sources[i] = absl::Uniform(randomizer, 0, graph->num_nodes());
   }
   const int kThreads = 10;
   auto container =
       GenericPathContainer<TypeParam>::BuildInMemoryCompactPathContainer();
   ComputeManyToManyShortestPathsWithMultipleThreads(
-      graph, lengths, sources, sources, kThreads, &container);
+      *graph, lengths, sources, sources, kThreads, &container);
   auto distance_container =
       GenericPathContainer<TypeParam>::BuildPathDistanceContainer();
   ComputeManyToManyShortestPathsWithMultipleThreads(
-      graph, lengths, sources, sources, kThreads, &distance_container);
+      *graph, lengths, sources, sources, kThreads, &distance_container);
   for (int tail = 0; tail < sources.size(); ++tail) {
     for (int head = 0; head < sources.size(); ++head) {
       EXPECT_NE(TypeParam::kNilNode, container.GetPenultimateNodeInPath(

@@ -30,7 +30,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <iostream>
-#include <limits>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -75,15 +74,15 @@ double Distance(const std::pair<double, double>& node1,
   return std::sqrt(dx * dx + dy * dy);
 }
 
-std::pair<util::StaticGraph<int32_t, int32_t>, std::vector<double>> MakeGraph(
-    const std::vector<std::pair<double, double>>& points,
-    double max_edge_distance) {
-  util::StaticGraph<int32_t, int32_t> graph;
-  CHECK_LE(points.size(),
-           static_cast<size_t>(std::numeric_limits<int32_t>::max()));
+std::pair<std::unique_ptr<util::StaticGraph<int32_t, int32_t>>,
+          std::vector<double>>
+MakeGraph(const std::vector<std::pair<double, double>>& points,
+          double max_edge_distance) {
+  util::StaticGraph<int32_t, int32_t>::Builder builder;
+  CHECK_LE(points.size(), static_cast<size_t>(kint32max));
   const int32_t num_nodes = static_cast<int32_t>(points.size());
   if (num_nodes > 0) {
-    graph.AddNode(num_nodes - 1);
+    builder.AddNode(num_nodes - 1);
   }
   std::vector<double> arcs;
   for (int32_t i = 0; i < num_nodes; ++i) {
@@ -97,17 +96,14 @@ std::pair<util::StaticGraph<int32_t, int32_t>, std::vector<double>> MakeGraph(
       }
       const double dist = Distance(points[i], points[j]);
       if (dist <= max_edge_distance) {
-        graph.AddArc(i, j);
+        builder.AddArc(i, j);
         arcs.push_back(dist);
-        graph.AddArc(j, i);
+        builder.AddArc(j, i);
         arcs.push_back(dist);
       }
     }
   }
-  std::vector<int32_t> permutation;
-  graph.Build(&permutation);
-  util::Permute(permutation, &arcs);
-
+  auto graph = std::move(builder).BuildAndPermute(arcs);
   return {std::move(graph), std::move(arcs)};
 }
 
@@ -158,14 +154,14 @@ int main(int argc, char** argv) {
             << std::endl;
   std::cout << "Max distance for edge: " << max_edge_distance << std::endl;
   std::cout << "Estimated edges: " << expected_edges << std::endl;
-  std::cout << "Actual edges: " << graph.num_arcs() / 2 << std::endl;
+  std::cout << "Actual edges: " << graph->num_arcs() / 2 << std::endl;
   std::cout << "All pairs shortest path distance limit: " << limit << std::endl;
   std::cout << "Upper bound (estimated) on pairs of points within limit: "
             << estimated_connected_pairs << std::endl;
 
   const absl::Time start = absl::Now();
   const std::vector<std::pair<int, int>> all_pairs_within_distance =
-      AllPairsWithinDistance(graph, arc_lengths, limit);
+      AllPairsWithinDistance(*graph, arc_lengths, limit);
   const absl::Duration shortest_path_time = absl::Now() - start;
   // Our problem is undirected, so everything appears twice.
   std::cout << "Actual pairs of points within distance limit: "

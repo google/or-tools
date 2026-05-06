@@ -16,24 +16,20 @@
 #include <algorithm>
 #include <cstdint>
 #include <functional>
-#include <limits>
-#include <memory>
 #include <random>
 #include <type_traits>
 #include <utility>
 #include <vector>
 
-#include "absl/log/check.h"
 #include "absl/random/distributions.h"
 #include "absl/random/random.h"
-#include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
 #include "ortools/base/dump_vars.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/strong_int.h"
+#include "ortools/base/types.h"
 #include "ortools/graph_base/graph.h"
 #include "ortools/graph_base/io.h"
-#include "ortools/graph_base/test_util.h"
 #include "ortools/util/flat_matrix.h"
 
 namespace operations_research {
@@ -126,22 +122,22 @@ TEST(BoundedDijkstraWrapper, EmptyPath) {
 
 TEST(BoundedDijkstraWrapper, OverflowSafe) {
   TestGraph graph;
-  const int64_t int_max = std::numeric_limits<int64_t>::max();
-  DijkstraWrapper<int64_t>::ByArc<int64_t> arc_lengths = {int_max, int_max / 2,
-                                                          int_max / 2, 1};
+  DijkstraWrapper<int64_t>::ByArc<int64_t> arc_lengths = {
+      kint64max, kint64max / 2, kint64max / 2, 1};
   graph.AddArc(NodeIndex(0), NodeIndex(1));
   graph.AddArc(NodeIndex(0), NodeIndex(1));
   graph.AddArc(NodeIndex(1), NodeIndex(2));
   graph.AddArc(NodeIndex(2), NodeIndex(3));
 
   BoundedDijkstraWrapper<TestGraph, int64_t> dijkstra(&graph, &arc_lengths);
-  const auto reached = dijkstra.RunBoundedDijkstra(NodeIndex(0), int_max);
+  const auto reached = dijkstra.RunBoundedDijkstra(NodeIndex(0), kint64max);
 
-  // This works because int_max is odd, i.e. 2 * (int_max / 2) = int_max - 1
+  // This works because kint64max is odd, i.e. 2 * (kint64max / 2) = kint64max -
+  // 1
   EXPECT_THAT(reached, ElementsAre(NodeIndex(0), NodeIndex(1), NodeIndex(2)));
   EXPECT_EQ(0, dijkstra.distances()[NodeIndex(0)]);
-  EXPECT_EQ(int_max / 2, dijkstra.distances()[NodeIndex(1)]);
-  EXPECT_EQ(int_max - 1, dijkstra.distances()[NodeIndex(2)]);
+  EXPECT_EQ(kint64max / 2, dijkstra.distances()[NodeIndex(1)]);
+  EXPECT_EQ(kint64max - 1, dijkstra.distances()[NodeIndex(2)]);
 }
 
 TEST(BoundedDijkstraWrapper,
@@ -242,7 +238,7 @@ TEST(BoundedDijkstraWrapperTest, RandomDenseGraph) {
 }
 
 TEST(SimpleOneToOneShortestPathTest, PathTooLong) {
-  const int big_length = std::numeric_limits<int>::max() / 2;
+  const int big_length = kint32max / 2;
   std::vector<int> tails = {0, 1, 2};
   std::vector<int> heads = {1, 2, 3};
   std::vector<int> lengths = {big_length, big_length, big_length};
@@ -250,15 +246,15 @@ TEST(SimpleOneToOneShortestPathTest, PathTooLong) {
   {
     const auto [distance, path] =
         SimpleOneToOneShortestPath<int, int>(0, 3, tails, heads, lengths);
-    EXPECT_EQ(distance, std::numeric_limits<int>::max());
+    EXPECT_EQ(distance, kint32max);
     EXPECT_TRUE(path.empty());
   }
 
   {
-    // from 0 to 2 work because 2 * big_length < int_max.
+    // from 0 to 2 work because 2 * big_length < kint64max.
     const auto [distance, path] =
         SimpleOneToOneShortestPath<int, int>(0, 2, tails, heads, lengths);
-    EXPECT_EQ(distance, std::numeric_limits<int>::max() - 1);
+    EXPECT_EQ(distance, kint32max - 1);
     EXPECT_THAT(path, ElementsAre(0, 1, 2));
   }
 }
@@ -644,7 +640,6 @@ TEST(BoundedDijkstraWrapperTest, CustomSettledNodeCallback) {
 TEST(BoundedDisjktraTest, RandomizedStressTest) {
   std::mt19937 random;
   const int kNumTests = 10'000;
-  constexpr int kint32max = std::numeric_limits<int>::max();
   for (int test = 0; test < kNumTests; ++test) {
     // Generate a random graph with random weights.
     const NodeIndex num_nodes(absl::Uniform(random, 1, 12));
@@ -737,48 +732,6 @@ TEST(BoundedDisjktraTest, RandomizedStressTest) {
     }
   }
 }
-
-template <bool arc_lengths_are_discrete>
-void BM_GridGraph(benchmark::State& state) {
-  typedef util::StaticGraph<int> Graph;
-  const int64_t kWidth = 100;
-  const int64_t kHeight = 10000;
-  const int kSourceNode = static_cast<int>(kWidth * kHeight / 2);
-  std::unique_ptr<Graph> graph =
-      util::Create2DGridGraph<Graph>(/*width=*/kWidth, /*height=*/kHeight);
-  BoundedDijkstraWrapper<Graph, int64_t>::ByArc<int64_t> arc_lengths(
-      graph->num_arcs(), 0);
-  const int64_t min_length = arc_lengths_are_discrete ? 0 : 1;
-  const int64_t max_length = arc_lengths_are_discrete ? 2 : 1000000000000000L;
-  std::mt19937 random(12345);
-  for (int64_t& length : arc_lengths) {
-    length = absl::Uniform(random, min_length, max_length + 1);
-  }
-  BoundedDijkstraWrapper<Graph, int64_t> dijkstra(graph.get(), &arc_lengths);
-  const int64_t kSearchRadius = kWidth * (min_length + max_length) / 2;
-  // NOTE(user): The expected number of nodes visited is in ϴ(kWidth²),
-  // since the search radius is ϴ(kWidth). The exact constant is hard to
-  // derive mathematically as a function of the radius formula, so I measured
-  // it empirically and it was close to 0.5, which seemed about right.
-  const int64_t kExpectedApproximateSearchSize = kWidth * kWidth / 2;
-  int64_t total_nodes_visited = 0;
-  for (auto _ : state) {
-    const int num_nodes_visited =
-        dijkstra
-            .RunBoundedDijkstra(/*source_node=*/kSourceNode,
-                                /*distance_limit=*/kSearchRadius)
-            .size();
-    // We verify that the Dijkstra search size is in the expected range, to
-    // make sure that we're measuring what we want in this benchmark.
-    CHECK_GE(num_nodes_visited, kExpectedApproximateSearchSize / 2);
-    CHECK_GE(num_nodes_visited, kExpectedApproximateSearchSize * 2);
-    total_nodes_visited += num_nodes_visited;
-  }
-  state.SetItemsProcessed(total_nodes_visited);
-}
-
-BENCHMARK(BM_GridGraph<true>);
-BENCHMARK(BM_GridGraph<false>);
 
 }  // namespace
 }  // namespace operations_research

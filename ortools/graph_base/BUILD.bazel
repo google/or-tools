@@ -39,6 +39,7 @@ cc_library(
         ":iterators",
         "//ortools/base:constant_divisor",
         "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/base:nullability",
         "@abseil-cpp//absl/debugging:leak_check",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/types:span",
@@ -52,7 +53,6 @@ cc_library(
     hdrs = ["random_graph.h"],
     deps = [
         ":graph",
-        "//ortools/base:types",
         "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/memory",
@@ -67,6 +67,7 @@ cc_library(
     deps = [
         "//ortools/base:numbers",
         "//ortools/util:filelineiter",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",

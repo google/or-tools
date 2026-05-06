@@ -13,16 +13,12 @@
 
 #include "ortools/graph/rooted_tree.h"
 
-#include <algorithm>
 #include <cstdint>
 #include <utility>
 #include <vector>
 
 #include "absl/algorithm/container.h"
-#include "absl/log/check.h"
-#include "absl/random/random.h"
 #include "absl/status/status.h"
-#include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/graph_base/graph.h"
@@ -617,37 +613,6 @@ REGISTER_TYPED_TEST_SUITE_P(
 using NodeTypes =
     ::testing::Types<int16_t, int32_t, int64_t, uint16_t, uint32_t, uint64_t>;
 INSTANTIATE_TYPED_TEST_SUITE_P(AllRootedTreeTests, RootedTreeTest, NodeTypes);
-
-////////////////////////////////////////////////////////////////////////////////
-// Benchmarks
-////////////////////////////////////////////////////////////////////////////////
-
-std::vector<int> RandomTreeRootedZero(int num_nodes) {
-  absl::BitGen bit_gen;
-  std::vector<int> nodes(num_nodes);
-  absl::c_iota(nodes, 0);
-  std::shuffle(nodes.begin() + 1, nodes.end(), bit_gen);
-  std::vector<int> result(num_nodes);
-  result[0] = -1;
-  for (int i = 1; i < num_nodes; ++i) {
-    int target = absl::Uniform<int>(bit_gen, 0, i);
-    result[i] = target;
-  }
-  return result;
-}
-
-void BM_RootedTreeShortestPath(benchmark::State& state) {
-  const int num_nodes = state.range(0);
-  std::vector<int> random_tree_data = RandomTreeRootedZero(num_nodes);
-  for (auto s : state) {
-    const RootedTree<int> tree =
-        RootedTree<int>::Create(0, random_tree_data).value();
-    std::vector<int> path = tree.PathToRoot(num_nodes - 1);
-    CHECK_GE(path.size(), 2);
-  }
-}
-
-BENCHMARK(BM_RootedTreeShortestPath)->Arg(100)->Arg(10'000)->Arg(1'000'000);
 
 }  // namespace
 }  // namespace operations_research

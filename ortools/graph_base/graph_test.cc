@@ -43,6 +43,7 @@ using testing::AllOf;
 using testing::ElementsAre;
 using testing::Field;
 using testing::Pair;
+using testing::Pointee;
 using testing::UnorderedElementsAre;
 
 DEFINE_STRONG_INT_TYPE(StrongNodeId, int32_t);
@@ -262,29 +263,22 @@ void ConstructAndCheckGraph(
     bool test_permutation) {
   using NodeIndex = typename GraphType::NodeIndex;
   using ArcIndex = typename GraphType::ArcIndex;
-  std::unique_ptr<GraphType> graph;
-  if (reserve) {
-    graph.reset(new GraphType(num_nodes, num_arcs));
-  } else {
-    graph.reset(new GraphType());
-  }
+  auto builder = reserve ? typename GraphType::Builder(num_nodes, num_arcs)
+                         : typename GraphType::Builder();
   std::vector<std::vector<NodeIndex>> verifier(static_cast<size_t>(num_nodes));
 
   for (ArcIndex i(0); i < num_arcs; ++i) {
     NodeIndex head = heads[static_cast<size_t>(i)];
     NodeIndex tail = tails[static_cast<size_t>(i)];
-    EXPECT_EQ(i, graph->AddArc(tail, head));
+    EXPECT_EQ(i, builder.AddArc(tail, head));
     verifier[static_cast<size_t>(tail)].push_back(head);
   }
   std::vector<typename GraphType::ArcIndex> permutation;
-  if (test_permutation) {
-    graph->Build(&permutation);
-  } else {
-    graph->Build();
-  }
+  const auto graph =
+      std::move(builder).Build(test_permutation ? &permutation : nullptr);
 
   EXPECT_EQ(num_nodes, graph->num_nodes());
-  EXPECT_EQ(num_nodes, graph->size());
+  EXPECT_EQ(num_nodes, size(*graph));
   EXPECT_EQ(num_arcs, graph->num_arcs());
   CheckOutgoingArcIterator(*graph, verifier);
   CheckOutgoingHeadIterator(*graph, verifier);
@@ -751,40 +745,39 @@ TYPED_TEST_SUITE(GenericGraphInterfaceTest, GraphType);
 TYPED_TEST(GenericGraphInterfaceTest, EmptyGraph) {
   using NodeIndex = typename TypeParam::NodeIndex;
   using ArcIndex = typename TypeParam::ArcIndex;
-  TypeParam graph;
-  graph.Build();
-  EXPECT_EQ(NodeIndex(0), graph.num_nodes());
-  EXPECT_EQ(NodeIndex(0), graph.size());
-  EXPECT_EQ(ArcIndex(0), graph.num_arcs());
+  const auto graph = typename TypeParam::Builder().Build(nullptr);
+  EXPECT_EQ(NodeIndex(0), graph->num_nodes());
+  EXPECT_EQ(NodeIndex(0), size(*graph));
+  EXPECT_EQ(ArcIndex(0), graph->num_arcs());
 }
 
 TYPED_TEST(GenericGraphInterfaceTest, EmptyGraphAlternateSyntax) {
   using NodeIndex = typename TypeParam::NodeIndex;
   using ArcIndex = typename TypeParam::ArcIndex;
-  TypeParam graph(NodeIndex(0), ArcIndex(0));
-  graph.Build();
-  EXPECT_EQ(NodeIndex(0), graph.num_nodes());
-  EXPECT_EQ(NodeIndex(0), graph.size());
-  EXPECT_EQ(ArcIndex(0), graph.num_arcs());
+  const auto graph =
+      typename TypeParam::Builder(NodeIndex(0), ArcIndex(0)).Build(nullptr);
+  EXPECT_EQ(NodeIndex(0), graph->num_nodes());
+  EXPECT_EQ(NodeIndex(0), size(*graph));
+  EXPECT_EQ(ArcIndex(0), graph->num_arcs());
 }
 
 TYPED_TEST(GenericGraphInterfaceTest, GraphWithNodesButNoArc) {
   using NodeIndex = typename TypeParam::NodeIndex;
   using ArcIndex = typename TypeParam::ArcIndex;
   const NodeIndex kNodes(1000);
-  TypeParam graph(kNodes, ArcIndex(0));
-  graph.Build();
-  EXPECT_EQ(kNodes, graph.num_nodes());
-  EXPECT_EQ(kNodes, graph.size());
-  EXPECT_EQ(ArcIndex(0), graph.num_arcs());
+  const auto graph =
+      typename TypeParam::Builder(kNodes, ArcIndex(0)).Build(nullptr);
+  EXPECT_EQ(kNodes, graph->num_nodes());
+  EXPECT_EQ(kNodes, size(*graph));
+  EXPECT_EQ(ArcIndex(0), graph->num_arcs());
   int count = 0;
-  for (const NodeIndex node : graph.AllNodes()) {
-    for ([[maybe_unused]] const ArcIndex arc : graph.OutgoingArcs(node)) {
+  for (const NodeIndex node : graph->AllNodes()) {
+    for ([[maybe_unused]] const ArcIndex arc : graph->OutgoingArcs(node)) {
       ++count;
     }
   }
   EXPECT_EQ(0, count);
-  for ([[maybe_unused]] const ArcIndex arc : graph.AllForwardArcs()) {
+  for ([[maybe_unused]] const ArcIndex arc : graph->AllForwardArcs()) {
     ++count;
   }
   EXPECT_EQ(0, count);
@@ -841,32 +834,33 @@ TYPED_TEST(GenericGraphInterfaceTest, BuildWithOrderedArc) {
 
 TYPED_TEST(GenericGraphInterfaceTest, PastTheEndIterators) {
   using NodeIndex = typename TypeParam::NodeIndex;
-  TypeParam graph;
-  graph.AddArc(NodeIndex(0), NodeIndex(1));
-  graph.AddArc(NodeIndex(0), NodeIndex(2));
-  graph.AddArc(NodeIndex(0), NodeIndex(3));
-  graph.AddArc(NodeIndex(3), NodeIndex(4));
-  graph.AddArc(NodeIndex(1), NodeIndex(4));
-  graph.Build();
+  typename TypeParam::Builder builder;
+  builder.AddArc(NodeIndex(0), NodeIndex(1));
+  builder.AddArc(NodeIndex(0), NodeIndex(2));
+  builder.AddArc(NodeIndex(0), NodeIndex(3));
+  builder.AddArc(NodeIndex(3), NodeIndex(4));
+  builder.AddArc(NodeIndex(1), NodeIndex(4));
+  const auto graph = std::move(builder).Build(nullptr);
   for (NodeIndex i(0); i < NodeIndex(4); ++i) {
-    EXPECT_EQ(graph.OutgoingArcsStartingFrom(i, TypeParam::kNilArc).end(),
-              graph.OutgoingArcs(i).end());
+    EXPECT_EQ(graph->OutgoingArcsStartingFrom(i, TypeParam::kNilArc).end(),
+              graph->OutgoingArcs(i).end());
     if constexpr (TypeParam::kHasNegativeReverseArcs) {
-      EXPECT_EQ(graph.IncomingArcsStartingFrom(i, TypeParam::kNilArc).end(),
-                graph.IncomingArcs(i).end());
+      EXPECT_EQ(graph->IncomingArcsStartingFrom(i, TypeParam::kNilArc).end(),
+                graph->IncomingArcs(i).end());
       EXPECT_EQ(
-          graph.OppositeIncomingArcsStartingFrom(i, TypeParam::kNilArc).end(),
-          graph.OppositeIncomingArcs(i).end());
-      EXPECT_EQ(
-          graph
-              .OutgoingOrOppositeIncomingArcsStartingFrom(i, TypeParam::kNilArc)
-              .end(),
-          typename TypeParam::OutgoingOrOppositeIncomingArcIterator(
-              graph, i, TypeParam::kNilArc));
+          graph->OppositeIncomingArcsStartingFrom(i, TypeParam::kNilArc).end(),
+          graph->OppositeIncomingArcs(i).end());
+      EXPECT_EQ(graph
+                    ->OutgoingOrOppositeIncomingArcsStartingFrom(
+                        i, TypeParam::kNilArc)
+                    .end(),
+                typename TypeParam::OutgoingOrOppositeIncomingArcIterator(
+                    *graph, i, TypeParam::kNilArc));
     }
   }
 }
 
+// TODO(b/501313028): Remove once graphs are always built.
 TEST(StaticGraphTest, HeadAndTailBeforeAndAfterBuild) {
   for (const bool poll_in_the_middle_of_construction : {false, true}) {
     for (const bool build : {false, true}) {
@@ -921,7 +915,7 @@ TEST(StaticGraphTest, FromArcs) {
   const std::vector<std::pair<int, int>> arcs = {{1, 2}, {1, 0}};
   StaticGraph<> graph = StaticGraph<>::FromArcs(3, arcs);
   EXPECT_EQ(3, graph.num_nodes());
-  EXPECT_EQ(3, graph.size());
+  EXPECT_EQ(3, size(graph));
   EXPECT_EQ(2, graph.num_arcs());
   std::vector<std::pair<int, int>> read_arcs;
   for (const auto arc : graph.AllForwardArcs()) {
@@ -933,7 +927,7 @@ TEST(StaticGraphTest, FromArcs) {
 TEST(CompleteGraphTest, EmptyGraph) {
   CompleteGraph<> graph(0);
   EXPECT_EQ(0, graph.num_nodes());
-  EXPECT_EQ(0, graph.size());
+  EXPECT_EQ(0, size(graph));
   EXPECT_EQ(0, graph.num_arcs());
   for (const auto arc : graph.AllForwardArcs()) {
     EXPECT_TRUE(false);
@@ -944,7 +938,7 @@ TEST(CompleteGraphTest, EmptyGraph) {
 TEST(CompleteGraphTest, OneNodeGraph) {
   CompleteGraph<> graph(1);
   EXPECT_EQ(1, graph.num_nodes());
-  EXPECT_EQ(1, graph.size());
+  EXPECT_EQ(1, size(graph));
   EXPECT_EQ(1, graph.num_arcs());
   EXPECT_EQ(graph.Head(0), 0);
   EXPECT_EQ(graph.Tail(0), 0);
@@ -954,7 +948,7 @@ TEST(CompleteGraphTest, NonEmptyGraph) {
   static const int kNumNodes = 5;
   CompleteGraph<> graph(kNumNodes);
   EXPECT_EQ(kNumNodes, graph.num_nodes());
-  EXPECT_EQ(kNumNodes, graph.size());
+  EXPECT_EQ(kNumNodes, size(graph));
   EXPECT_EQ(kNumNodes * kNumNodes, graph.num_arcs());
   int count = 0;
   for (const auto arc : graph.AllForwardArcs()) {
@@ -984,7 +978,7 @@ TEST(CompleteGraphTest, NonEmptyGraph) {
 TEST(CompleteBipartiteGraphTest, EmptyGraph) {
   CompleteBipartiteGraph<> graph(0, 0);
   EXPECT_EQ(0, graph.num_nodes());
-  EXPECT_EQ(0, graph.size());
+  EXPECT_EQ(0, size(graph));
   EXPECT_EQ(0, graph.num_arcs());
   EXPECT_TRUE(graph.AllForwardArcs().empty());
 }
@@ -992,7 +986,7 @@ TEST(CompleteBipartiteGraphTest, EmptyGraph) {
 TEST(CompleteBipartiteGraphTest, OneRightNodeGraph) {
   CompleteBipartiteGraph<> graph(3, 1);
   EXPECT_EQ(4, graph.num_nodes());
-  EXPECT_EQ(4, graph.size());
+  EXPECT_EQ(4, size(graph));
   EXPECT_EQ(3, graph.num_arcs());
   EXPECT_EQ(graph.Head(0), 3);
   EXPECT_EQ(graph.Head(1), 3);
@@ -1007,7 +1001,7 @@ TEST(CompleteBipartiteGraphTest, NonEmptyGraph) {
   static const int kNumLeftNodes = 3;
   CompleteBipartiteGraph<> graph(kNumLeftNodes, kNumRightNodes);
   EXPECT_EQ(kNumLeftNodes + kNumRightNodes, graph.num_nodes());
-  EXPECT_EQ(graph.num_nodes(), graph.size());
+  EXPECT_EQ(graph.num_nodes(), size(graph));
   EXPECT_EQ(kNumLeftNodes * kNumRightNodes, graph.num_arcs());
   int count = 0;
   for (const auto arc : graph.AllForwardArcs()) {
@@ -1046,7 +1040,7 @@ TEST(CompleteBipartiteGraphTest, Overflow) {
   constexpr NodeIndex kNumNodes = std::numeric_limits<NodeIndex>::max() / 2;
   Graph graph(kNumNodes, kNumNodes);
   EXPECT_EQ(2 * kNumNodes, graph.num_nodes());
-  EXPECT_EQ(graph.num_nodes(), graph.size());
+  EXPECT_EQ(graph.num_nodes(), size(graph));
   EXPECT_EQ(kNumNodes * kNumNodes, graph.num_arcs());
   constexpr uint64_t kLeft = kNumNodes - 3;
   constexpr uint64_t kRight = kNumNodes + kNumNodes - 2;
@@ -1086,6 +1080,47 @@ TEST(Permute, StrongVector) {
   EXPECT_THAT(array, ElementsAre(4, 6, 5));
 }
 
+class TestGraphBuilder
+    : public internal::GraphBuilderBase<TestGraphBuilder, ListGraph<int, int>,
+                                        int, int> {
+ public:
+  static constexpr bool kBuildPermutesArcs = true;
+
+  explicit TestGraphBuilder(std::vector<int> permutation)
+      : permutation_(std::move(permutation)) {}
+
+  std::unique_ptr<ListGraph<int, int>> Build(std::vector<int>* permutation) && {
+    *permutation = std::move(permutation_);
+    return nullptr;
+  }
+
+ private:
+  std::vector<int> permutation_;
+};
+
+TEST(BuildAndPermuteTest, Works) {
+  TestGraphBuilder builder({0, 2, 1});
+  int array[] = {4, 5, 6};
+  std::vector<bool> bool_vector = {true, false, true};
+  util_intops::StrongVector<StrongArcId, int> strong_vector = {4, 5, 6};
+  std::unique_ptr<int> unique_ptr_array[] = {std::make_unique<int>(4),
+                                             std::make_unique<int>(5),
+                                             std::make_unique<int>(6)};
+  auto graph = std::move(builder).BuildAndPermute(
+      array, bool_vector, strong_vector, unique_ptr_array);
+  EXPECT_THAT(array, ElementsAre(4, 6, 5));
+  EXPECT_THAT(bool_vector, ElementsAre(true, true, false));
+  EXPECT_THAT(strong_vector, ElementsAre(4, 6, 5));
+  EXPECT_THAT(unique_ptr_array,
+              ElementsAre(Pointee(4), Pointee(6), Pointee(5)));
+}
+
+template <typename Graph>
+class BMGraphBuilder : public Graph::Builder {
+  using Base = Graph::Builder;
+  using Base::Base;
+};
+
 template <typename GraphType, bool reserve>
 static void BM_RandomArcs(benchmark::State& state) {
   const int kRandomSeed = 0;
@@ -1093,16 +1128,16 @@ static void BM_RandomArcs(benchmark::State& state) {
   const int kArcs = 5 * kNodes;
   int items_processed = 0;
   for (auto _ : state) {
-    GraphType graph;
+    BMGraphBuilder<GraphType> builder;
     if (reserve) {
-      graph.Reserve(kNodes, kArcs);
+      builder.Reserve(kNodes, kArcs);
     }
     std::mt19937 randomizer(kRandomSeed);
     for (int i = 0; i < kArcs; ++i) {
-      graph.AddArc(absl::Uniform<int32_t>(randomizer, 0, kNodes),
-                   absl::Uniform<int32_t>(randomizer, 0, kNodes));
+      builder.AddArc(absl::Uniform<int32_t>(randomizer, 0, kNodes),
+                     absl::Uniform<int32_t>(randomizer, 0, kNodes));
     }
-    graph.Build();
+    const auto graph = std::move(builder).Build(nullptr);
     items_processed += kArcs;
   }
   state.SetItemsProcessed(items_processed);
@@ -1116,17 +1151,17 @@ static void BM_OrderedArcs(benchmark::State& state) {
   const int kArcs = kDegree * kNodes;
   int items_processed = 0;
   for (auto _ : state) {
-    GraphType graph;
+    BMGraphBuilder<GraphType> builder;
     if (reserve) {
-      graph.Reserve(kNodes, kArcs);
+      builder.Reserve(kNodes, kArcs);
     }
     std::mt19937 randomizer(kRandomSeed);
     for (int i = 0; i < kNodes; ++i) {
       for (int j = 0; j < kDegree; ++j) {
-        graph.AddArc(i, absl::Uniform<int32_t>(randomizer, 0, kNodes));
+        builder.AddArc(i, absl::Uniform<int32_t>(randomizer, 0, kNodes));
       }
     }
-    graph.Build();
+    const auto graph = std::move(builder).Build(nullptr);
     items_processed += kArcs;
   }
   state.SetItemsProcessed(items_processed);
@@ -1142,14 +1177,14 @@ static void BM_RandomArcsBeforeBuild(benchmark::State& state) {
   const int kArcs = 5 * kNodes;
   int items_processed = 0;
   for (auto _ : state) {
-    GraphType graph;
+    BMGraphBuilder<GraphType> builder;
     if (reserve) {
-      graph.Reserve(kNodes, kArcs);
+      builder.Reserve(kNodes, kArcs);
     }
     std::mt19937 randomizer(kRandomSeed);
     for (int i = 0; i < kArcs; ++i) {
-      graph.AddArc(absl::Uniform<int32_t>(randomizer, 0, kNodes),
-                   absl::Uniform<int32_t>(randomizer, 0, kNodes));
+      builder.AddArc(absl::Uniform<int32_t>(randomizer, 0, kNodes),
+                     absl::Uniform<int32_t>(randomizer, 0, kNodes));
     }
     items_processed += kArcs;
   }
@@ -1159,18 +1194,25 @@ static void BM_RandomArcsBeforeBuild(benchmark::State& state) {
 // A basic vector<vector<>> graph implementation that many people uses. It is
 // quite slower and use more memory than a static graph, except maybe during
 // construction.
-class VectorVectorGraph {
+using VectorVectorGraph = std::vector<std::vector<int32_t>>;
+
+template <>
+class BMGraphBuilder<VectorVectorGraph> {
  public:
-  VectorVectorGraph() = default;
+  BMGraphBuilder() : graph_(std::make_unique<VectorVectorGraph>()) {}
+
   void Reserve(int32_t num_nodes, int32_t num_arcs) {
-    // We could only reserve the space, but AddArc() need to be smarter then.
-    graph_.resize(num_nodes);
+    graph_->resize(num_nodes);
   }
-  void Build() {}
-  void AddArc(int32_t tail, int32_t head) { graph_[tail].push_back(head); }
+
+  void AddArc(int32_t tail, int32_t head) { (*graph_)[tail].push_back(head); }
+
+  std::unique_ptr<VectorVectorGraph> Build(nullptr_t) && {
+    return std::move(graph_);
+  }
 
  private:
-  std::vector<std::vector<int32_t>> graph_;
+  std::unique_ptr<VectorVectorGraph> graph_;
 };
 
 #define RESERVE true
@@ -1202,23 +1244,23 @@ BENCHMARK_TEMPLATE2(BM_RandomArcs, ReverseArcStaticGraph<>, NO_RESERVE);
 #undef NO_RESERVE
 
 template <typename GraphType>
-void BuildGraphForIterationsBenchmarks(GraphType* graph) {
+GraphType BuildGraphForIterationsBenchmarks() {
   const int kRandomSeed = 0;
   const int kNodes = 10 * 1000 * 1000;
   const int kArcs = 5 * kNodes;
-  graph->Reserve(kNodes, kArcs);
+  typename GraphType::Builder builder;
+  builder.Reserve(kNodes, kArcs);
   std::mt19937 randomizer(kRandomSeed);
   for (int i = 0; i < kArcs; ++i) {
-    graph->AddArc(absl::Uniform<int32_t>(randomizer, 0, kNodes),
-                  absl::Uniform<int32_t>(randomizer, 0, kNodes));
+    builder.AddArc(absl::Uniform<int32_t>(randomizer, 0, kNodes),
+                   absl::Uniform<int32_t>(randomizer, 0, kNodes));
   }
-  graph->Build();
+  return std::move(builder).BuildGraph(nullptr);
 }
 
 template <typename GraphType>
 static void BM_OutgoingIterations(benchmark::State& state) {
-  GraphType graph;
-  BuildGraphForIterationsBenchmarks(&graph);
+  const auto graph = BuildGraphForIterationsBenchmarks<GraphType>();
   int64_t num_arcs = 0;
   int64_t some_work = 0;
   for (auto _ : state) {
@@ -1240,8 +1282,7 @@ BENCHMARK_TEMPLATE(BM_OutgoingIterations, ReverseArcStaticGraph<>);
 
 template <typename GraphType>
 static void BM_IncomingIterations(benchmark::State& state) {
-  GraphType graph;
-  BuildGraphForIterationsBenchmarks(&graph);
+  const auto graph = BuildGraphForIterationsBenchmarks<GraphType>();
   int64_t num_arcs = 0;
   int64_t some_work = 0;
   for (auto _ : state) {
@@ -1261,8 +1302,7 @@ BENCHMARK_TEMPLATE(BM_IncomingIterations, ReverseArcStaticGraph<>);
 
 template <typename GraphType>
 static void BM_OppositeIncomingIterations(benchmark::State& state) {
-  GraphType graph;
-  BuildGraphForIterationsBenchmarks(&graph);
+  const auto graph = BuildGraphForIterationsBenchmarks<GraphType>();
   int64_t num_arcs = 0;
   int64_t some_work = 0;
   for (auto _ : state) {
@@ -1282,8 +1322,7 @@ BENCHMARK_TEMPLATE(BM_OppositeIncomingIterations, ReverseArcStaticGraph<>);
 
 template <typename GraphType>
 static void BM_OutgoingOrOppositeIncomingIterations(benchmark::State& state) {
-  GraphType graph;
-  BuildGraphForIterationsBenchmarks(&graph);
+  const auto graph = BuildGraphForIterationsBenchmarks<GraphType>();
   int64_t num_arcs = 0;
   for (auto _ : state) {
     for (int node = 0; node < graph.num_nodes(); ++node) {
@@ -1306,8 +1345,7 @@ BENCHMARK_TEMPLATE(BM_OutgoingOrOppositeIncomingIterations,
 template <typename GraphType>
 static void BM_OutgoingOrOppositeIncomingIterationsTwoLoops(
     benchmark::State& state) {
-  GraphType graph;
-  BuildGraphForIterationsBenchmarks(&graph);
+  const auto graph = BuildGraphForIterationsBenchmarks<GraphType>();
   for (auto _ : state) {
     for (int node = 0; node < graph.num_nodes(); ++node) {
       const auto work = [&graph](int arc) {
@@ -1331,8 +1369,7 @@ BENCHMARK_TEMPLATE(BM_OutgoingOrOppositeIncomingIterationsTwoLoops,
 
 template <typename GraphType>
 static void BM_IntegralTypeCopy(benchmark::State& state) {
-  GraphType graph;
-  BuildGraphForIterationsBenchmarks(&graph);
+  const auto graph = BuildGraphForIterationsBenchmarks<GraphType>();
 
   for (auto s : state) {
     GraphType copied;
