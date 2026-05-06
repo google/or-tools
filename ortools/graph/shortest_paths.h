@@ -79,6 +79,7 @@
 #include "ortools/base/adjustable_priority_queue.h"
 #include "ortools/base/threadpool.h"
 #include "ortools/base/timer.h"
+#include "ortools/base/types.h"
 
 namespace operations_research {
 
@@ -87,8 +88,7 @@ namespace operations_research {
 // precision should be acceptable in practice.
 typedef uint32_t PathDistance;
 
-const PathDistance kDisconnectedPathDistance =
-    std::numeric_limits<uint32_t>::max();
+const PathDistance kDisconnectedPathDistance = kuint32max;
 
 namespace internal {
 template <class NodeIndex, NodeIndex kNilNode>

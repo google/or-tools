@@ -158,8 +158,8 @@ node.
     memory loads.
 
 -   `StaticGraph<>`: More memory and speed efficient than `ListGraph<>`, but
-    requires calling `Build()` once after adding all nodes and arcs. Iterating
-    outgoing arcs requires only `2` memory loads.
+    requires building after adding all nodes and arcs. Iterating outgoing arcs
+    requires only `2` memory loads.
 
 -   `ReverseArcListGraph<>` adds reverse arcs to `ListGraph<>`. Iterating
     neighboring arcs for a node requires `O(degree)` memory loads.
@@ -202,18 +202,18 @@ You can find some canonical examples in [`samples`][samples].
 
 <!-- Links used throughout the document. -->
 [graph_h]: ../graph/graph.h
-[bounded_dijkstra_h]: http://google3/third_party/ortools/ortools/graph/bounded_dijkstra.h
-[bidirectional_dijkstra_h]: http://google3/third_party/ortools/ortools/graph/bidirectional_dijkstra.h
-[shortest_paths_h]: http://google3/third_party/ortools/ortools/graph/shortest_paths.h
-[dag_shortest_path_h]: http://google3/third_party/ortools/ortools/graph/dag_shortest_path.h
-[dag_constrained_shortest_path_h]: http://google3/third_party/ortools/ortools/graph/dag_constrained_shortest_path.h
-[hamiltonian_path_h]: http://google3/third_party/ortools/ortools/graph/hamiltonian_path.h
-[eulerian_path_h]: http://google3/third_party/ortools/ortools/graph/eulerian_path.h
-[connected_components_h]: http://google3/third_party/ortools/ortools/graph/connected_components.h
-[strongly_connected_components_h]: http://google3/third_party/ortools/ortools/graph/strongly_connected_components.h
-[cliques_h]: http://google3/third_party/ortools/ortools/graph/cliques.h
-[linear_assignment_h]: http://google3/third_party/ortools/ortools/graph/linear_assignment.h
-[max_flow_h]: http://google3/third_party/ortools/ortools/graph/max_flow.h
-[min_cost_flow_h]: http://google3/third_party/ortools/ortools/graph/min_cost_flow.h
-[samples]: http://google3/third_party/ortools/ortools/graph/samples/
+[bounded_dijkstra_h]: ../graph/bounded_dijkstra.h
+[bidirectional_dijkstra_h]: ../graph/bidirectional_dijkstra.h
+[shortest_paths_h]: ../graph/shortest_paths.h
+[dag_shortest_path_h]: ../graph/dag_shortest_path.h
+[dag_constrained_shortest_path_h]: ../graph/dag_constrained_shortest_path.h
+[hamiltonian_path_h]: ../graph/hamiltonian_path.h
+[eulerian_path_h]: ../graph/eulerian_path.h
+[connected_components_h]: ../graph/connected_components.h
+[strongly_connected_components_h]: ../graph/strongly_connected_components.h
+[cliques_h]: ../graph/cliques.h
+[linear_assignment_h]: ../graph/linear_assignment.h
+[max_flow_h]: ../graph/max_flow.h
+[min_cost_flow_h]: ../graph/min_cost_flow.h
+[samples]: ../graph/samples/
 [graph]: ../graph/

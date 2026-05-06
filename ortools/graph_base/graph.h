@@ -37,7 +37,8 @@
 //
 // Provided implementations:
 //   - ListGraph<> for the simplest api. Also aliased to util::Graph.
-//   - StaticGraph<> for performance, but require calling Build(), see below
+//   - StaticGraph<> for performance, but requires building before usage, see
+//     below
 //   - CompleteGraph<> if you need a fully connected graph
 //   - CompleteBipartiteGraph<> if you need a fully connected bipartite graph
 //   - ReverseArcListGraph<> to add reverse arcs to ListGraph<>
@@ -75,20 +76,17 @@
 //
 // Note on iteration efficiency: When re-indexing the arcs it is not possible to
 // have both the outgoing arcs and the incoming ones form a consecutive range.
+// It is however possible to do so for the outgoing arcs and the opposite
+// incoming arcs. It is why the OutgoingOrOppositeIncomingArcs() and
+// OutgoingArcs() iterations are more efficient than the IncomingArcs() one.
 //
 // Iterators are invalidated by any operation that changes the graph (e.g.
 // `AddArc()`).
 //
-// It is however possible to do so for the outgoing arcs and the opposite
-// incoming arcs. It is why the OutgoingOrOppositeIncomingArcs() and
-// OutgoingArcs() iterations are more efficient than the IncomingArcs() one.
-// TODO(b/385094969): Once we no longer use `Next()/Ok()` for iterators, we can
-// get rid of `limit_`, which will make iteration much more efficient.
-//
 // If you know the graph size in advance, this already set the number of nodes,
 // reserve space for the arcs and check in DEBUG mode that you don't go over the
 // bounds:
-//   Graph graph(num_nodes, arc_capacity);
+//   ListGraph<> graph(num_nodes, arc_capacity);
 //
 // Storing and using node annotations:
 //   vector<bool> is_visited(graph.num_nodes(), false);
@@ -110,31 +108,45 @@
 //
 // More efficient version:
 //   typedef StaticGraph<> Graph;
-//   Graph graph(num_nodes, arc_capacity);  // Optional, but help memory usage.
+//   // Note: providing the arc capacity is optional, but helps memory usage.
+//   Graph::Builder graph_builder(num_nodes, arc_capacity);
 //   vector<int> weights;
 //   weights.reserve(arc_capacity);  // Optional, but help memory usage.
 //   for (...) {
-//     graph.AddArc(tail, head);
+//     graph_builder.AddArc(tail, head);
 //     weights.push_back(arc_weight);
 //   }
 //   ...
-//   vector<Graph::ArcIndex> permutation;
-//   graph.Build(&permutation);  // A static graph must be Build() before usage.
-//   Permute(permutation, &weights);  // Build() may permute the arc index.
+//   // Build() may permute the arc indices:
+//   const Graph graph = std::move(graph_builder).BuildAndPermute(weights);
 //   ...
+//
+//  Note on the permutation:
+//  - you can permute more than one vector at construction:
+//      std::vector<int> colors, normals;
+//      const Graph graph =
+//          std::move(graph_builder).BuildAndPermute(colors, normals);
+//  - you can also get the permutation explicitly with `Build()` and use it
+//    later:
+//      std::vector<int> permutation;
+//      const Graph graph = std::move(graph_builder).Build(&permutation);
+//      ...
 //
 // Encoding an undirected graph: If you don't need arc annotation, then the best
 // is to add two arcs for each edge (one in each direction) to a directed graph.
 // Otherwise you can do the following.
 //
 //   typedef ReverseArc... Graph;
-//   Graph graph;
+//   Graph::Builder graph_builder;
 //   for (...) {
-//     graph.AddArc(tail, head);  // or graph.AddArc(head, tail) but not both.
+//     graph_builder.AddArc(tail, head);  // or graph.AddArc(head, tail) but not
+//                                        // both.
 //     edge_annotations.push_back(value);
 //   }
+//   const Graph graph =
+//       std::move(graph_builder).BuildAndPermute(edge_annotations);
 //   ...
-//   for (const Graph::NodeIndex node : graph.AllNodes()) {
+//   for (const Graph::NodeIndex node : graph->AllNodes()) {
 //     for (const Graph::ArcIndex arc :
 //          graph.OutgoingOrOppositeIncomingArcs(node)) {
 //       destination = graph.Head(arc);
@@ -165,12 +177,17 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <initializer_list>
 #include <iterator>
 #include <limits>
+#include <memory>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 #include "absl/base/attributes.h"
+#include "absl/base/macros.h"
+#include "absl/base/nullability.h"
 #include "absl/debugging/leak_check.h"
 #include "absl/log/check.h"
 #include "absl/types/span.h"
@@ -187,6 +204,113 @@ class SVector;
 template <typename IndexT, typename T>
 class Vector;
 
+// A base class for graph builders, that adds common functionality to all graph
+// builders.
+template <typename BuilderImpl, typename GraphImpl, typename NodeIndexType,
+          typename ArcIndexType>
+class GraphBuilderBase {
+ public:
+  // Builds the graph and permutes the given arc-indexed arrays so that they
+  // correspond to the arc indices of the built graph.
+  template <typename... ArcPropertyArray>
+  std::unique_ptr<GraphImpl> BuildAndPermute(
+      ArcPropertyArray&... arc_properties) &&;
+
+  // Builds the graph and returns it. If `permutation` is not nullptr, it is
+  // filled with the arc permutation if the graph implementation reorders arcs.
+  GraphImpl BuildGraph(
+      std::vector<ArcIndexType>* absl_nullable permutation) && {
+    return std::move(
+        *static_cast<BuilderImpl&&>(std::move(*this)).Build(permutation));
+  }
+
+  // Same as `BuildAndPermute()`, but returns a value.
+  template <typename... ArcPropertyArray>
+  GraphImpl BuildGraphAndPermute(ArcPropertyArray&... arc_properties) && {
+    return std::move(*std::move(*this).BuildAndPermute(arc_properties...));
+  }
+
+  void Reserve(NodeIndexType node_capacity, ArcIndexType arc_capacity) {
+    static_cast<BuilderImpl&>(*this).ReserveArcs(arc_capacity);
+    static_cast<BuilderImpl&>(*this).ReserveNodes(node_capacity);
+  }
+
+  // Reserving does nothing by default.
+  void ReserveNodes(NodeIndexType bound) {}
+  void ReserveArcs(ArcIndexType bound) {}
+
+  // The number of arcs added by the user. Might not be the same as the number
+  // of arcs in the built graph for some graph implementations (e.g.
+  // `FlowGraph`).
+  ArcIndexType num_arcs() const;
+
+  // The number of nodes added by the user. Might not be the same as the number
+  // of nodes in the built graph for some graph implementations.
+  NodeIndexType num_nodes();
+};
+
+// A graph builder for graphs that don't need building (e.g. `ListGraph`).
+// Simply forwards mutable calls to the underlying graph.
+// TODO(b/501313028): Remove once migration is over.
+template <typename Impl, typename NodeIndexType, typename ArcIndexType,
+          bool build_permutes_arcs>
+class MutableGraphBuilder
+    : public GraphBuilderBase<
+          MutableGraphBuilder<Impl, NodeIndexType, ArcIndexType,
+                              build_permutes_arcs>,
+          Impl, NodeIndexType, ArcIndexType> {
+  using Base =
+      GraphBuilderBase<MutableGraphBuilder<Impl, NodeIndexType, ArcIndexType,
+                                           build_permutes_arcs>,
+                       Impl, NodeIndexType, ArcIndexType>;
+
+ public:
+  static constexpr bool kBuildPermutesArcs = build_permutes_arcs;
+
+  MutableGraphBuilder() : graph_(std::make_unique<Impl>()) {}
+  MutableGraphBuilder(NodeIndexType num_nodes, ArcIndexType arc_capacity)
+      : graph_(std::make_unique<Impl>(num_nodes, arc_capacity)) {}
+
+  // TODO(b/501313028): This should be `= default` when we no longer mutate
+  // the graph.
+  MutableGraphBuilder(const MutableGraphBuilder& other) {
+    graph_ = std::make_unique<Impl>(*other.graph_);
+  }
+  MutableGraphBuilder& operator=(const MutableGraphBuilder& other) {
+    if (this == &other) return *this;
+    graph_ = std::make_unique<Impl>(*other.graph_);
+    return *this;
+  }
+  MutableGraphBuilder(MutableGraphBuilder&&) = default;
+  MutableGraphBuilder& operator=(MutableGraphBuilder&&) = default;
+
+  std::unique_ptr<Impl> Build(
+      std::vector<ArcIndexType>* absl_nullable permutation) && {
+    graph_->Build(permutation);
+    return std::move(graph_);
+  }
+
+  void AddNode(NodeIndexType node) { graph_->AddNode(node); }
+
+  ArcIndexType AddArc(NodeIndexType tail, NodeIndexType head) {
+    return graph_->AddArc(tail, head);
+  }
+
+  void ReserveNodes(NodeIndexType bound) { graph_->ReserveNodes(bound); }
+
+  void ReserveArcs(ArcIndexType bound) { graph_->ReserveArcs(bound); }
+
+  void FreezeCapacities() { graph_->FreezeCapacities(); }
+
+  NodeIndexType node_capacity() const { return graph_->node_capacity(); }
+  ArcIndexType arc_capacity() const { return graph_->arc_capacity(); }
+
+  ArcIndexType num_arcs() const { return graph_->num_arcs(); }
+  NodeIndexType num_nodes() const { return graph_->num_nodes(); }
+
+ protected:
+  std::unique_ptr<Impl> graph_;
+};
 }  // namespace internal
 
 // Base class of all Graphs implemented here. The default value for the graph
@@ -223,10 +347,13 @@ class BaseGraph  //
 
   virtual ~BaseGraph() = default;
 
-  // Returns the number of valid nodes in the graph. Prefer using num_nodes():
-  // the size() API is here to make Graph and vector<vector<int>> more alike.
+  // Returns the number of valid nodes in the graph.
   NodeIndexType num_nodes() const { return num_nodes_; }
-  NodeIndexType size() const { return num_nodes_; }  // Prefer num_nodes().
+
+  [[deprecated("Use num_nodes() instead")]] ABSL_REFACTOR_INLINE NodeIndexType
+  size() const {
+    return num_nodes();
+  }
 
   // Returns the number of valid arcs in the graph.
   ArcIndexType num_arcs() const { return num_arcs_; }
@@ -300,7 +427,7 @@ class BaseGraph  //
   //
   // Note that some implementations become immutable after calling Build().
   // By default, Build() is a no-op.
-  virtual void Build(std::vector<ArcIndexType>* permutation) {
+  virtual void Build(std::vector<ArcIndexType>* absl_nullable permutation) {
     if (permutation != nullptr) permutation->clear();
   }
   void Build() { Build(nullptr); }
@@ -318,9 +445,18 @@ class BaseGraph  //
   NodeIndexType node_capacity_;
   ArcIndexType num_arcs_;
   ArcIndexType arc_capacity_;
+  // TODO(b/501313028): This is only relevant for mutable graphs.
   bool const_capacities_;
 };
 
+// Provide a `size` overload so that `Graph` and `std::vector<std::vector<int>>`
+// are compatible.
+template <typename Impl, typename NodeIndexType, typename ArcIndexType,
+          bool HasNegativeReverseArcs>
+constexpr auto size(const BaseGraph<Impl, NodeIndexType, ArcIndexType,
+                                    HasNegativeReverseArcs>& graph) {
+  return graph.num_nodes();
+}
 // An iterator that wraps an arc iterator and retrieves a property of the arc.
 // The property to retrieve is specified by a `Graph` member function taking an
 // `ArcIndex` parameter. For example, `ArcHeadIterator` retrieves the head of an
@@ -621,7 +757,9 @@ class SVector {
 
 // Graph traits, to allow algorithms to manipulate graphs as adjacency lists.
 // This works with any graph type, and any object that has:
-// - a size() method returning the number of nodes.
+// - an ADL-compatible `size()` method returning the number of nodes. This
+//   includes any object with a `size()` method (e.g. `std::vector`), C-style
+//   arrays, ...
 // - an operator[] method taking a node index and returning a range of neighbour
 //   node indices.
 // One common example is using `std::vector<std::vector<int>>` to represent
@@ -629,9 +767,14 @@ class SVector {
 template <typename Graph>
 struct GraphTraits {
  private:
+  static constexpr auto num_nodes(const Graph& graph) {
+    using std::size;
+    return size(graph);
+  }
+
   // The type of the range returned by `operator[]`.
   using NeighborRangeType = std::decay_t<
-      decltype(std::declval<Graph>()[std::declval<Graph>().size()])>;
+      decltype(std::declval<Graph>()[num_nodes(std::declval<Graph>())])>;
 
  public:
   // The index type for nodes of the graph.
@@ -670,6 +813,8 @@ class ListGraph : public BaseGraph<ListGraph<NodeIndexType, ArcIndexType>,
   using Base::num_nodes_;
 
  public:
+  using Builder = internal::MutableGraphBuilder<ListGraph, NodeIndexType,
+                                                ArcIndexType, false>;
   using Base::IsArcValid;
   ListGraph() = default;
 
@@ -778,6 +923,9 @@ class StaticGraph : public BaseGraph<StaticGraph<NodeIndexType, ArcIndexType>,
   using Base::num_nodes_;
 
  public:
+  using Builder = internal::MutableGraphBuilder<StaticGraph, NodeIndexType,
+                                                ArcIndexType, true>;
+
   using Base::IsArcValid;
   StaticGraph() : is_built_(false), arc_in_order_(true), last_tail_seen_(0) {}
   StaticGraph(NodeIndexType num_nodes, ArcIndexType arc_capacity)
@@ -789,6 +937,7 @@ class StaticGraph : public BaseGraph<StaticGraph<NodeIndexType, ArcIndexType>,
     }
   }
 
+  // TODO(b/501313028): Use `GraphFromArcs()` instead.
   // Shortcut to directly create a finalized graph, i.e. Build() is called.
   template <class ArcContainer>  // e.g. vector<pair<int, int>>.
   static StaticGraph FromArcs(NodeIndexType num_nodes,
@@ -821,7 +970,7 @@ class StaticGraph : public BaseGraph<StaticGraph<NodeIndexType, ArcIndexType>,
   void AddNode(NodeIndexType node);
   ArcIndexType AddArc(NodeIndexType tail, NodeIndexType head);
 
-  void Build(std::vector<ArcIndexType>* permutation) final;
+  void Build(std::vector<ArcIndexType>* absl_nullable permutation) final;
   void Build() { Build(nullptr); }
   bool IsBuilt() const final { return is_built_; }
 
@@ -865,6 +1014,9 @@ class ReverseArcListGraph
   using Base::num_nodes_;
 
  public:
+  using Builder =
+      internal::MutableGraphBuilder<ReverseArcListGraph, NodeIndexType,
+                                    ArcIndexType, false>;
   using Base::IsArcValid;
   ReverseArcListGraph() = default;
   ReverseArcListGraph(NodeIndexType num_nodes, ArcIndexType arc_capacity) {
@@ -1001,6 +1153,9 @@ class ReverseArcStaticGraph
   using Base::num_nodes_;
 
  public:
+  using Builder =
+      internal::MutableGraphBuilder<ReverseArcStaticGraph, NodeIndexType,
+                                    ArcIndexType, true>;
   using Base::IsArcValid;
   ReverseArcStaticGraph() : is_built_(false) {}
   ReverseArcStaticGraph(NodeIndexType num_nodes, ArcIndexType arc_capacity)
@@ -1083,7 +1238,7 @@ class ReverseArcStaticGraph
   void AddNode(NodeIndexType node);
   ArcIndexType AddArc(NodeIndexType tail, NodeIndexType head);
 
-  void Build(std::vector<ArcIndexType>* permutation) final;
+  void Build(std::vector<ArcIndexType>* absl_nullable permutation) final;
   void Build() { Build(nullptr); }
   bool IsBuilt() const final { return is_built_; }
 
@@ -1131,12 +1286,30 @@ void Permute(const IntVector& permutation, Array* array_to_permute) {
       typename std::iterator_traits<decltype(std::begin(array))>::value_type;
   std::vector<ElementType> temp(size);
   auto array_begin = std::begin(array);
-  std::copy_n(array_begin, size, temp.begin());
+  std::move(array_begin, array_begin + size, temp.begin());
   for (size_t i = 0; i < permutation.size(); ++i) {
-    *(array_begin + static_cast<size_t>(permutation[i])) = temp[i];
+    *(array_begin + static_cast<size_t>(permutation[i])) = std::move(temp[i]);
   }
 }
-
+namespace internal {
+template <typename BuilderImpl, typename GraphImpl, typename NodeIndexType,
+          typename ArcIndexType>
+template <typename... ArcPropertyArray>
+std::unique_ptr<GraphImpl> GraphBuilderBase<
+    BuilderImpl, GraphImpl, NodeIndexType,
+    ArcIndexType>::BuildAndPermute(ArcPropertyArray&... arc_properties) && {
+  if constexpr (BuilderImpl::kBuildPermutesArcs) {
+    std::vector<ArcIndexType> permutation;
+    auto graph =
+        static_cast<BuilderImpl&&>(std::move(*this)).Build(&permutation);
+    (Permute(permutation, &arc_properties), ...);
+    return graph;
+  } else {
+    // Optimization: avoid permuting with an identity permutation.
+    return static_cast<BuilderImpl&&>(std::move(*this)).Build(nullptr);
+  }
+}
+}  // namespace internal
 // BaseGraph implementation ----------------------------------------------------
 
 template <typename Impl, typename NodeIndexType, typename ArcIndexType,
@@ -1385,10 +1558,9 @@ template <class ArcContainer>
 StaticGraph<NodeIndexType, ArcIndexType>
 StaticGraph<NodeIndexType, ArcIndexType>::FromArcs(NodeIndexType num_nodes,
                                                    const ArcContainer& arcs) {
-  StaticGraph g(num_nodes, arcs.size());
-  for (const auto& [from, to] : arcs) g.AddArc(from, to);
-  g.Build();
-  return g;
+  StaticGraph::Builder builder(num_nodes, arcs.size());
+  for (const auto& [from, to] : arcs) builder.AddArc(from, to);
+  return std::move(builder).BuildGraph(nullptr);
 }
 
 template <typename NodeIndexType, typename ArcIndexType>
@@ -2060,6 +2232,17 @@ CompleteBipartiteGraph<NodeIndexType, ArcIndexType>::operator[](
 
 // Defining the simplest Graph interface as Graph for convenience.
 typedef ListGraph<> Graph;
+
+// Creates a graph from a container of arcs.
+template <typename GraphT,
+          typename ArcContainer = std::initializer_list<std::pair<
+              typename GraphT::NodeIndex, typename GraphT::NodeIndex>>>
+GraphT GraphFromArcs(typename GraphT::NodeIndex num_nodes,
+                     const ArcContainer& arcs) {
+  typename GraphT::Builder builder(num_nodes, arcs.size());
+  for (const auto& [from, to] : arcs) builder.AddArc(from, to);
+  return std::move(builder).BuildGraph(nullptr);
+}
 
 }  // namespace util
 

@@ -48,7 +48,7 @@ int main(int argc, char** argv) {
   const int source = n;
   const int dest = n + 1;
   const int num_arcs = 3 * n - 1;
-  util::StaticGraph<> graph;
+  util::StaticGraph<>::Builder builder;
   // There are 3 types of arcs: (1) source to M, (2) M to dest, and (3) within
   // M. This vector stores all of them, first of type (1), then type (2),
   // then type (3). The arcs are ordered by i in M within each type.
@@ -57,17 +57,17 @@ int main(int argc, char** argv) {
   std::vector<std::vector<double>> resources(1, std::vector<double>(num_arcs));
 
   for (int i = 0; i < n; ++i) {
-    graph.AddArc(source, i);
+    builder.AddArc(source, i);
     weights[i] = 100.0;
     resources[0][i] = 0.0;
   }
   for (int i = 0; i < n; ++i) {
-    graph.AddArc(i, dest);
+    builder.AddArc(i, dest);
     weights[n + i] = 100.0;
     resources[0][n + i] = 0.0;
   }
   for (int i = 0; i + 1 < n; ++i) {
-    graph.AddArc(i, i + 1);
+    builder.AddArc(i, i + 1);
     weights[2 * n + i] = 1.0;
     resources[0][2 * n + i] = 1.0;
   }
@@ -75,7 +75,7 @@ int main(int argc, char** argv) {
   // Static graph reorders the arcs at Build() time, use permutation to get from
   // the old ordering to the new one.
   std::vector<int32_t> permutation;
-  graph.Build(&permutation);
+  const auto graph = std::move(builder).Build(&permutation);
   util::Permute(permutation, &weights);
   util::Permute(permutation, &resources[0]);
   // [END graph]
@@ -95,7 +95,7 @@ int main(int argc, char** argv) {
   const std::vector<double> max_resources = {1.0};
 
   operations_research::ConstrainedShortestPathsOnDagWrapper<util::StaticGraph<>>
-      constrained_shortest_path_on_dag(&graph, &weights, &resources,
+      constrained_shortest_path_on_dag(graph.get(), &weights, &resources,
                                        topological_order, sources, destinations,
                                        &max_resources);
   operations_research::GraphPathWithLength<util::StaticGraph<>>

@@ -30,32 +30,30 @@
 
 namespace {
 absl::Status Main() {
-  util::StaticGraph<> graph;
+  util::StaticGraph<>::Builder builder;
   std::vector<double> weights;
-  graph.AddArc(0, 2);
+  builder.AddArc(0, 2);
   weights.push_back(5.0);
-  graph.AddArc(0, 3);
+  builder.AddArc(0, 3);
   weights.push_back(4.0);
-  graph.AddArc(1, 3);
+  builder.AddArc(1, 3);
   weights.push_back(1.0);
-  graph.AddArc(2, 4);
+  builder.AddArc(2, 4);
   weights.push_back(-3.0);
-  graph.AddArc(3, 4);
+  builder.AddArc(3, 4);
   weights.push_back(0.0);
 
-  // Static graph reorders the arcs at Build() time, use permutation to get
+  // Static graph reorders the arcs at build time, use permutation to get
   // from the old ordering to the new one.
-  std::vector<int32_t> permutation;
-  graph.Build(&permutation);
-  util::Permute(permutation, &weights);
+  const auto graph = std::move(builder).BuildAndPermute(weights);
 
   // We need a topological order. We can find it by hand on this small graph,
   // e.g., {0, 1, 2, 3, 4}, but we demonstrate how to compute one instead.
   ASSIGN_OR_RETURN(const std::vector<int32_t> topological_order,
-                   util::graph::FastTopologicalSort(graph));
+                   util::graph::FastTopologicalSort(*graph));
 
   operations_research::ShortestPathsOnDagWrapper<util::StaticGraph<>>
-      shortest_path_on_dag(&graph, &weights, topological_order);
+      shortest_path_on_dag(graph.get(), &weights, topological_order);
   const int source = 0;
   shortest_path_on_dag.RunShortestPathOnDag({source});
 

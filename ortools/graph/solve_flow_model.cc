@@ -25,6 +25,7 @@
 #include <functional>
 #include <sstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "absl/flags/flag.h"
@@ -196,16 +197,16 @@ void SolveMinCostFlow(const FlowModelProto& flow_model, double* loading_time,
   }
 
   // Build the graph.
-  Graph graph(num_nodes, flow_model.arcs_size());
+  Graph::Builder builder(num_nodes, flow_model.arcs_size());
   for (int i = 0; i < flow_model.arcs_size(); ++i) {
-    graph.AddArc(flow_model.arcs(i).tail(), flow_model.arcs(i).head());
+    builder.AddArc(flow_model.arcs(i).tail(), flow_model.arcs(i).head());
   }
   std::vector<Graph::ArcIndex> permutation;
-  graph.Build(&permutation);
-  absl::PrintF("%d,", graph.num_nodes());
-  absl::PrintF("%d,", graph.num_arcs());
+  const auto graph = std::move(builder).Build(&permutation);
+  absl::PrintF("%d,", graph->num_nodes());
+  absl::PrintF("%d,", graph->num_arcs());
 
-  GenericMinCostFlow<Graph> min_cost_flow(&graph);
+  GenericMinCostFlow<Graph> min_cost_flow(graph.get());
   for (int i = 0; i < flow_model.arcs_size(); ++i) {
     const Graph::ArcIndex image = i < permutation.size() ? permutation[i] : i;
     min_cost_flow.SetArcUnitCost(image, flow_model.arcs(i).unit_cost());
@@ -231,27 +232,28 @@ void SolveMinCostFlow(const FlowModelProto& flow_model, double* loading_time,
 
 // Loads a FlowModelProto proto into the MaxFlow class and solves it.
 template <typename GraphType>
-void SolveMaxFlow(
-    const FlowModelProto& flow_model, double* loading_time,
-    double* solving_time,
-    std::function<void(GraphType* graph)> configure_graph_options = nullptr) {
+void SolveMaxFlow(const FlowModelProto& flow_model, double* loading_time,
+                  double* solving_time,
+                  std::function<void(typename GraphType::Builder* graph)>
+                      configure_graph_options = nullptr) {
   WallTimer timer;
   timer.Start();
 
   // Build the graph.
-  GraphType graph(flow_model.nodes_size(), flow_model.arcs_size());
+  typename GraphType::Builder graph_builder(flow_model.nodes_size(),
+                                            flow_model.arcs_size());
   for (int i = 0; i < flow_model.arcs_size(); ++i) {
-    graph.AddArc(flow_model.arcs(i).tail(), flow_model.arcs(i).head());
+    graph_builder.AddArc(flow_model.arcs(i).tail(), flow_model.arcs(i).head());
   }
   std::vector<typename GraphType::ArcIndex> permutation;
 
   if (configure_graph_options != nullptr) {
-    configure_graph_options(&graph);
+    configure_graph_options(&graph_builder);
   }
-  graph.Build(&permutation);
+  const auto graph = std::move(graph_builder).Build(&permutation);
 
-  absl::PrintF("%d,", graph.num_nodes());
-  absl::PrintF("%d,", graph.num_arcs());
+  absl::PrintF("%d,", graph->num_nodes());
+  absl::PrintF("%d,", graph->num_arcs());
 
   // Find source & sink.
   typename GraphType::NodeIndex source = -1;
@@ -269,7 +271,7 @@ void SolveMaxFlow(
   CHECK_NE(sink, -1);
 
   // Create the max flow instance and set the arc capacities.
-  GenericMaxFlow<GraphType> max_flow(&graph, source, sink);
+  GenericMaxFlow<GraphType> max_flow(graph.get(), source, sink);
   for (int i = 0; i < flow_model.arcs_size(); ++i) {
     const typename GraphType::ArcIndex image =
         i < permutation.size() ? permutation[i] : i;
@@ -374,10 +376,10 @@ int main(int argc, char** argv) {
         if (absl::GetFlag(FLAGS_use_flow_graph)) {
           SolveMaxFlow<util::FlowGraph<>>(
               proto, &loading_time, &solving_time,
-              [](util::FlowGraph<>* graph) {
-                graph->SetDetectReverse(
+              [](util::FlowGraph<>::Builder* builder) {
+                builder->SetDetectReverse(
                     absl::GetFlag(FLAGS_detect_reverse_arcs));
-                graph->SetSortByHead(absl::GetFlag(FLAGS_sort_heads));
+                builder->SetSortByHead(absl::GetFlag(FLAGS_sort_heads));
               });
         } else {
           SolveMaxFlow<util::ReverseArcStaticGraph<>>(proto, &loading_time,

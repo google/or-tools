@@ -17,8 +17,6 @@
 #ifndef UTIL_GRAPH_RANDOM_GRAPH_H_
 #define UTIL_GRAPH_RANDOM_GRAPH_H_
 
-#include <memory>
-
 #include "absl/random/bit_gen_ref.h"
 #include "ortools/graph_base/graph.h"
 
@@ -27,24 +25,23 @@ namespace util {
 // Generates a random graph where multi-arcs and self-arcs are allowed (and
 // therefore expected): exactly "num_arcs" are generated, each from a node
 // picked uniformly at random to another node picked uniformly at random.
-// Calls Build() on the graph iff "finalized" is true.
-std::unique_ptr<StaticGraph<>> GenerateRandomMultiGraph(int num_nodes,
-                                                        int num_arcs,
-                                                        bool finalized,
-                                                        absl::BitGenRef gen);
+StaticGraph<>::Builder GenerateRandomMultiGraph(int num_nodes, int num_arcs,
+                                                absl::BitGenRef gen);
 
 // Like GenerateRandomMultiGraph(), but with neither multi-arcs nor self-arcs:
 // the generated graph will have exactly num_arcs arcs. It will be picked
 // uniformly at random from the set of all simple graphs with that number of
 // nodes and arcs.
-std::unique_ptr<StaticGraph<>> GenerateRandomDirectedSimpleGraph(
-    int num_nodes, int num_arcs, bool finalized, absl::BitGenRef gen);
+StaticGraph<>::Builder GenerateRandomDirectedSimpleGraph(int num_nodes,
+                                                         int num_arcs,
+                                                         absl::BitGenRef gen);
 
 // Like GenerateRandomDirectedSimpleGraph(), but where an undirected edge is
 // represented by two arcs: a->b and b->a. As a result, the amount of arcs in
 // the generated graph is 2*num_edges.
-std::unique_ptr<StaticGraph<>> GenerateRandomUndirectedSimpleGraph(
-    int num_nodes, int num_edges, bool finalized, absl::BitGenRef gen);
+StaticGraph<>::Builder GenerateRandomUndirectedSimpleGraph(int num_nodes,
+                                                           int num_edges,
+                                                           absl::BitGenRef gen);
 
 }  // namespace util
 

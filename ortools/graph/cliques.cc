@@ -156,6 +156,9 @@ void Search(std::function<bool(int, int)> graph,
     // Otherwise, do the recursive step.
     if (new_candidate_size == 0) {
       *stop = callback(*current_clique);
+      if (*stop) {
+        return;
+      }
     } else {
       if (new_first_candidate_index < new_candidate_size) {
         Search(graph, callback, new_candidates.data(),

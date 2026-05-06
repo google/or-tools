@@ -561,7 +561,7 @@ class IdGenerator {
 // in [0, num_classes) and any symmetry will only map nodes with the same class
 // between each other.
 template <typename Graph>
-Graph* GenerateGraphForSymmetryDetection(
+std::unique_ptr<const Graph> GenerateGraphForSymmetryDetection(
     const LinearBooleanProblem& problem,
     std::vector<int>* initial_equivalence_classes) {
   // First, we convert the problem to its canonical representation.
@@ -578,7 +578,7 @@ Graph* GenerateGraphForSymmetryDetection(
 
   // TODO(user): reserve the memory for the graph? not sure it is worthwhile
   // since it would require some linear scan of the problem though.
-  Graph* graph = new Graph();
+  typename Graph::Builder builder;
   initial_equivalence_classes->clear();
 
   // We will construct a graph with 3 different types of node that must be
@@ -593,8 +593,8 @@ Graph* GenerateGraphForSymmetryDetection(
     // Note that the indices are in [0, 2 * num_variables) and in one to one
     // correspondence with the index representation of a literal.
     const Literal literal = Literal(BooleanVariable(i), true);
-    graph->AddArc(literal.Index().value(), literal.NegatedIndex().value());
-    graph->AddArc(literal.NegatedIndex().value(), literal.Index().value());
+    builder.AddArc(literal.Index().value(), literal.NegatedIndex().value());
+    builder.AddArc(literal.NegatedIndex().value(), literal.Index().value());
   }
 
   // We use 0 for their initial equivalence class, but that may be modified
@@ -648,18 +648,18 @@ Graph* GenerateGraphForSymmetryDetection(
         // Connect this node to the constraint node. Note that we don't
         // technically need the arcs in both directions, but that may help a bit
         // the algorithm to find symmetries.
-        graph->AddArc(constraint_node_index, current_node_index);
-        graph->AddArc(current_node_index, constraint_node_index);
+        builder.AddArc(constraint_node_index, current_node_index);
+        builder.AddArc(current_node_index, constraint_node_index);
       }
 
       // Connect this node to the associated term.literal node. Note that we
       // don't technically need the arcs in both directions, but that may help a
       // bit the algorithm to find symmetries.
-      graph->AddArc(current_node_index, term.literal.Index().value());
-      graph->AddArc(term.literal.Index().value(), current_node_index);
+      builder.AddArc(current_node_index, term.literal.Index().value());
+      builder.AddArc(term.literal.Index().value(), current_node_index);
     }
   }
-  graph->Build();
+  auto graph = std::move(builder).Build(nullptr);
   DCHECK_EQ(graph->num_nodes(), initial_equivalence_classes->size());
   return graph;
 }
@@ -704,8 +704,8 @@ void FindLinearBooleanProblemSymmetries(
     std::vector<std::unique_ptr<SparsePermutation>>* generators) {
   typedef GraphSymmetryFinder::Graph Graph;
   std::vector<int> equivalence_classes;
-  std::unique_ptr<Graph> graph(
-      GenerateGraphForSymmetryDetection<Graph>(problem, &equivalence_classes));
+  std::unique_ptr<const Graph> graph =
+      GenerateGraphForSymmetryDetection<Graph>(problem, &equivalence_classes);
   LOG(INFO) << "Graph has " << graph->num_nodes() << " nodes and "
             << graph->num_arcs() / 2 << " edges.";
 #if defined(ORTOOLS_TARGET_OS_SUPPORTS_FILE)

@@ -231,22 +231,22 @@ bool GraphIsSymmetric(const Graph& graph) {
   typedef typename Graph::NodeIndex NodeIndex;
   typedef typename Graph::ArcIndex ArcIndex;
   // Create a reverse copy of the graph.
-  StaticGraph<NodeIndex, ArcIndex> reverse_graph(graph.num_nodes(),
-                                                 graph.num_arcs());
+  typename StaticGraph<NodeIndex, ArcIndex>::Builder builder(graph.num_nodes(),
+                                                             graph.num_arcs());
   for (const NodeIndex node : graph.AllNodes()) {
     for (const ArcIndex arc : graph.OutgoingArcs(node)) {
-      reverse_graph.AddArc(graph.Head(arc), node);
+      builder.AddArc(graph.Head(arc), node);
     }
   }
-  reverse_graph.Build();
+  const auto reverse_graph = std::move(builder).Build(nullptr);
   // Compare the graph to its reverse, one adjacency list at a time.
   std::vector<ArcIndex> count(graph.num_nodes(), 0);
   for (const NodeIndex node : graph.AllNodes()) {
     for (const ArcIndex arc : graph.OutgoingArcs(node)) {
       ++count[graph.Head(arc)];
     }
-    for (const ArcIndex arc : reverse_graph.OutgoingArcs(node)) {
-      if (--count[reverse_graph.Head(arc)] < 0) return false;
+    for (const ArcIndex arc : reverse_graph->OutgoingArcs(node)) {
+      if (--count[reverse_graph->Head(arc)] < 0) return false;
     }
     for (const ArcIndex arc : graph.OutgoingArcs(node)) {
       if (count[graph.Head(arc)] != 0) return false;
@@ -273,15 +273,13 @@ bool GraphIsWeaklyConnected(const Graph& graph) {
 
 template <class Graph>
 std::unique_ptr<Graph> CopyGraph(const Graph& graph) {
-  std::unique_ptr<Graph> new_graph(
-      new Graph(graph.num_nodes(), graph.num_arcs()));
+  typename Graph::Builder builder(graph.num_nodes(), graph.num_arcs());
   for (const auto node : graph.AllNodes()) {
     for (const auto arc : graph.OutgoingArcs(node)) {
-      new_graph->AddArc(node, graph.Head(arc));
+      builder.AddArc(node, graph.Head(arc));
     }
   }
-  new_graph->Build();
-  return new_graph;
+  return std::move(builder).Build(nullptr);
 }
 
 template <class Graph>
@@ -290,17 +288,15 @@ std::unique_ptr<Graph> RemapGraph(const Graph& old_graph,
   DCHECK(IsValidPermutation(new_node_index)) << "Invalid permutation";
   const int num_nodes = old_graph.num_nodes();
   CHECK_EQ(new_node_index.size(), num_nodes);
-  std::unique_ptr<Graph> new_graph(new Graph(num_nodes, old_graph.num_arcs()));
+  typename Graph::Builder builder(num_nodes, old_graph.num_arcs());
   typedef typename Graph::NodeIndex NodeIndex;
   typedef typename Graph::ArcIndex ArcIndex;
   for (const NodeIndex node : old_graph.AllNodes()) {
     for (const ArcIndex arc : old_graph.OutgoingArcs(node)) {
-      new_graph->AddArc(new_node_index[node],
-                        new_node_index[old_graph.Head(arc)]);
+      builder.AddArc(new_node_index[node], new_node_index[old_graph.Head(arc)]);
     }
   }
-  new_graph->Build();
-  return new_graph;
+  return std::move(builder).Build(nullptr);
 }
 
 template <class Graph>
@@ -325,21 +321,20 @@ std::unique_ptr<Graph> GetSubgraphOfNodes(const Graph& old_graph,
   // NOTE(user): there might seem to be a bit of duplication with RemapGraph(),
   // but there is a key difference: the loop below only iterates on "nodes",
   // which could be much smaller than all the graph's nodes.
-  std::unique_ptr<Graph> new_graph(new Graph(nodes.size(), num_arcs));
+  typename Graph::Builder builder(nodes.size(), num_arcs);
   for (NodeIndex new_tail = 0; new_tail < nodes.size(); ++new_tail) {
     const NodeIndex old_tail = nodes[new_tail];
     for (const ArcIndex arc : old_graph.OutgoingArcs(old_tail)) {
       const NodeIndex new_head = new_node_index[old_graph.Head(arc)];
-      if (new_head != -1) new_graph->AddArc(new_tail, new_head);
+      if (new_head != -1) builder.AddArc(new_tail, new_head);
     }
   }
-  new_graph->Build();
-  return new_graph;
+  return std::move(builder).Build(nullptr);
 }
 
 template <class Graph>
 std::unique_ptr<Graph> RemoveSelfArcsAndDuplicateArcs(const Graph& graph) {
-  std::unique_ptr<Graph> g(new Graph(graph.num_nodes(), graph.num_arcs()));
+  typename Graph::Builder builder(graph.num_nodes(), graph.num_arcs());
   typedef typename Graph::ArcIndex ArcIndex;
   typedef typename Graph::NodeIndex NodeIndex;
   std::vector<bool> tmp_node_mask(graph.num_nodes(), false);
@@ -348,15 +343,14 @@ std::unique_ptr<Graph> RemoveSelfArcsAndDuplicateArcs(const Graph& graph) {
       const NodeIndex head = graph.Head(arc);
       if (head != tail && !tmp_node_mask[head]) {
         tmp_node_mask[head] = true;
-        g->AddArc(tail, head);
+        builder.AddArc(tail, head);
       }
     }
     for (const ArcIndex arc : graph.OutgoingArcs(tail)) {
       tmp_node_mask[graph.Head(arc)] = false;
     }
   }
-  g->Build();
-  return g;
+  return std::move(builder).Build(nullptr);
 }
 
 template <class Graph>

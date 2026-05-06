@@ -39,15 +39,15 @@ struct ShortestPathOnDagProblem {
 
 ShortestPathOnDagProblem ReadProblem(
     const int num_nodes, absl::Span<const ArcWithLength> arcs_with_length) {
-  GraphType graph(num_nodes, arcs_with_length.size());
+  GraphType::Builder builder(num_nodes, arcs_with_length.size());
   std::vector<double> arc_lengths;
   arc_lengths.reserve(arcs_with_length.size());
   for (const auto& arc : arcs_with_length) {
-    graph.AddArc(arc.from, arc.to);
+    builder.AddArc(arc.from, arc.to);
     arc_lengths.push_back(arc.length);
   }
   std::vector<ArcIndex> permutation;
-  graph.Build(&permutation);
+  auto graph = std::move(builder).Build(&permutation);
   util::Permute(permutation, &arc_lengths);
 
   std::vector<ArcIndex> original_arc_indices(permutation.size());
@@ -58,11 +58,11 @@ ShortestPathOnDagProblem ReadProblem(
   }
 
   absl::StatusOr<std::vector<NodeIndex>> topological_order =
-      util::graph::FastTopologicalSort(graph);
+      util::graph::FastTopologicalSort(*graph);
   CHECK_OK(topological_order) << "arcs_with_length form a cycle.";
 
   return ShortestPathOnDagProblem{
-      .graph = std::move(graph),
+      .graph = std::move(*graph),
       .arc_lengths = std::move(arc_lengths),
       .original_arc_indices = std::move(original_arc_indices),
       .topological_order = std::move(topological_order).value()};

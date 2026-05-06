@@ -48,12 +48,9 @@ cc_test(
         "//ortools/base:types",
         "//ortools/graph_base:graph",
         "//ortools/graph_base:io",
-        "//ortools/graph_base:test_util",
         "//ortools/util:flat_matrix",
-        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/random:distributions",
-        "@google_benchmark//:benchmark",
     ],
 )
 
@@ -150,7 +147,6 @@ cc_test(
         "@abseil-cpp//absl/random:distributions",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",
-        "@google_benchmark//:benchmark",
     ],
 )
 
@@ -215,7 +211,6 @@ cc_test(
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/strings:str_format",
         "@abseil-cpp//absl/types:span",
-        "@google_benchmark//:benchmark",
     ],
 )
 
@@ -234,7 +229,6 @@ cc_test(
         "//ortools/base:gmock_main",
         "//ortools/graph_base:graph",
         "@abseil-cpp//absl/base:core_headers",
-        "@google_benchmark//:benchmark",
     ],
 )
 
@@ -258,7 +252,6 @@ cc_test(
         "//ortools/base:types",
         "//ortools/graph_base:graph",
         "@abseil-cpp//absl/base:core_headers",
-        "@abseil-cpp//absl/random:distributions",
         "@abseil-cpp//absl/types:span",
         "@google_benchmark//:benchmark",
     ],
@@ -473,7 +466,6 @@ cc_test(
         "@abseil-cpp//absl/random:distributions",
         "@abseil-cpp//absl/strings:str_format",
         "@abseil-cpp//absl/types:span",
-        "@google_benchmark//:benchmark",
     ],
 )
 
@@ -558,7 +550,6 @@ cc_test(
         "//ortools/graph_base:graph",
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/log:check",
-        "@abseil-cpp//absl/random:distributions",
         "@abseil-cpp//absl/types:span",
         "@google_benchmark//:benchmark",
     ],
@@ -690,10 +681,7 @@ cc_test(
         "//ortools/base:gmock_main",
         "//ortools/graph_base:graph",
         "@abseil-cpp//absl/algorithm:container",
-        "@abseil-cpp//absl/log:check",
-        "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/status",
-        "@google_benchmark//:benchmark",
     ],
 )
 
@@ -715,7 +703,6 @@ cc_test(
         ":minimum_vertex_cover",
         "//ortools/base:gmock_main",
         "@abseil-cpp//absl/algorithm:container",
-        "@google_benchmark//:benchmark",
     ],
 )
 
@@ -754,6 +741,5 @@ cc_test(
         "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/types:span",
-        "@google_benchmark//:benchmark",
     ],
 )

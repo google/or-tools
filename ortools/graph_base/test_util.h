@@ -36,15 +36,15 @@ namespace util {
 template <class Graph>
 std::unique_ptr<Graph> Create2DGridGraph(int64_t width, int64_t height) {
   const int64_t num_arcs = 2L * ((width - 1) * height + width * (height - 1));
-  auto graph = std::make_unique<Graph>(/*num_nodes=*/width * height,
-                                       /*arc_capacity=*/num_arcs);
+  typename Graph::Builder builder(/*num_nodes=*/width * height,
+                                  /*arc_capacity=*/num_arcs);
   // Add horizontal edges.
   for (int i = 0; i < height; ++i) {
     for (int j = 1; j < width; ++j) {
       const int left = i * width + (j - 1);
       const int right = i * width + j;
-      graph->AddArc(left, right);
-      graph->AddArc(right, left);
+      builder.AddArc(left, right);
+      builder.AddArc(right, left);
     }
   }
   // Add vertical edges.
@@ -52,12 +52,11 @@ std::unique_ptr<Graph> Create2DGridGraph(int64_t width, int64_t height) {
     for (int j = 0; j < width; ++j) {
       const int up = (i - 1) * width + j;
       const int down = i * width + j;
-      graph->AddArc(up, down);
-      graph->AddArc(down, up);
+      builder.AddArc(up, down);
+      builder.AddArc(down, up);
     }
   }
-  graph->Build();
-  return graph;
+  return std::move(builder).Build(nullptr);
 }
 
 }  // namespace util

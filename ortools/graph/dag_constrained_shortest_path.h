@@ -16,6 +16,7 @@
 
 #include <cmath>
 #include <limits>
+#include <memory>
 #include <optional>
 #include <vector>
 
@@ -223,7 +224,7 @@ class ConstrainedShortestPathsOnDagWrapper {
   // an additional linked to sources (resp. destinations) for the forward (resp.
   // backward) direction. For the forward (resp. backward) direction, nodes are
   // indexed using the original (resp. reverse) topological order.
-  GraphType sub_reverse_graph_[2];
+  std::unique_ptr<const GraphType> sub_reverse_graph_[2];
   std::vector<std::vector<double>> sub_arc_resources_[2];
   // `sub_full_arc_indices_[dir]` has size `sub_reverse_graph_[dir].num_arcs()`
   // such that `sub_full_arc_indices_[dir][sub_arc] = arc` where `sub_arc` is
@@ -354,12 +355,12 @@ ConstrainedShortestPathsOnDagWrapper<GraphType>::
   full_topological_order[FORWARD] = topological_order;
   full_sources[FORWARD] = sources;
   // Backward.
-  GraphType full_backward_graph(num_nodes, num_arcs);
+  typename GraphType::Builder builder(num_nodes, num_arcs);
   for (ArcIndex arc_index = 0; arc_index < num_arcs; ++arc_index) {
-    full_backward_graph.AddArc(graph->Head(arc_index), graph->Tail(arc_index));
+    builder.AddArc(graph->Head(arc_index), graph->Tail(arc_index));
   }
   std::vector<ArcIndex> full_permutation;
-  full_backward_graph.Build(&full_permutation);
+  const auto full_backward_graph = std::move(builder).Build(&full_permutation);
   const std::vector<ArcIndex> full_inverse_arc_indices =
       internal::GetInversePermutation(full_permutation);
   std::vector<std::vector<double>> backward_arc_resources(num_resources_);
@@ -372,7 +373,7 @@ ConstrainedShortestPathsOnDagWrapper<GraphType>::
   for (int i = num_nodes - 1; i >= 0; --i) {
     full_backward_topological_order.push_back(topological_order[i]);
   }
-  full_graph[BACKWARD] = &full_backward_graph;
+  full_graph[BACKWARD] = full_backward_graph.get();
   full_arc_resources[BACKWARD] = &backward_arc_resources;
   full_topological_order[BACKWARD] = full_backward_topological_order;
   full_sources[BACKWARD] = destinations;
@@ -476,7 +477,8 @@ ConstrainedShortestPathsOnDagWrapper<GraphType>::
     // node is indexed with the last index. All added arcs are given to have an
     // arc index in the original graph of -1.
     const int sub_arcs_count = num_arcs + full_sources[dir].size();
-    sub_reverse_graph_[dir] = GraphType(sub_nodes.size() + 1, sub_arcs_count);
+    typename GraphType::Builder graph_builder(sub_nodes.size() + 1,
+                                              sub_arcs_count);
     sub_arc_resources_[dir].resize(num_resources_);
     for (int r = 0; r < num_resources_; ++r) {
       sub_arc_resources_[dir][r].reserve(sub_arcs_count);
@@ -491,7 +493,7 @@ ConstrainedShortestPathsOnDagWrapper<GraphType>::
       if (from == -1 || to == -1) {
         continue;
       }
-      sub_reverse_graph_[dir].AddArc(from, to);
+      graph_builder.AddArc(from, to);
       ArcIndex sub_full_arc_index;
       if (dir == FORWARD && !full_inverse_arc_indices.empty()) {
         sub_full_arc_index = full_inverse_arc_indices[arc_index];
@@ -509,14 +511,14 @@ ConstrainedShortestPathsOnDagWrapper<GraphType>::
       if (sub_source == -1) {
         continue;
       }
-      sub_reverse_graph_[dir].AddArc(sub_source, sub_nodes.size());
+      graph_builder.AddArc(sub_source, sub_nodes.size());
       for (int r = 0; r < num_resources_; ++r) {
         sub_arc_resources_[dir][r].push_back(0.0);
       }
       sub_full_arc_indices_[dir].push_back(-1);
     }
     std::vector<ArcIndex> sub_permutation;
-    sub_reverse_graph_[dir].Build(&sub_permutation);
+    sub_reverse_graph_[dir] = std::move(graph_builder).Build(&sub_permutation);
     for (int r = 0; r < num_resources_; ++r) {
       util::Permute(sub_permutation, &sub_arc_resources_[dir][r]);
     }
@@ -528,8 +530,8 @@ ConstrainedShortestPathsOnDagWrapper<GraphType>::
   // better performance.
   for (const Direction dir : {FORWARD, BACKWARD}) {
     resources_from_sources_[dir].resize(num_resources_);
-    node_first_label_[dir].resize(sub_reverse_graph_[dir].size());
-    node_num_labels_[dir].resize(sub_reverse_graph_[dir].size());
+    node_first_label_[dir].resize(sub_reverse_graph_[dir]->num_nodes());
+    node_num_labels_[dir].resize(sub_reverse_graph_[dir]->num_nodes());
   }
 }
 
@@ -543,9 +545,9 @@ GraphPathWithLength<GraphType> ConstrainedShortestPathsOnDagWrapper<
   // Assign lengths on sub-relevant graphs.
   std::vector<double> sub_arc_lengths[2];
   for (const Direction dir : {FORWARD, BACKWARD}) {
-    sub_arc_lengths[dir].reserve(sub_reverse_graph_[dir].num_arcs());
+    sub_arc_lengths[dir].reserve(sub_reverse_graph_[dir]->num_arcs());
     for (ArcIndex sub_arc_index = 0;
-         sub_arc_index < sub_reverse_graph_[dir].num_arcs(); ++sub_arc_index) {
+         sub_arc_index < sub_reverse_graph_[dir]->num_arcs(); ++sub_arc_index) {
       const ArcIndex arc_index = sub_full_arc_indices_[dir][sub_arc_index];
       if (arc_index == -1) {
         sub_arc_lengths[dir].push_back(0.0);
@@ -560,7 +562,7 @@ GraphPathWithLength<GraphType> ConstrainedShortestPathsOnDagWrapper<
     for (const Direction dir : {FORWARD, BACKWARD}) {
       search_threads.Schedule([this, dir, &sub_arc_lengths]() {
         RunHalfConstrainedShortestPathOnDag(
-            /*reverse_graph=*/sub_reverse_graph_[dir],
+            /*reverse_graph=*/*sub_reverse_graph_[dir],
             /*arc_lengths=*/sub_arc_lengths[dir],
             /*arc_resources=*/sub_arc_resources_[dir],
             /*min_arc_resources=*/sub_min_arc_resources_[dir],

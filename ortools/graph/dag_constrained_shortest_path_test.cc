@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <limits>
+#include <memory>
 #include <utility>
 #include <vector>
 
@@ -24,7 +25,6 @@
 #include "absl/random/random.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
-#include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
 #include "ortools/base/dump_vars.h"
 #include "ortools/base/gmock.h"
@@ -361,23 +361,24 @@ TEST(ConstrainedShortestPathsOnDagWrapperTest,
   const int source_2 = 1;
   const int destination = 2;
   const int num_nodes = 3;
-  util::ListGraph<> graph(num_nodes, /*arc_capacity=*/2);
+  util::ListGraph<>::Builder builder(num_nodes, /*arc_capacity=*/2);
   std::vector<double> arc_lengths;
   std::vector<std::vector<double>> arc_resources(1);
-  graph.AddArc(source_1, source_2);
+  builder.AddArc(source_1, source_2);
   arc_lengths.push_back(-7.0);
   arc_resources[0].push_back(2.0);
-  graph.AddArc(source_2, destination);
+  builder.AddArc(source_2, destination);
   arc_lengths.push_back(3.0);
   arc_resources[0].push_back(3.0);
+  auto graph = std::move(builder).Build(nullptr);
   const std::vector<int> topological_order = {source_1, source_2, destination};
   const std::vector<int> sources = {source_1, source_2};
   const std::vector<int> destinations = {destination};
   const std::vector<double> max_resources = {6.0};
   ConstrainedShortestPathsOnDagWrapper<util::ListGraph<>>
-      constrained_shortest_path_on_dag(&graph, &arc_lengths, &arc_resources,
-                                       topological_order, sources, destinations,
-                                       &max_resources);
+      constrained_shortest_path_on_dag(graph.get(), &arc_lengths,
+                                       &arc_resources, topological_order,
+                                       sources, destinations, &max_resources);
 
   EXPECT_THAT(
       constrained_shortest_path_on_dag.RunConstrainedShortestPathOnDag(),
@@ -391,18 +392,19 @@ TEST(ConstrainedShortestPathsOnDagWrapperTest, MultipleDestinations) {
   const int destination_2 = 2;
   const int destination_3 = 3;
   const int num_nodes = 4;
-  util::ListGraph<> graph(num_nodes, /*arc_capacity=*/3);
+  util::ListGraph<>::Builder builder(num_nodes, /*arc_capacity=*/3);
   std::vector<double> arc_lengths;
   std::vector<std::vector<double>> arc_resources(1);
-  graph.AddArc(source, destination_1);
+  builder.AddArc(source, destination_1);
   arc_lengths.push_back(3.0);
   arc_resources[0].push_back(5.0);
-  graph.AddArc(source, destination_2);
+  builder.AddArc(source, destination_2);
   arc_lengths.push_back(1.0);
   arc_resources[0].push_back(7.0);
-  graph.AddArc(source, destination_3);
+  builder.AddArc(source, destination_3);
   arc_lengths.push_back(2.0);
   arc_resources[0].push_back(6.0);
+  auto graph = std::move(builder).Build(nullptr);
   const std::vector<int> sources = {source};
   const std::vector<int> destinations = {destination_1, destination_2,
                                          destination_3};
@@ -410,9 +412,9 @@ TEST(ConstrainedShortestPathsOnDagWrapperTest, MultipleDestinations) {
                                               destination_1, destination_2};
   const std::vector<double> max_resources = {6.0};
   ConstrainedShortestPathsOnDagWrapper<util::ListGraph<>>
-      constrained_shortest_path_on_dag(&graph, &arc_lengths, &arc_resources,
-                                       topological_order, sources, destinations,
-                                       &max_resources);
+      constrained_shortest_path_on_dag(graph.get(), &arc_lengths,
+                                       &arc_resources, topological_order,
+                                       sources, destinations, &max_resources);
 
   EXPECT_THAT(
       constrained_shortest_path_on_dag.RunConstrainedShortestPathOnDag(),
@@ -426,33 +428,34 @@ TEST(ConstrainedShortestPathsOnDagWrapperTest, UpdateArcsLength) {
   const int a = 2;
   const int b = 3;
   const int num_nodes = 4;
-  util::ListGraph<> graph(num_nodes, /*arc_capacity=*/4);
+  util::ListGraph<>::Builder builder(num_nodes, /*arc_capacity=*/4);
   std::vector<double> arc_lengths;
   std::vector<std::vector<double>> arc_resources(2);
-  graph.AddArc(source, a);
+  builder.AddArc(source, a);
   arc_lengths.push_back(5.0);
   arc_resources[0].push_back(1.0);
   arc_resources[1].push_back(3.0);
-  graph.AddArc(source, b);
+  builder.AddArc(source, b);
   arc_lengths.push_back(2.0);
   arc_resources[0].push_back(4.0);
   arc_resources[1].push_back(10.0);
-  graph.AddArc(a, destination);
+  builder.AddArc(a, destination);
   arc_lengths.push_back(3.0);
   arc_resources[0].push_back(5.0);
   arc_resources[1].push_back(9.0);
-  graph.AddArc(b, destination);
+  builder.AddArc(b, destination);
   arc_lengths.push_back(20.0);
   arc_resources[0].push_back(2.0);
   arc_resources[1].push_back(2.0);
+  auto graph = std::move(builder).Build(nullptr);
   const std::vector<int> topological_order = {source, a, b, destination};
   const std::vector<int> sources = {source};
   const std::vector<int> destinations = {destination};
   const std::vector<double> max_resources = {6.0, 12.0};
   ConstrainedShortestPathsOnDagWrapper<util::ListGraph<>>
-      constrained_shortest_path_on_dag(&graph, &arc_lengths, &arc_resources,
-                                       topological_order, sources, destinations,
-                                       &max_resources);
+      constrained_shortest_path_on_dag(graph.get(), &arc_lengths,
+                                       &arc_resources, topological_order,
+                                       sources, destinations, &max_resources);
 
   EXPECT_THAT(
       constrained_shortest_path_on_dag.RunConstrainedShortestPathOnDag(),
@@ -473,26 +476,27 @@ TEST(ConstrainedShortestPathsOnDagWrapperTest, LimitMaximumNumberOfLabels) {
   const int destination = 1;
   const int a = 2;
   const int num_nodes = 3;
-  util::ListGraph<> graph(num_nodes, /*arc_capacity=*/2);
+  util::ListGraph<>::Builder builder(num_nodes, /*arc_capacity=*/2);
   std::vector<double> arc_lengths;
   std::vector<std::vector<double>> arc_resources(1);
-  graph.AddArc(source, a);
+  builder.AddArc(source, a);
   arc_lengths.push_back(5.0);
   arc_resources[0].push_back(2.0);
-  graph.AddArc(a, destination);
+  builder.AddArc(a, destination);
   arc_lengths.push_back(-2.0);
   arc_resources[0].push_back(1.0);
+  auto graph = std::move(builder).Build(nullptr);
   const std::vector<int> topological_order = {source, a, destination};
   const std::vector<int> sources = {source};
   const std::vector<int> destinations = {destination};
   const std::vector<double> max_resources = {6.0};
   ConstrainedShortestPathsOnDagWrapper<util::ListGraph<>>
       constrained_shortest_path_on_dag_with_one_label(
-          &graph, &arc_lengths, &arc_resources, topological_order, sources,
+          graph.get(), &arc_lengths, &arc_resources, topological_order, sources,
           destinations, &max_resources, /*max_num_created_labels=*/1);
   ConstrainedShortestPathsOnDagWrapper<util::ListGraph<>>
       constrained_shortest_path_on_dag_with_four_labels(
-          &graph, &arc_lengths, &arc_resources, topological_order, sources,
+          graph.get(), &arc_lengths, &arc_resources, topological_order, sources,
           destinations, &max_resources, /*max_num_created_labels=*/4);
 
   EXPECT_THAT(constrained_shortest_path_on_dag_with_one_label
@@ -510,7 +514,8 @@ TEST(ConstrainedShortestPathsOnDagWrapperTest, LimitMaximumNumberOfLabels) {
 // the first and num_nodes-1 the last element in the topological order. Note
 // that the graph always include at least one arc from 0 to num_nodes-1.
 template <typename NodeIndex = int32_t, typename ArcIndex = int32_t>
-std::pair<util::StaticGraph<NodeIndex, ArcIndex>, std::vector<NodeIndex>>
+std::pair<std::unique_ptr<util::StaticGraph<NodeIndex, ArcIndex>>,
+          std::vector<NodeIndex>>
 BuildRandomDag(const NodeIndex num_nodes, const ArcIndex num_arcs) {
   absl::BitGen bit_gen;
   CHECK_GE(num_nodes, 2);
@@ -523,16 +528,18 @@ BuildRandomDag(const NodeIndex num_nodes, const ArcIndex num_arcs) {
   absl::c_iota(non_start_end, 1);
   absl::c_shuffle(non_start_end, bit_gen);
   ArcIndex edges_added = 0;
-  util::StaticGraph<NodeIndex, ArcIndex> graph(num_nodes, num_arcs);
-  graph.AddArc(0, num_nodes - 1);
+  typename util::StaticGraph<NodeIndex, ArcIndex>::Builder builder(num_nodes,
+                                                                   num_arcs);
+  builder.AddArc(0, num_nodes - 1);
   while (edges_added < num_arcs - 1) {
     NodeIndex start_index = absl::Uniform(bit_gen, 0, num_nodes - 1);
     NodeIndex end_index = absl::Uniform(bit_gen, start_index + 1, num_nodes);
-    graph.AddArc(topological_order[start_index], topological_order[end_index]);
+    builder.AddArc(topological_order[start_index],
+                   topological_order[end_index]);
     edges_added++;
   }
-  graph.Build();
-  return {graph, topological_order};
+  auto graph = std::move(builder).Build(nullptr);
+  return {std::move(graph), topological_order};
 }
 
 // The length of each arc is drawn uniformly at random within a given interval
@@ -628,178 +635,34 @@ TEST(ConstrainedShortestPathsOnDagWrapperTest,
     const auto [graph, topological_order] = BuildRandomDag(num_nodes, num_arcs);
     std::vector<double> arc_lengths(num_arcs);
     std::vector<std::vector<double>> arc_resources(1);
-    arc_resources[0] = GenerateRandomIntegerValues(graph, /*min_value=*/1.0,
+    arc_resources[0] = GenerateRandomIntegerValues(*graph, /*min_value=*/1.0,
                                                    /*max_value=*/10.0,
                                                    /*start_to_end_value=*/1.0);
     const std::vector<int> sources = {0};
     const std::vector<int> destinations = {num_nodes - 1};
     const std::vector<double> max_resources = {15.0};
     ConstrainedShortestPathsOnDagWrapper<util::StaticGraph<>>
-        constrained_shortest_path_on_dag(&graph, &arc_lengths, &arc_resources,
-                                         topological_order, sources,
-                                         destinations, &max_resources);
+        constrained_shortest_path_on_dag(graph.get(), &arc_lengths,
+                                         &arc_resources, topological_order,
+                                         sources, destinations, &max_resources);
     const int kNumSamples = 5;
     for (int _ = 0; _ < kNumSamples; ++_) {
-      arc_lengths = GenerateRandomIntegerValues(graph);
+      arc_lengths = GenerateRandomIntegerValues(*graph);
       const GraphPathWithLength<util::StaticGraph<>> path_with_length =
           constrained_shortest_path_on_dag.RunConstrainedShortestPathOnDag();
 
       EXPECT_NEAR(path_with_length.length,
                   SolveConstrainedShortestPathUsingIntegerProgramming(
-                      graph, arc_lengths, arc_resources, max_resources, sources,
-                      destinations),
+                      *graph, arc_lengths, arc_resources, max_resources,
+                      sources, destinations),
                   1e-5);
 
       ASSERT_FALSE(HasFailure())
           << DUMP_VARS(num_nodes, num_arcs, arc_lengths) << "\n With graph :\n "
-          << util::GraphToString(graph, util::PRINT_GRAPH_ARCS);
+          << util::GraphToString(*graph, util::PRINT_GRAPH_ARCS);
     }
   }
 }
-
-// -----------------------------------------------------------------------------
-// Benchmark.
-// -----------------------------------------------------------------------------
-template <typename NodeIndex = int32_t, typename ArcIndex = int32_t>
-void BM_RandomDag(benchmark::State& state) {
-  absl::BitGen bit_gen;
-  // Generate a fixed random DAG.
-  const NodeIndex num_nodes = state.range(0);
-  const ArcIndex num_arcs = num_nodes * state.range(1);
-  const auto [graph, topological_order] = BuildRandomDag(num_nodes, num_arcs);
-  // Generate 20 scenarios of random arc lengths.
-  const int num_scenarios = 20;
-  std::vector<std::vector<double>> arc_lengths_scenarios;
-  for (int _ = 0; _ < num_scenarios; ++_) {
-    arc_lengths_scenarios.push_back(GenerateRandomIntegerValues(graph));
-  }
-  std::vector<double> arc_lengths(num_arcs);
-  std::vector<std::vector<double>> arc_resources(1);
-  arc_resources[0] =
-      GenerateRandomIntegerValues(graph, /*min_value=*/1.0,
-                                  /*max_value=*/10.0,
-                                  /*start_to_end_value=*/num_nodes * 0.2);
-  const std::vector<NodeIndex> sources = {0};
-  const std::vector<NodeIndex> destinations = {num_nodes - 1};
-  const std::vector<double> max_resources = {num_nodes * 0.2};
-  ConstrainedShortestPathsOnDagWrapper<util::StaticGraph<NodeIndex, ArcIndex>>
-      constrained_shortest_path_on_dag(&graph, &arc_lengths, &arc_resources,
-                                       topological_order, sources, destinations,
-                                       &max_resources);
-
-  int total_label_count = 0;
-  for (auto _ : state) {
-    // Pick a arc lengths scenario at random.
-    arc_lengths =
-        arc_lengths_scenarios[absl::Uniform(bit_gen, 0, num_scenarios)];
-    const GraphPathWithLength<util::StaticGraph<NodeIndex, ArcIndex>>
-        path_with_length =
-            constrained_shortest_path_on_dag.RunConstrainedShortestPathOnDag();
-    total_label_count += constrained_shortest_path_on_dag.label_count();
-    CHECK_GE(path_with_length.length, 0.0);
-    CHECK_LE(path_with_length.length, 10000.0);
-  }
-  state.SetItemsProcessed(std::max(1, total_label_count));
-}
-
-BENCHMARK(BM_RandomDag<int32_t, int32_t>)
-    ->ArgPair(1 << 10, 16)
-    ->ArgPair(1 << 16, 4)
-    ->ArgPair(1 << 16, 16)
-    ->ArgPair(1 << 19, 4);
-BENCHMARK(BM_RandomDag<int64_t, int64_t>)
-    ->ArgPair(1 << 19, 16)
-    ->ArgPair(1 << 22, 4);
-
-// Generate a 2-dimensional grid DAG.
-// Eg. for width=3, height=2, it generates this:
-// 0 ----> 1 ----> 2
-// |       |       |
-// |       |       |
-// v       v       v
-// 3 ----> 4 ----> 5
-void BM_GridDAG(benchmark::State& state) {
-  const int64_t width = state.range(0);
-  const int64_t height = state.range(1);
-  const int num_resources = state.range(2);
-  const int num_nodes = width * height;
-  const int num_arcs = 2 * num_nodes - width - height;
-  util::StaticGraph<> graph(num_nodes, num_arcs);
-  // Add horizontal edges.
-  for (int i = 0; i < height; ++i) {
-    for (int j = 1; j < width; ++j) {
-      const int left = i * width + (j - 1);
-      const int right = i * width + j;
-      graph.AddArc(left, right);
-    }
-  }
-  // Add vertical edges.
-  for (int i = 1; i < height; ++i) {
-    for (int j = 0; j < width; ++j) {
-      const int up = (i - 1) * width + j;
-      const int down = i * width + j;
-      graph.AddArc(up, down);
-    }
-  }
-  graph.Build();
-  std::vector<int> topological_order(num_nodes);
-  absl::c_iota(topological_order, 0);
-
-  // Generate 20 scenarios of random arc lengths.
-  absl::BitGen bit_gen;
-  const int kNumScenarios = 20;
-  std::vector<std::vector<double>> arc_lengths_scenarios;
-  for (int unused = 0; unused < kNumScenarios; ++unused) {
-    std::vector<double> arc_lengths(graph.num_arcs());
-    for (int i = 0; i < graph.num_arcs(); ++i) {
-      arc_lengths[i] = absl::Uniform<double>(bit_gen, 0, 1);
-    }
-    arc_lengths_scenarios.push_back(arc_lengths);
-  }
-
-  std::vector<std::vector<double>> arc_resources(num_resources);
-  for (int r = 0; r < num_resources; ++r) {
-    arc_resources[r].resize(graph.num_arcs());
-    for (int i = 0; i < graph.num_arcs(); ++i) {
-      arc_resources[r][i] = absl::Uniform<double>(bit_gen, 0, 1);
-    }
-  }
-
-  std::vector<double> arc_lengths(num_arcs);
-  const std::vector<int> sources = {0};
-  const std::vector<int> destinations = {num_nodes - 1};
-  std::vector<double> max_resources(num_resources);
-  // Each path from source to destination has `(width + height - 2)` arcs. Each
-  // arc has mean resource(s) 0.5. We want to consider paths with half (0.5) the
-  // mean resource(s).
-  const double max_resource = (width + height - 2) * 0.5 * 0.5;
-  for (int r = 0; r < num_resources; ++r) {
-    max_resources[r] = max_resource;
-  }
-
-  ConstrainedShortestPathsOnDagWrapper<util::StaticGraph<>>
-      constrained_shortest_path_on_dag(&graph, &arc_lengths, &arc_resources,
-                                       topological_order, sources, destinations,
-                                       &max_resources);
-
-  int total_label_count = 0;
-  for (auto _ : state) {
-    // Pick a arc lengths scenario at random.
-    arc_lengths =
-        arc_lengths_scenarios[absl::Uniform<int>(bit_gen, 0, kNumScenarios)];
-    const GraphPathWithLength<util::StaticGraph<>> path_with_length =
-        constrained_shortest_path_on_dag.RunConstrainedShortestPathOnDag();
-    total_label_count += constrained_shortest_path_on_dag.label_count();
-    CHECK_GE(path_with_length.length, 0.0);
-  }
-  state.SetItemsProcessed(std::max(1, total_label_count));
-}
-
-BENCHMARK(BM_GridDAG)
-    ->Args({100, 100, 1})
-    ->Args({100, 100, 2})
-    ->Args({1000, 100, 1})
-    ->Args({1000, 100, 2});
 
 // -----------------------------------------------------------------------------
 // Debug tests.
@@ -861,19 +724,20 @@ TEST(ConstrainedShortestPathsOnDagWrapperTest, ValidateTopologicalOrder) {
   const int source = 0;
   const int destination = 1;
   const int num_nodes = 2;
-  util::ListGraph<> graph(num_nodes, /*arc_capacity=*/1);
+  util::ListGraph<>::Builder builder(num_nodes, /*arc_capacity=*/1);
   std::vector<double> arc_lengths;
   std::vector<std::vector<double>> arc_resources(1);
-  graph.AddArc(source, destination);
+  builder.AddArc(source, destination);
   arc_lengths.push_back(1.0);
   arc_resources[0].push_back({1.0});
+  auto graph = std::move(builder).Build(nullptr);
   const std::vector<int> topological_order = {source};
   const std::vector<int> sources = {source};
   const std::vector<int> destinations = {destination};
   const std::vector<double> max_resources = {0.0};
 
   EXPECT_DEATH(ConstrainedShortestPathsOnDagWrapper<util::ListGraph<>>(
-                   &graph, &arc_lengths, &arc_resources, topological_order,
+                   graph.get(), &arc_lengths, &arc_resources, topological_order,
                    sources, destinations, &max_resources),
                "Invalid topological order");
 }

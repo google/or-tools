@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <limits>
+#include <memory>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -25,7 +26,6 @@
 #include "absl/random/random.h"
 #include "absl/status/status.h"
 #include "absl/types/span.h"
-#include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
 #include "ortools/base/dump_vars.h"
 #include "ortools/base/gmock.h"
@@ -446,8 +446,8 @@ TEST(ShortestPathsOnDagWrapperTest, UpdateCost) {
 // Builds a random DAG with a given number of nodes and arcs where 0 is always
 // the first and num_nodes-1 the last element in the topological order. Note
 // that the graph always include at least one arc from 0 to num_nodes-1.
-std::pair<util::StaticGraph<>, std::vector<int>> BuildRandomDag(
-    const int64_t num_nodes, const int64_t num_arcs) {
+std::pair<std::unique_ptr<const util::StaticGraph<>>, std::vector<int>>
+BuildRandomDag(const int64_t num_nodes, const int64_t num_arcs) {
   absl::BitGen bit_gen;
   CHECK_GE(num_nodes, 2);
   CHECK_GE(num_arcs, 1);
@@ -459,16 +459,16 @@ std::pair<util::StaticGraph<>, std::vector<int>> BuildRandomDag(
   absl::c_iota(non_start_end, 1);
   absl::c_shuffle(non_start_end, bit_gen);
   int edges_added = 0;
-  util::StaticGraph<> graph(num_nodes, num_arcs);
-  graph.AddArc(0, num_nodes - 1);
+  util::StaticGraph<>::Builder builder(num_nodes, num_arcs);
+  builder.AddArc(0, num_nodes - 1);
   while (edges_added < num_arcs - 1) {
     int start_index = absl::Uniform(bit_gen, 0, num_nodes - 1);
     int end_index = absl::Uniform(bit_gen, start_index + 1, num_nodes);
-    graph.AddArc(topological_order[start_index], topological_order[end_index]);
+    builder.AddArc(topological_order[start_index],
+                   topological_order[end_index]);
     edges_added++;
   }
-  graph.Build();
-  return {graph, topological_order};
+  return {std::move(builder).Build(nullptr), topological_order};
 }
 
 // The length of each arc is drawn uniformly at random within a given interval
@@ -504,12 +504,12 @@ TEST(ShortestPathsOnDagWrapperTest, RandomizedStressTest) {
         bit_gen, 1, std::min(num_nodes * (num_nodes - 1) / 2, 15));
     // Generate a random DAG with random lengths.
     const auto [graph, topological_order] = BuildRandomDag(num_nodes, num_arcs);
-    const std::vector<double> arc_lengths = GenerateRandomLengths(graph);
+    const std::vector<double> arc_lengths = GenerateRandomLengths(*graph);
 
     // Run Floyd-Warshall as a 'reference' shortest path algorithm.
     FlatMatrix<double> ref_dist(num_nodes, num_nodes, kInf);
     for (int a = 0; a < num_arcs; ++a) {
-      double& d = ref_dist[graph.Tail(a)][graph.Head(a)];
+      double& d = ref_dist[graph->Tail(a)][graph->Head(a)];
       if (arc_lengths[a] < d) d = arc_lengths[a];
     }
     for (int node = 0; node < num_nodes; ++node) {
@@ -528,7 +528,7 @@ TEST(ShortestPathsOnDagWrapperTest, RandomizedStressTest) {
     // the FW (Floyd-Warshall) which is O(N³), we run more than one shortest
     // path per FW.
     ShortestPathsOnDagWrapper<util::StaticGraph<>> shortest_path_on_dag(
-        &graph, &arc_lengths, topological_order);
+        graph.get(), &arc_lengths, topological_order);
     for (int _ = 0; _ < 20; ++_) {
       // Draw sources (*with* repetition) with initial distances.
       const int num_sources = absl::Uniform(bit_gen, 1, 5);
@@ -558,7 +558,7 @@ TEST(ShortestPathsOnDagWrapperTest, RandomizedStressTest) {
       ASSERT_FALSE(HasFailure())
           << DUMP_VARS(num_nodes, num_arcs, num_sources, sources, arc_lengths)
           << "\n With graph:\n"
-          << util::GraphToString(graph, util::PRINT_GRAPH_ARCS);
+          << util::GraphToString(*graph, util::PRINT_GRAPH_ARCS);
     }
   }
 }
@@ -595,71 +595,6 @@ TEST(ShortestPathsOnDagWrapperTest, ValidateTopologicalOrder) {
                "Invalid topological order");
 }
 #endif  // NDEBUG
-
-// -----------------------------------------------------------------------------
-// ShortestPathsOnDagWrapper benchmarks.
-// -----------------------------------------------------------------------------
-void BM_RandomDag(benchmark::State& state) {
-  absl::BitGen bit_gen;
-  // Generate a fixed random DAG.
-  const int num_nodes = state.range(0);
-  const int num_arcs = num_nodes * state.range(1);
-  const auto [graph, topological_order] = BuildRandomDag(num_nodes, num_arcs);
-  // Generate 10 scenarios of random arc lengths.
-  const int num_scenarios = 10;
-  std::vector<std::vector<double>> arc_lengths_scenarios;
-  for (int _ = 0; _ < num_scenarios; ++_) {
-    arc_lengths_scenarios.push_back(GenerateRandomLengths(graph));
-  }
-  std::vector<double> arc_lengths = arc_lengths_scenarios.front();
-  ShortestPathsOnDagWrapper<util::StaticGraph<>> shortest_path_on_dag(
-      &graph, &arc_lengths, topological_order);
-  for (auto _ : state) {
-    // Pick a arc lengths scenario at random.
-    arc_lengths =
-        arc_lengths_scenarios[absl::Uniform(bit_gen, 0, num_scenarios)];
-    shortest_path_on_dag.RunShortestPathOnDag({0});
-    CHECK(shortest_path_on_dag.IsReachable(num_nodes - 1));
-    const double minimum_length = shortest_path_on_dag.LengthTo(num_nodes - 1);
-    CHECK_GE(minimum_length, 0.0);
-    CHECK_LE(minimum_length, 10000.0);
-  }
-  state.SetItemsProcessed(state.iterations() * (num_nodes + num_arcs));
-}
-
-BENCHMARK(BM_RandomDag)
-    ->ArgPair(1000, 10)
-    ->ArgPair(1 << 16, 4)
-    ->ArgPair(1 << 16, 16)
-    ->ArgPair(1 << 22, 4)
-    ->ArgPair(1 << 22, 16)
-    ->ArgPair(1 << 26, 4);  // Don't go bigger, can't run on work station.
-
-void BM_LineDag(benchmark::State& state) {
-  const int num_nodes = state.range(0);
-  const int num_edges = num_nodes - 1;
-  std::vector<int> topological_order(num_nodes);
-  util::StaticGraph<> graph(num_nodes, num_edges);
-  absl::c_iota(topological_order, 0);
-  for (int i = 0; i < num_nodes - 1; ++i) {
-    graph.AddArc(i, i + 1);
-  }
-  graph.Build();
-  std::vector<double> arc_lengths(num_edges, 1);
-  ShortestPathsOnDagWrapper<util::StaticGraph<>> shortest_path_on_dag(
-      &graph, &arc_lengths, topological_order);
-  for (auto _ : state) {
-    shortest_path_on_dag.RunShortestPathOnDag({0});
-    CHECK(shortest_path_on_dag.IsReachable(num_nodes - 1));
-    CHECK_EQ(shortest_path_on_dag.LengthTo(num_nodes - 1), num_nodes - 1);
-    CHECK_EQ(shortest_path_on_dag.ArcPathTo(num_nodes - 1).size(),
-             num_nodes - 1);
-    CHECK_EQ(shortest_path_on_dag.NodePathTo(num_nodes - 1).size(), num_nodes);
-  }
-  state.SetItemsProcessed(state.iterations() * num_nodes);
-}
-
-BENCHMARK(BM_LineDag)->Arg(1 << 16)->Arg(1 << 22)->Arg(1 << 24);
 
 // -----------------------------------------------------------------------------
 // KShortestPathOnDagTest and KShortestPathsOnDagWrapperTest.
@@ -1110,13 +1045,13 @@ TEST(KShortestPathsOnDagWrapperTest, RandomizedStressTest) {
         bit_gen, 1, std::min(num_nodes * (num_nodes - 1) / 2, 15));
     // Generate a random DAG with random lengths.
     const auto [graph, topological_order] = BuildRandomDag(num_nodes, num_arcs);
-    const std::vector<double> arc_lengths = GenerateRandomLengths(graph);
+    const std::vector<double> arc_lengths = GenerateRandomLengths(*graph);
 
     ShortestPathsOnDagWrapper<util::StaticGraph<>> shortest_path_on_dag(
-        &graph, &arc_lengths, topological_order);
+        graph.get(), &arc_lengths, topological_order);
     const int path_count = 5;
     KShortestPathsOnDagWrapper<util::StaticGraph<>> shortest_paths_on_dag(
-        &graph, &arc_lengths, topological_order, path_count);
+        graph.get(), &arc_lengths, topological_order, path_count);
     for (int _ = 0; _ < 20; ++_) {
       // Draw sources (*with* repetition) with initial distances.
       const int num_sources = absl::Uniform(bit_gen, 1, 5);
@@ -1130,8 +1065,8 @@ TEST(KShortestPathsOnDagWrapperTest, RandomizedStressTest) {
         all_paths_count[source] = 1;
       }
       for (const int from : topological_order) {
-        for (const int arc : graph.OutgoingArcs(from)) {
-          const int to = graph.Head(arc);
+        for (const int arc : graph->OutgoingArcs(from)) {
+          const int to = graph->Head(arc);
           all_paths_count[to] += all_paths_count[from];
         }
       }
@@ -1150,7 +1085,7 @@ TEST(KShortestPathsOnDagWrapperTest, RandomizedStressTest) {
       ASSERT_FALSE(HasFailure())
           << DUMP_VARS(num_nodes, num_arcs, num_sources, sources, arc_lengths)
           << "\n With graph:\n"
-          << util::GraphToString(graph, util::PRINT_GRAPH_ARCS);
+          << util::GraphToString(*graph, util::PRINT_GRAPH_ARCS);
     }
   }
 }
@@ -1188,48 +1123,6 @@ TEST(KShortestPathsOnDagWrapperTest, ValidateTopologicalOrder) {
                "Invalid topological order");
 }
 #endif  // NDEBUG
-
-// -----------------------------------------------------------------------------
-// KShortestPathsOnDagWrapper benchmarks.
-// -----------------------------------------------------------------------------
-void BM_RandomDag_K(benchmark::State& state) {
-  absl::BitGen bit_gen;
-  // Generate a fixed random DAG.
-  const int num_nodes = state.range(0);
-  const int num_arcs = num_nodes * state.range(1);
-  const int path_count = state.range(2);
-  const auto [graph, topological_order] = BuildRandomDag(num_nodes, num_arcs);
-  // Generate 10 scenarios of random arc lengths.
-  const int num_scenarios = 10;
-  std::vector<std::vector<double>> arc_lengths_scenarios;
-  for (int _ = 0; _ < num_scenarios; ++_) {
-    arc_lengths_scenarios.push_back(GenerateRandomLengths(graph));
-  }
-  std::vector<double> arc_lengths = arc_lengths_scenarios.front();
-  KShortestPathsOnDagWrapper<util::StaticGraph<>> shortest_paths_on_dag(
-      &graph, &arc_lengths, topological_order, path_count);
-  for (auto _ : state) {
-    // Pick a arc lengths scenario at random.
-    arc_lengths =
-        arc_lengths_scenarios[absl::Uniform(bit_gen, 0, num_scenarios)];
-    shortest_paths_on_dag.RunKShortestPathOnDag({0});
-    CHECK(shortest_paths_on_dag.IsReachable(num_nodes - 1));
-    const std::vector<double> lengths =
-        shortest_paths_on_dag.LengthsTo(num_nodes - 1);
-    CHECK_GE(lengths[0], 0.0);
-    CHECK_LE(lengths[0], 10000.0);
-  }
-  state.SetItemsProcessed(state.iterations() * (num_nodes + num_arcs));
-}
-
-BENCHMARK(BM_RandomDag_K)
-    ->Args({1000, 10, 4})
-    ->Args({1 << 16, 4, 4})
-    ->Args({1 << 16, 4, 16})
-    ->Args({1 << 16, 16, 4})
-    ->Args({1 << 16, 16, 16})
-    ->Args({1 << 22, 4, 4})
-    ->Args({1 << 22, 4, 16});
 
 TEST(ShortestPathOnDagIncrementalTest, ChangeSources) {
   util::ListGraph<> graph(4, /*arc_capacity=*/4);
