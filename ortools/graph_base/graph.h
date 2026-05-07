@@ -766,12 +766,13 @@ class SVector {
 // adjacency lists.
 template <typename Graph>
 struct GraphTraits {
- private:
+ public:
   static constexpr auto num_nodes(const Graph& graph) {
     using std::size;
     return size(graph);
   }
 
+ private:
   // The type of the range returned by `operator[]`.
   using NeighborRangeType = std::decay_t<
       decltype(std::declval<Graph>()[num_nodes(std::declval<Graph>())])>;

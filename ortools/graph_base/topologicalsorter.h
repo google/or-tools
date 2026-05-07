@@ -622,12 +622,13 @@ std::vector<T> StableTopologicalSortOrDie(
 template <class AdjacencyLists>
 absl::StatusOr<std::vector<typename GraphTraits<AdjacencyLists>::NodeIndex>>
 FastTopologicalSort(const AdjacencyLists& adj) {
-  using NodeIndex = typename GraphTraits<AdjacencyLists>::NodeIndex;
-  if (adj.size() > std::numeric_limits<NodeIndex>::max()) {
-    return absl::InvalidArgumentError(
-        absl::StrFormat("Too many nodes: adj.size()=%v", adj.size()));
+  using GraphTraitsT = GraphTraits<AdjacencyLists>;
+  using NodeIndex = GraphTraitsT::NodeIndex;
+  if (GraphTraitsT::num_nodes(adj) > std::numeric_limits<NodeIndex>::max()) {
+    return absl::InvalidArgumentError(absl::StrFormat(
+        "Too many nodes: num_nodes=%v", GraphTraitsT::num_nodes(adj)));
   }
-  const NodeIndex num_nodes(adj.size());
+  const NodeIndex num_nodes = GraphTraitsT::num_nodes(adj);
   std::vector<NodeIndex> indegree(static_cast<size_t>(num_nodes), NodeIndex(0));
   std::vector<NodeIndex> topo_order;
   topo_order.reserve(static_cast<size_t>(num_nodes));
@@ -664,12 +665,13 @@ template <class AdjacencyLists>
 absl::StatusOr<
     std::vector<typename util::GraphTraits<AdjacencyLists>::NodeIndex>>
 FindCycleInGraph(const AdjacencyLists& adj) {
-  using NodeIndex = typename GraphTraits<AdjacencyLists>::NodeIndex;
-  if (adj.size() > std::numeric_limits<NodeIndex>::max()) {
-    return absl::InvalidArgumentError(
-        absl::StrFormat("Too many nodes: adj.size()=%v", adj.size()));
+  using GraphTraitsT = GraphTraits<AdjacencyLists>;
+  using NodeIndex = GraphTraitsT::NodeIndex;
+  if (GraphTraitsT::num_nodes(adj) > std::numeric_limits<NodeIndex>::max()) {
+    return absl::InvalidArgumentError(absl::StrFormat(
+        "Too many nodes: num_nodes=%v", GraphTraitsT::num_nodes(adj)));
   }
-  const NodeIndex num_nodes(adj.size());
+  const NodeIndex num_nodes = GraphTraitsT::num_nodes(adj);
 
   // First pass to validate that inputs are valid.
   for (NodeIndex node(0); node < NodeIndex(node); ++node) {
