@@ -12,6 +12,7 @@
 # limitations under the License.
 
 file(GLOB _SRCS "*.h" "*.cc")
+list(FILTER _SRCS EXCLUDE REGEX ".*/.*_benchmark.cc")
 list(FILTER _SRCS EXCLUDE REGEX ".*/.*_test.cc")
 list(FILTER _SRCS EXCLUDE REGEX ".*/set_cover_solve.cc")
 
@@ -34,6 +35,7 @@ target_link_libraries(${NAME} PRIVATE
 #add_library(${PROJECT_NAMESPACE}::algorithms ALIAS ${NAME})
 
 if(BUILD_TESTING)
+  # Test
   file(GLOB _TEST_SRCS "*_test.cc")
   list(FILTER _TEST_SRCS EXCLUDE REGEX ".*_stress_test.cc")
   list(FILTER _TEST_SRCS EXCLUDE REGEX ".*/n_choose_k_test.cc")
@@ -56,4 +58,26 @@ if(BUILD_TESTING)
   set_tests_properties(
     cxx_algorithms_radix_sort_test
     PROPERTIES DISABLED TRUE)
+  # Benchmark
+  file(GLOB _BENCHMARK_SRCS "*_benchmark.cc")
+  set(_ARGS "")
+  if(NOT RUN_BENCHMARKS)
+    set(_ARGS "DISABLED")
+  endif()
+  foreach(_FULL_FILE_NAME IN LISTS _BENCHMARK_SRCS)
+    get_filename_component(_NAME ${_FULL_FILE_NAME} NAME_WE)
+    get_filename_component(_FILE_NAME ${_FULL_FILE_NAME} NAME)
+    ortools_cxx_test(
+      NAME
+        algorithms_${_NAME}
+      SOURCES
+        ${_FILE_NAME}
+      LINK_LIBRARIES
+        benchmark::benchmark
+        benchmark::benchmark_main
+        GTest::gtest
+        GTest::gmock
+      ${_ARGS}
+    )
+  endforeach()
 endif()

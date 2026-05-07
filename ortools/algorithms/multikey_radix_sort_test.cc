@@ -27,12 +27,11 @@
 #include "absl/algorithm/container.h"
 #include "absl/random/random.h"
 #include "absl/strings/str_cat.h"
-#include "absl/types/span.h"
 #include "gtest/gtest.h"
-#include "ortools/algorithms/radix_sort.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/strong_int.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/base/types.h"
 
 namespace operations_research {
 namespace {

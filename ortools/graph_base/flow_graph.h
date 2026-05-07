@@ -21,7 +21,6 @@
 
 #include "absl/log/check.h"
 #include "absl/types/span.h"
-#include "ortools/base/stl_util.h"
 #include "ortools/base/unique_array.h"
 #include "ortools/graph_base/graph.h"
 #include "ortools/graph_base/iterators.h"
@@ -41,7 +40,7 @@ namespace util {
 // the input graph, this will detect if a reverse arc was already present in the
 // input, and do not create a new one when this is the case. In the best case,
 // this can gain a factor 2 in the final graph size, note however that the graph
-// construction is slighlty slower because of this detection.
+// construction is slightly slower because of this detection.
 //
 // A side effect of reusing reverse arc is also that we cannot anymore clearly
 // separate the original arcs from the newly created one. So the algorithm needs
@@ -175,9 +174,10 @@ class FlowGraph<NodeIndexType, ArcIndexType>::Builder
 
   ArcIndexType AddArc(NodeIndexType tail, NodeIndexType head) & {
     AddNode(tail > head ? tail : head);
+    const ArcIndexType result = num_arcs();
     tmp_tails_.push_back(tail);
     tmp_heads_.push_back(head);
-    return num_arcs_++;
+    return result;
   }
 
   // If true, we will detect already existing pairs of (arc, reverse_arc) and
@@ -201,40 +201,38 @@ class FlowGraph<NodeIndexType, ArcIndexType>::Builder
   std::unique_ptr<FlowGraph> Build(std::vector<ArcIndexType>* permutation) &&;
 
   NodeIndexType num_nodes() const { return num_nodes_; }
-  ArcIndexType num_arcs() const { return num_arcs_; }
+  ArcIndexType num_arcs() const { return tmp_tails_.size(); }
 
  private:
-  void FillReversePermutationAndStart(
+  static void FillReversePermutationAndStart(
       absl::Span<const NodeIndexType> first_criteria,
       absl::Span<const NodeIndexType> second_criteria,
-      absl::Span<ArcIndexType> reverse_perm,
-      absl::Span<ArcIndexType> start) const;
+      absl::Span<ArcIndexType> reverse_perm, absl::Span<ArcIndexType> start);
 
   // Computes the permutation that would stable_sort input, and fill start
   // to correspond to the beginning of each section of identical elements.
   // This assumes input only contains element in [0, num_nodes_).
-  void FillPermutationAndStart(absl::Span<const NodeIndexType> input,
-                               absl::Span<ArcIndexType> perm,
-                               absl::Span<ArcIndexType> start) const;
+  static void FillPermutationAndStart(absl::Span<const NodeIndexType> input,
+                                      absl::Span<ArcIndexType> perm,
+                                      absl::Span<ArcIndexType> start);
 
   // These are similar but tie-break identical element by "second_criteria".
   // We have two versions. It seems filling the reverse permutation instead is
   // slightly faster and require less memory.
-  void FillPermutationAndStart(absl::Span<const NodeIndexType> first_criteria,
-                               absl::Span<const NodeIndexType> second_criteria,
-                               absl::Span<ArcIndexType> perm,
-                               absl::Span<ArcIndexType> start) const;
+  static void FillPermutationAndStart(
+      absl::Span<const NodeIndexType> first_criteria,
+      absl::Span<const NodeIndexType> second_criteria,
+      absl::Span<ArcIndexType> perm, absl::Span<ArcIndexType> start);
 
   // Internal helpers for the Fill*() functions above.
-  void InitializeStart(absl::Span<const NodeIndexType> input,
-                       absl::Span<ArcIndexType> start) const;
-  void RestoreStart(absl::Span<ArcIndexType> start) const;
+  static void InitializeStart(absl::Span<const NodeIndexType> input,
+                              absl::Span<ArcIndexType> start);
+  static void RestoreStart(absl::Span<ArcIndexType> start);
 
   bool option_detect_reverse_ = true;
   bool option_sort_by_head_ = false;
 
   NodeIndexType num_nodes_ = 0;
-  ArcIndexType num_arcs_ = 0;
 
   // Stores the AddArc() data.
   std::vector<NodeIndexType> tmp_tails_;
@@ -243,17 +241,18 @@ class FlowGraph<NodeIndexType, ArcIndexType>::Builder
 
 template <typename NodeIndexType, typename ArcIndexType>
 void FlowGraph<NodeIndexType, ArcIndexType>::Builder::InitializeStart(
-    absl::Span<const NodeIndexType> input,
-    absl::Span<ArcIndexType> start) const {
+    absl::Span<const NodeIndexType> input, absl::Span<ArcIndexType> start) {
   // Computes the number of each elements.
-  std::fill(start.data(), start.data() + num_nodes_, 0);
-  start[num_nodes_] = input.size();  // sentinel.
+  DCHECK(!start.empty());
+  const NodeIndexType num_nodes = start.size() - 1;
+  std::fill(start.data(), start.data() + num_nodes, 0);
+  start[num_nodes] = input.size();  // sentinel.
 
   for (const NodeIndexType node : input) start[node]++;
 
   // Compute the cumulative sums (shifted one element to the right).
   int sum = 0;
-  for (int i = 0; i < num_nodes_; ++i) {
+  for (int i = 0; i < num_nodes; ++i) {
     int temp = start[i];
     start[i] = sum;
     sum += temp;
@@ -263,9 +262,10 @@ void FlowGraph<NodeIndexType, ArcIndexType>::Builder::InitializeStart(
 
 template <typename NodeIndexType, typename ArcIndexType>
 void FlowGraph<NodeIndexType, ArcIndexType>::Builder::RestoreStart(
-    absl::Span<ArcIndexType> start) const {
+    absl::Span<ArcIndexType> start) {
   // Restore in start[i] the index of the first arc with tail >= i.
-  for (int i = num_nodes_; --i > 0;) {
+  DCHECK(!start.empty());
+  for (int i = start.size() - 1; --i > 0;) {
     start[i] = start[i - 1];
   }
   start[0] = 0;
@@ -274,7 +274,7 @@ void FlowGraph<NodeIndexType, ArcIndexType>::Builder::RestoreStart(
 template <typename NodeIndexType, typename ArcIndexType>
 void FlowGraph<NodeIndexType, ArcIndexType>::Builder::FillPermutationAndStart(
     absl::Span<const NodeIndexType> input, absl::Span<ArcIndexType> perm,
-    absl::Span<ArcIndexType> start) const {
+    absl::Span<ArcIndexType> start) {
   DCHECK_EQ(input.size(), perm.size());
   InitializeStart(input, start);
 
@@ -291,20 +291,19 @@ template <typename NodeIndexType, typename ArcIndexType>
 void FlowGraph<NodeIndexType, ArcIndexType>::Builder::FillPermutationAndStart(
     absl::Span<const NodeIndexType> first_criteria,
     absl::Span<const NodeIndexType> second_criteria,
-    absl::Span<ArcIndexType> perm, absl::Span<ArcIndexType> start) const {
+    absl::Span<ArcIndexType> perm, absl::Span<ArcIndexType> start) {
+  const auto num_arcs = perm.size();
   // First sort by second_criteria.
   FillPermutationAndStart(second_criteria, perm, start);
 
   // Create a temporary permuted version of first_criteria.
-  const auto tmp_storage = gtl::MakeUniqueArray<ArcIndexType>(num_arcs_);
-  const auto tmp = absl::MakeSpan(tmp_storage.data(), num_arcs_);
+  const auto tmp_storage = gtl::MakeUniqueArray<ArcIndexType>(num_arcs);
+  const auto tmp = absl::MakeSpan(tmp_storage.data(), num_arcs);
   internal::PermuteInto<ArcIndexType, NodeIndexType>(perm, first_criteria, tmp);
 
   // Now sort by permuted first_criteria.
-  const auto second_perm_storage =
-      gtl::MakeUniqueArray<ArcIndexType>(num_arcs_);
-  const auto second_perm =
-      absl::MakeSpan(second_perm_storage.data(), num_arcs_);
+  const auto second_perm_storage = gtl::MakeUniqueArray<ArcIndexType>(num_arcs);
+  const auto second_perm = absl::MakeSpan(second_perm_storage.data(), num_arcs);
   FillPermutationAndStart(tmp, second_perm, start);
 
   // Update the final permutation. This guarantee that for the same
@@ -319,12 +318,12 @@ void FlowGraph<NodeIndexType, ArcIndexType>::Builder::
     FillReversePermutationAndStart(
         absl::Span<const NodeIndexType> first_criteria,
         absl::Span<const NodeIndexType> second_criteria,
-        absl::Span<ArcIndexType> reverse_perm,
-        absl::Span<ArcIndexType> start) const {
+        absl::Span<ArcIndexType> reverse_perm, absl::Span<ArcIndexType> start) {
   // Compute the reverse perm according to the second criteria.
+  const auto num_arcs = reverse_perm.size();
   InitializeStart(second_criteria, start);
-  const auto r_perm_storage = gtl::MakeUniqueArray<ArcIndexType>(num_arcs_);
-  const auto r_perm = absl::MakeSpan(r_perm_storage.data(), num_arcs_);
+  const auto r_perm_storage = gtl::MakeUniqueArray<ArcIndexType>(num_arcs);
+  const auto r_perm = absl::MakeSpan(r_perm_storage.data(), num_arcs);
   for (int i = 0; i < second_criteria.size(); ++i) {
     r_perm[start[second_criteria[i]]++] = i;
   }
@@ -341,18 +340,20 @@ template <typename NodeIndexType, typename ArcIndexType>
 std::unique_ptr<FlowGraph<NodeIndexType, ArcIndexType>>
 FlowGraph<NodeIndexType, ArcIndexType>::Builder::Build(
     std::vector<ArcIndexType>* permutation) && {
-  auto start = gtl::MakeUniqueArray<ArcIndexType>(num_nodes_ + 1);
-  std::vector<ArcIndexType> perm(num_arcs_);
+  const NodeIndexType num_nodes = num_nodes_;
+  const ArcIndexType num_orig_arcs = num_arcs();
+  auto start = gtl::MakeUniqueArray<ArcIndexType>(num_nodes + 1);
+  std::vector<ArcIndexType> perm(num_orig_arcs);
 
   const int kNoExplicitReverseArc = -1;
-  std::vector<ArcIndexType> reverse(num_arcs_, kNoExplicitReverseArc);
+  std::vector<ArcIndexType> reverse(num_orig_arcs, kNoExplicitReverseArc);
 
   bool fix_final_permutation = false;
   if (option_detect_reverse_) {
     // Step 1 we only keep a "canonical version" of each arc where tail <= head.
     // This will allow us to detect reverse as duplicates instead.
-    std::vector<bool> was_reversed_(num_arcs_, false);
-    for (int arc = 0; arc < num_arcs_; ++arc) {
+    std::vector<bool> was_reversed_(num_orig_arcs, false);
+    for (int arc = 0; arc < num_orig_arcs; ++arc) {
       if (tmp_heads_[arc] < tmp_tails_[arc]) {
         std::swap(tmp_heads_[arc], tmp_tails_[arc]);
         was_reversed_[arc] = true;
@@ -371,7 +372,7 @@ FlowGraph<NodeIndexType, ArcIndexType>::Builder::Build(
     // them. The others position will stay at -1.
     int candidate_i = 0;
     int num_filled = 0;
-    for (int i = 0; i < num_arcs_; ++i) {
+    for (int i = 0; i < num_orig_arcs; ++i) {
       const int arc = reverse_perm[i];
       const int candidate_arc = reverse_perm[candidate_i];
       if (tmp_heads_[arc] != tmp_heads_[candidate_arc] ||
@@ -399,12 +400,12 @@ FlowGraph<NodeIndexType, ArcIndexType>::Builder::Build(
 
     // Create the extra reversed arcs needed.
     {
-      const int extra_size = num_arcs_ - num_filled;
-      tmp_tails_.resize(num_arcs_ + extra_size);
-      tmp_heads_.resize(num_arcs_ + extra_size);
-      reverse.resize(num_arcs_ + extra_size);
-      int new_index = num_arcs_;
-      for (int i = 0; i < num_arcs_; ++i) {
+      const int extra_size = num_orig_arcs - num_filled;
+      tmp_tails_.resize(num_orig_arcs + extra_size);
+      tmp_heads_.resize(num_orig_arcs + extra_size);
+      reverse.resize(num_orig_arcs + extra_size);
+      int new_index = num_orig_arcs;
+      for (int i = 0; i < num_orig_arcs; ++i) {
         // Fix the initial swap.
         if (was_reversed_[i]) {
           std::swap(tmp_tails_[i], tmp_heads_[i]);
@@ -417,15 +418,15 @@ FlowGraph<NodeIndexType, ArcIndexType>::Builder::Build(
         tmp_heads_[new_index] = tmp_tails_[i];
         ++new_index;
       }
-      CHECK_EQ(new_index, num_arcs_ + extra_size);
+      CHECK_EQ(new_index, num_orig_arcs + extra_size);
     }
   } else {
     // Just create a reverse for each arc.
-    tmp_tails_.resize(2 * num_arcs_);
-    tmp_heads_.resize(2 * num_arcs_);
-    reverse.resize(2 * num_arcs_);
-    for (int arc = 0; arc < num_arcs_; ++arc) {
-      const int image = num_arcs_ + arc;
+    tmp_tails_.resize(2 * num_orig_arcs);
+    tmp_heads_.resize(2 * num_orig_arcs);
+    reverse.resize(2 * num_orig_arcs);
+    for (int arc = 0; arc < num_orig_arcs; ++arc) {
+      const int image = num_orig_arcs + arc;
       tmp_heads_[image] = tmp_tails_[arc];
       tmp_tails_[image] = tmp_heads_[arc];
       reverse[image] = arc;
@@ -439,15 +440,15 @@ FlowGraph<NodeIndexType, ArcIndexType>::Builder::Build(
     // With this, we should have almost exactly the same behavior
     // as ReverseArcStaticGraph().
     fix_final_permutation = true;
-    for (int arc = 0; arc < num_arcs_; ++arc) {
-      const int image = num_arcs_ + arc;
+    for (int arc = 0; arc < num_orig_arcs; ++arc) {
+      const int image = num_orig_arcs + arc;
       std::swap(tmp_heads_[image], tmp_heads_[arc]);
       std::swap(tmp_tails_[image], tmp_tails_[arc]);
     }
   }
 
-  num_arcs_ = tmp_heads_.size();
-  perm.resize(num_arcs_);
+  const ArcIndexType num_flow_arcs = tmp_heads_.size();
+  perm.resize(num_flow_arcs);
 
   // Do we sort each OutgoingArcs(node) by head ?
   // Or is it better to keep all new reverse arc before or after ?
@@ -465,30 +466,26 @@ FlowGraph<NodeIndexType, ArcIndexType>::Builder::Build(
   auto graph = absl::WrapUnique(new FlowGraph());
   graph->const_capacities_ = true;
   graph->num_nodes_ = num_nodes_;
-  graph->num_arcs_ = num_arcs_;
+  graph->num_arcs_ = num_flow_arcs;
   graph->node_capacity_ = num_nodes_;
-  graph->arc_capacity_ = num_arcs_;
+  graph->arc_capacity_ = num_flow_arcs;
   graph->start_ = std::move(start);
 
   // Create the final heads_.
-  graph->heads_ = gtl::MakeUniqueArray<NodeIndexType>(num_arcs_);
+  graph->heads_ = gtl::MakeUniqueArray<NodeIndexType>(num_flow_arcs);
   internal::PermuteInto<ArcIndexType, NodeIndexType>(
-      perm, tmp_heads_, absl::MakeSpan(graph->heads_.data(), num_arcs_));
-
-  // No longer needed.
-  gtl::STLClearObject(&tmp_tails_);
-  gtl::STLClearObject(&tmp_heads_);
+      perm, tmp_heads_, absl::MakeSpan(graph->heads_.data(), num_flow_arcs));
 
   // We now create reverse_, this needs the permutation on both sides.
-  graph->reverse_ = gtl::MakeUniqueArray<ArcIndexType>(num_arcs_);
-  for (int i = 0; i < num_arcs_; ++i) {
+  graph->reverse_ = gtl::MakeUniqueArray<ArcIndexType>(num_flow_arcs);
+  for (int i = 0; i < num_flow_arcs; ++i) {
     graph->reverse_[perm[i]] = perm[reverse[i]];
   }
 
   if (permutation != nullptr) {
     if (fix_final_permutation) {
-      for (int i = 0; i < num_arcs_ / 2; ++i) {
-        std::swap(perm[i], perm[num_arcs_ / 2 + i]);
+      for (int i = 0; i < num_flow_arcs / 2; ++i) {
+        std::swap(perm[i], perm[num_flow_arcs / 2 + i]);
       }
     }
     permutation->swap(perm);

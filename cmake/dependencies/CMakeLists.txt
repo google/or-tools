@@ -557,7 +557,7 @@ if(BUILD_benchmark)
   FetchContent_Declare(
     benchmark
     GIT_REPOSITORY https://github.com/google/benchmark.git
-    GIT_TAG v1.9.2
+    GIT_TAG v1.9.5
     GIT_SHALLOW TRUE
     #PATCH_COMMAND git apply --ignore-whitespace ""
     SYSTEM

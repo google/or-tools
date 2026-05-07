@@ -190,18 +190,22 @@ if(BUILD_TESTING)
   set(OR_TOOLS_BUILD_TESTING ON)
   CMAKE_DEPENDENT_OPTION(BUILD_googletest "Build googletest" OFF
     "NOT BUILD_DEPS" ON)
+  set(BUILD_protobuf_matchers ON)
   CMAKE_DEPENDENT_OPTION(BUILD_benchmark "Build benchmark" OFF
     "NOT BUILD_DEPS" ON)
-  set(BUILD_protobuf_matchers ON)
+  option(RUN_BENCHMARKS "Run benchmarks" OFF)
+  message(STATUS "Run benchmarks: ${RUN_BENCHMARKS}")
 else()
   set(OR_TOOLS_BUILD_TESTING OFF)
   set(BUILD_googletest OFF)
   set(BUILD_protobuf_matchers OFF)
   set(BUILD_benchmark OFF)
+  set(RUN_BENCHMARKS OFF)
 endif()
 message(STATUS "Build googletest: ${BUILD_googletest}")
 message(STATUS "Build protobuf_matchers: ${BUILD_protobuf_matchers}")
 message(STATUS "Build benchmark: ${BUILD_benchmark}")
+message(STATUS "Run benchmarks: ${RUN_BENCHMARKS}")
 
 # Optional third party solvers (enabled by default)
 ## BOP

@@ -54,6 +54,21 @@ cc_test(
     ],
 )
 
+cc_binary(
+    name = "bounded_dijkstra_benchmark",
+    srcs = ["bounded_dijkstra_benchmark.cc"],
+    deps = [
+        ":bounded_dijkstra",
+        "//ortools/graph_base:graph",
+        "//ortools/graph_base:test_util",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/random:distributions",
+        "@google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark_main",
+    ],
+)
+
 cc_library(
     name = "multi_dijkstra",
     hdrs = ["multi_dijkstra.h"],
@@ -150,6 +165,23 @@ cc_test(
     ],
 )
 
+cc_binary(
+    name = "cliques_benchmark",
+    srcs = ["cliques_benchmark.cc"],
+    deps = [
+        ":cliques",
+        "//ortools/util:time_limit",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/functional:bind_front",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/random:distributions",
+        "@abseil-cpp//absl/types:span",
+        "@google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark_main",
+    ],
+)
+
 cc_library(
     name = "hamiltonian_path",
     hdrs = ["hamiltonian_path.h"],
@@ -214,6 +246,17 @@ cc_test(
     ],
 )
 
+cc_binary(
+    name = "christofides_benchmark",
+    srcs = ["christofides_benchmark.cc"],
+    deps = [
+        ":christofides",
+        "@abseil-cpp//absl/log:check",
+        "@google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark_main",
+    ],
+)
+
 cc_library(
     name = "eulerian_path",
     hdrs = ["eulerian_path.h"],
@@ -229,6 +272,18 @@ cc_test(
         "//ortools/base:gmock_main",
         "//ortools/graph_base:graph",
         "@abseil-cpp//absl/base:core_headers",
+    ],
+)
+
+cc_binary(
+    name = "eulerian_path_benchmark",
+    srcs = ["eulerian_path_benchmark.cc"],
+    deps = [
+        ":eulerian_path",
+        "//ortools/graph_base:graph",
+        "@abseil-cpp//absl/log:check",
+        "@google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark_main",
     ],
 )
 
@@ -253,7 +308,19 @@ cc_test(
         "//ortools/graph_base:graph",
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_binary(
+    name = "minimum_spanning_tree_benchmark",
+    srcs = ["minimum_spanning_tree_benchmark.cc"],
+    deps = [
+        ":minimum_spanning_tree",
+        "//ortools/graph_base:graph",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/random:distributions",
         "@google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark_main",
     ],
 )
 
@@ -347,7 +414,20 @@ cc_test(
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/random:distributions",
         "@abseil-cpp//absl/strings",
+    ],
+)
+
+cc_binary(
+    name = "k_shortest_paths_benchmark",
+    srcs = ["k_shortest_paths_benchmark.cc"],
+    deps = [
+        ":k_shortest_paths",
+        ":shortest_paths",
+        "//ortools/graph_base:graph",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/random:distributions",
         "@google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark_main",
     ],
 )
 
@@ -419,7 +499,22 @@ cc_test(
         "@abseil-cpp//absl/random:bit_gen_ref",
         "@abseil-cpp//absl/strings:str_format",
         "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_binary(
+    name = "generic_max_flow_benchmark",
+    srcs = ["generic_max_flow_benchmark.cc"],
+    deps = [
+        ":generic_max_flow",
+        "//ortools/graph_base:flow_graph",
+        "//ortools/graph_base:graph",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/random:bit_gen_ref",
+        "@abseil-cpp//absl/types:span",
         "@google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark_main",
     ],
 )
 
@@ -428,7 +523,8 @@ cc_library(
     srcs = ["min_cost_flow.cc"],
     hdrs = ["min_cost_flow.h"],
     copts = select({
-        "@platforms//os:windows": ["/Zc:preprocessor"],
+        "@rules_cc//cc/compiler:mingw-gcc": ["/Zc:preprocessor"],
+        "@rules_cc//cc/compiler:msvc-cl": ["/Zc:preprocessor"],
         "//conditions:default": [],
     }),
     visibility = ["//visibility:public"],
@@ -466,6 +562,20 @@ cc_test(
         "@abseil-cpp//absl/random:distributions",
         "@abseil-cpp//absl/strings:str_format",
         "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_binary(
+    name = "min_cost_flow_benchmark",
+    srcs = ["min_cost_flow_benchmark.cc"],
+    deps = [
+        ":min_cost_flow",
+        "//ortools/graph_base:graph",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/random:distributions",
+        "@google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark_main",
     ],
 )
 
@@ -517,9 +627,18 @@ cc_test(
     deps = [
         ":assignment",
         "//ortools/base:gmock_main",
+    ],
+)
+
+cc_binary(
+    name = "assignment_benchmark",
+    srcs = ["assignment_benchmark.cc"],
+    deps = [
+        ":assignment",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/random:distributions",
         "@google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark_main",
     ],
 )
 
@@ -551,7 +670,19 @@ cc_test(
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_binary(
+    name = "linear_assignment_benchmark",
+    srcs = ["linear_assignment_benchmark.cc"],
+    deps = [
+        ":linear_assignment",
+        "//ortools/graph_base:graph",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/random:distributions",
         "@google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark_main",
     ],
 )
 
@@ -653,7 +784,22 @@ cc_test(
         "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_binary(
+    name = "dag_constrained_shortest_path_benchmark",
+    srcs = ["dag_constrained_shortest_path_benchmark.cc"],
+    deps = [
+        ":dag_constrained_shortest_path",
+        "//ortools/graph_base:graph",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/random:distributions",
+        "@abseil-cpp//absl/types:span",
         "@google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark_main",
     ],
 )
 
@@ -685,6 +831,19 @@ cc_test(
     ],
 )
 
+cc_binary(
+    name = "rooted_tree_benchmark",
+    srcs = ["rooted_tree_benchmark.cc"],
+    deps = [
+        ":rooted_tree",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/random",
+        "@google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark_main",
+    ],
+)
+
 cc_library(
     name = "minimum_vertex_cover",
     srcs = ["minimum_vertex_cover.cc"],
@@ -703,6 +862,17 @@ cc_test(
         ":minimum_vertex_cover",
         "//ortools/base:gmock_main",
         "@abseil-cpp//absl/algorithm:container",
+    ],
+)
+
+cc_binary(
+    name = "minimum_vertex_cover_benchmark",
+    srcs = ["minimum_vertex_cover_benchmark.cc"],
+    deps = [
+        ":minimum_vertex_cover",
+        "@abseil-cpp//absl/algorithm:container",
+        "@google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark_main",
     ],
 )
 
@@ -741,5 +911,20 @@ cc_test(
         "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_binary(
+    name = "dag_shortest_path_benchmark",
+    srcs = ["dag_shortest_path_benchmark.cc"],
+    deps = [
+        ":dag_shortest_path",
+        "//ortools/graph_base:graph",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/types:span",
+        "@google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark_main",
     ],
 )
