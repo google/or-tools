@@ -45,7 +45,7 @@ jobs:
         python-version: ${{env.PYTHON_VERSION}}
     - uses: bazel-contrib/setup-bazel@0.19.0
     - name: Build
-      run: bazel test --config=ci --remote_cache=https://storage.googleapis.com/or-tools-github-remote-caching //ortools/...
+      run: bazel test --config=ci --remote_cache=https://storage.googleapis.com/or-tools-github-remote-caching --google_default_credentials //ortools/...
       shell: bash
 ###############################################################################
   CMake:
