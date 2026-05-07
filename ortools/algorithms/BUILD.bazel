@@ -11,6 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_cc//cc:cc_test.bzl", "cc_test")
 
@@ -44,7 +45,17 @@ cc_test(
         "@abseil-cpp//absl/strings:str_format",
         "@abseil-cpp//absl/strings:string_view",
         "@abseil-cpp//absl/time",
+    ],
+)
+
+cc_binary(
+    name = "binary_search_benchmark",
+    srcs = ["binary_search_benchmark.cc"],
+    deps = [
+        ":binary_search",
+        "@abseil-cpp//absl/numeric:int128",
         "@google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark_main",
     ],
 )
 
@@ -84,7 +95,38 @@ cc_test(
         "@abseil-cpp//absl/random:bit_gen_ref",
         "@abseil-cpp//absl/random:distributions",
         "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_binary(
+    name = "radix_sort_benchmark",
+    srcs = ["radix_sort_benchmark.cc"],
+    deps = [
+        ":radix_sort",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/numeric:bits",
+        "@abseil-cpp//absl/numeric:int128",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/random:bit_gen_ref",
+        "@abseil-cpp//absl/random:distributions",
+        "@abseil-cpp//absl/types:span",
         "@google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark_main",
+    ],
+)
+
+cc_binary(
+    name = "radix_sort_release_benchmark",
+    srcs = ["radix_sort_release_benchmark.cc"],
+    deps = [
+        ":radix_sort",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/random:bit_gen_ref",
+        "@abseil-cpp//absl/random:distributions",
+        "@abseil-cpp//absl/types:span",
+        "@google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark_main",
     ],
 )
 
@@ -271,7 +313,22 @@ cc_test(
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/random:distributions",
+    ],
+)
+
+cc_binary(
+    name = "space_saving_most_frequent_benchmark",
+    srcs = ["space_saving_most_frequent_benchmark.cc"],
+    deps = [
+        ":space_saving_most_frequent",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/base:nullability",
+        "@abseil-cpp//absl/hash",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/random:distributions",
         "@google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark_main",
     ],
 )
 
@@ -353,6 +410,7 @@ cc_test(
         "//ortools/base:log_severity",
         "//ortools/base:map_util",
         "//ortools/base:path",
+        "//ortools/graph_base:graph",
         "//ortools/graph_base:io",
         "//ortools/graph_base:random_graph",
         "//ortools/graph_base:util",
@@ -449,13 +507,25 @@ cc_test(
     srcs = ["multikey_radix_sort_test.cc"],
     deps = [
         ":multikey_radix_sort",
-        ":radix_sort",
         "//ortools/base:gmock_main",
         "//ortools/base:strong_int",
         "//ortools/base:strong_vector",
+        "//ortools/base:types",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/strings",
+    ],
+)
+
+cc_binary(
+    name = "multikey_radix_sort_benchmark",
+    srcs = ["multikey_radix_sort_benchmark.cc"],
+    deps = [
+        ":multikey_radix_sort",
+        ":radix_sort",
+        "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/types:span",
+        "@google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark_main",
     ],
 )

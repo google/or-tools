@@ -12,7 +12,8 @@
 # limitations under the License.
 
 file(GLOB _SRCS "*.h" "*.cc")
-list(FILTER _SRCS EXCLUDE REGEX "/.*_test.cc")
+list(FILTER _SRCS EXCLUDE REGEX ".*/.*_benchmark.cc")
+list(FILTER _SRCS EXCLUDE REGEX ".*/.*_test.cc")
 list(FILTER _SRCS EXCLUDE REGEX "/gmock\.h")
 
 set(NAME ${PROJECT_NAME}_base)
@@ -45,14 +46,14 @@ target_link_libraries(${NAME} PRIVATE
 #add_library(${PROJECT_NAMESPACE}::base ALIAS ${NAME})
 
 if(BUILD_TESTING)
-ortools_cxx_library(
-  NAME
+  ortools_cxx_library(
+    NAME
     base_gmock
-  SOURCES
+    SOURCES
     "gmock.h"
-  TYPE
+    TYPE
     INTERFACE
-  LINK_LIBRARIES
+    LINK_LIBRARIES
     absl::log
     absl::strings
     absl::status_matchers
@@ -60,9 +61,8 @@ ortools_cxx_library(
     GTest::gmock
     protobuf::libprotobuf
     protobuf-matchers
-  TESTING
-)
-
+    TESTING
+  )
   file(GLOB _TEST_SRCS "*_test.cc")
   foreach(_FULL_FILE_NAME IN LISTS _TEST_SRCS)
     get_filename_component(_NAME ${_FULL_FILE_NAME} NAME_WE)
@@ -77,6 +77,28 @@ ortools_cxx_library(
         base_gmock
         GTest::gtest
         GTest::gtest_main
+    )
+  endforeach()
+  # Benchmark
+  file(GLOB _BENCHMARK_SRCS "*_benchmark.cc")
+  set(_ARGS "")
+  if(NOT RUN_BENCHMARKS)
+    set(_ARGS "DISABLED")
+  endif()
+  foreach(_FULL_FILE_NAME IN LISTS _BENCHMARK_SRCS)
+    get_filename_component(_NAME ${_FULL_FILE_NAME} NAME_WE)
+    get_filename_component(_FILE_NAME ${_FULL_FILE_NAME} NAME)
+    ortools_cxx_test(
+      NAME
+        base_${_NAME}
+      SOURCES
+        ${_FILE_NAME}
+      LINK_LIBRARIES
+        benchmark::benchmark
+        benchmark::benchmark_main
+        GTest::gtest
+        GTest::gmock
+      ${_ARGS}
     )
   endforeach()
 endif()

@@ -57,6 +57,7 @@
 #include "ortools/base/map_util.h"
 #include "ortools/base/options.h"
 #include "ortools/base/path.h"
+#include "ortools/graph_base/graph.h"
 #include "ortools/graph_base/io.h"
 #include "ortools/graph_base/util.h"
 #include "ortools/util/time_limit.h"
@@ -75,11 +76,11 @@ using ::util::GraphIsSymmetric;
 // Shortcut that calls RecursivelyRefinePartitionByAdjacency() on all nodes
 // of a graph, and outputs the resulting partition.
 std::string FullyRefineGraph(absl::Span<const std::pair<int, int>> arcs) {
-  Graph graph;
+  Graph::Builder graph_builder;
   for (const std::pair<int, int>& arc : arcs) {
-    graph.AddArc(arc.first, arc.second);
+    graph_builder.AddArc(arc.first, arc.second);
   }
-  graph.Build();
+  const auto graph = std::move(graph_builder).BuildGraph(nullptr);
   GraphSymmetryFinder symmetry_finder(graph, GraphIsSymmetric(graph));
   DynamicPartition partition(graph.num_nodes());
   symmetry_finder.RecursivelyRefinePartitionByAdjacency(0, &partition);
@@ -151,8 +152,7 @@ TEST(RecursivelyRefinePartitionByAdjacencyTest, FlowerOfCycles) {
 TEST(GraphSymmetryFinderTest, EmptyGraph) {
   for (bool is_undirected : {true, false}) {
     SCOPED_TRACE(DUMP_VARS(is_undirected));
-    Graph empty_graph;
-    empty_graph.Build();
+    const auto empty_graph = Graph::Builder().BuildGraph(nullptr);
     GraphSymmetryFinder symmetry_finder(empty_graph, is_undirected);
 
     EXPECT_TRUE(symmetry_finder.IsGraphAutomorphism(DynamicPermutation(0)));
@@ -170,8 +170,7 @@ TEST(GraphSymmetryFinderTest, EmptyGraph) {
 }
 
 TEST(GraphSymmetryFinderTest, EmptyGraphAndDoNothing) {
-  Graph empty_graph;
-  empty_graph.Build();
+  const auto empty_graph = Graph::Builder().BuildGraph(nullptr);
   GraphSymmetryFinder symmetry_finder(empty_graph, /*is_undirected=*/true);
 }
 
@@ -181,11 +180,11 @@ class IsGraphAutomorphismTest : public testing::Test {
       int num_nodes, const std::vector<std::pair<int, int>>& graph_arcs,
       absl::Span<const std::vector<int>> permutation_cycles,
       bool expected_is_automorphism) {
-    Graph graph(num_nodes, graph_arcs.size());
+    Graph::Builder graph_builder(num_nodes, graph_arcs.size());
     for (const std::pair<int, int>& arc : graph_arcs) {
-      graph.AddArc(arc.first, arc.second);
+      graph_builder.AddArc(arc.first, arc.second);
     }
-    graph.Build();
+    const auto graph = std::move(graph_builder).BuildGraph(nullptr);
     GraphSymmetryFinder symmetry_finder(graph, GraphIsSymmetric(graph));
 
     DynamicPermutation permutation(graph.num_nodes());
@@ -331,10 +330,10 @@ class FindSymmetriesTest : public ::testing::Test {
   void ExpectSymmetries(const std::vector<std::pair<int, int>>& arcs,
                         absl::string_view expected_node_equivalence_classes,
                         double log_of_expected_permutation_group_size) {
-    Graph graph;
+    Graph::Builder graph_builder;
     for (const std::pair<int, int>& arc : arcs)
-      graph.AddArc(arc.first, arc.second);
-    graph.Build();
+      graph_builder.AddArc(arc.first, arc.second);
+    const auto graph = std::move(graph_builder).BuildGraph(nullptr);
     GraphSymmetryFinder symmetry_finder(graph, GraphIsSymmetric(graph));
     std::vector<std::unique_ptr<SparsePermutation>> generators;
     std::vector<int> node_equivalence_classes(graph.num_nodes(), 0);
@@ -697,10 +696,10 @@ TEST_F(FindSymmetriesTest, InwardGrid) {
 }
 
 void AddReverseArcs(Graph::Builder& builder) {
-  const auto graph = Graph::Builder(builder).Build(nullptr);
-  const int num_arcs = graph->num_arcs();
+  const auto graph = Graph::Builder(builder).BuildGraph(nullptr);
+  const int num_arcs = graph.num_arcs();
   for (int a = 0; a < num_arcs; ++a) {
-    builder.AddArc(graph->Head(a), graph->Tail(a));
+    builder.AddArc(graph.Head(a), graph.Tail(a));
   }
 }
 
