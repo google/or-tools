@@ -37,12 +37,15 @@ jobs:
     runs-on: ${{matrix.os}}
     steps:
     - uses: actions/checkout@v6
+    - uses: 'google-github-actions/auth@v3'
+      with:
+        credentials_json: '${{secrets.GCP_BUCKET_API_KEY}}'
     - uses: actions/setup-python@v6
       with:
         python-version: ${{env.PYTHON_VERSION}}
     - uses: bazel-contrib/setup-bazel@0.19.0
     - name: Build
-      run: bazel test --config=ci //ortools/...
+      run: bazel test --config=ci --remote_cache=https://storage.googleapis.com/or-tools-github-remote-caching //ortools/...
       shell: bash
 ###############################################################################
   CMake:
