@@ -39,7 +39,7 @@ BuildRandomDag(const NodeIndex num_nodes, const ArcIndex num_arcs) {
   absl::BitGen bit_gen;
   CHECK_GE(num_nodes, 2);
   CHECK_GE(num_arcs, 1);
-  CHECK_LE(num_arcs, (num_nodes * (num_nodes - 1)) / 2);
+  CHECK_LE(num_arcs, (int64_t{num_nodes} * (num_nodes - 1)) / 2);
   std::vector<NodeIndex> topological_order(num_nodes);
   topological_order.back() = num_nodes - 1;
   absl::Span<NodeIndex> non_start_end =

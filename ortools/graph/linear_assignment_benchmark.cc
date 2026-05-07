@@ -48,8 +48,7 @@ ConstructRandomAssignmentForNewGraphApi(const int left_nodes,
   }
 
   // Finalize the graph.
-  std::vector<typename GraphType::ArcIndex> permutation;
-  auto graph = std::move(builder).BuildAndPermute(permutation, arc_costs);
+  auto graph = std::move(builder).BuildAndPermute(arc_costs);
 
   // Create the assignment.
   auto assignment = std::make_unique<LinearSumAssignment<GraphType, int64_t>>(
