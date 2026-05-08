@@ -228,6 +228,18 @@ class XpressSolver : public SolverInterface {
   bool nonbinary_indicator_ = false;
   bool is_multiobj_ = false;
   bool is_mip_ = false;
+
+  // Tracks integer variables whose unrounded bounds are non-empty (lb <= ub)
+  // but whose rounded integer bounds are empty (ceil(lb) > floor(ub)). Xpress
+  // rejects creation of such variables, so the bounds passed to Xpress are
+  // replaced with [0, 0] and these entries are kept here. Solve() detects a
+  // non-empty list and returns an infeasible result instead of invoking Xpress.
+  struct EmptyIntegerBoundsVar {
+    VarId id;
+    double lb;
+    double ub;
+  };
+  std::vector<EmptyIntegerBoundsVar> empty_integer_bounds_vars_;
   // Results of the last solve
   int primal_sol_avail_ = XPRS_SOLAVAILABLE_NOTFOUND;
   int dual_sol_avail_ = XPRS_SOLAVAILABLE_NOTFOUND;
