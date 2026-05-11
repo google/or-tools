@@ -47,7 +47,7 @@ struct CppFlags {
    */
   std::string cp_model_dump_prefix;
   /**
-   * DEBUG ONLY: Dump CP-SAT models during solve.
+   * Dump CP-SAT models during solve. (DEBUG ONLY)
    *
    *  When set to true, SolveCpModel() will dump its model protos
    * (original model, presolved model, mapping model) in text  format to
@@ -56,7 +56,7 @@ struct CppFlags {
   bool cp_model_dump_models = false;
 
   /**
-   * DEBUG ONLY: Dump CP-SAT LNS models during solve.
+   * Dump CP-SAT LNS models during solve. (DEBUG ONLY)
    *
    * When set to true, solve will dump all lns models proto in text format to
    * 'FLAGS_cp_model_dump_prefix'lns_xxx.pbtxt.
@@ -64,7 +64,7 @@ struct CppFlags {
   bool cp_model_dump_submodels;
 
   /**
-   * DEBUG ONLY: Dump the CP-SAT final response found during solve.
+   * Dump the CP-SAT final response found during solve. (DEBUG ONLY)
    *
    * If true, the final response of each solve will be dumped to
    * 'FLAGS_cp_model_dump_prefix'response.pbtxt.
