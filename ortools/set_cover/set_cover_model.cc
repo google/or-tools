@@ -33,7 +33,7 @@
 #include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/algorithms/radix_sort.h"
+#include "ortools/algorithms/multikey_radix_sort.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/set_cover/base_types.h"
 #include "ortools/set_cover/set_cover.pb.h"
@@ -332,18 +332,10 @@ void SetCoverModel::ReserveNumElementsInSubset(BaseInt num_elements,
   columns_[SubsetIndex(subset)].reserve(ColumnEntryIndex(num_elements));
 }
 
-namespace {
-template <typename T, typename U>
-void RadixSort(util_intops::StrongVector<T, U>& v) {
-  BaseInt* data = reinterpret_cast<BaseInt*>(v.data());
-  ::operations_research::RadixSort(absl::MakeSpan(data, v.size()));
-}
-}  // namespace
-
 void SetCoverModel::SortElementsInSubsets() {
   for (const SubsetIndex subset : SubsetRange()) {
-    // std::sort(columns_[subset].begin(), columns_[subset].end());
-    RadixSort(columns_[subset]);
+    MultikeyRadixSort(columns_[subset],
+                      [](const ElementIndex& x) { return x.value(); });
   }
   elements_in_columns_are_sorted_ = true;
 }
@@ -358,8 +350,8 @@ void SetCoverModel::CreateSparseRowView() {
   rows_.resize(num_elements_, SparseRow());
   ElementToIntVector row_sizes(num_elements_, 0);
   for (const SubsetIndex subset : SubsetRange()) {
-    RadixSort(columns_[subset]);
-
+    MultikeyRadixSort(columns_[subset],
+                      [](const ElementIndex& x) { return x.value(); });
     ElementIndex previous_element(-1);
     for (const ElementIndex element : columns_[subset]) {
       CHECK_GT(element, previous_element)
@@ -392,8 +384,8 @@ void SetCoverModel::CreateSparseColumnView() {
   columns_.resize(num_subsets_, SparseColumn());
   SubsetToIntVector column_sizes(num_subsets_, 0);
   for (const ElementIndex element : ElementRange()) {
-    RadixSort(rows_[element]);
-
+    MultikeyRadixSort(rows_[element],
+                      [](const SubsetIndex& x) { return x.value(); });
     SubsetIndex previous_subset(-1);
     for (const SubsetIndex subset : rows_[element]) {
       CHECK_GT(subset, previous_subset)
@@ -412,6 +404,24 @@ void SetCoverModel::CreateSparseColumnView() {
   column_view_is_valid_ = true;
   subsets_in_rows_are_sorted_ = true;
   VLOG(1) << "CreateSparseColumnView finished";
+}
+
+namespace {}  // namespace
+
+std::pair<std::vector<SubsetIndex>, std::vector<SubsetIndex>>
+SetCoverModel::CompareSolutions(const SubsetBoolVector& a,
+                                const SubsetBoolVector& b) {
+  DCHECK_EQ(a.size(), b.size());
+  std::vector<SubsetIndex> a_and_not_b;
+  std::vector<SubsetIndex> b_and_not_a;
+  for (SubsetIndex subset : IndexRange<SubsetIndex>(SubsetIndex(a.size()))) {
+    if (a[subset] && !b[subset]) {
+      a_and_not_b.push_back(subset);
+    } else if (b[subset] && !a[subset]) {
+      b_and_not_a.push_back(subset);
+    }
+  }
+  return {a_and_not_b, b_and_not_a};
 }
 
 std::vector<SubsetIndex> SetCoverModel::ComputeSliceIndices(
@@ -449,8 +459,8 @@ SparseRowView SetCoverModel::ComputeSparseRowViewSlice(SubsetIndex begin_subset,
   rows.reserve(num_elements_);
   ElementToIntVector row_sizes(num_elements_, 0);
   for (SubsetIndex subset = begin_subset; subset < end_subset; ++subset) {
-    RadixSort(columns_[subset]);
-
+    MultikeyRadixSort(columns_[subset],
+                      [](ElementIndex element) { return element.value(); });
     ElementIndex previous_element(-1);
     for (const ElementIndex element : columns_[subset]) {
       CHECK_GT(element, previous_element)
@@ -569,7 +579,8 @@ SetCoverProto SetCoverModel::ExportModelAsProto() const {
     SetCoverProto::Subset* subset_proto = message.add_subset();
     subset_proto->set_cost(subset_costs_[subset]);
     SparseColumn column = columns_[subset];  // Copy is intentional.
-    RadixSort(column);
+    MultikeyRadixSort(column,
+                      [](ElementIndex element) { return element.value(); });
     for (const ElementIndex element : column) {
       subset_proto->add_element(element.value());
     }

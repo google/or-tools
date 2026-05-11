@@ -26,6 +26,7 @@
 #include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "ortools/algorithms/adjustable_k_ary_heap.h"
+#include "ortools/base/types.h"
 #include "ortools/set_cover/base_types.h"
 #include "ortools/set_cover/set_cover_invariant.h"
 #include "ortools/set_cover/set_cover_model.h"
@@ -68,8 +69,8 @@ class SetCoverSolutionGenerator {
         subset_priority_fn_(&DefaultSubsetMarginalImpactFn),
         class_name_(class_name),
         name_(name),
-        time_limit_in_seconds_(std::numeric_limits<double>::infinity()),
-        max_iterations_(std::numeric_limits<int64_t>::max()) {}
+        time_limit_(absl::InfiniteDuration()),
+        max_iterations_(kint64max) {}
 
   virtual ~SetCoverSolutionGenerator() = default;
 
@@ -97,8 +98,8 @@ class SetCoverSolutionGenerator {
 
   // Resets the limits to their default values.
   virtual SetCoverSolutionGenerator& ResetLimits() {
-    time_limit_in_seconds_ = std::numeric_limits<double>::infinity();
-    max_iterations_ = std::numeric_limits<int64_t>::max();
+    time_limit_ = absl::InfiniteDuration();
+    max_iterations_ = kint64max;
     return *this;
   }
 
@@ -111,27 +112,13 @@ class SetCoverSolutionGenerator {
   // Returns the maximum number of iterations.
   int64_t max_iterations() const { return max_iterations_; }
 
-  // Sets the time limit in seconds.
-  SetCoverSolutionGenerator& SetTimeLimitInSeconds(double seconds) {
-    time_limit_in_seconds_ = seconds;
+  // Sets the time limit.
+  SetCoverSolutionGenerator& SetTimeLimit(absl::Duration time_limit) {
+    time_limit_ = time_limit;
     return *this;
   }
 
   absl::Duration run_time() const { return run_time_; }
-
-  // Returns the total elapsed runtime in seconds.
-  double run_time_in_seconds() const {
-    return absl::ToDoubleSeconds(run_time_);
-  }
-
-  // Returns the total elapsed runtime in milliseconds.
-  int64_t run_time_ms() const { return absl::ToInt64Milliseconds(run_time_); }
-
-  // Returns the total elapsed runtime in microseconds.
-  int64_t run_time_us() const { return absl::ToInt64Microseconds(run_time_); }
-
-  // Returns the total elapsed runtime in nanoseconds.
-  int64_t run_time_ns() const { return absl::ToInt64Nanoseconds(run_time_); }
 
   // Returns the name of the heuristic.
   std::string name() const { return name_; }
@@ -161,8 +148,8 @@ class SetCoverSolutionGenerator {
   SetCoverModel* model() const { return inv_->model(); }
   BaseInt num_subsets() const { return model()->num_subsets(); }
 
-  // The time limit in seconds.
-  double time_limit_in_seconds() const { return time_limit_in_seconds_; }
+  // Returns the time limit as an absl::Duration.
+  absl::Duration time_limit() const { return time_limit_; }
 
   // run_time_ is an abstract duration for the time spent in NextSolution().
   absl::Duration run_time_;
@@ -193,8 +180,8 @@ class SetCoverSolutionGenerator {
   // by default, but can be changed by the user.
   std::string name_;
 
-  // The time limit in seconds.
-  double time_limit_in_seconds_;
+  // The time limit as an absl::Duration.
+  absl::Duration time_limit_;
 
   // The maximum number of iterations.
   int64_t max_iterations_;
@@ -425,10 +412,13 @@ class LazyElementDegreeSolutionGenerator
   // If set to 0, no random passes are performed.
   void SetNumRandomPasses(int num_random_passes) {
     num_random_passes_ = num_random_passes;
+    SetName(num_random_passes == 0
+                ? "LazyElementDegreeGenerator"
+                : absl::StrCat("LazyElementDegreeGeneratorRandom(",
+                               num_random_passes, ")"));
   }
 
-  // Returns the number of random passes to be performed. The default value is
-  // 0.
+  // Returns the number of random passes to be performed. Default value is 0.
   int64_t num_random_passes() const { return num_random_passes_; }
 
  private:
@@ -698,6 +688,59 @@ class GuidedLocalSearch : public SubsetListBasedSolutionGenerator {
   AdjustableKAryHeap<float, SubsetIndex, 2, true> utility_heap_;
 };
 
+// CliqueGuidedLNS is a variant of Large Neighborhood Search that finds cliques
+// in the intersection graph of the subsets. Starting from a solution, it
+// computes of selected subsets. It then deselects all the subsets in the
+// clique, and run LazyElementDegree and LazySteepestSearch on the non-covered
+// elements.
+//
+// The consistency level is maintained up to kFreeAndUncovered.
+class CliqueGuidedLNS : public SubsetListBasedSolutionGenerator {
+ public:
+  explicit CliqueGuidedLNS(SetCoverInvariant* inv)
+      : CliqueGuidedLNS(inv, "CliqueGuidedLNS") {}
+
+  CliqueGuidedLNS(SetCoverInvariant* inv, absl::string_view name)
+      : SubsetListBasedSolutionGenerator(
+            inv, SetCoverInvariant::ConsistencyLevel::kFreeAndUncovered,
+            "CliqueGuidedLNS", name),
+        max_num_cliques_(kDefaultNumCliques),
+        max_clique_size_(kDefaultMaxCliqueSize) {}
+
+  using SubsetListBasedSolutionGenerator::NextSolution;
+  bool NextSolution(absl::Span<const SubsetIndex> focus) final;
+
+  // Setter and getter for the maximum number of cliques to be generated. This
+  // limits the running time.
+  CliqueGuidedLNS& SetMaxNumCliques(int max_num_cliques) {
+    max_num_cliques_ = max_num_cliques;
+    return *this;
+  }
+  int GetMaxNumCliques() const { return max_num_cliques_; }
+
+  // Setter and getter for the maximum clique size. In some cases, the clique
+  // can be almost as large (90%) as the number of subsets in the problem,
+  // making the computation time prohibitive, and defeating the local search
+  // aspect of the algorithm.
+  CliqueGuidedLNS& SetMaxCliqueSize(int max_clique_size) {
+    max_clique_size_ = max_clique_size;
+    return *this;
+  }
+  int GetMaxCliqueSize() const { return max_clique_size_; }
+
+  // Returns for the maximum clique size generated. This is useful to tune the
+  // parameter max_clique_size.
+  int max_clique_size_generated() const { return max_clique_size_generated_; }
+
+ private:
+  static constexpr BaseInt kDefaultNumCliques = 100;
+  static constexpr BaseInt kDefaultMaxCliqueSize = 2000;
+
+  BaseInt max_num_cliques_;
+  BaseInt max_clique_size_;
+  BaseInt max_clique_size_generated_ = 0;
+};
+
 // Randomly clears a proportion num_subsets variables in the solution.
 // Returns a list of subset indices to be potentially reused as a focus.
 // Randomly clears at least num_subsets variables in the
@@ -738,6 +781,19 @@ Cost ComputeDualAscentLB(const SetCoverInvariant& inv, int num_random_passes);
 // shuffles elements of same degree for num_random_passes.
 Cost ComputeDegreeBasedDualAscentLB(const SetCoverInvariant& inv,
                                     int num_random_passes);
+
+// Computes a clique in the intersection graph of the subsets, starting from
+// the given subset.
+std::vector<SubsetIndex> ComputeClique(
+    const SetCoverInvariant& inv, SubsetIndex subset,
+    int max_clique_size = kint32max,
+    absl::Duration max_duration = absl::Milliseconds(100));
+
+// Returns a vector of weights for each subset in the model.
+// The weight is equal to the size of the subset if size > 2, 0 otherwise.
+// The first element of the pair is true if at least one weight is > 0.
+std::pair<bool, std::vector<double>> GetSubsetWeights(
+    const SetCoverModel& model);
 
 }  // namespace operations_research
 

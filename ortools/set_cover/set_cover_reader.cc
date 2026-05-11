@@ -35,6 +35,7 @@
 #include "ortools/base/filesystem.h"
 #include "ortools/base/helpers.h"
 #include "ortools/base/options.h"
+#include "ortools/base/types.h"
 #include "ortools/set_cover/base_types.h"
 #include "ortools/set_cover/set_cover.pb.h"
 #include "ortools/set_cover/set_cover_model.h"
@@ -353,8 +354,7 @@ namespace {
 // FlushLine() must be called before closing the file.
 class LineFormatter {
  public:
-  explicit LineFormatter(File* file)
-      : LineFormatter(file, std::numeric_limits<int64_t>::max()) {}
+  explicit LineFormatter(File* file) : LineFormatter(file, kint64max) {}
   LineFormatter(File* file, int64_t max_cols)
       : num_cols_(0), max_cols_(max_cols), line_(), file_(file) {}
   ~LineFormatter() { CHECK(line_.empty()); }
@@ -474,6 +474,36 @@ SubsetBoolVector ReadSetCoverSolutionProto(absl::string_view filename,
   // NOTE(user): The solution is 0-indexed.
   for (const BaseInt subset : message.subset()) {
     solution[SubsetIndex(subset)] = true;
+  }
+  return solution;
+}
+
+SubsetBoolVector ReadSetCoverSolutionDat(absl::string_view filename,
+                                         BaseInt num_subsets) {
+  SubsetBoolVector solution(num_subsets, false);
+  if (!file::Exists(filename, file::Defaults()).ok()) {
+    return solution;
+  }
+  bool cost_read = false;
+  for (const std::string& line : FileLines(filename)) {
+    std::vector<std::string> tokens =
+        absl::StrSplit(line, ' ', absl::SkipEmpty());
+    for (const std::string& token : tokens) {
+      if (token.empty()) continue;
+      if (!cost_read) {
+        double cost;
+        CHECK(absl::SimpleAtod(token, &cost));
+        cost_read = true;
+      } else {
+        int64_t subset_val;
+        CHECK(absl::SimpleAtoi(token, &subset_val));
+        CHECK_GE(subset_val, 0);
+        CHECK_LT(subset_val, num_subsets)
+            << "Subset index " << subset_val << " out of range [0, "
+            << num_subsets << ")";
+        solution[SubsetIndex(subset_val)] = true;
+      }
+    }
   }
   return solution;
 }

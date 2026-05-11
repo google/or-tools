@@ -14,7 +14,7 @@
 file(GLOB _SRCS "*.h" "*.cc")
 list(FILTER _SRCS EXCLUDE REGEX ".*/.*_test.cc")
 list(FILTER _SRCS EXCLUDE REGEX ".*/set_cover_solve.cc")
-list(FILTER _SRCS EXCLUDE REGEX ".*/formatting_helper.*")
+list(FILTER _SRCS EXCLUDE REGEX ".*/reporting.*")
 
 set(NAME ${PROJECT_NAME}_set_cover)
 

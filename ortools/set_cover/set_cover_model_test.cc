@@ -603,5 +603,73 @@ TEST(SetCoverModelTest, GenerateRandomModelFrom) {
   }
 }
 
+SubsetBoolVector SubsetBoolVectorFromIndices(
+    int size, const std::vector<BaseInt>& indices) {
+  SubsetBoolVector v(size, false);
+  for (const BaseInt index : indices) {
+    v[SubsetIndex(index)] = true;
+  }
+  return v;
+}
+
+TEST(SetCoverModelTest, CompareSolutions) {
+  const SubsetBoolVector a = SubsetBoolVectorFromIndices(3, {0, 1});
+  const SubsetBoolVector b = SubsetBoolVectorFromIndices(3, {1, 2});
+
+  const auto [a_minus_b, b_minus_a] = SetCoverModel::CompareSolutions(a, b);
+
+  // a - b should have index 0 set.
+  EXPECT_THAT(a_minus_b, ElementsAre(SubsetIndex(0)));
+
+  // b - a should have index 2 set.
+  EXPECT_THAT(b_minus_a, ElementsAre(SubsetIndex(2)));
+}
+
+TEST(SetCoverModelTest, CompareSolutionsRandom) {
+  auto rng = absl::BitGen();
+  const int size = 50;
+
+  for (int i = 0; i < 10; ++i) {
+    SubsetBoolVector a(size, false);
+    SubsetBoolVector b(size, false);
+    for (int j = 0; j < size; ++j) {
+      a[SubsetIndex(j)] = absl::Bernoulli(rng, 0.5);
+      b[SubsetIndex(j)] = absl::Bernoulli(rng, 0.5);
+    }
+
+    const auto [a_minus_b, b_minus_a] = SetCoverModel::CompareSolutions(a, b);
+
+    // Check a_minus_b.
+    // 1. All elements in a_minus_b must be in a and not in b.
+    for (const SubsetIndex index : a_minus_b) {
+      EXPECT_TRUE(a[index]);
+      EXPECT_FALSE(b[index]);
+    }
+    // 2. All elements in a and not in b must be in a_minus_b.
+    int count_a_minus_b = 0;
+    for (SubsetIndex index(0); index.value() < size; ++index) {
+      if (a[index] && !b[index]) {
+        ++count_a_minus_b;
+      }
+    }
+    EXPECT_EQ(a_minus_b.size(), count_a_minus_b);
+
+    // Check b_minus_a.
+    // 1. All elements in b_minus_a must be in b and not in a.
+    for (const SubsetIndex index : b_minus_a) {
+      EXPECT_TRUE(b[index]);
+      EXPECT_FALSE(a[index]);
+    }
+    // 2. All elements in b and not in a must be in b_minus_a.
+    int count_b_minus_a = 0;
+    for (SubsetIndex index(0); index.value() < size; ++index) {
+      if (b[index] && !a[index]) {
+        ++count_b_minus_a;
+      }
+    }
+    EXPECT_EQ(b_minus_a.size(), count_b_minus_a);
+  }
+}
+
 }  // namespace
 }  // namespace operations_research

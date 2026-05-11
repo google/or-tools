@@ -27,7 +27,7 @@ proto_library(
     name = "set_cover_proto",
     srcs = ["set_cover.proto"],
     deps = [
-        "//ortools/util:int128_proto",
+        "@protobuf//:duration_proto",
     ],
 )
 
@@ -92,7 +92,7 @@ cc_library(
     deps = [
         ":base_types",
         ":set_cover_cc_proto",
-        "//ortools/algorithms:radix_sort",
+        "//ortools/algorithms:multikey_radix_sort",
         "//ortools/base:strong_int",
         "//ortools/base:strong_vector",
         "@abseil-cpp//absl/log",
@@ -115,6 +115,7 @@ cc_test(
         ":set_cover_model",
         "//ortools/base:gmock_main",
         "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/random",
     ],
 )
 
@@ -181,11 +182,11 @@ cc_library(
         ":set_cover_invariant",
         ":set_cover_model",
         "//ortools/algorithms:adjustable_k_ary_heap",
+        "//ortools/algorithms:multikey_radix_sort",
         "//ortools/base:adjustable_priority_queue",
-        "@abseil-cpp//absl/base",
+        "//ortools/base:types",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
-        "@abseil-cpp//absl/numeric:bits",
         "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/random:distributions",
         "@abseil-cpp//absl/strings",
@@ -204,10 +205,12 @@ cc_library(
         ":set_cover_heuristics",
         ":set_cover_invariant",
         ":set_cover_model",
-        "//ortools/linear_solver:linear_solver_base",
-        "//ortools/lp_data:lp_types",
+        "//ortools/base:strong_int",
+        "//ortools/base:strong_vector",
+        "//ortools/math_opt/cpp:math_opt",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:string_view",
         "@abseil-cpp//absl/time",
         "@abseil-cpp//absl/types:span",
@@ -223,8 +226,7 @@ cc_library(
         ":set_cover_cc_proto",
         ":set_cover_model",
         "//ortools/base:file",
-        "//ortools/base:strong_int",
-        "//ortools/base:strong_vector",
+        "//ortools/base:types",
         "//ortools/util:filelineiter",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
@@ -262,14 +264,16 @@ cc_test(
 )
 
 cc_library(
-    name = "formatting_helper",
-    srcs = ["formatting_helper.cc"],
-    hdrs = ["formatting_helper.h"],
+    name = "reporting",
+    srcs = ["reporting.cc"],
+    hdrs = ["reporting.h"],
     deps = [
+        ":base_types",
+        ":set_cover_cc_proto",
         ":set_cover_heuristics",
         ":set_cover_invariant",
         ":set_cover_model",
-        "@abseil-cpp//absl/flags:flag",
+        "//ortools/base:protoutil",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings",
@@ -281,9 +285,13 @@ cc_library(
 cc_binary(
     name = "set_cover_solve",
     srcs = ["set_cover_solve.cc"],
+    tags = [
+        "not_build:arm",
+        "not_run:arm",
+    ],
     deps = [
         ":base_types",
-        ":formatting_helper",
+        ":reporting",
         ":set_cover_heuristics",
         ":set_cover_invariant",
         ":set_cover_lagrangian",
@@ -325,6 +333,7 @@ cc_test(
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/time",
         "@google_benchmark//:benchmark",
     ],
 )
