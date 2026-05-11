@@ -24,7 +24,7 @@ load("@rules_python//python:py_test.bzl", "py_test")
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
-    name = "sorted_interval_list_doc",
+    name = "sorted_interval_list_doc_cc",
     hdrs = ["sorted_interval_list_doc.h"],
     visibility = ["//visibility:public"],
 )
@@ -34,7 +34,7 @@ pybind_extension(
     srcs = ["sorted_interval_list.cc"],
     visibility = ["//visibility:public"],
     deps = [
-        ":sorted_interval_list_doc",
+        ":sorted_interval_list_doc_cc",
         "//ortools/util:sorted_interval_list",
         "@abseil-cpp//absl/strings",
     ],
@@ -45,7 +45,7 @@ pybind_library(
     srcs = ["sorted_interval_list.cc"],
     visibility = ["//visibility:public"],
     deps = [
-        ":sorted_interval_list_doc",
+        ":sorted_interval_list_doc_cc",
         "//ortools/util:sorted_interval_list",
         "@abseil-cpp//absl/strings",
     ],

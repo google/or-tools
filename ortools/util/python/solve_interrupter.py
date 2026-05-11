@@ -65,11 +65,21 @@ class SolveInterrupter:
         return self.pybind_interrupter.interrupted
 
     def add_trigger_target(self, target: "SolveInterrupter") -> None:
-        """Triggers the target when this interrupter is triggered."""
+        """Triggers the target when this interrupter is triggered.
+
+        If this interrupter is already triggered, triggers the target immediately.
+
+        Args:
+          target: The target interrupter to add.
+        """
         self.pybind_interrupter.add_trigger_target(target.pybind_interrupter)
 
     def remove_trigger_target(self, target: "SolveInterrupter") -> None:
-        """Removes the target if not null and present, else do nothing."""
+        """Removes the target if not null and present, else do nothing.
+
+        Args:
+          target: The target interrupter to add.
+        """
         self.pybind_interrupter.remove_trigger_target(target.pybind_interrupter)
 
     @contextlib.contextmanager

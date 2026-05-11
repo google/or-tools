@@ -12,7 +12,8 @@
 # limitations under the License.
 
 file(GLOB _SRCS "*.h" "*.cc")
-list(FILTER _SRCS EXCLUDE REGEX ".*/rounding_modes_benchmark.cc")
+list(FILTER _SRCS EXCLUDE REGEX ".*/.*_benchmark.cc")
+list(FILTER _SRCS EXCLUDE REGEX ".*/.*_test.cc")
 
 set(NAME ${PROJECT_NAME}_util)
 
@@ -38,3 +39,23 @@ target_link_libraries(${NAME} PRIVATE
   protobuf::libprotobuf
   ${PROJECT_NAMESPACE}::ortools_proto)
 #add_library(${PROJECT_NAMESPACE}::util ALIAS ${NAME})
+
+
+if(BUILD_TESTING)
+  # Test
+  file(GLOB _TEST_SRCS "*_test.cc")
+  foreach(_FULL_FILE_NAME IN LISTS _TEST_SRCS)
+    get_filename_component(_NAME ${_FULL_FILE_NAME} NAME_WE)
+    get_filename_component(_FILE_NAME ${_FULL_FILE_NAME} NAME)
+    ortools_cxx_test(
+      NAME
+        util_${_NAME}
+      SOURCES
+        ${_FILE_NAME}
+      LINK_LIBRARIES
+        GTest::gtest
+        GTest::gtest_main
+        GTest::gmock
+    )
+  endforeach()
+endif()

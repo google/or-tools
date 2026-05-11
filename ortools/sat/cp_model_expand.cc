@@ -588,8 +588,8 @@ void ExpandIntMod(ConstraintProto* ct, PresolveContext* context) {
   }
 
   // div_expr = expr / mod_expr.
-  const int div_var = context->NewIntVar(
-      context->DomainSuperSetOf(expr).PositiveDivisionBySuperset(
+  const int div_var =
+      context->NewIntVar(context->DomainSuperSetOf(expr).DivisionBySuperset(
           context->DomainSuperSetOf(mod_expr)));
   LinearExpressionProto div_expr;
   div_expr.add_vars(div_var);

@@ -62,5 +62,5 @@ predicate ortools_array_var_set_element(var int: idx,
 predicate array_var_set_element_nonshifted(var int: idx,
                                            array[int] of var set of int: x,
                                            var set of int: c) =
-  ortools_array_var_set_element(idx, index_set(x), array1d(x), c);  
+  ortools_array_var_set_element(idx, index_set(x), array1d(x), c);
 

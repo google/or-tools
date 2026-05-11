@@ -41,11 +41,11 @@ py_test(
     srcs = ["pdlp_test.py"],
     data = [":pdlp.so"],
     deps = [
+        "//ortools/linear_solver:linear_solver_py_pb2",
         "//ortools/pdlp:solve_log_py_pb2",
         "//ortools/pdlp:solvers_py_pb2",
         requirement("absl-py"),
         requirement("numpy"),
         requirement("scipy"),
-        "//ortools/linear_solver:linear_solver_py_pb2",
     ],
 )

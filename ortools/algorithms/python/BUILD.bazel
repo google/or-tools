@@ -22,7 +22,7 @@ package(default_visibility = ["//visibility:public"])
 
 # knapsack_solver
 cc_library(
-    name = "knapsack_solver_doc",
+    name = "knapsack_solver_doc_cc",
     hdrs = ["knapsack_solver_doc.h"],
     visibility = ["//visibility:public"],
 )
@@ -32,7 +32,7 @@ pybind_extension(
     srcs = ["knapsack_solver.cc"],
     visibility = ["//visibility:public"],
     deps = [
-        ":knapsack_solver_doc",
+        ":knapsack_solver_doc_cc",
         "//ortools/algorithms:knapsack_solver",
     ],
 )
