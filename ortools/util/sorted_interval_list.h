@@ -467,13 +467,10 @@ class Domain {
   PositiveModuloBySuperset(const Domain& modulo) const;
 
   /**
-   * Returns a superset of {x ∈ Int64, ∃ e ∈ D, ∃ d ∈ divisor, x = e / d }.
-   *
-   * We check that divisor is strictly positive.
-   * For now we just intersect with the min/max possible value.
+   * Returns a superset of:
+   * {x ∈ Int64, ∃ e ∈ D, ∃ d ∈ divisor \ {0}, x = e / d }.
    */
-  ABSL_MUST_USE_RESULT Domain
-  PositiveDivisionBySuperset(const Domain& divisor) const;
+  ABSL_MUST_USE_RESULT Domain DivisionBySuperset(const Domain& divisor) const;
 
   /**
    * Returns a superset of {x ∈ Int64, ∃ y ∈ D, x = y * y }.

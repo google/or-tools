@@ -50,7 +50,7 @@ cc_library(
     deps = [
         ":dynamic_library",
         "//ortools/base:base_export",
-        "//ortools/base:status_builder",
+        "//ortools/base:status_macros",
         "@abseil-cpp//absl/base",
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/log",

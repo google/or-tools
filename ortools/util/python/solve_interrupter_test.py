@@ -37,6 +37,14 @@ class SolveInterrupterTest(absltest.TestCase):
         self.assertTrue(source.interrupted)
         self.assertTrue(target.interrupted)
 
+    def test_add_target_triggered_interrupter(self) -> None:
+        source = solve_interrupter.SolveInterrupter()
+        target = solve_interrupter.SolveInterrupter()
+        source.interrupt()
+        source.add_trigger_target(target)
+        self.assertTrue(source.interrupted)
+        self.assertTrue(target.interrupted)
+
     def test_remove_existing_target(self) -> None:
         source = solve_interrupter.SolveInterrupter()
         target = solve_interrupter.SolveInterrupter()

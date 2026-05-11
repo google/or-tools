@@ -15,9 +15,7 @@
 
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 
-package(
-    default_visibility = ["//visibility:public"],
-)
+package(default_visibility = ["//visibility:public"])
 
 cc_library(
     name = "model_builder_helper",
@@ -34,8 +32,8 @@ cc_library(
     ],
     deps = [
         "//ortools/base:file",
-        "//ortools/linear_solver",
         "//ortools/linear_solver:gurobi_util",
+        "//ortools/linear_solver:linear_solver_base",
         "//ortools/linear_solver:linear_solver_cc_proto",
         "//ortools/linear_solver:model_exporter",
         "//ortools/linear_solver:solve_mp_model",

@@ -34,7 +34,7 @@ bazel_dep(name = "rules_java", version = "9.5.0")
 bazel_dep(name = "rules_jvm_external", version = "6.10")
 bazel_dep(name = "rules_jni", version = "0.11.1")
 bazel_dep(name = "rules_license", version = "1.0.0")
-bazel_dep(name = "rules_python", version = "1.8.3")
+bazel_dep(name = "rules_python", version = "2.0.0")
 bazel_dep(name = "rules_shell", version = "0.6.1")
 
 # OR-Tools C++ dependencies
@@ -107,8 +107,8 @@ JUNIT_JUPITER_VERSION = "5.9.2"
 maven = use_extension("@rules_jvm_external//:extensions.bzl", "maven")
 maven.install(
     artifacts = [
-        "net.java.dev.jna:jna:5.14.0",
         "com.google.truth:truth:0.32",
+        "net.java.dev.jna:jna:5.14.0",
         "org.junit.platform:junit-platform-launcher:%s" % JUNIT_PLATFORM_VERSION,
         "org.junit.platform:junit-platform-reporting:%s" % JUNIT_PLATFORM_VERSION,
         "org.junit.jupiter:junit-jupiter-api:%s" % JUNIT_JUPITER_VERSION,

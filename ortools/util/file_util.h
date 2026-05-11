@@ -15,15 +15,11 @@
 #define ORTOOLS_UTIL_FILE_UTIL_H_
 
 #include <string>
-#include <vector>
 
 #include "absl/log/check.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "google/protobuf/message.h"
-#include "ortools/base/file.h"
-#include "ortools/base/options.h"
-#include "ortools/base/recordio.h"
 #include "ortools/base/status_macros.h"
 
 namespace operations_research {
@@ -70,80 +66,6 @@ absl::Status WriteProtoToFile(absl::string_view filename,
                               ProtoWriteFormat proto_write_format,
                               bool gzipped = false,
                               bool append_extension_to_file_name = true);
-
-namespace internal {
-// General method to read expected_num_records from a file. If
-// expected_num_records is -1, then reads all records from the file. If not,
-// dies if the file doesn't contain exactly expected_num_records.
-template <typename Proto>
-std::vector<Proto> ReadNumRecords(File* file, int expected_num_records) {
-  recordio::RecordReader reader(file);
-  std::vector<Proto> protos;
-  Proto proto;
-  int num_read = 0;
-  while (num_read != expected_num_records &&
-         reader.ReadProtocolMessage(&proto)) {
-    protos.push_back(proto);
-    ++num_read;
-  }
-
-  CHECK(reader.Close())
-      << "File '" << file->filename()
-      << "'was not fully read, or something went wrong when closing "
-         "it. Is it the right format? (RecordIO of Protocol Buffers).";
-
-  if (expected_num_records >= 0) {
-    CHECK_EQ(num_read, expected_num_records)
-        << "There were less than the expected " << expected_num_records
-        << " in the file.";
-  }
-
-  return protos;
-}
-
-// Ditto, taking a filename as argument.
-template <typename Proto>
-std::vector<Proto> ReadNumRecords(absl::string_view filename,
-                                  int expected_num_records) {
-  return ReadNumRecords<Proto>(file::OpenOrDie(filename, "r", file::Defaults()),
-                               expected_num_records);
-}
-}  // namespace internal
-
-// Reads all records in Proto format in 'file'. Silently does nothing if the
-// file is empty. Dies if the file doesn't exist or contains something else than
-// protos encoded in RecordIO format.
-template <typename Proto>
-std::vector<Proto> ReadAllRecordsOrDie(absl::string_view filename) {
-  return internal::ReadNumRecords<Proto>(filename, -1);
-}
-template <typename Proto>
-std::vector<Proto> ReadAllRecordsOrDie(File* file) {
-  return internal::ReadNumRecords<Proto>(file, -1);
-}
-
-// Reads one record from file, which must be in RecordIO binary proto format.
-// Dies if the file can't be read, doesn't contain exactly one record, or
-// contains something else than the expected proto in RecordIO format.
-template <typename Proto>
-Proto ReadOneRecordOrDie(absl::string_view filename) {
-  Proto p;
-  p.Swap(&internal::ReadNumRecords<Proto>(filename, 1)[0]);
-  return p;
-}
-
-// Writes all records in Proto format to 'file'. Dies if it is unable to open
-// the file or write to it.
-template <typename Proto>
-void WriteRecordsOrDie(absl::string_view filename,
-                       const std::vector<Proto>& protos) {
-  recordio::RecordWriter writer(
-      file::OpenOrDie(filename, "w", file::Defaults()));
-  for (const Proto& proto : protos) {
-    CHECK(writer.WriteProtocolMessage(proto));
-  }
-  CHECK(writer.Close());
-}
 
 }  // namespace operations_research
 

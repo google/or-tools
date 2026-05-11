@@ -17,6 +17,8 @@ load("@rules_python//python:py_binary.bzl", "py_binary")
 load("@rules_python//python:py_library.bzl", "py_library")
 load("@rules_python//python:py_test.bzl", "py_test")
 
+package(default_visibility = ["//visibility:public"])
+
 # Python wrapper for model_builder.
 pybind_extension(
     name = "model_builder_helper",
@@ -53,18 +55,18 @@ py_test(
     ],
     deps = [
         ":model_builder_helper",
+        "//ortools/linear_solver:linear_solver_glop",
+        "//ortools/linear_solver:linear_solver_pdlp",
+        "//ortools/linear_solver:linear_solver_py_pb2",
         requirement("absl-py"),
         requirement("numpy"),
         requirement("scipy"),
-        "//ortools/linear_solver:linear_solver_glop",
-        "//ortools/linear_solver:linear_solver_py_pb2",
     ],
 )
 
 py_library(
     name = "model_builder_numbers",
     srcs = ["model_builder_numbers.py"],
-    visibility = ["//visibility:public"],
     deps = [
         requirement("numpy"),
     ],
@@ -77,13 +79,12 @@ py_library(
         "not_build:arm",
         "not_run:arm",
     ],
-    visibility = ["//visibility:public"],
     deps = [
         ":model_builder_helper",
         ":model_builder_numbers",
+        "//ortools/linear_solver:linear_solver_py_pb2",
         requirement("numpy"),
         requirement("pandas"),
-        "//ortools/linear_solver:linear_solver_py_pb2",
     ],
 )
 
@@ -101,16 +102,14 @@ py_test(
     deps = [
         ":model_builder",
         ":model_builder_helper",
+        "//ortools/linear_solver:linear_solver_glop",
+        "//ortools/linear_solver:linear_solver_py_pb2",
         "@protobuf//:protobuf_python",
         requirement("absl-py"),
         requirement("numpy"),
         requirement("pandas"),
-        "//ortools/linear_solver:linear_solver_glop",
-        "//ortools/linear_solver:linear_solver_py_pb2",
     ],
 )
-
-## Proto solver
 
 py_binary(
     name = "solve_model",
@@ -123,4 +122,10 @@ py_binary(
         ":model_builder",
         requirement("absl-py"),
     ],
+)
+
+py_library(
+    name = "linear_solver_natural_api",
+    srcs = ["linear_solver_natural_api.py"],
+    visibility = ["//visibility:public"],
 )

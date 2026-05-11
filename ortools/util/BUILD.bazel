@@ -219,8 +219,8 @@ cc_library(
     srcs = ["fp_utils.cc"],
     hdrs = ["fp_utils.h"],
     # -frounding-math is needed for code that uses IEEE-754 rounding modes.
-    # You must also set this flag if you depend on this target and use
-    # its methods related to IEEE-754 rounding modes.
+    # You must also set this flag if you depend on this target and use its methods related to
+    # IEEE-754 rounding modes.
     copts = select({
         "@platforms//os:linux": ["-frounding-math"],
         "@platforms//os:macos": ["-frounding-math"],
@@ -275,21 +275,6 @@ cc_library(
         "@abseil-cpp//absl/strings:str_format",
         "@protobuf",
     ],
-)
-
-proto_library(
-    name = "int128_proto",
-    srcs = ["int128.proto"],
-)
-
-cc_proto_library(
-    name = "int128_cc_proto",
-    deps = [":int128_proto"],
-)
-
-py_proto_library(
-    name = "int128_py_pb2",
-    deps = [":int128_proto"],
 )
 
 # helper library for the swig wrappers.
@@ -364,7 +349,6 @@ cc_library(
     deps = [
         "//ortools/base:file",
         "//ortools/base:gzipstring",
-        "//ortools/base:recordio",
         "//ortools/base:status_macros",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
