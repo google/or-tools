@@ -54,6 +54,7 @@ build:macos --cxxopt=-Wno-sign-compare --host_cxxopt=-Wno-sign-compare
 build:macos --cxxopt=-Wno-dangling-field --host_cxxopt=-Wno-dangling-field
 build:macos --cxxopt=-Wno-range-loop-construct --host_cxxopt=-Wno-range-loop-construct
 build:macos --cxxopt=-mmacos-version-min=10.15 --host_cxxopt=-mmacos-version-min=10.15
+build:macos --cxxopt=-Wno-nullability-completeness --host_cxxopt=-Wno-nullability-completeness
 
 ###############################################################################
 # Options for Windows.
