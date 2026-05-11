@@ -15,7 +15,7 @@ syntax = "proto3";
 
 package operations_research;
 
-import "ortools/util/int128.proto";
+import "google/protobuf/duration.proto";
 
 option java_package = "com.google.ortools.algorithms";
 option java_multiple_files = true;
@@ -38,8 +38,8 @@ message SetCoverProto {
   // A user-defined name for the model.
   optional string name = 2;
 
-  // An automatically fingerprint for the model. TODO(user): Implement.
-  optional Int128 fingerprint = 3;
+  // 3 is deleted and reserved.
+  reserved 3;
 }
 
 message SetCoverSolutionResponse {
@@ -78,9 +78,27 @@ message SetCoverSolutionResponse {
   // A lower bound of the solution, as computed by the algorithm.
   optional double cost_lower_bound = 5;
 
-  // An automatically fingerprint for the solution. TODO(user): Implement.
-  optional Int128 fingerprint = 6;
+  // 6 and 7 are deleted and reserved.
+  reserved 6, 7;
 
-  // A reference to the model the solution applies to. TODO(user): Implement.
-  optional Int128 model_fingerprint = 7;
+  // The time used by the solver to compute the best solution.
+  optional google.protobuf.Duration duration_to_best = 8;
+
+  // The time used by the solver to compute the solution.
+  optional google.protobuf.Duration total_duration = 9;
+
+  // The name of the algorithm used to compute the solution.
+  optional string algorithm_name = 10;
+
+  // The name of the problem.
+  optional string problem_name = 11;
+
+  // True if the costs of the subsets are all equal to 1.
+  optional bool is_unicost = 12;
+
+  // Whether the solution is optimal.
+  optional bool is_optimal = 13;
+
+  // The number of subsets in the solution.
+  optional int64 solution_cardinality = 14;
 }

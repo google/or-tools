@@ -14,7 +14,6 @@
 #include "ortools/set_cover/set_cover_heuristics.h"
 
 #include <algorithm>
-#include <climits>
 #include <cstddef>
 #include <cstdint>
 #include <limits>
@@ -22,15 +21,14 @@
 #include <utility>
 #include <vector>
 
-#include "absl/base/casts.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
-#include "absl/numeric/bits.h"
 #include "absl/random/distributions.h"
 #include "absl/random/random.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "ortools/algorithms/adjustable_k_ary_heap.h"
+#include "ortools/algorithms/multikey_radix_sort.h"
 #include "ortools/base/adjustable_priority_queue-inl.h"
 #include "ortools/base/adjustable_priority_queue.h"
 #include "ortools/set_cover/base_types.h"
@@ -289,132 +287,27 @@ class ComputationUsefulnessStats {
 }  // namespace
 
 namespace {
-// Clearly not the fastest radix sort, but its complexity is the right one.
-// Furthermore:
-// - it is as memory-safe as std::vectors can be (no pointers),
-// - no multiplication is performed,
-// - it is stable
-// - it handles the cases of signed and unsigned integers automatically,
-// - bounds on the keys are optional, or they can be computed automatically,
-// - based on those bounds, the number of passes is automatically computed,
-// - a payload is associated to each key, and it is sorted in the same way
-//   as the keys. This payload can be a vector of integers or a vector of
-//   pointers to larger objects.
-// TODO(user): Make it an independent library.
-// - add support for decreasing counting sort,
-// - make payloads optional,
-// - support floats and doubles,
-// - improve performance.
-// - use vectorized code.
-namespace internal {
-template <typename T>
-auto RawBits(T x) {
-  if constexpr (sizeof(T) == sizeof(uint32_t)) {
-    return absl::bit_cast<uint32_t>(x);
-  } else {
-    static_assert(sizeof(T) == sizeof(uint64_t));
-    return absl::bit_cast<uint64_t>(x);
-  }
-}
-
-inline uint32_t Bucket(uint32_t x, uint32_t shift, uint32_t radix) {
-  DCHECK_EQ(0, radix & (radix - 1));  // Must be a power of two.
-  // NOMUTANTS -- a way to compute the remainder of a division when radix is a
-  // power of two.
-  return (x >> shift) & (radix - 1);
-}
-
-template <typename T>
-int NumBitsToRepresent(T value) {
-  DCHECK_LE(absl::countl_zero(RawBits(value)), sizeof(T) * CHAR_BIT);
-  return sizeof(T) * CHAR_BIT - absl::countl_zero(RawBits(value));
-}
-
-template <typename Key, typename Counter>
-void UpdateCounters(uint32_t radix, int shift, std::vector<Key>& keys,
-                    std::vector<Counter>& counts) {
-  std::fill(counts.begin(), counts.end(), 0);
-  DCHECK_EQ(counts[0], 0);
-  DCHECK_EQ(0, radix & (radix - 1));  // Must be a power of two.
-  const auto num_keys = keys.size();
-  for (int64_t i = 0; i < num_keys; ++i) {
-    ++counts[Bucket(keys[i], shift, radix)];
-  }
-  // Now the counts will contain the sum of the sizes below and including each
-  // bucket.
-  for (uint64_t i = 1; i < radix; ++i) {
-    counts[i] += counts[i - 1];
-  }
-}
-
-template <typename Key, typename Payload, typename Counter>
-void IncreasingCountingSort(uint32_t radix, int shift, std::vector<Key>& keys,
-                            std::vector<Payload>& payloads,
-                            std::vector<Key>& scratch_keys,
-                            std::vector<Payload>& scratch_payloads,
-                            std::vector<Counter>& counts) {
-  DCHECK_EQ(0, radix & (radix - 1));  // Must be a power of two.
-  UpdateCounters(radix, shift, keys, counts);
-  const auto num_keys = keys.size();
-  // In this order for stability.
-  for (int64_t i = num_keys - 1; i >= 0; --i) {
-    Counter c = --counts[Bucket(keys[i], shift, radix)];
-    scratch_keys[c] = keys[i];
-    scratch_payloads[c] = payloads[i];
-  }
-  std::swap(keys, scratch_keys);
-  std::swap(payloads, scratch_payloads);
-}
-}  // namespace internal
-
-template <typename Key, typename Payload>
-void RadixSort(int radix_log, std::vector<Key>& keys,
-               std::vector<Payload>& payloads, Key /*min_key*/, Key max_key) {
-  // range_log is the number of bits necessary to represent the max_key
-  // We could as well use max_key - min_key, but it is more expensive to
-  // compute.
-  const int range_log = internal::NumBitsToRepresent(max_key);
-  DCHECK_EQ(internal::NumBitsToRepresent(0), 0);
-  DCHECK_LE(internal::NumBitsToRepresent(std::numeric_limits<Key>::max()),
-            std::numeric_limits<Key>::digits);
-  const int radix = 1 << radix_log;  // By definition.
-  std::vector<uint32_t> counters(radix, 0);
-  std::vector<Key> scratch_keys(keys.size());
-  std::vector<Payload> scratch_payloads(payloads.size());
-  for (int shift = 0; shift < range_log; shift += radix_log) {
-    DCHECK_LE(1 << shift, max_key);
-    internal::IncreasingCountingSort(radix, shift, keys, payloads, scratch_keys,
-                                     scratch_payloads, counters);
-  }
-}
-
 // TODO(user): Move this to SetCoverInvariant.
 
 std::vector<ElementIndex> GetUncoveredElementsSortedByDegree(
     const SetCoverInvariant* const inv) {
   const BaseInt num_elements = inv->model()->num_elements();
-  std::vector<ElementIndex> degree_sorted_elements;  // payloads
-  degree_sorted_elements.reserve(num_elements);
-  std::vector<BaseInt> keys;
-  keys.reserve(num_elements);
+  std::vector<std::pair<BaseInt, ElementIndex>> elements_with_degree;
+  elements_with_degree.reserve(num_elements);
   const SparseRowView& rows = inv->model()->rows();
-  BaseInt max_degree = 0;
   for (const ElementIndex element : inv->model()->ElementRange()) {
     // Already covered elements should not be considered.
     if (inv->coverage()[element] != 0) continue;
-    degree_sorted_elements.push_back(element);
-    const BaseInt size = rows[element].size();
-    max_degree = std::max(max_degree, size);
-    keys.push_back(size);
+    elements_with_degree.push_back({rows[element].size(), element});
   }
-  RadixSort(11, keys, degree_sorted_elements, 1, max_degree);
-#ifndef NDEBUG
-  BaseInt prev_key = -1;
-  for (const auto key : keys) {
-    DCHECK_LE(prev_key, key);
-    prev_key = key;
+  MultikeyRadixSort(
+      elements_with_degree,
+      [](const std::pair<BaseInt, ElementIndex>& p) { return p.first; });
+  std::vector<ElementIndex> degree_sorted_elements;
+  degree_sorted_elements.reserve(elements_with_degree.size());
+  for (const auto& p : elements_with_degree) {
+    degree_sorted_elements.push_back(p.second);
   }
-#endif
   return degree_sorted_elements;
 }
 
@@ -964,6 +857,194 @@ bool GuidedLocalSearch::NextSolution(absl::Span<const SubsetIndex> focus) {
   return true;
 }
 
+std::vector<SubsetIndex> ComputeClique(const SetCoverInvariant& inv,
+                                       SubsetIndex subset, int max_clique_size,
+                                       absl::Duration max_duration) {
+  absl::Duration run_time;
+  StopWatch stop_watch(&run_time);
+  std::vector<SubsetIndex> clique;
+  clique.push_back(subset);
+
+  const SetCoverModel& model = *inv.model();
+  // Initialize candidates with neighbors of 'subset'.
+  std::vector<SubsetIndex> candidates;
+  // Boolean vector to quickly check if a subset is a neighbor of the current
+  // node in the clique.
+  SubsetBoolVector is_neighbor(model.num_subsets(), false);
+  is_neighbor[subset] = true;
+  VLOG(1) << "ComputeClique: " << subset.value();
+  for (const ElementIndex element : model.columns()[subset]) {
+    for (const SubsetIndex neighbor : model.rows()[element]) {
+      if (!is_neighbor[neighbor] && inv.is_selected()[neighbor]) {
+        candidates.push_back(neighbor);
+        is_neighbor[neighbor] = true;
+      }
+    }
+  }
+
+  for (const SubsetIndex candidate : candidates) {
+    is_neighbor[candidate] = false;
+  }
+  is_neighbor[subset] = false;
+
+  // Sort candidates by decreasing size (heuristic to find larger cliques).
+  const SparseColumnView& columns = model.columns();
+  std::sort(candidates.begin(), candidates.end(),
+            [&columns](SubsetIndex a, SubsetIndex b) {
+              return columns[a].size() > columns[b].size();
+            });
+
+  while (!candidates.empty()) {
+    if (clique.size() >= max_clique_size) break;
+    if (stop_watch.GetElapsedDuration() > max_duration) break;
+    // Pick the best candidate.
+    const SubsetIndex best_candidate = candidates.front();
+    clique.push_back(best_candidate);
+
+    // Identify neighbors of best_candidate to filter candidates.
+    // We mark them in 'is_neighbor'.
+    for (const SubsetIndex neighbor :
+         IntersectingSubsetsRange(model, best_candidate)) {
+      is_neighbor[neighbor] = true;
+    }
+
+    // Check that deadline has not been exceeded.
+    if (stop_watch.GetElapsedDuration() > max_duration) break;
+
+    // Filter candidates: keep only those that are neighbors of best_candidate.
+    // We reuse the 'candidates' vector to avoid allocation, but we need a
+    // read/write head.
+    BaseInt write_index = 0;
+    for (const SubsetIndex candidate : candidates) {
+      if (candidate == best_candidate) continue;
+      if (is_neighbor[candidate]) {
+        candidates[write_index] = candidate;
+        ++write_index;
+      }
+    }
+    candidates.resize(write_index);
+
+    if (stop_watch.GetElapsedDuration() > max_duration) break;
+
+    // Reset is_neighbor for the next iteration.
+    for (const SubsetIndex neighbor :
+         IntersectingSubsetsRange(model, best_candidate)) {
+      is_neighbor[neighbor] = false;
+    }
+  }
+
+  return clique;
+}
+
+std::pair<bool, std::vector<double>> GetSubsetWeights(
+    const SetCoverModel& model) {
+  const BaseInt num_subsets = model.num_subsets();
+  const SparseColumnView& columns = model.columns();
+  std::vector<double> weights;
+  weights.reserve(num_subsets);
+
+  bool has_valid_subset = false;
+  for (const SubsetIndex subset : model.SubsetRange()) {
+    const BaseInt size = columns[subset].size();
+    if (size > 2) {
+      const double weight = static_cast<double>(size);
+      weights.push_back(weight);
+      if (weight > 0) has_valid_subset = true;
+    } else {
+      weights.push_back(0.0);
+    }
+  }
+  return {has_valid_subset, weights};
+}
+
+bool CliqueGuidedLNS::NextSolution(absl::Span<const SubsetIndex> focus) {
+  StopWatch stop_watch(&run_time_);
+  DCHECK(inv()->CheckConsistency(CL::kFreeAndUncovered));
+
+  Cost best_cost = inv()->cost();
+  SubsetBoolVector best_choices = inv()->is_selected();
+
+  // Try to use the trace to know which subsets are in the solution.
+  std::vector<SubsetIndex> selected_subsets;
+  selected_subsets.reserve(inv()->trace().size());
+  for (const SetCoverDecision& decision : inv()->trace()) {
+    if (inv()->is_selected()[decision.subset()]) {
+      selected_subsets.push_back(decision.subset());
+    }
+  }
+
+  // If the trace is empty, but the cost is not zero: we have a solution. Use
+  // all selected subsets.
+  if (selected_subsets.empty() && inv()->cost() > 0.0) {
+    for (const SubsetIndex subset : model()->SubsetRange()) {
+      if (inv()->is_selected()[subset]) {
+        selected_subsets.push_back(subset);
+      }
+    }
+  }
+
+  if (selected_subsets.empty()) return false;
+
+  // TODO(user): Use the weights in the clique computation ?
+  // TODO(user): Make it possible to pass code that improves on the solution`
+  // as a parameter.
+  LazyElementDegreeSolutionGenerator lazy_element_degree(inv());
+  LazySteepestSearch lazy_steepest_search(inv());
+
+  const auto [has_valid_subset, weights] = GetSubsetWeights(*model());
+
+  DCHECK(has_valid_subset);
+
+  auto bit_gen = absl::BitGen();
+  absl::uniform_int_distribution<BaseInt> dist(0, selected_subsets.size() - 1);
+  for (int i = 0; i < max_num_cliques_; ++i) {
+    VLOG(1) << "Clique " << i << " cost " << inv()->cost();
+    // Check global time budget.
+    // TODO(user): check whether to do it here or after the clique computation.
+    if (stop_watch.GetElapsedDuration() > time_limit()) {
+      break;
+    }
+
+    SubsetIndex subset;
+    do {
+      subset = SubsetIndex(dist(bit_gen));
+      if (stop_watch.GetElapsedDuration() > time_limit()) {
+        break;
+      }
+    } while (!inv()->is_selected()[subset]);
+
+    if (!inv()->is_selected()[subset]) break;
+
+    std::vector<SubsetIndex> clique = ComputeClique(
+        *inv(), subset, max_clique_size_,
+        std::min(time_limit() - run_time_, absl::Milliseconds(100)));
+    max_clique_size_generated_ =
+        std::max(max_clique_size_generated_, static_cast<int>(clique.size()));
+
+    // Deselect elements of the clique.
+    for (const SubsetIndex subset : clique) {
+      DCHECK(inv()->is_selected()[subset]);
+      inv()->Deselect(subset, CL::kCostAndCoverage);
+    }
+
+    // Call LazyElementDegree.
+    lazy_element_degree.NextSolution();
+    // lazy_steepest_search.NextSolution();
+
+    if (inv()->cost() < best_cost) {
+      best_cost = inv()->cost();
+      best_choices = inv()->is_selected();
+    } else {
+      inv()->LoadSolution(best_choices);
+      inv()->Recompute(CL::kCostAndCoverage);
+    }
+  }
+  inv()->LoadSolution(best_choices);
+  inv()->Recompute(CL::kCostAndCoverage);
+  DCHECK(inv()->CheckConsistency(CL::kCostAndCoverage));
+  return true;
+}
+
 namespace {
 void SampleSubsets(std::vector<SubsetIndex>* list, BaseInt num_subsets) {
   num_subsets = std::min<BaseInt>(num_subsets, list->size());
@@ -1126,21 +1207,25 @@ Cost ComputeDualAscentLB(const SetCoverInvariant& inv, int num_random_passes) {
 Cost ComputeDegreeBasedDualAscentLB(const SetCoverInvariant& inv,
                                     int num_random_passes) {
   const BaseInt num_elements = inv.model()->num_elements();
-  std::vector<ElementIndex> permutation;
-  permutation.reserve(num_elements);
-  std::vector<BaseInt> degrees;
-  degrees.reserve(num_elements);
+  std::vector<std::pair<BaseInt, ElementIndex>> elements_with_degree;
+  elements_with_degree.reserve(num_elements);
   const SparseRowView& rows = inv.model()->rows();
   // Sort the elements according by increasing degree.
-  // We use radix sort, which requires an auxiliary array (degrees).
-  BaseInt max_degree = 0;
   for (const ElementIndex element : inv.model()->ElementRange()) {
-    permutation.push_back(element);
-    const BaseInt size = rows[element].size();
-    max_degree = std::max(max_degree, size);
-    degrees.push_back(size);
+    elements_with_degree.push_back({rows[element].size(), element});
   }
-  RadixSort(11, degrees, permutation, 1, max_degree);
+  MultikeyRadixSort(
+      11, elements_with_degree,
+      [](const std::pair<BaseInt, ElementIndex>& p) { return p.first; });
+  // TODO(user): remove the need for this copy and a permutation vector.
+  std::vector<ElementIndex> permutation;
+  permutation.reserve(elements_with_degree.size());
+  std::vector<BaseInt> degrees;
+  degrees.reserve(elements_with_degree.size());
+  for (const auto& p : elements_with_degree) {
+    degrees.push_back(p.first);
+    permutation.push_back(p.second);
+  }
 
   Cost max_lower_bound = PerformDualAscent(inv, permutation).first;
   if (num_random_passes == 0) {

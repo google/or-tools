@@ -147,6 +147,15 @@ SubsetBoolVector ReadSetCoverSolutionText(absl::string_view filename);
 SubsetBoolVector ReadSetCoverSolutionProto(absl::string_view filename,
                                            bool binary);
 
+// Reads a solution in the following format (space-separated):
+// cost(as a double) subset_index subset_index subset_index ...
+// The subset_indexes are not sorted, and it is not said how many there are of
+// them. The function takes a size as a parameter, and returns a vector of that
+// size (if there are subset_indexes out of range, this is an error).
+// If the file does not exist, returns a vector of false values.
+SubsetBoolVector ReadSetCoverSolutionDat(absl::string_view filename,
+                                         BaseInt num_subsets);
+
 // Writes a set cover solution to a text file.
 // The format of the file is:
 // number of columns (n)

@@ -16,7 +16,7 @@
 
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/linear_solver/linear_solver.h"
+#include "ortools/math_opt/cpp/math_opt.h"
 #include "ortools/set_cover/base_types.h"
 #include "ortools/set_cover/set_cover_heuristics.h"
 #include "ortools/set_cover/set_cover_invariant.h"
@@ -56,7 +56,7 @@ class SetCoverMip : public SubsetListBasedSolutionGenerator {
     return *this;
   }
 
-  MPSolver::ResultStatus solve_status() const { return solve_status_; }
+  math_opt::TerminationReason solve_status() const { return solve_status_; }
 
   using SubsetListBasedSolutionGenerator::NextSolution;
 
@@ -76,7 +76,7 @@ class SetCoverMip : public SubsetListBasedSolutionGenerator {
   bool use_integers_;
 
   // The status of the last solve.
-  MPSolver::ResultStatus solve_status_;
+  math_opt::TerminationReason solve_status_;
 
   // The solution of the MIP solver, corresponding to the weights of each subset
   // in the solution. The weights can be fractional and are in [0, 1].

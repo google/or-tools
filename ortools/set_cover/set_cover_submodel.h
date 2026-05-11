@@ -27,8 +27,8 @@ namespace operations_research {
 
 // Forward declarations, see below for the definition of the classes.
 struct PrimalDualState;
-struct Solution;
-struct DualState;
+class Solution;
+class DualState;
 
 // The CFT algorithm generates sub-models in two distinct ways:
 //
