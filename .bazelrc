@@ -63,6 +63,8 @@ build:macos --cxxopt=-Wno-nullability-completeness --host_cxxopt=-Wno-nullabilit
 build:windows --cxxopt=/std:c++20 --host_cxxopt=/std:c++20
 # Enable preprocessor conformance mode needed to correctly support __VA_OPT__
 build:windows --cxxopt=/Zc:preprocessor --host_cxxopt=/Zc:preprocessor
+# Disable "Command line warning D9025 : overriding '/Od' with '/O1'""
+build:windows --cxxopt=/wd9025 --host_cxxopt=/wd9025
 
 # Enable the runfiles symlink tree on Windows. This makes it possible to build
 # the pip package on Windows without an intermediate data-file archive, as the
