@@ -38,7 +38,7 @@ build --enable_platform_specific_config
 # Options for Linux.
 ###############################################################################
 
-build:linux --cxxopt=-std=c++20 --host_cxxopt=-std=c++20
+build:linux --per_file_copt=^//or-tools/.*\.cc$@-std=c++20
 build:linux --cxxopt=-Wno-sign-compare --host_cxxopt=-Wno-sign-compare
 build:linux --cxxopt=-Wno-range-loop-construct --host_cxxopt=-Wno-range-loop-construct
 
@@ -49,7 +49,7 @@ build:linux --cxxopt=-Wno-range-loop-construct --host_cxxopt=-Wno-range-loop-con
 # Sets the default Apple platform to macOS.
 build --apple_platform_type=macos
 build:macos --features=-supports_dynamic_linker
-build:macos --cxxopt=-std=c++20 --host_cxxopt=-std=c++20
+build:macos --per_file_copt=^//or-tools/.*\.cc$@-std=c++20
 build:macos --cxxopt=-Wno-sign-compare --host_cxxopt=-Wno-sign-compare
 build:macos --cxxopt=-Wno-dangling-field --host_cxxopt=-Wno-dangling-field
 build:macos --cxxopt=-Wno-range-loop-construct --host_cxxopt=-Wno-range-loop-construct
@@ -60,7 +60,7 @@ build:macos --cxxopt=-Wno-nullability-completeness --host_cxxopt=-Wno-nullabilit
 # Options for Windows.
 ###############################################################################
 
-build:windows --cxxopt=/std:c++20 --host_cxxopt=/std:c++20
+build:windows --per_file_copt=^//or-tools/.*\.cc$@/std:c++20
 # Enable preprocessor conformance mode needed to correctly support __VA_OPT__
 build:windows --cxxopt=/Zc:preprocessor --host_cxxopt=/Zc:preprocessor
 
