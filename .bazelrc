@@ -90,8 +90,11 @@ build:ci --test_tag_filters=-noci
 # Print information only about tests executed
 build:ci --test_summary=short
 
-# Use GCS Bucket as a remote cache by default.
-build:ci --remote_cache=https://storage.googleapis.com/or-tools-github-remote-caching --google_default_credentials
+###############################################################################
+# Options for remote caching through GCS Bucket.
+###############################################################################
+build:remote_cache --google_default_credentials
+build:remote_cache --remote_cache=https://storage.googleapis.com/or-tools-github-remote-caching
 
 ###############################################################################
 # Options for asan.
