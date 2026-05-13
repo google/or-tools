@@ -191,6 +191,8 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
       "${PROJECT_SOURCE_DIR}/javascript/generated_proto_schemas.h.in"
       "${PROJECT_SOURCE_DIR}/ortools/sat/cp_model.proto"
       "${PROJECT_SOURCE_DIR}/ortools/sat/sat_parameters.proto")
+  add_custom_target(generate_proto_schemas
+    DEPENDS "${PROTO_SCHEMA_HEADER}")
 
   set(JS_OUTPUT_DIR "${PROJECT_BINARY_DIR}/javascript/wasm")
   set(JS_EXAMPLES_DIR "${JS_OUTPUT_DIR}/examples")
@@ -231,6 +233,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
 
   add_executable(cp_sat_runtime
     ${CP_SAT_COMMON_SOURCES})
+  add_dependencies(cp_sat_runtime generate_proto_schemas)
   target_link_libraries(cp_sat_runtime PRIVATE ${PROJECT_NAMESPACE}::ortools)
   target_include_directories(cp_sat_runtime PRIVATE "${PROJECT_BINARY_DIR}/javascript")
   target_compile_definitions(cp_sat_runtime PRIVATE
@@ -246,6 +249,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
 
   add_executable(cp_sat_runtime_asyncify
     ${CP_SAT_COMMON_SOURCES})
+  add_dependencies(cp_sat_runtime_asyncify generate_proto_schemas)
   target_link_libraries(cp_sat_runtime_asyncify PRIVATE ${PROJECT_NAMESPACE}::ortools)
   target_include_directories(cp_sat_runtime_asyncify PRIVATE "${PROJECT_BINARY_DIR}/javascript")
   target_compile_definitions(cp_sat_runtime_asyncify PRIVATE
