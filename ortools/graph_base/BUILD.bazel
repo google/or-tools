@@ -202,7 +202,6 @@ cc_library(
     deps = [
         ":graph",
         ":iterators",
-        "//ortools/base:stl_util",
         "//ortools/base:unique_array",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/types:span",

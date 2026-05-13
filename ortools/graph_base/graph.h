@@ -336,19 +336,18 @@ class BaseGraph  //
   typedef ArcIndexType ArcIndex;
   static constexpr bool kHasNegativeReverseArcs = HasNegativeReverseArcs;
 
-  BaseGraph()
-      : num_nodes_(0),
-        node_capacity_(0),
-        num_arcs_(0),
-        arc_capacity_(0),
-        const_capacities_(false) {}
+  BaseGraph() = default;
   BaseGraph(const BaseGraph&) = default;
   BaseGraph& operator=(const BaseGraph&) = default;
+  BaseGraph(BaseGraph&&) = default;
+  BaseGraph& operator=(BaseGraph&&) = default;
 
   virtual ~BaseGraph() = default;
 
   // Returns the number of valid nodes in the graph.
-  NodeIndexType num_nodes() const { return num_nodes_; }
+  NodeIndexType num_nodes() const {
+    return static_cast<const Impl*>(this)->num_nodes();
+  }
 
   [[deprecated("Use num_nodes() instead")]] ABSL_REFACTOR_INLINE NodeIndexType
   size() const {
@@ -356,7 +355,21 @@ class BaseGraph  //
   }
 
   // Returns the number of valid arcs in the graph.
-  ArcIndexType num_arcs() const { return num_arcs_; }
+  ArcIndexType num_arcs() const {
+    return static_cast<const Impl*>(this)->num_arcs();
+  }
+
+  // Returns the node capacity of the graph.
+  NodeIndexType node_capacity() const {
+    // By default (immutable graphs) this is the number of nodes in the graph.
+    return num_nodes();
+  }
+
+  // Returns the arc capacity of the graph.
+  ArcIndexType arc_capacity() const {
+    // By default (immutable graphs) this is the number of arcs in the graph.
+    return num_arcs();
+  }
 
   // Allows nice range-based for loop:
   //   for (const NodeIndex node : graph.AllNodes()) { ... }
@@ -366,15 +379,51 @@ class BaseGraph  //
 
   // Returns true if the given node is a valid node of the graph.
   bool IsNodeValid(NodeIndexType node) const {
-    return node >= NodeIndexType(0) && node < num_nodes_;
+    return node >= NodeIndexType(0) && node < num_nodes();
   }
 
   // Returns true if the given arc is a valid arc of the graph.
   // Note that the arc validity range changes for graph with reverse arcs.
   bool IsArcValid(ArcIndexType arc) const {
-    return (HasNegativeReverseArcs ? -num_arcs_ : ArcIndexType(0)) <= arc &&
-           arc < num_arcs_;
+    return (HasNegativeReverseArcs ? -num_arcs() : ArcIndexType(0)) <= arc &&
+           arc < num_arcs();
   }
+
+  // Constants that will never be a valid node or arc.
+  // They are the maximum possible node and arc capacity.
+  static_assert(std::numeric_limits<NodeIndexType>::is_specialized);
+  static constexpr NodeIndexType kNilNode =
+      std::numeric_limits<NodeIndexType>::max();
+  static_assert(std::numeric_limits<ArcIndexType>::is_specialized);
+  static constexpr ArcIndexType kNilArc =
+      std::numeric_limits<ArcIndexType>::max();
+
+ protected:
+  // Functions commented when defined because they are implementation details.
+  void ComputeCumulativeSum(internal::Vector<NodeIndexType, ArcIndexType>* v);
+  void BuildStartAndForwardHead(
+      internal::SVector<ArcIndexType, NodeIndexType>* head,
+      internal::Vector<NodeIndexType, ArcIndexType>* start,
+      std::vector<ArcIndexType>* permutation);
+};
+
+template <typename Impl, typename NodeIndexType = int32_t,
+          typename ArcIndexType = int32_t, bool HasNegativeReverseArcs = false>
+class MutableGraph : public BaseGraph<Impl, NodeIndexType, ArcIndexType,
+                                      HasNegativeReverseArcs> {
+ public:
+  MutableGraph()
+      : num_nodes_(0),
+        node_capacity_(0),
+        num_arcs_(0),
+        arc_capacity_(0),
+        const_capacities_(false) {}
+  MutableGraph(const MutableGraph&) = default;
+  MutableGraph& operator=(const MutableGraph&) = default;
+
+  NodeIndexType num_nodes() const { return num_nodes_; }
+
+  ArcIndexType num_arcs() const { return num_arcs_; }
 
   // Capacity reserved for future nodes, always >= num_nodes_.
   NodeIndexType node_capacity() const;
@@ -409,15 +458,6 @@ class BaseGraph  //
   // crash in DEBUG mode.
   void FreezeCapacities();
 
-  // Constants that will never be a valid node or arc.
-  // They are the maximum possible node and arc capacity.
-  static_assert(std::numeric_limits<NodeIndexType>::is_specialized);
-  static constexpr NodeIndexType kNilNode =
-      std::numeric_limits<NodeIndexType>::max();
-  static_assert(std::numeric_limits<ArcIndexType>::is_specialized);
-  static constexpr ArcIndexType kNilArc =
-      std::numeric_limits<ArcIndexType>::max();
-
   // Some graph implementations need to be finalized with Build() before they
   // can be used. Build() may change the arc indices (which had been the
   // return values of previous AddArc() calls): the new index of former arc #i
@@ -434,13 +474,6 @@ class BaseGraph  //
   virtual bool IsBuilt() const { return true; }
 
  protected:
-  // Functions commented when defined because they are implementation details.
-  void ComputeCumulativeSum(internal::Vector<NodeIndexType, ArcIndexType>* v);
-  void BuildStartAndForwardHead(
-      internal::SVector<ArcIndexType, NodeIndexType>* head,
-      internal::Vector<NodeIndexType, ArcIndexType>* start,
-      std::vector<ArcIndexType>* permutation);
-
   NodeIndexType num_nodes_;
   NodeIndexType node_capacity_;
   ArcIndexType num_arcs_;
@@ -802,10 +835,10 @@ struct GraphTraits {
 // result in the same order).
 //
 template <typename NodeIndexType = int32_t, typename ArcIndexType = int32_t>
-class ListGraph : public BaseGraph<ListGraph<NodeIndexType, ArcIndexType>,
-                                   NodeIndexType, ArcIndexType, false> {
-  typedef BaseGraph<ListGraph<NodeIndexType, ArcIndexType>, NodeIndexType,
-                    ArcIndexType, false>
+class ListGraph : public MutableGraph<ListGraph<NodeIndexType, ArcIndexType>,
+                                      NodeIndexType, ArcIndexType, false> {
+  typedef MutableGraph<ListGraph<NodeIndexType, ArcIndexType>, NodeIndexType,
+                       ArcIndexType, false>
       Base;
   using Base::arc_capacity_;
   using Base::const_capacities_;
@@ -912,10 +945,11 @@ class ListGraph : public BaseGraph<ListGraph<NodeIndexType, ArcIndexType>,
 // StaticGraphWithoutTail<>. This almost corresponds to a past implementation
 // of StaticGraph<> @CL 116144340.
 template <typename NodeIndexType = int32_t, typename ArcIndexType = int32_t>
-class StaticGraph : public BaseGraph<StaticGraph<NodeIndexType, ArcIndexType>,
-                                     NodeIndexType, ArcIndexType, false> {
-  typedef BaseGraph<StaticGraph<NodeIndexType, ArcIndexType>, NodeIndexType,
-                    ArcIndexType, false>
+class StaticGraph
+    : public MutableGraph<StaticGraph<NodeIndexType, ArcIndexType>,
+                          NodeIndexType, ArcIndexType, false> {
+  typedef MutableGraph<StaticGraph<NodeIndexType, ArcIndexType>, NodeIndexType,
+                       ArcIndexType, false>
       Base;
   using Base::arc_capacity_;
   using Base::const_capacities_;
@@ -1000,13 +1034,13 @@ class StaticGraph : public BaseGraph<StaticGraph<NodeIndexType, ArcIndexType>,
 //   + 2 * (ArcIndexType + NodeIndexType) * arc_capacity() memory.
 template <typename NodeIndexType = int32_t, typename ArcIndexType = int32_t>
 class ReverseArcListGraph
-    : public BaseGraph<ReverseArcListGraph<NodeIndexType, ArcIndexType>,
-                       NodeIndexType, ArcIndexType, true> {
+    : public MutableGraph<ReverseArcListGraph<NodeIndexType, ArcIndexType>,
+                          NodeIndexType, ArcIndexType, true> {
   static_assert(internal::IsSigned<ArcIndexType>(),
                 "ArcIndexType must be signed");
 
-  typedef BaseGraph<ReverseArcListGraph<NodeIndexType, ArcIndexType>,
-                    NodeIndexType, ArcIndexType, true>
+  typedef MutableGraph<ReverseArcListGraph<NodeIndexType, ArcIndexType>,
+                       NodeIndexType, ArcIndexType, true>
       Base;
   using Base::arc_capacity_;
   using Base::const_capacities_;
@@ -1139,13 +1173,13 @@ class ReverseArcListGraph
 //   time lookup function).
 template <typename NodeIndexType = int32_t, typename ArcIndexType = int32_t>
 class ReverseArcStaticGraph
-    : public BaseGraph<ReverseArcStaticGraph<NodeIndexType, ArcIndexType>,
-                       NodeIndexType, ArcIndexType, true> {
+    : public MutableGraph<ReverseArcStaticGraph<NodeIndexType, ArcIndexType>,
+                          NodeIndexType, ArcIndexType, true> {
   static_assert(internal::IsSigned<ArcIndexType>(),
                 "ArcIndexType must be signed");
 
-  typedef BaseGraph<ReverseArcStaticGraph<NodeIndexType, ArcIndexType>,
-                    NodeIndexType, ArcIndexType, true>
+  typedef MutableGraph<ReverseArcStaticGraph<NodeIndexType, ArcIndexType>,
+                       NodeIndexType, ArcIndexType, true>
       Base;
   using Base::arc_capacity_;
   using Base::const_capacities_;
@@ -1318,7 +1352,7 @@ template <typename Impl, typename NodeIndexType, typename ArcIndexType,
 IntegerRange<NodeIndexType>
 BaseGraph<Impl, NodeIndexType, ArcIndexType, HasNegativeReverseArcs>::AllNodes()
     const {
-  return IntegerRange<NodeIndexType>(NodeIndexType(0), num_nodes_);
+  return IntegerRange<NodeIndexType>(NodeIndexType(0), num_nodes());
 }
 
 template <typename Impl, typename NodeIndexType, typename ArcIndexType,
@@ -1326,13 +1360,13 @@ template <typename Impl, typename NodeIndexType, typename ArcIndexType,
 IntegerRange<ArcIndexType> BaseGraph<Impl, NodeIndexType, ArcIndexType,
                                      HasNegativeReverseArcs>::AllForwardArcs()
     const {
-  return IntegerRange<ArcIndexType>(ArcIndexType(0), num_arcs_);
+  return IntegerRange<ArcIndexType>(ArcIndexType(0), num_arcs());
 }
 
 template <typename Impl, typename NodeIndexType, typename ArcIndexType,
           bool HasNegativeReverseArcs>
-NodeIndexType BaseGraph<Impl, NodeIndexType, ArcIndexType,
-                        HasNegativeReverseArcs>::node_capacity() const {
+NodeIndexType MutableGraph<Impl, NodeIndexType, ArcIndexType,
+                           HasNegativeReverseArcs>::node_capacity() const {
   // TODO(user): Is it needed? remove completely? return the real capacities
   // at the cost of having a different implementation for each graphs?
   return node_capacity_ > num_nodes_ ? node_capacity_ : num_nodes_;
@@ -1340,16 +1374,16 @@ NodeIndexType BaseGraph<Impl, NodeIndexType, ArcIndexType,
 
 template <typename Impl, typename NodeIndexType, typename ArcIndexType,
           bool HasNegativeReverseArcs>
-ArcIndexType BaseGraph<Impl, NodeIndexType, ArcIndexType,
-                       HasNegativeReverseArcs>::arc_capacity() const {
+ArcIndexType MutableGraph<Impl, NodeIndexType, ArcIndexType,
+                          HasNegativeReverseArcs>::arc_capacity() const {
   // TODO(user): Same questions as the ones in node_capacity().
   return arc_capacity_ > num_arcs_ ? arc_capacity_ : num_arcs_;
 }
 
 template <typename Impl, typename NodeIndexType, typename ArcIndexType,
           bool HasNegativeReverseArcs>
-void BaseGraph<Impl, NodeIndexType, ArcIndexType,
-               HasNegativeReverseArcs>::FreezeCapacities() {
+void MutableGraph<Impl, NodeIndexType, ArcIndexType,
+                  HasNegativeReverseArcs>::FreezeCapacities() {
   // TODO(user): Only define this in debug mode at the cost of having a lot
   // of ifndef NDEBUG all over the place? remove the function completely ?
   const_capacities_ = true;
@@ -1363,15 +1397,16 @@ template <typename Impl, typename NodeIndexType, typename ArcIndexType,
           bool HasNegativeReverseArcs>
 void BaseGraph<Impl, NodeIndexType, ArcIndexType, HasNegativeReverseArcs>::
     ComputeCumulativeSum(internal::Vector<NodeIndexType, ArcIndexType>* v) {
-  DCHECK_EQ(v->size(), num_nodes_ + NodeIndexType(1));
+  const auto num_nodes = this->num_nodes();
+  DCHECK_EQ(v->size(), num_nodes + NodeIndexType(1));
   ArcIndexType sum(0);
-  for (NodeIndexType i(0); i < num_nodes_; ++i) {
+  for (NodeIndexType i(0); i < num_nodes; ++i) {
     ArcIndexType temp = (*v)[i];
     (*v)[i] = sum;
     sum += temp;
   }
-  DCHECK_EQ(sum, num_arcs_);
-  (*v)[num_nodes_] = sum;  // Sentinel.
+  DCHECK_EQ(sum, num_arcs());
+  (*v)[num_nodes] = sum;  // Sentinel.
 }
 
 // Given the tail of arc #i in (*head)[i] and the head of arc #i in (*head)[~i]
@@ -1389,10 +1424,12 @@ void BaseGraph<Impl, NodeIndexType, ArcIndexType, HasNegativeReverseArcs>::
   // Computes the outgoing degree of each nodes and check if we need to permute
   // something or not. Note that the tails are currently stored in the positive
   // range of the SVector head.
-  start->assign(num_nodes_ + NodeIndexType(1), ArcIndexType(0));
+  const auto num_nodes = this->num_nodes();
+  const auto num_arcs = this->num_arcs();
+  start->assign(num_nodes + NodeIndexType(1), ArcIndexType(0));
   NodeIndexType last_tail_seen(0);
   bool permutation_needed = false;
-  for (ArcIndexType i(0); i < num_arcs_; ++i) {
+  for (ArcIndexType i(0); i < num_arcs; ++i) {
     NodeIndexType tail = (*head)[i];
     if (!permutation_needed) {
       permutation_needed = tail < last_tail_seen;
@@ -1405,7 +1442,7 @@ void BaseGraph<Impl, NodeIndexType, ArcIndexType, HasNegativeReverseArcs>::
   // Abort early if we do not need the permutation: we only need to put the
   // heads in the positive range.
   if (!permutation_needed) {
-    for (ArcIndexType i(0); i < num_arcs_; ++i) {
+    for (ArcIndexType i(0); i < num_arcs; ++i) {
       (*head)[i] = (*head)[~i];
     }
     if (permutation != nullptr) {
@@ -1416,14 +1453,14 @@ void BaseGraph<Impl, NodeIndexType, ArcIndexType, HasNegativeReverseArcs>::
 
   // Computes the forward arc permutation.
   // Note that this temporarily alters the start vector.
-  std::vector<ArcIndexType> perm(static_cast<size_t>(num_arcs_));
-  for (ArcIndexType i(0); i < num_arcs_; ++i) {
+  std::vector<ArcIndexType> perm(static_cast<size_t>(num_arcs));
+  for (ArcIndexType i(0); i < num_arcs; ++i) {
     perm[static_cast<size_t>(i)] = (*start)[(*head)[i]]++;
   }
 
   // Restore in (*start)[i] the index of the first arc with tail >= i.
-  DCHECK_GE(num_nodes_, NodeIndexType(1));
-  for (NodeIndexType i = num_nodes_ - NodeIndexType(1); i > NodeIndexType(0);
+  DCHECK_GE(num_nodes, NodeIndexType(1));
+  for (NodeIndexType i = num_nodes - NodeIndexType(1); i > NodeIndexType(0);
        --i) {
     (*start)[i] = (*start)[i - NodeIndexType(1)];
   }
@@ -1431,7 +1468,7 @@ void BaseGraph<Impl, NodeIndexType, ArcIndexType, HasNegativeReverseArcs>::
 
   // Permutes the head into their final position in head.
   // We do not need the tails anymore at this point.
-  for (ArcIndexType i(0); i < num_arcs_; ++i) {
+  for (ArcIndexType i(0); i < num_arcs; ++i) {
     (*head)[perm[static_cast<size_t>(i)]] = (*head)[~i];
   }
   if (permutation != nullptr) {
@@ -2028,26 +2065,16 @@ template <typename NodeIndexType = int32_t, typename ArcIndexType = int32_t>
 class CompleteGraph
     : public BaseGraph<CompleteGraph<NodeIndexType, ArcIndexType>,
                        NodeIndexType, ArcIndexType, false> {
-  typedef BaseGraph<CompleteGraph<NodeIndexType, ArcIndexType>, NodeIndexType,
-                    ArcIndexType, false>
-      Base;
-  using Base::arc_capacity_;
-  using Base::const_capacities_;
-  using Base::node_capacity_;
-  using Base::num_arcs_;
-  using Base::num_nodes_;
-
  public:
   // Builds a complete graph with num_nodes nodes.
   explicit CompleteGraph(NodeIndexType num_nodes)
-      :  // If there are 0 or 1 nodes, the divisor is arbitrary. We pick 2 as 0
-         // and 1 are not supported by `ConstantDivisor`.
-        divisor_(num_nodes > 1 ? num_nodes : 2) {
-    this->Reserve(num_nodes, num_nodes * num_nodes);
-    this->FreezeCapacities();
-    num_nodes_ = num_nodes;
-    num_arcs_ = num_nodes * num_nodes;
-  }
+      : num_nodes_(num_nodes),
+        // If there are 0 or 1 nodes, the divisor is arbitrary. We pick 2 as 0
+        // and 1 are not supported by `ConstantDivisor`.
+        divisor_(num_nodes > 1 ? num_nodes : 2) {}
+
+  NodeIndexType num_nodes() const { return num_nodes_; }
+  NodeIndexType num_arcs() const { return num_nodes_ * num_nodes_; }
 
   NodeIndexType Head(ArcIndexType arc) const;
   NodeIndexType Tail(ArcIndexType arc) const;
@@ -2057,6 +2084,7 @@ class CompleteGraph
                                                       ArcIndexType from) const;
   IntegerRange<NodeIndexType> operator[](NodeIndexType node) const;
 
+  const NodeIndexType num_nodes_;
   const ::util::math::ConstantDivisor<std::make_unsigned_t<ArcIndexType>>
       divisor_;
 };
@@ -2115,15 +2143,6 @@ template <typename NodeIndexType = int32_t, typename ArcIndexType = int32_t>
 class CompleteBipartiteGraph
     : public BaseGraph<CompleteBipartiteGraph<NodeIndexType, ArcIndexType>,
                        NodeIndexType, ArcIndexType, false> {
-  typedef BaseGraph<CompleteBipartiteGraph<NodeIndexType, ArcIndexType>,
-                    NodeIndexType, ArcIndexType, false>
-      Base;
-  using Base::arc_capacity_;
-  using Base::const_capacities_;
-  using Base::node_capacity_;
-  using Base::num_arcs_;
-  using Base::num_nodes_;
-
  public:
   // Builds a complete bipartite graph from a set of left nodes to a set of
   // right nodes.
@@ -2135,12 +2154,10 @@ class CompleteBipartiteGraph
         // If there are no right nodes, the divisor is arbitrary. We pick 2 as
         // 0 and 1 are not supported by `ConstantDivisor`. We handle the case
         // where `right_nodes` is 1 explicitly when dividing.
-        divisor_(right_nodes > 1 ? right_nodes : 2) {
-    this->Reserve(left_nodes + right_nodes, left_nodes * right_nodes);
-    this->FreezeCapacities();
-    num_nodes_ = left_nodes + right_nodes;
-    num_arcs_ = left_nodes * right_nodes;
-  }
+        divisor_(right_nodes > 1 ? right_nodes : 2) {}
+
+  NodeIndexType num_nodes() const { return left_nodes_ + right_nodes_; }
+  NodeIndexType num_arcs() const { return left_nodes_ * right_nodes_; }
 
   // Returns the arc index for the arc from `left` to `right`, where `left` is
   // in `[0, left_nodes)` and `right` is in
@@ -2168,7 +2185,7 @@ ArcIndexType CompleteBipartiteGraph<NodeIndexType, ArcIndexType>::GetArc(
     NodeIndexType left_node, NodeIndexType right_node) const {
   DCHECK_LT(left_node, left_nodes_);
   DCHECK_GE(right_node, left_nodes_);
-  DCHECK_LT(right_node, num_nodes_);
+  DCHECK_LT(right_node, num_nodes());
   return left_node * static_cast<ArcIndexType>(right_nodes_) +
          (right_node - left_nodes_);
 }
@@ -2231,8 +2248,8 @@ CompleteBipartiteGraph<NodeIndexType, ArcIndexType>::operator[](
   }
 }
 
-// Defining the simplest Graph interface as Graph for convenience.
-typedef ListGraph<> Graph;
+[[deprecated(
+    "Use ListGraph<> instead")]] ABSL_REFACTOR_INLINE typedef ListGraph<> Graph;
 
 // Creates a graph from a container of arcs.
 template <typename GraphT,

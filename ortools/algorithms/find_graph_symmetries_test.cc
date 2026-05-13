@@ -712,8 +712,8 @@ std::unique_ptr<Graph> MakeGraphFromEdges(
 }
 
 TEST(CountTrianglesTest, EmptyGraph) {
-  EXPECT_THAT(CountTriangles(Graph(0, 0), /*max_degree=*/0), IsEmpty());
-  EXPECT_THAT(CountTriangles(Graph(0, 0), /*max_degree=*/9999), IsEmpty());
+  EXPECT_THAT(CountTriangles(Graph(), /*max_degree=*/0), IsEmpty());
+  EXPECT_THAT(CountTriangles(Graph(), /*max_degree=*/9999), IsEmpty());
 }
 
 TEST(CountTrianglesTest, SimpleUndirectedExample) {
