@@ -556,8 +556,14 @@ bool Relocate<ignore_path_vars>::MakeNeighbor() {
   const int64_t destination = this->BaseNode(1);
   std::optional<int64_t> chain_end =
       this->GetChainEnd(before_chain, destination, chain_length_);
-  return chain_end.has_value() &&
-         this->MoveChain(before_chain, *chain_end, destination);
+  if (!chain_end.has_value()) return false;
+  const auto [has_change, is_feasible] = this->MoveChainWithCheck(
+      before_chain, *chain_end, destination, /*check_path_compatibility=*/true);
+  if (!is_feasible) {
+    this->SetNextBaseToIncrement(0);
+    return false;
+  }
+  return has_change;
 }
 
 template <bool ignore_path_vars>
@@ -594,7 +600,10 @@ bool RelocateWithNeighbors<ignore_path_vars>::MakeNeighbor() {
     std::optional<int64_t> chain_end =
         this->GetChainEnd(before_chain, destination, this->chain_length_);
     if (!chain_end.has_value()) return false;
-    return this->MoveChain(before_chain, *chain_end, destination);
+    const auto [has_change, is_feasible] =
+        this->MoveChainWithCheck(before_chain, *chain_end, destination,
+                                 /*check_path_compatibility=*/true);
+    return has_change && is_feasible;
   };
   const int64_t node0 = this->BaseNode(0);
   const auto [neighbor, outgoing] = this->GetNeighborForBaseNode(0);
@@ -663,14 +672,23 @@ bool Exchange<ignore_path_vars>::MakeNeighbor() {
     if (neighbor < 0 || this->IsInactive(neighbor)) return false;
     if (outgoing) {
       // Exchange node0's next with 'neighbor'.
-      return this->SwapNodes(this->Next(node0), neighbor);
+      const auto [has_change, is_feasible] =
+          this->SwapNodesWithCheck(this->Next(node0), neighbor,
+                                   /*check_path_compatibility=*/true);
+      return has_change && is_feasible;
     }
     DCHECK(!this->IsPathStart(node0))
         << "Path starts have no incoming neighbors.";
     // Exchange node0's prev with 'neighbor'.
-    return this->SwapNodes(this->Prev(node0), neighbor);
+    const auto [has_change, is_feasible] =
+        this->SwapNodesWithCheck(this->Prev(node0), neighbor,
+                                 /*check_path_compatibility=*/true);
+    return has_change && is_feasible;
   }
-  return this->SwapNodes(this->Next(node0), this->Next(this->BaseNode(1)));
+  const auto [has_change, is_feasible] =
+      this->SwapNodesWithCheck(this->Next(node0), this->Next(this->BaseNode(1)),
+                               /*check_path_compatibility=*/true);
+  return has_change && is_feasible;
 }
 
 LocalSearchOperator* MakeExchange(
@@ -741,6 +759,7 @@ bool Cross<ignore_path_vars>::MakeNeighbor() {
   if (start1 == start0 || node1 == start1) return false;
 
   bool moved = false;
+  bool feasible = true;
   if (cross_path_starts) {
     // Cross path starts.
     // If two paths are equivalent don't exchange the full paths.
@@ -751,10 +770,18 @@ bool Cross<ignore_path_vars>::MakeNeighbor() {
       return false;
     }
     const int first1 = this->Next(start1);
-    if (!this->IsPathEnd(node0))
-      moved |= this->MoveChain(start0, node0, start1);
-    if (!this->IsPathEnd(node1))
-      moved |= this->MoveChain(this->Prev(first1), node1, start0);
+    if (!this->IsPathEnd(node0)) {
+      const auto [has_change, is_feasible] =
+          this->MoveChainWithCheck(start0, node0, start1, true);
+      moved |= has_change;
+      feasible &= is_feasible;
+    }
+    if (!this->IsPathEnd(node1)) {
+      const auto [has_change, is_feasible] =
+          this->MoveChainWithCheck(this->Prev(first1), node1, start0, true);
+      moved |= has_change;
+      feasible &= is_feasible;
+    }
   } else {
     // Cross path ends.
     // If paths are equivalent, every end crossing has a corresponding start
@@ -773,15 +800,21 @@ bool Cross<ignore_path_vars>::MakeNeighbor() {
 
     const int prev_end_node1 = this->Prev(this->CurrentNodePathEnd(node1));
     if (!this->IsPathEnd(node0)) {
-      moved |= this->MoveChain(this->Prev(node0), this->Prev(this->EndNode(0)),
-                               prev_end_node1);
+      const auto [has_change, is_feasible] = this->MoveChainWithCheck(
+          this->Prev(node0), this->Prev(this->EndNode(0)), prev_end_node1,
+          true);
+      moved |= has_change;
+      feasible &= is_feasible;
     }
     if (!this->IsPathEnd(node1)) {
-      moved |= this->MoveChain(this->Prev(node1), prev_end_node1,
-                               this->Prev(this->EndNode(0)));
+      const auto [has_change, is_feasible] =
+          this->MoveChainWithCheck(this->Prev(node1), prev_end_node1,
+                                   this->Prev(this->EndNode(0)), true);
+      moved |= has_change;
+      feasible &= is_feasible;
     }
   }
-  return moved;
+  return moved && feasible;
 }
 
 LocalSearchOperator* MakeCross(
