@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// [START program]
 // The solve_and_print_intermediate_solutions_sample_sat command
 package main
 
@@ -20,9 +19,8 @@ import (
 
 	log "github.com/golang/glog"
 	"github.com/google/or-tools/ortools/sat/go/cpmodel"
-	"google.golang.org/protobuf/proto"
-
 	sppb "github.com/google/or-tools/ortools/sat/proto/satparameters"
+	"google.golang.org/protobuf/proto"
 )
 
 func solveAndPrintIntermediateSolutionsSampleSat() error {
@@ -70,5 +68,3 @@ func main() {
 		log.Exitf("solveAndPrintIntermediateSolutionsSampleSat returned with error: %v", err)
 	}
 }
-
-// [END program]

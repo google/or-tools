@@ -14,8 +14,8 @@
 // IWYU pragma: private, include "ortools/math_opt/cpp/math_opt.h"
 // IWYU pragma: friend "ortools/math_opt/cpp/.*"
 
-#ifndef ORTOOLS_MATH_OPT_CPP_MODEL_H_
-#define ORTOOLS_MATH_OPT_CPP_MODEL_H_
+#ifndef OR_TOOLS_MATH_OPT_CPP_MODEL_H_
+#define OR_TOOLS_MATH_OPT_CPP_MODEL_H_
 
 #include <cstdint>
 #include <memory>
@@ -137,7 +137,7 @@ class Model {
   // This constructor is used when loading a model, for example from a
   // ModelProto or an MPS file. Note that in those cases the FromModelProto()
   // should be used.
-  explicit Model(absl_nonnull std::unique_ptr<ModelStorage> storage);
+  explicit Model(absl::Nonnull<std::unique_ptr<ModelStorage>> storage);
 
   Model(const Model&) = delete;
   Model& operator=(const Model&) = delete;
@@ -159,7 +159,7 @@ class Model {
   //   * in an arbitrary order using Variables() and LinearConstraints().
   //
   // Note that the returned model does not have any update tracker.
-  absl_nonnull std::unique_ptr<Model> Clone(
+  absl::Nonnull<std::unique_ptr<Model>> Clone(
       std::optional<absl::string_view> new_name = std::nullopt) const;
 
   inline absl::string_view name() const;
@@ -925,7 +925,7 @@ class Model {
   // We use a shared_ptr here so that the UpdateTracker class can have a
   // weak_ptr on the ModelStorage. This let it have a destructor that don't
   // crash when called after the destruction of the associated Model.
-  const absl_nonnull std::shared_ptr<ModelStorage> storage_;
+  const absl::Nonnull<std::shared_ptr<ModelStorage>> storage_;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1639,4 +1639,4 @@ void Model::CheckModel(const ModelStorageCPtr other_storage) const {
 }  // namespace math_opt
 }  // namespace operations_research
 
-#endif  // ORTOOLS_MATH_OPT_CPP_MODEL_H_
+#endif  // OR_TOOLS_MATH_OPT_CPP_MODEL_H_

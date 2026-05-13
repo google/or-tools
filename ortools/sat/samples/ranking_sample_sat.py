@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# [START program]
 """Code sample to demonstrates how to rank intervals."""
 
 from ortools.sat.python import cp_model
@@ -159,4 +158,3 @@ def ranking_sample_sat() -> None:
 
 
 ranking_sample_sat()
-# [END program]

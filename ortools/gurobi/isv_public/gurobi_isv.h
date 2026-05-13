@@ -11,14 +11,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ORTOOLS_GUROBI_ISV_PUBLIC_GUROBI_ISV_H_
-#define ORTOOLS_GUROBI_ISV_PUBLIC_GUROBI_ISV_H_
+#ifndef OR_TOOLS_GUROBI_ISV_PUBLIC_GUROBI_ISV_H_
+#define OR_TOOLS_GUROBI_ISV_PUBLIC_GUROBI_ISV_H_
 
 #include <cstdint>
 #include <string>
 
 #include "absl/status/statusor.h"
-#include "ortools/third_party_solvers/gurobi_environment.h"
+#include "ortools/gurobi/environment.h"
 
 namespace operations_research::math_opt {
 
@@ -40,4 +40,4 @@ absl::StatusOr<GRBenv*> NewPrimaryEnvFromISVKey(const GurobiIsvKey& isv_key);
 
 }  // namespace operations_research::math_opt
 
-#endif  // ORTOOLS_GUROBI_ISV_PUBLIC_GUROBI_ISV_H_
+#endif  // OR_TOOLS_GUROBI_ISV_PUBLIC_GUROBI_ISV_H_

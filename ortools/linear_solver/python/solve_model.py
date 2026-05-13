@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # Copyright 2010-2025 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -33,14 +32,10 @@ def main(argv: Sequence[str]) -> None:
 
     model = model_builder.ModelBuilder()
 
-    # Load MPS, LP, or proto file.
+    # Load MPS or proto file.
     if _INPUT.value.endswith(".mps"):
         if not model.import_from_mps_file(_INPUT.value):
             print(f"Cannot import MPS file: '{_INPUT.value}'")
-            return
-    elif _INPUT.value.endswith(".lp"):
-        if not model.import_from_lp_file(_INPUT.value):
-            print(f"Cannot import LP file: '{_INPUT.value}'")
             return
     elif not model.import_from_proto_file(_INPUT.value):
         print(f"Cannot import Proto file: '{_INPUT.value}'")

@@ -14,11 +14,10 @@
 // IWYU pragma: private, include "ortools/math_opt/cpp/math_opt.h"
 // IWYU pragma: friend "ortools/math_opt/cpp/.*"
 
-#ifndef ORTOOLS_MATH_OPT_CPP_SOLVER_RESOURCES_H_
-#define ORTOOLS_MATH_OPT_CPP_SOLVER_RESOURCES_H_
+#ifndef OR_TOOLS_MATH_OPT_CPP_SOLVER_RESOURCES_H_
+#define OR_TOOLS_MATH_OPT_CPP_SOLVER_RESOURCES_H_
 
 #include <optional>
-#include <ostream>
 #include <string>
 
 #include "absl/status/statusor.h"
@@ -75,8 +74,6 @@ struct SolverResources {
       const SolverResourcesProto& proto);
 };
 
-std::ostream& operator<<(std::ostream& out, const SolverResources& resources);
-
 bool AbslParseFlag(absl::string_view text, SolverResources* solver_resources,
                    std::string* error);
 
@@ -84,4 +81,4 @@ std::string AbslUnparseFlag(const SolverResources& solver_resources);
 
 }  // namespace operations_research::math_opt
 
-#endif  // ORTOOLS_MATH_OPT_CPP_SOLVER_RESOURCES_H_
+#endif  // OR_TOOLS_MATH_OPT_CPP_SOLVER_RESOURCES_H_

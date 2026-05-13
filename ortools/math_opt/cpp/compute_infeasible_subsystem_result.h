@@ -13,8 +13,8 @@
 
 // IWYU pragma: private, include "ortools/math_opt/cpp/math_opt.h"
 // IWYU pragma: friend "ortools/math_opt/cpp/.*"
-#ifndef ORTOOLS_MATH_OPT_CPP_COMPUTE_INFEASIBLE_SUBSYSTEM_RESULT_H_
-#define ORTOOLS_MATH_OPT_CPP_COMPUTE_INFEASIBLE_SUBSYSTEM_RESULT_H_
+#ifndef OR_TOOLS_MATH_OPT_CPP_COMPUTE_INFEASIBLE_SUBSYSTEM_RESULT_H_
+#define OR_TOOLS_MATH_OPT_CPP_COMPUTE_INFEASIBLE_SUBSYSTEM_RESULT_H_
 
 #include <ostream>
 #include <string>
@@ -142,4 +142,4 @@ std::ostream& operator<<(std::ostream& out,
 
 }  // namespace operations_research::math_opt
 
-#endif  // ORTOOLS_MATH_OPT_CPP_COMPUTE_INFEASIBLE_SUBSYSTEM_RESULT_H_
+#endif  // OR_TOOLS_MATH_OPT_CPP_COMPUTE_INFEASIBLE_SUBSYSTEM_RESULT_H_

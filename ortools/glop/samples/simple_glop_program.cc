@@ -14,7 +14,6 @@
 // Minimal example to call the GLOP solver.
 // [START program]
 // [START import]
-#include <cstdlib>
 #include <iostream>
 #include <ostream>
 

@@ -681,9 +681,7 @@ bool FeasibilityPump::PropagationRounding() {
     }
 
     if (!sat_solver_->FinishPropagation()) return false;
-    const SatSolver::Status decision_status =
-        sat_solver_->EnqueueDecisionAndBacktrackOnConflict(to_enqueue);
-    if (decision_status != SatSolver::Status::FEASIBLE) return false;
+    sat_solver_->EnqueueDecisionAndBacktrackOnConflict(to_enqueue);
     if (sat_solver_->ModelIsUnsat()) return false;
   }
   integer_solution_is_set_ = true;

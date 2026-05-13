@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# [START program]
 """Builds temporal relations between intervals."""
 
 from ortools.sat.python import cp_model
@@ -78,4 +77,3 @@ def interval_relations_sample_sat():
 
 
 interval_relations_sample_sat()
-# [END program]

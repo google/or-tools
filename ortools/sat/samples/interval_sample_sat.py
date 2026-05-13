@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# [START program]
 """Code sample to demonstrates how to build an interval."""
 
 
@@ -45,4 +44,3 @@ def interval_sample_sat():
 
 
 interval_sample_sat()
-# [END program]

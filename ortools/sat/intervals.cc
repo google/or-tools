@@ -13,10 +13,8 @@
 
 #include "ortools/sat/intervals.h"
 
-#include <algorithm>
 #include <optional>
 #include <utility>
-#include <variant>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
@@ -45,10 +43,7 @@ IntervalsRepository::IntervalsRepository(Model* model)
       sat_solver_(model->GetOrCreate<SatSolver>()),
       implications_(model->GetOrCreate<BinaryImplicationGraph>()),
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
-      reified_precedences_(model->GetOrCreate<ReifiedLinear2Bounds>()),
-      root_level_bounds_(model->GetOrCreate<RootLevelLinear2Bounds>()),
-      linear2_bounds_(model->GetOrCreate<Linear2Bounds>()),
-      integer_encoder_(model->GetOrCreate<IntegerEncoder>()) {}
+      relations_maps_(model->GetOrCreate<BinaryRelationsMaps>()) {}
 
 IntervalVariable IntervalsRepository::CreateInterval(IntegerVariable start,
                                                      IntegerVariable end,
@@ -122,129 +117,75 @@ IntervalsRepository::GetOrCreateDisjunctivePrecedenceLiteralIfNonTrivial(
     enforcement_literals.push_back(b.is_present.value());
   }
 
-  auto remove_fixed_at_root_level =
-      [assignment = &assignment_,
-       sat_solver_ = sat_solver_](std::vector<Literal>& literals) {
-        int new_size = 0;
-        for (const Literal l : literals) {
-          if (assignment->LiteralIsAssigned(l)) {
-            const bool is_fixed =
-                sat_solver_->LiteralTrail().Info(l.Variable()).level == 0;
-            // We can ignore always absent interval, and skip the literal of the
-            // interval that are now always present.
-            if (is_fixed && assignment->LiteralIsTrue(l)) continue;
-            if (is_fixed && assignment->LiteralIsFalse(l)) return false;
-          }
-          literals[new_size++] = l;
-        }
-        literals.resize(new_size);
-        return true;
-      };
+  auto remove_fixed = [assignment =
+                           &assignment_](std::vector<Literal>& literals) {
+    int new_size = 0;
+    for (const Literal l : literals) {
+      // We can ignore always absent interval, and skip the literal of the
+      // interval that are now always present.
+      if (assignment->LiteralIsTrue(l)) continue;
+      if (assignment->LiteralIsFalse(l)) return false;
+      literals[new_size++] = l;
+    }
+    literals.resize(new_size);
+    return true;
+  };
 
-  if (!remove_fixed_at_root_level(enforcement_literals)) return kNoLiteralIndex;
+  if (sat_solver_->CurrentDecisionLevel() == 0) {
+    if (!remove_fixed(enforcement_literals)) return kNoLiteralIndex;
+  }
 
   // task_a is currently before task_b ?
   // Lets not create a literal that will be propagated right away.
-  const auto [expr_b_before_a, ub_b_before_a] =
-      EncodeDifferenceLowerThan(b.end, a.start, 0);
-  const RelationStatus b_before_a_root_status =
-      root_level_bounds_->GetLevelZeroStatus(expr_b_before_a, kMinIntegerValue,
-                                             ub_b_before_a);
-
-  // task_b is before task_a ?
-  const auto [expr_a_before_b, ub_a_before_b] =
-      EncodeDifferenceLowerThan(a.end, b.start, 0);
-  const RelationStatus a_before_b_root_status =
-      root_level_bounds_->GetLevelZeroStatus(expr_a_before_b, kMinIntegerValue,
-                                             ub_a_before_b);
-
-  if (enforcement_literals.empty() &&
-      b_before_a_root_status != RelationStatus::IS_UNKNOWN &&
-      a_before_b_root_status == b_before_a_root_status) {
-    // We have "a before b" and "b before a" at root level (or similarly with
-    // "after"). This is UNSAT.
-    sat_solver_->NotifyThatModelIsUnsat();
-    return kNoLiteralIndex;
-  }
-
-  if (b_before_a_root_status == RelationStatus::IS_FALSE) {
-    if (!enforcement_literals.empty() ||
-        a_before_b_root_status == RelationStatus::IS_UNKNOWN) {
+  if (integer_trail_->UpperBound(a.start) < integer_trail_->LowerBound(b.end)) {
+    if (sat_solver_->CurrentDecisionLevel() == 0) {
       AddConditionalAffinePrecedence(enforcement_literals, a.end, b.start,
                                      model_);
     }
     return kNoLiteralIndex;
   }
-  const RelationStatus b_before_a_status = linear2_bounds_->GetStatus(
-      expr_b_before_a, kMinIntegerValue, ub_b_before_a);
-  if (b_before_a_status != RelationStatus::IS_UNKNOWN) {
-    // Abort if the relation is already known.
-    return kNoLiteralIndex;
-  }
 
-  if (a_before_b_root_status == RelationStatus::IS_FALSE) {
-    if (!enforcement_literals.empty() ||
-        b_before_a_root_status == RelationStatus::IS_UNKNOWN) {
+  // task_b is before task_a ?
+  if (integer_trail_->UpperBound(b.start) < integer_trail_->LowerBound(a.end)) {
+    if (sat_solver_->CurrentDecisionLevel() == 0) {
       AddConditionalAffinePrecedence(enforcement_literals, b.end, a.start,
                                      model_);
     }
     return kNoLiteralIndex;
   }
-  const RelationStatus a_before_b_status = linear2_bounds_->GetStatus(
-      expr_a_before_b, kMinIntegerValue, ub_a_before_b);
-  if (a_before_b_status != RelationStatus::IS_UNKNOWN) {
-    // Abort if the relation is already known.
+
+  // Abort if the relation is already known.
+  if (relations_maps_->GetLevelZeroPrecedenceStatus(a.end, b.start) ==
+          RelationStatus::IS_TRUE ||
+      relations_maps_->GetLevelZeroPrecedenceStatus(b.end, a.start) ==
+          RelationStatus::IS_TRUE) {
     return kNoLiteralIndex;
   }
 
   // Create a new literal.
   //
-  // TODO(user): An alternative solution when it is enforced is to get/create
+  // TODO(user): If there are no enforcement and we already have at one of:
   // - s <=> a.end <= b.start
   // - t <=> b.end <= a.start
-  // and have enforcement => s + t == 1. The later might not even be needed
-  // though, since interval equation should already enforce it.
-  Literal a_before_b;
-  if (enforcement_literals.empty()) {
-    // We don't have any enforcement literal, so we should use the existing
-    // ReifiedLinear2Bounds class.
-    LiteralIndex a_before_b_index = GetPrecedenceLiteral(a.end, b.start);
-    const LiteralIndex b_before_a_index = GetPrecedenceLiteral(b.end, a.start);
-    if (a_before_b_index == kNoLiteralIndex &&
-        b_before_a_index == kNoLiteralIndex) {
-      CreatePrecedenceLiteralIfNonTrivial(a.end, b.start);
-      a_before_b_index = GetPrecedenceLiteral(a.end, b.start);
-      DCHECK_NE(a_before_b_index, kNoLiteralIndex);  // We tested not trivial.
-      // Now associate its negation with b.end <= a.start.
-      reified_precedences_->AddBoundEncodingIfNonTrivial(
-          Literal(a_before_b_index).Negated(), expr_b_before_a, ub_b_before_a);
-    } else if (a_before_b_index == kNoLiteralIndex &&
-               b_before_a_index != kNoLiteralIndex) {
-      // We already have a literal for b.end <= a.start.
-      // We can just use the negation of that literal.
-      a_before_b_index = Literal(b_before_a_index).NegatedIndex();
-      reified_precedences_->AddBoundEncodingIfNonTrivial(
-          Literal(a_before_b_index), expr_a_before_b, ub_a_before_b);
-    } else if (a_before_b_index != kNoLiteralIndex &&
-               b_before_a_index == kNoLiteralIndex) {
-      reified_precedences_->AddBoundEncodingIfNonTrivial(
-          Literal(a_before_b_index).Negated(), expr_b_before_a, ub_b_before_a);
-    } else {
-      // We have both literals. One must be the negation of the other.
-      implications_->AddImplication(Literal(a_before_b_index),
-                                    Literal(b_before_a_index).Negated());
-      implications_->AddImplication(Literal(a_before_b_index).Negated(),
-                                    Literal(b_before_a_index));
-    }
-    DCHECK_NE(a_before_b_index, kNoLiteralIndex);
-    a_before_b = Literal(a_before_b_index);
-  } else {
-    const BooleanVariable boolean_var = sat_solver_->NewBooleanVariable();
-    a_before_b = Literal(boolean_var, true);
-  }
-
+  // We could use (s, not(s)) or (not(t), t) and make sure s = not(t) if both
+  // exists.
+  //
+  // TODO(user): Otherwise, an alternative solution is to create s and t (can be
+  // one more Boolean though), and have enforcement => s + t == 1. The later
+  // might not even be needed though, since interval equation should already
+  // enforce it.
+  const BooleanVariable boolean_var = sat_solver_->NewBooleanVariable();
+  const Literal a_before_b = Literal(boolean_var, true);
   disjunctive_precedences_.insert({{a, b}, a_before_b});
   disjunctive_precedences_.insert({{b, a}, a_before_b.Negated()});
+
+  // Also insert it in precedences.
+  if (enforcement_literals.empty()) {
+    relations_maps_->AddReifiedPrecedenceIfNonTrivial(a_before_b, a.end,
+                                                      b.start);
+    relations_maps_->AddReifiedPrecedenceIfNonTrivial(a_before_b.Negated(),
+                                                      b.end, a.start);
+  }
 
   enforcement_literals.push_back(a_before_b);
   AddConditionalAffinePrecedence(enforcement_literals, a.end, b.start, model_);
@@ -256,7 +197,9 @@ IntervalsRepository::GetOrCreateDisjunctivePrecedenceLiteralIfNonTrivial(
 
   // The calls to AddConditionalAffinePrecedence() might have fixed some of the
   // enforcement literals. Remove them if we are at level zero.
-  if (!remove_fixed_at_root_level(enforcement_literals)) return kNoLiteralIndex;
+  if (sat_solver_->CurrentDecisionLevel() == 0) {
+    if (!remove_fixed(enforcement_literals)) return kNoLiteralIndex;
+  }
 
   // Force the value of boolean_var in case the precedence is not active. This
   // avoids duplicate solutions when enumerating all possible solutions.
@@ -269,41 +212,20 @@ IntervalsRepository::GetOrCreateDisjunctivePrecedenceLiteralIfNonTrivial(
 
 bool IntervalsRepository::CreatePrecedenceLiteralIfNonTrivial(
     AffineExpression x, AffineExpression y) {
-  const auto [expr, ub] = EncodeDifferenceLowerThan(x, y, 0);
-  auto reified_bound = reified_precedences_->GetEncodedBound(expr, ub);
-  if (std::holds_alternative<ReifiedLinear2Bounds::ReifiedBoundType>(
-          reified_bound)) {
-    const auto bound_type =
-        std::get<ReifiedLinear2Bounds::ReifiedBoundType>(reified_bound);
-    if (bound_type == ReifiedLinear2Bounds::ReifiedBoundType::kAlwaysTrue ||
-        bound_type == ReifiedLinear2Bounds::ReifiedBoundType::kAlwaysFalse) {
-      // Nothing to do, precedence is trivial at level zero.
-      return false;
-    }
-  }
+  const LiteralIndex index = relations_maps_->GetReifiedPrecedence(x, y);
+  if (index != kNoLiteralIndex) return false;
 
-  if (std::holds_alternative<Literal>(reified_bound)) {
-    // Already created.
+  // We want l => x <= y and not(l) => x > y <=> y + 1 <= x
+  // Do not create l if the relation is always true or false.
+  if (relations_maps_->GetLevelZeroPrecedenceStatus(x, y) !=
+      RelationStatus::IS_UNKNOWN) {
     return false;
-  }
-
-  if (std::holds_alternative<IntegerLiteral>(reified_bound)) {
-    if (integer_encoder_->GetAssociatedLiteral(
-            std::get<IntegerLiteral>(reified_bound)) != kNoLiteralIndex) {
-      return false;
-    }
-    // Create a new literal from the IntegerLiteral. This makes sure
-    // GetPrecedenceLiteral() always returns something if this function was
-    // called on a non-trivial precedence.
-    integer_encoder_->GetOrCreateAssociatedLiteral(
-        std::get<IntegerLiteral>(reified_bound));
-    return true;
   }
 
   // Create a new literal.
   const BooleanVariable boolean_var = sat_solver_->NewBooleanVariable();
   const Literal x_before_y = Literal(boolean_var, true);
-  reified_precedences_->AddBoundEncodingIfNonTrivial(x_before_y, expr, ub);
+  relations_maps_->AddReifiedPrecedenceIfNonTrivial(x_before_y, x, y);
 
   AffineExpression y_plus_one = y;
   y_plus_one.constant += 1;
@@ -314,28 +236,7 @@ bool IntervalsRepository::CreatePrecedenceLiteralIfNonTrivial(
 
 LiteralIndex IntervalsRepository::GetPrecedenceLiteral(
     AffineExpression x, AffineExpression y) const {
-  const auto [expr, ub] = EncodeDifferenceLowerThan(x, y, 0);
-  auto reified_bound = reified_precedences_->GetEncodedBound(expr, ub);
-  if (std::holds_alternative<IntegerLiteral>(reified_bound)) {
-    return integer_encoder_->GetAssociatedLiteral(
-        std::get<IntegerLiteral>(reified_bound));
-  }
-  if (std::holds_alternative<Literal>(reified_bound)) {
-    return std::get<Literal>(reified_bound).Index();
-  }
-  if (std::holds_alternative<ReifiedLinear2Bounds::ReifiedBoundType>(
-          reified_bound)) {
-    const auto bound_type =
-        std::get<ReifiedLinear2Bounds::ReifiedBoundType>(reified_bound);
-    if (bound_type == ReifiedLinear2Bounds::ReifiedBoundType::kAlwaysTrue) {
-      return integer_encoder_->GetTrueLiteral().Index();
-    }
-    if (bound_type == ReifiedLinear2Bounds::ReifiedBoundType::kAlwaysFalse) {
-      return integer_encoder_->GetTrueLiteral().NegatedIndex();
-    }
-  }
-
-  return kNoLiteralIndex;
+  return relations_maps_->GetReifiedPrecedence(x, y);
 }
 
 Literal IntervalsRepository::GetOrCreatePrecedenceLiteral(AffineExpression x,
@@ -346,7 +247,7 @@ Literal IntervalsRepository::GetOrCreatePrecedenceLiteral(AffineExpression x,
   }
 
   CHECK(CreatePrecedenceLiteralIfNonTrivial(x, y));
-  const LiteralIndex index = GetPrecedenceLiteral(x, y);
+  const LiteralIndex index = relations_maps_->GetReifiedPrecedence(x, y);
   CHECK_NE(index, kNoLiteralIndex);
   return Literal(index);
 }
@@ -355,11 +256,9 @@ Literal IntervalsRepository::GetOrCreatePrecedenceLiteral(AffineExpression x,
 // we cannot since we often use this with a parallel vector of demands. So this
 // "sorting" should happen in the presolver so we can share as much as possible.
 SchedulingConstraintHelper* IntervalsRepository::GetOrCreateHelper(
-    std::vector<Literal> enforcement_literals,
     const std::vector<IntervalVariable>& variables,
     bool register_as_disjunctive_helper) {
-  std::sort(enforcement_literals.begin(), enforcement_literals.end());
-  const auto it = helper_repository_.find({enforcement_literals, variables});
+  const auto it = helper_repository_.find(variables);
   if (it != helper_repository_.end()) return it->second;
   std::vector<AffineExpression> starts;
   std::vector<AffineExpression> ends;
@@ -386,9 +285,8 @@ SchedulingConstraintHelper* IntervalsRepository::GetOrCreateHelper(
   SchedulingConstraintHelper* helper = new SchedulingConstraintHelper(
       std::move(starts), std::move(ends), std::move(sizes),
       std::move(reason_for_presence), model_);
-  helper->RegisterWith(model_->GetOrCreate<GenericLiteralWatcher>(),
-                       enforcement_literals);
-  helper_repository_[{enforcement_literals, variables}] = helper;
+  helper->RegisterWith(model_->GetOrCreate<GenericLiteralWatcher>());
+  helper_repository_[variables] = helper;
   model_->TakeOwnership(helper);
   if (register_as_disjunctive_helper) {
     disjunctive_helpers_.push_back(helper);
@@ -397,12 +295,10 @@ SchedulingConstraintHelper* IntervalsRepository::GetOrCreateHelper(
 }
 
 NoOverlap2DConstraintHelper* IntervalsRepository::GetOrCreate2DHelper(
-    std::vector<Literal> enforcement_literals,
     const std::vector<IntervalVariable>& x_variables,
     const std::vector<IntervalVariable>& y_variables) {
-  std::sort(enforcement_literals.begin(), enforcement_literals.end());
-  const auto it = no_overlap_2d_helper_repository_.find(
-      {enforcement_literals, x_variables, y_variables});
+  const auto it =
+      no_overlap_2d_helper_repository_.find({x_variables, y_variables});
   if (it != no_overlap_2d_helper_repository_.end()) return it->second;
 
   std::vector<AffineExpression> x_starts;
@@ -439,10 +335,8 @@ NoOverlap2DConstraintHelper* IntervalsRepository::GetOrCreate2DHelper(
       std::move(x_starts), std::move(x_ends), std::move(x_sizes),
       std::move(x_reason_for_presence), std::move(y_starts), std::move(y_ends),
       std::move(y_sizes), std::move(y_reason_for_presence), model_);
-  helper->RegisterWith(model_->GetOrCreate<GenericLiteralWatcher>(),
-                       enforcement_literals);
-  no_overlap_2d_helper_repository_[{enforcement_literals, x_variables,
-                                    y_variables}] = helper;
+  helper->RegisterWith(model_->GetOrCreate<GenericLiteralWatcher>());
+  no_overlap_2d_helper_repository_[{x_variables, y_variables}] = helper;
   model_->TakeOwnership(helper);
   return helper;
 }

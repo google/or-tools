@@ -243,7 +243,6 @@ void StiglerDiet() {
   // [START variables]
   std::vector<MPVariable*> foods;
   const double infinity = solver->infinity();
-  foods.reserve(data.size());
   for (const Commodity& commodity : data) {
     foods.push_back(solver->MakeNumVar(0.0, infinity, commodity.name));
   }

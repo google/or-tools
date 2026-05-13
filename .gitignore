@@ -1,6 +1,7 @@
 Makefile.local
 Makefile.local~
 
+/node_modules/
 /build_make/
 /install_make/
 /dependencies/
@@ -25,6 +26,7 @@ or-tools*.zip
 *.ass
 *.swp
 *.swo
+*.tgz
 
 build*.log
 test.log
@@ -49,8 +51,8 @@ temp_python*
 temp_python*_test/
 temp_archive/
 temp_fz_archive/
-lib/
-bin/
+/lib/
+/bin/
 install/
 examples/notebook/.ipynb_checkpoints
 
@@ -64,7 +66,6 @@ export_meta
 ortools/bazel-*
 examples/bazel-*
 bazel-*
-user.bazelrc
 
 .vagrant/
 
@@ -109,6 +110,7 @@ CMakeFiles
 DartConfiguration.tcl
 *build*/*
 build/
+dist/
 
 # Ignore Bzlmod lock file until it is more stable
 MODULE.bazel.lock

@@ -65,9 +65,4 @@ if(BUILD_TESTING)
       GTest::gmock
     )
   endif()
-
-  # These tests are too long so we disable them.
-  set_tests_properties(
-    cxx_algorithms_radix_sort_test
-    PROPERTIES DISABLED TRUE)
 endif()

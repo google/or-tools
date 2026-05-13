@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# [START program]
 """Code sample that encodes the product of two Boolean variables."""
 
 
@@ -44,4 +43,3 @@ def boolean_product_sample_sat():
 
 
 boolean_product_sample_sat()
-# [END program]

@@ -26,7 +26,6 @@ option java_multiple_files = true;
 option csharp_namespace = "Google.OrTools.ConstraintSolver";
 
 import "ortools/constraint_solver/routing_enums.proto";
-import "ortools/constraint_solver/routing_heuristic_parameters.proto";
 
 package operations_research;
 
@@ -36,7 +35,7 @@ message SpatiallyCloseRoutesRuinStrategy {
   optional uint32 num_ruined_routes = 3;
 }
 
-// Ruin strategy that removes a number of nodes by performing a random walk
+// Ruin strategy that removes a number of customers by performing a random walk
 // on the underlying routing solution. More precisely, starting from a randomly
 // selected seed visit, the walk is extended by either moving within the
 // same route or by jumping to a visit served by a different neighboring
@@ -132,7 +131,7 @@ message SISRRuinStrategy {
   // paper is \bar{c} and the suggested value is 10.
   optional uint32 avg_num_removed_visits = 2;
 
-  // Value in [0, 1] ruling the number of preserved nodes in the split
+  // Value in [0, 1] ruling the number of preserved customers in the split
   // sequence removal. The parameter name in the paper is \alpha and the
   // suggested value is 0.01.
   optional double bypass_factor = 3;
@@ -145,22 +144,6 @@ message RuinStrategy {
     RandomWalkRuinStrategy random_walk = 2;
     SISRRuinStrategy sisr = 3;
   }
-}
-
-// Parameters to customize a recreate strategy.
-message RecreateParameters {
-  oneof parameters {
-    LocalCheapestInsertionParameters local_cheapest_insertion = 1;
-    SavingsParameters savings = 2;
-  }
-}
-
-// Strategy defining how a solution is recreated.
-message RecreateStrategy {
-  optional FirstSolutionStrategy.Value heuristic = 1;
-  // The selected parameters should match the chosen recreate heuristic.
-  // If not set, the default parameters from the RoutingModel are used.
-  optional RecreateParameters parameters = 2;
 }
 
 // The ruin composition strategies specifies how ruin are selected at every ILS
@@ -192,7 +175,7 @@ message RuinRecreateParameters {
   RuinCompositionStrategy.Value ruin_composition_strategy = 2;
 
   // Strategy defining how a reference solution is recreated.
-  RecreateStrategy recreate_strategy = 3;
+  FirstSolutionStrategy.Value recreate_strategy = 3;
 
   // Ratio in [0, 1] of non start/end nodes to consider as neighbors for the
   // identification of routes spatially close to a non start/end seed node.
@@ -262,12 +245,8 @@ message CoolingScheduleStrategy {
   }
 }
 
-// Acceptance strategy in which only improving solutions are accepted.
-message GreedyDescentAcceptanceStrategy {}
-
-// Acceptance strategy in which solutions are accepted with a probability that
-// depends on its quality and on the current state of the search.
-message SimulatedAnnealingAcceptanceStrategy {
+// Specifies the behavior of a simulated annealing acceptance strategy.
+message SimulatedAnnealingParameters {
   // Determines the speed at which the temperature changes from initial to
   // final.
   CoolingScheduleStrategy.Value cooling_schedule_strategy = 1;
@@ -291,17 +270,21 @@ message SimulatedAnnealingAcceptanceStrategy {
   optional bool automatic_temperatures = 4;
 }
 
-// Acceptance strategy in which a solution is accepted only if all nodes
-// are performed. Disjunctions are respected when several nodes can be
-// performed.
-message AllNodesPerformedAcceptanceStrategy {}
-
-// Determines when a candidate solution replaces another one.
+// Determines when a neighbor solution, obtained by the application of a
+// perturbation and improvement step to a reference solution, is used to
+// replace the reference solution.
 message AcceptanceStrategy {
-  oneof strategy {
-    GreedyDescentAcceptanceStrategy greedy_descent = 1;
-    SimulatedAnnealingAcceptanceStrategy simulated_annealing = 2;
-    AllNodesPerformedAcceptanceStrategy all_nodes_performed = 3;
+  enum Value {
+    // Unspecified value.
+    UNSET = 0;
+
+    // Accepts only solutions that are improving with respect to the reference
+    // one.
+    GREEDY_DESCENT = 1;
+
+    // Accepts a candidate solution with a probability that depends on its
+    // quality and on the current state of the search.
+    SIMULATED_ANNEALING = 2;
   }
 }
 
@@ -320,9 +303,9 @@ message IteratedLocalSearchParameters {
 
   // Determines when the neighbor solution S', possibly improved if
   // `improve_perturbed_solution` is true, replaces the reference solution S.
-  AcceptanceStrategy reference_solution_acceptance_strategy = 4;
+  AcceptanceStrategy.Value acceptance_strategy = 4;
 
-  // Determines when the neighbor solution S' replaces the best solution found
-  // so far.
-  AcceptanceStrategy best_solution_acceptance_strategy = 5;
+  // Parameters to customize a simulated annealing acceptance strategy. These
+  // parameters are required iff the acceptance_strategy is SIMULATED_ANNEALING.
+  SimulatedAnnealingParameters simulated_annealing_parameters = 5;
 }

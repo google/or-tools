@@ -34,20 +34,17 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/flags/flag.h"
-#include "absl/functional/any_invocable.h"
 #include "absl/log/check.h"
-#include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
+#include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/constraint_solver/routing.h"
-#include "ortools/constraint_solver/routing_breaks.h"
-#include "ortools/constraint_solver/routing_filter_committables.h"
 #include "ortools/constraint_solver/routing_lp_scheduling.h"
 #include "ortools/constraint_solver/routing_parameters.pb.h"
 #include "ortools/constraint_solver/routing_types.h"
@@ -227,151 +224,12 @@ IntVarLocalSearchFilter* MakeMaxActiveVehiclesFilter(
 
 namespace {
 
-class SameActivityGroupManager {
- public:
-  explicit SameActivityGroupManager(const RoutingModel& routing_model)
-      : routing_model_(routing_model) {}
-  int NumberOfGroups() const {
-    return routing_model_.GetSameActivityGroupsCount();
-  }
-  absl::Span<const int> GetGroupsFromNode(int node) const {
-    return absl::MakeConstSpan(routing_model_.GetSameActivityGroups())
-        .subspan(node, 1);
-  }
-  const std::vector<int>& GetGroupNodes(int group) const {
-    return routing_model_.GetSameActivityIndicesOfGroup(group);
-  }
-  void Revert() {}
-  bool CheckGroup(int group, int active, int unknown,
-                  const CommittableArray<bool>& /*node_is_active*/,
-                  const CommittableArray<bool>& /*node_is_unknown*/) const {
-    const int group_size = GetGroupNodes(group).size();
-    // The group constraint is respected iff either 0 or group size is inside
-    // interval [num_active, num_active + num_unknown],
-    if (active == 0) return true;
-    if (active <= group_size && group_size <= active + unknown) {
-      return true;
-    }
-    return false;
-  }
-
- private:
-  const RoutingModel& routing_model_;
-};
-
-class OrderedActivityGroupManager {
- public:
-  explicit OrderedActivityGroupManager(const RoutingModel& routing_model)
-      : groups_(routing_model.GetOrderedActivityGroups()),
-        group_bounds_(routing_model.GetOrderedActivityGroups().size(), {0, 0}) {
-    node_groups_.resize(routing_model.Size());
-    for (int group = 0; group < groups_.size(); ++group) {
-      for (int node : groups_[group]) {
-        node_groups_[node].push_back(group);
-      }
-      group_bounds_.Set(group, std::make_pair(0, groups_[group].size() - 1));
-    }
-    group_bounds_.Commit();
-  }
-  int NumberOfGroups() const { return groups_.size(); }
-  absl::Span<const int> GetGroupsFromNode(int node) const {
-    return node_groups_[node];
-  }
-  const std::vector<int>& GetGroupNodes(int group) const {
-    return groups_[group];
-  }
-  void Revert() {
-    group_bounds_.Revert();
-    touched_nodes_.clear();
-  }
-  bool CheckGroup(int group, int active, int unknown,
-                  CommittableArray<bool>& node_is_active,
-                  CommittableArray<bool>& node_is_unknown) {
-    if (active == 0) return true;
-    auto& [min_rank, max_rank] = group_bounds_.GetMutable(group);
-    for (int rank = min_rank; rank <= max_rank; ++rank) {
-      const int node = groups_[group][rank];
-      if (node_is_unknown.Get(node)) continue;
-      if (!node_is_active.Get(node)) {
-        touched_nodes_.push_back(node);
-        break;
-      }
-    }
-    for (int rank = max_rank; rank >= min_rank; --rank) {
-      const int node = groups_[group][rank];
-      if (node_is_unknown.Get(node)) continue;
-      if (node_is_active.Get(node)) {
-        touched_nodes_.push_back(node);
-        break;
-      }
-    }
-    while (!touched_nodes_.empty()) {
-      const int node = touched_nodes_.back();
-      touched_nodes_.pop_back();
-      if (!Propagate(node, node_is_active, node_is_unknown)) {
-        return false;
-      }
-#ifndef NDEBUG
-      for (int n : touched_nodes_) DCHECK_NE(n, node);
-#endif  // NDEBUG
-    }
-    return true;
-  }
-  bool Propagate(int node, CommittableArray<bool>& node_is_active,
-                 CommittableArray<bool>& node_is_unknown) {
-    for (int group_index : node_groups_[node]) {
-      const std::vector<int>& group = groups_[group_index];
-      auto& [min_rank, max_rank] = group_bounds_.GetMutable(group_index);
-      if (max_rank < min_rank) continue;
-      if (node_is_active.Get(node)) {
-        // Make all active between min_rank and node.
-        int rank = min_rank;
-        while (group[rank] != node) {
-          const int current_node = group[rank];
-          if (node_is_unknown.Get(current_node)) {
-            node_is_active.Set(current_node, true);
-            node_is_unknown.Set(current_node, false);
-            touched_nodes_.push_back(current_node);
-          } else if (!node_is_active.Get(current_node)) {
-            return false;
-          }
-          rank++;
-        }
-        min_rank = rank + 1;
-      } else {
-        // Make all inactive between node and max_rank.
-        int rank = max_rank;
-        while (group[rank] != node) {
-          const int current_node = group[rank];
-          if (node_is_unknown.Get(current_node)) {
-            node_is_active.Set(current_node, false);
-            node_is_unknown.Set(current_node, false);
-            touched_nodes_.push_back(current_node);
-          } else if (node_is_active.Get(current_node)) {
-            return false;
-          }
-          rank--;
-        }
-        max_rank = rank - 1;
-      }
-    }
-    return true;
-  }
-
- private:
-  const std::vector<std::vector<int>>& groups_;
-  std::vector<std::vector<int>> node_groups_;
-  CommittableArray<std::pair<int, int>> group_bounds_;
-  std::vector<int> touched_nodes_;
-};
-
-template <typename GroupAccessor>
 class ActiveNodeGroupFilter : public IntVarLocalSearchFilter {
  public:
   explicit ActiveNodeGroupFilter(const RoutingModel& routing_model)
       : IntVarLocalSearchFilter(routing_model.Nexts()),
-        group_accessor_(routing_model),
-        active_count_per_group_(group_accessor_.NumberOfGroups(),
+        routing_model_(routing_model),
+        active_count_per_group_(routing_model.GetSameActivityGroupsCount(),
                                 {.active = 0, .unknown = 0}),
         node_is_active_(routing_model.Nexts().size(), false),
         node_is_unknown_(routing_model.Nexts().size(), false) {}
@@ -379,43 +237,35 @@ class ActiveNodeGroupFilter : public IntVarLocalSearchFilter {
   bool Accept(const Assignment* delta, const Assignment* /*deltadelta*/,
               int64_t /*objective_min*/, int64_t /*objective_max*/) override {
     active_count_per_group_.Revert();
-    node_is_active_.Revert();
-    node_is_unknown_.Revert();
-    group_accessor_.Revert();
     const Assignment::IntContainer& container = delta->IntVarContainer();
-    // Updating group counters.
     for (const IntVarElement& new_element : container.elements()) {
       IntVar* const var = new_element.Var();
       int64_t index = -1;
       if (!FindIndex(var, &index)) continue;
-      for (const int group : group_accessor_.GetGroupsFromNode(index)) {
-        ActivityCounts counts = active_count_per_group_.Get(group);
-        // Change contribution to counts: remove old state, add new state.
-        if (node_is_unknown_.Get(index)) --counts.unknown;
-        if (node_is_active_.Get(index)) --counts.active;
-        if (new_element.Min() != new_element.Max()) {
-          ++counts.unknown;
-        } else if (new_element.Min() != index) {
-          ++counts.active;
-        }
-        active_count_per_group_.Set(group, counts);
+      const int group = routing_model_.GetSameActivityGroupOfIndex(index);
+      ActivityCounts counts = active_count_per_group_.Get(group);
+      // Change contribution to counts: remove old state, add new state.
+      if (node_is_unknown_[index]) --counts.unknown;
+      if (node_is_active_[index]) --counts.active;
+      if (new_element.Min() != new_element.Max()) {
+        ++counts.unknown;
+      } else if (new_element.Min() != index) {
+        ++counts.active;
       }
-    }
-    // Updating node states.
-    for (const IntVarElement& new_element : container.elements()) {
-      IntVar* const var = new_element.Var();
-      int64_t index = -1;
-      if (!FindIndex(var, &index)) continue;
-      node_is_unknown_.Set(index, new_element.Min() != new_element.Max());
-      node_is_active_.Set(index, new_element.Min() == new_element.Max() &&
-                                     new_element.Min() != index);
+      active_count_per_group_.Set(group, counts);
     }
     for (const int group : active_count_per_group_.ChangedIndices()) {
       const ActivityCounts counts = active_count_per_group_.Get(group);
-      if (!group_accessor_.CheckGroup(group, counts.active, counts.unknown,
-                                      node_is_active_, node_is_unknown_)) {
-        return false;
+      const int group_size =
+          routing_model_.GetSameActivityIndicesOfGroup(group).size();
+      // The group constraint is respected iff either 0 or group size is inside
+      // interval [num_active, num_active + num_unknown],
+      if (counts.active == 0) continue;
+      if (counts.active <= group_size &&
+          group_size <= counts.active + counts.unknown) {
+        continue;
       }
+      return false;
     }
     return true;
   }
@@ -423,29 +273,27 @@ class ActiveNodeGroupFilter : public IntVarLocalSearchFilter {
 
  private:
   void OnSynchronize(const Assignment* /*delta*/) override {
-    const int num_groups = group_accessor_.NumberOfGroups();
+    const int num_groups = routing_model_.GetSameActivityGroupsCount();
     for (int group = 0; group < num_groups; ++group) {
       ActivityCounts counts = {.active = 0, .unknown = 0};
-      for (int node : group_accessor_.GetGroupNodes(group)) {
+      for (int node : routing_model_.GetSameActivityIndicesOfGroup(group)) {
         if (IsVarSynced(node)) {
           const bool is_active = (Value(node) != node);
-          node_is_active_.Set(node, is_active);
-          node_is_unknown_.Set(node, false);
+          node_is_active_[node] = is_active;
+          node_is_unknown_[node] = false;
           counts.active += is_active ? 1 : 0;
         } else {
           ++counts.unknown;
-          node_is_unknown_.Set(node, true);
-          node_is_active_.Set(node, false);
+          node_is_unknown_[node] = true;
+          node_is_active_[node] = false;
         }
       }
       active_count_per_group_.Set(group, counts);
     }
     active_count_per_group_.Commit();
-    node_is_active_.Commit();
-    node_is_unknown_.Commit();
   }
 
-  GroupAccessor group_accessor_;
+  const RoutingModel& routing_model_;
   struct ActivityCounts {
     int active;
     int unknown;
@@ -453,10 +301,10 @@ class ActiveNodeGroupFilter : public IntVarLocalSearchFilter {
   CommittableArray<ActivityCounts> active_count_per_group_;
   // node_is_active_[node] is true iff node was synced and active at last
   // Synchronize().
-  CommittableArray<bool> node_is_active_;
+  std::vector<bool> node_is_active_;
   // node_is_unknown_[node] is true iff node was not synced at last
   // Synchronize().
-  CommittableArray<bool> node_is_unknown_;
+  std::vector<bool> node_is_unknown_;
 };
 
 }  // namespace
@@ -464,13 +312,7 @@ class ActiveNodeGroupFilter : public IntVarLocalSearchFilter {
 IntVarLocalSearchFilter* MakeActiveNodeGroupFilter(
     const RoutingModel& routing_model) {
   return routing_model.solver()->RevAlloc(
-      new ActiveNodeGroupFilter<SameActivityGroupManager>(routing_model));
-}
-
-IntVarLocalSearchFilter* MakeOrderedActivityGroupFilter(
-    const RoutingModel& routing_model) {
-  return routing_model.solver()->RevAlloc(
-      new ActiveNodeGroupFilter<OrderedActivityGroupManager>(routing_model));
+      new ActiveNodeGroupFilter(routing_model));
 }
 
 namespace {
@@ -995,136 +837,6 @@ IntVarLocalSearchFilter* MakeVehicleAmortizedCostFilter(
 
 namespace {
 
-// TODO(user): Make this filter use PathStates.
-// TODO(user): Optimize the case where same vehicle groups are disjoint and
-// deltas are not "splitting" the groups.
-class SameVehicleCostFilter : public BasePathFilter {
- public:
-  explicit SameVehicleCostFilter(const RoutingModel& model)
-      : BasePathFilter(model.Nexts(), model.Size() + model.vehicles(),
-                       model.GetPathsMetadata()),
-        model_(model),
-        same_vehicle_costs_per_node_(model.Size()),
-        nodes_per_vehicle_(model.GetNumberOfSoftSameVehicleConstraints()),
-        new_nodes_per_vehicle_(model.GetNumberOfSoftSameVehicleConstraints()),
-        current_vehicle_per_node_(model.Size()),
-        current_cost_(0) {
-    for (int i = 0; i < model.GetNumberOfSoftSameVehicleConstraints(); ++i) {
-      for (int node : model.GetSoftSameVehicleIndices(i)) {
-        same_vehicle_costs_per_node_[node].push_back(i);
-      }
-    }
-    start_to_vehicle_.resize(Size(), -1);
-    for (int v = 0; v < model.vehicles(); v++) {
-      const int64_t start = model.Start(v);
-      start_to_vehicle_[start] = v;
-    }
-  }
-  int64_t GetSynchronizedObjectiveValue() const override {
-    return current_cost_;
-  }
-  int64_t GetAcceptedObjectiveValue() const override {
-    return lns_detected() ? 0 : delta_cost_;
-  }
-  std::string DebugString() const override { return "SameVehicleCostFilter"; }
-
- private:
-  bool InitializeAcceptPath() override {
-    delta_cost_ = current_cost_;
-    for (int same_vehicle_cost_index : touched_) {
-      new_nodes_per_vehicle_[same_vehicle_cost_index] =
-          nodes_per_vehicle_[same_vehicle_cost_index];
-    }
-    touched_.clear();
-    return true;
-  }
-  bool AcceptPath(int64_t path_start, int64_t chain_start,
-                  int64_t chain_end) override {
-    const int64_t vehicle = start_to_vehicle_[path_start];
-    DCHECK_GE(vehicle, 0);
-    if (chain_start == chain_end) return true;
-    for (int64_t node = GetNext(chain_start); node != chain_end;
-         node = GetNext(node)) {
-      if (vehicle == current_vehicle_per_node_[node]) continue;
-      for (int same_vehicle_cost_index : same_vehicle_costs_per_node_[node]) {
-        auto& new_nodes = new_nodes_per_vehicle_[same_vehicle_cost_index];
-        new_nodes[vehicle]++;
-        new_nodes[current_vehicle_per_node_[node]]--;
-        if (new_nodes[current_vehicle_per_node_[node]] == 0) {
-          new_nodes.erase(current_vehicle_per_node_[node]);
-        }
-        touched_.insert(same_vehicle_cost_index);
-      }
-    }
-    return true;
-  }
-  bool FinalizeAcceptPath(int64_t /*objective_min*/,
-                          int64_t objective_max) override {
-    for (int same_vehicle_cost_index : touched_) {
-      CapAddTo(CapSub(GetCost(same_vehicle_cost_index, new_nodes_per_vehicle_),
-                      GetCost(same_vehicle_cost_index, nodes_per_vehicle_)),
-               &delta_cost_);
-    }
-    return delta_cost_ <= objective_max;
-  }
-
-  void OnAfterSynchronizePaths() override {
-    current_cost_ = 0;
-    touched_.clear();
-    for (int same_vehicle_cost_index = 0;
-         same_vehicle_cost_index < nodes_per_vehicle_.size();
-         ++same_vehicle_cost_index) {
-      nodes_per_vehicle_[same_vehicle_cost_index].clear();
-      touched_.insert(same_vehicle_cost_index);
-    }
-    current_vehicle_per_node_.assign(model_.Size(), -1);
-    for (int v = 0; v < model_.vehicles(); ++v) {
-      int64_t node = GetNext(model_.Start(v));
-      DCHECK(model_.IsEnd(node) || IsVarSynced(node));
-      while (!model_.IsEnd(node)) {
-        for (int same_vehicle_cost_index : same_vehicle_costs_per_node_[node]) {
-          nodes_per_vehicle_[same_vehicle_cost_index][v]++;
-        }
-        current_vehicle_per_node_[node] = v;
-        node = GetNext(node);
-      }
-    }
-    for (int same_vehicle_cost_index = 0;
-         same_vehicle_cost_index < nodes_per_vehicle_.size();
-         ++same_vehicle_cost_index) {
-      CapAddTo(GetCost(same_vehicle_cost_index, nodes_per_vehicle_),
-               &current_cost_);
-    }
-  }
-  int64_t GetCost(
-      int index,
-      absl::Span<const absl::flat_hash_map<int, int>> nodes_per_vehicle) const {
-    const int num_vehicles_used = nodes_per_vehicle[index].size();
-    if (num_vehicles_used <= 1) return 0;
-    return CapProd(num_vehicles_used - 1, model_.GetSoftSameVehicleCost(index));
-  }
-
-  const RoutingModel& model_;
-  std::vector<int> start_to_vehicle_;
-  std::vector<std::vector<int>> same_vehicle_costs_per_node_;
-  std::vector<absl::flat_hash_map<int, int>> nodes_per_vehicle_;
-  std::vector<absl::flat_hash_map<int, int>> new_nodes_per_vehicle_;
-  absl::flat_hash_set<int> touched_;
-  std::vector<int> current_vehicle_per_node_;
-  int64_t current_cost_;
-  int64_t delta_cost_;
-};
-
-}  // namespace
-
-IntVarLocalSearchFilter* MakeSameVehicleCostFilter(
-    const RoutingModel& routing_model) {
-  return routing_model.solver()->RevAlloc(
-      new SameVehicleCostFilter(routing_model));
-}
-
-namespace {
-
 class TypeRegulationsFilter : public BasePathFilter {
  public:
   explicit TypeRegulationsFilter(const RoutingModel& model);
@@ -1475,31 +1187,29 @@ bool FillDimensionValuesFromRoutingDimension(
 // TODO(user): use committed values as a cache to avoid calling evaluators.
 void FillPrePostVisitValues(
     int path, const DimensionValues& dimension_values,
-    std::optional<absl::AnyInvocable<int64_t(int64_t, int64_t) const>>
-        pre_travel_evaluator,
-    std::optional<absl::AnyInvocable<int64_t(int64_t, int64_t) const>>
-        post_travel_evaluator,
+    absl::AnyInvocable<int64_t(int64_t, int64_t) const> pre_travel_evaluator,
+    absl::AnyInvocable<int64_t(int64_t, int64_t) const> post_travel_evaluator,
     PrePostVisitValues& visit_values) {
   const int num_nodes = dimension_values.NumNodes(path);
   visit_values.ChangePathSize(path, num_nodes);
   absl::Span<int64_t> pre_visits = visit_values.MutablePreVisits(path);
   absl::Span<int64_t> post_visits = visit_values.MutablePostVisits(path);
   absl::Span<const int> nodes = dimension_values.Nodes(path);
-  if (pre_travel_evaluator.has_value()) {
+  if (pre_travel_evaluator == nullptr) {
+    absl::c_fill(post_visits, 0);
+  } else {
     for (int i = 0; i < num_nodes - 1; ++i) {
-      post_visits[i] = (*pre_travel_evaluator)(nodes[i], nodes[i + 1]);
+      post_visits[i] = pre_travel_evaluator(nodes[i], nodes[i + 1]);
     }
     post_visits.back() = 0;
-  } else {
-    absl::c_fill(post_visits, 0);
   }
-  if (post_travel_evaluator.has_value()) {
+  if (post_travel_evaluator == nullptr) {
+    absl::c_fill(pre_visits, 0);
+  } else {
     pre_visits[0] = 0;
     for (int i = 1; i < num_nodes; ++i) {
-      pre_visits[i] = (*post_travel_evaluator)(nodes[i - 1], nodes[i]);
+      pre_visits[i] = post_travel_evaluator(nodes[i - 1], nodes[i]);
     }
-  } else {
-    absl::c_fill(pre_visits, 0);
   }
 }
 
@@ -1654,7 +1364,10 @@ class PathCumulFilter : public BasePathFilter {
   bool FillDimensionValues(int path);
   // Propagates the transit constraint, cumul[r] + transit[r] == cumul[r+1],
   // in dimension_values_'s current path data.
-  bool PropagateTransitsAndSpans(int path);
+  bool PropagateTransits(int path);
+  // Propagates the transit constraint supposing that there are no forbidden
+  // intervals for cumuls. This is faster than considering the intervals.
+  bool PropagateTransitsWithoutForbiddenIntervals(int path);
   // Propagates both the transit constraint and cumul forbidden intervals.
   bool PropagateTransitsWithForbiddenIntervals(int path);
   // Propagates the span constraint, cumul[start] + span == cumul[end].
@@ -1785,9 +1498,6 @@ class PathCumulFilter : public BasePathFilter {
   // Data reflecting information on path variables for the committed and the
   // current solution.
   DimensionValues dimension_values_;
-  PrePostVisitValues visits_;
-  BreakPropagator break_propagator_;
-
   // Maps each path to the sum of its path-only costs: span/slack cost,
   // soft cumul costs, soft span limits.
   CommittableArray<int64_t> cost_of_path_;
@@ -1809,7 +1519,6 @@ class PathCumulFilter : public BasePathFilter {
   // This vector is empty if there are no precedences on the dimension_.
   const std::vector<std::vector<RoutingDimension::NodePrecedence>>
       node_index_to_precedences_;
-  absl::flat_hash_map<std::pair<int, int>, int64_t> precedence_offsets_;
   struct PathAndRank {
     int path = -1;
     int rank = -1;
@@ -1988,8 +1697,6 @@ PathCumulFilter::PathCumulFilter(const RoutingModel& routing_model,
                          })),
 
       dimension_values_(routing_model.vehicles(), dimension.cumuls().size()),
-      visits_(routing_model.vehicles(), dimension.cumuls().size()),
-      break_propagator_(dimension.cumuls().size()),
       cost_of_path_(NumPaths(), 0),
       synchronized_objective_value_(0),
       accepted_objective_value_(0),
@@ -2004,15 +1711,6 @@ PathCumulFilter::PathCumulFilter(const RoutingModel& routing_model,
       filter_objective_cost_(filter_objective_cost),
       may_use_optimizers_(may_use_optimizers),
       propagate_own_objective_value_(propagate_own_objective_value) {
-  for (int node = 0; node < node_index_to_precedences_.size(); ++node) {
-    for (const auto [first_node, second_node, offset,
-                     unused_performed_constraint] :
-         node_index_to_precedences_[node]) {
-      int64_t& current_offset = gtl::LookupOrInsert(
-          &precedence_offsets_, {first_node, second_node}, offset);
-      current_offset = std::max(current_offset, offset);
-    }
-  }
 #ifndef NDEBUG
   for (int vehicle = 0; vehicle < routing_model.vehicles(); vehicle++) {
     if (FilterWithDimensionCumulOptimizerForVehicle(vehicle)) {
@@ -2023,12 +1721,11 @@ PathCumulFilter::PathCumulFilter(const RoutingModel& routing_model,
 #endif  // NDEBUG
 }
 
-bool PathCumulFilter::PropagateTransitsAndSpans(int path) {
+bool PathCumulFilter::PropagateTransits(int path) {
   if (has_forbidden_intervals_) {
-    return PropagateSpan(path) &&
-           PropagateTransitsWithForbiddenIntervals(path) && PropagateSpan(path);
+    return PropagateTransitsWithForbiddenIntervals(path);
   } else {
-    return PropagateTransitAndSpan(path, dimension_values_);
+    return PropagateTransitsWithoutForbiddenIntervals(path);
   }
 }
 
@@ -2062,6 +1759,27 @@ bool PathCumulFilter::PropagateTransitsWithForbiddenIntervals(int path) {
     cumul.Subtract(transits[r]);
     if (!cumul.IntersectWith(cumuls[r])) return false;
     if (!reduce_to_allowed_interval(cumul, nodes[r])) return false;
+    cumuls[r] = cumul;
+  }
+  return true;
+}
+
+bool PathCumulFilter::PropagateTransitsWithoutForbiddenIntervals(int path) {
+  DCHECK_LT(0, dimension_values_.NumNodes(path));
+  absl::Span<Interval> cumuls = dimension_values_.MutableCumuls(path);
+  absl::Span<const Interval> transits = dimension_values_.Transits(path);
+  const int num_nodes = dimension_values_.NumNodes(path);
+  // Propagate from start to end.
+  Interval cumul = cumuls.front();
+  for (int r = 1; r < num_nodes; ++r) {
+    cumul.Add(transits[r - 1]);
+    if (!cumul.IntersectWith(cumuls[r])) return false;
+    cumuls[r] = cumul;
+  }
+  // Propagate from end to start.
+  for (int r = num_nodes - 2; r >= 0; --r) {
+    cumul.Subtract(transits[r]);
+    if (!cumul.IntersectWith(cumuls[r])) return false;
     cumuls[r] = cumul;
   }
   return true;
@@ -2184,58 +1902,19 @@ bool PathCumulFilter::AcceptPath(int64_t path_start, int64_t /*chain_start*/,
   // Filter feasibility: cumul windows, transit, span, breaks.
   // The first PropagateSpan() is mostly used to check feasibility of total
   // travel within span max, the second can tighten all start/end/span bounds.
-  if (!PropagateTransitsAndSpans(path)) return false;
+  if (!PropagateSpan(path) || !PropagateTransits(path) ||
+      !PropagateSpan(path)) {
+    return false;
+  }
   if (dimension_.HasPickupToDeliveryLimits()) {
     if (!PropagatePickupToDeliveryLimits(path)) return false;
     // Re-propagate span and transits.
-    if (!PropagateTransitsAndSpans(path)) return false;
-  }
-  if (FilterVehicleBreaks(path)) {
-    // TODO(user) using enum BreakPropagator::PropagationResult once C++20
-    // support is available in OSS.
-    const auto& interbreaks =
-        dimension_.GetBreakDistanceDurationOfVehicle(path);
-    if (!PropagateVehicleBreaks(path) ||
-        break_propagator_.PropagateInterbreak(path, dimension_values_,
-                                              interbreaks) ==
-            BreakPropagator::PropagationResult::kInfeasible ||
-        !PropagateTransitsAndSpans(path)) {
+    if (!PropagateSpan(path) || !PropagateTransits(path) ||
+        !PropagateSpan(path)) {
       return false;
     }
-    // Fill pre/post travel data.
-    visits_.Revert();
-    auto any_invocable = [this](int evaluator_index)
-        -> std::optional<absl::AnyInvocable<int64_t(int64_t, int64_t) const>> {
-      const auto& evaluator =
-          evaluator_index == -1
-              ? nullptr
-              : dimension_.model()->TransitCallback(evaluator_index);
-      if (evaluator == nullptr) return std::nullopt;
-      return evaluator;
-    };
-    FillPrePostVisitValues(
-        path, dimension_values_,
-        any_invocable(dimension_.GetPreTravelEvaluatorOfVehicle(path)),
-        any_invocable(dimension_.GetPostTravelEvaluatorOfVehicle(path)),
-        visits_);
-    // Loop until there are no changes, capped at a small number of iterations.
-    BreakPropagator::PropagationResult result = BreakPropagator::kChanged;
-    int num_iterations = 2;
-    while (result == BreakPropagator::kChanged && num_iterations-- > 0) {
-      result =
-          break_propagator_.FastPropagations(path, dimension_values_, visits_);
-      if (result == BreakPropagator::kChanged) {
-        if (!PropagateVehicleBreaks(path) ||
-            break_propagator_.PropagateInterbreak(path, dimension_values_,
-                                                  interbreaks) ==
-                BreakPropagator::PropagationResult::kInfeasible ||
-            !PropagateTransitsAndSpans(path)) {
-          return false;
-        }
-      }
-    }
-    if (result == BreakPropagator::kInfeasible) return false;
   }
+  if (FilterVehicleBreaks(path) && !PropagateVehicleBreaks(path)) return false;
 
   // Filter costs: span (linear/quadratic/piecewise),
   // soft cumul windows (linear/piecewise).
@@ -2310,28 +1989,6 @@ bool PathCumulFilter::FinalizeAcceptPath(int64_t /*objective_min*/,
                                          int64_t objective_max) {
   if (lns_detected()) return true;
   if (FilterPrecedences()) {
-    // Fast pass on consecutive nodes of changed paths, useful when the number
-    // of precedences is much larger than the number of nodes.
-    // TODO(user): Remove this when we have a better way to express
-    // precedence chains, which does not require a quadratic number of
-    // precedences.
-    for (const int path : dimension_values_.ChangedPaths()) {
-      const absl::Span<const int64_t> travel_sums =
-          dimension_values_.TravelSums(path);
-      int prev = -1;
-      int rank = -1;
-      for (const int node : dimension_values_.Nodes(path)) {
-        int64_t offset = std::numeric_limits<int64_t>::min();
-        // Check the "opposite" precedence constraint.
-        if (gtl::FindCopy(precedence_offsets_, std::pair<int, int>{node, prev},
-                          &offset) &&
-            CapSub(travel_sums[rank], travel_sums[rank + 1]) < offset) {
-          return false;
-        }
-        prev = node;
-        ++rank;
-      }
-    }
     // Find location of all nodes: remove committed nodes of changed paths,
     // then add nodes of changed paths. This removes nodes that became loops.
     for (const int path : dimension_values_.ChangedPaths()) {
@@ -2371,17 +2028,6 @@ bool PathCumulFilter::FinalizeAcceptPath(int64_t /*objective_min*/,
           DCHECK(node == first_node || node == second_node);
           DCHECK_EQ(first_node, dimension_values_.Nodes(path1)[rank1]);
           DCHECK_EQ(second_node, dimension_values_.Nodes(path2)[rank2]);
-          // Check the compatibility between the precedence and the implicit
-          // precedence induced from the route sequence.
-          if (path1 == path2 && rank2 < rank1) {
-            absl::Span<const int64_t> travel_sums =
-                dimension_values_.TravelSums(path);
-            // Check that travel(second_node, first_node) <= -offset,
-            // (equivalent to -travel(second_node, first_node) >= offset).
-            if (CapSub(travel_sums[rank2], travel_sums[rank1]) < offset) {
-              return false;
-            }
-          }
           // Check that cumul1 + offset <= cumul2 is feasible.
           if (CapAdd(dimension_values_.Cumuls(path1)[rank1].min, offset) >
               dimension_values_.Cumuls(path2)[rank2].max)
@@ -2452,7 +2098,9 @@ bool PathCumulFilter::FinalizeAcceptPath(int64_t /*objective_min*/,
               path_accessor_, /*resource=*/nullptr,
               filter_objective_cost_ ? &path_cost_with_lp : nullptr);
       solve_duration_shares--;
-      if (status == DimensionSchedulingStatus::INFEASIBLE) return false;
+      if (status == DimensionSchedulingStatus::INFEASIBLE) {
+        return false;
+      }
       // Replace previous path cost with the LP optimizer cost.
       if (filter_objective_cost_ &&
           (status == DimensionSchedulingStatus::OPTIMAL ||
@@ -3016,7 +2664,7 @@ bool PickupDeliveryFilter::AcceptPathOrdered(int path) {
 
 LocalSearchFilter* MakePickupDeliveryFilter(
     const RoutingModel& routing_model, const PathState* path_state,
-    absl::Span<const PickupDeliveryPair> pairs,
+    const std::vector<PickupDeliveryPair>& pairs,
     const std::vector<RoutingModel::PickupAndDeliveryPolicy>&
         vehicle_policies) {
   return routing_model.solver()->RevAlloc(

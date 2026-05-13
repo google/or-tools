@@ -13,10 +13,7 @@
 
 #include "ortools/util/proto_tools.h"
 
-#include <cstddef>
-#include <cstdint>
 #include <string>
-#include <vector>
 
 #include "absl/strings/str_cat.h"
 #include "google/protobuf/descriptor.h"

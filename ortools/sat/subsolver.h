@@ -14,8 +14,8 @@
 // Simple framework for choosing and distributing a solver "sub-tasks" on a set
 // of threads.
 
-#ifndef ORTOOLS_SAT_SUBSOLVER_H_
-#define ORTOOLS_SAT_SUBSOLVER_H_
+#ifndef OR_TOOLS_SAT_SUBSOLVER_H_
+#define OR_TOOLS_SAT_SUBSOLVER_H_
 
 #include <algorithm>
 #include <cmath>
@@ -101,7 +101,6 @@ class SubSolver {
   // called sequentially. Subclasses do not need to call this.
   void AddTaskDuration(double duration_in_seconds) {
     ++num_finished_tasks_;
-    duration_in_seconds = std::max(0.0, duration_in_seconds);
     wall_time_ += duration_in_seconds;
     timing_.AddTimeInSec(duration_in_seconds);
   }
@@ -227,4 +226,4 @@ void SequentialLoop(std::vector<std::unique_ptr<SubSolver>>& subsolvers);
 }  // namespace sat
 }  // namespace operations_research
 
-#endif  // ORTOOLS_SAT_SUBSOLVER_H_
+#endif  // OR_TOOLS_SAT_SUBSOLVER_H_

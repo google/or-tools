@@ -11,18 +11,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ORTOOLS_CONSTRAINT_SOLVER_ROUTING_FILTERS_H_
-#define ORTOOLS_CONSTRAINT_SOLVER_ROUTING_FILTERS_H_
+#ifndef OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_FILTERS_H_
+#define OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_FILTERS_H_
 
 #include <cstdint>
 #include <functional>
 #include <initializer_list>
 #include <memory>
-#include <optional>
 #include <utility>
 #include <vector>
 
-#include "absl/functional/any_invocable.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/types.h"
@@ -53,10 +51,8 @@ bool FillDimensionValuesFromRoutingDimension(
 
 void FillPrePostVisitValues(
     int path, const DimensionValues& dimension_values,
-    std::optional<absl::AnyInvocable<int64_t(int64_t, int64_t) const>>
-        pre_travel_evaluator,
-    std::optional<absl::AnyInvocable<int64_t(int64_t, int64_t) const>>
-        post_travel_evaluator,
+    absl::AnyInvocable<int64_t(int64_t, int64_t) const> pre_travel_evaluator,
+    absl::AnyInvocable<int64_t(int64_t, int64_t) const> post_travel_evaluator,
     PrePostVisitValues& visit_values);
 
 // Propagates vehicle break constraints in dimension_values.
@@ -81,21 +77,12 @@ IntVarLocalSearchFilter* MakeMaxActiveVehiclesFilter(
 IntVarLocalSearchFilter* MakeActiveNodeGroupFilter(
     const RoutingModel& routing_model);
 
-/// Returns a filter ensuring that for each ordered activity group,
-/// if nodes[i] is active then nodes[i-1] is active.
-IntVarLocalSearchFilter* MakeOrderedActivityGroupFilter(
-    const RoutingModel& routing_model);
-
 /// Returns a filter ensuring that node disjunction constraints are enforced.
 IntVarLocalSearchFilter* MakeNodeDisjunctionFilter(
     const RoutingModel& routing_model, bool filter_cost);
 
 /// Returns a filter computing vehicle amortized costs.
 IntVarLocalSearchFilter* MakeVehicleAmortizedCostFilter(
-    const RoutingModel& routing_model);
-
-/// Returns a filter computing same vehicle costs.
-IntVarLocalSearchFilter* MakeSameVehicleCostFilter(
     const RoutingModel& routing_model);
 
 /// Returns a filter ensuring type regulation constraints are enforced.
@@ -490,7 +477,7 @@ LocalSearchFilter* MakeVehicleVarFilter(const RoutingModel& routing_model,
 /// pair of nodes and given policies.
 LocalSearchFilter* MakePickupDeliveryFilter(
     const RoutingModel& routing_model, const PathState* path_state,
-    absl::Span<const PickupDeliveryPair> pairs,
+    const std::vector<PickupDeliveryPair>& pairs,
     const std::vector<RoutingModel::PickupAndDeliveryPolicy>& vehicle_policies);
 
 // This checker enforces dimension requirements.
@@ -1034,4 +1021,4 @@ class BasePathFilter : public IntVarLocalSearchFilter {
 
 }  // namespace operations_research
 
-#endif  // ORTOOLS_CONSTRAINT_SOLVER_ROUTING_FILTERS_H_
+#endif  // OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_FILTERS_H_

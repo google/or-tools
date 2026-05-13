@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ORTOOLS_MATH_OPT_SOLVERS_GUROBI_SOLVER_H_
-#define ORTOOLS_MATH_OPT_SOLVERS_GUROBI_SOLVER_H_
+#ifndef OR_TOOLS_MATH_OPT_SOLVERS_GUROBI_SOLVER_H_
+#define OR_TOOLS_MATH_OPT_SOLVERS_GUROBI_SOLVER_H_
 
 #include <cstdint>
 #include <limits>
@@ -28,6 +28,7 @@
 #include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "ortools/base/linked_hash_map.h"
+#include "ortools/gurobi/environment.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/invalid_indicators.h"
 #include "ortools/math_opt/core/inverted_bounds.h"
@@ -43,7 +44,6 @@
 #include "ortools/math_opt/solvers/gurobi_callback.h"
 #include "ortools/math_opt/solvers/message_callback_data.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
-#include "ortools/third_party_solvers/gurobi_environment.h"
 #include "ortools/util/solve_interrupter.h"
 
 namespace operations_research {
@@ -474,4 +474,4 @@ class GurobiSolver : public SolverInterface {
 }  // namespace math_opt
 }  // namespace operations_research
 
-#endif  // ORTOOLS_MATH_OPT_SOLVERS_GUROBI_SOLVER_H_
+#endif  // OR_TOOLS_MATH_OPT_SOLVERS_GUROBI_SOLVER_H_

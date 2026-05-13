@@ -23,7 +23,6 @@ if(NOT TARGET ${PROJECT_NAMESPACE}::ortools)
 endif()
 
 # Will need swig
-set(SWIG_SOURCE_FILE_EXTENSIONS ".i" ".swig")
 set(CMAKE_SWIG_FLAGS)
 find_package(SWIG REQUIRED)
 include(UseSWIG)
@@ -171,6 +170,10 @@ if(USE_PDLP OR BUILD_MATH_OPT)
   file(GLOB_RECURSE PDLP_PROTO_PY_FILES RELATIVE ${PROJECT_SOURCE_DIR} "ortools/pdlp/*.proto")
   list(APPEND OR_TOOLS_PROTO_PY_FILES ${PDLP_PROTO_PY_FILES})
 endif()
+if(USE_SCIP OR BUILD_MATH_OPT)
+  file(GLOB_RECURSE GSCIP_PROTO_PY_FILES RELATIVE ${PROJECT_SOURCE_DIR} "ortools/gscip/*.proto")
+  list(APPEND OR_TOOLS_PROTO_PY_FILES ${GSCIP_PROTO_PY_FILES})
+endif()
 
 foreach(PROTO_FILE IN LISTS OR_TOOLS_PROTO_PY_FILES)
   #message(STATUS "protoc proto(py): ${PROTO_FILE}")
@@ -317,6 +320,7 @@ file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/constraint_solver/__init__.py CONTENT
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/glop/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/graph/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/graph/python/__init__.py CONTENT "")
+file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/gscip/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/init/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/init/python/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/linear_solver/__init__.py CONTENT "")
@@ -335,7 +339,6 @@ if(BUILD_MATH_OPT)
   file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/math_opt/python/ipc/__init__.py CONTENT "")
   file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/math_opt/python/testing/__init__.py CONTENT "")
   file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/math_opt/solvers/__init__.py CONTENT "")
-  file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/math_opt/solvers/gscip/__init__.py CONTENT "")
 
   file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/service/__init__.py CONTENT "")
   file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/service/v1/__init__.py CONTENT "")
@@ -375,6 +378,7 @@ if(BUILD_MATH_OPT)
     ortools/math_opt/python/errors.py
     ortools/math_opt/python/expressions.py
     ortools/math_opt/python/from_model.py
+    ortools/math_opt/python/hash_model_storage.py
     ortools/math_opt/python/indicator_constraints.py
     ortools/math_opt/python/init_arguments.py
     ortools/math_opt/python/linear_constraints.py
@@ -382,6 +386,7 @@ if(BUILD_MATH_OPT)
     ortools/math_opt/python/message_callback.py
     ortools/math_opt/python/model.py
     ortools/math_opt/python/model_parameters.py
+    ortools/math_opt/python/model_storage.py
     ortools/math_opt/python/normalized_inequality.py
     ortools/math_opt/python/normalize.py
     ortools/math_opt/python/objectives.py
@@ -409,14 +414,12 @@ if(BUILD_MATH_OPT)
 endif()
 file(COPY
   ortools/sat/python/cp_model.py
+  ortools/sat/python/cp_model_numbers.py
   DESTINATION ${PYTHON_PROJECT_DIR}/sat/python)
 file(COPY
   ortools/sat/colab/flags.py
   ortools/sat/colab/visualization.py
   DESTINATION ${PYTHON_PROJECT_DIR}/sat/colab)
-file(COPY
-  ortools/util/python/solve_interrupter.py
-  DESTINATION ${PYTHON_PROJECT_DIR}/util/python)
 
 # Adds py.typed to make typed packages.
 file(TOUCH ${PYTHON_PROJECT_DIR}/linear_solver/python/py.typed)
@@ -487,19 +490,16 @@ add_custom_command(
   OUTPUT python/ortools_timestamp
   COMMAND ${CMAKE_COMMAND} -E remove -f ortools_timestamp
   COMMAND ${CMAKE_COMMAND} -E make_directory ${PYTHON_PROJECT}/.libs
-
   COMMAND ${CMAKE_COMMAND} -E
     $<IF:$<BOOL:${BUILD_ZLIB}>,copy,true>
     $<${need_unix_zlib_lib}:$<TARGET_SONAME_FILE:ZLIB::ZLIB>>
     $<${need_windows_zlib_lib}:$<TARGET_FILE:ZLIB::ZLIB>>
     ${PYTHON_PROJECT}/.libs
-
   COMMAND ${CMAKE_COMMAND} -E
     $<IF:$<BOOL:${BUILD_BZip2}>,copy,true>
     $<${need_unix_bzip2_lib}:$<TARGET_SONAME_FILE:BZip2::BZip2>>
     $<${need_windows_bzip2_lib}:$<TARGET_FILE:BZip2::BZip2>>
     ${PYTHON_PROJECT}/.libs
-
   COMMAND ${CMAKE_COMMAND} -E
     $<IF:$<BOOL:${BUILD_absl}>,copy,true>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::base>>
@@ -538,7 +538,6 @@ add_custom_command(
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::int128>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::kernel_timeout_internal>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::leak_check>>
-    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::log_entry>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::log_flags>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::log_globals>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::log_initialize>>
@@ -554,6 +553,7 @@ add_custom_command(
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::log_internal_proto>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::log_severity>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::log_sink>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::low_level_hash>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::malloc_internal>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::random_distributions>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::random_internal_entropy_pool>>
@@ -643,7 +643,6 @@ add_custom_command(
     $<${need_unix_ortools_lib}:$<TARGET_SONAME_FILE:${PROJECT_NAMESPACE}::ortools>>
     $<${need_windows_ortools_lib}:$<TARGET_FILE:${PROJECT_NAMESPACE}::ortools>>
     ${PYTHON_PROJECT}/.libs
-
   COMMAND ${CMAKE_COMMAND} -E touch ${PROJECT_BINARY_DIR}/python/ortools_timestamp
   MAIN_DEPENDENCY
     ortools/python/setup.py.in
@@ -695,11 +694,6 @@ add_custom_command(
    $<TARGET_FILE:set_cover_pybind11> ${PYTHON_PROJECT}/set_cover/python
   COMMAND ${CMAKE_COMMAND} -E copy
    $<TARGET_FILE:sorted_interval_list_pybind11> ${PYTHON_PROJECT}/util/python
-  COMMAND ${CMAKE_COMMAND} -E copy
-   $<TARGET_FILE:solve_interrupter_pybind11> ${PYTHON_PROJECT}/util/python
-  COMMAND ${CMAKE_COMMAND} -E
-   $<IF:$<BOOL:${BUILD_TESTING}>,copy,true>
-   $<$<TARGET_EXISTS:solve_interrupter_testing_pybind11>:$<TARGET_FILE:solve_interrupter_testing_pybind11>> ${PYTHON_PROJECT}/util/python
   COMMAND ${CMAKE_COMMAND} -E touch ${PROJECT_BINARY_DIR}/python/pybind11_timestamp
   MAIN_DEPENDENCY
     ortools/python/setup.py.in
@@ -720,8 +714,6 @@ add_custom_command(
     rcpsp_pybind11
     set_cover_pybind11
     sorted_interval_list_pybind11
-    solve_interrupter_pybind11
-    $<TARGET_NAME_IF_EXISTS:solve_interrupter_testing_pybind11>
   WORKING_DIRECTORY python
   COMMAND_EXPAND_LISTS)
 
@@ -759,7 +751,6 @@ add_custom_command(
   COMMAND ${stubgen_EXECUTABLE} -p ortools.scheduling.python.rcpsp --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.set_cover.python.set_cover --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.util.python.sorted_interval_list --output .
-  COMMAND ${stubgen_EXECUTABLE} -p ortools.util.python.pybind_solve_interrupter --output .
   COMMAND ${CMAKE_COMMAND} -E touch ${PROJECT_BINARY_DIR}/python/stub_timestamp
   MAIN_DEPENDENCY
     ortools/python/setup.py.in
@@ -858,7 +849,7 @@ if(BUILD_PYTHON_DOC)
   if(DOXYGEN_FOUND)
     configure_file(${PROJECT_SOURCE_DIR}/ortools/python/Doxyfile.in ${PROJECT_BINARY_DIR}/python/Doxyfile @ONLY)
     file(DOWNLOAD
-      https://raw.githubusercontent.com/jothepro/doxygen-awesome-css/v2.3.4/doxygen-awesome.css
+      https://raw.githubusercontent.com/jothepro/doxygen-awesome-css/v2.1.0/doxygen-awesome.css
       ${PROJECT_BINARY_DIR}/python/doxygen-awesome.css
       SHOW_PROGRESS
     )
@@ -870,8 +861,6 @@ if(BUILD_PYTHON_DOC)
         python_package
         ${PROJECT_BINARY_DIR}/python/Doxyfile
         ${PROJECT_BINARY_DIR}/python/doxygen-awesome.css
-        ${PROJECT_SOURCE_DIR}/ortools/doxygen/header.html
-        ${PROJECT_SOURCE_DIR}/ortools/doxygen/DoxygenLayout.xml
         ${PROJECT_SOURCE_DIR}/ortools/python/stylesheet.css
       WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
       COMMENT "Generating Python API documentation with Doxygen"

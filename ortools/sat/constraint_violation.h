@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ORTOOLS_SAT_CONSTRAINT_VIOLATION_H_
-#define ORTOOLS_SAT_CONSTRAINT_VIOLATION_H_
+#ifndef OR_TOOLS_SAT_CONSTRAINT_VIOLATION_H_
+#define OR_TOOLS_SAT_CONSTRAINT_VIOLATION_H_
 
 #include <cstddef>
 #include <cstdint>
@@ -291,26 +291,8 @@ class CompiledConstraintWithProto : public CompiledConstraint {
 
   const ConstraintProto& ct_proto() const { return ct_proto_; }
 
-  int64_t ComputeViolation(absl::Span<const int64_t> solution) final;
-
-  // Returns the delta if var changes from old_value to solution[var].
-  int64_t ViolationDelta(
-      int var, int64_t old_value,
-      absl::Span<const int64_t> solution_with_new_value) final;
-
   // This just returns the variables used by the stored ct_proto_.
   std::vector<int> UsedVariables(const CpModelProto& model_proto) const final;
-
- protected:
-  // Computes the violation of a constraint when it is enforced.
-  virtual int64_t ComputeViolationWhenEnforced(
-      absl::Span<const int64_t> solution) = 0;
-
-  // Returns the delta if var changes from old_value to solution[var], assuming
-  // that the constraint was and stays enforced after the change.
-  virtual int64_t ViolationDeltaWhenEnforced(
-      int var, int64_t old_value,
-      absl::Span<const int64_t> solution_with_new_value);
 
  private:
   const ConstraintProto& ct_proto_;
@@ -331,7 +313,7 @@ class LsEvaluator {
               TimeLimit* time_limit);
   LsEvaluator(const CpModelProto& cp_model, const SatParameters& params,
               const std::vector<bool>& ignored_constraints,
-              absl::Span<const ConstraintProto> additional_constraints,
+              const std::vector<ConstraintProto>& additional_constraints,
               TimeLimit* time_limit);
 
   // Intersects the domain of the objective with [lb..ub].
@@ -452,7 +434,7 @@ class LsEvaluator {
  private:
   void CompileConstraintsAndObjective(
       const std::vector<bool>& ignored_constraints,
-      absl::Span<const ConstraintProto> additional_constraints);
+      const std::vector<ConstraintProto>& additional_constraints);
 
   void CompileOneConstraint(const ConstraintProto& ct_proto);
   void BuildVarConstraintGraph();
@@ -488,10 +470,9 @@ class CompiledBoolXorConstraint : public CompiledConstraintWithProto {
   explicit CompiledBoolXorConstraint(const ConstraintProto& ct_proto);
   ~CompiledBoolXorConstraint() override = default;
 
-  int64_t ComputeViolationWhenEnforced(
-      absl::Span<const int64_t> solution) override;
-  int64_t ViolationDeltaWhenEnforced(
-      int var, int64_t old_value,
+  int64_t ComputeViolation(absl::Span<const int64_t> solution) override;
+  int64_t ViolationDelta(
+      int /*var*/, int64_t /*old_value*/,
       absl::Span<const int64_t> solution_with_new_value) override;
 };
 
@@ -504,8 +485,7 @@ class CompiledLinMaxConstraint : public CompiledConstraintWithProto {
   explicit CompiledLinMaxConstraint(const ConstraintProto& ct_proto);
   ~CompiledLinMaxConstraint() override = default;
 
-  int64_t ComputeViolationWhenEnforced(
-      absl::Span<const int64_t> solution) override;
+  int64_t ComputeViolation(absl::Span<const int64_t> solution) override;
 };
 
 // The violation of an int_prod constraint is
@@ -515,8 +495,7 @@ class CompiledIntProdConstraint : public CompiledConstraintWithProto {
   explicit CompiledIntProdConstraint(const ConstraintProto& ct_proto);
   ~CompiledIntProdConstraint() override = default;
 
-  int64_t ComputeViolationWhenEnforced(
-      absl::Span<const int64_t> solution) override;
+  int64_t ComputeViolation(absl::Span<const int64_t> solution) override;
 };
 
 // The violation of an int_div constraint is
@@ -526,8 +505,7 @@ class CompiledIntDivConstraint : public CompiledConstraintWithProto {
   explicit CompiledIntDivConstraint(const ConstraintProto& ct_proto);
   ~CompiledIntDivConstraint() override = default;
 
-  int64_t ComputeViolationWhenEnforced(
-      absl::Span<const int64_t> solution) override;
+  int64_t ComputeViolation(absl::Span<const int64_t> solution) override;
 };
 
 // The violation of an int_mod constraint is defined as follow:
@@ -547,8 +525,7 @@ class CompiledIntModConstraint : public CompiledConstraintWithProto {
   explicit CompiledIntModConstraint(const ConstraintProto& ct_proto);
   ~CompiledIntModConstraint() override = default;
 
-  int64_t ComputeViolationWhenEnforced(
-      absl::Span<const int64_t> solution) override;
+  int64_t ComputeViolation(absl::Span<const int64_t> solution) override;
 };
 
 // The violation of a all_diff is the number of unordered pairs of expressions
@@ -558,8 +535,7 @@ class CompiledAllDiffConstraint : public CompiledConstraintWithProto {
   explicit CompiledAllDiffConstraint(const ConstraintProto& ct_proto);
   ~CompiledAllDiffConstraint() override = default;
 
-  int64_t ComputeViolationWhenEnforced(
-      absl::Span<const int64_t> solution) override;
+  int64_t ComputeViolation(absl::Span<const int64_t> solution) override;
 
  private:
   std::vector<int64_t> values_;
@@ -588,7 +564,7 @@ struct ViewOfAffineLinearExpressionProto {
 };
 
 // Special constraint for no overlap between two intervals.
-// We usually expand small no-overlap in n^2 such constraints, so we want to
+// We usually expand small no-overlap in n^2 such constraint, so we want to
 // be compact and efficient here.
 template <bool has_enforcement = true>
 class CompiledNoOverlapWithTwoIntervals : public CompiledConstraint {
@@ -600,15 +576,11 @@ class CompiledNoOverlapWithTwoIntervals : public CompiledConstraint {
     ViewOfAffineLinearExpressionProto end;
   };
 
-  CompiledNoOverlapWithTwoIntervals(absl::Span<const int> enforcement_literals,
-                                    const ConstraintProto& x1,
+  CompiledNoOverlapWithTwoIntervals(const ConstraintProto& x1,
                                     const ConstraintProto& x2)
       : interval1_(x1), interval2_(x2) {
     if (has_enforcement) {
-      enforcements_.assign(enforcement_literals.begin(),
-                           enforcement_literals.end());
-      enforcements_.insert(enforcements_.end(),
-                           x1.enforcement_literal().begin(),
+      enforcements_.assign(x1.enforcement_literal().begin(),
                            x1.enforcement_literal().end());
       enforcements_.insert(enforcements_.end(),
                            x2.enforcement_literal().begin(),
@@ -646,8 +618,7 @@ class CompiledNoOverlap2dConstraint : public CompiledConstraintWithProto {
                                 const CpModelProto& cp_model);
   ~CompiledNoOverlap2dConstraint() override = default;
 
-  int64_t ComputeViolationWhenEnforced(
-      absl::Span<const int64_t> solution) override;
+  int64_t ComputeViolation(absl::Span<const int64_t> solution) override;
 
  private:
   const CpModelProto& cp_model_;
@@ -668,17 +639,13 @@ class CompiledNoOverlap2dWithTwoBoxes : public CompiledConstraint {
     ViewOfAffineLinearExpressionProto y_max;
   };
 
-  CompiledNoOverlap2dWithTwoBoxes(absl::Span<const int> enforcement_literals,
-                                  const ConstraintProto& x1,
+  CompiledNoOverlap2dWithTwoBoxes(const ConstraintProto& x1,
                                   const ConstraintProto& y1,
                                   const ConstraintProto& x2,
                                   const ConstraintProto& y2)
       : box1_(x1, y1), box2_(x2, y2) {
     if (has_enforcement) {
-      enforcements_.assign(enforcement_literals.begin(),
-                           enforcement_literals.end());
-      enforcements_.insert(enforcements_.end(),
-                           x1.enforcement_literal().begin(),
+      enforcements_.assign(x1.enforcement_literal().begin(),
                            x1.enforcement_literal().end());
       enforcements_.insert(enforcements_.end(),
                            y1.enforcement_literal().begin(),
@@ -728,13 +695,11 @@ class CompiledNoOverlap2dWithTwoBoxes : public CompiledConstraint {
 // ViolationDelta().
 class CompiledReservoirConstraint : public CompiledConstraint {
  public:
-  CompiledReservoirConstraint(std::vector<int> enforcement_literals,
-                              LinearExpressionProto capacity,
+  CompiledReservoirConstraint(LinearExpressionProto capacity,
                               std::vector<std::optional<int>> is_active,
                               std::vector<LinearExpressionProto> times,
                               std::vector<LinearExpressionProto> demands)
-      : enforcement_literals_(std::move(enforcement_literals)),
-        capacity_(std::move(capacity)),
+      : capacity_(std::move(capacity)),
         is_active_(std::move(is_active)),
         times_(std::move(times)),
         demands_(std::move(demands)) {
@@ -744,7 +709,13 @@ class CompiledReservoirConstraint : public CompiledConstraint {
     InitializeDenseIndexToEvents();
   }
 
-  int64_t ComputeViolation(absl::Span<const int64_t> solution) final;
+  // Note that since we have our own ViolationDelta() implementation this is
+  // only used for initialization and our PerformMove(). It is why we set
+  // violations_ here.
+  int64_t ComputeViolation(absl::Span<const int64_t> solution) final {
+    violation_ = BuildProfileAndReturnViolation(solution);
+    return violation_;
+  }
 
   void PerformMove(int /*var*/, int64_t /*old_value*/,
                    absl::Span<const int64_t> solution_with_new_value) final {
@@ -776,7 +747,6 @@ class CompiledReservoirConstraint : public CompiledConstraint {
 
   // The const data from the constructor.
   // Note that is_active_ might be empty if all events are mandatory.
-  const std::vector<int> enforcement_literals_;
   const LinearExpressionProto capacity_;
   const std::vector<std::optional<int>> is_active_;
   const std::vector<LinearExpressionProto> times_;
@@ -804,4 +774,4 @@ class CompiledReservoirConstraint : public CompiledConstraint {
 }  // namespace sat
 }  // namespace operations_research
 
-#endif  // ORTOOLS_SAT_CONSTRAINT_VIOLATION_H_
+#endif  // OR_TOOLS_SAT_CONSTRAINT_VIOLATION_H_

@@ -23,8 +23,8 @@
 // number of edges of the subgraph induced by odd-degree nodes of the minimum
 // spanning tree.
 
-#ifndef ORTOOLS_GRAPH_CHRISTOFIDES_H_
-#define ORTOOLS_GRAPH_CHRISTOFIDES_H_
+#ifndef OR_TOOLS_GRAPH_CHRISTOFIDES_H_
+#define OR_TOOLS_GRAPH_CHRISTOFIDES_H_
 
 #include <cstdint>
 #include <functional>
@@ -35,7 +35,6 @@
 
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
-#include "absl/strings/str_cat.h"
 #include "ortools/base/logging.h"
 #include "ortools/graph/eulerian_path.h"
 #include "ortools/graph/graph.h"
@@ -49,7 +48,6 @@ namespace operations_research {
 
 using ::util::CompleteGraph;
 
-// TODO(user): Only support integer weights/costs.
 template <typename CostType, typename ArcIndex = int64_t,
           typename NodeIndex = int32_t,
           typename CostFunction = std::function<CostType(NodeIndex, NodeIndex)>>
@@ -68,22 +66,23 @@ class ChristofidesPathSolver {
   // (MINIMUM_WEIGHT_MATCHING) guarantees the 3/2 upper bound to the optimal
   // solution. A minimal weight perfect matching (MINIMAL_WEIGHT_MATCHING)
   // finds a locally minimal weight matching which does not offer any bound
-  // guarantee but, as of 09/2025, can sometimes be faster on larger problems.
-  // By default, MINIMUM_WEIGHT_MATCHING is selected.
+  // guarantee but, as of 1/2017, is orders of magnitude faster than the
+  // minimum matching.
+  // By default, MINIMAL_WEIGHT_MATCHING is selected.
+  // TODO(user): Change the default when minimum matching gets faster.
   void SetMatchingAlgorithm(MatchingAlgorithm matching) {
     matching_ = matching;
   }
 
-  // If the problem was not solved, solves it with the Christofides algorithm,
-  // and returns the cost of the approximate TSP tour.
-  absl::StatusOr<CostType> TravelingSalesmanCost();
+  // Returns the cost of the approximate TSP tour.
+  CostType TravelingSalesmanCost();
 
-  // If the problem was not solved, solves it with the Christofides algorithm,
-  // and returns the approximate TSP tour.
-  absl::StatusOr<const std::vector<NodeIndex>&> TravelingSalesmanPath();
+  // Returns the approximate TSP tour.
+  std::vector<NodeIndex> TravelingSalesmanPath();
 
-  // If the problem was not solved, solves it with the Christofides algorithm.
-  absl::Status Solve();
+  // Runs the Christofides algorithm. Returns true if a solution was found,
+  // false otherwise.
+  bool Solve();
 
  private:
   // Safe addition operator to avoid overflows when possible.
@@ -118,17 +117,13 @@ class ChristofidesPathSolver {
 };
 
 // Computes a minimum weight perfect matching on an undirected graph.
-template <typename CostType, typename WeightFunctionType, typename GraphType>
+template <typename WeightFunctionType, typename GraphType>
 absl::StatusOr<std::vector<
     std::pair<typename GraphType::NodeIndex, typename GraphType::NodeIndex>>>
 ComputeMinimumWeightMatching(const GraphType& graph,
                              const WeightFunctionType& weight) {
   using ArcIndex = typename GraphType::ArcIndex;
   using NodeIndex = typename GraphType::NodeIndex;
-  if constexpr (!std::is_integral_v<CostType>) {
-    DLOG(WARNING) << "Weights are being cast to int64_t. This might result "
-                     "in loss of precision or overflows.";
-  }
   MinCostPerfectMatching matching(graph.num_nodes());
   for (NodeIndex tail : graph.AllNodes()) {
     for (const ArcIndex arc : graph.OutgoingArcs(tail)) {
@@ -140,10 +135,8 @@ ComputeMinimumWeightMatching(const GraphType& graph,
     }
   }
   MinCostPerfectMatching::Status status = matching.Solve();
-  if (status != MinCostPerfectMatching::OPTIMAL &&
-      status != MinCostPerfectMatching::COST_OVERFLOW) {
-    return absl::InvalidArgumentError(
-        absl::StrCat("Perfect matching failed: ", status));
+  if (status != MinCostPerfectMatching::OPTIMAL) {
+    return absl::InvalidArgumentError("Perfect matching failed");
   }
   std::vector<std::pair<NodeIndex, NodeIndex>> match;
   for (NodeIndex tail : graph.AllNodes()) {
@@ -239,7 +232,7 @@ template <typename CostType, typename ArcIndex, typename NodeIndex,
           typename CostFunction>
 ChristofidesPathSolver<CostType, ArcIndex, NodeIndex, CostFunction>::
     ChristofidesPathSolver(NodeIndex num_nodes, CostFunction costs)
-    : matching_(MatchingAlgorithm::MINIMUM_WEIGHT_MATCHING),
+    : matching_(MatchingAlgorithm::MINIMAL_WEIGHT_MATCHING),
       graph_(num_nodes),
       costs_(std::move(costs)),
       tsp_cost_(0),
@@ -247,30 +240,30 @@ ChristofidesPathSolver<CostType, ArcIndex, NodeIndex, CostFunction>::
 
 template <typename CostType, typename ArcIndex, typename NodeIndex,
           typename CostFunction>
-absl::StatusOr<CostType> ChristofidesPathSolver<
-    CostType, ArcIndex, NodeIndex, CostFunction>::TravelingSalesmanCost() {
+CostType ChristofidesPathSolver<CostType, ArcIndex, NodeIndex,
+                                CostFunction>::TravelingSalesmanCost() {
   if (!solved_) {
-    const absl::Status status = Solve();
-    if (!status.ok()) return status;
+    bool const ok = Solve();
+    DCHECK(ok);
   }
   return tsp_cost_;
 }
 
 template <typename CostType, typename ArcIndex, typename NodeIndex,
           typename CostFunction>
-absl::StatusOr<const std::vector<NodeIndex>&> ChristofidesPathSolver<
+std::vector<NodeIndex> ChristofidesPathSolver<
     CostType, ArcIndex, NodeIndex, CostFunction>::TravelingSalesmanPath() {
   if (!solved_) {
-    const absl::Status status = Solve();
-    if (!status.ok()) return status;
+    const bool ok = Solve();
+    DCHECK(ok);
   }
   return tsp_path_;
 }
 
 template <typename CostType, typename ArcIndex, typename NodeIndex,
           typename CostFunction>
-absl::Status
-ChristofidesPathSolver<CostType, ArcIndex, NodeIndex, CostFunction>::Solve() {
+bool ChristofidesPathSolver<CostType, ArcIndex, NodeIndex,
+                            CostFunction>::Solve() {
   const NodeIndex num_nodes = graph_.num_nodes();
   tsp_path_.clear();
   tsp_cost_ = 0;
@@ -278,7 +271,7 @@ ChristofidesPathSolver<CostType, ArcIndex, NodeIndex, CostFunction>::Solve() {
     tsp_path_ = {0, 0};
   }
   if (num_nodes <= 1) {
-    return absl::OkStatus();
+    return true;
   }
   // Compute Minimum Spanning Tree.
   const std::vector<ArcIndex> mst =
@@ -298,20 +291,21 @@ ChristofidesPathSolver<CostType, ArcIndex, NodeIndex, CostFunction>::Solve() {
     }
   }
   // Find minimum-weight perfect matching on odd-degree-node complete graph.
+  // TODO(user): Make this code available as an independent algorithm.
   const NodeIndex reduced_size = odd_degree_nodes.size();
   DCHECK_NE(0, reduced_size);
   CompleteGraph<NodeIndex, ArcIndex> reduced_graph(reduced_size);
   std::vector<std::pair<NodeIndex, NodeIndex>> closure_arcs;
   switch (matching_) {
     case MatchingAlgorithm::MINIMUM_WEIGHT_MATCHING: {
-      auto result = ComputeMinimumWeightMatching<CostType>(
+      auto result = ComputeMinimumWeightMatching(
           reduced_graph, [this, &reduced_graph,
                           &odd_degree_nodes](CompleteGraph<>::ArcIndex arc) {
             return costs_(odd_degree_nodes[reduced_graph.Tail(arc)],
                           odd_degree_nodes[reduced_graph.Head(arc)]);
           });
       if (!result.ok()) {
-        return result.status();
+        return false;
       }
       result->swap(closure_arcs);
       break;
@@ -325,7 +319,7 @@ ChristofidesPathSolver<CostType, ArcIndex, NodeIndex, CostFunction>::Solve() {
                           odd_degree_nodes[reduced_graph.Head(arc)]);
           });
       if (!result.ok()) {
-        return result.status();
+        return false;
       }
       result->swap(closure_arcs);
       break;
@@ -342,10 +336,10 @@ ChristofidesPathSolver<CostType, ArcIndex, NodeIndex, CostFunction>::Solve() {
             costs_(odd_degree_nodes[reduced_graph.Tail(arc)],
                    odd_degree_nodes[reduced_graph.Head(arc)]);
       }
-      absl::c_sort(ordered_arcs,
-                   [&ordered_arc_costs](ArcIndex arc_a, ArcIndex arc_b) {
-                     return ordered_arc_costs[arc_a] < ordered_arc_costs[arc_b];
-                   });
+      std::sort(ordered_arcs.begin(), ordered_arcs.end(),
+                [&ordered_arc_costs](ArcIndex arc_a, ArcIndex arc_b) {
+                  return ordered_arc_costs[arc_a] < ordered_arc_costs[arc_b];
+                });
       std::vector<bool> touched_nodes(reduced_size, false);
       for (ArcIndex arc_index = 0; closure_arcs.size() * 2 < reduced_size;
            ++arc_index) {
@@ -385,8 +379,8 @@ ChristofidesPathSolver<CostType, ArcIndex, NodeIndex, CostFunction>::Solve() {
       SafeAdd(tsp_cost_, tsp_path_.empty() ? 0 : costs_(tsp_path_.back(), 0));
   tsp_path_.push_back(0);
   solved_ = true;
-  return absl::OkStatus();
+  return true;
 }
 }  // namespace operations_research
 
-#endif  // ORTOOLS_GRAPH_CHRISTOFIDES_H_
+#endif  // OR_TOOLS_GRAPH_CHRISTOFIDES_H_

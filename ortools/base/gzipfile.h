@@ -11,19 +11,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ORTOOLS_BASE_GZIPFILE_H_
-#define ORTOOLS_BASE_GZIPFILE_H_
-
-#include <zlib.h>  // for Z_DEFAULT_COMPRESSION
+#ifndef OR_TOOLS_BASE_GZIPFILE_H_
+#define OR_TOOLS_BASE_GZIPFILE_H_
 
 #include "absl/strings/string_view.h"
+#include "ortools/base/basictypes.h"  // for Ownership enum
+#include "zlib.h"                     // for Z_DEFAULT_COMPRESSION
 
 class File;
-
-// Argument type used in interfaces that can optionally take ownership
-// of a passed in argument.  If TAKE_OWNERSHIP is passed, the called
-// object takes ownership of the argument.  Otherwise it does not.
-enum Ownership { DO_NOT_TAKE_OWNERSHIP, TAKE_OWNERSHIP };
 
 // Argument type used in interfaces that can optionally accept appended
 // compressed streams.  If kConcatenateStreams is passed, the output will
@@ -70,4 +65,4 @@ inline File* GZipFileReader(absl::string_view name, File* compressed_file,
                         AppendedStreams::kConcatenateStreams);
 }
 
-#endif  // ORTOOLS_BASE_GZIPFILE_H_
+#endif  // OR_TOOLS_BASE_GZIPFILE_H_

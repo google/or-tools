@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//
 // This file implements the core objects of the constraint solver:
 // Solver, Search, Queue, ... along with the main resolution loop.
 
@@ -39,6 +40,7 @@
 #include "ortools/base/timer.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/util/tuple_set.h"
+#include "zconf.h"
 #include "zlib.h"
 
 // These flags are used to set the fields in the DefaultSolverParameters proto.
@@ -1022,7 +1024,7 @@ class Search {
   bool AtSolution();
   bool AcceptSolution();
   void NoMoreSolutions();
-  bool ContinueAtLocalOptimum();
+  bool LocalOptimum();
   bool AcceptDelta(Assignment* delta, Assignment* deltadelta);
   void AcceptNeighbor();
   void AcceptUncheckedNeighbor();
@@ -1314,15 +1316,15 @@ bool Search::AtSolution() {
 
 void Search::NoMoreSolutions() { CALL_EVENT_LISTENERS(NoMoreSolutions); }
 
-bool Search::ContinueAtLocalOptimum() {
-  bool continue_at_local_optimum = false;
+bool Search::LocalOptimum() {
+  bool at_local_optimum = false;
   for (SearchMonitor* const monitor :
        GetEventListeners(Solver::MonitorEvent::kLocalOptimum)) {
-    if (monitor->AtLocalOptimum()) {
-      continue_at_local_optimum = true;
+    if (monitor->LocalOptimum()) {
+      at_local_optimum = true;
     }
   }
-  return continue_at_local_optimum;
+  return at_local_optimum;
 }
 
 bool Search::AcceptDelta(Assignment* delta, Assignment* deltadelta) {
@@ -1373,9 +1375,7 @@ void Search::Accept(ModelVisitor* const visitor) const {
 
 #undef CALL_EVENT_LISTENERS
 
-bool ContinueAtLocalOptimum(Search* search) {
-  return search->ContinueAtLocalOptimum();
-}
+bool LocalOptimumReached(Search* search) { return search->LocalOptimum(); }
 
 bool AcceptDelta(Search* search, Assignment* delta, Assignment* deltadelta) {
   return search->AcceptDelta(delta, deltadelta);
@@ -2894,7 +2894,7 @@ void SearchMonitor::EndInitialPropagation() {}
 bool SearchMonitor::AcceptSolution() { return true; }
 bool SearchMonitor::AtSolution() { return false; }
 void SearchMonitor::NoMoreSolutions() {}
-bool SearchMonitor::AtLocalOptimum() { return false; }
+bool SearchMonitor::LocalOptimum() { return false; }
 bool SearchMonitor::AcceptDelta([[maybe_unused]] Assignment* delta,
                                 [[maybe_unused]] Assignment* deltadelta) {
   return true;
@@ -3250,10 +3250,6 @@ std::string Solver::SearchContext() const {
 
 std::string Solver::SearchContext(const Search* search) const {
   return search->search_context();
-}
-
-bool Solver::AcceptSolution(Search* search) const {
-  return search->AcceptSolution();
 }
 
 Assignment* Solver::GetOrCreateLocalSearchState() {

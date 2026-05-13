@@ -13,7 +13,7 @@ Solving the following optimization problem:
 """
 
 function main(ARGS)
-    optimizer = ORTools.Optimizer(solver_type = ORTools.SolverType.SOLVER_TYPE_GLOP)
+    optimizer = ORTools.Optimizer()
     c = [1.0, 2.0]
 
     # Variables definition

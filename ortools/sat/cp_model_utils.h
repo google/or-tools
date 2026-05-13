@@ -11,11 +11,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ORTOOLS_SAT_CP_MODEL_UTILS_H_
-#define ORTOOLS_SAT_CP_MODEL_UTILS_H_
+#ifndef OR_TOOLS_SAT_CP_MODEL_UTILS_H_
+#define OR_TOOLS_SAT_CP_MODEL_UTILS_H_
 
 #include <algorithm>
 #include <cstdint>
+#include <functional>
 #include <limits>
 #include <string>
 #include <vector>
@@ -24,7 +25,6 @@
 #include "ortools/base/helpers.h"
 #endif  // !defined(__PORTABLE_PLATFORM__)
 #include "absl/flags/declare.h"
-#include "absl/functional/function_ref.h"
 #include "absl/log/check.h"
 #include "absl/status/status.h"
 #include "absl/strings/match.h"
@@ -32,19 +32,16 @@
 #include "absl/types/span.h"
 #include "google/protobuf/message.h"
 #include "google/protobuf/text_format.h"
-#include "ortools/base/base_export.h"
 #include "ortools/base/hash.h"
 #include "ortools/base/options.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/sorted_interval_list.h"
 
-#ifndef SWIG
-OR_DLL ABSL_DECLARE_FLAG(bool, cp_model_dump_models);
-OR_DLL ABSL_DECLARE_FLAG(std::string, cp_model_dump_prefix);
-OR_DLL ABSL_DECLARE_FLAG(bool, cp_model_dump_problematic_lns);
-OR_DLL ABSL_DECLARE_FLAG(bool, cp_model_dump_submodels);
-#endif
+ABSL_DECLARE_FLAG(bool, cp_model_dump_models);
+ABSL_DECLARE_FLAG(std::string, cp_model_dump_prefix);
+ABSL_DECLARE_FLAG(bool, cp_model_dump_problematic_lns);
+ABSL_DECLARE_FLAG(bool, cp_model_dump_submodels);
 
 namespace operations_research {
 namespace sat {
@@ -90,11 +87,11 @@ void GetReferencesUsedByConstraint(const ConstraintProto& ct,
 // Applies the given function to all variables/literals/intervals indices of the
 // constraint. This function is used in a few places to have a "generic" code
 // dealing with constraints.
-void ApplyToAllVariableIndices(absl::FunctionRef<void(int*)> function,
+void ApplyToAllVariableIndices(const std::function<void(int*)>& function,
                                ConstraintProto* ct);
-void ApplyToAllLiteralIndices(absl::FunctionRef<void(int*)> function,
+void ApplyToAllLiteralIndices(const std::function<void(int*)>& function,
                               ConstraintProto* ct);
-void ApplyToAllIntervalIndices(absl::FunctionRef<void(int*)> function,
+void ApplyToAllIntervalIndices(const std::function<void(int*)>& function,
                                ConstraintProto* ct);
 
 // Returns the name of the ConstraintProto::ConstraintCase oneof enum.
@@ -141,27 +138,11 @@ bool DomainInProtoContains(const ProtoWithDomain& proto, int64_t value) {
 template <typename ProtoWithDomain>
 void FillDomainInProto(const Domain& domain, ProtoWithDomain* proto) {
   proto->clear_domain();
-  proto->mutable_domain()->Reserve(2 * domain.NumIntervals());
+  proto->mutable_domain()->Reserve(domain.NumIntervals());
   for (const ClosedInterval& interval : domain) {
     proto->add_domain(interval.start);
     proto->add_domain(interval.end);
   }
-}
-
-template <typename ProtoWithDomain>
-void FillDomainInProto(int64_t lb, int64_t ub, ProtoWithDomain* proto) {
-  proto->clear_domain();
-  proto->mutable_domain()->Reserve(2);
-  proto->add_domain(lb);
-  proto->add_domain(ub);
-}
-
-template <typename ProtoWithDomain>
-void FillDomainInProto(int64_t value, ProtoWithDomain* proto) {
-  proto->clear_domain();
-  proto->mutable_domain()->Reserve(2);
-  proto->add_domain(value);
-  proto->add_domain(value);
 }
 
 // Reads a Domain from the domain field of a proto.
@@ -279,10 +260,6 @@ void AddLinearExpressionToLinearConstraint(const LinearExpressionProto& expr,
 void AddWeightedLiteralToLinearConstraint(int lit, int64_t coeff,
                                           LinearConstraintProto* linear,
                                           int64_t* offset);
-
-// Sets `linear` to the constraint "lb <= sum(`literals`) <= ub".
-void LiteralsToLinear(absl::Span<const int> literals, int64_t lb, int64_t ub,
-                      LinearConstraintProto* linear);
 
 // Same method, but returns if the addition was possible without overflowing.
 bool SafeAddLinearExpressionToLinearConstraint(
@@ -426,11 +403,7 @@ H AbslHashValue(H h, const LinearConstraintProto& m) {
   return h;
 }
 
-bool ConvertCpModelProtoToCnf(const CpModelProto& cp_model, std::string* out);
-
-// This returns a wcnf model in the 2022 (new) format:
-//     https://maxsat-evaluations.github.io/2022/rules.html
-bool ConvertCpModelProtoToWCnf(const CpModelProto& cp_model, std::string* out);
+bool ConvertCpModelProtoToCnf(const CpModelProto& cp_mode, std::string* out);
 
 // We assume delta >= 0 and we only use the low bit of delta.
 int CombineSeed(int base_seed, int64_t delta);
@@ -438,4 +411,4 @@ int CombineSeed(int base_seed, int64_t delta);
 }  // namespace sat
 }  // namespace operations_research
 
-#endif  // ORTOOLS_SAT_CP_MODEL_UTILS_H_
+#endif  // OR_TOOLS_SAT_CP_MODEL_UTILS_H_

@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# [START program]
 """Compute the index of the first Boolean variable set to true."""
 
 from ortools.sat.python import cp_model
@@ -72,4 +71,3 @@ def index_of_first_bool_at_true_sample_sat():
 
 
 index_of_first_bool_at_true_sample_sat()
-# [END program]

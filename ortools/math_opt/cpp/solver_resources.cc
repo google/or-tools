@@ -13,7 +13,6 @@
 
 #include "ortools/math_opt/cpp/solver_resources.h"
 
-#include <ostream>
 #include <string>
 #include <utility>
 
@@ -23,11 +22,6 @@
 #include "ortools/port/proto_utils.h"
 
 namespace operations_research::math_opt {
-
-std::ostream& operator<<(std::ostream& out, const SolverResources& resources) {
-  out << '{' << AbslUnparseFlag(resources) << '}';
-  return out;
-}
 
 SolverResourcesProto SolverResources::Proto() const {
   SolverResourcesProto ret;

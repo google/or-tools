@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ORTOOLS_BASE_MAP_UTIL_H_
-#define ORTOOLS_BASE_MAP_UTIL_H_
+#ifndef OR_TOOLS_BASE_MAP_UTIL_H_
+#define OR_TOOLS_BASE_MAP_UTIL_H_
 
 #include <utility>
 
@@ -248,4 +248,4 @@ typename Collection::value_type::second_type& LookupOrInsert(
   return ret.first->second;
 }
 }  // namespace gtl
-#endif  // ORTOOLS_BASE_MAP_UTIL_H_
+#endif  // OR_TOOLS_BASE_MAP_UTIL_H_

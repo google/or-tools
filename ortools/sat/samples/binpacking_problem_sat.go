@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// [START program]
 // The binpacking_problem_sat command is an example of a bin packing problem that uses channeling
 // constraints.
 package main
@@ -120,5 +119,3 @@ func main() {
 		log.Exitf("binpackingProblemSat returned with error: %v", err)
 	}
 }
-
-// [END program]

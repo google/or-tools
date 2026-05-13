@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// [START program]
 // The bool_or_sample_sat command is simple example of the BoolOr constraint.
 package main
 
@@ -31,5 +30,3 @@ func boolOrSampleSat() {
 func main() {
 	boolOrSampleSat()
 }
-
-// [END program]

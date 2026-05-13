@@ -37,8 +37,8 @@ predicate array_var_int_element_nonshifted(var int: idx,
                                            array [int] of var int: x,
                                            var int: c);
 
-% We no longer need to include nosets.mzn, but we keep it here for testing.
-% include "nosets.mzn";
+% Include set redefinitions.
+include "nosets.mzn";
 
 % Include strings redefinitions
 % include "nostring.mzn"

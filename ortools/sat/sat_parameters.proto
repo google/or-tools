@@ -24,7 +24,7 @@ option java_multiple_files = true;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 344
+// NEXT TAG: 325
 message SatParameters {
   // In some context, like in a portfolio of search, it makes sense to name a
   // given parameters set for logging purpose.
@@ -115,19 +115,21 @@ message SatParameters {
 
   // Do we try to minimize conflicts (greedily) when creating them.
   enum ConflictMinimizationAlgorithm {
-    reserved 3;
     NONE = 0;
     SIMPLE = 1;
     RECURSIVE = 2;
+    EXPERIMENTAL = 3;
   }
   optional ConflictMinimizationAlgorithm minimization_algorithm = 4
       [default = RECURSIVE];
 
   // Whether to expoit the binary clause to minimize learned clauses further.
   enum BinaryMinizationAlgorithm {
-    reserved 2, 3, 4;
     NO_BINARY_MINIMIZATION = 0;
     BINARY_MINIMIZATION_FIRST = 1;
+    BINARY_MINIMIZATION_FIRST_WITH_TRANSITIVE_REDUCTION = 4;
+    BINARY_MINIMIZATION_WITH_REACHABILITY = 2;
+    EXPERIMENTAL_BINARY_MINIMIZATION = 3;
   }
   optional BinaryMinizationAlgorithm binary_minimization_algorithm = 34
       [default = BINARY_MINIMIZATION_FIRST];
@@ -138,34 +140,12 @@ message SatParameters {
   // from the problem.
   optional bool subsumption_during_conflict_analysis = 56 [default = true];
 
-  // If >=0, each time we have a conflict, we try to subsume the last n learned
-  // clause with it.
-  optional int32 eagerly_subsume_last_n_conflicts = 343 [default = 4];
-
-  // If true, try to backtrack as little as possible on conflict and re-imply
-  // the clauses later.
-  // This means we discard less propagation than traditional backjumping, but
-  // requites additional bookkeeping to handle reimplication.
-  // See: https://doi.org/10.1007/978-3-319-94144-8_7
-  optional bool use_chronological_backtracking = 330 [default = false];
-
-  // If chronological backtracking is enabled, this is the maximum number of
-  // levels we will backjump over, otherwise we will backtrack.
-  optional int32 max_backjump_levels = 331 [default = 50];
-
-  // If chronological backtracking is enabled, this is the minimum number of
-  // conflicts before we will consider backjumping.
-  optional int32 chronological_backtrack_min_conflicts = 332 [default = 1000];
-
   // ==========================================================================
   // Clause database management
   // ==========================================================================
 
   // Trigger a cleanup when this number of "deletable" clauses is learned.
   optional int32 clause_cleanup_period = 11 [default = 10000];
-
-  // Increase clause_cleanup_period by this amount after each cleanup.
-  optional int32 clause_cleanup_period_increment = 337 [default = 0];
 
   // During a cleanup, we will always keep that number of "deletable" clauses.
   // Note that this doesn't include the "protected" clauses.
@@ -190,9 +170,6 @@ message SatParameters {
   // All the clauses with a LBD (literal blocks distance) lower or equal to this
   // parameters will always be kept.
   optional int32 clause_cleanup_lbd_bound = 59 [default = 5];
-
-  // Only protect clauses up to this maximum LBD.
-  optional int32 clause_protection_lbd_bound = 338 [default = 8];
 
   // The clauses that will be kept during a cleanup are the ones that come
   // first under this order. We always keep or exclude ties together.
@@ -402,13 +379,6 @@ message SatParameters {
   // Log to response proto.
   optional bool log_to_response = 187 [default = false];
 
-  // Experimental.
-  //
-  // This is an old experiment, it might cause crashes in multi-thread and you
-  // should double check the solver result. It can still be used if you only
-  // care about feasible solutions (these are checked) and it gives good result
-  // on your problem. We might revive it at some point.
-  //
   // Whether to use pseudo-Boolean resolution to analyze a conflict. Note that
   // this option only make sense if your problem is modelized using
   // pseudo-Boolean constraints. If you only have clauses, this shouldn't change
@@ -490,14 +460,6 @@ message SatParameters {
   // Whether we also use the sat presolve when cp_model_presolve is true.
   optional bool cp_model_use_sat_presolve = 93 [default = true];
 
-  // If we try to load at most ones and exactly ones constraints when running
-  // the pure SAT presolve. Or if we just ignore them.
-  //
-  // If one detects at_most_one via merge_at_most_one_work_limit or exactly one
-  // with find_clauses_that_are_exactly_one, it might be good to also set this
-  // to true.
-  optional bool load_at_most_ones_in_sat_presolve = 335 [default = false];
-
   // If cp_model_presolve is true and there is a large proportion of fixed
   // variable after the first model copy, remap all the model to a dense set of
   // variable before the full presolve even starts. This should help for LNS on
@@ -528,9 +490,6 @@ message SatParameters {
   // If true, expand the reservoir constraints by creating booleans for all
   // possible precedences between event and encoding the constraint.
   optional bool expand_reservoir_constraints = 182 [default = true];
-
-  // Max domain size for expanding linear2 constraints (ax + by ==/!= c).
-  optional int32 max_domain_size_for_linear2_expansion = 340 [default = 8];
 
   // Mainly useful for testing.
   //
@@ -619,13 +578,6 @@ message SatParameters {
   // the number of non-zero.
   optional bool find_big_linear_overlap = 234 [default = true];
 
-  // By propagating (or just using binary clauses), one can detect that all
-  // literal of a clause are actually in at most one relationship. Thus this
-  // constraint can be promoted to an exactly one constraints. This should help
-  // as it convey more structure. Note that this is expensive, so we have a
-  // deterministic limit in place.
-  optional bool find_clauses_that_are_exactly_one = 333 [default = true];
-
   // ==========================================================================
   // Inprocessing
   // ==========================================================================
@@ -657,12 +609,6 @@ message SatParameters {
       [default = true];
   optional bool inprocessing_minimization_use_all_orderings = 298
       [default = false];
-
-  // Whether we use the algorithm described in "Clausal Congruence closure",
-  // Armin Biere, Katalin Fazekas, Mathias Fleury, Nils Froleyks, 2024.
-  //
-  // Note that we only have a basic version currently.
-  optional bool inprocessing_use_congruence_closure = 342 [default = true];
 
   // ==========================================================================
   // Multithread
@@ -757,19 +703,12 @@ message SatParameters {
   // Allows sharing of the bounds of modified variables at level 0.
   optional bool share_level_zero_bounds = 114 [default = true];
 
-  // Allows sharing of the bounds on linear2 discovered at level 0. This is
-  // mainly interesting on scheduling type of problems when we branch on
-  // precedences.
-  //
-  // Warning: This currently non-deterministic.
-  optional bool share_linear2_bounds = 326 [default = false];
-
   // Allows sharing of new learned binary clause between workers.
   optional bool share_binary_clauses = 203 [default = true];
 
   // Allows sharing of short glue clauses between workers.
   // Implicitly disabled if share_binary_clauses is false.
-  optional bool share_glue_clauses = 285 [default = true];
+  optional bool share_glue_clauses = 285 [default = false];
 
   // Minimize and detect subsumption of shared clauses immediately after they
   // are imported.
@@ -796,9 +735,6 @@ message SatParameters {
 
   // Crash if presolve breaks a feasible hint.
   optional bool debug_crash_if_presolve_breaks_hint = 306 [default = false];
-
-  // Crash if the LRAT UNSAT proof is invalid.
-  optional bool debug_crash_if_lrat_check_fails = 339 [default = false];
 
   // ==========================================================================
   // Max-sat parameters
@@ -881,11 +817,6 @@ message SatParameters {
   // This always result in better propagation, but it is usually slow, so
   // depending on the problem, turning this off may lead to a faster solution.
   optional bool use_precedences_in_disjunctive_constraint = 74 [default = true];
-
-  // At root level, we might compute the transitive closure of "precedences"
-  // relations so that we can exploit that in scheduling problems. Setting this
-  // to zero disable the feature.
-  optional int32 transitive_precedences_work_limit = 327 [default = 1000000];
 
   // Create one literal for each disjunction of two pairs of tasks. This slows
   // down the solve time, but improves the lower bound of the objective in the
@@ -1276,7 +1207,7 @@ message SatParameters {
   // the same subtrees as one another.
   // Specifying a negative number uses a heuristic to select an appropriate
   // number of shared tree workeres based on the total number of workers.
-  optional int32 shared_tree_num_workers = 235 [default = -1];
+  optional int32 shared_tree_num_workers = 235 [default = 0];
 
   // Set on shared subtree workers. Users should not set this directly.
   optional bool use_shared_tree_search = 236 [default = false];
@@ -1334,20 +1265,13 @@ message SatParameters {
   // SPLIT_STRATEGY_BALANCED_TREE and SPLIT_STRATEGY_DISCREPANCY.
   optional int32 shared_tree_balance_tolerance = 305 [default = 1];
 
-  // How much dtime a worker will wait between proposing splits.
-  // This limits the contention in splitting the shared tree, and also reduces
-  // the number of too-easy subtrees that are generates.
-  optional double shared_tree_split_min_dtime = 328 [default = 0.1];
-
-  // Whether we enumerate all solutions of a problem without objective.
+  // Whether we enumerate all solutions of a problem without objective. Note
+  // that setting this to true automatically disable some presolve reduction
+  // that can remove feasible solution. That is it has the same effect as
+  // setting keep_all_feasible_solutions_in_presolve.
   //
-  // WARNING:
-  // - This can be used with num_workers > 1 but then each solutions can be
-  //   found more than once, so it is up to the client to deduplicate them.
-  // - If keep_all_feasible_solutions_in_presolve is unset, we will set it to
-  //   true as otherwise, many feasible solution can just be removed by the
-  //   presolve. It is still possible to manually set this to false if one only
-  //   wants to enumerate all solutions of the presolved model.
+  // TODO(user): Do not do that and let the user choose what behavior is best by
+  // setting keep_all_feasible_solutions_in_presolve ?
   optional bool enumerate_all_solutions = 87 [default = false];
 
   // If true, we disable the presolve reductions that remove feasible solutions
@@ -1412,20 +1336,9 @@ message SatParameters {
   optional bool use_lns_only = 101 [default = false];
 
   // Size of the top-n different solutions kept by the solver.
-  // This parameter must be > 0. Currently, having this larger than one mainly
-  // impact the "base" solution chosen for a LNS/LS fragment.
+  // This parameter must be > 0.
+  // Currently this only impact the "base" solution chosen for a LNS fragment.
   optional int32 solution_pool_size = 193 [default = 3];
-
-  // If solution_pool_size is <= this, we will use DP to keep a "diverse" set
-  // of solutions (the one further apart via hamming distance) in the pool.
-  // Setting this to large value might be slow, especially if your solution are
-  // large.
-  optional int32 solution_pool_diversity_limit = 329 [default = 10];
-
-  // In order to not get stuck in local optima, when this is non-zero, we try to
-  // also work on "older" solutions with a worse objective value so we get a
-  // chance to follow a different LS/LNS trajectory.
-  optional int32 alternative_pool_size = 325 [default = 1];
 
   // Turns on relaxation induced neighborhood generator.
   optional bool use_rins_lns = 129 [default = true];
@@ -1727,14 +1640,6 @@ message SatParameters {
   // linear constrainst in the problem. This can be used in some cuts, altough
   // for now we don't really exploit it.
   optional bool detect_linearized_product = 277 [default = false];
-
-  // This should be better on integer problems.
-  // But it is still work in progress.
-  optional bool use_new_integer_conflict_resolution = 336 [default = false];
-
-  // If true, and during integer conflict resolution (icr) the 1-UIP is an
-  // integer literal for which we do not have an associated Boolean. Create one.
-  optional bool create_1uip_boolean_during_icr = 341 [default = true];
 
   // ==========================================================================
   // MIP -> CP-SAT (i.e. IP with integer coeff) conversion parameters that are

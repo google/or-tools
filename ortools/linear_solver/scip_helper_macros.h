@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ORTOOLS_LINEAR_SOLVER_SCIP_HELPER_MACROS_H_
-#define ORTOOLS_LINEAR_SOLVER_SCIP_HELPER_MACROS_H_
+#ifndef OR_TOOLS_LINEAR_SOLVER_SCIP_HELPER_MACROS_H_
+#define OR_TOOLS_LINEAR_SOLVER_SCIP_HELPER_MACROS_H_
 
 #include "absl/status/status.h"
 #include "absl/strings/str_format.h"
@@ -40,4 +40,4 @@ inline absl::Status ScipCodeToUtilStatus(/*SCIP_Retcode*/ int retcode,
 
 }  // namespace operations_research
 
-#endif  // ORTOOLS_LINEAR_SOLVER_SCIP_HELPER_MACROS_H_
+#endif  // OR_TOOLS_LINEAR_SOLVER_SCIP_HELPER_MACROS_H_

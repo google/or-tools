@@ -68,12 +68,6 @@ When releasing a new version of OR-Tools:
         @JuliaRegistrator register subdir=ortools/julia/ORToolsGenerated.jl
         ```
 
-        If registering from a nondefault branch like `julia/dev`:
-
-        ```
-        @JuliaRegistrator register subdir=ortools/julia/ORToolsGenerated.jl branch=julia/dev
-        ```
-
     This operation starts an automated process that will publish a new version
     of the `ORToolsGenerated.jl` package to the
     [official Julia package repository](https://juliapackages.com/). The version
@@ -81,11 +75,7 @@ When releasing a new version of OR-Tools:
 
 5.  In case the C API changes, you must update `ORTools.jl` accordingly: after
     the manual update, follow the steps 3 and 4, replacing `ORToolsGenerated.jl`
-    by `ORTools.jl`. To register the new version, the command thus looks like:
-
-    ```
-    @JuliaRegistrator register subdir=ortools/julia/ORTools.jl branch=julia/dev
-    ```
+    by `ORTools.jl`.
 
 There is only one set-up action to perform: install Julia's Registrator bot into
 OR-Tools' repository (which only needs read access) using
@@ -133,6 +123,7 @@ If there is an update in the MathOpt proto interface, use
 to update the generated Protocol Buffers code. This script is automatically
 called by
 [`update_package.jl`](../ORToolsGenerated.jl/scripts/update_package.jl).
+
 
 ## Design decisions
 

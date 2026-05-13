@@ -72,8 +72,8 @@ Note: this problem is equivalent to symmetric bin packing:
 but typically in bin packing it is not assumed that you should exploit having
 multiple items of the same size.
 """
-from collections.abc import Sequence
 import dataclasses
+from typing import List, Sequence, Tuple
 
 from absl import app
 
@@ -92,8 +92,8 @@ class CuttingStockInstance:
       board_length: The length of each board.
     """
 
-    piece_sizes: list[int] = dataclasses.field(default_factory=list)
-    piece_demands: list[int] = dataclasses.field(default_factory=list)
+    piece_sizes: List[int] = dataclasses.field(default_factory=list)
+    piece_demands: List[int] = dataclasses.field(default_factory=list)
     board_length: int = 0
 
 
@@ -110,8 +110,8 @@ class Configuration:
         as pieces.
     """
 
-    pieces: list[int] = dataclasses.field(default_factory=list)
-    quantity: list[int] = dataclasses.field(default_factory=list)
+    pieces: List[int] = dataclasses.field(default_factory=list)
+    quantity: List[int] = dataclasses.field(default_factory=list)
 
 
 @dataclasses.dataclass
@@ -130,14 +130,14 @@ class CuttingStockSolution:
         sum(quantity).
     """
 
-    configurations: list[Configuration] = dataclasses.field(default_factory=list)
-    quantity: list[int] = dataclasses.field(default_factory=list)
+    configurations: List[Configuration] = dataclasses.field(default_factory=list)
+    quantity: List[int] = dataclasses.field(default_factory=list)
     objective_value: int = 0
 
 
 def best_configuration(
-    piece_prices: list[float], piece_sizes: list[int], board_size: int
-) -> tuple[Configuration, float]:
+    piece_prices: List[float], piece_sizes: List[int], board_size: int
+) -> Tuple[Configuration, float]:
     """Solves the worker problem.
 
     Solves the problem on finding the configuration (with its objective value) to
@@ -202,7 +202,7 @@ def solve_cutting_stock(instance: CuttingStockInstance) -> CuttingStockSolution:
         model.add_linear_constraint(lb=demands[i], ub=demands[i]) for i in range(n)
     ]
 
-    configs: list[tuple[Configuration, mathopt.Variable]] = []
+    configs: List[Tuple[Configuration, mathopt.Variable]] = []
 
     def add_config(config: Configuration) -> None:
         v = model.add_variable(lb=0.0)

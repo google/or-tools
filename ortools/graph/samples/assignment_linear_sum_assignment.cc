@@ -15,7 +15,7 @@
 // [START import]
 #include "ortools/graph/assignment.h"
 
-#include <cstdlib>
+#include <cstdint>
 #include <numeric>
 #include <string>
 #include <vector>

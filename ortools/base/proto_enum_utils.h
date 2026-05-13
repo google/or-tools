@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ORTOOLS_BASE_PROTO_ENUM_UTILS_H_
-#define ORTOOLS_BASE_PROTO_ENUM_UTILS_H_
+#ifndef OR_TOOLS_BASE_PROTO_ENUM_UTILS_H_
+#define OR_TOOLS_BASE_PROTO_ENUM_UTILS_H_
 
 // Provides utility functions that help with handling Protocol Buffer enums.
 //
@@ -26,7 +26,6 @@
 // }
 //
 
-#include <cstddef>
 #include <iterator>
 
 #include "google/protobuf/descriptor.pb.h"
@@ -176,19 +175,8 @@ namespace internal {
 template <typename E>
 class RepeatedEnumView {
  public:
-  class Iterator
-#if __cplusplus < 201703L
-      : public std::iterator<std::input_iterator_tag, E>
-#endif
-  {
+  class Iterator : public std::iterator<std::input_iterator_tag, E> {
    public:
-    using difference_type = ptrdiff_t;
-    using value_type = E;
-#if __cplusplus >= 201703L
-    using iterator_category = std::input_iterator_tag;
-    using pointer = E*;
-    using reference = E&;
-#endif
     explicit Iterator(RepeatedField<int>::const_iterator ptr) : ptr_(ptr) {}
     bool operator==(const Iterator& it) const { return ptr_ == it.ptr_; }
     bool operator!=(const Iterator& it) const { return ptr_ != it.ptr_; }
@@ -216,4 +204,4 @@ class RepeatedEnumView {
 
 }  // namespace google::protobuf::contrib::utils
 
-#endif  // ORTOOLS_BASE_PROTO_ENUM_UTILS_H_
+#endif  // OR_TOOLS_BASE_PROTO_ENUM_UTILS_H_

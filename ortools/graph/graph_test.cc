@@ -25,7 +25,6 @@
 #include <vector>
 
 #include "absl/algorithm/container.h"
-#include "absl/base/log_severity.h"
 #include "absl/log/check.h"
 #include "absl/random/random.h"
 #include "absl/strings/str_cat.h"
@@ -38,10 +37,7 @@
 
 namespace util {
 
-using testing::_;
-using testing::AllOf;
 using testing::ElementsAre;
-using testing::Field;
 using testing::Pair;
 using testing::UnorderedElementsAre;
 
@@ -1161,7 +1157,7 @@ static void BM_RandomArcsBeforeBuild(benchmark::State& state) {
 // construction.
 class VectorVectorGraph {
  public:
-  VectorVectorGraph() = default;
+  VectorVectorGraph() {}
   void Reserve(int32_t num_nodes, int32_t num_arcs) {
     // We could only reserve the space, but AddArc() need to be smarter then.
     graph_.resize(num_nodes);

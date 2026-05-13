@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// [START program]
 using System;
 using Google.OrTools.Sat;
 using Google.OrTools.Util;
@@ -76,4 +75,3 @@ public class ChannelingSampleSat
         solver.Solve(model, cb);
     }
 }
-// [END program]

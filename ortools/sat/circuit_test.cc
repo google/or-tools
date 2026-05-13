@@ -49,8 +49,7 @@ std::function<void(Model*)> DenseCircuitConstraint(
         literals.push_back(Literal(model->Add(NewBooleanVariable()), true));
       }
     }
-    LoadSubcircuitConstraint(num_nodes, tails, heads,
-                             /*enforcement_literals=*/{}, literals, model,
+    LoadSubcircuitConstraint(num_nodes, tails, heads, literals, model,
                              allow_multiple_subcircuit_through_zero);
   };
 }
@@ -111,8 +110,7 @@ TEST(CircuitConstraintTest, NodeWithNoArcsIsUnsat) {
   tails.push_back(0);
   heads.push_back(1);
   literals.push_back(Literal(model.Add(NewBooleanVariable()), true));
-  LoadSubcircuitConstraint(kNumNodes, tails, heads, /*enforcement_literals=*/{},
-                           literals, &model);
+  LoadSubcircuitConstraint(kNumNodes, tails, heads, literals, &model);
   EXPECT_TRUE(model.GetOrCreate<SatSolver>()->ModelIsUnsat());
 }
 
@@ -219,15 +217,14 @@ TEST(CircuitConstraintTest, InfeasibleBecauseOfMissingArcs) {
     heads.push_back(arcs.second);
     literals.push_back(Literal(model.Add(NewBooleanVariable()), true));
   }
-  LoadSubcircuitConstraint(3, tails, heads, /*enforcement_literals=*/{},
-                           literals, &model, false);
+  LoadSubcircuitConstraint(3, tails, heads, literals, &model, false);
   const SatSolver::Status status = SolveIntegerProblemWithLazyEncoding(&model);
   EXPECT_EQ(status, SatSolver::Status::INFEASIBLE);
 }
 
 // The graph look like this with a self-loop at 2. If 2 is not selected
 // (self-loop) then there is one solution (0,1,3,0) and (0,3,5,0). Otherwise,
-// there is 2 more solutions with 2 inserted in one of the two routes.
+// there is 2 more solutions with 2 inserteed in one of the two routes.
 //
 //   0  ---> 1 ---> 4 -------------
 //   |       |      ^             |
@@ -256,8 +253,7 @@ TEST(CircuitConstraintTest, RouteConstraint) {
     heads.push_back(arcs.second);
     literals.push_back(Literal(model.Add(NewBooleanVariable()), true));
   }
-  LoadSubcircuitConstraint(6, tails, heads, /*enforcement_literals=*/{},
-                           literals, &model, true);
+  LoadSubcircuitConstraint(6, tails, heads, literals, &model, true);
   const int64_t num_solutions = CountSolutions(&model);
   EXPECT_EQ(num_solutions, 3);
 }

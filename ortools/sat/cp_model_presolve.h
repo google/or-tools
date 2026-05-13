@@ -11,14 +11,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ORTOOLS_SAT_CP_MODEL_PRESOLVE_H_
-#define ORTOOLS_SAT_CP_MODEL_PRESOLVE_H_
+#ifndef OR_TOOLS_SAT_CP_MODEL_PRESOLVE_H_
+#define OR_TOOLS_SAT_CP_MODEL_PRESOLVE_H_
 
 #include <array>
 #include <cstddef>
 #include <cstdint>
 #include <deque>
-#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -30,7 +29,6 @@
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/diffn_util.h"
-#include "ortools/sat/integer_base.h"
 #include "ortools/sat/presolve_context.h"
 #include "ortools/sat/presolve_util.h"
 #include "ortools/sat/sat_base.h"
@@ -44,19 +42,13 @@ namespace operations_research {
 namespace sat {
 
 // Replaces all the instance of a variable i (and the literals referring to it)
-// by mapping[i] in the given cp_model. The definition of variables i is also
-// moved to its new index.
+// by mapping[i] in the working model. The definition of variables i is also
+// moved to its new index. If mapping[i] < 0 the variable can be ignored if
+// possible. If it is not possible, then we will use a new index for it (at the
+// end) and the mapping will be updated to reflect that.
 //
-// If mapping[i] < 0 the variable can be ignored if there are no reference to it
-// at all. If it is not possible (i.e. some field uses it), then we will use a
-// new index for it (at the end) and reverse_mapping will be updated to reflect
-// that. This is the only time we touch reverse_mapping.
 // The image of the mapping should be dense in [0, reverse_mapping->size()).
-//
-// If mapping[i] == mapping[j], the variables will be merged, but it will be the
-// IntegerVariableProto definition of max(i, j) that will be kept in the output.
-// TODO(user): This behavior is not well unit-tested.
-void ApplyVariableMapping(absl::Span<int> mapping, CpModelProto* cp_model,
+void ApplyVariableMapping(PresolveContext* context, absl::Span<int> mapping,
                           std::vector<int>* reverse_mapping);
 
 // Presolves the initial content of presolved_model.
@@ -168,7 +160,7 @@ class CpModelPresolver {
   // Regroups terms and substitute affine relations.
   // Returns true if the set of variables in the expression changed.
   bool CanonicalizeLinearExpression(const ConstraintProto& ct,
-                                    LinearExpressionProto* exp);
+                                    LinearExpressionProto* proto);
   bool CanonicalizeLinearArgument(const ConstraintProto& ct,
                                   LinearArgumentProto* proto);
 
@@ -178,7 +170,6 @@ class CpModelPresolver {
   bool PropagateDomainsInLinear(int ct_index, ConstraintProto* ct);
   bool RemoveSingletonInLinear(ConstraintProto* ct);
   bool PresolveSmallLinear(ConstraintProto* ct);
-  bool PresolveEmptyLinearConstraint(ConstraintProto* ct);
   bool PresolveLinearOfSizeOne(ConstraintProto* ct);
   bool PresolveLinearOfSizeTwo(ConstraintProto* ct);
   bool PresolveLinearOnBooleans(ConstraintProto* ct);
@@ -186,10 +177,6 @@ class CpModelPresolver {
   bool AddVarAffineRepresentativeFromLinearEquality(int target_index,
                                                     ConstraintProto* ct);
   bool PresolveLinearEqualityWithModulo(ConstraintProto* ct);
-  bool PresolveLinear2NeCst(ConstraintProto* ct, int64_t rhs);
-  bool PresolveUnenforcedLinear2EqCst(ConstraintProto* ct, int64_t rhs);
-  bool PresolveEnforcedLinear2EqCst(ConstraintProto* ct, int64_t rhs);
-  bool PresolveLinear2WithBooleans(ConstraintProto* ct);
 
   // If a constraint is of the form "a * expr_X + expr_Y" and expr_Y can only
   // take small values compared to a, depending on the bounds, the constraint
@@ -284,10 +271,6 @@ class CpModelPresolver {
   // transforms them into maximal cliques.
   void TransformIntoMaxCliques();
 
-  // Checks if there are any clauses that can be transformed to an at most
-  // one constraint.
-  void TransformClausesToExactlyOne();
-
   // Converts bool_or and at_most_one of size 2 to bool_and.
   void ConvertToBoolAnd();
 
@@ -315,11 +298,7 @@ class CpModelPresolver {
   void LookAtVariableWithDegreeTwo(int var);
   void ProcessVariableInTwoAtMostOrExactlyOne(int var);
 
-  bool MergeCliqueConstraintsHelper(std::vector<std::vector<Literal>>& cliques,
-                                    std::string_view entry_name,
-                                    PresolveTimer& timer);
-  bool MergeNoOverlapConstraints();
-  bool MergeNoOverlap2DConstraints();
+  void MergeNoOverlapConstraints();
 
   // Assumes that all [constraint_index, multiple] in block are linear
   // constraint that contains multiple * common_part and perform the
@@ -367,9 +346,7 @@ class CpModelPresolver {
   bool ExploitEquivalenceRelations(int c, ConstraintProto* ct);
 
   ABSL_MUST_USE_RESULT bool RemoveConstraint(ConstraintProto* ct);
-  ABSL_MUST_USE_RESULT bool MarkConstraintAsFalse(ConstraintProto* ct,
-                                                  std::string_view reason);
-  ABSL_MUST_USE_RESULT bool MarkOptionalIntervalAsFalse(ConstraintProto* ct);
+  ABSL_MUST_USE_RESULT bool MarkConstraintAsFalse(ConstraintProto* ct);
 
   std::vector<int>* postsolve_mapping_;
   PresolveContext* context_;
@@ -465,4 +442,4 @@ std::vector<std::pair<int, int>> FindDuplicateConstraints(
 }  // namespace sat
 }  // namespace operations_research
 
-#endif  // ORTOOLS_SAT_CP_MODEL_PRESOLVE_H_
+#endif  // OR_TOOLS_SAT_CP_MODEL_PRESOLVE_H_

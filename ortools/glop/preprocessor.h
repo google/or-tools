@@ -11,14 +11,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//
 // This file contains the presolving code for a LinearProgram.
 //
 // A classical reference is:
 // E. D. Andersen, K. D. Andersen, "Presolving in linear programming.",
 // Mathematical Programming 71 (1995) 221-245.
 
-#ifndef ORTOOLS_GLOP_PREPROCESSOR_H_
-#define ORTOOLS_GLOP_PREPROCESSOR_H_
+#ifndef OR_TOOLS_GLOP_PREPROCESSOR_H_
+#define OR_TOOLS_GLOP_PREPROCESSOR_H_
 
 #include <deque>
 #include <memory>
@@ -1063,4 +1064,4 @@ class AddSlackVariablesPreprocessor final : public Preprocessor {
 }  // namespace glop
 }  // namespace operations_research
 
-#endif  // ORTOOLS_GLOP_PREPROCESSOR_H_
+#endif  // OR_TOOLS_GLOP_PREPROCESSOR_H_

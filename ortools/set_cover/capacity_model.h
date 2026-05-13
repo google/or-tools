@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ORTOOLS_SET_COVER_CAPACITY_MODEL_H_
-#define ORTOOLS_SET_COVER_CAPACITY_MODEL_H_
+#ifndef OR_TOOLS_SET_COVER_CAPACITY_MODEL_H_
+#define OR_TOOLS_SET_COVER_CAPACITY_MODEL_H_
 
 #include <cmath>
 #include <cstdint>
@@ -152,4 +152,4 @@ class CapacityModel {
 };
 }  // namespace operations_research
 
-#endif  // ORTOOLS_SET_COVER_CAPACITY_MODEL_H_
+#endif  // OR_TOOLS_SET_COVER_CAPACITY_MODEL_H_

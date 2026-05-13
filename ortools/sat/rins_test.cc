@@ -16,7 +16,6 @@
 #include <utility>
 #include <vector>
 
-#include "absl/strings/match.h"
 #include "absl/types/span.h"
 #include "gtest/gtest.h"
 #include "ortools/base/parse_test_proto.h"
@@ -151,24 +150,19 @@ TEST(GetRinsRensNeighborhoodTest, GetRinsRensNeighborhoodLP) {
   // Add a lp solution.
   lp_solutions.NewLPSolution({3.5, 5});
   lp_solutions.Synchronize();
-
   // Add a solution.
   CpSolverResponse solution;
   solution.add_solution(4);
   solution.add_solution(5);
   shared_response_manager->NewSolution(solution.solution(),
                                        solution.solution_info(), &model);
-  shared_response_manager->Synchronize();
+  shared_response_manager->MutableSolutionsRepository()->Synchronize();
 
-  ReducedDomainNeighborhood rins_neighborhood;
-  for (int i = 0; i < 100; ++i) {
-    rins_neighborhood = GetRinsRensNeighborhood(
-        shared_response_manager, &lp_solutions, &incomplete_solutions,
-        /*difficulty=*/0.5, random);
-    if (absl::StartsWith(rins_neighborhood.source_info, "rins")) break;
-  }
+  const ReducedDomainNeighborhood rins_neighborhood = GetRinsRensNeighborhood(
+      shared_response_manager, &lp_solutions, &incomplete_solutions,
+      /*difficulty=*/0.5, random);
 
-  EXPECT_TRUE(rins_neighborhood.reduced_domain_vars.empty());
+  EXPECT_EQ(rins_neighborhood.reduced_domain_vars.size(), 0);
   EXPECT_EQ(rins_neighborhood.fixed_vars.size(), 1);
   EXPECT_EQ(rins_neighborhood.fixed_vars[0].first, 1);
   EXPECT_EQ(rins_neighborhood.fixed_vars[0].second, 5);

@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ORTOOLS_SAT_CP_MODEL_SEARCH_H_
-#define ORTOOLS_SAT_CP_MODEL_SEARCH_H_
+#ifndef OR_TOOLS_SAT_CP_MODEL_SEARCH_H_
+#define OR_TOOLS_SAT_CP_MODEL_SEARCH_H_
 
 #include <cstdint>
 #include <functional>
@@ -89,9 +89,12 @@ std::function<BooleanOrIntegerLiteral()> ConstructHintSearchStrategy(
     const CpModelProto& cp_model_proto, CpModelMapping* mapping, Model* model);
 
 // Constructs our "fixed" search strategy which start with
-// ConstructUserSearchStrategy() if present, but is completed by a couple of
-// automatic heuristics.
-void ConstructFixedSearchStrategy(SearchHeuristics* h, Model* model);
+// ConstructUserSearchStrategy() but is completed by a couple of automatic
+// heuristics.
+std::function<BooleanOrIntegerLiteral()> ConstructFixedSearchStrategy(
+    std::function<BooleanOrIntegerLiteral()> user_search,
+    std::function<BooleanOrIntegerLiteral()> heuristic_search,
+    std::function<BooleanOrIntegerLiteral()> integer_completion);
 
 // For debugging fixed-search: display information about the named variables
 // domain before taking each decision. Note that we copy the instrumented
@@ -176,4 +179,4 @@ class SubsolverNameFilter {
 }  // namespace sat
 }  // namespace operations_research
 
-#endif  // ORTOOLS_SAT_CP_MODEL_SEARCH_H_
+#endif  // OR_TOOLS_SAT_CP_MODEL_SEARCH_H_

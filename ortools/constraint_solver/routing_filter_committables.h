@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ORTOOLS_CONSTRAINT_SOLVER_ROUTING_FILTER_COMMITTABLES_H_
-#define ORTOOLS_CONSTRAINT_SOLVER_ROUTING_FILTER_COMMITTABLES_H_
+#ifndef OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_FILTER_COMMITTABLES_H_
+#define OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_FILTER_COMMITTABLES_H_
 
 #include <algorithm>
 #include <cstddef>
@@ -254,26 +254,22 @@ class DimensionValues {
       max = std::min(max, other.max);
       return min <= max;
     }
-    // Set addition of intervals: adds other.min to the min, other.max to the
-    // max, with CapAdd().
-    Interval operator+(const Interval& other) const {
-      DCHECK(!IsEmpty());
-      DCHECK(!other.IsEmpty());
-      return {.min = CapAdd(min, other.min), .max = CapAdd(max, other.max)};
-    }
-    // Set addition, with intervals: adds other.min to the min, other.max to
+    // A set addition, with intervals: adds other.min to the min, other.max to
     // the max, with CapAdd().
-    void Add(const Interval& other) { *this = *this + other; }
-    // Set subtraction, with intervals: subtracts other.max from the min,
-    // other.min from the max, with CapSub().
-    Interval operator-(const Interval& other) const {
+    void Add(const Interval& other) {
       DCHECK(!IsEmpty());
       DCHECK(!other.IsEmpty());
-      return {.min = CapSub(min, other.max), .max = CapSub(max, other.min)};
+      min = CapAdd(min, other.min);
+      max = CapAdd(max, other.max);
     }
-    // Set subtraction, with intervals: subtracts other.max from the min,
+    // A set subtraction, with intervals: subtracts other.max from the min,
     // other.min from the max, with CapSub().
-    void Subtract(const Interval& other) { *this = *this - other; }
+    void Subtract(const Interval& other) {
+      DCHECK(!IsEmpty());
+      DCHECK(!other.IsEmpty());
+      min = CapSub(min, other.max);
+      max = CapSub(max, other.min);
+    }
     // Returns an interval containing all integers: {kint64min, kint64max}.
     static Interval AllIntegers() {
       return {.min = std::numeric_limits<int64_t>::min(),
@@ -509,8 +505,6 @@ class DimensionValues {
   CommittableValue<size_t> num_elements_;
 };
 
-bool PropagateTransitAndSpan(int path, DimensionValues& dimension_values);
-
 class PrePostVisitValues {
  public:
   PrePostVisitValues(int num_paths, int num_nodes)
@@ -642,4 +636,4 @@ class PrePostVisitValues {
 
 }  // namespace operations_research
 
-#endif  // ORTOOLS_CONSTRAINT_SOLVER_ROUTING_FILTER_COMMITTABLES_H_
+#endif  // OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_FILTER_COMMITTABLES_H_

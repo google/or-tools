@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ORTOOLS_SAT_SAT_DECISION_H_
-#define ORTOOLS_SAT_SAT_DECISION_H_
+#ifndef OR_TOOLS_SAT_SAT_DECISION_H_
+#define OR_TOOLS_SAT_SAT_DECISION_H_
 
 #include <cstdint>
 #include <utility>
@@ -107,31 +107,13 @@ class SatDecisionPolicy {
   }
 
   // Like SetAssignmentPreference() but it can be overridden by phase-saving.
-  void SetTargetPolarityIfUnassigned(Literal l) {
-    if (trail_.Assignment().VariableIsAssigned(l.Variable())) return;
-    has_target_polarity_[l.Variable()] = true;
-    target_polarity_[l.Variable()] = var_polarity_[l.Variable()] =
-        l.IsPositive();
-    best_partial_assignment_.push_back(l);
-    target_length_++;
+  void SetTargetPolarity(Literal l) {
+    var_polarity_[l.Variable()] = l.IsPositive();
   }
   absl::Span<const Literal> GetBestPartialAssignment() const {
     return best_partial_assignment_;
   }
-  void ClearBestPartialAssignment() {
-    target_length_ = 0;
-    has_target_polarity_.assign(has_target_polarity_.size(), false);
-    best_partial_assignment_.clear();
-  }
-
-  // Increases activities of variables in the best partial assignment to ensure
-  // they are branched on first in the same order until the next conflict.
-  // Activities before this call are scaled to become disambiguation terms.
-  // Future conflicts will bump activity by the largest increase applied by this
-  // method.
-  // This acts as a soft-reset of the decision policy, useful when exploring a
-  // new region of the search space.
-  void ResetActivitiesToFollowBestPartialAssignment();
+  void ClearBestPartialAssignment() { best_partial_assignment_.clear(); }
 
  private:
   // Computes an initial variable ordering.
@@ -272,4 +254,4 @@ class SatDecisionPolicy {
 }  // namespace sat
 }  // namespace operations_research
 
-#endif  // ORTOOLS_SAT_SAT_DECISION_H_
+#endif  // OR_TOOLS_SAT_SAT_DECISION_H_

@@ -74,7 +74,7 @@ class ModelSetObjectiveTest(absltest.TestCase):
         x = mod.add_variable()
 
         with self.assertRaisesRegex(TypeError, "Quadratic"):
-            mod.maximize_linear_objective(x * x)
+            mod.maximize_linear_objective(x * x)  # pytype: disable=wrong-arg-types
 
     def test_maximize_quadratic_objective(self) -> None:
         mod = model.Model()
@@ -125,7 +125,7 @@ class ModelSetObjectiveTest(absltest.TestCase):
         x = mod.add_variable()
 
         with self.assertRaisesRegex(TypeError, "Quadratic"):
-            mod.minimize_linear_objective(x * x)
+            mod.minimize_linear_objective(x * x)  # pytype: disable=wrong-arg-types
 
     def test_minimize_quadratic_objective(self) -> None:
         mod = model.Model()
@@ -176,7 +176,9 @@ class ModelSetObjectiveTest(absltest.TestCase):
         x = mod.add_variable()
 
         with self.assertRaisesRegex(TypeError, "Quadratic"):
-            mod.set_linear_objective(x * x, is_maximize=True)
+            mod.set_linear_objective(
+                x * x, is_maximize=True
+            )  # pytype: disable=wrong-arg-types
 
     def test_set_objective_quadratic_objective(self) -> None:
         mod = model.Model()

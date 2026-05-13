@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// [START program]
 // The search_for_all_solutions_sample_sat command is an example for how to search for
 // all solutions.
 package main
@@ -21,9 +20,8 @@ import (
 
 	log "github.com/golang/glog"
 	"github.com/google/or-tools/ortools/sat/go/cpmodel"
-	"google.golang.org/protobuf/proto"
-
 	sppb "github.com/google/or-tools/ortools/sat/proto/satparameters"
+	"google.golang.org/protobuf/proto"
 )
 
 func searchForAllSolutionsSampleSat() error {
@@ -68,5 +66,3 @@ func main() {
 		log.Exitf("searchForAllSolutionsSampleSat returned with error: %v", err)
 	}
 }
-
-// [END program]

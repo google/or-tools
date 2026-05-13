@@ -63,9 +63,6 @@ namespace graph {
 // StaticGraph<> in ./graph.h: FastTopologicalSort() can take any such graph as
 // input.
 //
-// If you have a util_graph::Graph and don't need input validation, consider
-// util_graph::TopoOrder(): it has an even simpler API and is only 1.5x slower.
-//
 // ERRORS: returns InvalidArgumentError if the input is broken (negative or
 // out-of-bounds integers) or if the graph is cyclic. In the latter case, the
 // error message will contain "cycle". Note that if cycles may occur in your
@@ -75,7 +72,7 @@ namespace graph {
 // TIE BREAKING: the returned topological order is deterministic and fixed, and
 // corresponds to iterating on nodes in a LIFO (Breadth-first) order.
 //
-// Benchmark: gpaste/4894742655664128.
+// Benchmark: gpaste/6147236302946304, 4-10x faster than util_graph::TopoSort().
 //
 // EXAMPLES:
 //   std::vector<std::vector<int>> adj = {{..}, {..}, ..};
@@ -316,6 +313,8 @@ typedef ::util::internal::DenseIntTopologicalSorterTpl<
 // TopologicalSorter requires that all nodes and edges be added before
 // traversing the nodes, otherwise it will die with a fatal error.
 //
+// TopologicalSorter is -compatible
+//
 // Note(user): since all the real work is done by
 // DenseIntTopologicalSorterTpl, and this class is a template, we inline
 // every function here in the .h.
@@ -330,12 +329,12 @@ template <typename T, bool stable_sort = false,
               typename absl::flat_hash_map<T, int, Hash>::key_equal>
 class TopologicalSorter {
  public:
-  TopologicalSorter() = default;
+  TopologicalSorter() {}
 
   // This type is neither copyable nor movable.
   TopologicalSorter(const TopologicalSorter&) = delete;
   TopologicalSorter& operator=(const TopologicalSorter&) = delete;
-  ~TopologicalSorter() = default;
+  ~TopologicalSorter() {}
 
   // Adds a node to the graph, if it has not already been added via
   // previous calls to AddNode()/AddEdge(). If no edges are later

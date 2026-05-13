@@ -38,7 +38,7 @@ class PrinterMessageCallbackImpl {
       : output_stream_(output_stream), prefix_(prefix) {}
 
   void Call(absl::Span<const std::string> messages) {
-    const absl::MutexLock lock(mutex_);
+    const absl::MutexLock lock(&mutex_);
     for (const std::string& message : messages) {
       output_stream_ << prefix_ << message << '\n';
     }
@@ -69,7 +69,7 @@ class VectorLikeMessageCallbackImpl {
       : sink_(ABSL_DIE_IF_NULL(sink)) {}
 
   void Call(absl::Span<const std::string> messages) {
-    const absl::MutexLock lock(mutex_);
+    const absl::MutexLock lock(&mutex_);
     PushBack(messages, sink_);
   }
 
@@ -87,12 +87,13 @@ MessageCallback PrinterMessageCallback(std::ostream& output_stream,
   // it uses an absl::Mutex that is not.
   const auto impl =
       std::make_shared<PrinterMessageCallbackImpl>(output_stream, prefix);
-  return [=](absl::Span<const std::string> messages) { impl->Call(messages); };
+  return
+      [=](const std::vector<std::string>& messages) { impl->Call(messages); };
 }
 
 MessageCallback InfoLoggerMessageCallback(const absl::string_view prefix,
                                           const absl::SourceLocation loc) {
-  return [=](absl::Span<const std::string> messages) {
+  return [=](const std::vector<std::string>& messages) {
     for (const std::string& message : messages) {
       LOG(INFO).AtLocation(loc.file_name(), loc.line()) << prefix << message;
     }
@@ -127,7 +128,8 @@ MessageCallback RepeatedPtrFieldMessageCallback(
   // it uses an absl::Mutex that is not.
   const auto impl = std::make_shared<VectorLikeMessageCallbackImpl<
       google::protobuf::RepeatedPtrField<std::string>>>(sink);
-  return [=](absl::Span<const std::string> messages) { impl->Call(messages); };
+  return
+      [=](const std::vector<std::string>& messages) { impl->Call(messages); };
 }
 
 }  // namespace operations_research::math_opt

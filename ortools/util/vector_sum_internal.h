@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ORTOOLS_UTIL_VECTOR_SUM_INTERNAL_H_
-#define ORTOOLS_UTIL_VECTOR_SUM_INTERNAL_H_
+#ifndef OR_TOOLS_UTIL_VECTOR_SUM_INTERNAL_H_
+#define OR_TOOLS_UTIL_VECTOR_SUM_INTERNAL_H_
 
 #include <algorithm>
 #include <cstddef>
@@ -174,4 +174,4 @@ Value VectorSum(absl::Span<const Value> values) {
 }  // namespace internal
 }  // namespace operations_research
 
-#endif  // ORTOOLS_UTIL_VECTOR_SUM_INTERNAL_H_
+#endif  // OR_TOOLS_UTIL_VECTOR_SUM_INTERNAL_H_

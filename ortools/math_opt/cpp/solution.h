@@ -14,8 +14,8 @@
 // IWYU pragma: private, include "ortools/math_opt/cpp/math_opt.h"
 // IWYU pragma: friend "ortools/math_opt/cpp/.*"
 
-#ifndef ORTOOLS_MATH_OPT_CPP_SOLUTION_H_
-#define ORTOOLS_MATH_OPT_CPP_SOLUTION_H_
+#ifndef OR_TOOLS_MATH_OPT_CPP_SOLUTION_H_
+#define OR_TOOLS_MATH_OPT_CPP_SOLUTION_H_
 
 #include <optional>
 
@@ -274,4 +274,4 @@ struct Solution {
 }  // namespace math_opt
 }  // namespace operations_research
 
-#endif  // ORTOOLS_MATH_OPT_CPP_SOLUTION_H_
+#endif  // OR_TOOLS_MATH_OPT_CPP_SOLUTION_H_

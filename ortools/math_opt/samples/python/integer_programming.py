@@ -14,7 +14,7 @@
 
 """Simple integer programming example."""
 
-from collections.abc import Sequence
+from typing import Sequence
 
 from absl import app
 

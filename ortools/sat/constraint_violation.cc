@@ -942,42 +942,6 @@ CompiledConstraintWithProto::CompiledConstraintWithProto(
     const ConstraintProto& ct_proto)
     : ct_proto_(ct_proto) {}
 
-int64_t CompiledConstraintWithProto::ComputeViolation(
-    absl::Span<const int64_t> solution) {
-  for (const int lit : ct_proto_.enforcement_literal()) {
-    if (!LiteralValue(lit, solution)) return 0;
-  }
-  return ComputeViolationWhenEnforced(solution);
-}
-
-int64_t CompiledConstraintWithProto::ViolationDelta(
-    int var, int64_t old_value,
-    absl::Span<const int64_t> solution_with_new_value) {
-  bool becomes_enforced = false;
-  bool becomes_unenforced = false;
-  for (const int lit : ct_proto().enforcement_literal()) {
-    if (var == PositiveRef(lit)) {
-      if (LiteralValue(lit, solution_with_new_value) == 1) {
-        becomes_enforced = true;
-      } else {
-        becomes_unenforced = true;
-      }
-    } else if (!LiteralValue(lit, solution_with_new_value)) {
-      // If an enforcement literal stays false, the violation stays 0.
-      return 0;
-    }
-  }
-  if (becomes_enforced) {
-    // New violation (ComputeViolationWhenEnforced()) minus old violation (0).
-    return ComputeViolationWhenEnforced(solution_with_new_value);
-  }
-  if (becomes_unenforced) {
-    // New violation (0) minus old violation (violation()).
-    return -violation();
-  }
-  return ViolationDeltaWhenEnforced(var, old_value, solution_with_new_value);
-}
-
 std::vector<int> CompiledConstraintWithProto::UsedVariables(
     const CpModelProto& model_proto) const {
   std::vector<int> result = sat::UsedVariables(ct_proto_);
@@ -992,19 +956,13 @@ std::vector<int> CompiledConstraintWithProto::UsedVariables(
   return result;
 }
 
-int64_t CompiledConstraintWithProto::ViolationDeltaWhenEnforced(
-    int /*var*/, int64_t /*old_value*/,
-    absl::Span<const int64_t> solution_with_new_value) {
-  return ComputeViolationWhenEnforced(solution_with_new_value) - violation();
-}
-
 // ----- CompiledBoolXorConstraint -----
 
 CompiledBoolXorConstraint::CompiledBoolXorConstraint(
     const ConstraintProto& ct_proto)
     : CompiledConstraintWithProto(ct_proto) {}
 
-int64_t CompiledBoolXorConstraint::ComputeViolationWhenEnforced(
+int64_t CompiledBoolXorConstraint::ComputeViolation(
     absl::Span<const int64_t> solution) {
   int64_t sum_of_literals = 0;
   for (const int lit : ct_proto().bool_xor().literals()) {
@@ -1013,7 +971,7 @@ int64_t CompiledBoolXorConstraint::ComputeViolationWhenEnforced(
   return 1 - (sum_of_literals % 2);
 }
 
-int64_t CompiledBoolXorConstraint::ViolationDeltaWhenEnforced(
+int64_t CompiledBoolXorConstraint::ViolationDelta(
     int /*var*/, int64_t /*old_value*/,
     absl::Span<const int64_t> /*solution_with_new_value*/) {
   return violation() == 0 ? 1 : -1;
@@ -1025,7 +983,7 @@ CompiledLinMaxConstraint::CompiledLinMaxConstraint(
     const ConstraintProto& ct_proto)
     : CompiledConstraintWithProto(ct_proto) {}
 
-int64_t CompiledLinMaxConstraint::ComputeViolationWhenEnforced(
+int64_t CompiledLinMaxConstraint::ComputeViolation(
     absl::Span<const int64_t> solution) {
   const int64_t target_value =
       ExprValue(ct_proto().lin_max().target(), solution);
@@ -1043,7 +1001,7 @@ CompiledIntProdConstraint::CompiledIntProdConstraint(
     const ConstraintProto& ct_proto)
     : CompiledConstraintWithProto(ct_proto) {}
 
-int64_t CompiledIntProdConstraint::ComputeViolationWhenEnforced(
+int64_t CompiledIntProdConstraint::ComputeViolation(
     absl::Span<const int64_t> solution) {
   const int64_t target_value =
       ExprValue(ct_proto().int_prod().target(), solution);
@@ -1060,7 +1018,7 @@ CompiledIntDivConstraint::CompiledIntDivConstraint(
     const ConstraintProto& ct_proto)
     : CompiledConstraintWithProto(ct_proto) {}
 
-int64_t CompiledIntDivConstraint::ComputeViolationWhenEnforced(
+int64_t CompiledIntDivConstraint::ComputeViolation(
     absl::Span<const int64_t> solution) {
   const int64_t target_value =
       ExprValue(ct_proto().int_div().target(), solution);
@@ -1076,7 +1034,7 @@ CompiledIntModConstraint::CompiledIntModConstraint(
     const ConstraintProto& ct_proto)
     : CompiledConstraintWithProto(ct_proto) {}
 
-int64_t CompiledIntModConstraint::ComputeViolationWhenEnforced(
+int64_t CompiledIntModConstraint::ComputeViolation(
     absl::Span<const int64_t> solution) {
   const int64_t target_value =
       ExprValue(ct_proto().int_mod().target(), solution);
@@ -1105,7 +1063,7 @@ CompiledAllDiffConstraint::CompiledAllDiffConstraint(
     const ConstraintProto& ct_proto)
     : CompiledConstraintWithProto(ct_proto) {}
 
-int64_t CompiledAllDiffConstraint::ComputeViolationWhenEnforced(
+int64_t CompiledAllDiffConstraint::ComputeViolation(
     absl::Span<const int64_t> solution) {
   values_.clear();
   for (const LinearExpressionProto& expr : ct_proto().all_diff().exprs()) {
@@ -1217,7 +1175,7 @@ CompiledNoOverlap2dConstraint::CompiledNoOverlap2dConstraint(
     const ConstraintProto& ct_proto, const CpModelProto& cp_model)
     : CompiledConstraintWithProto(ct_proto), cp_model_(cp_model) {}
 
-int64_t CompiledNoOverlap2dConstraint::ComputeViolationWhenEnforced(
+int64_t CompiledNoOverlap2dConstraint::ComputeViolation(
     absl::Span<const int64_t> solution) {
   DCHECK_GE(ct_proto().no_overlap_2d().x_intervals_size(), 2);
   const int size = ct_proto().no_overlap_2d().x_intervals_size();
@@ -1319,11 +1277,10 @@ class CompiledCircuitConstraint : public CompiledConstraintWithProto {
   explicit CompiledCircuitConstraint(const ConstraintProto& ct_proto);
   ~CompiledCircuitConstraint() override = default;
 
-  int64_t ComputeViolationWhenEnforced(
-      absl::Span<const int64_t> solution) override;
+  int64_t ComputeViolation(absl::Span<const int64_t> solution) override;
   void PerformMove(int var, int64_t old_value,
                    absl::Span<const int64_t> new_solution) override;
-  int64_t ViolationDeltaWhenEnforced(
+  int64_t ViolationDelta(
       int var, int64_t old_value,
       absl::Span<const int64_t> solution_with_new_value) override;
 
@@ -1428,7 +1385,7 @@ void CompiledCircuitConstraint::PerformMove(
   std::swap(committed_sccs_, sccs_);
 }
 
-int64_t CompiledCircuitConstraint::ComputeViolationWhenEnforced(
+int64_t CompiledCircuitConstraint::ComputeViolation(
     absl::Span<const int64_t> solution) {
   InitGraph(solution);
   int64_t result = ViolationForCurrentGraph();
@@ -1436,7 +1393,7 @@ int64_t CompiledCircuitConstraint::ComputeViolationWhenEnforced(
   return result;
 }
 
-int64_t CompiledCircuitConstraint::ViolationDeltaWhenEnforced(
+int64_t CompiledCircuitConstraint::ViolationDelta(
     int var, int64_t old_value,
     absl::Span<const int64_t> solution_with_new_value) {
   int64_t result = 0;
@@ -1543,7 +1500,7 @@ LsEvaluator::LsEvaluator(const CpModelProto& cp_model,
 LsEvaluator::LsEvaluator(
     const CpModelProto& cp_model, const SatParameters& params,
     const std::vector<bool>& ignored_constraints,
-    absl::Span<const ConstraintProto> additional_constraints,
+    const std::vector<ConstraintProto>& additional_constraints,
     TimeLimit* time_limit)
     : cp_model_(cp_model), params_(params), time_limit_(time_limit) {
   var_to_constraints_.resize(cp_model_.variables_size());
@@ -1702,10 +1659,6 @@ void LsEvaluator::CompileOneConstraint(const ConstraintProto& ct) {
         // The violation will be the area above the capacity.
         LinearExpressionProto one;
         one.set_offset(1);
-        std::vector<int> enforcement_literals;
-        for (const int lit : ct.enforcement_literal()) {
-          enforcement_literals.push_back(lit);
-        }
         std::vector<std::optional<int>> is_active;
         std::vector<LinearExpressionProto> times;
         std::vector<LinearExpressionProto> demands;
@@ -1729,8 +1682,8 @@ void LsEvaluator::CompileOneConstraint(const ConstraintProto& ct) {
           demands.push_back(NegatedLinearExpression(one));
         }
         constraints_.emplace_back(new CompiledReservoirConstraint(
-            std::move(enforcement_literals), std::move(one),
-            std::move(is_active), std::move(times), std::move(demands)));
+            std::move(one), std::move(is_active), std::move(times),
+            std::move(demands)));
       } else {
         // We expand the no_overlap constraints into a quadratic number of
         // disjunctions.
@@ -1749,17 +1702,16 @@ void LsEvaluator::CompileOneConstraint(const ConstraintProto& ct) {
             if (min_start_i >= max_end_j || min_start_j >= max_end_i) continue;
 
             const bool has_enforcement =
-                !ct.enforcement_literal().empty() ||
                 !proto_i.enforcement_literal().empty() ||
                 !proto_j.enforcement_literal().empty();
             if (has_enforcement) {
               constraints_.emplace_back(
-                  new CompiledNoOverlapWithTwoIntervals<true>(
-                      ct.enforcement_literal(), proto_i, proto_j));
+                  new CompiledNoOverlapWithTwoIntervals<true>(proto_i,
+                                                              proto_j));
             } else {
               constraints_.emplace_back(
-                  new CompiledNoOverlapWithTwoIntervals<false>(
-                      /*enforcement_literals=*/{}, proto_i, proto_j));
+                  new CompiledNoOverlapWithTwoIntervals<false>(proto_i,
+                                                               proto_j));
             }
           }
         }
@@ -1768,10 +1720,6 @@ void LsEvaluator::CompileOneConstraint(const ConstraintProto& ct) {
     }
     case ConstraintProto::ConstraintCase::kCumulative: {
       LinearExpressionProto capacity = ct.cumulative().capacity();
-      std::vector<int> enforcement_literals;
-      for (const int lit : ct.enforcement_literal()) {
-        enforcement_literals.push_back(lit);
-      }
       std::vector<std::optional<int>> is_active;
       std::vector<LinearExpressionProto> times;
       std::vector<LinearExpressionProto> demands;
@@ -1806,8 +1754,8 @@ void LsEvaluator::CompileOneConstraint(const ConstraintProto& ct) {
       }
 
       constraints_.emplace_back(new CompiledReservoirConstraint(
-          std::move(enforcement_literals), std::move(capacity),
-          std::move(is_active), std::move(times), std::move(demands)));
+          std::move(capacity), std::move(is_active), std::move(times),
+          std::move(demands)));
       break;
     }
     case ConstraintProto::ConstraintCase::kNoOverlap2D: {
@@ -1853,20 +1801,17 @@ void LsEvaluator::CompileOneConstraint(const ConstraintProto& ct) {
           }
 
           const bool has_enforcement =
-              !ct.enforcement_literal().empty() ||
               !x_proto_i.enforcement_literal().empty() ||
               !x_proto_j.enforcement_literal().empty() ||
               !y_proto_i.enforcement_literal().empty() ||
               !y_proto_j.enforcement_literal().empty();
           if (has_enforcement) {
             constraints_.emplace_back(new CompiledNoOverlap2dWithTwoBoxes<true>(
-                ct.enforcement_literal(), x_proto_i, y_proto_i, x_proto_j,
-                y_proto_j));
+                x_proto_i, y_proto_i, x_proto_j, y_proto_j));
           } else {
             constraints_.emplace_back(
                 new CompiledNoOverlap2dWithTwoBoxes<false>(
-                    /*enforcement_literals=*/{}, x_proto_i, y_proto_i,
-                    x_proto_j, y_proto_j));
+                    x_proto_i, y_proto_i, x_proto_j, y_proto_j));
           }
         }
       }
@@ -1885,7 +1830,7 @@ void LsEvaluator::CompileOneConstraint(const ConstraintProto& ct) {
 
 void LsEvaluator::CompileConstraintsAndObjective(
     const std::vector<bool>& ignored_constraints,
-    absl::Span<const ConstraintProto> additional_constraints) {
+    const std::vector<ConstraintProto>& additional_constraints) {
   constraints_.clear();
 
   // The first compiled constraint is always the objective if present.
@@ -2132,21 +2077,6 @@ void LsEvaluator::UpdateViolatedList(const int c) {
   }
 }
 
-// Note that since we have our own ViolationDelta() implementation this is
-// only used for initialization and our PerformMove(). It is why we set
-// violations_ here.
-int64_t CompiledReservoirConstraint::ComputeViolation(
-    absl::Span<const int64_t> solution) {
-  for (const int lit : enforcement_literals_) {
-    if (!LiteralValue(lit, solution)) {
-      violation_ = 0;
-      return 0;
-    }
-  }
-  violation_ = BuildProfileAndReturnViolation(solution);
-  return violation_;
-}
-
 int64_t CompiledReservoirConstraint::BuildProfileAndReturnViolation(
     absl::Span<const int64_t> solution) {
   // Starts by filling the cache and profile_.
@@ -2201,11 +2131,6 @@ int64_t CompiledReservoirConstraint::BuildProfileAndReturnViolation(
 
 int64_t CompiledReservoirConstraint::IncrementalViolation(
     int var, absl::Span<const int64_t> solution) {
-  for (const int lit : enforcement_literals_) {
-    if (!LiteralValue(lit, solution)) {
-      return 0;
-    }
-  }
   const int64_t capacity = ExprValue(capacity_, solution);
   profile_delta_.clear();
   CHECK(RefIsPositive(var));

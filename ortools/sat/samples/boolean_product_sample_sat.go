@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// [START program]
 // The boolean_product_sample_sat command is a simple example of the product of two literals.
 package main
 
@@ -20,9 +19,8 @@ import (
 
 	log "github.com/golang/glog"
 	"github.com/google/or-tools/ortools/sat/go/cpmodel"
-	"google.golang.org/protobuf/proto"
-
 	sppb "github.com/google/or-tools/ortools/sat/proto/satparameters"
+	"google.golang.org/protobuf/proto"
 )
 
 func booleanProductSample() error {
@@ -73,5 +71,3 @@ func main() {
 		log.Exitf("booleanProductSample returned with error: %v", err)
 	}
 }
-
-// [END program]

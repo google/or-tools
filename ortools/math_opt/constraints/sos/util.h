@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ORTOOLS_MATH_OPT_CONSTRAINTS_SOS_UTIL_H_
-#define ORTOOLS_MATH_OPT_CONSTRAINTS_SOS_UTIL_H_
+#ifndef OR_TOOLS_MATH_OPT_CONSTRAINTS_SOS_UTIL_H_
+#define OR_TOOLS_MATH_OPT_CONSTRAINTS_SOS_UTIL_H_
 
 #include <sstream>
 #include <string>
@@ -62,4 +62,4 @@ std::string SosConstraintToString(const SosConstraint constraint,
 
 }  // namespace operations_research::math_opt::internal
 
-#endif  // ORTOOLS_MATH_OPT_CONSTRAINTS_SOS_UTIL_H_
+#endif  // OR_TOOLS_MATH_OPT_CONSTRAINTS_SOS_UTIL_H_

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # Copyright 2010-2025 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -28,7 +27,6 @@ from ortools.math_opt.python import model
 from ortools.math_opt.python import model_parameters
 from ortools.math_opt.python import parameters
 from ortools.math_opt.python import result
-from ortools.util.python import solve_interrupter
 from pybind11_abseil.status import StatusNotOk
 
 SolveCallback = Callable[[callback.CallbackData], callback.CallbackResult]
@@ -44,8 +42,6 @@ def solve(
     callback_reg: Optional[callback.CallbackRegistration] = None,
     cb: Optional[SolveCallback] = None,
     streamable_init_args: Optional[init_arguments.StreamableSolverInitArguments] = None,
-    remove_names: bool = False,
-    interrupter: Optional[solve_interrupter.SolveInterrupter] = None,
 ) -> result.SolveResult:
     """Solves an optimization model.
 
@@ -63,9 +59,6 @@ def solve(
         what data will be collected to access in the callback.
       cb: A callback that will be called periodically as the solver runs.
       streamable_init_args: Configuration for initializing the underlying solver.
-      remove_names: When true, remove all names for the ModelProto.
-      interrupter: An optional interrupter that the solver can use to interrupt
-        the solve early.
 
     Returns:
       A SolveResult containing the termination reason, solution(s) and stats.
@@ -81,7 +74,7 @@ def solve(
     streamable_init_args = (
         streamable_init_args or init_arguments.StreamableSolverInitArguments()
     )
-    model_proto = opt_model.export_model(remove_names=remove_names)
+    model_proto = opt_model.export_model()
     proto_cb = None
     if cb is not None:
         proto_cb = lambda x: cb(  # pylint: disable=g-long-lambda
@@ -98,7 +91,7 @@ def solve(
             msg_cb,
             callback_reg.to_proto(),
             proto_cb,
-            interrupter.pybind_interrupter if interrupter is not None else None,
+            None,
         )
     except StatusNotOk as e:
         raise _status_not_ok_to_exception(e) from None
@@ -112,8 +105,6 @@ def compute_infeasible_subsystem(
     params: Optional[parameters.SolveParameters] = None,
     msg_cb: Optional[message_callback.SolveMessageCallback] = None,
     streamable_init_args: Optional[init_arguments.StreamableSolverInitArguments] = None,
-    remove_names: bool = False,
-    interrupter: Optional[solve_interrupter.SolveInterrupter] = None,
 ) -> compute_infeasible_subsystem_result.ComputeInfeasibleSubsystemResult:
     """Computes an infeasible subsystem of the input model.
 
@@ -124,9 +115,6 @@ def compute_infeasible_subsystem(
       params: Configuration of the underlying solver.
       msg_cb: A callback that gives back the underlying solver's logs by the line.
       streamable_init_args: Configuration for initializing the underlying solver.
-      remove_names: When true, remove all names for the ModelProto.
-      interrupter: An optional interrupter that the solver can use to interrupt
-        the solve early.
 
     Returns:
       An `ComputeInfeasibleSubsystemResult` where `feasibility` indicates if the
@@ -139,7 +127,7 @@ def compute_infeasible_subsystem(
     streamable_init_args = (
         streamable_init_args or init_arguments.StreamableSolverInitArguments()
     )
-    model_proto = opt_model.export_model(remove_names=remove_names)
+    model_proto = opt_model.export_model()
     # Solve
     try:
         proto_result = solver.compute_infeasible_subsystem(
@@ -148,7 +136,7 @@ def compute_infeasible_subsystem(
             streamable_init_args.to_proto(),
             params.to_proto(),
             msg_cb,
-            interrupter.pybind_interrupter if interrupter is not None else None,
+            None,
         )
     except StatusNotOk as e:
         raise _status_not_ok_to_exception(e) from None
@@ -194,7 +182,6 @@ class IncrementalSolver:
         streamable_init_args: Optional[
             init_arguments.StreamableSolverInitArguments
         ] = None,
-        remove_names: bool = False,
     ):
         streamable_init_args = (
             streamable_init_args or init_arguments.StreamableSolverInitArguments()
@@ -205,7 +192,7 @@ class IncrementalSolver:
         try:
             self._proto_solver = solver.new(
                 solver_type.value,
-                self._model.export_model(remove_names=remove_names),
+                self._model.export_model(),
                 streamable_init_args.to_proto(),
             )
         except StatusNotOk as e:
@@ -220,7 +207,6 @@ class IncrementalSolver:
         msg_cb: Optional[message_callback.SolveMessageCallback] = None,
         callback_reg: Optional[callback.CallbackRegistration] = None,
         cb: Optional[SolveCallback] = None,
-        interrupter: Optional[solve_interrupter.SolveInterrupter] = None,
     ) -> result.SolveResult:
         """Solves the current optimization model.
 
@@ -230,8 +216,6 @@ class IncrementalSolver:
           msg_cb: An optional callback for solver messages.
           callback_reg: The parameters controlling when cb is called.
           cb: An optional callback for LP/MIP events.
-          interrupter: An optional interrupter that the solver can use to interrupt
-            the solve early.
 
         Returns:
           The result of the solve.
@@ -269,7 +253,7 @@ class IncrementalSolver:
                 msg_cb,
                 callback_reg.to_proto(),
                 proto_cb,
-                interrupter.pybind_interrupter if interrupter is not None else None,
+                None,
             )
         except StatusNotOk as e:
             raise _status_not_ok_to_exception(e) from None

@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ORTOOLS_MATH_OPT_CORE_MATH_OPT_PROTO_UTILS_H_
-#define ORTOOLS_MATH_OPT_CORE_MATH_OPT_PROTO_UTILS_H_
+#ifndef OR_TOOLS_MATH_OPT_CORE_MATH_OPT_PROTO_UTILS_H_
+#define OR_TOOLS_MATH_OPT_CORE_MATH_OPT_PROTO_UTILS_H_
 
 #include <cstdint>
 #include <optional>
@@ -400,4 +400,4 @@ bool SparseVectorFilterPredicate::AcceptsAndUpdate(const int64_t id,
 
 }  // namespace operations_research::math_opt
 
-#endif  // ORTOOLS_MATH_OPT_CORE_MATH_OPT_PROTO_UTILS_H_
+#endif  // OR_TOOLS_MATH_OPT_CORE_MATH_OPT_PROTO_UTILS_H_

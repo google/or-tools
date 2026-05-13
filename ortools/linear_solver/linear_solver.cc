@@ -1155,6 +1155,7 @@ void MPSolver::SolveLazyMutableRequest(LazyMutableCopy<MPModelRequest> request,
       // the user. They shouldn't matter for polling, but for solving we might
       // e.g. use a larger stack.
       ThreadPool thread_pool(/*num_threads=*/1);
+      thread_pool.StartWorkers();
       thread_pool.Schedule(polling_func);
 
       // Make sure the interruption notification didn't arrive while waiting to
@@ -1375,7 +1376,7 @@ absl::Status MPSolver::LoadSolutionFromProto(const MPSolutionResponse& response,
 
 void MPSolver::Clear() {
   {
-    absl::MutexLock lock(global_count_mutex_);
+    absl::MutexLock lock(&global_count_mutex_);
     global_num_variables_ += variables_.size();
     global_num_constraints_ += constraints_.size();
   }
@@ -1908,13 +1909,13 @@ int64_t MPSolver::global_num_constraints_ = 0;
 
 // static
 int64_t MPSolver::global_num_variables() {
-  absl::MutexLock lock(global_count_mutex_);
+  absl::MutexLock lock(&global_count_mutex_);
   return global_num_variables_;
 }
 
 // static
 int64_t MPSolver::global_num_constraints() {
-  absl::MutexLock lock(global_count_mutex_);
+  absl::MutexLock lock(&global_count_mutex_);
   return global_num_constraints_;
 }
 

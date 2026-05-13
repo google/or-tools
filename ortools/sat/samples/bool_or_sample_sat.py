@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# [START program]
 """Code sample to demonstrates a simple Boolean constraint."""
 
 
@@ -32,4 +31,3 @@ def bool_or_sample_sat():
 
 
 bool_or_sample_sat()
-# [END program]

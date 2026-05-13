@@ -51,6 +51,17 @@ Dockers:
 [docker_svg]: ./../../../actions/workflows/amd64_docker_cmake.yml/badge.svg?branch=main
 [docker_link]: ./../../../actions/workflows/amd64_docker_cmake.yml
 
+[![Build Status][aarch64_toolchain_status]][aarch64_toolchain_link]
+[![Build Status][mips_toolchain_status]][mips_toolchain_link]
+[![Build Status][powerpc_toolchain_status]][powerpc_toolchain_link]
+
+[aarch64_toolchain_status]: ./../../../actions/workflows/aarch64_toolchain.yml/badge.svg?branch=main
+[aarch64_toolchain_link]: ./../../../actions/workflows/aarch64_toolchain.yml
+[mips_toolchain_status]: ./../../../actions/workflows/mips_toolchain.yml/badge.svg?branch=main
+[mips_toolchain_link]: ./../../../actions/workflows/mips_toolchain.yml
+[powerpc_toolchain_status]: ./../../../actions/workflows/powerpc_toolchain.yml/badge.svg?branch=main
+[powerpc_toolchain_link]: ./../../../actions/workflows/powerpc_toolchain.yml
+
 ## Introduction
 <nav for="cmake"> |
 <a href="#requirement">Requirement</a> |
@@ -77,7 +88,7 @@ CMake as a standalone project or incorporate it into an existing CMake project.
 ## Requirement
 You'll need:
 
-* `CMake >= 3.24`.
+* `CMake >= 3.18`.
 * A C++20 compiler (GCC 10 or above)
 
 ## Solvers supported
@@ -182,19 +193,20 @@ CMake Option                    | Default Value   | Note
 `BUILD_DOTNET`                  | OFF             | Build .Net wrapper and packages
 `BUILD_JAVA`                    | OFF             | Build Java wrapper and packages
 `BUILD_PYTHON`                  | OFF             | Build Python wrapper and package
+`EMSCRIPTEN_USE_PTHREADS`       | ON*             | Enable pthread support when targeting Emscripten (requires browser support for SharedArrayBuffer)
 | |
 `BUILD_FLATZINC`                | ON\*            | Build the flatzinc library<br>**Forced** to OFF if `BUILD_CXX=OFF`
 `BUILD_GLOP`                    | OFF\*           | Build the standalone Glop library<br>**Forced** to OFF if `BUILD_CXX=ON`, otherwise default to ON
 | **Dependencies** |
 `BUILD_DEPS`                    | OFF*            | Default to ON if `BUILD_JAVA=ON` or `BUILD_PYTHON=ON` or `BUILD_DOTNET=ON`
-`BUILD_ZLIB`                    | OFF*            | Build the zlib dynamic library<br>**Forced** to ON if `BUILD_DEPS=ON`
-`BUILD_BZip2`                   | OFF*            | Build the bzip2 dynamic library<br>**Forced** to ON if `BUILD_DEPS=ON`
-`BUILD_absl`                    | OFF*            | Build the abseil-cpp dynamic libraries<br>**Forced** to ON if `BUILD_DEPS=ON`
-`BUILD_Protobuf`                | OFF*            | Build the protobuf dynamic libraries<br>**Forced** to ON if `BUILD_DEPS=ON`
-`BUILD_re2`                     | OFF*            | Build the re2 dynamic libraries<br>**Forced** to ON if `BUILD_DEPS=ON`
-`BUILD_Eigen3`                  | OFF*            | Build the Eigen3 libraries<br>**Forced** to ON if `BUILD_DEPS=ON`
+`BUILD_ZLIB`                    | ON*             | Build the zlib dynamic library<br>**Forced** to ON if `BUILD_DEPS=ON`
+`BUILD_BZip2`                   | ON*             | Build the bzip2 dynamic library<br>**Forced** to ON if `BUILD_DEPS=ON`
+`BUILD_absl`                    | ON*             | Build the abseil-cpp dynamic libraries<br>**Forced** to ON if `BUILD_DEPS=ON`
+`BUILD_Protobuf`                | ON*             | Build the protobuf dynamic libraries<br>**Forced** to ON if `BUILD_DEPS=ON`
+`BUILD_re2`                     | ON*             | Build the re2 dynamic libraries<br>**Forced** to ON if `BUILD_DEPS=ON`
+`BUILD_Eigen3`                  | ON*             | Build the Eigen3 libraries<br>**Forced** to ON if `BUILD_DEPS=ON`
 | Coin-OR |
-`USE_COINOR`                    | ON\*            | Enable Coin-OR support<br>**Forced** to OFF if `BUILD_CXX=OFF`
+`USE_COINOR`                    | OFF\*           | Enable Coin-OR support<br>**Forced** to OFF if `BUILD_CXX=OFF`
 `BUILD_CoinUtils`               | OFF\*           | Build the CoinUtils dynamic library<br>**Forced** to ON if `USE_COINOR=ON` **and** `BUILD_DEPS=ON`
 `BUILD_Osi`                     | OFF\*           | Build the Osi dynamic library<br>**Forced** to ON if `USE_COINOR=ON` **and** `BUILD_DEPS=ON`
 `BUILD_Clp`                     | OFF\*           | Build the Clp dynamic library<br>**Forced** to ON if `USE_COINOR=ON` **and** `BUILD_DEPS=ON`
@@ -204,10 +216,10 @@ CMake Option                    | Default Value   | Note
 `USE_GLPK`                      | OFF\*           | Enable GLPK support<br>**Forced** to OFF if `BUILD_CXX=OFF`
 `BUILD_GLPK`                    | OFF\*           | Build the GLPK dynamic libraries<br>**Forced** to ON if `USE_GLPK=ON` **and** `BUILD_DEPS=ON`
 | HiGHS |
-`USE_HIGHS`                     | ON\*            | Enable HIGHS support<br>**Forced** to OFF if `BUILD_CXX=OFF`
+`USE_HIGHS`                     | OFF\*           | Enable HIGHS support<br>**Forced** to OFF if `BUILD_CXX=OFF`
 `BUILD_HIGHS`                   | OFF\*           | Build the HiGHS dynamic libraries<br>**Forced** to ON if `USE_HIGHS=ON` **and** `BUILD_DEPS=ON`
 | SCIP |
-`USE_SCIP`                      | ON\*            | Enable SCIP support<br>**Forced** to OFF if `BUILD_CXX=OFF`
+`USE_SCIP`                      | OFF\*           | Enable SCIP support<br>**Forced** to OFF if `BUILD_CXX=OFF`
 `BUILD_SCIP`                    | OFF\*           | Build the SCIP dynamic libraries<br>**Forced** to ON if `USE_SCIP=ON` **and** `BUILD_DEPS=ON`
 | CPLEX
 `USE_CPLEX`                     | OFF             | Enable CPLEX support

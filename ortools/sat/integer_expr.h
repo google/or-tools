@@ -11,30 +11,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ORTOOLS_SAT_INTEGER_EXPR_H_
-#define ORTOOLS_SAT_INTEGER_EXPR_H_
+#ifndef OR_TOOLS_SAT_INTEGER_EXPR_H_
+#define OR_TOOLS_SAT_INTEGER_EXPR_H_
 
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
 #include <functional>
 #include <memory>
-#include <string>
 #include <utility>
 #include <vector>
 
-#include "absl/base/attributes.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/types/span.h"
-#include "ortools/sat/enforcement.h"
-#include "ortools/sat/enforcement_helper.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/linear_propagation.h"
 #include "ortools/sat/model.h"
-#include "ortools/sat/old_precedences_propagator.h"
+#include "ortools/sat/precedences.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
@@ -86,10 +82,6 @@ class LinearConstraintPropagator : public PropagatorInterface,
   // enforcement_literals.
   LinearConstraintPropagator(LinearConstraint ct, Model* model);
 
-  std::string LazyReasonName() const override {
-    return use_int128 ? "IntegerSumLE128" : "IntegerSumLE";
-  }
-
   // We propagate:
   // - If the sum of the individual lower-bound is > upper_bound, we fail.
   // - For all i, upper-bound of i
@@ -110,7 +102,10 @@ class LinearConstraintPropagator : public PropagatorInterface,
       IntegerLiteral integer_literal, IntegerVariable target_var) const;
 
   // For LazyReasonInterface.
-  void Explain(int id, IntegerLiteral to_explain, IntegerReason* reason) final;
+  void Explain(int id, IntegerValue propagation_slack,
+               IntegerVariable var_to_explain, int trail_index,
+               std::vector<Literal>* literals_reason,
+               std::vector<int>* trail_indices_reason) final;
 
  private:
   // Fills integer_reason_ with all the current lower_bounds. The real
@@ -246,30 +241,23 @@ class MinPropagator : public PropagatorInterface {
 // Same as MinPropagator except this works on min = MIN(exprs) where exprs are
 // linear expressions. It uses IntegerSumLE to propagate bounds on the exprs.
 // Assumes Canonical expressions (all positive coefficients).
-class GreaterThanMinOfExprsPropagator : public PropagatorInterface,
-                                        LazyReasonInterface {
+class LinMinPropagator : public PropagatorInterface, LazyReasonInterface {
  public:
-  GreaterThanMinOfExprsPropagator(
-      absl::Span<const Literal> enforcement_literals,
-      std::vector<LinearExpression> exprs, IntegerVariable min_var,
-      Model* model);
-  GreaterThanMinOfExprsPropagator(const GreaterThanMinOfExprsPropagator&) =
-      delete;
-  GreaterThanMinOfExprsPropagator& operator=(
-      const GreaterThanMinOfExprsPropagator&) = delete;
-
-  std::string LazyReasonName() const override {
-    return "GreaterThanMinOfExprsPropagator";
-  }
+  LinMinPropagator(std::vector<LinearExpression> exprs, IntegerVariable min_var,
+                   Model* model);
+  LinMinPropagator(const LinMinPropagator&) = delete;
+  LinMinPropagator& operator=(const LinMinPropagator&) = delete;
 
   bool Propagate() final;
+  void RegisterWith(GenericLiteralWatcher* watcher);
 
   // For LazyReasonInterface.
-  void Explain(int id, IntegerLiteral to_explain, IntegerReason* reason) final;
+  void Explain(int id, IntegerValue propagation_slack,
+               IntegerVariable var_to_explain, int trail_index,
+               std::vector<Literal>* literals_reason,
+               std::vector<int>* trail_indices_reason) final;
 
  private:
-  int RegisterWith(GenericLiteralWatcher* watcher);
-
   // Lighter version of IntegerSumLE. This uses the current value of
   // integer_reason_ in addition to the reason for propagating the linear
   // constraint. The coeffs are assumed to be positive here.
@@ -281,17 +269,12 @@ class GreaterThanMinOfExprsPropagator : public PropagatorInterface,
   const IntegerVariable min_var_;
   std::vector<IntegerValue> expr_lbs_;
   Model* model_;
-  IntegerTrail& integer_trail_;
-  EnforcementHelper& enforcement_helper_;
-  EnforcementId enforcement_id_;
+  IntegerTrail* integer_trail_;
   std::vector<IntegerValue> max_variations_;
   std::vector<IntegerValue> reason_coeffs_;
   std::vector<IntegerLiteral> local_reason_;
   std::vector<IntegerLiteral> integer_reason_for_unique_candidate_;
   int rev_unique_candidate_ = 0;
-
-  std::vector<IntegerVariable> tmp_vars_;
-  std::vector<IntegerValue> tmp_coeffs_;
 };
 
 // Propagates a * b = p.
@@ -300,19 +283,17 @@ class GreaterThanMinOfExprsPropagator : public PropagatorInterface,
 // the bounds on p as this require more complex arithmetics.
 class ProductPropagator : public PropagatorInterface {
  public:
-  ProductPropagator(absl::Span<const Literal> enforcement_literals,
-                    AffineExpression a, AffineExpression b, AffineExpression p,
-                    Model* model);
+  ProductPropagator(AffineExpression a, AffineExpression b, AffineExpression p,
+                    IntegerTrail* integer_trail);
 
   // This type is neither copyable nor movable.
   ProductPropagator(const ProductPropagator&) = delete;
   ProductPropagator& operator=(const ProductPropagator&) = delete;
 
   bool Propagate() final;
+  void RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
-  int RegisterWith(GenericLiteralWatcher* watcher);
-
   // Maybe replace a_, b_ or c_ by their negation to simplify the cases.
   bool CanonicalizeCases();
 
@@ -329,9 +310,8 @@ class ProductPropagator : public PropagatorInterface {
   AffineExpression a_;
   AffineExpression b_;
   AffineExpression p_;
-  const IntegerTrail& integer_trail_;
-  EnforcementHelper& enforcement_helper_;
-  EnforcementId enforcement_id_;
+
+  IntegerTrail* integer_trail_;
 };
 
 // Propagates num / denom = div. Basic version, we don't extract any special
@@ -340,19 +320,17 @@ class ProductPropagator : public PropagatorInterface {
 // TODO(user): Deal with overflow.
 class DivisionPropagator : public PropagatorInterface {
  public:
-  DivisionPropagator(absl::Span<const Literal> enforcement_literals,
-                     AffineExpression num, AffineExpression denom,
-                     AffineExpression div, Model* model);
+  DivisionPropagator(AffineExpression num, AffineExpression denom,
+                     AffineExpression div, IntegerTrail* integer_trail);
 
   // This type is neither copyable nor movable.
   DivisionPropagator(const DivisionPropagator&) = delete;
   DivisionPropagator& operator=(const DivisionPropagator&) = delete;
 
   bool Propagate() final;
+  void RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
-  int RegisterWith(GenericLiteralWatcher* watcher);
-
   // Propagates the fact that the signs of each domain, if fixed, are
   // compatible.
   bool PropagateSigns(AffineExpression num, AffineExpression denom,
@@ -369,63 +347,55 @@ class DivisionPropagator : public PropagatorInterface {
   bool PropagatePositiveDomains(AffineExpression num, AffineExpression denom,
                                 AffineExpression div);
 
-  AffineExpression num_;
-  AffineExpression denom_;
+  const AffineExpression num_;
+  const AffineExpression denom_;
   const AffineExpression div_;
+  const AffineExpression negated_denom_;
+  const AffineExpression negated_num_;
   const AffineExpression negated_div_;
-  const IntegerTrail& integer_trail_;
-  EnforcementHelper& enforcement_helper_;
-  EnforcementId enforcement_id_;
+  IntegerTrail* integer_trail_;
 };
 
 // Propagates var_a / cst_b = var_c. Basic version, we don't extract any special
 // cases, and we only propagates the bounds. cst_b must be > 0.
 class FixedDivisionPropagator : public PropagatorInterface {
  public:
-  FixedDivisionPropagator(absl::Span<const Literal> enforcement_literals,
-                          AffineExpression a, IntegerValue b,
-                          AffineExpression c, Model* model);
+  FixedDivisionPropagator(AffineExpression a, IntegerValue b,
+                          AffineExpression c, IntegerTrail* integer_trail);
 
   // This type is neither copyable nor movable.
   FixedDivisionPropagator(const FixedDivisionPropagator&) = delete;
   FixedDivisionPropagator& operator=(const FixedDivisionPropagator&) = delete;
 
   bool Propagate() final;
+  void RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
-  int RegisterWith(GenericLiteralWatcher* watcher);
-
   const AffineExpression a_;
   const IntegerValue b_;
   const AffineExpression c_;
-  const IntegerTrail& integer_trail_;
-  EnforcementHelper& enforcement_helper_;
-  EnforcementId enforcement_id_;
+
+  IntegerTrail* integer_trail_;
 };
 
 // Propagates target == expr % mod. Basic version, we don't extract any special
 // cases, and we only propagates the bounds. mod must be > 0.
 class FixedModuloPropagator : public PropagatorInterface {
  public:
-  FixedModuloPropagator(absl::Span<const Literal> enforcement_literals,
-                        AffineExpression expr, IntegerValue mod,
-                        AffineExpression target, Model* model);
+  FixedModuloPropagator(AffineExpression expr, IntegerValue mod,
+                        AffineExpression target, IntegerTrail* integer_trail);
 
   // This type is neither copyable nor movable.
   FixedModuloPropagator(const FixedModuloPropagator&) = delete;
   FixedModuloPropagator& operator=(const FixedModuloPropagator&) = delete;
 
   bool Propagate() final;
+  void RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
-  int RegisterWith(GenericLiteralWatcher* watcher);
-
-  bool PropagateWhenFalseAndTargetIsPositive(AffineExpression expr,
-                                             AffineExpression target);
-  bool PropagateWhenFalseAndTargetDomainContainsZero();
   bool PropagateSignsAndTargetRange();
-  bool PropagateBoundsWhenExprIsNonNegative(AffineExpression expr,
-                                            AffineExpression target);
+  bool PropagateBoundsWhenExprIsPositive(AffineExpression expr,
+                                         AffineExpression target);
   bool PropagateOuterBounds();
 
   const AffineExpression expr_;
@@ -433,44 +403,73 @@ class FixedModuloPropagator : public PropagatorInterface {
   const AffineExpression target_;
   const AffineExpression negated_expr_;
   const AffineExpression negated_target_;
-  const IntegerTrail& integer_trail_;
-  EnforcementHelper& enforcement_helper_;
-  EnforcementId enforcement_id_;
+  IntegerTrail* integer_trail_;
 };
 
 // Propagates x * x = s.
 // TODO(user): Only works for x nonnegative.
 class SquarePropagator : public PropagatorInterface {
  public:
-  SquarePropagator(absl::Span<const Literal> enforcement_literals,
-                   AffineExpression x, AffineExpression s, Model* model);
+  SquarePropagator(AffineExpression x, AffineExpression s,
+                   IntegerTrail* integer_trail);
 
   // This type is neither copyable nor movable.
   SquarePropagator(const SquarePropagator&) = delete;
   SquarePropagator& operator=(const SquarePropagator&) = delete;
 
   bool Propagate() final;
+  void RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
-  int RegisterWith(GenericLiteralWatcher* watcher);
-
   const AffineExpression x_;
   const AffineExpression s_;
-  const IntegerTrail& integer_trail_;
-  EnforcementHelper& enforcement_helper_;
-  EnforcementId enforcement_id_;
+  IntegerTrail* integer_trail_;
 };
 
 // =============================================================================
 // Model based functions.
 // =============================================================================
 
+// Weighted sum <= constant.
+template <typename VectorInt>
+inline std::function<void(Model*)> WeightedSumLowerOrEqual(
+    absl::Span<const IntegerVariable> vars, const VectorInt& coefficients,
+    int64_t upper_bound) {
+  return [=, vars = std::vector<IntegerVariable>(vars.begin(), vars.end())](
+             Model* model) {
+    return AddWeightedSumLowerOrEqual({}, vars, coefficients, upper_bound,
+                                      model);
+  };
+}
+
+// Weighted sum >= constant.
+template <typename VectorInt>
+inline std::function<void(Model*)> WeightedSumGreaterOrEqual(
+    absl::Span<const IntegerVariable> vars, const VectorInt& coefficients,
+    int64_t lower_bound) {
+  // We just negate everything and use an <= constraints.
+  std::vector<int64_t> negated_coeffs(coefficients.begin(), coefficients.end());
+  for (int64_t& ref : negated_coeffs) ref = -ref;
+  return WeightedSumLowerOrEqual(vars, negated_coeffs, -lower_bound);
+}
+
+// Weighted sum == constant.
+template <typename VectorInt>
+inline std::function<void(Model*)> FixedWeightedSum(
+    absl::Span<const IntegerVariable> vars, const VectorInt& coefficients,
+    int64_t value) {
+  return [=, vars = std::vector<IntegerVariable>(vars.begin(), vars.end())](
+             Model* model) {
+    model->Add(WeightedSumGreaterOrEqual(vars, coefficients, value));
+    model->Add(WeightedSumLowerOrEqual(vars, coefficients, value));
+  };
+}
+
 // enforcement_literals => sum <= upper_bound
 inline void AddWeightedSumLowerOrEqual(
     absl::Span<const Literal> enforcement_literals,
     absl::Span<const IntegerVariable> vars,
-    absl::Span<const IntegerValue> coefficients, int64_t upper_bound,
-    Model* model) {
+    absl::Span<const int64_t> coefficients, int64_t upper_bound, Model* model) {
   // Linear1.
   DCHECK_GE(vars.size(), 1);
   if (vars.size() == 1) {
@@ -560,7 +559,9 @@ inline void AddWeightedSumLowerOrEqual(
 
   if (params.new_linear_propagation()) {
     const bool ok = model->GetOrCreate<LinearPropagator>()->AddConstraint(
-        enforcement_literals, vars, coefficients, IntegerValue(upper_bound));
+        enforcement_literals, vars,
+        std::vector<IntegerValue>(coefficients.begin(), coefficients.end()),
+        IntegerValue(upper_bound));
     if (!ok) {
       auto* sat_solver = model->GetOrCreate<SatSolver>();
       if (sat_solver->CurrentDecisionLevel() == 0) {
@@ -571,9 +572,10 @@ inline void AddWeightedSumLowerOrEqual(
       }
     }
   } else {
-    IntegerSumLE* constraint =
-        new IntegerSumLE(enforcement_literals, vars, coefficients,
-                         IntegerValue(upper_bound), model);
+    IntegerSumLE* constraint = new IntegerSumLE(
+        enforcement_literals, vars,
+        std::vector<IntegerValue>(coefficients.begin(), coefficients.end()),
+        IntegerValue(upper_bound), model);
     constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
     model->TakeOwnership(constraint);
   }
@@ -583,50 +585,12 @@ inline void AddWeightedSumLowerOrEqual(
 inline void AddWeightedSumGreaterOrEqual(
     absl::Span<const Literal> enforcement_literals,
     absl::Span<const IntegerVariable> vars,
-    absl::Span<const IntegerValue> coefficients, int64_t lower_bound,
-    Model* model) {
+    absl::Span<const int64_t> coefficients, int64_t lower_bound, Model* model) {
   // We just negate everything and use an <= constraint.
-  std::vector<IntegerValue> negated_coeffs(coefficients.begin(),
-                                           coefficients.end());
-  for (IntegerValue& ref : negated_coeffs) ref = -ref;
+  std::vector<int64_t> negated_coeffs(coefficients.begin(), coefficients.end());
+  for (int64_t& ref : negated_coeffs) ref = -ref;
   AddWeightedSumLowerOrEqual(enforcement_literals, vars, negated_coeffs,
                              -lower_bound, model);
-}
-
-// Weighted sum <= constant.
-template <typename VectorInt>
-inline std::function<void(Model*)> WeightedSumLowerOrEqual(
-    absl::Span<const IntegerVariable> vars, const VectorInt& coefficients,
-    int64_t upper_bound) {
-  return [=, vars = std::vector<IntegerVariable>(vars.begin(), vars.end()),
-          coeffs = std::vector<IntegerValue>(
-              coefficients.begin(), coefficients.end())](Model* model) {
-    return AddWeightedSumLowerOrEqual({}, vars, coeffs, upper_bound, model);
-  };
-}
-
-// Weighted sum >= constant.
-template <typename VectorInt>
-inline std::function<void(Model*)> WeightedSumGreaterOrEqual(
-    absl::Span<const IntegerVariable> vars, const VectorInt& coefficients,
-    int64_t lower_bound) {
-  // We just negate everything and use an <= constraints.
-  std::vector<IntegerValue> negated_coeffs(coefficients.begin(),
-                                           coefficients.end());
-  for (IntegerValue& ref : negated_coeffs) ref = -ref;
-  return WeightedSumLowerOrEqual(vars, negated_coeffs, -lower_bound);
-}
-
-// Weighted sum == constant.
-template <typename VectorInt>
-inline std::function<void(Model*)> FixedWeightedSum(
-    absl::Span<const IntegerVariable> vars, const VectorInt& coefficients,
-    int64_t value) {
-  return [=, vars = std::vector<IntegerVariable>(vars.begin(), vars.end())](
-             Model* model) {
-    model->Add(WeightedSumGreaterOrEqual(vars, coefficients, value));
-    model->Add(WeightedSumLowerOrEqual(vars, coefficients, value));
-  };
 }
 
 // TODO(user): Delete once Telamon use new function.
@@ -635,13 +599,13 @@ inline std::function<void(Model*)> ConditionalWeightedSumLowerOrEqual(
     absl::Span<const IntegerVariable> vars,
     absl::Span<const int64_t> coefficients, int64_t upper_bound) {
   return [=, vars = std::vector<IntegerVariable>(vars.begin(), vars.end()),
-          coeffs = std::vector<IntegerValue>(coefficients.begin(),
-                                             coefficients.end()),
+          coefficients =
+              std::vector<int64_t>(coefficients.begin(), coefficients.end()),
           enforcement_literals =
               std::vector<Literal>(enforcement_literals.begin(),
                                    enforcement_literals.end())](Model* model) {
-    AddWeightedSumLowerOrEqual(enforcement_literals, vars, coeffs, upper_bound,
-                               model);
+    AddWeightedSumLowerOrEqual(enforcement_literals, vars, coefficients,
+                               upper_bound, model);
   };
 }
 inline std::function<void(Model*)> ConditionalWeightedSumGreaterOrEqual(
@@ -649,13 +613,13 @@ inline std::function<void(Model*)> ConditionalWeightedSumGreaterOrEqual(
     absl::Span<const IntegerVariable> vars,
     absl::Span<const int64_t> coefficients, int64_t upper_bound) {
   return [=,
-          coeffs = std::vector<IntegerValue>(coefficients.begin(),
-                                             coefficients.end()),
+          coefficients =
+              std::vector<int64_t>(coefficients.begin(), coefficients.end()),
           vars = std::vector<IntegerVariable>(vars.begin(), vars.end()),
           enforcement_literals =
               std::vector<Literal>(enforcement_literals.begin(),
                                    enforcement_literals.end())](Model* model) {
-    AddWeightedSumGreaterOrEqual(enforcement_literals, vars, coeffs,
+    AddWeightedSumGreaterOrEqual(enforcement_literals, vars, coefficients,
                                  upper_bound, model);
   };
 }
@@ -675,13 +639,21 @@ inline void LoadConditionalLinearConstraint(
     return model->Add(ClauseConstraint(clause));
   }
 
+  // TODO(user): Remove the conversion!
+  std::vector<IntegerVariable> vars(cst.num_terms);
+  std::vector<int64_t> coeffs(cst.num_terms);
+  for (int i = 0; i < cst.num_terms; ++i) {
+    vars[i] = cst.vars[i];
+    coeffs[i] = cst.coeffs[i].value();
+  }
+
   if (cst.ub < kMaxIntegerValue) {
-    AddWeightedSumLowerOrEqual(enforcement_literals, cst.VarsAsSpan(),
-                               cst.CoeffsAsSpan(), cst.ub.value(), model);
+    AddWeightedSumLowerOrEqual(enforcement_literals, vars, coeffs,
+                               cst.ub.value(), model);
   }
   if (cst.lb > kMinIntegerValue) {
-    AddWeightedSumGreaterOrEqual(enforcement_literals, cst.VarsAsSpan(),
-                                 cst.CoeffsAsSpan(), cst.lb.value(), model);
+    AddWeightedSumGreaterOrEqual(enforcement_literals, vars, coeffs,
+                                 cst.lb.value(), model);
   }
 }
 
@@ -738,10 +710,9 @@ inline std::function<IntegerVariable(Model*)> NewWeightedSum(
 // Expresses the fact that an existing integer variable is equal to the minimum
 // of linear expressions. Assumes Canonical expressions (all positive
 // coefficients).
-inline void AddIsEqualToMinOf(
-    const absl::Span<const Literal> enforcement_literals,
-    const LinearExpression& min_expr, std::vector<LinearExpression> exprs,
-    Model* model) {
+inline void AddIsEqualToMinOf(const LinearExpression& min_expr,
+                              std::vector<LinearExpression> exprs,
+                              Model* model) {
   IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
 
   IntegerVariable min_var;
@@ -765,18 +736,17 @@ inline void AddIsEqualToMinOf(
     LoadLinearConstraint(builder.Build(), model);
   }
 
-  // Add for all i, enforcement_literals => min <= exprs[i].
+  // Add for all i, min <= exprs[i].
   for (const LinearExpression& expr : exprs) {
     LinearConstraintBuilder builder(0, kMaxIntegerValue);
     builder.AddLinearExpression(expr, 1);
     builder.AddTerm(min_var, -1);
-    LoadConditionalLinearConstraint(enforcement_literals, builder.Build(),
-                                    model);
+    LoadLinearConstraint(builder.Build(), model);
   }
 
-  GreaterThanMinOfExprsPropagator* constraint =
-      new GreaterThanMinOfExprsPropagator(enforcement_literals,
-                                          std::move(exprs), min_var, model);
+  LinMinPropagator* constraint =
+      new LinMinPropagator(std::move(exprs), min_var, model);
+  constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
   model->TakeOwnership(constraint);
 }
 
@@ -784,80 +754,84 @@ ABSL_DEPRECATED("Use AddIsEqualToMinOf() instead.")
 inline std::function<void(Model*)> IsEqualToMinOf(
     const LinearExpression& min_expr,
     const std::vector<LinearExpression>& exprs) {
-  return [&](Model* model) {
-    AddIsEqualToMinOf(/*enforcement_literals=*/{}, min_expr, exprs, model);
-  };
+  return [&](Model* model) { AddIsEqualToMinOf(min_expr, exprs, model); };
 }
 
+template <class T>
+void RegisterAndTransferOwnership(Model* model, T* ct) {
+  ct->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
+  model->TakeOwnership(ct);
+}
 // Adds the constraint: a * b = p.
-inline std::function<void(Model*)> ProductConstraint(
-    absl::Span<const Literal> enforcement_literals, AffineExpression a,
-    AffineExpression b, AffineExpression p) {
+inline std::function<void(Model*)> ProductConstraint(AffineExpression a,
+                                                     AffineExpression b,
+                                                     AffineExpression p) {
   return [=](Model* model) {
-    const IntegerTrail& integer_trail = *model->GetOrCreate<IntegerTrail>();
-    // TODO(user): return early if constraint is never enforced.
+    IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
     if (a == b) {
-      if (integer_trail.LowerBound(a) >= 0) {
-        model->TakeOwnership(
-            new SquarePropagator(enforcement_literals, a, p, model));
+      if (integer_trail->LowerBound(a) >= 0) {
+        RegisterAndTransferOwnership(model,
+                                     new SquarePropagator(a, p, integer_trail));
         return;
       }
-      if (integer_trail.UpperBound(a) <= 0) {
-        model->TakeOwnership(
-            new SquarePropagator(enforcement_literals, a.Negated(), p, model));
+      if (integer_trail->UpperBound(a) <= 0) {
+        RegisterAndTransferOwnership(
+            model, new SquarePropagator(a.Negated(), p, integer_trail));
         return;
       }
     }
-    model->TakeOwnership(
-        new ProductPropagator(enforcement_literals, a, b, p, model));
+    RegisterAndTransferOwnership(model,
+                                 new ProductPropagator(a, b, p, integer_trail));
   };
 }
 
 // Adds the constraint: num / denom = div. (denom > 0).
-inline std::function<void(Model*)> DivisionConstraint(
-    absl::Span<const Literal> enforcement_literals, AffineExpression num,
-    AffineExpression denom, AffineExpression div) {
+inline std::function<void(Model*)> DivisionConstraint(AffineExpression num,
+                                                      AffineExpression denom,
+                                                      AffineExpression div) {
   return [=](Model* model) {
-    const IntegerTrail& integer_trail = *model->GetOrCreate<IntegerTrail>();
-    // TODO(user): return early if constraint is never enforced.
+    IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
     DivisionPropagator* constraint;
-    if (integer_trail.UpperBound(denom) < 0) {
-      constraint = new DivisionPropagator(enforcement_literals, num.Negated(),
-                                          denom.Negated(), div, model);
+    if (integer_trail->UpperBound(denom) < 0) {
+      constraint = new DivisionPropagator(num.Negated(), denom.Negated(), div,
+                                          integer_trail);
+
     } else {
-      constraint =
-          new DivisionPropagator(enforcement_literals, num, denom, div, model);
+      constraint = new DivisionPropagator(num, denom, div, integer_trail);
     }
+    constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
     model->TakeOwnership(constraint);
   };
 }
 
 // Adds the constraint: a / b = c where b is a constant.
-inline std::function<void(Model*)> FixedDivisionConstraint(
-    absl::Span<const Literal> enforcement_literals, AffineExpression a,
-    IntegerValue b, AffineExpression c) {
+inline std::function<void(Model*)> FixedDivisionConstraint(AffineExpression a,
+                                                           IntegerValue b,
+                                                           AffineExpression c) {
   return [=](Model* model) {
-    // TODO(user): return early if constraint is never enforced.
+    IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
     FixedDivisionPropagator* constraint =
-        b > 0
-            ? new FixedDivisionPropagator(enforcement_literals, a, b, c, model)
-            : new FixedDivisionPropagator(enforcement_literals, a.Negated(), -b,
-                                          c, model);
+        b > 0 ? new FixedDivisionPropagator(a, b, c, integer_trail)
+              : new FixedDivisionPropagator(a.Negated(), -b, c, integer_trail);
+    constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
     model->TakeOwnership(constraint);
   };
 }
 
 // Adds the constraint: a % b = c where b is a constant.
-inline std::function<void(Model*)> FixedModuloConstraint(
-    absl::Span<const Literal> enforcement_literals, AffineExpression a,
-    IntegerValue b, AffineExpression c) {
+inline std::function<void(Model*)> FixedModuloConstraint(AffineExpression a,
+                                                         IntegerValue b,
+                                                         AffineExpression c) {
   return [=](Model* model) {
-    model->TakeOwnership(
-        new FixedModuloPropagator(enforcement_literals, a, b, c, model));
+    IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+    FixedModuloPropagator* constraint =
+        new FixedModuloPropagator(a, b, c, integer_trail);
+    constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
+    model->TakeOwnership(constraint);
   };
 }
 
 }  // namespace sat
 }  // namespace operations_research
 
-#endif  // ORTOOLS_SAT_INTEGER_EXPR_H_
+#endif  // OR_TOOLS_SAT_INTEGER_EXPR_H_

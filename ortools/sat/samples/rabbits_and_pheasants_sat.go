@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// [START program]
 // The rabbits_and_pheasants_sat command is an example of a simple sat program that
 // solves the rabbits and pheasants problem.
 package main
@@ -21,7 +20,6 @@ import (
 
 	log "github.com/golang/glog"
 	"github.com/google/or-tools/ortools/sat/go/cpmodel"
-
 	cmpb "github.com/google/or-tools/ortools/sat/proto/cpmodel"
 )
 
@@ -63,5 +61,3 @@ func main() {
 		log.Exitf("rabbitsAndPheasants returned with error: %v", err)
 	}
 }
-
-// [END program]

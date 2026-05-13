@@ -13,8 +13,8 @@
 
 // Convert strings to numbers or numbers to strings.
 
-#ifndef ORTOOLS_BASE_NUMBERS_H_
-#define ORTOOLS_BASE_NUMBERS_H_
+#ifndef OR_TOOLS_BASE_NUMBERS_H_
+#define OR_TOOLS_BASE_NUMBERS_H_
 
 #include <functional>
 #include <limits>
@@ -131,4 +131,4 @@ inline bool ParseLeadingBoolValue(std::string_view str, bool deflt) {
 }
 }  // namespace strings
 
-#endif  // ORTOOLS_BASE_NUMBERS_H_
+#endif  // OR_TOOLS_BASE_NUMBERS_H_

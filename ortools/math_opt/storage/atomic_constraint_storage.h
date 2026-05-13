@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ORTOOLS_MATH_OPT_STORAGE_ATOMIC_CONSTRAINT_STORAGE_H_
-#define ORTOOLS_MATH_OPT_STORAGE_ATOMIC_CONSTRAINT_STORAGE_H_
+#ifndef OR_TOOLS_MATH_OPT_STORAGE_ATOMIC_CONSTRAINT_STORAGE_H_
+#define OR_TOOLS_MATH_OPT_STORAGE_ATOMIC_CONSTRAINT_STORAGE_H_
 
 #include <algorithm>
 #include <cstdint>
@@ -292,4 +292,4 @@ AtomicConstraintStorage<ConstraintData>::Update(const Diff& diff) const {
 
 }  // namespace operations_research::math_opt
 
-#endif  // ORTOOLS_MATH_OPT_STORAGE_ATOMIC_CONSTRAINT_STORAGE_H_
+#endif  // OR_TOOLS_MATH_OPT_STORAGE_ATOMIC_CONSTRAINT_STORAGE_H_

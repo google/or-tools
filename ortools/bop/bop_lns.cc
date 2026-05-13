@@ -256,7 +256,8 @@ BopOptimizerBase::Status BopAdaptiveLNSOptimizer::Optimize(
   auto sat_propagator_cleanup =
       ::absl::MakeCleanup([initial_dt, this, &learned_info, &time_limit]() {
         if (!sat_propagator_->ModelIsUnsat()) {
-          (void)sat_propagator_->ResetToLevelZero();
+          sat_propagator_->SetAssumptionLevel(0);
+          sat_propagator_->RestoreSolverToAssumptionLevel();
           ExtractLearnedInfoFromSatSolver(sat_propagator_, learned_info);
         }
         time_limit->AdvanceDeterministicTime(
@@ -326,14 +327,14 @@ BopOptimizerBase::Status BopAdaptiveLNSOptimizer::Optimize(
     // Restore to the assumption level.
     // This is call is important since all the fixed variable in the
     // propagator_ will be used to construct the local problem below.
-    // Note that calling ResetToLevelZero() might actually prove
+    // Note that calling RestoreSolverToAssumptionLevel() might actually prove
     // the infeasibility. It is important to check the UNSAT status afterward.
     if (!sat_propagator_->ModelIsUnsat()) {
-      (void)sat_propagator_->ResetToLevelZero();
+      sat_propagator_->RestoreSolverToAssumptionLevel();
     }
 
     // Check if the problem is proved UNSAT, by previous the search or the
-    // ResetToLevelZero() call above.
+    // RestoreSolverToAssumptionLevel() call above.
     if (sat_propagator_->ModelIsUnsat()) {
       return problem_state.solution().IsFeasible()
                  ? BopOptimizerBase::OPTIMAL_SOLUTION_FOUND

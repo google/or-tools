@@ -12,10 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# [START program]
 """Implements sequence constraints in a no_overlap constraint."""
 
-from collections.abc import Sequence
+from typing import Dict, List, Sequence, Tuple
 
 from ortools.sat.python import cp_model
 
@@ -27,9 +26,9 @@ def sequence_constraints_with_circuit(
     task_types: Sequence[str],
     lengths: Sequence[cp_model.IntVar],
     cumuls: Sequence[cp_model.IntVar],
-    sequence_length_constraints: dict[str, tuple[int, int]],
-    sequence_cumul_constraints: dict[str, tuple[int, int, int]],
-) -> Sequence[tuple[cp_model.IntVar, int]]:
+    sequence_length_constraints: Dict[str, Tuple[int, int]],
+    sequence_cumul_constraints: Dict[str, Tuple[int, int, int]],
+) -> Sequence[Tuple[cp_model.IntVar, int]]:
     """This method enforces constraints on sequences of tasks of the same type.
 
     This method assumes that all durations are strictly positive.
@@ -65,7 +64,7 @@ def sequence_constraints_with_circuit(
     num_tasks = len(starts)
     all_tasks = range(num_tasks)
 
-    arcs: list[cp_model.ArcT] = []
+    arcs: List[cp_model.ArcT] = []
     for i in all_tasks:
         # if node i is first.
         start_lit = model.new_bool_var(f"start_{i}")
@@ -297,4 +296,3 @@ def sequences_in_no_overlap_sample_sat():
 
 
 sequences_in_no_overlap_sample_sat()
-# [END program]

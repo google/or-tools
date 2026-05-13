@@ -51,7 +51,6 @@ MandatoryOverlapPropagator::~MandatoryOverlapPropagator() {
 }
 
 bool MandatoryOverlapPropagator::Propagate() {
-  if (!helper_.IsEnforced()) return true;
   if (!helper_.SynchronizeAndSetDirection()) return false;
 
   mandatory_regions_.clear();

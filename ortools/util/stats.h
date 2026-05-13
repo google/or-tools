@@ -65,10 +65,12 @@
 // macro IF_STATS_ENABLED() that does nothing if OR_STATS is not defined or just
 // translates to its argument otherwise.
 
-#ifndef ORTOOLS_UTIL_STATS_H_
-#define ORTOOLS_UTIL_STATS_H_
+#ifndef OR_TOOLS_UTIL_STATS_H_
+#define OR_TOOLS_UTIL_STATS_H_
 
 #include <cstdint>
+#include <functional>
+#include <map>
 #include <memory>
 #include <string>
 #include <vector>
@@ -423,4 +425,4 @@ using ScopedTimeStats = DisabledScopedTimeStats;
 
 }  // namespace operations_research
 
-#endif  // ORTOOLS_UTIL_STATS_H_
+#endif  // OR_TOOLS_UTIL_STATS_H_

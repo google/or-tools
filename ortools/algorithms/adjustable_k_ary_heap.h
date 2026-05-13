@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ORTOOLS_ALGORITHMS_ADJUSTABLE_K_ARY_HEAP_H_
-#define ORTOOLS_ALGORITHMS_ADJUSTABLE_K_ARY_HEAP_H_
+#ifndef OR_TOOLS_ALGORITHMS_ADJUSTABLE_K_ARY_HEAP_H_
+#define OR_TOOLS_ALGORITHMS_ADJUSTABLE_K_ARY_HEAP_H_
 
 #include <algorithm>
 #include <limits>
@@ -309,4 +309,4 @@ class AdjustableKAryHeap {
   const Index kNonExistent = -1;
 };
 
-#endif  // ORTOOLS_ALGORITHMS_ADJUSTABLE_K_ARY_HEAP_H_
+#endif  // OR_TOOLS_ALGORITHMS_ADJUSTABLE_K_ARY_HEAP_H_

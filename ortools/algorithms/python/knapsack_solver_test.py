@@ -12,8 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Copyright 2011 Google Inc. All Rights Reserved.
+
 """knapsack_solver unittest file."""
 
+from absl import app
 from absl.testing import absltest
 from ortools.algorithms.python import knapsack_solver
 
@@ -260,5 +263,9 @@ class PyWrapAlgorithmsKnapsackSolverTest(absltest.TestCase):
         self.assertEqual(optimal_profit, profit)
 
 
-if __name__ == "__main__":
+def main(_):
     absltest.main()
+
+
+if __name__ == "__main__":
+    app.run(main)

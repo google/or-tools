@@ -12,11 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# [START program]
 """Implements transition times and costs in a no_overlap constraint."""
 
-from collections.abc import Sequence
-from typing import Union
+from typing import Dict, List, Sequence, Tuple, Union
 
 from ortools.sat.python import cp_model
 
@@ -26,9 +24,9 @@ def transitive_reduction_with_circuit_delays_and_penalties(
     starts: Sequence[cp_model.IntVar],
     durations: Sequence[int],
     presences: Sequence[Union[cp_model.IntVar, bool]],
-    penalties: dict[tuple[int, int], int],
-    delays: dict[tuple[int, int], int],
-) -> Sequence[tuple[cp_model.IntVar, int]]:
+    penalties: Dict[Tuple[int, int], int],
+    delays: Dict[Tuple[int, int], int],
+) -> Sequence[Tuple[cp_model.IntVar, int]]:
     """This method uses a circuit constraint to rank tasks.
 
     This method assumes that all starts are disjoint, meaning that all tasks have
@@ -65,7 +63,7 @@ def transitive_reduction_with_circuit_delays_and_penalties(
     num_tasks = len(starts)
     all_tasks = range(num_tasks)
 
-    arcs: list[cp_model.ArcT] = []
+    arcs: List[cp_model.ArcT] = []
     penalty_terms = []
     for i in all_tasks:
         # if node i is first.
@@ -203,4 +201,3 @@ def transitions_in_no_overlap_sample_sat():
 
 
 transitions_in_no_overlap_sample_sat()
-# [END program]

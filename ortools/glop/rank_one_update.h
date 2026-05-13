@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ORTOOLS_GLOP_RANK_ONE_UPDATE_H_
-#define ORTOOLS_GLOP_RANK_ONE_UPDATE_H_
+#ifndef OR_TOOLS_GLOP_RANK_ONE_UPDATE_H_
+#define OR_TOOLS_GLOP_RANK_ONE_UPDATE_H_
 
 #include <vector>
 
@@ -252,4 +252,4 @@ class RankOneUpdateFactorization {
 }  // namespace glop
 }  // namespace operations_research
 
-#endif  // ORTOOLS_GLOP_RANK_ONE_UPDATE_H_
+#endif  // OR_TOOLS_GLOP_RANK_ONE_UPDATE_H_

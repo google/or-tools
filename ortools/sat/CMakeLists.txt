@@ -27,10 +27,6 @@ add_library(${NAME} OBJECT ${_SRCS})
 set_target_properties(${NAME} PROPERTIES
   POSITION_INDEPENDENT_CODE ON
   )
-if(MSVC AND BUILD_SHARED_LIBS)
-  target_compile_definitions(${NAME} PUBLIC "OR_BUILD_DLL")
-  target_compile_definitions(${NAME} PRIVATE "OR_EXPORT")
-endif()
 target_include_directories(${NAME} PRIVATE
   ${PROJECT_SOURCE_DIR}
   ${PROJECT_BINARY_DIR})
@@ -61,15 +57,6 @@ if(BUILD_TESTING)
         GTest::gtest_main
     )
   endforeach()
-
-  # These tests are too long so we disable them.
-  set_tests_properties(
-    cxx_sat_2d_rectangle_presolve_test
-    cxx_sat_cp_model_presolve_random_test
-    cxx_sat_cp_model_presolve_test
-    cxx_sat_cp_model_search_test
-    cxx_sat_integer_expr_test
-    PROPERTIES DISABLED TRUE)
 endif()
 
 # Sat Runner

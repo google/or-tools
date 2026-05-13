@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//
 // Classes for permuting indexable, ordered containers of data without
 // depending on that data to be accessible in any particular way. The
 // client needs to give us two things:
@@ -74,8 +75,8 @@
 // operator[](), we provide the class template
 // ArrayIndexCycleHandler.
 
-#ifndef ORTOOLS_UTIL_PERMUTATION_H_
-#define ORTOOLS_UTIL_PERMUTATION_H_
+#ifndef OR_TOOLS_UTIL_PERMUTATION_H_
+#define OR_TOOLS_UTIL_PERMUTATION_H_
 
 #include "ortools/base/logging.h"
 
@@ -212,4 +213,4 @@ class PermutationApplier {
   PermutationCycleHandler<IndexType>* cycle_handler_;
 };
 }  // namespace operations_research
-#endif  // ORTOOLS_UTIL_PERMUTATION_H_
+#endif  // OR_TOOLS_UTIL_PERMUTATION_H_

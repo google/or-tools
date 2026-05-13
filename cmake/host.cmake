@@ -35,7 +35,6 @@ configure_file(
 
 add_custom_command(
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/host_tools
-  COMMAND ${CMAKE_COMMAND} -E remove_directory build
   COMMAND ${CMAKE_COMMAND} -S. -Bbuild -DCMAKE_BUILD_TYPE=Release -DCMAKE_RUNTIME_OUTPUT_DIRECTORY:PATH=${CMAKE_CURRENT_BINARY_DIR}/host_tools/bin
   COMMAND ${CMAKE_COMMAND} --build build --config Release -v
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/host_tools

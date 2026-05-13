@@ -14,8 +14,8 @@
 // IWYU pragma: private, include "ortools/math_opt/cpp/math_opt.h"
 // IWYU pragma: friend "ortools/math_opt/cpp/.*"
 
-#ifndef ORTOOLS_MATH_OPT_CPP_PARAMETERS_H_
-#define ORTOOLS_MATH_OPT_CPP_PARAMETERS_H_
+#ifndef OR_TOOLS_MATH_OPT_CPP_PARAMETERS_H_
+#define OR_TOOLS_MATH_OPT_CPP_PARAMETERS_H_
 
 #include <cstdint>
 #include <optional>
@@ -26,13 +26,13 @@
 #include "absl/time/time.h"
 #include "ortools/base/linked_hash_map.h"
 #include "ortools/glop/parameters.pb.h"  // IWYU pragma: export
+#include "ortools/gscip/gscip.pb.h"      // IWYU pragma: export
 #include "ortools/math_opt/cpp/enums.h"  // IWYU pragma: export
 #include "ortools/math_opt/parameters.pb.h"
-#include "ortools/math_opt/solvers/gscip/gscip.pb.h"  // IWYU pragma: export
-#include "ortools/math_opt/solvers/gurobi.pb.h"       // IWYU pragma: export
-#include "ortools/math_opt/solvers/highs.pb.h"        // IWYU pragma: export
-#include "ortools/pdlp/solvers.pb.h"                  // IWYU pragma: export
-#include "ortools/sat/sat_parameters.pb.h"            // IWYU pragma: export
+#include "ortools/math_opt/solvers/gurobi.pb.h"  // IWYU pragma: export
+#include "ortools/math_opt/solvers/highs.pb.h"   // IWYU pragma: export
+#include "ortools/pdlp/solvers.pb.h"             // IWYU pragma: export
+#include "ortools/sat/sat_parameters.pb.h"       // IWYU pragma: export
 
 namespace operations_research {
 namespace math_opt {
@@ -439,4 +439,4 @@ std::string AbslUnparseFlag(SolveParameters solve_parameters);
 }  // namespace math_opt
 }  // namespace operations_research
 
-#endif  // ORTOOLS_MATH_OPT_CPP_PARAMETERS_H_
+#endif  // OR_TOOLS_MATH_OPT_CPP_PARAMETERS_H_

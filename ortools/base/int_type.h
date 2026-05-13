@@ -142,8 +142,8 @@
 //  void GetGlobalDoc(int64_t global) { ...
 //  GetGlobalDoc(local.value());                  <-- Compiles fine.
 
-#ifndef ORTOOLS_BASE_INT_TYPE_H_
-#define ORTOOLS_BASE_INT_TYPE_H_
+#ifndef OR_TOOLS_BASE_INT_TYPE_H_
+#define OR_TOOLS_BASE_INT_TYPE_H_
 
 #include <stddef.h>
 
@@ -189,6 +189,7 @@ class IntType {
   }
 
   // Note that this may change from time to time without notice.
+  // See .
   struct Hasher {
     size_t operator()(const IntType& arg) const {
       return static_cast<size_t>(arg.value());
@@ -356,4 +357,4 @@ INT_TYPE_COMPARISON_OP(>=);  // NOLINT
 
 }  // namespace gtl
 
-#endif  // ORTOOLS_BASE_INT_TYPE_H_
+#endif  // OR_TOOLS_BASE_INT_TYPE_H_

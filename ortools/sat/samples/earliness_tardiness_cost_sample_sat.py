@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# [START program]
 """Encodes a convex piecewise linear function."""
 
 
@@ -86,4 +85,3 @@ def earliness_tardiness_cost_sample_sat():
 
 
 earliness_tardiness_cost_sample_sat()
-# [END program]

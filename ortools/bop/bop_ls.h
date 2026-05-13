@@ -24,8 +24,8 @@
 // OneFlipConstraintRepairer, SatWrapper and LocalSearchAssignmentIterator.
 // They are implementation details and should not be used outside of bop_ls.
 
-#ifndef ORTOOLS_BOP_BOP_LS_H_
-#define ORTOOLS_BOP_BOP_LS_H_
+#ifndef OR_TOOLS_BOP_BOP_LS_H_
+#define OR_TOOLS_BOP_BOP_LS_H_
 
 #include <stddef.h>
 
@@ -670,4 +670,4 @@ class LocalSearchAssignmentIterator {
 
 }  // namespace bop
 }  // namespace operations_research
-#endif  // ORTOOLS_BOP_BOP_LS_H_
+#endif  // OR_TOOLS_BOP_BOP_LS_H_

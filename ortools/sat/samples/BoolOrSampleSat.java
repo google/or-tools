@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// [START program]
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.Loader;
@@ -29,4 +28,3 @@ public class BoolOrSampleSat {
     model.addBoolOr(new Literal[] {x, y.not()});
   }
 }
-// [END program]

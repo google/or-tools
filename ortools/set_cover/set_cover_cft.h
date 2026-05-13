@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ORTOOLS_SET_COVER_SET_COVER_CFT_H
-#define ORTOOLS_SET_COVER_SET_COVER_CFT_H
+#ifndef OR_TOOLS_ORTOOLS_SET_COVER_SET_COVER_CFT_H
+#define OR_TOOLS_ORTOOLS_SET_COVER_SET_COVER_CFT_H
 
 #include <absl/algorithm/container.h>
 #include <absl/base/internal/pretty_function.h>
@@ -454,4 +454,4 @@ class FullToCoreModel : public SubModel {
 
 }  // namespace operations_research::scp
 
-#endif /* ORTOOLS_SET_COVER_SET_COVER_CFT_H */
+#endif /* OR_TOOLS_ORTOOLS_SET_COVER_SET_COVER_CFT_H */

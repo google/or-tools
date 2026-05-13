@@ -181,9 +181,6 @@ class StronglyConnectedComponentsFinder {
   bool NodeIsInCurrentDfsPath(NodeIndex node) const {
     return node_index_[node] > 0 && node_index_[node] < kSettledIndex;
   }
-  bool NodeIsNotYetExplored(NodeIndex node) const {
-    return node_index_[node] == 0;
-  }
 
  private:
   static constexpr NodeIndex kSettledIndex =

@@ -29,7 +29,6 @@
 #include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
-#include "absl/numeric/bits.h"
 #include "absl/numeric/int128.h"
 #include "absl/random/random.h"
 #include "absl/strings/str_join.h"
@@ -56,7 +55,6 @@ namespace {
 
 using ::testing::ElementsAre;
 using ::testing::IsEmpty;
-using ::testing::Pair;
 
 TEST(CompactVectorVectorTest, EmptyCornerCases) {
   CompactVectorVector<int, int> storage;
@@ -164,33 +162,10 @@ TEST(CompactVectorVectorTest, ResetFromTranspose) {
   EXPECT_THAT(second_transpose[2], ElementsAre(2, 2, 3, 4));
 }
 
-TEST(MergeableOccurrenceList, BasicTest) {
-  CompactVectorVector<int, int> storage;
-  const std::vector<int> keys = {2, 3, 1, 1, 1, 0, 0, 2, 2};
-  const std::vector<int> vals = {3, 4, 0, 0, 1, 5, 1, 2, 2};
-  storage.ResetFromFlatMapping(keys, vals);
-
-  MergeableOccurrenceList<int, int> occ;
-  occ.ResetFromTranspose(storage);
-
-  // The first access should be ordered.
-  EXPECT_THAT(occ.size(), 6);
-  EXPECT_THAT(occ[0], ElementsAre(1));
-  EXPECT_THAT(occ[1], ElementsAre(0, 1));
-  EXPECT_THAT(occ[2], ElementsAre(2));
-  EXPECT_THAT(occ[3], ElementsAre(2));
-  EXPECT_THAT(occ[4], ElementsAre(3));
-  EXPECT_THAT(occ[5], ElementsAre(0));
-
-  // But not after we merge.
-  occ.MergeInto(1, 2);
-  EXPECT_THAT(occ[2], UnorderedElementsAre(0, 1, 2));
-
-  occ.MergeInto(3, 4);
-  EXPECT_THAT(occ[4], UnorderedElementsAre(2, 3));
-
-  occ.MergeInto(2, 4);
-  EXPECT_THAT(occ[4], UnorderedElementsAre(0, 1, 2, 3));
+TEST(FormatCounterTest, BasicCases) {
+  EXPECT_EQ("12", FormatCounter(12));
+  EXPECT_EQ("12'345", FormatCounter(12345));
+  EXPECT_EQ("123'456'789", FormatCounter(123456789));
 }
 
 TEST(FormatTable, BasicAlign) {
@@ -1183,110 +1158,6 @@ TEST(DagTopologicalSortIteratorTest, RandomTest) {
     EXPECT_EQ(count_permutation, count_iterator);
     EXPECT_EQ(iterator_solutions, permutation_solutions);
   }
-}
-
-TEST(FindMostDiverseSubsetTest, Random) {
-  const int k = 4;
-  for (const int n : {4, 5, 10}) {  // We test the two special cases.
-    absl::BitGen random;
-    std::vector<int64_t> distances(n * n);
-    std::vector<int64_t> buffer;
-    for (int i = 0; i < n; ++i) {
-      for (int j = i + 1; j < n; ++j) {
-        distances[i * n + j] = distances[j * n + i] =
-            absl::Uniform<int>(random, 0, 1000);
-      }
-    }
-
-    const std::vector<int> result =
-        FindMostDiverseSubset(k, n, distances, buffer);
-    CHECK(std::is_sorted(result.begin(), result.end()));
-    int64_t result_value = 0;
-    for (const int i : result) {
-      for (const int j : result) {
-        if (i < j) result_value += distances[i * n + j];
-      }
-    }
-
-    int64_t best_seen = 0;
-    std::vector<int> subset;
-    const int limit = 1 << n;
-    for (unsigned int mask = 0; mask < limit; ++mask) {
-      if (absl::popcount(mask) != k) continue;
-      subset.clear();
-      for (int i = 0; i < n; ++i) {
-        if ((mask >> i) & 1) subset.push_back(i);
-      }
-      int64_t value = 0;
-      for (const int i : subset) {
-        for (const int j : subset) {
-          if (i < j) value += distances[i * n + j];
-        }
-      }
-      ASSERT_LE(value, result_value);
-      best_seen = std::max(best_seen, value);
-    }
-    EXPECT_EQ(best_seen, result_value);
-  }
-}
-
-TEST(FindMostDiverseSubsetTest, RandomButAlwaysPickZero) {
-  const int k = 5;
-  const int n = 10;
-  absl::BitGen random;
-  std::vector<int64_t> distances(n * n);
-  std::vector<int64_t> buffer;
-  for (int i = 0; i < n; ++i) {
-    for (int j = i + 1; j < n; ++j) {
-      distances[i * n + j] = distances[j * n + i] =
-          absl::Uniform<int>(random, 0, 1000);
-    }
-  }
-
-  const std::vector<int> result =
-      FindMostDiverseSubset(k, n, distances, buffer, /*always_pick_mask=*/1);
-  CHECK(std::is_sorted(result.begin(), result.end()));
-  int64_t result_value = 0;
-  for (const int i : result) {
-    for (const int j : result) {
-      if (i < j) result_value += distances[i * n + j];
-    }
-  }
-
-  int64_t best_seen = 0;
-  std::vector<int> subset;
-  const int limit = 1 << n;
-  for (unsigned int mask = 1; mask < limit; mask += 2) {  // bit 1 always set.
-    if (absl::popcount(mask) != k) continue;
-    subset.clear();
-    for (int i = 0; i < n; ++i) {
-      if ((mask >> i) & 1) subset.push_back(i);
-    }
-    int64_t value = 0;
-    for (const int i : subset) {
-      for (const int j : subset) {
-        if (i < j) value += distances[i * n + j];
-      }
-    }
-    ASSERT_LE(value, result_value);
-    best_seen = std::max(best_seen, value);
-  }
-  EXPECT_EQ(best_seen, result_value);
-}
-
-TEST(HeuristicallySplitLongLinearTest, BasicExamples) {
-  EXPECT_THAT(HeuristicallySplitLongLinear({1, 2, 3}),
-              ElementsAre(Pair(0, 1), Pair(1, 1), Pair(2, 1)));
-  EXPECT_THAT(HeuristicallySplitLongLinear({1, 1, 2, 3}),
-              ElementsAre(Pair(0, 2), Pair(2, 1), Pair(3, 1)));
-
-  // The number of part is not ideal here.
-  EXPECT_THAT(
-      HeuristicallySplitLongLinear({1, 1, 1, 1, 1, 2, 3}),
-      ElementsAre(Pair(0, 1), Pair(1, 2), Pair(3, 2), Pair(5, 1), Pair(6, 1)));
-
-  EXPECT_THAT(HeuristicallySplitLongLinear({1, 1, 1, 1, 3, 3, 3, 3, 3}),
-              ElementsAre(Pair(0, 2), Pair(2, 2), Pair(4, 2), Pair(6, 3)));
 }
 
 }  // namespace

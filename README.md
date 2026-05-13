@@ -43,6 +43,12 @@ npm run preview
 CP-SAT WebAssembly runtime, Vite builds the package bundle, and Vite builds the
 static demo site.
 
+The Emscripten SDK is tracked as a pinned `emsdk` git submodule. The build
+script initializes that submodule automatically if needed, so a normal clone can
+run `npm run build` directly after `npm install`. If you prefer to fetch
+submodules up front, clone with `--recurse-submodules` or run
+`git submodule update --init --recursive`.
+
 ## npm scripts
 
 - `npm run build:wasm` rebuilds the `cp_sat_runtime` wasm/js bundle via emsdk + CMake.

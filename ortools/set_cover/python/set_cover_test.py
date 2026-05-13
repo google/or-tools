@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from absl import app
 from absl.testing import absltest
 
 from ortools.set_cover.python import set_cover
@@ -227,5 +228,9 @@ class SetCoverTest(absltest.TestCase):
     # KnightsCoverMip
 
 
-if __name__ == "__main__":
+def main(_):
     absltest.main()
+
+
+if __name__ == "__main__":
+    app.run(main)

@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# [START program]
 """Solves a binpacking problem using the CP-SAT solver."""
 
 
@@ -79,4 +78,3 @@ def binpacking_problem_sat():
 
 
 binpacking_problem_sat()
-# [END program]

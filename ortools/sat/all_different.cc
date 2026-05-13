@@ -14,7 +14,9 @@
 #include "ortools/sat/all_different.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <functional>
+#include <limits>
 #include <utility>
 #include <vector>
 
@@ -25,7 +27,6 @@
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/graph/strongly_connected_components.h"
-#include "ortools/sat/enforcement.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
@@ -73,13 +74,14 @@ std::function<void(Model*)> AllDifferentBinary(
 }
 
 std::function<void(Model*)> AllDifferentOnBounds(
-    absl::Span<const Literal> enforcement_literals,
     absl::Span<const AffineExpression> expressions) {
   return [=, expressions = std::vector<AffineExpression>(
                  expressions.begin(), expressions.end())](Model* model) {
     if (expressions.empty()) return;
-    model->TakeOwnership(new AllDifferentBoundsPropagator(enforcement_literals,
-                                                          expressions, model));
+    auto* constraint = new AllDifferentBoundsPropagator(
+        expressions, model->GetOrCreate<IntegerTrail>());
+    constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
+    model->TakeOwnership(constraint);
   };
 }
 
@@ -93,8 +95,10 @@ std::function<void(Model*)> AllDifferentOnBounds(
     for (const IntegerVariable var : vars) {
       expressions.push_back(AffineExpression(var));
     }
-    model->TakeOwnership(new AllDifferentBoundsPropagator(
-        /*enforcement_literals=*/{}, expressions, model));
+    auto* constraint = new AllDifferentBoundsPropagator(
+        expressions, model->GetOrCreate<IntegerTrail>());
+    constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
+    model->TakeOwnership(constraint);
   };
 }
 
@@ -413,10 +417,8 @@ bool AllDifferentConstraint::Propagate() {
 }
 
 AllDifferentBoundsPropagator::AllDifferentBoundsPropagator(
-    absl::Span<const Literal> enforcement_literals,
-    absl::Span<const AffineExpression> expressions, Model* model)
-    : integer_trail_(*model->GetOrCreate<IntegerTrail>()),
-      enforcement_helper_(*model->GetOrCreate<EnforcementHelper>()) {
+    absl::Span<const AffineExpression> expressions, IntegerTrail* integer_trail)
+    : integer_trail_(integer_trail) {
   CHECK(!expressions.empty());
 
   // We need +2 for sentinels.
@@ -430,18 +432,9 @@ AllDifferentBoundsPropagator::AllDifferentBoundsPropagator(
     bounds_.push_back({expressions[i]});
     negated_bounds_.push_back({expressions[i].Negated()});
   }
-
-  GenericLiteralWatcher* watcher = model->GetOrCreate<GenericLiteralWatcher>();
-  enforcement_id_ = enforcement_helper_.Register(enforcement_literals, watcher,
-                                                 RegisterWith(watcher));
 }
 
 bool AllDifferentBoundsPropagator::Propagate() {
-  const EnforcementStatus status = enforcement_helper_.Status(enforcement_id_);
-  if (status != EnforcementStatus::IS_ENFORCED &&
-      status != EnforcementStatus::CAN_PROPAGATE_ENFORCEMENT) {
-    return true;
-  }
   if (!PropagateLowerBounds()) return false;
 
   // Note that it is not required to swap back bounds_ and negated_bounds_.
@@ -485,8 +478,8 @@ int AllDifferentBoundsPropagator::FindStartIndexAndCompressPath(int index) {
 bool AllDifferentBoundsPropagator::PropagateLowerBounds() {
   // Start by filling the cached bounds and sorting by increasing lb.
   for (CachedBounds& entry : bounds_) {
-    entry.lb = integer_trail_.LowerBound(entry.expr);
-    entry.ub = integer_trail_.UpperBound(entry.expr);
+    entry.lb = integer_trail_->LowerBound(entry.expr);
+    entry.ub = integer_trail_->UpperBound(entry.expr);
   }
   IncrementalSort(bounds_.begin(), bounds_.end(),
                   [](CachedBounds a, CachedBounds b) { return a.lb < b.lb; });
@@ -568,17 +561,9 @@ bool AllDifferentBoundsPropagator::PropagateLowerBoundsInternal(
         const IntegerValue he = hall_ends_[hall_index];
         FillHallReason(hs, he);
         integer_reason_.push_back(expr.GreaterOrEqual(hs));
-        if (enforcement_helper_.Status(enforcement_id_) ==
-            EnforcementStatus::IS_ENFORCED) {
-          if (!enforcement_helper_.SafeEnqueue(enforcement_id_,
-                                               expr.GreaterOrEqual(he + 1),
-                                               integer_reason_)) {
-            return false;
-          }
-        } else if (he >= entry.ub) {
-          integer_reason_.push_back(expr.LowerOrEqual(entry.ub));
-          return enforcement_helper_.PropagateWhenFalse(
-              enforcement_id_, /*literal_reason=*/{}, integer_reason_);
+        if (!integer_trail_->SafeEnqueue(expr.GreaterOrEqual(he + 1),
+                                         integer_reason_)) {
+          return false;
         }
       }
     }
@@ -622,7 +607,7 @@ bool AllDifferentBoundsPropagator::PropagateLowerBoundsInternal(
     // we abort so that the conflict reason will be better on the next call to
     // the propagator.
     const IntegerValue end = GetValue(end_index);
-    if (end > integer_trail_.UpperBound(expr)) return true;
+    if (end > integer_trail_->UpperBound(expr)) return true;
 
     // If we have a new Hall interval, add it to the set. Note that it will
     // always be last, and if it overlaps some previous Hall intervals, it
@@ -645,13 +630,13 @@ bool AllDifferentBoundsPropagator::PropagateLowerBoundsInternal(
   return true;
 }
 
-int AllDifferentBoundsPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
+void AllDifferentBoundsPropagator::RegisterWith(
+    GenericLiteralWatcher* watcher) {
   const int id = watcher->Register(this);
   for (const CachedBounds& entry : bounds_) {
     watcher->WatchAffineExpression(entry.expr, id);
   }
   watcher->NotifyThatPropagatorMayNotReachFixedPointInOnePass(id);
-  return id;
 }
 
 }  // namespace sat

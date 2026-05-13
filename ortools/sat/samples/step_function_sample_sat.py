@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# [START program]
 """Implements a step function."""
 
 from ortools.sat.python import cp_model
@@ -90,4 +89,3 @@ def step_function_sample_sat():
 
 
 step_function_sample_sat()
-# [END program]

@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ORTOOLS_SAT_DIOPHANTINE_H_
-#define ORTOOLS_SAT_DIOPHANTINE_H_
+#ifndef OR_TOOLS_SAT_DIOPHANTINE_H_
+#define OR_TOOLS_SAT_DIOPHANTINE_H_
 
 #include <cstdint>
 #include <vector>
@@ -130,4 +130,4 @@ DiophantineSolution SolveDiophantine(absl::Span<const int64_t> coeffs,
 
 }  // namespace operations_research::sat
 
-#endif  // ORTOOLS_SAT_DIOPHANTINE_H_
+#endif  // OR_TOOLS_SAT_DIOPHANTINE_H_

@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ORTOOLS_MATH_OPT_SOLVER_TESTS_MULTI_OBJECTIVE_TESTS_H_
-#define ORTOOLS_MATH_OPT_SOLVER_TESTS_MULTI_OBJECTIVE_TESTS_H_
+#ifndef OR_TOOLS_MATH_OPT_SOLVER_TESTS_MULTI_OBJECTIVE_TESTS_H_
+#define OR_TOOLS_MATH_OPT_SOLVER_TESTS_MULTI_OBJECTIVE_TESTS_H_
 
 #include <iosfwd>
 #include <ostream>
@@ -94,4 +94,4 @@ class IncrementalMultiObjectiveTest
 
 }  // namespace operations_research::math_opt
 
-#endif  // ORTOOLS_MATH_OPT_SOLVER_TESTS_MULTI_OBJECTIVE_TESTS_H_
+#endif  // OR_TOOLS_MATH_OPT_SOLVER_TESTS_MULTI_OBJECTIVE_TESTS_H_

@@ -16,7 +16,6 @@
 # [START program]
 # [START import]
 from ortools.algorithms.python import knapsack_solver
-
 # [END import]
 
 

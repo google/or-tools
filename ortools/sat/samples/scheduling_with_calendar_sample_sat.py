@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# [START program]
 """Code sample to demonstrate how an interval can span across a break."""
 
 from ortools.sat.python import cp_model
@@ -79,4 +78,3 @@ def scheduling_with_calendar_sample_sat():
 
 
 scheduling_with_calendar_sample_sat()
-# [END program]

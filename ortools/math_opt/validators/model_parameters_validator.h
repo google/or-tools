@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ORTOOLS_MATH_OPT_VALIDATORS_MODEL_PARAMETERS_VALIDATOR_H_
-#define ORTOOLS_MATH_OPT_VALIDATORS_MODEL_PARAMETERS_VALIDATOR_H_
+#ifndef OR_TOOLS_MATH_OPT_VALIDATORS_MODEL_PARAMETERS_VALIDATOR_H_
+#define OR_TOOLS_MATH_OPT_VALIDATORS_MODEL_PARAMETERS_VALIDATOR_H_
 
 #include "absl/status/status.h"
 #include "ortools/math_opt/core/model_summary.h"
@@ -31,4 +31,4 @@ absl::Status ValidateModelSolveParameters(
 }  // namespace math_opt
 }  // namespace operations_research
 
-#endif  // ORTOOLS_MATH_OPT_VALIDATORS_MODEL_PARAMETERS_VALIDATOR_H_
+#endif  // OR_TOOLS_MATH_OPT_VALIDATORS_MODEL_PARAMETERS_VALIDATOR_H_

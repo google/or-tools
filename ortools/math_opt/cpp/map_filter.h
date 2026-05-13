@@ -14,8 +14,8 @@
 // IWYU pragma: private, include "ortools/math_opt/cpp/math_opt.h"
 // IWYU pragma: friend "ortools/math_opt/cpp/.*"
 
-#ifndef ORTOOLS_MATH_OPT_CPP_MAP_FILTER_H_
-#define ORTOOLS_MATH_OPT_CPP_MAP_FILTER_H_
+#ifndef OR_TOOLS_MATH_OPT_CPP_MAP_FILTER_H_
+#define OR_TOOLS_MATH_OPT_CPP_MAP_FILTER_H_
 
 #include <initializer_list>
 #include <optional>
@@ -223,4 +223,4 @@ SparseVectorFilterProto MapFilter<KeyType>::Proto() const {
 
 }  // namespace operations_research::math_opt
 
-#endif  // ORTOOLS_MATH_OPT_CPP_MAP_FILTER_H_
+#endif  // OR_TOOLS_MATH_OPT_CPP_MAP_FILTER_H_

@@ -11,23 +11,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ORTOOLS_SAT_SCHEDULING_HELPERS_H_
-#define ORTOOLS_SAT_SCHEDULING_HELPERS_H_
+#ifndef OR_TOOLS_SAT_SCHEDULING_HELPERS_H_
+#define OR_TOOLS_SAT_SCHEDULING_HELPERS_H_
 
 #include <algorithm>
 #include <cstdint>
-#include <functional>
 #include <memory>
 #include <optional>
 #include <string>
-#include <utility>
 #include <vector>
 
 #include "absl/base/attributes.h"
 #include "absl/log/check.h"
 #include "absl/types/span.h"
-#include "ortools/sat/enforcement.h"
-#include "ortools/sat/enforcement_helper.h"
 #include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
@@ -36,7 +32,6 @@
 #include "ortools/sat/precedences.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
-#include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/strong_integers.h"
 
@@ -106,9 +101,6 @@ class SchedulingConstraintHelper : public PropagatorInterface {
   // to fetch the maximum possible number of task at construction.
   SchedulingConstraintHelper(int num_tasks, Model* model);
 
-  // Returns true if and only if all the enforcement literals are true.
-  bool IsEnforced() const;
-
   // This is a propagator so we can "cache" all the intervals relevant
   // information. This gives good speedup. Note however that the info is stale
   // except if a bound was pushed by this helper or if this was called. We run
@@ -116,16 +108,10 @@ class SchedulingConstraintHelper : public PropagatorInterface {
   // beginning of each Propagate() call of the classes using this.
   bool Propagate() final;
   bool IncrementalPropagate(const std::vector<int>& watch_indices) final;
-  void RegisterWith(GenericLiteralWatcher* watcher,
-                    absl::Span<const Literal> enforcement_literals);
-
-  // Sets the enforcement ID without registering this propagator with a watcher.
-  // This is used by NoOverlap2DConstraintHelper, which registers itself but
-  // does not register its x and y SchedulingConstraintHelpers.
-  void SetEnforcementId(EnforcementId id) { enforcement_id_ = id; }
+  void RegisterWith(GenericLiteralWatcher* watcher);
 
   // Resets the class to the same state as if it was constructed with
-  // the given subset of tasks from other (and the same enforcement literals).
+  // the given subset of tasks from other.
   ABSL_MUST_USE_RESULT bool ResetFromSubset(
       const SchedulingConstraintHelper& other, absl::Span<const int> tasks);
 
@@ -219,27 +205,21 @@ class SchedulingConstraintHelper : public PropagatorInterface {
   bool IsPresent(LiteralIndex lit) const;
   bool IsAbsent(LiteralIndex lit) const;
 
-  // Returns a value so that End(a) + dist <= Start(b).
-  //
-  // TODO(user): we use this to optimize some reason, but ideally we only want
-  // to use linear2 bounds here, not bounds coming from trivial bounds. Make
-  // sure we have the best possible reason.
-  IntegerValue GetCurrentMinDistanceBetweenTasks(int a, int b);
+  // Return a value so that End(a) + dist <= Start(b).
+  // Returns kMinInterValue if we don't have any such relation.
+  IntegerValue GetCurrentMinDistanceBetweenTasks(
+      int a, int b, bool add_reason_if_after = false);
 
-  // We detected a precedence between two tasks at level zero.
-  // This register a new constraint and notify the linear2 root level bounds
-  // repository. Returns false on conflict.
-  //
-  // TODO(user): We could also call this at positive decision level, but it is a
-  // bit harder to exploit as we will also need to store the reasons.
-  bool NotifyLevelZeroPrecedence(int a, int b);
+  // We detected a precedence between two tasks.
+  // If we are at level zero, we might want to add the constraint.
+  // If we are at positive level, we might want to propagate the associated
+  // precedence literal if it exists.
+  bool PropagatePrecedence(int a, int b);
 
-  // Return the minimum overlap of task t with the time window [start..end].
+  // Return the minimum overlap of interval i with the time window [start..end].
   //
   // Note: this is different from the mandatory part of an interval.
   IntegerValue GetMinOverlap(int t, IntegerValue start, IntegerValue end) const;
-
-  bool TaskIsBeforeOrIsOverlapping(int before, int after);
 
   // Returns a string with the current task bounds.
   std::string TaskDebugString(int t) const;
@@ -257,7 +237,6 @@ class SchedulingConstraintHelper : public PropagatorInterface {
   absl::Span<const TaskTime> TaskByIncreasingEndMin();
 
   absl::Span<const CachedTaskBounds> TaskByIncreasingShiftedStartMin();
-  absl::Span<const CachedTaskBounds> TaskByIncreasingNegatedShiftedEndMax();
 
   // Returns a sorted vector where each task appear twice, the first occurrence
   // is at size (end_min - size_min) and the second one at (end_min).
@@ -278,9 +257,8 @@ class SchedulingConstraintHelper : public PropagatorInterface {
   };
   const std::vector<ProfileEvent>& GetEnergyProfile();
 
-  // Functions to reset and then set the current reason.
-  void ResetReason();
-  void ImportReasonsFromOther(const SchedulingConstraintHelper& other_helper);
+  // Functions to clear and then set the current reason.
+  void ClearReason();
   void AddPresenceReason(int t);
   void AddAbsenceReason(int t);
   void AddSizeMinReason(int t);
@@ -295,30 +273,16 @@ class SchedulingConstraintHelper : public PropagatorInterface {
   void AddEnergyAfterReason(int t, IntegerValue energy_min, IntegerValue time);
   void AddEnergyMinInIntervalReason(int t, IntegerValue min, IntegerValue max);
 
-  void AddLiteralReason(Literal l);
-  void AddIntegerReason(IntegerLiteral l);
+  // Adds the reason why task "before" must be before task "after".
+  // That is StartMax(before) < EndMin(after).
+  void AddReasonForBeingBefore(int before, int after);
 
-  // Adds the reason why the task "before" must be before task "after", in
-  // the sense that "after" can only start at the same time or later than the
-  // task "before" ends.
-  //
-  // Important: this assumes that the two task cannot overlap. So we can have
-  // a more relaxed reason than Start(after) >= Ends(before).
-  //
-  // There are actually many possibilities to explain such relation:
-  // - StartMax(before) < EndMin(after).
-  // - We have a linear2: Start(after) >= End(before) - SizeMin(before);
-  // - etc...
-  // We try to pick the best one.
-  //
-  // TODO(user): Refine the heuritic. Also consider other reason for the
-  // complex cases where Start() and End() do not use the same integer variable.
-  void AddReasonForBeingBeforeAssumingNoOverlap(int before, int after);
-
-  void AddReasonForUpperBoundLowerThan(LinearExpression2 expr, IntegerValue ub);
-
-  void AppendAndResetReason(std::vector<IntegerLiteral>* integer_reason,
-                            std::vector<Literal>* literal_reason);
+  // It is also possible to directly manipulates the underlying reason vectors
+  // that will be used when pushing something.
+  std::vector<Literal>* MutableLiteralReason() { return &literal_reason_; }
+  std::vector<IntegerLiteral>* MutableIntegerReason() {
+    return &integer_reason_;
+  }
 
   // Push something using the current reason. Note that IncreaseStartMin() will
   // also increase the end-min, and DecreaseEndMax() will also decrease the
@@ -339,11 +303,6 @@ class SchedulingConstraintHelper : public PropagatorInterface {
   ABSL_MUST_USE_RESULT bool ReportConflict();
   ABSL_MUST_USE_RESULT bool PushIntegerLiteralIfTaskPresent(int t,
                                                             IntegerLiteral lit);
-
-  // Push that t_before must end at the same time or before t_after starts.
-  // This function does the correct thing if t_before or t_after are optional
-  // and their presence is unknown. Returns false on conflict.
-  ABSL_MUST_USE_RESULT bool PushTaskOrderWhenPresent(int t_before, int t_after);
 
   absl::Span<const AffineExpression> Starts() const { return starts_; }
   absl::Span<const AffineExpression> Ends() const { return ends_; }
@@ -368,27 +327,29 @@ class SchedulingConstraintHelper : public PropagatorInterface {
   // in this class change. Note that we do not watch size max though.
   void WatchAllTasks(int id);
 
-  // Sometimes, typically for no_overlap_2d, we can use the variables that are
-  // fixed at current decision level to define a scheduling sub-problem. For
-  // example, if all the x coordinates are fixed and the intervals overlap on
-  // the x axis, we can just run the disjunction propagators on the y
-  // coordinates.
+  // Manages the other helper (used by the diffn constraint).
   //
-  // To be able to run scheduling propagators on a sub-problem, we can register
-  // a callback that before any explanation or when one of the bounds of an item
-  // is pushed. The callback will get the list of all items that participated in
-  // the reason and/or the bound push and allows the caller to introduce any new
-  // literals needed to make sure that the conditions making it a sub-problem
-  // hold.
-  void SetExtraExplanationForItemCallback(
-      std::function<void(absl::Span<const int> items,
-                         std::vector<Literal>* reason,
-                         std::vector<IntegerLiteral>* integer_reason)>
-          extra_explanation_callback) {
-    used_items_for_reason_.ClearAndResize(
-        extra_explanation_callback == nullptr ? 0 : capacity_);
-    extra_explanation_callback_ = std::move(extra_explanation_callback);
+  // For each interval appearing in a reason on this helper, another reason
+  // will be added. This other reason specifies that on the other helper, the
+  // corresponding interval overlaps 'event'.
+  void SetOtherHelper(SchedulingConstraintHelper* other_helper,
+                      absl::Span<const int> map_to_other_helper,
+                      IntegerValue event) {
+    CHECK(other_helper != nullptr);
+    other_helper_ = other_helper;
+    map_to_other_helper_ = map_to_other_helper;
+    event_for_other_helper_ = event;
   }
+
+  bool HasOtherHelper() const { return other_helper_ != nullptr; }
+
+  void ClearOtherHelper() { other_helper_ = nullptr; }
+
+  // Adds to this helper reason all the explanation of the other helper.
+  // This checks that other_helper_ is null.
+  //
+  // This is used in the 2D energetic reasoning in the diffn constraint.
+  void ImportOtherReasons(const SchedulingConstraintHelper& other_helper);
 
   // TODO(user): Change the propagation loop code so that we don't stop
   // pushing in the middle of the propagation as more advanced propagator do
@@ -397,33 +358,6 @@ class SchedulingConstraintHelper : public PropagatorInterface {
 
   int CurrentDecisionLevel() const {
     return sat_solver_->CurrentDecisionLevel();
-  }
-
-  // This increase as soon as we propagate something.
-  int64_t PropagationTimestamp() const {
-    return integer_trail_->timestamp() + trail_->NumberOfEnqueues();
-  }
-
-  struct TaskInfo {
-    int task;
-    IntegerValue start_min;
-    IntegerValue size_min;
-
-    bool operator<(TaskInfo other) const { return start_min < other.start_min; }
-  };
-  // Provide scratch vector that are cleared and available for use for
-  // propagators inside the call to Propagate().
-  FixedCapacityVector<TaskTime>& GetScratchTaskTimeVector1() {
-    scratch_task_time_vector1_.ClearAndReserve(NumTasks());
-    return scratch_task_time_vector1_;
-  }
-  FixedCapacityVector<TaskTime>& GetScratchTaskTimeVector2() {
-    scratch_task_time_vector2_.ClearAndReserve(NumTasks());
-    return scratch_task_time_vector2_;
-  }
-  FixedCapacityVector<TaskInfo>& GetScratchTaskSet() {
-    scratch_task_set_.ClearAndReserve(NumTasks());
-    return scratch_task_set_;
   }
 
  private:
@@ -449,26 +383,21 @@ class SchedulingConstraintHelper : public PropagatorInterface {
   // Internal function for IncreaseStartMin()/DecreaseEndMax().
   bool PushIntervalBound(int t, IntegerLiteral lit);
 
-  // This should be called every time a task that is part of a reason or a
-  // bound push to update the items_in_reason_ vector.
-  void FlagItemAsUsedInReason(int t);
+  // This will be called on any interval that is part of a reason or
+  // a bound push. Since the last call to ClearReason(), for each unique
+  // t, we will add once to other_helper_ the reason for t containing
+  // the point event_for_other_helper_.
+  void AddOtherReason(int t);
 
-  void RunCallbackIfSet();
+  // Import the reasons on the other helper into this helper.
+  void ImportOtherReasons();
 
   Model* model_;
   SatSolver* sat_solver_;
   const VariablesAssignment& assignment_;
-  Trail* trail_;
   IntegerTrail* integer_trail_;
   GenericLiteralWatcher* watcher_;
-  Linear2Bounds* linear2_bounds_;
-  RootLevelLinear2Bounds* root_level_lin2_bounds_;
-  EnforcementHelper& enforcement_helper_;
-  EnforcementId enforcement_id_;
-
-  FixedCapacityVector<TaskTime> scratch_task_time_vector1_;
-  FixedCapacityVector<TaskTime> scratch_task_time_vector2_;
-  FixedCapacityVector<TaskInfo> scratch_task_set_;
+  PrecedenceRelations* precedence_relations_;
 
   // The current direction of time, true for forward, false for backward.
   bool current_time_direction_ = true;
@@ -537,11 +466,11 @@ class SchedulingConstraintHelper : public PropagatorInterface {
   std::vector<Literal> literal_reason_;
   std::vector<IntegerLiteral> integer_reason_;
 
-  std::function<void(absl::Span<const int> items, std::vector<Literal>*,
-                     std::vector<IntegerLiteral>*)>
-      extra_explanation_callback_ = nullptr;
-
-  SparseBitset<int> used_items_for_reason_;
+  // Optional 'proxy' helper used in the diffn constraint.
+  SchedulingConstraintHelper* other_helper_ = nullptr;
+  absl::Span<const int> map_to_other_helper_;
+  IntegerValue event_for_other_helper_;
+  std::vector<bool> already_added_to_other_reasons_;
 
   // List of watcher to "wake-up" each time one of the task bounds changes.
   std::vector<int> propagator_ids_;
@@ -723,16 +652,18 @@ inline bool SchedulingConstraintHelper::IsAbsent(LiteralIndex lit) const {
   return assignment_.LiteralIsFalse(Literal(lit));
 }
 
-inline void SchedulingConstraintHelper::ResetReason() {
+inline void SchedulingConstraintHelper::ClearReason() {
   integer_reason_.clear();
   literal_reason_.clear();
-  enforcement_helper_.AddEnforcementReason(enforcement_id_, &literal_reason_);
-  used_items_for_reason_.ClearAndResize(capacity_);
+  if (other_helper_) {
+    other_helper_->ClearReason();
+    already_added_to_other_reasons_.assign(NumTasks(), false);
+  }
 }
 
 inline void SchedulingConstraintHelper::AddPresenceReason(int t) {
   DCHECK(IsPresent(t));
-  FlagItemAsUsedInReason(t);
+  AddOtherReason(t);
   if (reason_for_presence_[t] != kNoLiteralIndex) {
     literal_reason_.push_back(Literal(reason_for_presence_[t]).Negated());
   }
@@ -740,7 +671,7 @@ inline void SchedulingConstraintHelper::AddPresenceReason(int t) {
 
 inline void SchedulingConstraintHelper::AddAbsenceReason(int t) {
   DCHECK(IsAbsent(t));
-  FlagItemAsUsedInReason(t);
+  AddOtherReason(t);
   if (reason_for_presence_[t] != kNoLiteralIndex) {
     literal_reason_.push_back(Literal(reason_for_presence_[t]));
   }
@@ -779,7 +710,7 @@ inline void SchedulingConstraintHelper::AddGenericReason(
 
 inline void SchedulingConstraintHelper::AddSizeMinReason(
     int t, IntegerValue lower_bound) {
-  FlagItemAsUsedInReason(t);
+  AddOtherReason(t);
   DCHECK(!IsAbsent(t));
   if (lower_bound <= 0) return;
   AddGenericReason(sizes_[t].Negated(), -lower_bound, minus_ends_[t],
@@ -788,28 +719,28 @@ inline void SchedulingConstraintHelper::AddSizeMinReason(
 
 inline void SchedulingConstraintHelper::AddSizeMaxReason(
     int t, IntegerValue upper_bound) {
-  FlagItemAsUsedInReason(t);
+  AddOtherReason(t);
   DCHECK(!IsAbsent(t));
   AddGenericReason(sizes_[t], upper_bound, ends_[t], minus_starts_[t]);
 }
 
 inline void SchedulingConstraintHelper::AddStartMinReason(
     int t, IntegerValue lower_bound) {
-  FlagItemAsUsedInReason(t);
+  AddOtherReason(t);
   DCHECK(!IsAbsent(t));
   AddGenericReason(minus_starts_[t], -lower_bound, minus_ends_[t], sizes_[t]);
 }
 
 inline void SchedulingConstraintHelper::AddStartMaxReason(
     int t, IntegerValue upper_bound) {
-  FlagItemAsUsedInReason(t);
+  AddOtherReason(t);
   DCHECK(!IsAbsent(t));
   AddGenericReason(starts_[t], upper_bound, ends_[t], NegatedSizeOrZero(t));
 }
 
 inline void SchedulingConstraintHelper::AddEndMinReason(
     int t, IntegerValue lower_bound) {
-  FlagItemAsUsedInReason(t);
+  AddOtherReason(t);
   DCHECK(!IsAbsent(t));
   AddGenericReason(minus_ends_[t], -lower_bound, minus_starts_[t],
                    NegatedSizeOrZero(t));
@@ -817,7 +748,7 @@ inline void SchedulingConstraintHelper::AddEndMinReason(
 
 inline void SchedulingConstraintHelper::AddEndMaxReason(
     int t, IntegerValue upper_bound) {
-  FlagItemAsUsedInReason(t);
+  AddOtherReason(t);
   DCHECK(!IsAbsent(t));
   AddGenericReason(ends_[t], upper_bound, starts_[t], sizes_[t]);
 }
@@ -854,14 +785,6 @@ inline void SchedulingConstraintHelper::AddEnergyMinInIntervalReason(
   AddSizeMinReason(t, energy_min);
 }
 
-inline void SchedulingConstraintHelper::AddLiteralReason(Literal l) {
-  literal_reason_.push_back(l);
-}
-
-inline void SchedulingConstraintHelper::AddIntegerReason(IntegerLiteral l) {
-  integer_reason_.push_back(l);
-}
-
 // Cuts helpers.
 enum IntegerVariablesToAddMask {
   kStart = 1 << 0,
@@ -881,4 +804,4 @@ void AppendVariablesFromCapacityAndDemands(
 }  // namespace sat
 }  // namespace operations_research
 
-#endif  // ORTOOLS_SAT_SCHEDULING_HELPERS_H_
+#endif  // OR_TOOLS_SAT_SCHEDULING_HELPERS_H_

@@ -158,7 +158,7 @@ NoOverlap2DConstraintHelper* CreateHelper(
     y_intervals.push_back(y_interval);
   }
   return model->GetOrCreate<IntervalsRepository>()->GetOrCreate2DHelper(
-      /*enforcement_literals=*/{}, x_intervals, y_intervals);
+      x_intervals, y_intervals);
 }
 
 TEST(TryEdgeRectanglePropagatorTest, Simple) {

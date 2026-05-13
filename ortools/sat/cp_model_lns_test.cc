@@ -201,10 +201,8 @@ TYPED_TEST(GeneratorTest, ReadyToGenerate) {
   EXPECT_FALSE(generator.ReadyToGenerate());
   shared_response_manager->NewSolution(solution.solution(),
                                        solution.solution_info(), &model);
-  shared_response_manager->Synchronize();
-  EXPECT_EQ(
-      1,
-      shared_response_manager->SolutionPool().BestSolutions().NumSolutions());
+  shared_response_manager->MutableSolutionsRepository()->Synchronize();
+  EXPECT_EQ(1, shared_response_manager->SolutionsRepository().NumSolutions());
   EXPECT_TRUE(generator.ReadyToGenerate());
 }
 
@@ -303,7 +301,7 @@ TEST(RelaxationInducedNeighborhoodGeneratorTest, NoNeighborhoodGeneratedRINS) {
   solution.add_solution(0);
   shared_response_manager->NewSolution(solution.solution(),
                                        solution.solution_info(), &model);
-  shared_response_manager->Synchronize();
+  shared_response_manager->MutableSolutionsRepository()->Synchronize();
   lp_solutions.NewLPSolution({0.0});
   lp_solutions.Synchronize();
 
@@ -568,7 +566,7 @@ TEST(NeighborhoodGeneratorHelperTest, BoundAreUpdatedOnSynchronize) {
 
   // No change since not synchronized.
   {
-    absl::ReaderMutexLock lock(helper.graph_mutex_);
+    absl::ReaderMutexLock lock(&helper.graph_mutex_);
     EXPECT_TRUE(helper.IsActive(0));
   }
   EXPECT_EQ(ReadDomainFromProto(helper.FullNeighborhood().delta.variables(0)),
@@ -577,7 +575,7 @@ TEST(NeighborhoodGeneratorHelperTest, BoundAreUpdatedOnSynchronize) {
 
   // New bound are properly there.
   {
-    absl::ReaderMutexLock lock(helper.graph_mutex_);
+    absl::ReaderMutexLock lock(&helper.graph_mutex_);
     EXPECT_FALSE(helper.IsActive(0));
   }
   EXPECT_EQ(ReadDomainFromProto(helper.FullNeighborhood().delta.variables(0)),

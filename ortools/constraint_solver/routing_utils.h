@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ORTOOLS_CONSTRAINT_SOLVER_ROUTING_UTILS_H_
-#define ORTOOLS_CONSTRAINT_SOLVER_ROUTING_UTILS_H_
+#ifndef OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_UTILS_H_
+#define OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_UTILS_H_
 
 #include <cstdint>
 #include <functional>
@@ -91,4 +91,4 @@ bool FindMostExpensiveArcsOnRoute(
 
 }  // namespace operations_research
 
-#endif  // ORTOOLS_CONSTRAINT_SOLVER_ROUTING_UTILS_H_
+#endif  // OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_UTILS_H_

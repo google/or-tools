@@ -11,63 +11,62 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/** @file constraint_solver.h
-Declaration of the core objects for the constraint solver.
+/// Declaration of the core objects for the constraint solver.
+///
+/// The literature around constraint programming is extremely dense but one
+/// can find some basic introductions in the following links:
+///   - http://en.wikipedia.org/wiki/Constraint_programming
+///   - http://kti.mff.cuni.cz/~bartak/constraints/index.html
+///
+/// Here is a very simple Constraint Programming problem:
+///
+///   If we see 56 legs and 20 heads, how many two-legged pheasants
+///   and four-legged rabbits are we looking at?
+///
+/// Here is some simple Constraint Programming code to find out:
+///
+///   void pheasant() {
+///     Solver s("pheasant");
+///     // Create integer variables to represent the number of pheasants and
+///     // rabbits, with a minimum of 0 and a maximum of 20.
+///     IntVar* const p = s.MakeIntVar(0, 20, "pheasant"));
+///     IntVar* const r = s.MakeIntVar(0, 20, "rabbit"));
+///     // The number of heads is the sum of pheasants and rabbits.
+///     IntExpr* const heads = s.MakeSum(p, r);
+///     // The number of legs is the sum of pheasants * 2 and rabbits * 4.
+///     IntExpr* const legs = s.MakeSum(s.MakeProd(p, 2), s.MakeProd(r, 4));
+///     // Constraints: the number of legs is 56 and heads is 20.
+///     Constraint* const ct_legs = s.MakeEquality(legs, 56);
+///     Constraint* const ct_heads = s.MakeEquality(heads, 20);
+///     s.AddConstraint(ct_legs);
+///     s.AddConstraint(ct_heads);
+///     DecisionBuilder* const db = s.MakePhase(p, r,
+///                                             Solver::CHOOSE_FIRST_UNBOUND,
+///                                             Solver::ASSIGN_MIN_VALUE);
+///     s.NewSearch(db);
+///     CHECK(s.NextSolution());
+///     LOG(INFO) << "rabbits -> " << r->Value() << ", pheasants -> "
+///               << p->Value();
+///     LOG(INFO) << s.DebugString();
+///     s.EndSearch();
+///   }
+///
+/// which outputs:
+///
+///   rabbits -> 8, pheasants -> 12
+///   Solver(name = "pheasant",
+///          state = OUTSIDE_SEARCH,
+///          branches = 0,
+///          fails = 0,
+///          decisions = 0
+///          propagation loops = 11,
+///          demons Run = 25,
+///          Run time = 0 ms)
+///
+///
 
-The literature around constraint programming is extremely dense but one
-can find some basic introductions in the following links:
-  - http://en.wikipedia.org/wiki/Constraint_programming
-  - http://kti.mff.cuni.cz/~bartak/constraints/index.html
-
-Here is a very simple Constraint Programming problem:
-
-  If we see 56 legs and 20 heads, how many two-legged pheasants
-  and four-legged rabbits are we looking at?
-
-Here is some simple Constraint Programming code to find out:
-@code{.cpp}
-  void pheasant() {
-    Solver s("pheasant");
-    // Create integer variables to represent the number of pheasants and
-    // rabbits, with a minimum of 0 and a maximum of 20.
-    IntVar* const p = s.MakeIntVar(0, 20, "pheasant"));
-    IntVar* const r = s.MakeIntVar(0, 20, "rabbit"));
-    // The number of heads is the sum of pheasants and rabbits.
-    IntExpr* const heads = s.MakeSum(p, r);
-    // The number of legs is the sum of pheasants * 2 and rabbits * 4.
-    IntExpr* const legs = s.MakeSum(s.MakeProd(p, 2), s.MakeProd(r, 4));
-    // Constraints: the number of legs is 56 and heads is 20.
-    Constraint* const ct_legs = s.MakeEquality(legs, 56);
-    Constraint* const ct_heads = s.MakeEquality(heads, 20);
-    s.AddConstraint(ct_legs);
-    s.AddConstraint(ct_heads);
-    DecisionBuilder* const db = s.MakePhase(p, r,
-                                            Solver::CHOOSE_FIRST_UNBOUND,
-                                            Solver::ASSIGN_MIN_VALUE);
-    s.NewSearch(db);
-    CHECK(s.NextSolution());
-    LOG(INFO) << "rabbits -> " << r->Value() << ", pheasants -> "
-              << p->Value();
-    LOG(INFO) << s.DebugString();
-    s.EndSearch();
-  }
-@endcode
-which outputs:
-@verbatim
-rabbits -> 8, pheasants -> 12
-Solver(name = "pheasant",
-       state = OUTSIDE_SEARCH,
-       branches = 0,
-       fails = 0,
-       decisions = 0
-       propagation loops = 11,
-       demons Run = 25,
-       Run time = 0 ms)
-@endverbatim
-*/
-
-#ifndef ORTOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVER_H_
-#define ORTOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVER_H_
+#ifndef OR_TOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVER_H_
+#define OR_TOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVER_H_
 
 #include <stddef.h>
 #include <stdint.h>
@@ -105,10 +104,10 @@ Solver(name = "pheasant",
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/tuple_set.h"
 
-#ifndef SWIG
+#if !defined(SWIG)
 OR_DLL ABSL_DECLARE_FLAG(int64_t, cp_random_seed);
 OR_DLL ABSL_DECLARE_FLAG(bool, cp_disable_solve);
-#endif  // SWIG
+#endif  // !defined(SWIG)
 
 class File;
 
@@ -178,9 +177,9 @@ inline int64_t CpRandomSeed() {
              : absl::GetFlag(FLAGS_cp_random_seed);
 }
 
-/// @brief This struct holds all parameters for the default search.
-/// @details DefaultPhaseParameters is only used by Solver::MakeDefaultPhase
-/// methods. Note this is for advanced users only.
+/// This struct holds all parameters for the default search.
+/// DefaultPhaseParameters is only used by Solver::MakeDefaultPhase methods.
+/// Note this is for advanced users only.
 struct DefaultPhaseParameters {
  public:
   enum VariableSelection {
@@ -240,22 +239,23 @@ struct DefaultPhaseParameters {
   DefaultPhaseParameters();
 };
 
-/** @brief Solver Class.
-@details A solver represents the main computation engine. It implements the
-entire range of Constraint Programming protocols:
-- Reversibility
-- Propagation
-- Search
-
-Usually, Constraint Programming code consists of
-- the creation of the Solver,
-- the creation of the decision variables of the model,
-- the creation of the constraints of the model and their addition to the
-  solver() through the AddConstraint() method,
-- the creation of the main DecisionBuilder class,
-- the launch of the solve() method with the decision builder.
-
-For the time being, Solver is neither MT_SAFE nor MT_HOT. */
+/// Solver Class
+///
+/// A solver represents the main computation engine. It implements the entire
+/// range of Constraint Programming protocols:
+///   - Reversibility
+///   - Propagation
+///   - Search
+///
+/// Usually, Constraint Programming code consists of
+///   - the creation of the Solver,
+///   - the creation of the decision variables of the model,
+///   - the creation of the constraints of the model and their addition to the
+///     solver() through the AddConstraint() method,
+///   - the creation of the main DecisionBuilder class,
+///   - the launch of the solve() method with the decision builder.
+///
+/// For the time being, Solver is neither MT_SAFE nor MT_HOT.
 class Solver {
  public:
   /// Holds semantic information stating that the 'expression' has been
@@ -444,11 +444,9 @@ class Solver {
     /// Possible neighbors for the path 1 -> 2 -> 3 -> 4 -> 5
     /// (where (1, 5) are first and last nodes of the path and can therefore not
     /// be moved):
-    /// @code
     ///   1 -> [3 -> 2] -> 4  -> 5
     ///   1 -> [4 -> 3  -> 2] -> 5
     ///   1 ->  2 -> [4 -> 3] -> 5
-    /// @endcode
     TWOOPT,
 
     /// Relocate: OROPT and RELOCATE.
@@ -459,10 +457,9 @@ class Solver {
     /// Possible neighbors for the path 1 -> 2 -> 3 -> 4 -> 5, for a chain
     /// length of 2 (where (1, 5) are first and last nodes of the path and can
     /// therefore not be moved):
-    /// @code
     ///   1 ->  4 -> [2 -> 3] -> 5
     ///   1 -> [3 -> 4] -> 2  -> 5
-    /// @endcode
+    ///
     /// Using Relocate with chain lengths of 1, 2 and 3 together is equivalent
     /// to the OrOpt operator on a path. The OrOpt operator is a limited
     ///  version of 3Opt (breaks 3 arcs on a path).
@@ -475,11 +472,9 @@ class Solver {
     /// Possible neighbors for the path 1 -> 2 -> 3 -> 4 -> 5
     /// (where (1, 5) are first and last nodes of the path and can therefore not
     /// be moved):
-    /// @code
     ///   1 -> [3] -> [2] ->  4  -> 5
     ///   1 -> [4] ->  3  -> [2] -> 5
     ///   1 ->  2  -> [4] -> [3] -> 5
-    /// @endcode
     EXCHANGE,
 
     /// Operator which cross exchanges the starting chains of 2 paths, including
@@ -488,59 +483,47 @@ class Solver {
     /// Possible neighbors for the paths 1 -> 2 -> 3 -> 4 -> 5 and 6 -> 7 -> 8
     /// (where (1, 5) and (6, 8) are first and last nodes of the paths and can
     /// therefore not be moved):
-    /// @code
     ///   1 -> [7] -> 3 -> 4 -> 5  6 -> [2] -> 8
     ///   1 -> [7] -> 4 -> 5       6 -> [2 -> 3] -> 8
     ///   1 -> [7] -> 5            6 -> [2 -> 3 -> 4] -> 8
-    /// @endcode
     CROSS,
 
     /// Operator which inserts an inactive node into a path.
     /// Possible neighbors for the path 1 -> 2 -> 3 -> 4 with 5 inactive
     /// (where 1 and 4 are first and last nodes of the path) are:
-    /// @code
     ///   1 -> [5] ->  2  ->  3  -> 4
     ///   1 ->  2  -> [5] ->  3  -> 4
     ///   1 ->  2  ->  3  -> [5] -> 4
-    /// @endcode
     MAKEACTIVE,
 
     /// Operator which makes path nodes inactive.
     /// Possible neighbors for the path 1 -> 2 -> 3 -> 4 (where 1 and 4 are
     /// first and last nodes of the path) are:
-    /// @code
     ///   1 -> 3 -> 4 with 2 inactive
     ///   1 -> 2 -> 4 with 3 inactive
-    /// @endcode
     MAKEINACTIVE,
 
     /// Operator which makes a "chain" of path nodes inactive.
     /// Possible neighbors for the path 1 -> 2 -> 3 -> 4 (where 1 and 4 are
     /// first and last nodes of the path) are:
-    /// @code
     ///   1 -> 3 -> 4 with 2 inactive
     ///   1 -> 2 -> 4 with 3 inactive
     ///   1 -> 4 with 2 and 3 inactive
-    /// @endcode
     MAKECHAININACTIVE,
 
     /// Operator which replaces an active node by an inactive one.
     /// Possible neighbors for the path 1 -> 2 -> 3 -> 4 with 5 inactive
     /// (where 1 and 4 are first and last nodes of the path) are:
-    /// @code
     ///   1 -> [5] ->  3  -> 4 with 2 inactive
     ///   1 ->  2  -> [5] -> 4 with 3 inactive
-    /// @endcode
     SWAPACTIVE,
 
     /// Operator which replaces a chain of active nodes by an inactive one.
     /// Possible neighbors for the path 1 -> 2 -> 3 -> 4 with 5 inactive
     /// (where 1 and 4 are first and last nodes of the path) are:
-    /// @code
     ///   1 -> [5] ->  3  -> 4 with 2 inactive
     ///   1 ->  2  -> [5] -> 4 with 3 inactive
     ///   1 -> [5] -> 4 with 2 and 3 inactive
-    /// @endcode
     SWAPACTIVECHAIN,
 
     /// Operator which makes an inactive node active and an active one inactive.
@@ -549,12 +532,10 @@ class Solver {
     /// the node made inactive.
     /// Possible neighbors for the path 1 -> 2 -> 3 -> 4 with 5 inactive
     /// (where 1 and 4 are first and last nodes of the path) are:
-    /// @code
     ///   1 -> [5] ->  3  -> 4 with 2 inactive
     ///   1 ->  3  -> [5] -> 4 with 2 inactive
     ///   1 -> [5] ->  2  -> 4 with 3 inactive
     ///   1 ->  2  -> [5] -> 4 with 3 inactive
-    /// @endcode
     EXTENDEDSWAPACTIVE,
 
     /// Operator which relaxes two sub-chains of three consecutive arcs each.
@@ -1052,7 +1033,7 @@ class Solver {
   /// are relative to this time.
   absl::Time Now() const;
 
-  /// @deprecated Use Now() instead.
+  /// DEPRECATED: Use Now() instead.
   /// Time elapsed, in ms since the creation of the solver.
   int64_t wall_time() const;
 
@@ -3164,7 +3145,6 @@ class Solver {
   void SetSearchContext(Search* search, absl::string_view search_context);
   std::string SearchContext() const;
   std::string SearchContext(const Search* search) const;
-  bool AcceptSolution(Search* search) const;
   /// Returns (or creates) an assignment representing the state of local search.
   // TODO(user): Investigate if this should be moved to Search.
   Assignment* GetOrCreateLocalSearchState();
@@ -3628,11 +3608,7 @@ class Demon : public BaseObject {
 };
 
 /// Model visitor.
-class
-#ifndef SWIG
-    OR_DLL
-#endif
-    ModelVisitor : public BaseObject {
+class OR_DLL ModelVisitor : public BaseObject {
  public:
   /// Constraint and Expression types.
   static const char kAbs[];
@@ -3999,9 +3975,9 @@ class SearchMonitor : public BaseObject {
   /// When the search tree is finished.
   virtual void NoMoreSolutions();
 
-  /// Called when a local optimum is reached. If 'true' is returned, the last
-  /// solution is discarded and the search proceeds with the next one.
-  virtual bool AtLocalOptimum();
+  /// When a local optimum is reached. If 'true' is returned, the last solution
+  /// is discarded and the search proceeds with the next one.
+  virtual bool LocalOptimum();
 
   ///
   virtual bool AcceptDelta(Assignment* delta, Assignment* deltadelta);
@@ -4848,11 +4824,7 @@ class ImprovementSearchLimit : public SearchLimit {
 /// cannot be accessed any more. An interval var is automatically marked
 /// as unperformed when it is not consistent anymore (start greater
 /// than end, duration < 0...)
-class
-#ifndef SWIG
-    OR_DLL
-#endif
-    IntervalVar : public PropagationBaseObject {
+class OR_DLL IntervalVar : public PropagationBaseObject {
  public:
   /// The smallest acceptable value to be returned by StartMin()
   static const int64_t kMinValidValue;
@@ -5101,7 +5073,6 @@ class SequenceVar : public PropagationBaseObject {
 class AssignmentElement {
  public:
   AssignmentElement() : activated_(true) {}
-  AssignmentElement(const AssignmentElement&) = default;
 
   void Activate() { activated_ = true; }
   void Deactivate() { activated_ = false; }
@@ -5115,7 +5086,6 @@ class IntVarElement : public AssignmentElement {
  public:
   IntVarElement();
   explicit IntVarElement(IntVar* var);
-  IntVarElement(const IntVarElement& element) = default;
   void Reset(IntVar* var);
   IntVarElement* Clone();
   void Copy(const IntVarElement& element);
@@ -5380,8 +5350,9 @@ class AssignmentContainer {
   /// previous content.
   void Copy(const AssignmentContainer<V, E>& container) {
     Clear();
-    for (const E& element : container.elements_) {
-      elements_.emplace_back(element);
+    for (int i = 0; i < container.elements_.size(); ++i) {
+      const E& element = container.elements_[i];
+      FastAdd(element.Var())->Copy(element);
     }
   }
   bool Contains(const V* const var) const {
@@ -5940,4 +5911,4 @@ class SolutionPool : public BaseObject {
 };
 }  // namespace operations_research
 
-#endif  // ORTOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVER_H_
+#endif  // OR_TOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVER_H_

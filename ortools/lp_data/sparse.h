@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//
 // The following are very good references for terminology, data structures,
 // and algorithms:
 //
@@ -25,8 +26,8 @@
 //
 // Both books also contain a wealth of references.
 
-#ifndef ORTOOLS_LP_DATA_SPARSE_H_
-#define ORTOOLS_LP_DATA_SPARSE_H_
+#ifndef OR_TOOLS_LP_DATA_SPARSE_H_
+#define OR_TOOLS_LP_DATA_SPARSE_H_
 
 #include <algorithm>
 #include <cstdint>
@@ -939,4 +940,4 @@ class TriangularMatrix : private CompactSparseMatrix {
 }  // namespace glop
 }  // namespace operations_research
 
-#endif  // ORTOOLS_LP_DATA_SPARSE_H_
+#endif  // OR_TOOLS_LP_DATA_SPARSE_H_

@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//
 // Storage classes for Linear Programs.
 //
 // LinearProgram stores the complete data for a Linear Program:
@@ -20,8 +21,8 @@
 //   - bounds for each variable,
 //   - bounds for each constraint.
 
-#ifndef ORTOOLS_LP_DATA_LP_DATA_H_
-#define ORTOOLS_LP_DATA_LP_DATA_H_
+#ifndef OR_TOOLS_LP_DATA_LP_DATA_H_
+#define OR_TOOLS_LP_DATA_LP_DATA_H_
 
 #include <algorithm>  // for max
 #include <cmath>
@@ -713,4 +714,4 @@ inline bool AreBoundsValid(Fractional lower_bound, Fractional upper_bound) {
 }  // namespace glop
 }  // namespace operations_research
 
-#endif  // ORTOOLS_LP_DATA_LP_DATA_H_
+#endif  // OR_TOOLS_LP_DATA_LP_DATA_H_

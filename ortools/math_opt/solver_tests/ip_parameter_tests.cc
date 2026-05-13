@@ -1273,9 +1273,12 @@ TEST_P(LargeInstanceIpParameterTest, AbsoluteGapTolerance) {
   }
   ASSERT_THAT(result, IsOkAndHolds(IsOptimal()));
   // There should be some space between our optimal solution and best bound
-  EXPECT_GE(result->termination.objective_bounds.primal_bound -
-                result->termination.objective_bounds.dual_bound,
-            absolute_lp_relax_gap / 40.0);
+  if (GetParam().solver_type != SolverType::kCpSat) {
+    // CP-SAT in parallel can find the optimal solution directly.
+    EXPECT_GE(result->termination.objective_bounds.primal_bound -
+                  result->termination.objective_bounds.dual_bound,
+              absolute_lp_relax_gap / 40.0);
+  }
 }
 
 // Set the relative gap to 2*(8090 - 7649)/8090 ~= 0.1 and check there is

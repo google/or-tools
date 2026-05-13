@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ORTOOLS_MATH_OPT_CORE_MODEL_SUMMARY_H_
-#define ORTOOLS_MATH_OPT_CORE_MODEL_SUMMARY_H_
+#ifndef OR_TOOLS_MATH_OPT_CORE_MODEL_SUMMARY_H_
+#define OR_TOOLS_MATH_OPT_CORE_MODEL_SUMMARY_H_
 
 #include <cstdint>
 #include <initializer_list>
@@ -266,4 +266,4 @@ absl::Status UpdateBiMapFromMappedData(
 }  // namespace math_opt
 }  // namespace operations_research
 
-#endif  // ORTOOLS_MATH_OPT_CORE_MODEL_SUMMARY_H_
+#endif  // OR_TOOLS_MATH_OPT_CORE_MODEL_SUMMARY_H_

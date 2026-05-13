@@ -53,7 +53,6 @@
 #include "Eigen/Core"
 #include "Eigen/SparseCore"
 #include "absl/algorithm/container.h"
-#include "absl/base/nullability.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/status/status.h"
@@ -620,8 +619,7 @@ class Solver {
 
   NextSolutionAndDelta ComputeNextDualSolution(
       double dual_step_size, double extrapolation_factor,
-      const NextSolutionAndDelta& next_primal_solution,
-      const VectorXd* absl_nullable next_primal_product = nullptr) const;
+      const NextSolutionAndDelta& next_primal) const;
 
   std::pair<double, double> ComputeMovementTerms(
       const VectorXd& delta_primal, const VectorXd& delta_dual) const;
@@ -631,10 +629,6 @@ class Solver {
 
   double ComputeNonlinearity(const VectorXd& delta_primal,
                              const VectorXd& next_dual_product) const;
-
-  // Sets current_primal_product_ and current_dual_product_ based on
-  // current_primal_solution_ and current_dual_solution_ respectively.
-  void SetCurrentPrimalAndDualProducts();
 
   // Creates all the simple-to-compute statistics in stats.
   IterationStats CreateSimpleIterationStats(RestartChoice restart_used) const;
@@ -740,9 +734,6 @@ class Solver {
   WallTimer timer_;
   int iterations_completed_;
   int num_rejected_steps_;
-  // A cache of `constraint_matrix * current_primal_solution_`.
-  // Malitsky-Pock linesearch only.
-  std::optional<VectorXd> current_primal_product_;
   // A cache of `constraint_matrix.transpose() * current_dual_solution_`.
   VectorXd current_dual_product_;
   // The primal point at which the algorithm was last restarted from, or
@@ -1879,41 +1870,31 @@ Solver::NextSolutionAndDelta Solver::ComputeNextPrimalSolution(
 
 Solver::NextSolutionAndDelta Solver::ComputeNextDualSolution(
     double dual_step_size, double extrapolation_factor,
-    const NextSolutionAndDelta& next_primal_solution,
-    const VectorXd* absl_nullable next_primal_product) const {
+    const NextSolutionAndDelta& next_primal_solution) const {
   const int64_t dual_size = ShardedWorkingQp().DualSize();
   NextSolutionAndDelta result = {
       .value = VectorXd(dual_size),
       .delta = VectorXd(dual_size),
   };
   const QuadraticProgram& qp = WorkingQp();
-  std::optional<VectorXd> extrapolated_primal;
-  if (!next_primal_product) {
-    extrapolated_primal.emplace(ShardedWorkingQp().PrimalSize());
-    ShardedWorkingQp().PrimalSharder().ParallelForEachShard(
-        [&](const Sharder::Shard& shard) {
-          shard(*extrapolated_primal) =
-              (shard(next_primal_solution.value) +
-               extrapolation_factor * shard(next_primal_solution.delta));
-        });
-  }
+  VectorXd extrapolated_primal(ShardedWorkingQp().PrimalSize());
+  ShardedWorkingQp().PrimalSharder().ParallelForEachShard(
+      [&](const Sharder::Shard& shard) {
+        shard(extrapolated_primal) =
+            (shard(next_primal_solution.value) +
+             extrapolation_factor * shard(next_primal_solution.delta));
+      });
+  // TODO(user): Refactor this multiplication so that we only do one matrix
+  // vector multiply for the primal variable. This only applies to Malitsky and
+  // Pock and not to the adaptive step size rule.
   ShardedWorkingQp().TransposedConstraintMatrixSharder().ParallelForEachShard(
       [&](const Sharder::Shard& shard) {
-        VectorXd temp;
-        if (next_primal_product) {
-          CHECK(current_primal_product_.has_value());
-          temp = shard(current_dual_solution_) -
-                 dual_step_size *
-                     (-extrapolation_factor * shard(*current_primal_product_) +
-                      (extrapolation_factor + 1) * shard(*next_primal_product));
-        } else {
-          temp = shard(current_dual_solution_) -
-                 dual_step_size *
-                     shard(ShardedWorkingQp().TransposedConstraintMatrix())
-                         .transpose() *
-                     extrapolated_primal.value();
-        }
-
+        VectorXd temp =
+            shard(current_dual_solution_) -
+            dual_step_size *
+                shard(ShardedWorkingQp().TransposedConstraintMatrix())
+                    .transpose() *
+                extrapolated_primal;
         // Each element of the argument of `.cwiseMin()` is the critical point
         // of the respective 1D minimization problem if it's negative.
         // Likewise the argument to the `.cwiseMax()` is the critical point if
@@ -1956,21 +1937,6 @@ double Solver::ComputeNonlinearity(const VectorXd& delta_primal,
       });
 }
 
-void Solver::SetCurrentPrimalAndDualProducts() {
-  if (params_.linesearch_rule() ==
-      PrimalDualHybridGradientParams::MALITSKY_POCK_LINESEARCH_RULE) {
-    current_primal_product_ = TransposedMatrixVectorProduct(
-        ShardedWorkingQp().TransposedConstraintMatrix(),
-        current_primal_solution_,
-        ShardedWorkingQp().TransposedConstraintMatrixSharder());
-  } else {
-    current_primal_product_.reset();
-  }
-  current_dual_product_ = TransposedMatrixVectorProduct(
-      WorkingQp().constraint_matrix, current_dual_solution_,
-      ShardedWorkingQp().ConstraintMatrixSharder());
-}
-
 IterationStats Solver::CreateSimpleIterationStats(
     RestartChoice restart_used) const {
   IterationStats stats;
@@ -2011,10 +1977,8 @@ LocalizedLagrangianBounds Solver::ComputeLocalizedBoundsAtCurrent() const {
       ShardedWorkingQp(), current_primal_solution_, current_dual_solution_,
       PrimalDualNorm::kEuclideanNorm, primal_weight_,
       distance_traveled_by_current,
-      /*primal_product=*/current_primal_product_.has_value()
-          ? &current_primal_product_.value()
-          : nullptr,
-      &current_dual_product_, params_.use_diagonal_qp_trust_region_solver(),
+      /*primal_product=*/nullptr, &current_dual_product_,
+      params_.use_diagonal_qp_trust_region_solver(),
       params_.diagonal_qp_trust_region_solver_tolerance());
 }
 
@@ -2261,7 +2225,9 @@ void Solver::ApplyRestartChoice(const RestartChoice restart_to_apply) {
       }
       current_primal_solution_ = primal_average_.ComputeAverage();
       current_dual_solution_ = dual_average_.ComputeAverage();
-      SetCurrentPrimalAndDualProducts();
+      current_dual_product_ = TransposedMatrixVectorProduct(
+          WorkingQp().constraint_matrix, current_dual_solution_,
+          ShardedWorkingQp().ConstraintMatrixSharder());
       break;
   }
   primal_weight_ = ComputeNewPrimalWeight();
@@ -2477,14 +2443,6 @@ InnerStepOutcome Solver::TakeMalitskyPockStep() {
       params_.malitsky_pock_parameters().linesearch_contraction_factor();
   const double dual_weight = primal_weight_ * primal_weight_;
   int inner_iterations = 0;
-  VectorXd next_primal_product(current_dual_solution_.size());
-  ShardedWorkingQp().TransposedConstraintMatrixSharder().ParallelForEachShard(
-      [&](const Sharder::Shard& shard) {
-        shard(next_primal_product) =
-            shard(ShardedWorkingQp().TransposedConstraintMatrix()).transpose() *
-            next_primal_solution.value;
-      });
-
   for (bool accepted_step = false; !accepted_step; ++inner_iterations) {
     if (inner_iterations >= 60) {
       LogInnerIterationLimitHit();
@@ -2496,7 +2454,7 @@ InnerStepOutcome Solver::TakeMalitskyPockStep() {
         new_primal_step_size / primal_step_size;
     NextSolutionAndDelta next_dual_solution = ComputeNextDualSolution(
         dual_weight * new_primal_step_size, new_last_two_step_sizes_ratio,
-        next_primal_solution, &next_primal_product);
+        next_primal_solution);
 
     VectorXd next_dual_product = TransposedMatrixVectorProduct(
         WorkingQp().constraint_matrix, next_dual_solution.value,
@@ -2524,7 +2482,6 @@ InnerStepOutcome Solver::TakeMalitskyPockStep() {
       current_primal_solution_ = std::move(next_primal_solution.value);
       current_dual_solution_ = std::move(next_dual_solution.value);
       current_dual_product_ = std::move(next_dual_product);
-      current_primal_product_ = std::move(next_primal_product);
       primal_average_.Add(current_primal_solution_,
                           /*weight=*/new_primal_step_size);
       dual_average_.Add(current_dual_solution_,
@@ -2598,7 +2555,6 @@ InnerStepOutcome Solver::TakeAdaptiveStep() {
       current_primal_solution_ = std::move(next_primal_solution.value);
       current_dual_solution_ = std::move(next_dual_solution.value);
       current_dual_product_ = std::move(next_dual_product);
-      current_primal_product_.reset();
       current_primal_delta_ = std::move(next_primal_solution.delta);
       current_dual_delta_ = std::move(next_dual_solution.delta);
       primal_average_.Add(current_primal_solution_, /*weight=*/step_size_);
@@ -2664,7 +2620,6 @@ InnerStepOutcome Solver::TakeConstantSizeStep() {
   current_primal_solution_ = std::move(next_primal_solution.value);
   current_dual_solution_ = std::move(next_dual_solution.value);
   current_dual_product_ = std::move(next_dual_product);
-  current_primal_product_.reset();
   current_primal_delta_ = std::move(next_primal_solution.delta);
   current_dual_delta_ = std::move(next_dual_solution.delta);
   primal_average_.Add(current_primal_solution_, /*weight=*/step_size_);
@@ -3025,7 +2980,9 @@ SolverResult Solver::Solve(const IterationType iteration_type,
   // restart.
 
   ratio_last_two_step_sizes_ = 1;
-  SetCurrentPrimalAndDualProducts();
+  current_dual_product_ = TransposedMatrixVectorProduct(
+      WorkingQp().constraint_matrix, current_dual_solution_,
+      ShardedWorkingQp().ConstraintMatrixSharder());
 
   // This is set to true if we can't proceed any more because of numerical
   // issues. We may or may not have found the optimal solution.

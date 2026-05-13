@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ORTOOLS_MATH_OPT_SOLVERS_GSCIP_SOLVER_H_
-#define ORTOOLS_MATH_OPT_SOLVERS_GSCIP_SOLVER_H_
+#ifndef OR_TOOLS_MATH_OPT_SOLVERS_GSCIP_SOLVER_H_
+#define OR_TOOLS_MATH_OPT_SOLVERS_GSCIP_SOLVER_H_
 
 #include <cstdint>
 #include <memory>
@@ -26,6 +26,9 @@
 #include "absl/status/statusor.h"
 #include "absl/types/span.h"
 #include "ortools/base/linked_hash_map.h"
+#include "ortools/gscip/gscip.h"
+#include "ortools/gscip/gscip.pb.h"
+#include "ortools/gscip/gscip_event_handler.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/invalid_indicators.h"
 #include "ortools/math_opt/core/inverted_bounds.h"
@@ -36,10 +39,7 @@
 #include "ortools/math_opt/model_update.pb.h"
 #include "ortools/math_opt/parameters.pb.h"
 #include "ortools/math_opt/result.pb.h"
-#include "ortools/math_opt/solvers/gscip/gscip.h"
-#include "ortools/math_opt/solvers/gscip/gscip.pb.h"
-#include "ortools/math_opt/solvers/gscip/gscip_event_handler.h"
-#include "ortools/math_opt/solvers/gscip/math_opt_gscip_solver_constraint_handler.h"
+#include "ortools/math_opt/solvers/gscip/gscip_solver_constraint_handler.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
 #include "ortools/util/solve_interrupter.h"
 #include "scip/type_cons.h"
@@ -182,4 +182,4 @@ class GScipSolver : public SolverInterface {
 }  // namespace math_opt
 }  // namespace operations_research
 
-#endif  // ORTOOLS_MATH_OPT_SOLVERS_GSCIP_SOLVER_H_
+#endif  // OR_TOOLS_MATH_OPT_SOLVERS_GSCIP_SOLVER_H_

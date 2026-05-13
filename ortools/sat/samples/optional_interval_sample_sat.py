@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# [START program]
 """Code sample to demonstrates how to build an optional interval."""
 
 from ortools.sat.python import cp_model
@@ -49,4 +48,3 @@ def optional_interval_sample_sat():
 
 
 optional_interval_sample_sat()
-# [END program]

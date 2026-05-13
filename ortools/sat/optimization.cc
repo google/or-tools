@@ -61,7 +61,9 @@ void MinimizeCoreWithPropagation(TimeLimit* limit, SatSolver* solver,
   absl::btree_set<LiteralIndex> moved_last;
   std::vector<Literal> candidate(core->begin(), core->end());
 
-  if (!solver->ResetToLevelZero()) return;
+  solver->Backtrack(0);
+  solver->SetAssumptionLevel(0);
+  if (!solver->FinishPropagation()) return;
   while (!limit->LimitReached()) {
     // We want each literal in candidate to appear last once in our propagation
     // order. We want to do that while maximizing the reutilization of the
@@ -70,7 +72,7 @@ void MinimizeCoreWithPropagation(TimeLimit* limit, SatSolver* solver,
     const int target_level = MoveOneUnprocessedLiteralLast(
         moved_last, solver->CurrentDecisionLevel(), &candidate);
     if (target_level == -1) break;
-    if (!solver->BacktrackAndPropagateReimplications(target_level)) return;
+    solver->Backtrack(target_level);
     while (!solver->ModelIsUnsat() && !limit->LimitReached() &&
            solver->CurrentDecisionLevel() < candidate.size()) {
       const Literal decision = candidate[solver->CurrentDecisionLevel()];
@@ -91,7 +93,8 @@ void MinimizeCoreWithPropagation(TimeLimit* limit, SatSolver* solver,
     moved_last.insert(candidate.back().Index());
   }
 
-  if (!solver->ResetToLevelZero()) return;
+  solver->Backtrack(0);
+  solver->SetAssumptionLevel(0);
   if (candidate.size() < core->size()) {
     VLOG(1) << "minimization with propag " << core->size() << " -> "
             << candidate.size();
@@ -217,18 +220,6 @@ SatSolver::Status MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
   // Simple linear scan algorithm to find the optimal.
   if (!sat_solver->ResetToLevelZero()) return SatSolver::INFEASIBLE;
   while (true) {
-    if (DEBUG_MODE) {
-      // The solver usually always solve a "restricted decision problem"
-      // obj < current_best. So when we have an optimal solution, then the
-      // problem is UNSAT, and any clauses we learn can break the debug
-      // solution. So we disable this checks once we found an optimal solution.
-      const DebugSolution* debug_sol = model->Get<DebugSolution>();
-      if (debug_sol && integer_trail->LowerBound(objective_var) <=
-                           debug_sol->inner_objective_value) {
-        model->GetOrCreate<DebugSolution>()->Clear();
-      }
-    }
-
     const SatSolver::Status result = search->SolveIntegerProblem();
     if (result != SatSolver::FEASIBLE) return result;
 

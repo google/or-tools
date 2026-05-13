@@ -36,17 +36,19 @@
 //     LOG(INFO) << DUMP_VARS_WITH_BINDINGS((x, y, z), x, *y, f(z), other_var);
 //   }
 
-#ifndef ORTOOLS_BASE_DUMP_VARS_H_
-#define ORTOOLS_BASE_DUMP_VARS_H_
+#ifndef OR_TOOLS_BASE_DUMP_VARS_H_
+#define OR_TOOLS_BASE_DUMP_VARS_H_
 
 #include <optional>
 #include <ostream>
 #include <sstream>
 #include <string>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
 #include "absl/container/inlined_vector.h"
+#include "ortools/base/strong_int.h"
 #include "ortools/base/strong_vector.h"
 
 /* need extra level to force extra eval */
@@ -230,4 +232,4 @@ Dump<F> make_dump_vars(DumpNames&& names, F f) {
 }  // namespace internal_dump_vars
 }  // namespace operations_research::base
 
-#endif  // ORTOOLS_BASE_DUMP_VARS_H_
+#endif  // OR_TOOLS_BASE_DUMP_VARS_H_

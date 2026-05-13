@@ -22,8 +22,8 @@
 //   * Use std::string instead of null terminated char* for string values (note
 //     that attribute names are still char*).
 //   * When setting array data, accept const data (absl::Span<const T>).
-#ifndef ORTOOLS_MATH_OPT_SOLVERS_XPRESS_G_XPRESS_H_
-#define ORTOOLS_MATH_OPT_SOLVERS_XPRESS_G_XPRESS_H_
+#ifndef OR_TOOLS_MATH_OPT_SOLVERS_XPRESS_G_XPRESS_H_
+#define OR_TOOLS_MATH_OPT_SOLVERS_XPRESS_G_XPRESS_H_
 
 #include <map>
 #include <memory>
@@ -34,7 +34,7 @@
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/third_party_solvers/xpress_environment.h"
+#include "ortools/xpress/environment.h"
 
 namespace operations_research::math_opt {
 
@@ -131,4 +131,4 @@ class Xpress {
 
 }  // namespace operations_research::math_opt
 
-#endif  // ORTOOLS_MATH_OPT_SOLVERS_XPRESS_G_XPRESS_H_
+#endif  // OR_TOOLS_MATH_OPT_SOLVERS_XPRESS_G_XPRESS_H_

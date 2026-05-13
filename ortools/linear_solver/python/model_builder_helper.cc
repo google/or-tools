@@ -513,6 +513,7 @@ PYBIND11_MODULE(model_builder_helper, m) {
           "__isub__",
           [](std::shared_ptr<SumArray> expr,
              std::shared_ptr<LinearExpr> other) -> std::shared_ptr<LinearExpr> {
+            expr->AddInPlace(other->Neg());
             return expr->AddInPlace(other->Neg());
           },
           py::arg("other").none(false), "Returns `self` - `other`.")
@@ -585,7 +586,8 @@ PYBIND11_MODULE(model_builder_helper, m) {
                         absl::StrCat("Evaluating a BoundedLinearExpression '",
                                      self.ToString(),
                                      "'instance as a Boolean is "
-                                     "not supported."));
+                                     "not supported.")
+                            .c_str());
              return false;
            })
       .def("__str__", &BoundedLinearExpression::ToString)

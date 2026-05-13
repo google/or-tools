@@ -16,7 +16,6 @@
 #include <cstdint>
 #include <functional>
 #include <limits>
-#include <string>
 #include <utility>
 #include <vector>
 
@@ -306,10 +305,10 @@ TEST(IntegerTrailTest, BasicReason) {
 struct LazyReasonForTest : public LazyReasonInterface {
   bool called = false;
 
-  std::string LazyReasonName() const override { return "LazyReasonForTest"; }
-
-  void Explain(int /*id*/, IntegerLiteral /*to_explain*/,
-               IntegerReason* /*reason*/) final {
+  void Explain(int /*id*/, IntegerValue /*propagation_slack*/,
+               IntegerVariable /*variable_to_explain*/, int /*trail_index*/,
+               std::vector<Literal>* /*literals_reason*/,
+               std::vector<int>* /*trail_indices_reason*/) final {
     called = true;
   }
 };
@@ -403,22 +402,21 @@ TEST(IntegerTrailTest, RelaxLinearReason) {
   IntegerTrail* integer_trail = model.GetOrCreate<IntegerTrail>();
   const IntegerVariable a = model.Add(NewIntegerVariable(0, 10));
   const IntegerVariable b = model.Add(NewIntegerVariable(0, 10));
-  const Literal reason = Literal(model.Add(NewBooleanVariable()), true);
 
-  auto* sat_solver = model.GetOrCreate<SatSolver>();
-  EXPECT_TRUE(sat_solver->EnqueueDecisionIfNotConflicting(reason.Negated()));
-  EXPECT_TRUE(sat_solver->Propagate());
+  Trail* trail = model.GetOrCreate<Trail>();
+  trail->SetDecisionLevel(1);
+  EXPECT_TRUE(integer_trail->Propagate(trail));
 
   EXPECT_TRUE(integer_trail->Enqueue(
-      IntegerLiteral::GreaterOrEqual(a, IntegerValue(1)), {reason}, {}));
+      IntegerLiteral::GreaterOrEqual(a, IntegerValue(1)), {}, {}));
   EXPECT_TRUE(integer_trail->Enqueue(
-      IntegerLiteral::GreaterOrEqual(a, IntegerValue(2)), {reason}, {}));
+      IntegerLiteral::GreaterOrEqual(a, IntegerValue(2)), {}, {}));
   EXPECT_TRUE(integer_trail->Enqueue(
-      IntegerLiteral::GreaterOrEqual(b, IntegerValue(1)), {reason}, {}));
+      IntegerLiteral::GreaterOrEqual(b, IntegerValue(1)), {}, {}));
   EXPECT_TRUE(integer_trail->Enqueue(
-      IntegerLiteral::GreaterOrEqual(a, IntegerValue(3)), {reason}, {}));
+      IntegerLiteral::GreaterOrEqual(a, IntegerValue(3)), {}, {}));
   EXPECT_TRUE(integer_trail->Enqueue(
-      IntegerLiteral::GreaterOrEqual(b, IntegerValue(3)), {reason}, {}));
+      IntegerLiteral::GreaterOrEqual(b, IntegerValue(3)), {}, {}));
 
   std::vector<IntegerValue> coeffs(2, IntegerValue(1));
   std::vector<IntegerLiteral> reasons{

@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# [START program]
 """Simple model with a reified constraint."""
 
 from ortools.sat.python import cp_model
@@ -39,4 +38,3 @@ def reified_sample_sat():
 
 
 reified_sample_sat()
-# [END program]

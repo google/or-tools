@@ -13,8 +13,7 @@
 # limitations under the License.
 
 """Testing correctness of the code snippets in the comments of model.py."""
-
-from collections.abc import Sequence
+from typing import Sequence
 
 from absl import app
 

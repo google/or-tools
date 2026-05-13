@@ -29,24 +29,23 @@ target_link_libraries(${NAME} PRIVATE
   absl::strings
 )
 
-if(BUILD_TESTING)
-  ortools_cxx_library(
-    NAME
-      math_opt_elemental_matcher
-    SOURCES
-      "elemental_matcher.cc"
-      "elemental_matcher.h"
-    TYPE
-      STATIC
-    LINK_LIBRARIES
-      absl::log
-      absl::status
-      absl::strings
-      GTest::gmock
-      ortools::base_gmock
-    TESTING
-  )
+ortools_cxx_library(
+  NAME
+    math_opt_elemental_matcher
+  SOURCES
+    "elemental_matcher.cc"
+    "elemental_matcher.h"
+  TYPE
+    STATIC
+  LINK_LIBRARIES
+    absl::log
+    absl::status
+    absl::strings
+    GTest::gmock
+  TESTING
+)
 
+if(BUILD_TESTING)
   file(GLOB _TEST_SRCS "*_test.cc")
   list(FILTER _TEST_SRCS
     EXCLUDE REGEX "elemental_export_model_update_test.cc$")
@@ -62,7 +61,7 @@ if(BUILD_TESTING)
         ${_FILE_NAME}
       LINK_LIBRARIES
         benchmark::benchmark
-        ortools::base_gmock
+        GTest::gmock
         GTest::gtest_main
         ortools::math_opt_matchers
         ortools::math_opt_elemental_matcher

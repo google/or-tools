@@ -14,12 +14,9 @@
 #include "ortools/sat/cp_constraints.h"
 
 #include <algorithm>
-#include <utility>
 #include <vector>
 
-#include "absl/log/check.h"
 #include "absl/types/span.h"
-#include "ortools/sat/enforcement.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
@@ -29,33 +26,14 @@
 namespace operations_research {
 namespace sat {
 
-BooleanXorPropagator::BooleanXorPropagator(
-    absl::Span<const Literal> enforcement_literals,
-    const std::vector<Literal>& literals, bool value, Model* model)
-    : literals_(literals),
-      value_(value),
-      trail_(*model->GetOrCreate<Trail>()),
-      integer_trail_(*model->GetOrCreate<IntegerTrail>()),
-      enforcement_helper_(*model->GetOrCreate<EnforcementHelper>()) {
-  GenericLiteralWatcher* watcher = model->GetOrCreate<GenericLiteralWatcher>();
-  enforcement_id_ = enforcement_helper_.Register(enforcement_literals, watcher,
-                                                 RegisterWith(watcher));
-}
-
 bool BooleanXorPropagator::Propagate() {
-  const EnforcementStatus status = enforcement_helper_.Status(enforcement_id_);
-  if (status == EnforcementStatus::IS_FALSE ||
-      status == EnforcementStatus::CANNOT_PROPAGATE) {
-    return true;
-  }
-
   bool sum = false;
   int unassigned_index = -1;
   for (int i = 0; i < literals_.size(); ++i) {
     const Literal l = literals_[i];
-    if (trail_.Assignment().LiteralIsFalse(l)) {
+    if (trail_->Assignment().LiteralIsFalse(l)) {
       sum ^= false;
-    } else if (trail_.Assignment().LiteralIsTrue(l)) {
+    } else if (trail_->Assignment().LiteralIsTrue(l)) {
       sum ^= true;
     } else {
       // If we have more than one unassigned literal, we can't deduce anything.
@@ -64,49 +42,41 @@ bool BooleanXorPropagator::Propagate() {
     }
   }
 
-  auto fill_literal_reason = [&]() {
+  // Propagates?
+  if (unassigned_index != -1) {
     literal_reason_.clear();
     for (int i = 0; i < literals_.size(); ++i) {
       if (i == unassigned_index) continue;
       const Literal l = literals_[i];
       literal_reason_.push_back(
-          trail_.Assignment().LiteralIsFalse(l) ? l : l.Negated());
+          trail_->Assignment().LiteralIsFalse(l) ? l : l.Negated());
     }
-  };
-
-  // Propagates?
-  if (status == EnforcementStatus::IS_ENFORCED && unassigned_index != -1) {
-    fill_literal_reason();
     const Literal u = literals_[unassigned_index];
-    return enforcement_helper_.EnqueueLiteral(
-        enforcement_id_, sum == value_ ? u.Negated() : u, literal_reason_,
-        /*integer_reason=*/{});
+    integer_trail_->EnqueueLiteral(sum == value_ ? u.Negated() : u,
+                                   literal_reason_, {});
+    return true;
   }
 
   // Ok.
   if (sum == value_) return true;
 
   // Conflict.
-  if (status == EnforcementStatus::IS_ENFORCED) {
-    fill_literal_reason();
-    return enforcement_helper_.ReportConflict(enforcement_id_, literal_reason_,
-                                              /*integer_reason=*/{});
-  } else if (unassigned_index == -1) {
-    fill_literal_reason();
-    return enforcement_helper_.PropagateWhenFalse(
-        enforcement_id_, literal_reason_, /*integer_reason=*/{});
-  } else {
-    return true;
+  std::vector<Literal>* conflict = trail_->MutableConflict();
+  conflict->clear();
+  for (int i = 0; i < literals_.size(); ++i) {
+    const Literal l = literals_[i];
+    conflict->push_back(trail_->Assignment().LiteralIsFalse(l) ? l
+                                                               : l.Negated());
   }
+  return false;
 }
 
-int BooleanXorPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
+void BooleanXorPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
   const int id = watcher->Register(this);
   for (const Literal& l : literals_) {
     watcher->WatchLiteral(l, id);
     watcher->WatchLiteral(l.Negated(), id);
   }
-  return id;
 }
 
 GreaterThanAtLeastOneOfPropagator::GreaterThanAtLeastOneOfPropagator(
@@ -120,19 +90,19 @@ GreaterThanAtLeastOneOfPropagator::GreaterThanAtLeastOneOfPropagator(
       trail_(model->GetOrCreate<Trail>()),
       integer_trail_(model->GetOrCreate<IntegerTrail>()) {}
 
-void GreaterThanAtLeastOneOfPropagator::Explain(int id,
-                                                IntegerLiteral to_explain,
-                                                IntegerReason* reason) {
+void GreaterThanAtLeastOneOfPropagator::Explain(
+    int id, IntegerValue propagation_slack, IntegerVariable /*var_to_explain*/,
+    int /*trail_index*/, std::vector<Literal>* literals_reason,
+    std::vector<int>* trail_indices_reason) {
+  literals_reason->clear();
+  trail_indices_reason->clear();
+
   const int first_non_false = id;
+  const IntegerValue target_min = propagation_slack;
 
-  // Note that even if we propagated more, we only need the reason for
-  // to_explain.bound, this is easy for that propagator.
-  CHECK_EQ(to_explain.var, target_var_);
-  const IntegerValue target_min = to_explain.bound;
-
-  reason->boolean_literals_at_true = enforcements_;
-
-  auto& literals_at_false = integer_trail_->ClearedMutableTmpLiterals();
+  for (const Literal l : enforcements_) {
+    literals_reason->push_back(l.Negated());
+  }
   for (int i = 0; i < first_non_false; ++i) {
     // If the level zero bounds is good enough, no reason needed.
     //
@@ -142,24 +112,11 @@ void GreaterThanAtLeastOneOfPropagator::Explain(int id,
       continue;
     }
 
-    literals_at_false.push_back(selectors_[i]);
+    literals_reason->push_back(selectors_[i]);
   }
-  reason->boolean_literals_at_false = literals_at_false;
-
-  // Add all greater than target_min reason.
-  auto& integer_literals = integer_trail_->ClearedMutableTmpIntegerLiterals();
-  for (const AffineExpression& expr :
-       absl::MakeSpan(exprs_).subspan(first_non_false)) {
-    if (expr.IsConstant()) {
-      DCHECK_GE(expr.constant, target_min);
-      continue;
-    }
-    DCHECK_NE(expr.var, kNoIntegerVariable);
-    const IntegerLiteral to_explain = expr.GreaterOrEqual(target_min);
-    if (integer_trail_->IsTrueAtLevelZero(to_explain)) continue;
-    integer_literals.push_back(to_explain);
-  }
-  reason->integer_literals = integer_literals;
+  integer_trail_->AddAllGreaterThanConstantReason(
+      absl::MakeSpan(exprs_).subspan(first_non_false), target_min,
+      trail_indices_reason);
 }
 
 bool GreaterThanAtLeastOneOfPropagator::Propagate() {

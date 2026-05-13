@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ORTOOLS_LINEAR_SOLVER_GLOP_UTILS_H_
-#define ORTOOLS_LINEAR_SOLVER_GLOP_UTILS_H_
+#ifndef OR_TOOLS_LINEAR_SOLVER_GLOP_UTILS_H_
+#define OR_TOOLS_LINEAR_SOLVER_GLOP_UTILS_H_
 
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/lp_data/lp_types.h"
@@ -29,4 +29,4 @@ glop::ConstraintStatus MPSolverToGlopConstraintStatus(MPSolver::BasisStatus s);
 
 }  // namespace operations_research
 
-#endif  // ORTOOLS_LINEAR_SOLVER_GLOP_UTILS_H_
+#endif  // OR_TOOLS_LINEAR_SOLVER_GLOP_UTILS_H_

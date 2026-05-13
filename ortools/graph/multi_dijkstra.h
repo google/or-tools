@@ -42,8 +42,8 @@
 //            }
 //          });
 
-#ifndef ORTOOLS_GRAPH_MULTI_DIJKSTRA_H_
-#define ORTOOLS_GRAPH_MULTI_DIJKSTRA_H_
+#ifndef OR_TOOLS_GRAPH_MULTI_DIJKSTRA_H_
+#define OR_TOOLS_GRAPH_MULTI_DIJKSTRA_H_
 
 #include <iostream>
 #include <ostream>
@@ -199,4 +199,4 @@ MultiDijkstra(const Graph& graph, ArcLengthFunctor arc_length_functor,
 
 }  // namespace operations_research
 
-#endif  // ORTOOLS_GRAPH_MULTI_DIJKSTRA_H_
+#endif  // OR_TOOLS_GRAPH_MULTI_DIJKSTRA_H_

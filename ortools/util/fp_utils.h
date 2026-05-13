@@ -19,8 +19,8 @@
 // IMPORTANT NOTICE: you need to compile your binary with -frounding-math if
 // you want to use rounding modes.
 
-#ifndef ORTOOLS_UTIL_FP_UTILS_H_
-#define ORTOOLS_UTIL_FP_UTILS_H_
+#ifndef OR_TOOLS_UTIL_FP_UTILS_H_
+#define OR_TOOLS_UTIL_FP_UTILS_H_
 
 #include <algorithm>
 #include <cmath>
@@ -253,11 +253,6 @@ inline FloatType Interpolate(FloatType x, FloatType y, FloatType alpha) {
   return alpha * x + (1 - alpha) * y;
 }
 
-inline int fast_ilogb(double value) { return ilogb(value); }
-inline double fast_scalbn(double value, int exponent) {
-  return scalbn(value, exponent);
-}
-
 }  // namespace operations_research
 
-#endif  // ORTOOLS_UTIL_FP_UTILS_H_
+#endif  // OR_TOOLS_UTIL_FP_UTILS_H_

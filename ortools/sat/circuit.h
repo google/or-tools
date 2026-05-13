@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ORTOOLS_SAT_CIRCUIT_H_
-#define ORTOOLS_SAT_CIRCUIT_H_
+#ifndef OR_TOOLS_SAT_CIRCUIT_H_
+#define OR_TOOLS_SAT_CIRCUIT_H_
 
 #include <functional>
 #include <utility>
@@ -22,8 +22,6 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/types/span.h"
 #include "ortools/graph/strongly_connected_components.h"
-#include "ortools/sat/enforcement.h"
-#include "ortools/sat/enforcement_helper.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
@@ -55,7 +53,6 @@ class CircuitPropagator : PropagatorInterface, ReversibleInterface {
   // being present when the given literal is true.
   CircuitPropagator(int num_nodes, absl::Span<const int> tails,
                     absl::Span<const int> heads,
-                    absl::Span<const Literal> enforcement_literals,
                     absl::Span<const Literal> literals, Options options,
                     Model* model);
 
@@ -66,10 +63,9 @@ class CircuitPropagator : PropagatorInterface, ReversibleInterface {
   void SetLevel(int level) final;
   bool Propagate() final;
   bool IncrementalPropagate(const std::vector<int>& watch_indices) final;
+  void RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
-  int RegisterWith(GenericLiteralWatcher* watcher);
-
   // Updates the structures when the given arc is added to the paths.
   void AddArc(int tail, int head, LiteralIndex literal_index);
 
@@ -78,17 +74,10 @@ class CircuitPropagator : PropagatorInterface, ReversibleInterface {
   // start (not like a rho shape).
   void FillReasonForPath(int start_node, std::vector<Literal>* reason) const;
 
-  // Reports a conflict if the constraint is enforced, or propagates the unique
-  // unassigned enforcement literal otherwise.
-  bool ReportConflictOrPropagateEnforcement(std::vector<Literal>* reason);
-
   const int num_nodes_;
   const Options options_;
-  Trail& trail_;
-  EnforcementHelper& enforcement_helper_;
-  EnforcementId enforcement_id_;
+  Trail* trail_;
   const VariablesAssignment& assignment_;
-  bool enabled_;
 
   // We use this to query in O(1) for an arc existence. The self-arcs are
   // accessed often, so we use a more efficient std::vector<> for them. Note
@@ -125,7 +114,6 @@ class CircuitPropagator : PropagatorInterface, ReversibleInterface {
   // Temporary vectors.
   std::vector<bool> processed_;
   std::vector<bool> in_current_path_;
-  std::vector<Literal> temp_reason_;
 };
 
 // Enforce the fact that there is no cycle in the given directed graph.
@@ -258,7 +246,6 @@ int ReindexArcs(IntContainer* tails, IntContainer* heads,
 // problem to be UNSAT. One can call ReindexArcs() first to ignore such nodes.
 void LoadSubcircuitConstraint(int num_nodes, absl::Span<const int> tails,
                               absl::Span<const int> heads,
-                              absl::Span<const Literal> enforcement_literals,
                               absl::Span<const Literal> literals, Model* model,
                               bool multiple_subcircuit_through_zero = false);
 
@@ -272,4 +259,4 @@ std::function<void(Model*)> CircuitCovering(
 }  // namespace sat
 }  // namespace operations_research
 
-#endif  // ORTOOLS_SAT_CIRCUIT_H_
+#endif  // OR_TOOLS_SAT_CIRCUIT_H_

@@ -113,8 +113,7 @@ bool SolveUsingConstraint(const EnergyInstance& instance) {
       model.Add(ConstantIntegerVariable(instance.capacity)));
 
   auto* repo = model.GetOrCreate<IntervalsRepository>();
-  SchedulingConstraintHelper* helper =
-      repo->GetOrCreateHelper(/*enforcement_literals=*/{}, intervals);
+  SchedulingConstraintHelper* helper = repo->GetOrCreateHelper(intervals);
   SchedulingDemandHelper* demands_helper =
       new SchedulingDemandHelper({}, helper, &model);
   demands_helper->OverrideDecomposedEnergies(decomposed_energies);
@@ -177,8 +176,8 @@ bool SolveUsingNaiveModel(const EnergyInstance& instance) {
   std::vector<IntervalVariable> intervals;
   std::vector<AffineExpression> consumptions;
   IntegerVariable one = model.Add(ConstantIntegerVariable(1));
-  auto* intervals_repository = model.GetOrCreate<IntervalsRepository>();
-  auto* precedences = model.GetOrCreate<PrecedencesPropagator>();
+  IntervalsRepository* intervals_repository =
+      model.GetOrCreate<IntervalsRepository>();
 
   for (const auto& task : instance.tasks) {
     if (task.is_optional) {
@@ -208,7 +207,7 @@ bool SolveUsingNaiveModel(const EnergyInstance& instance) {
         CHECK_NE(start_expr.var, kNoIntegerVariable);
         const IntegerVariable start = start_expr.var;
         if (previous_start != kNoIntegerVariable) {
-          precedences->AddPrecedence(previous_start, start);
+          model.Add(LowerOrEqual(previous_start, start));
         } else {
           first_start = start;
         }
@@ -216,15 +215,15 @@ bool SolveUsingNaiveModel(const EnergyInstance& instance) {
       }
       // start[last] <= start[0] + duration_max - 1
       if (previous_start != kNoIntegerVariable) {
-        precedences->AddPrecedenceWithOffset(previous_start, first_start,
-                                             -task.duration_max + 1);
+        model.Add(LowerOrEqualWithOffset(previous_start, first_start,
+                                         -task.duration_max + 1));
       }
     }
   }
 
   SatParameters params =
       model.Add(NewSatParameters("use_overload_checker_in_cumulative:true"));
-  model.Add(Cumulative(/*enforcement_literals=*/{}, intervals, consumptions,
+  model.Add(Cumulative(intervals, consumptions,
                        AffineExpression(IntegerValue(instance.capacity))));
 
   return SolveIntegerProblemWithLazyEncoding(&model) ==
@@ -304,8 +303,7 @@ bool TestOverloadCheckerPropagation(
 
   // Propagator responsible for filtering the capacity variable.
   auto* repo = model.GetOrCreate<IntervalsRepository>();
-  SchedulingConstraintHelper* helper =
-      repo->GetOrCreateHelper(/*enforcement_literals=*/{}, interval_vars);
+  SchedulingConstraintHelper* helper = repo->GetOrCreateHelper(interval_vars);
   SchedulingDemandHelper* demands_helper =
       new SchedulingDemandHelper(demands, helper, &model);
   model.TakeOwnership(demands_helper);
@@ -414,8 +412,7 @@ TEST(OverloadCheckerTest, OptionalTaskPropagatedToAbsent) {
       model.Add(NewOptionalInterval(0, 10, /*size=*/8, is_present));
 
   auto* repo = model.GetOrCreate<IntervalsRepository>();
-  SchedulingConstraintHelper* helper =
-      repo->GetOrCreateHelper(/*enforcement_literals=*/{}, {i1, i2});
+  SchedulingConstraintHelper* helper = repo->GetOrCreateHelper({i1, i2});
   const AffineExpression cte(IntegerValue(2));
   SchedulingDemandHelper* demands_helper =
       new SchedulingDemandHelper({cte, cte}, helper, &model);
@@ -435,8 +432,7 @@ TEST(OverloadCheckerTest, OptionalTaskMissedPropagationCase) {
       model.Add(NewOptionalInterval(0, 10, /*size=*/8, is_present));
 
   auto* repo = model.GetOrCreate<IntervalsRepository>();
-  SchedulingConstraintHelper* helper =
-      repo->GetOrCreateHelper(/*enforcement_literals=*/{}, {i1, i2});
+  SchedulingConstraintHelper* helper = repo->GetOrCreateHelper({i1, i2});
   const AffineExpression cte(IntegerValue(2));
   SchedulingDemandHelper* demands_helper =
       new SchedulingDemandHelper({cte, cte}, helper, &model);
@@ -519,8 +515,7 @@ bool TestIsAfterCumulative(absl::Span<const CumulativeTasks> tasks,
 
   // Propagator responsible for filtering the capacity variable.
   auto* repo = model.GetOrCreate<IntervalsRepository>();
-  SchedulingConstraintHelper* helper =
-      repo->GetOrCreateHelper(/*enforcement_literals=*/{}, interval_vars);
+  SchedulingConstraintHelper* helper = repo->GetOrCreateHelper(interval_vars);
   SchedulingDemandHelper* demands_helper =
       new SchedulingDemandHelper(demands, helper, &model);
   model.TakeOwnership(demands_helper);

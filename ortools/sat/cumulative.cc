@@ -34,7 +34,6 @@
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
-#include "ortools/sat/scheduling_helpers.h"
 #include "ortools/sat/timetable.h"
 #include "ortools/sat/timetable_edgefinding.h"
 #include "ortools/util/strong_integers.h"
@@ -43,7 +42,6 @@ namespace operations_research {
 namespace sat {
 
 std::function<void(Model*)> Cumulative(
-    const std::vector<Literal>& enforcement_literals,
     const std::vector<IntervalVariable>& vars,
     absl::Span<const AffineExpression> demands, AffineExpression capacity,
     SchedulingConstraintHelper* helper) {
@@ -55,15 +53,8 @@ std::function<void(Model*)> Cumulative(
     auto* watcher = model->GetOrCreate<GenericLiteralWatcher>();
     SatSolver* sat_solver = model->GetOrCreate<SatSolver>();
 
-    if (enforcement_literals.empty()) {
-      if (!integer_trail->SafeEnqueue(capacity.GreaterOrEqual(0), {})) {
-        sat_solver->NotifyThatModelIsUnsat();
-      }
-    } else {
-      LinearConstraintBuilder builder(model, IntegerValue(0), kMaxIntegerValue);
-      builder.AddTerm(capacity, IntegerValue(1));
-      LoadConditionalLinearConstraint(enforcement_literals, builder.Build(),
-                                      model);
+    if (!integer_trail->SafeEnqueue(capacity.GreaterOrEqual(0), {})) {
+      sat_solver->NotifyThatModelIsUnsat();
     }
     if (demands.empty()) {
       // If there is no demand, since we already added a constraint that the
@@ -83,25 +74,23 @@ std::function<void(Model*)> Cumulative(
       builder.AddTerm(capacity, IntegerValue(-1));
       LinearConstraint ct = builder.Build();
 
-      std::vector<Literal> task_enforcement_literals = enforcement_literals;
+      std::vector<Literal> enforcement_literals;
       if (intervals->IsOptional(vars[i])) {
-        task_enforcement_literals.push_back(
-            intervals->PresenceLiteral(vars[i]));
+        enforcement_literals.push_back(intervals->PresenceLiteral(vars[i]));
       }
 
       // If the interval can be of size zero, it currently do not count towards
       // the capacity. TODO(user): Change that since we have optional interval
       // for this.
       if (intervals->MinSize(vars[i]) <= 0) {
-        task_enforcement_literals.push_back(
-            encoder->GetOrCreateAssociatedLiteral(
-                intervals->Size(vars[i]).GreaterOrEqual(IntegerValue(1))));
+        enforcement_literals.push_back(encoder->GetOrCreateAssociatedLiteral(
+            intervals->Size(vars[i]).GreaterOrEqual(IntegerValue(1))));
       }
 
-      if (task_enforcement_literals.empty()) {
+      if (enforcement_literals.empty()) {
         LoadLinearConstraint(ct, model);
       } else {
-        LoadConditionalLinearConstraint(task_enforcement_literals, ct, model);
+        LoadConditionalLinearConstraint(enforcement_literals, ct, model);
       }
     }
 
@@ -165,13 +154,12 @@ std::function<void(Model*)> Cumulative(
       //
       // TODO(user): A better place for stuff like this could be in the
       // presolver so that it is easier to disable and play with alternatives.
-      if (in_disjunction.size() > 1)
-        AddDisjunctive(enforcement_literals, in_disjunction, model);
+      if (in_disjunction.size() > 1) AddDisjunctive(in_disjunction, model);
       if (in_disjunction.size() == vars.size()) return;
     }
 
     if (helper == nullptr) {
-      helper = intervals->GetOrCreateHelper(enforcement_literals, vars);
+      helper = intervals->GetOrCreateHelper(vars);
     }
     SchedulingDemandHelper* demands_helper =
         intervals->GetOrCreateDemandHelper(helper, demands);
@@ -224,8 +212,8 @@ std::function<void(Model*)> Cumulative(
       // having two independent constraint doing the same propagation.
       std::vector<FullIntegerPrecedence> full_precedences;
       if (parameters.exploit_all_precedences()) {
-        model->GetOrCreate<TransitivePrecedencesEvaluator>()
-            ->ComputeFullPrecedences(index_to_end_vars, &full_precedences);
+        model->GetOrCreate<PrecedenceRelations>()->ComputeFullPrecedences(
+            index_to_end_vars, &full_precedences);
       }
       for (const FullIntegerPrecedence& data : full_precedences) {
         const int size = data.indices.size();
@@ -304,11 +292,9 @@ std::function<void(Model*)> Cumulative(
 }
 
 std::function<void(Model*)> CumulativeTimeDecomposition(
-    absl::Span<const Literal> enforcement_literals,
     absl::Span<const IntervalVariable> vars,
     absl::Span<const AffineExpression> demands, AffineExpression capacity,
-    SchedulingConstraintHelper* /*helper*/) {
-  CHECK(enforcement_literals.empty());
+    SchedulingConstraintHelper* helper) {
   return [=, vars = std::vector<IntervalVariable>(vars.begin(), vars.end()),
           demands = std::vector<AffineExpression>(
               demands.begin(), demands.end())](Model* model) {
@@ -390,10 +376,9 @@ std::function<void(Model*)> CumulativeTimeDecomposition(
 }
 
 std::function<void(Model*)> CumulativeUsingReservoir(
-    absl::Span<const Literal> enforcement_literals,
     absl::Span<const IntervalVariable> vars,
     absl::Span<const AffineExpression> demands, AffineExpression capacity,
-    SchedulingConstraintHelper* /*helper*/) {
+    SchedulingConstraintHelper* helper) {
   return [=, vars = std::vector<IntervalVariable>(vars.begin(), vars.end()),
           demands = std::vector<AffineExpression>(
               demands.begin(), demands.end())](Model* model) {
@@ -426,8 +411,8 @@ std::function<void(Model*)> CumulativeUsingReservoir(
         presences.push_back(encoder->GetTrueLiteral());
       }
     }
-    AddReservoirConstraint(enforcement_literals, times, deltas, presences, 0,
-                           fixed_capacity.value(), model);
+    AddReservoirConstraint(times, deltas, presences, 0, fixed_capacity.value(),
+                           model);
   };
 }
 

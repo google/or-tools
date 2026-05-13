@@ -26,15 +26,16 @@
 
 #include "absl/functional/bind_front.h"
 #include "absl/log/check.h"
-#include "absl/log/log.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "google/protobuf/repeated_ptr_field.h"
+#include "ortools/base/logging.h"
 #include "ortools/base/protoutil.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/routing.h"
 #include "ortools/constraint_solver/routing_ils.pb.h"
 #include "ortools/constraint_solver/routing_parameters.pb.h"
+#include "ortools/constraint_solver/routing_parameters_utils.h"
 #include "ortools/constraint_solver/routing_search.h"
 #include "ortools/constraint_solver/routing_types.h"
 
@@ -64,25 +65,20 @@ MakeGlobalCheapestInsertionParameters(
   return gci_parameters;
 }
 
-// Returns local cheapest insertion parameters based on the given recreate
-// strategy if available. Returns default parameters otherwise.
-LocalCheapestInsertionParameters
-GetLocalCheapestInsertionParametersForRecreateStrategy(
-    const RecreateStrategy& recreate_strategy,
-    const LocalCheapestInsertionParameters& default_parameters) {
-  return recreate_strategy.has_parameters() &&
-                 recreate_strategy.parameters().has_local_cheapest_insertion()
-             ? recreate_strategy.parameters().local_cheapest_insertion()
-             : default_parameters;
-}
-
-SavingsParameters GetSavingsParametersForRecreateStrategy(
-    const RecreateStrategy& recreate_strategy,
-    const SavingsParameters& default_parameters) {
-  return recreate_strategy.has_parameters() &&
-                 recreate_strategy.parameters().has_savings()
-             ? recreate_strategy.parameters().savings()
-             : default_parameters;
+// Returns savings parameters based on the given search parameters.
+// TODO(user): consider having an ILS specific set of parameters.
+SavingsFilteredHeuristic::SavingsParameters MakeSavingsParameters(
+    const RoutingSearchParameters& search_parameters) {
+  SavingsFilteredHeuristic::SavingsParameters savings_parameters;
+  savings_parameters.neighbors_ratio =
+      search_parameters.savings_neighbors_ratio();
+  savings_parameters.max_memory_usage_bytes =
+      search_parameters.savings_max_memory_usage_bytes();
+  savings_parameters.add_reverse_arcs =
+      search_parameters.savings_add_reverse_arcs();
+  savings_parameters.arc_coefficient =
+      search_parameters.savings_arc_coefficient();
+  return savings_parameters;
 }
 
 // Returns a ruin procedure based on the given ruin strategy.
@@ -230,29 +226,25 @@ std::unique_ptr<RoutingFilteredHeuristic> MakeRecreateProcedure(
     const RoutingSearchParameters& parameters, RoutingModel* model,
     std::function<bool()> stop_search,
     LocalSearchFilterManager* filter_manager) {
-  const RecreateStrategy& recreate_strategy =
-      parameters.iterated_local_search_parameters()
-          .ruin_recreate_parameters()
-          .recreate_strategy();
-  switch (recreate_strategy.heuristic()) {
-    case FirstSolutionStrategy::LOCAL_CHEAPEST_INSERTION: {
+  switch (parameters.iterated_local_search_parameters()
+              .ruin_recreate_parameters()
+              .recreate_strategy()) {
+    case FirstSolutionStrategy::LOCAL_CHEAPEST_INSERTION:
       return std::make_unique<LocalCheapestInsertionFilteredHeuristic>(
           model, std::move(stop_search),
           absl::bind_front(&RoutingModel::GetArcCostForVehicle, model),
-          GetLocalCheapestInsertionParametersForRecreateStrategy(
-              recreate_strategy,
-              parameters.local_cheapest_insertion_parameters()),
+          parameters.local_cheapest_cost_insertion_pickup_delivery_strategy(),
+          GetLocalCheapestInsertionSortingProperties(
+              parameters.local_cheapest_insertion_sorting_properties()),
           filter_manager, model->GetBinCapacities());
-    }
-    case FirstSolutionStrategy::LOCAL_CHEAPEST_COST_INSERTION: {
+    case FirstSolutionStrategy::LOCAL_CHEAPEST_COST_INSERTION:
       return std::make_unique<LocalCheapestInsertionFilteredHeuristic>(
           model, std::move(stop_search),
           /*evaluator=*/nullptr,
-          GetLocalCheapestInsertionParametersForRecreateStrategy(
-              recreate_strategy,
-              parameters.local_cheapest_cost_insertion_parameters()),
+          parameters.local_cheapest_cost_insertion_pickup_delivery_strategy(),
+          GetLocalCheapestInsertionSortingProperties(
+              parameters.local_cheapest_insertion_sorting_properties()),
           filter_manager, model->GetBinCapacities());
-    }
     case FirstSolutionStrategy::SEQUENTIAL_CHEAPEST_INSERTION: {
       GlobalCheapestInsertionFilteredHeuristic::
           GlobalCheapestInsertionParameters gci_parameters =
@@ -277,16 +269,12 @@ std::unique_ptr<RoutingFilteredHeuristic> MakeRecreateProcedure(
     }
     case FirstSolutionStrategy::SAVINGS: {
       return std::make_unique<SequentialSavingsFilteredHeuristic>(
-          model, std::move(stop_search),
-          GetSavingsParametersForRecreateStrategy(
-              recreate_strategy, parameters.savings_parameters()),
+          model, std::move(stop_search), MakeSavingsParameters(parameters),
           filter_manager);
     }
     case FirstSolutionStrategy::PARALLEL_SAVINGS: {
       return std::make_unique<ParallelSavingsFilteredHeuristic>(
-          model, std::move(stop_search),
-          GetSavingsParametersForRecreateStrategy(
-              recreate_strategy, parameters.savings_parameters()),
+          model, std::move(stop_search), MakeSavingsParameters(parameters),
           filter_manager);
     }
     default:
@@ -385,20 +373,33 @@ class LinearCoolingSchedule : public CoolingSchedule {
 
 // Returns a cooling schedule based on the given input parameters.
 std::unique_ptr<CoolingSchedule> MakeCoolingSchedule(
-    const RoutingModel& model,
-    const SimulatedAnnealingAcceptanceStrategy& sa_params,
-    const NeighborAcceptanceCriterion::SearchState& final_search_state,
+    const RoutingModel& model, const RoutingSearchParameters& parameters,
     std::mt19937* rnd) {
+  const absl::Duration final_duration =
+      !parameters.has_time_limit()
+          ? absl::InfiniteDuration()
+          : util_time::DecodeGoogleApiProto(parameters.time_limit()).value();
+
+  const SimulatedAnnealingParameters& sa_params =
+      parameters.iterated_local_search_parameters()
+          .simulated_annealing_parameters();
+
+  NeighborAcceptanceCriterion::SearchState final_search_state{
+      final_duration, parameters.solution_limit()};
+
   const auto [initial_temperature, final_temperature] =
       GetSimulatedAnnealingTemperatures(model, sa_params, rnd);
 
   switch (sa_params.cooling_schedule_strategy()) {
     case CoolingScheduleStrategy::EXPONENTIAL:
       return std::make_unique<ExponentialCoolingSchedule>(
-          final_search_state, initial_temperature, final_temperature);
+          NeighborAcceptanceCriterion::SearchState{final_duration,
+                                                   parameters.solution_limit()},
+          initial_temperature, final_temperature);
     case CoolingScheduleStrategy::LINEAR:
       return std::make_unique<LinearCoolingSchedule>(
-          final_search_state, initial_temperature, final_temperature);
+          std::move(final_search_state), initial_temperature,
+          final_temperature);
     default:
       LOG(DFATAL) << "Unsupported cooling schedule strategy.";
       return nullptr;
@@ -429,43 +430,6 @@ class SimulatedAnnealingAcceptanceCriterion
   std::unique_ptr<CoolingSchedule> cooling_schedule_;
   std::mt19937 rnd_;
   std::uniform_real_distribution<double> probability_distribution_;
-};
-
-// Acceptance criterion in which a candidate assignment is accepted when it has
-// all nodes performed.
-class AllNodesPerformedAcceptanceCriterion
-    : public NeighborAcceptanceCriterion {
- public:
-  explicit AllNodesPerformedAcceptanceCriterion(const RoutingModel& model)
-      : model_(model) {}
-
-  bool Accept([[maybe_unused]] const SearchState& search_state,
-              const Assignment* candidate,
-              [[maybe_unused]] const Assignment* reference) override {
-    for (RoutingModel::DisjunctionIndex d(0);
-         d < model_.GetNumberOfDisjunctions(); ++d) {
-      // This solution avoids counting non-fixed variables as inactive.
-      int num_possible_actives = model_.GetDisjunctionNodeIndices(d).size();
-      for (const int64_t node : model_.GetDisjunctionNodeIndices(d)) {
-        if (candidate->Value(model_.NextVar(node)) == node) {
-          --num_possible_actives;
-        }
-      }
-      if (num_possible_actives < model_.GetDisjunctionMaxCardinality(d)) {
-        return false;
-      }
-    }
-
-    for (int node = 0; node < model_.Size(); ++node) {
-      if (model_.IsStart(node) || model_.IsEnd(node)) continue;
-      if (!model_.GetDisjunctionIndices(node).empty()) continue;
-      if (candidate->Value(model_.NextVar(node)) == node) return false;
-    }
-    return true;
-  }
-
- private:
-  const RoutingModel& model_;
 };
 
 // Returns whether the given assignment has at least one performed node.
@@ -503,21 +467,21 @@ double ComputeAverageNonEmptyRouteSize(const RoutingModel& model,
 // performed visits.
 int64_t PickRandomPerformedVisit(
     const RoutingModel& model, const Assignment& assignment, std::mt19937& rnd,
-    std::uniform_int_distribution<int64_t>& node_dist) {
-  DCHECK_EQ(node_dist.min(), 0);
-  DCHECK_EQ(node_dist.max(), model.Size() - model.vehicles());
+    std::uniform_int_distribution<int64_t>& customer_dist) {
+  DCHECK_EQ(customer_dist.min(), 0);
+  DCHECK_EQ(customer_dist.max(), model.Size() - model.vehicles());
 
   if (!HasPerformedNodes(model, assignment)) {
     return -1;
   }
 
-  int64_t node;
+  int64_t customer;
   do {
-    node = node_dist(rnd);
-  } while (model.IsStart(node) ||
-           assignment.Value(model.VehicleVar(node)) == -1);
-  DCHECK(!model.IsEnd(node));
-  return node;
+    customer = customer_dist(rnd);
+  } while (model.IsStart(customer) ||
+           assignment.Value(model.VehicleVar(customer)) == -1);
+  DCHECK(!model.IsEnd(customer));
+  return customer;
 }
 }  // namespace
 
@@ -570,20 +534,20 @@ void RoutingSolution::InitializeRouteInfoIfNeeded(int vehicle) {
   prevs_[end] = prev;
 }
 
-bool RoutingSolution::BelongsToInitializedRoute(int64_t node) const {
-  DCHECK_EQ(nexts_[node] != -1, prevs_[node] != -1);
-  return nexts_[node] != -1;
+bool RoutingSolution::BelongsToInitializedRoute(int64_t node_index) const {
+  DCHECK_EQ(nexts_[node_index] != -1, prevs_[node_index] != -1);
+  return nexts_[node_index] != -1;
 }
 
-int64_t RoutingSolution::GetNextNodeIndex(int64_t node) const {
-  return BelongsToInitializedRoute(node)
-             ? nexts_[node]
-             : assignment_->Value(model_.NextVar(node));
+int64_t RoutingSolution::GetNextNodeIndex(int64_t node_index) const {
+  return BelongsToInitializedRoute(node_index)
+             ? nexts_[node_index]
+             : assignment_->Value(model_.NextVar(node_index));
 }
 
-int64_t RoutingSolution::GetInitializedPrevNodeIndex(int64_t node) const {
-  DCHECK(BelongsToInitializedRoute(node));
-  return prevs_[node];
+int64_t RoutingSolution::GetInitializedPrevNodeIndex(int64_t node_index) const {
+  DCHECK(BelongsToInitializedRoute(node_index));
+  return prevs_[node_index];
 }
 
 int RoutingSolution::GetRouteSize(int vehicle) const {
@@ -591,40 +555,37 @@ int RoutingSolution::GetRouteSize(int vehicle) const {
   return route_sizes_[vehicle];
 }
 
-bool RoutingSolution::CanBeRemoved(int64_t node) const {
-  return !model_.IsStart(node) && !model_.IsEnd(node) &&
-         GetNextNodeIndex(node) != node;
+bool RoutingSolution::CanBeRemoved(int64_t node_index) const {
+  return !model_.IsStart(node_index) && !model_.IsEnd(node_index) &&
+         GetNextNodeIndex(node_index) != node_index;
 }
 
-void RoutingSolution::RemoveNode(int64_t node) {
-  DCHECK(BelongsToInitializedRoute(node));
+void RoutingSolution::RemoveNode(int64_t node_index) {
+  DCHECK(BelongsToInitializedRoute(node_index));
 
-  DCHECK_NE(nexts_[node], node);
-  DCHECK_NE(prevs_[node], node);
+  DCHECK_NE(nexts_[node_index], node_index);
+  DCHECK_NE(prevs_[node_index], node_index);
 
-  const int64_t next = nexts_[node];
-  const int64_t prev = prevs_[node];
+  const int64_t next = nexts_[node_index];
+  const int64_t prev = prevs_[node_index];
 
-  const int vehicle = assignment_->Value(model_.VehicleVar(node));
+  const int vehicle = assignment_->Value(model_.VehicleVar(node_index));
   --route_sizes_[vehicle];
   DCHECK_GE(route_sizes_[vehicle], 0);
 
   nexts_[prev] = next;
   prevs_[next] = prev;
 
-  nexts_[node] = node;
-  prevs_[node] = node;
+  nexts_[node_index] = node_index;
+  prevs_[node_index] = node_index;
 }
 
-void RoutingSolution::RemovePerformedPickupDeliverySibling(int64_t node) {
-  DCHECK(!model_.IsStart(node));
-  DCHECK(!model_.IsEnd(node));
+void RoutingSolution::RemovePerformedPickupDeliverySibling(int64_t customer) {
+  DCHECK(!model_.IsStart(customer));
+  DCHECK(!model_.IsEnd(customer));
   if (const std::optional<int64_t> sibling_node =
           model_.GetFirstMatchingPickupDeliverySibling(
-              node,
-              [this](int64_t candidate_node) {
-                return CanBeRemoved(candidate_node);
-              });
+              customer, [this](int64_t node) { return CanBeRemoved(node); });
       sibling_node.has_value()) {
     const int sibling_vehicle =
         assignment_->Value(model_.VehicleVar(sibling_node.value()));
@@ -780,7 +741,7 @@ CloseRoutesRemovalRuinProcedure::CloseRoutesRemovalRuinProcedure(
            /*only_sort_neighbors_for_partial_neighborhoods=*/false})),
       num_routes_(num_routes),
       rnd_(*rnd),
-      node_dist_(0, model->Size() - model->vehicles()),
+      customer_dist_(0, model->Size() - model->vehicles()),
       removed_routes_(model->vehicles()) {}
 
 std::function<int64_t(int64_t)> CloseRoutesRemovalRuinProcedure::Ruin(
@@ -792,7 +753,7 @@ std::function<int64_t(int64_t)> CloseRoutesRemovalRuinProcedure::Ruin(
   }
 
   const int64_t seed_node =
-      PickRandomPerformedVisit(model_, *assignment, rnd_, node_dist_);
+      PickRandomPerformedVisit(model_, *assignment, rnd_, customer_dist_);
   if (seed_node == -1) {
     return [this, assignment](int64_t node) {
       return assignment->Value(model_.NextVar(node));
@@ -826,7 +787,7 @@ std::function<int64_t(int64_t)> CloseRoutesRemovalRuinProcedure::Ruin(
   }
 
   return [this, assignment](int64_t node) {
-    // Shortcut removed routes to remove associated nodes.
+    // Shortcut removed routes to remove associated customers.
     if (model_.IsStart(node)) {
       const int route = assignment->Value(model_.VehicleVar(node));
       if (removed_routes_[route]) {
@@ -849,7 +810,7 @@ RandomWalkRemovalRuinProcedure::RandomWalkRemovalRuinProcedure(
            /*only_sort_neighbors_for_partial_neighborhoods=*/false})),
       rnd_(*rnd),
       walk_length_(walk_length),
-      node_dist_(0, model->Size() - model->vehicles()) {}
+      customer_dist_(0, model->Size() - model->vehicles()) {}
 
 std::function<int64_t(int64_t)> RandomWalkRemovalRuinProcedure::Ruin(
     const Assignment* assignment) {
@@ -860,7 +821,7 @@ std::function<int64_t(int64_t)> RandomWalkRemovalRuinProcedure::Ruin(
   }
 
   int64_t curr_node =
-      PickRandomPerformedVisit(model_, *assignment, rnd_, node_dist_);
+      PickRandomPerformedVisit(model_, *assignment, rnd_, customer_dist_);
   if (curr_node == -1) {
     return [this, assignment](int64_t node) {
       return assignment->Value(model_.NextVar(node));
@@ -935,8 +896,8 @@ int64_t RandomWalkRemovalRuinProcedure::GetNextNodeToRemove(
     return neighbor;
   }
 
-  // If we are not able to find a node in another route, we are ok
-  // with taking a node from the current one.
+  // If we are not able to find a customer in another route, we are ok
+  // with taking a customer from the current one.
   // Note that it can be -1 if no removable neighbor was found for the input
   // node.
   return same_route_closest_neighbor;
@@ -956,7 +917,7 @@ SISRRuinProcedure::SISRRuinProcedure(RoutingModel* model, std::mt19937* rnd,
            /*add_vehicle_starts_to_neighbors=*/false,
            /*add_vehicle_ends_to_neighbors=*/false,
            /*only_sort_neighbors_for_partial_neighborhoods=*/false})),
-      node_dist_(0, model->Size() - model->vehicles()),
+      customer_dist_(0, model->Size() - model->vehicles()),
       probability_dist_(0.0, 1.0),
       ruined_routes_(model->vehicles()),
       routing_solution_(*model) {}
@@ -964,7 +925,7 @@ SISRRuinProcedure::SISRRuinProcedure(RoutingModel* model, std::mt19937* rnd,
 std::function<int64_t(int64_t)> SISRRuinProcedure::Ruin(
     const Assignment* assignment) {
   const int64_t seed_node =
-      PickRandomPerformedVisit(model_, *assignment, rnd_, node_dist_);
+      PickRandomPerformedVisit(model_, *assignment, rnd_, customer_dist_);
   if (seed_node == -1) {
     return [this, assignment](int64_t node) {
       return assignment->Value(model_.NextVar(node));
@@ -1153,19 +1114,15 @@ DecisionBuilder* MakePerturbationDecisionBuilder(
 }
 
 std::unique_ptr<NeighborAcceptanceCriterion> MakeNeighborAcceptanceCriterion(
-    const RoutingModel& model, const AcceptanceStrategy& acceptance_strategy,
-    const NeighborAcceptanceCriterion::SearchState& final_search_state,
+    const RoutingModel& model, const RoutingSearchParameters& parameters,
     std::mt19937* rnd) {
-  switch (acceptance_strategy.strategy_case()) {
-    case AcceptanceStrategy::kGreedyDescent:
+  CHECK(parameters.has_iterated_local_search_parameters());
+  switch (parameters.iterated_local_search_parameters().acceptance_strategy()) {
+    case AcceptanceStrategy::GREEDY_DESCENT:
       return std::make_unique<GreedyDescentAcceptanceCriterion>();
-    case AcceptanceStrategy::kSimulatedAnnealing:
+    case AcceptanceStrategy::SIMULATED_ANNEALING:
       return std::make_unique<SimulatedAnnealingAcceptanceCriterion>(
-          MakeCoolingSchedule(model, acceptance_strategy.simulated_annealing(),
-                              final_search_state, rnd),
-          rnd);
-    case AcceptanceStrategy::kAllNodesPerformed:
-      return std::make_unique<AllNodesPerformedAcceptanceCriterion>(model);
+          MakeCoolingSchedule(model, parameters, rnd), rnd);
     default:
       LOG(DFATAL) << "Unsupported acceptance strategy.";
       return nullptr;
@@ -1173,8 +1130,8 @@ std::unique_ptr<NeighborAcceptanceCriterion> MakeNeighborAcceptanceCriterion(
 }
 
 std::pair<double, double> GetSimulatedAnnealingTemperatures(
-    const RoutingModel& model,
-    const SimulatedAnnealingAcceptanceStrategy& sa_params, std::mt19937* rnd) {
+    const RoutingModel& model, const SimulatedAnnealingParameters& sa_params,
+    std::mt19937* rnd) {
   if (!sa_params.automatic_temperatures()) {
     return {sa_params.initial_temperature(), sa_params.final_temperature()};
   }

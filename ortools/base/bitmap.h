@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ORTOOLS_BASE_BITMAP_H_
-#define ORTOOLS_BASE_BITMAP_H_
+#ifndef OR_TOOLS_BASE_BITMAP_H_
+#define OR_TOOLS_BASE_BITMAP_H_
 
 #include <cassert>
 #include <cstdint>
@@ -84,4 +84,4 @@ class Bitmap {
 
 }  // namespace operations_research
 
-#endif  // ORTOOLS_BASE_BITMAP_H_
+#endif  // OR_TOOLS_BASE_BITMAP_H_

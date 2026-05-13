@@ -128,13 +128,9 @@ endif()
 
 option(BUILD_PYTHON "Build Python Library" OFF)
 message(STATUS "Build Python: ${BUILD_PYTHON}")
-option(BUILD_JAVA "Build Java Library" OFF)
-message(STATUS "Build Java: ${BUILD_JAVA}")
-option(BUILD_DOTNET "Build .NET Library" OFF)
-message(STATUS "Build .Net: ${BUILD_DOTNET}")
 
 # If wrapper are built, we need to have the install rpath in BINARY_DIR to package
-if(BUILD_PYTHON OR BUILD_JAVA OR BUILD_DOTNET)
+if(BUILD_PYTHON)
   set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 endif()
 
@@ -156,10 +152,6 @@ CMAKE_DEPENDENT_OPTION(BUILD_CXX_SAMPLES "Build cxx samples" ON "BUILD_SAMPLES;B
 message(STATUS "Build C++ samples: ${BUILD_CXX_SAMPLES}")
 CMAKE_DEPENDENT_OPTION(BUILD_PYTHON_SAMPLES "Build python samples" ON "BUILD_SAMPLES;BUILD_PYTHON" OFF)
 message(STATUS "Build Python samples: ${BUILD_PYTHON_SAMPLES}")
-CMAKE_DEPENDENT_OPTION(BUILD_JAVA_SAMPLES "Build java samples" ON "BUILD_SAMPLES;BUILD_JAVA" OFF)
-message(STATUS "Build Java samples: ${BUILD_JAVA_SAMPLES}")
-CMAKE_DEPENDENT_OPTION(BUILD_DOTNET_SAMPLES "Build dotnet samples" ON "BUILD_SAMPLES;BUILD_DOTNET" OFF)
-message(STATUS "Build .Net samples: ${BUILD_DOTNET_SAMPLES}")
 
 ## Examples
 option(BUILD_EXAMPLES "Build examples" ON)
@@ -168,10 +160,6 @@ CMAKE_DEPENDENT_OPTION(BUILD_CXX_EXAMPLES "Build cxx examples" ON "BUILD_EXAMPLE
 message(STATUS "Build C++ examples: ${BUILD_CXX_EXAMPLES}")
 CMAKE_DEPENDENT_OPTION(BUILD_PYTHON_EXAMPLES "Build python examples" ON "BUILD_EXAMPLES;BUILD_PYTHON" OFF)
 message(STATUS "Build Python examples: ${BUILD_PYTHON_EXAMPLES}")
-CMAKE_DEPENDENT_OPTION(BUILD_JAVA_EXAMPLES "Build java examples" ON "BUILD_EXAMPLES;BUILD_JAVA" OFF)
-message(STATUS "Build Java examples: ${BUILD_JAVA_EXAMPLES}")
-CMAKE_DEPENDENT_OPTION(BUILD_DOTNET_EXAMPLES "Build dotnet examples" ON "BUILD_EXAMPLES;BUILD_DOTNET" OFF)
-message(STATUS "Build .Net examples: ${BUILD_DOTNET_EXAMPLES}")
 
 option(BUILD_DOC "Build documentation" OFF)
 message(STATUS "Build documentation: ${BUILD_DOC}")
@@ -275,8 +263,8 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
 endif()
 
 # By default all dependencies are NOT built (i.e. BUILD_DEPS=OFF),
-# BUT if building any wrappers (Python, Java or .Net) then BUILD_DEPS=ON.
-if(BUILD_PYTHON OR BUILD_JAVA OR BUILD_DOTNET)
+# BUT if building the Python wrapper then BUILD_DEPS=ON.
+if(BUILD_PYTHON)
   option(BUILD_DEPS "Build all dependencies" ON)
 else()
   option(BUILD_DEPS "Build all dependencies" OFF)
@@ -286,10 +274,10 @@ message(STATUS "Build all dependencies: ${BUILD_DEPS}")
 option(INSTALL_BUILD_DEPS "Install build all dependencies" ON)
 
 # IF BUILD_DEPS=ON THEN Force all BUILD_*=ON
-CMAKE_DEPENDENT_OPTION(BUILD_ZLIB "Build the ZLIB dependency Library" OFF
+CMAKE_DEPENDENT_OPTION(BUILD_ZLIB "Build the ZLIB dependency Library" ON
   "NOT BUILD_DEPS" ON)
 
-CMAKE_DEPENDENT_OPTION(BUILD_BZip2 "Build the BZip2 dependency Library" OFF
+CMAKE_DEPENDENT_OPTION(BUILD_BZip2 "Build the BZip2 dependency Library" ON
   "NOT BUILD_DEPS" ON)
 
 set(_ORTOOLS_PATCH_DIR "${CMAKE_CURRENT_LIST_DIR}/patches")
@@ -468,77 +456,6 @@ if(BUILD_CXX)
   message(STATUS "C++: Build doc: ${BUILD_CXX_DOC}")
 endif()
 
-if(BUILD_DOTNET)
-  option(UNIVERSAL_DOTNET_PACKAGE "Build a .Net multi OS Package" OFF)
-  message(STATUS ".Net: Create multiple OS Package: ${UNIVERSAL_DOTNET_PACKAGE}")
-
-  CMAKE_DEPENDENT_OPTION(BUILD_DOTNET_DOC "Build the .Net doc" OFF "NOT BUILD_DOC" ON)
-  message(STATUS ".Net: Build doc: ${BUILD_DOTNET_DOC}")
-
-  # Language Version
-  # see: https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/configure-language-version
-  set(DOTNET_LANG "9.0" CACHE STRING "Specify the C# language version (default \"9.0\")")
-  message(STATUS ".Net C# language version: ${DOTNET_LANG}")
-
-  set(DOTNET_SAMPLE_LANG "8.0" CACHE STRING "Specify the C# language version for samples (default \"8.0\")")
-  message(STATUS ".Net Samples C# language version: ${DOTNET_SAMPLE_LANG}")
-
-  # Targeted Framework Moniker
-  # see: https://docs.microsoft.com/en-us/dotnet/standard/frameworks
-  # see: https://learn.microsoft.com/en-us/dotnet/standard/net-standard
-  option(USE_DOTNET_46 "Use .Net Framework 4.6 support" OFF)
-  message(STATUS ".Net: Use .Net Framework 4.6 support: ${USE_DOTNET_46}")
-  option(USE_DOTNET_461 "Use .Net Framework 4.6.1 support" OFF)
-  message(STATUS ".Net: Use .Net Framework 4.6.1 support: ${USE_DOTNET_461}")
-  option(USE_DOTNET_462 "Use .Net Framework 4.6.2 support" OFF)
-  message(STATUS ".Net: Use .Net Framework 4.6.2 support: ${USE_DOTNET_462}")
-
-  option(USE_DOTNET_48 "Use .Net Framework 4.8 support" OFF)
-  message(STATUS ".Net: Use .Net Framework 4.8 support: ${USE_DOTNET_48}")
-
-  option(USE_DOTNET_STD_21 "Use .Net Standard 2.1 support" OFF)
-  message(STATUS ".Net: Use .Net Framework 2.1 support: ${USE_DOTNET_STD_21}")
-
-  # .Net Core 3.1 LTS is not available for osx arm64
-  if(APPLE AND CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64)")
-    set(USE_DOTNET_CORE_31 OFF)
-  else()
-    option(USE_DOTNET_CORE_31 "Use .Net Core 3.1 LTS support" OFF)
-  endif()
-  message(STATUS ".Net: Use .Net Core 3.1 LTS support: ${USE_DOTNET_CORE_31}")
-
-  option(USE_DOTNET_6 "Use .Net 6.0 LTS support" OFF)
-  message(STATUS ".Net: Use .Net 6.0 LTS support: ${USE_DOTNET_6}")
-
-  option(USE_DOTNET_7 "Use .Net 7.0 support" OFF)
-  message(STATUS ".Net: Use .Net 7.0 support: ${USE_DOTNET_7}")
-
-  option(USE_DOTNET_8 "Use .Net 8.0 LTS support" ON)
-  message(STATUS ".Net: Use .Net 8.0 support: ${USE_DOTNET_8}")
-
-  option(USE_DOTNET_9 "Use .Net 9.0 support" OFF)
-  message(STATUS ".Net: Use .Net 9.0 support: ${USE_DOTNET_9}")
-endif()
-
-if(BUILD_JAVA)
-  option(BUILD_FAT_JAR "Create single .jar with all dependencies (including native binaries)" OFF)
-  message(STATUS "Java: Build single fat .jar: ${BUILD_FAT_JAR}")
-
-  option(SKIP_GPG "Disable GPG sign" ON)
-  message(STATUS "Java: Disable gpg:sign: ${SKIP_GPG}")
-
-  option(UNIVERSAL_JAVA_PACKAGE "Build a Java multi OS Package" OFF)
-  message(STATUS "Java: Create multiple OS package: ${UNIVERSAL_JAVA_PACKAGE}")
-
-  CMAKE_DEPENDENT_OPTION(BUILD_JAVA_DOC "Build the Java doc" OFF "NOT BUILD_DOC" ON)
-  message(STATUS "Java: Build doc: ${BUILD_JAVA_DOC}")
-
-  # On Centos-7 this option (needed otherwise) is unrecognized and should be
-  # replaced by an empty string.
-  set(GPG_ARGS "<arg>--pinentry-mode</arg><arg>loopback</arg>" CACHE STRING "Extra options for GPG")
-  message(STATUS "Java: Add GPG options: ${GPG_ARGS}")
-endif()
-
 if(BUILD_PYTHON)
   CMAKE_DEPENDENT_OPTION(BUILD_pybind11 "Build the pybind11 dependency Library" OFF
     "NOT BUILD_DEPS" ON)
@@ -586,8 +503,6 @@ include(flatzinc)
 include(glop)
 
 include(python)
-include(java)
-include(dotnet)
 
 # Since samples mix all languages we must parse them once we have included all
 # <language>.cmake files

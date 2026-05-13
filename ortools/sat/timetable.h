@@ -11,15 +11,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ORTOOLS_SAT_TIMETABLE_H_
-#define ORTOOLS_SAT_TIMETABLE_H_
+#ifndef OR_TOOLS_SAT_TIMETABLE_H_
+#define OR_TOOLS_SAT_TIMETABLE_H_
 
 #include <cstdint>
 #include <vector>
 
-#include "absl/types/span.h"
-#include "ortools/sat/enforcement.h"
-#include "ortools/sat/enforcement_helper.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
@@ -36,11 +33,10 @@ namespace sat {
 //
 // This instantiate one or more ReservoirTimeTabling class to perform the
 // propagation.
-void AddReservoirConstraint(absl::Span<const Literal> enforcement_literals,
-                            absl::Span<const AffineExpression> times,
-                            absl::Span<const AffineExpression> deltas,
-                            absl::Span<const Literal> presences,
-                            int64_t min_level, int64_t max_level, Model* model);
+void AddReservoirConstraint(std::vector<AffineExpression> times,
+                            std::vector<AffineExpression> deltas,
+                            std::vector<Literal> presences, int64_t min_level,
+                            int64_t max_level, Model* model);
 
 // The piecewise constant function must be below the given capacity. The initial
 // function value is zero. Note that a negative capacity will thus be trivially
@@ -51,10 +47,9 @@ void AddReservoirConstraint(absl::Span<const Literal> enforcement_literals,
 // full horizon, we could have taken < t with no behavior change.
 class ReservoirTimeTabling : public PropagatorInterface {
  public:
-  ReservoirTimeTabling(absl::Span<const Literal> enforcement_literals,
-                       absl::Span<const AffineExpression> times,
-                       absl::Span<const AffineExpression> deltas,
-                       absl::Span<const Literal> presences,
+  ReservoirTimeTabling(const std::vector<AffineExpression>& times,
+                       const std::vector<AffineExpression>& deltas,
+                       const std::vector<Literal>& presences,
                        IntegerValue capacity, Model* model);
 
   bool Propagate() final;
@@ -91,7 +86,6 @@ class ReservoirTimeTabling : public PropagatorInterface {
   bool TryToDecreaseMax(int event);
 
   // Input.
-  std::vector<Literal> enforcement_literals_;
   std::vector<AffineExpression> times_;
   std::vector<AffineExpression> deltas_;
   std::vector<Literal> presences_;
@@ -99,9 +93,7 @@ class ReservoirTimeTabling : public PropagatorInterface {
 
   // Model class.
   const VariablesAssignment& assignment_;
-  const IntegerTrail& integer_trail_;
-  EnforcementHelper& enforcement_helper_;
-  EnforcementId enforcement_id_;
+  IntegerTrail* integer_trail_;
 
   // Temporary data.
   std::vector<Literal> literal_reason_;
@@ -222,4 +214,4 @@ class TimeTablingPerTask : public PropagatorInterface {
 }  // namespace sat
 }  // namespace operations_research
 
-#endif  // ORTOOLS_SAT_TIMETABLE_H_
+#endif  // OR_TOOLS_SAT_TIMETABLE_H_

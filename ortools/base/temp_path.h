@@ -11,9 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// emulates g3/file/util/temp_path.h
-#ifndef ORTOOLS_BASE_TEMP_PATH_H_
-#define ORTOOLS_BASE_TEMP_PATH_H_
+#ifndef OR_TOOLS_BASE_TEMP_PATH_H_
+#define OR_TOOLS_BASE_TEMP_PATH_H_
 
 #include <string>
 
@@ -60,4 +59,4 @@ class TempPath {
 
 namespace file {}  // namespace file
 
-#endif  // ORTOOLS_BASE_TEMP_PATH_H_
+#endif  // OR_TOOLS_BASE_TEMP_PATH_H_

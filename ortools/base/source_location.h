@@ -25,8 +25,8 @@
 // omit that argument, and the default will automatically capture the location
 // of the callsite.
 
-#ifndef ORTOOLS_BASE_SOURCE_LOCATION_H_
-#define ORTOOLS_BASE_SOURCE_LOCATION_H_
+#ifndef OR_TOOLS_BASE_SOURCE_LOCATION_H_
+#define OR_TOOLS_BASE_SOURCE_LOCATION_H_
 
 #include <cstdint>
 
@@ -140,4 +140,4 @@ class SourceLocation {
 #define ABSL_LOC_CURRENT_DEFAULT_ARG
 #endif
 
-#endif  // ORTOOLS_BASE_SOURCE_LOCATION_H_
+#endif  // OR_TOOLS_BASE_SOURCE_LOCATION_H_

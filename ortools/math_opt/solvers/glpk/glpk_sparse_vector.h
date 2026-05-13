@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ORTOOLS_MATH_OPT_SOLVERS_GLPK_GLPK_SPARSE_VECTOR_H_
-#define ORTOOLS_MATH_OPT_SOLVERS_GLPK_GLPK_SPARSE_VECTOR_H_
+#ifndef OR_TOOLS_MATH_OPT_SOLVERS_GLPK_GLPK_SPARSE_VECTOR_H_
+#define OR_TOOLS_MATH_OPT_SOLVERS_GLPK_GLPK_SPARSE_VECTOR_H_
 
 #include <functional>
 #include <limits>
@@ -199,4 +199,4 @@ void GlpkSparseVector::Set(const int index, const double value) {
 
 }  // namespace operations_research::math_opt
 
-#endif  // ORTOOLS_MATH_OPT_SOLVERS_GLPK_GLPK_SPARSE_VECTOR_H_
+#endif  // OR_TOOLS_MATH_OPT_SOLVERS_GLPK_GLPK_SPARSE_VECTOR_H_

@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ORTOOLS_MATH_OPT_CPP_UPDATE_RESULT_H_
-#define ORTOOLS_MATH_OPT_CPP_UPDATE_RESULT_H_
+#ifndef OR_TOOLS_MATH_OPT_CPP_UPDATE_RESULT_H_
+#define OR_TOOLS_MATH_OPT_CPP_UPDATE_RESULT_H_
 
 #include "ortools/math_opt/model_update.pb.h"
 
@@ -30,4 +30,4 @@ struct UpdateResult {
 
 }  // namespace operations_research::math_opt
 
-#endif  // ORTOOLS_MATH_OPT_CPP_UPDATE_RESULT_H_
+#endif  // OR_TOOLS_MATH_OPT_CPP_UPDATE_RESULT_H_
