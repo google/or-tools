@@ -139,7 +139,7 @@ jobs:
         -DCMAKE_C_COMPILER_LAUNCHER=${{env.SCCACHE_PATH}}
         -DCMAKE_CXX_COMPILER_LAUNCHER=${{env.SCCACHE_PATH}}
     - name: Build
-      run: VERBOSE=1 cmake --build build --config Release -j --target ${{ matrix.generator == 'Ninja' && 'all' || 'ALL_BUILD'}}
+      run: cmake --build build --config Release -j --target ${{ matrix.generator == 'Ninja' && 'all' || 'ALL_BUILD'}}
     - name: Test
       env:
         CTEST_OUTPUT_ON_FAILURE: 1
