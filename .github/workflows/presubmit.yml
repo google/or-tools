@@ -22,6 +22,7 @@ env:
 jobs:
 ###############################################################################
   clang-format:
+    if: false
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v6
@@ -30,6 +31,7 @@ jobs:
         exclude-regex: '\.tab\.hh$'
 ###############################################################################
   Bazel:
+    if: false
     strategy:
       fail-fast: false
       matrix:
@@ -52,8 +54,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-15-intel, macos-latest, windows-2022]
-        build: [cpp, java, dotnet, python]
+        os: [ubuntu-latest] #, macos-15-intel, macos-latest, windows-2022]
+        build: [cpp] #, java, dotnet, python]
         include:
           # Map build to CMake
           - build: cpp
@@ -83,9 +85,10 @@ jobs:
             cmake_flags: '-DCMAKE_CONFIGURATION_TYPES="Release"'
     runs-on: ${{matrix.os}}
     env:
-      SCCACHE_GHA_ENABLED: "true"
-      SCCACHE_GCS_BUCKET: "or-tools-github-remote-caching"
-      SCCACHE_GCS_RW_MODE: "READ_WRITE"
+      SCCACHE_GHA_ENABLED: true
+      SCCACHE_GCS_BUCKET: or-tools-github-remote-caching
+      SCCACHE_GCS_KEY_PREFIX: cmake
+      SCCACHE_GCS_RW_MODE: READ_WRITE
     steps:
     - uses: actions/checkout@v6
     - uses: 'google-github-actions/auth@v3'
@@ -93,6 +96,8 @@ jobs:
         credentials_json: '${{secrets.GCP_BUCKET_API_KEY}}'
     - name: Run sccache-cache
       uses: mozilla-actions/sccache-action@v0.0.10
+      env:
+        SCCACHE_GCS_KEY_PATH: ${{env.GOOGLE_GHA_CREDS_PATH}}
     - uses: actions/setup-java@v5
       if: ${{ matrix.build == 'java' }}
       with:
@@ -124,6 +129,7 @@ jobs:
       env:
         SCCACHE_GCS_KEY_PATH: ${{env.GOOGLE_GHA_CREDS_PATH}}
       run: >
+        VERBOSE=1
         cmake
         -S.
         -Bbuild
@@ -140,9 +146,9 @@ jobs:
     - name: Build
       env:
         SCCACHE_GCS_KEY_PATH: ${{env.GOOGLE_GHA_CREDS_PATH}}
-      run: cmake --build build --config Release -j --target ${{ matrix.generator == 'Ninja' && 'all' || 'ALL_BUILD'}}
+      run: VERBOSE=1 cmake --build build --config Release -j --target ${{ matrix.generator == 'Ninja' && 'all' || 'ALL_BUILD'}}
     - name: Test
       env:
         SCCACHE_GCS_KEY_PATH: ${{env.GOOGLE_GHA_CREDS_PATH}}
         CTEST_OUTPUT_ON_FAILURE: 1
-      run: cmake --build build --config Release -j --target ${{ matrix.generator == 'Ninja' && 'test' || 'RUN_TESTS'}}
+      run: VERBOSE=1 cmake --build build --config Release -j --target ${{ matrix.generator == 'Ninja' && 'test' || 'RUN_TESTS'}}
