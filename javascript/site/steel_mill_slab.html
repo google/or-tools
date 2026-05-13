@@ -3,57 +3,16 @@
 	<head>
 		<meta charset="utf-8">
 		<title>CP-SAT WASM • Steel Mill Slab</title>
+		<link rel="stylesheet" href="./example.css">
 		<style>
-			body {
-				font-family: system-ui, sans-serif;
-				margin: 2rem;
-				line-height: 1.6;
-			}
-			nav a {
-				text-decoration: none;
-				color: #0b57d0;
-			}
-			label {
-				display: flex;
-				gap: 0.35rem;
-				align-items: center;
-			}
-			.controls {
-				display: flex;
-				flex-wrap: wrap;
-				gap: 1rem;
-				margin-bottom: 1rem;
-			}
+			body { line-height: 1.6; }
+			label { display: flex; }
+			.controls { margin-bottom: 0.75rem; }
 			.controls > div {
 				min-width: 250px;
 			}
-			button {
-				font-size: 1rem;
-			}
-			table {
-				border-collapse: collapse;
-				width: 100%;
-				margin-bottom: 1rem;
-			}
-			th,
-			td {
-				border: 1px solid #d0d7de;
-				padding: 0.35rem 0.5rem;
-			}
 			th {
-				background: #f6f8fa;
 				text-align: left;
-			}
-			#status {
-				background: #f6f8fa;
-				border-radius: 6px;
-				padding: 1rem;
-				min-height: 10rem;
-				white-space: pre-wrap;
-			}
-			input,
-			select {
-				font-size: 1rem;
 			}
 			#summary {
 				font-weight: 600;
@@ -100,15 +59,15 @@
 				Use worker bridge</label>
 			</div>
 		</div>
-		<div style="margin-bottom: 1rem;">
+		<div class="spaced">
 			<label>
 				Solver parameters (comma-separated key:value pairs)
-				<input id="params" type="text" value="max_time_in_seconds:10,log_search_progress:true" style="width: 100%;">
+				<input id="params" class="full-width" type="text" value="max_time_in_seconds:10,log_search_progress:true">
 			</label>
 		</div>
 		<button id="run">Run steel mill slab</button>
 		<button id="stop" disabled>Stop solving</button>
-		<h2 style="margin-top: 2rem;">Solution</h2>
+		<h2 class="section-heading">Solution</h2>
 		<div id="summary">No solution yet.</div>
 		<table id="slab-table"></table>
 		<p>Status / Response:</p>

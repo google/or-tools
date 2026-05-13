@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>CP-SAT WASM • Model Playground</title>
+  <link rel="stylesheet" href="./example.css">
+  <style>
+    textarea, pre {
+      min-height: 22rem;
+    }
+    .params {
+      min-height: 8rem;
+    }
+  </style>
+</head>
+<body>
+  <main class="stack">
+    <nav><a href="../index.html">← All examples</a></nav>
+    <h1>Model Playground</h1>
+    <p>Paste a JSON-shaped <code>CpModelProto</code>, optionally edit SAT parameters, then validate or solve it in the browser.</p>
+
+    <div class="controls">
+      <button id="load-sample">Load sample</button>
+      <button id="validate">Validate</button>
+      <button id="solve">Solve</button>
+      <button id="cancel" disabled>Cancel</button>
+      <label><input id="use-worker-bridge" type="checkbox" checked /> Use worker bridge</label>
+    </div>
+    <div id="status" class="status-line" role="status" aria-live="polite"></div>
+
+    <div class="two-column">
+      <section>
+        <h2>Model JSON</h2>
+        <textarea id="model-input" spellcheck="false"></textarea>
+        <h2>SAT Parameters JSON</h2>
+        <textarea id="params-input" class="params" spellcheck="false"></textarea>
+      </section>
+      <section>
+        <h2>Result</h2>
+        <pre id="result-output"></pre>
+      </section>
+    </div>
+  </main>
+
+  <script type="module" src="./model_playground.ts"></script>
+</body>
+</html>

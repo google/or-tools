@@ -3,13 +3,12 @@
 <head>
   <meta charset="utf-8" />
   <title>CP-SAT WASM Examples</title>
+  <link rel="stylesheet" href="./example.css">
   <style>
-    body { font-family: system-ui, sans-serif; margin: 2rem; line-height: 1.6; }
+    body { line-height: 1.6; }
     h1 { margin-bottom: 0.5rem; }
     ul { padding-left: 1.25rem; }
     li { margin-bottom: 0.4rem; }
-    a { color: #0b57d0; text-decoration: none; }
-    a:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
@@ -17,10 +16,10 @@
   <p>Select an example to launch a demo powered by the <code>cp_sat_api</code> high-level bridge.</p>
     <ul>
       <li><a href="./magic_square.html">Magic Square (model + solve entirely in JS/WASM)</a></li>
+      <li><a href="./model_playground.html">Model Playground (paste JSON CpModelProto text and solve it)</a></li>
       <li><a href="./schema_viewer.html">Schema Viewer (print embedded proto schemas)</a></li>
       <li><a href="./sports_scheduling.html">Sports Scheduling (double round-robin minimization)</a></li>
       <li><a href="./steel_mill_slab.html">Steel Mill Slab (three solver variants)</a></li>
     </ul>
-  <p>The frontend is now bundled via Vite; run <code>npm run build</code> to compile the WASM target and emit the static site under <code>build/javascript/site</code>.</p>
 </body>
 </html>

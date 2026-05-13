@@ -3,11 +3,9 @@
 	<head>
 		<meta charset="utf-8">
 		<title>CP-SAT WASM • Schema Viewer</title>
+		<link rel="stylesheet" href="./example.css">
 		<style>
-			body { font-family: system-ui, sans-serif; margin: 2rem; line-height: 1.5; }
-			textarea { width: 100%; min-height: 12rem; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.9rem; }
-			button { font-size: 1rem; padding: 0.35rem 0.8rem; }
-			#status { color: #555; margin-bottom: 1rem; }
+			textarea { min-height: 12rem; }
 		</style>
 	</head>
 	<body>
@@ -17,7 +15,7 @@
 			and <code>sat_parameters.proto</code>
 			schemas and prints their contents.</p>
 		<button id="load-schemas">Load schemas</button>
-		<div id="status" role="status" aria-live="polite"></div>
+		<div id="status" class="status-line" role="status" aria-live="polite"></div>
 		<h2>CpModelProto</h2>
 		<textarea id="cp-schema" readonly></textarea>
 		<h2>SatParameters</h2>

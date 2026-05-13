@@ -4,11 +4,11 @@
         const r = WebAssembly;
         return typeof r < "u" && typeof r.promising == "function";
     }
-    function g() {
-        return i || (i = m() ? "jspi" : "asyncify", console.log(i === "jspi" ? "🚀 JSPI is supported! Using ASYNCIFY=2 (High Performance)." : "🐢 JSPI not found. Falling back to ASYNCIFY=1 (Stack Rewriting)."), i);
+    function y() {
+        return i || (i = m() ? "jspi" : "asyncify", console.log(i === "jspi" ? "JSPI is supported. Using ASYNCIFY=2." : "JSPI not found. Falling back to ASYNCIFY=1."), i);
     }
-    async function y() {
-        if (g() === "jspi") {
+    async function g() {
+        if (y() === "jspi") {
             const { default: n } = await import("./cp_sat_runtime-BSzCkFJB.js");
             return n;
         }
@@ -16,7 +16,7 @@
         return e;
     }
     async function _() {
-        return u || (u = (async ()=>(await y())({}))()), u;
+        return u || (u = (async ()=>(await g())({}))()), u;
     }
     const a = self;
     let t = null;

@@ -3,14 +3,11 @@
 	<head>
 		<meta charset="utf-8">
 		<title>CP-SAT WASM • Magic Square</title>
+		<link rel="stylesheet" href="./example.css">
 		<style>
-			body { font-family: system-ui, sans-serif; margin: 2rem; line-height: 1.5; }
-			input, button, textarea { font-size: 1rem; }
 			textarea { width: 100%; height: 18rem; }
-			#status { white-space: pre-wrap; background: #f6f8fa; padding: 1rem; border-radius: 6px; min-height: 12rem; }
-			nav { margin-bottom: 1rem; }
-			nav a { text-decoration: none; color: #0b57d0; }
-			#solution-wrapper { margin: 1rem 0; }
+			#status { min-height: 12rem; }
+			#solution-wrapper { margin: 0.75rem 0; }
 			#solution-grid {
 				display: inline-grid;
 				gap: 0.35rem;
@@ -35,9 +32,9 @@
 		<h1>Magic Square (CP-SAT WASM)</h1>
 		<p>This page exercises the <code>cp_sat_api</code>
 			WASM module by building and solving a magic square model directly in the browser.</p>
-		<div style="display:flex; gap:1rem; flex-wrap:wrap; align-items:center; margin-bottom:0.5rem;">
-			<label>Size <input id="size" type="number" value="5" min="1" style="width:4rem"></label>
-			<label>Workers <input id="workers" type="number" value="4" min="1" style="width:4rem"></label>
+		<div class="controls">
+			<label>Size <input id="size" class="short-number" type="number" value="5" min="1"></label>
+			<label>Workers <input id="workers" class="short-number" type="number" value="4" min="1"></label>
 			<label><input id="use-worker-bridge" type="checkbox" checked>
 			Use worker bridge</label>
 			<button id="run">Run magic square</button>
