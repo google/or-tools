@@ -1,6 +1,8 @@
-# ortools-cpsat-wasm
+# or-tools-wasm
 
 JavaScript and WebAssembly bindings for the OR-Tools CP-SAT solver.
+
+Currently supported: CP-SAT.
 
 This package builds a browser-oriented CP-SAT runtime from Google OR-Tools and
 wraps it with a TypeScript API, worker bridge, generated SAT parameter types,
@@ -26,10 +28,68 @@ This repository currently vendors OR-Tools 9.14 pre-release sources
 ## Install
 
 ```sh
-npm install ortools-cpsat-wasm
+npm install or-tools-wasm
 ```
 
-The published package exposes the library bundle under `build/javascript/lib`.
+Then import it normally:
+
+```ts
+import { CpSat } from 'or-tools-wasm';
+```
+
+This flow is verified with Vite. The worker script and WebAssembly files are
+emitted automatically from the package import, with no manual copying into
+`public/` or `static/` required.
+
+Other modern bundlers may also work if they support module workers and WebAssembly
+asset emission, but that is not yet officially verified.
+
+If you use the worker bridge, the app must still be served with cross-origin
+isolation headers:
+
+```http
+Cross-Origin-Opener-Policy: same-origin
+Cross-Origin-Embedder-Policy: require-corp
+```
+
+## Usage
+
+```ts
+const model = {
+  name: 'choose_one',
+  variables: [
+    { name: 'x', domain: [0, 1] },
+    { name: 'y', domain: [0, 1] },
+  ],
+  constraints: [
+    {
+      name: 'exactly_one',
+      linear: {
+        vars: [0, 1],
+        coeffs: [1, 1],
+        domain: [1, 1],
+      },
+    },
+  ],
+  objective: {
+    vars: [0, 1],
+    coeffs: [1, 2],
+  },
+};
+
+const modelBytes = await CpSat.createModel(model);
+const validation = await CpSat.validate(modelBytes);
+
+if (!validation.ok) {
+  throw new Error(validation.message);
+}
+
+const result = await CpSat.solve(modelBytes, {
+  numSearchWorkers: 1,
+});
+
+console.log(result.response);
+```
 
 ## Build
 
@@ -67,7 +127,7 @@ worker startup.
 
 - `npm run build:wasm` rebuilds the `cp_sat_runtime` wasm/js bundle via emsdk + CMake.
 - `npm run build:lib` regenerates SAT parameter types, type-checks with `tsc`, and builds the library bundle with `vite.lib.config.ts`.
-- `npm run build:site` builds the demo site with `vite.site.config.ts`. The site imports `ortools-cpsat-wasm` directly, so Vite emits the worker/runtime/wasm assets from the package bundle automatically.
+- `npm run build:site` builds the demo site with `vite.site.config.ts`. The site imports `or-tools-wasm` directly, so Vite emits the worker/runtime/wasm assets from the package bundle automatically.
 - `npm run dev` / `npm run start` builds the library and launches the Vite dev server for the demo site.
 - `npm run build` runs `build:wasm`, `build:lib`, and `build:site`.
 - `npm run preview` serves the already-built Vite site from `build/javascript/site`.

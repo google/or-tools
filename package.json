@@ -1,5 +1,5 @@
 {
-  "name": "ortools-cpsat-wasm",
+  "name": "or-tools-wasm",
   "private": false,
   "version": "0.5.0",
   "license": "Apache-2.0",

@@ -1,4 +1,4 @@
-import { CpSat, type SatParameters } from 'ortools-cpsat-wasm';
+import { CpSat, type SatParameters } from 'or-tools-wasm';
 
 const sampleModel = {
   name: 'exactly_one_bool',

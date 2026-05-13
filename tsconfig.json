@@ -9,7 +9,7 @@
     "skipLibCheck": true,
     "lib": ["ES2020", "DOM", "DOM.Iterable", "WebWorker"],
     "paths": {
-      "ortools-cpsat-wasm": ["javascript/lib/index.ts"],
+      "or-tools-wasm": ["javascript/lib/index.ts"],
       "@internal-wasm/*": ["build/javascript/wasm/*"]
     }
   },

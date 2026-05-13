@@ -1,4 +1,4 @@
-import { CpSat, type CpSatModelInstance } from 'ortools-cpsat-wasm';
+import { CpSat, type CpSatModelInstance } from 'or-tools-wasm';
 import { getMaxWorkerCount } from './worker_limits.js';
 
 type SolverMethod = 'sat' | 'sat_table' | 'sat_column';
@@ -1032,4 +1032,3 @@ if (solverSelect && breakSymCheckbox) {
   solverSelect.addEventListener('change', updateBreakSymVisibility);
   updateBreakSymVisibility();
 }
-
