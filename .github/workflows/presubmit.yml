@@ -54,8 +54,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest] #, macos-15-intel, macos-latest, windows-2022]
-        build: [cpp] #, java, dotnet, python]
+        os: [ubuntu-latest, macos-15-intel, macos-latest, windows-2022]
+        build: [cpp, java, dotnet, python]
         include:
           # Map build to CMake
           - build: cpp
@@ -126,6 +126,7 @@ jobs:
         python3 -m pip install --user mypy-protobuf absl-py setuptools wheel numpy pandas
         echo "$((Get-Item ~).FullName)/AppData/Roaming/Python/Python312/Scripts" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
     - name: Config
+      if: ${{ matrix.build == 'cpp' && matrix.platform == 'linux' }}
       env:
         SCCACHE_GCS_KEY_PATH: ${{env.GOOGLE_GHA_CREDS_PATH}}
       run: >
@@ -144,10 +145,12 @@ jobs:
         -DCMAKE_C_COMPILER_LAUNCHER=${{env.SCCACHE_PATH}}
         -DCMAKE_CXX_COMPILER_LAUNCHER=${{env.SCCACHE_PATH}}
     - name: Build
+      if: ${{ matrix.build == 'cpp' && matrix.platform == 'linux' }}
       env:
         SCCACHE_GCS_KEY_PATH: ${{env.GOOGLE_GHA_CREDS_PATH}}
       run: VERBOSE=1 cmake --build build --config Release -j --target ${{ matrix.generator == 'Ninja' && 'all' || 'ALL_BUILD'}}
     - name: Test
+      if: ${{ matrix.build == 'cpp' && matrix.platform == 'linux' }}
       env:
         SCCACHE_GCS_KEY_PATH: ${{env.GOOGLE_GHA_CREDS_PATH}}
         CTEST_OUTPUT_ON_FAILURE: 1
