@@ -103,10 +103,10 @@ jobs:
         python-version: ${{env.PYTHON_VERSION}}
     - name: Setup linux
       if: ${{ matrix.platform == 'linux' }}
-      run: sudo apt install -y ninja-build ccache swig
+      run: sudo apt install -y ninja-build swig
     - name: Setup macos
       if: ${{ matrix.platform == 'macos' }}
-      run: brew install ccache swig
+      run: brew install swig
     - name: Setup Linux Python Env
       if: ${{ matrix.build == 'python' && matrix.platform == 'linux' }}
       run: echo "$HOME/.local/bin" >> $GITHUB_PATH
