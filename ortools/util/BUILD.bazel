@@ -363,12 +363,6 @@ cc_library(
 )
 
 proto_library(
-    name = "file_util_test_proto",
-    testonly = True,
-    srcs = ["file_util_test.proto"],
-)
-
-proto_library(
     name = "status_proto",
     srcs = ["status.proto"],
 )
@@ -386,32 +380,6 @@ java_proto_library(
 py_proto_library(
     name = "status_py_pb2",
     deps = [":status_proto"],
-)
-
-cc_proto_library(
-    name = "file_util_test_cc_proto",
-    testonly = True,
-    deps = [":file_util_test_proto"],
-)
-
-cc_test(
-    name = "file_util_test",
-    size = "small",
-    srcs = ["file_util_test.cc"],
-    deps = [
-        ":file_util",
-        ":file_util_test_cc_proto",
-        "//ortools/base:file",
-        "//ortools/base:gmock_main",
-        "//ortools/base:gzipstring",
-        "//ortools/base:mutable_memfile",
-        "//ortools/base:parse_test_proto",
-        "//ortools/base:temp_file",
-        "//util/task:codes_cc_proto",
-        "@abseil-cpp//absl/status",
-        "@abseil-cpp//absl/strings",
-        "@protobuf",
-    ],
 )
 
 cc_library(
