@@ -45,7 +45,7 @@ jobs:
         python-version: ${{env.PYTHON_VERSION}}
     - uses: bazel-contrib/setup-bazel@0.19.0
     - name: Build
-      run: bazel test --config=ci //ortools/...
+      run: bazel test --config=ci --config=remote_cache //ortools/...
       shell: bash
 ###############################################################################
   CMake:
