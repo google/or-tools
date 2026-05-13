@@ -43,7 +43,7 @@
 #include "ortools/base/macros/os_support.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/base/timer.h"
-#include "ortools/base/version.h"
+#include "ortools/base/version.h"  // IWYU pragma: keep
 #include "ortools/graph_base/connected_components.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/clause.h"
@@ -1334,8 +1334,32 @@ void LoadCpModel(const CpModelProto& model_proto, Model* model) {
     if (!sat_solver->FinishPropagation()) return unsat();
   }
 
-  // Try to extract some structure before we start anything else.
-  model->GetOrCreate<GateCongruenceClosure>()->EarlyGateDetection();
+  if (parameters.use_sat_inprocessing()) {
+    if (parameters.inprocessing_detect_and_sweep_circuit()) {
+      auto solve_cp_model_callback = [](const CpModelProto& cp_model_proto) {
+        Model model;
+        auto* params = model.GetOrCreate<SatParameters>();
+        params->set_log_search_progress(false);
+        params->set_log_to_stdout(false);
+        params->set_catch_sigint_signal(false);
+        params->set_linearization_level(0);
+        params->set_max_time_in_seconds(2);
+        params->set_cp_model_probing_level(0);
+        params->set_use_sat_inprocessing(false);
+        model.GetOrCreate<TimeLimit>()->ResetLimitFromParameters(*params);
+        auto* response_manager = model.GetOrCreate<SharedResponseManager>();
+        response_manager->InitializeObjective(cp_model_proto);
+        LoadCpModel(cp_model_proto, &model);
+        SolveLoadedCpModel(cp_model_proto, &model);
+        return response_manager->GetResponse();
+      };
+      model->GetOrCreate<GateCongruenceClosure>()->SetSolveCallback(
+          solve_cp_model_callback);
+    }
+
+    // Try to extract some structure before we start anything else.
+    model->GetOrCreate<GateCongruenceClosure>()->EarlyGateDetection();
+  }
 
   // Note that this is already done in the presolve, but it is important to redo
   // it here to collect literal => integer >= bound constraints that are used in
@@ -1756,9 +1780,75 @@ void QuickSolveWithHint(const CpModelProto& model_proto, Model* model) {
 
   // Solve decision problem.
   ConfigureSearchHeuristics(model);
+  SatSolver::Status status = SatSolver::Status::LIMIT_REACHED;
+
   const auto& mapping = *model->GetOrCreate<CpModelMapping>();
-  const SatSolver::Status status = ResetAndSolveIntegerProblem(
-      mapping.Literals(model_proto.assumptions()), model);
+  const auto& integer_trail = *model->GetOrCreate<IntegerTrail>();
+  auto* encoder = model->GetOrCreate<IntegerEncoder>();
+
+  // On problems where the propagation is really slow, completing a valid but
+  // incomplete hint can take hours. This is because we propagate after each
+  // decision. This is especially true for scheduling or 2D packing.
+  //
+  // Here we try first to see if loading the hint as assumptions work since
+  // propagation will be a lot more efficient in this case. That requires
+  // creating all relevant literals beforehand though.
+  //
+  // Note(user): I am not sure always creating all such associated literal when
+  // we have a hint is good... especially in LNS subsolvers? that said it might
+  // orient the solution around the hint. And if the hint was full and valid,
+  // this is exactly what the HINT_SEARCH would have done.
+  //
+  // TODO(user): If we have user assumptions, we can still do that if they align
+  // with the hint.
+  //
+  // TODO(user): For enumerate_all_solutions() we can make this work, but
+  // currently ExcludeCurrentSolutionAndBacktrack() will not work with all
+  // assumptions taken at the same decision level. Also we will not have the
+  // nice analysis of the subset of decisions that are sufficient for exclusion.
+  if (parameters->try_hint_as_assumptions() &&
+      !parameters->enumerate_all_solutions() &&
+      model_proto.assumptions().empty() &&
+      !shared_response_manager->HasFeasibleSolution()) {
+    std::vector<Literal> assumptions;
+    for (int i = 0; i < model_proto.solution_hint().vars_size(); ++i) {
+      const int ref = model_proto.solution_hint().vars(i);
+      const IntegerValue value(model_proto.solution_hint().values(i));
+      CHECK(RefIsPositive(ref));
+      if (mapping.IsBoolean(ref)) {
+        assumptions.push_back(value == 1 ? mapping.Literal(ref)
+                                         : mapping.Literal(ref).Negated());
+      } else {
+        const IntegerVariable var = mapping.Integer(ref);
+        const IntegerValue lb = integer_trail.LevelZeroLowerBound(var);
+        const IntegerValue ub = integer_trail.LevelZeroUpperBound(var);
+        if (lb == ub) continue;
+        if (value == lb) {
+          assumptions.push_back(encoder->GetOrCreateAssociatedLiteral(
+              IntegerLiteral::LowerOrEqual(var, value)));
+        } else if (value == ub) {
+          assumptions.push_back(encoder->GetOrCreateAssociatedLiteral(
+              IntegerLiteral::GreaterOrEqual(var, value)));
+        } else {
+          // TODO(user): Use equality?
+          assumptions.push_back(encoder->GetOrCreateAssociatedLiteral(
+              IntegerLiteral::LowerOrEqual(var, value)));
+          assumptions.push_back(encoder->GetOrCreateAssociatedLiteral(
+              IntegerLiteral::GreaterOrEqual(var, value)));
+        }
+      }
+    }
+    status = ResetAndSolveIntegerProblem(assumptions, model);
+  }
+
+  // TODO(user): Still do that if we are in ASSUMPTION_UNSAT ? Now that the
+  // literal are created, normal search will still kind of follow the hint (but
+  // maybe not as systematically as this). We also do not really need to
+  // backtrack, we could resume from the state above with a bit of tweaking.
+  if (status != SatSolver::Status::FEASIBLE) {
+    status = ResetAndSolveIntegerProblem(
+        mapping.Literals(model_proto.assumptions()), model);
+  }
 
   const std::string& solution_info = model->Name();
   if (status == SatSolver::Status::FEASIBLE) {

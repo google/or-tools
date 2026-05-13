@@ -30,6 +30,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/cp_model_utils.h"
@@ -223,7 +224,7 @@ std::function<BooleanOrIntegerLiteral()> ConstructUserSearchStrategy(
   return [&view, &parameters, random, strategies]() {
     for (const DecisionStrategyProto& strategy : strategies) {
       int candidate_ref = -1;
-      int64_t candidate_value = std::numeric_limits<int64_t>::max();
+      int64_t candidate_value = kint64max;
 
       // TODO(user): Improve the complexity if this becomes an issue which
       // may be the case if we do a fixed_search.
@@ -295,7 +296,7 @@ std::function<BooleanOrIntegerLiteral()> ConstructUserSearchStrategy(
       }
 
       // Check if one active variable has been found.
-      if (candidate_value == std::numeric_limits<int64_t>::max()) continue;
+      if (candidate_value == kint64max) continue;
 
       // Pick the winner when decisions are randomized.
       if (randomize_decision) {
@@ -662,6 +663,7 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     if (base_params.use_dual_scheduling_heuristics()) {
       AddExtraSchedulingPropagators(new_params);
     }
+    new_params.set_cut_level(0);
     strategies["probing"] = new_params;
 
     new_params.set_linearization_level(0);
@@ -669,6 +671,7 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
 
     // We want to spend more time on the LP here.
     new_params.set_linearization_level(2);
+    new_params.set_cut_level(1);
     new_params.set_add_lp_constraints_lazily(false);
     new_params.set_root_lp_iterations(100'000);
     strategies["probing_max_lp"] = new_params;

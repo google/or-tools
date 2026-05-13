@@ -43,6 +43,7 @@
 #include "ortools/base/log_severity.h"
 #include "ortools/base/macros/buildenv.h"
 #include "ortools/base/stl_util.h"
+#include "ortools/base/types.h"
 #include "ortools/graph_base/connected_components.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_copy.h"
@@ -97,6 +98,7 @@ NeighborhoodGeneratorHelper::NeighborhoodGeneratorHelper(
   }
   *model_proto_with_only_variables_.mutable_variables() =
       model_proto_.variables();
+
   InitializeHelperData();
   RecomputeHelperData();
   Synchronize();
@@ -189,8 +191,7 @@ bool NeighborhoodGeneratorHelper::ObjectiveDomainIsConstraining() const {
   const Domain obj_domain = ReadDomainFromProto(objective);
   const Domain inferred_domain =
       Domain(min_activity, max_activity)
-          .IntersectionWith(
-              Domain(std::numeric_limits<int64_t>::min(), obj_domain.Max()));
+          .IntersectionWith(Domain(kint64min, obj_domain.Max()));
   return !inferred_domain.IsIncludedIn(obj_domain);
 }
 
@@ -212,8 +213,18 @@ void NeighborhoodGeneratorHelper::RecomputeHelperData() {
   absl::MutexLock graph_lock(graph_mutex_);
   absl::ReaderMutexLock domain_lock(domain_mutex_);
 
+  std::vector<int> mapping;
   if (shared_clauses_ != nullptr) {
-    var_to_representative_ = shared_clauses_->GetRepresentatives();
+    mapping = shared_clauses_->GetRepresentatives();
+  }
+  if (!mapping.empty()) {
+    // GetRepresentatives() return the smallest possible vector, complete it.
+    const int num_vars = model_proto_with_only_variables_.variables().size();
+    CHECK_LE(mapping.size(), num_vars);
+    mapping.reserve(num_vars);
+    while (mapping.size() < num_vars) {
+      mapping.push_back(mapping.size());
+    }
   }
 
   // Do basic presolving to have a more precise graph.
@@ -228,7 +239,6 @@ void NeighborhoodGeneratorHelper::RecomputeHelperData() {
   // TODO(user): We can also start from the previous simplified model instead.
   {
     Model local_model;
-    CpModelProto mapping_proto;
     // We want to replace the simplified_model_proto_ by a new one. Since
     // deleting an object in the arena doesn't free the memory, we also delete
     // and recreate the arena, but reusing the same storage.
@@ -239,43 +249,24 @@ void NeighborhoodGeneratorHelper::RecomputeHelperData() {
     local_arena_storage_.resize(new_size);
     local_arena_ = std::make_unique<google::protobuf::Arena>(
         local_arena_storage_.data(), local_arena_storage_.size());
+
+    // Note that here we don't densify the space of indices, so we don't need
+    // any special logic for the constants. ModelCopy will already deal with
+    // them efficiently.
     simplified_model_proto_ =
         google::protobuf::Arena::Create<CpModelProto>(local_arena_.get());
-    *simplified_model_proto_->mutable_variables() =
-        model_proto_with_only_variables_.variables();
+    ModelCopy copier(simplified_model_proto_, &local_model, mapping);
 
-    const int num_vars = model_proto_with_only_variables_.variables_size();
-    std::vector<int> mapping;
-    std::vector<int> reverse_mapping;
-    mapping.reserve(num_vars);
-    reverse_mapping.reserve(num_vars);
-    int first_fixed_literal = -1;
-    for (int var = 0; var < num_vars; ++var) {
-      if (IsConstant(var)) {
-        const int64_t value = ConstantValue(var);
-        // ModelCopy requires that if some literals are fixed, then one of them
-        // must not be removed by the mapping.
-        if (first_fixed_literal == -1 && (value == 0 || value == 1)) {
-          first_fixed_literal = var;
-          mapping.push_back(var);
-        } else {
-          mapping.push_back(kNoVariableMapping);
-        }
-      } else {
-        mapping.push_back(GetRepresentative(var));
-      }
-      reverse_mapping.push_back(var);
-    }
-
-    PresolveContext context(&local_model, simplified_model_proto_,
-                            &mapping_proto);
-    ModelCopy copier(&context, mapping, reverse_mapping);
-
-    // TODO(user): Not sure what to do if the model is UNSAT.
-    // This  shouldn't matter as it should be dealt with elsewhere.
-    copier.ImportAndSimplifyConstraints(model_proto_);
-    copier.ImportObjective(model_proto_);
+    // When the model is unsat, we abort any update.
+    // This shouldn't matter as it should be dealt with elsewhere.
+    if (!copier.ImportVariables(model_proto_with_only_variables_)) return;
+    if (!copier.ImportAndSimplifyConstraints(model_proto_)) return;
+    if (!copier.ImportObjective(model_proto_)) return;
+    if (!copier.FinishCopy(model_proto_)) return;
   }
+
+  // We copied the model successfully, so commit.
+  var_to_representative_ = mapping;
 
   // Compute the constraint <-> variable graph.
   //
@@ -350,6 +341,7 @@ void NeighborhoodGeneratorHelper::RecomputeHelperData() {
       const int var = objective.vars(i);
       const int64_t coeff = objective.coeffs(i);
       DCHECK(RefIsPositive(var));
+      DCHECK(!IsConstant(var));
       DCHECK_NE(coeff, 0);
       is_in_objective_[var] = true;
       has_positive_objective_coefficient_[var] = coeff > 0;
@@ -770,8 +762,8 @@ void ProcessDemandListFromCumulativeConstraint(
   // Checks if any pairs of tasks cannot overlap.
   int64_t sum_of_min_two_capacities = 2;
   if (capacity > 1) {
-    int64_t min1 = std::numeric_limits<int64_t>::max();
-    int64_t min2 = std::numeric_limits<int64_t>::max();
+    int64_t min1 = kint64max;
+    int64_t min2 = kint64max;
     for (const Demand& demand : demands) {
       if (demand.height <= min1) {
         min2 = min1;
@@ -1046,7 +1038,7 @@ NeighborhoodGeneratorHelper::GetRoutingPathBooleanVariables(
     const CircuitConstraintProto& ct = ModelProto().constraints(i).circuit();
 
     // Collect arcs.
-    int min_node = std::numeric_limits<int>::max();
+    int min_node = kint32max;
     tail_to_head_and_arc_bool_var.clear();
     for (int i = 0; i < ct.literals_size(); ++i) {
       const int literal = ct.literals(i);
@@ -1122,88 +1114,63 @@ Neighborhood NeighborhoodGeneratorHelper::FixGivenVariables(
     const Bitset64<int>& variables_to_fix) const {
   const int num_variables = variables_to_fix.size();
   Neighborhood neighborhood(num_variables);
-  neighborhood.delta.mutable_variables()->Reserve(num_variables);
 
-  // TODO(user): Maybe relax all variables in the objective when the number
-  // is small or negligible compared to the number of variables.
-  int unique_objective_variable = -1;
+  // Do a bit of filtering on what to fix compared to "variables_to_fix".
+  // We want only active variable in there (at the time we acquire the lock).
+  std::vector<int> to_fix;
+  std::vector<bool> in_to_fix(num_variables, false);
   {
     absl::ReaderMutexLock graph_lock(graph_mutex_);
+
+    // If there is an unique objective variable, we will always relax it.
+    //
+    // TODO(user): Maybe relax all variables in the objective when the number
+    // is small or negligible compared to the number of variables.
+    int unique_objective_variable = -1;
     if (simplified_model_proto_->has_objective() &&
         simplified_model_proto_->objective().vars_size() == 1) {
       unique_objective_variable = simplified_model_proto_->objective().vars(0);
     }
-  }
 
-  // Fill in neighborhood.delta all variable domains.
-  int num_fixed = 0;
-  {
-    absl::ReaderMutexLock domain_lock(domain_mutex_);
-    for (int i = 0; i < num_variables; ++i) {
-      const IntegerVariableProto& current_var =
-          model_proto_with_only_variables_.variables(i);
-      IntegerVariableProto* new_var = neighborhood.delta.add_variables();
+    for (int var = 0; var < num_variables; ++var) {
+      if (!variables_to_fix[var]) continue;
 
-      // We only copy the name in debug mode.
-      if (DEBUG_MODE) new_var->set_name(current_var.name());
+      // We only fix representative.
+      // This is needed for correctness of the "connected component" logic.
+      //
+      // We don't need to fix all the other, since the initial copy to generate
+      // the LNS fragment will use the most up to date equivalence information.
+      const int rep = PositiveRef(GetRepresentative(var));
+      if (rep == unique_objective_variable) continue;
 
-      if (variables_to_fix[i] && i != unique_objective_variable) {
-        ++num_fixed;
+      // Skip non-active variable (they should be already fixed).
+      if (!active_variables_set_[rep]) continue;
 
-        // Note the use of DomainInProtoContains() instead of
-        // ReadDomainFromProto() as the later is slower and allocate memory.
-        const int64_t base_value = base_solution.solution(i);
-        if (DomainInProtoContains(current_var, base_value)) {
-          new_var->add_domain(base_value);
-          new_var->add_domain(base_value);
-        } else {
-          // If under the updated domain, the base solution is no longer valid,
-          // We should probably regenerate this neighborhood. But for now we
-          // just do a best effort and take the closest value.
-          const Domain domain = ReadDomainFromProto(current_var);
-          int64_t closest_value = domain.Min();
-          int64_t closest_dist = std::abs(closest_value - base_value);
-          for (const ClosedInterval interval : domain) {
-            for (const int64_t value : {interval.start, interval.end}) {
-              const int64_t dist = std::abs(value - base_value);
-              if (dist < closest_dist) {
-                closest_value = value;
-                closest_dist = dist;
-              }
-            }
-          }
-          FillDomainInProto(Domain(closest_value, closest_value), new_var);
-        }
-      } else {
-        *new_var->mutable_domain() = current_var.domain();
+      if (!in_to_fix[rep]) {
+        in_to_fix[rep] = true;
+        to_fix.push_back(rep);
       }
     }
-  }
 
-  // Fill some statistic fields and detect if we cover a full component.
-  //
-  // TODO(user): If there is just one component, we can skip some computation.
-  {
-    absl::ReaderMutexLock graph_lock(graph_mutex_);
-    std::vector<int> count(components_.size(), 0);
-    const int num_variables = neighborhood.delta.variables().size();
-    for (int var = 0; var < num_variables; ++var) {
-      const auto& domain = neighborhood.delta.variables(var).domain();
-      if (domain.size() != 2 || domain[0] != domain[1]) {
+    std::vector<bool> component_was_altered(components_.size(), false);
+    for (const int var : active_variables_) {
+      DCHECK_EQ(GetRepresentative(var), var);
+      if (in_to_fix[var]) {
+        const int c = var_to_component_index_[var];
+        DCHECK_NE(c, -1);
+        component_was_altered[c] = true;
+      } else {
+        // Anything non-fixed is considered "relaxed".
+        // TODO(user): shall we ignore fixed variables.
         ++neighborhood.num_relaxed_variables;
         if (is_in_objective_[var]) {
           ++neighborhood.num_relaxed_variables_in_objective;
-        }
-        const int c = var_to_component_index_[var];
-        if (c != -1) {
-          DCHECK_EQ(GetRepresentative(var), var);
-          count[c]++;
         }
       }
     }
 
     for (int i = 0; i < components_.size(); ++i) {
-      if (count[i] == components_[i].size()) {
+      if (!component_was_altered[i]) {
         neighborhood.variables_that_can_be_fixed_to_local_optimum.insert(
             neighborhood.variables_that_can_be_fixed_to_local_optimum.end(),
             components_[i].begin(), components_[i].end());
@@ -1211,11 +1178,51 @@ Neighborhood NeighborhoodGeneratorHelper::FixGivenVariables(
     }
   }
 
+  // We start by copying the current domains. Note that if ignore_names is true
+  // (the default), we should already have no names here so we don't waste that
+  // space.
+  {
+    absl::ReaderMutexLock domain_lock(domain_mutex_);
+    *neighborhood.delta.mutable_variables() =
+        model_proto_with_only_variables_.variables();
+  }
+
+  // Do the actual fixing using the base solution.
+  for (const int var : to_fix) {
+    IntegerVariableProto* var_proto = neighborhood.delta.mutable_variables(var);
+
+    // Note the use of DomainInProtoContains() instead of
+    // ReadDomainFromProto() as the later is slower and allocate memory.
+    int64_t fixed_value = base_solution.solution(var);
+    if (!DomainInProtoContains(*var_proto, fixed_value)) {
+      // If under the updated domain, the base solution is no longer valid,
+      // We should probably regenerate this neighborhood. But for now we
+      // just do a best effort and take the closest value.
+      const Domain domain = ReadDomainFromProto(*var_proto);
+      int64_t closest_value = domain.Min();
+      int64_t closest_dist = std::abs(closest_value - fixed_value);
+      for (const ClosedInterval interval : domain) {
+        for (const int64_t value : {interval.start, interval.end}) {
+          const int64_t dist = std::abs(value - fixed_value);
+          if (dist < closest_dist) {
+            closest_value = value;
+            closest_dist = dist;
+          }
+        }
+      }
+      fixed_value = closest_value;
+    }
+
+    // Fix that variable domain.
+    FillDomainInProto(Domain(fixed_value, fixed_value), var_proto);
+  }
+
   // If the objective domain might cut the optimal solution, we cannot exploit
-  // the connected components. We compute this outside the mutex to avoid
-  // any deadlock risk.
+  // the connected components.
   //
   // TODO(user): We could handle some complex domain (size > 2).
+  // TODO(user): We could still handle component that do not contain objective
+  // terms.
   if (model_proto_.has_objective() &&
       (model_proto_.objective().domain().size() != 2 ||
        shared_response_->GetInnerObjectiveLowerBound() <
@@ -1223,6 +1230,7 @@ Neighborhood NeighborhoodGeneratorHelper::FixGivenVariables(
     neighborhood.variables_that_can_be_fixed_to_local_optimum.clear();
   }
 
+  const int num_fixed = to_fix.size();
   const int num_relaxed = num_variables - num_fixed;
   neighborhood.delta.mutable_solution_hint()->mutable_vars()->Reserve(
       num_relaxed);
@@ -1706,7 +1714,7 @@ Neighborhood DecompositionGraphNeighborhoodGenerator::Generate(
     absl::BitGenRef random) {
   int max_width = 0;
   int size_at_min_width_after_100;
-  int min_width_after_100 = std::numeric_limits<int>::max();
+  int min_width_after_100 = kint32max;
   int num_zero_score = 0;
   std::vector<int> relaxed_variables;
 
@@ -1888,7 +1896,7 @@ ConstraintProto DistanceToBoundsSmallerThanConstraint(
     linear->add_coeffs(-1);
     linear->add_vars(var);
   }
-  linear->add_domain(std::numeric_limits<int64_t>::min());
+  linear->add_domain(kint64min);
   linear->add_domain(rhs - lhs_constant_value);
   return new_constraint;
 }
@@ -2142,7 +2150,7 @@ namespace {
 void AddPrecedence(const LinearExpressionProto& before,
                    const LinearExpressionProto& after, CpModelProto* model) {
   LinearConstraintProto* linear = model->add_constraints()->mutable_linear();
-  linear->add_domain(std::numeric_limits<int64_t>::min());
+  linear->add_domain(kint64min);
   linear->add_domain(after.offset() - before.offset());
   for (int i = 0; i < before.vars_size(); ++i) {
     linear->add_vars(before.vars(i));

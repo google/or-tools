@@ -34,6 +34,7 @@
 #include "ortools/base/log_severity.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/timer.h"
+#include "ortools/base/types.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/port/sysinfo.h"
 #include "ortools/sat/clause.h"
@@ -1150,7 +1151,7 @@ void SatSolver::ProcessCurrentConflict(
   }
 
   // Learn the new clauses.
-  int best_lbd = std::numeric_limits<int>::max();
+  int best_lbd = kint32max;
   for (const auto& [clause, is_redundant, min_lbd, literals] :
        learned_clauses_) {
     DCHECK((lrat_proof_handler_ == nullptr) || (clause != kNullClausePtr));
@@ -1196,7 +1197,7 @@ std::pair<bool, int> SatSolver::SubsumptionsInConflictResolution(
   // conflict "shrinking" in the literature.
   std::vector<SatClause*> subsumed_by_decisions;
   bool decision_is_redundant = true;
-  int decision_min_lbd = std::numeric_limits<int>::max();
+  int decision_min_lbd = kint32max;
   int decisions_clause_size = 0;
   if (assumption_level_ == 0 &&
       parameters_->decision_subsumption_during_conflict_analysis()) {
@@ -1282,7 +1283,7 @@ std::pair<bool, int> SatSolver::SubsumptionsInConflictResolution(
 
     // Then this clause subsumes all entry in the group.
     bool new_clause_is_redundant = true;
-    int new_clause_min_lbd = std::numeric_limits<int>::max();
+    int new_clause_min_lbd = kint32max;
     for (SatClause* clause : subsuming_groups_[i]) {
       CHECK_NE(clause->size(), 0);  // Not subsumed yet.
       if (clauses_propagator_->IsRemovable(clause)) {
@@ -1306,7 +1307,7 @@ std::pair<bool, int> SatSolver::SubsumptionsInConflictResolution(
   }
 
   bool is_redundant = true;
-  int min_lbd_of_subsumed_clauses = std::numeric_limits<int>::max();
+  int min_lbd_of_subsumed_clauses = kint32max;
   const auto in_decision = tmp_decision_set_.const_view();
   const auto maybe_subsume = [&is_redundant, &min_lbd_of_subsumed_clauses,
                               in_conflict, conflict, in_decision,
@@ -1672,7 +1673,7 @@ SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit,
   const int64_t kDisplayFrequency = 10000;
   int64_t next_display = parameters_->log_search_progress()
                              ? NextMultipleOf(num_failures(), kDisplayFrequency)
-                             : std::numeric_limits<int64_t>::max();
+                             : kint64max;
 
   // Variables used to check the memory limit every kMemoryCheckFrequency.
   const int64_t kMemoryCheckFrequency = 10000;
@@ -1682,8 +1683,8 @@ SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit,
   // The max_number_of_conflicts is per solve but the counter is for the whole
   // solver.
   const int64_t kFailureLimit =
-      max_number_of_conflicts == std::numeric_limits<int64_t>::max()
-          ? std::numeric_limits<int64_t>::max()
+      max_number_of_conflicts == kint64max
+          ? kint64max
           : counters_.num_failures + max_number_of_conflicts;
 
   // Starts search.
@@ -2737,12 +2738,11 @@ void SatSolver::MinimizeConflictRecursively(std::vector<Literal>* conflict,
   is_independent_.ClearAndResize(num_variables_);
 
   // min_trail_index_per_level_ will always be reset to all
-  // std::numeric_limits<int>::max() at the end. This is used to prune the
+  // kint32max at the end. This is used to prune the
   // search because any literal at a given level with an index smaller or equal
   // to min_trail_index_per_level_[level] can't be redundant.
   if (CurrentDecisionLevel() >= min_trail_index_per_level_.size()) {
-    min_trail_index_per_level_.resize(CurrentDecisionLevel() + 1,
-                                      std::numeric_limits<int>::max());
+    min_trail_index_per_level_.resize(CurrentDecisionLevel() + 1, kint32max);
   }
 
   // Compute the number of variables at each decision level. This will be used
@@ -2809,8 +2809,7 @@ void SatSolver::MinimizeConflictRecursively(std::vector<Literal>* conflict,
   const int threshold = min_trail_index_per_level_.size() / 2;
   if (is_marked_.PositionsSetAtLeastOnce().size() < threshold) {
     for (BooleanVariable var : is_marked_.PositionsSetAtLeastOnce()) {
-      min_trail_index_per_level_[AssignmentLevel(var)] =
-          std::numeric_limits<int>::max();
+      min_trail_index_per_level_[AssignmentLevel(var)] = kint32max;
     }
   } else {
     min_trail_index_per_level_.clear();

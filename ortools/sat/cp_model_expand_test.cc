@@ -14,10 +14,12 @@
 #include "ortools/sat/cp_model_expand.h"
 
 #include <cstdint>
+#include <utility>
 #include <vector>
 
 #include "absl/container/btree_set.h"
 #include "absl/log/check.h"
+#include "absl/random/random.h"
 #include "absl/strings/string_view.h"
 #include "gtest/gtest.h"
 #include "ortools/base/container_logging.h"
@@ -2082,6 +2084,57 @@ TEST(ExpandInverseTest, DuplicateAtDifferentPosition) {
   EXPECT_EQ(4, solutions.size());
 }
 
+TEST(ExpandInverseTest, ExpressionsWithDuplicateVariables) {
+  absl::BitGen random;
+  std::vector<std::pair<int, int>> coeff_and_offsets;
+  for (int coeff = -2; coeff < 3; ++coeff) {
+    for (int offset = -1; offset < 2; ++offset) {
+      coeff_and_offsets.push_back({coeff, offset});
+    }
+  }
+  for (int i = 0; i < 1000; ++i) {
+    CpModelProto initial_model;
+    for (int j = 0; j < 4; ++j) {
+      auto* var = initial_model.add_variables();
+      var->add_domain(-1);
+      var->add_domain(4);
+    }
+    auto* inverse = initial_model.add_constraints()->mutable_inverse();
+    // Create an inverse constraint with direct expressions using variables
+    // {0, 1, 2, 3} and inverse expressions using variables {1, 2, 3, 4}.
+    for (int j = 0; j < 4; ++j) {
+      int k = absl::Uniform(random, 0, (int)coeff_and_offsets.size());
+      auto* f_direct = inverse->add_f_expr_direct();
+      if (coeff_and_offsets[k].first != 0) {
+        f_direct->add_vars(j);
+        f_direct->add_coeffs(coeff_and_offsets[k].first);
+      }
+      f_direct->set_offset(coeff_and_offsets[k].second);
+
+      k = absl::Uniform(random, 0, (int)coeff_and_offsets.size());
+      auto* f_inverse = inverse->add_f_expr_inverse();
+      if (coeff_and_offsets[k].first != 0) {
+        f_inverse->add_vars((j + 1) % 4);
+        f_inverse->add_coeffs(coeff_and_offsets[k].first);
+      }
+      f_inverse->set_offset(coeff_and_offsets[k].second);
+    }
+    absl::btree_set<std::vector<int>> solutions;
+    const CpSolverResponse response =
+        SolveAndCheck(initial_model, "", &solutions);
+
+    int num_expected_solutions = 0;
+    for (int j = 0; j < 6 * 6 * 6 * 6; ++j) {
+      if (SolutionIsFeasible(initial_model, {j / 216 - 1, (j / 36) % 6 - 1,
+                                             (j / 6) % 6 - 1, j % 6 - 1})) {
+        ++num_expected_solutions;
+      }
+    }
+    EXPECT_EQ(solutions.size(), num_expected_solutions)
+        << initial_model.DebugString();
+  }
+}
+
 TEST(TableExpandTest, UsedToFail) {
   const CpModelProto initial_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 3 ] }
@@ -2310,7 +2363,7 @@ TEST(FinalExpansionForLinearConstraintTest, ComplexLinearExpansion) {
   PresolveContext context(&model, &initial_model, nullptr);
 
   context.InitializeNewDomains();
-  context.LoadSolutionHint();
+  context.LoadAndClampSolutionHint();
 
   FinalExpansionForLinearConstraint(&context);
 
@@ -2381,7 +2434,7 @@ TEST(FinalExpansionForLinearConstraintTest, ComplexLinearExpansionWithInteger) {
   PresolveContext context(&model, &initial_model, nullptr);
 
   context.InitializeNewDomains();
-  context.LoadSolutionHint();
+  context.LoadAndClampSolutionHint();
 
   FinalExpansionForLinearConstraint(&context);
 
@@ -2434,7 +2487,7 @@ TEST(FinalExpansionForLinearConstraintTest,
   PresolveContext context(&model, &initial_model, nullptr);
 
   context.InitializeNewDomains();
-  context.LoadSolutionHint();
+  context.LoadAndClampSolutionHint();
 
   FinalExpansionForLinearConstraint(&context);
 

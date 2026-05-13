@@ -35,6 +35,7 @@
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/base/timer.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/drat_checker.h"
 #include "ortools/sat/linear_programming_constraint.h"
@@ -778,7 +779,7 @@ bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
     // Important: we can only use this clause to subsume/strenghten others if
     // it cannot be deleted later.
     if (!clause_manager_->IsRemovable(clause)) {
-      int min_size = std::numeric_limits<int32_t>::max();
+      int min_size = kint32max;
       LiteralIndex min_literal = kNoLiteralIndex;
       for (const Literal l : clause->AsSpan()) {
         if (one_watcher[l].size() < min_size) {

@@ -52,6 +52,8 @@ SchedulingConstraintHelper::SchedulingConstraintHelper(
       root_level_lin2_bounds_(model->GetOrCreate<RootLevelLinear2Bounds>()),
       enforcement_helper_(*model->GetOrCreate<EnforcementHelper>()),
       enforcement_id_(-1),
+      fixed_search_(model->GetOrCreate<SatParameters>()->search_branching() ==
+                    SatParameters::FIXED_SEARCH),
       starts_(std::move(starts)),
       ends_(std::move(ends)),
       sizes_(std::move(sizes)),
@@ -94,6 +96,8 @@ SchedulingConstraintHelper::SchedulingConstraintHelper(int num_tasks,
       root_level_lin2_bounds_(model->GetOrCreate<RootLevelLinear2Bounds>()),
       enforcement_helper_(*model->GetOrCreate<EnforcementHelper>()),
       enforcement_id_(-1),
+      fixed_search_(model->GetOrCreate<SatParameters>()->search_branching() ==
+                    SatParameters::FIXED_SEARCH),
       capacity_(num_tasks),
       cached_size_min_(new IntegerValue[capacity_]),
       cached_start_min_(new IntegerValue[capacity_]),
@@ -109,6 +113,10 @@ SchedulingConstraintHelper::SchedulingConstraintHelper(int num_tasks,
 bool SchedulingConstraintHelper::IsEnforced() const {
   return enforcement_helper_.Status(enforcement_id_) ==
          EnforcementStatus::IS_ENFORCED;
+}
+
+bool SchedulingConstraintHelper::FixedSearchFirstSolutionMode() const {
+  return fixed_search_ && sat_solver_->num_failures() == 0;
 }
 
 bool SchedulingConstraintHelper::Propagate() {

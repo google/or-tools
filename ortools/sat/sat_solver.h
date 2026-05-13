@@ -35,6 +35,7 @@
 #include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/base/timer.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/enforcement.h"
 #include "ortools/sat/lrat_proof_handler.h"
@@ -100,7 +101,7 @@ class SatSolver {
     const int num_vars = NumVariables();
 
     // We need to be able to encode the variable as a literal.
-    CHECK_LT(2 * num_vars, std::numeric_limits<int32_t>::max());
+    CHECK_LT(2 * num_vars, kint32max);
     SetNumVariables(num_vars + 1);
     return BooleanVariable(num_vars);
   }
@@ -1078,8 +1079,9 @@ inline std::function<void(Model*)> ExcludeCurrentSolutionAndBacktrack() {
     for (int i = 0; i < current_level; ++i) {
       clause_to_exclude_solution.push_back(decisions[i].literal.Negated());
     }
-    sat_solver->Backtrack(0);
-    AddClauseConstraint(clause_to_exclude_solution, model);
+    if (sat_solver->ResetToLevelZero()) {
+      AddClauseConstraint(clause_to_exclude_solution, model);
+    }
   };
 }
 

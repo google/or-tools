@@ -19,6 +19,7 @@
 #include "absl/log/log.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_split.h"
+#include "absl/strings/string_view.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/sat_decision.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -50,9 +51,9 @@ void RestartPolicy::Reset() {
     strategies_.push_back(parameters_.restart_algorithms(i));
   }
   if (strategies_.empty()) {
-    const std::vector<std::string> string_values = absl::StrSplit(
+    const std::vector<absl::string_view> string_values = absl::StrSplit(
         parameters_.default_restart_algorithms(), ',', absl::SkipEmpty());
-    for (const std::string& string_value : string_values) {
+    for (const absl::string_view string_value : string_values) {
       SatParameters::RestartAlgorithm tmp;
       if (!SatParameters::RestartAlgorithm_Parse(string_value, &tmp)) {
         LOG(WARNING) << "Couldn't parse the RestartAlgorithm name: '"

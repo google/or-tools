@@ -1164,8 +1164,10 @@ bool BinaryImplicationGraph::FixLiteral(Literal true_literal,
   if (trail_->Assignment().LiteralIsTrue(true_literal)) return true;
   if (trail_->Assignment().LiteralIsFalse(true_literal)) {
     if (lrat_proof_handler_ != nullptr) {
-      std::vector<ClausePtr> unsat_proof = {proof.begin(), proof.end()};
+      std::vector<ClausePtr> unsat_proof;
+      unsat_proof.reserve(proof.size() + 1);
       unsat_proof.push_back(ClausePtr(true_literal.Negated()));
+      unsat_proof.insert(unsat_proof.end(), proof.begin(), proof.end());
       lrat_proof_handler_->AddInferredClause(ClausePtr::EmptyClausePtr(),
                                              unsat_proof);
     }
@@ -2090,6 +2092,19 @@ class LratEquivalenceHelper {
   std::vector<Literal> tmp_literals_;
 };
 
+void BinaryImplicationGraph::ExportAllEquivalences() {
+  if (!enable_sharing_) return;
+  if (add_binary_callback_ == nullptr) return;
+  for (BooleanVariable var(0); var < representative_of_.size(); ++var) {
+    const Literal lit(var, true);
+    const Literal rep = RepresentativeOf(lit);
+    if (lit != rep) {
+      add_binary_callback_(lit.Negated(), rep);
+      add_binary_callback_(lit, rep.Negated());
+    }
+  }
+}
+
 bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
   // This was already called, and no new constraint where added. Note that new
   // fixed variable cannot create new equivalence, only new binary clauses do.
@@ -2178,6 +2193,22 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
     for (int i = 1; i < component.size(); ++i) {
       const Literal literal = Literal(LiteralIndex(component[i]));
       if (!is_redundant_[literal]) {
+        // This allows to make sure the SharedClauseManager properly detect
+        // that we have an equivalence. It shouldn't share more than
+        // O(num_variables) binary clauses per worker.
+        //
+        // TODO(user): Alternatively, we could run DetectEquivalences() in the
+        // SharedClauseManager, that might be more robust to make sure we don't
+        // miss any. Not clear what is the best approach.
+        //
+        // If literal.Negated() == representative the model is unsat, which
+        // should be detected by the other test below.
+        if (enable_sharing_ && add_binary_callback_ != nullptr &&
+            literal.Negated() != Literal(representative)) {
+          add_binary_callback_(literal.Negated(), Literal(representative));
+          add_binary_callback_(literal, Literal(representative).Negated());
+        }
+
         ++num_new_redundant_literals;
         is_redundant_.Set(literal);
       }
@@ -2923,7 +2954,7 @@ std::vector<Literal> BinaryImplicationGraph::ExpandAtMostOneWithWeight(
         const double lp =
             use_weight
                 ? expanded_lp_values[Literal(intersection[j]).NegatedIndex()] +
-                      absl::Uniform<double>(*random_, 0.0, 1e-4)
+                      absl::Uniform<double>(random_, 0.0, 1e-4)
                 : can_be_included.size() - intersection[j].value();
         if (index == -1 || lp > max_lp) {
           index = j;
@@ -3039,7 +3070,7 @@ BinaryImplicationGraph::GenerateAtMostOnesWithLargeWeight(
       const double activity =
           current_value + expanded_lp_values[l.NegatedIndex()];
       if (activity <= 1.01) continue;
-      const double v = activity + absl::Uniform<double>(*random_, 0.0, 1e-4);
+      const double v = activity + absl::Uniform<double>(random_, 0.0, 1e-4);
       if (best == kNoLiteralIndex || v > best_value) {
         best_value = v;
         best = l.NegatedIndex();
@@ -3076,7 +3107,7 @@ BinaryImplicationGraph::GenerateAtMostOnesWithLargeWeight(
     const int max_graph_size = 1024;
     if (fractional_literals.size() > max_graph_size) {
       std::shuffle(fractional_literals.begin(), fractional_literals.end(),
-                   *random_);
+                   random_);
       fractional_literals.resize(max_graph_size);
     }
 
@@ -3398,7 +3429,7 @@ LiteralIndex BinaryImplicationGraph::RandomImpliedLiteral(Literal lhs) {
   const int size2 = implications_and_amos_[lhs].num_offsets();
   if (size1 + size2 == 0) return kNoLiteralIndex;
 
-  const int choice = absl::Uniform<int>(*random_, 0, size1 + size2);
+  const int choice = absl::Uniform<int>(random_, 0, size1 + size2);
   if (choice < size1) {
     return implications_and_amos_[lhs].literals()[choice].Index();
   }
@@ -3406,12 +3437,12 @@ LiteralIndex BinaryImplicationGraph::RandomImpliedLiteral(Literal lhs) {
   const absl::Span<const Literal> amo =
       AtMostOne(implications_and_amos_[lhs].offsets()[choice - size1]);
   CHECK_GE(amo.size(), 2);
-  const int first_choice = absl::Uniform<int>(*random_, 0, amo.size());
+  const int first_choice = absl::Uniform<int>(random_, 0, amo.size());
   const Literal lit = amo[first_choice];
   if (lit != lhs) return lit.NegatedIndex();
 
   // We are unlucky and just picked the wrong literal: take a different one.
-  int next_choice = absl::Uniform<int>(*random_, 0, amo.size() - 1);
+  int next_choice = absl::Uniform<int>(random_, 0, amo.size() - 1);
   if (next_choice >= first_choice) {
     next_choice += 1;
   }
@@ -3717,7 +3748,7 @@ BinaryImplicationGraph::BinaryImplicationGraph(Model* model)
     : SatPropagator("BinaryImplicationGraph"),
       stats_("BinaryImplicationGraph"),
       time_limit_(model->GetOrCreate<TimeLimit>()),
-      random_(model->GetOrCreate<ModelRandomGenerator>()),
+      random_(*model->GetOrCreate<ModelRandomGenerator>()),
       trail_(model->GetOrCreate<Trail>()),
       lrat_proof_handler_(model->Mutable<LratProofHandler>()),
       at_most_one_max_expansion_size_(model->GetOrCreate<SatParameters>()

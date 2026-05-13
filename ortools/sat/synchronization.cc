@@ -52,6 +52,7 @@
 #include "ortools/base/log_severity.h"
 #include "ortools/base/macros/os_support.h"
 #include "ortools/base/timer.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/integer_base.h"
@@ -267,7 +268,7 @@ SharedResponseManager::SharedResponseManager(Model* model)
     : parameters_(*model->GetOrCreate<SatParameters>()),
       wall_timer_(*model->GetOrCreate<WallTimer>()),
       shared_time_limit_(model->GetOrCreate<ModelSharedTimeLimit>()),
-      random_(model->GetOrCreate<ModelRandomGenerator>()),
+      random_(*model->GetOrCreate<ModelRandomGenerator>()),
       solution_pool_(parameters_),
       logger_(model->GetOrCreate<SolverLogger>()) {
   bounds_logging_id_ = logger_->GetNewThrottledId();
@@ -529,7 +530,7 @@ IntegerValue SharedResponseManager::GetInnerObjectiveUpperBound() {
 }
 
 void SharedResponseManager::Synchronize() {
-  solution_pool_.Synchronize(*random_);
+  solution_pool_.Synchronize(random_);
 
   absl::MutexLock mutex_lock(mutex_);
   synchronized_inner_objective_lower_bound_ =
@@ -808,7 +809,7 @@ SharedResponseManager::NewSolution(absl::Span<const int64_t> solution_values,
   // In single thread, no one is synchronizing the solution manager, so we
   // should do it from here.
   if (always_synchronize_) {
-    solution_pool_.Synchronize(*random_);
+    solution_pool_.Synchronize(random_);
     first_solution_solvers_should_stop_ = true;
   }
 
@@ -930,12 +931,10 @@ SolverStatusChangeInfo SharedResponseManager::GetSolverStatusChangeInfo() {
 SharedBoundsManager::SharedBoundsManager(const CpModelProto& model_proto)
     : num_variables_(model_proto.variables_size()),
       model_proto_(model_proto),
-      lower_bounds_(num_variables_, std::numeric_limits<int64_t>::min()),
-      upper_bounds_(num_variables_, std::numeric_limits<int64_t>::max()),
-      synchronized_lower_bounds_(num_variables_,
-                                 std::numeric_limits<int64_t>::min()),
-      synchronized_upper_bounds_(num_variables_,
-                                 std::numeric_limits<int64_t>::max()) {
+      lower_bounds_(num_variables_, kint64min),
+      upper_bounds_(num_variables_, kint64max),
+      synchronized_lower_bounds_(num_variables_, kint64min),
+      synchronized_upper_bounds_(num_variables_, kint64max) {
   changed_variables_since_last_synchronize_.ClearAndResize(num_variables_);
   for (int i = 0; i < num_variables_; ++i) {
     lower_bounds_[i] = model_proto.variables(i).domain(0);
@@ -959,18 +958,17 @@ SharedBoundsManager::SharedBoundsManager(const CpModelProto& model_proto)
     var_to_orbit_index_ = GetOrbits(num_vars, generators);
 
     // Fill orbits_.
-    std::vector<int> keys;
-    std::vector<int> values;
+    CompactVectorVectorBuilder<int, int> orbits_builder;
+    orbits_builder.ReserveNumItems(num_vars);
     for (int var = 0; var < num_vars; ++var) {
       const int orbit_index = var_to_orbit_index_[var];
       if (orbit_index == -1) continue;
-      keys.push_back(orbit_index);
-      values.push_back(var);
+      orbits_builder.Add(orbit_index, var);
     }
-    if (keys.empty()) return;
+    orbits_.ResetFromBuilder(orbits_builder);
+    if (orbits_.empty()) return;
 
     has_symmetry_ = true;
-    orbits_.ResetFromFlatMapping(keys, values);
 
     // Fill representative.
     var_to_representative_.resize(num_vars);
@@ -1131,6 +1129,7 @@ void SharedBoundsManager::Synchronize() {
     }
   }
   changed_variables_since_last_synchronize_.ResetAllToFalse();
+  synchronized_timestamp_ = timestamp_;
 }
 
 int SharedBoundsManager::RegisterNewId(absl::string_view name) {
@@ -1182,7 +1181,7 @@ void SharedBoundsManager::GetChangedBounds(
       bounds_stats_[id_to_name_[id]].num_imported += variables->size();
     }
     if (timestamp != nullptr) {
-      *timestamp = timestamp_;
+      *timestamp = synchronized_timestamp_;
     }
   }
 
@@ -1429,6 +1428,13 @@ void SharedClausesManager::AddEdge(LiteralIndex a, LiteralIndex b) {
   }
   const LiteralIndex rep_a = GetRepresentative(a);
   const LiteralIndex rep_b = GetRepresentative(b);
+
+  if (Literal(rep_a) == Literal(rep_b).Negated()) {
+    // This happens when we just proved a model UNSAT. Do nothing to preserve
+    // the invariant representative[negated(a)] == negated(representative[a]).
+    return;
+  }
+
   // Always use the min as the new parent, in order to guarantee that the
   // representative of not(a) is the negation of the representative of a. On the
   // other hand, this does not give the shallowest new tree. This gives a less
@@ -1527,12 +1533,13 @@ void SharedClausesManager::LogStatistics(SolverLogger* logger) {
     absl::c_sort(name_to_table_line);
     std::vector<std::vector<std::string>> table;
     table.push_back({"Clauses shared", "#Exported", "#Imported", "#BinaryRead",
-                     "#BinaryTotal"});
+                     "#BinaryTotal", "#EquivTotal"});
     for (const auto& [name, exported, imported, binary_read, binary_total] :
          name_to_table_line) {
       table.push_back({FormatName(name), FormatCounter(exported),
                        FormatCounter(imported), FormatCounter(binary_read),
-                       FormatCounter(binary_total)});
+                       FormatCounter(binary_total),
+                       FormatCounter(num_equivalences_)});
     }
     SOLVER_LOG(logger, FormatTable(table));
   }

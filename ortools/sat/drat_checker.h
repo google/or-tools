@@ -25,6 +25,7 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/util/strong_integers.h"
 
@@ -122,7 +123,7 @@ class DratChecker {
     // DeleteClause(c0), AddProblemClause(c2), ... if c0's index is 0, then its
     // deleted_index is 2. Meaning that when checking a clause whose index is
     // larger than or equal to 2 (e.g. c2), c0 can be ignored.
-    ClauseIndex deleted_index = ClauseIndex(std::numeric_limits<int>::max());
+    ClauseIndex deleted_index = ClauseIndex(kint32max);
 
     // The indices of the clauses (with at least two literals) which are deleted
     // just after this clause.

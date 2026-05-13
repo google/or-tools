@@ -27,6 +27,7 @@
 #include "absl/numeric/int128.h"
 #include "absl/types/span.h"
 #include "ortools/base/mathutil.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/enforcement.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
@@ -295,7 +296,7 @@ bool LinearConstraintPropagator<use_int128>::Propagate() {
   // If use_int128 is true, the slack or propagation slack can be larger than
   // this. To detect overflow with capped arithmetic, it is important the slack
   // used in our algo never exceed this value.
-  const absl::int128 max_slack = std::numeric_limits<int64_t>::max() - 1;
+  const absl::int128 max_slack = kint64max - 1;
 
   // Conflict?
   IntegerValue slack;

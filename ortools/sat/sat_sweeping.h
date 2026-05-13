@@ -55,7 +55,7 @@ class EquivalenceSatSweeping {
         implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()),
         clause_manager_(model->GetOrCreate<ClauseManager>()),
         global_time_limit_(model->GetOrCreate<TimeLimit>()),
-        random_(model->GetOrCreate<ModelRandomGenerator>()) {}
+        random_(*model->GetOrCreate<ModelRandomGenerator>()) {}
 
   // Do one round of equivalence SAT sweeping.
   // `run_inprocessing` is a function that is called on the model before solving
@@ -79,7 +79,7 @@ class EquivalenceSatSweeping {
   BinaryImplicationGraph* implication_graph_;
   ClauseManager* clause_manager_;
   TimeLimit* global_time_limit_;
-  ModelRandomGenerator* random_;
+  absl::BitGenRef random_;
 
   int max_num_clauses_ = 52000;
   int max_num_boolean_variables_ = 2000;

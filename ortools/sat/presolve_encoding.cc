@@ -32,6 +32,7 @@
 #include "absl/strings/str_join.h"
 #include "google/protobuf/repeated_field.h"
 #include "ortools/base/stl_util.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/presolve_context.h"
@@ -76,8 +77,8 @@ std::vector<VariableEncodingLocalModel> CreateVariableEncodingLocalModels(
 
   // Do a pass to gather all linear1 constraints.
   absl::flat_hash_map<int, absl::InlinedVector<int, 1>> var_to_linear1;
-  for (int i = 0; i < context->working_model->constraints_size(); ++i) {
-    const ConstraintProto& ct = context->working_model->constraints(i);
+  for (int i = 0; i < context->NumConstraints(); ++i) {
+    const ConstraintProto& ct = context->Constraint(i);
     if (ct.constraint_case() == ConstraintProto::kBoolOr ||
         ct.constraint_case() == ConstraintProto::kAtMostOne ||
         ct.constraint_case() == ConstraintProto::kExactlyOne) {
@@ -106,12 +107,11 @@ std::vector<VariableEncodingLocalModel> CreateVariableEncodingLocalModels(
   // not related to the encodings. We use a bitset to keep track of all boolean
   // potentially encoding a domain for any variable and we filter out all
   // bool_or that are not linked to at least two of these booleans.
-  Bitset64<int> booleans_potentially_encoding_domain(
-      context->working_model->variables_size());
+  Bitset64<int> booleans_potentially_encoding_domain(context->NumVariables());
 
   for (const auto& [var, linear1_cts] : var_to_linear1) {
     for (const int c : linear1_cts) {
-      const ConstraintProto& ct = context->working_model->constraints(c);
+      const ConstraintProto& ct = context->Constraint(c);
       const int bool_var = PositiveRef(ct.enforcement_literal(0));
       booleans_potentially_encoding_domain.Set(bool_var);
       bool_to_var_encodings[bool_var].push_back(var);
@@ -124,7 +124,7 @@ std::vector<VariableEncodingLocalModel> CreateVariableEncodingLocalModels(
   int new_encoding_or_count = 0;
   for (int i = 0; i < constraint_encoding_or.size(); ++i) {
     const int c = constraint_encoding_or[i];
-    const ConstraintProto& ct = context->working_model->constraints(c);
+    const ConstraintProto& ct = context->Constraint(c);
     const BoolArgumentProto& bool_ct =
         ct.constraint_case() == ConstraintProto::kAtMostOne
             ? ct.at_most_one()
@@ -162,7 +162,7 @@ std::vector<VariableEncodingLocalModel> CreateVariableEncodingLocalModels(
 
   for (const int c : constraint_encoding_or) {
     var_to_bools.clear();
-    const ConstraintProto& ct = context->working_model->constraints(c);
+    const ConstraintProto& ct = context->Constraint(c);
     const BoolArgumentProto& bool_ct =
         ct.constraint_case() == ConstraintProto::kAtMostOne
             ? ct.at_most_one()
@@ -201,8 +201,8 @@ std::vector<VariableEncodingLocalModel> CreateVariableEncodingLocalModels(
     encoding_model.var_in_more_than_one_constraint_outside_the_local_model =
         (context->VarToConstraints(var).size() - linear1_cts.size() > 1);
     for (const int ct : linear1_cts) {
-      const int bool_var = PositiveRef(
-          context->working_model->constraints(ct).enforcement_literal(0));
+      const int bool_var =
+          PositiveRef(context->Constraint(ct).enforcement_literal(0));
       encoding_model.bools_only_used_inside_the_local_model.insert(bool_var);
       var_bool_counts[{var, bool_var}].linear1_count++;
     }
@@ -233,7 +233,7 @@ bool BasicPresolveAndGetFullyEncodedDomains(
   // Fill ref_to_linear1 and do some basic presolving.
   Domain var_domain = context->DomainOf(local_model.var);
   for (const int ct : local_model.linear1_constraints) {
-    ConstraintProto* ct_proto = context->working_model->mutable_constraints(ct);
+    ConstraintProto* ct_proto = context->MutableConstraint(ct);
     DCHECK(ConstraintIsEncodingBound(*ct_proto));
     const int ref = ct_proto->enforcement_literal(0);
     const Domain domain = ReadDomainFromProto(ct_proto->linear());
@@ -251,8 +251,7 @@ bool BasicPresolveAndGetFullyEncodedDomains(
     auto [it, inserted] = ref_to_linear1.insert({ref, ct});
     if (!inserted) {
       *changed = true;
-      ConstraintProto* old_ct_proto =
-          context->working_model->mutable_constraints(it->second);
+      ConstraintProto* old_ct_proto = context->MutableConstraint(it->second);
       const Domain old_ct_domain = ReadDomainFromProto(old_ct_proto->linear());
       const Domain new_domain = domain.IntersectionWith(old_ct_domain);
       ct_proto->Clear();
@@ -279,7 +278,7 @@ bool BasicPresolveAndGetFullyEncodedDomains(
   int new_linear1_size = 0;
   for (int i = 0; i < local_model.linear1_constraints.size(); ++i) {
     const int ct = local_model.linear1_constraints[i];
-    const ConstraintProto& ct_proto = context->working_model->constraints(ct);
+    const ConstraintProto& ct_proto = context->Constraint(ct);
     if (ct_proto.constraint_case() != ConstraintProto::kLinear) continue;
     if (context->IsFixed(ct_proto.enforcement_literal(0))) {
       continue;
@@ -297,10 +296,8 @@ bool BasicPresolveAndGetFullyEncodedDomains(
   for (const auto& [ref, ct] : ref_to_linear1) {
     auto it = ref_to_linear1.find(NegatedRef(ref));
     if (it == ref_to_linear1.end()) continue;
-    const ConstraintProto& positive_ct =
-        context->working_model->constraints(ct);
-    const ConstraintProto& negative_ct =
-        context->working_model->constraints(it->second);
+    const ConstraintProto& positive_ct = context->Constraint(ct);
+    const ConstraintProto& negative_ct = context->Constraint(it->second);
     const Domain positive_domain = ReadDomainFromProto(positive_ct.linear());
     const Domain negative_domain = ReadDomainFromProto(negative_ct.linear());
     // b => x in D1
@@ -341,7 +338,7 @@ bool BasicPresolveAndGetFullyEncodedDomains(
   //
   // where D1, D2, ..., D_n are non overlapping. This works too for exactly_one.
   for (const int ct : local_model.constraints_linking_two_encoding_booleans) {
-    const ConstraintProto& ct_proto = context->working_model->constraints(ct);
+    const ConstraintProto& ct_proto = context->Constraint(ct);
     if (ct_proto.constraint_case() != ConstraintProto::kBoolOr &&
         ct_proto.constraint_case() != ConstraintProto::kExactlyOne) {
       continue;
@@ -361,8 +358,8 @@ bool BasicPresolveAndGetFullyEncodedDomains(
         encoding_detected = false;
         break;
       }
-      const Domain domain = ReadDomainFromProto(
-          context->working_model->constraints(it->second).linear());
+      const Domain domain =
+          ReadDomainFromProto(context->Constraint(it->second).linear());
       ref_and_domains.push_back({ref, domain});
       if (!non_overlapping_domain.IntersectionWith(domain).IsEmpty()) {
         encoding_detected = false;
@@ -395,8 +392,8 @@ bool BasicPresolveAndGetFullyEncodedDomains(
             "domain");
         std::vector<int> new_enforcement_literals(bool_or.literals().begin(),
                                                   bool_or.literals().end());
-        context->working_model->mutable_constraints(ct)->clear_bool_or();
-        context->working_model->mutable_constraints(ct)
+        context->MutableConstraint(ct)->clear_bool_or();
+        context->MutableConstraint(ct)
             ->mutable_exactly_one()
             ->mutable_literals()
             ->Add(new_enforcement_literals.begin(),
@@ -428,7 +425,7 @@ bool BasicPresolveAndGetFullyEncodedDomains(
         // the linear1 holding the ~l0 encoding and the implicit encoding for
         // ~l0 coming from the bool_or are equivalent.
         ConstraintProto& negated_linear1_ct =
-            *context->working_model->mutable_constraints(it->second);
+            *context->MutableConstraint(it->second);
         const Domain negated_ct_domain =
             ReadDomainFromProto(negated_linear1_ct.linear());
         const Domain potential_new_domain =
@@ -455,7 +452,7 @@ bool DetectEncodedComplexDomain(
     PresolveContext* context, int ct_index,
     VariableEncodingLocalModel& local_model,
     absl::flat_hash_map<int, Domain>* fully_encoded_domains, bool* changed) {
-  ConstraintProto* ct = context->working_model->mutable_constraints(ct_index);
+  ConstraintProto* ct = context->MutableConstraint(ct_index);
   *changed = false;
 
   if (context->ModelIsUnsat()) return false;
@@ -718,18 +715,16 @@ bool DetectEncodedComplexDomain(
   } else if (domain_new_var_complement.IsEmpty()) {
     CHECK(context->SetLiteralToTrue(new_var));
   } else {
-    local_model.linear1_constraints.push_back(
-        context->working_model->constraints_size());
-    ConstraintProto* new_ct = context->working_model->add_constraints();
+    local_model.linear1_constraints.push_back(context->NumConstraints());
+    ConstraintProto* new_ct = context->NewConstraint();
     new_ct->add_enforcement_literal(new_var);
     new_ct->mutable_linear()->add_vars(local_model.var);
     new_ct->mutable_linear()->add_coeffs(1);
     FillDomainInProto(domain_new_var, new_ct->mutable_linear());
-    local_model.linear1_constraints.push_back(
-        context->working_model->constraints_size());
+    local_model.linear1_constraints.push_back(context->NumConstraints());
     local_model.bools_only_used_inside_the_local_model.insert(
         PositiveRef(new_var));
-    new_ct = context->working_model->add_constraints();
+    new_ct = context->NewConstraint();
     new_ct->add_enforcement_literal(NegatedRef(new_var));
     new_ct->mutable_linear()->add_vars(local_model.var);
     new_ct->mutable_linear()->add_coeffs(1);
@@ -779,7 +774,7 @@ bool DetectEncodedComplexDomain(
   int new_linear1_size = 0;
   for (int i = 0; i < local_model.linear1_constraints.size(); ++i) {
     const int ct = local_model.linear1_constraints[i];
-    ConstraintProto* ct_proto = context->working_model->mutable_constraints(ct);
+    ConstraintProto* ct_proto = context->MutableConstraint(ct);
     if (bools_to_remove_set.contains(
             PositiveRef(ct_proto->enforcement_literal(0)))) {
       ct_proto->Clear();
@@ -832,7 +827,7 @@ bool MaybeTransferLinear1ToAnotherVariable(
   // In general constraint with more than two variable can't be removed.
   // Similarly for linear2 with non-fixed rhs as we would need to check the form
   // of all implied domain.
-  const auto& other_ct = context->working_model->constraints(other_c);
+  const auto& other_ct = context->Constraint(other_c);
   if (context->ConstraintToVars(other_c).size() != 2 ||
       !other_ct.enforcement_literal().empty() ||
       other_ct.constraint_case() == ConstraintProto::kLinear) {
@@ -862,8 +857,7 @@ bool MaybeTransferLinear1ToAnotherVariable(
       Domain target_domain =
           implied.ContinuousMultiplicationBy(target.coeffs(0))
               .AdditionWith(Domain(target.offset()));
-      target_domain = target_domain.IntersectionWith(
-          Domain(0, std::numeric_limits<int64_t>::max()));
+      target_domain = target_domain.IntersectionWith(Domain(0, kint64max));
 
       // We have target = abs(expr).
       const Domain expr_domain =
@@ -883,7 +877,7 @@ bool MaybeTransferLinear1ToAnotherVariable(
   // Applies transfer_f to all linear1.
   const Domain var_domain = context->DomainOf(var);
   for (const int c : to_rewrite) {
-    ConstraintProto* ct = context->working_model->mutable_constraints(c);
+    ConstraintProto* ct = context->MutableConstraint(c);
     if (ct->linear().vars(0) != var || ct->linear().coeffs(0) != 1) {
       // This shouldn't happen.
       LOG(INFO) << "Aborted in MaybeTransferLinear1ToAnotherVariable()";
@@ -913,7 +907,7 @@ bool MaybeTransferLinear1ToAnotherVariable(
 
   // Copy other_ct to the mapping model and delete var!
   context->NewMappingConstraint(other_ct, __FILE__, __LINE__);
-  context->working_model->mutable_constraints(other_c)->Clear();
+  context->ClearConstraint(other_c);
   context->UpdateConstraintVariableUsage(other_c);
   context->MarkVariableAsRemoved(var);
   local_model.var = -1;

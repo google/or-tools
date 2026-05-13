@@ -24,6 +24,7 @@
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/numeric/bits.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
@@ -222,7 +223,7 @@ inline int CanonicalizeFunctionTruthTable(Literal& target,
   const int new_size = FullyCanonicalizeTruthTable(inputs, function_values);
 
   // If we have x = f(a,b,c) and not(y) = f(a,b,c) with the same f, we have an
-  // equivalence, so we need to canonicalicpze both f() and not(f()) to the same
+  // equivalence, so we need to canonicalize both f() and not(f()) to the same
   // function. For that we just always choose to have the lowest bit at zero.
   if (function_values & 1) {
     target = target.Negated();
@@ -329,6 +330,15 @@ struct BinaryGate {
     }
   }
 
+  template <typename H>
+  friend H AbslHashValue(H h, const BinaryGate& g) {
+    return H::combine(std::move(h), g.type, g.target, g.a, g.b);
+  }
+
+  bool operator==(const BinaryGate& o) const {
+    return type == o.type && target == o.target && a == o.a && b == o.b;
+  }
+
   // value[target] = (type >> (value[a] + 2 * value[b])) & 1.
   SmallBitset type = 0;
   int target = 0;
@@ -423,9 +433,9 @@ CompactVectorVector<int, Literal> SampleForEquivalences(
     const BinaryCircuit& circuit, absl::BitGenRef random,
     const std::vector<std::vector<BooleanVariable>>& saved_solutions);
 
-// Find equivalences using sampling, and then proove using either exhaustive
+// Find equivalences using sampling, and then prove using either exhaustive
 // enumeration or sat solving via the solve() function.
-void SimplifyCircuit(
+std::vector<std::pair<Literal, Literal>> SimplifyCircuit(
     int max_num_solve, absl::BitGenRef random,
     std::function<CpSolverResponse(const CpModelProto& cp_model)> solve,
     std::vector<std::vector<BooleanVariable>>* saved_solutions,

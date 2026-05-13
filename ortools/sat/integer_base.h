@@ -19,7 +19,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <limits>
-#include <numeric>
+#include <optional>
 #include <ostream>
 #include <string>
 #include <utility>
@@ -405,6 +405,14 @@ struct LinearExpression2 {
   AffineExpression GetAffineLowerBound(int var_index, IntegerValue expr_lb,
                                        IntegerValue other_var_lb) const;
 
+  // If `this` >= `lb` is of the form k*(t2 - t1) >= k*delta_t with k > 0,
+  // returns delta_t. Otherwise, returns nullopt. The variables in `t1` and `t2`
+  // must be `NegationOf(vars[0])` and `vars[1]`, respectively. coeffs[0] and
+  // coeffs[1] must be positive.
+  std::optional<IntegerValue> GetDifferenceLowerBound(IntegerValue lb,
+                                                      AffineExpression t2,
+                                                      AffineExpression t1);
+
   // Divides the expression by the gcd of both coefficients, and returns it.
   // Note that we always return something >= 1 even if both coefficients are
   // zero.
@@ -509,6 +517,8 @@ class BestBinaryRelationBounds {
   };
   std::pair<AddResult, AddResult> Add(LinearExpression2 expr, IntegerValue lb,
                                       IntegerValue ub);
+
+  std::pair<IntegerValue, IntegerValue> GetBounds(LinearExpression2 expr) const;
 
   // Returns the known status of expr <= bound.
   RelationStatus GetStatus(LinearExpression2 expr, IntegerValue lb,

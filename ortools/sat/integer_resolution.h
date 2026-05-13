@@ -21,6 +21,7 @@
 
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
@@ -104,7 +105,7 @@ class IntegerConflictResolution {
     // Whether this variable was added in the queue.
     // If false, index_in_queue will be the index to re-add it with.
     bool in_queue = false;
-    int int_index_in_queue = std::numeric_limits<int>::max();
+    int int_index_in_queue = kint32max;
 
     // We only need var >= bound in the current conflict resolution.
     // Note that we have: integer_trail_[int_index_in_queue] >= bound.

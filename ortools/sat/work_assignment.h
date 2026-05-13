@@ -35,6 +35,7 @@
 #include "absl/log/check.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/types/span.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/cp_model_utils.h"
@@ -91,7 +92,7 @@ class ProtoLiteral {
   static std::optional<ProtoLiteral> EncodeInteger(IntegerLiteral,
                                                    CpModelMapping*);
 
-  int proto_var_ = std::numeric_limits<int>::max();
+  int proto_var_ = kint32max;
   IntegerValue lb_ = kMaxIntegerValue;
 };
 
@@ -444,7 +445,7 @@ class SharedTreeWorker {
   IntegerTrail* integer_trail_;
   IntegerEncoder* encoder_;
   const ObjectiveDefinition* objective_;
-  ModelRandomGenerator* random_;
+  absl::BitGenRef random_;
   IntegerSearchHelper* helper_;
   SearchHeuristics* heuristics_;
   SatDecisionPolicy* decision_policy_;

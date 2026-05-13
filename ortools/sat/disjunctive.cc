@@ -18,7 +18,6 @@
 #include <utility>
 #include <vector>
 
-#include "absl/algorithm/container.h"
 #include "absl/cleanup/cleanup.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
@@ -338,7 +337,9 @@ template <bool time_direction>
 void CombinedDisjunctive<time_direction>::AddNoOverlap(
     absl::Span<const IntervalVariable> vars) {
   const int index = task_sets_.size();
-  task_sets_.emplace_back(task_set_storage_.emplace_back());
+  auto& storage = task_set_storage_.emplace_back();
+  storage.ClearAndReserve(vars.size());
+  task_sets_.emplace_back(storage);
   end_mins_.push_back(kMinIntegerValue);
   for (const IntervalVariable var : vars) {
     task_to_disjunctives_[var.value()].push_back(index);
@@ -466,6 +467,7 @@ bool CombinedDisjunctive<time_direction>::Propagate() {
 }
 
 bool DisjunctiveOverloadChecker::Propagate() {
+  if (helper_->FixedSearchFirstSolutionMode()) return true;
   if (!helper_->IsEnforced()) return true;
   stats_.OnPropagate();
   if (!helper_->SynchronizeAndSetTimeDirection(/*is_forward=*/true)) {
@@ -928,6 +930,7 @@ bool DisjunctiveSimplePrecedences::PropagateOneDirection() {
 }
 
 bool DisjunctiveDetectablePrecedences::Propagate() {
+  if (helper_->FixedSearchFirstSolutionMode()) return true;
   if (!helper_->IsEnforced()) return true;
   stats_.OnPropagate();
   if (!helper_->SynchronizeAndSetTimeDirection(time_direction_)) {
@@ -1211,6 +1214,7 @@ int DisjunctiveDetectablePrecedences::RegisterWith(
 }
 
 bool DisjunctivePrecedences::Propagate() {
+  if (helper_->FixedSearchFirstSolutionMode()) return true;
   if (!helper_->IsEnforced()) return true;
   stats_.OnPropagate();
   if (!helper_->SynchronizeAndSetTimeDirection(time_direction_)) {
@@ -1425,6 +1429,7 @@ int DisjunctivePrecedences::RegisterWith(GenericLiteralWatcher* watcher) {
 }
 
 bool DisjunctiveNotLast::Propagate() {
+  if (helper_->FixedSearchFirstSolutionMode()) return true;
   if (!helper_->IsEnforced()) return true;
   stats_.OnPropagate();
   if (!helper_->SynchronizeAndSetTimeDirection(time_direction_)) {
@@ -1643,6 +1648,7 @@ int DisjunctiveNotLast::RegisterWith(GenericLiteralWatcher* watcher) {
 }
 
 bool DisjunctiveEdgeFinding::Propagate() {
+  if (helper_->FixedSearchFirstSolutionMode()) return true;
   if (!helper_->IsEnforced()) return true;
   stats_.OnPropagate();
   const int num_tasks = helper_->NumTasks();

@@ -44,7 +44,7 @@ def scheduling_with_calendar_sample_sat():
     # Because of the break, work cannot start at 13h.
 
     start = model.new_int_var_from_domain(
-        cp_model.Domain.from_intervals([(8, 12), (14, 15)]), "start"
+        cp_model.Domain.from_intervals([[8, 12], [14, 15]]), "start"
     )
     duration = model.new_int_var(3, 4, "duration")
     end = model.new_int_var(8, 18, "end")

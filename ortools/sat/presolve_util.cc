@@ -17,7 +17,6 @@
 #include <array>
 #include <cstdint>
 #include <cstdlib>
-#include <limits>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -29,6 +28,7 @@
 #include "absl/random/distributions.h"
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/util.h"
@@ -718,8 +718,8 @@ bool FindSingleLinearDifference(const LinearConstraintProto& lin1,
   int j = 0;
   while (i < size || j < size) {
     // Note that we can't have both undefined or the loop would have exited.
-    const int v1 = i < size ? lin1.vars(i) : std::numeric_limits<int>::max();
-    const int v2 = j < size ? lin2.vars(j) : std::numeric_limits<int>::max();
+    const int v1 = i < size ? lin1.vars(i) : kint32max;
+    const int v2 = j < size ? lin2.vars(j) : kint32max;
 
     // Same term, continue.
     if (v1 == v2 && lin1.coeffs(i) == lin2.coeffs(j)) {

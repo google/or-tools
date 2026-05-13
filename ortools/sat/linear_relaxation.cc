@@ -35,6 +35,7 @@
 #include "ortools/base/mathutil.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/circuit.h"  // for ReindexArcs.
 #include "ortools/sat/clause.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -358,8 +359,7 @@ void LinearizeComplexLinear1(Model* m, const CpModelProto& model_proto,
   if (mapping == nullptr || integer_trail == nullptr) return;
 
   // Lets regroup all interval linear one by variable.
-  std::vector<IntegerVariable> flat_vars;
-  std::vector<int> flat_lin1s;
+  CompactVectorVectorBuilder<IntegerVariable, int> var_to_lin1_builder;
   const int num_constraints = model_proto.constraints().size();
   for (int c = 0; c < num_constraints; ++c) {
     const ConstraintProto& ct = model_proto.constraints(c);
@@ -372,13 +372,12 @@ void LinearizeComplexLinear1(Model* m, const CpModelProto& model_proto,
     CHECK(RefIsPositive(proto_var));
     if (!mapping->IsInteger(proto_var)) continue;
 
-    flat_vars.push_back(mapping->Integer(proto_var));
-    flat_lin1s.push_back(c);
+    var_to_lin1_builder.Add(mapping->Integer(proto_var), c);
   }
 
   int num_added_constraints = 0;
-  CompactVectorVector<IntegerVariable, int> var_to_lin1;
-  var_to_lin1.ResetFromFlatMapping(flat_vars, flat_lin1s);
+  const CompactVectorVector<IntegerVariable, int> var_to_lin1(
+      var_to_lin1_builder);
   for (IntegerVariable var(0); var < var_to_lin1.size(); ++var) {
     const Domain var_domain = integer_trail->InitialVariableDomain(var);
     if (var_to_lin1[var].size() < 2) continue;
@@ -1459,9 +1458,7 @@ void AppendLinearConstraintRelaxation(const ConstraintProto& ct, Model* model,
   const IntegerValue rhs_domain_min = IntegerValue(ct.linear().domain(0));
   const IntegerValue rhs_domain_max =
       IntegerValue(ct.linear().domain(ct.linear().domain_size() - 1));
-  if (rhs_domain_min == std::numeric_limits<int64_t>::min() &&
-      rhs_domain_max == std::numeric_limits<int64_t>::max())
-    return;
+  if (rhs_domain_min == kint64min && rhs_domain_max == kint64max) return;
 
   LinearConstraintBuilder lc(model, rhs_domain_min, rhs_domain_max);
   auto* mapping = model->Get<CpModelMapping>();
@@ -2214,9 +2211,13 @@ LinearRelaxation ComputeLinearRelaxation(const CpModelProto& model_proto,
 
   // Linearize the at most one constraints. Note that we transform them
   // into maximum "at most one" first and we removes redundant ones.
-  m->GetOrCreate<BinaryImplicationGraph>()->TransformIntoMaxCliques(
-      &relaxation.at_most_ones,
-      SafeDoubleToInt64(params.merge_at_most_one_work_limit()));
+  if (!m->GetOrCreate<BinaryImplicationGraph>()->TransformIntoMaxCliques(
+          &relaxation.at_most_ones,
+          SafeDoubleToInt64(params.merge_at_most_one_work_limit()))) {
+    m->GetOrCreate<SatSolver>()->NotifyThatModelIsUnsat();
+    return relaxation;
+  }
+
   for (const std::vector<Literal>& at_most_one : relaxation.at_most_ones) {
     if (at_most_one.empty()) continue;
 

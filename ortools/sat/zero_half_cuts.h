@@ -52,7 +52,7 @@ class ZeroHalfCutHelper {
                         absl::Span<const IntegerValue> coeffs, IntegerValue lb,
                         IntegerValue ub);
   std::vector<std::vector<std::pair<glop::RowIndex, IntegerValue>>>
-  InterestingCandidates(ModelRandomGenerator* random);
+  InterestingCandidates(absl::BitGenRef random);
 
   // Visible for testing.
   void Reset(int size);

@@ -14,6 +14,8 @@
 #include "ortools/sat/2d_rectangle_presolve.h"
 
 #include <algorithm>
+#include <array>
+#include <iostream>
 #include <limits>
 #include <optional>
 #include <sstream>
@@ -30,7 +32,9 @@
 #include "absl/log/log.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/random/random.h"
+#include "absl/strings/str_cat.h"
 #include "absl/strings/str_split.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
@@ -268,9 +272,7 @@ std::string RenderContour(std::optional<Rectangle> bb,
     std::pair<IntegerValue, IntegerValue> p = path.step_points[i];
     ss << "  p" << i << "[pos=\"" << 2 * p.first << "," << 2 * p.second
        << "!\" shape=point]\n";
-    if (i != path.step_points.size() - 1) {
-      ss << "  p" << i << "->p" << i + 1 << "\n";
-    }
+    ss << "  p" << i << "->p" << ((i + 1) % path.step_points.size()) << "\n";
   }
   return RenderDot(bb, rectangles, ss.str());
 }
@@ -652,9 +654,9 @@ ShapePath TraceBoundary(
       next_direction = EdgePosition::BOTTOM;
     }
   } else if (touching_edge[EdgePosition::TOP]) {
-    next_direction = EdgePosition::LEFT;
-  } else if (touching_edge[EdgePosition::BOTTOM]) {
     next_direction = EdgePosition::RIGHT;
+  } else if (touching_edge[EdgePosition::BOTTOM]) {
+    next_direction = EdgePosition::LEFT;
   } else {
     LOG(FATAL)
         << "TraceBoundary() got a `starting_step_point` that is not in an edge "
@@ -671,6 +673,8 @@ ShapePath TraceBoundary(
         result.step_points.back() == result.step_points.front() &&
         point.x == result.step_points[1].first &&
         point.y == result.step_points[1].second) {
+      result.step_points.pop_back();
+      result.touching_box_index.pop_back();
       break;
     }
     if (!result.step_points.empty() &&
@@ -702,7 +706,8 @@ ShapePath TraceBoundary(
 
 std::string RenderShapes(std::optional<Rectangle> bb,
                          absl::Span<const Rectangle> rectangles,
-                         absl::Span<const SingleShape> shapes) {
+                         absl::Span<const SingleShape> shapes,
+                         std::string_view extra_dot_payload = "") {
   const std::vector<std::string> colors = {"black", "white",  "orange",
                                            "cyan",  "yellow", "purple"};
   std::stringstream ss;
@@ -734,7 +739,39 @@ std::string RenderShapes(std::optional<Rectangle> bb,
       }
     }
   }
+
+  ss << extra_dot_payload;
+
   return RenderDot(bb, rectangles, ss.str());
+}
+
+std::string RenderCuts(const std::array<std::vector<PolygonCut>, 4>& cuts) {
+  std::stringstream ss;
+
+  // Distinct colors for TOP, RIGHT, BOTTOM, LEFT
+  const std::string_view cut_colors[] = {"red", "blue", "green", "magenta"};
+
+  for (int dir = 0; dir < 4; ++dir) {
+    for (int i = 0; i < cuts[dir].size(); ++i) {
+      const auto& cut = cuts[dir][i];
+
+      // Give nodes unique names to avoid colliding with RenderShapes' 'p' nodes
+      ss << "  cut_" << dir << "_" << i << "_start[pos=\""
+         << 2 * cut.start.first << "," << 2 * cut.start.second
+         << "!\" shape=point width=0 height=0]\n";
+
+      ss << "  cut_" << dir << "_" << i << "_end[pos=\"" << 2 * cut.end.first
+         << "," << 2 * cut.end.second << "!\" shape=point width=0 height=0]\n";
+
+      // Use penwidth=15 so it's thinner than boundaries, and dashed so we can
+      // see through it
+      ss << "  cut_" << dir << "_" << i << "_start->cut_" << dir << "_" << i
+         << "_end"
+         << " [color=\"" << cut_colors[dir]
+         << "\", penwidth=15, style=dashed];\n";
+    }
+  }
+  return ss.str();
 }
 
 TEST(ContourTest, Random) {
@@ -758,36 +795,37 @@ TEST(ContourTest, Random) {
     const Neighbours neighbours = BuildNeighboursGraph(fixed_rectangles);
     const auto components = SplitInConnectedComponents(neighbours);
     const Rectangle bb = {.x_min = 0, .x_max = 100, .y_min = 0, .y_max = 100};
-    int min_index = -1;
-    std::pair<IntegerValue, IntegerValue> min_coord = {
-        std::numeric_limits<IntegerValue>::max(),
-        std::numeric_limits<IntegerValue>::max()};
-    for (const int box_index : components[0]) {
-      const Rectangle& rectangle = fixed_rectangles[box_index];
-      if (std::make_pair(rectangle.x_min, rectangle.y_min) < min_coord) {
-        min_coord = {rectangle.x_min, rectangle.y_min};
-        min_index = box_index;
-      }
-    }
 
     const std::vector<SingleShape> shapes =
         BoxesToShapes(fixed_rectangles, neighbours);
-    for (const SingleShape& shape : shapes) {
-      const ShapePath& boundary = shape.boundary;
-      const ShapePath expected_shape =
-          TraceBoundary(boundary.step_points[0], boundary.touching_box_index[0],
+
+    // A helper lambda to test any ShapePath (boundary or hole)
+    auto verify_path = [&](const ShapePath& path,
+                           const std::string& path_name) {
+      if (path.step_points.empty()) return;
+
+      const ShapePath expected_path =
+          TraceBoundary(path.step_points[0], path.touching_box_index[0],
                         fixed_rectangles, neighbours);
-      if (boundary.step_points != expected_shape.step_points) {
-        LOG(ERROR) << "Fast algo:\n"
-                   << RenderContour(bb, fixed_rectangles, boundary);
-        LOG(ERROR) << "Naive algo:\n"
-                   << RenderContour(bb, fixed_rectangles, expected_shape);
+
+      if (path.step_points != expected_path.step_points) {
+        LOG(ERROR) << "Fast algo (" << path_name << "):\n"
+                   << RenderContour(bb, fixed_rectangles, path);
+        LOG(ERROR) << "Naive algo (" << path_name << "):\n"
+                   << RenderContour(bb, fixed_rectangles, expected_path);
         LOG(FATAL) << "Found different solutions between naive and fast algo!";
       }
-      EXPECT_EQ(boundary.step_points, expected_shape.step_points);
-      EXPECT_EQ(boundary.touching_box_index, expected_shape.touching_box_index);
-    }
+      EXPECT_EQ(path.step_points, expected_path.step_points);
+      EXPECT_EQ(path.touching_box_index, expected_path.touching_box_index);
+    };
 
+    // Test both the exterior boundaries AND the internal holes
+    for (const SingleShape& shape : shapes) {
+      verify_path(shape.boundary, "Exterior Boundary");
+      for (int i = 0; i < shape.holes.size(); ++i) {
+        verify_path(shape.holes[i], absl::StrCat("Hole ", i));
+      }
+    }
     if (run == 0) {
       LOG(INFO) << RenderShapes(bb, fixed_rectangles, shapes);
     }
@@ -800,48 +838,301 @@ TEST(ContourTest, SimpleShapes) {
       {.x_min = 3, .x_max = 8, .y_min = 0, .y_max = 10}};
   ShapePath shape =
       TraceBoundary({0, 20}, 0, rectangles, BuildNeighboursGraph(rectangles));
-  EXPECT_THAT(shape.touching_box_index, ElementsAre(0, 0, 0, 1, 1, 1, 0, 0, 0));
+  EXPECT_THAT(shape.touching_box_index, ElementsAre(0, 0, 0, 1, 1, 1, 0, 0));
   EXPECT_THAT(shape.step_points,
               ElementsAre(std::make_pair(0, 20), std::make_pair(10, 20),
                           std::make_pair(10, 10), std::make_pair(8, 10),
                           std::make_pair(8, 0), std::make_pair(3, 0),
-                          std::make_pair(3, 10), std::make_pair(0, 10),
-                          std::make_pair(0, 20)));
+                          std::make_pair(3, 10), std::make_pair(0, 10)));
 
   rectangles = {{.x_min = 0, .x_max = 10, .y_min = 10, .y_max = 20},
                 {.x_min = 0, .x_max = 10, .y_min = 0, .y_max = 10}};
   shape =
       TraceBoundary({0, 20}, 0, rectangles, BuildNeighboursGraph(rectangles));
-  EXPECT_THAT(shape.touching_box_index, ElementsAre(0, 0, 1, 1, 1, 0, 0));
+  EXPECT_THAT(shape.touching_box_index, ElementsAre(0, 0, 1, 1, 1, 0));
   EXPECT_THAT(shape.step_points,
               ElementsAre(std::make_pair(0, 20), std::make_pair(10, 20),
                           std::make_pair(10, 10), std::make_pair(10, 0),
-                          std::make_pair(0, 0), std::make_pair(0, 10),
-                          std::make_pair(0, 20)));
+                          std::make_pair(0, 0), std::make_pair(0, 10)));
 
   rectangles = {{.x_min = 0, .x_max = 10, .y_min = 10, .y_max = 20},
                 {.x_min = 0, .x_max = 15, .y_min = 0, .y_max = 10}};
   shape =
       TraceBoundary({0, 20}, 0, rectangles, BuildNeighboursGraph(rectangles));
-  EXPECT_THAT(shape.touching_box_index, ElementsAre(0, 0, 1, 1, 1, 1, 0, 0));
+  EXPECT_THAT(shape.touching_box_index, ElementsAre(0, 0, 1, 1, 1, 1, 0));
   EXPECT_THAT(shape.step_points,
               ElementsAre(std::make_pair(0, 20), std::make_pair(10, 20),
                           std::make_pair(10, 10), std::make_pair(15, 10),
                           std::make_pair(15, 0), std::make_pair(0, 0),
-                          std::make_pair(0, 10), std::make_pair(0, 20)));
+                          std::make_pair(0, 10)));
 
   rectangles = {{.x_min = 0, .x_max = 10, .y_min = 10, .y_max = 20},
                 {.x_min = 0, .x_max = 10, .y_min = 0, .y_max = 10},
                 {.x_min = 10, .x_max = 20, .y_min = 0, .y_max = 10}};
   shape =
       TraceBoundary({0, 20}, 0, rectangles, BuildNeighboursGraph(rectangles));
-  EXPECT_THAT(shape.touching_box_index, ElementsAre(0, 0, 2, 2, 2, 1, 1, 0, 0));
+  EXPECT_THAT(shape.touching_box_index, ElementsAre(0, 0, 2, 2, 2, 1, 1, 0));
   EXPECT_THAT(shape.step_points,
               ElementsAre(std::make_pair(0, 20), std::make_pair(10, 20),
                           std::make_pair(10, 10), std::make_pair(20, 10),
                           std::make_pair(20, 0), std::make_pair(10, 0),
-                          std::make_pair(0, 0), std::make_pair(0, 10),
-                          std::make_pair(0, 20)));
+                          std::make_pair(0, 0), std::make_pair(0, 10)));
+}
+
+// Naive but long and inefficient implementation of GetPotentialPolygonCuts.
+std::array<std::vector<PolygonCut>, 4> GetPotentialPolygonCutsNaive(
+    FlatShape& shape) {
+  std::array<std::vector<PolygonCut>, 4> cuts;
+
+  int original_N = shape.points.size();
+  if (original_N == 0) return cuts;
+
+  // 1. Build a `prev` lookup array to easily access the previous vertex
+  //    for any given vertex without an expensive linear search.
+  std::vector<int> prev(original_N);
+  for (int i = 0; i < original_N; ++i) {
+    prev[shape.next[i]] = i;
+  }
+
+  // We only iterate up to `original_N`. Any points added during edge-splitting
+  // are perfectly straight/collinear and cannot be concave vertices.
+  for (int i = 0; i < original_N; ++i) {
+    auto A = shape.points[prev[i]];
+    auto B = shape.points[i];
+    auto C = shape.points[shape.next[i]];
+
+    // Vector u = A -> B, Vector v = B -> C
+    IntegerValue ux = B.first - A.first;
+    IntegerValue uy = B.second - A.second;
+    IntegerValue vx = C.first - B.first;
+    IntegerValue vy = C.second - B.second;
+
+    // 2. Identify Concave Vertices
+    // Cross product: ux*vy - uy*vx.
+    // Given "solid on right", a strictly positive cross product means a left
+    // turn, which corresponds to a 270-degree concave interior angle.
+    IntegerValue cross_product = ux * vy - uy * vx;
+
+    if (cross_product > 0) {
+      std::vector<EdgePosition> inward_dirs;
+
+      // 3. Determine the two inward shooting directions.
+      // For a concave vertex, these are the forward continuations of A->B and
+      // C->B. Continuation of A->B (same direction as u)
+      if (ux > 0)
+        inward_dirs.push_back(EdgePosition::RIGHT);
+      else if (ux < 0)
+        inward_dirs.push_back(EdgePosition::LEFT);
+      else if (uy > 0)
+        inward_dirs.push_back(EdgePosition::TOP);  // Assumes +Y is Up
+      else if (uy < 0)
+        inward_dirs.push_back(EdgePosition::BOTTOM);  // Assumes -Y is Down
+
+      // Continuation of C->B (opposite direction of v)
+      if (vx > 0)
+        inward_dirs.push_back(EdgePosition::LEFT);
+      else if (vx < 0)
+        inward_dirs.push_back(EdgePosition::RIGHT);
+      else if (vy > 0)
+        inward_dirs.push_back(EdgePosition::BOTTOM);
+      else if (vy < 0)
+        inward_dirs.push_back(EdgePosition::TOP);
+
+      // 4. Cast rays in both inward directions to find the closest opposite
+      // edge
+      for (EdgePosition dir : inward_dirs) {
+        IntegerValue min_dist = std::numeric_limits<IntegerValue>::max();
+        int best_edge = -1;
+        std::pair<IntegerValue, IntegerValue> hit_point;
+
+        // Re-evaluate size on every ray cast to include dynamically split
+        // edges!
+        int current_N = shape.points.size();
+
+        for (int k = 0; k < current_N; ++k) {
+          auto P1 = shape.points[k];
+          auto P2 = shape.points[shape.next[k]];
+
+          // Check for intersection with perpendicular edges ahead of the ray
+          if (dir == EdgePosition::RIGHT) {
+            if (P1.first == P2.first &&
+                P1.first > B.first) {  // Vertical edge to the right
+              if (std::min(P1.second, P2.second) <= B.second &&
+                  B.second <= std::max(P1.second, P2.second)) {
+                IntegerValue dist = P1.first - B.first;
+                if (dist < min_dist) {
+                  min_dist = dist;
+                  best_edge = k;
+                  hit_point = {P1.first, B.second};
+                }
+              }
+            }
+          } else if (dir == EdgePosition::LEFT) {
+            if (P1.first == P2.first &&
+                P1.first < B.first) {  // Vertical edge to the left
+              if (std::min(P1.second, P2.second) <= B.second &&
+                  B.second <= std::max(P1.second, P2.second)) {
+                IntegerValue dist = B.first - P1.first;
+                if (dist < min_dist) {
+                  min_dist = dist;
+                  best_edge = k;
+                  hit_point = {P1.first, B.second};
+                }
+              }
+            }
+          } else if (dir == EdgePosition::TOP) {
+            if (P1.second == P2.second &&
+                P1.second > B.second) {  // Horizontal edge above
+              if (std::min(P1.first, P2.first) <= B.first &&
+                  B.first <= std::max(P1.first, P2.first)) {
+                IntegerValue dist = P1.second - B.second;
+                if (dist < min_dist) {
+                  min_dist = dist;
+                  best_edge = k;
+                  hit_point = {B.first, P1.second};
+                }
+              }
+            }
+          } else if (dir == EdgePosition::BOTTOM) {
+            if (P1.second == P2.second &&
+                P1.second < B.second) {  // Horizontal edge below
+              if (std::min(P1.first, P2.first) <= B.first &&
+                  B.first <= std::max(P1.first, P2.first)) {
+                IntegerValue dist = B.second - P1.second;
+                if (dist < min_dist) {
+                  min_dist = dist;
+                  best_edge = k;
+                  hit_point = {B.first, P1.second};
+                }
+              }
+            }
+          }
+        }
+
+        // 5. Apply the cut and split the edge if necessary
+        if (best_edge != -1) {
+          int end_idx = -1;
+          auto P1 = shape.points[best_edge];
+          auto P2 = shape.points[shape.next[best_edge]];
+
+          if (hit_point == P1) {
+            end_idx = best_edge;
+          } else if (hit_point == P2) {
+            end_idx = shape.next[best_edge];
+          } else {
+            // The cut landed in the middle of a segment. Split it!
+            end_idx = shape.points.size();
+            shape.points.push_back(hit_point);
+
+            // Maintain the circular linked list geometry
+            shape.next.push_back(shape.next[best_edge]);
+            shape.next[best_edge] = end_idx;
+          }
+
+          PolygonCut cut;
+          cut.start = B;
+          cut.end = hit_point;
+          cut.start_index = i;
+          cut.end_index = end_idx;
+
+          cuts[dir].push_back(cut);
+        }
+      }
+    }
+  }
+
+  return cuts;
+}
+
+TEST(GetPotentialPolygonCutsTest, Random) {
+  constexpr int kNumRuns = 1000;
+  absl::BitGen bit_gen;
+
+  for (int run = 0; run < kNumRuns; ++run) {
+    // Start by generating a feasible problem that we know the solution with
+    // some items fixed.
+    std::vector<Rectangle> input =
+        GenerateNonConflictingRectanglesWithPacking({100, 100}, 60, bit_gen);
+    std::shuffle(input.begin(), input.end(), bit_gen);
+    const int num_fixed_rectangles = input.size() * 2 / 3;
+    const absl::Span<const Rectangle> fixed_rectangles =
+        absl::MakeConstSpan(input).subspan(0, num_fixed_rectangles);
+    const absl::Span<const Rectangle> other_rectangles =
+        absl::MakeSpan(input).subspan(num_fixed_rectangles);
+    const std::vector<RectangleInRange> input_in_range =
+        MakeItemsFromRectangles(other_rectangles, 0.6, bit_gen);
+
+    const Neighbours neighbours = BuildNeighboursGraph(fixed_rectangles);
+    const auto components = SplitInConnectedComponents(neighbours);
+    std::vector<SingleShape> shapes =
+        BoxesToShapes(fixed_rectangles, neighbours);
+    for (auto& shape : shapes) {
+      FlatShape flat_shape = BuildFlatShape(shape);
+      FlatShape flat_shape_naive = BuildFlatShape(shape);
+      auto cuts = GetPotentialPolygonCuts(flat_shape);
+      auto cuts_naive = GetPotentialPolygonCutsNaive(flat_shape_naive);
+      for (auto* cut_sol_ptr : {&cuts, &cuts_naive}) {
+        auto& cut_sol = *cut_sol_ptr;
+        for (int i = 0; i < 4; ++i) {
+          absl::c_sort(
+              cut_sol[i], [](const PolygonCut& a, const PolygonCut& b) {
+                return std::tie(a.start, a.end) < std::tie(b.start, b.end);
+              });
+        }
+      }
+      for (int i = 0; i < 4; ++i) {
+        auto check = [&](bool condition, absl::string_view message) {
+          if (!condition) {
+            std::cerr << message << "\nOptimized:\n"
+                      << RenderShapes(std::nullopt, fixed_rectangles, shapes,
+                                      RenderCuts(cuts))
+                      << "Naive:\n"
+                      << RenderShapes(std::nullopt, fixed_rectangles, shapes,
+                                      RenderCuts(cuts_naive));
+            LOG(FATAL) << message;
+          }
+        };
+        // 1. Both algorithms MUST find the exact same number of concave cuts
+        check(cuts[i].size() == cuts_naive[i].size(),
+              absl::StrCat("Mismatch in cut count for direction ", i));
+
+        for (int k = 0; k < cuts[i].size(); ++k) {
+          const auto& opt_cut = cuts[i][k];
+          const auto& naive_cut = cuts_naive[i][k];
+
+          // 2. Prevent segfaults by guaranteeing indices were correctly
+          // assigned
+          ASSERT_GE(opt_cut.start_index, 0);
+          ASSERT_GE(opt_cut.end_index, 0);
+          ASSERT_GE(naive_cut.start_index, 0);
+          ASSERT_GE(naive_cut.end_index, 0);
+
+          // 3. The physical coordinates of the rays must be strictly identical
+          check(opt_cut.start == naive_cut.start,
+                absl::StrCat("Ray start coordinate mismatch in direction ", i));
+          check(opt_cut.end == naive_cut.end,
+                absl::StrCat("Ray end coordinate mismatch in direction ", i));
+
+          // 4. The Graph Topology check (The most important part!)
+          // This proves that regardless of mutation order or array length,
+          // the linked list graph points exactly to the expected geometric
+          // coordinate.
+          check(flat_shape.points[opt_cut.start_index] ==
+                    flat_shape_naive.points[naive_cut.start_index],
+                "Ray start index coordinate mismatch in direction");
+
+          check(flat_shape.points[opt_cut.end_index] ==
+                    flat_shape_naive.points[naive_cut.end_index],
+                "Ray end index coordinate mismatch in direction");
+
+          // 5. Internal struct consistency
+          // Ensure the pointer actually leads to the recorded coordinate
+          CHECK_EQ(flat_shape.points[opt_cut.start_index], opt_cut.start);
+          CHECK_EQ(flat_shape.points[opt_cut.end_index], opt_cut.end);
+        }
+      }
+    }
+  }
 }
 
 TEST(ContourTest, ExampleFromPaper) {

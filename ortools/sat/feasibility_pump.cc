@@ -24,6 +24,7 @@
 #include "absl/log/check.h"
 #include "absl/meta/type_traits.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/base/types.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/glop/revised_simplex.h"
 #include "ortools/glop/status.h"
@@ -705,15 +706,12 @@ void FeasibilityPump::FillIntegerSolutionStats() {
     for (const auto& term : integer_lp_[i].terms) {
       const int64_t prod =
           CapProd(integer_solution_[term.first.value()], term.second.value());
-      if (prod <= std::numeric_limits<int64_t>::min() ||
-          prod >= std::numeric_limits<int64_t>::max()) {
+      if (prod <= kint64min || prod >= kint64max) {
         activity = prod;
         break;
       }
       activity = CapAdd(activity, prod);
-      if (activity <= std::numeric_limits<int64_t>::min() ||
-          activity >= std::numeric_limits<int64_t>::max())
-        break;
+      if (activity <= kint64min || activity >= kint64max) break;
     }
     if (activity > integer_lp_[i].ub || activity < integer_lp_[i].lb) {
       integer_solution_is_feasible_ = false;

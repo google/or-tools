@@ -18,7 +18,6 @@
 #include <cmath>
 #include <deque>
 #include <functional>
-#include <limits>
 #include <memory>
 #include <optional>
 #include <string>
@@ -33,6 +32,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/types/span.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/cp_model_utils.h"
@@ -272,11 +272,11 @@ SharedTreeManager::SharedTreeManager(Model* model)
           model->GetOrCreate<SharedStatistics>())),
       num_splits_wanted_(
           num_workers_ * params_.shared_tree_open_leaves_per_worker() - 1),
-      max_nodes_(
-          params_.shared_tree_max_nodes_per_worker() >=
-                  std::numeric_limits<int>::max() / std::max(num_workers_, 1)
-              ? std::numeric_limits<int>::max()
-              : num_workers_ * params_.shared_tree_max_nodes_per_worker()) {
+      max_nodes_(params_.shared_tree_max_nodes_per_worker() >=
+                         kint32max / std::max(num_workers_, 1)
+                     ? kint32max
+                     : num_workers_ *
+                           params_.shared_tree_max_nodes_per_worker()) {
   // Create the root node with a fake decision.
   nodes_.push_back(
       {.decision = ProtoLiteral(),
@@ -1055,7 +1055,7 @@ SharedTreeWorker::SharedTreeWorker(Model* model)
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
       encoder_(model->GetOrCreate<IntegerEncoder>()),
       objective_(model->Get<ObjectiveDefinition>()),
-      random_(model->GetOrCreate<ModelRandomGenerator>()),
+      random_(*model->GetOrCreate<ModelRandomGenerator>()),
       helper_(model->GetOrCreate<IntegerSearchHelper>()),
       heuristics_(model->GetOrCreate<SearchHeuristics>()),
       decision_policy_(model->GetOrCreate<SatDecisionPolicy>()),

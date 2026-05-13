@@ -210,6 +210,7 @@ void IntegerConflictResolution::AddToQueue(GlobalTrailIndex source_index,
 
       const GlobalTrailIndex index{info.level, info.trail_index};
       tmp_queue_.push_back(index);
+      DCHECK_LT(tmp_queue_.back(), source_index);
     }
   }
   for (const IntegerLiteral i_lit : reason.integer_literals) {
@@ -238,6 +239,7 @@ void IntegerConflictResolution::AddToQueue(GlobalTrailIndex source_index,
       data.in_queue = true;
       tmp_queue_.push_back(
           integer_trail_->GlobalIndexAt(data.int_index_in_queue));
+      DCHECK_LT(tmp_queue_.back(), source_index);
     }
 
     CHECK_LT(integer_trail_->GlobalIndexAt(data.int_index_in_queue),
@@ -292,6 +294,7 @@ void IntegerConflictResolution::ProcessIntegerLiteral(
     data.in_queue = true;
     tmp_queue_.push_back(
         integer_trail_->GlobalIndexAt(data.int_index_in_queue));
+    DCHECK_LT(tmp_queue_.back(), source_index);
   }
 
   data.bound = std::max(data.bound, i_lit.bound);
@@ -393,6 +396,7 @@ void IntegerConflictResolution::ComputeFirstUIPConflict(
             data.int_index_in_queue = previous_index;
             tmp_queue_.push_back(
                 integer_trail_->GlobalIndexAt(data.int_index_in_queue));
+            DCHECK_LT(tmp_queue_.back(), top_index);
             CHECK_LE(
                 data.bound,
                 integer_trail_->IntegerLiteralAtIndex(data.int_index_in_queue)

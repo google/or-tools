@@ -27,6 +27,7 @@
 #include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/base/stl_util.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/sat_base.h"
 
 namespace operations_research {
@@ -182,7 +183,7 @@ class LiteralsOrOffsets {
   void GrowCapacity() {
     // TODO(user): crash later.
     // For now, we do if we use more than 2 GB per LiteralOrOffsets.
-    CHECK_LE(capacity_, std::numeric_limits<uint32_t>::max() / 2);
+    CHECK_LE(capacity_, kuint32max / 2);
     const uint32_t new_capacity =
         static_cast<uint32_t>(1.3 * static_cast<double>(capacity_));
     CHECK_GT(new_capacity, kInlineElements);

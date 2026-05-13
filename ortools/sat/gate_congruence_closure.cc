@@ -34,6 +34,7 @@
 #include "ortools/base/log_severity.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/base/types.h"
 #include "ortools/graph_base/connected_components.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/gate_utils.h"
@@ -258,7 +259,7 @@ void GateCongruenceClosure::ExtractAndGatesAndFillShortTruthTables(
     }
 
     // Used for an optimization below.
-    int min_num_implications = std::numeric_limits<int>::max();
+    int min_num_implications = kint32max;
     Literal lit_with_less_implications;
 
     const int clause_size = clause->size();
@@ -1690,6 +1691,51 @@ bool GateCongruenceClosure::DoOneRound(bool log_info) {
     }
   }
 
+  if (params_.inprocessing_detect_and_sweep_circuit()) {
+    // Use lower index as representative.
+    util_intops::StrongVector<BooleanVariable, LiteralIndex> lowest_rep(
+        num_variables, kNoLiteralIndex);
+    for (BooleanVariable var(0); var < num_variables; ++var) {
+      const Literal rep1 =
+          lrat_helper.GetRepresentativeWithProofSupport(Literal(var, true));
+      if (rep1.Variable() == var) continue;
+
+      Literal current_rep = rep1;
+      if (lowest_rep[rep1.Variable()] != kNoLiteralIndex) {
+        current_rep = Literal(lowest_rep[rep1.Variable()]);
+        if (rep1.IsNegative()) {
+          current_rep = current_rep.Negated();
+        }
+      }
+
+      if (current_rep.Variable() > var) {
+        if (lowest_rep[current_rep.Variable()] == kNoLiteralIndex) {
+          lowest_rep[current_rep.Variable()] =
+              Literal(var, current_rep.IsPositive()).Index();
+        }
+      } else if (lowest_rep[var] == kNoLiteralIndex) {
+        lowest_rep[var] = current_rep.Index();
+      }
+    }
+
+    // Test the code above.
+    // TODO(user): unit test instead.
+    if (DEBUG_MODE) {
+      for (BooleanVariable var(0); var < num_variables; ++var) {
+        if (lowest_rep[var] != kNoLiteralIndex) {
+          CHECK_LT(Literal(lowest_rep[var]).Variable(), var);
+          CHECK_EQ(
+              lrat_helper.GetRepresentativeWithProofSupport(
+                  Literal(lowest_rep[var])),
+              lrat_helper.GetRepresentativeWithProofSupport(Literal(var, true)))
+              << var;
+        }
+      }
+    }
+
+    ExploitCircuitStructure(lowest_rep);
+  }
+
   if (DEBUG_MODE) {
     CHECK_EQ(num_processed_fixed_variables, trail_->Index());
     CHECK(queue.empty());
@@ -1735,6 +1781,131 @@ bool GateCongruenceClosure::DoOneRound(bool log_info) {
   }
 
   return true;
+}
+
+void GateCongruenceClosure::ExploitCircuitStructure(
+    const util_intops::StrongVector<BooleanVariable, LiteralIndex>&
+        lowest_rep) {
+  const auto get_rep = [&lowest_rep](Literal lit) {
+    if (lowest_rep[lit.Variable()] == kNoLiteralIndex) return lit;
+    return lit.IsPositive() ? Literal(lowest_rep[lit.Variable()])
+                            : Literal(lowest_rep[lit.Variable()]).Negated();
+  };
+
+  // Compute a "defining" gate for each Boolean.
+  const int num_variables(sat_solver_->NumVariables());
+  util_intops::StrongVector<BooleanVariable, GateId> defining_id(num_variables,
+                                                                 GateId(-1));
+  const int num_gates = gates_inputs_.size();
+  for (GateId id(0); id < num_gates; ++id) {
+    if (gates_type_[id] == kAndGateType) continue;
+    if (gates_inputs_[id].size() != 2) continue;
+    if (assignment_.LiteralIsAssigned(Literal(gates_target_[id]))) continue;
+
+    const Literal target = get_rep(gates_target_[id]);
+    const Literal a = get_rep(gates_inputs_[id][0]);
+    const Literal b = get_rep(gates_inputs_[id][1]);
+    if (a.Index() >= target.Index()) continue;
+    if (b.Index() >= target.Index()) continue;
+
+    if (defining_id[target.Variable()] < 0) {
+      defining_id[target.Variable()] = id;
+    }
+  }
+
+  // Assume topological order follow the variable ones, and reconstruct a
+  // circuit. This is why we used the "lowest" representative, to try to keep
+  // this topological order.
+  util_intops::StrongVector<BooleanVariable, bool> is_used(num_variables,
+                                                           false);
+  util_intops::StrongVector<BooleanVariable, bool> is_defined(num_variables,
+                                                              false);
+  int num_defining_gates = 0;
+  for (BooleanVariable var(0); var < num_variables; ++var) {
+    if (defining_id[var] < 0) continue;
+
+    const GateId id = defining_id[var];
+    const Literal target = get_rep(gates_target_[id]);
+    const Literal a = get_rep(gates_inputs_[id][0]);
+    const Literal b = get_rep(gates_inputs_[id][1]);
+
+    ++num_defining_gates;
+    is_used[a.Variable()] = true;
+    is_used[b.Variable()] = true;
+    is_defined[target.Variable()] = true;
+  }
+
+  // Recover the inputs.
+  BinaryCircuit circuit;
+  circuit.mapping.assign(num_variables, -1);
+  for (BooleanVariable var(0); var < num_variables; ++var) {
+    if (is_used[var] && !is_defined[var]) {
+      circuit.mapping[var] = circuit.reverse_mapping.size();
+      circuit.reverse_mapping.push_back(var);
+    }
+  }
+  circuit.num_inputs = circuit.reverse_mapping.size();
+
+  // Recover the gates.
+  for (BooleanVariable var(0); var < num_variables; ++var) {
+    if (defining_id[var] < 0) continue;
+
+    const GateId id = defining_id[var];
+    SmallBitset type = gates_type_[id];
+    Literal target = get_rep(gates_target_[id]);
+    if (target.IsNegative()) {
+      target = target.Negated();
+      type ^= 0b1111;
+    }
+    CHECK_EQ(target.Variable(), var);
+
+    const Literal a = get_rep(gates_inputs_[id][0]);
+    const Literal b = get_rep(gates_inputs_[id][1]);
+    if (circuit.mapping[a.Variable()] == -1) continue;
+    if (circuit.mapping[b.Variable()] == -1) continue;
+
+    // Change the type so that a and b are positive.
+    int swap = 0;
+    if (!a.IsPositive()) swap |= 1;
+    if (!b.IsPositive()) swap |= 2;
+    if (swap != 0) {
+      SmallBitset new_type = 0;
+      for (int i = 0; i < 4; ++i) {
+        new_type |= ((type >> i) & 1) << (i ^ swap);
+      }
+      type = new_type;
+    }
+
+    CHECK_EQ(circuit.mapping[var], -1);
+    circuit.mapping[var] = circuit.reverse_mapping.size();
+    circuit.reverse_mapping.push_back(var);
+
+    circuit.gates.emplace_back(type, circuit.mapping[var],
+                               circuit.mapping[a.Variable()],
+                               circuit.mapping[b.Variable()]);
+    if (!is_used[var]) {
+      circuit.outputs.push_back(circuit.mapping[var]);
+    }
+  }
+  circuit.num_vars = circuit.reverse_mapping.size();
+
+  VLOG(2) << "============================== ";
+  VLOG(2) << circuit.DebugString();
+  ReduceGates(&circuit);  // Make the sampling more efficient.
+  VLOG(2) << circuit.DebugString();
+
+  auto new_equiv =
+      SimplifyCircuit(/*max_num_solve=*/50, random_, solve_cp_model_callback_,
+                      &saved_sampled_solutions_, &circuit);
+  VLOG(2) << circuit.DebugString();
+
+  gtl::STLSortAndRemoveDuplicates(&new_equiv);
+  for (const auto [a, b] : new_equiv) {
+    implication_graph_->AddImplication(a, b);
+    implication_graph_->AddImplication(b, a);
+  }
+  VLOG(2) << "#EQUIVALENCES " << new_equiv.size();
+  VLOG(2) << "============================== ";
 }
 
 }  // namespace sat

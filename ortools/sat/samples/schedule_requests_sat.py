@@ -14,6 +14,7 @@
 
 # [START program]
 """Nurse scheduling problem with shift requests."""
+
 # [START import]
 from typing import Union
 

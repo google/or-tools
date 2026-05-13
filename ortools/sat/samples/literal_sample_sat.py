@@ -15,7 +15,6 @@
 # [START program]
 """Code sample to demonstrate Boolean variable and literals."""
 
-
 from ortools.sat.python import cp_model
 
 

@@ -579,6 +579,11 @@ class BinaryImplicationGraph : public SatPropagator {
   void SetAdditionCallback(std::function<void(Literal, Literal)> f) {
     add_binary_callback_ = f;
   }
+
+  // Call the "add_binary_callback_" on all var <=> representative.
+  // See the call-site to see the usage of this.
+  void ExportAllEquivalences();
+
   // An at most one constraint of size n is a compact way to encode n * (n - 1)
   // implications. This must only be called at level zero.
   //
@@ -632,7 +637,7 @@ class BinaryImplicationGraph : public SatPropagator {
   // TODO(user): Completely get rid of such literal instead? it might not be
   // reasonable code-wise to remap our literals in all of our constraints
   // though.
-  bool DetectEquivalences(bool log_info = false);
+  ABSL_MUST_USE_RESULT bool DetectEquivalences(bool log_info = false);
 
   // Returns true if DetectEquivalences() has been called and no new binary
   // clauses have been added since then. When this is true then there is no
@@ -684,8 +689,9 @@ class BinaryImplicationGraph : public SatPropagator {
   //
   // Returns false if the model is detected to be UNSAT (this needs to call
   // DetectEquivalences() if not already done).
-  bool TransformIntoMaxCliques(std::vector<std::vector<Literal>>* at_most_ones,
-                               int64_t max_num_explored_nodes = 1e8);
+  ABSL_MUST_USE_RESULT bool TransformIntoMaxCliques(
+      std::vector<std::vector<Literal>>* at_most_ones,
+      int64_t max_num_explored_nodes = 1e8);
 
   // This is similar to TransformIntoMaxCliques() but we are just looking into
   // reducing the number of constraints. If two initial clique A and B can be
@@ -976,7 +982,7 @@ class BinaryImplicationGraph : public SatPropagator {
 
   mutable StatsGroup stats_;
   TimeLimit* time_limit_;
-  ModelRandomGenerator* random_;
+  absl::BitGenRef random_;
   Trail* trail_;
   LratProofHandler* lrat_proof_handler_ = nullptr;
   LratEquivalenceHelper* lrat_helper_ = nullptr;

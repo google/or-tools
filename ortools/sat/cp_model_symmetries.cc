@@ -40,6 +40,7 @@
 #include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/base/hash.h"
 #include "ortools/base/log_severity.h"
+#include "ortools/base/types.h"
 #include "ortools/graph_base/graph.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_checker.h"
@@ -160,7 +161,7 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
   CHECK(initial_equivalence_classes != nullptr);
 
   const int num_variables = problem.variables_size();
-  auto graph = std::make_unique<Graph>();
+  typename Graph::Builder builder;
 
   // Each node will be created with a given color. Two nodes of different color
   // can never be send one into another by a symmetry. The first element of
@@ -176,7 +177,8 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
   };
   IdGenerator color_id_generator;
   initial_equivalence_classes->clear();
-  auto new_node_from_id = [&initial_equivalence_classes, &graph](int color_id) {
+  auto new_node_from_id = [&initial_equivalence_classes,
+                           &builder](int color_id) {
     // Since we add nodes one by one, initial_equivalence_classes->size() gives
     // the number of nodes at any point, which we use as the next node index.
     const int node = initial_equivalence_classes->size();
@@ -184,7 +186,7 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
 
     // In some corner cases, we create a node but never uses it. We still
     // want it to be there.
-    graph->AddNode(node);
+    builder.AddNode(node);
     return node;
   };
   auto new_node = [&new_node_from_id,
@@ -223,7 +225,7 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
   // with a given coefficient.
   absl::flat_hash_map<std::pair<int64_t, int64_t>, int> coefficient_nodes;
   auto get_coefficient_node =
-      [&new_node_from_id, &graph, &coefficient_nodes, &color_id_generator,
+      [&new_node_from_id, &builder, &coefficient_nodes, &color_id_generator,
        &tmp_color, color_id_for_coeff_minus_one](int var, int64_t coeff) {
         const int var_node = var;
         DCHECK(RefIsPositive(var));
@@ -247,7 +249,7 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
           color_id = color_id_generator.GetId(tmp_color);
         }
         const int secondary_node = new_node_from_id(color_id);
-        graph->AddArc(var_node, secondary_node);
+        builder.AddArc(var_node, secondary_node);
         insert.first->second = secondary_node;
         return secondary_node;
       };
@@ -272,7 +274,7 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
   // node. This makes sure that any permutation that touch a variable, must
   // permute its coefficient nodes accordingly.
   absl::flat_hash_set<std::pair<int, int>> implications;
-  auto get_implication_node = [&new_node_from_id, &graph, &coefficient_nodes,
+  auto get_implication_node = [&new_node_from_id, &builder, &coefficient_nodes,
                                color_id_for_coeff_one,
                                color_id_for_coeff_minus_one](int ref) {
     const int var = PositiveRef(ref);
@@ -282,23 +284,23 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
     if (!insert.second) return insert.first->second;
     const int secondary_node = new_node_from_id(
         coeff == 1 ? color_id_for_coeff_one : color_id_for_coeff_minus_one);
-    graph->AddArc(var, secondary_node);
+    builder.AddArc(var, secondary_node);
     insert.first->second = secondary_node;
     return secondary_node;
   };
-  auto add_implication = [&get_implication_node, &graph, &implications](
+  auto add_implication = [&get_implication_node, &builder, &implications](
                              int ref_a, int ref_b) {
     const auto insert = implications.insert({ref_a, ref_b});
     if (!insert.second) return;
-    graph->AddArc(get_implication_node(ref_a), get_implication_node(ref_b));
+    builder.AddArc(get_implication_node(ref_a), get_implication_node(ref_b));
 
     // Always add the other side.
     implications.insert({NegatedRef(ref_b), NegatedRef(ref_a)});
-    graph->AddArc(get_implication_node(NegatedRef(ref_b)),
-                  get_implication_node(NegatedRef(ref_a)));
+    builder.AddArc(get_implication_node(NegatedRef(ref_b)),
+                   get_implication_node(NegatedRef(ref_a)));
   };
 
-  auto make_linear_expr_node = [&new_node, &graph, &get_coefficient_node](
+  auto make_linear_expr_node = [&new_node, &builder, &get_coefficient_node](
                                    const LinearExpressionProto& expr,
                                    const std::vector<int64_t>& color) {
     std::vector<int64_t> local_color = color;
@@ -310,7 +312,7 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
       const int var_node = PositiveRef(ref);
       const int64_t coeff =
           RefIsPositive(ref) ? expr.coeffs(i) : -expr.coeffs(i);
-      graph->AddArc(get_coefficient_node(var_node, coeff), local_node);
+      builder.AddArc(get_coefficient_node(var_node, coeff), local_node);
     }
     return local_node;
   };
@@ -357,8 +359,8 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
           const int64_t coeff = RefIsPositive(ref)
                                     ? constraint.linear().coeffs(i)
                                     : -constraint.linear().coeffs(i);
-          graph->AddArc(get_coefficient_node(variable_node, coeff),
-                        constraint_node);
+          builder.AddArc(get_coefficient_node(variable_node, coeff),
+                         constraint_node);
         }
         break;
       }
@@ -366,14 +368,14 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
         CHECK_EQ(constraint_node, new_node(color));
         for (const LinearExpressionProto& expr :
              constraint.all_diff().exprs()) {
-          graph->AddArc(shared_linear_expr_node(expr), constraint_node);
+          builder.AddArc(shared_linear_expr_node(expr), constraint_node);
         }
         break;
       }
       case ConstraintProto::kBoolOr: {
         CHECK_EQ(constraint_node, new_node(color));
         for (const int ref : constraint.bool_or().literals()) {
-          graph->AddArc(get_literal_node(ref), constraint_node);
+          builder.AddArc(get_literal_node(ref), constraint_node);
         }
         break;
       }
@@ -388,21 +390,21 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
 
         CHECK_EQ(constraint_node, new_node(color));
         for (const int ref : constraint.at_most_one().literals()) {
-          graph->AddArc(get_literal_node(ref), constraint_node);
+          builder.AddArc(get_literal_node(ref), constraint_node);
         }
         break;
       }
       case ConstraintProto::kExactlyOne: {
         CHECK_EQ(constraint_node, new_node(color));
         for (const int ref : constraint.exactly_one().literals()) {
-          graph->AddArc(get_literal_node(ref), constraint_node);
+          builder.AddArc(get_literal_node(ref), constraint_node);
         }
         break;
       }
       case ConstraintProto::kBoolXor: {
         CHECK_EQ(constraint_node, new_node(color));
         for (const int ref : constraint.bool_xor().literals()) {
-          graph->AddArc(get_literal_node(ref), constraint_node);
+          builder.AddArc(get_literal_node(ref), constraint_node);
         }
         break;
       }
@@ -410,7 +412,7 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
         if (constraint.enforcement_literal_size() > 1) {
           CHECK_EQ(constraint_node, new_node(color));
           for (const int ref : constraint.bool_and().literals()) {
-            graph->AddArc(get_literal_node(ref), constraint_node);
+            builder.AddArc(get_literal_node(ref), constraint_node);
           }
           break;
         }
@@ -431,7 +433,7 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
 
         for (int i = 0; i < constraint.lin_max().exprs_size(); ++i) {
           const LinearExpressionProto& expr = constraint.lin_max().exprs(i);
-          graph->AddArc(shared_linear_expr_node(expr), target_node);
+          builder.AddArc(shared_linear_expr_node(expr), target_node);
         }
 
         break;
@@ -471,8 +473,8 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
 
           // Make sure that if one node is mapped to another one, its other two
           // components are the same.
-          graph->AddArc(start_node, end_node);
-          graph->AddArc(end_node, size_node);
+          builder.AddArc(start_node, end_node);
+          builder.AddArc(end_node, size_node);
         }
         interval_constraint_index_to_node[constraint_index] = constraint_node;
         break;
@@ -483,8 +485,8 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
         // here and in a bunch of other places.
         CHECK_EQ(constraint_node, new_node(color));
         for (const int interval : constraint.no_overlap().intervals()) {
-          graph->AddArc(interval_constraint_index_to_node.at(interval),
-                        constraint_node);
+          builder.AddArc(interval_constraint_index_to_node.at(interval),
+                         constraint_node);
         }
         break;
       }
@@ -499,18 +501,18 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
         const int node_x = new_node(local_color);
         const int node_y = new_node(local_color);
         local_color.pop_back();
-        graph->AddArc(constraint_node, node_x);
-        graph->AddArc(constraint_node, node_y);
+        builder.AddArc(constraint_node, node_x);
+        builder.AddArc(constraint_node, node_y);
         local_color.push_back(1);
         for (int i = 0; i < size; ++i) {
           const int box_node = new_node(local_color);
-          graph->AddArc(box_node, constraint_node);
+          builder.AddArc(box_node, constraint_node);
           const int x = constraint.no_overlap_2d().x_intervals(i);
           const int y = constraint.no_overlap_2d().y_intervals(i);
-          graph->AddArc(interval_constraint_index_to_node.at(x), node_x);
-          graph->AddArc(interval_constraint_index_to_node.at(x), box_node);
-          graph->AddArc(interval_constraint_index_to_node.at(y), node_y);
-          graph->AddArc(interval_constraint_index_to_node.at(y), box_node);
+          builder.AddArc(interval_constraint_index_to_node.at(x), node_x);
+          builder.AddArc(interval_constraint_index_to_node.at(x), box_node);
+          builder.AddArc(interval_constraint_index_to_node.at(y), node_y);
+          builder.AddArc(interval_constraint_index_to_node.at(y), box_node);
         }
         break;
       }
@@ -522,17 +524,17 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
         std::vector<int64_t> capacity_color = color;
         capacity_color.push_back(0);
         CHECK_EQ(constraint_node, new_node(capacity_color));
-        graph->AddArc(constraint_node,
-                      make_linear_expr_node(ct.capacity(), capacity_color));
+        builder.AddArc(constraint_node,
+                       make_linear_expr_node(ct.capacity(), capacity_color));
 
         std::vector<int64_t> task_color = color;
         task_color.push_back(1);
         for (int i = 0; i < ct.intervals().size(); ++i) {
           const int task_node =
               make_linear_expr_node(ct.demands(i), task_color);
-          graph->AddArc(task_node, constraint_node);
-          graph->AddArc(task_node,
-                        interval_constraint_index_to_node.at(ct.intervals(i)));
+          builder.AddArc(task_node, constraint_node);
+          builder.AddArc(task_node,
+                         interval_constraint_index_to_node.at(ct.intervals(i)));
         }
         break;
       }
@@ -564,11 +566,11 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
           // To make the graph directed, we add two arcs on the head but not on
           // the tail.
           if (!constraint.enforcement_literal().empty()) {
-            graph->AddArc(constraint_node, arc_node);
+            builder.AddArc(constraint_node, arc_node);
           }
-          graph->AddArc(tail_node, arc_node);
-          graph->AddArc(arc_node, get_literal_node(literal));
-          graph->AddArc(arc_node, head_node);
+          builder.AddArc(tail_node, arc_node);
+          builder.AddArc(arc_node, get_literal_node(literal));
+          builder.AddArc(arc_node, head_node);
         }
         break;
       }
@@ -595,12 +597,12 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
         CHECK_LT(constraint_node, initial_equivalence_classes->size());
       }
       for (const int ref : constraint.enforcement_literal()) {
-        graph->AddArc(constraint_node, get_literal_node(ref));
+        builder.AddArc(constraint_node, get_literal_node(ref));
       }
     }
   }
 
-  graph->Build();
+  auto graph = std::move(builder).Build(nullptr);
   DCHECK_EQ(graph->num_nodes(), initial_equivalence_classes->size());
 
   // TODO(user): The symmetry code does not officially support multi-arcs. And
@@ -948,10 +950,10 @@ std::vector<int64_t> BuildInequalityCoeffsForOrbitope(
 
 bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
   const SatParameters& params = context->params();
-  const CpModelProto& proto = *context->working_model;
+  const CpModelProto& proto = context->WorkingModel();
 
   // We need to make sure the proto is up to date before computing symmetries!
-  if (context->working_model->has_objective()) {
+  if (proto.has_objective()) {
     context->WriteObjectiveToProto();
   }
   context->WriteVariableDomainsToProto();
@@ -970,7 +972,7 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
     if (r.representative == var) continue;
 
     ++num_added;
-    ConstraintProto* ct = context->working_model->add_constraints();
+    ConstraintProto* ct = context->NewConstraint();
     auto* arg = ct->mutable_linear();
     arg->add_vars(var);
     arg->add_coeffs(1);
@@ -1148,7 +1150,7 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
   // orbitope symmetry on one line. But this line being the objective is key. We
   // can also explicitly look for a full permutation group of the objective
   // terms directly instead of finding the largest orbitope first.
-  if (!orbitope.empty() && context->working_model->has_objective()) {
+  if (!orbitope.empty() && context->WorkingModel().has_objective()) {
     const int num_objective_terms = context->ObjectiveMap().size();
     if (orbitope[0].size() == num_objective_terms) {
       int num_in_column = 0;
@@ -1157,17 +1159,16 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
       }
       if (num_in_column == 1) {
         context->WriteObjectiveToProto();
-        const auto& obj = context->working_model->objective();
+        const auto& obj = context->WorkingModel().objective();
         CHECK_EQ(num_objective_terms, obj.vars().size());
         for (int i = 1; i < num_objective_terms; ++i) {
-          auto* new_ct =
-              context->working_model->add_constraints()->mutable_linear();
+          auto* new_ct = context->NewConstraint()->mutable_linear();
           new_ct->add_vars(obj.vars(i - 1));
           new_ct->add_vars(obj.vars(i));
           new_ct->add_coeffs(1);
           new_ct->add_coeffs(-1);
           new_ct->add_domain(0);
-          new_ct->add_domain(std::numeric_limits<int64_t>::max());
+          new_ct->add_domain(kint64max);
         }
         context->UpdateNewConstraintsVariableUsage();
         context->UpdateRuleStats("symmetry: objective is one orbitope row.");
@@ -1241,7 +1242,7 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
     if (orbit_sizes[orbit_index] > num_in_orbit + 1) {
       context->UpdateRuleStats(
           "symmetry: added orbit symmetry breaking implications");
-      auto* ct = context->working_model->add_constraints();
+      auto* ct = context->NewConstraint();
       auto* bool_and = ct->mutable_bool_and();
       ct->add_enforcement_literal(NegatedRef(distinguished_var));
       for (int var = 0; var < num_vars; ++var) {
@@ -1524,13 +1525,13 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
         continue;
       }
 
-      ConstraintProto* ct = context->working_model->add_constraints();
+      ConstraintProto* ct = context->NewConstraint();
       ct->mutable_linear()->add_coeffs(1);
       ct->mutable_linear()->add_vars(orbitope[0][i]);
       ct->mutable_linear()->add_coeffs(-1);
       ct->mutable_linear()->add_vars(orbitope[0][i + 1]);
       ct->mutable_linear()->add_domain(0);
-      ct->mutable_linear()->add_domain(std::numeric_limits<int64_t>::max());
+      ct->mutable_linear()->add_domain(kint64max);
       context->UpdateRuleStats("symmetry: added symmetry breaking inequality");
     }
     context->UpdateNewConstraintsVariableUsage();
@@ -1547,7 +1548,7 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
     const std::vector<int64_t> coeffs = BuildInequalityCoeffsForOrbitope(
         max_values, (int64_t{1} << kMaxBits), &is_approximated);
     for (int i = 0; i + 1 < orbitope[0].size(); ++i) {
-      ConstraintProto* ct = context->working_model->add_constraints();
+      ConstraintProto* ct = context->NewConstraint();
       auto* arg = ct->mutable_linear();
       for (int j = 0; j < orbitope.size(); ++j) {
         const int64_t coeff = coeffs[j];
@@ -1561,8 +1562,8 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
                   context->MinOf(orbitope[j][i]));
       }
       arg->add_domain(0);
-      arg->add_domain(std::numeric_limits<int64_t>::max());
-      DCHECK(!PossibleIntegerOverflow(*context->working_model, arg->vars(),
+      arg->add_domain(kint64max);
+      DCHECK(!PossibleIntegerOverflow(context->WorkingModel(), arg->vars(),
                                       arg->coeffs()));
     }
     context->UpdateRuleStats(
@@ -1740,7 +1741,7 @@ bool FilterOrbitOnUnusedOrFixedVariables(SymmetryProto* symmetry,
   // Lets output the new statistics.
   // TODO(user): Avoid the reconvertion.
   {
-    const int num_vars = context->working_model->variables().size();
+    const int num_vars = context->WorkingModel().variables().size();
     std::vector<std::unique_ptr<SparsePermutation>> generators;
     for (const SparsePermutationProto& perm : symmetry->permutations()) {
       generators.emplace_back(CreateSparsePermutationFromProto(num_vars, perm));

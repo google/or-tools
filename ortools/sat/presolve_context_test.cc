@@ -690,7 +690,7 @@ TEST(PresolveContextTest, ReifiedConstraintCache) {
   PresolveContext context(&model, &working_model, nullptr);
   context.InitializeNewDomains();
   context.UpdateNewConstraintsVariableUsage();
-  context.LoadSolutionHint();
+  context.LoadAndClampSolutionHint();
   LinearExpressionProto expr1;
   expr1.add_vars(2);
   expr1.add_coeffs(1);
@@ -767,7 +767,7 @@ TEST(PresolveContextTest, IntersectDomainWithUpdatesHint) {
   )pb");
   PresolveContext context(&model, &working_model, nullptr);
   context.InitializeNewDomains();
-  context.LoadSolutionHint();
+  context.LoadAndClampSolutionHint();
 
   EXPECT_TRUE(context.IntersectDomainWith(0, Domain(5, 20)));
 
@@ -1059,7 +1059,7 @@ TEST(PresolveContextTest, CanonicalizeLinearConstraint) {
   EXPECT_THAT(working_model.constraints(0), testing::EqualsProto(expected));
 }
 
-TEST(PresolveContextTest, LoadSolutionHint) {
+TEST(PresolveContextTest, LoadAndClampSolutionHint) {
   Model model;
   CpModelProto working_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 10 ] }
@@ -1072,7 +1072,7 @@ TEST(PresolveContextTest, LoadSolutionHint) {
   )pb");
   PresolveContext context(&model, &working_model, nullptr);
   context.InitializeNewDomains();
-  context.LoadSolutionHint();
+  context.LoadAndClampSolutionHint();
 
   context.solution_crush().StoreSolutionAsHint(working_model);
   // All hints should be clamped to their respective domains, and new hints
