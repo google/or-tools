@@ -89,6 +89,7 @@ jobs:
       SCCACHE_GCS_BUCKET: or-tools-github-remote-caching
       SCCACHE_GCS_KEY_PREFIX: cmake
       SCCACHE_GCS_RW_MODE: READ_WRITE
+      SCCACHE_GCS_KEY_PATH: ${{env.GOOGLE_GHA_CREDS_PATH}}
     steps:
     - uses: actions/checkout@v6
     - uses: 'google-github-actions/auth@v3'
@@ -96,8 +97,6 @@ jobs:
         credentials_json: '${{secrets.GCP_BUCKET_API_KEY}}'
     - name: Run sccache-cache
       uses: mozilla-actions/sccache-action@v0.0.10
-      env:
-        SCCACHE_GCS_KEY_PATH: ${{env.GOOGLE_GHA_CREDS_PATH}}
     - uses: actions/setup-java@v5
       if: ${{ matrix.build == 'java' }}
       with:
@@ -127,10 +126,7 @@ jobs:
         echo "$((Get-Item ~).FullName)/AppData/Roaming/Python/Python312/Scripts" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
     - name: Config
       if: ${{ matrix.build == 'cpp' && matrix.platform == 'linux' }}
-      env:
-        SCCACHE_GCS_KEY_PATH: ${{env.GOOGLE_GHA_CREDS_PATH}}
       run: >
-        VERBOSE=1
         cmake
         -S.
         -Bbuild
@@ -146,12 +142,9 @@ jobs:
         -DCMAKE_CXX_COMPILER_LAUNCHER=${{env.SCCACHE_PATH}}
     - name: Build
       if: ${{ matrix.build == 'cpp' && matrix.platform == 'linux' }}
-      env:
-        SCCACHE_GCS_KEY_PATH: ${{env.GOOGLE_GHA_CREDS_PATH}}
-      run: VERBOSE=1 cmake --build build --config Release -j --target ${{ matrix.generator == 'Ninja' && 'all' || 'ALL_BUILD'}}
+      run: cmake --build build --config Release -j --target ${{ matrix.generator == 'Ninja' && 'all' || 'ALL_BUILD'}}
     - name: Test
       if: ${{ matrix.build == 'cpp' && matrix.platform == 'linux' }}
       env:
-        SCCACHE_GCS_KEY_PATH: ${{env.GOOGLE_GHA_CREDS_PATH}}
         CTEST_OUTPUT_ON_FAILURE: 1
-      run: VERBOSE=1 cmake --build build --config Release -j --target ${{ matrix.generator == 'Ninja' && 'test' || 'RUN_TESTS'}}
+      run: cmake --build build --config Release -j --target ${{ matrix.generator == 'Ninja' && 'test' || 'RUN_TESTS'}}
