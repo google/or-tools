@@ -17,7 +17,6 @@
 
 #include <algorithm>
 #include <functional>
-#include <limits>
 #include <string>
 #include <utility>
 #include <vector>
@@ -33,12 +32,14 @@
 #include "absl/types/span.h"
 #include "ortools/base/log_severity.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/enforcement.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/precedences.h"
 #include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_solver.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
@@ -50,6 +51,7 @@ namespace sat {
 
 LinearPropagator::LinearPropagator(Model* model)
     : trail_(model->GetOrCreate<Trail>()),
+      sat_solver_(model->GetOrCreate<SatSolver>()),
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
       enforcement_propagator_(model->GetOrCreate<EnforcementPropagator>()),
       enforcement_helper_(model->GetOrCreate<EnforcementHelper>()),
@@ -61,9 +63,12 @@ LinearPropagator::LinearPropagator(Model* model)
       precedences_(model->GetOrCreate<EnforcedLinear2Bounds>()),
       lin2_indices_(model->GetOrCreate<Linear2Indices>()),
       linear3_bounds_(model->GetOrCreate<Linear2BoundsFromLinear3>()),
-      random_(model->GetOrCreate<ModelRandomGenerator>()),
+      random_(*model->GetOrCreate<ModelRandomGenerator>()),
       shared_stats_(model->GetOrCreate<SharedStatistics>()),
       watcher_id_(watcher_->Register(this)),
+      only_propagate_unit_linear_(
+          model->GetOrCreate<SatParameters>()->search_branching() ==
+          SatParameters::FIXED_SEARCH),
       order_(random_, time_limit_,
              [this](int id) { return GetVariables(infos_[id]); }) {
   // Note that we need this class always in sync.
@@ -159,6 +164,29 @@ void LinearPropagator::OnVariableChange(IntegerVariable var, IntegerValue lb,
 
   SetPropagatedBy(var, id);
   order_.UpdateBound(var, lb);
+
+  if (only_propagate_unit_linear_ && sat_solver_->num_failures() == 0) {
+    // Stop the propagation if `var` was propagated by a "non-unit" linear
+    // constraint (i.e., a linear constraint with more than one non-fixed
+    // variable). This avoids a quadratic number of propagations when fixing
+    // vars one by one when looking for a first solution with FIXED_SEARCH.
+    if (id != -1 && infos_[id].rev_size != 1) {
+      return;
+    }
+    // When we only propagate unit linear constraints, we need to activate again
+    // all constraints that contain a fixed variable, and this is both
+    // directions.
+    if (integer_trail_->UpperBound(var) == lb) {
+      AddVarConstraintsToQueue(NegationOf(var));
+    }
+  }
+
+  AddVarConstraintsToQueue(var);
+}
+
+void LinearPropagator::AddVarConstraintsToQueue(IntegerVariable var) {
+  const int size = var_to_constraint_ids_[var].size();
+  if (size == 0) return;
   Bitset64<int>::View in_queue = in_queue_.view();
   time_limit_->AdvanceDeterministicTime(static_cast<double>(size) * 1e-9);
   for (const int id : var_to_constraint_ids_[var]) {
@@ -310,6 +338,17 @@ bool LinearPropagator::Propagate() {
   }
   PushPendingLin2Bounds();
   return true;
+}
+
+bool LinearPropagator::PropagateAll() {
+  if (!only_propagate_unit_linear_) {
+    return true;
+  }
+  only_propagate_unit_linear_ = false;
+  for (int i = 0; i < infos_.size(); ++i) {
+    AddToQueueIfNeeded(i);
+  }
+  return Propagate();
 }
 
 // Adds a new constraint to the propagator.
@@ -824,7 +863,7 @@ bool LinearPropagator::ReportConflictingCycle() {
                 });
 
       // Relax the linear reason if everything fit on an int64_t.
-      const absl::int128 limit{std::numeric_limits<int64_t>::max()};
+      const absl::int128 limit{kint64max};
       const absl::int128 slack = implied_lb - rhs_sum;
       if (slack > 1) {
         reason_coeffs_.clear();

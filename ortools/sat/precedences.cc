@@ -247,6 +247,7 @@ IntegerValue RootLevelLinear2Bounds::GetUpperBoundNoTrail(
 std::vector<std::pair<LinearExpression2, IntegerValue>>
 RootLevelLinear2Bounds::GetSortedNonTrivialUpperBounds() const {
   std::vector<std::pair<LinearExpression2, IntegerValue>> result;
+  result.reserve(best_upper_bounds_.size());
   for (LinearExpression2Index index = LinearExpression2Index{0};
        index < best_upper_bounds_.size(); ++index) {
     const IntegerValue ub = best_upper_bounds_[index];
@@ -802,14 +803,14 @@ void ConditionalLinear2Bounds::AddPartialRelation(Literal lit,
 void ConditionalLinear2Bounds::Build() {
   DCHECK(!is_built_);
   is_built_ = true;
-  std::vector<std::pair<LiteralIndex, int>> literal_key_values;
+  CompactVectorVectorBuilder<LiteralIndex, int> lit_to_relations_builder;
+  lit_to_relations_builder.ReserveNumItems(num_enforced_relations_);
   const int num_relations = relations_.size();
-  literal_key_values.reserve(num_enforced_relations_);
   for (int i = 0; i < num_relations; ++i) {
     const Relation& r = relations_[i];
-    literal_key_values.emplace_back(r.enforcement.Index(), i);
+    lit_to_relations_builder.Add(r.enforcement.Index(), i);
   }
-  lit_to_relations_.ResetFromPairs(literal_key_values);
+  lit_to_relations_.ResetFromBuilder(lit_to_relations_builder);
   lit_to_relations_.Add({});  // One extra unit size to make sure the negation
                               // cannot be out of bounds in lit_to_relations_.
 
@@ -1205,19 +1206,18 @@ int GreaterThanAtLeastOneOfDetector::AddGreaterThanAtLeastOneOfConstraints(
 
   CompactVectorVector<LiteralIndex, IntegerLiteral> implied_bounds_by_literal;
   {
+    CompactVectorVectorBuilder<LiteralIndex, IntegerLiteral>
+        implied_bounds_by_literal_builder;
     const auto& all_implied_bounds = implied_bounds_.GetModelImpliedBounds();
-    std::vector<LiteralIndex> implied_bounds_conditions;
-    std::vector<IntegerLiteral> implied_bounds_integer_lit;
-    implied_bounds_conditions.reserve(all_implied_bounds.size());
-    implied_bounds_integer_lit.reserve(all_implied_bounds.size());
+    implied_bounds_by_literal_builder.ReserveNumItems(
+        all_implied_bounds.size());
     for (const auto& [literal_var_pair, bound] : all_implied_bounds) {
-      implied_bounds_conditions.push_back(literal_var_pair.first);
-      implied_bounds_integer_lit.push_back(
+      implied_bounds_by_literal_builder.Add(
+          literal_var_pair.first,
           IntegerLiteral::GreaterOrEqual(literal_var_pair.second, bound));
     }
-    implied_bounds_by_literal.ResetFromFlatMapping(
-        std::move(implied_bounds_conditions),
-        std::move(implied_bounds_integer_lit), 2 * solver->NumVariables());
+    implied_bounds_by_literal.ResetFromBuilder(
+        implied_bounds_by_literal_builder, 2 * solver->NumVariables());
   }
 
   // We have two possible approaches. For now, we prefer the first one except if

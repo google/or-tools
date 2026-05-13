@@ -35,6 +35,7 @@
 #include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/base/timer.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/enforcement.h"
 #include "ortools/sat/lrat_proof_handler.h"
@@ -100,7 +101,7 @@ class SatSolver {
     const int num_vars = NumVariables();
 
     // We need to be able to encode the variable as a literal.
-    CHECK_LT(2 * num_vars, std::numeric_limits<int32_t>::max());
+    CHECK_LT(2 * num_vars, kint32max);
     SetNumVariables(num_vars + 1);
     return BooleanVariable(num_vars);
   }
@@ -387,7 +388,7 @@ class SatSolver {
     // It is important to process the newly fixed variables, so they are not
     // present in the clauses we export.
     if (num_processed_fixed_variables_ < trail_->Index()) {
-      ProcessNewlyFixedVariables();
+      if (!ProcessNewlyFixedVariables()) return false;
     }
     clauses_propagator_->DeleteRemovedClauses();
 
@@ -506,7 +507,7 @@ class SatSolver {
   }
 
   // Simplifies the problem when new variables are assigned at level 0.
-  void ProcessNewlyFixedVariables();
+  bool ProcessNewlyFixedVariables();
 
   int64_t NumFixedVariables() const {
     if (CurrentDecisionLevel() > 0) {
@@ -1078,8 +1079,9 @@ inline std::function<void(Model*)> ExcludeCurrentSolutionAndBacktrack() {
     for (int i = 0; i < current_level; ++i) {
       clause_to_exclude_solution.push_back(decisions[i].literal.Negated());
     }
-    sat_solver->Backtrack(0);
-    AddClauseConstraint(clause_to_exclude_solution, model);
+    if (sat_solver->ResetToLevelZero()) {
+      AddClauseConstraint(clause_to_exclude_solution, model);
+    }
   };
 }
 

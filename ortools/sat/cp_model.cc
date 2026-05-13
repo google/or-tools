@@ -15,7 +15,6 @@
 
 #include <cstdint>
 #include <initializer_list>
-#include <limits>
 #include <ostream>
 #include <string>
 #include <vector>
@@ -26,6 +25,7 @@
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/util/sorted_interval_list.h"
@@ -972,7 +972,7 @@ Constraint CpModelBuilder::AddGreaterOrEqual(const LinearExpr& left,
   FillLinearTerms(left, right, proto->mutable_linear());
   const int64_t rhs = right.constant() - left.constant();
   proto->mutable_linear()->add_domain(rhs);
-  proto->mutable_linear()->add_domain(std::numeric_limits<int64_t>::max());
+  proto->mutable_linear()->add_domain(kint64max);
   return Constraint(proto);
 }
 
@@ -981,7 +981,7 @@ Constraint CpModelBuilder::AddLessOrEqual(const LinearExpr& left,
   ConstraintProto* const proto = cp_model_.add_constraints();
   FillLinearTerms(left, right, proto->mutable_linear());
   const int64_t rhs = right.constant() - left.constant();
-  proto->mutable_linear()->add_domain(std::numeric_limits<int64_t>::min());
+  proto->mutable_linear()->add_domain(kint64min);
   proto->mutable_linear()->add_domain(rhs);
   return Constraint(proto);
 }
@@ -992,7 +992,7 @@ Constraint CpModelBuilder::AddGreaterThan(const LinearExpr& left,
   FillLinearTerms(left, right, proto->mutable_linear());
   const int64_t rhs = right.constant() - left.constant();
   proto->mutable_linear()->add_domain(rhs + 1);
-  proto->mutable_linear()->add_domain(std::numeric_limits<int64_t>::max());
+  proto->mutable_linear()->add_domain(kint64max);
   return Constraint(proto);
 }
 
@@ -1001,7 +1001,7 @@ Constraint CpModelBuilder::AddLessThan(const LinearExpr& left,
   ConstraintProto* const proto = cp_model_.add_constraints();
   FillLinearTerms(left, right, proto->mutable_linear());
   const int64_t rhs = right.constant() - left.constant();
-  proto->mutable_linear()->add_domain(std::numeric_limits<int64_t>::min());
+  proto->mutable_linear()->add_domain(kint64min);
   proto->mutable_linear()->add_domain(rhs - 1);
   return Constraint(proto);
 }
@@ -1028,10 +1028,10 @@ Constraint CpModelBuilder::AddNotEqual(const LinearExpr& left,
   ConstraintProto* const proto = cp_model_.add_constraints();
   FillLinearTerms(left, right, proto->mutable_linear());
   const int64_t rhs = right.constant() - left.constant();
-  proto->mutable_linear()->add_domain(std::numeric_limits<int64_t>::min());
+  proto->mutable_linear()->add_domain(kint64min);
   proto->mutable_linear()->add_domain(rhs - 1);
   proto->mutable_linear()->add_domain(rhs + 1);
-  proto->mutable_linear()->add_domain(std::numeric_limits<int64_t>::max());
+  proto->mutable_linear()->add_domain(kint64max);
   return Constraint(proto);
 }
 

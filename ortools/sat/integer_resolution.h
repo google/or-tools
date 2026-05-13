@@ -21,6 +21,7 @@
 
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
@@ -94,7 +95,6 @@ class IntegerConflictResolution {
   // Information about the current content of our tmp_queue_ and our conflict
   // resolution.
   SparseBitset<int> tmp_bool_index_seen_;
-  SparseBitset<BooleanVariable> tmp_bool_seen_;
   std::vector<IntegerLiteral> tmp_integer_literals_;
   util_intops::StrongVector<IntegerVariable, IntegerValue>
       tmp_var_to_settled_lb_;
@@ -104,7 +104,7 @@ class IntegerConflictResolution {
     // Whether this variable was added in the queue.
     // If false, index_in_queue will be the index to re-add it with.
     bool in_queue = false;
-    int int_index_in_queue = std::numeric_limits<int>::max();
+    int int_index_in_queue = kint32max;
 
     // We only need var >= bound in the current conflict resolution.
     // Note that we have: integer_trail_[int_index_in_queue] >= bound.

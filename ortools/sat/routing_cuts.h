@@ -30,6 +30,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "ortools/base/stl_util.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cuts.h"
 #include "ortools/sat/integer.h"
@@ -666,10 +667,10 @@ void GenerateInterestingSubsets(int num_nodes,
 //
 // TODO(user): This also allocate O(n) memory internally, we could reuse it from
 // call to call if needed.
-void ExtractAllSubsetsFromForest(
-    absl::Span<const int> parent, std::vector<int>* subset_data,
-    std::vector<absl::Span<const int>>* subsets,
-    int node_limit = std::numeric_limits<int>::max());
+void ExtractAllSubsetsFromForest(absl::Span<const int> parent,
+                                 std::vector<int>* subset_data,
+                                 std::vector<absl::Span<const int>>* subsets,
+                                 int node_limit = kint32max);
 
 // In the routing context, we usually always have lp_value in [0, 1] and only
 // looks at arcs with a lp_value that is not too close to zero.

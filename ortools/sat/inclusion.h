@@ -20,13 +20,13 @@
 #include <algorithm>
 #include <cstdint>
 #include <functional>
-#include <limits>
 #include <tuple>
 #include <utility>
 #include <vector>
 
 #include "absl/log/check.h"
 #include "absl/types/span.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/time_limit.h"
@@ -152,7 +152,7 @@ class InclusionDetector {
   int num_potential_subsets_ = 0;
   int num_potential_supersets_ = 0;
   uint64_t work_done_ = 0;
-  uint64_t work_limit_ = std::numeric_limits<uint64_t>::max();
+  uint64_t work_limit_ = kuint64max;
 
   bool stop_ = false;
   bool stop_with_current_subset_ = false;
@@ -205,7 +205,7 @@ class SubsetsDetector {
 
   TimeLimit* time_limit_;
   uint64_t work_done_ = 0;
-  uint64_t work_limit_ = std::numeric_limits<uint64_t>::max();
+  uint64_t work_limit_ = kuint64max;
 
   struct OneWatcherData {
     int index;
@@ -426,8 +426,7 @@ inline void SubsetsDetector<Storage>::IndexAllStorageAsSubsets() {
   stop_ = false;
 
   // Flat representation of one_watcher_, we will fill it in one go from there.
-  std::vector<int> tmp_keys;
-  std::vector<OneWatcherData> tmp_values;
+  CompactVectorVectorBuilder<int, OneWatcherData> one_watcher_builder;
   std::vector<int> element_to_num_watched;
 
   work_done_ = 0;
@@ -469,11 +468,10 @@ inline void SubsetsDetector<Storage>::IndexAllStorageAsSubsets() {
     DCHECK_NE(best_choice, second_choice);
 
     element_to_num_watched[best_choice]++;
-    tmp_keys.push_back(best_choice);
-    tmp_values.push_back({index, second_choice, signature});
+    one_watcher_builder.Add(best_choice, {index, second_choice, signature});
   }
 
-  one_watcher_.ResetFromFlatMapping(tmp_keys, tmp_values);
+  one_watcher_.ResetFromBuilder(one_watcher_builder);
 }
 
 template <typename Storage>

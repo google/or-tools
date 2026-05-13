@@ -24,6 +24,7 @@
 #include "absl/numeric/int128.h"
 #include "absl/types/span.h"
 #include "ortools/base/mathutil.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/util.h"
 
 namespace operations_research::sat {
@@ -31,10 +32,10 @@ namespace operations_research::sat {
 namespace {
 
 int64_t Gcd(const absl::Span<const int64_t> coeffs) {
-  DCHECK(coeffs[0] != std::numeric_limits<int64_t>::min());
+  DCHECK(coeffs[0] != kint64min);
   int64_t gcd = std::abs(coeffs[0]);
   for (int i = 1; i < coeffs.size(); ++i) {
-    DCHECK(coeffs[i] != std::numeric_limits<int64_t>::min());
+    DCHECK(coeffs[i] != kint64min);
     const int64_t abs_coeff = std::abs(coeffs[i]);
     gcd = std::gcd(gcd, abs_coeff);
   }
@@ -69,12 +70,12 @@ void ReduceModuloBasis(absl::Span<const std::vector<absl::int128>> basis,
 std::vector<int> GreedyFastDecreasingGcd(
     const absl::Span<const int64_t> coeffs) {
   std::vector<int> result;
-  DCHECK(coeffs[0] != std::numeric_limits<int64_t>::min());
+  DCHECK(coeffs[0] != kint64min);
   int64_t min_abs_coeff = std::abs(coeffs[0]);
   int min_term = 0;
   int64_t global_gcd = min_abs_coeff;
   for (int i = 1; i < coeffs.size(); ++i) {
-    DCHECK(coeffs[i] != std::numeric_limits<int64_t>::min());
+    DCHECK(coeffs[i] != kint64min);
     const int64_t abs_coeff = std::abs(coeffs[i]);
     global_gcd = std::gcd(global_gcd, abs_coeff);
     if (abs_coeff < min_abs_coeff) {

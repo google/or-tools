@@ -240,7 +240,7 @@ bool EquivalenceSatSweeping::DoOneRound(
       constexpr int kMaxTries = 10;
       for (tries = 0; tries < kMaxTries; ++tries) {
         next_candidate_var = RepresentativeVar(
-            BooleanVariable(absl::Uniform<int>(*random_, 0, num_vars)));
+            BooleanVariable(absl::Uniform<int>(random_, 0, num_vars)));
         if (var_to_clauses_[next_candidate_var].size() < 2) continue;
         const Literal positive_lit(next_candidate_var, true);
         if (implication_graph_->RepresentativeOf(positive_lit) !=
@@ -355,7 +355,7 @@ bool EquivalenceSatSweeping::DoOneRound(
     } else if (!result.new_equivalences.empty()) {
       // Try a different variable from the same neighborhood.
       const int var_index =
-          absl::Uniform<int>(*random_, 0, bools_with_new_equivalences.size());
+          absl::Uniform<int>(random_, 0, bools_with_new_equivalences.size());
       const BooleanVariable unmapped_next_candidate_var =
           bools_with_new_equivalences[var_index];
       next_candidate_var = RepresentativeVar(

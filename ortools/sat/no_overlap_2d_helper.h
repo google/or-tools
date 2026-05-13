@@ -224,6 +224,7 @@ class NoOverlap2DConstraintHelper : public PropagatorInterface {
 
   int NumBoxes() const { return x_helper_->NumTasks(); }
 
+  bool IncrementalPropagate(const std::vector<int>& watch_indices) override;
   bool Propagate() override;
 
   // Note that the helpers are only valid until the next call to
@@ -248,6 +249,14 @@ class NoOverlap2DConstraintHelper : public PropagatorInterface {
              absl::Span<const int> non_fixed_box_indexes);
 
   CompactVectorVector<int> connected_components_;
+
+  // The watcher indices never changes, but box indices are remapped by Reset().
+  // Note that as boxes become fixed at the root level, the corresponding entry
+  // will be set to -1 here.
+  //
+  // TODO(user): We should probably remove the entry in the watch list of the
+  // GenericLiteralWatcher too.
+  std::vector<int> watch_index_to_box_;
 
   bool axes_are_swapped_;
   std::unique_ptr<SchedulingConstraintHelper> x_helper_;

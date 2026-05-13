@@ -189,8 +189,18 @@ void GetReferencesUsedByConstraint(const ConstraintProto& ct,
       // The node expressions are not used by the constraint itself.
       break;
     case ConstraintProto::ConstraintCase::kInverse:
-      AddIndices(ct.inverse().f_direct(), variables);
-      AddIndices(ct.inverse().f_inverse(), variables);
+      if (!ct.inverse().f_direct().empty()) {
+        AddIndices(ct.inverse().f_direct(), variables);
+        AddIndices(ct.inverse().f_inverse(), variables);
+      } else {
+        for (const LinearExpressionProto& expr : ct.inverse().f_expr_direct()) {
+          AddIndices(expr.vars(), variables);
+        }
+        for (const LinearExpressionProto& expr :
+             ct.inverse().f_expr_inverse()) {
+          AddIndices(expr.vars(), variables);
+        }
+      }
       break;
     case ConstraintProto::ConstraintCase::kReservoir:
       for (const LinearExpressionProto& time : ct.reservoir().time_exprs()) {
@@ -384,8 +394,17 @@ void ApplyToAllVariableIndices(absl::FunctionRef<void(int*)> f,
     case ConstraintProto::ConstraintCase::kRoutes:
       break;
     case ConstraintProto::ConstraintCase::kInverse:
-      APPLY_TO_REPEATED_FIELD(inverse, f_direct);
-      APPLY_TO_REPEATED_FIELD(inverse, f_inverse);
+      if (!ct->inverse().f_direct().empty()) {
+        APPLY_TO_REPEATED_FIELD(inverse, f_direct);
+        APPLY_TO_REPEATED_FIELD(inverse, f_inverse);
+      } else {
+        for (int i = 0; i < ct->inverse().f_expr_direct_size(); ++i) {
+          APPLY_TO_REPEATED_FIELD(inverse, f_expr_direct(i)->mutable_vars);
+        }
+        for (int i = 0; i < ct->inverse().f_expr_inverse_size(); ++i) {
+          APPLY_TO_REPEATED_FIELD(inverse, f_expr_inverse(i)->mutable_vars);
+        }
+      }
       break;
     case ConstraintProto::ConstraintCase::kReservoir:
       for (int i = 0; i < ct->reservoir().time_exprs_size(); ++i) {
@@ -612,6 +631,7 @@ std::vector<int> UsedIntervals(const ConstraintProto& ct) {
       AddIndices(ct.no_overlap().intervals(), &used_intervals);
       break;
     case ConstraintProto::ConstraintCase::kNoOverlap2D:
+      used_intervals.reserve(2 * ct.no_overlap_2d().x_intervals_size());
       AddIndices(ct.no_overlap_2d().x_intervals(), &used_intervals);
       AddIndices(ct.no_overlap_2d().y_intervals(), &used_intervals);
       break;
@@ -831,8 +851,19 @@ uint64_t FingerprintModel(const CpModelProto& model, uint64_t seed) {
         fp = FingerprintRepeatedField(ct.routes().literals(), fp);
         break;
       case ConstraintProto::ConstraintCase::kInverse:
-        fp = FingerprintRepeatedField(ct.inverse().f_direct(), fp);
-        fp = FingerprintRepeatedField(ct.inverse().f_inverse(), fp);
+        if (!ct.inverse().f_direct().empty()) {
+          fp = FingerprintRepeatedField(ct.inverse().f_direct(), fp);
+          fp = FingerprintRepeatedField(ct.inverse().f_inverse(), fp);
+        } else {
+          for (const LinearExpressionProto& expr :
+               ct.inverse().f_expr_direct()) {
+            fp = FingerprintExpression(expr, fp);
+          }
+          for (const LinearExpressionProto& expr :
+               ct.inverse().f_expr_inverse()) {
+            fp = FingerprintExpression(expr, fp);
+          }
+        }
         break;
       case ConstraintProto::ConstraintCase::kReservoir:
         fp = FingerprintSingleField(ct.reservoir().min_level(), fp);

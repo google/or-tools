@@ -204,6 +204,7 @@ class LratChecker {
 
   // Only used if DEBUG_MODE is true.
   absl::flat_hash_map<ClausePtr, std::vector<Literal>> debug_clause_by_ptr_;
+  SparseBitset<LiteralIndex> debug_scratch_literal_set_;
 
   SharedStatistics* stats_;
 };

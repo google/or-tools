@@ -32,6 +32,7 @@
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/types/span.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/constraint_violation.h"
 #include "ortools/sat/cp_model_copy.h"
 #include "ortools/sat/integer_base.h"
@@ -41,6 +42,7 @@
 #include "ortools/sat/subsolver.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
+#include "ortools/util/random_engine.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/time_limit.h"
 
@@ -177,14 +179,14 @@ struct LsOptions {
            use_objective == o.use_objective;
   }
 
-  void Randomize(const SatParameters& params, ModelRandomGenerator* random) {
+  void Randomize(const SatParameters& params, absl::BitGenRef random) {
     perturbation_probability =
-        absl::Bernoulli(*random, 0.5)
+        absl::Bernoulli(random, 0.5)
             ? 0.0
             : params.feasibility_jump_var_randomization_probability();
-    use_decay = absl::Bernoulli(*random, 0.5);
-    use_compound_moves = absl::Bernoulli(*random, 0.5);
-    use_objective = absl::Bernoulli(*random, 0.5);
+    use_decay = absl::Bernoulli(random, 0.5);
+    use_compound_moves = absl::Bernoulli(random, 0.5);
+    use_objective = absl::Bernoulli(random, 0.5);
   }
 };
 
@@ -245,7 +247,7 @@ struct LsState {
   int64_t num_batches_before_change = 0;
 
   // Used by LS to know the rank of the starting solution for this state.
-  int64_t last_solution_rank = std::numeric_limits<int64_t>::max();
+  int64_t last_solution_rank = kint64max;
 
   // Tricky: If this changed since last time, we need to recompute the
   // compound moves as the objective constraint bound changed.
@@ -390,7 +392,7 @@ class FeasibilityJumpSolver : public SubSolver {
         shared_response_(shared_response),
         shared_hints_(shared_hints),
         stat_tables_(stat_tables),
-        random_(params_) {
+        random_(params_.random_seed()) {
     shared_time_limit_->UpdateLocalLimit(&time_limit_);
   }
 
@@ -512,7 +514,7 @@ class FeasibilityJumpSolver : public SubSolver {
   SharedResponseManager* shared_response_;
   SharedLsSolutionRepository* shared_hints_;
   SharedStatTables* stat_tables_;
-  ModelRandomGenerator random_;
+  random_engine_t random_;
 
   // Whether each `dense_model_` variable occurs in a positive/negative term in
   // the objective.

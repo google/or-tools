@@ -21,6 +21,7 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/container/inlined_vector.h"
 #include "absl/types/span.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/presolve_context.h"
 
@@ -40,7 +41,7 @@ void CanonicalizeTable(PresolveContext* context, ConstraintProto* ct);
 // regexps.
 //
 // This method is exposed for testing purposes.
-constexpr int64_t kTableAnyValue = std::numeric_limits<int64_t>::min();
+constexpr int64_t kTableAnyValue = kint64min;
 void CompressTuples(absl::Span<const int64_t> domain_sizes,
                     std::vector<std::vector<int64_t>>* tuples);
 

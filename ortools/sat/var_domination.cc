@@ -18,7 +18,6 @@
 #include <algorithm>
 #include <cstdint>
 #include <cstdlib>
-#include <limits>
 #include <memory>
 #include <string>
 #include <utility>
@@ -38,6 +37,7 @@
 #include "ortools/base/mathutil.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/integer_base.h"
@@ -686,7 +686,7 @@ void TransformLinearWithSpecialBoolean(const ConstraintProto& ct, int ref,
     output->push_back(ct.enforcement_literal().size());
     for (const int literal : ct.enforcement_literal()) {
       if (literal == NegatedRef(ref)) {
-        output->push_back(std::numeric_limits<int32_t>::max());  // Sentinel
+        output->push_back(kint32max);  // Sentinel
       } else {
         output->push_back(literal);
       }
@@ -701,11 +701,11 @@ void TransformLinearWithSpecialBoolean(const ConstraintProto& ct, int ref,
     const int v = ct.linear().vars(i);
     const int64_t c = ct.linear().coeffs(i);
     if (v == ref) {
-      output->push_back(std::numeric_limits<int32_t>::max());  // Sentinel
+      output->push_back(kint32max);  // Sentinel
       output->push_back(c);
     } else if (v == NegatedRef(ref)) {
       // c * v = -c * (1 - v) + c
-      output->push_back(std::numeric_limits<int32_t>::max());  // Sentinel
+      output->push_back(kint32max);  // Sentinel
       output->push_back(-c);
       offset += c;
     } else {
@@ -725,7 +725,7 @@ void TransformLinearWithSpecialBoolean(const ConstraintProto& ct, int ref,
 bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
   SolutionCrush& crush = context->solution_crush();
   num_deleted_constraints_ = 0;
-  const CpModelProto& cp_model = *context->working_model;
+  const CpModelProto& cp_model = context->WorkingModel();
   const int num_vars = cp_model.variables_size();
   int64_t num_fixed_vars = 0;
   for (int var = 0; var < num_vars; ++var) {
@@ -773,19 +773,15 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
     // has holes.
     if (lb_limit > lb || ub_limit < ub) {
       const int64_t new_ub =
-          ub_limit < ub
-              ? context->DomainOf(var)
-                    .IntersectionWith(
-                        Domain(ub_limit, std::numeric_limits<int64_t>::max()))
-                    .Min()
-              : ub;
+          ub_limit < ub ? context->DomainOf(var)
+                              .IntersectionWith(Domain(ub_limit, kint64max))
+                              .Min()
+                        : ub;
       const int64_t new_lb =
-          lb_limit > lb
-              ? context->DomainOf(var)
-                    .IntersectionWith(
-                        Domain(std::numeric_limits<int64_t>::min(), lb_limit))
-                    .Max()
-              : lb;
+          lb_limit > lb ? context->DomainOf(var)
+                              .IntersectionWith(Domain(kint64min, lb_limit))
+                              .Max()
+                        : lb;
       context->UpdateRuleStats("dual: reduced domain");
       CHECK(context->IntersectDomainWith(var, Domain(new_lb, new_ub)));
     }
@@ -824,7 +820,7 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
     }
 
     const int ct_index = locking_ct_index_[var];
-    const ConstraintProto& ct = context->working_model->constraints(ct_index);
+    const ConstraintProto& ct = context->Constraint(ct_index);
     if (ct.constraint_case() == ConstraintProto::CONSTRAINT_NOT_SET) {
       // TODO(user): Fix variable right away rather than waiting for next call.
       continue;
@@ -911,7 +907,6 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
           // order to preserve the hint feasibility.
           crush.SetLiteralToValueIf(ref, false, NegatedRef(enf));
           context->AddImplication(NegatedRef(enf), NegatedRef(ref));
-          context->UpdateNewConstraintsVariableUsage();
           continue;
         }
 
@@ -937,7 +932,7 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
           }
           processed[PositiveRef(ref)] = true;
           processed[PositiveRef(var)] = true;
-          context->working_model->mutable_constraints(ct_index)->Clear();
+          context->ClearConstraint(ct_index);
           context->UpdateConstraintVariableUsage(ct_index);
           continue;
         }
@@ -945,7 +940,7 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
           context->UpdateRuleStats("linear1: always true");
           processed[PositiveRef(ref)] = true;
           processed[PositiveRef(var)] = true;
-          context->working_model->mutable_constraints(ct_index)->Clear();
+          context->ClearConstraint(ct_index);
           context->UpdateConstraintVariableUsage(ct_index);
           continue;
         }
@@ -992,7 +987,7 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
                 return false;
               }
             }
-            context->working_model->mutable_constraints(ct_index)->Clear();
+            context->ClearConstraint(ct_index);
             context->UpdateConstraintVariableUsage(ct_index);
             processed[PositiveRef(ref)] = true;
             processed[PositiveRef(var)] = true;
@@ -1013,12 +1008,11 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
           // (`var` in `rhs`) -- which does not apply when `ref` is true.
           crush.SetLiteralToValueIfLinearConstraintViolated(
               ref, false, {{var, 1}}, complement);
-          ConstraintProto* new_ct = context->working_model->add_constraints();
+          ConstraintProto* new_ct = context->AddConstraint();
           new_ct->add_enforcement_literal(ref);
           new_ct->mutable_linear()->add_vars(var);
           new_ct->mutable_linear()->add_coeffs(1);
           FillDomainInProto(complement, new_ct->mutable_linear());
-          context->UpdateNewConstraintsVariableUsage();
 
           if (rhs.IsFixed()) {
             context->StoreLiteralImpliesVarEqValue(NegatedRef(ref), var, value);
@@ -1027,7 +1021,6 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
             context->StoreLiteralImpliesVarNeValue(NegatedRef(ref), var, value);
             context->StoreLiteralImpliesVarEqValue(ref, var, value);
           }
-          context->UpdateNewConstraintsVariableUsage();
           continue;
         }
       }
@@ -1064,8 +1057,7 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
           // Already present!
           const auto [other_c_with_same_hash, other_ref] = it->second;
           CHECK_NE(other_c_with_same_hash, ct_index);
-          const auto& other_ct =
-              context->working_model->constraints(other_c_with_same_hash);
+          const auto& other_ct = context->Constraint(other_c_with_same_hash);
           TransformLinearWithSpecialBoolean(other_ct, other_ref,
                                             &other_temp_data);
           if (temp_data == other_temp_data) {
@@ -1100,7 +1092,7 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
               // We can delete one of the constraint since they are duplicate
               // now.
               ++num_deleted_constraints_;
-              context->working_model->mutable_constraints(ct_index)->Clear();
+              context->ClearConstraint(ct_index);
               context->UpdateConstraintVariableUsage(ct_index);
               continue;
             }
@@ -1187,7 +1179,7 @@ void ScanModelForDominanceDetection(PresolveContext& context,
                                     VarDomination* var_domination) {
   if (context.ModelIsUnsat()) return;
 
-  const CpModelProto& cp_model = *context.working_model;
+  const CpModelProto& cp_model = context.WorkingModel();
   const int num_vars = cp_model.variables().size();
   var_domination->Reset(num_vars);
 
@@ -1393,7 +1385,7 @@ void ScanModelForDualBoundStrengthening(
     const PresolveContext& context,
     DualBoundStrengthening* dual_bound_strengthening) {
   if (context.ModelIsUnsat()) return;
-  const CpModelProto& cp_model = *context.working_model;
+  const CpModelProto& cp_model = context.WorkingModel();
   const int num_vars = cp_model.variables().size();
   dual_bound_strengthening->Reset(num_vars);
 
@@ -1538,7 +1530,7 @@ bool ProcessAtMostOne(
 
 bool ExploitDominanceRelations(const VarDomination& var_domination,
                                PresolveContext* context) {
-  const CpModelProto& cp_model = *context->working_model;
+  const CpModelProto& cp_model = context->WorkingModel();
   const int num_vars = cp_model.variables_size();
 
   // Abort early if there is nothing to do.
@@ -1562,7 +1554,7 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
   util_intops::StrongVector<IntegerVariable, int> can_freely_decrease_count(
       num_vars * 2, 0);
   util_intops::StrongVector<IntegerVariable, int64_t> can_freely_decrease_until(
-      num_vars * 2, std::numeric_limits<int64_t>::min());
+      num_vars * 2, kint64min);
 
   // Temporary data that we fill/clear for each linear constraint.
   util_intops::StrongVector<IntegerVariable, int64_t> var_lb_to_ub_diff(
@@ -1954,7 +1946,6 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
         // call below fixes it by negating both values. Otherwise it does
         // nothing and thus preserves its feasibility.
         crush.UpdateLiteralsWithDominance(ref, dom_ref);
-        context->UpdateNewConstraintsVariableUsage();
         implications.insert({ref, dom_ref});
         implications.insert({NegatedRef(dom_ref), NegatedRef(ref)});
 

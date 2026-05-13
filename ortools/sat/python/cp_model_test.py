@@ -1419,6 +1419,14 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(canonical_expr2.coeffs[1], 2)
         self.assertEqual(canonical_expr2.offset, 2)
 
+    def test_prettyprint_model_proto(self) -> None:
+        model = cp_model.CpModel()
+        model.new_int_var(0, 4, "x")
+        self.assertEqual(
+            cmh.prettyprint_model_proto(model.proto),
+            'variables { name: "x" domain: [0, 4] }\n',
+        )
+
     def test_absent_interval(self) -> None:
         model = cp_model.CpModel()
         i = model.new_optional_interval_var(1, 0, 1, False, "")

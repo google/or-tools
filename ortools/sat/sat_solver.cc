@@ -34,6 +34,7 @@
 #include "ortools/base/log_severity.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/timer.h"
+#include "ortools/base/types.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/port/sysinfo.h"
 #include "ortools/sat/clause.h"
@@ -702,7 +703,7 @@ bool SatSolver::ResetWithGivenAssumptions(
   // For assumptions and core-based search, it is really important to add as
   // many binary clauses as possible. This is because we do not want to miss any
   // early core of size 2.
-  ProcessNewlyFixedVariables();
+  if (!ProcessNewlyFixedVariables()) return false;
 
   DCHECK(assumptions_.empty());
   assumption_level_ = 1;
@@ -1150,7 +1151,7 @@ void SatSolver::ProcessCurrentConflict(
   }
 
   // Learn the new clauses.
-  int best_lbd = std::numeric_limits<int>::max();
+  int best_lbd = kint32max;
   for (const auto& [clause, is_redundant, min_lbd, literals] :
        learned_clauses_) {
     DCHECK((lrat_proof_handler_ == nullptr) || (clause != kNullClausePtr));
@@ -1196,7 +1197,7 @@ std::pair<bool, int> SatSolver::SubsumptionsInConflictResolution(
   // conflict "shrinking" in the literature.
   std::vector<SatClause*> subsumed_by_decisions;
   bool decision_is_redundant = true;
-  int decision_min_lbd = std::numeric_limits<int>::max();
+  int decision_min_lbd = kint32max;
   int decisions_clause_size = 0;
   if (assumption_level_ == 0 &&
       parameters_->decision_subsumption_during_conflict_analysis()) {
@@ -1282,7 +1283,7 @@ std::pair<bool, int> SatSolver::SubsumptionsInConflictResolution(
 
     // Then this clause subsumes all entry in the group.
     bool new_clause_is_redundant = true;
-    int new_clause_min_lbd = std::numeric_limits<int>::max();
+    int new_clause_min_lbd = kint32max;
     for (SatClause* clause : subsuming_groups_[i]) {
       CHECK_NE(clause->size(), 0);  // Not subsumed yet.
       if (clauses_propagator_->IsRemovable(clause)) {
@@ -1306,7 +1307,7 @@ std::pair<bool, int> SatSolver::SubsumptionsInConflictResolution(
   }
 
   bool is_redundant = true;
-  int min_lbd_of_subsumed_clauses = std::numeric_limits<int>::max();
+  int min_lbd_of_subsumed_clauses = kint32max;
   const auto in_decision = tmp_decision_set_.const_view();
   const auto maybe_subsume = [&is_redundant, &min_lbd_of_subsumed_clauses,
                               in_conflict, conflict, in_decision,
@@ -1672,7 +1673,7 @@ SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit,
   const int64_t kDisplayFrequency = 10000;
   int64_t next_display = parameters_->log_search_progress()
                              ? NextMultipleOf(num_failures(), kDisplayFrequency)
-                             : std::numeric_limits<int64_t>::max();
+                             : kint64max;
 
   // Variables used to check the memory limit every kMemoryCheckFrequency.
   const int64_t kMemoryCheckFrequency = 10000;
@@ -1682,8 +1683,8 @@ SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit,
   // The max_number_of_conflicts is per solve but the counter is for the whole
   // solver.
   const int64_t kFailureLimit =
-      max_number_of_conflicts == std::numeric_limits<int64_t>::max()
-          ? std::numeric_limits<int64_t>::max()
+      max_number_of_conflicts == kint64max
+          ? kint64max
           : counters_.num_failures + max_number_of_conflicts;
 
   // Starts search.
@@ -2022,10 +2023,10 @@ std::string SatSolver::RunningStatisticsString() const {
       num_variables_.value() - num_processed_fixed_variables_);
 }
 
-void SatSolver::ProcessNewlyFixedVariables() {
+bool SatSolver::ProcessNewlyFixedVariables() {
   SCOPED_TIME_STAT(&stats_);
   DCHECK_EQ(CurrentDecisionLevel(), 0);
-  if (num_processed_fixed_variables_ == trail_->Index()) return;
+  if (num_processed_fixed_variables_ == trail_->Index()) return true;
   num_processed_fixed_variables_ = trail_->Index();
 
   int num_detached_clauses = 0;
@@ -2066,15 +2067,13 @@ void SatSolver::ProcessNewlyFixedVariables() {
       // fixed literals, that is okay, we will clean them up on the next call to
       // ProcessNewlyFixedVariables().
       //
-      // TODO(user): This still happen in SAT22.Carry_Save_Fast_1.cnf.cnf.xz, A
-      // better alternative is probably to make sure we only ever have cleaned
-      // clauses. We must clean them each time
-      // binary_implication_graph_->DetectEquivalence() is called, and we need
-      // to make sure we don't generate new clauses that are not cleaned up.
+      // Note that this is hard to avoid, because as we find new equivalences,
+      // more clause can become binary which might cause new equivalences... And
+      // making sure we reach a fix-point each time DetectEquivalence() is
+      // called is not so easy.
       if (trail_->Index() > saved_index) {
         if (!FinishPropagation()) {
-          SetModelUnsat();
-          return;
+          return SetModelUnsat();
         }
         saved_index = trail_->Index();
       }
@@ -2101,6 +2100,7 @@ void SatSolver::ProcessNewlyFixedVariables() {
   CHECK(binary_implication_graph_->Propagate(trail_));
   binary_implication_graph_->RemoveFixedVariables();
   deterministic_time_of_last_fixed_variables_cleanup_ = deterministic_time();
+  return true;
 }
 
 bool SatSolver::PropagationIsDone() const {
@@ -2147,6 +2147,22 @@ bool SatSolver::Propagate() {
         if (trail_->Index() > old_index) break;
       }
       if (trail_->Index() == old_index) break;
+    }
+
+    // We are back at level 0. This can happen because of a restart, or because
+    // we proved that some variables must take a given value in any satisfiable
+    // assignment. Trigger a simplification of the clauses if there is new fixed
+    // variables. Note that for efficiency reason, we don't do that too often.
+    //
+    // TODO(user): Do more advanced preprocessing?
+    if (CurrentDecisionLevel() == 0) {
+      const double kMinDeterministicTimeBetweenCleanups = 1.0;
+      if (num_processed_fixed_variables_ < trail_->Index() &&
+          deterministic_time() >
+              deterministic_time_of_last_fixed_variables_cleanup_ +
+                  kMinDeterministicTimeBetweenCleanups) {
+        if (!ProcessNewlyFixedVariables()) return false;
+      }
     }
 
     // In some corner cases, we might add new constraint during propagation,
@@ -2227,22 +2243,6 @@ bool SatSolver::ResolvePBConflict(BooleanVariable var,
 void SatSolver::EnqueueNewDecision(Literal literal) {
   SCOPED_TIME_STAT(&stats_);
   CHECK(!Assignment().VariableIsAssigned(literal.Variable()));
-
-  // We are back at level 0. This can happen because of a restart, or because
-  // we proved that some variables must take a given value in any satisfiable
-  // assignment. Trigger a simplification of the clauses if there is new fixed
-  // variables. Note that for efficiency reason, we don't do that too often.
-  //
-  // TODO(user): Do more advanced preprocessing?
-  if (CurrentDecisionLevel() == 0) {
-    const double kMinDeterministicTimeBetweenCleanups = 1.0;
-    if (num_processed_fixed_variables_ < trail_->Index() &&
-        deterministic_time() >
-            deterministic_time_of_last_fixed_variables_cleanup_ +
-                kMinDeterministicTimeBetweenCleanups) {
-      ProcessNewlyFixedVariables();
-    }
-  }
 
   counters_.num_branches++;
   last_decision_or_backtrack_trail_index_ = trail_->Index();
@@ -2737,12 +2737,11 @@ void SatSolver::MinimizeConflictRecursively(std::vector<Literal>* conflict,
   is_independent_.ClearAndResize(num_variables_);
 
   // min_trail_index_per_level_ will always be reset to all
-  // std::numeric_limits<int>::max() at the end. This is used to prune the
+  // kint32max at the end. This is used to prune the
   // search because any literal at a given level with an index smaller or equal
   // to min_trail_index_per_level_[level] can't be redundant.
   if (CurrentDecisionLevel() >= min_trail_index_per_level_.size()) {
-    min_trail_index_per_level_.resize(CurrentDecisionLevel() + 1,
-                                      std::numeric_limits<int>::max());
+    min_trail_index_per_level_.resize(CurrentDecisionLevel() + 1, kint32max);
   }
 
   // Compute the number of variables at each decision level. This will be used
@@ -2809,8 +2808,7 @@ void SatSolver::MinimizeConflictRecursively(std::vector<Literal>* conflict,
   const int threshold = min_trail_index_per_level_.size() / 2;
   if (is_marked_.PositionsSetAtLeastOnce().size() < threshold) {
     for (BooleanVariable var : is_marked_.PositionsSetAtLeastOnce()) {
-      min_trail_index_per_level_[AssignmentLevel(var)] =
-          std::numeric_limits<int>::max();
+      min_trail_index_per_level_[AssignmentLevel(var)] = kint32max;
     }
   } else {
     min_trail_index_per_level_.clear();

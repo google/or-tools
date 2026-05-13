@@ -233,6 +233,9 @@ class CpModelMapping {
   // Returns the number of variables in the loaded proto.
   int NumProtoVariables() const { return integers_.size(); }
 
+  // The current cp_model proto.
+  CpModelProto const* ModelProto() const { return model_proto_; }
+
  private:
   friend void LoadVariables(const CpModelProto& model_proto,
                             bool view_all_booleans_as_integers, Model* m);
@@ -258,6 +261,8 @@ class CpModelMapping {
   // >= value. Because they are fully reified, they will be processed
   // differently during linearization.
   absl::flat_hash_set<const ConstraintProto*> encoding_ct_;
+
+  CpModelProto const* model_proto_ = nullptr;
 
   int64_t num_non_boolean_integers_ = 0;
 };
