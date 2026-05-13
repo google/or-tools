@@ -82,8 +82,17 @@ jobs:
             generator: 'Visual Studio 17 2022'
             cmake_flags: '-DCMAKE_CONFIGURATION_TYPES="Release"'
     runs-on: ${{matrix.os}}
+    env:
+      SCCACHE_GHA_ENABLED: "true"
+      SCCACHE_GCS_BUCKET: "or-tools-github-remote-caching"
+      SCCACHE_GCS_RW_MODE: "READ_WRITE"
     steps:
     - uses: actions/checkout@v6
+    - uses: 'google-github-actions/auth@v3'
+      with:
+        credentials_json: '${{secrets.GCP_BUCKET_API_KEY}}'
+    - name: Run sccache-cache
+      uses: mozilla-actions/sccache-action@v0.0.10
     - uses: actions/setup-java@v5
       if: ${{ matrix.build == 'java' }}
       with:
@@ -112,6 +121,8 @@ jobs:
         python3 -m pip install --user mypy-protobuf absl-py setuptools wheel numpy pandas
         echo "$((Get-Item ~).FullName)/AppData/Roaming/Python/Python312/Scripts" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
     - name: Config
+      env:
+        SCCACHE_GCS_KEY_PATH: ${{env.GOOGLE_GHA_CREDS_PATH}}
       run: >
         cmake
         -S.
@@ -124,9 +135,14 @@ jobs:
         -DUSE_GLPK=OFF
         -DUSE_HIGHS=OFF
         -DUSE_SCIP=OFF
+        -DCMAKE_C_COMPILER_LAUNCHER=sccache
+        -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
     - name: Build
+      env:
+        SCCACHE_GCS_KEY_PATH: ${{env.GOOGLE_GHA_CREDS_PATH}}
       run: cmake --build build --config Release -j --target ${{ matrix.generator == 'Ninja' && 'all' || 'ALL_BUILD'}}
     - name: Test
       env:
+        SCCACHE_GCS_KEY_PATH: ${{env.GOOGLE_GHA_CREDS_PATH}}
         CTEST_OUTPUT_ON_FAILURE: 1
       run: cmake --build build --config Release -j --target ${{ matrix.generator == 'Ninja' && 'test' || 'RUN_TESTS'}}
