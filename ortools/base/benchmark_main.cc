@@ -11,20 +11,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ORTOOLS_UTIL_TESTING_UTILS_H_
-#define ORTOOLS_UTIL_TESTING_UTILS_H_
+#include <cstdlib>
 
-namespace operations_research {
+#include "benchmark/benchmark.h"
+#include "ortools/base/init_google.h"
 
-inline constexpr bool kAsanEnabled = false;
-inline constexpr bool kHwAsanEnabled = false;
-inline constexpr bool kMsanEnabled = false;
-inline constexpr bool kTsanEnabled = false;
-inline bool ProbablyRunningInsideUnitTest() { return false; }
-
-inline constexpr bool kAnyXsanEnabled =
-    kAsanEnabled || kMsanEnabled || kTsanEnabled || kHwAsanEnabled;
-
-}  // namespace operations_research
-
-#endif  // ORTOOLS_UTIL_TESTING_UTILS_H_
+int main(int argc, char* argv[]) {
+  benchmark::MaybeReenterWithoutASLR(argc, argv);
+  benchmark::Initialize(&argc, argv);
+  InitGoogle(argv[0], &argc, &argv, false);
+  benchmark::RunSpecifiedBenchmarks();
+  benchmark::Shutdown();
+  return EXIT_SUCCESS;
+}

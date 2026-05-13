@@ -63,6 +63,16 @@ cc_test(
         "//ortools/base:gmock_main",
         "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_binary(
+    name = "base_types_benchmark",
+    srcs = ["base_types_benchmark.cc"],
+    deps = [
+        ":base_types",
+        "//ortools/base:benchmark_main",
+        "@abseil-cpp//absl/random",
         "@google_benchmark//:benchmark",
     ],
 )
@@ -334,6 +344,42 @@ cc_test(
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/time",
+        "@google_benchmark//:benchmark",
+    ],
+)
+
+cc_test(
+    name = "knights_test",
+    size = "medium",
+    timeout = "eternal",
+    srcs = ["knights_test.cc"],
+    tags = ["manual"],
+    deps = [
+        ":base_types",
+        ":set_cover_cc_proto",
+        ":set_cover_heuristics",
+        ":set_cover_invariant",
+        ":set_cover_mip",
+        ":set_cover_model",
+        "//ortools/base:gmock_main",
+        "//ortools/math_opt/solvers:glop_solver",
+        "//ortools/math_opt/solvers:gscip_solver",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/time",
+    ],
+)
+
+cc_binary(
+    name = "knights_benchmark",
+    srcs = ["knights_benchmark.cc"],
+    deps = [
+        ":base_types",
+        ":set_cover_heuristics",
+        ":set_cover_invariant",
+        ":set_cover_model",
+        "//ortools/base:benchmark_main",
         "@google_benchmark//:benchmark",
     ],
 )

@@ -11,20 +11,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ORTOOLS_UTIL_TESTING_UTILS_H_
-#define ORTOOLS_UTIL_TESTING_UTILS_H_
+#include "ortools/util/fp_roundtrip_conv_testing.h"
+
+#include <sstream>
+
+#include "gtest/gtest.h"
+#include "ortools/util/fp_roundtrip_conv.h"
 
 namespace operations_research {
+namespace {
 
-inline constexpr bool kAsanEnabled = false;
-inline constexpr bool kHwAsanEnabled = false;
-inline constexpr bool kMsanEnabled = false;
-inline constexpr bool kTsanEnabled = false;
-inline bool ProbablyRunningInsideUnitTest() { return false; }
+TEST(TestNumberTest, Test) {
+  {
+    std::ostringstream oss;
+    oss << kRoundTripTestNumber;
+    EXPECT_NE(oss.str(), kRoundTripTestNumberStr);
+    EXPECT_EQ(oss.str(), "0.1");
+  }
+  {
+    std::ostringstream oss;
+    oss << RoundTripDoubleFormat(kRoundTripTestNumber);
+    EXPECT_EQ(oss.str(), kRoundTripTestNumberStr);
+  }
+}
 
-inline constexpr bool kAnyXsanEnabled =
-    kAsanEnabled || kMsanEnabled || kTsanEnabled || kHwAsanEnabled;
-
+}  // namespace
 }  // namespace operations_research
-
-#endif  // ORTOOLS_UTIL_TESTING_UTILS_H_

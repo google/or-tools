@@ -11,20 +11,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ORTOOLS_UTIL_TESTING_UTILS_H_
-#define ORTOOLS_UTIL_TESTING_UTILS_H_
+#include "ortools/util/random_engine.h"
 
-namespace operations_research {
+#include <random>
 
-inline constexpr bool kAsanEnabled = false;
-inline constexpr bool kHwAsanEnabled = false;
-inline constexpr bool kMsanEnabled = false;
-inline constexpr bool kTsanEnabled = false;
-inline bool ProbablyRunningInsideUnitTest() { return false; }
+#include "gtest/gtest.h"
 
-inline constexpr bool kAnyXsanEnabled =
-    kAsanEnabled || kMsanEnabled || kTsanEnabled || kHwAsanEnabled;
-
-}  // namespace operations_research
-
-#endif  // ORTOOLS_UTIL_TESTING_UTILS_H_
+// This test is just here to make sure that a type has been selected that
+// models UniformRandomBitGenerator.
+TEST(RandomEngineCompileTest, TestIt) {
+  operations_research::random_engine_t engine;
+  engine.seed(10);
+  ASSERT_LT(engine.min(), engine.max());
+  EXPECT_LT(-1, std::uniform_int_distribution<int>(0, 1)(engine));
+}

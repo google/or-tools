@@ -11,20 +11,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ORTOOLS_UTIL_TESTING_UTILS_H_
-#define ORTOOLS_UTIL_TESTING_UTILS_H_
+syntax = "proto3";
 
-namespace operations_research {
+package operations_research;
 
-inline constexpr bool kAsanEnabled = false;
-inline constexpr bool kHwAsanEnabled = false;
-inline constexpr bool kMsanEnabled = false;
-inline constexpr bool kTsanEnabled = false;
-inline bool ProbablyRunningInsideUnitTest() { return false; }
+option java_package = "com.google.operationsresearch";
+option java_multiple_files = true;
+option java_outer_classname = "StatusProtobuf";
 
-inline constexpr bool kAnyXsanEnabled =
-    kAsanEnabled || kMsanEnabled || kTsanEnabled || kHwAsanEnabled;
+// The streamed version of absl::Status.
+message StatusProto {
+  // The status code, one of the absl::StatusCode.
+  int32 code = 1;
 
-}  // namespace operations_research
-
-#endif  // ORTOOLS_UTIL_TESTING_UTILS_H_
+  // The status message.
+  string message = 2;
+}

@@ -11,20 +11,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ORTOOLS_UTIL_TESTING_UTILS_H_
-#define ORTOOLS_UTIL_TESTING_UTILS_H_
+#include "ortools/util/cached_log.h"
 
-namespace operations_research {
+#include <math.h>
 
-inline constexpr bool kAsanEnabled = false;
-inline constexpr bool kHwAsanEnabled = false;
-inline constexpr bool kMsanEnabled = false;
-inline constexpr bool kTsanEnabled = false;
-inline bool ProbablyRunningInsideUnitTest() { return false; }
+#include <cstdint>
 
-inline constexpr bool kAnyXsanEnabled =
-    kAsanEnabled || kMsanEnabled || kTsanEnabled || kHwAsanEnabled;
+#include "gtest/gtest.h"
 
-}  // namespace operations_research
+namespace {
 
-#endif  // ORTOOLS_UTIL_TESTING_UTILS_H_
+TEST(CachedLogTest, LogAccess) {
+  const int kSize = 100;
+  operations_research::CachedLog cache;
+  for (int64_t i = 1; i < kSize; ++i) {
+    EXPECT_DOUBLE_EQ(log2(i), cache.Log2(i));
+  }
+  cache.Init(kSize / 2);
+  for (int64_t i = 1; i < kSize; ++i) {
+    EXPECT_DOUBLE_EQ(log2(i), cache.Log2(i));
+  }
+}
+
+}  // namespace

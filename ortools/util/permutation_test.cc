@@ -11,20 +11,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ORTOOLS_UTIL_TESTING_UTILS_H_
-#define ORTOOLS_UTIL_TESTING_UTILS_H_
+#include "ortools/util/permutation.h"
+
+#include <array>
+
+#include "gtest/gtest.h"
 
 namespace operations_research {
 
-inline constexpr bool kAsanEnabled = false;
-inline constexpr bool kHwAsanEnabled = false;
-inline constexpr bool kMsanEnabled = false;
-inline constexpr bool kTsanEnabled = false;
-inline bool ProbablyRunningInsideUnitTest() { return false; }
+TEST(PermutationTest, BasicOperation) {
+  auto data = std::to_array<int>({1005, 1000, 1004, 1001, 1003, 1002});
+  auto permutation = std::to_array<int>({1, 3, 5, 4, 2, 0});
 
-inline constexpr bool kAnyXsanEnabled =
-    kAsanEnabled || kMsanEnabled || kTsanEnabled || kHwAsanEnabled;
+  ArrayIndexCycleHandler<int, int> handler(data.data());
+  PermutationApplier<int> permuter(&handler);
+  static_assert(data.size() == permutation.size());
+  permuter.Apply(permutation.data(), 0, data.size());
+  for (int i = 0; i < data.size(); ++i) {
+    EXPECT_EQ(data[i], 1000 + i);
+  }
+}
 
 }  // namespace operations_research
-
-#endif  // ORTOOLS_UTIL_TESTING_UTILS_H_

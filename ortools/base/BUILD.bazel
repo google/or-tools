@@ -113,13 +113,23 @@ cc_binary(
     srcs = ["constant_divisor_benchmark.cc"],
     deps = [
         ":constant_divisor",
+        "//ortools/base:benchmark_main",
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/random:bit_gen_ref",
         "@abseil-cpp//absl/random:distributions",
         "@google_benchmark//:benchmark",
-        "@google_benchmark//:benchmark_main",
     ],
+)
+
+cc_library(
+    name = "benchmark_main",
+    srcs = ["benchmark_main.cc"],
+    deps = [
+        "//ortools/base",
+        "@google_benchmark//:benchmark",
+    ],
+    alwayslink = True,
 )
 
 cc_library(

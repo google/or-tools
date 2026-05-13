@@ -11,20 +11,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ORTOOLS_UTIL_TESTING_UTILS_H_
-#define ORTOOLS_UTIL_TESTING_UTILS_H_
+edition = "2024";
 
-namespace operations_research {
+package operations_research;
 
-inline constexpr bool kAsanEnabled = false;
-inline constexpr bool kHwAsanEnabled = false;
-inline constexpr bool kMsanEnabled = false;
-inline constexpr bool kTsanEnabled = false;
-inline bool ProbablyRunningInsideUnitTest() { return false; }
+message FileUtilTestProto1 {
+  double some_field = 1;
+}
 
-inline constexpr bool kAnyXsanEnabled =
-    kAsanEnabled || kMsanEnabled || kTsanEnabled || kHwAsanEnabled;
-
-}  // namespace operations_research
-
-#endif  // ORTOOLS_UTIL_TESTING_UTILS_H_
+message FileUtilTestProto2 {
+  double optional_field = 1;
+  repeated FileUtilTestProto1 repeated_fields = 2;
+}
