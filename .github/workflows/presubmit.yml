@@ -22,7 +22,6 @@ env:
 jobs:
 ###############################################################################
   clang-format:
-    if: false
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v6
@@ -31,7 +30,6 @@ jobs:
         exclude-regex: '\.tab\.hh$'
 ###############################################################################
   Bazel:
-    if: false
     strategy:
       fail-fast: false
       matrix:
@@ -126,7 +124,6 @@ jobs:
         python3 -m pip install --user mypy-protobuf absl-py setuptools wheel numpy pandas
         echo "$((Get-Item ~).FullName)/AppData/Roaming/Python/Python312/Scripts" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
     - name: Config
-      if: ${{ matrix.build == 'cpp' && matrix.platform == 'linux' }}
       run: >
         cmake
         -S.
@@ -142,10 +139,8 @@ jobs:
         -DCMAKE_C_COMPILER_LAUNCHER=${{env.SCCACHE_PATH}}
         -DCMAKE_CXX_COMPILER_LAUNCHER=${{env.SCCACHE_PATH}}
     - name: Build
-      if: ${{ matrix.build == 'cpp' && matrix.platform == 'linux' }}
       run: cmake --build build --config Release -j --target ${{ matrix.generator == 'Ninja' && 'all' || 'ALL_BUILD'}}
     - name: Test
-      if: ${{ matrix.build == 'cpp' && matrix.platform == 'linux' }}
       env:
         CTEST_OUTPUT_ON_FAILURE: 1
       run: cmake --build build --config Release -j --target ${{ matrix.generator == 'Ninja' && 'test' || 'RUN_TESTS'}}
