@@ -6,6 +6,9 @@ body {
 
 nav {
 	margin-bottom: 0.75rem;
+	display: flex;
+	gap: 0.75rem;
+	flex-wrap: wrap;
 }
 
 h1,

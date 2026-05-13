@@ -49,6 +49,20 @@ run `npm run build` directly after `npm install`. If you prefer to fetch
 submodules up front, clone with `--recurse-submodules` or run
 `git submodule update --init --recursive`.
 
+## Browser hosting requirements
+
+This package uses a threaded WebAssembly runtime. Browser pages that load it
+must be served with cross-origin isolation enabled:
+
+```http
+Cross-Origin-Opener-Policy: same-origin
+Cross-Origin-Embedder-Policy: require-corp
+```
+
+Without these headers, browsers may block the `SharedArrayBuffer` APIs required
+by Emscripten pthreads, and solving can fail during WebAssembly runtime or
+worker startup.
+
 ## npm scripts
 
 - `npm run build:wasm` rebuilds the `cp_sat_runtime` wasm/js bundle via emsdk + CMake.
