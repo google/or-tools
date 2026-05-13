@@ -16,7 +16,6 @@
 #include <algorithm>
 #include <cstdint>
 #include <deque>
-#include <limits>
 #include <utility>
 #include <vector>
 
@@ -31,6 +30,7 @@
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/base/timer.h"
+#include "ortools/base/types.h"
 #include "ortools/graph_base/strongly_connected_components.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -859,7 +859,7 @@ LiteralIndex SatPresolver::FindLiteralWithShortestOccurrenceListExcluding(
     const std::vector<Literal>& clause, Literal to_exclude) {
   DCHECK(!clause.empty());
   LiteralIndex result = kNoLiteralIndex;
-  int num_occurrences = std::numeric_limits<int>::max();
+  int num_occurrences = kint32max;
   for (const Literal l : clause) {
     if (l == to_exclude) continue;
     if (literal_to_clause_sizes_[l] < num_occurrences) {

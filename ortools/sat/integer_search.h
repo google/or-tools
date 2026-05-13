@@ -44,7 +44,6 @@
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/synchronization.h"
-#include "ortools/sat/util.h"
 #include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
 
@@ -381,7 +380,7 @@ class ContinuousProber {
   Prober* prober_;
   SharedResponseManager* shared_response_manager_;
   SharedBoundsManager* shared_bounds_manager_;
-  ModelRandomGenerator* random_;
+  absl::BitGenRef random_;
 
   // Statistics.
   int64_t num_literals_probed_ = 0;

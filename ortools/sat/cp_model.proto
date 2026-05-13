@@ -273,11 +273,13 @@ message TableConstraintProto {
   bool negated = 3;
 }
 
-// The two arrays of variable each represent a function, the second is the
-// inverse of the first: f_direct[i] == j <=> f_inverse[j] == i.
+// The two arrays of expressions each represent a function, the second is the
+// inverse of the first: f_expr_direct[i] == j <=> f_expr_inverse[j] == i.
 message InverseConstraintProto {
-  repeated int32 f_direct = 1;
-  repeated int32 f_inverse = 2;
+  repeated int32 f_direct = 1;   // Legacy field.
+  repeated int32 f_inverse = 2;  // Legacy field.
+  repeated LinearExpressionProto f_expr_direct = 3;
+  repeated LinearExpressionProto f_expr_inverse = 4;
 }
 
 // This constraint forces a sequence of expressions to be accepted by an

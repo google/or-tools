@@ -44,6 +44,7 @@
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/base/timer.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
@@ -134,7 +135,7 @@ class SharedSolutionRepository {
   std::shared_ptr<const Solution> GetSolution(int index) const;
 
   // Returns the rank of the best known solution. If there is no solution, this
-  // will return std::numeric_limits<int64_t>::max().
+  // will return kint64max.
   int64_t GetBestRank() const;
 
   std::vector<std::shared_ptr<const Solution>> GetBestNSolutions(int n) const;
@@ -294,10 +295,8 @@ class SharedSolutionPool {
   // best known solution. We usually never select seeds_[0] but keep it around
   // for later in case new best solutions are found.
   absl::Mutex mutex_;
-  int64_t max_rank_ ABSL_GUARDED_BY(mutex_) =
-      std::numeric_limits<int64_t>::min();
-  int64_t min_rank_ ABSL_GUARDED_BY(mutex_) =
-      std::numeric_limits<int64_t>::max();
+  int64_t max_rank_ ABSL_GUARDED_BY(mutex_) = kint64min;
+  int64_t min_rank_ ABSL_GUARDED_BY(mutex_) = kint64max;
   std::vector<int64_t> ranks_;
   std::vector<
       std::shared_ptr<const SharedSolutionRepository<int64_t>::Solution>>
@@ -586,7 +585,7 @@ class SharedResponseManager {
   const SatParameters& parameters_;
   const WallTimer& wall_timer_;
   ModelSharedTimeLimit* shared_time_limit_;
-  ModelRandomGenerator* random_;
+  absl::BitGenRef random_;
   CpObjectiveProto const* objective_or_null_ = nullptr;
 
   mutable absl::Mutex mutex_;
@@ -602,18 +601,15 @@ class SharedResponseManager {
   SharedSolutionPool solution_pool_;  // Thread-safe.
 
   int num_solutions_ ABSL_GUARDED_BY(mutex_) = 0;
-  int64_t inner_objective_lower_bound_ ABSL_GUARDED_BY(mutex_) =
-      std::numeric_limits<int64_t>::min();
-  int64_t inner_objective_upper_bound_ ABSL_GUARDED_BY(mutex_) =
-      std::numeric_limits<int64_t>::max();
-  int64_t best_solution_objective_value_ ABSL_GUARDED_BY(mutex_) =
-      std::numeric_limits<int64_t>::max();
+  int64_t inner_objective_lower_bound_ ABSL_GUARDED_BY(mutex_) = kint64min;
+  int64_t inner_objective_upper_bound_ ABSL_GUARDED_BY(mutex_) = kint64max;
+  int64_t best_solution_objective_value_ ABSL_GUARDED_BY(mutex_) = kint64max;
 
   bool always_synchronize_ ABSL_GUARDED_BY(mutex_) = true;
-  IntegerValue synchronized_inner_objective_lower_bound_ ABSL_GUARDED_BY(
-      mutex_) = IntegerValue(std::numeric_limits<int64_t>::min());
-  IntegerValue synchronized_inner_objective_upper_bound_ ABSL_GUARDED_BY(
-      mutex_) = IntegerValue(std::numeric_limits<int64_t>::max());
+  IntegerValue synchronized_inner_objective_lower_bound_
+      ABSL_GUARDED_BY(mutex_) = IntegerValue(kint64min);
+  IntegerValue synchronized_inner_objective_upper_bound_
+      ABSL_GUARDED_BY(mutex_) = IntegerValue(kint64max);
 
   bool update_integral_on_each_change_ ABSL_GUARDED_BY(mutex_) = false;
   double gap_integral_ ABSL_GUARDED_BY(mutex_) = 0.0;
@@ -742,6 +738,7 @@ class SharedBoundsManager {
   std::vector<int64_t> synchronized_upper_bounds_ ABSL_GUARDED_BY(mutex_);
   std::deque<SparseBitset<int>> id_to_changed_variables_
       ABSL_GUARDED_BY(mutex_);
+  int64_t synchronized_timestamp_ ABSL_GUARDED_BY(mutex_) = 0;
 
   std::vector<std::string> id_to_name_ ABSL_GUARDED_BY(mutex_);
 
@@ -1086,7 +1083,7 @@ SharedSolutionRepository<ValueType>::GetSolution(int i) const {
 template <typename ValueType>
 int64_t SharedSolutionRepository<ValueType>::GetBestRank() const {
   absl::MutexLock mutex_lock(mutex_);
-  if (solutions_.empty()) return std::numeric_limits<int64_t>::max();
+  if (solutions_.empty()) return kint64max;
   return solutions_[0]->rank;
 }
 
@@ -1203,9 +1200,8 @@ void SharedSolutionRepository<ValueType>::Synchronize(
     }
   }
 
-  const int64_t old_best_rank = solutions_.empty()
-                                    ? std::numeric_limits<int64_t>::max()
-                                    : solutions_[0]->rank;
+  const int64_t old_best_rank =
+      solutions_.empty() ? kint64max : solutions_[0]->rank;
 
   solutions_.insert(solutions_.end(), new_solutions_.begin(),
                     new_solutions_.end());
@@ -1283,7 +1279,7 @@ void SharedSolutionRepository<ValueType>::Synchronize(
       solutions_.resize(new_size);
 
       if (VLOG_IS_ON(3)) {
-        int min_count = std::numeric_limits<int>::max();
+        int min_count = kint32max;
         int max_count = 0;
         for (const auto& s : solutions_) {
           CHECK(s != nullptr);

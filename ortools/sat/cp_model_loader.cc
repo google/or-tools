@@ -104,6 +104,9 @@ void LoadVariables(const CpModelProto& model_proto,
   auto* mapping = m->GetOrCreate<CpModelMapping>();
   const int num_proto_variables = model_proto.variables_size();
 
+  // We assume this is alive during the whole solve.
+  mapping->model_proto_ = &model_proto;
+
   // All [0, 1] variables always have a corresponding Boolean, even if it is
   // fixed to 0 (domain == [0,0]) or fixed to 1 (domain == [1,1]).
   {
@@ -188,7 +191,7 @@ void LoadVariables(const CpModelProto& model_proto,
     IndexReferences refs;
     for (int c = 0; c < model_proto.constraints_size(); ++c) {
       const ConstraintProto& ct = model_proto.constraints(c);
-      refs = GetReferencesUsedByConstraint(ct);
+      GetReferencesUsedByConstraint(ct, &refs.variables, &refs.literals);
       for (const int ref : refs.variables) {
         used_variables.insert(PositiveRef(ref));
       }
@@ -1012,6 +1015,7 @@ void LoadBoolOrConstraint(const ConstraintProto& ct, Model* m) {
 void LoadBoolAndConstraint(const ConstraintProto& ct, Model* m) {
   auto* mapping = m->GetOrCreate<CpModelMapping>();
   std::vector<Literal> literals;
+  literals.reserve(ct.enforcement_literal().size() + 1);
   for (const int ref : ct.enforcement_literal()) {
     literals.push_back(mapping->Literal(ref).Negated());
   }
@@ -1278,6 +1282,8 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
     }
   }
 
+  // TODO(user): We should probably reuse memory to avoid allocating for large
+  // problem with many small constraints.
   auto* integer_trail = m->GetOrCreate<IntegerTrail>();
   std::vector<IntegerVariable> vars = mapping->Integers(ct.linear().vars());
   std::vector<IntegerValue> coeffs(ct.linear().coeffs().begin(),
@@ -1411,11 +1417,14 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
           /*use_lower_bound=*/(min_sum < lb), lb,
           /*use_upper_bound=*/(max_sum > ub), ub, &enforcement_literals, &cst);
     } else {
-      if (min_sum < lb) {
-        AddWeightedSumGreaterOrEqual(enforcement_literals, vars, coeffs, lb, m);
-      }
       if (max_sum > ub) {
         AddWeightedSumLowerOrEqual(enforcement_literals, vars, coeffs, ub, m);
+      }
+      if (min_sum < lb) {
+        // AddWeightedSumGreaterOrEqual() allocates a vector, so we do the
+        // conversion here since we already allocated one.
+        for (IntegerValue& ref : coeffs) ref = -ref;
+        AddWeightedSumLowerOrEqual(enforcement_literals, vars, coeffs, -lb, m);
       }
     }
     return;

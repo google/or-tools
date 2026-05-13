@@ -27,6 +27,7 @@
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/log_severity.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/integer_search.h"
 #include "ortools/sat/model.h"
@@ -137,17 +138,15 @@ TEST(NegationOfTest, VectorArgument) {
 }
 
 TEST(IntegerValue, NegatedCannotOverflow) {
-  EXPECT_GT(kMinIntegerValue - 1, std::numeric_limits<int64_t>::min());
+  EXPECT_GT(kMinIntegerValue - 1, kint64min);
 }
 
 TEST(IntegerLiteral, OverflowValueAreCapped) {
   const IntegerVariable var(0);
   EXPECT_EQ(IntegerLiteral::GreaterOrEqual(var, kMaxIntegerValue + 1),
-            IntegerLiteral::GreaterOrEqual(
-                var, IntegerValue(std::numeric_limits<int64_t>::max())));
+            IntegerLiteral::GreaterOrEqual(var, IntegerValue(kint64max)));
   EXPECT_EQ(IntegerLiteral::LowerOrEqual(var, kMinIntegerValue - 1),
-            IntegerLiteral::LowerOrEqual(
-                var, IntegerValue(std::numeric_limits<int64_t>::min())));
+            IntegerLiteral::LowerOrEqual(var, IntegerValue(kint64min)));
 }
 
 TEST(IntegerLiteral, NegatedIsIdempotent) {
@@ -163,13 +162,11 @@ TEST(IntegerLiteral, NegatedIsIdempotent) {
 // A bound difference of exactly kint64max is ok.
 TEST(IntegerTrailDeathTest, LargeVariableDomain) {
   Model model;
-  model.Add(NewIntegerVariable(-3, std::numeric_limits<int64_t>::max() - 3));
+  model.Add(NewIntegerVariable(-3, kint64max - 3));
 
   if (DEBUG_MODE) {
     // But one of kint64max + 1 cause a check fail in debug.
-    EXPECT_DEATH(model.Add(NewIntegerVariable(
-                     -3, std::numeric_limits<int64_t>::max() - 2)),
-                 "");
+    EXPECT_DEATH(model.Add(NewIntegerVariable(-3, kint64max - 2)), "");
   }
 }
 

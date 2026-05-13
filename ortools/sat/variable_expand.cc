@@ -28,6 +28,7 @@
 #include "absl/strings/str_cat.h"
 #include "ortools/base/log_severity.h"
 #include "ortools/base/stl_util.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/presolve_context.h"
 #include "ortools/sat/solution_crush.h"
@@ -76,7 +77,7 @@ enum class EncodingLinear1Status {
 
 struct EncodingLinear1 {
   EncodingLinear1Type type;
-  int64_t value = std::numeric_limits<int64_t>::min();
+  int64_t value = kint64min;
   Domain rhs;  // Only used for kVarInDomain.
   int enforcement_literal;
   int constraint_index;
@@ -305,8 +306,8 @@ void OrderEncoding::CreateAllOrderEncodingLiterals(
   const int64_t max_le_value = encoded_le_literal_.rbegin()->first;
   const int64_t max_ge_value = var_domain_.ValueAtOrAfter(max_le_value + 1);
   ConstraintProto* not_le = nullptr;
-  ConstraintProto* not_ge = context_->working_model->add_constraints();
-  ConstraintProto* le = context_->working_model->add_constraints();
+  ConstraintProto* not_ge = context_->NewConstraint();
+  ConstraintProto* le = context_->NewConstraint();
   ConstraintProto* ge = nullptr;
 
   for (const auto [value, eq_literal] : values.encoding()) {
@@ -327,7 +328,7 @@ void OrderEncoding::CreateAllOrderEncodingLiterals(
       DCHECK(le != nullptr);
       le->add_enforcement_literal(le_literal);
       if (value < max_le_value) {
-        le = context_->working_model->add_constraints();
+        le = context_->NewConstraint();
         le->mutable_bool_or()->add_literals(le_literal);
       } else {
         le = nullptr;
@@ -354,7 +355,7 @@ void OrderEncoding::CreateAllOrderEncodingLiterals(
         DCHECK(not_ge != nullptr);
         not_ge->add_enforcement_literal(ge_literal);
         if (value != max_ge_value) {
-          not_ge = context_->working_model->add_constraints();
+          not_ge = context_->NewConstraint();
           not_ge->mutable_bool_and()->add_literals(ge_literal);
         } else {
           not_ge = nullptr;
@@ -479,7 +480,7 @@ bool ProcessEncodingConstraints(
   // Sort the constraint indices to make the encoding deterministic.
   absl::c_sort(constraint_indices);
   for (const int c : constraint_indices) {
-    const ConstraintProto& ct = context->working_model->constraints(c);
+    const ConstraintProto& ct = context->Constraint(c);
     DCHECK_EQ(ct.constraint_case(), ConstraintProto::kLinear);
     DCHECK_EQ(ct.linear().vars().size(), 1);
     DCHECK(RefIsPositive(ct.linear().vars(0)));
@@ -760,8 +761,7 @@ void TryToReplaceVariableByItsEncoding(int var, PresolveContext* context,
     // Note, the use of exactly_one here is correct because this is a partition,
     // and the two equations complement each other.
     for (const EncodingLinear1& info_in : lin_domain) {
-      BoolArgumentProto* exo =
-          context->working_model->add_constraints()->mutable_exactly_one();
+      BoolArgumentProto* exo = context->NewConstraint()->mutable_exactly_one();
       exo->add_literals(NegatedRef(info_in.enforcement_literal));
       for (const int64_t v : info_in.rhs.Values()) {
         exo->add_literals(values.literal(v));
@@ -788,7 +788,7 @@ void TryToReplaceVariableByItsEncoding(int var, PresolveContext* context,
     const int e_j = info_j.enforcement_literal;
     if (e_i == NegatedRef(e_j)) return;
     BoolArgumentProto* incompatible =
-        context->working_model->add_constraints()->mutable_bool_or();
+        context->NewConstraint()->mutable_bool_or();
     incompatible->add_literals(NegatedRef(e_i));
     incompatible->add_literals(NegatedRef(e_j));
     context->UpdateRuleStats(
@@ -845,7 +845,7 @@ void TryToReplaceVariableByItsEncoding(int var, PresolveContext* context,
     int64_t accumulated = std::abs(base_value);
     for (const int64_t value : values.encoded_values()) {
       accumulated = CapAdd(accumulated, std::abs(CapSub(value, base_value)));
-      if (accumulated == std::numeric_limits<int64_t>::max()) {
+      if (accumulated == kint64max) {
         VLOG(2) << "Abort - overflow when converting linear1 to clauses";
         context->UpdateRuleStats(
             "TODO variables: overflow when converting linear1 to clauses");
@@ -916,13 +916,13 @@ void TryToReplaceVariableByItsEncoding(int var, PresolveContext* context,
     }
     absl::c_sort(to_clear);
     for (const int c : to_clear) {
-      context->working_model->mutable_constraints(c)->Clear();
+      context->ClearConstraint(c);
       context->UpdateConstraintVariableUsage(c);
     }
   }
 
   // This must be done after we removed all the constraint containing var.
-  ConstraintProto* exo = context->working_model->add_constraints();
+  ConstraintProto* exo = context->NewConstraint();
   BoolArgumentProto* arg = exo->mutable_exactly_one();
   for (const auto& [value, literal] : values.encoding()) {
     arg->add_literals(literal);

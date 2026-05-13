@@ -35,6 +35,7 @@
 #include "absl/types/span.h"
 #include "ortools/base/log_severity.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
@@ -76,6 +77,7 @@ void IntegerEncoder::ReserveSpaceForNumVariables(int num_vars) {
   encoding_by_var_.reserve(num_vars);
   equality_to_associated_literal_.reserve(num_vars);
   equality_by_var_.reserve(num_vars);
+  is_fully_encoded_.reserve(num_vars);
 }
 
 void IntegerEncoder::FullyEncodeVariable(IntegerVariable var) {
@@ -256,7 +258,7 @@ std::pair<IntegerLiteral, IntegerLiteral> IntegerEncoder::Canonicalize(
   IntegerValue before(i_lit.bound - 1);
   DCHECK_GE(before, domains_[index].Min());
   DCHECK_LE(after, domains_[index].Max());
-  int64_t previous = std::numeric_limits<int64_t>::min();
+  int64_t previous = kint64min;
   for (const ClosedInterval& interval : domains_[index]) {
     if (before > previous && before < interval.start) before = previous;
     if (after > previous && after < interval.start) after = interval.start;
@@ -868,10 +870,15 @@ IntegerVariable IntegerTrail::AddIntegerVariable(IntegerValue lower_bound,
   DCHECK_GE(lower_bound, kMinIntegerValue);
   DCHECK_LE(lower_bound, upper_bound);
   DCHECK_LE(upper_bound, kMaxIntegerValue);
-  DCHECK(lower_bound >= 0 ||
-         lower_bound + std::numeric_limits<int64_t>::max() >= upper_bound);
+  DCHECK(lower_bound >= 0 || lower_bound + kint64max >= upper_bound);
   DCHECK(integer_search_levels_.empty());
   DCHECK_EQ(var_lbs_.size(), integer_trail_.size());
+
+  // This is needed if we create integer variable AFTER we did some propagation
+  // to make sure the extra info for any new variable is clean.
+  if (extra_trail_info_.size() > integer_trail_.size()) {
+    extra_trail_info_.resize(integer_trail_.size());
+  }
 
   const IntegerVariable i(var_lbs_.size());
   var_lbs_.push_back(lower_bound);
@@ -883,6 +890,7 @@ IntegerVariable IntegerTrail::AddIntegerVariable(IntegerValue lower_bound,
   var_lbs_.push_back(-upper_bound);
   var_trail_index_.push_back(integer_trail_.size());
   integer_trail_.push_back({-upper_bound, NegationOf(i)});
+  CHECK_LT(integer_trail_.size(), kint32max);
 
   var_trail_index_cache_.resize(var_lbs_.size(), integer_trail_.size());
   tmp_var_to_trail_index_in_queue_.resize(var_lbs_.size(), 0);
@@ -1670,6 +1678,7 @@ ReasonIndex IntegerTrail::AppendReasonToInternalBuffers(
     literals_reason_buffer_.insert(literals_reason_buffer_.end(),
                                    literal_reason.begin(),
                                    literal_reason.end());
+    CHECK_LT(literals_reason_buffer_.size(), kint32max);
   }
 
   cached_sizes_.push_back(-1);
@@ -1677,6 +1686,7 @@ ReasonIndex IntegerTrail::AppendReasonToInternalBuffers(
   if (!integer_reason.empty()) {
     bounds_reason_buffer_.insert(bounds_reason_buffer_.end(),
                                  integer_reason.begin(), integer_reason.end());
+    CHECK_LT(bounds_reason_buffer_.size(), kint32max);
   }
 
   return reason_index;
@@ -1896,16 +1906,25 @@ void IntegerTrail::PushOnTrail(IntegerLiteral i_lit, int prev_trail_index,
                                int bool_trail_index, ReasonIndex reason_index,
                                int assignment_level) {
   const int i = integer_trail_.size();
+  DCHECK_GE(prev_trail_index, 0);
+  DCHECK_LT(prev_trail_index, i);
+
   integer_trail_.push_back({/*bound=*/i_lit.bound,
                             /*var=*/i_lit.var,
                             /*prev_trail_index=*/prev_trail_index,
                             /*reason_index=*/reason_index});
+  CHECK_LT(integer_trail_.size(), kint32max);
 
   if (!new_conflict_resolution_) return;
   if (extra_trail_info_.size() < integer_trail_.size()) {
     extra_trail_info_.resize(integer_trail_.size());
   }
 
+  // The bool_trail_index should be non-decreasing between the previous trail
+  // entry on the same variable, otherwise we have an issue with the conflict
+  // resolution code.
+  DCHECK_GE(bool_trail_index,
+            extra_trail_info_[prev_trail_index].bool_trail_index);
   extra_trail_info_[i] = {/*assignment_level=*/assignment_level,
                           /*bool_trail_index=*/bool_trail_index};
 }
@@ -1956,15 +1975,32 @@ bool IntegerTrail::EnqueueAssociatedIntegerLiteral(IntegerLiteral i_lit,
 
   const ReasonIndex reason_index =
       AppendReasonToInternalBuffers({literal_reason.Negated()}, {});
-  const int prev_trail_index = var_trail_index_[i_lit.var];
+  int prev_trail_index = var_trail_index_[i_lit.var];
   var_lbs_[i_lit.var] = i_lit.bound;
   var_trail_index_[i_lit.var] = integer_trail_.size();
 
   // We use as a boolean trail_index the next one after the one of
   // literal_reason.
-  PushOnTrail(i_lit, prev_trail_index,
-              trail_->Info(literal_reason.Variable()).trail_index + 1,
-              reason_index, trail_->AssignmentLevel(literal_reason));
+  //
+  // Important: This is rare, but it can happen that this stronger bound was
+  // derived using a lower bool_trail_index than the current best bound we have.
+  // In this case, to ensure correctness of the conflict resolution code, we
+  // will clear all such "dominated" previous entry.
+  const int bool_trail_index =
+      trail_->Info(literal_reason.Variable()).trail_index + 1;
+  if (new_conflict_resolution_) {
+    const int num_vars = var_lbs_.size();
+    while (prev_trail_index >= num_vars &&
+           prev_trail_index < extra_trail_info_.size() &&
+           extra_trail_info_[prev_trail_index].bool_trail_index >
+               bool_trail_index) {
+      integer_trail_[prev_trail_index].var = kNoIntegerVariable;
+      prev_trail_index = integer_trail_[prev_trail_index].prev_trail_index;
+    }
+  }
+
+  PushOnTrail(i_lit, prev_trail_index, bool_trail_index, reason_index,
+              trail_->AssignmentLevel(literal_reason));
   return true;
 }
 
@@ -1994,7 +2030,7 @@ void IntegerTrail::ComputeLazyReasonIfNeeded(ReasonIndex index) const {
     // mainly save a FindLowestTrailIndexThatExplainBound() call per skipped
     // indices, which can still be costly.
     const int index = tmp_var_to_trail_index_in_queue_[i_lit.var];
-    if (index == std::numeric_limits<int>::max()) continue;
+    if (index == kint32max) continue;
     if (index > 0 && integer_trail_[index].bound >= i_lit.bound) {
       has_dependency_ = true;
       continue;

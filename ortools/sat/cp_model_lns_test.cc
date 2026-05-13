@@ -621,19 +621,12 @@ TEST(NeighborhoodGeneratorHelperTest, FixGivenVariables) {
   Bitset64<int> variables_to_fix(helper.NumVariables());
   for (const int var : {2, 0}) variables_to_fix.Set(var);
   const Neighborhood n = helper.FixGivenVariables(response, variables_to_fix);
-  const CpModelProto expected_output =
-      DEBUG_MODE ? ParseTestProto(R"pb(
-        variables { name: "x" domain: 2 domain: 2 }
-        variables { name: "y" domain: 0 domain: 10 }
-        variables { name: "z" domain: 4 domain: 4 }
-        solution_hint { vars: 1 values: 3 }
-      )pb")
-                 : ParseTestProto(R"pb(
-                     variables { domain: 2 domain: 2 }
-                     variables { domain: 0 domain: 10 }
-                     variables { domain: 4 domain: 4 }
-                     solution_hint { vars: 1 values: 3 }
-                   )pb");
+  const CpModelProto expected_output = ParseTestProto(R"pb(
+    variables { name: "x" domain: 2 domain: 2 }
+    variables { name: "y" domain: 0 domain: 10 }
+    variables { name: "z" domain: 4 domain: 4 }
+    solution_hint { vars: 1 values: 3 }
+  )pb");
   EXPECT_THAT(n.delta, testing::EqualsProto(expected_output));
 }
 

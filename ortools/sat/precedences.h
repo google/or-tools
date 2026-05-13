@@ -114,6 +114,17 @@ class Linear2Indices {
   // expression must already be canonicalized and divided by its GCD.
   LinearExpression2Index GetIndex(LinearExpression2 expr) const;
 
+  // Returns the number of positive linear2 expressions that have a potentially
+  // non-trivial bound.
+  // These expressions can be obtained with GetExpression(2 * i),
+  // for all i in [0,NumStoredPositiveLinear2()[.
+  LinearExpression2Index NumStoredPositiveLinear2() const {
+    return LinearExpression2Index(exprs_.size());
+  }
+
+  // Returns the linear expression corresponding to the given index. The index
+  // must be less than 2 * NumStoredPositiveLinear2(). Even indices correspond
+  // to positive linear expressions, and odd indices to their negation.
   LinearExpression2 GetExpression(LinearExpression2Index index) const;
 
   // Return all positive linear2 expressions that have a potentially non-trivial

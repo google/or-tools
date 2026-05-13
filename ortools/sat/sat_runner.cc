@@ -15,7 +15,6 @@
 #include <cstdlib>
 #include <functional>
 #include <iostream>
-#include <limits>
 #include <memory>
 #include <string>
 #include <vector>
@@ -60,11 +59,11 @@ ABSL_FLAG(
 
 ABSL_FLAG(
     std::string, hint_file, "",
-    "Protobuf file containing a CpModelResponse. The solution will be used as a"
-    " hint to bootstrap the search.");
+    "Protobuf file containing a CpSolverResponse. The solution will be used as "
+    "a hint to bootstrap the search.");
 
 ABSL_FLAG(std::string, domain_file, "",
-          "Protobuf file containing a CpModelResponse. If present, the "
+          "Protobuf file containing a CpSolverResponse. If present, the "
           "tightened models will be used to reduce the domain of variables.");
 
 ABSL_FLAG(std::string, output, "",
@@ -276,8 +275,8 @@ bool LoadProblem(const std::string& filename, absl::string_view hint_file,
           // This way, the solver will return MODEL_INVALID instead of
           // crashing.
           IntegerVariableProto* var = cp_model->add_variables();
-          var->add_domain(std::numeric_limits<int64_t>::min());
-          var->add_domain(std::numeric_limits<int64_t>::max());
+          var->add_domain(kint64min);
+          var->add_domain(kint64max);
           return true;  // Will still call solve() to get the status.
         }
       } else {

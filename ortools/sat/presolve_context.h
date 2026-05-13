@@ -101,13 +101,11 @@ class PresolveContext {
   PresolveContext(Model* model, CpModelProto* cp_model, CpModelProto* mapping)
       : working_model(cp_model),
         mapping_model(mapping),
+        lrat_proof_handler(model->Mutable<LratProofHandler>()),
         logger_(model->GetOrCreate<SolverLogger>()),
         params_(*model->GetOrCreate<SatParameters>()),
         time_limit_(model->GetOrCreate<TimeLimit>()),
-        random_(model->GetOrCreate<ModelRandomGenerator>()) {
-    lrat_proof_handler = LratProofHandler::MaybeCreate(
-        model, /*enable_rat_proofs=*/params_.cp_model_pure_sat_presolve());
-  }
+        random_(model->GetOrCreate<ModelRandomGenerator>()) {}
 
   // Helpers to adds new variables to the presolved model.
 
@@ -144,7 +142,8 @@ class PresolveContext {
   // Shortcuts to create enforced constraints.
   ConstraintProto* AddEnforcedConstraint(
       absl::Span<const int> enforcement_literals);
-  ConstraintProto* AddEnforcedConstraint(ConstraintProto* ct);
+  ConstraintProto* AddEnforcedConstraint(const ConstraintProto& ct);
+  ConstraintProto* AddEnforcedConstraint(const ConstraintProto* ct);
 
   // a => b.
   void AddImplication(int a, int b);
@@ -192,10 +191,6 @@ class PresolveContext {
   int64_t MaxOf(const LinearExpressionProto& expr) const;
   bool IsFixed(const LinearExpressionProto& expr) const;
   int64_t FixedValue(const LinearExpressionProto& expr) const;
-
-  // This is faster than testing IsFixed() + FixedValue().
-  std::optional<int64_t> FixedValueOrNullopt(
-      const LinearExpressionProto& expr) const;
 
   // Accepts any proto with two parallel vector .vars() and .coeffs(), like
   // LinearConstraintProto or ObjectiveProto or LinearExpressionProto but beware
@@ -674,9 +669,10 @@ class PresolveContext {
   // Hint values outside the domain of their variable are adjusted to the
   // nearest value in this domain. Missing hint values are completed when
   // possible (e.g. for the model proto's fixed variables).
-  void LoadSolutionHint();
+  void LoadAndClampSolutionHint();
 
   SolutionCrush& solution_crush() { return solution_crush_; }
+
   // This is slow O(problem_size) but can be used to debug presolve, either by
   // pinpointing the transition from feasible to infeasible or the other way
   // around if for some reason the presolve drop constraint that it shouldn't.
@@ -685,14 +681,31 @@ class PresolveContext {
   SolverLogger* logger() const { return logger_; }
   const SatParameters& params() const { return params_; }
   TimeLimit* time_limit() { return time_limit_; }
-  ModelRandomGenerator* random() { return random_; }
+  absl::BitGenRef random() { return *random_; }
 
+  // CpModelProto const accessors.
+  const CpModelProto& WorkingModel() const { return *working_model; }
+  int NumConstraints() const { return working_model->constraints().size(); }
+  int NumVariables() const { return working_model->variables().size(); }
+  const ConstraintProto& Constraint(int c) const {
+    return working_model->constraints(c);
+  }
+
+  // CpModelProto mutable accessors.
+  ConstraintProto* NewConstraint() { return working_model->add_constraints(); }
+  ConstraintProto* MutableConstraint(int c) {
+    return working_model->mutable_constraints(c);
+  }
+  void ClearConstraint(int c) { MutableConstraint(c)->Clear(); }
+
+  // TODO(user): Avoid modifying the model directly, so we can easily
+  // enforce invariant like the graph<->constraint variable usage.
   CpModelProto* working_model = nullptr;
   CpModelProto* mapping_model = nullptr;
 
   // Used for the LRAT proof of inferred clauses during model copy and, if
   // applicable, during the pure SAT presolve.
-  std::unique_ptr<LratProofHandler> lrat_proof_handler = nullptr;
+  LratProofHandler* lrat_proof_handler = nullptr;
 
   // Number of "rules" applied. This should be equal to the sum of all numbers
   // in stats_by_rule_name. This is used to decide if we should do one more pass

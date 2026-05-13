@@ -37,6 +37,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -65,6 +66,26 @@ class IdentityMap {
   T operator[](T t) const { return t; }
 };
 
+template <typename K, typename V>
+class CompactVectorVector;
+
+template <typename K = int, typename V = int>
+class CompactVectorVectorBuilder {
+ public:
+  void Add(const K& key, const V& value);
+
+  void ReserveNumItems(int64_t num_items);
+
+  void Clear();
+
+ private:
+  friend class CompactVectorVector<K, V>;
+
+  std::vector<K> key_buffer_;
+  std::vector<V> value_buffer_;
+  K max_key_ = K(0);
+};
+
 // Small utility class to store a vector<vector<>> where one can only append new
 // vector and never change previously added ones. This allows to store a static
 // key -> value(s) mapping.
@@ -77,6 +98,12 @@ template <typename K = int, typename V = int>
 class CompactVectorVector {
  public:
   using value_type = V;
+
+  CompactVectorVector() = default;
+  explicit CompactVectorVector(const CompactVectorVectorBuilder<K, V>& builder,
+                               int minimum_num_keys = 0) {
+    ResetFromBuilder(builder, minimum_num_keys);
+  }
 
   // Size of the "key" space, always in [0, size()).
   size_t size() const;
@@ -102,6 +129,9 @@ class CompactVectorVector {
     reserve(size);
     buffer_.reserve(num_entries);
   }
+
+  void ResetFromBuilder(const CompactVectorVectorBuilder<K, V>& builder,
+                        int minimum_num_keys = 0);
 
   // Given a flat mapping (keys[i] -> values[i]) with two parallel vectors, not
   // necessarily sorted by key, regroup the same key so that
@@ -168,6 +198,9 @@ class CompactVectorVector {
   // This will crash if there are more values than before.
   void ReplaceValuesBySmallerSet(K key, absl::Span<const V> values);
 
+  // Sorts the values at the given key and removes duplicates.
+  void SortAndRemoveDuplicateValues(K key);
+
   // Shrinks the inner vector size of the given key.
   void Shrink(K key, int new_size);
 
@@ -178,9 +211,6 @@ class CompactVectorVector {
   }
 
  private:
-  // Convert int and StrongInt to normal int.
-  static int InternalKey(K key);
-
   std::vector<int> starts_;
   std::vector<int> sizes_;
   std::vector<V> buffer_;
@@ -452,26 +482,12 @@ bool LinearInequalityCanBeReducedWithClosestMultiple(
 // ones.
 class ModelRandomGenerator : public absl::BitGenRef {
  public:
-  // We seed the strategy at creation only. This should be enough for our use
-  // case since the SatParameters is set first before the solver is created. We
-  // also never really need to change the seed afterwards, it is just used to
-  // diversify solves with identical parameters on different Model objects.
-  explicit ModelRandomGenerator(const SatParameters& params)
-      : absl::BitGenRef(deterministic_random_) {
-    deterministic_random_.seed(params.random_seed());
-    if (params.use_absl_random()) {
-      absl_random_ = absl::BitGen(absl::SeedSeq({params.random_seed()}));
-      absl::BitGenRef::operator=(absl::BitGenRef(absl_random_));
-    }
-  }
-
   explicit ModelRandomGenerator(const absl::BitGenRef& bit_gen_ref)
-      : absl::BitGenRef(deterministic_random_) {
-    absl::BitGenRef::operator=(bit_gen_ref);
-  }
+      : absl::BitGenRef(bit_gen_ref) {}
 
   explicit ModelRandomGenerator(Model* model)
-      : ModelRandomGenerator(*model->GetOrCreate<SatParameters>()) {}
+      : absl::BitGenRef(
+            model->GetOrCreate<ModelRandomEngine>()->bit_gen_ref()) {}
 
   // This is just used to display ABSL_RANDOM_SALT_OVERRIDE in the log so that
   // it is possible to reproduce a failure more easily while looking at a solver
@@ -481,8 +497,30 @@ class ModelRandomGenerator : public absl::BitGenRef {
   void LogSalt() const {}
 
  private:
-  random_engine_t deterministic_random_;
-  absl::BitGen absl_random_;
+  class ModelRandomEngine {
+   public:
+    // We seed the strategy at creation only. This should be enough for our use
+    // case since the SatParameters is set first before the solver is created.
+    // We also never really need to change the seed afterwards, it is just used
+    // to diversify solves with identical parameters on different Model objects.
+    explicit ModelRandomEngine(Model* model) {
+      const SatParameters& params = *model->GetOrCreate<SatParameters>();
+      if (params.use_absl_random()) {
+        absl_random_ = absl::BitGen(absl::SeedSeq({params.random_seed()}));
+        absl_bit_gen_ref_ = absl::BitGenRef(absl_random_);
+      } else {
+        deterministic_random_.seed(params.random_seed());
+        absl_bit_gen_ref_ = absl::BitGenRef(deterministic_random_);
+      }
+    }
+
+    absl::BitGenRef bit_gen_ref() const { return absl_bit_gen_ref_; }
+
+   private:
+    random_engine_t deterministic_random_;
+    absl::BitGen absl_random_;
+    absl::BitGenRef absl_bit_gen_ref_ = absl::BitGenRef(deterministic_random_);
+  };
 };
 
 // The model "singleton" shared time limit.
@@ -622,7 +660,7 @@ class FirstFewValues {
 
   void Reset() {
     for (int i = 0; i < n; ++i) {
-      reachable_[i] = std::numeric_limits<int64_t>::max();
+      reachable_[i] = kint64max;
     }
     reachable_[0] = 0;
     new_reachable_[0] = 0;
@@ -758,7 +796,7 @@ class BasicKnapsackSolver {
 
   // We only need to keep one state with the same activity.
   struct State {
-    int64_t cost = std::numeric_limits<int64_t>::max();
+    int64_t cost = kint64max;
     int64_t value = 0;
   };
   std::vector<std::vector<State>> var_activity_states_;
@@ -914,19 +952,53 @@ inline bool IsStrictlyIncluded(Bitset64<LiteralIndex>::ConstView in_subset,
 
 inline int64_t SafeDoubleToInt64(double value) {
   if (std::isnan(value)) return 0;
-  if (value >= static_cast<double>(std::numeric_limits<int64_t>::max())) {
-    return std::numeric_limits<int64_t>::max();
+  if (value >= static_cast<double>(kint64max)) {
+    return kint64max;
   }
-  if (value <= static_cast<double>(std::numeric_limits<int64_t>::min())) {
-    return std::numeric_limits<int64_t>::min();
+  if (value <= static_cast<double>(kint64min)) {
+    return kint64min;
   }
   return static_cast<int64_t>(value);
 }
 
 // Tells whether a int128 can be casted to a int64_t that can be negated.
 inline bool IsNegatableInt64(absl::int128 x) {
-  return x <= absl::int128(std::numeric_limits<int64_t>::max()) &&
-         x > absl::int128(std::numeric_limits<int64_t>::min());
+  return x <= absl::int128(kint64max) && x > absl::int128(kint64min);
+}
+
+namespace compact_vector_vector_detail {
+
+// Convert int and StrongInt to normal int.
+template <typename K>
+inline int InternalKey(K key) {
+  if constexpr (std::is_same_v<K, int>) {
+    return key;
+  } else {
+    return key.value();
+  }
+}
+
+}  // namespace compact_vector_vector_detail
+
+template <typename K, typename V>
+void CompactVectorVectorBuilder<K, V>::Add(const K& key, const V& value) {
+  using compact_vector_vector_detail::InternalKey;
+  max_key_ = std::max(max_key_, key);
+  key_buffer_.push_back(key);
+  value_buffer_.push_back(value);
+}
+
+template <typename K, typename V>
+void CompactVectorVectorBuilder<K, V>::ReserveNumItems(int64_t num_items) {
+  key_buffer_.reserve(num_items);
+  value_buffer_.reserve(num_items);
+}
+
+template <typename K, typename V>
+void CompactVectorVectorBuilder<K, V>::Clear() {
+  max_key_ = 0;
+  key_buffer_.clear();
+  value_buffer_.clear();
 }
 
 template <typename K, typename V>
@@ -961,6 +1033,22 @@ inline void CompactVectorVector<K, V>::ReplaceValuesBySmallerSet(
 }
 
 template <typename K, typename V>
+inline void CompactVectorVector<K, V>::SortAndRemoveDuplicateValues(K key) {
+  using compact_vector_vector_detail::InternalKey;
+  DCHECK_GE(key, 0);
+  DCHECK_LT(key, starts_.size());
+  DCHECK_LT(key, sizes_.size());
+  const int k = InternalKey(key);
+  const size_t size = static_cast<size_t>(sizes_.data()[k]);
+  if (size > 0) {
+    auto span = absl::MakeSpan(&buffer_.data()[starts_.data()[k]], size);
+    std::sort(span.begin(), span.end());
+    sizes_.data()[k] = static_cast<int>(
+        std::distance(span.begin(), std::unique(span.begin(), span.end())));
+  }
+}
+
+template <typename K, typename V>
 template <typename L>
 inline int CompactVectorVector<K, V>::AddLiterals(
     const std::vector<L>& wrapped_values) {
@@ -973,18 +1061,9 @@ inline int CompactVectorVector<K, V>::AddLiterals(
   return index;
 }
 
-// We need to support both StrongType and normal int.
-template <typename K, typename V>
-inline int CompactVectorVector<K, V>::InternalKey(K key) {
-  if constexpr (std::is_same_v<K, int>) {
-    return key;
-  } else {
-    return key.value();
-  }
-}
-
 template <typename K, typename V>
 inline void CompactVectorVector<K, V>::Shrink(K key, int new_size) {
+  using compact_vector_vector_detail::InternalKey;
   const int k = InternalKey(key);
   DCHECK_LE(new_size, sizes_[k]);
   sizes_[k] = new_size;
@@ -992,6 +1071,7 @@ inline void CompactVectorVector<K, V>::Shrink(K key, int new_size) {
 
 template <typename K, typename V>
 inline absl::Span<const V> CompactVectorVector<K, V>::operator[](K key) const {
+  using compact_vector_vector_detail::InternalKey;
   DCHECK_GE(key, 0);
   DCHECK_LT(key, starts_.size());
   DCHECK_LT(key, sizes_.size());
@@ -1003,6 +1083,7 @@ inline absl::Span<const V> CompactVectorVector<K, V>::operator[](K key) const {
 
 template <typename K, typename V>
 inline absl::Span<V> CompactVectorVector<K, V>::operator[](K key) {
+  using compact_vector_vector_detail::InternalKey;
   DCHECK_GE(key, 0);
   DCHECK_LT(key, starts_.size());
   DCHECK_LT(key, sizes_.size());
@@ -1043,6 +1124,7 @@ template <typename K, typename V>
 template <typename Keys, typename Values>
 inline void CompactVectorVector<K, V>::ResetFromFlatMapping(
     Keys keys, Values values, int minimum_num_nodes) {
+  using compact_vector_vector_detail::InternalKey;
   // Compute maximum index.
   int max_key = minimum_num_nodes;
   for (const K key : keys) {
@@ -1081,11 +1163,56 @@ inline void CompactVectorVector<K, V>::ResetFromFlatMapping(
   starts_[0] = 0;
 }
 
+template <typename K, typename V>
+inline void CompactVectorVector<K, V>::ResetFromBuilder(
+    const CompactVectorVectorBuilder<K, V>& builder, int minimum_num_keys) {
+  using compact_vector_vector_detail::InternalKey;
+
+  if (builder.key_buffer_.empty()) {
+    clear();
+    sizes_.assign(minimum_num_keys, 0);
+    starts_.assign(minimum_num_keys, 0);
+    return;
+  }
+
+  minimum_num_keys =
+      std::max(minimum_num_keys, InternalKey(builder.max_key_) + 1);
+
+  // Compute sizes_;
+  sizes_.assign(minimum_num_keys, 0);
+  for (const K key : builder.key_buffer_) {
+    sizes_[InternalKey(key)]++;
+  }
+
+  // Compute starts_;
+  starts_.assign(minimum_num_keys, 0);
+  for (int k = 1; k < minimum_num_keys; ++k) {
+    starts_[k] = starts_[k - 1] + sizes_[k - 1];
+  }
+
+  // Copy data and uses starts as temporary indices.
+  const int num_items = builder.key_buffer_.size();
+
+  buffer_.resize(num_items);
+  const K* keys = builder.key_buffer_.data();
+  const V* values = builder.value_buffer_.data();
+  for (int i = 0; i < num_items; ++i) {
+    buffer_[starts_[InternalKey(keys[i])]++] = values[i];
+  }
+
+  // Restore starts_.
+  for (int k = minimum_num_keys - 1; k > 0; --k) {
+    starts_[k] = starts_[k - 1];
+  }
+  starts_[0] = 0;
+}
+
 // Similar to ResetFromFlatMapping().
 template <typename K, typename V>
 template <typename Collection>
 inline void CompactVectorVector<K, V>::ResetFromPairs(const Collection& pairs,
                                                       int minimum_num_nodes) {
+  using compact_vector_vector_detail::InternalKey;
   // Compute maximum index.
   int max_key = minimum_num_nodes;
   for (const auto& [key, _] : pairs) {
@@ -1130,6 +1257,7 @@ template <typename K, typename V>
 template <typename ValueMapper, typename Container>
 void CompactVectorVector<K, V>::ResetFromTransposeMap(const Container& other,
                                                       int min_transpose_size) {
+  using compact_vector_vector_detail::InternalKey;
   ValueMapper mapper;
   if (other.size() == 0) {
     clear();

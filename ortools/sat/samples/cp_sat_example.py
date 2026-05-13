@@ -14,6 +14,7 @@
 
 # [START program]
 """Simple solve."""
+
 # [START import]
 from ortools.sat.python import cp_model
 

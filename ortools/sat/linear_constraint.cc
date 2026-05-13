@@ -29,6 +29,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/sat_base.h"
@@ -424,7 +425,7 @@ bool ValidateLinearConstraintForOverflow(const LinearConstraint& constraint,
     negative_sum = CapAdd(negative_sum, std::min(int64_t{0}, min_prod));
   }
 
-  const int64_t limit = std::numeric_limits<int64_t>::max();
+  const int64_t limit = kint64max;
   if (positive_sum >= limit) return false;
   if (negative_sum <= -limit) return false;
   if (CapSub(positive_sum, negative_sum) >= limit) return false;

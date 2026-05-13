@@ -22,6 +22,7 @@
 #include "absl/log/log.h"
 #include "absl/types/span.h"
 #include "ortools/base/log_severity.h"
+#include "ortools/base/types.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
@@ -269,7 +270,7 @@ bool LinearExpressionIsFixed(const LinearExpressionProto& expr,
 // support post-solving the case where whatever the value of all expression,
 // there will be a valid target.
 void PostsolveLinMax(const ConstraintProto& ct, std::vector<Domain>* domains) {
-  int64_t max_value = std::numeric_limits<int64_t>::min();
+  int64_t max_value = kint64min;
   for (const LinearExpressionProto& expr : ct.lin_max().exprs()) {
     // In most case all expression are fixed, except in the corner case where
     // one of the expression refer to the target itself !

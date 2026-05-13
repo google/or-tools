@@ -64,6 +64,7 @@ class GateCongruenceClosure {
  public:
   explicit GateCongruenceClosure(Model* model)
       : assignment_(model->GetOrCreate<Trail>()->Assignment()),
+        params_(*model->GetOrCreate<SatParameters>()),
         sat_solver_(model->GetOrCreate<SatSolver>()),
         trail_(model->GetOrCreate<Trail>()),
         implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()),
@@ -71,7 +72,8 @@ class GateCongruenceClosure {
         lrat_proof_handler_(model->Mutable<LratProofHandler>()),
         shared_stats_(model->GetOrCreate<SharedStatistics>()),
         logger_(model->GetOrCreate<SolverLogger>()),
-        time_limit_(model->GetOrCreate<TimeLimit>()) {}
+        time_limit_(model->GetOrCreate<TimeLimit>()),
+        random_(*model->GetOrCreate<ModelRandomGenerator>()) {}
 
   ~GateCongruenceClosure();
 
@@ -80,6 +82,13 @@ class GateCongruenceClosure {
   // This is meant to be called as soon as possible, before any inprocessing is
   // run to try to keep the structural information from the model.
   void EarlyGateDetection();
+
+  // Can be used to solve SAT sweeping subproblems.
+  // This should be configured to be relatively fast.
+  void SetSolveCallback(std::function<CpSolverResponse(const CpModelProto&)>
+                            solve_cp_model_callback) {
+    solve_cp_model_callback_ = solve_cp_model_callback;
+  }
 
  private:
   DEFINE_STRONG_INDEX_TYPE(TruthTableId);
@@ -155,7 +164,16 @@ class GateCongruenceClosure {
   // Returns its number of inputs.
   int CanonicalizeShortGate(GateId id);
 
+  // Infer a "circuit" from the binary gate, and using sampling see if we
+  // can detect some extra equivalences.
+  //
+  // TODO(user): We currently do not have LRAT support for this.
+  void ExploitCircuitStructure(
+      const util_intops::StrongVector<BooleanVariable, LiteralIndex>&
+          lowest_rep);
+
   const VariablesAssignment& assignment_;
+  const SatParameters& params_;
   SatSolver* sat_solver_;
   Trail* trail_;
   BinaryImplicationGraph* implication_graph_;
@@ -164,6 +182,12 @@ class GateCongruenceClosure {
   SharedStatistics* shared_stats_;
   SolverLogger* logger_;
   TimeLimit* time_limit_;
+  absl::BitGenRef random_;
+
+  // For the experimental inprocessing_detect_and_sweep_circuit.
+  std::vector<std::vector<BooleanVariable>> saved_sampled_solutions_;
+  std::function<CpSolverResponse(const CpModelProto&)>
+      solve_cp_model_callback_ = nullptr;
 
   SparseBitset<LiteralIndex> marked_;
   SparseBitset<LiteralIndex> seen_;

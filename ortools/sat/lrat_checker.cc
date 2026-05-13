@@ -312,15 +312,27 @@ bool LratChecker::DebugCheckProofClauseId(ClausePtr clause,
                  absl::StrCat("proof clause not found: ", proof_clause, " ",
                               absl::StrJoin(proof_clause.GetLiterals(), ",")));
   }
-  absl::btree_set<Literal> expected_literals;
-  for (const Literal literal : it->second) {
-    expected_literals.insert(literal);
+  bool difference_found =
+      it->second.size() != proof_clause.GetLiterals().size();
+  debug_scratch_literal_set_.Resize(LiteralIndex(2 * num_variables_));
+  if (!difference_found) {
+    for (const Literal literal : it->second) {
+      debug_scratch_literal_set_.Set(literal);
+    }
+    for (const Literal literal : proof_clause.GetLiterals()) {
+      if (!debug_scratch_literal_set_[literal]) {
+        difference_found = true;
+        break;
+      }
+      debug_scratch_literal_set_.Clear(literal);
+    }
   }
-  absl::btree_set<Literal> actual_literals;
-  for (const Literal literal : proof_clause.GetLiterals()) {
-    actual_literals.insert(literal);
-  }
-  if (actual_literals != expected_literals) {
+  if (difference_found) {
+    debug_scratch_literal_set_.ClearAndResize(LiteralIndex(2 * num_variables_));
+    const absl::btree_set<Literal> actual_literals(
+        proof_clause.GetLiterals().begin(), proof_clause.GetLiterals().end());
+    const absl::btree_set<Literal> expected_literals(it->second.begin(),
+                                                     it->second.end());
     return Error(
         clause,
         absl::StrCat("proof clause ", proof_clause, ": unexpected literals ",

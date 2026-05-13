@@ -16,7 +16,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <cstdlib>
-#include <limits>
+#include <memory>
 #include <numeric>
 #include <optional>
 #include <string>
@@ -37,6 +37,7 @@
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/log_severity.h"
+#include "ortools/base/types.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_checker.h"
@@ -157,10 +158,14 @@ ConstraintProto* PresolveContext::AddEnforcedConstraint(
   return new_ct;
 }
 
-ConstraintProto* PresolveContext::AddEnforcedConstraint(ConstraintProto* ct) {
-  ConstraintProto* const new_ct = working_model->add_constraints();
-  *new_ct->mutable_enforcement_literal() = ct->enforcement_literal();
-  return new_ct;
+ConstraintProto* PresolveContext::AddEnforcedConstraint(
+    const ConstraintProto& ct) {
+  return AddEnforcedConstraint(ct.enforcement_literal());
+}
+
+ConstraintProto* PresolveContext::AddEnforcedConstraint(
+    const ConstraintProto* ct) {
+  return AddEnforcedConstraint(ct->enforcement_literal());
 }
 
 // a => b.
@@ -284,18 +289,6 @@ int64_t PresolveContext::FixedValue(const LinearExpressionProto& expr) const {
   for (int i = 0; i < expr.vars_size(); ++i) {
     if (expr.coeffs(i) == 0) continue;
     result += expr.coeffs(i) * FixedValue(expr.vars(i));
-  }
-  return result;
-}
-
-std::optional<int64_t> PresolveContext::FixedValueOrNullopt(
-    const LinearExpressionProto& expr) const {
-  int64_t result = expr.offset();
-  for (int i = 0; i < expr.vars_size(); ++i) {
-    if (expr.coeffs(i) == 0) continue;
-    const Domain& domain = domains_[expr.vars(i)];
-    if (!domain.IsFixed()) return std::nullopt;
-    result += expr.coeffs(i) * domain.Min();
   }
   return result;
 }
@@ -1399,7 +1392,9 @@ void PresolveContext::ResetAfterCopy() {
   var_to_constraints_.clear();
   var_to_num_linear1_.clear();
   objective_map_.clear();
-  DCHECK(!solution_crush_.SolutionIsLoaded());
+  if (solution_crush_.SolutionIsLoaded()) {
+    solution_crush_.StoreSolutionAsHint(*working_model);
+  }
 }
 
 // Create the internal structure for any new variables in working_model.
@@ -1431,7 +1426,7 @@ void PresolveContext::InitializeNewDomains() {
   solution_crush_.Resize(new_size);
 }
 
-void PresolveContext::LoadSolutionHint() {
+void PresolveContext::LoadAndClampSolutionHint() {
   const int num_vars = working_model->variables().size();
   if (working_model->has_solution_hint() || num_vars == 0) {
     const auto hint_proto = working_model->solution_hint();
@@ -2132,8 +2127,7 @@ bool PresolveContext::CanonicalizeObjective(bool simplify_domain) {
   // value without any issues.
   objective_domain_is_constraining_ =
       !implied_domain
-           .IntersectionWith(Domain(std::numeric_limits<int64_t>::min(),
-                                    objective_domain_.Max()))
+           .IntersectionWith(Domain(kint64min, objective_domain_.Max()))
            .IsIncludedIn(objective_domain_);
   if (objective_domain_is_constraining_) {
     VLOG(3) << "objective domain is constraining: size: "
@@ -2201,8 +2195,8 @@ void PresolveContext::AddLiteralToObjective(int ref, int64_t value) {
 bool PresolveContext::AddToObjectiveOffset(int64_t delta) {
   objective_proto_is_up_to_date_ = false;
   const int64_t temp = CapAdd(objective_integer_before_offset_, delta);
-  if (temp == std::numeric_limits<int64_t>::min()) return false;
-  if (temp == std::numeric_limits<int64_t>::max()) return false;
+  if (temp == kint64min) return false;
+  if (temp == kint64max) return false;
   objective_integer_before_offset_ = temp;
 
   // Tricky: The objective domain is without the offset, so we need to shift it.
@@ -2242,7 +2236,7 @@ bool PresolveContext::SubstituteVariableInObjective(
                  std::abs(coeff_in_equality) *
                      std::max(std::abs(MinOf(var_in_equality)),
                               std::abs(MaxOf(var_in_equality))));
-  if (new_value == std::numeric_limits<int64_t>::max()) return false;
+  if (new_value == kint64max) return false;
   objective_overflow_detection_ = new_value;
 
   // Compute the objective offset change.
@@ -2312,8 +2306,7 @@ bool PresolveContext::SubstituteVariableInObjective(
     // objective value without any issues.
     objective_domain_is_constraining_ =
         !implied_domain
-             .IntersectionWith(Domain(std::numeric_limits<int64_t>::min(),
-                                      objective_domain_.Max()))
+             .IntersectionWith(Domain(kint64min, objective_domain_.Max()))
              .IsIncludedIn(objective_domain_);
     if (objective_domain_is_constraining_) {
       VLOG(3) << "objective domain is constraining: size: "
@@ -2333,7 +2326,7 @@ bool PresolveContext::ExploitExactlyOneInObjective(
   if (objective_map_.empty()) return false;
   if (exactly_one.empty()) return false;
 
-  int64_t min_coeff = std::numeric_limits<int64_t>::max();
+  int64_t min_coeff = kint64max;
   for (const int ref : exactly_one) {
     const auto it = objective_map_.find(PositiveRef(ref));
     if (it == objective_map_.end()) return false;
@@ -2415,8 +2408,7 @@ bool PresolveContext::ShiftCostInExactlyOne(absl::Span<const int> exactly_one,
   //
   // TODO(user): This is a bit hacky, find a nicer way.
   if (!objective_domain_is_constraining_) {
-    objective_domain_ =
-        Domain(std::numeric_limits<int64_t>::min(), objective_domain_.Max());
+    objective_domain_ = Domain(kint64min, objective_domain_.Max());
   }
 
   return true;
@@ -2503,7 +2495,7 @@ int PresolveContext::GetOrCreateReifiedPrecedenceLiteral(
       (IsFixed(time_i) ? FixedValue(time_i) : time_i.offset()) -
       (IsFixed(time_j) ? FixedValue(time_j) : time_j.offset());
   lesseq->mutable_linear()->add_domain(offset);
-  lesseq->mutable_linear()->add_domain(std::numeric_limits<int64_t>::max());
+  lesseq->mutable_linear()->add_domain(kint64max);
   CanonicalizeLinearConstraint(lesseq);
 
   if (!LiteralIsTrue(active_i)) {
@@ -2524,7 +2516,7 @@ int PresolveContext::GetOrCreateReifiedPrecedenceLiteral(
       greater->mutable_linear()->add_vars(time_j.vars(0));
       greater->mutable_linear()->add_coeffs(time_j.coeffs(0));
     }
-    greater->mutable_linear()->add_domain(std::numeric_limits<int64_t>::min());
+    greater->mutable_linear()->add_domain(kint64min);
     greater->mutable_linear()->add_domain(offset - 1);
 
     greater->add_enforcement_literal(NegatedRef(result));
@@ -2563,11 +2555,9 @@ std::tuple<int, int64_t, int, int64_t, int64_t, int, int>
 PresolveContext::GetReifiedPrecedenceKey(const LinearExpressionProto& time_i,
                                          const LinearExpressionProto& time_j,
                                          int active_i, int active_j) {
-  const int var_i =
-      IsFixed(time_i) ? std::numeric_limits<int>::min() : time_i.vars(0);
+  const int var_i = IsFixed(time_i) ? kint32min : time_i.vars(0);
   const int64_t coeff_i = IsFixed(time_i) ? 0 : time_i.coeffs(0);
-  const int var_j =
-      IsFixed(time_j) ? std::numeric_limits<int>::min() : time_j.vars(0);
+  const int var_j = IsFixed(time_j) ? kint32min : time_j.vars(0);
   const int64_t coeff_j = IsFixed(time_j) ? 0 : time_j.coeffs(0);
   const int64_t offset =
       (IsFixed(time_i) ? FixedValue(time_i) : time_i.offset()) -
@@ -2616,7 +2606,7 @@ bool LoadModelForProbing(PresolveContext* context, Model* local_model) {
 
   // Update the domain in the current CpModelProto.
   context->WriteVariableDomainsToProto();
-  const CpModelProto& model_proto = *(context->working_model);
+  const CpModelProto& model_proto = context->WorkingModel();
   // Adapt some of the parameters during this probing phase.
   SatParameters local_params = context->params();
   local_params.set_use_implied_bounds(false);
@@ -2630,7 +2620,9 @@ bool LoadModelForPresolve(const CpModelProto& model_proto, SatParameters params,
   *local_model->GetOrCreate<SatParameters>() = std::move(params);
   local_model->GetOrCreate<TimeLimit>()->MergeWithGlobalTimeLimit(
       context->time_limit());
-  local_model->Register<ModelRandomGenerator>(context->random());
+  auto random = std::make_unique<ModelRandomGenerator>(context->random());
+  local_model->Register(random.get());
+  local_model->TakeOwnership(random.release());
   auto* encoder = local_model->GetOrCreate<IntegerEncoder>();
   encoder->DisableImplicationBetweenLiteral();
   auto* mapping = local_model->GetOrCreate<CpModelMapping>();
@@ -2852,7 +2844,7 @@ void CreateValidModelWithSingleConstraint(const ConstraintProto& ct,
     auto [it, inserted] =
         inverse_interval_map.insert({i, mini_model->constraints_size()});
     if (inserted) {
-      const ConstraintProto& itv_ct = context->working_model->constraints(i);
+      const ConstraintProto& itv_ct = context->Constraint(i);
       *mini_model->add_constraints() = itv_ct;
 
       // Now add end = start + size for the interval. This is not strictly

@@ -16,6 +16,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <deque>
 #include <memory>
 #include <string>
 #include <utility>
@@ -34,7 +35,6 @@
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/scheduling.h"
-#include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -273,7 +273,9 @@ class CombinedDisjunctive : public PropagatorInterface {
   std::vector<std::vector<int>> task_to_disjunctives_;
   std::vector<bool> task_is_added_;
   std::vector<TaskSet> task_sets_;
-  std::vector<FixedCapacityVector<TaskSet::Entry>> task_set_storage_;
+
+  // Using a deque to avoid invalidating references.
+  std::deque<FixedCapacityVector<TaskSet::Entry>> task_set_storage_;
   std::vector<IntegerValue> end_mins_;
 };
 

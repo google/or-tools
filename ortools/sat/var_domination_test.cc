@@ -220,7 +220,7 @@ TEST(VarDominationTest, ExploitDominanceOfImplicant) {
   context.InitializeNewDomains();
   context.ReadObjectiveFromProto();
   context.UpdateNewConstraintsVariableUsage();
-  context.LoadSolutionHint();
+  context.LoadAndClampSolutionHint();
   ScanModelForDominanceDetection(context, &var_dom);
   EXPECT_TRUE(ExploitDominanceRelations(var_dom, &context));
 
@@ -269,7 +269,7 @@ TEST(VarDominationTest, ExploitDominanceOfNegatedImplicand) {
   context.InitializeNewDomains();
   context.ReadObjectiveFromProto();
   context.UpdateNewConstraintsVariableUsage();
-  context.LoadSolutionHint();
+  context.LoadAndClampSolutionHint();
   ScanModelForDominanceDetection(context, &var_dom);
   EXPECT_TRUE(ExploitDominanceRelations(var_dom, &context));
 
@@ -315,7 +315,7 @@ TEST(VarDominationTest, ExploitDominanceInExactlyOne) {
   context.InitializeNewDomains();
   context.ReadObjectiveFromProto();
   context.UpdateNewConstraintsVariableUsage();
-  context.LoadSolutionHint();
+  context.LoadAndClampSolutionHint();
   ScanModelForDominanceDetection(context, &var_dom);
   EXPECT_TRUE(ExploitDominanceRelations(var_dom, &context));
 
@@ -369,7 +369,7 @@ TEST(VarDominationTest, ExploitDominanceWithIntegerVariables) {
   context.InitializeNewDomains();
   context.ReadObjectiveFromProto();
   context.UpdateNewConstraintsVariableUsage();
-  context.LoadSolutionHint();
+  context.LoadAndClampSolutionHint();
   ScanModelForDominanceDetection(context, &var_dom);
   EXPECT_TRUE(ExploitDominanceRelations(var_dom, &context));
 
@@ -415,7 +415,7 @@ TEST(VarDominationTest, ExploitRemainingDominance) {
   context.InitializeNewDomains();
   context.ReadObjectiveFromProto();
   context.UpdateNewConstraintsVariableUsage();
-  context.LoadSolutionHint();
+  context.LoadAndClampSolutionHint();
   ScanModelForDominanceDetection(context, &var_dom);
   EXPECT_TRUE(ExploitDominanceRelations(var_dom, &context));
 
@@ -482,7 +482,7 @@ TEST(VarDominationTest, ExploitRemainingDominanceWithIntegerVariables) {
   context.InitializeNewDomains();
   context.ReadObjectiveFromProto();
   context.UpdateNewConstraintsVariableUsage();
-  context.LoadSolutionHint();
+  context.LoadAndClampSolutionHint();
   ScanModelForDominanceDetection(context, &var_dom);
   EXPECT_TRUE(ExploitDominanceRelations(var_dom, &context));
 
@@ -827,7 +827,7 @@ TEST(DualBoundReductionTest, FixVariableToDomainBound) {
   Model model;
   PresolveContext context(&model, &model_proto, nullptr);
   context.InitializeNewDomains();
-  context.LoadSolutionHint();
+  context.LoadAndClampSolutionHint();
   context.ReadObjectiveFromProto();
   ScanModelForDualBoundStrengthening(context, &dual_bound_strengthening);
 
@@ -865,7 +865,7 @@ TEST(DualBoundReductionTest, BasicTest) {
   Model model;
   PresolveContext context(&model, &model_proto, nullptr);
   context.InitializeNewDomains();
-  context.LoadSolutionHint();
+  context.LoadAndClampSolutionHint();
   context.ReadObjectiveFromProto();
   ScanModelForDualBoundStrengthening(context, &dual_bound_strengthening);
 
@@ -929,7 +929,7 @@ TEST(DualBoundReductionTest, Choices) {
   Model model;
   PresolveContext context(&model, &model_proto, nullptr);
   context.InitializeNewDomains();
-  context.LoadSolutionHint();
+  context.LoadAndClampSolutionHint();
   context.ReadObjectiveFromProto();
   ScanModelForDualBoundStrengthening(context, &dual_bound_strengthening);
 
@@ -966,7 +966,7 @@ TEST(DualBoundReductionTest, AddImplication) {
   Model model;
   PresolveContext context(&model, &model_proto, nullptr);
   context.InitializeNewDomains();
-  context.LoadSolutionHint();
+  context.LoadAndClampSolutionHint();
   context.ReadObjectiveFromProto();
   ScanModelForDualBoundStrengthening(context, &dual_bound_strengthening);
 
@@ -1024,7 +1024,7 @@ TEST(DualBoundReductionTest, EquivalenceDetection) {
   Model model;
   PresolveContext context(&model, &model_proto, nullptr);
   context.InitializeNewDomains();
-  context.LoadSolutionHint();
+  context.LoadAndClampSolutionHint();
   context.ReadObjectiveFromProto();
   ScanModelForDualBoundStrengthening(context, &dual_bound_strengthening);
 

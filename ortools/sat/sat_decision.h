@@ -161,7 +161,7 @@ class SatDecisionPolicy {
   // Singleton model objects.
   const SatParameters& parameters_;
   const Trail& trail_;
-  ModelRandomGenerator* random_;
+  absl::BitGenRef random_;
 
   // TODO(user): This is in term of proto indices. Ideally we would need
   // CpModelMapping to map that to Booleans but this currently lead to cyclic

@@ -32,6 +32,7 @@
 #include "absl/log/vlog_is_on.h"
 #include "absl/numeric/bits.h"
 #include "absl/types/span.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/2d_distances_propagator.h"
 #include "ortools/sat/2d_mandatory_overlap_propagator.h"
 #include "ortools/sat/2d_orthogonal_packing.h"
@@ -498,7 +499,7 @@ std::optional<NonOverlappingRectanglesEnergyPropagator::Conflict>
 NonOverlappingRectanglesEnergyPropagator::FindConflict(
     std::vector<RectangleInRange> active_box_ranges) {
   const auto rectangles_with_too_much_energy =
-      FindRectanglesWithEnergyConflictMC(active_box_ranges, *random_, 1.0, 0.8);
+      FindRectanglesWithEnergyConflictMC(active_box_ranges, random_, 1.0, 0.8);
 
   if (rectangles_with_too_much_energy.conflicts.empty() &&
       rectangles_with_too_much_energy.candidates.empty()) {
@@ -515,11 +516,11 @@ NonOverlappingRectanglesEnergyPropagator::FindConflict(
   absl::InlinedVector<Rectangle, kSampleSize> sampled_rectangles;
   std::sample(rectangles_with_too_much_energy.conflicts.begin(),
               rectangles_with_too_much_energy.conflicts.end(),
-              std::back_inserter(sampled_rectangles), 5, *random_);
+              std::back_inserter(sampled_rectangles), 5, random_);
   std::sample(rectangles_with_too_much_energy.candidates.begin(),
               rectangles_with_too_much_energy.candidates.end(),
               std::back_inserter(sampled_rectangles),
-              kSampleSize - sampled_rectangles.size(), *random_);
+              kSampleSize - sampled_rectangles.size(), random_);
   std::sort(sampled_rectangles.begin(), sampled_rectangles.end(),
             [](const Rectangle& a, const Rectangle& b) {
               const bool larger = std::make_pair(a.SizeX(), a.SizeY()) >
@@ -928,8 +929,8 @@ bool NonOverlappingRectanglesDisjunctivePropagator::
     if (!x_.ResetFromSubset(*x, boxes)) return false;
 
     // Collect the common overlapping coordinates of all boxes.
-    IntegerValue lb(std::numeric_limits<int64_t>::min());
-    IntegerValue ub(std::numeric_limits<int64_t>::max());
+    IntegerValue lb(kint64min);
+    IntegerValue ub(kint64max);
     for (const int b : boxes) {
       lb = std::max(lb, y->StartMax(b));
       ub = std::min(ub, y->EndMin(b) - 1);

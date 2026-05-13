@@ -138,6 +138,7 @@ class CpModelPresolver {
   bool PresolveIntMod(int c, ConstraintProto* ct);
   bool PresolveIntProd(ConstraintProto* ct);
   bool PresolveInterval(int c, ConstraintProto* ct);
+  bool PresolveLegacyInverse(ConstraintProto* ct);
   bool PresolveInverse(ConstraintProto* ct);
   bool DivideLinMaxByGcd(int c, ConstraintProto* ct);
   bool PresolveLinMax(int c, ConstraintProto* ct);
@@ -178,7 +179,7 @@ class CpModelPresolver {
   ABSL_MUST_USE_RESULT bool CanonicalizeAllLinears();
   bool PropagateDomainsInLinear(int ct_index, ConstraintProto* ct);
   bool RemoveSingletonInLinear(ConstraintProto* ct);
-  bool PresolveSmallLinear(ConstraintProto* ct);
+  bool PresolveSmallLinear(ConstraintProto* ct, bool canonicalize = true);
   bool PresolveEmptyLinearConstraint(ConstraintProto* ct);
   bool PresolveLinearOfSizeOne(ConstraintProto* ct);
   bool PresolveLinearOfSizeTwo(ConstraintProto* ct);
@@ -320,6 +321,11 @@ class CpModelPresolver {
   // one constraint.
   void TransformClausesToExactlyOne();
 
+  // Use all the detected precedences to detect if a part of a no_overlap
+  // constraint can only be executed after the rest and thus the no_overlap
+  // constraint can be split into smaller no_overlap constraints.
+  void SplitNoOverlapAndCumulativeConstraints();
+
   // Converts bool_or and at_most_one of size 2 to bool_and.
   void ConvertToBoolAnd();
 
@@ -405,6 +411,9 @@ class CpModelPresolver {
   void MaybePermuteVariablesRandomly(std::vector<int>& mapping);
   CpSolverStatus LogAndValidatePresolvedModel();
 
+  void AddLinear2ToModel(const LinearExpression2& linear2, int64_t lb,
+                         int64_t ub);
+
   std::vector<int>* postsolve_mapping_;
   PresolveContext* context_;
   SolutionCrush& solution_crush_;
@@ -454,7 +463,12 @@ class CpModelPresolver {
   //
   // We reuse an IntegerVariable/IntegerValue based class via
   // GetLinearExpression2FromProto() only visible in the .cc.
+  //
+  // We have two versions of this map: one that only consider linear2 that
+  // are encoded as such in the model, and a more general one that consider any
+  // linear2 that was detected by the presolve.
   BestBinaryRelationBounds known_linear2_;
+  BestBinaryRelationBounds known_model_linear2_;
 
   struct IntervalConstraintEq {
     const CpModelProto* working_model;

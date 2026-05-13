@@ -18,14 +18,18 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include <string>
 #include <utility>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
+#include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "ortools/base/stl_util.h"
+#include "ortools/port/proto_utils.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/diffn_util.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
@@ -267,6 +271,8 @@ class CompiledConstraint {
   // The cached violation of this constraint.
   int64_t violation() const { return violation_; }
 
+  virtual std::string DebugString() const = 0;
+
  protected:
   // Computes the violation of a constraint.
   //
@@ -295,6 +301,11 @@ class CompiledConstraintWithProto : public CompiledConstraint {
 
   // This just returns the variables used by the stored ct_proto_.
   std::vector<int> UsedVariables(const CpModelProto& model_proto) const final;
+
+  std::string DebugString() const override {
+    return absl::StrCat("CompiledConstraintWithProto: ",
+                        ProtobufShortDebugString(ct_proto_));
+  }
 
  protected:
   // Computes the violation of a constraint when it is enforced.
@@ -383,6 +394,7 @@ class LsEvaluator {
   // size as NumEvaluatorConstraints().
   int64_t Violation(int c) const;
   bool IsViolated(int c) const;
+  std::string ConstraintDebugString(int c) const;
   double WeightedViolation(absl::Span<const double> weights) const;
 
   // Computes the delta in weighted violation if solution[var] += delta.
@@ -578,6 +590,12 @@ struct ViewOfAffineLinearExpressionProto {
     if (coeff != 0) result.push_back(var);
   }
 
+  template <typename Sink>
+  friend void AbslStringify(Sink& sink,
+                            const ViewOfAffineLinearExpressionProto& expr) {
+    absl::Format(&sink, "%d*I%d+%d", expr.coeff, expr.var, expr.offset);
+  }
+
   int var = 0;
   int64_t coeff = 0;
   int64_t offset = 0;
@@ -615,6 +633,12 @@ class CompiledNoOverlapWithTwoIntervals : public CompiledConstraint {
 
   ~CompiledNoOverlapWithTwoIntervals() final = default;
 
+  std::string DebugString() const final {
+    return absl::StrCat("CompiledNoOverlapWithTwoIntervals: (",
+                        interval1_.start, " - ", interval1_.end, "), (",
+                        interval2_.start, " - ", interval2_.end, ")");
+  }
+
   int64_t ComputeViolation(absl::Span<const int64_t> solution) final {
     // Optimization hack: If we create a ComputeViolationInternal() that we call
     // from here and in ViolationDelta(), then the later is not inlined below in
@@ -645,8 +669,34 @@ class CompiledNoOverlap2dConstraint : public CompiledConstraintWithProto {
   int64_t ComputeViolationWhenEnforced(
       absl::Span<const int64_t> solution) override;
 
+  int64_t ViolationDeltaWhenEnforced(
+      int var, int64_t old_value,
+      absl::Span<const int64_t> solution_with_new_value) override;
+
+  void PerformMove(int var, int64_t old_value,
+                   absl::Span<const int64_t> solution_with_new_value) override;
+
  private:
+  Rectangle ComputeRectangle(int box_index,
+                             absl::Span<const int64_t> solution) const;
+  bool IsRectangleActive(int box_index,
+                         absl::Span<const int64_t> solution) const;
+
+  void RecomputeActiveBoxes() {
+    active_boxes_.clear();
+    active_boxes_.reserve(box_is_active_.size());
+    for (int i = 0; i < box_is_active_.size(); ++i) {
+      if (box_is_active_[i]) {
+        active_boxes_.push_back(i);
+      }
+    }
+  }
+
   const CpModelProto& cp_model_;
+  CompactVectorVector<int> var_to_boxes_;
+  std::vector<Rectangle> rectangles_;
+  std::vector<bool> box_is_active_;
+  std::vector<int> active_boxes_;
 };
 
 template <bool has_enforcement = true>
@@ -690,6 +740,13 @@ class CompiledNoOverlap2dWithTwoBoxes : public CompiledConstraint {
   }
 
   ~CompiledNoOverlap2dWithTwoBoxes() final = default;
+
+  std::string DebugString() const final {
+    return absl::StrCat("CompiledNoOverlap2dWithTwoBoxes: (", box1_.x_min,
+                        " - ", box1_.x_max, ")x(", box1_.y_min, " - ",
+                        box1_.y_max, "), (", box2_.x_min, " - ", box2_.x_max,
+                        ")x(", box2_.y_min, " - ", box2_.y_max, ")");
+  }
 
   int64_t ComputeViolation(absl::Span<const int64_t> solution) final {
     // Optimization hack: If we create a ComputeViolationInternal() that we call
@@ -757,6 +814,10 @@ class CompiledReservoirConstraint : public CompiledConstraint {
   }
 
   std::vector<int> UsedVariables(const CpModelProto& model_proto) const final;
+
+  std::string DebugString() const final {
+    return absl::StrCat("CompiledReservoirConstrain, capacity=", capacity_);
+  }
 
  private:
   // This works in O(n log n).

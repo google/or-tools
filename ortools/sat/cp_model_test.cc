@@ -28,6 +28,7 @@
 #include "ortools/base/gmock.h"
 #include "ortools/base/log_severity.h"
 #include "ortools/base/parse_test_proto.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_checker.h"
 #include "ortools/sat/cp_model_solver.h"
@@ -618,8 +619,7 @@ TEST(CpModelTest, TestGreaterOrEqual) {
   EXPECT_EQ(0, cp_model.Proto().constraints(0).linear().vars(0));
   EXPECT_EQ(1, cp_model.Proto().constraints(0).linear().coeffs(0));
   EXPECT_EQ(10, cp_model.Proto().constraints(0).linear().domain(0));
-  EXPECT_EQ(std::numeric_limits<int64_t>::max(),
-            cp_model.Proto().constraints(0).linear().domain(1));
+  EXPECT_EQ(kint64max, cp_model.Proto().constraints(0).linear().domain(1));
 }
 
 TEST(CpModelTest, TestGreater) {
@@ -631,8 +631,7 @@ TEST(CpModelTest, TestGreater) {
   EXPECT_EQ(0, cp_model.Proto().constraints(0).linear().vars(0));
   EXPECT_EQ(1, cp_model.Proto().constraints(0).linear().coeffs(0));
   EXPECT_EQ(11, cp_model.Proto().constraints(0).linear().domain(0));
-  EXPECT_EQ(std::numeric_limits<int64_t>::max(),
-            cp_model.Proto().constraints(0).linear().domain(1));
+  EXPECT_EQ(kint64max, cp_model.Proto().constraints(0).linear().domain(1));
 }
 
 TEST(CpModelTest, TestLessOrEqual) {
@@ -643,8 +642,7 @@ TEST(CpModelTest, TestLessOrEqual) {
   EXPECT_EQ(1, cp_model.Proto().constraints(0).linear().vars_size());
   EXPECT_EQ(0, cp_model.Proto().constraints(0).linear().vars(0));
   EXPECT_EQ(1, cp_model.Proto().constraints(0).linear().coeffs(0));
-  EXPECT_EQ(std::numeric_limits<int64_t>::min(),
-            cp_model.Proto().constraints(0).linear().domain(0));
+  EXPECT_EQ(kint64min, cp_model.Proto().constraints(0).linear().domain(0));
   EXPECT_EQ(10, cp_model.Proto().constraints(0).linear().domain(1));
 }
 
@@ -656,8 +654,7 @@ TEST(CpModelTest, TestLess) {
   EXPECT_EQ(1, cp_model.Proto().constraints(0).linear().vars_size());
   EXPECT_EQ(0, cp_model.Proto().constraints(0).linear().vars(0));
   EXPECT_EQ(1, cp_model.Proto().constraints(0).linear().coeffs(0));
-  EXPECT_EQ(std::numeric_limits<int64_t>::min(),
-            cp_model.Proto().constraints(0).linear().domain(0));
+  EXPECT_EQ(kint64min, cp_model.Proto().constraints(0).linear().domain(0));
   EXPECT_EQ(9, cp_model.Proto().constraints(0).linear().domain(1));
 }
 
@@ -688,12 +685,10 @@ TEST(CpModelTest, TestNotEqual) {
   EXPECT_EQ(1, cp_model.Proto().constraints(0).linear().vars(1));
   EXPECT_EQ(1, cp_model.Proto().constraints(0).linear().coeffs(0));
   EXPECT_EQ(-1, cp_model.Proto().constraints(0).linear().coeffs(1));
-  EXPECT_EQ(std::numeric_limits<int64_t>::min(),
-            cp_model.Proto().constraints(0).linear().domain(0));
+  EXPECT_EQ(kint64min, cp_model.Proto().constraints(0).linear().domain(0));
   EXPECT_EQ(-1, cp_model.Proto().constraints(0).linear().domain(1));
   EXPECT_EQ(1, cp_model.Proto().constraints(0).linear().domain(2));
-  EXPECT_EQ(std::numeric_limits<int64_t>::max(),
-            cp_model.Proto().constraints(0).linear().domain(3));
+  EXPECT_EQ(kint64max, cp_model.Proto().constraints(0).linear().domain(3));
 }
 
 TEST(CpModelTest, TestAllDifferent) {

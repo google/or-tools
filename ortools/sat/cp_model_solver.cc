@@ -20,7 +20,6 @@
 #include <cstdlib>
 #include <deque>
 #include <functional>
-#include <limits>
 #include <memory>
 #include <optional>
 #include <random>
@@ -56,7 +55,8 @@
 #include "ortools/base/macros/os_support.h"
 #include "ortools/base/options.h"
 #include "ortools/base/timer.h"
-#include "ortools/base/version.h"
+#include "ortools/base/types.h"
+#include "ortools/base/version.h"  // IWYU pragma: keep
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/combine_solutions.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -89,6 +89,7 @@
 #include "ortools/sat/sat_inprocessing.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/scheduling_local_search.h"
 #include "ortools/sat/shaving_solver.h"
 #include "ortools/sat/stat_tables.h"
 #include "ortools/sat/subsolver.h"
@@ -571,8 +572,8 @@ std::string CpModelStats(const CpModelProto& model_proto) {
     }
   } else {
     int64_t max_complexity = 0;
-    int64_t min = std::numeric_limits<int64_t>::max();
-    int64_t max = std::numeric_limits<int64_t>::min();
+    int64_t min = kint64max;
+    int64_t max = kint64min;
     for (const auto& entry : num_vars_per_domains) {
       min = std::min(min, entry.first.Min());
       max = std::max(max, entry.first.Max());
@@ -895,8 +896,7 @@ bool RestrictObjectiveUsingHint(CpModelProto* model_proto) {
 
   const int64_t obj_upper_bound =
       ComputeInnerObjective(model_proto->objective(), solution);
-  const Domain restriction =
-      Domain(std::numeric_limits<int64_t>::min(), obj_upper_bound);
+  const Domain restriction = Domain(kint64min, obj_upper_bound);
 
   if (restriction.IsEmpty()) return false;
 
@@ -1142,6 +1142,13 @@ class FullProblemSolver : public SubSolver {
           RegisterClausesLevelZeroImport(id, shared_->clauses.get(),
                                          &local_model_);
           RegisterClausesExport(id, shared_->clauses.get(), &local_model_);
+
+          // Hack to export all equivalences found so far.
+          //
+          // TODO(user): We probably want to do probing "AFTER" this. But then
+          // we might not want to export all binary clauses found by probing.
+          local_model_.GetOrCreate<BinaryImplicationGraph>()
+              ->ExportAllEquivalences();
         }
 
         auto* logger = local_model_.GetOrCreate<SolverLogger>();
@@ -1435,10 +1442,7 @@ class LnsSolver : public SubSolver {
           *google::protobuf::Arena::Create<CpModelProto>(&arena);
       CpModelProto& mapping_proto =
           *google::protobuf::Arena::Create<CpModelProto>(&arena);
-      auto context = std::make_unique<PresolveContext>(
-          &local_model, &lns_fragment, &mapping_proto);
 
-      *lns_fragment.mutable_variables() = neighborhood.delta.variables();
       std::vector<int> variable_mapping;
       std::vector<int64_t> fixed_values;
       {
@@ -1470,12 +1474,20 @@ class LnsSolver : public SubSolver {
         // TODO(user): the mapping removes fixed variables but the model
         // copy can fix new ones. Should we update the mapping and do a new
         // copy, and so on until fix point?
-        std::vector<int> reverse_mapping;
-        if (!GenerateMapping(context.get(), variable_mapping, reverse_mapping,
+        if (!GenerateMapping(neighborhood.delta, variable_mapping,
                              fixed_values)) {
           return;
         }
-        ModelCopy copier(context.get(), variable_mapping, reverse_mapping);
+        ModelCopy copier(&lns_fragment, &local_model, variable_mapping);
+        if (!copier.ImportVariables(neighborhood.delta)) return;
+
+        if (use_hint) {
+          if (neighborhood.delta.has_solution_hint()) {
+            copier.ImportSolutionHint(neighborhood.delta);
+          } else {
+            copier.ImportSolutionHint(helper_->ModelProto());
+          }
+        }
 
         // Copy and simplify the constraints from the initial model.
         if (!copier.ImportAndSimplifyConstraints(helper_->ModelProto())) {
@@ -1488,14 +1500,6 @@ class LnsSolver : public SubSolver {
           return;
         }
 
-        if (use_hint) {
-          if (neighborhood.delta.has_solution_hint()) {
-            copier.ImportSolutionHint(neighborhood.delta);
-          } else {
-            copier.ImportSolutionHint(helper_->ModelProto());
-          }
-        }
-
         // Copy the rest of the model, except symmetries (we don't want to use
         // the symmetry of the main problem in the LNS presolved problem).
         if (!copier.ImportEverythingExceptVariablesConstraintsAndHint(
@@ -1503,9 +1507,7 @@ class LnsSolver : public SubSolver {
           return;
         }
 
-        if (!copier.RemapVariablesInProtoAndContext()) {
-          return;
-        }
+        if (!copier.FinishCopy(neighborhood.delta)) return;
       }
 
       lns_fragment.set_name(absl::StrCat("lns_", task_id, "_", source_info));
@@ -1544,6 +1546,9 @@ class LnsSolver : public SubSolver {
 
       const int num_vars_before_presolve = lns_fragment.variables_size();
       std::vector<int> postsolve_mapping;
+
+      auto context = std::make_unique<PresolveContext>(
+          &local_model, &lns_fragment, &mapping_proto);
       const CpSolverStatus presolve_status =
           PresolveCpModel(context.get(), &postsolve_mapping);
 
@@ -1615,10 +1620,11 @@ class LnsSolver : public SubSolver {
                                  mapping_proto, postsolve_mapping,
                                  &local_solution_values);
         // Map the solution back to the original variables.
-        const int num_vars = variable_mapping.size();
+        const int num_vars = helper_->ModelProto().variables().size();
         solution_values.reserve(num_vars);
         for (int i = 0; i < num_vars; ++i) {
-          const int mapped_ref = variable_mapping[i];
+          const int mapped_ref =
+              variable_mapping.empty() ? i : variable_mapping[i];
           if (mapped_ref != kNoVariableMapping) {
             int64_t value = local_solution_values[PositiveRef(mapped_ref)];
             if (RefIsPositive(mapped_ref)) {
@@ -1629,7 +1635,7 @@ class LnsSolver : public SubSolver {
               solution_values.push_back(1 - value);
             }
           } else {
-            DCHECK_NE(fixed_values[i], std::numeric_limits<int64_t>::min());
+            DCHECK_NE(fixed_values[i], kint64min);
             solution_values.push_back(fixed_values[i]);
           }
         }
@@ -1776,12 +1782,12 @@ class LnsSolver : public SubSolver {
   }
 
  private:
-  // Generates a mapping which removes fixed variables (except those in kInverse
-  // constraints, and one fixed literal).
-  bool GenerateMapping(PresolveContext* context,
+  // Generates a mapping which removes fixed variables (except one fixed
+  // literal).
+  bool GenerateMapping(CpModelProto& proto_with_variables,
                        std::vector<int>& variable_mapping,
-                       std::vector<int>& reverse_mapping,
                        std::vector<int64_t>& fixed_values) {
+    int new_var_index = 0;
     std::vector<int> representatives;
     if (shared_->clauses != nullptr) {
       representatives = shared_->clauses->GetRepresentatives();
@@ -1793,39 +1799,45 @@ class LnsSolver : public SubSolver {
 
     // Fixed variables can be removed from the model. If a variable is fixed
     // then the equivalent variables can be fixed too.
-    const CpModelProto& lns_fragment = *context->working_model;
-    const int num_vars = lns_fragment.variables_size();
-    context->InitializeNewDomains();
-    auto fix_literal = [&](int literal, bool value) {
-      return value ? context->SetLiteralToTrue(literal)
-                   : context->SetLiteralToFalse(literal);
+    const int num_vars = proto_with_variables.variables_size();
+    auto is_fixed = [&](int ref) {
+      const int var = PositiveRef(ref);
+      const auto& domain = proto_with_variables.variables(var).domain();
+      return domain[0] == domain[domain.size() - 1];
+    };
+    auto fixed_literal_value = [&](int ref) {
+      const int var = PositiveRef(ref);
+      const int value = proto_with_variables.variables(var).domain(0);
+      return RefIsPositive(ref) ? value : 1 - value;
+    };
+    auto fix_literal = [&](int literal, int value) {
+      if (!RefIsPositive(literal)) {
+        literal = PositiveRef(literal);
+        value = 1 - value;
+      }
+      if (is_fixed(literal) && fixed_literal_value(literal) != value) {
+        return false;
+      }
+      auto* domain =
+          proto_with_variables.mutable_variables(literal)->mutable_domain();
+      domain->Clear();
+      domain->Add(value);
+      domain->Add(value);
+      return true;
     };
     for (int i = 0; i < num_vars; ++i) {
-      if (context->IsFixed(i)) {
+      if (proto_with_variables.variables(i).domain().empty()) return false;
+      if (is_fixed(i)) {
         const int rep = get_representative(i);
         if (rep != i) {
-          if (!fix_literal(rep, context->LiteralIsTrue(i))) return false;
+          if (!fix_literal(rep, fixed_literal_value(i))) return false;
         }
       }
     }
     for (int i = 0; i < num_vars; ++i) {
       const int rep = get_representative(i);
-      if (rep != i && context->IsFixed(rep)) {
-        if (!fix_literal(i, context->LiteralIsTrue(rep))) return false;
-      }
-    }
-
-    // ModelCopy does not support removing variables appearing in kInverse
-    // constraints.
-    absl::flat_hash_set<int> unremovable_vars;
-    for (const ConstraintProto& ct : lns_fragment.constraints()) {
-      if (ct.constraint_case() == ConstraintProto::kInverse) {
-        for (int var : ct.inverse().f_direct()) {
-          unremovable_vars.insert(var);
-        }
-        for (int var : ct.inverse().f_inverse()) {
-          unremovable_vars.insert(var);
-        }
+      if (rep != i && is_fixed(rep)) {
+        if (!fix_literal(i, fixed_literal_value(rep))) return false;
       }
     }
 
@@ -1834,26 +1846,25 @@ class LnsSolver : public SubSolver {
     fixed_values.reserve(num_vars);
     for (int i = 0; i < num_vars; ++i) {
       bool add_to_mapping = true;
-      if (context->IsFixed(i)) {
-        const int64_t value = context->FixedValue(i);
+      if (is_fixed(i)) {
+        const int64_t value = proto_with_variables.variables(i).domain(0);
         fixed_values.push_back(value);
-        add_to_mapping = unremovable_vars.contains(i);
+        add_to_mapping = false;
         if (first_fixed_literal == -1 && (value == 0 || value == 1)) {
           first_fixed_literal = i;
           add_to_mapping = true;
         }
       } else {
-        fixed_values.push_back(std::numeric_limits<int64_t>::min());
+        fixed_values.push_back(kint64min);
       }
       if (add_to_mapping && variable_mapping[i] == kNoVariableMapping) {
         const int rep = get_representative(i);
         const int rep_var = PositiveRef(rep);
         if (variable_mapping[rep_var] == kNoVariableMapping) {
-          variable_mapping[i] = reverse_mapping.size();
+          variable_mapping[i] = new_var_index++;
           variable_mapping[rep_var] = RefIsPositive(rep)
                                           ? variable_mapping[i]
                                           : NegatedRef(variable_mapping[i]);
-          reverse_mapping.push_back(i);
         } else {
           variable_mapping[i] = RefIsPositive(rep)
                                     ? variable_mapping[rep_var]
@@ -2019,6 +2030,10 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
         lns_params_base, lns_params_stalling, helper, shared));
   }
 
+  const bool has_no_overlap_or_cumulative =
+      !helper->TypeToConstraints(ConstraintProto::kNoOverlap).empty() ||
+      !helper->TypeToConstraints(ConstraintProto::kCumulative).empty();
+
   // Add incomplete subsolvers that require an objective.
   //
   // They are all re-entrant, so we do not need to specify more than the number
@@ -2072,10 +2087,6 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
               helper, name_filter.LastName(), shared->time_limit, shared),
           lns_params_base, lns_params_stalling, helper, shared));
     }
-
-    const bool has_no_overlap_or_cumulative =
-        !helper->TypeToConstraints(ConstraintProto::kNoOverlap).empty() ||
-        !helper->TypeToConstraints(ConstraintProto::kCumulative).empty();
 
     // Scheduling (no_overlap and cumulative) specific LNS.
     if (has_no_overlap_or_cumulative) {
@@ -2222,6 +2233,14 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
                 shared->bounds.get(), shared->clauses.get(), shared->ls_hints,
                 shared->stat_tables));
       }
+    }
+
+    if (has_no_overlap_or_cumulative) {
+      interleaved_subsolvers.push_back(
+          std::make_unique<SchedulingLocalSearchSolver>(
+              "ls_scheduling", SubSolver::INCOMPLETE, shared->model_proto,
+              params, shared->time_limit, shared->response,
+              shared->stat_tables));
     }
 
     if (num_ls_lin > 0) {
@@ -2483,6 +2502,7 @@ void FixVariablesToHintValue(const PartialVariableAssignment& solution_hint,
                              PresolveContext* context, SolverLogger* logger) {
   SOLVER_LOG(logger, "Fixing ", solution_hint.vars().size(),
              " variables to their value in the solution hints.");
+  context->InitializeNewDomains();
   for (int i = 0; i < solution_hint.vars_size(); ++i) {
     const int var = solution_hint.vars(i);
     const int64_t value = solution_hint.values(i);
@@ -2692,7 +2712,9 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   // Presolve and expansions.
   SOLVER_LOG(logger, "");
   SOLVER_LOG(logger,
-             absl::StrFormat("Starting presolve at %.2fs", wall_timer->Get()));
+             absl::StrFormat("Starting initial copy and canonicalization of "
+                             "the input proto at %.2fs",
+                             wall_timer->Get()));
 
   // Note: Allocating in an arena significantly speed up destruction (free) for
   // large messages.
@@ -2701,14 +2723,23 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
       google::protobuf::Arena::Create<CpModelProto>(&arena);
   CpModelProto* mapping_proto =
       google::protobuf::Arena::Create<CpModelProto>(&arena);
-  auto context = std::make_unique<PresolveContext>(model, new_cp_model_proto,
-                                                   mapping_proto);
 
-  if (!ImportModelWithBasicPresolveIntoContext(model_proto, context.get())) {
+  // The lrat proof handler is needed is some cases, during the initial copy
+  // and the presolve.
+  //
+  // Note that this is the "presolve one", each worker will have its own.
+  std::unique_ptr<LratProofHandler> presolve_lrat_proof_handler =
+      LratProofHandler::MaybeCreate(
+          model, /*enable_rat_proofs=*/params.cp_model_pure_sat_presolve());
+  if (presolve_lrat_proof_handler != nullptr) {
+    model->Register<LratProofHandler>(presolve_lrat_proof_handler.get());
+  }
+
+  if (!CopyModel(model_proto, new_cp_model_proto, model)) {
     const std::string info = "Problem proved infeasible during initial copy.";
     SOLVER_LOG(logger, info);
-    if (context->lrat_proof_handler != nullptr) {
-      context->lrat_proof_handler->Close(/*model_is_unsat=*/true);
+    if (model->Mutable<LratProofHandler>() != nullptr) {
+      model->Mutable<LratProofHandler>()->Close(/*model_is_unsat=*/true);
     }
     CpSolverResponse status_response;
     status_response.set_status(CpSolverStatus::INFEASIBLE);
@@ -2734,23 +2765,33 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
                " routes constraint(s).");
   }
 
-  ClearInternalFields(context->working_model, logger);
+  ClearInternalFields(new_cp_model_proto, logger);
 
   if (absl::GetFlag(FLAGS_cp_model_ignore_objective) &&
-      (context->working_model->has_objective() ||
-       context->working_model->has_floating_point_objective())) {
+      (new_cp_model_proto->has_objective() ||
+       new_cp_model_proto->has_floating_point_objective())) {
     SOLVER_LOG(logger, "Ignoring objective");
-    context->working_model->clear_objective();
-    context->working_model->clear_floating_point_objective();
+    new_cp_model_proto->clear_objective();
+    new_cp_model_proto->clear_floating_point_objective();
   }
 
   if (absl::GetFlag(FLAGS_cp_model_ignore_hints) &&
-      context->working_model->has_solution_hint()) {
+      new_cp_model_proto->has_solution_hint()) {
     SOLVER_LOG(logger, "Ignoring solution hint");
-    context->working_model->clear_solution_hint();
+    new_cp_model_proto->clear_solution_hint();
   }
 
+  SOLVER_LOG(logger,
+             absl::StrFormat("Starting presolve at %.2fs", wall_timer->Get()));
+  auto context = std::make_unique<PresolveContext>(model, new_cp_model_proto,
+                                                   mapping_proto);
+
   // Checks for hints early in case they are forced to be hard constraints.
+  //
+  // Note that this still use the original user-given hint, which is not
+  // clamped. We also don't have hint for potential new variable created during
+  // copy/canonicalization. But we should be able to recover their value quite
+  // quickly when we fix the hint.
   if (params.fix_variables_to_their_hinted_value() &&
       model_proto.has_solution_hint()) {
     FixVariablesToHintValue(model_proto.solution_hint(), context.get(), logger);
@@ -2880,12 +2921,17 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   const CpSolverStatus presolve_status =
       PresolveCpModel(context.get(), &postsolve_mapping);
 
+  // Delete the presolve_lrat_proof_handler.
+  // This is needed to properly write the first proof file.
+  if (presolve_lrat_proof_handler != nullptr) {
+    presolve_lrat_proof_handler->Close(presolve_status ==
+                                       CpSolverStatus::INFEASIBLE);
+    model->Unregister<LratProofHandler>();
+    presolve_lrat_proof_handler.reset(nullptr);
+  }
+
   // Delete the context as soon as the presolve is done. Note that only
   // postsolve_mapping and mapping_proto are needed for postsolve.
-  if (context->lrat_proof_handler != nullptr) {
-    context->lrat_proof_handler->Close(presolve_status ==
-                                       CpSolverStatus::INFEASIBLE);
-  }
   context.reset(nullptr);
 
   if (presolve_status != CpSolverStatus::UNKNOWN) {

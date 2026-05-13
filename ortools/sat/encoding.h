@@ -233,7 +233,7 @@ class ObjectiveEncoder {
       : params_(*model->GetOrCreate<SatParameters>()),
         sat_solver_(model->GetOrCreate<SatSolver>()),
         implications_(model->GetOrCreate<BinaryImplicationGraph>()),
-        random_(model->GetOrCreate<ModelRandomGenerator>()) {}
+        random_(*model->GetOrCreate<ModelRandomGenerator>()) {}
 
   // Updates the encoding using the given core. The literals in the core must
   // match the order in nodes. Returns false if the model become infeasible.
@@ -271,7 +271,7 @@ class ObjectiveEncoder {
   const SatParameters& params_;
   SatSolver* sat_solver_;
   BinaryImplicationGraph* implications_;
-  ModelRandomGenerator* random_;
+  absl::BitGenRef random_;
 };
 
 }  // namespace sat

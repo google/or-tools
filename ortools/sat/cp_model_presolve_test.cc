@@ -7401,8 +7401,12 @@ TEST(PresolveCpModelTest, ReduceDomainsInInverse) {
     variables { domain: [ 0, 2 ] }
     constraints {
       inverse {
-        f_direct: [ 0, 1, 2 ]
-        f_inverse: [ 3, 4, 5 ]
+        f_expr_direct: { vars: 0 coeffs: 1 }
+        f_expr_direct: { vars: 1 coeffs: 1 }
+        f_expr_direct: { vars: 2 coeffs: 1 }
+        f_expr_inverse: { vars: 3 coeffs: 1 }
+        f_expr_inverse: { vars: 4 coeffs: 1 }
+        f_expr_inverse: { vars: 5 coeffs: 1 }
       }
     }
   )pb");

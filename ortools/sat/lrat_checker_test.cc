@@ -226,6 +226,33 @@ TEST(LratCheckerTest, CheckSuccessWithRatClausesExtensions) {
        LratChecker::RatClauses{c7, {c6}}}));
 }
 
+TEST(LratCheckerTest, VariableAdditionWithRatProof) {
+  Model model;
+  ClauseFactory factory;
+
+  LratChecker& checker = *model.GetOrCreate<LratChecker>();
+  checker.EnableRatProofs();
+
+  // Add a new variable x4 <=> x1 ^ x2 ^ not(x3), assuming that x1, x2, x3
+  // already exist.
+  // First add the clauses not(x4) v x1, not(x4) v x2, and not(x4) v not(x3).
+  // They can be proved with an empty RAT proof since there are no clauses
+  // containing x4, the negation of the pivot not(x4).
+  const ClausePtr c1 = factory.NewClause({-4, +1});
+  const ClausePtr c2 = factory.NewClause({-4, +2});
+  const ClausePtr c3 = factory.NewClause({-4, -3});
+  EXPECT_TRUE(checker.AddInferredClause(c1, {}, {}));
+  EXPECT_TRUE(checker.AddInferredClause(c2, {}, {}));
+  EXPECT_TRUE(checker.AddInferredClause(c3, {}, {}));
+  // Now add the clause x1 ^ x2 ^ not(x3) => x4. This requires a RAT proof
+  // listing all the clauses C containing not(x4), the negation of the pivot x4.
+  // Here each resolvant C has two pairs of complementary literals with c4,
+  // hence an empty rup_clauses is sufficient in each RatClauses.
+  const ClausePtr c4 = factory.NewClause({+4, -1, -2, +3});
+  EXPECT_TRUE(checker.AddInferredClause(
+      c4, {}, {{.resolvant = c1}, {.resolvant = c2}, {.resolvant = c3}}));
+}
+
 TEST(LratCheckerTest, ErrorStateIsSticky) {
   Model model;
   ClauseFactory factory;

@@ -39,6 +39,7 @@
 #include "absl/types/span.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/base/types.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/implied_bounds.h"
@@ -352,8 +353,7 @@ ABSL_DEPRECATED("Only used in tests, this will be removed.")
 bool CutDataBuilder::ConvertToLinearConstraint(const CutData& cut,
                                                LinearConstraint* output) {
   tmp_map_.clear();
-  if (cut.rhs > absl::int128(std::numeric_limits<int64_t>::max()) ||
-      cut.rhs < absl::int128(std::numeric_limits<int64_t>::min())) {
+  if (cut.rhs > absl::int128(kint64max) || cut.rhs < absl::int128(kint64min)) {
     return false;
   }
   IntegerValue new_rhs = static_cast<int64_t>(cut.rhs);
@@ -696,7 +696,7 @@ IntegerValue GetFactorT(IntegerValue rhs_remainder, IntegerValue divisor,
   // Make sure that when we multiply the rhs or the coefficient by a factor t,
   // we do not have an integer overflow. Note that the rhs should be counted
   // in max_magnitude since we will apply f() on it.
-  IntegerValue max_t(std::numeric_limits<int64_t>::max());
+  IntegerValue max_t(kint64max);
   if (max_magnitude != 0) {
     max_t = max_t / max_magnitude;
   }
@@ -718,8 +718,7 @@ std::function<IntegerValue(IntegerValue)> GetSuperAdditiveRoundingFunction(
   // Make sure we don't have an integer overflow below. Note that we assume that
   // divisor and the maximum coeff magnitude are not too different (maybe a
   // factor 1000 at most) so that the final result will never overflow.
-  max_scaling =
-      std::min(max_scaling, std::numeric_limits<int64_t>::max() / divisor);
+  max_scaling = std::min(max_scaling, kint64max / divisor);
 
   const IntegerValue size = divisor - rhs_remainder;
   if (max_scaling == 1 || size == 1) {
@@ -837,9 +836,7 @@ GetSuperAdditiveStrengtheningMirFunction(IntegerValue positive_rhs,
   }
 
   // We need to scale.
-  scaling =
-      std::min(scaling, IntegerValue(std::numeric_limits<int64_t>::max()) /
-                            positive_rhs);
+  scaling = std::min(scaling, IntegerValue(kint64max) / positive_rhs);
   if (scaling == 1) {
     return [](IntegerValue v) {
       if (v >= 0) return IntegerValue(0);
@@ -1680,7 +1677,7 @@ bool CoverCutHelper::TrySingleNodeFlow(const CutData& input_ct,
   // strengthening just result in all coeff at 1, so worse than our cover
   // heuristic.
   CHECK_LT(cut_.rhs, 0);
-  if (cut_.rhs <= absl::int128(std::numeric_limits<int64_t>::min())) {
+  if (cut_.rhs <= absl::int128(kint64min)) {
     return false;
   }
 
@@ -1789,7 +1786,7 @@ bool CoverCutHelper::TryWithLetchfordSouliLifting(
 
   // We don't support big rhs here.
   // Note however than since this only deal with Booleans, it is less likely.
-  if (cut_.rhs > absl::int128(std::numeric_limits<int64_t>::max())) {
+  if (cut_.rhs > absl::int128(kint64max)) {
     ++ls_stats_.num_overflow_aborts;
     return false;
   }
@@ -1832,7 +1829,7 @@ bool CoverCutHelper::TryWithLetchfordSouliLifting(
   std::vector<IntegerValue> thresholds;
   for (int i = 0; i < q; ++i) {
     // TODO(user): compute this in an overflow-safe way.
-    if (CapProd(p.value(), i + 1) >= std::numeric_limits<int64_t>::max() - 1) {
+    if (CapProd(p.value(), i + 1) >= kint64max - 1) {
       ++ls_stats_.num_overflow_aborts;
       return false;
     }
@@ -3012,9 +3009,8 @@ CutGenerator CreateCliqueCutGenerator(
       // We need to express such "at most one" in term of the initial
       // variables, so we do not use the
       // LinearConstraintBuilder::AddLiteralTerm() here.
-      LinearConstraintBuilder builder(
-          model, IntegerValue(std::numeric_limits<int64_t>::min()),
-          IntegerValue(1));
+      LinearConstraintBuilder builder(model, IntegerValue(kint64min),
+                                      IntegerValue(1));
       for (const Literal l : at_most_one) {
         if (positive_map.contains(l.Index())) {
           builder.AddTerm(positive_map.at(l.Index()), IntegerValue(1));
