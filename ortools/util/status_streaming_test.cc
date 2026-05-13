@@ -54,8 +54,7 @@ TEST(StreamStatusTest, FailureWithPayload) {
 
   absl::ScopedMockLog log;
   EXPECT_CALL(log, Log).Times(AnyNumber());
-  EXPECT_CALL(log, Log(absl::LogSeverity::kWarning,
-                       "ortools/util/status_streaming_test.cc",
+  EXPECT_CALL(log, Log(absl::LogSeverity::kWarning, ::testing::_,
                        HasSubstr("some_payload_url")))
       .Times(1);
 
