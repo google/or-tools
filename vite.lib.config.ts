@@ -10,6 +10,12 @@ const outDir = path.resolve(__dirname, 'build/javascript/lib');
 
 
 // vite.lib.config.ts
+const unwrapDataUrlWorkers = (code) =>
+  code.replace(
+    /new\s+URL\s*\(\s*(["'])(data:text\/javascript;base64,[^"']+)\1\s*,\s*import\.meta\.url\s*\)/g,
+    (_match, quote, dataUrl) => `${quote}${dataUrl}${quote}`
+  );
+
 const patchEmscriptenWasmPlugin = () => ({
   name: 'patch-emscripten-no-inline',
   transform(code, id) {
@@ -24,6 +30,10 @@ const patchEmscriptenWasmPlugin = () => ({
           /new\s+URL\s*\(\s*['"]([^'"]+\.wasm)['"]\s*,/g,
           (match, filename) => `new URL("${filename}?no-inline",`
         );
+      }
+
+      if (modifiedCode.includes('data:text/javascript;base64,')) {
+        modifiedCode = unwrapDataUrlWorkers(modifiedCode);
       }
 
       if (modifiedCode.includes('new Worker')) {
@@ -44,11 +54,20 @@ const patchEmscriptenWasmPlugin = () => ({
         map: null
       };
     }
+  },
+  renderChunk(code, chunk) {
+    if (chunk.fileName.includes('cp_sat_runtime') && code.includes('data:text/javascript;base64,')) {
+      return {
+        code: unwrapDataUrlWorkers(code),
+        map: null,
+      };
+    }
   }
 });
 
 export default defineConfig({
   root: rootDir,
+  base: './',
   assetsInclude: ['**/*.d.ts'],
   resolve: {
     alias: {
@@ -77,6 +96,7 @@ export default defineConfig({
     }
   },
   build: {
+    target: 'esnext',
     lib: {
       entry: path.join(libRoot, 'index.ts'),
       formats: ['es'],

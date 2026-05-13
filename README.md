@@ -67,9 +67,8 @@ worker startup.
 
 - `npm run build:wasm` rebuilds the `cp_sat_runtime` wasm/js bundle via emsdk + CMake.
 - `npm run build:lib` regenerates SAT parameter types, type-checks with `tsc`, and builds the library bundle with `vite.lib.config.ts`.
-- `npm run sync:lib-assets-to-site` clears `javascript/site/public/assets` and copies in the current library runtime assets from `build/javascript/lib/assets`.
-- `npm run build:site` syncs the library assets, then builds the demo site with `vite.site.config.ts`.
-- `npm run dev` / `npm run start` builds the library, syncs runtime assets into the demo site, and launches the Vite dev server.
+- `npm run build:site` builds the demo site with `vite.site.config.ts`. The site imports `ortools-cpsat-wasm` directly, so Vite emits the worker/runtime/wasm assets from the package bundle automatically.
+- `npm run dev` / `npm run start` builds the library and launches the Vite dev server for the demo site.
 - `npm run build` runs `build:wasm`, `build:lib`, and `build:site`.
 - `npm run preview` serves the already-built Vite site from `build/javascript/site`.
 - `npm run clean` removes the entire `build/` tree.
@@ -79,7 +78,6 @@ worker startup.
 
 - `javascript/lib` contains the TypeScript package API and worker bridge.
 - `javascript/site` contains the demo pages.
-- `javascript/site/public/assets` contains generated runtime assets copied from the latest library build.
 - `javascript/cp_sat_api.cc` contains the C++ binding layer compiled into WebAssembly.
 - `scripts/embed_proto.cmake` embeds CP-SAT proto schemas into the runtime.
 - `scripts/generate_sat_parameters_types.mjs` generates TypeScript SAT parameter definitions.

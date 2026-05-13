@@ -7,7 +7,7 @@ const distDir = path.resolve(__dirname, 'build/javascript/site');
 export default defineConfig({
   root: siteRoot,
   base: './',
-  publicDir: path.join(siteRoot, 'public'),
+  publicDir: false,
   worker: {
     format: 'es',
   },
