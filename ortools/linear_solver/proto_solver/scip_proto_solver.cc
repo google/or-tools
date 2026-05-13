@@ -37,6 +37,7 @@
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
 #include "ortools/base/timer.h"
+#include "ortools/base/types.h"
 #include "scip/cons_and.h"
 #include "scip/cons_disjunction.h"
 #include "scip/cons_indicator.h"
@@ -927,11 +928,10 @@ absl::StatusOr<MPSolutionResponse> ScipSolveProto(
   response.mutable_solve_info()->set_solve_user_time_seconds(
       absl::ToDoubleSeconds(user_timer.GetDuration()));
 
-  const int solution_count =
-      std::min(SCIPgetNSols(scip),
-               std::min(request->populate_additional_solutions_up_to(),
-                        std::numeric_limits<int32_t>::max() - 1) +
-                   1);
+  const int solution_count = std::min(
+      SCIPgetNSols(scip),
+      std::min(request->populate_additional_solutions_up_to(), kint32max - 1) +
+          1);
   if (solution_count > 0) {
     // can't make 'scip_solution' const, as SCIPxxx does not offer const
     // parameter functions.
