@@ -24,7 +24,7 @@ package operations_research.glop;
 option java_package = "com.google.ortools.glop";
 option java_multiple_files = true;
 option csharp_namespace = "Google.OrTools.Glop";
-// next id = 73
+// next id = 75
 message GlopParameters {
   // Supported algorithms for scaling:
   // EQUILIBRATION - progressive scaling by row and column norms until the
@@ -492,4 +492,10 @@ message GlopParameters {
   // On some problem like stp3d or pds-100 this makes a huge difference in
   // speed and number of iterations of the dual simplex.
   optional bool dual_price_prioritize_norm = 69 [default = false];
+
+  // Experimental. These only matter if one set the "integrality scale" of
+  // relevant variables. When OPTIMAL is reached, try to perform more pivot to
+  // make the solution more "integral". This is useful in a MIP context.
+  optional bool primal_polish = 73 [default = false];
+  optional bool dual_polish = 74 [default = false];
 }

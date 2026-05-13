@@ -646,7 +646,14 @@ class RevisedSimplex {
   //
   // I could only find slides for the reference of this "LP Solution Polishing
   // to improve MIP Performance", Matthias Miltenberger, Zuse Institute Berlin.
-  ABSL_MUST_USE_RESULT Status Polish(TimeLimit* time_limit);
+  ABSL_MUST_USE_RESULT Status PrimalPolish(TimeLimit* time_limit);
+  ABSL_MUST_USE_RESULT Status DualPolish(TimeLimit* time_limit);
+
+  // Helper function for Primal/DualPolish().
+  Fractional IntegralityChange(ColIndex col, Fractional old_value,
+                               Fractional new_value) const;
+  int NumNonIntegerInBasis() const;
+  void FillWithNonIntegerInBasis(std::vector<RowIndex>* candidates);
 
   // Utility functions to return the current ColIndex of the slack column with
   // given number. Note that currently, such columns are always present in the

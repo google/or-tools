@@ -189,7 +189,8 @@ Status RevisedSimplex::MinimizeFromTransposedMatrixWithSlack(
     // Fast track if we just changed variable bounds.
     primal_edge_norms_.Clear();
     variables_info_.InitializeFromBasisState(first_slack_col_, ColIndex(0),
-                                             solution_state_);
+                                             solution_state_,
+                                             variable_starting_values_.size());
     variable_values_.ResetAllNonBasicVariableValues(variable_starting_values_);
     variable_values_.RecomputeBasicVariableValues();
     return SolveInternal(start_time, false, objective, time_limit);
@@ -415,12 +416,6 @@ ABSL_MUST_USE_RESULT Status RevisedSimplex::SolveInternal(
     DCHECK(problem_status_ == ProblemStatus::PRIMAL_FEASIBLE ||
            problem_status_ == ProblemStatus::DUAL_FEASIBLE ||
            basis_factorization_.IsRefactorized());
-
-    // If SetIntegralityScale() was called, we perform a polish operation.
-    if (!integrality_scale_.empty() &&
-        problem_status_ == ProblemStatus::OPTIMAL) {
-      GLOP_RETURN_IF_ERROR(Polish(time_limit));
-    }
 
     // Remove the bound and cost shifts (or perturbations).
     //
@@ -679,6 +674,17 @@ ABSL_MUST_USE_RESULT Status RevisedSimplex::SolveInternal(
                      "Skipping push phase because optimize didn't succeed.");
         }
       }
+    }
+  }
+
+  // If SetIntegralityScale() was called, we perform a polish operation.
+  if (!integrality_scale_.empty() &&
+      problem_status_ == ProblemStatus::OPTIMAL) {
+    if (parameters_.dual_polish()) {
+      GLOP_RETURN_IF_ERROR(DualPolish(time_limit));
+    }
+    if (parameters_.primal_polish()) {
+      GLOP_RETURN_IF_ERROR(PrimalPolish(time_limit));
     }
   }
 
@@ -1499,8 +1505,9 @@ Status RevisedSimplex::Initialize(const LinearProgram& lp) {
         reduced_costs_.ClearAndRemoveCostShifts();
         solve_from_scratch = false;
       } else if (only_change_is_new_cols && only_new_bounds) {
-        variables_info_.InitializeFromBasisState(first_slack_col_, num_new_cols,
-                                                 solution_state_);
+        variables_info_.InitializeFromBasisState(
+            first_slack_col_, num_new_cols, solution_state_,
+            variable_starting_values_.size());
         variable_values_.ResetAllNonBasicVariableValues(
             variable_starting_values_);
 
@@ -1527,7 +1534,8 @@ Status RevisedSimplex::Initialize(const LinearProgram& lp) {
         if (matrix_is_unchanged) {
           if (!bounds_are_unchanged) {
             variables_info_.InitializeFromBasisState(
-                first_slack_col_, ColIndex(0), solution_state_);
+                first_slack_col_, ColIndex(0), solution_state_,
+                variable_starting_values_.size());
             variable_values_.ResetAllNonBasicVariableValues(
                 variable_starting_values_);
             variable_values_.RecomputeBasicVariableValues();
@@ -1537,7 +1545,8 @@ Status RevisedSimplex::Initialize(const LinearProgram& lp) {
           // For the dual-simplex, we also perform a warm start if a couple of
           // new rows where added.
           variables_info_.InitializeFromBasisState(
-              first_slack_col_, ColIndex(0), solution_state_);
+              first_slack_col_, ColIndex(0), solution_state_,
+              variable_starting_values_.size());
           dual_edge_norms_.ResizeOnNewRows(num_rows_);
 
           // TODO(user): The reduced costs do not really need to be recomputed.
@@ -1571,7 +1580,8 @@ Status RevisedSimplex::FinishInitialization(bool solve_from_scratch) {
     // If an external basis has been provided or if the matrix changed, we need
     // to perform more work, e.g., factorize the proposed basis and validate it.
     variables_info_.InitializeFromBasisState(first_slack_col_, ColIndex(0),
-                                             solution_state_);
+                                             solution_state_,
+                                             variable_starting_values_.size());
 
     // Use the set of basic columns as a "hint" to construct the first basis.
     std::vector<ColIndex> candidates;
@@ -2680,7 +2690,32 @@ void RevisedSimplex::SetIntegralityScale(ColIndex col, Fractional scale) {
   integrality_scale_[col] = scale;
 }
 
-Status RevisedSimplex::Polish(TimeLimit* time_limit) {
+// TODO(user): Count with more weight variable with a small domain, i.e.
+// binary variable, compared to a variable in [0, 1k] ?
+Fractional RevisedSimplex::IntegralityChange(ColIndex col, Fractional old_value,
+                                             Fractional new_value) const {
+  if (col >= integrality_scale_.size() || integrality_scale_[col] == 0.0) {
+    return Fractional(0.0);
+  }
+  const Fractional s = integrality_scale_[col];
+  return (std::abs(new_value * s - std::round(new_value * s)) -
+          std::abs(old_value * s - std::round(old_value * s)));
+}
+
+int RevisedSimplex::NumNonIntegerInBasis() const {
+  int num_non_integer = 0;
+  for (const ColIndex col : basis_) {
+    if (col >= integrality_scale_.size()) continue;
+    const Fractional value = variable_values_.Get(col);
+    const Fractional scaled = value * integrality_scale_[col];
+    if (std::abs(scaled - std::round(scaled)) > 1e-4) {
+      num_non_integer++;
+    }
+  }
+  return num_non_integer;
+}
+
+Status RevisedSimplex::PrimalPolish(TimeLimit* time_limit) {
   GLOP_RETURN_ERROR_IF_NULL(time_limit);
   Cleanup update_deterministic_time_on_return(
       [this, time_limit]() { AdvanceDeterministicTime(time_limit); });
@@ -2695,13 +2730,17 @@ Status RevisedSimplex::Polish(TimeLimit* time_limit) {
     if (std::abs(rc[col]) < 1e-9) candidates.push_back(col);
   }
 
+  SOLVER_LOG(logger_, "Basis has ", NumNonIntegerInBasis(), "/", num_rows_,
+             " non-integer values. Candidates: ", candidates.size());
+
+  // TODO(user): Fix hardcoded candidate and pivots limit.
   bool refactorize = false;
   int num_pivots = 0;
   Fractional total_gain = 0.0;
-  for (int i = 0; i < 10; ++i) {
+  for (int i = 0; i < 1'000; ++i) {
     AdvanceDeterministicTime(time_limit);
     if (time_limit->LimitReached()) break;
-    if (num_pivots >= 5) break;
+    if (num_pivots >= 100) break;
     if (candidates.empty()) break;
 
     // Pick a random one and remove it from the list.
@@ -2740,26 +2779,14 @@ Status RevisedSimplex::Polish(TimeLimit* time_limit) {
     }
     const Fractional step = (fake_rc > 0.0) ? -step_length : step_length;
 
-    // Evaluate if pivot reduce the fractionality of the basis.
-    //
-    // TODO(user): Count with more weight variable with a small domain, i.e.
-    // binary variable, compared to a variable in [0, 1k] ?
-    const auto get_diff = [this](ColIndex col, Fractional old_value,
-                                 Fractional new_value) {
-      if (col >= integrality_scale_.size() || integrality_scale_[col] == 0.0) {
-        return Fractional(0.0);
-      }
-      const Fractional s = integrality_scale_[col];
-      return (std::abs(new_value * s - std::round(new_value * s)) -
-              std::abs(old_value * s - std::round(old_value * s)));
-    };
-    Fractional diff = get_diff(entering_col, variable_values_.Get(entering_col),
-                               variable_values_.Get(entering_col) + step);
+    Fractional diff =
+        IntegralityChange(entering_col, variable_values_.Get(entering_col),
+                          variable_values_.Get(entering_col) + step);
     for (const auto e : direction_) {
       const ColIndex col = basis_[e.row()];
       const Fractional old_value = variable_values_.Get(col);
       const Fractional new_value = old_value - e.coefficient() * step;
-      diff += get_diff(col, old_value, new_value);
+      diff += IntegralityChange(col, old_value, new_value);
     }
 
     // Ignore low decrease in integrality.
@@ -2817,7 +2844,184 @@ Status RevisedSimplex::Polish(TimeLimit* time_limit) {
         UpdateAndPivot(entering_col, leaving_row, target_bound));
   }
 
-  VLOG(1) << "Polish num_pivots: " << num_pivots << " gain:" << total_gain;
+  // Make sure we refactorize before finishing as cut DCHECK assume this is
+  // the case.
+  refactorize = true;
+  GLOP_RETURN_IF_ERROR(RefactorizeBasisIfNeeded(&refactorize));
+
+  SOLVER_LOG(logger_, "PrimalPolish num_pivots: ", num_pivots,
+             " gain:", total_gain, " non-integer:", NumNonIntegerInBasis());
+  return Status::OK();
+}
+
+void RevisedSimplex::FillWithNonIntegerInBasis(
+    std::vector<RowIndex>* candidates) {
+  candidates->clear();
+  for (RowIndex row(0); row < basis_.size(); ++row) {
+    const ColIndex col = basis_[row];
+    if (col >= integrality_scale_.size()) continue;
+    const Fractional value = variable_values_.Get(col);
+    const Fractional scaled = value * integrality_scale_[col];
+    if (std::abs(scaled - std::round(scaled)) > 1e-4) {
+      candidates->push_back(row);
+    }
+  }
+}
+
+Status RevisedSimplex::DualPolish(TimeLimit* time_limit) {
+  GLOP_RETURN_ERROR_IF_NULL(time_limit);
+  Cleanup update_deterministic_time_on_return(
+      [this, time_limit]() { AdvanceDeterministicTime(time_limit); });
+
+  int num_pivots = 0;
+  Fractional total_gain = 0.0;
+  bool refactorize = false;
+  const int old_num_non_integer = NumNonIntegerInBasis();
+
+  const DenseRow& lower_bounds = variables_info_.GetVariableLowerBounds();
+  const DenseRow& upper_bounds = variables_info_.GetVariableUpperBounds();
+
+  int num_entering_candidates = 0;
+  const DenseRow::ConstView reduced_costs = reduced_costs_.GetReducedCosts();
+  for (const ColIndex col : variables_info_.GetIsRelevantBitRow()) {
+    CHECK(!variables_info_.GetIsBasicBitRow()[col]);
+    if (std::abs(reduced_costs[col]) < 1e-9) {
+      ++num_entering_candidates;
+    }
+  }
+  if (num_entering_candidates == 0) return Status::OK();
+
+  std::vector<RowIndex> candidates;
+  FillWithNonIntegerInBasis(&candidates);
+  if (candidates.empty()) return Status::OK();
+
+  for (int num_tries = 0; num_tries < 100; ++num_tries) {
+    if (candidates.empty()) break;
+
+    // Pick a random one and remove it from the list.
+    const int index =
+        std::uniform_int_distribution<int>(0, candidates.size() - 1)(random_);
+    const RowIndex leaving_row = candidates[index];
+    std::swap(candidates[index], candidates.back());
+    candidates.pop_back();
+
+    const ColIndex leaving_col = basis_[leaving_row];
+    const Fractional leaving_value = variable_values_.Get(leaving_col);
+    update_row_.ComputeUnitRowLeftInverse(leaving_row);
+    update_row_.ComputeUpdateRow(leaving_row);
+
+    // Try to move the variable to its lower bound (resp. upper bound) and see
+    // if we are still feasible and if we improve the integrality of the basis.
+    // If we do, perform that move greedily.
+    for (const Fractional target_bound :
+         {lower_bounds[leaving_col], upper_bounds[leaving_col]}) {
+      if (!IsFinite(target_bound)) continue;
+      const Fractional cost_variation = target_bound - leaving_value;
+
+      // TODO(user): just look at 2/3 position with higest coeff and reduced
+      // cost close to zero ?
+      ColIndex entering_col = kInvalidCol;
+      bound_flip_candidates_.clear();
+      GLOP_RETURN_IF_ERROR(entering_variable_.DualChooseEnteringColumn(
+          reduced_costs_.AreReducedCostsPrecise(), update_row_, cost_variation,
+          &bound_flip_candidates_, &entering_col));
+      if (entering_col == kInvalidCol) continue;
+
+      // When we are at optimal, only moves with a reduced cost of zero should
+      // stay on the optimal facet. We also just ignore bound flips here.
+      // we also do not perform cost shifting as we don't care about making
+      // small progress.
+      if (std::abs(reduced_costs[entering_col]) > 1e-9) continue;
+
+      // Avoid bad pivot.
+      const Fractional entering_coeff =
+          update_row_.GetCoefficient(entering_col);
+      if (std::abs(entering_coeff) < parameters_.dual_small_pivot_threshold()) {
+        continue;
+      }
+      ComputeDirection(entering_col);
+      const Fractional limit =
+          std::max(1e-20, parameters_.small_pivot_threshold() *
+                              direction_infinity_norm_);
+      if (std::abs(direction_[leaving_row]) < limit) continue;
+
+      const Fractional primal_step =
+          ComputeStepToMoveBasicVariableToBound(leaving_row, target_bound);
+      const Fractional entering_value = variable_values_.Get(entering_col);
+      const Fractional new_entering_value = entering_value + primal_step;
+
+      const Fractional epsilon = parameters_.primal_feasibility_tolerance();
+      bool primal_feasible = true;
+      if (new_entering_value < lower_bounds[entering_col] - epsilon ||
+          new_entering_value > upper_bounds[entering_col] + epsilon) {
+        primal_feasible = false;
+      }
+      if (!primal_feasible) continue;
+
+      double integrality_gain =
+          -IntegralityChange(entering_col, entering_value, new_entering_value);
+      for (const auto e : direction_) {
+        const ColIndex col = basis_[e.row()];
+        const Fractional value = variable_values_.Get(col);
+        const Fractional new_value = value - e.coefficient() * primal_step;
+        if (new_value < lower_bounds[col] - epsilon ||
+            new_value > upper_bounds[col] + epsilon) {
+          primal_feasible = false;
+        }
+        integrality_gain -= IntegralityChange(col, value, new_value);
+      }
+      if (!primal_feasible) continue;
+      if (integrality_gain < 1e-4) continue;
+
+      // Perform the pivot.
+      VLOG(2) << leaving_row << "/" << leaving_col << "<->" << entering_col
+              << " " << leaving_value << "-> " << target_bound << " ["
+              << lower_bounds[leaving_col] << "," << upper_bounds[leaving_col]
+              << "] step: " << primal_step << " igain " << integrality_gain
+              << " flip: " << bound_flip_candidates_.size();
+      ++num_pivots;
+      total_gain += integrality_gain;
+
+      // TODO(user): Refactor common code with DualMinimize().
+      reduced_costs_.UpdateBeforeBasisPivot(entering_col, leaving_row,
+                                            direction_, &update_row_);
+      dual_edge_norms_.UpdateBeforeBasisPivot(
+          entering_col, leaving_row, direction_,
+          update_row_.GetUnitRowLeftInverse());
+      variable_values_.UpdateOnPivoting(direction_, entering_col, primal_step);
+      const ColIndex leaving_col = basis_[leaving_row];
+      GLOP_RETURN_IF_ERROR(
+          UpdateAndPivot(entering_col, leaving_row, target_bound));
+      variable_values_.SetNonBasicVariableValueFromStatus(leaving_col);
+
+      // Trigger a refactorization if one of the class we use request it.
+      if (!refactorize && reduced_costs_.NeedsBasisRefactorization()) {
+        last_refactorization_reason_ = RefactorizationReason::RC;
+        refactorize = true;
+      }
+      if (!refactorize && dual_edge_norms_.NeedsBasisRefactorization()) {
+        last_refactorization_reason_ = RefactorizationReason::NORM;
+        refactorize = true;
+      }
+      GLOP_RETURN_IF_ERROR(RefactorizeBasisIfNeeded(&refactorize));
+
+      // Recompute new candidates.
+      // TODO(user): be faster here?
+      FillWithNonIntegerInBasis(&candidates);
+
+      // Do not try ub if lb worked?
+      break;
+    }
+  }
+
+  // Make sure we refactorize before finishing as cut DCHECK assume this is
+  // the case.
+  refactorize = true;
+  GLOP_RETURN_IF_ERROR(RefactorizeBasisIfNeeded(&refactorize));
+
+  SOLVER_LOG(logger_, "DualPolish num_pivots: ", num_pivots,
+             " gain:", total_gain, " non-integer:", old_num_non_integer, "->",
+             NumNonIntegerInBasis());
   return Status::OK();
 }
 
@@ -3626,10 +3830,19 @@ Status RevisedSimplex::PrimalPush(TimeLimit* time_limit) {
     ++num_iterations_;
   }
 
+  // Make sure we refactorize before finishing as cut DCHECK assume this is
+  // the case.
+  refactorize = true;
+  GLOP_RETURN_IF_ERROR(RefactorizeBasisIfNeeded(&refactorize));
+
   if (!super_basic_cols.empty()) {
     SOLVER_LOG(logger_, "Push terminated early with ", super_basic_cols.size(),
                " super-basic variables remaining.");
+  } else {
+    SOLVER_LOG(logger_, "Push finished");
   }
+
+  DisplayErrors();
 
   // TODO(user): What status should be returned if the time limit is hit?
   // If the optimization phase finished, then OPTIMAL is technically correct
