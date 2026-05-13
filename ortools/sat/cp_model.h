@@ -50,6 +50,7 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"  // IWYU pragma: export.
 #include "ortools/sat/cp_model_utils.h"
@@ -125,7 +126,7 @@ class BoolVar {
   BoolVar(int index, CpModelBuilder* builder);
 
   CpModelBuilder* builder_ = nullptr;
-  int index_ = std::numeric_limits<int32_t>::min();
+  int index_ = kint32min;
 };
 
 std::ostream& operator<<(std::ostream& os, const BoolVar& var);
@@ -198,7 +199,7 @@ class IntVar {
   IntVar(int index, CpModelBuilder* builder);
 
   CpModelBuilder* builder_ = nullptr;
-  int index_ = std::numeric_limits<int32_t>::min();
+  int index_ = kint32min;
 };
 
 std::ostream& operator<<(std::ostream& os, const IntVar& var);
@@ -495,7 +496,7 @@ class IntervalVar {
   IntervalVar(int index, CpModelBuilder* builder);
 
   CpModelBuilder* builder_ = nullptr;
-  int index_ = std::numeric_limits<int32_t>::min();
+  int index_ = kint32min;
 };
 
 std::ostream& operator<<(std::ostream& os, const IntervalVar& var);

@@ -16,7 +16,6 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
-#include <limits>
 #include <string>
 #include <utility>
 #include <vector>
@@ -33,6 +32,7 @@
 #include "ortools/base/log_severity.h"
 #include "ortools/base/parse_test_proto.h"
 #include "ortools/base/parse_text_proto.h"
+#include "ortools/base/types.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_checker.h"
@@ -1502,12 +1502,12 @@ TEST(DivisionConstraintTest, CheckAllPropagationsRandomProblem) {
     if (z_min > z_max) std::swap(z_min, z_max);
 
     // Loop through the domains of x and y, and collect valid bounds.
-    int expected_x_min = std::numeric_limits<int>::max();
-    int expected_x_max = std::numeric_limits<int>::min();
-    int expected_y_min = std::numeric_limits<int>::max();
-    int expected_y_max = std::numeric_limits<int>::min();
-    int expected_z_min = std::numeric_limits<int>::max();
-    int expected_z_max = std::numeric_limits<int>::min();
+    int expected_x_min = kint32max;
+    int expected_x_max = kint32min;
+    int expected_y_min = kint32max;
+    int expected_y_max = kint32min;
+    int expected_z_min = kint32max;
+    int expected_z_max = kint32min;
     for (int i = x_min; i <= x_max; ++i) {
       for (int j = y_min; j <= y_max; ++j) {
         const int k = i / j;
@@ -1532,7 +1532,7 @@ TEST(DivisionConstraintTest, CheckAllPropagationsRandomProblem) {
       EXPECT_BOUNDS_EQ(var_y, expected_y_min, expected_y_max);
       EXPECT_BOUNDS_EQ(var_z, expected_z_min, expected_z_max);
     } else {
-      EXPECT_EQ(expected_x_max, std::numeric_limits<int>::min());
+      EXPECT_EQ(expected_x_max, kint32min);
     }
   }
 }
@@ -1702,10 +1702,10 @@ TEST(DivisionConstraintTest, CheckAllSolutionsOnExprs) {
 
 void TestAllDivisionValues(int64_t min_a, int64_t max_a, int64_t b,
                            int64_t min_c, int64_t max_c) {
-  int64_t true_min_a = std::numeric_limits<int64_t>::max();
-  int64_t true_max_a = std::numeric_limits<int64_t>::min();
-  int64_t true_min_c = std::numeric_limits<int64_t>::max();
-  int64_t true_max_c = std::numeric_limits<int64_t>::min();
+  int64_t true_min_a = kint64max;
+  int64_t true_max_a = kint64min;
+  int64_t true_min_c = kint64max;
+  int64_t true_max_c = kint64min;
   for (int64_t a = min_a; a <= max_a; ++a) {
     for (int64_t c = min_c; c <= max_c; ++c) {
       if (a / b == c) {
@@ -1734,7 +1734,7 @@ void TestAllDivisionValues(int64_t min_a, int64_t max_a, int64_t b,
     EXPECT_EQ(integer_trail->LowerBound(var_c), true_min_c);
     EXPECT_EQ(integer_trail->UpperBound(var_c), true_max_c);
   } else {
-    EXPECT_EQ(true_min_a, std::numeric_limits<int64_t>::max());  // No solution.
+    EXPECT_EQ(true_min_a, kint64max);  // No solution.
   }
 }
 
@@ -1791,15 +1791,15 @@ TEST(FixedDivisionConstraintTest, ExpectedPropagation) {
                                      /*new_a=*/-8, 2, /*new_c=*/-2, 0));
   // Check large domains.
   EXPECT_TRUE(PropagateFixedDivision(
-      /*a=*/0, std::numeric_limits<int64_t>::max() / 2,
-      /*b=*/5, /*c=*/3, std::numeric_limits<int64_t>::max() - 3,
-      /*new_a=*/15, std::numeric_limits<int64_t>::max() / 2,
-      /*new_c=*/3, std::numeric_limits<int64_t>::max() / 10));
+      /*a=*/0, kint64max / 2,
+      /*b=*/5, /*c=*/3, kint64max - 3,
+      /*new_a=*/15, kint64max / 2,
+      /*new_c=*/3, kint64max / 10));
   EXPECT_TRUE(PropagateFixedDivision(
-      /*a=*/0, std::numeric_limits<int64_t>::max() / 2,
-      /*b=*/5, /*c=*/3, std::numeric_limits<int64_t>::max() - 3,
-      /*new_a=*/15, std::numeric_limits<int64_t>::max() / 2,
-      /*new_c=*/3, std::numeric_limits<int64_t>::max() / 10));
+      /*a=*/0, kint64max / 2,
+      /*b=*/5, /*c=*/3, kint64max - 3,
+      /*new_a=*/15, kint64max / 2,
+      /*new_c=*/3, kint64max / 10));
 }
 
 TEST(FixedDivisionConstraintTest, AlwaysFalseWithUnassignedEnforcementLiteral) {
@@ -1879,11 +1879,13 @@ TEST(ModuloConstraintTest, CheckAllSolutions) {
     LinearArgumentProto* modulo =
         initial_model.add_constraints()->mutable_int_mod();
     modulo->add_exprs()->add_vars(0);  // var.
-    modulo->mutable_exprs(0)->add_coeffs(1);
+    const int var_coeff = absl::Uniform<int>(random, -3, 3);
+    modulo->mutable_exprs(0)->add_coeffs(var_coeff);
     modulo->add_exprs()->add_vars(1);  // mod
     modulo->mutable_exprs(1)->add_coeffs(1);
     modulo->mutable_target()->add_vars(2);  // target
-    modulo->mutable_target()->add_coeffs(1);
+    const int target_coeff = absl::Uniform<int>(random, -3, 3);
+    modulo->mutable_target()->add_coeffs(target_coeff);
 
     absl::btree_set<std::vector<int>> solutions;
     const CpSolverResponse response =
@@ -1892,9 +1894,18 @@ TEST(ModuloConstraintTest, CheckAllSolutions) {
     // Loop through the domains of var and target, and collect valid solutions.
     absl::btree_set<std::vector<int>> expected;
     for (int i = var_min; i <= var_max; ++i) {
-      const int k = i % mod;
-      if (k < target_min || k > target_max) continue;
-      expected.insert({i, mod, k});
+      const int k = (var_coeff * i) % mod;
+      if (target_coeff == 0 && k != 0) continue;
+      if (target_coeff == 0) {
+        for (int j = target_min; j <= target_max; ++j) {
+          expected.insert({i, mod, j});
+        }
+        continue;
+      }
+      if (k % target_coeff != 0) continue;
+      const int j = k / target_coeff;
+      if (j < target_min || j > target_max) continue;
+      expected.insert({i, mod, j});
     }
 
     // Checks that we get we get the same solution set through the two methods.
@@ -1923,10 +1934,10 @@ TEST(ModuloConstraintTest, CheckAllPropagationsRandomProblem) {
     if (target_min > target_max) std::swap(target_min, target_max);
 
     // Loop through the domains of var and target, and collect valid bounds.
-    int expected_var_min = std::numeric_limits<int>::max();
-    int expected_var_max = std::numeric_limits<int>::min();
-    int expected_target_min = std::numeric_limits<int>::max();
-    int expected_target_max = std::numeric_limits<int>::min();
+    int expected_var_min = kint32max;
+    int expected_var_max = kint32min;
+    int expected_target_min = kint32max;
+    int expected_target_max = kint32min;
     for (int i = var_min; i <= var_max; ++i) {
       const int k = i % mod;
       if (k < target_min || k > target_max) continue;
@@ -1952,7 +1963,7 @@ TEST(ModuloConstraintTest, CheckAllPropagationsRandomProblem) {
           << model.Get(LowerBound(target)) << ".."
           << model.Get(UpperBound(target)) << "]";
     } else {
-      EXPECT_EQ(expected_var_max, std::numeric_limits<int>::min());
+      EXPECT_EQ(expected_var_max, kint32min);
     }
   }
 }

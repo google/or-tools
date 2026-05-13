@@ -667,7 +667,6 @@ TEST(PresolveContextTest, VarIsOnlyUsedInEncoding) {
   )pb");
   PresolveContext context(&model, &working_model, nullptr);
   context.InitializeNewDomains();
-  context.UpdateNewConstraintsVariableUsage();
   EXPECT_FALSE(context.VariableIsOnlyUsedInEncodingAndMaybeInObjective(0));
   EXPECT_FALSE(context.VariableIsOnlyUsedInEncodingAndMaybeInObjective(1));
   EXPECT_TRUE(context.VariableIsOnlyUsedInEncodingAndMaybeInObjective(2));
@@ -689,8 +688,7 @@ TEST(PresolveContextTest, ReifiedConstraintCache) {
   )pb");
   PresolveContext context(&model, &working_model, nullptr);
   context.InitializeNewDomains();
-  context.UpdateNewConstraintsVariableUsage();
-  context.LoadSolutionHint();
+  context.LoadAndClampSolutionHint();
   LinearExpressionProto expr1;
   expr1.add_vars(2);
   expr1.add_coeffs(1);
@@ -723,7 +721,6 @@ TEST(PresolveContextTest, ExploitFixedDomainOverflow) {
   )pb");
   PresolveContext context(&model, &working_model, nullptr);
   context.InitializeNewDomains();
-  context.UpdateNewConstraintsVariableUsage();
 }
 
 TEST(PresolveContextTest, IntersectDomainWithConstant) {
@@ -767,7 +764,7 @@ TEST(PresolveContextTest, IntersectDomainWithUpdatesHint) {
   )pb");
   PresolveContext context(&model, &working_model, nullptr);
   context.InitializeNewDomains();
-  context.LoadSolutionHint();
+  context.LoadAndClampSolutionHint();
 
   EXPECT_TRUE(context.IntersectDomainWith(0, Domain(5, 20)));
 
@@ -815,7 +812,6 @@ TEST(PresolveContextTest, AddAffineRelation) {
   )pb");
   PresolveContext context(&model, &working_model, nullptr);
   context.InitializeNewDomains();
-  context.UpdateNewConstraintsVariableUsage();
 
   EXPECT_TRUE(context.StoreAffineRelation(0, 1, 3, 0));  // x0 = 3x1
   EXPECT_TRUE(context.StoreAffineRelation(2, 3, 5, 0));  // x2 = 5x3
@@ -850,7 +846,6 @@ TEST(PresolveContextTest, AddAffineRelationWithOffset) {
   )pb");
   PresolveContext context(&model, &working_model, nullptr);
   context.InitializeNewDomains();
-  context.UpdateNewConstraintsVariableUsage();
 
   EXPECT_TRUE(context.StoreAffineRelation(0, 1, 3, 10));  // x0 = 3x1 + 10
   EXPECT_TRUE(context.StoreAffineRelation(2, 3, 1, 30));  // x2 = x3 + 30
@@ -880,7 +875,6 @@ TEST(PresolveContextTest, AddAffineRelationPreventOverflow) {
   )pb");
   PresolveContext context(&model, &working_model, nullptr);
   context.InitializeNewDomains();
-  context.UpdateNewConstraintsVariableUsage();
 
   // x0 = 10 x2 - 1e9.
   EXPECT_TRUE(context.StoreAffineRelation(0, 1, 10, -1000000000));
@@ -956,7 +950,6 @@ TEST(ExpressionIsALiteralTest, BasicApi) {
   )pb");
   PresolveContext context(&model, &working_model, nullptr);
   context.InitializeNewDomains();
-  context.UpdateNewConstraintsVariableUsage();
 
   int ref;
   const LinearExpressionProto expr1 = ParseTestProto(R"pb(
@@ -1059,7 +1052,7 @@ TEST(PresolveContextTest, CanonicalizeLinearConstraint) {
   EXPECT_THAT(working_model.constraints(0), testing::EqualsProto(expected));
 }
 
-TEST(PresolveContextTest, LoadSolutionHint) {
+TEST(PresolveContextTest, LoadAndClampSolutionHint) {
   Model model;
   CpModelProto working_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 10 ] }
@@ -1072,7 +1065,7 @@ TEST(PresolveContextTest, LoadSolutionHint) {
   )pb");
   PresolveContext context(&model, &working_model, nullptr);
   context.InitializeNewDomains();
-  context.LoadSolutionHint();
+  context.LoadAndClampSolutionHint();
 
   context.solution_crush().StoreSolutionAsHint(working_model);
   // All hints should be clamped to their respective domains, and new hints

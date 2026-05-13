@@ -36,6 +36,7 @@
 #include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
+#include "ortools/base/types.h"
 #include "ortools/graph_base/connected_components.h"
 #include "ortools/graph_base/strongly_connected_components.h"
 #include "ortools/sat/2d_orthogonal_packing_testing.h"
@@ -267,7 +268,7 @@ std::vector<IndexedInterval> GenerateRandomIntervalVector(
   std::vector<IndexedInterval> intervals;
   intervals.reserve(num_intervals);
   const int64_t interval_domain =
-      absl::LogUniform<int64_t>(random, 1, std::numeric_limits<int64_t>::max());
+      absl::LogUniform<int64_t>(random, 1, kint64max);
   const int64_t max_interval_length = absl::Uniform<int64_t>(
       random, std::max<int64_t>(1, interval_domain / (2 * num_intervals + 1)),
       interval_domain);
@@ -1100,6 +1101,95 @@ TEST(FindPartialIntersections, Random) {
       EXPECT_NE(opt_pair, std::nullopt);
       EXPECT_FALSE(
           rectangles[opt_pair->first].IsDisjoint(rectangles[opt_pair->second]));
+    }
+  }
+}
+
+TEST(FindEmptySpaces, Random) {
+  absl::BitGen random;
+  constexpr int num_runs = 100;
+
+  const Rectangle bounding_box = {
+      .x_min = 0, .x_max = 100, .y_min = 0, .y_max = 100};
+  const IntegerValue total_bb_area = bounding_box.Area();
+
+  for (int k = 0; k < num_runs; k++) {
+    std::vector<Rectangle> rectangles =
+        GenerateNonConflictingRectanglesWithPacking({100, 100}, 60, random);
+
+    IntegerValue occupied_area = 0;
+    for (const Rectangle& r : rectangles) {
+      occupied_area += r.Area();
+    }
+
+    for (const bool test_vertical : {false, true}) {
+      std::vector<EmptySpace> empty_spaces =
+          test_vertical ? FindEmptySpacesVertically(bounding_box, rectangles)
+                        : FindEmptySpacesHorizontally(bounding_box, rectangles);
+
+      std::vector<Rectangle> all_rects = rectangles;
+      IntegerValue empty_area = 0;
+
+      for (const EmptySpace& space : empty_spaces) {
+        all_rects.push_back(space.rect);
+        empty_area += space.rect.Area();
+
+        // Check that the returned rectangle is touching the adjacent inputs
+        if (test_vertical) {
+          if (space.before_idx == -1) {
+            EXPECT_EQ(space.rect.y_min, bounding_box.y_min);
+          } else {
+            ASSERT_GE(space.before_idx, 0);
+            ASSERT_LT(space.before_idx, rectangles.size());
+            EXPECT_EQ(space.rect.y_min, rectangles[space.before_idx].y_max);
+            EXPECT_GE(space.rect.x_min, rectangles[space.before_idx].x_min);
+            EXPECT_LE(space.rect.x_max, rectangles[space.before_idx].x_max);
+          }
+
+          if (space.after_idx == -1) {
+            EXPECT_EQ(space.rect.y_max, bounding_box.y_max);
+          } else {
+            ASSERT_GE(space.after_idx, 0);
+            ASSERT_LT(space.after_idx, rectangles.size());
+            EXPECT_EQ(space.rect.y_max, rectangles[space.after_idx].y_min);
+            EXPECT_GE(space.rect.x_min, rectangles[space.after_idx].x_min);
+            EXPECT_LE(space.rect.x_max, rectangles[space.after_idx].x_max);
+          }
+        } else {
+          if (space.before_idx == -1) {
+            EXPECT_EQ(space.rect.x_min, bounding_box.x_min);
+          } else {
+            ASSERT_GE(space.before_idx, 0);
+            ASSERT_LT(space.before_idx, rectangles.size());
+            EXPECT_EQ(space.rect.x_min, rectangles[space.before_idx].x_max);
+            EXPECT_GE(space.rect.y_min, rectangles[space.before_idx].y_min);
+            EXPECT_LE(space.rect.y_max, rectangles[space.before_idx].y_max);
+          }
+
+          if (space.after_idx == -1) {
+            EXPECT_EQ(space.rect.x_max, bounding_box.x_max);
+          } else {
+            ASSERT_GE(space.after_idx, 0);
+            ASSERT_LT(space.after_idx, rectangles.size());
+            EXPECT_EQ(space.rect.x_max, rectangles[space.after_idx].x_min);
+            EXPECT_GE(space.rect.y_min, rectangles[space.after_idx].y_min);
+            EXPECT_LE(space.rect.y_max, rectangles[space.after_idx].y_max);
+          }
+        }
+      }
+
+      // Check that the result is is not overlapping neither avec itself nor
+      // with the input.
+      absl::c_sort(all_rects, [](const Rectangle& a, const Rectangle& b) {
+        return a.x_min < b.x_min;
+      });
+      EXPECT_FALSE(FindOneIntersectionIfPresent(all_rects).has_value())
+          << "Overlap detected between empty spaces and/or occupied "
+             "rectangles!";
+
+      // Check that the all bounding box area is covered.
+      EXPECT_EQ(occupied_area + empty_area, total_bb_area)
+          << "Sum of areas does not match bounding box.";
     }
   }
 }

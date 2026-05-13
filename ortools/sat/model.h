@@ -196,6 +196,12 @@ class Model {
     singletons_[type_id] = non_owned_class;
   }
 
+  template <typename T>
+  void Unregister() {
+    const size_t type_id = FastTypeId<T>();
+    singletons_.erase(type_id);
+  }
+
   const std::string& Name() const { return name_; }
 
  private:

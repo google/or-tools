@@ -44,9 +44,9 @@ class NonOverlappingRectanglesEnergyPropagator : public PropagatorInterface {
   NonOverlappingRectanglesEnergyPropagator(NoOverlap2DConstraintHelper* helper,
                                            Model* model)
       : helper_(*helper),
-        random_(model->GetOrCreate<ModelRandomGenerator>()),
+        random_(*model->GetOrCreate<ModelRandomGenerator>()),
         shared_stats_(model->GetOrCreate<SharedStatistics>()),
-        orthogonal_packing_checker_(*random_, shared_stats_) {}
+        orthogonal_packing_checker_(random_, shared_stats_) {}
 
   ~NonOverlappingRectanglesEnergyPropagator() override;
 
@@ -68,7 +68,7 @@ class NonOverlappingRectanglesEnergyPropagator : public PropagatorInterface {
   bool BuildAndReportEnergyTooLarge(absl::Span<const RectangleInRange> ranges);
 
   NoOverlap2DConstraintHelper& helper_;
-  ModelRandomGenerator* random_;
+  absl::BitGenRef random_;
   SharedStatistics* shared_stats_;
   OrthogonalPackingInfeasibilityDetector orthogonal_packing_checker_;
 

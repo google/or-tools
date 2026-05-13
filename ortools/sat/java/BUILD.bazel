@@ -45,9 +45,7 @@ java_wrap_cc(
     name = "cp_model_proto",
     srcs = ["cp_model_proto.swig"],
     package = "com.google.ortools.sat",
-    swig_includes = [
-        "//ortools/base:base_swig",
-    ],
+    swig_includes = ["//ortools/base:base_swig"],
     visibility = ["//visibility:public"],
     deps = [
         "//ortools/port:proto_utils",

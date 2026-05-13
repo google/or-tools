@@ -43,7 +43,7 @@ namespace sat {
 SatDecisionPolicy::SatDecisionPolicy(Model* model)
     : parameters_(*(model->GetOrCreate<SatParameters>())),
       trail_(*model->GetOrCreate<Trail>()),
-      random_(model->GetOrCreate<ModelRandomGenerator>()),
+      random_(*model->GetOrCreate<ModelRandomGenerator>()),
       ls_hints_(model->GetOrCreate<SharedLsSolutionRepository>()) {}
 
 void SatDecisionPolicy::IncreaseNumVariables(int num_variables) {
@@ -185,7 +185,7 @@ void SatDecisionPolicy::ResetInitialPolarity(int from, bool inverted) {
           var_polarity_[var] =
               trail_.Assignment().LiteralIsTrue(Literal(var, true));
         } else {
-          var_polarity_[var] = absl::Bernoulli(*random_, 0.5);
+          var_polarity_[var] = absl::Bernoulli(random_, 0.5);
         }
         break;
     }
@@ -211,7 +211,7 @@ bool SatDecisionPolicy::UseLsSolutionAsInitialPolarity() {
   // TODO(user): use cp_model_mapping. But this is not needed to experiment
   // on pure sat problems.
   std::shared_ptr<const SharedLsSolutionRepository::Solution> solution =
-      ls_hints_->GetRandomBiasedSolution(*random_);
+      ls_hints_->GetRandomBiasedSolution(random_);
   if (solution->variable_values.size() != var_polarity_.size()) return false;
 
   for (int i = 0; i < solution->variable_values.size(); ++i) {
@@ -231,7 +231,7 @@ void SatDecisionPolicy::FlipCurrentPolarity() {
 void SatDecisionPolicy::RandomizeCurrentPolarity() {
   const int num_variables = var_polarity_.size();
   for (BooleanVariable var; var < num_variables; ++var) {
-    var_polarity_[var] = std::uniform_int_distribution<int>(0, 1)(*random_);
+    var_polarity_[var] = std::uniform_int_distribution<int>(0, 1)(random_);
   }
 }
 
@@ -286,7 +286,7 @@ void SatDecisionPolicy::InitializeVariableOrdering() {
       std::reverse(tmp_variables_.begin(), tmp_variables_.end());
       break;
     case SatParameters::IN_RANDOM_ORDER:
-      std::shuffle(tmp_variables_.begin(), tmp_variables_.end(), *random_);
+      std::shuffle(tmp_variables_.begin(), tmp_variables_.end(), random_);
       break;
   }
 
@@ -391,7 +391,7 @@ Literal SatDecisionPolicy::NextBranch() {
   BooleanVariable var;
   const double ratio = parameters_.random_branches_ratio();
   auto zero_to_one = [this]() {
-    return std::uniform_real_distribution<double>()(*random_);
+    return std::uniform_real_distribution<double>()(random_);
   };
   if (ratio != 0.0 && zero_to_one() < ratio) {
     while (true) {
@@ -399,7 +399,7 @@ Literal SatDecisionPolicy::NextBranch() {
       // variables are assigned.
       std::uniform_int_distribution<int> index_dist(0,
                                                     var_ordering_.Size() - 1);
-      var = var_ordering_.QueueElement(index_dist(*random_)).var;
+      var = var_ordering_.QueueElement(index_dist(random_)).var;
       if (!trail_.Assignment().VariableIsAssigned(var)) break;
       pq_need_update_for_var_at_trail_index_.Set(trail_.Info(var).trail_index);
       var_ordering_.Remove(var.value());
@@ -419,7 +419,7 @@ Literal SatDecisionPolicy::NextBranch() {
   // Choose its polarity (i.e. True of False).
   const double random_ratio = parameters_.random_polarity_ratio();
   if (random_ratio != 0.0 && zero_to_one() < random_ratio) {
-    return Literal(var, std::uniform_int_distribution<int>(0, 1)(*random_));
+    return Literal(var, std::uniform_int_distribution<int>(0, 1)(random_));
   }
 
   if (has_forced_polarity_[var]) return Literal(var, forced_polarity_[var]);

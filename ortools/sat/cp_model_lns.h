@@ -124,6 +124,9 @@ class NeighborhoodGeneratorHelper : public SubSolver {
 
   // Returns the LNS fragment where the given variables are fixed to the value
   // they take in the given solution.
+  //
+  // Note that we will first transform 'variables_to_fix' so that it contains
+  // only active variables.
   Neighborhood FixGivenVariables(const CpSolverResponse& base_solution,
                                  const Bitset64<int>& variables_to_fix) const;
 

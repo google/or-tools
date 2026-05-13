@@ -49,9 +49,20 @@ std::string ValidateCpModel(const CpModelProto& model,
 std::string ValidateInputCpModel(const SatParameters& params,
                                  const CpModelProto& model);
 
+// This is the logic used by PossibleIntegerOverflow().
+// It is exposed so that we can reuse it in more situations.
+struct LinearOverflowChecker {
+  // Returns false if adding coeff * X for X in [min_domain, max_domain] to a
+  // linear equation does not satisfy our overflow preconditions.
+  bool AddTerm(int64_t coeff, int64_t min_domain, int64_t max_domain);
+
+  int64_t sum_min = 0;
+  int64_t sum_max = 0;
+};
+
 // Check if a given linear expression can create overflow. If it doesn't,
-// sets `implied_domain` to the implied domain of the expression. It is exposed
-// to test new constraints created during the presolve.
+// sets `implied_domain` to a superset of the implied domain of the expression.
+// It is exposed to test new constraints created during the presolve.
 bool PossibleIntegerOverflow(
     const CpModelProto& model, absl::Span<const int> vars,
     absl::Span<const int64_t> coeffs, int64_t offset = 0,

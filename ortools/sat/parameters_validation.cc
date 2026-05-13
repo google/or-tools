@@ -16,10 +16,10 @@
 #include <stdint.h>
 
 #include <cmath>
-#include <limits>
 #include <string>
 
 #include "absl/strings/str_cat.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/cp_model_search.h"
 #include "ortools/sat/sat_parameters.pb.h"
 
@@ -122,7 +122,7 @@ std::string ValidateParameters(const SatParameters& params) {
   // validation. It is however not open sourced.
   TEST_IN_RANGE(mip_max_activity_exponent, 1, 62);
   TEST_IN_RANGE(mip_max_bound, 0, 1e17);
-  TEST_IN_RANGE(solution_pool_size, 1, std::numeric_limits<int32_t>::max());
+  TEST_IN_RANGE(solution_pool_size, 1, kint32max);
 
   // Feasibility jump.
   TEST_NOT_NAN(feasibility_jump_decay);

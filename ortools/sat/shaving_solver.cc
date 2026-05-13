@@ -550,11 +550,9 @@ void VariablesShavingSolver::CopyModelConnectedToVar(
     return cc_finder.Connected(root_index, ct_to_node(c));
   };
 
-  PresolveContext context(local_model, shaving_proto, nullptr);
   std::vector<int> interval_mapping;
-  ImportModelAndDomainsWithBasicPresolveIntoContext(
-      model_proto_, var_domains_, active_constraints, &context,
-      &interval_mapping);
+  CopyModelAdvanced(model_proto_, var_domains_, active_constraints,
+                    &interval_mapping, shaving_proto, local_model);
 
   // Now copy the ignored constraints "partially".
   for (const int c : ignored_constraints) {
@@ -697,7 +695,6 @@ bool VariablesShavingSolver::ResetAndSolveModel(int64_t task_id, State* state,
     auto context = std::make_unique<PresolveContext>(local_model, shaving_proto,
                                                      &mapping_proto);
     context->InitializeNewDomains();
-    context->UpdateNewConstraintsVariableUsage();
     const int num_constraints = shaving_proto->constraints().size();
     std::vector<bool> useful_interval(num_constraints, false);
     std::vector<int> no_overalp_2d;

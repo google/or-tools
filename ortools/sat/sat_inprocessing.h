@@ -213,7 +213,7 @@ class StampingSimplifier {
         implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()),
         clause_manager_(model->GetOrCreate<ClauseManager>()),
         lrat_proof_handler_(model->Mutable<LratProofHandler>()),
-        random_(model->GetOrCreate<ModelRandomGenerator>()),
+        random_(*model->GetOrCreate<ModelRandomGenerator>()),
         time_limit_(model->GetOrCreate<TimeLimit>()) {}
 
   // This is "fast" (linear scan + sort of all clauses) so we always complete
@@ -256,7 +256,7 @@ class StampingSimplifier {
   BinaryImplicationGraph* implication_graph_;
   ClauseManager* clause_manager_;
   LratProofHandler* lrat_proof_handler_;
-  ModelRandomGenerator* random_;
+  absl::BitGenRef random_;
   TimeLimit* time_limit_;
 
   // For ComputeStampsForNextRound().

@@ -1,0 +1,229 @@
+// Copyright 2010-2025 Google LLC
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#ifndef ORTOOLS_SAT_SCHEDULING_LOCAL_SEARCH_H_
+#define ORTOOLS_SAT_SCHEDULING_LOCAL_SEARCH_H_
+
+#include <cstdint>
+#include <functional>
+#include <memory>
+#include <optional>
+#include <utility>
+#include <vector>
+
+#include "absl/algorithm/container.h"
+#include "absl/random/bit_gen_ref.h"
+#include "absl/strings/string_view.h"
+#include "absl/types/span.h"
+#include "ortools/sat/integer_base.h"
+#include "ortools/sat/scheduling_model.h"
+#include "ortools/sat/stat_tables.h"
+#include "ortools/sat/subsolver.h"
+#include "ortools/sat/synchronization.h"
+#include "ortools/sat/util.h"
+#include "ortools/util/time_limit.h"
+
+namespace operations_research {
+namespace sat {
+
+// Stand-alone class for improving solutions to scheduling problems using local
+// search. The heuristic this class uses is the Nowicki & Smutnicki algorithm
+// described in "Eugeniusz Nowicki, Czeslaw Smutnicki, (1996) A Fast Taboo
+// Search Algorithm for the Job Shop Problem. Management Science 42(6):797-813".
+class SchedulingLocalSearch {
+ public:
+  explicit SchedulingLocalSearch(const SchedulingProblem& problem);
+
+  SchedulingLocalSearch(const SchedulingLocalSearch&) = delete;
+  SchedulingLocalSearch& operator=(const SchedulingLocalSearch&) = delete;
+
+  // Run local search on the given problem and return the best solution found.
+  // Will stop early if the makespan is less than makespan_to_beat. Thread-safe.
+  std::vector<int64_t> Solve(absl::Span<const int64_t> initial_hint,
+                             absl::Span<const int> active_machine_indices,
+                             int64_t makespan_to_beat, absl::BitGenRef random,
+                             TimeLimit* time_limit) const;
+
+ protected:  // Exposed for testing.
+  struct ScheduleAnalysis {
+    explicit ScheduleAnalysis(const SchedulingProblem& problem);
+
+    std::vector<int> critical_path;
+    std::vector<IntegerValue> start_mins;
+    std::vector<int> topo_order;
+    IntegerValue makespan;
+
+    // This is used to compute the topological order on the graph of tasks
+    // including the precedences and the order of tasks on machines.
+    // This gets initialized so that scratch_adjacency_list[i] contains the
+    // job successors of task i and a "fake" task with index num_tasks_. To
+    // get a topological order of the tasks including the order of tasks on
+    // machines, we need to overwrite this fake task with the actual tasks that
+    // follow task i on the same machine, if any.
+    CompactVectorVector<int> scratch_adjacency_list;
+  };
+
+  struct InsertMove {
+    int task;          // Task to be moved
+    int target_task;   // Reference task for the new position
+    bool place_after;  // true: insert after target_task; false: insert before
+                       // target_task
+  };
+
+  struct SolverState {
+    std::vector<int> prev_on_machine;
+    std::vector<int> next_on_machine;
+    std::vector<int> position_in_machine;
+    // Minimum time to complete all successors of a task.
+    std::vector<IntegerValue> tails;
+  };
+
+  static CompactVectorVector<int> ComputeJobSuccessors(
+      const SchedulingProblem& problem);
+
+  static std::vector<bool> ComputeJobReachability(
+      const SchedulingProblem& problem,
+      const CompactVectorVector<int>& job_successors);
+
+  static std::vector<std::pair<int, int>> ComputePrecedences(
+      const SchedulingProblem& problem);
+
+  SolverState ComputeDynamicState(
+      const CompactVectorVector<int>& machine_tasks,
+      absl::Span<const int> topo_order,
+      absl::Span<const int64_t> current_durations) const;
+
+  // Builds the sequence of tasks on each machine from the start times of the
+  // tasks. We want to use the task ordering as the internal solution
+  // representation to better encode our moves as swaps.
+  CompactVectorVector<int> BuildInitialMachineSequences(
+      absl::Span<const int64_t> initial_solution,
+      absl::Span<const int> current_machines) const;
+
+  std::optional<SchedulingLocalSearch::InsertMove> SelectBestMove(
+      absl::Span<const InsertMove> candidates,
+      absl::Span<const IntegerValue> start_mins,
+      absl::Span<const IntegerValue> tails,
+      absl::Span<const int> prev_on_machine,
+      absl::Span<const int> next_on_machine, absl::Span<const int> tabu_matrix,
+      absl::Span<const int64_t> current_durations, int current_iteration,
+      IntegerValue global_best_makespan, absl::BitGenRef random) const;
+
+  // Generates the possible moves for the local search following [1]. The moves
+  // are generated by defining a "block", which is a contiguous set of tasks
+  // that are on the critical path and on the same machine. To reduce the
+  // makespan, the critical path must be broken by reordering tasks in these
+  // blocks.
+  //
+  // The N8 neighborhood generates two distinct types of intra-machine moves:
+  // 1. Internal block moves: moving tasks to the boundaries of their own block
+  //    (e.g., moving an inner task before the first task, or after the last
+  //    task).
+  // 2. External leaps: taking tasks from the critical block and pushing them
+  //    into non-critical time intervals on the same machine.
+  //
+  // [1] Xie, J., Li, X., Gao, L., & Gui, L. (2023). A new neighbourhood
+  // structure for job shop scheduling problems. International Journal of
+  // Production Research, 61(7), 2147-2161.
+  std::vector<InsertMove> GenerateN8Moves(
+      absl::Span<const int> critical_path,
+      absl::Span<const int> prev_on_machine,
+      absl::Span<const int> next_on_machine,
+      absl::Span<const IntegerValue> start_mins,
+      absl::Span<const IntegerValue> tails,
+      absl::Span<const int> current_machines,
+      absl::Span<const int64_t> current_durations) const;
+
+  struct MoveEvaluationScratch {
+    std::vector<int> mutated_sequence;
+    std::vector<IntegerValue> heads;
+    std::vector<IntegerValue> tails;
+  };
+
+  // Estimates the makespan of the solution if we apply the move `move`.
+  // Uses the estimator described in Section 3 of "Balas, E., & Vazacopoulos, A.
+  // (1998). Guided local search with shifting bottleneck for job shop
+  // scheduling. Management science, 44(2), 262-275".
+  IntegerValue EstimateMakespanForInsert(
+      const InsertMove& move, absl::Span<const IntegerValue> start_mins,
+      absl::Span<const IntegerValue> tails,
+      absl::Span<const int> prev_on_machine,
+      absl::Span<const int> next_on_machine,
+      absl::Span<const int64_t> current_durations,
+      MoveEvaluationScratch* scratch) const;
+
+  // Find the critical path of a solution using a topological sort. Also
+  // computes the implied heads (Earliest Start Times) of each task.
+  void AnalyzeSchedule(const CompactVectorVector<int>& machine_tasks,
+                       absl::Span<const int64_t> current_durations,
+                       SchedulingLocalSearch::ScheduleAnalysis* analysis) const;
+
+ private:
+  const SchedulingProblem& problem_;
+  const std::vector<std::pair<int, int>> precedences_;
+  const CompactVectorVector<int> job_successors_;
+  const std::vector<bool> job_reachability_;
+  const int num_tasks_;
+  const int num_machines_;
+};
+
+class SchedulingLocalSearchSolver : public SubSolver {
+ public:
+  SchedulingLocalSearchSolver(absl::string_view name,
+                              SubSolver::SubsolverType type,
+                              const CpModelProto& input_model_proto,
+                              SatParameters params,
+                              ModelSharedTimeLimit* shared_time_limit,
+                              SharedResponseManager* shared_response,
+                              SharedStatTables* stat_tables);
+
+  SchedulingLocalSearchSolver(const SchedulingLocalSearchSolver&) = delete;
+  SchedulingLocalSearchSolver& operator=(const SchedulingLocalSearchSolver&) =
+      delete;
+
+  ~SchedulingLocalSearchSolver() override {
+    stat_tables_->AddTimingStat(*this);
+  }
+
+  std::function<void()> GenerateTask(int64_t /*task_id*/) final;
+  void Synchronize() final {}
+  bool IsDone() final { return false; }
+  bool TaskIsAvailable() final {
+    if (IsDone()) return false;
+    if (shared_response_->ProblemIsSolved()) return false;
+    if (shared_time_limit_->LimitReached()) return false;
+    if (relaxation_.problems_and_mappings.empty()) return false;
+    if (absl::c_all_of(
+            relaxation_.problems_and_mappings,
+            [](const SchedulingProblemAndMapping& problem_and_mapping) {
+              return problem_and_mapping.problem.tasks.size() < 3;
+            })) {
+      return false;
+    }
+    return shared_response_->HasFeasibleSolution();
+  }
+
+ private:
+  CpModelProto input_model_proto_;
+  SatParameters params_;
+  SharedTimeLimit* shared_time_limit_;
+  SharedResponseManager* shared_response_;
+  SharedStatTables* stat_tables_;
+  SchedulingRelaxation relaxation_;
+  std::vector<std::unique_ptr<SchedulingLocalSearch>> local_search_solvers_;
+};
+
+}  // namespace sat
+}  // namespace operations_research
+
+#endif  // ORTOOLS_SAT_SCHEDULING_LOCAL_SEARCH_H_

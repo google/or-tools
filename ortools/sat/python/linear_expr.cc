@@ -27,6 +27,7 @@
 #include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/util/fp_roundtrip_conv.h"
@@ -698,46 +699,46 @@ std::shared_ptr<BoundedLinearExpression> LinearExpr::NeCst(int64_t rhs) {
 
 std::shared_ptr<BoundedLinearExpression> LinearExpr::Le(
     std::shared_ptr<LinearExpr> rhs) {
-  return std::make_shared<BoundedLinearExpression>(
-      shared_from_this(), rhs, Domain(std::numeric_limits<int64_t>::min(), 0));
+  return std::make_shared<BoundedLinearExpression>(shared_from_this(), rhs,
+                                                   Domain(kint64min, 0));
 }
 
 std::shared_ptr<BoundedLinearExpression> LinearExpr::LeCst(int64_t rhs) {
-  return std::make_shared<BoundedLinearExpression>(
-      shared_from_this(), Domain(std::numeric_limits<int64_t>::min(), rhs));
+  return std::make_shared<BoundedLinearExpression>(shared_from_this(),
+                                                   Domain(kint64min, rhs));
 }
 
 std::shared_ptr<BoundedLinearExpression> LinearExpr::Lt(
     std::shared_ptr<LinearExpr> rhs) {
-  return std::make_shared<BoundedLinearExpression>(
-      shared_from_this(), rhs, Domain(std::numeric_limits<int64_t>::min(), -1));
+  return std::make_shared<BoundedLinearExpression>(shared_from_this(), rhs,
+                                                   Domain(kint64min, -1));
 }
 
 std::shared_ptr<BoundedLinearExpression> LinearExpr::LtCst(int64_t rhs) {
-  return std::make_shared<BoundedLinearExpression>(
-      shared_from_this(), Domain(std::numeric_limits<int64_t>::min(), rhs - 1));
+  return std::make_shared<BoundedLinearExpression>(shared_from_this(),
+                                                   Domain(kint64min, rhs - 1));
 }
 
 std::shared_ptr<BoundedLinearExpression> LinearExpr::Ge(
     std::shared_ptr<LinearExpr> rhs) {
-  return std::make_shared<BoundedLinearExpression>(
-      shared_from_this(), rhs, Domain(0, std::numeric_limits<int64_t>::max()));
+  return std::make_shared<BoundedLinearExpression>(shared_from_this(), rhs,
+                                                   Domain(0, kint64max));
 }
 
 std::shared_ptr<BoundedLinearExpression> LinearExpr::GeCst(int64_t rhs) {
-  return std::make_shared<BoundedLinearExpression>(
-      shared_from_this(), Domain(rhs, std::numeric_limits<int64_t>::max()));
+  return std::make_shared<BoundedLinearExpression>(shared_from_this(),
+                                                   Domain(rhs, kint64max));
 }
 
 std::shared_ptr<BoundedLinearExpression> LinearExpr::Gt(
     std::shared_ptr<LinearExpr> rhs) {
-  return std::make_shared<BoundedLinearExpression>(
-      shared_from_this(), rhs, Domain(1, std::numeric_limits<int64_t>::max()));
+  return std::make_shared<BoundedLinearExpression>(shared_from_this(), rhs,
+                                                   Domain(1, kint64max));
 }
 
 std::shared_ptr<BoundedLinearExpression> LinearExpr::GtCst(int64_t rhs) {
-  return std::make_shared<BoundedLinearExpression>(
-      shared_from_this(), Domain(rhs + 1, std::numeric_limits<int64_t>::max()));
+  return std::make_shared<BoundedLinearExpression>(shared_from_this(),
+                                                   Domain(rhs + 1, kint64max));
 }
 
 void IntExprVisitor::AddToProcess(std::shared_ptr<LinearExpr> expr,
@@ -1015,13 +1016,13 @@ std::string BoundedLinearExpression::ToString() const {
   if (bounds_.IsFixed()) {
     absl::StrAppend(&s, " == ", bounds_.Min());
   } else if (bounds_.NumIntervals() == 1) {
-    if (bounds_.Min() == std::numeric_limits<int64_t>::min()) {
-      if (bounds_.Max() == std::numeric_limits<int64_t>::max()) {
+    if (bounds_.Min() == kint64min) {
+      if (bounds_.Max() == kint64max) {
         return absl::StrCat("True (unbounded expr ", s, ")");
       } else {
         absl::StrAppend(&s, " <= ", bounds_.Max());
       }
-    } else if (bounds_.Max() == std::numeric_limits<int64_t>::max()) {
+    } else if (bounds_.Max() == kint64max) {
       absl::StrAppend(&s, " >= ", bounds_.Min());
     } else {
       return absl::StrCat(bounds_.Min(), " <= ", s, " <= ", bounds_.Max());

@@ -118,6 +118,12 @@ class SchedulingConstraintHelper : public PropagatorInterface {
   // Returns true if and only if all the enforcement literals are true.
   bool IsEnforced() const;
 
+  // Returns true if the search branching strategy is FIXED_SEARCH and if the
+  // SAT solver has not made any backtrack yet. In this case the scheduling
+  // search heuristics is strong enough to allow skipping some scheduling
+  // propagators.
+  bool FixedSearchFirstSolutionMode() const;
+
   // This is a propagator so we can "cache" all the intervals relevant
   // information. This gives good speedup. Note however that the info is stale
   // except if a bound was pushed by this helper or if this was called. We run
@@ -132,6 +138,7 @@ class SchedulingConstraintHelper : public PropagatorInterface {
   // This is used by NoOverlap2DConstraintHelper, which registers itself but
   // does not register its x and y SchedulingConstraintHelpers.
   void SetEnforcementId(EnforcementId id) { enforcement_id_ = id; }
+  void RecomputeCache(int t) { recompute_cache_.Set(t); }
 
   // Resets the class to the same state as if it was constructed with
   // the given subset of tasks from other (and the same enforcement literals).
@@ -477,6 +484,7 @@ class SchedulingConstraintHelper : public PropagatorInterface {
   RootLevelLinear2Bounds* root_level_lin2_bounds_;
   EnforcementHelper& enforcement_helper_;
   EnforcementId enforcement_id_;
+  bool fixed_search_;
 
   FixedCapacityVector<TaskTime> scratch_task_time_vector1_;
   FixedCapacityVector<TaskTime> scratch_task_time_vector2_;

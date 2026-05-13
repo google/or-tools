@@ -360,7 +360,7 @@ TEST(FindCpModelSymmetries, ImplicationTestThatUsedToFail) {
 
 TEST(DetectAndAddSymmetryToProto, BasicTest) {
   // A model with one (0, 1) (2, 3) symmetry.
-  CpModelProto model = ParseTestProto(R"pb(
+  CpModelProto cp_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 1 ] }
     variables { domain: [ 0, 1 ] }
     variables { domain: [ 0, 2 ] }
@@ -391,7 +391,8 @@ TEST(DetectAndAddSymmetryToProto, BasicTest) {
   SatParameters params;
   params.set_log_search_progress(true);
   TimeLimit time_limit;
-  DetectAndAddSymmetryToProto(params, &model, &logger, &time_limit);
+  DetectAndAddSymmetryToProto(params, cp_model, cp_model.mutable_symmetry(),
+                              &logger, &time_limit);
 
   // TODO(user): canonicalize the order in each cycle?
   const SymmetryProto expected = ParseTestProto(R"pb(
@@ -401,7 +402,7 @@ TEST(DetectAndAddSymmetryToProto, BasicTest) {
     }
   )pb");
 
-  EXPECT_THAT(model.symmetry(), testing::EqualsProto(expected));
+  EXPECT_THAT(cp_model.symmetry(), testing::EqualsProto(expected));
 }
 
 const char kBooleanModel[] = R"pb(
@@ -663,7 +664,6 @@ TEST(FindCpModelSymmetries, BinPacking) {
   model.GetOrCreate<SolverLogger>()->SetLogToStdOut(true);
   PresolveContext context(&model, &proto, nullptr);
   context.InitializeNewDomains();
-  context.UpdateNewConstraintsVariableUsage();
   context.ReadObjectiveFromProto();
   EXPECT_TRUE(DetectAndExploitSymmetriesInPresolve(&context));
   context.LogInfo();

@@ -39,6 +39,7 @@
 #include "ortools/base/gmock.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/base/stl_util.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/cp_model_utils.h"
@@ -128,6 +129,23 @@ TEST(CompactVectorVectorTest, ShrinkValues) {
 
   storage.ReplaceValuesBySmallerSet(2, {3, 4, 5});
   EXPECT_THAT(storage[2], ElementsAre(3, 4, 5));
+}
+
+TEST(CompactVectorVectorTest, SortAndRemoveDuplicateValues) {
+  CompactVectorVector<int, int> storage;
+  EXPECT_EQ(storage.size(), 0);
+
+  storage.ResetFromFlatMapping(
+      std::vector<int>({1, 1, 2, 2, 2, 1, 1, 1}),
+      std::vector<int>({14, 13, 22, 21, 22, 14, 10, 14}));
+  storage.SortAndRemoveDuplicateValues(0);
+  storage.SortAndRemoveDuplicateValues(1);
+  storage.SortAndRemoveDuplicateValues(2);
+
+  EXPECT_EQ(storage.size(), 3);
+  EXPECT_THAT(storage[0], IsEmpty());
+  EXPECT_THAT(storage[1], ElementsAre(10, 13, 14));
+  EXPECT_THAT(storage[2], ElementsAre(21, 22));
 }
 
 TEST(CompactVectorVectorTest, ResetFromTranspose) {
@@ -226,7 +244,7 @@ TEST(ModularInverseTest, AllSmallValues) {
 
 TEST(ModularInverseTest, BasicOverflowTest) {
   absl::BitGen random;
-  const int64_t max = std::numeric_limits<int64_t>::max();
+  const int64_t max = kint64max;
   for (int i = 0; i < 100000; ++i) {
     const int64_t m = max - absl::LogUniform<int64_t>(random, 0, max);
     const int64_t x = absl::Uniform(random, 0, m);
@@ -316,7 +334,7 @@ TEST(SolveDiophantineEquationOfSizeTwoTest, FewSmallValues) {
 
 TEST(SolveDiophantineEquationOfSizeTwoTest, BasicOverflowTest) {
   absl::BitGen random;
-  const int64_t max = std::numeric_limits<int64_t>::max();
+  const int64_t max = kint64max;
   for (int i = 0; i < 100000; ++i) {
     int64_t a = max - absl::LogUniform<int64_t>(random, 0, max);
     int64_t b = max - absl::LogUniform<int64_t>(random, 0, max);
@@ -651,8 +669,8 @@ TEST(Percentile, RandomNumbers) {
 
 TEST(SafeDoubleToInt64Test, BasicCases) {
   const double kInfinity = std::numeric_limits<double>::infinity();
-  const int64_t kMax = std::numeric_limits<int64_t>::max();
-  const int64_t kMin = std::numeric_limits<int64_t>::min();
+  const int64_t kMax = kint64max;
+  const int64_t kMin = kint64min;
   const int64_t max53 = (int64_t{1} << 53) - 1;
 
   // Arbitrary behavior for nans.
@@ -783,7 +801,7 @@ BENCHMARK(BM_bounded_subset_sum)
 
 TEST(FirstFewValuesTest, Basic) {
   FirstFewValues<8> values;
-  EXPECT_EQ(values.LastValue(), std::numeric_limits<int64_t>::max());
+  EXPECT_EQ(values.LastValue(), kint64max);
   values.Add(3);
   EXPECT_THAT(values.reachable(), ElementsAre(0, 3, 6, 9, 12, 15, 18, 21));
   values.Add(5);
@@ -798,7 +816,7 @@ TEST(FirstFewValuesTest, Basic) {
 TEST(FirstFewValuesTest, Overflow) {
   FirstFewValues<6> values;
 
-  const int64_t max = std::numeric_limits<int64_t>::max();
+  const int64_t max = kint64max;
   const int64_t v = max / 3;
   values.Add(v);
   EXPECT_THAT(values.reachable(), ElementsAre(0, v, 2 * v, 3 * v, max, max));

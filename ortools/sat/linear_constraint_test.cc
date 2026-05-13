@@ -24,6 +24,7 @@
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
@@ -77,9 +78,8 @@ TEST(ComputeInfinityNormTest, BasicTest) {
   }
   {
     LinearConstraintBuilder constraint;
-    constraint.AddTerm(y, IntegerValue(std::numeric_limits<int64_t>::max()));
-    EXPECT_EQ(IntegerValue(std::numeric_limits<int64_t>::max()),
-              ComputeInfinityNorm(constraint.Build()));
+    constraint.AddTerm(y, IntegerValue(kint64max));
+    EXPECT_EQ(IntegerValue(kint64max), ComputeInfinityNorm(constraint.Build()));
   }
 }
 

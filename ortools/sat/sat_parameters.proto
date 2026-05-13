@@ -26,7 +26,7 @@ option java_multiple_files = true;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 362
+// NEXT TAG: 364
 message SatParameters {
   // In some context, like in a portfolio of search, it makes sense to name a
   // given parameters set for logging purpose.
@@ -697,6 +697,12 @@ message SatParameters {
   // Note that we only have a basic version currently.
   optional bool inprocessing_use_congruence_closure = 342 [default = true];
 
+  // Experimental. We don't have LRAT support for this. Recovers a "circuit"
+  // structure based on the gate detection used by congruence closure, and try
+  // to detect more equivalence via sampling. This is like the custom SAT
+  // sweeping done on a logic circuit with binary gates.
+  optional bool inprocessing_detect_and_sweep_circuit = 362 [default = false];
+
   // Whether we use the SAT sweeping algorithm described in "Clausal Equivalence
   // Sweeping", Armin Biere, Katalin Fazekas, Mathias Fleury, Nils Froleyks,
   // 2025.
@@ -1199,6 +1205,10 @@ message SatParameters {
 
   // Conflict limit used in the phase that exploit the solution hint.
   optional int32 hint_conflict_limit = 153 [default = 10];
+
+  // Try first to use the hint as assumption in the phase that exploit the
+  // solution hint. This should be way faster if the hint is completable.
+  optional bool try_hint_as_assumptions = 363 [default = true];
 
   // If true, the solver tries to repair the solution given in the hint. This
   // search terminates after the 'hint_conflict_limit' is reached and the solver
