@@ -38,6 +38,7 @@
 #include "absl/time/time.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/base/timer.h"
+#include "ortools/base/types.h"
 #include "ortools/linear_solver/gurobi_util.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/model_validator.h"
@@ -578,7 +579,7 @@ absl::StatusOr<MPSolutionResponse> GurobiSolveProto(
     }
     const int additional_solutions = std::min(
         solution_count, std::min(request->populate_additional_solutions_up_to(),
-                                 std::numeric_limits<int32_t>::max() - 1) +
+                                 kint32max - 1) +
                             1);
     for (int i = 1; i < additional_solutions; ++i) {
       RETURN_IF_GUROBI_ERROR(

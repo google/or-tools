@@ -13,10 +13,12 @@
 
 load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
 load("@protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
+load("@protobuf//bazel:java_proto_library.bzl", "java_proto_library")
 load("@protobuf//bazel:proto_library.bzl", "proto_library")
 load("@protobuf//bazel:py_proto_library.bzl", "py_proto_library")
 load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
 load("//bazel:compilation_flags.bzl", "SAFE_FP_CODE")
 
 package(default_visibility = ["//visibility:public"])
@@ -147,6 +149,11 @@ proto_library(
     name = "linear_solver_proto",
     srcs = ["linear_solver.proto"],
     deps = ["//ortools/util:optional_boolean_proto"],
+)
+
+java_proto_library(
+    name = "linear_solver_java_proto",
+    deps = [":linear_solver_proto"],
 )
 
 cc_proto_library(
