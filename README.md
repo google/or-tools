@@ -1,190 +1,106 @@
-# OR-Tools - Google Optimization Tools
+# ortools-cpsat-wasm
 
-[![PyPI version](https://img.shields.io/pypi/v/ortools.svg)](https://pypi.org/project/ortools/)
-[![PyPI download](https://img.shields.io/pypi/dm/ortools.svg)](https://pypi.org/project/ortools/#files)
-[![Binder](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/google/or-tools/main)
-\
-[![NuGet version](https://img.shields.io/nuget/v/Google.OrTools.svg)](https://www.nuget.org/packages/Google.OrTools)
-[![NuGet download](https://img.shields.io/nuget/dt/Google.OrTools.svg)](https://www.nuget.org/packages/Google.OrTools)
-\
-[![Maven Central](https://img.shields.io/maven-central/v/com.google.ortools/ortools-java)](https://mvnrepository.com/artifact/com.google.ortools/ortools-java)
-\
-[![Discord](https://img.shields.io/discord/693088862481678374?color=7289DA&logo=discord&style=plastic)](https://discord.gg/ENkQrdf)
+JavaScript and WebAssembly bindings for the OR-Tools CP-SAT solver.
 
-Google's software suite for combinatorial optimization.
+This package builds a browser-oriented CP-SAT runtime from Google OR-Tools and
+wraps it with a TypeScript API, worker bridge, generated SAT parameter types,
+and Vite-powered demos.
 
-## Table of Contents
+The upstream solver source is vendored from
+[google/or-tools](https://github.com/google/or-tools).
 
-*   [About OR-Tools](#about)
-*   [Codemap](#codemap)
-*   [Installation](#installation)
-*   [Quick Start](#quick-start)
-*   [Documentation](#documentation)
-*   [Contributing](#contributing)
-*   [License](#license)
+This repository currently vendors OR-Tools 9.14 pre-release sources
+(`Version.txt` reports `OR_TOOLS_MAJOR=9`, `OR_TOOLS_MINOR=14`, and
+`PRE_RELEASE` enabled).
 
-<a name="about"></a>
-## About OR-Tools
+## What is included
 
-Google Optimization Tools (a.k.a., OR-Tools) is an open-source, fast and
-portable software suite for solving combinatorial optimization problems.
+- A CP-SAT WebAssembly runtime built with Emscripten pthread support.
+- A TypeScript API for solving, validating models, interrupting solves, and
+  reading embedded proto schemas.
+- A worker bridge for keeping browser UI threads responsive while solving.
+- Generated TypeScript definitions for SAT parameters.
+- Demo pages for Magic Square, Sports Scheduling, Steel Mill Slab, and schema
+  inspection.
 
-The suite contains:
+## Install
 
-*   Two constraint programming solver (CP* and CP-SAT);
-*   Two linear programming solvers (Glop and PDLP);
-*   Wrappers around commercial and other open source solvers, including mixed
-    integer solvers;
-*   Bin packing and knapsack algorithms;
-*   Algorithms for the Traveling Salesman Problem and Vehicle Routing Problem;
-*   Graph algorithms (shortest paths, min cost flow, max flow, linear sum
-    assignment).
-
-We wrote OR-Tools in C++, but provide wrappers in Python, C# and Java.
-
-## Codemap
-
-This software suite is composed of the following components:
-
-*   [Makefile](Makefile) Top-level for
-    [GNU Make](https://www.gnu.org/software/make/manual/make.html) based build.
-*   [makefiles](makefiles) Subsidiary Make files, CI and build system documentation.
-*   [CMakeLists.txt](CMakeLists.txt) Top-level for
-    [CMake](https://cmake.org/cmake/help/latest/) based build.
-*   [cmake](cmake) Subsidiary CMake files, CI and build system documentation.
-*   [WORKSPACE](WORKSPACE) Top-level for
-    [Bazel](https://bazel.build/start/bazel-intro) based build.
-*   [bazel](bazel) Subsidiary Bazel files, CI and build system documentation.
-*   [ortools](ortools) Root directory for source code.
-    *   [base](ortools/base) Basic utilities.
-    *   [algorithms](ortools/algorithms) Basic algorithms.
-        *   [samples](ortools/algorithms/samples) Carefully crafted samples.
-    *   [graph](ortools/graph) Graph algorithms.
-        *   [samples](ortools/graph/samples) Carefully crafted samples.
-    *   [linear_solver](ortools/linear_solver) Linear solver wrapper.
-        *   [samples](ortools/linear_solver/samples) Carefully crafted samples.
-    *   [glop](ortools/glop) Simplex-based linear programming solver.
-        *   [samples](ortools/glop/samples) Carefully crafted samples.
-    *   [pdlp](ortools/pdlp) First-order linear programming solver.
-        *   [samples](ortools/pdlp/samples) Carefully crafted samples.
-    *   [lp_data](ortools/lp_data) Data structures for linear models.
-    *   [constraint_solver](ortools/constraint_solver) Constraint and Routing
-        solver.
-        *   [docs](ortools/constraint_solver/docs) Documentation of the component.
-        *   [samples](ortools/constraint_solver/samples) Carefully crafted samples.
-    *   [sat](ortools/sat) SAT solver.
-        *   [docs](ortools/sat/docs) Documentation of the component.
-        *   [samples](ortools/sat/samples) Carefully crafted samples.
-    *   [bop](ortools/bop) Boolean solver based on SAT.
-    *   [util](ortools/util) Utilities needed by the constraint solver
-*   [examples](examples) Root directory for all examples.
-    *   [contrib](examples/contrib) Examples from the community.
-    *   [cpp](examples/cpp) C++ examples.
-    *   [dotnet](examples/dotnet) .Net examples.
-    *   [java](examples/java) Java examples.
-    *   [python](examples/python) Python examples.
-    *   [notebook](examples/notebook) Jupyter/IPython notebooks.
-    *   [flatzinc](examples/flatzinc) FlatZinc examples.
-    *   [tests](examples/tests) Unit tests and bug reports.
-*   [tools](tools) Delivery Tools (e.g. Windows GNU binaries, scripts, release dockers)
-
-## Installation
-
-This software suite has been tested under:
-
-*   Ubuntu 18.04 LTS and up (64-bit);
-*   Apple macOS Mojave with Xcode 9.x (64-bit);
-*   Microsoft Windows with Visual Studio 2022 (64-bit).
-
-OR-Tools currently builds with a Makefile, but also provides Bazel and CMake
-support.
-
-For installation instructions (both source and binary), please visit
-https://developers.google.com/optimization/introduction/installing.
-
-### Build from source using Make (legacy)
-
-We provide a Make based build.<br>Please check the
-[Make build instructions](makefiles/README.md).
-
-### Build from source using CMake
-
-We provide a CMake based build.<br>Please check the
-[CMake build instructions](cmake/README.md).
-
-### Build from source using Bazel
-
-We provide a Bazel based build.<br>Please check the
-[Bazel build instructions](bazel/README.md).
-
-## Quick Start
-
-The best way to learn how to use OR-Tools is to follow the tutorials in our
-developer guide:
-
-https://developers.google.com/optimization/introduction/get_started
-
-If you want to learn from code examples, take a look at the examples in the
-[examples](examples) directory.
-
-## JavaScript workflow
-
-You can build and serve the WebAssembly-based demos with npm. A full build looks like:
-
+```sh
+npm install ortools-cpsat-wasm
 ```
+
+The published package exposes the library bundle under `build/javascript/lib`.
+
+## Build
+
+```sh
 npm install
-npm run build:wasm
-npm run dev   # or: npm run build && npm run preview
+npm run build
+npm run preview
 ```
 
-`npm run build:wasm` bootstraps the emsdk, configures CMake, and rebuilds the
-`cp_sat_runtime` WebAssembly target (including the generated `cp_sat_runtime.d.ts`). The
-high-level API surface lives in `javascript/lib/cp_sat_api.ts`, and Vite builds that entry via
-`vite.lib.config.ts`, emitting both the library (`build/javascript/lib/cp_sat_api.js`) and the worker bundle
-while the `cp_sat_runtime.*` artifacts remain under `build/javascript/wasm` so both the dev server
-and downstream consumers point at a single runtime location.
+`npm run build` runs the full pipeline: Emscripten/CMake builds the low-level
+CP-SAT WebAssembly runtime, Vite builds the package bundle, and Vite builds the
+static demo site.
 
-The frontend is bundled via Vite (see `vite.site.config.ts`). All `.ts` entrypoints
-under `javascript/site` are compiled and emitted into `build/javascript/site`, so individual
-HTML pages no longer need to include separate `<script>` tags for the Emscripten
-glue and our handwritten APIs.
+## npm scripts
 
-### npm scripts
+- `npm run build:wasm` rebuilds the `cp_sat_runtime` wasm/js bundle via emsdk + CMake.
+- `npm run build:lib` regenerates SAT parameter types, type-checks with `tsc`, and builds the library bundle with `vite.lib.config.ts`.
+- `npm run sync:lib-assets-to-site` clears `javascript/site/public/assets` and copies in the current library runtime assets from `build/javascript/lib/assets`.
+- `npm run build:site` syncs the library assets, then builds the demo site with `vite.site.config.ts`.
+- `npm run dev` / `npm run start` builds the library, syncs runtime assets into the demo site, and launches the Vite dev server.
+- `npm run build` runs `build:wasm`, `build:lib`, and `build:site`.
+- `npm run preview` serves the already-built Vite site from `build/javascript/site`.
+- `npm run clean` removes the entire `build/` tree.
+- `npm run pack:lib` rebuilds the library bundle and writes an npm tarball into `build/javascript/lib`.
 
-- `npm run build:wasm` — rebuilds the `cp_sat_runtime` wasm/js bundle via emsdk + CMake (this is the low-level solver runtime that `cp_sat_api.ts` consumes).
-- `npm run dev` / `npm run start` — launches the Vite dev server (requires a prior `build:wasm` so the wasm artifacts exist).
-- `npm run build` — runs `build:wasm` followed by `build:vite`, leaving the wasm runtime under `build/javascript/wasm`, the library bundles under `build/javascript/lib`, and the site under `build/javascript/site`.
-- `npm run build:vite` — runs Vite twice: once with the site config (`vite.site.config.ts`) and again with the library config (`vite.lib.config.ts`), so site and library bundles land under `build/javascript/site` and `build/javascript/lib`.
-- `npm run preview` — serves the already-built Vite site from `build/javascript/site`.
-- `npm run clean` — removes the entire `build/` tree, covering both the wasm outputs and the bundled site.
-- `npm run pack:lib` — rebuilds just the `build/javascript/lib` bundle and runs `npm pack`, leaving the `.tgz` in `build/javascript/lib`.
+## Project layout
 
-### Linking the demo site to the local package
+- `javascript/lib` contains the TypeScript package API and worker bridge.
+- `javascript/site` contains the demo pages.
+- `javascript/site/public/assets` contains generated runtime assets copied from the latest library build.
+- `javascript/cp_sat_api.cc` contains the C++ binding layer compiled into WebAssembly.
+- `scripts/embed_proto.cmake` embeds CP-SAT proto schemas into the runtime.
+- `scripts/generate_sat_parameters_types.mjs` generates TypeScript SAT parameter definitions.
+- `vite.lib.config.ts` builds the distributable JS package.
+- `vite.site.config.ts` builds the demo site.
 
-When you want the Vite site to consume the freshly built `ortools-cpsat-wasm` package exactly like an external project, run `npm run link:site`. That script performs both `npm link` from the repo root and `npm link ortools-cpsat-wasm` inside `javascript/site`, matching what you’d do manually.
+## Demos
 
-`npm run dev`, `npm run start`, and `npm run build:site` already execute `npm run link:site` as part of their flows, so the site automatically resolves `ortools-cpsat-wasm` from `node_modules` before bundling.
+- The Magic Square and Sports Scheduling pages let users pick a worker count; that value becomes `SatParameters.num_search_workers`, clamped to `min(navigator.hardwareConcurrency, 8)`.
+- Each demo exposes a "Use worker bridge" checkbox. When enabled, solves run through `cpsat_worker.ts`, which loads the CP-SAT runtime in a dedicated JavaScript worker and keeps the browser's main thread free for rendering, form input, progress UI, and cancellation.
+- When the worker bridge is disabled, the solve runs directly on the main thread. The solver still works, but long solves can freeze the page until CP-SAT returns because the browser cannot repaint or process UI events while the synchronous WebAssembly call is running.
+- The WebAssembly build caps the pthread pool at 8 and scales down on low-core devices.
+- Schema Viewer imports the bundled `CpSat` API automatically; no extra script ordering is required.
 
-### Running the demos
+## JSPI and Asyncify
 
-- The Magic Square and Sports Scheduling pages let you pick a worker count; that value becomes `SatParameters.num_search_workers`, but the UI clamps it to `min(navigator.hardwareConcurrency, 8)` so it never exceeds the pthread pool size baked into the wasm build.
-- Each demo exposes a “Use worker bridge” checkbox (enabled by default). When it is checked, solves are routed through `cpsat_worker.ts`, keeping the main thread responsive even though the `cp_sat_runtime` wasm solver uses WebAssembly threads. Clear the checkbox to run solves directly on the main thread when workers are unavailable via the `cp_sat_api` bridge.
-- The WebAssembly build caps the pthread pool at 8 and scales down on low-core devices (`-sPTHREAD_POOL_SIZE=Math.max(1, Math.min(8, navigator.hardwareConcurrency || 8))`).
-- Schema Viewer now imports the bundled `CpSat` API automatically; no extra `<script>` ordering is required in the HTML.
+The package ships two CP-SAT runtime builds:
 
-## Documentation
+- `cp_sat_runtime` uses Emscripten JSPI support (`-sJSPI=2`) for browsers that expose `WebAssembly.promising`.
+- `cp_sat_runtime_asyncify` uses classic Asyncify stack rewriting for browsers without JSPI support.
 
-The complete documentation for OR-Tools is available at:
-https://developers.google.com/optimization/
+`javascript/lib/cp_sat_module_loader.ts` chooses the runtime at startup. If
+`WebAssembly.promising` is available, it imports the JSPI runtime, which is the
+more modern and faster path. Otherwise it falls back to the Asyncify runtime.
+Both paths expose the same TypeScript API, so application code does not need to
+choose one manually. Current browser support for JSPI is tracked at
+[caniuse.com/wf-wasm-jspi](https://caniuse.com/wf-wasm-jspi).
 
-## Contributing
+## Upstream OR-Tools
 
-The [CONTRIBUTING.md](CONTRIBUTING.md) file contains instructions on how to
-submit the Contributor License Agreement before sending any pull requests (PRs).
-Of course, if you're new to the project, it's usually best to discuss any
-proposals and reach consensus before sending your first PR.
+This repository vendors Google OR-Tools and adds a JavaScript/WebAssembly
+packaging layer on top. OR-Tools is Google's open-source suite for solving
+combinatorial optimization problems, including CP-SAT, linear programming,
+routing, bin packing, and graph algorithms.
+
+Upstream project:
+
+- Source: [github.com/google/or-tools](https://github.com/google/or-tools)
+- Documentation: [developers.google.com/optimization](https://developers.google.com/optimization/)
+- License: Apache License 2.0
 
 ## License
 
-The OR-Tools software suite is licensed under the terms of the Apache License 2.0.
-<br>See [LICENSE](LICENSE) for more information.
+This project is licensed under the Apache License 2.0. See [LICENSE](LICENSE).

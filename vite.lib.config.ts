@@ -28,8 +28,14 @@ const patchEmscriptenWasmPlugin = () => ({
 
       if (modifiedCode.includes('new Worker')) {
         modifiedCode = modifiedCode.replace(
-          /new\s+Worker\s*\(\s*([^,]+),\s*\{/g,
-          'new Worker($1, /* @vite-ignore */ {'
+          /new\s+Worker\s*\(\s*(\/\*\s*@vite-ignore\s*\*\/\s*)?(new\s+URL\s*\(\s*["'][^"']+["']\s*,\s*import\.meta\.url\s*\))\s*,\s*(\/\*\s*@vite-ignore\s*\*\/\s*)?\{/g,
+          (_match, urlIgnore, workerUrl, optionsIgnore) =>
+            `new Worker(${urlIgnore ?? '/* @vite-ignore */ '}${workerUrl}, ${optionsIgnore ?? '/* @vite-ignore */ '}{`
+        );
+        modifiedCode = modifiedCode.replace(
+          /new\s+Worker\s*\(\s*([A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)?)\s*,\s*(\/\*\s*@vite-ignore\s*\*\/\s*)?\{/g,
+          (_match, workerUrl, existingIgnore) =>
+            `new Worker(${workerUrl}, ${existingIgnore ?? '/* @vite-ignore */ '}{`
         );
       }
 

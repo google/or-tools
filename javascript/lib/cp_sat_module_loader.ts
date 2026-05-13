@@ -17,9 +17,9 @@ function selectRuntimeFlavor(): RuntimeFlavor {
   }
   selectedFlavor = isJspiSupported() ? 'jspi' : 'asyncify';
   if (selectedFlavor === 'jspi') {
-    console.log('🚀 JSPI is supported! Using ASYNCIFY=2 (High Performance).');
+    console.log('JSPI is supported. Using ASYNCIFY=2.');
   } else {
-    console.log('🐢 JSPI not found. Falling back to ASYNCIFY=1 (Stack Rewriting).');
+    console.log('JSPI not found. Falling back to ASYNCIFY=1.');
   }
   return selectedFlavor;
 }
