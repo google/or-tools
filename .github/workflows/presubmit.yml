@@ -135,8 +135,8 @@ jobs:
         -DUSE_GLPK=OFF
         -DUSE_HIGHS=OFF
         -DUSE_SCIP=OFF
-        -DCMAKE_C_COMPILER_LAUNCHER=sccache
-        -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+        -DCMAKE_C_COMPILER_LAUNCHER=${{env.SCCACHE_PATH}}
+        -DCMAKE_CXX_COMPILER_LAUNCHER=${{env.SCCACHE_PATH}}
     - name: Build
       env:
         SCCACHE_GCS_KEY_PATH: ${{env.GOOGLE_GHA_CREDS_PATH}}
