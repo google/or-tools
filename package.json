@@ -54,7 +54,7 @@
     "test:fixture:rollup:serve-static": "npm --prefix tests/fixtures/rollup-basic run serve-static",
     "test:fixture:rollup": "npm run test:fixture:rollup:build && FIXTURE_GROUP=rollup playwright test --config tests/playwright.config.ts --project=rollup-static-chromium --project=rollup-static-firefox",
     "test:fixture:deno:install": "node tests/fixtures/install-packed-package.mjs deno-basic",
-    "test:fixture:deno": "npm run test:fixture:deno:install && deno test --no-check --no-lock --node-modules-dir=auto --allow-read tests/fixtures/deno-basic/basic.test.ts",
+    "test:fixture:deno": "npm run test:fixture:deno:install && npm --prefix tests/fixtures/deno-basic run test",
     "test:fixtures": "npm run test:fixture:vite && npm run test:fixture:webpack && npm run test:fixture:rollup && npm run test:fixture:deno"
   },
   "files": [
