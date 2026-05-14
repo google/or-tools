@@ -21,7 +21,9 @@ Currently supported solvers: CP-SAT.
 
 Verified with:
 
-- Vite in browser contexts
+- Vite 7 in browser contexts
+- Webpack 5 in browser contexts
+- Deno runtime solves
 
 This package builds a browser-oriented CP-SAT runtime from Google OR-Tools and
 wraps it with a TypeScript API, worker bridge, generated SAT parameter types,
@@ -29,13 +31,6 @@ and Vite-powered demos.
 
 The upstream solver source is vendored from
 [google/or-tools](https://github.com/google/or-tools).
-
-Browser deployments that use threaded solving must serve the page with cross-origin
-isolation headers:
-
-`Cross-Origin-Opener-Policy: same-origin`
-
-`Cross-Origin-Embedder-Policy: require-corp`
 
 ## What is included
 
@@ -59,13 +54,16 @@ Then import it normally:
 import { CpSat } from 'or-tools-wasm';
 ```
 
-This flow is verified with Vite. The worker script and WebAssembly files are
-emitted automatically from the package import, with no manual copying into
-`public/` or `static/` required.
+This flow is verified with Vite and Webpack. The worker script and WebAssembly
+files are emitted automatically from the package import, with no manual copying
+into `public/` or `static/` required.
 
-For Vite dev mode, exclude `or-tools-wasm` from dependency optimization so Vite
-handles the package's worker and WebAssembly URLs as source assets, and include
-`protobufjs` so Vite prebundles its CommonJS entry:
+## Vite configuration
+
+For Vite apps, keep `or-tools-wasm` out of dependency optimization so Vite
+handles the worker and WebAssembly URLs through its normal asset pipeline.
+`protobufjs` is CommonJS, so include it in dependency optimization. The worker
+runtime also needs ES module worker output:
 
 ```ts
 // vite.config.ts
@@ -79,31 +77,11 @@ export default defineConfig({
   worker: {
     format: 'es',
   },
-  server: {
-    headers: {
-      'Cross-Origin-Opener-Policy': 'same-origin',
-      'Cross-Origin-Embedder-Policy': 'require-corp',
-    },
-  },
-  preview: {
-    headers: {
-      'Cross-Origin-Opener-Policy': 'same-origin',
-      'Cross-Origin-Embedder-Policy': 'require-corp',
-    },
-  },
 });
 ```
 
-Other modern bundlers may also work if they support module workers and WebAssembly
-asset emission, but that is not yet officially verified.
-
-If you use the worker bridge, the app must still be served with cross-origin
-isolation headers:
-
-```http
-Cross-Origin-Opener-Policy: same-origin
-Cross-Origin-Embedder-Policy: require-corp
-```
+Other modern bundlers may also work if they support module workers and
+WebAssembly asset emission, but that is not yet officially verified.
 
 ## Usage
 
@@ -194,6 +172,28 @@ Cross-Origin-Embedder-Policy: require-corp
 Without these headers, browsers may block the `SharedArrayBuffer` APIs required
 by Emscripten pthreads, and solving can fail during WebAssembly runtime or
 worker startup.
+
+For Vite dev and preview servers, set the headers in `vite.config.ts`:
+
+```ts
+// vite.config.ts
+import { defineConfig } from 'vite';
+
+export default defineConfig({
+  server: {
+    headers: {
+      'Cross-Origin-Opener-Policy': 'same-origin',
+      'Cross-Origin-Embedder-Policy': 'require-corp',
+    },
+  },
+  preview: {
+    headers: {
+      'Cross-Origin-Opener-Policy': 'same-origin',
+      'Cross-Origin-Embedder-Policy': 'require-corp',
+    },
+  },
+});
+```
 
 ## npm scripts
 

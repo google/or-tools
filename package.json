@@ -17,7 +17,7 @@
   "exports": {
     ".": {
       "types": "./build/javascript/lib/cp_sat_api.d.ts",
-      "browser": "./javascript/lib/index.ts",
+      "browser": "./build/javascript/browser/index.js",
       "import": "./build/javascript/lib/cp_sat_api.js",
       "default": "./build/javascript/lib/cp_sat_api.js"
     },
@@ -30,7 +30,7 @@
     "build:wasm": "bash -lc 'scripts/ensure-emsdk.sh && source ./emsdk/emsdk_env.sh && cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE=$EMSDK/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake ${CMAKE_ARGS} && cmake --build build --target cp_sat_runtime_site --parallel ${CMAKE_BUILD_PARALLEL_LEVEL:-2}'",
     "gen:sat-parameters": "node scripts/generate_sat_parameters_types.mjs",
     "patch:wasm-runtime": "node scripts/patch_emscripten_runtime.mjs",
-    "build:lib": "npm run build:wasm && npm run patch:wasm-runtime && npm run gen:sat-parameters && tsc && vite build --config vite.lib.config.ts",
+    "build:lib": "npm run build:wasm && npm run patch:wasm-runtime && npm run gen:sat-parameters && tsc && vite build --config vite.lib.config.ts && node scripts/build_browser_sources.mjs",
     "build:site": "vite build --config vite.site.config.ts",
     "build": "npm run build:lib && npm run build:site",
     "dev": "npm run build:lib && vite --config vite.site.config.ts dev --host",
@@ -58,6 +58,7 @@
     "build/javascript/lib/cp_sat_api.d.ts",
     "build/javascript/lib/cp_sat_api.js",
     "build/javascript/lib/cp_sat_api.js.map",
+    "build/javascript/browser",
     "build/javascript/wasm",
     "javascript/lib"
   ],
@@ -67,6 +68,7 @@
   "devDependencies": {
     "@playwright/test": "^1.60.0",
     "@types/node": "^20.14.15",
+    "esbuild": "^0.27.7",
     "typescript": "^5.9.3",
     "vite": "^7.2.4",
     "vite-plugin-dts": "^4.5.4",

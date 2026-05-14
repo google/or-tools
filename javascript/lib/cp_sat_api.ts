@@ -22,7 +22,7 @@ export type CpSatApi = {
   validate(model: Uint8Array): Promise<{ ok: boolean; message: string }>;
   getSchemas(): Promise<SchemaPair>;
   createModel(model: Record<string, unknown>): Promise<Uint8Array>;
-  loadModule(): Promise<MainModule>;
+  loadModule(): Promise<unknown>;
   setWorkerBridgeEnabled(enabled: boolean): void;
   isWorkerBridgeEnabled(): boolean;
   cancelSolve(): Promise<void>;
@@ -79,8 +79,8 @@ function ensureWorker(): Worker {
   if (worker) {
     return worker;
   }
-  const workerUrl = new URL('./cpsat_worker.ts', import.meta.url);
-  const instance = new Worker(new URL('./cpsat_worker.ts', import.meta.url), { type: 'module' });
+  const workerUrl = new URL('./cpsat_worker.js', import.meta.url);
+  const instance = new Worker(new URL('./cpsat_worker.js', import.meta.url), { type: 'module' });
   worker = instance;
   workerReadyPromise = new Promise<void>((resolve, reject) => {
     instance.onmessage = (event: MessageEvent<WorkerResponse>) => {

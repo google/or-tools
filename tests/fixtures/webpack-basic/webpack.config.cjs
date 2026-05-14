@@ -42,9 +42,6 @@ module.exports = {
     }),
   ],
   resolve: {
-    extensionAlias: {
-      '.js': ['.js', '.ts'],
-    },
     extensions: ['.ts', '.js'],
   },
   devServer: {
