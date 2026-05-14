@@ -1,39 +1,63 @@
 {
   "name": "or-tools-wasm",
   "private": false,
-  "version": "0.5.0",
+  "version": "0.6.0",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Axelwickm/or-tools-wasm.git"
+  },
+  "homepage": "https://github.com/Axelwickm/or-tools-wasm",
+  "bugs": {
+    "url": "https://github.com/Axelwickm/or-tools-wasm/issues"
+  },
   "type": "module",
   "main": "./build/javascript/lib/cp_sat_api.js",
   "types": "./build/javascript/lib/cp_sat_api.d.ts",
   "exports": {
     ".": {
       "types": "./build/javascript/lib/cp_sat_api.d.ts",
+      "browser": "./javascript/lib/index.ts",
       "import": "./build/javascript/lib/cp_sat_api.js",
       "default": "./build/javascript/lib/cp_sat_api.js"
     },
     "./build/javascript/lib/*": "./build/javascript/lib/*"
   },
+  "imports": {
+    "#internal-wasm/*": "./build/javascript/wasm/*"
+  },
   "scripts": {
     "build:wasm": "bash -lc 'scripts/ensure-emsdk.sh && source ./emsdk/emsdk_env.sh && cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE=$EMSDK/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake ${CMAKE_ARGS} && cmake --build build --target cp_sat_runtime_site -j'",
     "gen:sat-parameters": "node scripts/generate_sat_parameters_types.mjs",
-    "build:lib": "npm run gen:sat-parameters && tsc && vite build --config vite.lib.config.ts",
+    "build:lib": "npm run build:wasm && npm run gen:sat-parameters && tsc && vite build --config vite.lib.config.ts",
     "build:site": "vite build --config vite.site.config.ts",
-    "build": "npm run build:wasm && npm run build:lib && npm run build:site",
+    "build": "npm run build:lib && npm run build:site",
     "dev": "npm run build:lib && vite --config vite.site.config.ts dev --host",
     "pack:lib": "npm run build:lib && npm pack --pack-destination build/javascript/lib",
     "clean": "rm -rf build",
     "package": "npm run build && npm pack",
     "start": "npm run dev",
-    "preview": "vite --config vite.site.config.ts preview --host"
+    "preview": "vite --config vite.site.config.ts preview --host",
+    "test:fixture:vite:install": "node tests/fixtures/install-packed-package.mjs vite-basic",
+    "test:fixture:vite:build": "npm run test:fixture:vite:install && npm --prefix tests/fixtures/vite-basic run build",
+    "test:fixture:vite:serve-dev": "npm run test:fixture:vite:install && npm --prefix tests/fixtures/vite-basic run dev -- --host 127.0.0.1 --port 4174",
+    "test:fixture:vite:serve-static": "npm run test:fixture:vite:build && npm --prefix tests/fixtures/vite-basic run preview -- --host 127.0.0.1 --port 4175",
+    "test:fixture:vite": "playwright test --config tests/playwright.config.ts"
   },
   "files": [
-    "build/javascript/lib"
+    "build/javascript/lib/assets",
+    "build/javascript/lib/chunks",
+    "build/javascript/lib/cp_sat_api.d.ts",
+    "build/javascript/lib/cp_sat_api.js",
+    "build/javascript/lib/cp_sat_api.js.map",
+    "build/javascript/wasm",
+    "javascript/lib"
   ],
-  "optionalDependencies": {
+  "dependencies": {
     "protobufjs": "^7.5.4"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
     "@types/node": "^20.14.15",
     "typescript": "^5.9.3",
     "vite": "^7.2.4",

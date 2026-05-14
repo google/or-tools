@@ -1,0 +1,57 @@
+name: Package
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  package:
+    name: Build npm package
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Cache Emscripten and CMake build
+        uses: actions/cache@v4
+        with:
+          path: |
+            emsdk/downloads
+            emsdk/node
+            emsdk/upstream
+            emsdk/.emscripten
+            build
+          key: wasm-build-${{ runner.os }}-${{ hashFiles('package-lock.json', 'CMakeLists.txt', 'cmake/**/*.cmake', 'cmake/**/*.txt', 'patches/**', 'scripts/ensure-emsdk.sh', 'scripts/embed_proto.cmake', 'javascript/cp_sat_api.cc') }}
+          restore-keys: |
+            wasm-build-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install native build tools
+        run: sudo apt-get update && sudo apt-get install -y cmake ninja-build
+
+      - name: Build and pack library
+        run: npm run pack:lib
+
+      - name: Upload package artifact
+        if: ${{ !env.ACT }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-package
+          path: build/javascript/lib/*.tgz
+          if-no-files-found: error
+          retention-days: 7

@@ -10,13 +10,13 @@
     "lib": ["ES2020", "DOM", "DOM.Iterable", "WebWorker"],
     "paths": {
       "or-tools-wasm": ["javascript/lib/index.ts"],
-      "@internal-wasm/*": ["build/javascript/wasm/*"]
+      "@internal-wasm/*": ["build/javascript/wasm/*"],
+      "#internal-wasm/*": ["build/javascript/wasm/*"]
     }
   },
   "include": [
     "javascript/lib/**/*.ts",
     "javascript/lib/**/*.d.ts",
-    "javascript/site/**/*.ts",
     "build/javascript/wasm/**/*.d.ts"
   ]
 }

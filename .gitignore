@@ -1,7 +1,7 @@
 Makefile.local
 Makefile.local~
 
-/node_modules/
+**/node_modules/
 /build_make/
 /install_make/
 /dependencies/

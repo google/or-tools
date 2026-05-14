@@ -1,8 +1,8 @@
-import type { MainModule } from '@internal-wasm/cp_sat_runtime.js';
+import type { MainModule } from '#internal-wasm/cp_sat_runtime.js';
 import { loadCpSat } from './cp_sat_module_loader.js';
-import workerScriptUrl from './cpsat_worker.js?worker&url';
 import type { WorkerRequest, WorkerResponse } from './cpsat_worker_types.js';
 import type { SatParameters } from './generated/sat_parameters.js';
+import * as protobufModule from 'protobufjs';
 
 type SchemaPair = {
   cp_model: string;
@@ -33,7 +33,6 @@ export type CpSatModelInstance = Uint8Array;
 const isBrowserMainThread = typeof window !== 'undefined' && typeof document !== 'undefined';
 const workerCapable = typeof Worker !== 'undefined';
 const workerBridgeAvailable = isBrowserMainThread && workerCapable;
-const workerEntryUrl = new URL(workerScriptUrl, import.meta.url);
 let worker: Worker | null = null;
 let workerReadyPromise: Promise<void> | null = null;
 const pendingWorkerRequests = new Map<
@@ -79,7 +78,8 @@ function ensureWorker(): Worker {
   if (worker) {
     return worker;
   }
-  const instance = new Worker(workerEntryUrl, { type: 'module' });
+  const workerUrl = new URL('./cpsat_worker.ts', import.meta.url);
+  const instance = new Worker(new URL('./cpsat_worker.ts', import.meta.url), { type: 'module' });
   worker = instance;
   workerReadyPromise = new Promise<void>((resolve, reject) => {
     instance.onmessage = (event: MessageEvent<WorkerResponse>) => {
@@ -105,8 +105,10 @@ function ensureWorker(): Worker {
       }
     };
     instance.onerror = (event: ErrorEvent) => {
-      const error =
-        event.error ?? new Error(event.message || 'cpsat_worker error');
+      const detail = event.error instanceof Error
+        ? event.error.message
+        : event.message || 'The browser blocked or failed to load the worker module.';
+      const error = new Error(`CP-SAT worker failed to load from ${workerUrl.href}: ${detail}`);
       reject(error);
       terminateWorker(error.message);
     };
@@ -154,61 +156,42 @@ function loadModule() {
 }
 
 
-const schemaPromise: Promise<SchemaPair> = (async () => {
-  if (shouldUseWorkerBridge()) {
-    // 1. Ask the worker for schemas
-    const response = await postWorkerRequest<Extract<WorkerResponse, { type: 'schemaResult' }>>({
-      type: 'getSchemas',
-      id: nextWorkerRequestId++,
-    });
-    return response.schemas;
-  } else {
-    // 2. Fallback to local (Direct) loading only if bridge is disabled
-    const Module = await loadModule();
-    return {
-      cp_model: Module.ccall('get_cp_model_schema', 'string', [], []),
-      sat_parameters: Module.ccall('get_sat_parameters_schema', 'string', [], []),
-    };
-  }
-})();
+let schemaPromise: Promise<SchemaPair> | null = null;
 
-type ProtobufModule = typeof import('protobufjs');
+function getSchemas() {
+  if (!schemaPromise) {
+    schemaPromise = (async () => {
+      if (shouldUseWorkerBridge()) {
+        const response = await postWorkerRequest<Extract<WorkerResponse, { type: 'schemaResult' }>>({
+          type: 'getSchemas',
+          id: nextWorkerRequestId++,
+        });
+        return response.schemas;
+      }
+
+      const Module = await loadModule();
+      return {
+        cp_model: Module.ccall('get_cp_model_schema', 'string', [], []),
+        sat_parameters: Module.ccall('get_sat_parameters_schema', 'string', [], []),
+      };
+    })();
+  }
+  return schemaPromise;
+}
+
 type ProtobufRoot = import('protobufjs').Root;
 type CpModelType = import('protobufjs').Type;
 type CpSolverResponseType = import('protobufjs').Type;
 
-let protobufModulePromise: Promise<ProtobufModule> | null = null;
 let protobufRootPromise: Promise<ProtobufRoot> | null = null;
 let cpModelTypePromise: Promise<CpModelType> | null = null;
 let cpSolverResponseTypePromise: Promise<CpSolverResponseType> | null = null;
 let satParametersTypePromise: Promise<import('protobufjs').Type> | null = null;
 
-function createMissingDependencyError(feature: string) {
-  return new Error(
-    `CpSat.${feature} requires the optional dependency "protobufjs". Install it with \`npm install protobufjs\` and rebuild.`,
-  );
-}
-
-async function loadProtobufModule(feature: string): Promise<ProtobufModule> {
-  if (!protobufModulePromise) {
-    protobufModulePromise = import('protobufjs').catch((error) => {
-      protobufModulePromise = null;
-      throw createMissingDependencyError(feature);
-    });
-  }
-  try {
-    return await protobufModulePromise;
-  } catch (error) {
-    protobufModulePromise = null;
-    throw error;
-  }
-}
-
 async function resolveProtobufRoot(feature: string): Promise<ProtobufRoot> {
   if (!protobufRootPromise) {
     protobufRootPromise = (async () => {
-      const schemas = await schemaPromise;
-      const protobufModule = await loadProtobufModule(feature);
+      const schemas = await getSchemas();
       const parsed = protobufModule.parse(schemas.cp_model);
       return parsed.root;
     })();
@@ -262,8 +245,7 @@ async function resolveCpSolverResponseType(): Promise<CpSolverResponseType> {
 async function resolveSatParametersType(): Promise<import('protobufjs').Type> {
   if (!satParametersTypePromise) {
     satParametersTypePromise = (async () => {
-      const schemas = await schemaPromise;
-      const protobufModule = await loadProtobufModule('solve');
+      const schemas = await getSchemas();
       const parsed = protobufModule.parse(schemas.sat_parameters);
       const root = parsed.root;
       const paramsType = root.lookupType('operations_research.sat.SatParameters');
@@ -477,7 +459,7 @@ export const CpSat: CpSatApi = {
   solve: (model, params = null) => solve(model, params),
   solveRaw: (model, params = null) => solveRaw(model, params),
   validate: (model) => (shouldUseWorkerBridge() ? validateViaWorker(model) : validateDirect(model)),
-  getSchemas: () => schemaPromise,
+  getSchemas,
   createModel,
   loadModule,
   cancelSolve,
@@ -489,5 +471,4 @@ if (isBrowserMainThread) {
   (window as Window & { CpSat?: CpSatApi }).CpSat = CpSat;
 }
 
-export type { WorkerRequest, WorkerResponse } from './cpsat_worker_types.js';
 export default CpSat;

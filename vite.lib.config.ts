@@ -1,34 +1,32 @@
 import { defineConfig } from 'vite';
+import type { Plugin } from 'vite';
 import path from 'node:path';
-import topLevelAwait from "vite-plugin-top-level-await";
+import { readFileSync } from 'node:fs';
+import topLevelAwait from 'vite-plugin-top-level-await';
 import dts from 'vite-plugin-dts';
 
 const rootDir = __dirname;
 const libRoot = path.resolve(__dirname, 'javascript/lib');
 const wasmBuildDir = path.resolve(__dirname, 'build/javascript/wasm');
 const outDir = path.resolve(__dirname, 'build/javascript/lib');
+const bundledLoaderPath = path.join(libRoot, 'cp_sat_module_loader.bundled.ts');
 
-
-// vite.lib.config.ts
-const unwrapDataUrlWorkers = (code) =>
+const unwrapDataUrlWorkers = (code: string) =>
   code.replace(
     /new\s+URL\s*\(\s*(["'])(data:text\/javascript;base64,[^"']+)\1\s*,\s*import\.meta\.url\s*\)/g,
-    (_match, quote, dataUrl) => `${quote}${dataUrl}${quote}`
+    (_match: string, quote: string, dataUrl: string) => `${quote}${dataUrl}${quote}`
   );
 
-const patchEmscriptenWasmPlugin = () => ({
+const patchEmscriptenWasmPlugin = (): Plugin => ({
   name: 'patch-emscripten-no-inline',
   transform(code, id) {
     if (id.includes('cp_sat_runtime') && id.endsWith('.js')) {
       let modifiedCode = code;
 
-      // 1. WASM Fix: Keep WASM external
-      // Matches: new URL('file.wasm', ...)
       if (modifiedCode.includes('.wasm')) {
-        console.log('[patch-emscripten] PATCHING .wasm IN', path.basename(id), "with ?no-inline");
         modifiedCode = modifiedCode.replace(
           /new\s+URL\s*\(\s*['"]([^'"]+\.wasm)['"]\s*,/g,
-          (match, filename) => `new URL("${filename}?no-inline",`
+          (_match: string, filename: string) => `new URL("${filename}?no-inline",`
         );
       }
 
@@ -55,8 +53,8 @@ const patchEmscriptenWasmPlugin = () => ({
       };
     }
   },
-  renderChunk(code, chunk) {
-    if (chunk.fileName.includes('cp_sat_runtime') && code.includes('data:text/javascript;base64,')) {
+  renderChunk(code) {
+    if (code.includes('data:text/javascript;base64,')) {
       return {
         code: unwrapDataUrlWorkers(code),
         map: null,
@@ -65,18 +63,33 @@ const patchEmscriptenWasmPlugin = () => ({
   }
 });
 
+const emitWasmSourceMapsPlugin = (): Plugin => ({
+  name: 'emit-wasm-source-maps',
+  generateBundle() {
+    for (const fileName of ['cp_sat_runtime.wasm.map', 'cp_sat_runtime_asyncify.wasm.map']) {
+      this.emitFile({
+        type: 'asset',
+        fileName: `assets/${fileName}`,
+        source: readFileSync(path.join(wasmBuildDir, fileName)),
+      });
+    }
+  },
+});
+
 export default defineConfig({
   root: rootDir,
   base: './',
   assetsInclude: ['**/*.d.ts'],
   resolve: {
     alias: {
+      './cp_sat_module_loader.js': bundledLoaderPath,
       '@internal-wasm': wasmBuildDir
     }
   },
   plugins: [
     topLevelAwait(),
     patchEmscriptenWasmPlugin(),
+    emitWasmSourceMapsPlugin(),
     dts({
       tsconfigPath: path.resolve(__dirname, 'tsconfig.json'),
       rollupTypes: true,
@@ -91,9 +104,9 @@ export default defineConfig({
     ],
     rollupOptions: {
       output: {
-        sourcemap: true
-      }
-    }
+        assetFileNames: 'assets/[name][extname]',
+      },
+    },
   },
   build: {
     target: 'esnext',
@@ -108,7 +121,7 @@ export default defineConfig({
     sourcemap: true,
     rollupOptions: {
       output: {
-        assetFileNames: 'assets/[name]-[hash][extname]',
+        assetFileNames: 'assets/[name][extname]',
         chunkFileNames: 'chunks/[name]-[hash].js',
       },
       external: ['module', 'worker_threads', 'fs', 'path', 'url'],

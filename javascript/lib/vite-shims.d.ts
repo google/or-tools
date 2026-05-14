@@ -3,6 +3,11 @@ declare module '*.wasm?url' {
   export default src;
 }
 
+declare module '*.wasm?url&no-inline' {
+  const src: string;
+  export default src;
+}
+
 declare module '*.d.ts?url' {
   const src: string;
   export default src;

@@ -1,8 +1,18 @@
 # or-tools-wasm
 
-JavaScript and WebAssembly bindings for the OR-Tools CP-SAT solver.
+Unofficial JavaScript and WebAssembly bindings for the OR-Tools CP-SAT solver.
 
-Currently supported: CP-SAT.
+[GitHub](https://github.com/Axelwickm/or-tools-wasm)
+[npm](https://www.npmjs.com/package/or-tools-wasm)
+[Try Online](https://axelwickman.com/ortools-cpsat-wasm)
+
+[![Package](https://github.com/Axelwickm/or-tools-wasm/actions/workflows/package.yml/badge.svg)](https://github.com/Axelwickm/or-tools-wasm/actions/workflows/package.yml)
+
+Currently supported solvers: CP-SAT.
+
+Verified with:
+
+- Vite in browser contexts
 
 This package builds a browser-oriented CP-SAT runtime from Google OR-Tools and
 wraps it with a TypeScript API, worker bridge, generated SAT parameter types,
@@ -11,9 +21,12 @@ and Vite-powered demos.
 The upstream solver source is vendored from
 [google/or-tools](https://github.com/google/or-tools).
 
-This repository currently vendors OR-Tools 9.14 pre-release sources
-(`Version.txt` reports `OR_TOOLS_MAJOR=9`, `OR_TOOLS_MINOR=14`, and
-`PRE_RELEASE` enabled).
+Browser deployments that use threaded solving must serve the page with cross-origin
+isolation headers:
+
+`Cross-Origin-Opener-Policy: same-origin`
+
+`Cross-Origin-Embedder-Policy: require-corp`
 
 ## What is included
 
@@ -40,6 +53,37 @@ import { CpSat } from 'or-tools-wasm';
 This flow is verified with Vite. The worker script and WebAssembly files are
 emitted automatically from the package import, with no manual copying into
 `public/` or `static/` required.
+
+For Vite dev mode, exclude `or-tools-wasm` from dependency optimization so Vite
+handles the package's worker and WebAssembly URLs as source assets, and include
+`protobufjs` so Vite prebundles its CommonJS entry:
+
+```ts
+// vite.config.ts
+import { defineConfig } from 'vite';
+
+export default defineConfig({
+  optimizeDeps: {
+    include: ['protobufjs'],
+    exclude: ['or-tools-wasm'],
+  },
+  worker: {
+    format: 'es',
+  },
+  server: {
+    headers: {
+      'Cross-Origin-Opener-Policy': 'same-origin',
+      'Cross-Origin-Embedder-Policy': 'require-corp',
+    },
+  },
+  preview: {
+    headers: {
+      'Cross-Origin-Opener-Policy': 'same-origin',
+      'Cross-Origin-Embedder-Policy': 'require-corp',
+    },
+  },
+});
+```
 
 Other modern bundlers may also work if they support module workers and WebAssembly
 asset emission, but that is not yet officially verified.
@@ -147,6 +191,7 @@ worker startup.
 ## Demos
 
 - The Magic Square and Sports Scheduling pages let users pick a worker count; that value becomes `SatParameters.num_search_workers`, clamped to `min(navigator.hardwareConcurrency, 8)`.
+- Higher worker counts can significantly increase startup time because the browser needs to initialize more threaded runtime workers before solving begins.
 - Each demo exposes a "Use worker bridge" checkbox. When enabled, solves run through `cpsat_worker.ts`, which loads the CP-SAT runtime in a dedicated JavaScript worker and keeps the browser's main thread free for rendering, form input, progress UI, and cancellation.
 - When the worker bridge is disabled, the solve runs directly on the main thread. The solver still works, but long solves can freeze the page until CP-SAT returns because the browser cannot repaint or process UI events while the synchronous WebAssembly call is running.
 - The WebAssembly build caps the pthread pool at 8 and scales down on low-core devices.

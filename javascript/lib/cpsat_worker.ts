@@ -1,6 +1,6 @@
 /// <reference lib="webworker" />
 
-import type { MainModule } from '@internal-wasm/cp_sat_runtime.js';
+import type { MainModule } from '#internal-wasm/cp_sat_runtime.js';
 import { loadCpSat } from './cp_sat_module_loader.js';
 import type { WorkerRequest, WorkerResponse } from './cpsat_worker_types.js';
 
