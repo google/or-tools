@@ -6,6 +6,6 @@
     "test": "deno test --no-check --no-lock --node-modules-dir=manual --allow-read basic.test.ts"
   },
   "dependencies": {
-    "or-tools-wasm": "file:../../../build/javascript/lib/or-tools-wasm-0.6.0.tgz"
+    "or-tools-wasm": "file:../../../build/javascript/lib/or-tools-wasm-0.6.1.tgz"
   }
 }
