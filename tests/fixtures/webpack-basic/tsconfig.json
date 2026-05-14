@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "allowImportingTsExtensions": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "noEmit": true,
+    "strict": true,
+    "target": "es2022",
+    "types": []
+  },
+  "include": ["src/**/*.ts", "../browser-basic-src/**/*.ts"]
+}

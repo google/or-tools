@@ -1,0 +1,22 @@
+{
+  "name": "or-tools-wasm-webpack-basic-fixture",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "webpack --config webpack.config.cjs",
+    "serve": "webpack serve --config webpack.config.cjs --host 127.0.0.1 --port 4176",
+    "serve-static": "node static-server.mjs"
+  },
+  "dependencies": {
+    "or-tools-wasm": "file:../../../build/javascript/lib/or-tools-wasm-0.6.0.tgz",
+    "protobufjs": "^7.5.4"
+  },
+  "devDependencies": {
+    "html-webpack-plugin": "^5.6.5",
+    "ts-loader": "^9.5.4",
+    "typescript": "^5.9.3",
+    "webpack": "^5.104.1",
+    "webpack-cli": "^6.0.1",
+    "webpack-dev-server": "^5.2.2"
+  }
+}

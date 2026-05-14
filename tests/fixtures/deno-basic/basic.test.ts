@@ -6,9 +6,9 @@ function assert(condition: unknown, message: string): asserts condition {
   }
 }
 
-Deno.test('solves the README model in Deno', async () => {
-  assert(CpSat.isWorkerBridgeEnabled() === false, 'worker bridge should be disabled in Deno');
-
+async function runCase(mode: 'direct' | 'worker') {
+  CpSat.setWorkerBridgeEnabled(mode === 'worker');
+  assert(CpSat.isWorkerBridgeEnabled() === (mode === 'worker'), `worker bridge state mismatch for ${mode}`);
   const modelBytes = await CpSat.createModel({
     name: 'choose_one',
     variables: [
@@ -31,7 +31,7 @@ Deno.test('solves the README model in Deno', async () => {
   });
 
   const validation = await CpSat.validate(modelBytes);
-  assert(validation.ok, validation.message);
+  assert(validation.ok, `${mode} validation failed: ${validation.message}`);
 
   const result = await CpSat.solve(modelBytes, {
     numSearchWorkers: 1,
@@ -39,6 +39,11 @@ Deno.test('solves the README model in Deno', async () => {
 
   assert(
     result.response?.status === 'OPTIMAL' || result.response?.status === 'FEASIBLE',
-    `unexpected solver status: ${String(result.response?.status)}`,
+    `${mode} unexpected solver status: ${String(result.response?.status)}`,
   );
+}
+
+Deno.test('solves the README model in Deno with and without the worker bridge', async () => {
+  await runCase('direct');
+  await runCase('worker');
 });

@@ -104,11 +104,65 @@ jobs:
           name: npm-package
           path: build/javascript/lib
 
+      - name: Build Vite fixture
+        run: npm run test:fixture:vite:build
+
       - name: Install browser
         run: npx playwright install --with-deps ${{ matrix.browser }}
 
       - name: Run Vite fixture
-        run: npx playwright test --config tests/playwright.config.ts --project=${{ matrix.project }}
+        run: FIXTURE_GROUP=vite npx playwright test --config tests/playwright.config.ts --project=${{ matrix.project }}
+
+  webpack-fixture:
+    name: Webpack 5 / ${{ matrix.mode }} / ${{ matrix.browser }}
+    needs: package
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - mode: dev
+            browser: chromium
+            project: webpack-dev-chromium
+          - mode: dev
+            browser: firefox
+            project: webpack-dev-firefox
+          - mode: static
+            browser: chromium
+            project: webpack-static-chromium
+          - mode: static
+            browser: firefox
+            project: webpack-static-firefox
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download package artifact
+        if: ${{ !env.ACT }}
+        uses: actions/download-artifact@v4
+        with:
+          name: npm-package
+          path: build/javascript/lib
+
+      - name: Build Webpack fixture
+        run: npm run test:fixture:webpack:build
+
+      - name: Install browser
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+
+      - name: Run Webpack fixture
+        run: FIXTURE_GROUP=webpack npx playwright test --config tests/playwright.config.ts --project=${{ matrix.project }}
 
   deno-fixture:
     name: Deno / solve
@@ -149,6 +203,7 @@ jobs:
     needs:
       - package
       - vite-fixture
+      - webpack-fixture
       - deno-fixture
     runs-on: ubuntu-latest
     timeout-minutes: 10

@@ -11,6 +11,10 @@ Unofficial JavaScript and WebAssembly bindings for the OR-Tools CP-SAT solver.
 [![Vite 7 dev Firefox](https://img.shields.io/github/checks-status/Axelwickm/or-tools-wasm/main?label=Vite%207%20dev%20Firefox&name=Vite%207%20%2F%20dev%20%2F%20firefox)](https://github.com/Axelwickm/or-tools-wasm/actions/workflows/package.yml)
 [![Vite 7 static Chromium](https://img.shields.io/github/checks-status/Axelwickm/or-tools-wasm/main?label=Vite%207%20static%20Chromium&name=Vite%207%20%2F%20static%20%2F%20chromium)](https://github.com/Axelwickm/or-tools-wasm/actions/workflows/package.yml)
 [![Vite 7 static Firefox](https://img.shields.io/github/checks-status/Axelwickm/or-tools-wasm/main?label=Vite%207%20static%20Firefox&name=Vite%207%20%2F%20static%20%2F%20firefox)](https://github.com/Axelwickm/or-tools-wasm/actions/workflows/package.yml)
+[![Webpack 5 dev Chromium](https://img.shields.io/github/checks-status/Axelwickm/or-tools-wasm/main?label=Webpack%205%20dev%20Chromium&name=Webpack%205%20%2F%20dev%20%2F%20chromium)](https://github.com/Axelwickm/or-tools-wasm/actions/workflows/package.yml)
+[![Webpack 5 dev Firefox](https://img.shields.io/github/checks-status/Axelwickm/or-tools-wasm/main?label=Webpack%205%20dev%20Firefox&name=Webpack%205%20%2F%20dev%20%2F%20firefox)](https://github.com/Axelwickm/or-tools-wasm/actions/workflows/package.yml)
+[![Webpack 5 static Chromium](https://img.shields.io/github/checks-status/Axelwickm/or-tools-wasm/main?label=Webpack%205%20static%20Chromium&name=Webpack%205%20%2F%20static%20%2F%20chromium)](https://github.com/Axelwickm/or-tools-wasm/actions/workflows/package.yml)
+[![Webpack 5 static Firefox](https://img.shields.io/github/checks-status/Axelwickm/or-tools-wasm/main?label=Webpack%205%20static%20Firefox&name=Webpack%205%20%2F%20static%20%2F%20firefox)](https://github.com/Axelwickm/or-tools-wasm/actions/workflows/package.yml)
 [![Deno](https://img.shields.io/github/checks-status/Axelwickm/or-tools-wasm/main?label=Deno&name=Deno%20%2F%20solve)](https://github.com/Axelwickm/or-tools-wasm/actions/workflows/package.yml)
 
 Currently supported solvers: CP-SAT.
