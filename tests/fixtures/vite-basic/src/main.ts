@@ -1,12 +1,18 @@
-import { CpSat } from 'or-tools-wasm';
-
 const statusEl = document.getElementById('status');
 
 type RunResult = {
   mode: 'direct' | 'worker';
   ok: boolean;
   solverStatus: unknown;
+  workerStats: WorkerStats;
 };
+
+type WorkerStats = {
+  total: number;
+  pthread: number;
+};
+
+type CpSatApi = typeof import('or-tools-wasm')['CpSat'];
 
 const model = {
   name: 'choose_one',
@@ -36,7 +42,36 @@ function setStatus(value: unknown) {
   }
 }
 
-async function runCase(mode: RunResult['mode']): Promise<RunResult> {
+function installWorkerSpy() {
+  const originalWorker = window.Worker;
+  const creations: Array<{ url: string; name?: string }> = [];
+
+  window.Worker = function WorkerSpy(scriptURL: string | URL, options?: WorkerOptions) {
+    creations.push({
+      url: String(scriptURL),
+      name: options?.name,
+    });
+    return new originalWorker(scriptURL, options);
+  } as unknown as typeof Worker;
+
+  return {
+    snapshot(): WorkerStats {
+      return {
+        total: creations.length,
+        pthread: creations.filter((creation) => creation.name?.startsWith('em-pthread-')).length,
+      };
+    },
+  };
+}
+
+function forceSmallHardwareConcurrency() {
+  Object.defineProperty(navigator, 'hardwareConcurrency', {
+    configurable: true,
+    value: 2,
+  });
+}
+
+async function runCase(CpSat: CpSatApi, mode: RunResult['mode'], getWorkerStats: () => WorkerStats): Promise<RunResult> {
   CpSat.setWorkerBridgeEnabled(mode === 'worker');
   const modelBytes = await CpSat.createModel(model);
   const validation = await CpSat.validate(modelBytes);
@@ -58,12 +93,19 @@ async function runCase(mode: RunResult['mode']): Promise<RunResult> {
     mode,
     ok: true,
     solverStatus,
+    workerStats: getWorkerStats(),
   };
 }
 
 async function main() {
   setStatus({ ok: false, phase: 'running' });
-  const results = [await runCase('direct'), await runCase('worker')];
+  forceSmallHardwareConcurrency();
+  const workerSpy = installWorkerSpy();
+  const { CpSat } = await import('or-tools-wasm');
+  const results = [
+    await runCase(CpSat, 'direct', workerSpy.snapshot),
+    await runCase(CpSat, 'worker', workerSpy.snapshot),
+  ];
   setStatus({ ok: true, results });
 }
 

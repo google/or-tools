@@ -7,6 +7,10 @@ Unofficial JavaScript and WebAssembly bindings for the OR-Tools CP-SAT solver.
 [Try Online](https://axelwickman.com/ortools-cpsat-wasm)
 
 [![Package](https://github.com/Axelwickm/or-tools-wasm/actions/workflows/package.yml/badge.svg)](https://github.com/Axelwickm/or-tools-wasm/actions/workflows/package.yml)
+[![Vite 7 dev Chromium](https://img.shields.io/github/checks-status/Axelwickm/or-tools-wasm/main?label=Vite%207%20dev%20Chromium&name=Vite%207%20%2F%20dev%20%2F%20chromium)](https://github.com/Axelwickm/or-tools-wasm/actions/workflows/package.yml)
+[![Vite 7 dev Firefox](https://img.shields.io/github/checks-status/Axelwickm/or-tools-wasm/main?label=Vite%207%20dev%20Firefox&name=Vite%207%20%2F%20dev%20%2F%20firefox)](https://github.com/Axelwickm/or-tools-wasm/actions/workflows/package.yml)
+[![Vite 7 static Chromium](https://img.shields.io/github/checks-status/Axelwickm/or-tools-wasm/main?label=Vite%207%20static%20Chromium&name=Vite%207%20%2F%20static%20%2F%20chromium)](https://github.com/Axelwickm/or-tools-wasm/actions/workflows/package.yml)
+[![Vite 7 static Firefox](https://img.shields.io/github/checks-status/Axelwickm/or-tools-wasm/main?label=Vite%207%20static%20Firefox&name=Vite%207%20%2F%20static%20%2F%20firefox)](https://github.com/Axelwickm/or-tools-wasm/actions/workflows/package.yml)
 
 Currently supported solvers: CP-SAT.
 
@@ -135,6 +139,25 @@ const result = await CpSat.solve(modelBytes, {
 console.log(result.response);
 ```
 
+## Threading model
+
+The WebAssembly runtime is built with Emscripten pthread support. When the
+runtime starts, Emscripten creates a pthread worker pool sized from
+`navigator.hardwareConcurrency`. This pool is separate from CP-SAT's own search
+worker setting.
+
+`SatParameters.numSearchWorkers` controls how many CP-SAT search workers the
+solver should use for a solve. It does not change how many Emscripten pthread
+workers are created when the WebAssembly runtime is initialized.
+
+By default, `CpSat.solve` runs through the package's worker bridge. The bridge
+loads the CP-SAT runtime in a dedicated JavaScript worker, so the browser's main
+thread remains available for rendering, input, progress UI, and cancellation.
+If the worker bridge is disabled, solving runs directly on the main thread. The
+solver still works, but the GUI can freeze until CP-SAT returns because the
+browser cannot repaint or process UI events during the synchronous WebAssembly
+call.
+
 ## Build
 
 ```sh
@@ -190,11 +213,8 @@ worker startup.
 
 ## Demos
 
-- The Magic Square and Sports Scheduling pages let users pick a worker count; that value becomes `SatParameters.num_search_workers`, clamped to `min(navigator.hardwareConcurrency, 8)`.
-- Higher worker counts can significantly increase startup time because the browser needs to initialize more threaded runtime workers before solving begins.
-- Each demo exposes a "Use worker bridge" checkbox. When enabled, solves run through `cpsat_worker.ts`, which loads the CP-SAT runtime in a dedicated JavaScript worker and keeps the browser's main thread free for rendering, form input, progress UI, and cancellation.
-- When the worker bridge is disabled, the solve runs directly on the main thread. The solver still works, but long solves can freeze the page until CP-SAT returns because the browser cannot repaint or process UI events while the synchronous WebAssembly call is running.
-- The WebAssembly build caps the pthread pool at 8 and scales down on low-core devices.
+- The Magic Square and Sports Scheduling pages let users pick a CP-SAT search worker count; that value becomes `SatParameters.num_search_workers`, clamped to `min(navigator.hardwareConcurrency, 8)`.
+- Each demo exposes a "Use worker bridge" checkbox. Keep it enabled for interactive use; disabling it runs the solve on the main browser thread and can freeze the GUI until CP-SAT returns.
 - Schema Viewer imports the bundled `CpSat` API automatically; no extra script ordering is required.
 
 ## JSPI and Asyncify

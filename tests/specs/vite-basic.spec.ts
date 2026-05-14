@@ -53,11 +53,26 @@ test('runs the README model with and without the worker bridge', async ({ page }
   }
 
   const parsedStatus = JSON.parse(await status.textContent() ?? '{}') as {
-    results?: Array<{ mode?: string; ok?: boolean; solverStatus?: string }>;
+    results?: Array<{
+      mode?: string;
+      ok?: boolean;
+      solverStatus?: string;
+      workerStats?: {
+        total?: number;
+        pthread?: number;
+      };
+    }>;
   };
   expect(parsedStatus.results).toHaveLength(2);
   expect(parsedStatus.results).toEqual([
     expect.objectContaining({ mode: 'direct', ok: true }),
     expect.objectContaining({ mode: 'worker', ok: true }),
   ]);
+  expect(parsedStatus.results?.[0].workerStats).toEqual(
+    expect.objectContaining({
+      total: 2,
+      pthread: 2,
+    }),
+  );
+  expect(parsedStatus.results?.[1].workerStats?.total).toBeGreaterThanOrEqual(3);
 });

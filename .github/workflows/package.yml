@@ -4,8 +4,13 @@ on:
   push:
     branches:
       - main
+    tags:
+      - 'v*'
   pull_request:
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   package:
@@ -55,3 +60,87 @@ jobs:
           path: build/javascript/lib/*.tgz
           if-no-files-found: error
           retention-days: 7
+
+  vite-fixture:
+    name: Vite 7 / ${{ matrix.mode }} / ${{ matrix.browser }}
+    needs: package
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - mode: dev
+            browser: chromium
+            project: vite-dev-chromium
+          - mode: dev
+            browser: firefox
+            project: vite-dev-firefox
+          - mode: static
+            browser: chromium
+            project: vite-static-chromium
+          - mode: static
+            browser: firefox
+            project: vite-static-firefox
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download package artifact
+        if: ${{ !env.ACT }}
+        uses: actions/download-artifact@v4
+        with:
+          name: npm-package
+          path: build/javascript/lib
+
+      - name: Install browser
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+
+      - name: Run Vite fixture
+        run: npx playwright test --config tests/playwright.config.ts --project=${{ matrix.project }}
+
+  publish:
+    name: Publish release
+    needs:
+      - package
+      - vite-fixture
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: ${{ startsWith(github.ref, 'refs/tags/v') && !env.ACT }}
+    permissions:
+      contents: write
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+
+      - name: Download package artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: npm-package
+          path: build/javascript/lib
+
+      - name: Publish to npm
+        run: npm publish build/javascript/lib/*.tgz --access public
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" build/javascript/lib/*.tgz --generate-notes --verify-tag
