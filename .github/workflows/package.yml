@@ -110,11 +110,46 @@ jobs:
       - name: Run Vite fixture
         run: npx playwright test --config tests/playwright.config.ts --project=${{ matrix.project }}
 
+  deno-fixture:
+    name: Deno / solve
+    needs: package
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download package artifact
+        if: ${{ !env.ACT }}
+        uses: actions/download-artifact@v4
+        with:
+          name: npm-package
+          path: build/javascript/lib
+
+      - name: Run Deno fixture
+        run: npm run test:fixture:deno
+
   publish:
     name: Publish release
     needs:
       - package
       - vite-fixture
+      - deno-fixture
     runs-on: ubuntu-latest
     timeout-minutes: 10
     if: ${{ startsWith(github.ref, 'refs/tags/v') && github.actor != 'nektos/act' }}
