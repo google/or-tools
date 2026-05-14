@@ -30,6 +30,13 @@ const webServers = [
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
   },
+  {
+    fixture: 'rollup',
+    command: 'npm run test:fixture:rollup:serve-static',
+    url: 'http://127.0.0.1:4178',
+    reuseExistingServer: !process.env.CI,
+    timeout: 120_000,
+  },
 ]
   .filter((server) => !fixtureGroup || server.fixture === fixtureGroup)
   .map(({ fixture: _fixture, ...server }) => server);
@@ -96,6 +103,20 @@ export default defineConfig({
       use: {
         ...devices['Desktop Firefox'],
         baseURL: 'http://127.0.0.1:4177',
+      },
+    },
+    {
+      name: 'rollup-static-chromium',
+      use: {
+        ...devices['Desktop Chrome'],
+        baseURL: 'http://127.0.0.1:4178',
+      },
+    },
+    {
+      name: 'rollup-static-firefox',
+      use: {
+        ...devices['Desktop Firefox'],
+        baseURL: 'http://127.0.0.1:4178',
       },
     },
   ],

@@ -49,8 +49,13 @@
     "test:fixture:webpack:serve": "npm --prefix tests/fixtures/webpack-basic run serve",
     "test:fixture:webpack:serve-static": "npm --prefix tests/fixtures/webpack-basic run serve-static",
     "test:fixture:webpack": "npm run test:fixture:webpack:build && FIXTURE_GROUP=webpack playwright test --config tests/playwright.config.ts --project=webpack-dev-chromium --project=webpack-dev-firefox --project=webpack-static-chromium --project=webpack-static-firefox",
+    "test:fixture:rollup:install": "node tests/fixtures/install-packed-package.mjs rollup-basic",
+    "test:fixture:rollup:build": "npm run test:fixture:rollup:install && npm --prefix tests/fixtures/rollup-basic run build && cp tests/fixtures/rollup-basic/index.html tests/fixtures/rollup-basic/dist/index.html",
+    "test:fixture:rollup:serve-static": "npm --prefix tests/fixtures/rollup-basic run serve-static",
+    "test:fixture:rollup": "npm run test:fixture:rollup:build && FIXTURE_GROUP=rollup playwright test --config tests/playwright.config.ts --project=rollup-static-chromium --project=rollup-static-firefox",
     "test:fixture:deno:install": "node tests/fixtures/install-packed-package.mjs deno-basic",
-    "test:fixture:deno": "npm run test:fixture:deno:install && deno test --no-check --no-lock --node-modules-dir=auto --allow-read tests/fixtures/deno-basic/basic.test.ts"
+    "test:fixture:deno": "npm run test:fixture:deno:install && deno test --no-check --no-lock --node-modules-dir=auto --allow-read tests/fixtures/deno-basic/basic.test.ts",
+    "test:fixtures": "npm run test:fixture:vite && npm run test:fixture:webpack && npm run test:fixture:rollup && npm run test:fixture:deno"
   },
   "files": [
     "build/javascript/lib/assets",

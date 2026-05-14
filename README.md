@@ -4,7 +4,7 @@ Unofficial JavaScript and WebAssembly bindings for the OR-Tools CP-SAT solver.
 
 [GitHub](https://github.com/Axelwickm/or-tools-wasm)
 [npm](https://www.npmjs.com/package/or-tools-wasm)
-[Try Online](https://axelwickman.com/ortools-cpsat-wasm)
+[Try Online](https://axelwickman.com/or-tools-wasm)
 
 [![Package](https://github.com/Axelwickm/or-tools-wasm/actions/workflows/package.yml/badge.svg)](https://github.com/Axelwickm/or-tools-wasm/actions/workflows/package.yml)
 [![Vite 7 dev Chromium](https://img.shields.io/github/checks-status/Axelwickm/or-tools-wasm/main?label=Vite%207%20dev%20Chromium&name=Vite%207%20%2F%20dev%20%2F%20chromium)](https://github.com/Axelwickm/or-tools-wasm/actions/workflows/package.yml)
@@ -15,6 +15,8 @@ Unofficial JavaScript and WebAssembly bindings for the OR-Tools CP-SAT solver.
 [![Webpack 5 dev Firefox](https://img.shields.io/github/checks-status/Axelwickm/or-tools-wasm/main?label=Webpack%205%20dev%20Firefox&name=Webpack%205%20%2F%20dev%20%2F%20firefox)](https://github.com/Axelwickm/or-tools-wasm/actions/workflows/package.yml)
 [![Webpack 5 static Chromium](https://img.shields.io/github/checks-status/Axelwickm/or-tools-wasm/main?label=Webpack%205%20static%20Chromium&name=Webpack%205%20%2F%20static%20%2F%20chromium)](https://github.com/Axelwickm/or-tools-wasm/actions/workflows/package.yml)
 [![Webpack 5 static Firefox](https://img.shields.io/github/checks-status/Axelwickm/or-tools-wasm/main?label=Webpack%205%20static%20Firefox&name=Webpack%205%20%2F%20static%20%2F%20firefox)](https://github.com/Axelwickm/or-tools-wasm/actions/workflows/package.yml)
+[![Rollup 4 static Chromium](https://img.shields.io/github/checks-status/Axelwickm/or-tools-wasm/main?label=Rollup%204%20static%20Chromium&name=Rollup%204%20%2F%20static%20%2F%20chromium)](https://github.com/Axelwickm/or-tools-wasm/actions/workflows/package.yml)
+[![Rollup 4 static Firefox](https://img.shields.io/github/checks-status/Axelwickm/or-tools-wasm/main?label=Rollup%204%20static%20Firefox&name=Rollup%204%20%2F%20static%20%2F%20firefox)](https://github.com/Axelwickm/or-tools-wasm/actions/workflows/package.yml)
 [![Deno](https://img.shields.io/github/checks-status/Axelwickm/or-tools-wasm/main?label=Deno&name=Deno%20%2F%20solve)](https://github.com/Axelwickm/or-tools-wasm/actions/workflows/package.yml)
 
 Currently supported solvers: CP-SAT.
@@ -23,6 +25,7 @@ Verified with:
 
 - Vite 7 in browser contexts
 - Webpack 5 in browser contexts
+- Rollup 4 static browser builds
 - Deno runtime solves
 
 This package builds a browser-oriented CP-SAT runtime from Google OR-Tools and
@@ -54,9 +57,9 @@ Then import it normally:
 import { CpSat } from 'or-tools-wasm';
 ```
 
-This flow is verified with Vite and Webpack. The worker script and WebAssembly
-files are emitted automatically from the package import, with no manual copying
-into `public/` or `static/` required.
+This flow is verified with Vite, Webpack, and Rollup. The worker script and
+WebAssembly files are emitted automatically from the package import, with no
+manual copying into `public/` or `static/` required.
 
 ## Vite configuration
 
@@ -80,8 +83,44 @@ export default defineConfig({
 });
 ```
 
+## Rollup configuration
+
+Rollup core does not bundle module workers or emit `new URL(...,
+import.meta.url)` assets by itself. The verified fixture uses Rollup's standard
+plugin surface for those features:
+
+```js
+// rollup.config.mjs
+import { nodeResolve } from '@rollup/plugin-node-resolve';
+import OMT from '@surma/rollup-plugin-off-main-thread';
+import { importMetaAssets } from '@web/rollup-plugin-import-meta-assets';
+
+function moduleRelativeFileUrls() {
+  return {
+    name: 'module-relative-file-urls',
+    resolveFileUrl({ fileName }) {
+      return `new URL(${JSON.stringify(fileName)}, import.meta.url).href`;
+    },
+  };
+}
+
+export default {
+  input: 'src/main.js',
+  output: {
+    dir: 'dist',
+    format: 'es',
+  },
+  plugins: [
+    nodeResolve({ browser: true }),
+    moduleRelativeFileUrls(),
+    OMT(),
+    importMetaAssets(),
+  ],
+};
+```
+
 Other modern bundlers may also work if they support module workers and
-WebAssembly asset emission, but that is not yet officially verified.
+WebAssembly asset emission, but they are not yet officially verified.
 
 ## Usage
 

@@ -164,6 +164,49 @@ jobs:
       - name: Run Webpack fixture
         run: FIXTURE_GROUP=webpack npx playwright test --config tests/playwright.config.ts --project=${{ matrix.project }}
 
+  rollup-fixture:
+    name: Rollup 4 / static / ${{ matrix.browser }}
+    needs: package
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - browser: chromium
+            project: rollup-static-chromium
+          - browser: firefox
+            project: rollup-static-firefox
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download package artifact
+        if: ${{ !env.ACT }}
+        uses: actions/download-artifact@v4
+        with:
+          name: npm-package
+          path: build/javascript/lib
+
+      - name: Build Rollup fixture
+        run: npm run test:fixture:rollup:build
+
+      - name: Install browser
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+
+      - name: Run Rollup fixture
+        run: FIXTURE_GROUP=rollup npx playwright test --config tests/playwright.config.ts --project=${{ matrix.project }}
+
   deno-fixture:
     name: Deno / solve
     needs: package
@@ -204,6 +247,7 @@ jobs:
       - package
       - vite-fixture
       - webpack-fixture
+      - rollup-fixture
       - deno-fixture
     runs-on: ubuntu-latest
     timeout-minutes: 10

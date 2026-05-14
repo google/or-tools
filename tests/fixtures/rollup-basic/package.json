@@ -1,0 +1,16 @@
+{
+  "name": "or-tools-wasm-rollup-basic-fixture",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "rollup -c",
+    "serve-static": "node static-server.mjs"
+  },
+  "dependencies": {
+    "@rollup/plugin-node-resolve": "^16.0.3",
+    "@surma/rollup-plugin-off-main-thread": "^2.2.3",
+    "@web/rollup-plugin-import-meta-assets": "^2.3.3",
+    "or-tools-wasm": "file:../../../build/javascript/lib/or-tools-wasm-0.6.0.tgz",
+    "rollup": "^4.53.3"
+  }
+}
