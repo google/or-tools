@@ -58,6 +58,7 @@ Domain Domain::IntegerValue(int64_t value) {
 }
 
 Domain Domain::Interval(int64_t included_min, int64_t included_max) {
+  if (included_min > included_max) return Domain::EmptyDomain();
   Domain result;
   result.is_interval = true;
   result.values.push_back(included_min);
@@ -765,6 +766,32 @@ int Argument::Size() const {
   ABSL_UNREACHABLE();
 }
 
+std::string Argument::TypeString() const {
+  switch (type) {
+    case INT_VALUE:
+      return "INT_VALUE";
+    case INT_INTERVAL:
+      return "INT_INTERVAL";
+    case INT_LIST:
+      return "INT_LIST";
+    case DOMAIN_LIST:
+      return "DOMAIN_LIST";
+    case VAR_REF:
+      return "VAR_REF";
+    case VAR_REF_ARRAY:
+      return "VAR_REF_ARRAY";
+    case VOID_ARGUMENT:
+      return "VOID_ARGUMENT";
+    case FLOAT_VALUE:
+      return "FLOAT_VALUE";
+    case FLOAT_INTERVAL:
+      return "FLOAT_INTERVAL";
+    case FLOAT_LIST:
+      return "FLOAT_LIST";
+  }
+  ABSL_UNREACHABLE();
+}
+
 // ----- Variable -----
 
 Variable::Variable(absl::string_view name_, const Domain& domain_,
@@ -1033,6 +1060,14 @@ Variable* Model::AddConstant(int64_t value) {
 Variable* Model::AddFloatConstant(double value) {
   Variable* const var =
       new Variable(absl::StrCat(value), Domain::FloatValue(value), true);
+  variables_.push_back(var);
+  return var;
+}
+
+Variable* Model::AddSetConstant(const Domain& domain) {
+  Variable* const var = new Variable(domain.DebugString(), domain, true);
+  var->domain.is_a_set = true;
+  var->domain.is_fixed_set = true;
   variables_.push_back(var);
   return var;
 }

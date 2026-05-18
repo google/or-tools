@@ -121,6 +121,9 @@ std::vector<int64_t> SetEvalAt(
         return domain.values;
       }
     }
+    case Argument::INT_LIST: {
+      return {arg.ValueAt(pos)};
+    }
     case Argument::VAR_REF_ARRAY: {
       return set_evaluator(arg.variables[pos]);
     }
@@ -336,6 +339,19 @@ bool CheckOrToolsArraySetElement(
   const std::vector<int64_t> element =
       SetEvalAt(ct.arguments[2], index - min_index, set_evaluator);
   const std::vector<int64_t> target = SetEval(ct.arguments[3], set_evaluator);
+  if (element != target) {
+    LOG(INFO) << "CheckOrToolsArraySetElement: element: ["
+              << absl::StrJoin(element, ",") << "], target: ["
+              << absl::StrJoin(target, ",") << "]";
+    LOG(INFO) << "index: " << ct.arguments[0].DebugString() << " "
+              << ct.arguments[0].TypeString();
+    LOG(INFO) << "index_set: " << ct.arguments[1].DebugString() << " "
+              << ct.arguments[1].TypeString();
+    LOG(INFO) << "element: " << ct.arguments[2].DebugString() << " "
+              << ct.arguments[2].TypeString();
+    LOG(INFO) << "target: " << ct.arguments[3].DebugString() << " "
+              << ct.arguments[3].TypeString();
+  }
   return element == target;
 }
 
