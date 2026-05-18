@@ -35,6 +35,7 @@
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/base/types.h"
 
 namespace operations_research::routing {
 
@@ -303,7 +304,7 @@ bool FourierSolver::Solve() {
     // TODO(b/492476073): compare other scores, could p * q - p - q be better?
     // TODO(b/492476073): count constraint-wise instead of variable-wise.
     ColIndex min_var{0};
-    int64_t min_score = std::numeric_limits<int64_t>::max();
+    int64_t min_score = kint64max;
     const int num_vars = num_variables_;
     for (ColIndex v{1}; v < num_vars; ++v) {
       if (variable_is_symbolic_[v]) continue;
