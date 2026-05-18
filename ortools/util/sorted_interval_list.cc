@@ -18,6 +18,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <limits>
+#include <optional>
 #include <ostream>
 #include <string>
 #include <utility>
@@ -451,6 +452,42 @@ Domain Domain::IntersectionWith(const Domain& domain) const {
     }
   }
   DCHECK(IntervalsAreSortedAndNonAdjacent(result.intervals_));
+  return result;
+}
+
+std::optional<int64_t> Domain::UniqueValueNotIn(const Domain& other) const {
+  std::optional<int64_t> result;
+  int i = 0;
+  const auto& to_exclude = other.intervals_;
+  for (auto [start, end] : intervals_) {
+    while (start <= end) {
+      // find the first interval with to_exclude[i].end >= start.
+      while (i < to_exclude.size() && to_exclude[i].end < start) ++i;
+      if (i < to_exclude.size()) {
+        DCHECK_GE(to_exclude[i].end, start);
+        if (to_exclude[i].start <= start) {
+          if (to_exclude[i].end == kint64max) return result;
+          start = to_exclude[i].end + 1;
+          continue;
+        }
+        // Notice that if end > start, there will be no overflow here.
+        if (end == start || to_exclude[i].start == start + 1) {
+          if (result != std::nullopt) return std::nullopt;
+          result = start;
+          if (to_exclude[i].end == kint64max) return result;
+          start = to_exclude[i].end + 1;
+          continue;
+        }
+        return std::nullopt;
+      } else if (end == start) {
+        if (result != std::nullopt) return std::nullopt;
+        result = start;
+        break;  // Next interval.
+      } else {
+        return std::nullopt;
+      }
+    }
+  }
   return result;
 }
 

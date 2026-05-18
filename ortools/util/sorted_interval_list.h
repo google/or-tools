@@ -507,6 +507,14 @@ class Domain {
   SimplifyUsingImpliedDomain(const Domain& implied_domain) const;
 
   /**
+   * If this \minus other is a singleton, returns it. Returns nullopt otherwise.
+   *
+   * This is similar to checking if this.IntersectionWith(other.Complement()) is
+   * non-empty and fixed, but avoid allocating memory.
+   */
+  std::optional<int64_t> UniqueValueNotIn(const Domain& other) const;
+
+  /**
    * Returns a compact string of a vector of intervals like "[1,4][6][10,20]".
    */
   std::string ToString() const;
