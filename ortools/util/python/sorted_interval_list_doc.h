@@ -336,6 +336,14 @@ R"doc(Returns a compact string of a vector of intervals like
 
 static const char *mkd_doc_operations_research_Domain_UnionWith = R"doc(Returns the union of D and domain.)doc";
 
+static const char *mkd_doc_operations_research_Domain_UniqueValueNotIn =
+R"doc(If this \minus other is a singleton, returns it. Returns nullopt
+otherwise.
+
+This is similar to checking if
+this.IntersectionWith(other.Complement()) is non-empty and fixed, but
+avoid allocating memory.)doc";
+
 static const char *mkd_doc_operations_research_Domain_ValueAtOrAfter = R"doc()doc";
 
 static const char *mkd_doc_operations_research_Domain_ValueAtOrBefore =
