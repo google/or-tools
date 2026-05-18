@@ -62,9 +62,14 @@ bool JsspParser::ParseFile(absl::string_view filename) {
   //  - fjs suffix -> Flexible Jobshop
   //  - txt suffix -> Taillard or time dependent scheduling.
 
-  if (absl::EndsWith(filename, "fjs")) {
+  if (absl::EndsWith(filename, "fjs") || absl::EndsWith(filename, "fjs.bz2") ||
+      absl::EndsWith(filename, "fjs.gz") ||
+      absl::EndsWith(filename, "fjs.xz")) {
     problem_type_ = FLEXIBLE;
-  } else if (absl::EndsWith(filename, ".txt")) {
+  } else if (absl::EndsWith(filename, ".txt") ||
+             absl::EndsWith(filename, ".txt.bz2") ||
+             absl::EndsWith(filename, ".txt.gz") ||
+             absl::EndsWith(filename, ".txt.xz")) {
     problem_type_ = TAILLARD;
   } else {
     problem_type_ = JSSP;
