@@ -56,7 +56,8 @@ namespace graph {
 
 // This is the recommended API when performance matters. It's also very simple.
 // AdjacencyList is any type that lets you iterate over the neighbors of
-// node with the [] operator, for example vector<vector<int>> or util::Graph.
+// node with the [] operator, for example vector<vector<int>> or
+// util::ListGraph.
 //
 // If you don't already have an adjacency list representation, build one using
 // StaticGraph<> in ./graph.h: FastTopologicalSort() can take any such graph as

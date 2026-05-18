@@ -36,7 +36,7 @@
 //   store them.
 //
 // Provided implementations:
-//   - ListGraph<> for the simplest api. Also aliased to util::Graph.
+//   - ListGraph<> for the simplest api.
 //   - StaticGraph<> for performance, but requires building before usage, see
 //     below
 //   - CompleteGraph<> if you need a fully connected graph
@@ -945,7 +945,7 @@ class ListGraph : public MutableGraph<ListGraph<NodeIndexType, ArcIndexType>,
 // StaticGraphWithoutTail<>. This almost corresponds to a past implementation
 // of StaticGraph<> @CL 116144340.
 template <typename NodeIndexType = int32_t, typename ArcIndexType = int32_t>
-class StaticGraph
+class StaticGraph final
     : public MutableGraph<StaticGraph<NodeIndexType, ArcIndexType>,
                           NodeIndexType, ArcIndexType, false> {
   typedef MutableGraph<StaticGraph<NodeIndexType, ArcIndexType>, NodeIndexType,
@@ -1172,7 +1172,7 @@ class ReverseArcListGraph
 // - The reverse arcs from a node are sorted by head (so we could add a log()
 //   time lookup function).
 template <typename NodeIndexType = int32_t, typename ArcIndexType = int32_t>
-class ReverseArcStaticGraph
+class ReverseArcStaticGraph final
     : public MutableGraph<ReverseArcStaticGraph<NodeIndexType, ArcIndexType>,
                           NodeIndexType, ArcIndexType, true> {
   static_assert(internal::IsSigned<ArcIndexType>(),
