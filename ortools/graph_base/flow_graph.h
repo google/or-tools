@@ -50,8 +50,8 @@ namespace util {
 // TODO(user): Currently only max-flow handles this graph, but not
 // min-cost-flow.
 template <typename NodeIndexType = int32_t, typename ArcIndexType = int32_t>
-class FlowGraph : public BaseGraph<FlowGraph<NodeIndexType, ArcIndexType>,
-                                   NodeIndexType, ArcIndexType, false> {
+class FlowGraph final : public BaseGraph<FlowGraph<NodeIndexType, ArcIndexType>,
+                                         NodeIndexType, ArcIndexType, false> {
   // Note that we do NOT use negated indices for reverse arc. So we use false
   // for the last template argument here HasNegativeReverseArcs.
   typedef BaseGraph<FlowGraph<NodeIndexType, ArcIndexType>, NodeIndexType,
