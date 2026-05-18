@@ -17,8 +17,8 @@ syntax = "proto3";
 package operations_research.math_opt;
 
 import "google/protobuf/duration.proto";
-import "ortools/pdlp/solvers.proto";
 import "ortools/glop/parameters.proto";
+import "ortools/pdlp/solvers.proto";
 import "ortools/math_opt/solvers/glpk.proto";
 import "ortools/math_opt/solvers/gscip/gscip.proto";
 import "ortools/math_opt/solvers/gurobi.proto";

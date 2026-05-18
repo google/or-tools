@@ -225,11 +225,15 @@ XpressParametersProto XpressParameters::Proto() const {
   return result;
 }
 
-XpressParameters XpressParameters::FromProto(
+absl::StatusOr<XpressParameters> XpressParameters::FromProto(
     const XpressParametersProto& proto) {
   XpressParameters result;
   for (const XpressParametersProto::Parameter& p : proto.parameters()) {
-    result.param_values[p.name()] = p.value();
+    if (!result.param_values.insert({p.name(), p.value()}).second) {
+      return util::InvalidArgumentErrorBuilder()
+             << "duplicate Xpress parameter: '" << absl::CEscape(p.name())
+             << "'";
+    }
   }
   return result;
 }
@@ -346,7 +350,9 @@ absl::StatusOr<SolveParameters> SolveParameters::FromProto(
   result.pdlp = proto.pdlp();
   result.glpk = GlpkParameters::FromProto(proto.glpk());
   result.highs = proto.highs();
-  result.xpress = XpressParameters::FromProto(proto.xpress());
+  OR_ASSIGN_OR_RETURN3(result.xpress,
+                       XpressParameters::FromProto(proto.xpress()),
+                       _ << "invalid xpress parameters");
   return result;
 }
 
