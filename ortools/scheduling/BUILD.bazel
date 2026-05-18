@@ -113,6 +113,7 @@ cc_test(
         "//ortools/scheduling/testdata:1010_1_3",
         "//ortools/scheduling/testdata:50_10_01_ta041.txt",
         "//ortools/scheduling/testdata:SDST10_ta001.txt",
+        "//ortools/scheduling/testdata:SDST10_ta001.txt.gz",
         "//ortools/scheduling/testdata:ft06",
         "//ortools/scheduling/testdata:jb1.txt",
         "//ortools/scheduling/testdata:taillard-jobshop-15_15-1_225_100_150-1",

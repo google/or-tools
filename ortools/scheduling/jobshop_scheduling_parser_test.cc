@@ -67,6 +67,19 @@ TEST(RcpspParserTest, Sdst) {
   }
 }
 
+TEST(RcpspParserTest, CompressedSdst) {
+  JsspParser parser;
+  ASSERT_TRUE(parser.ParseFile(GetPath("SDST10_ta001.txt.gz")));
+  const JsspInputProblem problem = parser.problem();
+  EXPECT_EQ(20, problem.jobs_size());
+  EXPECT_EQ(5, problem.machines_size());
+  for (const Machine& m : problem.machines()) {
+    ASSERT_TRUE(m.has_transition_time_matrix());
+    EXPECT_EQ(m.transition_time_matrix().transition_time_size(),
+              problem.jobs_size() * problem.jobs_size());
+  }
+}
+
 TEST(RcpspParserTest, Tardiness) {
   JsspParser parser;
   ASSERT_TRUE(parser.ParseFile(GetPath("jb1.txt")));
