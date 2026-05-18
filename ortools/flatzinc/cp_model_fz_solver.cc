@@ -88,6 +88,14 @@ struct SetVariable {
     if (it == sorted_values.end() || *it != value) return -1;
     return it - sorted_values.begin();
   }
+
+  std::string DebugString() const {
+    return absl::StrCat(
+        "SetVariable(var_indices: ", absl::StrJoin(var_indices, ","),
+        ", sorted_values: ", absl::StrJoin(sorted_values, ","),
+        ", card_var_index: ", card_var_index,
+        ", fixed_card: ", fixed_card.value_or(-1), ")");
+  }
 };
 
 // Helper class to convert a flatzinc model to a CpModelProto.
@@ -533,8 +541,8 @@ std::shared_ptr<SetVariable> CpModelProtoWithMapping::LookupSetVarAt(
     }
     return result;
   } else {
-    LOG(FATAL) << "LookupSetVarAt:Unsupported argument type '" << argument.type
-               << "'";
+    LOG(FATAL) << "LookupSetVarAt:Unsupported argument type '"
+               << argument.TypeString() << "'";
   }
   return std::make_shared<SetVariable>();
 }
