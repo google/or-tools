@@ -38,6 +38,7 @@
 #include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/base/adjustable_priority_queue.h"
+#include "ortools/base/types.h"
 #include "ortools/constraint_solver/assignment.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/routing/enums.pb.h"
@@ -271,6 +272,10 @@ class IntVarFilteredHeuristic {
   /// returning.
   std::optional<int64_t> Evaluate(bool commit, bool ignore_upper_bound = false,
                                   bool update_upper_bound = true);
+  // Reset current cost upper bound.
+  void ResetUpperBound() {
+    objective_upper_bound_ = std::numeric_limits<int64_t>::max();
+  }
   /// Returns true if the search must be stopped.
   virtual bool StopSearch() { return false; }
   /// Modifies the current solution by setting the variable of index 'index' to
@@ -543,7 +548,7 @@ class GlobalCheapestInsertionFilteredHeuristic
     PairEntry(int pickup_to_insert, int pickup_insert_after,
               int delivery_to_insert, int delivery_insert_after, int vehicle,
               int64_t bucket)
-        : value_(std::numeric_limits<int64_t>::max()),
+        : value_(kint64max),
           heap_index_(-1),
           pickup_to_insert_(pickup_to_insert),
           pickup_insert_after_(pickup_insert_after),

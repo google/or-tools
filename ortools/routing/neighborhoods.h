@@ -22,6 +22,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/constraint_solver/assignment.h"
@@ -275,15 +276,34 @@ class MakePairActiveOperator : public PathOperator<ignore_path_vars> {
   /// compatible with GetBaseNodeRestartPosition.
   bool RestartAtPathStartOnSynchronize() override { return true; }
 
+  void ResetIncrementalism() override {
+    last_start_node_ = -1;
+    for (auto& [start_node, counts] :
+         num_active_alternatives_of_pairs_of_start_node_) {
+      ActivateAllPairsForPath(start_node);
+    }
+  }
+
  private:
   void OnNodeInitialization() override;
   int FindNextInactivePair(int pair_index) const;
   bool ContainsActiveNodes(absl::Span<const int64_t> nodes) const;
+  void ActivateAllPairsForPath(int start_node);
 
   int inactive_pair_;
   int inactive_pair_first_index_;
   int inactive_pair_second_index_;
   const std::vector<PickupDeliveryPair> pairs_;
+  std::vector<int64_t> next_states_;
+  /// num_active_alternatives_of_pairs_of_start_node_[start_node][pair_index] is
+  /// the number of alternatives of pair_index that remain to be generated for
+  /// the path of start_node. When moving to a new solution, the values in
+  /// num_active_alternatives_of_pairs_of_start_node_[start_node] of paths that
+  /// have changed are reset. Maintaining this count allows to skip pair-path
+  /// insertions that have already been tried and failed.
+  absl::flat_hash_map<int, std::vector<int>>
+      num_active_alternatives_of_pairs_of_start_node_;
+  int last_start_node_ = -1;
 };
 
 LocalSearchOperator* MakePairActive(
@@ -848,6 +868,12 @@ class RelocateSubtrip : public PathOperator<ignore_path_vars> {
   std::string DebugString() const override { return "RelocateSubtrip"; }
   bool MakeNeighbor() override;
 
+ protected:
+  void OnNodeInitialization() override {
+    reference_node_ = -1;
+    covered_nodes_.ResetAllToFalse();
+  }
+
  private:
   // Relocates the subtrip starting at chain_first_node. It must be a pickup.
   bool RelocateSubTripFromPickup(int64_t chain_first_node,
@@ -865,6 +891,8 @@ class RelocateSubtrip : public PathOperator<ignore_path_vars> {
 
   std::vector<int64_t> rejected_nodes_;
   std::vector<int64_t> subtrip_nodes_;
+  SparseBitset<> covered_nodes_;
+  int64_t reference_node_ = -1;
 };
 
 LocalSearchOperator* MakeRelocateSubtrip(

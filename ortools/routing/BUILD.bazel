@@ -192,6 +192,9 @@ cc_library(
         "//ortools/constraint_solver:cp",
         "//ortools/util:bitset",
         "//ortools/util:saturated_arithmetic",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/types:span",
     ],
@@ -220,6 +223,7 @@ cc_library(
     deps = [
         ":filter_committables",
         "//ortools/algorithms:binary_search",
+        "//ortools/base:types",
         "//ortools/util:saturated_arithmetic",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/types:span",
@@ -269,6 +273,7 @@ cc_library(
         ":types",
         ":utils",
         "//ortools/base:adjustable_priority_queue",
+        "//ortools/base:base_export",
         "//ortools/base:dump_vars",
         "//ortools/base:log_severity",
         "//ortools/base:map_util",
@@ -334,6 +339,7 @@ cc_library(
     srcs = ["filter_committables.cc"],
     hdrs = ["filter_committables.h"],
     deps = [
+        "//ortools/base:types",
         "//ortools/util:bitset",
         "//ortools/util:saturated_arithmetic",
         "@abseil-cpp//absl/log:check",
@@ -347,6 +353,7 @@ cc_library(
     hdrs = ["fourier_solver.h"],
     deps = [
         "//ortools/base:strong_vector",
+        "//ortools/base:types",
         "//ortools/util:strong_integers",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/container:flat_hash_map",
@@ -358,20 +365,21 @@ cc_library(
     ],
 )
 
-# cc_test(
-#     name = "fourier_solver_test",
-#     srcs = ["fourier_solver_test.cc"],
-#     deps = [
-#         ":fourier_solver",
-#         "//ortools/base:gmock_main",
-#         "//ortools/util:optional_boolean_cc_proto",
-#         "@abseil-cpp//absl/algorithm:container",
-#         "@abseil-cpp//absl/container:flat_hash_map",
-#         "@abseil-cpp//absl/strings",
-#         "@abseil-cpp//absl/types:span",
-#         "@protobuf//:duration_cc_proto",
-#     ],
-# )
+cc_test(
+    name = "fourier_solver_test",
+    srcs = ["fourier_solver_test.cc"],
+    deps = [
+        ":fourier_solver",
+        "//ortools/base:gmock_main",
+        "//ortools/util:optional_boolean_cc_proto",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/types:span",
+        "@google_benchmark//:benchmark",
+        "@protobuf//:duration_cc_proto",
+    ],
+)
 
 proto_library(
     name = "heuristic_parameters_proto",

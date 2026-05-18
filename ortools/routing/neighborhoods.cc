@@ -19,11 +19,14 @@
 #include <utility>
 #include <vector>
 
+#include "absl/algorithm/container.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/base/types.h"
 #include "ortools/constraint_solver/assignment.h"
 #include "ortools/constraint_solver/constraint_solver.h"
+#include "ortools/constraint_solver/local_search.h"
 #include "ortools/routing/types.h"
 #include "ortools/routing/utils.h"
 #include "ortools/util/saturated_arithmetic.h"
@@ -385,9 +388,11 @@ MakePairActiveOperator<ignore_path_vars>::MakePairActiveOperator(
     const std::vector<IntVar*>& secondary_vars,
     std::function<int(int64_t)> start_empty_path_class,
     const std::vector<PickupDeliveryPair>& pairs)
-    : PathOperator<ignore_path_vars>(vars, secondary_vars, 2, false, true,
-                                     std::move(start_empty_path_class), nullptr,
-                                     nullptr),
+    : PathOperator<ignore_path_vars>(
+          vars, secondary_vars, /*number_of_base_nodes=*/2,
+          /*skip_locally_optimal_paths=*/false,
+          /*accept_path_end_base=*/true, std::move(start_empty_path_class),
+          nullptr, nullptr),
       inactive_pair_(0),
       inactive_pair_first_index_(0),
       inactive_pair_second_index_(0),
@@ -406,9 +411,15 @@ bool MakePairActiveOperator<ignore_path_vars>::MakeOneNeighbor() {
       inactive_pair_first_index_ = 0;
       ++inactive_pair_second_index_;
     } else {
+      const int last_inactive_pair = inactive_pair_;
       inactive_pair_ = FindNextInactivePair(inactive_pair_ + 1);
       inactive_pair_first_index_ = 0;
       inactive_pair_second_index_ = 0;
+      if (inactive_pair_ >= pairs_.size() && last_start_node_ != -1) {
+        num_active_alternatives_of_pairs_of_start_node_[last_start_node_]
+                                                       [last_inactive_pair]--;
+      }
+      last_start_node_ = -1;
     }
   }
   return false;
@@ -417,6 +428,19 @@ bool MakePairActiveOperator<ignore_path_vars>::MakeOneNeighbor() {
 template <bool ignore_path_vars>
 bool MakePairActiveOperator<ignore_path_vars>::MakeNeighbor() {
   DCHECK_EQ(this->StartNode(0), this->StartNode(1));
+  if (num_active_alternatives_of_pairs_of_start_node_[this->StartNode(0)]
+                                                     [inactive_pair_] == 0) {
+    //  Jump to the next destination path.
+    this->SetNextBaseToIncrement(-1);
+    return false;
+  }
+  if (last_start_node_ != this->StartNode(0)) {
+    if (last_start_node_ != -1) {
+      num_active_alternatives_of_pairs_of_start_node_[last_start_node_]
+                                                     [inactive_pair_]--;
+    }
+    last_start_node_ = this->StartNode(0);
+  }
   // Inserting the second node of the pair before the first one which ensures
   // that the only solutions where both nodes are next to each other have the
   // first node before the second (the move is not symmetric and doing it this
@@ -424,10 +448,17 @@ bool MakePairActiveOperator<ignore_path_vars>::MakeNeighbor() {
   // pair is not violated).
   const auto& [pickup_alternatives, delivery_alternatives] =
       pairs_[inactive_pair_];
-  return this->MakeActive(delivery_alternatives[inactive_pair_second_index_],
-                          this->BaseNode(1)) &&
-         this->MakeActive(pickup_alternatives[inactive_pair_first_index_],
-                          this->BaseNode(0));
+  const int64_t pickup = pickup_alternatives[inactive_pair_first_index_];
+  const int64_t delivery = delivery_alternatives[inactive_pair_second_index_];
+  const int64_t destination_path = this->Path(this->BaseNode(0));
+  if (!this->IsCompatibleWithPath(pickup, destination_path) ||
+      !this->IsCompatibleWithPath(delivery, destination_path)) {
+    // Jump to the next destination path (both base nodes are on the same path).
+    this->SetNextBaseToIncrement(-1);
+    return false;
+  }
+  return this->MakeActive(delivery, this->BaseNode(1)) &&
+         this->MakeActive(pickup, this->BaseNode(0));
 }
 
 template <bool ignore_path_vars>
@@ -447,6 +478,38 @@ void MakePairActiveOperator<ignore_path_vars>::OnNodeInitialization() {
   inactive_pair_ = FindNextInactivePair(0);
   inactive_pair_first_index_ = 0;
   inactive_pair_second_index_ = 0;
+  if (next_states_.empty()) {
+    next_states_.resize(this->number_of_nexts(), -1);
+  }
+  absl::flat_hash_set<int> touched_path_starts;
+  for (int i = 0; i < this->number_of_nexts(); ++i) {
+    const int64_t next = this->Next(i);
+    if (next_states_[i] != next && next != i) {
+      int start = this->CurrentNodePathStart(i);
+      // Workaround for empty path start nodes.
+      // TODO(user): Maintain this properly in the parent class.
+      if (start == -1 && this->IsPathStart(i)) start = i;
+      touched_path_starts.insert(start);
+    }
+    next_states_[i] = next;
+  }
+  for (int start : touched_path_starts) {
+    ActivateAllPairsForPath(start);
+  }
+  last_start_node_ = -1;
+}
+
+template <bool ignore_path_vars>
+void MakePairActiveOperator<ignore_path_vars>::ActivateAllPairsForPath(
+    int start_node) {
+  auto& active_path_pair_count =
+      num_active_alternatives_of_pairs_of_start_node_[start_node];
+  active_path_pair_count.assign(pairs_.size(), 0);
+  for (int i = 0; i < pairs_.size(); ++i) {
+    const auto& [pickup_alternatives, delivery_alternatives] = pairs_[i];
+    active_path_pair_count[i] =
+        pickup_alternatives.size() * delivery_alternatives.size();
+  }
 }
 
 template <bool ignore_path_vars>
@@ -1461,7 +1524,8 @@ RelocateSubtrip<ignore_path_vars>::RelocateSubtrip(
           /*accept_path_end_base=*/false, std::move(start_empty_path_class),
           nullptr,  // Incoming neighbors aren't supported as of 09/2024.
           std::move(get_outgoing_neighbors)),
-      pd_data_(this->number_of_nexts_, pairs) {
+      pd_data_(this->number_of_nexts_, pairs),
+      covered_nodes_(this->number_of_nexts_) {
   opened_pairs_set_.resize(pairs.size(), false);
 }
 
@@ -1480,37 +1544,45 @@ bool RelocateSubtrip<ignore_path_vars>::RelocateSubTripFromPickup(
   if (this->Prev(chain_first_node) == insertion_node)
     return false;  // Skip null move.
 
-  int num_opened_pairs = 0;
-  // Split chain into subtrip and rejected nodes.
-  rejected_nodes_ = {this->Prev(chain_first_node)};
-  subtrip_nodes_ = {insertion_node};
-  int current = chain_first_node;
-  do {
-    if (current == insertion_node) {
-      // opened_pairs_set_ must be all false when we leave this function.
-      opened_pairs_set_.assign(opened_pairs_set_.size(), false);
-      return false;
-    }
-    const int pair = pd_data_.GetPairOfNode(current);
-    if (pd_data_.IsDeliveryNode(current) && !opened_pairs_set_[pair]) {
-      rejected_nodes_.push_back(current);
-    } else {
-      subtrip_nodes_.push_back(current);
-      if (pd_data_.IsPickupNode(current)) {
-        ++num_opened_pairs;
-        opened_pairs_set_[pair] = true;
-      } else if (pd_data_.IsDeliveryNode(current)) {
-        --num_opened_pairs;
-        opened_pairs_set_[pair] = false;
+  if (chain_first_node == reference_node_) {
+    subtrip_nodes_.front() = insertion_node;
+    subtrip_nodes_.back() = this->Next(insertion_node);
+  } else {
+    reference_node_ = chain_first_node;
+    covered_nodes_.ResetAllToFalse();
+    int num_opened_pairs = 0;
+    // Split chain into subtrip and rejected nodes.
+    rejected_nodes_ = {this->Prev(chain_first_node)};
+    subtrip_nodes_ = {insertion_node};
+    int current = chain_first_node;
+    do {
+      covered_nodes_.Set(current);
+      const int pair = pd_data_.GetPairOfNode(current);
+      if (pd_data_.IsDeliveryNode(current) && !opened_pairs_set_[pair]) {
+        rejected_nodes_.push_back(current);
+      } else {
+        subtrip_nodes_.push_back(current);
+        if (pd_data_.IsPickupNode(current)) {
+          ++num_opened_pairs;
+          opened_pairs_set_[pair] = true;
+        } else if (pd_data_.IsDeliveryNode(current)) {
+          --num_opened_pairs;
+          opened_pairs_set_[pair] = false;
+        }
       }
-    }
-    current = this->Next(current);
-  } while (num_opened_pairs != 0 && !this->IsPathEnd(current));
-  DCHECK_EQ(num_opened_pairs, 0);
-  rejected_nodes_.push_back(current);
-  subtrip_nodes_.push_back(this->Next(insertion_node));
-
+      current = this->Next(current);
+    } while (num_opened_pairs != 0 && !this->IsPathEnd(current));
+    DCHECK_EQ(num_opened_pairs, 0);
+    rejected_nodes_.push_back(current);
+    subtrip_nodes_.push_back(this->Next(insertion_node));
+  }
+  if (covered_nodes_[insertion_node]) return false;
   // Set new paths.
+  if (!this->CheckPathCompatibility(subtrip_nodes_,
+                                    this->Path(insertion_node))) {
+    this->SetNextBaseToIncrement(0);
+    return false;
+  }
   SetPath(rejected_nodes_, this->Path(chain_first_node));
   SetPath(subtrip_nodes_, this->Path(insertion_node));
   return true;
@@ -1524,42 +1596,52 @@ bool RelocateSubtrip<ignore_path_vars>::RelocateSubTripFromDelivery(
   // opened_pairs_set_ should be all false.
   DCHECK(std::none_of(opened_pairs_set_.begin(), opened_pairs_set_.end(),
                       [](bool value) { return value; }));
-  int num_opened_pairs = 0;
-  // Split chain into subtrip and rejected nodes. Store nodes in reverse order.
-  rejected_nodes_ = {this->Next(chain_last_node)};
-  subtrip_nodes_ = {this->Next(insertion_node)};
-  int current = chain_last_node;
-  do {
-    if (current == insertion_node) {
-      opened_pairs_set_.assign(opened_pairs_set_.size(), false);
-      return false;
-    }
-    const int pair = pd_data_.GetPairOfNode(current);
-    if (pd_data_.IsPickupNode(current) && !opened_pairs_set_[pair]) {
-      rejected_nodes_.push_back(current);
-    } else {
-      subtrip_nodes_.push_back(current);
-      if (pd_data_.IsDeliveryNode(current)) {
-        ++num_opened_pairs;
-        opened_pairs_set_[pair] = true;
-      } else if (pd_data_.IsPickupNode(current)) {
-        --num_opened_pairs;
-        opened_pairs_set_[pair] = false;
+  if (chain_last_node == reference_node_) {
+    subtrip_nodes_.front() = insertion_node;
+    subtrip_nodes_.back() = this->Next(insertion_node);
+  } else {
+    reference_node_ = chain_last_node;
+    covered_nodes_.ResetAllToFalse();
+    int num_opened_pairs = 0;
+    // Split chain into subtrip and rejected nodes. Store nodes in reverse
+    // order.
+    rejected_nodes_ = {this->Next(chain_last_node)};
+    subtrip_nodes_ = {this->Next(insertion_node)};
+    int current = chain_last_node;
+    do {
+      covered_nodes_.Set(current);
+      const int pair = pd_data_.GetPairOfNode(current);
+      if (pd_data_.IsPickupNode(current) && !opened_pairs_set_[pair]) {
+        rejected_nodes_.push_back(current);
+      } else {
+        subtrip_nodes_.push_back(current);
+        if (pd_data_.IsDeliveryNode(current)) {
+          ++num_opened_pairs;
+          opened_pairs_set_[pair] = true;
+        } else if (pd_data_.IsPickupNode(current)) {
+          --num_opened_pairs;
+          opened_pairs_set_[pair] = false;
+        }
       }
-    }
-    current = this->Prev(current);
-  } while (num_opened_pairs != 0 && !this->IsPathStart(current));
-  DCHECK_EQ(num_opened_pairs, 0);
-  if (current == insertion_node) return false;  // Skip null move.
-  rejected_nodes_.push_back(current);
-  subtrip_nodes_.push_back(insertion_node);
+      current = this->Prev(current);
+    } while (num_opened_pairs != 0 && !this->IsPathStart(current));
+    DCHECK_EQ(num_opened_pairs, 0);
+    covered_nodes_.Set(current);  // Skip null move.
+    rejected_nodes_.push_back(current);
+    subtrip_nodes_.push_back(insertion_node);
 
-  // TODO(user): either remove those std::reverse() and adapt the loops
-  // below, or refactor the loops into a function that also DCHECKs the path.
-  std::reverse(rejected_nodes_.begin(), rejected_nodes_.end());
-  std::reverse(subtrip_nodes_.begin(), subtrip_nodes_.end());
-
+    // TODO(user): either remove those std::reverse() and adapt the loops
+    // below, or refactor the loops into a function that also DCHECKs the path.
+    std::reverse(rejected_nodes_.begin(), rejected_nodes_.end());
+    std::reverse(subtrip_nodes_.begin(), subtrip_nodes_.end());
+  }
+  if (covered_nodes_[insertion_node]) return false;
   // Set new paths.
+  if (!this->CheckPathCompatibility(subtrip_nodes_,
+                                    this->Path(insertion_node))) {
+    this->SetNextBaseToIncrement(0);
+    return false;
+  }
   SetPath(rejected_nodes_, this->Path(chain_last_node));
   SetPath(subtrip_nodes_, this->Path(insertion_node));
   return true;
@@ -1584,6 +1666,8 @@ bool RelocateSubtrip<ignore_path_vars>::MakeNeighbor() {
     if (this->IsInactive(neighbor)) return false;
     return do_move(/*node=*/neighbor, /*insertion_node=*/this->BaseNode(0));
   }
+  // TODO(user): Optimize the code to not recompute subtrip and rejected
+  // subpaths when BaseNode(0) has not changed.
   return do_move(/*node=*/this->BaseNode(0),
                  /*insertion_node=*/this->BaseNode(1));
 }
@@ -1646,7 +1730,7 @@ void ExchangeSubtrip<ignore_path_vars>::SetPath(absl::Span<const int64_t> path,
 
 namespace {
 bool VectorContains(absl::Span<const int64_t> values, int64_t target) {
-  return std::find(values.begin(), values.end(), target) != values.end();
+  return absl::c_find(values, target) != values.end();
 }
 }  // namespace
 
@@ -1732,6 +1816,10 @@ bool ExchangeSubtrip<ignore_path_vars>::MakeNeighbor() {
   // record path_id0 and path_id11 before calling SetPath();
   const int64_t path0_id = this->Path(node0);
   const int64_t path1_id = this->Path(node1);
+  if (!this->CheckPathCompatibility(path0_, path0_id) ||
+      !this->CheckPathCompatibility(path1_, path1_id)) {
+    return false;
+  }
   SetPath(path0_, path0_id);
   SetPath(path1_, path1_id);
   return true;

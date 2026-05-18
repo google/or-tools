@@ -28,6 +28,7 @@
 #include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraints.h"
 #include "ortools/constraint_solver/interval.h"
@@ -264,7 +265,7 @@ class ResourceAssignmentConstraint : public Constraint {
       dim->CumulVar(model_.End(vehicle))
           ->SetRange(attributes.end_domain().Min(),
                      attributes.end_domain().Max());
-      if (attributes.span_upper_bound() < std::numeric_limits<int64_t>::max()) {
+      if (attributes.span_upper_bound() < kint64max) {
         dim->vehicle_span_variables()[vehicle]->SetMax(
             attributes.span_upper_bound());
       }
@@ -359,22 +360,18 @@ class PathSpansAndTotalSlacks : public Constraint {
   // for span and total_slack or not.
   int64_t SpanMin(int vehicle, int64_t sum_fixed_transits) {
     DCHECK_GE(sum_fixed_transits, 0);
-    const int64_t span_min = spans_[vehicle]
-                                 ? spans_[vehicle]->Min()
-                                 : std::numeric_limits<int64_t>::max();
-    const int64_t total_slack_min = total_slacks_[vehicle]
-                                        ? total_slacks_[vehicle]->Min()
-                                        : std::numeric_limits<int64_t>::max();
+    const int64_t span_min =
+        spans_[vehicle] ? spans_[vehicle]->Min() : kint64max;
+    const int64_t total_slack_min =
+        total_slacks_[vehicle] ? total_slacks_[vehicle]->Min() : kint64max;
     return std::min(span_min, CapAdd(total_slack_min, sum_fixed_transits));
   }
   int64_t SpanMax(int vehicle, int64_t sum_fixed_transits) {
     DCHECK_GE(sum_fixed_transits, 0);
-    const int64_t span_max = spans_[vehicle]
-                                 ? spans_[vehicle]->Max()
-                                 : std::numeric_limits<int64_t>::min();
-    const int64_t total_slack_max = total_slacks_[vehicle]
-                                        ? total_slacks_[vehicle]->Max()
-                                        : std::numeric_limits<int64_t>::min();
+    const int64_t span_max =
+        spans_[vehicle] ? spans_[vehicle]->Max() : kint64min;
+    const int64_t total_slack_max =
+        total_slacks_[vehicle] ? total_slacks_[vehicle]->Max() : kint64min;
     return std::max(span_max, CapAdd(total_slack_max, sum_fixed_transits));
   }
   void SetSpanMin(int vehicle, int64_t min, int64_t sum_fixed_transits) {
@@ -545,9 +542,7 @@ class PathSpansAndTotalSlacks : public Constraint {
       const int64_t span_max = SpanMax(vehicle, sum_fixed_transits);
       const int64_t slack_from_lb = CapSub(span_max, span_lb);
       const int64_t slack_from_ub =
-          span_ub < std::numeric_limits<int64_t>::max()
-              ? CapSub(span_ub, span_min)
-              : std::numeric_limits<int64_t>::max();
+          span_ub < kint64max ? CapSub(span_ub, span_min) : kint64max;
       for (const int node : path_) {
         IntVar* transit_var = dimension_->TransitVar(node);
         const int64_t transit_i_min = transit_var->Min();

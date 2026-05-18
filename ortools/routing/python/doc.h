@@ -2146,16 +2146,6 @@ static const char*
     R"doc()doc";
 
 static const char*
-    __doc_operations_research_routing_Model_HasMandatoryDisjunctions =  // NOLINT
-    R"doc(Returns true if the model contains mandatory disjunctions (ones with
-kNoPenalty as penalty).)doc";
-
-static const char*
-    __doc_operations_research_routing_Model_HasMaxCardinalityConstrainedDisjunctions =  // NOLINT
-    R"doc(Returns true if the model contains at least one disjunction which 
-is constrained by its max_cardinality.)doc";
-
-static const char*
     __doc_operations_research_routing_Model_HasSameVehicleTypeRequirements =
         R"doc(Returns true iff any same-route (resp. temporal) type requirements
 have been added to the model.)doc";

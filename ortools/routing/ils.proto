@@ -19,10 +19,9 @@
 // to an acceptance criterion.
 // The best found solution is eventually returned.
 
-syntax = "proto3";
+edition = "2024";
 
 option java_package = "com.google.ortools.routing";
-option java_multiple_files = true;
 option csharp_namespace = "Google.OrTools.Routing";
 
 import "ortools/routing/enums.proto";
@@ -33,7 +32,7 @@ package operations_research.routing;
 // Ruin strategy that removes a number of spatially close routes.
 message SpatiallyCloseRoutesRuinStrategy {
   // Number of spatially close routes ruined at each ruin application.
-  optional uint32 num_ruined_routes = 3;
+  uint32 num_ruined_routes = 3 [default = 2];
 }
 
 // Ruin strategy that removes a number of nodes by performing a random walk
@@ -48,7 +47,7 @@ message RandomWalkRuinStrategy {
   // i.e., the removal of a pickup (respectively delivery) causes the removal of
   // the associated delivery (respectively pickup) and it counts as a single
   // removal.
-  optional uint32 num_removed_visits = 7;
+  uint32 num_removed_visits = 7 [default = 10];
 }
 
 // Adaptive version of the RandomWalkRuinStrategy where the walk length is
@@ -86,9 +85,9 @@ message RandomWalkRuinStrategy {
 // Daniele Vigo, Transportation Science 2021.
 message AdaptiveRandomWalkRuinStrategy {
   // Factor used to compute the strengthening threshold.
-  optional double strengthening_factor = 1;
+  double strengthening_factor = 1 [default = 0.375];
   // Factor used to compute the weakening threshold.
-  optional double weakening_factor = 2;
+  double weakening_factor = 2 [default = 0.85];
 }
 
 // Ruin strategy based on the "Slack Induction by String Removals for Vehicle
@@ -164,16 +163,16 @@ message AdaptiveRandomWalkRuinStrategy {
 message SISRRuinStrategy {
   // Maximum number of removed visits per sequence. The parameter name in the
   // paper is L^{max} and the suggested value is 10.
-  optional uint32 max_removed_sequence_size = 1;
+  uint32 max_removed_sequence_size = 1 [default = 10];
 
   // Number of visits that are removed on average. The parameter name in the
   // paper is \bar{c} and the suggested value is 10.
-  optional uint32 avg_num_removed_visits = 2;
+  uint32 avg_num_removed_visits = 2 [default = 10];
 
   // Value in [0, 1] ruling the number of preserved nodes in the split
   // sequence removal. The parameter name in the paper is \alpha and the
   // suggested value is 0.01.
-  optional double bypass_factor = 3;
+  double bypass_factor = 3 [default = 0.01];
 }
 
 // Ruin strategies, used in perturbation based on ruin and recreate approaches.
@@ -197,10 +196,11 @@ message RecreateParameters {
 
 // Strategy defining how a solution is recreated.
 message RecreateStrategy {
-  optional FirstSolutionStrategy.Value heuristic = 1;
+  FirstSolutionStrategy.Value heuristic = 1
+      [default = LOCAL_CHEAPEST_INSERTION];
   // The selected parameters should match the chosen recreate heuristic.
   // If not set, the default parameters from the RoutingModel are used.
-  optional RecreateParameters parameters = 2;
+  RecreateParameters parameters = 2;
 }
 
 // The ruin composition strategies specifies how ruin are selected at every ILS
@@ -229,7 +229,8 @@ message RuinRecreateParameters {
 
   // The composition strategy to use when combining the given 'ruin_strategies'.
   // Has no effect when ruin_strategies is composed of a single strategy.
-  RuinCompositionStrategy.Value ruin_composition_strategy = 2;
+  RuinCompositionStrategy.Value ruin_composition_strategy = 2
+      [default = RUN_ALL_SEQUENTIALLY];
 
   // Strategy defining how a reference solution is recreated.
   RecreateStrategy recreate_strategy = 3;
@@ -250,9 +251,9 @@ message RuinRecreateParameters {
   //
   // Neighbors ratio, and minimum and maximum number of non start/end neighbor
   // nodes for the identification of spatially close routes.
-  optional double route_selection_neighbors_ratio = 4;
-  optional uint32 route_selection_min_neighbors = 5;
-  optional uint32 route_selection_max_neighbors = 6;
+  double route_selection_neighbors_ratio = 4 [default = 1.0];
+  uint32 route_selection_min_neighbors = 5 [default = 10];
+  uint32 route_selection_max_neighbors = 6 [default = 100];
 }
 
 // Defines how a reference solution is perturbed.
@@ -311,7 +312,7 @@ message CoolingScheduleStrategy {
 message GreedyDescentAcceptanceStrategy {
   // Specifies how many solutions in the past to consider for the late
   // acceptance.
-  optional uint32 late_acceptance_window = 1;
+  uint32 late_acceptance_window = 1 [default = 0];
 }
 
 // Acceptance strategy in which solutions are accepted with a probability that
@@ -319,13 +320,14 @@ message GreedyDescentAcceptanceStrategy {
 message SimulatedAnnealingAcceptanceStrategy {
   // Determines the speed at which the temperature changes from initial to
   // final.
-  CoolingScheduleStrategy.Value cooling_schedule_strategy = 1;
+  CoolingScheduleStrategy.Value cooling_schedule_strategy = 1
+      [default = EXPONENTIAL];
 
   // The initial temperature. See CoolingScheduleStrategy for its usage.
-  optional double initial_temperature = 2;
+  double initial_temperature = 2 [default = 100.0];
 
   // The final temperature. See CoolingScheduleStrategy for its usage.
-  optional double final_temperature = 3;
+  double final_temperature = 3 [default = 0.01];
 
   // Automatically define the value for the temperatures as follows.
   // First, a  reference temperature t is defined as
@@ -337,7 +339,7 @@ message SimulatedAnnealingAcceptanceStrategy {
   // The initial and final temperatures are then defined as
   // - initial_temperature: 0.1 * t
   // - final_temperature: 0.001 * t
-  optional bool automatic_temperatures = 4;
+  bool automatic_temperatures = 4 [default = false];
 }
 
 // Acceptance strategy in which a solution is accepted only if all nodes
@@ -370,7 +372,7 @@ message MoreNodesPerformedAcceptanceStrategy {}
 message AbsencesBasedAcceptanceStrategy {
   // If true, when a new best solution is found, the route with the lowest sum
   // of absences is removed from the reference solution.
-  optional bool remove_route_with_lowest_absences = 1;
+  bool remove_route_with_lowest_absences = 1 [default = false];
 }
 
 // Determines when a candidate solution replaces another one.
@@ -402,14 +404,15 @@ message IteratedLocalSearchParameters {
 
   // Determines how a reference solution S is perturbed to obtain a neighbor
   // solution S'.
-  PerturbationStrategy.Value perturbation_strategy = 1;
+  PerturbationStrategy.Value perturbation_strategy = 1
+      [default = RUIN_AND_RECREATE];
 
   // Parameters to customize a ruin and recreate perturbation.
   RuinRecreateParameters ruin_recreate_parameters = 2;
 
   // Determines whether solution S', obtained from the perturbation, should be
   // optimized with a local search application.
-  optional bool improve_perturbed_solution = 3;
+  bool improve_perturbed_solution = 3 [default = true];
 
   // Determines when the neighbor solution S', possibly improved if
   // `improve_perturbed_solution` is true, replaces the reference solution S.

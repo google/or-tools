@@ -16,7 +16,7 @@
 
 %include "ortools/base/base.i"
 %include "ortools/util/python/proto.i"
-%include "ortools/util/python/strings.swig"
+%include "ortools/util/python/strings.i"
 
 // PY_CONVERT_HELPER_* macros.
 %include "ortools/constraint_solver/python/constraint_solver_helpers.swig"
@@ -210,12 +210,26 @@ namespace operations_research::routing {
 %unignore Model::GetAllDimensionNames;
 %unignore Model::GetDimensions;
 %unignore Model::GetDisjunctionIndices;
+%unignore Model::GetDisjunctionMaxCardinality;
+%unignore Model::GetDisjunctionMinCardinality;
+%unignore Model::GetDisjunctionSoftMaxCardinality;
+%unignore Model::GetDisjunctionSoftMaxPenalty;
+%unignore Model::GetDisjunctionSoftMaxPenaltyCostBehavior;
+%unignore Model::GetDisjunctionSoftMinCardinality;
+%unignore Model::GetDisjunctionSoftMinPenalty;
+%unignore Model::GetDisjunctionSoftMinPenaltyCostBehavior;
 %unignore Model::GetDisjunctionPenalty;
+%unignore Model::GetNumberOfDisjunctions;
+%unignore Model::MakeDisjunction;
 %unignore Model::ReadAssignment;
 %unignore Model::RegisterCumulDependentTransitCallback;
 %unignore Model::ResourceVar;
 %unignore Model::RestoreAssignment;
 %unignore Model::SetArcCostEvaluatorOfVehicle;
+%unignore Model::SetDisjunctionHardMaximum;
+%unignore Model::SetDisjunctionHardMinimum;
+%unignore Model::SetDisjunctionSoftMaximum;
+%unignore Model::SetDisjunctionSoftMinimum;
 %unignore Model::SetPathEnergyCostOfVehicle;
 %unignore Model::TransitCallback;
 %unignore Model::UnaryTransitCallbackOrNull;

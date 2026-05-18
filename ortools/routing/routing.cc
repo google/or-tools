@@ -148,14 +148,11 @@ const Assignment* Model::PackCumulsOfOptimizerDimensionsFromAssignment(
     return original_assignment;
   }
   RegularLimit* const limit = GetOrCreateLimit();
-  limit->UpdateLimits(duration_limit, std::numeric_limits<int64_t>::max(),
-                      std::numeric_limits<int64_t>::max(),
-                      std::numeric_limits<int64_t>::max());
+  limit->UpdateLimits(duration_limit, kint64max, kint64max, kint64max);
 
   RegularLimit* const cumulative_limit = GetOrCreateCumulativeLimit();
-  cumulative_limit->UpdateLimits(
-      duration_limit, std::numeric_limits<int64_t>::max(),
-      std::numeric_limits<int64_t>::max(), std::numeric_limits<int64_t>::max());
+  cumulative_limit->UpdateLimits(duration_limit, kint64max, kint64max,
+                                 kint64max);
 
   // Initialize the packed_assignment with the Next values in the
   // original_assignment.
@@ -589,7 +586,7 @@ Model::Model(const IndexManager& index_manager,
   for (int i = 0; i < index_to_node.size(); ++i) {
     index_to_equivalence_class_[i] = index_to_node[i].value();
   }
-  allowed_vehicles_.resize(Size() + vehicles_);
+  allowed_vehicles_.resize(Size() + vehicles_, LazyMonotonicSet(vehicles_));
 }
 
 void Model::Initialize() {
@@ -756,7 +753,7 @@ void Model::AddNoCycleConstraintInternal() {
 
 bool Model::AddDimension(int evaluator_index, int64_t slack_max,
                          int64_t capacity, bool fix_start_cumul_to_zero,
-                         const std::string& name) {
+                         absl::string_view name) {
   const std::vector<int> evaluator_indices(vehicles_, evaluator_index);
   std::vector<int64_t> capacities(vehicles_, capacity);
   return AddDimensionWithCapacityInternal(evaluator_indices, {}, slack_max,
@@ -766,7 +763,7 @@ bool Model::AddDimension(int evaluator_index, int64_t slack_max,
 
 bool Model::AddDimensionWithVehicleTransits(
     const std::vector<int>& evaluator_indices, int64_t slack_max,
-    int64_t capacity, bool fix_start_cumul_to_zero, const std::string& name) {
+    int64_t capacity, bool fix_start_cumul_to_zero, absl::string_view name) {
   std::vector<int64_t> capacities(vehicles_, capacity);
   return AddDimensionWithCapacityInternal(evaluator_indices, {}, slack_max,
                                           std::move(capacities),
@@ -776,7 +773,7 @@ bool Model::AddDimensionWithVehicleTransits(
 bool Model::AddDimensionWithVehicleCapacity(
     int evaluator_index, int64_t slack_max,
     std::vector<int64_t> vehicle_capacities, bool fix_start_cumul_to_zero,
-    const std::string& name) {
+    absl::string_view name) {
   const std::vector<int> evaluator_indices(vehicles_, evaluator_index);
   return AddDimensionWithCapacityInternal(evaluator_indices, {}, slack_max,
                                           std::move(vehicle_capacities),
@@ -786,7 +783,7 @@ bool Model::AddDimensionWithVehicleCapacity(
 bool Model::AddDimensionWithVehicleTransitAndCapacity(
     const std::vector<int>& evaluator_indices, int64_t slack_max,
     std::vector<int64_t> vehicle_capacities, bool fix_start_cumul_to_zero,
-    const std::string& name) {
+    absl::string_view name) {
   return AddDimensionWithCapacityInternal(evaluator_indices, {}, slack_max,
                                           std::move(vehicle_capacities),
                                           fix_start_cumul_to_zero, name);
@@ -796,7 +793,7 @@ bool Model::AddDimensionWithCumulDependentVehicleTransitAndCapacity(
     const std::vector<int>& fixed_evaluator_indices,
     const std::vector<int>& cumul_dependent_evaluator_indices,
     int64_t slack_max, std::vector<int64_t> vehicle_capacities,
-    bool fix_start_cumul_to_zero, const std::string& name) {
+    bool fix_start_cumul_to_zero, absl::string_view name) {
   return AddDimensionWithCapacityInternal(
       fixed_evaluator_indices, cumul_dependent_evaluator_indices, slack_max,
       std::move(vehicle_capacities), fix_start_cumul_to_zero, name);
@@ -806,7 +803,7 @@ bool Model::AddDimensionWithCapacityInternal(
     const std::vector<int>& evaluator_indices,
     const std::vector<int>& cumul_dependent_evaluator_indices,
     int64_t slack_max, std::vector<int64_t> vehicle_capacities,
-    bool fix_start_cumul_to_zero, const std::string& name) {
+    bool fix_start_cumul_to_zero, absl::string_view name) {
   CHECK_EQ(vehicles_, vehicle_capacities.size());
   return InitializeDimensionInternal(
       evaluator_indices, cumul_dependent_evaluator_indices,
@@ -848,7 +845,7 @@ bool Model::InitializeDimensionInternal(
 
 std::pair<int, bool> Model::AddConstantDimensionWithSlack(
     int64_t value, int64_t capacity, int64_t slack_max,
-    bool fix_start_cumul_to_zero, const std::string& dimension_name) {
+    bool fix_start_cumul_to_zero, absl::string_view dimension_name) {
   const TransitEvaluatorSign sign = value < 0
                                         ? kTransitEvaluatorSignNegativeOrZero
                                         : kTransitEvaluatorSignPositiveOrZero;
@@ -861,7 +858,7 @@ std::pair<int, bool> Model::AddConstantDimensionWithSlack(
 
 std::pair<int, bool> Model::AddVectorDimension(
     std::vector<int64_t> values, int64_t capacity, bool fix_start_cumul_to_zero,
-    const std::string& dimension_name) {
+    absl::string_view dimension_name) {
   const int evaluator_index = RegisterUnaryTransitVector(std::move(values));
   return std::make_pair(evaluator_index,
                         AddDimension(evaluator_index, 0, capacity,
@@ -870,7 +867,7 @@ std::pair<int, bool> Model::AddVectorDimension(
 
 std::pair<int, bool> Model::AddMatrixDimension(
     std::vector<std::vector<int64_t>> values, int64_t capacity,
-    bool fix_start_cumul_to_zero, const std::string& dimension_name) {
+    bool fix_start_cumul_to_zero, absl::string_view dimension_name) {
   const int evaluator_index = RegisterTransitMatrix(std::move(values));
   return std::make_pair(evaluator_index,
                         AddDimension(evaluator_index, 0, capacity,
@@ -895,7 +892,7 @@ class RangeMakeElementExpr : public BaseIntExpr {
     const int idx_min = index_->Min();
     const int idx_max = index_->Max() + 1;
     return (idx_min < idx_max) ? callback_->RangeMin(idx_min, idx_max)
-                               : std::numeric_limits<int64_t>::max();
+                               : kint64max;
   }
   void SetMin(int64_t new_min) override {
     const int64_t old_min = Min();
@@ -920,7 +917,7 @@ class RangeMakeElementExpr : public BaseIntExpr {
     const int idx_min = index_->Min();
     const int idx_max = index_->Max() + 1;
     return (idx_min < idx_max) ? callback_->RangeMax(idx_min, idx_max)
-                               : std::numeric_limits<int64_t>::min();
+                               : kint64min;
   }
   void SetMax(int64_t new_max) override {
     const int64_t old_min = Min();
@@ -957,7 +954,7 @@ IntExpr* MakeRangeMakeElementExpr(const RangeIntToIntFunction* callback,
 bool Model::AddDimensionDependentDimensionWithVehicleCapacity(
     const std::vector<int>& dependent_transits, const Dimension* base_dimension,
     int64_t slack_max, std::vector<int64_t> vehicle_capacities,
-    bool fix_start_cumul_to_zero, const std::string& name) {
+    bool fix_start_cumul_to_zero, absl::string_view name) {
   const std::vector<int> pure_transits(vehicles_, /*zero_evaluator*/ 0);
   return AddDimensionDependentDimensionWithVehicleCapacity(
       pure_transits, dependent_transits, base_dimension, slack_max,
@@ -967,7 +964,7 @@ bool Model::AddDimensionDependentDimensionWithVehicleCapacity(
 bool Model::AddDimensionDependentDimensionWithVehicleCapacity(
     int transit, const Dimension* dimension, int64_t slack_max,
     int64_t vehicle_capacity, bool fix_start_cumul_to_zero,
-    const std::string& name) {
+    absl::string_view name) {
   return AddDimensionDependentDimensionWithVehicleCapacity(
       /*zero_evaluator*/ 0, transit, dimension, slack_max, vehicle_capacity,
       fix_start_cumul_to_zero, name);
@@ -977,7 +974,7 @@ bool Model::AddDimensionDependentDimensionWithVehicleCapacityInternal(
     const std::vector<int>& pure_transits,
     const std::vector<int>& dependent_transits, const Dimension* base_dimension,
     int64_t slack_max, std::vector<int64_t> vehicle_capacities,
-    bool fix_start_cumul_to_zero, const std::string& name) {
+    bool fix_start_cumul_to_zero, absl::string_view name) {
   CHECK_EQ(vehicles_, vehicle_capacities.size());
   Dimension* new_dimension = nullptr;
   if (base_dimension == nullptr) {
@@ -996,7 +993,7 @@ bool Model::AddDimensionDependentDimensionWithVehicleCapacityInternal(
 bool Model::AddDimensionDependentDimensionWithVehicleCapacity(
     int pure_transit, int dependent_transit, const Dimension* base_dimension,
     int64_t slack_max, int64_t vehicle_capacity, bool fix_start_cumul_to_zero,
-    const std::string& name) {
+    absl::string_view name) {
   std::vector<int> pure_transits(vehicles_, pure_transit);
   std::vector<int> dependent_transits(vehicles_, dependent_transit);
   std::vector<int64_t> vehicle_capacities(vehicles_, vehicle_capacity);
@@ -1094,11 +1091,10 @@ DimensionIndex Model::GetDimensionIndex(
 
 const Dimension& Model::GetDimensionOrDie(
     absl::string_view dimension_name) const {
-  return *dimensions_[gtl::FindOrDie(dimension_name_to_index_,
-                                     std::string(dimension_name))];
+  return *dimensions_[dimension_name_to_index_.at(dimension_name)];
 }
 
-Dimension* Model::GetMutableDimension(const std::string& dimension_name) const {
+Dimension* Model::GetMutableDimension(absl::string_view dimension_name) const {
   const DimensionIndex index = GetDimensionIndex(dimension_name);
   if (index != kNoDimension) {
     return dimensions_[index];
@@ -1155,7 +1151,7 @@ ResourceGroup* Model::AddResourceGroup() {
   // Create and add the resource vars (the proper variable bounds and
   // constraints are set up when closing the model).
   resource_vars_.push_back({});
-  solver_->MakeIntVarArray(vehicles(), -1, std::numeric_limits<int64_t>::max(),
+  solver_->MakeIntVarArray(vehicles(), -1, kint64max,
                            absl::StrCat("Resources[", rg_index, "]"),
                            &resource_vars_.back());
 
@@ -1397,8 +1393,8 @@ void Model::FinalizeAllowedVehicles() {
   // For each dimension, find the range of possible total transits.
   // This is precomputed to heuristically avoid a linear test on all vehicles.
   struct TransitBounds {
-    int64_t min = std::numeric_limits<int64_t>::max();
-    int64_t max = std::numeric_limits<int64_t>::min();
+    int64_t min = kint64max;
+    int64_t max = kint64min;
   };
   std::vector<TransitBounds> dimension_bounds(unary_dimensions.size());
   for (int d = 0; d < unary_dimensions.size(); ++d) {
@@ -1440,13 +1436,9 @@ void Model::FinalizeAllowedVehicles() {
       }
       for (int node = 0; node < Size(); ++node) {
         if (IsStart(node)) continue;
-        absl::flat_hash_set<int>& allowed_vehicles = allowed_vehicles_[node];
-        // NOTE: An empty set of "allowed_vehicles" actually means all
-        // vehicles are allowed for this node, so we lazily fill
-        // "allowed_vehicles" to [-1, num_vehicles) when removing a vehicle.
-
+        LazyMonotonicSet& allowed_vehicles = allowed_vehicles_[node];
         // The vehicle is already forbidden for this node.
-        if (!allowed_vehicles.empty() && !allowed_vehicles.contains(vehicle)) {
+        if (!allowed_vehicles.Contains(vehicle)) {
           continue;
         }
         // If the transit is within the allowed range, we can keep the vehicle.
@@ -1456,21 +1448,60 @@ void Model::FinalizeAllowedVehicles() {
             CapAdd(transit, slack_var->Min()) <= allowed_transits.max) {
           continue;
         }
-        // We will remove the vehicle, lazy fill.
-        if (allowed_vehicles.empty()) {
-          allowed_vehicles.reserve(vehicles_);
-          for (int v = 0; v < vehicles_; ++v) allowed_vehicles.insert(v);
-        }
-        allowed_vehicles.erase(vehicle);
-        if (allowed_vehicles.empty()) {
-          // If after erasing 'vehicle', allowed_vehicles becomes empty, it
-          // means no vehicle is allowed for this node, so we insert the value
-          // -1 in allowed_vehicles to distinguish with an empty
-          // allowed_vehicles which actually means all vehicles allowed.
-          allowed_vehicles.insert(-1);
-        }
+        allowed_vehicles.Erase(vehicle);
       }
     }
+  }
+  // For each vehicle-node pair, find whether dimension cumuls are outside
+  // vehicle dimension cumul bounds.
+  auto prune_vehicle_domains =
+      [this](std::vector<std::pair<int64_t, int>> vehicle_values,
+             std::vector<std::pair<int64_t, int>> node_values) {
+        absl::c_sort(vehicle_values);
+        absl::c_sort(node_values);
+        int vehicle_idx = 0;
+        int node_idx = 0;
+        SparseBitset<> forbidden_vehicles(vehicles_);
+        while (node_idx < node_values.size()) {
+          if (vehicle_idx < vehicle_values.size() &&
+              vehicle_values[vehicle_idx].first < node_values[node_idx].first) {
+            forbidden_vehicles.Set(vehicle_values[vehicle_idx].second);
+            vehicle_idx++;
+          } else {
+            LazyMonotonicSet& allowed_vehicles =
+                allowed_vehicles_[node_values[node_idx].second];
+            for (int vehicle : forbidden_vehicles.PositionsSetAtLeastOnce()) {
+              allowed_vehicles.Erase(vehicle);
+            }
+            node_idx++;
+          }
+        }
+      };
+  for (Dimension* dimension : dimensions_) {
+    const size_t num_cumuls = dimension->cumuls_.size();
+    std::vector<std::pair<int64_t, int>> vehicle_end_max;
+    for (int i = 0; i < vehicles_; ++i) {
+      if (!dimension->AreVehicleTransitsPositive(i)) continue;
+      vehicle_end_max.emplace_back(dimension->CumulVar(End(i))->Max(), i);
+    }
+    std::vector<std::pair<int64_t, int>> node_start_min(num_cumuls);
+    for (int i = 0; i < num_cumuls; ++i) {
+      node_start_min[i] = {dimension->cumuls_[i]->Min(), i};
+    }
+    prune_vehicle_domains(std::move(vehicle_end_max),
+                          std::move(node_start_min));
+    std::vector<std::pair<int64_t, int>> vehicle_neg_start_min;
+    for (int i = 0; i < vehicles_; ++i) {
+      if (!dimension->AreVehicleTransitsPositive(i)) continue;
+      vehicle_neg_start_min.emplace_back(-dimension->CumulVar(Start(i))->Min(),
+                                         i);
+    }
+    std::vector<std::pair<int64_t, int>> node_neg_start_max(num_cumuls);
+    for (int i = 0; i < num_cumuls; ++i) {
+      node_neg_start_max[i] = {-dimension->cumuls_[i]->Max(), i};
+    }
+    prune_vehicle_domains(std::move(vehicle_neg_start_min),
+                          std::move(node_neg_start_max));
   }
 }
 
@@ -1904,8 +1935,7 @@ void Model::FinalizePrecedences() {
     std::vector<int> in_degree(Size(), 0);
     SparseBitset<> nodes_in_precedences(Size());
     std::vector<absl::flat_hash_set<int>> successors(Size());
-    std::vector<int64_t> node_max_offset(Size(),
-                                         std::numeric_limits<int64_t>::min());
+    std::vector<int64_t> node_max_offset(Size(), kint64min);
     // Note: A precedence constraint between first_node and second_node with an
     // offset enforces cumuls(second_node) >= cumuls(first_node) + offset.
     for (const auto [first_node, second_node, offset, unused] :
@@ -1942,25 +1972,116 @@ DisjunctionIndex Model::AddDisjunction(
     CHECK_NE(kUnassigned, indices[i]);
   }
 
-  const DisjunctionIndex disjunction_index(disjunctions_.size());
-  disjunctions_.push_back(
-      {indices, {penalty, max_cardinality, penalty_cost_behavior}});
+  DisjunctionIndex disj_index = MakeDisjunction(indices);
+  SetDisjunctionHardMaximum(disj_index, max_cardinality);
+  // Set min == max if penalty is < 0 or int max, otherwise soft_min = max.
+  if (penalty < 0 || penalty == kint64max) {
+    SetDisjunctionHardMinimum(disj_index, max_cardinality);
+  } else {
+    SetDisjunctionSoftMinimum(disj_index, max_cardinality, penalty,
+                              penalty_cost_behavior);
+  }
+  return disj_index;
+}
+
+DisjunctionIndex Model::MakeDisjunction(const std::vector<int64_t>& indices) {
+  const DisjunctionIndex disj_index(disjunctions_.size());
+  disjunctions_.push_back({});
+  disjunctions_.back().indices = indices;
+  disjunctions_.back().max_cardinality = indices.size();
   for (const int64_t index : indices) {
-    index_to_disjunctions_[index].push_back(disjunction_index);
+    index_to_disjunctions_[index].push_back(disj_index);
   }
-  return disjunction_index;
+  return disj_index;
 }
 
-bool Model::HasMandatoryDisjunctions() const {
-  for (const auto& [indices, value] : disjunctions_) {
-    if (value.penalty == kNoPenalty) return true;
-  }
-  return false;
+void Model::SetDisjunctionHardMinimum(DisjunctionIndex disj_index,
+                                      int64_t min_cardinality) {
+  Disjunction& disj = disjunctions_[disj_index];
+  DCHECK_GE(min_cardinality, 0);
+  DCHECK_LE(min_cardinality, disj.indices.size());
+  disj.min_cardinality = min_cardinality;
 }
 
-bool Model::HasMaxCardinalityConstrainedDisjunctions() const {
-  for (const auto& [indices, value] : disjunctions_) {
-    if (indices.size() > value.max_cardinality) return true;
+void Model::SetDisjunctionSoftMinimum(
+    DisjunctionIndex disj_index, int64_t soft_min_cardinality, int64_t penalty,
+    PenaltyCostBehavior penalty_cost_behavior) {
+  CHECK_GE(penalty, 0);
+  Disjunction& disj = disjunctions_[disj_index];
+  DCHECK_GE(soft_min_cardinality, 0);
+  DCHECK_LE(soft_min_cardinality, disj.indices.size());
+  disj.soft_min_cardinality = soft_min_cardinality;
+  disj.soft_min_penalty = penalty;
+  disj.soft_min_penalty_type = penalty_cost_behavior;
+}
+
+void Model::SetDisjunctionHardMaximum(DisjunctionIndex disj_index,
+                                      int64_t max_cardinality) {
+  Disjunction& disj = disjunctions_[disj_index];
+  DCHECK_GE(max_cardinality, 0);
+  DCHECK_LE(max_cardinality, disj.indices.size());
+  disj.max_cardinality = max_cardinality;
+}
+
+void Model::SetDisjunctionSoftMaximum(
+    DisjunctionIndex disj_index, int64_t soft_max_cardinality, int64_t penalty,
+    PenaltyCostBehavior penalty_cost_behavior) {
+  CHECK_GE(penalty, 0);
+  Disjunction& disj = disjunctions_[disj_index];
+  DCHECK_GE(soft_max_cardinality, 0);
+  DCHECK_LE(soft_max_cardinality, disj.indices.size());
+  disj.soft_max_cardinality = soft_max_cardinality;
+  disj.soft_max_penalty = penalty;
+  disj.soft_max_penalty_type = penalty_cost_behavior;
+}
+
+int64_t Model::GetDisjunctionMaxCardinality(DisjunctionIndex index) const {
+  return disjunctions_[index].max_cardinality;
+}
+
+int64_t Model::GetDisjunctionMinCardinality(DisjunctionIndex index) const {
+  return disjunctions_[index].min_cardinality;
+}
+
+int64_t Model::GetDisjunctionSoftMaxCardinality(DisjunctionIndex index) const {
+  return disjunctions_[index].soft_max_cardinality;
+}
+
+int64_t Model::GetDisjunctionSoftMinCardinality(DisjunctionIndex index) const {
+  return disjunctions_[index].soft_min_cardinality;
+}
+
+int64_t Model::GetDisjunctionSoftMaxPenalty(DisjunctionIndex index) const {
+  return disjunctions_[index].soft_max_penalty;
+}
+
+int64_t Model::GetDisjunctionSoftMinPenalty(DisjunctionIndex index) const {
+  return disjunctions_[index].soft_min_penalty;
+}
+
+int64_t Model::GetDisjunctionPenalty(DisjunctionIndex index) const {
+  const Disjunction& disj = disjunctions_[index];
+  return disj.min_cardinality > 0 ? kNoPenalty : disj.soft_min_penalty;
+}
+
+Model::PenaltyCostBehavior Model::GetDisjunctionSoftMinPenaltyCostBehavior(
+    DisjunctionIndex index) const {
+  return disjunctions_[index].soft_min_penalty_type;
+}
+
+Model::PenaltyCostBehavior Model::GetDisjunctionSoftMaxPenaltyCostBehavior(
+    DisjunctionIndex index) const {
+  return disjunctions_[index].soft_max_penalty_type;
+}
+
+int Model::GetNumberOfDisjunctions() const { return disjunctions_.size(); }
+
+bool Model::HasHardDisjunctions() const {
+  for (const Disjunction& disj : disjunctions_) {
+    if (disj.min_cardinality > 0 ||
+        disj.max_cardinality < disj.indices.size()) {
+      return true;
+    }
   }
   return false;
 }
@@ -1968,11 +2089,10 @@ bool Model::HasMaxCardinalityConstrainedDisjunctions() const {
 std::vector<std::pair<int64_t, int64_t>> Model::GetPerfectBinaryDisjunctions()
     const {
   std::vector<std::pair<int64_t, int64_t>> var_index_pairs;
-  for (const Disjunction& disjunction : disjunctions_) {
-    const std::vector<int64_t>& var_indices = disjunction.indices;
-    if (var_indices.size() != 2) continue;
-    const int64_t v0 = var_indices[0];
-    const int64_t v1 = var_indices[1];
+  for (const Disjunction& disj : disjunctions_) {
+    if (disj.indices.size() != 2) continue;
+    const int64_t v0 = disj.indices[0];
+    const int64_t v1 = disj.indices[1];
     if (index_to_disjunctions_[v0].size() == 1 &&
         index_to_disjunctions_[v1].size() == 1) {
       // We output sorted pairs.
@@ -1994,50 +2114,64 @@ void Model::IgnoreDisjunctionsAlreadyForcedToZero() {
       }
     }
     if (!has_one_potentially_active_var) {
-      disjunction.value.max_cardinality = 0;
+      disjunction.max_cardinality = 0;
+      disjunction.min_cardinality = 0;
+      disjunction.soft_max_cardinality = 0;
+      disjunction.soft_min_cardinality = 0;
     }
   }
 }
 
 IntVar* Model::CreateDisjunction(DisjunctionIndex disjunction) {
-  const std::vector<int64_t>& indices = disjunctions_[disjunction].indices;
-  const int indices_size = indices.size();
-  std::vector<IntVar*> disjunction_vars(indices_size);
-  for (int i = 0; i < indices_size; ++i) {
-    const int64_t index = indices[i];
-    CHECK_LT(index, Size());
-    disjunction_vars[i] = ActiveVar(index);
+  const Disjunction& disj = disjunctions_[disjunction];
+  std::vector<IntVar*> active_vars;
+  active_vars.reserve(disj.indices.size());
+  for (const int64_t node : disj.indices) {
+    CHECK_LT(node, Size());
+    active_vars.push_back(ActiveVar(node));
   }
-  const int64_t max_cardinality =
-      disjunctions_[disjunction].value.max_cardinality;
+  IntVar* num_actives_var = solver_->MakeSum(active_vars)->Var();
+  num_actives_var->SetRange(disj.min_cardinality, disj.max_cardinality);
 
-  IntVar* number_active_vars = solver_->MakeIntVar(0, max_cardinality);
-  solver_->AddConstraint(
-      solver_->MakeSumEquality(disjunction_vars, number_active_vars));
+  std::vector<IntVar*> penalty_vars;
+  std::vector<int64_t> penalty_weights;
 
-  const int64_t penalty = disjunctions_[disjunction].value.penalty;
-  // If penalty is negative, then disjunction is mandatory
-  // i.e. number of active vars must be equal to max cardinality.
-  if (penalty < 0) {
-    solver_->AddConstraint(
-        solver_->MakeEquality(number_active_vars, max_cardinality));
+  if (disj.soft_min_penalty > 0 &&
+      disj.soft_min_cardinality > disj.min_cardinality) {
+    IntVar* num_violations = nullptr;
+    if (disj.soft_min_penalty_type == PenaltyCostBehavior::PENALIZE_ONCE ||
+        disj.min_cardinality + 1 == disj.soft_min_cardinality) {
+      num_violations =
+          solver_->MakeIsLessCstVar(num_actives_var, disj.soft_min_cardinality);
+    } else {
+      IntExpr* diff =
+          solver_->MakeDifference(disj.soft_min_cardinality, num_actives_var);
+      num_violations = solver_->MakeMax(diff, 0)->Var();
+    }
+    penalty_vars.push_back(num_violations);
+    penalty_weights.push_back(disj.soft_min_penalty);
+  }
+
+  if (disj.soft_max_penalty > 0 &&
+      disj.soft_max_cardinality < disj.max_cardinality) {
+    IntVar* num_violations = nullptr;
+    if (disj.soft_max_penalty_type == PenaltyCostBehavior::PENALIZE_ONCE ||
+        disj.soft_max_cardinality + 1 == disj.max_cardinality) {
+      num_violations = solver_->MakeIsGreaterCstVar(num_actives_var,
+                                                    disj.soft_max_cardinality);
+    } else {
+      IntExpr* diff =
+          solver_->MakeSum(num_actives_var, -disj.soft_max_cardinality);
+      num_violations = solver_->MakeMax(diff, 0)->Var();
+    }
+    penalty_vars.push_back(num_violations);
+    penalty_weights.push_back(disj.soft_max_penalty);
+  }
+
+  if (penalty_vars.empty()) {
     return nullptr;
-  }
-
-  const PenaltyCostBehavior penalty_cost_behavior =
-      disjunctions_[disjunction].value.penalty_cost_behavior;
-  if (max_cardinality == 1 ||
-      penalty_cost_behavior == PenaltyCostBehavior::PENALIZE_ONCE) {
-    IntVar* penalize_var = solver_->MakeBoolVar();
-    solver_->AddConstraint(solver_->MakeIsDifferentCstCt(
-        number_active_vars, max_cardinality, penalize_var));
-    return solver_->MakeProd(penalize_var, penalty)->Var();
   } else {
-    IntVar* number_no_active_vars = solver_->MakeIntVar(0, max_cardinality);
-    solver_->AddConstraint(solver_->MakeEquality(
-        number_no_active_vars,
-        solver_->MakeDifference(max_cardinality, number_active_vars)));
-    return solver_->MakeProd(number_no_active_vars, penalty)->Var();
+    return solver_->MakeScalProd(penalty_vars, penalty_weights)->Var();
   }
 }
 
@@ -2052,11 +2186,7 @@ void Model::AddSoftSameVehicleConstraint(std::vector<int64_t> indices,
 void Model::SetAllowedVehiclesForIndex(absl::Span<const int> vehicles,
                                        int64_t index) {
   DCHECK(!closed_);
-  auto& allowed_vehicles = allowed_vehicles_[index];
-  allowed_vehicles.clear();
-  for (int vehicle : vehicles) {
-    allowed_vehicles.insert(vehicle);
-  }
+  allowed_vehicles_[index].Reset(vehicles);
 }
 
 void Model::AddPickupAndDelivery(int64_t pickup, int64_t delivery) {
@@ -2231,8 +2361,7 @@ void Model::AppendHomogeneousArcCosts(const RoutingSearchParameters& parameters,
     // Only supporting positive costs.
     // TODO(user): Detect why changing lower bound to kint64min stalls
     // the search in GLS in some cases (Solomon instances for instance).
-    IntVar* const base_cost_var =
-        solver_->MakeIntVar(0, std::numeric_limits<int64_t>::max());
+    IntVar* const base_cost_var = solver_->MakeIntVar(0, kint64max);
     solver_->AddConstraint(solver_->MakeLightElement(
         arc_cost_evaluator, base_cost_var, nexts_[node_index],
         [this]() { return enable_deep_serialization_; }));
@@ -2256,8 +2385,7 @@ void Model::AppendArcCosts(const RoutingSearchParameters& parameters,
     // Only supporting positive costs.
     // TODO(user): Detect why changing lower bound to kint64min stalls
     // the search in GLS in some cases (Solomon instances for instance).
-    IntVar* const base_cost_var =
-        solver_->MakeIntVar(0, std::numeric_limits<int64_t>::max());
+    IntVar* const base_cost_var = solver_->MakeIntVar(0, kint64max);
     solver_->AddConstraint(solver_->MakeLightElement(
         [this, node_index](int64_t to, int64_t vehicle) {
           return GetArcCostForVehicle(node_index, to, vehicle);
@@ -2567,9 +2695,8 @@ void Model::CloseModelWithParameters(
   closed_ = true;
 
   // Setup the time limit to be able to check it while closing the model.
-  GetOrCreateLimit()->UpdateLimits(
-      GetTimeLimit(parameters), std::numeric_limits<int64_t>::max(),
-      std::numeric_limits<int64_t>::max(), parameters.solution_limit());
+  GetOrCreateLimit()->UpdateLimits(GetTimeLimit(parameters), kint64max,
+                                   kint64max, parameters.solution_limit());
 
   for (Dimension* const dimension : dimensions_) {
     dimension->CloseModel(UsesLightPropagation(parameters));
@@ -2622,11 +2749,11 @@ void Model::CloseModelWithParameters(
   // Reduce domains of vehicle variables.
   for (int i = 0; i < allowed_vehicles_.size(); ++i) {
     const auto& allowed_vehicles = allowed_vehicles_[i];
-    if (!allowed_vehicles.empty()) {
+    if (allowed_vehicles.Touched()) {
       std::vector<int64_t> vehicles;
-      vehicles.reserve(allowed_vehicles.size() + 1);
+      vehicles.reserve(allowed_vehicles.Values().size() + 1);
       vehicles.push_back(-1);
-      for (int vehicle : allowed_vehicles) {
+      for (int vehicle : allowed_vehicles.Values()) {
         vehicles.push_back(vehicle);
       }
       solver_->AddConstraint(solver_->MakeMemberCt(VehicleVar(i), vehicles));
@@ -2661,9 +2788,9 @@ void Model::CloseModelWithParameters(
     const std::vector<DisjunctionIndex>& disjunctions =
         GetDisjunctionIndices(i);
     bool is_mandatory = disjunctions.empty();
-    for (const DisjunctionIndex& disjunction : disjunctions) {
-      if (GetDisjunctionNodeIndices(disjunction).size() == 1 &&
-          GetDisjunctionPenalty(disjunction) == kNoPenalty) {
+    for (const DisjunctionIndex& index : disjunctions) {
+      const Disjunction& disj = disjunctions_[index];
+      if (disj.indices.size() == disj.min_cardinality) {
         is_mandatory = true;
         break;
       }
@@ -2783,9 +2910,7 @@ void Model::CloseModelWithParameters(
         std::any_of(slack_costs.begin(), slack_costs.end(),
                     [](int64_t coeff) { return coeff != 0; }) ||
         std::any_of(span_ubs.begin(), span_ubs.end(),
-                    [](int64_t value) {
-                      return value < std::numeric_limits<int64_t>::max();
-                    }) ||
+                    [](int64_t value) { return value < kint64max; }) ||
         std::any_of(
             rg_indices.begin(), rg_indices.end(),
             [this, dimension](int64_t rg_index) {
@@ -2796,8 +2921,7 @@ void Model::CloseModelWithParameters(
               for (const ResourceGroup::Resource& resource :
                    resource_group.GetResources()) {
                 if (resource.GetDimensionAttributes(dimension->index())
-                        .span_upper_bound() <
-                    std::numeric_limits<int64_t>::max()) {
+                        .span_upper_bound() < kint64max) {
                   return true;
                 }
               }
@@ -2811,7 +2935,7 @@ void Model::CloseModelWithParameters(
       std::vector<IntVar*> total_slacks(vehicles(), nullptr);
       // Generate variables only where needed.
       for (int vehicle = 0; vehicle < vehicles(); ++vehicle) {
-        if (span_ubs[vehicle] < std::numeric_limits<int64_t>::max()) {
+        if (span_ubs[vehicle] < kint64max) {
           spans[vehicle] = solver_->MakeIntVar(0, span_ubs[vehicle], "");
         }
         if (span_costs[vehicle] != 0 || slack_costs[vehicle] != 0) {
@@ -2851,13 +2975,12 @@ void Model::CloseModelWithParameters(
       for (int vehicle = 0; vehicle < vehicles(); ++vehicle) {
         if (!spans[vehicle] && !total_slacks[vehicle]) continue;
         if (spans[vehicle]) {
-          AddVariableTargetToFinalizer(spans[vehicle],
-                                       std::numeric_limits<int64_t>::min());
+          AddVariableTargetToFinalizer(spans[vehicle], kint64min);
         }
         AddVariableTargetToFinalizer(dimension->CumulVar(End(vehicle)),
-                                     std::numeric_limits<int64_t>::min());
+                                     kint64min);
         AddVariableTargetToFinalizer(dimension->CumulVar(Start(vehicle)),
-                                     std::numeric_limits<int64_t>::max());
+                                     kint64max);
       }
       // Add costs of variables.
       for (int vehicle = 0; vehicle < vehicles(); ++vehicle) {
@@ -2880,9 +3003,7 @@ void Model::CloseModelWithParameters(
         for (int vehicle = 0; vehicle < vehicles(); ++vehicle) {
           const auto bound_cost =
               dimension->GetSoftSpanUpperBoundForVehicle(vehicle);
-          if (bound_cost.cost == 0 ||
-              bound_cost.bound == std::numeric_limits<int64_t>::max())
-            continue;
+          if (bound_cost.cost == 0 || bound_cost.bound == kint64max) continue;
           DCHECK(spans[vehicle] != nullptr);
           // Additional cost is vehicle_cost_considered_[vehicle] *
           // max(0, spans[vehicle] - bound_cost.bound) * bound_cost.cost.
@@ -2905,9 +3026,7 @@ void Model::CloseModelWithParameters(
         for (int vehicle = 0; vehicle < vehicles(); ++vehicle) {
           const auto bound_cost =
               dimension->GetQuadraticCostSoftSpanUpperBoundForVehicle(vehicle);
-          if (bound_cost.cost == 0 ||
-              bound_cost.bound == std::numeric_limits<int64_t>::max())
-            continue;
+          if (bound_cost.cost == 0 || bound_cost.bound == kint64max) continue;
           DCHECK(spans[vehicle] != nullptr);
           // Additional cost is vehicle_cost_considered_[vehicle] *
           // max(0, spans[vehicle] - bound_cost.bound)^2 * bound_cost.cost.
@@ -3048,7 +3167,7 @@ void Model::CloseModelWithParameters(
   for (const Dimension* const dimension : dimensions_) {
     // Dimension path precedences, discovered by model inspection (which must be
     // performed before adding path transit precedences).
-    const ReverseArcListGraph<int, int>& graph =
+    const util::ReverseArcListGraph<int, int>& graph =
         dimension->GetPathPrecedenceGraph();
     std::vector<std::pair<int, int>> path_precedences;
     for (const auto tail : graph.AllNodes()) {
@@ -3289,12 +3408,10 @@ bool Model::UpdateLimits(const RoutingSearchParameters& parameters,
           ? absl::ZeroDuration()
           : parameters.secondary_ls_time_limit_ratio() * time_left;
   const absl::Duration time_limit = time_left - secondary_solve_buffer;
-  limit_->UpdateLimits(time_limit, std::numeric_limits<int64_t>::max(),
-                       std::numeric_limits<int64_t>::max(),
+  limit_->UpdateLimits(time_limit, kint64max, kint64max,
                        parameters.solution_limit());
   DCHECK_NE(ls_limit_, nullptr);
-  ls_limit_->UpdateLimits(time_limit, std::numeric_limits<int64_t>::max(),
-                          std::numeric_limits<int64_t>::max(), 1);
+  ls_limit_->UpdateLimits(time_limit, kint64max, kint64max, 1);
   // TODO(user): Come up with a better formula. Ideally this should be
   // calibrated in the first solution strategies.
   time_buffer_ = std::min(absl::Seconds(1), time_limit * 0.05);
@@ -3345,9 +3462,8 @@ const Assignment* Model::FastSolveFromAssignmentWithParameters(
       InitializeSearch(search_parameters);
   if (!start_time_ms.has_value()) return nullptr;
   if (assignment == nullptr) return nullptr;
-  limit_->UpdateLimits(
-      GetTimeLimit(search_parameters), std::numeric_limits<int64_t>::max(),
-      std::numeric_limits<int64_t>::max(), search_parameters.solution_limit());
+  limit_->UpdateLimits(GetTimeLimit(search_parameters), kint64max, kint64max,
+                       search_parameters.solution_limit());
   std::vector<SearchMonitor*> monitors = {metaheuristic_};
   if (search_log_ != nullptr) monitors.push_back(search_log_);
   Assignment* solution = solver()->RunUncheckedLocalSearch(
@@ -3471,9 +3587,8 @@ const Assignment* Model::SolveFromAssignmentsWithParameters(
     status_ = RoutingSearchStatus::ROUTING_FAIL_TIMEOUT;
     return nullptr;
   }
-  lns_limit_->UpdateLimits(
-      GetLnsTimeLimit(parameters), std::numeric_limits<int64_t>::max(),
-      std::numeric_limits<int64_t>::max(), std::numeric_limits<int64_t>::max());
+  lns_limit_->UpdateLimits(GetLnsTimeLimit(parameters), kint64max, kint64max,
+                           kint64max);
   // NOTE: Allow more time for the first solution's scheduling, since if it
   // fails, we won't have anything to build upon.
   // We set this time limit based on whether local/global dimension optimizers
@@ -3484,9 +3599,8 @@ const Assignment* Model::SolveFromAssignmentsWithParameters(
   const absl::Duration first_solution_lns_time_limit =
       std::max(GetTimeLimit(parameters) / time_limit_shares,
                GetLnsTimeLimit(parameters));
-  first_solution_lns_limit_->UpdateLimits(
-      first_solution_lns_time_limit, std::numeric_limits<int64_t>::max(),
-      std::numeric_limits<int64_t>::max(), std::numeric_limits<int64_t>::max());
+  first_solution_lns_limit_->UpdateLimits(first_solution_lns_time_limit,
+                                          kint64max, kint64max, kint64max);
 
   std::vector<std::unique_ptr<Assignment>> solution_pool;
   std::vector<const Assignment*> first_solution_assignments;
@@ -3662,7 +3776,7 @@ const Assignment* Model::SolveFromAssignmentsWithParameters(
 
 const Assignment* Model::SolveWithIteratedLocalSearch(
     const RoutingSearchParameters& parameters) {
-  DCHECK(parameters.use_iterated_local_search());
+  DCHECK(parameters.has_iterated_local_search_parameters());
 
   if (nodes() == 0) {
     return nullptr;
@@ -3709,12 +3823,10 @@ const Assignment* Model::SolveWithIteratedLocalSearch(
     if (time_left < absl::ZeroDuration()) {
       return false;
     }
-    limit_->UpdateLimits(time_left, std::numeric_limits<int64_t>::max(),
-                         std::numeric_limits<int64_t>::max(),
+    limit_->UpdateLimits(time_left, kint64max, kint64max,
                          parameters.solution_limit());
     DCHECK_NE(ls_limit_, nullptr);
-    ls_limit_->UpdateLimits(time_left, std::numeric_limits<int64_t>::max(),
-                            std::numeric_limits<int64_t>::max(), 1);
+    ls_limit_->UpdateLimits(time_left, kint64max, kint64max, 1);
     // TODO(user): Come up with a better formula. Ideally this should be
     // calibrated in the first solution strategies.
     time_buffer_ = std::min(absl::Seconds(1), time_left * 0.05);
@@ -4450,8 +4562,7 @@ int64_t Model::GetArcCostForFirstSolution(int64_t from_index,
         nexts_, active_, is_bound_to_end_, zero_transit));
     is_bound_to_end_ct_added_.Switch(solver_.get());
   }
-  if (is_bound_to_end_[to_index]->Min() == 1)
-    return std::numeric_limits<int64_t>::max();
+  if (is_bound_to_end_[to_index]->Min() == 1) return kint64max;
   // TODO(user): Take vehicle into account.
   return GetHomogeneousCost(from_index, to_index);
 }
@@ -4746,16 +4857,16 @@ int64_t Model::UnperformedPenalty(int64_t var_index) const {
 
 int64_t Model::UnperformedPenaltyOrValue(int64_t default_value,
                                          int64_t var_index) const {
-  if (active_[var_index]->Min() == 1)
-    return std::numeric_limits<int64_t>::max();  // Forced active.
+  if (active_[var_index]->Min() == 1) return kint64max;  // Forced active.
   const std::vector<DisjunctionIndex>& disjunction_indices =
       GetDisjunctionIndices(var_index);
   if (disjunction_indices.size() != 1) return default_value;
-  const DisjunctionIndex disjunction_index = disjunction_indices[0];
+  const Disjunction& disj = disjunctions_[disjunction_indices[0]];
   // The disjunction penalty can be kNoPenalty iff there is more than one node
   // in the disjunction; otherwise we would have caught it earlier (the node
   // would be forced active).
-  return std::max(int64_t{0}, disjunctions_[disjunction_index].value.penalty);
+  return std::max(int64_t{0},
+                  disj.soft_min_cardinality > 0 ? disj.soft_min_penalty : 0);
 }
 
 std::string Model::DebugOutputAssignment(
@@ -4852,51 +4963,45 @@ Assignment* Model::GetOrCreateTmpAssignment() {
 
 RegularLimit* Model::GetOrCreateLimit() {
   if (limit_ == nullptr) {
-    limit_ = solver_->MakeLimit(
-        absl::InfiniteDuration(), std::numeric_limits<int64_t>::max(),
-        std::numeric_limits<int64_t>::max(),
-        std::numeric_limits<int64_t>::max(), /*smart_time_check=*/true);
+    limit_ = solver_->MakeLimit(absl::InfiniteDuration(), kint64max, kint64max,
+                                kint64max, /*smart_time_check=*/true);
   }
   return limit_;
 }
 
 RegularLimit* Model::GetOrCreateCumulativeLimit() {
   if (cumulative_limit_ == nullptr) {
-    cumulative_limit_ = solver_->MakeLimit(
-        absl::InfiniteDuration(), std::numeric_limits<int64_t>::max(),
-        std::numeric_limits<int64_t>::max(),
-        std::numeric_limits<int64_t>::max(), /*smart_time_check=*/true,
-        /*cumulative=*/true);
+    cumulative_limit_ =
+        solver_->MakeLimit(absl::InfiniteDuration(), kint64max, kint64max,
+                           kint64max, /*smart_time_check=*/true,
+                           /*cumulative=*/true);
   }
   return cumulative_limit_;
 }
 
 RegularLimit* Model::GetOrCreateLocalSearchLimit() {
   if (ls_limit_ == nullptr) {
-    ls_limit_ = solver_->MakeLimit(absl::InfiniteDuration(),
-                                   std::numeric_limits<int64_t>::max(),
-                                   std::numeric_limits<int64_t>::max(),
-                                   /*solutions=*/1, /*smart_time_check=*/true);
+    ls_limit_ =
+        solver_->MakeLimit(absl::InfiniteDuration(), kint64max, kint64max,
+                           /*solutions=*/1, /*smart_time_check=*/true);
   }
   return ls_limit_;
 }
 
 RegularLimit* Model::GetOrCreateLargeNeighborhoodSearchLimit() {
   if (lns_limit_ == nullptr) {
-    lns_limit_ = solver_->MakeLimit(
-        absl::InfiniteDuration(), std::numeric_limits<int64_t>::max(),
-        std::numeric_limits<int64_t>::max(),
-        std::numeric_limits<int64_t>::max(), /*smart_time_check=*/false);
+    lns_limit_ =
+        solver_->MakeLimit(absl::InfiniteDuration(), kint64max, kint64max,
+                           kint64max, /*smart_time_check=*/false);
   }
   return lns_limit_;
 }
 
 RegularLimit* Model::GetOrCreateFirstSolutionLargeNeighborhoodSearchLimit() {
   if (first_solution_lns_limit_ == nullptr) {
-    first_solution_lns_limit_ = solver_->MakeLimit(
-        absl::InfiniteDuration(), std::numeric_limits<int64_t>::max(),
-        std::numeric_limits<int64_t>::max(),
-        std::numeric_limits<int64_t>::max(), /*smart_time_check=*/false);
+    first_solution_lns_limit_ =
+        solver_->MakeLimit(absl::InfiniteDuration(), kint64max, kint64max,
+                           kint64max, /*smart_time_check=*/false);
   }
   return first_solution_lns_limit_;
 }
@@ -5051,8 +5156,7 @@ void Model::CreateNeighborhoodOperators(
     // Only add disjunctions of cardinality 1 and of size > 1, as
     // SwapActiveToShortestPathOperator and TwoOptWithShortestPathOperator only
     // support DAGs, and don't care about chain-DAGS.
-    if (disjunction.value.max_cardinality == 1 &&
-        disjunction.indices.size() > 1) {
+    if (disjunction.max_cardinality == 1 && disjunction.indices.size() > 1) {
       alternative_sets.push_back(disjunction.indices);
     }
   }
@@ -5252,9 +5356,8 @@ LocalSearchOperator* Model::GetNeighborhoodOperators(
     CP_ROUTING_PUSH_OPERATOR(EXCHANGE, exchange);
     CP_ROUTING_PUSH_OPERATOR(CROSS, cross);
   }
-  if (!pickup_delivery_pairs_.empty() ||
-      search_parameters.local_search_operators().use_relocate_neighbors() ==
-          BOOL_TRUE) {
+  if (search_parameters.local_search_operators().use_relocate_neighbors() ==
+      BOOL_TRUE) {
     operators.push_back(local_search_operators_[RELOCATE_NEIGHBORS]);
   }
   const LocalSearchMetaheuristic::Value local_search_metaheuristic =
@@ -5485,8 +5588,7 @@ Model::CreateLocalSearchFilters(const RoutingSearchParameters& parameters,
     }
 
     if (!disjunctions_.empty()) {
-      if (options.filter_objective || HasMandatoryDisjunctions() ||
-          HasMaxCardinalityConstrainedDisjunctions()) {
+      if (options.filter_objective || HasHardDisjunctions()) {
         filter_events.push_back(
             {MakeNodeDisjunctionFilter(*this, options.filter_objective),
              kAccept, priority});
@@ -5746,8 +5848,7 @@ void Model::StoreDimensionCumulOptimizers(
       if (!AllTransitsPositive(*dimension)) {
         dimension->SetOffsetForGlobalOptimizer(0);
       } else {
-        int64_t offset =
-            vehicles() == 0 ? 0 : std::numeric_limits<int64_t>::max();
+        int64_t offset = vehicles() == 0 ? 0 : kint64max;
         for (int vehicle = 0; vehicle < vehicles(); ++vehicle) {
           DCHECK_GE(dimension->CumulVar(Start(vehicle))->Min(), 0);
           offset =
@@ -5773,8 +5874,7 @@ void Model::StoreDimensionCumulOptimizers(
       if (dimension->GetSpanCostCoefficientForVehicle(vehicle) > 0) {
         has_span_cost = true;
       }
-      if (dimension->GetSpanUpperBoundForVehicle(vehicle) <
-          std::numeric_limits<int64_t>::max()) {
+      if (dimension->GetSpanUpperBoundForVehicle(vehicle) < kint64max) {
         has_span_limit = true;
       }
       DCHECK_GE(dimension->CumulVar(Start(vehicle))->Min(), 0);
@@ -5964,6 +6064,23 @@ DecisionBuilder* Model::CreateSolutionFinalizer(
   return solver_->Compose(decision_builders);
 }
 
+namespace {
+class ResetLSOperators : public DecisionBuilder {
+ public:
+  explicit ResetLSOperators(LocalSearchOperator* ls_operators)
+      : ls_operators_(ls_operators) {}
+  ~ResetLSOperators() override = default;
+  Decision* Next(Solver* /*solver*/) override {
+    ls_operators_->Reset();
+    return nullptr;
+  }
+  std::string DebugString() const override { return "ResetLSOperators"; }
+
+ private:
+  LocalSearchOperator* const ls_operators_;
+};
+}  // namespace
+
 void Model::CreateFirstSolutionDecisionBuilders(
     const RoutingSearchParameters& search_parameters) {
   first_solution_decision_builders_.resize(
@@ -6047,14 +6164,20 @@ void Model::CreateFirstSolutionDecisionBuilders(
       MakeAllUnperformed(this);
   // Best insertion heuristic.
   RegularLimit* const ls_limit = solver_->MakeLimit(
-      GetTimeLimit(search_parameters), std::numeric_limits<int64_t>::max(),
-      std::numeric_limits<int64_t>::max(), std::numeric_limits<int64_t>::max(),
+      GetTimeLimit(search_parameters), kint64max, kint64max, kint64max,
       /*smart_time_check=*/true);
+  LocalSearchOperator* const insertion_operator = CreateInsertionOperator();
+  // BEST_INSERTION will perform best accept local search using insertion
+  // operators. As of 04/2026, some of these operators keep track of optimal
+  // sub-spaces which need to be cleared for best accept.
+  DecisionBuilder* const reset_ls_operators =
+      solver_->RevAlloc(new ResetLSOperators(insertion_operator));
   DecisionBuilder* const finalize = solver_->MakeSolveOnce(
-      finalize_solution, GetOrCreateLargeNeighborhoodSearchLimit());
+      solver_->Compose(finalize_solution, reset_ls_operators),
+      GetOrCreateLargeNeighborhoodSearchLimit());
   LocalSearchPhaseParameters* const insertion_parameters =
       solver_->MakeLocalSearchPhaseParameters(
-          nullptr, CreateInsertionOperator(), finalize, ls_limit,
+          nullptr, insertion_operator, finalize, ls_limit,
           GetOrCreateLocalSearchFilterManager(
               search_parameters,
               {/*filter_objective=*/true, /*filter_with_cp_solver=*/false}));
@@ -6255,7 +6378,8 @@ void Model::CreateFirstSolutionDecisionBuilders(
       [](Dimension* dim) { return !dim->GetNodePrecedences().empty(); });
   bool has_single_vehicle_node = false;
   for (int node = 0; node < Size(); node++) {
-    if (!IsStart(node) && !IsEnd(node) && allowed_vehicles_[node].size() == 1) {
+    if (!IsStart(node) && !IsEnd(node) &&
+        allowed_vehicles_[node].Values().size() == 1) {
       has_single_vehicle_node = true;
       break;
     }
@@ -6443,8 +6567,7 @@ void Model::SetupMetaheuristics(
     // Some metaheuristics will effectively never terminate; warn
     // user if they fail to set a time limit.
     bool limit_too_long = !search_parameters.has_time_limit() &&
-                          search_parameters.solution_limit() ==
-                              std::numeric_limits<int64_t>::max();
+                          search_parameters.solution_limit() == kint64max;
     const int64_t optimization_step = std::max(
         MathUtil::SafeRound<int64_t>(search_parameters.optimization_step()),
         One());
@@ -6752,7 +6875,7 @@ const char ModelVisitor::kLightElement2[] = "LightElement2";
 const char ModelVisitor::kRemoveValues[] = "RemoveValues";
 
 Dimension::Dimension(Model* model, std::vector<int64_t> vehicle_capacities,
-                     const std::string& name, const Dimension* base_dimension)
+                     absl::string_view name, const Dimension* base_dimension)
     : vehicle_capacities_(std::move(vehicle_capacities)),
       base_dimension_(base_dimension),
       global_span_cost_coefficient_(0),
@@ -6761,15 +6884,14 @@ Dimension::Dimension(Model* model, std::vector<int64_t> vehicle_capacities,
       name_(name),
       global_optimizer_offset_(0) {
   CHECK(model != nullptr);
-  vehicle_span_upper_bounds_.assign(model->vehicles(),
-                                    std::numeric_limits<int64_t>::max());
+  vehicle_span_upper_bounds_.assign(model->vehicles(), kint64max);
   vehicle_span_cost_coefficients_.assign(model->vehicles(), 0);
   vehicle_slack_cost_coefficients_.assign(model->vehicles(), 0);
   vehicle_span_vars_.resize(model->vehicles(), nullptr);
 }
 
 Dimension::Dimension(Model* model, std::vector<int64_t> vehicle_capacities,
-                     const std::string& name, SelfBased)
+                     absl::string_view name, SelfBased)
     : Dimension(model, std::move(vehicle_capacities), name, this) {}
 
 Dimension::~Dimension() { cumul_var_piecewise_linear_cost_.clear(); }
@@ -6803,8 +6925,7 @@ void Dimension::InitializeCumuls() {
   forbidden_intervals_.resize(size);
   capacity_vars_.clear();
   if (min_capacity != max_capacity) {
-    solver->MakeIntVarArray(size, 0, std::numeric_limits<int64_t>::max(),
-                            &capacity_vars_);
+    solver->MakeIntVarArray(size, 0, kint64max, &capacity_vars_);
     for (int i = 0; i < size; ++i) {
       IntVar* const capacity_var = capacity_vars_[i];
       if (i < model_->Size()) {
@@ -6869,7 +6990,7 @@ void Dimension::InitializeTransitVariables(int64_t slack_max) {
   }
   const bool is_unary = IsUnary();
   for (int64_t i = 0; i < size; ++i) {
-    int64_t min_fixed_transit = std::numeric_limits<int64_t>::max();
+    int64_t min_fixed_transit = kint64max;
     if (is_unary) {
       for (int evaluator_index : class_evaluators_) {
         const auto& unary_transit_callback =
@@ -6879,11 +7000,11 @@ void Dimension::InitializeTransitVariables(int64_t slack_max) {
             std::min(min_fixed_transit, unary_transit_callback(i));
       }
     }
-    fixed_transits_[i] = solver->MakeIntVar(
-        is_unary                      ? min_fixed_transit
-        : are_all_evaluators_positive ? int64_t{0}
-                                      : std::numeric_limits<int64_t>::min(),
-        std::numeric_limits<int64_t>::max(), absl::StrCat(transit_name, i));
+    fixed_transits_[i] =
+        solver->MakeIntVar(is_unary                      ? min_fixed_transit
+                           : are_all_evaluators_positive ? int64_t{0}
+                                                         : kint64min,
+                           kint64max, absl::StrCat(transit_name, i));
     // Setting dependent_transits_[i].
     if (base_dimension_ != nullptr) {
       if (state_dependent_class_evaluators_.size() == 1) {
@@ -7237,8 +7358,7 @@ void TypeRegulationsConstraint::InitialPropagate() {
 void Dimension::CloseModel(bool use_light_propagation) {
   Solver* const solver = model_->solver();
   const auto capacity_lambda = [this](int64_t vehicle) {
-    return vehicle >= 0 ? vehicle_capacities_[vehicle]
-                        : std::numeric_limits<int64_t>::max();
+    return vehicle >= 0 ? vehicle_capacities_[vehicle] : kint64max;
   };
   for (int i = 0; i < capacity_vars_.size(); ++i) {
     IntVar* const vehicle_var = model_->VehicleVar(i);
@@ -7580,8 +7700,7 @@ void Dimension::SetupGlobalSpanCost(std::vector<IntVar*>* cost_elements) const {
         max_end_cumul, global_span_cost_coefficient_);
     std::vector<IntVar*> start_cumuls;
     for (int i = 0; i < model_->vehicles(); ++i) {
-      IntVar* global_span_cost_start_cumul =
-          solver->MakeIntVar(0, std::numeric_limits<int64_t>::max());
+      IntVar* global_span_cost_start_cumul = solver->MakeIntVar(0, kint64max);
       solver->AddConstraint(solver->MakeIfThenElseCt(
           model_->vehicle_route_considered_[i], cumuls_[model_->Start(i)],
           max_end_cumul, global_span_cost_start_cumul));
@@ -7663,16 +7782,16 @@ void Dimension::SetBreakIntervalsOfVehicle(std::vector<IntervalVar*> breaks,
       model_->AddVariableTargetToFinalizer(interval->PerformedExpr()->Var(), 0);
     }
     model_->AddVariableTargetToFinalizer(interval->SafeStartExpr(0)->Var(),
-                                         std::numeric_limits<int64_t>::min());
+                                         kint64min);
     model_->AddVariableTargetToFinalizer(interval->SafeDurationExpr(0)->Var(),
-                                         std::numeric_limits<int64_t>::min());
+                                         kint64min);
   }
   // When a vehicle has breaks, if its start and end are fixed,
   // then propagation keeps the cumuls min and max on its path feasible.
   model_->AddVariableTargetToFinalizer(CumulVar(model_->End(vehicle)),
-                                       std::numeric_limits<int64_t>::min());
+                                       kint64min);
   model_->AddVariableTargetToFinalizer(CumulVar(model_->Start(vehicle)),
-                                       std::numeric_limits<int64_t>::max());
+                                       kint64max);
 }
 
 void Dimension::InitializeBreaks() {
@@ -7718,9 +7837,9 @@ void Dimension::SetBreakDistanceDurationOfVehicle(int64_t distance,
   // When a vehicle has breaks, if its start and end are fixed,
   // then propagation keeps the cumuls min and max on its path feasible.
   model_->AddVariableTargetToFinalizer(CumulVar(model_->End(vehicle)),
-                                       std::numeric_limits<int64_t>::min());
+                                       kint64min);
   model_->AddVariableTargetToFinalizer(CumulVar(model_->Start(vehicle)),
-                                       std::numeric_limits<int64_t>::max());
+                                       kint64max);
 }
 
 const std::vector<std::pair<int64_t, int64_t>>&
@@ -7750,13 +7869,13 @@ int64_t Dimension::GetPickupToDeliveryLimitForPair(
   DCHECK_GE(pair_index, 0);
 
   if (pair_index >= pickup_to_delivery_limits_per_pair_index_.size()) {
-    return std::numeric_limits<int64_t>::max();
+    return kint64max;
   }
   const PickupToDeliveryLimitFunction& pickup_to_delivery_limit_function =
       pickup_to_delivery_limits_per_pair_index_[pair_index];
   if (!pickup_to_delivery_limit_function) {
     // No limit function set for this pair.
-    return std::numeric_limits<int64_t>::max();
+    return kint64max;
   }
   DCHECK_GE(pickup_alternative_index, 0);
   DCHECK_GE(delivery_alternative_index, 0);
@@ -7796,13 +7915,12 @@ void Dimension::SetupSlackAndDependentTransitCosts() const {
        it != dimensions_with_relevant_slacks.rend(); ++it) {
     for (int i = 0; i < model_->vehicles(); ++i) {
       model_->AddVariableTargetToFinalizer((*it)->cumuls_[model_->End(i)],
-                                           std::numeric_limits<int64_t>::min());
+                                           kint64min);
       model_->AddVariableTargetToFinalizer((*it)->cumuls_[model_->Start(i)],
-                                           std::numeric_limits<int64_t>::max());
+                                           kint64max);
     }
     for (IntVar* const slack : (*it)->slacks_) {
-      model_->AddVariableTargetToFinalizer(slack,
-                                           std::numeric_limits<int64_t>::min());
+      model_->AddVariableTargetToFinalizer(slack, kint64min);
     }
   }
 }

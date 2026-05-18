@@ -117,7 +117,7 @@ public final class VrpSolutionCallback {
         routingModel.solver().finishCurrentSearch();
       }
     }
-  };
+  }
 
   // [END solution_callback]
 
