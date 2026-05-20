@@ -592,7 +592,7 @@ class Gurobi {
 
   absl::Status ToStatus(
       int grb_err, absl::StatusCode code = absl::StatusCode::kInvalidArgument,
-      absl::SourceLocation loc = absl::SourceLocation::current()) const;
+      ortools::SourceLocation loc = ortools::SourceLocation::current()) const;
 
  private:
   // optional_owned_primary_env can be null, model and model_env cannot.

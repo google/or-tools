@@ -238,7 +238,7 @@ Gurobi::~Gurobi() {
 }
 
 absl::Status Gurobi::ToStatus(const int grb_err, const absl::StatusCode code,
-                              const absl::SourceLocation loc) const {
+                              const ortools::SourceLocation loc) const {
   if (grb_err == kGrbOk) {
     return absl::OkStatus();
   }
