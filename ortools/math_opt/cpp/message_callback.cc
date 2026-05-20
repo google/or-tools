@@ -91,7 +91,7 @@ MessageCallback PrinterMessageCallback(std::ostream& output_stream,
 }
 
 MessageCallback InfoLoggerMessageCallback(const absl::string_view prefix,
-                                          const absl::SourceLocation loc) {
+                                          const ortools::SourceLocation loc) {
   return [=](absl::Span<const std::string> messages) {
     for (const std::string& message : messages) {
       LOG(INFO).AtLocation(loc.file_name(), loc.line()) << prefix << message;
@@ -100,7 +100,7 @@ MessageCallback InfoLoggerMessageCallback(const absl::string_view prefix,
 }
 
 MessageCallback VLoggerMessageCallback(int level, absl::string_view prefix,
-                                       absl::SourceLocation loc) {
+                                       ortools::SourceLocation loc) {
   return [=](absl::Span<const std::string> messages) {
     for (const std::string& message : messages) {
       VLOG(level).AtLocation(loc.file_name(), loc.line()) << prefix << message;

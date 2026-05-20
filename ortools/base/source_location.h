@@ -15,10 +15,10 @@
 // Based on http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2015/n4519.pdf.
 //
 // To define a function that has access to the source location of the
-// callsite, define it with a parameter of type `absl::SourceLocation`. The
-// caller can then invoke the function, passing `ABSL_LOC` as the argument.
+// callsite, define it with a parameter of type `ortools::SourceLocation`. The
+// caller can then invoke the function, passing `OR_LOC` as the argument.
 //
-// If at all possible, make the `absl::SourceLocation` parameter be the
+// If at all possible, make the `ortools::SourceLocation` parameter be the
 // function's last parameter. That way, when `std::source_location` is
 // available, you will be able to switch to it, and give the parameter a default
 // argument of `std::source_location::current()`. Users will then be able to
@@ -30,12 +30,10 @@
 
 #include <cstdint>
 
-#include "absl/base/config.h"
-
-namespace absl {
+namespace ortools {
 
 // Class representing a specific location in the source code of a program.
-// `absl::SourceLocation` is copyable.
+// `ortools::SourceLocation` is copyable.
 class SourceLocation {
   struct PrivateTag {
    private:
@@ -48,13 +46,12 @@ class SourceLocation {
   constexpr SourceLocation() : line_(0), file_name_(nullptr) {}
 
   // Wrapper to invoke the private constructor below. This should only be used
-  // by the `ABSL_LOC` macro, hence the name.
+  // by the `OR_LOC` macro, hence the name.
   static constexpr SourceLocation DoNotInvokeDirectly(std::uint_least32_t line,
                                                       const char* file_name) {
     return SourceLocation(line, file_name);
   }
 
-#ifdef ABSL_HAVE_SOURCE_LOCATION_CURRENT
   // SourceLocation::current
   //
   // Creates a `SourceLocation` based on the current line and file.  APIs that
@@ -77,13 +74,6 @@ class SourceLocation {
       const char* file_name = __builtin_FILE()) {
     return SourceLocation(line, file_name);
   }
-#else
-  // Creates a dummy `SourceLocation` of "<source_location>" at line number 1,
-  // if no `SourceLocation::current()` implementation is available.
-  static constexpr SourceLocation current() {
-    return SourceLocation(1, "<source_location>");
-  }
-#endif
   // The line number of the captured source location.
   constexpr std::uint_least32_t line() const { return line_; }
 
@@ -94,11 +84,11 @@ class SourceLocation {
   // support them.
 
  private:
-  // Do not invoke this constructor directly. Instead, use the `ABSL_LOC` macro
+  // Do not invoke this constructor directly. Instead, use the `OR_LOC` macro
   // below.
   //
-  // `file_name` must outlive all copies of the `absl::SourceLocation` object,
-  // so in practice it should be a string literal.
+  // `file_name` must outlive all copies of the `ortools::SourceLocation`
+  // object, so in practice it should be a string literal.
   constexpr SourceLocation(std::uint_least32_t line, const char* file_name)
       : line_(line), file_name_(file_name) {}
 
@@ -115,29 +105,26 @@ class SourceLocation {
   const char* file_name_;
 };
 
-}  // namespace absl
+}  // namespace ortools
 
-// If a function takes an `absl::SourceLocation` parameter, pass this as the
+// If a function takes an `ortools::SourceLocation` parameter, pass this as the
 // argument.
-#define ABSL_LOC ::absl::SourceLocation::DoNotInvokeDirectly(__LINE__, __FILE__)
+#define OR_LOC \
+  ::ortools::SourceLocation::DoNotInvokeDirectly(__LINE__, __FILE__)
 
-// ABSL_LOC_CURRENT_DEFAULT_ARG
+// OR_LOC_CURRENT_DEFAULT_ARG
 //
-// Specifies that a function should use `absl::SourceLocation::current()` on
+// Specifies that a function should use `ortools::SourceLocation::current()` on
 // platforms where it will return useful information, but require explicitly
-// passing `ABSL_LOC` on platforms where it would return dummy information.
+// passing `OR_LOC` on platforms where it would return dummy information.
 //
 // Usage:
 //
 //   void MyLog(absl::string_view msg,
-//              absl::SourceLocation loc ABSL_LOC_CURRENT_DEFAULT_ARG) {
+//              ortools::SourceLocation loc OR_LOC_CURRENT_DEFAULT_ARG) {
 //     std::cout << loc.file_name() << "@" << loc.line() << ": " << msg;
 //   }
 //
-#if ABSL_HAVE_SOURCE_LOCATION_CURRENT
-#define ABSL_LOC_CURRENT_DEFAULT_ARG = ::absl::SourceLocation::current()
-#else
-#define ABSL_LOC_CURRENT_DEFAULT_ARG
-#endif
+#define OR_LOC_CURRENT_DEFAULT_ARG = ::ortools::SourceLocation::current()
 
 #endif  // ORTOOLS_BASE_SOURCE_LOCATION_H_
