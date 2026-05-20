@@ -1207,7 +1207,7 @@ class BMGraphBuilder<VectorVectorGraph> {
 
   void AddArc(int32_t tail, int32_t head) { (*graph_)[tail].push_back(head); }
 
-  std::unique_ptr<VectorVectorGraph> Build(nullptr_t) && {
+  std::unique_ptr<VectorVectorGraph> Build(std::nullptr_t) && {
     return std::move(graph_);
   }
 
