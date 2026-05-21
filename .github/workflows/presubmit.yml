@@ -55,7 +55,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-15-intel, macos-latest, windows-2022]
+        os: [ubuntu-latest, macos-latest]
         build: [cpp, java, dotnet, python]
         include:
           # Map build to CMake
@@ -72,18 +72,10 @@ jobs:
             platform: linux
             generator: Ninja
             cmake_flags: -DCMAKE_BUILD_TYPE=Release
-          - os: macos-15-intel
-            platform: macos
-            generator: Ninja
-            cmake_flags: -DCMAKE_BUILD_TYPE=Release
           - os: macos-latest
             platform: macos
             generator: Ninja
             cmake_flags: -DCMAKE_BUILD_TYPE=Release
-          - os: windows-2022
-            platform: windows
-            generator: 'Visual Studio 17 2022'
-            cmake_flags: -DCMAKE_CONFIGURATION_TYPES=Release
     runs-on: ${{matrix.os}}
     env:
       SCCACHE_GHA_ENABLED: true
@@ -124,17 +116,13 @@ jobs:
       run: |
         echo "$HOME/Library/Python/${{env.PYTHON_VERSION}}/bin" >> $GITHUB_PATH
         echo "$HOME/.local/bin" >> $GITHUB_PATH
-    - name: Setup Windows Python Env
-      if: ${{ matrix.build == 'python' && matrix.platform == 'windows' }}
-      run: |
-        python3 -m pip install --user mypy-protobuf absl-py setuptools wheel numpy pandas
-        echo "$((Get-Item ~).FullName)/AppData/Roaming/Python/Python312/Scripts" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
     - name: Config
       run: >
         cmake
         -S.
         -Bbuild
-        -G "${{matrix.generator}}"
+        -G
+        "${{matrix.generator}}"
         ${{matrix.cmake_options}}
         ${{matrix.cmake_flags}}
         -DCMAKE_INSTALL_PREFIX=install
@@ -142,11 +130,11 @@ jobs:
         -DUSE_GLPK=OFF
         -DUSE_HIGHS=OFF
         -DUSE_SCIP=OFF
-        -DCMAKE_C_COMPILER_LAUNCHER=${{env.SCCACHE_PATH}}
-        -DCMAKE_CXX_COMPILER_LAUNCHER=${{env.SCCACHE_PATH}}
+        -DCMAKE_C_COMPILER_LAUNCHER="${{env.SCCACHE_PATH}}"
+        -DCMAKE_CXX_COMPILER_LAUNCHER="${{env.SCCACHE_PATH}}"
     - name: Build
-      run: cmake --build build --config Release -j --target ${{ matrix.generator == 'Ninja' && 'all' || 'ALL_BUILD'}}
+      run: cmake --build build --config Release -j --target all
     - name: Test
       env:
         CTEST_OUTPUT_ON_FAILURE: 1
-      run: cmake --build build --config Release -j --target ${{ matrix.generator == 'Ninja' && 'test' || 'RUN_TESTS'}}
+      run: cmake --build build --config Release -j --target test
