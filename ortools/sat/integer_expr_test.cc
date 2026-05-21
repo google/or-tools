@@ -1879,11 +1879,13 @@ TEST(ModuloConstraintTest, CheckAllSolutions) {
     LinearArgumentProto* modulo =
         initial_model.add_constraints()->mutable_int_mod();
     modulo->add_exprs()->add_vars(0);  // var.
-    modulo->mutable_exprs(0)->add_coeffs(1);
+    const int var_coeff = absl::Uniform<int>(random, -3, 3);
+    modulo->mutable_exprs(0)->add_coeffs(var_coeff);
     modulo->add_exprs()->add_vars(1);  // mod
     modulo->mutable_exprs(1)->add_coeffs(1);
     modulo->mutable_target()->add_vars(2);  // target
-    modulo->mutable_target()->add_coeffs(1);
+    const int target_coeff = absl::Uniform<int>(random, -3, 3);
+    modulo->mutable_target()->add_coeffs(target_coeff);
 
     absl::btree_set<std::vector<int>> solutions;
     const CpSolverResponse response =
@@ -1892,9 +1894,18 @@ TEST(ModuloConstraintTest, CheckAllSolutions) {
     // Loop through the domains of var and target, and collect valid solutions.
     absl::btree_set<std::vector<int>> expected;
     for (int i = var_min; i <= var_max; ++i) {
-      const int k = i % mod;
-      if (k < target_min || k > target_max) continue;
-      expected.insert({i, mod, k});
+      const int k = (var_coeff * i) % mod;
+      if (target_coeff == 0 && k != 0) continue;
+      if (target_coeff == 0) {
+        for (int j = target_min; j <= target_max; ++j) {
+          expected.insert({i, mod, j});
+        }
+        continue;
+      }
+      if (k % target_coeff != 0) continue;
+      const int j = k / target_coeff;
+      if (j < target_min || j > target_max) continue;
+      expected.insert({i, mod, j});
     }
 
     // Checks that we get we get the same solution set through the two methods.

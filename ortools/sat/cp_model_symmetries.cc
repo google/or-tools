@@ -783,28 +783,25 @@ void LogOrbitInformation(absl::Span<const int> var_to_orbit_index,
 }  // namespace
 
 void DetectAndAddSymmetryToProto(const SatParameters& params,
-                                 CpModelProto* proto, SolverLogger* logger,
-                                 TimeLimit* time_limit) {
-  SymmetryProto* symmetry = proto->mutable_symmetry();
-  symmetry->Clear();
+                                 const CpModelProto& proto,
+                                 SymmetryProto* mutable_symmetry,
+                                 SolverLogger* logger, TimeLimit* time_limit) {
+  mutable_symmetry->Clear();
 
   std::vector<std::unique_ptr<SparsePermutation>> generators;
-  FindCpModelSymmetries(params, *proto, &generators, logger, time_limit);
-  if (generators.empty()) {
-    proto->clear_symmetry();
-    return;
-  }
+  FindCpModelSymmetries(params, proto, &generators, logger, time_limit);
+  if (generators.empty()) return;
 
   // Log orbit information.
   //
   // TODO(user): It might be nice to just add this to the proto rather than
   // re-reading the generators and recomputing this in a few places.
-  const int num_vars = proto->variables().size();
+  const int num_vars = proto.variables().size();
   const std::vector<int> orbits = GetOrbits(num_vars, generators);
   LogOrbitInformation(orbits, logger);
 
   for (const std::unique_ptr<SparsePermutation>& perm : generators) {
-    SparsePermutationProto* perm_proto = symmetry->add_permutations();
+    SparsePermutationProto* perm_proto = mutable_symmetry->add_permutations();
     const int num_cycle = perm->NumCycles();
     for (int i = 0; i < num_cycle; ++i) {
       const int old_size = perm_proto->support().size();
@@ -819,7 +816,7 @@ void DetectAndAddSymmetryToProto(const SatParameters& params,
   if (orbitope.empty()) return;
   SOLVER_LOG(logger, "[Symmetry] Found orbitope of size ", orbitope.size(),
              " x ", orbitope[0].size());
-  DenseMatrixProto* matrix = symmetry->add_orbitopes();
+  DenseMatrixProto* matrix = mutable_symmetry->add_orbitopes();
   matrix->set_num_rows(orbitope.size());
   matrix->set_num_cols(orbitope[0].size());
   for (const std::vector<int>& row : orbitope) {
@@ -958,10 +955,15 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
   }
   context->WriteVariableDomainsToProto();
 
+  // We just temporarily add extra constraints and delete them just afterwards.
+  // So we should leave the proto unchanged (modulo reallocation, but this
+  // should be fine).
+  const int initial_ct_index = proto.constraints().size();
+  CpModelProto* mutable_model = context->UnsafeMutableWorkingModel();
+
   // Tricky: the equivalence relation are not part of the proto.
   // We thus add them temporarily to compute the symmetry.
   int64_t num_added = 0;
-  const int initial_ct_index = proto.constraints().size();
   const int num_vars = proto.variables_size();
   for (int var = 0; var < num_vars; ++var) {
     if (context->IsFixed(var)) continue;
@@ -972,7 +974,7 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
     if (r.representative == var) continue;
 
     ++num_added;
-    ConstraintProto* ct = context->NewConstraint();
+    ConstraintProto* ct = mutable_model->add_constraints();
     auto* arg = ct->mutable_linear();
     arg->add_vars(var);
     arg->add_coeffs(1);
@@ -987,8 +989,8 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
                         context->time_limit());
 
   // Remove temporary affine relation.
-  context->working_model->mutable_constraints()->DeleteSubrange(
-      initial_ct_index, num_added);
+  mutable_model->mutable_constraints()->DeleteSubrange(initial_ct_index,
+                                                       num_added);
 
   if (generators.empty()) return true;
 
@@ -1162,7 +1164,7 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
         const auto& obj = context->WorkingModel().objective();
         CHECK_EQ(num_objective_terms, obj.vars().size());
         for (int i = 1; i < num_objective_terms; ++i) {
-          auto* new_ct = context->NewConstraint()->mutable_linear();
+          auto* new_ct = context->AddConstraint()->mutable_linear();
           new_ct->add_vars(obj.vars(i - 1));
           new_ct->add_vars(obj.vars(i));
           new_ct->add_coeffs(1);
@@ -1242,7 +1244,7 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
     if (orbit_sizes[orbit_index] > num_in_orbit + 1) {
       context->UpdateRuleStats(
           "symmetry: added orbit symmetry breaking implications");
-      auto* ct = context->NewConstraint();
+      auto* ct = context->AddConstraint();
       auto* bool_and = ct->mutable_bool_and();
       ct->add_enforcement_literal(NegatedRef(distinguished_var));
       for (int var = 0; var < num_vars; ++var) {
@@ -1525,7 +1527,7 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
         continue;
       }
 
-      ConstraintProto* ct = context->NewConstraint();
+      ConstraintProto* ct = context->AddConstraint();
       ct->mutable_linear()->add_coeffs(1);
       ct->mutable_linear()->add_vars(orbitope[0][i]);
       ct->mutable_linear()->add_coeffs(-1);
@@ -1548,7 +1550,7 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
     const std::vector<int64_t> coeffs = BuildInequalityCoeffsForOrbitope(
         max_values, (int64_t{1} << kMaxBits), &is_approximated);
     for (int i = 0; i + 1 < orbitope[0].size(); ++i) {
-      ConstraintProto* ct = context->NewConstraint();
+      ConstraintProto* ct = context->AddConstraint();
       auto* arg = ct->mutable_linear();
       for (int j = 0; j < orbitope.size(); ++j) {
         const int64_t coeff = coeffs[j];

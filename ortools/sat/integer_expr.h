@@ -426,7 +426,7 @@ class FixedModuloPropagator : public PropagatorInterface {
   bool PropagateSignsAndTargetRange();
   bool PropagateBoundsWhenExprIsNonNegative(AffineExpression expr,
                                             AffineExpression target);
-  bool PropagateOuterBounds();
+  bool PropagateOuterBounds(bool* changed);
 
   const AffineExpression expr_;
   const IntegerValue mod_;

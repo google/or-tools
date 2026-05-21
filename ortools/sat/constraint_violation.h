@@ -471,9 +471,9 @@ class LsEvaluator {
   CpModelProto expanded_constraints_;
   LinearIncrementalEvaluator linear_evaluator_;
   std::vector<std::unique_ptr<CompiledConstraint>> constraints_;
-  std::vector<std::vector<int>> var_to_constraints_;
+  CompactVectorVector<int> var_to_constraints_;
   std::vector<double> var_to_dtime_estimate_;
-  std::vector<std::vector<int>> constraint_to_vars_;
+  CompactVectorVector<int> constraint_to_vars_;
   std::vector<bool> jump_value_optimal_;
   TimeLimit* time_limit_;
 

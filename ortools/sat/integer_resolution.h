@@ -95,7 +95,6 @@ class IntegerConflictResolution {
   // Information about the current content of our tmp_queue_ and our conflict
   // resolution.
   SparseBitset<int> tmp_bool_index_seen_;
-  SparseBitset<BooleanVariable> tmp_bool_seen_;
   std::vector<IntegerLiteral> tmp_integer_literals_;
   util_intops::StrongVector<IntegerVariable, IntegerValue>
       tmp_var_to_settled_lb_;

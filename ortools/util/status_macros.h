@@ -29,10 +29,14 @@
 // WARNING: OR_ASSIGN_OR_RETURN3 expands into multiple statements; it cannot be
 //  used in a single statement (e.g. as the body of an if statement without {})!
 //
-#define OR_ASSIGN_OR_RETURN3(lhs, rexpr, error_expression)                   \
-  OR_ASSIGN_OR_RETURN3_IMPL_(                                                \
-      STATUS_MACROS_IMPL_CONCAT_(_status_or_value, __COUNTER__), lhs, rexpr, \
-      error_expression)
+#define OR_STATUS_MACROS_IMPL_CONCAT_INNER_(x, y) x##y
+#define OR_STATUS_MACROS_IMPL_CONCAT_(x, y) \
+  OR_STATUS_MACROS_IMPL_CONCAT_INNER_(x, y)
+
+#define OR_ASSIGN_OR_RETURN3(lhs, rexpr, error_expression)               \
+  OR_ASSIGN_OR_RETURN3_IMPL_(                                            \
+      OR_STATUS_MACROS_IMPL_CONCAT_(_status_or_value, __COUNTER__), lhs, \
+      rexpr, error_expression)
 
 #define OR_ASSIGN_OR_RETURN3_IMPL_(statusor, lhs, rexpr, error_expression) \
   auto statusor = (rexpr);                                                 \

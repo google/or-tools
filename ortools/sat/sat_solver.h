@@ -388,7 +388,7 @@ class SatSolver {
     // It is important to process the newly fixed variables, so they are not
     // present in the clauses we export.
     if (num_processed_fixed_variables_ < trail_->Index()) {
-      ProcessNewlyFixedVariables();
+      if (!ProcessNewlyFixedVariables()) return false;
     }
     clauses_propagator_->DeleteRemovedClauses();
 
@@ -507,7 +507,7 @@ class SatSolver {
   }
 
   // Simplifies the problem when new variables are assigned at level 0.
-  void ProcessNewlyFixedVariables();
+  bool ProcessNewlyFixedVariables();
 
   int64_t NumFixedVariables() const {
     if (CurrentDecisionLevel() > 0) {

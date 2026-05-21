@@ -306,8 +306,8 @@ void OrderEncoding::CreateAllOrderEncodingLiterals(
   const int64_t max_le_value = encoded_le_literal_.rbegin()->first;
   const int64_t max_ge_value = var_domain_.ValueAtOrAfter(max_le_value + 1);
   ConstraintProto* not_le = nullptr;
-  ConstraintProto* not_ge = context_->NewConstraint();
-  ConstraintProto* le = context_->NewConstraint();
+  ConstraintProto* not_ge = context_->AddConstraint();
+  ConstraintProto* le = context_->AddConstraint();
   ConstraintProto* ge = nullptr;
 
   for (const auto [value, eq_literal] : values.encoding()) {
@@ -328,7 +328,7 @@ void OrderEncoding::CreateAllOrderEncodingLiterals(
       DCHECK(le != nullptr);
       le->add_enforcement_literal(le_literal);
       if (value < max_le_value) {
-        le = context_->NewConstraint();
+        le = context_->AddConstraint();
         le->mutable_bool_or()->add_literals(le_literal);
       } else {
         le = nullptr;
@@ -355,7 +355,7 @@ void OrderEncoding::CreateAllOrderEncodingLiterals(
         DCHECK(not_ge != nullptr);
         not_ge->add_enforcement_literal(ge_literal);
         if (value != max_ge_value) {
-          not_ge = context_->NewConstraint();
+          not_ge = context_->AddConstraint();
           not_ge->mutable_bool_and()->add_literals(ge_literal);
         } else {
           not_ge = nullptr;
@@ -761,7 +761,7 @@ void TryToReplaceVariableByItsEncoding(int var, PresolveContext* context,
     // Note, the use of exactly_one here is correct because this is a partition,
     // and the two equations complement each other.
     for (const EncodingLinear1& info_in : lin_domain) {
-      BoolArgumentProto* exo = context->NewConstraint()->mutable_exactly_one();
+      BoolArgumentProto* exo = context->AddConstraint()->mutable_exactly_one();
       exo->add_literals(NegatedRef(info_in.enforcement_literal));
       for (const int64_t v : info_in.rhs.Values()) {
         exo->add_literals(values.literal(v));
@@ -788,7 +788,7 @@ void TryToReplaceVariableByItsEncoding(int var, PresolveContext* context,
     const int e_j = info_j.enforcement_literal;
     if (e_i == NegatedRef(e_j)) return;
     BoolArgumentProto* incompatible =
-        context->NewConstraint()->mutable_bool_or();
+        context->AddConstraint()->mutable_bool_or();
     incompatible->add_literals(NegatedRef(e_i));
     incompatible->add_literals(NegatedRef(e_j));
     context->UpdateRuleStats(
@@ -922,7 +922,7 @@ void TryToReplaceVariableByItsEncoding(int var, PresolveContext* context,
   }
 
   // This must be done after we removed all the constraint containing var.
-  ConstraintProto* exo = context->NewConstraint();
+  ConstraintProto* exo = context->AddConstraint();
   BoolArgumentProto* arg = exo->mutable_exactly_one();
   for (const auto& [value, literal] : values.encoding()) {
     arg->add_literals(literal);

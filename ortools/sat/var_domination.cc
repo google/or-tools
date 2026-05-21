@@ -1009,7 +1009,7 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
           // (`var` in `rhs`) -- which does not apply when `ref` is true.
           crush.SetLiteralToValueIfLinearConstraintViolated(
               ref, false, {{var, 1}}, complement);
-          ConstraintProto* new_ct = context->NewConstraint();
+          ConstraintProto* new_ct = context->AddConstraint();
           new_ct->add_enforcement_literal(ref);
           new_ct->mutable_linear()->add_vars(var);
           new_ct->mutable_linear()->add_coeffs(1);

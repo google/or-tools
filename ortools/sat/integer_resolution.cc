@@ -339,8 +339,10 @@ void IntegerConflictResolution::ComputeFirstUIPConflict(
   const int num_i_vars = integer_trail_->NumIntegerVariables().value();
   int_data_.clear();
   int_data_.resize(num_i_vars);
-  // Note the +1 in case we create a new 1-UIP boolean.
-  tmp_bool_index_seen_.ClearAndResize(trail_->Index() + 1);
+  // Note the we need some slack because we enqueue a new decision if we see a
+  // boolean already assigned to true.
+  constexpr int kSizeSlack = 100;
+  tmp_bool_index_seen_.ClearAndResize(trail_->Index() + kSizeSlack);
   tmp_var_to_settled_lb_.assign(num_i_vars, kMinIntegerValue);
 
   tmp_queue_.clear();
@@ -511,6 +513,9 @@ void IntegerConflictResolution::ComputeFirstUIPConflict(
             if (!trail_->Assignment().LiteralIsAssigned(new_lit)) {
               // Using a decision should work as we will backtrack right away.
               trail_->EnqueueSearchDecision(new_lit);
+              if (trail_->Index() >= tmp_bool_index_seen_.size()) {
+                tmp_bool_index_seen_.Resize(trail_->Index() + kSizeSlack);
+              }
             }
 
             // It should be true.
@@ -611,7 +616,7 @@ void IntegerConflictResolution::ComputeFirstUIPConflict(
 
     // Expand.
     //
-    // TODO(user): There is probably a faster way to recover the heap propety
+    // TODO(user): There is probably a faster way to recover the heap property
     // than doing it one by one.
     const int old_size = tmp_queue_.size();
     AddToQueue(top_index,

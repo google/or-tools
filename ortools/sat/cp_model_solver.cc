@@ -2508,7 +2508,7 @@ void FixVariablesToHintValue(const PartialVariableAssignment& solution_hint,
     const int64_t value = solution_hint.values(i);
     if (!context->IntersectDomainWith(var, Domain(value))) {
       const IntegerVariableProto& var_proto =
-          context->working_model->variables(var);
+          context->WorkingModel().variables(var);
       const std::string var_name = var_proto.name().empty()
                                        ? absl::StrCat("var(", var, ")")
                                        : var_proto.name();
@@ -2985,8 +2985,15 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
     } else {
       TimeLimit time_limit;
       shared_time_limit->UpdateLocalLimit(&time_limit);
-      DetectAndAddSymmetryToProto(params, new_cp_model_proto, logger,
-                                  &time_limit);
+      DetectAndAddSymmetryToProto(params, *new_cp_model_proto,
+                                  new_cp_model_proto->mutable_symmetry(),
+                                  logger, &time_limit);
+    }
+
+    // TODO(user): Some code just check new_cp_model_proto->has_symmetry().
+    // If we don't have any generator, better to just clear the field.
+    if (new_cp_model_proto->symmetry().permutations().empty()) {
+      new_cp_model_proto->clear_symmetry();
     }
   }
 
