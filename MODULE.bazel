@@ -107,8 +107,11 @@ JUNIT_JUPITER_VERSION = "5.9.2"
 maven = use_extension("@rules_jvm_external//:extensions.bzl", "maven")
 maven.install(
     artifacts = [
-        "com.google.truth:truth:0.32",
+        "com.google.errorprone:error_prone_type_annotations:2.46.0",
+        "com.google.truth:truth:1.4.2",
+        "com.google.truth.extensions:truth-proto-extension:1.4.2",
         "net.java.dev.jna:jna:5.14.0",
+        "org.jspecify:jspecify:1.0.0",
         "org.junit.platform:junit-platform-launcher:%s" % JUNIT_PLATFORM_VERSION,
         "org.junit.platform:junit-platform-reporting:%s" % JUNIT_PLATFORM_VERSION,
         "org.junit.jupiter:junit-jupiter-api:%s" % JUNIT_JUPITER_VERSION,

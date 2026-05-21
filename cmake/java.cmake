@@ -267,15 +267,19 @@ foreach(SUBPROJECT IN ITEMS
  init
  linear_solver
  constraint_solver
- routing
- sat
- util)
+ routing)
   add_subdirectory(ortools/${SUBPROJECT}/java)
   target_link_libraries(jni${JAVA_ARTIFACT} PRIVATE jni${SUBPROJECT})
 endforeach()
+# from ortools/linear_solver/java
 target_link_libraries(jni${JAVA_ARTIFACT} PRIVATE jnimodelbuilder)
-target_link_libraries(jni${JAVA_ARTIFACT} PRIVATE ortools::util_java_jni_helper)
+add_subdirectory(ortools/sat/java)
+target_link_libraries(jni${JAVA_ARTIFACT} PRIVATE jnisat)
 target_link_libraries(jni${JAVA_ARTIFACT} PRIVATE jni_cp_model_proto)
+add_subdirectory(ortools/util/java)
+target_link_libraries(jni${JAVA_ARTIFACT} PRIVATE util_java_jni_helper)
+target_link_libraries(jni${JAVA_ARTIFACT} PRIVATE jni_sorted_interval_list)
+target_link_libraries(jni${JAVA_ARTIFACT} PRIVATE jni_java_swig_solve_interrupter)
 
 #################################
 ##  Java Native Maven Package  ##
@@ -568,6 +572,13 @@ add_custom_target(java_deploy
   COMMAND ${MAVEN_EXECUTABLE} deploy
   WORKING_DIRECTORY ${JAVA_PROJECT_DIR})
 add_dependencies(java_deploy java_package)
+
+#################
+##  Java Test  ##
+#################
+if(BUILD_TESTING)
+  add_subdirectory(ortools/javatests/com/google/ortools javatests/ortools)
+endif()
 
 ###############
 ## Doc rules ##

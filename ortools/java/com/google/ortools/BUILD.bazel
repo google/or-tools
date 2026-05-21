@@ -30,6 +30,7 @@ cc_binary(
         "//ortools/linear_solver/java:modelbuilder_cc",
         "//ortools/sat/java:cp_model_proto_cc",
         "//ortools/sat/java:sat_cc",
+        "//ortools/util/java:java_swig_solve_interrupter_swig_cc",
         "//ortools/util/java:sorted_interval_list_cc",
         "//ortools/util/java:wrappers_test_message_cc",
     ],
@@ -44,15 +45,16 @@ cc_binary(
     }),
     visibility = ["//visibility:public"],
     deps = [
-        "@rules_jni//jni:libjvm",
         "//ortools/algorithms/java:knapsacksolver_cc",
         "//ortools/graph/java:graph_cc",
         "//ortools/init/java:init_cc",
         "//ortools/linear_solver/java:modelbuilder_cc",
         "//ortools/sat/java:cp_model_proto_cc",
         "//ortools/sat/java:sat_cc",
+        "//ortools/util/java:java_swig_solve_interrupter_swig_cc",
         "//ortools/util/java:sorted_interval_list_cc",
         "//ortools/util/java:wrappers_test_message_cc",
+        "@rules_jni//jni:libjvm",
     ],
 )
 
@@ -65,15 +67,16 @@ cc_binary(
     }),
     visibility = ["//visibility:public"],
     deps = [
-        "@rules_jni//jni:libjvm",
         "//ortools/algorithms/java:knapsacksolver_cc",
         "//ortools/graph/java:graph_cc",
         "//ortools/init/java:init_cc",
         "//ortools/linear_solver/java:modelbuilder_cc",
         "//ortools/sat/java:cp_model_proto_cc",
         "//ortools/sat/java:sat_cc",
+        "//ortools/util/java:java_swig_solve_interrupter_swig_cc",
         "//ortools/util/java:sorted_interval_list_cc",
         "//ortools/util/java:wrappers_test_message_cc",
+        "@rules_jni//jni:libjvm",
     ],
 )
 
