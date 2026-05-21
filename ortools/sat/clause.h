@@ -645,10 +645,12 @@ class BinaryImplicationGraph : public SatPropagator {
   // form a cycle with their representative).
   bool IsDag() const { return is_dag_; }
 
-  // One must call DetectEquivalences() first, this is CHECKed.
   // Returns a list so that if x => y, then x is after y.
+  //
+  // One must call DetectEquivalences() first, otherwise this can be empty. Note
+  // that it is usually okay to use an "old" topological order if
+  // DetectEquivalences() was not called on the last state.
   const std::vector<LiteralIndex>& ReverseTopologicalOrder() const {
-    CHECK(is_dag_);
     return reverse_topological_order_;
   }
 

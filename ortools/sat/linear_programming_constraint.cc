@@ -2194,12 +2194,15 @@ bool LinearProgrammingConstraint::Propagate() {
   // if the deterministic time spent after the last level zero "solve" is lower
   // than the effort spent on that last solve.
   //
+  // We use a really high level to disable this in some TEST only.
+  //
   // TODO(user): also use the logic of lp_at_level_zero_is_final_. If we don't
   // have new info, there is no reason to rerun it. harder to make sure we
   // don't miss anything though.
   const double dtime_at_function_start =
       time_limit_->GetElapsedDeterministicTime();
-  if (trail_->CurrentDecisionLevel() == 0 && old_num_force == 0) {
+  if (trail_->CurrentDecisionLevel() == 0 && old_num_force == 0 &&
+      parameters_.linearization_level() < 10) {
     const double interval =
         dtime_at_function_start - last_root_level_deterministic_time_;
     if (last_root_level_deterministic_duration_ > interval) {

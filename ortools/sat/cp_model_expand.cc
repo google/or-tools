@@ -53,7 +53,7 @@ void ExpandAlwaysFalseConstraint(ConstraintProto* ct, PresolveContext* context,
   if (ct->enforcement_literal().empty()) {
     return (void)context->NotifyThatModelIsUnsat(message);
   }
-  BoolArgumentProto& bool_or = *context->NewConstraint()->mutable_bool_or();
+  BoolArgumentProto& bool_or = *context->AddConstraint()->mutable_bool_or();
   for (const int literal : ct->enforcement_literal()) {
     bool_or.add_literals(NegatedRef(literal));
   }
@@ -212,7 +212,7 @@ void ExpandReservoirUsingCircuit(int64_t sum_of_positive_demand,
 
   // The encoding will create a circuit constraint, and one integer variable per
   // event (representing the level at that event time).
-  CircuitConstraintProto* circuit = context->NewConstraint()->mutable_circuit();
+  CircuitConstraintProto* circuit = context->AddConstraint()->mutable_circuit();
 
   const int64_t var_min =
       std::max(reservoir.min_level(), sum_of_negative_demand);
@@ -1817,8 +1817,8 @@ void ProcessOneCompressedColumn(
     // bit, especially the linear relaxation.
     BoolArgumentProto* no_support =
         use_exo && !value_is_multiple.contains(value)
-            ? context->NewConstraint()->mutable_exactly_one()
-            : context->NewConstraint()->mutable_bool_or();
+            ? context->AddConstraint()->mutable_exactly_one()
+            : context->AddConstraint()->mutable_bool_or();
 
     for (; i < pairs.size() && pairs[i].first == value; ++i) {
       no_support->add_literals(pairs[i].second);
@@ -1905,7 +1905,7 @@ void AddSizeTwoTable(
           }
           if (exclusive) {
             BoolArgumentProto* exo =
-                context->NewConstraint()->mutable_exactly_one();
+                context->AddConstraint()->mutable_exactly_one();
             for (const int support_literal : support_literals) {
               exo->add_literals(support_literal);
             }
@@ -1913,7 +1913,7 @@ void AddSizeTwoTable(
             ++num_exo_added;
           } else {
             BoolArgumentProto* bool_or =
-                context->NewConstraint()->mutable_bool_or();
+                context->AddConstraint()->mutable_bool_or();
             for (const int support_literal : support_literals) {
               bool_or->add_literals(support_literal);
             }
@@ -2213,7 +2213,7 @@ void CompressAndExpandPositiveTable(ConstraintProto* ct,
   // Create one Boolean variable per tuple to indicate if it can still be
   // selected or not. Enforce an exactly one between them.
   BoolArgumentProto* exactly_one =
-      context->NewConstraint()->mutable_exactly_one();
+      context->AddConstraint()->mutable_exactly_one();
 
   std::optional<int> table_is_active_literal = std::nullopt;
   // Process enforcement literals.
@@ -2224,7 +2224,7 @@ void CompressAndExpandPositiveTable(ConstraintProto* ct,
         context->NewBoolVarWithConjunction(ct->enforcement_literal());
 
     // Adds table_is_active <=> and(enforcement_literals).
-    BoolArgumentProto* bool_or = context->NewConstraint()->mutable_bool_or();
+    BoolArgumentProto* bool_or = context->AddConstraint()->mutable_bool_or();
     bool_or->add_literals(table_is_active_literal.value());
     for (const int lit : ct->enforcement_literal()) {
       context->AddImplication(table_is_active_literal.value(), lit);
@@ -2362,7 +2362,7 @@ void ExpandPositiveTable(ConstraintProto* ct, PresolveContext* context) {
       return (void)context->NotifyThatModelIsUnsat();
     } else {
       context->UpdateRuleStats("table: enforced and empty");
-      BoolArgumentProto* bool_or = context->NewConstraint()->mutable_bool_or();
+      BoolArgumentProto* bool_or = context->AddConstraint()->mutable_bool_or();
       for (const int lit : ct->enforcement_literal()) {
         bool_or->add_literals(NegatedRef(lit));
       }
@@ -2492,7 +2492,7 @@ void ExpandComplexLinearConstraint(int c, ConstraintProto* ct,
       // a single Boolean.
       single_bool = context->NewBoolVar("complex linear expansion");
     } else {
-      clause = context->NewConstraint()->mutable_bool_or();
+      clause = context->AddConstraint()->mutable_bool_or();
       for (const int ref : ct->enforcement_literal()) {
         clause->add_literals(NegatedRef(ref));
       }
@@ -2519,7 +2519,7 @@ void ExpandComplexLinearConstraint(int c, ConstraintProto* ct,
 
       // Create a new constraint which is a copy of the original, but with a
       // simple sub-domain and enforcement literal.
-      ConstraintProto* new_ct = context->NewConstraint();
+      ConstraintProto* new_ct = context->AddConstraint();
       *new_ct = *ct;
       new_ct->add_enforcement_literal(subdomain_literal);
       FillDomainInProto(Domain(lb, ub), new_ct->mutable_linear());
@@ -2536,7 +2536,7 @@ void ExpandComplexLinearConstraint(int c, ConstraintProto* ct,
       } else {
         linear_is_enforced = context->NewBoolVar("complex linear expansion");
         BoolArgumentProto* maintain_linear_is_enforced =
-            context->NewConstraint()->mutable_bool_or();
+            context->AddConstraint()->mutable_bool_or();
         for (const int e_lit : enforcement_literals) {
           context->AddImplication(NegatedRef(e_lit),
                                   NegatedRef(linear_is_enforced));

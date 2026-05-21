@@ -1736,7 +1736,6 @@ void AddCircuitFlowConstraints(LinearIncrementalEvaluator& linear_evaluator,
 LsEvaluator::LsEvaluator(const CpModelProto& cp_model,
                          const SatParameters& params, TimeLimit* time_limit)
     : cp_model_(cp_model), params_(params), time_limit_(time_limit) {
-  var_to_constraints_.resize(cp_model_.variables_size());
   var_to_dtime_estimate_.resize(cp_model_.variables_size());
   jump_value_optimal_.resize(cp_model_.variables_size(), true);
   num_violated_constraint_per_var_ignoring_objective_.assign(
@@ -1755,7 +1754,6 @@ LsEvaluator::LsEvaluator(
     absl::Span<const ConstraintProto> additional_constraints,
     TimeLimit* time_limit)
     : cp_model_(cp_model), params_(params), time_limit_(time_limit) {
-  var_to_constraints_.resize(cp_model_.variables_size());
   var_to_dtime_estimate_.resize(cp_model_.variables_size());
   jump_value_optimal_.resize(cp_model_.variables_size(), true);
   num_violated_constraint_per_var_ignoring_objective_.assign(
@@ -1766,28 +1764,27 @@ LsEvaluator::LsEvaluator(
 }
 
 void LsEvaluator::BuildVarConstraintGraph() {
-  // Clear the var <-> constraint graph.
-  for (std::vector<int>& ct_indices : var_to_constraints_) ct_indices.clear();
-  constraint_to_vars_.resize(constraints_.size());
+  constraint_to_vars_.clear();
 
   // Build the var <-> constraint graph.
+  CompactVectorVectorBuilder<int> var_to_constraints_builder;
   for (int ct_index = 0; ct_index < constraints_.size(); ++ct_index) {
-    constraint_to_vars_[ct_index] =
-        constraints_[ct_index]->UsedVariables(cp_model_);
+    constraint_to_vars_.Add(constraints_[ct_index]->UsedVariables(cp_model_));
 
     const double dtime = 1e-8 * constraint_to_vars_[ct_index].size();
     for (const int var : constraint_to_vars_[ct_index]) {
-      var_to_constraints_[var].push_back(ct_index);
+      var_to_constraints_builder.Add(var, ct_index);
       var_to_dtime_estimate_[var] += dtime;
     }
   }
+  var_to_constraints_.ResetFromBuilder(var_to_constraints_builder,
+                                       cp_model_.variables_size());
 
-  // Remove duplicates.
-  for (std::vector<int>& constraints : var_to_constraints_) {
-    gtl::STLSortAndRemoveDuplicates(&constraints);
+  for (int i = 0; i < var_to_constraints_.size(); ++i) {
+    var_to_constraints_.SortAndRemoveDuplicateValues(i);
   }
-  for (std::vector<int>& vars : constraint_to_vars_) {
-    gtl::STLSortAndRemoveDuplicates(&vars);
+  for (int i = 0; i < constraint_to_vars_.size(); ++i) {
+    constraint_to_vars_.SortAndRemoveDuplicateValues(i);
   }
 
   // Scan the model to decide if a variable is linked to a convex evaluation.

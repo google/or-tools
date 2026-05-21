@@ -545,10 +545,15 @@ bool Inprocessing::RemoveFixedAndEquivalentVariables(bool log_info) {
     if (!implication_graph_->RemoveDuplicatesAndFixedVariables()) return false;
   }
 
-  // Invariant. There should be no clause with fixed variables left.
+  // Invariant. There should be no clause with fixed or redundant variables
+  // left.
   if (DEBUG_MODE) {
+    const auto& assignment = trail_->Assignment();
     for (SatClause* clause : clause_manager_->AllClausesInCreationOrder()) {
-      CHECK(!SomeLiteralAreAssigned(trail_->Assignment(), clause->AsSpan()));
+      for (const Literal lit : clause->AsSpan()) {
+        CHECK(!assignment.LiteralIsAssigned(lit));
+        CHECK(!implication_graph_->IsRedundant(lit));
+      }
     }
   }
 

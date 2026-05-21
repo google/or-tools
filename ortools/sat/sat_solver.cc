@@ -703,7 +703,7 @@ bool SatSolver::ResetWithGivenAssumptions(
   // For assumptions and core-based search, it is really important to add as
   // many binary clauses as possible. This is because we do not want to miss any
   // early core of size 2.
-  ProcessNewlyFixedVariables();
+  if (!ProcessNewlyFixedVariables()) return false;
 
   DCHECK(assumptions_.empty());
   assumption_level_ = 1;
@@ -2023,10 +2023,10 @@ std::string SatSolver::RunningStatisticsString() const {
       num_variables_.value() - num_processed_fixed_variables_);
 }
 
-void SatSolver::ProcessNewlyFixedVariables() {
+bool SatSolver::ProcessNewlyFixedVariables() {
   SCOPED_TIME_STAT(&stats_);
   DCHECK_EQ(CurrentDecisionLevel(), 0);
-  if (num_processed_fixed_variables_ == trail_->Index()) return;
+  if (num_processed_fixed_variables_ == trail_->Index()) return true;
   num_processed_fixed_variables_ = trail_->Index();
 
   int num_detached_clauses = 0;
@@ -2067,15 +2067,13 @@ void SatSolver::ProcessNewlyFixedVariables() {
       // fixed literals, that is okay, we will clean them up on the next call to
       // ProcessNewlyFixedVariables().
       //
-      // TODO(user): This still happen in SAT22.Carry_Save_Fast_1.cnf.cnf.xz, A
-      // better alternative is probably to make sure we only ever have cleaned
-      // clauses. We must clean them each time
-      // binary_implication_graph_->DetectEquivalence() is called, and we need
-      // to make sure we don't generate new clauses that are not cleaned up.
+      // Note that this is hard to avoid, because as we find new equivalences,
+      // more clause can become binary which might cause new equivalences... And
+      // making sure we reach a fix-point each time DetectEquivalence() is
+      // called is not so easy.
       if (trail_->Index() > saved_index) {
         if (!FinishPropagation()) {
-          SetModelUnsat();
-          return;
+          return SetModelUnsat();
         }
         saved_index = trail_->Index();
       }
@@ -2102,6 +2100,7 @@ void SatSolver::ProcessNewlyFixedVariables() {
   CHECK(binary_implication_graph_->Propagate(trail_));
   binary_implication_graph_->RemoveFixedVariables();
   deterministic_time_of_last_fixed_variables_cleanup_ = deterministic_time();
+  return true;
 }
 
 bool SatSolver::PropagationIsDone() const {
@@ -2148,6 +2147,22 @@ bool SatSolver::Propagate() {
         if (trail_->Index() > old_index) break;
       }
       if (trail_->Index() == old_index) break;
+    }
+
+    // We are back at level 0. This can happen because of a restart, or because
+    // we proved that some variables must take a given value in any satisfiable
+    // assignment. Trigger a simplification of the clauses if there is new fixed
+    // variables. Note that for efficiency reason, we don't do that too often.
+    //
+    // TODO(user): Do more advanced preprocessing?
+    if (CurrentDecisionLevel() == 0) {
+      const double kMinDeterministicTimeBetweenCleanups = 1.0;
+      if (num_processed_fixed_variables_ < trail_->Index() &&
+          deterministic_time() >
+              deterministic_time_of_last_fixed_variables_cleanup_ +
+                  kMinDeterministicTimeBetweenCleanups) {
+        if (!ProcessNewlyFixedVariables()) return false;
+      }
     }
 
     // In some corner cases, we might add new constraint during propagation,
@@ -2228,22 +2243,6 @@ bool SatSolver::ResolvePBConflict(BooleanVariable var,
 void SatSolver::EnqueueNewDecision(Literal literal) {
   SCOPED_TIME_STAT(&stats_);
   CHECK(!Assignment().VariableIsAssigned(literal.Variable()));
-
-  // We are back at level 0. This can happen because of a restart, or because
-  // we proved that some variables must take a given value in any satisfiable
-  // assignment. Trigger a simplification of the clauses if there is new fixed
-  // variables. Note that for efficiency reason, we don't do that too often.
-  //
-  // TODO(user): Do more advanced preprocessing?
-  if (CurrentDecisionLevel() == 0) {
-    const double kMinDeterministicTimeBetweenCleanups = 1.0;
-    if (num_processed_fixed_variables_ < trail_->Index() &&
-        deterministic_time() >
-            deterministic_time_of_last_fixed_variables_cleanup_ +
-                kMinDeterministicTimeBetweenCleanups) {
-      ProcessNewlyFixedVariables();
-    }
-  }
 
   counters_.num_branches++;
   last_decision_or_backtrack_trail_index_ = trail_->Index();

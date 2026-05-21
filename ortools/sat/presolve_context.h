@@ -99,13 +99,13 @@ ABSL_MUST_USE_RESULT bool ScaleFloatingPointObjective(
 class PresolveContext {
  public:
   PresolveContext(Model* model, CpModelProto* cp_model, CpModelProto* mapping)
-      : working_model(cp_model),
-        mapping_model(mapping),
+      : mapping_model(mapping),
         lrat_proof_handler(model->Mutable<LratProofHandler>()),
         logger_(model->GetOrCreate<SolverLogger>()),
         params_(*model->GetOrCreate<SatParameters>()),
         time_limit_(model->GetOrCreate<TimeLimit>()),
-        random_(model->GetOrCreate<ModelRandomGenerator>()) {}
+        random_(model->GetOrCreate<ModelRandomGenerator>()),
+        working_model_(cp_model) {}
 
   // Helpers to adds new variables to the presolved model.
 
@@ -116,6 +116,12 @@ class PresolveContext {
   // Creates a new Boolean variable.
   // WARNING: this does not set any hint value for the new variable.
   int NewBoolVar(absl::string_view source);
+
+  // Changes the name of a variable. This is just for debug, and we don't need
+  // to notify anyone that a name changed.
+  void SetVarName(int var, absl::string_view name) {
+    working_model_->mutable_variables(var)->set_name(name);
+  }
 
   // Creates a new integer variable with the given domain and definition.
   // By default this also creates the linking constraint new_var = definition.
@@ -138,12 +144,6 @@ class PresolveContext {
   // create a NewBoolVar() the first time, but later call will just returns it.
   int GetTrueLiteral();
   int GetFalseLiteral();
-
-  // Shortcuts to create enforced constraints.
-  ConstraintProto* AddEnforcedConstraint(
-      absl::Span<const int> enforcement_literals);
-  ConstraintProto* AddEnforcedConstraint(const ConstraintProto& ct);
-  ConstraintProto* AddEnforcedConstraint(const ConstraintProto* ct);
 
   // a => b.
   void AddImplication(int a, int b);
@@ -413,7 +413,7 @@ class PresolveContext {
   bool PropagateAffineRelation(int var);
   bool PropagateAffineRelation(int var, int rep, int64_t coeff, int64_t offset);
 
-  // Creates the internal structure for any new variables in working_model.
+  // Creates the internal structure for any new variables in working_model_.
   void InitializeNewDomains();
 
   // This is a bit hacky. Clear some fields. See call site.
@@ -524,6 +524,7 @@ class PresolveContext {
   // anything with that variable since it appear in at least two constraints.
   void ReadObjectiveFromProto();
   bool AddToObjectiveOffset(int64_t delta);
+  ABSL_MUST_USE_RESULT bool RestrictObjectiveDomain(Domain domain);
   ABSL_MUST_USE_RESULT bool CanonicalizeOneObjectiveVariable(int var);
   ABSL_MUST_USE_RESULT bool CanonicalizeObjective(bool simplify_domain = true);
   void WriteObjectiveToProto() const;
@@ -631,7 +632,7 @@ class PresolveContext {
   // Make sure we never delete an "assumption" literal by using a special
   // constraint for that.
   void RegisterVariablesUsedInAssumptions() {
-    for (const int ref : working_model->assumptions()) {
+    for (const int ref : working_model_->assumptions()) {
       var_to_constraints_[PositiveRef(ref)].insert(kAssumptionsConstraint);
     }
   }
@@ -669,7 +670,10 @@ class PresolveContext {
   // Hint values outside the domain of their variable are adjusted to the
   // nearest value in this domain. Missing hint values are completed when
   // possible (e.g. for the model proto's fixed variables).
+  //
+  // At the end of presolve, one should call WriteHintInProto() to update it.
   void LoadAndClampSolutionHint();
+  void WriteHintToProto();
 
   SolutionCrush& solution_crush() { return solution_crush_; }
 
@@ -684,23 +688,43 @@ class PresolveContext {
   absl::BitGenRef random() { return *random_; }
 
   // CpModelProto const accessors.
-  const CpModelProto& WorkingModel() const { return *working_model; }
-  int NumConstraints() const { return working_model->constraints().size(); }
-  int NumVariables() const { return working_model->variables().size(); }
+  const CpModelProto& WorkingModel() const { return *working_model_; }
+  int NumConstraints() const { return working_model_->constraints().size(); }
+  int NumVariables() const { return working_model_->variables().size(); }
   const ConstraintProto& Constraint(int c) const {
-    return working_model->constraints(c);
+    return working_model_->constraints(c);
   }
 
+  // Function to create a new constraint, with shortcuts for enforced ones.
+  ConstraintProto* AddConstraint() { return working_model_->add_constraints(); }
+  ConstraintProto* AddEnforcedConstraint(
+      absl::Span<const int> enforcement_literals);
+  ConstraintProto* AddEnforcedConstraint(const ConstraintProto& ct);
+  ConstraintProto* AddEnforcedConstraint(const ConstraintProto* ct);
+
   // CpModelProto mutable accessors.
-  ConstraintProto* NewConstraint() { return working_model->add_constraints(); }
   ConstraintProto* MutableConstraint(int c) {
-    return working_model->mutable_constraints(c);
+    return working_model_->mutable_constraints(c);
   }
   void ClearConstraint(int c) { MutableConstraint(c)->Clear(); }
 
-  // TODO(user): Avoid modifying the model directly, so we can easily
-  // enforce invariant like the graph<->constraint variable usage.
-  CpModelProto* working_model = nullptr;
+  // Sometimes we start creating a constraint but bail out, this is a "safe"
+  // pattern and shouldn't break invariants.
+  void RemoveLastConstraint() {
+    working_model_->mutable_constraints()->RemoveLast();
+  }
+
+  // WARNING. Only use when you know what you are doing as some modification
+  // might break the invariant maintained by this class. In particular, do not
+  // modify constraints via this pointer !
+  //
+  // This is still exposed for efficiency and set-up in some places. The usage
+  // should stay minimal.
+  CpModelProto* UnsafeMutableWorkingModel() { return working_model_; }
+  SymmetryProto* MutableWorkingModelSymmetry() {
+    return working_model_->mutable_symmetry();
+  }
+
   CpModelProto* mapping_model = nullptr;
 
   // Used for the LRAT proof of inferred clauses during model copy and, if
@@ -776,6 +800,9 @@ class PresolveContext {
   const SatParameters& params_;
   TimeLimit* time_limit_;
   ModelRandomGenerator* random_;
+
+  // The model we are modifying during presolve.
+  CpModelProto* working_model_ = nullptr;
 
   // Initially false, and set to true on the first inconsistency.
   bool is_unsat_ = false;

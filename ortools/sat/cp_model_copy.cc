@@ -17,18 +17,18 @@
 #include <cstdint>
 #include <cstdlib>
 #include <functional>
-#include <limits>
-#include <memory>
 #include <numeric>
 #include <optional>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "absl/algorithm/container.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
+#include "absl/numeric/int128.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
@@ -43,11 +43,11 @@
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/lrat_proof_handler.h"
 #include "ortools/sat/model.h"
-#include "ortools/sat/presolve_context.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/util/logging.h"
+#include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
@@ -165,6 +165,22 @@ std::optional<int64_t> ModelCopyHelper::InputFixedValueOrNullopt(
     const int var = expr.vars(i);
     if (!InputIsFixed(var)) return std::nullopt;
     result += expr.coeffs(i) * InputFixedValue(var);
+  }
+  return result;
+}
+
+std::optional<ModelCopyHelper::FixedLinearArgument>
+ModelCopyHelper::InputFixedLinearArgumentOrNullopt(
+    const LinearArgumentProto& linear_argument) const {
+  const auto target = InputFixedValueOrNullopt(linear_argument.target());
+  if (target == std::nullopt) return std::nullopt;
+  FixedLinearArgument result;
+  result.target = target.value();
+  result.exprs.resize(linear_argument.exprs_size());
+  for (int i = 0; i < linear_argument.exprs_size(); ++i) {
+    const auto expr = InputFixedValueOrNullopt(linear_argument.exprs(i));
+    if (expr == std::nullopt) return std::nullopt;
+    result.exprs[i] = expr.value();
   }
   return result;
 }
@@ -674,6 +690,17 @@ bool ModelCopy::FinishBoolOrCopy() {
   return true;
 }
 
+bool ModelCopy::CopyFalseConstraint() {
+  if (temp_enforcement_literals_.empty()) return false;
+  google::protobuf::RepeatedField<int>& literals =
+      *working_model_->add_constraints()->mutable_bool_or()->mutable_literals();
+  literals.Reserve(temp_enforcement_literals_.size());
+  for (const int literal : temp_enforcement_literals_) {
+    literals.Add(NegatedRef(literal));
+  }
+  return true;
+}
+
 bool ModelCopy::CopyBoolOr(const ConstraintProto& ct) {
   temp_literals_.clear();
   for (const int lit : temp_enforcement_literals_) {
@@ -790,13 +817,7 @@ bool ModelCopy::CopyBoolAnd(const ConstraintProto& ct) {
   }
 
   if (at_least_one_false) {
-    // One enforcement literal must be false.
-    BoolArgumentProto* bool_or =
-        working_model_->add_constraints()->mutable_bool_or();
-    for (const int lit : temp_enforcement_literals_) {
-      bool_or->add_literals(NegatedRef(lit));
-    }
-    return !bool_or->literals().empty();
+    return CopyFalseConstraint();
   } else if (num_non_fixed_literals > 0) {
     ConstraintProto* new_ct = working_model_->add_constraints();
     FinishEnforcementCopy(new_ct);
@@ -845,13 +866,7 @@ bool ModelCopy::CopyBoolAndWithDupSupport(const ConstraintProto& ct) {
   }
 
   if (at_least_one_false) {
-    // One enforcement literal must be false.
-    BoolArgumentProto* bool_or =
-        working_model_->add_constraints()->mutable_bool_or();
-    for (const int lit : temp_enforcement_literals_) {
-      bool_or->add_literals(NegatedRef(lit));
-    }
-    return !bool_or->literals().empty();
+    return CopyFalseConstraint();
   }
 
   if (temp_literals_.empty()) {
@@ -932,16 +947,7 @@ bool ModelCopy::CopyLinear(const ConstraintProto& ct, bool canonicalize) {
   // Constraint is false?
   const Domain tight_domain = implied.IntersectionWith(new_rhs);
   if (tight_domain.IsEmpty()) {
-    if (temp_enforcement_literals_.empty()) return false;
-    temp_literals_.clear();
-    for (const int literal : temp_enforcement_literals_) {
-      temp_literals_.push_back(NegatedRef(literal));
-    }
-    working_model_->add_constraints()
-        ->mutable_bool_or()
-        ->mutable_literals()
-        ->Add(temp_literals_.begin(), temp_literals_.end());
-    return true;
+    return CopyFalseConstraint();
   }
 
   DCHECK(!non_fixed_terms_.empty());
@@ -1116,6 +1122,19 @@ bool ModelCopy::CopyAllDiff(const ConstraintProto& ct) {
 }
 
 bool ModelCopy::CopyLinMax(const ConstraintProto& ct) {
+  // A lin max must have some rhs, or it is not satisfiable.
+  if (ct.lin_max().exprs().empty()) return CopyFalseConstraint();
+
+  // Check if everything is fixed.
+  const auto fixed_linear_argument =
+      helper_.InputFixedLinearArgumentOrNullopt(ct.lin_max());
+  if (fixed_linear_argument.has_value()) {
+    DCHECK(!fixed_linear_argument->exprs.empty());
+    return CopyTrivialConstraint(
+        *absl::c_max_element(fixed_linear_argument->exprs) ==
+        fixed_linear_argument->target);
+  }
+
   // We will create it lazily if we end up copying something.
   ConstraintProto* new_ct = nullptr;
 
@@ -1395,6 +1414,17 @@ bool ModelCopy::CopyInterval(const ConstraintProto& ct, int c,
 }
 
 bool ModelCopy::CopyIntProd(const ConstraintProto& ct, bool ignore_names) {
+  // Check if everything is fixed.
+  const auto fixed_linear_argument =
+      helper_.InputFixedLinearArgumentOrNullopt(ct.int_prod());
+  if (fixed_linear_argument.has_value()) {
+    int64_t prod = 1;
+    for (const int64_t expr : fixed_linear_argument->exprs) {
+      prod = CapProd(prod, expr);
+    }
+    return CopyTrivialConstraint(prod == fixed_linear_argument->target);
+  }
+
   ConstraintProto* new_ct = working_model_->add_constraints();
   if (!ignore_names) {
     new_ct->set_name(ct.name());
@@ -1409,6 +1439,15 @@ bool ModelCopy::CopyIntProd(const ConstraintProto& ct, bool ignore_names) {
 }
 
 bool ModelCopy::CopyIntDiv(const ConstraintProto& ct, bool ignore_names) {
+  // Check if everything is fixed.
+  const auto fixed_linear_argument =
+      helper_.InputFixedLinearArgumentOrNullopt(ct.int_div());
+  if (fixed_linear_argument.has_value()) {
+    return CopyTrivialConstraint(fixed_linear_argument->exprs[0] /
+                                     fixed_linear_argument->exprs[1] ==
+                                 fixed_linear_argument->target);
+  }
+
   ConstraintProto* new_ct = working_model_->add_constraints();
   if (!ignore_names) {
     new_ct->set_name(ct.name());
@@ -1423,6 +1462,15 @@ bool ModelCopy::CopyIntDiv(const ConstraintProto& ct, bool ignore_names) {
 }
 
 bool ModelCopy::CopyIntMod(const ConstraintProto& ct, bool ignore_names) {
+  // Check if everything is fixed.
+  const auto fixed_linear_argument =
+      helper_.InputFixedLinearArgumentOrNullopt(ct.int_mod());
+  if (fixed_linear_argument.has_value()) {
+    return CopyTrivialConstraint(fixed_linear_argument->exprs[0] %
+                                     fixed_linear_argument->exprs[1] ==
+                                 fixed_linear_argument->target);
+  }
+
   ConstraintProto* new_ct = working_model_->add_constraints();
   if (!ignore_names) {
     new_ct->set_name(ct.name());
@@ -1549,18 +1597,7 @@ bool ModelCopy::CopyAndMapCumulative(const ConstraintProto& ct) {
       helper_.InputFixedValueOrNullopt(ct.cumulative().capacity());
   if (ct.cumulative().intervals().empty() && fixed_capa != std::nullopt) {
     // Trivial constraint, either obviously SAT or UNSAT if enforced.
-    const int64_t capacity = fixed_capa.value();
-    if (temp_enforcement_literals_.empty()) {
-      return capacity >= 0;
-    }
-    if (capacity < 0) {
-      // At least one enforcement literal must be false.
-      auto* new_ct = working_model_->add_constraints();
-      for (const int literal : temp_enforcement_literals_) {
-        new_ct->mutable_bool_or()->add_literals(NegatedRef(literal));
-      }
-    }
-    return true;
+    return CopyTrivialConstraint(fixed_capa.value() >= 0);
   }
   // Note that we don't copy names here.
   auto* new_ct = working_model_->add_constraints();

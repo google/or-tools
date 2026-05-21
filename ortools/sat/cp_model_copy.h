@@ -75,6 +75,13 @@ class ModelCopyHelper {
   std::optional<int64_t> InputFixedValueOrNullopt(
       const LinearExpressionProto& expr) const;
 
+  struct FixedLinearArgument {
+    int64_t target;
+    std::vector<int64_t> exprs;
+  };
+  std::optional<FixedLinearArgument> InputFixedLinearArgumentOrNullopt(
+      const LinearArgumentProto& linear_argument) const;
+
   // All the *Mapped*() functions work in the mapped space, after the mapping
   // has been applied. All the mutable function are in this category.
   ABSL_MUST_USE_RESULT bool IntersectMappedDomainWith(int var,
@@ -243,6 +250,18 @@ class ModelCopy {
   void FinishEnforcementCopy(ConstraintProto* ct);
 
   // All these functions return false if the constraint is found infeasible.
+
+  // Copy a constraint that is always false, returning false if the enforcement
+  // literals are empty or creating a constraint forcing at least one of them to
+  // be false.
+  bool CopyFalseConstraint();
+
+  // Copy a constraint that is either always or never satisfied.
+  bool CopyTrivialConstraint(bool is_always_satisfied) {
+    if (is_always_satisfied) return true;
+    return CopyFalseConstraint();
+  }
+
   bool CopyBoolOr(const ConstraintProto& ct);
   bool CopyBoolOrWithDupSupport(const ConstraintProto& ct,
                                 int one_based_cnf_index);

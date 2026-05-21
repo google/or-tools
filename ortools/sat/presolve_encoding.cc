@@ -716,7 +716,7 @@ bool DetectEncodedComplexDomain(
     CHECK(context->SetLiteralToTrue(new_var));
   } else {
     local_model.linear1_constraints.push_back(context->NumConstraints());
-    ConstraintProto* new_ct = context->NewConstraint();
+    ConstraintProto* new_ct = context->AddConstraint();
     new_ct->add_enforcement_literal(new_var);
     new_ct->mutable_linear()->add_vars(local_model.var);
     new_ct->mutable_linear()->add_coeffs(1);
@@ -724,7 +724,7 @@ bool DetectEncodedComplexDomain(
     local_model.linear1_constraints.push_back(context->NumConstraints());
     local_model.bools_only_used_inside_the_local_model.insert(
         PositiveRef(new_var));
-    new_ct = context->NewConstraint();
+    new_ct = context->AddConstraint();
     new_ct->add_enforcement_literal(NegatedRef(new_var));
     new_ct->mutable_linear()->add_vars(local_model.var);
     new_ct->mutable_linear()->add_coeffs(1);

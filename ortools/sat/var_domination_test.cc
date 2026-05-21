@@ -421,12 +421,11 @@ TEST(VarDominationTest, ExploitRemainingDominance) {
 
   // Check that an implication between X and Y was added, and that the hint was
   // updated in consequence.
-  EXPECT_EQ(context.working_model->constraints_size(), 2);
+  EXPECT_EQ(context.NumConstraints(), 2);
   const ConstraintProto expected_constraint_proto =
       ParseTestProto(R"pb(enforcement_literal: -1
                           bool_and { literals: -2 })pb");
-  EXPECT_THAT(context.working_model->constraints(1),
-              EqualsProto(expected_constraint_proto));
+  EXPECT_THAT(context.Constraint(1), EqualsProto(expected_constraint_proto));
   EXPECT_EQ(context.DomainOf(0).ToString(), "[0,1]");
   EXPECT_EQ(context.DomainOf(1).ToString(), "[0,1]");
   EXPECT_EQ(context.solution_crush().GetVarValues()[0], 1);
@@ -973,17 +972,15 @@ TEST(DualBoundReductionTest, AddImplication) {
   EXPECT_TRUE(dual_bound_strengthening.Strengthen(&context));
 
   // not(a) => not(b) and not(a) => not(c) should be added.
-  ASSERT_EQ(context.working_model->constraints_size(), 3);
+  ASSERT_EQ(context.NumConstraints(), 3);
   const ConstraintProto expected_constraint_proto1 =
       ParseTestProto(R"pb(enforcement_literal: -1
                           bool_and { literals: -2 })pb");
-  EXPECT_THAT(context.working_model->constraints(1),
-              EqualsProto(expected_constraint_proto1));
+  EXPECT_THAT(context.Constraint(1), EqualsProto(expected_constraint_proto1));
   const ConstraintProto expected_constraint_proto2 =
       ParseTestProto(R"pb(enforcement_literal: -1
                           bool_and { literals: -3 })pb");
-  EXPECT_THAT(context.working_model->constraints(2),
-              EqualsProto(expected_constraint_proto2));
+  EXPECT_THAT(context.Constraint(2), EqualsProto(expected_constraint_proto2));
   EXPECT_EQ(context.DomainOf(0).ToString(), "[0]");
   EXPECT_EQ(context.DomainOf(1).ToString(), "[0,1]");
   EXPECT_EQ(context.DomainOf(2).ToString(), "[0,1]");

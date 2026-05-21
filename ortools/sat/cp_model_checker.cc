@@ -273,16 +273,16 @@ std::string ValidateLinearExpression(const CpModelProto& model,
     return absl::StrCat("coeffs_size() != vars_size() in linear expression: ",
                         ProtobufShortDebugString(expr));
   }
-  if (PossibleIntegerOverflow(model, expr.vars(), expr.coeffs(),
-                              expr.offset())) {
-    return absl::StrCat("Possible overflow in linear expression: ",
-                        ProtobufShortDebugString(expr));
-  }
   for (const int var : expr.vars()) {
     if (!RefIsPositive(var)) {
       return absl::StrCat("Invalid negated variable in linear expression: ",
                           ProtobufShortDebugString(expr));
     }
+  }
+  if (PossibleIntegerOverflow(model, expr.vars(), expr.coeffs(),
+                              expr.offset())) {
+    return absl::StrCat("Possible overflow in linear expression: ",
+                        ProtobufShortDebugString(expr));
   }
   return "";
 }
@@ -445,6 +445,15 @@ std::string ValidateElementConstraint(const CpModelProto& model,
            "since the index will be out of bounds.";
   }
 
+  if (in_legacy_format) {
+    if (!VariableIndexIsValid(model, element.index()) ||
+        !VariableIndexIsValid(model, element.target())) {
+      return absl::StrCat(
+          "Element constraint index and target must valid variables: ",
+          ProtobufShortDebugString(ct));
+    }
+  }
+
   // We need to be able to manipulate expression like "target - var" without
   // integer overflow.
   if (!element.vars().empty()) {
@@ -466,15 +475,6 @@ std::string ValidateElementConstraint(const CpModelProto& model,
             "overflow",
             ProtobufShortDebugString(ct));
       }
-    }
-  }
-
-  if (in_legacy_format) {
-    if (!VariableIndexIsValid(model, element.index()) ||
-        !VariableIndexIsValid(model, element.target())) {
-      return absl::StrCat(
-          "Element constraint index and target must valid variables: ",
-          ProtobufShortDebugString(ct));
     }
   }
 
@@ -1072,32 +1072,19 @@ std::string ValidateSolutionHint(const CpModelProto& model) {
 
 }  // namespace
 
-bool PossibleIntegerOverflow(const CpModelProto& model,
-                             absl::Span<const int> vars,
-                             absl::Span<const int64_t> coeffs, int64_t offset,
-                             std::pair<int64_t, int64_t>* implied_domain) {
-  if (offset == kint64min) return true;
-  int64_t sum_min = -std::abs(offset);
-  int64_t sum_max = +std::abs(offset);
-  for (int i = 0; i < vars.size(); ++i) {
-    const int ref = vars[i];
-    const auto& var_proto = model.variables(PositiveRef(ref));
-    const int64_t min_domain = var_proto.domain(0);
-    const int64_t max_domain = var_proto.domain(var_proto.domain_size() - 1);
-    if (coeffs[i] == kint64min) return true;
-    const int64_t coeff = RefIsPositive(ref) ? coeffs[i] : -coeffs[i];
-    const int64_t prod1 = CapProd(min_domain, coeff);
-    const int64_t prod2 = CapProd(max_domain, coeff);
+bool LinearOverflowChecker::AddTerm(int64_t coeff, int64_t min_domain,
+                                    int64_t max_domain) {
+  if (coeff == kint64min) return false;
+  const int64_t prod1 = CapProd(min_domain, coeff);
+  const int64_t prod2 = CapProd(max_domain, coeff);
+  if (AtMinOrMaxInt64(prod1)) return false;
+  if (AtMinOrMaxInt64(prod2)) return false;
 
-    // Note that we use min/max with zero to disallow "alternative" terms and
-    // be sure that we cannot have an overflow if we do the computation in a
-    // different order.
-    sum_min = CapAdd(sum_min, std::min(int64_t{0}, std::min(prod1, prod2)));
-    sum_max = CapAdd(sum_max, std::max(int64_t{0}, std::max(prod1, prod2)));
-    for (const int64_t v : {prod1, prod2, sum_min, sum_max}) {
-      if (AtMinOrMaxInt64(v)) return true;
-    }
-  }
+  // Note that we use min/max with zero to disallow "alternative" terms and
+  // be sure that we cannot have an overflow if we do the computation in a
+  // different order.
+  sum_min = CapAdd(sum_min, std::min(int64_t{0}, std::min(prod1, prod2)));
+  sum_max = CapAdd(sum_max, std::max(int64_t{0}, std::max(prod1, prod2)));
 
   // In addition to computing the min/max possible sum, we also often compare
   // it with the constraint bounds, so we do not want max - min to overflow.
@@ -1105,10 +1092,31 @@ bool PossibleIntegerOverflow(const CpModelProto& model,
   //
   // Note that it is important to be symmetric here, as we do not want expr to
   // pass but not -expr!
-  if (sum_min < -kint64max / 2) return true;
-  if (sum_max > kint64max / 2) return true;
+  return sum_min >= -kint64max / 2 && sum_max <= kint64max / 2;
+}
+
+bool PossibleIntegerOverflow(const CpModelProto& model,
+                             absl::Span<const int> vars,
+                             absl::Span<const int64_t> coeffs, int64_t offset,
+                             std::pair<int64_t, int64_t>* implied_domain) {
+  offset = std::abs(offset);
+  if (offset > kint64max / 2) return true;
+
+  LinearOverflowChecker checher;
+  checher.sum_min = -std::abs(offset);
+  checher.sum_max = std::abs(offset);
+  for (int i = 0; i < vars.size(); ++i) {
+    const int ref = vars[i];
+    CHECK(RefIsPositive(ref));
+    const auto& var_proto = model.variables(ref);
+    const int64_t min_domain = var_proto.domain(0);
+    const int64_t max_domain = var_proto.domain(var_proto.domain_size() - 1);
+
+    if (!checher.AddTerm(coeffs[i], min_domain, max_domain)) return true;
+  }
+
   if (implied_domain) {
-    *implied_domain = {sum_min, sum_max};
+    *implied_domain = {checher.sum_min, checher.sum_max};
   }
   return false;
 }
