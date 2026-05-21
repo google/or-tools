@@ -71,19 +71,19 @@ jobs:
           - os: ubuntu-latest
             platform: linux
             generator: Ninja
-            cmake_flags: '-DCMAKE_BUILD_TYPE=Release -DCMAKE_C_FLAGS_RELEASE="-O1 -DNDEBUG" -DCMAKE_CXX_FLAGS_RELEASE="-O1 -DNDEBUG"'
+            cmake_flags: -DCMAKE_BUILD_TYPE=Release
           - os: macos-15-intel
             platform: macos
-            generator: Xcode
-            cmake_flags: '-DCMAKE_CONFIGURATION_TYPES="Release" -DCMAKE_C_FLAGS_RELEASE="-O1 -DNDEBUG" -DCMAKE_CXX_FLAGS_RELEASE="-O1 -DNDEBUG"'
+            generator: Ninja
+            cmake_flags: -DCMAKE_BUILD_TYPE=Release
           - os: macos-latest
             platform: macos
-            generator: Xcode
-            cmake_flags: '-DCMAKE_CONFIGURATION_TYPES="Release" -DCMAKE_C_FLAGS_RELEASE="-O1 -DNDEBUG" -DCMAKE_CXX_FLAGS_RELEASE="-O1 -DNDEBUG"'
+            generator: Ninja
+            cmake_flags: -DCMAKE_BUILD_TYPE=Release
           - os: windows-2022
             platform: windows
             generator: 'Visual Studio 17 2022'
-            cmake_flags: '-DCMAKE_CONFIGURATION_TYPES="Release"'
+            cmake_flags: -DCMAKE_CONFIGURATION_TYPES=Release
     runs-on: ${{matrix.os}}
     env:
       SCCACHE_GHA_ENABLED: true
@@ -115,7 +115,7 @@ jobs:
       run: sudo apt install -y ninja-build swig
     - name: Setup macos
       if: ${{ matrix.platform == 'macos' }}
-      run: brew install swig
+      run: brew install swig ninja
     - name: Setup Linux Python Env
       if: ${{ matrix.build == 'python' && matrix.platform == 'linux' }}
       run: echo "$HOME/.local/bin" >> $GITHUB_PATH
