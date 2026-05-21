@@ -152,15 +152,11 @@ SolverLogger& LPSolver::GetSolverLogger() { return logger_; }
 ProblemStatus LPSolver::Solve(const LinearProgram& lp) {
   std::unique_ptr<TimeLimit> time_limit =
       TimeLimit::FromParameters(parameters_);
-  return SolveWithTimeLimit(lp, time_limit.get());
+  return SolveWithTimeLimit(lp, *time_limit);
 }
 
 ProblemStatus LPSolver::SolveWithTimeLimit(const LinearProgram& lp,
-                                           TimeLimit* time_limit) {
-  if (time_limit == nullptr) {
-    LOG(DFATAL) << "SolveWithTimeLimit() called with a nullptr time_limit.";
-    return ProblemStatus::ABNORMAL;
-  }
+                                           TimeLimit& time_limit) {
   ++num_solves_;
   num_revised_simplex_iterations_ = 0;
   DumpLinearProgramIfRequiredByFlags(lp, num_solves_);
@@ -227,7 +223,7 @@ ProblemStatus LPSolver::SolveWithTimeLimit(const LinearProgram& lp,
   // Preprocess.
   MainLpPreprocessor preprocessor(&parameters_);
   preprocessor.SetLogger(&logger_);
-  preprocessor.SetTimeLimit(time_limit);
+  preprocessor.SetTimeLimit(&time_limit);
 
   const bool postsolve_is_needed = preprocessor.Run(&current_linear_program_);
 
@@ -261,7 +257,7 @@ ProblemStatus LPSolver::SolveWithTimeLimit(const LinearProgram& lp,
   // Do not launch the solver if the time limit was already reached. This might
   // mean that the pre-processors were not all run, and current_linear_program_
   // might not be in a completely safe state.
-  if (!time_limit->LimitReached()) {
+  if (!time_limit.LimitReached()) {
     RunRevisedSimplexIfNeeded(&solution, time_limit);
   }
   if (postsolve_is_needed) preprocessor.DestructiveRecoverSolution(&solution);
@@ -271,9 +267,9 @@ ProblemStatus LPSolver::SolveWithTimeLimit(const LinearProgram& lp,
     SOLVER_LOG(&logger_, "status: ", GetProblemStatusString(status));
     SOLVER_LOG(&logger_, "objective: ", GetObjectiveValue());
     SOLVER_LOG(&logger_, "iterations: ", GetNumberOfSimplexIterations());
-    SOLVER_LOG(&logger_, "time: ", time_limit->GetElapsedTime());
+    SOLVER_LOG(&logger_, "time: ", time_limit.GetElapsedTime());
     SOLVER_LOG(&logger_, "deterministic_time: ",
-               time_limit->GetElapsedDeterministicTime());
+               time_limit.GetElapsedDeterministicTime());
     SOLVER_LOG(&logger_, "");
   }
 
@@ -609,7 +605,7 @@ void LPSolver::ResizeSolution(RowIndex num_rows, ColIndex num_cols) {
 }
 
 void LPSolver::RunRevisedSimplexIfNeeded(ProblemSolution* solution,
-                                         TimeLimit* time_limit) {
+                                         TimeLimit& time_limit) {
   // Note that the transpose matrix is no longer needed at this point.
   // This helps reduce the peak memory usage of the solver.
   //

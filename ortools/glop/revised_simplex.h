@@ -97,6 +97,7 @@
 #include <vector>
 
 #include "absl/base/attributes.h"
+#include "absl/base/nullability.h"
 #include "absl/log/die_if_null.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/random/random.h"
@@ -154,6 +155,12 @@ class RevisedSimplex {
   // and try to use the previously computed solution as a warm-start. To disable
   // this behavior or give explicit warm-start data, use one of the State*()
   // functions below.
+  ABSL_MUST_USE_RESULT Status Solve(const LinearProgram& lp,
+                                    TimeLimit& time_limit);
+
+  // Legacy version of Solve() passing a pointer on TimeLimit and expecting it
+  // to be non-null (it returns Status::ERROR_NULL when null).
+  ABSL_DEPRECATED("Use Solve(const LinearProgram&, TimeLimit&) instead.");
   ABSL_MUST_USE_RESULT Status Solve(const LinearProgram& lp,
                                     TimeLimit* time_limit);
 
@@ -268,7 +275,7 @@ class RevisedSimplex {
   }
   ABSL_MUST_USE_RESULT Status MinimizeFromTransposedMatrixWithSlack(
       const DenseRow& objective, Fractional objective_scaling_factor,
-      Fractional objective_offset, TimeLimit* time_limit);
+      Fractional objective_offset, TimeLimit& time_limit);
 
  private:
   struct IterationStats : public StatsGroup {
@@ -323,7 +330,7 @@ class RevisedSimplex {
 
   ABSL_MUST_USE_RESULT Status SolveInternal(double start_time, bool maximize,
                                             const DenseRow& objective,
-                                            TimeLimit* time_limit);
+                                            TimeLimit& time_limit);
 
   // Propagates parameters_ to all the other classes that need it.
   //
@@ -520,11 +527,11 @@ class RevisedSimplex {
   // not refactorized, set refactorize to true. Otherwise, the row number of the
   // leaving variable is written in *leaving_row, and the step length
   // is written in *step_length.
-  Status ChooseLeavingVariableRow(ColIndex entering_col,
-                                  Fractional reduced_cost, bool* refactorize,
-                                  RowIndex* leaving_row,
-                                  Fractional* step_length,
-                                  Fractional* target_bound);
+  void ChooseLeavingVariableRow(ColIndex entering_col, Fractional reduced_cost,
+                                bool* absl_nonnull refactorize,
+                                RowIndex* absl_nonnull leaving_row,
+                                Fractional* absl_nonnull step_length,
+                                Fractional* absl_nonnull target_bound);
 
   // Chooses the leaving variable for the primal phase-I algorithm. The
   // algorithm follows more or less what is described in Istvan Maros's book in
@@ -546,9 +553,9 @@ class RevisedSimplex {
   //   along this dual edge.
   // - target_bound: the bound at which the leaving variable should go when
   //   leaving the basis.
-  ABSL_MUST_USE_RESULT Status DualChooseLeavingVariableRow(
-      RowIndex* leaving_row, Fractional* cost_variation,
-      Fractional* target_bound);
+  void DualChooseLeavingVariableRow(RowIndex* absl_nonnull leaving_row,
+                                    Fractional* absl_nonnull cost_variation,
+                                    Fractional* absl_nonnull target_bound);
 
   // Updates the prices used by DualChooseLeavingVariableRow() after a simplex
   // iteration by using direction_. The prices are stored in
@@ -575,9 +582,10 @@ class RevisedSimplex {
   // Dual Phase-1 Algorithm for the Simplex Method", Computational Optimization
   // and Applications, October 2003, Volume 26, Issue 1, pp 63-81.
   // http://rd.springer.com/article/10.1023%2FA%3A1025102305440
-  ABSL_MUST_USE_RESULT Status DualPhaseIChooseLeavingVariableRow(
-      RowIndex* leaving_row, Fractional* cost_variation,
-      Fractional* target_bound);
+  void DualPhaseIChooseLeavingVariableRow(
+      RowIndex* absl_nonnull leaving_row,
+      Fractional* absl_nonnull cost_variation,
+      Fractional* absl_nonnull target_bound);
 
   // Makes sure the boxed variable are dual-feasible by setting them to the
   // correct bound according to their reduced costs. This is called
@@ -625,18 +633,18 @@ class RevisedSimplex {
   Status RefactorizeBasisIfNeeded(bool* refactorize);
 
   // Main iteration loop of the primal simplex.
-  ABSL_MUST_USE_RESULT Status PrimalMinimize(TimeLimit* time_limit);
+  ABSL_MUST_USE_RESULT Status PrimalMinimize(TimeLimit& time_limit);
 
   // Main iteration loop of the dual simplex.
   ABSL_MUST_USE_RESULT Status DualMinimize(bool feasibility_phase,
-                                           TimeLimit* time_limit);
+                                           TimeLimit& time_limit);
 
   // Pushes all super-basic variables to bounds (if applicable) or to zero (if
   // unconstrained). This is part of a "crossover" procedure to find a vertex
   // solution given a (near) optimal solution. Assumes that Minimize() or
   // DualMinimize() has already run, i.e., that we are at an optimal solution
   // within numerical tolerances.
-  ABSL_MUST_USE_RESULT Status PrimalPush(TimeLimit* time_limit);
+  ABSL_MUST_USE_RESULT Status PrimalPush(TimeLimit& time_limit);
 
   // Experimental. This is useful in a MIP context. It performs a few degenerate
   // pivot to try to mimize the fractionality of the optimal basis.
@@ -646,8 +654,8 @@ class RevisedSimplex {
   //
   // I could only find slides for the reference of this "LP Solution Polishing
   // to improve MIP Performance", Matthias Miltenberger, Zuse Institute Berlin.
-  ABSL_MUST_USE_RESULT Status PrimalPolish(TimeLimit* time_limit);
-  ABSL_MUST_USE_RESULT Status DualPolish(TimeLimit* time_limit);
+  ABSL_MUST_USE_RESULT Status PrimalPolish(TimeLimit& time_limit);
+  ABSL_MUST_USE_RESULT Status DualPolish(TimeLimit& time_limit);
 
   // Helper function for Primal/DualPolish().
   Fractional IntegralityChange(ColIndex col, Fractional old_value,
@@ -665,7 +673,7 @@ class RevisedSimplex {
   // during the last call to this method.
   // TODO(user): Update the internals of revised simplex so that the time
   // limit is updated at the source and remove this method.
-  void AdvanceDeterministicTime(TimeLimit* time_limit);
+  void AdvanceDeterministicTime(TimeLimit& time_limit);
 
   // Problem status
   ProblemStatus problem_status_;
