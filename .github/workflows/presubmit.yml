@@ -74,11 +74,11 @@ jobs:
             cmake_flags: '-DCMAKE_BUILD_TYPE=Release -DCMAKE_C_FLAGS_RELEASE="-O1 -DNDEBUG" -DCMAKE_CXX_FLAGS_RELEASE="-O1 -DNDEBUG"'
           - os: macos-15-intel
             platform: macos
-            generator: Xcode
+            generator: Ninja
             cmake_flags: '-DCMAKE_CONFIGURATION_TYPES="Release" -DCMAKE_C_FLAGS_RELEASE="-O1 -DNDEBUG" -DCMAKE_CXX_FLAGS_RELEASE="-O1 -DNDEBUG"'
           - os: macos-latest
             platform: macos
-            generator: Xcode
+            generator: Ninja
             cmake_flags: '-DCMAKE_CONFIGURATION_TYPES="Release" -DCMAKE_C_FLAGS_RELEASE="-O1 -DNDEBUG" -DCMAKE_CXX_FLAGS_RELEASE="-O1 -DNDEBUG"'
           - os: windows-2022
             platform: windows
@@ -115,7 +115,7 @@ jobs:
       run: sudo apt install -y ninja-build swig
     - name: Setup macos
       if: ${{ matrix.platform == 'macos' }}
-      run: brew install swig
+      run: brew install swig ninja
     - name: Setup Linux Python Env
       if: ${{ matrix.build == 'python' && matrix.platform == 'linux' }}
       run: echo "$HOME/.local/bin" >> $GITHUB_PATH
