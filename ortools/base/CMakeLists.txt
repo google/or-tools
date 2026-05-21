@@ -15,6 +15,7 @@ file(GLOB _SRCS "*.h" "*.cc")
 list(FILTER _SRCS EXCLUDE REGEX ".*/.*_benchmark.cc")
 list(FILTER _SRCS EXCLUDE REGEX ".*/.*_test.cc")
 list(FILTER _SRCS EXCLUDE REGEX "/gmock\.h")
+list(FILTER _SRCS EXCLUDE REGEX ".*/benchmark_main\.cc")
 
 set(NAME ${PROJECT_NAME}_base)
 
