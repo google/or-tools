@@ -157,8 +157,8 @@ class CpModelPresolver {
   bool PresolveCircuit(ConstraintProto* ct);
   bool PresolveRoutes(ConstraintProto* ct);
 
-  bool PresolveAtMostOrExactlyOne(ConstraintProto* ct);
-  bool PresolveAtMostOne(ConstraintProto* ct);
+  bool PresolveAtMostOrExactlyOne(ConstraintProto* ct, bool use_dual_reduction);
+  bool PresolveAtMostOne(ConstraintProto* ct, bool use_dual_reduction = true);
   bool PresolveExactlyOne(ConstraintProto* ct);
 
   bool PresolveBoolAnd(ConstraintProto* ct);

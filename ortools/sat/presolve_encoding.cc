@@ -729,7 +729,6 @@ bool DetectEncodedComplexDomain(
     new_ct->mutable_linear()->add_vars(local_model.var);
     new_ct->mutable_linear()->add_coeffs(1);
     FillDomainInProto(domain_new_var_complement, new_ct->mutable_linear());
-    context->UpdateNewConstraintsVariableUsage();
     fully_encoded_domains->insert({new_var, domain_new_var});
     fully_encoded_domains->insert(
         {NegatedRef(new_var), domain_new_var_complement});

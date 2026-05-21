@@ -179,7 +179,6 @@ CpModelProto PresolveOneConstraint(const CpModelProto& initial_model,
   PresolveContext context(&model, &presolved_model, &mapping_model);
   CpModelPresolver presolver(&context, &mapping);
   context.InitializeNewDomains();
-  context.UpdateNewConstraintsVariableUsage();
   presolver.PresolveOneConstraint(constraint_index);
   presolver.RemoveEmptyConstraints();
   for (int i = 0; i < presolved_model.variables_size(); ++i) {
@@ -4974,7 +4973,6 @@ TEST(PresolveCpModelTest, DetectDifferentVariablesAndAddNoOverlap) {
   std::vector<int> mapping;
   CpModelPresolver presolver(&context, &mapping);
   context.InitializeNewDomains();
-  context.UpdateNewConstraintsVariableUsage();
   presolver.DetectDifferentVariables();
   context.WriteVariableDomainsToProto();
 
@@ -8462,7 +8460,6 @@ TEST(PresolveCpModelTest, DuplicateColumns) {
   CpModelPresolver presolver(&context, &mapping);
 
   context.InitializeNewDomains();
-  context.UpdateNewConstraintsVariableUsage();
   presolver.DetectDuplicateColumns();
   context.WriteVariableDomainsToProto();
 

@@ -36,14 +36,35 @@ class JSSPSolverTest : public ::testing::Test {
  protected:
   void SetUp() override {
     // 1. Setup the Problem
-    problem_.tasks = {
-        {0, 10, {}},  // Task 0: M0, Dur 10
-        {0, 10, {}},  // Task 1: M0, Dur 10
-        {0, 10, {}},  // Task 2: M0, Dur 10
-        {1, 10, {2}}  // Task 3: M1, Dur 10. Depends on Task 2
-    };
+    problem_.type = SchedulingProblem::kMinimizeMakespan;
 
-    // 2. Setup the Initial Sequence (M0: 0->1->2, M1: 3)
+    // { {compatible_machines}, {durations}, min_start, {precedences} }
+    problem_.tasks = {// Task 0: M0, Dur 10
+                      {.compatible_machine = {0},
+                       .duration_for_machine = {10},
+                       .tasks_that_must_complete_before_this = {},
+                       .min_start = 0},
+                      // Task 1: M0, Dur 10
+                      {.compatible_machine = {0},
+                       .duration_for_machine = {10},
+                       .tasks_that_must_complete_before_this = {},
+                       .min_start = 0},
+                      // Task 2: M0, Dur 10
+                      {.compatible_machine = {0},
+                       .duration_for_machine = {10},
+                       .tasks_that_must_complete_before_this = {},
+                       .min_start = 0},
+                      // Task 3: M1, Dur 10. Depends on Task 2
+                      {.compatible_machine = {1},
+                       .duration_for_machine = {10},
+                       .tasks_that_must_complete_before_this = {2},
+                       .min_start = 0}};
+
+    // 2. Setup the current selected alternatives for the test
+    current_machines_ = {0, 0, 0, 1};
+    current_durations_ = {10, 10, 10, 10};
+
+    // 3. Setup the Initial Sequence (M0: 0->1->2, M1: 3)
     machine_tasks_.ResetFromPairs(
         std::vector<std::pair<int, int>>({{0, 0}, {0, 1}, {0, 2}, {1, 3}}));
   }
@@ -66,12 +87,14 @@ class JSSPSolverTest : public ::testing::Test {
 
   SchedulingProblem problem_;
   CompactVectorVector<int> machine_tasks_;
+  std::vector<int> current_machines_;
+  std::vector<int64_t> current_durations_;
 };
 
 TEST_F(JSSPSolverTest, AnalyzeScheduleComputesCorrectGraph) {
   const SchedLSTest solver(problem_);
   SchedLSTest::ScheduleAnalysis analysis(problem_);
-  solver.AnalyzeSchedule(machine_tasks_, &analysis);
+  solver.AnalyzeSchedule(machine_tasks_, current_durations_, &analysis);
 
   // Check Makespan
   EXPECT_EQ(analysis.makespan, 40);
@@ -91,9 +114,9 @@ TEST_F(JSSPSolverTest, AnalyzeScheduleComputesCorrectGraph) {
 TEST_F(JSSPSolverTest, ComputeDynamicStateBuildsCorrectTailsAndLookups) {
   const SchedLSTest solver(problem_);
   SchedLSTest::ScheduleAnalysis analysis(problem_);
-  solver.AnalyzeSchedule(machine_tasks_, &analysis);
-  const SchedLSTest::SolverState state =
-      solver.ComputeDynamicState(machine_tasks_, analysis.topo_order);
+  solver.AnalyzeSchedule(machine_tasks_, current_durations_, &analysis);
+  const SchedLSTest::SolverState state = solver.ComputeDynamicState(
+      machine_tasks_, analysis.topo_order, current_durations_);
 
   // Check Tails
   EXPECT_THAT(state.tails, ElementsAre(30, 20, 10, 0));
@@ -109,13 +132,13 @@ TEST_F(JSSPSolverTest, ComputeDynamicStateBuildsCorrectTailsAndLookups) {
 TEST_F(JSSPSolverTest, GenerateN8MovesExtractsValidInsertions) {
   const SchedLSTest solver(problem_);
   SchedLSTest::ScheduleAnalysis analysis(problem_);
-  solver.AnalyzeSchedule(machine_tasks_, &analysis);
-  const SchedLSTest::SolverState state =
-      solver.ComputeDynamicState(machine_tasks_, analysis.topo_order);
+  solver.AnalyzeSchedule(machine_tasks_, current_durations_, &analysis);
+  const SchedLSTest::SolverState state = solver.ComputeDynamicState(
+      machine_tasks_, analysis.topo_order, current_durations_);
 
   const std::vector<SchedLSTest::InsertMove> moves = solver.GenerateN8Moves(
       analysis.critical_path, state.prev_on_machine, state.next_on_machine,
-      analysis.start_mins, state.tails);
+      analysis.start_mins, state.tails, current_machines_, current_durations_);
 
   // The critical path is [0, 1, 2, 3].
   // Blocks: Block 0 is [0, 1, 2] on M0. Block 1 is [3] on M1.
@@ -123,8 +146,6 @@ TEST_F(JSSPSolverTest, GenerateN8MovesExtractsValidInsertions) {
   // Valid unique moves generated for Block 0:
   // 1. Task 0 moving right after last_op (2).
   // 2. Task 1 moving right after last_op (2).
-  // Note: Moving 2 before 1 is functionally identical to moving 1 after 2,
-  // and the loop bounds (end - 2) intentionally prevent this duplicate.
   ASSERT_EQ(moves.size(), 2);
 
   // Task 0 placed after Task 2
@@ -141,38 +162,24 @@ TEST_F(JSSPSolverTest, GenerateN8MovesExtractsValidInsertions) {
 TEST_F(JSSPSolverTest, EstimateMakespanForInsertAccuratelyPredictsImprovement) {
   const SchedLSTest solver(problem_);
   SchedLSTest::ScheduleAnalysis analysis(problem_);
-  solver.AnalyzeSchedule(machine_tasks_, &analysis);
-  const SchedLSTest::SolverState state =
-      solver.ComputeDynamicState(machine_tasks_, analysis.topo_order);
+  solver.AnalyzeSchedule(machine_tasks_, current_durations_, &analysis);
+  const SchedLSTest::SolverState state = solver.ComputeDynamicState(
+      machine_tasks_, analysis.topo_order, current_durations_);
 
   // We propose taking Task 1 and inserting it AFTER Task 2.
-  // Old M0 sequence: 0 -> 1 -> 2
-  // New M0 sequence: 0 -> 2 -> 1
   const SchedLSTest::InsertMove insert_move{1, 2, true};
   SchedLSTest::MoveEvaluationScratch scratch;
 
   const IntegerValue estimated_makespan = solver.EstimateMakespanForInsert(
       insert_move, analysis.start_mins, state.tails, state.prev_on_machine,
-      state.next_on_machine, &scratch);
+      state.next_on_machine, current_durations_, &scratch);
 
-  // Moving T1 after T2 allows T2 to execute earlier at t=10.
-  // Since T3 depends on T2, T3 can now execute at t=20 and finish at t=30.
-  // T1 is pushed to t=20 (after T2) and finishes at t=30.
-  // Both T1 and T3 paths terminate at 30, meaning the new makespan is
-  // exactly 30.
+  // Moving T1 after T2 pushes T2 to 10, T3 to 20(->30), T1 to 20(->30).
   EXPECT_EQ(estimated_makespan, 30);
 }
 
 TEST_F(JSSPSolverTest, BuildInitialMachineSequencesHandlesDirtyHints) {
-  // We use the same 4-task problem defined in the SetUp:
-  // T0(M0), T1(M0), T2(M0), T3(M1)
-
   // Let's provide a completely non-canonical hint:
-  // - It doesn't start at 0.
-  // - It has massive, arbitrary idle gaps.
-  // - We intentionally schedule them out of the standard 0->1->2 order.
-  // We want Machine 0 to process in the order: Task 2 -> Task 0 -> Task 1.
-
   const std::vector<int64_t> dirty_hint = {
       500,   // Task 0 starts at 500
       1000,  // Task 1 starts at 1000
@@ -182,7 +189,7 @@ TEST_F(JSSPSolverTest, BuildInitialMachineSequencesHandlesDirtyHints) {
 
   const SchedLSTest solver(problem_);
   const CompactVectorVector<int> generated_sequences =
-      solver.BuildInitialMachineSequences(dirty_hint);
+      solver.BuildInitialMachineSequences(dirty_hint, current_machines_);
 
   // We expect exactly 2 machines to be populated
   ASSERT_EQ(generated_sequences.size(), 2);

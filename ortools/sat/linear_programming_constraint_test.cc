@@ -15,6 +15,7 @@
 
 #include <stdint.h>
 
+#include <algorithm>
 #include <cstdlib>
 #include <string>
 #include <utility>
@@ -101,21 +102,31 @@ LPProblem GeneratePermutationProblem(int size) {
   std::vector<std::vector<int>> node_constraint_indices;
   std::vector<std::vector<IntegerValue>> node_constraint_coefs;
 
+  std::vector<int> randomized_left;
+  std::vector<int> randomized_right;
+  for (int i = 0; i < size; i++) {
+    randomized_left.push_back(i);
+    randomized_right.push_back(i);
+  }
+  std::shuffle(randomized_left.begin(), randomized_left.end(), absl::BitGen());
+  std::shuffle(randomized_right.begin(), randomized_right.end(),
+               absl::BitGen());
+
   // Left and right nodes are indexed by [0, size).
   // The edge (left, right) has number left * size + right.
   const std::vector<IntegerValue> ones(size, IntegerValue(1));
-  for (int left = 0; left < size; left++) {
+  for (const int left : randomized_left) {
     std::vector<int> indices;
-    for (int right = 0; right < size; right++) {
+    for (int right = 0; right < size; ++right) {
       indices.push_back(left * size + right);
     }
     node_constraint_indices.push_back(indices);
     node_constraint_coefs.push_back(ones);
   }
 
-  for (int right = 0; right < size; right++) {
+  for (const int right : randomized_right) {
     std::vector<int> indices;
-    for (int left = 0; left < size; left++) {
+    for (int left = 0; left < size; ++left) {
       indices.push_back(left * size + right);
     }
     node_constraint_indices.push_back(indices);
@@ -134,6 +145,8 @@ LPProblem GeneratePermutationProblem(int size) {
 int CountSolutionsOfLPProblemUsingSAT(const LPProblem& problem) {
   Model model;
   model.GetOrCreate<SatParameters>()->set_add_lp_constraints_lazily(false);
+  model.GetOrCreate<SatParameters>()->set_use_sat_inprocessing(false);
+  model.GetOrCreate<SatParameters>()->set_linearization_level(10);
 
   std::vector<IntegerVariable> cp_variables;
   const int num_cp_vars = problem.num_integer_vars();

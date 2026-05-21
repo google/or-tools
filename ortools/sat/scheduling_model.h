@@ -41,15 +41,17 @@ namespace sat {
 // problem is a start time for each task.
 struct SchedulingProblem {
   struct Task {
-    int machine;
-    int64_t duration;
+    std::vector<int> compatible_machine;
+    std::vector<int64_t> duration_for_machine;
     std::vector<int> tasks_that_must_complete_before_this;
+    int64_t min_start = 0;
 
     template <typename Sink>
     friend void AbslStringify(Sink& sink, const Task& task) {
       absl::Format(
-          &sink, "Task(machine: %v, duration: %v, run_after: %v)", task.machine,
-          task.duration,
+          &sink, "Task(machines: [%v], durations: [%v], run_after: [%v])",
+          absl::StrJoin(task.compatible_machine, ","),
+          absl::StrJoin(task.duration_for_machine, ","),
           absl::StrJoin(task.tasks_that_must_complete_before_this, ","));
     }
   };
@@ -65,11 +67,12 @@ struct SchedulingProblem {
                                            : "satisfaction"),
         absl::StrJoin(
             problem.tasks, ",", [](std::string* out, const Task& task) {
-              absl::Format(out,
-                           "Task(machine: %v, duration: %v, run_after: %v)",
-                           task.machine, task.duration,
-                           absl::StrJoin(
-                               task.tasks_that_must_complete_before_this, ","));
+              absl::Format(
+                  out, "Task(machines: [%v], durations: [%v], run_after: [%v])",
+                  absl::StrJoin(task.compatible_machine, ","),
+                  absl::StrJoin(task.duration_for_machine, ","),
+                  absl::StrJoin(task.tasks_that_must_complete_before_this,
+                                ","));
             }));
   }
 };
@@ -80,13 +83,23 @@ struct SchedulingProblem {
 struct SchedulingProblemAndMapping {
   SchedulingProblem problem;
 
-  struct ShiftedVar {
+  struct AffineExpr {
     int var;  // The variable in the CpModelProto.
     int64_t coeff;
     int64_t offset;
   };
-  std::vector<ShiftedVar> task_to_start_time_model_var;
-  std::optional<ShiftedVar> makespan_expr;
+  std::vector<AffineExpr> task_to_start_time_model_var;
+  std::optional<AffineExpr> makespan_expr;
+  std::vector<std::vector<int>> task_to_presence_literals;
+
+  struct TaskIntervalVars {
+    // Conditional intervals that map 1:1 with `compatible_machine`.
+    std::vector<int> alternative_intervals;
+
+    // Unconditional intervals (e.g., dummies used for precedence routing).
+    std::vector<int> unconditional_intervals;
+  };
+  std::vector<TaskIntervalVars> task_to_intervals;
 };
 
 // A relaxation of the CpModelProto as a set of independent scheduling problems
