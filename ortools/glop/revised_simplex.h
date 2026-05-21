@@ -155,6 +155,12 @@ class RevisedSimplex {
   // this behavior or give explicit warm-start data, use one of the State*()
   // functions below.
   ABSL_MUST_USE_RESULT Status Solve(const LinearProgram& lp,
+                                    TimeLimit& time_limit);
+
+  // Legacy version of Solve() passing a pointer on TimeLimit and expecting it
+  // to be non-null (it returns Status::ERROR_NULL when null).
+  ABSL_DEPRECATED("Use Solve(const LinearProgram&, TimeLimit&) instead.");
+  ABSL_MUST_USE_RESULT Status Solve(const LinearProgram& lp,
                                     TimeLimit* time_limit);
 
   // Do not use the current solution as a warm-start for the next Solve(). The
@@ -268,6 +274,15 @@ class RevisedSimplex {
   }
   ABSL_MUST_USE_RESULT Status MinimizeFromTransposedMatrixWithSlack(
       const DenseRow& objective, Fractional objective_scaling_factor,
+      Fractional objective_offset, TimeLimit& time_limit);
+
+  // Legacy version of MinimizeFromTransposedMatrixWithSlack() passing a pointer
+  // on TimeLimit and expecting it to be non-null (it returns
+  // Status::ERROR_NULL).
+  ABSL_DEPRECATED(
+      "Use MinimizeFromTransposedMatrixWithSlack(..., TimeLimit&) instead.");
+  ABSL_MUST_USE_RESULT Status MinimizeFromTransposedMatrixWithSlack(
+      const DenseRow& objective, Fractional objective_scaling_factor,
       Fractional objective_offset, TimeLimit* time_limit);
 
  private:
@@ -323,7 +338,7 @@ class RevisedSimplex {
 
   ABSL_MUST_USE_RESULT Status SolveInternal(double start_time, bool maximize,
                                             const DenseRow& objective,
-                                            TimeLimit* time_limit);
+                                            TimeLimit& time_limit);
 
   // Propagates parameters_ to all the other classes that need it.
   //
@@ -625,18 +640,18 @@ class RevisedSimplex {
   Status RefactorizeBasisIfNeeded(bool* refactorize);
 
   // Main iteration loop of the primal simplex.
-  ABSL_MUST_USE_RESULT Status PrimalMinimize(TimeLimit* time_limit);
+  ABSL_MUST_USE_RESULT Status PrimalMinimize(TimeLimit& time_limit);
 
   // Main iteration loop of the dual simplex.
   ABSL_MUST_USE_RESULT Status DualMinimize(bool feasibility_phase,
-                                           TimeLimit* time_limit);
+                                           TimeLimit& time_limit);
 
   // Pushes all super-basic variables to bounds (if applicable) or to zero (if
   // unconstrained). This is part of a "crossover" procedure to find a vertex
   // solution given a (near) optimal solution. Assumes that Minimize() or
   // DualMinimize() has already run, i.e., that we are at an optimal solution
   // within numerical tolerances.
-  ABSL_MUST_USE_RESULT Status PrimalPush(TimeLimit* time_limit);
+  ABSL_MUST_USE_RESULT Status PrimalPush(TimeLimit& time_limit);
 
   // Experimental. This is useful in a MIP context. It performs a few degenerate
   // pivot to try to mimize the fractionality of the optimal basis.
@@ -646,8 +661,8 @@ class RevisedSimplex {
   //
   // I could only find slides for the reference of this "LP Solution Polishing
   // to improve MIP Performance", Matthias Miltenberger, Zuse Institute Berlin.
-  ABSL_MUST_USE_RESULT Status PrimalPolish(TimeLimit* time_limit);
-  ABSL_MUST_USE_RESULT Status DualPolish(TimeLimit* time_limit);
+  ABSL_MUST_USE_RESULT Status PrimalPolish(TimeLimit& time_limit);
+  ABSL_MUST_USE_RESULT Status DualPolish(TimeLimit& time_limit);
 
   // Helper function for Primal/DualPolish().
   Fractional IntegralityChange(ColIndex col, Fractional old_value,
@@ -665,7 +680,7 @@ class RevisedSimplex {
   // during the last call to this method.
   // TODO(user): Update the internals of revised simplex so that the time
   // limit is updated at the source and remove this method.
-  void AdvanceDeterministicTime(TimeLimit* time_limit);
+  void AdvanceDeterministicTime(TimeLimit& time_limit);
 
   // Problem status
   ProblemStatus problem_status_;
