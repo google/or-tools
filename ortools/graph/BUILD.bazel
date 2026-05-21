@@ -29,6 +29,7 @@ cc_library(
         "//ortools/base:threadpool",
         "//ortools/base:top_n",
         "//ortools/graph_base:graph",
+        "//ortools/util:bitset",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/log:check",
