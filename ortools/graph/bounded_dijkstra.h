@@ -22,7 +22,6 @@
 #include <utility>
 #include <vector>
 
-#include "absl/algorithm/container.h"
 #include "absl/base/attributes.h"
 #include "absl/log/check.h"
 #include "absl/types/span.h"
@@ -30,6 +29,7 @@
 #include "ortools/base/strong_vector.h"
 #include "ortools/base/top_n.h"
 #include "ortools/graph_base/graph.h"
+#include "ortools/util/bitset.h"
 
 namespace operations_research {
 
@@ -293,7 +293,7 @@ class BoundedDijkstraWrapper {
   ByNode<DistanceType> distances_;
   ByNode<NodeIndex> parents_;
   ByNode<ArcIndex> arc_from_source_;
-  ByNode<bool> is_reached_;
+  Bitset64<NodeIndex> is_reached_;
   std::vector<NodeIndex> reached_nodes_;
 
   // Priority queue of nodes, ordered by their distance to the source.
@@ -331,6 +331,21 @@ class BoundedDijkstraWrapper {
   ByNode<int> node_to_source_index_;
   ByNode<int> node_to_destination_index_;
 };
+
+// CTAD guides.
+template <class GraphType, class DistanceContainer>
+BoundedDijkstraWrapper(const GraphType* graph,
+                       const DistanceContainer* arc_lengths)
+    -> BoundedDijkstraWrapper<GraphType,
+                              typename DistanceContainer::value_type>;
+
+template <class GraphType, class ArcLengthFunctor>
+BoundedDijkstraWrapper(const GraphType* graph,
+                       ArcLengthFunctor arc_length_functor)
+    -> BoundedDijkstraWrapper<
+        GraphType,
+        std::invoke_result_t<ArcLengthFunctor, typename GraphType::ArcIndex>,
+        ArcLengthFunctor>;
 
 // -----------------------------------------------------------------------------
 // Implementation.
@@ -494,15 +509,16 @@ BoundedDijkstraWrapper<GraphType, DistanceType, ArcLengthFunctor>::
         DistanceType distance_limit) {
   // Sparse clear is_reached_ from the last call.
   for (const NodeIndex node : reached_nodes_) {
-    is_reached_[node] = false;
+    is_reached_.Clear(node);
   }
   reached_nodes_.clear();
-  DCHECK(!absl::c_linear_search(is_reached_, true));
 
-  is_reached_.resize(graph_->num_nodes(), false);
+  is_reached_.Resize(graph_->num_nodes());
   distances_.resize(graph_->num_nodes(), distance_limit);
   parents_.resize(graph_->num_nodes(), std::numeric_limits<NodeIndex>::min());
   arc_from_source_.resize(graph_->num_nodes(), GraphType::kNilArc);
+
+  typename Bitset64<NodeIndex>::View is_reached = is_reached_.view();
 
   // Initialize sources.
   CHECK(queue_.empty());
@@ -515,9 +531,9 @@ BoundedDijkstraWrapper<GraphType, DistanceType, ArcLengthFunctor>::
     // Sources with an initial distance ≥ limit are *not* reached.
     if (distance >= distance_limit) continue;
     // Skip useless repetitions.
-    if (is_reached_[node] && distance >= distances_[node]) continue;
-    if (!is_reached_[node]) {
-      is_reached_[node] = true;
+    if (is_reached[node] && distance >= distances_[node]) continue;
+    if (!is_reached[node]) {
+      is_reached.Set(node);
       reached_nodes_.push_back(node);
       parents_[node] = node;  // Set the parent to itself.
     }
@@ -571,10 +587,10 @@ BoundedDijkstraWrapper<GraphType, DistanceType, ArcLengthFunctor>::
       const DistanceType candidate_distance = top.distance + arc_length;
 
       const NodeIndex head = graph_->Head(arc);
-      if (is_reached_[head]) {
+      if (is_reached[head]) {
         if (candidate_distance >= distances_[head]) continue;
       } else {
-        is_reached_[head] = true;
+        is_reached.Set(head);
         reached_nodes_.push_back(head);
       }
       distances_[head] = candidate_distance;
