@@ -71,15 +71,15 @@ jobs:
           - os: ubuntu-latest
             platform: linux
             generator: Ninja
-            cmake_flags: '-DCMAKE_BUILD_TYPE=Release -DCMAKE_C_FLAGS_RELEASE="-O1 -DNDEBUG" -DCMAKE_CXX_FLAGS_RELEASE="-O1 -DNDEBUG"'
+            cmake_flags: '-DCMAKE_BUILD_TYPE=Release'
           - os: macos-15-intel
             platform: macos
             generator: Ninja
-            cmake_flags: '-DCMAKE_CONFIGURATION_TYPES="Release" -DCMAKE_C_FLAGS_RELEASE="-O1 -DNDEBUG" -DCMAKE_CXX_FLAGS_RELEASE="-O1 -DNDEBUG"'
+            cmake_flags: '-DCMAKE_BUILD_TYPE="Release"'
           - os: macos-latest
             platform: macos
             generator: Ninja
-            cmake_flags: '-DCMAKE_CONFIGURATION_TYPES="Release" -DCMAKE_C_FLAGS_RELEASE="-O1 -DNDEBUG" -DCMAKE_CXX_FLAGS_RELEASE="-O1 -DNDEBUG"'
+            cmake_flags: '-DCMAKE_BUILD_TYPE="Release"'
           - os: windows-2022
             platform: windows
             generator: 'Visual Studio 17 2022'
