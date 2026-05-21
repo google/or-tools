@@ -52,7 +52,6 @@ TEST(CreateVariableEncodingLocalModelsTest, TrivialTest) {
   PresolveContext context(&model, &model_proto, &mapping_model);
   context.InitializeNewDomains();
   context.ReadObjectiveFromProto();
-  context.UpdateNewConstraintsVariableUsage();
   const std::vector<VariableEncodingLocalModel> local_models =
       CreateVariableEncodingLocalModels(&context);
   ASSERT_EQ(local_models.size(), 1);
@@ -88,7 +87,6 @@ TEST(CreateVariableEncodingLocalModelsTest, BasicTest) {
   PresolveContext context(&model, &model_proto, &mapping_model);
   context.InitializeNewDomains();
   context.ReadObjectiveFromProto();
-  context.UpdateNewConstraintsVariableUsage();
   const std::vector<VariableEncodingLocalModel> local_models =
       CreateVariableEncodingLocalModels(&context);
   ASSERT_EQ(local_models.size(), 1);
@@ -149,7 +147,6 @@ TEST(CreateVariableEncodingLocalModelsTest, OneBooleanUsedElsewhere) {
   PresolveContext context(&model, &model_proto, &mapping_model);
   context.InitializeNewDomains();
   context.ReadObjectiveFromProto();
-  context.UpdateNewConstraintsVariableUsage();
   const std::vector<VariableEncodingLocalModel> local_models =
       CreateVariableEncodingLocalModels(&context);
   ASSERT_EQ(local_models.size(), 1);
@@ -228,7 +225,6 @@ TEST(CreateVariableEncodingLocalModelsTest, TwoVars) {
   PresolveContext context(&model, &model_proto, &mapping_model);
   context.InitializeNewDomains();
   context.ReadObjectiveFromProto();
-  context.UpdateNewConstraintsVariableUsage();
   std::vector<VariableEncodingLocalModel> local_models =
       CreateVariableEncodingLocalModels(&context);
   ASSERT_EQ(local_models.size(), 2);
@@ -313,7 +309,6 @@ TEST(BasicPresolveAndGetFullyEncodedDomainsTest, EncodingWithBoolOr) {
   PresolveContext context(&model, &model_proto, &mapping_model);
   context.InitializeNewDomains();
   context.ReadObjectiveFromProto();
-  context.UpdateNewConstraintsVariableUsage();
   std::vector<VariableEncodingLocalModel> local_models =
       CreateVariableEncodingLocalModels(&context);
 
@@ -400,7 +395,6 @@ TEST(DetectAllEncodedComplexDomainTest, BasicTest) {
   PresolveContext context(&model, &model_proto, &mapping_model);
   context.InitializeNewDomains();
   context.ReadObjectiveFromProto();
-  context.UpdateNewConstraintsVariableUsage();
   std::vector<VariableEncodingLocalModel> local_models =
       CreateVariableEncodingLocalModels(&context);
   ASSERT_TRUE(DetectAllEncodedComplexDomain(&context, local_models[0]));

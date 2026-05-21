@@ -664,7 +664,6 @@ TEST(FindCpModelSymmetries, BinPacking) {
   model.GetOrCreate<SolverLogger>()->SetLogToStdOut(true);
   PresolveContext context(&model, &proto, nullptr);
   context.InitializeNewDomains();
-  context.UpdateNewConstraintsVariableUsage();
   context.ReadObjectiveFromProto();
   EXPECT_TRUE(DetectAndExploitSymmetriesInPresolve(&context));
   context.LogInfo();

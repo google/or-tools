@@ -122,7 +122,6 @@ TEST(VarDominationTest, ExploitDominanceRelation) {
   PresolveContext context(&model, &model_proto, nullptr);
   context.InitializeNewDomains();
   context.ReadObjectiveFromProto();
-  context.UpdateNewConstraintsVariableUsage();
   ScanModelForDominanceDetection(context, &var_dom);
   EXPECT_TRUE(ExploitDominanceRelations(var_dom, &context));
 
@@ -173,7 +172,6 @@ TEST(VarDominationTest, ExploitDominanceRelationWithHoles) {
   PresolveContext context(&model, &model_proto, nullptr);
   context.InitializeNewDomains();
   context.ReadObjectiveFromProto();
-  context.UpdateNewConstraintsVariableUsage();
   ScanModelForDominanceDetection(context, &var_dom);
   EXPECT_TRUE(ExploitDominanceRelations(var_dom, &context));
 
@@ -219,7 +217,6 @@ TEST(VarDominationTest, ExploitDominanceOfImplicant) {
   PresolveContext context(&model, &model_proto, nullptr);
   context.InitializeNewDomains();
   context.ReadObjectiveFromProto();
-  context.UpdateNewConstraintsVariableUsage();
   context.LoadAndClampSolutionHint();
   ScanModelForDominanceDetection(context, &var_dom);
   EXPECT_TRUE(ExploitDominanceRelations(var_dom, &context));
@@ -268,7 +265,6 @@ TEST(VarDominationTest, ExploitDominanceOfNegatedImplicand) {
   PresolveContext context(&model, &model_proto, nullptr);
   context.InitializeNewDomains();
   context.ReadObjectiveFromProto();
-  context.UpdateNewConstraintsVariableUsage();
   context.LoadAndClampSolutionHint();
   ScanModelForDominanceDetection(context, &var_dom);
   EXPECT_TRUE(ExploitDominanceRelations(var_dom, &context));
@@ -314,7 +310,6 @@ TEST(VarDominationTest, ExploitDominanceInExactlyOne) {
   PresolveContext context(&model, &model_proto, nullptr);
   context.InitializeNewDomains();
   context.ReadObjectiveFromProto();
-  context.UpdateNewConstraintsVariableUsage();
   context.LoadAndClampSolutionHint();
   ScanModelForDominanceDetection(context, &var_dom);
   EXPECT_TRUE(ExploitDominanceRelations(var_dom, &context));
@@ -368,7 +363,6 @@ TEST(VarDominationTest, ExploitDominanceWithIntegerVariables) {
   PresolveContext context(&model, &model_proto, nullptr);
   context.InitializeNewDomains();
   context.ReadObjectiveFromProto();
-  context.UpdateNewConstraintsVariableUsage();
   context.LoadAndClampSolutionHint();
   ScanModelForDominanceDetection(context, &var_dom);
   EXPECT_TRUE(ExploitDominanceRelations(var_dom, &context));
@@ -414,7 +408,6 @@ TEST(VarDominationTest, ExploitRemainingDominance) {
   PresolveContext context(&model, &model_proto, nullptr);
   context.InitializeNewDomains();
   context.ReadObjectiveFromProto();
-  context.UpdateNewConstraintsVariableUsage();
   context.LoadAndClampSolutionHint();
   ScanModelForDominanceDetection(context, &var_dom);
   EXPECT_TRUE(ExploitDominanceRelations(var_dom, &context));
@@ -480,7 +473,6 @@ TEST(VarDominationTest, ExploitRemainingDominanceWithIntegerVariables) {
   PresolveContext context(&model, &model_proto, nullptr);
   context.InitializeNewDomains();
   context.ReadObjectiveFromProto();
-  context.UpdateNewConstraintsVariableUsage();
   context.LoadAndClampSolutionHint();
   ScanModelForDominanceDetection(context, &var_dom);
   EXPECT_TRUE(ExploitDominanceRelations(var_dom, &context));

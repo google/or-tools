@@ -907,7 +907,6 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
           // order to preserve the hint feasibility.
           crush.SetLiteralToValueIf(ref, false, NegatedRef(enf));
           context->AddImplication(NegatedRef(enf), NegatedRef(ref));
-          context->UpdateNewConstraintsVariableUsage();
           continue;
         }
 
@@ -1014,7 +1013,6 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
           new_ct->mutable_linear()->add_vars(var);
           new_ct->mutable_linear()->add_coeffs(1);
           FillDomainInProto(complement, new_ct->mutable_linear());
-          context->UpdateNewConstraintsVariableUsage();
 
           if (rhs.IsFixed()) {
             context->StoreLiteralImpliesVarEqValue(NegatedRef(ref), var, value);
@@ -1023,7 +1021,6 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
             context->StoreLiteralImpliesVarNeValue(NegatedRef(ref), var, value);
             context->StoreLiteralImpliesVarEqValue(ref, var, value);
           }
-          context->UpdateNewConstraintsVariableUsage();
           continue;
         }
       }
@@ -1949,7 +1946,6 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
         // call below fixes it by negating both values. Otherwise it does
         // nothing and thus preserves its feasibility.
         crush.UpdateLiteralsWithDominance(ref, dom_ref);
-        context->UpdateNewConstraintsVariableUsage();
         implications.insert({ref, dom_ref});
         implications.insert({NegatedRef(dom_ref), NegatedRef(ref)});
 

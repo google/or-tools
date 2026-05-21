@@ -26,11 +26,13 @@
 #include "absl/algorithm/container.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
+#include "absl/log/vlog_is_on.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/random/distributions.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
+#include "ortools/base/types.h"
 #include "ortools/graph_base/topologicalsorter.h"
 #include "ortools/sat/combine_solutions.h"
 #include "ortools/sat/cp_model_checker.h"
@@ -48,14 +50,15 @@ namespace operations_research {
 namespace sat {
 
 CompactVectorVector<int> SchedulingLocalSearch::BuildInitialMachineSequences(
-    absl::Span<const int64_t> initial_solution) const {
+    absl::Span<const int64_t> initial_solution,
+    absl::Span<const int> current_machines) const {
   CompactVectorVectorBuilder<int> machine_tasks_builder;
   machine_tasks_builder.ReserveNumItems(num_tasks_);
   for (int i = 0; i < num_tasks_; ++i) {
-    machine_tasks_builder.Add(problem_.tasks[i].machine, i);
+    machine_tasks_builder.Add(current_machines[i], i);
   }
   CompactVectorVector<int> machine_tasks;
-  machine_tasks.ResetFromBuilder(machine_tasks_builder);
+  machine_tasks.ResetFromBuilder(machine_tasks_builder, num_machines_);
 
   for (int machine = 0; machine < num_machines_; ++machine) {
     absl::Span<int> tasks_on_machine = machine_tasks[machine];
@@ -72,7 +75,9 @@ SchedulingLocalSearch::GenerateN8Moves(
     absl::Span<const int> critical_path, absl::Span<const int> prev_on_machine,
     absl::Span<const int> next_on_machine,
     absl::Span<const IntegerValue> start_mins,
-    absl::Span<const IntegerValue> tails) const {
+    absl::Span<const IntegerValue> tails,
+    absl::Span<const int> current_machines,
+    absl::Span<const int64_t> current_durations) const {
   if (critical_path.size() < 2) return {};
 
   // Heuristics to forbid moves that can potentially create cycles.
@@ -89,13 +94,13 @@ SchedulingLocalSearch::GenerateN8Moves(
       // successor is on the same machine, we cannot leap over it. If it starts
       // before or at the target, we are leaping over it (or landing on it),
       // which creates a cycle.
-      if (problem_.tasks[js].machine == problem_.tasks[x].machine) {
+      if (current_machines[js] == current_machines[x]) {
         if (start_mins[js] <= start_mins[target]) return true;
       }
 
       // Xie et al. Prop 1: moving x here provably worsens the makespan or
       // forms an indirect cycle.
-      if (task_durations_[target] + tails[target] < tails[js]) return true;
+      if (current_durations[target] + tails[target] < tails[js]) return true;
     }
     return false;
   };
@@ -107,12 +112,12 @@ SchedulingLocalSearch::GenerateN8Moves(
 
     for (const int jp :
          problem_.tasks[x].tasks_that_must_complete_before_this) {
-      if (problem_.tasks[jp].machine == problem_.tasks[x].machine) {
+      if (current_machines[jp] == current_machines[x]) {
         if (start_mins[jp] >= start_mins[target]) return true;
       }
 
-      if (start_mins[target] + task_durations_[target] <
-          start_mins[jp] + task_durations_[jp]) {
+      if (start_mins[target] + current_durations[target] <
+          start_mins[jp] + current_durations[jp]) {
         return true;
       }
     }
@@ -140,8 +145,8 @@ SchedulingLocalSearch::GenerateN8Moves(
       is_critical[critical_path[i]] = true;
     }
     if (i == critical_path.size() ||
-        problem_.tasks[critical_path[i]].machine !=
-            problem_.tasks[critical_path[current_start]].machine) {
+        current_machines[critical_path[i]] !=
+            current_machines[critical_path[current_start]]) {
       if (i - current_start >= 1) {
         blocks.push_back({current_start, i - 1});
       }
@@ -235,18 +240,18 @@ IntegerValue SchedulingLocalSearch::EstimateMakespanForInsert(
     const InsertMove& move, absl::Span<const IntegerValue> start_mins,
     absl::Span<const IntegerValue> tails, absl::Span<const int> prev_on_machine,
     absl::Span<const int> next_on_machine,
+    absl::Span<const int64_t> current_durations,
     MoveEvaluationScratch* scratch) const {
   const int x = move.task;
   const int target = move.target_task;
   DCHECK_NE(x, target);
-  DCHECK_EQ(problem_.tasks[x].machine, problem_.tasks[target].machine);
 
   // Helper to get the earliest possible start_min for a task ignoring the
   // current machine attribution for this task only.
   auto get_job_head = [&](int task) {
-    IntegerValue j_head = 0;
+    IntegerValue j_head = problem_.tasks[task].min_start;
     for (int p : problem_.tasks[task].tasks_that_must_complete_before_this) {
-      j_head = std::max(j_head, start_mins[p] + task_durations_[p]);
+      j_head = std::max(j_head, start_mins[p] + current_durations[p]);
     }
     return j_head;
   };
@@ -255,7 +260,7 @@ IntegerValue SchedulingLocalSearch::EstimateMakespanForInsert(
   auto get_job_tail = [&](int task) {
     IntegerValue j_tail = 0;
     for (int s : job_successors_[task]) {
-      j_tail = std::max(j_tail, task_durations_[s] + tails[s]);
+      j_tail = std::max(j_tail, current_durations[s] + tails[s]);
     }
     return j_tail;
   };
@@ -311,14 +316,14 @@ IntegerValue SchedulingLocalSearch::EstimateMakespanForInsert(
   new_heads.resize(mutated_sequence.size());
   IntegerValue head = 0;
   if (p_m != -1) {
-    head = start_mins[p_m] + task_durations_[p_m];
+    head = start_mins[p_m] + current_durations[p_m];
   }
 
   for (size_t i = 0; i < mutated_sequence.size(); ++i) {
     const int t = mutated_sequence[i];
     head = std::max(head, get_job_head(t));
     new_heads[i] = head;
-    head += task_durations_[t];
+    head += current_durations[t];
   }
 
   // Backward sweep to calculate new tails.
@@ -326,21 +331,21 @@ IntegerValue SchedulingLocalSearch::EstimateMakespanForInsert(
   new_tails.resize(mutated_sequence.size());
   IntegerValue tail = 0;
   if (s_m != -1) {
-    tail = task_durations_[s_m] + tails[s_m];
+    tail = current_durations[s_m] + tails[s_m];
   }
 
   for (int i = mutated_sequence.size() - 1; i >= 0; --i) {
     const int t = mutated_sequence[i];
     tail = std::max(tail, get_job_tail(t));
     new_tails[i] = tail;
-    tail += task_durations_[t];
+    tail += current_durations[t];
   }
 
   // Find the maximum path through the mutated segment.
   IntegerValue max_path = 0;
   for (size_t i = 0; i < mutated_sequence.size(); ++i) {
     const IntegerValue path =
-        new_heads[i] + task_durations_[mutated_sequence[i]] + new_tails[i];
+        new_heads[i] + current_durations[mutated_sequence[i]] + new_tails[i];
     max_path = std::max(max_path, path);
   }
 
@@ -348,15 +353,13 @@ IntegerValue SchedulingLocalSearch::EstimateMakespanForInsert(
 }
 
 std::optional<SchedulingLocalSearch::InsertMove>
-SchedulingLocalSearch::SelectBestMove(absl::Span<const InsertMove> candidates,
-                                      absl::Span<const IntegerValue> start_mins,
-                                      absl::Span<const IntegerValue> tails,
-                                      absl::Span<const int> prev_on_machine,
-                                      absl::Span<const int> next_on_machine,
-                                      absl::Span<const int> tabu_matrix,
-                                      int current_iteration,
-                                      IntegerValue global_best_makespan,
-                                      absl::BitGenRef random) const {
+SchedulingLocalSearch::SelectBestMove(
+    absl::Span<const InsertMove> candidates,
+    absl::Span<const IntegerValue> start_mins,
+    absl::Span<const IntegerValue> tails, absl::Span<const int> prev_on_machine,
+    absl::Span<const int> next_on_machine, absl::Span<const int> tabu_matrix,
+    absl::Span<const int64_t> current_durations, int current_iteration,
+    IntegerValue global_best_makespan, absl::BitGenRef random) const {
   DCHECK_EQ(start_mins.size(), num_tasks_);
   DCHECK_EQ(tails.size(), num_tasks_);
   DCHECK_EQ(prev_on_machine.size(), num_tasks_);
@@ -401,8 +404,9 @@ SchedulingLocalSearch::SelectBestMove(absl::Span<const InsertMove> candidates,
     }
 
     // Evaluate an approximation of the makespan if we make this move.
-    const IntegerValue estimate = EstimateMakespanForInsert(
-        move, start_mins, tails, prev_on_machine, next_on_machine, &scratch);
+    const IntegerValue estimate =
+        EstimateMakespanForInsert(move, start_mins, tails, prev_on_machine,
+                                  next_on_machine, current_durations, &scratch);
 
     // 3. Tabu Search Logic + Aspiration Criterion
     // If it's NOT tabu, it's a valid candidate.
@@ -461,7 +465,8 @@ CompactVectorVector<int> SchedulingLocalSearch::ComputeJobSuccessors(
 
 SchedulingLocalSearch::SolverState SchedulingLocalSearch::ComputeDynamicState(
     const CompactVectorVector<int>& machine_tasks,
-    absl::Span<const int> topo_order) const {
+    absl::Span<const int> topo_order,
+    absl::Span<const int64_t> current_durations) const {
   SolverState state;
   state.prev_on_machine.assign(num_tasks_, -1);
   state.next_on_machine.assign(num_tasks_, -1);
@@ -492,7 +497,7 @@ SchedulingLocalSearch::SolverState SchedulingLocalSearch::ComputeDynamicState(
 
     // A. Check Job Successors
     for (const int s : job_successors_[u]) {
-      const IntegerValue path_len = task_durations_[s] + state.tails[s];
+      const IntegerValue path_len = current_durations[s] + state.tails[s];
       if (path_len > max_tail) {
         max_tail = path_len;
       }
@@ -502,7 +507,7 @@ SchedulingLocalSearch::SolverState SchedulingLocalSearch::ComputeDynamicState(
     const int m_succ = state.next_on_machine[u];
     if (m_succ != -1) {
       const IntegerValue path_len =
-          task_durations_[m_succ] + state.tails[m_succ];
+          current_durations[m_succ] + state.tails[m_succ];
       if (path_len > max_tail) {
         max_tail = path_len;
       }
@@ -516,6 +521,7 @@ SchedulingLocalSearch::SolverState SchedulingLocalSearch::ComputeDynamicState(
 
 void SchedulingLocalSearch::AnalyzeSchedule(
     const CompactVectorVector<int>& machine_tasks,
+    absl::Span<const int64_t> current_durations,
     SchedulingLocalSearch::ScheduleAnalysis* analysis) const {
   // Build the precedences graph, taking into account the order of the tasks on
   // the machines and the task precedences.
@@ -550,9 +556,14 @@ void SchedulingLocalSearch::AnalyzeSchedule(
 
   // Find the start_min
   analysis->start_mins.assign(num_tasks_, 0);
+  for (int i = 0; i < num_tasks_; ++i) {
+    analysis->start_mins[i] = problem_.tasks[i].min_start;
+  }
+
   for (int u : analysis->topo_order) {
+    if (u == num_tasks_) continue;
     const IntegerValue completion_time_u =
-        analysis->start_mins[u] + task_durations_[u];
+        analysis->start_mins[u] + current_durations[u];
     for (int v : adj[u]) {
       if (v == num_tasks_) continue;
       if (completion_time_u > analysis->start_mins[v]) {
@@ -565,7 +576,8 @@ void SchedulingLocalSearch::AnalyzeSchedule(
   int last_task = -1;
   analysis->makespan = -1;
   for (int i = 0; i < num_tasks_; ++i) {
-    const IntegerValue comp_time = analysis->start_mins[i] + task_durations_[i];
+    const IntegerValue comp_time =
+        analysis->start_mins[i] + current_durations[i];
     if (comp_time > analysis->makespan) {
       analysis->makespan = comp_time;
       last_task = i;
@@ -580,12 +592,12 @@ void SchedulingLocalSearch::AnalyzeSchedule(
 
   while (curr != -1) {
     analysis->critical_path.push_back(curr);
-    if (analysis->start_mins[curr] == 0) break;
+    if (analysis->start_mins[curr] == problem_.tasks[curr].min_start) break;
 
     int tightest_pred = -1;
     for (const int pred :
          problem_.tasks[curr].tasks_that_must_complete_before_this) {
-      if (analysis->start_mins[pred] + task_durations_[pred] ==
+      if (analysis->start_mins[pred] + current_durations[pred] ==
           analysis->start_mins[curr]) {
         tightest_pred = pred;
         break;
@@ -596,7 +608,7 @@ void SchedulingLocalSearch::AnalyzeSchedule(
     if (tightest_pred == -1) {
       int m_pred = prev_on_machine[curr];
       if (m_pred != -1 &&
-          analysis->start_mins[m_pred] + task_durations_[m_pred] ==
+          analysis->start_mins[m_pred] + current_durations[m_pred] ==
               analysis->start_mins[curr]) {
         tightest_pred = m_pred;
       }
@@ -637,25 +649,17 @@ SchedulingLocalSearch::SchedulingLocalSearch(const SchedulingProblem& problem)
       job_successors_(ComputeJobSuccessors(problem)),
       job_reachability_(ComputeJobReachability(problem, job_successors_)),
       num_tasks_(problem_.tasks.size()),
-      num_machines_(
-          problem_.tasks.empty()
-              ? 0
-              : (absl::c_max_element(problem_.tasks,
-                                     [](const SchedulingProblem::Task& a,
-                                        const SchedulingProblem::Task& b) {
-                                       return a.machine < b.machine;
-                                     })
-                     ->machine +
-                 1)),
-      task_durations_(([](const SchedulingProblem& p) {
-        std::vector<int64_t> task_durations;
-        task_durations.reserve(p.tasks.size());
-        for (const auto& task : p.tasks) {
-          task_durations.push_back(task.duration);
+      num_machines_(([](const SchedulingProblem& p) {
+        int max_m = -1;
+        for (const auto& t : p.tasks) {
+          for (int m : t.compatible_machine) {
+            max_m = std::max(max_m, m);
+          }
         }
-        return task_durations;
-      })(problem)) {
+        return max_m + 1;
+      })(problem_)) {
   CHECK(!problem_.tasks.empty());
+  CHECK_GT(num_machines_, 0);
 }
 
 SchedulingLocalSearch::ScheduleAnalysis::ScheduleAnalysis(
@@ -688,18 +692,27 @@ std::vector<std::pair<int, int>> SchedulingLocalSearch::ComputePrecedences(
 }
 
 std::vector<int64_t> SchedulingLocalSearch::Solve(
-    absl::Span<const int64_t> initial_hint, int64_t makespan_to_beat,
+    absl::Span<const int64_t> initial_hint,
+    absl::Span<const int> active_machine_indices, int64_t makespan_to_beat,
     absl::BitGenRef random, TimeLimit* time_limit) const {
   if (num_tasks_ > 40000) {
     // TODO(user): Support huge problems.
     return {};
   }
 
+  std::vector<int> current_machines(num_tasks_);
+  std::vector<int64_t> current_durations(num_tasks_);
+  for (int i = 0; i < num_tasks_; ++i) {
+    const int a_idx = active_machine_indices[i];
+    current_machines[i] = problem_.tasks[i].compatible_machine[a_idx];
+    current_durations[i] = problem_.tasks[i].duration_for_machine[a_idx];
+  }
+
   std::vector<int> tabu_matrix(num_tasks_ * num_tasks_, 0);
 
   // Build the initial sequence state from the external hint
   CompactVectorVector<int> current_machine_tasks =
-      BuildInitialMachineSequences(initial_hint);
+      BuildInitialMachineSequences(initial_hint, current_machines);
 
   IntegerValue initial_makespan = -1;
 
@@ -728,7 +741,7 @@ std::vector<int64_t> SchedulingLocalSearch::Solve(
     if (time_limit_check.LimitReached()) break;
 
     // Analyze the current sequence.
-    AnalyzeSchedule(current_machine_tasks, &analysis);
+    AnalyzeSchedule(current_machine_tasks, current_durations, &analysis);
 
     // Track our absolute best schedule
     if (analysis.makespan < global_best_makespan) {
@@ -751,18 +764,18 @@ std::vector<int64_t> SchedulingLocalSearch::Solve(
     }
 
     // Compute dynamic state.
-    const SolverState state =
-        ComputeDynamicState(current_machine_tasks, analysis.topo_order);
+    const SolverState state = ComputeDynamicState(
+        current_machine_tasks, analysis.topo_order, current_durations);
 
     const std::vector<InsertMove> candidates = GenerateN8Moves(
         analysis.critical_path, state.prev_on_machine, state.next_on_machine,
-        analysis.start_mins, state.tails);
+        analysis.start_mins, state.tails, current_machines, current_durations);
 
     // Select the best move.
     std::optional<InsertMove> best_move = SelectBestMove(
         candidates, analysis.start_mins, state.tails, state.prev_on_machine,
-        state.next_on_machine, tabu_matrix, current_iteration,
-        global_best_makespan, random);
+        state.next_on_machine, tabu_matrix, current_durations,
+        current_iteration, global_best_makespan, random);
 
     if (iterations_without_improvement > stagnation_limit) {
       // To diversify the our tabu search, when the search stagnates, we
@@ -782,7 +795,7 @@ std::vector<int64_t> SchedulingLocalSearch::Solve(
     // Apply the Move directly to the schedule sequence
     const int x = best_move->task;
     const int target = best_move->target_task;
-    const int m = problem_.tasks[x].machine;
+    const int m = current_machines[x];
 
     const int idx_x = state.position_in_machine[x];
     const int idx_target = state.position_in_machine[target];
@@ -827,7 +840,7 @@ std::vector<int64_t> SchedulingLocalSearch::Solve(
     }
   }
   if (VLOG_IS_ON(2)) {
-    AnalyzeSchedule(best_machine_tasks, &analysis);
+    AnalyzeSchedule(best_machine_tasks, current_durations, &analysis);
   }
   VLOG(2) << "Initial makespan: " << initial_makespan
           << " best makespan: " << analysis.makespan
@@ -836,6 +849,98 @@ std::vector<int64_t> SchedulingLocalSearch::Solve(
   // Return the start times of the best schedule we found.
   return best_solution_start_mins;
 }
+
+namespace {
+
+std::vector<int64_t> ComputeCpSatSolutionFromSchedulingSolution(
+    const SchedulingProblemAndMapping& problem_and_mapping,
+    const CpModelProto& input_model_proto,
+    absl::Span<const int64_t> scheduling_solution,
+    absl::Span<const int> active_machine_indices,
+    absl::Span<const int64_t> original_solution) {
+  // 1. Copy the entire original solution to inherit non-scheduling variables
+  std::vector<int64_t> new_solution(original_solution.begin(),
+                                    original_solution.end());
+
+  int64_t new_makespan = 0;
+
+  auto assign_expr = [&](const LinearExpressionProto& expr,
+                         int64_t target_val) {
+    // The division might not be exact: our definition of SchedulingRelaxation
+    // cannot enforce the start times to be a multiple of some coefficient. We
+    // might end up with a infeasible solution.
+    if (expr.vars().size() == 1) {
+      const int var = expr.vars(0);
+      const int64_t coeff = expr.coeffs(0);
+      const int64_t offset = expr.offset();
+
+      DCHECK_GE(var, 0);
+      new_solution[var] = (target_val - offset) / coeff;
+    }
+  };
+
+  for (int i = 0; i < problem_and_mapping.problem.tasks.size(); ++i) {
+    const int64_t new_start = scheduling_solution[i];
+    const int active_machine_idx = active_machine_indices[i];
+
+    // 2. Explicitly set all intervals' optional presence booleans
+    // based on the dynamically provided machine choices.
+    const SchedulingProblem::Task& task = problem_and_mapping.problem.tasks[i];
+    for (int a = 0; a < task.compatible_machine.size(); ++a) {
+      const int lit = problem_and_mapping.task_to_presence_literals[i][a];
+      if (lit == kint32max) continue;
+
+      const bool should_be_true = (a == active_machine_idx);
+      if (RefIsPositive(lit)) {
+        new_solution[lit] = should_be_true ? 1 : 0;
+      } else {
+        new_solution[NegatedRef(lit)] = should_be_true ? 0 : 1;
+      }
+    }
+
+    const int64_t duration = problem_and_mapping.problem.tasks[i]
+                                 .duration_for_machine[active_machine_idx];
+    const int64_t new_end = new_start + duration;
+    new_makespan = std::max(new_makespan, new_end);
+
+    // 3. Set interval start, end, and size variables
+    const auto& task_intervals = problem_and_mapping.task_to_intervals[i];
+
+    // 3a. Repair the specific active alternative interval
+    if (active_machine_idx < task_intervals.alternative_intervals.size()) {
+      const int active_interval_idx =
+          task_intervals.alternative_intervals[active_machine_idx];
+      const auto& interval =
+          input_model_proto.constraints(active_interval_idx).interval();
+
+      assign_expr(interval.start(), new_start);
+      assign_expr(interval.end(), new_end);
+      assign_expr(interval.size(), duration);
+    }
+
+    // 3b. Repair all main/shared intervals
+    for (const int main_idx : task_intervals.unconditional_intervals) {
+      const auto& interval = input_model_proto.constraints(main_idx).interval();
+
+      assign_expr(interval.start(), new_start);
+      assign_expr(interval.end(), new_end);
+      assign_expr(interval.size(), duration);
+    }
+  }
+
+  // 4. Update Makespan if present
+  if (problem_and_mapping.makespan_expr.has_value()) {
+    const auto& [makespan_var, coeff, offset] =
+        problem_and_mapping.makespan_expr.value();
+
+    DCHECK_GE(makespan_var, 0);
+    new_solution[makespan_var] = (new_makespan - offset) / coeff;
+  }
+
+  return new_solution;
+}
+
+}  // namespace
 
 SchedulingLocalSearchSolver::SchedulingLocalSearchSolver(
     const absl::string_view name, SubSolver::SubsolverType type,
@@ -876,9 +981,9 @@ std::function<void()> SchedulingLocalSearchSolver::GenerateTask(
     const SchedulingProblemAndMapping& problem_and_mapping =
         relaxation_.problems_and_mappings[problem_index];
     const auto base_solution =
-        shared_response_->SolutionPool().GetSolutionToImprove(
-            random);  // NOLINT clang-tidy cppcoreguidelines-slicing
+        shared_response_->SolutionPool().GetSolutionToImprove(random);
     if (base_solution == nullptr) return;
+
     std::vector<int64_t> scheduling_solution;
     scheduling_solution.reserve(
         problem_and_mapping.task_to_start_time_model_var.size());
@@ -889,6 +994,32 @@ std::function<void()> SchedulingLocalSearchSolver::GenerateTask(
       scheduling_solution.push_back(
           base_solution->variable_values[var] * coeff + offset);
     }
+
+    std::vector<int> active_machine_indices(
+        problem_and_mapping.problem.tasks.size(), 0);
+    for (int i = 0; i < problem_and_mapping.problem.tasks.size(); ++i) {
+      const SchedulingProblem::Task& task =
+          problem_and_mapping.problem.tasks[i];
+      int active_idx = 0;
+      for (int a = 0; a < task.compatible_machine.size(); ++a) {
+        int lit = problem_and_mapping.task_to_presence_literals[i][a];
+        if (lit == kint32max) {
+          // A single machine choice, no enforcement needed.
+          active_idx = a;
+          break;
+        }
+        const bool is_true =
+            (RefIsPositive(lit))
+                ? (base_solution->variable_values[lit] == 1)
+                : (base_solution->variable_values[NegatedRef(lit)] == 0);
+        if (is_true) {
+          active_idx = a;
+          break;
+        }
+      }
+      active_machine_indices[i] = active_idx;
+    }
+
     int64_t relaxed_objective_value = 0;
 
     DCHECK(VerifySchedulingRelaxation(
@@ -898,32 +1029,20 @@ std::function<void()> SchedulingLocalSearchSolver::GenerateTask(
                                     base_solution->variable_values));
     SchedulingLocalSearch& local_search_solver =
         *local_search_solvers_[problem_index];
+
     const std::vector<int64_t> new_scheduling_solution =
         local_search_solver.Solve(
             absl::MakeConstSpan(scheduling_solution),
+            absl::MakeConstSpan(active_machine_indices),
             shared_response_->BestSolutionInnerObjectiveValue().value(), random,
             &task_time_limit);
     if (new_scheduling_solution.empty()) return;
-    std::vector<int64_t> new_solution = base_solution->variable_values;
-    for (int i = 0; i < new_scheduling_solution.size(); ++i) {
-      const auto& [var, coeff, offset] =
-          problem_and_mapping.task_to_start_time_model_var[i];
-      // The division might not be exact: our definition of SchedulingRelaxation
-      // cannot enforce the start times to be a multiple of some coefficient. We
-      // might end up with a infeasible solution.
-      new_solution[var] = (new_scheduling_solution[i] - offset) / coeff;
-    }
-    int64_t new_makespan = 0;
-    for (int i = 0; i < new_scheduling_solution.size(); ++i) {
-      new_makespan = std::max(
-          new_makespan, new_scheduling_solution[i] +
-                            problem_and_mapping.problem.tasks[i].duration);
-    }
-    if (problem_and_mapping.makespan_expr.has_value()) {
-      new_solution[problem_and_mapping.makespan_expr->var] =
-          (new_makespan - problem_and_mapping.makespan_expr->offset) /
-          problem_and_mapping.makespan_expr->coeff;
-    }
+
+    std::vector<int64_t> new_solution =
+        ComputeCpSatSolutionFromSchedulingSolution(
+            problem_and_mapping, input_model_proto_, new_scheduling_solution,
+            active_machine_indices, base_solution->variable_values);
+
     if (SolutionIsFeasible(input_model_proto_, new_solution)) {
       const int64_t new_objective_value =
           ComputeInnerObjective(input_model_proto_.objective(), new_solution);

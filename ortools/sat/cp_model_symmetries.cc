@@ -955,16 +955,14 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
   }
   context->WriteVariableDomainsToProto();
 
-  // We just temporarily add extra constraints and delete them just afterwards.
-  // So we should leave the proto unchanged (modulo reallocation, but this
-  // should be fine).
-  const int initial_ct_index = proto.constraints().size();
-  CpModelProto* mutable_model = context->UnsafeMutableWorkingModel();
-
   // Tricky: the equivalence relation are not part of the proto.
-  // We thus add them temporarily to compute the symmetry.
-  int64_t num_added = 0;
+  // We thus add them temporarily to compute the symmetry, but we can't
+  // use the context functions while doing that though!
+  //
+  // TODO(user): we should be able to always remove all affine relation, so
+  // this complexity can probably be removed now.
   const int num_vars = proto.variables_size();
+  std::vector<std::pair<int, AffineRelation::Relation>> to_add;
   for (int var = 0; var < num_vars; ++var) {
     if (context->IsFixed(var)) continue;
     if (context->VariableWasRemoved(var)) continue;
@@ -973,6 +971,14 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
     const AffineRelation::Relation r = context->GetAffineRelation(var);
     if (r.representative == var) continue;
 
+    to_add.push_back({var, r});
+  }
+
+  // Temporarily add affine relation still required.
+  int64_t num_added = 0;
+  const int initial_ct_index = proto.constraints().size();
+  CpModelProto* mutable_model = context->UnsafeMutableWorkingModel();
+  for (const auto [var, r] : to_add) {
     ++num_added;
     ConstraintProto* ct = mutable_model->add_constraints();
     auto* arg = ct->mutable_linear();
@@ -984,6 +990,7 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
     arg->add_domain(r.offset);
   }
 
+  // Find symmetries.
   std::vector<std::unique_ptr<SparsePermutation>> generators;
   FindCpModelSymmetries(params, proto, &generators, context->logger(),
                         context->time_limit());
@@ -991,7 +998,6 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
   // Remove temporary affine relation.
   mutable_model->mutable_constraints()->DeleteSubrange(initial_ct_index,
                                                        num_added);
-
   if (generators.empty()) return true;
 
   // Collect the at most ones.
@@ -1172,7 +1178,6 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
           new_ct->add_domain(0);
           new_ct->add_domain(kint64max);
         }
-        context->UpdateNewConstraintsVariableUsage();
         context->UpdateRuleStats("symmetry: objective is one orbitope row.");
         return true;
       }
@@ -1253,7 +1258,6 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
         if (context->IsFixed(var)) continue;
         bool_and->add_literals(NegatedRef(var));
       }
-      context->UpdateNewConstraintsVariableUsage();
     }
     return true;
   }
@@ -1536,7 +1540,6 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
       ct->mutable_linear()->add_domain(kint64max);
       context->UpdateRuleStats("symmetry: added symmetry breaking inequality");
     }
-    context->UpdateNewConstraintsVariableUsage();
   } else if (orbitope.size() > 1) {
     std::vector<int64_t> max_values(orbitope.size());
     for (int i = 0; i < orbitope.size(); ++i) {
@@ -1573,7 +1576,6 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
                      is_approximated ? "approximated " : "",
                      "inequality ordering orbitope columns"),
         orbitope[0].size());
-    context->UpdateNewConstraintsVariableUsage();
     return true;
   }
 

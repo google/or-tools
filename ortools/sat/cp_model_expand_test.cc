@@ -1969,7 +1969,6 @@ TEST(ExpandAllDiffTest, GoldenTestWithEnforcementLiteral) {
   Model model;
   PresolveContext context(&model, &initial_model, nullptr);
   context.InitializeNewDomains();
-  context.UpdateNewConstraintsVariableUsage();
   ExpandCpModel(&context);
 
   const CpModelProto expected_model = ParseTestProto(R"pb(

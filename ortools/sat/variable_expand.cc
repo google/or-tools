@@ -824,7 +824,6 @@ void TryToReplaceVariableByItsEncoding(int var, PresolveContext* context,
       }
     }
   }
-  context->UpdateNewConstraintsVariableUsage();
 
   // Update the objective if needed. Note that this operation can fail if
   // the new expression result in potential overflow.
@@ -927,7 +926,6 @@ void TryToReplaceVariableByItsEncoding(int var, PresolveContext* context,
   for (const auto& [value, literal] : values.encoding()) {
     arg->add_literals(literal);
   }
-  context->UpdateNewConstraintsVariableUsage();
   if (context->ModelIsUnsat()) return;
 
   // To simplify the postsolve, we output a single constraint to infer X from

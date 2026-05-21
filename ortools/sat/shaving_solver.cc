@@ -695,7 +695,6 @@ bool VariablesShavingSolver::ResetAndSolveModel(int64_t task_id, State* state,
     auto context = std::make_unique<PresolveContext>(local_model, shaving_proto,
                                                      &mapping_proto);
     context->InitializeNewDomains();
-    context->UpdateNewConstraintsVariableUsage();
     const int num_constraints = shaving_proto->constraints().size();
     std::vector<bool> useful_interval(num_constraints, false);
     std::vector<int> no_overalp_2d;

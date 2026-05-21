@@ -1038,7 +1038,6 @@ void ExpandVariableElement(ConstraintProto* ct, PresolveContext* context,
       mapping_ct->mutable_linear()->add_domain(mapping_offset);
       mapping_ct->mutable_linear()->add_domain(mapping_offset);
 
-      context->UpdateNewConstraintsVariableUsage();
       context->MarkVariableAsRemoved(index_var);
       context->UpdateRuleStats(
           "element: expanded variable element with unused index");
@@ -1081,7 +1080,6 @@ void ExpandVariableElement(ConstraintProto* ct, PresolveContext* context,
         AddLinearExpressionToLinearConstraint(expr, 1, imply->mutable_linear());
         context->CanonicalizeLinearConstraint(imply);
       }
-      context->UpdateNewConstraintsVariableUsage();
       context->UpdateRuleStats(
           "element: expanded variable element with unused target");
       context->MarkVariableAsRemoved(target_var);
@@ -2557,7 +2555,6 @@ void ExpandComplexLinearConstraint(int c, ConstraintProto* ct,
 
   context->UpdateRuleStats("linear: expanded complex rhs");
   context->InitializeNewDomains();
-  context->UpdateNewConstraintsVariableUsage();
   context->UpdateConstraintVariableUsage(c);
 }
 
@@ -2906,7 +2903,6 @@ void ExpandCpModel(PresolveContext* context) {
     if (skip) continue;  // Nothing was done for this constraint.
 
     // Update variable-constraint graph.
-    context->UpdateNewConstraintsVariableUsage();
     if (ct.constraint_case() == ConstraintProto::CONSTRAINT_NOT_SET) {
       context->UpdateConstraintVariableUsage(c);
     }
@@ -2949,7 +2945,6 @@ void ExpandCpModel(PresolveContext* context) {
     if (skip) continue;  // Nothing was done for this constraint.
 
     // Update variable-constraint graph.
-    context->UpdateNewConstraintsVariableUsage();
     if (ct.constraint_case() == ConstraintProto::CONSTRAINT_NOT_SET) {
       context->UpdateConstraintVariableUsage(c);
     }
