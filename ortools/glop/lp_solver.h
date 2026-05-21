@@ -17,6 +17,7 @@
 #include <memory>
 #include <string>
 
+#include "absl/base/attributes.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/glop/revised_simplex.h"
 #include "ortools/lp_data/lp_data.h"
@@ -64,7 +65,7 @@ class LPSolver {
   // Same as Solve() but use the given time limit rather than constructing a new
   // one from the current GlopParameters.
   ABSL_MUST_USE_RESULT ProblemStatus SolveWithTimeLimit(const LinearProgram& lp,
-                                                        TimeLimit* time_limit);
+                                                        TimeLimit& time_limit);
 
   // Puts the solver in a clean state.
   //
@@ -193,7 +194,7 @@ class LPSolver {
   // Runs the revised simplex algorithm if needed (i.e. if the program was not
   // already solved by the preprocessors).
   void RunRevisedSimplexIfNeeded(ProblemSolution* solution,
-                                 TimeLimit* time_limit);
+                                 TimeLimit& time_limit);
 
   // Checks that the returned solution values and statuses are consistent.
   // Returns true if this is the case. See the code for the exact check
