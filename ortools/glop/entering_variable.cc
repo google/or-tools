@@ -40,11 +40,9 @@ EnteringVariable::EnteringVariable(const VariablesInfo& variables_info,
       reduced_costs_(reduced_costs),
       parameters_() {}
 
-Status EnteringVariable::DualChooseEnteringColumn(
+ColIndex EnteringVariable::DualChooseEnteringColumn(
     bool nothing_to_recompute, const UpdateRow& update_row,
-    Fractional cost_variation, std::vector<ColIndex>* bound_flip_candidates,
-    ColIndex* entering_col) {
-  GLOP_RETURN_ERROR_IF_NULL(entering_col);
+    Fractional cost_variation, std::vector<ColIndex>* bound_flip_candidates) {
   const auto update_coefficients = update_row.GetCoefficients().const_view();
   const auto reduced_costs = reduced_costs_->GetReducedCosts();
   SCOPED_TIME_STAT(&stats_);
@@ -145,7 +143,7 @@ Status EnteringVariable::DualChooseEnteringColumn(
   // - We have processed all breakpoints with a ratio smaller than it.
   harris_ratio = std::numeric_limits<Fractional>::max();
 
-  *entering_col = kInvalidCol;
+  ColIndex entering_col = kInvalidCol;
   bound_flip_candidates->clear();
   Fractional step = 0.0;
   Fractional best_coeff = -1.0;
@@ -196,12 +194,12 @@ Status EnteringVariable::DualChooseEnteringColumn(
                    top.ratio + harris_tolerance / top.coeff_magnitude));
 
       if (top.coeff_magnitude == best_coeff && top.ratio == step) {
-        DCHECK_NE(*entering_col, kInvalidCol);
+        DCHECK_NE(entering_col, kInvalidCol);
         equivalent_entering_choices_.push_back(top.col);
       } else {
         equivalent_entering_choices_.clear();
         best_coeff = top.coeff_magnitude;
-        *entering_col = top.col;
+        entering_col = top.col;
 
         // Note that the step is not directly used, so it is okay to leave it
         // negative.
@@ -217,15 +215,15 @@ Status EnteringVariable::DualChooseEnteringColumn(
 
   // Break the ties randomly.
   if (!equivalent_entering_choices_.empty()) {
-    equivalent_entering_choices_.push_back(*entering_col);
-    *entering_col =
+    equivalent_entering_choices_.push_back(entering_col);
+    entering_col =
         equivalent_entering_choices_[std::uniform_int_distribution<int>(
             0, equivalent_entering_choices_.size() - 1)(random_)];
     IF_STATS_ENABLED(
         stats_.num_perfect_ties.Add(equivalent_entering_choices_.size()));
   }
 
-  if (*entering_col == kInvalidCol) return Status::OK();
+  if (entering_col == kInvalidCol) return entering_col;
 
   // If best_coeff is small and they are potential bound flips, we can take a
   // smaller step but use a good pivot.
@@ -239,18 +237,17 @@ Status EnteringVariable::DualChooseEnteringColumn(
 
       VLOG(1) << "Used bound flip to avoid bad pivot. Before: " << best_coeff
               << " now: " << std::abs(update_coefficients[col]);
-      *entering_col = col;
+      entering_col = col;
       break;
     }
   }
 
-  return Status::OK();
+  return entering_col;
 }
 
-Status EnteringVariable::DualPhaseIChooseEnteringColumn(
+ColIndex EnteringVariable::DualPhaseIChooseEnteringColumn(
     bool nothing_to_recompute, const UpdateRow& update_row,
-    Fractional cost_variation, ColIndex* entering_col) {
-  GLOP_RETURN_ERROR_IF_NULL(entering_col);
+    Fractional cost_variation) {
   const auto update_coefficients = update_row.GetCoefficients().const_view();
   const auto reduced_costs = reduced_costs_->GetReducedCosts();
   SCOPED_TIME_STAT(&stats_);
@@ -334,7 +331,7 @@ Status EnteringVariable::DualPhaseIChooseEnteringColumn(
 
   // Select the last breakpoint that still improves the infeasibility and has a
   // numerically stable pivot.
-  *entering_col = kInvalidCol;
+  ColIndex entering_col = kInvalidCol;
   Fractional step = -1.0;
   Fractional improvement = std::abs(cost_variation);
   while (!breakpoints_.empty()) {
@@ -344,7 +341,7 @@ Status EnteringVariable::DualPhaseIChooseEnteringColumn(
     DCHECK(top.ratio > step ||
            (top.ratio == step && top.coeff_magnitude <= pivot_magnitude));
     if (top.ratio > step && top.coeff_magnitude >= pivot_magnitude) {
-      *entering_col = top.col;
+      entering_col = top.col;
       step = top.ratio;
       pivot_magnitude = top.coeff_magnitude;
     }
@@ -362,7 +359,7 @@ Status EnteringVariable::DualPhaseIChooseEnteringColumn(
     std::pop_heap(breakpoints_.begin(), breakpoints_.end());
     breakpoints_.pop_back();
   }
-  return Status::OK();
+  return entering_col;
 }
 
 void EnteringVariable::SetParameters(const GlopParameters& parameters) {

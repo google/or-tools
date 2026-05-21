@@ -18,12 +18,14 @@
 #include <cstdint>
 #include <cstdlib>
 #include <functional>
+#include <random>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/log/vlog_is_on.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/random/random.h"
@@ -156,8 +158,8 @@ void RevisedSimplex::SetStartingVariableValuesForNextSolve(
 
 Status RevisedSimplex::MinimizeFromTransposedMatrixWithSlack(
     const DenseRow& objective, Fractional objective_scaling_factor,
-    Fractional objective_offset, TimeLimit* time_limit) {
-  const double start_time = time_limit->GetElapsedTime();
+    Fractional objective_offset, TimeLimit& time_limit) {
+  const double start_time = time_limit.GetElapsedTime();
   default_logger_.EnableLogging(parameters_.log_search_progress());
   default_logger_.SetLogToStdOut(parameters_.log_to_stdout());
   parameters_ = initial_parameters_;
@@ -201,8 +203,16 @@ Status RevisedSimplex::MinimizeFromTransposedMatrixWithSlack(
   return SolveInternal(start_time, false, objective, time_limit);
 }
 
-Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
-  const double start_time = time_limit->GetElapsedTime();
+Status RevisedSimplex::MinimizeFromTransposedMatrixWithSlack(
+    const DenseRow& objective, Fractional objective_scaling_factor,
+    Fractional objective_offset, TimeLimit* time_limit) {
+  GLOP_RETURN_ERROR_IF_NULL(time_limit);
+  return MinimizeFromTransposedMatrixWithSlack(
+      objective, objective_scaling_factor, objective_offset, *time_limit);
+}
+
+Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit& time_limit) {
+  const double start_time = time_limit.GetElapsedTime();
   default_logger_.EnableLogging(parameters_.log_search_progress());
   default_logger_.SetLogToStdOut(parameters_.log_to_stdout());
 
@@ -212,17 +222,21 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
                        lp.objective_coefficients(), time_limit);
 }
 
+Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
+  GLOP_RETURN_ERROR_IF_NULL(time_limit);
+  return Solve(lp, *time_limit);
+}
+
 ABSL_MUST_USE_RESULT Status RevisedSimplex::SolveInternal(
     double start_time, bool is_maximization_problem,
-    const DenseRow& objective_coefficients, TimeLimit* time_limit) {
+    const DenseRow& objective_coefficients, TimeLimit& time_limit) {
   SCOPED_TIME_STAT(&function_stats_);
-  GLOP_RETURN_ERROR_IF_NULL(time_limit);
   Cleanup update_deterministic_time_on_return(
-      [this, time_limit]() { AdvanceDeterministicTime(time_limit); });
+      [this, &time_limit]() { AdvanceDeterministicTime(time_limit); });
 
   SOLVER_LOG(logger_, "");
-  primal_edge_norms_.SetTimeLimit(time_limit);
-  dual_edge_norms_.SetTimeLimit(time_limit);
+  primal_edge_norms_.SetTimeLimit(&time_limit);
+  dual_edge_norms_.SetTimeLimit(&time_limit);
 
   if (logger_->LoggingIsEnabled()) {
     DisplayBasicVariableStatistics();
@@ -371,7 +385,7 @@ ABSL_MUST_USE_RESULT Status RevisedSimplex::SolveInternal(
   DisplayErrors();
 
   phase_ = Phase::OPTIMIZATION;
-  feasibility_time_ = time_limit->GetElapsedTime() - start_time;
+  feasibility_time_ = time_limit.GetElapsedTime() - start_time;
   primal_edge_norms_.SetPricingRule(parameters_.optimization_rule());
   num_feasibility_iterations_ = num_iterations_;
 
@@ -396,7 +410,7 @@ ABSL_MUST_USE_RESULT Status RevisedSimplex::SolveInternal(
        !objective_limit_reached_ &&
        (num_iterations_ == 0 ||
         num_iterations_ < parameters_.max_number_of_iterations()) &&
-       !time_limit->LimitReached() &&
+       !time_limit.LimitReached() &&
        !absl::GetFlag(FLAGS_simplex_stop_after_feasibility) &&
        (problem_status_ == ProblemStatus::PRIMAL_FEASIBLE ||
         problem_status_ == ProblemStatus::DUAL_FEASIBLE);
@@ -650,7 +664,7 @@ ABSL_MUST_USE_RESULT Status RevisedSimplex::SolveInternal(
     }
   }
 
-  total_time_ = time_limit->GetElapsedTime() - start_time;
+  total_time_ = time_limit.GetElapsedTime() - start_time;
   optimization_time_ = total_time_ - feasibility_time_;
   num_optimization_iterations_ = num_iterations_ - num_feasibility_iterations_;
 
@@ -688,7 +702,7 @@ ABSL_MUST_USE_RESULT Status RevisedSimplex::SolveInternal(
     }
   }
 
-  total_time_ = time_limit->GetElapsedTime() - start_time;
+  total_time_ = time_limit.GetElapsedTime() - start_time;
   push_time_ = total_time_ - feasibility_time_ - optimization_time_;
   num_push_iterations_ = num_iterations_ - num_feasibility_iterations_ -
                          num_optimization_iterations_;
@@ -2715,10 +2729,9 @@ int RevisedSimplex::NumNonIntegerInBasis() const {
   return num_non_integer;
 }
 
-Status RevisedSimplex::PrimalPolish(TimeLimit* time_limit) {
-  GLOP_RETURN_ERROR_IF_NULL(time_limit);
+Status RevisedSimplex::PrimalPolish(TimeLimit& time_limit) {
   Cleanup update_deterministic_time_on_return(
-      [this, time_limit]() { AdvanceDeterministicTime(time_limit); });
+      [this, &time_limit]() { AdvanceDeterministicTime(time_limit); });
 
   // Get all non-basic variables with a reduced costs close to zero.
   // Note that because we only choose entering candidate with a cost of zero,
@@ -2739,7 +2752,7 @@ Status RevisedSimplex::PrimalPolish(TimeLimit* time_limit) {
   Fractional total_gain = 0.0;
   for (int i = 0; i < 1'000; ++i) {
     AdvanceDeterministicTime(time_limit);
-    if (time_limit->LimitReached()) break;
+    if (time_limit.LimitReached()) break;
     if (num_pivots >= 100) break;
     if (candidates.empty()) break;
 
@@ -2868,10 +2881,9 @@ void RevisedSimplex::FillWithNonIntegerInBasis(
   }
 }
 
-Status RevisedSimplex::DualPolish(TimeLimit* time_limit) {
-  GLOP_RETURN_ERROR_IF_NULL(time_limit);
+Status RevisedSimplex::DualPolish(TimeLimit& time_limit) {
   Cleanup update_deterministic_time_on_return(
-      [this, time_limit]() { AdvanceDeterministicTime(time_limit); });
+      [this, &time_limit]() { AdvanceDeterministicTime(time_limit); });
 
   int num_pivots = 0;
   Fractional total_gain = 0.0;
@@ -2920,11 +2932,10 @@ Status RevisedSimplex::DualPolish(TimeLimit* time_limit) {
 
       // TODO(user): just look at 2/3 position with higest coeff and reduced
       // cost close to zero ?
-      ColIndex entering_col = kInvalidCol;
       bound_flip_candidates_.clear();
-      GLOP_RETURN_IF_ERROR(entering_variable_.DualChooseEnteringColumn(
+      const ColIndex entering_col = entering_variable_.DualChooseEnteringColumn(
           reduced_costs_.AreReducedCostsPrecise(), update_row_, cost_variation,
-          &bound_flip_candidates_, &entering_col));
+          &bound_flip_candidates_);
       if (entering_col == kInvalidCol) continue;
 
       // When we are at optimal, only moves with a reduced cost of zero should
@@ -3040,10 +3051,9 @@ Status RevisedSimplex::DualPolish(TimeLimit* time_limit) {
 // enter the basis, and a variable from x_B is selected to leave the basis.
 // To avoid explicit inversion of B, the algorithm solves two sub-systems:
 // y.B = c_B and B.d = a (a being the entering column).
-Status RevisedSimplex::PrimalMinimize(TimeLimit* time_limit) {
-  GLOP_RETURN_ERROR_IF_NULL(time_limit);
+Status RevisedSimplex::PrimalMinimize(TimeLimit& time_limit) {
   Cleanup update_deterministic_time_on_return(
-      [this, time_limit]() { AdvanceDeterministicTime(time_limit); });
+      [this, &time_limit]() { AdvanceDeterministicTime(time_limit); });
   num_consecutive_degenerate_iterations_ = 0;
   bool refactorize = false;
   last_refactorization_reason_ = RefactorizationReason::DEFAULT;
@@ -3063,7 +3073,7 @@ Status RevisedSimplex::PrimalMinimize(TimeLimit* time_limit) {
 
   while (true) {
     AdvanceDeterministicTime(time_limit);
-    if (time_limit->LimitReached()) break;
+    if (time_limit.LimitReached()) break;
 
     // TODO(user): we may loop a bit more than the actual number of iteration.
     // fix.
@@ -3346,9 +3356,9 @@ Status RevisedSimplex::PrimalMinimize(TimeLimit* time_limit) {
 //
 // Note that the returned status applies to the primal problem!
 Status RevisedSimplex::DualMinimize(bool feasibility_phase,
-                                    TimeLimit* time_limit) {
+                                    TimeLimit& time_limit) {
   Cleanup update_deterministic_time_on_return(
-      [this, time_limit]() { AdvanceDeterministicTime(time_limit); });
+      [this, &time_limit]() { AdvanceDeterministicTime(time_limit); });
   num_consecutive_degenerate_iterations_ = 0;
   bool refactorize = false;
   last_refactorization_reason_ = RefactorizationReason::DEFAULT;
@@ -3360,12 +3370,9 @@ Status RevisedSimplex::DualMinimize(bool feasibility_phase,
   Fractional cost_variation;
   Fractional target_bound;
 
-  // Entering variable.
-  ColIndex entering_col;
-
   while (true) {
     AdvanceDeterministicTime(time_limit);
-    if (time_limit->LimitReached()) break;
+    if (time_limit.LimitReached()) break;
 
     // TODO(user): we may loop a bit more than the actual number of iteration.
     // fix.
@@ -3515,15 +3522,14 @@ Status RevisedSimplex::DualMinimize(bool feasibility_phase,
     }
     update_row_.ComputeUpdateRow(leaving_row);
 
-    if (feasibility_phase) {
-      GLOP_RETURN_IF_ERROR(entering_variable_.DualPhaseIChooseEnteringColumn(
-          reduced_costs_.AreReducedCostsPrecise(), update_row_, cost_variation,
-          &entering_col));
-    } else {
-      GLOP_RETURN_IF_ERROR(entering_variable_.DualChooseEnteringColumn(
-          reduced_costs_.AreReducedCostsPrecise(), update_row_, cost_variation,
-          &bound_flip_candidates_, &entering_col));
-    }
+    const ColIndex entering_col =
+        feasibility_phase
+            ? entering_variable_.DualPhaseIChooseEnteringColumn(
+                  reduced_costs_.AreReducedCostsPrecise(), update_row_,
+                  cost_variation)
+            : entering_variable_.DualChooseEnteringColumn(
+                  reduced_costs_.AreReducedCostsPrecise(), update_row_,
+                  cost_variation, &bound_flip_candidates_);
 
     // No entering_col: dual unbounded (i.e. primal infeasible).
     if (entering_col == kInvalidCol) {
@@ -3667,10 +3673,9 @@ Status RevisedSimplex::DualMinimize(bool feasibility_phase,
   return Status::OK();
 }
 
-Status RevisedSimplex::PrimalPush(TimeLimit* time_limit) {
-  GLOP_RETURN_ERROR_IF_NULL(time_limit);
+Status RevisedSimplex::PrimalPush(TimeLimit& time_limit) {
   Cleanup update_deterministic_time_on_return(
-      [this, time_limit]() { AdvanceDeterministicTime(time_limit); });
+      [this, &time_limit]() { AdvanceDeterministicTime(time_limit); });
   bool refactorize = false;
 
   // We clear all the quantities that we don't update so they will be recomputed
@@ -3690,7 +3695,7 @@ Status RevisedSimplex::PrimalPush(TimeLimit* time_limit) {
 
   while (!super_basic_cols.empty()) {
     AdvanceDeterministicTime(time_limit);
-    if (time_limit->LimitReached()) break;
+    if (time_limit.LimitReached()) break;
 
     ScopedTimeDistributionUpdater timer(&iteration_stats_.total);
     GLOP_RETURN_IF_ERROR(RefactorizeBasisIfNeeded(&refactorize));
@@ -4202,12 +4207,11 @@ void RevisedSimplex::DisplayProblem() {
   }
 }
 
-void RevisedSimplex::AdvanceDeterministicTime(TimeLimit* time_limit) {
-  DCHECK(time_limit != nullptr);
+void RevisedSimplex::AdvanceDeterministicTime(TimeLimit& time_limit) {
   const double current_deterministic_time = DeterministicTime();
   const double deterministic_time_delta =
       current_deterministic_time - last_deterministic_time_update_;
-  time_limit->AdvanceDeterministicTime(deterministic_time_delta);
+  time_limit.AdvanceDeterministicTime(deterministic_time_delta);
   last_deterministic_time_update_ = current_deterministic_time;
 }
 
