@@ -114,8 +114,15 @@ jobs:
       if: ${{ matrix.platform == 'linux' }}
       run: sudo apt install -y ninja-build swig
     - name: Setup macos
+      # can't use brew swig (4.4) since Director python support is broken on macos
+      # see: https://github.com/swig/swig/issues/3279
       if: ${{ matrix.platform == 'macos' }}
-      run: brew install swig ninja
+      run: |
+        brew install ninja
+        wget -q https://downloads.sourceforge.net/project/swig/swig/swig-4.3.1/swig-4.3.1.tar.gz && tar xzvf swig-4.3.1.tar.gz && rm swig-4.3.1.tar.gz
+        cd swig-4.3.1 && ./configure --prefix=$HOME/.local && make -j 4 && make install
+        rm -rf swig-4.3.1
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
     - name: Setup Linux Python Env
       if: ${{ matrix.build == 'python' && matrix.platform == 'linux' }}
       run: echo "$HOME/.local/bin" >> $GITHUB_PATH
