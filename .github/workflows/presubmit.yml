@@ -142,8 +142,6 @@ jobs:
       run: cmake --build build --config Release -j --target all
     - name: Test
       shell: bash
-      env:
-        CTEST_OUTPUT_ON_FAILURE: 1
       run: |
         echo "Determining number of cores..."
         if [[ "$RUNNER_OS" == "Linux" ]]; then
