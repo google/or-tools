@@ -141,6 +141,20 @@ jobs:
     - name: Build
       run: cmake --build build --config Release -j --target all
     - name: Test
+      shell: bash
       env:
         CTEST_OUTPUT_ON_FAILURE: 1
-      run: cmake --build build --config Release -j --target test
+      run: |
+        echo "Determining number of cores..."
+        if [[ "$RUNNER_OS" == "Linux" ]]; then
+          CORES=$(nproc)
+        elif [[ "$RUNNER_OS" == "macOS" ]]; then
+          CORES=$(sysctl -n hw.ncpu)
+        elif [[ "$RUNNER_OS" == "Windows" ]]; then
+          CORES=$NUMBER_OF_PROCESSORS
+        else
+          echo "Unknown OS. Defaulting to 2 cores."
+          CORES=2
+        fi
+        echo "Detected $CORES cores"
+        ctest --test-dir build -j$CORES --output-on-failure --stop-on-failure
