@@ -78,8 +78,8 @@ build:windows --enable_runfiles
 # All build options also apply to test as described by the "Option precedence"
 # section in https://bazel.build/run/bazelrc#bazelrc-syntax-semantics.
 
-# Show as many errors as possible.
-build:ci --keep_going
+# Stop on first test error.
+build:ci --notest_keep_going
 
 # Show test errors.
 build:ci --test_output=errors
