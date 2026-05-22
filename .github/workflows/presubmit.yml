@@ -121,8 +121,7 @@ jobs:
         cmake
         -S.
         -Bbuild
-        -G
-        "${{matrix.generator}}"
+        -G "${{matrix.generator}}"
         ${{matrix.cmake_options}}
         ${{matrix.cmake_flags}}
         -DCMAKE_INSTALL_PREFIX=install
