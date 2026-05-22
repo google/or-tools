@@ -71,11 +71,9 @@ jobs:
           - os: ubuntu-latest
             platform: linux
             generator: Ninja
-            cmake_flags: -DCMAKE_BUILD_TYPE=Release
           - os: macos-latest
             platform: macos
             generator: Ninja
-            cmake_flags: -DCMAKE_BUILD_TYPE=Release
     runs-on: ${{matrix.os}}
     env:
       SCCACHE_GHA_ENABLED: true
@@ -130,7 +128,7 @@ jobs:
         -Bbuild
         -G "${{matrix.generator}}"
         ${{matrix.cmake_options}}
-        ${{matrix.cmake_flags}}
+        -DCMAKE_BUILD_TYPE=Release
         -DCMAKE_INSTALL_PREFIX=install
         -DUSE_COINOR=OFF
         -DUSE_GLPK=OFF
@@ -155,4 +153,4 @@ jobs:
           CORES=2
         fi
         echo "Detected $CORES cores"
-        ctest --test-dir build -j$CORES --output-on-failure --stop-on-failure
+        ctest --test-dir build -C Release -j$CORES --output-on-failure --stop-on-failure
