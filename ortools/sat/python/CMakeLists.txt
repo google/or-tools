@@ -59,6 +59,7 @@ add_custom_command(
      OUTPUT proto_builder_pybind11.h
      COMMAND gen_proto_builder_pybind11 > proto_builder_pybind11.h
      COMMENT "Generate C++ proto_builder_pybind11.h"
+     DEPENDS ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/gen_proto_builder_pybind11
      VERBATIM)
 
 pybind11_add_module(cp_model_helper_pybind11 MODULE cp_model_helper.cc proto_builder_pybind11.h)
