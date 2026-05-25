@@ -1754,8 +1754,8 @@ PYBIND11_MODULE(cp_model_helper, m) {
       .def(py::init<std::shared_ptr<CpModelProto>, int>())
       .def(py::init<std::shared_ptr<CpModelProto>>())  // new variable.
       .def_property_readonly(
-          "proto", &IntVar::proto, py::return_value_policy::reference,
-          py::keep_alive<1, 0>(),
+          "proto", py::cpp_function(&IntVar::proto, py::return_value_policy::reference,
+          py::keep_alive<1, 0>()),
           "Returns the IntegerVariableProto of this variable.")
       .def_property_readonly("model_proto", &IntVar::model_proto,
                              "Returns the CP model protobuf")
@@ -2000,9 +2000,9 @@ PYBIND11_MODULE(cp_model_helper, m) {
           "Returns the index of the constraint in the model protobuf.")
       .def_property_readonly("model_proto", &Constraint::model_proto,
                              "Returns the model protobuf.")
-      .def_property_readonly("proto", &Constraint::proto,
+      .def_property_readonly("proto", py::cpp_function(&Constraint::proto,
                              py::return_value_policy::reference,
-                             py::keep_alive<1, 0>(),
+                             py::keep_alive<1, 0>()),
                              "Returns the ConstraintProto of this constraint.")
       .def_property("name", &Constraint::name, &Constraint::SetName,
                     "The name of the constraint.")
@@ -2118,8 +2118,8 @@ Raises:
       .def_property_readonly("model_proto", &IntervalVar::model_proto,
                              "Returns the model protobuf.")
       .def_property_readonly(
-          "proto", &IntervalVar::proto, py::return_value_policy::reference,
-          py::keep_alive<1, 0>(), "Returns the interval constraint protobuf.")
+          "proto", py::cpp_function(&IntervalVar::proto, py::return_value_policy::reference,
+          py::keep_alive<1, 0>()), "Returns the interval constraint protobuf.")
       .def_property("name", &IntervalVar::name, &IntervalVar::SetName,
                     "The name of the interval variable.")
       .def(
