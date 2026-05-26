@@ -20,7 +20,7 @@ env:
   JAVA_VERSION: '21'
   # Disable auth (and caching) when running from a fork.
   # By default, secrets are not passed to workflows triggered from forks, including Dependabot.
-  USE_GOOGLE_CLOUD_STORAGE: ! ${{ github.event.pull_request.head.repo.fork || false }}
+  USE_GOOGLE_CLOUD_STORAGE: ${{ ! (github.event.pull_request.head.repo.fork || false) }}
 
 jobs:
 ###############################################################################
@@ -40,8 +40,6 @@ jobs:
     runs-on: ${{matrix.os}}
     steps:
     - uses: actions/checkout@v6
-    - name: Debug
-      run: echo ${{toJSON(github.event.pull_request.head.repo)}}
     - uses: 'google-github-actions/auth@v3'
       if: ${{env.USE_GOOGLE_CLOUD_STORAGE}}
       with:
