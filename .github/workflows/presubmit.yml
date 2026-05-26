@@ -41,7 +41,7 @@ jobs:
     steps:
     - uses: actions/checkout@v6
     - name: Debug
-      run: echo ${{toJSON(github.event)}}
+      run: echo ${{toJSON(github.event.pull_request.head.repo)}}
     - uses: 'google-github-actions/auth@v3'
       if: ${{env.USE_GOOGLE_CLOUD_STORAGE}}
       with:
