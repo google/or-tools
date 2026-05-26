@@ -141,5 +141,3 @@ proposals and reach consensus before sending your first PR.
 
 The OR-Tools software suite is licensed under the terms of the Apache License 2.0.
 <br>See [LICENSE](LICENSE) for more information.
-
-DO NOT MERGE

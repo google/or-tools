@@ -44,3 +44,5 @@ class AccurateSum {
 }  // namespace operations_research
 
 #endif  // ORTOOLS_BASE_ACCURATE_SUM_H_
+
+// DO NOT MERGE
