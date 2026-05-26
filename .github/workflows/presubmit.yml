@@ -20,7 +20,7 @@ env:
   JAVA_VERSION: '21'
   # Disable auth (and caching) when running from a fork.
   # By default, secrets are not passed to workflows triggered from forks, including Dependabot.
-  USE_GOOGLE_CLOUD_STORAGE: ! ${{ github.event.pull_request.head.repo.fork || false }}
+  USE_GOOGLE_CLOUD_STORAGE: ${{ ! (github.event.pull_request.head.repo.fork || false) }}
 
 jobs:
 ###############################################################################
@@ -41,11 +41,11 @@ jobs:
     steps:
     - uses: actions/checkout@v6
     - uses: 'google-github-actions/auth@v3'
-      if: ${{env.USE_GOOGLE_CLOUD_STORAGE}}
+      if: env.USE_GOOGLE_CLOUD_STORAGE == 'true'
       with:
         credentials_json: '${{secrets.GCP_BUCKET_API_KEY}}'
     - name: Set caching env vars
-      if: ${{env.USE_GOOGLE_CLOUD_STORAGE}}
+      if: env.USE_GOOGLE_CLOUD_STORAGE == 'true'
       run: echo "BAZEL_REMOTE_ARGS=--config=remote_cache" >> $GITHUB_ENV
     - uses: actions/setup-python@v6
       with:
@@ -82,16 +82,16 @@ jobs:
     steps:
     - uses: actions/checkout@v6
     - uses: 'google-github-actions/auth@v3'
-      if: ${{env.USE_GOOGLE_CLOUD_STORAGE}}
+      if: env.USE_GOOGLE_CLOUD_STORAGE == 'true'
       with:
         credentials_json: '${{secrets.GCP_BUCKET_API_KEY}}'
     - name: Install sccache-cache
       uses: mozilla-actions/sccache-action@v0.0.10
-      if: ${{env.USE_GOOGLE_CLOUD_STORAGE}}
+      if: env.USE_GOOGLE_CLOUD_STORAGE == 'true'
       env:
         SCCACHE_GCS_KEY_PATH: ${{env.GOOGLE_GHA_CREDS_PATH}}
     - name: Set caching env vars
-      if: ${{env.USE_GOOGLE_CLOUD_STORAGE}}
+      if: env.USE_GOOGLE_CLOUD_STORAGE == 'true'
       run: |
         echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
         echo "SCCACHE_GCS_BUCKET=or-tools-github-remote-caching" >> $GITHUB_ENV
