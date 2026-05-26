@@ -40,6 +40,8 @@ jobs:
     runs-on: ${{matrix.os}}
     steps:
     - uses: actions/checkout@v6
+    - name: Debug
+      run: echo ${{toJSON(github.event)}}
     - uses: 'google-github-actions/auth@v3'
       if: ${{env.USE_GOOGLE_CLOUD_STORAGE}}
       with:
