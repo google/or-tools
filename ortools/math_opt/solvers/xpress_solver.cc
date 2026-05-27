@@ -14,6 +14,7 @@
 #include "ortools/math_opt/solvers/xpress_solver.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <memory>
 #include <optional>
@@ -35,6 +36,7 @@
 #include "ortools/base/map_util.h"
 #include "ortools/base/protoutil.h"
 #include "ortools/base/status_macros.h"
+#include "ortools/math_opt/core/empty_bounds.h"
 #include "ortools/math_opt/core/inverted_bounds.h"
 #include "ortools/math_opt/core/math_opt_proto_utils.h"
 #include "ortools/math_opt/core/solver_interface.h"
@@ -965,6 +967,12 @@ absl::Status XpressSolver::AddNewVariables(
   ASSIGN_OR_RETURN(int const n_variables,
                    xpress_->GetIntAttr(XPRS_ORIGINALCOLS));
   bool have_integers = false;
+  // Indices (within this batch) of integer variables whose unrounded bounds
+  // are non-empty but whose rounded integer bounds are empty. Xpress rounds
+  // bounds of integer variables on input and rejects creation of variables
+  // with crossed bounds, so we substitute safe bounds for these and remember
+  // them in empty_integer_bounds_vars_ to report infeasibility at solve time.
+  std::vector<int> empty_int_indices;
   for (int j = 0; j < num_new_variables; ++j) {
     const VarId id = new_variables.ids(j);
     gtl::InsertOrDie(&variables_map_, id, j + n_variables);
@@ -973,6 +981,12 @@ absl::Status XpressSolver::AddNewVariables(
       //       integer variables in {0,1}
       variable_type[j] = XPRS_INTEGER;
       have_integers = true;
+      const double lb = new_variables.lower_bounds(j);
+      const double ub = new_variables.upper_bounds(j);
+      if (lb <= ub && std::ceil(lb) > std::floor(ub)) {
+        empty_integer_bounds_vars_.push_back({id, lb, ub});
+        empty_int_indices.push_back(j);
+      }
     } else {
       variable_type[j] = XPRS_CONTINUOUS;
     }
@@ -982,9 +996,25 @@ absl::Status XpressSolver::AddNewVariables(
     // save the call to XPRSchgcoltype() in AddVars()
     variable_type.clear();
   }
-  RETURN_IF_ERROR(
-      xpress_->AddVars(num_new_variables, {}, new_variables.lower_bounds(),
-                       new_variables.upper_bounds(), variable_type));
+  if (empty_int_indices.empty()) {
+    RETURN_IF_ERROR(
+        xpress_->AddVars(num_new_variables, {}, new_variables.lower_bounds(),
+                         new_variables.upper_bounds(), variable_type));
+  } else {
+    // Replace bounds of variables with empty integer bounds with [0, 0] so
+    // Xpress accepts them. The actual values do not matter since Solve()
+    // returns infeasible without invoking Xpress when this list is non-empty.
+    std::vector<double> lower_bounds(new_variables.lower_bounds().begin(),
+                                     new_variables.lower_bounds().end());
+    std::vector<double> upper_bounds(new_variables.upper_bounds().begin(),
+                                     new_variables.upper_bounds().end());
+    for (const int j : empty_int_indices) {
+      lower_bounds[j] = 0.0;
+      upper_bounds[j] = 0.0;
+    }
+    RETURN_IF_ERROR(xpress_->AddVars(num_new_variables, {}, lower_bounds,
+                                     upper_bounds, variable_type));
+  }
 
   if (extract_names_) {
     RETURN_IF_ERROR(AddNames(xpress_.get(), XPRS_NAMES_COLUMN,
@@ -1526,6 +1556,23 @@ absl::StatusOr<SolveResultProto> XpressSolver::Solve(
     ASSIGN_OR_RETURN(const InvertedBounds inverted_bounds,
                      ListInvertedBounds());
     RETURN_IF_ERROR(inverted_bounds.ToStatus());
+  }
+  // Handle integer variables whose unrounded bounds are non-empty but whose
+  // rounded integer bounds are empty (e.g. AddIntegerVariable(0.5, 0.6)).
+  // These were tracked in AddNewVariables() because Xpress would otherwise
+  // reject them at variable creation. Report infeasibility now.
+  if (!empty_integer_bounds_vars_.empty()) {
+    ASSIGN_OR_RETURN(double const objsen,
+                     xpress_->GetDoubleAttr(XPRS_OBJSENSE));
+    const EmptyIntegerBoundsVar& bad = empty_integer_bounds_vars_.front();
+    SolveResultProto result = ResultForIntegerInfeasible(
+        /*is_maximize=*/objsen < 0.0,
+        /*bad_variable_id=*/bad.id, /*lb=*/bad.lb, /*ub=*/bad.ub);
+    RETURN_IF_ERROR(util_time::EncodeGoogleApiProto(
+        absl::Now() - start,
+        result.mutable_solve_stats()->mutable_solve_time()))
+        << "failed to set SolveResultProto.solve_stats.solve_time";
+    return result;
   }
   // Check that we don't have non-binary indicator variables
   if (nonbinary_indicator_) {

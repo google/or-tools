@@ -723,6 +723,7 @@ cc_library(
         "//ortools/math_opt:result_cc_proto",
         "//ortools/math_opt:solution_cc_proto",
         "//ortools/math_opt:sparse_containers_cc_proto",
+        "//ortools/math_opt/core:empty_bounds",
         "//ortools/math_opt/core:inverted_bounds",
         "//ortools/math_opt/core:math_opt_proto_utils",
         "//ortools/math_opt/core:solver_interface",
