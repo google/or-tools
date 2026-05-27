@@ -458,7 +458,7 @@ class NestedTimeLimit {
    * is owned by the nested time limit object that returns it, and it will
    * remain valid until the nested time limit object is destroyed.
    */
-  TimeLimit* GetTimeLimit() { return &time_limit_; }
+  TimeLimit& GetTimeLimit() { return time_limit_; }
 
  private:
   TimeLimit* const base_time_limit_;

@@ -944,7 +944,7 @@ bool LinearProgrammingConstraint::SolveLp() {
   const double offset_before_unscaling =
       ToDouble(integer_objective_offset_) * scaler_.ObjectiveScalingFactor();
   auto status = simplex_.MinimizeFromTransposedMatrixWithSlack(
-      obj_with_slack_, unscaling_factor, offset_before_unscaling, time_limit_);
+      obj_with_slack_, unscaling_factor, offset_before_unscaling, *time_limit_);
   DCHECK_EQ(simplex_.GetProblemNumRows(), integer_lp_.size());
 
   // Lets resolve from scratch if we encounter this status.
@@ -953,7 +953,7 @@ bool LinearProgrammingConstraint::SolveLp() {
     simplex_.ClearStateForNextSolve();
     status = simplex_.MinimizeFromTransposedMatrixWithSlack(
         obj_with_slack_, unscaling_factor, offset_before_unscaling,
-        time_limit_);
+        *time_limit_);
   }
 
   state_ = simplex_.GetState();

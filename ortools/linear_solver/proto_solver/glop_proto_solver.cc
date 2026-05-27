@@ -195,7 +195,7 @@ MPSolutionResponse GlopSolveProto(
 
   // Solve and set response status.
   const glop::ProblemStatus status =
-      lp_solver.SolveWithTimeLimit(linear_program, time_limit.get());
+      lp_solver.SolveWithTimeLimit(linear_program, *time_limit);
   const MPSolverResponseStatus result_status = ToMPSolverResultStatus(status);
   response.set_status(result_status);
 
