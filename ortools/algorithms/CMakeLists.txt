@@ -74,7 +74,7 @@ if(BUILD_TESTING)
         ${_FILE_NAME}
       LINK_LIBRARIES
         benchmark::benchmark
-        benchmark::benchmark_main
+        ortools_benchmark_main
         GTest::gtest
         GTest::gmock
       ${_ARGS}
