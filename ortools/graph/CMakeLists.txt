@@ -97,7 +97,7 @@ if(BUILD_TESTING)
       LINK_LIBRARIES
         absl::status_matchers
         benchmark::benchmark
-        benchmark::benchmark_main
+        ortools_benchmark_main
         GTest::gtest
         GTest::gmock
       ${_ARGS}

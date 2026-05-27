@@ -12,9 +12,10 @@
 # limitations under the License.
 
 file(GLOB _SRCS "*.h" "*.cc")
-list(FILTER _SRCS EXCLUDE REGEX ".*/.*_benchmark.cc")
-list(FILTER _SRCS EXCLUDE REGEX ".*/.*_test.cc")
-list(FILTER _SRCS EXCLUDE REGEX "/gmock\.h")
+list(FILTER _SRCS EXCLUDE REGEX ".*/.*_benchmark\.cc")
+list(FILTER _SRCS EXCLUDE REGEX ".*/.*_test\.cc")
+list(FILTER _SRCS EXCLUDE REGEX ".*/benchmark_main\.cc")
+list(FILTER _SRCS EXCLUDE REGEX ".*/gmock\.h")
 
 set(NAME ${PROJECT_NAME}_base)
 
@@ -80,6 +81,19 @@ if(BUILD_TESTING)
     )
   endforeach()
   # Benchmark
+  ortools_cxx_library(
+    NAME
+    ortools_benchmark_main
+    SOURCES
+      "benchmark_main.cc"
+    TYPE
+      STATIC
+    LINK_LIBRARIES
+    ortools_base
+    benchmark::benchmark
+    TESTING
+  )
+
   file(GLOB _BENCHMARK_SRCS "*_benchmark.cc")
   set(_ARGS "")
   if(NOT RUN_BENCHMARKS)
@@ -95,7 +109,7 @@ if(BUILD_TESTING)
         ${_FILE_NAME}
       LINK_LIBRARIES
         benchmark::benchmark
-        benchmark::benchmark_main
+        ortools_benchmark_main
         GTest::gtest
         GTest::gmock
       ${_ARGS}
