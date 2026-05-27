@@ -824,7 +824,7 @@ absl::StatusOr<SolveResultProto> GlopSolver::Solve(
   RETURN_IF_ERROR(ListInvertedBounds().ToStatus());
 
   const glop::ProblemStatus status =
-      lp_solver_.SolveWithTimeLimit(linear_program_, time_limit.get());
+      lp_solver_.SolveWithTimeLimit(linear_program_, *time_limit);
   const absl::Duration solve_time = absl::Now() - start;
   return MakeSolveResult(status, model_parameters, interrupter, solve_time);
 }

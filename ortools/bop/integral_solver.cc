@@ -16,7 +16,6 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
-#include <limits>
 #include <memory>
 #include <string>
 #include <vector>
@@ -1055,8 +1054,8 @@ void RunOneBop(const BopParameters& parameters, int problem_index,
       deterministic_time_per_variable * local_num_variables);
 
   *status = InternalSolve(problem, parameters, local_initial_solution,
-                          subproblem_time_limit.GetTimeLimit(), variable_values,
-                          objective_value, best_bound);
+                          &subproblem_time_limit.GetTimeLimit(),
+                          variable_values, objective_value, best_bound);
 }
 }  // anonymous namespace
 
