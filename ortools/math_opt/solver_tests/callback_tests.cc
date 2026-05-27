@@ -75,18 +75,22 @@ std::ostream& operator<<(std::ostream& out,
 }
 
 CallbackTestParams::CallbackTestParams(
-    const SolverType solver_type, const bool integer_variables,
+    const SolverType solver_type, const TestModelClass model_class,
     const bool add_lazy_constraints, const bool add_cuts,
     absl::flat_hash_set<CallbackEvent> supported_events,
     std::optional<SolveParameters> all_solutions,
     std::optional<SolveParameters> reaches_cut_callback)
     : solver_type(solver_type),
-      integer_variables(integer_variables),
+      model_class(model_class),
       add_lazy_constraints(add_lazy_constraints),
       add_cuts(add_cuts),
       supported_events(std::move(supported_events)),
       all_solutions(std::move(all_solutions)),
       reaches_cut_callback(std::move(reaches_cut_callback)) {}
+
+bool CallbackTestParams::uses_integer_variables() const {
+  return model_class == TestModelClass::kIp;
+}
 
 namespace {
 
@@ -110,7 +114,7 @@ absl::StatusOr<std::unique_ptr<Model>> LoadMiplibInstance(
 
 std::ostream& operator<<(std::ostream& out, const CallbackTestParams& params) {
   out << "{ solver_type: " << params.solver_type
-      << ", integer_variables: " << params.integer_variables
+      << ", model_class: " << ToString(params.model_class)
       << ", add_lazy_constraints: " << params.add_lazy_constraints
       << ", add_cuts: " << params.add_cuts << ", supported_events: "
       << absl::StrJoin(params.supported_events, ",",
@@ -291,8 +295,10 @@ TEST_P(CallbackTest, EventPresolve) {
   }
 
   Model model("model");
-  Variable x = model.AddVariable(0, 2.0, GetParam().integer_variables, "x");
-  Variable y = model.AddVariable(0, 3.0, GetParam().integer_variables, "y");
+  Variable x =
+      model.AddVariable(0, 2.0, GetParam().uses_integer_variables(), "x");
+  Variable y =
+      model.AddVariable(0, 3.0, GetParam().uses_integer_variables(), "y");
   model.AddLinearConstraint(y <= 1.0);
   model.Maximize(2.0 * x + y);
   SolveArguments args = {
@@ -375,7 +381,7 @@ TEST_P(CallbackTest, EventBarrier) {
 
   // Make a model that requires multiple barrier steps to solve.
   const std::unique_ptr<const Model> model =
-      SmallModel(GetParam().integer_variables);
+      SmallModel(GetParam().uses_integer_variables());
 
   SolveArguments args;
   args.parameters.presolve = Emphasis::kOff;
@@ -404,7 +410,7 @@ TEST_P(CallbackTest, EventSolutionAlwaysCalled) {
   }
 
   // This test must use integer variables.
-  ASSERT_TRUE(GetParam().integer_variables);
+  ASSERT_TRUE(GetParam().uses_integer_variables());
 
   Model model("model");
   const Variable x = model.AddBinaryVariable("x");
@@ -450,7 +456,7 @@ TEST_P(CallbackTest, EventSolutionInterrupt) {
   }
 
   // This test must use integer variables.
-  ASSERT_TRUE(GetParam().integer_variables);
+  ASSERT_TRUE(GetParam().uses_integer_variables());
 
   // A model where we will not prove optimality immediately.
   const std::unique_ptr<const Model> model =
@@ -479,7 +485,7 @@ TEST_P(CallbackTest, EventSolutionCalledMoreThanOnce) {
   }
 
   // This test must use integer variables.
-  ASSERT_TRUE(GetParam().integer_variables);
+  ASSERT_TRUE(GetParam().uses_integer_variables());
 
   Model model("model");
   const Variable x = model.AddBinaryVariable("x");
@@ -539,7 +545,7 @@ TEST_P(CallbackTest, EventSolutionLazyConstraint) {
   }
 
   // This test must use integer variables.
-  ASSERT_TRUE(GetParam().integer_variables);
+  ASSERT_TRUE(GetParam().uses_integer_variables());
 
   Model model("model");
   const Variable x = model.AddBinaryVariable("x");
@@ -587,7 +593,7 @@ TEST_P(CallbackTest, EventSolutionLazyConstraintWithLinearConstraints) {
   }
 
   // This test must use integer variables.
-  ASSERT_TRUE(GetParam().integer_variables);
+  ASSERT_TRUE(GetParam().uses_integer_variables());
 
   Model model("model");
   const Variable x = model.AddBinaryVariable("x");
@@ -633,7 +639,7 @@ TEST_P(CallbackTest, EventSolutionFilter) {
   }
 
   // This test must use integer variables.
-  ASSERT_TRUE(GetParam().integer_variables);
+  ASSERT_TRUE(GetParam().uses_integer_variables());
 
   Model model("model");
   const Variable x = model.AddBinaryVariable("x");
@@ -686,7 +692,7 @@ TEST_P(CallbackTest, EventNodeCut) {
   }
 
   // This test must use integer variables.
-  ASSERT_TRUE(GetParam().integer_variables);
+  ASSERT_TRUE(GetParam().uses_integer_variables());
 
   // Max sum_i x_i
   // s.t. x_i + x_j + x_k <= 2 for all i < j < k
@@ -759,7 +765,7 @@ TEST_P(CallbackTest, EventNodeFilter) {
   }
 
   // This test must use integer variables.
-  ASSERT_TRUE(GetParam().integer_variables);
+  ASSERT_TRUE(GetParam().uses_integer_variables());
   // Use the MIPLIB instance 23588, which has optimal solution 8090 and LP
   // relaxation of 7649.87. This instance was selected because every
   // supported solver can solve it quickly (a few seconds), but no solver can
@@ -801,7 +807,7 @@ TEST_P(CallbackTest, EventMip) {
   }
 
   // This test must use integer variables.
-  ASSERT_TRUE(GetParam().integer_variables);
+  ASSERT_TRUE(GetParam().uses_integer_variables());
 
   // Use the MIPLIB instance 23588, which has optimal solution 8090 and LP
   // relaxation of 7649.87. This instance was selected because every
@@ -846,7 +852,7 @@ TEST_P(CallbackTest, StatusPropagation) {
   }
 
   // This test must use integer variables.
-  ASSERT_TRUE(GetParam().integer_variables);
+  ASSERT_TRUE(GetParam().uses_integer_variables());
 
   // Check status propagation by adding an invalid cut.
   Model model("model");
@@ -875,8 +881,8 @@ TEST_P(CallbackTest, StatusPropagation) {
 }
 
 TEST_P(CallbackTest, UnsupportedEvents) {
-  Model model("model");
-  model.AddVariable(0, 1.0, GetParam().integer_variables, "x");
+  const std::unique_ptr<const Model> model =
+      MinimalModelForTestModelClass(GetParam().model_class);
 
   for (const CallbackEvent event : Enum<CallbackEvent>::AllValues()) {
     if (GetParam().supported_events.contains(event)) {
@@ -889,7 +895,7 @@ TEST_P(CallbackTest, UnsupportedEvents) {
         .callback = [](const CallbackData&) { return CallbackResult{}; }};
 
     EXPECT_THAT(
-        Solve(model, GetParam().solver_type, args),
+        Solve(*model, GetParam().solver_type, args),
         StatusIs(absl::StatusCode::kInvalidArgument,
                  HasSubstr(CallbackEventProto_Name(EnumToProto(event)))));
   }

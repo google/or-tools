@@ -587,12 +587,17 @@ absl::Status Xpress::AddQRow(char sense, double rhs, double rng,
   if (checkInt32Overflow(std::size_t(oldRows) + 1))
     return absl::InvalidArgumentError(
         "XPRESS cannot handle more than 2^31 rows");
+  if (colind.size() != rowcoef.size() || qcol1.size() != qcol2.size() ||
+      qcol1.size() != qcoef.size())
+    return absl::InvalidArgumentError("inconsistent arguments to AddQRows");
   XPRSint64 const start = 0;
+  const int num_coefs = static_cast<int>(rowcoef.size());
   OR_RETURN_IF_ERROR(
-      ToStatus(XPRSaddrows64(xpress_model_, 1, colind.size(), &sense, &rhs,
-                             &rng, &start, colind.data(), rowcoef.data())));
-  if (qcol1.size() > 0) {
-    int const ret = XPRSaddqmatrix64(xpress_model_, oldRows, qcol1.size(),
+      ToStatus(XPRSaddrows64(xpress_model_, 1, num_coefs, &sense, &rhs, &rng,
+                             &start, colind.data(), rowcoef.data())));
+  if (!qcol1.empty()) {
+    const int num_qcoefs = static_cast<int>(qcoef.size());
+    int const ret = XPRSaddqmatrix64(xpress_model_, oldRows, num_qcoefs,
                                      qcol1.data(), qcol2.data(), qcoef.data());
     if (ret != 0) {
       XPRSdelrows(xpress_model_, 1, &oldRows);

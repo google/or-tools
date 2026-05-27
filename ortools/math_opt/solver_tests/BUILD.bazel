@@ -136,6 +136,7 @@ cc_library(
     hdrs = ["invalid_input_tests.h"],
     deps = [
         ":base_solver_test",
+        ":test_models",
         "//ortools/base:gmock",
         "//ortools/math_opt:model_cc_proto",
         "//ortools/math_opt:model_update_cc_proto",

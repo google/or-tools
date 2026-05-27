@@ -19,10 +19,62 @@
 #include "ortools/base/gmock.h"
 #include "ortools/math_opt/cpp/matchers.h"
 #include "ortools/math_opt/cpp/math_opt.h"
+#include "ortools/math_opt/testing/stream.h"
 
 namespace operations_research::math_opt {
 
 using ::testing::status::IsOkAndHolds;
+
+TEST(TestModelClassTest, ToString) {
+  EXPECT_EQ(ToString(TestModelClass::kIp), "ip");
+  EXPECT_EQ(StreamToString(TestModelClass::kIp), "ip");
+  EXPECT_EQ(ToString(TestModelClass::kLp), "lp");
+  EXPECT_EQ(StreamToString(TestModelClass::kLp), "lp");
+  EXPECT_EQ(ToString(TestModelClass::kMinCostFlow), "min_cost_flow");
+  EXPECT_EQ(StreamToString(TestModelClass::kMinCostFlow), "min_cost_flow");
+}
+
+TEST(MinimalModelForTestModelClassTest, LpCanSolve) {
+  std::unique_ptr<Model> model =
+      MinimalModelForTestModelClass(TestModelClass::kLp);
+  EXPECT_THAT(
+      Solve(*model, SolverType::kGlop),
+      IsOkAndHolds(IsOptimal(kMinimalModelForTestModelClassOptimalObjective)));
+}
+
+TEST(MinimalModelTest, IpCanSolve) {
+  std::unique_ptr<Model> model =
+      MinimalModelForTestModelClass(TestModelClass::kIp);
+  EXPECT_THAT(
+      Solve(*model, SolverType::kCpSat),
+      IsOkAndHolds(IsOptimal(kMinimalModelForTestModelClassOptimalObjective)));
+}
+
+TEST(MinimalModelTest, MinCostFlowCanSolve) {
+  std::unique_ptr<Model> model =
+      MinimalModelForTestModelClass(TestModelClass::kMinCostFlow);
+  // TODO: b/495435136 - use min cost flow solver here instead.
+  EXPECT_THAT(
+      Solve(*model, SolverType::kGlop),
+      IsOkAndHolds(IsOptimal(kMinimalModelForTestModelClassOptimalObjective)));
+}
+
+TEST(NontrivialModelTest, LpCanSolve) {
+  std::unique_ptr<Model> model = NontrivialModel(TestModelClass::kLp, 5);
+  EXPECT_THAT(Solve(*model, SolverType::kGlop), IsOkAndHolds(IsOptimal()));
+}
+
+TEST(NontrivialModelTest, IpCanSolve) {
+  std::unique_ptr<Model> model = NontrivialModel(TestModelClass::kIp, 5);
+  EXPECT_THAT(Solve(*model, SolverType::kCpSat), IsOkAndHolds(IsOptimal()));
+}
+
+TEST(NontrivialModelTest, MinCostFlowCanSolve) {
+  std::unique_ptr<Model> model =
+      NontrivialModel(TestModelClass::kMinCostFlow, 5);
+  // TODO: b/495435136 - use min cost flow solver here instead.
+  EXPECT_THAT(Solve(*model, SolverType::kGlop), IsOkAndHolds(IsOptimal()));
+}
 
 TEST(SmallModelTest, Integer) {
   const std::unique_ptr<const Model> model = SmallModel(/*integer=*/true);

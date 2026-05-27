@@ -36,8 +36,7 @@ LogicalConstraintTestParameters::LogicalConstraintTestParameters(
     const bool supports_incremental_add_and_deletes,
     const bool supports_incremental_variable_deletions,
     const bool supports_deleting_indicator_variables,
-    const bool supports_updating_binary_variables,
-    const bool supports_sos_on_expressions)
+    const bool supports_updating_binary_variables)
     : solver_type(solver_type),
       parameters(std::move(parameters)),
       supports_integer_variables(supports_integer_variables),
@@ -50,8 +49,7 @@ LogicalConstraintTestParameters::LogicalConstraintTestParameters(
           supports_incremental_variable_deletions),
       supports_deleting_indicator_variables(
           supports_deleting_indicator_variables),
-      supports_updating_binary_variables(supports_updating_binary_variables),
-      supports_sos_on_expressions(supports_sos_on_expressions) {}
+      supports_updating_binary_variables(supports_updating_binary_variables) {}
 
 std::ostream& operator<<(std::ostream& out,
                          const LogicalConstraintTestParameters& params) {

@@ -30,7 +30,6 @@
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/status_macros.h"
-#include "ortools/base/strong_int.h"
 #include "ortools/math_opt/constraints/indicator/indicator_constraint.h"
 #include "ortools/math_opt/constraints/quadratic/quadratic_constraint.h"
 #include "ortools/math_opt/constraints/second_order_cone/second_order_cone_constraint.h"

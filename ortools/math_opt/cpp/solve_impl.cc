@@ -118,7 +118,7 @@ absl::StatusOr<SolveResult> CallSolve(BaseSolver& solver,
 absl::StatusOr<ComputeInfeasibleSubsystemResult> CallComputeInfeasibleSubsystem(
     BaseSolver& solver, const ModelStorageCPtr expected_storage,
     const ComputeInfeasibleSubsystemArguments& arguments,
-    SolveInterrupter& local_canceller) {
+    SolveInterrupter& /*local_canceller*/) {
   OR_ASSIGN_OR_RETURN(
       const ComputeInfeasibleSubsystemResultProto compute_result_proto,
       solver.ComputeInfeasibleSubsystem(

@@ -74,6 +74,10 @@ std::ostream& operator<<(std::ostream& out,
 
 // A suite of unit tests for logical constraints.
 //
+// These tests assume that the solver supports optimizing linear programs (LPs)
+// or mixed-integer programs (MIPs), depending on if variables are continuous
+// or integer.
+//
 // To use these tests, in file <solver>_test.cc, write:
 //   INSTANTIATE_TEST_SUITE_P(
 //       <Solver>SimpleLogicalConstraintTest, SimpleLogicalConstraint,
@@ -96,6 +100,10 @@ class SimpleLogicalConstraintTest
 };
 
 // A suite of unit tests for logical constraints.
+//
+// These tests assume that the solver supports optimizing linear programs (LPs)
+// or mixed-integer programs (MIPs), depending on if variables are continuous
+// or integer.
 //
 // To use these tests, in file <solver>_test.cc, write:
 //   INSTANTIATE_TEST_SUITE_P(

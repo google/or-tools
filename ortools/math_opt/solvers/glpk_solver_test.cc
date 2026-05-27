@@ -42,6 +42,7 @@
 #include "ortools/math_opt/solver_tests/qp_tests.h"
 #include "ortools/math_opt/solver_tests/second_order_cone_tests.h"
 #include "ortools/math_opt/solver_tests/status_tests.h"
+#include "ortools/math_opt/solver_tests/test_models.h"
 #include "ortools/math_opt/testing/param_name.h"
 
 namespace operations_research {
@@ -88,14 +89,13 @@ INSTANTIATE_TEST_SUITE_P(GlpkStatusTest, StatusTest,
 InvalidParameterTestParams InvalidThreadsParameters() {
   SolveParameters params;
   params.threads = 2;
-  return InvalidParameterTestParams(SolverType::kGlpk, std::move(params),
-                                    {"threads"});
+  return InvalidParameterTestParams(SolverType::kGlpk, TestModelClass::kLp,
+                                    std::move(params), {"threads"});
 }
 
 INSTANTIATE_TEST_SUITE_P(
     GlpkInvalidInputTest, InvalidInputTest,
-    Values(InvalidInputTestParameters(SolverType::kGlpk,
-                                      /*use_integer_variables=*/false)));
+    Values(InvalidInputTestParameters(SolverType::kGlpk, TestModelClass::kLp)));
 INSTANTIATE_TEST_SUITE_P(GlpkInvalidParameterTest, InvalidParameterTest,
                          Values(InvalidThreadsParameters()));
 
@@ -164,6 +164,20 @@ INSTANTIATE_TEST_SUITE_P(GlpkLpModelSolveParametersTest,
 // TODO(b/187027049): see rationale in the TODO comment of IpParameterTest.
 GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(LpParameterTest);
 GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(LpIncompleteSolveTest);
+
+INSTANTIATE_TEST_SUITE_P(
+    GlpkMinCostFlowTest, MinCostFlowTest,
+    testing::Values(MinCostFlowTestParams{
+        .name = "glpk",
+        .solver_type = math_opt::SolverType::kGlpk,
+        .lp_not_flow_error_substring = std::nullopt,
+        .mip_not_flow_error_substring = std::nullopt,
+        .floating_point_cost_error_substring = std::nullopt,
+        .floating_point_capacity_error_substring = std::nullopt,
+        .certifies_nontrivial_infeasibility = false,
+        .returns_dual_solution = true,
+    }),
+    ParamName{});
 
 std::vector<SimpleLpTestParameters> GetGlpkSimpleLpTestParameters() {
   std::vector<SimpleLpTestParameters> test_parameters;
@@ -307,18 +321,18 @@ INSTANTIATE_TEST_SUITE_P(
     GlpkGenericTest, GenericTest,
     Values(GenericTestParameters(SolverType::kGlpk,
                                  /*support_interrupter=*/true,
-                                 /*integer_variables=*/true,
+                                 TestModelClass::kIp,
                                  /*expected_log=*/"OPTIMAL SOLUTION FOUND"),
            // When GLPK solves linear programs, it does not support
            // interruption.
            GenericTestParameters(SolverType::kGlpk,
                                  /*support_interrupter=*/false,
-                                 /*integer_variables=*/false,
-                                 /*expected_log=*/"OPTIMAL SOLUTION FOUND"),
+                                 TestModelClass::kLp,
+                                 /*expected_log=*/"OPTIMAL LP SOLUTION FOUND"),
            // GLPK has different code path for interior point.
            GenericTestParameters(SolverType::kGlpk,
                                  /*support_interrupter=*/false,
-                                 /*integer_variables=*/false,
+                                 TestModelClass::kLp,
                                  /*expected_log=*/"OPTIMAL SOLUTION FOUND",
                                  UseInteriorPointParameters())));
 
@@ -342,8 +356,7 @@ INSTANTIATE_TEST_SUITE_P(
 
 INSTANTIATE_TEST_SUITE_P(
     GlpkCallbackTest, CallbackTest,
-    Values(CallbackTestParams(SolverType::kGlpk,
-                              /*integer_variables=*/false,
+    Values(CallbackTestParams(SolverType::kGlpk, TestModelClass::kLp,
                               /*add_lazy_constraints=*/false,
                               /*add_cuts=*/false,
                               /*supported_events=*/{},

@@ -45,7 +45,6 @@
 #include "ortools/base/zipfile.h"
 #include "ortools/routing/parsers/simple_graph.h"
 #include "ortools/util/filelineiter.h"
-#include "re2/re2.h"
 
 namespace operations_research::routing {
 namespace {

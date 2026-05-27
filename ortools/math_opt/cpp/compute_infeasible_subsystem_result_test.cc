@@ -13,13 +13,11 @@
 
 #include "ortools/math_opt/cpp/compute_infeasible_subsystem_result.h"
 
-#include <cstdint>
 #include <string>
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
-#include "absl/status/statusor.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/math_opt/constraints/indicator/indicator_constraint.h"
@@ -27,7 +25,6 @@
 #include "ortools/math_opt/constraints/second_order_cone/second_order_cone_constraint.h"
 #include "ortools/math_opt/constraints/sos/sos1_constraint.h"
 #include "ortools/math_opt/constraints/sos/sos2_constraint.h"
-#include "ortools/math_opt/cpp/enums.h"
 #include "ortools/math_opt/cpp/linear_constraint.h"
 #include "ortools/math_opt/cpp/matchers.h"
 #include "ortools/math_opt/cpp/model.h"

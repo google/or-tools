@@ -25,6 +25,7 @@
 #include "ortools/math_opt/cpp/math_opt.h"
 #include "ortools/math_opt/parameters.pb.h"
 #include "ortools/math_opt/solver_tests/base_solver_test.h"
+#include "ortools/math_opt/solver_tests/test_models.h"
 #include "ortools/math_opt/storage/model_storage.h"
 
 namespace operations_research {
@@ -32,12 +33,16 @@ namespace math_opt {
 
 struct InvalidInputTestParameters {
   SolverType solver_type;
-  bool use_integer_variables;
+  TestModelClass model_class;
 
   InvalidInputTestParameters(const SolverType solver_type,
-                             const bool use_integer_variables)
-      : solver_type(solver_type),
-        use_integer_variables(use_integer_variables) {}
+                             const TestModelClass model_class)
+      : solver_type(solver_type), model_class(model_class) {}
+
+  // Returns true if model_class uses integer variables (i.e., is `kIp`).
+  bool uses_integer_variables() const {
+    return model_class == TestModelClass::kIp;
+  }
 
   friend std::ostream& operator<<(std::ostream& out,
                                   const InvalidInputTestParameters& params);
@@ -47,7 +52,7 @@ struct InvalidInputTestParameters {
 //   INSTANTIATE_TEST_SUITE_P(
 //       <Solver>InvalidInputTest, InvalidInputTest,
 //       testing::Values(InvalidInputTestParameters(
-//         SolverType::k<Solver>, /*use_integer_variables=*/true)));
+//         SolverType::k<Solver>, TestModelClass::kIp)));
 // TODO(b/172553545): this test should not be repeated for each solver since it
 //   tests that the Solver class validates the model before calling the
 //   interface.
@@ -59,10 +64,12 @@ class InvalidInputTest
 
 struct InvalidParameterTestParams {
   InvalidParameterTestParams(
-      SolverType solver_type, SolveParameters solve_parameters,
+      SolverType solver_type, TestModelClass model_class,
+      SolveParameters solve_parameters,
       std::vector<std::string> expected_error_substrings);
 
   SolverType solver_type;
+  TestModelClass model_class;
   SolveParameters solve_parameters;
   std::vector<std::string> expected_error_substrings;
 
@@ -77,11 +84,10 @@ class InvalidParameterTest
 
   absl::StatusOr<SolveResult> SimpleSolve(
       const SolveParameters& parameters = GetParam().solve_parameters) {
-    return Solve(model_, GetParam().solver_type, {.parameters = parameters});
+    return Solve(*model_, GetParam().solver_type, {.parameters = parameters});
   }
 
-  Model model_;
-  const Variable x_;
+  const std::unique_ptr<const Model> model_;
 };
 
 }  // namespace math_opt

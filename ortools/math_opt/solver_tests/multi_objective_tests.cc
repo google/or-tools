@@ -486,13 +486,18 @@ TEST_P(SimpleMultiObjectiveTest,
           .objective_parameters = {{model->primary_objective(),
                                     {.time_limit = absl::Seconds(10)}}}}};
   args.parameters.time_limit = absl::Milliseconds(1);
-  ASSERT_OK_AND_ASSIGN(const SolveResult result,
-                       Solve(*model, GetParam().solver_type, args));
-  EXPECT_THAT(result, TerminatesWithLimit(Limit::kTime));
+  const auto result = Solve(*model, GetParam().solver_type, args);
+  if (GetParam().solver_type == SolverType::kXpress) {
+    EXPECT_THAT(result, StatusIs(absl::StatusCode::kInvalidArgument,
+                                 HasSubstr("per-objective time limits")));
+    return;
+  }
+  ASSERT_OK(result);
+  EXPECT_THAT(*result, TerminatesWithLimit(Limit::kTime));
   // Solvers do not stop very precisely, use a large number to avoid flaky
   // tests. Do NOT try to fine tune this to be small, it is hard to get right
   // for all compilation modes (e.g., debug, asan).
-  EXPECT_LE(result.solve_stats.solve_time, absl::Seconds(1));
+  EXPECT_LE(result->solve_stats.solve_time, absl::Seconds(1));
 }
 
 // We test that all solvers that do not support multi-objective models error

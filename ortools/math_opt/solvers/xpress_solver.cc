@@ -14,36 +14,47 @@
 #include "ortools/math_opt/solvers/xpress_solver.h"
 
 #include <algorithm>
+#include <cmath>
+#include <cstddef>
 #include <cstdint>
+#include <exception>
+#include <functional>
+#include <iostream>
 #include <memory>
 #include <optional>
 #include <string>
-#include <type_traits>
 #include <utility>
+#include <variant>
 #include <vector>
 
+#include "absl/base/nullability.h"
+#include "absl/base/thread_annotations.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/container/linked_hash_map.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/memory/memory.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "absl/strings/numbers.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
+#include "absl/synchronization/mutex.h"
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
+#include "google/protobuf/map.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/protoutil.h"
 #include "ortools/base/status_macros.h"
+#include "ortools/base/types.h"
 #include "ortools/math_opt/core/inverted_bounds.h"
 #include "ortools/math_opt/core/math_opt_proto_utils.h"
 #include "ortools/math_opt/core/solver_interface.h"
 #include "ortools/math_opt/core/sparse_vector_view.h"
-#include "ortools/math_opt/cpp/math_opt.h"
-#include "ortools/math_opt/cpp/streamable_solver_init_arguments.h"
 #include "ortools/math_opt/solvers/xpress/g_xpress.h"
 #include "ortools/math_opt/validators/callback_validator.h"
-#include "ortools/port/proto_utils.h"
 #include "ortools/third_party_solvers/xpress_environment.h"
 #include "ortools/util/solve_interrupter.h"
 
@@ -54,37 +65,35 @@ namespace {
 struct SharedSolveContext {
   Xpress* xpress;
 
-  /** Mutex for accessing callbackException. */
+  /** Mutex for accessing callback_status_. */
   absl::Mutex mutex;
 
   /** Capturing of exceptions in callbacks.
    * We cannot let exceptions escape from callbacks since that would just
    * unroll the stack until some function that catches the exception.
    * In particular, it would bypass any cleanup code implemented in the C code
-   * of the solver. So we must capture exceptions, interrupt the solve and
-   * handle the exception once the solver returned.
+   * of the solver. So we must capture exceptions, convert them to Status,
+   * interrupt the solve and handle the status once the solver returned.
    */
-  std::exception_ptr callbackException;
+  absl::Status callback_status ABSL_GUARDED_BY(mutex) = absl::OkStatus();
 };
 
 /** Registered callback that is auto-removed in the destructor.
  * Use Add() to add a callback to a solve context.
- * The class also provides convenience functions SetCallbackException()
+ * The class also provides convenience functions SetCallbackStatus()
  * and Interrupt() that are required in every callback implementation to
- * capture exceptions from user code and reraise them appropriately.
+ * capture exceptions from user code and return them as Status.
  */
 template <typename ProtoT, typename CbT>
 class ScopedCallback {
   using proto_type = typename ProtoT::proto_type;
-  SharedSolveContext* ctx;
+  SharedSolveContext* ctx_;
 
   ScopedCallback(ScopedCallback const&) = delete;
-  ScopedCallback(ScopedCallback&&) = delete;
   ScopedCallback& operator=(ScopedCallback const&) = delete;
-  ScopedCallback& operator=(ScopedCallback&&) = delete;
 
   // We intercept and store any exception throw by a callback defining a static
-  // wrapper function that invokes the callback within a try/carch block. For
+  // wrapper function that invokes the callback within a try/catch block. For
   // this to work, we need to deduce the callback return type and arguments.
   template <typename FuncPtr>
   struct ExWrapper;
