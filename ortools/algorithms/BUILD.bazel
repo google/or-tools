@@ -53,9 +53,9 @@ cc_binary(
     srcs = ["binary_search_benchmark.cc"],
     deps = [
         ":binary_search",
+        "//ortools/base:benchmark_main",
         "@abseil-cpp//absl/numeric:int128",
         "@google_benchmark//:benchmark",
-        "@google_benchmark//:benchmark_main",
     ],
 )
 
@@ -103,6 +103,7 @@ cc_binary(
     srcs = ["radix_sort_benchmark.cc"],
     deps = [
         ":radix_sort",
+        "//ortools/base:benchmark_main",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/numeric:bits",
@@ -112,7 +113,6 @@ cc_binary(
         "@abseil-cpp//absl/random:distributions",
         "@abseil-cpp//absl/types:span",
         "@google_benchmark//:benchmark",
-        "@google_benchmark//:benchmark_main",
     ],
 )
 
@@ -121,12 +121,12 @@ cc_binary(
     srcs = ["radix_sort_release_benchmark.cc"],
     deps = [
         ":radix_sort",
+        "//ortools/base:benchmark_main",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/random:bit_gen_ref",
         "@abseil-cpp//absl/random:distributions",
         "@abseil-cpp//absl/types:span",
         "@google_benchmark//:benchmark",
-        "@google_benchmark//:benchmark_main",
     ],
 )
 
@@ -321,6 +321,7 @@ cc_binary(
     srcs = ["space_saving_most_frequent_benchmark.cc"],
     deps = [
         ":space_saving_most_frequent",
+        "//ortools/base:benchmark_main",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/base:nullability",
         "@abseil-cpp//absl/hash",
@@ -328,7 +329,6 @@ cc_binary(
         "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/random:distributions",
         "@google_benchmark//:benchmark",
-        "@google_benchmark//:benchmark_main",
     ],
 )
 
@@ -523,9 +523,9 @@ cc_binary(
     deps = [
         ":multikey_radix_sort",
         ":radix_sort",
+        "//ortools/base:benchmark_main",
         "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/types:span",
         "@google_benchmark//:benchmark",
-        "@google_benchmark//:benchmark_main",
     ],
 )
