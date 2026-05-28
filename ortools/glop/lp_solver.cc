@@ -276,15 +276,6 @@ ProblemStatus LPSolver::SolveWithTimeLimit(const LinearProgram& lp,
   return status;
 }
 
-ProblemStatus LPSolver::SolveWithTimeLimit(const LinearProgram& lp,
-                                           TimeLimit* time_limit) {
-  if (time_limit == nullptr) {
-    LOG(DFATAL) << "SolveWithTimeLimit() called with a nullptr time_limit.";
-    return ProblemStatus::ABNORMAL;
-  }
-  return SolveWithTimeLimit(lp, *time_limit);
-}
-
 void LPSolver::Clear() {
   ResizeSolution(RowIndex(0), ColIndex(0));
   revised_simplex_.reset(nullptr);
