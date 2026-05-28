@@ -592,6 +592,9 @@ std::string CpModelStats(const CpModelProto& model_proto) {
     absl::StrAppend(&result, Summarize(temp));
   }
 
+  absl::StrAppend(&result, "#Constraints: ",
+                  FormatCounter(model_proto.constraints().size()), "\n");
+
   std::vector<std::string> constraints;
   constraints.reserve(name_to_num_constraints.size());
   for (const auto& [c_name, count] : name_to_num_constraints) {
@@ -3114,6 +3117,28 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
     if (absl::GetFlag(FLAGS_cp_model_dump_models)) {
       DumpModelProto(*new_cp_model_proto, "presolved_model");
       DumpModelProto(*mapping_proto, "mapping_model");
+
+      // Debug model with 1-based indices easier to read but cannot be parsed
+      // back! This follow the SAT convention for literal like +3/-3 and
+      // variable starts at 1. Note also that without the model name, the domain
+      // of variable #i will be at line i.
+      {
+        CpModelProto copy = *new_cp_model_proto;
+        copy.clear_name();
+        for (ConstraintProto& ct : *copy.mutable_constraints()) {
+          ApplyToAllVariableIndices(
+              [](int* ref) {
+                if (*ref >= 0) ++*ref;
+              },
+              &ct);
+          ApplyToAllLiteralIndices(
+              [](int* ref) {
+                if (*ref >= 0) ++*ref;
+              },
+              &ct);
+        }
+        DumpModelProto(copy, "debug_1_based_model");
+      }
 
       // If the model is convertible to a MIP, we dump it too.
       //

@@ -6889,7 +6889,8 @@ TEST(FindDuplicateConstraintsTest, BasicTest) {
     }
   )pb");
 
-  std::vector<std::pair<int, int>> duplicates = FindDuplicateConstraints(model);
+  std::vector<std::pair<int, int>> duplicates =
+      FindDuplicateConstraints(model, false, true);
   EXPECT_THAT(duplicates,
               ::testing::ElementsAre(std::make_pair(1, 0), std::make_pair(2, 0),
                                      std::make_pair(3, 0)));
@@ -6910,7 +6911,8 @@ TEST(FindDuplicateConstraintsTest, LinearConstraintParallelToObjective) {
     }
   )pb");
 
-  std::vector<std::pair<int, int>> duplicates = FindDuplicateConstraints(model);
+  std::vector<std::pair<int, int>> duplicates =
+      FindDuplicateConstraints(model, false, true);
   EXPECT_THAT(duplicates,
               ::testing::ElementsAre(std::make_pair(0, kObjectiveConstraint)));
 }

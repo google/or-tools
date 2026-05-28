@@ -426,6 +426,34 @@ void PostsolveResponse(const int64_t num_variables_in_original_model,
         break;
       }
     }
+
+    // Special case for enforced linear1, we don't fix variable, we just
+    // restrict the domain....
+    if (ct.constraint_case() == ConstraintProto::kLinear &&
+        ct.linear().vars().size() == 1 && !ct.enforcement_literal().empty()) {
+      if (constraint_can_be_ignored) continue;
+
+      bool enforced = true;
+      for (const int enf : ct.enforcement_literal()) {
+        const int var = PositiveRef(enf);
+        const bool is_true =
+            domains[var].IsFixed() &&
+            RefIsPositive(enf) == (domains[var].FixedValue() == 1);
+        if (!is_true) {
+          enforced = false;
+          break;
+        }
+      }
+      if (enforced) {
+        const int var = ct.linear().vars(0);
+        const Domain implied =
+            ReadDomainFromProto(ct.linear())
+                .InverseMultiplicationBy(ct.linear().coeffs(0));
+        domains[var] = domains[var].IntersectionWith(implied);
+        continue;
+      }
+    }
+
     if (constraint_can_be_ignored) {
       ArbitrarilyFixVariables(ct, absl::MakeSpan(domains));
       CheckPostsolveFixedVariables(ct, domains);
