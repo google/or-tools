@@ -23,6 +23,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/base/nullability.h"
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
@@ -203,14 +204,6 @@ Status RevisedSimplex::MinimizeFromTransposedMatrixWithSlack(
   return SolveInternal(start_time, false, objective, time_limit);
 }
 
-Status RevisedSimplex::MinimizeFromTransposedMatrixWithSlack(
-    const DenseRow& objective, Fractional objective_scaling_factor,
-    Fractional objective_offset, TimeLimit* time_limit) {
-  GLOP_RETURN_ERROR_IF_NULL(time_limit);
-  return MinimizeFromTransposedMatrixWithSlack(
-      objective, objective_scaling_factor, objective_offset, *time_limit);
-}
-
 Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit& time_limit) {
   const double start_time = time_limit.GetElapsedTime();
   default_logger_.EnableLogging(parameters_.log_search_progress());
@@ -223,7 +216,7 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit& time_limit) {
 }
 
 Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
-  GLOP_RETURN_ERROR_IF_NULL(time_limit);
+  CHECK(time_limit != nullptr);
   return Solve(lp, *time_limit);
 }
 
@@ -1931,13 +1924,12 @@ bool IsRatioMoreOrEquallyStable(Fractional candidate, Fractional current) {
 
 // Ratio-test or Quotient-test. Choose the row of the leaving variable.
 // Known as CHUZR or CHUZRO in FORTRAN codes.
-Status RevisedSimplex::ChooseLeavingVariableRow(
-    ColIndex entering_col, Fractional reduced_cost, bool* refactorize,
-    RowIndex* leaving_row, Fractional* step_length, Fractional* target_bound) {
+void RevisedSimplex::ChooseLeavingVariableRow(
+    ColIndex entering_col, Fractional reduced_cost,
+    bool* absl_nonnull refactorize, RowIndex* absl_nonnull leaving_row,
+    Fractional* absl_nonnull step_length,
+    Fractional* absl_nonnull target_bound) {
   SCOPED_TIME_STAT(&function_stats_);
-  GLOP_RETURN_ERROR_IF_NULL(refactorize);
-  GLOP_RETURN_ERROR_IF_NULL(leaving_row);
-  GLOP_RETURN_ERROR_IF_NULL(step_length);
   DCHECK_COL_BOUNDS(entering_col);
   DCHECK_NE(0.0, reduced_cost);
 
@@ -2065,7 +2057,7 @@ Status RevisedSimplex::ChooseLeavingVariableRow(
                 << " direction_infinity_norm_ = " << direction_infinity_norm_
                 << " reduced cost = " << reduced_cost;
         *refactorize = true;
-        return Status::OK();
+        return;
       }
 
       // Because of the "threshold" in ComputeHarrisRatioAndLeavingCandidates()
@@ -2104,7 +2096,6 @@ Status RevisedSimplex::ChooseLeavingVariableRow(
       ratio_test_stats_.abs_used_pivot.Add(std::abs(direction_[*leaving_row]));
     }
   });
-  return Status::OK();
 }
 
 namespace {
@@ -2250,13 +2241,10 @@ void RevisedSimplex::PrimalPhaseIChooseLeavingVariableRow(
 }
 
 // This implements the pricing step for the dual simplex.
-Status RevisedSimplex::DualChooseLeavingVariableRow(RowIndex* leaving_row,
-                                                    Fractional* cost_variation,
-                                                    Fractional* target_bound) {
+void RevisedSimplex::DualChooseLeavingVariableRow(
+    RowIndex* absl_nonnull leaving_row, Fractional* absl_nonnull cost_variation,
+    Fractional* absl_nonnull target_bound) {
   SCOPED_TIME_STAT(&function_stats_);
-  GLOP_RETURN_ERROR_IF_NULL(leaving_row);
-  GLOP_RETURN_ERROR_IF_NULL(cost_variation);
-  GLOP_RETURN_ERROR_IF_NULL(target_bound);
 
   // This is not supposed to happen, but better be safe.
   if (dual_prices_.Size() == 0) {
@@ -2267,7 +2255,7 @@ Status RevisedSimplex::DualChooseLeavingVariableRow(RowIndex* leaving_row,
   // Return right away if there is no leaving variable.
   // Fill cost_variation and target_bound otherwise.
   *leaving_row = dual_prices_.GetMaximum();
-  if (*leaving_row == kInvalidRow) return Status::OK();
+  if (*leaving_row == kInvalidRow) return;
 
   const DenseRow& lower_bounds = variables_info_.GetVariableLowerBounds();
   const DenseRow& upper_bounds = variables_info_.GetVariableUpperBounds();
@@ -2282,7 +2270,6 @@ Status RevisedSimplex::DualChooseLeavingVariableRow(RowIndex* leaving_row,
     *target_bound = upper_bounds[leaving_col];
     DCHECK_LT(*cost_variation, 0.0);
   }
-  return Status::OK();
 }
 
 namespace {
@@ -2442,12 +2429,10 @@ void RevisedSimplex::DualPhaseIUpdatePriceOnReducedCostChange(
   }
 }
 
-Status RevisedSimplex::DualPhaseIChooseLeavingVariableRow(
-    RowIndex* leaving_row, Fractional* cost_variation,
-    Fractional* target_bound) {
+void RevisedSimplex::DualPhaseIChooseLeavingVariableRow(
+    RowIndex* absl_nonnull leaving_row, Fractional* absl_nonnull cost_variation,
+    Fractional* absl_nonnull target_bound) {
   SCOPED_TIME_STAT(&function_stats_);
-  GLOP_RETURN_ERROR_IF_NULL(leaving_row);
-  GLOP_RETURN_ERROR_IF_NULL(cost_variation);
   const DenseRow& lower_bounds = variables_info_.GetVariableLowerBounds();
   const DenseRow& upper_bounds = variables_info_.GetVariableUpperBounds();
 
@@ -2479,13 +2464,13 @@ Status RevisedSimplex::DualPhaseIChooseLeavingVariableRow(
 
   // If there is no dual-infeasible position, we are done.
   *leaving_row = kInvalidRow;
-  if (num_dual_infeasible_positions_ == 0) return Status::OK();
+  if (num_dual_infeasible_positions_ == 0) return;
 
   *leaving_row = dual_prices_.GetMaximum();
 
   // Returns right away if there is no leaving variable or fill the other
   // return values otherwise.
-  if (*leaving_row == kInvalidRow) return Status::OK();
+  if (*leaving_row == kInvalidRow) return;
   *cost_variation = dual_pricing_vector_[*leaving_row];
   const ColIndex leaving_col = basis_[*leaving_row];
   if (*cost_variation < 0.0) {
@@ -2494,7 +2479,6 @@ Status RevisedSimplex::DualPhaseIChooseLeavingVariableRow(
     *target_bound = lower_bounds[leaving_col];
   }
   DCHECK(IsFinite(*target_bound));
-  return Status::OK();
 }
 
 template <typename BoxedVariableCols>
@@ -2780,9 +2764,8 @@ Status RevisedSimplex::PrimalPolish(TimeLimit& time_limit) {
     RowIndex leaving_row;
     Fractional target_bound;
     bool local_refactorize = false;
-    GLOP_RETURN_IF_ERROR(
-        ChooseLeavingVariableRow(entering_col, fake_rc, &local_refactorize,
-                                 &leaving_row, &step_length, &target_bound));
+    ChooseLeavingVariableRow(entering_col, fake_rc, &local_refactorize,
+                             &leaving_row, &step_length, &target_bound);
 
     if (local_refactorize) continue;
     if (step_length == kInfinity || step_length == -kInfinity) continue;
@@ -3196,9 +3179,8 @@ Status RevisedSimplex::PrimalMinimize(TimeLimit& time_limit) {
                                            &refactorize, &leaving_row,
                                            &step_length, &target_bound);
     } else {
-      GLOP_RETURN_IF_ERROR(
-          ChooseLeavingVariableRow(entering_col, reduced_cost, &refactorize,
-                                   &leaving_row, &step_length, &target_bound));
+      ChooseLeavingVariableRow(entering_col, reduced_cost, &refactorize,
+                               &leaving_row, &step_length, &target_bound);
     }
     if (refactorize) {
       last_refactorization_reason_ = RefactorizationReason::SMALL_PIVOT;
@@ -3467,11 +3449,11 @@ Status RevisedSimplex::DualMinimize(bool feasibility_phase,
     }
 
     if (feasibility_phase) {
-      GLOP_RETURN_IF_ERROR(DualPhaseIChooseLeavingVariableRow(
-          &leaving_row, &cost_variation, &target_bound));
+      DualPhaseIChooseLeavingVariableRow(&leaving_row, &cost_variation,
+                                         &target_bound);
     } else {
-      GLOP_RETURN_IF_ERROR(DualChooseLeavingVariableRow(
-          &leaving_row, &cost_variation, &target_bound));
+      DualChooseLeavingVariableRow(&leaving_row, &cost_variation,
+                                   &target_bound);
     }
     if (leaving_row == kInvalidRow) {
       // TODO(user): integrate this with the main "re-optimization" loop.
@@ -3748,9 +3730,8 @@ Status RevisedSimplex::PrimalPush(TimeLimit& time_limit) {
     RowIndex leaving_row;
     Fractional target_bound;
 
-    GLOP_RETURN_IF_ERROR(ChooseLeavingVariableRow(entering_col, fake_rc,
-                                                  &refactorize, &leaving_row,
-                                                  &step_length, &target_bound));
+    ChooseLeavingVariableRow(entering_col, fake_rc, &refactorize, &leaving_row,
+                             &step_length, &target_bound);
 
     if (refactorize) continue;
 

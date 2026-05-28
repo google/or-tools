@@ -97,6 +97,7 @@
 #include <vector>
 
 #include "absl/base/attributes.h"
+#include "absl/base/nullability.h"
 #include "absl/log/die_if_null.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/random/random.h"
@@ -275,15 +276,6 @@ class RevisedSimplex {
   ABSL_MUST_USE_RESULT Status MinimizeFromTransposedMatrixWithSlack(
       const DenseRow& objective, Fractional objective_scaling_factor,
       Fractional objective_offset, TimeLimit& time_limit);
-
-  // Legacy version of MinimizeFromTransposedMatrixWithSlack() passing a pointer
-  // on TimeLimit and expecting it to be non-null (it returns
-  // Status::ERROR_NULL).
-  ABSL_DEPRECATED(
-      "Use MinimizeFromTransposedMatrixWithSlack(..., TimeLimit&) instead.");
-  ABSL_MUST_USE_RESULT Status MinimizeFromTransposedMatrixWithSlack(
-      const DenseRow& objective, Fractional objective_scaling_factor,
-      Fractional objective_offset, TimeLimit* time_limit);
 
  private:
   struct IterationStats : public StatsGroup {
@@ -535,11 +527,11 @@ class RevisedSimplex {
   // not refactorized, set refactorize to true. Otherwise, the row number of the
   // leaving variable is written in *leaving_row, and the step length
   // is written in *step_length.
-  Status ChooseLeavingVariableRow(ColIndex entering_col,
-                                  Fractional reduced_cost, bool* refactorize,
-                                  RowIndex* leaving_row,
-                                  Fractional* step_length,
-                                  Fractional* target_bound);
+  void ChooseLeavingVariableRow(ColIndex entering_col, Fractional reduced_cost,
+                                bool* absl_nonnull refactorize,
+                                RowIndex* absl_nonnull leaving_row,
+                                Fractional* absl_nonnull step_length,
+                                Fractional* absl_nonnull target_bound);
 
   // Chooses the leaving variable for the primal phase-I algorithm. The
   // algorithm follows more or less what is described in Istvan Maros's book in
@@ -561,9 +553,9 @@ class RevisedSimplex {
   //   along this dual edge.
   // - target_bound: the bound at which the leaving variable should go when
   //   leaving the basis.
-  ABSL_MUST_USE_RESULT Status DualChooseLeavingVariableRow(
-      RowIndex* leaving_row, Fractional* cost_variation,
-      Fractional* target_bound);
+  void DualChooseLeavingVariableRow(RowIndex* absl_nonnull leaving_row,
+                                    Fractional* absl_nonnull cost_variation,
+                                    Fractional* absl_nonnull target_bound);
 
   // Updates the prices used by DualChooseLeavingVariableRow() after a simplex
   // iteration by using direction_. The prices are stored in
@@ -590,9 +582,10 @@ class RevisedSimplex {
   // Dual Phase-1 Algorithm for the Simplex Method", Computational Optimization
   // and Applications, October 2003, Volume 26, Issue 1, pp 63-81.
   // http://rd.springer.com/article/10.1023%2FA%3A1025102305440
-  ABSL_MUST_USE_RESULT Status DualPhaseIChooseLeavingVariableRow(
-      RowIndex* leaving_row, Fractional* cost_variation,
-      Fractional* target_bound);
+  void DualPhaseIChooseLeavingVariableRow(
+      RowIndex* absl_nonnull leaving_row,
+      Fractional* absl_nonnull cost_variation,
+      Fractional* absl_nonnull target_bound);
 
   // Makes sure the boxed variable are dual-feasible by setting them to the
   // correct bound according to their reduced costs. This is called

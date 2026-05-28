@@ -67,13 +67,6 @@ class LPSolver {
   ABSL_MUST_USE_RESULT ProblemStatus SolveWithTimeLimit(const LinearProgram& lp,
                                                         TimeLimit& time_limit);
 
-  // Legacy version of SolveWithTimeLimit() passing a pointer on TimeLimit and
-  // expecting it to be non-null (it returns ProblemStatus::ABNORMAL and use
-  // LOG(DFATAL) when null).
-  ABSL_DEPRECATED("Use SolveWithTimeLimit(const LinearProgram&, TimeLimit&).");
-  ABSL_MUST_USE_RESULT ProblemStatus SolveWithTimeLimit(const LinearProgram& lp,
-                                                        TimeLimit* time_limit);
-
   // Puts the solver in a clean state.
   //
   // Calling Solve() for the first time, or calling Clear() then Solve() on the
