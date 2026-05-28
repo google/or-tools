@@ -862,7 +862,7 @@ void ClauseManager::AppendClausesFixing(
       clause = (*root_literals)(level, trail_index);
     }
     const Literal level_decision = decisions[level - 1].literal;
-    if (clause == kNullClausePtr &&
+    if (level_decision.Index() != kNoLiteralIndex && clause == kNullClausePtr &&
         lrat_proof_handler_->HasBinaryClause(level_decision.Negated(),
                                              marked_literal)) {
       clause = ClausePtr(level_decision.Negated(), marked_literal);

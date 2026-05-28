@@ -165,7 +165,8 @@ class SharedSolutionRepository {
   // Works in O(num_solutions_to_keep_).
   //
   // If f() is provided, it will be called on all new solutions.
-  void Synchronize(std::function<void(const Solution& solution)> f = nullptr);
+  void Synchronize(
+      const std::function<void(const Solution& solution)>& f = nullptr);
 
   std::vector<std::string> TableLineStats() const {
     absl::MutexLock mutex_lock(mutex_);
@@ -1181,7 +1182,7 @@ SharedSolutionRepository<ValueType>::Add(Solution solution) {
 
 template <typename ValueType>
 void SharedSolutionRepository<ValueType>::Synchronize(
-    std::function<void(const Solution& solution)> f) {
+    const std::function<void(const Solution& solution)>& f) {
   absl::MutexLock mutex_lock(mutex_);
   if (new_solutions_.empty()) {
     const int64_t diff = num_queried_ - num_queried_at_last_sync_;

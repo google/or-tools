@@ -666,7 +666,7 @@ std::vector<ValueLiteralPair> IntegerEncoder::PartialGreaterThanEncoding(
 }
 
 bool IntegerEncoder::UpdateEncodingOnInitialDomainChange(IntegerVariable var,
-                                                         Domain domain) {
+                                                         const Domain& domain) {
   DCHECK(VariableIsPositive(var));
   const PositiveOnlyIndex index = GetPositiveOnlyIndex(var);
   if (index >= encoding_by_var_.size()) return true;

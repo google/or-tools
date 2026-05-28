@@ -450,33 +450,48 @@ bool VariablesShavingSolver::ConstraintIsInactive(int c) const
 bool VariablesShavingSolver::FindNextVar(State* state)
     ABSL_SHARED_LOCKS_REQUIRED(mutex_) {
   const int num_vars = var_domains_.size();
-  ++current_index_;
+  ++current_index_;  // Starts at -1.
 
   // We start by shaving the objective in order to increase the lower bound.
+  // We abort for models with large number of objective variables. We also
+  // ignore when the objective is a single variable.
+  int num_objective_vars_to_scan = 0;
   if (model_proto_.has_objective()) {
     const int num_obj_vars = model_proto_.objective().vars().size();
-    if (num_obj_vars > 1) {
-      while (current_index_ < num_obj_vars) {
-        const int var = model_proto_.objective().vars(current_index_);
-        if (VarIsFixed(var)) {
-          ++current_index_;
-          continue;
-        }
-        state->var_index = var;
-        state->minimize = model_proto_.objective().coeffs(current_index_) > 0;
-        state->shave_using_objective = true;
-        return true;
-      }
+    if (num_obj_vars > 1 && num_obj_vars * 10 < num_vars) {
+      num_objective_vars_to_scan = num_obj_vars;
     }
   }
 
-  // Otherwise loop over all variables.
-  // TODO(user): maybe we should just order all possible State, putting the
-  // objective first, and just loop.
-  for (int i = 0; i < num_vars; ++i) {
-    const int var = (current_index_ / 2 + i) % num_vars;
+  while (current_index_ < num_objective_vars_to_scan) {
+    const int var = model_proto_.objective().vars(current_index_);
     if (VarIsFixed(var)) {
       ++current_index_;
+      continue;
+    }
+
+    state->var_index = var;
+    state->minimize = model_proto_.objective().coeffs(current_index_) > 0;
+    state->shave_using_objective = true;
+    return true;
+  }
+
+  // Otherwise loop over all variables. The method returns false when all
+  // variables are fixed.
+  // TODO(user): maybe we should just order all possible State, putting the
+  // objective first, and just loop.
+  const int starting_index = current_index_;
+  while (current_index_ - starting_index < num_vars * 2) {
+    const int normalized_index = current_index_ - num_objective_vars_to_scan;
+    const int loop_index = normalized_index / (2 * num_vars);
+    const int var_index = (normalized_index / 2) % num_vars;
+    const bool minimize = normalized_index % 2 == 0;
+
+    // Skip fixed variables.
+    if (VarIsFixed(var_index)) {
+      ++current_index_;
+      // Skip maximization too.
+      if (minimize) ++current_index_;
       continue;
     }
 
@@ -484,15 +499,19 @@ bool VariablesShavingSolver::FindNextVar(State* state)
     // looking at it.
     if (model_proto_.has_objective() &&
         model_proto_.objective().vars_size() == 1 &&
-        var == model_proto_.objective().vars(0)) {
+        var_index == model_proto_.objective().vars(0)) {
+      current_index_ += 2;  // Skip minimize and maximize.
       continue;
     }
 
-    state->var_index = var;
-    state->minimize = current_index_ % 2 == 0;
-    state->shave_using_objective = current_index_ / num_vars < 2;
+    state->var_index = var_index;
+    state->minimize = minimize;
+    // Starting from the second loop, we use the objective to do the shaving.
+    // TODO(user): Explore other policies like alternating.
+    state->shave_using_objective = loop_index > 0;
     return true;
   }
+
   return false;
 }
 
@@ -599,7 +618,9 @@ void VariablesShavingSolver::CopyModelConnectedToVar(
 
   shaving_proto->clear_objective();
 
-  if (state->shave_using_objective) {
+  const Domain domain =
+      ReadDomainFromProto(shaving_proto->variables(state->var_index));
+  if (state->shave_using_objective && domain.Size() > 2) {
     if (state->minimize) {
       shaving_proto->mutable_objective()->add_vars(state->var_index);
       shaving_proto->mutable_objective()->add_coeffs(1);
@@ -608,9 +629,6 @@ void VariablesShavingSolver::CopyModelConnectedToVar(
       shaving_proto->mutable_objective()->add_coeffs(-1);
     }
   } else {
-    const Domain domain =
-        ReadDomainFromProto(shaving_proto->variables(state->var_index));
-
     int64_t delta = 0;
     if (domain.Size() > local_params_.shaving_search_threshold()) {
       const int64_t mid_range = (domain.Max() - domain.Min()) / 2;

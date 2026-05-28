@@ -40,7 +40,8 @@
 namespace operations_research {
 namespace sat {
 
-void DomainDeductions::AddDeduction(int literal_ref, int var, Domain domain) {
+void DomainDeductions::AddDeduction(int literal_ref, int var,
+                                    const Domain& domain) {
   CHECK_GE(var, 0);
   const Index index = IndexFromLiteral(literal_ref);
   if (index >= something_changed_.size()) {

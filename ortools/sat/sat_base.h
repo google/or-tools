@@ -725,8 +725,8 @@ class Trail {
   // Specific Enqueue() for assumptions.
   void EnqueueAssumption(Literal assumptions) {
     if (current_decision_level_ == 0) {
-      // Special decision. This should never be accessed.
-      decisions_[0] = LiteralWithTrailIndex(Literal(), Index());
+      // Special decision, make sure it is detectable.
+      decisions_[0] = LiteralWithTrailIndex(Literal(kNoLiteralIndex), Index());
       current_info_.level = ++current_decision_level_;
     }
     CHECK_EQ(current_decision_level_, 1);
