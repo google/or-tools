@@ -507,8 +507,12 @@ bool VariablesShavingSolver::FindNextVar(State* state)
     state->var_index = var_index;
     state->minimize = minimize;
     // Starting from the second loop, we use the objective to do the shaving.
+    //
+    // As we will test both minimization and maximization, we only consider
+    // shaving using the objective when the domain has more than 2 values.
+    //
     // TODO(user): Explore other policies like alternating.
-    state->shave_using_objective = loop_index > 0;
+    state->shave_using_objective = loop_index > 0 && DomainSize(var_index) > 2;
     return true;
   }
 
@@ -618,9 +622,7 @@ void VariablesShavingSolver::CopyModelConnectedToVar(
 
   shaving_proto->clear_objective();
 
-  const Domain domain =
-      ReadDomainFromProto(shaving_proto->variables(state->var_index));
-  if (state->shave_using_objective && domain.Size() > 2) {
+  if (state->shave_using_objective) {
     if (state->minimize) {
       shaving_proto->mutable_objective()->add_vars(state->var_index);
       shaving_proto->mutable_objective()->add_coeffs(1);
@@ -629,6 +631,7 @@ void VariablesShavingSolver::CopyModelConnectedToVar(
       shaving_proto->mutable_objective()->add_coeffs(-1);
     }
   } else {
+    const Domain& domain = var_domains_[state->var_index];
     int64_t delta = 0;
     if (domain.Size() > local_params_.shaving_search_threshold()) {
       const int64_t mid_range = (domain.Max() - domain.Min()) / 2;
