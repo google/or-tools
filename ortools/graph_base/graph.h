@@ -117,7 +117,7 @@
 //     weights.push_back(arc_weight);
 //   }
 //   ...
-//   // Build() may permute the arc indices:
+//   // Building the graph may permute the arc indices:
 //   const Graph graph = std::move(graph_builder).BuildAndPermute(weights);
 //   ...
 //
@@ -467,10 +467,13 @@ class MutableGraph : public BaseGraph<Impl, NodeIndexType, ArcIndexType,
   //
   // Note that some implementations become immutable after calling Build().
   // By default, Build() is a no-op.
+  ABSL_DEPRECATED("Use `MutableGraphBuilder` instead")
   virtual void Build(std::vector<ArcIndexType>* absl_nullable permutation) {
     if (permutation != nullptr) permutation->clear();
   }
+  ABSL_DEPRECATED("Use `MutableGraphBuilder` instead")
   void Build() { Build(nullptr); }
+  ABSL_DEPRECATED("`Graph`s are always built")
   virtual bool IsBuilt() const { return true; }
 
  protected:
@@ -932,11 +935,8 @@ class ListGraph : public MutableGraph<ListGraph<NodeIndexType, ArcIndexType>,
 };
 
 // Most efficient implementation of a graph without reverse arcs:
-// - Build() needs to be called after the arc and node have been added.
 // - The graph is really compact memory wise:
-//   ArcIndexType * node_capacity() + 2 * NodeIndexType * arc_capacity(),
-//   but when Build() is called it uses a temporary extra space of
-//   ArcIndexType * arc_capacity().
+//   ArcIndexType * node_capacity() + 2 * NodeIndexType * arc_capacity().
 // - The construction is really fast.
 //
 // NOTE(user): if the need arises for very-well compressed graphs, we could
@@ -973,7 +973,6 @@ class StaticGraph final
   }
 
   // TODO(b/501313028): Use `GraphFromArcs()` instead.
-  // Shortcut to directly create a finalized graph, i.e. Build() is called.
   template <class ArcContainer>  // e.g. vector<pair<int, int>>.
   static StaticGraph FromArcs(NodeIndexType num_nodes,
                               const ArcContainer& arcs);
@@ -1005,8 +1004,11 @@ class StaticGraph final
   void AddNode(NodeIndexType node);
   ArcIndexType AddArc(NodeIndexType tail, NodeIndexType head);
 
+  ABSL_DEPRECATED("Use `Builder` instead.")
   void Build(std::vector<ArcIndexType>* absl_nullable permutation) final;
+  ABSL_DEPRECATED("Use `Builder` instead.")
   void Build() { Build(nullptr); }
+  ABSL_DEPRECATED("`StaticGraph`s are always built")
   bool IsBuilt() const final { return is_built_; }
 
  private:
@@ -1203,7 +1205,6 @@ class ReverseArcStaticGraph final
   }
 
   ArcIndexType OppositeArc(ArcIndexType arc) const;
-  // TODO(user): support Head() and Tail() before Build(), like StaticGraph<>.
   NodeIndexType Head(ArcIndexType arc) const;
   NodeIndexType Tail(ArcIndexType arc) const;
 
@@ -1273,8 +1274,11 @@ class ReverseArcStaticGraph final
   void AddNode(NodeIndexType node);
   ArcIndexType AddArc(NodeIndexType tail, NodeIndexType head);
 
+  ABSL_DEPRECATED("Use `Builder` instead")
   void Build(std::vector<ArcIndexType>* absl_nullable permutation) final;
+  ABSL_DEPRECATED("Use `Builder` instead")
   void Build() { Build(nullptr); }
+  ABSL_DEPRECATED("`StaticGraph`s are always built")
   bool IsBuilt() const final { return is_built_; }
 
  private:
