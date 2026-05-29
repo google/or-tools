@@ -49,7 +49,7 @@ absl::Status Main() {
       const std::vector<int> bfs_tree,
       util::graph::GetBFSRootedTree(adjacency_list, num_nodes, source));
   OR_ASSIGN_OR_RETURN(const std::vector<int> shortest_path,
-                   util::graph::GetBFSShortestPath(bfs_tree, terminal));
+                      util::graph::GetBFSShortestPath(bfs_tree, terminal));
 
   // Print to length of the path and then the nodes in the path.
   std::cout << "Shortest path length (in arcs): " << shortest_path.size() - 1

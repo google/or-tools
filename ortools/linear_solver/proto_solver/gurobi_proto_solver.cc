@@ -305,7 +305,7 @@ absl::StatusOr<MPSolutionResponse> GurobiSolveProto(
 
 // `gurobi_env` references ther GRBenv argument.
 #define RETURN_IF_GUROBI_ERROR(x) \
-  OR_RETURN_IF_ERROR(                \
+  OR_RETURN_IF_ERROR(             \
       GurobiCodeToUtilStatus(x, __FILE__, __LINE__, #x, gurobi_env));
 
   RETURN_IF_GUROBI_ERROR(GRBnewmodel(gurobi_env, &gurobi_model,

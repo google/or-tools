@@ -47,14 +47,14 @@ absl::Status Main() {
       util::graph::GetBFSRootedTree(adjacency_list, num_nodes, source));
   // Runs in O(num nodes). Nodes that are not reachable have distance -1.
   OR_ASSIGN_OR_RETURN(const std::vector<int> node_distances,
-                   util::graph::GetBFSDistances(bfs_tree));
+                      util::graph::GetBFSDistances(bfs_tree));
   for (int t = 0; t < num_nodes; ++t) {
     if (t == source) {
       continue;
     }
     if (node_distances[t] >= 0) {
       OR_ASSIGN_OR_RETURN(const std::vector<int> shortest_path,
-                       util::graph::GetBFSShortestPath(bfs_tree, t));
+                          util::graph::GetBFSShortestPath(bfs_tree, t));
       std::cout << "Shortest path from 0 to " << t
                 << " has length: " << node_distances[t] << std::endl;
       std::cout << "Path is: " << absl::StrJoin(shortest_path, ", ")
