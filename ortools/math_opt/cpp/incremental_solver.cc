@@ -20,14 +20,14 @@ namespace operations_research::math_opt {
 
 absl::StatusOr<SolveResult> IncrementalSolver::Solve(
     const SolveArguments& arguments) {
-  RETURN_IF_ERROR(Update().status());
+  OR_RETURN_IF_ERROR(Update().status());
   return SolveWithoutUpdate(arguments);
 }
 
 absl::StatusOr<ComputeInfeasibleSubsystemResult>
 IncrementalSolver::ComputeInfeasibleSubsystem(
     const ComputeInfeasibleSubsystemArguments& arguments) {
-  RETURN_IF_ERROR(Update().status());
+  OR_RETURN_IF_ERROR(Update().status());
   return ComputeInfeasibleSubsystemWithoutUpdate(arguments);
 }
 

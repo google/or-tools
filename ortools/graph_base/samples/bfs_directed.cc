@@ -43,10 +43,10 @@ absl::Status Main() {
   // Solve the shortest path problem from 0 to 5.
   const int source = 0;
   const int terminal = 5;
-  ASSIGN_OR_RETURN(
+  OR_ASSIGN_OR_RETURN(
       const std::vector<int> bfs_tree,
       util::graph::GetBFSRootedTree(adjacency_list, num_nodes, source));
-  ASSIGN_OR_RETURN(const std::vector<int> shortest_path,
+  OR_ASSIGN_OR_RETURN(const std::vector<int> shortest_path,
                    util::graph::GetBFSShortestPath(bfs_tree, terminal));
 
   // Print to length of the path and then the nodes in the path.

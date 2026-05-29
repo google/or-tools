@@ -63,7 +63,7 @@ namespace {
 
 absl::StatusOr<std::unique_ptr<Model>> LoadMiplibInstance(
     absl::string_view name) {
-  ASSIGN_OR_RETURN(
+  OR_ASSIGN_OR_RETURN(
       const ModelProto model_proto,
       ReadMpsFile(absl::StrCat("ortools/math_opt/solver_tests/testdata/", name,
                                ".mps")));

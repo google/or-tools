@@ -53,7 +53,7 @@ absl::StatusOr<MPSLineInfo> MPSLineInfo::Create(int64_t line_num,
     return line_info.InvalidArgumentError("Line is not in fixed format.");
   }
   if (!line_info.IsCommentOrBlank()) {
-    RETURN_IF_ERROR(line_info.SplitLineIntoFields());
+    OR_RETURN_IF_ERROR(line_info.SplitLineIntoFields());
   }
   return line_info;
 }
@@ -132,7 +132,7 @@ absl::Status MPSLineInfo::InvalidArgumentError(
 }
 
 absl::Status MPSLineInfo::AppendLineToError(const absl::Status& status) const {
-  return util::StatusBuilder(status).SetAppend()
+  return ortools::StatusBuilder(status).SetAppend()
          << " Line " << line_num_ << ": \"" << line_ << "\".";
 }
 

@@ -360,7 +360,7 @@ absl::Status MPSReader::ParseProblemFromString(absl::string_view source,
 absl::StatusOr<MPModelProto> MpsDataToMPModelProto(absl::string_view mps_data) {
   MPModelProto model;
   DataWrapper<MPModelProto> data_wrapper(&model);
-  RETURN_IF_ERROR(
+  OR_RETURN_IF_ERROR(
       (MPSReaderTemplate<DataWrapper<MPModelProto>>()
            .ParseString(mps_data, &data_wrapper, MPSReaderFormat::kAutoDetect)
            .status()));
@@ -370,7 +370,7 @@ absl::StatusOr<MPModelProto> MpsDataToMPModelProto(absl::string_view mps_data) {
 absl::StatusOr<MPModelProto> MpsFileToMPModelProto(absl::string_view mps_file) {
   MPModelProto model;
   DataWrapper<MPModelProto> data_wrapper(&model);
-  RETURN_IF_ERROR(
+  OR_RETURN_IF_ERROR(
       (MPSReaderTemplate<DataWrapper<MPModelProto>>()
            .ParseFile(mps_file, &data_wrapper, MPSReaderFormat::kAutoDetect)
            .status()));

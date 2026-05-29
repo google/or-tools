@@ -153,7 +153,7 @@ absl::StatusOr<ModelUpdateProto> ReadModelUpdate(
     case FileFormat::kMathOptText:
       return file::GetTextProto<ModelUpdateProto>(file_path, file::Defaults());
     default:
-      return util::InternalErrorBuilder() << "invalid format " << format;
+      return ortools::InternalErrorBuilder() << "invalid format " << format;
   }
 }
 
@@ -195,8 +195,8 @@ absl::StatusOr<ModelAndHint> ParseModelAndHint() {
 
   std::vector<ModelUpdateProto> model_updates;
   for (const std::string& update_file_path : update_file_paths) {
-    ASSIGN_OR_RETURN(ModelUpdateProto update,
-                     ReadModelUpdate(update_file_path, format));
+    OR_ASSIGN_OR_RETURN(ModelUpdateProto update,
+                        ReadModelUpdate(update_file_path, format));
     model_updates.emplace_back(std::move(update));
   }
 
@@ -208,11 +208,11 @@ absl::StatusOr<ModelAndHint> ParseModelAndHint() {
   }
 
   // Parse the problem and the updates.
-  ASSIGN_OR_RETURN(std::unique_ptr<Model> model,
-                   Model::FromModelProto(model_proto));
+  OR_ASSIGN_OR_RETURN(std::unique_ptr<Model> model,
+                      Model::FromModelProto(model_proto));
   for (int u = 0; u < model_updates.size(); ++u) {
     const ModelUpdateProto& update = model_updates[u];
-    RETURN_IF_ERROR(model->ApplyUpdateProto(update))
+    OR_RETURN_IF_ERROR(model->ApplyUpdateProto(update))
         << "failed to apply the update file: " << update_file_paths[u];
   }
   if (absl::GetFlag(FLAGS_lp_relaxation)) {
@@ -316,7 +316,7 @@ absl::Status RunSolver() {
         "a finite time limit is required when solving remotely, e.g. "
         "--time_limit=5m");
   }
-  ASSIGN_OR_RETURN(const ModelAndHint model_and_hint, ParseModelAndHint());
+  OR_ASSIGN_OR_RETURN(const ModelAndHint model_and_hint, ParseModelAndHint());
 
   if (absl::GetFlag(FLAGS_ranges)) {
     std::cout << "Ranges of finite non-zero values in the model:\n"
@@ -354,7 +354,7 @@ absl::Status RunSolver() {
       .integrality_tolerance = absl::GetFlag(FLAGS_integrality_tolerance),
       .nonzero_tolerance = absl::GetFlag(FLAGS_nonzero_tolerance),
   };
-  RETURN_IF_ERROR(
+  OR_RETURN_IF_ERROR(
       PrintSummary(*model_and_hint.model, result,
                    absl::GetFlag(FLAGS_check_solutions)
                        ? std::make_optional(feasibility_checker_options)

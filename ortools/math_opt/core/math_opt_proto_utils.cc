@@ -374,10 +374,10 @@ absl::Status ModelIsSupported(const ModelProto& model,
                                 const SupportType support) -> absl::Status {
     switch (support) {
       case SupportType::kNotSupported:
-        return util::InvalidArgumentErrorBuilder()
+        return ortools::InvalidArgumentErrorBuilder()
                << solver_name << " does not support " << structure;
       case SupportType::kNotImplemented:
-        return util::UnimplementedErrorBuilder()
+        return ortools::UnimplementedErrorBuilder()
                << "MathOpt does not currently support " << solver_name
                << " models with " << structure;
       case SupportType::kSupported:
@@ -536,11 +536,11 @@ absl::Status ModelSolveParametersAreSupported(
       case SupportType::kSupported:
         return absl::OkStatus();
       case SupportType::kNotSupported:
-        return util::InvalidArgumentErrorBuilder()
+        return ortools::InvalidArgumentErrorBuilder()
                << structure << " is not supported as " << solver_name
                << " does not support multiple objectives";
       case SupportType::kNotImplemented:
-        return util::UnimplementedErrorBuilder()
+        return ortools::UnimplementedErrorBuilder()
                << structure
                << " is not supported as MathOpt does not currently support "
                << solver_name << " models with multiple objectives";
@@ -548,12 +548,12 @@ absl::Status ModelSolveParametersAreSupported(
     return absl::OkStatus();
   };
   if (model_parameters.has_primary_objective_parameters()) {
-    RETURN_IF_ERROR(validate_support(
+    OR_RETURN_IF_ERROR(validate_support(
         "ModelSolveParametersProto.primary_objective_parameters",
         support_menu.multi_objectives));
   }
   if (!model_parameters.auxiliary_objective_parameters().empty()) {
-    RETURN_IF_ERROR(validate_support(
+    OR_RETURN_IF_ERROR(validate_support(
         "ModelSolveParametersProto.auxiliary_objective_parameters",
         support_menu.multi_objectives));
   }

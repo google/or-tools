@@ -32,7 +32,7 @@ absl::StatusOr<MapFilter<Variable>> VariableFilterFromProto(
     absl::flat_hash_set<Variable> filtered;
     for (const int64_t id : proto.filtered_ids()) {
       if (!model.has_variable(id)) {
-        return util::InvalidArgumentErrorBuilder()
+        return ortools::InvalidArgumentErrorBuilder()
                << "cannot create MapFilter<Variable> from proto, variable id: "
                << id << " not in model";
       }
@@ -51,7 +51,7 @@ absl::StatusOr<MapFilter<LinearConstraint>> LinearConstraintFilterFromProto(
     absl::flat_hash_set<LinearConstraint> filtered;
     for (const int64_t id : proto.filtered_ids()) {
       if (!model.has_linear_constraint(id)) {
-        return util::InvalidArgumentErrorBuilder()
+        return ortools::InvalidArgumentErrorBuilder()
                << "cannot create MapFilter<LinearConstraint> from proto, "
                   "linear constraint id: "
                << id << " not in model";
@@ -72,7 +72,7 @@ QuadraticConstraintFilterFromProto(const Model& model,
     absl::flat_hash_set<QuadraticConstraint> filtered;
     for (const int64_t id : proto.filtered_ids()) {
       if (!model.has_quadratic_constraint(id)) {
-        return util::InvalidArgumentErrorBuilder()
+        return ortools::InvalidArgumentErrorBuilder()
                << "cannot create MapFilter<QuadraticConstraint> from proto, "
                   "quadratic constraint id: "
                << id << " not in model";

@@ -133,7 +133,7 @@ class HighsSolver : public SolverInterface {
   template <typename T>
   absl::Status EnsureOneEntryPerVariable(const std::vector<T>& vec) {
     if (vec.size() != variable_data_.size()) {
-      return util::InvalidArgumentErrorBuilder()
+      return ortools::InvalidArgumentErrorBuilder()
              << "expected one entry per variable, but model had "
              << variable_data_.size() << " variables and found " << vec.size()
              << " elements";
@@ -144,7 +144,7 @@ class HighsSolver : public SolverInterface {
   template <typename T>
   absl::Status EnsureOneEntryPerLinearConstraint(const std::vector<T>& vec) {
     if (vec.size() != lin_con_data_.size()) {
-      return util::InvalidArgumentErrorBuilder()
+      return ortools::InvalidArgumentErrorBuilder()
              << "expected one entry per linear constraint, but model had "
              << lin_con_data_.size() << " linear constraints and found "
              << vec.size() << " elements";

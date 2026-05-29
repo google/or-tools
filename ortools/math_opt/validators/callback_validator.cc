@@ -64,17 +64,17 @@ absl::Status ValidateGeneratedLinearConstraint(
     const bool add_cuts, const bool add_lazy_constraints,
     const ModelSummary& model_summary) {
   const auto coefficients = MakeView(linear_constraint.linear_expression());
-  RETURN_IF_ERROR(CheckIdsAndValues(
+  OR_RETURN_IF_ERROR(CheckIdsAndValues(
       coefficients,
       {.allow_positive_infinity = false, .allow_negative_infinity = false}))
       << "invalid linear_constraint coefficients";
-  RETURN_IF_ERROR(CheckIdsSubset(coefficients.ids(), model_summary.variables,
-                                 "cut variables", "model IDs"));
-  RETURN_IF_ERROR(CheckScalar(linear_constraint.lower_bound(),
-                              {.allow_positive_infinity = false}))
+  OR_RETURN_IF_ERROR(CheckIdsSubset(coefficients.ids(), model_summary.variables,
+                                    "cut variables", "model IDs"));
+  OR_RETURN_IF_ERROR(CheckScalar(linear_constraint.lower_bound(),
+                                 {.allow_positive_infinity = false}))
       << "for GeneratedLinearConstraint.lower_bound";
-  RETURN_IF_ERROR(CheckScalar(linear_constraint.upper_bound(),
-                              {.allow_negative_infinity = false}))
+  OR_RETURN_IF_ERROR(CheckScalar(linear_constraint.upper_bound(),
+                                 {.allow_negative_infinity = false}))
       << "for GeneratedLinearConstraint.upper_bound";
   if (linear_constraint.lower_bound() == -kInf &&
       linear_constraint.upper_bound() == kInf) {
@@ -100,10 +100,10 @@ absl::Status ValidateGeneratedLinearConstraint(
 absl::Status ValidateCallbackRegistration(
     const CallbackRegistrationProto& callback_registration,
     const ModelSummary& model_summary) {
-  RETURN_IF_ERROR(ValidateSparseVectorFilter(
+  OR_RETURN_IF_ERROR(ValidateSparseVectorFilter(
       callback_registration.mip_solution_filter(), model_summary.variables))
       << "invalid CallbackRegistrationProto.mip_solution_filter";
-  RETURN_IF_ERROR(ValidateSparseVectorFilter(
+  OR_RETURN_IF_ERROR(ValidateSparseVectorFilter(
       callback_registration.mip_node_filter(), model_summary.variables))
       << "invalid CallbackRegistrationProto.mip_node_filter";
   // Unfortunately the range iterator return ints and not CallbackEventProtos.
@@ -147,7 +147,7 @@ absl::Status ValidateCallbackDataProto(
     const CallbackRegistrationProto& callback_registration,
     const ModelSummary& model_summary) {
   const CallbackEventProto event = cb_data.event();
-  RETURN_IF_ERROR(IsEventRegistered(event, callback_registration))
+  OR_RETURN_IF_ERROR(IsEventRegistered(event, callback_registration))
       << "invalid CallbackDataProto.event for given CallbackRegistrationProto";
 
   const bool has_primal_solution = cb_data.has_primal_solution_vector();
@@ -161,12 +161,13 @@ absl::Status ValidateCallbackDataProto(
 #ifdef RETURN_IF_SCALAR
 #error Collision in macro definition RETURN_IF_SCALAR
 #endif
-#define RETURN_IF_SCALAR(stat, value, option)                                 \
-  do {                                                                        \
-    if (stat.has_##value()) {                                                 \
-      RETURN_IF_ERROR(CheckScalar(static_cast<double>(stat.value()), option)) \
-          << "Invalid CallbackDataProto." << #stat << "." << #value;          \
-    }                                                                         \
+#define RETURN_IF_SCALAR(stat, value, option)                        \
+  do {                                                               \
+    if (stat.has_##value()) {                                        \
+      OR_RETURN_IF_ERROR(                                            \
+          CheckScalar(static_cast<double>(stat.value()), option))    \
+          << "Invalid CallbackDataProto." << #stat << "." << #value; \
+    }                                                                \
   } while (false)
   const DoubleOptions nonan;
   const DoubleOptions finite = {.allow_positive_infinity = false,
@@ -205,9 +206,9 @@ absl::Status ValidateCallbackDataProto(
   RETURN_IF_SCALAR(mip_stats, cutting_planes_in_lp, noneg);
 
   // Check runtime.
-  RETURN_IF_ERROR(CheckScalar(cb_data.runtime().seconds(), noneg))
+  OR_RETURN_IF_ERROR(CheckScalar(cb_data.runtime().seconds(), noneg))
       << "Invalid CallbackDataProto.runtime.seconds";
-  RETURN_IF_ERROR(CheckScalar(cb_data.runtime().nanos(), noneg))
+  OR_RETURN_IF_ERROR(CheckScalar(cb_data.runtime().nanos(), noneg))
       << "Invalid CallbackDataProto.runtime.nanos";
 #undef RETURN_IF_SCALAR
 
@@ -220,7 +221,7 @@ absl::Status ValidateCallbackDataProto(
             event == CALLBACK_EVENT_MIP_NODE
                 ? callback_registration.mip_node_filter()
                 : callback_registration.mip_solution_filter();
-        RETURN_IF_ERROR(ValidatePrimalSolutionVector(
+        OR_RETURN_IF_ERROR(ValidatePrimalSolutionVector(
             cb_data.primal_solution_vector(), filter, model_summary))
             << "invalid CallbackDataProto.primal_solution_vector";
       } else if (event == CALLBACK_EVENT_MIP_SOLUTION) {
@@ -266,7 +267,7 @@ absl::Status ValidateCallbackResultProto(
     }
     for (const CallbackResultProto::GeneratedLinearConstraint& cut :
          callback_result.cuts()) {
-      RETURN_IF_ERROR(ValidateGeneratedLinearConstraint(
+      OR_RETURN_IF_ERROR(ValidateGeneratedLinearConstraint(
           cut, callback_registration.add_cuts(),
           callback_registration.add_lazy_constraints(), model_summary));
     }
@@ -281,7 +282,7 @@ absl::Status ValidateCallbackResultProto(
     }
     for (const SparseDoubleVectorProto& primal_solution_vector :
          callback_result.suggested_solutions()) {
-      RETURN_IF_ERROR(ValidatePrimalSolutionVector(
+      OR_RETURN_IF_ERROR(ValidatePrimalSolutionVector(
           primal_solution_vector, SparseVectorFilterProto(), model_summary))
           << "invalid CallbackResultProto.suggested_solutions";
     }

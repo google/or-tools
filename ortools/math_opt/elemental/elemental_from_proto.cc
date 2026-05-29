@@ -181,7 +181,7 @@ absl::Status SetAuxiliaryObjectives(
     elemental.SetAttr(IntAttr1::kAuxObjPriority, AttrKey(id),
                       objective.priority());
     if (objective.quadratic_coefficients().row_ids_size() > 0) {
-      return util::InvalidArgumentErrorBuilder()
+      return ortools::InvalidArgumentErrorBuilder()
              << "quadratic coefficients not supported for auxiliary "
                 "objectives, but found them in objective with id: "
              << id << " and name: " << objective.name();
@@ -240,7 +240,7 @@ void AddIndicatorConstraints(
 }
 
 absl::StatusOr<Elemental> ElementalFromModelProtoImpl(const ModelProto& proto) {
-  RETURN_IF_ERROR(ValidateModel(proto, /*check_names=*/false).status());
+  OR_RETURN_IF_ERROR(ValidateModel(proto, /*check_names=*/false).status());
   if (proto.second_order_cone_constraints_size() > 0) {
     return absl::UnimplementedError(
         "Elemental does not support second order cone constraints yet");
@@ -265,7 +265,7 @@ absl::StatusOr<Elemental> ElementalFromModelProtoImpl(const ModelProto& proto) {
                             objective.quadratic_coefficients(), elemental);
     elemental.SetAttr(IntAttr0::kObjPriority, AttrKey(), objective.priority());
   }
-  RETURN_IF_ERROR(
+  OR_RETURN_IF_ERROR(
       SetAuxiliaryObjectives(proto.auxiliary_objectives(), elemental));
   AddLinearConstraints(proto.linear_constraints(), elemental);
   SetDoubleAttr2FromProto(DoubleAttr2::kLinConCoef,
@@ -304,11 +304,11 @@ absl::StatusOr<ModelSummary> MakeSummary(const Elemental& elemental) {
     std::vector<int64_t> ids = elemental.AllElementsUntyped(e);
     absl::c_sort(ids);
     for (const int64_t id : ids) {
-      ASSIGN_OR_RETURN(const absl::string_view name,
-                       elemental.GetElementNameUntyped(e, id));
-      RETURN_IF_ERROR(id_map.Insert(id, std::string(name)));
+      OR_ASSIGN_OR_RETURN(const absl::string_view name,
+                          elemental.GetElementNameUntyped(e, id));
+      OR_RETURN_IF_ERROR(id_map.Insert(id, std::string(name)));
     }
-    RETURN_IF_ERROR(id_map.SetNextFreeId(elemental.NextElementId(e)));
+    OR_RETURN_IF_ERROR(id_map.SetNextFreeId(elemental.NextElementId(e)));
   }
   return summary;
 }
@@ -355,7 +355,7 @@ absl::Status ValidateModelUpdateProto(const Elemental& elemental,
     return absl::UnimplementedError(
         "Elemental does not support sos2 constraints yet");
   }
-  ASSIGN_OR_RETURN(ModelSummary summary, MakeSummary(elemental));
+  OR_ASSIGN_OR_RETURN(ModelSummary summary, MakeSummary(elemental));
   return ValidateModelUpdate(update_proto, summary);
 }
 
@@ -409,7 +409,7 @@ absl::Status ApplyAuxiliaryObjectiveUpdates(
 
 absl::Status ElementalApplyUpdateProto(const ModelUpdateProto& update_proto,
                                        Elemental& elemental) {
-  RETURN_IF_ERROR(ValidateModelUpdateProto(elemental, update_proto));
+  OR_RETURN_IF_ERROR(ValidateModelUpdateProto(elemental, update_proto));
   for (const ElementType e : kElements) {
     for (const int64_t id : GetDeletedIds(e, update_proto)) {
       elemental.DeleteElementUntyped(e, id);
@@ -432,10 +432,10 @@ absl::Status ElementalApplyUpdateProto(const ModelUpdateProto& update_proto,
   ApplyObjectiveUpdates(update_proto.objective_updates(), elemental);
   for (const auto& [id, aux_obj_update] :
        update_proto.auxiliary_objectives_updates().objective_updates()) {
-    RETURN_IF_ERROR(
+    OR_RETURN_IF_ERROR(
         ApplyAuxiliaryObjectiveUpdates(aux_obj_update, id, elemental));
   }
-  RETURN_IF_ERROR(SetAuxiliaryObjectives(
+  OR_RETURN_IF_ERROR(SetAuxiliaryObjectives(
       update_proto.auxiliary_objectives_updates().new_objectives(), elemental));
 
   // Update linear constraints.

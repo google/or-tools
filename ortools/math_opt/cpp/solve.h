@@ -73,7 +73,7 @@ absl::StatusOr<SolveResult> Solve(const Model& model, SolverType solver_type,
 //      // fill in model...
 //      SolveArguments args;
 //      SolveInitArguments init_args;
-//      ASSIGN_OR_RETURN(
+//      OR_ASSIGN_OR_RETURN(
 //        const SolveResult result,
 //        solve_function(model, SolverType::kGscip, args, init_args));
 //      // process result...

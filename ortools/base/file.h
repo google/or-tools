@@ -122,7 +122,7 @@ absl::Status GetTextProto(absl::string_view file_name,
 template <typename T>
 absl::StatusOr<T> GetTextProto(absl::string_view file_name, Options options) {
   T proto;
-  RETURN_IF_ERROR(GetTextProto(file_name, &proto, options));
+  OR_RETURN_IF_ERROR(GetTextProto(file_name, &proto, options));
   return proto;
 }
 
@@ -136,7 +136,7 @@ template <typename T>
 
 absl::StatusOr<T> GetBinaryProto(absl::string_view file_name, Options options) {
   T proto;
-  RETURN_IF_ERROR(GetBinaryProto(file_name, &proto, options));
+  OR_RETURN_IF_ERROR(GetBinaryProto(file_name, &proto, options));
   return proto;
 }
 

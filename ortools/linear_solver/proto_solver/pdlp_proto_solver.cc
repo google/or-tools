@@ -63,7 +63,7 @@ absl::StatusOr<MPSolutionResponse> PdlpSolveProto(
       GetMPModelOrPopulateResponse(request, &response);
   if (!optional_model) return response;
 
-  ASSIGN_OR_RETURN(
+  OR_ASSIGN_OR_RETURN(
       pdlp::QuadraticProgram qp,
       pdlp::QpFromMpModelProto(**optional_model, relax_integer_variables));
 

@@ -39,7 +39,7 @@ absl::Status InvalidIndicators::ToStatus() const {
                                          ", ", invalid_indicators[i].variable,
                                          ")"));
   }
-  auto builder = util::InvalidArgumentErrorBuilder();
+  auto builder = ortools::InvalidArgumentErrorBuilder();
   builder
       << "the following (indicator constraint ID, indicator variable ID) pairs "
          "are invalid as the indicator variable is not binary: "

@@ -484,7 +484,7 @@ inline Elemental::DiePolicy::CheckResultT Elemental::CheckElementExists(
 inline Elemental::StatusPolicy::CheckResultT Elemental::CheckElementExists(
     const ElementType elem_type, const int64_t elem_id, StatusPolicy) const {
   if (!ElementExistsUntyped(elem_type, elem_id)) {
-    return util::InvalidArgumentErrorBuilder()
+    return ortools::InvalidArgumentErrorBuilder()
            << "no element with id " << elem_id << " for element type "
            << elem_type;
   }

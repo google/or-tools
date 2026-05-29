@@ -29,12 +29,12 @@ namespace operations_research::math_opt {
 absl::Status ValidateConstraint(
     const SecondOrderConeConstraintProto& constraint,
     const IdNameBiMap& variable_universe) {
-  RETURN_IF_ERROR(
+  OR_RETURN_IF_ERROR(
       ValidateLinearExpression(constraint.upper_bound(), variable_universe))
       << "invalid `upper_bound`";
   for (int i = 0; i < constraint.arguments_to_norm_size(); ++i) {
     const LinearExpressionProto& expression = constraint.arguments_to_norm(i);
-    RETURN_IF_ERROR(ValidateLinearExpression(expression, variable_universe))
+    OR_RETURN_IF_ERROR(ValidateLinearExpression(expression, variable_universe))
         << "invalid `arguments_to_norm` at index: " << i;
   }
   return absl::OkStatus();

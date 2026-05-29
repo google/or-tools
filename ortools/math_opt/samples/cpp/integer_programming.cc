@@ -52,9 +52,9 @@ absl::Status Main() {
   // Objective
   model.Maximize(x + 10 * y);
 
-  ASSIGN_OR_RETURN(const math_opt::SolveResult result,
-                   Solve(model, math_opt::SolverType::kGscip));
-  RETURN_IF_ERROR(result.termination.EnsureIsOptimalOrFeasible());
+  OR_ASSIGN_OR_RETURN(const math_opt::SolveResult result,
+                      Solve(model, math_opt::SolverType::kGscip));
+  OR_RETURN_IF_ERROR(result.termination.EnsureIsOptimalOrFeasible());
   // A feasible solution is always available on termination reason kOptimal, and
   // kFeasible, but in the later case the solution may be sub-optimal.
   std::cout << "Problem solved in " << result.solve_time() << std::endl;

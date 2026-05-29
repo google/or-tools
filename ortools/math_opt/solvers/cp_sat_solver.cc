@@ -314,7 +314,7 @@ absl::StatusOr<TerminationProto> GetTermination(
           absl::StrCat("cp-sat solver returned MODEL_INVALID, details: ",
                        response.status_str()));
     case MPSOLVER_MODEL_INVALID_SOLVER_PARAMETERS:
-      return util::InvalidArgumentErrorBuilder()
+      return ortools::InvalidArgumentErrorBuilder()
              << "invalid cp-sat parameters: " << response.status_str();
     default:
       return absl::InternalError(
@@ -484,9 +484,10 @@ void CpSatCallbacks::UpdateMipStatsFromNewSolution(
 
 absl::StatusOr<std::unique_ptr<SolverInterface>> CpSatSolver::New(
     const ModelProto& model, const InitArgs&) {
-  RETURN_IF_ERROR(ModelIsSupported(model, kCpSatSupportedStructures, "CP-SAT"));
-  ASSIGN_OR_RETURN(MPModelProto cp_sat_model,
-                   MathOptModelToMPModelProto(model));
+  OR_RETURN_IF_ERROR(
+      ModelIsSupported(model, kCpSatSupportedStructures, "CP-SAT"));
+  OR_ASSIGN_OR_RETURN(MPModelProto cp_sat_model,
+                      MathOptModelToMPModelProto(model));
   std::vector variable_ids(model.variables().ids().begin(),
                            model.variables().ids().end());
   std::vector linear_constraint_ids(model.linear_constraints().ids().begin(),
@@ -503,11 +504,11 @@ absl::StatusOr<SolveResultProto> CpSatSolver::Solve(
     const MessageCallback message_cb,
     const CallbackRegistrationProto& callback_registration, const Callback cb,
     const SolveInterrupter* absl_nullable interrupter) {
-  RETURN_IF_ERROR(ModelSolveParametersAreSupported(
+  OR_RETURN_IF_ERROR(ModelSolveParametersAreSupported(
       model_parameters, kCpSatSupportedStructures, "CP-SAT"));
   const absl::Time start = absl::Now();
 
-  RETURN_IF_ERROR(CheckRegisteredCallbackEvents(
+  OR_RETURN_IF_ERROR(CheckRegisteredCallbackEvents(
       callback_registration,
       /*supported_events=*/{CALLBACK_EVENT_MIP_SOLUTION, CALLBACK_EVENT_MIP}));
   if (callback_registration.add_lazy_constraints()) {
@@ -584,16 +585,16 @@ absl::StatusOr<SolveResultProto> CpSatSolver::Solve(
                            events, cp_sat_model_.maximize());
 
   // CP-SAT returns "infeasible" for inverted bounds.
-  RETURN_IF_ERROR(ListInvertedBounds().ToStatus());
+  OR_RETURN_IF_ERROR(ListInvertedBounds().ToStatus());
 
   const MPSolutionResponse response = SatSolveProto(
       std::move(req), &interrupt_solve, logging_callback,
       callbacks.MakeSolutionCallback(), callbacks.MakeBestBoundCallback());
-  RETURN_IF_ERROR(callbacks.error()) << "error in callback";
-  ASSIGN_OR_RETURN(*result.mutable_termination(),
-                   GetTermination(local_interrupter.IsInterrupted(),
-                                  /*maximize=*/cp_sat_model_.maximize(),
-                                  /*used_cutoff=*/used_cutoff, response));
+  OR_RETURN_IF_ERROR(callbacks.error()) << "error in callback";
+  OR_ASSIGN_OR_RETURN(*result.mutable_termination(),
+                      GetTermination(local_interrupter.IsInterrupted(),
+                                     /*maximize=*/cp_sat_model_.maximize(),
+                                     /*used_cutoff=*/used_cutoff, response));
   const SparseVectorFilterProto& var_values_filter =
       model_parameters.variable_values_filter();
   auto add_solution =

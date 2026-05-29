@@ -234,7 +234,7 @@ absl::StatusOr<SimpleMultiObjectiveSolveResult> SolveWithObjectiveDegradation(
       model_parameters.objective_parameters[priority_0]
           .objective_degradation_relative_tolerance = 0.5;
   }
-  ASSIGN_OR_RETURN(
+  OR_ASSIGN_OR_RETURN(
       const SolveResult result,
       Solve(model, solver_type,
             {.parameters = parameters, .model_parameters = model_parameters}));
@@ -360,7 +360,7 @@ TEST_P(SimpleMultiObjectiveTest,
 //
 // Note that this instance is a MIP.
 absl::StatusOr<std::unique_ptr<Model>> Load23588MiplibInstance() {
-  ASSIGN_OR_RETURN(
+  OR_ASSIGN_OR_RETURN(
       const ModelProto model_proto,
       ReadMpsFile(absl::StrCat("ortools/math_opt/solver_tests/testdata/"
                                "23588.mps")));

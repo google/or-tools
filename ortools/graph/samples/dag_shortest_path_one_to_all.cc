@@ -49,7 +49,7 @@ absl::Status Main() {
 
   // We need a topological order. We can find it by hand on this small graph,
   // e.g., {0, 1, 2, 3, 4}, but we demonstrate how to compute one instead.
-  ASSIGN_OR_RETURN(const std::vector<int32_t> topological_order,
+  OR_ASSIGN_OR_RETURN(const std::vector<int32_t> topological_order,
                    util::graph::FastTopologicalSort(*graph));
 
   operations_research::ShortestPathsOnDagWrapper<util::StaticGraph<>>

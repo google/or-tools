@@ -65,9 +65,9 @@ absl::Status Main() {
   // Objective
   model.Maximize(10 * x[0] + 6 * x[1] + 4 * x[2]);
 
-  ASSIGN_OR_RETURN(const math_opt::SolveResult result,
-                   Solve(model, math_opt::SolverType::kGlop));
-  RETURN_IF_ERROR(result.termination.EnsureIsOptimal());
+  OR_ASSIGN_OR_RETURN(const math_opt::SolveResult result,
+                      Solve(model, math_opt::SolverType::kGlop));
+  OR_RETURN_IF_ERROR(result.termination.EnsureIsOptimal());
 
   std::cout << "Problem solved in " << result.solve_time() << std::endl;
   std::cout << "Objective value: " << result.objective_value() << std::endl;
@@ -79,7 +79,7 @@ absl::Status Main() {
   if (!result.has_dual_feasible_solution()) {
     // MathOpt does not require solvers to return a dual solution on optimal,
     // but most LP solvers always will.
-    return util::InternalErrorBuilder()
+    return ortools::InternalErrorBuilder()
            << "no dual solution was returned on optimal";
   }
 
@@ -93,7 +93,8 @@ absl::Status Main() {
   if (!result.has_basis()) {
     // MathOpt does not require solvers to return a basis on optimal, but most
     // Simplex LP solvers (like Glop) always will.
-    return util::InternalErrorBuilder() << "no basis was returned on optimal";
+    return ortools::InternalErrorBuilder()
+           << "no basis was returned on optimal";
   }
 
   std::cout << "Constraint basis status: ["

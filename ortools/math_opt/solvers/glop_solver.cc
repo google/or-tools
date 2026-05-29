@@ -161,7 +161,7 @@ absl::StatusOr<TerminationProto> BuildTermination(
 absl::Status ValidateGlopParameters(const glop::GlopParameters& parameters) {
   const std::string error = glop::ValidateParameters(parameters);
   if (!error.empty()) {
-    return util::InvalidArgumentErrorBuilder()
+    return ortools::InvalidArgumentErrorBuilder()
            << "invalid GlopParameters: " << error;
   }
   return absl::OkStatus();
@@ -307,7 +307,7 @@ absl::StatusOr<glop::GlopParameters> GlopSolver::MergeSolveParameters(
     const bool setting_initial_basis, const bool has_message_callback,
     const bool is_maximization) {
   // Validate first the user specific Glop parameters.
-  RETURN_IF_ERROR(ValidateGlopParameters(solve_parameters.glop()))
+  OR_RETURN_IF_ERROR(ValidateGlopParameters(solve_parameters.glop()))
       << "invalid SolveParametersProto.glop value";
 
   glop::GlopParameters result = solve_parameters.glop();
@@ -452,7 +452,7 @@ absl::StatusOr<glop::GlopParameters> GlopSolver::MergeSolveParameters(
   // validated at the beginning of this function. Thus the invalid values are
   // values translated from solve_parameters and this code should not produce
   // invalid parameters.
-  RETURN_IF_ERROR(ValidateGlopParameters(result))
+  OR_RETURN_IF_ERROR(ValidateGlopParameters(result))
       << "invalid GlopParameters generated from SolveParametersProto";
 
   return result;
@@ -722,7 +722,7 @@ absl::Status GlopSolver::FillSolveStats(const absl::Duration solve_time,
                                         SolveStatsProto& solve_stats) {
   // Fill remaining stats
   solve_stats.set_simplex_iterations(lp_solver_.GetNumberOfSimplexIterations());
-  RETURN_IF_ERROR(util_time::EncodeGoogleApiProto(
+  OR_RETURN_IF_ERROR(util_time::EncodeGoogleApiProto(
       solve_time, solve_stats.mutable_solve_time()));
 
   return absl::OkStatus();
@@ -734,12 +734,12 @@ absl::StatusOr<SolveResultProto> GlopSolver::MakeSolveResult(
     const SolveInterrupter* absl_nullable const interrupter,
     const absl::Duration solve_time) {
   SolveResultProto solve_result;
-  ASSIGN_OR_RETURN(*solve_result.mutable_termination(),
-                   BuildTermination(status, interrupter,
-                                    linear_program_.IsMaximizationProblem(),
-                                    lp_solver_.GetObjectiveValue()));
+  OR_ASSIGN_OR_RETURN(*solve_result.mutable_termination(),
+                      BuildTermination(status, interrupter,
+                                       linear_program_.IsMaximizationProblem(),
+                                       lp_solver_.GetObjectiveValue()));
   FillSolution(status, model_parameters, solve_result);
-  RETURN_IF_ERROR(
+  OR_RETURN_IF_ERROR(
       FillSolveStats(solve_time, *solve_result.mutable_solve_stats()));
   return solve_result;
 }
@@ -767,13 +767,13 @@ absl::StatusOr<SolveResultProto> GlopSolver::Solve(
     const MessageCallback message_cb,
     const CallbackRegistrationProto& callback_registration, const Callback,
     const SolveInterrupter* absl_nullable const interrupter) {
-  RETURN_IF_ERROR(ModelSolveParametersAreSupported(
+  OR_RETURN_IF_ERROR(ModelSolveParametersAreSupported(
       model_parameters, kGlopSupportedStructures, "Glop"));
-  RETURN_IF_ERROR(CheckRegisteredCallbackEvents(callback_registration,
-                                                /*supported_events=*/{}));
+  OR_RETURN_IF_ERROR(CheckRegisteredCallbackEvents(callback_registration,
+                                                   /*supported_events=*/{}));
 
   const absl::Time start = absl::Now();
-  ASSIGN_OR_RETURN(
+  OR_ASSIGN_OR_RETURN(
       const glop::GlopParameters glop_parameters,
       MergeSolveParameters(
           parameters,
@@ -821,7 +821,7 @@ absl::StatusOr<SolveResultProto> GlopSolver::Solve(
   // Glop returns an error when bounds are inverted and does not list the
   // offending variables/constraints. Here we want to return a more detailed
   // status.
-  RETURN_IF_ERROR(ListInvertedBounds().ToStatus());
+  OR_RETURN_IF_ERROR(ListInvertedBounds().ToStatus());
 
   const glop::ProblemStatus status =
       lp_solver_.SolveWithTimeLimit(linear_program_, *time_limit);
@@ -831,7 +831,7 @@ absl::StatusOr<SolveResultProto> GlopSolver::Solve(
 
 absl::StatusOr<std::unique_ptr<SolverInterface>> GlopSolver::New(
     const ModelProto& model, const InitArgs&) {
-  RETURN_IF_ERROR(ModelIsSupported(model, kGlopSupportedStructures, "Glop"));
+  OR_RETURN_IF_ERROR(ModelIsSupported(model, kGlopSupportedStructures, "Glop"));
   auto solver = absl::WrapUnique(new GlopSolver);
   // By default Glop CHECKs that bounds are always consistent (lb < ub); thus it
   // would fail if the initial model or later updates temporarily set inverted

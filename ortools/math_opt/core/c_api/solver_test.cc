@@ -81,18 +81,18 @@ absl::StatusOr<SolveResultProto> ParseMathOptSolveOutput(
   // that a SolveResultProto can be parsed, then return them.
   if (code == 0) {
     if (status_msg_str != nullptr) {
-      return util::AbortedErrorBuilder()
+      return ortools::AbortedErrorBuilder()
              << "expected status_msg_str to be null on OK solve, but was: "
              << status_msg_str;
     }
     if (solve_result_size > 0 && solve_result_bytes == nullptr) {
-      return util::AbortedErrorBuilder()
+      return ortools::AbortedErrorBuilder()
              << "expected solve_result_bytes to be not null on OK solve with "
                 "positive solve_result_size: "
              << solve_result_size;
     }
     if (solve_result_size > kint32max) {
-      return util::AbortedErrorBuilder()
+      return ortools::AbortedErrorBuilder()
              << "solve_result_size should be at most INT_MAX but found: "
              << solve_result_size;
     }
@@ -107,20 +107,21 @@ absl::StatusOr<SolveResultProto> ParseMathOptSolveOutput(
   // message is present and that there is no SolveResultProto information, then
   // return a Status error.
   if (status_msg_str == nullptr) {
-    return util::AbortedErrorBuilder() << "on solver failure with nonzero code "
-                                       << static_cast<absl::StatusCode>(code)
-                                       << " error message should not be null";
+    return ortools::AbortedErrorBuilder()
+           << "on solver failure with nonzero code "
+           << static_cast<absl::StatusCode>(code)
+           << " error message should not be null";
   }
   absl::Status underlying_failure(static_cast<absl::StatusCode>(code),
                                   status_msg_str);
   if (solve_result_size > 0) {
-    return util::AbortedErrorBuilder()
+    return ortools::AbortedErrorBuilder()
            << "solve_result_size should be 0 on failure but was: "
            << solve_result_size
            << "; underlying failure was: " << underlying_failure;
   }
   if (solve_result_bytes != nullptr) {
-    return util::AbortedErrorBuilder()
+    return ortools::AbortedErrorBuilder()
            << "solve_result_bytes should be nullptr on failure but was not"
            << "; underlying failure was: " << underlying_failure;
   }

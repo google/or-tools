@@ -82,9 +82,9 @@
 
 namespace operations_research {
 
-#define RETURN_ERROR_UNLESS(x)                                           \
-  if (!(x))                                                              \
-  return util::StatusBuilder(absl::InvalidArgumentError(absl::StrFormat( \
+#define RETURN_ERROR_UNLESS(x)                                              \
+  if (!(x))                                                                 \
+  return ortools::StatusBuilder(absl::InvalidArgumentError(absl::StrFormat( \
       "Condition violated at %s:%d: %s", __FILE__, __LINE__, #x)))
 
 namespace {
@@ -217,7 +217,7 @@ absl::Status CheckSolutionsInOrder(const GScipResult& result,
     const double previous = result.objective_values[i - 1];
     const double current = result.objective_values[i];
     if (!objective_as_good_as(previous, current)) {
-      return util::InternalErrorBuilder()
+      return ortools::InternalErrorBuilder()
              << "Expected SCIP solutions to be in best objective order "
                 "first, but for "
              << (is_maximize ? "maximization" : "minimization")
@@ -369,7 +369,7 @@ absl::StatusOr<std::unique_ptr<GScip>> GScip::Create(
   auto result = absl::WrapUnique(new GScip(scip));
   // GScip takes ownership of `scip`.
   std::move(scip_cleanup).Cancel();
-  RETURN_IF_ERROR(result->interrupt_event_handler_.Register(result.get()));
+  OR_RETURN_IF_ERROR(result->interrupt_event_handler_.Register(result.get()));
   return result;
 }
 
@@ -435,7 +435,7 @@ absl::StatusOr<SCIP_VAR*> GScip::AddVariable(
                        _ << "invalid lower bound for variable: " << var_name);
   OR_ASSIGN_OR_RETURN3(ub, ScipInfClamp(ub),
                        _ << "invalid upper bound for variable: " << var_name);
-  RETURN_IF_ERROR(CheckScipFinite(obj_coef))
+  OR_RETURN_IF_ERROR(CheckScipFinite(obj_coef))
       << "invalid objective coefficient for variable: " << var_name;
   RETURN_IF_SCIP_ERROR(SCIPcreateVarBasic(scip_, /*var=*/&var,
                                           /*name=*/var_name.c_str(),
@@ -474,7 +474,7 @@ absl::StatusOr<SCIP_CONS*> GScip::AddLinearConstraint(
   OR_ASSIGN_OR_RETURN3(const double ub, ScipInfClamp(range.upper_bound),
                        _ << "invalid upper bound for constraint: " << name);
   for (int i = 0; i < range.coefficients.size(); ++i) {
-    RETURN_IF_ERROR(CheckScipFinite(range.coefficients[i]))
+    OR_RETURN_IF_ERROR(CheckScipFinite(range.coefficients[i]))
         << "invalid coefficient at index " << i << " of constraint: " << name;
   }
   RETURN_IF_SCIP_ERROR(SCIPcreateConsLinear(
@@ -493,7 +493,7 @@ absl::StatusOr<SCIP_CONS*> GScip::AddLinearConstraint(
       /*removable=*/options.removable,
       /*stickingatnode=*/options.sticking_at_node));
   RETURN_IF_SCIP_ERROR(SCIPaddCons(scip_, constraint));
-  RETURN_IF_ERROR(MaybeKeepConstraintAlive(constraint, options));
+  OR_RETURN_IF_ERROR(MaybeKeepConstraintAlive(constraint, options));
   return constraint;
 }
 
@@ -514,12 +514,12 @@ absl::StatusOr<SCIP_CONS*> GScip::AddQuadraticConstraint(
   OR_ASSIGN_OR_RETURN3(const double ub, ScipInfClamp(range.upper_bound),
                        _ << "invalid upper bound for constraint: " << name);
   for (int i = 0; i < range.linear_coefficients.size(); ++i) {
-    RETURN_IF_ERROR(CheckScipFinite(range.linear_coefficients[i]))
+    OR_RETURN_IF_ERROR(CheckScipFinite(range.linear_coefficients[i]))
         << "invalid linear coefficient at index " << i
         << " of constraint: " << name;
   }
   for (int i = 0; i < range.quadratic_coefficients.size(); ++i) {
-    RETURN_IF_ERROR(CheckScipFinite(range.quadratic_coefficients[i]))
+    OR_RETURN_IF_ERROR(CheckScipFinite(range.quadratic_coefficients[i]))
         << "invalid quadratic coefficient at index " << i
         << " of constraint: " << name;
   }
@@ -541,7 +541,7 @@ absl::StatusOr<SCIP_CONS*> GScip::AddQuadraticConstraint(
       /*dynamic=*/options.dynamic,
       /*removable=*/options.removable));
   RETURN_IF_SCIP_ERROR(SCIPaddCons(scip_, constraint));
-  RETURN_IF_ERROR(MaybeKeepConstraintAlive(constraint, options));
+  OR_RETURN_IF_ERROR(MaybeKeepConstraintAlive(constraint, options));
   return constraint;
 }
 
@@ -563,7 +563,7 @@ absl::StatusOr<SCIP_CONS*> GScip::AddIndicatorConstraint(
                        ScipInfClamp(indicator_constraint.upper_bound),
                        _ << "invalid upper bound for constraint: " << name);
   for (int i = 0; i < indicator_constraint.coefficients.size(); ++i) {
-    RETURN_IF_ERROR(CheckScipFinite(indicator_constraint.coefficients[i]))
+    OR_RETURN_IF_ERROR(CheckScipFinite(indicator_constraint.coefficients[i]))
         << "invalid coefficient at index " << i << " of constraint: " << name;
   }
   RETURN_IF_SCIP_ERROR(SCIPcreateConsIndicator(
@@ -582,7 +582,7 @@ absl::StatusOr<SCIP_CONS*> GScip::AddIndicatorConstraint(
       /*removable=*/options.removable,
       /*stickingatnode=*/options.sticking_at_node));
   RETURN_IF_SCIP_ERROR(SCIPaddCons(scip_, constraint));
-  RETURN_IF_ERROR(MaybeKeepConstraintAlive(constraint, options));
+  OR_RETURN_IF_ERROR(MaybeKeepConstraintAlive(constraint, options));
   return constraint;
 }
 
@@ -607,7 +607,7 @@ absl::StatusOr<SCIP_CONS*> GScip::AddAndConstraint(
                         /*removable=*/options.removable,
                         /*stickingatnode=*/options.sticking_at_node));
   RETURN_IF_SCIP_ERROR(SCIPaddCons(scip_, constraint));
-  RETURN_IF_ERROR(MaybeKeepConstraintAlive(constraint, options));
+  OR_RETURN_IF_ERROR(MaybeKeepConstraintAlive(constraint, options));
   return constraint;
 }
 
@@ -632,7 +632,7 @@ absl::StatusOr<SCIP_CONS*> GScip::AddOrConstraint(
                        /*removable=*/options.removable,
                        /*stickingatnode=*/options.sticking_at_node));
   RETURN_IF_SCIP_ERROR(SCIPaddCons(scip_, constraint));
-  RETURN_IF_ERROR(MaybeKeepConstraintAlive(constraint, options));
+  OR_RETURN_IF_ERROR(MaybeKeepConstraintAlive(constraint, options));
   return constraint;
 }
 
@@ -661,7 +661,7 @@ absl::Status ValidateSOSData(const GScipSOSData& sos_data,
 absl::StatusOr<SCIP_CONS*> GScip::AddSOS1Constraint(
     const GScipSOSData& sos_data, const std::string& name,
     const GScipConstraintOptions& options) {
-  RETURN_IF_ERROR(ValidateSOSData(sos_data, name));
+  OR_RETURN_IF_ERROR(ValidateSOSData(sos_data, name));
   SCIP_CONS* constraint = nullptr;
   double* weights = nullptr;
   if (!sos_data.weights.empty()) {
@@ -681,14 +681,14 @@ absl::StatusOr<SCIP_CONS*> GScip::AddSOS1Constraint(
       /*removable=*/options.removable,
       /*stickingatnode=*/options.sticking_at_node));
   RETURN_IF_SCIP_ERROR(SCIPaddCons(scip_, constraint));
-  RETURN_IF_ERROR(MaybeKeepConstraintAlive(constraint, options));
+  OR_RETURN_IF_ERROR(MaybeKeepConstraintAlive(constraint, options));
   return constraint;
 }
 
 absl::StatusOr<SCIP_CONS*> GScip::AddSOS2Constraint(
     const GScipSOSData& sos_data, const std::string& name,
     const GScipConstraintOptions& options) {
-  RETURN_IF_ERROR(ValidateSOSData(sos_data, name));
+  OR_RETURN_IF_ERROR(ValidateSOSData(sos_data, name));
   SCIP_CONS* constraint = nullptr;
   double* weights = nullptr;
   if (!sos_data.weights.empty()) {
@@ -707,7 +707,7 @@ absl::StatusOr<SCIP_CONS*> GScip::AddSOS2Constraint(
       /*removable=*/options.removable,
       /*stickingatnode=*/options.sticking_at_node));
   RETURN_IF_SCIP_ERROR(SCIPaddCons(scip_, constraint));
-  RETURN_IF_ERROR(MaybeKeepConstraintAlive(constraint, options));
+  OR_RETURN_IF_ERROR(MaybeKeepConstraintAlive(constraint, options));
   return constraint;
 }
 
@@ -718,7 +718,7 @@ absl::Status GScip::SetMaximize(bool is_maximize) {
 }
 
 absl::Status GScip::SetObjectiveOffset(double offset) {
-  RETURN_IF_ERROR(CheckScipFinite(offset)) << "invalid objective offset";
+  OR_RETURN_IF_ERROR(CheckScipFinite(offset)) << "invalid objective offset";
   double old_offset = SCIPgetOrigObjoffset(scip_);
   double delta_offset = offset - old_offset;
   RETURN_IF_SCIP_ERROR(SCIPaddOrigObjoffset(scip_, delta_offset));
@@ -749,7 +749,8 @@ absl::Status GScip::SetUb(SCIP_VAR* var, double ub) {
 }
 
 absl::Status GScip::SetObjCoef(SCIP_VAR* var, double obj_coef) {
-  RETURN_IF_ERROR(CheckScipFinite(obj_coef)) << "invalid objective coefficient";
+  OR_RETURN_IF_ERROR(CheckScipFinite(obj_coef))
+      << "invalid objective coefficient";
   RETURN_IF_SCIP_ERROR(SCIPchgVarObj(scip_, var, obj_coef));
   return absl::OkStatus();
 }
@@ -786,7 +787,7 @@ absl::Status GScip::CanSafeBulkDelete(
 }
 
 absl::Status GScip::SafeBulkDelete(const absl::flat_hash_set<SCIP_VAR*>& vars) {
-  RETURN_IF_ERROR(CanSafeBulkDelete(vars));
+  OR_RETURN_IF_ERROR(CanSafeBulkDelete(vars));
   if (vars.empty()) {
     return absl::OkStatus();
   }
@@ -798,12 +799,12 @@ absl::Status GScip::SafeBulkDelete(const absl::flat_hash_set<SCIP_VAR*>& vars) {
                                                nonzeros.end());
     for (SCIP_VAR* var : nonzeros_copy) {
       if (vars.contains(var)) {
-        RETURN_IF_ERROR(SetLinearConstraintCoef(constraint, var, 0.0));
+        OR_RETURN_IF_ERROR(SetLinearConstraintCoef(constraint, var, 0.0));
       }
     }
   }
   for (SCIP_VAR* const var : vars) {
-    RETURN_IF_ERROR(DeleteVariable(var));
+    OR_RETURN_IF_ERROR(DeleteVariable(var));
   }
   return absl::OkStatus();
 }
@@ -880,7 +881,7 @@ absl::Status GScip::SetLinearConstraintCoef(SCIP_CONS* constraint,
   // TODO(user): this operation is slow (linear in the nnz in the constraint).
   // It would be better to just use a bulk operation, but there doesn't appear
   // to be any?
-  RETURN_IF_ERROR(CheckScipFinite(value)) << "invalid coefficient";
+  OR_RETURN_IF_ERROR(CheckScipFinite(value)) << "invalid coefficient";
   RETURN_IF_SCIP_ERROR(SCIPchgCoefLinear(scip_, constraint, var, value));
   return absl::OkStatus();
 }
@@ -888,7 +889,7 @@ absl::Status GScip::SetLinearConstraintCoef(SCIP_CONS* constraint,
 absl::Status GScip::AddLinearConstraintCoef(SCIP_CONS* const constraint,
                                             SCIP_VAR* const var,
                                             const double value) {
-  RETURN_IF_ERROR(CheckScipFinite(value)) << "invalid coefficient";
+  OR_RETURN_IF_ERROR(CheckScipFinite(value)) << "invalid coefficient";
   RETURN_IF_SCIP_ERROR(SCIPaddCoefLinear(scip_, constraint, var, value));
   return absl::OkStatus();
 }
@@ -983,8 +984,8 @@ absl::StatusOr<GScipResult> GScip::Solve(
   MessageHandlerPtr new_handler;
   if (message_handler != nullptr) {
     previous_handler = CaptureMessageHandlerPtr(SCIPgetMessagehdlr(scip_));
-    ASSIGN_OR_RETURN(new_handler,
-                     internal::MakeSCIPMessageHandler(message_handler));
+    OR_ASSIGN_OR_RETURN(new_handler,
+                        internal::MakeSCIPMessageHandler(message_handler));
     SCIPsetMessagehdlr(scip_, new_handler.get());
   }
   // Make sure we prevent any call of message_handler after this function has
@@ -1033,7 +1034,7 @@ absl::StatusOr<GScipResult> GScip::Solve(
   absl::Status callback_status;
   {
     const absl::MutexLock callback_status_lock(callback_status_mutex_);
-    callback_status = util::StatusBuilder(callback_status_)
+    callback_status = ortools::StatusBuilder(callback_status_)
                       << "error in a callback that interrupted the solve";
   }
   if (!callback_status.ok()) {
@@ -1065,7 +1066,7 @@ absl::StatusOr<GScipResult> GScip::Solve(
     result.solutions.push_back(solution);
     result.objective_values.push_back(obj_value);
   }
-  RETURN_IF_ERROR(CheckSolutionsInOrder(result, ObjectiveIsMaximize()));
+  OR_RETURN_IF_ERROR(CheckSolutionsInOrder(result, ObjectiveIsMaximize()));
   // Can only check for primal ray if we made it past presolve.
   if (stage != SCIP_STAGE_PRESOLVING && SCIPhasPrimalRay(scip_)) {
     for (SCIP_VAR* v : variables_) {
@@ -1087,7 +1088,7 @@ absl::StatusOr<GScipResult> GScip::Solve(
   result.gscip_output.set_status(ConvertStatus(SCIPgetStatus(scip_)));
 
   // Step 4: clean up.
-  RETURN_IF_ERROR(FreeTransform());
+  OR_RETURN_IF_ERROR(FreeTransform());
 
   // Restore the previous message handler. We must do so AFTER we reset the
   // stage of the problem with FreeTransform(). Doing so before will fail since
@@ -1173,7 +1174,7 @@ absl::StatusOr<double> GScip::ScipInfClamp(const double d) {
   }
   // NaN is considered finite here.
   if (d >= kScipInf || d <= -kScipInf) {
-    return util::InvalidArgumentErrorBuilder()
+    return ortools::InvalidArgumentErrorBuilder()
            << d << " is not in SCIP's finite range: (" << -kScipInf << ", "
            << kScipInf << ")";
   }
@@ -1191,7 +1192,7 @@ absl::Status GScip::CheckScipFinite(double d) {
   const double kScipInf = ScipInf();
   // NaN is considered finite here.
   if (d >= kScipInf || d <= -kScipInf) {
-    return util::InvalidArgumentErrorBuilder()
+    return ortools::InvalidArgumentErrorBuilder()
            << d << " is not in SCIP's finite range: (" << -kScipInf << ", "
            << kScipInf << ")";
   }

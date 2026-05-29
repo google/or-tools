@@ -33,7 +33,7 @@ absl::Status Main() {
   //  2 is root
   //  3 -> 2
   //  4 -> 1
-  ASSIGN_OR_RETURN(
+  OR_ASSIGN_OR_RETURN(
       const operations_research::RootedTree<int> tree,
       operations_research::RootedTree<int>::Create(2, {1, 2, -1, 2, 1}));
 

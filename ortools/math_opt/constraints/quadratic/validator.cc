@@ -32,32 +32,32 @@ namespace operations_research::math_opt {
 absl::Status ValidateConstraint(const QuadraticConstraintProto& constraint,
                                 const IdNameBiMap& variable_universe) {
   // Step 1: Validate linear terms.
-  RETURN_IF_ERROR(CheckIdsAndValues(
+  OR_RETURN_IF_ERROR(CheckIdsAndValues(
       MakeView(constraint.linear_terms()),
       {.allow_positive_infinity = false, .allow_negative_infinity = false}))
       << "bad linear term in quadratic constraint";
-  RETURN_IF_ERROR(
+  OR_RETURN_IF_ERROR(
       CheckIdsSubset(constraint.linear_terms().ids(), variable_universe))
       << "bad linear term ID in quadratic constraint";
 
   // Step 2: Validate quadratic terms.
-  RETURN_IF_ERROR(SparseMatrixValid(constraint.quadratic_terms(),
-                                    /*enforce_upper_triangular=*/true))
+  OR_RETURN_IF_ERROR(SparseMatrixValid(constraint.quadratic_terms(),
+                                       /*enforce_upper_triangular=*/true))
       << "bad quadratic term in quadratic constraint";
-  RETURN_IF_ERROR(SparseMatrixIdsAreKnown(constraint.quadratic_terms(),
-                                          variable_universe, variable_universe))
+  OR_RETURN_IF_ERROR(SparseMatrixIdsAreKnown(
+      constraint.quadratic_terms(), variable_universe, variable_universe))
       << "bad quadratic term ID in quadratic constraint";
 
   // Step 3: Validate bounds.
   {
     const double lb = constraint.lower_bound();
     const double ub = constraint.upper_bound();
-    RETURN_IF_ERROR(CheckScalar(lb, {.allow_positive_infinity = false}))
+    OR_RETURN_IF_ERROR(CheckScalar(lb, {.allow_positive_infinity = false}))
         << "bad quadratic constraint lower bound";
-    RETURN_IF_ERROR(CheckScalar(ub, {.allow_negative_infinity = false}))
+    OR_RETURN_IF_ERROR(CheckScalar(ub, {.allow_negative_infinity = false}))
         << "bad quadratic constraint upper bound";
     if (lb > ub) {
-      return util::InvalidArgumentErrorBuilder()
+      return ortools::InvalidArgumentErrorBuilder()
              << "Quadratic constraint bounds are inverted, rendering model "
                 "trivially infeasible: lb = "
              << lb << " > " << ub << " = ub";

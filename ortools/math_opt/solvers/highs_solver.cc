@@ -91,9 +91,9 @@ absl::Status ToStatus(const HighsStatus status) {
       // this to be warning worthy.
       return absl::OkStatus();
     case HighsStatus::kError:
-      return util::InternalErrorBuilder() << "HighsStatus: kError";
+      return ortools::InternalErrorBuilder() << "HighsStatus: kError";
     default:
-      return util::InternalErrorBuilder()
+      return ortools::InternalErrorBuilder()
              << "unexpected HighsStatus: " << static_cast<int>(status);
   }
 }
@@ -109,7 +109,7 @@ absl::Status ToStatus(const OptionStatus option_status) {
       // is out of bounds for the option.
       return absl::InvalidArgumentError("option value not valid for name");
   }
-  return util::InternalErrorBuilder()
+  return ortools::InternalErrorBuilder()
          << "unexpected option_status: " << static_cast<int>(option_status);
 }
 
@@ -120,7 +120,7 @@ absl::StatusOr<int> SafeIntCast(const int64_t i, const absl::string_view name) {
     const int64_t kMin = static_cast<int64_t>(kint32min);
     const int64_t kMax = static_cast<int64_t>(kint32max);
     if (i < kMin || i > kMax) {
-      return util::InvalidArgumentErrorBuilder()
+      return ortools::InvalidArgumentErrorBuilder()
              << name << " has value " << i
              << " not representable as an int (the range [" << kMin << ", "
              << kMax << "]) and thus is not supported for HiGHS";
@@ -173,11 +173,11 @@ absl::StatusOr<std::unique_ptr<HighsOptions>> MakeOptions(
   }
   if (parameters.has_iteration_limit()) {
     if (is_integer) {
-      return util::InvalidArgumentErrorBuilder()
+      return ortools::InvalidArgumentErrorBuilder()
              << "iteration_limit not supported for HiGHS on problems with "
                 "integer variables";
     }
-    ASSIGN_OR_RETURN(
+    OR_ASSIGN_OR_RETURN(
         const int iter_limit,
         SafeIntCast(parameters.iteration_limit(), "iteration_limit"));
 
@@ -185,8 +185,8 @@ absl::StatusOr<std::unique_ptr<HighsOptions>> MakeOptions(
     result->ipm_iteration_limit = iter_limit;
   }
   if (parameters.has_node_limit()) {
-    ASSIGN_OR_RETURN(result->mip_max_nodes,
-                     SafeIntCast(parameters.node_limit(), "node_limit"));
+    OR_ASSIGN_OR_RETURN(result->mip_max_nodes,
+                        SafeIntCast(parameters.node_limit(), "node_limit"));
   }
   if (parameters.has_cutoff_limit()) {
     // TODO(b/271606858) : It may be possible to get this working for IPs via
@@ -195,7 +195,7 @@ absl::StatusOr<std::unique_ptr<HighsOptions>> MakeOptions(
   }
   if (parameters.has_objective_limit()) {
     if (is_integer) {
-      return util::InvalidArgumentErrorBuilder()
+      return ortools::InvalidArgumentErrorBuilder()
              << "objective_limit not supported for HiGHS solver on integer "
                 "problems.";
     } else {
@@ -208,7 +208,7 @@ absl::StatusOr<std::unique_ptr<HighsOptions>> MakeOptions(
   }
   if (parameters.has_best_bound_limit()) {
     if (is_integer) {
-      return util::InvalidArgumentErrorBuilder()
+      return ortools::InvalidArgumentErrorBuilder()
              << "best_bound_limit not supported for HiGHS solver on integer "
                 "problems.";
     } else {
@@ -222,7 +222,7 @@ absl::StatusOr<std::unique_ptr<HighsOptions>> MakeOptions(
     // Do not assign result.threads = parameters.threads() here, this is
     // requires global synchronization. See
     // highs/src/lp_data/Highs.cpp:607
-    return util::InvalidArgumentErrorBuilder()
+    return ortools::InvalidArgumentErrorBuilder()
            << "threads not supported for HiGHS solver, this must be set using "
               "globals, see HiGHS documentation";
   }
@@ -236,12 +236,12 @@ absl::StatusOr<std::unique_ptr<HighsOptions>> MakeOptions(
     result->mip_rel_gap = parameters.relative_gap_tolerance();
   }
   if (parameters.has_solution_pool_size()) {
-    return util::InvalidArgumentErrorBuilder()
+    return ortools::InvalidArgumentErrorBuilder()
            << "solution_pool_size not supported for HiGHS";
   }
   if (parameters.lp_algorithm() != LP_ALGORITHM_UNSPECIFIED) {
     if (is_integer) {
-      return util::InvalidArgumentErrorBuilder()
+      return ortools::InvalidArgumentErrorBuilder()
              << "lp_algorithm is not supported for HiGHS on problems with "
                 "integer variables";
     }
@@ -258,7 +258,7 @@ absl::StatusOr<std::unique_ptr<HighsOptions>> MakeOptions(
         result->solver = ::kIpmString;
         break;
       default:
-        return util::InvalidArgumentErrorBuilder()
+        return ortools::InvalidArgumentErrorBuilder()
                << "unsupported lp_algorithm: "
                << LPAlgorithmProto_Name(parameters.lp_algorithm());
     }
@@ -271,7 +271,7 @@ absl::StatusOr<std::unique_ptr<HighsOptions>> MakeOptions(
     }
   }
   if (parameters.cuts() != EMPHASIS_UNSPECIFIED) {
-    return util::InvalidArgumentErrorBuilder()
+    return ortools::InvalidArgumentErrorBuilder()
            << "cuts solve parameter unsupported for HiGHS";
   }
   if (parameters.heuristics() != EMPHASIS_UNSPECIFIED) {
@@ -292,7 +292,7 @@ absl::StatusOr<std::unique_ptr<HighsOptions>> MakeOptions(
         result->mip_heuristic_effort = 0.2;
         break;
       default:
-        return util::InvalidArgumentErrorBuilder()
+        return ortools::InvalidArgumentErrorBuilder()
                << "unexpected value for solve_parameters.heuristics of: "
                << parameters.heuristics();
     }
@@ -309,25 +309,25 @@ absl::StatusOr<std::unique_ptr<HighsOptions>> MakeOptions(
       // parameters first, as we don't want extra logging while setting options.
       continue;
     }
-    RETURN_IF_ERROR(ToStatus(setLocalOptionValue(result->log_options, name,
-                                                 result->log_options,
-                                                 result->records, value)))
+    OR_RETURN_IF_ERROR(ToStatus(setLocalOptionValue(result->log_options, name,
+                                                    result->log_options,
+                                                    result->records, value)))
         << "error setting string option name: " << name
         << " to value:" << value;
   }
   for (const auto& [name, value] : parameters.highs().double_options()) {
-    RETURN_IF_ERROR(ToStatus(
+    OR_RETURN_IF_ERROR(ToStatus(
         setLocalOptionValue(result->log_options, name, result->records, value)))
         << "error setting double option name: " << name
         << " to value:" << value;
   }
   for (const auto& [name, value] : parameters.highs().int_options()) {
-    RETURN_IF_ERROR(ToStatus(
+    OR_RETURN_IF_ERROR(ToStatus(
         setLocalOptionValue(result->log_options, name, result->records, value)))
         << "error setting int option name: " << name << " to value:" << value;
   }
   for (const auto& [name, value] : parameters.highs().bool_options()) {
-    RETURN_IF_ERROR(ToStatus(
+    OR_RETURN_IF_ERROR(ToStatus(
         setLocalOptionValue(result->log_options, name, result->records, value)))
         << "error setting bool option name: " << name << " to value:" << value;
   }
@@ -414,7 +414,7 @@ absl::StatusOr<std::optional<BasisStatusProto>> ToBasisStatus(
       }
     }
   }
-  return util::InternalErrorBuilder()
+  return ortools::InternalErrorBuilder()
          << "unexpected highs basis: " << static_cast<int>(highs_basis);
 }
 
@@ -428,7 +428,7 @@ absl::StatusOr<SolutionStatusProto> ToSolutionStatus(
     case ::kSolutionStatusNone:
       return SOLUTION_STATUS_UNDETERMINED;
   }
-  return util::InternalErrorBuilder()
+  return ortools::InternalErrorBuilder()
          << "unimplemented highs SolutionStatus: " << highs_solution_status;
 }
 
@@ -442,7 +442,7 @@ absl::StatusOr<FeasibilityStatusProto> HighsSolver::DualFeasibilityStatus(
       (is_integer && std::isfinite(highs_info.mip_dual_bound));
   if (dual_feasible_solution_exists &&
       solution_claims.highs_returned_primal_ray) {
-    return util::InternalErrorBuilder()
+    return ortools::InternalErrorBuilder()
            << "Found dual feasible solution and primal ray";
   }
   if (dual_feasible_solution_exists) {
@@ -458,7 +458,7 @@ absl::StatusOr<FeasibilityStatusProto> HighsSolver::PrimalFeasibilityStatus(
     const SolutionClaims solution_claims) {
   if (solution_claims.highs_returned_primal_feasible_solution &&
       solution_claims.highs_returned_dual_ray) {
-    return util::InternalErrorBuilder()
+    return ortools::InternalErrorBuilder()
            << "Found primal feasible solution and dual ray";
   }
   if (solution_claims.highs_returned_primal_feasible_solution) {
@@ -475,11 +475,11 @@ absl::StatusOr<TerminationProto> HighsSolver::MakeTermination(
     const bool is_integer, const bool had_node_limit,
     const bool had_solution_limit, const bool is_maximize,
     const SolutionClaims solution_claims) {
-  ASSIGN_OR_RETURN(
+  OR_ASSIGN_OR_RETURN(
       const FeasibilityStatusProto dual_feasibility_status,
       DualFeasibilityStatus(highs_info, is_integer, solution_claims));
-  ASSIGN_OR_RETURN(const FeasibilityStatusProto primal_feasibility_status,
-                   PrimalFeasibilityStatus(solution_claims));
+  OR_ASSIGN_OR_RETURN(const FeasibilityStatusProto primal_feasibility_status,
+                      PrimalFeasibilityStatus(solution_claims));
 
   const std::optional<double> optional_finite_primal_objective =
       (primal_feasibility_status == FEASIBILITY_STATUS_FEASIBLE)
@@ -500,7 +500,7 @@ absl::StatusOr<TerminationProto> HighsSolver::MakeTermination(
     // Note: we actually deal with kModelEmpty separately in Solve(), this
     // case should not be hit.
     case HighsModelStatus::kModelEmpty:
-      return util::InternalErrorBuilder()
+      return ortools::InternalErrorBuilder()
              << "HighsModelStatus was "
              << utilModelStatusToString(highs_model_status);
     case HighsModelStatus::kOptimal: {
@@ -575,8 +575,9 @@ absl::StatusOr<TerminationProto> HighsSolver::MakeTermination(
           is_maximize, LIMIT_OTHER, optional_finite_primal_objective,
           optional_dual_objective, "Highs hit kMemoryLimit");
   }
-  return util::InternalErrorBuilder() << "HighsModelStatus unimplemented: "
-                                      << static_cast<int>(highs_model_status);
+  return ortools::InternalErrorBuilder()
+         << "HighsModelStatus unimplemented: "
+         << static_cast<int>(highs_model_status);
 }
 
 SolveResultProto HighsSolver::ResultForHighsModelStatusModelEmpty(
@@ -639,14 +640,14 @@ absl::StatusOr<std::optional<BasisProto>> HighsSolver::ExtractBasis() {
     return std::nullopt;
   }
   // Make sure the solution is the right size
-  RETURN_IF_ERROR(EnsureOneEntryPerVariable(highs_solution.col_value))
+  OR_RETURN_IF_ERROR(EnsureOneEntryPerVariable(highs_solution.col_value))
       << "invalid highs_solution.col_value";
-  RETURN_IF_ERROR(EnsureOneEntryPerVariable(highs_solution.col_dual))
+  OR_RETURN_IF_ERROR(EnsureOneEntryPerVariable(highs_solution.col_dual))
       << "invalid highs_solution.col_dual";
   // Make sure the basis is the right size
-  RETURN_IF_ERROR(EnsureOneEntryPerVariable(highs_basis.col_status))
+  OR_RETURN_IF_ERROR(EnsureOneEntryPerVariable(highs_basis.col_status))
       << "invalid highs_basis.col_status";
-  RETURN_IF_ERROR(EnsureOneEntryPerLinearConstraint(highs_basis.row_status))
+  OR_RETURN_IF_ERROR(EnsureOneEntryPerLinearConstraint(highs_basis.row_status))
       << "invalid highs_basis.row_status";
   BasisProto basis;
 
@@ -697,8 +698,9 @@ absl::StatusOr<bool> HighsSolver::PrimalRayReturned() const {
   bool has_primal_ray = false;
   // Note getPrimalRay may return without modifying has_primal_ray, in which
   // case it will remain at its default false value.
-  RETURN_IF_ERROR(ToStatus(highs_->getPrimalRay(has_primal_ray,
-                                                /*primal_ray_value=*/nullptr)));
+  OR_RETURN_IF_ERROR(
+      ToStatus(highs_->getPrimalRay(has_primal_ray,
+                                    /*primal_ray_value=*/nullptr)));
   return has_primal_ray;
 }
 
@@ -709,8 +711,8 @@ absl::StatusOr<bool> HighsSolver::DualRayReturned() const {
   bool has_dual_ray = false;
   // Note getPrimalRay may return without modifying has_dual_ray, in which
   // case it will remain at its default false value.
-  RETURN_IF_ERROR(ToStatus(highs_->getDualRay(has_dual_ray,
-                                              /*dual_ray_value=*/nullptr)));
+  OR_RETURN_IF_ERROR(ToStatus(highs_->getDualRay(has_dual_ray,
+                                                 /*dual_ray_value=*/nullptr)));
   return has_dual_ray;
 }
 
@@ -730,7 +732,7 @@ HighsSolver::ExtractSolutionAndRays(
     SolutionProto& solution =
         solution_and_claims.solutions.emplace_back(SolutionProto());
     if (highs_solution.value_valid) {
-      RETURN_IF_ERROR(EnsureOneEntryPerVariable(highs_solution.col_value))
+      OR_RETURN_IF_ERROR(EnsureOneEntryPerVariable(highs_solution.col_value))
           << "invalid highs_solution.col_value";
       PrimalSolutionProto& primal_solution =
           *solution.mutable_primal_solution();
@@ -749,9 +751,9 @@ HighsSolver::ExtractSolutionAndRays(
       }
     }
     if (highs_solution.dual_valid) {
-      RETURN_IF_ERROR(EnsureOneEntryPerVariable(highs_solution.col_dual))
+      OR_RETURN_IF_ERROR(EnsureOneEntryPerVariable(highs_solution.col_dual))
           << "invalid highs_solution.col_dual";
-      RETURN_IF_ERROR(
+      OR_RETURN_IF_ERROR(
           EnsureOneEntryPerLinearConstraint(highs_solution.row_dual))
           << "invalid highs_solution.row_dual";
       DualSolutionProto& dual_solution = *solution.mutable_dual_solution();
@@ -774,26 +776,28 @@ HighsSolver::ExtractSolutionAndRays(
             highs_solution.row_dual[lin_con_data_.at(lin_con_id).index]);
       }
     }
-    ASSIGN_OR_RETURN(std::optional<BasisProto> basis_proto,
-                     HighsSolver::ExtractBasis());
+    OR_ASSIGN_OR_RETURN(std::optional<BasisProto> basis_proto,
+                        HighsSolver::ExtractBasis());
     if (basis_proto.has_value()) {
       *solution.mutable_basis() = *std::move(basis_proto);
     }
     ApplyAllFilters(model_params, solution);
   }
 
-  ASSIGN_OR_RETURN(
+  OR_ASSIGN_OR_RETURN(
       solution_and_claims.solution_claims.highs_returned_primal_ray,
       PrimalRayReturned());
-  ASSIGN_OR_RETURN(solution_and_claims.solution_claims.highs_returned_dual_ray,
-                   DualRayReturned());
+  OR_ASSIGN_OR_RETURN(
+      solution_and_claims.solution_claims.highs_returned_dual_ray,
+      DualRayReturned());
 
   return solution_and_claims;
 }
 
 absl::StatusOr<std::unique_ptr<SolverInterface>> HighsSolver::New(
     const ModelProto& model, const InitArgs&) {
-  RETURN_IF_ERROR(ModelIsSupported(model, kHighsSupportedStructures, "Highs"));
+  OR_RETURN_IF_ERROR(
+      ModelIsSupported(model, kHighsSupportedStructures, "Highs"));
   HighsModel highs_model;
   HighsLp& lp = highs_model.lp_;
   lp.model_name_ = model.name();
@@ -904,8 +908,8 @@ absl::StatusOr<std::unique_ptr<SolverInterface>> HighsSolver::New(
   HighsOptions disable_output;
   disable_output.output_flag = false;
   disable_output.log_to_console = false;
-  RETURN_IF_ERROR(ToStatus(highs->passOptions(disable_output)));
-  RETURN_IF_ERROR(ToStatus(highs->passModel(std::move(highs_model))));
+  OR_RETURN_IF_ERROR(ToStatus(highs->passOptions(disable_output)));
+  OR_RETURN_IF_ERROR(ToStatus(highs->passModel(std::move(highs_model))));
   return absl::WrapUnique(new HighsSolver(
       std::move(highs), std::move(variable_data), std::move(lin_con_data)));
 }
@@ -915,7 +919,7 @@ absl::StatusOr<SolveResultProto> HighsSolver::Solve(
     const ModelSolveParametersProto& model_parameters,
     MessageCallback message_cb, const CallbackRegistrationProto&, Callback,
     const SolveInterrupter* absl_nullable const) {
-  RETURN_IF_ERROR(ModelSolveParametersAreSupported(
+  OR_RETURN_IF_ERROR(ModelSolveParametersAreSupported(
       model_parameters, kHighsSupportedStructures, "Highs"));
   const absl::Time start = absl::Now();
   auto set_solve_time = [&start](SolveResultProto& result) -> absl::Status {
@@ -938,11 +942,11 @@ absl::StatusOr<SolveResultProto> HighsSolver::Solve(
       index.push_back(variable_data_.at(id).index);
       value.push_back(val);
     }
-    RETURN_IF_ERROR(ToStatus(highs_->setSolution(
+    OR_RETURN_IF_ERROR(ToStatus(highs_->setSolution(
         static_cast<HighsInt>(num_entries), index.data(), value.data())));
   }
 
-  RETURN_IF_ERROR(ListInvertedBounds().ToStatus());
+  OR_RETURN_IF_ERROR(ListInvertedBounds().ToStatus());
   // TODO(b/271595607): delete this code once we upgrade HiGHS, if HiGHS does
   // return a proper infeasibility status for models with empty integer bounds.
   const bool is_maximize = highs_->getModel().lp_.sense_ == ObjSense::kMaximize;
@@ -950,14 +954,14 @@ absl::StatusOr<SolveResultProto> HighsSolver::Solve(
     if (bounds.rounded_bounds_cross()) {
       SolveResultProto result =
           ResultForIntegerInfeasible(is_maximize, var_id, bounds.lb, bounds.ub);
-      RETURN_IF_ERROR(set_solve_time(result));
+      OR_RETURN_IF_ERROR(set_solve_time(result));
       return result;
     }
   }
 
   BufferedMessageCallback buffered_message_callback(std::move(message_cb));
   if (buffered_message_callback.has_user_message_callback()) {
-    RETURN_IF_ERROR(ToStatus(
+    OR_RETURN_IF_ERROR(ToStatus(
         highs_->setLogCallback(&HighsLogCallback, &buffered_message_callback)))
         << "failed to register logging callback";
   }
@@ -988,19 +992,19 @@ absl::StatusOr<SolveResultProto> HighsSolver::Solve(
   if (it != parameters.highs().bool_options().end() && it->second) {
     is_integer = false;
   }
-  ASSIGN_OR_RETURN(
+  OR_ASSIGN_OR_RETURN(
       const std::unique_ptr<HighsOptions> options,
       MakeOptions(parameters,
                   buffered_message_callback.has_user_message_callback(),
                   is_integer));
-  RETURN_IF_ERROR(ToStatus(highs_->passOptions(*options)));
-  RETURN_IF_ERROR(ToStatus(highs_->run()));
+  OR_RETURN_IF_ERROR(ToStatus(highs_->passOptions(*options)));
+  OR_RETURN_IF_ERROR(ToStatus(highs_->run()));
   std::move(message_cb_cleanup).Invoke();
   // When the model is empty, highs_->getInfo() is invalid, so we bail out.
   if (highs_->getModelStatus() == HighsModelStatus::kModelEmpty) {
     SolveResultProto result = ResultForHighsModelStatusModelEmpty(
         is_maximize, highs_->getModel().lp_.offset_, lin_con_data_);
-    RETURN_IF_ERROR(set_solve_time(result));
+    OR_RETURN_IF_ERROR(set_solve_time(result));
     return result;
   }
   const HighsInfo& info = highs_->getInfo();
@@ -1009,20 +1013,21 @@ absl::StatusOr<SolveResultProto> HighsSolver::Solve(
   }
 
   SolveResultProto result;
-  ASSIGN_OR_RETURN(SolutionsAndClaims solutions_and_claims,
-                   ExtractSolutionAndRays(model_parameters));
+  OR_ASSIGN_OR_RETURN(SolutionsAndClaims solutions_and_claims,
+                      ExtractSolutionAndRays(model_parameters));
   for (SolutionProto& solution : solutions_and_claims.solutions) {
     *result.add_solutions() = std::move(solution);
   }
-  ASSIGN_OR_RETURN(*result.mutable_termination(),
-                   MakeTermination(highs_->getModelStatus(), info, is_integer,
-                                   parameters.has_node_limit(),
-                                   parameters.has_solution_limit(), is_maximize,
-                                   solutions_and_claims.solution_claims));
+  OR_ASSIGN_OR_RETURN(
+      *result.mutable_termination(),
+      MakeTermination(highs_->getModelStatus(), info, is_integer,
+                      parameters.has_node_limit(),
+                      parameters.has_solution_limit(), is_maximize,
+                      solutions_and_claims.solution_claims));
 
-  ASSIGN_OR_RETURN(*result.mutable_solve_stats(), ToSolveStats(info));
+  OR_ASSIGN_OR_RETURN(*result.mutable_solve_stats(), ToSolveStats(info));
 
-  RETURN_IF_ERROR(set_solve_time(result));
+  OR_RETURN_IF_ERROR(set_solve_time(result));
   return result;
 }
 

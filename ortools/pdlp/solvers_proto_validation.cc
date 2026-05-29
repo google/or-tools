@@ -62,56 +62,56 @@ absl::Status ValidateTerminationCriteria(const TerminationCriteria& criteria) {
     }
   }
   if (criteria.has_detailed_optimality_criteria()) {
-    RETURN_IF_ERROR(CheckNonNegative(
+    OR_RETURN_IF_ERROR(CheckNonNegative(
         criteria.detailed_optimality_criteria()
             .eps_optimal_primal_residual_absolute(),
         "detailed_optimality_criteria.eps_optimal_primal_residual_absolute"));
-    RETURN_IF_ERROR(CheckNonNegative(
+    OR_RETURN_IF_ERROR(CheckNonNegative(
         criteria.detailed_optimality_criteria()
             .eps_optimal_primal_residual_relative(),
         "detailed_optimality_criteria.eps_optimal_primal_residual_relative"));
-    RETURN_IF_ERROR(CheckNonNegative(
+    OR_RETURN_IF_ERROR(CheckNonNegative(
         criteria.detailed_optimality_criteria()
             .eps_optimal_dual_residual_absolute(),
         "detailed_optimality_criteria.eps_optimal_dual_residual_absolute"));
-    RETURN_IF_ERROR(CheckNonNegative(
+    OR_RETURN_IF_ERROR(CheckNonNegative(
         criteria.detailed_optimality_criteria()
             .eps_optimal_dual_residual_relative(),
         "detailed_optimality_criteria.eps_optimal_dual_residual_relative"));
-    RETURN_IF_ERROR(CheckNonNegative(
+    OR_RETURN_IF_ERROR(CheckNonNegative(
         criteria.detailed_optimality_criteria()
             .eps_optimal_objective_gap_absolute(),
         "detailed_optimality_criteria.eps_optimal_objective_gap_absolute"));
-    RETURN_IF_ERROR(CheckNonNegative(
+    OR_RETURN_IF_ERROR(CheckNonNegative(
         criteria.detailed_optimality_criteria()
             .eps_optimal_objective_gap_relative(),
         "detailed_optimality_criteria.eps_optimal_objective_gap_relative"));
   } else if (criteria.has_simple_optimality_criteria()) {
-    RETURN_IF_ERROR(CheckNonNegative(
+    OR_RETURN_IF_ERROR(CheckNonNegative(
         criteria.simple_optimality_criteria().eps_optimal_absolute(),
         "simple_optimality_criteria.eps_optimal_absolute"));
-    RETURN_IF_ERROR(CheckNonNegative(
+    OR_RETURN_IF_ERROR(CheckNonNegative(
         criteria.simple_optimality_criteria().eps_optimal_relative(),
         "simple_optimality_criteria.eps_optimal_relative"));
   } else {
-    RETURN_IF_ERROR(CheckNonNegative(criteria.eps_optimal_absolute(),
+    OR_RETURN_IF_ERROR(CheckNonNegative(criteria.eps_optimal_absolute(),
                                      "eps_optimal_absolute"));
-    RETURN_IF_ERROR(CheckNonNegative(criteria.eps_optimal_relative(),
+    OR_RETURN_IF_ERROR(CheckNonNegative(criteria.eps_optimal_relative(),
                                      "eps_optimal_relative"));
   }
-  RETURN_IF_ERROR(CheckNonNegative(criteria.eps_primal_infeasible(),
+  OR_RETURN_IF_ERROR(CheckNonNegative(criteria.eps_primal_infeasible(),
                                    "eps_primal_infeasible"));
-  RETURN_IF_ERROR(
+  OR_RETURN_IF_ERROR(
       CheckNonNegative(criteria.eps_dual_infeasible(), "eps_dual_infeasible"));
-  RETURN_IF_ERROR(
+  OR_RETURN_IF_ERROR(
       CheckNonNegative(criteria.eps_dual_infeasible(), "eps_dual_infeasible"));
-  RETURN_IF_ERROR(
+  OR_RETURN_IF_ERROR(
       CheckNonNegative(criteria.time_sec_limit(), "time_sec_limit"));
 
   if (criteria.iteration_limit() < 0) {
     return InvalidArgumentError("iteration_limit must be non-negative");
   }
-  RETURN_IF_ERROR(CheckNonNegative(criteria.kkt_matrix_pass_limit(),
+  OR_RETURN_IF_ERROR(CheckNonNegative(criteria.kkt_matrix_pass_limit(),
                                    "kkt_matrix_pass_limit"));
 
   return OkStatus();
@@ -170,7 +170,7 @@ absl::Status ValidateMalitskyPockParams(const MalitskyPockParams& params) {
 
 absl::Status ValidatePrimalDualHybridGradientParams(
     const PrimalDualHybridGradientParams& params) {
-  RETURN_IF_ERROR(ValidateTerminationCriteria(params.termination_criteria()))
+  OR_RETURN_IF_ERROR(ValidateTerminationCriteria(params.termination_criteria()))
       << "termination_criteria invalid";
   if (params.num_threads() <= 0) {
     return InvalidArgumentError("num_threads must be positive");
@@ -250,10 +250,10 @@ absl::Status ValidatePrimalDualHybridGradientParams(
           PrimalDualHybridGradientParams::CONSTANT_STEP_SIZE_RULE) {
     return InvalidArgumentError("invalid linesearch_rule");
   }
-  RETURN_IF_ERROR(
+  OR_RETURN_IF_ERROR(
       ValidateAdaptiveLinesearchParams(params.adaptive_linesearch_parameters()))
       << "adaptive_linesearch_parameters invalid";
-  RETURN_IF_ERROR(ValidateMalitskyPockParams(params.malitsky_pock_parameters()))
+  OR_RETURN_IF_ERROR(ValidateMalitskyPockParams(params.malitsky_pock_parameters()))
       << "malitsky_pock_parameters invalid";
   if (std::isnan(params.initial_step_size_scaling())) {
     return InvalidArgumentError("initial_step_size_scaling is NAN");

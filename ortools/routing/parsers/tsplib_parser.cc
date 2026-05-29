@@ -185,7 +185,7 @@ TspLibParser::TspLibParser()
 namespace {
 absl::StatusOr<File*> OpenFile(absl::string_view file_name) {
   File* file = nullptr;
-  RETURN_IF_ERROR(file::Open(file_name, "r", &file, file::Defaults()));
+  OR_RETURN_IF_ERROR(file::Open(file_name, "r", &file, file::Defaults()));
   return file;
 }
 }  // namespace
@@ -194,14 +194,14 @@ absl::Status TspLibParser::LoadFile(absl::string_view file_name) {
   std::shared_ptr<zipfile::ZipArchive> zip_archive(
       OpenZipArchiveIfItExists(file_name));
   valid_section_found_ = false;
-  ASSIGN_OR_RETURN(File* const file, OpenFile(file_name));
+  OR_ASSIGN_OR_RETURN(File* const file, OpenFile(file_name));
   for (const std::string& line :
        FileLines(file_name, file, FileLineIterator::REMOVE_INLINE_CR)) {
     ProcessNewLine(line);
   }
   FinalizeEdgeWeights();
   if (!valid_section_found_) {
-    return util::InvalidArgumentErrorBuilder()
+    return ortools::InvalidArgumentErrorBuilder()
            << "Could not find any valid sections in " << file_name;
   }
   return absl::OkStatus();
@@ -211,7 +211,7 @@ absl::StatusOr<int> TspLibParser::SizeFromFile(
     absl::string_view file_name) const {
   std::shared_ptr<zipfile::ZipArchive> zip_archive(
       OpenZipArchiveIfItExists(file_name));
-  ASSIGN_OR_RETURN(File* const file, OpenFile(file_name));
+  OR_ASSIGN_OR_RETURN(File* const file, OpenFile(file_name));
   int size = 0;
   for (const std::string& line :
        FileLines(file_name, file, FileLineIterator::REMOVE_INLINE_CR)) {
@@ -219,7 +219,7 @@ absl::StatusOr<int> TspLibParser::SizeFromFile(
       return size;
     }
   }
-  return util::InvalidArgumentErrorBuilder()
+  return ortools::InvalidArgumentErrorBuilder()
          << "Could not determine problem size from " << file_name;
 }
 
@@ -782,7 +782,7 @@ absl::Status TspLibTourParser::LoadFile(absl::string_view file_name) {
   tour_.clear();
   std::shared_ptr<zipfile::ZipArchive> zip_archive(
       OpenZipArchiveIfItExists(file_name));
-  ASSIGN_OR_RETURN(File* const file, OpenFile(file_name));
+  OR_ASSIGN_OR_RETURN(File* const file, OpenFile(file_name));
   for (const std::string& line :
        FileLines(file_name, file, FileLineIterator::REMOVE_INLINE_CR)) {
     ProcessNewLine(line);
@@ -851,7 +851,7 @@ absl::Status CVRPToursParser::LoadFile(absl::string_view file_name) {
   cost_ = 0;
   std::shared_ptr<zipfile::ZipArchive> zip_archive(
       OpenZipArchiveIfItExists(file_name));
-  ASSIGN_OR_RETURN(File* const file, OpenFile(file_name));
+  OR_ASSIGN_OR_RETURN(File* const file, OpenFile(file_name));
   for (const std::string& line :
        FileLines(file_name, file, FileLineIterator::REMOVE_INLINE_CR)) {
     ProcessNewLine(line);

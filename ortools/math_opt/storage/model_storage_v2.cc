@@ -78,7 +78,7 @@ void ModelStorageV2::DeleteLinearConstraint(LinearConstraintId id) {
 
 absl::StatusOr<absl_nonnull std::unique_ptr<ModelStorageV2>>
 ModelStorageV2::FromModelProto(const ModelProto& model_proto) {
-  ASSIGN_OR_RETURN(Elemental e, Elemental::FromModelProto(model_proto));
+  OR_ASSIGN_OR_RETURN(Elemental e, Elemental::FromModelProto(model_proto));
   return absl::WrapUnique(new ModelStorageV2(std::move(e)));
 }
 

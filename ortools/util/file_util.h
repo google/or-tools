@@ -47,7 +47,7 @@ template <typename Proto>
 absl::StatusOr<Proto> ReadFileToProto(absl::string_view filename,
                                       bool allow_partial = false) {
   Proto proto;
-  RETURN_IF_ERROR(ReadFileToProto(filename, &proto, allow_partial))
+  OR_RETURN_IF_ERROR(ReadFileToProto(filename, &proto, allow_partial))
       << "filename=" << filename;
   return proto;
 }

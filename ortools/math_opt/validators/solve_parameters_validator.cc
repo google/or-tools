@@ -36,7 +36,7 @@ namespace {
 absl::Status ValidateEmphasisProtoParameter(
     const EmphasisProto value, const absl::string_view field_name) {
   if (!EmphasisProto_IsValid(value)) {
-    return util::InvalidArgumentErrorBuilder()
+    return ortools::InvalidArgumentErrorBuilder()
            << "Unknown enum value for SolverParameters." << field_name << " = "
            << value;
   }
@@ -52,7 +52,7 @@ absl::Status ValidateSolveParameters(const SolveParametersProto& parameters) {
         util_time::DecodeGoogleApiProto(parameters.time_limit()),
         _ << "invalid SolveParameters.time_limit");
     if (time_limit < absl::ZeroDuration()) {
-      return util::InvalidArgumentErrorBuilder()
+      return ortools::InvalidArgumentErrorBuilder()
              << "SolveParameters.time_limit = " << time_limit << " < 0";
     }
   }
@@ -80,19 +80,19 @@ absl::Status ValidateSolveParameters(const SolveParametersProto& parameters) {
     }
   }
   if (parameters.has_node_limit() && parameters.node_limit() < 0) {
-    return util::InvalidArgumentErrorBuilder()
+    return ortools::InvalidArgumentErrorBuilder()
            << "SolveParameters.node_limit = " << parameters.node_limit()
            << " should be nonnegative.";
   }
 
   if (parameters.has_solution_limit() && parameters.solution_limit() <= 0) {
-    return util::InvalidArgumentErrorBuilder()
+    return ortools::InvalidArgumentErrorBuilder()
            << "SolveParameters.solution_limit = " << parameters.solution_limit()
            << " should be positive.";
   }
 
   if (!std::isfinite(parameters.cutoff_limit())) {
-    return util::InvalidArgumentErrorBuilder()
+    return ortools::InvalidArgumentErrorBuilder()
            << "SolveParameters.cutoff_limit should be finite (and not NaN) but "
               "was: "
            << parameters.cutoff_limit();
@@ -107,18 +107,18 @@ absl::Status ValidateSolveParameters(const SolveParametersProto& parameters) {
   }
   if (parameters.has_solution_pool_size() &&
       parameters.solution_pool_size() <= 0) {
-    return util::InvalidArgumentErrorBuilder()
+    return ortools::InvalidArgumentErrorBuilder()
            << "SolveParameters.solution_pool_size must be positive if set, but "
               "was set to: "
            << parameters.solution_pool_size();
   }
   if (!LPAlgorithmProto_IsValid(parameters.lp_algorithm())) {
-    return util::InvalidArgumentErrorBuilder()
+    return ortools::InvalidArgumentErrorBuilder()
            << "Unknown enum value for SolverParameters.lp_algorithm = "
            << parameters.lp_algorithm();
   }
 #define VALIDATE_EMPHASIS(property) \
-  RETURN_IF_ERROR(                  \
+  OR_RETURN_IF_ERROR(               \
       ValidateEmphasisProtoParameter(parameters.property(), #property))
   VALIDATE_EMPHASIS(presolve);
   VALIDATE_EMPHASIS(cuts);

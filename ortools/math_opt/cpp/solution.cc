@@ -200,13 +200,13 @@ absl::StatusOr<Basis> Basis::FromProto(const ModelStorageCPtr model,
 absl::Status Basis::CheckModelStorage(
     const ModelStorageCPtr expected_storage) const {
   for (const auto& [v, _] : variable_status) {
-    RETURN_IF_ERROR(
+    OR_RETURN_IF_ERROR(
         internal::CheckModelStorage(/*storage=*/v.storage(),
                                     /*expected_storage=*/expected_storage))
         << "invalid variable " << v << " in variable_status";
   }
   for (const auto& [c, _] : constraint_status) {
-    RETURN_IF_ERROR(
+    OR_RETURN_IF_ERROR(
         internal::CheckModelStorage(/*storage=*/c.storage(),
                                     /*expected_storage=*/expected_storage))
         << "invalid constraint " << c << " in constraint_status";

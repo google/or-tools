@@ -25,8 +25,8 @@
 namespace operations_research::math_opt {
 
 absl::StatusOr<std::string> ModelProtoToLp(const ModelProto& model) {
-  ASSIGN_OR_RETURN(const MPModelProto mp_model_proto,
-                   MathOptModelToMPModelProto(model));
+  OR_ASSIGN_OR_RETURN(const MPModelProto mp_model_proto,
+                      MathOptModelToMPModelProto(model));
   return ExportModelAsLpFormat(mp_model_proto, {.show_unused_variables = true});
 }
 

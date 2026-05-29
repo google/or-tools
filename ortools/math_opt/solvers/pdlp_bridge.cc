@@ -80,7 +80,7 @@ Eigen::VectorXd EncodeSolution(
 
 absl::StatusOr<PdlpBridge> PdlpBridge::FromProto(
     const ModelProto& model_proto) {
-  RETURN_IF_ERROR(
+  OR_RETURN_IF_ERROR(
       ModelIsSupported(model_proto, kPdlpSupportedStructures, "PDLP"));
   PdlpBridge result;
   pdlp::QuadraticProgram& pdlp_lp = result.pdlp_lp_;

@@ -38,7 +38,7 @@ namespace {
 
 absl::Status ScipConvertLpToMps(const std::string& lp_filename_in,
                                 const std::string& mps_filename_out) {
-  ASSIGN_OR_RETURN(const std::unique_ptr<GScip> gscip, GScip::Create(""));
+  OR_ASSIGN_OR_RETURN(const std::unique_ptr<GScip> gscip, GScip::Create(""));
   // Warning: puts gscip into an invalid state, but the underlying SCIP is fine.
   RETURN_IF_SCIP_ERROR(
       SCIPreadProb(gscip->scip(), lp_filename_in.c_str(), "lp"));
@@ -57,14 +57,14 @@ absl::StatusOr<ModelProto> ModelProtoFromLp(const absl::string_view lp_data) {
         "creating temporary directory when parsing LP file failed");
   }
   const std::string lp_file = file::JoinPath(dir->path(), "model.lp");
-  RETURN_IF_ERROR(file::SetContents(lp_file, lp_data, file::Defaults()));
+  OR_RETURN_IF_ERROR(file::SetContents(lp_file, lp_data, file::Defaults()));
   const std::string mps_file = file::JoinPath(dir->path(), "model.mps");
 
   // Do the conversion
-  RETURN_IF_ERROR(ScipConvertLpToMps(lp_file, mps_file))
+  OR_RETURN_IF_ERROR(ScipConvertLpToMps(lp_file, mps_file))
       << "failed to convert LP file with SCIP";
-  ASSIGN_OR_RETURN(const std::string mps_data,
-                   file::GetContents(mps_file, file::Defaults()));
+  OR_ASSIGN_OR_RETURN(const std::string mps_data,
+                      file::GetContents(mps_file, file::Defaults()));
   OR_ASSIGN_OR_RETURN3(
       ModelProto result, MpsToModelProto(mps_data),
       _ << "failed to parse MPS (produced by SCIP from LP file)");

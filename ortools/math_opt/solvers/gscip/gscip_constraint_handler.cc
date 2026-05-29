@@ -117,7 +117,7 @@ absl::StatusOr<GScipCallbackResult> ApplyCallback(
       absl::MakeSpan(constraints, total_num_constraints);
   absl::Span<SCIP_Cons*> useful_constraints =
       all_constraints.subspan(0, num_useful_constraints);
-  ASSIGN_OR_RETURN(
+  OR_ASSIGN_OR_RETURN(
       const GScipCallbackResult result,
       ApplyCallback(useful_constraints, callback_function, callback_type));
   // The first num_useful_constraints are the ones that are more likely to be
@@ -128,7 +128,7 @@ absl::StatusOr<GScipCallbackResult> ApplyCallback(
       result == GScipCallbackResult::kFeasible) {
     absl::Span<SCIP_Cons*> remaining_constraints =
         all_constraints.subspan(num_useful_constraints);
-    ASSIGN_OR_RETURN(
+    OR_ASSIGN_OR_RETURN(
         const GScipCallbackResult remaining_result,
         ApplyCallback(remaining_constraints, callback_function, callback_type));
     if (remaining_result != GScipCallbackResult::kDidNotFind &&
@@ -621,7 +621,7 @@ absl::StatusOr<SCIP_CONS*> AddCallbackConstraint(
   SCIP* scip = gscip->scip();
   SCIP_CONSHDLR* conshdlr = SCIPfindConshdlr(scip, handler_name.data());
   if (conshdlr == nullptr) {
-    return util::InternalErrorBuilder()
+    return ortools::InternalErrorBuilder()
            << "Constraint handler " << handler_name
            << " not registered with SCIP. Check if you "
               "registered the constraint handler before adding constraints.";

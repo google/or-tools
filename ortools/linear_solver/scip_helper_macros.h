@@ -157,7 +157,7 @@ inline absl::Status ScipCodeToUtilStatus(
   }
 
   auto status_builder =
-      util::InvalidArgumentErrorBuilder()
+      ortools::InvalidArgumentErrorBuilder()
       << "SCIP error code " << retcode << " (" << SCIPRetcodeName(retcode)
       << ") (file '" << absl::CEscape(source_file) << "', line " << source_line
       << ") on '" << absl::CEscape(scip_statement) << "'";
@@ -190,7 +190,7 @@ inline absl::Status ScipCodeToUtilStatus(
         retcode, __FILE__, __LINE__, #x, captured_errors);          \
   }()
 
-#define RETURN_IF_SCIP_ERROR(x) RETURN_IF_ERROR(SCIP_TO_STATUS(x));
+#define RETURN_IF_SCIP_ERROR(x) OR_RETURN_IF_ERROR(SCIP_TO_STATUS(x));
 
 }  // namespace operations_research
 

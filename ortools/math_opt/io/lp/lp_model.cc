@@ -39,7 +39,7 @@ absl::Status ValidateRelation(Relation relation) {
     case Relation::kGreaterOrEqual:
       return absl::OkStatus();
   }
-  return util::InvalidArgumentErrorBuilder()
+  return ortools::InvalidArgumentErrorBuilder()
          << "Invalid Relation: " << static_cast<int>(relation);
 }
 
@@ -76,25 +76,26 @@ std::ostream& operator<<(std::ostream& ostr, const Constraint& constraint) {
 
 absl::StatusOr<ConstraintIndex> LpModel::AddConstraint(Constraint constraint) {
   if (!constraint.name.empty()) {
-    RETURN_IF_ERROR(ValidateName(constraint.name)) << "invalid constraint name";
+    OR_RETURN_IF_ERROR(ValidateName(constraint.name))
+        << "invalid constraint name";
   }
   if (constraint.terms.empty()) {
     return absl::InvalidArgumentError("constraint must have at least one term");
   }
   for (const auto [coef, var] : constraint.terms) {
     if (var < VariableIndex{0} || var >= variables_.end_index()) {
-      return util::InvalidArgumentErrorBuilder()
+      return ortools::InvalidArgumentErrorBuilder()
              << "variable ids should be in [0," << variables_.end_index()
              << ") but found: " << var;
     }
     if (!std::isfinite(coef)) {
-      return util::InvalidArgumentErrorBuilder()
+      return ortools::InvalidArgumentErrorBuilder()
              << "All coefficients in constraints must be finite and not NaN "
                 "but found: "
              << coef;
     }
   }
-  RETURN_IF_ERROR(ValidateRelation(constraint.relation));
+  OR_RETURN_IF_ERROR(ValidateRelation(constraint.relation));
   if (std::isnan(constraint.rhs)) {
     return absl::InvalidArgumentError("rhs of constraint was NaN");
   }
@@ -105,10 +106,10 @@ absl::StatusOr<ConstraintIndex> LpModel::AddConstraint(Constraint constraint) {
 
 absl::StatusOr<VariableIndex> LpModel::AddVariable(absl::string_view name) {
   if (variable_names_.contains(name)) {
-    return util::InvalidArgumentErrorBuilder()
+    return ortools::InvalidArgumentErrorBuilder()
            << "duplicate variable name: " << name;
   }
-  RETURN_IF_ERROR(ValidateName(name)) << "invalid variable name";
+  OR_RETURN_IF_ERROR(ValidateName(name)) << "invalid variable name";
   const VariableIndex index = variables_.end_index();
   variables_.push_back(std::string(name));
   variable_names_[name] = index;

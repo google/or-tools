@@ -38,7 +38,7 @@ namespace operations_research {
 
 absl::StatusOr<std::string> ReadFileToString(absl::string_view filename) {
   std::string contents;
-  RETURN_IF_ERROR(file::GetContents(filename, &contents, file::Defaults()));
+  OR_RETURN_IF_ERROR(file::GetContents(filename, &contents, file::Defaults()));
   // Try decompressing it.
   {
     std::string uncompressed;
@@ -51,8 +51,8 @@ absl::Status ReadFileToProto(absl::string_view filename,
                              google::protobuf::Message* proto,
                              bool allow_partial) {
   std::string data;
-  RETURN_IF_ERROR(file::GetContents(filename, &data, file::Defaults()));
-  return util::StatusBuilder(StringToProto(data, proto, allow_partial))
+  OR_RETURN_IF_ERROR(file::GetContents(filename, &data, file::Defaults()));
+  return ortools::StatusBuilder(StringToProto(data, proto, allow_partial))
          << " in file '" << filename << "'";
 }
 

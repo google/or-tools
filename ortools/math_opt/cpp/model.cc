@@ -55,8 +55,8 @@ constexpr double kInf = std::numeric_limits<double>::infinity();
 
 absl::StatusOr<std::unique_ptr<Model>> Model::FromModelProto(
     const ModelProto& model_proto) {
-  ASSIGN_OR_RETURN(absl_nonnull std::unique_ptr<ModelStorage> storage,
-                   ModelStorage::FromModelProto(model_proto));
+  OR_ASSIGN_OR_RETURN(absl_nonnull std::unique_ptr<ModelStorage> storage,
+                      ModelStorage::FromModelProto(model_proto));
   return std::make_unique<Model>(std::move(storage));
 }
 

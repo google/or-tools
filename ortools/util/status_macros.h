@@ -41,9 +41,9 @@
 #define OR_ASSIGN_OR_RETURN3_IMPL_(statusor, lhs, rexpr, error_expression) \
   auto statusor = (rexpr);                                                 \
   if (!statusor.ok()) {                                                    \
-    ::util::StatusBuilder _(std::move(statusor).status());                 \
+    ::ortools::StatusBuilder _(std::move(statusor).status());                 \
     return (error_expression);                                             \
   }                                                                        \
-  STATUS_MACROS_IMPL_UNPARENTHESIS(lhs) = std::move(statusor).value()
+  OR_STATUS_MACROS_IMPL_UNPARENTHESIS(lhs) = std::move(statusor).value()
 
 #endif  // ORTOOLS_UTIL_STATUS_MACROS_H_

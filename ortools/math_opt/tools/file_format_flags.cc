@@ -200,37 +200,37 @@ absl::StatusOr<std::pair<ModelProto, std::optional<SolutionHintProto>>>
 ReadModel(const absl::string_view file_path, const FileFormat format) {
   switch (format) {
     case FileFormat::kMathOptBinary: {
-      ASSIGN_OR_RETURN(ModelProto model, file::GetBinaryProto<ModelProto>(
-                                             file_path, file::Defaults()));
+      OR_ASSIGN_OR_RETURN(ModelProto model, file::GetBinaryProto<ModelProto>(
+                                                file_path, file::Defaults()));
       return std::make_pair(std::move(model), std::nullopt);
     }
     case FileFormat::kMathOptText: {
-      ASSIGN_OR_RETURN(ModelProto model, file::GetTextProto<ModelProto>(
-                                             file_path, file::Defaults()));
+      OR_ASSIGN_OR_RETURN(ModelProto model, file::GetTextProto<ModelProto>(
+                                                file_path, file::Defaults()));
       return std::make_pair(std::move(model), std::nullopt);
     }
     case FileFormat::kLinearSolverBinary:
     case FileFormat::kLinearSolverText: {
-      ASSIGN_OR_RETURN(
+      OR_ASSIGN_OR_RETURN(
           const MPModelProto linear_solver_model,
           format == FileFormat::kLinearSolverBinary
               ? file::GetBinaryProto<MPModelProto>(file_path, file::Defaults())
               : file::GetTextProto<MPModelProto>(file_path, file::Defaults()));
-      ASSIGN_OR_RETURN(ModelProto model,
-                       MPModelProtoToMathOptModel(linear_solver_model));
-      ASSIGN_OR_RETURN(
+      OR_ASSIGN_OR_RETURN(ModelProto model,
+                          MPModelProtoToMathOptModel(linear_solver_model));
+      OR_ASSIGN_OR_RETURN(
           std::optional<SolutionHintProto> hint,
           MPModelProtoSolutionHintToMathOptHint(linear_solver_model));
       return std::make_pair(std::move(model), std::move(hint));
     }
     case FileFormat::kMPS: {
-      ASSIGN_OR_RETURN(ModelProto model, ReadMpsFile(file_path));
+      OR_ASSIGN_OR_RETURN(ModelProto model, ReadMpsFile(file_path));
       return std::make_pair(std::move(model), std::nullopt);
     }
     case FileFormat::kLP: {
-      ASSIGN_OR_RETURN(const std::string lp_data,
-                       file::GetContents(file_path, file::Defaults()));
-      ASSIGN_OR_RETURN(ModelProto model, ModelProtoFromLp(lp_data));
+      OR_ASSIGN_OR_RETURN(const std::string lp_data,
+                          file::GetContents(file_path, file::Defaults()));
+      OR_ASSIGN_OR_RETURN(ModelProto model, ModelProtoFromLp(lp_data));
       return std::make_pair(std::move(model), std::nullopt);
     }
   }
@@ -248,8 +248,8 @@ absl::Status WriteModel(const absl::string_view file_path,
       return file::SetTextProto(file_path, model_proto, file::Defaults());
     case FileFormat::kLinearSolverBinary:
     case FileFormat::kLinearSolverText: {
-      ASSIGN_OR_RETURN(const MPModelProto linear_solver_model,
-                       MathOptModelToMPModelProto(model_proto));
+      OR_ASSIGN_OR_RETURN(const MPModelProto linear_solver_model,
+                          MathOptModelToMPModelProto(model_proto));
       if (hint_proto.has_value()) {
         LOG(WARNING) << "support for converting a MathOpt hint to MPModelProto "
                         "is not yet supported thus the hint has been lost";
@@ -261,12 +261,13 @@ absl::Status WriteModel(const absl::string_view file_path,
                                       file::Defaults());
     }
     case FileFormat::kMPS: {
-      ASSIGN_OR_RETURN(const std::string mps_data,
-                       ModelProtoToMps(model_proto));
+      OR_ASSIGN_OR_RETURN(const std::string mps_data,
+                          ModelProtoToMps(model_proto));
       return file::SetContents(file_path, mps_data, file::Defaults());
     }
     case FileFormat::kLP: {
-      ASSIGN_OR_RETURN(const std::string lp_data, ModelProtoToLp(model_proto));
+      OR_ASSIGN_OR_RETURN(const std::string lp_data,
+                          ModelProtoToLp(model_proto));
       return file::SetContents(file_path, lp_data, file::Defaults());
     }
   }

@@ -73,7 +73,7 @@ namespace math_opt {
 // objective_expression += 2 * x;
 // objective_expression += y;
 // model.Maximize(objective_expression);
-// ASSIGN_OR_RETURN(const math_opt::SolveResult result,
+// OR_ASSIGN_OR_RETURN(const math_opt::SolveResult result,
 //                  Solve(model, math_opt::SolverType::kGscip));
 // switch (result.termination.reason) {
 //   case math_opt::TerminationReason::kOptimal:
@@ -83,7 +83,7 @@ namespace math_opt {
 //               << std::endl;
 //     return absl::OkStatus();
 //   default:
-//     return util::InternalErrorBuilder()
+//     return ortools::InternalErrorBuilder()
 //            << "model failed to solve: " << result.termination;
 // }
 //
@@ -123,8 +123,8 @@ class Model {
   // apply an update to the model.
   //
   // Usage example reading an MPS file:
-  //   ASSIGN_OR_RETURN(const ModelProto model_proto, ReadMpsFile(path));
-  //   ASSIGN_OR_RETURN(const std::unique_ptr<Model> model,
+  //   OR_ASSIGN_OR_RETURN(const ModelProto model_proto, ReadMpsFile(path));
+  //   OR_ASSIGN_OR_RETURN(const std::unique_ptr<Model> model,
   //                    Model::FromModelProto(model_proto));
   static absl::StatusOr<std::unique_ptr<Model>> FromModelProto(
       const ModelProto& model_proto);
@@ -1043,12 +1043,12 @@ absl::Status Model::ValidateExistingVariableOfThisModel(
     Variable variable) const {
   // TODO(b/239810718): use << for Variable once it does not CHECK.
   if (storage_.get() != variable.storage()) {
-    return util::InvalidArgumentErrorBuilder()
+    return ortools::InvalidArgumentErrorBuilder()
            << "variable with id " << variable.id()
            << " is from a different model";
   }
   if (!has_variable(variable.typed_id())) {
-    return util::InvalidArgumentErrorBuilder()
+    return ortools::InvalidArgumentErrorBuilder()
            << "variable with id " << variable.id()
            << " is not found in this model (it was probably deleted)";
   }
@@ -1130,12 +1130,12 @@ absl::Status Model::ValidateExistingLinearConstraintOfThisModel(
     LinearConstraint linear_constraint) const {
   // TODO(b/239810718): use << for LinearConstraint once it does not CHECK.
   if (storage_.get() != linear_constraint.storage()) {
-    return util::InvalidArgumentErrorBuilder()
+    return ortools::InvalidArgumentErrorBuilder()
            << "linear constraint with id " << linear_constraint.id()
            << " is from a different model";
   }
   if (!has_linear_constraint(linear_constraint.typed_id())) {
-    return util::InvalidArgumentErrorBuilder()
+    return ortools::InvalidArgumentErrorBuilder()
            << "linear constraint with id " << linear_constraint.id()
            << " is not found in this model (it was probably deleted)";
   }

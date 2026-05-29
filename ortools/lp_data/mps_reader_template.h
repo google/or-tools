@@ -671,10 +671,10 @@ absl::StatusOr<MPSReaderFormat> MPSReaderTemplate<DataWrapper>::ParseFile(
   Reset();
   data->SetUp();
   File* file = nullptr;
-  RETURN_IF_ERROR(file::Open(file_name, "r", &file, file::Defaults()));
+  OR_RETURN_IF_ERROR(file::Open(file_name, "r", &file, file::Defaults()));
   for (const absl::string_view line :
        FileLines(file_name, file, FileLineIterator::REMOVE_INLINE_CR)) {
-    RETURN_IF_ERROR(ProcessLine(line, data));
+    OR_RETURN_IF_ERROR(ProcessLine(line, data));
   }
   data->CleanUp();
   DisplaySummary();
@@ -697,7 +697,7 @@ absl::StatusOr<MPSReaderFormat> MPSReaderTemplate<DataWrapper>::ParseString(
   Reset();
   data->SetUp();
   for (absl::string_view line : absl::StrSplit(source, '\n')) {
-    RETURN_IF_ERROR(ProcessLine(line, data));
+    OR_RETURN_IF_ERROR(ProcessLine(line, data));
   }
   data->CleanUp();
   DisplaySummary();
@@ -708,7 +708,7 @@ template <class DataWrapper>
 absl::Status MPSReaderTemplate<DataWrapper>::ProcessLine(absl::string_view line,
                                                          DataWrapper* data) {
   ++line_num_;
-  ASSIGN_OR_RETURN(const internal::MPSLineInfo line_info,
+  OR_ASSIGN_OR_RETURN(const internal::MPSLineInfo line_info,
                    internal::MPSLineInfo::Create(line_num_, free_form_, line));
   if (line_info.IsCommentOrBlank()) {
     return absl::OkStatus();  // Skip blank lines and comments.
@@ -907,7 +907,7 @@ absl::Status MPSReaderTemplate<DataWrapper>::ProcessColumnsSection(
   } else {
     data->SetVariableBounds(col, 0.0, kInfinity);
   }
-  RETURN_IF_ERROR(
+  OR_RETURN_IF_ERROR(
       StoreCoefficient(line_info, col, row1_name, row1_value, data));
   if (line_info.GetFieldsSize() == start_index + 4) {
     return line_info.InvalidArgumentError("Unexpected number of fields.");
@@ -915,7 +915,7 @@ absl::Status MPSReaderTemplate<DataWrapper>::ProcessColumnsSection(
   if (line_info.GetFieldsSize() - start_index > 4) {
     const absl::string_view row2_name = line_info.GetField(start_index + 3);
     const absl::string_view row2_value = line_info.GetField(start_index + 4);
-    RETURN_IF_ERROR(
+    OR_RETURN_IF_ERROR(
         StoreCoefficient(line_info, col, row2_name, row2_value, data));
   }
   return absl::OkStatus();
@@ -932,11 +932,11 @@ absl::Status MPSReaderTemplate<DataWrapper>::ProcessRhsSection(
   // const absl::string_view rhs_name = line_info.GetField(0); is not used
   const absl::string_view row1_name = line_info.GetField(offset);
   const absl::string_view row1_value = line_info.GetField(offset + 1);
-  RETURN_IF_ERROR(StoreRightHandSide(line_info, row1_name, row1_value, data));
+  OR_RETURN_IF_ERROR(StoreRightHandSide(line_info, row1_name, row1_value, data));
   if (line_info.GetFieldsSize() - start_index >= 4) {
     const absl::string_view row2_name = line_info.GetField(offset + 2);
     const absl::string_view row2_value = line_info.GetField(offset + 3);
-    RETURN_IF_ERROR(StoreRightHandSide(line_info, row2_name, row2_value, data));
+    OR_RETURN_IF_ERROR(StoreRightHandSide(line_info, row2_name, row2_value, data));
   }
   return absl::OkStatus();
 }
@@ -952,11 +952,11 @@ absl::Status MPSReaderTemplate<DataWrapper>::ProcessRangesSection(
   // const absl::string_view range_name = line_info.GetField(0); is not used
   const absl::string_view row1_name = line_info.GetField(offset);
   const absl::string_view row1_value = line_info.GetField(offset + 1);
-  RETURN_IF_ERROR(StoreRange(line_info, row1_name, row1_value, data));
+  OR_RETURN_IF_ERROR(StoreRange(line_info, row1_name, row1_value, data));
   if (line_info.GetFieldsSize() - start_index >= 4) {
     const absl::string_view row2_name = line_info.GetField(offset + 2);
     const absl::string_view row2_value = line_info.GetField(offset + 3);
-    RETURN_IF_ERROR(StoreRange(line_info, row2_name, row2_value, data));
+    OR_RETURN_IF_ERROR(StoreRange(line_info, row2_name, row2_value, data));
   }
   return absl::OkStatus();
 }
@@ -997,7 +997,7 @@ absl::Status MPSReaderTemplate<DataWrapper>::ProcessIndicatorsSection(
   const absl::string_view column_value = line_info.GetField(3);
 
   bool value;
-  ASSIGN_OR_RETURN(value, GetBoolFromString(column_value, line_info));
+  OR_ASSIGN_OR_RETURN(value, GetBoolFromString(column_value, line_info));
 
   const IndexType col = data->FindOrCreateVariable(column_name);
   // Variables used in indicator constraints become Boolean by default.
@@ -1005,7 +1005,7 @@ absl::Status MPSReaderTemplate<DataWrapper>::ProcessIndicatorsSection(
   data->SetVariableBounds(col, std::max(0.0, data->VariableLowerBound(col)),
                           std::min(1.0, data->VariableUpperBound(col)));
 
-  RETURN_IF_ERROR(line_info.AppendLineToError(
+  OR_RETURN_IF_ERROR(line_info.AppendLineToError(
       data->CreateIndicatorConstraint(row_name, col, value)));
 
   return absl::OkStatus();
@@ -1021,7 +1021,7 @@ absl::Status MPSReaderTemplate<DataWrapper>::StoreCoefficient(
   }
 
   double value;
-  ASSIGN_OR_RETURN(value, GetDoubleFromString(row_value, line_info));
+  OR_ASSIGN_OR_RETURN(value, GetDoubleFromString(row_value, line_info));
   if (value == kInfinity || value == -kInfinity) {
     return line_info.InvalidArgumentError(
         "Constraint coefficients cannot be infinity.");
@@ -1045,7 +1045,7 @@ absl::Status MPSReaderTemplate<DataWrapper>::StoreRightHandSide(
   if (row_name != objective_name_) {
     const IndexType row = data->FindOrCreateConstraint(row_name);
     double value;
-    ASSIGN_OR_RETURN(value, GetDoubleFromString(row_value, line_info));
+    OR_ASSIGN_OR_RETURN(value, GetDoubleFromString(row_value, line_info));
 
     // The row type is encoded in the bounds, so at this point we have either
     // (-kInfinity, 0.0], [0.0, 0.0] or [0.0, kInfinity). We use the right
@@ -1060,7 +1060,7 @@ absl::Status MPSReaderTemplate<DataWrapper>::StoreRightHandSide(
     // line with what the MPS writer does and what Gurobi's MPS format
     // expects.
     double value;
-    ASSIGN_OR_RETURN(value, GetDoubleFromString(row_value, line_info));
+    OR_ASSIGN_OR_RETURN(value, GetDoubleFromString(row_value, line_info));
     data->SetObjectiveOffset(-value);
   }
   return absl::OkStatus();
@@ -1074,7 +1074,7 @@ absl::Status MPSReaderTemplate<DataWrapper>::StoreRange(
 
   const IndexType row = data->FindOrCreateConstraint(row_name);
   double range;
-  ASSIGN_OR_RETURN(range, GetDoubleFromString(range_value, line_info));
+  OR_ASSIGN_OR_RETURN(range, GetDoubleFromString(range_value, line_info));
 
   double lower_bound = data->ConstraintLowerBound(row);
   double upper_bound = data->ConstraintUpperBound(row);
@@ -1121,7 +1121,7 @@ absl::Status MPSReaderTemplate<DataWrapper>::StoreBound(
   }
   switch (bound_type_id) {
     case BoundTypeId::kLowerBound: {
-      ASSIGN_OR_RETURN(lower_bound,
+      OR_ASSIGN_OR_RETURN(lower_bound,
                        GetDoubleFromString(bound_value, line_info));
       // TODO(b/285121446): Decide to keep or remove this corner case behavior.
       // LI with the value 0.0 specifies general integers with no upper bound.
@@ -1131,18 +1131,18 @@ absl::Status MPSReaderTemplate<DataWrapper>::StoreBound(
       break;
     }
     case BoundTypeId::kUpperBound: {
-      ASSIGN_OR_RETURN(upper_bound,
+      OR_ASSIGN_OR_RETURN(upper_bound,
                        GetDoubleFromString(bound_value, line_info));
       break;
     }
     case BoundTypeId::kSemiContinuous: {
-      ASSIGN_OR_RETURN(upper_bound,
+      OR_ASSIGN_OR_RETURN(upper_bound,
                        GetDoubleFromString(bound_value, line_info));
       data->SetVariableTypeToSemiContinuous(col);
       break;
     }
     case BoundTypeId::kFixedVariable: {
-      ASSIGN_OR_RETURN(lower_bound,
+      OR_ASSIGN_OR_RETURN(lower_bound,
                        GetDoubleFromString(bound_value, line_info));
       upper_bound = lower_bound;
       break;

@@ -27,8 +27,8 @@
 namespace operations_research::math_opt {
 
 absl::StatusOr<std::string> ModelProtoToMps(const ModelProto& model) {
-  ASSIGN_OR_RETURN(const MPModelProto mp_model_proto,
-                   MathOptModelToMPModelProto(model));
+  OR_ASSIGN_OR_RETURN(const MPModelProto mp_model_proto,
+                      MathOptModelToMPModelProto(model));
   return ExportModelAsMpsFormat(mp_model_proto,
                                 {.show_unused_variables = true});
 }
@@ -36,13 +36,13 @@ absl::StatusOr<std::string> ModelProtoToMps(const ModelProto& model) {
 absl::StatusOr<ModelProto> ReadMpsFile(const absl::string_view filename) {
   glop::MPSReader mps_reader;
   MPModelProto mp_model;
-  RETURN_IF_ERROR(mps_reader.ParseFile(filename, &mp_model));
+  OR_RETURN_IF_ERROR(mps_reader.ParseFile(filename, &mp_model));
   return MPModelProtoToMathOptModel(mp_model);
 }
 
 absl::StatusOr<ModelProto> MpsToModelProto(absl::string_view mps_data) {
-  ASSIGN_OR_RETURN(const MPModelProto mp_model,
-                   glop::MpsDataToMPModelProto(mps_data));
+  OR_ASSIGN_OR_RETURN(const MPModelProto mp_model,
+                      glop::MpsDataToMPModelProto(mps_data));
   return MPModelProtoToMathOptModel(mp_model);
 }
 

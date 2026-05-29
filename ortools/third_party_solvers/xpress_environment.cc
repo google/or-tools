@@ -307,11 +307,11 @@ absl::Status LoadXpressDynamicLibrary(std::string& xpresspath) {
       if (!XPRSgetversionnumbers ||
           XPRSgetversionnumbers(&major, &minor, &build) != 0)
         *xpress_load_status =
-            util::StatusBuilder(absl::StatusCode::kNotFound)
+            ortools::StatusBuilder(absl::StatusCode::kNotFound)
             << "Xpress optimizer library too old, need at least version "
             << XPVERSION;
       else if (major < XPVERSION)
-        *xpress_load_status = util::StatusBuilder(absl::StatusCode::kNotFound)
+        *xpress_load_status = ortools::StatusBuilder(absl::StatusCode::kNotFound)
                               << "Xpress optimizer library version " << major
                               << " too old, need at least version "
                               << XPVERSION;

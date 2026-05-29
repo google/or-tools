@@ -34,13 +34,13 @@ namespace operations_research {
 
 absl::StatusOr<glop::DenseRow> ParseSolFile(absl::string_view file_name,
                                             const glop::LinearProgram& model) {
-  ASSIGN_OR_RETURN(std::string sol_file, ReadFileToString(file_name));
+  OR_ASSIGN_OR_RETURN(std::string sol_file, ReadFileToString(file_name));
   return ParseSolString(sol_file, model);
 }
 
 absl::StatusOr<MPSolutionResponse> ParseSolFile(absl::string_view file_name,
                                                 const MPModelProto& model) {
-  ASSIGN_OR_RETURN(std::string sol_file, ReadFileToString(file_name));
+  OR_ASSIGN_OR_RETURN(std::string sol_file, ReadFileToString(file_name));
   return ParseSolString(sol_file, model);
 }
 

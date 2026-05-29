@@ -154,7 +154,7 @@ struct SolveImplementationCaller {
       case Incremental::kNo:
         return solve(model, solver_type, solve_args, init_args);
       case Incremental::kYes: {
-        ASSIGN_OR_RETURN(
+        OR_ASSIGN_OR_RETURN(
             const std::unique_ptr<IncrementalSolver> incremental_solver,
             new_incremental_solver(&model, solver_type, init_args),
             _ << "NewXxxIncrementalSolver() failed");
@@ -176,7 +176,7 @@ struct SolveImplementationCaller {
         return compute_infeasible_subsystem(model, solver_type, compute_args,
                                             init_args);
       case Incremental::kYes: {
-        ASSIGN_OR_RETURN(
+        OR_ASSIGN_OR_RETURN(
             const std::unique_ptr<IncrementalSolver> incremental_solver,
             new_incremental_solver(&model, solver_type, init_args),
             _ << "NewXxxIncrementalSolver() failed");

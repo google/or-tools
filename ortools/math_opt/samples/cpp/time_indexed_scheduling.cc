@@ -157,11 +157,11 @@ absl::StatusOr<Schedule> Solve(absl::Span<const Job> jobs,
     }
     model.AddLinearConstraint(conflicts <= 1.0);
   }
-  ASSIGN_OR_RETURN(const math_opt::SolveResult result,
-                   math_opt::Solve(model, solver_type,
-                                   {.parameters = {.enable_output = true}}));
+  OR_ASSIGN_OR_RETURN(const math_opt::SolveResult result,
+                      math_opt::Solve(model, solver_type,
+                                      {.parameters = {.enable_output = true}}));
   if (!result.has_primal_feasible_solution()) {
-    return util::InvalidArgumentErrorBuilder()
+    return ortools::InvalidArgumentErrorBuilder()
            << "no primal feasible solution, termination: "
            << result.termination;
   }
@@ -205,8 +205,8 @@ absl::Status Main() {
     const int num_jobs = absl::GetFlag(FLAGS_num_jobs);
     jobs = RandomJobs(num_jobs);
   }
-  ASSIGN_OR_RETURN(const Schedule schedule,
-                   Solve(jobs, absl::GetFlag(FLAGS_solver_type)));
+  OR_ASSIGN_OR_RETURN(const Schedule schedule,
+                      Solve(jobs, absl::GetFlag(FLAGS_solver_type)));
   PrintSchedule(jobs, schedule);
   return absl::OkStatus();
 }
