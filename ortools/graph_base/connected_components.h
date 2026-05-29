@@ -155,9 +155,10 @@ struct ConnectedComponentsTypeHelper {
   template <typename U, typename V>
   struct SelectContainer<
       U, V,
-      absl::enable_if_t<std::is_integral<decltype(std::declval<const U&>()(
-                            std::declval<const T&>()))>::value &&
-                        std::is_same_v<V, void>>> {
+      std::enable_if_t<std::is_integral<decltype(std::declval<const U&>()(
+                           std::declval<const T&>()))>::value &&
+                           std::is_same_v<V, void>,
+                       void>> {
     using Set = absl::flat_hash_set<T, CompareOrHashT>;
     using Map = absl::flat_hash_map<T, int, CompareOrHashT>;
   };
@@ -166,9 +167,10 @@ struct ConnectedComponentsTypeHelper {
   template <typename U, typename V>
   struct SelectContainer<
       U, V,
-      absl::enable_if_t<std::is_integral<decltype(std::declval<const U&>()(
-                            std::declval<const T&>()))>::value &&
-                        !std::is_same_v<V, void>>> {
+      std::enable_if_t<std::is_integral<decltype(std::declval<const U&>()(
+                           std::declval<const T&>()))>::value &&
+                           !std::is_same_v<V, void>,
+                       void>> {
     using Set = absl::flat_hash_set<T, CompareOrHashT, Eq>;
     using Map = absl::flat_hash_map<T, int, CompareOrHashT, Eq>;
   };
