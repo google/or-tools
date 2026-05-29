@@ -59,8 +59,8 @@ absl::Status PreviousFatalFailureOccurred() {
 absl::StatusOr<SolveResultProto> Solver::NonIncrementalSolve(
     const ModelProto& model, const SolverTypeProto solver_type,
     const InitArgs& init_args, const SolveArgs& solve_args) {
-  ASSIGN_OR_RETURN(std::unique_ptr<Solver> solver,
-                   Solver::New(solver_type, model, init_args));
+  OR_ASSIGN_OR_RETURN(std::unique_ptr<Solver> solver,
+                      Solver::New(solver_type, model, init_args));
   return solver->Solve(solve_args);
 }
 
@@ -77,9 +77,9 @@ Solver::~Solver() { --internal::debug_num_solver; }
 absl::StatusOr<std::unique_ptr<Solver>> Solver::New(
     const SolverTypeProto solver_type, const ModelProto& model,
     const InitArgs& arguments) {
-  RETURN_IF_ERROR(internal::ValidateInitArgs(arguments, solver_type));
-  ASSIGN_OR_RETURN(ModelSummary summary, ValidateModel(model));
-  ASSIGN_OR_RETURN(
+  OR_RETURN_IF_ERROR(internal::ValidateInitArgs(arguments, solver_type));
+  OR_ASSIGN_OR_RETURN(ModelSummary summary, ValidateModel(model));
+  OR_ASSIGN_OR_RETURN(
       auto underlying_solver,
       AllSolversRegistry::Instance()->Create(solver_type, model, arguments));
   auto result = absl::WrapUnique(
@@ -88,8 +88,8 @@ absl::StatusOr<std::unique_ptr<Solver>> Solver::New(
 }
 
 absl::StatusOr<SolveResultProto> Solver::Solve(const SolveArgs& arguments) {
-  ASSIGN_OR_RETURN(const auto guard,
-                   ConcurrentCallsGuard::TryAcquire(concurrent_calls_tracker_));
+  OR_ASSIGN_OR_RETURN(const auto guard, ConcurrentCallsGuard::TryAcquire(
+                                            concurrent_calls_tracker_));
 
   if (fatal_failure_occurred_) {
     return PreviousFatalFailureOccurred();
@@ -103,14 +103,14 @@ absl::StatusOr<SolveResultProto> Solver::Solve(const SolveArgs& arguments) {
   // can be filtered, this should be included in the solver_interface
   // implementations.
 
-  RETURN_IF_ERROR(ValidateSolveParameters(arguments.parameters))
+  OR_RETURN_IF_ERROR(ValidateSolveParameters(arguments.parameters))
       << "invalid parameters";
-  RETURN_IF_ERROR(
+  OR_RETURN_IF_ERROR(
       ValidateModelSolveParameters(arguments.model_parameters, model_summary_))
       << "invalid model_parameters";
 
-  RETURN_IF_ERROR(ValidateCallbackRegistration(arguments.callback_registration,
-                                               model_summary_));
+  OR_RETURN_IF_ERROR(ValidateCallbackRegistration(
+      arguments.callback_registration, model_summary_));
   SolverInterface::Callback cb = nullptr;
   if (!arguments.callback_registration.request_registration().empty() &&
       arguments.user_cb == nullptr) {
@@ -121,29 +121,29 @@ absl::StatusOr<SolveResultProto> Solver::Solve(const SolveArgs& arguments) {
   if (arguments.user_cb != nullptr) {
     cb = [&](const CallbackDataProto& callback_data)
         -> absl::StatusOr<CallbackResultProto> {
-      RETURN_IF_ERROR(ValidateCallbackDataProto(
+      OR_RETURN_IF_ERROR(ValidateCallbackDataProto(
           callback_data, arguments.callback_registration, model_summary_));
       auto callback_result = arguments.user_cb(callback_data);
-      RETURN_IF_ERROR(ValidateCallbackResultProto(
+      OR_RETURN_IF_ERROR(ValidateCallbackResultProto(
           callback_result, callback_data.event(),
           arguments.callback_registration, model_summary_));
       return callback_result;
     };
   }
 
-  ASSIGN_OR_RETURN(SolveResultProto result,
-                   underlying_solver_->Solve(arguments.parameters,
-                                             arguments.model_parameters,
-                                             arguments.message_callback,
-                                             arguments.callback_registration,
-                                             cb, arguments.interrupter));
+  OR_ASSIGN_OR_RETURN(SolveResultProto result,
+                      underlying_solver_->Solve(arguments.parameters,
+                                                arguments.model_parameters,
+                                                arguments.message_callback,
+                                                arguments.callback_registration,
+                                                cb, arguments.interrupter));
   // TODO(b/290091715): Remove once language specific structs can use new
   // messages.
   UpgradeSolveResultProtoForStatsMigration(result);
   // We consider errors in `result` to be internal errors, but
   // `ValidateResult()` will return an InvalidArgumentError. So here we convert
   // the error.
-  RETURN_IF_ERROR(
+  OR_RETURN_IF_ERROR(
       ValidateResult(result, arguments.model_parameters, model_summary_))
       .SetCode(absl::StatusCode::kInternal);
 
@@ -152,8 +152,8 @@ absl::StatusOr<SolveResultProto> Solver::Solve(const SolveArgs& arguments) {
 }
 
 absl::StatusOr<bool> Solver::Update(const ModelUpdateProto model_update) {
-  ASSIGN_OR_RETURN(const auto guard,
-                   ConcurrentCallsGuard::TryAcquire(concurrent_calls_tracker_));
+  OR_ASSIGN_OR_RETURN(const auto guard, ConcurrentCallsGuard::TryAcquire(
+                                            concurrent_calls_tracker_));
 
   if (fatal_failure_occurred_) {
     return PreviousFatalFailureOccurred();
@@ -163,9 +163,9 @@ absl::StatusOr<bool> Solver::Update(const ModelUpdateProto model_update) {
   // We will reset it in code paths where no error occur.
   fatal_failure_occurred_ = true;
 
-  RETURN_IF_ERROR(ValidateModelUpdate(model_update, model_summary_));
-  ASSIGN_OR_RETURN(const bool updated,
-                   underlying_solver_->Update(model_update));
+  OR_RETURN_IF_ERROR(ValidateModelUpdate(model_update, model_summary_));
+  OR_ASSIGN_OR_RETURN(const bool updated,
+                      underlying_solver_->Update(model_update));
   if (!updated) {
     // We only destroy underlying_solver_ in this specific case as it would be
     // incorrect to destroy if the solver is GLPK and the error is that we are
@@ -183,8 +183,8 @@ absl::StatusOr<bool> Solver::Update(const ModelUpdateProto model_update) {
 absl::StatusOr<ComputeInfeasibleSubsystemResultProto>
 Solver::ComputeInfeasibleSubsystem(
     const ComputeInfeasibleSubsystemArgs& arguments) {
-  ASSIGN_OR_RETURN(const auto guard,
-                   ConcurrentCallsGuard::TryAcquire(concurrent_calls_tracker_));
+  OR_ASSIGN_OR_RETURN(const auto guard, ConcurrentCallsGuard::TryAcquire(
+                                            concurrent_calls_tracker_));
 
   if (fatal_failure_occurred_) {
     return PreviousFatalFailureOccurred();
@@ -194,18 +194,18 @@ Solver::ComputeInfeasibleSubsystem(
   // We will reset it in code paths where no error occur.
   fatal_failure_occurred_ = true;
 
-  RETURN_IF_ERROR(ValidateSolveParameters(arguments.parameters))
+  OR_RETURN_IF_ERROR(ValidateSolveParameters(arguments.parameters))
       << "invalid parameters";
 
-  ASSIGN_OR_RETURN(ComputeInfeasibleSubsystemResultProto result,
-                   underlying_solver_->ComputeInfeasibleSubsystem(
-                       arguments.parameters, arguments.message_callback,
-                       arguments.interrupter));
+  OR_ASSIGN_OR_RETURN(ComputeInfeasibleSubsystemResultProto result,
+                      underlying_solver_->ComputeInfeasibleSubsystem(
+                          arguments.parameters, arguments.message_callback,
+                          arguments.interrupter));
 
   // We consider errors in `result` to be internal errors, but
   // `ValidateInfeasibleSubsystemResult()` will return an InvalidArgumentError.
   // So here we convert the error.
-  RETURN_IF_ERROR(
+  OR_RETURN_IF_ERROR(
       ValidateComputeInfeasibleSubsystemResult(result, model_summary_))
       .SetCode(absl::StatusCode::kInternal);
 
@@ -218,8 +218,8 @@ Solver::NonIncrementalComputeInfeasibleSubsystem(
     const ModelProto& model, const SolverTypeProto solver_type,
     const InitArgs& init_args,
     const ComputeInfeasibleSubsystemArgs& compute_infeasible_subsystem_args) {
-  ASSIGN_OR_RETURN(std::unique_ptr<Solver> solver,
-                   Solver::New(solver_type, model, init_args));
+  OR_ASSIGN_OR_RETURN(std::unique_ptr<Solver> solver,
+                      Solver::New(solver_type, model, init_args));
   return solver->ComputeInfeasibleSubsystem(compute_infeasible_subsystem_args);
 }
 

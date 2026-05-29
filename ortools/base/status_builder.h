@@ -22,7 +22,7 @@
 #include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
 
-namespace util {
+namespace ortools {
 
 class StatusBuilder {
  public:
@@ -145,6 +145,6 @@ inline StatusBuilder UnknownErrorBuilder() {
   return StatusBuilder(absl::StatusCode::kUnknown);
 }
 
-}  // namespace util
+}  // namespace ortools
 
 #endif  // ORTOOLS_BASE_STATUS_BUILDER_H_

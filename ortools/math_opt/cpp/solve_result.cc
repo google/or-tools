@@ -327,7 +327,7 @@ bool Termination::limit_reached() const {
 
 absl::Status Termination::EnsureReasonIs(TerminationReason reason) const {
   if (this->reason == reason) return absl::OkStatus();
-  return util::InternalErrorBuilder()
+  return ortools::InternalErrorBuilder()
          << "expected termination reason '" << reason << "' but got " << *this;
 }
 
@@ -336,7 +336,7 @@ absl::Status Termination::EnsureReasonIsAnyOf(
   for (const TerminationReason reason : reasons) {
     if (this->reason == reason) return absl::OkStatus();
   }
-  return util::InternalErrorBuilder()
+  return ortools::InternalErrorBuilder()
          << "expected termination reason in {"
          << absl::StrJoin(reasons, ", ",
                           [](std::string* out, TerminationReason reason) {
@@ -448,7 +448,7 @@ std::string ProblemStatus::ToString() const {
 
 absl::StatusOr<SolveStatsProto> SolveStats::Proto() const {
   SolveStatsProto proto;
-  RETURN_IF_ERROR(
+  OR_RETURN_IF_ERROR(
       util_time::EncodeGoogleApiProto(solve_time, proto.mutable_solve_time()))
       << "invalid solve_time (value must be finite)";
   proto.set_simplex_iterations(simplex_iterations);
@@ -493,7 +493,7 @@ absl::Status CheckSolverSpecificOutputEmpty(const SolveResultProto& result) {
       SolveResultProto::SOLVER_SPECIFIC_OUTPUT_NOT_SET) {
     return absl::OkStatus();
   }
-  return util::InvalidArgumentErrorBuilder()
+  return ortools::InvalidArgumentErrorBuilder()
          << "cannot set solver specific output twice, was already "
          << static_cast<int>(result.solver_specific_output_case());
 }
@@ -582,7 +582,7 @@ absl::StatusOr<SolveResult> SolveResult::FromProto(
     case SolveResultProto::SOLVER_SPECIFIC_OUTPUT_NOT_SET:
       return result;
   }
-  return util::InvalidArgumentErrorBuilder()
+  return ortools::InvalidArgumentErrorBuilder()
          << "unexpected value of solver_specific_output_case "
          << solve_result_proto.solver_specific_output_case();
 }

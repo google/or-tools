@@ -43,7 +43,7 @@ bool GurobiIsCorrectlyInstalled() {
 absl::StatusOr<GRBenv*> GetGurobiEnv() {
   GRBenv* env = nullptr;
 
-  RETURN_IF_ERROR(LoadGurobiDynamicLibrary({}));
+  OR_RETURN_IF_ERROR(LoadGurobiDynamicLibrary({}));
 
   if (GRBloadenv(&env, nullptr) != 0 || env == nullptr) {
     return absl::FailedPreconditionError(

@@ -150,7 +150,7 @@ struct ModelSummary {
 
 absl::Status IdNameBiMap::Insert(const int64_t id, std::string name) {
   if (id < next_free_id_) {
-    return util::InvalidArgumentErrorBuilder()
+    return ortools::InvalidArgumentErrorBuilder()
            << "expected id=" << id
            << " to be at least next_free_id_=" << next_free_id_
            << " (ids should be nonnegative and inserted in strictly increasing "
@@ -168,7 +168,7 @@ absl::Status IdNameBiMap::Insert(const int64_t id, std::string name) {
   if (nonempty_name_to_id_.has_value() && !name_view.empty()) {
     const auto [it, success] = nonempty_name_to_id_->insert({name_view, id});
     if (!success) {
-      return util::InvalidArgumentErrorBuilder()
+      return ortools::InvalidArgumentErrorBuilder()
              << "duplicate name inserted: " << name_view;
     }
   }
@@ -178,7 +178,7 @@ absl::Status IdNameBiMap::Insert(const int64_t id, std::string name) {
 absl::Status IdNameBiMap::Erase(const int64_t id) {
   const auto it = id_to_name_.find(id);
   if (it == id_to_name_.end()) {
-    return util::InvalidArgumentErrorBuilder()
+    return ortools::InvalidArgumentErrorBuilder()
            << "cannot delete missing id " << id;
   }
   const absl::string_view name_view(it->second);
@@ -215,13 +215,13 @@ absl::Status IdNameBiMap::SetNextFreeId(const int64_t new_next_free_id) {
   if (!Empty()) {
     const int64_t largest_id = id_to_name_.back().first;
     if (new_next_free_id <= largest_id) {
-      return util::InvalidArgumentErrorBuilder()
+      return ortools::InvalidArgumentErrorBuilder()
              << "new_next_free_id=" << new_next_free_id
              << " must be greater than largest_id=" << largest_id;
     }
   } else {
     if (new_next_free_id < 0) {
-      return util::InvalidArgumentErrorBuilder()
+      return ortools::InvalidArgumentErrorBuilder()
              << "new_next_free_id=" << new_next_free_id
              << " must be nonnegative";
     }
@@ -245,10 +245,10 @@ absl::Status UpdateBiMapFromMappedData(
     const absl::Span<const int64_t> deleted_ids,
     const google::protobuf::Map<int64_t, DataProto>& proto_map,
     IdNameBiMap& bimap) {
-  RETURN_IF_ERROR(CheckIdsRangeAndStrictlyIncreasing2(deleted_ids))
+  OR_RETURN_IF_ERROR(CheckIdsRangeAndStrictlyIncreasing2(deleted_ids))
       << "invalid deleted ids";
   for (const int64_t id : deleted_ids) {
-    RETURN_IF_ERROR(bimap.Erase(id));
+    OR_RETURN_IF_ERROR(bimap.Erase(id));
   }
   std::vector<int64_t> new_ids;
   new_ids.reserve(proto_map.size());
@@ -257,7 +257,7 @@ absl::Status UpdateBiMapFromMappedData(
   }
   absl::c_sort(new_ids);
   for (const int64_t id : new_ids) {
-    RETURN_IF_ERROR(bimap.Insert(id, proto_map.at(id).name()));
+    OR_RETURN_IF_ERROR(bimap.Insert(id, proto_map.at(id).name()));
   }
   return absl::OkStatus();
 }

@@ -45,7 +45,7 @@ absl::Status Main() {
   int root = 2;
   std::vector<int32_t> topological_order;
   std::vector<int32_t> depth;
-  ASSIGN_OR_RETURN(const operations_research::RootedTree<int32_t> tree,
+  OR_ASSIGN_OR_RETURN(const operations_research::RootedTree<int32_t> tree,
                    operations_research::RootedTreeFromGraph(
                        root, graph, &topological_order, &depth));
 

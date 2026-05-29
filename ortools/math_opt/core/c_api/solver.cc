@@ -50,7 +50,7 @@ absl::StatusOr<std::pair<void*, size_t>> SolveImpl(
         "model cannot be null unless model_size is zero");
   }
   if (model_size > kint32max) {
-    return util::InvalidArgumentErrorBuilder()
+    return ortools::InvalidArgumentErrorBuilder()
            << "model_size must be at most max int, was: " << model_size;
   }
   ModelProto model;
@@ -64,13 +64,13 @@ absl::StatusOr<std::pair<void*, size_t>> SolveImpl(
   if (interrupter != nullptr) {
     solve_args.interrupter = &interrupter->cpp_interrupter;
   }
-  ASSIGN_OR_RETURN(const SolveResultProto result,
-                   Solver::NonIncrementalSolve(
-                       model, static_cast<SolverTypeProto>(solver_type),
-                       init_args, solve_args));
+  OR_ASSIGN_OR_RETURN(const SolveResultProto result,
+                      Solver::NonIncrementalSolve(
+                          model, static_cast<SolverTypeProto>(solver_type),
+                          init_args, solve_args));
   const size_t result_size_bytes = result.ByteSizeLong();
   if (result_size_bytes > kint32max) {
-    return util::InvalidArgumentErrorBuilder()
+    return ortools::InvalidArgumentErrorBuilder()
            << "cannot serialize a SolveResultProto with more than INT_MAX = "
            << kint32max << "(0x" << std::hex << kint32max << std::dec
            << ") bytes, but solve result proto needed " << result_size_bytes

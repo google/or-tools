@@ -317,9 +317,9 @@ TEST_P(BranchPrioritiesTest, PrioritiesClearedAfterIncrementalSolve) {
             .parameters = SolveParams(),
             .model_parameters = {.branching_priorities = {
                                      {zminus1, 1}, {zminus2, 1}, {zplus1, 3}}}};
-        ASSIGN_OR_RETURN(const SolveResult result,
-                         Solve(model, TestedSolver(), args));
-        RETURN_IF_ERROR(result.termination.EnsureIsOptimal());
+        OR_ASSIGN_OR_RETURN(const SolveResult result,
+                            Solve(model, TestedSolver(), args));
+        OR_RETURN_IF_ERROR(result.termination.EnsureIsOptimal());
         return result.solve_stats.node_count;
       }()));
 
@@ -350,8 +350,8 @@ TEST_P(BranchPrioritiesTest, PrioritiesClearedAfterIncrementalSolve) {
             .parameters = SolveParams(),
             .model_parameters = {
                 .branching_priorities = {{zminus1, 2}, {zminus2, 2}}}};
-        ASSIGN_OR_RETURN(const SolveResult result, solver->Solve(args));
-        RETURN_IF_ERROR(result.termination.EnsureIsOptimal());
+        OR_ASSIGN_OR_RETURN(const SolveResult result, solver->Solve(args));
+        OR_RETURN_IF_ERROR(result.termination.EnsureIsOptimal());
         return result.solve_stats.node_count;
       }()));
 

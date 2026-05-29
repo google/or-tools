@@ -30,7 +30,7 @@ absl::Status InvertedBounds::ToStatus() const {
     return absl::OkStatus();
   }
 
-  auto builder = util::InvalidArgumentErrorBuilder();
+  auto builder = ortools::InvalidArgumentErrorBuilder();
   const auto format_bounds_ids = [&builder](const std::string_view name,
                                             const std::vector<int64_t>& ids) {
     if (ids.empty()) {

@@ -294,9 +294,9 @@ absl::StatusOr<Cycle> SolveTsp(
     }
     return result;
   };
-  ASSIGN_OR_RETURN(const math_opt::SolveResult result,
-                   math_opt::Solve(model, solver, args));
-  RETURN_IF_ERROR(result.termination.EnsureIsOptimal());
+  OR_ASSIGN_OR_RETURN(const math_opt::SolveResult result,
+                      math_opt::Solve(model, solver, args));
+  OR_RETURN_IF_ERROR(result.termination.EnsureIsOptimal());
   std::cout << "Route length: " << result.objective_value() << std::endl;
   const std::vector<Cycle> cycles =
       FindCycles(EdgeValues(edge_vars, result.variable_values()));
@@ -339,13 +339,13 @@ absl::Status RealMain() {
   } else {
     cities = RandomCities(absl::GetFlag(FLAGS_num_cities));
   }
-  ASSIGN_OR_RETURN(const Cycle solution,
-                   SolveTsp(cities, absl::GetFlag(FLAGS_solver)));
+  OR_ASSIGN_OR_RETURN(const Cycle solution,
+                      SolveTsp(cities, absl::GetFlag(FLAGS_solver)));
   const std::string svg = RouteSvg(cities, solution);
   if (absl::GetFlag(FLAGS_output).empty()) {
     std::cout << svg << std::endl;
   } else {
-    RETURN_IF_ERROR(
+    OR_RETURN_IF_ERROR(
         file::SetContents(absl::GetFlag(FLAGS_output), svg, file::Defaults()));
   }
   return absl::OkStatus();

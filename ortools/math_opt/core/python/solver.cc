@@ -107,7 +107,7 @@ class PybindSolver {
   static absl::StatusOr<std::unique_ptr<PybindSolver>> New(
       const SolverTypeProto solver_type, const ModelProto& model,
       SolverInitializerProto solver_initializer) {
-    ASSIGN_OR_RETURN(
+    OR_ASSIGN_OR_RETURN(
         std::unique_ptr<Solver> solver,
         Solver::New(solver_type, model,
                     {.streamable = std::move(solver_initializer)}));

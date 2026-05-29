@@ -257,10 +257,11 @@ absl::StatusOr<Menu> SolveForMenu(
   model.Maximize(cocktails_made);
   const math_opt::SolveArguments args = {
       .parameters = {.enable_output = enable_solver_output}};
-  ASSIGN_OR_RETURN(const math_opt::SolveResult result,
-                   math_opt::Solve(model, math_opt::SolverType::kGscip, args));
+  OR_ASSIGN_OR_RETURN(
+      const math_opt::SolveResult result,
+      math_opt::Solve(model, math_opt::SolverType::kGscip, args));
 
-  RETURN_IF_ERROR(result.termination.EnsureIsOptimalOrFeasible());
+  OR_RETURN_IF_ERROR(result.termination.EnsureIsOptimalOrFeasible());
   Menu menu;
   for (const absl::string_view ingredient : kIngredients) {
     if (result.variable_values().at(ingredient_vars.at(ingredient)) > 0.5) {
@@ -291,7 +292,7 @@ absl::Status AnalysisMode() {
     const absl::StatusOr<Menu> menu = SolveForMenu(
         i, false, /*existing_ingredients=*/{}, /*unavailable_ingredients=*/{},
         /*required_cocktails=*/{}, /*blocked_cocktails=*/{});
-    RETURN_IF_ERROR(menu.status())
+    OR_RETURN_IF_ERROR(menu.status())
         << "Failure when solving for " << i << " ingredients";
     std::cout << i << " | " << menu->cocktails.size() << std::endl;
   }

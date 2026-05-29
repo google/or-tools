@@ -37,7 +37,7 @@ absl::Status ParseTextProtoInto(absl::string_view input, T* proto) {
 template <typename T>
 absl::StatusOr<T> ParseTextProto(absl::string_view asciipb) {
   T msg;
-  RETURN_IF_ERROR(ParseTextProtoInto(asciipb, &msg));
+  OR_RETURN_IF_ERROR(ParseTextProtoInto(asciipb, &msg));
   return msg;
 }
 

@@ -207,7 +207,7 @@ absl::Status CheckStringArray(const py::array& strings) {
   if (strings.ndim() == 1 && dtype == 'U') {
     return absl::OkStatus();
   }
-  return util::InvalidArgumentErrorBuilder()
+  return ortools::InvalidArgumentErrorBuilder()
          << "expected a 1d array of dtype U:, got " << strings.ndim()
          << "d array of dtype " << dtype;
 }
@@ -222,7 +222,7 @@ absl::Status CheckForDuplicates(const InRange& values) {
   seen.reserve(values.size());
   for (int i = 0; i < values.size(); ++i) {
     if (!seen.insert(values[i]).second) {
-      return util::InvalidArgumentErrorBuilder()
+      return ortools::InvalidArgumentErrorBuilder()
              << "array has duplicates: " << values[i];
     }
   }
@@ -336,7 +336,7 @@ template <typename AttrType>
 absl::Status ValidateSliceKeyIndex(const AttrType attr, const int key_index) {
   const int key_size = GetAttrKeySize<AttrType>();
   if (key_index < 0 || key_index >= key_size) {
-    return util::InvalidArgumentErrorBuilder()
+    return ortools::InvalidArgumentErrorBuilder()
            << "key_index must be in [0, " << key_size
            << ") for attribute: " << attr
            << " but key_index was: " << key_index;
@@ -380,7 +380,7 @@ template <typename AttrType>
 absl::StatusOr<std::vector<AttrKeyFor<AttrType>>> DynamicSlice(
     const Elemental& e, const AttrType attr, const int key_index,
     const int element_id) {
-  RETURN_IF_ERROR(ValidateSliceKeyIndex(attr, key_index));
+  OR_RETURN_IF_ERROR(ValidateSliceKeyIndex(attr, key_index));
   return ApplyOnIndex<GetAttrKeySize<AttrType>()>(
       [&e, attr, element_id]<int k>() {
         return e.Slice<k, Elemental::StatusPolicy>(attr, element_id);
@@ -396,7 +396,7 @@ absl::StatusOr<int64_t> DynamicGetSliceSize(const Elemental& e,
                                             const AttrType attr,
                                             const int key_index,
                                             const int element_id) {
-  RETURN_IF_ERROR(ValidateSliceKeyIndex(attr, key_index));
+  OR_RETURN_IF_ERROR(ValidateSliceKeyIndex(attr, key_index));
   return ApplyOnIndex<GetAttrKeySize<AttrType>()>(
       [&e, attr, element_id]<int k>() {
         return e.GetSliceSize<k, Elemental::StatusPolicy>(attr, element_id);
@@ -432,7 +432,7 @@ absl::Status CheckForElementExistence(
     for (int j = 0; j < GetAttrKeySize<AttrType>(); ++j) {
       const auto element_type = GetElementTypes<AttrType>(attr)[j];
       if (!e.ElementExistsUntyped(element_type, key[j])) {
-        return util::InvalidArgumentErrorBuilder()
+        return ortools::InvalidArgumentErrorBuilder()
                << element_type << " id " << key[j] << " does not exist";
       }
     }
@@ -445,7 +445,7 @@ absl::StatusOr<Elemental::DiffHandle> GetDiffHandle(const Elemental& elemental,
   std::optional<Elemental::DiffHandle> handle =
       elemental.GetDiffHandle(diff_id);
   if (handle == std::nullopt) {
-    return util::InvalidArgumentErrorBuilder()
+    return ortools::InvalidArgumentErrorBuilder()
            << "no diff with id: " << diff_id;
   }
   return *handle;

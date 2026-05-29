@@ -213,9 +213,9 @@ absl::StatusOr<SolveStats> SolveForLpAlgorithm(SolverType solver_type,
   if (solver_type != SolverType::kHighs) {
     args.parameters.threads = 1;
   }
-  ASSIGN_OR_RETURN(const SolveResult result,
-                   Solve(assignment_problem.model(), solver_type, args));
-  RETURN_IF_ERROR(result.termination.EnsureIsOptimal());
+  OR_ASSIGN_OR_RETURN(const SolveResult result,
+                      Solve(assignment_problem.model(), solver_type, args));
+  OR_RETURN_IF_ERROR(result.termination.EnsureIsOptimal());
   return result.solve_stats;
 }
 

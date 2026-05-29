@@ -230,7 +230,7 @@ absl::StatusOr<XpressParameters> XpressParameters::FromProto(
   XpressParameters result;
   for (const XpressParametersProto::Parameter& p : proto.parameters()) {
     if (!result.param_values.insert({p.name(), p.value()}).second) {
-      return util::InvalidArgumentErrorBuilder()
+      return ortools::InvalidArgumentErrorBuilder()
              << "duplicate Xpress parameter: '" << absl::CEscape(p.name())
              << "'";
     }

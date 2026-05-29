@@ -42,28 +42,28 @@ struct AttrOp {
   }
 
   static absl::StatusOr<ValueType> Get(Elemental* e, int attr, Key key) {
-    ASSIGN_OR_RETURN(const auto typed_attr, SafeCastAttr(attr));
+    OR_ASSIGN_OR_RETURN(const auto typed_attr, SafeCastAttr(attr));
     return e->GetAttr<Elemental::StatusPolicy>(typed_attr, key);
   }
 
   static absl::Status Set(Elemental* e, int attr, Key key, ValueType value) {
-    ASSIGN_OR_RETURN(const auto typed_attr, SafeCastAttr(attr));
+    OR_ASSIGN_OR_RETURN(const auto typed_attr, SafeCastAttr(attr));
     return e->SetAttr<Elemental::StatusPolicy>(typed_attr, key, value);
   }
 
   static absl::StatusOr<bool> IsNonDefault(Elemental* e, int attr, Key key) {
-    ASSIGN_OR_RETURN(const auto typed_attr, SafeCastAttr(attr));
+    OR_ASSIGN_OR_RETURN(const auto typed_attr, SafeCastAttr(attr));
     return e->AttrIsNonDefault<Elemental::StatusPolicy>(typed_attr, key);
   }
 
   static absl::StatusOr<int64_t> NumNonDefaults(Elemental* e, int attr) {
-    ASSIGN_OR_RETURN(const auto typed_attr, SafeCastAttr(attr));
+    OR_ASSIGN_OR_RETURN(const auto typed_attr, SafeCastAttr(attr));
     return e->AttrNumNonDefaults(typed_attr);
   }
 
   static absl::StatusOr<std::vector<Key>> GetNonDefaults(Elemental* e,
                                                          int attr) {
-    ASSIGN_OR_RETURN(const auto typed_attr, SafeCastAttr(attr));
+    OR_ASSIGN_OR_RETURN(const auto typed_attr, SafeCastAttr(attr));
     return e->AttrNonDefaults(typed_attr);
   }
 };

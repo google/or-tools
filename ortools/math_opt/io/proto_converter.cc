@@ -215,7 +215,7 @@ absl::StatusOr<MPGeneralConstraintProto> SosConstraintFromMathOptToMPModel(
 
 absl::StatusOr<::operations_research::math_opt::ModelProto>
 MPModelProtoToMathOptModel(const ::operations_research::MPModelProto& model) {
-  RETURN_IF_ERROR(IsSupported(model));
+  OR_RETURN_IF_ERROR(IsSupported(model));
 
   ModelProto output;
   output.set_name(model.name());
@@ -351,7 +351,7 @@ MPModelProtoToMathOptModel(const ::operations_research::MPModelProto& model) {
         auto& new_indicator_constraint =
             (*output.mutable_indicator_constraints())
                 [output.indicator_constraints_size()];
-        ASSIGN_OR_RETURN(
+        OR_ASSIGN_OR_RETURN(
             new_indicator_constraint,
             IndicatorConstraintFromMPModelToMathOpt(
                 general_constraint.indicator_constraint(), in_name));
@@ -388,7 +388,7 @@ MPModelProtoSolutionHintToMathOptHint(const MPModelProto& model) {
 
 absl::StatusOr<::operations_research::MPModelProto> MathOptModelToMPModelProto(
     const ::operations_research::math_opt::ModelProto& model) {
-  RETURN_IF_ERROR(ValidateModel(model).status());
+  OR_RETURN_IF_ERROR(ValidateModel(model).status());
   if (!model.second_order_cone_constraints().empty()) {
     return absl::InvalidArgumentError(
         "translating models with second-order cone constraints is not "
@@ -491,14 +491,14 @@ absl::StatusOr<::operations_research::MPModelProto> MathOptModelToMPModelProto(
     }
   }
   for (const auto& [id, in_constraint] : model.sos1_constraints()) {
-    ASSIGN_OR_RETURN(*output.add_general_constraint(),
-                     SosConstraintFromMathOptToMPModel(
-                         in_constraint, MPSosConstraint::SOS1_DEFAULT,
-                         variable_id_to_mp_position));
+    OR_ASSIGN_OR_RETURN(*output.add_general_constraint(),
+                        SosConstraintFromMathOptToMPModel(
+                            in_constraint, MPSosConstraint::SOS1_DEFAULT,
+                            variable_id_to_mp_position));
   }
 
   for (const auto& [id, in_constraint] : model.sos2_constraints()) {
-    ASSIGN_OR_RETURN(
+    OR_ASSIGN_OR_RETURN(
         *output.add_general_constraint(),
         SosConstraintFromMathOptToMPModel(in_constraint, MPSosConstraint::SOS2,
                                           variable_id_to_mp_position));

@@ -59,7 +59,7 @@ TEST(ConcurrentCallsGuard, MoveConstructor) {
   {  // Limit the scope of guard_from_move.
     ASSERT_OK_AND_ASSIGN(ConcurrentCallsGuard guard_from_move,
                          [&]() -> absl::StatusOr<ConcurrentCallsGuard> {
-                           ASSIGN_OR_RETURN(
+                           OR_ASSIGN_OR_RETURN(
                                ConcurrentCallsGuard guard,
                                ConcurrentCallsGuard::TryAcquire(tracker));
                            return ConcurrentCallsGuard(std::move(guard));

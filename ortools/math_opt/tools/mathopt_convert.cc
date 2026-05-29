@@ -121,7 +121,7 @@ absl::Status Main() {
   }
 
   // Write the model.
-  RETURN_IF_ERROR(
+  OR_RETURN_IF_ERROR(
       WriteModel(output_file_path, model_proto, optional_hint, output_format))
       << "failed to write " << output_file_path;
 

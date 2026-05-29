@@ -29,21 +29,21 @@ absl::Status ValidateConstraint(const SosConstraintProto& constraint,
                                 const IdNameBiMap& variable_universe) {
   if (!constraint.weights().empty() &&
       constraint.weights_size() != constraint.expressions_size()) {
-    return util::InvalidArgumentErrorBuilder()
+    return ortools::InvalidArgumentErrorBuilder()
            << "Length mismatch between weights and expressions: "
            << constraint.weights_size() << " vs. "
            << constraint.expressions_size();
   }
   for (const LinearExpressionProto& expression : constraint.expressions()) {
-    RETURN_IF_ERROR(ValidateLinearExpression(expression, variable_universe))
+    OR_RETURN_IF_ERROR(ValidateLinearExpression(expression, variable_universe))
         << "Invalid SOS expression";
   }
   // Check weights for uniqueness.
   absl::flat_hash_set<double> weights;
   for (const double weight : constraint.weights()) {
-    RETURN_IF_ERROR(CheckScalarNoNanNoInf(weight)) << "Invalid SOS weight";
+    OR_RETURN_IF_ERROR(CheckScalarNoNanNoInf(weight)) << "Invalid SOS weight";
     if (!weights.insert(weight).second) {
-      return util::InvalidArgumentErrorBuilder()
+      return ortools::InvalidArgumentErrorBuilder()
              << "SOS weights must be unique, but encountered duplicate weight: "
              << weight;
     }

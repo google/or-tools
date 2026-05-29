@@ -288,12 +288,12 @@ class VertexCover {
   static absl::StatusOr<std::vector<std::string>> SolveAndFingerprint(
       const SolverType solver_type, const SolveParameters& params) {
     VertexCover vertex_cover;
-    ASSIGN_OR_RETURN(
+    OR_ASSIGN_OR_RETURN(
         SolveResult result,
         Solve(vertex_cover.model(), solver_type, {.parameters = params}));
-    RETURN_IF_ERROR(result.termination.EnsureIsOptimal());
+    OR_RETURN_IF_ERROR(result.termination.EnsureIsOptimal());
     if (std::abs(result.objective_value() - 18.0) > 1e-4) {
-      return util::InternalErrorBuilder()
+      return ortools::InternalErrorBuilder()
              << "expected objective value of 18, found: "
              << result.objective_value();
     }
@@ -390,8 +390,9 @@ absl::StatusOr<std::pair<SolveStats, std::string>> SolveForIPPresolve(
   SolveArguments args;
   args.parameters.presolve = do_presolve ? Emphasis::kMedium : Emphasis::kOff;
   args.message_callback = PrinterMessageCallback(oss);
-  ASSIGN_OR_RETURN(const SolveResult result, Solve(model, solver_type, args));
-  RETURN_IF_ERROR(result.termination.EnsureIsOptimal());
+  OR_ASSIGN_OR_RETURN(const SolveResult result,
+                      Solve(model, solver_type, args));
+  OR_RETURN_IF_ERROR(result.termination.EnsureIsOptimal());
   return std::make_pair(result.solve_stats, oss.str());
 }
 
@@ -460,8 +461,9 @@ absl::StatusOr<SolveStats> SolveForCuts(SolverType solver_type, bool use_cuts) {
   SolveArguments args;
   args.parameters.presolve = Emphasis::kOff;
   args.parameters.cuts = use_cuts ? Emphasis::kMedium : Emphasis::kOff;
-  ASSIGN_OR_RETURN(const SolveResult result, Solve(model, solver_type, args));
-  RETURN_IF_ERROR(result.termination.EnsureIsOptimal());
+  OR_ASSIGN_OR_RETURN(const SolveResult result,
+                      Solve(model, solver_type, args));
+  OR_RETURN_IF_ERROR(result.termination.EnsureIsOptimal());
   return result.solve_stats;
 }
 
@@ -515,10 +517,10 @@ absl::StatusOr<SolveStats> SolveForRootLp(
     params.presolve = Emphasis::kOff;
   }
 
-  ASSIGN_OR_RETURN(
+  OR_ASSIGN_OR_RETURN(
       const SolveResult result,
       Solve(vertex_cover.model(), solver_type, {.parameters = params}));
-  RETURN_IF_ERROR(result.termination.EnsureIsOptimal());
+  OR_RETURN_IF_ERROR(result.termination.EnsureIsOptimal());
   return result.solve_stats;
 }
 
@@ -1039,7 +1041,7 @@ namespace {
 
 absl::StatusOr<std::unique_ptr<Model>> LoadMiplibInstance(
     absl::string_view name) {
-  ASSIGN_OR_RETURN(
+  OR_ASSIGN_OR_RETURN(
       const ModelProto model_proto,
       ReadMpsFile(absl::StrCat("ortools/math_opt/solver_tests/testdata/", name,
                                ".mps")));

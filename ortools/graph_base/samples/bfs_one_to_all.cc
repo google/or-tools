@@ -42,18 +42,18 @@ absl::Status Main() {
 
   // Compute the shortest path from 0 to each reachable node.
   const int source = 0;
-  ASSIGN_OR_RETURN(
+  OR_ASSIGN_OR_RETURN(
       const std::vector<int> bfs_tree,
       util::graph::GetBFSRootedTree(adjacency_list, num_nodes, source));
   // Runs in O(num nodes). Nodes that are not reachable have distance -1.
-  ASSIGN_OR_RETURN(const std::vector<int> node_distances,
+  OR_ASSIGN_OR_RETURN(const std::vector<int> node_distances,
                    util::graph::GetBFSDistances(bfs_tree));
   for (int t = 0; t < num_nodes; ++t) {
     if (t == source) {
       continue;
     }
     if (node_distances[t] >= 0) {
-      ASSIGN_OR_RETURN(const std::vector<int> shortest_path,
+      OR_ASSIGN_OR_RETURN(const std::vector<int> shortest_path,
                        util::graph::GetBFSShortestPath(bfs_tree, t));
       std::cout << "Shortest path from 0 to " << t
                 << " has length: " << node_distances[t] << std::endl;

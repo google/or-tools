@@ -565,12 +565,12 @@ class ModelStorage {
   // Example:
   //   ModelStorage model;
   //   ...
-  //   ASSIGN_OR_RETURN(const auto solver,
+  //   OR_ASSIGN_OR_RETURN(const auto solver,
   //                    Solver::New(solver_type, model.ExportModel(),
   //                                /*initializer=*/{}));
   //   const UpdateTrackerId update_tracker = model.NewUpdatesTracker();
   //
-  //   ASSIGN_OR_RETURN(const auto result_1,
+  //   OR_ASSIGN_OR_RETURN(const auto result_1,
   //                    solver->Solve(/*parameters=*/{});
   //
   //   model.AddVariable(0.0, 1.0, true, "y");
@@ -581,16 +581,16 @@ class ModelStorage {
   //   model.AdvanceCheckpoint(update_tracker);
   //
   //   if (update_proto) {
-  //     ASSIGN_OR_RETURN(const bool updated, solver->Update(*update_proto));
+  //     OR_ASSIGN_OR_RETURN(const bool updated, solver->Update(*update_proto));
   //     if (!updated) {
   //       // The update is not supported by the solver, we create a new one.
-  //       ASSIGN_OR_RETURN(const auto new_model_proto, model.ExportModel());
-  //       ASSIGN_OR_RETURN(solver,
+  //       OR_ASSIGN_OR_RETURN(const auto new_model_proto, model.ExportModel());
+  //       OR_ASSIGN_OR_RETURN(solver,
   //                        Solver::New(solver_type, new_model_proto,
   //                                    /*initializer=*/{}));
   //     }
   //   }
-  //   ASSIGN_OR_RETURN(const auto result_2,
+  //   OR_ASSIGN_OR_RETURN(const auto result_2,
   //                    solver->Solve(/*parameters=*/{});
   //
   UpdateTrackerId NewUpdateTracker();

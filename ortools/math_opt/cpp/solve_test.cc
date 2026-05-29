@@ -190,7 +190,7 @@ TEST(SolveTest, SuccessfulSolveWithCallback) {
     cb_data.set_event(CALLBACK_EVENT_MIP_SOLUTION);
     *cb_data.mutable_primal_solution_vector() = MakeSparseDoubleVector(
         {{basic_lp.a.id(), 1.0}, {basic_lp.b.id(), 0.0}});
-    ASSIGN_OR_RETURN(const CallbackResultProto result, cb(cb_data));
+    OR_ASSIGN_OR_RETURN(const CallbackResultProto result, cb(cb_data));
     return basic_lp.OptimalResult({basic_lp.a});
   };
 
@@ -422,7 +422,7 @@ TEST(SolveTest, WrongModelInCallbackResult) {
     cb_data.set_event(CALLBACK_EVENT_MIP_SOLUTION);
     *cb_data.mutable_primal_solution_vector() = MakeSparseDoubleVector(
         {{basic_lp.a.id(), 1.0}, {basic_lp.b.id(), 0.0}});
-    ASSIGN_OR_RETURN(const CallbackResultProto result, cb(cb_data));
+    OR_ASSIGN_OR_RETURN(const CallbackResultProto result, cb(cb_data));
     return basic_lp.OptimalResult({basic_lp.a, basic_lp.b});
   };
 
@@ -967,7 +967,7 @@ TEST(IncrementalSolverTest, SuccessfulSolveWithCallback) {
     cb_data.set_event(CALLBACK_EVENT_MIP_SOLUTION);
     *cb_data.mutable_primal_solution_vector() = MakeSparseDoubleVector(
         {{basic_lp.a.id(), 1.0}, {basic_lp.b.id(), 0.0}});
-    ASSIGN_OR_RETURN(const CallbackResultProto result, cb(cb_data));
+    OR_ASSIGN_OR_RETURN(const CallbackResultProto result, cb(cb_data));
     return basic_lp.OptimalResult({basic_lp.a});
   };
 
@@ -1143,7 +1143,7 @@ TEST(IncrementalSolverTest, UpdateAndSolve) {
     cb_data.set_event(CALLBACK_EVENT_MIP_SOLUTION);
     *cb_data.mutable_primal_solution_vector() = MakeSparseDoubleVector(
         {{basic_lp.a.id(), 1.0}, {basic_lp.b.id(), 0.0}});
-    ASSIGN_OR_RETURN(const CallbackResultProto result, cb(cb_data));
+    OR_ASSIGN_OR_RETURN(const CallbackResultProto result, cb(cb_data));
     return basic_lp.OptimalResult({basic_lp.a});
   };
 
@@ -1401,7 +1401,7 @@ TEST(IncrementalSolverTest, WrongModelInCallbackResult) {
     cb_data.set_event(CALLBACK_EVENT_MIP_SOLUTION);
     *cb_data.mutable_primal_solution_vector() = MakeSparseDoubleVector(
         {{basic_lp.a.id(), 1.0}, {basic_lp.b.id(), 0.0}});
-    ASSIGN_OR_RETURN(const CallbackResultProto result, cb(cb_data));
+    OR_ASSIGN_OR_RETURN(const CallbackResultProto result, cb(cb_data));
     return basic_lp.OptimalResult({basic_lp.a, basic_lp.b});
   };
 

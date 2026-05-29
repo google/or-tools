@@ -34,28 +34,30 @@ namespace operations_research {
 absl::StatusOr<GScipAndVariables> GScipAndVariables::FromMPModelProto(
     const MPModelProto& model) {
   GScipAndVariables result;
-  ASSIGN_OR_RETURN(result.gscip, GScip::Create(model.name()));
-  RETURN_IF_ERROR(result.gscip->SetMaximize(model.maximize()));
-  RETURN_IF_ERROR(result.gscip->SetObjectiveOffset(model.objective_offset()));
+  OR_ASSIGN_OR_RETURN(result.gscip, GScip::Create(model.name()));
+  OR_RETURN_IF_ERROR(result.gscip->SetMaximize(model.maximize()));
+  OR_RETURN_IF_ERROR(
+      result.gscip->SetObjectiveOffset(model.objective_offset()));
   for (const MPVariableProto& variable : model.variable()) {
-    ASSIGN_OR_RETURN(SCIP_VAR * v,
-                     result.gscip->AddVariable(
-                         variable.lower_bound(), variable.upper_bound(),
-                         variable.objective_coefficient(),
-                         variable.is_integer() ? GScipVarType::kInteger
-                                               : GScipVarType::kContinuous,
-                         variable.name()));
+    OR_ASSIGN_OR_RETURN(SCIP_VAR * v,
+                        result.gscip->AddVariable(
+                            variable.lower_bound(), variable.upper_bound(),
+                            variable.objective_coefficient(),
+                            variable.is_integer() ? GScipVarType::kInteger
+                                                  : GScipVarType::kContinuous,
+                            variable.name()));
     result.variables.push_back(v);
   }
   for (const MPConstraintProto& linear_constraint : model.constraint()) {
-    RETURN_IF_ERROR(result.AddLinearConstraint(linear_constraint));
+    OR_RETURN_IF_ERROR(result.AddLinearConstraint(linear_constraint));
   }
   for (const MPGeneralConstraintProto& gen_constraint :
        model.general_constraint()) {
-    RETURN_IF_ERROR(result.AddGeneralConstraint(gen_constraint));
+    OR_RETURN_IF_ERROR(result.AddGeneralConstraint(gen_constraint));
   }
   if (model.has_quadratic_objective()) {
-    RETURN_IF_ERROR(result.AddQuadraticObjective(model.quadratic_objective()));
+    OR_RETURN_IF_ERROR(
+        result.AddQuadraticObjective(model.quadratic_objective()));
   }
   return result;
 }

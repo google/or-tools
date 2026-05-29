@@ -37,7 +37,7 @@ struct ComputeInfeasibleSubsystemArguments {
   // Usage:
   //
   //   // To print messages to stdout with a prefix.
-  //   ASSIGN_OR_RETURN(
+  //   OR_ASSIGN_OR_RETURN(
   //     const ComputeInfeasibleSubsystemResult result,
   //     ComputeInfeasibleSubsystem(model, SolverType::kGurobi,
   //           { .message_callback = PrinterMessageCallback(std::cout,
@@ -56,7 +56,7 @@ struct ComputeInfeasibleSubsystemArguments {
   //     interrupter->Interrupt();
   //   });
   //
-  //   ASSIGN_OR_RETURN(const ComputeInfeasibleSubsystemResult result,
+  //   OR_ASSIGN_OR_RETURN(const ComputeInfeasibleSubsystemResult result,
   //                    ComputeInfeasibleSubsystem(model, SolverType::kGurobi,
   //                          { .interrupter = interrupter.get() });
   //

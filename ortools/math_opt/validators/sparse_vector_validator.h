@@ -41,7 +41,7 @@ template <typename T,
           typename = std::enable_if_t<!std::is_floating_point<T>::value>>
 absl::Status CheckValues(const SparseVectorView<T>& vector_view,
                          absl::string_view value_name = "values") {
-  RETURN_IF_ERROR(CheckIdsAndValuesSize(vector_view, value_name));
+  OR_RETURN_IF_ERROR(CheckIdsAndValuesSize(vector_view, value_name));
   return absl::OkStatus();
 }
 
@@ -49,8 +49,8 @@ template <typename T,
           typename = std::enable_if_t<!std::is_floating_point<T>::value>>
 absl::Status CheckIdsAndValues(const SparseVectorView<T>& vector_view,
                                absl::string_view value_name = "values") {
-  RETURN_IF_ERROR(CheckIdsRangeAndStrictlyIncreasing(vector_view.ids()));
-  RETURN_IF_ERROR(CheckValues(vector_view, value_name));
+  OR_RETURN_IF_ERROR(CheckIdsRangeAndStrictlyIncreasing(vector_view.ids()));
+  OR_RETURN_IF_ERROR(CheckValues(vector_view, value_name));
   return absl::OkStatus();
 }
 
@@ -59,9 +59,9 @@ template <typename T,
 absl::Status CheckValues(const SparseVectorView<T>& vector_view,
                          const DoubleOptions& options,
                          absl::string_view value_name = "values") {
-  RETURN_IF_ERROR(CheckIdsAndValuesSize(vector_view, value_name));
+  OR_RETURN_IF_ERROR(CheckIdsAndValuesSize(vector_view, value_name));
   for (int i = 0, length = vector_view.values_size(); i < length; ++i) {
-    RETURN_IF_ERROR(CheckScalar(vector_view.values(i), options))
+    OR_RETURN_IF_ERROR(CheckScalar(vector_view.values(i), options))
         << absl::StrCat(" in: ", value_name, " for id: ", vector_view.ids(i),
                         " (at index: ", i, ")");
   }
@@ -73,8 +73,8 @@ template <typename T,
 absl::Status CheckIdsAndValues(const SparseVectorView<T>& vector_view,
                                const DoubleOptions& options,
                                absl::string_view value_name = "values") {
-  RETURN_IF_ERROR(CheckIdsRangeAndStrictlyIncreasing(vector_view.ids()));
-  RETURN_IF_ERROR(CheckValues(vector_view, options, value_name));
+  OR_RETURN_IF_ERROR(CheckIdsRangeAndStrictlyIncreasing(vector_view.ids()));
+  OR_RETURN_IF_ERROR(CheckValues(vector_view, options, value_name));
   return absl::OkStatus();
 }
 

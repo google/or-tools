@@ -240,7 +240,7 @@ absl::Status TestableCanFitInMpModelProto(const QuadraticProgram& qp,
 }  // namespace internal
 
 absl::StatusOr<MPModelProto> QpToMpModelProto(const QuadraticProgram& qp) {
-  RETURN_IF_ERROR(CanFitInMpModelProto(qp));
+  OR_RETURN_IF_ERROR(CanFitInMpModelProto(qp));
   if (qp.objective_scaling_factor == 0) {
     return absl::InvalidArgumentError(
         "objective_scaling_factor cannot be zero.");

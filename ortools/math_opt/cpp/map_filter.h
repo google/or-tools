@@ -197,7 +197,7 @@ absl::Status MapFilter<KeyType>::CheckModelStorage(
     return absl::OkStatus();
   }
   for (const KeyType& k : filtered_keys.value()) {
-    RETURN_IF_ERROR(internal::CheckModelStorage(
+    OR_RETURN_IF_ERROR(internal::CheckModelStorage(
         /*storage=*/k.storage(),
         /*expected_storage=*/expected_storage));
   }

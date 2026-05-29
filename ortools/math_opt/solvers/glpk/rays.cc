@@ -362,8 +362,9 @@ absl::StatusOr<std::optional<GlpkRay>> GlpkComputeUnboundRay(
   if (!glp_bf_exists(problem)) {
     const int factorization_rc = glp_factorize(problem);
     if (factorization_rc != 0) {
-      return util::InternalErrorBuilder() << "glp_factorize() failed: "
-                                          << ReturnCodeString(factorization_rc);
+      return ortools::InternalErrorBuilder()
+             << "glp_factorize() failed: "
+             << ReturnCodeString(factorization_rc);
     }
   }
 
@@ -374,9 +375,9 @@ absl::StatusOr<std::optional<GlpkRay>> GlpkComputeUnboundRay(
       ComputeFormVarStatus(problem,
                            /*num_cstrs=*/glp_get_num_rows(problem),
                            /*k=*/unbound_ray) == GLP_BS;
-  ASSIGN_OR_RETURN(GlpkRay ray,
-                   (is_dual_ray ? ComputeDualRay(problem, unbound_ray)
-                                : ComputePrimalRay(problem, unbound_ray)));
+  OR_ASSIGN_OR_RETURN(GlpkRay ray,
+                      (is_dual_ray ? ComputeDualRay(problem, unbound_ray)
+                                   : ComputePrimalRay(problem, unbound_ray)));
   return ray;
 }
 

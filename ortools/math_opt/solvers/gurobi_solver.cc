@@ -117,7 +117,7 @@ absl::StatusOr<std::unique_ptr<Gurobi>> GurobiFromInitArgs(
     return Gurobi::NewWithSharedPrimaryEnv(non_streamable_args->primary_env);
   } else if (init_args.streamable.has_gurobi() &&
              init_args.streamable.gurobi().has_isv_key()) {
-    ASSIGN_OR_RETURN(
+    OR_ASSIGN_OR_RETURN(
         GRBenvUniquePtr env,
         NewPrimaryEnvironment(init_args.streamable.gurobi().isv_key()));
     return Gurobi::New(std::move(env));
@@ -177,15 +177,15 @@ absl::StatusOr<GurobiParametersProto> MergeParameters(
   {
     absl::Duration time_limit = absl::InfiniteDuration();
     if (solve_parameters.has_time_limit()) {
-      ASSIGN_OR_RETURN(time_limit, util_time::DecodeGoogleApiProto(
-                                       solve_parameters.time_limit()));
+      OR_ASSIGN_OR_RETURN(time_limit, util_time::DecodeGoogleApiProto(
+                                          solve_parameters.time_limit()));
     }
     // If we do not have a multi-objective model, but the user has specified a
     // time limit on the primary objective, this is functionally a second way to
     // specify the global time limit. So, we should take the min of the two.
     if (!is_multi_objective_mode &&
         model_parameters.primary_objective_parameters().has_time_limit()) {
-      ASSIGN_OR_RETURN(
+      OR_ASSIGN_OR_RETURN(
           const absl::Duration primary_objective_time_limit,
           util_time::DecodeGoogleApiProto(
               model_parameters.primary_objective_parameters().time_limit()));
@@ -498,7 +498,7 @@ std::vector<std::string> TruncateNames(
 // See kGurobiInfBound documentation for details.
 absl::Status SafeGurobiBound(const double d) {
   if (std::isfinite(d) && std::abs(d) >= kGurobiInfBound) {
-    return util::InvalidArgumentErrorBuilder()
+    return ortools::InvalidArgumentErrorBuilder()
            << "finite bound: " << d << " will be treated as infinite by Gurobi";
   }
   return absl::OkStatus();
@@ -536,10 +536,10 @@ std::vector<int> IndexUpdateMap(const int size_before_delete,
 absl::StatusOr<bool> GetIntAttrElementAsBool(Gurobi& gurobi,
                                              const char* const name,
                                              const int element) {
-  ASSIGN_OR_RETURN(const int value, gurobi.GetIntAttrElement(name, element));
+  OR_ASSIGN_OR_RETURN(const int value, gurobi.GetIntAttrElement(name, element));
   const bool cast_value(value);
   if (static_cast<int>(cast_value) != value) {
-    return util::InternalErrorBuilder()
+    return ortools::InternalErrorBuilder()
            << "Gurobi unexpectedly returned non-boolean value for " << name
            << ": " << value;
   }
@@ -552,7 +552,7 @@ class OrAccumulator {
   // Propagates any error in `update`. Otherwise, ORs the internal state with
   // the value in `update`.
   absl::Status Or(absl::StatusOr<bool> update) {
-    RETURN_IF_ERROR(update.status());
+    OR_RETURN_IF_ERROR(update.status());
     value_ |= *update;
     return absl::OkStatus();
   }
@@ -568,7 +568,7 @@ absl::Status AddMapEntryIfPresent(
     const int64_t map_id,
     absl::StatusOr<std::optional<ModelSubsetProto::Bounds>> maybe_value,
     google::protobuf::Map<int64_t, ModelSubsetProto::Bounds>& target) {
-  RETURN_IF_ERROR(maybe_value.status());
+  OR_RETURN_IF_ERROR(maybe_value.status());
   if (maybe_value->has_value()) {
     target[map_id] = **std::move(maybe_value);
   }
@@ -580,7 +580,7 @@ absl::Status AddMapEntryIfPresent(
 absl::Status AppendEntryIfTrue(
     const int64_t id, absl::StatusOr<bool> should_append,
     google::protobuf::RepeatedField<int64_t>& target) {
-  RETURN_IF_ERROR(should_append.status());
+  OR_RETURN_IF_ERROR(should_append.status());
   if (*should_append) {
     target.Add(id);
   }
@@ -630,7 +630,7 @@ GurobiSolver::SosConstraintData::DependentElements() const {
 absl::StatusOr<TerminationProto> GurobiSolver::ConvertTerminationReason(
     const int gurobi_status, const SolutionClaims solution_claims,
     const double best_primal_bound, const double best_dual_bound) {
-  ASSIGN_OR_RETURN(const bool is_maximize, IsMaximize());
+  OR_ASSIGN_OR_RETURN(const bool is_maximize, IsMaximize());
   switch (gurobi_status) {
     case GRB_OPTIMAL:
       // TODO(b/290359402): it appears Gurobi could return an infinite
@@ -720,24 +720,26 @@ absl::StatusOr<TerminationProto> GurobiSolver::ConvertTerminationReason(
 }
 
 absl::StatusOr<bool> GurobiSolver::IsMaximize() const {
-  ASSIGN_OR_RETURN(const int obj_sense,
-                   gurobi_->GetIntAttr(GRB_INT_ATTR_MODELSENSE));
+  OR_ASSIGN_OR_RETURN(const int obj_sense,
+                      gurobi_->GetIntAttr(GRB_INT_ATTR_MODELSENSE));
   return obj_sense == GRB_MAXIMIZE;
 }
 
 absl::StatusOr<bool> GurobiSolver::IsMIP() const {
-  ASSIGN_OR_RETURN(const int is_mip, gurobi_->GetIntAttr(GRB_INT_ATTR_IS_MIP));
+  OR_ASSIGN_OR_RETURN(const int is_mip,
+                      gurobi_->GetIntAttr(GRB_INT_ATTR_IS_MIP));
   return static_cast<bool>(is_mip);
 }
 
 // TODO(b/204595455): Revisit logic when nonconvex QP support is decided upon
 absl::StatusOr<bool> GurobiSolver::IsQP() const {
-  ASSIGN_OR_RETURN(const int is_qp, gurobi_->GetIntAttr(GRB_INT_ATTR_IS_QP));
+  OR_ASSIGN_OR_RETURN(const int is_qp, gurobi_->GetIntAttr(GRB_INT_ATTR_IS_QP));
   return static_cast<bool>(is_qp);
 }
 
 absl::StatusOr<bool> GurobiSolver::IsQCP() const {
-  ASSIGN_OR_RETURN(const int is_qcp, gurobi_->GetIntAttr(GRB_INT_ATTR_IS_QCP));
+  OR_ASSIGN_OR_RETURN(const int is_qcp,
+                      gurobi_->GetIntAttr(GRB_INT_ATTR_IS_QCP));
   return static_cast<bool>(is_qcp);
 }
 
@@ -790,16 +792,16 @@ absl::Status GurobiSolver::SetGurobiBasis(const BasisProto& basis) {
       gurobi_constraint_basis_status.push_back(kGrbNonBasicConstraint);
     }
   }
-  RETURN_IF_ERROR(gurobi_->SetIntAttrArray(GRB_INT_ATTR_VBASIS,
-                                           gurobi_variable_basis_status));
-  RETURN_IF_ERROR(gurobi_->SetIntAttrArray(GRB_INT_ATTR_CBASIS,
-                                           gurobi_constraint_basis_status));
+  OR_RETURN_IF_ERROR(gurobi_->SetIntAttrArray(GRB_INT_ATTR_VBASIS,
+                                              gurobi_variable_basis_status));
+  OR_RETURN_IF_ERROR(gurobi_->SetIntAttrArray(GRB_INT_ATTR_CBASIS,
+                                              gurobi_constraint_basis_status));
   return absl::OkStatus();
 }
 
 absl::StatusOr<BasisProto> GurobiSolver::GetGurobiBasis() {
   BasisProto basis;
-  ASSIGN_OR_RETURN(
+  OR_ASSIGN_OR_RETURN(
       const std::vector<int> gurobi_variable_basis_status,
       gurobi_->GetIntAttrArray(GRB_INT_ATTR_VBASIS, num_gurobi_variables_));
 
@@ -815,7 +817,7 @@ absl::StatusOr<BasisProto> GurobiSolver::GetGurobiBasis() {
     basis.mutable_variable_status()->add_values(variable_status);
   }
 
-  ASSIGN_OR_RETURN(
+  OR_ASSIGN_OR_RETURN(
       const std::vector<int> gurobi_constraint_basis_status,
       gurobi_->GetIntAttrArray(GRB_INT_ATTR_CBASIS, num_gurobi_lin_cons_));
   for (auto [constraint_id, gurobi_data] : linear_constraints_map_) {
@@ -878,9 +880,9 @@ absl::StatusOr<DualRayProto> GurobiSolver::GetGurobiDualRay(
     const SparseVectorFilterProto& linear_constraints_filter,
     const SparseVectorFilterProto& variables_filter, const bool is_maximize) {
   // farkas_dual = lambda
-  ASSIGN_OR_RETURN(const std::vector<double> farkas_dual,
-                   gurobi_->GetDoubleAttrArray(GRB_DBL_ATTR_FARKASDUAL,
-                                               num_gurobi_lin_cons_));
+  OR_ASSIGN_OR_RETURN(const std::vector<double> farkas_dual,
+                      gurobi_->GetDoubleAttrArray(GRB_DBL_ATTR_FARKASDUAL,
+                                                  num_gurobi_lin_cons_));
 
   DualRayProto dual_ray;
 
@@ -908,8 +910,8 @@ absl::StatusOr<DualRayProto> GurobiSolver::GetGurobiDualRay(
       // reduced_cost_value = r[gurobi_variable_index]
       //                    = \bar{a}[gurobi_variable_index]
       double reduced_cost_value = 0.0;
-      ASSIGN_OR_RETURN(Gurobi::SparseMat column,
-                       gurobi_->GetVars(gurobi_variable_index, 1));
+      OR_ASSIGN_OR_RETURN(Gurobi::SparseMat column,
+                          gurobi_->GetVars(gurobi_variable_index, 1));
       for (int i = 0; i < column.inds.size(); ++i) {
         reduced_cost_value += farkas_dual[column.inds[i]] * column.vals[i];
       }
@@ -929,11 +931,11 @@ absl::StatusOr<DualRayProto> GurobiSolver::GetGurobiDualRay(
 absl::StatusOr<SolveResultProto> GurobiSolver::ExtractSolveResultProto(
     const absl::Time start, const ModelSolveParametersProto& model_parameters) {
   SolveResultProto result;
-  ASSIGN_OR_RETURN(const int grb_termination,
-                   gurobi_->GetIntAttr(GRB_INT_ATTR_STATUS));
+  OR_ASSIGN_OR_RETURN(const int grb_termination,
+                      gurobi_->GetIntAttr(GRB_INT_ATTR_STATUS));
   SolutionClaims solution_claims;
-  ASSIGN_OR_RETURN(SolutionsAndClaims solution_and_claims,
-                   GetSolutions(model_parameters));
+  OR_ASSIGN_OR_RETURN(SolutionsAndClaims solution_and_claims,
+                      GetSolutions(model_parameters));
   if (grb_termination == GRB_CUTOFF) {
     // Cutoff will not be triggered by bounds e.g. for LP dual feasible
     // solutions. In particular, if the problem is both primal and dual
@@ -945,25 +947,25 @@ absl::StatusOr<SolveResultProto> GurobiSolver::ExtractSolveResultProto(
     solution_and_claims.solution_claims.primal_feasible_solution_exists = false;
     solution_and_claims.solution_claims.dual_feasible_solution_exists = true;
   }
-  ASSIGN_OR_RETURN(const double best_primal_bound,
-                   GetBestPrimalBound(solution_and_claims.solutions));
-  ASSIGN_OR_RETURN(const double best_dual_bound,
-                   GetBestDualBound(solution_and_claims.solutions));
+  OR_ASSIGN_OR_RETURN(const double best_primal_bound,
+                      GetBestPrimalBound(solution_and_claims.solutions));
+  OR_ASSIGN_OR_RETURN(const double best_dual_bound,
+                      GetBestDualBound(solution_and_claims.solutions));
   solution_claims = solution_and_claims.solution_claims;
 
   // TODO(b/195295177): Add tests for rays in unbounded MIPs
-  RETURN_IF_ERROR(FillRays(model_parameters, solution_claims, result));
+  OR_RETURN_IF_ERROR(FillRays(model_parameters, solution_claims, result));
 
   for (SolutionProto& solution : solution_and_claims.solutions) {
     *result.add_solutions() = std::move(solution);
   }
 
-  ASSIGN_OR_RETURN(
+  OR_ASSIGN_OR_RETURN(
       *result.mutable_termination(),
       ConvertTerminationReason(grb_termination, solution_claims,
                                best_primal_bound, best_dual_bound));
 
-  ASSIGN_OR_RETURN(*result.mutable_solve_stats(), GetSolveStats(start));
+  OR_ASSIGN_OR_RETURN(*result.mutable_solve_stats(), GetSolveStats(start));
   return result;
 }
 
@@ -971,26 +973,26 @@ absl::StatusOr<bool> GurobiSolver::AnyElementInIIS(
     const GurobiModelElements& grb_elements) {
   OrAccumulator any_in_iis;
   for (const GurobiVariableIndex grb_index : grb_elements.variables) {
-    RETURN_IF_ERROR(any_in_iis.Or(VariableInIIS(grb_index)));
+    OR_RETURN_IF_ERROR(any_in_iis.Or(VariableInIIS(grb_index)));
   }
   for (const GurobiLinearConstraintIndex grb_index :
        grb_elements.linear_constraints) {
-    RETURN_IF_ERROR(any_in_iis.Or(
+    OR_RETURN_IF_ERROR(any_in_iis.Or(
         GetIntAttrElementAsBool(*gurobi_, GRB_INT_ATTR_IIS_CONSTR, grb_index)));
   }
   for (const GurobiQuadraticConstraintIndex grb_index :
        grb_elements.quadratic_constraints) {
-    RETURN_IF_ERROR(any_in_iis.Or(GetIntAttrElementAsBool(
+    OR_RETURN_IF_ERROR(any_in_iis.Or(GetIntAttrElementAsBool(
         *gurobi_, GRB_INT_ATTR_IIS_QCONSTR, grb_index)));
   }
   for (const GurobiSosConstraintIndex grb_index :
        grb_elements.sos_constraints) {
-    RETURN_IF_ERROR(any_in_iis.Or(
+    OR_RETURN_IF_ERROR(any_in_iis.Or(
         GetIntAttrElementAsBool(*gurobi_, GRB_INT_ATTR_IIS_SOS, grb_index)));
   }
   for (const GurobiGeneralConstraintIndex grb_index :
        grb_elements.general_constraints) {
-    RETURN_IF_ERROR(any_in_iis.Or(GetIntAttrElementAsBool(
+    OR_RETURN_IF_ERROR(any_in_iis.Or(GetIntAttrElementAsBool(
         *gurobi_, GRB_INT_ATTR_IIS_GENCONSTR, grb_index)));
   }
   return any_in_iis.value();
@@ -1000,10 +1002,10 @@ absl::StatusOr<bool> GurobiSolver::AnyElementInIIS(
 // to true.
 absl::StatusOr<std::optional<ModelSubsetProto::Bounds>>
 GurobiSolver::VariableBoundsInIIS(const GurobiVariableIndex grb_index) {
-  ASSIGN_OR_RETURN(
+  OR_ASSIGN_OR_RETURN(
       const bool var_lb_is_in_iis,
       GetIntAttrElementAsBool(*gurobi_, GRB_INT_ATTR_IIS_LB, grb_index));
-  ASSIGN_OR_RETURN(
+  OR_ASSIGN_OR_RETURN(
       const bool var_ub_is_in_iis,
       GetIntAttrElementAsBool(*gurobi_, GRB_INT_ATTR_IIS_UB, grb_index));
   if (!var_lb_is_in_iis && !var_ub_is_in_iis) {
@@ -1017,8 +1019,8 @@ GurobiSolver::VariableBoundsInIIS(const GurobiVariableIndex grb_index) {
 
 absl::StatusOr<bool> GurobiSolver::VariableInIIS(
     const GurobiVariableIndex grb_index) {
-  ASSIGN_OR_RETURN(const std::optional<ModelSubsetProto::Bounds> bounds,
-                   VariableBoundsInIIS(grb_index));
+  OR_ASSIGN_OR_RETURN(const std::optional<ModelSubsetProto::Bounds> bounds,
+                      VariableBoundsInIIS(grb_index));
   return bounds.has_value();
 }
 
@@ -1029,8 +1031,8 @@ GurobiSolver::LinearConstraintInIIS(const LinearConstraintData& grb_data) {
   // associated with this linear constraint is part of the IIS (including
   // slack variable/constraints), then we mark any finite bound as being part
   // of the IIS.
-  ASSIGN_OR_RETURN(const bool constr_in_iis,
-                   AnyElementInIIS(grb_data.DependentElements()));
+  OR_ASSIGN_OR_RETURN(const bool constr_in_iis,
+                      AnyElementInIIS(grb_data.DependentElements()));
   if (!constr_in_iis) {
     return std::nullopt;
   }
@@ -1043,13 +1045,13 @@ GurobiSolver::LinearConstraintInIIS(const LinearConstraintData& grb_data) {
 absl::StatusOr<std::optional<ModelSubsetProto::Bounds>>
 GurobiSolver::QuadraticConstraintInIIS(
     const GurobiQuadraticConstraintIndex grb_index) {
-  ASSIGN_OR_RETURN(
+  OR_ASSIGN_OR_RETURN(
       const bool constr_in_iis,
       GetIntAttrElementAsBool(*gurobi_, GRB_INT_ATTR_IIS_QCONSTR, grb_index));
   if (!constr_in_iis) {
     return std::nullopt;
   }
-  ASSIGN_OR_RETURN(
+  OR_ASSIGN_OR_RETURN(
       const char constr_sense,
       gurobi_->GetCharAttrElement(GRB_CHAR_ATTR_QCSENSE, grb_index));
   ModelSubsetProto::Bounds result;
@@ -1069,18 +1071,18 @@ GurobiSolver::ExtractComputeInfeasibleSubsystemResultProto(
   }
   result.set_feasibility(FEASIBILITY_STATUS_INFEASIBLE);
   {
-    ASSIGN_OR_RETURN(const bool is_minimal,
-                     gurobi_->GetIntAttr(GRB_INT_ATTR_IIS_MINIMAL));
+    OR_ASSIGN_OR_RETURN(const bool is_minimal,
+                        gurobi_->GetIntAttr(GRB_INT_ATTR_IIS_MINIMAL));
     result.set_is_minimal(is_minimal);
   }
   for (const auto [id, grb_index] : variables_map_) {
-    RETURN_IF_ERROR(AddMapEntryIfPresent(
+    OR_RETURN_IF_ERROR(AddMapEntryIfPresent(
         id, /*maybe_value=*/VariableBoundsInIIS(grb_index),
         *result.mutable_infeasible_subsystem()->mutable_variable_bounds()));
     {
       // Gurobi does not report integrality in its IIS, so we mark any integer
       // variable in the model as being involved.
-      ASSIGN_OR_RETURN(
+      OR_ASSIGN_OR_RETURN(
           const char var_type,
           gurobi_->GetCharAttrElement(GRB_CHAR_ATTR_VTYPE, grb_index));
       if (var_type == GRB_BINARY || var_type == GRB_INTEGER) {
@@ -1091,33 +1093,33 @@ GurobiSolver::ExtractComputeInfeasibleSubsystemResultProto(
   }
 
   for (const auto [id, grb_data] : linear_constraints_map_) {
-    RETURN_IF_ERROR(AddMapEntryIfPresent(
+    OR_RETURN_IF_ERROR(AddMapEntryIfPresent(
         id, /*maybe_value=*/LinearConstraintInIIS(grb_data),
         *result.mutable_infeasible_subsystem()->mutable_linear_constraints()));
   }
 
   for (const auto [id, grb_index] : quadratic_constraints_map_) {
-    RETURN_IF_ERROR(AddMapEntryIfPresent(
+    OR_RETURN_IF_ERROR(AddMapEntryIfPresent(
         id, /*maybe_value=*/QuadraticConstraintInIIS(grb_index),
         *result.mutable_infeasible_subsystem()
              ->mutable_quadratic_constraints()));
   }
 
   for (const auto& [id, grb_data] : soc_constraints_map_) {
-    RETURN_IF_ERROR(AppendEntryIfTrue(
+    OR_RETURN_IF_ERROR(AppendEntryIfTrue(
         id, /*should_append=*/AnyElementInIIS(grb_data.DependentElements()),
         *result.mutable_infeasible_subsystem()
              ->mutable_second_order_cone_constraints()));
   }
 
   for (const auto& [id, grb_data] : sos1_constraints_map_) {
-    RETURN_IF_ERROR(AppendEntryIfTrue(
+    OR_RETURN_IF_ERROR(AppendEntryIfTrue(
         id, /*should_append=*/AnyElementInIIS(grb_data.DependentElements()),
         *result.mutable_infeasible_subsystem()->mutable_sos1_constraints()));
   }
 
   for (const auto& [id, grb_data] : sos2_constraints_map_) {
-    RETURN_IF_ERROR(AppendEntryIfTrue(
+    OR_RETURN_IF_ERROR(AppendEntryIfTrue(
         id, /*should_append=*/AnyElementInIIS(grb_data.DependentElements()),
         *result.mutable_infeasible_subsystem()->mutable_sos2_constraints()));
   }
@@ -1126,7 +1128,7 @@ GurobiSolver::ExtractComputeInfeasibleSubsystemResultProto(
     if (!maybe_grb_data.has_value()) {
       continue;
     }
-    RETURN_IF_ERROR(AppendEntryIfTrue(
+    OR_RETURN_IF_ERROR(AppendEntryIfTrue(
         id,
         /*should_append=*/
         GetIntAttrElementAsBool(*gurobi_, GRB_INT_ATTR_IIS_GENCONSTR,
@@ -1143,9 +1145,9 @@ GurobiSolver::ExtractComputeInfeasibleSubsystemResultProto(
 absl::StatusOr<GurobiSolver::SolutionsAndClaims> GurobiSolver::GetSolutions(
     const ModelSolveParametersProto& model_parameters) {
   // Note that all multi-objective models will have `IsMip()` return true.
-  ASSIGN_OR_RETURN(const bool is_mip, IsMIP());
-  ASSIGN_OR_RETURN(const bool is_qp, IsQP());
-  ASSIGN_OR_RETURN(const bool is_qcp, IsQCP());
+  OR_ASSIGN_OR_RETURN(const bool is_mip, IsMIP());
+  OR_ASSIGN_OR_RETURN(const bool is_qp, IsQP());
+  OR_ASSIGN_OR_RETURN(const bool is_qcp, IsQCP());
 
   if (is_mip) {
     return GetMipSolutions(model_parameters);
@@ -1168,10 +1170,10 @@ absl::StatusOr<SolveStatsProto> GurobiSolver::GetSolveStats(
                                            solve_stats.mutable_solve_time()));
 
   if (gurobi_->IsAttrAvailable(GRB_DBL_ATTR_ITERCOUNT)) {
-    ASSIGN_OR_RETURN(const double simplex_iters_double,
-                     gurobi_->GetDoubleAttr(GRB_DBL_ATTR_ITERCOUNT));
-    ASSIGN_OR_RETURN(const int64_t simplex_iters,
-                     SafeInt64FromDouble(simplex_iters_double));
+    OR_ASSIGN_OR_RETURN(const double simplex_iters_double,
+                        gurobi_->GetDoubleAttr(GRB_DBL_ATTR_ITERCOUNT));
+    OR_ASSIGN_OR_RETURN(const int64_t simplex_iters,
+                        SafeInt64FromDouble(simplex_iters_double));
     LOG_IF(ERROR, simplex_iters < 0)
         << "Expected GRB_DBL_ATTR_ITERCOUNT to be non-negative, got: "
         << simplex_iters << "; clamping to 0";
@@ -1179,8 +1181,8 @@ absl::StatusOr<SolveStatsProto> GurobiSolver::GetSolveStats(
   }
 
   if (gurobi_->IsAttrAvailable(GRB_INT_ATTR_BARITERCOUNT)) {
-    ASSIGN_OR_RETURN(const int barrier_iters,
-                     gurobi_->GetIntAttr(GRB_INT_ATTR_BARITERCOUNT));
+    OR_ASSIGN_OR_RETURN(const int barrier_iters,
+                        gurobi_->GetIntAttr(GRB_INT_ATTR_BARITERCOUNT));
     LOG_IF(ERROR, barrier_iters < 0)
         << "Expected GRB_INT_ATTR_BARITERCOUNT to be non-negative, got: "
         << barrier_iters << "; clamping to 0";
@@ -1188,9 +1190,9 @@ absl::StatusOr<SolveStatsProto> GurobiSolver::GetSolveStats(
   }
 
   if (gurobi_->IsAttrAvailable(GRB_DBL_ATTR_NODECOUNT)) {
-    ASSIGN_OR_RETURN(const double nodes_double,
-                     gurobi_->GetDoubleAttr(GRB_DBL_ATTR_NODECOUNT));
-    ASSIGN_OR_RETURN(const int64_t nodes, SafeInt64FromDouble(nodes_double));
+    OR_ASSIGN_OR_RETURN(const double nodes_double,
+                        gurobi_->GetDoubleAttr(GRB_DBL_ATTR_NODECOUNT));
+    OR_ASSIGN_OR_RETURN(const int64_t nodes, SafeInt64FromDouble(nodes_double));
     LOG_IF(ERROR, nodes < 0)
         << "Expected GRB_DBL_ATTR_NODECOUNT to be non-negative, got: " << nodes
         << "; clamping to 0";
@@ -1203,23 +1205,25 @@ absl::StatusOr<GurobiSolver::SolutionsAndClaims> GurobiSolver::GetMipSolutions(
     const ModelSolveParametersProto& model_parameters) {
   int num_solutions = 0;
   if (gurobi_->IsAttrAvailable(GRB_INT_ATTR_SOLCOUNT)) {
-    ASSIGN_OR_RETURN(num_solutions, gurobi_->GetIntAttr(GRB_INT_ATTR_SOLCOUNT));
+    OR_ASSIGN_OR_RETURN(num_solutions,
+                        gurobi_->GetIntAttr(GRB_INT_ATTR_SOLCOUNT));
   }
   std::vector<SolutionProto> solutions;
   solutions.reserve(num_solutions);
 
   for (int i = 0; i < num_solutions; ++i) {
-    RETURN_IF_ERROR(gurobi_->SetIntParam(GRB_INT_PAR_SOLUTIONNUMBER, i));
+    OR_RETURN_IF_ERROR(gurobi_->SetIntParam(GRB_INT_PAR_SOLUTIONNUMBER, i));
 
     PrimalSolutionProto primal_solution;
-    ASSIGN_OR_RETURN(const double sol_val,
-                     gurobi_->GetDoubleAttr(GRB_DBL_ATTR_POOLOBJVAL));
+    OR_ASSIGN_OR_RETURN(const double sol_val,
+                        gurobi_->GetDoubleAttr(GRB_DBL_ATTR_POOLOBJVAL));
     primal_solution.set_objective_value(sol_val);
     if (is_multi_objective_mode()) {
       for (const auto [id, grb_index] : multi_objectives_map_) {
-        RETURN_IF_ERROR(gurobi_->SetIntParam(GRB_INT_PAR_OBJNUMBER, grb_index));
-        ASSIGN_OR_RETURN(const double obj_val,
-                         gurobi_->GetDoubleAttr(GRB_DBL_ATTR_OBJNVAL));
+        OR_RETURN_IF_ERROR(
+            gurobi_->SetIntParam(GRB_INT_PAR_OBJNUMBER, grb_index));
+        OR_ASSIGN_OR_RETURN(const double obj_val,
+                            gurobi_->GetDoubleAttr(GRB_DBL_ATTR_OBJNVAL));
         // If unset, this is the primary objective. We have already queried its
         // value via PoolObjVal above.
         if (id.has_value()) {
@@ -1234,7 +1238,7 @@ absl::StatusOr<GurobiSolver::SolutionsAndClaims> GurobiSolver::GetMipSolutions(
     // feasible.
     primal_solution.set_feasibility_status(
         i == 0 ? SOLUTION_STATUS_FEASIBLE : SOLUTION_STATUS_UNDETERMINED);
-    ASSIGN_OR_RETURN(
+    OR_ASSIGN_OR_RETURN(
         const std::vector<double> grb_var_values,
         gurobi_->GetDoubleAttrArray(GRB_DBL_ATTR_XN, num_gurobi_variables_));
     GurobiVectorToSparseDoubleVector(grb_var_values, variables_map_,
@@ -1244,10 +1248,10 @@ absl::StatusOr<GurobiSolver::SolutionsAndClaims> GurobiSolver::GetMipSolutions(
         std::move(primal_solution);
   }
 
-  ASSIGN_OR_RETURN(const int grb_termination,
-                   gurobi_->GetIntAttr(GRB_INT_ATTR_STATUS));
+  OR_ASSIGN_OR_RETURN(const int grb_termination,
+                      gurobi_->GetIntAttr(GRB_INT_ATTR_STATUS));
   // Set solution claims
-  ASSIGN_OR_RETURN(const double best_dual_bound, GetGurobiBestDualBound());
+  OR_ASSIGN_OR_RETURN(const double best_dual_bound, GetGurobiBestDualBound());
   // Note: here the existence of a dual solution refers to a dual solution to
   // some convex relaxation of the MIP. This convex relaxation can likely be
   // interpreted as an LP between the LP relaxation of the MIP and the convex
@@ -1290,11 +1294,11 @@ GurobiSolver::GetConvexPrimalSolutionIfAvailable(
     return SolutionAndClaim<PrimalSolutionProto>{
         .solution = std::nullopt, .feasible_solution_exists = false};
   }
-  ASSIGN_OR_RETURN(const int grb_termination,
-                   gurobi_->GetIntAttr(GRB_INT_ATTR_STATUS));
+  OR_ASSIGN_OR_RETURN(const int grb_termination,
+                      gurobi_->GetIntAttr(GRB_INT_ATTR_STATUS));
 
   // Get primal solutions if available.
-  ASSIGN_OR_RETURN(
+  OR_ASSIGN_OR_RETURN(
       const std::vector<double> grb_var_values,
       gurobi_->GetDoubleAttrArray(GRB_DBL_ATTR_X, num_gurobi_variables_));
 
@@ -1306,12 +1310,12 @@ GurobiSolver::GetConvexPrimalSolutionIfAvailable(
   // more and make simple example to file a bug.
   if (gurobi_->IsAttrAvailable(GRB_DBL_ATTR_OBJVAL) &&
       grb_termination != GRB_ITERATION_LIMIT) {
-    ASSIGN_OR_RETURN(const double sol_val,
-                     gurobi_->GetDoubleAttr(GRB_DBL_ATTR_OBJVAL));
+    OR_ASSIGN_OR_RETURN(const double sol_val,
+                        gurobi_->GetDoubleAttr(GRB_DBL_ATTR_OBJVAL));
     primal_solution.set_objective_value(sol_val);
   } else {
     double objective_value = 0.0;
-    ASSIGN_OR_RETURN(
+    OR_ASSIGN_OR_RETURN(
         const std::vector<double> linear_obj_coefs,
         gurobi_->GetDoubleAttrArray(GRB_DBL_ATTR_OBJ, num_gurobi_variables_));
     for (int i = 0; i < num_gurobi_variables_; ++i) {
@@ -1326,9 +1330,10 @@ GurobiSolver::GetConvexPrimalSolutionIfAvailable(
   } else if (grb_termination == GRB_INFEASIBLE) {
     primal_solution.set_feasibility_status(SOLUTION_STATUS_INFEASIBLE);
   } else if (PrimalSolutionQualityAvailable()) {
-    ASSIGN_OR_RETURN(const double solution_quality, GetPrimalSolutionQuality());
-    ASSIGN_OR_RETURN(const double tolerance,
-                     gurobi_->GetDoubleParam(GRB_DBL_PAR_FEASIBILITYTOL));
+    OR_ASSIGN_OR_RETURN(const double solution_quality,
+                        GetPrimalSolutionQuality());
+    OR_ASSIGN_OR_RETURN(const double tolerance,
+                        gurobi_->GetDoubleParam(GRB_DBL_PAR_FEASIBILITYTOL));
     if (solution_quality <= tolerance) {
       primal_solution.set_feasibility_status(SOLUTION_STATUS_FEASIBLE);
     } else {
@@ -1356,18 +1361,18 @@ bool GurobiSolver::PrimalSolutionQualityAvailable() const {
 }
 
 absl::StatusOr<double> GurobiSolver::GetPrimalSolutionQuality() const {
-  ASSIGN_OR_RETURN(const double constraint_residual,
-                   gurobi_->GetDoubleAttr(GRB_DBL_ATTR_CONSTR_RESIDUAL));
-  ASSIGN_OR_RETURN(const double constraint_violation,
-                   gurobi_->GetDoubleAttr(GRB_DBL_ATTR_CONSTR_VIO));
-  ASSIGN_OR_RETURN(const double bound_violation,
-                   gurobi_->GetDoubleAttr(GRB_DBL_ATTR_BOUND_VIO));
-  ASSIGN_OR_RETURN(const double constraint_scaled_residual,
-                   gurobi_->GetDoubleAttr(GRB_DBL_ATTR_CONSTR_SRESIDUAL));
-  ASSIGN_OR_RETURN(const double constraint_scaled_violation,
-                   gurobi_->GetDoubleAttr(GRB_DBL_ATTR_CONSTR_SVIO));
-  ASSIGN_OR_RETURN(const double bound_scaled_violation,
-                   gurobi_->GetDoubleAttr(GRB_DBL_ATTR_BOUND_SVIO));
+  OR_ASSIGN_OR_RETURN(const double constraint_residual,
+                      gurobi_->GetDoubleAttr(GRB_DBL_ATTR_CONSTR_RESIDUAL));
+  OR_ASSIGN_OR_RETURN(const double constraint_violation,
+                      gurobi_->GetDoubleAttr(GRB_DBL_ATTR_CONSTR_VIO));
+  OR_ASSIGN_OR_RETURN(const double bound_violation,
+                      gurobi_->GetDoubleAttr(GRB_DBL_ATTR_BOUND_VIO));
+  OR_ASSIGN_OR_RETURN(const double constraint_scaled_residual,
+                      gurobi_->GetDoubleAttr(GRB_DBL_ATTR_CONSTR_SRESIDUAL));
+  OR_ASSIGN_OR_RETURN(const double constraint_scaled_violation,
+                      gurobi_->GetDoubleAttr(GRB_DBL_ATTR_CONSTR_SVIO));
+  OR_ASSIGN_OR_RETURN(const double bound_scaled_violation,
+                      gurobi_->GetDoubleAttr(GRB_DBL_ATTR_BOUND_SVIO));
   return std::max({constraint_residual, constraint_violation, bound_violation,
                    constraint_scaled_residual, constraint_scaled_violation,
                    bound_scaled_violation});
@@ -1380,7 +1385,7 @@ absl::StatusOr<double> GurobiSolver::GetBestPrimalBound(
   // Note that for (primal) unbounded problems the primal_bound is correctly
   // filled by ConvertTerminationReason() possibly overriding the value
   // returned by GetBestPrimalBound().
-  ASSIGN_OR_RETURN(const bool is_maximize, IsMaximize());
+  OR_ASSIGN_OR_RETURN(const bool is_maximize, IsMaximize());
   double best_objective_value = is_maximize ? -kInf : kInf;
   for (const SolutionProto& solution : solutions) {
     if (solution.has_primal_solution() &&
@@ -1397,10 +1402,10 @@ absl::StatusOr<double> GurobiSolver::GetBestPrimalBound(
 
 absl::StatusOr<double> GurobiSolver::GetBestDualBound(
     absl::Span<const SolutionProto> solutions) const {
-  ASSIGN_OR_RETURN(const bool is_maximize, IsMaximize());
+  OR_ASSIGN_OR_RETURN(const bool is_maximize, IsMaximize());
   // GetGurobiBestDualBound() returns the correct bound for problems without
   // dual solutions (e.g. MIP).
-  ASSIGN_OR_RETURN(double best_dual_bound, GetGurobiBestDualBound());
+  OR_ASSIGN_OR_RETURN(double best_dual_bound, GetGurobiBestDualBound());
   // However, GetGurobiBestDualBound() may be incorrect for QP problems.
   for (const SolutionProto& solution : solutions) {
     if (solution.has_dual_solution() &&
@@ -1421,24 +1426,24 @@ absl::StatusOr<double> GurobiSolver::GetGurobiBestDualBound() const {
   // multi objective mode.
   if (gurobi_->IsAttrAvailable(GRB_DBL_ATTR_OBJBOUND) &&
       !is_multi_objective_mode()) {
-    ASSIGN_OR_RETURN(const double obj_bound,
-                     gurobi_->GetDoubleAttr(GRB_DBL_ATTR_OBJBOUND));
+    OR_ASSIGN_OR_RETURN(const double obj_bound,
+                        gurobi_->GetDoubleAttr(GRB_DBL_ATTR_OBJBOUND));
     // Note: Unbounded models return GRB_DBL_ATTR_OBJBOUND = GRB_INFINITY so
     // the conversion of +/-GRB_INFINITY to +/-kInf is needed and consistent.
     if (std::abs(obj_bound) < GRB_INFINITY) {
       return obj_bound;
     }
   }
-  ASSIGN_OR_RETURN(const bool is_maximize, IsMaximize());
+  OR_ASSIGN_OR_RETURN(const bool is_maximize, IsMaximize());
   return is_maximize ? kInf : -kInf;
 }
 
 absl::StatusOr<std::optional<BasisProto>> GurobiSolver::GetBasisIfAvailable() {
   if (gurobi_->IsAttrAvailable(GRB_INT_ATTR_VBASIS) &&
       gurobi_->IsAttrAvailable(GRB_INT_ATTR_CBASIS)) {
-    ASSIGN_OR_RETURN(BasisProto basis, GetGurobiBasis());
-    ASSIGN_OR_RETURN(const int grb_termination,
-                     gurobi_->GetIntAttr(GRB_INT_ATTR_STATUS));
+    OR_ASSIGN_OR_RETURN(BasisProto basis, GetGurobiBasis());
+    OR_ASSIGN_OR_RETURN(const int grb_termination,
+                        gurobi_->GetIntAttr(GRB_INT_ATTR_STATUS));
     basis.set_basic_dual_feasibility(SOLUTION_STATUS_UNDETERMINED);
     if (grb_termination == GRB_OPTIMAL) {
       basis.set_basic_dual_feasibility(SOLUTION_STATUS_FEASIBLE);
@@ -1453,11 +1458,11 @@ absl::StatusOr<std::optional<BasisProto>> GurobiSolver::GetBasisIfAvailable() {
 
 absl::StatusOr<GurobiSolver::SolutionsAndClaims> GurobiSolver::GetLpSolution(
     const ModelSolveParametersProto& model_parameters) {
-  ASSIGN_OR_RETURN(auto primal_solution_and_claim,
-                   GetConvexPrimalSolutionIfAvailable(model_parameters));
-  ASSIGN_OR_RETURN(auto dual_solution_and_claim,
-                   GetConvexDualSolutionIfAvailable(model_parameters));
-  ASSIGN_OR_RETURN(auto basis, GetBasisIfAvailable());
+  OR_ASSIGN_OR_RETURN(auto primal_solution_and_claim,
+                      GetConvexPrimalSolutionIfAvailable(model_parameters));
+  OR_ASSIGN_OR_RETURN(auto dual_solution_and_claim,
+                      GetConvexDualSolutionIfAvailable(model_parameters));
+  OR_ASSIGN_OR_RETURN(auto basis, GetBasisIfAvailable());
   const SolutionClaims solution_claims = {
       .primal_feasible_solution_exists =
           primal_solution_and_claim.feasible_solution_exists,
@@ -1498,7 +1503,7 @@ GurobiSolver::GetConvexDualSolutionIfAvailable(
   // ranged constraints.
   DualSolutionProto dual_solution;
   bool dual_feasible_solution_exists = false;
-  ASSIGN_OR_RETURN(
+  OR_ASSIGN_OR_RETURN(
       const std::vector<double> grb_constraint_duals,
       gurobi_->GetDoubleAttrArray(GRB_DBL_ATTR_PI, num_gurobi_lin_cons_));
   GurobiVectorToSparseDoubleVector(grb_constraint_duals,
@@ -1506,7 +1511,7 @@ GurobiSolver::GetConvexDualSolutionIfAvailable(
                                    *dual_solution.mutable_dual_values(),
                                    model_parameters.dual_values_filter());
 
-  ASSIGN_OR_RETURN(
+  OR_ASSIGN_OR_RETURN(
       const std::vector<double> grb_reduced_cost_values,
       gurobi_->GetDoubleAttrArray(GRB_DBL_ATTR_RC, num_gurobi_variables_));
   GurobiVectorToSparseDoubleVector(grb_reduced_cost_values, variables_map_,
@@ -1515,7 +1520,7 @@ GurobiSolver::GetConvexDualSolutionIfAvailable(
 
   if (!quadratic_constraints_map_.empty() &&
       gurobi_->IsAttrAvailable(GRB_DBL_ATTR_QCPI)) {
-    ASSIGN_OR_RETURN(
+    OR_ASSIGN_OR_RETURN(
         const std::vector<double> grb_quad_constraint_duals,
         gurobi_->GetDoubleAttrArray(GRB_DBL_ATTR_QCPI, num_gurobi_quad_cons_));
     GurobiVectorToSparseDoubleVector(
@@ -1524,12 +1529,12 @@ GurobiSolver::GetConvexDualSolutionIfAvailable(
         model_parameters.quadratic_dual_values_filter());
   }
 
-  ASSIGN_OR_RETURN(const int grb_termination,
-                   gurobi_->GetIntAttr(GRB_INT_ATTR_STATUS));
+  OR_ASSIGN_OR_RETURN(const int grb_termination,
+                      gurobi_->GetIntAttr(GRB_INT_ATTR_STATUS));
   if (grb_termination == GRB_OPTIMAL &&
       gurobi_->IsAttrAvailable(GRB_DBL_ATTR_OBJVAL)) {
-    ASSIGN_OR_RETURN(const double obj_val,
-                     gurobi_->GetDoubleAttr(GRB_DBL_ATTR_OBJVAL));
+    OR_ASSIGN_OR_RETURN(const double obj_val,
+                        gurobi_->GetDoubleAttr(GRB_DBL_ATTR_OBJVAL));
     dual_solution.set_objective_value(obj_val);
   }
 
@@ -1553,7 +1558,7 @@ GurobiSolver::GetConvexDualSolutionIfAvailable(
   // Note: GRB_DBL_ATTR_OBJBOUND can sometimes provide the objective value of a
   // sub-optimal dual feasible solution.
   // Here we only use it to possibly update dual_feasible_solution_exists.
-  ASSIGN_OR_RETURN(const double best_dual_bound, GetGurobiBestDualBound());
+  OR_ASSIGN_OR_RETURN(const double best_dual_bound, GetGurobiBestDualBound());
   if (dual_feasible_solution_exists || std::isfinite(best_dual_bound)) {
     dual_feasible_solution_exists = true;
   } else if (grb_termination == GRB_OPTIMAL) {
@@ -1569,16 +1574,16 @@ GurobiSolver::GetConvexDualSolutionIfAvailable(
 absl::Status GurobiSolver::FillRays(
     const ModelSolveParametersProto& model_parameters,
     const SolutionClaims solution_claims, SolveResultProto& result) {
-  ASSIGN_OR_RETURN(const bool is_maximize, IsMaximize());
+  OR_ASSIGN_OR_RETURN(const bool is_maximize, IsMaximize());
   // GRB_DBL_ATTR_UNBDRAY is sometimes incorrectly available for problems
   // without variables. We also give priority to the conclusions obtained from
   // dual solutions or bounds.
   if (!solution_claims.dual_feasible_solution_exists &&
       num_gurobi_variables_ > 0 &&
       gurobi_->IsAttrAvailable(GRB_DBL_ATTR_UNBDRAY)) {
-    ASSIGN_OR_RETURN(const std::vector<double> grb_ray_var_values,
-                     gurobi_->GetDoubleAttrArray(GRB_DBL_ATTR_UNBDRAY,
-                                                 num_gurobi_variables_));
+    OR_ASSIGN_OR_RETURN(const std::vector<double> grb_ray_var_values,
+                        gurobi_->GetDoubleAttrArray(GRB_DBL_ATTR_UNBDRAY,
+                                                    num_gurobi_variables_));
     PrimalRayProto* const primal_ray = result.add_primal_rays();
     GurobiVectorToSparseDoubleVector(grb_ray_var_values, variables_map_,
                                      *primal_ray->mutable_variable_values(),
@@ -1590,7 +1595,7 @@ absl::Status GurobiSolver::FillRays(
   if (!solution_claims.primal_feasible_solution_exists &&
       num_gurobi_lin_cons_ > 0 &&
       gurobi_->IsAttrAvailable(GRB_DBL_ATTR_FARKASDUAL)) {
-    ASSIGN_OR_RETURN(
+    OR_ASSIGN_OR_RETURN(
         DualRayProto dual_ray,
         GetGurobiDualRay(model_parameters.dual_values_filter(),
                          model_parameters.reduced_costs_filter(), is_maximize));
@@ -1601,12 +1606,12 @@ absl::Status GurobiSolver::FillRays(
 
 absl::StatusOr<GurobiSolver::SolutionsAndClaims> GurobiSolver::GetQpSolution(
     const ModelSolveParametersProto& model_parameters) {
-  ASSIGN_OR_RETURN((auto [primal_solution, found_primal_feasible_solution]),
-                   GetConvexPrimalSolutionIfAvailable(model_parameters));
+  OR_ASSIGN_OR_RETURN((auto [primal_solution, found_primal_feasible_solution]),
+                      GetConvexPrimalSolutionIfAvailable(model_parameters));
   // TODO(b/225189115): Expand QpDualsTest to check maximization problems and
   // other edge cases.
-  ASSIGN_OR_RETURN((auto [dual_solution, found_dual_feasible_solution]),
-                   GetConvexDualSolutionIfAvailable(model_parameters));
+  OR_ASSIGN_OR_RETURN((auto [dual_solution, found_dual_feasible_solution]),
+                      GetConvexDualSolutionIfAvailable(model_parameters));
   // TODO(b/280353996): we want to extract the basis here (when we solve via
   // simplex), but the existing code extracts a basis which fails our validator.
 
@@ -1631,12 +1636,12 @@ absl::StatusOr<GurobiSolver::SolutionsAndClaims> GurobiSolver::GetQpSolution(
 
 absl::StatusOr<GurobiSolver::SolutionsAndClaims> GurobiSolver::GetQcpSolution(
     const ModelSolveParametersProto& model_parameters) {
-  ASSIGN_OR_RETURN((auto [primal_solution, found_primal_feasible_solution]),
-                   GetConvexPrimalSolutionIfAvailable(model_parameters));
-  ASSIGN_OR_RETURN((auto [dual_solution, found_dual_feasible_solution]),
-                   GetConvexDualSolutionIfAvailable(model_parameters));
-  ASSIGN_OR_RETURN(const int grb_termination,
-                   gurobi_->GetIntAttr(GRB_INT_ATTR_STATUS));
+  OR_ASSIGN_OR_RETURN((auto [primal_solution, found_primal_feasible_solution]),
+                      GetConvexPrimalSolutionIfAvailable(model_parameters));
+  OR_ASSIGN_OR_RETURN((auto [dual_solution, found_dual_feasible_solution]),
+                      GetConvexDualSolutionIfAvailable(model_parameters));
+  OR_ASSIGN_OR_RETURN(const int grb_termination,
+                      gurobi_->GetIntAttr(GRB_INT_ATTR_STATUS));
   // By default, Gurobi will not return duals for optimally solved QCPs.
   const bool proven_feasible = grb_termination == GRB_OPTIMAL;
   const SolutionClaims solution_claims = {
@@ -1661,10 +1666,10 @@ absl::StatusOr<GurobiSolver::SolutionsAndClaims> GurobiSolver::GetQcpSolution(
 absl::Status GurobiSolver::SetParameters(
     const SolveParametersProto& parameters,
     const ModelSolveParametersProto& model_parameters) {
-  ASSIGN_OR_RETURN(const bool is_mip, IsMIP());
-  ASSIGN_OR_RETURN(const GurobiParametersProto gurobi_parameters,
-                   MergeParameters(parameters, model_parameters, is_mip,
-                                   is_multi_objective_mode()));
+  OR_ASSIGN_OR_RETURN(const bool is_mip, IsMIP());
+  OR_ASSIGN_OR_RETURN(const GurobiParametersProto gurobi_parameters,
+                      MergeParameters(parameters, model_parameters, is_mip,
+                                      is_multi_objective_mode()));
   std::vector<std::string> parameter_errors;
   for (const GurobiParametersProto::Parameter& parameter :
        gurobi_parameters.parameters()) {
@@ -1693,11 +1698,11 @@ absl::Status GurobiSolver::AddNewVariables(
     // kGurobiInfBound], variable bounds outside this range are discarded and
     // replaced by GRB_INFINITY. So there is no need to have a special case
     // here.
-    RETURN_IF_ERROR(SafeGurobiBound(new_variables.lower_bounds(j)))
+    OR_RETURN_IF_ERROR(SafeGurobiBound(new_variables.lower_bounds(j)))
         << "lower bound for variable " << id << ": "
         << EscapedNameForLogging(
                new_variables.names().empty() ? "" : new_variables.names(j));
-    RETURN_IF_ERROR(SafeGurobiBound(new_variables.upper_bounds(j)))
+    OR_RETURN_IF_ERROR(SafeGurobiBound(new_variables.upper_bounds(j)))
         << "upper bound for variable " << id << ": "
         << EscapedNameForLogging(
                new_variables.names().empty() ? "" : new_variables.names(j));
@@ -1708,7 +1713,7 @@ absl::Status GurobiSolver::AddNewVariables(
   // absl::Span<std::string>.
   const std::vector<std::string> variable_names =
       TruncateNames(new_variables.names());
-  RETURN_IF_ERROR(gurobi_->AddVars(
+  OR_RETURN_IF_ERROR(gurobi_->AddVars(
       /*obj=*/{},
       /*lb=*/new_variables.lower_bounds(),
       /*ub=*/new_variables.upper_bounds(),
@@ -1720,12 +1725,12 @@ absl::Status GurobiSolver::AddNewVariables(
 
 absl::Status GurobiSolver::AddSingleObjective(const ObjectiveProto& objective) {
   const int model_sense = objective.maximize() ? GRB_MAXIMIZE : GRB_MINIMIZE;
-  RETURN_IF_ERROR(gurobi_->SetIntAttr(GRB_INT_ATTR_MODELSENSE, model_sense));
-  RETURN_IF_ERROR(
+  OR_RETURN_IF_ERROR(gurobi_->SetIntAttr(GRB_INT_ATTR_MODELSENSE, model_sense));
+  OR_RETURN_IF_ERROR(
       gurobi_->SetDoubleAttr(GRB_DBL_ATTR_OBJCON, objective.offset()));
-  RETURN_IF_ERROR(UpdateDoubleListAttribute(objective.linear_coefficients(),
-                                            GRB_DBL_ATTR_OBJ, variables_map_));
-  RETURN_IF_ERROR(
+  OR_RETURN_IF_ERROR(UpdateDoubleListAttribute(
+      objective.linear_coefficients(), GRB_DBL_ATTR_OBJ, variables_map_));
+  OR_RETURN_IF_ERROR(
       ResetQuadraticObjectiveTerms(objective.quadratic_coefficients()));
   return absl::OkStatus();
 }
@@ -1738,17 +1743,17 @@ absl::Status GurobiSolver::AddMultiObjectives(
   for (const auto& [id, objective] : auxiliary_objectives) {
     const int64_t priority = objective.priority();
     if (!priorities.insert(priority).second) {
-      return util::InvalidArgumentErrorBuilder()
+      return ortools::InvalidArgumentErrorBuilder()
              << "repeated objective priority: " << priority;
     }
   }
   const bool is_maximize = primary_objective.maximize();
-  RETURN_IF_ERROR(gurobi_->SetIntAttr(
+  OR_RETURN_IF_ERROR(gurobi_->SetIntAttr(
       GRB_INT_ATTR_MODELSENSE, is_maximize ? GRB_MAXIMIZE : GRB_MINIMIZE));
-  RETURN_IF_ERROR(AddNewMultiObjective(
+  OR_RETURN_IF_ERROR(AddNewMultiObjective(
       primary_objective, /*objective_id=*/std::nullopt, is_maximize));
   for (const int64_t id : SortedMapKeys(auxiliary_objectives)) {
-    RETURN_IF_ERROR(
+    OR_RETURN_IF_ERROR(
         AddNewMultiObjective(auxiliary_objectives.at(id), id, is_maximize));
   }
   return absl::OkStatus();
@@ -1773,7 +1778,7 @@ absl::Status GurobiSolver::AddNewMultiObjective(
   // * Gurobi exposes only a single objective sense for the entire model. We use
   //   the objective weight to handle mixing senses across objectives (weight of
   //   1 if objective sense agrees with model sense, -1 otherwise).
-  RETURN_IF_ERROR(gurobi_->SetNthObjective(
+  OR_RETURN_IF_ERROR(gurobi_->SetNthObjective(
       /*index=*/grb_index, /*priority=*/static_cast<int>(-objective.priority()),
       /*weight=*/objective.maximize() == is_maximize ? +1.0 : -1.0,
       /*abs_tol=*/1.0e-6,
@@ -1819,11 +1824,11 @@ absl::Status GurobiSolver::AddNewSlacks(
     column_non_zero_begin.push_back(k);
   }
   // Add variables to the underlying model.
-  RETURN_IF_ERROR(gurobi_->AddVars(/*vbegin=*/column_non_zero_begin,
-                                   /*vind=*/row_indices,
-                                   /*vval=*/column_non_zeros, /*obj=*/{},
-                                   /*lb=*/lower_bounds, /*ub=*/upper_bounds,
-                                   /*vtype=*/vtypes, /*names=*/{}));
+  OR_RETURN_IF_ERROR(gurobi_->AddVars(/*vbegin=*/column_non_zero_begin,
+                                      /*vind=*/row_indices,
+                                      /*vval=*/column_non_zeros, /*obj=*/{},
+                                      /*lb=*/lower_bounds, /*ub=*/upper_bounds,
+                                      /*vtype=*/vtypes, /*names=*/{}));
   num_gurobi_variables_ += num_slacks;
   return absl::OkStatus();
 }
@@ -1865,11 +1870,11 @@ absl::Status GurobiSolver::AddNewLinearConstraints(
     // equality constraints). But to support this use-case properly, we would
     // need to test for bounds before solving instead of testing them here as
     // updates could make bounds equal or different later.
-    RETURN_IF_ERROR(SafeGurobiBound(lb))
+    OR_RETURN_IF_ERROR(SafeGurobiBound(lb))
         << "lower bound for linear constraint " << id << ": "
         << EscapedNameForLogging(
                constraints.names().empty() ? "" : constraints.names(i));
-    RETURN_IF_ERROR(SafeGurobiBound(ub))
+    OR_RETURN_IF_ERROR(SafeGurobiBound(ub))
         << "upper bound for linear constraint " << id << ": "
         << EscapedNameForLogging(
                constraints.names().empty() ? "" : constraints.names(i));
@@ -1899,12 +1904,12 @@ absl::Status GurobiSolver::AddNewLinearConstraints(
     constraint_sense.emplace_back(sense);
   }
   // Add all constraints in one call.
-  RETURN_IF_ERROR(
+  OR_RETURN_IF_ERROR(
       gurobi_->AddConstrs(constraint_sense, constraint_rhs, constraint_names));
   num_gurobi_lin_cons_ += num_new_constraints;
   // Add slacks for true ranged constraints (if needed)
   if (!new_slacks.empty()) {
-    RETURN_IF_ERROR(AddNewSlacks(new_slacks));
+    OR_RETURN_IF_ERROR(AddNewSlacks(new_slacks));
   }
   return absl::OkStatus();
 }
@@ -1927,10 +1932,10 @@ absl::Status GurobiSolver::AddNewQuadraticConstraints(
     const double lb = constraint.lower_bound();
     const double ub = constraint.upper_bound();
     // See comment in AddNewLinearConstraints() about case where lb == ub.
-    RETURN_IF_ERROR(SafeGurobiBound(lb))
+    OR_RETURN_IF_ERROR(SafeGurobiBound(lb))
         << "lower bound for quadratic constraint " << id << ": "
         << EscapedNameForLogging(constraint.name());
-    RETURN_IF_ERROR(SafeGurobiBound(ub))
+    OR_RETURN_IF_ERROR(SafeGurobiBound(ub))
         << "upper bound for quadratic constraint " << id << ": "
         << EscapedNameForLogging(constraint.name());
     const bool lb_is_grb_neg_inf = lb <= -GRB_INFINITY;
@@ -1969,7 +1974,7 @@ absl::Status GurobiSolver::AddNewQuadraticConstraints(
       quad_row_index[k] = variables_map_.at(quad_coeffs.row_ids(k));
       quad_col_index[k] = variables_map_.at(quad_coeffs.column_ids(k));
     }
-    RETURN_IF_ERROR(gurobi_->AddQConstr(
+    OR_RETURN_IF_ERROR(gurobi_->AddQConstr(
         linear_col_index, linear_coeffs.values(), quad_row_index,
         quad_col_index, quad_coeffs.coefficients(), sense, rhs,
         TruncateName(constraint.name())));
@@ -1998,9 +2003,9 @@ GurobiSolver::CreateSlackVariableEqualToExpression(
     slack_col_indices.push_back(variables_map_.at(expression.ids(j)));
     slack_coeffs.push_back(expression.coefficients(j));
   }
-  RETURN_IF_ERROR(gurobi_->AddVar(0, -kInf, kInf, GRB_CONTINUOUS, ""));
-  RETURN_IF_ERROR(gurobi_->AddConstr(slack_col_indices, slack_coeffs, GRB_EQUAL,
-                                     -expression.offset(), ""));
+  OR_RETURN_IF_ERROR(gurobi_->AddVar(0, -kInf, kInf, GRB_CONTINUOUS, ""));
+  OR_RETURN_IF_ERROR(gurobi_->AddConstr(slack_col_indices, slack_coeffs,
+                                        GRB_EQUAL, -expression.offset(), ""));
   return VariableEqualToExpression{.variable_index = num_gurobi_variables_++,
                                    .constraint_index = num_gurobi_lin_cons_++};
 }
@@ -2027,10 +2032,10 @@ absl::Status GurobiSolver::AddNewSecondOrderConeConstraints(
     // We force a new variable to be added so that we can add a lower bound on
     // it. Otherwise, we must update the model to flush bounds, or risk either
     // a Gurobi error, or stomping on a potentially stronger bound.
-    ASSIGN_OR_RETURN(
+    OR_ASSIGN_OR_RETURN(
         (const auto [ub_var, ub_cons]),
         CreateSlackVariableEqualToExpression(constraint.upper_bound()));
-    RETURN_IF_ERROR(
+    OR_RETURN_IF_ERROR(
         gurobi_->SetDoubleAttrElement(GRB_DBL_ATTR_LB, ub_var, 0.0));
     constraint_data.slack_variables.push_back(ub_var);
     constraint_data.slack_constraints.push_back(ub_cons);
@@ -2045,15 +2050,15 @@ absl::Status GurobiSolver::AddNewSecondOrderConeConstraints(
         quad_var_indices.push_back(variables_map_.at(*maybe_variable));
         continue;
       }
-      ASSIGN_OR_RETURN((const auto [arg_var, arg_cons]),
-                       CreateSlackVariableEqualToExpression(expression));
+      OR_ASSIGN_OR_RETURN((const auto [arg_var, arg_cons]),
+                          CreateSlackVariableEqualToExpression(expression));
       quad_var_indices.push_back(arg_var);
       constraint_data.slack_variables.push_back(arg_var);
       constraint_data.slack_constraints.push_back(arg_cons);
     }
-    RETURN_IF_ERROR(gurobi_->AddQConstr({}, {}, quad_var_indices,
-                                        quad_var_indices, quad_coeffs,
-                                        GRB_LESS_EQUAL, 0.0, ""));
+    OR_RETURN_IF_ERROR(gurobi_->AddQConstr({}, {}, quad_var_indices,
+                                           quad_var_indices, quad_coeffs,
+                                           GRB_LESS_EQUAL, 0.0, ""));
     ++num_gurobi_quad_cons_;
   }
   return absl::OkStatus();
@@ -2093,14 +2098,15 @@ absl::Status GurobiSolver::AddNewSosConstraints(
         }
         continue;
       }
-      ASSIGN_OR_RETURN(
+      OR_ASSIGN_OR_RETURN(
           (const auto [var_index, cons_index]),
           CreateSlackVariableEqualToExpression(constraint.expressions(i)));
       sos_var_indices.push_back(var_index);
       constraint_data.slack_variables.push_back(var_index);
       constraint_data.slack_constraints.push_back(cons_index);
     }
-    RETURN_IF_ERROR(gurobi_->AddSos({sos_type}, {0}, sos_var_indices, weights));
+    OR_RETURN_IF_ERROR(
+        gurobi_->AddSos({sos_type}, {0}, sos_var_indices, weights));
     ++num_gurobi_sos_cons_;
   }
   return absl::OkStatus();
@@ -2112,7 +2118,7 @@ absl::Status GurobiSolver::AddNewIndicatorConstraints(
   for (const auto& [id, constraint] : constraints) {
     if (!constraint.has_indicator_id()) {
       if (constraint.activate_on_zero()) {
-        return util::UnimplementedErrorBuilder()
+        return ortools::UnimplementedErrorBuilder()
                << "MathOpt does not currently support Gurobi models with "
                   "indicator constraints that activate on zero with unset "
                   "indicator variables; encountered one at id: "
@@ -2131,10 +2137,10 @@ absl::Status GurobiSolver::AddNewIndicatorConstraints(
     const double lb = constraint.lower_bound();
     const double ub = constraint.upper_bound();
     // See comment in AddNewLinearConstraints() about case where lb == ub.
-    RETURN_IF_ERROR(SafeGurobiBound(lb))
+    OR_RETURN_IF_ERROR(SafeGurobiBound(lb))
         << "lower bound for indicator constraint " << id << ": "
         << EscapedNameForLogging(constraint.name());
-    RETURN_IF_ERROR(SafeGurobiBound(ub))
+    OR_RETURN_IF_ERROR(SafeGurobiBound(ub))
         << "upper bound for indicator constraint " << id << ": "
         << EscapedNameForLogging(constraint.name());
     const bool lb_is_grb_neg_inf = lb <= -GRB_INFINITY;
@@ -2159,7 +2165,7 @@ absl::Status GurobiSolver::AddNewIndicatorConstraints(
           "Gurobi "
           "interface");
     }
-    RETURN_IF_ERROR(gurobi_->AddIndicator(
+    OR_RETURN_IF_ERROR(gurobi_->AddIndicator(
         /*name=*/constraint.name(),
         /*binvar=*/variables_map_.at(constraint.indicator_id()),
         /*binval=*/constraint.activate_on_zero() ? 0 : 1,
@@ -2220,29 +2226,30 @@ absl::Status GurobiSolver::UpdateInt32ListAttribute(
 
 absl::Status GurobiSolver::LoadModel(const ModelProto& input_model) {
   CHECK(gurobi_ != nullptr);
-  RETURN_IF_ERROR(gurobi_->SetStringAttr(GRB_STR_ATTR_MODELNAME,
-                                         TruncateName(input_model.name())));
-  RETURN_IF_ERROR(AddNewVariables(input_model.variables()));
+  OR_RETURN_IF_ERROR(gurobi_->SetStringAttr(GRB_STR_ATTR_MODELNAME,
+                                            TruncateName(input_model.name())));
+  OR_RETURN_IF_ERROR(AddNewVariables(input_model.variables()));
 
-  RETURN_IF_ERROR(AddNewLinearConstraints(input_model.linear_constraints()));
-  RETURN_IF_ERROR(
+  OR_RETURN_IF_ERROR(AddNewLinearConstraints(input_model.linear_constraints()));
+  OR_RETURN_IF_ERROR(
       AddNewQuadraticConstraints(input_model.quadratic_constraints()));
-  RETURN_IF_ERROR(AddNewSecondOrderConeConstraints(
+  OR_RETURN_IF_ERROR(AddNewSecondOrderConeConstraints(
       input_model.second_order_cone_constraints()));
-  RETURN_IF_ERROR(AddNewSosConstraints(input_model.sos1_constraints(),
-                                       GRB_SOS_TYPE1, sos1_constraints_map_));
-  RETURN_IF_ERROR(AddNewSosConstraints(input_model.sos2_constraints(),
-                                       GRB_SOS_TYPE2, sos2_constraints_map_));
-  RETURN_IF_ERROR(
+  OR_RETURN_IF_ERROR(AddNewSosConstraints(
+      input_model.sos1_constraints(), GRB_SOS_TYPE1, sos1_constraints_map_));
+  OR_RETURN_IF_ERROR(AddNewSosConstraints(
+      input_model.sos2_constraints(), GRB_SOS_TYPE2, sos2_constraints_map_));
+  OR_RETURN_IF_ERROR(
       AddNewIndicatorConstraints(input_model.indicator_constraints()));
 
-  RETURN_IF_ERROR(ChangeCoefficients(input_model.linear_constraint_matrix()));
+  OR_RETURN_IF_ERROR(
+      ChangeCoefficients(input_model.linear_constraint_matrix()));
 
   if (input_model.auxiliary_objectives().empty()) {
-    RETURN_IF_ERROR(AddSingleObjective(input_model.objective()));
+    OR_RETURN_IF_ERROR(AddSingleObjective(input_model.objective()));
   } else {
-    RETURN_IF_ERROR(AddMultiObjectives(input_model.objective(),
-                                       input_model.auxiliary_objectives()));
+    OR_RETURN_IF_ERROR(AddMultiObjectives(input_model.objective(),
+                                          input_model.auxiliary_objectives()));
   }
   return absl::OkStatus();
 }
@@ -2250,7 +2257,7 @@ absl::Status GurobiSolver::LoadModel(const ModelProto& input_model) {
 absl::Status GurobiSolver::ResetQuadraticObjectiveTerms(
     const SparseDoubleMatrixProto& terms) {
   quadratic_objective_coefficients_.clear();
-  RETURN_IF_ERROR(gurobi_->DelQ());
+  OR_RETURN_IF_ERROR(gurobi_->DelQ());
   const int num_terms = terms.row_ids().size();
   if (num_terms > 0) {
     std::vector<GurobiVariableIndex> first_var_index(num_terms);
@@ -2263,8 +2270,8 @@ absl::Status GurobiSolver::ResetQuadraticObjectiveTerms(
       quadratic_objective_coefficients_[{row_id, column_id}] =
           terms.coefficients(k);
     }
-    RETURN_IF_ERROR(gurobi_->AddQpTerms(first_var_index, second_var_index,
-                                        terms.coefficients()));
+    OR_RETURN_IF_ERROR(gurobi_->AddQpTerms(first_var_index, second_var_index,
+                                           terms.coefficients()));
   }
   return absl::OkStatus();
 }
@@ -2292,8 +2299,8 @@ absl::Status GurobiSolver::UpdateQuadraticObjectiveTerms(
           new_coefficient - quadratic_objective_coefficients_[qp_term_key];
       quadratic_objective_coefficients_[qp_term_key] = new_coefficient;
     }
-    RETURN_IF_ERROR(gurobi_->AddQpTerms(first_var_index, second_var_index,
-                                        coefficient_updates));
+    OR_RETURN_IF_ERROR(gurobi_->AddQpTerms(first_var_index, second_var_index,
+                                           coefficient_updates));
   }
   return absl::OkStatus();
 }
@@ -2389,9 +2396,9 @@ absl::Status GurobiSolver::UpdateLinearConstraints(
     // Validate the new bounds.
     //
     // See comment in AddNewLinearConstraints() about case where lb == ub.
-    RETURN_IF_ERROR(SafeGurobiBound(update_data.new_lower_bound))
+    OR_RETURN_IF_ERROR(SafeGurobiBound(update_data.new_lower_bound))
         << "lower bound for linear constraint " << update_data.constraint_id;
-    RETURN_IF_ERROR(SafeGurobiBound(update_data.new_upper_bound))
+    OR_RETURN_IF_ERROR(SafeGurobiBound(update_data.new_upper_bound))
         << "upper bound for linear constraint " << update_data.constraint_id;
 
     // Save into linear_constraints_map_[id] the new bounds for the linear
@@ -2450,20 +2457,20 @@ absl::Status GurobiSolver::UpdateLinearConstraints(
 
   // Pass down changes to Gurobi.
   if (!rhs_index.empty()) {
-    RETURN_IF_ERROR(
+    OR_RETURN_IF_ERROR(
         gurobi_->SetDoubleAttrList(GRB_DBL_ATTR_RHS, rhs_index, rhs_data));
-    RETURN_IF_ERROR(
+    OR_RETURN_IF_ERROR(
         gurobi_->SetCharAttrList(GRB_CHAR_ATTR_SENSE, rhs_index, sense_data));
   }  // rhs changes
   if (!bound_index.empty()) {
-    RETURN_IF_ERROR(gurobi_->SetDoubleAttrList(GRB_DBL_ATTR_LB, bound_index,
-                                               lower_bound_data));
-    RETURN_IF_ERROR(gurobi_->SetDoubleAttrList(GRB_DBL_ATTR_UB, bound_index,
-                                               upper_bound_data));
+    OR_RETURN_IF_ERROR(gurobi_->SetDoubleAttrList(GRB_DBL_ATTR_LB, bound_index,
+                                                  lower_bound_data));
+    OR_RETURN_IF_ERROR(gurobi_->SetDoubleAttrList(GRB_DBL_ATTR_UB, bound_index,
+                                                  upper_bound_data));
   }  // Slack bound changes.
 
   if (!new_slacks.empty()) {
-    RETURN_IF_ERROR(AddNewSlacks(new_slacks));
+    OR_RETURN_IF_ERROR(AddNewSlacks(new_slacks));
   }
   return absl::OkStatus();
 }
@@ -2609,61 +2616,64 @@ absl::StatusOr<bool> GurobiSolver::Update(
     return false;
   }
 
-  RETURN_IF_ERROR(AddNewVariables(model_update.new_variables()));
+  OR_RETURN_IF_ERROR(AddNewVariables(model_update.new_variables()));
 
-  RETURN_IF_ERROR(
+  OR_RETURN_IF_ERROR(
       AddNewLinearConstraints(model_update.new_linear_constraints()));
 
-  RETURN_IF_ERROR(AddNewQuadraticConstraints(
+  OR_RETURN_IF_ERROR(AddNewQuadraticConstraints(
       model_update.quadratic_constraint_updates().new_constraints()));
-  RETURN_IF_ERROR(AddNewSecondOrderConeConstraints(
+  OR_RETURN_IF_ERROR(AddNewSecondOrderConeConstraints(
       model_update.second_order_cone_constraint_updates().new_constraints()));
-  RETURN_IF_ERROR(AddNewSosConstraints(
+  OR_RETURN_IF_ERROR(AddNewSosConstraints(
       model_update.sos1_constraint_updates().new_constraints(), GRB_SOS_TYPE1,
       sos1_constraints_map_));
-  RETURN_IF_ERROR(AddNewSosConstraints(
+  OR_RETURN_IF_ERROR(AddNewSosConstraints(
       model_update.sos2_constraint_updates().new_constraints(), GRB_SOS_TYPE2,
       sos2_constraints_map_));
-  RETURN_IF_ERROR(AddNewIndicatorConstraints(
+  OR_RETURN_IF_ERROR(AddNewIndicatorConstraints(
       model_update.indicator_constraint_updates().new_constraints()));
 
-  RETURN_IF_ERROR(
+  OR_RETURN_IF_ERROR(
       ChangeCoefficients(model_update.linear_constraint_matrix_updates()));
 
   if (model_update.objective_updates().has_direction_update()) {
     const int model_sense = model_update.objective_updates().direction_update()
                                 ? GRB_MAXIMIZE
                                 : GRB_MINIMIZE;
-    RETURN_IF_ERROR(gurobi_->SetIntAttr(GRB_INT_ATTR_MODELSENSE, model_sense));
+    OR_RETURN_IF_ERROR(
+        gurobi_->SetIntAttr(GRB_INT_ATTR_MODELSENSE, model_sense));
   }
 
   if (model_update.objective_updates().has_offset_update()) {
-    RETURN_IF_ERROR(gurobi_->SetDoubleAttr(
+    OR_RETURN_IF_ERROR(gurobi_->SetDoubleAttr(
         GRB_DBL_ATTR_OBJCON, model_update.objective_updates().offset_update()));
   }
 
-  RETURN_IF_ERROR(UpdateDoubleListAttribute(
+  OR_RETURN_IF_ERROR(UpdateDoubleListAttribute(
       model_update.objective_updates().linear_coefficients(), GRB_DBL_ATTR_OBJ,
       variables_map_));
 
-  RETURN_IF_ERROR(UpdateQuadraticObjectiveTerms(
+  OR_RETURN_IF_ERROR(UpdateQuadraticObjectiveTerms(
       model_update.objective_updates().quadratic_coefficients()));
 
   // Validate the new bounds.
   for (const auto [id, lb] :
        MakeView(model_update.variable_updates().lower_bounds())) {
-    RETURN_IF_ERROR(SafeGurobiBound(lb)) << "lower bound for variable " << id;
+    OR_RETURN_IF_ERROR(SafeGurobiBound(lb))
+        << "lower bound for variable " << id;
   }
   for (const auto [id, ub] :
        MakeView(model_update.variable_updates().upper_bounds())) {
-    RETURN_IF_ERROR(SafeGurobiBound(ub)) << "upper bound for variable " << id;
+    OR_RETURN_IF_ERROR(SafeGurobiBound(ub))
+        << "upper bound for variable " << id;
   }
 
-  RETURN_IF_ERROR(
+  OR_RETURN_IF_ERROR(
       UpdateDoubleListAttribute(model_update.variable_updates().lower_bounds(),
                                 GRB_DBL_ATTR_LB, variables_map_));
 
-  RETURN_IF_ERROR(
+  OR_RETURN_IF_ERROR(
       UpdateDoubleListAttribute(model_update.variable_updates().upper_bounds(),
                                 GRB_DBL_ATTR_UB, variables_map_));
 
@@ -2680,7 +2690,7 @@ absl::StatusOr<bool> GurobiSolver::Update(
     for (const bool val : update.values()) {
       value.push_back(val ? GRB_INTEGER : GRB_CONTINUOUS);
     }
-    RETURN_IF_ERROR(
+    OR_RETURN_IF_ERROR(
         gurobi_->SetCharAttrList(GRB_CHAR_ATTR_VTYPE, index, value));
   }
 
@@ -2705,7 +2715,7 @@ absl::StatusOr<bool> GurobiSolver::Update(
   // deleted, and perform deletions at the end of the update call.
   DeletedIndices deleted_indices;
 
-  RETURN_IF_ERROR(UpdateLinearConstraints(
+  OR_RETURN_IF_ERROR(UpdateLinearConstraints(
       model_update.linear_constraint_updates(), deleted_indices.variables));
 
   for (const VariableId id : model_update.deleted_variable_ids()) {
@@ -2791,32 +2801,32 @@ absl::StatusOr<bool> GurobiSolver::Update(
   // After that we must update the model so that sequence of updates don't
   // interfere with one-another.
   if (!deleted_indices.linear_constraints.empty()) {
-    RETURN_IF_ERROR(gurobi_->DelConstrs(deleted_indices.linear_constraints));
+    OR_RETURN_IF_ERROR(gurobi_->DelConstrs(deleted_indices.linear_constraints));
     num_gurobi_lin_cons_ -= deleted_indices.linear_constraints.size();
   }
 
   if (!deleted_indices.quadratic_constraints.empty()) {
-    RETURN_IF_ERROR(
+    OR_RETURN_IF_ERROR(
         gurobi_->DelQConstrs(deleted_indices.quadratic_constraints));
     num_gurobi_quad_cons_ -= deleted_indices.quadratic_constraints.size();
   }
 
   if (!deleted_indices.sos_constraints.empty()) {
-    RETURN_IF_ERROR(gurobi_->DelSos(deleted_indices.sos_constraints));
+    OR_RETURN_IF_ERROR(gurobi_->DelSos(deleted_indices.sos_constraints));
   }
 
   if (!deleted_indices.general_constraints.empty()) {
-    RETURN_IF_ERROR(
+    OR_RETURN_IF_ERROR(
         gurobi_->DelGenConstrs(deleted_indices.general_constraints));
   }
 
   if (!deleted_indices.variables.empty()) {
-    RETURN_IF_ERROR(gurobi_->DelVars(deleted_indices.variables));
+    OR_RETURN_IF_ERROR(gurobi_->DelVars(deleted_indices.variables));
     num_gurobi_variables_ -= deleted_indices.variables.size();
   }
 
   // Synchronize all pending changes.
-  RETURN_IF_ERROR(gurobi_->UpdateModel());
+  OR_RETURN_IF_ERROR(gurobi_->UpdateModel());
 
   return true;
 }
@@ -2824,25 +2834,25 @@ absl::StatusOr<bool> GurobiSolver::Update(
 absl::StatusOr<std::unique_ptr<GurobiSolver>> GurobiSolver::New(
     const ModelProto& input_model, const SolverInterface::InitArgs& init_args) {
   // TODO(user): Correctly load the gurobi library in open source.
-  RETURN_IF_ERROR(
+  OR_RETURN_IF_ERROR(
       ModelIsSupported(input_model, kGurobiSupportedStructures, "Gurobi"));
   if (!input_model.auxiliary_objectives().empty() &&
       !input_model.objective().quadratic_coefficients().row_ids().empty()) {
-    return util::InvalidArgumentErrorBuilder()
+    return ortools::InvalidArgumentErrorBuilder()
            << "Gurobi does not support multiple objective models with "
               "quadratic objectives";
   }
   for (const auto& [id, obj] : input_model.auxiliary_objectives()) {
     if (!obj.quadratic_coefficients().row_ids().empty()) {
-      return util::InvalidArgumentErrorBuilder()
+      return ortools::InvalidArgumentErrorBuilder()
              << "Gurobi does not support multiple objective models with "
                 "quadratic objectives";
     }
   }
-  ASSIGN_OR_RETURN(std::unique_ptr<Gurobi> gurobi,
-                   GurobiFromInitArgs(init_args));
+  OR_ASSIGN_OR_RETURN(std::unique_ptr<Gurobi> gurobi,
+                      GurobiFromInitArgs(init_args));
   auto gurobi_solver = absl::WrapUnique(new GurobiSolver(std::move(gurobi)));
-  RETURN_IF_ERROR(gurobi_solver->LoadModel(input_model));
+  OR_RETURN_IF_ERROR(gurobi_solver->LoadModel(input_model));
   return gurobi_solver;
 }
 
@@ -2859,9 +2869,10 @@ GurobiSolver::RegisterCallback(
   //
   // Here we assume that we get MIP related events and use a MIP solving
   // strategy when IS_MIP is true.
-  ASSIGN_OR_RETURN(const int is_mip, gurobi_->GetIntAttr(GRB_INT_ATTR_IS_MIP));
+  OR_ASSIGN_OR_RETURN(const int is_mip,
+                      gurobi_->GetIntAttr(GRB_INT_ATTR_IS_MIP));
 
-  RETURN_IF_ERROR(CheckRegisteredCallbackEvents(
+  OR_RETURN_IF_ERROR(CheckRegisteredCallbackEvents(
       registration, is_mip ? SupportedMIPEvents() : SupportedLPEvents()))
       << "for a " << (is_mip ? "MIP" : "LP") << " model";
 
@@ -2869,17 +2880,17 @@ GurobiSolver::RegisterCallback(
   if (message_cb != nullptr) {
     // Disable logging messages to the console the user wants to handle
     // messages.
-    RETURN_IF_ERROR(gurobi_->SetIntParam(GRB_INT_PAR_LOGTOCONSOLE, 0));
+    OR_RETURN_IF_ERROR(gurobi_->SetIntParam(GRB_INT_PAR_LOGTOCONSOLE, 0));
   }
   if (registration.add_cuts() || registration.add_lazy_constraints()) {
     // This is to signal the solver presolve to limit primal transformations
     // that precludes crushing cuts to the presolved model.
-    RETURN_IF_ERROR(gurobi_->SetIntParam(GRB_INT_PAR_PRECRUSH, 1));
+    OR_RETURN_IF_ERROR(gurobi_->SetIntParam(GRB_INT_PAR_PRECRUSH, 1));
   }
   if (registration.add_lazy_constraints()) {
     // This is needed so that the solver knows that some presolve reductions
     // can not be performed safely.
-    RETURN_IF_ERROR(gurobi_->SetIntParam(GRB_INT_PAR_LAZYCONSTRAINTS, 1));
+    OR_RETURN_IF_ERROR(gurobi_->SetIntParam(GRB_INT_PAR_LAZYCONSTRAINTS, 1));
   }
   return std::make_unique<GurobiCallbackData>(
       GurobiCallbackInput{
@@ -2897,10 +2908,10 @@ GurobiSolver::RegisterCallback(
 absl::StatusOr<InvertedBounds> GurobiSolver::ListInvertedBounds() const {
   InvertedBounds inverted_bounds;
   {
-    ASSIGN_OR_RETURN(
+    OR_ASSIGN_OR_RETURN(
         const std::vector<double> var_lbs,
         gurobi_->GetDoubleAttrArray(GRB_DBL_ATTR_LB, num_gurobi_variables_));
-    ASSIGN_OR_RETURN(
+    OR_ASSIGN_OR_RETURN(
         const std::vector<double> var_ubs,
         gurobi_->GetDoubleAttrArray(GRB_DBL_ATTR_UB, num_gurobi_variables_));
     for (const auto& [id, index] : variables_map_) {
@@ -2931,11 +2942,13 @@ absl::StatusOr<InvalidIndicators> GurobiSolver::ListInvalidIndicators() const {
     }
     const int64_t indicator_id = indicator_data->indicator_variable_id;
     const GurobiVariableIndex variable_index = variables_map_.at(indicator_id);
-    ASSIGN_OR_RETURN(const double var_lb, gurobi_->GetDoubleAttrElement(
-                                              GRB_DBL_ATTR_LB, variable_index));
-    ASSIGN_OR_RETURN(const double var_ub, gurobi_->GetDoubleAttrElement(
-                                              GRB_DBL_ATTR_UB, variable_index));
-    ASSIGN_OR_RETURN(
+    OR_ASSIGN_OR_RETURN(
+        const double var_lb,
+        gurobi_->GetDoubleAttrElement(GRB_DBL_ATTR_LB, variable_index));
+    OR_ASSIGN_OR_RETURN(
+        const double var_ub,
+        gurobi_->GetDoubleAttrElement(GRB_DBL_ATTR_UB, variable_index));
+    OR_ASSIGN_OR_RETURN(
         const char var_type,
         gurobi_->GetCharAttrElement(GRB_CHAR_ATTR_VTYPE, variable_index));
     if (!(var_type == GRB_BINARY ||
@@ -2959,14 +2972,14 @@ absl::Status GurobiSolver::SetMultiObjectiveParameters(
       [&](const GurobiMultiObjectiveIndex index,
           const ObjectiveParametersProto& objective_parameters)
       -> absl::Status {
-    RETURN_IF_ERROR(gurobi_->SetIntParam("ObjNumber", index));
+    OR_RETURN_IF_ERROR(gurobi_->SetIntParam("ObjNumber", index));
     if (objective_parameters.has_objective_degradation_absolute_tolerance()) {
-      RETURN_IF_ERROR(gurobi_->SetDoubleAttr(
+      OR_RETURN_IF_ERROR(gurobi_->SetDoubleAttr(
           "ObjNAbsTol",
           objective_parameters.objective_degradation_absolute_tolerance()));
     }
     if (objective_parameters.has_objective_degradation_relative_tolerance()) {
-      RETURN_IF_ERROR(gurobi_->SetDoubleAttr(
+      OR_RETURN_IF_ERROR(gurobi_->SetDoubleAttr(
           "ObjNRelTol",
           objective_parameters.objective_degradation_relative_tolerance()));
     }
@@ -2980,7 +2993,7 @@ absl::Status GurobiSolver::SetMultiObjectiveParameters(
       // Unset time_limit defaults to infinite, so we don't need to do anything.
       return absl::OkStatus();
     }
-    ASSIGN_OR_RETURN(
+    OR_ASSIGN_OR_RETURN(
         const absl::Duration time_limit,
         util_time::DecodeGoogleApiProto(objective_parameters.time_limit()));
     return gurobi_->SetMultiObjectiveDoubleParam(
@@ -2989,19 +3002,19 @@ absl::Status GurobiSolver::SetMultiObjectiveParameters(
   if (model_parameters.has_primary_objective_parameters()) {
     const GurobiMultiObjectiveIndex obj_index =
         multi_objectives_map_.at(std::nullopt);
-    RETURN_IF_ERROR(set_tolerances(
+    OR_RETURN_IF_ERROR(set_tolerances(
         obj_index, model_parameters.primary_objective_parameters()))
         << " for primary objective";
-    RETURN_IF_ERROR(set_time_limit(
+    OR_RETURN_IF_ERROR(set_time_limit(
         obj_index, model_parameters.primary_objective_parameters()))
         << " for primary objective";
   }
   for (const auto& [id, objective_parameters] :
        model_parameters.auxiliary_objective_parameters()) {
     const GurobiMultiObjectiveIndex obj_index = multi_objectives_map_.at(id);
-    RETURN_IF_ERROR(set_tolerances(obj_index, objective_parameters))
+    OR_RETURN_IF_ERROR(set_tolerances(obj_index, objective_parameters))
         << " for auxiliary objective " << id;
-    RETURN_IF_ERROR(set_time_limit(obj_index, objective_parameters))
+    OR_RETURN_IF_ERROR(set_time_limit(obj_index, objective_parameters))
         << " for auxiliary objective " << id;
   }
   return absl::OkStatus();
@@ -3012,7 +3025,7 @@ absl::Status GurobiSolver::ResetModelParameters(
   for (int i = 0; i < model_parameters.branching_priorities().ids_size(); ++i) {
     const int64_t var_id = model_parameters.branching_priorities().ids(i);
     const GurobiVariableIndex grb_index = variables_map_.at(var_id);
-    RETURN_IF_ERROR(
+    OR_RETURN_IF_ERROR(
         gurobi_->SetIntAttrElement(GRB_INT_ATTR_BRANCHPRIORITY, grb_index, 0))
         << "failed to reset branching priority for variable ID " << var_id
         << " (Gurobi index = " << grb_index << ")";
@@ -3021,7 +3034,7 @@ absl::Status GurobiSolver::ResetModelParameters(
        model_parameters.lazy_linear_constraint_ids()) {
     const GurobiLinearConstraintIndex lazy_constraint_index =
         linear_constraints_map_.at(lazy_constraint_id).constraint_index;
-    RETURN_IF_ERROR(
+    OR_RETURN_IF_ERROR(
         gurobi_->SetIntAttrElement(GRB_INT_ATTR_LAZY, lazy_constraint_index, 0))
         << "failed to reset lazy constraint for lazy constraint ID "
         << lazy_constraint_id << " (Gurobi index = " << lazy_constraint_index
@@ -3036,7 +3049,7 @@ absl::StatusOr<SolveResultProto> GurobiSolver::Solve(
     const MessageCallback message_cb,
     const CallbackRegistrationProto& callback_registration, const Callback cb,
     const SolveInterrupter* absl_nullable const interrupter) {
-  RETURN_IF_ERROR(ModelSolveParametersAreSupported(
+  OR_RETURN_IF_ERROR(ModelSolveParametersAreSupported(
       model_parameters, kGurobiSupportedStructures, "Gurobi"));
   const absl::Time start = absl::Now();
 
@@ -3045,27 +3058,27 @@ absl::StatusOr<SolveResultProto> GurobiSolver::Solve(
   //  2. registering callbacks (to test if the problem is a MIP),
   //  3. setting basis and getting the obj sense.
   // We just run it first.
-  RETURN_IF_ERROR(gurobi_->UpdateModel());
+  OR_RETURN_IF_ERROR(gurobi_->UpdateModel());
 
   // Gurobi returns "infeasible" when bounds are inverted.
   {
-    ASSIGN_OR_RETURN(const InvertedBounds inverted_bounds,
-                     ListInvertedBounds());
-    RETURN_IF_ERROR(inverted_bounds.ToStatus());
+    OR_ASSIGN_OR_RETURN(const InvertedBounds inverted_bounds,
+                        ListInvertedBounds());
+    OR_RETURN_IF_ERROR(inverted_bounds.ToStatus());
   }
 
   // Gurobi will silently impose that indicator variables are binary even if
   // not so specified by the user in the model. We return an error here if
   // this is the case to be consistent across solvers.
   {
-    ASSIGN_OR_RETURN(const InvalidIndicators invalid_indicators,
-                     ListInvalidIndicators());
-    RETURN_IF_ERROR(invalid_indicators.ToStatus());
+    OR_ASSIGN_OR_RETURN(const InvalidIndicators invalid_indicators,
+                        ListInvalidIndicators());
+    OR_RETURN_IF_ERROR(invalid_indicators.ToStatus());
   }
 
   // We must set the parameters before calling RegisterCallback since it
   // changes some parameters depending on the callback registration.
-  RETURN_IF_ERROR(SetParameters(parameters, model_parameters));
+  OR_RETURN_IF_ERROR(SetParameters(parameters, model_parameters));
 
   // We use a local interrupter that will triggers the calls to GRBterminate()
   // when either the user interrupter is triggered or when a callback returns
@@ -3096,21 +3109,21 @@ absl::StatusOr<SolveResultProto> GurobiSolver::Solve(
       interrupter, [&]() { local_interrupter->Interrupt(); });
 
   if (model_parameters.has_initial_basis()) {
-    RETURN_IF_ERROR(SetGurobiBasis(model_parameters.initial_basis()));
+    OR_RETURN_IF_ERROR(SetGurobiBasis(model_parameters.initial_basis()));
   }
-  RETURN_IF_ERROR(gurobi_->SetIntAttr(GRB_INT_ATTR_NUMSTART,
-                                      model_parameters.solution_hints_size()));
+  OR_RETURN_IF_ERROR(gurobi_->SetIntAttr(
+      GRB_INT_ATTR_NUMSTART, model_parameters.solution_hints_size()));
   for (int i = 0; i < model_parameters.solution_hints_size(); ++i) {
-    RETURN_IF_ERROR(gurobi_->SetIntParam(GRB_INT_PAR_STARTNUMBER, i));
-    RETURN_IF_ERROR(UpdateDoubleListAttribute(
+    OR_RETURN_IF_ERROR(gurobi_->SetIntParam(GRB_INT_PAR_STARTNUMBER, i));
+    OR_RETURN_IF_ERROR(UpdateDoubleListAttribute(
         model_parameters.solution_hints(i).variable_values(),
         GRB_DBL_ATTR_START, variables_map_));
   }
-  RETURN_IF_ERROR(
+  OR_RETURN_IF_ERROR(
       UpdateInt32ListAttribute(model_parameters.branching_priorities(),
                                GRB_INT_ATTR_BRANCHPRIORITY, variables_map_));
   if (is_multi_objective_mode()) {
-    RETURN_IF_ERROR(SetMultiObjectiveParameters(model_parameters));
+    OR_RETURN_IF_ERROR(SetMultiObjectiveParameters(model_parameters));
   }
   for (const int64_t lazy_constraint_id :
        model_parameters.lazy_linear_constraint_ids()) {
@@ -3121,8 +3134,8 @@ absl::StatusOr<SolveResultProto> GurobiSolver::Solve(
     // select which violated constraints to add to the model if multiple are
     // violated. This seems like a reasonable default choice for us, but we may
     // want to revisit later (or expose this choice to the user).
-    RETURN_IF_ERROR(gurobi_->SetIntAttrElement(GRB_INT_ATTR_LAZY,
-                                               lazy_constraint_index, 1));
+    OR_RETURN_IF_ERROR(gurobi_->SetIntAttrElement(GRB_INT_ATTR_LAZY,
+                                                  lazy_constraint_index, 1));
   }
 
   // Here we register the callback when we either have a user callback or a
@@ -3131,9 +3144,9 @@ absl::StatusOr<SolveResultProto> GurobiSolver::Solve(
   Gurobi::Callback grb_cb = nullptr;
   std::unique_ptr<GurobiCallbackData> gurobi_cb_data;
   if (cb != nullptr || local_interrupter != nullptr || message_cb != nullptr) {
-    ASSIGN_OR_RETURN(gurobi_cb_data,
-                     RegisterCallback(callback_registration, cb, message_cb,
-                                      start, local_interrupter.get()));
+    OR_ASSIGN_OR_RETURN(gurobi_cb_data,
+                        RegisterCallback(callback_registration, cb, message_cb,
+                                         start, local_interrupter.get()));
     grb_cb = [&gurobi_cb_data](
                  const Gurobi::CallbackContext& cb_context) -> absl::Status {
       return GurobiCallbackImpl(cb_context, gurobi_cb_data->callback_input,
@@ -3142,7 +3155,7 @@ absl::StatusOr<SolveResultProto> GurobiSolver::Solve(
     };
   }
 
-  RETURN_IF_ERROR(gurobi_->Optimize(grb_cb));
+  OR_RETURN_IF_ERROR(gurobi_->Optimize(grb_cb));
 
   // We flush message callbacks before testing for Gurobi error in case where
   // the unfinished line of message would help with the error.
@@ -3151,13 +3164,13 @@ absl::StatusOr<SolveResultProto> GurobiSolver::Solve(
                             gurobi_cb_data->message_callback_data);
   }
 
-  ASSIGN_OR_RETURN(SolveResultProto solve_result,
-                   ExtractSolveResultProto(start, model_parameters));
+  OR_ASSIGN_OR_RETURN(SolveResultProto solve_result,
+                      ExtractSolveResultProto(start, model_parameters));
   // Reset Gurobi parameters.
   // TODO(b/277246682): ensure that resetting parameters does not degrade
   // incrementalism performance.
-  RETURN_IF_ERROR(gurobi_->ResetParameters());
-  RETURN_IF_ERROR(ResetModelParameters(model_parameters));
+  OR_RETURN_IF_ERROR(gurobi_->ResetParameters());
+  OR_RETURN_IF_ERROR(ResetModelParameters(model_parameters));
 
   return solve_result;
 }
@@ -3172,20 +3185,20 @@ GurobiSolver::ComputeInfeasibleSubsystem(
   // Need to run GRBupdatemodel before:
   //  1. setting parameters (to test if the problem is a MIP)
   //  2. registering callbacks (to test if the problem is a MIP),
-  RETURN_IF_ERROR(gurobi_->UpdateModel());
+  OR_RETURN_IF_ERROR(gurobi_->UpdateModel());
 
   // Gurobi will silently impose that indicator variables are binary even if
   // not so specified by the user in the model. We return an error here if
   // this is the case to be consistent across solvers.
   {
-    ASSIGN_OR_RETURN(const InvalidIndicators invalid_indicators,
-                     ListInvalidIndicators());
-    RETURN_IF_ERROR(invalid_indicators.ToStatus());
+    OR_ASSIGN_OR_RETURN(const InvalidIndicators invalid_indicators,
+                        ListInvalidIndicators());
+    OR_RETURN_IF_ERROR(invalid_indicators.ToStatus());
   }
 
   // We must set the parameters before calling RegisterCallback since it
   // changes some parameters depending on the callback registration.
-  RETURN_IF_ERROR(SetParameters(parameters));
+  OR_RETURN_IF_ERROR(SetParameters(parameters));
 
   // We use a local interrupter that will triggers the calls to
   // GRBterminate() when either the user interrupter is triggered or when a
@@ -3222,9 +3235,9 @@ GurobiSolver::ComputeInfeasibleSubsystem(
   Gurobi::Callback grb_cb = nullptr;
   std::unique_ptr<GurobiCallbackData> gurobi_cb_data;
   if (local_interrupter != nullptr || message_cb != nullptr) {
-    ASSIGN_OR_RETURN(gurobi_cb_data,
-                     RegisterCallback({}, nullptr, message_cb, start,
-                                      local_interrupter.get()));
+    OR_ASSIGN_OR_RETURN(gurobi_cb_data,
+                        RegisterCallback({}, nullptr, message_cb, start,
+                                         local_interrupter.get()));
     grb_cb = [&gurobi_cb_data](
                  const Gurobi::CallbackContext& cb_context) -> absl::Status {
       return GurobiCallbackImpl(cb_context, gurobi_cb_data->callback_input,
@@ -3233,7 +3246,8 @@ GurobiSolver::ComputeInfeasibleSubsystem(
     };
   }
 
-  ASSIGN_OR_RETURN(const bool proven_infeasible, gurobi_->ComputeIIS(grb_cb));
+  OR_ASSIGN_OR_RETURN(const bool proven_infeasible,
+                      gurobi_->ComputeIIS(grb_cb));
 
   // We flush message callbacks before testing for Gurobi error in case
   // where the unfinished line of message would help with the error.
@@ -3242,13 +3256,13 @@ GurobiSolver::ComputeInfeasibleSubsystem(
                             gurobi_cb_data->message_callback_data);
   }
 
-  ASSIGN_OR_RETURN(
+  OR_ASSIGN_OR_RETURN(
       ComputeInfeasibleSubsystemResultProto iis_result,
       ExtractComputeInfeasibleSubsystemResultProto(proven_infeasible));
   // Reset Gurobi parameters.
   // TODO(b/277246682): ensure that resetting parameters does not degrade
   // incrementalism performance.
-  RETURN_IF_ERROR(gurobi_->ResetParameters());
+  OR_RETURN_IF_ERROR(gurobi_->ResetParameters());
 
   return iis_result;
 }

@@ -684,7 +684,7 @@ absl::StatusOr<SCIP_CONS*> GScip::AddConstraintForHandler(
     return absl::InternalError("SCIP failed to create constraint");
   }
   RETURN_IF_SCIP_ERROR(SCIPaddCons(scip_, constraint));
-  RETURN_IF_ERROR(MaybeKeepConstraintAlive(constraint, options));
+  OR_RETURN_IF_ERROR(MaybeKeepConstraintAlive(constraint, options));
   return constraint;
 }
 

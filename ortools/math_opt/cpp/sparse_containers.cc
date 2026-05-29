@@ -42,8 +42,8 @@ namespace {
 // SparseVectorProtoType should be SparseDoubleVector or SparseBasisStatusVector
 template <typename SparseVectorProtoType>
 absl::Status CheckSparseVectorProto(const SparseVectorProtoType& vec) {
-  RETURN_IF_ERROR(CheckIdsAndValuesSize(MakeView(vec)));
-  RETURN_IF_ERROR(CheckIdsRangeAndStrictlyIncreasing(vec.ids()));
+  OR_RETURN_IF_ERROR(CheckIdsAndValuesSize(MakeView(vec)));
+  OR_RETURN_IF_ERROR(CheckIdsRangeAndStrictlyIncreasing(vec.ids()));
   return absl::OkStatus();
 }
 
@@ -59,7 +59,7 @@ absl::StatusOr<absl::flat_hash_map<Key, BasisStatus>> BasisVectorFromProto(
     const std::optional<BasisStatus> basis_status =
         EnumFromProto(basis_status_proto);
     if (!basis_status.has_value()) {
-      return util::InvalidArgumentErrorBuilder()
+      return ortools::InvalidArgumentErrorBuilder()
              << "basis status not specified for id " << id;
     }
     map[Key(model, IdType(id))] = *basis_status;
@@ -107,7 +107,7 @@ absl::Status VariableIdsExist(const ModelStorageCPtr model,
                               const absl::Span<const int64_t> ids) {
   for (const int64_t id : ids) {
     if (!model->has_variable(VariableId(id))) {
-      return util::InvalidArgumentErrorBuilder()
+      return ortools::InvalidArgumentErrorBuilder()
              << "no variable with id " << id << " exists";
     }
   }
@@ -118,7 +118,7 @@ absl::Status LinearConstraintIdsExist(const ModelStorageCPtr model,
                                       const absl::Span<const int64_t> ids) {
   for (const int64_t id : ids) {
     if (!model->has_linear_constraint(LinearConstraintId(id))) {
-      return util::InvalidArgumentErrorBuilder()
+      return ortools::InvalidArgumentErrorBuilder()
              << "no linear constraint with id " << id << " exists";
     }
   }
@@ -129,7 +129,7 @@ absl::Status QuadraticConstraintIdsExist(const ModelStorageCPtr model,
                                          const absl::Span<const int64_t> ids) {
   for (const int64_t id : ids) {
     if (!model->has_constraint(QuadraticConstraintId(id))) {
-      return util::InvalidArgumentErrorBuilder()
+      return ortools::InvalidArgumentErrorBuilder()
              << "no quadratic constraint with id " << id << " exists";
     }
   }
@@ -140,15 +140,15 @@ absl::Status QuadraticConstraintIdsExist(const ModelStorageCPtr model,
 
 absl::StatusOr<VariableMap<double>> VariableValuesFromProto(
     const ModelStorageCPtr model, const SparseDoubleVectorProto& vars_proto) {
-  RETURN_IF_ERROR(CheckSparseVectorProto(vars_proto));
-  RETURN_IF_ERROR(VariableIdsExist(model, vars_proto.ids()));
+  OR_RETURN_IF_ERROR(CheckSparseVectorProto(vars_proto));
+  OR_RETURN_IF_ERROR(VariableIdsExist(model, vars_proto.ids()));
   return MakeView(vars_proto).as_map<Variable>(model);
 }
 
 absl::StatusOr<VariableMap<int32_t>> VariableValuesFromProto(
     const ModelStorageCPtr model, const SparseInt32VectorProto& vars_proto) {
-  RETURN_IF_ERROR(CheckSparseVectorProto(vars_proto));
-  RETURN_IF_ERROR(VariableIdsExist(model, vars_proto.ids()));
+  OR_RETURN_IF_ERROR(CheckSparseVectorProto(vars_proto));
+  OR_RETURN_IF_ERROR(VariableIdsExist(model, vars_proto.ids()));
   return MakeView(vars_proto).as_map<Variable>(model);
 }
 
@@ -165,7 +165,7 @@ AuxiliaryObjectiveValuesFromProto(
   for (const auto [raw_id, value] : aux_obj_proto) {
     const AuxiliaryObjectiveId id(raw_id);
     if (!model->has_auxiliary_objective(id)) {
-      return util::InvalidArgumentErrorBuilder()
+      return ortools::InvalidArgumentErrorBuilder()
              << "no auxiliary objective with id " << raw_id << " exists";
     }
     result[Objective::Auxiliary(model, id)] = value;
@@ -187,8 +187,8 @@ google::protobuf::Map<int64_t, double> AuxiliaryObjectiveValuesToProto(
 absl::StatusOr<LinearConstraintMap<double>> LinearConstraintValuesFromProto(
     const ModelStorageCPtr model,
     const SparseDoubleVectorProto& lin_cons_proto) {
-  RETURN_IF_ERROR(CheckSparseVectorProto(lin_cons_proto));
-  RETURN_IF_ERROR(LinearConstraintIdsExist(model, lin_cons_proto.ids()));
+  OR_RETURN_IF_ERROR(CheckSparseVectorProto(lin_cons_proto));
+  OR_RETURN_IF_ERROR(LinearConstraintIdsExist(model, lin_cons_proto.ids()));
   return MakeView(lin_cons_proto).as_map<LinearConstraint>(model);
 }
 
@@ -201,8 +201,8 @@ absl::StatusOr<absl::flat_hash_map<QuadraticConstraint, double>>
 QuadraticConstraintValuesFromProto(
     const ModelStorageCPtr model,
     const SparseDoubleVectorProto& quad_cons_proto) {
-  RETURN_IF_ERROR(CheckSparseVectorProto(quad_cons_proto));
-  RETURN_IF_ERROR(QuadraticConstraintIdsExist(model, quad_cons_proto.ids()));
+  OR_RETURN_IF_ERROR(CheckSparseVectorProto(quad_cons_proto));
+  OR_RETURN_IF_ERROR(QuadraticConstraintIdsExist(model, quad_cons_proto.ids()));
   return MakeView(quad_cons_proto).as_map<QuadraticConstraint>(model);
 }
 
@@ -214,8 +214,8 @@ SparseDoubleVectorProto QuadraticConstraintValuesToProto(
 
 absl::StatusOr<VariableMap<BasisStatus>> VariableBasisFromProto(
     const ModelStorageCPtr model, const SparseBasisStatusVector& basis_proto) {
-  RETURN_IF_ERROR(CheckSparseVectorProto(basis_proto));
-  RETURN_IF_ERROR(VariableIdsExist(model, basis_proto.ids()));
+  OR_RETURN_IF_ERROR(CheckSparseVectorProto(basis_proto));
+  OR_RETURN_IF_ERROR(VariableIdsExist(model, basis_proto.ids()));
   return BasisVectorFromProto<Variable>(model, basis_proto);
 }
 
@@ -226,8 +226,8 @@ SparseBasisStatusVector VariableBasisToProto(
 
 absl::StatusOr<LinearConstraintMap<BasisStatus>> LinearConstraintBasisFromProto(
     const ModelStorageCPtr model, const SparseBasisStatusVector& basis_proto) {
-  RETURN_IF_ERROR(CheckSparseVectorProto(basis_proto));
-  RETURN_IF_ERROR(LinearConstraintIdsExist(model, basis_proto.ids()));
+  OR_RETURN_IF_ERROR(CheckSparseVectorProto(basis_proto));
+  OR_RETURN_IF_ERROR(LinearConstraintIdsExist(model, basis_proto.ids()));
   return BasisVectorFromProto<LinearConstraint>(model, basis_proto);
 }
 

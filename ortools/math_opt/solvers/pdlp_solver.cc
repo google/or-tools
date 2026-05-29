@@ -71,7 +71,7 @@ constexpr SupportedProblemStructures kPdlpSupportedStructures = {
 absl::StatusOr<std::unique_ptr<SolverInterface>> PdlpSolver::New(
     const ModelProto& model, const InitArgs&) {
   auto result = absl::WrapUnique(new PdlpSolver);
-  ASSIGN_OR_RETURN(result->pdlp_bridge_, PdlpBridge::FromProto(model));
+  OR_ASSIGN_OR_RETURN(result->pdlp_bridge_, PdlpBridge::FromProto(model));
   return result;
 }
 
@@ -240,14 +240,15 @@ absl::StatusOr<SolveResultProto> PdlpSolver::MakeSolveResult(
         convergence_information->primal_objective());
     objective_bounds.set_dual_bound(convergence_information->dual_objective());
   }
-  ASSIGN_OR_RETURN(*result.mutable_termination(),
-                   ConvertReason(pdlp_result.solve_log.termination_reason(),
-                                 pdlp_result.solve_log.termination_string(),
-                                 is_maximize, objective_bounds.primal_bound(),
-                                 objective_bounds.dual_bound()));
-  ASSIGN_OR_RETURN(*result.mutable_solve_stats()->mutable_solve_time(),
-                   util_time::EncodeGoogleApiProto(
-                       absl::Seconds(pdlp_result.solve_log.solve_time_sec())));
+  OR_ASSIGN_OR_RETURN(
+      *result.mutable_termination(),
+      ConvertReason(pdlp_result.solve_log.termination_reason(),
+                    pdlp_result.solve_log.termination_string(), is_maximize,
+                    objective_bounds.primal_bound(),
+                    objective_bounds.dual_bound()));
+  OR_ASSIGN_OR_RETURN(*result.mutable_solve_stats()->mutable_solve_time(),
+                      util_time::EncodeGoogleApiProto(absl::Seconds(
+                          pdlp_result.solve_log.solve_time_sec())));
   result.mutable_solve_stats()->set_first_order_iterations(
       pdlp_result.solve_log.iteration_count());
 
@@ -262,7 +263,7 @@ absl::StatusOr<SolveResultProto> PdlpSolver::MakeSolveResult(
       {
         auto maybe_primal = pdlp_bridge_.PrimalVariablesToProto(
             pdlp_result.primal_solution, model_params.variable_values_filter());
-        RETURN_IF_ERROR(maybe_primal.status());
+        OR_RETURN_IF_ERROR(maybe_primal.status());
         PrimalSolutionProto* primal_proto =
             solution_proto->mutable_primal_solution();
         primal_proto->set_feasibility_status(SOLUTION_STATUS_UNDETERMINED);
@@ -283,10 +284,10 @@ absl::StatusOr<SolveResultProto> PdlpSolver::MakeSolveResult(
       {
         auto maybe_dual = pdlp_bridge_.DualVariablesToProto(
             pdlp_result.dual_solution, model_params.dual_values_filter());
-        RETURN_IF_ERROR(maybe_dual.status());
+        OR_RETURN_IF_ERROR(maybe_dual.status());
         auto maybe_reduced = pdlp_bridge_.ReducedCostsToProto(
             pdlp_result.reduced_costs, model_params.reduced_costs_filter());
-        RETURN_IF_ERROR(maybe_reduced.status());
+        OR_RETURN_IF_ERROR(maybe_reduced.status());
         DualSolutionProto* dual_proto = solution_proto->mutable_dual_solution();
         dual_proto->set_feasibility_status(SOLUTION_STATUS_UNDETERMINED);
         *dual_proto->mutable_dual_values() = *std::move(maybe_dual);
@@ -308,10 +309,10 @@ absl::StatusOr<SolveResultProto> PdlpSolver::MakeSolveResult(
       // certificate (dual ray) in the dual variables and reduced costs.
       auto maybe_dual = pdlp_bridge_.DualVariablesToProto(
           pdlp_result.dual_solution, model_params.dual_values_filter());
-      RETURN_IF_ERROR(maybe_dual.status());
+      OR_RETURN_IF_ERROR(maybe_dual.status());
       auto maybe_reduced = pdlp_bridge_.ReducedCostsToProto(
           pdlp_result.reduced_costs, model_params.reduced_costs_filter());
-      RETURN_IF_ERROR(maybe_reduced.status());
+      OR_RETURN_IF_ERROR(maybe_reduced.status());
       DualRayProto* dual_ray_proto = result.add_dual_rays();
       *dual_ray_proto->mutable_dual_values() = *std::move(maybe_dual);
       *dual_ray_proto->mutable_reduced_costs() = *std::move(maybe_reduced);
@@ -322,7 +323,7 @@ absl::StatusOr<SolveResultProto> PdlpSolver::MakeSolveResult(
       // certificate (primal ray) in the primal variables.
       auto maybe_primal = pdlp_bridge_.PrimalVariablesToProto(
           pdlp_result.primal_solution, model_params.variable_values_filter());
-      RETURN_IF_ERROR(maybe_primal.status());
+      OR_RETURN_IF_ERROR(maybe_primal.status());
       PrimalRayProto* primal_ray_proto = result.add_primal_rays();
       *primal_ray_proto->mutable_variable_values() = *std::move(maybe_primal);
       break;
@@ -339,19 +340,19 @@ absl::StatusOr<SolveResultProto> PdlpSolver::Solve(
     const MessageCallback message_cb,
     const CallbackRegistrationProto& callback_registration, const Callback,
     const SolveInterrupter* absl_nullable const interrupter) {
-  RETURN_IF_ERROR(ModelSolveParametersAreSupported(
+  OR_RETURN_IF_ERROR(ModelSolveParametersAreSupported(
       model_parameters, kPdlpSupportedStructures, "PDLP"));
-  RETURN_IF_ERROR(CheckRegisteredCallbackEvents(callback_registration,
-                                                /*supported_events=*/{}));
+  OR_RETURN_IF_ERROR(CheckRegisteredCallbackEvents(callback_registration,
+                                                   /*supported_events=*/{}));
 
-  ASSIGN_OR_RETURN(
+  OR_ASSIGN_OR_RETURN(
       auto pdlp_params,
       MergeParameters(parameters,
                       /*has_message_callback=*/message_cb != nullptr));
 
   // PDLP returns `(TERMINATION_REASON_INVALID_PROBLEM): The input problem has
   // inconsistent bounds.` but we want a more detailed error.
-  RETURN_IF_ERROR(pdlp_bridge_.ListInvertedBounds().ToStatus());
+  OR_RETURN_IF_ERROR(pdlp_bridge_.ListInvertedBounds().ToStatus());
 
   std::atomic<bool> interrupt = false;
   const ScopedSolveInterrupterCallback set_interrupt(

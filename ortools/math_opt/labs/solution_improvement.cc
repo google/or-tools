@@ -40,16 +40,16 @@ namespace {
 absl::Status ValidateFullFiniteSolution(const Model& model,
                                         const VariableMap<double>& solution) {
   for (const auto& [v, value] : solution) {
-    RETURN_IF_ERROR(model.ValidateExistingVariableOfThisModel(v));
+    OR_RETURN_IF_ERROR(model.ValidateExistingVariableOfThisModel(v));
     if (!std::isfinite(value)) {
-      return util::InvalidArgumentErrorBuilder()
+      return ortools::InvalidArgumentErrorBuilder()
              << "the solution contains non-finite value " << value
              << " for variable " << v;
     }
   }
   for (const Variable v : model.SortedVariables()) {
     if (!solution.contains(v)) {
-      return util::InvalidArgumentErrorBuilder()
+      return ortools::InvalidArgumentErrorBuilder()
              << "the solution does not contain a value for variable " << v;
     }
   }
@@ -73,7 +73,7 @@ absl::Status ValidateOptions(
   if (!std::isfinite(options.integrality_tolerance) ||
       options.integrality_tolerance < 0.0 ||
       options.integrality_tolerance > kMaxIntegralityTolerance) {
-    return util::InvalidArgumentErrorBuilder()
+    return ortools::InvalidArgumentErrorBuilder()
            << "integrality_tolerance = "
            << RoundTripDoubleFormat(options.integrality_tolerance)
            << " is not in [0, "
@@ -93,8 +93,8 @@ absl::StatusOr<VariableMap<double>> MoveVariablesToTheirBestFeasibleValue(
     // TODO(b/193121090): here we build the proto as the APIs of MathOpt only
     // works with the proto and can't use the C++ Model (or ModelStorage).
     const ModelProto model_proto = model.ExportModel();
-    RETURN_IF_ERROR(ValidateModel(model_proto).status()) << "invalid model";
-    RETURN_IF_ERROR(ModelIsSupported(
+    OR_RETURN_IF_ERROR(ValidateModel(model_proto).status()) << "invalid model";
+    OR_RETURN_IF_ERROR(ModelIsSupported(
         model_proto,
         SupportedProblemStructures{
             .integer_variables = SupportType::kSupported,
@@ -102,10 +102,10 @@ absl::StatusOr<VariableMap<double>> MoveVariablesToTheirBestFeasibleValue(
         /*solver_name=*/"MoveVariablesToTheirBestFeasibleValue"));
   }
   for (const Variable v : variables) {
-    RETURN_IF_ERROR(model.ValidateExistingVariableOfThisModel(v))
+    OR_RETURN_IF_ERROR(model.ValidateExistingVariableOfThisModel(v))
         << "invalid `variables`";
     if (v.lower_bound() > v.upper_bound()) {
-      return util::InvalidArgumentErrorBuilder()
+      return ortools::InvalidArgumentErrorBuilder()
              << "variable " << v << " bounds ["
              << RoundTripDoubleFormat(v.lower_bound()) << ", "
              << RoundTripDoubleFormat(v.upper_bound())
@@ -114,16 +114,16 @@ absl::StatusOr<VariableMap<double>> MoveVariablesToTheirBestFeasibleValue(
     }
     if (RoundedLowerBound(v, options.integrality_tolerance) >
         RoundedUpperBound(v, options.integrality_tolerance)) {
-      return util::InvalidArgumentErrorBuilder()
+      return ortools::InvalidArgumentErrorBuilder()
              << "integer variable " << v << " has bounds ["
              << RoundTripDoubleFormat(v.lower_bound()) << ", "
              << RoundTripDoubleFormat(v.upper_bound())
              << "] that contain no integer value";
     }
   }
-  RETURN_IF_ERROR(ValidateFullFiniteSolution(model, input_solution))
+  OR_RETURN_IF_ERROR(ValidateFullFiniteSolution(model, input_solution))
       << "invalid `input_solution`";
-  RETURN_IF_ERROR(ValidateOptions(options)) << "invalid `options`";
+  OR_RETURN_IF_ERROR(ValidateOptions(options)) << "invalid `options`";
 
   // We maintain a solution with updated value for each variable in the order of
   // traversal.
@@ -232,7 +232,7 @@ absl::StatusOr<VariableMap<double>> MoveVariablesToTheirBestFeasibleValue(
       }
       // If there is no limiting constraint with a finite bound and the variable
       // own bound is infinite, the model is actually unbounded.
-      return util::FailedPreconditionErrorBuilder()
+      return ortools::FailedPreconditionErrorBuilder()
              << "the model is unbounded regarding variable " << v;
     }
 
