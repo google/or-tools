@@ -256,7 +256,7 @@ absl::Status WriteModelToMpsFile(absl::string_view filename,
                                  const MPModelProto& model,
                                  const MPModelExportOptions& options) {
   OR_ASSIGN_OR_RETURN(std::string mps_data,
-                   ExportModelAsMpsFormat(model, options));
+                      ExportModelAsMpsFormat(model, options));
   return file::SetContents(filename, mps_data, file::Defaults());
 }
 

@@ -49,7 +49,8 @@ absl::StatusOr<GRBenv*> NewPrimaryEnvFromISVKey(const GurobiIsvKey& isv_key) {
            << operation_name << " returned the error (" << err_code
            << "): " << GRBgeterrormsg(primary_env);
   };
-  OR_RETURN_IF_ERROR(handle_failure(GRBemptyenv(&primary_env), "GRBemptyenv()"));
+  OR_RETURN_IF_ERROR(
+      handle_failure(GRBemptyenv(&primary_env), "GRBemptyenv()"));
   // We want to turn off logging before setting the ISV key so that it doesn't
   // leak. We store the original logging state, and reset it at the end.
   int original_output_flag;

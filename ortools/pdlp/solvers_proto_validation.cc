@@ -95,12 +95,12 @@ absl::Status ValidateTerminationCriteria(const TerminationCriteria& criteria) {
         "simple_optimality_criteria.eps_optimal_relative"));
   } else {
     OR_RETURN_IF_ERROR(CheckNonNegative(criteria.eps_optimal_absolute(),
-                                     "eps_optimal_absolute"));
+                                        "eps_optimal_absolute"));
     OR_RETURN_IF_ERROR(CheckNonNegative(criteria.eps_optimal_relative(),
-                                     "eps_optimal_relative"));
+                                        "eps_optimal_relative"));
   }
   OR_RETURN_IF_ERROR(CheckNonNegative(criteria.eps_primal_infeasible(),
-                                   "eps_primal_infeasible"));
+                                      "eps_primal_infeasible"));
   OR_RETURN_IF_ERROR(
       CheckNonNegative(criteria.eps_dual_infeasible(), "eps_dual_infeasible"));
   OR_RETURN_IF_ERROR(
@@ -112,7 +112,7 @@ absl::Status ValidateTerminationCriteria(const TerminationCriteria& criteria) {
     return InvalidArgumentError("iteration_limit must be non-negative");
   }
   OR_RETURN_IF_ERROR(CheckNonNegative(criteria.kkt_matrix_pass_limit(),
-                                   "kkt_matrix_pass_limit"));
+                                      "kkt_matrix_pass_limit"));
 
   return OkStatus();
 }
@@ -253,7 +253,8 @@ absl::Status ValidatePrimalDualHybridGradientParams(
   OR_RETURN_IF_ERROR(
       ValidateAdaptiveLinesearchParams(params.adaptive_linesearch_parameters()))
       << "adaptive_linesearch_parameters invalid";
-  OR_RETURN_IF_ERROR(ValidateMalitskyPockParams(params.malitsky_pock_parameters()))
+  OR_RETURN_IF_ERROR(
+      ValidateMalitskyPockParams(params.malitsky_pock_parameters()))
       << "malitsky_pock_parameters invalid";
   if (std::isnan(params.initial_step_size_scaling())) {
     return InvalidArgumentError("initial_step_size_scaling is NAN");

@@ -708,8 +708,9 @@ template <class DataWrapper>
 absl::Status MPSReaderTemplate<DataWrapper>::ProcessLine(absl::string_view line,
                                                          DataWrapper* data) {
   ++line_num_;
-  OR_ASSIGN_OR_RETURN(const internal::MPSLineInfo line_info,
-                   internal::MPSLineInfo::Create(line_num_, free_form_, line));
+  OR_ASSIGN_OR_RETURN(
+      const internal::MPSLineInfo line_info,
+      internal::MPSLineInfo::Create(line_num_, free_form_, line));
   if (line_info.IsCommentOrBlank()) {
     return absl::OkStatus();  // Skip blank lines and comments.
   }
@@ -932,11 +933,13 @@ absl::Status MPSReaderTemplate<DataWrapper>::ProcessRhsSection(
   // const absl::string_view rhs_name = line_info.GetField(0); is not used
   const absl::string_view row1_name = line_info.GetField(offset);
   const absl::string_view row1_value = line_info.GetField(offset + 1);
-  OR_RETURN_IF_ERROR(StoreRightHandSide(line_info, row1_name, row1_value, data));
+  OR_RETURN_IF_ERROR(
+      StoreRightHandSide(line_info, row1_name, row1_value, data));
   if (line_info.GetFieldsSize() - start_index >= 4) {
     const absl::string_view row2_name = line_info.GetField(offset + 2);
     const absl::string_view row2_value = line_info.GetField(offset + 3);
-    OR_RETURN_IF_ERROR(StoreRightHandSide(line_info, row2_name, row2_value, data));
+    OR_RETURN_IF_ERROR(
+        StoreRightHandSide(line_info, row2_name, row2_value, data));
   }
   return absl::OkStatus();
 }
@@ -1122,7 +1125,7 @@ absl::Status MPSReaderTemplate<DataWrapper>::StoreBound(
   switch (bound_type_id) {
     case BoundTypeId::kLowerBound: {
       OR_ASSIGN_OR_RETURN(lower_bound,
-                       GetDoubleFromString(bound_value, line_info));
+                          GetDoubleFromString(bound_value, line_info));
       // TODO(b/285121446): Decide to keep or remove this corner case behavior.
       // LI with the value 0.0 specifies general integers with no upper bound.
       if (bound_type_mnemonic == "LI" && lower_bound == 0.0) {
@@ -1132,18 +1135,18 @@ absl::Status MPSReaderTemplate<DataWrapper>::StoreBound(
     }
     case BoundTypeId::kUpperBound: {
       OR_ASSIGN_OR_RETURN(upper_bound,
-                       GetDoubleFromString(bound_value, line_info));
+                          GetDoubleFromString(bound_value, line_info));
       break;
     }
     case BoundTypeId::kSemiContinuous: {
       OR_ASSIGN_OR_RETURN(upper_bound,
-                       GetDoubleFromString(bound_value, line_info));
+                          GetDoubleFromString(bound_value, line_info));
       data->SetVariableTypeToSemiContinuous(col);
       break;
     }
     case BoundTypeId::kFixedVariable: {
       OR_ASSIGN_OR_RETURN(lower_bound,
-                       GetDoubleFromString(bound_value, line_info));
+                          GetDoubleFromString(bound_value, line_info));
       upper_bound = lower_bound;
       break;
     }

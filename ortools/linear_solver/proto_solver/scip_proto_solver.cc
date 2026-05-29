@@ -138,7 +138,7 @@ absl::Status AddIndicatorConstraint(const MPGeneralConstraintProto& gen_cst,
 
   if (ind.constraint().upper_bound() < kInfinity) {
     OR_ASSIGN_OR_RETURN(const double upper_bound,
-                     ScipInfClamp(scip, ind.constraint().upper_bound()));
+                        ScipInfClamp(scip, ind.constraint().upper_bound()));
     RETURN_IF_SCIP_ERROR(SCIPcreateConsIndicator(
         scip, scip_cst, gen_cst.name().c_str(), ind_var, size,
         tmp_variables->data(), tmp_coefficients->data(), upper_bound,
@@ -157,7 +157,7 @@ absl::Status AddIndicatorConstraint(const MPGeneralConstraintProto& gen_cst,
   }
   if (ind.constraint().lower_bound() > -kInfinity) {
     OR_ASSIGN_OR_RETURN(const double lower_bound,
-                     ScipInfClamp(scip, ind.constraint().lower_bound()));
+                        ScipInfClamp(scip, ind.constraint().lower_bound()));
     for (int i = 0; i < size; ++i) {
       (*tmp_coefficients)[i] *= -1;
     }
@@ -282,9 +282,9 @@ absl::Status AddQuadraticConstraint(
   }
 
   OR_ASSIGN_OR_RETURN(const double lower_bound,
-                   ScipInfClamp(scip, quad_cst.lower_bound()));
+                      ScipInfClamp(scip, quad_cst.lower_bound()));
   OR_ASSIGN_OR_RETURN(const double upper_bound,
-                   ScipInfClamp(scip, quad_cst.upper_bound()));
+                      ScipInfClamp(scip, quad_cst.upper_bound()));
   RETURN_IF_SCIP_ERROR(
       SCIPcreateConsBasicQuadratic(scip,
                                    /*cons=*/scip_cst,
@@ -447,9 +447,9 @@ absl::Status AddMinMaxConstraint(const MPGeneralConstraintProto& gen_cst,
     const std::string name =
         gen_cst.has_name() ? absl::StrCat(gen_cst.name(), name_prefix) : "";
     OR_ASSIGN_OR_RETURN(const double scip_lower_bound,
-                     ScipInfClamp(scip, lower_bound));
+                        ScipInfClamp(scip, lower_bound));
     OR_ASSIGN_OR_RETURN(const double scip_upper_bound,
-                     ScipInfClamp(scip, upper_bound));
+                        ScipInfClamp(scip, upper_bound));
     RETURN_IF_SCIP_ERROR(SCIPcreateConsBasicLinear(
         scip, /*cons=*/&scip_cons,
         /*name=*/name.c_str(), /*nvars=*/vars.size(), /*vars=*/vars.data(),
@@ -491,10 +491,10 @@ absl::Status AddMinMaxConstraint(const MPGeneralConstraintProto& gen_cst,
     vals = {1, -1};
     if (gen_cst.has_min_constraint()) {
       OR_RETURN_IF_ERROR(add_lin_constraint(absl::StrCat("_ineq_", var_index),
-                                         -kInfinity, 0.0));
+                                            -kInfinity, 0.0));
     } else {
-      OR_RETURN_IF_ERROR(add_lin_constraint(absl::StrCat("_ineq_", var_index), 0.0,
-                                         kInfinity));
+      OR_RETURN_IF_ERROR(add_lin_constraint(absl::StrCat("_ineq_", var_index),
+                                            0.0, kInfinity));
     }
   }
   if (minmax.has_constant()) {
@@ -793,9 +793,9 @@ absl::StatusOr<MPSolutionResponse> ScipSolveProto(
   for (int v = 0; v < model.variable_size(); ++v) {
     const MPVariableProto& variable = model.variable(v);
     OR_ASSIGN_OR_RETURN(const double lower_bound,
-                     ScipInfClamp(scip, variable.lower_bound()));
+                        ScipInfClamp(scip, variable.lower_bound()));
     OR_ASSIGN_OR_RETURN(const double upper_bound,
-                     ScipInfClamp(scip, variable.upper_bound()));
+                        ScipInfClamp(scip, variable.upper_bound()));
     RETURN_IF_SCIP_ERROR(SCIPcreateVarBasic(
         scip, /*var=*/&scip_variables[v], /*name=*/variable.name().c_str(),
         /*lb=*/lower_bound, /*ub=*/upper_bound,
@@ -818,9 +818,9 @@ absl::StatusOr<MPSolutionResponse> ScipSolveProto(
         ct_coefficients[i] = constraint.coefficient(i);
       }
       OR_ASSIGN_OR_RETURN(const double lower_bound,
-                       ScipInfClamp(scip, constraint.lower_bound()));
+                          ScipInfClamp(scip, constraint.lower_bound()));
       OR_ASSIGN_OR_RETURN(const double upper_bound,
-                       ScipInfClamp(scip, constraint.upper_bound()));
+                          ScipInfClamp(scip, constraint.upper_bound()));
       RETURN_IF_SCIP_ERROR(SCIPcreateConsLinear(
           scip, /*cons=*/&scip_constraints[c],
           /*name=*/constraint.name().c_str(),
@@ -856,9 +856,9 @@ absl::StatusOr<MPSolutionResponse> ScipSolveProto(
           break;
         }
         case MPGeneralConstraintProto::kSosConstraint: {
-          OR_RETURN_IF_ERROR(AddSosConstraint(gen_cst, scip_variables, scip,
-                                           &scip_constraints[lincst_size + c],
-                                           &ct_variables, &ct_coefficients));
+          OR_RETURN_IF_ERROR(AddSosConstraint(
+              gen_cst, scip_variables, scip, &scip_constraints[lincst_size + c],
+              &ct_variables, &ct_coefficients));
           break;
         }
         case MPGeneralConstraintProto::kQuadraticConstraint: {
@@ -869,20 +869,21 @@ absl::StatusOr<MPSolutionResponse> ScipSolveProto(
           break;
         }
         case MPGeneralConstraintProto::kAbsConstraint: {
-          OR_RETURN_IF_ERROR(AddAbsConstraint(gen_cst, scip_variables, scip,
-                                           &scip_constraints[lincst_size + c]));
+          OR_RETURN_IF_ERROR(
+              AddAbsConstraint(gen_cst, scip_variables, scip,
+                               &scip_constraints[lincst_size + c]));
           break;
         }
         case MPGeneralConstraintProto::kAndConstraint: {
-          OR_RETURN_IF_ERROR(AddAndConstraint(gen_cst, scip_variables, scip,
-                                           &scip_constraints[lincst_size + c],
-                                           &ct_variables));
+          OR_RETURN_IF_ERROR(AddAndConstraint(
+              gen_cst, scip_variables, scip, &scip_constraints[lincst_size + c],
+              &ct_variables));
           break;
         }
         case MPGeneralConstraintProto::kOrConstraint: {
           OR_RETURN_IF_ERROR(AddOrConstraint(gen_cst, scip_variables, scip,
-                                          &scip_constraints[lincst_size + c],
-                                          &ct_variables));
+                                             &scip_constraints[lincst_size + c],
+                                             &ct_variables));
           break;
         }
         case MPGeneralConstraintProto::kMinConstraint:
@@ -901,8 +902,8 @@ absl::StatusOr<MPSolutionResponse> ScipSolveProto(
   }
 
   if (model.has_quadratic_objective()) {
-    OR_RETURN_IF_ERROR(AddQuadraticObjective(model.quadratic_objective(), scip,
-                                          &scip_variables, &scip_constraints));
+    OR_RETURN_IF_ERROR(AddQuadraticObjective(
+        model.quadratic_objective(), scip, &scip_variables, &scip_constraints));
   }
   RETURN_IF_SCIP_ERROR(SCIPaddOrigObjoffset(scip, model.objective_offset()));
   OR_RETURN_IF_ERROR(AddSolutionHint(model, scip, scip_variables));
