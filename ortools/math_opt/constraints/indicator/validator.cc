@@ -13,11 +13,13 @@
 
 #include "ortools/math_opt/constraints/indicator/validator.h"
 
-#include <cmath>
+#include <cstdint>
 
 #include "absl/status/status.h"
+#include "ortools/base/status_builder.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/math_opt/core/model_summary.h"
+#include "ortools/math_opt/core/sparse_vector_view.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/validators/scalar_validator.h"
 #include "ortools/math_opt/validators/sparse_vector_validator.h"

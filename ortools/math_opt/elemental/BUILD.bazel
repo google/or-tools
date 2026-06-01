@@ -60,6 +60,7 @@ cc_library(
         ":elements",
         ":symmetry",
         ":thread_safe_id_map",
+        "//ortools/base:status_builder",
         "//ortools/base:status_macros",
         "//ortools/base:types",
         "//ortools/math_opt:model_cc_proto",
@@ -137,7 +138,7 @@ cc_library(
     srcs = ["element_storage.cc"],
     hdrs = ["element_storage.h"],
     deps = [
-        "//ortools/base:status_macros",
+        "//ortools/base:status_builder",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/status:statusor",
@@ -251,7 +252,7 @@ cc_library(
     deps = [
         ":elements",
         ":symmetry",
-        "//ortools/base:status_macros",
+        "//ortools/base:status_builder",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/log:check",
@@ -380,10 +381,10 @@ cc_library(
     deps = [
         ":derived_data",
         ":elemental",
+        "//ortools/base:status_builder",
         "//ortools/base:status_macros",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
-        "@abseil-cpp//absl/strings",
     ],
 )
 

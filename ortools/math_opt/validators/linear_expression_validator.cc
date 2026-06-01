@@ -16,6 +16,7 @@
 #include <cstdint>
 
 #include "absl/status/status.h"
+#include "ortools/base/status_builder.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/math_opt/core/model_summary.h"
 #include "ortools/math_opt/core/sparse_vector_view.h"

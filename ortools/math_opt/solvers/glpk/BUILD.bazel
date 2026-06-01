@@ -27,13 +27,13 @@ cc_library(
             "//conditions:default": ["@platforms//:incompatible"],
         }),
     deps = [
+        "//ortools/base:status_builder",
         "//ortools/base:status_macros",
         "//ortools/third_party_solvers/glpk:glpk_computational_form",
         "//ortools/third_party_solvers/glpk:glpk_formatters",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
-        "@abseil-cpp//absl/strings",
         "@glpk",
     ],
 )

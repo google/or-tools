@@ -90,6 +90,7 @@ cc_library(
     srcs = ["validator.cc"],
     hdrs = ["validator.h"],
     deps = [
+        "//ortools/base:status_builder",
         "//ortools/base:status_macros",
         "//ortools/math_opt:model_cc_proto",
         "//ortools/math_opt:sparse_containers_cc_proto",

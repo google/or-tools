@@ -581,13 +581,14 @@ class ModelStorage {
   //   model.AdvanceCheckpoint(update_tracker);
   //
   //   if (update_proto) {
-  //     OR_ASSIGN_OR_RETURN(const bool updated, solver->Update(*update_proto));
-  //     if (!updated) {
+  //     OR_ASSIGN_OR_RETURN(const bool updated,
+  //     solver->Update(*update_proto)); if (!updated) {
   //       // The update is not supported by the solver, we create a new one.
-  //       OR_ASSIGN_OR_RETURN(const auto new_model_proto, model.ExportModel());
+  //       OR_ASSIGN_OR_RETURN(const auto new_model_proto,
+  //                              model.ExportModel());
   //       OR_ASSIGN_OR_RETURN(solver,
-  //                        Solver::New(solver_type, new_model_proto,
-  //                                    /*initializer=*/{}));
+  //                             Solver::New(solver_type, new_model_proto,
+  //                                         /*initializer=*/{}));
   //     }
   //   }
   //   OR_ASSIGN_OR_RETURN(const auto result_2,

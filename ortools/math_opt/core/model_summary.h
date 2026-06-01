@@ -16,7 +16,6 @@
 
 #include <cstdint>
 #include <initializer_list>
-#include <limits>
 #include <list>
 #include <optional>
 #include <string>
@@ -31,6 +30,7 @@
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
+#include "ortools/base/status_builder.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/base/types.h"
 #include "ortools/math_opt/model.pb.h"

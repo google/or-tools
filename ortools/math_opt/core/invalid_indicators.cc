@@ -14,7 +14,6 @@
 #include "ortools/math_opt/core/invalid_indicators.h"
 
 #include <algorithm>
-#include <cstdint>
 #include <string>
 #include <tuple>
 #include <vector>

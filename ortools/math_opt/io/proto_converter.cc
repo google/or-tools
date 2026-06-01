@@ -346,7 +346,7 @@ MPModelProtoToMathOptModel(const ::operations_research::MPModelProto& model) {
         break;
       }
       case MPGeneralConstraintProto::kIndicatorConstraint: {
-        // Note that the open-source version of ASSIGN_OR_RETURN does not
+        // Note that the open-source version of ABSL_ASSIGN_OR_RETURN does not
         // support inlining the new_indicator_constraint expression.
         auto& new_indicator_constraint =
             (*output.mutable_indicator_constraints())

@@ -14,7 +14,6 @@
 #include "ortools/math_opt/core/inverted_bounds.h"
 
 #include <cstdint>
-#include <string>
 #include <string_view>
 #include <vector>
 

@@ -23,6 +23,7 @@ cc_library(
     srcs = ["solver.cc"],
     hdrs = ["solver.h"],
     deps = [
+        "//ortools/base:status_builder",
         "//ortools/base:status_macros",
         "//ortools/base:types",
         "//ortools/math_opt:model_cc_proto",
@@ -42,7 +43,7 @@ cc_test(
     deps = [
         ":solver",
         "//ortools/base:gmock_main",
-        "//ortools/base:status_macros",
+        "//ortools/base:status_builder",
         "//ortools/base:types",
         "//ortools/math_opt:model_cc_proto",
         "//ortools/math_opt:result_cc_proto",

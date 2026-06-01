@@ -14,14 +14,13 @@
 #include "ortools/math_opt/validators/solve_parameters_validator.h"
 
 #include <cmath>
-#include <string>
 
 #include "absl/status/status.h"
-#include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/time/time.h"
 #include "ortools/base/protoutil.h"
+#include "ortools/base/status_builder.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/math_opt/parameters.pb.h"
 #include "ortools/util/status_macros.h"

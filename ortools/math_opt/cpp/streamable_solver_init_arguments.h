@@ -27,6 +27,7 @@
 #include <optional>
 #include <string>
 
+#include "absl/base/attributes.h"
 #include "absl/status/statusor.h"
 #include "ortools/math_opt/parameters.pb.h"
 #include "ortools/math_opt/solvers/gurobi.pb.h"

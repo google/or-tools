@@ -19,6 +19,7 @@ cc_library(
     hdrs = ["lp_model.h"],
     deps = [
         ":lp_name",
+        "//ortools/base:status_builder",
         "//ortools/base:status_macros",
         "//ortools/base:strong_int",
         "//ortools/base:strong_vector",
@@ -35,7 +36,7 @@ cc_library(
     srcs = ["lp_name.cc"],
     hdrs = ["lp_name.h"],
     deps = [
-        "//ortools/base:status_macros",
+        "//ortools/base:status_builder",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:string_view",
@@ -48,6 +49,7 @@ cc_library(
     hdrs = ["model_utils.h"],
     deps = [
         ":lp_model",
+        "//ortools/base:status_builder",
         "//ortools/base:status_macros",
         "//ortools/base:strong_vector",
         "@abseil-cpp//absl/container:flat_hash_set",

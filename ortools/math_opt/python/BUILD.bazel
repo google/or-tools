@@ -63,11 +63,11 @@ py_library(
         ":objectives",
         ":quadratic_constraints",
         ":variables",
+        "//ortools/math_opt/elemental/python:cpp_elemental",
+        "//ortools/math_opt/elemental/python:enums",
         requirement("typing-extensions"),
         "//ortools/math_opt:model_py_pb2",
         "//ortools/math_opt:model_update_py_pb2",
-        "//ortools/math_opt/elemental/python:cpp_elemental",
-        "//ortools/math_opt/elemental/python:enums",
         "//ortools/math_opt/python/elemental",
     ],
 )
@@ -244,8 +244,8 @@ py_library(
     deps = [
         ":from_model",
         ":variables",
-        requirement("numpy"),
         "//ortools/math_opt/elemental/python:enums",
+        requirement("numpy"),
         "//ortools/math_opt/python/elemental",
     ],
 )
@@ -472,8 +472,8 @@ py_library(
     deps = [
         ":bounded_expressions",
         ":from_model",
-        requirement("immutabledict"),
         "//ortools/math_opt/elemental/python:enums",
+        requirement("immutabledict"),
         "//ortools/math_opt/python/elemental",
     ],
 )
