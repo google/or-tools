@@ -24,12 +24,14 @@
 
 #include "absl/base/attributes.h"
 #include "absl/log/check.h"
+#include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/charconv.h"
 #include "absl/strings/escaping.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
 #include "ortools/base/status_builder.h"
+#include "ortools/base/status_macros.h"
 
 namespace operations_research {
 namespace {

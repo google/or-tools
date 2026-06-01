@@ -14,6 +14,7 @@
 #ifndef ORTOOLS_UTIL_STATUS_MACROS_H_
 #define ORTOOLS_UTIL_STATUS_MACROS_H_
 
+#include "ortools/base/status_builder.h"
 #include "ortools/base/status_macros.h"
 
 // Executes an expression that returns an absl::StatusOr, extracting its value
