@@ -24,6 +24,7 @@ cc_library(
         "not_run:arm",
     ],
     deps = [
+        "//ortools/base:status_builder",
         "//ortools/base:status_macros",
         "//ortools/math_opt/solvers:gurobi_cc_proto",
         "//ortools/third_party_solvers:gurobi_environment",
