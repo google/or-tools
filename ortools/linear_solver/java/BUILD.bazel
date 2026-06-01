@@ -47,10 +47,10 @@ java_junit5_test(
     ],
     test_class = "com.google.ortools.modelbuilder.ModelBuilderTest",
     deps = [
+        ":modelbuilder",
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/modelbuilder",
         "//ortools/linear_solver:linear_solver_glop",
-        "//ortools/linear_solver/java:modelbuilder",
         "@maven//:com_google_truth_truth",
         "@maven//:org_junit_jupiter_junit_jupiter_api",
         "@maven//:org_junit_jupiter_junit_jupiter_engine",
