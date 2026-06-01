@@ -79,7 +79,8 @@ namespace graph {
 //
 // EXAMPLES:
 //   std::vector<std::vector<int>> adj = {{..}, {..}, ..};
-//   OR_ASSIGN_OR_RETURN(std::vector<int> topo_order, FastTopologicalSort(adj));
+//   OR_ASSIGN_OR_RETURN(std::vector<int> topo_order,
+//       FastTopologicalSort(adj));
 //
 // or
 //   std::vector<pair<int, int>> arcs = {{.., ..}, ..., };
