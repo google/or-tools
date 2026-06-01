@@ -61,7 +61,6 @@ cc_library(
     deps = [
         ":lp_types",
         ":permutation",
-        "//ortools/base:types",
         "//ortools/graph_base:iterators",
         "//ortools/util:return_macros",
         "@abseil-cpp//absl/log:check",
