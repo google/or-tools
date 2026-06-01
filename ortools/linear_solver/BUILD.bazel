@@ -491,7 +491,6 @@ cc_library(
         ":gurobi_util",
         ":linear_solver_base",
         ":linear_solver_callback",
-        "//ortools/base:status_macros",
         "//ortools/base:timer",
         "//ortools/linear_solver/proto_solver:gurobi_proto_solver",
         "//ortools/linear_solver/proto_solver:proto_utils",
@@ -501,6 +500,7 @@ cc_library(
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:die_if_null",
         "@abseil-cpp//absl/status",
@@ -728,6 +728,7 @@ cc_library(
     srcs = ["scip_helper_macros.cc"],
     hdrs = ["scip_helper_macros.h"],
     deps = [
+        "//ortools/base:status_builder",
         "//ortools/base:status_macros",
         "@abseil-cpp//absl/base",
         "@abseil-cpp//absl/base:nullability",

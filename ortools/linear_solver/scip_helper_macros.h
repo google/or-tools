@@ -25,6 +25,7 @@
 #include "absl/status/status.h"
 #include "absl/strings/escaping.h"
 #include "absl/strings/string_view.h"
+#include "ortools/base/status_builder.h"
 #include "ortools/base/status_macros.h"
 #include "scip/pub_message.h"
 #include "scip/type_retcode.h"
