@@ -38,7 +38,7 @@ java_junit5_test(
     srcs = ["FlowTest.java"],
     test_class = "com.google.ortools.graph.FlowTest",
     deps = [
-        "//ortools/graph/java:graph",
+        ":graph",
         "//ortools/java/com/google/ortools:Loader",
         "@maven//:org_junit_jupiter_junit_jupiter_api",
         "@maven//:org_junit_jupiter_junit_jupiter_engine",

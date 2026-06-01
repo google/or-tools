@@ -190,6 +190,8 @@
 #include "absl/base/nullability.h"
 #include "absl/debugging/leak_check.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
+#include "absl/memory/memory.h"
 #include "absl/types/span.h"
 #include "ortools/base/constant_divisor.h"
 #include "ortools/graph_base/iterators.h"
@@ -400,7 +402,6 @@ class BaseGraph  //
 
  protected:
   // Functions commented when defined because they are implementation details.
-  void ComputeCumulativeSum(internal::Vector<NodeIndexType, ArcIndexType>* v);
   void BuildStartAndForwardHead(
       internal::SVector<ArcIndexType, NodeIndexType>* head,
       internal::Vector<NodeIndexType, ArcIndexType>* start,
@@ -572,6 +573,10 @@ constexpr bool IsSigned() {
 template <typename IndexT, typename T>
 class Vector : public std::vector<T> {
  public:
+  Vector() = default;
+  explicit Vector(IndexT size, T value)
+      : std::vector<T>(static_cast<size_t>(size), value) {}
+
   const T& operator[](IndexT index) const {
     return std::vector<T>::operator[](static_cast<size_t>(index));
   }
@@ -946,42 +951,52 @@ class ListGraph : public MutableGraph<ListGraph<NodeIndexType, ArcIndexType>,
 // of StaticGraph<> @CL 116144340.
 template <typename NodeIndexType = int32_t, typename ArcIndexType = int32_t>
 class StaticGraph final
-    : public MutableGraph<StaticGraph<NodeIndexType, ArcIndexType>,
-                          NodeIndexType, ArcIndexType, false> {
-  typedef MutableGraph<StaticGraph<NodeIndexType, ArcIndexType>, NodeIndexType,
-                       ArcIndexType, false>
+    : public BaseGraph<StaticGraph<NodeIndexType, ArcIndexType>, NodeIndexType,
+                       ArcIndexType, false> {
+  typedef BaseGraph<StaticGraph<NodeIndexType, ArcIndexType>, NodeIndexType,
+                    ArcIndexType, false>
       Base;
-  using Base::arc_capacity_;
-  using Base::const_capacities_;
-  using Base::node_capacity_;
-  using Base::num_arcs_;
-  using Base::num_nodes_;
 
  public:
-  using Builder = internal::MutableGraphBuilder<StaticGraph, NodeIndexType,
-                                                ArcIndexType, true>;
+  class Builder;
 
   using Base::IsArcValid;
-  StaticGraph() : is_built_(false), arc_in_order_(true), last_tail_seen_(0) {}
-  StaticGraph(NodeIndexType num_nodes, ArcIndexType arc_capacity)
-      : is_built_(false), arc_in_order_(true), last_tail_seen_(0) {
-    this->Reserve(num_nodes, arc_capacity);
-    this->FreezeCapacities();
-    if (num_nodes > NodeIndexType(0)) {
-      this->AddNode(num_nodes - NodeIndexType(1));
-    }
-  }
 
   // TODO(b/501313028): Use `GraphFromArcs()` instead.
   template <class ArcContainer>  // e.g. vector<pair<int, int>>.
   static StaticGraph FromArcs(NodeIndexType num_nodes,
                               const ArcContainer& arcs);
 
+  // Default constructor creates an empty graph.
+  StaticGraph()
+      : StaticGraph(internal::Vector<NodeIndexType, ArcIndexType>(
+                        NodeIndexType(1), ArcIndexType(0)),
+                    {}, {}) {}
+
+  StaticGraph(const StaticGraph& other) = default;
+  StaticGraph(StaticGraph&& other) = default;
+  StaticGraph& operator=(const StaticGraph& other) = default;
+  StaticGraph& operator=(StaticGraph&& other) = default;
+
   // Do not use directly. See instead the arc iteration functions below.
   class OutgoingArcIterator;
 
-  NodeIndexType Head(ArcIndexType arc) const;
-  NodeIndexType Tail(ArcIndexType arc) const;
+  NodeIndexType Head(ArcIndexType arc) const {
+    DCHECK(IsArcValid(arc));
+    return head_[arc];
+  }
+
+  NodeIndexType Tail(ArcIndexType arc) const {
+    DCHECK(IsArcValid(arc));
+    return tail_[arc];
+  }
+
+  NodeIndexType num_nodes() const {
+    DCHECK_GT(start_.size(), NodeIndexType(0));
+    return start_.size() - NodeIndexType(1);
+  }
+  ArcIndexType num_arcs() const { return head_.size(); }
+
   ArcIndexType OutDegree(NodeIndexType node) const;  // Work in O(1).
   IntegerRange<ArcIndexType> OutgoingArcs(NodeIndexType node) const {
     return IntegerRange<ArcIndexType>(start_[node], DirectArcLimit(node));
@@ -999,28 +1014,21 @@ class StaticGraph final
   // graph algorithms.
   absl::Span<const NodeIndexType> operator[](NodeIndexType node) const;
 
-  void ReserveNodes(NodeIndexType bound) override;
-  void ReserveArcs(ArcIndexType bound) override;
-  void AddNode(NodeIndexType node);
-  ArcIndexType AddArc(NodeIndexType tail, NodeIndexType head);
-
-  ABSL_DEPRECATED("Use `Builder` instead.")
-  void Build(std::vector<ArcIndexType>* absl_nullable permutation) final;
-  ABSL_DEPRECATED("Use `Builder` instead.")
-  void Build() { Build(nullptr); }
-  ABSL_DEPRECATED("`StaticGraph`s are always built")
-  bool IsBuilt() const final { return is_built_; }
-
  private:
+  friend class Builder;
+
+  StaticGraph(internal::Vector<NodeIndexType, ArcIndexType> start,
+              internal::Vector<ArcIndexType, NodeIndexType> head,
+              internal::Vector<ArcIndexType, NodeIndexType> tail)
+      : start_(std::move(start)),
+        head_(std::move(head)),
+        tail_(std::move(tail)) {}
+
   ArcIndexType DirectArcLimit(NodeIndexType node) const {
-    DCHECK(is_built_);
     DCHECK(Base::IsNodeValid(node));
     return start_[node + NodeIndexType(1)];
   }
 
-  bool is_built_;
-  bool arc_in_order_;
-  NodeIndexType last_tail_seen_;
   // First outgoing arc for each node. If `num_nodes_ > 0`, the "past-the-end"
   // value is a sentinel (`start_[num_nodes_] == num_arcs_`).
   internal::Vector<NodeIndexType, ArcIndexType> start_;
@@ -1395,23 +1403,23 @@ void MutableGraph<Impl, NodeIndexType, ArcIndexType,
   arc_capacity_ = std::max(arc_capacity_, num_arcs_);
 }
 
-// Computes the cumulative sum of the entry in v. We only use it with
-// in/out degree distribution, hence the Check() at the end.
-template <typename Impl, typename NodeIndexType, typename ArcIndexType,
-          bool HasNegativeReverseArcs>
-void BaseGraph<Impl, NodeIndexType, ArcIndexType, HasNegativeReverseArcs>::
-    ComputeCumulativeSum(internal::Vector<NodeIndexType, ArcIndexType>* v) {
-  const auto num_nodes = this->num_nodes();
-  DCHECK_EQ(v->size(), num_nodes + NodeIndexType(1));
+namespace graph_internal {
+
+// Computes the cumulative sum of the entries in v.
+template <typename NodeIndexType, typename ArcIndexType>
+void ComputeCumulativeSum(internal::Vector<NodeIndexType, ArcIndexType>* v) {
+  DCHECK(!v->empty());
+  const auto num_nodes = v->size() - NodeIndexType(1);
   ArcIndexType sum(0);
   for (NodeIndexType i(0); i < num_nodes; ++i) {
     ArcIndexType temp = (*v)[i];
     (*v)[i] = sum;
     sum += temp;
   }
-  DCHECK_EQ(sum, num_arcs());
   (*v)[num_nodes] = sum;  // Sentinel.
 }
+
+}  // namespace graph_internal
 
 // Given the tail of arc #i in (*head)[i] and the head of arc #i in (*head)[~i]
 // - Reorder the arc by increasing tail.
@@ -1441,7 +1449,8 @@ void BaseGraph<Impl, NodeIndexType, ArcIndexType, HasNegativeReverseArcs>::
     }
     (*start)[tail]++;
   }
-  ComputeCumulativeSum(start);
+  graph_internal::ComputeCumulativeSum(start);
+  DCHECK_EQ(start->back(), num_arcs);
 
   // Abort early if we do not need the permutation: we only need to put the
   // heads in the positive range.
@@ -1620,139 +1629,162 @@ ArcIndexType StaticGraph<NodeIndexType, ArcIndexType>::OutDegree(
 }
 
 template <typename NodeIndexType, typename ArcIndexType>
-void StaticGraph<NodeIndexType, ArcIndexType>::ReserveNodes(
-    NodeIndexType bound) {
-  Base::ReserveNodes(bound);
-  if (bound <= num_nodes_) return;
-  start_.reserve(bound + NodeIndexType(1));
-}
+class StaticGraph<NodeIndexType, ArcIndexType>::Builder
+    : public internal::GraphBuilderBase<Builder, StaticGraph, NodeIndexType,
+                                        ArcIndexType> {
+  using Base = internal::GraphBuilderBase<Builder, StaticGraph, NodeIndexType,
+                                          ArcIndexType>;
 
-template <typename NodeIndexType, typename ArcIndexType>
-void StaticGraph<NodeIndexType, ArcIndexType>::ReserveArcs(ArcIndexType bound) {
-  Base::ReserveArcs(bound);
-  if (bound <= num_arcs_) return;
-  head_.reserve(bound);
-  tail_.reserve(bound);
-}
+ public:
+  static constexpr bool kBuildPermutesArcs = true;
 
-template <typename NodeIndexType, typename ArcIndexType>
-void StaticGraph<NodeIndexType, ArcIndexType>::AddNode(NodeIndexType node) {
-  if (node < num_nodes_) return;
-  DCHECK(!const_capacities_ || node < node_capacity_) << node;
-  num_nodes_ = node + NodeIndexType(1);
-  start_.resize(num_nodes_ + NodeIndexType(1), ArcIndexType(0));
-}
+  Builder()
+      : const_capacities_(false), start_(NodeIndexType(1), ArcIndexType(0)) {}
 
-template <typename NodeIndexType, typename ArcIndexType>
-ArcIndexType StaticGraph<NodeIndexType, ArcIndexType>::AddArc(
-    NodeIndexType tail, NodeIndexType head) {
-  DCHECK_GE(tail, NodeIndexType(0));
-  DCHECK_GE(head, NodeIndexType(0));
-  DCHECK(!is_built_);
-  AddNode(tail > head ? tail : head);
-  if (arc_in_order_) {
-    if (tail >= last_tail_seen_) {
-      start_[tail]++;
-      last_tail_seen_ = tail;
-    } else {
-      arc_in_order_ = false;
+  Builder(NodeIndexType num_nodes, ArcIndexType arc_capacity)
+      : const_capacities_(true),
+        num_nodes_(num_nodes),
+        start_(num_nodes + NodeIndexType(1), ArcIndexType(0)) {
+    head_.reserve(arc_capacity);
+    tail_.reserve(arc_capacity);
+  }
+
+  NodeIndexType num_nodes() const { return num_nodes_; }
+  ArcIndexType num_arcs() const { return head_.size(); }
+
+  void ReserveNodes(NodeIndexType bound) {
+    if (bound <= num_nodes_) return;
+    start_.reserve(bound + NodeIndexType(1));
+  }
+
+  void ReserveArcs(ArcIndexType bound) {
+    if (bound <= num_arcs()) return;
+    head_.reserve(bound);
+    tail_.reserve(bound);
+  }
+
+  void AddNode(NodeIndexType node) {
+    if (node < num_nodes_) return;
+    DCHECK(!const_capacities_) << node;
+    num_nodes_ = node + NodeIndexType(1);
+    start_.resize(num_nodes_ + NodeIndexType(1), ArcIndexType(0));
+  }
+
+  ArcIndexType AddArc(NodeIndexType tail, NodeIndexType head) {
+    DCHECK_GE(tail, NodeIndexType(0));
+    DCHECK_GE(head, NodeIndexType(0));
+    AddNode(tail > head ? tail : head);
+    if (arc_in_order_) {
+      if (tail >= last_tail_seen_) {
+        start_[tail]++;
+        last_tail_seen_ = tail;
+      } else {
+        arc_in_order_ = false;
+      }
     }
-  }
-  tail_.push_back(tail);
-  head_.push_back(head);
-  DCHECK(!const_capacities_ || num_arcs_ < arc_capacity_);
-  return num_arcs_++;
-}
-
-template <typename NodeIndexType, typename ArcIndexType>
-NodeIndexType StaticGraph<NodeIndexType, ArcIndexType>::Tail(
-    ArcIndexType arc) const {
-  DCHECK(IsArcValid(arc));
-  return tail_[arc];
-}
-
-template <typename NodeIndexType, typename ArcIndexType>
-NodeIndexType StaticGraph<NodeIndexType, ArcIndexType>::Head(
-    ArcIndexType arc) const {
-  DCHECK(IsArcValid(arc));
-  return head_[arc];
-}
-
-// Implementation details: A reader may be surprised that we do many passes
-// into the data where things could be done in one pass. For instance, during
-// construction, we store the edges first, and then do a second pass at the
-// end to compute the degree distribution.
-//
-// This is because it is a lot more efficient cache-wise to do it this way.
-// This was determined by various experiments, but can also be understood:
-// - during repetitive call to AddArc() a client usually accesses various
-//   areas of memory, and there is no reason to pollute the cache with
-//   possibly random access to degree[i].
-// - When the degrees are needed, we compute them in one go, maximizing the
-//   chance of cache hit during the computation.
-template <typename NodeIndexType, typename ArcIndexType>
-void StaticGraph<NodeIndexType, ArcIndexType>::Build(
-    std::vector<ArcIndexType>* permutation) {
-  DCHECK(!is_built_);
-  if (is_built_) return;
-  is_built_ = true;
-  node_capacity_ = num_nodes_;
-  arc_capacity_ = num_arcs_;
-  this->FreezeCapacities();
-  if (num_nodes_ == NodeIndexType(0)) {
-    return;
+    const ArcIndexType arc(tail_.size());
+    tail_.push_back(tail);
+    head_.push_back(head);
+    return arc;
   }
 
-  // If Arc are in order, start_ already contains the degree distribution.
-  if (arc_in_order_) {
+  // Implementation details: A reader may be surprised that we do many passes
+  // into the data where things could be done in one pass. For instance, during
+  // construction, we store the edges first, and then do a second pass at the
+  // end to compute the degree distribution.
+  //
+  // This is because it is a lot more efficient cache-wise to do it this way.
+  // This was determined by various experiments, but can also be understood:
+  // - during repetitive call to AddArc() a client usually accesses various
+  //   areas of memory, and there is no reason to pollute the cache with
+  //   possibly random access to degree[i].
+  // - When the degrees are needed, we compute them in one go, maximizing the
+  //   chance of cache hit during the computation.
+  std::unique_ptr<StaticGraph<NodeIndexType, ArcIndexType>> Build(
+      std::vector<ArcIndexType>* permutation) {
+    const NodeIndexType num_nodes = num_nodes_;
+    const ArcIndexType num_arcs = this->num_arcs();
+    if (num_nodes == NodeIndexType(0)) {
+      return absl::WrapUnique(new StaticGraph());
+    }
+
+    // If Arc are in order, start_ already contains the degree distribution.
+    if (arc_in_order_) {
+      if (permutation != nullptr) {
+        permutation->clear();
+      }
+      graph_internal::ComputeCumulativeSum(&start_);
+      DCHECK_EQ(start_.back(), num_arcs);
+      return absl::WrapUnique(new StaticGraph(
+          std::move(start_), std::move(head_), std::move(tail_)));
+    }
+
+    // Computes outgoing degree of each nodes. We have to clear start, since
+    // at least the first arc was processed with arc_in_order_ == true.
+    start_.assign(num_nodes + NodeIndexType(1), ArcIndexType(0));
+    for (ArcIndexType i(0); i < num_arcs; ++i) {
+      start_[tail_[i]]++;
+    }
+    graph_internal::ComputeCumulativeSum(&start_);
+    DCHECK_EQ(start_.back(), num_arcs);
+
+    // Computes the forward arc permutation.
+    // Note that this temporarily alters the start_ vector.
+    std::vector<ArcIndexType> perm(static_cast<size_t>(num_arcs));
+    for (ArcIndexType i(0); i < num_arcs; ++i) {
+      perm[static_cast<size_t>(i)] = start_[tail_[i]]++;
+    }
+
+    // We use "tail_" (which now contains rubbish) to permute "head_" faster.
+    CHECK_EQ(tail_.size(), num_arcs);
+    tail_.swap(head_);
+    for (ArcIndexType i(0); i < num_arcs; ++i) {
+      head_[perm[static_cast<size_t>(i)]] = tail_[i];
+    }
+
     if (permutation != nullptr) {
-      permutation->clear();
+      permutation->swap(perm);
     }
-    this->ComputeCumulativeSum(&start_);
-    return;
-  }
 
-  // Computes outgoing degree of each nodes. We have to clear start_, since
-  // at least the first arc was processed with arc_in_order_ == true.
-  start_.assign(num_nodes_ + NodeIndexType(1), ArcIndexType(0));
-  for (ArcIndexType i(0); i < num_arcs_; ++i) {
-    start_[tail_[i]]++;
-  }
-  this->ComputeCumulativeSum(&start_);
-
-  // Computes the forward arc permutation.
-  // Note that this temporarily alters the start_ vector.
-  std::vector<ArcIndexType> perm(static_cast<size_t>(num_arcs_));
-  for (ArcIndexType i(0); i < num_arcs_; ++i) {
-    perm[static_cast<size_t>(i)] = start_[tail_[i]]++;
-  }
-
-  // We use "tail_" (which now contains rubbish) to permute "head_" faster.
-  CHECK_EQ(tail_.size(), num_arcs_);
-  tail_.swap(head_);
-  for (ArcIndexType i(0); i < num_arcs_; ++i) {
-    head_[perm[static_cast<size_t>(i)]] = tail_[i];
-  }
-
-  if (permutation != nullptr) {
-    permutation->swap(perm);
-  }
-
-  // Restore in start_[i] the index of the first arc with tail >= i.
-  DCHECK_GE(num_nodes_, NodeIndexType(1));
-  for (NodeIndexType i = num_nodes_ - NodeIndexType(1); i > NodeIndexType(0);
-       --i) {
-    start_[i] = start_[i - NodeIndexType(1)];
-  }
-  start_[NodeIndexType(0)] = ArcIndexType(0);
-
-  // Recompute the correct tail_ vector
-  for (const NodeIndexType node : Base::AllNodes()) {
-    for (const ArcIndexType arc : OutgoingArcs(node)) {
-      tail_[arc] = node;
+    // Restore in start_[i] the index of the first arc with tail >= i.
+    DCHECK_GE(num_nodes, NodeIndexType(1));
+    for (NodeIndexType i = num_nodes - NodeIndexType(1); i > NodeIndexType(0);
+         --i) {
+      start_[i] = start_[i - NodeIndexType(1)];
     }
+    start_[NodeIndexType(0)] = ArcIndexType(0);
+
+    // Recompute the correct tail_ vector
+    for (NodeIndexType node(0); node < num_nodes; ++node) {
+      const ArcIndexType start = start_[node];
+      const ArcIndexType end = start_[node + NodeIndexType(1)];
+      for (ArcIndexType arc = start; arc < end; ++arc) {
+        tail_[arc] = node;
+      }
+    }
+
+    return absl::WrapUnique(
+        new StaticGraph(std::move(start_), std::move(head_), std::move(tail_)));
   }
-}
+
+ private:
+  NodeIndexType node_capacity() const {
+    if (start_.empty()) return NodeIndexType(0);
+    return start_.capacity() - 1;
+  }
+  ArcIndexType arc_capacity() const { return head_.capacity(); }
+
+  bool const_capacities_;
+  bool arc_in_order_ = true;
+  NodeIndexType last_tail_seen_ = NodeIndexType(0);
+
+  NodeIndexType num_nodes_ = NodeIndexType(0);
+
+  internal::Vector<NodeIndexType, ArcIndexType> start_;
+  // TODO(user): Experiment with using `vector<TmpArc>` like for `FlowGraph`.
+  internal::Vector<ArcIndexType, NodeIndexType> head_;
+  internal::Vector<ArcIndexType, NodeIndexType> tail_;
+};
 
 // ReverseArcListGraph implementation ------------------------------------------
 DEFINE_RANGE_BASED_ARC_ITERATION(ReverseArcListGraph,
@@ -1986,7 +2018,8 @@ void ReverseArcStaticGraph<NodeIndexType, ArcIndexType>::Build(
   for (ArcIndexType i(0); i < num_arcs_; ++i) {
     reverse_start_[head_[i]]++;
   }
-  this->ComputeCumulativeSum(&reverse_start_);
+  graph_internal::ComputeCumulativeSum(&reverse_start_);
+  DCHECK_EQ(reverse_start_.back(), num_arcs_);
 
   // Computes the reverse arcs of the forward arcs.
   // Note that this sort the reverse arcs with the same tail by head.

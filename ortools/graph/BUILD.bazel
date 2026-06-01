@@ -30,7 +30,6 @@ cc_library(
         "//ortools/base:top_n",
         "//ortools/graph_base:graph",
         "//ortools/util:bitset",
-        "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/types:span",
@@ -809,6 +808,7 @@ cc_library(
     hdrs = ["rooted_tree.h"],
     visibility = ["//visibility:public"],
     deps = [
+        "//ortools/base:status_builder",
         "//ortools/base:status_macros",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/log",
