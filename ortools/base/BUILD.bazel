@@ -112,9 +112,8 @@ cc_binary(
     name = "constant_divisor_benchmark",
     srcs = ["constant_divisor_benchmark.cc"],
     deps = [
+        ":benchmark_main",
         ":constant_divisor",
-        "//ortools/base:benchmark_main",
-        "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/random:bit_gen_ref",
         "@abseil-cpp//absl/random:distributions",
@@ -398,7 +397,6 @@ cc_library(
     deps = [
         ":status_builder",
         "@abseil-cpp//absl/status",
-        "@abseil-cpp//absl/status:statusor",
     ],
 )
 
@@ -490,7 +488,6 @@ cc_library(
     srcs = ["temp_path.cc"],
     hdrs = ["temp_path.h"],
     deps = [
-        ":base",
         ":file",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
