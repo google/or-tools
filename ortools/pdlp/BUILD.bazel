@@ -230,6 +230,7 @@ cc_library(
         "//ortools/base:gzipfile",
         "//ortools/base:mathutil",
         "//ortools/base:recordio",
+        "//ortools/base:status_builder",
         "//ortools/base:status_macros",
         "//ortools/linear_solver:linear_solver_cc_proto",
         "//ortools/linear_solver:model_exporter",
