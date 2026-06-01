@@ -18,9 +18,9 @@
 #include <cstdlib>
 #include <memory>
 #include <string>
-#include <vector>
 
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_format.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/glop/parameters.pb.h"
@@ -430,7 +430,7 @@ Status SparseMatrixScaler::LPScale() {
 
   linear_program->AddSlackVariablesWhereNecessary(false);
   const Status simplex_status =
-      simplex->Solve(*linear_program, TimeLimit::Infinite().get());
+      simplex->Solve(*linear_program, *TimeLimit::Infinite());
   if (!simplex_status.ok()) {
     return simplex_status;
   } else {
