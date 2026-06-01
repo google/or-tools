@@ -16,7 +16,6 @@
 #include <cstdint>
 
 #include "absl/status/status.h"
-#include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 
@@ -136,35 +135,5 @@ TEST(ElementStorageTest, EnsureNextIdAtLeastNoEffect) {
   EXPECT_EQ(elements.Add("y"), 1);
   EXPECT_THAT(elements.AllIds(), UnorderedElementsAre(0, 1));
 }
-
-void BM_AddElements(benchmark::State& state) {
-  const int n = state.range(0);
-  for (auto s : state) {
-    ElementStorage storage;
-    for (int i = 0; i < n; ++i) {
-      storage.Add("");
-    }
-    benchmark::DoNotOptimize(storage);
-  }
-}
-
-BENCHMARK(BM_AddElements)->Arg(100)->Arg(10000);
-
-void BM_Exists(benchmark::State& state) {
-  const int n = state.range(0);
-  ElementStorage storage;
-  for (int i = 0; i < n; ++i) {
-    storage.Add("");
-  }
-  for (auto s : state) {
-    for (int i = 0; i < 2 * n; ++i) {
-      bool e = storage.Exists(i);
-      benchmark::DoNotOptimize(e);
-    }
-  }
-}
-
-BENCHMARK(BM_Exists)->Arg(100)->Arg(10000);
-
 }  // namespace
 }  // namespace operations_research::math_opt

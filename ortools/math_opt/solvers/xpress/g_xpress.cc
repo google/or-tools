@@ -17,6 +17,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -304,7 +305,7 @@ absl::StatusOr<int64_t> Xpress::GetIntControl64(int control) const {
   XPRSint64 result;
   OR_RETURN_IF_ERROR(
       ToStatus(XPRSgetintcontrol64(xpress_model_, control, &result)))
-      << "Error getting Xpress int64 control: " << control;
+      << "Error getting Xpress int64_t control: " << control;
   return result;
 }
 
@@ -326,8 +327,8 @@ absl::Status Xpress::SetDblControl(int control, double value) {
 
 absl::StatusOr<std::string> Xpress::GetStrControl(int control) const {
   int nbytes = 0;
-  OR_RETURN_IF_ERROR(
-      ToStatus(XPRSgetstringcontrol(xpress_model_, control, NULL, 0, &nbytes)));
+  OR_RETURN_IF_ERROR(ToStatus(
+      XPRSgetstringcontrol(xpress_model_, control, nullptr, 0, &nbytes)));
   std::vector<char> result(nbytes,
                            '\0');  // nbytes CONTAINS the terminating nul!
   OR_RETURN_IF_ERROR(ToStatus(XPRSgetstringcontrol(
@@ -454,7 +455,7 @@ absl::Status Xpress::AddMIPSol(absl::Span<double const> vals,
   if (checkInt32Overflow(colind.size()))
     return absl::InvalidArgumentError("more start values than columns");
   if (colind.size() != vals.size())
-    return absl::InvalidArgumentError("inconsitent data to AddMIPSol()");
+    return absl::InvalidArgumentError("inconsistent data to AddMIPSol()");
   // XPRSaddmipsol() supports colind=nullptr, but we do not support that here
   // since we don't need it.
   return ToStatus(XPRSaddmipsol(xpress_model_, static_cast<int>(colind.size()),
@@ -494,8 +495,7 @@ absl::StatusOr<int> Xpress::AddObjective(double constant, int ncols,
                                          int priority, double weight) {
   OR_ASSIGN_OR_RETURN(int const objs, GetIntAttr(XPRS_OBJECTIVES));
   if (objs == INT_MAX) {
-    return ortools::StatusBuilder(absl::StatusCode::kInvalidArgument)
-           << "too many objectives";
+    return ortools::InvalidArgumentErrorBuilder() << "too many objectives";
   }
   int ret = XPRSaddobj(xpress_model_, ncols, colind.data(), objcoef.data(),
                        priority, weight);
@@ -626,7 +626,7 @@ absl::Status Xpress::ChgBounds(absl::Span<int const> colind,
                                absl::Span<char const> bndtype,
                                absl::Span<double const> bndval) {
   if (colind.size() != bndtype.size() || colind.size() != bndval.size())
-    return absl::InvalidArgumentError("inconsitent data to ChgBounds()");
+    return absl::InvalidArgumentError("inconsistent data to ChgBounds()");
   if (checkInt32Overflow(colind.size()))
     return absl::InvalidArgumentError(
         "XPRESS cannot handle more than 2^31 bound changes");
@@ -636,7 +636,7 @@ absl::Status Xpress::ChgBounds(absl::Span<int const> colind,
 absl::Status Xpress::ChgColType(absl::Span<int const> colind,
                                 absl::Span<char const> coltype) {
   if (colind.size() != coltype.size())
-    return absl::InvalidArgumentError("inconsitent data to ChgColType()");
+    return absl::InvalidArgumentError("inconsistent data to ChgColType()");
   if (checkInt32Overflow(colind.size()))
     return absl::InvalidArgumentError(
         "XPRESS cannot handle more than 2^31 type changes");

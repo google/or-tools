@@ -567,6 +567,7 @@ cc_library(
         ":highs_cc_proto",
         ":message_callback_data",
         "//ortools/base:protoutil",
+        "//ortools/base:status_builder",
         "//ortools/base:status_macros",
         "//ortools/base:types",
         "//ortools/math_opt:callback_cc_proto",

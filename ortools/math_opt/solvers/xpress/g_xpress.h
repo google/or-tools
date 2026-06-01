@@ -25,6 +25,8 @@
 #ifndef ORTOOLS_MATH_OPT_SOLVERS_XPRESS_G_XPRESS_H_
 #define ORTOOLS_MATH_OPT_SOLVERS_XPRESS_G_XPRESS_H_
 
+#include <cstddef>
+#include <cstdint>
 #include <map>
 #include <memory>
 #include <optional>

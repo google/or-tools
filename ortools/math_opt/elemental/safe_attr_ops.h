@@ -20,7 +20,7 @@
 
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
-#include "absl/strings/str_cat.h"
+#include "ortools/base/status_builder.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/math_opt/elemental/derived_data.h"
 #include "ortools/math_opt/elemental/elemental.h"
@@ -35,8 +35,8 @@ struct AttrOp {
 
   static absl::StatusOr<AttrType> SafeCastAttr(int attr) {
     if (attr < 0 || attr >= Descriptor::NumAttrs()) {
-      return absl::InvalidArgumentError(
-          absl::StrCat("invalid attribute ", attr));
+      return ortools::InvalidArgumentErrorBuilder()
+             << "invalid attribute " << attr;
     }
     return static_cast<AttrType>(attr);
   }

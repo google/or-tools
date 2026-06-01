@@ -15,16 +15,10 @@
 
 #include <stddef.h>
 
-#include <algorithm>
 #include <cstdint>
-#include <iterator>
-#include <limits>
 #include <optional>
-#include <string>
 
-#include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
-#include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/status_builder.h"

@@ -28,7 +28,6 @@
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "ortools/base/status_builder.h"
-#include "ortools/math_opt/elemental/attr_key.h"
 #include "ortools/math_opt/elemental/attr_storage.h"
 #include "ortools/math_opt/elemental/derived_data.h"
 #include "ortools/math_opt/elemental/diff.h"

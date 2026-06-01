@@ -22,7 +22,6 @@
 #include "absl/status/status.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/base/status_builder.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/math_opt/cpp/sparse_containers.h"
 #include "ortools/math_opt/cpp/variable_and_expressions.h"

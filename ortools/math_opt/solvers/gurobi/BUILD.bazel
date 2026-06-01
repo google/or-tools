@@ -31,6 +31,7 @@ cc_library(
     ],
     deps = [
         "//ortools/base:source_location",
+        "//ortools/base:status_builder",
         "//ortools/base:status_macros",
         "//ortools/gurobi/isv_public:gurobi_isv",
         "//ortools/math_opt/solvers:gurobi_cc_proto",

@@ -24,6 +24,7 @@ cc_library(
     deps = [
         ":sparse_vector_view",
         "//ortools/base:log_severity",
+        "//ortools/base:status_builder",
         "//ortools/base:status_macros",
         "//ortools/math_opt:callback_cc_proto",
         "//ortools/math_opt:infeasible_subsystem_cc_proto",
@@ -71,7 +72,6 @@ cc_library(
         ":arrow_operator_proxy",
         ":sparse_vector",
         "//ortools/base:map_util",
-        "//ortools/base:types",
         "//ortools/math_opt:sparse_containers_cc_proto",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/log:check",
@@ -93,7 +93,6 @@ cc_test(
         ":sparse_vector_view",
         "//ortools/base:gmock_main",
         "//ortools/base:strong_int",
-        "//ortools/base:types",
         "//ortools/math_opt:model_cc_proto",
         "//ortools/math_opt:sparse_containers_cc_proto",
         "@abseil-cpp//absl/container:flat_hash_map",
@@ -130,6 +129,7 @@ cc_library(
     srcs = ["model_summary.cc"],
     hdrs = ["model_summary.h"],
     deps = [
+        "//ortools/base:status_builder",
         "//ortools/base:status_macros",
         "//ortools/base:types",
         "//ortools/math_opt:model_cc_proto",
@@ -173,7 +173,7 @@ cc_library(
     deps = [
         ":non_streamable_solver_init_arguments",
         "//ortools/base:map_util",
-        "//ortools/base:status_macros",
+        "//ortools/base:status_builder",
         "//ortools/math_opt:callback_cc_proto",
         "//ortools/math_opt:infeasible_subsystem_cc_proto",
         "//ortools/math_opt:model_cc_proto",
@@ -370,7 +370,7 @@ cc_library(
     srcs = ["inverted_bounds.cc"],
     hdrs = ["inverted_bounds.h"],
     deps = [
-        "//ortools/base:status_macros",
+        "//ortools/base:status_builder",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",
@@ -392,7 +392,7 @@ cc_library(
     srcs = ["invalid_indicators.cc"],
     hdrs = ["invalid_indicators.h"],
     deps = [
-        "//ortools/base:status_macros",
+        "//ortools/base:status_builder",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/strings",

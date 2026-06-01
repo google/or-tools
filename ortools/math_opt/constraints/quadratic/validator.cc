@@ -13,8 +13,6 @@
 
 #include "ortools/math_opt/constraints/quadratic/validator.h"
 
-#include <cstdint>
-
 #include "absl/status/status.h"
 #include "ortools/base/status_builder.h"
 #include "ortools/base/status_macros.h"

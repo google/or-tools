@@ -32,6 +32,7 @@
 #include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "ortools/base/protoutil.h"
+#include "ortools/base/status_builder.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/math_opt/core/math_opt_proto_utils.h"
 #include "ortools/math_opt/cpp/linear_constraint.h"

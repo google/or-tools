@@ -20,7 +20,7 @@
 #include "absl/log/check.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
-#include "absl/strings/str_cat.h"
+#include "ortools/base/status_builder.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/third_party_solvers/glpk/glpk_computational_form.h"
 #include "ortools/third_party_solvers/glpk/glpk_formatters.h"
@@ -121,9 +121,9 @@ absl::StatusOr<GlpkRay> ComputePrimalRay(glp_prob* const problem,
     case GLP_NF:  // Free (unbounded).
       break;
     default:  // GLP_BS (basic), GLP_NS (fixed) or invalid value
-      return absl::InternalError(absl::StrCat(
-          "unexpected ", BasisStatusString(non_basic_variable_status),
-          " reported as cause of unboundness"));
+      return ortools::InternalErrorBuilder()
+             << "unexpected " << BasisStatusString(non_basic_variable_status)
+             << " reported as cause of unboundness";
   }
 
   GlpkRay::SparseVector ray_non_zeros;

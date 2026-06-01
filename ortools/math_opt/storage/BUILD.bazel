@@ -174,20 +174,13 @@ cc_library(
     ],
 )
 
-config_setting(
-    name = "storage_v2",
-    define_values = {"mathopt_storage_v2": "1"},
-)
-
 cc_library(
     name = "model_storage",
     srcs = select({
-        ":storage_v2": [],
         "//conditions:default": ["model_storage.cc"],
     }),
     hdrs = ["model_storage.h"],
     defines = select({
-        ":storage_v2": ["MATHOPT_STORAGE_V2"],
         "//conditions:default": [],
     }),
     deps = [
@@ -222,59 +215,6 @@ cc_library(
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
         "@abseil-cpp//absl/types:span",
-    ] + select({
-        ":storage_v2": [":model_storage_v2"],
-        "//conditions:default": [],
-    }),
-)
-
-cc_library(
-    name = "model_storage_v2",
-    srcs = ["model_storage_v2.cc"],
-    hdrs = ["model_storage_v2.h"],
-    deps = [
-        ":atomic_constraint_storage",
-        ":atomic_constraints_v2",
-        ":model_storage_types",
-        "//ortools/base:status_macros",
-        "//ortools/math_opt:model_cc_proto",
-        "//ortools/math_opt:model_update_cc_proto",
-        "//ortools/math_opt:sparse_containers_cc_proto",
-        "//ortools/math_opt/constraints/indicator:storage",
-        "//ortools/math_opt/constraints/quadratic:storage",
-        "//ortools/math_opt/constraints/sos:storage",
-        "//ortools/math_opt/elemental",
-        "//ortools/math_opt/elemental:attr_key",
-        "//ortools/math_opt/elemental:attributes",
-        "//ortools/math_opt/elemental:derived_data",
-        "//ortools/math_opt/elemental:elements",
-        "@abseil-cpp//absl/algorithm:container",
-        "@abseil-cpp//absl/base:nullability",
-        "@abseil-cpp//absl/container:flat_hash_map",
-        "@abseil-cpp//absl/log",
-        "@abseil-cpp//absl/log:check",
-        "@abseil-cpp//absl/memory",
-        "@abseil-cpp//absl/status",
-        "@abseil-cpp//absl/status:statusor",
-        "@abseil-cpp//absl/strings:string_view",
-        "@abseil-cpp//absl/types:span",
-    ],
-)
-
-cc_library(
-    name = "atomic_constraints_v2",
-    hdrs = ["atomic_constraints_v2.h"],
-    deps = [
-        ":atomic_constraint_storage",
-        ":model_storage_types",
-        "//ortools/math_opt/constraints/indicator:storage",
-        "//ortools/math_opt/constraints/quadratic:storage",
-        "//ortools/math_opt/elemental",
-        "//ortools/math_opt/elemental:attr_key",
-        "//ortools/math_opt/elemental:attributes",
-        "//ortools/math_opt/elemental:derived_data",
-        "//ortools/math_opt/elemental:elements",
-        "@abseil-cpp//absl/log:check",
     ],
 )
 

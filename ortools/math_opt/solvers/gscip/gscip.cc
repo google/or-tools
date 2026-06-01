@@ -37,6 +37,7 @@
 #include "absl/synchronization/mutex.h"
 #include "absl/types/span.h"
 #include "lpi/lpi.h"
+#include "ortools/base/status_macros.h"
 #include "scip/cons_and.h"
 #include "scip/cons_indicator.h"
 #include "scip/cons_linear.h"
@@ -47,7 +48,6 @@
 #else
 #include "scip/cons_quadratic.h"
 #endif  // SCIP_VERSION_MAJOR >= 10
-#include "ortools/base/status_macros.h"
 #include "ortools/linear_solver/scip_helper_macros.h"
 #include "ortools/math_opt/solvers/gscip/gscip.pb.h"
 #include "ortools/math_opt/solvers/gscip/gscip_event_handler.h"

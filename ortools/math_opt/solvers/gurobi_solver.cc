@@ -1827,7 +1827,8 @@ absl::Status GurobiSolver::AddNewSlacks(
   OR_RETURN_IF_ERROR(gurobi_->AddVars(/*vbegin=*/column_non_zero_begin,
                                       /*vind=*/row_indices,
                                       /*vval=*/column_non_zeros, /*obj=*/{},
-                                      /*lb=*/lower_bounds, /*ub=*/upper_bounds,
+                                      /*lb=*/lower_bounds,
+                                      /*ub=*/upper_bounds,
                                       /*vtype=*/vtypes, /*names=*/{}));
   num_gurobi_variables_ += num_slacks;
   return absl::OkStatus();
