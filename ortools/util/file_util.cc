@@ -32,6 +32,7 @@
 #include "ortools/base/gzipstring.h"
 #include "ortools/base/helpers.h"
 #include "ortools/base/options.h"
+#include "ortools/base/status_builder.h"
 #include "ortools/base/status_macros.h"
 
 namespace operations_research {
