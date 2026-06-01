@@ -932,6 +932,7 @@ void ModelStorageV2::clear_objective(const ObjectiveId id) {
 const absl::flat_hash_map<VariableId, double>& ModelStorageV2::linear_objective(
     const ObjectiveId id) const {
   LOG(FATAL) << "cannot be implemented";
+  return *static_cast<const absl::flat_hash_map<VariableId, double>*>(nullptr);
 }
 
 int64_t ModelStorageV2::num_linear_objective_terms(const ObjectiveId id) const {
@@ -1024,6 +1025,7 @@ typename ConstraintData::IdType ModelStorageV2::AddAtomicConstraint(
     const ConstraintData data) {
   if constexpr (!ConstraintData::kSupportsElemental) {
     LOG(FATAL) << "elemental not supported yet";
+    return {};
   } else {
     return internal::AddAtomicConstraint(data, elemental_);
   }
@@ -1044,6 +1046,7 @@ typename AtomicConstraintTraits<IdType>::ConstraintData
 ModelStorageV2::GetConstraintData(IdType id) const {
   if constexpr (!AtomicConstraintTraits<IdType>::kSupportsElemental) {
     LOG(FATAL) << "elemental not supported yet";
+    return {};
   } else {
     return internal::GetAtomicConstraint(id, elemental_);
   }
@@ -1053,12 +1056,14 @@ template <typename IdType>
 const typename AtomicConstraintTraits<IdType>::ConstraintData&
 ModelStorageV2::constraint_data(const IdType) const {
   LOG(FATAL) << "not implementable for ModelStorageV2";
+  return *static_cast<const typename AtomicConstraintTraits<IdType>::ConstraintData*>(nullptr);
 }
 
 template <typename IdType>
 int64_t ModelStorageV2::num_constraints() const {
   if constexpr (!AtomicConstraintTraits<IdType>::kSupportsElemental) {
     LOG(FATAL) << "elemental not supported yet";
+    return {};
   } else {
     return elemental_.NumElements(AtomicConstraintTraits<IdType>::kElementType);
   }
@@ -1068,6 +1073,7 @@ template <typename IdType>
 IdType ModelStorageV2::next_constraint_id() const {
   if constexpr (!AtomicConstraintTraits<IdType>::kSupportsElemental) {
     LOG(FATAL) << "elemental not supported yet";
+    return {};
   } else {
     return IdType{
         elemental_.NextElementId(AtomicConstraintTraits<IdType>::kElementType)};
@@ -1087,6 +1093,7 @@ template <typename IdType>
 bool ModelStorageV2::has_constraint(const IdType id) const {
   if constexpr (!AtomicConstraintTraits<IdType>::kSupportsElemental) {
     LOG(FATAL) << "elemental not supported yet";
+    return {};
   } else {
     return elemental_.ElementExists(id);
   }
@@ -1096,6 +1103,7 @@ template <typename IdType>
 std::vector<IdType> ModelStorageV2::Constraints() const {
   if constexpr (!AtomicConstraintTraits<IdType>::kSupportsElemental) {
     LOG(FATAL) << "elemental not supported yet";
+    return {};
   } else {
     constexpr ElementType e = AtomicConstraintTraits<IdType>::kElementType;
     auto els = elemental_.AllElements<e>();
@@ -1112,6 +1120,7 @@ template <typename IdType>
 std::vector<IdType> ModelStorageV2::SortedConstraints() const {
   if constexpr (!AtomicConstraintTraits<IdType>::kSupportsElemental) {
     LOG(FATAL) << "elemental not supported yet";
+    return {};
   } else {
     auto result = Constraints<IdType>();
     absl::c_sort(result);
@@ -1123,12 +1132,14 @@ template <typename IdType>
 std::vector<IdType> ModelStorageV2::ConstraintsWithVariable(
     const VariableId) const {
   LOG(FATAL) << "not implementable for ModelStorageV2";
+  return {};
 }
 
 template <typename IdType>
 std::vector<VariableId> ModelStorageV2::VariablesInConstraint(
     const IdType) const {
   LOG(FATAL) << "not implementable for ModelStorageV2";
+  return {};
 }
 
 }  // namespace operations_research::math_opt
