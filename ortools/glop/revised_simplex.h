@@ -160,7 +160,7 @@ class RevisedSimplex {
 
   // Legacy version of Solve() passing a pointer on TimeLimit and expecting it
   // to be non-null (it returns Status::ERROR_NULL when null).
-  ABSL_DEPRECATED("Use Solve(const LinearProgram&, TimeLimit&) instead.");
+  ABSL_DEPRECATED("Use Solve(const LinearProgram&, TimeLimit&) instead.")
   ABSL_MUST_USE_RESULT Status Solve(const LinearProgram& lp,
                                     TimeLimit* time_limit);
 
@@ -328,9 +328,19 @@ class RevisedSimplex {
     FINAL_CHECK
   };
 
-  ABSL_MUST_USE_RESULT Status SolveInternal(double start_time, bool maximize,
-                                            const DenseRow& objective,
-                                            TimeLimit& time_limit);
+  ABSL_MUST_USE_RESULT Status
+  SolveInternal(double start_time, bool is_maximization_problem,
+                const DenseRow& objective_coefficients, TimeLimit& time_limit);
+
+  // Phase-I of the Primal Simplex algorithm (feasibility).
+  ABSL_MUST_USE_RESULT Status
+  PrimalPhaseI(bool is_maximization_problem,
+               const DenseRow& objective_coefficients, TimeLimit& time_limit);
+
+  // Phase-I of the Dual Simplex algorithm (feasibility).
+  ABSL_MUST_USE_RESULT Status DualPhaseI(bool is_maximization_problem,
+                                         const DenseRow& objective_coefficients,
+                                         TimeLimit& time_limit);
 
   // Propagates parameters_ to all the other classes that need it.
   //
