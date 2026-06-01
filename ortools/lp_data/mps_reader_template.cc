@@ -21,6 +21,7 @@
 #include "absl/strings/ascii.h"
 #include "absl/strings/match.h"
 #include "absl/strings/string_view.h"
+#include "ortools/base/status_builder.h"
 #include "ortools/base/status_macros.h"
 
 namespace operations_research::internal {

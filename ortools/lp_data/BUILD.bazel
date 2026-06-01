@@ -130,6 +130,7 @@ cc_library(
         "//ortools/glop:status",
         "//ortools/util:return_macros",
         "//ortools/util:time_limit",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings:str_format",
     ],
@@ -265,6 +266,7 @@ cc_library(
     copts = SAFE_FP_CODE,
     deps = [
         "//ortools/base:file",
+        "//ortools/base:status_builder",
         "//ortools/base:status_macros",
         "//ortools/util:filelineiter",
         "@abseil-cpp//absl/container:flat_hash_map",
