@@ -12,7 +12,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Building using the github runner environement directly.
+  # Building using the github runner environment directly.
   clang-format:
     runs-on: ubuntu-latest
     steps:

@@ -15,7 +15,7 @@ concurrency:
 env:
   cache-root: /private/tmp/bazel
 
-# Building using the github runner environement directly.
+# Building using the github runner environment directly.
 jobs:
   arm64-MacOS-Bazel-Python:
     strategy:

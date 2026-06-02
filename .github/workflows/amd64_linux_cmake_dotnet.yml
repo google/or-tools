@@ -12,7 +12,7 @@ concurrency:
   group: ${{github.workflow}}-${{github.ref}}
   cancel-in-progress: true
 
-# Building using the github runner environement directly.
+# Building using the github runner environment directly.
 env:
   CCACHE_BASEDIR: ${{github.workspace}}
   CCACHE_DIR: ${{github.workspace}}/.ccache

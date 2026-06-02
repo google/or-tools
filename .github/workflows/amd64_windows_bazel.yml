@@ -15,7 +15,7 @@ concurrency:
 env:
   cache-root: '%USERPROFILE%\AppData\Local\Temp\bazel'
 
-# Building using the github runner environement directly.
+# Building using the github runner environment directly.
 jobs:
   amd64-Windows-Bazel-Python:
     strategy:

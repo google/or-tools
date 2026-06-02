@@ -15,7 +15,7 @@ concurrency:
 env:
   cache-root: /tmp/bazel
 
-# Building using the github runner environement directly.
+# Building using the github runner environment directly.
 jobs:
   amd64-Linux-Bazel-Python:
     strategy:

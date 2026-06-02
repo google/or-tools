@@ -12,7 +12,7 @@ concurrency:
   group: ${{github.workflow}}-${{github.ref}}
   cancel-in-progress: true
 
-# Building using the github runner environement directly.
+# Building using the github runner environment directly.
 jobs:
   mips:
     strategy:
