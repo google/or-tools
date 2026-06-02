@@ -124,9 +124,18 @@ ortools_cxx_bintest(
     BINTEST_Class_01.2bp=${CMAKE_SOURCE_DIR}/ortools/packing/testdata/Class_01.2bp
 )
 
+ortools_cxx_library(
+  NAME bzl_cc_example_jobshop_sat_model
+  SOURCES
+    jobshop_sat_model.cc
+    jobshop_sat_model.h
+  TYPE SHARED
+)
+
 ortools_cxx_binary(
   NAME bzl_cc_example_jobshop_sat
   SOURCES jobshop_sat.cc
+  LINK_LIBRARIES bzl_cc_example_jobshop_sat_model
 )
 
 ortools_cxx_bintest(

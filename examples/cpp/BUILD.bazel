@@ -253,9 +253,10 @@ bintest(
     },
 )
 
-cc_binary(
-    name = "jobshop_sat",
-    srcs = ["jobshop_sat.cc"],
+cc_library(
+    name = "jobshop_sat_model",
+    srcs = ["jobshop_sat_model.cc"],
+    hdrs = ["jobshop_sat_model.h"],
     deps = [
         "//ortools/base:log_severity",
         "//ortools/base:types",
@@ -269,12 +270,34 @@ cc_binary(
         "//ortools/util:sorted_interval_list",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/container:flat_hash_set",
-        "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:globals",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",
+        "@protobuf",
+        "@protobuf//:wrappers_cc_proto",
+    ],
+)
+
+cc_binary(
+    name = "jobshop_sat",
+    srcs = ["jobshop_sat.cc"],
+    deps = [
+        ":jobshop_sat_model",
+        "//ortools/base",
+        "//ortools/base:log_severity",
+        "//ortools/base:types",
+        "//ortools/sat:cp_model",
+        "//ortools/sat:cp_model_cc_proto",
+        "//ortools/sat:cp_model_solver",
+        "//ortools/sat:sat_parameters_cc_proto",
+        "//ortools/scheduling:jobshop_scheduling_cc_proto",
+        "//ortools/scheduling:jobshop_scheduling_parser",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/log:globals",
         "@protobuf",
         "@protobuf//:wrappers_cc_proto",
     ],
