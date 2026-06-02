@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <limits>
 #include <memory>
 #include <string>
@@ -25,23 +26,37 @@
 #include <vector>
 
 #include "absl/algorithm/container.h"
+#include "absl/log/absl_log.h"
+#include "absl/numeric/bits.h"
 #include "absl/random/random.h"
-#include "absl/strings/str_cat.h"
+#include "absl/time/clock.h"
+#include "absl/time/time.h"
+#include "absl/types/span.h"
 #include "gtest/gtest.h"
+#include "ortools/algorithms/radix_sort.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/strong_int.h"
 #include "ortools/base/strong_vector.h"
-#include "ortools/base/types.h"
 
 namespace operations_research {
 namespace {
+
 DEFINE_STRONG_INT_TYPE(StrongIndex, int32_t);
 
 using ::testing::ElementsAre;
 
 template <typename T>
 constexpr std::pair<T, T> FullRange() {
-  return {std::numeric_limits<T>::lowest(), std::numeric_limits<T>::max()};
+  if constexpr (std::is_floating_point_v<T>) {
+    // Avoid overflow in absl::Uniform by halving the max value. A some point
+    // when generating random numbers, absl::Uniform will subtract the bounds.
+    // Using the full range would result in a NaN, which would result in the
+    // radix sort sorting a set of identical incorrect values.
+    const T half_max_val = 0.5 * std::numeric_limits<T>::max();
+    return {-half_max_val, half_max_val};
+  } else {
+    return {std::numeric_limits<T>::lowest(), std::numeric_limits<T>::max()};
+  }
 }
 
 template <typename T>
@@ -97,9 +112,9 @@ GenerateRandomTupleVector(
   return values;
 }
 
-class MultikeyRadixSortStableTest : public testing::TestWithParam<int> {};
+class AutoRadixSortStableTest : public testing::TestWithParam<int> {};
 
-TEST_P(MultikeyRadixSortStableTest, IsStable) {
+TEST_P(AutoRadixSortStableTest, IsStable) {
   struct StableItem {
     int key;
     int value;
@@ -114,9 +129,12 @@ TEST_P(MultikeyRadixSortStableTest, IsStable) {
     items.push_back({i % 10, i});
   }
   std::vector<StableItem> expected = items;
-  absl::c_stable_sort(expected);
+  absl::c_stable_sort(expected, [](const StableItem& a, const StableItem& b) {
+    return a.key < b.key;
+  });
 
-  MultikeyRadixSort(items, [](const StableItem& item) { return item.key; });
+  AutoHistogramRadixSort(items,
+                         [](const StableItem& item) { return item.key; });
 
   ASSERT_EQ(items.size(), size);
   ASSERT_EQ(items.size(), expected.size());
@@ -126,12 +144,12 @@ TEST_P(MultikeyRadixSortStableTest, IsStable) {
   }
 }
 
-INSTANTIATE_TEST_SUITE_P(StableTestInstantiation, MultikeyRadixSortStableTest,
+INSTANTIATE_TEST_SUITE_P(StableTestInstantiation, AutoRadixSortStableTest,
                          testing::Values(0, 1, 3, 10, 30, 100, 300, 1000));
 
-class RadixSortMinMaxStableTest : public testing::TestWithParam<int> {};
+class RangeRadixSortStableTest : public testing::TestWithParam<int> {};
 
-TEST_P(RadixSortMinMaxStableTest, IsStable) {
+TEST_P(RangeRadixSortStableTest, IsStable) {
   struct StableItem {
     int key;
     int value;
@@ -146,9 +164,12 @@ TEST_P(RadixSortMinMaxStableTest, IsStable) {
     items.push_back({i % 10, i});
   }
   std::vector<StableItem> expected = items;
-  absl::c_stable_sort(expected);
+  absl::c_stable_sort(expected, [](const StableItem& a, const StableItem& b) {
+    return a.key < b.key;
+  });
 
-  RadixSortMinMax(0, 9, items, [](const StableItem& item) { return item.key; });
+  RangeHistogramRadixSort(0, 9, items,
+                          [](const StableItem& item) { return item.key; });
 
   ASSERT_EQ(items.size(), size);
   ASSERT_EQ(items.size(), expected.size());
@@ -158,10 +179,10 @@ TEST_P(RadixSortMinMaxStableTest, IsStable) {
   }
 }
 
-INSTANTIATE_TEST_SUITE_P(StableTestInstantiation, RadixSortMinMaxStableTest,
+INSTANTIATE_TEST_SUITE_P(StableTestInstantiation, RangeRadixSortStableTest,
                          testing::Values(0, 1, 3, 10, 30, 100, 300, 1000));
 
-TEST(MultikeyRadixSortTest, MultikeyRadixSortThreeKeys) {
+TEST(MultikeyHistogramRadixSortTest, ThreeKeys) {
   struct MyStruct {
     uint32_t a;
     uint32_t b;
@@ -172,200 +193,376 @@ TEST(MultikeyRadixSortTest, MultikeyRadixSortThreeKeys) {
     }
   };
 
-  std::vector<MyStruct> values = {
+  const std::vector<MyStruct> data = {
       {2, 1, 3}, {1, 2, 3}, {1, 1, 1}, {2, 2, 2}, {1, 1, 2},
   };
-
-  MultikeyRadixSort(
-      values, [](const auto& p) { return p.c; },
+  std::vector<MyStruct> values_multi = data;
+  MultikeyHistogramRadixSort(
+      values_multi, [](const auto& p) { return p.c; },
       [](const auto& p) { return p.b; }, [](const auto& p) { return p.a; });
 
-  EXPECT_THAT(values, ElementsAre(MyStruct{1, 1, 1}, MyStruct{1, 1, 2},
-                                  MyStruct{1, 2, 3}, MyStruct{2, 1, 3},
-                                  MyStruct{2, 2, 2}));
+  EXPECT_THAT(values_multi, ElementsAre(MyStruct{1, 1, 1}, MyStruct{1, 1, 2},
+                                        MyStruct{1, 2, 3}, MyStruct{2, 1, 3},
+                                        MyStruct{2, 2, 2}));
+  std::vector<MyStruct> values_seq = data;
+  AutoHistogramRadixSort(values_seq, [](const auto& p) { return p.c; });
+  AutoHistogramRadixSort(values_seq, [](const auto& p) { return p.b; });
+  AutoHistogramRadixSort(values_seq, [](const auto& p) { return p.a; });
+  EXPECT_EQ(values_multi, values_seq);
 }
 
-TEST(MultikeyRadixSortTest, MultikeyRadixSortOneKey) {
-  std::vector<int32_t> values = {5, 2, 4, 1, 3};
+TEST(MultikeyRadixSortTest, ThreeKeys) {
+  struct MyStruct {
+    uint32_t a;
+    uint32_t b;
+    uint32_t c;
 
-  MultikeyRadixSort(values, [](const auto& p) { return p; });
+    bool operator==(const MyStruct& other) const {
+      return a == other.a && b == other.b && c == other.c;
+    }
+  };
 
-  EXPECT_THAT(values, ElementsAre(1, 2, 3, 4, 5));
-}
-
-TEST(RadixSortMinMaxTest, RadixSortMinMaxOneKey) {
-  std::vector<int32_t> values = {5, 2, 4, 1, 3};
-
-  RadixSortMinMax(1, 5, values, [](const auto& p) { return p; });
-
-  EXPECT_THAT(values, ElementsAre(1, 2, 3, 4, 5));
-}
-
-void TestRandomVectorSortWithParams(int radix_bits, size_t length,
-                                    int max_value) {
-  auto values = GenerateRandomInt32PairVector(length, max_value);
-  auto expected = values;
-  std::sort(expected.begin(), expected.end());
-
+  const std::vector<MyStruct> data = {
+      {2, 1, 3}, {1, 2, 3}, {1, 1, 1}, {2, 2, 2}, {1, 1, 2},
+  };
+  std::vector<MyStruct> values_multi = data;
   MultikeyRadixSort(
-      radix_bits, values, [](const auto& p) { return p.second; },
-      [](const auto& p) { return p.first; });
+      values_multi, [](const auto& p) { return p.c; },
+      [](const auto& p) { return p.b; }, [](const auto& p) { return p.a; });
 
-  EXPECT_EQ(values, expected);
+  EXPECT_THAT(values_multi, ElementsAre(MyStruct{1, 1, 1}, MyStruct{1, 1, 2},
+                                        MyStruct{1, 2, 3}, MyStruct{2, 1, 3},
+                                        MyStruct{2, 2, 2}));
+  std::vector<MyStruct> values_seq = data;
+  AutoRadixSort(values_seq, [](const auto& p) { return p.c; });
+  AutoRadixSort(values_seq, [](const auto& p) { return p.b; });
+  AutoRadixSort(values_seq, [](const auto& p) { return p.a; });
+  EXPECT_EQ(values_multi, values_seq);
 }
 
-TEST(MultikeyRadixSortTest, SortsRandomVector_DifferentRadixBits) {
-  constexpr int kLength = 100'000;
-  constexpr int kRange = 10 * kLength;
-  for (int radix_bits = 6; radix_bits <= 12; ++radix_bits) {
-    SCOPED_TRACE(absl::StrCat("radix_bits = ", radix_bits));
-    TestRandomVectorSortWithParams(radix_bits, kLength, kRange);
-  }
+TEST(MultikeyHistogramRadixSortTest, ThreeKeysDecreasing) {
+  struct MyStruct {
+    uint32_t a;
+    uint32_t b;
+    uint32_t c;
+
+    bool operator==(const MyStruct& other) const {
+      return a == other.a && b == other.b && c == other.c;
+    }
+  };
+
+  const std::vector<MyStruct> data = {
+      {2, 1, 3}, {1, 2, 3}, {1, 1, 1}, {2, 2, 2}, {1, 1, 2},
+  };
+  std::vector<MyStruct> values_multi = data;
+  MultikeyHistogramRadixSort<RadixSortDirection::kDecreasing>(
+      values_multi, [](const auto& p) { return p.c; },
+      [](const auto& p) { return p.b; }, [](const auto& p) { return p.a; });
+
+  EXPECT_THAT(values_multi, ElementsAre(MyStruct{2, 2, 2}, MyStruct{2, 1, 3},
+                                        MyStruct{1, 2, 3}, MyStruct{1, 1, 2},
+                                        MyStruct{1, 1, 1}));
+  std::vector<MyStruct> values_seq = data;
+  AutoHistogramRadixSort<RadixSortDirection::kDecreasing>(
+      values_seq, [](const auto& p) { return p.c; });
+  AutoHistogramRadixSort<RadixSortDirection::kDecreasing>(
+      values_seq, [](const auto& p) { return p.b; });
+  AutoHistogramRadixSort<RadixSortDirection::kDecreasing>(
+      values_seq, [](const auto& p) { return p.a; });
+  EXPECT_EQ(values_multi, values_seq);
 }
 
-TEST(MultikeyRadixSortTest, SortsRandomVectorMultikeyRadixSort) {
-  constexpr int kLength = 1'000'000;
-  constexpr int kRange = 10 * kLength;
-  auto values = GenerateRandomInt32PairVector(kLength, kRange);
-  auto expected = values;
-  std::sort(expected.begin(), expected.end());
+TEST(MultikeyRadixSortTest, ThreeKeysDecreasing) {
+  struct MyStruct {
+    uint32_t a;
+    uint32_t b;
+    uint32_t c;
 
-  MultikeyRadixSort(
-      values, [](const auto& p) { return p.second; },
-      [](const auto& p) { return p.first; });
+    bool operator==(const MyStruct& other) const {
+      return a == other.a && b == other.b && c == other.c;
+    }
+  };
 
-  EXPECT_EQ(values, expected);
+  const std::vector<MyStruct> data = {
+      {2, 1, 3}, {1, 2, 3}, {1, 1, 1}, {2, 2, 2}, {1, 1, 2},
+  };
+  std::vector<MyStruct> values_multi = data;
+  MultikeyRadixSort<RadixSortDirection::kDecreasing>(
+      values_multi, [](const auto& p) { return p.c; },
+      [](const auto& p) { return p.b; }, [](const auto& p) { return p.a; });
+
+  EXPECT_THAT(values_multi, ElementsAre(MyStruct{2, 2, 2}, MyStruct{2, 1, 3},
+                                        MyStruct{1, 2, 3}, MyStruct{1, 1, 2},
+                                        MyStruct{1, 1, 1}));
+  std::vector<MyStruct> values_seq = data;
+  AutoRadixSort<RadixSortDirection::kDecreasing>(
+      values_seq, [](const auto& p) { return p.c; });
+  AutoRadixSort<RadixSortDirection::kDecreasing>(
+      values_seq, [](const auto& p) { return p.b; });
+  AutoRadixSort<RadixSortDirection::kDecreasing>(
+      values_seq, [](const auto& p) { return p.a; });
+  EXPECT_EQ(values_multi, values_seq);
 }
 
-TEST(MultikeyRadixSortTest, MultikeyRadixSortTuple) {
-  constexpr int kLength = 1'000'000;
-  auto values = GenerateRandomTupleVector(kLength);
-
-  auto expected = values;
-  std::sort(expected.begin(), expected.end());
-
-  MultikeyRadixSort(
-      values, [](const auto& t) { return std::get<3>(t); },
-      [](const auto& t) { return std::get<2>(t); },
-      [](const auto& t) { return std::get<1>(t); },
-      [](const auto& t) { return std::get<0>(t); });
-
-  EXPECT_EQ(values, expected);
+std::vector<std::pair<int32_t, int32_t>> GeneratePairData(size_t length) {
+  return GenerateRandomInt32PairVector(length, 10 * length);
 }
 
-TEST(MultikeyRadixSortTest, MultikeyRadixSortTupleSmallBounds) {
-  constexpr int kLength = 1'000'000;
+std::vector<std::tuple<int32_t, int64_t, uint64_t, uint32_t>> GenerateTupleData(
+    size_t length) {
+  return GenerateRandomTupleVector(length);
+}
+
+std::vector<std::tuple<int32_t, int64_t, uint64_t, uint32_t>>
+GenerateTupleDataSmallBounds(size_t length) {
   constexpr int kRange32 = 10'000;
   constexpr int kRange64 = 10'000'000;
-  auto values = GenerateRandomTupleVector(kLength, {-kRange32, kRange32},
-                                          {-kRange64, kRange64}, {0, kRange64},
-                                          {0, kRange32});
+  return GenerateRandomTupleVector(length, {-kRange32, kRange32},
+                                   {-kRange64, kRange64}, {0, kRange64},
+                                   {0, kRange32});
+}
 
-  auto expected = values;
-  std::sort(expected.begin(), expected.end());
+template <auto GeneratorFn, RadixSortDirection Direction,
+          typename... Extractors>
+void TestTupleSorting(Extractors... extractors) {
+  constexpr int kLength = 1'000'000;
+  auto data = GeneratorFn(kLength);
 
-  MultikeyRadixSort(
-      values, [](const auto& t) { return std::get<3>(t); },
+  auto values_multi = data;
+  auto expected = values_multi;
+  (absl::c_stable_sort(expected,
+                       [&](const auto& lhs, const auto& rhs) {
+                         if constexpr (Direction ==
+                                       RadixSortDirection::kIncreasing) {
+                           return extractors(lhs) < extractors(rhs);
+                         } else {
+                           return extractors(lhs) > extractors(rhs);
+                         }
+                       }),
+   ...);
+
+  MultikeyHistogramRadixSort<Direction>(values_multi, extractors...);
+
+  EXPECT_EQ(values_multi, expected);
+  auto values_seq = data;
+  (AutoHistogramRadixSort<Direction>(values_seq, extractors), ...);
+  EXPECT_EQ(values_multi, values_seq);
+}
+
+template <auto GeneratorFn, RadixSortDirection Direction,
+          typename... Extractors>
+void TestTupleSortingNonHistogram(Extractors... extractors) {
+  constexpr int kLength = 1'000'000;
+  auto data = GeneratorFn(kLength);
+
+  auto values_multi = data;
+  auto expected = values_multi;
+  (absl::c_stable_sort(expected,
+                       [&](const auto& lhs, const auto& rhs) {
+                         if constexpr (Direction ==
+                                       RadixSortDirection::kIncreasing) {
+                           return extractors(lhs) < extractors(rhs);
+                         } else {
+                           return extractors(lhs) > extractors(rhs);
+                         }
+                       }),
+   ...);
+
+  MultikeyRadixSort<Direction>(values_multi, extractors...);
+
+  EXPECT_EQ(values_multi, expected);
+  auto values_seq = data;
+  (AutoRadixSort<Direction>(values_seq, extractors), ...);
+  EXPECT_EQ(values_multi, values_seq);
+}
+
+TEST(MultikeyHistogramRadixSortTest, SortsRandomVector) {
+  TestTupleSorting<GeneratePairData, RadixSortDirection::kIncreasing>(
+      [](const auto& p) { return p.second; },
+      [](const auto& p) { return p.first; });
+}
+TEST(MultikeyRadixSortTest, SortsRandomVector) {
+  TestTupleSortingNonHistogram<GeneratePairData,
+                               RadixSortDirection::kIncreasing>(
+      [](const auto& p) { return p.second; },
+      [](const auto& p) { return p.first; });
+}
+
+TEST(MultikeyHistogramRadixSortTest, Tuple) {
+  TestTupleSorting<GenerateTupleData, RadixSortDirection::kIncreasing>(
+      [](const auto& t) { return std::get<3>(t); },
       [](const auto& t) { return std::get<2>(t); },
       [](const auto& t) { return std::get<1>(t); },
       [](const auto& t) { return std::get<0>(t); });
-
-  EXPECT_EQ(values, expected);
+}
+TEST(MultikeyRadixSortTest, Tuple) {
+  TestTupleSortingNonHistogram<GenerateTupleData,
+                               RadixSortDirection::kIncreasing>(
+      [](const auto& t) { return std::get<3>(t); },
+      [](const auto& t) { return std::get<2>(t); },
+      [](const auto& t) { return std::get<1>(t); },
+      [](const auto& t) { return std::get<0>(t); });
 }
 
-TEST(MultikeyRadixSortTest, MultikeyRadixSortNegativeKeys) {
+TEST(MultikeyHistogramRadixSortTest, TupleSmallBounds) {
+  TestTupleSorting<GenerateTupleDataSmallBounds,
+                   RadixSortDirection::kIncreasing>(
+      [](const auto& t) { return std::get<3>(t); },
+      [](const auto& t) { return std::get<2>(t); },
+      [](const auto& t) { return std::get<1>(t); },
+      [](const auto& t) { return std::get<0>(t); });
+}
+TEST(MultikeyRadixSortTest, TupleSmallBounds) {
+  TestTupleSortingNonHistogram<GenerateTupleDataSmallBounds,
+                               RadixSortDirection::kIncreasing>(
+      [](const auto& t) { return std::get<3>(t); },
+      [](const auto& t) { return std::get<2>(t); },
+      [](const auto& t) { return std::get<1>(t); },
+      [](const auto& t) { return std::get<0>(t); });
+}
+
+TEST(MultikeyHistogramRadixSortTest, DecreasingTuple) {
+  TestTupleSorting<GenerateTupleData, RadixSortDirection::kDecreasing>(
+      [](const auto& t) { return std::get<3>(t); },
+      [](const auto& t) { return std::get<2>(t); },
+      [](const auto& t) { return std::get<1>(t); },
+      [](const auto& t) { return std::get<0>(t); });
+}
+TEST(MultikeyRadixSortTest, DecreasingTuple) {
+  TestTupleSortingNonHistogram<GenerateTupleData,
+                               RadixSortDirection::kDecreasing>(
+      [](const auto& t) { return std::get<3>(t); },
+      [](const auto& t) { return std::get<2>(t); },
+      [](const auto& t) { return std::get<1>(t); },
+      [](const auto& t) { return std::get<0>(t); });
+}
+
+TEST(MultikeyHistogramRadixSortTest, DecreasingTupleSmallBounds) {
+  TestTupleSorting<GenerateTupleDataSmallBounds,
+                   RadixSortDirection::kDecreasing>(
+      [](const auto& t) { return std::get<3>(t); },
+      [](const auto& t) { return std::get<2>(t); },
+      [](const auto& t) { return std::get<1>(t); },
+      [](const auto& t) { return std::get<0>(t); });
+}
+TEST(MultikeyRadixSortTest, DecreasingTupleSmallBounds) {
+  TestTupleSortingNonHistogram<GenerateTupleDataSmallBounds,
+                               RadixSortDirection::kDecreasing>(
+      [](const auto& t) { return std::get<3>(t); },
+      [](const auto& t) { return std::get<2>(t); },
+      [](const auto& t) { return std::get<1>(t); },
+      [](const auto& t) { return std::get<0>(t); });
+}
+
+template <auto SortFn>
+void TestNegativeKeys() {
   std::vector<int32_t> values = {5, -2, 4, -1, 0, 3, -10};
-
-  MultikeyRadixSort(values);
-
+  SortFn(values);
   EXPECT_THAT(values, ElementsAre(-10, -2, -1, 0, 3, 4, 5));
 }
 
-TEST(RadixSortMinMaxTest, RadixSortMinMaxNegativeKeys) {
-  std::vector<int32_t> values = {5, -2, 4, -1, 0, 3, -10};
-
-  RadixSortMinMax(-10, 5, values, [](const auto& p) { return p; });
-
-  EXPECT_THAT(values, ElementsAre(-10, -2, -1, 0, 3, 4, 5));
+TEST(AutoRadixSortTest, AutoRadixSortNegativeKeys) {
+  TestNegativeKeys<[](auto& arr) { AutoHistogramRadixSort(arr); }>();
 }
 
-TEST(MultikeyRadixSortTest, SortCArray) {
+TEST(RangeRadixSortTest, RangeRadixSortNegativeKeys) {
+  TestNegativeKeys<[](auto& arr) {
+    RangeHistogramRadixSort(-10, 5, arr, [](const auto& p) { return p; });
+  }>();
+}
+
+template <auto SortFn,
+          RadixSortDirection Direction = RadixSortDirection::kIncreasing>
+void TestSortCArray() {
   constexpr int kLength = 10'000;
-  absl::BitGen bitgen;
   const auto bounds = NonNegativeRange<int>(100'000);
   std::vector<int> values = GenerateRandomVector<int>(kLength, bounds);
   int c_array[kLength];
   for (int i = 0; i < kLength; ++i) {
     c_array[i] = values[i];
   }
-  MultikeyRadixSort(c_array);
-  MultikeyRadixSort(values);
+  SortFn(c_array, bounds);
+  if constexpr (Direction == RadixSortDirection::kIncreasing) {
+    std::sort(values.begin(), values.end());
+  } else {
+    std::sort(values.begin(), values.end(), std::greater<>());
+  }
   const std::vector<int> c_array_vec(std::begin(c_array), std::end(c_array));
   EXPECT_EQ(c_array_vec, values);
 }
 
-TEST(RadixSortMinMaxTest, SortCArray) {
-  constexpr int kLength = 10'000;
-  absl::BitGen bitgen;
-  const auto bounds = NonNegativeRange<int>(100'000);
-  std::vector<int> values = GenerateRandomVector<int>(kLength, bounds);
-  int c_array[kLength];
-  for (int i = 0; i < kLength; ++i) {
-    c_array[i] = values[i];
-  }
-  RadixSortMinMax(bounds.first, bounds.second, c_array,
-                  [](const auto& val) { return val; });
-  MultikeyRadixSort(values);
-  const std::vector<int> c_array_vec(std::begin(c_array), std::end(c_array));
-  EXPECT_EQ(c_array_vec, values);
+TEST(AutoRadixSortTest, SortCArray) {
+  TestSortCArray<[](auto& arr, const auto&) { AutoHistogramRadixSort(arr); }>();
 }
 
-TEST(MultikeyRadixSortTest, SortStrongVector) {
+TEST(RangeRadixSortTest, SortCArray) {
+  TestSortCArray<[](auto& arr, const auto& bounds) {
+    RangeHistogramRadixSort(bounds.first, bounds.second, arr,
+                            [](const auto& val) { return val; });
+  }>();
+}
+
+TEST(AutoRadixSortTest, SortCArrayDecreasing) {
+  TestSortCArray<[](auto& arr, const auto&) {
+    AutoHistogramRadixSort<RadixSortDirection::kDecreasing>(arr);
+  },
+                 /*direction=*/RadixSortDirection::kDecreasing>();
+}
+
+TEST(RangeRadixSortTest, SortCArrayDecreasing) {
+  TestSortCArray<[](auto& arr, const auto& bounds) {
+    RangeHistogramRadixSort<RadixSortDirection::kDecreasing>(
+        bounds.first, bounds.second, arr, [](const auto& val) { return val; });
+  },
+                 /*direction=*/RadixSortDirection::kDecreasing>();
+}
+
+template <auto SortFn>
+void TestSortStrongVector() {
   constexpr int kLength = 10'000;
+  const auto bounds = FullRange<int64_t>();
+  std::vector<int64_t> std_values =
+      GenerateRandomVector<int64_t>(kLength, bounds);
   ::util_intops::StrongVector<StrongIndex, int64_t> values;
   values.reserve(kLength);
-  absl::BitGen bitgen;
-  for (int i = 0; i < kLength; ++i) {
-    values.push_back(absl::Uniform<int64_t>(bitgen, kint64min, kint64max));
+  for (int64_t v : std_values) {
+    values.push_back(v);
   }
   auto expected_values = values;
   std::sort(expected_values.begin(), expected_values.end());
-  MultikeyRadixSort(values, [](const auto& val) { return val; });
+  SortFn(values, bounds);
   EXPECT_EQ(values, expected_values);
 }
 
-TEST(RadixSortMinMaxTest, SortStrongVector) {
-  constexpr int kLength = 10'000;
-  ::util_intops::StrongVector<StrongIndex, int64_t> values;
-  values.reserve(kLength);
-  absl::BitGen bitgen;
-  for (int i = 0; i < kLength; ++i) {
-    values.push_back(
-        absl::Uniform<int64_t>(bitgen, std::numeric_limits<int64_t>::lowest(),
-                               std::numeric_limits<int64_t>::max()));
-  }
-  auto expected_values = values;
-  std::sort(expected_values.begin(), expected_values.end());
-  RadixSortMinMax(std::numeric_limits<int64_t>::lowest(),
-                  std::numeric_limits<int64_t>::max(), values,
-                  [](const auto& val) { return val; });
-  EXPECT_EQ(values, expected_values);
+TEST(AutoRadixSortTest, SortStrongVector) {
+  TestSortStrongVector<[](auto& arr, const auto&) {
+    AutoHistogramRadixSort(arr, [](const auto& val) { return val; });
+  }>();
 }
 
-TEST(MultikeyRadixSortTest, SortsEmptyVector) {
+TEST(RangeRadixSortTest, SortStrongVector) {
+  TestSortStrongVector<[](auto& arr, const auto& bounds) {
+    RangeHistogramRadixSort(bounds.first, bounds.second, arr,
+                            [](const auto& val) { return val; });
+  }>();
+}
+
+template <auto SortFn>
+void TestSortsEmptyVector() {
   std::vector<int64_t> values = {};
-  MultikeyRadixSort(values);
+  const auto bounds = std::pair<int64_t, int64_t>(0, 0);
+  SortFn(values, bounds);
   EXPECT_THAT(values, testing::IsEmpty());
 }
 
-TEST(RadixSortMinMaxTest, SortsEmptyVector) {
+TEST(RangeHistogramRadixSortTest, SortsEmptyVector) {
   std::vector<int64_t> values = {};
-  RadixSortMinMax(int64_t{0}, int64_t{0}, values,
-                  [](const auto& val) { return val; });
+  RangeHistogramRadixSort(0L, 0L, values, [](const auto& val) { return val; });
   EXPECT_THAT(values, testing::IsEmpty());
 }
 
-TEST(RadixSortMinMaxTest, SortPairsOfInts) {
+template <RadixSortDirection Direction = RadixSortDirection::kIncreasing>
+void TestSortPairsOfInts() {
   constexpr int kMax = 30;
   std::vector<std::pair<int, int>> values;
   for (int i = 0; i <= kMax; ++i) {
@@ -380,27 +577,49 @@ TEST(RadixSortMinMaxTest, SortPairsOfInts) {
   // Sort by first key.
   {
     auto expected = values;
-    std::stable_sort(
-        expected.begin(), expected.end(),
-        [](const auto& a, const auto& b) { return a.first < b.first; });
+    if constexpr (Direction == RadixSortDirection::kIncreasing) {
+      std::stable_sort(
+          expected.begin(), expected.end(),
+          [](const auto& a, const auto& b) { return a.first < b.first; });
+    } else {
+      std::stable_sort(
+          expected.begin(), expected.end(),
+          [](const auto& a, const auto& b) { return a.first > b.first; });
+    }
     auto sorted = values;
-    RadixSortMinMax(0, kMax, sorted, [](const auto& p) { return p.first; });
+    RangeHistogramRadixSort<Direction>(0, kMax, sorted,
+                                       [](const auto& p) { return p.first; });
     EXPECT_EQ(sorted, expected);
   }
 
   // Sort by second key.
   {
     auto expected = values;
-    std::stable_sort(
-        expected.begin(), expected.end(),
-        [](const auto& a, const auto& b) { return a.second < b.second; });
+    if constexpr (Direction == RadixSortDirection::kIncreasing) {
+      std::stable_sort(
+          expected.begin(), expected.end(),
+          [](const auto& a, const auto& b) { return a.second < b.second; });
+    } else {
+      std::stable_sort(
+          expected.begin(), expected.end(),
+          [](const auto& a, const auto& b) { return a.second > b.second; });
+    }
     auto sorted = values;
-    RadixSortMinMax(0, kMax, sorted, [](const auto& p) { return p.second; });
+    RangeHistogramRadixSort<Direction>(0, kMax, sorted,
+                                       [](const auto& p) { return p.second; });
     EXPECT_EQ(sorted, expected);
   }
 }
 
-TEST(RadixSortMinMaxTest, AllElementsIdentical) {
+TEST(RangeRadixSortTest, SortPairsOfInts) {
+  TestSortPairsOfInts<RadixSortDirection::kIncreasing>();
+}
+
+TEST(RangeRadixSortTest, SortPairsOfIntsDecreasing) {
+  TestSortPairsOfInts<RadixSortDirection::kDecreasing>();
+}
+
+TEST(RangeRadixSortTest, AllElementsIdentical) {
   struct MyStruct {
     int a;
     int b;
@@ -415,18 +634,411 @@ TEST(RadixSortMinMaxTest, AllElementsIdentical) {
     values[i].b = i;
   }
   auto expected = values;
-  RadixSortMinMax(12345, 12345, values, [](MyStruct v) { return v.a; });
+  RangeHistogramRadixSort(12345, 12345, values, [](MyStruct v) { return v.a; });
   EXPECT_EQ(values, expected);
   values = expected;
-  MultikeyRadixSort(values, [](MyStruct v) { return v.a; });
+  AutoHistogramRadixSort(values, [](MyStruct v) { return v.a; });
+  EXPECT_EQ(values, expected);
+}
+// AutoHistogramRadixSort requires copyable types, so it cannot sort containers
+// of move-only types like std::unique_ptr.
+TEST(AutoRadixSortTest, DoesNotSupportMoveOnlyTypes) {
+  ASSERT_FALSE(std::is_copy_constructible_v<std::unique_ptr<int>>);
+  ASSERT_FALSE(std::is_copy_assignable_v<std::unique_ptr<int>>);
+}
+
+struct Int64NonNeg {
+  constexpr std::pair<int64_t, int64_t> bounds() const {
+    return NonNegativeRange<int64_t>();
+  }
+  std::vector<int64_t> operator()(size_t n) const {
+    return GenerateRandomVector<int64_t>(n, bounds());
+  }
+};
+
+struct Int64Small {
+  constexpr std::pair<int64_t, int64_t> bounds() const { return {0, 100000}; }
+  std::vector<int64_t> operator()(size_t n) const {
+    return GenerateRandomVector<int64_t>(n, bounds());
+  }
+};
+
+struct Int64MaxMinusSmall {
+  constexpr std::pair<int64_t, int64_t> bounds() const {
+    return {std::numeric_limits<int64_t>::max() - 100000,
+            std::numeric_limits<int64_t>::max()};
+  }
+  std::vector<int64_t> operator()(size_t n) const {
+    return GenerateRandomVector<int64_t>(n, bounds());
+  }
+};
+
+template <typename T>
+struct FloatFull {
+  constexpr std::pair<T, T> bounds() const { return FullRange<T>(); }
+  std::vector<T> operator()(size_t n) const {
+    return GenerateRandomVector<T>(n, bounds());
+  }
+};
+
+template <typename T>
+struct FloatSmall {
+  constexpr std::pair<T, T> bounds() const { return {T{0.0}, T{100000.0}}; }
+  std::vector<T> operator()(size_t n) const {
+    return GenerateRandomVector<T>(n, bounds());
+  }
+};
+
+template <typename T>
+struct FloatMedium {
+  constexpr std::pair<T, T> bounds() const {
+    return {T{23500.0}, T{9500000.0}};
+  }
+  std::vector<T> operator()(size_t n) const {
+    return GenerateRandomVector<T>(n, bounds());
+  }
+};
+
+template <typename T>
+class AutoRadixSortFloatTest : public ::testing::Test {};
+
+using FloatingPointTypes = ::testing::Types<float, double>;
+TYPED_TEST_SUITE(AutoRadixSortFloatTest, FloatingPointTypes);
+
+template <typename T, RadixSortDirection Direction, typename SortFn>
+void TestFloatSorting(const std::vector<T>& data, SortFn sort_fn) {
+  auto values = data;
+  auto expected = data;
+  if constexpr (Direction == RadixSortDirection::kIncreasing) {
+    std::sort(expected.begin(), expected.end());
+  } else {
+    std::sort(expected.begin(), expected.end(), std::greater<T>());
+  }
+  sort_fn(values);
   EXPECT_EQ(values, expected);
 }
 
-// MultikeyRadixSort requires copyable types, so it cannot sort containers of
-// move-only types like std::unique_ptr.
-TEST(MultikeyRadixSortTest, DoesNotSupportMoveOnlyTypes) {
-  ASSERT_FALSE(std::is_copy_constructible_v<std::unique_ptr<int>>);
-  ASSERT_FALSE(std::is_copy_assignable_v<std::unique_ptr<int>>);
+TYPED_TEST(AutoRadixSortFloatTest, ComprehensiveFloatSorting) {
+  constexpr int kLength = 250'000;
+  const auto full_bounds = FloatFull<TypeParam>{}.bounds();
+  const auto full_data = FloatFull<TypeParam>{}(kLength);
+  const auto small_bounds = FloatSmall<TypeParam>{}.bounds();
+  const auto small_data = FloatSmall<TypeParam>{}(kLength);
+  const auto medium_bounds = FloatMedium<TypeParam>{}.bounds();
+  const auto medium_data = FloatMedium<TypeParam>{}(kLength);
+
+  for (const auto& [data, bounds] :
+       {std::make_pair(full_data, full_bounds),
+        std::make_pair(small_data, small_bounds),
+        std::make_pair(medium_data, medium_bounds)}) {
+    const TypeParam key_min = bounds.first;
+    const TypeParam key_max = bounds.second;
+
+    // AutoHistogramRadixSort
+    TestFloatSorting<TypeParam, RadixSortDirection::kIncreasing>(
+        data, [](auto& v) {
+          AutoHistogramRadixSort<RadixSortDirection::kIncreasing>(v);
+        });
+    TestFloatSorting<TypeParam, RadixSortDirection::kDecreasing>(
+        data, [](auto& v) {
+          AutoHistogramRadixSort<RadixSortDirection::kDecreasing>(v);
+        });
+
+    // AutoRadixSort
+    TestFloatSorting<TypeParam, RadixSortDirection::kIncreasing>(
+        data,
+        [](auto& v) { AutoRadixSort<RadixSortDirection::kIncreasing>(v); });
+    TestFloatSorting<TypeParam, RadixSortDirection::kDecreasing>(
+        data,
+        [](auto& v) { AutoRadixSort<RadixSortDirection::kDecreasing>(v); });
+
+    // RangeHistogramRadixSort
+    TestFloatSorting<TypeParam, RadixSortDirection::kIncreasing>(
+        data, [key_min, key_max](auto& v) {
+          RangeHistogramRadixSort<RadixSortDirection::kIncreasing>(key_min,
+                                                                   key_max, v);
+        });
+    TestFloatSorting<TypeParam, RadixSortDirection::kDecreasing>(
+        data, [key_min, key_max](auto& v) {
+          RangeHistogramRadixSort<RadixSortDirection::kDecreasing>(key_min,
+                                                                   key_max, v);
+        });
+
+    // RangeRadixSort
+    TestFloatSorting<TypeParam, RadixSortDirection::kIncreasing>(
+        data, [key_min, key_max](auto& v) {
+          RangeRadixSort<RadixSortDirection::kIncreasing>(key_min, key_max, v);
+        });
+    TestFloatSorting<TypeParam, RadixSortDirection::kDecreasing>(
+        data, [key_min, key_max](auto& v) {
+          RangeRadixSort<RadixSortDirection::kDecreasing>(key_min, key_max, v);
+        });
+  }
+}
+
+TYPED_TEST(AutoRadixSortFloatTest, FloatToSortableUintPreservesOrder) {
+  constexpr int kLength = 10'000;
+  const auto values = FloatFull<TypeParam>{}(kLength);
+
+  for (int i = 0; i < values.size(); ++i) {
+    for (int j = 0; j < 10; ++j) {
+      const TypeParam f1 = values[i];
+      const TypeParam f2 = values[(i + j) % values.size()];
+      const auto u1 = FloatToSortableUint(f1);
+      const auto u2 = FloatToSortableUint(f2);
+      EXPECT_EQ(u1 < u2, f1 < f2) << "f1 = " << f1 << ", f2 = " << f2;
+      EXPECT_EQ(u1 > u2, f1 > f2) << "f1 = " << f1 << ", f2 = " << f2;
+      EXPECT_EQ(u1 == u2, f1 == f2) << "f1 = " << f1 << ", f2 = " << f2;
+    }
+  }
+}
+
+TYPED_TEST(AutoRadixSortFloatTest, FloatToSortableUintIsBijection) {
+  constexpr int kLength = 10'000;
+  const auto values = FloatFull<TypeParam>{}(kLength);
+
+  for (const TypeParam f : values) {
+    const auto uint_val = FloatToSortableUint(f);
+    const auto float_val = SortableUintToFloat(uint_val);
+    EXPECT_EQ(float_val, f) << "f = " << f << ", float_val = " << float_val;
+  }
+}
+
+struct StdSortWrapper {
+  template <RadixSortDirection Direction, typename T>
+  void operator()(std::vector<T>& v, int64_t, int64_t) const {
+    if constexpr (Direction == RadixSortDirection::kIncreasing) {
+      std::sort(v.begin(), v.end());
+    } else {
+      std::sort(v.begin(), v.end(), std::greater<T>());
+    }
+  }
+};
+
+struct StdStableSortWrapper {
+  template <RadixSortDirection Direction, typename T>
+  void operator()(std::vector<T>& v, int64_t, int64_t) const {
+    if constexpr (Direction == RadixSortDirection::kIncreasing) {
+      std::stable_sort(v.begin(), v.end());
+    } else {
+      std::stable_sort(v.begin(), v.end(), std::greater<T>());
+    }
+  }
+};
+
+struct AutoRadixSortWrapper {
+  template <RadixSortDirection Direction, typename T>
+  void operator()(std::vector<T>& v, int64_t, int64_t) const {
+    AutoRadixSort<Direction>(v);
+  }
+};
+
+struct AutoHistogramRadixSortWrapper {
+  template <RadixSortDirection Direction, typename T>
+  void operator()(std::vector<T>& v, int64_t, int64_t) const {
+    AutoHistogramRadixSort<Direction>(v);
+  }
+};
+
+struct RangeRadixSortWrapper {
+  template <RadixSortDirection Direction, typename T>
+  void operator()(std::vector<T>& v, int64_t min_val, int64_t max_val) const {
+    RangeRadixSort<Direction>(min_val, max_val, v);
+  }
+};
+
+struct RangeHistogramRadixSortWrapper {
+  template <RadixSortDirection Direction, typename T>
+  void operator()(std::vector<T>& v, int64_t min_val, int64_t max_val) const {
+    RangeHistogramRadixSort<Direction>(min_val, max_val, v);
+  }
+};
+
+template <typename SortFn, typename GeneratorFn>
+void RunPerformanceComparisonTest(const std::string& sort_name,
+                                  const std::string& gen_name, int size,
+                                  RadixSortDirection Direction, int64_t min_val,
+                                  int64_t max_val) {
+  GeneratorFn generator;
+  auto data = generator(size);
+
+  auto copy1 = data;
+  absl::Time start1 = absl::Now();
+  if (Direction == RadixSortDirection::kIncreasing) {
+    SortFn{}.template operator()<RadixSortDirection::kIncreasing>(
+        copy1, min_val, max_val);
+  } else {
+    SortFn{}.template operator()<RadixSortDirection::kDecreasing>(
+        copy1, min_val, max_val);
+  }
+  absl::Duration time1 = absl::Now() - start1;
+
+  auto copy2 = data;
+  absl::Time start2 = absl::Now();
+  int num_bits = 64;
+  if (min_val >= 0 && max_val > 0) {
+    num_bits = 64 - absl::countl_zero(static_cast<uint64_t>(max_val));
+  }
+  ::operations_research::RadixSort(absl::MakeSpan(copy2), num_bits);
+  absl::Duration time2 = absl::Now() - start2;
+
+  double time1_us = absl::ToDoubleMicroseconds(time1);
+  double time2_us = absl::ToDoubleMicroseconds(time2);
+  double ratio = time1_us > 0 ? time2_us / time1_us : 0.0;
+
+  ABSL_LOG(INFO) << ", " << sort_name << ", " << gen_name << ", " << size
+                 << ", "
+                 << (Direction == RadixSortDirection::kIncreasing ? "1" : "0")
+                 << ", " << time1 << ", " << time2 << ", " << ratio;
+}
+
+TEST(AutoRadixSortTest, PerformanceComparison) {
+  const std::vector<int> sizes = {100, 1000, 10000, 100000, 1000000};
+  const std::vector<RadixSortDirection> kDirections = {
+      RadixSortDirection::kIncreasing, RadixSortDirection::kDecreasing};
+  const int64_t kInt64Max = std::numeric_limits<int64_t>::max();
+
+  for (const int size : sizes) {
+    for (const RadixSortDirection direction : kDirections) {
+      RunPerformanceComparisonTest<AutoRadixSortWrapper, Int64NonNeg>(
+          "AutoRadixSort", "Int64NonNeg", size, direction, 0, kInt64Max);
+      RunPerformanceComparisonTest<AutoRadixSortWrapper, Int64Small>(
+          "AutoRadixSort", "Int64Small", size, direction, 0, 100000);
+      RunPerformanceComparisonTest<AutoRadixSortWrapper, Int64MaxMinusSmall>(
+          "AutoRadixSort", "Int64MaxMinusSmall", size, direction,
+          kInt64Max - 100000, kInt64Max);
+
+      RunPerformanceComparisonTest<AutoHistogramRadixSortWrapper, Int64NonNeg>(
+          "AutoHistogramRadixSort", "Int64NonNeg", size, direction, 0,
+          kInt64Max);
+      RunPerformanceComparisonTest<AutoHistogramRadixSortWrapper, Int64Small>(
+          "AutoHistogramRadixSort", "Int64Small", size, direction, 0, 100000);
+      RunPerformanceComparisonTest<AutoHistogramRadixSortWrapper,
+                                   Int64MaxMinusSmall>(
+          "AutoHistogramRadixSort", "Int64MaxMinusSmall", size, direction,
+          kInt64Max - 100000, kInt64Max);
+    }
+  }
+}
+
+TEST(RangeRadixSortTest, PerformanceComparison) {
+  const std::vector<int> sizes = {100, 1000, 10000, 100000, 1000000};
+  const std::vector<RadixSortDirection> kDirections = {
+      RadixSortDirection::kIncreasing, RadixSortDirection::kDecreasing};
+  const int64_t kInt64Max = std::numeric_limits<int64_t>::max();
+
+  for (const int size : sizes) {
+    for (const RadixSortDirection direction : kDirections) {
+      RunPerformanceComparisonTest<RangeRadixSortWrapper, Int64NonNeg>(
+          "RangeRadixSort", "Int64NonNeg", size, direction, 0, kInt64Max);
+      RunPerformanceComparisonTest<RangeRadixSortWrapper, Int64Small>(
+          "RangeRadixSort", "Int64Small", size, direction, 0, 100000);
+      RunPerformanceComparisonTest<RangeRadixSortWrapper, Int64MaxMinusSmall>(
+          "RangeRadixSort", "Int64MaxMinusSmall", size, direction,
+          kInt64Max - 100000, kInt64Max);
+
+      RunPerformanceComparisonTest<RangeHistogramRadixSortWrapper, Int64NonNeg>(
+          "RangeHistogramRadixSort", "Int64NonNeg", size, direction, 0,
+          kInt64Max);
+      RunPerformanceComparisonTest<RangeHistogramRadixSortWrapper, Int64Small>(
+          "RangeHistogramRadixSort", "Int64Small", size, direction, 0, 100000);
+      RunPerformanceComparisonTest<RangeHistogramRadixSortWrapper,
+                                   Int64MaxMinusSmall>(
+          "RangeHistogramRadixSort", "Int64MaxMinusSmall", size, direction,
+          kInt64Max - 100000, kInt64Max);
+    }
+  }
+}
+
+template <typename SortFn1, typename SortFn2, typename GeneratorFn>
+void RunAlgorithmComparisonTest(const std::string& sort1_name,
+                                const std::string& sort2_name,
+                                const std::string& gen_name, int size,
+                                const RadixSortDirection Direction,
+                                int64_t min_val, int64_t max_val) {
+  GeneratorFn generator;
+  auto data = generator(size);
+
+  auto copy1 = data;
+  absl::Time start1 = absl::Now();
+  if (Direction == RadixSortDirection::kIncreasing) {
+    SortFn1{}.template operator()<RadixSortDirection::kIncreasing>(
+        copy1, min_val, max_val);
+  } else {
+    SortFn1{}.template operator()<RadixSortDirection::kDecreasing>(
+        copy1, min_val, max_val);
+  }
+  absl::Duration time1 = absl::Now() - start1;
+
+  auto copy2 = data;
+  absl::Time start2 = absl::Now();
+  if (Direction == RadixSortDirection::kIncreasing) {
+    SortFn2{}.template operator()<RadixSortDirection::kIncreasing>(
+        copy2, min_val, max_val);
+  } else {
+    SortFn2{}.template operator()<RadixSortDirection::kDecreasing>(
+        copy2, min_val, max_val);
+  }
+  absl::Duration time2 = absl::Now() - start2;
+
+  double time1_us = absl::ToDoubleMicroseconds(time1);
+  double time2_us = absl::ToDoubleMicroseconds(time2);
+  double ratio = time2_us > 0 ? time1_us / time2_us : 0.0;
+
+  ABSL_LOG(INFO) << ", " << sort1_name << " vs " << sort2_name << ", "
+                 << gen_name << ", " << size << ", "
+                 << (Direction == RadixSortDirection::kIncreasing ? "1" : "0")
+                 << ", " << time1 << ", " << time2 << ", ratio: " << ratio;
+}
+
+TEST(AutoRadixSortTest, AlgorithmComparison) {
+  const std::vector<int> sizes = {100, 1000, 10000, 100000, 1000000};
+  const std::vector<RadixSortDirection> kDirections = {
+      RadixSortDirection::kIncreasing, RadixSortDirection::kDecreasing};
+  const int64_t kInt64Max = std::numeric_limits<int64_t>::max();
+
+  for (const int size : sizes) {
+    for (const RadixSortDirection direction : kDirections) {
+      RunAlgorithmComparisonTest<AutoRadixSortWrapper,
+                                 AutoHistogramRadixSortWrapper, Int64NonNeg>(
+          "AutoRadixSort", "AutoHistogramRadixSort", "Int64NonNeg", size,
+          direction, 0, kInt64Max);
+      RunAlgorithmComparisonTest<AutoRadixSortWrapper,
+                                 AutoHistogramRadixSortWrapper, Int64Small>(
+          "AutoRadixSort", "AutoHistogramRadixSort", "Int64Small", size,
+          direction, 0, 100000);
+      RunAlgorithmComparisonTest<AutoRadixSortWrapper,
+                                 AutoHistogramRadixSortWrapper,
+                                 Int64MaxMinusSmall>(
+          "AutoRadixSort", "AutoHistogramRadixSort", "Int64MaxMinusSmall", size,
+          direction, kInt64Max - 100000, kInt64Max);
+    }
+  }
+}
+
+TEST(RangeRadixSortTest, AlgorithmComparison) {
+  const std::vector<int> sizes = {100, 1000, 10000, 100000, 1000000};
+  const std::vector<RadixSortDirection> kDirections = {
+      RadixSortDirection::kIncreasing, RadixSortDirection::kDecreasing};
+  const int64_t kInt64Max = std::numeric_limits<int64_t>::max();
+
+  for (const int size : sizes) {
+    for (const RadixSortDirection direction : kDirections) {
+      RunAlgorithmComparisonTest<RangeRadixSortWrapper,
+                                 RangeHistogramRadixSortWrapper, Int64NonNeg>(
+          "RangeRadixSort", "RangeHistogramRadixSort", "Int64NonNeg", size,
+          direction, 0, kInt64Max);
+      RunAlgorithmComparisonTest<RangeRadixSortWrapper,
+                                 RangeHistogramRadixSortWrapper, Int64Small>(
+          "RangeRadixSort", "RangeHistogramRadixSort", "Int64Small", size,
+          direction, 0, 100000);
+      RunAlgorithmComparisonTest<RangeRadixSortWrapper,
+                                 RangeHistogramRadixSortWrapper,
+                                 Int64MaxMinusSmall>(
+          "RangeRadixSort", "RangeHistogramRadixSort", "Int64MaxMinusSmall",
+          size, direction, kInt64Max - 100000, kInt64Max);
+    }
+  }
 }
 
 }  // namespace

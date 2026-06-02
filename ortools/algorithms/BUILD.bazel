@@ -106,8 +106,6 @@ cc_binary(
         "//ortools/base:benchmark_main",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/log",
-        "@abseil-cpp//absl/numeric:bits",
-        "@abseil-cpp//absl/numeric:int128",
         "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/random:bit_gen_ref",
         "@abseil-cpp//absl/random:distributions",
@@ -480,6 +478,7 @@ cc_library(
     hdrs = ["multikey_radix_sort.h"],
     deps = [
         "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/base",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/numeric:bits",
     ],
@@ -507,13 +506,17 @@ cc_test(
     srcs = ["multikey_radix_sort_test.cc"],
     deps = [
         ":multikey_radix_sort",
+        ":radix_sort",
         "//ortools/base:gmock_main",
         "//ortools/base:strong_int",
         "//ortools/base:strong_vector",
-        "//ortools/base:types",
         "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/log:absl_log",
+        "@abseil-cpp//absl/numeric:bits",
         "@abseil-cpp//absl/random",
-        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/time",
+        "@abseil-cpp//absl/types:span",
+        "@google_benchmark//:benchmark",
     ],
 )
 
@@ -523,7 +526,7 @@ cc_binary(
     deps = [
         ":multikey_radix_sort",
         ":radix_sort",
-        "//ortools/base:benchmark_main",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/types:span",
         "@google_benchmark//:benchmark",
