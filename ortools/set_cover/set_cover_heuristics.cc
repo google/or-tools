@@ -79,13 +79,20 @@ bool TrivialSolutionGenerator::NextSolution(
 }
 
 // RandomSolutionGenerator.
-
+// General note on the use of InsecureBitGen:
+// - it's the recommended faster way to generate large numbers of random values.
+//   We need this to shuffles large vectors of SubsetIndex or ElementIndex
+//   multiple times.
+// - we create an instance in each function to avoid thread-safety issues.
+// - we use InsecureBitGen because we don't need cryptographic security: we're
+//   just shuffling data i.e. indices or rows and columns.
 bool RandomSolutionGenerator::NextSolution(
     absl::Span<const SubsetIndex> focus) {
   StopWatch stop_watch(&run_time_);
   inv()->ClearTrace();
   std::vector<SubsetIndex> shuffled(focus.begin(), focus.end());
-  std::shuffle(shuffled.begin(), shuffled.end(), absl::BitGen());
+  absl::InsecureBitGen bit_gen;
+  std::shuffle(shuffled.begin(), shuffled.end(), bit_gen);
   for (const SubsetIndex subset : shuffled) {
     if (inv()->is_selected()[subset]) continue;
     if (inv()->num_free_elements()[subset] != 0) {
@@ -401,13 +408,14 @@ std::vector<size_t> GetSegmentStarts(size_t permutation_size,
 // Shuffles each segment of `elements` as defined by `segment_starts`.
 void ShuffleSegments(const std::vector<size_t>& segment_starts,
                      std::vector<ElementIndex>* elements) {
+  absl::InsecureBitGen bit_gen;
   for (size_t j = 0; j < segment_starts.size() - 1; ++j) {
-    // NOMUTANTS -- don't need to test shuffling a segment of length 1.
+    // NOMUTANTS -- don't need to shuffle a segment of length 1.
     if (segment_starts[j + 1] - segment_starts[j] > 1) {
       std::shuffle(
           elements->begin() + segment_starts[j],
           // NOMUTANTS -- the end iterator is not included in the range.
-          elements->begin() + segment_starts[j + 1], absl::BitGen());
+          elements->begin() + segment_starts[j + 1], bit_gen);
     }
   }
 }
@@ -1049,7 +1057,8 @@ namespace {
 void SampleSubsets(std::vector<SubsetIndex>* list, BaseInt num_subsets) {
   num_subsets = std::min<BaseInt>(num_subsets, list->size());
   CHECK_GE(num_subsets, 0);
-  std::shuffle(list->begin(), list->end(), absl::BitGen());
+  absl::InsecureBitGen bit_gen;
+  std::shuffle(list->begin(), list->end(), bit_gen);
   list->resize(num_subsets);
 }
 }  // namespace
@@ -1133,7 +1142,9 @@ std::vector<SubsetIndex> ClearMostCoveredElements(
 
   // Actually *sample* sampled_subset.
   // TODO(user): find another algorithm if necessary.
-  std::shuffle(sampled_subsets.begin(), sampled_subsets.end(), absl::BitGen());
+  // Improve to use SampleSubsets(&sampled_subsets, max_num_subsets);
+  absl::InsecureBitGen bit_gen;
+  std::shuffle(sampled_subsets.begin(), sampled_subsets.end(), bit_gen);
   sampled_subsets.resize(
       std::min<BaseInt>(sampled_subsets.size(), max_num_subsets));
 
@@ -1195,9 +1206,10 @@ Cost ComputeDualAscentLB(const SetCoverInvariant& inv, int num_random_passes) {
   std::iota(element_permutation.begin(), element_permutation.end(),
             ElementIndex(0));
   Cost max_lower_bound = PerformDualAscent(inv, element_permutation).first;
+  absl::InsecureBitGen bit_gen;
   for (int i = 0; i < num_random_passes; ++i) {
     std::shuffle(element_permutation.begin(), element_permutation.end(),
-                 absl::BitGen());
+                 bit_gen);
     max_lower_bound = std::max(
         max_lower_bound, PerformDualAscent(inv, element_permutation).first);
   }
@@ -1215,7 +1227,7 @@ Cost ComputeDegreeBasedDualAscentLB(const SetCoverInvariant& inv,
     elements_with_degree.push_back({rows[element].size(), element});
   }
   MultikeyRadixSort(
-      11, elements_with_degree,
+      elements_with_degree,
       [](const std::pair<BaseInt, ElementIndex>& p) { return p.first; });
   // TODO(user): remove the need for this copy and a permutation vector.
   std::vector<ElementIndex> permutation;
