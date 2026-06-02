@@ -555,7 +555,7 @@ Assignment* RoutingFilteredHeuristic::BuildSolutionFromRoutes(
     int64_t node = model_->Start(v);
     while (!model_->IsEnd(node)) {
       const int64_t next = next_accessor(node);
-      DCHECK_NE(next, node);
+      if (next == node) return nullptr;
       SetNext(node, next, v);
       SetVehicleIndex(node, v);
       node = next;

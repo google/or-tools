@@ -3505,13 +3505,35 @@ const Assignment* Model::InsertNodesInAssignmentWithParameters(
   if (insertion_db_ == nullptr) {
     DCHECK_EQ(insertion_assignment_, nullptr);
     insertion_assignment_ = solver_->MakeAssignment();
+    DCHECK(preassignment_ != nullptr);
+    DecisionBuilder* restore_preassignment =
+        solver_->MakeRestoreAssignment(preassignment_);
     std::vector<DecisionBuilder*> first_solution_dbs;
     for (bool filter_with_cp_solver : {false, true}) {
       first_solution_dbs.push_back(
           CreateRoutingFilteredDecisionBuilderWithRoutes<
               LocalCheapestInsertionFilteredHeuristic>(
               [this](int64_t i) {
-                return insertion_assignment_->Value(NextVar(i));
+                const IntVar* const next_var = NextVar(i);
+                // Propagation or the pre-assignment inserted a node which is
+                // not part of the insertion assignment.
+                if (!insertion_assignment_->Contains(next_var)) {
+                  DCHECK(next_var->Bound());
+                  return next_var->Min();
+                }
+                const int64_t next = insertion_assignment_->Value(next_var);
+                // Propagation inserted a node so we need to take it into
+                // account if we can. Only happens when there is a single
+                // un-inserted node and a single insertion position.
+                if (next_var->Bound()) {
+                  const int64_t constrained_next = next_var->Min();
+                  if (next != constrained_next && !IsEnd(constrained_next) &&
+                      NextVar(constrained_next)->Bound() &&
+                      next == NextVar(constrained_next)->Min()) {
+                    return constrained_next;
+                  }
+                }
+                return next;
               },
               /*evaluator=*/nullptr,
               parameters.local_cheapest_insertion_parameters(),
@@ -3528,7 +3550,7 @@ const Assignment* Model::InsertNodesInAssignmentWithParameters(
     DecisionBuilder* const first_solution_sub_decision_builder =
         solver_->MakeSolveOnce(CreateSolutionFinalizer(parameters),
                                first_solution_lns_limit);
-    insertion_db_ = solver_->Compose(first_solution_db,
+    insertion_db_ = solver_->Compose(restore_preassignment, first_solution_db,
                                      first_solution_sub_decision_builder);
   }
 
