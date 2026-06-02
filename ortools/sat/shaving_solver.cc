@@ -706,14 +706,8 @@ bool VariablesShavingSolver::ResetAndSolveModel(int64_t task_id, State* state,
     CpModelProto mapping_proto;
     auto context = std::make_unique<PresolveContext>(local_model, shaving_proto,
                                                      &mapping_proto);
-    const absl::Time time_before = absl::Now();
-    const double dtime_before = time_limit->GetElapsedDeterministicTime();
     const CpSolverStatus presolve_status =
         PresolveCpModel(context.get(), &postsolve_mapping);
-    LOG(INFO) << "var = " << state->var_index
-              << ", minimize = " << state->minimize
-              << ", time = " << absl::Now() - time_before << ", dtime = "
-              << time_limit->GetElapsedDeterministicTime() - dtime_before;
     if (presolve_status == CpSolverStatus::INFEASIBLE) {
       CpSolverResponse tmp_response;
       tmp_response.set_status(CpSolverStatus::INFEASIBLE);
