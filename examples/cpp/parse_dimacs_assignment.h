@@ -42,7 +42,6 @@ class DimacsAssignmentParser {
   explicit DimacsAssignmentParser(absl::string_view filename,
                                   bool maximize_cost)
       : filename_(filename),
-        graph_(nullptr),
         assignment_(nullptr),
         maximize_cost_(maximize_cost) {}
 
@@ -90,7 +89,7 @@ class DimacsAssignmentParser {
   };
 
   ErrorTrackingState state_;
-  std::unique_ptr<GraphType> graph_;
+  std::unique_ptr<typename GraphType::Builder> graph_builder_;
   LinearSumAssignment<GraphType>* assignment_;
   bool maximize_cost_;
 };
@@ -117,7 +116,8 @@ void DimacsAssignmentParser<GraphType>::ParseProblemLine(
   }
 
   state_.num_arcs = num_arcs;
-  graph_ = std::make_unique<GraphType>(num_nodes, num_arcs);
+  graph_builder_ =
+      std::make_unique<typename GraphType::Builder>(num_nodes, num_arcs);
 }
 
 template <typename GraphType>
@@ -140,7 +140,7 @@ void DimacsAssignmentParser<GraphType>::ParseNodeLine(const std::string& line) {
 
 template <typename GraphType>
 void DimacsAssignmentParser<GraphType>::ParseArcLine(const std::string& line) {
-  if (graph_ == nullptr) {
+  if (graph_builder_ == nullptr) {
     state_.bad = true;
     state_.reason =
         "Problem specification line must precede any arc specification.";
@@ -161,7 +161,7 @@ void DimacsAssignmentParser<GraphType>::ParseArcLine(const std::string& line) {
     state_.reason = "Syntax error in arc descriptor.";
     state_.bad_line.reset(new std::string(line));
   }
-  ArcIndex arc = graph_->AddArc(tail - 1, head - 1);
+  ArcIndex arc = graph_builder_->AddArc(tail - 1, head - 1);
   assignment_->SetArcCost(arc, maximize_cost_ ? -cost : cost);
 }
 
@@ -234,17 +234,17 @@ LinearSumAssignment<GraphType>* DimacsAssignmentParser<GraphType>::Parse(
     *error_message = *error_message + ": \"" + *state_.bad_line + "\"";
     return nullptr;
   }
-  if (graph_ == nullptr) {
+  if (graph_builder_ == nullptr) {
     *error_message = "empty graph description";
     return nullptr;
   }
-  graph_->Build();
-  assignment_->SetGraph(graph_.get());
+  auto graph = std::move(*graph_builder_).Build(nullptr);
+  assignment_->SetGraph(graph.get());
   *error_message = "";
   // Return a handle on the graph to the caller so the caller can free
   // the graph's memory, because the LinearSumAssignment object does
   // not take ownership of the graph and hence will not free it.
-  *graph_handle = graph_.release();
+  *graph_handle = graph.release();
   return assignment_;
 }
 
