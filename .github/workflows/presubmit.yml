@@ -53,7 +53,10 @@ jobs:
     - uses: bazel-contrib/setup-bazel@0.19.0
     - name: Build
       shell: bash
-      run: bazel test --config=ci ${{env.BAZEL_REMOTE_ARGS}} //...
+      run: bazel build --config=ci ${{env.BAZEL_REMOTE_ARGS}} //...
+    - name: Test
+      shell: bash
+      run: bazel test --config=ci ${{env.BAZEL_REMOTE_ARGS}} //ortools/...
 ###############################################################################
   CMake:
     strategy:
