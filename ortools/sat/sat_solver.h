@@ -337,8 +337,14 @@ class SatSolver {
   // is reached or the model was proven UNSAT. If `callback` is provided it is
   // called for each learned conflict (if any), before backtracking. Returns
   // IsModelUnsat().
+  //
+  // Note that if this is called at level zero, we might trigger a cleanup to
+  // remove all fixed variables from our clause database. This can have
+  // side-effect, so it can be disabled by setting
+  // potentially_process_fixed_variables to false.
   ABSL_MUST_USE_RESULT bool FinishPropagation(
-      std::optional<ConflictCallback> callback = std::nullopt);
+      std::optional<ConflictCallback> callback = std::nullopt,
+      bool potentially_process_fixed_variables = true);
 
   // Like Backtrack(0) but make sure the propagation is finished and return
   // false if unsat was detected. This also removes any assumptions level.
@@ -490,9 +496,11 @@ class SatSolver {
   // not needed.
   bool AddClauseDuringSearch(absl::Span<const Literal> literals);
 
-  // Performs propagation of the recently enqueued elements.
-  // Mainly visible for testing.
-  ABSL_MUST_USE_RESULT bool Propagate();
+  // Performs propagation of the recently enqueued elements. If
+  // potentially_process_fixed_variables is true, we might clean-up the clause
+  // database by removing fixed literals. Mainly visible for testing.
+  ABSL_MUST_USE_RESULT bool Propagate(
+      bool potentially_process_fixed_variables = true);
 
   bool MinimizeByPropagation(double dtime,
                              bool minimize_new_clauses_only = false);

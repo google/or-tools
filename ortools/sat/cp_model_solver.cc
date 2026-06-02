@@ -592,6 +592,9 @@ std::string CpModelStats(const CpModelProto& model_proto) {
     absl::StrAppend(&result, Summarize(temp));
   }
 
+  absl::StrAppend(&result, "#Constraints: ",
+                  FormatCounter(model_proto.constraints().size()), "\n");
+
   std::vector<std::string> constraints;
   constraints.reserve(name_to_num_constraints.size());
   for (const auto& [c_name, count] : name_to_num_constraints) {
@@ -2030,8 +2033,9 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
         lns_params_base, lns_params_stalling, helper, shared));
   }
 
-  const bool has_no_overlap_or_cumulative =
-      !helper->TypeToConstraints(ConstraintProto::kNoOverlap).empty() ||
+  const bool has_no_overlap =
+      !helper->TypeToConstraints(ConstraintProto::kNoOverlap).empty();
+  const bool has_cumulative =
       !helper->TypeToConstraints(ConstraintProto::kCumulative).empty();
 
   // Add incomplete subsolvers that require an objective.
@@ -2043,37 +2047,37 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
       !shared->model_proto.objective().vars().empty()) {
     // Enqueue all the possible LNS neighborhood subsolvers.
     // Each will have their own metrics.
-    if (name_filter.Keep("rnd_var_lns")) {
+    if (name_filter.Keep("lns_rnd_var")) {
       reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
           std::make_unique<RelaxRandomVariablesGenerator>(
               helper, name_filter.LastName()),
           lns_params_base, lns_params_stalling, helper, shared));
     }
-    if (name_filter.Keep("rnd_cst_lns")) {
+    if (name_filter.Keep("lns_rnd_cst")) {
       reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
           std::make_unique<RelaxRandomConstraintsGenerator>(
               helper, name_filter.LastName()),
           lns_params_base, lns_params_stalling, helper, shared));
     }
-    if (name_filter.Keep("graph_var_lns")) {
+    if (name_filter.Keep("lns_graph_var")) {
       reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
           std::make_unique<VariableGraphNeighborhoodGenerator>(
               helper, name_filter.LastName()),
           lns_params_base, lns_params_stalling, helper, shared));
     }
-    if (name_filter.Keep("graph_arc_lns")) {
+    if (name_filter.Keep("lns_graph_arc")) {
       reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
           std::make_unique<ArcGraphNeighborhoodGenerator>(
               helper, name_filter.LastName()),
           lns_params_base, lns_params_stalling, helper, shared));
     }
-    if (name_filter.Keep("graph_cst_lns")) {
+    if (name_filter.Keep("lns_graph_cst")) {
       reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
           std::make_unique<ConstraintGraphNeighborhoodGenerator>(
               helper, name_filter.LastName()),
           lns_params_base, lns_params_stalling, helper, shared));
     }
-    if (name_filter.Keep("graph_dec_lns")) {
+    if (name_filter.Keep("lns_graph_dec")) {
       reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
           std::make_unique<DecompositionGraphNeighborhoodGenerator>(
               helper, name_filter.LastName()),
@@ -2081,7 +2085,7 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
     }
     if (params.use_lb_relax_lns() &&
         params.num_workers() >= params.lb_relax_num_workers_threshold() &&
-        name_filter.Keep("lb_relax_lns")) {
+        name_filter.Keep("lns_lb_relax")) {
       reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
           std::make_unique<LocalBranchingLpBasedNeighborhoodGenerator>(
               helper, name_filter.LastName(), shared->time_limit, shared),
@@ -2089,14 +2093,14 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
     }
 
     // Scheduling (no_overlap and cumulative) specific LNS.
-    if (has_no_overlap_or_cumulative) {
-      if (name_filter.Keep("scheduling_intervals_lns")) {
+    if (has_no_overlap || has_cumulative) {
+      if (name_filter.Keep("lns_scheduling_intervals")) {
         reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
             std::make_unique<RandomIntervalSchedulingNeighborhoodGenerator>(
                 helper, name_filter.LastName()),
             lns_params_base, lns_params_stalling, helper, shared));
       }
-      if (name_filter.Keep("scheduling_time_window_lns")) {
+      if (name_filter.Keep("lns_scheduling_time_window")) {
         reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
             std::make_unique<SchedulingTimeWindowNeighborhoodGenerator>(
                 helper, name_filter.LastName()),
@@ -2105,10 +2109,16 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
       const std::vector<std::vector<int>> intervals_in_constraints =
           helper->GetUniqueIntervalSets();
       if (intervals_in_constraints.size() > 2 &&
-          name_filter.Keep("scheduling_resource_windows_lns")) {
+          name_filter.Keep("lns_scheduling_resource_windows")) {
         reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
             std::make_unique<SchedulingResourceWindowsNeighborhoodGenerator>(
                 helper, intervals_in_constraints, name_filter.LastName()),
+            lns_params_base, lns_params_stalling, helper, shared));
+      }
+      if (name_filter.Keep("lns_scheduling_time_window")) {
+        reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
+            std::make_unique<SchedulingTimeWindowNeighborhoodGenerator>(
+                helper, name_filter.LastName()),
             lns_params_base, lns_params_stalling, helper, shared));
       }
     }
@@ -2117,31 +2127,31 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
     const bool has_no_overlap2d =
         !helper->TypeToConstraints(ConstraintProto::kNoOverlap2D).empty();
     if (has_no_overlap2d) {
-      if (name_filter.Keep("packing_random_lns")) {
+      if (name_filter.Keep("lns_packing_random")) {
         reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
             std::make_unique<RandomRectanglesPackingNeighborhoodGenerator>(
                 helper, name_filter.LastName()),
             lns_params_base, lns_params_stalling, helper, shared));
       }
-      if (name_filter.Keep("packing_square_lns")) {
+      if (name_filter.Keep("lns_packing_square")) {
         reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
             std::make_unique<RectanglesPackingRelaxOneNeighborhoodGenerator>(
                 helper, name_filter.LastName()),
             lns_params_base, lns_params_stalling, helper, shared));
       }
-      if (name_filter.Keep("packing_swap_lns")) {
+      if (name_filter.Keep("lns_packing_swap")) {
         reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
             std::make_unique<RectanglesPackingRelaxTwoNeighborhoodsGenerator>(
                 helper, name_filter.LastName()),
             lns_params_base, lns_params_stalling, helper, shared));
       }
-      if (name_filter.Keep("packing_precedences_lns")) {
+      if (name_filter.Keep("lns_packing_precedences")) {
         reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
             std::make_unique<RandomPrecedencesPackingNeighborhoodGenerator>(
                 helper, name_filter.LastName()),
             lns_params_base, lns_params_stalling, helper, shared));
       }
-      if (name_filter.Keep("packing_slice_lns")) {
+      if (name_filter.Keep("lns_packing_slice")) {
         reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
             std::make_unique<SlicePackingNeighborhoodGenerator>(
                 helper, name_filter.LastName()),
@@ -2150,8 +2160,8 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
     }
 
     // Generic scheduling/packing LNS.
-    if (has_no_overlap_or_cumulative || has_no_overlap2d) {
-      if (name_filter.Keep("scheduling_precedences_lns")) {
+    if (has_no_overlap || has_cumulative || has_no_overlap2d) {
+      if (name_filter.Keep("lns_scheduling_precedences")) {
         reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
             std::make_unique<RandomPrecedenceSchedulingNeighborhoodGenerator>(
                 helper, name_filter.LastName()),
@@ -2164,13 +2174,13 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
     const int num_routes = static_cast<int>(
         helper->TypeToConstraints(ConstraintProto::kRoutes).size());
     if (num_circuit + num_routes > 0) {
-      if (name_filter.Keep("routing_random_lns")) {
+      if (name_filter.Keep("lns_routing_random")) {
         reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
             std::make_unique<RoutingRandomNeighborhoodGenerator>(
                 helper, name_filter.LastName()),
             lns_params_routing, lns_params_stalling, helper, shared));
       }
-      if (name_filter.Keep("routing_path_lns")) {
+      if (name_filter.Keep("lns_routing_path")) {
         reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
             std::make_unique<RoutingPathNeighborhoodGenerator>(
                 helper, name_filter.LastName()),
@@ -2178,7 +2188,7 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
       }
     }
     if (num_routes > 0 || num_circuit > 1) {
-      if (name_filter.Keep("routing_full_path_lns")) {
+      if (name_filter.Keep("lns_routing_full_path")) {
         reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
             std::make_unique<RoutingFullPathNeighborhoodGenerator>(
                 helper, name_filter.LastName()),
@@ -2235,7 +2245,7 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
       }
     }
 
-    if (has_no_overlap_or_cumulative) {
+    if (has_no_overlap) {
       interleaved_subsolvers.push_back(
           std::make_unique<SchedulingLocalSearchSolver>(
               "ls_scheduling", SubSolver::INCOMPLETE, shared->model_proto,
@@ -3114,6 +3124,28 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
     if (absl::GetFlag(FLAGS_cp_model_dump_models)) {
       DumpModelProto(*new_cp_model_proto, "presolved_model");
       DumpModelProto(*mapping_proto, "mapping_model");
+
+      // Debug model with 1-based indices easier to read but cannot be parsed
+      // back! This follow the SAT convention for literal like +3/-3 and
+      // variable starts at 1. Note also that without the model name, the domain
+      // of variable #i will be at line i.
+      {
+        CpModelProto copy = *new_cp_model_proto;
+        copy.clear_name();
+        for (ConstraintProto& ct : *copy.mutable_constraints()) {
+          ApplyToAllVariableIndices(
+              [](int* ref) {
+                if (*ref >= 0) ++*ref;
+              },
+              &ct);
+          ApplyToAllLiteralIndices(
+              [](int* ref) {
+                if (*ref >= 0) ++*ref;
+              },
+              &ct);
+        }
+        DumpModelProto(copy, "debug_1_based_model");
+      }
 
       // If the model is convertible to a MIP, we dump it too.
       //

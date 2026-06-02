@@ -53,7 +53,7 @@ class DomainDeductions {
   //
   // Important: No need to store any deductions where the domain is a superset
   // of the current variable domain.
-  void AddDeduction(int literal_ref, int var, Domain domain);
+  void AddDeduction(int literal_ref, int var, const Domain& domain);
 
   // Returns the domain of var when literal_ref is true.
   // If there is no information, returns Domain::AllValues().

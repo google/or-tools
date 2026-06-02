@@ -18,6 +18,7 @@
 #include <bitset>
 #include <cstdint>
 #include <limits>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -1021,6 +1022,8 @@ class LratGateCongruenceHelper {
     const auto& assignment = trail_->Assignment();
 
     for (const SatClause* clause : gates_clauses_[id]) {
+      DCHECK(!clause->empty());
+
       // We rewrite each clause using new equivalences or fixed literals found.
       marked_.ResetAllToFalse();
       tmp_literals_.clear();
@@ -1368,7 +1371,19 @@ bool GateCongruenceClosure::DoOneRound(bool log_info) {
 
     // Also propagate all the clauses.
     // TODO(user): We might not want to trigger LP or costly propagator here.
-    if (!sat_solver_->FinishPropagation()) return false;
+    //
+    // Tricky: It is important that we disable fixed variables inprocessing
+    // because we keep pointers to clauses, and we don't want the database to
+    // change behind our back.
+    //
+    // TODO(user): we should probably make it clearer in our API, where and when
+    // the clause database can be inprocessed. Currently removing fixed variable
+    // is the only thing that can happen at level zero, so this should work, but
+    // it seems brittle.
+    if (!sat_solver_->FinishPropagation(
+            std::nullopt, /*potentially_process_fixed_variables=*/false)) {
+      return false;
+    }
 
     // This is quite tricky: as we fix a literal, we propagate right away
     // everything implied by it in the binary implication graph. So we need to

@@ -326,7 +326,9 @@ std::function<BooleanOrIntegerLiteral()> SequentialValueSelection(
     Model* model) {
   auto* encoder = model->GetOrCreate<IntegerEncoder>();
   auto* sat_policy = model->GetOrCreate<SatDecisionPolicy>();
-  return [=]() {
+  return [encoder, sat_policy,
+          value_selection_heuristics = std::move(value_selection_heuristics),
+          var_selection_heuristic = std::move(var_selection_heuristic)]() {
     // Get the current decision.
     const BooleanOrIntegerLiteral current_decision = var_selection_heuristic();
     if (!current_decision.HasValue()) return current_decision;
@@ -1973,8 +1975,6 @@ SatSolver::Status IntegerSearchHelper::SolveIntegerProblem() {
           // Should not happen, but restart if it does (PropagateAll() disables
           // the incomplete propagation in the linear propagator, and is a no-op
           // after that; hence this can only happen at most once).
-          LOG(DFATAL)
-              << "Should not happen: linear propagator PropagateAll() failed";
           sat_solver_->Backtrack(0);
           if (!sat_solver_->FinishPropagation()) {
             return sat_solver_->UnsatStatus();

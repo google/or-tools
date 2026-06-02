@@ -77,8 +77,10 @@ class JSSPSolverTest : public ::testing::Test {
     using SchedulingLocalSearch::AnalyzeSchedule;
     using SchedulingLocalSearch::BuildInitialMachineSequences;
     using SchedulingLocalSearch::ComputeDynamicState;
-    using SchedulingLocalSearch::EstimateMakespanForInsert;
+    using SchedulingLocalSearch::EstimateAssignmentMove;
+    using SchedulingLocalSearch::EstimateSequenceMove;
     using SchedulingLocalSearch::GenerateN8Moves;
+    using SchedulingLocalSearch::GenerateNAMoves;
     using SchedulingLocalSearch::InsertMove;
     using SchedulingLocalSearch::MoveEvaluationScratch;
     using SchedulingLocalSearch::ScheduleAnalysis;
@@ -127,6 +129,7 @@ TEST_F(JSSPSolverTest, ComputeDynamicStateBuildsCorrectTailsAndLookups) {
 
   // Check Position Lookup
   EXPECT_THAT(state.position_in_machine, ElementsAre(0, 1, 2, 0));
+  EXPECT_THAT(state.topo_index[3], Eq(3));
 }
 
 TEST_F(JSSPSolverTest, GenerateN8MovesExtractsValidInsertions) {
@@ -136,9 +139,11 @@ TEST_F(JSSPSolverTest, GenerateN8MovesExtractsValidInsertions) {
   const SchedLSTest::SolverState state = solver.ComputeDynamicState(
       machine_tasks_, analysis.topo_order, current_durations_);
 
-  const std::vector<SchedLSTest::InsertMove> moves = solver.GenerateN8Moves(
-      analysis.critical_path, state.prev_on_machine, state.next_on_machine,
-      analysis.start_mins, state.tails, current_machines_, current_durations_);
+  std::vector<SchedLSTest::InsertMove> moves;
+  solver.GenerateN8Moves(analysis.critical_path, state.prev_on_machine,
+                         state.next_on_machine, analysis.start_mins,
+                         state.tails, current_machines_, current_durations_,
+                         &moves);
 
   // The critical path is [0, 1, 2, 3].
   // Blocks: Block 0 is [0, 1, 2] on M0. Block 1 is [3] on M1.
@@ -159,23 +164,84 @@ TEST_F(JSSPSolverTest, GenerateN8MovesExtractsValidInsertions) {
   EXPECT_EQ(moves[1].place_after, true);
 }
 
-TEST_F(JSSPSolverTest, EstimateMakespanForInsertAccuratelyPredictsImprovement) {
+TEST_F(JSSPSolverTest, EstimateSequenceMoveAccuratelyPredictsImprovement) {
   const SchedLSTest solver(problem_);
   SchedLSTest::ScheduleAnalysis analysis(problem_);
   solver.AnalyzeSchedule(machine_tasks_, current_durations_, &analysis);
   const SchedLSTest::SolverState state = solver.ComputeDynamicState(
       machine_tasks_, analysis.topo_order, current_durations_);
 
-  // We propose taking Task 1 and inserting it AFTER Task 2.
-  const SchedLSTest::InsertMove insert_move{1, 2, true};
-  SchedLSTest::MoveEvaluationScratch scratch;
+  std::vector<IntegerValue> static_job_heads = {0, 0, 0, 0};
+  std::vector<IntegerValue> static_job_tails = {0, 0, 10, 0};
 
-  const IntegerValue estimated_makespan = solver.EstimateMakespanForInsert(
+  // We propose taking Task 1 and inserting it AFTER Task 2.
+  const SchedLSTest::InsertMove insert_move{1, 2, true, 0, 10};
+  SchedLSTest::MoveEvaluationScratch scratch;
+  IntegerValue prune_threshold = kMaxIntegerValue;
+
+  const IntegerValue estimated_makespan = solver.EstimateSequenceMove(
       insert_move, analysis.start_mins, state.tails, state.prev_on_machine,
-      state.next_on_machine, current_durations_, &scratch);
+      state.next_on_machine, current_durations_,
+      absl::MakeSpan(static_job_heads), absl::MakeSpan(static_job_tails),
+      prune_threshold, &scratch);
 
   // Moving T1 after T2 pushes T2 to 10, T3 to 20(->30), T1 to 20(->30).
   EXPECT_EQ(estimated_makespan, 30);
+}
+
+TEST_F(JSSPSolverTest,
+       GenerateNAMovesExtractsValidAssignmentsAndPrunesWorkloads) {
+  problem_.tasks[0].compatible_machine = {0, 1};
+  problem_.tasks[0].duration_for_machine = {10, 10};
+
+  const SchedLSTest solver(problem_);
+  SchedLSTest::ScheduleAnalysis analysis(problem_);
+  solver.AnalyzeSchedule(machine_tasks_, current_durations_, &analysis);
+  const SchedLSTest::SolverState state = solver.ComputeDynamicState(
+      machine_tasks_, analysis.topo_order, current_durations_);
+
+  std::vector<SchedLSTest::InsertMove> moves;
+
+  solver.GenerateNAMoves(analysis.critical_path, analysis.start_mins,
+                         state.tails, current_machines_, current_durations_,
+                         machine_tasks_, state, &moves);
+
+  ASSERT_EQ(moves.size(), 2);
+  EXPECT_EQ(moves[0].task, 0);
+  EXPECT_EQ(moves[0].target_task, 3);
+  EXPECT_EQ(moves[0].place_after, false);
+  EXPECT_EQ(moves[0].new_machine, 1);
+
+  EXPECT_EQ(moves[1].task, 0);
+  EXPECT_EQ(moves[1].target_task, 3);
+  EXPECT_EQ(moves[1].place_after, true);
+  EXPECT_EQ(moves[1].new_machine, 1);
+}
+
+TEST_F(JSSPSolverTest, EstimateAssignmentMoveAccuratelyPredictsImpact) {
+  const SchedLSTest solver(problem_);
+  SchedLSTest::ScheduleAnalysis analysis(problem_);
+  solver.AnalyzeSchedule(machine_tasks_, current_durations_, &analysis);
+  const SchedLSTest::SolverState state = solver.ComputeDynamicState(
+      machine_tasks_, analysis.topo_order, current_durations_);
+
+  // T3 depends on T2. T2 finishes at 30. So T3's job head is 30.
+  std::vector<IntegerValue> static_job_heads = {0, 0, 0, 30};
+  std::vector<IntegerValue> static_job_tails = {0, 0, 10, 0};
+
+  const SchedLSTest::InsertMove insert_move{0, 3, true, 1, 10};
+  SchedLSTest::MoveEvaluationScratch scratch;
+  IntegerValue prune_threshold = kMaxIntegerValue;
+
+  const IntegerValue estimated_makespan = solver.EstimateAssignmentMove(
+      insert_move, analysis.start_mins, state.tails, state, current_durations_,
+      machine_tasks_, absl::MakeSpan(static_job_heads),
+      absl::MakeSpan(static_job_tails), prune_threshold, &scratch);
+
+  // T3 starts at 30 and ends at 40. T0 is placed AFTER T3.
+  // T0 starts at 40 and ends at 50. Max path is 50.
+  EXPECT_EQ(estimated_makespan, 50);
+  EXPECT_THAT(scratch.mutated_sequence, ElementsAre(3, 0));
 }
 
 TEST_F(JSSPSolverTest, BuildInitialMachineSequencesHandlesDirtyHints) {

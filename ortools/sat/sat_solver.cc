@@ -659,12 +659,13 @@ int SatSolver::EnqueueDecisionAndBackjumpOnConflict(
   return last_decision_or_backtrack_trail_index_;
 }
 
-bool SatSolver::FinishPropagation(std::optional<ConflictCallback> callback) {
+bool SatSolver::FinishPropagation(std::optional<ConflictCallback> callback,
+                                  bool potentially_process_fixed_variables) {
   if (model_is_unsat_) return false;
   int num_loop = 0;
   while (true) {
     const int old_decision_level = trail_->CurrentDecisionLevel();
-    if (!Propagate()) {
+    if (!Propagate(potentially_process_fixed_variables)) {
       ProcessCurrentConflict(callback);
       if (model_is_unsat_) return false;
       if (trail_->CurrentDecisionLevel() == old_decision_level) {
@@ -2116,7 +2117,7 @@ bool SatSolver::PropagationIsDone() const {
 // TODO(user): Support propagating only the "first" propagators. That can
 // be useful for probing/in-processing, so we can control if we do only the SAT
 // part or the full integer part...
-bool SatSolver::Propagate() {
+bool SatSolver::Propagate(bool potentially_process_fixed_variables) {
   SCOPED_TIME_STAT(&stats_);
   DCHECK(!ModelIsUnsat());
 
@@ -2155,7 +2156,7 @@ bool SatSolver::Propagate() {
     // variables. Note that for efficiency reason, we don't do that too often.
     //
     // TODO(user): Do more advanced preprocessing?
-    if (CurrentDecisionLevel() == 0) {
+    if (CurrentDecisionLevel() == 0 && potentially_process_fixed_variables) {
       const double kMinDeterministicTimeBetweenCleanups = 1.0;
       if (num_processed_fixed_variables_ < trail_->Index() &&
           deterministic_time() >

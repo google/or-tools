@@ -127,7 +127,7 @@ bool LiteralValue(int lit, absl::Span<const int64_t> solution) {
 
 int LinearIncrementalEvaluator::NewConstraint(Domain domain) {
   DCHECK(creation_phase_);
-  domains_.push_back(domain);
+  domains_.push_back(std::move(domain));
   offsets_.push_back(0);
   activities_.push_back(0);
   num_false_enforcement_.push_back(0);

@@ -71,15 +71,40 @@ CompactVectorVector<int> SchedulingLocalSearch::BuildInitialMachineSequences(
 }
 
 std::vector<SchedulingLocalSearch::InsertMove>
-SchedulingLocalSearch::GenerateN8Moves(
+SchedulingLocalSearch::GenerateMoves(
+    absl::Span<const int> critical_path, const SolverState& state,
+    absl::Span<const IntegerValue> start_mins,
+    absl::Span<const int> current_machines,
+    absl::Span<const int64_t> current_durations,
+    const CompactVectorVector<int>& current_machine_tasks) const {
+  const absl::Span<const int> prev_on_machine = state.prev_on_machine;
+  const absl::Span<const int> next_on_machine = state.next_on_machine;
+  const absl::Span<const IntegerValue> tails = state.tails;
+
+  if (critical_path.size() < 2) return {};
+
+  std::vector<InsertMove> moves;
+  // Reserve enough space to cover both N8 and NA candidates
+  moves.reserve(critical_path.size() * 8);
+
+  GenerateN8Moves(critical_path, prev_on_machine, next_on_machine, start_mins,
+                  tails, current_machines, current_durations, &moves);
+
+  GenerateNAMoves(critical_path, start_mins, tails, current_machines,
+                  current_durations, current_machine_tasks, state, &moves);
+
+  return moves;
+}
+
+void SchedulingLocalSearch::GenerateN8Moves(
     absl::Span<const int> critical_path, absl::Span<const int> prev_on_machine,
     absl::Span<const int> next_on_machine,
     absl::Span<const IntegerValue> start_mins,
     absl::Span<const IntegerValue> tails,
     absl::Span<const int> current_machines,
-    absl::Span<const int64_t> current_durations) const {
-  if (critical_path.size() < 2) return {};
-
+    absl::Span<const int64_t> current_durations,
+    std::vector<InsertMove>* moves) const {
+  if (critical_path.size() < 2) return;
   // Heuristics to forbid moves that can potentially create cycles.
   auto is_invalid_forward_move = [&](int x, int target) {
     if (target == -1) return false;
@@ -155,10 +180,7 @@ SchedulingLocalSearch::GenerateN8Moves(
   }
 
   const int num_blocks = blocks.size();
-  if (num_blocks == 0) return {};
-
-  std::vector<InsertMove> moves;
-  moves.reserve(critical_path.size() * 4);
+  if (num_blocks == 0) return;
 
   // First op restrictions and leftward leaps.
   // Applies to all blocks except the first one.
@@ -166,11 +188,13 @@ SchedulingLocalSearch::GenerateN8Moves(
     const int start = blocks[b].start_idx;
     const int end = blocks[b].end_idx;
     const int first_op = critical_path[start];
+    const int current_m = current_machines[first_op];
 
     // Prop 5: Inner ops moving left before first_op.
     for (int i = start + 1; i <= end; ++i) {
       if (!is_invalid_backward_move(critical_path[i], first_op)) {
-        moves.push_back({critical_path[i], first_op, false});
+        moves->push_back({critical_path[i], first_op, false, current_m,
+                          current_durations[critical_path[i]]});
       }
     }
 
@@ -178,7 +202,8 @@ SchedulingLocalSearch::GenerateN8Moves(
     for (int i = start + 2; i < end; ++i) {
       const int target = critical_path[i];
       if (is_invalid_forward_move(first_op, target)) break;  // Monotonic prune.
-      moves.push_back({first_op, target, true});
+      moves->push_back(
+          {first_op, target, true, current_m, current_durations[first_op]});
     }
 
     // N8 external leaps (leftward).
@@ -187,7 +212,8 @@ SchedulingLocalSearch::GenerateN8Moves(
       bool pushed_any = false;
       for (int i = start; i <= end; ++i) {
         if (!is_invalid_backward_move(critical_path[i], target)) {
-          moves.push_back({critical_path[i], target, false});
+          moves->push_back({critical_path[i], target, false, current_m,
+                            current_durations[critical_path[i]]});
           pushed_any = true;
         }
       }
@@ -202,11 +228,13 @@ SchedulingLocalSearch::GenerateN8Moves(
     const int start = blocks[b].start_idx;
     const int end = blocks[b].end_idx;
     const int last_op = critical_path[end];
+    const int current_m = current_machines[last_op];
 
     // Prop 6: Inner ops moving RIGHT after last_op.
     for (int i = start; i < end; ++i) {
       if (!is_invalid_forward_move(critical_path[i], last_op)) {
-        moves.push_back({critical_path[i], last_op, true});
+        moves->push_back({critical_path[i], last_op, true, current_m,
+                          current_durations[critical_path[i]]});
       }
     }
 
@@ -214,7 +242,8 @@ SchedulingLocalSearch::GenerateN8Moves(
     for (int i = end - 2; i > start; --i) {
       const int target = critical_path[i];
       if (is_invalid_backward_move(last_op, target)) break;  // Monotonic prune.
-      moves.push_back({last_op, target, false});
+      moves->push_back(
+          {last_op, target, false, current_m, current_durations[last_op]});
     }
 
     // N8 external leaps (rightward).
@@ -224,7 +253,8 @@ SchedulingLocalSearch::GenerateN8Moves(
       // Evaluate ALL operations in the block, including last_op!
       for (int i = start; i <= end; ++i) {
         if (!is_invalid_forward_move(critical_path[i], target)) {
-          moves.push_back({critical_path[i], target, true});
+          moves->push_back({critical_path[i], target, true, current_m,
+                            current_durations[critical_path[i]]});
           pushed_any = true;
         }
       }
@@ -232,38 +262,89 @@ SchedulingLocalSearch::GenerateN8Moves(
       target = next_on_machine[target];
     }
   }
-
-  return moves;
 }
 
-IntegerValue SchedulingLocalSearch::EstimateMakespanForInsert(
+void SchedulingLocalSearch::GenerateNAMoves(
+    absl::Span<const int> critical_path,
+    absl::Span<const IntegerValue> start_mins,
+    absl::Span<const IntegerValue> tails,
+    absl::Span<const int> current_machines,
+    absl::Span<const int64_t> current_durations,
+    const CompactVectorVector<int>& current_machine_tasks,
+    const SolverState& state, std::vector<InsertMove>* moves) const {
+  auto x_reaches_target = [&](int x, int target) {
+    if (target == -1 || x == -1) return false;
+    if (job_reachability_[x * num_tasks_ + target]) return true;
+    for (int js : job_successors_[x]) {
+      if (state.topo_index[js] <= state.topo_index[target] &&
+          start_mins[target] >= start_mins[js] + current_durations[js] &&
+          tails[js] >= current_durations[target] + tails[target]) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  auto target_reaches_x = [&](int target, int x) {
+    if (target == -1 || x == -1) return false;
+    if (job_reachability_[target * num_tasks_ + x]) return true;
+    for (int jp : problem_.tasks[x].tasks_that_must_complete_before_this) {
+      if (state.topo_index[target] <= state.topo_index[jp] &&
+          start_mins[jp] >= start_mins[target] + current_durations[target] &&
+          tails[target] >= current_durations[jp] + tails[jp]) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  for (const int t : critical_path) {
+    if (problem_.tasks[t].compatible_machine.size() <= 1) continue;
+
+    for (int a = 0; a < problem_.tasks[t].compatible_machine.size(); ++a) {
+      const int new_m = problem_.tasks[t].compatible_machine[a];
+      if (new_m == current_machines[t]) continue;
+
+      const int64_t new_duration = problem_.tasks[t].duration_for_machine[a];
+
+      absl::Span<const int> seq = current_machine_tasks[new_m];
+
+      if (seq.empty()) {
+        moves->push_back({t, -1, true, new_m, new_duration});
+        continue;
+      }
+
+      const int first_task = seq[0];
+      // Check if safe to place BEFORE the first element
+      if (!target_reaches_x(first_task, t)) {
+        moves->push_back({t, first_task, false, new_m, new_duration});
+      }
+
+      for (int i = 0; i < seq.size(); ++i) {
+        const int t2 = seq[i];
+        const int next_t2 = (i + 1 < seq.size()) ? seq[i + 1] : -1;
+
+        // Check if safe to place AFTER t2 (must check both sides of insertion)
+        if (x_reaches_target(t, t2)) continue;
+        if (next_t2 != -1 && target_reaches_x(next_t2, t)) continue;
+
+        moves->push_back({t, t2, true, new_m, new_duration});
+      }
+    }
+  }
+}
+
+IntegerValue SchedulingLocalSearch::EstimateSequenceMove(
     const InsertMove& move, absl::Span<const IntegerValue> start_mins,
     absl::Span<const IntegerValue> tails, absl::Span<const int> prev_on_machine,
     absl::Span<const int> next_on_machine,
     absl::Span<const int64_t> current_durations,
-    MoveEvaluationScratch* scratch) const {
+    absl::Span<const IntegerValue> static_job_heads,
+    absl::Span<const IntegerValue> static_job_tails,
+    IntegerValue prune_threshold, MoveEvaluationScratch* scratch) const {
   const int x = move.task;
   const int target = move.target_task;
-  DCHECK_NE(x, target);
-
-  // Helper to get the earliest possible start_min for a task ignoring the
-  // current machine attribution for this task only.
-  auto get_job_head = [&](int task) {
-    IntegerValue j_head = problem_.tasks[task].min_start;
-    for (int p : problem_.tasks[task].tasks_that_must_complete_before_this) {
-      j_head = std::max(j_head, start_mins[p] + current_durations[p]);
-    }
-    return j_head;
-  };
-
-  // Same as above, but for the job tail.
-  auto get_job_tail = [&](int task) {
-    IntegerValue j_tail = 0;
-    for (int s : job_successors_[task]) {
-      j_tail = std::max(j_tail, current_durations[s] + tails[s]);
-    }
-    return j_tail;
-  };
+  const int64_t x_duration = current_durations[x];
 
   // Build the contiguous mutated sequence of tasks on this machine.
   //
@@ -279,6 +360,13 @@ IntegerValue SchedulingLocalSearch::EstimateMakespanForInsert(
   // necessarily on the critical path. `mutated_sequence` below represents
   // this generalized displaced machine segment (Q) combined with the moved
   // task (x).
+
+  // O(1) Job-level early exit
+  if (static_job_heads[x] + x_duration + static_job_tails[x] >
+      prune_threshold) {
+    return kMaxIntegerValue;
+  }
+
   std::vector<int>& mutated_sequence = scratch->mutated_sequence;
   mutated_sequence.clear();
   int p_m = -1;  // The machine predecessor to the entire mutated segment.
@@ -311,6 +399,21 @@ IntegerValue SchedulingLocalSearch::EstimateMakespanForInsert(
     }
   }
 
+  return ComputeMutatedSequenceMakespan(
+      x, x_duration, p_m, s_m, start_mins, tails, current_durations,
+      static_job_heads, static_job_tails, scratch);
+}
+
+IntegerValue SchedulingLocalSearch::ComputeMutatedSequenceMakespan(
+    int x, int64_t x_duration, int p_m, int s_m,
+    absl::Span<const IntegerValue> start_mins,
+    absl::Span<const IntegerValue> tails,
+    absl::Span<const int64_t> current_durations,
+    absl::Span<const IntegerValue> static_job_heads,
+    absl::Span<const IntegerValue> static_job_tails,
+    MoveEvaluationScratch* scratch) const {
+  std::vector<int>& mutated_sequence = scratch->mutated_sequence;
+
   // Forward sweep to calculate new heads.
   std::vector<IntegerValue>& new_heads = scratch->heads;
   new_heads.resize(mutated_sequence.size());
@@ -321,9 +424,10 @@ IntegerValue SchedulingLocalSearch::EstimateMakespanForInsert(
 
   for (size_t i = 0; i < mutated_sequence.size(); ++i) {
     const int t = mutated_sequence[i];
-    head = std::max(head, get_job_head(t));
+    const int64_t dur = (t == x) ? x_duration : current_durations[t];
+    head = std::max(head, static_job_heads[t]);
     new_heads[i] = head;
-    head += current_durations[t];
+    head += dur;
   }
 
   // Backward sweep to calculate new tails.
@@ -336,34 +440,133 @@ IntegerValue SchedulingLocalSearch::EstimateMakespanForInsert(
 
   for (int i = mutated_sequence.size() - 1; i >= 0; --i) {
     const int t = mutated_sequence[i];
-    tail = std::max(tail, get_job_tail(t));
+    const int64_t dur = (t == x) ? x_duration : current_durations[t];
+    tail = std::max(tail, static_job_tails[t]);
     new_tails[i] = tail;
-    tail += current_durations[t];
+    tail += dur;
   }
 
   // Find the maximum path through the mutated segment.
   IntegerValue max_path = 0;
   for (size_t i = 0; i < mutated_sequence.size(); ++i) {
-    const IntegerValue path =
-        new_heads[i] + current_durations[mutated_sequence[i]] + new_tails[i];
+    const int t = mutated_sequence[i];
+    const int64_t dur = (t == x) ? x_duration : current_durations[t];
+    const IntegerValue path = new_heads[i] + dur + new_tails[i];
     max_path = std::max(max_path, path);
   }
 
   return max_path;
 }
 
+IntegerValue SchedulingLocalSearch::EstimateAssignmentMove(
+    const InsertMove& move, absl::Span<const IntegerValue> start_mins,
+    absl::Span<const IntegerValue> tails, const SolverState& state,
+    absl::Span<const int64_t> current_durations,
+    const CompactVectorVector<int>& current_machine_tasks,
+    absl::Span<const IntegerValue> static_job_heads,
+    absl::Span<const IntegerValue> static_job_tails,
+    IntegerValue prune_threshold, MoveEvaluationScratch* scratch) const {
+  const int x = move.task;
+  const int target = move.target_task;
+  const int new_m = move.new_machine;
+  const int64_t x_duration = move.new_duration;
+
+  int64_t new_workload = state.machine_workloads[new_m] + x_duration;
+  if (new_workload > prune_threshold) {
+    return new_workload;
+  }
+
+  absl::Span<const int> seq = current_machine_tasks[new_m];
+
+  // Track the immediate neighbors of x specifically for the pruning bounds.
+  int p_x = -1;
+  int s_x = -1;
+
+  if (!seq.empty()) {
+    if (target == -1) {
+      p_x = seq.back();
+    } else if (!move.place_after && target == seq[0]) {
+      s_x = seq[0];
+    } else {
+      p_x = target;
+    }
+  }
+
+  IntegerValue lb_head_x = static_job_heads[x];
+  if (p_x != -1) {
+    lb_head_x = std::max(lb_head_x, start_mins[p_x] + current_durations[p_x]);
+  }
+
+  IntegerValue lb_tail_x = static_job_tails[x];
+  if (s_x != -1) {
+    lb_tail_x = std::max(lb_tail_x, current_durations[s_x] + tails[s_x]);
+  }
+
+  if (lb_head_x + x_duration + lb_tail_x > prune_threshold) {
+    return kMaxIntegerValue;
+  }
+
+  std::vector<int>& mutated_sequence = scratch->mutated_sequence;
+  mutated_sequence.clear();
+  mutated_sequence.reserve(num_tasks_);
+
+  bool inserted = false;
+  if (target == -1) {
+    mutated_sequence.push_back(x);
+    inserted = true;
+  } else if (!move.place_after && !seq.empty() && target == seq[0]) {
+    mutated_sequence.push_back(x);
+    inserted = true;
+  }
+
+  for (int t : seq) {
+    mutated_sequence.push_back(t);
+    if (move.place_after && t == target) {
+      mutated_sequence.push_back(x);
+      inserted = true;
+    }
+  }
+  if (!inserted) mutated_sequence.push_back(x);
+
+  return ComputeMutatedSequenceMakespan(
+      x, x_duration, -1, -1, start_mins, tails, current_durations,
+      static_job_heads, static_job_tails, scratch);
+}
+
 std::optional<SchedulingLocalSearch::InsertMove>
 SchedulingLocalSearch::SelectBestMove(
     absl::Span<const InsertMove> candidates,
-    absl::Span<const IntegerValue> start_mins,
-    absl::Span<const IntegerValue> tails, absl::Span<const int> prev_on_machine,
-    absl::Span<const int> next_on_machine, absl::Span<const int> tabu_matrix,
-    absl::Span<const int64_t> current_durations, int current_iteration,
-    IntegerValue global_best_makespan, absl::BitGenRef random) const {
+    absl::Span<const IntegerValue> start_mins, const SolverState& state,
+    absl::Span<const int> tabu_matrix,
+    absl::Span<const int> assignment_tabu_matrix,
+    absl::Span<const int> current_machines,
+    absl::Span<const int64_t> current_durations,
+    const CompactVectorVector<int>& current_machine_tasks,
+    int current_iteration, IntegerValue global_best_makespan,
+    absl::BitGenRef random) const {
+  absl::Span<const IntegerValue> tails = state.tails;
+  absl::Span<const int> prev_on_machine = state.prev_on_machine;
+  absl::Span<const int> next_on_machine = state.next_on_machine;
   DCHECK_EQ(start_mins.size(), num_tasks_);
   DCHECK_EQ(tails.size(), num_tasks_);
   DCHECK_EQ(prev_on_machine.size(), num_tasks_);
   DCHECK_EQ(next_on_machine.size(), num_tasks_);
+
+  std::vector<IntegerValue> static_job_heads(num_tasks_, 0);
+  std::vector<IntegerValue> static_job_tails(num_tasks_, 0);
+  for (int t = 0; t < num_tasks_; ++t) {
+    IntegerValue j_head = problem_.tasks[t].min_start;
+    for (int p : problem_.tasks[t].tasks_that_must_complete_before_this) {
+      j_head = std::max(j_head, start_mins[p] + current_durations[p]);
+    }
+    static_job_heads[t] = j_head;
+
+    IntegerValue j_tail = 0;
+    for (int s : job_successors_[t]) {
+      j_tail = std::max(j_tail, current_durations[s] + tails[s]);
+    }
+    static_job_tails[t] = j_tail;
+  }
 
   std::optional<InsertMove> best_move = std::nullopt;
   IntegerValue best_estimate = kMaxIntegerValue;
@@ -379,8 +582,13 @@ SchedulingLocalSearch::SelectBestMove(
     const int target = move.target_task;
 
     bool is_tabu = false;
-    {
-      // Tabu check
+    // Tabu check
+    if (move.new_machine != current_machines[x]) {
+      if (assignment_tabu_matrix[x * num_machines_ + move.new_machine] >
+          current_iteration) {
+        is_tabu = true;
+      }
+    } else {
       int new_prev = move.place_after ? target : prev_on_machine[target];
       if (new_prev == x) new_prev = prev_on_machine[x];
 
@@ -402,11 +610,26 @@ SchedulingLocalSearch::SelectBestMove(
         if (tabu_matrix[u * num_tasks_ + v] > current_iteration) is_tabu = true;
       }
     }
+    // A non-tabu move only matters if it ties or beats the current best.
+    // A tabu move matters if it beats the global best or is the best fallback
+    // tabu move.
+    const IntegerValue prune_threshold =
+        is_tabu ? std::max(global_best_makespan - 1, best_tabu_estimate)
+                : best_estimate;
 
     // Evaluate an approximation of the makespan if we make this move.
-    const IntegerValue estimate =
-        EstimateMakespanForInsert(move, start_mins, tails, prev_on_machine,
-                                  next_on_machine, current_durations, &scratch);
+    IntegerValue estimate;
+    if (move.new_machine == current_machines[x]) {
+      estimate = EstimateSequenceMove(move, start_mins, tails, prev_on_machine,
+                                      next_on_machine, current_durations,
+                                      static_job_heads, static_job_tails,
+                                      prune_threshold, &scratch);
+    } else {
+      estimate = EstimateAssignmentMove(
+          move, start_mins, tails, state, current_durations,
+          current_machine_tasks, static_job_heads, static_job_tails,
+          prune_threshold, &scratch);
+    }
 
     // 3. Tabu Search Logic + Aspiration Criterion
     // If it's NOT tabu, it's a valid candidate.
@@ -472,12 +695,19 @@ SchedulingLocalSearch::SolverState SchedulingLocalSearch::ComputeDynamicState(
   state.next_on_machine.assign(num_tasks_, -1);
   state.position_in_machine.assign(num_tasks_, -1);
   state.tails.assign(num_tasks_, 0);
+  state.machine_workloads.assign(num_machines_, 0);
+  state.topo_index.assign(num_tasks_, -1);
+
+  for (int i = 0; i < topo_order.size(); ++i) {
+    state.topo_index[topo_order[i]] = i;
+  }
 
   // 1. Build O(1) Machine Successor/Predecessor lookups
   for (int m = 0; m < machine_tasks.size(); ++m) {
     const absl::Span<const int> tasks_on_machine = machine_tasks[m];
     for (int i = 0; i < tasks_on_machine.size(); ++i) {
       const int u = tasks_on_machine[i];
+      state.machine_workloads[m] += current_durations[u];
       state.position_in_machine[u] = i;
       if (i > 0) {
         state.prev_on_machine[u] = tasks_on_machine[i - 1];
@@ -691,7 +921,113 @@ std::vector<std::pair<int, int>> SchedulingLocalSearch::ComputePrecedences(
   return precedences;
 }
 
-std::vector<int64_t> SchedulingLocalSearch::Solve(
+void SchedulingLocalSearch::ApplySequenceMove(
+    const InsertMove& move, const SolverState& state, int current_iteration,
+    int tenure, absl::Span<int> tabu_matrix,
+    absl::Span<int> machine_seq) const {
+  const int x = move.task;
+  const int target = move.target_task;
+
+  const int idx_x = state.position_in_machine[x];
+  const int idx_target = state.position_in_machine[target];
+
+  // Determine the raw destination index based on placement.
+  int insert_idx = idx_target + (move.place_after ? 1 : 0);
+
+  // If the task is moving right, its own removal shifts the target index left.
+  if (idx_x < insert_idx) {
+    insert_idx--;
+  }
+
+  // Execute the insertion in-place via std::rotate.
+  if (idx_x < insert_idx) {
+    // Moving task to the right.
+    // Everything between idx_x+1 and insert_idx shifts left by 1.
+    std::rotate(machine_seq.begin() + idx_x, machine_seq.begin() + idx_x + 1,
+                machine_seq.begin() + insert_idx + 1);
+  } else if (idx_x > insert_idx) {
+    // Moving task to the left.
+    // Everything between insert_idx and idx_x-1 shifts right by 1.
+    std::rotate(machine_seq.begin() + insert_idx, machine_seq.begin() + idx_x,
+                machine_seq.begin() + idx_x + 1);
+  }
+
+  // Penalize the task jumping back next to its old neighbors.
+  const int old_prev = state.prev_on_machine[x];
+  const int old_next = state.next_on_machine[x];
+
+  if (old_prev != -1) {
+    tabu_matrix[x * num_tasks_ + old_prev] = current_iteration + tenure;
+    tabu_matrix[old_prev * num_tasks_ + x] = current_iteration + tenure;
+  }
+  if (old_next != -1) {
+    tabu_matrix[x * num_tasks_ + old_next] = current_iteration + tenure;
+    tabu_matrix[old_next * num_tasks_ + x] = current_iteration + tenure;
+  }
+}
+
+void SchedulingLocalSearch::ApplyAssignmentMove(
+    const InsertMove& move, int old_m, int current_iteration, int tenure,
+    absl::Span<int> current_machines,
+    absl::Span<int> current_active_machine_indices,
+    absl::Span<int64_t> current_durations,
+    absl::Span<int> assignment_tabu_matrix,
+    CompactVectorVector<int>* current_machine_tasks) const {
+  const int x = move.task;
+  const int target = move.target_task;
+  const int new_m = move.new_machine;
+
+  CompactVectorVector<int> next_machine_tasks;
+  next_machine_tasks.reserve(num_machines_, num_tasks_);
+
+  for (int m = 0; m < num_machines_; ++m) {
+    absl::Span<const int> old_seq = (*current_machine_tasks)[m];
+
+    if (m == old_m) {
+      next_machine_tasks.Add({});
+      for (const int t : old_seq) {
+        if (t != x) next_machine_tasks.AppendToLastVector(t);
+      }
+    } else if (m == new_m) {
+      if (old_seq.empty()) {
+        next_machine_tasks.Add({x});
+        continue;
+      }
+      next_machine_tasks.Add({});
+      bool inserted = false;
+      if (!move.place_after && target == old_seq[0]) {
+        next_machine_tasks.AppendToLastVector(x);
+        inserted = true;
+      }
+      for (const int t : old_seq) {
+        next_machine_tasks.AppendToLastVector(t);
+        if (move.place_after && t == target) {
+          next_machine_tasks.AppendToLastVector(x);
+          inserted = true;
+        }
+      }
+      if (!inserted) next_machine_tasks.AppendToLastVector(x);
+    } else {
+      next_machine_tasks.Add(old_seq);
+    }
+  }
+
+  *current_machine_tasks = std::move(next_machine_tasks);
+
+  current_machines[x] = new_m;
+  for (int a = 0; a < problem_.tasks[x].compatible_machine.size(); ++a) {
+    if (problem_.tasks[x].compatible_machine[a] == new_m) {
+      current_active_machine_indices[x] = a;
+      current_durations[x] = problem_.tasks[x].duration_for_machine[a];
+      break;
+    }
+  }
+
+  assignment_tabu_matrix[x * num_machines_ + old_m] =
+      current_iteration + tenure;
+}
+
+SchedulingLocalSearch::LocalSearchResult SchedulingLocalSearch::Solve(
     absl::Span<const int64_t> initial_hint,
     absl::Span<const int> active_machine_indices, int64_t makespan_to_beat,
     absl::BitGenRef random, TimeLimit* time_limit) const {
@@ -702,6 +1038,8 @@ std::vector<int64_t> SchedulingLocalSearch::Solve(
 
   std::vector<int> current_machines(num_tasks_);
   std::vector<int64_t> current_durations(num_tasks_);
+  std::vector<int> current_active_machine_indices(
+      active_machine_indices.begin(), active_machine_indices.end());
   for (int i = 0; i < num_tasks_; ++i) {
     const int a_idx = active_machine_indices[i];
     current_machines[i] = problem_.tasks[i].compatible_machine[a_idx];
@@ -709,6 +1047,7 @@ std::vector<int64_t> SchedulingLocalSearch::Solve(
   }
 
   std::vector<int> tabu_matrix(num_tasks_ * num_tasks_, 0);
+  std::vector<int> assignment_tabu_matrix(num_tasks_ * num_machines_, 0);
 
   // Build the initial sequence state from the external hint
   CompactVectorVector<int> current_machine_tasks =
@@ -718,6 +1057,8 @@ std::vector<int64_t> SchedulingLocalSearch::Solve(
 
   CompactVectorVector<int> best_machine_tasks;
   std::vector<int64_t> best_solution_start_mins(num_tasks_);
+  std::vector<int> best_active_machine_indices(active_machine_indices.begin(),
+                                               active_machine_indices.end());
   IntegerValue global_best_makespan = kMaxIntegerValue;
 
   TimeLimitCheckEveryNCalls time_limit_check(100, time_limit);
@@ -754,6 +1095,7 @@ std::vector<int64_t> SchedulingLocalSearch::Solve(
       for (int i = 0; i < num_tasks_; ++i) {
         best_solution_start_mins[i] = analysis.start_mins[i].value();
       }
+      best_active_machine_indices = current_active_machine_indices;
       iterations_without_improvement = 0;
     }
     ++iterations_without_improvement;
@@ -767,15 +1109,15 @@ std::vector<int64_t> SchedulingLocalSearch::Solve(
     const SolverState state = ComputeDynamicState(
         current_machine_tasks, analysis.topo_order, current_durations);
 
-    const std::vector<InsertMove> candidates = GenerateN8Moves(
-        analysis.critical_path, state.prev_on_machine, state.next_on_machine,
-        analysis.start_mins, state.tails, current_machines, current_durations);
+    const std::vector<InsertMove> candidates = GenerateMoves(
+        analysis.critical_path, state, analysis.start_mins, current_machines,
+        current_durations, current_machine_tasks);
 
     // Select the best move.
     std::optional<InsertMove> best_move = SelectBestMove(
-        candidates, analysis.start_mins, state.tails, state.prev_on_machine,
-        state.next_on_machine, tabu_matrix, current_durations,
-        current_iteration, global_best_makespan, random);
+        candidates, analysis.start_mins, state, tabu_matrix,
+        assignment_tabu_matrix, current_machines, current_durations,
+        current_machine_tasks, current_iteration, global_best_makespan, random);
 
     if (iterations_without_improvement > stagnation_limit) {
       // To diversify the our tabu search, when the search stagnates, we
@@ -792,51 +1134,26 @@ std::vector<int64_t> SchedulingLocalSearch::Solve(
 
     if (!best_move.has_value()) break;
 
-    // Apply the Move directly to the schedule sequence
-    const int x = best_move->task;
-    const int target = best_move->target_task;
-    const int m = current_machines[x];
-
-    const int idx_x = state.position_in_machine[x];
-    const int idx_target = state.position_in_machine[target];
-
-    // Determine the raw destination index based on placement
-    int insert_idx = idx_target + (best_move->place_after ? 1 : 0);
-
-    // If the task is moving right, its own removal shifts the target index left
-    if (idx_x < insert_idx) {
-      insert_idx--;
-    }
-
-    absl::Span<int> machine_seq = current_machine_tasks[m];
-
-    // Execute the insertion in-place via std::rotate
-    if (idx_x < insert_idx) {
-      // Moving task to the right.
-      // Everything between idx_x+1 and insert_idx shifts left by 1.
-      std::rotate(machine_seq.begin() + idx_x, machine_seq.begin() + idx_x + 1,
-                  machine_seq.begin() + insert_idx + 1);
-    } else if (idx_x > insert_idx) {
-      // Moving task to the left.
-      // Everything between insert_idx and idx_x-1 shifts right by 1.
-      std::rotate(machine_seq.begin() + insert_idx, machine_seq.begin() + idx_x,
-                  machine_seq.begin() + idx_x + 1);
-    }
-
     // Update Tabu matrix using a random tenure length
     const int tenure =
         absl::Uniform<int>(random, tabu_tenure_min, tabu_tenure_max + 1);
-    const int old_prev = state.prev_on_machine[x];
-    const int old_next = state.next_on_machine[x];
 
-    // Penalize the task jumping back next to its old neighbors
-    if (old_prev != -1) {
-      tabu_matrix[x * num_tasks_ + old_prev] = current_iteration + tenure;
-      tabu_matrix[old_prev * num_tasks_ + x] = current_iteration + tenure;
-    }
-    if (old_next != -1) {
-      tabu_matrix[x * num_tasks_ + old_next] = current_iteration + tenure;
-      tabu_matrix[old_next * num_tasks_ + x] = current_iteration + tenure;
+    // Apply the move directly to the schedule sequence.
+    const int x = best_move->task;
+    const int old_m = current_machines[x];
+    const int new_m = best_move->new_machine;
+
+    if (old_m == new_m) {
+      ApplySequenceMove(*best_move, state, current_iteration, tenure,
+                        absl::MakeSpan(tabu_matrix),
+                        current_machine_tasks[old_m]);
+    } else {
+      ApplyAssignmentMove(*best_move, old_m, current_iteration, tenure,
+                          absl::MakeSpan(current_machines),
+                          absl::MakeSpan(current_active_machine_indices),
+                          absl::MakeSpan(current_durations),
+                          absl::MakeSpan(assignment_tabu_matrix),
+                          &current_machine_tasks);
     }
   }
   if (VLOG_IS_ON(2)) {
@@ -847,7 +1164,7 @@ std::vector<int64_t> SchedulingLocalSearch::Solve(
           << " num_iterations: " << current_iteration;
 
   // Return the start times of the best schedule we found.
-  return best_solution_start_mins;
+  return {best_solution_start_mins, best_active_machine_indices};
 }
 
 namespace {
@@ -944,7 +1261,7 @@ std::vector<int64_t> ComputeCpSatSolutionFromSchedulingSolution(
 
 SchedulingLocalSearchSolver::SchedulingLocalSearchSolver(
     const absl::string_view name, SubSolver::SubsolverType type,
-    const CpModelProto& input_model_proto, SatParameters params,
+    const CpModelProto& input_model_proto, const SatParameters& params,
     ModelSharedTimeLimit* shared_time_limit,
     SharedResponseManager* shared_response, SharedStatTables* stat_tables)
     : SubSolver(name, type),
@@ -1030,18 +1347,18 @@ std::function<void()> SchedulingLocalSearchSolver::GenerateTask(
     SchedulingLocalSearch& local_search_solver =
         *local_search_solvers_[problem_index];
 
-    const std::vector<int64_t> new_scheduling_solution =
+    const SchedulingLocalSearch::LocalSearchResult result =
         local_search_solver.Solve(
             absl::MakeConstSpan(scheduling_solution),
             absl::MakeConstSpan(active_machine_indices),
             shared_response_->BestSolutionInnerObjectiveValue().value(), random,
             &task_time_limit);
-    if (new_scheduling_solution.empty()) return;
+    if (result.start_mins.empty()) return;
 
     std::vector<int64_t> new_solution =
         ComputeCpSatSolutionFromSchedulingSolution(
-            problem_and_mapping, input_model_proto_, new_scheduling_solution,
-            active_machine_indices, base_solution->variable_values);
+            problem_and_mapping, input_model_proto_, result.start_mins,
+            result.active_machine_indices, base_solution->variable_values);
 
     if (SolutionIsFeasible(input_model_proto_, new_solution)) {
       const int64_t new_objective_value =

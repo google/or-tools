@@ -44,7 +44,9 @@
 #include "ortools/sat/presolve_context.h"
 #include "ortools/sat/presolve_util.h"
 #include "ortools/sat/solution_crush.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/affine_relation.h"
+#include "ortools/util/bitset.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
@@ -1567,52 +1569,62 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
   SolutionCrush& crush = context->solution_crush();
   absl::flat_hash_set<std::pair<int, int>> implications;
   const int num_constraints = cp_model.constraints_size();
+  CompactVectorVectorBuilder<IntegerVariable, IntegerVariable>
+      implications_vec_builder;
   for (int c = 0; c < num_constraints; ++c) {
     const ConstraintProto& ct = cp_model.constraints(c);
 
-    if (ct.constraint_case() == ConstraintProto::kBoolAnd) {
-      if (ct.enforcement_literal().size() != 1) continue;
-      const int a = ct.enforcement_literal(0);
-      if (context->IsFixed(a)) continue;
-      for (const int b : ct.bool_and().literals()) {
-        if (context->IsFixed(b)) continue;
-        implications.insert({a, b});
-        implications.insert({NegatedRef(b), NegatedRef(a)});
+    if (ct.constraint_case() != ConstraintProto::kBoolAnd) continue;
 
-        // If (a--, b--) is valid, we can always set a to false. If the hint
-        // value of `a` is 1 then the hint value of `b` should be 1 due to the
-        // a => b constraint. Hence the hint feasibility can always be preserved
-        // (if the hint value of `a` is 0 the hint does not need to be updated).
-        for (const IntegerVariable ivar :
-             var_domination.DominatingVariables(a)) {
-          const int ref = VarDomination::IntegerVariableToRef(ivar);
-          if (ref == NegatedRef(b)) {
-            context->UpdateRuleStats("domination: in implication");
-            crush.UpdateLiteralsWithDominance(a, ref);
-            if (!context->SetLiteralToFalse(a)) return false;
-            break;
-          }
-        }
-        if (context->IsFixed(a)) break;
+    if (ct.enforcement_literal().size() != 1) continue;
+    const int a = ct.enforcement_literal(0);
+    if (context->IsFixed(a)) continue;
+    for (const int b : ct.bool_and().literals()) {
+      if (context->IsFixed(b)) continue;
+      implications.insert({a, b});
+      implications.insert({NegatedRef(b), NegatedRef(a)});
+      implications_vec_builder.Add(VarDomination::RefToIntegerVariable(a),
+                                   VarDomination::RefToIntegerVariable(b));
+      implications_vec_builder.Add(
+          VarDomination::RefToIntegerVariable(NegatedRef(b)),
+          VarDomination::RefToIntegerVariable(NegatedRef(a)));
+    }
+  }
 
-        // If (b++, a++) is valid, then we can always set b to true. If the hint
-        // value of `b` is 0 then the hint value of `a` should be 0 due to the
-        // a => b constraint. Hence the hint feasibility can always be preserved
-        // (if the hint value of `b` is 1 the hint does not need to be updated).
-        for (const IntegerVariable ivar :
-             var_domination.DominatingVariables(NegatedRef(b))) {
-          const int ref = VarDomination::IntegerVariableToRef(ivar);
-          if (ref == a) {
-            context->UpdateRuleStats("domination: in implication");
-            crush.UpdateLiteralsWithDominance(NegatedRef(b), ref);
-            if (!context->SetLiteralToTrue(b)) return false;
-            break;
-          }
-        }
-      }
-      continue;
+  // Handle first all the implications.
+  CompactVectorVector<IntegerVariable, IntegerVariable> implications_vec(
+      implications_vec_builder, 2 * num_vars);
+  SparseBitset<IntegerVariable> impacted_vars;
+  for (IntegerVariable a_var{0}; a_var < implications_vec.size(); ++a_var) {
+    if (implications_vec[a_var].empty()) continue;
+
+    const int a = VarDomination::IntegerVariableToRef(a_var);
+    if (context->IsFixed(a)) continue;
+
+    impacted_vars.ClearAndResize(IntegerVariable(2 * num_vars));
+    for (const IntegerVariable b_var : implications_vec[a_var]) {
+      const int b = VarDomination::IntegerVariableToRef(b_var);
+      if (context->IsFixed(b)) continue;
+      impacted_vars.Set(b_var);
     }
 
+    // If (a--, b--) is valid, we can always set a to false. If the hint
+    // value of `a` is 1 then the hint value of `b` should be 1 due to the
+    // a => b constraint. Hence the hint feasibility can always be preserved
+    // (if the hint value of `a` is 0 the hint does not need to be updated).
+    for (const IntegerVariable ivar : var_domination.DominatingVariables(a)) {
+      if (impacted_vars[NegationOf(ivar)]) {
+        context->UpdateRuleStats("domination: in implication");
+        const int ref = VarDomination::IntegerVariableToRef(ivar);
+        crush.UpdateLiteralsWithDominance(a, ref);
+        if (!context->SetLiteralToFalse(a)) return false;
+        break;
+      }
+    }
+  }
+
+  for (int c = 0; c < num_constraints; ++c) {
+    const ConstraintProto& ct = cp_model.constraints(c);
     if (!ct.enforcement_literal().empty()) continue;
 
     // TODO(user): More generally, combine with probing? if a dominated

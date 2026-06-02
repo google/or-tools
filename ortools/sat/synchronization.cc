@@ -557,7 +557,7 @@ double SharedResponseManager::GapIntegral() const {
 void SharedResponseManager::AddSolutionPostprocessor(
     std::function<void(std::vector<int64_t>*)> postprocessor) {
   absl::MutexLock mutex_lock(mutex_);
-  solution_postprocessors_.push_back(postprocessor);
+  solution_postprocessors_.push_back(std::move(postprocessor));
 }
 
 void SharedResponseManager::AddResponsePostprocessor(

@@ -100,13 +100,13 @@ class Model {
    \endcode
    */
   template <typename T>
-  T Add(std::function<T(Model*)> f) {
+  T Add(const std::function<T(Model*)>& f) {
     return f(this);
   }
 
   /// Similar to Add() but this is const.
   template <typename T>
-  T Get(std::function<T(const Model&)> f) const {
+  T Get(const std::function<T(const Model&)>& f) const {
     return f(*this);
   }
 

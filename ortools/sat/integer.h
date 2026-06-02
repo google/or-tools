@@ -338,7 +338,8 @@ class IntegerEncoder {
 
   // Makes sure all element in the >= encoding are non-trivial and canonical.
   // The input variable must be positive.
-  bool UpdateEncodingOnInitialDomainChange(IntegerVariable var, Domain domain);
+  bool UpdateEncodingOnInitialDomainChange(IntegerVariable var,
+                                           const Domain& domain);
 
   // All IntegerVariable passed to the functions above must be in
   // [0, NumVariables).

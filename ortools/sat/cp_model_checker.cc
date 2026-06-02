@@ -1569,6 +1569,23 @@ class ConstraintChecker {
       if (current_load > capacity) {
         VLOG(1) << "Cumulative constraint: load: " << current_load
                 << " capacity: " << capacity << " time: " << time;
+        for (int i = 0; i < num_intervals; ++i) {
+          const ConstraintProto& interval_constraint =
+              model.constraints(ct.cumulative().intervals(i));
+          if (!ConstraintIsEnforced(interval_constraint)) {
+            VLOG(1) << "Interval : " << ct.cumulative().intervals(i)
+                    << " not enforced";
+          } else {
+            const int64_t start = IntervalStart(interval_constraint.interval());
+            const int64_t duration =
+                IntervalSize(interval_constraint.interval());
+            const int64_t demand =
+                LinearExpressionValue(ct.cumulative().demands(i));
+            VLOG(1) << "Interval : " << ct.cumulative().intervals(i) << " ["
+                    << start << "," << start + duration
+                    << "] demand=" << demand;
+          }
+        }
         return false;
       }
     }

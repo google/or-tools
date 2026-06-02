@@ -1151,7 +1151,7 @@ SubsolverNameFilter::SubsolverNameFilter(const SatParameters& params) {
     // Still add first solution solvers.
     filter_patterns_.push_back("fj*");
     filter_patterns_.push_back("fs*");
-    filter_patterns_.push_back("*lns");
+    filter_patterns_.push_back("lns*");
   }
 }
 

@@ -22,7 +22,7 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
-#include "absl/meta/type_traits.h"
+#include "absl/log/log.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/base/types.h"
 #include "ortools/glop/parameters.pb.h"
@@ -386,7 +386,7 @@ bool FeasibilityPump::SolveLp() {
   const int num_vars = integer_variables_.size();
   VLOG(3) << "LP relaxation: " << lp_data_.GetDimensionString() << ".";
 
-  const auto status = simplex_.Solve(lp_data_, time_limit_);
+  const auto status = simplex_.Solve(lp_data_, *time_limit_);
   total_num_simplex_iterations_ += simplex_.GetNumberOfIterations();
   if (!status.ok()) {
     VLOG(1) << "The LP solver encountered an error: " << status.error_message();
