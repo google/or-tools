@@ -3560,7 +3560,7 @@ cc_library(
     hdrs = ["lp_utils.h"],
     visibility = [
         "//ortools/bop:__pkg__",
-        "//third_party/ortools/ortools/linear_solver/proto_solver:__pkg__",
+        "//ortools/linear_solver/proto_solver:__pkg__",
         "//visibility:public",
     ],
     deps = [

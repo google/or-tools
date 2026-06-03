@@ -391,7 +391,7 @@ MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters& param) {
 
   VLOG(1) << "cbc result status: " << tmp_status;
   /* Final status of problem
-     (info from third_party/cbc/.../CbcSolver.cpp,
+     (info from @cbc//.../CbcSolver.cpp,
       See http://cs?q="cbc+status"+file:CbcSolver.cpp)
      Some of these can be found out by is...... functions
      -1 before branchAndBound

@@ -604,7 +604,7 @@ cc_test(
     name = "highs_solver_test",
     srcs = ["highs_solver_test.cc"],
     flaky = 1,
-    # Highs fails to build with WASM in third_party/zstr.
+    # Highs fails to build with WASM in @zstr.
     tags = ["no_test_wasm"],
     deps = [
         ":highs_cc_proto",

@@ -371,11 +371,11 @@ cc_library(
     deps = [
         ":linear_solver_base",
         "//ortools/base:timer",
-        "//third_party/cbc:clp",
-        "//third_party/cbc:coinutils",
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings:str_format",
+        "@clp",
+        "@coinutils",
     ],
     alwayslink = 1,  # Important! Library is used via dependency injection.
 )
