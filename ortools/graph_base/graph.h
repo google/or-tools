@@ -459,24 +459,6 @@ class MutableGraph : public BaseGraph<Impl, NodeIndexType, ArcIndexType,
   // crash in DEBUG mode.
   void FreezeCapacities();
 
-  // Some graph implementations need to be finalized with Build() before they
-  // can be used. Build() may change the arc indices (which had been the
-  // return values of previous AddArc() calls): the new index of former arc #i
-  // will be stored in permutation[i] if #i is smaller than permutation.size(),
-  // or will be unchanged otherwise. If you don't care about these, just call
-  // the simple no-output version Build().
-  //
-  // Note that some implementations become immutable after calling Build().
-  // By default, Build() is a no-op.
-  ABSL_DEPRECATED("Use `MutableGraphBuilder` instead")
-  virtual void Build(std::vector<ArcIndexType>* absl_nullable permutation) {
-    if (permutation != nullptr) permutation->clear();
-  }
-  ABSL_DEPRECATED("Use `MutableGraphBuilder` instead")
-  void Build() { Build(nullptr); }
-  ABSL_DEPRECATED("`Graph`s are always built")
-  virtual bool IsBuilt() const { return true; }
-
  protected:
   NodeIndexType num_nodes_;
   NodeIndexType node_capacity_;
@@ -932,6 +914,11 @@ class ListGraph : public MutableGraph<ListGraph<NodeIndexType, ArcIndexType>,
   void ReserveNodes(NodeIndexType bound) override;
   void ReserveArcs(ArcIndexType bound) override;
 
+  ABSL_DEPRECATED("Use `MutableGraphBuilder` instead")
+  void Build(std::vector<ArcIndexType>* absl_nullable permutation) {
+    if (permutation != nullptr) permutation->clear();
+  }
+
  private:
   internal::Vector<NodeIndexType, ArcIndexType> start_;
   internal::Vector<ArcIndexType, ArcIndexType> next_;
@@ -1165,6 +1152,11 @@ class ReverseArcListGraph
   void AddNode(NodeIndexType node);
   ArcIndexType AddArc(NodeIndexType tail, NodeIndexType head);
 
+  ABSL_DEPRECATED("Use `MutableGraphBuilder` instead")
+  void Build(std::vector<ArcIndexType>* absl_nullable permutation) {
+    if (permutation != nullptr) permutation->clear();
+  }
+
  private:
   internal::Vector<NodeIndexType, ArcIndexType> start_;
   internal::Vector<NodeIndexType, ArcIndexType> reverse_start_;
@@ -1283,11 +1275,9 @@ class ReverseArcStaticGraph final
   ArcIndexType AddArc(NodeIndexType tail, NodeIndexType head);
 
   ABSL_DEPRECATED("Use `Builder` instead")
-  void Build(std::vector<ArcIndexType>* absl_nullable permutation) final;
+  void Build(std::vector<ArcIndexType>* absl_nullable permutation);
   ABSL_DEPRECATED("Use `Builder` instead")
   void Build() { Build(nullptr); }
-  ABSL_DEPRECATED("`StaticGraph`s are always built")
-  bool IsBuilt() const final { return is_built_; }
 
  private:
   ArcIndexType DirectArcLimit(NodeIndexType node) const {
