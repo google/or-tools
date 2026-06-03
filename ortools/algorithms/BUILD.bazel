@@ -516,7 +516,6 @@ cc_test(
         "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/time",
         "@abseil-cpp//absl/types:span",
-        "@google_benchmark//:benchmark",
     ],
 )
 
@@ -526,6 +525,7 @@ cc_binary(
     deps = [
         ":multikey_radix_sort",
         ":radix_sort",
+        "//ortools/base:benchmark_main",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/types:span",

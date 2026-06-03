@@ -27,10 +27,6 @@
 #include "ortools/algorithms/multikey_radix_sort.h"
 #include "ortools/algorithms/radix_sort.h"
 
-namespace benchmark {
-extern std::string FLAGS_benchmark_filter;
-}  // namespace benchmark
-
 namespace operations_research {
 namespace {
 
@@ -366,13 +362,3 @@ BENCHMARK(BM_Sort<RangeHistogramRadixSortFn, FloatMedium>)
 
 }  // namespace
 }  // namespace operations_research
-
-int main(int argc, char** argv) {
-  ::benchmark::Initialize(&argc, argv);
-  if (::benchmark::FLAGS_benchmark_filter.empty()) {
-    ::benchmark::FLAGS_benchmark_filter = "all";
-  }
-  ::benchmark::RunSpecifiedBenchmarks();
-  ::benchmark::Shutdown();
-  return 0;
-}
