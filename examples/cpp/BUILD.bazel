@@ -66,6 +66,7 @@ cc_library(
         "//ortools/base:file",
         "//ortools/constraint_solver:cp",
         "@abseil-cpp//absl/container:btree",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
