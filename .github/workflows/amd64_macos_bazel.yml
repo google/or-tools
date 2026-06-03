@@ -12,9 +12,6 @@ concurrency:
   group: ${{github.workflow}}-${{github.ref}}
   cancel-in-progress: true
 
-env:
-  cache-root: /private/tmp/bazel
-
 # Building using the github runner environment directly.
 jobs:
   amd64-MacOS-Bazel-Python:
@@ -28,11 +25,13 @@ jobs:
           #{version: '3.14'},
         ]
       fail-fast: false
-    env:
-      cache-name: ${{github.job}}-${{matrix.python.version}}
     runs-on: macos-15-intel
     steps:
       - uses: actions/checkout@v6
+      - uses: ./.github/actions/remote_cache
+        with:
+          credentials_json: '${{secrets.GCP_BUCKET_API_KEY}}'
+          set_home_bazelrc: true
       - name: Set Java to OpenJDK 21 (Temurin)
         uses: actions/setup-java@v5
         with:
@@ -46,6 +45,7 @@ jobs:
           python-version: ${{matrix.python.version}}
       - name: Check Python
         run: python --version
+      - uses: bazel-contrib/setup-bazel@0.19.0
       - name: Check Bazel
         run: bazel version
       - name: Change Python in .bazelrc
@@ -56,23 +56,10 @@ jobs:
         run: |
           sed -i '' -e 's/\(DEFAULT_PYTHON =\) "3.[0-9]*"/\1 "${{matrix.python.version}}"/g' MODULE.bazel
           cat MODULE.bazel
-      - name: Restore bazel cache
-        uses: actions/cache/restore@v5
-        id: bazel-cache-restore
-        with:
-          key: ${{env.cache-name}}
-          path: ${{env.cache-root}}
       - name: Build
-        run: bazel --output_user_root=${{env.cache-root}} build --config=ci //...
+        run: bazel build --config=ci //...
       - name: Test
-        run: bazel --output_user_root=${{env.cache-root}} test --config=ci //...
-      - name: Save Bazel cache for branch main even when Build and Test fail.
-        uses: actions/cache/save@v5
-        # https://docs.github.com/en/actions/reference/workflows-and-actions/dependency-caching#restrictions-for-accessing-a-cache
-        if: always() && github.ref == 'refs/heads/main'
-        with:
-          key: ${{env.cache-name}}-${{github.sha}}
-          path: ${{env.cache-root}}
+        run: bazel test  --config=ci //ortools/...
 
   amd64_macos_bazel:
     runs-on: ubuntu-latest
