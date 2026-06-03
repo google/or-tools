@@ -90,7 +90,7 @@ void RunAllExamples() {
     if (absl::StrContains(type_name, "HIGHS")) continue;
 // ASAN issues a warning in CBC code which cannot be avoided for now:
 // AddressSanitizer: float-cast-overflow
-// third_party/cbc/Cgl/src/CglPreProcess/CglPreProcess.cpp:1717:36
+// @cbc//Cgl/src/CglPreProcess/CglPreProcess.cpp:1717:36
 #ifdef ADDRESS_SANITIZER
     if (type_name.find("CBC") != std::string::npos) {
       continue;

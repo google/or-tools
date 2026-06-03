@@ -6,7 +6,7 @@ these errors, we recommend adhering to the following guidelines.
 Here is a classical example of selectively compilation.
 
 ```c++ {.bad}
-#include "third_party/ortools/ortools/base/macros/os_support.h"
+#include "ortools/base/macros/os_support.h"
 
 absl::Status WriteFile(std::string_view filename, std::string_view content) {
 #if defined(ORTOOLS_TARGET_OS_SUPPORTS_FILE)
@@ -29,7 +29,7 @@ each preprocessor definition with a C++ variable.
 A completely safe usage would be as follows.
 
 ```c++ {.good}
-#include "third_party/ortools/ortools/base/macros/os_support.h"
+#include "ortools/base/macros/os_support.h"
 
 absl::Status WriteFile(std::string_view filename, std::string_view content) {
 #if defined(ORTOOLS_TARGET_OS_SUPPORTS_FILE)
