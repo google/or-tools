@@ -20,6 +20,9 @@ int main(int argc, char* argv[]) {
   benchmark::MaybeReenterWithoutASLR(argc, argv);
   benchmark::Initialize(&argc, argv);
   InitGoogle(argv[0], &argc, &argv, false);
+  if (benchmark::GetBenchmarkFilter().empty()) {
+    benchmark::SetBenchmarkFilter("all");
+  }
   benchmark::RunSpecifiedBenchmarks();
   benchmark::Shutdown();
   return EXIT_SUCCESS;

@@ -557,7 +557,8 @@ void TestSortsEmptyVector() {
 
 TEST(RangeHistogramRadixSortTest, SortsEmptyVector) {
   std::vector<int64_t> values = {};
-  RangeHistogramRadixSort(0L, 0L, values, [](const auto& val) { return val; });
+  RangeHistogramRadixSort(int64_t{0}, int64_t{0}, values,
+                          [](const auto& val) { return val; });
   EXPECT_THAT(values, testing::IsEmpty());
 }
 
