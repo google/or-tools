@@ -40,23 +40,20 @@ jobs:
     runs-on: ${{matrix.os}}
     steps:
     - uses: actions/checkout@v6
-    - uses: 'google-github-actions/auth@v3'
-      if: env.USE_GOOGLE_CLOUD_STORAGE == 'true'
+    - uses: ./.github/actions/remote_cache
       with:
         credentials_json: '${{secrets.GCP_BUCKET_API_KEY}}'
-    - name: Set caching env vars
-      if: env.USE_GOOGLE_CLOUD_STORAGE == 'true'
-      run: echo "BAZEL_REMOTE_ARGS=--config=remote_cache" >> $GITHUB_ENV
+        set_home_bazelrc: true
     - uses: actions/setup-python@v6
       with:
         python-version: ${{env.PYTHON_VERSION}}
     - uses: bazel-contrib/setup-bazel@0.19.0
     - name: Build
       shell: bash
-      run: bazel build --config=ci ${{env.BAZEL_REMOTE_ARGS}} //...
+      run: bazel build --config=ci //...
     - name: Test
       shell: bash
-      run: bazel test --config=ci ${{env.BAZEL_REMOTE_ARGS}} //ortools/...
+      run: bazel test --config=ci //ortools/...
 ###############################################################################
   CMake:
     strategy:
@@ -84,24 +81,10 @@ jobs:
     runs-on: ${{matrix.os}}
     steps:
     - uses: actions/checkout@v6
-    - uses: 'google-github-actions/auth@v3'
-      if: env.USE_GOOGLE_CLOUD_STORAGE == 'true'
+    - uses: ./.github/actions/remote_cache
       with:
         credentials_json: '${{secrets.GCP_BUCKET_API_KEY}}'
-    - name: Install sccache-cache
-      uses: mozilla-actions/sccache-action@v0.0.10
-      if: env.USE_GOOGLE_CLOUD_STORAGE == 'true'
-      env:
-        SCCACHE_GCS_KEY_PATH: ${{env.GOOGLE_GHA_CREDS_PATH}}
-    - name: Set caching env vars
-      if: env.USE_GOOGLE_CLOUD_STORAGE == 'true'
-      run: |
-        echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
-        echo "SCCACHE_GCS_BUCKET=or-tools-github-remote-caching" >> $GITHUB_ENV
-        echo "SCCACHE_GCS_KEY_PREFIX=cmake" >> $GITHUB_ENV
-        echo "SCCACHE_GCS_RW_MODE=READ_WRITE" >> $GITHUB_ENV
-        echo "CMAKE_C_COMPILER_LAUNCHER=${{env.SCCACHE_PATH}}" >> $GITHUB_ENV
-        echo "CMAKE_CXX_COMPILER_LAUNCHER=${{env.SCCACHE_PATH}}" >> $GITHUB_ENV
+        set_cmake_sccache_launcher: true
     - uses: actions/setup-java@v5
       if: ${{ matrix.build == 'java' }}
       with:

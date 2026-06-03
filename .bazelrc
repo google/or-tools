@@ -91,12 +91,6 @@ build:ci --test_tag_filters=-noci
 build:ci --test_summary=short
 
 ###############################################################################
-# Options for remote caching through GCS Bucket.
-###############################################################################
-build:remote_cache --google_default_credentials
-build:remote_cache --remote_cache=https://storage.googleapis.com/or-tools-github-remote-caching
-
-###############################################################################
 # Options for asan.
 ################################################################################
 
