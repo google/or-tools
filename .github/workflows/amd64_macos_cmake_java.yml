@@ -13,10 +13,6 @@ concurrency:
   cancel-in-progress: true
 
 # Building using the github runner environment directly.
-env:
-  CCACHE_BASEDIR: ${{github.workspace}}
-  CCACHE_DIR: ${{github.workspace}}/.ccache
-
 jobs:
   native:
     strategy:
@@ -28,40 +24,17 @@ jobs:
       fail-fast: false
     name: amd64•MacOS•CMake(${{matrix.cmake.name}})•Java
     runs-on: macos-15-intel
-    env:
-      deps_src_key: amd64_macos_java_deps_src
-      deps_build_key: amd64_macos_java_deps_build_${{matrix.cmake.name}}
-      ccache_key: amd64_macos_java_ccache_${{matrix.cmake.name}}
     steps:
       - uses: actions/checkout@v6
+      - uses: ./.github/actions/remote_cache
+        with:
+          credentials_json: '${{secrets.GCP_BUCKET_API_KEY}}'
+          set_cmake_sccache_launcher: true
       - name: Install Dependencies
         run: |
-          brew install ccache swig
+          brew install swig
           swig -version
           echo "JAVA_HOME=$JAVA_HOME_21_X64" >> $GITHUB_ENV
-
-      # RESTORING CACHES
-      - name: Restore CMake dependency source code
-        uses: actions/cache/restore@v5
-        id: deps_src_restore
-        with:
-          key: ${{env.deps_src_key}}-${{hashFiles('CMakeLists.txt', 'cmake/**')}}
-          path: ${{github.workspace}}/build/_deps/*-src
-      - name: Restore CMake dependency build
-        uses: actions/cache/restore@v5
-        id: deps_build_restore
-        with:
-          key: ${{env.deps_build_key}}-${{hashFiles('CMakeLists.txt', 'cmake/**')}}
-          path: |
-            ${{github.workspace}}/build/_deps/*-build
-            ${{github.workspace}}/build/_deps/*-subbuild
-      - name: Restore CCache
-        uses: actions/cache/restore@v5
-        id: ccache_restore
-        with:
-          key: ${{env.ccache_key}}-${{github.sha}}
-          restore-keys: ${{env.ccache_key}}-
-          path: ${{env.CCACHE_DIR}}
 
       - name: Check CMake
         run: cmake --version
@@ -73,18 +46,22 @@ jobs:
           -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF
           -DBUILD_JAVA=ON -DSKIP_GPG=ON
           -DCMAKE_INSTALL_PREFIX=install
+      - id: num_cores
+        uses: ./.github/actions/num_cores
       - name: Build
         run: >
           cmake --build build
           --config ${{matrix.cmake.config}}
           --target ${{matrix.cmake.build_target}}
-          -v -j2
+          -j${{ steps.num_cores.outputs.cores }}
+          -v
       - name: Test
         run: >
           CTEST_OUTPUT_ON_FAILURE=1
           cmake --build build
           --config ${{matrix.cmake.config}}
           --target ${{matrix.cmake.test_target}}
+          -j${{ steps.num_cores.outputs.cores }}
           -v
       - name: Install
         run: >
@@ -92,33 +69,6 @@ jobs:
           --config ${{matrix.cmake.config}}
           --target ${{matrix.cmake.install_target}}
           -v
-      - name: CCache stats
-        run: |
-          ccache --show-stats
-          ccache --zero-stats
-
-      # SAVING CACHES
-      - name: Save CCache
-        if: github.ref == 'refs/heads/main'
-        uses: actions/cache/save@v5
-        with:
-          key: ${{steps.ccache_restore.outputs.cache-primary-key}}
-          path: ${{env.CCACHE_DIR}}
-      - name: Save CMake dependency build
-        if: github.ref == 'refs/heads/main'
-        uses: actions/cache/save@v5
-        with:
-          key: ${{steps.deps_build_restore.outputs.cache-primary-key}}
-          path: |
-            ${{github.workspace}}/build/_deps/*-build
-            ${{github.workspace}}/build/_deps/*-subbuild
-      - name: Save CMake dependency source code
-        if: github.ref == 'refs/heads/main'
-        uses: actions/cache/save@v5
-        with:
-          key: ${{steps.deps_src_restore.outputs.cache-primary-key}}
-          path: ${{github.workspace}}/build/_deps/*-src
-
   amd64_macos_cmake_java:
     runs-on: ubuntu-latest
     needs: native
