@@ -30,6 +30,10 @@ jobs:
       CTEST_OUTPUT_ON_FAILURE: 1
     steps:
       - uses: actions/checkout@v6
+      - uses: ./.github/actions/remote_cache
+        with:
+          credentials_json: '${{secrets.GCP_BUCKET_API_KEY}}'
+          set_cmake_sccache_launcher: true
 
       # CONFIGURING CACHES
       - name: Cache CMake dependency source code
@@ -56,17 +60,21 @@ jobs:
           -DCMAKE_CONFIGURATION_TYPES=${{matrix.cmake.config}}
           -DBUILD_DEPS=ON
           -DCMAKE_INSTALL_PREFIX=install
+      - id: num_cores
+        uses: ./.github/actions/num_cores
       - name: Build
         run: >
           cmake --build build
           --config ${{matrix.cmake.config}}
           --target ALL_BUILD
-          -v -j2
+          -j${{ steps.num_cores.outputs.cores }}
+          -v
       - name: Test
         run: >
           cmake --build build
           --config ${{matrix.cmake.config}}
           --target RUN_TESTS
+          -j${{ steps.num_cores.outputs.cores }}
           -v
       - name: Install
         run: >
