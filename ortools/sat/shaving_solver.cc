@@ -701,7 +701,7 @@ bool VariablesShavingSolver::ResetAndSolveModel(int64_t task_id, State* state,
   }
 
   // Presolve if asked.
-  if (true || local_params_.cp_model_presolve()) {
+  if (local_params_.cp_model_presolve()) {
     std::vector<int> postsolve_mapping;
     CpModelProto mapping_proto;
     auto context = std::make_unique<PresolveContext>(local_model, shaving_proto,

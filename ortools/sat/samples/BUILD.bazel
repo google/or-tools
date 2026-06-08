@@ -1529,6 +1529,7 @@ java_binary(
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
+        "@maven//:com_google_errorprone_error_prone_annotations",
     ],
 )
 

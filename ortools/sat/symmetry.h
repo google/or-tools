@@ -58,6 +58,13 @@ namespace sat {
 //
 // TODO(user): Implement the optimizations mentioned in the paper?
 // TODO(user): Instrument and see if the code can be optimized.
+//
+// TODO(user): Add API to disable some symmetry. As we close an independent
+// component of a problem, our current mechanism is to fix variables to an
+// optimal solution of that component. But when we do that we cannot assume this
+// fixing was derived from the problem alone and is compatible with the
+// symmetries. Basically, this propagator will derive wrong conclusion... This
+// should be relatively easy by just disabling propagation on some Booleans.
 class SymmetryPropagator : public SatPropagator {
  public:
   SymmetryPropagator();

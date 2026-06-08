@@ -956,8 +956,22 @@ bool LinearProgrammingConstraint::SolveLp() {
       obj_with_slack_, unscaling_factor, offset_before_unscaling, *time_limit_);
   DCHECK_EQ(simplex_.GetProblemNumRows(), integer_lp_.size());
 
-  // Lets resolve from scratch if we encounter this status.
-  if (simplex_.GetProblemStatus() == glop::ProblemStatus::ABNORMAL) {
+  // Lets resolve from scratch if we encounter an error.
+  //
+  // Note that when using LPSolver class, failing glop::Status are converted to
+  // glop::ProblemStatus::ABNORMAL. But when calling glop::RevisedSimplex
+  // directly we either get:
+  // * a failing glop::Status when there is an LU factorization error (which
+  //   traverse the stack with GLOP_RETURN_IF_ERROR(), leaving the
+  //   glop::RevisedSimplex in an unspecified state); typically:
+  //     - either "The matrix is singular!",
+  //     - or "trying to pivot with number too small",
+  // * or we get a glop::ProblemStatus for other errors.
+  //
+  // We should not call GetProblemStatus() when a failing glop::Status is
+  // returned as it may be in an incorrect state.
+  if (!status.ok() ||
+      simplex_.GetProblemStatus() == glop::ProblemStatus::ABNORMAL) {
     VLOG(2) << "The LP solver returned abnormal, resolving from scratch";
     simplex_.ClearStateForNextSolve();
     status = simplex_.MinimizeFromTransposedMatrixWithSlack(

@@ -426,11 +426,6 @@ bool CopyModelAdvanced(const CpModelProto& in_proto,
 // hot spots.
 class VariableDomains {
  public:
-  VariableDomains(absl::string_view name, SharedBoundsManager* shared_bounds)
-      : shared_bounds_id_(
-            shared_bounds == nullptr ? 0 : shared_bounds->RegisterNewId(name)),
-        shared_bounds_(shared_bounds) {}
-
   void Reset(int num_vars);
 
   absl::Span<const Domain> AsSpan() const { return domains_; }
@@ -444,25 +439,12 @@ class VariableDomains {
 
   void Set(int var, Domain d);
 
-  // Return false if one of the domain becomes empty (UNSAT). This might happen
-  // while we are cleaning up all workers at the end of a search.
-  bool UpdateFromSharedBounds(absl::Span<const int> variable_mapping,
-                              int64_t& timestamp);
-
  private:
-  const int shared_bounds_id_;
-  SharedBoundsManager* shared_bounds_;
-
   // Depends on domain updates.
   std::vector<Domain> domains_;
   std::vector<bool> has_two_values_;
   std::vector<bool> is_fixed_;
   std::vector<int> fixed_vars_;
-
-  // Temporary data for UpdateFromSharedBounds()
-  std::vector<int> tmp_variables_;
-  std::vector<int64_t> tmp_new_lower_bounds_;
-  std::vector<int64_t> tmp_new_upper_bounds_;
 };
 
 // A CpModelProto copy where fixed and non-representative variables are removed,
@@ -493,16 +475,24 @@ class DenseModelCopy {
   std::vector<int64_t> ReverseMapSolution(
       absl::Span<const int64_t> solution) const;
 
+  // Maps an inner objective value from the input model to the dense model.
+  int64_t MapInnerObjectiveValue(int64_t input_inner_objective_value) const;
+
  private:
+  // Return false if one of the domain becomes empty (UNSAT). This might happen
+  // while we are cleaning up all workers at the end of a search.
+  bool UpdateFromSharedBounds(int64_t& timestamp);
+
   // Computes and applies a dense mapping of the variables which removes fixed
   // and non-representative variables. Returns false if UNSAT.
-  bool ComputeVariableMapping(absl::Span<const int> input_var_representatives,
-                              std::vector<int>& new_input_var_mapping);
-  bool ApplyVariableMapping(absl::Span<const int> input_var_mapping);
+  bool ComputeVariableMapping(absl::Span<const int> input_var_representatives);
+  bool ApplyVariableMapping();
   void ResetVarDomains();
 
   const CpModelProto& input_model_proto_;
   SharedClausesManager* shared_clauses_;
+  SharedBoundsManager* shared_bounds_;
+  const int shared_bounds_id_;
 
   // Timestamps of the data used to compute the fields below.
   int64_t bounds_timestamp_ = -1;
@@ -521,12 +511,15 @@ class DenseModelCopy {
   // The reverse mapping from the dense to the input variables.
   std::vector<int> reverse_mapping_;
 
+  // The domains of the `input_model_proto_` variables.
+  std::vector<Domain> input_var_domains_;
   // The domains of the `model_proto_` variables.
   VariableDomains var_domains_;
 
-  // For each `input_model_proto_` variable, its fixed value according to the
-  // SharedBoundsManager, or int64_t::min() if there is none.
-  std::vector<int64_t> fixed_input_var_values_;
+  // Temporary data for UpdateFromSharedBounds().
+  std::vector<int> tmp_variables_;
+  std::vector<int64_t> tmp_new_lower_bounds_;
+  std::vector<int64_t> tmp_new_upper_bounds_;
 };
 
 }  // namespace sat

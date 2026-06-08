@@ -375,6 +375,38 @@ cc_test(
 )
 
 cc_library(
+    name = "continuous_prober",
+    srcs = ["continuous_prober.cc"],
+    hdrs = ["continuous_prober.h"],
+    deps = [
+        ":clause",
+        ":cp_model_cc_proto",
+        ":cp_model_mapping",
+        ":integer",
+        ":integer_base",
+        ":integer_search",
+        ":model",
+        ":probing",
+        ":sat_base",
+        ":sat_inprocessing",
+        ":sat_parameters_cc_proto",
+        ":sat_solver",
+        ":synchronization",
+        ":util",
+        "//ortools/util:strong_integers",
+        "//ortools/util:time_limit",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/log:vlog_is_on",
+        "@abseil-cpp//absl/random:bit_gen_ref",
+        "@abseil-cpp//absl/random:distributions",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_library(
     name = "cp_model_solver_logging",
     srcs = ["cp_model_solver_logging.cc"],
     hdrs = ["cp_model_solver_logging.h"],
@@ -653,6 +685,7 @@ cc_test(
         "//ortools/base:stl_util",
         "//ortools/port:proto_utils",
         "@abseil-cpp//absl/container:flat_hash_set",
+        "@protobuf",
     ],
 )
 
@@ -979,6 +1012,7 @@ cc_library(
     deps = [
         ":circuit",
         ":clause",
+        ":continuous_prober",
         ":cp_model_cc_proto",
         ":cp_model_checker",
         ":cp_model_loader",
@@ -1856,6 +1890,7 @@ cc_library(
         ":sat_base",
         ":sat_parameters_cc_proto",
         ":sat_solver",
+        ":synchronization",
         ":util",
         "//ortools/base:strong_vector",
         "//ortools/base:timer",
@@ -1867,7 +1902,6 @@ cc_library(
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/cleanup",
         "@abseil-cpp//absl/container:btree",
-        "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:vlog_is_on",
@@ -3093,6 +3127,7 @@ cc_library(
         "//ortools/util:logging",
         "//ortools/util:sorted_interval_list",
         "//ortools/util:strong_integers",
+        "//ortools/util:time_limit",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/container:btree",

@@ -47,6 +47,7 @@
 #include "ortools/graph_base/connected_components.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/clause.h"
+#include "ortools/sat/continuous_prober.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_checker.h"
 #include "ortools/sat/cp_model_loader.h"
@@ -436,10 +437,13 @@ IntegerVariable AddLPConstraints(bool objective_need_to_be_tight,
     ++component_sizes[index_to_component[get_var_index(var)]];
   }
 
+  TimeLimitCheckEveryNCalls time_limit_check(100, m->GetOrCreate<TimeLimit>());
+
   // Dispatch every constraint to its LinearProgrammingConstraint.
   std::vector<LinearProgrammingConstraint*> lp_constraints(num_components,
                                                            nullptr);
   for (int i = 0; i < num_lp_constraints; i++) {
+    if (time_limit_check.LimitReached()) break;
     const int c = index_to_component[get_constraint_index(i)];
     if (component_sizes[c] <= 1) continue;
     if (lp_constraints[c] == nullptr) {
@@ -574,6 +578,7 @@ void RegisterVariableBoundsLevelZeroExport(
   auto* mapping = model->GetOrCreate<CpModelMapping>();
   auto* trail = model->Get<Trail>();
   auto* integer_trail = model->Get<IntegerTrail>();
+  TimeLimit* time_limit = model->GetOrCreate<TimeLimit>();
 
   int saved_trail_index = 0;
   std::vector<int> model_variables;
@@ -584,6 +589,8 @@ void RegisterVariableBoundsLevelZeroExport(
 
   auto broadcast_level_zero_bounds =
       [=](absl::Span<const IntegerVariable> modified_vars) mutable {
+        if (time_limit->LimitReached()) return;
+
         // Inspect the modified IntegerVariables.
         for (const IntegerVariable& var : modified_vars) {
           const IntegerVariable positive_var = PositiveVariable(var);

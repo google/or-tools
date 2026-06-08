@@ -15,7 +15,6 @@
 
 #include <algorithm>
 #include <cstdint>
-#include <limits>
 #include <numeric>
 #include <optional>
 #include <utility>
@@ -66,6 +65,7 @@
 #include "ortools/util/logging.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/strong_integers.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -378,6 +378,7 @@ void LinearizeComplexLinear1(Model* m, const CpModelProto& model_proto,
   int num_added_constraints = 0;
   const CompactVectorVector<IntegerVariable, int> var_to_lin1(
       var_to_lin1_builder);
+  TimeLimit* time_limit = m->GetOrCreate<TimeLimit>();
   for (IntegerVariable var(0); var < var_to_lin1.size(); ++var) {
     const Domain var_domain = integer_trail->InitialVariableDomain(var);
     if (var_to_lin1[var].size() < 2) continue;
@@ -385,6 +386,8 @@ void LinearizeComplexLinear1(Model* m, const CpModelProto& model_proto,
     const IntegerValue ub = integer_trail->LevelZeroUpperBound(var);
 
     VLOG(2) << "=== var " << var << " domain " << var_domain << "===";
+
+    if (time_limit->LimitReached()) return;
 
     // We will sort by "smallest domain" first.
     struct Lin1Info {
@@ -2174,8 +2177,13 @@ LinearRelaxation ComputeLinearRelaxation(const CpModelProto& model_proto,
     LinearizeComplexLinear1(m, model_proto, &already_linearized, &relaxation);
   }
 
+  TimeLimit* time_limit = m->GetOrCreate<TimeLimit>();
+  if (time_limit->LimitReached()) return relaxation;
+
+  TimeLimitCheckEveryNCalls time_limit_check(100, time_limit);
   // Linearize the constraints.
   for (int c = 0; c < num_constraints; ++c) {
+    if (time_limit_check.LimitReached()) return relaxation;
     if (already_linearized[c]) continue;
     const ConstraintProto& ct = model_proto.constraints(c);
     TryToLinearizeConstraint(model_proto, ct, params.linearization_level(), m,
@@ -2217,6 +2225,8 @@ LinearRelaxation ComputeLinearRelaxation(const CpModelProto& model_proto,
     m->GetOrCreate<SatSolver>()->NotifyThatModelIsUnsat();
     return relaxation;
   }
+
+  if (time_limit->LimitReached()) return relaxation;
 
   for (const std::vector<Literal>& at_most_one : relaxation.at_most_ones) {
     if (at_most_one.empty()) continue;

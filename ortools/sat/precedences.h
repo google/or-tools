@@ -16,6 +16,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <string>
 #include <tuple>
 #include <utility>
 #include <variant>
@@ -39,6 +40,7 @@
 #include "ortools/sat/util.h"
 #include "ortools/util/rev.h"
 #include "ortools/util/strong_integers.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -353,6 +355,7 @@ class TransitivePrecedencesEvaluator {
  public:
   explicit TransitivePrecedencesEvaluator(Model* model)
       : params_(model->GetOrCreate<SatParameters>()),
+        time_limit_(model->GetOrCreate<TimeLimit>()),
         integer_trail_(model->GetOrCreate<IntegerTrail>()),
         shared_stats_(model->GetOrCreate<SharedStatistics>()),
         root_level_bounds_(model->GetOrCreate<RootLevelLinear2Bounds>()) {
@@ -393,6 +396,7 @@ class TransitivePrecedencesEvaluator {
 
  private:
   SatParameters* params_;
+  TimeLimit* time_limit_;
   IntegerTrail* integer_trail_;
   SharedStatistics* shared_stats_;
   RootLevelLinear2Bounds* root_level_bounds_;

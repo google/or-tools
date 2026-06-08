@@ -1067,8 +1067,6 @@ void SharedBoundsManager::ReportPotentialNewBounds(
 void SharedBoundsManager::FixVariablesFromPartialSolution(
     absl::Span<const int64_t> solution,
     absl::Span<const int> variables_to_fix) {
-  // This function shouldn't be called if we has symmetry.
-  CHECK(!has_symmetry_);
   absl::MutexLock mutex_lock(mutex_);
 
   // Abort if incompatible. Note that we only check the position that we are
@@ -1189,6 +1187,9 @@ void SharedBoundsManager::GetChangedBounds(
   // Note that alternatively we could do that in the client side, but the
   // complexity will be the same, we will just save some memory that is usually
   // just reused.
+  //
+  // TODO(user): Be careful if we ever start to call
+  // FixVariablesFromPartialSolution() on variable that touches symmetries.
   if (has_symmetry_) {
     const int old_size = variables->size();
     for (int i = 0; i < old_size; ++i) {

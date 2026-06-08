@@ -16,7 +16,6 @@
 #include <stdlib.h>
 
 #include <algorithm>
-#include <atomic>
 #include <cmath>
 #include <cstdint>
 #include <functional>
@@ -389,6 +388,9 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
       }
       reset_weights = true;
     }
+    if (!state_->solution.empty()) {
+      CHECK_EQ(state_->solution.size(), dense_model_.var_domains().size());
+    }
 
     // If we found a new best solution, we will restart all violation ls (we
     // still finish each batch though). We will also reset the luby sequence.
@@ -473,7 +475,9 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
 
       if (ub < lb) return;  // Search is finished.
       bool reduced = false;
-      if (!evaluator_->ReduceObjectiveBounds(lb.value(), ub.value(), reduced)) {
+      const int64_t mapped_lb = dense_model_.MapInnerObjectiveValue(lb.value());
+      const int64_t mapped_ub = dense_model_.MapInnerObjectiveValue(ub.value());
+      if (!evaluator_->ReduceObjectiveBounds(mapped_lb, mapped_ub, reduced)) {
         return;  // Search is finished.
       }
       if (reduced) {
@@ -511,6 +515,11 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
     if (reset_weights) {
       state_->bump_value = 1.0;
       state_->weights.assign(evaluator_->NumEvaluatorConstraints(), 1.0);
+      if (state_->options.start_with_random_weights) {
+        for (double& w : state_->weights) {
+          w = absl::Uniform(random_, 1.0, 2.0);
+        }
+      }
       recompute_compound_weights = true;
     }
     if (recompute_compound_weights) {

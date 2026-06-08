@@ -47,7 +47,7 @@ namespace sat {
 
 // Neighborhood returned by Neighborhood generators.
 struct Neighborhood {
-  static constexpr int kDefaultArenaSizePerVariable = 128;
+  static constexpr int64_t kDefaultArenaSizePerVariable = 128;
 
   explicit Neighborhood(int num_variables_hint = 10)
       : arena(std::make_unique<google::protobuf::Arena>(
@@ -220,8 +220,7 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   // Returns all the constraints indices of a given type.
   absl::Span<const int> TypeToConstraints(
       ConstraintProto::ConstraintCase type) const {
-    if (type >= type_to_constraints_.size()) return {};
-    return absl::MakeSpan(type_to_constraints_[type]);
+    return type_to_constraints_[type];
   }
 
   // Filters a vector of intervals against the initial_solution, and returns
@@ -275,6 +274,23 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   // Returns a copy of the problem proto with updated domains.
   CpModelProto UpdatedModelProtoCopy() const;
 
+  // Thread-safe.
+  //
+  // VariablesTouchSymmetries() returns true iff any symmetry touches the given
+  // variables.
+  //
+  // VariablesSplitSymmetries() return true iff any symmetry is either fully
+  // included or fully excluded from the given set of variable. This is here
+  // because it is used to decide if we can close a full subproblem with LNS.
+  // Maybe there is a better place.
+  //
+  // TODO(user): right now VariablesSplitSymmetries() do not work because we
+  // will still need to disable the symmetry propagation for this component, or
+  // use a different system than fixing variables. Using
+  // VariablesTouchSymmetry() do not have this problem but is less powerful.
+  bool VariablesTouchSymmetries(absl::Span<const int> variables);
+  bool VariablesSplitSymmetries(absl::Span<const int> variables);
+
   // The initial problem.
   // Note that the domain of the variables are not updated here.
   const CpModelProto& ModelProto() const { return model_proto_; }
@@ -291,10 +307,9 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   // Note: This mutex needs to be public for thread annotations.
   mutable absl::Mutex graph_mutex_;
 
-  // TODO(user): Display LNS statistics through the StatisticsString()
-  // method.
-
  private:
+  void InitializeSymmetryData();
+
   // Precompute stuff that will never change. During the execution, only the
   // domain of the variable will change, so data that only depends on the
   // constraints need to be computed just once.
@@ -345,7 +360,11 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   CpModelProto model_proto_with_only_variables_ ABSL_GUARDED_BY(domain_mutex_);
 
   // Constraints by types. This never changes.
-  std::vector<std::vector<int>> type_to_constraints_;
+  CompactVectorVector<int, int> type_to_constraints_;
+
+  // Info for VariablesSplitSymmetries(). This never changes.
+  std::vector<int> var_symmetry_partition_class_;
+  std::vector<int> size_of_symmetry_class_;
 
   // Whether a variable appears in the simplified_model_proto_ objective.
   std::vector<bool> is_in_objective_;
@@ -370,7 +389,7 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   // Connected components of the variable-constraint graph. If a variable is
   // constant or non-representative, it will not appear in any component and
   // var_to_component_index_[var] will be -1.
-  std::vector<std::vector<int>> components_ ABSL_GUARDED_BY(graph_mutex_);
+  CompactVectorVector<int, int> components_ ABSL_GUARDED_BY(graph_mutex_);
   std::vector<int> var_to_component_index_ ABSL_GUARDED_BY(graph_mutex_);
 
   // The set of active variables which is currently the list of non-constant,

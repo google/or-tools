@@ -256,7 +256,7 @@ void NonDeterministicLoop(std::vector<std::unique_ptr<SubSolver>>& subsolvers,
         }
       }
     }
-    if (best == -1) {
+    if (best == -1 || time_limit->LimitReached()) {
       if (all_done) break;
 
       // It is hard to know when new info will allows for more task to be

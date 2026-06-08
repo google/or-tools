@@ -452,6 +452,10 @@ bool ConvertCpModelProtoToWCnf(const CpModelProto& cp_model, std::string* out);
 // We assume delta >= 0 and we only use the low bit of delta.
 int CombineSeed(int base_seed, int64_t delta);
 
+// The largest possible value of ConstraintProto::constraint_case.
+constexpr ConstraintProto::ConstraintCase kLargestConstraintType =
+    ConstraintProto::ConstraintCase::kDummyConstraint;
+
 }  // namespace sat
 }  // namespace operations_research
 

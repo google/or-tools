@@ -1678,7 +1678,10 @@ class LnsSolver : public SubSolver {
         //
         // TODO(user): This do not work if they are symmetries loaded into SAT.
         // For now we just disable this if there is any symmetry. See for
-        // instance spot5_1401.fzn. Be smarter about that.
+        // instance spot5_1401.fzn. Be smarter about that. We use
+        // !VariablesTouchSymmetries() which is a bit better. Maybe we can use
+        // VariablesSplitSymmetries() but that currently require more work and
+        // in general, we would need to disable the symmetry that we fix here.
         //
         // The issue is that as we fix level zero variables from a partial
         // solution, the symmetry propagator could wrongly fix other variables
@@ -1694,10 +1697,12 @@ class LnsSolver : public SubSolver {
         //
         // TODO(user): We could however fix it in the LNS Helper!
         if (data.status == CpSolverStatus::OPTIMAL &&
-            !shared_->model_proto.has_symmetry() && !solution_values.empty() &&
-            neighborhood.is_simple && shared_->bounds != nullptr &&
+            !solution_values.empty() && neighborhood.is_simple &&
+            shared_->bounds != nullptr &&
             !neighborhood.variables_that_can_be_fixed_to_local_optimum
-                 .empty()) {
+                 .empty() &&
+            !helper_->VariablesTouchSymmetries(
+                neighborhood.variables_that_can_be_fixed_to_local_optimum)) {
           display_lns_info = true;
           shared_->bounds->FixVariablesFromPartialSolution(
               solution_values,
@@ -2033,9 +2038,8 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
         lns_params_base, lns_params_stalling, helper, shared));
   }
 
-  const bool has_no_overlap =
-      !helper->TypeToConstraints(ConstraintProto::kNoOverlap).empty();
-  const bool has_cumulative =
+  const bool has_no_overlap_or_cumulative =
+      !helper->TypeToConstraints(ConstraintProto::kNoOverlap).empty() ||
       !helper->TypeToConstraints(ConstraintProto::kCumulative).empty();
 
   // Add incomplete subsolvers that require an objective.
@@ -2093,7 +2097,7 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
     }
 
     // Scheduling (no_overlap and cumulative) specific LNS.
-    if (has_no_overlap || has_cumulative) {
+    if (has_no_overlap_or_cumulative) {
       if (name_filter.Keep("lns_scheduling_intervals")) {
         reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
             std::make_unique<RandomIntervalSchedulingNeighborhoodGenerator>(
@@ -2113,12 +2117,6 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
         reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
             std::make_unique<SchedulingResourceWindowsNeighborhoodGenerator>(
                 helper, intervals_in_constraints, name_filter.LastName()),
-            lns_params_base, lns_params_stalling, helper, shared));
-      }
-      if (name_filter.Keep("lns_scheduling_time_window")) {
-        reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
-            std::make_unique<SchedulingTimeWindowNeighborhoodGenerator>(
-                helper, name_filter.LastName()),
             lns_params_base, lns_params_stalling, helper, shared));
       }
     }
@@ -2160,7 +2158,7 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
     }
 
     // Generic scheduling/packing LNS.
-    if (has_no_overlap || has_cumulative || has_no_overlap2d) {
+    if (has_no_overlap_or_cumulative || has_no_overlap2d) {
       if (name_filter.Keep("lns_scheduling_precedences")) {
         reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
             std::make_unique<RandomPrecedenceSchedulingNeighborhoodGenerator>(
@@ -2245,7 +2243,7 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
       }
     }
 
-    if (has_no_overlap) {
+    if (has_no_overlap_or_cumulative) {
       interleaved_subsolvers.push_back(
           std::make_unique<SchedulingLocalSearchSolver>(
               "ls_scheduling", SubSolver::INCOMPLETE, shared->model_proto,

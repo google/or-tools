@@ -618,7 +618,9 @@ void TransitivePrecedencesEvaluator::ComputeFullPrecedences(
                       absl::flat_hash_map<IntegerVariable, IntegerValue>>
       vars_before_with_offset;
   absl::flat_hash_map<IntegerVariable, IntegerValue> tail_map;
+  TimeLimitCheckEveryNCalls time_limit_check(100, time_limit_);
   for (const IntegerVariable tail_var : topological_order_) {
+    if (time_limit_check.LimitReached()) return;
     if (!to_consider.contains(tail_var) &&
         !vars_before_with_offset.contains(tail_var)) {
       continue;

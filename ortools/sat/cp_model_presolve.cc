@@ -8760,9 +8760,9 @@ bool CpModelPresolver::PresolvePureSatPart() {
   // one, and we could merge this with what the ProcessSetPPC() is doing.
   Model local_model;
   local_model.GetOrCreate<TimeLimit>()->MergeWithGlobalTimeLimit(time_limit_);
+  *local_model.GetOrCreate<SatParameters>() = context_->params();
   auto* sat_solver = local_model.GetOrCreate<SatSolver>();
   auto* graph = local_model.GetOrCreate<BinaryImplicationGraph>();
-  *local_model.GetOrCreate<SatParameters>() = context_->params();
   sat_solver->SetNumVariables(num_variables);
 
   // Fix variables if any. Because we might not have reached the presove "fixed

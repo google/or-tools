@@ -196,15 +196,87 @@ bool NeighborhoodGeneratorHelper::ObjectiveDomainIsConstraining() const {
 }
 
 void NeighborhoodGeneratorHelper::InitializeHelperData() {
-  type_to_constraints_.clear();
+  CompactVectorVectorBuilder<int, int> type_to_constraints_builder;
   const int num_constraints = model_proto_.constraints_size();
+  type_to_constraints_builder.ReserveNumItems(num_constraints);
   for (int c = 0; c < num_constraints; ++c) {
     const int type = model_proto_.constraints(c).constraint_case();
-    if (type >= type_to_constraints_.size()) {
-      type_to_constraints_.resize(type + 1);
-    }
-    type_to_constraints_[type].push_back(c);
+    type_to_constraints_builder.Add(type, c);
   }
+  type_to_constraints_.ResetFromBuilder(type_to_constraints_builder,
+                                        kLargestConstraintType + 1);
+
+  // TODO(user): because we currently only load Boolean symmetries, we could
+  // be a bit smarter here. That said the SharedBoundsManager do exploit all
+  // symmetries, so we still need to be careful there.
+  if (model_proto_.has_symmetry() &&
+      !model_proto_.symmetry().permutations().empty()) {
+    const int num_vars = model_proto_.variables().size();
+
+    DenseConnectedComponentsFinder finder;
+    finder.SetNumberOfNodes(num_vars);
+
+    var_symmetry_partition_class_.resize(num_vars);
+    for (const SparsePermutationProto& permutation :
+         model_proto_.symmetry().permutations()) {
+      DCHECK(!permutation.support().empty());
+      const int rep = permutation.support(0);
+      for (const int var : permutation.support()) {
+        finder.AddEdge(rep, var);
+      }
+    }
+
+    int num_components = 0;
+    int num_covered = 0;
+    var_symmetry_partition_class_ = finder.GetComponentIds();
+    CHECK_EQ(var_symmetry_partition_class_.size(), num_vars);
+
+    size_of_symmetry_class_.resize(finder.GetNumberOfComponents());
+    const auto& roots = finder.GetComponentRoots();
+    CHECK_EQ(roots.size(), size_of_symmetry_class_.size());
+    for (int i = 0; i < size_of_symmetry_class_.size(); ++i) {
+      size_of_symmetry_class_[i] = finder.GetSize(roots[i]);
+      if (size_of_symmetry_class_[i] == 1) {
+        // Optimization.
+        var_symmetry_partition_class_[roots[i]] = -1;
+      } else {
+        num_components++;
+        num_covered += size_of_symmetry_class_[i];
+      }
+    }
+
+    VLOG(2) << "num_generators: "
+            << model_proto_.symmetry().permutations().size()
+            << " num_components:" << num_components
+            << " num_covered:" << num_covered << "/" << num_vars;
+  }
+}
+
+bool NeighborhoodGeneratorHelper::VariablesTouchSymmetries(
+    absl::Span<const int> variables) {
+  if (size_of_symmetry_class_.empty()) return false;  // No symmetry.
+  for (const int var : variables) {
+    if (var_symmetry_partition_class_[var] >= 0) return true;
+  }
+  return false;
+}
+
+bool NeighborhoodGeneratorHelper::VariablesSplitSymmetries(
+    absl::Span<const int> variables) {
+  if (size_of_symmetry_class_.empty()) return true;  // No symmetry.
+
+  // else we count.
+  std::vector<int> count(size_of_symmetry_class_.size());
+  int num_classes = 0;
+  int num_full_classes = 0;
+  for (const int var : variables) {
+    const int c = var_symmetry_partition_class_[var];
+    if (c < 0) continue;
+    if (count[c] == 0) ++num_classes;
+    count[c]++;
+    if (count[c] == size_of_symmetry_class_[c]) ++num_full_classes;
+  }
+  return num_classes == num_full_classes;
 }
 
 // Recompute all the data when new variables have been fixed. Note that this
@@ -388,8 +460,10 @@ void NeighborhoodGeneratorHelper::RecomputeHelperData() {
   // TODO(user): If a component has no objective, we can fix it to any feasible
   // solution. This will automatically be done by LNS fragment covering such
   // component though.
-  components_.clear();
   var_to_component_index_.assign(num_variables, -1);
+  CompactVectorVectorBuilder<int, int> components_builder;
+  components_builder.ReserveNumItems(num_variables);
+  int num_components = 0;
   for (int var = 0; var < num_variables; ++var) {
     if (IsConstant(var)) continue;
     if (GetRepresentative(var) != var) continue;
@@ -397,12 +471,12 @@ void NeighborhoodGeneratorHelper::RecomputeHelperData() {
     DCHECK_LT(root, var_to_component_index_.size());
     int& index = var_to_component_index_[root];
     if (index == -1) {
-      index = components_.size();
-      components_.push_back({});
+      index = num_components++;
     }
     var_to_component_index_[var] = index;
-    components_[index].push_back(var);
+    components_builder.Add(index, var);
   }
+  components_.ResetFromBuilder(components_builder);
 
   // Display information about the reduced problem.
   //
@@ -411,11 +485,10 @@ void NeighborhoodGeneratorHelper::RecomputeHelperData() {
   if (!shared_response_->LoggingIsEnabled()) return;
 
   std::vector<int> component_sizes;
-  for (const std::vector<int>& component : components_) {
+  for (const absl::Span<const int> component : components_.AsVectorOfSpan()) {
     component_sizes.push_back(component.size());
   }
-  std::sort(component_sizes.begin(), component_sizes.end(),
-            std::greater<int>());
+  absl::c_sort(component_sizes, std::greater<int>());
   std::string compo_message;
   if (component_sizes.size() > 1) {
     if (component_sizes.size() <= 10) {

@@ -231,6 +231,37 @@ TEST(FindCpModelSymmetries, LinMaxConstraint) {
   EXPECT_EQ(generators[0]->DebugString(), "(1 2)");
 }
 
+TEST(FindCpModelSymmetries, CanMapLinearToItsNegation) {
+  CpModelProto model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 20 ] }
+    variables { domain: [ 0, 20 ] }
+    constraints {
+      linear {
+        vars: [ 0, 2 ]
+        coeffs: [ 2, -1 ]
+        domain: [ 0, 0 ]
+      }
+    }
+    constraints {
+      linear {
+        vars: [ 3, 1 ]
+        coeffs: [ 1, -2 ]
+        domain: [ 0, 0 ]
+      }
+    }
+  )pb");
+  SolverLogger logger;
+
+  std::vector<std::unique_ptr<SparsePermutation>> generators;
+  TimeLimit time_limit;
+  FindCpModelSymmetries({}, model, &generators, &logger, &time_limit);
+
+  ASSERT_EQ(generators.size(), 1);
+  EXPECT_EQ(generators[0]->DebugString(), "(0 1) (2 3)");
+}
+
 TEST(FindCpModelSymmetries, UnsupportedConstraintTypeReturnsNoGenerators) {
   CpModelProto model = ParseTestProto(R"pb(
     variables {

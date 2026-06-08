@@ -40,6 +40,7 @@
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/logging.h"
@@ -233,11 +234,22 @@ Prober::Prober(Model* model)
       time_limit_(model->GetOrCreate<TimeLimit>()),
       implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()),
       clause_manager_(model->GetOrCreate<ClauseManager>()),
+      shared_stats_(model->GetOrCreate<SharedStatistics>()),
       lrat_proof_handler_(model->Mutable<LratProofHandler>()),
       trail_copy_(new TrailCopy(trail_, *clause_manager_, lrat_proof_handler_)),
       logger_(model->GetOrCreate<SolverLogger>()) {}
 
-Prober::~Prober() { delete trail_copy_; }
+Prober::~Prober() {
+  delete trail_copy_;
+  if (!VLOG_IS_ON(1)) return;
+  shared_stats_->AddStats(
+      {{"Probing/num_decisions", counters_.num_decisions},
+       {"Probing/num_total_new_binary", counters_.num_total_new_binary},
+       {"Probing/num_total_new_integer_bounds",
+        counters_.num_total_new_integer_bounds},
+       {"Probing/num_total_new_literals_fixed",
+        counters_.num_total_new_literals_fixed}});
+}
 
 bool Prober::ProbeBooleanVariables(const double deterministic_time_limit) {
   const int num_variables = sat_solver_->NumVariables();
@@ -266,7 +278,7 @@ bool Prober::ProbeOneVariableInternal(BooleanVariable b) {
   for (const Literal decision : {Literal(b, true), Literal(b, false)}) {
     if (assignment_.LiteralIsAssigned(decision)) continue;
 
-    ++num_decisions_;
+    ++counters_.num_decisions;
     CHECK_EQ(sat_solver_->CurrentDecisionLevel(), 0);
     const int saved_index = trail_.Index();
     if (sat_solver_->EnqueueDecisionAndBackjumpOnConflict(decision) ==
@@ -332,8 +344,8 @@ bool Prober::ProbeOneVariableInternal(BooleanVariable b) {
           lrat_proof_handler_->AddInferredClause(
               ClausePtr(decision.Negated(), l), tmp_proof_);
         }
-        num_lrat_clauses_++;
-        num_lrat_proof_clauses_ += tmp_proof_.size();
+        counters_.num_lrat_clauses++;
+        counters_.num_lrat_proof_clauses += tmp_proof_.size();
       }
       if (decision.IsPositive()) {
         trail_copy_->CopyTrail(saved_index);
@@ -345,8 +357,8 @@ bool Prober::ProbeOneVariableInternal(BooleanVariable b) {
                                            decision.NegatedIndex());
           lrat_proof_handler_->AddInferredClause(ClausePtr(decision, l),
                                                  tmp_proof_);
-          num_lrat_clauses_++;
-          num_lrat_proof_clauses_ += tmp_proof_.size();
+          counters_.num_lrat_clauses++;
+          counters_.num_lrat_proof_clauses += tmp_proof_.size();
         }
       }
     }
@@ -359,8 +371,8 @@ bool Prober::ProbeOneVariableInternal(BooleanVariable b) {
         lrat_proof_handler_->AddInferredClause(
             ClausePtr(l),
             {ClausePtr(decision.Negated(), l), ClausePtr(decision, l)});
-        num_lrat_clauses_++;
-        num_lrat_proof_clauses_ += 2;
+        counters_.num_lrat_clauses++;
+        counters_.num_lrat_proof_clauses += 2;
       }
       if (!clause_manager_->InprocessingAddUnitClause(l)) {
         return false;
@@ -371,7 +383,8 @@ bool Prober::ProbeOneVariableInternal(BooleanVariable b) {
       // Some variables can be fixed by the above loop.
       if (trail_.Assignment().LiteralIsAssigned(decision)) break;
       if (trail_.Assignment().LiteralIsAssigned(l)) continue;
-      num_new_binary_++;
+      counters_.num_new_binary++;
+      counters_.num_total_new_binary++;
       if (!implication_graph_->AddBinaryClause(decision.Negated(), l)) {
         return false;
       }
@@ -379,7 +392,7 @@ bool Prober::ProbeOneVariableInternal(BooleanVariable b) {
     if (!sat_solver_->FinishPropagation()) return false;
   }
   if (lrat_proof_handler_ != nullptr) {
-    num_unneeded_lrat_clauses_ +=
+    counters_.num_unneeded_lrat_clauses +=
         lrat_proof_handler_->DeleteTemporaryBinaryClauses();
   }
 
@@ -420,7 +433,7 @@ bool Prober::ProbeOneVariableInternal(BooleanVariable b) {
         const Domain new_domain = old_domain.IntersectionWith(
             Domain(ub_min.value() + 1, lb_max.value() - 1).Complement());
         if (new_domain != old_domain) {
-          ++num_new_holes_;
+          ++counters_.num_new_holes;
           if (!integer_trail_->UpdateInitialDomain(prev_var, new_domain)) {
             return false;
           }
@@ -444,7 +457,8 @@ bool Prober::ProbeOneVariableInternal(BooleanVariable b) {
     const IntegerValue new_bound = std::min(new_integer_bounds_[i - 1].bound,
                                             new_integer_bounds_[i].bound);
     if (new_bound > integer_trail_->LowerBound(var)) {
-      ++num_new_integer_bounds_;
+      ++counters_.num_new_integer_bounds;
+      ++counters_.num_total_new_integer_bounds;
       if (!integer_trail_->Enqueue(
               IntegerLiteral::GreaterOrEqual(var, new_bound), {}, {})) {
         return false;
@@ -469,7 +483,8 @@ bool Prober::ProbeOneVariable(BooleanVariable b) {
 
   // Statistics
   const int num_fixed = sat_solver_->LiteralTrail().Index();
-  num_new_literals_fixed_ += num_fixed - initial_num_fixed;
+  counters_.num_new_literals_fixed += num_fixed - initial_num_fixed;
+  counters_.num_total_new_literals_fixed += num_fixed - initial_num_fixed;
   return true;
 }
 
@@ -480,14 +495,14 @@ bool Prober::ProbeBooleanVariables(
   wall_timer.Start();
 
   // Reset statistics.
-  num_decisions_ = 0;
-  num_new_binary_ = 0;
-  num_new_holes_ = 0;
-  num_new_integer_bounds_ = 0;
-  num_new_literals_fixed_ = 0;
-  num_lrat_clauses_ = 0;
-  num_lrat_proof_clauses_ = 0;
-  num_unneeded_lrat_clauses_ = 0;
+  counters_.num_decisions = 0;
+  counters_.num_new_binary = 0;
+  counters_.num_new_holes = 0;
+  counters_.num_new_integer_bounds = 0;
+  counters_.num_new_literals_fixed = 0;
+  counters_.num_lrat_clauses = 0;
+  counters_.num_lrat_proof_clauses = 0;
+  counters_.num_unneeded_lrat_clauses = 0;
 
   // Resize the propagated sparse bitset.
   const int num_variables = sat_solver_->NumVariables();
@@ -527,7 +542,8 @@ bool Prober::ProbeBooleanVariables(
 
   // Update stats.
   const int num_fixed = sat_solver_->LiteralTrail().Index();
-  num_new_literals_fixed_ = num_fixed - initial_num_fixed;
+  counters_.num_new_literals_fixed = num_fixed - initial_num_fixed;
+  counters_.num_total_new_literals_fixed += num_fixed - initial_num_fixed;
 
   // Display stats.
   if (logger_->LoggingIsEnabled()) {
@@ -538,35 +554,35 @@ bool Prober::ProbeBooleanVariables(
                ") wall_time: ", wall_timer.Get(), " (",
                (limit_reached ? "Aborted " : ""), num_probed, "/",
                bool_vars.size(), ")");
-    if (num_new_literals_fixed_ > 0) {
-      SOLVER_LOG(logger_,
-                 "[Probing]  - new fixed Boolean: ", num_new_literals_fixed_,
-                 " (", FormatCounter(num_fixed), "/",
+    if (counters_.num_new_literals_fixed > 0) {
+      SOLVER_LOG(logger_, "[Probing]  - new fixed Boolean: ",
+                 counters_.num_new_literals_fixed, " (",
+                 FormatCounter(num_fixed), "/",
                  FormatCounter(sat_solver_->NumVariables()), ")");
     }
-    if (num_new_holes_ > 0) {
+    if (counters_.num_new_holes > 0) {
       SOLVER_LOG(logger_, "[Probing]  - new integer holes: ",
-                 FormatCounter(num_new_holes_));
+                 FormatCounter(counters_.num_new_holes));
     }
-    if (num_new_integer_bounds_ > 0) {
+    if (counters_.num_new_integer_bounds > 0) {
       SOLVER_LOG(logger_, "[Probing]  - new integer bounds: ",
-                 FormatCounter(num_new_integer_bounds_));
+                 FormatCounter(counters_.num_new_integer_bounds));
     }
-    if (num_new_binary_ > 0) {
+    if (counters_.num_new_binary > 0) {
       SOLVER_LOG(logger_, "[Probing]  - new binary clause: ",
-                 FormatCounter(num_new_binary_));
+                 FormatCounter(counters_.num_new_binary));
     }
-    if (num_lrat_clauses_ > 0) {
+    if (counters_.num_lrat_clauses > 0) {
       SOLVER_LOG(logger_, "[Probing]  - new LRAT clauses: ",
-                 FormatCounter(num_lrat_clauses_));
+                 FormatCounter(counters_.num_lrat_clauses));
     }
-    if (num_lrat_proof_clauses_ > 0) {
+    if (counters_.num_lrat_proof_clauses > 0) {
       SOLVER_LOG(logger_, "[Probing]  - new LRAT proof clauses: ",
-                 FormatCounter(num_lrat_proof_clauses_));
+                 FormatCounter(counters_.num_lrat_proof_clauses));
     }
-    if (num_unneeded_lrat_clauses_ > 0) {
+    if (counters_.num_unneeded_lrat_clauses > 0) {
       SOLVER_LOG(logger_, "[Probing]  - unneeded LRAT clauses: ",
-                 FormatCounter(num_unneeded_lrat_clauses_));
+                 FormatCounter(counters_.num_unneeded_lrat_clauses));
     }
   }
 
@@ -621,7 +637,7 @@ bool Prober::ProbeDnf(absl::string_view name,
       sat_solver_->AdvanceDeterministicTime(time_limit_);
       const int decision_level_after_enqueue =
           sat_solver_->CurrentDecisionLevel();
-      ++num_decisions_;
+      ++counters_.num_decisions;
 
       if (sat_solver_->ModelIsUnsat()) return false;
       // If the literal has been pushed without any conflict, the level should
@@ -667,7 +683,7 @@ bool Prober::ProbeDnf(absl::string_view name,
 
   if (!sat_solver_->ResetToLevelZero()) return false;
   // Fix literals implied by the dnf.
-  const int previous_num_literals_fixed = num_new_literals_fixed_;
+  const int previous_num_literals_fixed = counters_.num_new_literals_fixed;
   if (lrat_proof_handler_ != nullptr) {
     if (!FixProbedDnfLiterals(dnf, always_propagated_literals_, dnf_type,
                               dnf_clause)) {
@@ -677,16 +693,18 @@ bool Prober::ProbeDnf(absl::string_view name,
     for (const LiteralIndex literal_index : always_propagated_literals_) {
       const Literal lit(literal_index);
       if (assignment_.LiteralIsTrue(lit)) continue;
-      ++num_new_literals_fixed_;
+      ++counters_.num_new_literals_fixed;
+      ++counters_.num_total_new_literals_fixed;
       if (!sat_solver_->AddUnitClause(lit)) return false;
     }
   }
 
   // Fix integer bounds implied by the dnf.
-  int previous_num_integer_bounds = num_new_integer_bounds_;
+  int previous_num_integer_bounds = counters_.num_new_integer_bounds;
   for (const auto& [var, bound] : always_propagated_bounds_) {
     if (bound > integer_trail_->LowerBound(var)) {
-      ++num_new_integer_bounds_;
+      ++counters_.num_new_integer_bounds;
+      ++counters_.num_total_new_integer_bounds;
       if (!integer_trail_->Enqueue(IntegerLiteral::GreaterOrEqual(var, bound),
                                    {}, {})) {
         return false;
@@ -696,12 +714,12 @@ bool Prober::ProbeDnf(absl::string_view name,
 
   if (!sat_solver_->FinishPropagation()) return false;
 
-  if (num_new_integer_bounds_ > previous_num_integer_bounds ||
-      num_new_literals_fixed_ > previous_num_literals_fixed) {
-    VLOG(1) << "ProbeDnf(" << name << ", num_fixed_literals="
-            << num_new_literals_fixed_ - previous_num_literals_fixed
+  if (counters_.num_new_integer_bounds > previous_num_integer_bounds ||
+      counters_.num_new_literals_fixed > previous_num_literals_fixed) {
+    VLOG(2) << "ProbeDnf(" << name << ", num_fixed_literals="
+            << counters_.num_new_literals_fixed - previous_num_literals_fixed
             << ", num_pushed_integer_bounds="
-            << num_new_integer_bounds_ - previous_num_integer_bounds
+            << counters_.num_new_integer_bounds - previous_num_integer_bounds
             << ", num_valid_conjunctions=" << num_valid_conjunctions << "/"
             << dnf.size() << ")";
   }
@@ -858,7 +876,8 @@ bool Prober::FixProbedDnfLiterals(
     absl::Span<ClausePtr> propagations = propagation_clauses[i++];
     if (assignment_.LiteralIsTrue(propagated_lit)) continue;
 
-    ++num_new_literals_fixed_;
+    ++counters_.num_new_literals_fixed;
+    ++counters_.num_total_new_literals_fixed;
     switch (dnf_type) {
       case DnfType::kAtLeastOne:
         // `propagations` contains the clauses "not(l_i) OR propagated_lit"
@@ -1074,7 +1093,7 @@ bool FailedLiteralProbing::DoOneRound(ProbingOptions options) {
   WallTimer wall_timer;
   wall_timer.Start();
 
-  options.log_info |= VLOG_IS_ON(1);
+  options.log_info |= VLOG_IS_ON(2);
 
   num_variables_ = sat_solver_->NumVariables();
   to_fix_.clear();

@@ -253,6 +253,13 @@ class SatSolver {
   // the problem UNSAT.
   std::vector<Literal> GetLastIncompatibleDecisions();
 
+  // This returns a ClausePtr to a clause containing all the negation of
+  // GetLastIncompatibleDecisions(). If the options are on, this will already
+  // have an LRAT proof. Note that the pointer will only be valid until the next
+  // ASSUMPTION_UNSAT conflict. If you plan to keep this clause, you should make
+  // a copy (with its own trivial "copy" LRAT proof).
+  ClausePtr GetLastIncompatibleDecisionsAsClausePtr();
+
   // Returns a subset of decisions that are sufficient to ensure all literals in
   // `literals` are fixed to their current value.
   std::vector<Literal> GetDecisionsFixing(absl::Span<const Literal> literals);
@@ -528,6 +535,7 @@ class SatSolver {
   SolverLogger* mutable_logger() { return logger_; }
 
   // Processes the current conflict from trail->FailingClause().
+  // Returns false if the model is unsat or the assumptions are unsat.
   //
   // This learns the conflict, backtracks, enqueues the consequence of the
   // learned conflict and return. If `callback` is provided it is called with
@@ -537,7 +545,7 @@ class SatSolver {
   // return false without backtracking in case of ASSUMPTIONS_UNSAT. This is
   // only exposed to allow processing a conflict detected outside normal
   // propagation.
-  void ProcessCurrentConflict(
+  bool ProcessCurrentConflict(
       std::optional<ConflictCallback> callback = std::nullopt);
 
   void EnsureNewClauseIndexInitialized() {
@@ -775,6 +783,14 @@ class SatSolver {
   void RescaleClauseActivities(double scaling_factor);
   void UpdateClauseActivityIncrement();
 
+  // When we reach ASSUMPTION_UNSAT, we might want to learn the last conflict.
+  // This code is special since all assumptions are at the same level, so we
+  // don't use normal conflict resolution.
+  void MaybeLearnOnAssumptionUnsat();
+  void MaybeLazilyFillIncompatibleDecisions();
+  void ProveIncompatibleDecisions(absl::Span<const Literal> literals,
+                                  bool need_failing_clause);
+
   std::string DebugString(const SatClause& clause) const;
   std::string StatusString(Status status) const;
   std::string RunningStatisticsString() const;
@@ -896,6 +912,28 @@ class SatSolver {
     std::vector<Literal> literals;
   };
   std::vector<NewClauses> learned_clauses_;
+
+  // This is used by GetLastIncompatibleDecisions().
+  //
+  // We really have two cases, either this was due to a conflict, and we
+  // already "analyzed" the reason. Or it was due to trying to assign an already
+  // propagated literal, and lazily_fill_from is set.
+  //
+  // TODO(user): This is a bit hacky, but likely to change if we manage to treat
+  // a conflict that proves assumptions unsat in the same way as a normal
+  // conflict.
+  struct IncompatibleDecisions {
+    std::optional<Literal> lazily_fill_from;
+
+    std::vector<Literal> decisions;
+
+    // Associated clause (the negation of decisions).
+    ClausePtr clause_ptr;
+
+    // In some cases, clause_ptr will point to this "temporary" SatClause.
+    std::unique_ptr<SatClause> underlying_memory;
+  };
+  IncompatibleDecisions incompatible_decisions_;
 
   // When true, temporarily disable the deletion of clauses that are not needed
   // anymore. This is a hack for TryToMinimizeClause() because we use

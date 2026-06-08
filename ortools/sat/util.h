@@ -496,15 +496,13 @@ class ModelRandomGenerator : public absl::BitGenRef {
   // TODO(user): I didn't find a cleaner way to log this.
   void LogSalt() const {}
 
- private:
   class ModelRandomEngine {
    public:
     // We seed the strategy at creation only. This should be enough for our use
     // case since the SatParameters is set first before the solver is created.
     // We also never really need to change the seed afterwards, it is just used
     // to diversify solves with identical parameters on different Model objects.
-    explicit ModelRandomEngine(Model* model) {
-      const SatParameters& params = *model->GetOrCreate<SatParameters>();
+    explicit ModelRandomEngine(const SatParameters& params) {
       if (params.use_absl_random()) {
         absl_random_ = absl::BitGen(absl::SeedSeq({params.random_seed()}));
         absl_bit_gen_ref_ = absl::BitGenRef(absl_random_);
@@ -513,6 +511,9 @@ class ModelRandomGenerator : public absl::BitGenRef {
         absl_bit_gen_ref_ = absl::BitGenRef(deterministic_random_);
       }
     }
+
+    explicit ModelRandomEngine(Model* model)
+        : ModelRandomEngine(*model->GetOrCreate<SatParameters>()) {}
 
     absl::BitGenRef bit_gen_ref() const { return absl_bit_gen_ref_; }
 

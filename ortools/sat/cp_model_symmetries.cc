@@ -174,6 +174,7 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
     VAR_COEFFICIENT_NODE,
     CONSTRAINT_NODE,
     VAR_LIN_EXPR_NODE,
+    DOMAIN_NODE,
   };
   IdGenerator color_id_generator;
   initial_equivalence_classes->clear();
@@ -347,20 +348,71 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
         // before reaching here.
         continue;
       case ConstraintProto::kLinear: {
+        // Special case for positive only constraint (quite common).
+        bool only_positive_coefficients = true;
+        for (int i = 0; i < constraint.linear().vars_size(); ++i) {
+          const int64_t coeff = constraint.linear().coeffs(i);
+          if (coeff < 0) {
+            only_positive_coefficients = false;
+            break;
+          }
+        }
+
+        // We want to consider both constraint and -constraint from a symmetry
+        // perspective. Note that this cannot be reached by canonicalization
+        // alone. For instance, if we have X - Y == 0 and A - B == 0, maybe
+        // (X,B) (Y,A) is a symmetry.
+        //
+        // In order to do detect such symmetries, our encoding use one
+        // constraint node, a positive coefficient node (of color that depends
+        // on the constraint rhs) and a negative coefficient node (of color that
+        // depends on -rhs). All terms are linked to one of these nodes
+        // according to their sign, and only use the magnitude of the
+        // coefficient since the sign is encoded by the connection.
+        int positive_node, negative_node;
+        if (only_positive_coefficients) {
+          // We use no extra node in this case. Just a single constraint node.
+          Append(constraint.linear().domain(), &color);
+          CHECK_EQ(constraint_node, new_node(color));
+          positive_node = constraint_node;
+          negative_node = constraint_node;  // not used.
+        } else {
+          // We use two extra nodes here.
+          CHECK_EQ(constraint_node, new_node(color));
+          const Domain domain = ReadDomainFromProto(constraint.linear());
+
+          color = {DOMAIN_NODE};
+          for (const int64_t value : domain.FlattenedIntervals()) {
+            color.push_back(value);
+          }
+          positive_node = new_node(color);
+          builder.AddArc(positive_node, constraint_node);
+
+          color = {DOMAIN_NODE};
+          for (const int64_t value : domain.Negation().FlattenedIntervals()) {
+            color.push_back(value);
+          }
+          negative_node = new_node(color);
+          builder.AddArc(negative_node, constraint_node);
+        }
+
         // TODO(user): We can use the same trick as for the implications to
         // encode relations of the form coeff * var_a <= coeff * var_b without
         // creating a constraint node by directly adding an arc between the two
-        // var coefficient nodes.
-        Append(constraint.linear().domain(), &color);
-        CHECK_EQ(constraint_node, new_node(color));
+        // var coefficient nodes. And encoding both the relation and its
+        // negation.
         for (int i = 0; i < constraint.linear().vars_size(); ++i) {
-          const int ref = constraint.linear().vars(i);
-          const int variable_node = PositiveRef(ref);
-          const int64_t coeff = RefIsPositive(ref)
-                                    ? constraint.linear().coeffs(i)
-                                    : -constraint.linear().coeffs(i);
-          builder.AddArc(get_coefficient_node(variable_node, coeff),
-                         constraint_node);
+          const int variable_node = constraint.linear().vars(i);
+          const int64_t coeff = constraint.linear().coeffs(i);
+          if (coeff > 0) {
+            builder.AddArc(get_coefficient_node(variable_node, coeff),
+                           positive_node);
+          } else {
+            DCHECK_LT(coeff, 0);
+            DCHECK(!only_positive_coefficients);
+            builder.AddArc(get_coefficient_node(variable_node, -coeff),
+                           negative_node);
+          }
         }
         break;
       }
