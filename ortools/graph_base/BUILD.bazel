@@ -111,6 +111,7 @@ cc_test(
     name = "test_util_test",
     srcs = ["test_util_test.cc"],
     deps = [
+        ":graph",
         ":io",
         ":test_util",
         "//ortools/base:gmock_main",

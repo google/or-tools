@@ -84,8 +84,9 @@ std::vector<PathWithLength> KShortestPathsOnDag(
 // A wrapper that holds the memory needed to run many shortest path computations
 // efficiently on the given DAG. One call of `RunShortestPathOnDag()` has time
 // complexity O(|E| + |V|) and space complexity O(|V|).
-// `GraphType` can use any of the interfaces defined in `util/graph/graph.h`.
-// `ArcLengthContainer` can be any container of doubles.
+// `GraphType` can use any of the interfaces defined in
+// `ortools/graph_base/graph.h`. `ArcLengthContainer` can be any container of
+// doubles.
 template <class GraphType, typename ArcLengthContainer = std::vector<double>>
 class ShortestPathsOnDagWrapper {
  public:
@@ -161,9 +162,9 @@ class ShortestPathsOnDagWrapper {
 // computations efficiently on the given DAG. One call of
 // `RunKShortestPathOnDag()` has time complexity O(|E| + k|V|log(d)) where d is
 // the mean degree of the graph and space complexity O(k|V|).
-// `GraphType` can use any of the interfaces defined in `util/graph/graph.h`.
-// IMPORTANT: Only use if `path_count > 1` (k > 1) otherwise use
-// `ShortestPathsOnDagWrapper`.
+// `GraphType` can use any of the interfaces defined in
+// `ortools/graph_base/graph.h`. IMPORTANT: Only use if `path_count > 1` (k > 1)
+// otherwise use `ShortestPathsOnDagWrapper`.
 template <class GraphType, typename ArcLengthContainer = std::vector<double>>
 class KShortestPathsOnDagWrapper {
  public:
