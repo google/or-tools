@@ -13,6 +13,8 @@
 
 #include "ortools/base/dump_vars.h"
 
+#include <cstdint>
+#include <memory>
 #include <optional>
 #include <sstream>
 #include <string>
