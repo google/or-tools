@@ -44,6 +44,9 @@ genrule(
 java_wrap_cc(
     name = "cp_model_proto",
     srcs = ["cp_model_proto.swig"],
+    java_deps = [
+        "@maven//:com_google_errorprone_error_prone_annotations",
+    ],
     package = "com.google.ortools.sat",
     swig_includes = ["//ortools/base:base_swig"],
     visibility = ["//visibility:public"],
@@ -61,8 +64,8 @@ java_junit5_test(
     jvm_flags = ["-Xcheck:jni"],
     test_class = "com.google.ortools.sat.CpModelProtoTest",
     deps = [
+        ":cp_model_proto",
         "//ortools/java/com/google/ortools:Loader",
-        "//ortools/sat/java:cp_model_proto",
         "//ortools/util/java:jni_helper",
         "@maven//:com_google_truth_truth",
         "@maven//:org_junit_jupiter_junit_jupiter_api",
@@ -80,12 +83,13 @@ java_wrap_cc(
         ":cp_model_proto",
         "//ortools/sat:sat_parameters_java_proto",
         "//ortools/util/java:sorted_interval_list",
+        "@maven//:com_google_errorprone_error_prone_annotations",
         "@protobuf//java/core",
     ],
     package = "com.google.ortools.sat",
     swig_includes = [
+        ":cp_model_proto.swig",
         "//ortools/base:base_swig",
-        "//ortools/sat/java:cp_model_proto.swig",
         "//ortools/util/java:proto.i",
         "//ortools/util/java:sorted_interval_list.swig",
         "//ortools/util/java:vector.swig",
