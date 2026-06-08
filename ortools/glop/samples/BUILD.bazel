@@ -21,6 +21,7 @@ cc_binary(
     srcs = ["simple_glop_program.cc"],
     deps = [
         "//ortools/glop:lp_solver",
+        "//ortools/glop:parameters_cc_proto",
         "//ortools/lp_data",
         "//ortools/lp_data:lp_types",
     ],
