@@ -24,7 +24,6 @@
 #include <vector>
 
 #include "absl/base/attributes.h"
-#include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/strings/str_format.h"
@@ -36,26 +35,12 @@
 #include "ortools/util/stats.h"
 #include "ortools/util/zvector.h"
 
-// TODO(user): Remove these flags and expose the parameters in the API.
-// New clients, please do not use these flags!
-ABSL_FLAG(int64_t, min_cost_flow_alpha, 5,
-          "Divide factor for epsilon at each refine step.");
-ABSL_FLAG(bool, min_cost_flow_check_feasibility, true,
-          "Check that the graph has enough capacity to send all supplies "
-          "and serve all demands. Also check that the sum of supplies "
-          "is equal to the sum of demands.");
-ABSL_FLAG(bool, min_cost_flow_check_result, true,
-          "Check that the result is valid.");
-
 namespace operations_research {
 
 template <typename Graph, typename ArcFlowType, typename ArcScaledCostType>
 GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::GenericMinCostFlow(
     const Graph* graph)
-    : graph_(graph),
-      alpha_(absl::GetFlag(FLAGS_min_cost_flow_alpha)),
-      stats_("MinCostFlow"),
-      check_feasibility_(absl::GetFlag(FLAGS_min_cost_flow_check_feasibility)) {
+    : graph_(graph), stats_("MinCostFlow") {
   // This class assumes we have negative reverse arcs.
   static_assert(Graph::kHasNegativeReverseArcs);
 
@@ -456,7 +441,7 @@ bool GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::Solve() {
   if (!CheckInputConsistency()) {
     return false;
   }
-  if (check_feasibility_ && !CheckFeasibility()) {
+  if (params_.check_feasibility && !CheckFeasibility()) {
     status_ = INFEASIBLE;
     return false;
   }
@@ -471,7 +456,9 @@ bool GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::Solve() {
   DCHECK_EQ(status_, NOT_SOLVED);
   status_ = OPTIMAL;
 
-  if (absl::GetFlag(FLAGS_min_cost_flow_check_result) && !CheckResult()) {
+  // TODO(user): just do DCHECK(CheckResult()) and remove check_result from
+  // MinCostFlowParams?
+  if (params_.check_result && !CheckResult()) {
     status_ = BAD_RESULT;
     UnscaleCosts();
     return false;
@@ -518,7 +505,7 @@ void GenericMinCostFlow<Graph, ArcFlowType,
 template <typename Graph, typename ArcFlowType, typename ArcScaledCostType>
 bool GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::ScaleCosts() {
   SCOPED_TIME_STAT(&stats_);
-  cost_scaling_factor_ = scale_prices_ ? graph_->num_nodes() + 1 : 1;
+  cost_scaling_factor_ = params_.scale_prices ? graph_->num_nodes() + 1 : 1;
   epsilon_ = 1LL;
   VLOG(3) << "Number of nodes in the graph = " << graph_->num_nodes();
   VLOG(3) << "Number of arcs in the graph = " << graph_->num_arcs();
@@ -563,7 +550,7 @@ bool GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::Optimize() {
   num_relabels_since_last_price_update_ = 0;
   do {
     // Avoid epsilon_ == 0.
-    epsilon_ = std::max(epsilon_ / alpha_, kEpsilonMin);
+    epsilon_ = std::max(epsilon_ / params_.alpha, kEpsilonMin);
     VLOG(3) << "Epsilon changed to: " << epsilon_;
     if (!Refine()) return false;
   } while (epsilon_ != 1LL);
@@ -806,7 +793,7 @@ bool GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::Refine() {
     // TODO(user): Experiment with different factors in front of num_nodes.
     if (num_relabels_since_last_price_update_ >= num_nodes) {
       num_relabels_since_last_price_update_ = 0;
-      if (use_price_update_) {
+      if (params_.update_prices) {
         if (!UpdatePrices()) return false;
       }
     }
@@ -1186,10 +1173,9 @@ SimpleMinCostFlow::Status SimpleMinCostFlow::SolveWithPossibleAdjustment(
   }
   min_cost_flow.SetNodeSupply(source, maximum_flow_);
   min_cost_flow.SetNodeSupply(sink, -maximum_flow_);
-  min_cost_flow.SetCheckFeasibility(false);
-  min_cost_flow.SetPriceScaling(scale_prices_);
 
   arc_flow_.resize(num_arcs);
+  min_cost_flow.params().check_feasibility = false;
   if (min_cost_flow.Solve()) {
     optimal_cost_ = min_cost_flow.GetOptimalCost();
     for (arc = 0; arc < num_arcs; ++arc) {

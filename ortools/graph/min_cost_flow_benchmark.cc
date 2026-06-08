@@ -115,10 +115,6 @@ void BM_MinCostFlowOnMultiMatchingProblem(benchmark::State& state) {
     GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType> min_cost_flow(
         graph.get());
 
-    // We also disable the feasibility check which takes a huge amount of
-    // memory.
-    min_cost_flow.SetCheckFeasibility(false);
-
     min_cost_flow.SetNodeSupply(/*node=*/0, /*supply=*/-total_demand);
     // Now, set the arcs capacity and cost, in the same order as we created them
     // above.
@@ -138,6 +134,11 @@ void BM_MinCostFlowOnMultiMatchingProblem(benchmark::State& state) {
       min_cost_flow.SetArcCapacity(arc_index, kMaxChannelsPerUser);
       arc_index++;
     }
+
+    // We don't need to check feasibility, as it is guaranteed by the
+    // construction of the graph, and checking it would add a lot of memory and
+    // time overhead.
+    min_cost_flow.params().check_feasibility = false;
     const bool solved_ok = min_cost_flow.Solve();
     CHECK(solved_ok);
     LOG(INFO) << "Maximum revenue: " << -min_cost_flow.GetOptimalCost();
