@@ -1113,10 +1113,12 @@ ResourceGroup::Attributes::Attributes()
 }
 
 ResourceGroup::Attributes::Attributes(Domain start_domain, Domain end_domain,
-                                      int64_t span_upper_bound)
+                                      int64_t span_upper_bound,
+                                      int64_t fixed_cost)
     : start_domain_(std::move(start_domain)),
       end_domain_(std::move(end_domain)),
-      span_upper_bound_(span_upper_bound) {}
+      span_upper_bound_(span_upper_bound),
+      fixed_cost_(fixed_cost) {}
 
 void ResourceGroup::Resource::SetDimensionAttributes(
     Attributes attributes, const Dimension* dimension) {
@@ -3102,6 +3104,32 @@ void Model::CloseModelWithParameters(
   }
   for (IntVar* route_cost_var : route_cost_vars) {
     cost_elements.push_back(route_cost_var);
+  }
+  // Resource costs
+  for (int rg = 0; rg < resource_groups_.size(); ++rg) {
+    const std::vector<ResourceGroup::Resource>& resources =
+        resource_groups_[rg]->GetResources();
+    std::vector<int64_t> fixed_costs(resources.size());
+    for (int i = 0; i < fixed_costs.size(); ++i) {
+      for (const auto& attributes : resources[i].GetAllDimensionAttributes()) {
+        fixed_costs[i] = CapAdd(fixed_costs[i], attributes.fixed_cost());
+      }
+    }
+    if (fixed_costs.empty()) continue;
+    const int64_t max_fixed_cost =
+        *std::max_element(fixed_costs.begin(), fixed_costs.end());
+    if (max_fixed_cost == 0) {
+      continue;
+    }
+    for (IntVar* resource_var : resource_vars_[rg]) {
+      IntVar* const resource_cost = solver_->MakeIntVar(0, max_fixed_cost);
+      solver_->AddConstraint(solver_->MakeLightElement(
+          [fixed_costs](int i) {
+            return i >= 0 && i < fixed_costs.size() ? fixed_costs[i] : 0;
+          },
+          resource_cost, resource_var, []() { return false; }));
+      cost_elements.push_back(resource_cost);
+    }
   }
   // cost_ is the sum of cost_elements.
   cost_ = solver_->MakeSum(cost_elements)->Var();

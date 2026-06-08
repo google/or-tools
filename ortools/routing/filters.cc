@@ -1486,6 +1486,11 @@ bool ChainCumulFilter::AcceptPath(int64_t path_start, int64_t chain_start,
 
 }  // namespace
 
+IntVarLocalSearchFilter* MakeChainCumulFilter(const Dimension& dimension) {
+  Model& model = *dimension.model();
+  return model.solver()->RevAlloc(new ChainCumulFilter(model, dimension));
+}
+
 bool FillDimensionValuesFromDimension(
     int path, int64_t capacity, int64_t span_upper_bound,
     absl::Span<const DimensionValues::Interval> cumul_of_node,

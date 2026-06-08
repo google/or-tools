@@ -457,21 +457,24 @@ class OR_DLL Model {
      public:
       Attributes();
       Attributes(Domain start_domain, Domain end_domain,
-                 int64_t span_upper_bound = kint64max);
+                 int64_t span_upper_bound = kint64max, int64_t fixed_cost = 0);
 
       const Domain& start_domain() const { return start_domain_; }
       const Domain& end_domain() const { return end_domain_; }
       int64_t span_upper_bound() const { return span_upper_bound_; }
+      int64_t fixed_cost() const { return fixed_cost_; }
 
       friend bool operator==(const Attributes& a, const Attributes& b) {
         return a.start_domain_ == b.start_domain_ &&
                a.end_domain_ == b.end_domain_ &&
-               a.span_upper_bound_ == b.span_upper_bound_;
+               a.span_upper_bound_ == b.span_upper_bound_ &&
+               a.fixed_cost_ == b.fixed_cost_;
       }
       template <typename H>
       friend H AbslHashValue(H h, const Attributes& attributes) {
         return H::combine(std::move(h), attributes.start_domain_,
-                          attributes.end_domain_, attributes.span_upper_bound_);
+                          attributes.end_domain_, attributes.span_upper_bound_,
+                          attributes.fixed_cost_);
       }
 
      private:
@@ -485,6 +488,9 @@ class OR_DLL Model {
       /// assigned to this resource: cumul[End(v)] - cumul[Start(v)] <=
       /// span_upper_bound
       int64_t span_upper_bound_ = kint64max;
+      // The fixed cost of the resource, added to the cost of the solution if
+      // the resource is used.
+      int64_t fixed_cost_ = 0;
     };
 
     /// A Resource sets attributes (costs/constraints) for a set of dimensions.
@@ -495,6 +501,10 @@ class OR_DLL Model {
         return index < dimension_attributes_per_index_.size()
                    ? attributes_[dimension_attributes_per_index_[index]]
                    : GetDefaultAttributes();
+      }
+      const std::vector<ResourceGroup::Attributes>& GetAllDimensionAttributes()
+          const {
+        return attributes_;
       }
 
      private:
