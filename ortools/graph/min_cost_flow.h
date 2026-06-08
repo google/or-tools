@@ -501,24 +501,6 @@ class GenericMinCostFlow : public MinCostFlowBase {
   const MinCostFlowParams& params() const { return params_; }
   MinCostFlowParams& params() { return params_; }
 
-  // TODO(user): Remove the deprecated functions below when there are no users.
-  // They are just shortcuts to make it easier to migrate existing code.
-  ABSL_DEPRECATED(
-      "Use params() instead. This function will be removed once there are no"
-      " users.")
-  void SetCheckFeasibility(bool value) { params_.check_feasibility = value; }
-
-  // Algorithm options.
-  ABSL_DEPRECATED(
-      "Use params() instead. This function will be removed once there are no"
-      " users.")
-  void SetUseUpdatePrices(bool value) { params_.update_prices = value; }
-
-  ABSL_DEPRECATED(
-      "Use params() instead. This function will be removed once there are no"
-      " users.")
-  void SetPriceScaling(bool value) { params_.scale_prices = value; }
-
  private:
   // Checks for feasibility, i.e., that all the supplies and demands can be
   // matched without exceeding bottlenecks in the network.

@@ -56,5 +56,6 @@ java_library(
         "//ortools/sat/java:cp_model_proto",
         "//ortools/sat/java:sat",
         "//ortools/util/java:sorted_interval_list",
+        "@maven//:com_google_errorprone_error_prone_annotations",
     ],
 )
