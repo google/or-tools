@@ -25,7 +25,7 @@ The Julia wrapper is divided into three Julia packages:
 *   [`ORTools.jl`](../ORTools.jl)
     is the actual, high-level wrapper (more specifically, the
     [MathOptInterface](https://github.com/jump-dev/MathOptInterface.jl) code for
-    use through [JuMP](https://jump.dev/)). **It is not yet written.**
+    use through [JuMP](https://jump.dev/)).
 
 ## Maintenance
 
