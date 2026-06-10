@@ -178,8 +178,6 @@ enum class NodeOrderInsideComponent : int {
 // ... and so on...
 // Of course, in this usage, the connected components finder retains
 // these pointers through its lifetime (though it doesn't dereference them).
-//
-// TODO(user): Switch default of CompareOrHashT to absl::Hash<T>.
 template <typename T,
           typename CompareOrHashT = util::graph::PreferHashOrCompare<T>,
           typename Eq = void>
@@ -361,11 +359,11 @@ ConnectedComponentsFinder<T, CompareOrHashT, Eq>::FindConnectedComponents(
         absl::c_sort(component);
       }
     } else {
-      // TODO(b/518640449): Add LOG(DFATAL) here and fix the only caller.
+      LOG(DFATAL) << "kSortByValue requested but node type is not sortable";
     }
   } else {
     // If the user did not provide a hasher, components are already sorted by
-    // node value since we store them in a btree_set.
+    // node value since we store them in a btree_set. We just DCHECK that.
     if (DEBUG_MODE) {
       for (const auto& component : components) {
         DCHECK(absl::c_is_sorted(component, CompareOrHashT{}));

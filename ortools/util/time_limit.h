@@ -19,6 +19,7 @@
 #include <cstdint>
 #include <limits>
 #include <memory>
+#include <ostream>
 #include <string>
 #include <vector>
 
@@ -27,6 +28,7 @@
 #include "absl/flags/declare.h"
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
+#include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
@@ -97,6 +99,27 @@ namespace operations_research {
 //                 "number of operations" to avoid confusion with "real" time.
 class OR_DLL TimeLimit {
  public:
+  // Stats of the time limit.
+  enum class State : int8_t {
+    // No limit reached.
+    kRunning,
+
+    // The atomic passed to RegisterExternalBooleanAsLimit() is true.
+    kExternalBoolean,
+
+    // The atomic passed to RegisterSecondaryExternalBooleanAsLimit() is true.
+    kSecondaryExternalBoolean,
+
+    // We reached deterministic_limit.
+    kDeterministicTime,
+
+    // We reached limit_in_seconds.
+    kTime,
+  };
+
+  // Returns the string representation of the State enum.
+  static absl::string_view GetStateString(State state);
+
   static const double kSafetyBufferSeconds;  // See the .cc for the value.
   static const int kHistorySize;
 
@@ -152,8 +175,23 @@ class OR_DLL TimeLimit {
    * over the deterministic limit or if the next time \c LimitReached() is
    * called is likely to be over the time limit. See toplevel comment. Once it
    * has returned true, it is guaranteed to always return true.
+   *
+   * See CurrentState() to get more details about the reached limit.
    */
   bool LimitReached();
+
+  /**
+   * Computes and returns the state of this time limit.
+   *
+   * When multiple stopping conditions are true at once, the one returned is
+   * arbitrary. On top of that it may change on subsequent calls. The only
+   * guarantee is that once it returned a value different fromq kRunning, it
+   * will always return a value different from kRunning.
+   *
+   * Note that LimitReached() returns true iff CurrentState() returns any value
+   * but kRunning.
+   */
+  State CurrentState();
 
   /**
    * Returns the time left on this limit, or 0 if the limit was reached (it
@@ -323,6 +361,9 @@ class OR_DLL TimeLimit {
   friend class NestedTimeLimit;
   friend class ParallelTimeLimit;
 };
+
+// Prints TimeLimit::GetStateString().
+std::ostream& operator<<(std::ostream& os, TimeLimit::State state);
 
 // Wrapper around TimeLimit to make it thread safe and add Stop() support.
 class SharedTimeLimit {
@@ -523,17 +564,21 @@ inline void TimeLimit::MergeWithGlobalTimeLimit(const TimeLimit* other) {
 }
 
 inline bool TimeLimit::LimitReached() {
+  return CurrentState() != State::kRunning;
+}
+
+inline TimeLimit::State TimeLimit::CurrentState() {
   if (external_boolean_as_limit_ != nullptr &&
       external_boolean_as_limit_->load()) {
-    return true;
+    return State::kExternalBoolean;
   }
   if (secondary_external_boolean_as_limit_ != nullptr &&
       secondary_external_boolean_as_limit_->load()) {
-    return true;
+    return State::kSecondaryExternalBoolean;
   }
 
   if (GetDeterministicTimeLeft() <= 0.0) {
-    return true;
+    return State::kDeterministicTime;
   }
 
   const int64_t current_ns = absl::GetCurrentTimeNanos();
@@ -547,15 +592,17 @@ inline bool TimeLimit::LimitReached() {
       const double time_left_s = limit_in_seconds_ - user_timer_.Get();
       if (time_left_s > kSafetyBufferSeconds) {
         limit_ns_ = static_cast<int64_t>(time_left_s * 1e9) + last_ns_;
-        return false;
+        return State::kRunning;
       }
     }
 
     // To ensure that future calls to LimitReached() will return true.
+    //
+    // Note that this does not change the returned State.
     limit_ns_ = 0;
-    return true;
+    return State::kTime;
   }
-  return false;
+  return State::kRunning;
 }
 
 inline double TimeLimit::GetTimeLeft() const {

@@ -17,6 +17,7 @@
 #include <cstdint>
 #include <limits>
 #include <memory>
+#include <ostream>
 #include <string>
 #include <utility>
 
@@ -24,6 +25,7 @@
 #include "absl/log/die_if_null.h"
 #include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 #include "absl/time/time.h"
 #include "ortools/base/macros/buildenv.h"
 #include "ortools/base/macros/os_support.h"
@@ -59,6 +61,30 @@ std::string TimeLimit::DebugString() const {
   }
 #endif
   return buffer;
+}
+
+absl::string_view TimeLimit::GetStateString(const State state) {
+  switch (state) {
+    case State::kRunning:
+      return "RUNNING";
+    case State::kExternalBoolean:
+      return "EXTERNAL_BOOLEAN";
+    case State::kSecondaryExternalBoolean:
+      return "SECONDARY_EXTERNAL_BOOLEAN";
+    case State::kDeterministicTime:
+      return "DETERMINISTIC_TIME";
+    case State::kTime:
+      return "TIME";
+      // Fallback. We don't use "default:" so the compiler will return an error
+      // if we forgot one enum case above.
+      LOG(DFATAL) << "Invalid TimeLimit::State " << static_cast<int>(state);
+      return "UNKNOWN TimeLimit::State";
+  }
+}
+
+std::ostream& operator<<(std::ostream& os, const TimeLimit::State state) {
+  os << TimeLimit::GetStateString(state);
+  return os;
 }
 
 NestedTimeLimit::NestedTimeLimit(TimeLimit* base_time_limit,
