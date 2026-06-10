@@ -2,6 +2,7 @@ module TestMOIWrapper
 
 using Test
 using ORTools
+import ORToolsBinaries
 import MathOptInterface as MOI
 
 ## Test the optimizer
@@ -129,11 +130,10 @@ function test_solver_specific_parameters_of_emphasis_type()
 
     for attribute in emphasis_based_attributes
         @test MOI.supports(model, attribute) == true
-        @test MOI.get(model, attribute) == ORTools.Emphasis.EMPHASIS_UNSPECIFIED
+        @test isnothing(MOI.get(model, attribute))
         MOI.set(model, attribute, ORTools.Emphasis.EMPHASIS_HIGH)
         @test MOI.get(model, attribute) == ORTools.Emphasis.EMPHASIS_HIGH
         MOI.empty!(model)
-        @test MOI.get(model, attribute) == nothing
         ## Re-initialize the model
         ORTools.optionally_initialize_model_and_parameters!(model)
     end
@@ -416,7 +416,7 @@ TODO: b/392085365
 """
 function test_model_ScalarFunctionConstantNotZero()
     T = Float64
-    model = ORTools.Optimizer()
+    model = MOI.instantiate(ORTools.Optimizer; with_cache_type = Float64)
     function _error(S, value)
         F = MOI.ScalarAffineFunction{T}
         return MOI.ScalarFunctionConstantNotZero{T,F,S}(value)
