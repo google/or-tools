@@ -25,6 +25,7 @@
 
 #include <stdint.h>
 
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -78,6 +79,20 @@ class ContinuousProber {
     int64_t num_new_binary = 0;
   };
 
+  // Probes variable bounds. Returns a status if the main Probe() function
+  // should abort and return this status, or nullopt if probing should continue.
+  std::optional<SatSolver::Status> ProbeIntegerVariables(double time_limit);
+  // Probes Boolean variables from the model.
+  std::optional<SatSolver::Status> ProbeBooleanVariables(double time_limit);
+  // Probes clauses of the SAT model.
+  std::optional<SatSolver::Status> ProbeAtLeastOnes(double time_limit);
+  // Probes at_most_ones of the SAT model.
+  std::optional<SatSolver::Status> ProbeAtMostOnes(double time_limit);
+  // Probes combinations of Booleans variables.
+  std::optional<SatSolver::Status> ProbePairsOfBoolVars(double time_limit);
+
+  // Returns true if boool_var is not assigned and not redundant.
+  bool ShouldProbe(BooleanVariable bool_var) const;
   SatSolver::Status ShaveLiteral(Literal literal,
                                  bool literal_is_an_integer_bound);
   bool ReportStatus(SatSolver::Status status);

@@ -108,6 +108,12 @@ bool ReasonClauseIsValidForDebug(const SharedTreeEncoder::Node* node,
                           return valid_literals.contains(literal);
                         });
 }
+
+// Returns true if node `a` has a lower id than node `b`.
+bool NodeIdLess(const SharedTreeEncoder::Node* a,
+                const SharedTreeEncoder::Node* b) {
+  return a->shared().id < b->shared().id;
+}
 }  // namespace
 
 SharedTreeEncoder::Node::Node(SharedTreeEncoder* encoder, NodeId id,
@@ -127,26 +133,29 @@ SharedTreeEncoder::Node::Node(SharedTreeEncoder* encoder, NodeId id,
 SharedTreeEncoder::Node* SharedTreeEncoder::Node::GetLevelStart() {
   Node* node = this;
   while (node->shared_.is_implied) {
-    Node* ancestor = node->parent()->level_start_;
+    Node* ancestor = node->parent_node_->level_start_;
     node->level_start_ = ancestor->level_start_;
     node = ancestor;
   }
   return node;
 }
 
-bool SharedTreeEncoder::Node::AddImplication(Literal literal) {
-  const std::optional<ProtoLiteral> proto_literal = encoder_->Encode(literal);
-  if (!proto_literal.has_value()) return false;
-  return encoder_->AddImplication(this, *proto_literal, literal);
+bool SharedTreeEncoder::Node::AddImplication(ProtoLiteral literal) {
+  DCHECK(!shared_.is_closed());
+  DCHECK(!shared_.is_implied);
+  auto [it, inserted] =
+      shared_.var_lower_bounds.emplace(literal.proto_var(), literal.lb());
+  if (!inserted && it->second >= literal.lb()) return false;
+  it->second = literal.lb();
+  return true;
 }
 
 void SharedTreeEncoder::Node::ExportInferredReasonClause(
     Literal literal, absl::Span<const ClausePtr> proof) {
-  if (encoder_->lrat_proof_handler_ != nullptr) {
-    reason_clauses_.emplace(literal,
-                            encoder_->NewInferredClause(
-                                ExpectedReasonClauseLiterals(literal), proof));
-  }
+  if (encoder_->lrat_proof_handler_ == nullptr) return;
+  reason_clauses_.emplace(literal,
+                          encoder_->NewInferredClause(
+                              ExpectedReasonClauseLiterals(literal), proof));
 }
 
 int SharedTreeEncoder::Node::GetLevel() {
@@ -192,7 +201,6 @@ void SharedTreeEncoder::Node::Cleanup() {
     encoder_->DeleteClause(clause);
   }
   gtl::STLClearObject(&shared_.var_lower_bounds);
-  gtl::STLClearObject(&implications_);
   gtl::STLClearObject(&reason_clauses_);
 }
 
@@ -309,22 +317,6 @@ void SharedTreeEncoder::CloseNode(NodeId node_id,
   }
 }
 
-bool SharedTreeEncoder::AddImplication(Node* node, ProtoLiteral literal,
-                                       Literal decoded_literal) {
-  CHECK(!node->shared().is_closed());
-  CHECK(!node->shared().is_implied);
-  auto [it, inserted] =
-      node->shared_.var_lower_bounds.emplace(literal.proto_var(), literal.lb());
-  if (!inserted && it->second >= literal.lb()) {
-    return false;
-  }
-  it->second = literal.lb();
-  if (ShouldDecodeImplications()) {
-    node->implications_.push_back(decoded_literal);
-  }
-  return true;
-}
-
 void SharedTreeEncoder::CloseNodeInternal(Node* node,
                                           absl::Span<const ClausePtr> proof,
                                           bool parent_is_closed) {
@@ -386,16 +378,12 @@ void SharedTreeEncoder::ProcessImpliedNode(Node* node,
   Node* new_level_start = node->GetLevelStart();
   CHECK_NE(new_level_start, node);
   CHECK(!new_level_start->shared().is_closed());
-  SetProofToPropagateImpliedNodes(node->parent());
-  if (AddImplication(new_level_start, node->shared().decision,
-                     node->decoded_decision()) &&
+  SetProofToPropagateImpliedNodes(node->parent_node_);
+  if (new_level_start->AddImplication(node->shared().decision) &&
       lrat_proof_handler_ != nullptr) {
     tmp_proof_.push_back(decision_reason_clause);
-    new_level_start->reason_clauses_.emplace(
-        node->decoded_decision(),
-        NewInferredClause(new_level_start->ExpectedReasonClauseLiterals(
-                              node->decoded_decision()),
-                          tmp_proof_));
+    new_level_start->ExportInferredReasonClause(node->decoded_decision(),
+                                                tmp_proof_);
     tmp_proof_.pop_back();
   }
   DeleteClause(decision_reason_clause);
@@ -405,8 +393,7 @@ void SharedTreeEncoder::ProcessImpliedNode(Node* node,
   CHECK(new_level_start->shared().LiteralIsImplied(node->shared().decision));
   // Update variable bounds.
   for (auto& [var, lb] : node->shared_.var_lower_bounds) {
-    AddImplication(new_level_start, ProtoLiteral(var, lb),
-                   Decode(ProtoLiteral(var, lb)));
+    new_level_start->AddImplication(ProtoLiteral(var, lb));
   }
   MoveReasonClausesToLevelStart(node);
   tmp_proof_.clear();
@@ -424,7 +411,7 @@ void SharedTreeEncoder::ProcessNewObjectiveBound(Node* node) {
         prev_level_start->shared().objective_lb) {
       return;
     }
-    Node* sibling = node->sibling();
+    const Node* sibling = node->sibling();
     prev_level_start->shared_.objective_lb =
         std::min(sibling->shared().objective_lb, node->shared().objective_lb);
     node = prev_level_start;
@@ -433,17 +420,15 @@ void SharedTreeEncoder::ProcessNewObjectiveBound(Node* node) {
 
 SharedTreeEncoder::Node* SharedTreeEncoder::EnsureNodeExists(
     NodeId id, NodeId parent_id, ProtoLiteral decision) {
-  if (Node* node = GetNodeOrNull(id)) return node;
+  auto it = nodes_by_id_.emplace(id, nullptr).first;
+  if (it->second != nullptr) return it->second;
 
-  Node* parent = nullptr;
-  if (parent_id != kNoNodeId) {
-    parent = GetNode(parent_id);
-  }
+  Node* parent = parent_id == kNoNodeId ? nullptr : GetNode(parent_id);
   const std::optional<Literal> decoded_decision =
       (parent != nullptr) ? std::make_optional(Decode(decision)) : std::nullopt;
   nodes_.emplace_back(this, id, decision, decoded_decision, parent);
   Node* node = &nodes_.back();
-  nodes_by_id_[id] = node;
+  it->second = node;
 
   if (!node->shared().is_root()) {
     parent->set_child(node);
@@ -483,7 +468,7 @@ void SharedTreeEncoder::UpdateNode(
     Node* sibling = node->sibling();
     // We should already have imported all clauses from the start of the
     // level, find the right one.
-    ClausePtr clause = node->parent()->GetLevelStart()->ReasonClauseOrNull(
+    ClausePtr clause = node->parent_node_->GetLevelStart()->ReasonClauseOrNull(
         node->decoded_decision());
     if (lrat_proof_handler_ != nullptr) {
       CHECK_NE(clause, kNullClausePtr);
@@ -498,20 +483,20 @@ void SharedTreeEncoder::UpdateNode(
   Node* level_start = node->GetLevelStart();
   SetProofToPropagateImpliedNodes(node);
   for (const auto& [var, bound] : other.var_lower_bounds) {
-    const ProtoLiteral proto_implied = ProtoLiteral(var, bound);
-    const Literal implied = Decode(proto_implied);
-    if (AddImplication(level_start, proto_implied, implied) &&
+    const ProtoLiteral implied = ProtoLiteral(var, bound);
+    if (level_start->AddImplication(implied) &&
         lrat_proof_handler_ != nullptr) {
+      const Literal decoded = Decode(implied);
       ClausePtr clause = NewImportedClause(
-          importable_reason_clauses.at(implied).GetLiterals());
+          importable_reason_clauses.at(decoded).GetLiterals());
       if (node->shared().id != level_start->shared().id) {
         tmp_proof_.push_back(clause);
         clause = NewInferredClause(
-            level_start->ExpectedReasonClauseLiterals(implied), tmp_proof_);
+            level_start->ExpectedReasonClauseLiterals(decoded), tmp_proof_);
         DeleteClause(tmp_proof_.back());
         tmp_proof_.pop_back();
       }
-      level_start->reason_clauses_.emplace(implied, clause);
+      level_start->reason_clauses_.emplace(decoded, clause);
     }
   }
 }
@@ -537,7 +522,8 @@ void SharedTreeEncoder::SyncNodesOnPath(NodeId leaf_id,
   // implied, as implications are moved to the parent which was imported
   // earlier.
   for (const Node* node : to_update_) {
-    Node* worker_node = worker_tree.GetNodeOrNull(node->shared().id);
+    SharedTreeEncoder::Node* worker_node =
+        worker_tree.nodes_by_id_[node->shared().id];
     if (worker_node == nullptr) break;
     ImportNode(worker_node->shared(), worker_node->reason_clauses());
     if (node->shared().is_closed()) break;
@@ -552,9 +538,7 @@ void SharedTreeEncoder::SyncNodesOnPath(NodeId leaf_id,
 void SharedTreeEncoder::Clear() {
   if (lrat_proof_handler_ != nullptr) {
     for (auto& node : nodes_) {
-      for (auto& [literal, clause] : node.reason_clauses()) {
-        DeleteClause(clause);
-      }
+      node.Cleanup();
     }
   }
   nodes_.clear();
@@ -562,14 +546,13 @@ void SharedTreeEncoder::Clear() {
   closed_leaves_ = 0;
 }
 
-std::vector<SharedTreeEncoder::Node*>
-SharedTreeEncoder::GetNormalizedLevelStartNodes(NodeId leaf_id) {
+std::vector<SharedTreeEncoder::Node*> SharedTreeEncoder::GetLevelStartNodes(
+    NodeId leaf_id) {
   std::vector<Node*> nodes;
   if (leaf_id == kNoNodeId) return nodes;
   Node* node = GetNode(leaf_id);
   while (node != nullptr) {
     Node* level_start = node->GetLevelStart();
-    NormalizeReasonClauses(level_start);
     nodes.push_back(level_start);
     node = level_start->parent();
   }
@@ -690,30 +673,12 @@ bool SharedTreeEncoder::CheckInvariants() {
       closed_leaves += node->shared().is_closed();
     }
     CHECK_EQ(id, node->shared().id);
-    if (!ShouldDecodeImplications()) {
-      CHECK_EQ(node->implications().size(), 0);
-    }
     if (lrat_proof_handler_ != nullptr) {
-      absl::flat_hash_set<Literal> expected_implications;
       for (const auto& [var, bound] : node->shared().var_lower_bounds) {
-        expected_implications.insert(Decode(ProtoLiteral(var, bound)));
-      }
-      for (int i = 0; i < node->implications().size(); ++i) {
-        const Literal implied = node->implications()[i];
-        CHECK(expected_implications.contains(implied));
-        if (lrat_proof_handler_ != nullptr) {
-          CHECK(node->reason_clauses().contains(implied));
-          CHECK(ReasonClauseIsValidForDebug(
-              node, implied, node->reason_clauses().at(implied)));
-        }
-      }
-      if (ShouldDecodeImplications()) {
-        CHECK_EQ(node->shared().var_lower_bounds.size(),
-                 node->implications().size());
-      }
-      if (!node->shared().is_root()) {
-        CHECK_EQ(node->reason_clauses().size(),
-                 node->shared().var_lower_bounds.size());
+        const Literal implied = Decode(ProtoLiteral(var, bound));
+        CHECK(node->reason_clauses().contains(implied));
+        CHECK(ReasonClauseIsValidForDebug(node, implied,
+                                          node->reason_clauses().at(implied)));
       }
     }
     if (node->shared().is_root()) continue;
@@ -741,11 +706,6 @@ bool SharedTreeEncoder::CheckInvariants() {
               level_start, sibling_node->decoded_decision(),
               level_start->reason_clauses().at(
                   sibling_node->decoded_decision())));
-        }
-        if (lrat_proof_handler_ != nullptr && ShouldDecodeImplications()) {
-          CHECK_EQ(absl::c_count(level_start->implications(),
-                                 sibling_node->decoded_decision()),
-                   1);
         }
       }
     } else {
@@ -927,16 +887,14 @@ NodeId SharedTreeManager::ReplaceTree(NodeId old_leaf_id,
     auto [new_leaf, new_phase] = std::move(unassigned_leaves_.front());
     unassigned_leaves_.pop_front();
     const SharedTreeEncoder::Node* leaf = tree_.GetNode(new_leaf);
-    if (!leaf->shared().is_closed() && leaf->is_leaf()) {
-      num_leaves_assigned_since_restart_ += 1;
-      tree_.SyncNodesOnPath(new_leaf, encoder);
-      phase = std::move(new_phase);
-      return new_leaf;
-    }
+    if (leaf->shared().is_closed()) continue;
+    DCHECK(leaf->is_leaf());
+    num_leaves_assigned_since_restart_ += 1;
+    tree_.SyncNodesOnPath(new_leaf, encoder);
+    phase = std::move(new_phase);
+    return new_leaf;
   }
   VLOG(2) << "No unassigned leaves available";
-  // TODO(user): Investigate assigning a random leaf so workers can
-  // still improve shared tree bounds.
   return kNoNodeId;
 }
 
@@ -987,212 +945,41 @@ SharedTreeWorker::SharedTreeWorker(Model* model)
       heuristics_(model->GetOrCreate<SearchHeuristics>()),
       decision_policy_(model->GetOrCreate<SatDecisionPolicy>()),
       restart_policy_(model->GetOrCreate<RestartPolicy>()),
-      level_zero_callbacks_(model->GetOrCreate<LevelZeroCallbackHelper>()),
       reversible_int_repository_(model->GetOrCreate<RevIntRepository>()),
       tree_(lrat_proof_handler_, mapping_, encoder_),
       assigned_tree_lbds_(/*window_size=*/8) {}
 
-bool SharedTreeWorker::EnsureNextNodeIsConsistent() {
-  const VariablesAssignment& assignment = sat_solver_->Assignment();
-  const int level = sat_solver_->CurrentDecisionLevel();
-  if (level + 1 >= assigned_nodes_.size()) return false;
-  for (int i = level + 1; i < assigned_nodes_.size(); ++i) {
-    const SharedTreeEncoder::Node* node = assigned_nodes_[i];
-    if (!assignment.LiteralIsAssigned(node->decoded_decision())) break;
-    absl::Span<const ClausePtr> proof =
-        ProofClausesForLiterals({assignment.GetTrueLiteralForAssignedVariable(
-            node->decoded_decision().Variable())});
-    if (assignment.LiteralIsFalse(node->decoded_decision())) {
-      tree_.CloseNode(node->shared().id, proof);
-      break;
-    } else {
-      tree_.CloseNode(node->shared().sibling_id(), proof);
-    }
-  }
-  if (assigned_nodes_[level + 1]->shared().is_implied) {
-    assigned_nodes_ = tree_.GetNormalizedLevelStartNodes(leaf_id_);
-  }
-  return num_processed_implications_[level] <
-         assigned_nodes_[level]->implications().size();
-}
-
-bool SharedTreeWorker::EnqueueImplications() {
-  const int level = sat_solver_->CurrentDecisionLevel();
-  if (level >= assigned_nodes_.size()) return true;
-  // If the time limit is reached, the solver lies about being at fixed point,
-  // so we can enqueue incorrect reasons if we don't check this.
-  if (time_limit_->LimitReached()) return false;
-  const VariablesAssignment& assignment = sat_solver_->Assignment();
-  SharedTreeEncoder::Node* node = assigned_nodes_[level];
-  if (node->shared().is_closed()) return false;
-
-  const int initial_trail_index = trail_->Index();
-  num_processed_implications_.resize(level + 1, 0);
-  DCHECK(tree_.CheckInvariants());
-
-  // Enqueue the objective lower bound if it improved.
-  const IntegerValue objective_lb = node->shared().objective_lb;
-  if (objective_lb > CurrentObjectiveLowerBound()) {
-    const Literal obj_literal =
-        encoder_->GetOrCreateAssociatedLiteral(IntegerLiteral::GreaterOrEqual(
-            objective_->objective_var, objective_lb));
-    *trail_->GetEmptyVectorToStoreReason() = node->NegatedDecisions();
-    if (!trail_->EnqueueWithStoredReason(obj_literal, kNullClausePtr)) {
-      return ProcessConflict();
-    }
-  }
-  for (int& i = num_processed_implications_[level];
-       i < node->implications().size(); ++i) {
-    const Literal lit = node->implications()[i];
-    if (assignment.LiteralIsTrue(lit)) continue;
-    *trail_->GetEmptyVectorToStoreReason() = node->NegatedDecisions();
-    if (!trail_->EnqueueWithStoredReason(lit, node->ReasonClauseOrNull(lit))) {
-      return ProcessConflict();
-    }
-  }
-  if (trail_->Index() != initial_trail_index && !sat_solver_->Propagate()) {
-    return ProcessConflict();
-  }
-  return true;
-}
-
-bool SharedTreeWorker::ProcessConflict() {
-  if (sat_solver_->ModelIsUnsat()) return false;
-  if (time_limit_->LimitReached()) return true;
-  const int level = sat_solver_->CurrentDecisionLevel();
-  SharedTreeEncoder::Node* to_close = assigned_nodes_[level];
-  sat_solver_->ProcessCurrentConflict(
-      [&](ClausePtr conflict_clause,
-          absl::Span<const Literal> conflict_literals) {
-        if (to_close->shared().is_closed()) return;
-        tree_.CloseNode(
-            to_close->shared().id,
-            ProofClausesForLiterals(conflict_literals, conflict_clause));
-      });
-  return false;
-}
-
-bool SharedTreeWorker::SyncWithLocalTrail() {
-  if (!sat_solver_->FinishPropagation()) return false;
-  if (time_limit_->LimitReached()) return true;
-  while (true) {
-    // If the assigned subtree is closed, backtrack so we can obtain a new one.
-    if (LeafIsClosed()) sat_solver_->Backtrack(0);
-
-    if (!helper_->BeforeTakingDecision()) return false;
-    // Enqueue any implications from the shared tree.
-    if (!EnqueueImplications()) {
-      if (!sat_solver_->FinishPropagation()) return false;
-      if (time_limit_->LimitReached()) return true;
-    }
-    if (sat_solver_->ModelIsUnsat()) return false;
-    // Loop until fixed point if the next node becomes implied.
-    if (EnsureNextNodeIsConsistent()) continue;
-
-    const int level = sat_solver_->CurrentDecisionLevel();
-
-    if (level < assigned_nodes_.size()) {
-      assigned_nodes_[level]->SetObjectiveLowerBound(
-          CurrentObjectiveLowerBound());
-    }
-
-    if (parameters_->shared_tree_worker_enable_trail_sharing() && level > 0 &&
-        level < assigned_nodes_.size() &&
-        !assigned_nodes_[level]->shared().is_closed() &&
-        reversible_trail_index_ < trail_->Index()) {
-      const int binary_propagator_id = binary_propagator_->PropagatorId();
-      // Add implications from the local trail to share with other workers.
-      reversible_int_repository_->SaveState(&reversible_trail_index_);
-      reversible_trail_index_ =
-          std::max(reversible_trail_index_,
-                   sat_solver_->Decisions()[level - 1].trail_index + 1);
-      for (int i = reversible_trail_index_; i < trail_->Index(); ++i) {
-        const Literal lit = (*trail_)[i];
-        const int assignment_type = trail_->AssignmentType(lit.Variable());
-        DCHECK_NE(assignment_type, AssignmentType::kSearchDecision);
-        // Avoid sharing implications from binary clauses - these are always
-        // shared, so the implication will be propagated anyway.
-        if (assignment_type == binary_propagator_id) continue;
-        if (assigned_nodes_[level]->AddImplication(lit)) {
-          assigned_nodes_[level]->ExportInferredReasonClause(
-              lit, ProofClausesForLiterals({lit}));
-        }
-      }
-      reversible_trail_index_ = trail_->Index();
-    }
-    if (!LeafIsClosed()) break;
-  }
-  return true;
-}
-
-absl::Span<const ClausePtr> SharedTreeWorker::ProofClausesForLiterals(
-    absl::Span<const Literal> literals, ClausePtr to_append) {
-  if (lrat_proof_handler_ == nullptr) return {};
-  tmp_proof_clauses_.clear();
-  const int level = sat_solver_->CurrentDecisionLevel();
-  DCHECK_LT(level, assigned_nodes_.size());
-  clause_manager_->AppendClausesFixing(
-      literals, &tmp_proof_clauses_,
-      /*decision=*/kNoLiteralIndex, [&](int level, int trail_index) {
-        return assigned_nodes_[level]->ReasonClauseOrNull(
-            (*trail_)[trail_index]);
-      });
-  if (to_append != kNullClausePtr) {
-    tmp_proof_clauses_.push_back(to_append);
-  }
-  return tmp_proof_clauses_;
-}
-
-bool SharedTreeWorker::NextDecision(LiteralIndex* decision_index) {
-  if (time_limit_->LimitReached()) return false;
-  DCHECK(!LeafIsClosed());
-  const auto& decision_policy =
-      heuristics_->decision_policies[heuristics_->policy_index];
-  const int next_level = sat_solver_->CurrentDecisionLevel() + 1;
-  if (next_level < assigned_nodes_.size()) {
-    VLOG(2) << "Following shared trail depth=" << next_level << " "
-            << parameters_->name();
-    const Literal decision = assigned_nodes_[next_level]->decoded_decision();
-    CHECK(!sat_solver_->Assignment().LiteralIsFalse(decision));
-    CHECK(!sat_solver_->Assignment().LiteralIsTrue(decision));
-    *decision_index = decision.Index();
-    return true;
-  }
-  return helper_->GetDecision(decision_policy, decision_index);
-}
-
 void SharedTreeWorker::MaybeProposeSplits() {
   if (assigned_nodes_.empty()) return;
-  const int assigned_level = assigned_nodes_.size() - 1;
-  if (sat_solver_->CurrentDecisionLevel() <= assigned_level) return;
+  if (sat_solver_->CurrentDecisionLevel() <= sat_solver_->AssumptionLevel()) {
+    return;
+  }
   if (time_limit_->GetElapsedDeterministicTime() <= next_split_dtime_) {
     return;
   }
   next_split_dtime_ = time_limit_->GetElapsedDeterministicTime() +
                       parameters_->shared_tree_split_min_dtime();
-  const int max_split_level =
-      std::min<int>(trail_->CurrentDecisionLevel(), manager_->MaxPathDepth());
-  for (int i = assigned_level; i < max_split_level; ++i) {
+  const int max_splits = manager_->MaxPathDepth() - assigned_nodes_.size() + 1;
+  for (int i = sat_solver_->AssumptionLevel();
+       i < sat_solver_->CurrentDecisionLevel(); ++i) {
     const Literal split_decision = trail_->Decisions()[i].literal;
     const std::optional<ProtoLiteral> encoded = tree_.Encode(split_decision);
     // If we can't encode a decision we can't split on it or any deeper levels.
     if (!encoded.has_value()) break;
     // TODO(user): This should be impossible, investigate.
-    SharedTreeEncoder::Node* leaf_node = tree_.GetNodeOrNull(leaf_id_);
-    if (leaf_node != nullptr && leaf_node->LiteralIsTrue(*encoded)) break;
-    if (leaf_node != nullptr && leaf_node->LiteralIsTrue(encoded->Negated()))
-      break;
+    SharedTreeEncoder::Node* leaf_node = tree_.GetNode(leaf_id_);
+    if (leaf_node->LiteralIsTrue(*encoded)) break;
+    if (leaf_node->LiteralIsTrue(encoded->Negated())) break;
     tmp_splits_.push_back(*encoded);
+    if (tmp_splits_.size() >= max_splits) break;
   }
-  leaf_id_ = manager_->TrySplitTree(leaf_id_, tmp_splits_, tree_);
-  assigned_nodes_ = tree_.GetNormalizedLevelStartNodes(leaf_id_);
-  for (int level = 1; level < assigned_nodes_.size(); ++level) {
-    DCHECK_EQ(binary_propagator_->RepresentativeOf(
-                  assigned_nodes_[level]->decoded_decision()),
-              binary_propagator_->RepresentativeOf(
-                  trail_->Decisions()[level - 1].literal));
-  }
+  const NodeId new_leaf_id =
+      manager_->TrySplitTree(leaf_id_, tmp_splits_, tree_);
   tmp_splits_.clear();
+  if (new_leaf_id != leaf_id_) {
+    ExportNewImplications();
+    ResetAndEnqueueAssumptions(new_leaf_id);
+  }
 }
 
 bool SharedTreeWorker::ShouldReplaceSubtree() {
@@ -1215,8 +1002,10 @@ bool SharedTreeWorker::ShouldReplaceSubtree() {
 bool SharedTreeWorker::SyncWithSharedTree() {
   CHECK_EQ(trail_->CurrentDecisionLevel(), 0);
   if (!manager_->SyncTree(leaf_id_, tree_)) {
+    sat_solver_->NotifyThatModelIsUnsat();
     return false;
   }
+  NodeId new_leaf_id = leaf_id_;
   if (ShouldReplaceSubtree()) {
     ++num_trees_;
     VLOG(2) << parameters_->name() << " acquiring tree #" << num_trees_
@@ -1245,11 +1034,11 @@ bool SharedTreeWorker::SyncWithSharedTree() {
         phase_.push_back(*encoded);
       }
     }
-    leaf_id_ = manager_->ReplaceTree(leaf_id_, tree_, phase_);
+    new_leaf_id = manager_->ReplaceTree(leaf_id_, tree_, phase_);
     assigned_tree_lbds_.Add(restart_policy_->LbdAverageSinceReset());
     restart_policy_->Reset();
     earliest_replacement_dtime_ = 0;
-    if (leaf_id_ != kNoNodeId) {
+    if (new_leaf_id != kNoNodeId) {
       next_split_dtime_ = time_limit_->GetElapsedDeterministicTime() +
                           parameters_->shared_tree_split_min_dtime();
     }
@@ -1278,33 +1067,40 @@ bool SharedTreeWorker::SyncWithSharedTree() {
     // Treat this as reassigning the same tree.
     assigned_tree_lbds_.Add(restart_policy_->LbdAverageSinceReset());
   }
-  // Tricky: Implications at the root node may be reordered, so re-process
-  // them.
-  num_processed_implications_.clear();
-  assigned_nodes_ = tree_.GetNormalizedLevelStartNodes(leaf_id_);
   DCHECK(tree_.CheckInvariants());
-  return true;
+  return ResetAndEnqueueAssumptions(new_leaf_id);
 }
 
 SatSolver::Status SharedTreeWorker::Search(
     const std::function<void()>& feasible_solution_observer) {
-  sat_solver_->Backtrack(0);
-  level_zero_callbacks_->callbacks.push_back(
-      [this]() { return SyncWithSharedTree(); });
+  if (!sat_solver_->ResetToLevelZero()) return sat_solver_->UnsatStatus();
   const bool has_objective =
       objective_ != nullptr && objective_->objective_var != kNoIntegerVariable;
   while (!time_limit_->LimitReached()) {
-    if (!sat_solver_->FinishPropagation()) {
-      return sat_solver_->UnsatStatus();
-    }
-    if (heuristics_->restart_policies[heuristics_->policy_index]()) {
+    if (LeafIsClosed() ||
+        heuristics_->restart_policies[heuristics_->policy_index]()) {
       heuristics_->policy_index = restart_policy_->NumRestarts() %
                                   heuristics_->decision_policies.size();
       sat_solver_->Backtrack(0);
     }
-    if (!SyncWithLocalTrail()) return sat_solver_->UnsatStatus();
+    if (sat_solver_->CurrentDecisionLevel() == 0 && !SyncWithSharedTree()) {
+      return SatSolver::INFEASIBLE;
+    }
+    // Re-sync with the shared tree if the assigned subtree is closed.
+    if (LeafIsClosed()) continue;
+
+    if (sat_solver_->CurrentDecisionLevel() <= sat_solver_->AssumptionLevel()) {
+      ExportNewImplications();
+    }
+
+    if (!helper_->BeforeTakingDecision() && !CloseNodeAfterConflict()) {
+      return sat_solver_->UnsatStatus();
+    }
+    const auto& decision_policy =
+        heuristics_->decision_policies[heuristics_->policy_index];
     LiteralIndex decision_index;
-    if (!NextDecision(&decision_index)) continue;
+    if (!helper_->GetDecision(decision_policy, &decision_index)) continue;
+
     if (time_limit_->LimitReached()) return SatSolver::LIMIT_REACHED;
     if (decision_index == kNoLiteralIndex) {
       feasible_solution_observer();
@@ -1318,20 +1114,204 @@ SatSolver::Status SharedTreeWorker::Search(
               {}, {})) {
         return SatSolver::INFEASIBLE;
       }
-
+      if (!sat_solver_->FinishPropagation()) return sat_solver_->UnsatStatus();
       continue;
     }
     const Literal decision(decision_index);
-    // The LRAT proofs assume that an assigned tree decision is the actual one
-    // which is taken here.
-    if (!helper_->TakeDecision(
-            decision,
-            /*use_representative=*/lrat_proof_handler_ == nullptr)) {
+    if (!helper_->TakeDecision(decision) && !CloseNodeAfterConflict()) {
       return sat_solver_->UnsatStatus();
     }
     MaybeProposeSplits();
   }
 
   return SatSolver::LIMIT_REACHED;
+}
+
+SharedTreeEncoder::Node* SharedTreeWorker::FixedByOrNull(Literal literal) {
+  if (assigned_nodes_.empty()) return nullptr;
+  if (trail_->AssignmentLevel(literal) == 0 &&
+      trail_->Assignment().LiteralIsTrue(literal)) {
+    return assigned_nodes_.front();
+  }
+  if (literal.Index() >= fixed_by_.size()) return nullptr;
+  SharedTreeEncoder::Node* node = fixed_by_[literal.Index()];
+  if (node == nullptr) return nullptr;
+  return node->GetLevelStart();
+}
+
+void SharedTreeWorker::ExportNewImplications() {
+  fixed_by_.resize(2 * sat_solver_->NumVariables(), nullptr);
+  if (!parameters_->shared_tree_worker_enable_trail_sharing()) return;
+  if (sat_solver_->ModelIsUnsat()) return;
+  if (time_limit_->LimitReached()) return;
+  DCHECK(sat_solver_->PropagationIsDone());
+  const int binary_propagator_id = binary_propagator_->PropagatorId();
+  DCHECK_GE(trail_->Index(), reversible_trail_index_);
+  for (int i = reversible_trail_index_; i < trail_->Index(); ++i) {
+    const Literal literal = (*trail_)[i];
+    if (trail_->AssignmentLevel(literal) == 0) {
+      // Literals true at level zero won't be reprocessed after restart (which
+      // invalidates node pointers). Store null for root assignments to avoid
+      // dangling pointers.
+      fixed_by_[literal.Index()] = nullptr;
+      continue;
+    }
+    const int assignment_type = trail_->AssignmentType(literal.Variable());
+    if (assignment_type == AssignmentType::kSearchDecision) {
+      if (fixed_by_[literal.Index()] != nullptr) continue;
+      reversible_int_repository_->SaveState(&reversible_trail_index_);
+      reversible_trail_index_ = i;
+      return;
+    }
+
+    SharedTreeEncoder::Node* result = assigned_nodes_.front();
+    for (Literal reason_literal : trail_->Reason(literal.Variable())) {
+      SharedTreeEncoder::Node* node = FixedByOrNull(reason_literal.Negated());
+      DCHECK_NE(node, nullptr);
+      result = std::max(node, result, &NodeIdLess);
+    }
+    DCHECK(!result->shared().is_closed());
+    fixed_by_[literal] = result;
+    // Avoid exporting things propagated by binary clauses, since these are
+    // already shared normally.
+    if (assignment_type == binary_propagator_id) continue;
+    std::optional<ProtoLiteral> encoded = tree_.Encode(literal);
+    if (!encoded.has_value()) continue;
+    if (result->AddImplication(*encoded) && lrat_proof_handler_ != nullptr) {
+      result->ExportInferredReasonClause(literal, GetProof(result, literal));
+    }
+  }
+  if (!assigned_nodes_.empty()) {
+    // We've reached the end of the trail, so the current lower bound is valid
+    // for the last assigned node.
+    assigned_nodes_.back()->SetObjectiveLowerBound(
+        CurrentObjectiveLowerBound());
+  }
+  reversible_int_repository_->SaveState(&reversible_trail_index_);
+  reversible_trail_index_ = trail_->Index();
+}
+
+absl::Span<const ClausePtr> SharedTreeWorker::GetProof(
+    SharedTreeEncoder::Node* implied_by, Literal literal) {
+  tmp_proof_clauses_.clear();
+  if (lrat_proof_handler_ == nullptr) return tmp_proof_clauses_;
+  DCHECK(!sat_solver_->ModelIsUnsat());
+  DCHECK(!implied_by->shared().is_closed());
+  clause_manager_->AppendClausesFixing(
+      {literal}, &tmp_proof_clauses_,
+      /*decision=*/kNoLiteralIndex, [&](int level, int index) -> ClausePtr {
+        if (level == 0) return kNullClausePtr;
+        const Literal lit = (*trail_)[index];
+        SharedTreeEncoder::Node* node = FixedByOrNull(lit);
+        if (node == nullptr) return kNullClausePtr;
+        // Only use a cached reason if `node` is no deeper than `implied_by`,
+        // otherwise the reason will not be unit.
+        if (NodeIdLess(implied_by, node)) return kNullClausePtr;
+        return node->ReasonClauseOrNull(lit);
+      });
+  return tmp_proof_clauses_;
+}
+
+bool SharedTreeWorker::ResetAndEnqueueAssumptions(NodeId leaf_id) {
+  leaf_id_ = leaf_id;
+  assigned_nodes_.clear();
+  fixed_by_.assign(2 * sat_solver_->NumVariables(), nullptr);
+  if (!sat_solver_->ResetToLevelZero()) return false;
+  if (time_limit_->LimitReached()) return true;
+  if (!helper_->BeforeTakingDecision()) return false;
+  const VariablesAssignment& assignment = sat_solver_->Assignment();
+  for (SharedTreeEncoder::Node* node : tree_.GetLevelStartNodes(leaf_id)) {
+    if (node->shared().is_closed()) return sat_solver_->ResetToLevelZero();
+    tree_.NormalizeReasonClauses(node);
+    if (node->shared().is_root()) {
+      assigned_nodes_.push_back(node);
+    } else {
+      const Literal decision = node->decoded_decision();
+      if (assignment.LiteralIsTrue(decision)) {
+        // The decision is implied, so the sibling can be closed.
+        tree_.CloseNode(node->shared().sibling_id(),
+                        GetProof(assigned_nodes_.back(), decision));
+        node = node->GetLevelStart();
+      } else {
+        assigned_nodes_.push_back(node);
+        fixed_by_[decision] = node;
+        if (!sat_solver_->EnqueueAssumption(decision)) {
+          return CloseNodeAfterConflict();
+        }
+      }
+    }
+    for (const auto [var, lb] : node->shared().var_lower_bounds) {
+      const Literal implied = tree_.Decode(ProtoLiteral(var, lb));
+      if (assignment.LiteralIsTrue(implied)) continue;
+      *trail_->GetEmptyVectorToStoreReason() = node->NegatedDecisions();
+      if (!trail_->EnqueueWithStoredReason(implied,
+                                           node->ReasonClauseOrNull(implied))) {
+        return ProcessAssumptionConflict();
+      }
+    }
+
+    // Ensure equivalent literals are always fixed at the correct node.
+    if (!binary_propagator_->Propagate(trail_)) {
+      return ProcessAssumptionConflict();
+    }
+
+    // Ensure propagation is finished at the root, or if explicitly enabled.
+    if (trail_->CurrentDecisionLevel() == 0 ||
+        parameters_->shared_tree_worker_propagate_intermediate_nodes()) {
+      if (!sat_solver_->FinishPropagation()) return CloseNodeAfterConflict();
+      ExportNewImplications();
+    }
+  }
+
+  if (!assigned_nodes_.empty()) {
+    const IntegerValue shared_objective_lb =
+        assigned_nodes_.back()->shared().objective_lb;
+    if (shared_objective_lb > CurrentObjectiveLowerBound()) {
+      const Literal objective_lit =
+          encoder_->GetOrCreateAssociatedLiteral(IntegerLiteral::GreaterOrEqual(
+              objective_->objective_var, shared_objective_lb));
+      *trail_->GetEmptyVectorToStoreReason() =
+          assigned_nodes_.back()->NegatedDecisions();
+      if (!trail_->EnqueueWithStoredReason(
+              objective_lit,
+              assigned_nodes_.back()->ReasonClauseOrNull(objective_lit))) {
+        return ProcessAssumptionConflict();
+      }
+    }
+  }
+
+  if (!sat_solver_->FinishPropagation()) {
+    return CloseNodeAfterConflict();
+  }
+  ExportNewImplications();
+  return true;
+}
+
+bool SharedTreeWorker::ProcessAssumptionConflict() {
+  sat_solver_->ProcessCurrentConflict();
+  return CloseNodeAfterConflict();
+}
+
+bool SharedTreeWorker::CloseNodeAfterConflict() {
+  if (sat_solver_->ModelIsUnsat()) return false;
+  if (time_limit_->LimitReached()) return true;
+  std::vector<Literal> core = sat_solver_->GetLastIncompatibleDecisions();
+  DCHECK(!core.empty());
+  SharedTreeEncoder::Node* node_to_close = FixedByOrNull(core.back());
+  DCHECK_NE(node_to_close, nullptr);
+  SharedTreeEncoder::Node* implied_by =
+      core.size() == 1 ? assigned_nodes_.front()
+                       : FixedByOrNull(core[core.size() - 2]);
+  DCHECK_NE(implied_by, nullptr);
+  DCHECK(!implied_by->shared().is_closed());
+  if (implied_by->AddImplication(node_to_close->shared().decision.Negated()) &&
+      lrat_proof_handler_ != nullptr) {
+    implied_by->ExportInferredReasonClause(
+        core.back().Negated(),
+        {sat_solver_->GetLastIncompatibleDecisionsAsClausePtr()});
+  }
+  tree_.CloseNode(node_to_close->shared().id,
+                  {sat_solver_->GetLastIncompatibleDecisionsAsClausePtr()});
+  return sat_solver_->ResetToLevelZero();
 }
 }  // namespace operations_research::sat

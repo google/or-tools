@@ -1849,18 +1849,15 @@ bool IntegerSearchHelper::GetDecision(
   return true;
 }
 
-bool IntegerSearchHelper::TakeDecision(Literal decision,
-                                       bool use_representative) {
+bool IntegerSearchHelper::TakeDecision(Literal decision) {
   // If we are about to take a decision on a redundant literal, always
-  // prefer to branch on the representative. This should helps learn more
-  // consistent conflict.
+  // prefer to branch on the representative. This should help learn more
+  // consistent conflicts.
   //
   // TODO(user): Ideally never learn anything on redundant variable. This is
   // a bit of work.
-  if (use_representative) {
-    decision = binary_implication_graph_->RepresentativeOf(decision);
-    CHECK(!sat_solver_->Assignment().LiteralIsAssigned(decision));
-  }
+  decision = binary_implication_graph_->RepresentativeOf(decision);
+  DCHECK(!sat_solver_->Assignment().LiteralIsAssigned(decision));
 
   pseudo_costs_->BeforeTakingDecision(decision);
 

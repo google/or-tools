@@ -759,6 +759,17 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     new_params.set_use_shared_tree_search(true);
     new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
 
+    // SharedTreeWorkers use assumptions, which artificially reduces the LBD
+    // of learned clauses, reduce the cleanup LBD threshold to compensate, but
+    // enable protection so we still keep good clauses for a while.
+    new_params.set_clause_cleanup_lbd_bound(2);
+    new_params.set_clause_cleanup_lbd_tier1(3);
+    new_params.set_clause_cleanup_lbd_tier2(4);
+    // Shared tree workers aim to keep specialized clause databases, clean up
+    // more aggressively.
+    new_params.set_clause_cleanup_period(base_params.clause_cleanup_period() /
+                                         2);
+
     // These settings don't make sense with shared tree search, turn them off as
     // they can break things.
     new_params.set_optimize_with_core(false);

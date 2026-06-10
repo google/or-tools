@@ -1280,7 +1280,8 @@ class RouteRelationsBuilder {
       }
     }
     const std::vector<std::vector<IntegerVariable>> connected_components =
-        cc_finder.FindConnectedComponents();
+        cc_finder.FindConnectedComponents(
+            NodeOrderInsideComponent::kNotOrderedUndeterministic);
     for (int i = 0; i < connected_components.size(); ++i) {
       for (const IntegerVariable var : connected_components[i]) {
         dimension_by_var_[GetPositiveOnlyIndex(var)] = i;

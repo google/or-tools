@@ -717,20 +717,12 @@ bool SatSolver::ReapplyAssumptionsIfNeeded() {
     CHECK_EQ(trail_->CurrentDecisionLevel(), 0);
     last_decision_or_backtrack_trail_index_ = trail_->Index();
 
-    // We enqueue all assumptions at once at decision level 1.
-    int num_decisions = 0;
     for (const Literal lit : assumptions_) {
-      if (Assignment().LiteralIsTrue(lit)) continue;
-      if (Assignment().LiteralIsFalse(lit)) {
-        incompatible_decisions_.lazily_fill_from = lit;
-        return false;
-      }
-      ++num_decisions;
-      trail_->EnqueueAssumption(lit);
+      if (!EnqueueAssumptionInternal(lit)) return false;
     }
 
     // Corner case: all assumptions are fixed at level zero, we ignore them.
-    if (num_decisions == 0) {
+    if (last_decision_or_backtrack_trail_index_ == trail_->Index()) {
       return ResetToLevelZero();
     }
 
@@ -1631,6 +1623,11 @@ void SatSolver::SetAssumptionLevel(int assumption_level) {
   }
 }
 
+bool SatSolver::EnqueueAssumption(Literal lit) {
+  assumptions_.push_back(lit);
+  return EnqueueAssumptionInternal(lit);
+}
+
 SatSolver::Status SatSolver::SolveWithTimeLimit(TimeLimit* time_limit) {
   return SolveInternal(time_limit == nullptr ? time_limit_ : time_limit,
                        parameters_->max_number_of_conflicts());
@@ -2340,6 +2337,19 @@ void SatSolver::EnqueueNewDecision(Literal literal) {
   counters_.num_branches++;
   last_decision_or_backtrack_trail_index_ = trail_->Index();
   trail_->EnqueueSearchDecision(literal);
+}
+
+bool SatSolver::EnqueueAssumptionInternal(Literal lit) {
+  DCHECK_LE(trail_->CurrentDecisionLevel(), assumption_level_);
+  if (assumption_level_ == 0) assumption_level_ = 1;
+  if (Assignment().LiteralIsTrue(lit)) return true;
+  if (Assignment().LiteralIsFalse(lit)) {
+    // See GetLastIncompatibleDecisions().
+    incompatible_decisions_.lazily_fill_from = lit;
+    return false;
+  }
+  trail_->EnqueueAssumption(lit);
+  return true;
 }
 
 std::string SatSolver::DebugString(const SatClause& clause) const {

@@ -81,9 +81,8 @@ TEST(SharedTreeEncoderTest, AddImplication) {
   const Literal lit =
       model.GetOrCreate<CpModelMapping>()->Literal(implied_var.index());
 
-  EXPECT_TRUE(encoder.GetNode(NodeId(2))->AddImplication(lit));
-  EXPECT_THAT(encoder.GetNode(NodeId(2))->implications(),
-              testing::ElementsAre(lit));
+  EXPECT_TRUE(
+      encoder.GetNode(NodeId(2))->AddImplication(encoder.Encode(lit).value()));
   EXPECT_THAT(encoder.GetNode(NodeId(2))->shared().var_lower_bounds,
               testing::ElementsAre(
                   testing::Pair(implied_var.index(), IntegerValue(1))));
@@ -327,7 +326,8 @@ TEST(SharedTreeEncoderTest, CloseNodeDeletesReasonClauses) {
   lrat->AddProblemClause(clause);
   std::vector<ClausePtr> proof = {clause};
   Literal implied_literal = Literal(BooleanVariable(1), true);
-  encoder.GetNode(NodeId(2))->AddImplication(implied_literal);
+  encoder.GetNode(NodeId(2))->AddImplication(
+      encoder.Encode(implied_literal).value());
   encoder.GetNode(NodeId(2))->ExportInferredReasonClause(implied_literal,
                                                          proof);
   ASSERT_EQ(encoder.GetNode(NodeId(2))->reason_clauses().size(), 1);
@@ -352,8 +352,14 @@ class SharedTreeSolveTest : public testing::TestWithParam<absl::string_view> {
 };
 INSTANTIATE_TEST_SUITE_P(
     SharedTreeParams, SharedTreeSolveTest,
-    testing::Values("shared_tree_worker_enable_trail_sharing:false",
-                    "shared_tree_worker_enable_trail_sharing:true"));
+    testing::Values("shared_tree_worker_enable_trail_sharing:false,"
+                    "shared_tree_worker_propagate_intermediate_nodes:false",
+                    "shared_tree_worker_enable_trail_sharing:true,"
+                    "shared_tree_worker_propagate_intermediate_nodes:true",
+                    "shared_tree_worker_enable_trail_sharing:true,"
+                    "shared_tree_worker_propagate_intermediate_nodes:false",
+                    "shared_tree_worker_enable_trail_sharing:false,"
+                    "shared_tree_worker_propagate_intermediate_nodes:true"));
 
 TEST_P(SharedTreeSolveTest, SmokeTest) {
   CpModelBuilder model_builder;
@@ -551,14 +557,14 @@ TEST(SharedTreeManagerTest, RestartTestWithLevelZeroImplications) {
   LoadVariables(model_builder.Build(), false, &model);
   auto* shared_tree_manager = model.GetOrCreate<SharedTreeManager>();
   SharedTreeEncoder shared_trail(nullptr);
-  shared_trail.ImportNode({.id = NodeId(1), .decision = ProtoLiteral()});
+  std::vector<ProtoLiteral> phase;
   NodeId leaf_id =
-      shared_tree_manager->TrySplitTree(NodeId(1), {{-1, 0}}, shared_trail);
+      shared_tree_manager->ReplaceTree(kNoNodeId, shared_trail, phase);
+  leaf_id = shared_tree_manager->TrySplitTree(leaf_id, {{-1, 0}}, shared_trail);
 
   shared_trail.CloseNode(NodeId(2), {});
   shared_tree_manager->SyncTree(leaf_id, shared_trail);
 
-  std::vector<ProtoLiteral> phase;
   shared_tree_manager->ReplaceTree(leaf_id, shared_trail, phase);
   shared_tree_manager->Restart();
 
@@ -590,8 +596,8 @@ TEST(SharedTreeManagerTest, SharedBranchingTest) {
       shared_tree_manager->TrySplitTree(root_id, {{-1, 0}}, trail1);
   NodeId leaf_id2 = shared_tree_manager->ReplaceTree(kNoNodeId, trail2, phase);
 
-  EXPECT_EQ(trail1.GetNormalizedLevelStartNodes(leaf_id1).size(), 2);
-  EXPECT_EQ(trail2.GetNormalizedLevelStartNodes(leaf_id2).size(), 2);
+  EXPECT_EQ(trail1.GetLevelStartNodes(leaf_id1).size(), 2);
+  EXPECT_EQ(trail2.GetLevelStartNodes(leaf_id2).size(), 2);
   const auto* leaf1 = trail1.GetNode(leaf_id1);
   const auto* leaf2 = trail2.GetNode(leaf_id2);
   EXPECT_EQ(leaf1->shared().decision, leaf2->shared().decision.Negated());
@@ -661,25 +667,22 @@ TEST(SharedTreeManagerTest, DiscrepancySplitTestOneLeafPerWorker) {
   SharedTreeEncoder trail1(nullptr);
   SharedTreeEncoder trail2(nullptr);
 
-  trail1.ImportNode(
-      {.id = NodeId(1), .decision = ProtoLiteral(), .objective_lb = 0});
-  trail2.ImportNode(
-      {.id = NodeId(1), .decision = ProtoLiteral(), .objective_lb = 0});
+  std::vector<ProtoLiteral> phase;
+  NodeId root_id = shared_tree_manager->ReplaceTree(kNoNodeId, trail1, phase);
 
-  NodeId leaf_id1 = shared_tree_manager->TrySplitTree(NodeId(1),
+  NodeId leaf_id1 = shared_tree_manager->TrySplitTree(root_id,
                                                       {{-1, 0},
                                                        {int_var.index(), 3},
                                                        {int_var.index(), 4},
                                                        {int_var.index(), 5}},
                                                       trail1);
-  EXPECT_EQ(trail1.GetNormalizedLevelStartNodes(leaf_id1).size(), 4);
+  EXPECT_EQ(trail1.GetLevelStartNodes(leaf_id1).size(), 4);
 
-  std::vector<ProtoLiteral> phase;
   NodeId leaf_id2 = shared_tree_manager->ReplaceTree(kNoNodeId, trail2, phase);
 
   NodeId leaf_id2_new = shared_tree_manager->TrySplitTree(
       leaf_id2, {{int_var.index(), 3}, {int_var.index(), 5}}, trail2);
-  EXPECT_EQ(trail2.GetNormalizedLevelStartNodes(leaf_id2_new).size(), 3);
+  EXPECT_EQ(trail2.GetLevelStartNodes(leaf_id2_new).size(), 3);
 
   EXPECT_EQ(shared_tree_manager->MaxPathDepth(), 3);
   EXPECT_EQ(shared_tree_manager->NumNodes(), 9);
@@ -708,21 +711,18 @@ TEST(SharedTreeManagerTest, DiscrepancySplitTest) {
   SharedTreeEncoder trail1(nullptr);
   SharedTreeEncoder trail2(nullptr);
 
-  trail1.ImportNode(
-      {.id = NodeId(1), .decision = ProtoLiteral(), .objective_lb = 0});
-  trail2.ImportNode(
-      {.id = NodeId(1), .decision = ProtoLiteral(), .objective_lb = 0});
+  std::vector<ProtoLiteral> phase;
+  NodeId root_id = shared_tree_manager->ReplaceTree(kNoNodeId, trail1, phase);
 
   NodeId leaf_id1 = shared_tree_manager->TrySplitTree(
-      NodeId(1), {{-1, 0}, {int_var.index(), 3}, {int_var.index(), 5}}, trail1);
-  EXPECT_EQ(trail1.GetNormalizedLevelStartNodes(leaf_id1).size(), 4);
+      root_id, {{-1, 0}, {int_var.index(), 3}, {int_var.index(), 5}}, trail1);
+  EXPECT_EQ(trail1.GetLevelStartNodes(leaf_id1).size(), 4);
 
-  std::vector<ProtoLiteral> phase;
   NodeId leaf_id2 = shared_tree_manager->ReplaceTree(kNoNodeId, trail2, phase);
 
   NodeId leaf_id2_new = shared_tree_manager->TrySplitTree(
       leaf_id2, {{int_var.index(), 3}, {int_var.index(), 5}}, trail2);
-  EXPECT_EQ(trail2.GetNormalizedLevelStartNodes(leaf_id2_new).size(), 3);
+  EXPECT_EQ(trail2.GetLevelStartNodes(leaf_id2_new).size(), 3);
 
   EXPECT_EQ(shared_tree_manager->MaxPathDepth(), 3);
   EXPECT_EQ(shared_tree_manager->NumNodes(), 9);
@@ -760,7 +760,7 @@ TEST(SharedTreeManagerTest, BalancedSplitTestOneLeafPerWorker) {
                                                        {int_var.index(), 0}},
                                                       trail1);
   EXPECT_EQ(shared_tree_manager->MaxPathDepth(), 3);
-  EXPECT_EQ(trail1.GetNormalizedLevelStartNodes(leaf_id1).size(), 4);
+  EXPECT_EQ(trail1.GetLevelStartNodes(leaf_id1).size(), 4);
 
   shared_tree_manager->SyncTree(leaf_id1, trail1);
 
@@ -768,7 +768,7 @@ TEST(SharedTreeManagerTest, BalancedSplitTestOneLeafPerWorker) {
 
   NodeId leaf_id2_new = shared_tree_manager->TrySplitTree(
       leaf_id2, {{int_var.index(), 5}, {int_var.index(), 4}}, trail2);
-  EXPECT_EQ(trail2.GetNormalizedLevelStartNodes(leaf_id2_new).size(), 3);
+  EXPECT_EQ(trail2.GetLevelStartNodes(leaf_id2_new).size(), 3);
 
   EXPECT_EQ(shared_tree_manager->MaxPathDepth(), 3);
   EXPECT_EQ(shared_tree_manager->NumNodes(), 9);
@@ -797,20 +797,17 @@ TEST(SharedTreeManagerTest, BalancedSplitTest) {
   SharedTreeEncoder trail1(nullptr);
   SharedTreeEncoder trail2(nullptr);
 
-  trail1.ImportNode(
-      {.id = NodeId(1), .decision = ProtoLiteral(), .objective_lb = 0});
-  trail2.ImportNode(
-      {.id = NodeId(1), .decision = ProtoLiteral(), .objective_lb = 0});
+  std::vector<ProtoLiteral> phase;
+  NodeId root_id = shared_tree_manager->ReplaceTree(kNoNodeId, trail1, phase);
 
-  NodeId leaf_id1 = shared_tree_manager->TrySplitTree(NodeId(1),
+  NodeId leaf_id1 = shared_tree_manager->TrySplitTree(root_id,
                                                       {{int_var.index(), 3},
                                                        {int_var.index(), 2},
                                                        {int_var.index(), 1},
                                                        {int_var.index(), 0}},
                                                       trail1);
-  EXPECT_EQ(trail1.GetNormalizedLevelStartNodes(leaf_id1).size(), 4);
+  EXPECT_EQ(trail1.GetLevelStartNodes(leaf_id1).size(), 4);
 
-  std::vector<ProtoLiteral> phase;
   NodeId leaf_id2 = shared_tree_manager->ReplaceTree(kNoNodeId, trail2, phase);
 
   NodeId leaf_id2_new =
@@ -820,7 +817,7 @@ TEST(SharedTreeManagerTest, BalancedSplitTest) {
                                          {int_var.index(), 4},
                                          {int_var.index(), 3}},
                                         trail2);
-  EXPECT_EQ(trail2.GetNormalizedLevelStartNodes(leaf_id2_new).size(), 4);
+  EXPECT_EQ(trail2.GetLevelStartNodes(leaf_id2_new).size(), 4);
 
   EXPECT_EQ(shared_tree_manager->MaxPathDepth(), 3);
   EXPECT_EQ(shared_tree_manager->NumNodes(), 11);
@@ -837,14 +834,13 @@ TEST(SharedTreeManagerTest, CloseTreeTest) {
   SharedTreeEncoder trail1(nullptr);
   SharedTreeEncoder trail2(nullptr);
 
-  trail1.ImportNode({.id = NodeId(1), .decision = ProtoLiteral()});
-  trail2.ImportNode({.id = NodeId(1), .decision = ProtoLiteral()});
+  std::vector<ProtoLiteral> phase;
+  NodeId root_id = shared_tree_manager->ReplaceTree(kNoNodeId, trail1, phase);
 
   NodeId leaf_id1 =
-      shared_tree_manager->TrySplitTree(NodeId(1), {{-1, 0}, {1, 0}}, trail1);
+      shared_tree_manager->TrySplitTree(root_id, {{-1, 0}, {1, 0}}, trail1);
   EXPECT_EQ(trail1.Size(), 5);
 
-  std::vector<ProtoLiteral> phase;
   NodeId leaf_id2 = shared_tree_manager->ReplaceTree(kNoNodeId, trail2, phase);
 
   trail1.CloseNode(NodeId(2), {});
@@ -878,26 +874,25 @@ TEST(SharedTreeManagerTest, TrailSharing) {
                            model.GetOrCreate<IntegerEncoder>());
   SharedTreeEncoder trail2(nullptr, model.GetOrCreate<CpModelMapping>(),
                            model.GetOrCreate<IntegerEncoder>());
-  trail1.ImportNode({.id = NodeId(1), .decision = ProtoLiteral()});
-  trail2.ImportNode({.id = NodeId(1), .decision = ProtoLiteral()});
-  NodeId leaf_id1 = shared_tree_manager->TrySplitTree(
-      NodeId(1), {ProtoLiteral(0, 1)}, trail1);
-  Literal lit_impl1 = Literal(BooleanVariable(1), true);
-  trail1.GetNode(NodeId(2))->AddImplication(lit_impl1);
+  std::vector<ProtoLiteral> init_phase;
+  NodeId root_id =
+      shared_tree_manager->ReplaceTree(kNoNodeId, trail1, init_phase);
+  NodeId leaf_id1 =
+      shared_tree_manager->TrySplitTree(root_id, {ProtoLiteral(0, 1)}, trail1);
+  trail1.GetNode(NodeId(2))->AddImplication(ProtoLiteral(2, IntegerValue(1)));
   shared_tree_manager->SyncTree(leaf_id1, trail1);
-  std::vector<ProtoLiteral> phase = {ProtoLiteral(2, 1)};
+  std::vector<ProtoLiteral> phase = {ProtoLiteral(3, 1)};
 
-  NodeId leaf_id1_new =
-      shared_tree_manager->ReplaceTree(leaf_id1, trail1, phase);
+  shared_tree_manager->ReplaceTree(leaf_id1, trail1, phase);
   std::vector<ProtoLiteral> phase2;
   NodeId leaf_id2 = shared_tree_manager->ReplaceTree(kNoNodeId, trail2, phase2);
 
   EXPECT_EQ(trail1.Size(), 3);
   EXPECT_EQ(trail2.Size(), 3);
-  EXPECT_THAT(trail2.GetNode(leaf_id2)->implications(),
-              testing::ElementsAre(lit_impl1));
-  EXPECT_THAT(phase2, testing::ElementsAre(ProtoLiteral(2, 1)));
-  EXPECT_TRUE(trail1.GetNode(leaf_id1_new)->implications().empty());
+  EXPECT_EQ(leaf_id2, leaf_id1);
+  EXPECT_THAT(trail2.GetNode(leaf_id2)->shared().var_lower_bounds,
+              testing::ElementsAre(testing::Pair(2, IntegerValue(1))));
+  EXPECT_THAT(phase2, testing::ElementsAre(ProtoLiteral(3, 1)));
 }
 
 TEST(SharedTreeEncoderTest, SetObjectiveLowerBound) {

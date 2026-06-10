@@ -246,6 +246,12 @@ class SatSolver {
   // consequences of others before them due to the newly learned clauses.
   int AssumptionLevel() const { return assumption_level_; }
 
+  // Enqueues an assumption and returns true if no conflict occurred.
+  // Returns false if the assumption was already false.
+  // This provides an alternative to ResetWithGivenAssumptions(), allowing the
+  // caller to enqueue consequences of the assumptions before propagation.
+  bool EnqueueAssumption(Literal lit);
+
   // This can be called just after SolveWithAssumptions() returned
   // ASSUMPTION_UNSAT or after EnqueueDecisionAndBacktrackOnConflict() leaded
   // to a conflict. It returns a subsequence (in the correct order) of the
@@ -671,6 +677,12 @@ class SatSolver {
   // Creates a new decision which corresponds to setting the given literal to
   // True and Enqueue() this change.
   void EnqueueNewDecision(Literal literal);
+
+  // Enqueues an assumption and returns true if no conflict occurred.
+  // Sets MutableConflict to a fake conflict if `lit` is already false.
+  // Called by both EnqueueAssumption() and ResetWithGivenAssumptions().
+  // `lit` must already be present in `assumptions_`.
+  bool EnqueueAssumptionInternal(Literal lit);
 
   // Update the propagators_ list with the relevant propagators.
   void InitializePropagators();

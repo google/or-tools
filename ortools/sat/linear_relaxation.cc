@@ -466,7 +466,6 @@ void LinearizeComplexLinear1(Model* m, const CpModelProto& model_proto,
 
         VLOG(2) << "Disjoint linear1 implications: " << disjoints.size();
         for (const Lin1Info& info : disjoints) {
-          (*already_linearized)[info.c] = true;
           if (info.domain.Min() > lb) {
             CHECK(lb_ct.AddLiteralTerm(info.lit, info.domain.Min() - lb));
           }
@@ -477,9 +476,26 @@ void LinearizeComplexLinear1(Model* m, const CpModelProto& model_proto,
                   << Domain(info.domain.Min(), info.domain.Max());
         }
 
+        // These constraint might not pass our PossibleOverflow() since the
+        // max/min activity can be way larger than the domain of the encoded
+        // variable. We disable this in this case.
+        //
+        // TODO(user): the relaxation will be less powerfull though. Provide a
+        // way to use them in the LP but not in cuts ? This might not be worth
+        // the effort though.
+        LinearConstraint lb_lin = lb_ct.Build();
+        if (PossibleOverflow(*integer_trail, lb_lin)) continue;
+
+        LinearConstraint ub_lin = ub_ct.Build();
+        if (PossibleOverflow(*integer_trail, ub_lin)) continue;
+
+        for (const Lin1Info& info : disjoints) {
+          (*already_linearized)[info.c] = true;
+        }
+
         num_added_constraints += 3;
-        relaxation->linear_constraints.push_back(lb_ct.Build());
-        relaxation->linear_constraints.push_back(ub_ct.Build());
+        relaxation->linear_constraints.push_back(std::move(lb_lin));
+        relaxation->linear_constraints.push_back(std::move(ub_lin));
 
         if (is_full_domain_encoded && !some_non_full_encoding_constraint) {
           VLOG(2) << "Domain fully encoded, adding exactly_one constraint";

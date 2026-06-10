@@ -34,6 +34,7 @@
 #include "absl/random/bit_gen_ref.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/types/span.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/base/types.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/cp_model_mapping.h"
@@ -149,7 +150,7 @@ class SharedTreeEncoder {
 
     // Adds an implication to this node.
     // Returns true if this implication is new.
-    bool AddImplication(Literal literal);
+    bool AddImplication(ProtoLiteral literal);
 
     // Adds a reason clause for the given literal that can be inferred from
     // `proof`.
@@ -178,11 +179,6 @@ class SharedTreeEncoder {
     // this node.
     std::vector<Literal> ExpectedReasonClauseLiterals(Literal implied) const;
 
-    // Returns all the literals that may be propagated as a consequence of the
-    // decisions up to and including this node.
-    // Will be empty for implied and closed nodes.
-    const std::vector<Literal>& implications() const { return implications_; }
-
     // Returns the reason clauses for all implications at this node. These
     // will contain a subset of the negated decoded decisions on the path from
     // this node to the root including at least all non-implied nodes. This will
@@ -210,13 +206,8 @@ class SharedTreeEncoder {
     SharedTreeNode shared_;
     Literal decoded_decision_ = Literal(kNoLiteralIndex);
 
-    // Literals propagated at this level, this will be empty (and have 0
-    // capacity) for implied and closed nodes, and for the SharedTreeManager's
-    // nodes if LRAT is not enabled.
-    std::vector<Literal> implications_;
-
     // If lrat is enabled, this will contain the reason clause for each
-    // implication in `implications_`.
+    // literal implied at this node.
     absl::flat_hash_map<Literal, ClausePtr> reason_clauses_;
 
     SharedTreeEncoder* encoder_ = nullptr;
@@ -271,22 +262,17 @@ class SharedTreeEncoder {
   // Clears all nodes in this tree and deletes any non-unit reason clauses.
   void Clear();
 
-  // Returns the Node with the given id.
+  // Returns the DecodedNode with the given id.
   Node* absl_nonnull GetNode(NodeId node_id) const {
     return nodes_by_id_.at(node_id);
   }
 
-  // Returns the Node with the given id if it exists, or nullptr
-  // otherwise.
-  Node* absl_nullable GetNodeOrNull(NodeId node_id) const {
-    auto it = nodes_by_id_.find(node_id);
-    if (it == nodes_by_id_.end()) return nullptr;
-    return it->second;
-  }
+  // Returns all non-implied nodes on the path from root to leaf.
+  std::vector<Node*> GetLevelStartNodes(NodeId leaf_id);
 
-  // Returns all non-implied nodes on the path from root to leaf, and ensures
-  // any reason clauses are normalized to omit decisions of implied nodes.
-  std::vector<Node*> GetNormalizedLevelStartNodes(NodeId leaf_id);
+  // Ensures that all reason clauses in `node` contain exactly the
+  // non-implied decisions on the path from the root to `node`.
+  void NormalizeReasonClauses(Node* node);
 
   // CHECK fails if any invariants are violated, or returns true otherwise.
   // Very slow, intended for use in DCHECKs only.
@@ -295,14 +281,6 @@ class SharedTreeEncoder {
  private:
   // Ensures that a node with the given id exists. If not, creates it.
   Node* EnsureNodeExists(NodeId id, NodeId parent_id, ProtoLiteral decision);
-
-  // We only need implied_literals if this is a worker's encoder with a mapping.
-  bool ShouldDecodeImplications() const { return mapping_ != nullptr; }
-
-  // Adds an implication to `node`.
-  // Returns true if this implication is new.
-  bool AddImplication(Node* node, ProtoLiteral literal,
-                      Literal decoded_literal);
 
   // Ensures that `node` will be closed after the next call to
   // ProcessNodeChanges.
@@ -342,10 +320,6 @@ class SharedTreeEncoder {
   ClausePtr NewImportedClause(absl::Span<const Literal> literals);
   ClausePtr NewInferredClause(absl::Span<const Literal> literals,
                               absl::Span<const ClausePtr> proof);
-
-  // Ensures that all reason clauses in `node` contain exactly the
-  // non-implied decisions on the path from the root to `node`.
-  void NormalizeReasonClauses(Node* node);
 
   // Moves any new reason clauses from `implied_node` to the start of its
   // level. If the start of the level is the root, we only move reason
@@ -470,12 +444,12 @@ class SharedTreeWorker {
     return !assigned_nodes_.empty() &&
            assigned_nodes_.back()->shared().is_closed();
   }
-  // Syncs the assigned tree with the local trail, ensuring that any new
-  // implications are synced. This is a noop if the search is deeper than the
-  // assigned tree. Returns false if the problem is unsat.
-  bool SyncWithLocalTrail();
+
+  // Syncs tree_ with the shared tree manager, possibly acquires a new
+  // assignment, enqueues assumptions and finishes propagation.
+  // Returns false if the problem is infeasible.
   bool SyncWithSharedTree();
-  bool NextDecision(LiteralIndex* decision_index);
+
   void MaybeProposeSplits();
   bool ShouldReplaceSubtree();
   bool FinishedMinRestarts() const {
@@ -484,30 +458,40 @@ class SharedTreeWorker {
                parameters_->shared_tree_worker_min_restarts_per_subtree();
   }
 
-  // Ensures that assigned_nodes_[level+1] is consistent with the trail (the
-  // decision is unassigned or the node is closed), this may close the node or
-  // its sibling and update assigned_nodes_ as appropriate given the current
-  // state of the trail, and will repeat until this property holds.
-  // Returns true if new implications can be propagated at the current level.
-  bool EnsureNextNodeIsConsistent();
+  // Returns the node fixing `literal` to true, or nullptr if it is not fixed by
+  // a node in the assigned subtree. Will always return the start of a level.
+  // This is safe to call interleaved with decoding ProtoLiterals, and on
+  // literals fixed at the root, unlike raw access to fixed_by_.
+  SharedTreeEncoder::Node* FixedByOrNull(Literal literal);
 
-  // Enqueues new implications and propagates them.
-  // Returns false if backtracking occurs.
-  bool EnqueueImplications();
+  // Exports any new implications to the shared tree.
+  // Updates fixed_by_ for literals on the trail up until the first
+  // decision not fixed by some node in the assigned subtree as it goes.
+  void ExportNewImplications();
 
-  // When a conflict is detected inside EnqueueImplications, this function will
-  // close the appropriate node and backtrack to the root.
-  // Always returns false.
-  bool ProcessConflict();
+  // Returns a sequence of clauses sufficient to propagate `literal` using only
+  // the decisions on the path from the root to `implied_by` as assumptions.
+  // All literals must be assigned.
+  absl::Span<const ClausePtr> GetProof(SharedTreeEncoder::Node* implied_by,
+                                       Literal literal);
 
-  // Returns the clauses needed to prove that the given `literals` are implied
-  // by the decisions on the current trail. The returned span is valid until the
-  // next call to ProofClausesForLiteral. If `to_append` is not
-  // `kNullClausePtr`, it will be appended to the proof.
-  absl::Span<const ClausePtr> ProofClausesForLiterals(
-      absl::Span<const Literal> literal, ClausePtr to_append = kNullClausePtr);
+  // Sets sat_solver_'s assumptions to those on the path to `leaf_id`,
+  // propagates them, and adds any new implications to tree_.
+  // If there is a conflict in the assumptions it will close the appropriate
+  // node, if any node's decision is propagated, it will close the appropriate
+  // sibling node.
+  // Returns false if the problem is infeasible.
+  bool ResetAndEnqueueAssumptions(NodeId leaf_id);
 
-  bool CheckPropagationInvariants() const;
+  // Processes a conflict at or before the assumption level, closing the
+  // appropriate node in the shared tree. Returns false if the problem is UNSAT.
+  bool ProcessAssumptionConflict();
+
+  // Closes the appropriate node in the shared tree  after either failing to
+  // enqueue a decision, or after processing a conflict at the assumption
+  // level, the solver will be reset to level 0.
+  // Returns false if the problem is UNSAT.
+  bool CloseNodeAfterConflict();
 
   SatParameters* parameters_;
   SharedResponseManager* shared_response_;
@@ -527,12 +511,13 @@ class SharedTreeWorker {
   SearchHeuristics* heuristics_;
   SatDecisionPolicy* decision_policy_;
   RestartPolicy* restart_policy_;
-  LevelZeroCallbackHelper* level_zero_callbacks_;
   RevIntRepository* reversible_int_repository_;
 
   int64_t num_trees_ = 0;
 
   SharedTreeEncoder tree_;
+  // Stores the first node at which each literal is made true.
+  util_intops::StrongVector<LiteralIndex, SharedTreeEncoder::Node*> fixed_by_;
   // Stores the non-implied nodes in the assigned subtree.
   std::vector<SharedTreeEncoder::Node*> assigned_nodes_;
   NodeId leaf_id_ = kNoNodeId;
@@ -548,10 +533,8 @@ class SharedTreeWorker {
   RunningAverage assigned_tree_lbds_;
   double earliest_replacement_dtime_ = 0;
 
-  // Stores the trail index of the last implication added to assigned_tree_.
+  // Stores the end of the literals implied by the assigned tree.
   int reversible_trail_index_ = 0;
-  // Stores the number of implications processed for each level.
-  std::vector<int> num_processed_implications_;
 
   std::vector<ClausePtr> tmp_proof_clauses_;
 };
