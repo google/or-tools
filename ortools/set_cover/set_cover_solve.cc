@@ -515,8 +515,9 @@ double RunSolvers() {
   RunFromResultAndReport(lazy_element_degree_result, lazy_steepest, report);
   RunLowerBoundAndReport(true, ComputeDualAscentLB, "DualAscentLB", inv,
                          report);
-  RunLowerBoundAndReport(true, ComputeDegreeBasedDualAscentLB,
-                         "DegreeBasedDualAscentLB", inv, report);
+  RunLowerBoundAndReport(true, ComputeDualAscentLBFullRandom,
+                         "DualAscentLBFullRandom", inv, report);
+
   RunLowerBoundAndReport(true, ComputeLagrangianLowerBound, "LagrangianLB", inv,
                          report);
 
@@ -656,10 +657,10 @@ void Benchmarks() {
           run_lower_bounds, ComputeDualAscentLB, "DualAscentLB", inv, report);
       report.ReportGap(loaded_solution_result, dual_ascent_result);
 
-      const RunResult degree_based_dual_ascent_result = RunLowerBoundAndReport(
-          run_lower_bounds, ComputeDegreeBasedDualAscentLB,
-          "DegreeBasedDualAscentLB", inv, report);
-      report.ReportGap(loaded_solution_result, degree_based_dual_ascent_result);
+      const RunResult dual_ascent_full_random_result = RunLowerBoundAndReport(
+          run_lower_bounds, ComputeDualAscentLBFullRandom,
+          "DualAscentLBFullRandom", inv, report);
+      report.ReportGap(loaded_solution_result, dual_ascent_full_random_result);
 
       const RunResult lagrangian_relaxation_result =
           RunLowerBoundAndReport(run_lower_bounds, ComputeLagrangianLowerBound,

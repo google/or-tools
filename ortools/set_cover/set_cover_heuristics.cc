@@ -14,6 +14,7 @@
 #include "ortools/set_cover/set_cover_heuristics.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <limits>
@@ -386,22 +387,29 @@ bool ElementDegreeSolutionGenerator::NextSolution(
   return true;
 }
 
-namespace {
+namespace internal {
 // Returns the segment starts for a permutation sorted by degree.
 // A segment is a contiguous range of elements with the same degree.
 // `get_degree(i)` should return the degree of the i-th element in the
 // permutation.
-template <typename DegreeGetter>
-std::vector<size_t> GetSegmentStarts(size_t permutation_size,
-                                     DegreeGetter get_degree) {
+std::vector<size_t> ComputeSegmentStarts(
+    const absl::Span<const ElementIndex> elements_sorted_by_degree,
+    const SparseRowView& rows) {
   std::vector<size_t> segment_starts;
+  if (elements_sorted_by_degree.empty()) {
+    segment_starts.push_back(0);
+    return segment_starts;
+  }
   segment_starts.push_back(0);
-  for (size_t i = 1; i < permutation_size; ++i) {
-    if (get_degree(i) != get_degree(i - 1)) {
+  size_t prev_size = rows[elements_sorted_by_degree[0]].size();
+  for (size_t i = 1; i < elements_sorted_by_degree.size(); ++i) {
+    const size_t current_size = rows[elements_sorted_by_degree[i]].size();
+    if (current_size != prev_size) {
       segment_starts.push_back(i);
+      prev_size = current_size;
     }
   }
-  segment_starts.push_back(permutation_size);
+  segment_starts.push_back(elements_sorted_by_degree.size());
   return segment_starts;
 }
 
@@ -468,7 +476,7 @@ void RunLazyElementDegreePass(
              << " num_uncovered_elements = " << inv->num_uncovered_elements();
   }
 }
-}  // namespace
+}  // namespace internal
 
 // LazyElementDegreeSolutionGenerator.
 // There is no need to use a priority queue here, as the ratios are computed
@@ -490,15 +498,15 @@ bool LazyElementDegreeSolutionGenerator::NextSolution(
 
   // Get the segment starts for the permutation sorted by degree so that we can
   // shuffle the elements with the same degree in each pass.
-  const std::vector<size_t> segment_starts = GetSegmentStarts(
-      degree_sorted_elements.size(),
-      [&](size_t i) { return rows[degree_sorted_elements[i]].size(); });
+  const std::vector<size_t> segment_starts =
+      internal::ComputeSegmentStarts(degree_sorted_elements, rows);
 
   ComputationUsefulnessStats stats(inv(), false);
 
   const SubsetBoolVector initial_solution = inv()->is_selected();
 
-  RunLazyElementDegreePass(degree_sorted_elements, in_focus, inv(), &stats);
+  internal::RunLazyElementDegreePass(degree_sorted_elements, in_focus, inv(),
+                                     &stats);
   Cost best_cost = inv()->cost();
   SubsetBoolVector best_solution = inv()->is_selected();
 
@@ -507,9 +515,10 @@ bool LazyElementDegreeSolutionGenerator::NextSolution(
     inv()->Recompute(CL::kCostAndCoverage);
 
     // Shuffle the elements with the same degree in each pass.
-    ShuffleSegments(segment_starts, &degree_sorted_elements);
+    internal::ShuffleSegments(segment_starts, &degree_sorted_elements);
 
-    RunLazyElementDegreePass(degree_sorted_elements, in_focus, inv(), &stats);
+    internal::RunLazyElementDegreePass(degree_sorted_elements, in_focus, inv(),
+                                       &stats);
     if (inv()->num_uncovered_elements() == 0 && inv()->cost() < best_cost) {
       best_cost = inv()->cost();
       best_solution = inv()->is_selected();
@@ -1156,7 +1165,7 @@ std::vector<SubsetIndex> ClearMostCoveredElements(
   return sampled_subsets;
 }
 
-namespace {
+namespace internal {
 // Performs a single pass of dual ascent with the given element permutation.
 // Returns the lower bound and the dual values.
 // The input SetCoverInvariant is not modified.
@@ -1164,17 +1173,26 @@ namespace {
 // the number of subset endpoints.
 std::pair<Cost, ElementCostVector> PerformDualAscent(
     const SetCoverInvariant& inv,
-    const std::vector<ElementIndex>& element_permutation) {
+    const std::vector<ElementIndex>& element_permutation,
+    const int32_t step = 1) {
+  // Ideally, we should DCHECK that step is a prime number, but we don't want to
+  // pay the price of the primality test at each call.
+  CHECK(step == 1 || step == 2 || step % 2 != 0);  // Step is 1, 2 or odd.
   const SetCoverModel& model = *(inv.model());
   const SparseRowView& rows = model.rows();
   const SubsetCostVector& costs = model.subset_costs();
-  ElementCostVector dual_values(model.num_elements(),
-                                0.0);     // Initialize dual variables to 0
+  const BaseInt num_elements = model.num_elements();
+  ElementCostVector dual_values(num_elements, 0.0);  // Set dual variables to 0.
   SubsetCostVector reduced_cost = costs;  // Remaining budget for each set j
   Cost lower_bound = 0.0;
 
-  // Iterate through each element i
-  for (const ElementIndex i : element_permutation) {
+  absl::InsecureBitGen bit_gen;
+  // Iterate through each element i through the permutation with a step of size
+  // prime, wrapping around at the end of the permutation.
+  // But first, we start at a random position in the permutation.
+  BaseInt pos(absl::Uniform<BaseInt>(bit_gen, 0, num_elements));
+  for (int counter = 0; counter < num_elements; ++counter) {
+    const ElementIndex i(element_permutation[pos]);
     // Find the minimum reduced cost among all sets containing element i
     Cost delta = std::numeric_limits<Cost>::max();
 
@@ -1194,74 +1212,106 @@ std::pair<Cost, ElementCostVector> PerformDualAscent(
         reduced_cost[j] -= delta;
       }
     }
+    // Wrap around if pos + step exceeds the number of elements.
+    // This is equivalent to pos = (pos + step) % num_elements, but faster.
+    // We do not use the modulo operator because it is slow.
+    pos = (step >= num_elements - pos) ? pos + step - num_elements : pos + step;
+    while (pos >= num_elements) {  // Wrap around if still necessary.
+      pos -= num_elements;
+    }
   }
 
   return {lower_bound, dual_values};
 }
-}  // namespace
+
+std::vector<int32_t> GenerateFirstNPrimes(int32_t n) {
+  if (n <= 0) return {};
+  if (n == 1) return {2};
+
+  // Estimate the N-th prime using the Prime Number Theorem upper bound.
+  // p_n < n * (ln(n) + ln(ln(n)) + 0.5) for n >= 6.
+  int32_t max_limit = 15;  // Covers small n
+  if (n >= 6) {
+    const double log_n = std::log(n);
+    const double log_log_n = std::log(log_n);
+    max_limit = static_cast<int32_t>(n * (log_n + log_log_n + 0.5));
+  }
+
+  // Sieve of Eratosthenes (odd numbers only to save 50% memory/time).
+  // is_odd_prime[i] represents the primality of the number 2*i + 1.
+  const int32_t sieve_size = (max_limit + 1) / 2;
+  std::vector<bool> is_odd_prime(sieve_size, true);
+  is_odd_prime[0] = false;  // index 0 represents 1
+  std::vector<int32_t> primes;
+  primes.reserve(n);
+  primes.push_back(2);
+
+  for (int32_t i = 1; 2 * i * (i + 1) < sieve_size; ++i) {
+    if (is_odd_prime[i]) {
+      const int32_t prime = 2 * i + 1;
+      const int32_t start = 2 * i * (i + 1);
+      for (int32_t j = start; j < sieve_size; j += prime) {
+        is_odd_prime[j] = false;
+      }
+    }
+  }
+  for (int32_t i = 1; i < sieve_size && primes.size() < n; ++i) {
+    if (is_odd_prime[i]) {
+      primes.push_back(2 * i + 1);
+    }
+  }
+  return primes;
+}
+
+}  // namespace internal
 
 Cost ComputeDualAscentLB(const SetCoverInvariant& inv, int num_random_passes) {
   const BaseInt num_elements = inv.model()->num_elements();
   std::vector<ElementIndex> element_permutation(num_elements);
   std::iota(element_permutation.begin(), element_permutation.end(),
             ElementIndex(0));
-  Cost max_lower_bound = PerformDualAscent(inv, element_permutation).first;
+  Cost max_lower_bound =
+      internal::PerformDualAscent(inv, element_permutation, 1).first;
   absl::InsecureBitGen bit_gen;
+  std::shuffle(element_permutation.begin(), element_permutation.end(), bit_gen);
+  // We generate a few more primes than num_random_passes as a provision against
+  // the possibility that some primes may be skipped because they divide
+  // num_elements. There cannot be more that 9 such primes for a 32-bit integer,
+  // since 2 * 3 * 5 * 7 * 11 * 13 * 17 * 19 * 23 * 29 > 2^32.
+  // For a 64-bit integer, the number is 15.
+  const int32_t kNumMaxDifferentPrimeFactors = 9;
+  const std::vector<int32_t> primes = internal::GenerateFirstNPrimes(
+      num_random_passes + kNumMaxDifferentPrimeFactors);
+  int prime_index = 0;
   for (int i = 0; i < num_random_passes; ++i) {
-    std::shuffle(element_permutation.begin(), element_permutation.end(),
-                 bit_gen);
+    int32_t prime = primes[prime_index];
+    while (num_elements % prime == 0) {
+      ++prime_index;
+      prime = primes[prime_index];
+    }
     max_lower_bound = std::max(
-        max_lower_bound, PerformDualAscent(inv, element_permutation).first);
+        max_lower_bound,
+        internal::PerformDualAscent(inv, element_permutation, prime).first);
+    ++prime_index;
   }
   return max_lower_bound;
 }
 
-Cost ComputeDegreeBasedDualAscentLB(const SetCoverInvariant& inv,
-                                    int num_random_passes) {
+Cost ComputeDualAscentLBFullRandom(const SetCoverInvariant& inv,
+                                   int num_random_passes) {
   const BaseInt num_elements = inv.model()->num_elements();
-  std::vector<std::pair<BaseInt, ElementIndex>> elements_with_degree;
-  elements_with_degree.reserve(num_elements);
-  const SparseRowView& rows = inv.model()->rows();
-  // Sort the elements according by increasing degree.
-  for (const ElementIndex element : inv.model()->ElementRange()) {
-    elements_with_degree.push_back({rows[element].size(), element});
-  }
-  MultikeyRadixSort(
-      elements_with_degree,
-      [](const std::pair<BaseInt, ElementIndex>& p) { return p.first; });
-  // TODO(user): remove the need for this copy and a permutation vector.
-  std::vector<ElementIndex> permutation;
-  permutation.reserve(elements_with_degree.size());
-  std::vector<BaseInt> degrees;
-  degrees.reserve(elements_with_degree.size());
-  for (const auto& p : elements_with_degree) {
-    degrees.push_back(p.first);
-    permutation.push_back(p.second);
-  }
-
-  Cost max_lower_bound = PerformDualAscent(inv, permutation).first;
-  if (num_random_passes == 0) {
-    return max_lower_bound;
-  }
-
-  // Find the starts of the segments of equal degrees.
-  // The initial permutation is sorted according to degrees, so the segments are
-  // contiguous. We will shuffle each segment independently.
-  std::vector<size_t> segment_starts;
-  segment_starts.push_back(0);
-  for (size_t i = 1; i < permutation.size(); ++i) {
-    if (degrees[i] != degrees[i - 1]) {
-      segment_starts.push_back(i);
-    }
-  }
-  segment_starts.push_back(permutation.size());
-
+  std::vector<ElementIndex> element_permutation(num_elements);
+  std::iota(element_permutation.begin(), element_permutation.end(),
+            ElementIndex(0));
+  Cost max_lower_bound =
+      internal::PerformDualAscent(inv, element_permutation).first;
+  absl::InsecureBitGen bit_gen;
   for (int i = 0; i < num_random_passes; ++i) {
-    // Shuffle each segment independently.
-    ShuffleSegments(segment_starts, &permutation);
-    // Perform dual ascent with the updated permutation.
+    std::shuffle(element_permutation.begin(), element_permutation.end(),
+                 bit_gen);
     max_lower_bound =
-        std::max(max_lower_bound, PerformDualAscent(inv, permutation).first);
+        std::max(max_lower_bound,
+                 internal::PerformDualAscent(inv, element_permutation).first);
   }
   return max_lower_bound;
 }

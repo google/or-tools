@@ -14,6 +14,7 @@
 #ifndef ORTOOLS_SET_COVER_SET_COVER_HEURISTICS_H_
 #define ORTOOLS_SET_COVER_SET_COVER_HEURISTICS_H_
 
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <limits>
@@ -21,6 +22,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/base/attributes.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/time/time.h"
@@ -772,15 +774,29 @@ std::vector<SubsetIndex> ClearMostCoveredElements(
     absl::Span<const SubsetIndex> focus, BaseInt num_subsets,
     SetCoverInvariant* inv);
 
+// Internal functions, not part of the public API. Declared here for testing
+// purposes.
+namespace internal {
+std::vector<size_t> ComputeSegmentStarts(
+    absl::Span<const ElementIndex> elements_sorted_by_degree,
+    const SparseRowView& rows);
+std::vector<int32_t> GenerateFirstNPrimes(int32_t n);
+}  // namespace internal
+
 // Computes a lower bound of the set cover instance and element dual values
 // using a dual ascent algorithm, with num_random_passes random permutations of
 // elements. Returns the maximum lower bound found.
+// The first pass is deterministic, with a step of 1. The following passes are
+// use a random permutation of the elements, with a step equal to one prime
+// number for each pass.
 Cost ComputeDualAscentLB(const SetCoverInvariant& inv, int num_random_passes);
 
-// As above, but starts with a permutation sorted by degree, and then
-// shuffles elements of same degree for num_random_passes.
-Cost ComputeDegreeBasedDualAscentLB(const SetCoverInvariant& inv,
-                                    int num_random_passes);
+// Same as above, but the permutation is fully random at each pass. It is 10 to
+// 20 times slower than ComputeDualAscentLB. It was kept for comparison and will
+// be removed in the future.
+ABSL_DEPRECATED("Use ComputeDualAscentLB instead.")
+Cost ComputeDualAscentLBFullRandom(const SetCoverInvariant& inv,
+                                   int num_random_passes);
 
 // Computes a clique in the intersection graph of the subsets, starting from
 // the given subset.
