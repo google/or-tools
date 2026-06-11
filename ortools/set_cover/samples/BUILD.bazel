@@ -40,7 +40,10 @@ py_binary(
     name = "set_cover_py3",
     srcs = ["set_cover.py"],
     main = "set_cover.py",
-    deps = ["//ortools/set_cover/python:set_cover"],
+    deps = [
+        "//ortools/set_cover:set_cover_py_pb2",
+        "//ortools/set_cover/python:set_cover",
+    ],
 )
 
 bintest(

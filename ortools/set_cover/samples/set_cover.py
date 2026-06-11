@@ -16,6 +16,7 @@
 
 # [START program]
 # [START import]
+from ortools.set_cover import set_cover_pb2
 from ortools.set_cover.python import set_cover
 
 # [END import]
@@ -40,7 +41,7 @@ def main():
     if not has_found:
         print("No solution found by the greedy heuristic.")
         return
-    solution = inv.export_solution_as_proto()
+    solution: set_cover_pb2.SetCoverSolutionResponse = inv.export_solution_as_proto()
     # [END solve]
 
     # [START print_solution]
