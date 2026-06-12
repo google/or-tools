@@ -11,5 +11,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-add_subdirectory(mathopt)
-add_subdirectory(util)
+if(BUILD_TESTING)
+  file(GLOB JAVA_SRCS "*Test.java")
+  foreach(FILE_NAME IN LISTS JAVA_SRCS)
+    add_java_test(
+      FILE_NAME ${FILE_NAME}
+      COMPONENT_NAME mathopt
+    )
+  endforeach()
+endif()
