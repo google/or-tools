@@ -52,6 +52,7 @@ pybind_extension(
             "//ortools/math_opt/core:solver_debug",
             "//ortools/util:solve_interrupter",
             "//ortools/util/python:py_solve_interrupter_lib",
+            "@abseil-cpp//absl/base:nullability",
             "@abseil-cpp//absl/memory",
             "@abseil-cpp//absl/status:statusor",
             "@pybind11_abseil//pybind11_abseil:import_status_module",
