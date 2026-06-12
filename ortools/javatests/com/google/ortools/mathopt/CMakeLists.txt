@@ -13,6 +13,9 @@
 
 if(BUILD_TESTING)
   file(GLOB JAVA_SRCS "*Test.java")
+  if(NOT USE_SCIP)
+    list(FILTER JAVA_SRCS EXCLUDE REGEX "/SolveTest.java$")
+  endif()
   foreach(FILE_NAME IN LISTS JAVA_SRCS)
     add_java_test(
       FILE_NAME ${FILE_NAME}
