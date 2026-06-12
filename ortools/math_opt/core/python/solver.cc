@@ -17,12 +17,14 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+#include <cstdint>
 #include <functional>
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "absl/base/nullability.h"
 #include "absl/memory/memory.h"
 #include "absl/status/statusor.h"
 #include "ortools/base/status_macros.h"
