@@ -33,8 +33,8 @@ java_library(
     name = "proto_duration_conversion",
     srcs = ["ProtoDurationConversion.java"],
     visibility = [
-        "//javatests/com/google/wrappers/util/operationsresearch:__subpackages__",
-        "//ortools:__subpackages__",
+        "//ortools/java/com/google/ortools:__subpackages__",
+        "//ortools/javatests/com/google/ortools:__subpackages__",
     ],
     deps = [
         "@maven//:com_google_protobuf_protobuf_java",
@@ -45,7 +45,10 @@ java_library(
 java_library(
     name = "scoped_swig_interrupter",
     srcs = ["ScopedSwigInterrupter.java"],
-    visibility = ["//ortools:__subpackages__"],
+    visibility = [
+        "//ortools/java/com/google/ortools:__subpackages__",
+        "//ortools/javatests/com/google/ortools:__subpackages__",
+    ],
     deps = [
         ":interruptable",
         "//ortools/util/java:java_swig_solve_interrupter_swig",  # buildcleaner: keep

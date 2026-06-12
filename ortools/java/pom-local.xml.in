@@ -62,27 +62,45 @@
     <type>jar</type>
     <scope>runtime</scope>
   </dependency>
+  <!-- Source: https://mvnrepository.com/artifact/net.java.dev.jna/jna-platform -->
   <dependency>
     <groupId>net.java.dev.jna</groupId>
     <artifactId>jna-platform</artifactId>
     <version>5.14.0</version>
   </dependency>
+  <!-- Source: https://mvnrepository.com/artifact/com.google.errorprone/error_prone_annotations -->
   <dependency>
     <groupId>com.google.errorprone</groupId>
     <artifactId>error_prone_annotations</artifactId>
     <version>2.49.0</version>
     <scope>compile</scope>
   </dependency>
+  <!-- Source: https://mvnrepository.com/artifact/com.google.guava/guava -->
+  <dependency>
+    <groupId>com.google.guava</groupId>
+    <artifactId>guava</artifactId>
+    <version>33.6.0-jre</version>
+    <scope>compile</scope>
+  </dependency>
+  <!-- Source: https://mvnrepository.com/artifact/com.google.protobuf/protobuf-java -->
   <dependency>
     <groupId>com.google.protobuf</groupId>
     <artifactId>protobuf-java</artifactId>
     <version>4.33.6</version>
   </dependency>
+  <!-- Source: https://mvnrepository.com/artifact/com.google.protobuf/protobuf-java-util -->
   <dependency>
     <groupId>com.google.protobuf</groupId>
     <artifactId>protobuf-java-util</artifactId>
     <version>4.33.6</version>
   </dependency>
+  <!-- Source: https://mvnrepository.com/artifact/com.google.truth/truth -->
+  <dependency>
+    <groupId>com.google.truth</groupId>
+    <artifactId>truth</artifactId>
+    <version>1.4.5</version>
+  </dependency>
+  <!-- Source: https://mvnrepository.com/artifact/org.jspecify/jspecify -->
   <dependency>
     <groupId>org.jspecify</groupId>
     <artifactId>jspecify</artifactId>

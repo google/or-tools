@@ -108,12 +108,19 @@ file(GLOB_RECURSE proto_java_files RELATIVE ${PROJECT_SOURCE_DIR}
   "ortools/sat/sat_parameters.proto"
   "ortools/util/*.proto"
   )
-if(USE_PDLP)
+list(REMOVE_ITEM proto_java_files "ortools/constraint_solver/assignment.proto")
+list(REMOVE_ITEM proto_java_files "ortools/util/testdata/wrappers_test_message.proto")
+if(BUILD_MATH_OPT)
+  file(GLOB_RECURSE mathopt_proto_java_files RELATIVE ${PROJECT_SOURCE_DIR}
+    "ortools/math_opt/*.proto"
+    "ortools/math_opt/solvers/*.proto"
+  )
+  list(APPEND proto_java_files ${mathopt_proto_java_files})
+endif()
+if(USE_PDLP OR BUILD_MATH_OPT)
   file(GLOB_RECURSE pdlp_proto_java_files RELATIVE ${PROJECT_SOURCE_DIR} "ortools/pdlp/*.proto")
   list(APPEND proto_java_files ${pdlp_proto_java_files})
 endif()
-list(REMOVE_ITEM proto_java_files "ortools/constraint_solver/assignment.proto")
-list(REMOVE_ITEM proto_java_files "ortools/util/testdata/wrappers_test_message.proto")
 foreach(PROTO_FILE IN LISTS proto_java_files)
   #message(STATUS "protoc proto(java): ${PROTO_FILE}")
   get_filename_component(PROTO_DIR ${PROTO_FILE} DIRECTORY)
@@ -273,6 +280,9 @@ foreach(SUBPROJECT IN ITEMS
 endforeach()
 # from ortools/linear_solver/java
 target_link_libraries(jni${JAVA_ARTIFACT} PRIVATE jnimodelbuilder)
+add_subdirectory(ortools/math_opt/core/java)
+target_link_libraries(jni${JAVA_ARTIFACT} PRIVATE mathopt_java_jni_helper)
+target_link_libraries(jni${JAVA_ARTIFACT} PRIVATE jnimathopt)
 add_subdirectory(ortools/sat/java)
 target_link_libraries(jni${JAVA_ARTIFACT} PRIVATE jnisat)
 target_link_libraries(jni${JAVA_ARTIFACT} PRIVATE jni_cp_model_proto)
