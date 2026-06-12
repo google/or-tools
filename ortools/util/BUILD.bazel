@@ -12,6 +12,7 @@
 # limitations under the License.
 
 load("@protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
+load("@protobuf//bazel:java_proto_library.bzl", "java_proto_library")
 load("@protobuf//bazel:proto_library.bzl", "proto_library")
 load("@protobuf//bazel:py_proto_library.bzl", "py_proto_library")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
@@ -359,6 +360,26 @@ cc_library(
         "@abseil-cpp//absl/strings:string_view",
         "@protobuf",
     ],
+)
+
+proto_library(
+    name = "status_proto",
+    srcs = ["status.proto"],
+)
+
+cc_proto_library(
+    name = "status_cc_proto",
+    deps = [":status_proto"],
+)
+
+java_proto_library(
+    name = "status_java_proto",
+    deps = [":status_proto"],
+)
+
+py_proto_library(
+    name = "status_py_pb2",
+    deps = [":status_proto"],
 )
 
 cc_library(
