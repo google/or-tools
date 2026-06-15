@@ -3719,15 +3719,15 @@ void CpModelProtoWithMapping::TranslateSearchAnnotations(
       const fz::Annotation& select = args[2];
       if (select.id == "indomain_min" || select.id == "indomain") {
         strategy->set_domain_reduction_strategy(
-            DecisionStrategyProto::SELECT_MIN_VALUE);
+            DecisionStrategyProto::SELECT_MAX_VALUE);
       } else if (select.id == "indomain_max") {
         strategy->set_domain_reduction_strategy(
-            DecisionStrategyProto::SELECT_MAX_VALUE);
+            DecisionStrategyProto::SELECT_MIN_VALUE);
       } else {
         SOLVER_LOG(logger, "Unsupported value selection strategy '", select.id,
                    "', falling back to 'indomain_min'");
         strategy->set_domain_reduction_strategy(
-            DecisionStrategyProto::SELECT_MIN_VALUE);
+            DecisionStrategyProto::SELECT_MAX_VALUE);
       }
     }
   }
