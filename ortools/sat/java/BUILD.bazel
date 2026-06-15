@@ -15,7 +15,7 @@
 
 load("@contrib_rules_jvm//java:defs.bzl", "java_junit5_test")
 load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
-load("//bazel:swig_java.bzl", "java_wrap_cc")
+load("//bazel:or_java_wrap_cc.bzl", "or_java_wrap_cc")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -41,12 +41,10 @@ genrule(
     tools = [":gen_cp_model_proto_swig"],
 )
 
-java_wrap_cc(
+or_java_wrap_cc(
     name = "cp_model_proto",
     srcs = ["cp_model_proto.swig"],
-    java_deps = [
-        "@maven//:com_google_errorprone_error_prone_annotations",
-    ],
+    java_deps = ["@maven//:com_google_errorprone_error_prone_annotations"],
     package = "com.google.ortools.sat",
     swig_includes = ["//ortools/base:base_swig"],
     visibility = ["//visibility:public"],
@@ -76,7 +74,7 @@ java_junit5_test(
     ],
 )
 
-java_wrap_cc(
+or_java_wrap_cc(
     name = "sat",
     srcs = ["sat.swig"],
     java_deps = [
@@ -96,10 +94,7 @@ java_wrap_cc(
     ],
     use_directors = True,
     visibility = ["//visibility:public"],
-    deps = [
-        "//ortools/sat:swig_helper",
-        "//ortools/util:sorted_interval_list",
-    ],
+    deps = ["//ortools/sat:swig_helper"],
 )
 
 java_junit5_test(

@@ -14,13 +14,14 @@
 # Description: java wrapping of the C++ code at ../
 
 load("@contrib_rules_jvm//java:defs.bzl", "java_junit5_test")
-load("//bazel:swig_java.bzl", "java_wrap_cc")
+load("//bazel:or_java_wrap_cc.bzl", "or_java_wrap_cc")
 
 package(default_visibility = ["//visibility:public"])
 
-java_wrap_cc(
+or_java_wrap_cc(
     name = "modelbuilder",
     srcs = ["modelbuilder.swig"],
+    java_deps = ["@protobuf//java/core"],
     package = "com.google.ortools.modelbuilder",
     swig_includes = [
         "//ortools/base:base_swig",
