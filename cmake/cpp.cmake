@@ -183,7 +183,7 @@ function(ortools_cxx_test)
     "${multiValueArgs}"
     ${ARGN}
   )
-  if(NOT BUILD_TESTING)
+  if(NOT BUILD_CXX_TESTING)
     return()
   endif()
 
@@ -271,7 +271,7 @@ function(ortools_cxx_library)
     "${multiValueArgs}"
     ${ARGN}
   )
-  if(LIBRARY_TESTING AND NOT BUILD_TESTING)
+  if(LIBRARY_TESTING AND NOT BUILD_CXX_TESTING)
     return()
   endif()
 
@@ -344,7 +344,7 @@ function(ortools_cxx_binary)
     "${multiValueArgs}"
     ${ARGN}
   )
-  if(BINARY_TESTING AND NOT BUILD_TESTING)
+  if(BINARY_TESTING AND NOT BUILD_CXX_TESTING)
     return()
   endif()
 
@@ -898,6 +898,10 @@ function(add_cxx_sample)
     "${multiValueArgs}"
     ${ARGN}
   )
+  if(NOT BUILD_CXX_SAMPLES)
+    return()
+  endif()
+
   if(NOT SAMPLE_FILE_NAME)
     message(FATAL_ERROR "no FILE_NAME provided")
   endif()
@@ -931,7 +935,7 @@ function(add_cxx_sample)
   endif()
   install(TARGETS ${SAMPLE_NAME})
 
-  if(BUILD_TESTING)
+  if(BUILD_CXX_TESTING)
     add_test(
       NAME cxx_${COMPONENT_NAME}_${SAMPLE_NAME}
       COMMAND ${SAMPLE_NAME})
@@ -965,6 +969,10 @@ function(add_cxx_example)
     "${multiValueArgs}"
     ${ARGN}
   )
+  if(NOT BUILD_CXX_EXAMPLES)
+    return()
+  endif()
+
   if(NOT EXAMPLE_FILE_NAME)
     message(FATAL_ERROR "no FILE_NAME provided")
   endif()
@@ -997,7 +1005,7 @@ function(add_cxx_example)
   endif()
   install(TARGETS ${EXAMPLE_NAME})
 
-  if(BUILD_TESTING)
+  if(BUILD_CXX_TESTING)
     add_test(
       NAME cxx_${COMPONENT_NAME}_${EXAMPLE_NAME}
       COMMAND ${EXAMPLE_NAME})

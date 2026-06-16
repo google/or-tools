@@ -28,7 +28,7 @@ endif()
 target_link_libraries(init_pybind11 PRIVATE ${PROJECT_NAMESPACE}::ortools)
 add_library(${PROJECT_NAMESPACE}::init_pybind11 ALIAS init_pybind11)
 
-if(BUILD_TESTING)
+if(BUILD_PYTHON_TESTING)
   file(GLOB PYTHON_SRCS "*_test.py")
   foreach(FILE_NAME IN LISTS PYTHON_SRCS)
     add_python_test(FILE_NAME ${FILE_NAME})

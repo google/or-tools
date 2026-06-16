@@ -46,7 +46,7 @@ target_link_libraries(${NAME} PRIVATE
   ${PROJECT_NAMESPACE}::ortools_proto)
 #add_library(${PROJECT_NAMESPACE}::base ALIAS ${NAME})
 
-if(BUILD_TESTING)
+if(BUILD_CXX_TESTING)
   ortools_cxx_library(
     NAME
     base_gmock

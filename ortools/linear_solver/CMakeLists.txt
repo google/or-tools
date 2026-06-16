@@ -127,7 +127,7 @@ if(NOT EMSCRIPTEN)
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 endif()
 
-if(BUILD_TESTING)
+if(BUILD_CXX_TESTING)
   if (APPLE)
     set(CMAKE_INSTALL_RPATH
             "@loader_path/../${CMAKE_INSTALL_LIBDIR};@loader_path")

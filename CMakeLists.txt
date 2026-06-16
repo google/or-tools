@@ -89,10 +89,6 @@ endif()
 # Enable CCache if any
 include(ccache)
 
-# Disable CTest targets
-set_property(GLOBAL PROPERTY CTEST_TARGETS_ADDED 1)
-include(CTest)
-
 # By default only build the C++ library which agregate all components.
 option(BUILD_PYTHON "Build Python Library" OFF)
 message(STATUS "Build Python: ${BUILD_PYTHON}")
@@ -121,44 +117,68 @@ message(STATUS "Build Flatzinc: ${BUILD_FLATZINC}")
 option(BUILD_MATH_OPT "Build the MATH_OPT" ON)
 message(STATUS "Build MathOpt: ${BUILD_MATH_OPT}")
 
-## Samples
+# Documentations
+option(BUILD_DOC "Build documentation" OFF)
+message(STATUS "Build doc: ${BUILD_DOC}")
+CMAKE_DEPENDENT_OPTION(INSTALL_DOC "Install doc" ON "BUILD_DOC" OFF)
+message(STATUS "Install doc: ${INSTALL_DOC}")
+CMAKE_DEPENDENT_OPTION(BUILD_CXX_DOC "Build the C++ doc" ON "BUILD_DOC" OFF)
+message(STATUS "Build C++ doc: ${BUILD_CXX_DOC}")
+CMAKE_DEPENDENT_OPTION(BUILD_DOTNET_DOC "Build the .Net doc" ON "BUILD_DOC;BUILD_DOTNET" OFF)
+message(STATUS "Build .Net doc: ${BUILD_DOTNET_DOC}")
+CMAKE_DEPENDENT_OPTION(BUILD_JAVA_DOC "Build the Java doc" ON "BUILD_DOC;BUILD_JAVA" OFF)
+message(STATUS "Build Java doc: ${BUILD_JAVA_DOC}")
+CMAKE_DEPENDENT_OPTION(BUILD_PYTHON_DOC "Build the Python doc" ON "BUILD_DOC;BUILD_PYTHON" OFF)
+message(STATUS "Build Python doc: ${BUILD_PYTHON_DOC}")
+
+# Tests
+## Disable CTest targets
+set_property(GLOBAL PROPERTY CTEST_TARGETS_ADDED 1)
+include(CTest)
+message(STATUS "Build tests: ${BUILD_TESTING}")
+CMAKE_DEPENDENT_OPTION(BUILD_CXX_TESTING "Build cxx tests" ON "BUILD_TESTING" OFF)
+message(STATUS "Build C++ tests: ${BUILD_CXX_TESTING}")
+CMAKE_DEPENDENT_OPTION(BUILD_DOTNET_TESTING "Build dotnet tests" ON "BUILD_TESTING;BUILD_DOTNET" OFF)
+message(STATUS "Build .Net tests: ${BUILD_DOTNET_TESTING}")
+CMAKE_DEPENDENT_OPTION(BUILD_JAVA_TESTING "Build java tests" ON "BUILD_TESTING;BUILD_JAVA" OFF)
+message(STATUS "Build Java tests: ${BUILD_JAVA_TESTING}")
+CMAKE_DEPENDENT_OPTION(BUILD_PYTHON_TESTING "Build python tests" ON "BUILD_TESTING;BUILD_PYTHON" OFF)
+message(STATUS "Build Python tests: ${BUILD_PYTHON_TESTING}")
+
+# Samples
 option(BUILD_SAMPLES "Build samples" ON)
 message(STATUS "Build samples: ${BUILD_SAMPLES}")
 CMAKE_DEPENDENT_OPTION(BUILD_CXX_SAMPLES "Build cxx samples" ON "BUILD_SAMPLES" OFF)
 message(STATUS "Build C++ samples: ${BUILD_CXX_SAMPLES}")
-CMAKE_DEPENDENT_OPTION(BUILD_PYTHON_SAMPLES "Build python samples" ON "BUILD_SAMPLES;BUILD_PYTHON" OFF)
-message(STATUS "Build Python samples: ${BUILD_PYTHON_SAMPLES}")
-CMAKE_DEPENDENT_OPTION(BUILD_JAVA_SAMPLES "Build java samples" ON "BUILD_SAMPLES;BUILD_JAVA" OFF)
-message(STATUS "Build Java samples: ${BUILD_JAVA_SAMPLES}")
 CMAKE_DEPENDENT_OPTION(BUILD_DOTNET_SAMPLES "Build dotnet samples" ON "BUILD_SAMPLES;BUILD_DOTNET" OFF)
 message(STATUS "Build .Net samples: ${BUILD_DOTNET_SAMPLES}")
+CMAKE_DEPENDENT_OPTION(BUILD_JAVA_SAMPLES "Build java samples" ON "BUILD_SAMPLES;BUILD_JAVA" OFF)
+message(STATUS "Build Java samples: ${BUILD_JAVA_SAMPLES}")
+CMAKE_DEPENDENT_OPTION(BUILD_PYTHON_SAMPLES "Build python samples" ON "BUILD_SAMPLES;BUILD_PYTHON" OFF)
+message(STATUS "Build Python samples: ${BUILD_PYTHON_SAMPLES}")
 
-## Examples
+# Examples
 option(BUILD_EXAMPLES "Build examples" ON)
 message(STATUS "Build examples: ${BUILD_EXAMPLES}")
 CMAKE_DEPENDENT_OPTION(BUILD_CXX_EXAMPLES "Build cxx examples" ON "BUILD_EXAMPLES" OFF)
 message(STATUS "Build C++ examples: ${BUILD_CXX_EXAMPLES}")
-CMAKE_DEPENDENT_OPTION(BUILD_PYTHON_EXAMPLES "Build python examples" ON "BUILD_EXAMPLES;BUILD_PYTHON" OFF)
-message(STATUS "Build Python examples: ${BUILD_PYTHON_EXAMPLES}")
-CMAKE_DEPENDENT_OPTION(BUILD_JAVA_EXAMPLES "Build java examples" ON "BUILD_EXAMPLES;BUILD_JAVA" OFF)
-message(STATUS "Build Java examples: ${BUILD_JAVA_EXAMPLES}")
 CMAKE_DEPENDENT_OPTION(BUILD_DOTNET_EXAMPLES "Build dotnet examples" ON "BUILD_EXAMPLES;BUILD_DOTNET" OFF)
 message(STATUS "Build .Net examples: ${BUILD_DOTNET_EXAMPLES}")
+CMAKE_DEPENDENT_OPTION(BUILD_JAVA_EXAMPLES "Build java examples" ON "BUILD_EXAMPLES;BUILD_JAVA" OFF)
+message(STATUS "Build Java examples: ${BUILD_JAVA_EXAMPLES}")
+CMAKE_DEPENDENT_OPTION(BUILD_PYTHON_EXAMPLES "Build python examples" ON "BUILD_EXAMPLES;BUILD_PYTHON" OFF)
+message(STATUS "Build Python examples: ${BUILD_PYTHON_EXAMPLES}")
 
-option(BUILD_DOC "Build documentation" OFF)
-message(STATUS "Build documentation: ${BUILD_DOC}")
-CMAKE_DEPENDENT_OPTION(INSTALL_DOC "Install doc" ON "BUILD_DOC" OFF)
-message(STATUS "Install doc: ${INSTALL_DOC}")
-
-# By default all dependencies are NOT built (i.e. BUILD_DEPS=OFF),
-# BUT if building any wrappers (Python, Java or .Net) then BUILD_DEPS=ON.
+# Dependencies
+## By default all dependencies are NOT built (i.e. BUILD_DEPS=OFF),
+## BUT if building any wrappers (Python, Java or .Net) then BUILD_DEPS=ON.
 if(BUILD_PYTHON OR BUILD_JAVA OR BUILD_DOTNET)
   option(BUILD_DEPS "Build all dependencies" ON)
 else()
   option(BUILD_DEPS "Build all dependencies" OFF)
 endif()
 message(STATUS "Build all dependencies: ${BUILD_DEPS}")
-# Install built dependencies if any,
+## Install built dependencies if any,
 option(INSTALL_BUILD_DEPS "Install build all dependencies" ON)
 
 # IF BUILD_DEPS=ON THEN Force all BUILD_*=ON
@@ -186,7 +206,7 @@ CMAKE_DEPENDENT_OPTION(BUILD_re2 "Build the re2 dependency Library" OFF
   "NOT BUILD_DEPS" ON)
 message(STATUS "Build re2: ${BUILD_re2}")
 
-if(BUILD_TESTING)
+if(BUILD_CXX_TESTING)
   set(OR_TOOLS_BUILD_TESTING ON)
   CMAKE_DEPENDENT_OPTION(BUILD_googletest "Build googletest" OFF
     "NOT BUILD_DEPS" ON)
@@ -317,15 +337,9 @@ option(USE_XPRESS "Use the Xpress solver" ON)
 message(STATUS "Xpress support: ${USE_XPRESS}")
 
 # Language specific options
-CMAKE_DEPENDENT_OPTION(BUILD_CXX_DOC "Build the C++ doc" OFF "NOT BUILD_DOC" ON)
-message(STATUS "C++: Build doc: ${BUILD_CXX_DOC}")
-
 if(BUILD_DOTNET)
   option(UNIVERSAL_DOTNET_PACKAGE "Build a .Net multi OS Package" OFF)
   message(STATUS ".Net: Create multiple OS Package: ${UNIVERSAL_DOTNET_PACKAGE}")
-
-  CMAKE_DEPENDENT_OPTION(BUILD_DOTNET_DOC "Build the .Net doc" OFF "NOT BUILD_DOC" ON)
-  message(STATUS ".Net: Build doc: ${BUILD_DOTNET_DOC}")
 
   # Language Version
   # see: https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/configure-language-version
@@ -382,9 +396,6 @@ if(BUILD_JAVA)
   option(UNIVERSAL_JAVA_PACKAGE "Build a Java multi OS Package" OFF)
   message(STATUS "Java: Create multiple OS package: ${UNIVERSAL_JAVA_PACKAGE}")
 
-  CMAKE_DEPENDENT_OPTION(BUILD_JAVA_DOC "Build the Java doc" OFF "NOT BUILD_DOC" ON)
-  message(STATUS "Java: Build doc: ${BUILD_JAVA_DOC}")
-
   # On Centos-7 this option (needed otherwise) is unrecognized and should be
   # replaced by an empty string.
   set(GPG_ARGS "<arg>--pinentry-mode</arg><arg>loopback</arg>" CACHE STRING "Extra options for GPG")
@@ -407,11 +418,8 @@ if(BUILD_PYTHON)
   option(GENERATE_PYTHON_STUB "Generate Python stub file (.pyi)" ON)
   message(STATUS "Python: Generate stub file: ${GENERATE_PYTHON_STUB}")
 
-CMAKE_DEPENDENT_OPTION(BUILD_PYTHON_DOC "Build the Python doc" OFF "NOT BUILD_DOC" ON)
-  message(STATUS "Python: Build doc: ${BUILD_PYTHON_DOC}")
-
   CMAKE_DEPENDENT_OPTION(BUILD_VENV "Create Python venv in BINARY_DIR/python/venv" OFF
-    "NOT BUILD_TESTING" ON)
+    "NOT BUILD_PYTHON_TESTING" ON)
   message(STATUS "Python: Create venv: ${BUILD_VENV}")
 
   CMAKE_DEPENDENT_OPTION(VENV_USE_SYSTEM_SITE_PACKAGES "Python venv can use system site packages" OFF

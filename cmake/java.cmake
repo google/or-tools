@@ -253,7 +253,7 @@ function(add_java_test)
       ${JAVA_TEST_DIR}/timestamp
     WORKING_DIRECTORY ${JAVA_TEST_DIR})
 
-  if(BUILD_TESTING)
+  if(BUILD_JAVA_TESTING)
     add_test(
       NAME java_${COMPONENT_NAME}_${TEST_NAME}
       COMMAND ${MAVEN_EXECUTABLE} test
@@ -586,7 +586,7 @@ add_dependencies(java_deploy java_package)
 #################
 ##  Java Test  ##
 #################
-if(BUILD_TESTING)
+if(BUILD_JAVA_TESTING)
   add_subdirectory(ortools/javatests/com/google/ortools javatests/ortools)
 endif()
 
@@ -724,7 +724,7 @@ function(add_java_sample)
       ${SAMPLE_DIR}/timestamp
     WORKING_DIRECTORY ${SAMPLE_DIR})
 
-  if(BUILD_TESTING)
+  if(BUILD_JAVA_TESTING)
     add_test(
       NAME java_${COMPONENT_NAME}_${SAMPLE_NAME}
       COMMAND ${MAVEN_EXECUTABLE} exec:java
@@ -814,7 +814,7 @@ if(NOT EXAMPLE_FILE_NAME)
       ${JAVA_EXAMPLE_DIR}/timestamp
     WORKING_DIRECTORY ${JAVA_EXAMPLE_DIR})
 
-  if(BUILD_TESTING)
+  if(BUILD_JAVA_TESTING)
     add_test(
       NAME java_${COMPONENT_NAME}_${EXAMPLE_NAME}
       COMMAND ${MAVEN_EXECUTABLE} exec:java

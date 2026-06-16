@@ -29,7 +29,7 @@ set_target_properties(jnialgorithms PROPERTIES
   POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(jnialgorithms PRIVATE ortools::ortools)
 
-if(BUILD_TESTING)
+if(BUILD_JAVA_TESTING)
   file(GLOB JAVA_SRCS "*Test.java")
   foreach(FILE_NAME IN LISTS JAVA_SRCS)
     add_java_test(FILE_NAME ${FILE_NAME})

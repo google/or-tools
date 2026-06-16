@@ -34,7 +34,7 @@ target_link_libraries(${NAME} PRIVATE
   ${PROJECT_NAMESPACE}::ortools_proto)
 #add_library(${PROJECT_NAMESPACE}::set_cover ALIAS ${NAME})
 
-if(BUILD_TESTING)
+if(BUILD_CXX_TESTING)
   file(GLOB _TEST_SRCS "*_test.cc")
   if(NOT USE_SCIP)
     list(FILTER _TEST_SRCS EXCLUDE REGEX ".*/set_cover_test.cc")
