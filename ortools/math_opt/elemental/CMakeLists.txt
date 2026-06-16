@@ -29,7 +29,7 @@ target_link_libraries(${NAME} PRIVATE
   absl::strings
 )
 
-if(BUILD_TESTING)
+if(BUILD_CXX_TESTING)
   ortools_cxx_library(
     NAME
       math_opt_elemental_matcher

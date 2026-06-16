@@ -41,7 +41,7 @@ target_link_libraries(${NAME} PRIVATE
 #add_library(${PROJECT_NAMESPACE}::util ALIAS ${NAME})
 
 
-if(BUILD_TESTING)
+if(BUILD_CXX_TESTING)
   # Test
   file(GLOB _TEST_SRCS "*_test.cc")
   foreach(_FULL_FILE_NAME IN LISTS _TEST_SRCS)

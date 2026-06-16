@@ -66,11 +66,11 @@ jobs:
           - build: cpp
             cmake_options: '-DBUILD_DEPS=ON'
           - build: java
-            cmake_options: '-DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF -DBUILD_JAVA=ON -DSKIP_GPG=ON'
+            cmake_options: '-DBUILD_CXX_TESTING=OFF -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF -DBUILD_JAVA=ON -DSKIP_GPG=ON'
           - build: dotnet
-            cmake_options: '-DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF -DBUILD_DOTNET=ON'
+            cmake_options: '-DBUILD_CXX_TESTING=OFF -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF -DBUILD_DOTNET=ON'
           - build: python
-            cmake_options: '-DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF -DBUILD_PYTHON=ON'
+            cmake_options: '-DBUILD_CXX_TESTING=OFF -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF -DBUILD_PYTHON=ON'
           # Map os to platform / generator
           - os: ubuntu-latest
             platform: linux

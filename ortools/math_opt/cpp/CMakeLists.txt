@@ -43,7 +43,7 @@ ortools_cxx_library(
   TESTING
 )
 
-if(BUILD_TESTING)
+if(BUILD_CXX_TESTING)
   file(GLOB _TEST_SRCS "*_test.cc")
   list(FILTER _TEST_SRCS EXCLUDE REGEX "/callback_test.cc")
   list(FILTER _TEST_SRCS EXCLUDE REGEX "/formatters_test.cc")

@@ -275,7 +275,7 @@ function(add_dotnet_test)
       ${DOTNET_TEST_DIR}/timestamp
     WORKING_DIRECTORY ${DOTNET_TEST_DIR})
 
-  if(BUILD_TESTING)
+  if(BUILD_DOTNET_TESTING)
     if(USE_DOTNET_6)
       add_test(
         NAME dotnet_${COMPONENT_NAME}_${TEST_NAME}_net60
@@ -616,7 +616,7 @@ function(add_dotnet_sample)
       ${DOTNET_SAMPLE_DIR}/timestamp
     WORKING_DIRECTORY ${DOTNET_SAMPLE_DIR})
 
-  if(BUILD_TESTING)
+  if(BUILD_DOTNET_TESTING)
     if(USE_DOTNET_CORE_31)
       add_test(
         NAME dotnet_${COMPONENT_NAME}_${SAMPLE_NAME}_netcoreapp31
@@ -739,7 +739,7 @@ if(NOT EXAMPLE_FILE_NAME)
       ${DOTNET_EXAMPLE_DIR}/timestamp
     WORKING_DIRECTORY ${DOTNET_EXAMPLE_DIR})
 
-  if(BUILD_TESTING)
+  if(BUILD_DOTNET_TESTING)
     if(USE_DOTNET_CORE_31)
       add_test(
         NAME dotnet_${COMPONENT_NAME}_${EXAMPLE_NAME}_netcoreapp31

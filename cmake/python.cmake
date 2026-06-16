@@ -257,7 +257,7 @@ function(add_python_test)
     set(COMPONENT_NAME ${TEST_COMPONENT_NAME})
   endif()
 
-  if(BUILD_TESTING)
+  if(BUILD_PYTHON_TESTING)
     add_test(
       NAME python_${COMPONENT_NAME}_${TEST_NAME}
       COMMAND ${VENV_Python3_EXECUTABLE} -m pytest ${TEST_FILE_NAME}
@@ -715,7 +715,7 @@ add_custom_command(
   COMMAND ${CMAKE_COMMAND} -E copy
    $<TARGET_FILE:solve_interrupter_pybind11> ${PYTHON_PROJECT}/util/python
   COMMAND ${CMAKE_COMMAND} -E
-   $<IF:$<BOOL:${BUILD_TESTING}>,copy,true>
+  $<IF:$<BOOL:${BUILD_PYTHON_TESTING}>,copy,true>
    $<$<TARGET_EXISTS:solve_interrupter_testing_pybind11>:$<TARGET_FILE:solve_interrupter_testing_pybind11>> ${PYTHON_PROJECT}/util/python
   COMMAND ${CMAKE_COMMAND} -E touch ${PROJECT_BINARY_DIR}/python/pybind11_timestamp
   MAIN_DEPENDENCY
@@ -864,7 +864,7 @@ if(BUILD_VENV)
     VERBATIM)
 endif()
 
-if(BUILD_TESTING)
+if(BUILD_PYTHON_TESTING)
   configure_file(
     ${PROJECT_SOURCE_DIR}/ortools/init/python/version_test.py.in
     ${PROJECT_BINARY_DIR}/python/version_test.py
@@ -970,7 +970,7 @@ function(add_python_sample)
     set(COMPONENT_NAME ${SAMPLE_COMPONENT_NAME})
   endif()
 
-  if(BUILD_TESTING)
+  if(BUILD_PYTHON_TESTING)
     add_test(
       NAME python_${COMPONENT_NAME}_${SAMPLE_NAME}
       COMMAND ${VENV_Python3_EXECUTABLE} ${SAMPLE_FILE_NAME}
@@ -1020,7 +1020,7 @@ if(NOT EXAMPLE_FILE_NAME)
     set(COMPONENT_NAME ${EXAMPLE_COMPONENT_NAME})
   endif()
 
-  if(BUILD_TESTING)
+  if(BUILD_PYTHON_TESTING)
     add_test(
       NAME python_${COMPONENT_NAME}_${EXAMPLE_NAME}
       COMMAND ${VENV_Python3_EXECUTABLE} ${EXAMPLE_FILE_NAME}

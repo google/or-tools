@@ -74,7 +74,7 @@ target_link_libraries(util_java_jni_helper PRIVATE JNI::JNI JNI::JVM)
 add_library(${PROJECT_NAMESPACE}::util_java_jni_helper ALIAS util_java_jni_helper)
 
 
-if(BUILD_TESTING)
+if(BUILD_JAVA_TESTING)
   # TODO: need to generate the wrappers_test_message.swig
 
   file(GLOB JAVA_SRCS "*Test.java")

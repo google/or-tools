@@ -104,7 +104,7 @@ if(USE_SCIP)
 endif()
 
 # CXX Test
-if(BUILD_TESTING)
+if(BUILD_CXX_TESTING)
   if(NOT BUILD_googletest AND NOT TARGET GTest::gtest_main)
     find_package(GTest REQUIRED)
   endif()

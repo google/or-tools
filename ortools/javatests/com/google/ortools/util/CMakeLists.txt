@@ -11,7 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-if(BUILD_TESTING)
+if(BUILD_JAVA_TESTING)
   file(GLOB JAVA_SRCS "*Test.java")
   foreach(FILE_NAME IN LISTS JAVA_SRCS)
     add_java_test(

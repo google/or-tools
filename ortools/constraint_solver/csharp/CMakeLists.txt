@@ -30,7 +30,7 @@ set_target_properties(dotnet_constraint_solver PROPERTIES
   POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(dotnet_constraint_solver PRIVATE ortools::ortools)
 
-if(BUILD_TESTING)
+if(BUILD_DOTNET_TESTING)
   file(GLOB DOTNET_SRCS "*Tests.cs")
   foreach(FILE_NAME IN LISTS DOTNET_SRCS)
     add_dotnet_test(FILE_NAME ${FILE_NAME})
