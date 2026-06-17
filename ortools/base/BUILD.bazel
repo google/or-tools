@@ -145,8 +145,8 @@ cc_library(
         "//conditions:default": [],
     }),
     deps = [
-        ":strong_vector",
-        "@abseil-cpp//absl/container:inlined_vector",
+        ":intops",
+        ":strong_int",
     ],
 )
 
@@ -162,6 +162,7 @@ cc_test(
         ":dump_vars",
         ":strong_int",
         ":strong_vector",
+        "@abseil-cpp//absl/numeric:int128",
         "@googletest//:gtest_main",
     ],
 )
@@ -272,11 +273,6 @@ cc_library(
 )
 
 cc_library(
-    name = "memfile",
-    hdrs = ["memfile.h"],
-)
-
-cc_library(
     name = "memutil",
     hdrs = ["memutil.h"],
 )
@@ -285,11 +281,6 @@ cc_library(
     name = "murmur",
     hdrs = ["murmur.h"],
     deps = ["//ortools/base:hash"],
-)
-
-cc_library(
-    name = "mutable_memfile",
-    hdrs = ["mutable_memfile.h"],
 )
 
 cc_library(

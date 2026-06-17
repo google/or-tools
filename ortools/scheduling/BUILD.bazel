@@ -176,7 +176,6 @@ cc_test(
         ":course_scheduling",
         ":course_scheduling_cc_proto",
         "//ortools/base:gmock_main",
-        "//ortools/base:mutable_memfile",
         "//ortools/base:parse_test_proto",
     ],
 )
