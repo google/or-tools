@@ -15,7 +15,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <limits>
-#include <string>
 #include <type_traits>
 #include <utility>
 #include <vector>
