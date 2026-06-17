@@ -11,15 +11,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-if(BUILD_JAVA_TESTING)
-  file(GLOB JAVA_SRCS "*Test.java")
-  if(NOT USE_SCIP)
-    list(FILTER JAVA_SRCS EXCLUDE REGEX "/SolveTest.java$")
-  endif()
-  foreach(FILE_NAME IN LISTS JAVA_SRCS)
-    add_java_test(
-      FILE_NAME ${FILE_NAME}
-      COMPONENT_NAME mathopt
-    )
-  endforeach()
+if(NOT BUILD_JAVA_TESTING)
+  return()
 endif()
+
+file(GLOB JAVA_SRCS "*Test.java")
+if(NOT USE_SCIP)
+  list(FILTER JAVA_SRCS EXCLUDE REGEX "/SolveTest.java$")
+endif()
+foreach(FILE_NAME IN LISTS JAVA_SRCS)
+  add_java_test(
+    FILE_NAME ${FILE_NAME}
+    COMPONENT_NAME mathopt
+  )
+endforeach()

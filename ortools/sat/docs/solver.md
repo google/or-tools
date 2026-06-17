@@ -110,7 +110,7 @@ int main(int argc, char* argv[]) {
 ### Specifying the time limit in Java
 
 ```java
-// Snippet from ortools/sat/samples/SolveWithTimeLimitSampleSat.java
+// Snippet from ortools/sat/samples/java/SolveWithTimeLimitSampleSat.java
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.Loader;
@@ -382,7 +382,7 @@ int main(int argc, char* argv[]) {
 ### Java code
 
 ```java
-// Snippet from ortools/sat/samples/SolveAndPrintIntermediateSolutionsSampleSat.java
+// Snippet from ortools/sat/samples/java/SolveAndPrintIntermediateSolutionsSampleSat.java
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.Loader;
@@ -752,7 +752,7 @@ As in Python, CpSolver.solve() must be called after setting the correct
 parameter.
 
 ```java
-// Snippet from ortools/sat/samples/SearchForAllSolutionsSampleSat.java
+// Snippet from ortools/sat/samples/java/SearchForAllSolutionsSampleSat.java
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.Loader;
@@ -1089,7 +1089,7 @@ Stopping search is performed by calling stopSearch() inside of
 CpSolverSolutionCallback.onSolutionCallback().
 
 ```java
-// Snippet from ortools/sat/samples/StopAfterNSolutionsSampleSat.java
+// Snippet from ortools/sat/samples/java/StopAfterNSolutionsSampleSat.java
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.Loader;

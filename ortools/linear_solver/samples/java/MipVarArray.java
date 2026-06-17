@@ -51,8 +51,7 @@ public class MipVarArray {
     // Create the linear solver with the SCIP backend.
     MPSolver solver = MPSolver.createSolver("SCIP");
     if (solver == null) {
-      System.out.println("Could not create solver SCIP");
-      return;
+      throw new AssertionError("Could not create solver SCIP");
     }
     // [END solver]
 

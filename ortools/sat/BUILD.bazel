@@ -637,6 +637,12 @@ py_proto_library(
     deps = [":cp_model_proto"],
 )
 
+java_proto_library(
+    name = "cp_model_java_proto",
+    visibility = ["//visibility:public"],
+    deps = [":cp_model_proto"],
+)
+
 go_proto_library(
     name = "cp_model_go_proto",
     importpath = "github.com/google/or-tools/ortools/sat/proto/cpmodel",

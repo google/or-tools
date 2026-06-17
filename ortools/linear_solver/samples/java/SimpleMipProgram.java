@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Minimal example to call the MIP solver.
 // [START program]
 package com.google.ortools.linearsolver.samples;
 // [START import]
@@ -21,45 +22,46 @@ import com.google.ortools.linearsolver.MPSolver;
 import com.google.ortools.linearsolver.MPVariable;
 // [END import]
 
-/** Simple linear programming example. */
-public final class LinearProgrammingExample {
+/** Minimal Mixed Integer Programming example to showcase calling the solver. */
+public final class SimpleMipProgram {
   public static void main(String[] args) {
     Loader.loadNativeLibraries();
     // [START solver]
-    MPSolver solver = MPSolver.createSolver("GLOP");
+    // Create the linear solver with the SCIP backend.
+    MPSolver solver = MPSolver.createSolver("SCIP");
+    if (solver == null) {
+      throw new AssertionError("Could not create solver SCIP");
+    }
     // [END solver]
 
     // [START variables]
     double infinity = java.lang.Double.POSITIVE_INFINITY;
-    // x and y are continuous non-negative variables.
-    MPVariable x = solver.makeNumVar(0.0, infinity, "x");
-    MPVariable y = solver.makeNumVar(0.0, infinity, "y");
+    // x and y are integer non-negative variables.
+    MPVariable x = solver.makeIntVar(0.0, infinity, "x");
+    MPVariable y = solver.makeIntVar(0.0, infinity, "y");
+
     System.out.println("Number of variables = " + solver.numVariables());
     // [END variables]
 
     // [START constraints]
-    // x + 2*y <= 14.
-    MPConstraint c0 = solver.makeConstraint(-infinity, 14.0, "c0");
+    // x + 7 * y <= 17.5.
+    MPConstraint c0 = solver.makeConstraint(-infinity, 17.5, "c0");
     c0.setCoefficient(x, 1);
-    c0.setCoefficient(y, 2);
+    c0.setCoefficient(y, 7);
 
-    // 3*x - y >= 0.
-    MPConstraint c1 = solver.makeConstraint(0.0, infinity, "c1");
-    c1.setCoefficient(x, 3);
-    c1.setCoefficient(y, -1);
+    // x <= 3.5.
+    MPConstraint c1 = solver.makeConstraint(-infinity, 3.5, "c1");
+    c1.setCoefficient(x, 1);
+    c1.setCoefficient(y, 0);
 
-    // x - y <= 2.
-    MPConstraint c2 = solver.makeConstraint(-infinity, 2.0, "c2");
-    c2.setCoefficient(x, 1);
-    c2.setCoefficient(y, -1);
     System.out.println("Number of constraints = " + solver.numConstraints());
     // [END constraints]
 
     // [START objective]
-    // Maximize 3 * x + 4 * y.
+    // Maximize x + 10 * y.
     MPObjective objective = solver.objective();
-    objective.setCoefficient(x, 3);
-    objective.setCoefficient(y, 4);
+    objective.setCoefficient(x, 1);
+    objective.setCoefficient(y, 10);
     objective.setMaximization();
     // [END objective]
 
@@ -82,9 +84,10 @@ public final class LinearProgrammingExample {
     System.out.println("\nAdvanced usage:");
     System.out.println("Problem solved in " + solver.wallTime() + " milliseconds");
     System.out.println("Problem solved in " + solver.iterations() + " iterations");
+    System.out.println("Problem solved in " + solver.nodes() + " branch-and-bound nodes");
     // [END advanced]
   }
 
-  private LinearProgrammingExample() {}
+  private SimpleMipProgram() {}
 }
 // [END program]

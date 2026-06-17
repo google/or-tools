@@ -675,13 +675,9 @@ function(add_java_sample)
   message(STATUS "Configuring sample ${SAMPLE_FILE_NAME} ...")
 
   if(NOT SAMPLE_COMPONENT_NAME)
-    # sample is located in ortools/<component_name>/sample/
-    get_filename_component(SAMPLE_DIR ${SAMPLE_FILE_NAME} DIRECTORY)
-    get_filename_component(COMPONENT_DIR ${SAMPLE_DIR} DIRECTORY)
-    get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
-  else()
-    set(COMPONENT_NAME ${SAMPLE_COMPONENT_NAME})
+    message(FATAL_ERROR "no FILE_NAME provided")
   endif()
+  set(COMPONENT_NAME ${SAMPLE_COMPONENT_NAME})
   string(REPLACE "_" "" COMPONENT_NAME_LOWER ${COMPONENT_NAME})
 
   set(SAMPLE_DIR ${PROJECT_BINARY_DIR}/java/${COMPONENT_NAME}/${SAMPLE_NAME})

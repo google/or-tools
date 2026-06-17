@@ -201,7 +201,7 @@ int main(int argc, char* argv[]) {
 ### Java code
 
 ```java
-// Snippet from ortools/sat/samples/RabbitsAndPheasantsSat.java
+// Snippet from ortools/sat/samples/java/RabbitsAndPheasantsSat.java
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.Loader;
@@ -526,7 +526,7 @@ int main(int argc, char* argv[]) {
 ### Java code
 
 ```java
-// Snippet from ortools/sat/samples/EarlinessTardinessCostSampleSat.java
+// Snippet from ortools/sat/samples/java/EarlinessTardinessCostSampleSat.java
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.Loader;
@@ -982,7 +982,7 @@ int main(int argc, char* argv[]) {
 ### Java code
 
 ```java
-// Snippet from ortools/sat/samples/StepFunctionSampleSat.java
+// Snippet from ortools/sat/samples/java/StepFunctionSampleSat.java
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.Loader;

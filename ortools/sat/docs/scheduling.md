@@ -127,7 +127,7 @@ int main(int argc, char* argv[]) {
 ### Java code
 
 ```java
-// Snippet from ortools/sat/samples/IntervalSampleSat.java
+// Snippet from ortools/sat/samples/java/IntervalSampleSat.java
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.Loader;
@@ -361,7 +361,7 @@ int main(int argc, char* argv[]) {
 ### Java code
 
 ```java
-// Snippet from ortools/sat/samples/OptionalIntervalSampleSat.java
+// Snippet from ortools/sat/samples/java/OptionalIntervalSampleSat.java
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.Loader;
@@ -741,7 +741,7 @@ int main(int argc, char* argv[]) {
 ### Java code
 
 ```java
-// Snippet from ortools/sat/samples/NoOverlapSampleSat.java
+// Snippet from ortools/sat/samples/java/NoOverlapSampleSat.java
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.Loader;
@@ -1579,7 +1579,7 @@ int main(int argc, char* argv[]) {
 ### Java code
 
 ```java
-// Snippet from ortools/sat/samples/RankingSampleSat.java
+// Snippet from ortools/sat/samples/java/RankingSampleSat.java
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.Loader;
