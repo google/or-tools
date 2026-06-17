@@ -14,6 +14,7 @@
 #include "ortools/algorithms/knapsack_solver.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <limits>
 #include <memory>
@@ -32,6 +33,7 @@
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
+#include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/time_limit.h"
 
@@ -1293,7 +1295,7 @@ class KnapsackCpSat : public BaseKnapsackSolver {
             const std::vector<int64_t>& capacities) override;
 
   // Solves the problem and returns the profit of the optimal solution.
-  int64_t Solve(TimeLimit* time_limit, double time_limit_in_seconds,
+  int64_t Solve(TimeLimit* time_limit, double time_limit_in_second,
                 bool* is_solution_optimal) override;
 
   // Returns true if the item 'item_id' is packed in the optimal knapsack.

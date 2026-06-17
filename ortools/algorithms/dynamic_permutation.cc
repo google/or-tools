@@ -13,11 +13,11 @@
 
 #include "ortools/algorithms/dynamic_permutation.h"
 
-#include <algorithm>
 #include <memory>
 #include <string>
 #include <vector>
 
+#include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/algorithms/sparse_permutation.h"
 
