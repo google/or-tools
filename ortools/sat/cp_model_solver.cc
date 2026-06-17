@@ -34,7 +34,6 @@
 #include "absl/container/btree_map.h"
 #include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
-#include "absl/container/flat_hash_set.h"
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
@@ -58,6 +57,7 @@
 #include "ortools/base/types.h"
 #include "ortools/base/version.h"  // IWYU pragma: keep
 #include "ortools/port/proto_utils.h"
+#include "ortools/sat/clause.h"
 #include "ortools/sat/combine_solutions.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_checker.h"
@@ -76,7 +76,6 @@
 #include "ortools/sat/feasibility_pump.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
-#include "ortools/sat/linear_model.h"
 #include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/lp_utils.h"
 #include "ortools/sat/lrat_proof_handler.h"
@@ -1955,26 +1954,16 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
   NeighborhoodGeneratorHelper* helper = unique_helper.get();
   subsolvers.push_back(std::move(unique_helper));
 
-  // How many shared tree workers to run?
-  const int num_shared_tree_workers = shared->shared_tree_manager->NumWorkers();
-
-  // Add shared tree workers if asked.
-  if (num_shared_tree_workers >= 2 &&
-      shared->model_proto.assumptions().empty()) {
-    for (const SatParameters& local_params : RepeatParameters(
-             name_filter.Filter({name_to_params.at("shared_tree")}),
-             num_shared_tree_workers)) {
-      full_worker_subsolvers.push_back(std::make_unique<FullProblemSolver>(
-          local_params.name(), local_params,
-          /*split_in_chunks=*/params.interleave_search(), shared));
-    }
-  }
-
   // Add full problem solvers.
+  const int actual_num_shared_tree_workers =
+      shared->shared_tree_manager->NumWorkers() >= 2 &&
+              shared->model_proto.assumptions().empty()
+          ? shared->shared_tree_manager->NumWorkers()
+          : 0;
   for (const SatParameters& local_params : GetFullWorkerParameters(
            params, shared->model_proto,
            /*num_already_present=*/full_worker_subsolvers.size(),
-           &name_filter)) {
+           actual_num_shared_tree_workers, &name_filter)) {
     if (!name_filter.Keep(local_params.name())) continue;
 
     // TODO(user): This is currently not supported here.
@@ -1990,6 +1979,17 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
     full_worker_subsolvers.push_back(std::make_unique<FullProblemSolver>(
         local_params.name(), local_params,
         /*split_in_chunks=*/params.interleave_search(), shared));
+  }
+
+  // Add shared tree workers if asked.
+  if (actual_num_shared_tree_workers > 0) {
+    for (const SatParameters& local_params : RepeatParameters(
+             name_filter.Filter({name_to_params.at("shared_tree")}),
+             actual_num_shared_tree_workers)) {
+      full_worker_subsolvers.push_back(std::make_unique<FullProblemSolver>(
+          local_params.name(), local_params,
+          /*split_in_chunks=*/params.interleave_search(), shared));
+    }
   }
 
   // Add FeasibilityPumpSolver if enabled.
@@ -2072,6 +2072,12 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
     if (name_filter.Keep("lns_graph_arc")) {
       reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
           std::make_unique<ArcGraphNeighborhoodGenerator>(
+              helper, name_filter.LastName()),
+          lns_params_base, lns_params_stalling, helper, shared));
+    }
+    if (name_filter.Keep("lns_small_component")) {
+      reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
+          std::make_unique<SmallComponentNeighborhoodGenerator>(
               helper, name_filter.LastName()),
           lns_params_base, lns_params_stalling, helper, shared));
     }
@@ -2199,7 +2205,8 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
   //
   // Compared to LNS, these are not re-entrant, so we need to schedule the
   // correct number for parallelism.
-  if (shared->model_proto.has_objective()) {
+  if (shared->model_proto.has_objective() &&
+      !shared->model_proto.objective().vars().empty()) {
     // If not forced by the parameters, we want one LS every 3 threads that
     // work on interleaved stuff. Note that by default they are many LNS, so
     // that shouldn't be too many.
@@ -3002,6 +3009,32 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
     // If we don't have any generator, better to just clear the field.
     if (new_cp_model_proto->symmetry().permutations().empty()) {
       new_cp_model_proto->clear_symmetry();
+    }
+  }
+
+  // Set the number of shared tree workers if it was not set.
+  // Note, it has to be done here, after presolve, as presolve might empty the
+  // objective, and before the SharedClasses is created.
+  if (params.shared_tree_num_workers() == -1) {
+    int num_shared_tree_workers = 0;
+    if (new_cp_model_proto->assumptions().empty()) {
+      if (new_cp_model_proto->has_objective() &&
+          !new_cp_model_proto->objective().vars().empty()) {
+        num_shared_tree_workers = (params.num_workers() - 16) / 2;
+      } else {
+        num_shared_tree_workers = (params.num_workers() - 8) / 2;
+      }
+    }
+
+    // We need at least 4 workers for the shared tree search to be efficient.
+    if (num_shared_tree_workers >= 4) {
+      SOLVER_LOG(logger, "Setting number of shared tree workers to ",
+                 num_shared_tree_workers);
+      model->GetOrCreate<SatParameters>()->set_shared_tree_num_workers(
+          num_shared_tree_workers);
+    } else {
+      SOLVER_LOG(logger, "Not using shared tree search.");
+      model->GetOrCreate<SatParameters>()->set_shared_tree_num_workers(0);
     }
   }
 

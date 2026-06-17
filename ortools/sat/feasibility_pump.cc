@@ -27,7 +27,6 @@
 #include "ortools/base/types.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/glop/revised_simplex.h"
-#include "ortools/glop/status.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_data_utils.h"
 #include "ortools/lp_data/lp_types.h"
@@ -388,8 +387,8 @@ bool FeasibilityPump::SolveLp() {
 
   const auto status = simplex_.Solve(lp_data_, *time_limit_);
   total_num_simplex_iterations_ += simplex_.GetNumberOfIterations();
-  if (!status.ok()) {
-    VLOG(1) << "The LP solver encountered an error: " << status.error_message();
+  if (status.Is<glop::SolveStatus::Abnormal>()) {
+    VLOG(1) << "The LP solver encountered an error: " << status;
     simplex_.ClearStateForNextSolve();
     return false;
   }
@@ -397,16 +396,16 @@ bool FeasibilityPump::SolveLp() {
   // TODO(user): This shouldn't really happen except if the problem is UNSAT.
   // But we can't just rely on a potentially imprecise LP to close the problem.
   // The rest of the solver should do that with exact precision.
-  VLOG(3) << "simplex status: " << simplex_.GetProblemStatus();
-  if (simplex_.GetProblemStatus() == glop::ProblemStatus::PRIMAL_INFEASIBLE) {
+  VLOG(3) << "simplex status: " << status;
+  if (status.Is<glop::SolveStatus::PrimalInfeasible>()) {
     return false;
   }
 
   lp_solution_fractionality_ = 0.0;
-  if (simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL ||
-      simplex_.GetProblemStatus() == glop::ProblemStatus::DUAL_FEASIBLE ||
-      simplex_.GetProblemStatus() == glop::ProblemStatus::PRIMAL_FEASIBLE ||
-      simplex_.GetProblemStatus() == glop::ProblemStatus::IMPRECISE) {
+  if (status.Is<glop::SolveStatus::Optimal>() ||
+      status.Is<glop::SolveStatus::DualFeasible>() ||
+      status.Is<glop::SolveStatus::PrimalFeasible>() ||
+      status.Is<glop::SolveStatus::Imprecise>()) {
     lp_solution_is_set_ = true;
     for (int i = 0; i < num_vars; i++) {
       const double value = GetVariableValueAtCpScale(ColIndex(i));

@@ -820,7 +820,7 @@ NodeId SharedTreeManager::TrySplitTreeLockHeld(NodeId parent,
     VLOG(2) << "Enough splits for now";
     return kNoNodeId;
   }
-  if (tree_.Size() + 2 > max_nodes_) {
+  if (tree_.Size() >= max_nodes_ - 1) {
     VLOG(2) << "Too many nodes to accept split";
     return kNoNodeId;
   }
@@ -964,12 +964,12 @@ void SharedTreeWorker::MaybeProposeSplits() {
        i < sat_solver_->CurrentDecisionLevel(); ++i) {
     const Literal split_decision = trail_->Decisions()[i].literal;
     const std::optional<ProtoLiteral> encoded = tree_.Encode(split_decision);
-    // If we can't encode a decision we can't split on it or any deeper levels.
-    if (!encoded.has_value()) break;
+    // If we can't encode a decision we can't split on it.
+    if (!encoded.has_value()) continue;
     // TODO(user): This should be impossible, investigate.
     SharedTreeEncoder::Node* leaf_node = tree_.GetNode(leaf_id_);
-    if (leaf_node->LiteralIsTrue(*encoded)) break;
-    if (leaf_node->LiteralIsTrue(encoded->Negated())) break;
+    if (leaf_node->LiteralIsTrue(*encoded)) continue;
+    if (leaf_node->LiteralIsTrue(encoded->Negated())) continue;
     tmp_splits_.push_back(*encoded);
     if (tmp_splits_.size() >= max_splits) break;
   }
@@ -977,7 +977,6 @@ void SharedTreeWorker::MaybeProposeSplits() {
       manager_->TrySplitTree(leaf_id_, tmp_splits_, tree_);
   tmp_splits_.clear();
   if (new_leaf_id != leaf_id_) {
-    ExportNewImplications();
     ResetAndEnqueueAssumptions(new_leaf_id);
   }
 }
@@ -1219,6 +1218,7 @@ bool SharedTreeWorker::ResetAndEnqueueAssumptions(NodeId leaf_id) {
   if (!sat_solver_->ResetToLevelZero()) return false;
   if (time_limit_->LimitReached()) return true;
   if (!helper_->BeforeTakingDecision()) return false;
+  reversible_trail_index_ = trail_->Index();
   const VariablesAssignment& assignment = sat_solver_->Assignment();
   for (SharedTreeEncoder::Node* node : tree_.GetLevelStartNodes(leaf_id)) {
     if (node->shared().is_closed()) return sat_solver_->ResetToLevelZero();

@@ -253,7 +253,7 @@ void NeighborhoodGeneratorHelper::InitializeHelperData() {
 }
 
 bool NeighborhoodGeneratorHelper::VariablesTouchSymmetries(
-    absl::Span<const int> variables) {
+    absl::Span<const int> variables) const {
   if (size_of_symmetry_class_.empty()) return false;  // No symmetry.
   for (const int var : variables) {
     if (var_symmetry_partition_class_[var] >= 0) return true;
@@ -262,7 +262,7 @@ bool NeighborhoodGeneratorHelper::VariablesTouchSymmetries(
 }
 
 bool NeighborhoodGeneratorHelper::VariablesSplitSymmetries(
-    absl::Span<const int> variables) {
+    absl::Span<const int> variables) const {
   if (size_of_symmetry_class_.empty()) return true;  // No symmetry.
 
   // else we count.
@@ -427,8 +427,7 @@ void NeighborhoodGeneratorHelper::RecomputeHelperData() {
   // Note that fixed and non-representative variables are just ignored.
   DenseConnectedComponentsFinder union_find;
   union_find.SetNumberOfNodes(num_variables);
-  for (int c = 0; c < constraint_to_var_.size(); ++c) {
-    const auto row = constraint_to_var_[c];
+  for (const absl::Span<const int> row : constraint_to_var_) {
     if (row.size() <= 1) continue;
     DCHECK(!IsConstant(row[0]));
     DCHECK_EQ(GetRepresentative(row[0]), row[0]);
@@ -485,7 +484,7 @@ void NeighborhoodGeneratorHelper::RecomputeHelperData() {
   if (!shared_response_->LoggingIsEnabled()) return;
 
   std::vector<int> component_sizes;
-  for (const absl::Span<const int> component : components_.AsVectorOfSpan()) {
+  for (const absl::Span<const int> component : components_) {
     component_sizes.push_back(component.size());
   }
   absl::c_sort(component_sizes, std::greater<int>());
@@ -1709,6 +1708,44 @@ Neighborhood ArcGraphNeighborhoodGenerator::Generate(
       relaxed_variables.push_back(head_var);
       active_vars.push_back(head_var);
     }
+  }
+  return helper_.RelaxGivenVariables(initial_solution, relaxed_variables);
+}
+
+bool SmallComponentNeighborhoodGenerator::ReadyToGenerate() const {
+  if (!helper_.shared_response().HasFeasibleSolution()) return false;
+  if (helper_.Components().size() <= 1) return false;
+  return absl::c_any_of(
+      helper_.Components(), [&](absl::Span<const int> component) {
+        return component.size() <= kNumVarsConsideredTrivial &&
+               !helper_.VariablesTouchSymmetries(component);
+      });
+}
+
+Neighborhood SmallComponentNeighborhoodGenerator::Generate(
+    const CpSolverResponse& initial_solution, SolveData& /*data*/,
+    absl::BitGenRef /*random*/) {
+  CompactVectorVector<int, int> components = helper_.Components();
+  if (components.empty()) {
+    return helper_.NoNeighborhood();
+  }
+
+  std::vector<int> relaxed_variables;
+
+  int var_budget = kNumVarsConsideredTrivial;
+  for (const absl::Span<const int> component : components) {
+    if (component.size() > var_budget) continue;
+    if (helper_.VariablesTouchSymmetries(component)) continue;
+    absl::ReaderMutexLock graph_lock(helper_.graph_mutex_);
+    for (const int var : component) {
+      if (helper_.IsActive(var)) {
+        relaxed_variables.push_back(var);
+        --var_budget;
+      }
+    }
+  }
+  if (relaxed_variables.empty()) {
+    return helper_.NoNeighborhood();
   }
   return helper_.RelaxGivenVariables(initial_solution, relaxed_variables);
 }

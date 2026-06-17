@@ -831,16 +831,16 @@ void GateCongruenceClosure::ExtractShortGates(PresolveTimer& timer) {
   gtl::STLClearObject(&flat_binary_index);
   gtl::STLClearObject(&flat_table_id);
   int num_combinations = 0;
-  for (int c = 0; c < candidates.size(); ++c) {
-    if (candidates[c].size() < 2) continue;
-    if (candidates[c].size() > 10) continue;  // Too many? use heuristic.
+  for (const absl::Span<const TruthTableId> candidate : candidates) {
+    if (candidate.size() < 2) continue;
+    if (candidate.size() > 10) continue;  // Too many? use heuristic.
 
-    for (int a = 0; a < candidates[c].size(); ++a) {
-      for (int b = a + 1; b < candidates[c].size(); ++b) {
+    for (int a = 0; a < candidate.size(); ++a) {
+      for (int b = a + 1; b < candidate.size(); ++b) {
         const absl::Span<const BooleanVariable> inputs_a =
-            truth_tables_inputs_[candidates[c][a]];
+            truth_tables_inputs_[candidate[a]];
         const absl::Span<const BooleanVariable> inputs_b =
-            truth_tables_inputs_[candidates[c][b]];
+            truth_tables_inputs_[candidate[b]];
 
         std::array<BooleanVariable, 4> key;
         for (int i = 0; i < 3; ++i) key[i] = inputs_a[i];
@@ -880,10 +880,9 @@ void GateCongruenceClosure::ExtractShortGates(PresolveTimer& timer) {
   }
 
   std::vector<int> num_functions(6);
-  for (GateId id(0); id < gates_inputs_.size(); ++id) {
-    const int size = gates_inputs_[id].size();
-    if (size < num_functions.size()) {
-      num_functions[size]++;
+  for (const absl::Span<const Literal> inputs : gates_inputs_) {
+    if (inputs.size() < num_functions.size()) {
+      num_functions[inputs.size()]++;
     }
   }
   for (int i = 0; i < num_functions.size(); ++i) {

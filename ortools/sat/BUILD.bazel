@@ -391,6 +391,7 @@ cc_library(
         ":sat_inprocessing",
         ":sat_parameters_cc_proto",
         ":sat_solver",
+        ":symmetry_util",
         ":synchronization",
         ":util",
         "//ortools/util:time_limit",
@@ -1026,6 +1027,7 @@ cc_library(
         ":debug_solution",
         ":feasibility_jump",
         ":feasibility_pump",
+        ":gate_congruence_closure",
         ":implied_bounds",
         ":integer",
         ":integer_base",
@@ -2180,6 +2182,7 @@ cc_library(
     hdrs = ["symmetry_util.h"],
     deps = [
         ":cp_model_cc_proto",
+        ":util",
         "//ortools/algorithms:dynamic_partition",
         "//ortools/algorithms:sparse_permutation",
         "@abseil-cpp//absl/container:flat_hash_set",
@@ -2370,6 +2373,7 @@ cc_library(
         ":sat_parameters_cc_proto",
         ":sat_solver",
         ":scheduling_helpers",
+        ":symmetry_util",
         ":synchronization",
         ":util",
         "//ortools/base:log_severity",
@@ -2797,6 +2801,7 @@ cc_test(
     name = "linear_propagation_test",
     size = "small",
     srcs = ["linear_propagation_test.cc"],
+    tags = ["noci"],
     deps = [
         ":integer",
         ":integer_base",
@@ -3231,7 +3236,6 @@ cc_library(
         "//ortools/base:types",
         "//ortools/glop:parameters_cc_proto",
         "//ortools/glop:revised_simplex",
-        "//ortools/glop:status",
         "//ortools/glop:variables_info",
         "//ortools/lp_data:lp_data_utils",
         "//ortools/lp_data:lp_types",
@@ -4068,6 +4072,7 @@ cc_library(
 cc_test(
     name = "2d_orthogonal_packing_test",
     srcs = ["2d_orthogonal_packing_test.cc"],
+    tags = ["noci"],
     deps = [
         ":2d_orthogonal_packing",
         ":2d_orthogonal_packing_testing",
@@ -4136,6 +4141,7 @@ cc_test(
     name = "diffn_util_test",
     size = "small",
     srcs = ["diffn_util_test.cc"],
+    tags = ["noci"],
     target_compatible_with = select({
         "@platforms//os:linux": [],
         "//conditions:default": ["@platforms//:incompatible"],
@@ -4409,7 +4415,6 @@ cc_library(
         "//ortools/base:types",
         "//ortools/glop:parameters_cc_proto",
         "//ortools/glop:revised_simplex",
-        "//ortools/glop:status",
         "//ortools/lp_data",
         "//ortools/lp_data:lp_data_utils",
         "//ortools/lp_data:lp_types",

@@ -125,8 +125,7 @@ CompactVectorVector<int> GetOverlappingRectangleComponents(
   FindStronglyConnectedComponents(static_cast<int>(rectangles.size()), view,
                                   &components);
   CompactVectorVector<int> result;
-  for (int i = 0; i < components.size(); ++i) {
-    absl::Span<const int> component = components[i];
+  for (const absl::Span<const int> component : components) {
     result.Add({});
     for (const int r : component) {
       result.AppendToLastVector(r);

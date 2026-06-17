@@ -41,6 +41,7 @@
 #include "ortools/sat/sat_inprocessing.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/symmetry_util.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/time_limit.h"
@@ -55,6 +56,7 @@ namespace sat {
 ContinuousProber::ContinuousProber(const CpModelProto& model_proto,
                                    Model* model)
     : model_(model),
+      cp_model_mapping_(model->GetOrCreate<CpModelMapping>()),
       sat_solver_(model->GetOrCreate<SatSolver>()),
       time_limit_(model->GetOrCreate<TimeLimit>()),
       binary_implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()),
@@ -70,7 +72,7 @@ ContinuousProber::ContinuousProber(const CpModelProto& model_proto,
       shared_bounds_manager_(model->Mutable<SharedBoundsManager>()),
       shared_stats_(model->Mutable<SharedStatistics>()),
       random_(*model->GetOrCreate<ModelRandomGenerator>()),
-      active_limit_(parameters_.shaving_search_deterministic_time()) {
+      base_dtime_(parameters_.shaving_deterministic_time_in_probing_search()) {
   auto* mapping = model_->GetOrCreate<CpModelMapping>();
   absl::flat_hash_set<BooleanVariable> visited;
 
@@ -92,6 +94,11 @@ ContinuousProber::ContinuousProber(const CpModelProto& model_proto,
       int_vars_.push_back(var);
     }
   }
+
+  CompactVectorVector<int, int> orbits;
+  std::vector<int> var_to_orbit_index;
+  GetOrbitsAndRepresentatives(model_proto, orbits, var_to_orbit_index,
+                              var_to_representative_);
 
   VLOG(2) << "Start continuous probing with " << bool_vars_.size()
           << " Boolean variables,  " << int_vars_.size()
@@ -124,24 +131,19 @@ ContinuousProber::~ContinuousProber() {
 
 // Continuous probing procedure.
 // TODO(user):
-//   - sort variables before the iteration (statically or dynamically)
-//   - compress clause databases regularly (especially the implication graph)
-//   - better interleaving of the probing and shaving phases
-//   - move the shaving code directly in the probing class
-//   - probe all variables and not just the model ones
+//   - sort variables before the iteration (statically or dynamically) ?
+//   - move the shaving code directly in the probing class ?
+//   - probe all variables and not just the model ones ?
 SatSolver::Status ContinuousProber::Probe() {
   // Backtrack to level 0 in case we are not there.
   if (!sat_solver_->ResetToLevelZero()) return SatSolver::INFEASIBLE;
 
-  // Store current statistics to detect an iteration without any improvement.
-  int64_t reference_num_literals_fixed =
-      prober_->num_total_new_literals_fixed();
-  int64_t reference_num_bounds_shaved = counters_.shaving.num_new_bounds;
-  int64_t reference_num_bool_vars = bool_vars_.size();
-  int64_t reference_num_int_vars = int_vars_.size();
-
   while (!time_limit_->LimitReached()) {
     const double kMaxProbingTimePerMethod = 0.1;
+    // Store current statistics to detect shaving without any improvement.
+    int64_t starting_shaving_literals =
+        counters_.shaving.num_new_literals_fixed;
+    int64_t starting_shaving_bounds = counters_.shaving.num_new_bounds;
 
     std::optional<SatSolver::Status> status = ProbeIntegerVariables(
         time_limit_->GetElapsedDeterministicTime() + kMaxProbingTimePerMethod);
@@ -169,7 +171,6 @@ SatSolver::Status ContinuousProber::Probe() {
     // probed.
     if (current_bool_var_ >= bool_vars_.size() &&
         current_int_var_ >= int_vars_.size()) {
-      const bool shaving_was_used = use_shaving();
       ++iteration_;
 
       // Reset counters.
@@ -177,6 +178,29 @@ SatSolver::Status ContinuousProber::Probe() {
       current_int_var_ = 0;
       probed_bool_vars_.clear();
       shaved_literals_.clear();
+
+      // Alternate between shaving and non-shaving phases.
+      if (use_shaving_) {
+        if (counters_.shaving.num_new_literals_fixed >
+                starting_shaving_literals ||
+            counters_.shaving.num_new_bounds > starting_shaving_bounds) {
+          // We improved something. We reduce the multiplier by a factor of 2.
+          // TODO(user): We could not go below 1.0 and increase the base
+          // dtime.
+          limit_multiplier_ = std::max(1.0, limit_multiplier_ / 2);
+
+          // Update reference counters.
+          starting_shaving_literals = counters_.shaving.num_new_literals_fixed;
+          starting_shaving_bounds = counters_.shaving.num_new_bounds;
+        } else if (limit_multiplier_ < 16.0) {
+          limit_multiplier_ *= 1.5;  // Cap the maximum limit to 16 * dtime.
+        }
+
+        // Alternating shaving and non-shaving iterations.
+        use_shaving_ = false;
+      } else {
+        use_shaving_ = base_dtime_ > 0.0;
+      }
 
       // Remove fixed Boolean variables.
       int new_size = 0;
@@ -206,27 +230,6 @@ SatSolver::Status ContinuousProber::Probe() {
         }
       }
       int_vars_.resize(new_size);
-
-      if (shaving_was_used) {
-        const double dtime = parameters_.shaving_search_deterministic_time();
-        const bool was_improved_since_last_check =
-            prober_->num_total_new_literals_fixed() >
-                reference_num_literals_fixed ||
-            counters_.shaving.num_new_bounds > reference_num_bounds_shaved ||
-            reference_num_int_vars > int_vars_.size() ||
-            reference_num_bool_vars > bool_vars_.size();
-
-        if (was_improved_since_last_check) {
-          active_limit_ = dtime;
-          reference_num_literals_fixed =
-              prober_->num_total_new_literals_fixed();
-          reference_num_bounds_shaved = counters_.shaving.num_new_bounds;
-          reference_num_int_vars = int_vars_.size();
-          reference_num_bool_vars = bool_vars_.size();
-        } else if (active_limit_ < dtime * 128) {
-          active_limit_ *= 2;  // Cap the maximum limit to 128 * dtime.
-        }
-      }
     }
 
     // Update the pairs of variables to probe asynchronously w.r.t. the
@@ -235,8 +238,8 @@ SatSolver::Status ContinuousProber::Probe() {
         current_bv2_ >= bool_vars_.size()) {
       current_bv1_ = 0;
       current_bv2_ = 1;
-      random_pair_of_bool_vars_probed_ = 0;
     }
+    random_pair_of_bool_vars_probed_ = 0;
   }
 
   return SatSolver::LIMIT_REACHED;
@@ -247,6 +250,10 @@ std::optional<SatSolver::Status> ContinuousProber::ProbeIntegerVariables(
   for (; current_int_var_ < int_vars_.size(); ++current_int_var_) {
     const IntegerVariable int_var = int_vars_[current_int_var_];
     if (integer_trail_->IsFixed(int_var)) continue;
+    if (!IsOrbitRepresentative(
+            cp_model_mapping_->GetProtoVariableFromIntegerVariable(int_var))) {
+      continue;
+    }
     if (time_limit_->GetElapsedDeterministicTime() > time_limit) {
       break;
     }
@@ -277,7 +284,7 @@ std::optional<SatSolver::Status> ContinuousProber::ProbeIntegerVariables(
       AddStats(counters_.one_variable_stats, start_stats, GetStats(prober_));
     }
 
-    if (use_shaving()) {
+    if (use_shaving_) {
       const SatSolver::Status lb_status =
           ShaveLiteral(shave_lb_literal, /*literal_is_an_integer_bound=*/true);
       if (ReportStatus(lb_status)) return lb_status;
@@ -301,6 +308,10 @@ std::optional<SatSolver::Status> ContinuousProber::ProbeBooleanVariables(
     }
 
     if (!ShouldProbe(bool_var)) continue;
+    if (!IsOrbitRepresentative(
+            cp_model_mapping_->GetProtoVariableFromBooleanVariable(bool_var))) {
+      continue;
+    }
 
     const auto [_, inserted] = probed_bool_vars_.insert(bool_var);
     if (!inserted) continue;
@@ -312,7 +323,7 @@ std::optional<SatSolver::Status> ContinuousProber::ProbeBooleanVariables(
     AddStats(counters_.one_variable_stats, start_stats, GetStats(prober_));
 
     const Literal literal(bool_var, true);
-    if (use_shaving()) {
+    if (use_shaving_) {
       const SatSolver::Status true_status =
           ShaveLiteral(literal, /*literal_is_an_integer_bound=*/false);
       if (ReportStatus(true_status)) return true_status;
@@ -417,6 +428,11 @@ std::optional<SatSolver::Status> ContinuousProber::ProbePairsOfBoolVars(
       // variables are free after this point.
       current_bv2_ = std::max(current_bv1_ + 1, current_bv2_);
       if (!ShouldProbe(bv1)) continue;
+      if (!IsOrbitRepresentative(
+              cp_model_mapping_->GetProtoVariableFromBooleanVariable(bv1))) {
+        continue;
+      }
+
       for (; current_bv2_ < bool_vars_.size(); ++current_bv2_) {
         const BooleanVariable& bv2 = bool_vars_[current_bv2_];
         if (time_limit_->GetElapsedDeterministicTime() > time_limit) {
@@ -494,8 +510,9 @@ SatSolver::Status ContinuousProber::PeriodicSyncAndCheck() {
       }
     }
 
-    // Run inprocessing. Note that this does nothing if not enough dtime was
-    // spent since the last call, so it is okay to call it relatively often.
+    // Run inprocessing. Note that this does nothing if not enough
+    // deterministic time was spent since the last call, so it is okay to call
+    // it relatively often.
     if (parameters_.use_sat_inprocessing() &&
         !inprocessing_->InprocessingRound()) {
       sat_solver_->NotifyThatModelIsUnsat();
@@ -511,6 +528,11 @@ bool ContinuousProber::ShouldProbe(BooleanVariable bool_var) const {
          !binary_implication_graph_->IsRedundant(Literal(bool_var, true));
 }
 
+bool ContinuousProber::IsOrbitRepresentative(int var) const {
+  if (var_to_representative_.empty()) return true;
+  return var_to_representative_[var] == var;
+}
+
 SatSolver::Status ContinuousProber::ShaveLiteral(
     Literal literal, bool literal_is_an_integer_bound) {
   if (trail_->Assignment().LiteralIsAssigned(literal)) {
@@ -521,9 +543,9 @@ SatSolver::Status ContinuousProber::ShaveLiteral(
   counters_.shaving.num_calls++;
 
   const double original_dtime_limit = time_limit_->GetDeterministicLimit();
-  time_limit_->ChangeDeterministicLimit(
-      std::min(original_dtime_limit,
-               time_limit_->GetElapsedDeterministicTime() + active_limit_));
+  time_limit_->ChangeDeterministicLimit(std::min(
+      original_dtime_limit, time_limit_->GetElapsedDeterministicTime() +
+                                base_dtime_ * limit_multiplier_));
   const SatSolver::Status status =
       ResetAndSolveIntegerProblem({literal}, model_);
   time_limit_->ChangeDeterministicLimit(original_dtime_limit);
@@ -549,11 +571,6 @@ bool ContinuousProber::ReportStatus(const SatSolver::Status status) {
   return status == SatSolver::INFEASIBLE || status == SatSolver::FEASIBLE;
 }
 
-bool ContinuousProber::use_shaving() const {
-  return parameters_.shaving_deterministic_time_in_probing_search() > 0.0 &&
-         iteration_ % 2 == 0;
-}
-
 void ContinuousProber::LogStatistics() {
   if (shared_response_manager_ == nullptr ||
       shared_bounds_manager_ == nullptr) {
@@ -566,21 +583,23 @@ void ContinuousProber::LogStatistics() {
                                       counters_.at_most_one_stats.num_calls +
                                       counters_.pairs_stats.num_calls;
     shared_response_manager_->LogMessageWithThrottling(
-        "Probe",
-        absl::StrCat(name, "(iterations=", iteration_,
-                     " linearization_level=", parameters_.linearization_level(),
-                     " active_limit=", active_limit_, " shaving=",
-                     use_shaving(), " active_bool_vars=", bool_vars_.size(),
-                     " active_int_vars=", integer_trail_->NumIntegerVariables(),
-                     " new_integer_bounds=",
-                     shared_bounds_manager_->NumBoundsExported(name),
-                     " new_binary_clause=", prober_->num_new_binary_clauses(),
-                     " probing: literals_fixed=",
-                     prober_->num_total_new_literals_fixed(),
-                     ",calls=", num_probing_calls, " shaving: literals_fixed=",
-                     counters_.shaving.num_new_literals_fixed,
-                     ",bounds_reduced=", counters_.shaving.num_new_bounds,
-                     ",calls=", counters_.shaving.num_calls, ")"));
+        "Stats",
+        absl::StrCat(
+            name, "(iterations=", iteration_,
+            " linearization_level=", parameters_.linearization_level(),
+            " active_bool_vars=", bool_vars_.size(),
+            " active_int_vars=", int_vars_.size(), " shaving=", use_shaving_,
+            " active_limit=", base_dtime_ * limit_multiplier_,
+            " exported_integer_bounds=",
+            shared_bounds_manager_->NumBoundsExported(name),
+            " new_binary_clause=", prober_->num_total_new_binary(),
+            " probing: literals_fixed=",
+            prober_->num_total_new_literals_fixed(),
+            ",bounds_reduced=", prober_->num_total_new_integer_bounds(),
+            ",calls=", num_probing_calls, " shaving: literals_fixed=",
+            counters_.shaving.num_new_literals_fixed,
+            ",bounds_reduced=", counters_.shaving.num_new_bounds,
+            ",calls=", counters_.shaving.num_calls, ")"));
   }
 }
 

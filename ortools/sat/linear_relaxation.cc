@@ -1311,8 +1311,7 @@ void AppendNoOverlap2dRelaxation(const ConstraintProto& ct, Model* model,
     }
     last_level_zero_bound_change_idx =
         no_overlap_helper->LastLevelZeroChangeIdx();
-    for (const auto& component :
-         no_overlap_helper->connected_components().AsVectorOfSpan()) {
+    for (const auto& component : no_overlap_helper->connected_components()) {
       AppendNoOverlap2dRelaxationForComponent(
           component, model, no_overlap_helper, manager, product_decomposer);
     }
@@ -1528,6 +1527,115 @@ void AppendLinearConstraintRelaxation(absl::Span<const int> enforcement,
     enforcing_literals.push_back(mapping->Literal(enforcement_ref));
   }
 
+  bool lb_done = false;
+  bool ub_done = false;
+
+  // For multi-enforced linear1, we try to have tighter big-M.
+  // This trigger on miplib/ns1111636.mps
+  //
+  // TODO(user): Generalize to more multi-enforced constraints.
+  if (enforcing_literals.size() > 1 && linear_constraint.num_terms == 1) {
+    // The constraint is enforcements => var \in [rhs_lb, rhs_ub]
+    const IntegerVariable var = linear_constraint.vars[0];
+    const IntegerValue coeff = linear_constraint.coeffs[0];
+    IntegerValue rhs_lb;
+    IntegerValue rhs_ub;
+    if (coeff > 0) {
+      rhs_lb = CeilRatio(linear_constraint.lb, coeff);
+      rhs_ub = FloorRatio(linear_constraint.ub, coeff);
+    } else {
+      rhs_lb = CeilRatio(-linear_constraint.ub, -coeff);
+      rhs_ub = FloorRatio(-linear_constraint.lb, -coeff);
+    }
+
+    const auto* implied_bounds = model->Get<ImpliedBounds>();
+    if (implied_bounds != nullptr) {
+      const auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+      const IntegerValue root_var_lb = integer_trail->LowerBound(var);
+      const IntegerValue root_var_ub = integer_trail->UpperBound(var);
+
+      // TODO(user): We can probably be even tighter by exploiting more than
+      // the best lb/ub implied by a single literal.
+      Literal best_lb_lit;
+      Literal best_ub_lit;
+      IntegerValue best_lb = root_var_lb;
+      IntegerValue best_ub = root_var_ub;
+      for (const Literal lit : enforcing_literals) {
+        const auto [lb, ub] = implied_bounds->GetImpliedBounds(lit, var);
+        if (ub < best_ub) {
+          best_ub_lit = lit;
+          best_ub = ub;
+        }
+        if (lb > best_lb) {
+          best_lb_lit = lit;
+          best_lb = lb;
+        }
+      }
+
+      if (rhs_ub < root_var_ub && best_ub < root_var_ub) {
+        // Rather than having X <= rhs_ub + initialBigM * (sum_not_enforced)
+        //
+        // We can do X <= rhs_ub + initialBigM * Not(best_ub_lit) + tighterBigM
+        // * others;
+        const IntegerValue initialBigM = root_var_ub - rhs_ub;
+        const IntegerValue tighterBigM = best_ub - rhs_ub;
+        LinearConstraintBuilder lc(model, kMinIntegerValue, rhs_ub);
+        if (tighterBigM > 0) {
+          lc.AddTerm(var, IntegerValue(1));
+          CHECK(lc.AddLiteralTerm(best_ub_lit.Negated(), -initialBigM));
+          for (const Literal lit : enforcing_literals) {
+            if (lit == best_ub_lit) continue;
+            CHECK(lc.AddLiteralTerm(lit.Negated(), -tighterBigM));
+          }
+        } else {
+          // The basic best_ub_lit => linear1 is tighter.
+          lc.ResetBounds(kMinIntegerValue, best_ub);
+          lc.AddTerm(var, IntegerValue(1));
+          CHECK(lc.AddLiteralTerm(best_ub_lit.Negated(),
+                                  -(root_var_ub - best_ub)));
+        }
+
+        // Add the tighter constraint.
+        LinearConstraint built_ct = lc.Build();
+        if (!PossibleOverflow(*integer_trail, built_ct)) {
+          ub_done = true;
+          ++relaxation->counters.num_tighter_multi_enforced_linear1;
+          relaxation->linear_constraints.push_back(std::move(built_ct));
+        }
+      }
+
+      if (rhs_lb > root_var_lb && best_lb > root_var_lb) {
+        // X + initialBigM * (sum_not_enforced) >= rhs_lb;
+        const IntegerValue initialBigM = rhs_lb - root_var_lb;
+        const IntegerValue tighterBigM = rhs_lb - best_lb;
+
+        LinearConstraintBuilder lc(model, rhs_lb, kMaxIntegerValue);
+        if (tighterBigM > 0) {
+          lc.AddTerm(var, IntegerValue(1));
+          CHECK(lc.AddLiteralTerm(best_lb_lit.Negated(), initialBigM));
+          for (const Literal lit : enforcing_literals) {
+            if (lit == best_lb_lit) continue;
+            CHECK(lc.AddLiteralTerm(lit.Negated(), tighterBigM));
+          }
+        } else {
+          // The basic best_lb_lit => linear1 is tighter.
+          lc.ResetBounds(best_lb, kMaxIntegerValue);
+          lc.AddTerm(var, IntegerValue(1));
+          CHECK(lc.AddLiteralTerm(best_lb_lit.Negated(),
+                                  (best_lb - root_var_lb)));
+        }
+
+        // Add the tighter constraint.
+        LinearConstraint built_ct = lc.Build();
+        if (!PossibleOverflow(*integer_trail, built_ct)) {
+          lb_done = true;
+          ++relaxation->counters.num_tighter_multi_enforced_linear1;
+          relaxation->linear_constraints.push_back(std::move(built_ct));
+        }
+      }
+    }
+  }
+
   // Compute min/max activity.
   std::vector<std::pair<int, int64_t>> bool_terms;
   IntegerValue min_activity(0);
@@ -1559,7 +1667,7 @@ void AppendLinearConstraintRelaxation(absl::Span<const int> enforcement,
         IntegerValue(activity_helper->ComputeMaxActivity(bool_terms));
   }
 
-  if (linear_constraint.lb > min_activity) {
+  if (!lb_done && linear_constraint.lb > min_activity) {
     // And(ei) => terms >= linear_constraint.lb
     // <=> Sum_i (~ei * (linear_constraint.lb - min_activity)) + terms >=
     // rhs_domain_min
@@ -1577,7 +1685,7 @@ void AppendLinearConstraintRelaxation(absl::Span<const int> enforcement,
       relaxation->linear_constraints.push_back(std::move(built_ct));
     }
   }
-  if (linear_constraint.ub < max_activity) {
+  if (!ub_done && linear_constraint.ub < max_activity) {
     // And(ei) => terms <= linear_constraint.ub
     // <=> Sum_i (~ei * (linear_constraint.ub - max_activity)) + terms <=
     // linear_constraint.ub
@@ -2231,6 +2339,10 @@ LinearRelaxation ComputeLinearRelaxation(const CpModelProto& model_proto,
                " #linear:",
                relaxation.linear_constraints.size(),
                " #at_most_ones:", relaxation.at_most_ones.size());
+  }
+  if (relaxation.counters.num_tighter_multi_enforced_linear1 > 0) {
+    SOLVER_LOG(logger, "[LinearRelaxation] num_tighter_multi_enforced_linear1:",
+               relaxation.counters.num_tighter_multi_enforced_linear1);
   }
 
   // Linearize the at most one constraints. Note that we transform them

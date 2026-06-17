@@ -59,6 +59,7 @@
 #include "ortools/sat/cuts.h"
 #include "ortools/sat/debug_solution.h"
 #include "ortools/sat/feasibility_pump.h"
+#include "ortools/sat/gate_congruence_closure.h"
 #include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
@@ -981,66 +982,63 @@ int RegisterClausesLevelZeroImport(int id,
   const bool minimize_shared_clauses =
       model->GetOrCreate<SatParameters>()->minimize_shared_clauses();
   auto* clause_manager = model->GetOrCreate<ClauseManager>();
-  const auto& import_level_zero_clauses = [shared_clauses_manager, id, mapping,
-                                           sat_solver, vivifier, implications,
-                                           minimize_shared_clauses,
-                                           clause_stream,
-                                           clause_manager]() mutable {
-    std::vector<std::pair<int, int>> new_binary_clauses;
-    shared_clauses_manager->GetUnseenBinaryClauses(id, &new_binary_clauses);
-    implications->EnableSharing(false);
-    for (const auto& [ref1, ref2] : new_binary_clauses) {
-      const Literal l1 = mapping->Literal(ref1);
-      const Literal l2 = mapping->Literal(ref2);
-      if (!sat_solver->AddProblemClause({l1, l2})) {
-        return false;
-      }
-    }
-    implications->EnableSharing(true);
-    if (clause_stream == nullptr) return true;
-
-    int new_clauses = 0;
-    std::array<Literal, UniqueClauseStream::kMaxClauseSize> local_clause;
-    sat_solver->EnsureNewClauseIndexInitialized();
-    // Temporarily disable clause sharing.
-    auto callback = clause_manager->TakeAddClauseCallback();
-    while (true) {
-      auto batch = shared_clauses_manager->GetUnseenClauses(id);
-      if (batch.empty()) break;
-      for (int clause_index = 0; clause_index < batch.size(); ++clause_index) {
-        const absl::Span<const int>& shared_clause = batch[clause_index];
-        // Check this clause was not already learned by this worker.
-        if (!clause_stream->BlockClause(shared_clause)) continue;
-        ++new_clauses;
-        for (int i = 0; i < shared_clause.size(); ++i) {
-          local_clause[i] = mapping->Literal(shared_clause[i]);
+  const auto& import_level_zero_clauses =
+      [shared_clauses_manager, id, mapping, sat_solver, vivifier, implications,
+       minimize_shared_clauses, clause_stream, clause_manager]() mutable {
+        std::vector<std::pair<int, int>> new_binary_clauses;
+        shared_clauses_manager->GetUnseenBinaryClauses(id, &new_binary_clauses);
+        implications->EnableSharing(false);
+        for (const auto& [ref1, ref2] : new_binary_clauses) {
+          const Literal l1 = mapping->Literal(ref1);
+          const Literal l2 = mapping->Literal(ref2);
+          if (!sat_solver->AddProblemClause({l1, l2})) {
+            return false;
+          }
         }
-        if (!sat_solver->AddProblemClause(
-                absl::MakeSpan(local_clause)
-                    .subspan(0, shared_clause.size()))) {
-          return false;
-        }
-      }
-    }
-    clause_manager->SetAddClauseCallback(std::move(callback));
-    if (new_clauses > 0) {
-      shared_clauses_manager->NotifyNumImported(id, new_clauses);
-    }
+        implications->EnableSharing(true);
+        if (clause_stream == nullptr) return true;
 
-    if (new_clauses > 0 && !sat_solver->FinishPropagation()) return false;
-    if (minimize_shared_clauses && new_clauses > 0) {
-      // The new clauses may be subsumed, so try to minimize them to reduce
-      // overhead of sharing.
-      // We only share up to 1024 literals worth of new clauses per second, so
-      // at most 1024 decisions to vivify all new clauses, so this should be
-      // relatively cheap, *if* regular vivification is keeping up with new
-      // clauses. Use a tight dtime limit in case it isn't.
-      return vivifier->MinimizeByPropagation(
-          /*log_info=*/false, /*dtime_budget=*/0.01,
-          /*minimize_new_clauses_only=*/true);
-    }
-    return true;
-  };
+        int new_clauses = 0;
+        std::array<Literal, UniqueClauseStream::kMaxClauseSize> local_clause;
+        sat_solver->EnsureNewClauseIndexInitialized();
+        // Temporarily disable clause sharing.
+        auto callback = clause_manager->TakeAddClauseCallback();
+        while (true) {
+          auto batch = shared_clauses_manager->GetUnseenClauses(id);
+          if (batch.empty()) break;
+          for (const absl::Span<const int> shared_clause : batch) {
+            // Check this clause was not already learned by this worker.
+            if (!clause_stream->BlockClause(shared_clause)) continue;
+            ++new_clauses;
+            for (int i = 0; i < shared_clause.size(); ++i) {
+              local_clause[i] = mapping->Literal(shared_clause[i]);
+            }
+            if (!sat_solver->AddProblemClause(
+                    absl::MakeSpan(local_clause)
+                        .subspan(0, shared_clause.size()))) {
+              return false;
+            }
+          }
+        }
+        clause_manager->SetAddClauseCallback(std::move(callback));
+        if (new_clauses > 0) {
+          shared_clauses_manager->NotifyNumImported(id, new_clauses);
+        }
+
+        if (new_clauses > 0 && !sat_solver->FinishPropagation()) return false;
+        if (minimize_shared_clauses && new_clauses > 0) {
+          // The new clauses may be subsumed, so try to minimize them to reduce
+          // overhead of sharing.
+          // We only share up to 1024 literals worth of new clauses per second,
+          // so at most 1024 decisions to vivify all new clauses, so this should
+          // be relatively cheap, *if* regular vivification is keeping up with
+          // new clauses. Use a tight dtime limit in case it isn't.
+          return vivifier->MinimizeByPropagation(
+              /*log_info=*/false, /*dtime_budget=*/0.01,
+              /*minimize_new_clauses_only=*/true);
+        }
+        return true;
+      };
   model->GetOrCreate<LevelZeroCallbackHelper>()->callbacks.push_back(
       import_level_zero_clauses);
   return id;
@@ -2145,21 +2143,6 @@ void AdaptGlobalParameters(const CpModelProto& model_proto, Model* model) {
 #endif
     SOLVER_LOG(logger, "Setting number of workers to ", num_cores);
     params->set_num_workers(num_cores);
-  }
-
-  if (params->shared_tree_num_workers() == -1) {
-    int num_shared_tree_workers = 0;
-    if (model_proto.has_objective() ||
-        model_proto.has_floating_point_objective()) {
-      num_shared_tree_workers = (params->num_workers() - 16) / 2;
-    } else {
-      num_shared_tree_workers = (params->num_workers() - 8) * 3 / 4;
-    }
-    if (num_shared_tree_workers > 4) {
-      SOLVER_LOG(logger, "Setting number of shared tree workers to ",
-                 num_shared_tree_workers);
-      params->set_shared_tree_num_workers(num_shared_tree_workers);
-    }
   }
 
   // We currently only use the feasibility pump or rins/rens if it is enabled

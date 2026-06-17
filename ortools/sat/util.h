@@ -211,6 +211,146 @@ class CompactVectorVector {
   }
 
  private:
+  // A templated iterator to handle both const and non-const iteration.
+  template <bool is_const>
+  class IteratorImpl {
+   public:
+    // Determine the types based on whether this is a const iterator
+    using ParentType = std::conditional_t<is_const, const CompactVectorVector,
+                                          CompactVectorVector>;
+    using SpanType =
+        std::conditional_t<is_const, absl::Span<const V>, absl::Span<V>>;
+
+    IteratorImpl(ParentType* parent, size_t index)
+        : parent_(parent), index_(index) {}
+
+    // A lot of boilerplate for the random access iterator concept.
+    using difference_type = int64_t;
+    using value_type = SpanType;
+
+    IteratorImpl() : parent_(nullptr), index_(0) {}
+
+    // Allow the const iterator to access the internals of the non-const
+    // iterator.
+    template <bool is_const_other>
+    friend class IteratorImpl;
+
+    template <bool is_const_other>
+    explicit IteratorImpl(const IteratorImpl<is_const_other>& other)
+        : parent_(other.parent_), index_(other.index_) {}
+
+    IteratorImpl& operator=(const IteratorImpl& other) = default;
+
+    SpanType operator*() const { return (*parent_)[K(index_)]; }
+
+    IteratorImpl& operator++() {
+      ++index_;
+      return *this;
+    }
+
+    IteratorImpl operator++(int) {
+      IteratorImpl tmp = *this;
+      ++(*this);
+      return tmp;
+    }
+
+    IteratorImpl& operator--() {
+      --index_;
+      return *this;
+    }
+
+    IteratorImpl operator--(int) {
+      IteratorImpl tmp = *this;
+      --(*this);
+      return tmp;
+    }
+
+    IteratorImpl& operator+=(difference_type n) {
+      index_ += n;
+      return *this;
+    }
+
+    IteratorImpl& operator-=(difference_type n) {
+      index_ -= n;
+      return *this;
+    }
+
+    IteratorImpl operator+(difference_type n) const {
+      IteratorImpl tmp = *this;
+      tmp += n;
+      return tmp;
+    }
+
+    friend IteratorImpl<is_const> operator+(difference_type n,
+                                            const IteratorImpl& it) {
+      return it + n;
+    }
+
+    IteratorImpl operator-(difference_type n) const {
+      IteratorImpl tmp = *this;
+      tmp -= n;
+      return tmp;
+    }
+
+    template <bool C>
+    difference_type operator-(const IteratorImpl<C>& other) const {
+      return index_ - other.index_;
+    }
+
+    template <bool C>
+    bool operator!=(const IteratorImpl<C>& other) const {
+      return index_ != other.index_;
+    }
+
+    template <bool C>
+    bool operator==(const IteratorImpl<C>& other) const {
+      return index_ == other.index_;
+    }
+
+    template <bool C>
+    bool operator<(const IteratorImpl<C>& other) const {
+      return index_ < other.index_;
+    }
+
+    template <bool C>
+    bool operator>(const IteratorImpl<C>& other) const {
+      return index_ > other.index_;
+    }
+
+    template <bool C>
+    bool operator<=(const IteratorImpl<C>& other) const {
+      return index_ <= other.index_;
+    }
+
+    template <bool C>
+    bool operator>=(const IteratorImpl<C>& other) const {
+      return index_ >= other.index_;
+    }
+
+    SpanType operator[](difference_type n) const { return *(*this + n); }
+
+   private:
+    ParentType* parent_;
+    int64_t index_;
+  };
+
+ public:
+  // Standard STL-like type aliases
+  using iterator = IteratorImpl<false>;
+  using const_iterator = IteratorImpl<true>;
+
+  static_assert(std::random_access_iterator<iterator>);
+  static_assert(std::random_access_iterator<const_iterator>);
+
+  // Mutable iterators
+  iterator begin() { return iterator(this, 0); }
+  iterator end() { return iterator(this, static_cast<int64_t>(size())); }
+
+  // Const iterators
+  const_iterator begin() const { return const_iterator(this, 0); }
+  const_iterator end() const { return const_iterator(this, size()); }
+
+ private:
   std::vector<int> starts_;
   std::vector<int> sizes_;
   std::vector<V> buffer_;

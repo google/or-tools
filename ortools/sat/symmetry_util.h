@@ -20,6 +20,7 @@
 #include "absl/types/span.h"
 #include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/util.h"
 
 namespace operations_research {
 namespace sat {
@@ -79,6 +80,11 @@ std::vector<int> TracePoint(
 // Creates a SparsePermutation on [0, n) from its proto representation.
 std::unique_ptr<SparsePermutation> CreateSparsePermutationFromProto(
     int n, const SparsePermutationProto& proto);
+
+void GetOrbitsAndRepresentatives(const CpModelProto& model_proto,
+                                 CompactVectorVector<int, int>& orbits,
+                                 std::vector<int>& var_to_orbit_index,
+                                 std::vector<int>& var_to_representative);
 
 // Given the generators for a permutation group of [0, n-1], update it to
 // a set of generators of the group stabilizing the given element.

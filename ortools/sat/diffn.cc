@@ -901,9 +901,10 @@ bool NonOverlappingRectanglesDisjunctivePropagator::
   boxes_to_propagate_.clear();
   reduced_overlapping_boxes_.clear();
   int work_done = boxes.size();
-  for (int i = 0; i < events_overlapping_boxes_.size(); ++i) {
-    work_done += events_overlapping_boxes_[i].size();
-    SplitDisjointBoxes(*x, events_overlapping_boxes_[i], &disjoint_boxes_);
+  for (const absl::Span<const int> overlapping_boxes :
+       events_overlapping_boxes_) {
+    work_done += overlapping_boxes.size();
+    SplitDisjointBoxes(*x, overlapping_boxes, &disjoint_boxes_);
     for (const absl::Span<const int> sub_boxes : disjoint_boxes_) {
       // Boxes are sorted in a stable manner in the Split method.
       // Note that we do not use reduced_overlapping_boxes_ directly so that
@@ -1020,7 +1021,7 @@ bool NonOverlappingRectanglesDisjunctivePropagator::Propagate() {
   // mode. So we will not redo some propagation in slow mode that was already
   // done by the fast mode.
   const bool fast_propagation = watcher_->GetCurrentId() == fast_id_;
-  for (const auto subset : helper_->connected_components().AsVectorOfSpan()) {
+  for (const auto subset : helper_->connected_components()) {
     if (!FindBoxesThatMustOverlapAHorizontalLineAndPropagate(fast_propagation,
                                                              subset)) {
       return false;
@@ -1029,7 +1030,7 @@ bool NonOverlappingRectanglesDisjunctivePropagator::Propagate() {
   // We can actually swap dimensions to propagate vertically.
   if (!helper_->SynchronizeAndSetDirection(true, true, true)) return false;
 
-  for (const auto subset : helper_->connected_components().AsVectorOfSpan()) {
+  for (const auto subset : helper_->connected_components()) {
     if (!FindBoxesThatMustOverlapAHorizontalLineAndPropagate(fast_propagation,
                                                              subset)) {
       return false;
@@ -1065,15 +1066,14 @@ bool RectanglePairwisePropagator::Propagate() {
   num_calls_++;
   std::vector<PairwiseRestriction> restrictions;
 
-  for (int component_index = 0;
-       component_index < helper_->connected_components().size();
-       ++component_index) {
+  for (const absl::Span<const int> component :
+       helper_->connected_components()) {
     horizontal_zero_area_boxes_.clear();
     vertical_zero_area_boxes_.clear();
     point_zero_area_boxes_.clear();
     fixed_non_zero_area_boxes_.clear();
     non_fixed_non_zero_area_boxes_.clear();
-    for (int b : helper_->connected_components()[component_index]) {
+    for (const int b : component) {
       if (!helper_->IsPresent(b)) continue;
       const auto [x_size_max, y_size_max] = helper_->GetBoxSizesMax(b);
       ItemWithVariableSize box = helper_->GetItemWithVariableSize(b);

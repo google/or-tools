@@ -44,7 +44,6 @@
 #include "ortools/base/types.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/glop/revised_simplex.h"
-#include "ortools/glop/status.h"
 #include "ortools/glop/variables_info.h"
 #include "ortools/lp_data/lp_data_utils.h"
 #include "ortools/lp_data/lp_types.h"
@@ -957,22 +956,8 @@ bool LinearProgrammingConstraint::SolveLp() {
   DCHECK_EQ(simplex_.GetProblemNumRows(), integer_lp_.size());
 
   // Lets resolve from scratch if we encounter an error.
-  //
-  // Note that when using LPSolver class, failing glop::Status are converted to
-  // glop::ProblemStatus::ABNORMAL. But when calling glop::RevisedSimplex
-  // directly we either get:
-  // * a failing glop::Status when there is an LU factorization error (which
-  //   traverse the stack with GLOP_RETURN_IF_ERROR(), leaving the
-  //   glop::RevisedSimplex in an unspecified state); typically:
-  //     - either "The matrix is singular!",
-  //     - or "trying to pivot with number too small",
-  // * or we get a glop::ProblemStatus for other errors.
-  //
-  // We should not call GetProblemStatus() when a failing glop::Status is
-  // returned as it may be in an incorrect state.
-  if (!status.ok() ||
-      simplex_.GetProblemStatus() == glop::ProblemStatus::ABNORMAL) {
-    VLOG(2) << "The LP solver returned abnormal, resolving from scratch";
+  if (status.Is<glop::SolveStatus::Abnormal>()) {
+    VLOG(2) << "The LP solver returned " << status << ",resolving from scratch";
     simplex_.ClearStateForNextSolve();
     status = simplex_.MinimizeFromTransposedMatrixWithSlack(
         obj_with_slack_, unscaling_factor, offset_before_unscaling,
@@ -981,8 +966,8 @@ bool LinearProgrammingConstraint::SolveLp() {
 
   state_ = simplex_.GetState();
   total_num_simplex_iterations_ += simplex_.GetNumberOfIterations();
-  if (!status.ok()) {
-    VLOG(2) << "The LP solver encountered an error: " << status.error_message();
+  if (status.Is<glop::SolveStatus::Abnormal>()) {
+    VLOG(2) << "The LP solver encountered an error: " << status;
     simplex_.ClearStateForNextSolve();
     return false;
   }
@@ -992,28 +977,27 @@ bool LinearProgrammingConstraint::SolveLp() {
             << average_degeneracy_.CurrentAverage();
   }
 
-  const int status_as_int = static_cast<int>(simplex_.GetProblemStatus());
+  const int status_as_int = static_cast<int>(status.problem_status());
   if (status_as_int >= num_solves_by_status_.size()) {
     num_solves_by_status_.resize(status_as_int + 1);
   }
   num_solves_++;
   num_solves_by_status_[status_as_int]++;
   VLOG(2) << DimensionString() << " lvl:" << trail_->CurrentDecisionLevel()
-          << " " << simplex_.GetProblemStatus()
-          << " iter:" << simplex_.GetNumberOfIterations()
+          << " " << status << " iter:" << simplex_.GetNumberOfIterations()
           << " obj:" << simplex_.GetObjectiveValue() << " scaled:"
           << objective_definition_->ScaleObjective(
                  simplex_.GetObjectiveValue());
 
-  if (simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL ||
-      simplex_.GetProblemStatus() == glop::ProblemStatus::DUAL_FEASIBLE) {
+  if (status.Is<glop::SolveStatus::Optimal>() ||
+      status.Is<glop::SolveStatus::DualFeasible>()) {
     lp_objective_lower_bound_ = simplex_.GetObjectiveValue();
   }
-  lp_at_optimal_ = simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL;
+  lp_at_optimal_ = status.Is<glop::SolveStatus::Optimal>();
 
   // If stop_after_root_propagation() is true, we still copy whatever we have as
   // these values will be used for the local-branching lns heuristic.
-  if (simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL ||
+  if (status.Is<glop::SolveStatus::Optimal>() ||
       parameters_.stop_after_root_propagation()) {
     lp_solution_is_set_ = true;
     lp_solution_level_ = trail_->CurrentDecisionLevel();

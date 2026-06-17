@@ -657,9 +657,6 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
     new_params.set_use_probing_search(true);
     new_params.set_at_most_one_max_expansion_size(2);
-    // Use a small deterministic time to avoid spending too much time on
-    // shaving by default. The probing workers will increase it as needed.
-    new_params.set_shaving_search_deterministic_time(0.001);
     if (base_params.use_dual_scheduling_heuristics()) {
       AddExtraSchedulingPropagators(new_params);
     }
@@ -675,6 +672,23 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     new_params.set_add_lp_constraints_lazily(false);
     new_params.set_root_lp_iterations(100'000);
     strategies["probing_max_lp"] = new_params;
+  }
+
+  {
+    SatParameters new_params = base_params;
+    new_params.set_search_branching(SatParameters::ROUND_ROBIN_SHAVING_SEARCH);
+    new_params.set_cut_level(0);
+    strategies["shaving"] = new_params;
+
+    new_params.set_linearization_level(0);
+    strategies["shaving_no_lp"] = new_params;
+
+    // We want to spend more time on the LP here.
+    new_params.set_linearization_level(2);
+    new_params.set_cut_level(1);
+    new_params.set_add_lp_constraints_lazily(false);
+    new_params.set_root_lp_iterations(100'000);
+    strategies["shaving_max_lp"] = new_params;
   }
 
   // Search variation.
@@ -864,7 +878,8 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
 //   - Different propatation levels for scheduling constraints
 std::vector<SatParameters> GetFullWorkerParameters(
     const SatParameters& base_params, const CpModelProto& cp_model,
-    int num_already_present, SubsolverNameFilter* filter) {
+    int num_already_present, int num_shared_tree_workers,
+    SubsolverNameFilter* filter) {
   // Defines a set of named strategies so it is easier to read in one place
   // the one that are used. See below.
   const auto strategies = GetNamedParameters(base_params);
@@ -900,16 +915,17 @@ std::vector<SatParameters> GetFullWorkerParameters(
       // we prefer the less confusing name.
       names.push_back("max_lp");
     }
-    names.push_back("quick_restart");
-    names.push_back("reduced_costs");
     names.push_back("quick_restart_no_lp");
+    names.push_back("reduced_costs");
+    names.push_back("shaving_no_lp");
     names.push_back("pseudo_costs");
     names.push_back("lb_tree_search");
     names.push_back("probing");
     names.push_back("objective_lb_search");
     names.push_back("objective_shaving_no_lp");
+    names.push_back("quick_restart");
     names.push_back("objective_shaving_max_lp");
-    names.push_back("probing_max_lp");
+    names.push_back("shaving_max_lp");
     names.push_back("probing_no_lp");
     names.push_back("objective_lb_search_no_lp");
     names.push_back("objective_lb_search_max_lp");
@@ -1017,32 +1033,41 @@ std::vector<SatParameters> GetFullWorkerParameters(
   if (base_params.interleave_search()) return result;
 
   // Apply the logic for how many we keep.
-  int num_to_keep = base_params.num_full_subsolvers();
-  if (num_to_keep == 0) {
+  int target_subsolver_size = base_params.num_full_subsolvers();
+  const bool force_num_full_subsolvers = target_subsolver_size > 0;
+  if (target_subsolver_size == 0) {
     // Derive some automatic number to leave room for LS/LNS and other
     // strategies not taken into account here.
-    const int num_available =
-        std::max(0, base_params.num_workers() - num_already_present);
-
     const auto heuristic_num_workers = [](int num_workers) {
       DCHECK_GE(num_workers, 0);
       if (num_workers == 1) return 1;
       if (num_workers <= 4) return num_workers - 1;
       if (num_workers <= 8) return num_workers - 2;
       if (num_workers <= 16) return num_workers - (num_workers / 4 + 1);
-      return num_workers - (num_workers / 2 - 3);
+      return num_workers - (num_workers / 2 - 4);
     };
-
-    num_to_keep = heuristic_num_workers(num_available);
+    target_subsolver_size =
+        std::max(0, heuristic_num_workers(base_params.num_workers()) -
+                        num_shared_tree_workers - num_already_present);
+    VLOG(2) << "######## num_to_keep: " << target_subsolver_size
+            << " num_shared_tree_workers: " << num_shared_tree_workers
+            << " num_workers: " << base_params.num_workers()
+            << " num_already_present: " << num_already_present
+            << " num_full_subsolvers: " << base_params.num_full_subsolvers()
+            << " #results: " << result.size();
+  } else {
+    // We cap the number of subsolvers by the number of workers.
+    target_subsolver_size =
+        std::min(target_subsolver_size, base_params.num_workers());
   }
 
-  if (result.size() > num_to_keep) {
-    result.resize(std::max(0, num_to_keep));
-  } else if (!result.empty() && num_to_keep >= 0) {
+  if (result.size() > target_subsolver_size) {
+    result.resize(std::max(0, target_subsolver_size));
+  } else if (!result.empty() && force_num_full_subsolvers) {
     // If we have less parameters, duplicate the first one until we have enough.
     // This is a bit hacky but easily allow to do experiment with n times the
     // same subsolver.
-    while (result.size() < num_to_keep) {
+    while (result.size() < target_subsolver_size) {
       result.push_back(result[0]);
     }
   }

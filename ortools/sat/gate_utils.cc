@@ -1000,8 +1000,7 @@ std::vector<std::pair<Literal, Literal>> SimplifyCircuit(
   SubcircuitExtractor extractor(*circuit);
 
   std::vector<std::pair<Literal, Literal>> new_equiv;
-  for (int c = 0; c < equiv.size(); ++c) {
-    const auto& literals = equiv[c];
+  for (const absl::Span<const Literal> literals : equiv) {
     for (int k = 1; k < literals.size(); ++k) {
       const Literal a = literals[0];
       const Literal b = literals[k];

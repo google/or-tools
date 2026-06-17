@@ -223,6 +223,11 @@ class NeighborhoodGeneratorHelper : public SubSolver {
     return type_to_constraints_[type];
   }
 
+  CompactVectorVector<int, int> Components() const {
+    absl::ReaderMutexLock lock(graph_mutex_);
+    return components_;
+  }
+
   // Filters a vector of intervals against the initial_solution, and returns
   // only the active intervals.
   std::vector<int> KeepActiveIntervals(
@@ -288,8 +293,8 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   // will still need to disable the symmetry propagation for this component, or
   // use a different system than fixing variables. Using
   // VariablesTouchSymmetry() do not have this problem but is less powerful.
-  bool VariablesTouchSymmetries(absl::Span<const int> variables);
-  bool VariablesSplitSymmetries(absl::Span<const int> variables);
+  bool VariablesTouchSymmetries(absl::Span<const int> variables) const;
+  bool VariablesSplitSymmetries(absl::Span<const int> variables) const;
 
   // The initial problem.
   // Note that the domain of the variables are not updated here.
@@ -625,6 +630,24 @@ class ArcGraphNeighborhoodGenerator : public NeighborhoodGenerator {
       : NeighborhoodGenerator(name, helper) {}
   Neighborhood Generate(const CpSolverResponse& initial_solution,
                         SolveData& data, absl::BitGenRef random) final;
+};
+
+// This generates a neighborhood only when the problem is split into
+// several connected components and one of them is small enough for it to be
+// considered trivial.
+class SmallComponentNeighborhoodGenerator : public NeighborhoodGenerator {
+ public:
+  explicit SmallComponentNeighborhoodGenerator(
+      NeighborhoodGeneratorHelper const* helper, absl::string_view name)
+      : NeighborhoodGenerator(name, helper) {}
+
+  Neighborhood Generate(const CpSolverResponse& initial_solution,
+                        SolveData& data, absl::BitGenRef random) final;
+
+  bool ReadyToGenerate() const final;
+
+ private:
+  static constexpr int kNumVarsConsideredTrivial = 40;
 };
 
 // Pick a random subset of constraint and relax all of their variables. We are a

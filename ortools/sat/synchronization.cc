@@ -945,44 +945,13 @@ SharedBoundsManager::SharedBoundsManager(const CpModelProto& model_proto)
   }
 
   // Fill symmetry data.
-  if (model_proto.has_symmetry()) {
-    const int num_vars = model_proto.variables().size();
-    std::vector<std::unique_ptr<SparsePermutation>> generators;
-    for (const SparsePermutationProto& perm :
-         model_proto.symmetry().permutations()) {
-      generators.emplace_back(CreateSparsePermutationFromProto(num_vars, perm));
-    }
-    if (generators.empty()) return;
-
-    // Get orbits in term of IntegerVariable.
-    var_to_orbit_index_ = GetOrbits(num_vars, generators);
-
-    // Fill orbits_.
-    CompactVectorVectorBuilder<int, int> orbits_builder;
-    orbits_builder.ReserveNumItems(num_vars);
-    for (int var = 0; var < num_vars; ++var) {
-      const int orbit_index = var_to_orbit_index_[var];
-      if (orbit_index == -1) continue;
-      orbits_builder.Add(orbit_index, var);
-    }
-    orbits_.ResetFromBuilder(orbits_builder);
-    if (orbits_.empty()) return;
-
+  if (model_proto.has_symmetry() &&
+      !model_proto.symmetry().permutations().empty()) {
+    GetOrbitsAndRepresentatives(model_proto_, orbits_, var_to_orbit_index_,
+                                var_to_representative_);
     has_symmetry_ = true;
-
-    // Fill representative.
-    var_to_representative_.resize(num_vars);
-    for (int var = 0; var < num_vars; ++var) {
-      const int orbit_index = var_to_orbit_index_[var];
-      if (orbit_index == -1) {
-        var_to_representative_[var] = var;
-      } else {
-        var_to_representative_[var] = orbits_[orbit_index][0];
-      }
-    }
   }
 }
-
 void SharedBoundsManager::ReportPotentialNewBounds(
     const std::string& worker_name, absl::Span<const int> variables,
     absl::Span<const int64_t> new_lower_bounds,
@@ -1607,8 +1576,8 @@ void SharedClausesManager::Synchronize() {
   if (batches_to_merge.empty()) return;
   UniqueClauseStream next_batch;
   for (const auto& batch : batches_to_merge) {
-    for (int i = 0; i < batch.size(); ++i) {
-      next_batch.Add(batch[i]);
+    for (const absl::Span<const int> clause : batch) {
+      next_batch.Add(clause);
     }
   }
   if (next_batch.NumBufferedLiterals() > 0) {

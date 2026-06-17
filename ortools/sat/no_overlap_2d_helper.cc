@@ -269,7 +269,7 @@ void NoOverlap2DConstraintHelper::Reset(
   CompactVectorVector<int> components =
       GetOverlappingRectangleComponents(absl::MakeSpan(active_bounding_boxes));
   connected_components_.clear();
-  for (absl::Span<const int> component : components.AsVectorOfSpan()) {
+  for (const absl::Span<const int> component : components) {
     if (component.size() < 2) continue;
     connected_components_.Add({});
     for (int idx : component) {

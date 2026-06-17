@@ -34,6 +34,7 @@
 #include "absl/strings/string_view.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
@@ -93,12 +94,13 @@ class ContinuousProber {
 
   // Returns true if boool_var is not assigned and not redundant.
   bool ShouldProbe(BooleanVariable bool_var) const;
+  // Returns true if var is the representative of its orbit.
+  bool IsOrbitRepresentative(int var) const;
   SatSolver::Status ShaveLiteral(Literal literal,
                                  bool literal_is_an_integer_bound);
   bool ReportStatus(SatSolver::Status status);
   void LogStatistics();
   SatSolver::Status PeriodicSyncAndCheck();
-  bool use_shaving() const;
 
   MethodStats GetStats(Prober* prober) const;
   static void AddStats(MethodStats& total_stats, const MethodStats& start_stats,
@@ -110,6 +112,7 @@ class ContinuousProber {
 
   // Model object.
   Model* model_;
+  CpModelMapping* cp_model_mapping_;
   SatSolver* sat_solver_;
   TimeLimit* time_limit_;
   BinaryImplicationGraph* binary_implication_graph_;
@@ -126,6 +129,9 @@ class ContinuousProber {
   SharedStatistics* shared_stats_;
   absl::BitGenRef random_;
 
+  // Var representatives, for the symmetry of the model proto.
+  std::vector<int> var_to_representative_;
+
   // Statistics.
   struct Counters {
     MethodStats at_least_one_stats = MethodStats("at_least_one");
@@ -141,8 +147,9 @@ class ContinuousProber {
   int num_syncs_remaining_ = 0;
   int num_test_limit_remaining_ = 0;
 
-  // Current state of the probe.
-  double active_limit_;
+  // Current state of the probe limit.
+  const double base_dtime_;
+  double limit_multiplier_ = 1.0;
   // TODO(user): use 2 vector<bool>.
   absl::flat_hash_set<BooleanVariable> probed_bool_vars_;
   absl::flat_hash_set<LiteralIndex> shaved_literals_;
@@ -152,6 +159,7 @@ class ContinuousProber {
   int current_bv1_ = 0;
   int current_bv2_ = 0;
   int random_pair_of_bool_vars_probed_ = 0;
+  bool use_shaving_ = false;
   std::vector<std::vector<Literal>> tmp_dnf_;
   std::vector<Literal> tmp_literals_;
 };

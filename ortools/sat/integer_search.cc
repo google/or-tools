@@ -58,6 +58,7 @@
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/scheduling_helpers.h"
+#include "ortools/sat/symmetry_util.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/strong_integers.h"
@@ -301,6 +302,77 @@ UnassignedVarWithLowestMinAtItsMinHeuristic(
         if (candidate == kNoIntegerVariable) return BooleanOrIntegerLiteral();
         return BooleanOrIntegerLiteral(AtMinValue(candidate, integer_trail));
       };
+}
+
+std::function<BooleanOrIntegerLiteral()> ShaveModelIntegerVariableBounds(
+    const std::vector<IntegerVariable>& vars, Model* model) {
+  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+  auto* sat_solver = model->GetOrCreate<SatSolver>();
+  absl::BitGenRef random = *model->GetOrCreate<ModelRandomGenerator>();
+
+  int current_index = 0;
+  bool enable = true;
+  return [/*copy */ vars =
+              std::vector<IntegerVariable>(vars.begin(), vars.end()),
+          /*copy*/ current_index, /*copy*/ enable, integer_trail, sat_solver,
+          random = random]() mutable {
+    const int level = sat_solver->CurrentDecisionLevel();
+    if (level > 0 || !enable) return BooleanOrIntegerLiteral();
+
+    for (int i = 0; i < vars.size(); ++i) {
+      const IntegerVariable var = vars[current_index++];
+      if (current_index >= vars.size()) current_index = 0;
+
+      if (integer_trail->IsFixed(var)) continue;
+
+      const IntegerValue var_lb = integer_trail->LowerBound(var);
+      const IntegerValue var_ub = integer_trail->UpperBound(var);
+      DCHECK_LT(var_lb, var_ub);
+
+      const IntegerValue half_domain_range = (var_ub - var_lb) / 2;
+      const IntegerValue new_ub =
+          var_lb +
+          absl::LogUniform<int64_t>(random, 0, half_domain_range.value());
+
+      return BooleanOrIntegerLiteral(IntegerLiteral::LowerOrEqual(var, new_ub));
+    }
+
+    // We will disable this if all integer variables are fixed.
+    enable = false;
+    return BooleanOrIntegerLiteral();
+  };
+}
+
+std::function<BooleanOrIntegerLiteral()> ShaveModelBooleanVariables(
+    const std::vector<Literal>& literals, Model* model) {
+  auto* sat_solver = model->GetOrCreate<SatSolver>();
+  auto* binary_implication_graph = model->GetOrCreate<BinaryImplicationGraph>();
+  int current_index = 0;
+  bool enable = true;
+  return [/*copy */ literals =
+              std::vector<Literal>(literals.begin(), literals.end()),
+          /*copy*/ current_index, /*copy*/ enable, sat_solver,
+          binary_implication_graph]() mutable {
+    const int level = sat_solver->CurrentDecisionLevel();
+    if (level > 0 || !enable) return BooleanOrIntegerLiteral();
+
+    for (int i = 0; i < literals.size(); ++i) {
+      const Literal lit = literals[current_index++];
+      if (current_index >= literals.size()) current_index = 0;
+
+      if (sat_solver->Assignment().LiteralIsAssigned(lit) ||
+          binary_implication_graph->IsRedundant(
+              Literal(lit.Variable(), true))) {
+        continue;
+      }
+
+      return BooleanOrIntegerLiteral(lit.Index());
+    }
+
+    // We will disable this if all literals are fixed.
+    enable = false;
+    return BooleanOrIntegerLiteral();
+  };
 }
 
 std::function<BooleanOrIntegerLiteral()> SequentialSearch(
@@ -606,11 +678,10 @@ class IntervalPrecedencesDetector {
     // the above code might detect precedences only between the optional
     // intervals. To avoid conflicts in the heuristics below, it is better to
     // fix the optional intervals first.
-    for (int i = 0; i < intervals_by_start_var_.size(); ++i) {
-      const IntegerVariable var(i);
-      for (const IntervalVariable interval_var : intervals_by_start_var_[var]) {
-        for (const IntervalVariable other_interval_var :
-             intervals_by_start_var_[var]) {
+    for (const absl::Span<const IntervalVariable> intervals :
+         intervals_by_start_var_) {
+      for (const IntervalVariable interval_var : intervals) {
+        for (const IntervalVariable other_interval_var : intervals) {
           if (interval_var == other_interval_var) continue;
           if (!intervals_.IsOptional(interval_var) &&
               intervals_.IsOptional(other_interval_var)) {
@@ -1693,6 +1764,85 @@ void ConfigureSearchHeuristics(Model* model) {
       heuristics.decision_policies = {
           RandomizeOnRestartHeuristic(/*lns_mode=*/false, model)};
       heuristics.restart_policies = {SatSolverRestartPolicy(model)};
+      return;
+    }
+    case SatParameters::ROUND_ROBIN_SHAVING_SEARCH: {
+      // Model objects.
+      auto* mapping = model->GetOrCreate<CpModelMapping>();
+      auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+      const auto& assignment = model->GetOrCreate<Trail>()->Assignment();
+
+      // Temporary storage.
+      CompactVectorVector<int, int> orbits;
+      std::vector<int> var_to_orbit_index;
+      std::vector<int> var_to_representative;
+      GetOrbitsAndRepresentatives(*mapping->ModelProto(), orbits,
+                                  var_to_orbit_index, var_to_representative);
+
+      // Collect variables and literals to shave.
+      const int num_model_vars = mapping->ModelProto()->variables_size();
+      const int num_bool_vars = mapping->NumBooleanVariables();
+      std::vector<Literal> literals;
+      std::vector<IntegerVariable> integer_vars;
+      literals.reserve(2 * num_bool_vars);
+      integer_vars.reserve(2 * (num_model_vars - num_bool_vars));
+      for (int v = 0; v < mapping->ModelProto()->variables_size(); ++v) {
+        // Skip non-representative variables in symmetry orbits.
+        if (!var_to_representative.empty() && var_to_representative[v] != v) {
+          continue;
+        }
+        if (mapping->IsBoolean(v)) {
+          const BooleanVariable bool_var = mapping->Literal(v).Variable();
+          if (assignment.LiteralIsAssigned(Literal(bool_var, true))) continue;
+          literals.push_back(Literal(bool_var, true));
+          literals.push_back(Literal(bool_var, false));
+        } else {
+          IntegerVariable var = mapping->Integer(v);
+          if (integer_trail->IsFixed(var)) continue;
+          integer_vars.push_back(var);
+          integer_vars.push_back(NegationOf(var));
+        }
+      }
+
+      const auto search = [&parameters, model, &heuristics]() {
+        return parameters.shaving_search_use_random_search()
+                   ? SequentialSearch({RandomizeOnRestartHeuristic(
+                                           /*lns_mode=*/false, model),
+                                       heuristics.fixed_search})
+                   : IntegerValueSelectionHeuristic(
+                         SequentialSearch({SatSolverHeuristic(model),
+                                           heuristics.fixed_search}),
+                         model);
+      };
+
+      const auto restart_policy = [&parameters, model]() {
+        const int restart_limit = parameters.shaving_search_restart_limit();
+        if (restart_limit <= 0) {
+          return SatSolverRestartPolicy(model);
+        } else {
+          return RestartEveryKFailures(restart_limit,
+                                       model->GetOrCreate<SatSolver>());
+        }
+      };
+
+      heuristics.decision_policies.reserve(2);
+      if (!integer_vars.empty()) {
+        heuristics.decision_policies.push_back(SequentialSearch(
+            {ShaveModelIntegerVariableBounds(integer_vars, model), search()}));
+        heuristics.restart_policies.push_back(restart_policy());
+      }
+
+      if (!literals.empty()) {
+        heuristics.decision_policies.push_back(SequentialSearch(
+            {ShaveModelBooleanVariables(literals, model), search()}));
+        heuristics.restart_policies.push_back(restart_policy());
+      }
+
+      if (heuristics.decision_policies.empty()) {
+        heuristics.decision_policies.push_back(search());
+        heuristics.restart_policies.push_back(restart_policy());
+      }
+
       return;
     }
   }

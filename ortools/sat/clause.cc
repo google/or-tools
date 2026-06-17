@@ -2145,8 +2145,7 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
   // We increment num_redundant_literals_ only at the end, to avoid breaking the
   // invariant "num_redundant_literals_ % 2 == 0" in case of early return.
   reverse_topological_order_.clear();
-  for (int index = 0; index < scc.size(); ++index) {
-    const absl::Span<int32_t> component = scc[index];
+  for (const absl::Span<int32_t> component : scc) {
     // We ignore variable that appear in no constraints.
     if (component.size() == 1 && is_removed_[LiteralIndex(component[0])]) {
       continue;
@@ -2278,8 +2277,7 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
   // of size 1 is because of the potential newly fixed literals above.
   //
   // In any case, all fixed literals are marked as redundant.
-  for (int index = 0; index < scc.size(); ++index) {
-    const absl::Span<int32_t> component = scc[index];
+  for (const absl::Span<int32_t> component : scc) {
     if (component.size() == 1 || is_removed_[LiteralIndex(component[0])]) {
       continue;
     }

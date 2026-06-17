@@ -1609,7 +1609,7 @@ CompactVectorVector<int> PartitionByIncomparability(
     VLOG(3) << "PartitionByIncomparability found graph is non-splittable.";
   } else {
     VLOG(3) << "PartitionByIncomparability found: ["
-            << absl::StrJoin(result.AsVectorOfSpan(), ",",
+            << absl::StrJoin(result, ",",
                              [](std::string* out, absl::Span<const int> v) {
                                absl::StrAppend(out, v.size());
                              })
@@ -1742,9 +1742,9 @@ CompactVectorVector<int> IntervalsNonOverlappingComponents(
   CompactVectorVector<int> result;
 
   std::vector<int> mapped;
-  for (int i = 0; i < partitions.size(); ++i) {
+  for (const absl::Span<const int> partition : partitions) {
     mapped.clear();
-    for (const int u : partitions[i]) {
+    for (const int u : partition) {
       // Only keep nodes that represent intervals
       if (u < N) mapped.push_back(intervals[u].index);
     }
@@ -1760,7 +1760,7 @@ CompactVectorVector<int> IntervalsNonOverlappingComponents(
   } else {
     VLOG(3) << "IntervalsNonOverlappingComponents: " << N << " intervals and "
             << precedences.size() << " precedences, components=["
-            << absl::StrJoin(result.AsVectorOfSpan(), ",",
+            << absl::StrJoin(result, ",",
                              [](std::string* out, absl::Span<const int> v) {
                                absl::StrAppend(out, v.size());
                              })

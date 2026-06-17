@@ -593,6 +593,9 @@ bool Prober::ProbeDnf(absl::string_view name,
                       absl::Span<const std::vector<Literal>> dnf,
                       DnfType dnf_type, const SatClause* dnf_clause) {
   if (dnf.size() <= 1) return true;
+  // Large DNFs take a long time to probe, and can cause time limit violations.
+  // They are also less likely to give new fixed literals or new bounds.
+  if (dnf.size() >= 10) return true;
 
   // dnf_clause could be deleted as a side effect of probing, but is needed for
   // LRAT in FixProbedDnfLiterals(). To avoid this we block clause deletion
@@ -605,17 +608,22 @@ bool Prober::ProbeDnf(absl::string_view name,
   // Reset the solver in case it was already used.
   if (!sat_solver_->ResetToLevelZero()) return false;
 
+  const int root_trail_index = trail_.Index();
+  const int root_integer_trail_index = integer_trail_->Index();
   always_propagated_bounds_.clear();
   always_propagated_literals_.clear();
+  TimeLimitCheckEveryNCalls checker(100, time_limit_);
   int num_valid_conjunctions = 0;
   for (absl::Span<const Literal> conjunction : dnf) {
-    // TODO(user): instead of going back to level zero, we could backtrack
-    // to level 'n', where n is the length of the longest prefix shared between
-    // the current conjunction and the previous one (more or less -- conjunction
-    // literals which are already assigned or lead to a conflict do not
-    // translate to a decision). For a kAtLeastOneCombination DNF with 8
-    // conjunctions, this would reduce the number of enqueues from 8*3=24 to 14.
-    if (!sat_solver_->ResetToLevelZero()) return false;
+    int backtrack_level = 0;
+    while (backtrack_level < conjunction.size() &&
+           backtrack_level < sat_solver_->CurrentDecisionLevel() &&
+           conjunction[backtrack_level] ==
+               sat_solver_->Decisions()[backtrack_level].literal) {
+      backtrack_level++;
+    }
+    sat_solver_->Backtrack(backtrack_level);
+    if (!sat_solver_->FinishPropagation()) return false;
     if (num_valid_conjunctions > 0 && always_propagated_bounds_.empty() &&
         always_propagated_literals_.empty()) {
       // We can exit safely as nothing will be propagated.
@@ -623,9 +631,8 @@ bool Prober::ProbeDnf(absl::string_view name,
     }
 
     bool conjunction_is_valid = true;
-    const int root_trail_index = trail_.Index();
-    const int root_integer_trail_index = integer_trail_->Index();
     for (const Literal& lit : conjunction) {
+      if (checker.LimitReached()) return true;
       if (assignment_.LiteralIsAssigned(lit)) {
         if (assignment_.LiteralIsTrue(lit)) continue;
         conjunction_is_valid = false;
@@ -787,8 +794,16 @@ bool Prober::FixProbedDnfLiterals(
   for (int conjunction_index = 0; conjunction_index < dnf.size();
        ++conjunction_index) {
     absl::Span<const Literal> conjunction = dnf[conjunction_index];
-    // TODO(user): same comment as in ProbeDnf().
-    if (!sat_solver_->ResetToLevelZero()) return false;
+
+    int backtrack_level = 0;
+    while (backtrack_level < conjunction.size() &&
+           backtrack_level < sat_solver_->CurrentDecisionLevel() &&
+           conjunction[backtrack_level] ==
+               sat_solver_->Decisions()[backtrack_level].literal) {
+      backtrack_level++;
+    }
+    sat_solver_->Backtrack(backtrack_level);
+    if (!sat_solver_->FinishPropagation()) return false;
 
     // Enqueue the literals of `conjunction` one by one.
     // The first literal of `conjunction` which is propagated to false, if any,
@@ -856,8 +871,8 @@ bool Prober::FixProbedDnfLiterals(
         tmp_proof_.push_back(first_false_literal_clause);
       } else {
         // TODO(user): processing the propagated literals in trail order
-        // and reusing the previous proofs to compute new ones
-        // could reduce the algorithmic complexity here.
+        // and reusing the previous proofs to compute new ones could reduce the
+        // algorithmic complexity here.
         clause_manager_->AppendClausesFixing({propagated_lit}, &tmp_proof_);
       }
       // Add the inferred clause to the LratProofHandler.

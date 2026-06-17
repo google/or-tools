@@ -3030,14 +3030,46 @@ bool CpModelPresolver::PresolveLinear2WithBooleans(ConstraintProto* ct) {
   }
   if (!RefIsPositive(lit)) return false;
 
+  // The constraint is really:
+  // - enforcement & lit      => var \in var_domain_on_true
+  // - enforcement & not(lit) => var \in var_domain_on_false
+  // We will always rewrite it as such.
   const Domain rhs = ReadDomainFromProto(ct->linear());
   const Domain rhs_if_true =
       rhs.AdditionWith(Domain(-value_on_true)).InverseMultiplicationBy(coeff);
   const Domain rhs_if_false = rhs.InverseMultiplicationBy(coeff);
-  const bool implied_false =
-      context_->DomainOf(var).IntersectionWith(rhs_if_true).IsEmpty();
-  const bool implied_true =
-      context_->DomainOf(var).IntersectionWith(rhs_if_false).IsEmpty();
+
+  // The lit in the linear2 can imply something on var, in which case we
+  // have more information on the two possible domains of var.
+  //
+  // Tricky: We don't want the deduction to come from this constraint, otherwise
+  // the reasoning below will be wrong. But currently this should be safe since
+  // we don't push this kind of implied domain from a linear2.
+  const Domain var_domain = context_->DomainOf(var);
+  const Domain domain_on_true =
+      var_domain.IntersectionWith(context_->deductions.ImpliedDomain(lit, var));
+  const Domain domain_on_false = var_domain.IntersectionWith(
+      context_->deductions.ImpliedDomain(NegatedRef(lit), var));
+
+  // This is really the same as rhs_if_true/false EXCEPT if we already have
+  // lit => var \in domain !!
+  const Domain var_domain_on_true =
+      domain_on_true.IntersectionWith(rhs_if_true);
+  const Domain var_domain_on_false =
+      domain_on_false.IntersectionWith(rhs_if_false);
+
+  if (var_domain_on_false == var_domain_on_true) {
+    // This is really just a linear1 !
+    context_->UpdateRuleStats("linear2: reduce to a linear1");
+    ct->mutable_linear()->Clear();
+    ct->mutable_linear()->add_vars(var);
+    ct->mutable_linear()->add_coeffs(1);
+    FillDomainInProto(var_domain_on_true, ct->mutable_linear());
+    return PresolveSmallLinear(ct) || true;
+  }
+
+  const bool implied_false = var_domain_on_true.IsEmpty();
+  const bool implied_true = var_domain_on_false.IsEmpty();
   if (implied_true && implied_false) {
     return MarkConstraintAsFalse(ct, "linear2: infeasible");
   } else if (implied_true) {
@@ -3048,11 +3080,11 @@ bool CpModelPresolver::PresolveLinear2WithBooleans(ConstraintProto* ct) {
     *new_ct->mutable_enforcement_literal() = ct->enforcement_literal();
     new_ct->mutable_bool_and()->add_literals(lit);
 
-    // Rewrite to => var in rhs_if_true.
+    // Rewrite to => var in var_domain_on_true.
     ct->mutable_linear()->Clear();
     ct->mutable_linear()->add_vars(var);
     ct->mutable_linear()->add_coeffs(1);
-    FillDomainInProto(rhs_if_true, ct->mutable_linear());
+    FillDomainInProto(var_domain_on_true, ct->mutable_linear());
     return PresolveSmallLinear(ct) || true;
   } else if (implied_false) {
     context_->UpdateRuleStats("linear2: boolean with one feasible value");
@@ -3062,47 +3094,50 @@ bool CpModelPresolver::PresolveLinear2WithBooleans(ConstraintProto* ct) {
     *new_ct->mutable_enforcement_literal() = ct->enforcement_literal();
     new_ct->mutable_bool_and()->add_literals(NegatedRef(lit));
 
-    // Rewrite to => var in rhs_if_false.
+    // Rewrite to => var in var_domain_on_false.
     ct->mutable_linear()->Clear();
     ct->mutable_linear()->add_vars(var);
     ct->mutable_linear()->add_coeffs(1);
-    FillDomainInProto(rhs_if_false, ct->mutable_linear());
+    FillDomainInProto(var_domain_on_false, ct->mutable_linear());
     return PresolveSmallLinear(ct) || true;
-  } else if (ct->enforcement_literal().empty() &&
-             !context_->CanBeUsedAsLiteral(var)) {
-    // We currently only do that if there are no enforcement and we don't have
-    // two Booleans as this can be presolved differently. We expand it into
-    // two linear1 constraint that have a chance to be merged with other
-    // "encoding" constraints.
-    context_->UpdateRuleStats("linear2: contains a boolean");
-
-    // lit => var \in rhs_if_true
-    const Domain var_domain = context_->DomainOf(var);
-    if (!var_domain.IsIncludedIn(rhs_if_true)) {
-      ConstraintProto* new_ct = context_->AddConstraint();
-      new_ct->add_enforcement_literal(lit);
-      new_ct->mutable_linear()->add_vars(var);
-      new_ct->mutable_linear()->add_coeffs(1);
-      FillDomainInProto(rhs_if_true.IntersectionWith(var_domain),
-                        new_ct->mutable_linear());
-    }
-
-    // NegatedRef(lit) => var \in rhs_if_false
-    if (!var_domain.IsIncludedIn(rhs_if_false)) {
-      ConstraintProto* new_ct = context_->AddConstraint();
-      new_ct->add_enforcement_literal(NegatedRef(lit));
-      new_ct->mutable_linear()->add_vars(var);
-      new_ct->mutable_linear()->add_coeffs(1);
-      FillDomainInProto(rhs_if_false.IntersectionWith(var_domain),
-                        new_ct->mutable_linear());
-    }
-
-    return RemoveConstraint(ct);
   }
 
-  // Code below require equality.
-  context_->UpdateRuleStats("TODO linear2: contains a boolean");
-  return false;
+  // We always expand such linear 2.
+  if (domain_on_true != var_domain || domain_on_false != var_domain) {
+    context_->UpdateRuleStats("linear2: contains a related Boolean");
+  } else {
+    context_->UpdateRuleStats("linear2: contains a Boolean");
+  }
+
+  // lit => var \in var_domain_on_true
+  if (var_domain_on_true != var_domain) {
+    ConstraintProto* new_ct = context_->AddEnforcedConstraint(ct);
+    if (var_domain_on_false.IsIncludedIn(var_domain_on_true)) {
+      // This is true independently on the value of lit!
+      context_->UpdateRuleStats("linear2: simplified one alternative");
+    } else {
+      new_ct->add_enforcement_literal(lit);
+    }
+    new_ct->mutable_linear()->add_vars(var);
+    new_ct->mutable_linear()->add_coeffs(1);
+    FillDomainInProto(var_domain_on_true, new_ct->mutable_linear());
+  }
+
+  // NegatedRef(lit) => var \in var_domain_on_false
+  if (var_domain_on_false != var_domain) {
+    ConstraintProto* new_ct = context_->AddEnforcedConstraint(ct);
+    if (var_domain_on_true.IsIncludedIn(var_domain_on_false)) {
+      // This is true independently on the value of lit!
+      context_->UpdateRuleStats("linear2: simplified one alternative");
+    } else {
+      new_ct->add_enforcement_literal(NegatedRef(lit));
+    }
+    new_ct->mutable_linear()->add_vars(var);
+    new_ct->mutable_linear()->add_coeffs(1);
+    FillDomainInProto(var_domain_on_false, new_ct->mutable_linear());
+  }
+
+  return RemoveConstraint(ct);
 }
 
 bool CpModelPresolver::PresolveLinear2NeCst(ConstraintProto* ct, int64_t rhs) {
@@ -7033,8 +7068,7 @@ bool CpModelPresolver::PresolveNoOverlap2D(int /*c*/, ConstraintProto* ct) {
   const CompactVectorVector<int> components =
       GetOverlappingRectangleComponents(bounding_boxes);
   if (components.size() > 1) {
-    for (int i = 0; i < components.size(); ++i) {
-      absl::Span<const int> boxes = components[i];
+    for (const absl::Span<const int> boxes : components) {
       if (boxes.size() <= 1) continue;
 
       NoOverlap2DConstraintProto* new_no_overlap_2d =
@@ -7065,11 +7099,11 @@ bool CpModelPresolver::PresolveNoOverlap2D(int /*c*/, ConstraintProto* ct) {
     absl::c_stable_sort(indexed_intervals,
                         IndexedInterval::ComparatorByStart());
     ConstructOverlappingSets(absl::MakeSpan(indexed_intervals), &no_overlaps);
-    for (int i = 0; i < no_overlaps.size(); ++i) {
+    for (const absl::Span<const int> component : no_overlaps) {
       ConstraintProto* new_ct = context_->AddConstraint();
       // Unfortunately, the Assign() method does not work in or-tools as the
       // protobuf int32_t type is not the int type.
-      for (const int i : no_overlaps[i]) {
+      for (const int i : component) {
         new_ct->mutable_no_overlap()->add_intervals(i);
       }
     }
@@ -7144,11 +7178,9 @@ bool CpModelPresolver::PresolveNoOverlap2D(int /*c*/, ConstraintProto* ct) {
   const CompactVectorVector<int> non_fixed_components =
       GetOverlappingRectangleComponents(non_fixed_bounding_boxes);
   if (non_fixed_components.size() > 1) {
-    for (int i = 0; i < non_fixed_components.size(); ++i) {
+    for (const absl::Span<const int> indexes : non_fixed_components) {
       // Note: we care about components of size 1 because they might be
       // overlapping with the fixed boxes.
-      absl::Span<const int> indexes = non_fixed_components[i];
-
       NoOverlap2DConstraintProto* new_no_overlap_2d =
           context_->AddConstraint()->mutable_no_overlap_2d();
       for (const int idx : indexes) {
@@ -9990,7 +10022,7 @@ void CpModelPresolver::SplitNoOverlapAndCumulativeConstraints() {
       return;
     }
     context_->UpdateConstraintVariableUsage(c);
-    for (const auto& component : components.AsVectorOfSpan()) {
+    for (const auto& component : components) {
       if (is_no_overlap && component.size() <= 1) {
         continue;
       }
