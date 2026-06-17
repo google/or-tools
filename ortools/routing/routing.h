@@ -2441,6 +2441,8 @@ class OR_DLL Model {
   // nodes in topological order based on precedence constraints for
   // dimensions of the model.
   void FinalizePrecedences();
+  // Sets up all cost variables including the global cost variable.
+  void SetupCosts(const RoutingSearchParameters& parameters);
   int64_t GetArcCostForClassInternal(int64_t from_index, int64_t to_index,
                                      CostClassIndex cost_class_index) const;
   int64_t GetArcCostWithGuidedLocalSearchPenalties(int64_t from_index,

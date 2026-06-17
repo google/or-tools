@@ -1966,6 +1966,291 @@ void Model::FinalizePrecedences() {
   }
 }
 
+void Model::SetupCosts(const RoutingSearchParameters& parameters) {
+  std::vector<IntVar*> cost_elements;
+  // Arc and dimension costs.
+  if (vehicles_ > 0) {
+    for (int node_index = 0; node_index < Size(); ++node_index) {
+      if (CostsAreHomogeneousAcrossVehicles()) {
+        AppendHomogeneousArcCosts(parameters, node_index, &cost_elements);
+      } else {
+        AppendArcCosts(parameters, node_index, &cost_elements);
+      }
+    }
+    if (vehicle_amortized_cost_factors_set_) {
+      std::vector<IntVar*> route_lengths;
+      solver_->MakeIntVarArray(vehicles_, 0, Size(), &route_lengths);
+      solver_->AddConstraint(
+          solver_->MakeDistribute(vehicle_vars_, route_lengths));
+      std::vector<IntVar*> vehicle_used;
+      for (int i = 0; i < vehicles_; i++) {
+        // The start/end of the vehicle are always on the route.
+        vehicle_used.push_back(
+            solver_->MakeIsGreaterCstVar(route_lengths[i], 2));
+        IntVar* const var =
+            solver_
+                ->MakeProd(solver_->MakeOpposite(solver_->MakeSquare(
+                               solver_->MakeSum(route_lengths[i], -2))),
+                           quadratic_cost_factor_of_vehicle_[i])
+                ->Var();
+        cost_elements.push_back(var);
+      }
+      IntVar* const vehicle_usage_cost =
+          solver_->MakeScalProd(vehicle_used, linear_cost_factor_of_vehicle_)
+              ->Var();
+      cost_elements.push_back(vehicle_usage_cost);
+    }
+  }
+  // Dimension span constraints: cost and limits.
+  for (Dimension* dimension : dimensions_) {
+    dimension->SetupGlobalSpanCost(&cost_elements);
+    dimension->SetupSlackAndDependentTransitCosts();
+    const std::vector<int64_t>& span_costs =
+        dimension->vehicle_span_cost_coefficients();
+    const std::vector<int64_t>& slack_costs =
+        dimension->vehicle_slack_cost_coefficients();
+    const std::vector<int64_t>& span_ubs =
+        dimension->vehicle_span_upper_bounds();
+    const std::vector<int>& rg_indices =
+        dimension_resource_group_indices_[dimension->index()];
+    const bool has_span_constraint =
+        std::any_of(span_costs.begin(), span_costs.end(),
+                    [](int64_t coeff) { return coeff != 0; }) ||
+        std::any_of(slack_costs.begin(), slack_costs.end(),
+                    [](int64_t coeff) { return coeff != 0; }) ||
+        std::any_of(span_ubs.begin(), span_ubs.end(),
+                    [](int64_t value) { return value < kint64max; }) ||
+        std::any_of(
+            rg_indices.begin(), rg_indices.end(),
+            [this, dimension](int64_t rg_index) {
+              const ResourceGroup& resource_group = *resource_groups_[rg_index];
+              if (resource_group.GetVehiclesRequiringAResource().empty()) {
+                return false;
+              }
+              for (const ResourceGroup::Resource& resource :
+                   resource_group.GetResources()) {
+                if (resource.GetDimensionAttributes(dimension->index())
+                        .span_upper_bound() < kint64max) {
+                  return true;
+                }
+              }
+              return false;
+            }) ||
+        dimension->HasSoftSpanUpperBounds() ||
+        dimension->HasQuadraticCostSoftSpanUpperBounds();
+    if (has_span_constraint) {
+      std::vector<IntVar*>& spans =
+          *(dimension->mutable_vehicle_span_variables());
+      std::vector<IntVar*> total_slacks(vehicles(), nullptr);
+      // Generate variables only where needed.
+      for (int vehicle = 0; vehicle < vehicles(); ++vehicle) {
+        if (span_ubs[vehicle] < kint64max) {
+          spans[vehicle] = solver_->MakeIntVar(0, span_ubs[vehicle], "");
+        }
+        if (span_costs[vehicle] != 0 || slack_costs[vehicle] != 0) {
+          total_slacks[vehicle] = solver_->MakeIntVar(0, span_ubs[vehicle], "");
+        }
+      }
+      if (dimension->HasSoftSpanUpperBounds()) {
+        for (int vehicle = 0; vehicle < vehicles(); ++vehicle) {
+          if (spans[vehicle]) continue;
+          const BoundCost bound_cost =
+              dimension->GetSoftSpanUpperBoundForVehicle(vehicle);
+          if (bound_cost.cost == 0) continue;
+          spans[vehicle] = solver_->MakeIntVar(0, span_ubs[vehicle]);
+        }
+      }
+      if (dimension->HasQuadraticCostSoftSpanUpperBounds()) {
+        for (int vehicle = 0; vehicle < vehicles(); ++vehicle) {
+          if (spans[vehicle]) continue;
+          const BoundCost bound_cost =
+              dimension->GetQuadraticCostSoftSpanUpperBoundForVehicle(vehicle);
+          if (bound_cost.cost == 0) continue;
+          spans[vehicle] = solver_->MakeIntVar(0, span_ubs[vehicle]);
+        }
+      }
+      for (int rg_index :
+           dimension_resource_group_indices_[dimension->index()]) {
+        const ResourceGroup& resource_group = *resource_groups_[rg_index];
+        for (int vehicle : resource_group.GetVehiclesRequiringAResource()) {
+          if (spans[vehicle]) continue;
+          spans[vehicle] = solver_->MakeIntVar(0, span_ubs[vehicle]);
+        }
+      }
+      solver_->AddConstraint(
+          MakePathSpansAndTotalSlacks(dimension, spans, total_slacks));
+      // If a vehicle's span is constrained, its start/end cumuls must be
+      // instantiated.
+      for (int vehicle = 0; vehicle < vehicles(); ++vehicle) {
+        if (!spans[vehicle] && !total_slacks[vehicle]) continue;
+        if (spans[vehicle]) {
+          AddVariableTargetToFinalizer(spans[vehicle], kint64min);
+        }
+        AddVariableTargetToFinalizer(dimension->CumulVar(End(vehicle)),
+                                     kint64min);
+        AddVariableTargetToFinalizer(dimension->CumulVar(Start(vehicle)),
+                                     kint64max);
+      }
+      // Add costs of variables.
+      for (int vehicle = 0; vehicle < vehicles(); ++vehicle) {
+        if (span_costs[vehicle] == 0 && slack_costs[vehicle] == 0) continue;
+        DCHECK(total_slacks[vehicle] != nullptr);
+        IntVar* const slack_amount =
+            solver_
+                ->MakeProd(vehicle_route_considered_[vehicle],
+                           total_slacks[vehicle])
+                ->Var();
+        const int64_t slack_cost_coefficient =
+            CapAdd(slack_costs[vehicle], span_costs[vehicle]);
+        IntVar* const slack_cost =
+            solver_->MakeProd(slack_amount, slack_cost_coefficient)->Var();
+        cost_elements.push_back(slack_cost);
+        AddWeightedVariableMinimizedByFinalizer(slack_amount,
+                                                slack_cost_coefficient);
+      }
+      if (dimension->HasSoftSpanUpperBounds()) {
+        for (int vehicle = 0; vehicle < vehicles(); ++vehicle) {
+          const auto bound_cost =
+              dimension->GetSoftSpanUpperBoundForVehicle(vehicle);
+          if (bound_cost.cost == 0 || bound_cost.bound == kint64max) continue;
+          DCHECK(spans[vehicle] != nullptr);
+          // Additional cost is vehicle_cost_considered_[vehicle] *
+          // max(0, spans[vehicle] - bound_cost.bound) * bound_cost.cost.
+          IntVar* const span_violation_amount =
+              solver_
+                  ->MakeProd(
+                      vehicle_route_considered_[vehicle],
+                      solver_->MakeMax(
+                          solver_->MakeSum(spans[vehicle], -bound_cost.bound),
+                          0))
+                  ->Var();
+          IntVar* const span_violation_cost =
+              solver_->MakeProd(span_violation_amount, bound_cost.cost)->Var();
+          cost_elements.push_back(span_violation_cost);
+          AddWeightedVariableMinimizedByFinalizer(span_violation_amount,
+                                                  bound_cost.cost);
+        }
+      }
+      if (dimension->HasQuadraticCostSoftSpanUpperBounds()) {
+        for (int vehicle = 0; vehicle < vehicles(); ++vehicle) {
+          const auto bound_cost =
+              dimension->GetQuadraticCostSoftSpanUpperBoundForVehicle(vehicle);
+          if (bound_cost.cost == 0 || bound_cost.bound == kint64max) continue;
+          DCHECK(spans[vehicle] != nullptr);
+          // Additional cost is vehicle_cost_considered_[vehicle] *
+          // max(0, spans[vehicle] - bound_cost.bound)^2 * bound_cost.cost.
+          IntExpr* max0 = solver_->MakeMax(
+              solver_->MakeSum(spans[vehicle], -bound_cost.bound), 0);
+          IntVar* const squared_span_violation_amount =
+              solver_
+                  ->MakeProd(vehicle_route_considered_[vehicle],
+                             solver_->MakeSquare(max0))
+                  ->Var();
+          IntVar* const span_violation_cost =
+              solver_->MakeProd(squared_span_violation_amount, bound_cost.cost)
+                  ->Var();
+          cost_elements.push_back(span_violation_cost);
+          AddWeightedVariableMinimizedByFinalizer(squared_span_violation_amount,
+                                                  bound_cost.cost);
+        }
+      }
+    }
+  }
+  // Penalty costs
+  for (DisjunctionIndex i(0); i < disjunctions_.size(); ++i) {
+    IntVar* penalty_var = CreateDisjunction(i);
+    if (penalty_var != nullptr) {
+      cost_elements.push_back(penalty_var);
+    }
+  }
+  // Soft cumul lower/upper bound costs
+  for (const Dimension* dimension : dimensions_) {
+    dimension->SetupCumulVarSoftLowerBoundCosts(&cost_elements);
+    dimension->SetupCumulVarSoftUpperBoundCosts(&cost_elements);
+    dimension->SetupCumulVarPiecewiseLinearCosts(&cost_elements);
+  }
+  // Same vehicle costs
+  for (int i = 0; i < same_vehicle_costs_.size(); ++i) {
+    cost_elements.push_back(CreateSameVehicleCost(i));
+  }
+  // Energy costs
+  for (const auto& [force_distance, costs] : force_distance_to_energy_costs_) {
+    std::vector<IntVar*> energy_costs(vehicles_, nullptr);
+
+    for (int v = 0; v < vehicles_; ++v) {
+      const int64_t cost_ub = costs[v].IsNull() ? 0 : kint64max;
+      energy_costs[v] = solver_->MakeIntVar(0, cost_ub);
+      cost_elements.push_back(energy_costs[v]);
+      AddWeightedVariableMinimizedByFinalizer(
+          energy_costs[v], std::max(costs[v].cost_per_unit_below_threshold,
+                                    costs[v].cost_per_unit_above_threshold));
+    }
+
+    const Dimension* force_dimension =
+        GetMutableDimension(force_distance.first);
+    DCHECK_NE(force_dimension, nullptr);
+    const Dimension* distance_dimension =
+        GetMutableDimension(force_distance.second);
+    DCHECK_NE(distance_dimension, nullptr);
+    if (force_dimension == nullptr || distance_dimension == nullptr) continue;
+
+    Solver::PathEnergyCostConstraintSpecification specification{
+        .nexts = Nexts(),
+        .paths = VehicleVars(),
+        .forces = force_dimension->cumuls(),
+        .distances = distance_dimension->transits(),
+        .path_energy_costs = costs,
+        .path_used_when_empty = vehicle_used_when_empty_,
+        .path_starts = paths_metadata_.Starts(),
+        .path_ends = paths_metadata_.Ends(),
+        .costs = std::move(energy_costs),
+    };
+
+    solver_->AddConstraint(
+        solver_->MakePathEnergyCostConstraint(std::move(specification)));
+  }
+  // Adding route constraint.
+  std::vector<IntVar*> route_cost_vars;
+  if (!route_evaluators_.empty()) {
+    solver()->MakeIntVarArray(vehicles(), 0, kint64max, &route_cost_vars);
+    solver()->AddConstraint(MakeRouteConstraint(
+        this, route_cost_vars, absl::bind_front(&Model::GetRouteCost, this)));
+  }
+  for (IntVar* route_cost_var : route_cost_vars) {
+    cost_elements.push_back(route_cost_var);
+  }
+  // Resource costs
+  for (int rg = 0; rg < resource_groups_.size(); ++rg) {
+    const std::vector<ResourceGroup::Resource>& resources =
+        resource_groups_[rg]->GetResources();
+    std::vector<int64_t> fixed_costs(resources.size());
+    for (int i = 0; i < fixed_costs.size(); ++i) {
+      for (const auto& attributes : resources[i].GetAllDimensionAttributes()) {
+        fixed_costs[i] = CapAdd(fixed_costs[i], attributes.fixed_cost());
+      }
+    }
+    if (fixed_costs.empty()) continue;
+    const int64_t max_fixed_cost =
+        *std::max_element(fixed_costs.begin(), fixed_costs.end());
+    if (max_fixed_cost == 0) {
+      continue;
+    }
+    for (IntVar* resource_var : resource_vars_[rg]) {
+      IntVar* const resource_cost = solver_->MakeIntVar(0, max_fixed_cost);
+      solver_->AddConstraint(solver_->MakeLightElement(
+          [fixed_costs](int i) {
+            return i >= 0 && i < fixed_costs.size() ? fixed_costs[i] : 0;
+          },
+          resource_cost, resource_var, []() { return false; }));
+      cost_elements.push_back(resource_cost);
+    }
+  }
+  // cost_ is the sum of cost_elements.
+  DCHECK(cost_ == nullptr);
+  cost_ = solver_->MakeSum(cost_elements)->Var();
+  cost_->set_name("Cost");
+}
+
 DisjunctionIndex Model::AddDisjunction(
     const std::vector<int64_t>& indices, int64_t penalty,
     int64_t max_cardinality, PenaltyCostBehavior penalty_cost_behavior) {
@@ -2852,288 +3137,7 @@ void Model::CloseModelWithParameters(
     is_bound_to_end_[end]->SetValue(1);
   }
 
-  // Adding route constraint.
-  std::vector<IntVar*> route_cost_vars;
-  if (!route_evaluators_.empty()) {
-    solver()->MakeIntVarArray(vehicles(), 0, kint64max, &route_cost_vars);
-    solver()->AddConstraint(MakeRouteConstraint(
-        this, route_cost_vars, absl::bind_front(&Model::GetRouteCost, this)));
-  }
-
-  std::vector<IntVar*> cost_elements;
-  // Arc and dimension costs.
-  if (vehicles_ > 0) {
-    for (int node_index = 0; node_index < size; ++node_index) {
-      if (CostsAreHomogeneousAcrossVehicles()) {
-        AppendHomogeneousArcCosts(parameters, node_index, &cost_elements);
-      } else {
-        AppendArcCosts(parameters, node_index, &cost_elements);
-      }
-    }
-    if (vehicle_amortized_cost_factors_set_) {
-      std::vector<IntVar*> route_lengths;
-      solver_->MakeIntVarArray(vehicles_, 0, size, &route_lengths);
-      solver_->AddConstraint(
-          solver_->MakeDistribute(vehicle_vars_, route_lengths));
-      std::vector<IntVar*> vehicle_used;
-      for (int i = 0; i < vehicles_; i++) {
-        // The start/end of the vehicle are always on the route.
-        vehicle_used.push_back(
-            solver_->MakeIsGreaterCstVar(route_lengths[i], 2));
-        IntVar* const var =
-            solver_
-                ->MakeProd(solver_->MakeOpposite(solver_->MakeSquare(
-                               solver_->MakeSum(route_lengths[i], -2))),
-                           quadratic_cost_factor_of_vehicle_[i])
-                ->Var();
-        cost_elements.push_back(var);
-      }
-      IntVar* const vehicle_usage_cost =
-          solver_->MakeScalProd(vehicle_used, linear_cost_factor_of_vehicle_)
-              ->Var();
-      cost_elements.push_back(vehicle_usage_cost);
-    }
-  }
-  // Dimension span constraints: cost and limits.
-  for (Dimension* dimension : dimensions_) {
-    dimension->SetupGlobalSpanCost(&cost_elements);
-    dimension->SetupSlackAndDependentTransitCosts();
-    const std::vector<int64_t>& span_costs =
-        dimension->vehicle_span_cost_coefficients();
-    const std::vector<int64_t>& slack_costs =
-        dimension->vehicle_slack_cost_coefficients();
-    const std::vector<int64_t>& span_ubs =
-        dimension->vehicle_span_upper_bounds();
-    const std::vector<int>& rg_indices =
-        dimension_resource_group_indices_[dimension->index()];
-    const bool has_span_constraint =
-        std::any_of(span_costs.begin(), span_costs.end(),
-                    [](int64_t coeff) { return coeff != 0; }) ||
-        std::any_of(slack_costs.begin(), slack_costs.end(),
-                    [](int64_t coeff) { return coeff != 0; }) ||
-        std::any_of(span_ubs.begin(), span_ubs.end(),
-                    [](int64_t value) { return value < kint64max; }) ||
-        std::any_of(
-            rg_indices.begin(), rg_indices.end(),
-            [this, dimension](int64_t rg_index) {
-              const ResourceGroup& resource_group = *resource_groups_[rg_index];
-              if (resource_group.GetVehiclesRequiringAResource().empty()) {
-                return false;
-              }
-              for (const ResourceGroup::Resource& resource :
-                   resource_group.GetResources()) {
-                if (resource.GetDimensionAttributes(dimension->index())
-                        .span_upper_bound() < kint64max) {
-                  return true;
-                }
-              }
-              return false;
-            }) ||
-        dimension->HasSoftSpanUpperBounds() ||
-        dimension->HasQuadraticCostSoftSpanUpperBounds();
-    if (has_span_constraint) {
-      std::vector<IntVar*>& spans =
-          *(dimension->mutable_vehicle_span_variables());
-      std::vector<IntVar*> total_slacks(vehicles(), nullptr);
-      // Generate variables only where needed.
-      for (int vehicle = 0; vehicle < vehicles(); ++vehicle) {
-        if (span_ubs[vehicle] < kint64max) {
-          spans[vehicle] = solver_->MakeIntVar(0, span_ubs[vehicle], "");
-        }
-        if (span_costs[vehicle] != 0 || slack_costs[vehicle] != 0) {
-          total_slacks[vehicle] = solver_->MakeIntVar(0, span_ubs[vehicle], "");
-        }
-      }
-      if (dimension->HasSoftSpanUpperBounds()) {
-        for (int vehicle = 0; vehicle < vehicles(); ++vehicle) {
-          if (spans[vehicle]) continue;
-          const BoundCost bound_cost =
-              dimension->GetSoftSpanUpperBoundForVehicle(vehicle);
-          if (bound_cost.cost == 0) continue;
-          spans[vehicle] = solver_->MakeIntVar(0, span_ubs[vehicle]);
-        }
-      }
-      if (dimension->HasQuadraticCostSoftSpanUpperBounds()) {
-        for (int vehicle = 0; vehicle < vehicles(); ++vehicle) {
-          if (spans[vehicle]) continue;
-          const BoundCost bound_cost =
-              dimension->GetQuadraticCostSoftSpanUpperBoundForVehicle(vehicle);
-          if (bound_cost.cost == 0) continue;
-          spans[vehicle] = solver_->MakeIntVar(0, span_ubs[vehicle]);
-        }
-      }
-      for (int rg_index :
-           dimension_resource_group_indices_[dimension->index()]) {
-        const ResourceGroup& resource_group = *resource_groups_[rg_index];
-        for (int vehicle : resource_group.GetVehiclesRequiringAResource()) {
-          if (spans[vehicle]) continue;
-          spans[vehicle] = solver_->MakeIntVar(0, span_ubs[vehicle]);
-        }
-      }
-      solver_->AddConstraint(
-          MakePathSpansAndTotalSlacks(dimension, spans, total_slacks));
-      // If a vehicle's span is constrained, its start/end cumuls must be
-      // instantiated.
-      for (int vehicle = 0; vehicle < vehicles(); ++vehicle) {
-        if (!spans[vehicle] && !total_slacks[vehicle]) continue;
-        if (spans[vehicle]) {
-          AddVariableTargetToFinalizer(spans[vehicle], kint64min);
-        }
-        AddVariableTargetToFinalizer(dimension->CumulVar(End(vehicle)),
-                                     kint64min);
-        AddVariableTargetToFinalizer(dimension->CumulVar(Start(vehicle)),
-                                     kint64max);
-      }
-      // Add costs of variables.
-      for (int vehicle = 0; vehicle < vehicles(); ++vehicle) {
-        if (span_costs[vehicle] == 0 && slack_costs[vehicle] == 0) continue;
-        DCHECK(total_slacks[vehicle] != nullptr);
-        IntVar* const slack_amount =
-            solver_
-                ->MakeProd(vehicle_route_considered_[vehicle],
-                           total_slacks[vehicle])
-                ->Var();
-        const int64_t slack_cost_coefficient =
-            CapAdd(slack_costs[vehicle], span_costs[vehicle]);
-        IntVar* const slack_cost =
-            solver_->MakeProd(slack_amount, slack_cost_coefficient)->Var();
-        cost_elements.push_back(slack_cost);
-        AddWeightedVariableMinimizedByFinalizer(slack_amount,
-                                                slack_cost_coefficient);
-      }
-      if (dimension->HasSoftSpanUpperBounds()) {
-        for (int vehicle = 0; vehicle < vehicles(); ++vehicle) {
-          const auto bound_cost =
-              dimension->GetSoftSpanUpperBoundForVehicle(vehicle);
-          if (bound_cost.cost == 0 || bound_cost.bound == kint64max) continue;
-          DCHECK(spans[vehicle] != nullptr);
-          // Additional cost is vehicle_cost_considered_[vehicle] *
-          // max(0, spans[vehicle] - bound_cost.bound) * bound_cost.cost.
-          IntVar* const span_violation_amount =
-              solver_
-                  ->MakeProd(
-                      vehicle_route_considered_[vehicle],
-                      solver_->MakeMax(
-                          solver_->MakeSum(spans[vehicle], -bound_cost.bound),
-                          0))
-                  ->Var();
-          IntVar* const span_violation_cost =
-              solver_->MakeProd(span_violation_amount, bound_cost.cost)->Var();
-          cost_elements.push_back(span_violation_cost);
-          AddWeightedVariableMinimizedByFinalizer(span_violation_amount,
-                                                  bound_cost.cost);
-        }
-      }
-      if (dimension->HasQuadraticCostSoftSpanUpperBounds()) {
-        for (int vehicle = 0; vehicle < vehicles(); ++vehicle) {
-          const auto bound_cost =
-              dimension->GetQuadraticCostSoftSpanUpperBoundForVehicle(vehicle);
-          if (bound_cost.cost == 0 || bound_cost.bound == kint64max) continue;
-          DCHECK(spans[vehicle] != nullptr);
-          // Additional cost is vehicle_cost_considered_[vehicle] *
-          // max(0, spans[vehicle] - bound_cost.bound)^2 * bound_cost.cost.
-          IntExpr* max0 = solver_->MakeMax(
-              solver_->MakeSum(spans[vehicle], -bound_cost.bound), 0);
-          IntVar* const squared_span_violation_amount =
-              solver_
-                  ->MakeProd(vehicle_route_considered_[vehicle],
-                             solver_->MakeSquare(max0))
-                  ->Var();
-          IntVar* const span_violation_cost =
-              solver_->MakeProd(squared_span_violation_amount, bound_cost.cost)
-                  ->Var();
-          cost_elements.push_back(span_violation_cost);
-          AddWeightedVariableMinimizedByFinalizer(squared_span_violation_amount,
-                                                  bound_cost.cost);
-        }
-      }
-    }
-  }
-  // Penalty costs
-  for (DisjunctionIndex i(0); i < disjunctions_.size(); ++i) {
-    IntVar* penalty_var = CreateDisjunction(i);
-    if (penalty_var != nullptr) {
-      cost_elements.push_back(penalty_var);
-    }
-  }
-  // Soft cumul lower/upper bound costs
-  for (const Dimension* dimension : dimensions_) {
-    dimension->SetupCumulVarSoftLowerBoundCosts(&cost_elements);
-    dimension->SetupCumulVarSoftUpperBoundCosts(&cost_elements);
-    dimension->SetupCumulVarPiecewiseLinearCosts(&cost_elements);
-  }
-  // Same vehicle costs
-  for (int i = 0; i < same_vehicle_costs_.size(); ++i) {
-    cost_elements.push_back(CreateSameVehicleCost(i));
-  }
-  // Energy costs
-  for (const auto& [force_distance, costs] : force_distance_to_energy_costs_) {
-    std::vector<IntVar*> energy_costs(vehicles_, nullptr);
-
-    for (int v = 0; v < vehicles_; ++v) {
-      const int64_t cost_ub = costs[v].IsNull() ? 0 : kint64max;
-      energy_costs[v] = solver_->MakeIntVar(0, cost_ub);
-      cost_elements.push_back(energy_costs[v]);
-      AddWeightedVariableMinimizedByFinalizer(
-          energy_costs[v], std::max(costs[v].cost_per_unit_below_threshold,
-                                    costs[v].cost_per_unit_above_threshold));
-    }
-
-    const Dimension* force_dimension =
-        GetMutableDimension(force_distance.first);
-    DCHECK_NE(force_dimension, nullptr);
-    const Dimension* distance_dimension =
-        GetMutableDimension(force_distance.second);
-    DCHECK_NE(distance_dimension, nullptr);
-    if (force_dimension == nullptr || distance_dimension == nullptr) continue;
-
-    Solver::PathEnergyCostConstraintSpecification specification{
-        .nexts = Nexts(),
-        .paths = VehicleVars(),
-        .forces = force_dimension->cumuls(),
-        .distances = distance_dimension->transits(),
-        .path_energy_costs = costs,
-        .path_used_when_empty = vehicle_used_when_empty_,
-        .path_starts = paths_metadata_.Starts(),
-        .path_ends = paths_metadata_.Ends(),
-        .costs = std::move(energy_costs),
-    };
-
-    solver_->AddConstraint(
-        solver_->MakePathEnergyCostConstraint(std::move(specification)));
-  }
-  for (IntVar* route_cost_var : route_cost_vars) {
-    cost_elements.push_back(route_cost_var);
-  }
-  // Resource costs
-  for (int rg = 0; rg < resource_groups_.size(); ++rg) {
-    const std::vector<ResourceGroup::Resource>& resources =
-        resource_groups_[rg]->GetResources();
-    std::vector<int64_t> fixed_costs(resources.size());
-    for (int i = 0; i < fixed_costs.size(); ++i) {
-      for (const auto& attributes : resources[i].GetAllDimensionAttributes()) {
-        fixed_costs[i] = CapAdd(fixed_costs[i], attributes.fixed_cost());
-      }
-    }
-    if (fixed_costs.empty()) continue;
-    const int64_t max_fixed_cost =
-        *std::max_element(fixed_costs.begin(), fixed_costs.end());
-    if (max_fixed_cost == 0) {
-      continue;
-    }
-    for (IntVar* resource_var : resource_vars_[rg]) {
-      IntVar* const resource_cost = solver_->MakeIntVar(0, max_fixed_cost);
-      solver_->AddConstraint(solver_->MakeLightElement(
-          [fixed_costs](int i) {
-            return i >= 0 && i < fixed_costs.size() ? fixed_costs[i] : 0;
-          },
-          resource_cost, resource_var, []() { return false; }));
-      cost_elements.push_back(resource_cost);
-    }
-  }
-  // cost_ is the sum of cost_elements.
-  cost_ = solver_->MakeSum(cost_elements)->Var();
-  cost_->set_name("Cost");
+  SetupCosts(parameters);
 
   // Pickup-delivery precedences
   std::vector<std::pair<int, int>> pickup_delivery_precedences;
@@ -3839,8 +3843,27 @@ const Assignment* Model::SolveWithIteratedLocalSearch(
     return nullptr;
   }
 
-  // Build an initial solution.
-  solver_->Solve(solve_db_, monitors_);
+  if (hint_ != nullptr) {
+    // Use the hint as the starting solution, bypassing solve_db_ which would
+    // ignore the hint and run first solution heuristics from scratch.
+    // We compose MakeRestoreAssignment with CreateSolutionFinalizer to bind
+    // all variables (dimensions, cumuls, etc.) without running local search.
+    assignment_->CopyIntersection(hint_);
+    DecisionBuilder* restore_hint =
+        solver_->Compose(solver_->MakeRestoreAssignment(assignment_),
+                         CreateSolutionFinalizer(parameters));
+    solver_->Solve(restore_hint, monitors_);
+    if (!collect_assignments_->has_solution()) {
+      // Fallback to solve_db_ if the hint is infeasible.
+      LOG(WARNING)
+          << "First solution hint could not be restored; falling back to "
+             "solving from scratch.";
+      solver_->Solve(solve_db_, monitors_);
+    }
+  } else {
+    // Build an initial solution.
+    solver_->Solve(solve_db_, monitors_);
+  }
   int64_t explored_solutions = solver_->solutions();
 
   Assignment* best_solution = collect_assignments_->last_solution_or_null();

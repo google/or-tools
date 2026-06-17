@@ -331,7 +331,7 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
     return true;
   }
 
-  inline void DetermineVehiclesRequiringResourceAssignment(
+  void DetermineVehiclesRequiringResourceAssignment(
       std::vector<int>* vehicles_without_resource_assignment,
       std::vector<int>* vehicles_with_resource_assignment,
       util_intops::StrongVector<RCIndex, absl::flat_hash_set<int>>*

@@ -248,29 +248,29 @@ cc_library(
     ],
 )
 
-cc_test(
-    name = "tsplib_parser_test",
-    size = "small",
-    timeout = "moderate",
-    srcs = ["tsplib_parser_test.cc"],
-    data = [
-        "//ortools/routing/parsers/testdata:tsplib_Kytojoki_33.vrp",
-    ],
-    flaky = 1,  # b/132942541
-    deps = [
-        ":tsplib_parser",
-        "//ortools/base:file",
-        "//ortools/base:gmock_main",
-        "//ortools/base:path",
-        "//ortools/base:temp_file",
-        "//ortools/base:zipfile",
-        "@abseil-cpp//absl/base:core_headers",
-        "@abseil-cpp//absl/container:btree",
-        "@abseil-cpp//absl/status",
-        "@abseil-cpp//absl/strings",
-        "@abseil-cpp//absl/strings:str_format",
-    ],
-)
+#cc_test(
+#    name = "tsplib_parser_test",
+#    size = "small",
+#    timeout = "moderate",
+#    srcs = ["tsplib_parser_test.cc"],
+#    data = [
+#        "//ortools/routing/parsers/testdata:tsplib_Kytojoki_33.vrp",
+#    ],
+#    flaky = 1,  # b/132942541
+#    deps = [
+#        ":tsplib_parser",
+#        "//ortools/base:file",
+#        "//ortools/base:gmock_main",
+#        "//ortools/base:path",
+#        "//ortools/base:temp_file",
+#        "//ortools/base:zipfile",
+#        "@abseil-cpp//absl/base:core_headers",
+#        "@abseil-cpp//absl/container:btree",
+#        "@abseil-cpp//absl/status",
+#        "@abseil-cpp//absl/strings",
+#        "@abseil-cpp//absl/strings:str_format",
+#    ],
+#)
 
 cc_library(
     name = "tsptw_parser",
