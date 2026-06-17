@@ -130,7 +130,7 @@ The Java code implements the same interface as the Python code, with a
 **CpModel** and a **CpSolver** class.
 
 ```java
-// Snippet from ortools/sat/samples/SimpleSatProgram.java
+// Snippet from ortools/sat/samples/java/SimpleSatProgram.java
 package com.google.ortools.sat.samples;
 import com.google.ortools.Loader;
 import com.google.ortools.sat.CpSolverStatus;

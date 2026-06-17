@@ -11,5 +11,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+add_subdirectory(algorithms)
+add_subdirectory(constraintsolver)
+add_subdirectory(graph)
+add_subdirectory(linearsolver)
 add_subdirectory(mathopt)
+add_subdirectory(modelbuilder)
+add_subdirectory(routing)
+add_subdirectory(sat)
 add_subdirectory(util)

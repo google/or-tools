@@ -126,7 +126,7 @@ if __name__ == '__main__':
 ### Java code samples
 
 ```java
-// Snippet from ortools/constraint_solver/samples/SimpleCpProgram.java
+// Snippet from ortools/constraint_solver/samples/java/SimpleCpProgram.java
 package com.google.ortools.constraintsolver.samples;
 import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.DecisionBuilder;

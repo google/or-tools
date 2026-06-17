@@ -198,8 +198,7 @@ public final class StiglerDiet {
     // Create the linear solver with the GLOP backend.
     MPSolver solver = MPSolver.createSolver("GLOP");
     if (solver == null) {
-      System.out.println("Could not create solver GLOP");
-      return;
+      throw new AssertionError("Could not create solver GLOP");
     }
     // [END solver]
 

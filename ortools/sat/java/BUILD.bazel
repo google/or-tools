@@ -13,7 +13,6 @@
 
 # Description: java wrapping of the code in ../
 
-load("@contrib_rules_jvm//java:defs.bzl", "java_junit5_test")
 load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 load("//bazel:or_java_wrap_cc.bzl", "or_java_wrap_cc")
 
@@ -55,25 +54,6 @@ or_java_wrap_cc(
     ],
 )
 
-java_junit5_test(
-    name = "CpModelProtoTest",
-    size = "medium",
-    srcs = ["CpModelProtoTest.java"],
-    jvm_flags = ["-Xcheck:jni"],
-    test_class = "com.google.ortools.sat.CpModelProtoTest",
-    deps = [
-        ":cp_model_proto",
-        "//ortools/java/com/google/ortools:Loader",
-        "//ortools/util/java:jni_helper",
-        "@maven//:com_google_truth_truth",
-        "@maven//:org_junit_jupiter_junit_jupiter_api",
-        "@maven//:org_junit_jupiter_junit_jupiter_engine",
-        "@maven//:org_junit_jupiter_junit_jupiter_params",
-        "@maven//:org_junit_platform_junit_platform_launcher",
-        "@maven//:org_junit_platform_junit_platform_reporting",
-    ],
-)
-
 or_java_wrap_cc(
     name = "sat",
     srcs = ["sat.swig"],
@@ -95,55 +75,4 @@ or_java_wrap_cc(
     use_directors = True,
     visibility = ["//visibility:public"],
     deps = ["//ortools/sat:swig_helper"],
-)
-
-java_junit5_test(
-    name = "CpModelTest",
-    size = "medium",
-    srcs = ["CpModelTest.java"],
-    test_class = "com.google.ortools.sat.CpModelTest",
-    deps = [
-        "//ortools/java/com/google/ortools:Loader",
-        "//ortools/java/com/google/ortools/sat",
-        "@maven//:com_google_truth_truth",
-        "@maven//:org_junit_jupiter_junit_jupiter_api",
-        "@maven//:org_junit_jupiter_junit_jupiter_engine",
-        "@maven//:org_junit_jupiter_junit_jupiter_params",
-        "@maven//:org_junit_platform_junit_platform_launcher",
-        "@maven//:org_junit_platform_junit_platform_reporting",
-    ],
-)
-
-java_junit5_test(
-    name = "CpSolverTest",
-    size = "medium",
-    srcs = ["CpSolverTest.java"],
-    test_class = "com.google.ortools.sat.CpSolverTest",
-    deps = [
-        "//ortools/java/com/google/ortools:Loader",
-        "//ortools/java/com/google/ortools/sat",
-        "@maven//:com_google_truth_truth",
-        "@maven//:org_junit_jupiter_junit_jupiter_api",
-        "@maven//:org_junit_jupiter_junit_jupiter_engine",
-        "@maven//:org_junit_jupiter_junit_jupiter_params",
-        "@maven//:org_junit_platform_junit_platform_launcher",
-        "@maven//:org_junit_platform_junit_platform_reporting",
-    ],
-)
-
-java_junit5_test(
-    name = "LinearExprTest",
-    size = "medium",
-    srcs = ["LinearExprTest.java"],
-    test_class = "com.google.ortools.sat.LinearExprTest",
-    deps = [
-        "//ortools/java/com/google/ortools:Loader",
-        "//ortools/java/com/google/ortools/sat",
-        "@maven//:com_google_truth_truth",
-        "@maven//:org_junit_jupiter_junit_jupiter_api",
-        "@maven//:org_junit_jupiter_junit_jupiter_engine",
-        "@maven//:org_junit_jupiter_junit_jupiter_params",
-        "@maven//:org_junit_platform_junit_platform_launcher",
-        "@maven//:org_junit_platform_junit_platform_reporting",
-    ],
 )

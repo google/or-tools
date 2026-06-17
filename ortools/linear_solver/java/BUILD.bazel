@@ -12,8 +12,6 @@
 # limitations under the License.
 
 # Description: java wrapping of the C++ code at ../
-
-load("@contrib_rules_jvm//java:defs.bzl", "java_junit5_test")
 load("//bazel:or_java_wrap_cc.bzl", "or_java_wrap_cc")
 
 package(default_visibility = ["//visibility:public"])
@@ -38,25 +36,3 @@ or_java_wrap_cc(
     ],
 )
 
-java_junit5_test(
-    name = "ModelBuilderTest",
-    srcs = ["ModelBuilderTest.java"],
-    jvm_flags = ["-Xcheck:jni"],
-    tags = [
-        "not_build:arm",
-        "not_run:arm",
-    ],
-    test_class = "com.google.ortools.modelbuilder.ModelBuilderTest",
-    deps = [
-        ":modelbuilder",
-        "//ortools/java/com/google/ortools:Loader",
-        "//ortools/java/com/google/ortools/modelbuilder",
-        "//ortools/linear_solver:linear_solver_glop",
-        "@maven//:com_google_truth_truth",
-        "@maven//:org_junit_jupiter_junit_jupiter_api",
-        "@maven//:org_junit_jupiter_junit_jupiter_engine",
-        "@maven//:org_junit_jupiter_junit_jupiter_params",
-        "@maven//:org_junit_platform_junit_platform_launcher",
-        "@maven//:org_junit_platform_junit_platform_reporting",
-    ],
-)

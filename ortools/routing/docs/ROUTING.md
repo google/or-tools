@@ -168,7 +168,7 @@ if __name__ == "__main__":
 ### Java code samples
 
 ```java
-// Snippet from ortools/routing/samples/SimpleRoutingProgram.java
+// Snippet from ortools/routing/samples/java/SimpleRoutingProgram.java
 package com.google.ortools.routing.samples;
 import static java.lang.Math.abs;
 

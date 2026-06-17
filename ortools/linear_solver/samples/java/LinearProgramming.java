@@ -26,8 +26,7 @@ public class LinearProgramming {
   private static void runLinearProgrammingExample(String solverType, boolean printModel) {
     MPSolver solver = MPSolver.createSolver(solverType);
     if (solver == null) {
-      System.out.println("Could not create solver " + solverType);
-      return;
+      throw new AssertionError("Could not create solver " + solverType);
     }
     double infinity = Double.POSITIVE_INFINITY;
     // x1, x2 and x3 are continuous non-negative variables.

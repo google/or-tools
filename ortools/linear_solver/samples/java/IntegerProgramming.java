@@ -24,8 +24,7 @@ public class IntegerProgramming {
   private static void runIntegerProgrammingExample(String solverType) {
     MPSolver solver = MPSolver.createSolver(solverType);
     if (solver == null) {
-      System.out.println("Could not create solver " + solverType);
-      return;
+      throw new AssertionError("Could not create solver " + solverType);
     }
     double infinity = Double.POSITIVE_INFINITY;
     // x1 and x2 are integer non-negative variables.

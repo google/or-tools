@@ -16,7 +16,7 @@ Samples:
 
 *   [tsp.cc](../samples/tsp.cc)
 *   [tsp.py](../samples/tsp.py)
-*   [Tsp.java](../samples/Tsp.java)
+*   [Tsp.java](../samples/java/Tsp.java)
 *   [Tsp.cs](../samples/Tsp.cs)
 
 ## Using Distance Matrix
@@ -30,5 +30,5 @@ Samples:
 
 *   [tsp_distance_matrix.cc](../samples/tsp_distance_matrix.cc)
 *   [tsp_distance_matrix.py](../samples/tsp_distance_matrix.py)
-*   [TspDistanceMatrix.java](../samples/TspDistanceMatrix.java)
+*   [TspDistanceMatrix.java](../samples/java/TspDistanceMatrix.java)
 *   [TspDistanceMatrix.cs](../samples/TspDistanceMatrix.cs)

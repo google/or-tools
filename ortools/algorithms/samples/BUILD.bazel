@@ -12,9 +12,7 @@
 # limitations under the License.
 
 load("@rules_cc//cc:cc_test.bzl", "cc_test")
-load("@rules_java//java:java_binary.bzl", "java_binary")
 load("@rules_python//python:py_test.bzl", "py_test")
-load("//tools/testing:bintest.bzl", "bintest")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -54,20 +52,4 @@ py_test(
     srcs = ["knapsack.py"],
     main = "knapsack.py",
     deps = ["//ortools/algorithms/python:knapsack_solver"],
-)
-
-java_binary(
-    name = "Knapsack",
-    srcs = ["Knapsack.java"],
-    main_class = "com.google.ortools.algorithms.samples.Knapsack",
-    deps = [
-        "//ortools/algorithms/java:knapsacksolver",
-        "//ortools/java/com/google/ortools:Loader",
-    ],
-)
-
-bintest(
-    name = "KnapsackTest",
-    srcs = [":KnapsackTest.bintest"],
-    named_data = {"Knapsack": ":Knapsack"},
 )
