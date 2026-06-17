@@ -39,7 +39,7 @@
 //   - ListGraph<> for the simplest api.
 //   - StaticGraph<> for performance, but requires building before usage, see
 //     below
-//   - CompleteGraph<> if you need a fully connected graph
+//   - CompleteGraph<> if you need a fully connected graph (with self loops).
 //   - CompleteBipartiteGraph<> if you need a fully connected bipartite graph
 //   - ReverseArcListGraph<> to add reverse arcs to ListGraph<>
 //   - ReverseArcStaticGraph<> to add reverse arcs to StaticGraph<>
@@ -952,7 +952,11 @@ class StaticGraph final
   // TODO(b/501313028): Use `GraphFromArcs()` instead.
   template <class ArcContainer>  // e.g. vector<pair<int, int>>.
   static StaticGraph FromArcs(NodeIndexType num_nodes,
-                              const ArcContainer& arcs);
+                              const ArcContainer& arcs) {
+    StaticGraph::Builder builder(num_nodes, arcs.size());
+    for (const auto& [from, to] : arcs) builder.AddArc(from, to);
+    return std::move(builder).BuildGraph(nullptr);
+  }
 
   // Default constructor creates an empty graph.
   StaticGraph()
@@ -984,10 +988,14 @@ class StaticGraph final
   }
   ArcIndexType num_arcs() const { return head_.size(); }
 
-  ArcIndexType OutDegree(NodeIndexType node) const;  // Work in O(1).
+  ArcIndexType OutDegree(NodeIndexType node) const {
+    return DirectArcLimit(node) - start_[node];  // Works in O(1).
+  };
+
   IntegerRange<ArcIndexType> OutgoingArcs(NodeIndexType node) const {
     return IntegerRange<ArcIndexType>(start_[node], DirectArcLimit(node));
   }
+
   IntegerRange<ArcIndexType> OutgoingArcsStartingFrom(NodeIndexType node,
                                                       ArcIndexType from) const {
     DCHECK_GE(from, start_[node]);
@@ -999,7 +1007,11 @@ class StaticGraph final
   // This loops over the heads of the OutgoingArcs(node). It is just a more
   // convenient way to achieve this. Moreover this interface is used by some
   // graph algorithms.
-  absl::Span<const NodeIndexType> operator[](NodeIndexType node) const;
+  absl::Span<const NodeIndexType> operator[](NodeIndexType node) const {
+    return absl::Span<const NodeIndexType>(
+        head_.data() + static_cast<size_t>(start_[node]),
+        static_cast<size_t>(DirectArcLimit(node) - start_[node]));
+  }
 
  private:
   friend class Builder;
@@ -1276,8 +1288,6 @@ class ReverseArcStaticGraph final
 
   ABSL_DEPRECATED("Use `Builder` instead")
   void Build(std::vector<ArcIndexType>* absl_nullable permutation);
-  ABSL_DEPRECATED("Use `Builder` instead")
-  void Build() { Build(nullptr); }
 
  private:
   ArcIndexType DirectArcLimit(NodeIndexType node) const {
@@ -1593,30 +1603,6 @@ void ListGraph<NodeIndexType, ArcIndexType>::ReserveArcs(ArcIndexType bound) {
 }
 
 // StaticGraph implementation --------------------------------------------------
-
-template <typename NodeIndexType, typename ArcIndexType>
-template <class ArcContainer>
-StaticGraph<NodeIndexType, ArcIndexType>
-StaticGraph<NodeIndexType, ArcIndexType>::FromArcs(NodeIndexType num_nodes,
-                                                   const ArcContainer& arcs) {
-  StaticGraph::Builder builder(num_nodes, arcs.size());
-  for (const auto& [from, to] : arcs) builder.AddArc(from, to);
-  return std::move(builder).BuildGraph(nullptr);
-}
-
-template <typename NodeIndexType, typename ArcIndexType>
-absl::Span<const NodeIndexType>
-StaticGraph<NodeIndexType, ArcIndexType>::operator[](NodeIndexType node) const {
-  return absl::Span<const NodeIndexType>(
-      head_.data() + static_cast<size_t>(start_[node]),
-      static_cast<size_t>(DirectArcLimit(node) - start_[node]));
-}
-
-template <typename NodeIndexType, typename ArcIndexType>
-ArcIndexType StaticGraph<NodeIndexType, ArcIndexType>::OutDegree(
-    NodeIndexType node) const {
-  return DirectArcLimit(node) - start_[node];
-}
 
 template <typename NodeIndexType, typename ArcIndexType>
 class StaticGraph<NodeIndexType, ArcIndexType>::Builder
@@ -2088,6 +2074,22 @@ class ReverseArcStaticGraph<
 // CompleteGraph implementation ------------------------------------------------
 // Nodes and arcs are implicit and not stored.
 
+namespace graph_internal {
+
+// An unsigned type with the same bit-width as the given `ArcIndexType`, which
+// may be a signed or unsigned integral type, or a StrongInt.
+template <typename ArcIndexType>
+using UnsignedTypeOfSameWidth = decltype([](auto x) {
+  using T = decltype(x);
+  if constexpr (std::is_integral_v<T>) {
+    return std::make_unsigned_t<T>(x);
+  } else {
+    return std::make_unsigned_t<typename T::ValueType>(x);
+  }
+}(ArcIndexType(0)));
+
+}  // namespace graph_internal
+
 template <typename NodeIndexType = int32_t, typename ArcIndexType = int32_t>
 class CompleteGraph
     : public BaseGraph<CompleteGraph<NodeIndexType, ArcIndexType>,
@@ -2098,70 +2100,58 @@ class CompleteGraph
       : num_nodes_(num_nodes),
         // If there are 0 or 1 nodes, the divisor is arbitrary. We pick 2 as 0
         // and 1 are not supported by `ConstantDivisor`.
-        divisor_(num_nodes > 1 ? num_nodes : 2) {}
+        divisor_(num_nodes > NodeIndexType(1) ? InternalType(num_nodes)
+                                              : InternalType(2)) {}
 
-  NodeIndexType num_nodes() const { return num_nodes_; }
-  NodeIndexType num_arcs() const { return num_nodes_ * num_nodes_; }
+  NodeIndexType num_nodes() const { return NodeIndexType(num_nodes_); }
 
-  NodeIndexType Head(ArcIndexType arc) const;
-  NodeIndexType Tail(ArcIndexType arc) const;
-  ArcIndexType OutDegree(NodeIndexType node) const;
-  IntegerRange<ArcIndexType> OutgoingArcs(NodeIndexType node) const;
+  ArcIndexType num_arcs() const {
+    return ArcIndexType(num_nodes_ * num_nodes_);
+  }
+
+  NodeIndexType Head(ArcIndexType arc) const {
+    DCHECK(this->IsArcValid(arc));
+    return NodeIndexType(InternalType(arc) % divisor_);
+  }
+
+  NodeIndexType Tail(ArcIndexType arc) const {
+    DCHECK(this->IsArcValid(arc));
+    return NodeIndexType(InternalType(arc) / divisor_);
+  }
+
+  ArcIndexType OutDegree(NodeIndexType) const {
+    return ArcIndexType(num_nodes_);
+  }
+
+  IntegerRange<ArcIndexType> OutgoingArcs(NodeIndexType node) const {
+    const InternalType node_internal(node);
+    DCHECK_LT(node_internal, num_nodes_);
+    return IntegerRange<ArcIndexType>(
+        ArcIndexType(num_nodes_ * node_internal),
+        ArcIndexType(num_nodes_ * (node_internal + 1)));
+  }
+
   IntegerRange<ArcIndexType> OutgoingArcsStartingFrom(NodeIndexType node,
-                                                      ArcIndexType from) const;
-  IntegerRange<NodeIndexType> operator[](NodeIndexType node) const;
+                                                      ArcIndexType from) const {
+    const InternalType node_internal(node);
+    DCHECK_LT(node_internal, num_nodes_);
+    return IntegerRange<ArcIndexType>(
+        from, ArcIndexType(num_nodes_ * (node_internal + 1)));
+  }
 
-  const NodeIndexType num_nodes_;
-  const ::util::math::ConstantDivisor<std::make_unsigned_t<ArcIndexType>>
-      divisor_;
+  IntegerRange<NodeIndexType> operator[](NodeIndexType node) const {
+    DCHECK_LT(InternalType(node), num_nodes_);
+    return IntegerRange<NodeIndexType>(NodeIndexType(0),
+                                       NodeIndexType(num_nodes_));
+  }
+
+ private:
+  using InternalType =
+      typename graph_internal::UnsignedTypeOfSameWidth<ArcIndexType>;
+
+  const InternalType num_nodes_;
+  const ::util::math::ConstantDivisor<InternalType> divisor_;
 };
-
-template <typename NodeIndexType, typename ArcIndexType>
-NodeIndexType CompleteGraph<NodeIndexType, ArcIndexType>::Head(
-    ArcIndexType arc) const {
-  DCHECK(this->IsArcValid(arc));
-  return arc % divisor_;
-}
-
-template <typename NodeIndexType, typename ArcIndexType>
-NodeIndexType CompleteGraph<NodeIndexType, ArcIndexType>::Tail(
-    ArcIndexType arc) const {
-  DCHECK(this->IsArcValid(arc));
-  return arc / divisor_;
-}
-
-template <typename NodeIndexType, typename ArcIndexType>
-ArcIndexType CompleteGraph<NodeIndexType, ArcIndexType>::OutDegree(
-    NodeIndexType node) const {
-  return num_nodes_;
-}
-
-template <typename NodeIndexType, typename ArcIndexType>
-IntegerRange<ArcIndexType>
-CompleteGraph<NodeIndexType, ArcIndexType>::OutgoingArcs(
-    NodeIndexType node) const {
-  DCHECK_LT(node, num_nodes_);
-  return IntegerRange<ArcIndexType>(
-      static_cast<ArcIndexType>(num_nodes_) * node,
-      static_cast<ArcIndexType>(num_nodes_) * (node + 1));
-}
-
-template <typename NodeIndexType, typename ArcIndexType>
-IntegerRange<ArcIndexType>
-CompleteGraph<NodeIndexType, ArcIndexType>::OutgoingArcsStartingFrom(
-    NodeIndexType node, ArcIndexType from) const {
-  DCHECK_LT(node, num_nodes_);
-  return IntegerRange<ArcIndexType>(
-      from, static_cast<ArcIndexType>(num_nodes_) * (node + 1));
-}
-
-template <typename NodeIndexType, typename ArcIndexType>
-IntegerRange<NodeIndexType>
-CompleteGraph<NodeIndexType, ArcIndexType>::operator[](
-    NodeIndexType node) const {
-  DCHECK_LT(node, num_nodes_);
-  return IntegerRange<NodeIndexType>(NodeIndexType(0), num_nodes_);
-}
 
 // CompleteBipartiteGraph implementation ---------------------------------------
 // Nodes and arcs are implicit and not stored.
@@ -2181,102 +2171,87 @@ class CompleteBipartiteGraph
         // If there are no right nodes, the divisor is arbitrary. We pick 2 as
         // 0 and 1 are not supported by `ConstantDivisor`. We handle the case
         // where `right_nodes` is 1 explicitly when dividing.
-        divisor_(right_nodes > 1 ? right_nodes : 2) {}
+        divisor_(right_nodes > NodeIndexType(1) ? InternalType(right_nodes)
+                                                : InternalType(2)) {}
 
   NodeIndexType num_nodes() const { return left_nodes_ + right_nodes_; }
-  NodeIndexType num_arcs() const { return left_nodes_ * right_nodes_; }
+
+  ArcIndexType num_arcs() const {
+    return ArcIndexType(InternalType(left_nodes_) * InternalType(right_nodes_));
+  }
 
   // Returns the arc index for the arc from `left` to `right`, where `left` is
   // in `[0, left_nodes)` and `right` is in
   // `[left_nodes, left_nodes + right_nodes)`.
-  ArcIndexType GetArc(NodeIndexType left_node, NodeIndexType right_node) const;
+  ArcIndexType GetArc(NodeIndexType left_node, NodeIndexType right_node) const {
+    DCHECK_LT(left_node, left_nodes_);
+    DCHECK_GE(right_node, left_nodes_);
+    DCHECK_LT(right_node, num_nodes());
+    return ArcIndexType(InternalType(left_node) * InternalType(right_nodes_)) +
+           ArcIndexType(right_node - left_nodes_);
+  }
 
-  NodeIndexType Head(ArcIndexType arc) const;
-  NodeIndexType Tail(ArcIndexType arc) const;
-  ArcIndexType OutDegree(NodeIndexType node) const;
-  IntegerRange<ArcIndexType> OutgoingArcs(NodeIndexType node) const;
+  NodeIndexType Head(ArcIndexType arc) const {
+    DCHECK(this->IsArcValid(arc));
+    // See comment on `divisor_` in the constructor.
+    return right_nodes_ > NodeIndexType(1)
+               ? left_nodes_ + NodeIndexType(InternalType(arc) % divisor_)
+               : left_nodes_;
+  }
+
+  NodeIndexType Tail(ArcIndexType arc) const {
+    DCHECK(this->IsArcValid(arc));
+    // See comment on `divisor_` in the constructor.
+    return right_nodes_ > NodeIndexType(1)
+               ? NodeIndexType(InternalType(arc) / divisor_)
+               : NodeIndexType(arc);
+  }
+
+  ArcIndexType OutDegree(NodeIndexType node) const {
+    return (node < left_nodes_) ? ArcIndexType(InternalType(right_nodes_))
+                                : ArcIndexType(0);
+  }
+
+  IntegerRange<ArcIndexType> OutgoingArcs(NodeIndexType node) const {
+    if (node < left_nodes_) {
+      const InternalType node_internal(node);
+      return IntegerRange<ArcIndexType>(
+          ArcIndexType(InternalType(right_nodes_) * node_internal),
+          ArcIndexType(InternalType(right_nodes_) * (node_internal + 1)));
+    } else {
+      return IntegerRange<ArcIndexType>(ArcIndexType(0), ArcIndexType(0));
+    }
+  }
+
   IntegerRange<ArcIndexType> OutgoingArcsStartingFrom(NodeIndexType node,
-                                                      ArcIndexType from) const;
-  IntegerRange<NodeIndexType> operator[](NodeIndexType node) const;
+                                                      ArcIndexType from) const {
+    if (node < left_nodes_) {
+      const InternalType node_internal(node);
+      return IntegerRange<ArcIndexType>(
+          from, ArcIndexType(InternalType(right_nodes_) * (node_internal + 1)));
+    } else {
+      return IntegerRange<ArcIndexType>(ArcIndexType(0), ArcIndexType(0));
+    }
+  }
+
+  IntegerRange<NodeIndexType> operator[](NodeIndexType node) const {
+    if (node < left_nodes_) {
+      return IntegerRange<NodeIndexType>(left_nodes_,
+                                         left_nodes_ + right_nodes_);
+    } else {
+      return IntegerRange<NodeIndexType>(NodeIndexType(0), NodeIndexType(0));
+    }
+  }
 
  private:
+  using InternalType =
+      typename graph_internal::UnsignedTypeOfSameWidth<ArcIndexType>;
+
   const NodeIndexType left_nodes_;
   const NodeIndexType right_nodes_;
   // Note: only valid if `right_nodes_ > 1`.
-  const ::util::math::ConstantDivisor<std::make_unsigned_t<ArcIndexType>>
-      divisor_;
+  const ::util::math::ConstantDivisor<InternalType> divisor_;
 };
-
-template <typename NodeIndexType, typename ArcIndexType>
-ArcIndexType CompleteBipartiteGraph<NodeIndexType, ArcIndexType>::GetArc(
-    NodeIndexType left_node, NodeIndexType right_node) const {
-  DCHECK_LT(left_node, left_nodes_);
-  DCHECK_GE(right_node, left_nodes_);
-  DCHECK_LT(right_node, num_nodes());
-  return left_node * static_cast<ArcIndexType>(right_nodes_) +
-         (right_node - left_nodes_);
-}
-
-template <typename NodeIndexType, typename ArcIndexType>
-NodeIndexType CompleteBipartiteGraph<NodeIndexType, ArcIndexType>::Head(
-    ArcIndexType arc) const {
-  DCHECK(this->IsArcValid(arc));
-  // See comment on `divisor_` in the constructor.
-  return right_nodes_ > 1 ? left_nodes_ + arc % divisor_ : left_nodes_;
-}
-
-template <typename NodeIndexType, typename ArcIndexType>
-NodeIndexType CompleteBipartiteGraph<NodeIndexType, ArcIndexType>::Tail(
-    ArcIndexType arc) const {
-  DCHECK(this->IsArcValid(arc));
-  // See comment on `divisor_` in the constructor.
-  return right_nodes_ > 1 ? arc / divisor_ : arc;
-}
-
-template <typename NodeIndexType, typename ArcIndexType>
-ArcIndexType CompleteBipartiteGraph<NodeIndexType, ArcIndexType>::OutDegree(
-    NodeIndexType node) const {
-  return (node < left_nodes_) ? right_nodes_ : 0;
-}
-
-template <typename NodeIndexType, typename ArcIndexType>
-IntegerRange<ArcIndexType>
-CompleteBipartiteGraph<NodeIndexType, ArcIndexType>::OutgoingArcs(
-    NodeIndexType node) const {
-  if (node < left_nodes_) {
-    return IntegerRange<ArcIndexType>(
-        static_cast<ArcIndexType>(right_nodes_) * node,
-        static_cast<ArcIndexType>(right_nodes_) * (node + 1));
-  } else {
-    return IntegerRange<ArcIndexType>(ArcIndexType(0), ArcIndexType(0));
-  }
-}
-
-template <typename NodeIndexType, typename ArcIndexType>
-IntegerRange<ArcIndexType>
-CompleteBipartiteGraph<NodeIndexType, ArcIndexType>::OutgoingArcsStartingFrom(
-    NodeIndexType node, ArcIndexType from) const {
-  if (node < left_nodes_) {
-    return IntegerRange<ArcIndexType>(
-        from, static_cast<ArcIndexType>(right_nodes_) * (node + 1));
-  } else {
-    return IntegerRange<ArcIndexType>(ArcIndexType(0), ArcIndexType(0));
-  }
-}
-
-template <typename NodeIndexType, typename ArcIndexType>
-IntegerRange<NodeIndexType>
-CompleteBipartiteGraph<NodeIndexType, ArcIndexType>::operator[](
-    NodeIndexType node) const {
-  if (node < left_nodes_) {
-    return IntegerRange<NodeIndexType>(left_nodes_, left_nodes_ + right_nodes_);
-  } else {
-    return IntegerRange<NodeIndexType>(ArcIndexType(0), ArcIndexType(0));
-  }
-}
-
-[[deprecated(
-    "Use ListGraph<> instead")]] ABSL_REFACTOR_INLINE typedef ListGraph<> Graph;
 
 // Creates a graph from a container of arcs.
 template <typename GraphT,
