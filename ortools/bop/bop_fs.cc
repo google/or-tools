@@ -16,7 +16,6 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
-#include <limits>
 #include <memory>
 #include <string>
 #include <utility>
@@ -477,28 +476,28 @@ BopOptimizerBase::Status LinearRelaxation::Optimize(
     return sync_status;
   }
 
-  const glop::ProblemStatus lp_status = Solve(false, time_limit);
+  const glop::SolveStatus lp_status = Solve(false, time_limit);
   VLOG(1) << "                          LP: "
           << absl::StrFormat("%.6f", lp_solver_.GetObjectiveValue())
-          << "   status: " << GetProblemStatusString(lp_status);
+          << "   status: " << lp_status;
 
-  if (lp_status == glop::ProblemStatus::OPTIMAL ||
-      lp_status == glop::ProblemStatus::IMPRECISE) {
+  if (lp_status.Is<glop::SolveStatus::Optimal>() ||
+      lp_status.Is<glop::SolveStatus::Imprecise>()) {
     ++num_full_solves_;
     problem_already_solved_ = true;
   }
 
-  if (lp_status == glop::ProblemStatus::INIT) {
+  if (lp_status.Is<glop::SolveStatus::Init>()) {
     return BopOptimizerBase::LIMIT_REACHED;
   }
-  if (lp_status != glop::ProblemStatus::OPTIMAL &&
-      lp_status != glop::ProblemStatus::IMPRECISE &&
-      lp_status != glop::ProblemStatus::PRIMAL_FEASIBLE) {
+  if (!lp_status.Is<glop::SolveStatus::Optimal>() &&
+      !lp_status.Is<glop::SolveStatus::Imprecise>() &&
+      !lp_status.Is<glop::SolveStatus::PrimalFeasible>()) {
     return BopOptimizerBase::ABORT;
   }
   learned_info->lp_values = lp_solver_.variable_values();
 
-  if (lp_status == glop::ProblemStatus::OPTIMAL) {
+  if (lp_status.Is<glop::SolveStatus::Optimal>()) {
     // The lp returns the objective with the offset and scaled, so we need to
     // unscale it and then remove the offset.
     double lower_bound = lp_solver_.GetObjectiveValue();
@@ -535,8 +534,8 @@ BopOptimizerBase::Status LinearRelaxation::Optimize(
 //              parameter objective_lower_limit / objective_upper_limit. That
 //              can be used when a feasible solution is known, or when the false
 //              best bound is computed.
-glop::ProblemStatus LinearRelaxation::Solve(bool incremental_solve,
-                                            TimeLimit* time_limit) {
+glop::SolveStatus LinearRelaxation::Solve(bool incremental_solve,
+                                          TimeLimit* time_limit) {
   GlopParameters glop_params;
   if (incremental_solve) {
     glop_params.set_use_dual_simplex(true);
@@ -546,9 +545,8 @@ glop::ProblemStatus LinearRelaxation::Solve(bool incremental_solve,
   }
   NestedTimeLimit nested_time_limit(time_limit, time_limit->GetTimeLeft(),
                                     parameters_.lp_max_deterministic_time());
-  const glop::ProblemStatus lp_status = lp_solver_.SolveWithTimeLimit(
-      lp_model_, nested_time_limit.GetTimeLimit());
-  return lp_status;
+  return lp_solver_.SolveWithDetails(lp_model_,
+                                     nested_time_limit.GetTimeLimit());
 }
 
 double LinearRelaxation::ComputeLowerBoundUsingStrongBranching(
@@ -591,20 +589,20 @@ double LinearRelaxation::ComputeLowerBoundUsingStrongBranching(
 
     // Set to true.
     lp_model_.SetVariableBounds(col, 1.0, 1.0);
-    const glop::ProblemStatus status_true = Solve(true, time_limit);
+    const glop::SolveStatus status_true = Solve(true, time_limit);
     // TODO(user): Deal with PRIMAL_INFEASIBLE, DUAL_INFEASIBLE and
     //              INFEASIBLE_OR_UNBOUNDED statuses. In all cases, if the
     //              original lp was feasible, this means that the variable can
     //              be fixed to the other bound.
-    if (status_true == glop::ProblemStatus::OPTIMAL ||
-        status_true == glop::ProblemStatus::DUAL_FEASIBLE) {
+    if (status_true.Is<glop::SolveStatus::Optimal>() ||
+        status_true.Is<glop::SolveStatus::DualFeasible>()) {
       objective_true = lp_solver_.GetObjectiveValue();
 
       // Set to false.
       lp_model_.SetVariableBounds(col, 0.0, 0.0);
-      const glop::ProblemStatus status_false = Solve(true, time_limit);
-      if (status_false == glop::ProblemStatus::OPTIMAL ||
-          status_false == glop::ProblemStatus::DUAL_FEASIBLE) {
+      const glop::SolveStatus status_false = Solve(true, time_limit);
+      if (status_false.Is<glop::SolveStatus::Optimal>() ||
+          status_false.Is<glop::SolveStatus::DualFeasible>()) {
         objective_false = lp_solver_.GetObjectiveValue();
 
         // Compute the new min.
