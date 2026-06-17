@@ -49,10 +49,9 @@ namespace {
 enum class Format { NORMAL_FILE, GZIP_FILE, BZIP2_FILE };
 
 static Format GetFormatFromName(absl::string_view name) {
-  const int size = name.size();
-  if (size > 4 && name.substr(size - 3) == ".gz") {
+  if (name.ends_with(".gz")) {
     return Format::GZIP_FILE;
-  } else if (size > 5 && name.substr(size - 4) == ".bz2") {
+  } else if (name.ends_with(".bz2")) {
     return Format::BZIP2_FILE;
   } else {
     return Format::NORMAL_FILE;
@@ -258,33 +257,29 @@ File* File::OpenOrDie(absl::string_view file_name, absl::string_view mode) {
 }
 
 File* File::Open(absl::string_view file_name, absl::string_view mode) {
-  std::string null_terminated_name = std::string(file_name);
-  std::string null_terminated_mode = std::string(mode);
+  const std::string filename = std::string(file_name);
+  std::string mode_str(mode);
 #if defined(_MSC_VER)
-  if (null_terminated_mode == "r") {
-    null_terminated_mode = "rb";
-  } else if (null_terminated_mode == "w") {
-    null_terminated_mode = "wb";
+  if (mode_str == "r") {
+    mode_str = "rb";
+  } else if (mode_str == "w") {
+    mode_str = "wb";
   }
 #endif
-  const Format format = GetFormatFromName(file_name);
-  switch (format) {
+  switch (GetFormatFromName(file_name)) {
     case Format::NORMAL_FILE: {
-      FILE* c_file =
-          fopen(null_terminated_name.c_str(), null_terminated_mode.c_str());
+      FILE* c_file = fopen(filename.c_str(), mode_str.c_str());
       if (c_file == nullptr) return nullptr;
       return new CFile(c_file, file_name);
     }
     case Format::GZIP_FILE: {
-      gzFile gz_file =
-          gzopen(null_terminated_name.c_str(), null_terminated_mode.c_str());
-      if (!gz_file) return nullptr;
+      gzFile gz_file = gzopen(filename.c_str(), mode_str.c_str());
+      if (gz_file == nullptr) return nullptr;
       return new GzFile(gz_file, file_name);
     }
     case Format::BZIP2_FILE: {
-      BZFILE* bz_file = BZ2_bzopen(null_terminated_name.c_str(),
-                                   null_terminated_mode.c_str());
-      if (!bz_file) return nullptr;
+      BZFILE* bz_file = BZ2_bzopen(filename.c_str(), mode_str.c_str());
+      if (bz_file == nullptr) return nullptr;
       return new Bz2File(bz_file, file_name);
     }
   }
@@ -325,6 +320,7 @@ absl::string_view File::filename() const { return name_; }
 void File::Init() {}
 
 namespace file {
+
 absl::Status Open(absl::string_view file_name, absl::string_view mode, File** f,
                   Options options) {
   if (options == Defaults()) {
@@ -333,7 +329,7 @@ absl::Status Open(absl::string_view file_name, absl::string_view mode, File** f,
       return absl::OkStatus();
     }
   }
-  return absl::Status(absl::StatusCode::kInvalidArgument,
+  return absl::Status(absl::StatusCode::kNotFound,
                       absl::StrCat("Could not open '", file_name, "'"));
 }
 
@@ -371,7 +367,7 @@ absl::Status GetContents(absl::string_view file_name, std::string* output,
 
   file->Close(options).IgnoreError();  // Even if ReadToString() fails!
 
-  return absl::Status(absl::StatusCode::kInvalidArgument,
+  return absl::Status(absl::StatusCode::kNotFound,
                       absl::StrCat("Could not read from '", file_name, "'."));
 }
 
@@ -490,7 +486,7 @@ absl::Status SetBinaryProto(absl::string_view file_name,
 
 absl::Status Delete(absl::string_view path, Options options) {
   if (options == Defaults()) {
-    std::string null_terminated_path = std::string(path);
+    const std::string null_terminated_path = std::string(path);
     if (remove(null_terminated_path.c_str()) == 0) return absl::OkStatus();
   }
   return absl::Status(absl::StatusCode::kInvalidArgument,
@@ -499,7 +495,7 @@ absl::Status Delete(absl::string_view path, Options options) {
 
 absl::Status Exists(absl::string_view path, Options options) {
   if (options == Defaults()) {
-    std::string null_terminated_path = std::string(path);
+    const std::string null_terminated_path = std::string(path);
     if (access(null_terminated_path.c_str(), F_OK) == 0) {
       return absl::OkStatus();
     }

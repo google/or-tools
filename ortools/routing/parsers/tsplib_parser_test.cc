@@ -27,9 +27,10 @@
 #include "gtest/gtest.h"
 #include "ortools/base/filesystem.h"
 #include "ortools/base/gmock.h"
-#include "ortools/base/memfile.h"
+#include "ortools/base/helpers.h"
 #include "ortools/base/options.h"
 #include "ortools/base/path.h"
+#include "ortools/base/temp_file.h"
 #include "ortools/base/zipfile.h"
 
 #define ROOT_DIR "_main/"
@@ -101,7 +102,7 @@ TEST(TspLibParserTest, GeneratedDataSets) {
                 if (node_type == 1) {
                   data += " 0";
                 }
-                data += "\n";
+                data += '\n';
               }
             }
             if (type == 1) {
@@ -131,7 +132,7 @@ TEST(TspLibParserTest, GeneratedDataSets) {
                           abs(x - (j % kCoordSize)) + abs(y - (j / kCoordSize));
                       absl::StrAppendFormat(&data, "%d ", distance);
                     }
-                    data += "\n";
+                    data += '\n';
                   }
                   break;
                 case 1:
@@ -144,7 +145,7 @@ TEST(TspLibParserTest, GeneratedDataSets) {
                           abs(x - (j % kCoordSize)) + abs(y - (j / kCoordSize));
                       absl::StrAppendFormat(&data, "%d ", distance);
                     }
-                    data += "\n";
+                    data += '\n';
                   }
                   break;
                 case 2:
@@ -157,7 +158,7 @@ TEST(TspLibParserTest, GeneratedDataSets) {
                           abs(x - (j % kCoordSize)) + abs(y - (j / kCoordSize));
                       absl::StrAppendFormat(&data, "%d ", distance);
                     }
-                    data += "\n";
+                    data += '\n';
                   }
                   break;
                 case 3:
@@ -170,7 +171,7 @@ TEST(TspLibParserTest, GeneratedDataSets) {
                           abs(x - (j % kCoordSize)) + abs(y - (j / kCoordSize));
                       absl::StrAppendFormat(&data, "%d ", distance);
                     }
-                    data += "\n";
+                    data += '\n';
                   }
                   break;
                 case 4:
@@ -183,17 +184,19 @@ TEST(TspLibParserTest, GeneratedDataSets) {
                           abs(x - (j % kCoordSize)) + abs(y - (j / kCoordSize));
                       absl::StrAppendFormat(&data, "%d ", distance);
                     }
-                    data += "\n";
+                    data += '\n';
                   }
                   break;
               }
             }
             data += "EOF";
-            const std::string kMMFileName{std::tmpnam(nullptr)};
-            RegisteredMemFile registered(kMMFileName, data);
+            ASSERT_OK_AND_ASSIGN(
+                const std::string file_name,
+                file::MakeTempFilename(::testing::TempDir(), "dummy.tsp"));
+            ASSERT_OK(file::SetContents(file_name, data, file::Defaults()));
             TspLibParser parser;
-            EXPECT_OK(parser.LoadFile(kMMFileName));
-            EXPECT_THAT(parser.SizeFromFile(kMMFileName),
+            EXPECT_OK(parser.LoadFile(file_name));
+            EXPECT_THAT(parser.SizeFromFile(file_name),
                         IsOkAndHolds(kDimension));
           }
         }
@@ -213,11 +216,13 @@ TEST(TspLibParserTest, ParseHCPEdgeList) {
       " 3    1\n"
       " 2    1\n"
       "-1\nEOF";
-  const std::string kMMFileName{std::tmpnam(nullptr)};
-  RegisteredMemFile registered(kMMFileName, kData);
+  ASSERT_OK_AND_ASSIGN(
+      const std::string file_name,
+      file::MakeTempFilename(::testing::TempDir(), "dummy.hcp"));
+  ASSERT_OK(file::SetContents(file_name, kData, file::Defaults()));
   TspLibParser parser;
-  EXPECT_OK(parser.LoadFile(kMMFileName));
-  EXPECT_THAT(parser.SizeFromFile(kMMFileName), IsOkAndHolds(3));
+  EXPECT_OK(parser.LoadFile(file_name));
+  EXPECT_THAT(parser.SizeFromFile(file_name), IsOkAndHolds(3));
   EXPECT_EQ(2, parser.edges()[0].size());
   EXPECT_EQ(1, parser.edges()[0][0]);
   EXPECT_EQ(2, parser.edges()[0][1]);
@@ -235,11 +240,13 @@ TEST(TspLibParserTest, ParseHCPAdjList) {
       "EDGE_DATA_SECTION\n"
       " 3    1     2    -1\n"
       "-1\nEOF";
-  const std::string kMMFileName{std::tmpnam(nullptr)};
-  RegisteredMemFile registered(kMMFileName, kData);
+  ASSERT_OK_AND_ASSIGN(
+      const std::string file_name,
+      file::MakeTempFilename(::testing::TempDir(), "dummy.hcp"));
+  ASSERT_OK(file::SetContents(file_name, kData, file::Defaults()));
   TspLibParser parser;
-  EXPECT_OK(parser.LoadFile(kMMFileName));
-  EXPECT_THAT(parser.SizeFromFile(kMMFileName), IsOkAndHolds(3));
+  EXPECT_OK(parser.LoadFile(file_name));
+  EXPECT_THAT(parser.SizeFromFile(file_name), IsOkAndHolds(3));
   EXPECT_EQ(1, parser.edges()[0].size());
   EXPECT_EQ(2, parser.edges()[0][0]);
   EXPECT_EQ(1, parser.edges()[1].size());
