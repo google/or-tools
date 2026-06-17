@@ -442,6 +442,13 @@ class ModelStatistics {
       constraints_per_variables_;
 };
 
+// Returns the minimum number of arguments a well-formed FlatZinc constraint
+// of the given type must carry. The solution checker and the CP-SAT extractor
+// read fixed argument positions per constraint type; a constraint with fewer
+// arguments is malformed and indexing the missing positions would be an
+// out-of-bounds read on its argument vector. Returns 0 for unknown types.
+int NumRequiredArguments(absl::string_view type);
+
 // Helper method to flatten Search annotations.
 void FlattenAnnotations(const Annotation& ann, std::vector<Annotation>* out);
 

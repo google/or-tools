@@ -1916,6 +1916,13 @@ bool CheckSolution(
   const CallMap call_map = CreateCallMap();
   for (Constraint* ct : model.constraints()) {
     if (!ct->active) continue;
+    if (ct->arguments.size() < NumRequiredArguments(ct->type)) {
+      SOLVER_LOG(logger, "Constraint ", ct->type, " has too few arguments (",
+                 ct->arguments.size(), " < ", NumRequiredArguments(ct->type),
+                 "); treating as unsatisfied.");
+      ok = false;
+      continue;
+    }
     DCHECK(call_map.contains(ct->type)) << ct->type;
     const auto& checker = call_map.at(ct->type);
     if (!checker(*ct, evaluator, set_evaluator)) {
