@@ -19,7 +19,6 @@
 #include <vector>
 
 #include "absl/status/status.h"
-#include "absl/status/statusor.h"
 #include "ortools/base/file.h"
 
 namespace file {
@@ -31,9 +30,6 @@ absl::Status IsDirectory(std::string_view path, const file::Options& options);
 
 absl::Status RecursivelyCreateDir(std::string_view path,
                                   const file::Options& options);
-
-absl::StatusOr<int64_t> GetSize(absl::string_view path,
-                                const file::Options& options);
 
 }  // namespace file
 
