@@ -20,9 +20,9 @@
 #include <string>
 #include <type_traits>
 #include <utility>
+#include <variant>
 
-#include "absl/log/check.h"
-#include "absl/log/log.h"
+#include "absl/functional/overload.h"
 #include "absl/strings/str_cat.h"
 #include "ortools/glop/lp_solver.h"
 #include "ortools/glop/parameters_validation.h"
@@ -62,43 +62,86 @@ MPSolutionResponse ModelInvalidParametersResponse(SolverLogger& logger,
   return response;
 }
 
-MPSolverResponseStatus ToMPSolverResultStatus(glop::ProblemStatus s) {
-  switch (s) {
-    case glop::ProblemStatus::OPTIMAL:
-      return MPSOLVER_OPTIMAL;
-    case glop::ProblemStatus::PRIMAL_FEASIBLE:
-      return MPSOLVER_FEASIBLE;
+// Returns the MPSolverResponse.status_str to use to give the detailed output
+// from Glop.
+std::string ToMPSolverResultStatusStr(const glop::SolveStatus& status) {
+  return absl::StrCat("Glop returned: ", GetSolveStatusString(status));
+}
 
-    // Note(user): MPSolver does not have the equivalent of
-    // INFEASIBLE_OR_UNBOUNDED however UNBOUNDED is almost never relevant in
-    // applications, so we decided to report this status as INFEASIBLE since
-    // it should almost always be the case. Historically, we where reporting
-    // ABNORMAL, but that was more confusing than helpful.
-    //
-    // TODO(user): We could argue that it is infeasible to find the optimal of
-    // an unbounded problem. So it might just be simpler to completely get rid
-    // of the MpSolver::UNBOUNDED status that seems to never be used
-    // programmatically.
-    case glop::ProblemStatus::INFEASIBLE_OR_UNBOUNDED:  // PASS_THROUGH_INTENDED
-    case glop::ProblemStatus::PRIMAL_INFEASIBLE:        // PASS_THROUGH_INTENDED
-    case glop::ProblemStatus::DUAL_UNBOUNDED:
-      return MPSOLVER_INFEASIBLE;
-
-    case glop::ProblemStatus::DUAL_INFEASIBLE:  // PASS_THROUGH_INTENDED
-    case glop::ProblemStatus::PRIMAL_UNBOUNDED:
-      return MPSOLVER_UNBOUNDED;
-
-    case glop::ProblemStatus::DUAL_FEASIBLE:  // PASS_THROUGH_INTENDED
-    case glop::ProblemStatus::INIT:
-      return MPSOLVER_NOT_SOLVED;
-
-    case glop::ProblemStatus::ABNORMAL:   // PASS_THROUGH_INTENDED
-    case glop::ProblemStatus::IMPRECISE:  // PASS_THROUGH_INTENDED
-    case glop::ProblemStatus::INVALID_PROBLEM:
-      return MPSOLVER_ABNORMAL;
-  }
-  LOG(DFATAL) << "Invalid glop::ProblemStatus " << s;
-  return MPSOLVER_ABNORMAL;
+// Returns the MPSolverResponse.status and MPSolverResponse.status_str from the
+// input SolveStatus.
+//
+// For MPSolverResponseStatus that:
+// 1. perfectly match a glop::SolveStatus,
+// 2. and this glop::SolveStatus has no data,
+// returns std::nullopt for status_str as this adds no value (e.g. Optimal).
+std::pair<MPSolverResponseStatus, std::optional<std::string>>
+ToMPSolverResultStatus(const glop::SolveStatus& status) {
+  // Define a short name for return type of lambdas.
+  using Ret = std::pair<MPSolverResponseStatus, std::optional<std::string>>;
+  return std::visit(
+      absl::Overload{
+          [&](const glop::SolveStatus::Optimal&) -> Ret {
+            return std::make_pair(MPSOLVER_OPTIMAL, std::nullopt);
+          },
+          [&](const glop::SolveStatus::PrimalInfeasible&) -> Ret {
+            return std::make_pair(MPSOLVER_INFEASIBLE, std::nullopt);
+          },
+          [&](const glop::SolveStatus::DualInfeasible&) -> Ret {
+            return std::make_pair(MPSOLVER_UNBOUNDED,
+                                  ToMPSolverResultStatusStr(status));
+          },
+          [&](const glop::SolveStatus::InfeasibleOrUnbounded&) -> Ret {
+            // Note(user): MPSolver does not have the equivalent of
+            // INFEASIBLE_OR_UNBOUNDED however UNBOUNDED is almost never
+            // relevant in applications, so we decided to report this status as
+            // INFEASIBLE since it should almost always be the
+            // case. Historically, we where reporting ABNORMAL, but that was
+            // more confusing than helpful.
+            //
+            // TODO(user): We could argue that it is infeasible to find the
+            // optimal of an unbounded problem. So it might just be simpler to
+            // completely get rid of the MpSolver::UNBOUNDED status that seems
+            // to never be used programmatically.
+            return std::make_pair(MPSOLVER_INFEASIBLE,
+                                  ToMPSolverResultStatusStr(status));
+          },
+          [&](const glop::SolveStatus::PrimalUnbounded&) -> Ret {
+            return std::make_pair(MPSOLVER_UNBOUNDED, std::nullopt);
+          },
+          [&](const glop::SolveStatus::DualUnbounded&) -> Ret {
+            return std::make_pair(MPSOLVER_INFEASIBLE,
+                                  ToMPSolverResultStatusStr(status));
+          },
+          [&](const glop::SolveStatus::Init& alternative) -> Ret {
+            return std::make_pair(
+                alternative.cause == glop::InterruptionCause::kExternal
+                    ? MPSOLVER_CANCELLED_BY_USER
+                    : MPSOLVER_NOT_SOLVED,
+                ToMPSolverResultStatusStr(status));
+          },
+          [&](const glop::SolveStatus::PrimalFeasible&) -> Ret {
+            return std::make_pair(MPSOLVER_FEASIBLE,
+                                  ToMPSolverResultStatusStr(status));
+          },
+          [&](const glop::SolveStatus::DualFeasible&) -> Ret {
+            return std::make_pair(MPSOLVER_NOT_SOLVED,
+                                  ToMPSolverResultStatusStr(status));
+          },
+          [&](const glop::SolveStatus::Imprecise&) -> Ret {
+            return std::make_pair(MPSOLVER_ABNORMAL,
+                                  ToMPSolverResultStatusStr(status));
+          },
+          [&](const glop::SolveStatus::Abnormal&) -> Ret {
+            return std::make_pair(MPSOLVER_ABNORMAL,
+                                  ToMPSolverResultStatusStr(status));
+          },
+          [&](const glop::SolveStatus::InvalidProblem&) -> Ret {
+            return std::make_pair(MPSOLVER_ABNORMAL,
+                                  ToMPSolverResultStatusStr(status));
+          },
+      },
+      status.value);
 }
 
 }  // namespace
@@ -193,14 +236,22 @@ MPSolutionResponse GlopSolveProto(
     }
   }
 
-  // Solve and set response status.
-  const glop::ProblemStatus status =
-      lp_solver.SolveWithTimeLimit(linear_program, *time_limit);
-  const MPSolverResponseStatus result_status = ToMPSolverResultStatus(status);
-  response.set_status(result_status);
+  // Solve.
+  const glop::SolveStatus status =
+      lp_solver.SolveWithDetails(linear_program, *time_limit);
+  // Set response status.
+  {
+    auto [solution_status, solution_status_str] =
+        ToMPSolverResultStatus(status);
+    response.set_status(solution_status);
+    if (solution_status_str.has_value()) {
+      response.set_status_str(*std::move(solution_status_str));
+    }
+  }
 
   // Fill in solution.
-  if (result_status == MPSOLVER_OPTIMAL || result_status == MPSOLVER_FEASIBLE) {
+  if (status.Is<glop::SolveStatus::Optimal>() ||
+      status.Is<glop::SolveStatus::PrimalFeasible>()) {
     response.set_objective_value(lp_solver.GetObjectiveValue());
 
     const int num_vars = linear_program.num_variables().value();
@@ -213,11 +264,6 @@ MPSolutionResponse GlopSolveProto(
           lp_solver.reduced_costs()[glop::ColIndex(var_id)];
       response.add_reduced_cost(reduced_cost);
     }
-  }
-
-  if (result_status == MPSOLVER_UNKNOWN_STATUS && interrupt_solve != nullptr &&
-      interrupt_solve->load()) {
-    response.set_status(MPSOLVER_CANCELLED_BY_USER);
   }
 
   const int num_constraints = linear_program.num_constraints().value();

@@ -16,6 +16,7 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 
 #include "absl/base/attributes.h"
 #include "ortools/glop/parameters.pb.h"
@@ -50,20 +51,32 @@ class LPSolver {
   // ProblemStatus documentation for a description of the different values.
   //
   // The solution can be retrieved afterwards using the getter functions below.
-  // Note that depending on the returned ProblemStatus the solution values may
-  // not mean much, so it is important to check the returned status.
+  // Note that depending on the returned SolveStatus the solution values may not
+  // mean much, so it is important to check the returned status.
   //
-  // Incrementality: From one Solve() call to the next, the internal state is
-  // not cleared and the solver may take advantage of its current state if the
-  // given lp is only slightly modified. If the modification is too important,
-  // or if the solver does not see how to reuse the previous state efficiently,
-  // it will just solve the problem from scratch. On the other hand, if the lp
-  // is the same, calling Solve() again should basically resume the solve from
-  // the last position. To disable this behavior, simply call Clear() before.
-  ABSL_MUST_USE_RESULT ProblemStatus Solve(const LinearProgram& lp);
+  // Incrementality: From one SolveWithDetails() call to the next, the internal
+  // state is not cleared and the solver may take advantage of its current state
+  // if the given lp is only slightly modified. If the modification is too
+  // important, or if the solver does not see how to reuse the previous state
+  // efficiently, it will just solve the problem from scratch. On the other
+  // hand, if the lp is the same, calling SolveWithDetails() again should
+  // basically resume the solve from the last position. To disable this
+  // behavior, simply call Clear() before.
+  //
+  // TODO: b/365958111 - Rename Solve() once the deprecated function is removed?
+  SolveStatus SolveWithDetails(const LinearProgram& lp);
 
-  // Same as Solve() but use the given time limit rather than constructing a new
-  // one from the current GlopParameters.
+  // Same as SolveWithDetails() but use the given time limit rather than
+  // constructing a new one from the current GlopParameters.
+  //
+  // TODO: b/365958111 - Rename Solve() once the deprecated function is removed?
+  SolveStatus SolveWithDetails(const LinearProgram& lp, TimeLimit& time_limit);
+
+  // Same as SolveWithDetails() but return only ProblemStatus instead of
+  // detailed SolveStatus.
+  [[deprecated("Prefer using SolveWithDetails().")]]
+  ABSL_MUST_USE_RESULT ProblemStatus Solve(const LinearProgram& lp);
+  [[deprecated("Prefer using SolveWithDetails().")]]
   ABSL_MUST_USE_RESULT ProblemStatus SolveWithTimeLimit(const LinearProgram& lp,
                                                         TimeLimit& time_limit);
 
@@ -180,6 +193,13 @@ class LPSolver {
   SolverLogger& GetSolverLogger();
 
  private:
+  // Internal version of LoadAndVerifySolution that works with a more detailed
+  // SolveStatus instead of the ProblemSolution.status which is only a
+  // ProblemStatus.
+  SolveStatus LoadAndVerifySolutionInternal(const LinearProgram& lp,
+                                            const ProblemSolution& solution,
+                                            SolveStatus initial_status);
+
   // Resizes all the solution vectors to the given sizes.
   // This is used in case of error to make sure all the getter functions will
   // not crash when given row/col inside the initial linear program dimension.
@@ -191,10 +211,9 @@ class LPSolver {
   void MovePrimalValuesWithinBounds(const LinearProgram& lp);
   void MoveDualValuesWithinBounds(const LinearProgram& lp);
 
-  // Runs the revised simplex algorithm if needed (i.e. if the program was not
-  // already solved by the preprocessors).
-  void RunRevisedSimplexIfNeeded(ProblemSolution* solution,
-                                 TimeLimit& time_limit);
+  // Runs the revised simplex algorithm.
+  [[nodiscard]] std::pair<SolveStatus, ProblemSolution> RunRevisedSimplex(
+      TimeLimit& time_limit);
 
   // Checks that the returned solution values and statuses are consistent.
   // Returns true if this is the case. See the code for the exact check
@@ -282,7 +301,7 @@ class LPSolver {
   // The current ProblemSolution.
   // TODO(user): use a ProblemSolution directly? Note, that primal_ray_,
   // constraints_dual_ray_ and variable_bounds_dual_ray_ are not currently in
-  // ProblemSolution and are filled directly by RunRevisedSimplexIfNeeded().
+  // ProblemSolution and are filled directly by RunRevisedSimplex().
   DenseRow primal_values_;
   DenseColumn dual_values_;
   VariableStatusRow variable_statuses_;

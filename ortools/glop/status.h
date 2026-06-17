@@ -56,21 +56,6 @@ class Status {
 // Returns the string representation of the ErrorCode enum.
 std::string GetErrorCodeString(Status::ErrorCode error_code);
 
-// Macro to simplify error propagation between function returning Status.
-#define GLOP_RETURN_IF_ERROR(function_call)        \
-  do {                                             \
-    Status return_status = function_call;          \
-    if (!return_status.ok()) return return_status; \
-  } while (false)
-
-// Macro to simplify the creation of an error.
-#define GLOP_RETURN_AND_LOG_ERROR(error_code, message)                     \
-  do {                                                                     \
-    std::string error_message = message;                                   \
-    LOG(ERROR) << GetErrorCodeString(error_code) << ": " << error_message; \
-    return Status(error_code, error_message);                              \
-  } while (false)
-
 }  // namespace glop
 }  // namespace operations_research
 

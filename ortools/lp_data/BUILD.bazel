@@ -12,6 +12,7 @@
 # limitations under the License.
 
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
 load("//bazel:compilation_flags.bzl", "SAFE_FP_CODE")
 
 package(default_visibility = ["//visibility:public"])
@@ -23,10 +24,29 @@ cc_library(
     copts = SAFE_FP_CODE,
     deps = [
         "//ortools/base:strong_vector",
+        "//ortools/glop:status",
         "//ortools/util:bitset",
         "//ortools/util:strong_integers",
+        "//ortools/util:time_limit",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/functional:overload",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings:string_view",
+    ],
+)
+
+cc_test(
+    name = "lp_types_test",
+    srcs = ["lp_types_test.cc"],
+    deps = [
+        ":lp_types",
+        ":lp_types_testing",
+        "//ortools/base:gmock_main",
+        "//ortools/glop:status",
+        "//ortools/util:time_limit",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -104,9 +124,10 @@ cc_library(
         ":sparse_column",
         "//ortools/graph_base:iterators",
         "//ortools/util:bitset",
+        "//ortools/util:fp_roundtrip_conv",
         "//ortools/util:return_macros",
         "@abseil-cpp//absl/log:check",
-        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",
     ],
 )
@@ -123,10 +144,8 @@ cc_library(
         ":sparse",
         ":sparse_column",
         "//ortools/base:strong_vector",
-        "//ortools/base:types",
         "//ortools/glop:parameters_cc_proto",
         "//ortools/glop:revised_simplex",
-        "//ortools/glop:status",
         "//ortools/util:return_macros",
         "//ortools/util:time_limit",
         "@abseil-cpp//absl/log",
@@ -153,6 +172,7 @@ cc_library(
         "//ortools/util:fp_utils",
         "//ortools/util:strong_integers",
         "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
@@ -340,5 +360,16 @@ cc_library(
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/synchronization",
         "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_library(
+    name = "lp_types_testing",
+    testonly = True,
+    srcs = ["lp_types_testing.cc"],
+    hdrs = ["lp_types_testing.h"],
+    deps = [
+        ":lp_types",
+        "//ortools/base:gmock",
     ],
 )

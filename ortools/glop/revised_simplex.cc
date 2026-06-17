@@ -18,13 +18,17 @@
 #include <cstdint>
 #include <cstdlib>
 #include <functional>
+#include <optional>
 #include <random>
 #include <string>
 #include <utility>
+#include <variant>
 #include <vector>
 
 #include "absl/base/nullability.h"
+#include "absl/cleanup/cleanup.h"
 #include "absl/flags/flag.h"
+#include "absl/functional/overload.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/log/vlog_is_on.h"
@@ -94,8 +98,6 @@ class Cleanup {
     DCHECK_GT(num_rows_, row); \
   }
 
-constexpr const uint64_t kDeterministicSeed = 42;
-
 namespace {
 
 bool UseAbslRandom(const GlopParameters& parameters) {
@@ -104,9 +106,23 @@ bool UseAbslRandom(const GlopParameters& parameters) {
 
 }  // namespace
 
+std::string RevisedSimplex::GetPendingStatusString(
+    const PendingStatus& pending_status) {
+  return std::visit(absl::Overload{
+                        [&](const FeasibilityStatus feasibility) {
+                          return absl::StrCat(
+                              "FeasibilityStatus(",
+                              GetFeasibilityStatusString(feasibility), ")");
+                        },
+                        [&](const SolveStatus& solve_status) {
+                          return GetSolveStatusString(solve_status);
+                        },
+                    },
+                    pending_status);
+}
+
 RevisedSimplex::RevisedSimplex()
-    : problem_status_(ProblemStatus::INIT),
-      objective_(),
+    : objective_(),
       basis_(),
       variable_name_(),
       direction_(),
@@ -157,7 +173,7 @@ void RevisedSimplex::SetStartingVariableValuesForNextSolve(
   variable_starting_values_ = values;
 }
 
-Status RevisedSimplex::MinimizeFromTransposedMatrixWithSlack(
+SolveStatus RevisedSimplex::MinimizeFromTransposedMatrixWithSlack(
     const DenseRow& objective, Fractional objective_scaling_factor,
     Fractional objective_offset, TimeLimit& time_limit) {
   const double start_time = time_limit.GetElapsedTime();
@@ -198,29 +214,39 @@ Status RevisedSimplex::MinimizeFromTransposedMatrixWithSlack(
     variable_values_.RecomputeBasicVariableValues();
     return SolveInternal(start_time, false, objective, time_limit);
   } else {
-    GLOP_RETURN_IF_ERROR(FinishInitialization(true));
+    GLOP_RETURN_IF_ABNORMAL(FinishInitialization(true));
   }
 
   return SolveInternal(start_time, false, objective, time_limit);
 }
 
-Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit& time_limit) {
+SolveStatus RevisedSimplex::Solve(const LinearProgram& lp,
+                                  TimeLimit& time_limit) {
   const double start_time = time_limit.GetElapsedTime();
   default_logger_.EnableLogging(parameters_.log_search_progress());
   default_logger_.SetLogToStdOut(parameters_.log_to_stdout());
 
   DCHECK(lp.IsCleanedUp());
-  GLOP_RETURN_IF_ERROR(Initialize(lp));
+  GLOP_RETURN_IF_ABNORMAL(Initialize(lp));
   return SolveInternal(start_time, lp.IsMaximizationProblem(),
                        lp.objective_coefficients(), time_limit);
 }
 
 Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
   CHECK(time_limit != nullptr);
-  return Solve(lp, *time_limit);
+  return Solve(lp, *time_limit).LegacyStatus();
 }
 
-ABSL_MUST_USE_RESULT Status RevisedSimplex::SolveInternal(
+SolveStatus RevisedSimplex::SolveInternal(
+    const double start_time, const bool is_maximization_problem,
+    const DenseRow& objective_coefficients, TimeLimit& time_limit) {
+  SolveStatus solve_status = SolveInternalImpl(
+      start_time, is_maximization_problem, objective_coefficients, time_limit);
+  solve_status_ = solve_status;
+  return solve_status;
+}
+
+SolveStatus RevisedSimplex::SolveInternalImpl(
     const double start_time, const bool is_maximization_problem,
     const DenseRow& objective_coefficients, TimeLimit& time_limit) {
   SCOPED_TIME_STAT(&function_stats_);
@@ -238,7 +264,6 @@ ABSL_MUST_USE_RESULT Status RevisedSimplex::SolveInternal(
   dual_infeasibility_improvement_direction_.clear();
   update_row_.Invalidate();
   test_lu_.Clear();
-  problem_status_ = ProblemStatus::INIT;
   num_iterations_ = 0;
   num_feasibility_iterations_ = 0;
   num_optimization_iterations_ = 0;
@@ -261,7 +286,10 @@ ABSL_MUST_USE_RESULT Status RevisedSimplex::SolveInternal(
   }
   if (absl::GetFlag(FLAGS_simplex_stop_after_first_basis)) {
     DisplayAllStats();
-    return Status::OK();
+    // The kIterationLimit cause is a bit incorrect here; but this is a
+    // flag-only feature of Glop. If we change that to be a proper feature we
+    // should add a proper limit.
+    return InitSolveStatus(InterruptionCause::kIterationLimit);
   }
 
   // TODO(user): Avoid doing the first phase checks when we know from the
@@ -270,15 +298,25 @@ ABSL_MUST_USE_RESULT Status RevisedSimplex::SolveInternal(
   primal_edge_norms_.SetPricingRule(parameters_.feasibility_rule());
 
   // First phase: feasibility.
+  //
+  // We maintain a pending_status that:
+  // * either is a final SolveStatus, if the solve is finished (limit,
+  //   infeasibility, ...),
+  // * or is a FeasibilityStatus, if the solve is pending. In that case the
+  //   for-loop below will eventually update it to a SolveStatus before
+  //   breaking.
   phase_ = Phase::FEASIBILITY;
-  if (parameters_.use_dual_simplex()) {
-    GLOP_RETURN_IF_ERROR(DualPhaseI(is_maximization_problem,
-                                    objective_coefficients, time_limit));
-  } else {
-    GLOP_RETURN_IF_ERROR(PrimalPhaseI(is_maximization_problem,
-                                      objective_coefficients, time_limit));
+  PendingStatus pending_status =
+      parameters_.use_dual_simplex()
+          ? DualPhaseI(is_maximization_problem, objective_coefficients,
+                       time_limit)
+          : PrimalPhaseI(is_maximization_problem, objective_coefficients,
+                         time_limit);
+  if (IsSolveStatus<SolveStatus::Abnormal>(pending_status)) {
+    return std::get<SolveStatus>(pending_status);
   }
 
+  DisplayPendingStatus(pending_status);
   DisplayErrors();
 
   phase_ = Phase::OPTIMIZATION;
@@ -300,32 +338,65 @@ ABSL_MUST_USE_RESULT Status RevisedSimplex::SolveInternal(
   // limit).
   SOLVER_LOG(logger_, "");
   for (int num_optims = 0;
-       // We want to enter the loop when both num_optims and num_iterations_ are
-       // *equal* to the corresponding limits (to return a meaningful status
-       // when the limits are set to 0).
-       num_optims <= parameters_.max_number_of_reoptimizations() &&
-       !objective_limit_reached_ &&
-       (num_iterations_ == 0 ||
-        num_iterations_ < parameters_.max_number_of_iterations()) &&
-       !time_limit.LimitReached() &&
-       !absl::GetFlag(FLAGS_simplex_stop_after_feasibility) &&
-       (problem_status_ == ProblemStatus::PRIMAL_FEASIBLE ||
-        problem_status_ == ProblemStatus::DUAL_FEASIBLE);
+       // See comment of "First phase: feasibility"; this loop is needed only
+       // when we have not reached a final result.
+       //
+       // Loop invariant: we loop until pending_status is a SolveStatus.
+       std::holds_alternative<FeasibilityStatus>(pending_status);
        ++num_optims) {
-    if (problem_status_ == ProblemStatus::PRIMAL_FEASIBLE) {
-      // Run the primal simplex.
-      GLOP_RETURN_IF_ERROR(PrimalMinimize(time_limit));
-    } else {
-      // Run the dual simplex.
-      GLOP_RETURN_IF_ERROR(
-          DualMinimize(phase_ == Phase::FEASIBILITY, time_limit));
+    // Stopping conditions. If the condition is met, we update pending_status to
+    // a SolveStatus and break.
+    //
+    // We want to enter the loop when both num_optims and num_iterations_ are
+    // *equal* to the corresponding limits (to return a meaningful status when
+    // the limits are set to 0).
+    if (num_iterations_ > 0 &&
+        num_iterations_ >= parameters_.max_number_of_iterations()) {
+      pending_status =
+          FeasibleSolveStatus(std::get<FeasibilityStatus>(pending_status),
+                              InterruptionCause::kIterationLimit);
+      break;
+    }
+    if (const std::optional<InterruptionCause> cause =
+            TimeLimitStateToCause(time_limit);
+        cause.has_value()) {
+      pending_status = FeasibleSolveStatus(
+          std::get<FeasibilityStatus>(pending_status), *cause);
+      break;
+    }
+    if (absl::GetFlag(FLAGS_simplex_stop_after_feasibility)) {
+      // Same rationale for using kIterationLimit as
+      // FLAGS_simplex_stop_after_first_basis.
+      pending_status =
+          FeasibleSolveStatus(std::get<FeasibilityStatus>(pending_status),
+                              InterruptionCause::kIterationLimit);
+      break;
+    }
+
+    // We have determined we should continue with this iteration; we do the
+    // proper minimization.
+    switch (std::get<FeasibilityStatus>(pending_status)) {
+      case FeasibilityStatus::kPrimal:
+        pending_status = PrimalMinimize(time_limit);
+        break;
+      case FeasibilityStatus::kDual:
+        pending_status = DualMinimize(phase_ == Phase::FEASIBILITY, time_limit);
+        break;
+    }
+
+    // PrimalMinimize() and DualMinimize() should never return a
+    // FeasibilityStatus outside the feasibility phase!
+    DCHECK(!std::holds_alternative<FeasibilityStatus>(pending_status));
+
+    if (IsSolveStatus<SolveStatus::Abnormal>(pending_status)) {
+      return std::get<SolveStatus>(pending_status);
     }
 
     // PrimalMinimize() or DualMinimize() always double check the result with
     // maximum precision by refactoring the basis before exiting (except if an
     // iteration or time limit was reached).
-    DCHECK(problem_status_ == ProblemStatus::PRIMAL_FEASIBLE ||
-           problem_status_ == ProblemStatus::DUAL_FEASIBLE ||
+    DCHECK(IsSolveStatus<SolveStatus::PrimalFeasible>(pending_status) ||
+           IsSolveStatus<SolveStatus::DualFeasible>(pending_status) ||
            basis_factorization_.IsRefactorized());
 
     // Remove the bound and cost shifts (or perturbations).
@@ -333,36 +404,141 @@ ABSL_MUST_USE_RESULT Status RevisedSimplex::SolveInternal(
     // Note(user): Currently, we never do both at the same time, so we could
     // be a bit faster here, but then this is quick anyway.
     variable_values_.ResetAllNonBasicVariableValues(variable_starting_values_);
-    GLOP_RETURN_IF_ERROR(basis_factorization_.Refactorize());
+    GLOP_RETURN_IF_ABNORMAL(basis_factorization_.Refactorize());
     PermuteBasis();
     variable_values_.RecomputeBasicVariableValues();
     reduced_costs_.ClearAndRemoveCostShifts();
 
+    DisplayPendingStatus(pending_status);
     DisplayErrors();
 
-    // TODO(user): We should also confirm the PRIMAL_UNBOUNDED or DUAL_UNBOUNDED
-    // status by checking with the other phase I that the problem is really
-    // DUAL_INFEASIBLE or PRIMAL_INFEASIBLE. For instance we currently report
-    // PRIMAL_UNBOUNDED with the primal on the problem l30.mps instead of
-    // OPTIMAL and the dual does not have issues on this problem.
-    //
-    // TODO(user): There is another issue on infeas/qual.mps. I think we should
-    // just check the dual ray, not really the current solution dual
-    // feasibility.
-    if (problem_status_ == ProblemStatus::PRIMAL_UNBOUNDED) {
-      const Fractional tolerance = parameters_.solution_feasibility_tolerance();
-      if (reduced_costs_.ComputeMaximumDualResidual() > tolerance ||
-          variable_values_.ComputeMaximumPrimalResidual() > tolerance ||
-          variable_values_.ComputeMaximumPrimalInfeasibility() > tolerance) {
+    // If the pending_status is anything but OPTIMAL we don't re-optimize. Since
+    // PrimalMinimize()/DualMinimize() don't return a FeasibilityStatus outside
+    // phase I we respect the loop invariant.
+    if (!IsSolveStatus<SolveStatus::Optimal>(pending_status)) {
+      break;
+    }
+
+    // Change the status, if after the shift and perturbation removal the
+    // problem is not OPTIMAL anymore.
+    const Fractional solution_tolerance =
+        parameters_.solution_feasibility_tolerance();
+    const Fractional primal_residual =
+        variable_values_.ComputeMaximumPrimalResidual();
+    const Fractional dual_residual =
+        reduced_costs_.ComputeMaximumDualResidual();
+    if (primal_residual > solution_tolerance ||
+        dual_residual > solution_tolerance) {
+      SOLVER_LOG(logger_,
+                 "OPTIMAL was reported, yet one of the residuals is "
+                 "above the solution feasibility tolerance after the "
+                 "shift/perturbation are removed.");
+      if (parameters_.change_status_to_imprecise()) {
+        pending_status = ImpreciseSolveStatus();
+      }
+      break;
+    }
+
+    // We use the "precise" tolerances here to try to report the best
+    // possible solution. Note however that we cannot really hope for an
+    // infeasibility lower than its corresponding residual error. Note that
+    // we already adapt the tolerance like this during the simplex
+    // execution.
+    const Fractional primal_tolerance =
+        std::max(primal_residual,
+                 Fractional(parameters_.primal_feasibility_tolerance()));
+    const Fractional dual_tolerance = std::max(
+        dual_residual, Fractional(parameters_.dual_feasibility_tolerance()));
+    const Fractional primal_infeasibility =
+        variable_values_.ComputeMaximumPrimalInfeasibility();
+    const Fractional dual_infeasibility =
+        reduced_costs_.ComputeMaximumDualInfeasibility();
+    // Handle all possible combination of primal and dual infeasibilities.
+    if (primal_infeasibility > primal_tolerance &&
+        dual_infeasibility > dual_tolerance) {
+      SOLVER_LOG(logger_,
+                 "OPTIMAL was reported, yet both of the infeasibility "
+                 "are above the tolerance after the "
+                 "shift/perturbation are removed.");
+      if (parameters_.change_status_to_imprecise()) {
+        pending_status = ImpreciseSolveStatus();
+      }
+      break;
+    } else if (primal_infeasibility > primal_tolerance) {
+      // Only primal infeasiblity.
+      if (num_optims >= parameters_.max_number_of_reoptimizations()) {
         SOLVER_LOG(logger_,
-                   "PRIMAL_UNBOUNDED was reported, but the residual and/or "
-                   "dual infeasibility is above the tolerance");
-        if (parameters_.change_status_to_imprecise()) {
-          problem_status_ = ProblemStatus::IMPRECISE;
-        }
+                   "The primal infeasibility is still higher than the "
+                   "requested internal tolerance, but the maximum "
+                   "number of optimization is reached.");
+        // Note that solution tolerances will be used below to decide if the
+        // solution is precise enough.
         break;
       }
+      SOLVER_LOG(logger_, "");
+      SOLVER_LOG(logger_, "Re-optimizing with dual simplex ... ");
+      pending_status = FeasibilityStatus::kDual;
+    } else if (dual_infeasibility > dual_tolerance) {
+      // Only dual infeasiblity.
+      if (num_optims >= parameters_.max_number_of_reoptimizations()) {
+        SOLVER_LOG(logger_,
+                   "The dual infeasibility is still higher than the "
+                   "requested internal tolerance, but the maximum "
+                   "number of optimization is reached.");
+        // Note that solution tolerances will be used below to decide if the
+        // solution is precise enough.
+        break;
+      }
+      SOLVER_LOG(logger_, "");
+      SOLVER_LOG(logger_, "Re-optimizing with primal simplex ... ");
+      pending_status = FeasibilityStatus::kPrimal;
+    } else {
+      // primal_infeasibility <= primal_tolerance &&
+      // dual_infeasibility <= dual_tolerance
+      //
+      // Both feasible; keep Optimal result.
+      break;
+    }
+  }
 
+  // At this point pending_status must hold a SolveStatus (only way to exit the
+  // above loop).
+  SolveStatus solve_status = std::visit(
+      absl::Overload{
+          [](const FeasibilityStatus feasibility) -> SolveStatus {
+            // The loop invariant is broken? We should never exit with a non
+            // final SolveStatus!
+            LOG(DFATAL) << "Broken loop invariant; pending_status is "
+                           "FeasibilityStatus: "
+                        << feasibility;
+            return FeasibleSolveStatus(feasibility,
+                                       InterruptionCause::kExternal);
+          },
+          [](SolveStatus solve_status) -> SolveStatus { return solve_status; },
+      },
+      std::move(pending_status));
+
+  // TODO(user): We should also confirm the PRIMAL_UNBOUNDED or DUAL_UNBOUNDED
+  // status by checking with the other phase I that the problem is really
+  // DUAL_INFEASIBLE or PRIMAL_INFEASIBLE. For instance we currently report
+  // PRIMAL_UNBOUNDED with the primal on the problem l30.mps instead of
+  // OPTIMAL and the dual does not have issues on this problem.
+  //
+  // TODO(user): There is another issue on infeas/qual.mps. I think we should
+  // just check the dual ray, not really the current solution dual
+  // feasibility.
+  if (solve_status.Is<SolveStatus::PrimalUnbounded>()) {
+    const Fractional tolerance = parameters_.solution_feasibility_tolerance();
+    if (reduced_costs_.ComputeMaximumDualResidual() > tolerance ||
+        variable_values_.ComputeMaximumPrimalResidual() > tolerance ||
+        variable_values_.ComputeMaximumPrimalInfeasibility() > tolerance) {
+      SOLVER_LOG(logger_,
+                 "PRIMAL_UNBOUNDED was reported, but the residual and/or "
+                 "dual infeasibility is above the tolerance");
+      if (parameters_.change_status_to_imprecise()) {
+        solve_status = ImpreciseSolveStatus();
+      }
+    } else {
       // All of our tolerance are okay, but the dual ray might be fishy. This
       // happens on l30.mps and on L1_sixm250obs.mps.gz. If the ray do not
       // seems good enough, we might actually just be at the optimal and have
@@ -412,126 +588,56 @@ ABSL_MUST_USE_RESULT Status RevisedSimplex::SolveInternal(
                    "The difference between unbounded and optimal can depend "
                    "on a slight change of tolerance, trying to see if we are "
                    "at OPTIMAL after postsolve.");
-        problem_status_ = ProblemStatus::OPTIMAL;
+        solve_status = OptimalSolveStatus();
       }
-      break;
     }
-    if (problem_status_ == ProblemStatus::DUAL_UNBOUNDED) {
-      const Fractional tolerance = parameters_.solution_feasibility_tolerance();
-      if (reduced_costs_.ComputeMaximumDualResidual() > tolerance ||
-          variable_values_.ComputeMaximumPrimalResidual() > tolerance ||
-          reduced_costs_.ComputeMaximumDualInfeasibility() > tolerance) {
-        SOLVER_LOG(logger_,
-                   "DUAL_UNBOUNDED was reported, but the residual and/or "
-                   "dual infeasibility is above the tolerance");
-        if (parameters_.change_status_to_imprecise()) {
-          problem_status_ = ProblemStatus::IMPRECISE;
-        }
-      }
+  }
 
-      // Validate the dual ray that prove primal infeasibility.
-      //
-      // By taking the linear combination of the constraint, we should arrive
-      // to an infeasible <= 0 constraint using the variable bounds.
-      const DenseRow& lower_bounds = variables_info_.GetVariableLowerBounds();
-      const DenseRow& upper_bounds = variables_info_.GetVariableUpperBounds();
-      Fractional implied_lb = 0.0;
-      Fractional error = 0.0;
-      for (ColIndex col(0); col < num_cols_; ++col) {
-        const Fractional coeff = solution_dual_ray_row_combination_[col];
-        if (coeff > 0) {
-          if (lower_bounds[col] == -kInfinity) {
-            error = std::max(error, coeff);
-          } else {
-            implied_lb += coeff * lower_bounds[col];
-          }
-        } else if (coeff < 0) {
-          if (upper_bounds[col] == kInfinity) {
-            error = std::max(error, -coeff);
-          } else {
-            implied_lb += coeff * upper_bounds[col];
-          }
-        }
+  if (solve_status.Is<SolveStatus::DualUnbounded>()) {
+    const Fractional tolerance = parameters_.solution_feasibility_tolerance();
+    if (reduced_costs_.ComputeMaximumDualResidual() > tolerance ||
+        variable_values_.ComputeMaximumPrimalResidual() > tolerance ||
+        reduced_costs_.ComputeMaximumDualInfeasibility() > tolerance) {
+      SOLVER_LOG(logger_,
+                 "DUAL_UNBOUNDED was reported, but the residual and/or "
+                 "dual infeasibility is above the tolerance");
+      if (parameters_.change_status_to_imprecise()) {
+        solve_status = ImpreciseSolveStatus();
       }
-      SOLVER_LOG(logger_, "Dual ray error=", error,
-                 " infeasibility=", implied_lb);
-      if (implied_lb < tolerance || error > tolerance) {
-        SOLVER_LOG(logger_,
-                   "DUAL_UNBOUNDED was reported, but the dual ray is not "
-                   "proving infeasibility with high enough tolerance");
-        if (parameters_.change_status_to_imprecise()) {
-          problem_status_ = ProblemStatus::IMPRECISE;
-        }
-      }
-      break;
     }
 
-    // Change the status, if after the shift and perturbation removal the
-    // problem is not OPTIMAL anymore.
-    if (problem_status_ == ProblemStatus::OPTIMAL) {
-      const Fractional solution_tolerance =
-          parameters_.solution_feasibility_tolerance();
-      const Fractional primal_residual =
-          variable_values_.ComputeMaximumPrimalResidual();
-      const Fractional dual_residual =
-          reduced_costs_.ComputeMaximumDualResidual();
-      if (primal_residual > solution_tolerance ||
-          dual_residual > solution_tolerance) {
-        SOLVER_LOG(logger_,
-                   "OPTIMAL was reported, yet one of the residuals is "
-                   "above the solution feasibility tolerance after the "
-                   "shift/perturbation are removed.");
-        if (parameters_.change_status_to_imprecise()) {
-          problem_status_ = ProblemStatus::IMPRECISE;
+    // Validate the dual ray that prove primal infeasibility.
+    //
+    // By taking the linear combination of the constraint, we should arrive
+    // to an infeasible <= 0 constraint using the variable bounds.
+    const DenseRow& lower_bounds = variables_info_.GetVariableLowerBounds();
+    const DenseRow& upper_bounds = variables_info_.GetVariableUpperBounds();
+    Fractional implied_lb = 0.0;
+    Fractional error = 0.0;
+    for (ColIndex col(0); col < num_cols_; ++col) {
+      const Fractional coeff = solution_dual_ray_row_combination_[col];
+      if (coeff > 0) {
+        if (lower_bounds[col] == -kInfinity) {
+          error = std::max(error, coeff);
+        } else {
+          implied_lb += coeff * lower_bounds[col];
         }
-      } else {
-        // We use the "precise" tolerances here to try to report the best
-        // possible solution. Note however that we cannot really hope for an
-        // infeasibility lower than its corresponding residual error. Note that
-        // we already adapt the tolerance like this during the simplex
-        // execution.
-        const Fractional primal_tolerance =
-            std::max(primal_residual,
-                     Fractional(parameters_.primal_feasibility_tolerance()));
-        const Fractional dual_tolerance =
-            std::max(dual_residual,
-                     Fractional(parameters_.dual_feasibility_tolerance()));
-        const Fractional primal_infeasibility =
-            variable_values_.ComputeMaximumPrimalInfeasibility();
-        const Fractional dual_infeasibility =
-            reduced_costs_.ComputeMaximumDualInfeasibility();
-        if (primal_infeasibility > primal_tolerance &&
-            dual_infeasibility > dual_tolerance) {
-          SOLVER_LOG(logger_,
-                     "OPTIMAL was reported, yet both of the infeasibility "
-                     "are above the tolerance after the "
-                     "shift/perturbation are removed.");
-          if (parameters_.change_status_to_imprecise()) {
-            problem_status_ = ProblemStatus::IMPRECISE;
-          }
-        } else if (primal_infeasibility > primal_tolerance) {
-          if (num_optims == parameters_.max_number_of_reoptimizations()) {
-            SOLVER_LOG(logger_,
-                       "The primal infeasibility is still higher than the "
-                       "requested internal tolerance, but the maximum "
-                       "number of optimization is reached.");
-            break;
-          }
-          SOLVER_LOG(logger_, "");
-          SOLVER_LOG(logger_, "Re-optimizing with dual simplex ... ");
-          problem_status_ = ProblemStatus::DUAL_FEASIBLE;
-        } else if (dual_infeasibility > dual_tolerance) {
-          if (num_optims == parameters_.max_number_of_reoptimizations()) {
-            SOLVER_LOG(logger_,
-                       "The dual infeasibility is still higher than the "
-                       "requested internal tolerance, but the maximum "
-                       "number of optimization is reached.");
-            break;
-          }
-          SOLVER_LOG(logger_, "");
-          SOLVER_LOG(logger_, "Re-optimizing with primal simplex ... ");
-          problem_status_ = ProblemStatus::PRIMAL_FEASIBLE;
+      } else if (coeff < 0) {
+        if (upper_bounds[col] == kInfinity) {
+          error = std::max(error, -coeff);
+        } else {
+          implied_lb += coeff * upper_bounds[col];
         }
+      }
+    }
+    SOLVER_LOG(logger_, "Dual ray error=", error,
+               " infeasibility=", implied_lb);
+    if (implied_lb < tolerance || error > tolerance) {
+      SOLVER_LOG(logger_,
+                 "DUAL_UNBOUNDED was reported, but the dual ray is not "
+                 "proving infeasibility with high enough tolerance");
+      if (parameters_.change_status_to_imprecise()) {
+        solve_status = ImpreciseSolveStatus();
       }
     }
   }
@@ -541,22 +647,22 @@ ABSL_MUST_USE_RESULT Status RevisedSimplex::SolveInternal(
   // TODO(user): we currently skip the DUAL_INFEASIBLE status because the
   // quantities are not up to date in this case.
   if (parameters_.change_status_to_imprecise() &&
-      problem_status_ != ProblemStatus::DUAL_INFEASIBLE) {
+      !solve_status.Is<SolveStatus::DualInfeasible>()) {
     const Fractional tolerance = parameters_.solution_feasibility_tolerance();
     if (variable_values_.ComputeMaximumPrimalResidual() > tolerance ||
         reduced_costs_.ComputeMaximumDualResidual() > tolerance) {
-      problem_status_ = ProblemStatus::IMPRECISE;
-    } else if (problem_status_ == ProblemStatus::DUAL_FEASIBLE ||
-               problem_status_ == ProblemStatus::DUAL_UNBOUNDED ||
-               problem_status_ == ProblemStatus::PRIMAL_INFEASIBLE) {
+      solve_status = ImpreciseSolveStatus();
+    } else if (solve_status.Is<SolveStatus::DualFeasible>() ||
+               solve_status.Is<SolveStatus::DualUnbounded>() ||
+               solve_status.Is<SolveStatus::PrimalInfeasible>()) {
       if (reduced_costs_.ComputeMaximumDualInfeasibility() > tolerance) {
-        problem_status_ = ProblemStatus::IMPRECISE;
+        solve_status = ImpreciseSolveStatus();
       }
-    } else if (problem_status_ == ProblemStatus::PRIMAL_FEASIBLE ||
-               problem_status_ == ProblemStatus::PRIMAL_UNBOUNDED ||
-               problem_status_ == ProblemStatus::DUAL_INFEASIBLE) {
+    } else if (solve_status.Is<SolveStatus::PrimalFeasible>() ||
+               solve_status.Is<SolveStatus::PrimalUnbounded>() ||
+               solve_status.Is<SolveStatus::DualInfeasible>()) {
       if (variable_values_.ComputeMaximumPrimalInfeasibility() > tolerance) {
-        problem_status_ = ProblemStatus::IMPRECISE;
+        solve_status = ImpreciseSolveStatus();
       }
     }
   }
@@ -574,10 +680,10 @@ ABSL_MUST_USE_RESULT Status RevisedSimplex::SolveInternal(
                  "Num super-basic variables left after optimize phase: ",
                  num_super_basic);
       if (parameters_.push_to_vertex()) {
-        if (problem_status_ == ProblemStatus::OPTIMAL) {
+        if (solve_status.Is<SolveStatus::Optimal>()) {
           SOLVER_LOG(logger_, "");
           phase_ = Phase::PUSH;
-          GLOP_RETURN_IF_ERROR(PrimalPush(time_limit));
+          GLOP_RETURN_IF_ABNORMAL(PrimalPush(time_limit));
           // TODO(user): We should re-check for feasibility at this point and
           // apply clean-up as needed.
         } else {
@@ -589,13 +695,12 @@ ABSL_MUST_USE_RESULT Status RevisedSimplex::SolveInternal(
   }
 
   // If SetIntegralityScale() was called, we perform a polish operation.
-  if (!integrality_scale_.empty() &&
-      problem_status_ == ProblemStatus::OPTIMAL) {
+  if (!integrality_scale_.empty() && solve_status.Is<SolveStatus::Optimal>()) {
     if (parameters_.dual_polish()) {
-      GLOP_RETURN_IF_ERROR(DualPolish(time_limit));
+      GLOP_RETURN_IF_ABNORMAL(DualPolish(time_limit));
     }
     if (parameters_.primal_polish()) {
-      GLOP_RETURN_IF_ERROR(PrimalPolish(time_limit));
+      GLOP_RETURN_IF_ABNORMAL(PrimalPolish(time_limit));
     }
   }
 
@@ -605,7 +710,18 @@ ABSL_MUST_USE_RESULT Status RevisedSimplex::SolveInternal(
                          num_optimization_iterations_;
 
   // Store the result for the solution getters.
-  solution_objective_value_ = ComputeInitialProblemObjectiveValue();
+  if (solve_status.Is<SolveStatus::PrimalUnbounded>() ||
+      solve_status.Is<SolveStatus::DualUnbounded>()) {
+    // If the problem is unbounded, set the objective value to +/- infinity.
+    solution_objective_value_ = (solve_status.Is<SolveStatus::DualUnbounded>())
+                                    ? kInfinity
+                                    : -kInfinity;
+    if (is_maximization_problem) {
+      solution_objective_value_ = -solution_objective_value_;
+    }
+  } else {
+    solution_objective_value_ = ComputeInitialProblemObjectiveValue();
+  }
   solution_dual_values_ = reduced_costs_.GetDualValues();
   solution_reduced_costs_ = reduced_costs_.GetReducedCosts();
   SaveState();
@@ -615,29 +731,22 @@ ABSL_MUST_USE_RESULT Status RevisedSimplex::SolveInternal(
     ChangeSign(&solution_reduced_costs_);
   }
 
-  // If the problem is unbounded, set the objective value to +/- infinity.
-  if (problem_status_ == ProblemStatus::DUAL_UNBOUNDED ||
-      problem_status_ == ProblemStatus::PRIMAL_UNBOUNDED) {
-    solution_objective_value_ =
-        (problem_status_ == ProblemStatus::DUAL_UNBOUNDED) ? kInfinity
-                                                           : -kInfinity;
-    if (is_maximization_problem) {
-      solution_objective_value_ = -solution_objective_value_;
-    }
-  }
-
   variable_starting_values_.clear();
   DisplayAllStats();
-  return Status::OK();
+
+  return solve_status;
 }
 
-ABSL_MUST_USE_RESULT Status RevisedSimplex::PrimalPhaseI(
+RevisedSimplex::PendingStatus RevisedSimplex::PrimalPhaseI(
     const bool is_maximization_problem, const DenseRow& objective_coefficients,
     TimeLimit& time_limit) {
-  GLOP_RETURN_IF_ERROR(PrimalMinimize(time_limit));
+  PendingStatus pending_status = PrimalMinimize(time_limit);
+  if (IsSolveStatus<SolveStatus::Abnormal>(pending_status)) {
+    return pending_status;
+  }
 
   // After the primal phase I, we need to restore the objective.
-  if (problem_status_ != ProblemStatus::PRIMAL_INFEASIBLE) {
+  if (!IsSolveStatus<SolveStatus::PrimalInfeasible>(pending_status)) {
     objective_ = objective_coefficients;
     if (is_maximization_problem) {
       for (Fractional& value : objective_) {
@@ -648,10 +757,10 @@ ABSL_MUST_USE_RESULT Status RevisedSimplex::PrimalPhaseI(
     reduced_costs_.ResetForNewObjective();
   }
 
-  return Status::OK();
+  return pending_status;
 }
 
-ABSL_MUST_USE_RESULT Status RevisedSimplex::DualPhaseI(
+RevisedSimplex::PendingStatus RevisedSimplex::DualPhaseI(
     const bool is_maximization_problem, const DenseRow& objective_coefficients,
     TimeLimit& time_limit) {
   if (parameters_.perturb_costs_in_dual_simplex()) {
@@ -660,9 +769,13 @@ ABSL_MUST_USE_RESULT Status RevisedSimplex::DualPhaseI(
 
   if (parameters_.use_dedicated_dual_feasibility_algorithm()) {
     variables_info_.MakeBoxedVariableRelevant(false);
-    GLOP_RETURN_IF_ERROR(DualMinimize(/*feasibility_phase=*/true, time_limit));
+    PendingStatus pending_status =
+        DualMinimize(/*feasibility_phase=*/true, time_limit);
+    if (IsSolveStatus<SolveStatus::Abnormal>(pending_status)) {
+      return pending_status;
+    }
 
-    if (problem_status_ != ProblemStatus::DUAL_INFEASIBLE) {
+    if (!IsSolveStatus<SolveStatus::DualInfeasible>(pending_status)) {
       // Note(user): In most cases, the matrix will already be refactorized
       // and both Refactorize() and PermuteBasis() will do nothing. However,
       // if the time limit is reached during the first phase, this might not
@@ -670,7 +783,7 @@ ABSL_MUST_USE_RESULT Status RevisedSimplex::DualPhaseI(
       // matrix is refactorized. This is not required, but we currently only
       // want to recompute values from scratch when the matrix was just
       // refactorized to maximize precision.
-      GLOP_RETURN_IF_ERROR(basis_factorization_.Refactorize());
+      GLOP_RETURN_IF_ABNORMAL(basis_factorization_.Refactorize());
       PermuteBasis();
 
       variables_info_.MakeBoxedVariableRelevant(true);
@@ -681,68 +794,74 @@ ABSL_MUST_USE_RESULT Status RevisedSimplex::DualPhaseI(
                                     /*update_basic_values=*/false);
       variable_values_.RecomputeBasicVariableValues();
     }
-  } else {
-    // Test initial dual infeasibility, ignoring boxed variables. We currently
-    // refactorize/recompute the reduced costs if not already done.
-    // TODO(user): Not ideal in an incremental setting.
-    reduced_costs_.MakeReducedCostsPrecise();
-    bool refactorize = reduced_costs_.NeedsBasisRefactorization();
-    GLOP_RETURN_IF_ERROR(RefactorizeBasisIfNeeded(&refactorize));
 
-    const Fractional initial_infeasibility =
-        reduced_costs_.ComputeMaximumDualInfeasibilityOnNonBoxedVariables();
-    if (initial_infeasibility < reduced_costs_.GetDualFeasibilityTolerance()) {
-      SOLVER_LOG(logger_, "Initial basis is dual feasible.");
-      problem_status_ = ProblemStatus::DUAL_FEASIBLE;
-      MakeBoxedVariableDualFeasible(variables_info_.GetNonBasicBoxedVariables(),
-                                    /*update_basic_values=*/false);
-      variable_values_.RecomputeBasicVariableValues();
-    } else {
-      // Transform problem and recompute variable values.
-      variables_info_.TransformToDualPhaseIProblem(
-          reduced_costs_.GetDualFeasibilityTolerance(),
-          reduced_costs_.GetReducedCosts());
-      DenseRow zero;  // We want the FREE variable at zero here.
-      variable_values_.ResetAllNonBasicVariableValues(zero);
-      variable_values_.RecomputeBasicVariableValues();
-
-      // Optimize.
-      DisplayErrors();
-      GLOP_RETURN_IF_ERROR(DualMinimize(false, time_limit));
-
-      // Restore original problem and recompute variable values. Note that we
-      // need the reduced cost on the fixed positions here.
-      variables_info_.EndDualPhaseI(
-          reduced_costs_.GetDualFeasibilityTolerance(),
-          reduced_costs_.GetFullReducedCosts());
-      variable_values_.ResetAllNonBasicVariableValues(
-          variable_starting_values_);
-      variable_values_.RecomputeBasicVariableValues();
-
-      // TODO(user): Note that if there was cost shifts, we just keep them
-      // until the end of the optim.
-      //
-      // TODO(user): What if slightly infeasible? we shouldn't really stop.
-      // Call primal ? use higher tolerance ? It seems we can always kind of
-      // continue and deal with the issue later. Find a way other than this +
-      // 1e-6 hack.
-      if (problem_status_ == ProblemStatus::OPTIMAL) {
-        if (reduced_costs_.ComputeMaximumDualInfeasibility() <
-            reduced_costs_.GetDualFeasibilityTolerance() + 1e-6) {
-          problem_status_ = ProblemStatus::DUAL_FEASIBLE;
-        } else {
-          SOLVER_LOG(logger_, "Infeasible after first phase.");
-          problem_status_ = ProblemStatus::DUAL_INFEASIBLE;
-        }
-      }
-    }
+    return pending_status;
   }
 
-  return Status::OK();
+  // Test initial dual infeasibility, ignoring boxed variables. We currently
+  // refactorize/recompute the reduced costs if not already done.
+  // TODO(user): Not ideal in an incremental setting.
+  reduced_costs_.MakeReducedCostsPrecise();
+  bool refactorize = reduced_costs_.NeedsBasisRefactorization();
+  GLOP_RETURN_IF_ABNORMAL(RefactorizeBasisIfNeeded(&refactorize));
+
+  const Fractional initial_infeasibility =
+      reduced_costs_.ComputeMaximumDualInfeasibilityOnNonBoxedVariables();
+  if (initial_infeasibility < reduced_costs_.GetDualFeasibilityTolerance()) {
+    SOLVER_LOG(logger_, "Initial basis is dual feasible.");
+    MakeBoxedVariableDualFeasible(variables_info_.GetNonBasicBoxedVariables(),
+                                  /*update_basic_values=*/false);
+    variable_values_.RecomputeBasicVariableValues();
+    return FeasibilityStatus::kDual;
+  }
+
+  // Transform problem and recompute variable values.
+  variables_info_.TransformToDualPhaseIProblem(
+      reduced_costs_.GetDualFeasibilityTolerance(),
+      reduced_costs_.GetReducedCosts());
+  DenseRow zero;  // We want the FREE variable at zero here.
+  variable_values_.ResetAllNonBasicVariableValues(zero);
+  variable_values_.RecomputeBasicVariableValues();
+
+  // Optimize.
+  DisplayErrors();
+  PendingStatus pending_status = PrimalMinimize(time_limit);
+  if (IsSolveStatus<SolveStatus::Abnormal>(pending_status)) {
+    return pending_status;
+  }
+
+  // Restore original problem and recompute variable values. Note that we
+  // need the reduced cost on the fixed positions here.
+  variables_info_.EndDualPhaseI(reduced_costs_.GetDualFeasibilityTolerance(),
+                                reduced_costs_.GetFullReducedCosts());
+  variable_values_.ResetAllNonBasicVariableValues(variable_starting_values_);
+  variable_values_.RecomputeBasicVariableValues();
+
+  // TODO(user): Note that if there was cost shifts, we just keep them
+  // until the end of the optim.
+  //
+  // TODO(user): What if slightly infeasible? we shouldn't really stop.
+  // Call primal ? use higher tolerance ? It seems we can always kind of
+  // continue and deal with the issue later. Find a way other than this +
+  // 1e-6 hack.
+  if (IsSolveStatus<SolveStatus::Optimal>(pending_status)) {
+    if (reduced_costs_.ComputeMaximumDualInfeasibility() <
+        reduced_costs_.GetDualFeasibilityTolerance() + 1e-6) {
+      return FeasibilityStatus::kDual;
+    }
+    SOLVER_LOG(logger_, "Infeasible after first phase.");
+    return DualInfeasibleSolveStatus();
+  }
+
+  return pending_status;
 }
 
 ProblemStatus RevisedSimplex::GetProblemStatus() const {
-  return problem_status_;
+  DCHECK(solve_status_.has_value());
+  if (!solve_status_.has_value()) {
+    return ProblemStatus::ABNORMAL;
+  }
+  return solve_status_->problem_status();
 }
 
 Fractional RevisedSimplex::GetObjectiveValue() const {
@@ -799,16 +918,19 @@ ConstraintStatus RevisedSimplex::GetConstraintStatus(RowIndex row) const {
 }
 
 const DenseRow& RevisedSimplex::GetPrimalRay() const {
-  DCHECK_EQ(problem_status_, ProblemStatus::PRIMAL_UNBOUNDED);
+  DCHECK(solve_status_.has_value());
+  DCHECK(solve_status_->Is<SolveStatus::PrimalUnbounded>()) << *solve_status_;
   return solution_primal_ray_;
 }
 const DenseColumn& RevisedSimplex::GetDualRay() const {
-  DCHECK_EQ(problem_status_, ProblemStatus::DUAL_UNBOUNDED);
+  DCHECK(solve_status_.has_value());
+  DCHECK(solve_status_->Is<SolveStatus::DualUnbounded>()) << *solve_status_;
   return solution_dual_ray_;
 }
 
 const DenseRow& RevisedSimplex::GetDualRayRowCombination() const {
-  DCHECK_EQ(problem_status_, ProblemStatus::DUAL_UNBOUNDED);
+  DCHECK(solve_status_.has_value());
+  DCHECK(solve_status_->Is<SolveStatus::DualUnbounded>()) << *solve_status_;
   return solution_dual_ray_row_combination_;
 }
 
@@ -829,8 +951,9 @@ std::string RevisedSimplex::GetPrettySolverStats() const {
       "Time for optimization                        : %-6.4g\n"
       "Number of iterations for optimization        : %u\n"
       "Stop after first basis                       : %d\n",
-      GetProblemStatusString(problem_status_), total_time_, num_iterations_,
-      feasibility_time_, num_feasibility_iterations_, optimization_time_,
+      solve_status_.has_value() ? GetSolveStatusString(*solve_status_) : "n/a",
+      total_time_, num_iterations_, feasibility_time_,
+      num_feasibility_iterations_, optimization_time_,
       num_optimization_iterations_,
       absl::GetFlag(FLAGS_simplex_stop_after_first_basis));
 }
@@ -843,6 +966,15 @@ double RevisedSimplex::DeterministicTime() const {
          entering_variable_.DeterministicTime() +
          reduced_costs_.DeterministicTime() +
          primal_edge_norms_.DeterministicTime();
+}
+
+bool RevisedSimplex::objective_limit_reached() const {
+  if (!solve_status_.has_value()) {
+    LOG(DFATAL) << "solve_status_ unset";
+    return false;
+  }
+  return solve_status_->interruption_cause() ==
+         InterruptionCause::kObjectiveLimit;
 }
 
 void RevisedSimplex::SetVariableNames() {
@@ -1204,7 +1336,6 @@ bool RevisedSimplex::InitializeObjectiveAndTestIfUnchanged(
 }
 
 void RevisedSimplex::InitializeObjectiveLimit() {
-  objective_limit_reached_ = false;
   DCHECK(std::isfinite(objective_offset_));
   DCHECK(std::isfinite(objective_scaling_factor_));
   DCHECK_NE(0.0, objective_scaling_factor_);
@@ -1240,7 +1371,7 @@ void RevisedSimplex::InitializeObjectiveLimit() {
 // variables or the singleton columns present in the problem. Afterwards, the
 // fixed slacks in the basis are exchanged with normal columns of A if possible
 // by the InitialBasis class.
-Status RevisedSimplex::CreateInitialBasis() {
+AbnormalityStatus RevisedSimplex::CreateInitialBasis() {
   SCOPED_TIME_STAT(&function_stats_);
 
   // Initialize the variable values and statuses.
@@ -1364,7 +1495,7 @@ Status RevisedSimplex::CreateInitialBasis() {
           initial_basis.CompleteTriangularPrimalBasis(num_cols_, &basis);
         }
 
-        const Status status = InitializeFirstBasis(basis);
+        const AbnormalityStatus status = InitializeFirstBasis(basis);
         if (status.ok()) {
           return status;
         } else {
@@ -1386,7 +1517,8 @@ Status RevisedSimplex::CreateInitialBasis() {
   return InitializeFirstBasis(basis);
 }
 
-Status RevisedSimplex::InitializeFirstBasis(const RowToColMapping& basis) {
+AbnormalityStatus RevisedSimplex::InitializeFirstBasis(
+    const RowToColMapping& basis) {
   basis_ = basis;
 
   // For each row which does not have a basic column, assign it to the
@@ -1398,7 +1530,7 @@ Status RevisedSimplex::InitializeFirstBasis(const RowToColMapping& basis) {
     }
   }
 
-  GLOP_RETURN_IF_ERROR(basis_factorization_.Initialize());
+  GLOP_RETURN_IF_ABNORMAL(basis_factorization_.Initialize());
   PermuteBasis();
 
   // Test that the upper bound on the condition number of basis is not too high.
@@ -1409,11 +1541,12 @@ Status RevisedSimplex::InitializeFirstBasis(const RowToColMapping& basis) {
   const Fractional condition_number_ub =
       basis_factorization_.ComputeInfinityNormConditionNumberUpperBound();
   if (condition_number_ub > parameters_.initial_condition_number_threshold()) {
-    const std::string error_message =
+    SOLVER_LOG(
+        logger_,
         absl::StrCat("The matrix condition number upper bound is too high: ",
-                     condition_number_ub);
-    SOLVER_LOG(logger_, error_message);
-    return Status(Status::ERROR_LU, error_message);
+                     condition_number_ub));
+    return AbnormalityStatus(
+        AbnormalityCause::kRevisedSimplexConditionNumberTooHigh);
   }
 
   // Everything is okay, finish the initialization.
@@ -1437,10 +1570,10 @@ Status RevisedSimplex::InitializeFirstBasis(const RowToColMapping& basis) {
           variable_values_.ComputeMaximumPrimalResidual(), " vs. ", tolerance);
     }
   }
-  return Status::OK();
+  return OkAbnormalityStatus();
 }
 
-Status RevisedSimplex::Initialize(const LinearProgram& lp) {
+AbnormalityStatus RevisedSimplex::Initialize(const LinearProgram& lp) {
   parameters_ = initial_parameters_;
   PropagateParameters();
 
@@ -1588,7 +1721,8 @@ Status RevisedSimplex::Initialize(const LinearProgram& lp) {
   return FinishInitialization(solve_from_scratch);
 }
 
-Status RevisedSimplex::FinishInitialization(bool solve_from_scratch) {
+AbnormalityStatus RevisedSimplex::FinishInitialization(
+    bool solve_from_scratch) {
   // If we couldn't perform a "quick" warm start above, we can at least try to
   // reuse the variable statuses.
   if (solve_from_scratch && !solution_state_.IsEmpty()) {
@@ -1665,14 +1799,14 @@ Status RevisedSimplex::FinishInitialization(bool solve_from_scratch) {
     primal_edge_norms_.Clear();
     dual_edge_norms_.Clear();
     dual_pricing_vector_.clear();
-    GLOP_RETURN_IF_ERROR(CreateInitialBasis());
+    GLOP_RETURN_IF_ABNORMAL(CreateInitialBasis());
   } else {
     SOLVER_LOG(logger_, "Starting basis: incremental solve.");
   }
   DCHECK(BasisIsConsistent());
 
   transpose_was_changed_ = false;
-  return Status::OK();
+  return OkAbnormalityStatus();
 }
 
 void RevisedSimplex::DisplayBasicVariableStatistics() {
@@ -2611,9 +2745,9 @@ void RevisedSimplex::PermuteBasis() {
   basis_factorization_.SetColumnPermutationToIdentity();
 }
 
-Status RevisedSimplex::UpdateAndPivot(ColIndex entering_col,
-                                      RowIndex leaving_row,
-                                      Fractional target_bound) {
+AbnormalityStatus RevisedSimplex::UpdateAndPivot(ColIndex entering_col,
+                                                 RowIndex leaving_row,
+                                                 Fractional target_bound) {
   SCOPED_TIME_STAT(&function_stats_);
 
   // Tricky and a bit hacky.
@@ -2673,26 +2807,26 @@ Status RevisedSimplex::UpdateAndPivot(ColIndex entering_col,
     }
 
     last_refactorization_reason_ = RefactorizationReason::IMPRECISE_PIVOT;
-    GLOP_RETURN_IF_ERROR(basis_factorization_.ForceRefactorization());
+    GLOP_RETURN_IF_ABNORMAL(basis_factorization_.ForceRefactorization());
   } else {
-    GLOP_RETURN_IF_ERROR(
+    GLOP_RETURN_IF_ABNORMAL(
         basis_factorization_.Update(entering_col, leaving_row, direction_));
   }
   if (basis_factorization_.IsRefactorized()) {
     PermuteBasis();
   }
-  return Status::OK();
+  return OkAbnormalityStatus();
 }
 
-Status RevisedSimplex::RefactorizeBasisIfNeeded(bool* refactorize) {
+AbnormalityStatus RevisedSimplex::RefactorizeBasisIfNeeded(bool* refactorize) {
   SCOPED_TIME_STAT(&function_stats_);
   if (*refactorize && !basis_factorization_.IsRefactorized()) {
-    GLOP_RETURN_IF_ERROR(basis_factorization_.Refactorize());
+    GLOP_RETURN_IF_ABNORMAL(basis_factorization_.Refactorize());
     update_row_.Invalidate();
     PermuteBasis();
   }
   *refactorize = false;
-  return Status::OK();
+  return OkAbnormalityStatus();
 }
 
 void RevisedSimplex::SetIntegralityScale(ColIndex col, Fractional scale) {
@@ -2727,7 +2861,7 @@ int RevisedSimplex::NumNonIntegerInBasis() const {
   return num_non_integer;
 }
 
-Status RevisedSimplex::PrimalPolish(TimeLimit& time_limit) {
+AbnormalityStatus RevisedSimplex::PrimalPolish(TimeLimit& time_limit) {
   Cleanup update_deterministic_time_on_return(
       [this, &time_limit]() { AdvanceDeterministicTime(time_limit); });
 
@@ -2770,7 +2904,7 @@ Status RevisedSimplex::PrimalPolish(TimeLimit& time_limit) {
 
     // Refactorize if needed.
     if (reduced_costs_.NeedsBasisRefactorization()) refactorize = true;
-    GLOP_RETURN_IF_ERROR(RefactorizeBasisIfNeeded(&refactorize));
+    GLOP_RETURN_IF_ABNORMAL(RefactorizeBasisIfNeeded(&refactorize));
 
     // Compute the direction and by how much we can move along it.
     ComputeDirection(entering_col);
@@ -2850,18 +2984,18 @@ Status RevisedSimplex::PrimalPolish(TimeLimit& time_limit) {
     if (!is_degenerate) {
       variable_values_.Set(leaving_col, target_bound);
     }
-    GLOP_RETURN_IF_ERROR(
+    GLOP_RETURN_IF_ABNORMAL(
         UpdateAndPivot(entering_col, leaving_row, target_bound));
   }
 
   // Make sure we refactorize before finishing as cut DCHECK assume this is
   // the case.
   refactorize = true;
-  GLOP_RETURN_IF_ERROR(RefactorizeBasisIfNeeded(&refactorize));
+  GLOP_RETURN_IF_ABNORMAL(RefactorizeBasisIfNeeded(&refactorize));
 
   SOLVER_LOG(logger_, "PrimalPolish num_pivots: ", num_pivots,
              " gain:", total_gain, " non-integer:", NumNonIntegerInBasis());
-  return Status::OK();
+  return OkAbnormalityStatus();
 }
 
 void RevisedSimplex::FillWithNonIntegerInBasis(
@@ -2878,7 +3012,7 @@ void RevisedSimplex::FillWithNonIntegerInBasis(
   }
 }
 
-Status RevisedSimplex::DualPolish(TimeLimit& time_limit) {
+AbnormalityStatus RevisedSimplex::DualPolish(TimeLimit& time_limit) {
   Cleanup update_deterministic_time_on_return(
       [this, &time_limit]() { AdvanceDeterministicTime(time_limit); });
 
@@ -2898,11 +3032,11 @@ Status RevisedSimplex::DualPolish(TimeLimit& time_limit) {
       ++num_entering_candidates;
     }
   }
-  if (num_entering_candidates == 0) return Status::OK();
+  if (num_entering_candidates == 0) return OkAbnormalityStatus();
 
   std::vector<RowIndex> candidates;
   FillWithNonIntegerInBasis(&candidates);
-  if (candidates.empty()) return Status::OK();
+  if (candidates.empty()) return OkAbnormalityStatus();
 
   for (int num_tries = 0; num_tries < 100; ++num_tries) {
     if (candidates.empty()) break;
@@ -2998,7 +3132,7 @@ Status RevisedSimplex::DualPolish(TimeLimit& time_limit) {
           update_row_.GetUnitRowLeftInverse());
       variable_values_.UpdateOnPivoting(direction_, entering_col, primal_step);
       const ColIndex leaving_col = basis_[leaving_row];
-      GLOP_RETURN_IF_ERROR(
+      GLOP_RETURN_IF_ABNORMAL(
           UpdateAndPivot(entering_col, leaving_row, target_bound));
       variable_values_.SetNonBasicVariableValueFromStatus(leaving_col);
 
@@ -3011,7 +3145,7 @@ Status RevisedSimplex::DualPolish(TimeLimit& time_limit) {
         last_refactorization_reason_ = RefactorizationReason::NORM;
         refactorize = true;
       }
-      GLOP_RETURN_IF_ERROR(RefactorizeBasisIfNeeded(&refactorize));
+      GLOP_RETURN_IF_ABNORMAL(RefactorizeBasisIfNeeded(&refactorize));
 
       // Recompute new candidates.
       // TODO(user): be faster here?
@@ -3025,12 +3159,12 @@ Status RevisedSimplex::DualPolish(TimeLimit& time_limit) {
   // Make sure we refactorize before finishing as cut DCHECK assume this is
   // the case.
   refactorize = true;
-  GLOP_RETURN_IF_ERROR(RefactorizeBasisIfNeeded(&refactorize));
+  GLOP_RETURN_IF_ABNORMAL(RefactorizeBasisIfNeeded(&refactorize));
 
   SOLVER_LOG(logger_, "DualPolish num_pivots: ", num_pivots,
              " gain:", total_gain, " non-integer:", old_num_non_integer, "->",
              NumNonIntegerInBasis());
-  return Status::OK();
+  return OkAbnormalityStatus();
 }
 
 // Minimizes c.x subject to A.x = 0 where A is an mxn-matrix, c an n-vector, and
@@ -3048,7 +3182,8 @@ Status RevisedSimplex::DualPolish(TimeLimit& time_limit) {
 // enter the basis, and a variable from x_B is selected to leave the basis.
 // To avoid explicit inversion of B, the algorithm solves two sub-systems:
 // y.B = c_B and B.d = a (a being the entering column).
-Status RevisedSimplex::PrimalMinimize(TimeLimit& time_limit) {
+RevisedSimplex::PendingStatus RevisedSimplex::PrimalMinimize(
+    TimeLimit& time_limit) {
   Cleanup update_deterministic_time_on_return(
       [this, &time_limit]() { AdvanceDeterministicTime(time_limit); });
   num_consecutive_degenerate_iterations_ = 0;
@@ -3068,9 +3203,27 @@ Status RevisedSimplex::PrimalMinimize(TimeLimit& time_limit) {
     reduced_costs_.ResetForNewObjective();
   }
 
+  const absl::Cleanup update_before_return = [this]() {
+    if (num_consecutive_degenerate_iterations_ > 0) {
+      iteration_stats_.degenerate_run_size.Add(
+          num_consecutive_degenerate_iterations_);
+    }
+  };
+
+  // Returns InitSolveStatus() or PrimalFeasibleSolveStatus() depending on
+  // phase_.
+  const auto result_on_limit = [this](const InterruptionCause cause) {
+    return phase_ == Phase::FEASIBILITY ? InitSolveStatus(cause)
+                                        : PrimalFeasibleSolveStatus(cause);
+  };
+
   while (true) {
     AdvanceDeterministicTime(time_limit);
-    if (time_limit.LimitReached()) break;
+    if (const std::optional<InterruptionCause> cause =
+            TimeLimitStateToCause(time_limit);
+        cause.has_value()) {
+      return result_on_limit(*cause);
+    }
 
     // TODO(user): we may loop a bit more than the actual number of iteration.
     // fix.
@@ -3085,7 +3238,7 @@ Status RevisedSimplex::PrimalMinimize(TimeLimit& time_limit) {
       last_refactorization_reason_ = RefactorizationReason::NORM;
       refactorize = true;
     }
-    GLOP_RETURN_IF_ERROR(RefactorizeBasisIfNeeded(&refactorize));
+    GLOP_RETURN_IF_ABNORMAL(RefactorizeBasisIfNeeded(&refactorize));
 
     if (basis_factorization_.IsRefactorized()) {
       CorrectErrorsOnVariableValues();
@@ -3109,9 +3262,7 @@ Status RevisedSimplex::PrimalMinimize(TimeLimit& time_limit) {
         VLOG(1) << "Stopping the primal simplex because"
                 << " the objective limit " << primal_objective_limit_
                 << " has been reached.";
-        problem_status_ = ProblemStatus::PRIMAL_FEASIBLE;
-        objective_limit_reached_ = true;
-        return Status::OK();
+        return PrimalFeasibleSolveStatus(InterruptionCause::kObjectiveLimit);
       }
     } else if (phase_ == Phase::FEASIBILITY) {
       // Note that direction_.non_zeros contains the positions of the basic
@@ -3131,16 +3282,13 @@ Status RevisedSimplex::PrimalMinimize(TimeLimit& time_limit) {
               variable_values_.ComputeMaximumPrimalInfeasibility();
           if (primal_infeasibility <
               parameters_.primal_feasibility_tolerance()) {
-            problem_status_ = ProblemStatus::PRIMAL_FEASIBLE;
-          } else {
-            VLOG(1) << "Infeasible problem! infeasibility = "
-                    << primal_infeasibility;
-            problem_status_ = ProblemStatus::PRIMAL_INFEASIBLE;
+            return FeasibilityStatus::kPrimal;
           }
-        } else {
-          problem_status_ = ProblemStatus::OPTIMAL;
+          VLOG(1) << "Infeasible problem! infeasibility = "
+                  << primal_infeasibility;
+          return PrimalInfeasibleSolveStatus();
         }
-        break;
+        return OptimalSolveStatus();
       }
 
       VLOG(1) << "Optimal reached, double checking...";
@@ -3183,7 +3331,9 @@ Status RevisedSimplex::PrimalMinimize(TimeLimit& time_limit) {
     // when running with 0 iterations, we still want to report
     // ProblemStatus::OPTIMAL or ProblemStatus::PRIMAL_FEASIBLE if it is the
     // case at the beginning of the algorithm.
-    if (num_iterations_ == parameters_.max_number_of_iterations()) break;
+    if (num_iterations_ == parameters_.max_number_of_iterations()) {
+      return result_on_limit(InterruptionCause::kIterationLimit);
+    }
 
     Fractional step_length;
     RowIndex leaving_row;
@@ -3216,20 +3366,19 @@ Status RevisedSimplex::PrimalMinimize(TimeLimit& time_limit) {
       if (phase_ == Phase::FEASIBILITY) {
         // This shouldn't happen by construction.
         VLOG(1) << "Unbounded feasibility problem !?";
-        problem_status_ = ProblemStatus::ABNORMAL;
-      } else {
-        problem_status_ = ProblemStatus::PRIMAL_UNBOUNDED;
-        solution_primal_ray_.AssignToZero(num_cols_);
-        for (RowIndex row(0); row < num_rows_; ++row) {
-          const ColIndex col = basis_[row];
-          solution_primal_ray_[col] = -direction_[row];
-        }
-        solution_primal_ray_[entering_col] = 1.0;
-        if (reduced_cost > 0.0) {
-          ChangeSign(&solution_primal_ray_);
-        }
+        return AbnormalSolveStatus(
+            AbnormalityCause::kRevisedSimplexUnboundedFeasibilityProblem);
       }
-      break;
+      solution_primal_ray_.AssignToZero(num_cols_);
+      for (RowIndex row(0); row < num_rows_; ++row) {
+        const ColIndex col = basis_[row];
+        solution_primal_ray_[col] = -direction_[row];
+      }
+      solution_primal_ray_[entering_col] = 1.0;
+      if (reduced_cost > 0.0) {
+        ChangeSign(&solution_primal_ray_);
+      }
+      return PrimalUnboundedSolveStatus();
     }
 
     Fractional step = (reduced_cost > 0.0) ? -step_length : step_length;
@@ -3286,7 +3435,7 @@ Status RevisedSimplex::PrimalMinimize(TimeLimit& time_limit) {
         // may be slighlty different from target_bound.
         variable_values_.Set(leaving_col, target_bound);
       }
-      GLOP_RETURN_IF_ERROR(
+      GLOP_RETURN_IF_ABNORMAL(
           UpdateAndPivot(entering_col, leaving_row, target_bound));
       IF_STATS_ENABLED({
         if (is_degenerate) {
@@ -3333,11 +3482,6 @@ Status RevisedSimplex::PrimalMinimize(TimeLimit& time_limit) {
     }
     ++num_iterations_;
   }
-  if (num_consecutive_degenerate_iterations_ > 0) {
-    iteration_stats_.degenerate_run_size.Add(
-        num_consecutive_degenerate_iterations_);
-  }
-  return Status::OK();
 }
 
 // TODO(user): Two other approaches for the phase I described in Koberstein's
@@ -3351,8 +3495,8 @@ Status RevisedSimplex::PrimalMinimize(TimeLimit& time_limit) {
 //   it fails to make progress.
 //
 // Note that the returned status applies to the primal problem!
-Status RevisedSimplex::DualMinimize(bool feasibility_phase,
-                                    TimeLimit& time_limit) {
+RevisedSimplex::PendingStatus RevisedSimplex::DualMinimize(
+    const bool feasibility_phase, TimeLimit& time_limit) {
   Cleanup update_deterministic_time_on_return(
       [this, &time_limit]() { AdvanceDeterministicTime(time_limit); });
   num_consecutive_degenerate_iterations_ = 0;
@@ -3366,9 +3510,21 @@ Status RevisedSimplex::DualMinimize(bool feasibility_phase,
   Fractional cost_variation;
   Fractional target_bound;
 
+  // Returns InitSolveStatus() or DualFeasibleSolveStatus() depending on
+  // feasibility_phase.
+  const auto result_on_limit =
+      [feasibility_phase](const InterruptionCause cause) {
+        return feasibility_phase ? InitSolveStatus(cause)
+                                 : DualFeasibleSolveStatus(cause);
+      };
+
   while (true) {
     AdvanceDeterministicTime(time_limit);
-    if (time_limit.LimitReached()) break;
+    if (const std::optional<InterruptionCause> cause =
+            TimeLimitStateToCause(time_limit);
+        cause.has_value()) {
+      return result_on_limit(*cause);
+    }
 
     // TODO(user): we may loop a bit more than the actual number of iteration.
     // fix.
@@ -3386,7 +3542,7 @@ Status RevisedSimplex::DualMinimize(bool feasibility_phase,
       last_refactorization_reason_ = RefactorizationReason::NORM;
       refactorize = true;
     }
-    GLOP_RETURN_IF_ERROR(RefactorizeBasisIfNeeded(&refactorize));
+    GLOP_RETURN_IF_ABNORMAL(RefactorizeBasisIfNeeded(&refactorize));
 
     // If the basis is refactorized, we recompute all the values in order to
     // have a good precision.
@@ -3438,9 +3594,7 @@ Status RevisedSimplex::DualMinimize(bool feasibility_phase,
                      "Stopping the dual simplex because"
                      " the objective limit ",
                      dual_objective_limit_, " has been reached.");
-          problem_status_ = ProblemStatus::DUAL_FEASIBLE;
-          objective_limit_reached_ = true;
-          return Status::OK();
+          return DualFeasibleSolveStatus(InterruptionCause::kObjectiveLimit);
         }
       }
 
@@ -3487,16 +3641,15 @@ Status RevisedSimplex::DualMinimize(bool feasibility_phase,
         // variable values will also be corrected by
         // MakeBoxedVariableDualFeasible().
         if (num_dual_infeasible_positions_ == 0) {
-          problem_status_ = ProblemStatus::DUAL_FEASIBLE;
-        } else {
-          VLOG(1) << "DUAL infeasible in dual phase I.";
-          problem_status_ = ProblemStatus::DUAL_INFEASIBLE;
+          IF_STATS_ENABLED(timer.AlsoUpdate(&iteration_stats_.normal));
+          return FeasibilityStatus::kDual;
         }
-      } else {
-        problem_status_ = ProblemStatus::OPTIMAL;
+        VLOG(1) << "DUAL infeasible in dual phase I.";
+        IF_STATS_ENABLED(timer.AlsoUpdate(&iteration_stats_.normal));
+        return DualInfeasibleSolveStatus();
       }
       IF_STATS_ENABLED(timer.AlsoUpdate(&iteration_stats_.normal));
-      return Status::OK();
+      return OptimalSolveStatus();
     }
 
     update_row_.ComputeUnitRowLeftInverse(leaving_row);
@@ -3540,20 +3693,21 @@ Status RevisedSimplex::DualMinimize(bool feasibility_phase,
       if (feasibility_phase) {
         // This shouldn't happen by construction.
         VLOG(1) << "Unbounded dual feasibility problem !?";
-        problem_status_ = ProblemStatus::ABNORMAL;
-      } else {
-        problem_status_ = ProblemStatus::DUAL_UNBOUNDED;
-        solution_dual_ray_ =
-            Transpose(update_row_.GetUnitRowLeftInverse().values);
-        update_row_.ComputeFullUpdateRow(leaving_row,
-                                         &solution_dual_ray_row_combination_);
-        if (cost_variation < 0) {
-          ChangeSign(&solution_dual_ray_);
-          ChangeSign(&solution_dual_ray_row_combination_);
-        }
+        IF_STATS_ENABLED(timer.AlsoUpdate(&iteration_stats_.normal));
+        return AbnormalSolveStatus(
+            AbnormalityCause::kRevisedSimplexUnboundedFeasibilityProblem);
+      }
+
+      solution_dual_ray_ =
+          Transpose(update_row_.GetUnitRowLeftInverse().values);
+      update_row_.ComputeFullUpdateRow(leaving_row,
+                                       &solution_dual_ray_row_combination_);
+      if (cost_variation < 0) {
+        ChangeSign(&solution_dual_ray_);
+        ChangeSign(&solution_dual_ray_row_combination_);
       }
       IF_STATS_ENABLED(timer.AlsoUpdate(&iteration_stats_.normal));
-      return Status::OK();
+      return DualUnboundedSolveStatus();
     }
 
     // If the coefficient is too small, we recompute the reduced costs if not
@@ -3594,10 +3748,11 @@ Status RevisedSimplex::DualMinimize(bool feasibility_phase,
     //
     // TODO(user): Try to recover instead.
     if (std::abs(direction_[leaving_row]) <= 1e-20) {
-      const std::string error_message = absl::StrCat(
-          "trying to pivot with number too small: ", direction_[leaving_row]);
-      SOLVER_LOG(logger_, error_message);
-      return Status(Status::ERROR_LU, error_message);
+      SOLVER_LOG(logger_,
+                 absl::StrCat("trying to pivot with number too small: ",
+                              direction_[leaving_row]));
+      return AbnormalSolveStatus(
+          AbnormalityCause::kRevisedSimplexPivotTooSmall);
     }
 
     // This test takes place after the check for optimality/feasibility because
@@ -3606,7 +3761,7 @@ Status RevisedSimplex::DualMinimize(bool feasibility_phase,
     // case at the beginning of the algorithm.
     if (num_iterations_ == parameters_.max_number_of_iterations()) {
       IF_STATS_ENABLED(timer.AlsoUpdate(&iteration_stats_.normal));
-      return Status::OK();
+      return result_on_limit(InterruptionCause::kIterationLimit);
     }
 
     // Before we update the reduced costs, if its sign is already dual
@@ -3655,7 +3810,7 @@ Status RevisedSimplex::DualMinimize(bool feasibility_phase,
 
     // It is important to do the actual pivot after the update above!
     const ColIndex leaving_col = basis_[leaving_row];
-    GLOP_RETURN_IF_ERROR(
+    GLOP_RETURN_IF_ABNORMAL(
         UpdateAndPivot(entering_col, leaving_row, target_bound));
 
     // This makes sure the leaving variable is at its exact bound. Tests
@@ -3666,10 +3821,9 @@ Status RevisedSimplex::DualMinimize(bool feasibility_phase,
 
     ++num_iterations_;
   }
-  return Status::OK();
 }
 
-Status RevisedSimplex::PrimalPush(TimeLimit& time_limit) {
+AbnormalityStatus RevisedSimplex::PrimalPush(TimeLimit& time_limit) {
   Cleanup update_deterministic_time_on_return(
       [this, &time_limit]() { AdvanceDeterministicTime(time_limit); });
   bool refactorize = false;
@@ -3694,7 +3848,7 @@ Status RevisedSimplex::PrimalPush(TimeLimit& time_limit) {
     if (time_limit.LimitReached()) break;
 
     ScopedTimeDistributionUpdater timer(&iteration_stats_.total);
-    GLOP_RETURN_IF_ERROR(RefactorizeBasisIfNeeded(&refactorize));
+    GLOP_RETURN_IF_ABNORMAL(RefactorizeBasisIfNeeded(&refactorize));
     if (basis_factorization_.IsRefactorized()) {
       CorrectErrorsOnVariableValues();
       DisplayIterationInfo(/*primal=*/true);
@@ -3758,8 +3912,8 @@ Status RevisedSimplex::PrimalPush(TimeLimit& time_limit) {
         step_length = std::fabs(entering_value);
       } else {
         VLOG(1) << "Infinite step for bounded variable ?!";
-        problem_status_ = ProblemStatus::ABNORMAL;
-        break;
+        return AbnormalityStatus(
+            AbnormalityCause::kRevisedSimplexStepLengthOverflow);
       }
     }
 
@@ -3801,7 +3955,7 @@ Status RevisedSimplex::PrimalPush(TimeLimit& time_limit) {
         // may be slighlty different from target_bound.
         variable_values_.Set(leaving_col, target_bound);
       }
-      GLOP_RETURN_IF_ERROR(
+      GLOP_RETURN_IF_ABNORMAL(
           UpdateAndPivot(entering_col, leaving_row, target_bound));
       IF_STATS_ENABLED({
         if (is_degenerate) {
@@ -3833,7 +3987,7 @@ Status RevisedSimplex::PrimalPush(TimeLimit& time_limit) {
   // Make sure we refactorize before finishing as cut DCHECK assume this is
   // the case.
   refactorize = true;
-  GLOP_RETURN_IF_ERROR(RefactorizeBasisIfNeeded(&refactorize));
+  GLOP_RETURN_IF_ABNORMAL(RefactorizeBasisIfNeeded(&refactorize));
 
   if (!super_basic_cols.empty()) {
     SOLVER_LOG(logger_, "Push terminated early with ", super_basic_cols.size(),
@@ -3848,7 +4002,7 @@ Status RevisedSimplex::PrimalPush(TimeLimit& time_limit) {
   // If the optimization phase finished, then OPTIMAL is technically correct
   // but also misleading.
 
-  return Status::OK();
+  return OkAbnormalityStatus();
 }
 
 ColIndex RevisedSimplex::SlackColIndex(RowIndex row) const {
@@ -4004,10 +4158,14 @@ void RevisedSimplex::DisplayIterationInfo(bool primal,
   }
 }
 
-void RevisedSimplex::DisplayErrors() {
+void RevisedSimplex::DisplayPendingStatus(const PendingStatus& pending_status) {
   if (!logger_->LoggingIsEnabled()) return;
   SOLVER_LOG(logger_,
-             "Current status: ", GetProblemStatusString(problem_status_));
+             "Current status: ", GetPendingStatusString(pending_status));
+}
+
+void RevisedSimplex::DisplayErrors() {
+  if (!logger_->LoggingIsEnabled()) return;
   SOLVER_LOG(logger_, "Primal infeasibility (bounds) = ",
              variable_values_.ComputeMaximumPrimalInfeasibility());
   SOLVER_LOG(logger_, "Primal residual |A.x - b| = ",
@@ -4125,14 +4283,13 @@ RevisedSimplex::ComputeDictionary(const DenseRow* column_scales) {
   return dictionary;
 }
 
-void RevisedSimplex::ComputeBasicVariablesForState(
+AbnormalityStatus RevisedSimplex::ComputeBasicVariablesForState(
     const LinearProgram& linear_program, const BasisState& state) {
   LoadStateForNextSolve(state);
-  Status status = Initialize(linear_program);
-  if (status.ok()) {
-    variable_values_.RecomputeBasicVariableValues();
-    solution_objective_value_ = ComputeInitialProblemObjectiveValue();
-  }
+  GLOP_RETURN_IF_ABNORMAL(Initialize(linear_program));
+  variable_values_.RecomputeBasicVariableValues();
+  solution_objective_value_ = ComputeInitialProblemObjectiveValue();
+  return OkAbnormalityStatus();
 }
 
 void RevisedSimplex::DisplayRevisedSimplexDebugInfo() {

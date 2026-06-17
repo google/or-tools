@@ -21,11 +21,15 @@
 #include <iomanip>
 #include <ios>
 #include <memory>
+#include <optional>
+#include <ostream>
 #include <set>
 #include <utility>
+#include <variant>
 #include <vector>
 
 #include "absl/base/attributes.h"
+#include "absl/functional/overload.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/strings/str_format.h"
@@ -60,12 +64,24 @@ double trunc(double d) { return d > 0 ? floor(d) : ceil(d); }
 // Preprocessor
 // --------------------------------------------------------
 Preprocessor::Preprocessor(const GlopParameters* parameters)
-    : status_(ProblemStatus::INIT),
-      parameters_(*parameters),
+    : parameters_(*parameters),
       in_mip_context_(false),
       infinite_time_limit_(TimeLimit::Infinite()),
       time_limit_(infinite_time_limit_.get()) {}
 Preprocessor::~Preprocessor() {}
+
+std::ostream& operator<<(std::ostream& out,
+                         const Preprocessor::Result& result) {
+  out << "{ postsolve_is_needed: "
+      << (result.postsolve_is_needed ? "true" : "false") << ", solve_status: ";
+  if (result.solve_status.has_value()) {
+    out << *result.solve_status;
+  } else {
+    out << "<unset>";
+  }
+  out << " }";
+  return out;
+}
 
 // --------------------------------------------------------
 // MainLpPreprocessor
@@ -75,8 +91,8 @@ Preprocessor::~Preprocessor() {}
   RunAndPushIfRelevant(std::unique_ptr<Preprocessor>(new name(&parameters_)), \
                        #name, time_limit_, lp)
 
-bool MainLpPreprocessor::Run(LinearProgram* lp) {
-  RETURN_VALUE_IF_NULL(lp, false);
+Preprocessor::Result MainLpPreprocessor::Run(LinearProgram* lp) {
+  RETURN_VALUE_IF_NULL(lp, {.postsolve_is_needed = false});
 
   default_logger_.EnableLogging(parameters_.log_search_progress());
   default_logger_.SetLogToStdOut(parameters_.log_to_stdout());
@@ -143,7 +159,10 @@ bool MainLpPreprocessor::Run(LinearProgram* lp) {
   // The scaling is controlled by use_scaling, not use_preprocessing.
   RUN_PREPROCESSOR(ScalingPreprocessor);
 
-  return !preprocessors_.empty();
+  return {
+      .postsolve_is_needed = !preprocessors_.empty(),
+      .solve_status = status_,
+  };
 }
 
 #undef RUN_PREPROCESSOR
@@ -153,7 +172,16 @@ void MainLpPreprocessor::RunAndPushIfRelevant(
     TimeLimit* time_limit, LinearProgram* lp) {
   RETURN_IF_NULL(preprocessor);
   RETURN_IF_NULL(time_limit);
-  if (status_ != ProblemStatus::INIT || time_limit->LimitReached()) return;
+
+  // Having a result is final.
+  if (status_.has_value()) return;
+
+  if (const std::optional<InterruptionCause> cause =
+          TimeLimitStateToCause(*time_limit);
+      cause.has_value()) {
+    status_ = InitSolveStatus(*cause);
+    return;
+  }
 
   const double start_time = time_limit->GetElapsedTime();
   preprocessor->SetTimeLimit(time_limit);
@@ -161,11 +189,12 @@ void MainLpPreprocessor::RunAndPushIfRelevant(
   // No need to run the preprocessor if the lp is empty.
   // TODO(user): without this test, the code is failing as of 2013-03-18.
   if (lp->num_variables() == 0 && lp->num_constraints() == 0) {
-    status_ = ProblemStatus::OPTIMAL;
+    status_ = OptimalSolveStatus();
     return;
   }
 
-  if (preprocessor->Run(lp)) {
+  const Preprocessor::Result preprocessor_result = preprocessor->Run(lp);
+  if (preprocessor_result.postsolve_is_needed) {
     const EntryIndex new_num_entries = lp->num_entries();
     const double preprocess_time = time_limit->GetElapsedTime() - start_time;
     SOLVER_LOG(logger_,
@@ -181,31 +210,31 @@ void MainLpPreprocessor::RunAndPushIfRelevant(
                    static_cast<int64_t>(new_num_entries.value() -
                                         initial_num_entries_.value()),
                    preprocess_time));
-    status_ = preprocessor->status();
     preprocessors_.push_back(std::move(preprocessor));
-    return;
-  } else {
-    // Even if a preprocessor returns false (i.e. no need for postsolve), it
-    // can detect an issue with the problem.
-    status_ = preprocessor->status();
-    if (status_ != ProblemStatus::INIT) {
-      SOLVER_LOG(logger_, name, " detected that the problem is ",
-                 GetProblemStatusString(status_));
-    }
+  }
+
+  // Even if a preprocessor returns postsolve_is_needed = false, it can detect
+  // an issue with the problem.
+  status_ = preprocessor_result.solve_status;
+  if (status_.has_value()) {
+    SOLVER_LOG(logger_, name, " detected that the problem is ",
+               GetSolveStatusString(*status_));
   }
 }
 
-void MainLpPreprocessor::RecoverSolution(ProblemSolution* solution) const {
+void MainLpPreprocessor::RecoverSolution(SolveStatus& solve_status,
+                                         ProblemSolution* solution) const {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
   for (const auto& p : gtl::reversed_view(preprocessors_)) {
-    p->RecoverSolution(solution);
+    p->RecoverSolution(solve_status, solution);
   }
 }
 
-void MainLpPreprocessor::DestructiveRecoverSolution(ProblemSolution* solution) {
+void MainLpPreprocessor::DestructiveRecoverSolution(SolveStatus& solve_status,
+                                                    ProblemSolution* solution) {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
   while (!preprocessors_.empty()) {
-    preprocessors_.back()->RecoverSolution(solution);
+    preprocessors_.back()->RecoverSolution(solve_status, solution);
     preprocessors_.pop_back();
   }
 }
@@ -396,9 +425,9 @@ Fractional ComputeMaxVariableBoundsMagnitude(const LinearProgram& lp) {
 
 }  // namespace
 
-bool EmptyColumnPreprocessor::Run(LinearProgram* lp) {
+Preprocessor::Result EmptyColumnPreprocessor::Run(LinearProgram* lp) {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
-  RETURN_VALUE_IF_NULL(lp, false);
+  RETURN_VALUE_IF_NULL(lp, {.postsolve_is_needed = false});
   column_deletion_helper_.Clear();
   const ColIndex num_cols = lp->num_variables();
   for (ColIndex col(0); col < num_cols; ++col) {
@@ -426,8 +455,8 @@ bool EmptyColumnPreprocessor::Run(LinearProgram* lp) {
                   << " has a minimization cost of " << objective_coefficient
                   << " and bounds"
                   << " [" << lower_bound << "," << upper_bound << "]";
-          status_ = ProblemStatus::INFEASIBLE_OR_UNBOUNDED;
-          return false;
+          return {.postsolve_is_needed = false,
+                  .solve_status = InfeasibleOrUnboundedSolveStatus()};
         }
         lp->SetObjectiveOffset(lp->objective_offset() +
                                value * lp->objective_coefficients()[col]);
@@ -437,10 +466,11 @@ bool EmptyColumnPreprocessor::Run(LinearProgram* lp) {
     }
   }
   lp->DeleteColumns(column_deletion_helper_.GetMarkedColumns());
-  return !column_deletion_helper_.IsEmpty();
+  return {.postsolve_is_needed = !column_deletion_helper_.IsEmpty()};
 }
 
-void EmptyColumnPreprocessor::RecoverSolution(ProblemSolution* solution) const {
+void EmptyColumnPreprocessor::RecoverSolution(SolveStatus& solve_status,
+                                              ProblemSolution* solution) const {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
   RETURN_IF_NULL(solution);
   column_deletion_helper_.RestoreDeletedColumns(solution);
@@ -496,9 +526,9 @@ struct ColumnWithRepresentativeAndScaledCost {
 
 }  // namespace
 
-bool ProportionalColumnPreprocessor::Run(LinearProgram* lp) {
+Preprocessor::Result ProportionalColumnPreprocessor::Run(LinearProgram* lp) {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
-  RETURN_VALUE_IF_NULL(lp, false);
+  RETURN_VALUE_IF_NULL(lp, {.postsolve_is_needed = false});
   ColMapping mapping = FindProportionalColumns(
       lp->GetSparseMatrix(), parameters_.preprocessor_zero_tolerance());
 
@@ -520,7 +550,7 @@ bool ProportionalColumnPreprocessor::Run(LinearProgram* lp) {
       proportional_columns.push_back(col);
     }
   }
-  if (proportional_columns.empty()) return false;
+  if (proportional_columns.empty()) return {.postsolve_is_needed = false};
   VLOG(1) << "The problem contains " << proportional_columns.size()
           << " columns which belong to " << num_proportionality_classes
           << " proportionality classes.";
@@ -583,8 +613,8 @@ bool ProportionalColumnPreprocessor::Run(LinearProgram* lp) {
                 << " the associated quantity must be in ["
                 << slope_lower_bound[representative] << ","
                 << slope_upper_bound[representative] << "].";
-        status_ = ProblemStatus::INFEASIBLE_OR_UNBOUNDED;
-        return false;
+        return {.postsolve_is_needed = false,
+                .solve_status = InfeasibleOrUnboundedSolveStatus()};
       }
     }
   }
@@ -620,8 +650,8 @@ bool ProportionalColumnPreprocessor::Run(LinearProgram* lp) {
       mapping[col] = kInvalidCol;
       if (!IsFinite(target_bound)) {
         VLOG(1) << "Problem INFEASIBLE_OR_UNBOUNDED.";
-        status_ = ProblemStatus::INFEASIBLE_OR_UNBOUNDED;
-        return false;
+        return {.postsolve_is_needed = false,
+                .solve_status = InfeasibleOrUnboundedSolveStatus()};
       } else {
         SubtractColumnMultipleFromConstraintBound(col, target_bound, lp);
         column_deletion_helper_.MarkColumnForDeletionWithState(
@@ -722,11 +752,11 @@ bool ProportionalColumnPreprocessor::Run(LinearProgram* lp) {
   }
 
   lp->DeleteColumns(column_deletion_helper_.GetMarkedColumns());
-  return !column_deletion_helper_.IsEmpty();
+  return {.postsolve_is_needed = !column_deletion_helper_.IsEmpty()};
 }
 
 void ProportionalColumnPreprocessor::RecoverSolution(
-    ProblemSolution* solution) const {
+    SolveStatus& solve_status, ProblemSolution* solution) const {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
   RETURN_IF_NULL(solution);
   column_deletion_helper_.RestoreDeletedColumns(solution);
@@ -840,9 +870,9 @@ void ProportionalColumnPreprocessor::RecoverSolution(
 // ProportionalRowPreprocessor
 // --------------------------------------------------------
 
-bool ProportionalRowPreprocessor::Run(LinearProgram* lp) {
+Preprocessor::Result ProportionalRowPreprocessor::Run(LinearProgram* lp) {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
-  RETURN_VALUE_IF_NULL(lp, false);
+  RETURN_VALUE_IF_NULL(lp, {.postsolve_is_needed = false});
   const RowIndex num_rows = lp->num_constraints();
   const SparseMatrix& transpose = lp->GetTransposeSparseMatrix();
 
@@ -935,8 +965,8 @@ bool ProportionalRowPreprocessor::Run(LinearProgram* lp) {
       // lower than the new upper bound modulo the default tolerance.
       if (!IsSmallerWithinFeasibilityTolerance(lower_bounds[row],
                                                upper_bounds[row])) {
-        status_ = ProblemStatus::PRIMAL_INFEASIBLE;
-        return false;
+        return {.postsolve_is_needed = false,
+                .solve_status = PrimalInfeasibleSolveStatus()};
       }
 
       // Special case for fixed rows.
@@ -1012,11 +1042,11 @@ bool ProportionalRowPreprocessor::Run(LinearProgram* lp) {
 
   lp_is_maximization_problem_ = lp->IsMaximizationProblem();
   lp->DeleteRows(row_deletion_helper_.GetMarkedRows());
-  return !row_deletion_helper_.IsEmpty();
+  return {.postsolve_is_needed = !row_deletion_helper_.IsEmpty()};
 }
 
 void ProportionalRowPreprocessor::RecoverSolution(
-    ProblemSolution* solution) const {
+    SolveStatus& solve_status, ProblemSolution* solution) const {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
   RETURN_IF_NULL(solution);
   row_deletion_helper_.RestoreDeletedRows(solution);
@@ -1089,9 +1119,9 @@ void ProportionalRowPreprocessor::RecoverSolution(
 // FixedVariablePreprocessor
 // --------------------------------------------------------
 
-bool FixedVariablePreprocessor::Run(LinearProgram* lp) {
+Preprocessor::Result FixedVariablePreprocessor::Run(LinearProgram* lp) {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
-  RETURN_VALUE_IF_NULL(lp, false);
+  RETURN_VALUE_IF_NULL(lp, {.postsolve_is_needed = false});
   const ColIndex num_cols = lp->num_variables();
   for (ColIndex col(0); col < num_cols; ++col) {
     const Fractional lower_bound = lp->variable_lower_bounds()[col];
@@ -1108,11 +1138,11 @@ bool FixedVariablePreprocessor::Run(LinearProgram* lp) {
   }
 
   lp->DeleteColumns(column_deletion_helper_.GetMarkedColumns());
-  return !column_deletion_helper_.IsEmpty();
+  return {.postsolve_is_needed = !column_deletion_helper_.IsEmpty()};
 }
 
 void FixedVariablePreprocessor::RecoverSolution(
-    ProblemSolution* solution) const {
+    SolveStatus& solve_status, ProblemSolution* solution) const {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
   RETURN_IF_NULL(solution);
   column_deletion_helper_.RestoreDeletedColumns(solution);
@@ -1122,9 +1152,10 @@ void FixedVariablePreprocessor::RecoverSolution(
 // ForcingAndImpliedFreeConstraintPreprocessor
 // --------------------------------------------------------
 
-bool ForcingAndImpliedFreeConstraintPreprocessor::Run(LinearProgram* lp) {
+Preprocessor::Result ForcingAndImpliedFreeConstraintPreprocessor::Run(
+    LinearProgram* lp) {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
-  RETURN_VALUE_IF_NULL(lp, false);
+  RETURN_VALUE_IF_NULL(lp, {.postsolve_is_needed = false});
   const RowIndex num_rows = lp->num_constraints();
 
   // Compute the implied constraint bounds from the variable bounds.
@@ -1168,8 +1199,8 @@ bool ForcingAndImpliedFreeConstraintPreprocessor::Run(LinearProgram* lp) {
       VLOG(1) << "implied bound " << implied_lower_bounds[row] << " "
               << implied_upper_bounds[row];
       VLOG(1) << "constraint bound " << lower << " " << upper;
-      status_ = ProblemStatus::PRIMAL_INFEASIBLE;
-      return false;
+      return {.postsolve_is_needed = false,
+              .solve_status = PrimalInfeasibleSolveStatus()};
     }
 
     // Check if the constraint is forcing. That is, all the variables that
@@ -1233,8 +1264,8 @@ bool ForcingAndImpliedFreeConstraintPreprocessor::Run(LinearProgram* lp) {
             VLOG(1) << "A variable is forced in both directions! bounds: ["
                     << std::fixed << std::setprecision(10) << lower << ", "
                     << upper << "]. coeff:" << e.coefficient();
-            status_ = ProblemStatus::PRIMAL_INFEASIBLE;
-            return false;
+            return {.postsolve_is_needed = false,
+                    .solve_status = PrimalInfeasibleSolveStatus()};
           }
           target_bound = candidate;
           is_forced = true;
@@ -1251,8 +1282,8 @@ bool ForcingAndImpliedFreeConstraintPreprocessor::Run(LinearProgram* lp) {
             VLOG(1) << "A variable is forced in both directions! bounds: ["
                     << std::fixed << std::setprecision(10) << lower << ", "
                     << upper << "]. coeff:" << e.coefficient();
-            status_ = ProblemStatus::PRIMAL_INFEASIBLE;
-            return false;
+            return {.postsolve_is_needed = false,
+                    .solve_status = PrimalInfeasibleSolveStatus()};
           }
           target_bound = candidate;
           is_forced = true;
@@ -1284,11 +1315,11 @@ bool ForcingAndImpliedFreeConstraintPreprocessor::Run(LinearProgram* lp) {
 
   lp->DeleteColumns(column_deletion_helper_.GetMarkedColumns());
   lp->DeleteRows(row_deletion_helper_.GetMarkedRows());
-  return !column_deletion_helper_.IsEmpty();
+  return {.postsolve_is_needed = !column_deletion_helper_.IsEmpty()};
 }
 
 void ForcingAndImpliedFreeConstraintPreprocessor::RecoverSolution(
-    ProblemSolution* solution) const {
+    SolveStatus& solve_status, ProblemSolution* solution) const {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
   RETURN_IF_NULL(solution);
   column_deletion_helper_.RestoreDeletedColumns(solution);
@@ -1378,10 +1409,11 @@ void ForcingAndImpliedFreeConstraintPreprocessor::RecoverSolution(
 // ImpliedFreePreprocessor
 // --------------------------------------------------------
 
-bool ImpliedFreePreprocessor::Run(LinearProgram* lp) {
+Preprocessor::Result ImpliedFreePreprocessor::Run(LinearProgram* lp) {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
-  RETURN_VALUE_IF_NULL(lp, false);
-  if (!parameters_.use_implied_free_preprocessor()) return false;
+  RETURN_VALUE_IF_NULL(lp, {.postsolve_is_needed = false});
+  if (!parameters_.use_implied_free_preprocessor())
+    return {.postsolve_is_needed = false};
   const RowIndex num_rows = lp->num_constraints();
   const ColIndex num_cols = lp->num_variables();
 
@@ -1501,8 +1533,8 @@ bool ImpliedFreePreprocessor::Run(LinearProgram* lp) {
         !IsSmallerWithinFeasibilityTolerance(lower_bound, overall_implied_ub) ||
         !IsSmallerWithinFeasibilityTolerance(overall_implied_lb,
                                              overall_implied_ub)) {
-      status_ = ProblemStatus::PRIMAL_INFEASIBLE;
-      return false;
+      return {.postsolve_is_needed = false,
+              .solve_status = PrimalInfeasibleSolveStatus()};
     }
 
     // Detect fixed variable cases (there are two kinds).
@@ -1572,10 +1604,11 @@ bool ImpliedFreePreprocessor::Run(LinearProgram* lp) {
   VLOG(1) << num_implied_free_variables << " implied free columns.";
   VLOG(1) << num_fixed_variables << " variables can be fixed.";
 
-  return num_implied_free_variables > 0;
+  return {.postsolve_is_needed = num_implied_free_variables > 0};
 }
 
-void ImpliedFreePreprocessor::RecoverSolution(ProblemSolution* solution) const {
+void ImpliedFreePreprocessor::RecoverSolution(SolveStatus& solve_status,
+                                              ProblemSolution* solution) const {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
   RETURN_IF_NULL(solution);
   const ColIndex num_cols = solution->variable_statuses.size();
@@ -1599,9 +1632,9 @@ void ImpliedFreePreprocessor::RecoverSolution(ProblemSolution* solution) const {
 // DoubletonFreeColumnPreprocessor
 // --------------------------------------------------------
 
-bool DoubletonFreeColumnPreprocessor::Run(LinearProgram* lp) {
+Preprocessor::Result DoubletonFreeColumnPreprocessor::Run(LinearProgram* lp) {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
-  RETURN_VALUE_IF_NULL(lp, false);
+  RETURN_VALUE_IF_NULL(lp, {.postsolve_is_needed = false});
   // We will modify the matrix transpose and then push the change to the linear
   // program by calling lp->UseTransposeMatrixAsReference(). Note
   // that original_matrix will not change during this preprocessor run.
@@ -1700,13 +1733,13 @@ bool DoubletonFreeColumnPreprocessor::Run(LinearProgram* lp) {
     // The order is important.
     lp->UseTransposeMatrixAsReference();
     lp->DeleteRows(row_deletion_helper_.GetMarkedRows());
-    return true;
+    return {.postsolve_is_needed = true};
   }
-  return false;
+  return {.postsolve_is_needed = false};
 }
 
 void DoubletonFreeColumnPreprocessor::RecoverSolution(
-    ProblemSolution* solution) const {
+    SolveStatus& solve_status, ProblemSolution* solution) const {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
   row_deletion_helper_.RestoreDeletedRows(solution);
   for (const RestoreInfo& r : Reverse(restore_stack_)) {
@@ -1824,9 +1857,9 @@ void UnconstrainedVariablePreprocessor::RemoveZeroCostUnconstrainedVariable(
                             lp->variable_upper_bounds()[col]));
 }
 
-bool UnconstrainedVariablePreprocessor::Run(LinearProgram* lp) {
+Preprocessor::Result UnconstrainedVariablePreprocessor::Run(LinearProgram* lp) {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
-  RETURN_VALUE_IF_NULL(lp, false);
+  RETURN_VALUE_IF_NULL(lp, {.postsolve_is_needed = false});
 
   // To simplify the problem if something is almost zero, we use the low
   // tolerance (1e-9 by default) to be defensive. But to detect an infeasibility
@@ -1945,8 +1978,8 @@ bool UnconstrainedVariablePreprocessor::Run(LinearProgram* lp) {
                 << " can move to " << target_bound
                 << " and its reduced cost is in [" << rc_lb.Sum() << ", "
                 << rc_ub.Sum() << "]";
-        status_ = ProblemStatus::INFEASIBLE_OR_UNBOUNDED;
-        return false;
+        return {.postsolve_is_needed = false,
+                .solve_status = InfeasibleOrUnboundedSolveStatus()};
       } else {
         // We can remove this column and all its constraints! We just need to
         // choose proper variable values during the call to RecoverSolution()
@@ -2065,11 +2098,12 @@ bool UnconstrainedVariablePreprocessor::Run(LinearProgram* lp) {
 
   lp->DeleteColumns(column_deletion_helper_.GetMarkedColumns());
   lp->DeleteRows(row_deletion_helper_.GetMarkedRows());
-  return !column_deletion_helper_.IsEmpty() || !row_deletion_helper_.IsEmpty();
+  return {.postsolve_is_needed = !column_deletion_helper_.IsEmpty() ||
+                                 !row_deletion_helper_.IsEmpty()};
 }
 
 void UnconstrainedVariablePreprocessor::RecoverSolution(
-    ProblemSolution* solution) const {
+    SolveStatus& solve_status, ProblemSolution* solution) const {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
   RETURN_IF_NULL(solution);
   column_deletion_helper_.RestoreDeletedColumns(solution);
@@ -2161,9 +2195,9 @@ void UnconstrainedVariablePreprocessor::RecoverSolution(
 // FreeConstraintPreprocessor
 // --------------------------------------------------------
 
-bool FreeConstraintPreprocessor::Run(LinearProgram* lp) {
+Preprocessor::Result FreeConstraintPreprocessor::Run(LinearProgram* lp) {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
-  RETURN_VALUE_IF_NULL(lp, false);
+  RETURN_VALUE_IF_NULL(lp, {.postsolve_is_needed = false});
   const RowIndex num_rows = lp->num_constraints();
   for (RowIndex row(0); row < num_rows; ++row) {
     const Fractional lower_bound = lp->constraint_lower_bounds()[row];
@@ -2173,11 +2207,11 @@ bool FreeConstraintPreprocessor::Run(LinearProgram* lp) {
     }
   }
   lp->DeleteRows(row_deletion_helper_.GetMarkedRows());
-  return !row_deletion_helper_.IsEmpty();
+  return {.postsolve_is_needed = !row_deletion_helper_.IsEmpty()};
 }
 
 void FreeConstraintPreprocessor::RecoverSolution(
-    ProblemSolution* solution) const {
+    SolveStatus& solve_status, ProblemSolution* solution) const {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
   RETURN_IF_NULL(solution);
   row_deletion_helper_.RestoreDeletedRows(solution);
@@ -2187,9 +2221,9 @@ void FreeConstraintPreprocessor::RecoverSolution(
 // EmptyConstraintPreprocessor
 // --------------------------------------------------------
 
-bool EmptyConstraintPreprocessor::Run(LinearProgram* lp) {
+Preprocessor::Result EmptyConstraintPreprocessor::Run(LinearProgram* lp) {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
-  RETURN_VALUE_IF_NULL(lp, false);
+  RETURN_VALUE_IF_NULL(lp, {.postsolve_is_needed = false});
   const RowIndex num_rows(lp->num_constraints());
   const ColIndex num_cols(lp->num_variables());
 
@@ -2214,18 +2248,18 @@ bool EmptyConstraintPreprocessor::Run(LinearProgram* lp) {
                 << " is empty and its range ["
                 << lp->constraint_lower_bounds()[row] << ","
                 << lp->constraint_upper_bounds()[row] << "] doesn't contain 0.";
-        status_ = ProblemStatus::PRIMAL_INFEASIBLE;
-        return false;
+        return {.postsolve_is_needed = false,
+                .solve_status = PrimalInfeasibleSolveStatus()};
       }
       row_deletion_helper_.MarkRowForDeletion(row);
     }
   }
   lp->DeleteRows(row_deletion_helper_.GetMarkedRows());
-  return !row_deletion_helper_.IsEmpty();
+  return {.postsolve_is_needed = !row_deletion_helper_.IsEmpty()};
 }
 
 void EmptyConstraintPreprocessor::RecoverSolution(
-    ProblemSolution* solution) const {
+    SolveStatus& solve_status, ProblemSolution* solution) const {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
   RETURN_IF_NULL(solution);
   row_deletion_helper_.RestoreDeletedRows(solution);
@@ -2296,7 +2330,7 @@ void SingletonPreprocessor::DeleteSingletonRow(MatrixEntry e,
     VLOG(1) << "Problem ProblemStatus::PRIMAL_INFEASIBLE, singleton "
                "row causes the bound of the variable "
             << e.col << " to go to infinity.";
-    status_ = ProblemStatus::PRIMAL_INFEASIBLE;
+    status_ = PrimalInfeasibleSolveStatus();
     return;
   }
 
@@ -2307,7 +2341,7 @@ void SingletonPreprocessor::DeleteSingletonRow(MatrixEntry e,
                  "row causes the bound of the variable "
               << e.col << " to be infeasible by "
               << new_lower_bound - new_upper_bound;
-      status_ = ProblemStatus::PRIMAL_INFEASIBLE;
+      status_ = PrimalInfeasibleSolveStatus();
       return;
     }
 
@@ -2745,21 +2779,22 @@ bool SingletonPreprocessor::MakeConstraintAnEqualityIfPossible(
                         ub, lp->variable_upper_bounds()[e.col])) {
     if (e.coeff > 0) {
       if (cst_upper_bound == kInfinity) {
-        status_ = ProblemStatus::INFEASIBLE_OR_UNBOUNDED;
+        status_ = InfeasibleOrUnboundedSolveStatus();
       } else {
         relaxed_status = ConstraintStatus::AT_UPPER_BOUND;
         lp->SetConstraintBounds(e.row, cst_upper_bound, cst_upper_bound);
       }
     } else {
       if (cst_lower_bound == -kInfinity) {
-        status_ = ProblemStatus::INFEASIBLE_OR_UNBOUNDED;
+        status_ = InfeasibleOrUnboundedSolveStatus();
       } else {
         relaxed_status = ConstraintStatus::AT_LOWER_BOUND;
         lp->SetConstraintBounds(e.row, cst_lower_bound, cst_lower_bound);
       }
     }
 
-    if (status_ == ProblemStatus::INFEASIBLE_OR_UNBOUNDED) {
+    if (status_.has_value() &&
+        status_->Is<SolveStatus::InfeasibleOrUnbounded>()) {
       VLOG(1) << "Problem ProblemStatus::INFEASIBLE_OR_UNBOUNDED, singleton "
                  "variable "
               << e.col << " has a cost (for minimization) of " << cost
@@ -2787,21 +2822,22 @@ bool SingletonPreprocessor::MakeConstraintAnEqualityIfPossible(
                         lp->variable_lower_bounds()[e.col], lb)) {
     if (e.coeff > 0) {
       if (cst_lower_bound == -kInfinity) {
-        status_ = ProblemStatus::INFEASIBLE_OR_UNBOUNDED;
+        status_ = InfeasibleOrUnboundedSolveStatus();
       } else {
         relaxed_status = ConstraintStatus::AT_LOWER_BOUND;
         lp->SetConstraintBounds(e.row, cst_lower_bound, cst_lower_bound);
       }
     } else {
       if (cst_upper_bound == kInfinity) {
-        status_ = ProblemStatus::INFEASIBLE_OR_UNBOUNDED;
+        status_ = InfeasibleOrUnboundedSolveStatus();
       } else {
         relaxed_status = ConstraintStatus::AT_UPPER_BOUND;
         lp->SetConstraintBounds(e.row, cst_upper_bound, cst_upper_bound);
       }
     }
 
-    if (status_ == ProblemStatus::INFEASIBLE_OR_UNBOUNDED) {
+    if (status_.has_value() &&
+        status_->Is<SolveStatus::InfeasibleOrUnbounded>()) {
       DCHECK_EQ(lb, -kInfinity);
       VLOG(1) << "Problem ProblemStatus::INFEASIBLE_OR_UNBOUNDED, singleton "
                  "variable "
@@ -2824,9 +2860,9 @@ bool SingletonPreprocessor::MakeConstraintAnEqualityIfPossible(
   return false;
 }
 
-bool SingletonPreprocessor::Run(LinearProgram* lp) {
+Preprocessor::Result SingletonPreprocessor::Run(LinearProgram* lp) {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
-  RETURN_VALUE_IF_NULL(lp, false);
+  RETURN_VALUE_IF_NULL(lp, {.postsolve_is_needed = false});
   const SparseMatrix& matrix = lp->GetSparseMatrix();
   const SparseMatrix& transpose = lp->GetTransposeSparseMatrix();
 
@@ -2853,9 +2889,9 @@ bool SingletonPreprocessor::Run(LinearProgram* lp) {
   }
 
   // Process current singleton rows/columns and enqueue new ones.
-  while (status_ == ProblemStatus::INIT &&
+  while (!status_.has_value() &&
          (!column_to_process.empty() || !row_to_process.empty())) {
-    while (status_ == ProblemStatus::INIT && !column_to_process.empty()) {
+    while (!status_.has_value() && !column_to_process.empty()) {
       const ColIndex col = column_to_process.back();
       column_to_process.pop_back();
       if (column_degree[col] <= 0) continue;
@@ -2886,7 +2922,7 @@ bool SingletonPreprocessor::Run(LinearProgram* lp) {
         row_to_process.push_back(e.row);
       }
     }
-    while (status_ == ProblemStatus::INIT && !row_to_process.empty()) {
+    while (!status_.has_value() && !row_to_process.empty()) {
       const RowIndex row = row_to_process.back();
       row_to_process.pop_back();
       if (row_degree[row] <= 0) continue;
@@ -2908,13 +2944,20 @@ bool SingletonPreprocessor::Run(LinearProgram* lp) {
     }
   }
 
-  if (status_ != ProblemStatus::INIT) return false;
+  if (status_.has_value()) {
+    return {
+        .postsolve_is_needed = false,
+        .solve_status = *status_,
+    };
+  }
   lp->DeleteColumns(column_deletion_helper_.GetMarkedColumns());
   lp->DeleteRows(row_deletion_helper_.GetMarkedRows());
-  return !column_deletion_helper_.IsEmpty() || !row_deletion_helper_.IsEmpty();
+  return {.postsolve_is_needed = !column_deletion_helper_.IsEmpty() ||
+                                 !row_deletion_helper_.IsEmpty()};
 }
 
-void SingletonPreprocessor::RecoverSolution(ProblemSolution* solution) const {
+void SingletonPreprocessor::RecoverSolution(SolveStatus& solve_status,
+                                            ProblemSolution* solution) const {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
   RETURN_IF_NULL(solution);
 
@@ -2949,7 +2992,8 @@ MatrixEntry SingletonPreprocessor::GetSingletonColumnMatrixEntry(
   // COV_NF_START
   // This shouldn't happen.
   LOG(DFATAL) << "No unmarked entry in a column that is supposed to have one.";
-  status_ = ProblemStatus::ABNORMAL;
+  status_ = AbnormalSolveStatus(
+      AbnormalityCause::kSingletonPreprocessorNoUnmarkedEntry);
   return MatrixEntry(RowIndex(0), ColIndex(0), 0.0);
   // COV_NF_END
 }
@@ -2966,7 +3010,8 @@ MatrixEntry SingletonPreprocessor::GetSingletonRowMatrixEntry(
   // COV_NF_START
   // This shouldn't happen.
   LOG(DFATAL) << "No unmarked entry in a row that is supposed to have one.";
-  status_ = ProblemStatus::ABNORMAL;
+  status_ = AbnormalSolveStatus(
+      AbnormalityCause::kSingletonPreprocessorNoUnmarkedEntry);
   return MatrixEntry(RowIndex(0), ColIndex(0), 0.0);
   // COV_NF_END
 }
@@ -2975,11 +3020,11 @@ MatrixEntry SingletonPreprocessor::GetSingletonRowMatrixEntry(
 // SingletonColumnSignPreprocessor
 // --------------------------------------------------------
 
-bool SingletonColumnSignPreprocessor::Run(LinearProgram* lp) {
+Preprocessor::Result SingletonColumnSignPreprocessor::Run(LinearProgram* lp) {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
-  RETURN_VALUE_IF_NULL(lp, false);
+  RETURN_VALUE_IF_NULL(lp, {.postsolve_is_needed = false});
   const ColIndex num_cols = lp->num_variables();
-  if (num_cols == 0) return false;
+  if (num_cols == 0) return {.postsolve_is_needed = false};
 
   changed_columns_.clear();
   int num_singletons = 0;
@@ -3000,11 +3045,11 @@ bool SingletonColumnSignPreprocessor::Run(LinearProgram* lp) {
   }
   VLOG(1) << "Changed the sign of " << changed_columns_.size() << " columns.";
   VLOG(1) << num_singletons << " singleton columns left.";
-  return !changed_columns_.empty();
+  return {.postsolve_is_needed = !changed_columns_.empty()};
 }
 
 void SingletonColumnSignPreprocessor::RecoverSolution(
-    ProblemSolution* solution) const {
+    SolveStatus& solve_status, ProblemSolution* solution) const {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
   RETURN_IF_NULL(solution);
   for (int i = 0; i < changed_columns_.size(); ++i) {
@@ -3023,9 +3068,9 @@ void SingletonColumnSignPreprocessor::RecoverSolution(
 // DoubletonEqualityRowPreprocessor
 // --------------------------------------------------------
 
-bool DoubletonEqualityRowPreprocessor::Run(LinearProgram* lp) {
+Preprocessor::Result DoubletonEqualityRowPreprocessor::Run(LinearProgram* lp) {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
-  RETURN_VALUE_IF_NULL(lp, false);
+  RETURN_VALUE_IF_NULL(lp, {.postsolve_is_needed = false});
 
   // This is needed at postsolve.
   //
@@ -3129,8 +3174,10 @@ bool DoubletonEqualityRowPreprocessor::Run(LinearProgram* lp) {
           -r.coeff[DELETED] / r.coeff[MODIFIED];
       if (!IsFinite(carry_over_offset) || !IsFinite(carry_over_factor) ||
           carry_over_factor == 0.0) {
-        status_ = ProblemStatus::ABNORMAL;
-        break;
+        return {
+            .postsolve_is_needed = false,
+            .solve_status = AbnormalSolveStatus(
+                AbnormalityCause::kDoubletonEqualityRowPreprocessorOverflow)};
       }
 
       Fractional lb = r.lb[MODIFIED];
@@ -3187,8 +3234,9 @@ bool DoubletonEqualityRowPreprocessor::Run(LinearProgram* lp) {
     // Again we don't bother too much with over/underflows.
     if (!IsFinite(substitution_factor) || substitution_factor == 0.0 ||
         !IsFinite(constant_offset_factor)) {
-      status_ = ProblemStatus::ABNORMAL;
-      break;
+      return {.postsolve_is_needed = false,
+              .solve_status = AbnormalSolveStatus(
+                  AbnormalityCause::kDoubletonEqualityRowPreprocessorOverflow)};
     }
 
     // Note that we do not save again a saved column, so that we only save
@@ -3234,15 +3282,14 @@ bool DoubletonEqualityRowPreprocessor::Run(LinearProgram* lp) {
     column_deletion_helper_.MarkColumnForDeletion(r.col[DELETED]);
     row_deletion_helper_.MarkRowForDeletion(r.row);
   }
-  if (status_ != ProblemStatus::INIT) return false;
   lp->DeleteColumns(column_deletion_helper_.GetMarkedColumns());
   lp->DeleteRows(row_deletion_helper_.GetMarkedRows());
 
-  return !column_deletion_helper_.IsEmpty();
+  return {.postsolve_is_needed = !column_deletion_helper_.IsEmpty()};
 }
 
 void DoubletonEqualityRowPreprocessor::RecoverSolution(
-    ProblemSolution* solution) const {
+    SolveStatus& solve_status, ProblemSolution* solution) const {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
   RETURN_IF_NULL(solution);
   column_deletion_helper_.RestoreDeletedColumns(solution);
@@ -3408,11 +3455,11 @@ void DoubletonEqualityRowPreprocessor::
 // DualizerPreprocessor
 // --------------------------------------------------------
 
-bool DualizerPreprocessor::Run(LinearProgram* lp) {
+Preprocessor::Result DualizerPreprocessor::Run(LinearProgram* lp) {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
-  RETURN_VALUE_IF_NULL(lp, false);
+  RETURN_VALUE_IF_NULL(lp, {.postsolve_is_needed = false});
   if (parameters_.solve_dual_problem() == GlopParameters::NEVER_DO) {
-    return false;
+    return {.postsolve_is_needed = false};
   }
 
   // Store the original problem size and direction.
@@ -3441,7 +3488,7 @@ bool DualizerPreprocessor::Run(LinearProgram* lp) {
   if (parameters_.solve_dual_problem() == GlopParameters::LET_SOLVER_DECIDE) {
     if (1.0 * primal_num_rows_.value() <
         parameters_.dualizer_threshold() * primal_num_cols_.value()) {
-      return false;
+      return {.postsolve_is_needed = false};
     }
   }
 
@@ -3518,13 +3565,14 @@ bool DualizerPreprocessor::Run(LinearProgram* lp) {
   LinearProgram dual;
   dual.PopulateFromDual(*lp, &duplicated_rows_);
   dual.Swap(lp);
-  return true;
+  return {.postsolve_is_needed = true};
 }
 
 // Note(user): This assumes that LinearProgram.PopulateFromDual() uses
 // the first ColIndex and RowIndex for the rows and columns of the given
 // problem.
-void DualizerPreprocessor::RecoverSolution(ProblemSolution* solution) const {
+void DualizerPreprocessor::RecoverSolution(SolveStatus& solve_status,
+                                           ProblemSolution* solution) const {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
   RETURN_IF_NULL(solution);
 
@@ -3626,40 +3674,47 @@ void DualizerPreprocessor::RecoverSolution(ProblemSolution* solution) const {
            new_constraint_statuses[row] != ConstraintStatus::BASIC);
   }
 
-  solution->status = ChangeStatusToDualStatus(solution->status);
+  solve_status = ChangeResultToDualResult(solve_status);
+  solution->status = solve_status.problem_status();
   new_primal_values.swap(solution->primal_values);
   new_dual_values.swap(solution->dual_values);
   new_variable_statuses.swap(solution->variable_statuses);
   new_constraint_statuses.swap(solution->constraint_statuses);
 }
 
-ProblemStatus DualizerPreprocessor::ChangeStatusToDualStatus(
-    ProblemStatus status) const {
-  switch (status) {
-    case ProblemStatus::PRIMAL_INFEASIBLE:
-      return ProblemStatus::DUAL_INFEASIBLE;
-    case ProblemStatus::DUAL_INFEASIBLE:
-      return ProblemStatus::PRIMAL_INFEASIBLE;
-    case ProblemStatus::PRIMAL_UNBOUNDED:
-      return ProblemStatus::DUAL_UNBOUNDED;
-    case ProblemStatus::DUAL_UNBOUNDED:
-      return ProblemStatus::PRIMAL_UNBOUNDED;
-    case ProblemStatus::PRIMAL_FEASIBLE:
-      return ProblemStatus::DUAL_FEASIBLE;
-    case ProblemStatus::DUAL_FEASIBLE:
-      return ProblemStatus::PRIMAL_FEASIBLE;
-    default:
-      return status;
-  }
+SolveStatus DualizerPreprocessor::ChangeResultToDualResult(
+    const SolveStatus result) {
+  return std::visit(absl::Overload{
+                        [](SolveStatus::PrimalInfeasible) {
+                          return DualInfeasibleSolveStatus();
+                        },
+                        [](SolveStatus::DualInfeasible) {
+                          return PrimalInfeasibleSolveStatus();
+                        },
+                        [](SolveStatus::PrimalUnbounded) {
+                          return DualUnboundedSolveStatus();
+                        },
+                        [](SolveStatus::DualUnbounded) {
+                          return PrimalUnboundedSolveStatus();
+                        },
+                        [](const SolveStatus::PrimalFeasible v) {
+                          return DualFeasibleSolveStatus(v.cause);
+                        },
+                        [](const SolveStatus::DualFeasible v) {
+                          return PrimalFeasibleSolveStatus(v.cause);
+                        },
+                        [](auto v) { return SolveStatus{v}; },
+                    },
+                    result.value);
 }
 
 // --------------------------------------------------------
 // ShiftVariableBoundsPreprocessor
 // --------------------------------------------------------
 
-bool ShiftVariableBoundsPreprocessor::Run(LinearProgram* lp) {
+Preprocessor::Result ShiftVariableBoundsPreprocessor::Run(LinearProgram* lp) {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
-  RETURN_VALUE_IF_NULL(lp, false);
+  RETURN_VALUE_IF_NULL(lp, {.postsolve_is_needed = false});
 
   // Save the linear program bounds before shifting them.
   bool all_variable_domains_contain_zero = true;
@@ -3677,7 +3732,7 @@ bool ShiftVariableBoundsPreprocessor::Run(LinearProgram* lp) {
           << ComputeMaxVariableBoundsMagnitude(*lp);
 
   // Abort early if there is nothing to do.
-  if (all_variable_domains_contain_zero) return false;
+  if (all_variable_domains_contain_zero) return {.postsolve_is_needed = false};
 
   // Shift the variable bounds and compute the changes to the constraint bounds
   // and objective offset in a precise way.
@@ -3723,8 +3778,8 @@ bool ShiftVariableBoundsPreprocessor::Run(LinearProgram* lp) {
       VLOG(1) << "Shifting variable bounds causes a floating point overflow "
                  "for constraint "
               << row << ".";
-      status_ = ProblemStatus::INVALID_PROBLEM;
-      return false;
+      return {.postsolve_is_needed = false,
+              .solve_status = InvalidProblemSolveStatus()};
     }
     lp->SetConstraintBounds(
         row, lp->constraint_lower_bounds()[row] - row_offsets[row].Value(),
@@ -3733,15 +3788,15 @@ bool ShiftVariableBoundsPreprocessor::Run(LinearProgram* lp) {
   if (!std::isfinite(objective_offset.Value())) {
     VLOG(1) << "Shifting variable bounds causes a floating point overflow "
                "for the objective.";
-    status_ = ProblemStatus::INVALID_PROBLEM;
-    return false;
+    return {.postsolve_is_needed = false,
+            .solve_status = InvalidProblemSolveStatus()};
   }
   lp->SetObjectiveOffset(lp->objective_offset() + objective_offset.Value());
-  return true;
+  return {.postsolve_is_needed = true};
 }
 
 void ShiftVariableBoundsPreprocessor::RecoverSolution(
-    ProblemSolution* solution) const {
+    SolveStatus& solve_status, ProblemSolution* solution) const {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
   RETURN_IF_NULL(solution);
   const ColIndex num_cols = solution->variable_statuses.size();
@@ -3772,10 +3827,10 @@ void ShiftVariableBoundsPreprocessor::RecoverSolution(
 // ScalingPreprocessor
 // --------------------------------------------------------
 
-bool ScalingPreprocessor::Run(LinearProgram* lp) {
+Preprocessor::Result ScalingPreprocessor::Run(LinearProgram* lp) {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
-  RETURN_VALUE_IF_NULL(lp, false);
-  if (!parameters_.use_scaling()) return false;
+  RETURN_VALUE_IF_NULL(lp, {.postsolve_is_needed = false});
+  if (!parameters_.use_scaling()) return {.postsolve_is_needed = false};
 
   // Save the linear program bounds before scaling them.
   const ColIndex num_cols = lp->num_variables();
@@ -3792,10 +3847,11 @@ bool ScalingPreprocessor::Run(LinearProgram* lp) {
   cost_scaling_factor_ = lp->ScaleObjective(parameters_.cost_scaling());
   bound_scaling_factor_ = lp->ScaleBounds();
 
-  return true;
+  return {.postsolve_is_needed = true};
 }
 
-void ScalingPreprocessor::RecoverSolution(ProblemSolution* solution) const {
+void ScalingPreprocessor::RecoverSolution(SolveStatus& solve_status,
+                                          ProblemSolution* solution) const {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
   RETURN_IF_NULL(solution);
 
@@ -3835,9 +3891,9 @@ void ScalingPreprocessor::RecoverSolution(ProblemSolution* solution) const {
 // ToMinimizationPreprocessor
 // --------------------------------------------------------
 
-bool ToMinimizationPreprocessor::Run(LinearProgram* lp) {
+Preprocessor::Result ToMinimizationPreprocessor::Run(LinearProgram* lp) {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
-  RETURN_VALUE_IF_NULL(lp, false);
+  RETURN_VALUE_IF_NULL(lp, {.postsolve_is_needed = false});
   if (lp->IsMaximizationProblem()) {
     for (ColIndex col(0); col < lp->num_variables(); ++col) {
       const Fractional coeff = lp->objective_coefficients()[col];
@@ -3849,27 +3905,27 @@ bool ToMinimizationPreprocessor::Run(LinearProgram* lp) {
     lp->SetObjectiveOffset(-lp->objective_offset());
     lp->SetObjectiveScalingFactor(-lp->objective_scaling_factor());
   }
-  return false;
+  return {.postsolve_is_needed = false};
 }
 
 void ToMinimizationPreprocessor::RecoverSolution(
-    ProblemSolution* solution) const {}
+    SolveStatus& solve_status, ProblemSolution* solution) const {}
 
 // --------------------------------------------------------
 // AddSlackVariablesPreprocessor
 // --------------------------------------------------------
 
-bool AddSlackVariablesPreprocessor::Run(LinearProgram* lp) {
+Preprocessor::Result AddSlackVariablesPreprocessor::Run(LinearProgram* lp) {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
-  RETURN_VALUE_IF_NULL(lp, false);
+  RETURN_VALUE_IF_NULL(lp, {.postsolve_is_needed = false});
   lp->AddSlackVariablesWhereNecessary(
       /*detect_integer_constraints=*/true);
   first_slack_col_ = lp->GetFirstSlackVariable();
-  return true;
+  return {.postsolve_is_needed = true};
 }
 
 void AddSlackVariablesPreprocessor::RecoverSolution(
-    ProblemSolution* solution) const {
+    SolveStatus& solve_status, ProblemSolution* solution) const {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
   RETURN_IF_NULL(solution);
 

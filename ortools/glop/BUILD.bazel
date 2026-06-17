@@ -66,14 +66,16 @@ cc_library(
         ":lu_factorization",
         ":parameters_cc_proto",
         ":rank_one_update",
-        ":status",
         "//ortools/base:stl_util",
         "//ortools/lp_data:lp_types",
         "//ortools/lp_data:lp_utils",
         "//ortools/lp_data:permutation",
         "//ortools/lp_data:scattered_vector",
         "//ortools/lp_data:sparse",
+        "//ortools/lp_data:sparse_column",
+        "//ortools/util:return_macros",
         "//ortools/util:stats",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
     ],
 )
@@ -164,6 +166,7 @@ cc_library(
         "//ortools/util:time_limit",
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/functional:overload",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings:str_format",
@@ -177,7 +180,6 @@ cc_library(
     hdrs = ["markowitz.h"],
     deps = [
         ":parameters_cc_proto",
-        ":status",
         "//ortools/base:strong_vector",
         "//ortools/base:types",
         "//ortools/lp_data:lp_types",
@@ -245,7 +247,9 @@ cc_library(
         "//ortools/util:time_limit",
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/base:nullability",
+        "@abseil-cpp//absl/cleanup",
         "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/functional:overload",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:die_if_null",
@@ -325,7 +329,6 @@ cc_library(
         ":parameters_cc_proto",
         ":preprocessor",
         ":revised_simplex",
-        ":status",
         ":variables_info",
         "//ortools/base:version",
         "//ortools/base/macros:os_support",
@@ -378,7 +381,6 @@ cc_library(
     deps = [
         ":markowitz",
         ":parameters_cc_proto",
-        ":status",
         "//ortools/base:log_severity",
         "//ortools/lp_data:lp_types",
         "//ortools/lp_data:lp_utils",
@@ -400,6 +402,18 @@ cc_library(
     deps = [
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
+    ],
+)
+
+cc_library(
+    name = "preprocessor_testing",
+    testonly = True,
+    srcs = ["preprocessor_testing.cc"],
+    hdrs = ["preprocessor_testing.h"],
+    deps = [
+        ":preprocessor",
+        "//ortools/base:gmock",
+        "//ortools/lp_data:lp_types",
     ],
 )
 

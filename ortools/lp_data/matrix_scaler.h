@@ -61,14 +61,11 @@
 #define ORTOOLS_LP_DATA_MATRIX_SCALER_H_
 
 #include <string>
-#include <vector>
 
-#include "ortools/base/types.h"
 #include "ortools/glop/parameters.pb.h"
-#include "ortools/glop/revised_simplex.h"
-#include "ortools/glop/status.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"
+#include "ortools/lp_data/sparse.h"
 
 namespace operations_research {
 namespace glop {
@@ -125,8 +122,9 @@ class SparseMatrixScaler {
   void ScaleColumnVector(bool up, DenseColumn* column_vector) const;
 
  private:
-  // Solves the scaling problem as a linear program.
-  Status LPScale();
+  // Solves the scaling problem as a linear program; returns true it is
+  // succeeded. When it fails, VLOG(1) the error.
+  [[nodiscard]] bool LPScale();
 
   // Computes the variance of the non-zero coefficients of the matrix.
   // Used by Scale() do decide when to stop.

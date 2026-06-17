@@ -387,6 +387,7 @@ cc_library(
     deps = [
         ":linear_solver_base",
         ":scip_helper_macros",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/types:span",
         "@scip",
@@ -566,8 +567,10 @@ cc_library(
         "//ortools/port:proto_utils",
         "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:cp_model_solver",
+        "//ortools/sat:sat_parameters_cc_proto",
         "//ortools/util:lazy_mutable_copy",
         "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
     ],
@@ -640,6 +643,7 @@ cc_library(
     deps = [
         ":linear_solver_base",
         "//ortools/lp_data:lp_types",
+        "@abseil-cpp//absl/functional:overload",
         "@abseil-cpp//absl/log",
     ],
 )
@@ -713,6 +717,7 @@ cc_binary(
         "//ortools/util:file_util",
         "//ortools/util:sigint",
         "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:flags",
         "@abseil-cpp//absl/status",

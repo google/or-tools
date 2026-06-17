@@ -39,8 +39,9 @@ class IntegerBoundsPreprocessor : public glop::Preprocessor {
       delete;
   ~IntegerBoundsPreprocessor() override = default;
 
-  bool Run(glop::LinearProgram* linear_program) override;
-  void RecoverSolution(glop::ProblemSolution* /*solution*/) const override {}
+  Result Run(glop::LinearProgram* linear_program) override;
+  void RecoverSolution(glop::SolveStatus&,
+                       glop::ProblemSolution*) const override {}
 
  private:
   const glop::Fractional integer_solution_tolerance_;
@@ -76,8 +77,9 @@ class BoundPropagationPreprocessor : public glop::Preprocessor {
       delete;
   ~BoundPropagationPreprocessor() override = default;
 
-  bool Run(glop::LinearProgram* linear_program) override;
-  void RecoverSolution(glop::ProblemSolution* /*solution*/) const override {}
+  Result Run(glop::LinearProgram* linear_program) override;
+  void RecoverSolution(glop::SolveStatus&,
+                       glop::ProblemSolution*) const override {}
 
  private:
   const glop::Fractional integer_solution_tolerance_;
@@ -110,8 +112,9 @@ class ImpliedIntegerPreprocessor : public glop::Preprocessor {
   // can in turn be detected as such. Change the code to reach a fixed point.
   // Calling this multiple time has a similar effect, but is a lot less
   // efficient and can require O(num_variables) calls to reach the fix point.
-  bool Run(glop::LinearProgram* linear_program) override;
-  void RecoverSolution(glop::ProblemSolution* /*solution*/) const override {}
+  Result Run(glop::LinearProgram* linear_program) override;
+  void RecoverSolution(glop::SolveStatus&,
+                       glop::ProblemSolution*) const override {}
 
  private:
   // Returns true if the given variable is implied integer. This method is used
@@ -189,8 +192,9 @@ class ReduceCostOverExclusiveOrConstraintPreprocessor
       const ReduceCostOverExclusiveOrConstraintPreprocessor&) = delete;
   ~ReduceCostOverExclusiveOrConstraintPreprocessor() override = default;
 
-  bool Run(glop::LinearProgram* linear_program) override;
-  void RecoverSolution(glop::ProblemSolution* /*solution*/) const override {}
+  Result Run(glop::LinearProgram* linear_program) override;
+  void RecoverSolution(glop::SolveStatus&,
+                       glop::ProblemSolution*) const override {}
 };
 
 }  // namespace operations_research

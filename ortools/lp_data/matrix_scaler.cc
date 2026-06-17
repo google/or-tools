@@ -25,7 +25,6 @@
 #include "ortools/base/strong_vector.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/glop/revised_simplex.h"
-#include "ortools/glop/status.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/lp_utils.h"
@@ -112,15 +111,23 @@ void SparseMatrixScaler::Scale(GlopParameters::ScalingAlgorithm method) {
     return;  // Null matrix: nothing to do.
   }
   VLOG(1) << "Before scaling:\n" << DebugInformationString();
-  if (method == GlopParameters::LINEAR_PROGRAM) {
-    Status lp_status = LPScale();
-    // Revert to the default scaling method if there is an error with the LP.
-    if (lp_status.ok()) {
-      return;
-    } else {
-      VLOG(1) << "Error with LP scaling: " << lp_status.error_message();
-    }
+  switch (method) {
+    case GlopParameters::LINEAR_PROGRAM:
+      if (LPScale()) {
+        return;
+      }
+      // Revert to the default scaling method if there is an error with the LP.
+      break;
+    case GlopParameters::EQUILIBRATION:
+    case GlopParameters::DEFAULT:
+      break;
+    default:
+      LOG(DFATAL) << "Unimplemented scaling method: "
+                  << GlopParameters::ScalingAlgorithm_Name(method) << " ("
+                  << method << ")";
+      break;
   }
+
   // TODO(user): Decide precisely for which value of dynamic range we should cut
   // off geometric scaling.
   const Fractional dynamic_range = max_magnitude / min_magnitude;
@@ -340,12 +347,12 @@ void SparseMatrixScaler::ScaleMatrixColumn(ColIndex col, Fractional factor) {
   matrix_->mutable_column(col)->DivideByConstant(factor);
 }
 
-Status SparseMatrixScaler::LPScale() {
+bool SparseMatrixScaler::LPScale() {
   DCHECK(matrix_ != nullptr);
 
-  auto linear_program = std::make_unique<LinearProgram>();
+  const auto linear_program = std::make_unique<LinearProgram>();
   GlopParameters params;
-  auto simplex = std::make_unique<RevisedSimplex>();
+  const auto simplex = std::make_unique<RevisedSimplex>();
   simplex->SetParameters(params);
 
   // Begin linear program construction.
@@ -429,32 +436,35 @@ Status SparseMatrixScaler::LPScale() {
   // End linear program construction.
 
   linear_program->AddSlackVariablesWhereNecessary(false);
-  const Status simplex_status =
+  const SolveStatus simplex_status =
       simplex->Solve(*linear_program, *TimeLimit::Infinite());
-  if (!simplex_status.ok()) {
-    return simplex_status;
-  } else {
-    // Now the solution variables can be interpreted and translated from log
-    // space.
-    // For each row scale, unlog it and scale the constraints and constraint
-    // bounds.
-    const ColIndex num_cols = matrix_->num_cols();
-    for (ColIndex col(0); col < num_cols; ++col) {
-      const Fractional column_scale =
-          exp2(-simplex->GetVariableValue(CreateOrGetScaleIndex<ColIndex>(
-              col, linear_program.get(), &col_scale_var_indices)));
-      ScaleMatrixColumn(col, column_scale);
-    }
-    const RowIndex num_rows = matrix_->num_rows();
-    DenseColumn row_scale(num_rows, 0.0);
-    for (RowIndex row(0); row < num_rows; ++row) {
-      row_scale[row] =
-          exp2(-simplex->GetVariableValue(CreateOrGetScaleIndex<RowIndex>(
-              row, linear_program.get(), &row_scale_var_indices)));
-    }
-    ScaleMatrixRows(row_scale);
-    return Status::OK();
+  if (simplex_status.Is<SolveStatus::Abnormal>()) {
+    VLOG(1) << "Error with LP scaling: " << simplex_status;
+    return false;
   }
+
+  // Now the solution variables can be interpreted and translated from log
+  // space.
+  // For each row scale, unlog it and scale the constraints and constraint
+  // bounds.
+
+  // Returns the computed scale if scale_var is not kInvalidCol, else 1.0 (which
+  // happens for empty rows, for which we don't create variables in the model).
+  const auto get_scale = [&](const ColIndex scale_var) -> Fractional {
+    return scale_var == kInvalidCol
+               ? 1.0
+               : exp2(-simplex->GetVariableValue(scale_var));
+  };
+  for (ColIndex col(0); col < num_cols; ++col) {
+    ScaleMatrixColumn(col, get_scale(col_scale_var_indices[col]));
+  }
+  const RowIndex num_rows = matrix_->num_rows();
+  DenseColumn row_scale(num_rows, 0.0);
+  for (RowIndex row(0); row < num_rows; ++row) {
+    row_scale[row] = get_scale(row_scale_var_indices[row]);
+  }
+  ScaleMatrixRows(row_scale);
+  return true;
 }
 
 }  // namespace glop

@@ -100,8 +100,7 @@ cc_library(
         "//ortools/util:lazy_mutable_copy",
         "//ortools/util:logging",
         "//ortools/util:time_limit",
-        "@abseil-cpp//absl/log",
-        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/functional:overload",
         "@abseil-cpp//absl/strings",
     ],
 )

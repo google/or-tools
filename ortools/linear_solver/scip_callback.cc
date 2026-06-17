@@ -21,7 +21,9 @@
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/types/span.h"
+#include "ortools/linear_solver/linear_expr.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/scip_helper_macros.h"
 #include "scip/cons_linear.h"
