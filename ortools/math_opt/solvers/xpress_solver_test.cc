@@ -53,6 +53,53 @@ namespace math_opt {
 namespace {
 using testing::ValuesIn;
 
+/** Supported callback events.
+ * Xpress supports all callback events.
+ */
+absl::flat_hash_set<CallbackEvent> SupportedEvents() {
+  return {CallbackEvent::kPresolve, CallbackEvent::kSimplex,
+          CallbackEvent::kMip,      CallbackEvent::kMipSolution,
+          CallbackEvent::kMipNode,  CallbackEvent::kBarrier};
+}
+
+/** Supported callback events for tests with integer_variables=false.
+ * Even though Xpress supports setting the callbacks for non-MIP (they
+ * will just not be invoked), the tests are not prepared for this and will
+ * fail if the callback is supported and integer_variables=false.
+ */
+absl::flat_hash_set<CallbackEvent> SupportedEventsNoMip() {
+  return {CallbackEvent::kPresolve, CallbackEvent::kSimplex,
+          CallbackEvent::kBarrier};
+}
+
+/** Parameter settings to make sure we reach a callback that allows injection
+ * of cuts.
+ */
+SolveParameters ReachesCutCallback() {
+  SolveParameters params;
+  params.xpress.param_values["PRESOLVE"] = "0";
+  params.xpress.param_values["COVERCUTS"] = "0";
+  params.xpress.param_values["GOMCUTS"] = "0";
+  params.xpress.param_values["TREECOVERCUTS"] = "0";
+  params.xpress.param_values["TREEGOMCUTS"] = "0";
+  params.xpress.param_values["HEUREMPHASIS"] = "0";
+  return params;
+}
+
+/** Parameters that we must set for Xpress for every callback test.
+ */
+SolveParameters CallbackTestXpressParams() {
+  SolveParameters params;
+  //  By default, Xpress does not trigger the lplog callback for every simplex
+  // iteration since that results in quite some overhead. We have to force
+  // invocation after each iteration to pass the tests.
+  params.xpress.param_values["LPLOGSTYLE"] = "0";
+  params.xpress.param_values["LPLOG"] = "1";
+  // Never run concurrent
+  params.xpress.param_values["CONCURRENTTHREADS"] = "0";
+  return params;
+}
+
 INSTANTIATE_TEST_SUITE_P(
     XpressSolverLpTest, SimpleLpTest,
     testing::Values(SimpleLpTestParameters(
@@ -128,16 +175,18 @@ INSTANTIATE_TEST_SUITE_P(
                             /*integer_variables=*/false,
                             /*add_lazy_constraints=*/false,
                             /*add_cuts=*/false,
-                            /*supported_events=*/{},
+                            /*supported_events=*/SupportedEventsNoMip(),
                             /*all_solutions=*/std::nullopt,
-                            /*reaches_cut_callback*/ std::nullopt),
+                            /*reaches_cut_callback*/ std::nullopt,
+                            /*solve_parameters*/ CallbackTestXpressParams()),
          CallbackTestParams(SolverType::kXpress,
                             /*integer_variables=*/true,
-                            /*add_lazy_constraints=*/false,
-                            /*add_cuts=*/false,
-                            /*supported_events=*/{},
+                            /*add_lazy_constraints=*/true,
+                            /*add_cuts=*/true,
+                            /*supported_events=*/SupportedEvents(),
                             /*all_solutions=*/std::nullopt,
-                            /*reaches_cut_callback*/ std::nullopt)}));
+                            /*reaches_cut_callback*/ ReachesCutCallback(),
+                            /*solve_parameters*/ CallbackTestXpressParams())}));
 
 INSTANTIATE_TEST_SUITE_P(
     XpressInvalidInputTest, InvalidInputTest,

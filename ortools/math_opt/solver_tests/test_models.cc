@@ -22,6 +22,24 @@
 
 namespace operations_research::math_opt {
 
+// Create model
+//    Maximize
+//     obj: 3x_1 + 2y_1 + 3x_2 + 2y_2 + 3x_3 + 2y_3
+//    Subject To
+//     c1: x_1 + y_1 <= 1.5
+//     c2: x_2 + y_2 <= 1.5
+//     c3: x_3 + y_3 <= 1.5
+//    Bounds
+//     0 <= x_1 <= 1
+//     0 <= y_1 <= 1
+//     0 <= x_2 <= 1
+//     0 <= y_2 <= 1
+//     0 <= x_3 <= 1
+//     0 <= y_3 <= 1
+//    End
+// If `integer` is true then all variables are marked integer.
+// integer=false: optimal solution: 12.0 (x_i=1.0, y_i=0.5)
+// integer=true:  optimal solution:  9.0 (x_i=1.0, y_i=0.0)
 std::unique_ptr<Model> SmallModel(const bool integer) {
   auto model = std::make_unique<Model>("small_model");
   const Variable x_1 = model->AddVariable(0.0, 1.0, integer, "x_1");
