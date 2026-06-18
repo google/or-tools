@@ -36,28 +36,32 @@ enum CallbackEventProto {
 
   // The solver is currently running presolve.
   //
-  // This event is supported by SOLVER_TYPE_GUROBI only.
+  // This event is supported by SOLVER_TYPE_GUROBI and SOLVER_TYPE_XPRESS only.
   CALLBACK_EVENT_PRESOLVE = 1;
 
   // The solver is currently running the simplex method.
   //
-  // This event is supported by SOLVER_TYPE_GUROBI only.
+  // This event is supported by SOLVER_TYPE_GUROBI and SOLVER_TYPE_XPRESS only.
   CALLBACK_EVENT_SIMPLEX = 2;
 
   // The solver is in the MIP loop (called periodically before starting a new
   // node). Useful for early termination. Note that this event does not provide
   // information on LP relaxations nor about new incumbent solutions.
   //
-  // This event is fully supported for MIP models by SOLVER_TYPE_GUROBI only. If
+  // This event is fully supported for MIP models by SOLVER_TYPE_GUROBI and
+  // SOLVER_TYPE_XPRESS only. If
   // used with SOLVER_TYPE_CP_SAT, it is called when the dual bound is improved.
   CALLBACK_EVENT_MIP = 3;
 
   // Called every time a new MIP incumbent is found.
   //
-  // This event is fully supported for MIP models by SOLVER_TYPE_GUROBI.
+  // This event is fully supported for MIP models by SOLVER_TYPE_GUROBI and
+  // SOLVER_TYPE_XPRESS.
   // SOLVER_TYPE_CP_SAT has partial support: you can view the solutions and
   // request termination, but you cannot add lazy constraints. Other solvers
   // don't support this event.
+  // It is solver specific whether terminating from this event still collects
+  // the solution for which the event was triggered or not.
   CALLBACK_EVENT_MIP_SOLUTION = 4;
 
   // Called inside a MIP node. Note that there is no guarantee that the
@@ -68,14 +72,31 @@ enum CallbackEventProto {
   // being called and/or adding cuts at this event, the behavior is solver
   // specific.
   //
-  // This event is supported for MIP models by SOLVER_TYPE_GUROBI only.
+  // This event is supported for MIP models by SOLVER_TYPE_GUROBI and
+  // SOLVER_TYPE_XPRESS only.
   CALLBACK_EVENT_MIP_NODE = 5;
 
   // Called in each iterate of an interior point/barrier method.
   //
-  // This event is supported for SOLVER_TYPE_GUROBI only.
+  // This event is supported for SOLVER_TYPE_GUROBI and SOLVER_TYPE_XPRESS only.
   CALLBACK_EVENT_BARRIER = 6;
 }
+
+// Where a solution for a CALLBACK_EVENT_MIP_SOLUTION came from.
+enum CallbackSolutionSourceProto {
+  CALLBACK_SOLUTION_SOURCE_UNSPECIFIED = 0;
+
+  // The solution came from an LP relaxation that happened to be integer
+  // feasible.
+  CALLBACK_SOLUTION_SOURCE_INTEGRAL = 1;
+
+  // The solution came from a heuristic.
+  CALLBACK_SOLUTION_SOURCE_HEURISTIC = 2;
+
+  // The solution came from a solution vector provided by the user.
+  // This may include solutions the solver had to "repair".
+  CALLBACK_SOLUTION_SOURCE_USER = 3;
+};
 
 // The callback function input data.
 // Note that depending on the event, some information might be unavailable.
@@ -139,6 +160,10 @@ message CallbackDataProto {
     optional int64 simplex_iterations = 5;
     optional int32 number_of_solutions_found = 6;
     optional int32 cutting_planes_in_lp = 7;
+    // Only for CALLBACK_EVENT_MIP_SOLUTION, specifies where the solution
+    // came from. See CallbackSolutionSource.
+    // Only implemented for SOLVER_TYPE_XPRESS.
+    optional int32 solution_source = 8;
   }
   MipStats mip_stats = 7;
 }
@@ -179,16 +204,19 @@ message CallbackResultProto {
 
   // Dynamically generated linear constraints to add to the MIP. See
   // GeneratedLinearConstraint::is_lazy for details.
+  // All constraints must be globally valid (and not only valid for the subtree
+  // rooted at the search tree node for which the event was triggered).
   repeated GeneratedLinearConstraint cuts = 4;
 
   // Use only for CALLBACK_EVENT_MIP_NODE or CALLBACK_EVENT_MIP_SOLUTION.
   //
-  // Note that some solvers (e.g. Gurobi) support partially-defined solutions.
+  // Note that some solvers (e.g. Gurobi or Xpress) support partially-defined
+  // solutions.
   // The most common use case is to specify a value for each variable in the
   // model. If a variable is not present in the primal solution, its value is
   // taken to be undefined, and is up to the underlying solver to deal with it.
-  // For example, Gurobi will try to solve a Sub-MIP to get a fully feasible
-  // solution if necessary.
+  // For example, Gurobi or Xpress will try to solve a Sub-MIP to get a fully
+  // feasible solution if necessary.
   repeated SparseDoubleVectorProto suggested_solutions = 5;
 }
 

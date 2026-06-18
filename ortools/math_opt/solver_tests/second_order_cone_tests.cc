@@ -335,6 +335,10 @@ TEST_P(IncrementalSecondOrderConeTest,
   if (!GetParam().supports_soc_constraints) {
     GTEST_SKIP() << kNoSocSupportMessage;
   }
+  if (GetParam().solver_type == SolverType::kXpress) {
+    GTEST_SKIP()
+        << "Xpress does not support second order cone with general expressions";
+  }
   Model model;
   const Variable x = model.AddContinuousVariable(0.0, 2.0, "x");
   const Variable y = model.AddContinuousVariable(0.0, 1.0, "y");
@@ -377,6 +381,9 @@ TEST_P(IncrementalSecondOrderConeTest, UpdateDeletesVariableThatIsAnArgument) {
   if (!GetParam().supports_soc_constraints) {
     GTEST_SKIP() << kNoSocSupportMessage;
   }
+  if (GetParam().solver_type == SolverType::kXpress) {
+    GTEST_SKIP() << "Xpress does not support second order cone with constants";
+  }
   Model model;
   const Variable x = model.AddContinuousVariable(1.0, 1.0, "x");
   const Variable y = model.AddContinuousVariable(0.0, 1.0, "y");
@@ -418,6 +425,10 @@ TEST_P(IncrementalSecondOrderConeTest, UpdateDeletesVariableThatIsAnArgument) {
 TEST_P(IncrementalSecondOrderConeTest, UpdateDeletesVariableInAnArgument) {
   if (!GetParam().supports_soc_constraints) {
     GTEST_SKIP() << kNoSocSupportMessage;
+  }
+  if (GetParam().solver_type == SolverType::kXpress) {
+    GTEST_SKIP()
+        << "Xpress does not support second order cone with general expressions";
   }
   Model model;
   const Variable x = model.AddContinuousVariable(1.0, 1.0, "x");

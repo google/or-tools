@@ -206,6 +206,10 @@ TEST_P(SimpleLogicalConstraintTest, Sos1WithExpressions) {
   if (!GetParam().supports_sos1) {
     GTEST_SKIP() << no_sos1_support_message;
   }
+  if (GetParam().solver_type == SolverType::kXpress) {
+    // see https://github.com/google/or-tools/issues/5084
+    GTEST_SKIP() << "skipped since SOS on expressions are not supported";
+  }
   Model model;
   const Variable x = model.AddContinuousVariable(0.0, 1.0, "x");
   const Variable y = model.AddContinuousVariable(0.0, 1.0, "y");
@@ -226,6 +230,10 @@ TEST_P(SimpleLogicalConstraintTest, Sos1WithExpressions) {
 TEST_P(SimpleLogicalConstraintTest, Sos2WithExpressions) {
   if (!GetParam().supports_sos2) {
     GTEST_SKIP() << no_sos2_support_message;
+  }
+  if (GetParam().solver_type == SolverType::kXpress) {
+    // see https://github.com/google/or-tools/issues/5084
+    GTEST_SKIP() << "skipped since SOS on expressions are not supported";
   }
   Model model;
   const Variable x = model.AddContinuousVariable(-1.0, 1.0, "x");
@@ -249,6 +257,11 @@ TEST_P(SimpleLogicalConstraintTest, Sos1VariableInMultipleTerms) {
   if (!GetParam().supports_sos1) {
     GTEST_SKIP() << no_sos2_support_message;
   }
+  if (GetParam().solver_type == SolverType::kXpress) {
+    // Xpress does not support SOSs like { x, x } (see also xpress_solver.cc).
+    GTEST_SKIP() << "Xpress does not support the same variable appearing "
+                    "multiple times in an SOS";
+  }
   Model model;
   const Variable x = model.AddContinuousVariable(-1.0, 1.0, "x");
   model.Minimize(x);
@@ -268,6 +281,11 @@ TEST_P(SimpleLogicalConstraintTest, Sos1VariableInMultipleTerms) {
 TEST_P(SimpleLogicalConstraintTest, Sos2VariableInMultipleTerms) {
   if (!GetParam().supports_sos2) {
     GTEST_SKIP() << no_sos2_support_message;
+  }
+  if (GetParam().solver_type == SolverType::kXpress) {
+    // Xpress does not support SOSs like { x, x } (see also xpress_solver.cc).
+    GTEST_SKIP() << "Xpress does not support the same variable appearing "
+                    "multiple times in an SOS";
   }
   Model model;
   const Variable x = model.AddContinuousVariable(-1.0, 1.0, "x");
@@ -403,6 +421,10 @@ TEST_P(IncrementalLogicalConstraintTest, UpdateDeletesSos1Constraint) {
   if (!GetParam().supports_sos1) {
     GTEST_SKIP() << no_sos1_support_message;
   }
+  if (GetParam().solver_type == SolverType::kXpress) {
+    // see https://github.com/google/or-tools/issues/5084
+    GTEST_SKIP() << "skipped since SOS on expressions are not supported";
+  }
   Model model;
   const Variable x = model.AddContinuousVariable(0.0, 1.0, "x");
   const Variable y = model.AddContinuousVariable(0.0, 1.0, "y");
@@ -446,6 +468,10 @@ TEST_P(IncrementalLogicalConstraintTest, UpdateDeletesSos1Constraint) {
 TEST_P(IncrementalLogicalConstraintTest, UpdateDeletesSos2Constraint) {
   if (!GetParam().supports_sos2) {
     GTEST_SKIP() << no_sos1_support_message;
+  }
+  if (GetParam().solver_type == SolverType::kXpress) {
+    // see https://github.com/google/or-tools/issues/5084
+    GTEST_SKIP() << "skipped since SOS on expressions are not supported";
   }
   Model model;
   const Variable x = model.AddContinuousVariable(0.0, 1.0, "x");
@@ -496,6 +522,10 @@ TEST_P(IncrementalLogicalConstraintTest,
   if (!GetParam().supports_sos1) {
     GTEST_SKIP() << no_sos1_support_message;
   }
+  if (GetParam().solver_type == SolverType::kXpress) {
+    // see https://github.com/google/or-tools/issues/5084
+    GTEST_SKIP() << "skipped since SOS on expressions are not supported";
+  }
   Model model;
   const Variable x = model.AddContinuousVariable(0.0, 1.0, "x");
   const Variable y = model.AddContinuousVariable(0.0, 1.0, "y");
@@ -543,6 +573,10 @@ TEST_P(IncrementalLogicalConstraintTest,
        UpdateDeletesVariableInSos2Constraint) {
   if (!GetParam().supports_sos2) {
     GTEST_SKIP() << no_sos2_support_message;
+  }
+  if (GetParam().solver_type == SolverType::kXpress) {
+    // see https://github.com/google/or-tools/issues/5084
+    GTEST_SKIP() << "skipped since SOS on expressions are not supported";
   }
   Model model;
   const Variable x = model.AddContinuousVariable(0.0, 1.0, "x");
