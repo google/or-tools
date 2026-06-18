@@ -2495,11 +2495,6 @@ const ConstraintToMethodMapType& GetConstraintMap() {
 
 void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
                                              ConstraintProto* ct) {
-  if (fz_ct.arguments.size() < fz::NumRequiredArguments(fz_ct.type)) {
-    LOG(FATAL) << "FlatZinc constraint " << fz_ct.type
-               << " has too few arguments (" << fz_ct.arguments.size() << " < "
-               << fz::NumRequiredArguments(fz_ct.type) << ").";
-  }
   auto it = GetConstraintMap().find(fz_ct.type);
   if (it != GetConstraintMap().end()) {
     auto method_ptr = it->second;
