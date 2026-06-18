@@ -45,7 +45,7 @@
 //   std::vector<VariableMap<double>> solutions;
 //   auto cb = [&solutions](const CallbackData& cb_data) {
 //     // NOTE: this assumes the callback is always called from the same thread.
-//     // Gurobi always does this, multi-threaded SCIP does not.
+//     // Gurobi always does this, multi-threaded SCIP or Xpress do not.
 //     solutions.push_back(*cb_data.solution);
 //     return CallbackResult();
 //   };
@@ -62,8 +62,8 @@
 // CHECK fail). Some solvers do not support callbacks or certain events, in this
 // case the callback is ignored. TODO(b/180617976): change this behavior.
 //
-// Some solvers may call callback from multiple threads (SCIP will, Gurobi will
-// not). You should either solve with one thread (see
+// Some solvers may call callback from multiple threads (SCIP and Xpress will,
+// Gurobi will not). You should either solve with one thread (see
 // solver_parameters.threads), write a threadsafe callback, or consult
 // the documentation of your underlying solver.
 #ifndef ORTOOLS_MATH_OPT_CPP_CALLBACK_H_
@@ -97,26 +97,30 @@ using Callback = std::function<CallbackResult(const CallbackData&)>;
 enum class CallbackEvent {
   // The solver is currently running presolve.
   //
-  // This event is supported for SolverType::kGurobi only.
+  // This event is supported for SolverType::kGurobi or SolverType::kXpress
+  // only.
   kPresolve = CALLBACK_EVENT_PRESOLVE,
 
   // The solver is currently running the simplex method.
   //
-  // This event is supported for SolverType::kGurobi only.
+  // This event is supported for SolverType::kGurobi or SolverType::kXpress
+  // only.
   kSimplex = CALLBACK_EVENT_SIMPLEX,
 
   // The solver is in the MIP loop (called periodically before starting a new
   // node). Useful for early termination. Note that this event does not provide
   // information on LP relaxations nor about new incumbent solutions.
   //
-  // This event is fully supported for MIP models with SolverType::kGurobi only.
+  // This event is fully supported for MIP models with SolverType::kGurobi or
+  // SolverType::kXpress only.
   // If used with SolverType::kCpSat, it is called when the dual bound is
   // improved.
   kMip = CALLBACK_EVENT_MIP,
 
   // Called every time a new MIP incumbent is found.
   //
-  // This event is fully supported for MIP models by SolverType::kGurobi.
+  // This event is fully supported for MIP models by SolverType::kGurobi or
+  // SolverType::kXpress only.
   // SolverType::kCpSat has partial support: you can view the solutions and
   // request termination, but you cannot add lazy constraints. Other solvers
   // don't support this event.
@@ -130,16 +134,36 @@ enum class CallbackEvent {
   // being called and/or adding cuts at this event, the behavior is solver
   // specific.
   //
-  // This event is supported for MIP models with SolverType::kGurobi only.
+  // This event is supported for MIP models with SolverType::kGurobi or
+  // SolverType::kXpress only.
+  // For Xpress disabling cuts will prevent this event. To disable cuts
+  // and still get this event called for Xpress, disable cuts by setting
+  // COVERCUTS, GOMCUTS, TREECOVERCUTS, TREEGOMCUTS to 0.
   kMipNode = CALLBACK_EVENT_MIP_NODE,
 
   // Called in each iterate of an interior point/barrier method.
   //
-  // This event is supported for SolverType::kGurobi only.
+  // This event is supported for SolverType::kGurobi or SolverType::kXpress
+  // only.
   kBarrier = CALLBACK_EVENT_BARRIER,
 };
 
 MATH_OPT_DEFINE_ENUM(CallbackEvent, CALLBACK_EVENT_UNSPECIFIED);
+
+// Where a solution for a CALLBACK_EVENT_MIP_SOLUTION came from.
+enum class CallbackSolutionSource {
+  // The solution came from an LP relaxation that happened to be integer
+  // feasible.
+  kIntegral = CALLBACK_SOLUTION_SOURCE_INTEGRAL,
+  // The solution came from a heuristic.
+  kHeuristic = CALLBACK_SOLUTION_SOURCE_HEURISTIC,
+  // The solution came from a solution vector provided by the user.
+  // This may include solutions the solver had to "repair".
+  kUser = CALLBACK_SOLUTION_SOURCE_USER,
+};
+
+MATH_OPT_DEFINE_ENUM(CallbackSolutionSource,
+                     CALLBACK_SOLUTION_SOURCE_UNSPECIFIED);
 
 // Provided with a callback at the start of a Solve() to inform the solver:
 //   * what information the callback needs,
@@ -255,13 +279,17 @@ struct CallbackResult {
   };
 
   // Adds a "user cut," a linear constraint that excludes the current LP
-  // solution but does not cut off any integer points. Use only for
-  // CallbackEvent::kMipNode.
+  // solution but does not cut off any integer points.
+  // The constraint must be globally valid (and not only valid for the subtree
+  // rooted at the MIP search node at which the event was triggered).
+  // Use only for CallbackEvent::kMipNode.
   void AddUserCut(BoundedLinearExpression linear_constraint) {
     new_constraints.push_back({std::move(linear_constraint), false});
   }
 
   // Adds a "lazy constraint," a linear constraint that excludes integer points.
+  // The constraint must be globally valid (and not only valid for the subtree
+  // rooted at the MIP search node at which the event was triggered).
   // Use only for CallbackEvent::kMipNode and CallbackEvent::kMipSolution.
   void AddLazyConstraint(BoundedLinearExpression linear_constraint) {
     new_constraints.push_back({std::move(linear_constraint), true});
@@ -299,12 +327,13 @@ struct CallbackResult {
 
   // The user cuts and lazy constraints added. Prefer AddUserCut() and
   // AddLazyConstraint() to modifying this directly.
+  // All constraints are assumed to be globally valid.
   std::vector<GeneratedLinearConstraint> new_constraints;
 
   // A list of solutions (or partially defined solutions) to suggest to the
-  // solver. Some solvers (e.g. gurobi) will try and convert a partial solution
-  // into a full solution. Use only for CallbackEvent::kMipNode or
-  // CallbackEvent::kMipSolution.
+  // solver. Some solvers (e.g. gurobi or Xpress) will try and convert a
+  // partial solution into a full solution. Use only for
+  // CallbackEvent::kMipNode or CallbackEvent::kMipSolution.
   std::vector<VariableMap<double>> suggested_solutions;
 };
 
