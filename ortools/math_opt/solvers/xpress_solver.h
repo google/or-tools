@@ -105,6 +105,10 @@ class XpressSolver : public SolverInterface {
     return value < kPlusInf && value > kMinusInf;
   }
 
+ private:
+  static absl::flat_hash_set<CallbackEventProto> const SupportedMIPEvents_;
+  static absl::flat_hash_set<CallbackEventProto> const SupportedLPEvents_;
+
   absl::StatusOr<SolveResultProto> ExtractSolveResultProto(
       absl::Time start, const ModelSolveParametersProto& model_parameters,
       const SolveParametersProto& solve_parameters);
