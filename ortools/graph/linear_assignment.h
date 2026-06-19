@@ -201,6 +201,8 @@
 
 #include "absl/flags/declare.h"
 #include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_format.h"
 #include "ortools/base/base_export.h"
 #include "ortools/graph_base/iterators.h"

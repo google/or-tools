@@ -654,6 +654,8 @@ cc_library(
         "//ortools/util:permutation",
         "//ortools/util:zvector",
         "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings:str_format",
     ],
 )
