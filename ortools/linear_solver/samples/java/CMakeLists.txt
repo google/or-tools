@@ -16,6 +16,16 @@ if(NOT BUILD_JAVA_SAMPLES)
 endif()
 
 file(GLOB JAVA_SRCS "*.java")
+if(NOT USE_SCIP)
+  list(FILTER JAVA_SRCS EXCLUDE REGEX "/AssignmentGroupsMip.java$")
+  list(FILTER JAVA_SRCS EXCLUDE REGEX "/AssignmentMip.java$")
+  list(FILTER JAVA_SRCS EXCLUDE REGEX "/AssignmentTaskSizesMip.java$")
+  list(FILTER JAVA_SRCS EXCLUDE REGEX "/AssignmentTeamsMip.java$")
+  list(FILTER JAVA_SRCS EXCLUDE REGEX "/BinPackingMip.java$")
+  list(FILTER JAVA_SRCS EXCLUDE REGEX "/MipVarArray.java$")
+  list(FILTER JAVA_SRCS EXCLUDE REGEX "/MultipleKnapsackMip.java$")
+  list(FILTER JAVA_SRCS EXCLUDE REGEX "/SimpleMipProgram.java$")
+endif()
 foreach(SAMPLE IN LISTS JAVA_SRCS)
   add_java_sample(
     FILE_NAME ${SAMPLE}
