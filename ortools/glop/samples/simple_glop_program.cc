@@ -54,21 +54,21 @@ int RunLinearExample() {
   parameters.set_provide_strong_optimal_guarantee(true);
   solver.SetParameters(parameters);
 
-  ProblemStatus status = solver.Solve(lp);
-  if (status == ProblemStatus::OPTIMAL) {
-    std::cout << "Optimal solution found !" << std::endl;
-    // The objective value of the solution.
-    std::cout << "Optimal objective value = " << solver.GetObjectiveValue()
-              << std::endl;
-    // The value of each variable in the solution.
-    const DenseRow& values = solver.variable_values();
-    std::cout << "Solution:" << std::endl
-              << "x = " << values[col_x] << std::endl
-              << ", y = " << values[col_y] << std::endl;
-    return EXIT_SUCCESS;
-  } else {
+  const SolveStatus status = solver.SolveWithDetails(lp);
+  if (!status.Is<SolveStatus::Optimal>()) {
+    std::cout << "No solution found: " << status << "!" << std::endl;
     return EXIT_FAILURE;
   }
+  std::cout << "Optimal solution found !" << std::endl;
+  // The objective value of the solution.
+  std::cout << "Optimal objective value = " << solver.GetObjectiveValue()
+            << std::endl;
+  // The value of each variable in the solution.
+  const DenseRow& values = solver.variable_values();
+  std::cout << "Solution:" << std::endl
+            << "x = " << values[col_x] << std::endl
+            << ", y = " << values[col_y] << std::endl;
+  return EXIT_SUCCESS;
 }
 }  // namespace operations_research::glop
 

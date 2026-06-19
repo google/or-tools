@@ -54,6 +54,14 @@ template <typename Alternative>
       ::testing::Field("cause", &Alternative::cause, m));
 }
 
+// Matches a given SolveStatus with the provided matcher for its
+// SolveStatus::problem_status().
+//
+// See SolveStatusWith() and SolveStatusWithCause() for matching a specific
+// alternative and/or its data.
+::testing::Matcher<SolveStatus> SolveStatusProblemStatusIs(
+    ::testing::Matcher<const ProblemStatus&> m);
+
 }  // namespace operations_research::glop
 
 #endif  // ORTOOLS_LP_DATA_LP_TYPES_TESTING_H_

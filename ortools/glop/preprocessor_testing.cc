@@ -20,6 +20,7 @@
 #include "ortools/base/gmock.h"
 #include "ortools/glop/preprocessor.h"
 #include "ortools/lp_data/lp_types.h"
+#include "ortools/lp_data/lp_types_testing.h"
 
 namespace operations_research::glop {
 
@@ -39,10 +40,8 @@ testing::Matcher<Preprocessor::Result> PreprocessorResultIs(
       testing::Field("postsolve_is_needed",
                      &Preprocessor::Result::postsolve_is_needed,
                      std::move(postsolve_is_needed)),
-      testing::Field(
-          "solve_status", &Preprocessor::Result::solve_status,
-          testing::Optional(testing::Property(
-              "problem_status", &SolveStatus::problem_status, *status))));
+      testing::Field("solve_status", &Preprocessor::Result::solve_status,
+                     ::testing::Optional(SolveStatusProblemStatusIs(*status))));
 }
 
 }  // namespace operations_research::glop

@@ -414,6 +414,7 @@ cc_library(
         ":preprocessor",
         "//ortools/base:gmock",
         "//ortools/lp_data:lp_types",
+        "//ortools/lp_data:lp_types_testing",
     ],
 )
 

@@ -31,4 +31,9 @@ namespace operations_research::glop {
                           ::testing::Optional(cause));
 }
 
+::testing::Matcher<SolveStatus> SolveStatusProblemStatusIs(
+    ::testing::Matcher<const ProblemStatus&> m) {
+  return ::testing::Property("problem_status", &SolveStatus::problem_status, m);
+}
+
 }  // namespace operations_research::glop
