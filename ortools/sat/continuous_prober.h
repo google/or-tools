@@ -44,6 +44,7 @@
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/synchronization.h"
+#include "ortools/util/running_stat.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -70,6 +71,7 @@ class ContinuousProber {
   static const int kTestLimitPeriod = 20;
   static const int kLogPeriod = 5000;
   static const int kSyncPeriod = 50;
+  static const int kShavingUpdateFrequency = 20;
 
   struct MethodStats {
     explicit MethodStats(absl::string_view name = "") : name(name) {}
@@ -101,6 +103,7 @@ class ContinuousProber {
   bool ReportStatus(SatSolver::Status status);
   void LogStatistics();
   SatSolver::Status PeriodicSyncAndCheck();
+  void AdaptShavingMultiplier(bool success);
 
   MethodStats GetStats(Prober* prober) const;
   static void AddStats(MethodStats& total_stats, const MethodStats& start_stats,
@@ -162,6 +165,8 @@ class ContinuousProber {
   bool use_shaving_ = false;
   std::vector<std::vector<Literal>> tmp_dnf_;
   std::vector<Literal> tmp_literals_;
+  RunningAverage shaving_success_rate_;
+  int update_frequency_ = kShavingUpdateFrequency;
 };
 
 }  // namespace sat

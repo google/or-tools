@@ -54,12 +54,12 @@ struct SharedClasses {
   SharedStatistics* const stats;
   SharedStatTables* const stat_tables;
   SharedResponseManager* const response;
-  SharedTreeManager* const shared_tree_manager;
   SharedLsSolutionRepository* const ls_hints;
   SolverProgressLogger* const progress_logger;
   SharedLratProofStatus* const lrat_proof_status;
 
   // These can be nullptr depending on the options.
+  std::unique_ptr<SharedTreeManager> shared_tree_manager;
   std::unique_ptr<SharedBoundsManager> bounds;
   std::unique_ptr<SharedLPSolutionRepository> lp_solutions;
   std::unique_ptr<SharedIncompleteSolutionManager> incomplete_solutions;
@@ -73,6 +73,8 @@ struct SharedClasses {
   bool SearchIsDone();
 
   void LogFinalStatistics();
+
+  void InitSharedTreeManager(Model* model);
 };
 
 // Loads a CpModelProto inside the given model.

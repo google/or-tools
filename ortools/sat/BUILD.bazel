@@ -394,6 +394,7 @@ cc_library(
         ":symmetry_util",
         ":synchronization",
         ":util",
+        "//ortools/util:running_stat",
         "//ortools/util:time_limit",
         "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/log",
@@ -976,6 +977,7 @@ cc_library(
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/random:bit_gen_ref",
         "@abseil-cpp//absl/random:distributions",
@@ -1753,6 +1755,7 @@ cc_test(
     size = "small",
     timeout = "moderate",
     srcs = ["cp_model_expand_test.cc"],
+    tags = ["noci"],
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_checker",

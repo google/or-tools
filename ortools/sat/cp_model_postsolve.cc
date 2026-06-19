@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <limits>
+#include <string>
 #include <vector>
 
 #include "absl/log/check.h"
@@ -98,7 +99,6 @@ void PostsolveExactlyOne(const ConstraintProto& ct,
 // There must be one.
 void SetEnforcementLiteralToFalse(const ConstraintProto& ct,
                                   std::vector<Domain>* domains) {
-  CHECK(!ct.enforcement_literal().empty()) << ProtobufShortDebugString(ct);
   bool has_free_enforcement_literal = false;
   for (const int enf : ct.enforcement_literal()) {
     if ((*domains)[PositiveRef(enf)].IsFixed()) continue;
@@ -111,9 +111,13 @@ void SetEnforcementLiteralToFalse(const ConstraintProto& ct,
     break;
   }
   if (!has_free_enforcement_literal) {
+    std::string domain_info = "\n";
+    for (const int var : UsedVariables(ct)) {
+      absl::StrAppend(&domain_info, var, ":", (*domains)[var].ToString(), "\n");
+    }
     LOG(FATAL)
-        << "Unsatisfied linear constraint with no free enforcement literal: "
-        << ProtobufShortDebugString(ct);
+        << "Unsatisfied linear constraint with no free enforcement literal:\n"
+        << ProtobufShortDebugString(ct) << domain_info;
   }
 }
 

@@ -72,7 +72,8 @@ ContinuousProber::ContinuousProber(const CpModelProto& model_proto,
       shared_bounds_manager_(model->Mutable<SharedBoundsManager>()),
       shared_stats_(model->Mutable<SharedStatistics>()),
       random_(*model->GetOrCreate<ModelRandomGenerator>()),
-      base_dtime_(parameters_.shaving_deterministic_time_in_probing_search()) {
+      base_dtime_(parameters_.shaving_deterministic_time_in_probing_search()),
+      shaving_success_rate_(/*average_window_size=*/100) {
   auto* mapping = model_->GetOrCreate<CpModelMapping>();
   absl::flat_hash_set<BooleanVariable> visited;
 
@@ -140,11 +141,6 @@ SatSolver::Status ContinuousProber::Probe() {
 
   while (!time_limit_->LimitReached()) {
     const double kMaxProbingTimePerMethod = 0.1;
-    // Store current statistics to detect shaving without any improvement.
-    int64_t starting_shaving_literals =
-        counters_.shaving.num_new_literals_fixed;
-    int64_t starting_shaving_bounds = counters_.shaving.num_new_bounds;
-
     std::optional<SatSolver::Status> status = ProbeIntegerVariables(
         time_limit_->GetElapsedDeterministicTime() + kMaxProbingTimePerMethod);
     if (status.has_value()) return status.value();
@@ -181,22 +177,6 @@ SatSolver::Status ContinuousProber::Probe() {
 
       // Alternate between shaving and non-shaving phases.
       if (use_shaving_) {
-        if (counters_.shaving.num_new_literals_fixed >
-                starting_shaving_literals ||
-            counters_.shaving.num_new_bounds > starting_shaving_bounds) {
-          // We improved something. We reduce the multiplier by a factor of 2.
-          // TODO(user): We could not go below 1.0 and increase the base
-          // dtime.
-          limit_multiplier_ = std::max(1.0, limit_multiplier_ / 2);
-
-          // Update reference counters.
-          starting_shaving_literals = counters_.shaving.num_new_literals_fixed;
-          starting_shaving_bounds = counters_.shaving.num_new_bounds;
-        } else if (limit_multiplier_ < 16.0) {
-          limit_multiplier_ *= 1.5;  // Cap the maximum limit to 16 * dtime.
-        }
-
-        // Alternating shaving and non-shaving iterations.
         use_shaving_ = false;
       } else {
         use_shaving_ = base_dtime_ > 0.0;
@@ -533,6 +513,25 @@ bool ContinuousProber::IsOrbitRepresentative(int var) const {
   return var_to_representative_[var] == var;
 }
 
+void ContinuousProber::AdaptShavingMultiplier(bool success) {
+  if (success) {
+    shaving_success_rate_.Add(1.0);
+  } else {
+    shaving_success_rate_.Add(0.0);
+  }
+  // TODO(user): Try to wait until the window is full before adapting the
+  // multiplier.
+  if (--update_frequency_ <= 0) {
+    update_frequency_ = kShavingUpdateFrequency;
+    const double rate = shaving_success_rate_.WindowAverage();
+    if (rate > 0.5 && limit_multiplier_ > 0.5) {
+      limit_multiplier_ = std::max(0.5, limit_multiplier_ * 0.95);
+    } else if (rate < 0.05 && limit_multiplier_ < 10.0) {
+      limit_multiplier_ = std::min(20.0, limit_multiplier_ * 1.1);
+    }
+  }
+}
+
 SatSolver::Status ContinuousProber::ShaveLiteral(
     Literal literal, bool literal_is_an_integer_bound) {
   if (trail_->Assignment().LiteralIsAssigned(literal)) {
@@ -548,6 +547,8 @@ SatSolver::Status ContinuousProber::ShaveLiteral(
                                 base_dtime_ * limit_multiplier_));
   const SatSolver::Status status =
       ResetAndSolveIntegerProblem({literal}, model_);
+  AdaptShavingMultiplier(status == SatSolver::ASSUMPTIONS_UNSAT ||
+                         status == SatSolver::FEASIBLE);
   time_limit_->ChangeDeterministicLimit(original_dtime_limit);
   if (ReportStatus(status)) return status;
 

@@ -17,7 +17,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
-#include <limits>
 #include <string>
 #include <utility>
 #include <vector>
@@ -26,6 +25,7 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/random/distributions.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
@@ -618,15 +618,17 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     new_params.set_cp_model_presolve(true);
     new_params.set_cp_model_probing_level(0);
     new_params.set_symmetry_level(0);
-    if (base_params.use_dual_scheduling_heuristics()) {
-      AddExtraSchedulingPropagators(new_params);
-    }
-
     strategies["objective_shaving"] = new_params;
 
     new_params.set_linearization_level(0);
     strategies["objective_shaving_no_lp"] = new_params;
 
+    // TODO(user): These are really slow, we should probably tune them.
+    // For now we only add them where we already have a slow LP.
+    // Note that this is the same logic for "objective_lb_search" above.
+    if (base_params.use_dual_scheduling_heuristics()) {
+      AddExtraSchedulingPropagators(new_params);
+    }
     new_params.set_linearization_level(2);
     strategies["objective_shaving_max_lp"] = new_params;
   }
@@ -878,7 +880,6 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
 //   - Different propatation levels for scheduling constraints
 std::vector<SatParameters> GetFullWorkerParameters(
     const SatParameters& base_params, const CpModelProto& cp_model,
-    int num_already_present, int num_shared_tree_workers,
     SubsolverNameFilter* filter) {
   // Defines a set of named strategies so it is easier to read in one place
   // the one that are used. See below.
@@ -1033,6 +1034,8 @@ std::vector<SatParameters> GetFullWorkerParameters(
   if (base_params.interleave_search()) return result;
 
   // Apply the logic for how many we keep.
+  const int num_shared_tree_workers = base_params.shared_tree_num_workers();
+  DCHECK_GE(num_shared_tree_workers, 0);
   int target_subsolver_size = base_params.num_full_subsolvers();
   const bool force_num_full_subsolvers = target_subsolver_size > 0;
   if (target_subsolver_size == 0) {
@@ -1048,13 +1051,7 @@ std::vector<SatParameters> GetFullWorkerParameters(
     };
     target_subsolver_size =
         std::max(0, heuristic_num_workers(base_params.num_workers()) -
-                        num_shared_tree_workers - num_already_present);
-    VLOG(2) << "######## num_to_keep: " << target_subsolver_size
-            << " num_shared_tree_workers: " << num_shared_tree_workers
-            << " num_workers: " << base_params.num_workers()
-            << " num_already_present: " << num_already_present
-            << " num_full_subsolvers: " << base_params.num_full_subsolvers()
-            << " #results: " << result.size();
+                        num_shared_tree_workers);
   } else {
     // We cap the number of subsolvers by the number of workers.
     target_subsolver_size =
@@ -1070,6 +1067,14 @@ std::vector<SatParameters> GetFullWorkerParameters(
     while (result.size() < target_subsolver_size) {
       result.push_back(result[0]);
     }
+  }
+
+  // Add shared tree workers if asked.
+  for (int i = 0; i < num_shared_tree_workers; ++i) {
+    SatParameters params = strategies.at("shared_tree");
+    params.set_random_seed(CombineSeed(
+        base_params.random_seed(), static_cast<int64_t>(result.size()) + 1));
+    result.push_back(params);
   }
 
   return result;

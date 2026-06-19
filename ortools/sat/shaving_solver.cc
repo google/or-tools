@@ -82,7 +82,7 @@ std::function<void()> ObjectiveShavingSolver::GenerateTask(int64_t task_id) {
   return [this, task_id]() {
     if (ResetAndSolveModel(task_id)) {
       const CpSolverResponse local_response =
-          local_sat_model_->GetOrCreate<SharedResponseManager>()->GetResponse();
+          local_model_->GetOrCreate<SharedResponseManager>()->GetResponse();
 
       if (local_response.status() == CpSolverStatus::OPTIMAL ||
           local_response.status() == CpSolverStatus::FEASIBLE) {
@@ -104,9 +104,9 @@ std::function<void()> ObjectiveShavingSolver::GenerateTask(int64_t task_id) {
 
     absl::MutexLock mutex_lock(mutex_);
     task_in_flight_ = false;
-    if (local_sat_model_ != nullptr) {
-      const double dtime = local_sat_model_->GetOrCreate<TimeLimit>()
-                               ->GetElapsedDeterministicTime();
+    if (local_model_ != nullptr) {
+      const double dtime =
+          local_model_->GetOrCreate<TimeLimit>()->GetElapsedDeterministicTime();
       AddTaskDeterministicDuration(dtime);
       shared_->time_limit->AdvanceDeterministicTime(dtime);
     }
@@ -128,6 +128,9 @@ void ObjectiveShavingSolver::Synchronize() {
   }
 
   // The current objective lower bound has been improved, restarting.
+  //
+  // TODO(user): If we are exploring a range with current_objective_target_ub_
+  // still greater, it probably do not make sense to restart.
   if (shared_->response->GetInnerObjectiveLowerBound() > objective_lb_) {
     stop_current_chunk_.store(true);
   }
@@ -169,16 +172,16 @@ void ObjectiveShavingSolver::ResetModel() {
 }
 
 bool ObjectiveShavingSolver::ResetAndSolveModel(int64_t task_id) {
-  local_sat_model_ = std::make_unique<Model>(name());
-  *local_sat_model_->GetOrCreate<SatParameters>() = local_params_;
-  local_sat_model_->GetOrCreate<SatParameters>()->set_random_seed(
+  local_model_ = std::make_unique<Model>(name());
+  *local_model_->GetOrCreate<SatParameters>() = local_params_;
+  local_model_->GetOrCreate<SatParameters>()->set_random_seed(
       CombineSeed(local_params_.random_seed(), task_id));
 
-  auto* time_limit = local_sat_model_->GetOrCreate<TimeLimit>();
+  auto* time_limit = local_model_->GetOrCreate<TimeLimit>();
   shared_->time_limit->UpdateLocalLimit(time_limit);
   time_limit->RegisterSecondaryExternalBooleanAsLimit(&stop_current_chunk_);
 
-  auto* random = local_sat_model_->GetOrCreate<ModelRandomGenerator>();
+  auto* random = local_model_->GetOrCreate<ModelRandomGenerator>();
 
   // We copy the model.
   ResetModel();
@@ -192,7 +195,7 @@ bool ObjectiveShavingSolver::ResetAndSolveModel(int64_t task_id) {
     absl::MutexLock mutex_lock(mutex_);
     objective_lb = objective_lb_;
     if (objective_ub_ - objective_lb <=
-        local_params_.shaving_search_threshold()) {
+        local_params_.objective_shaving_search_threshold()) {
       current_objective_target_ub_ = objective_lb;
     } else {
       const IntegerValue mid = (objective_ub_ - objective_lb) / 2;
@@ -237,13 +240,13 @@ bool ObjectiveShavingSolver::ResetAndSolveModel(int64_t task_id) {
   // Clear the objective.
   local_proto_->clear_objective();
   local_proto_->set_name(absl::StrCat(local_proto_->name(), "_obj_shaving_",
-                                      objective_lb.value()));
+                                      chosen_objective_ub.value()));
 
   // Dump?
   if (absl::GetFlag(FLAGS_cp_model_dump_submodels)) {
-    const std::string name =
-        absl::StrCat(absl::GetFlag(FLAGS_cp_model_dump_prefix),
-                     "objective_shaving_", objective_lb.value(), ".pb.txt");
+    const std::string name = absl::StrCat(
+        absl::GetFlag(FLAGS_cp_model_dump_prefix), "objective_shaving_",
+        chosen_objective_ub.value(), ".pb.txt");
     LOG(INFO) << "Dumping objective shaving model to '" << name << "'.";
     CHECK(WriteModelProtoToFile(*local_proto_, name));
   }
@@ -253,7 +256,7 @@ bool ObjectiveShavingSolver::ResetAndSolveModel(int64_t task_id) {
     mapping_proto_.Clear();
     postsolve_mapping_.clear();
     auto context = std::make_unique<PresolveContext>(
-        local_sat_model_.get(), local_proto_, &mapping_proto_);
+        local_model_.get(), local_proto_, &mapping_proto_);
     const CpSolverStatus presolve_status =
         PresolveCpModel(context.get(), &postsolve_mapping_);
     if (presolve_status == CpSolverStatus::INFEASIBLE) {
@@ -273,7 +276,8 @@ bool ObjectiveShavingSolver::ResetAndSolveModel(int64_t task_id) {
   // such non fully-presolved model.
   if (time_limit->LimitReached()) return false;
 
-  LoadCpModel(*local_proto_, local_sat_model_.get());
+  LoadCpModel(*local_proto_, local_model_.get());
+  SolveLoadedCpModel(*local_proto_, local_model_.get());
   return true;
 }
 

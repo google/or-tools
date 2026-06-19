@@ -115,7 +115,6 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
 class SubsolverNameFilter;
 std::vector<SatParameters> GetFullWorkerParameters(
     const SatParameters& base_params, const CpModelProto& cp_model,
-    int num_already_present, int num_shared_tree_workers,
     SubsolverNameFilter* name_filter);
 
 // Given a base set of parameter, if non-empty, this repeat them (round-robbin)

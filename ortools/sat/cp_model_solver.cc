@@ -847,7 +847,9 @@ void LaunchSubsolvers(Model* global_model, SharedClasses* shared,
     subsolvers[i].reset();
   }
 
-  shared->shared_tree_manager->CloseLratProof();
+  if (shared->shared_tree_manager != nullptr) {
+    shared->shared_tree_manager->CloseLratProof();
+  }
   if (shared->response->ProblemIsSolved() &&
       !shared->response->HasFeasibleSolution()) {
     LratMerger(global_model)
@@ -1954,16 +1956,47 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
   NeighborhoodGeneratorHelper* helper = unique_helper.get();
   subsolvers.push_back(std::move(unique_helper));
 
+  // Compute the number of shared tree workers.
+  {
+    SatParameters* mutable_params = global_model->GetOrCreate<SatParameters>();
+    if (shared->model_proto.assumptions().empty()) {
+      int num_shared_tree_workers = params.shared_tree_num_workers();
+      // Set the number of shared tree workers if it was not set.
+      // Note: it has to be done after presolve, as presolve might empty
+      // the objective.
+      if (num_shared_tree_workers == -1) {
+        if (shared->model_proto.has_objective() &&
+            !shared->model_proto.objective().vars().empty()) {
+          // We reserve 16 workers for the main solver, and then we split the
+          // rest between the main solver and the shared tree search.
+          num_shared_tree_workers =
+              std::max((params.num_workers() - 16) / 2, 0);
+        } else {
+          num_shared_tree_workers = std::max((params.num_workers() - 8) / 2, 0);
+        }
+      }
+
+      // We need at least 4 workers for the shared tree search to be efficient.
+      if (num_shared_tree_workers >= 4) {
+        SOLVER_LOG(shared->logger, "Setting number of shared tree workers to ",
+                   num_shared_tree_workers);
+        mutable_params->set_shared_tree_num_workers(num_shared_tree_workers);
+        shared->InitSharedTreeManager(global_model);
+      } else {
+        SOLVER_LOG(shared->logger, "Not using shared tree search.");
+        mutable_params->set_shared_tree_num_workers(0);
+      }
+    } else if (params.shared_tree_num_workers() != 0) {
+      mutable_params->set_shared_tree_num_workers(0);
+      SOLVER_LOG(shared->logger,
+                 "Disabling shared tree search for problems with "
+                 "assumptions.");
+    }
+  }
+
   // Add full problem solvers.
-  const int actual_num_shared_tree_workers =
-      shared->shared_tree_manager->NumWorkers() >= 2 &&
-              shared->model_proto.assumptions().empty()
-          ? shared->shared_tree_manager->NumWorkers()
-          : 0;
-  for (const SatParameters& local_params : GetFullWorkerParameters(
-           params, shared->model_proto,
-           /*num_already_present=*/full_worker_subsolvers.size(),
-           actual_num_shared_tree_workers, &name_filter)) {
+  for (const SatParameters& local_params :
+       GetFullWorkerParameters(params, shared->model_proto, &name_filter)) {
     if (!name_filter.Keep(local_params.name())) continue;
 
     // TODO(user): This is currently not supported here.
@@ -1979,17 +2012,6 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
     full_worker_subsolvers.push_back(std::make_unique<FullProblemSolver>(
         local_params.name(), local_params,
         /*split_in_chunks=*/params.interleave_search(), shared));
-  }
-
-  // Add shared tree workers if asked.
-  if (actual_num_shared_tree_workers > 0) {
-    for (const SatParameters& local_params : RepeatParameters(
-             name_filter.Filter({name_to_params.at("shared_tree")}),
-             actual_num_shared_tree_workers)) {
-      full_worker_subsolvers.push_back(std::make_unique<FullProblemSolver>(
-          local_params.name(), local_params,
-          /*split_in_chunks=*/params.interleave_search(), shared));
-    }
   }
 
   // Add FeasibilityPumpSolver if enabled.
@@ -2250,7 +2272,7 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
       }
     }
 
-    if (has_no_overlap_or_cumulative) {
+    if (has_no_overlap_or_cumulative && name_filter.Keep("ls_scheduling")) {
       interleaved_subsolvers.push_back(
           std::make_unique<SchedulingLocalSearchSolver>(
               "ls_scheduling", SubSolver::INCOMPLETE, shared->model_proto,
@@ -3009,32 +3031,6 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
     // If we don't have any generator, better to just clear the field.
     if (new_cp_model_proto->symmetry().permutations().empty()) {
       new_cp_model_proto->clear_symmetry();
-    }
-  }
-
-  // Set the number of shared tree workers if it was not set.
-  // Note, it has to be done here, after presolve, as presolve might empty the
-  // objective, and before the SharedClasses is created.
-  if (params.shared_tree_num_workers() == -1) {
-    int num_shared_tree_workers = 0;
-    if (new_cp_model_proto->assumptions().empty()) {
-      if (new_cp_model_proto->has_objective() &&
-          !new_cp_model_proto->objective().vars().empty()) {
-        num_shared_tree_workers = (params.num_workers() - 16) / 2;
-      } else {
-        num_shared_tree_workers = (params.num_workers() - 8) / 2;
-      }
-    }
-
-    // We need at least 4 workers for the shared tree search to be efficient.
-    if (num_shared_tree_workers >= 4) {
-      SOLVER_LOG(logger, "Setting number of shared tree workers to ",
-                 num_shared_tree_workers);
-      model->GetOrCreate<SatParameters>()->set_shared_tree_num_workers(
-          num_shared_tree_workers);
-    } else {
-      SOLVER_LOG(logger, "Not using shared tree search.");
-      model->GetOrCreate<SatParameters>()->set_shared_tree_num_workers(0);
     }
   }
 

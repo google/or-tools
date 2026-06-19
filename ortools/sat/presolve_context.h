@@ -780,6 +780,13 @@ class PresolveContext {
   // done elsewhere.
   bool MarkConstraintAsFalse(ConstraintProto* ct, std::string_view reason);
 
+  // Replace the constraint (keeping the same enforcement literals) by
+  // expr \in domain.
+  bool MarkConstraintAsEquivalentToLinear(ConstraintProto* ct,
+                                          const LinearExpressionProto& expr,
+                                          const Domain& domain,
+                                          std::string_view reason);
+
   // Checks if a constraint contains an enforcement literal set to false,
   // or if it has been cleared.
   bool ConstraintIsInactive(int ct_index) const;

@@ -2177,7 +2177,6 @@ SharedClasses::SharedClasses(const CpModelProto* proto, Model* global_model)
       stats(global_model->GetOrCreate<SharedStatistics>()),
       stat_tables(global_model->GetOrCreate<SharedStatTables>()),
       response(global_model->GetOrCreate<SharedResponseManager>()),
-      shared_tree_manager(global_model->GetOrCreate<SharedTreeManager>()),
       ls_hints(global_model->GetOrCreate<SharedLsSolutionRepository>()),
       progress_logger(global_model->GetOrCreate<SolverProgressLogger>()),
       lrat_proof_status(global_model->GetOrCreate<SharedLratProofStatus>()) {
@@ -2218,11 +2217,18 @@ SharedClasses::SharedClasses(const CpModelProto* proto, Model* global_model)
   }
 }
 
+void SharedClasses::InitSharedTreeManager(Model* model) {
+  CHECK(shared_tree_manager == nullptr);
+  shared_tree_manager = std::make_unique<SharedTreeManager>(model);
+}
+
 void SharedClasses::RegisterSharedClassesInLocalModel(Model* local_model) {
   // Note that we do not register the logger which is not a shared class.
   local_model->Register<SharedResponseManager>(response);
   local_model->Register<SharedLsSolutionRepository>(ls_hints);
-  local_model->Register<SharedTreeManager>(shared_tree_manager);
+  if (shared_tree_manager != nullptr) {
+    local_model->Register<SharedTreeManager>(shared_tree_manager.get());
+  }
   local_model->Register<SharedStatistics>(stats);
   local_model->Register<SharedStatTables>(stat_tables);
   local_model->Register<SharedLratProofStatus>(lrat_proof_status);

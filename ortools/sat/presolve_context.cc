@@ -779,6 +779,27 @@ bool PresolveContext::MarkConstraintAsFalse(ConstraintProto* ct,
   return true;
 }
 
+bool PresolveContext::MarkConstraintAsEquivalentToLinear(
+    ConstraintProto* ct, const LinearExpressionProto& expr,
+    const Domain& domain, std::string_view reason) {
+  DCHECK(!reason.empty());
+  if (!HasEnforcementLiteral(*ct)) {
+    const bool ret = IntersectDomainWith(expr, domain);
+    ct->Clear();
+    return ret;
+  }
+  const Domain intersection = DomainSuperSetOf(expr).IntersectionWith(domain);
+  if (intersection.IsEmpty()) {
+    return MarkConstraintAsFalse(ct, reason);
+  }
+  const LinearExpressionProto expr_copy = expr;
+  ct->mutable_linear()->Clear();  // This clear the other one_of possibilities.
+  FillDomainInProto(intersection, ct->mutable_linear());
+  AddLinearExpressionToLinearConstraint(expr_copy, 1, ct->mutable_linear());
+  UpdateRuleStats(reason);
+  return true;
+}
+
 bool PresolveContext::ConstraintIsOptional(int ct_ref) const {
   const ConstraintProto& ct = working_model_->constraints(ct_ref);
   bool contains_one_free_literal = false;
