@@ -12,6 +12,9 @@
 # limitations under the License.
 
 file(GLOB _SRCS "*.h" "*.cc")
+list(FILTER _SRCS EXCLUDE REGEX ".*/.*_test.cc")
+list(FILTER _SRCS EXCLUDE REGEX ".*/.*_testing.cc")
+list(FILTER _SRCS EXCLUDE REGEX ".*/.*_testing.h")
 set(NAME ${PROJECT_NAME}_lp_data)
 
 # Will be merge in libortools.so

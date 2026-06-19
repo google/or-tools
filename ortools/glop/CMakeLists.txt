@@ -13,6 +13,8 @@
 
 file(GLOB _SRCS "*.h" "*.cc")
 list(FILTER _SRCS EXCLUDE REGEX ".*/.*_test.cc")
+list(FILTER _SRCS EXCLUDE REGEX ".*/preprocessor_testing.cc")
+list(FILTER _SRCS EXCLUDE REGEX ".*/preprocessor_testing.h")
 set(NAME ${PROJECT_NAME}_glop)
 
 # Will be merge in libortools.so
