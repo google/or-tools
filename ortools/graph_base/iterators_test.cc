@@ -13,6 +13,7 @@
 
 #include "ortools/graph_base/iterators.h"
 
+#include <concepts>
 #include <cstdint>
 #include <iterator>
 #include <vector>
@@ -25,10 +26,12 @@ namespace {
 
 DEFINE_STRONG_INT_TYPE(TestIndex, int64_t);
 
-#if __cplusplus >= 202002L
 static_assert(std::random_access_iterator<IntegerRangeIterator<int>>);
 static_assert(std::random_access_iterator<IntegerRangeIterator<TestIndex>>);
-#endif  // __cplusplus >= 202002L
+static_assert(
+    std::same_as<std::iterator_traits<
+                     IntegerRangeIterator<TestIndex>>::iterator_category,
+                 std::random_access_iterator_tag>);
 
 TEST(IntegerRangeTest, VariousEmptyRanges) {
   bool went_inside = false;

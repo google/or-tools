@@ -493,7 +493,7 @@ FlowGraph<NodeIndexType, ArcIndexType>::Builder::Build(
     }
     permutation->swap(perm);
   }
-  return std::move(graph);
+  return graph;
 }
 
 }  // namespace util

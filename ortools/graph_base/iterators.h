@@ -16,8 +16,10 @@
 #ifndef UTIL_GRAPH_ITERATORS_H_
 #define UTIL_GRAPH_ITERATORS_H_
 
+#include <compare>
 #include <cstddef>
 #include <iterator>
+#include <type_traits>
 #include <utility>
 
 #include "absl/log/check.h"
@@ -116,26 +118,30 @@ BeginEndReverseIteratorWrapper<Container> Reverse(const Container& c) {
   return BeginEndReverseIteratorWrapper<Container>(c);
 }
 
+namespace iterators_internal {
+
+template <typename IndexType>
+constexpr auto GetValue(IndexType x) {
+  if constexpr (std::is_integral_v<IndexType>) {
+    return x;
+  } else {
+    return static_cast<typename IndexType::ValueType>(x);
+  }
+}
+
+}  // namespace iterators_internal
+
 // Simple iterator on an integer range, see `IntegerRange` below.
 // `IntegerType` can be any signed integer type, or strong integer type that
 // defines usual operations (e.g. `gtl::IntType<T>`).
 template <typename IntegerType>
-class IntegerRangeIterator
-// TODO(b/385094969): In C++17, `std::iterator_traits<Iterator>` required
-// explicitly specifying the iterator category. Remove this when backwards
-// compatibility with C++17 is no longer needed.
-#if __cplusplus < 201703L
-    : public std::iterator<std::input_iterator_tag, IntegerType>
-#endif
-{
+class IntegerRangeIterator {
  public:
-  using difference_type = ptrdiff_t;
+  using difference_type =
+      std::make_signed_t<decltype(iterators_internal::GetValue(
+          IntegerType(0)))>;
   using value_type = IntegerType;
-#if __cplusplus >= 201703L && __cplusplus < 202002L
-  using iterator_category = std::input_iterator_tag;
-  using pointer = IntegerType*;
-  using reference = IntegerType&;
-#endif
+  using iterator_category = std::random_access_iterator_tag;
 
   IntegerRangeIterator() : index_{} {}
 
@@ -143,26 +149,8 @@ class IntegerRangeIterator
 
   IntegerType operator*() const { return index_; }
 
-  // TODO(b/385094969): Use `=default` when backwards compatibility with C++17
-  // is no longer needed.
-  bool operator==(const IntegerRangeIterator& other) const {
-    return index_ == other.index_;
-  }
-  bool operator!=(const IntegerRangeIterator& other) const {
-    return index_ != other.index_;
-  }
-  bool operator<(const IntegerRangeIterator& other) const {
-    return index_ < other.index_;
-  }
-  bool operator>(const IntegerRangeIterator& other) const {
-    return index_ > other.index_;
-  }
-  bool operator<=(const IntegerRangeIterator& other) const {
-    return index_ <= other.index_;
-  }
-  bool operator>=(const IntegerRangeIterator& other) const {
-    return index_ >= other.index_;
-  }
+  friend std::strong_ordering operator<=>(
+      const IntegerRangeIterator& l, const IntegerRangeIterator& r) = default;
 
   IntegerRangeIterator& operator++() {
     ++index_;
@@ -215,7 +203,8 @@ class IntegerRangeIterator
 
   friend difference_type operator-(const IntegerRangeIterator l,
                                    const IntegerRangeIterator r) {
-    return static_cast<difference_type>(l.index_ - r.index_);
+    return static_cast<difference_type>(l.index_) -
+           static_cast<difference_type>(r.index_);
   }
 
  private:

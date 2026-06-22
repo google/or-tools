@@ -86,7 +86,8 @@ namespace graph {
 //   std::vector<pair<int, int>> arcs = {{.., ..}, ..., };
 //   OR_ASSIGN_OR_RETURN(
 //       std::vector<int> topo_order,
-//       FastTopologicalSort(util::StaticGraph<>::FromArcs(num_nodes, arcs)));
+//       FastTopologicalSort(util::GraphFromArcs<util::StaticGraph<>>(num_nodes,
+//       arcs)));
 //
 template <class AdjacencyLists>  // vector<vector<int>>, util::StaticGraph<>, ..
 absl::StatusOr<
@@ -154,7 +155,7 @@ std::vector<T> StableTopologicalSortOrDie(
 inline ABSL_MUST_USE_RESULT std::vector<int> FindCycleInDenseIntGraph(
     int num_nodes, const std::vector<std::pair<int, int>>& arcs) {
   return util::graph::FindCycleInGraph(
-             util::StaticGraph<>::FromArcs(num_nodes, arcs))
+             util::GraphFromArcs<util::StaticGraph<int, int>>(num_nodes, arcs))
       .value();
 }
 
