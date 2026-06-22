@@ -20,6 +20,7 @@ py_test(
     name = "all_different_except_zero_sample_sat_py3",
     srcs = ["all_different_except_zero_sample_sat.py"],
     main = "all_different_except_zero_sample_sat.py",
+    tags = ["noci"],
     deps = ["//ortools/sat/python:cp_model"],
 )
 
@@ -41,6 +42,7 @@ py_test(
     name = "assignment_sat_py3",
     srcs = ["assignment_sat.py"],
     main = "assignment_sat.py",
+    tags = ["noci"],
     deps = [
         requirement("pandas"),
         "//ortools/sat/python:cp_model",
@@ -67,6 +69,7 @@ py_test(
     name = "assignment_groups_sat_py3",
     srcs = ["assignment_groups_sat.py"],
     main = "assignment_groups_sat.py",
+    tags = ["noci"],
     deps = ["//ortools/sat/python:cp_model"],
 )
 
@@ -111,6 +114,7 @@ py_test(
     name = "assignment_teams_sat_py3",
     srcs = ["assignment_teams_sat.py"],
     main = "assignment_teams_sat.py",
+    tags = ["noci"],
     deps = ["//ortools/sat/python:cp_model"],
 )
 
@@ -144,6 +148,7 @@ py_test(
     name = "assumptions_sample_sat_py3",
     srcs = ["assumptions_sample_sat.py"],
     main = "assumptions_sample_sat.py",
+    tags = ["noci"],
     deps = ["//ortools/sat/python:cp_model"],
 )
 
@@ -181,6 +186,7 @@ py_test(
     name = "bin_packing_sat_py3",
     srcs = ["bin_packing_sat.py"],
     main = "bin_packing_sat.py",
+    tags = ["noci"],
     deps = [
         requirement("pandas"),
         "//ortools/sat/python:cp_model",
@@ -216,6 +222,7 @@ py_test(
     name = "bool_or_sample_sat_py3",
     srcs = ["bool_or_sample_sat.py"],
     main = "bool_or_sample_sat.py",
+    tags = ["noci"],
     deps = ["//ortools/sat/python:cp_model"],
 )
 
@@ -234,6 +241,7 @@ py_test(
     name = "boolean_product_sample_sat_py3",
     srcs = ["boolean_product_sample_sat.py"],
     main = "boolean_product_sample_sat.py",
+    tags = ["noci"],
     deps = ["//ortools/sat/python:cp_model"],
 )
 
@@ -270,6 +278,7 @@ py_test(
     name = "channeling_sample_sat_py3",
     srcs = ["channeling_sample_sat.py"],
     main = "channeling_sample_sat.py",
+    tags = ["noci"],
     deps = ["//ortools/sat/python:cp_model"],
 )
 
@@ -316,6 +325,7 @@ py_test(
     name = "cp_is_fun_sat_py3",
     srcs = ["cp_is_fun_sat.py"],
     main = "cp_is_fun_sat.py",
+    tags = ["noci"],
     deps = ["//ortools/sat/python:cp_model"],
 )
 
@@ -345,6 +355,7 @@ py_test(
     name = "cumulative_variable_profile_sample_sat_py3",
     srcs = ["cumulative_variable_profile_sample_sat.py"],
     main = "cumulative_variable_profile_sample_sat.py",
+    tags = ["noci"],
     deps = [
         requirement("absl-py"),
         requirement("pandas"),
@@ -414,6 +425,7 @@ py_test(
     name = "interval_sample_sat_py3",
     srcs = ["interval_sample_sat.py"],
     main = "interval_sample_sat.py",
+    tags = ["noci"],
     deps = ["//ortools/sat/python:cp_model"],
 )
 
@@ -450,6 +462,7 @@ py_test(
     name = "minimal_jobshop_sat_py3",
     srcs = ["minimal_jobshop_sat.py"],
     main = "minimal_jobshop_sat.py",
+    tags = ["noci"],
     deps = ["//ortools/sat/python:cp_model"],
 )
 
@@ -478,6 +491,7 @@ py_test(
     name = "literal_sample_sat_py3",
     srcs = ["literal_sample_sat.py"],
     main = "literal_sample_sat.py",
+    tags = ["noci"],
     deps = ["//ortools/sat/python:cp_model"],
 )
 
@@ -500,6 +514,7 @@ py_test(
     name = "multiple_knapsack_sat_py3",
     srcs = ["multiple_knapsack_sat.py"],
     main = "multiple_knapsack_sat.py",
+    tags = ["noci"],
     deps = ["//ortools/sat/python:cp_model"],
 )
 
@@ -554,6 +569,7 @@ py_test(
     name = "nqueens_sat_py3",
     srcs = ["nqueens_sat.py"],
     main = "nqueens_sat.py",
+    tags = ["noci"],
     deps = ["//ortools/sat/python:cp_model"],
 )
 
@@ -588,6 +604,7 @@ py_test(
     name = "nurses_sat_py3",
     srcs = ["nurses_sat.py"],
     main = "nurses_sat.py",
+    tags = ["noci"],
     deps = ["//ortools/sat/python:cp_model"],
 )
 
@@ -617,6 +634,7 @@ py_test(
     name = "optional_interval_sample_sat_py3",
     srcs = ["optional_interval_sample_sat.py"],
     main = "optional_interval_sample_sat.py",
+    tags = ["noci"],
     deps = ["//ortools/sat/python:cp_model"],
 )
 
@@ -651,6 +669,7 @@ py_test(
     name = "no_overlap_sample_sat_py3",
     srcs = ["no_overlap_sample_sat.py"],
     main = "no_overlap_sample_sat.py",
+    tags = ["noci"],
     deps = ["//ortools/sat/python:cp_model"],
 )
 
@@ -658,6 +677,7 @@ py_test(
     name = "overlapping_intervals_sample_sat_py3",
     srcs = ["overlapping_intervals_sample_sat.py"],
     main = "overlapping_intervals_sample_sat.py",
+    tags = ["noci"],
     deps = ["//ortools/sat/python:cp_model"],
 )
 
@@ -730,6 +750,7 @@ py_test(
     name = "ranking_sample_sat_py3",
     srcs = ["ranking_sample_sat.py"],
     main = "ranking_sample_sat.py",
+    tags = ["noci"],
     deps = ["//ortools/sat/python:cp_model"],
 )
 
@@ -777,6 +798,7 @@ py_test(
     name = "schedule_requests_sat_py3",
     srcs = ["schedule_requests_sat.py"],
     main = "schedule_requests_sat.py",
+    tags = ["noci"],
     deps = ["//ortools/sat/python:cp_model"],
 )
 
@@ -784,6 +806,7 @@ py_test(
     name = "scheduling_with_calendar_sample_sat_py3",
     srcs = ["scheduling_with_calendar_sample_sat.py"],
     main = "scheduling_with_calendar_sample_sat.py",
+    tags = ["noci"],
     deps = ["//ortools/sat/python:cp_model"],
 )
 
@@ -819,6 +842,7 @@ py_test(
     name = "search_for_all_solutions_sample_sat_py3",
     srcs = ["search_for_all_solutions_sample_sat.py"],
     main = "search_for_all_solutions_sample_sat.py",
+    tags = ["noci"],
     deps = ["//ortools/sat/python:cp_model"],
 )
 
@@ -826,6 +850,7 @@ py_test(
     name = "sequences_in_no_overlap_sample_sat_py3",
     srcs = ["sequences_in_no_overlap_sample_sat.py"],
     main = "sequences_in_no_overlap_sample_sat.py",
+    tags = ["noci"],
     deps = ["//ortools/sat/python:cp_model"],
 )
 
@@ -858,6 +883,7 @@ py_test(
     name = "simple_sat_program_py3",
     srcs = ["simple_sat_program.py"],
     main = "simple_sat_program.py",
+    tags = ["noci"],
     deps = ["//ortools/sat/python:cp_model"],
 )
 
@@ -881,6 +907,7 @@ py_test(
     name = "soft_constraints_sat_py3",
     srcs = ["soft_constraints_sat.py"],
     main = "soft_constraints_sat.py",
+    tags = ["noci"],
     deps = ["//ortools/sat/python:cp_model"],
 )
 
@@ -898,6 +925,7 @@ py_test(
     name = "solution_hinting_sample_sat_py3",
     srcs = ["solution_hinting_sample_sat.py"],
     main = "solution_hinting_sample_sat.py",
+    tags = ["noci"],
     deps = ["//ortools/sat/python:cp_model"],
 )
 
@@ -969,6 +997,7 @@ py_test(
     name = "step_function_sample_sat_py3",
     srcs = ["step_function_sample_sat.py"],
     main = "step_function_sample_sat.py",
+    tags = ["noci"],
     deps = ["//ortools/sat/python:cp_model"],
 )
 
@@ -1005,6 +1034,7 @@ py_test(
     name = "solve_with_time_limit_sample_sat_py3",
     srcs = ["solve_with_time_limit_sample_sat.py"],
     main = "solve_with_time_limit_sample_sat.py",
+    tags = ["noci"],
     deps = ["//ortools/sat/python:cp_model"],
 )
 
@@ -1030,6 +1060,7 @@ py_test(
     name = "stop_after_n_solutions_sample_sat_py3",
     srcs = ["stop_after_n_solutions_sample_sat.py"],
     main = "stop_after_n_solutions_sample_sat.py",
+    tags = ["noci"],
     deps = ["//ortools/sat/python:cp_model"],
 )
 
@@ -1037,5 +1068,6 @@ py_test(
     name = "transitions_in_no_overlap_sample_sat_py3",
     srcs = ["transitions_in_no_overlap_sample_sat.py"],
     main = "transitions_in_no_overlap_sample_sat.py",
+    tags = ["noci"],
     deps = ["//ortools/sat/python:cp_model"],
 )
