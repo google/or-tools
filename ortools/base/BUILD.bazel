@@ -175,6 +175,7 @@ cc_library(
         "helpers.cc",
     ],
     hdrs = [
+        "basictypes.h",
         "file.h",
         "filesystem.h",
         "helpers.h",
@@ -182,14 +183,13 @@ cc_library(
     ],
     deps = [
         ":status_macros",
+        "@abseil-cpp//absl/base:config",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
-        "@bzip2//:bz2",
         "@protobuf",
-        "@zlib",
     ],
 )
 
@@ -210,18 +210,6 @@ cc_library(
     deps = [
         ":gmock",
         "@googletest//:gtest_main",
-    ],
-)
-
-cc_library(
-    name = "gzipfile",
-    srcs = ["gzipfile.cc"],
-    hdrs = ["gzipfile.h"],
-    deps = [
-        ":file",
-        "@abseil-cpp//absl/log",
-        "@abseil-cpp//absl/strings:string_view",
-        "@zlib",
     ],
 )
 
@@ -417,6 +405,7 @@ cc_test(
     size = "small",
     timeout = "long",
     srcs = ["strong_int_test.cc"],
+    tags = ["noci"],
     deps = [
         ":strong_int",
         "//ortools/base:gmock_main",
@@ -552,5 +541,57 @@ cc_library(
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings:str_format",
+    ],
+)
+
+cc_library(
+    name = "gzipfile",
+    srcs = ["gzipfile.cc"],
+    hdrs = ["gzipfile.h"],
+    deps = [
+        ":file",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/strings:string_view",
+        "@zlib",
+    ],
+)
+
+cc_test(
+    name = "gzipfile_test",
+    size = "small",
+    srcs = ["gzipfile_test.cc"],
+    deps = [
+        ":file",
+        ":gzipfile",
+        "//ortools/base:gmock_main",
+        "@abseil-cpp//absl/strings",
+        "@zlib",
+    ],
+)
+
+cc_library(
+    name = "bzip2file",
+    srcs = ["bzip2file.cc"],
+    hdrs = ["bzip2file.h"],
+    deps = [
+        ":file",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/strings:string_view",
+        "@bzip2//:bz2",
+    ],
+)
+
+cc_test(
+    name = "bzip2file_test",
+    size = "small",
+    srcs = ["bzip2file_test.cc"],
+    deps = [
+        ":bzip2file",
+        ":file",
+        "//ortools/base:gmock_main",
+        "@abseil-cpp//absl/strings",
+        "@bzip2//:bz2",
     ],
 )

@@ -11,14 +11,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ORTOOLS_BASE_GZIPFILE_H_
-#define ORTOOLS_BASE_GZIPFILE_H_
+#ifndef ORTOOLS_UTIL_BASICTYPES_H_
+#define ORTOOLS_UTIL_BASICTYPES_H_
 
-#include "absl/strings/string_view.h"
-#include "ortools/base/basictypes.h"
-#include "ortools/base/file.h"
+// Argument type used in interfaces that can optionally take ownership
+// of a passed in argument.  If TAKE_OWNERSHIP is passed, the called
+// object takes ownership of the argument.  Otherwise it does not.
+//
+// Note: In most cases where ownership transfer is needed it is preferable
+// to make it unconditional, typically by passing a std::unique_ptr.
+// See go/cppprimer#google_pointers for more suggestions.
+enum Ownership { DO_NOT_TAKE_OWNERSHIP, TAKE_OWNERSHIP };
 
-File* GZipFileReader(absl::string_view name, File* compressed_file,
-                     Ownership ownership);
-
-#endif  // ORTOOLS_BASE_GZIPFILE_H_
+#endif  // ORTOOLS_UTIL_BASICTYPES_H_
