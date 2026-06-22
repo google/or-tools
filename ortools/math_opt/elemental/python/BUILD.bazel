@@ -21,14 +21,17 @@ genrule(
     outs = [
         "enums.py",
     ],
-    cmd = "$(location //ortools/math_opt/elemental/codegen:codegen) --binding_type=python_enums > $@",
+    cmd = "$(location //ortools/math_opt/elemental/codegen) --binding_type=python_enums > $@",
     tools = ["//ortools/math_opt/elemental/codegen"],
 )
 
 py_library(
     name = "enums",
     srcs = [":generated_enums"],
-    visibility = ["//ortools/math_opt/python:__subpackages__"],
+    visibility = [
+        "//ortools/math_opt:__subpackages__",
+        "//ortools/math_opt/python:__subpackages__",
+    ],
     deps = [
         requirement("numpy"),
     ],

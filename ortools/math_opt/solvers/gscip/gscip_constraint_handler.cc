@@ -22,6 +22,7 @@
 #include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/types/span.h"
+#include "ortools/base/status_builder.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/linear_solver/scip_helper_macros.h"
 #include "ortools/math_opt/solvers/gscip/gscip.h"

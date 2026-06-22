@@ -59,6 +59,7 @@ cc_library(
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/synchronization",
         "@abseil-cpp//absl/types:span",
+        "@rules_cc//cc/runfiles",
     ],
     # Make sure the tests are included when using --dynamic_mode=off.
     alwayslink = 1,
@@ -84,6 +85,7 @@ cc_library(
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/time",
+        "@rules_cc//cc/runfiles",
     ],
     # Make sure the tests are included when using --dynamic_mode=off.
     alwayslink = 1,
@@ -104,6 +106,26 @@ cc_library(
         "//ortools/port:proto_utils",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status:statusor",
+    ],
+    # Make sure the tests are included when using --dynamic_mode=off.
+    alwayslink = 1,
+)
+
+cc_library(
+    name = "min_cost_flow_tests",
+    testonly = 1,
+    srcs = ["min_cost_flow_tests.cc"],
+    hdrs = ["min_cost_flow_tests.h"],
+    deps = [
+        "//ortools/base:gmock",
+        "//ortools/math_opt/cpp:matchers",
+        "//ortools/math_opt/cpp:math_opt",
+        "//ortools/port:proto_utils",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_matchers",
+        "@abseil-cpp//absl/strings",
     ],
     # Make sure the tests are included when using --dynamic_mode=off.
     alwayslink = 1,
@@ -136,6 +158,7 @@ cc_library(
     hdrs = ["invalid_input_tests.h"],
     deps = [
         ":base_solver_test",
+        ":test_models",
         "//ortools/base:gmock",
         "//ortools/math_opt:model_cc_proto",
         "//ortools/math_opt:model_update_cc_proto",
@@ -301,6 +324,7 @@ cc_library(
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/time",
         "@abseil-cpp//absl/types:span",
+        "@rules_cc//cc/runfiles",
     ],
     # Make sure the tests are included when using --dynamic_mode=off.
     alwayslink = 1,
@@ -329,6 +353,7 @@ cc_library(
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings:string_view",
         "@abseil-cpp//absl/time",
+        "@rules_cc//cc/runfiles",
     ],
     # Make sure the tests are included when using --dynamic_mode=off.
     alwayslink = 1,
@@ -438,6 +463,8 @@ cc_test(
         "//ortools/math_opt/solvers:cp_sat_solver",
         "//ortools/math_opt/solvers:glop_solver",
         "//ortools/math_opt/solvers:gscip_solver",
+        "//ortools/math_opt/solvers:min_cost_flow_solver",
+        "//ortools/math_opt/testing:stream",
     ],
 )
 

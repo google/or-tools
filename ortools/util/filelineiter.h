@@ -30,7 +30,16 @@
 #include <string>
 
 #include "absl/log/log.h"
+#include "absl/strings/match.h"
+#include "absl/strings/string_view.h"
+#include "ortools/base/basictypes.h"
+#include "ortools/base/bzip2file.h"
 #include "ortools/base/file.h"
+#include "ortools/base/gzipfile.h"
+#include "ortools/base/helpers.h"
+#include "ortools/base/options.h"
+
+namespace operations_research {
 
 // Implements the minimum interface for a range-based for loop iterator.
 class FileLineIterator {
@@ -135,6 +144,12 @@ class FileLines {
     if (!file_) {
       return;
     }
+
+    if (absl::EndsWith(filename, ".bz2")) {
+      file_ = BZip2FileReader(filename, file_, TAKE_OWNERSHIP);
+    } else if (absl::EndsWith(filename, ".gz")) {
+      file_ = GZipFileReader(filename, file_, TAKE_OWNERSHIP);
+    }
   }
 
   // Initializes the FileLines ignoring errors.
@@ -173,4 +188,5 @@ class FileLines {
   const int options_;
 };
 
+}  // namespace operations_research
 #endif  // ORTOOLS_UTIL_FILELINEITER_H_

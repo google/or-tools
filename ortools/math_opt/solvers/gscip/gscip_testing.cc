@@ -21,6 +21,10 @@
 
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
+#include "gtest/gtest.h"
+#include "ortools/base/gmock.h"
+#include "ortools/math_opt/solvers/gscip/gscip.h"
+#include "ortools/math_opt/solvers/gscip/gscip.pb.h"
 #include "ortools/math_opt/solvers/gscip/gscip_parameters.h"
 
 namespace operations_research {

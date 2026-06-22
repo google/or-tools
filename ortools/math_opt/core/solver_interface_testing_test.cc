@@ -21,6 +21,8 @@
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/math_opt/core/solver_interface.h"
+#include "ortools/math_opt/model.pb.h"
+#include "ortools/math_opt/parameters.pb.h"
 
 namespace operations_research::math_opt {
 namespace {

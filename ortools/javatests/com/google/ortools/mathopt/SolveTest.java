@@ -361,7 +361,6 @@ public final class SolveTest {
     model.addLeIndicatorConstraint(z, false, Expressions.linExpr(x), 5.0, "c");
 
     // Expect error during solve.
-    assertThrows(IllegalArgumentException.class,
-        () -> { SolveResult unused = Solve.solve(model, SolverType.GSCIP); });
+    assertThrows(IllegalArgumentException.class, () -> Solve.solve(model, SolverType.GSCIP));
   }
 }

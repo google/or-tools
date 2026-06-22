@@ -11,7 +11,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+load("@pip_deps//:requirements.bzl", "requirement")
 load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+load("//tools/testing:bintest.bzl", "py_bintest")
 
 cc_binary(
     name = "basic_example",
@@ -278,4 +280,66 @@ cc_binary(
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
     ],
+)
+
+cc_binary(
+    name = "min_cost_flow",
+    srcs = ["min_cost_flow.cc"],
+    tags = [
+        "not_build:arm",
+        "not_run:arm",
+    ],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:status_macros",
+        "//ortools/math_opt/cpp:math_opt",
+        "//ortools/math_opt/solvers:glop_solver",
+        "//ortools/math_opt/solvers:min_cost_flow_solver",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/status",
+    ],
+)
+
+py_bintest(
+    name = "min_cost_flow_test",
+    srcs = ["min_cost_flow_test.py"],
+    named_data = {"bin": ":min_cost_flow"},
+    tags = [
+        "not_build:arm",
+        "not_run:arm",
+    ],
+    deps = [requirement("absl-py")],
+)
+
+cc_binary(
+    name = "matching_by_min_cost_flow",
+    srcs = ["matching_by_min_cost_flow.cc"],
+    tags = [
+        "not_build:arm",
+        "not_run:arm",
+    ],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:status_macros",
+        "//ortools/math_opt/cpp:math_opt",
+        "//ortools/math_opt/solvers:glop_solver",
+        "//ortools/math_opt/solvers:min_cost_flow_solver",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/time",
+    ],
+)
+
+py_bintest(
+    name = "matching_by_min_cost_flow_test",
+    srcs = ["matching_by_min_cost_flow_test.py"],
+    named_data = {"bin": ":matching_by_min_cost_flow"},
+    tags = [
+        "not_build:arm",
+        "not_run:arm",
+    ],
+    deps = [requirement("absl-py")],
 )

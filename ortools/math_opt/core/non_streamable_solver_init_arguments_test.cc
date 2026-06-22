@@ -16,8 +16,10 @@
 #include <memory>
 #include <utility>
 
+#include "absl/base/attributes.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
+#include "ortools/math_opt/parameters.pb.h"
 
 namespace operations_research::math_opt {
 namespace {

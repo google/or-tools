@@ -28,11 +28,14 @@
 #include "ortools/math_opt/solver_tests/lp_model_solve_parameters_tests.h"
 #include "ortools/math_opt/solver_tests/lp_parameter_tests.h"
 #include "ortools/math_opt/solver_tests/lp_tests.h"
+#include "ortools/math_opt/solver_tests/min_cost_flow_tests.h"
 #include "ortools/math_opt/solver_tests/multi_objective_tests.h"
 #include "ortools/math_opt/solver_tests/qc_tests.h"
 #include "ortools/math_opt/solver_tests/qp_tests.h"
 #include "ortools/math_opt/solver_tests/second_order_cone_tests.h"
 #include "ortools/math_opt/solver_tests/status_tests.h"
+#include "ortools/math_opt/solver_tests/test_models.h"
+#include "ortools/math_opt/testing/param_name.h"
 
 namespace operations_research {
 namespace math_opt {
@@ -60,14 +63,18 @@ SimpleLpTestParameters ForcePrimalRays() {
       /*disallows_infeasible_or_unbounded=*/true);
 }
 
+SolveParameters ForceDualRaysSolveParameters() {
+  return SolveParameters{
+      .lp_algorithm = LPAlgorithm::kDualSimplex,
+      .presolve = Emphasis::kOff,
+      .scaling = Emphasis::kOff,
+  };
+}
+
 SimpleLpTestParameters ForceDualRays() {
-  SolveParameters parameters;
-  parameters.presolve = Emphasis::kOff;
-  parameters.scaling = Emphasis::kOff;
-  parameters.lp_algorithm = LPAlgorithm::kDualSimplex;
-  parameters.enable_output = true;
   return SimpleLpTestParameters(
-      SolverType::kGlop, parameters, /*supports_duals=*/true,
+      SolverType::kGlop, ForceDualRaysSolveParameters(),
+      /*supports_duals=*/true,
       /*supports_basis=*/true,
       /*ensures_primal_ray=*/false, /*ensures_dual_ray=*/true,
       /*disallows_infeasible_or_unbounded=*/false);
@@ -76,6 +83,21 @@ SimpleLpTestParameters ForceDualRays() {
 INSTANTIATE_TEST_SUITE_P(GlopSimpleLpTest, SimpleLpTest,
                          testing::Values(GlopDefaults(), ForcePrimalRays(),
                                          ForceDualRays()));
+
+INSTANTIATE_TEST_SUITE_P(
+    GlopMinCostFlowTest, MinCostFlowTest,
+    testing::Values(MinCostFlowTestParams{
+        .name = "glop",
+        .solver_type = math_opt::SolverType::kGlop,
+        .lp_not_flow_error_substring = std::nullopt,
+        .mip_not_flow_error_substring = "integer variables",
+        .floating_point_cost_error_substring = std::nullopt,
+        .floating_point_capacity_error_substring = std::nullopt,
+        .certifies_nontrivial_infeasibility = true,
+        .request_dual_rays_params = ForceDualRaysSolveParameters(),
+        .returns_dual_solution = true,
+    }),
+    ParamName{});
 
 std::vector<StatusTestParameters> MakeStatusTestConfigs() {
   std::vector<StatusTestParameters> test_parameters;
@@ -205,20 +227,19 @@ INSTANTIATE_TEST_SUITE_P(
 
 INSTANTIATE_TEST_SUITE_P(GlopInvalidInputTest, InvalidInputTest,
                          testing::Values(InvalidInputTestParameters(
-                             SolverType::kGlop,
-                             /*use_integer_variables=*/false)));
+                             SolverType::kGlop, TestModelClass::kLp)));
 
 INSTANTIATE_TEST_SUITE_P(
     GlopInvalidParameterTest, InvalidParameterTest,
     testing::Values(
-        InvalidParameterTestParams(SolverType::kGlop,
+        InvalidParameterTestParams(SolverType::kGlop, TestModelClass::kLp,
                                    {
                                        .solution_limit = 3,
                                        .heuristics = Emphasis::kVeryHigh,
                                    },
                                    {"solution_limit", "heuristics"}),
         InvalidParameterTestParams(
-            SolverType::kGlop,
+            SolverType::kGlop, TestModelClass::kLp,
             {
                 .glop =
                     []() {
@@ -258,7 +279,7 @@ INSTANTIATE_TEST_SUITE_P(GlopLpBasisStartTest, LpBasisStartTest,
 INSTANTIATE_TEST_SUITE_P(GlopGenericTest, GenericTest,
                          testing::Values(GenericTestParameters(
                              SolverType::kGlop, /*support_interrupter=*/true,
-                             /*integer_variables=*/false,
+                             TestModelClass::kLp,
                              /*expected_log=*/"status: OPTIMAL")));
 
 INSTANTIATE_TEST_SUITE_P(GlopMessageCallbackTest, MessageCallbackTest,
@@ -270,8 +291,7 @@ INSTANTIATE_TEST_SUITE_P(GlopMessageCallbackTest, MessageCallbackTest,
 
 INSTANTIATE_TEST_SUITE_P(
     GlopCallbackTest, CallbackTest,
-    testing::Values(CallbackTestParams(SolverType::kGlop,
-                                       /*integer_variables=*/false,
+    testing::Values(CallbackTestParams(SolverType::kGlop, TestModelClass::kLp,
                                        /*add_lazy_constraints=*/false,
                                        /*add_cuts=*/false,
                                        /*supported_events=*/{},

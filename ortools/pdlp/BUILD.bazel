@@ -224,6 +224,7 @@ cc_library(
     hdrs = ["quadratic_program_io.h"],
     deps = [
         ":quadratic_program",
+        "//ortools/base:bzip2file",
         "//ortools/base:file",
         "//ortools/base:gzipfile",
         "//ortools/base:mathutil",

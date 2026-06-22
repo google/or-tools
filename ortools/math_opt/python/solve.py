@@ -19,13 +19,14 @@ from typing import Callable, Optional
 
 from pybind11_abseil.status import StatusNotOk
 
-from ortools.math_opt import parameters_pb2, rpc_pb2
+from ortools.math_opt import parameters_pb2
 from ortools.math_opt.core.python import solver
 from ortools.math_opt.python import (callback,
                                      compute_infeasible_subsystem_result,
                                      errors, init_arguments, message_callback,
                                      model, model_parameters, parameters,
                                      result)
+from ortools.util import status_pb2
 from ortools.util.python import solve_interrupter
 
 SolveCallback = Callable[[callback.CallbackData], callback.CallbackResult]
@@ -317,7 +318,7 @@ def _status_not_ok_to_exception(err: StatusNotOk) -> Exception:
       The corresponding exception.
     """
     ret = errors.status_proto_to_exception(
-        rpc_pb2.StatusProto(code=err.canonical_code, message=err.message)
+        status_pb2.StatusProto(code=err.canonical_code, message=err.message)
     )
     # We never expect StatusNotOk to be OK.
     assert ret is not None, err

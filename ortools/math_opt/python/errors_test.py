@@ -16,8 +16,9 @@
 
 from absl.testing import absltest
 
-from ortools.math_opt import rpc_pb2
 from ortools.math_opt.python import errors
+from ortools.util import status_pb2
+from ortools.util.python import status_streaming
 
 
 class StatusProtoToExceptionTest(absltest.TestCase):
@@ -25,14 +26,15 @@ class StatusProtoToExceptionTest(absltest.TestCase):
     def test_ok(self) -> None:
         self.assertIsNone(
             errors.status_proto_to_exception(
-                rpc_pb2.StatusProto(code=errors._StatusCode.OK.value)
+                status_pb2.StatusProto(code=status_streaming.StatusCode.OK.value)
             )
         )
 
     def test_invalid_argument(self) -> None:
         error = errors.status_proto_to_exception(
-            rpc_pb2.StatusProto(
-                code=errors._StatusCode.INVALID_ARGUMENT.value, message="something"
+            status_pb2.StatusProto(
+                code=status_streaming.StatusCode.INVALID_ARGUMENT.value,
+                message="something",
             )
         )
         self.assertIsInstance(error, ValueError)
@@ -40,8 +42,8 @@ class StatusProtoToExceptionTest(absltest.TestCase):
 
     def test_failed_precondition(self) -> None:
         error = errors.status_proto_to_exception(
-            rpc_pb2.StatusProto(
-                code=errors._StatusCode.FAILED_PRECONDITION.value,
+            status_pb2.StatusProto(
+                code=status_streaming.StatusCode.FAILED_PRECONDITION.value,
                 message="something",
             )
         )
@@ -50,8 +52,9 @@ class StatusProtoToExceptionTest(absltest.TestCase):
 
     def test_unimplemented(self) -> None:
         error = errors.status_proto_to_exception(
-            rpc_pb2.StatusProto(
-                code=errors._StatusCode.UNIMPLEMENTED.value, message="something"
+            status_pb2.StatusProto(
+                code=status_streaming.StatusCode.UNIMPLEMENTED.value,
+                message="something",
             )
         )
         self.assertIsInstance(error, NotImplementedError)
@@ -59,8 +62,8 @@ class StatusProtoToExceptionTest(absltest.TestCase):
 
     def test_internal(self) -> None:
         error = errors.status_proto_to_exception(
-            rpc_pb2.StatusProto(
-                code=errors._StatusCode.INTERNAL.value, message="something"
+            status_pb2.StatusProto(
+                code=status_streaming.StatusCode.INTERNAL.value, message="something"
             )
         )
         self.assertIsInstance(error, errors.InternalMathOptError)
@@ -68,21 +71,20 @@ class StatusProtoToExceptionTest(absltest.TestCase):
 
     def test_unexpected_code(self) -> None:
         error = errors.status_proto_to_exception(
-            rpc_pb2.StatusProto(
-                code=errors._StatusCode.DEADLINE_EXCEEDED.value, message="something"
+            status_pb2.StatusProto(
+                code=status_streaming.StatusCode.DEADLINE_EXCEEDED.value,
+                message="something",
             )
         )
-        self.assertIsInstance(error, errors.InternalMathOptError)
-        self.assertEqual(
-            str(error), "unexpected C++ error DEADLINE_EXCEEDED: something"
-        )
+        self.assertIsInstance(error, status_streaming.DeadlineExceededError)
+        self.assertEqual(str(error), "something (was C++ DEADLINE_EXCEEDED)")
 
     def test_unknown_code(self) -> None:
         error = errors.status_proto_to_exception(
-            rpc_pb2.StatusProto(code=-5, message="something")
+            status_pb2.StatusProto(code=-5, message="something")
         )
-        self.assertIsInstance(error, errors.InternalMathOptError)
-        self.assertEqual(str(error), "unknown C++ error (code = -5): something")
+        self.assertIsInstance(error, status_streaming.UnexpectedCodeError)
+        self.assertEqual(str(error), "something (was C++ -5)")
 
 
 if __name__ == "__main__":

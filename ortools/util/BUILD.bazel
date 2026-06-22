@@ -49,7 +49,9 @@ cc_library(
     name = "filelineiter",
     hdrs = ["filelineiter.h"],
     deps = [
+        "//ortools/base:bzip2file",
         "//ortools/base:file",
+        "//ortools/base:gzipfile",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:string_view",
@@ -223,10 +225,9 @@ cc_library(
     # You must also set this flag if you depend on this target and use its methods related to
     # IEEE-754 rounding modes.
     copts = select({
-        "@platforms//os:linux": ["-frounding-math"],
-        "@platforms//os:macos": ["-frounding-math"],
-        "@platforms//os:windows": [],
-        "//conditions:default": ["-frounding-math"],
+        "@rules_cc//cc/compiler:clang": ["-frounding-math"],
+        "@rules_cc//cc/compiler:gcc": ["-frounding-math"],
+        "//conditions:default": [],
     }),
     deps = [
         ":bitset",
@@ -363,6 +364,12 @@ cc_library(
 )
 
 proto_library(
+    name = "file_util_test_proto",
+    testonly = True,
+    srcs = ["file_util_test.proto"],
+)
+
+proto_library(
     name = "status_proto",
     srcs = ["status.proto"],
 )
@@ -443,9 +450,11 @@ cc_library(
     srcs = ["fp_roundtrip_conv.cc"],
     hdrs = ["fp_roundtrip_conv.h"],
     deps = [
+        "//ortools/base:status_builder",
         "//ortools/base:status_macros",
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
@@ -515,4 +524,46 @@ cc_library(
     name = "scheduling",
     hdrs = ["scheduling.h"],
     deps = ["@abseil-cpp//absl/log:check"],
+)
+
+cc_library(
+    name = "status_streaming",
+    srcs = ["status_streaming.cc"],
+    hdrs = ["status_streaming.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":status_cc_proto",
+        "//ortools/base:source_location",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/strings:cord",
+        "@abseil-cpp//absl/strings:string_view",
+    ],
+)
+
+cc_library(
+    name = "random_subset",
+    hdrs = ["random_subset.h"],
+    deps = [
+        "//ortools/base:types",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/random:bit_gen_ref",
+        "@abseil-cpp//absl/random:distributions",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_library(
+    name = "data_path_resolver",
+    srcs = ["data_path_resolver.cc"],
+    hdrs = ["data_path_resolver.h"],
+    defines = ["ORTOOLS_USE_RUNFILES=1"],
+    deps = [
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:string_view",
+        "@rules_cc//cc/runfiles",
+    ],
 )

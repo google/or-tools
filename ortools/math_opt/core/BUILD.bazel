@@ -291,6 +291,8 @@ cc_test(
     deps = [
         ":non_streamable_solver_init_arguments",
         "//ortools/base:gmock_main",
+        "//ortools/math_opt:parameters_cc_proto",
+        "@abseil-cpp//absl/base:core_headers",
     ],
 )
 
@@ -346,6 +348,7 @@ cc_library(
     hdrs = ["solver_interface_testing.h"],
     deps = [
         ":solver_interface",
+        "//ortools/math_opt:parameters_cc_proto",
         "@abseil-cpp//absl/base:nullability",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/container:flat_hash_set",
@@ -359,6 +362,8 @@ cc_test(
         ":solver_interface",
         ":solver_interface_testing",
         "//ortools/base:gmock",
+        "//ortools/math_opt:model_cc_proto",
+        "//ortools/math_opt:parameters_cc_proto",
         "@abseil-cpp//absl/base:nullability",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
@@ -453,6 +458,7 @@ cc_test(
         ":empty_bounds",
         ":model_summary",
         "//ortools/base:gmock_main",
+        "//ortools/math_opt:result_cc_proto",
         "//ortools/math_opt/validators:result_validator",
     ],
 )

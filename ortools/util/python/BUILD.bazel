@@ -183,7 +183,6 @@ cc_binary(
     srcs = ["gen_wrappers_test_message_pybind11.cc"],
     deps = [
         ":wrappers",
-        "//ortools/base",
         "//ortools/util/testdata:wrappers_test_message_cc_proto",
         "@abseil-cpp//absl/flags:parse",
         "@abseil-cpp//absl/flags:usage",
@@ -227,5 +226,21 @@ py_test(
     deps = [
         ":wrappers_test_message_extension",
         requirement("absl-py"),
+    ],
+)
+
+py_library(
+    name = "status_streaming",
+    srcs = ["status_streaming.py"],
+    deps = ["//ortools/util:status_py_pb2"],
+)
+
+py_test(
+    name = "status_streaming_test",
+    srcs = ["status_streaming_test.py"],
+    deps = [
+        ":status_streaming",
+        requirement("absl-py"),
+        "//ortools/util:status_py_pb2",
     ],
 )
