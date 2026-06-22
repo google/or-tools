@@ -11,41 +11,48 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/base/gzipfile.h"
+#include "ortools/base/bzip2file.h"
 
-#include <zconf.h>
-#include <zlib.h>
-
+#include <cstdlib>
 #include <cstring>
 
 #include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/strings/string_view.h"
+#include "bzlib.h"
 #include "ortools/base/basictypes.h"
 #include "ortools/base/file.h"
 
 namespace {
 
-class GZipInputFile : public File {
+void* OrtBzAlloc(void* opaque, int items, int size) {
+  return std::malloc(items * size);
+}
+
+void OrtBzFree(void* opaque, void* address) { std::free(address); }
+
+class BZip2InputFile : public File {
  public:
-  GZipInputFile(absl::string_view name, File* file, bool own_file)
+  BZip2InputFile(absl::string_view name, File* file, bool own_file)
       : File(name),
         file_(file),
         own_file_(own_file),
         init_ok_(false),
         stream_completed_(false) {
-    memset(&zstream_, 0, sizeof(zstream_));
-    int z_status = inflateInit2(&zstream_, 47);
-    if (z_status == Z_OK) {
+    memset(&bzstream_, 0, sizeof(bzstream_));
+    bzstream_.bzalloc = OrtBzAlloc;
+    bzstream_.bzfree = OrtBzFree;
+    int bz_status = BZ2_bzDecompressInit(&bzstream_, 0, 0);
+    if (bz_status == BZ_OK) {
       init_ok_ = true;
     } else {
-      status_ = absl::InternalError("Failed to initialize zlib decompressor");
+      status_ = absl::InternalError("Failed to initialize bzip2 decompressor");
     }
   }
 
-  ~GZipInputFile() override {
+  ~BZip2InputFile() override {
     if (init_ok_) {
-      inflateEnd(&zstream_);
+      BZ2_bzDecompressEnd(&bzstream_);
     }
     if (own_file_ && file_ != nullptr) {
       file_->Close(0).IgnoreError();
@@ -58,66 +65,68 @@ class GZipInputFile : public File {
     }
 
     char* dest = static_cast<char*>(buf);
-    zstream_.next_out = reinterpret_cast<Bytef*>(dest);
-    zstream_.avail_out = size;
+    bzstream_.next_out = dest;
+    bzstream_.avail_out = size;
 
-    while (zstream_.avail_out > 0) {
-      if (zstream_.avail_in == 0) {
+    while (bzstream_.avail_out > 0) {
+      if (bzstream_.avail_in == 0) {
         size_t bytes_read = file_->Read(input_buffer_, sizeof(input_buffer_));
         if (bytes_read == 0) {
           if (!stream_completed_) {
             status_ =
-                absl::InternalError("Unexpected EOF in gzip compressed file");
+                absl::InternalError("Unexpected EOF in bzip2 compressed file");
           }
           break;
         }
-        zstream_.next_in = reinterpret_cast<Bytef*>(input_buffer_);
-        zstream_.avail_in = bytes_read;
+        bzstream_.next_in = input_buffer_;
+        bzstream_.avail_in = bytes_read;
       }
 
       if (stream_completed_) {
-        Bytef* saved_next_in = zstream_.next_in;
-        unsigned int saved_avail_in = zstream_.avail_in;
-        Bytef* saved_next_out = zstream_.next_out;
-        unsigned int saved_avail_out = zstream_.avail_out;
+        char* saved_next_in = bzstream_.next_in;
+        unsigned int saved_avail_in = bzstream_.avail_in;
+        char* saved_next_out = bzstream_.next_out;
+        unsigned int saved_avail_out = bzstream_.avail_out;
 
-        inflateEnd(&zstream_);
-        memset(&zstream_, 0, sizeof(zstream_));
-        zstream_.next_in = saved_next_in;
-        zstream_.avail_in = saved_avail_in;
-        zstream_.next_out = saved_next_out;
-        zstream_.avail_out = saved_avail_out;
+        BZ2_bzDecompressEnd(&bzstream_);
+        memset(&bzstream_, 0, sizeof(bzstream_));
+        bzstream_.bzalloc = OrtBzAlloc;
+        bzstream_.bzfree = OrtBzFree;
+        bzstream_.next_in = saved_next_in;
+        bzstream_.avail_in = saved_avail_in;
+        bzstream_.next_out = saved_next_out;
+        bzstream_.avail_out = saved_avail_out;
 
-        int init_status = inflateInit2(&zstream_, 47);
-        if (init_status != Z_OK) {
+        int init_status = BZ2_bzDecompressInit(&bzstream_, 0, 0);
+        if (init_status != BZ_OK) {
           status_ =
-              absl::InternalError("Failed to re-initialize zlib decompressor");
+              absl::InternalError("Failed to re-initialize bzip2 decompressor");
           break;
         }
         stream_completed_ = false;
       }
 
-      int z_status = inflate(&zstream_, Z_NO_FLUSH);
-      if (z_status == Z_STREAM_END) {
+      int bz_status = BZ2_bzDecompress(&bzstream_);
+      if (bz_status == BZ_STREAM_END) {
         stream_completed_ = true;
-      } else if (z_status != Z_OK && z_status != Z_BUF_ERROR) {
-        status_ = absl::InternalError("Zlib decompression error");
+      } else if (bz_status != BZ_OK) {
+        status_ = absl::InternalError("Bzip2 decompression error");
         break;
       }
     }
 
-    return size - zstream_.avail_out;
+    return size - bzstream_.avail_out;
   }
 
   size_t Write(const void* buf, size_t size) override {
-    LOG(FATAL) << "Write not supported on GZipFileReader";
+    LOG(FATAL) << "Write not supported on BZip2FileReader";
     return 0;
   }
 
   absl::Status Close(int flags) override {
     absl::Status status = status_;
     if (init_ok_) {
-      inflateEnd(&zstream_);
+      BZ2_bzDecompressEnd(&bzstream_);
       init_ok_ = false;
     }
     if (file_ != nullptr) {
@@ -142,12 +151,12 @@ class GZipInputFile : public File {
   bool init_ok_;
   bool stream_completed_;
   absl::Status status_;
-  z_stream zstream_;
+  bz_stream bzstream_;
   char input_buffer_[65536];
 };
 
 }  // namespace
 
-File* GZipFileReader(absl::string_view name, File* file, Ownership ownership) {
-  return new GZipInputFile(name, file, ownership == TAKE_OWNERSHIP);
+File* BZip2FileReader(absl::string_view name, File* file, Ownership ownership) {
+  return new BZip2InputFile(name, file, ownership == TAKE_OWNERSHIP);
 }

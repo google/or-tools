@@ -18,6 +18,7 @@
 #include <string>
 #include <system_error>  // NOLINT
 
+#include "absl/base/config.h"  // IWYU pragma: keep
 #include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
@@ -26,6 +27,10 @@
 #include "google/protobuf/message.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/base/file.h"
+
+#ifdef ABSL_HAVE_EXCEPTIONS
+#include <exception>
+#endif
 
 namespace file {
 
@@ -171,10 +176,12 @@ absl::Status SetBinaryProto(absl::string_view file_name,
       absl::StrCat("Could not write proto to '", file_name, "'."));
 }
 
-absl::StatusOr<int64_t> GetSize(absl::string_view path,
+absl::StatusOr<int64_t> GetSize(std::string_view path,
                                 const file::Options& options) {
   (void)options;
+#ifdef ABSL_HAVE_EXCEPTIONS
   try {
+#endif
     std::filesystem::path p(path);
     std::error_code ec;
     const bool is_dir = std::filesystem::is_directory(p, ec);
@@ -196,9 +203,11 @@ absl::StatusOr<int64_t> GetSize(absl::string_view path,
       return absl::InvalidArgumentError(ec.message());
     }
     return static_cast<int64_t>(size);
+#ifdef ABSL_HAVE_EXCEPTIONS
   } catch (const std::exception& e) {
-    return absl::NotFoundError(e.what());
+    return absl::InvalidArgumentError(e.what());
   }
+#endif
 }
 
 }  // namespace file
