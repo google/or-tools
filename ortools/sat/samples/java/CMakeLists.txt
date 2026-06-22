@@ -19,6 +19,6 @@ file(GLOB JAVA_SRCS "*.java")
 foreach(SAMPLE IN LISTS JAVA_SRCS)
   add_java_sample(
     FILE_NAME ${SAMPLE}
-    COMPONENT_NAME algorithms
+    COMPONENT_NAME sat
   )
 endforeach()
