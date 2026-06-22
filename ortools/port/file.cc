@@ -24,7 +24,7 @@
 static_assert(operations_research::kTargetOsSupportsFile);
 #if !defined(_MSC_VER)
 #include <unistd.h>
-#endif !defined(_MSC_VER)
+#endif  // !defined(_MSC_VER)
 
 #include "absl/strings/str_format.h"
 #include "absl/time/clock.h"
