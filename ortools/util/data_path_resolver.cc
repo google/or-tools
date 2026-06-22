@@ -18,7 +18,9 @@
 #include "absl/log/log.h"  // IWYU pragma: keep
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
+#ifdef ORTOOLS_USE_RUNFILES
 #include "rules_cc/cc/runfiles/runfiles.h"
+#endif  // ORTOOLS_USE_RUNFILES
 
 namespace ortools {
 
