@@ -11,7 +11,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Description: java wrapping of the C++ code at ../
 load("//bazel:or_java_wrap_cc.bzl", "or_java_wrap_cc")
 
 package(default_visibility = ["//visibility:public"])
@@ -35,4 +34,3 @@ or_java_wrap_cc(
         "//ortools/linear_solver/wrappers:model_builder_helper",
     ],
 )
-

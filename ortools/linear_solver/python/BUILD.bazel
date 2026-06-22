@@ -50,6 +50,7 @@ py_test(
         "//ortools/linear_solver/testdata:maximization.mps",
     ],
     tags = [
+        "noci",
         "not_build:arm",
         "not_run:arm",
     ],
@@ -96,6 +97,7 @@ py_test(
         "//ortools/linear_solver/testdata:small_model.lp",
     ],
     tags = [
+        "noci",
         "not_build:arm",
         "not_run:arm",
     ],

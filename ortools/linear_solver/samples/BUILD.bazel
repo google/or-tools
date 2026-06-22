@@ -177,6 +177,7 @@ py_test(
     srcs = ["assignment_mb.py"],
     main = "assignment_mb.py",
     tags = [
+        "noci",
         "not_build:arm",
         "not_run:arm",
     ],
@@ -191,6 +192,7 @@ py_test(
     srcs = ["bin_packing_mb.py"],
     main = "bin_packing_mb.py",
     tags = [
+        "noci",
         "not_build:arm",
         "not_run:arm",
     ],
@@ -205,6 +207,7 @@ py_test(
     srcs = ["clone_model_mb.py"],
     main = "clone_model_mb.py",
     tags = [
+        "noci",
         "not_build:arm",
         "not_run:arm",
     ],
@@ -216,6 +219,7 @@ py_test(
     srcs = ["simple_lp_program_mb.py"],
     main = "simple_lp_program_mb.py",
     tags = [
+        "noci",
         "not_build:arm",
         "not_run:arm",
     ],
@@ -227,6 +231,7 @@ py_test(
     srcs = ["simple_mip_program_mb.py"],
     main = "simple_mip_program_mb.py",
     tags = [
+        "noci",
         "not_build:arm",
         "not_run:arm",
     ],

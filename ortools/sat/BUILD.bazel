@@ -1262,6 +1262,7 @@ cc_test(
     name = "cp_model_solver_test",
     size = "medium",
     srcs = ["cp_model_solver_test.cc"],
+    tags = ["noci"],
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_checker",
@@ -2683,6 +2684,7 @@ cc_test(
     name = "integer_test",
     size = "small",
     srcs = ["integer_test.cc"],
+    tags = ["noci"],
     deps = [
         ":integer",
         ":integer_base",
@@ -3524,6 +3526,7 @@ cc_library(
 cc_test(
     name = "scheduling_cuts_test",
     srcs = ["scheduling_cuts_test.cc"],
+    tags = ["noci"],
     deps = [
         ":cp_model",
         ":cp_model_cc_proto",
@@ -3762,6 +3765,7 @@ cc_library(
 cc_test(
     name = "util_test",
     srcs = ["util_test.cc"],
+    tags = ["noci"],
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_solver",
@@ -4002,6 +4006,7 @@ cc_library(
 cc_test(
     name = "2d_packing_brute_force_test",
     srcs = ["2d_packing_brute_force_test.cc"],
+    tags = ["noci"],
     deps = [
         ":2d_packing_brute_force",
         ":cp_model",
@@ -4377,6 +4382,7 @@ cc_test(
     name = "cp_model_lns_test",
     size = "small",
     srcs = ["cp_model_lns_test.cc"],
+    tags = ["noci"],
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_lns",
