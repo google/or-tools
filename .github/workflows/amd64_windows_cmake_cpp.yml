@@ -18,8 +18,8 @@ jobs:
     strategy:
       matrix:
         cmake: [
-          {name: "VS2022", generator: "Visual Studio 17 2022", config: Release},
-          # {name: "VS2022", generator: "Visual Studio 17 2022", config: Debug}, # too many symbols
+          {name: "VS2026", generator: "Visual Studio 18 2026", config: Release},
+          # {name: "VS2026", generator: "Visual Studio 18 2026", config: Debug}, # too many symbols
         ]
       fail-fast: false
     name: amd64•Windows•CMake(${{matrix.cmake.name}},${{matrix.cmake.config}})•C++
