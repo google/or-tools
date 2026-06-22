@@ -78,6 +78,7 @@ jobs:
           - os: macos-latest
             platform: macos
             generator: Ninja
+    name: CMake(${{matrix.platform}}•${{matrix.build}})
     runs-on: ${{matrix.os}}
     steps:
     - uses: actions/checkout@v6
