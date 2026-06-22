@@ -154,3 +154,57 @@ the lowest level (`GetRadixKey`).
     types). This maps the largest original keys to the smallest radix buckets,
     achieving a perfectly stable descending sort with zero branching overhead in
     the core loops.
+
+---
+
+## 5. Permutation-Based Indirect Sorting
+
+When sorting a container of large, move-expensive, or move-only objects,
+or when the keys are stored in an independent data structure that is mapped
+by index, you can compute a permutation of indices instead of sorting the
+original container directly.
+
+The library provides two families of index-computing permutation APIs:
+the `Compute` variants that return a new `RadixSortPermutation` by value,
+and the `Update` variants that modify an existing `RadixSortPermutation`
+in-place via a non-const reference parameter.
+
+*   `ComputeAutoRadixSortPermutation` /
+    `ComputeAutoHistogramRadixSortPermutation`
+    (creates a new permutation; variadic, supports multikey)
+*   `UpdateAutoRadixSortPermutation` /
+    `UpdateAutoHistogramRadixSortPermutation`
+    (updates permutation in-place; variadic, supports multikey)
+*   `ComputeRangeRadixSortPermutation` /
+    `ComputeRangeHistogramRadixSortPermutation`
+    (creates a new permutation; single-key only)
+*   `UpdateRangeRadixSortPermutation` /
+    `UpdateRangeHistogramRadixSortPermutation`
+    (updates permutation in-place; single-key only)
+
+> [!NOTE]
+> The `Range`-based APIs are restricted to a single key accessor. Because
+> the caller must supply explicit `key_min` and `key_max` bounds, specifying
+> bounds for multiple keys directly in the signature would result in a
+> complex and cluttered API signature. Multi-key lexicographical range
+> sorting is better served by the `Auto` variants or sequential single-key
+> sorting passes.
+
+The `Compute` functions return a `RadixSortPermutation` object holding a
+`std::vector<std::size_t>`. You can cascade sorting passes by passing an
+existing `RadixSortPermutation` to the `Update` functions, which is then
+updated in-place by subsequent key sweeps:
+
+```cpp
+// 1. Initial pass sorting by secondary key
+RadixSortPermutation perm = ComputeAutoRadixSortPermutation(
+    container, [&](const std::size_t i) { return secondary_keys[i]; });
+
+// 2. Cascade sort by primary key
+UpdateAutoRadixSortPermutation(
+    perm, container, [&](const std::size_t i) { return primary_keys[i]; });
+
+// 3. Apply the final sorted permutation
+perm.ApplyTo(container);
+```
+

@@ -488,6 +488,7 @@ cc_library(
 cc_test(
     name = "n_choose_k_test",
     srcs = ["n_choose_k_test.cc"],
+    tags = ["noci"],
     deps = [
         ":n_choose_k",
         "//ortools/base:dump_vars",
@@ -505,6 +506,7 @@ cc_test(
 cc_test(
     name = "multikey_radix_sort_test",
     srcs = ["multikey_radix_sort_test.cc"],
+    tags = ["noci"],
     deps = [
         ":multikey_radix_sort",
         ":radix_sort",

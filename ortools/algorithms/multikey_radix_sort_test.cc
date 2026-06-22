@@ -19,6 +19,7 @@
 #include <functional>
 #include <limits>
 #include <memory>
+#include <numeric>
 #include <string>
 #include <tuple>
 #include <type_traits>
@@ -1040,6 +1041,241 @@ TEST(RangeRadixSortTest, AlgorithmComparison) {
           size, direction, kInt64Max - 100000, kInt64Max);
     }
   }
+}
+
+TEST(IndirectAutoRadixSortTest, SortMoveOnlyTypesWithIndependentKeys) {
+  struct MoveOnlyStruct {
+    std::unique_ptr<int> val;
+    bool operator==(const MoveOnlyStruct& other) const {
+      if (val == nullptr || other.val == nullptr) {
+        return val == other.val;
+      }
+      return *val == *other.val;
+    }
+  };
+  std::vector<MoveOnlyStruct> container;
+  container.push_back({std::make_unique<int>(10)});
+  container.push_back({std::make_unique<int>(20)});
+  container.push_back({std::make_unique<int>(30)});
+
+  std::vector<double> key = {3.0, 1.0, 2.0};
+  ComputeAutoRadixSortPermutation(container, [&](const std::size_t i) {
+    return key[i];
+  }).ApplyTo(container);
+  EXPECT_EQ(*container[0].val, 20);
+  EXPECT_EQ(*container[1].val, 30);
+  EXPECT_EQ(*container[2].val, 10);
+}
+
+struct MyValueStruct {
+  std::string name;
+  bool operator==(const MyValueStruct& other) const {
+    return name == other.name;
+  }
+};
+
+std::pair<std::vector<MyValueStruct>, std::vector<double>>
+GenerateSmallSeparateArrays() {
+  std::vector<MyValueStruct> container = {{"A"}, {"B"}, {"C"}};
+  std::vector<double> key = {3.0, 1.0, 2.0};
+  return {std::move(container), std::move(key)};
+}
+
+TEST(IndirectAutoRadixSortTest, SortStructsWithIndependentKeys) {
+  auto [container, key] = GenerateSmallSeparateArrays();
+  ComputeAutoRadixSortPermutation(container, [&](const std::size_t i) {
+    return key[i];
+  }).ApplyTo(container);
+  EXPECT_THAT(container, ElementsAre(MyValueStruct{"B"}, MyValueStruct{"C"},
+                                     MyValueStruct{"A"}));
+}
+
+TEST(IndirectRangeRadixSortTest, SortStructsWithIndependentKeysRange) {
+  auto [container, key] = GenerateSmallSeparateArrays();
+  ComputeRangeRadixSortPermutation(1.0, 3.0, container,
+                                   [&](const std::size_t i) { return key[i]; })
+      .ApplyTo(container);
+  EXPECT_THAT(container, ElementsAre(MyValueStruct{"B"}, MyValueStruct{"C"},
+                                     MyValueStruct{"A"}));
+}
+
+TEST(IndirectAutoHistogramRadixSortTest, SortStructsWithIndependentKeys) {
+  auto [container, key] = GenerateSmallSeparateArrays();
+  ComputeAutoHistogramRadixSortPermutation(container, [&](const std::size_t i) {
+    return key[i];
+  }).ApplyTo(container);
+  EXPECT_THAT(container, ElementsAre(MyValueStruct{"B"}, MyValueStruct{"C"},
+                                     MyValueStruct{"A"}));
+}
+
+TEST(IndirectRangeHistogramRadixSortTest, SortStructsWithIndependentKeysRange) {
+  auto [container, key] = GenerateSmallSeparateArrays();
+  ComputeRangeHistogramRadixSortPermutation(
+      1.0, 3.0, container, [&](const std::size_t i) { return key[i]; })
+      .ApplyTo(container);
+  EXPECT_THAT(container, ElementsAre(MyValueStruct{"B"}, MyValueStruct{"C"},
+                                     MyValueStruct{"A"}));
+}
+
+std::pair<std::vector<MyValueStruct>, std::vector<double>>
+GenerateSeparateArrays(int n) {
+  std::vector<MyValueStruct> container(n);
+  std::vector<double> key(n);
+  absl::BitGen bitgen;
+  for (int i = 0; i < n; ++i) {
+    container[i] = MyValueStruct{std::to_string(i)};
+    key[i] = absl::Uniform<double>(bitgen, 0.0, 1000.0);
+  }
+  return {std::move(container), std::move(key)};
+}
+
+template <typename SortFn>
+void VerifyIndirectSortLarge(SortFn sort_fn, RadixSortDirection direction) {
+  constexpr std::size_t n = 10000;
+  auto [container, key] = GenerateSeparateArrays(n);
+
+  std::vector<MyValueStruct> expected = container;
+  std::vector<std::size_t> permutation(n);
+  std::iota(permutation.begin(), permutation.end(), 0);
+  std::stable_sort(permutation.begin(), permutation.end(),
+                   [&](const std::size_t a, const std::size_t b) {
+                     if (direction == RadixSortDirection::kIncreasing) {
+                       return key[a] < key[b];
+                     } else {
+                       return key[a] > key[b];
+                     }
+                   });
+  std::vector<MyValueStruct> expected_sorted(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    expected_sorted[i] = expected[permutation[i]];
+  }
+
+  RadixSortPermutation perm = sort_fn(container, key);
+  perm.ApplyTo(container);
+  EXPECT_EQ(container, expected_sorted);
+}
+
+TEST(IndirectAutoRadixSortTest, SortLargeIncreasing) {
+  VerifyIndirectSortLarge(
+      [](const auto& container, const auto& key) {
+        return ComputeAutoRadixSortPermutation<RadixSortDirection::kIncreasing>(
+            container, [&](const std::size_t i) { return key[i]; });
+      },
+      RadixSortDirection::kIncreasing);
+}
+
+TEST(IndirectAutoRadixSortTest, SortLargeDecreasing) {
+  VerifyIndirectSortLarge(
+      [](const auto& container, const auto& key) {
+        return ComputeAutoRadixSortPermutation<RadixSortDirection::kDecreasing>(
+            container, [&](const std::size_t i) { return key[i]; });
+      },
+      RadixSortDirection::kDecreasing);
+}
+
+TEST(IndirectRangeRadixSortTest, SortLargeIncreasing) {
+  VerifyIndirectSortLarge(
+      [](const auto& container, const auto& key) {
+        return ComputeRangeRadixSortPermutation<
+            RadixSortDirection::kIncreasing>(
+            0.0, 1000.0, container,
+            [&](const std::size_t i) { return key[i]; });
+      },
+      RadixSortDirection::kIncreasing);
+}
+
+TEST(IndirectRangeRadixSortTest, SortLargeDecreasing) {
+  VerifyIndirectSortLarge(
+      [](const auto& container, const auto& key) {
+        return ComputeRangeRadixSortPermutation<
+            RadixSortDirection::kDecreasing>(
+            0.0, 1000.0, container,
+            [&](const std::size_t i) { return key[i]; });
+      },
+      RadixSortDirection::kDecreasing);
+}
+
+TEST(IndirectAutoHistogramRadixSortTest, SortLargeIncreasing) {
+  VerifyIndirectSortLarge(
+      [](const auto& container, const auto& key) {
+        return ComputeAutoHistogramRadixSortPermutation<
+            RadixSortDirection::kIncreasing>(
+            container, [&](const std::size_t i) { return key[i]; });
+      },
+      RadixSortDirection::kIncreasing);
+}
+
+TEST(IndirectAutoHistogramRadixSortTest, SortLargeDecreasing) {
+  VerifyIndirectSortLarge(
+      [](const auto& container, const auto& key) {
+        return ComputeAutoHistogramRadixSortPermutation<
+            RadixSortDirection::kDecreasing>(
+            container, [&](const std::size_t i) { return key[i]; });
+      },
+      RadixSortDirection::kDecreasing);
+}
+
+TEST(IndirectRangeHistogramRadixSortTest, SortLargeRangeIncreasing) {
+  VerifyIndirectSortLarge(
+      [](const auto& container, const auto& key) {
+        return ComputeRangeHistogramRadixSortPermutation<
+            RadixSortDirection::kIncreasing>(
+            0.0, 1000.0, container,
+            [&](const std::size_t i) { return key[i]; });
+      },
+      RadixSortDirection::kIncreasing);
+}
+
+TEST(IndirectRangeHistogramRadixSortTest, SortLargeRangeDecreasing) {
+  VerifyIndirectSortLarge(
+      [](const auto& container, const auto& key) {
+        return ComputeRangeHistogramRadixSortPermutation<
+            RadixSortDirection::kDecreasing>(
+            0.0, 1000.0, container,
+            [&](const std::size_t i) { return key[i]; });
+      },
+      RadixSortDirection::kDecreasing);
+}
+
+TEST(RadixSortPermutationTest, ValidationChecks) {
+  RadixSortPermutation perm1(5);
+  EXPECT_TRUE(perm1.IsValid());
+
+  RadixSortPermutation perm2(std::vector<std::size_t>{0, 2, 1, 4, 3});
+  EXPECT_TRUE(perm2.IsValid());
+
+  // Duplicate index
+  RadixSortPermutation perm3(std::vector<std::size_t>{0, 1, 1, 3});
+  EXPECT_FALSE(perm3.IsValid());
+
+  // Out of bounds index
+  RadixSortPermutation perm4(std::vector<std::size_t>{0, 1, 2, 4});
+  EXPECT_FALSE(perm4.IsValid());
+}
+
+TEST(IndirectAutoRadixSortTest, SortCascadedStructs) {
+  struct CascadedStruct {
+    int primary;
+    int secondary;
+    bool operator==(const CascadedStruct& other) const {
+      return primary == other.primary && secondary == other.secondary;
+    }
+  };
+  std::vector<CascadedStruct> container = {{2, 10}, {1, 20}, {2, 5}, {1, 5}};
+  // Sorting by secondary key first, then primary key.
+  RadixSortPermutation perm(container.size());
+  UpdateAutoRadixSortPermutation(perm, container, [&](const std::size_t i) {
+    return container[i].secondary;
+  });
+  UpdateAutoRadixSortPermutation(perm, container, [&](const std::size_t i) {
+    return container[i].primary;
+  });
+
+  perm.ApplyTo(container);
+
+  EXPECT_THAT(container,
+              ElementsAre(CascadedStruct{1, 5}, CascadedStruct{1, 20},
+                          CascadedStruct{2, 5}, CascadedStruct{2, 10}));
 }
 
 }  // namespace
