@@ -18,8 +18,10 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <iterator>
 #include <limits>
+#include <numeric>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -186,7 +188,8 @@ constexpr void CheckKeyAccessor() {
   using BeginType = decltype(std::begin(std::declval<Container&>()));
   using ValueType = typename std::iterator_traits<BeginType>::value_type;
   // Determine the integer type of the key at the lowest level.
-  using KeyType = std::decay_t<std::invoke_result_t<KeyAccessor, ValueType&>>;
+  using KeyType =
+      std::remove_cvref_t<std::invoke_result_t<KeyAccessor, ValueType>>;
   static_assert(std::is_integral_v<KeyType> || std::is_enum_v<KeyType> ||
                     std::is_floating_point_v<KeyType>,
                 "Key type must be integral, enum or floating point.");
@@ -352,7 +355,8 @@ template <typename Container, typename KeyAccessor>
 auto ComputeMinMax(const Container& values, const KeyAccessor get_key) {
   using ValueType =
       typename std::iterator_traits<decltype(std::begin(values))>::value_type;
-  using KeyType = std::decay_t<std::invoke_result_t<KeyAccessor, ValueType&>>;
+  using KeyType =
+      std::remove_cvref_t<std::invoke_result_t<KeyAccessor, ValueType>>;
   KeyType key_min = std::numeric_limits<KeyType>::max();
   KeyType key_max = std::numeric_limits<KeyType>::lowest();
   for (const auto& item : values) {
@@ -523,6 +527,7 @@ void SortWrapper(Container& values, SortImpl sort_impl) {
     sort_impl(values, buffer);
   }
 }
+
 }  // namespace radix_sort_internal
 
 // Sorts a container of items by key using radix sort.
@@ -649,6 +654,282 @@ void MultikeyHistogramRadixSort(Container& values,
     rsi::MultikeyHistogramRadixSortImpl<Direction>(vals, buff,
                                                    key_accessors...);
   });
+}
+
+namespace radix_sort_internal {
+
+template <typename Container, typename KeyAccessor>
+[[nodiscard]] auto CreateTempKeys(const Container& values,
+                                  const KeyAccessor get_key) {
+  const std::size_t n = std::size(values);
+  std::vector<std::remove_cvref_t<decltype(get_key(std::size_t{}))>> temp_keys;
+  temp_keys.reserve(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    temp_keys.push_back(get_key(i));
+  }
+  return temp_keys;
+}
+
+// Extracts keys using the key accessor into a flat temporary vector, and sorts
+// the permutation vector using raw AutoRadixSort.
+// Unique aspect: Unlike other radix sort internals that reorder the values
+// themselves (writing back and forth to buffers), this helper keeps the values
+// container completely const. We extract and buffer keys once up-front to
+// construct a contiguous array. This achieves cache locality during radix
+// sweeps and guarantees the user's get_key callback is invoked exactly once
+// per element.
+template <RadixSortDirection Direction, typename Container,
+          typename KeyAccessor>
+void SortPermutationStep(std::vector<std::size_t>& permutation,
+                         const Container& values, const KeyAccessor get_key) {
+  auto temp_keys = CreateTempKeys(values, get_key);
+  AutoRadixSort<Direction>(permutation,
+                           [&](const std::size_t i) { return temp_keys[i]; });
+}
+
+// Splits the keys out and sorts the permutation using RangeRadixSort.
+template <RadixSortDirection Direction, typename KeyType, typename Container,
+          typename KeyAccessor>
+void SortRangePermutationStep(std::vector<std::size_t>& permutation,
+                              const KeyType key_min, const KeyType key_max,
+                              const Container& values,
+                              const KeyAccessor get_key) {
+  auto temp_keys = CreateTempKeys(values, get_key);
+  RangeRadixSort<Direction>(key_min, key_max, permutation,
+                            [&](const std::size_t i) { return temp_keys[i]; });
+}
+
+// Similar to SortPermutationStep but uses AutoHistogramRadixSort for
+// histogram-based pass sorting of the index permutation.
+template <RadixSortDirection Direction, typename Container,
+          typename KeyAccessor>
+void SortPermutationHistogramStep(std::vector<std::size_t>& permutation,
+                                  const Container& values,
+                                  const KeyAccessor get_key) {
+  auto temp_keys = CreateTempKeys(values, get_key);
+  AutoHistogramRadixSort<Direction>(
+      permutation, [&](const std::size_t i) { return temp_keys[i]; });
+}
+
+// Splits the keys out and sorts the permutation using RangeHistogramRadixSort.
+template <RadixSortDirection Direction, typename KeyType, typename Container,
+          typename KeyAccessor>
+void SortRangePermutationHistogramStep(std::vector<std::size_t>& permutation,
+                                       const KeyType key_min,
+                                       const KeyType key_max,
+                                       const Container& values,
+                                       const KeyAccessor get_key) {
+  auto temp_keys = CreateTempKeys(values, get_key);
+  RangeHistogramRadixSort<Direction>(
+      key_min, key_max, permutation,
+      [&](const std::size_t i) { return temp_keys[i]; });
+}
+
+}  // namespace radix_sort_internal
+
+// Represents a permutation of indices that can be applied to any container.
+class [[nodiscard]] RadixSortPermutation {
+ public:
+  explicit RadixSortPermutation(std::size_t n) : permutation_(n) {
+    std::iota(permutation_.begin(), permutation_.end(), 0);
+  }
+  explicit RadixSortPermutation(std::vector<std::size_t> permutation)
+      : permutation_(std::move(permutation)) {}
+
+  std::size_t size() const { return permutation_.size(); }
+
+  const std::vector<std::size_t>& permutation() const { return permutation_; }
+  std::vector<std::size_t>& permutation() { return permutation_; }
+
+  // Returns true if the wrapped vector is a valid permutation of [0, ..., n-1].
+  bool IsValid() const {
+    const std::size_t n = permutation_.size();
+    std::vector<bool> seen(n, false);
+    for (const std::size_t index : permutation_) {
+      if (index >= n || seen[index]) {
+        return false;
+      }
+      seen[index] = true;
+    }
+    return true;
+  }
+
+  // Applies the permutation to the container in-place.
+  template <typename Container>
+  void ApplyTo(Container& values) const {
+    DCHECK(IsValid());
+    const std::size_t n = std::size(values);
+    DCHECK_EQ(n, permutation_.size());
+    std::vector<bool> visited(n, false);
+    for (std::size_t i = 0; i < n; ++i) {
+      if (visited[i]) continue;
+      std::size_t current = i;
+      std::size_t next = permutation_[current];
+      if (next == current) {  // Cycle of length 1.
+        visited[current] = true;
+        continue;
+      }
+      auto final_value_at_step_i = std::move(std::begin(values)[current]);
+      while (next != i) {
+        std::begin(values)[current] = std::move(std::begin(values)[next]);
+        DCHECK(!visited[current]);
+        visited[current] = true;
+        current = next;
+        next = permutation_[current];
+      }
+      std::begin(values)[current] = std::move(final_value_at_step_i);
+      visited[current] = true;
+    }
+    DCHECK(std::all_of(visited.begin(), visited.end(), std::identity{}));
+  }
+
+ private:
+  std::vector<std::size_t> permutation_;
+};
+
+// Updates the permutation vector in-place, sorting the elements of 'values' by
+// the keys returned by the given key accessors, starting from the given
+// permutation, without modifying 'values'.
+//
+// Example usage for cascaded sorting:
+//   RadixSortPermutation perm = ComputeAutoRadixSortPermutation(
+//       container, [&](const std::size_t i) { return secondary_keys[i]; });
+//   UpdateAutoRadixSortPermutation(
+//       perm, container, [&](const std::size_t i) { return primary_keys[i]; });
+//   perm.ApplyTo(container);
+//
+// This function is the most efficient for sorting by multiple keys, as it
+// creates and handles only one permutation. Moving the different container
+// elements is done only once, at the end. This can be a large saving if the
+// elements are large or move-only.
+// Note: This function is not templated on the key type because all keys are
+// extracted up-front into a temporary container, and the permutation is sorted
+// using AutoRadixSort.
+template <RadixSortDirection Direction = RadixSortDirection::kIncreasing,
+          typename Container, typename... KeyAccessors>
+void UpdateAutoRadixSortPermutation(RadixSortPermutation& permutation,
+                                    const Container& values,
+                                    KeyAccessors... key_accessors) {
+  const std::size_t n = std::size(values);
+  DCHECK_EQ(n, permutation.size());
+  if (n <= 1) return;
+
+  (radix_sort_internal::SortPermutationStep<Direction>(
+       permutation.permutation(), values, key_accessors),
+   ...);
+}
+
+// Simplified interface for ComputeAutoRadixSortPermutation that creates the
+// permutation vector internally.
+template <RadixSortDirection Direction = RadixSortDirection::kIncreasing,
+          typename Container, typename... KeyAccessors>
+RadixSortPermutation ComputeAutoRadixSortPermutation(
+    const Container& values, KeyAccessors... key_accessors) {
+  RadixSortPermutation permutation(std::size(values));
+  UpdateAutoRadixSortPermutation<Direction>(permutation, values,
+                                            key_accessors...);
+  return permutation;
+}
+
+// Updates the permutation vector in-place, sorting the elements of 'values'
+// by the keys returned by the given key accessor on the range [key_min,
+// key_max], starting from the given permutation, without modifying 'values'.
+// Note: Range-based radix sorting is limited to a single key accessor because
+// specifying explicit bounds for multiple keys would require a complex list of
+// bounds pairs. Lexicographical multikey sorting with ranges is better handled
+// by the Auto variant (which scans for bounds dynamically) or by serializing
+// single-key Range sort passes.
+template <RadixSortDirection Direction = RadixSortDirection::kIncreasing,
+          typename KeyType, typename Container, typename KeyAccessor>
+void UpdateRangeRadixSortPermutation(RadixSortPermutation& permutation,
+                                     const KeyType key_min,
+                                     const KeyType key_max,
+                                     const Container& values,
+                                     const KeyAccessor get_key) {
+  const std::size_t n = std::size(values);
+  DCHECK_EQ(n, permutation.size());
+  if (n <= 1) return;
+
+  radix_sort_internal::SortRangePermutationStep<Direction>(
+      permutation.permutation(), key_min, key_max, values, get_key);
+}
+
+// Simplified interface for ComputeRangeRadixSortPermutation that creates the
+// permutation vector internally.
+template <RadixSortDirection Direction = RadixSortDirection::kIncreasing,
+          typename KeyType, typename Container, typename KeyAccessor>
+RadixSortPermutation ComputeRangeRadixSortPermutation(
+    const KeyType key_min, const KeyType key_max, const Container& values,
+    const KeyAccessor get_key) {
+  RadixSortPermutation permutation(std::size(values));
+  UpdateRangeRadixSortPermutation<Direction>(permutation, key_min, key_max,
+                                             values, get_key);
+  return permutation;
+}
+
+// Updates the permutation vector in-place, sorting the elements of 'values'
+// by the keys returned by the given key accessors, starting from the given
+// permutation, without modifying 'values', using histogram radix sort.
+template <RadixSortDirection Direction = RadixSortDirection::kIncreasing,
+          typename Container, typename... KeyAccessors>
+void UpdateAutoHistogramRadixSortPermutation(RadixSortPermutation& permutation,
+                                             const Container& values,
+                                             KeyAccessors... key_accessors) {
+  const std::size_t n = std::size(values);
+  DCHECK_EQ(n, permutation.size());
+  if (n <= 1) return;
+
+  (radix_sort_internal::SortPermutationHistogramStep<Direction>(
+       permutation.permutation(), values, key_accessors),
+   ...);
+}
+
+// Simplified interface for ComputeAutoHistogramRadixSortPermutation that
+// creates the permutation vector internally.
+template <RadixSortDirection Direction = RadixSortDirection::kIncreasing,
+          typename Container, typename... KeyAccessors>
+RadixSortPermutation ComputeAutoHistogramRadixSortPermutation(
+    const Container& values, KeyAccessors... key_accessors) {
+  RadixSortPermutation permutation(std::size(values));
+  UpdateAutoHistogramRadixSortPermutation<Direction>(permutation, values,
+                                                     key_accessors...);
+  return permutation;
+}
+
+// Updates the permutation vector in-place, sorting the elements of 'values'
+// by the keys returned by the given key accessor on the range [key_min,
+// key_max], starting from the given permutation, without modifying 'values',
+// using histogram radix sort.
+// Note: Range-based radix sorting is limited to a single key accessor because
+// specifying explicit bounds for multiple keys would require a complex list of
+// bounds pairs. Lexicographical multikey sorting with ranges is better handled
+// by the Auto variant (which scans for bounds dynamically) or by serializing
+// single-key Range sort passes.
+template <RadixSortDirection Direction = RadixSortDirection::kIncreasing,
+          typename KeyType, typename Container, typename KeyAccessor>
+void UpdateRangeHistogramRadixSortPermutation(RadixSortPermutation& permutation,
+                                              const KeyType key_min,
+                                              const KeyType key_max,
+                                              const Container& values,
+                                              const KeyAccessor get_key) {
+  const std::size_t n = std::size(values);
+  DCHECK_EQ(n, permutation.size());
+  if (n <= 1) return;
+  radix_sort_internal::SortRangePermutationHistogramStep<Direction>(
+      permutation.permutation(), key_min, key_max, values, get_key);
+}
+
+// Simplified interface for ComputeRangeHistogramRadixSortPermutation that
+// creates the permutation vector internally.
+template <RadixSortDirection Direction = RadixSortDirection::kIncreasing,
+          typename KeyType, typename Container, typename KeyAccessor>
+RadixSortPermutation ComputeRangeHistogramRadixSortPermutation(
+    const KeyType key_min, const KeyType key_max, const Container& values,
+    const KeyAccessor get_key) {
+  RadixSortPermutation permutation(std::size(values));
+  UpdateRangeHistogramRadixSortPermutation<Direction>(permutation, key_min,
+                                                      key_max, values, get_key);
+  return permutation;
 }
 
 }  // namespace operations_research
