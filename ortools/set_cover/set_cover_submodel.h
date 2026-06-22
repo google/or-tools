@@ -250,6 +250,7 @@ class CoreModel : public SetCoverModel {
     (void)best_multipliers;
     (void)best_solution;
     (void)force;
+    return false;
   }
 
   FullModelView StrongTypedFullModelView() const { return full_model_; }
