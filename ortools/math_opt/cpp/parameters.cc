@@ -88,6 +88,8 @@ std::optional<absl::string_view> Enum<SolverType>::ToOptString(
       return "santorini";
     case SolverType::kXpress:
       return "xpress";
+    case SolverType::kMinCostFlow:
+      return "min_cost_flow";
   }
   return std::nullopt;
 }
@@ -97,7 +99,7 @@ absl::Span<const SolverType> Enum<SolverType>::AllValues() {
       SolverType::kGscip,     SolverType::kGurobi, SolverType::kGlop,
       SolverType::kCpSat,     SolverType::kPdlp,   SolverType::kGlpk,
       SolverType::kEcos,      SolverType::kScs,    SolverType::kHighs,
-      SolverType::kSantorini, SolverType::kXpress,
+      SolverType::kSantorini, SolverType::kXpress, SolverType::kMinCostFlow,
   };
   return absl::MakeConstSpan(kSolverTypeValues);
 }

@@ -43,6 +43,7 @@ cc_test(
         "//ortools/base:gmock",
         "//ortools/base:gmock_main",
         "//ortools/base:strong_int",
+        "//ortools/math_opt/constraints/util:model_util",
         "//ortools/math_opt/cpp:math_opt",
         "//ortools/math_opt/storage:model_storage",
         "//ortools/math_opt/storage:sparse_coefficient_map",

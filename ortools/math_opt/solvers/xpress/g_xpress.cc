@@ -94,13 +94,12 @@ absl::Status Xpress::RemoveCbMessage(void(XPRS_CC* cb)(XPRSprob, void*,
   return ToStatus(XPRSremovecbmessage(xpress_model_, cb, cbdata));
 }
 
-absl::Status Xpress::AddCbChecktime(int(XPRS_CC* cb)(XPRSprob, void*),
-                                    void* cbdata, int prio) {
+absl::Status Xpress::AddCbChecktime(ChecktimeCallback cb, void* cbdata,
+                                    int prio) {
   return ToStatus(XPRSaddcbchecktime(xpress_model_, cb, cbdata, prio));
 }
 
-absl::Status Xpress::RemoveCbChecktime(int(XPRS_CC* cb)(XPRSprob, void*),
-                                       void* cbdata) {
+absl::Status Xpress::RemoveCbChecktime(ChecktimeCallback cb, void* cbdata) {
   return ToStatus(XPRSremovecbchecktime(xpress_model_, cb, cbdata));
 }
 
@@ -164,7 +163,7 @@ absl::Status Xpress::AddVars(std::size_t count,
   // Since we don't add any non-zeros here, it is safe to use XPRSaddcols().
   OR_RETURN_IF_ERROR(ToStatus(XPRSaddcols(
       xpress_model_, num_vars, 0, c_obj, nullptr, nullptr, nullptr,
-      lb.size() ? lb.data() : nullptr, ub.size() ? ub.data() : nullptr)));
+      lb.empty() ? nullptr : lb.data(), ub.empty() ? nullptr : ub.data())));
   if (!vtype.empty()) {
     for (int i = 0; i < num_vars; ++i) colind.push_back(oldCols + i);
     int const ret =
@@ -572,9 +571,9 @@ absl::Status Xpress::AddRows(absl::Span<char const> rowtype,
       rowtype.size() != start.size() || colind.size() != rowcoef.size())
     return absl::InvalidArgumentError("inconsistent arguments to AddRows");
   return ToStatus(XPRSaddrows64(xpress_model_, static_cast<int>(rowtype.size()),
-                                colind.size(), rowtype.data(), rhs.data(),
-                                rng.data(), start.data(), colind.data(),
-                                rowcoef.data()));
+                                static_cast<int>(rowcoef.size()),
+                                rowtype.data(), rhs.data(), rng.data(),
+                                start.data(), colind.data(), rowcoef.data()));
 }
 
 absl::Status Xpress::AddQRow(char sense, double rhs, double rng,
@@ -587,12 +586,17 @@ absl::Status Xpress::AddQRow(char sense, double rhs, double rng,
   if (checkInt32Overflow(std::size_t(oldRows) + 1))
     return absl::InvalidArgumentError(
         "XPRESS cannot handle more than 2^31 rows");
+  if (colind.size() != rowcoef.size() || qcol1.size() != qcol2.size() ||
+      qcol1.size() != qcoef.size())
+    return absl::InvalidArgumentError("inconsistent arguments to AddQRows");
   XPRSint64 const start = 0;
+  const int num_coefs = static_cast<int>(rowcoef.size());
   OR_RETURN_IF_ERROR(
-      ToStatus(XPRSaddrows64(xpress_model_, 1, colind.size(), &sense, &rhs,
-                             &rng, &start, colind.data(), rowcoef.data())));
-  if (qcol1.size() > 0) {
-    int const ret = XPRSaddqmatrix64(xpress_model_, oldRows, qcol1.size(),
+      ToStatus(XPRSaddrows64(xpress_model_, 1, num_coefs, &sense, &rhs, &rng,
+                             &start, colind.data(), rowcoef.data())));
+  if (!qcol1.empty()) {
+    const int num_qcoefs = static_cast<int>(qcoef.size());
+    int const ret = XPRSaddqmatrix64(xpress_model_, oldRows, num_qcoefs,
                                      qcol1.data(), qcol2.data(), qcoef.data());
     if (ret != 0) {
       XPRSdelrows(xpress_model_, 1, &oldRows);
@@ -630,8 +634,8 @@ absl::Status Xpress::ChgBounds(absl::Span<int const> colind,
   if (checkInt32Overflow(colind.size()))
     return absl::InvalidArgumentError(
         "XPRESS cannot handle more than 2^31 bound changes");
-  return ToStatus(XPRSchgbounds(xpress_model_, colind.size(), colind.data(),
-                                bndtype.data(), bndval.data()));
+  return ToStatus(XPRSchgbounds(xpress_model_, static_cast<int>(colind.size()),
+                                colind.data(), bndtype.data(), bndval.data()));
 }
 absl::Status Xpress::ChgColType(absl::Span<int const> colind,
                                 absl::Span<char const> coltype) {
@@ -640,8 +644,8 @@ absl::Status Xpress::ChgColType(absl::Span<int const> colind,
   if (checkInt32Overflow(colind.size()))
     return absl::InvalidArgumentError(
         "XPRESS cannot handle more than 2^31 type changes");
-  return ToStatus(XPRSchgcoltype(xpress_model_, colind.size(), colind.data(),
-                                 coltype.data()));
+  return ToStatus(XPRSchgcoltype(xpress_model_, static_cast<int>(colind.size()),
+                                 colind.data(), coltype.data()));
 }
 
 }  // namespace operations_research::math_opt

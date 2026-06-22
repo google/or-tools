@@ -54,6 +54,7 @@ cc_library(
         ":gscip_cc_proto",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:string_view",
         "@abseil-cpp//absl/time",
     ],
 )
@@ -144,6 +145,7 @@ cc_library(
     deps = [
         ":gscip",
         "//ortools/base:status_macros",
+        "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/strings",
@@ -164,6 +166,7 @@ cc_test(
         "//ortools/base:gmock",
         "//ortools/base:gmock_main",
         "//ortools/base:map_util",
+        "@abseil-cpp//absl/container:flat_hash_map",
         "@scip",
     ],
 )
@@ -236,6 +239,7 @@ cc_library(
     deps = [
         ":gscip",
         ":gscip_callback_result",
+        "//ortools/base:status_builder",
         "//ortools/base:status_macros",
         "//ortools/linear_solver:scip_helper_macros",
         "@abseil-cpp//absl/log",
@@ -276,6 +280,7 @@ cc_library(
         ":gscip_callback_result",
         ":gscip_constraint_handler",
         "//ortools/base:protoutil",
+        "//ortools/base:status_builder",
         "//ortools/base:status_macros",
         "//ortools/math_opt:callback_cc_proto",
         "//ortools/math_opt:sparse_containers_cc_proto",

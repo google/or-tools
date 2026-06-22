@@ -136,10 +136,10 @@ class Xpress {
   absl::Status RemoveCbMessage(void(XPRS_CC* cb)(XPRSprob, void*, char const*,
                                                  int, int),
                                void* cbdata = nullptr);
-  absl::Status AddCbChecktime(int(XPRS_CC* cb)(XPRSprob, void*), void* cbdata,
-                              int prio = 0);
-  absl::Status RemoveCbChecktime(int(XPRS_CC* cb)(XPRSprob, void*),
-                                 void* cbdata = nullptr);
+
+  using ChecktimeCallback = int(XPRS_CC*)(XPRSprob, void*);
+  absl::Status AddCbChecktime(ChecktimeCallback cb, void* cbdata, int prio = 0);
+  absl::Status RemoveCbChecktime(ChecktimeCallback cb, void* cbdata = nullptr);
 
   absl::StatusOr<std::vector<double>> GetVarLb() const;
   absl::StatusOr<std::vector<double>> GetVarUb() const;

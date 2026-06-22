@@ -116,7 +116,28 @@ public enum SolverType {
    *
    * <p>Supports LP, MIP, and nonconvex integer quadratic problems. Need a special license.
    */
-  XPRESS(SolverTypeProto.SOLVER_TYPE_XPRESS);
+  XPRESS(SolverTypeProto.SOLVER_TYPE_XPRESS),
+
+  /**
+   * Google's Min-Cost Flow solver.
+   *
+   * <p>Uses a specialized solver for Min-Cost Flow problems (see
+   * https://developers.google.com/optimization/flow/mincostflow). Supports LP problems that match
+   * the structure of a Min-Cost Flow problem (see go/mathopt-min-cost-flow).
+   *
+   * <p>Requirements:
+   *
+   * <ul>
+   *   <li>The constraint matrix must be the node-arc incidence matrix of a digraph, that is, each
+   *       variable appears in exactly two constraints, with coefficients +1 and -1.
+   *   <li>Only linear constraints are allowed.
+   *   <li>All linear constraints must be equality constraints.
+   *   <li>All variable lower bounds must be 0.
+   *   <li>All variables and constraints must have integer bounds and costs.
+   *   <li>The objective must be linear.
+   * </ul>
+   */
+  MIN_COST_FLOW(SolverTypeProto.SOLVER_TYPE_MIN_COST_FLOW);
 
   private static class ProtoMap {
     private static final EnumMap<SolverTypeProto, SolverType> map =

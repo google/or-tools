@@ -292,12 +292,6 @@ TEST_P(BranchPrioritiesTest, PrioritiesAreSetProperly) {
 
 // See PrioritiesAreSetProperly for details on the model and solve parameters.
 TEST_P(BranchPrioritiesTest, PrioritiesClearedAfterIncrementalSolve) {
-  if (GetParam().solver_type == SolverType::kXpress) {
-    // This test does not work with Xpress since Xpress does not clear/reset
-    // model parameters after a solve. See the comment in XpressSolver::Solve
-    // in xpress_solver.cc.
-    GTEST_SKIP() << "Xpress does not clear model parameters in Solve().";
-  }
   Model model;
   Variable x = model.AddContinuousVariable(-3.0, 1.0, "x");
   Variable y = model.AddContinuousVariable(0.0, 3.0, "y");

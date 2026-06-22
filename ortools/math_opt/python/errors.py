@@ -18,32 +18,10 @@ Here we try to use the standard Python errors we would use if the C++ code was
 instead implemented in Python. This will give Python users a more familiar API.
 """
 
-import enum
-from typing import Optional, Type
+from typing import Optional
 
-from ortools.math_opt import rpc_pb2
-
-
-class _StatusCode(enum.Enum):
-    """The C++ absl::Status::code() values."""
-
-    OK = 0
-    CANCELLED = 1
-    UNKNOWN = 2
-    INVALID_ARGUMENT = 3
-    DEADLINE_EXCEEDED = 4
-    NOT_FOUND = 5
-    ALREADY_EXISTS = 6
-    PERMISSION_DENIED = 7
-    UNAUTHENTICATED = 16
-    RESOURCE_EXHAUSTED = 8
-    FAILED_PRECONDITION = 9
-    ABORTED = 10
-    OUT_OF_RANGE = 11
-    UNIMPLEMENTED = 12
-    INTERNAL = 13
-    UNAVAILABLE = 14
-    DATA_LOSS = 15
+from ortools.util import status_pb2
+from ortools.util.python import status_streaming
 
 
 class InternalMathOptError(RuntimeError):
@@ -55,7 +33,7 @@ class InternalMathOptError(RuntimeError):
 
 
 def status_proto_to_exception(
-    status_proto: rpc_pb2.StatusProto,
+    status_proto: status_pb2.StatusProto,
 ) -> Optional[Exception]:
     """Returns the Python exception that best match the input absl::Status.
 
@@ -76,31 +54,11 @@ def status_proto_to_exception(
     Returns:
       The corresponding exception. None if the input status is OK.
     """
-    try:
-        code = _StatusCode(status_proto.code)
-    except ValueError:
-        return InternalMathOptError(
-            f"unknown C++ error (code = {status_proto.code}):"
-            f" {status_proto.message}"
-        )
-
-    if code == _StatusCode.OK:
+    exception = status_streaming.status_proto_to_exception(status_proto)
+    if exception is None:
         return None
-
-    # For expected errors we compute the corresponding class.
-    error_type: Optional[Type[Exception]] = None
-    if code == _StatusCode.INVALID_ARGUMENT:
-        error_type = ValueError
-    if code == _StatusCode.FAILED_PRECONDITION:
-        error_type = AssertionError
-    if code == _StatusCode.UNIMPLEMENTED:
-        error_type = NotImplementedError
-    if code == _StatusCode.INTERNAL:
-        error_type = InternalMathOptError
-
-    if error_type is not None:
-        return error_type(f"{status_proto.message} (was C++ {code.name})")
-
-    return InternalMathOptError(
-        f"unexpected C++ error {code.name}: {status_proto.message}"
-    )
+    if isinstance(exception, status_streaming.InternalError):
+        return InternalMathOptError(str(exception))
+    # Exception returned by status_streaming already inherit from the expected
+    # exceptions.
+    return exception

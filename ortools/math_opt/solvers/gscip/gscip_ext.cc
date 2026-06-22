@@ -19,9 +19,12 @@
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/status/status.h"
+#include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/status_macros.h"
+#include "ortools/math_opt/solvers/gscip/gscip.h"
 
 namespace operations_research {
 

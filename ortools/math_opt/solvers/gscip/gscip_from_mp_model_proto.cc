@@ -25,6 +25,7 @@
 #include "absl/types/span.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/base/stl_util.h"
+#include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/math_opt/solvers/gscip/gscip.h"
 #include "ortools/math_opt/solvers/gscip/gscip_ext.h"
 #include "scip/type_var.h"

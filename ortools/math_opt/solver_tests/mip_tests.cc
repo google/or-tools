@@ -70,6 +70,42 @@ IncrementalMipTest::IncrementalMipTest()
 
 namespace {
 
+TEST_P(SimpleMipTest, EmptyModel) {
+  Model model;
+  EXPECT_THAT(Solve(model, GetParam().solver_type),
+              IsOkAndHolds(IsOptimal(0.0)));
+}
+
+TEST_P(SimpleMipTest, OffsetOnlyMinimization) {
+  Model model;
+  model.Minimize(4.0);
+  EXPECT_THAT(Solve(model, GetParam().solver_type),
+              IsOkAndHolds(IsOptimal(4.0)));
+}
+
+TEST_P(SimpleMipTest, OffsetOnlyMaximization) {
+  Model model;
+  model.Maximize(4.0);
+  EXPECT_THAT(Solve(model, GetParam().solver_type),
+              IsOkAndHolds(IsOptimal(4.0)));
+}
+
+TEST_P(SimpleMipTest, OffsetMinimization) {
+  Model model;
+  const Variable x = model.AddIntegerVariable(-1.0, 2.0, "x");
+  model.Minimize(2 * x + 4);
+  EXPECT_THAT(Solve(model, GetParam().solver_type),
+              IsOkAndHolds(IsOptimal(2.0)));
+}
+
+TEST_P(SimpleMipTest, OffsetMaximization) {
+  Model model;
+  const Variable x = model.AddIntegerVariable(-1.0, 2.0, "x");
+  model.Maximize(2 * x + 4);
+  EXPECT_THAT(Solve(model, GetParam().solver_type),
+              IsOkAndHolds(IsOptimal(8.0)));
+}
+
 TEST_P(SimpleMipTest, OneVarMax) {
   Model model;
   const Variable x = model.AddVariable(0.0, 4.0, false, "x");
@@ -146,6 +182,7 @@ TEST_P(SimpleMipTest, FractionalBoundsContainNoInteger) {
     // Xpress rounds bounds of integer variables on input, so the bounds
     // specified here result in [1,0]. Xpress also checks that bounds are
     // not contradicting, so it rejects creation of such a variable.
+    // see https://github.com/google/or-tools/issues/5085
     GTEST_SKIP() << "Xpress does not support contradictory bounds.";
   }
   Model model;

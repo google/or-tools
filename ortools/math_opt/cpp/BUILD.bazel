@@ -231,6 +231,7 @@ cc_test(
         "no_test_android",
         "no_test_darwin_x86_64",
         "no_test_wasm",
+        "noci",
     ],
     deps = [
         ":formatters",

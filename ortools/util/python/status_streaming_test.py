@@ -1,0 +1,98 @@
+#!/usr/bin/env python3
+# Copyright 2010-2025 Google LLC
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Tests of the `status_streaming` package."""
+
+from absl.testing import absltest
+
+from ortools.util import status_pb2
+from ortools.util.python import status_streaming
+
+
+class StatusProtoToExceptionTest(absltest.TestCase):
+
+    def test_ok(self) -> None:
+        self.assertIsNone(
+            status_streaming.status_proto_to_exception(
+                status_pb2.StatusProto(code=status_streaming.StatusCode.OK.value)
+            )
+        )
+
+    def test_invalid_argument(self) -> None:
+        error = status_streaming.status_proto_to_exception(
+            status_pb2.StatusProto(
+                code=status_streaming.StatusCode.INVALID_ARGUMENT.value,
+                message="something",
+            )
+        )
+        self.assertIsInstance(error, status_streaming.InvalidArgumentError)
+        self.assertIsInstance(error, ValueError)
+        self.assertEqual(str(error), "something (was C++ INVALID_ARGUMENT)")
+
+    def test_failed_precondition(self) -> None:
+        error = status_streaming.status_proto_to_exception(
+            status_pb2.StatusProto(
+                code=status_streaming.StatusCode.FAILED_PRECONDITION.value,
+                message="something",
+            )
+        )
+        self.assertIsInstance(error, status_streaming.FailedPreconditionError)
+        self.assertIsInstance(error, AssertionError)
+        self.assertEqual(str(error), "something (was C++ FAILED_PRECONDITION)")
+
+    def test_unimplemented(self) -> None:
+        error = status_streaming.status_proto_to_exception(
+            status_pb2.StatusProto(
+                code=status_streaming.StatusCode.UNIMPLEMENTED.value,
+                message="something",
+            )
+        )
+        self.assertIsInstance(error, status_streaming.UnimplementedError)
+        self.assertIsInstance(error, NotImplementedError)
+        self.assertEqual(str(error), "something (was C++ UNIMPLEMENTED)")
+
+    def test_all_error_codes(self) -> None:
+        """Tests all possible values in StatusCode but OK."""
+        for code in status_streaming.StatusCode:
+            if code == status_streaming.StatusCode.OK:
+                continue
+            with self.subTest(code=code):
+                error = status_streaming.status_proto_to_exception(
+                    status_pb2.StatusProto(code=code.value, message="something")
+                )
+
+                # Errors must be instances of sub-classes of StatusError; not an
+                # instance of this base class.
+                self.assertIsNot(type(error), status_streaming.StatusError)
+                self.assertIsInstance(error, status_streaming.StatusError)
+
+                # Test that the exception class name follows the expected pattern.
+                camel_case_code = "".join(
+                    word.capitalize() for word in code.name.lower().split("_")
+                )
+                self.assertEqual(type(error).__name__, f"{camel_case_code}Error")
+
+                # Test that the message is not lost and that the C++ code is included.
+                self.assertEqual(str(error), f"something (was C++ {code.name})")
+
+    def test_unknown_code(self) -> None:
+        error = status_streaming.status_proto_to_exception(
+            status_pb2.StatusProto(code=-5, message="something")
+        )
+        self.assertIsInstance(error, status_streaming.UnexpectedCodeError)
+        self.assertEqual(str(error), "something (was C++ -5)")
+
+
+if __name__ == "__main__":
+    absltest.main()
