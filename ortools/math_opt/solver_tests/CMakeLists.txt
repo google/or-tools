@@ -82,6 +82,25 @@ ortools_cxx_library(
 
 ortools_cxx_library(
   NAME
+    ${_PREFIX}_min_cost_flow_tests
+  SOURCES
+    "min_cost_flow_tests.cc"
+    "min_cost_flow_tests.h"
+  TYPE
+    STATIC
+  LINK_LIBRARIES
+    ortools::base_gmock
+    absl::log
+    absl::status
+    absl::status_matchers
+    absl::strings
+    ortools::math_opt_matchers
+    ortools::math_opt_base_solver_test
+  TESTING
+)
+
+ortools_cxx_library(
+  NAME
     ${_PREFIX}_lp_incomplete_solve_tests
   SOURCES
     "lp_incomplete_solve_tests.cc"
