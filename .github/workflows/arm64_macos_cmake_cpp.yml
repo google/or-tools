@@ -24,7 +24,7 @@ jobs:
     name: arm64•MacOS•CMake(${{matrix.cmake.name}})•C++
     runs-on: macos-latest # macos M1 based runner
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/remote_cache
         with:
           credentials_json: '${{secrets.GCP_BUCKET_API_KEY}}'
@@ -68,4 +68,4 @@ jobs:
     runs-on: ubuntu-latest
     needs: native
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7

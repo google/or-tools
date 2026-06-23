@@ -27,7 +27,7 @@ jobs:
   clang-format:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
     - uses: jidicula/clang-format-action@v4.18.0
       with:
         exclude-regex: '\.tab\.hh$'
@@ -39,7 +39,7 @@ jobs:
         os: [ubuntu-latest, macos-latest]
     runs-on: ${{matrix.os}}
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
     - uses: ./.github/actions/remote_cache
       with:
         credentials_json: '${{secrets.GCP_BUCKET_API_KEY}}'
@@ -81,7 +81,7 @@ jobs:
     name: CMake(${{matrix.platform}}•${{matrix.build}})
     runs-on: ${{matrix.os}}
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
     - uses: ./.github/actions/remote_cache
       with:
         credentials_json: '${{secrets.GCP_BUCKET_API_KEY}}'
