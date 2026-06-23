@@ -140,6 +140,36 @@ class Xpress {
                               int prio = 0);
   absl::Status RemoveCbChecktime(int(XPRS_CC* cb)(XPRSprob, void*),
                                  void* cbdata = nullptr);
+  absl::Status AddCbBarlog(int(XPRS_CC* cb)(XPRSprob, void*), void* cbdata,
+                           int prio = 0);
+  absl::Status RemoveCbBarlog(int(XPRS_CC* cb)(XPRSprob, void*),
+                              void* cbdata = nullptr);
+  absl::Status AddCbLplog(int(XPRS_CC* cb)(XPRSprob, void*), void* cbdata,
+                          int prio = 0);
+  absl::Status RemoveCbLplog(int(XPRS_CC* cb)(XPRSprob, void*),
+                             void* cbdata = nullptr);
+  absl::Status AddCbPresolve(void(XPRS_CC* cb)(XPRSprob, void*), void* cbdata,
+                             int prio = 0);
+  absl::Status RemoveCbPresolve(void(XPRS_CC* cb)(XPRSprob, void*),
+                                void* cbdata = nullptr);
+  absl::Status AddCbPreIntSol(void(XPRS_CC* cb)(XPRSprob, void*, int, int*,
+                                                double*),
+                              void* cbdata, int prio = 0);
+  absl::Status RemoveCbPreIntSol(void(XPRS_CC* cb)(XPRSprob, void*, int, int*,
+                                                   double*),
+                                 void* cbdata = nullptr);
+  absl::Status AddCbOptNode(void(XPRS_CC* cb)(XPRSprob, void*, int*),
+                            void* cbdata, int prio = 0);
+  absl::Status RemoveCbOptNode(void(XPRS_CC* cb)(XPRSprob, void*, int*),
+                               void* cbdata = nullptr);
+  absl::Status AddCbPreNode(void(XPRS_CC* cb)(XPRSprob, void*, int*),
+                            void* cbdata, int prio = 0);
+  absl::Status RemoveCbPreNode(void(XPRS_CC* cb)(XPRSprob, void*, int*),
+                               void* cbdata = nullptr);
+  absl::Status AddCbCutRound(void(XPRS_CC* cb)(XPRSprob, void*, int, int*),
+                             void* cbdata, int prio = 0);
+  absl::Status RemoveCbCutRound(void(XPRS_CC* cb)(XPRSprob, void*, int, int*),
+                                void* cbdata = nullptr);
 
   absl::StatusOr<std::vector<double>> GetVarLb() const;
   absl::StatusOr<std::vector<double>> GetVarUb() const;
@@ -196,6 +226,12 @@ class Xpress {
   absl::Status WriteProb(std::string const& filename,
                          std::string const& flags = "");
   absl::Status SaveAs(std::string const& filename);
+
+  static std::string GetLastError(XPRSprob const& prob, int xprs_err);
+
+  static absl::Status ToStatus(
+      XPRSprob prob, int xprs_err,
+      absl::StatusCode code = absl::StatusCode::kInvalidArgument);
 
  private:
   XPRSprob xpress_model_;

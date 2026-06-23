@@ -77,11 +77,12 @@ class MessageCallbackTest
 
 // Parameters for CallbackTest.
 struct CallbackTestParams {
-  CallbackTestParams(SolverType solver_type, bool integer_variables,
-                     bool add_lazy_constraints, bool add_cuts,
-                     absl::flat_hash_set<CallbackEvent> supported_events,
-                     std::optional<SolveParameters> all_solutions,
-                     std::optional<SolveParameters> reaches_cut_callback);
+  CallbackTestParams(
+      SolverType solver_type, bool integer_variables, bool add_lazy_constraints,
+      bool add_cuts, absl::flat_hash_set<CallbackEvent> supported_events,
+      std::optional<SolveParameters> all_solutions,
+      std::optional<SolveParameters> reaches_cut_callback,
+      std::optional<SolveParameters> solve_parameters = std::nullopt);
 
   // The solver to test.
   SolverType solver_type;
@@ -106,6 +107,9 @@ struct CallbackTestParams {
   // that we can run a custom cut on this problem. Not setting this value will
   // result in the test on adding cuts at event kMipNode not running.
   std::optional<SolveParameters> reaches_cut_callback;
+
+  // Parameters that are set for every solve.
+  std::optional<SolveParameters> solve_parameters;
 
   friend std::ostream& operator<<(std::ostream& out,
                                   const CallbackTestParams& params);

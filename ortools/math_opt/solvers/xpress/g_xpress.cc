@@ -46,19 +46,34 @@ T* forwardSpan(std::optional<absl::Span<T>> const& span) {
 
 constexpr int kXpressOk = 0;
 
-absl::Status Xpress::ToStatus(const int xprs_err,
-                              const absl::StatusCode code) const {
+std::string Xpress::GetLastError(XPRSprob const& prob, int xprs_err) {
+  char errmsg[512];
+  if (XPRSgetlasterror(prob, errmsg) != kXpressOk) {
+    std::snprintf(errmsg, sizeof(errmsg),
+                  "Xpress error code: %d (message could not be fetched)",
+                  xprs_err);
+  }
+  return errmsg;
+}
+
+absl::Status Xpress::ToStatus(XPRSprob prob, int xprs_err,
+                              absl::StatusCode code) {
   if (xprs_err == kXpressOk) {
     return absl::OkStatus();
   }
   char errmsg[512];
-  int status = XPRSgetlasterror(xpress_model_, errmsg);
+  int status = XPRSgetlasterror(prob, errmsg);
   if (status == kXpressOk) {
     return ortools::StatusBuilder(code)
            << "Xpress error code: " << xprs_err << ", message: " << errmsg;
   }
   return ortools::StatusBuilder(code) << "Xpress error code: " << xprs_err
                                       << " (message could not be fetched)";
+}
+
+absl::Status Xpress::ToStatus(const int xprs_err,
+                              const absl::StatusCode code) const {
+  return ToStatus(xpress_model_, xprs_err, code);
 }
 
 Xpress::Xpress(XPRSprob& model) : xpress_model_(ABSL_DIE_IF_NULL(model)) {
@@ -102,6 +117,73 @@ absl::Status Xpress::AddCbChecktime(int(XPRS_CC* cb)(XPRSprob, void*),
 absl::Status Xpress::RemoveCbChecktime(int(XPRS_CC* cb)(XPRSprob, void*),
                                        void* cbdata) {
   return ToStatus(XPRSremovecbchecktime(xpress_model_, cb, cbdata));
+}
+
+absl::Status Xpress::AddCbBarlog(int(XPRS_CC* cb)(XPRSprob, void*),
+                                 void* cbdata, int prio) {
+  return ToStatus(XPRSaddcbbarlog(xpress_model_, cb, cbdata, prio));
+}
+absl::Status Xpress::RemoveCbBarlog(int(XPRS_CC* cb)(XPRSprob, void*),
+                                    void* cbdata) {
+  return ToStatus(XPRSremovecbbarlog(xpress_model_, cb, cbdata));
+}
+
+absl::Status Xpress::AddCbLplog(int(XPRS_CC* cb)(XPRSprob, void*), void* cbdata,
+                                int prio) {
+  return ToStatus(XPRSaddcblplog(xpress_model_, cb, cbdata, prio));
+}
+absl::Status Xpress::RemoveCbLplog(int(XPRS_CC* cb)(XPRSprob, void*),
+                                   void* cbdata) {
+  return ToStatus(XPRSremovecblplog(xpress_model_, cb, cbdata));
+}
+
+absl::Status Xpress::AddCbPresolve(void(XPRS_CC* cb)(XPRSprob, void*),
+                                   void* cbdata, int prio) {
+  return ToStatus(XPRSaddcbpresolve(xpress_model_, cb, cbdata, prio));
+}
+absl::Status Xpress::RemoveCbPresolve(void(XPRS_CC* cb)(XPRSprob, void*),
+                                      void* cbdata) {
+  return ToStatus(XPRSremovecbpresolve(xpress_model_, cb, cbdata));
+}
+
+absl::Status Xpress::AddCbPreIntSol(void(XPRS_CC* cb)(XPRSprob, void*, int,
+                                                      int*, double*),
+                                    void* cbdata, int prio) {
+  return ToStatus(XPRSaddcbpreintsol(xpress_model_, cb, cbdata, prio));
+}
+absl::Status Xpress::RemoveCbPreIntSol(void(XPRS_CC* cb)(XPRSprob, void*, int,
+                                                         int*, double*),
+                                       void* cbdata) {
+  return ToStatus(XPRSremovecbpreintsol(xpress_model_, cb, cbdata));
+}
+
+absl::Status Xpress::AddCbOptNode(void(XPRS_CC* cb)(XPRSprob, void*, int*),
+                                  void* cbdata, int prio) {
+  return ToStatus(XPRSaddcboptnode(xpress_model_, cb, cbdata, prio));
+}
+absl::Status Xpress::RemoveCbOptNode(void(XPRS_CC* cb)(XPRSprob, void*, int*),
+                                     void* cbdata) {
+  return ToStatus(XPRSremovecboptnode(xpress_model_, cb, cbdata));
+}
+
+absl::Status Xpress::AddCbPreNode(void(XPRS_CC* cb)(XPRSprob, void*, int*),
+                                  void* cbdata, int prio) {
+  return ToStatus(XPRSaddcbprenode(xpress_model_, cb, cbdata, prio));
+}
+absl::Status Xpress::RemoveCbPreNode(void(XPRS_CC* cb)(XPRSprob, void*, int*),
+                                     void* cbdata) {
+  return ToStatus(XPRSremovecbprenode(xpress_model_, cb, cbdata));
+}
+
+absl::Status Xpress::AddCbCutRound(void(XPRS_CC* cb)(XPRSprob, void*, int,
+                                                     int*),
+                                   void* cbdata, int prio) {
+  return ToStatus(XPRSaddcbcutround(xpress_model_, cb, cbdata, prio));
+}
+absl::Status Xpress::RemoveCbCutRound(void(XPRS_CC* cb)(XPRSprob, void*, int,
+                                                        int*),
+                                      void* cbdata) {
+  return ToStatus(XPRSremovecbcutround(xpress_model_, cb, cbdata));
 }
 
 Xpress::~Xpress() {
@@ -389,10 +471,6 @@ absl::Status Xpress::GetBasis(std::vector<int>& rowBasis,
 
 absl::Status Xpress::SetStartingBasis(std::vector<int>& rowBasis,
                                       std::vector<int>& colBasis) const {
-  if (rowBasis.size() != colBasis.size()) {
-    return absl::InvalidArgumentError(
-        "Row basis and column basis must be of same size.");
-  }
   return ToStatus(
       XPRSloadbasis(xpress_model_, rowBasis.data(), colBasis.data()));
 }
