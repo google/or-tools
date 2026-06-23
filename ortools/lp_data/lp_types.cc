@@ -246,9 +246,7 @@ std::ostream& operator<<(std::ostream& os, const SolveStatus status) {
   return os;
 }
 
-SolveStatus OptimalSolveStatus() {
-  return {SolveStatus::Optimal{}};
-}
+SolveStatus OptimalSolveStatus() { return {SolveStatus::Optimal{}}; }
 
 SolveStatus PrimalInfeasibleSolveStatus() {
   return {SolveStatus::PrimalInfeasible{}};
@@ -300,9 +298,7 @@ SolveStatus InvalidProblemSolveStatus() {
   return {SolveStatus::InvalidProblem{}};
 }
 
-SolveStatus ImpreciseSolveStatus() {
-  return {SolveStatus::Imprecise{}};
-}
+SolveStatus ImpreciseSolveStatus() { return {SolveStatus::Imprecise{}}; }
 
 ProblemStatus SolveStatus::problem_status() const {
   return std::visit([](const auto& alternative) { return alternative.status; },
