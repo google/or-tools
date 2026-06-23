@@ -116,6 +116,7 @@ if(USE_GLOP)
       "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_lp_initial_basis_tests>"
       "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_lp_model_solve_parameters_tests>"
       "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_lp_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_min_cost_flow_tests>"
       "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_multi_objective_tests>"
       "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_qc_tests>"
       "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_qp_tests>"
@@ -166,6 +167,22 @@ ortools_cxx_test(
     absl::synchronization
 )
 
+ortools_cxx_test(
+  NAME
+    math_opt_solvers_min_cost_flow_solver_test
+  SOURCES
+    "min_cost_flow_solver_test.cc"
+  LINK_LIBRARIES
+    ortools::base_gmock
+    GTest::gmock_main
+    absl::status
+    "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_callback_tests>"
+    "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_generic_tests>"
+    "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_invalid_input_tests>"
+    "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_logical_constraint_tests>"
+    "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_min_cost_flow_tests>"
+)
+
 if(USE_PDLP)
   ortools_cxx_test(
     NAME
@@ -186,6 +203,7 @@ if(USE_PDLP)
       "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_lp_model_solve_parameters_tests>"
       "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_lp_parameter_tests>"
       "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_lp_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_min_cost_flow_tests>"
       "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_multi_objective_tests>"
       "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_qc_tests>"
       "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_qp_tests>"
@@ -217,6 +235,7 @@ if(USE_GLPK)
       "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_lp_model_solve_parameters_tests>"
       "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_lp_parameter_tests>"
       "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_lp_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_min_cost_flow_tests>"
       "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_mip_tests>"
       "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_multi_objective_tests>"
       "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_qc_tests>"
@@ -247,6 +266,7 @@ if(USE_HIGHS)
       "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_lp_model_solve_parameters_tests>"
       "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_lp_parameter_tests>"
       "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_lp_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_min_cost_flow_tests>"
       "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_mip_tests>"
       "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_multi_objective_tests>"
       "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_status_tests>"
