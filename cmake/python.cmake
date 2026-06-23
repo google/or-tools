@@ -420,6 +420,7 @@ file(COPY
   DESTINATION ${PYTHON_PROJECT_DIR}/sat/colab)
 file(COPY
   ortools/util/python/solve_interrupter.py
+  ortools/util/python/status_streaming.py
   DESTINATION ${PYTHON_PROJECT_DIR}/util/python)
 
 # Adds py.typed to make typed packages.
