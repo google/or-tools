@@ -18,8 +18,8 @@
 #include "absl/flags/flag.h"
 #include "absl/log/log.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "ortools/base/init_google.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/cpp/math_opt.h"
 
 ABSL_FLAG(operations_research::math_opt::SolverType, solver,
@@ -122,10 +122,10 @@ absl::Status Main() {
     params.presolve = math_opt::Emphasis::kOff;
     params.gurobi.param_values["NetworkAlg"] = "1";
   }
-  OR_ASSIGN_OR_RETURN(
+  ABSL_ASSIGN_OR_RETURN(
       const math_opt::SolveResult result,
       Solve(model, solver_type, {.parameters = std::move(params)}));
-  OR_RETURN_IF_ERROR(result.termination.EnsureIsOptimal());
+  ABSL_RETURN_IF_ERROR(result.termination.EnsureIsOptimal());
   std::cout << "Objective value: " << result.objective_value() << std::endl;
   std::cout << "sa: " << result.variable_values().at(sa) << std::endl;
   std::cout << "sb: " << result.variable_values().at(sb) << std::endl;

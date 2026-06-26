@@ -39,10 +39,10 @@
 #include "absl/flags/flag.h"
 #include "absl/log/log.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "ortools/base/init_google.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/io/names_removal.h"
 #include "ortools/math_opt/tools/file_format_flags.h"
 #include "ortools/util/status_macros.h"
@@ -121,7 +121,7 @@ absl::Status Main() {
   }
 
   // Write the model.
-  OR_RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       WriteModel(output_file_path, model_proto, optional_hint, output_format))
       << "failed to write " << output_file_path;
 

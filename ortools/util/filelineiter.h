@@ -133,7 +133,7 @@ class FileLines {
   // Usage:
   //
   //   File* file = nullptr;
-  //   OR_RETURN_IF_ERROR(file::Open(filename, "r", &file, file::Defaults()));
+  //   ABSL_RETURN_IF_ERROR(file::Open(filename, "r", &file, file::Defaults()));
   //   for (const absl::string_view line : FileLines(filename, file)) {
   //     ...
   //   }

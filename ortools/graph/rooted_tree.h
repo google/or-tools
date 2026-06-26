@@ -35,12 +35,12 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "absl/types/span.h"
 #include "ortools/base/status_builder.h"
-#include "ortools/base/status_macros.h"
 
 namespace operations_research {
 
@@ -463,7 +463,8 @@ absl::StatusOr<RootedTree<NodeType>> RootedTree<NodeType>::Create(
     std::vector<NodeType>* error_cycle,
     std::vector<NodeType>* topological_order) {
   const NodeType num_nodes = static_cast<NodeType>(parents.size());
-  OR_RETURN_IF_ERROR(internal::IsValidNode(root, num_nodes)) << "invalid root";
+  ABSL_RETURN_IF_ERROR(internal::IsValidNode(root, num_nodes))
+      << "invalid root";
   if (parents[root] != kNullParent) {
     return ortools::InvalidArgumentErrorBuilder()
            << "root should have no parent (-1), but found parent of: "
@@ -473,7 +474,7 @@ absl::StatusOr<RootedTree<NodeType>> RootedTree<NodeType>::Create(
     if (i == root) {
       continue;
     }
-    OR_RETURN_IF_ERROR(internal::IsValidNode(parents[i], num_nodes))
+    ABSL_RETURN_IF_ERROR(internal::IsValidNode(parents[i], num_nodes))
         << "invalid value for parent of node: " << i;
   }
   std::vector<NodeType> cycle =
@@ -745,7 +746,7 @@ absl::StatusOr<RootedTree<typename Graph::NodeIndex>> RootedTreeFromGraph(
     std::vector<typename Graph::NodeIndex>* const depths) {
   using NodeIndex = typename Graph::NodeIndex;
   const NodeIndex num_nodes = graph.num_nodes();
-  OR_RETURN_IF_ERROR(internal::IsValidNode(root, num_nodes))
+  ABSL_RETURN_IF_ERROR(internal::IsValidNode(root, num_nodes))
       << "invalid root node";
   if (topological_order != nullptr) {
     topological_order->clear();

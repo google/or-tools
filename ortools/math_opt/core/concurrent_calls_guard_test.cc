@@ -17,11 +17,11 @@
 #include <utility>
 
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
-#include "ortools/base/status_macros.h"
 
 namespace operations_research::math_opt {
 namespace {
@@ -59,7 +59,7 @@ TEST(ConcurrentCallsGuard, MoveConstructor) {
   {  // Limit the scope of guard_from_move.
     ASSERT_OK_AND_ASSIGN(ConcurrentCallsGuard guard_from_move,
                          [&]() -> absl::StatusOr<ConcurrentCallsGuard> {
-                           OR_ASSIGN_OR_RETURN(
+                           ABSL_ASSIGN_OR_RETURN(
                                ConcurrentCallsGuard guard,
                                ConcurrentCallsGuard::TryAcquire(tracker));
                            return ConcurrentCallsGuard(std::move(guard));

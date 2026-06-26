@@ -24,6 +24,7 @@
 
 #include "absl/log/check.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/escaping.h"
 #include "absl/strings/str_cat.h"
@@ -33,7 +34,6 @@
 #include "absl/types/span.h"
 #include "ortools/base/protoutil.h"
 #include "ortools/base/status_builder.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/core/math_opt_proto_utils.h"
 #include "ortools/math_opt/cpp/linear_constraint.h"
 #include "ortools/math_opt/cpp/variable_and_expressions.h"
@@ -449,7 +449,7 @@ std::string ProblemStatus::ToString() const {
 
 absl::StatusOr<SolveStatsProto> SolveStats::Proto() const {
   SolveStatsProto proto;
-  OR_RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       util_time::EncodeGoogleApiProto(solve_time, proto.mutable_solve_time()))
       << "invalid solve_time (value must be finite)";
   proto.set_simplex_iterations(simplex_iterations);

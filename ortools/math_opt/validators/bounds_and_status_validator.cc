@@ -18,10 +18,10 @@
 #include <limits>
 
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "ortools/base/status_builder.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/result.pb.h"
 #include "ortools/math_opt/validators/scalar_validator.h"
 
@@ -41,9 +41,9 @@ absl::Status ValidateFeasibilityStatus(const FeasibilityStatusProto& status) {
 }
 
 absl::Status ValidateProblemStatus(const ProblemStatusProto& status) {
-  OR_RETURN_IF_ERROR(ValidateFeasibilityStatus(status.primal_status()))
+  ABSL_RETURN_IF_ERROR(ValidateFeasibilityStatus(status.primal_status()))
       << "invalid primal_status";
-  OR_RETURN_IF_ERROR(ValidateFeasibilityStatus(status.dual_status()))
+  ABSL_RETURN_IF_ERROR(ValidateFeasibilityStatus(status.dual_status()))
       << "invalid dual_status";
   if (status.primal_or_dual_infeasible() &&
       (status.primal_status() != FEASIBILITY_STATUS_UNDETERMINED ||
@@ -127,9 +127,9 @@ absl::Status CheckDualStatusIs(const ProblemStatusProto& status,
 
 absl::Status ValidateObjectiveBounds(const ObjectiveBoundsProto& bounds) {
   const DoubleOptions nonan;
-  OR_RETURN_IF_ERROR(CheckScalar(bounds.primal_bound(), nonan))
+  ABSL_RETURN_IF_ERROR(CheckScalar(bounds.primal_bound(), nonan))
       << "in primal_bound";
-  OR_RETURN_IF_ERROR(CheckScalar(bounds.dual_bound(), nonan))
+  ABSL_RETURN_IF_ERROR(CheckScalar(bounds.dual_bound(), nonan))
       << "in dual_bound";
   return absl::OkStatus();
 }
@@ -218,14 +218,14 @@ absl::Status ValidateUnboundedBoundImpliesUnboundedStatus(
 absl::Status ValidateBoundStatusConsistency(
     const ObjectiveBoundsProto& objective_bounds,
     const ProblemStatusProto& status, bool is_maximize) {
-  OR_RETURN_IF_ERROR(ValidateUnboundedBoundImpliesUnboundedStatus(
+  ABSL_RETURN_IF_ERROR(ValidateUnboundedBoundImpliesUnboundedStatus(
       /*first_bound=*/objective_bounds.primal_bound(),
       /*second_bound=*/objective_bounds.dual_bound(),
       /*first_status=*/status.primal_status(),
       /*second_status=*/status.dual_status(), "primal", "dual",
       /*unbounded_bound=*/is_maximize ? kInf : -kInf))
       << "for is_maximize = " << std::boolalpha << is_maximize;
-  OR_RETURN_IF_ERROR(ValidateUnboundedBoundImpliesUnboundedStatus(
+  ABSL_RETURN_IF_ERROR(ValidateUnboundedBoundImpliesUnboundedStatus(
       /*first_bound=*/objective_bounds.dual_bound(),
       /*second_bound=*/objective_bounds.primal_bound(),
       /*first_status=*/status.dual_status(),
@@ -233,20 +233,20 @@ absl::Status ValidateBoundStatusConsistency(
       /*unbounded_bound=*/is_maximize ? -kInf : kInf))
       << "for is_maximize = " << std::boolalpha << is_maximize;
 
-  OR_RETURN_IF_ERROR(ValidateFiniteBoundImpliesFeasibleStatus(
+  ABSL_RETURN_IF_ERROR(ValidateFiniteBoundImpliesFeasibleStatus(
       /*first_bound=*/objective_bounds.primal_bound(),
       /*first_status=*/status.primal_status(), /*first_name=*/"primal"));
-  OR_RETURN_IF_ERROR(ValidateFiniteBoundImpliesFeasibleStatus(
+  ABSL_RETURN_IF_ERROR(ValidateFiniteBoundImpliesFeasibleStatus(
       /*first_bound=*/objective_bounds.dual_bound(),
       /*first_status=*/status.dual_status(), /*first_name=*/"dual"));
 
-  OR_RETURN_IF_ERROR(ValidateNotUnboundedBoundImpliesNotUnboundedStatus(
+  ABSL_RETURN_IF_ERROR(ValidateNotUnboundedBoundImpliesNotUnboundedStatus(
       /*first_bound=*/objective_bounds.primal_bound(),
       /*first_status=*/status.primal_status(),
       /*second_status=*/status.dual_status(), "primal", "dual",
       /*unbounded_bound=*/is_maximize ? kInf : -kInf))
       << "for is_maximize = " << std::boolalpha << is_maximize;
-  OR_RETURN_IF_ERROR(ValidateNotUnboundedBoundImpliesNotUnboundedStatus(
+  ABSL_RETURN_IF_ERROR(ValidateNotUnboundedBoundImpliesNotUnboundedStatus(
       /*first_bound=*/objective_bounds.dual_bound(),
       /*first_status=*/status.dual_status(),
       /*second_status=*/status.primal_status(), "dual", "primal",

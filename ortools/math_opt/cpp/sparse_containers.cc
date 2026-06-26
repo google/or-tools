@@ -21,11 +21,11 @@
 #include "absl/algorithm/container.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/types/span.h"
 #include "google/protobuf/map.h"
 #include "ortools/base/status_builder.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/constraints/quadratic/quadratic_constraint.h"
 #include "ortools/math_opt/core/sparse_vector_view.h"
 #include "ortools/math_opt/cpp/basis_status.h"
@@ -42,8 +42,8 @@ namespace {
 // SparseVectorProtoType should be SparseDoubleVector or SparseBasisStatusVector
 template <typename SparseVectorProtoType>
 absl::Status CheckSparseVectorProto(const SparseVectorProtoType& vec) {
-  OR_RETURN_IF_ERROR(CheckIdsAndValuesSize(MakeView(vec)));
-  OR_RETURN_IF_ERROR(CheckIdsRangeAndStrictlyIncreasing(vec.ids()));
+  ABSL_RETURN_IF_ERROR(CheckIdsAndValuesSize(MakeView(vec)));
+  ABSL_RETURN_IF_ERROR(CheckIdsRangeAndStrictlyIncreasing(vec.ids()));
   return absl::OkStatus();
 }
 
@@ -140,15 +140,15 @@ absl::Status QuadraticConstraintIdsExist(const ModelStorageCPtr model,
 
 absl::StatusOr<VariableMap<double>> VariableValuesFromProto(
     const ModelStorageCPtr model, const SparseDoubleVectorProto& vars_proto) {
-  OR_RETURN_IF_ERROR(CheckSparseVectorProto(vars_proto));
-  OR_RETURN_IF_ERROR(VariableIdsExist(model, vars_proto.ids()));
+  ABSL_RETURN_IF_ERROR(CheckSparseVectorProto(vars_proto));
+  ABSL_RETURN_IF_ERROR(VariableIdsExist(model, vars_proto.ids()));
   return MakeView(vars_proto).as_map<Variable>(model);
 }
 
 absl::StatusOr<VariableMap<int32_t>> VariableValuesFromProto(
     const ModelStorageCPtr model, const SparseInt32VectorProto& vars_proto) {
-  OR_RETURN_IF_ERROR(CheckSparseVectorProto(vars_proto));
-  OR_RETURN_IF_ERROR(VariableIdsExist(model, vars_proto.ids()));
+  ABSL_RETURN_IF_ERROR(CheckSparseVectorProto(vars_proto));
+  ABSL_RETURN_IF_ERROR(VariableIdsExist(model, vars_proto.ids()));
   return MakeView(vars_proto).as_map<Variable>(model);
 }
 
@@ -187,8 +187,8 @@ google::protobuf::Map<int64_t, double> AuxiliaryObjectiveValuesToProto(
 absl::StatusOr<LinearConstraintMap<double>> LinearConstraintValuesFromProto(
     const ModelStorageCPtr model,
     const SparseDoubleVectorProto& lin_cons_proto) {
-  OR_RETURN_IF_ERROR(CheckSparseVectorProto(lin_cons_proto));
-  OR_RETURN_IF_ERROR(LinearConstraintIdsExist(model, lin_cons_proto.ids()));
+  ABSL_RETURN_IF_ERROR(CheckSparseVectorProto(lin_cons_proto));
+  ABSL_RETURN_IF_ERROR(LinearConstraintIdsExist(model, lin_cons_proto.ids()));
   return MakeView(lin_cons_proto).as_map<LinearConstraint>(model);
 }
 
@@ -201,8 +201,9 @@ absl::StatusOr<absl::flat_hash_map<QuadraticConstraint, double>>
 QuadraticConstraintValuesFromProto(
     const ModelStorageCPtr model,
     const SparseDoubleVectorProto& quad_cons_proto) {
-  OR_RETURN_IF_ERROR(CheckSparseVectorProto(quad_cons_proto));
-  OR_RETURN_IF_ERROR(QuadraticConstraintIdsExist(model, quad_cons_proto.ids()));
+  ABSL_RETURN_IF_ERROR(CheckSparseVectorProto(quad_cons_proto));
+  ABSL_RETURN_IF_ERROR(
+      QuadraticConstraintIdsExist(model, quad_cons_proto.ids()));
   return MakeView(quad_cons_proto).as_map<QuadraticConstraint>(model);
 }
 
@@ -214,8 +215,8 @@ SparseDoubleVectorProto QuadraticConstraintValuesToProto(
 
 absl::StatusOr<VariableMap<BasisStatus>> VariableBasisFromProto(
     const ModelStorageCPtr model, const SparseBasisStatusVector& basis_proto) {
-  OR_RETURN_IF_ERROR(CheckSparseVectorProto(basis_proto));
-  OR_RETURN_IF_ERROR(VariableIdsExist(model, basis_proto.ids()));
+  ABSL_RETURN_IF_ERROR(CheckSparseVectorProto(basis_proto));
+  ABSL_RETURN_IF_ERROR(VariableIdsExist(model, basis_proto.ids()));
   return BasisVectorFromProto<Variable>(model, basis_proto);
 }
 
@@ -226,8 +227,8 @@ SparseBasisStatusVector VariableBasisToProto(
 
 absl::StatusOr<LinearConstraintMap<BasisStatus>> LinearConstraintBasisFromProto(
     const ModelStorageCPtr model, const SparseBasisStatusVector& basis_proto) {
-  OR_RETURN_IF_ERROR(CheckSparseVectorProto(basis_proto));
-  OR_RETURN_IF_ERROR(LinearConstraintIdsExist(model, basis_proto.ids()));
+  ABSL_RETURN_IF_ERROR(CheckSparseVectorProto(basis_proto));
+  ABSL_RETURN_IF_ERROR(LinearConstraintIdsExist(model, basis_proto.ids()));
   return BasisVectorFromProto<LinearConstraint>(model, basis_proto);
 }
 

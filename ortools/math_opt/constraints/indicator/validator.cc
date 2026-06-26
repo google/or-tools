@@ -16,8 +16,9 @@
 #include <cstdint>
 
 #include "absl/status/status.h"
+#include "absl/status/status_builder.h"
+#include "absl/status/status_macros.h"
 #include "ortools/base/status_builder.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/core/model_summary.h"
 #include "ortools/math_opt/core/sparse_vector_view.h"
 #include "ortools/math_opt/model.pb.h"
@@ -34,7 +35,7 @@ absl::Status ValidateConstraint(const IndicatorConstraintProto& constraint,
            << "Invalid indicator variable id in indicator constraint: "
            << constraint.indicator_id();
   }
-  OR_RETURN_IF_ERROR(CheckIdsAndValues(
+  ABSL_RETURN_IF_ERROR(CheckIdsAndValues(
       MakeView(constraint.expression()), /*options=*/
       {.allow_positive_infinity = false, .allow_negative_infinity = false}))
       << "expression of implied constraint in indicator constraint";
@@ -46,12 +47,12 @@ absl::Status ValidateConstraint(const IndicatorConstraintProto& constraint,
              << var_id;
     }
   }
-  OR_RETURN_IF_ERROR(CheckScalar(
+  ABSL_RETURN_IF_ERROR(CheckScalar(
       constraint.lower_bound(),
       {.allow_positive_infinity = false, .allow_negative_infinity = true}))
       << "invalid lower bound in indicator constraint: "
       << constraint.lower_bound();
-  OR_RETURN_IF_ERROR(CheckScalar(
+  ABSL_RETURN_IF_ERROR(CheckScalar(
       constraint.upper_bound(),
       {.allow_positive_infinity = true, .allow_negative_infinity = false}))
       << "invalid upper bound in indicator constraint: "

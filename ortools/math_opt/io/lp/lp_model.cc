@@ -20,12 +20,12 @@
 #include <utility>
 
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/escaping.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "ortools/base/status_builder.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/io/lp/lp_name.h"
 #include "ortools/util/fp_roundtrip_conv.h"
 
@@ -76,7 +76,7 @@ std::ostream& operator<<(std::ostream& ostr, const Constraint& constraint) {
 
 absl::StatusOr<ConstraintIndex> LpModel::AddConstraint(Constraint constraint) {
   if (!constraint.name.empty()) {
-    OR_RETURN_IF_ERROR(ValidateName(constraint.name))
+    ABSL_RETURN_IF_ERROR(ValidateName(constraint.name))
         << "invalid constraint name";
   }
   if (constraint.terms.empty()) {
@@ -95,7 +95,7 @@ absl::StatusOr<ConstraintIndex> LpModel::AddConstraint(Constraint constraint) {
              << coef;
     }
   }
-  OR_RETURN_IF_ERROR(ValidateRelation(constraint.relation));
+  ABSL_RETURN_IF_ERROR(ValidateRelation(constraint.relation));
   if (std::isnan(constraint.rhs)) {
     return absl::InvalidArgumentError("rhs of constraint was NaN");
   }
@@ -109,7 +109,7 @@ absl::StatusOr<VariableIndex> LpModel::AddVariable(absl::string_view name) {
     return ortools::InvalidArgumentErrorBuilder()
            << "duplicate variable name: " << name;
   }
-  OR_RETURN_IF_ERROR(ValidateName(name)) << "invalid variable name";
+  ABSL_RETURN_IF_ERROR(ValidateName(name)) << "invalid variable name";
   const VariableIndex index = variables_.end_index();
   variables_.push_back(std::string(name));
   variable_names_[name] = index;

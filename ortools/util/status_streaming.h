@@ -15,7 +15,7 @@
 #define ORTOOLS_UTIL_STATUS_STREAMING_H_
 
 #include "absl/status/status.h"
-#include "ortools/base/source_location.h"
+#include "absl/types/source_location.h"
 #include "ortools/util/status.pb.h"
 
 namespace operations_research {
@@ -26,14 +26,14 @@ namespace operations_research {
 // are payloads in the input Status, using `warning_loc` as location.
 StatusProto StreamStatus(
     const absl::Status& status,
-    ortools::SourceLocation warning_loc = ortools::SourceLocation::current());
+    absl::SourceLocation warning_loc = absl::SourceLocation::current());
 
 // Unstreams the input proto in the corresponding Status.
 //
 // The `loc` parameter is used as the status' location.
 absl::Status UnstreamStatus(
     const StatusProto& status_proto,
-    ortools::SourceLocation loc = ortools::SourceLocation::current());
+    absl::SourceLocation loc = absl::SourceLocation::current());
 
 }  // namespace operations_research
 

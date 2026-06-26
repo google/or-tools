@@ -33,6 +33,7 @@
 #include "absl/log/log.h"
 #include "absl/memory/memory.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
@@ -43,7 +44,6 @@
 #include "google/protobuf/repeated_ptr_field.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/protoutil.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/invalid_indicators.h"
 #include "ortools/math_opt/core/inverted_bounds.h"
@@ -275,7 +275,7 @@ absl::Status GScipSolver::AddVariables(
     // assertion in this corner case.
     const bool inverted_bounds =
         variables.lower_bounds(i) > variables.upper_bounds(i);
-    OR_ASSIGN_OR_RETURN(
+    ABSL_ASSIGN_OR_RETURN(
         SCIP_VAR* const v,
         gscip_->AddVariable(
             variables.lower_bounds(i),
@@ -292,9 +292,9 @@ absl::Status GScipSolver::AddVariables(
         // the bounds passed to AddVariable() are both in {0.0, 1.0}. Changing
         // the bounds then raises an assertion in SCIP if the bounds is not in
         // {0.0, 1.0}.
-        OR_RETURN_IF_ERROR(gscip_->SetVarType(v, GScipVarType::kInteger));
+        ABSL_RETURN_IF_ERROR(gscip_->SetVarType(v, GScipVarType::kInteger));
       }
-      OR_RETURN_IF_ERROR(gscip_->SetUb(v, variables.upper_bounds(i)));
+      ABSL_RETURN_IF_ERROR(gscip_->SetUb(v, variables.upper_bounds(i)));
     }
     gtl::InsertOrDie(&variables_, id, v);
   }
@@ -312,7 +312,7 @@ absl::StatusOr<bool> GScipSolver::UpdateVariables(
       // crashes, or unexpected round-trip values if the vartype changes.
       return false;
     }
-    OR_RETURN_IF_ERROR(
+    ABSL_RETURN_IF_ERROR(
         gscip_->SetVarType(var, GScipVarTypeFromIsInteger(is_integer)));
   }
   for (const auto [id, lb] : MakeView(variable_updates.lower_bounds())) {
@@ -322,7 +322,7 @@ absl::StatusOr<bool> GScipSolver::UpdateVariables(
       // crashes, or unexpected round-trip values if the vartype changes.
       return false;
     }
-    OR_RETURN_IF_ERROR(gscip_->SetLb(var, lb));
+    ABSL_RETURN_IF_ERROR(gscip_->SetLb(var, lb));
   }
   for (const auto [id, ub] : MakeView(variable_updates.upper_bounds())) {
     SCIP_VAR* const var = variables_.at(id);
@@ -331,7 +331,7 @@ absl::StatusOr<bool> GScipSolver::UpdateVariables(
       // crashes, or unexpected round-trip values if the vartype changes.
       return false;
     }
-    OR_RETURN_IF_ERROR(gscip_->SetUb(var, ub));
+    ABSL_RETURN_IF_ERROR(gscip_->SetUb(var, ub));
   }
   return true;
 }
@@ -347,7 +347,7 @@ absl::Status GScipSolver::AddQuadraticObjectiveTerms(
   if (num_qp_terms == 0) {
     return absl::OkStatus();
   }
-  OR_ASSIGN_OR_RETURN(
+  ABSL_ASSIGN_OR_RETURN(
       SCIP_VAR* const qp_auxiliary_variable,
       gscip_->AddVariable(-kInf, kInf, 1.0, GScipVarType::kContinuous));
   GScipQuadraticRange range{
@@ -366,7 +366,7 @@ absl::Status GScipSolver::AddQuadraticObjectiveTerms(
         variables_.at(new_qp_terms.column_ids(i)));
     range.quadratic_coefficients.push_back(new_qp_terms.coefficients(i));
   }
-  OR_RETURN_IF_ERROR(gscip_->AddQuadraticConstraint(range).status());
+  ABSL_RETURN_IF_ERROR(gscip_->AddQuadraticConstraint(range).status());
   has_quadratic_objective_ = true;
   return absl::OkStatus();
 }
@@ -388,7 +388,7 @@ absl::Status GScipSolver::AddLinearConstraints(
     for (const int64_t var_id : current.variable_ids) {
       range.variables.push_back(variables_.at(var_id));
     }
-    OR_ASSIGN_OR_RETURN(
+    ABSL_ASSIGN_OR_RETURN(
         SCIP_CONS* const scip_con,
         gscip_->AddLinearConstraint(range, std::string(current.name)));
     gtl::InsertOrDie(&linear_constraints_, current.linear_constraint_id,
@@ -404,12 +404,12 @@ absl::Status GScipSolver::UpdateLinearConstraints(
     const std::optional<int64_t> first_new_cstr_id) {
   for (const auto [id, lb] :
        MakeView(linear_constraint_updates.lower_bounds())) {
-    OR_RETURN_IF_ERROR(
+    ABSL_RETURN_IF_ERROR(
         gscip_->SetLinearConstraintLb(linear_constraints_.at(id), lb));
   }
   for (const auto [id, ub] :
        MakeView(linear_constraint_updates.upper_bounds())) {
-    OR_RETURN_IF_ERROR(
+    ABSL_RETURN_IF_ERROR(
         gscip_->SetLinearConstraintUb(linear_constraints_.at(id), ub));
   }
   for (const auto& [lin_con_id, var_coeffs] : SparseSubmatrixByRows(
@@ -417,7 +417,7 @@ absl::Status GScipSolver::UpdateLinearConstraints(
            /*end_row_id=*/first_new_cstr_id, /*start_col_id=*/0,
            /*end_col_id=*/first_new_var_id)) {
     for (const auto& [var_id, value] : var_coeffs) {
-      OR_RETURN_IF_ERROR(gscip_->SetLinearConstraintCoef(
+      ABSL_RETURN_IF_ERROR(gscip_->SetLinearConstraintCoef(
           linear_constraints_.at(lin_con_id), variables_.at(var_id), value));
     }
   }
@@ -455,7 +455,7 @@ absl::Status GScipSolver::AddQuadraticConstraints(
         range.quadratic_coefficients.push_back(quad_terms.coefficients(i));
       }
     }
-    OR_ASSIGN_OR_RETURN(
+    ABSL_ASSIGN_OR_RETURN(
         SCIP_CONS* const scip_con,
         gscip_->AddQuadraticConstraint(range, constraint.name()));
     gtl::InsertOrDie(&quadratic_constraints_, id, scip_con);
@@ -506,7 +506,7 @@ absl::Status GScipSolver::AddIndicatorConstraints(
         data.coefficients.push_back(scaling * coeff);
       }
     }
-    OR_ASSIGN_OR_RETURN(
+    ABSL_ASSIGN_OR_RETURN(
         SCIP_CONS* const scip_con,
         gscip_->AddIndicatorConstraint(data, constraint.name()));
     gtl::InsertOrDie(&indicator_constraints_, id,
@@ -518,7 +518,7 @@ absl::Status GScipSolver::AddIndicatorConstraints(
 absl::StatusOr<std::pair<SCIP_VAR*, SCIP_CONS*>>
 GScipSolver::AddSlackVariableEqualToExpression(
     const LinearExpressionProto& expression) {
-  OR_ASSIGN_OR_RETURN(
+  ABSL_ASSIGN_OR_RETURN(
       SCIP_VAR * aux_var,
       gscip_->AddVariable(-kInf, kInf, 0.0, GScipVarType::kContinuous));
   GScipLinearRange range{
@@ -531,18 +531,18 @@ GScipSolver::AddSlackVariableEqualToExpression(
     range.variables.push_back(variables_.at(expression.ids(i)));
     range.coefficients.push_back(expression.coefficients(i));
   }
-  OR_ASSIGN_OR_RETURN(SCIP_CONS * aux_constr,
-                      gscip_->AddLinearConstraint(range));
+  ABSL_ASSIGN_OR_RETURN(SCIP_CONS * aux_constr,
+                        gscip_->AddLinearConstraint(range));
   return std::make_pair(aux_var, aux_constr);
 }
 
 absl::Status GScipSolver::AuxiliaryStructureHandler::DeleteStructure(
     GScip& gscip) {
   for (SCIP_CONS* const constraint : constraints) {
-    OR_RETURN_IF_ERROR(gscip.DeleteConstraint(constraint));
+    ABSL_RETURN_IF_ERROR(gscip.DeleteConstraint(constraint));
   }
   for (SCIP_VAR* const variable : variables) {
-    OR_RETURN_IF_ERROR(gscip.DeleteVariable(variable));
+    ABSL_RETURN_IF_ERROR(gscip.DeleteVariable(variable));
   }
   variables.clear();
   constraints.clear();
@@ -563,8 +563,8 @@ GScipSolver::ProcessSosProto(const SosConstraintProto& sos_constraint) {
       data.variables.push_back(variables_.at(expr.ids(0)));
       reused_variables.insert(expr.ids(0));
     } else {
-      OR_ASSIGN_OR_RETURN((const auto [slack_var, slack_constr]),
-                          AddSlackVariableEqualToExpression(expr));
+      ABSL_ASSIGN_OR_RETURN((const auto [slack_var, slack_constr]),
+                            AddSlackVariableEqualToExpression(expr));
       handler.variables.push_back(slack_var);
       handler.constraints.push_back(slack_constr);
       data.variables.push_back(slack_var);
@@ -580,9 +580,9 @@ absl::Status GScipSolver::AddSos1Constraints(
     const google::protobuf::Map<int64_t, SosConstraintProto>&
         sos1_constraints) {
   for (const auto& [id, constraint] : sos1_constraints) {
-    OR_ASSIGN_OR_RETURN((auto [sos_data, slack_handler]),
-                        ProcessSosProto(constraint));
-    OR_ASSIGN_OR_RETURN(
+    ABSL_ASSIGN_OR_RETURN((auto [sos_data, slack_handler]),
+                          ProcessSosProto(constraint));
+    ABSL_ASSIGN_OR_RETURN(
         SCIP_CONS* const scip_con,
         gscip_->AddSOS1Constraint(std::move(sos_data), constraint.name()));
     gtl::InsertOrDie(&sos1_constraints_, id,
@@ -595,10 +595,11 @@ absl::Status GScipSolver::AddSos2Constraints(
     const google::protobuf::Map<int64_t, SosConstraintProto>&
         sos2_constraints) {
   for (const auto& [id, constraint] : sos2_constraints) {
-    OR_ASSIGN_OR_RETURN((auto [sos_data, slack_handler]),
-                        ProcessSosProto(constraint));
-    OR_ASSIGN_OR_RETURN(SCIP_CONS* const scip_con,
-                        gscip_->AddSOS2Constraint(sos_data, constraint.name()));
+    ABSL_ASSIGN_OR_RETURN((auto [sos_data, slack_handler]),
+                          ProcessSosProto(constraint));
+    ABSL_ASSIGN_OR_RETURN(
+        SCIP_CONS* const scip_con,
+        gscip_->AddSOS2Constraint(sos_data, constraint.name()));
     gtl::InsertOrDie(&sos2_constraints_, id,
                      std::make_pair(scip_con, std::move(slack_handler)));
   }
@@ -969,10 +970,10 @@ absl::StatusOr<SolveResultProto> GScipSolver::CreateSolveResultProto(
         FillSparseDoubleVector(variables_, gscip_result.primal_ray,
                                model_parameters.variable_values_filter());
   }
-  OR_ASSIGN_OR_RETURN(*solve_result.mutable_termination(),
-                      ConvertTerminationReason(
-                          gscip_result, is_maximize, solve_result.solutions(),
-                          /*had_cutoff=*/cutoff.has_value()));
+  ABSL_ASSIGN_OR_RETURN(*solve_result.mutable_termination(),
+                        ConvertTerminationReason(
+                            gscip_result, is_maximize, solve_result.solutions(),
+                            /*had_cutoff=*/cutoff.has_value()));
   SolveStatsProto* const common_stats = solve_result.mutable_solve_stats();
   const GScipSolvingStats& gscip_stats = gscip_result.gscip_output.stats();
 
@@ -989,29 +990,29 @@ GScipSolver::GScipSolver(std::unique_ptr<GScip> gscip)
 
 absl::StatusOr<std::unique_ptr<SolverInterface>> GScipSolver::New(
     const ModelProto& model, const InitArgs&) {
-  OR_RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       ModelIsSupported(model, kGscipSupportedStructures, "SCIP"));
-  OR_ASSIGN_OR_RETURN(std::unique_ptr<GScip> gscip,
-                      GScip::Create(model.name()));
-  OR_RETURN_IF_ERROR(gscip->SetMaximize(model.objective().maximize()));
-  OR_RETURN_IF_ERROR(gscip->SetObjectiveOffset(model.objective().offset()));
+  ABSL_ASSIGN_OR_RETURN(std::unique_ptr<GScip> gscip,
+                        GScip::Create(model.name()));
+  ABSL_RETURN_IF_ERROR(gscip->SetMaximize(model.objective().maximize()));
+  ABSL_RETURN_IF_ERROR(gscip->SetObjectiveOffset(model.objective().offset()));
   auto solver = absl::WrapUnique(new GScipSolver(std::move(gscip)));
-  OR_RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       solver->constraint_handler_.Register(solver->gscip_.get()));
-  OR_RETURN_IF_ERROR(solver->AddVariables(
+  ABSL_RETURN_IF_ERROR(solver->AddVariables(
       model.variables(),
       SparseDoubleVectorAsMap(model.objective().linear_coefficients())));
-  OR_RETURN_IF_ERROR(solver->AddQuadraticObjectiveTerms(
+  ABSL_RETURN_IF_ERROR(solver->AddQuadraticObjectiveTerms(
       model.objective().quadratic_coefficients(),
       model.objective().maximize()));
-  OR_RETURN_IF_ERROR(solver->AddLinearConstraints(
+  ABSL_RETURN_IF_ERROR(solver->AddLinearConstraints(
       model.linear_constraints(), model.linear_constraint_matrix()));
-  OR_RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       solver->AddQuadraticConstraints(model.quadratic_constraints()));
-  OR_RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       solver->AddIndicatorConstraints(model.indicator_constraints()));
-  OR_RETURN_IF_ERROR(solver->AddSos1Constraints(model.sos1_constraints()));
-  OR_RETURN_IF_ERROR(solver->AddSos2Constraints(model.sos2_constraints()));
+  ABSL_RETURN_IF_ERROR(solver->AddSos1Constraints(model.sos1_constraints()));
+  ABSL_RETURN_IF_ERROR(solver->AddSos2Constraints(model.sos2_constraints()));
   return solver;
 }
 
@@ -1021,7 +1022,7 @@ absl::StatusOr<SolveResultProto> GScipSolver::Solve(
     const MessageCallback message_cb,
     const CallbackRegistrationProto& callback_registration, Callback cb,
     const SolveInterrupter* absl_nullable const interrupter) {
-  OR_RETURN_IF_ERROR(ModelSolveParametersAreSupported(
+  ABSL_RETURN_IF_ERROR(ModelSolveParametersAreSupported(
       model_parameters, kGscipSupportedStructures, "SCIP"));
   const absl::Time start = absl::Now();
 
@@ -1030,7 +1031,7 @@ absl::StatusOr<SolveResultProto> GScipSolver::Solve(
       interrupter, [&]() { gscip_interrupter.Interrupt(); });
   const bool use_interrupter = interrupter != nullptr || cb != nullptr;
 
-  OR_RETURN_IF_ERROR(CheckRegisteredCallbackEvents(
+  ABSL_RETURN_IF_ERROR(CheckRegisteredCallbackEvents(
       callback_registration,
       /*supported_events=*/{CALLBACK_EVENT_MIP_SOLUTION,
                             CALLBACK_EVENT_MIP_NODE}));
@@ -1057,10 +1058,10 @@ absl::StatusOr<SolveResultProto> GScipSolver::Solve(
     // constraints, as otherwise, due to what appears to be a bug in SCIP, we
     // may run our callback before checking all the constraints in the model,
     // see https://listserv.zib.de/pipermail/scip/2023-November/004785.html.
-    OR_ASSIGN_OR_RETURN(callback_cons,
-                        constraint_handler_.AddCallbackConstraint(
-                            gscip_.get(), "mathopt_callback_constraint",
-                            constraint_data_.get()));
+    ABSL_ASSIGN_OR_RETURN(callback_cons,
+                          constraint_handler_.AddCallbackConstraint(
+                              gscip_.get(), "mathopt_callback_constraint",
+                              constraint_data_.get()));
   }
   const auto cleanup_constraint_data = absl::Cleanup([this]() {
     if (constraint_data_ != nullptr) {
@@ -1072,23 +1073,24 @@ absl::StatusOr<SolveResultProto> GScipSolver::Solve(
   auto message_cb_cleanup = absl::MakeCleanup(
       [&buffered_message_callback]() { buffered_message_callback.Flush(); });
 
-  OR_ASSIGN_OR_RETURN(auto gscip_parameters, MergeParameters(parameters));
+  ABSL_ASSIGN_OR_RETURN(auto gscip_parameters, MergeParameters(parameters));
 
   for (const SolutionHintProto& hint : model_parameters.solution_hints()) {
     absl::flat_hash_map<SCIP_VAR*, double> partial_solution;
     for (const auto [id, val] : MakeView(hint.variable_values())) {
       partial_solution.insert({variables_.at(id), val});
     }
-    OR_RETURN_IF_ERROR(gscip_->SuggestHint(partial_solution).status());
+    ABSL_RETURN_IF_ERROR(gscip_->SuggestHint(partial_solution).status());
   }
   for (const auto [id, value] :
        MakeView(model_parameters.branching_priorities())) {
-    OR_RETURN_IF_ERROR(gscip_->SetBranchingPriority(variables_.at(id), value));
+    ABSL_RETURN_IF_ERROR(
+        gscip_->SetBranchingPriority(variables_.at(id), value));
   }
 
   // SCIP returns "infeasible" when the model contain invalid bounds.
-  OR_RETURN_IF_ERROR(ListInvertedBounds().ToStatus());
-  OR_RETURN_IF_ERROR(ListInvalidIndicators().ToStatus());
+  ABSL_RETURN_IF_ERROR(ListInvertedBounds().ToStatus());
+  ABSL_RETURN_IF_ERROR(ListInvalidIndicators().ToStatus());
 
   GScipMessageHandler gscip_msg_cb = nullptr;
   if (buffered_message_callback.has_user_message_callback()) {
@@ -1098,7 +1100,7 @@ absl::StatusOr<SolveResultProto> GScipSolver::Solve(
     };
   }
 
-  OR_ASSIGN_OR_RETURN(
+  ABSL_ASSIGN_OR_RETURN(
       GScipResult gscip_result,
       gscip_->Solve(gscip_parameters, std::move(gscip_msg_cb),
                     use_interrupter ? &gscip_interrupter : nullptr));
@@ -1107,11 +1109,11 @@ absl::StatusOr<SolveResultProto> GScipSolver::Solve(
   std::move(message_cb_cleanup).Invoke();
 
   if (callback_cons != nullptr) {
-    OR_RETURN_IF_ERROR(gscip_->DeleteConstraint(callback_cons));
+    ABSL_RETURN_IF_ERROR(gscip_->DeleteConstraint(callback_cons));
     constraint_data_.reset();
   }
 
-  OR_ASSIGN_OR_RETURN(
+  ABSL_ASSIGN_OR_RETURN(
       SolveResultProto result,
       CreateSolveResultProto(std::move(gscip_result), model_parameters,
                              parameters.has_cutoff_limit()
@@ -1122,7 +1124,7 @@ absl::StatusOr<SolveResultProto> GScipSolver::Solve(
   // next solve. Note that 0 is the default branching priority.
   for (const auto [id, unused] :
        MakeView(model_parameters.branching_priorities())) {
-    OR_RETURN_IF_ERROR(gscip_->SetBranchingPriority(variables_.at(id), 0));
+    ABSL_RETURN_IF_ERROR(gscip_->SetBranchingPriority(variables_.at(id), 0));
   }
 
   CHECK_OK(util_time::EncodeGoogleApiProto(
@@ -1204,7 +1206,7 @@ absl::StatusOr<bool> GScipSolver::Update(const ModelUpdateProto& model_update) {
        model_update.deleted_linear_constraint_ids()) {
     SCIP_CONS* const scip_cons = linear_constraints_.at(constraint_id);
     linear_constraints_.erase(constraint_id);
-    OR_RETURN_IF_ERROR(gscip_->DeleteConstraint(scip_cons));
+    ABSL_RETURN_IF_ERROR(gscip_->DeleteConstraint(scip_cons));
   }
   {
     const absl::flat_hash_set<SCIP_VAR*> vars_to_delete =
@@ -1213,7 +1215,7 @@ absl::StatusOr<bool> GScipSolver::Update(const ModelUpdateProto& model_update) {
          model_update.deleted_variable_ids()) {
       variables_.erase(deleted_variable_id);
     }
-    OR_RETURN_IF_ERROR(gscip_->SafeBulkDelete(vars_to_delete));
+    ABSL_RETURN_IF_ERROR(gscip_->SafeBulkDelete(vars_to_delete));
   }
 
   const std::optional<int64_t> first_new_var_id =
@@ -1222,11 +1224,11 @@ absl::StatusOr<bool> GScipSolver::Update(const ModelUpdateProto& model_update) {
       FirstLinearConstraintId(model_update.new_linear_constraints());
 
   if (model_update.objective_updates().has_direction_update()) {
-    OR_RETURN_IF_ERROR(gscip_->SetMaximize(
+    ABSL_RETURN_IF_ERROR(gscip_->SetMaximize(
         model_update.objective_updates().direction_update()));
   }
   if (model_update.objective_updates().has_offset_update()) {
-    OR_RETURN_IF_ERROR(gscip_->SetObjectiveOffset(
+    ABSL_RETURN_IF_ERROR(gscip_->SetObjectiveOffset(
         model_update.objective_updates().offset_update()));
   }
   if (const auto response = UpdateVariables(model_update.variable_updates());
@@ -1239,7 +1241,7 @@ absl::StatusOr<bool> GScipSolver::Update(const ModelUpdateProto& model_update) {
   for (const auto& obj_pair : linear_objective_updates) {
     // New variables' coefficient is set when the variables are added below.
     if (!first_new_var_id.has_value() || obj_pair.first < *first_new_var_id) {
-      OR_RETURN_IF_ERROR(
+      ABSL_RETURN_IF_ERROR(
           gscip_->SetObjCoef(variables_.at(obj_pair.first), obj_pair.second));
     }
   }
@@ -1271,15 +1273,15 @@ absl::StatusOr<bool> GScipSolver::Update(const ModelUpdateProto& model_update) {
   // TODO(b/215722113): maybe we could use SCIPaddCoefLinear() for sub-matrix 1.
 
   // Add new variables.
-  OR_RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       AddVariables(model_update.new_variables(), linear_objective_updates));
 
-  OR_RETURN_IF_ERROR(AddQuadraticObjectiveTerms(
+  ABSL_RETURN_IF_ERROR(AddQuadraticObjectiveTerms(
       model_update.objective_updates().quadratic_coefficients(),
       gscip_->ObjectiveIsMaximize()));
 
   // Update linear constraints properties and sub-matrix 1.
-  OR_RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       UpdateLinearConstraints(model_update.linear_constraint_updates(),
                               model_update.linear_constraint_matrix_updates(),
                               /*first_new_var_id=*/first_new_var_id,
@@ -1297,24 +1299,24 @@ absl::StatusOr<bool> GScipSolver::Update(const ModelUpdateProto& model_update) {
                                /*end_col_id=*/std::nullopt)) {
       for (const auto& [var_id, value] : var_coeffs) {
         // See above why we use AddLinearConstraintCoef().
-        OR_RETURN_IF_ERROR(gscip_->AddLinearConstraintCoef(
+        ABSL_RETURN_IF_ERROR(gscip_->AddLinearConstraintCoef(
             linear_constraints_.at(lin_con_id), variables_.at(var_id), value));
       }
     }
   }
 
   // Add the new constraints and sets sub-matrix 3.
-  OR_RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       AddLinearConstraints(model_update.new_linear_constraints(),
                            model_update.linear_constraint_matrix_updates()));
 
   // Quadratic constraint updates.
   for (const int64_t constraint_id :
        model_update.quadratic_constraint_updates().deleted_constraint_ids()) {
-    OR_RETURN_IF_ERROR(gscip_->DeleteConstraint(
+    ABSL_RETURN_IF_ERROR(gscip_->DeleteConstraint(
         quadratic_constraints_.extract(constraint_id).mapped()));
   }
-  OR_RETURN_IF_ERROR(AddQuadraticConstraints(
+  ABSL_RETURN_IF_ERROR(AddQuadraticConstraints(
       model_update.quadratic_constraint_updates().new_constraints()));
 
   // Indicator constraint updates.
@@ -1327,9 +1329,9 @@ absl::StatusOr<bool> GScipSolver::Update(const ModelUpdateProto& model_update) {
     }
     SCIP_CONS* const gscip_constraint = gscip_data->first;
     CHECK_NE(gscip_constraint, nullptr);
-    OR_RETURN_IF_ERROR(gscip_->DeleteConstraint(gscip_constraint));
+    ABSL_RETURN_IF_ERROR(gscip_->DeleteConstraint(gscip_constraint));
   }
-  OR_RETURN_IF_ERROR(AddIndicatorConstraints(
+  ABSL_RETURN_IF_ERROR(AddIndicatorConstraints(
       model_update.indicator_constraint_updates().new_constraints()));
 
   // SOS1 constraint updates.
@@ -1337,10 +1339,10 @@ absl::StatusOr<bool> GScipSolver::Update(const ModelUpdateProto& model_update) {
        model_update.sos1_constraint_updates().deleted_constraint_ids()) {
     auto [gscip_constraint, slack_handler] =
         sos1_constraints_.extract(constraint_id).mapped();
-    OR_RETURN_IF_ERROR(gscip_->DeleteConstraint(gscip_constraint));
-    OR_RETURN_IF_ERROR(slack_handler.DeleteStructure(*gscip_));
+    ABSL_RETURN_IF_ERROR(gscip_->DeleteConstraint(gscip_constraint));
+    ABSL_RETURN_IF_ERROR(slack_handler.DeleteStructure(*gscip_));
   }
-  OR_RETURN_IF_ERROR(AddSos1Constraints(
+  ABSL_RETURN_IF_ERROR(AddSos1Constraints(
       model_update.sos1_constraint_updates().new_constraints()));
 
   // SOS2 constraint updates.
@@ -1348,10 +1350,10 @@ absl::StatusOr<bool> GScipSolver::Update(const ModelUpdateProto& model_update) {
        model_update.sos2_constraint_updates().deleted_constraint_ids()) {
     auto [gscip_constraint, slack_handler] =
         sos2_constraints_.extract(constraint_id).mapped();
-    OR_RETURN_IF_ERROR(gscip_->DeleteConstraint(gscip_constraint));
-    OR_RETURN_IF_ERROR(slack_handler.DeleteStructure(*gscip_));
+    ABSL_RETURN_IF_ERROR(gscip_->DeleteConstraint(gscip_constraint));
+    ABSL_RETURN_IF_ERROR(slack_handler.DeleteStructure(*gscip_));
   }
-  OR_RETURN_IF_ERROR(AddSos2Constraints(
+  ABSL_RETURN_IF_ERROR(AddSos2Constraints(
       model_update.sos2_constraint_updates().new_constraints()));
 
   return true;

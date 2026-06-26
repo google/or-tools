@@ -18,12 +18,12 @@
 #include <vector>
 
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/math_opt/solvers/gscip/gscip.h"
@@ -35,29 +35,29 @@ namespace operations_research {
 absl::StatusOr<GScipAndVariables> GScipAndVariables::FromMPModelProto(
     const MPModelProto& model) {
   GScipAndVariables result;
-  OR_ASSIGN_OR_RETURN(result.gscip, GScip::Create(model.name()));
-  OR_RETURN_IF_ERROR(result.gscip->SetMaximize(model.maximize()));
-  OR_RETURN_IF_ERROR(
+  ABSL_ASSIGN_OR_RETURN(result.gscip, GScip::Create(model.name()));
+  ABSL_RETURN_IF_ERROR(result.gscip->SetMaximize(model.maximize()));
+  ABSL_RETURN_IF_ERROR(
       result.gscip->SetObjectiveOffset(model.objective_offset()));
   for (const MPVariableProto& variable : model.variable()) {
-    OR_ASSIGN_OR_RETURN(SCIP_VAR * v,
-                        result.gscip->AddVariable(
-                            variable.lower_bound(), variable.upper_bound(),
-                            variable.objective_coefficient(),
-                            variable.is_integer() ? GScipVarType::kInteger
-                                                  : GScipVarType::kContinuous,
-                            variable.name()));
+    ABSL_ASSIGN_OR_RETURN(SCIP_VAR * v,
+                          result.gscip->AddVariable(
+                              variable.lower_bound(), variable.upper_bound(),
+                              variable.objective_coefficient(),
+                              variable.is_integer() ? GScipVarType::kInteger
+                                                    : GScipVarType::kContinuous,
+                              variable.name()));
     result.variables.push_back(v);
   }
   for (const MPConstraintProto& linear_constraint : model.constraint()) {
-    OR_RETURN_IF_ERROR(result.AddLinearConstraint(linear_constraint));
+    ABSL_RETURN_IF_ERROR(result.AddLinearConstraint(linear_constraint));
   }
   for (const MPGeneralConstraintProto& gen_constraint :
        model.general_constraint()) {
-    OR_RETURN_IF_ERROR(result.AddGeneralConstraint(gen_constraint));
+    ABSL_RETURN_IF_ERROR(result.AddGeneralConstraint(gen_constraint));
   }
   if (model.has_quadratic_objective()) {
-    OR_RETURN_IF_ERROR(
+    ABSL_RETURN_IF_ERROR(
         result.AddQuadraticObjective(model.quadratic_objective()));
   }
   return result;

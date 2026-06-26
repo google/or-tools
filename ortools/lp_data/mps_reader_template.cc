@@ -17,12 +17,12 @@
 
 #include "absl/container/inlined_vector.h"
 #include "absl/status/status.h"
+#include "absl/status/status_builder.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/ascii.h"
 #include "absl/strings/match.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/status_builder.h"
-#include "ortools/base/status_macros.h"
 
 namespace operations_research::internal {
 namespace {
@@ -54,7 +54,7 @@ absl::StatusOr<MPSLineInfo> MPSLineInfo::Create(int64_t line_num,
     return line_info.InvalidArgumentError("Line is not in fixed format.");
   }
   if (!line_info.IsCommentOrBlank()) {
-    OR_RETURN_IF_ERROR(line_info.SplitLineIntoFields());
+    ABSL_RETURN_IF_ERROR(line_info.SplitLineIntoFields());
   }
   return line_info;
 }
@@ -133,7 +133,7 @@ absl::Status MPSLineInfo::InvalidArgumentError(
 }
 
 absl::Status MPSLineInfo::AppendLineToError(const absl::Status& status) const {
-  return ortools::StatusBuilder(status).SetAppend()
+  return absl::StatusBuilder(status).SetAppend()
          << " Line " << line_num_ << ": \"" << line_ << "\".";
 }
 

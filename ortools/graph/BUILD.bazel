@@ -466,6 +466,7 @@ cc_test(
         "//ortools/base:gmock_main",
         "//ortools/base:path",
         "//ortools/util:file_util",
+        "@abseil-cpp//absl/log:check",
         "@protobuf",
     ],
 )
@@ -813,11 +814,11 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//ortools/base:status_builder",
-        "//ortools/base:status_macros",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",

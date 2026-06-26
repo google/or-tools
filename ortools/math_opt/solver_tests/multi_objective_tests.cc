@@ -19,12 +19,12 @@
 
 #include "absl/base/optimization.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "absl/time/time.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/cpp/matchers.h"
 #include "ortools/math_opt/cpp/math_opt.h"
 #include "ortools/math_opt/io/mps_converter.h"
@@ -234,7 +234,7 @@ absl::StatusOr<SimpleMultiObjectiveSolveResult> SolveWithObjectiveDegradation(
       model_parameters.objective_parameters[priority_0]
           .objective_degradation_relative_tolerance = 0.5;
   }
-  OR_ASSIGN_OR_RETURN(
+  ABSL_ASSIGN_OR_RETURN(
       const SolveResult result,
       Solve(model, solver_type,
             {.parameters = parameters, .model_parameters = model_parameters}));
@@ -360,7 +360,7 @@ TEST_P(SimpleMultiObjectiveTest,
 //
 // Note that this instance is a MIP.
 absl::StatusOr<std::unique_ptr<Model>> Load23588MiplibInstance() {
-  OR_ASSIGN_OR_RETURN(
+  ABSL_ASSIGN_OR_RETURN(
       const ModelProto model_proto,
       ReadMpsFile(absl::StrCat("ortools/math_opt/solver_tests/testdata/"
                                "23588.mps")));

@@ -27,11 +27,11 @@
 #include "absl/container/linked_hash_map.h"
 #include "absl/log/check.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/status_builder.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/base/types.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/model_update.pb.h"
@@ -245,10 +245,10 @@ absl::Status UpdateBiMapFromMappedData(
     const absl::Span<const int64_t> deleted_ids,
     const google::protobuf::Map<int64_t, DataProto>& proto_map,
     IdNameBiMap& bimap) {
-  OR_RETURN_IF_ERROR(CheckIdsRangeAndStrictlyIncreasing2(deleted_ids))
+  ABSL_RETURN_IF_ERROR(CheckIdsRangeAndStrictlyIncreasing2(deleted_ids))
       << "invalid deleted ids";
   for (const int64_t id : deleted_ids) {
-    OR_RETURN_IF_ERROR(bimap.Erase(id));
+    ABSL_RETURN_IF_ERROR(bimap.Erase(id));
   }
   std::vector<int64_t> new_ids;
   new_ids.reserve(proto_map.size());
@@ -257,7 +257,7 @@ absl::Status UpdateBiMapFromMappedData(
   }
   absl::c_sort(new_ids);
   for (const int64_t id : new_ids) {
-    OR_RETURN_IF_ERROR(bimap.Insert(id, proto_map.at(id).name()));
+    ABSL_RETURN_IF_ERROR(bimap.Insert(id, proto_map.at(id).name()));
   }
   return absl::OkStatus();
 }

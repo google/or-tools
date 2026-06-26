@@ -37,6 +37,7 @@
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
@@ -46,7 +47,6 @@
 #include "ortools/base/helpers.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/options.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/core/solver_interface.h"
 #include "ortools/math_opt/cpp/math_opt.h"
 #include "ortools/math_opt/cpp/statistics.h"
@@ -195,8 +195,8 @@ absl::StatusOr<ModelAndHint> ParseModelAndHint() {
 
   std::vector<ModelUpdateProto> model_updates;
   for (const std::string& update_file_path : update_file_paths) {
-    OR_ASSIGN_OR_RETURN(ModelUpdateProto update,
-                        ReadModelUpdate(update_file_path, format));
+    ABSL_ASSIGN_OR_RETURN(ModelUpdateProto update,
+                          ReadModelUpdate(update_file_path, format));
     model_updates.emplace_back(std::move(update));
   }
 
@@ -208,11 +208,11 @@ absl::StatusOr<ModelAndHint> ParseModelAndHint() {
   }
 
   // Parse the problem and the updates.
-  OR_ASSIGN_OR_RETURN(std::unique_ptr<Model> model,
-                      Model::FromModelProto(model_proto));
+  ABSL_ASSIGN_OR_RETURN(std::unique_ptr<Model> model,
+                        Model::FromModelProto(model_proto));
   for (int u = 0; u < model_updates.size(); ++u) {
     const ModelUpdateProto& update = model_updates[u];
-    OR_RETURN_IF_ERROR(model->ApplyUpdateProto(update))
+    ABSL_RETURN_IF_ERROR(model->ApplyUpdateProto(update))
         << "failed to apply the update file: " << update_file_paths[u];
   }
   if (absl::GetFlag(FLAGS_lp_relaxation)) {
@@ -316,7 +316,7 @@ absl::Status RunSolver() {
         "a finite time limit is required when solving remotely, e.g. "
         "--time_limit=5m");
   }
-  OR_ASSIGN_OR_RETURN(const ModelAndHint model_and_hint, ParseModelAndHint());
+  ABSL_ASSIGN_OR_RETURN(const ModelAndHint model_and_hint, ParseModelAndHint());
 
   if (absl::GetFlag(FLAGS_ranges)) {
     std::cout << "Ranges of finite non-zero values in the model:\n"
@@ -354,7 +354,7 @@ absl::Status RunSolver() {
       .integrality_tolerance = absl::GetFlag(FLAGS_integrality_tolerance),
       .nonzero_tolerance = absl::GetFlag(FLAGS_nonzero_tolerance),
   };
-  OR_RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       PrintSummary(*model_and_hint.model, result,
                    absl::GetFlag(FLAGS_check_solutions)
                        ? std::make_optional(feasibility_checker_options)

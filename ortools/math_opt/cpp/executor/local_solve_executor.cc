@@ -17,10 +17,10 @@
 #include <utility>
 
 #include "absl/base/nullability.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/cpp/executor/executor_init_args.h"
 #include "ortools/math_opt/cpp/executor/solve_executor.h"
 #include "ortools/math_opt/cpp/executor/time_limit_util.h"
@@ -103,7 +103,7 @@ LocalSolveExecutor::New(Model* model, SolverType solver_type,
   absl::Time absolute_deadline =
       absl::Now() +
       init_args.explicit_deadline.value_or(absl::InfiniteDuration());
-  OR_ASSIGN_OR_RETURN(
+  ABSL_ASSIGN_OR_RETURN(
       std::unique_ptr<IncrementalSolver> solver,
       NewIncrementalSolver(model, solver_type,
                            {.streamable = std::move(init_args.streamable),

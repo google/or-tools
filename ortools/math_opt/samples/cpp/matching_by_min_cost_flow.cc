@@ -22,10 +22,10 @@
 #include "absl/log/log.h"
 #include "absl/random/random.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
 #include "ortools/base/init_google.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/cpp/math_opt.h"
 
 ABSL_FLAG(operations_research::math_opt::SolverType, solver,
@@ -152,11 +152,11 @@ absl::Status Main() {
       absl::GetFlag(FLAGS_gurobi_network)) {
     params.gurobi.param_values["NetworkAlg"] = "1";
   }
-  OR_ASSIGN_OR_RETURN(
+  ABSL_ASSIGN_OR_RETURN(
       const math_opt::SolveResult result,
       Solve(model, solver_type, {.parameters = std::move(params)}));
   std::cout << "Done solving (" << absl::Now() - start << ")" << std::endl;
-  OR_RETURN_IF_ERROR(result.termination.EnsureIsOptimal());
+  ABSL_RETURN_IF_ERROR(result.termination.EnsureIsOptimal());
   std::cout << "Cost: " << result.objective_value() << std::endl;
   return absl::OkStatus();
 }

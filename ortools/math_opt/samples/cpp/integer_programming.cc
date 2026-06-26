@@ -20,9 +20,9 @@
 
 #include "absl/log/check.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/time/time.h"
 #include "ortools/base/init_google.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/cpp/math_opt.h"
 
 namespace {
@@ -52,9 +52,9 @@ absl::Status Main() {
   // Objective
   model.Maximize(x + 10 * y);
 
-  OR_ASSIGN_OR_RETURN(const math_opt::SolveResult result,
-                      Solve(model, math_opt::SolverType::kGscip));
-  OR_RETURN_IF_ERROR(result.termination.EnsureIsOptimalOrFeasible());
+  ABSL_ASSIGN_OR_RETURN(const math_opt::SolveResult result,
+                        Solve(model, math_opt::SolverType::kGscip));
+  ABSL_RETURN_IF_ERROR(result.termination.EnsureIsOptimalOrFeasible());
   // A feasible solution is always available on termination reason kOptimal, and
   // kFeasible, but in the later case the solution may be sub-optimal.
   std::cout << "Problem solved in " << result.solve_time() << std::endl;

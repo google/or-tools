@@ -17,10 +17,10 @@
 #include <string>
 
 #include "absl/log/check.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "google/protobuf/message.h"
-#include "ortools/base/status_macros.h"
 
 namespace operations_research {
 
@@ -47,7 +47,7 @@ template <typename Proto>
 absl::StatusOr<Proto> ReadFileToProto(absl::string_view filename,
                                       bool allow_partial = false) {
   Proto proto;
-  OR_RETURN_IF_ERROR(ReadFileToProto(filename, &proto, allow_partial))
+  ABSL_RETURN_IF_ERROR(ReadFileToProto(filename, &proto, allow_partial))
       << "filename=" << filename;
   return proto;
 }

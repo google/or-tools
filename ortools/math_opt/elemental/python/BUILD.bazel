@@ -45,7 +45,6 @@ pybind_extension(
     visibility = ["//visibility:public"],
     deps = [
         "//ortools/base:status_builder",
-        "//ortools/base:status_macros",
         "//ortools/math_opt/elemental",
         "//ortools/math_opt/elemental:arrays",
         "//ortools/math_opt/elemental:attr_key",
@@ -58,6 +57,7 @@ pybind_extension(
         "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",

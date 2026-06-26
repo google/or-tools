@@ -81,6 +81,7 @@ cc_test(
         "//ortools/base:gmock_main",
         "//ortools/base:path",
         "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -112,6 +113,8 @@ cc_test(
         ":lilim_parser",
         "//ortools/base:gmock_main",
         "//ortools/base:path",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:string_view",
     ],
 )
 
@@ -157,6 +160,7 @@ cc_test(
         "//ortools/base:log_severity",
         "//ortools/base:path",
         "@abseil-cpp//absl/log:scoped_mock_log",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -232,7 +236,6 @@ cc_library(
         "//ortools/base:numbers",
         "//ortools/base:path",
         "//ortools/base:status_builder",
-        "//ortools/base:status_macros",
         "//ortools/base:strtoint",
         "//ortools/base:types",
         "//ortools/base:zipfile",
@@ -241,6 +244,7 @@ cc_library(
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",

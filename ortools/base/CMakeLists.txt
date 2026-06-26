@@ -40,6 +40,7 @@ target_link_libraries(${NAME} PRIVATE
   ZLIB::ZLIB
   BZip2::BZip2
   absl::base
+  absl::status_builder
   absl::strings
   absl::str_format
   protobuf::libprotobuf

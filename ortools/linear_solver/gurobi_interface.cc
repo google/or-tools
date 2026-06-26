@@ -73,6 +73,7 @@
 #include "ortools/linear_solver/proto_solver/proto_utils.h"
 #include "ortools/third_party_solvers/gurobi_environment.h"
 #include "ortools/util/lazy_mutable_copy.h"
+#include "ortools/util/status_streaming.h"
 #include "ortools/util/time_limit.h"
 
 ABSL_FLAG(int, num_gurobi_threads, 0,

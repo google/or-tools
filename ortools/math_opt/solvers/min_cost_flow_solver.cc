@@ -27,6 +27,7 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/memory/memory.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
@@ -35,7 +36,6 @@
 #include "absl/time/time.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/protoutil.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/base/strong_int.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/graph/min_cost_flow.h"
@@ -197,7 +197,7 @@ absl::Status CheckSolveParameters(const SolveParametersProto& parameters) {
 
 absl::StatusOr<std::unique_ptr<SolverInterface>> MinCostFlowSolver::New(
     const ModelProto& model, const InitArgs& /*init_args*/) {
-  OR_RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       ModelIsSupported(model, kMinCostFlowSupportedStructures, "MinCostFlow"));
 
   const bool is_maximize = model.objective().maximize();
@@ -324,7 +324,7 @@ absl::StatusOr<std::unique_ptr<SolverInterface>> MinCostFlowSolver::New(
              << " lower bound is not 0";
     }
     if (std::isfinite(ub)) {
-      OR_RETURN_IF_ERROR(
+      ABSL_RETURN_IF_ERROR(
           RoundToInteger<FlowQuantity>(ub, "flow quantity").status())
           << "invalid upper bound for variable " << v;
     }
@@ -453,14 +453,14 @@ absl::StatusOr<SolveResultProto> MinCostFlowSolver::Solve(
     MessageCallback /*message_cb*/,
     const CallbackRegistrationProto& callback_registration, Callback /*cb*/,
     const SolveInterrupter* absl_nullable /*interrupter*/) {
-  OR_RETURN_IF_ERROR(CheckRegisteredCallbackEvents(callback_registration,
-                                                   /*supported_events=*/{}));
-  OR_RETURN_IF_ERROR(CheckSolveParameters(parameters));
+  ABSL_RETURN_IF_ERROR(CheckRegisteredCallbackEvents(callback_registration,
+                                                     /*supported_events=*/{}));
+  ABSL_RETURN_IF_ERROR(CheckSolveParameters(parameters));
 
   const absl::Time start = absl::Now();
   const SimpleMinCostFlow::Status status = mcf_->Solve();
 
-  OR_ASSIGN_OR_RETURN(SolveResultProto result, MakeSolveResult(status));
+  ABSL_ASSIGN_OR_RETURN(SolveResultProto result, MakeSolveResult(status));
   OR_ASSIGN_OR_RETURN3(*result.mutable_solve_stats()->mutable_solve_time(),
                        util_time::EncodeGoogleApiProto(absl::Now() - start),
                        _ << "can't encode solve_time");

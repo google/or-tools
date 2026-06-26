@@ -18,9 +18,9 @@
 
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "ortools/base/status_builder.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/math_opt/io/lp/lp_model.h"
 
@@ -58,7 +58,7 @@ absl::StatusOr<LpModel> ReorderVariables(
   }
   LpModel result;
   for (const VariableIndex new_var : new_to_old.index_range()) {
-    OR_RETURN_IF_ERROR(
+    ABSL_RETURN_IF_ERROR(
         result.AddVariable(model.variables()[new_to_old[new_var]]).status())
         << "should be unreachable";
   }
@@ -73,7 +73,7 @@ absl::StatusOr<LpModel> ReorderVariables(
       }
       var = old_to_new[var];
     }
-    OR_RETURN_IF_ERROR(result.AddConstraint(c).status())
+    ABSL_RETURN_IF_ERROR(result.AddConstraint(c).status())
         << "should be unreachable";
   }
   return result;

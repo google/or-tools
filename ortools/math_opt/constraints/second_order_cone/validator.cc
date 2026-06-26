@@ -16,8 +16,8 @@
 #include <cstdint>
 
 #include "absl/status/status.h"
-#include "ortools/base/status_builder.h"
-#include "ortools/base/status_macros.h"
+#include "absl/status/status_builder.h"
+#include "absl/status/status_macros.h"
 #include "ortools/math_opt/core/model_summary.h"
 #include "ortools/math_opt/core/sparse_vector_view.h"
 #include "ortools/math_opt/model.pb.h"
@@ -29,12 +29,13 @@ namespace operations_research::math_opt {
 absl::Status ValidateConstraint(
     const SecondOrderConeConstraintProto& constraint,
     const IdNameBiMap& variable_universe) {
-  OR_RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       ValidateLinearExpression(constraint.upper_bound(), variable_universe))
       << "invalid `upper_bound`";
   for (int i = 0; i < constraint.arguments_to_norm_size(); ++i) {
     const LinearExpressionProto& expression = constraint.arguments_to_norm(i);
-    OR_RETURN_IF_ERROR(ValidateLinearExpression(expression, variable_universe))
+    ABSL_RETURN_IF_ERROR(
+        ValidateLinearExpression(expression, variable_universe))
         << "invalid `arguments_to_norm` at index: " << i;
   }
   return absl::OkStatus();

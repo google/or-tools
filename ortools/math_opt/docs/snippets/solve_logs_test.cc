@@ -17,12 +17,12 @@
 
 #include "absl/log/check.h"
 #include "absl/log/log.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/synchronization/mutex.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/log_severity.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/cpp/math_opt.h"
 #include "ortools/port/scoped_std_stream_capture.h"
 #include "testing/base/public/mock-log.h"
@@ -52,10 +52,10 @@ absl::StatusOr<double> PrintLogsWithSolveParameters() {
   model.Maximize(x);
 
   const math_opt::SolveParameters params = {.enable_output = true};
-  OR_ASSIGN_OR_RETURN(const math_opt::SolveResult result,
-                      math_opt::Solve(model, math_opt::SolverType::kGscip,
-                                      {.parameters = params}));
-  OR_RETURN_IF_ERROR(result.termination.EnsureIsOptimal());
+  ABSL_ASSIGN_OR_RETURN(const math_opt::SolveResult result,
+                        math_opt::Solve(model, math_opt::SolverType::kGscip,
+                                        {.parameters = params}));
+  ABSL_RETURN_IF_ERROR(result.termination.EnsureIsOptimal());
   return result.objective_value();
 }
 // [END_print_logs_with_solve_parameters]
@@ -92,12 +92,12 @@ absl::StatusOr<double> CannedMessageCallback() {
   model.Maximize(x);
 
   // See message_callback.h for other canned callbacks.
-  OR_ASSIGN_OR_RETURN(
+  ABSL_ASSIGN_OR_RETURN(
       const math_opt::SolveResult result,
       math_opt::Solve(model, math_opt::SolverType::kGscip,
                       {.message_callback = math_opt::InfoLoggerMessageCallback(
                            "my_application_prefix: ")}));
-  OR_RETURN_IF_ERROR(result.termination.EnsureIsOptimal());
+  ABSL_RETURN_IF_ERROR(result.termination.EnsureIsOptimal());
   return result.objective_value();
 }
 // [END_canned_message_callback]
@@ -138,11 +138,11 @@ absl::StatusOr<std::vector<std::string>> SolveAndReturnLogs() {
       logs.push_back(msg);
     }
   };
-  OR_ASSIGN_OR_RETURN(
+  ABSL_ASSIGN_OR_RETURN(
       const math_opt::SolveResult result,
       math_opt::Solve(model, math_opt::SolverType::kGscip,
                       {.message_callback = std::move(message_cb)}));
-  OR_RETURN_IF_ERROR(result.termination.EnsureIsOptimal());
+  ABSL_RETURN_IF_ERROR(result.termination.EnsureIsOptimal());
   return logs;
 }
 // [END_solve_and_return_logs]

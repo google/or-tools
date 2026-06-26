@@ -55,29 +55,29 @@ namespace math_opt {
 //
 //   ...
 //
-//   OR_ASSIGN_OR_RETURN(const GRBenvUniquePtr primary_env,
+//   ABSL_ASSIGN_OR_RETURN(const GRBenvUniquePtr primary_env,
 //                    NewPrimaryEnvironment());
 //
 //   NonStreamableGurobiInitArguments gurobi_args;
 //   gurobi_args.primary_env = primary_env.get();
 //
-//   OR_ASSIGN_OR_RETURN(
+//   ABSL_ASSIGN_OR_RETURN(
 //       const std::unique_ptr<IncrementalSolver> incremental_solve_1,
 //       NewIncrementalSolver(model, SOLVER_TYPE_GUROBI,
 //                              SolverInitArguments(gurobi_args)));
-//   OR_ASSIGN_OR_RETURN(
+//   ABSL_ASSIGN_OR_RETURN(
 //       const std::unique_ptr<IncrementalSolver> incremental_solve_2,
 //       NewIncrementalSolver(model, SOLVER_TYPE_GUROBI,
 //                              SolverInitArguments(gurobi_args)));
 //
-//   OR_ASSIGN_OR_RETURN(const SolveResult result_1,
-//   incremental_solve_1->Solve()); OR_ASSIGN_OR_RETURN(const SolveResult
+//   ABSL_ASSIGN_OR_RETURN(const SolveResult result_1,
+//   incremental_solve_1->Solve()); ABSL_ASSIGN_OR_RETURN(const SolveResult
 //   result_2, incremental_solve_2->Solve());
 //
 //
 // With ISV key:
 //
-//   OR_ASSIGN_OR_RETURN(const GRBenvUniquePtr primary_env,
+//   ABSL_ASSIGN_OR_RETURN(const GRBenvUniquePtr primary_env,
 //                    NewPrimaryEnvironment(GurobiISVKey{
 //                        .name = "the name",
 //                        .application_name = "the application",

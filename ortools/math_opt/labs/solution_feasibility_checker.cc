@@ -19,13 +19,13 @@
 
 #include "absl/algorithm/container.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/base/status_builder.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/cpp/math_opt.h"
 #include "ortools/util/fp_roundtrip_conv.h"
 
@@ -213,8 +213,8 @@ bool CheckIndicatorConstraint(const IndicatorConstraint constraint,
 absl::StatusOr<ModelSubset> CheckPrimalSolutionFeasibility(
     const Model& model, const VariableMap<double>& variable_values,
     const FeasibilityCheckerOptions& options) {
-  OR_RETURN_IF_ERROR(ValidateOptions(options));
-  OR_RETURN_IF_ERROR(ValidateVariables(model, variable_values));
+  ABSL_RETURN_IF_ERROR(ValidateOptions(options));
+  ABSL_RETURN_IF_ERROR(ValidateVariables(model, variable_values));
 
   ModelSubset violated_constraints;
   for (const Variable variable : model.Variables()) {
@@ -329,9 +329,9 @@ void AppendViolatedConstraintsAsStrings(
 absl::StatusOr<std::vector<std::string>> ViolatedConstraintsAsStrings(
     const Model& model, const ModelSubset& violated_constraints,
     const VariableMap<double>& variable_values) {
-  OR_RETURN_IF_ERROR(violated_constraints.CheckModelStorage(model.storage()))
+  ABSL_RETURN_IF_ERROR(violated_constraints.CheckModelStorage(model.storage()))
       << "violated_constraints and model are inconsistent";
-  OR_RETURN_IF_ERROR(ValidateVariables(model, variable_values));
+  ABSL_RETURN_IF_ERROR(ValidateVariables(model, variable_values));
 
   std::vector<std::string> result;
   for (const Variable variable :

@@ -25,11 +25,11 @@
 #include "absl/log/check.h"
 #include "absl/memory/memory.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/base/strong_int.h"
 #include "ortools/math_opt/core/model_summary.h"
 #include "ortools/math_opt/core/sorted.h"
@@ -53,7 +53,7 @@ ModelStorage::FromModelProto(const ModelProto& model_proto) {
   // models. Thus a model built by ModelStorage can contain duplicated
   // names. And since we use FromModelProto() to implement Clone(), we must make
   // sure duplicated names don't fail.
-  OR_RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       ValidateModel(model_proto, /*check_names=*/false).status());
 
   auto storage = std::make_unique<ModelStorage>(model_proto.name(),
@@ -438,64 +438,64 @@ absl::Status ModelStorage::ApplyUpdateProto(
     ModelSummary summary(/*check_names=*/false);
     // IdNameBiMap requires Insert() calls to be in sorted id order.
     for (const VariableId id : SortedVariables()) {
-      OR_RETURN_IF_ERROR(
+      ABSL_RETURN_IF_ERROR(
           summary.variables.Insert(id.value(), variable_name(id)))
           << "invalid variable id in model";
     }
-    OR_RETURN_IF_ERROR(summary.variables.SetNextFreeId(
+    ABSL_RETURN_IF_ERROR(summary.variables.SetNextFreeId(
         copyable_data_.variables.next_id().value()));
     for (const AuxiliaryObjectiveId id : SortedAuxiliaryObjectives()) {
-      OR_RETURN_IF_ERROR(
+      ABSL_RETURN_IF_ERROR(
           summary.auxiliary_objectives.Insert(id.value(), objective_name(id)))
           << "invalid auxiliary objective id in model";
     }
-    OR_RETURN_IF_ERROR(summary.auxiliary_objectives.SetNextFreeId(
+    ABSL_RETURN_IF_ERROR(summary.auxiliary_objectives.SetNextFreeId(
         copyable_data_.objectives.next_id().value()));
     for (const LinearConstraintId id : SortedLinearConstraints()) {
-      OR_RETURN_IF_ERROR(summary.linear_constraints.Insert(
+      ABSL_RETURN_IF_ERROR(summary.linear_constraints.Insert(
           id.value(), linear_constraint_name(id)))
           << "invalid linear constraint id in model";
     }
-    OR_RETURN_IF_ERROR(summary.linear_constraints.SetNextFreeId(
+    ABSL_RETURN_IF_ERROR(summary.linear_constraints.SetNextFreeId(
         copyable_data_.linear_constraints.next_id().value()));
     for (const auto id : SortedConstraints<QuadraticConstraintId>()) {
-      OR_RETURN_IF_ERROR(summary.quadratic_constraints.Insert(
+      ABSL_RETURN_IF_ERROR(summary.quadratic_constraints.Insert(
           id.value(), copyable_data_.quadratic_constraints.data(id).name))
           << "invalid quadratic constraint id in model";
     }
-    OR_RETURN_IF_ERROR(summary.quadratic_constraints.SetNextFreeId(
+    ABSL_RETURN_IF_ERROR(summary.quadratic_constraints.SetNextFreeId(
         copyable_data_.quadratic_constraints.next_id().value()));
     for (const auto id : SortedConstraints<SecondOrderConeConstraintId>()) {
-      OR_RETURN_IF_ERROR(summary.second_order_cone_constraints.Insert(
+      ABSL_RETURN_IF_ERROR(summary.second_order_cone_constraints.Insert(
           id.value(), copyable_data_.soc_constraints.data(id).name))
           << "invalid second-order cone constraint id in model";
     }
-    OR_RETURN_IF_ERROR(summary.second_order_cone_constraints.SetNextFreeId(
+    ABSL_RETURN_IF_ERROR(summary.second_order_cone_constraints.SetNextFreeId(
         copyable_data_.soc_constraints.next_id().value()));
     for (const Sos1ConstraintId id : SortedConstraints<Sos1ConstraintId>()) {
-      OR_RETURN_IF_ERROR(summary.sos1_constraints.Insert(
+      ABSL_RETURN_IF_ERROR(summary.sos1_constraints.Insert(
           id.value(), constraint_data(id).name()))
           << "invalid SOS1 constraint id in model";
     }
-    OR_RETURN_IF_ERROR(summary.sos1_constraints.SetNextFreeId(
+    ABSL_RETURN_IF_ERROR(summary.sos1_constraints.SetNextFreeId(
         copyable_data_.sos1_constraints.next_id().value()));
     for (const Sos2ConstraintId id : SortedConstraints<Sos2ConstraintId>()) {
-      OR_RETURN_IF_ERROR(summary.sos2_constraints.Insert(
+      ABSL_RETURN_IF_ERROR(summary.sos2_constraints.Insert(
           id.value(), constraint_data(id).name()))
           << "invalid SOS2 constraint id in model";
     }
-    OR_RETURN_IF_ERROR(summary.sos2_constraints.SetNextFreeId(
+    ABSL_RETURN_IF_ERROR(summary.sos2_constraints.SetNextFreeId(
         copyable_data_.sos2_constraints.next_id().value()));
 
     for (const IndicatorConstraintId id :
          SortedConstraints<IndicatorConstraintId>()) {
-      OR_RETURN_IF_ERROR(summary.indicator_constraints.Insert(
+      ABSL_RETURN_IF_ERROR(summary.indicator_constraints.Insert(
           id.value(), constraint_data(id).name));
     }
-    OR_RETURN_IF_ERROR(summary.indicator_constraints.SetNextFreeId(
+    ABSL_RETURN_IF_ERROR(summary.indicator_constraints.SetNextFreeId(
         copyable_data_.indicator_constraints.next_id().value()));
 
-    OR_RETURN_IF_ERROR(ValidateModelUpdate(update_proto, summary))
+    ABSL_RETURN_IF_ERROR(ValidateModelUpdate(update_proto, summary))
         << "update not valid";
   }
 

@@ -37,7 +37,6 @@ cc_library(
         "//conditions:default": ["@platforms//:incompatible"],
     }),
     deps = [
-        "//ortools/base:status_macros",
         "//ortools/linear_solver:linear_solver_cc_proto",
         "//ortools/linear_solver:model_validator",
         "//ortools/pdlp:iteration_stats",
@@ -48,6 +47,7 @@ cc_library(
         "//ortools/port:proto_utils",
         "//ortools/util:lazy_mutable_copy",
         "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
     ],
 )
@@ -169,7 +169,6 @@ cc_library(
     }),
     deps = [
         ":scip_params",
-        "//ortools/base:status_macros",
         "//ortools/base:timer",
         "//ortools/base:types",
         "//ortools/linear_solver:linear_solver_cc_proto",
@@ -183,6 +182,7 @@ cc_library(
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
@@ -238,7 +238,6 @@ cc_library(
         "//conditions:default": ["@platforms//:incompatible"],
     }),
     deps = [
-        "//ortools/base:status_macros",
         "//ortools/base:timer",
         "//ortools/base:types",
         "//ortools/linear_solver:gurobi_util",
@@ -251,6 +250,7 @@ cc_library(
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
