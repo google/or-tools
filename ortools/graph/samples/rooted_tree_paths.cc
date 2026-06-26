@@ -18,9 +18,9 @@
 
 #include "absl/log/check.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/strings/str_join.h"
 #include "ortools/base/init_google.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/graph/rooted_tree.h"
 // [END imports]
 
@@ -33,7 +33,7 @@ absl::Status Main() {
   //  2 is root
   //  3 -> 2
   //  4 -> 1
-  OR_ASSIGN_OR_RETURN(
+  ABSL_ASSIGN_OR_RETURN(
       const operations_research::RootedTree<int> tree,
       operations_research::RootedTree<int>::Create(2, {1, 2, -1, 2, 1}));
 

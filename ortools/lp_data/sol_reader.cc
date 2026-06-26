@@ -19,12 +19,12 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "ortools/base/numbers.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"
@@ -34,13 +34,13 @@ namespace operations_research {
 
 absl::StatusOr<glop::DenseRow> ParseSolFile(absl::string_view file_name,
                                             const glop::LinearProgram& model) {
-  OR_ASSIGN_OR_RETURN(std::string sol_file, ReadFileToString(file_name));
+  ABSL_ASSIGN_OR_RETURN(std::string sol_file, ReadFileToString(file_name));
   return ParseSolString(sol_file, model);
 }
 
 absl::StatusOr<MPSolutionResponse> ParseSolFile(absl::string_view file_name,
                                                 const MPModelProto& model) {
-  OR_ASSIGN_OR_RETURN(std::string sol_file, ReadFileToString(file_name));
+  ABSL_ASSIGN_OR_RETURN(std::string sol_file, ReadFileToString(file_name));
   return ParseSolString(sol_file, model);
 }
 

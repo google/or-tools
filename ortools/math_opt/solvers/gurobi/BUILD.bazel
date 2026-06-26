@@ -35,9 +35,7 @@ cc_library(
         "//ortools/math_opt:__subpackages__",
     ],
     deps = [
-        "//ortools/base:source_location",
         "//ortools/base:status_builder",
-        "//ortools/base:status_macros",
         "//ortools/gurobi/isv_public:gurobi_isv",
         "//ortools/math_opt/solvers:gurobi_cc_proto",
         "@abseil-cpp//absl/log",
@@ -46,8 +44,10 @@ cc_library(
         "@abseil-cpp//absl/log:vlog_is_on",
         "@abseil-cpp//absl/memory",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/types:source_location",
         "@abseil-cpp//absl/types:span",
     ],
 )

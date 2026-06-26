@@ -34,12 +34,12 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/cpp/matchers.h"
 #include "ortools/math_opt/cpp/math_opt.h"
 
@@ -213,9 +213,9 @@ absl::StatusOr<SolveStats> SolveForLpAlgorithm(SolverType solver_type,
   if (solver_type != SolverType::kHighs) {
     args.parameters.threads = 1;
   }
-  OR_ASSIGN_OR_RETURN(const SolveResult result,
-                      Solve(assignment_problem.model(), solver_type, args));
-  OR_RETURN_IF_ERROR(result.termination.EnsureIsOptimal());
+  ABSL_ASSIGN_OR_RETURN(const SolveResult result,
+                        Solve(assignment_problem.model(), solver_type, args));
+  ABSL_RETURN_IF_ERROR(result.termination.EnsureIsOptimal());
   return result.solve_stats;
 }
 

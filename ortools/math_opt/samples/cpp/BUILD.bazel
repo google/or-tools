@@ -20,11 +20,11 @@ cc_binary(
     srcs = ["basic_example.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/base:status_macros",
         "//ortools/math_opt/cpp:math_opt",
         "//ortools/math_opt/solvers:gscip_solver",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
     ],
 )
 
@@ -34,7 +34,6 @@ cc_binary(
     deps = [
         "//ortools/base",
         "//ortools/base:map_util",
-        "//ortools/base:status_macros",
         "//ortools/math_opt/cpp:math_opt",
         "//ortools/math_opt/solvers:gscip_solver",
         "//ortools/util:status_macros",
@@ -43,6 +42,7 @@ cc_binary(
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",
@@ -54,11 +54,11 @@ cc_binary(
     srcs = ["linear_programming.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/base:status_macros",
         "//ortools/math_opt/cpp:math_opt",
         "//ortools/math_opt/solvers:glop_solver",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/time",
     ],
@@ -70,11 +70,11 @@ cc_binary(
     deps = [
         "//ortools/base",
         "//ortools/base:status_builder",
-        "//ortools/base:status_macros",
         "//ortools/math_opt/cpp:math_opt",
         "//ortools/math_opt/solvers:glop_solver",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/time",
     ],
@@ -85,11 +85,11 @@ cc_binary(
     srcs = ["integer_programming.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/base:status_macros",
         "//ortools/math_opt/cpp:math_opt",
         "//ortools/math_opt/solvers:gscip_solver",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/time",
     ],
 )
@@ -100,12 +100,12 @@ cc_binary(
     deps = [
         "//ortools/base",
         "//ortools/base:status_builder",
-        "//ortools/base:status_macros",
         "//ortools/math_opt/cpp:math_opt",
         "//ortools/math_opt/solvers:cp_sat_solver",
         "//ortools/math_opt/solvers:glop_solver",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
     ],
@@ -120,7 +120,6 @@ cc_binary(
     ],
     deps = [
         "//ortools/base",
-        "//ortools/base:status_macros",
         "//ortools/math_opt/cpp:math_opt",
         "//ortools/math_opt/solvers:glop_solver",
         "//ortools/math_opt/solvers:glpk_solver",
@@ -134,6 +133,7 @@ cc_binary(
         "@abseil-cpp//absl/random:distributions",
         "@abseil-cpp//absl/random:seed_sequences",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
@@ -149,13 +149,13 @@ cc_binary(
         "//ortools/base",
         "//ortools/base:container_logging",
         "//ortools/base:mathutil",
-        "//ortools/base:status_macros",
         "//ortools/math_opt/cpp:math_opt",
         "//ortools/math_opt/solvers:glop_solver",
         "//ortools/math_opt/solvers:gscip_solver",
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
@@ -171,7 +171,6 @@ cc_binary(
     ],
     deps = [
         "//ortools/base",
-        "//ortools/base:status_macros",
         "//ortools/math_opt/cpp:math_opt",
         "//ortools/math_opt/solvers:pdlp_solver",
         "@abseil-cpp//absl/algorithm:container",
@@ -179,6 +178,7 @@ cc_binary(
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",
@@ -215,7 +215,6 @@ cc_binary(
     deps = [
         "//ortools/base",
         "//ortools/base:file",
-        "//ortools/base:status_macros",
         "//ortools/math_opt/cpp:math_opt",
         "//ortools/math_opt/solvers:gscip_solver",
         "@abseil-cpp//absl/container:flat_hash_set",
@@ -223,6 +222,7 @@ cc_binary(
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",
@@ -234,12 +234,12 @@ cc_binary(
     srcs = ["graph_coloring.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/base:status_macros",
         "//ortools/math_opt/cpp:math_opt",
         "//ortools/math_opt/solvers:cp_sat_solver",
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
     ],
@@ -255,7 +255,6 @@ cc_binary(
     deps = [
         "//ortools/base",
         "//ortools/base:status_builder",
-        "//ortools/base:status_macros",
         "//ortools/math_opt/cpp:math_opt",
         "//ortools/math_opt/solvers:cp_sat_solver",
         "//ortools/math_opt/solvers:gscip_solver",
@@ -264,6 +263,7 @@ cc_binary(
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/types:span",
     ],
@@ -274,11 +274,11 @@ cc_binary(
     srcs = ["area_socp.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/base:status_macros",
         "//ortools/math_opt/cpp:math_opt",
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
     ],
 )
 
@@ -291,13 +291,13 @@ cc_binary(
     ],
     deps = [
         "//ortools/base",
-        "//ortools/base:status_macros",
         "//ortools/math_opt/cpp:math_opt",
         "//ortools/math_opt/solvers:glop_solver",
         "//ortools/math_opt/solvers:min_cost_flow_solver",
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
     ],
 )
 
@@ -321,7 +321,6 @@ cc_binary(
     ],
     deps = [
         "//ortools/base",
-        "//ortools/base:status_macros",
         "//ortools/math_opt/cpp:math_opt",
         "//ortools/math_opt/solvers:glop_solver",
         "//ortools/math_opt/solvers:min_cost_flow_solver",
@@ -329,6 +328,7 @@ cc_binary(
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/time",
     ],
 )

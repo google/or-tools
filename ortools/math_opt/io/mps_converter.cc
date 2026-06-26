@@ -15,9 +15,9 @@
 
 #include <string>
 
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/model_exporter.h"
 #include "ortools/lp_data/mps_reader.h"
@@ -27,8 +27,8 @@
 namespace operations_research::math_opt {
 
 absl::StatusOr<std::string> ModelProtoToMps(const ModelProto& model) {
-  OR_ASSIGN_OR_RETURN(const MPModelProto mp_model_proto,
-                      MathOptModelToMPModelProto(model));
+  ABSL_ASSIGN_OR_RETURN(const MPModelProto mp_model_proto,
+                        MathOptModelToMPModelProto(model));
   return ExportModelAsMpsFormat(mp_model_proto,
                                 {.show_unused_variables = true});
 }
@@ -36,13 +36,13 @@ absl::StatusOr<std::string> ModelProtoToMps(const ModelProto& model) {
 absl::StatusOr<ModelProto> ReadMpsFile(const absl::string_view filename) {
   glop::MPSReader mps_reader;
   MPModelProto mp_model;
-  OR_RETURN_IF_ERROR(mps_reader.ParseFile(filename, &mp_model));
+  ABSL_RETURN_IF_ERROR(mps_reader.ParseFile(filename, &mp_model));
   return MPModelProtoToMathOptModel(mp_model);
 }
 
 absl::StatusOr<ModelProto> MpsToModelProto(absl::string_view mps_data) {
-  OR_ASSIGN_OR_RETURN(const MPModelProto mp_model,
-                      glop::MpsDataToMPModelProto(mps_data));
+  ABSL_ASSIGN_OR_RETURN(const MPModelProto mp_model,
+                        glop::MpsDataToMPModelProto(mps_data));
   return MPModelProtoToMathOptModel(mp_model);
 }
 

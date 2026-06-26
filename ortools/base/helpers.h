@@ -18,11 +18,11 @@
 #include <string>
 
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "google/protobuf/message.h"
 #include "ortools/base/file.h"
-#include "ortools/base/status_macros.h"
 
 namespace file {
 
@@ -51,7 +51,7 @@ absl::Status GetTextProto(absl::string_view file_name,
 template <typename T>
 absl::StatusOr<T> GetTextProto(absl::string_view file_name, Options options) {
   T proto;
-  OR_RETURN_IF_ERROR(GetTextProto(file_name, &proto, options));
+  ABSL_RETURN_IF_ERROR(GetTextProto(file_name, &proto, options));
   return proto;
 }
 
@@ -65,7 +65,7 @@ template <typename T>
 
 absl::StatusOr<T> GetBinaryProto(absl::string_view file_name, Options options) {
   T proto;
-  OR_RETURN_IF_ERROR(GetBinaryProto(file_name, &proto, options));
+  ABSL_RETURN_IF_ERROR(GetBinaryProto(file_name, &proto, options));
   return proto;
 }
 

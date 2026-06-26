@@ -13,21 +13,21 @@
 
 #include "ortools/math_opt/cpp/incremental_solver.h"
 
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
-#include "ortools/base/status_macros.h"
 
 namespace operations_research::math_opt {
 
 absl::StatusOr<SolveResult> IncrementalSolver::Solve(
     const SolveArguments& arguments) {
-  OR_RETURN_IF_ERROR(Update().status());
+  ABSL_RETURN_IF_ERROR(Update().status());
   return SolveWithoutUpdate(arguments);
 }
 
 absl::StatusOr<ComputeInfeasibleSubsystemResult>
 IncrementalSolver::ComputeInfeasibleSubsystem(
     const ComputeInfeasibleSubsystemArguments& arguments) {
-  OR_RETURN_IF_ERROR(Update().status());
+  ABSL_RETURN_IF_ERROR(Update().status());
   return ComputeInfeasibleSubsystemWithoutUpdate(arguments);
 }
 

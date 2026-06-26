@@ -24,6 +24,7 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/log/log.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
@@ -32,7 +33,6 @@
 #include "absl/types/span.h"
 #include "ortools/base/helpers.h"
 #include "ortools/base/options.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/math_opt/io/lp_converter.h"
 #include "ortools/math_opt/io/lp_parser.h"
@@ -200,37 +200,37 @@ absl::StatusOr<std::pair<ModelProto, std::optional<SolutionHintProto>>>
 ReadModel(const absl::string_view file_path, const FileFormat format) {
   switch (format) {
     case FileFormat::kMathOptBinary: {
-      OR_ASSIGN_OR_RETURN(ModelProto model, file::GetBinaryProto<ModelProto>(
-                                                file_path, file::Defaults()));
+      ABSL_ASSIGN_OR_RETURN(ModelProto model, file::GetBinaryProto<ModelProto>(
+                                                  file_path, file::Defaults()));
       return std::make_pair(std::move(model), std::nullopt);
     }
     case FileFormat::kMathOptText: {
-      OR_ASSIGN_OR_RETURN(ModelProto model, file::GetTextProto<ModelProto>(
-                                                file_path, file::Defaults()));
+      ABSL_ASSIGN_OR_RETURN(ModelProto model, file::GetTextProto<ModelProto>(
+                                                  file_path, file::Defaults()));
       return std::make_pair(std::move(model), std::nullopt);
     }
     case FileFormat::kLinearSolverBinary:
     case FileFormat::kLinearSolverText: {
-      OR_ASSIGN_OR_RETURN(
+      ABSL_ASSIGN_OR_RETURN(
           const MPModelProto linear_solver_model,
           format == FileFormat::kLinearSolverBinary
               ? file::GetBinaryProto<MPModelProto>(file_path, file::Defaults())
               : file::GetTextProto<MPModelProto>(file_path, file::Defaults()));
-      OR_ASSIGN_OR_RETURN(ModelProto model,
-                          MPModelProtoToMathOptModel(linear_solver_model));
-      OR_ASSIGN_OR_RETURN(
+      ABSL_ASSIGN_OR_RETURN(ModelProto model,
+                            MPModelProtoToMathOptModel(linear_solver_model));
+      ABSL_ASSIGN_OR_RETURN(
           std::optional<SolutionHintProto> hint,
           MPModelProtoSolutionHintToMathOptHint(linear_solver_model));
       return std::make_pair(std::move(model), std::move(hint));
     }
     case FileFormat::kMPS: {
-      OR_ASSIGN_OR_RETURN(ModelProto model, ReadMpsFile(file_path));
+      ABSL_ASSIGN_OR_RETURN(ModelProto model, ReadMpsFile(file_path));
       return std::make_pair(std::move(model), std::nullopt);
     }
     case FileFormat::kLP: {
-      OR_ASSIGN_OR_RETURN(const std::string lp_data,
-                          file::GetContents(file_path, file::Defaults()));
-      OR_ASSIGN_OR_RETURN(ModelProto model, ModelProtoFromLp(lp_data));
+      ABSL_ASSIGN_OR_RETURN(const std::string lp_data,
+                            file::GetContents(file_path, file::Defaults()));
+      ABSL_ASSIGN_OR_RETURN(ModelProto model, ModelProtoFromLp(lp_data));
       return std::make_pair(std::move(model), std::nullopt);
     }
   }
@@ -248,8 +248,8 @@ absl::Status WriteModel(const absl::string_view file_path,
       return file::SetTextProto(file_path, model_proto, file::Defaults());
     case FileFormat::kLinearSolverBinary:
     case FileFormat::kLinearSolverText: {
-      OR_ASSIGN_OR_RETURN(const MPModelProto linear_solver_model,
-                          MathOptModelToMPModelProto(model_proto));
+      ABSL_ASSIGN_OR_RETURN(const MPModelProto linear_solver_model,
+                            MathOptModelToMPModelProto(model_proto));
       if (hint_proto.has_value()) {
         LOG(WARNING) << "support for converting a MathOpt hint to MPModelProto "
                         "is not yet supported thus the hint has been lost";
@@ -261,13 +261,13 @@ absl::Status WriteModel(const absl::string_view file_path,
                                       file::Defaults());
     }
     case FileFormat::kMPS: {
-      OR_ASSIGN_OR_RETURN(const std::string mps_data,
-                          ModelProtoToMps(model_proto));
+      ABSL_ASSIGN_OR_RETURN(const std::string mps_data,
+                            ModelProtoToMps(model_proto));
       return file::SetContents(file_path, mps_data, file::Defaults());
     }
     case FileFormat::kLP: {
-      OR_ASSIGN_OR_RETURN(const std::string lp_data,
-                          ModelProtoToLp(model_proto));
+      ABSL_ASSIGN_OR_RETURN(const std::string lp_data,
+                            ModelProtoToLp(model_proto));
       return file::SetContents(file_path, lp_data, file::Defaults());
     }
   }

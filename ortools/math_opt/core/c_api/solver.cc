@@ -22,9 +22,10 @@
 
 #include "absl/log/check.h"
 #include "absl/status/status.h"
+#include "absl/status/status_builder.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "ortools/base/status_builder.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/base/types.h"
 #include "ortools/math_opt/core/solver.h"
 #include "ortools/math_opt/model.pb.h"
@@ -63,10 +64,10 @@ absl::StatusOr<std::pair<void*, size_t>> SolveImpl(
   if (interrupter != nullptr) {
     solve_args.interrupter = &interrupter->cpp_interrupter;
   }
-  OR_ASSIGN_OR_RETURN(const SolveResultProto result,
-                      Solver::NonIncrementalSolve(
-                          model, static_cast<SolverTypeProto>(solver_type),
-                          init_args, solve_args));
+  ABSL_ASSIGN_OR_RETURN(const SolveResultProto result,
+                        Solver::NonIncrementalSolve(
+                            model, static_cast<SolverTypeProto>(solver_type),
+                            init_args, solve_args));
   const size_t result_size_bytes = result.ByteSizeLong();
   if (result_size_bytes > kint32max) {
     return ortools::InvalidArgumentErrorBuilder()

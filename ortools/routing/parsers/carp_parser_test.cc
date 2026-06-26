@@ -16,6 +16,8 @@
 #include <string>
 
 #include "absl/log/scoped_mock_log.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/log_severity.h"

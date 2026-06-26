@@ -19,9 +19,9 @@
 
 #include "absl/log/check.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/strings/str_join.h"
 #include "ortools/base/init_google.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/graph_base/bfs.h"
 // [END imports]
 
@@ -42,19 +42,19 @@ absl::Status Main() {
 
   // Compute the shortest path from 0 to each reachable node.
   const int source = 0;
-  OR_ASSIGN_OR_RETURN(
+  ABSL_ASSIGN_OR_RETURN(
       const std::vector<int> bfs_tree,
       util::graph::GetBFSRootedTree(adjacency_list, num_nodes, source));
   // Runs in O(num nodes). Nodes that are not reachable have distance -1.
-  OR_ASSIGN_OR_RETURN(const std::vector<int> node_distances,
-                      util::graph::GetBFSDistances(bfs_tree));
+  ABSL_ASSIGN_OR_RETURN(const std::vector<int> node_distances,
+                        util::graph::GetBFSDistances(bfs_tree));
   for (int t = 0; t < num_nodes; ++t) {
     if (t == source) {
       continue;
     }
     if (node_distances[t] >= 0) {
-      OR_ASSIGN_OR_RETURN(const std::vector<int> shortest_path,
-                          util::graph::GetBFSShortestPath(bfs_tree, t));
+      ABSL_ASSIGN_OR_RETURN(const std::vector<int> shortest_path,
+                            util::graph::GetBFSShortestPath(bfs_tree, t));
       std::cout << "Shortest path from 0 to " << t
                 << " has length: " << node_distances[t] << std::endl;
       std::cout << "Path is: " << absl::StrJoin(shortest_path, ", ")

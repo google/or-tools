@@ -351,11 +351,11 @@ cc_library(
     deps = [
         "//ortools/base:file",
         "//ortools/base:gzipstring",
-        "//ortools/base:status_builder",
-        "//ortools/base:status_macros",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_builder",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings:str_format",
         "@abseil-cpp//absl/strings:string_view",
@@ -451,10 +451,10 @@ cc_library(
     hdrs = ["fp_roundtrip_conv.h"],
     deps = [
         "//ortools/base:status_builder",
-        "//ortools/base:status_macros",
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
@@ -533,11 +533,11 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":status_cc_proto",
-        "//ortools/base:source_location",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/strings:cord",
         "@abseil-cpp//absl/strings:string_view",
+        "@abseil-cpp//absl/types:source_location",
     ],
 )
 

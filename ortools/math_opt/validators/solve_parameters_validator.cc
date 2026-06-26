@@ -16,12 +16,12 @@
 #include <cmath>
 
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/time/time.h"
 #include "ortools/base/protoutil.h"
 #include "ortools/base/status_builder.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/parameters.pb.h"
 #include "ortools/util/status_macros.h"
 
@@ -117,7 +117,7 @@ absl::Status ValidateSolveParameters(const SolveParametersProto& parameters) {
            << parameters.lp_algorithm();
   }
 #define VALIDATE_EMPHASIS(property) \
-  OR_RETURN_IF_ERROR(               \
+  ABSL_RETURN_IF_ERROR(             \
       ValidateEmphasisProtoParameter(parameters.property(), #property))
   VALIDATE_EMPHASIS(presolve);
   VALIDATE_EMPHASIS(cuts);

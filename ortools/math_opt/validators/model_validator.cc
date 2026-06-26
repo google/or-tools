@@ -18,9 +18,9 @@
 #include <utility>
 
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "ortools/base/status_builder.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/constraints/indicator/validator.h"
 #include "ortools/math_opt/constraints/quadratic/validator.h"
 #include "ortools/math_opt/constraints/second_order_cone/validator.h"
@@ -44,15 +44,15 @@ namespace {
 ////////////////////////////////////////////////////////////////////////////////
 
 absl::Status VariablesValid(const VariablesProto& variables) {
-  OR_RETURN_IF_ERROR(CheckIdsRangeAndStrictlyIncreasing(variables.ids()))
+  ABSL_RETURN_IF_ERROR(CheckIdsRangeAndStrictlyIncreasing(variables.ids()))
       << "Bad variable ids";
-  OR_RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       CheckValues(MakeView(variables.ids(), variables.lower_bounds()),
                   {.allow_positive_infinity = false}, "lower_bounds"));
-  OR_RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       CheckValues(MakeView(variables.ids(), variables.upper_bounds()),
                   {.allow_negative_infinity = false}, "upper_bounds"));
-  OR_RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       CheckValues(MakeView(variables.ids(), variables.integers()), "integers"));
   return absl::OkStatus();
 }
@@ -60,24 +60,24 @@ absl::Status VariablesValid(const VariablesProto& variables) {
 absl::Status VariableUpdatesValid(const VariableUpdatesProto& variable_updates,
                                   const IdNameBiMap& variable_ids,
                                   const int64_t old_var_id_ub) {
-  OR_RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       CheckIdsAndValues(MakeView(variable_updates.lower_bounds()),
                         {.allow_positive_infinity = false}))
       << "Bad lower bounds";
-  OR_RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       CheckIdsAndValues(MakeView(variable_updates.upper_bounds()),
                         {.allow_negative_infinity = false}))
       << "Bad upper bounds";
-  OR_RETURN_IF_ERROR(CheckIdsAndValues(MakeView(variable_updates.integers())))
+  ABSL_RETURN_IF_ERROR(CheckIdsAndValues(MakeView(variable_updates.integers())))
       << "Bad integers";
-  OR_RETURN_IF_ERROR(CheckIdsSubset(variable_updates.lower_bounds().ids(),
-                                    variable_ids, old_var_id_ub))
+  ABSL_RETURN_IF_ERROR(CheckIdsSubset(variable_updates.lower_bounds().ids(),
+                                      variable_ids, old_var_id_ub))
       << "lower bound update on invalid variable id";
-  OR_RETURN_IF_ERROR(CheckIdsSubset(variable_updates.upper_bounds().ids(),
-                                    variable_ids, old_var_id_ub))
+  ABSL_RETURN_IF_ERROR(CheckIdsSubset(variable_updates.upper_bounds().ids(),
+                                      variable_ids, old_var_id_ub))
       << "upper bound update on invalid variable id";
-  OR_RETURN_IF_ERROR(CheckIdsSubset(variable_updates.integers().ids(),
-                                    variable_ids, old_var_id_ub))
+  ABSL_RETURN_IF_ERROR(CheckIdsSubset(variable_updates.integers().ids(),
+                                      variable_ids, old_var_id_ub))
       << "integer update on invalid variable id";
   return absl::OkStatus();
 }
@@ -85,22 +85,22 @@ absl::Status VariableUpdatesValid(const VariableUpdatesProto& variable_updates,
 absl::Status ObjectiveValid(const ObjectiveProto& objective,
                             const IdNameBiMap& variable_ids) {
   // 1. Validate offset
-  OR_RETURN_IF_ERROR(CheckScalarNoNanNoInf(objective.offset()))
+  ABSL_RETURN_IF_ERROR(CheckScalarNoNanNoInf(objective.offset()))
       << "Objective offset invalid";
   // 2. Validate linear terms
   const auto linear_coefficients = MakeView(objective.linear_coefficients());
-  OR_RETURN_IF_ERROR(CheckIdsAndValues(
+  ABSL_RETURN_IF_ERROR(CheckIdsAndValues(
       linear_coefficients,
       {.allow_positive_infinity = false, .allow_negative_infinity = false}))
       << "Linear objective coefficients bad";
-  OR_RETURN_IF_ERROR(CheckIdsSubset(linear_coefficients.ids(), variable_ids))
+  ABSL_RETURN_IF_ERROR(CheckIdsSubset(linear_coefficients.ids(), variable_ids))
       << "Objective.linear_coefficients.ids not found in Variables.ids";
   // 3. Validate quadratic terms
-  OR_RETURN_IF_ERROR(SparseMatrixValid(objective.quadratic_coefficients(),
-                                       /*enforce_upper_triangular=*/true))
+  ABSL_RETURN_IF_ERROR(SparseMatrixValid(objective.quadratic_coefficients(),
+                                         /*enforce_upper_triangular=*/true))
       << "Objective.quadratic_coefficients invalid";
-  OR_RETURN_IF_ERROR(SparseMatrixIdsAreKnown(objective.quadratic_coefficients(),
-                                             variable_ids, variable_ids))
+  ABSL_RETURN_IF_ERROR(SparseMatrixIdsAreKnown(
+      objective.quadratic_coefficients(), variable_ids, variable_ids))
       << "Objective.quadratic_coefficients invalid";
   if (const int64_t priority = objective.priority(); priority < 0) {
     return ortools::InvalidArgumentErrorBuilder()
@@ -116,22 +116,22 @@ absl::Status ObjectiveUpdatesValid(
     const ObjectiveUpdatesProto& objective_updates,
     const IdNameBiMap& variable_ids) {
   // 1. Validate offset
-  OR_RETURN_IF_ERROR(CheckScalarNoNanNoInf(objective_updates.offset_update()))
+  ABSL_RETURN_IF_ERROR(CheckScalarNoNanNoInf(objective_updates.offset_update()))
       << "Offset update invalid";
   // 2. Validate linear terms
-  OR_RETURN_IF_ERROR(CheckIdsAndValues(
+  ABSL_RETURN_IF_ERROR(CheckIdsAndValues(
       MakeView(objective_updates.linear_coefficients()),
       {.allow_positive_infinity = false, .allow_negative_infinity = false}))
       << "Linear objective coefficients invalid";
   // 3. Validate quadratic terms
-  OR_RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       SparseMatrixValid(objective_updates.quadratic_coefficients(),
                         /*enforce_upper_triangular=*/true))
       << "Objective.quadratic_coefficients invalid";
-  OR_RETURN_IF_ERROR(CheckIdsSubset(
+  ABSL_RETURN_IF_ERROR(CheckIdsSubset(
       objective_updates.linear_coefficients().ids(), variable_ids))
       << "Linear coefficients ids not found in variable ids";
-  OR_RETURN_IF_ERROR(SparseMatrixIdsAreKnown(
+  ABSL_RETURN_IF_ERROR(SparseMatrixIdsAreKnown(
       objective_updates.quadratic_coefficients(), variable_ids, variable_ids))
       << "quadratic_coefficients invalid";
   if (objective_updates.has_priority_update()) {
@@ -156,7 +156,7 @@ absl::Status AuxiliaryObjectivesUpdatesValid(
                 "id: "
              << id;
     }
-    OR_RETURN_IF_ERROR(ObjectiveValid(new_objective, variable_ids))
+    ABSL_RETURN_IF_ERROR(ObjectiveValid(new_objective, variable_ids))
         << "bad new auxiliary objective with id: " << id;
   }
   for (const auto& id : objectives.deleted_objective_ids()) {
@@ -174,20 +174,20 @@ absl::Status AuxiliaryObjectivesUpdatesValid(
                 "with id: "
              << id;
     }
-    OR_RETURN_IF_ERROR(ObjectiveUpdatesValid(objective_update, variable_ids));
+    ABSL_RETURN_IF_ERROR(ObjectiveUpdatesValid(objective_update, variable_ids));
   }
   return absl::OkStatus();
 }
 
 absl::Status LinearConstraintsValid(
     const LinearConstraintsProto& linear_constraints) {
-  OR_RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       CheckIdsRangeAndStrictlyIncreasing(linear_constraints.ids()))
       << "Bad linear constraint ids";
-  OR_RETURN_IF_ERROR(CheckValues(
+  ABSL_RETURN_IF_ERROR(CheckValues(
       MakeView(linear_constraints.ids(), linear_constraints.lower_bounds()),
       {.allow_positive_infinity = false}, "lower_bounds"));
-  OR_RETURN_IF_ERROR(CheckValues(
+  ABSL_RETURN_IF_ERROR(CheckValues(
       MakeView(linear_constraints.ids(), linear_constraints.upper_bounds()),
       {.allow_negative_infinity = false}, "upper_bounds"));
   return absl::OkStatus();
@@ -196,19 +196,19 @@ absl::Status LinearConstraintsValid(
 absl::Status LinearConstraintUpdatesValid(
     const LinearConstraintUpdatesProto& linear_constraint_updates,
     const IdNameBiMap& linear_constraint_ids, const int64_t old_lin_con_id_ub) {
-  OR_RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       CheckIdsAndValues(MakeView(linear_constraint_updates.lower_bounds()),
                         {.allow_positive_infinity = false}))
       << "Bad lower bounds";
-  OR_RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       CheckIdsAndValues(MakeView(linear_constraint_updates.upper_bounds()),
                         {.allow_negative_infinity = false}))
       << "Bad upper bounds";
-  OR_RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       CheckIdsSubset(linear_constraint_updates.lower_bounds().ids(),
                      linear_constraint_ids, old_lin_con_id_ub))
       << "lower bound update on invalid linear constraint id";
-  OR_RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       CheckIdsSubset(linear_constraint_updates.upper_bounds().ids(),
                      linear_constraint_ids, old_lin_con_id_ub))
       << "upper bound update on invalid linear constraint id";
@@ -218,9 +218,9 @@ absl::Status LinearConstraintUpdatesValid(
 absl::Status LinearConstraintMatrixIdsValidForUpdate(
     const SparseDoubleMatrixProto& matrix,
     const IdNameBiMap& linear_constraint_ids, const IdNameBiMap& variable_ids) {
-  OR_RETURN_IF_ERROR(CheckIdsSubset(matrix.row_ids(), linear_constraint_ids))
+  ABSL_RETURN_IF_ERROR(CheckIdsSubset(matrix.row_ids(), linear_constraint_ids))
       << "Unknown linear_constraint_id";
-  OR_RETURN_IF_ERROR(CheckIdsSubset(matrix.column_ids(), variable_ids))
+  ABSL_RETURN_IF_ERROR(CheckIdsSubset(matrix.column_ids(), variable_ids))
       << "Unknown variable_id";
   return absl::OkStatus();
 }
@@ -233,7 +233,7 @@ absl::Status ValidateConstraintMap(
     const google::protobuf::Map<int64_t, ConstraintType>& constraints,
     const IdNameBiMap& variable_universe) {
   for (const auto& [id, constraint] : constraints) {
-    OR_RETURN_IF_ERROR(ValidateConstraint(constraint, variable_universe))
+    ABSL_RETURN_IF_ERROR(ValidateConstraint(constraint, variable_universe))
         << "invalid constraint with id: " << id;
   }
   return absl::OkStatus();
@@ -247,40 +247,41 @@ absl::Status ValidateConstraintMap(
 
 absl::StatusOr<ModelSummary> ValidateModel(const ModelProto& model,
                                            const bool check_names) {
-  OR_ASSIGN_OR_RETURN(const auto model_summary,
-                      ModelSummary::Create(model, check_names));
-  OR_RETURN_IF_ERROR(VariablesValid(model.variables()))
+  ABSL_ASSIGN_OR_RETURN(const auto model_summary,
+                        ModelSummary::Create(model, check_names));
+  ABSL_RETURN_IF_ERROR(VariablesValid(model.variables()))
       << "ModelProto.variables are invalid.";
-  OR_RETURN_IF_ERROR(ObjectiveValid(model.objective(), model_summary.variables))
+  ABSL_RETURN_IF_ERROR(
+      ObjectiveValid(model.objective(), model_summary.variables))
       << "ModelProto.objective is invalid";
   for (const auto& [id, objective] : model.auxiliary_objectives()) {
-    OR_RETURN_IF_ERROR(ObjectiveValid(objective, model_summary.variables))
+    ABSL_RETURN_IF_ERROR(ObjectiveValid(objective, model_summary.variables))
         << "ModelProto.auxiliary_objectives is invalid with objective id: "
         << id;
   }
-  OR_RETURN_IF_ERROR(LinearConstraintsValid(model.linear_constraints()))
+  ABSL_RETURN_IF_ERROR(LinearConstraintsValid(model.linear_constraints()))
       << "ModelProto.linear_constraints are invalid";
-  OR_RETURN_IF_ERROR(SparseMatrixValid(model.linear_constraint_matrix()))
+  ABSL_RETURN_IF_ERROR(SparseMatrixValid(model.linear_constraint_matrix()))
       << "ModelProto.linear_constraint_matrix invalid";
-  OR_RETURN_IF_ERROR(SparseMatrixIdsAreKnown(model.linear_constraint_matrix(),
-                                             model_summary.linear_constraints,
-                                             model_summary.variables))
+  ABSL_RETURN_IF_ERROR(SparseMatrixIdsAreKnown(model.linear_constraint_matrix(),
+                                               model_summary.linear_constraints,
+                                               model_summary.variables))
       << "ModelProto.linear_constraint_matrix ids are inconsistent";
 
-  OR_RETURN_IF_ERROR(ValidateConstraintMap(model.quadratic_constraints(),
-                                           model_summary.variables))
+  ABSL_RETURN_IF_ERROR(ValidateConstraintMap(model.quadratic_constraints(),
+                                             model_summary.variables))
       << "ModelProto.quadratic_constraints invalid";
-  OR_RETURN_IF_ERROR(ValidateConstraintMap(
+  ABSL_RETURN_IF_ERROR(ValidateConstraintMap(
       model.second_order_cone_constraints(), model_summary.variables))
       << "ModelProto.second_order_cone_constraints invalid";
-  OR_RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       ValidateConstraintMap(model.sos1_constraints(), model_summary.variables))
       << "ModelProto.sos1_constraints invalid";
-  OR_RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       ValidateConstraintMap(model.sos2_constraints(), model_summary.variables))
       << "ModelProto.sos2_constraints invalid";
-  OR_RETURN_IF_ERROR(ValidateConstraintMap(model.indicator_constraints(),
-                                           model_summary.variables))
+  ABSL_RETURN_IF_ERROR(ValidateConstraintMap(model.indicator_constraints(),
+                                             model_summary.variables))
       << "ModelProto.indicator_constraints invalid";
 
   return model_summary;
@@ -292,7 +293,7 @@ absl::StatusOr<ModelSummary> ValidateModel(const ModelProto& model,
 
 absl::Status ValidateModelUpdate(const ModelUpdateProto& model_update,
                                  ModelSummary& model_summary) {
-  OR_RETURN_IF_ERROR(model_summary.Update(model_update));
+  ABSL_RETURN_IF_ERROR(model_summary.Update(model_update));
   const int64_t old_var_id_ub = model_update.new_variables().ids_size() > 0
                                     ? model_update.new_variables().ids(0)
                                     : model_summary.variables.next_free_id();
@@ -300,53 +301,53 @@ absl::Status ValidateModelUpdate(const ModelUpdateProto& model_update,
       model_update.new_linear_constraints().ids_size() > 0
           ? model_update.new_linear_constraints().ids(0)
           : model_summary.linear_constraints.next_free_id();
-  OR_RETURN_IF_ERROR(VariableUpdatesValid(
+  ABSL_RETURN_IF_ERROR(VariableUpdatesValid(
       model_update.variable_updates(), model_summary.variables, old_var_id_ub))
       << "ModelUpdateProto.variable_updates invalid";
-  OR_RETURN_IF_ERROR(ObjectiveUpdatesValid(model_update.objective_updates(),
-                                           model_summary.variables))
+  ABSL_RETURN_IF_ERROR(ObjectiveUpdatesValid(model_update.objective_updates(),
+                                             model_summary.variables))
       << "ModelUpdateProto.objective_update invalid";
-  OR_RETURN_IF_ERROR(AuxiliaryObjectivesUpdatesValid(
+  ABSL_RETURN_IF_ERROR(AuxiliaryObjectivesUpdatesValid(
       model_update.auxiliary_objectives_updates(), model_summary.variables,
       model_summary.auxiliary_objectives))
       << "ModelUpdateProto.auxiliary_objectives_updates invalid";
-  OR_RETURN_IF_ERROR(LinearConstraintUpdatesValid(
+  ABSL_RETURN_IF_ERROR(LinearConstraintUpdatesValid(
       model_update.linear_constraint_updates(),
       model_summary.linear_constraints, old_lin_con_id_ub))
       << "ModelUpdateProto.linear_constraint_updates invalid";
-  OR_RETURN_IF_ERROR(VariablesValid(model_update.new_variables()))
+  ABSL_RETURN_IF_ERROR(VariablesValid(model_update.new_variables()))
       << "ModelUpdateProto.new_variables invalid";
-  OR_RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       LinearConstraintsValid(model_update.new_linear_constraints()))
       << "ModelUpdateProto.new_linear_constraints invalid";
-  OR_RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       SparseMatrixValid(model_update.linear_constraint_matrix_updates()))
       << "ModelUpdateProto.linear_constraint_matrix_updates invalid";
 
-  OR_RETURN_IF_ERROR(LinearConstraintMatrixIdsValidForUpdate(
+  ABSL_RETURN_IF_ERROR(LinearConstraintMatrixIdsValidForUpdate(
       model_update.linear_constraint_matrix_updates(),
       model_summary.linear_constraints, model_summary.variables))
       << "invalid linear constraint matrix update";
 
-  OR_RETURN_IF_ERROR(ValidateConstraintMap(
+  ABSL_RETURN_IF_ERROR(ValidateConstraintMap(
       model_update.quadratic_constraint_updates().new_constraints(),
       model_summary.variables))
       << "ModelUpdateProto.quadratic_constraint_updates.new_constraints "
          "invalid";
-  OR_RETURN_IF_ERROR(ValidateConstraintMap(
+  ABSL_RETURN_IF_ERROR(ValidateConstraintMap(
       model_update.second_order_cone_constraint_updates().new_constraints(),
       model_summary.variables))
       << "ModelUpdateProto.second_order_cone_constraint_updates.new_"
          "constraints invalid";
-  OR_RETURN_IF_ERROR(ValidateConstraintMap(
+  ABSL_RETURN_IF_ERROR(ValidateConstraintMap(
       model_update.sos1_constraint_updates().new_constraints(),
       model_summary.variables))
       << "ModelUpdateProto.sos1_constraint_updates.new_constraints invalid";
-  OR_RETURN_IF_ERROR(ValidateConstraintMap(
+  ABSL_RETURN_IF_ERROR(ValidateConstraintMap(
       model_update.sos2_constraint_updates().new_constraints(),
       model_summary.variables))
       << "ModelUpdateProto.sos2_constraint_updates.new_constraints invalid";
-  OR_RETURN_IF_ERROR(ValidateConstraintMap(
+  ABSL_RETURN_IF_ERROR(ValidateConstraintMap(
       model_update.indicator_constraint_updates().new_constraints(),
       model_summary.variables))
       << "ModelUpdateProto.indicator_constraint_updates.new_constraints "

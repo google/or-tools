@@ -19,10 +19,10 @@
 #include <string>
 #include <vector>
 
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/cpp/matchers.h"
 #include "ortools/math_opt/cpp/math_opt.h"
 #include "ortools/math_opt/parameters.pb.h"
@@ -311,9 +311,9 @@ TEST_P(BranchPrioritiesTest, PrioritiesClearedAfterIncrementalSolve) {
             .parameters = SolveParams(),
             .model_parameters = {.branching_priorities = {
                                      {zminus1, 1}, {zminus2, 1}, {zplus1, 3}}}};
-        OR_ASSIGN_OR_RETURN(const SolveResult result,
-                            Solve(model, TestedSolver(), args));
-        OR_RETURN_IF_ERROR(result.termination.EnsureIsOptimal());
+        ABSL_ASSIGN_OR_RETURN(const SolveResult result,
+                              Solve(model, TestedSolver(), args));
+        ABSL_RETURN_IF_ERROR(result.termination.EnsureIsOptimal());
         return result.solve_stats.node_count;
       }()));
 
@@ -344,8 +344,8 @@ TEST_P(BranchPrioritiesTest, PrioritiesClearedAfterIncrementalSolve) {
             .parameters = SolveParams(),
             .model_parameters = {
                 .branching_priorities = {{zminus1, 2}, {zminus2, 2}}}};
-        OR_ASSIGN_OR_RETURN(const SolveResult result, solver->Solve(args));
-        OR_RETURN_IF_ERROR(result.termination.EnsureIsOptimal());
+        ABSL_ASSIGN_OR_RETURN(const SolveResult result, solver->Solve(args));
+        ABSL_RETURN_IF_ERROR(result.termination.EnsureIsOptimal());
         return result.solve_stats.node_count;
       }()));
 

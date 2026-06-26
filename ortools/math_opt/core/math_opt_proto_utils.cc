@@ -25,10 +25,11 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/status/status.h"
+#include "absl/status/status_builder.h"
+#include "absl/status/status_macros.h"
 #include "absl/strings/string_view.h"
 #include "ortools/base/log_severity.h"
 #include "ortools/base/status_builder.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/sparse_vector_view.h"
 #include "ortools/math_opt/model.pb.h"
@@ -548,12 +549,12 @@ absl::Status ModelSolveParametersAreSupported(
     return absl::OkStatus();
   };
   if (model_parameters.has_primary_objective_parameters()) {
-    OR_RETURN_IF_ERROR(validate_support(
+    ABSL_RETURN_IF_ERROR(validate_support(
         "ModelSolveParametersProto.primary_objective_parameters",
         support_menu.multi_objectives));
   }
   if (!model_parameters.auxiliary_objective_parameters().empty()) {
-    OR_RETURN_IF_ERROR(validate_support(
+    ABSL_RETURN_IF_ERROR(validate_support(
         "ModelSolveParametersProto.auxiliary_objective_parameters",
         support_menu.multi_objectives));
   }

@@ -136,7 +136,6 @@ cc_library(
     hdrs = ["validator.h"],
     deps = [
         "//ortools/base:status_builder",
-        "//ortools/base:status_macros",
         "//ortools/math_opt:model_cc_proto",
         "//ortools/math_opt:sparse_containers_cc_proto",
         "//ortools/math_opt/core:model_summary",
@@ -144,6 +143,8 @@ cc_library(
         "//ortools/math_opt/validators:scalar_validator",
         "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_builder",
+        "@abseil-cpp//absl/status:status_macros",
     ],
 )
 

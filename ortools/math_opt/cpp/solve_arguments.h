@@ -48,7 +48,7 @@ struct SolveArguments {
   // Usage:
   //
   //   // To print messages to stdout with a prefix.
-  //   OR_ASSIGN_OR_RETURN(
+  //   ABSL_ASSIGN_OR_RETURN(
   //     const SolveResult result,
   //     Solve(model, SolverType::kGlop,
   //           { .message_callback = PrinterMessageCallback(std::cout,
@@ -79,7 +79,7 @@ struct SolveArguments {
   //     interrupter->Interrupt();
   //   });
   //
-  //   OR_ASSIGN_OR_RETURN(const SolveResult result,
+  //   ABSL_ASSIGN_OR_RETURN(const SolveResult result,
   //                    Solve(model, SolverType::kGlop,
   //                          { .interrupter = interrupter.get() });
   //

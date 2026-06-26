@@ -98,6 +98,7 @@ cc_library(
         "//ortools/util:filelineiter",
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings",
         "@protobuf//:wrappers_cc_proto",

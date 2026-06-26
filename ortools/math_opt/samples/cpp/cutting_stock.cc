@@ -83,11 +83,11 @@
 
 #include "absl/log/check.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/status_builder.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/cpp/math_opt.h"
 
 namespace {
@@ -142,9 +142,9 @@ absl::StatusOr<std::pair<Configuration, double>> BestConfiguration(
   model.Maximize(math_opt::InnerProduct(pieces, piece_prices));
   model.AddLinearConstraint(math_opt::InnerProduct(pieces, piece_lengths) <=
                             board_length);
-  OR_ASSIGN_OR_RETURN(const math_opt::SolveResult solve_result,
-                      math_opt::Solve(model, math_opt::SolverType::kCpSat));
-  OR_RETURN_IF_ERROR(solve_result.termination.EnsureIsOptimal());
+  ABSL_ASSIGN_OR_RETURN(const math_opt::SolveResult solve_result,
+                        math_opt::Solve(model, math_opt::SolverType::kCpSat));
+  ABSL_RETURN_IF_ERROR(solve_result.termination.EnsureIsOptimal());
   Configuration config;
   for (int i = 0; i < num_pieces; ++i) {
     const int use = static_cast<int>(
@@ -188,12 +188,12 @@ absl::StatusOr<CuttingStockSolution> SolveCuttingStock(
     add_config(Configuration{.pieces = {i}, .quantity = {1}});
   }
 
-  OR_ASSIGN_OR_RETURN(auto solver, math_opt::NewIncrementalSolver(
-                                       &model, math_opt::SolverType::kGlop));
+  ABSL_ASSIGN_OR_RETURN(auto solver, math_opt::NewIncrementalSolver(
+                                         &model, math_opt::SolverType::kGlop));
   int pricing_round = 0;
   while (true) {
-    OR_ASSIGN_OR_RETURN(math_opt::SolveResult solve_result, solver->Solve());
-    OR_RETURN_IF_ERROR(solve_result.termination.EnsureIsOptimal())
+    ABSL_ASSIGN_OR_RETURN(math_opt::SolveResult solve_result, solver->Solve());
+    ABSL_RETURN_IF_ERROR(solve_result.termination.EnsureIsOptimal())
         << " at iteration " << pricing_round;
     if (!solve_result.has_dual_feasible_solution()) {
       // MathOpt does not require solvers to return a dual solution on optimal,
@@ -207,9 +207,9 @@ absl::StatusOr<CuttingStockSolution> SolveCuttingStock(
     for (const math_opt::LinearConstraint d : demand_met) {
       prices.push_back(solve_result.dual_values().at(d));
     }
-    OR_ASSIGN_OR_RETURN((const auto [config, value]),
-                        BestConfiguration(prices, instance.piece_lengths,
-                                          instance.board_length));
+    ABSL_ASSIGN_OR_RETURN((const auto [config, value]),
+                          BestConfiguration(prices, instance.piece_lengths,
+                                            instance.board_length));
     if (value <= 1 + 1e-3) {
       // The LP relaxation is solved, we can stop adding columns.
       break;
@@ -223,9 +223,9 @@ absl::StatusOr<CuttingStockSolution> SolveCuttingStock(
   for (const auto& [config, var] : configs) {
     model.set_integer(var);
   }
-  OR_ASSIGN_OR_RETURN(const math_opt::SolveResult solve_result,
-                      math_opt::Solve(model, math_opt::SolverType::kCpSat));
-  OR_RETURN_IF_ERROR(solve_result.termination.EnsureIsOptimalOrFeasible())
+  ABSL_ASSIGN_OR_RETURN(const math_opt::SolveResult solve_result,
+                        math_opt::Solve(model, math_opt::SolverType::kCpSat));
+  ABSL_RETURN_IF_ERROR(solve_result.termination.EnsureIsOptimalOrFeasible())
       << " in final cutting stock MIP";
   CuttingStockSolution solution;
   for (const auto& [config, var] : configs) {
@@ -247,8 +247,8 @@ absl::Status RealMain() {
   instance.piece_lengths = {1380, 1520, 1560, 1710, 1820, 1880, 1930,
                             2000, 2050, 2100, 2140, 2150, 2200};
   instance.piece_demands = {22, 25, 12, 14, 18, 18, 20, 10, 12, 14, 16, 18, 20};
-  OR_ASSIGN_OR_RETURN(CuttingStockSolution solution,
-                      SolveCuttingStock(instance));
+  ABSL_ASSIGN_OR_RETURN(CuttingStockSolution solution,
+                        SolveCuttingStock(instance));
   std::cout << "Best known solution uses 73 boards." << std::endl;
   std::cout << "Total boards used in actual solution found: "
             << solution.objective_value << std::endl;

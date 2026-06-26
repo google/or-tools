@@ -19,8 +19,8 @@
 #include <utility>
 
 #include "absl/log/check.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/model_validator.h"
 #include "ortools/pdlp/iteration_stats.h"
@@ -63,7 +63,7 @@ absl::StatusOr<MPSolutionResponse> PdlpSolveProto(
       GetMPModelOrPopulateResponse(request, &response);
   if (!optional_model) return response;
 
-  OR_ASSIGN_OR_RETURN(
+  ABSL_ASSIGN_OR_RETURN(
       pdlp::QuadraticProgram qp,
       pdlp::QpFromMpModelProto(**optional_model, relax_integer_variables));
 

@@ -25,13 +25,13 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "ortools/base/protoutil.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/math_opt_proto_utils.h"
 #include "ortools/math_opt/core/solver_interface.h"
@@ -97,7 +97,7 @@ SparseDoubleVectorProto ApplyFilter(
 
 absl::StatusOr<int64_t> CbGetInt64(const Gurobi::CallbackContext& context,
                                    int what) {
-  OR_ASSIGN_OR_RETURN(const double result, context.CbGetDouble(what));
+  ABSL_ASSIGN_OR_RETURN(const double result, context.CbGetDouble(what));
   int64_t result64 = static_cast<int64_t>(result);
   if (result != static_cast<double>(result64)) {
     return absl::InternalError(
@@ -109,7 +109,7 @@ absl::StatusOr<int64_t> CbGetInt64(const Gurobi::CallbackContext& context,
 
 absl::StatusOr<bool> CbGetBool(const Gurobi::CallbackContext& context,
                                int what) {
-  OR_ASSIGN_OR_RETURN(const int result, context.CbGetInt(what));
+  ABSL_ASSIGN_OR_RETURN(const int result, context.CbGetInt(what));
   bool result_bool = static_cast<bool>(result);
   if (result != static_cast<int>(result_bool)) {
     return absl::InternalError(
@@ -122,12 +122,12 @@ absl::StatusOr<bool> CbGetBool(const Gurobi::CallbackContext& context,
 // Invokes setter on a non-error value in statusor or returns the error.
 //
 // Requires that statusor is a StatusOr<T> and setter(T) is a function.
-#define MO_SET_OR_RET(setter, statusor)         \
-  do {                                          \
-    auto eval_status_or = statusor;             \
-    OR_RETURN_IF_ERROR(eval_status_or.status()) \
-        << __FILE__ << ":" << __LINE__;         \
-    setter(*std::move(eval_status_or));         \
+#define MO_SET_OR_RET(setter, statusor)           \
+  do {                                            \
+    auto eval_status_or = statusor;               \
+    ABSL_RETURN_IF_ERROR(eval_status_or.status()) \
+        << __FILE__ << ":" << __LINE__;           \
+    setter(*std::move(eval_status_or));           \
   } while (false)
 
 // Sets the CallbackDataProto.runtime field using the difference between the
@@ -211,7 +211,7 @@ absl::StatusOr<std::optional<CallbackDataProto>> CreateCallbackDataProto(
       MO_SET_OR_RET(s->set_number_of_solutions_found,
                     c.CbGetInt(GRB_CB_MIPSOL_SOLCNT));
       std::vector<double> var_values(callback_input.num_gurobi_vars);
-      OR_RETURN_IF_ERROR(
+      ABSL_RETURN_IF_ERROR(
           c.CbGetDoubleArray(GRB_CB_MIPSOL_SOL, absl::MakeSpan(var_values)))
           << "Error reading solution at event MIP_SOLUTION";
       *callback_data.mutable_primal_solution_vector() =
@@ -230,11 +230,11 @@ absl::StatusOr<std::optional<CallbackDataProto>> CreateCallbackDataProto(
       MO_SET_OR_RET(s->set_number_of_solutions_found,
                     c.CbGetInt(GRB_CB_MIPNODE_SOLCNT));
       const absl::StatusOr<int> grb_status = c.CbGetInt(GRB_CB_MIPNODE_STATUS);
-      OR_RETURN_IF_ERROR(grb_status.status())
+      ABSL_RETURN_IF_ERROR(grb_status.status())
           << "Error reading solution status at event MIP_NODE";
       if (*grb_status == GRB_OPTIMAL) {
         std::vector<double> var_values(callback_input.num_gurobi_vars);
-        OR_RETURN_IF_ERROR(
+        ABSL_RETURN_IF_ERROR(
             c.CbGetDoubleArray(GRB_CB_MIPNODE_REL, absl::MakeSpan(var_values)))
             << "Error reading solution at event MIP_NODE";
         *callback_data.mutable_primal_solution_vector() =
@@ -248,7 +248,7 @@ absl::StatusOr<std::optional<CallbackDataProto>> CreateCallbackDataProto(
       LOG(FATAL) << "Unknown gurobi callback code " << c.where();
   }
 
-  OR_RETURN_IF_ERROR(SetRuntime(callback_input, callback_data))
+  ABSL_RETURN_IF_ERROR(SetRuntime(callback_input, callback_data))
       << "Error encoding runtime at callback event: " << c.where();
 
   return callback_data;
@@ -280,10 +280,10 @@ absl::Status ApplyResult(const Gurobi::CallbackContext& context,
     }
     for (const auto [sense, bound] : sense_bound_pairs) {
       if (cut.is_lazy()) {
-        OR_RETURN_IF_ERROR(context.CbLazy(
+        ABSL_RETURN_IF_ERROR(context.CbLazy(
             gurobi_vars, cut.linear_expression().values(), sense, bound));
       } else {
-        OR_RETURN_IF_ERROR(context.CbCut(
+        ABSL_RETURN_IF_ERROR(context.CbCut(
             gurobi_vars, cut.linear_expression().values(), sense, bound));
       }
     }
@@ -297,7 +297,7 @@ absl::Status ApplyResult(const Gurobi::CallbackContext& context,
     for (const auto [id, value] : MakeView(solution_vector)) {
       gurobi_var_values[callback_input.variable_ids.at(id)] = value;
     }
-    OR_RETURN_IF_ERROR(context.CbSolution(gurobi_var_values).status());
+    ABSL_RETURN_IF_ERROR(context.CbSolution(gurobi_var_values).status());
   }
 
   if (result.terminate()) {
@@ -346,7 +346,7 @@ absl::Status GurobiCallbackImpl(const Gurobi::CallbackContext& context,
   if (context.where() == GRB_CB_MESSAGE) {
     if (callback_input.message_cb) {
       const absl::StatusOr<std::string> msg = context.CbGetMessage();
-      OR_RETURN_IF_ERROR(msg.status())
+      ABSL_RETURN_IF_ERROR(msg.status())
           << "Error getting message string in callback";
       const std::vector<std::string> lines = message_callback_data.Parse(*msg);
       if (!lines.empty()) {
@@ -364,7 +364,7 @@ absl::Status GurobiCallbackImpl(const Gurobi::CallbackContext& context,
   // interrupter to deal with termination.
   CHECK(local_interrupter != nullptr);
 
-  OR_ASSIGN_OR_RETURN(
+  ABSL_ASSIGN_OR_RETURN(
       const std::optional<CallbackDataProto> callback_data,
       CreateCallbackDataProto(context, callback_input, message_callback_data));
   if (!callback_data) {
@@ -376,7 +376,7 @@ absl::Status GurobiCallbackImpl(const Gurobi::CallbackContext& context,
     local_interrupter->Interrupt();
     return result.status();
   }
-  OR_RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       ApplyResult(context, callback_input, *result, *local_interrupter));
   return absl::OkStatus();
 }

@@ -22,11 +22,11 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "ortools/base/protobuf_util.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"
@@ -360,7 +360,7 @@ absl::Status MPSReader::ParseProblemFromString(absl::string_view source,
 absl::StatusOr<MPModelProto> MpsDataToMPModelProto(absl::string_view mps_data) {
   MPModelProto model;
   DataWrapper<MPModelProto> data_wrapper(&model);
-  OR_RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       (MPSReaderTemplate<DataWrapper<MPModelProto>>()
            .ParseString(mps_data, &data_wrapper, MPSReaderFormat::kAutoDetect)
            .status()));
@@ -370,7 +370,7 @@ absl::StatusOr<MPModelProto> MpsDataToMPModelProto(absl::string_view mps_data) {
 absl::StatusOr<MPModelProto> MpsFileToMPModelProto(absl::string_view mps_file) {
   MPModelProto model;
   DataWrapper<MPModelProto> data_wrapper(&model);
-  OR_RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       (MPSReaderTemplate<DataWrapper<MPModelProto>>()
            .ParseFile(mps_file, &data_wrapper, MPSReaderFormat::kAutoDetect)
            .status()));

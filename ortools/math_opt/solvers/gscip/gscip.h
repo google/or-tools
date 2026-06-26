@@ -69,11 +69,11 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/types/span.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/linear_solver/scip_helper_macros.h"
 #include "ortools/math_opt/solvers/gscip/gscip.pb.h"
 #include "ortools/math_opt/solvers/gscip/gscip_event_handler.h"
@@ -684,7 +684,7 @@ absl::StatusOr<SCIP_CONS*> GScip::AddConstraintForHandler(
     return absl::InternalError("SCIP failed to create constraint");
   }
   RETURN_IF_SCIP_ERROR(SCIPaddCons(scip_, constraint));
-  OR_RETURN_IF_ERROR(MaybeKeepConstraintAlive(constraint, options));
+  ABSL_RETURN_IF_ERROR(MaybeKeepConstraintAlive(constraint, options));
   return constraint;
 }
 

@@ -24,7 +24,6 @@ cc_library(
     hdrs = ["solver.h"],
     deps = [
         "//ortools/base:status_builder",
-        "//ortools/base:status_macros",
         "//ortools/base:types",
         "//ortools/math_opt:model_cc_proto",
         "//ortools/math_opt:parameters_cc_proto",
@@ -33,6 +32,8 @@ cc_library(
         "//ortools/util:solve_interrupter",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_builder",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
     ],
 )
@@ -51,6 +52,7 @@ cc_test(
         "//ortools/math_opt/solvers:glop_solver",
         "@abseil-cpp//absl/cleanup",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_builder",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings:string_view",
     ],

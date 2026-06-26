@@ -16,11 +16,11 @@
 #include <cstdint>
 
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/time/time.h"
 #include "google/protobuf/repeated_field.h"
 #include "ortools/base/protoutil.h"
 #include "ortools/base/status_builder.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/core/model_summary.h"
 #include "ortools/math_opt/core/sparse_vector_view.h"
 #include "ortools/math_opt/model_parameters.pb.h"
@@ -36,19 +36,19 @@ namespace {
 
 absl::Status ValidateSolutionHint(const SolutionHintProto& solution_hint,
                                   const ModelSummary& model_summary) {
-  OR_RETURN_IF_ERROR(CheckIdsAndValues(
+  ABSL_RETURN_IF_ERROR(CheckIdsAndValues(
       MakeView(solution_hint.variable_values()),
       {.allow_positive_infinity = false, .allow_negative_infinity = false}))
       << "Invalid solution_hint.variable_values";
-  OR_RETURN_IF_ERROR(CheckIdsSubset(
+  ABSL_RETURN_IF_ERROR(CheckIdsSubset(
       solution_hint.variable_values().ids(), model_summary.variables,
       "solution_hint.variable_values ids", "model variable ids"));
 
-  OR_RETURN_IF_ERROR(CheckIdsAndValues(
+  ABSL_RETURN_IF_ERROR(CheckIdsAndValues(
       MakeView(solution_hint.dual_values()),
       {.allow_positive_infinity = false, .allow_negative_infinity = false}))
       << "Invalid solution_hint.dual_values";
-  OR_RETURN_IF_ERROR(CheckIdsSubset(
+  ABSL_RETURN_IF_ERROR(CheckIdsSubset(
       solution_hint.dual_values().ids(), model_summary.linear_constraints,
       "solution_hint.dual_values ids", "model linear constraint ids"));
 
@@ -59,11 +59,11 @@ absl::Status ValidateBranchingPriorities(
     const SparseInt32VectorProto& branching_priorities,
     const ModelSummary& model_summary) {
   const auto vector_view = MakeView(branching_priorities);
-  OR_RETURN_IF_ERROR(CheckIdsAndValues(vector_view))
+  ABSL_RETURN_IF_ERROR(CheckIdsAndValues(vector_view))
       << "Invalid branching_priorities";
-  OR_RETURN_IF_ERROR(CheckIdsSubset(branching_priorities.ids(),
-                                    model_summary.variables,
-                                    "branching_priorities ids", "model IDs"));
+  ABSL_RETURN_IF_ERROR(CheckIdsSubset(branching_priorities.ids(),
+                                      model_summary.variables,
+                                      "branching_priorities ids", "model IDs"));
 
   return absl::OkStatus();
 }
@@ -100,9 +100,9 @@ absl::Status ValidateObjectiveParameters(
 absl::Status ValidateLazyLinearConstraints(
     const google::protobuf::RepeatedField<int64_t>& lazy_linear_constraint_ids,
     const ModelSummary& model_summary) {
-  OR_RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       CheckIdsRangeAndStrictlyIncreasing(lazy_linear_constraint_ids));
-  OR_RETURN_IF_ERROR(CheckIdsSubset(
+  ABSL_RETURN_IF_ERROR(CheckIdsSubset(
       lazy_linear_constraint_ids, model_summary.linear_constraints,
       "lazy_linear_constraint ids", "model linear constraint IDs"));
   return absl::OkStatus();
@@ -112,8 +112,8 @@ absl::Status ValidateLazyLinearConstraints(
 
 absl::Status ValidateSparseVectorFilter(const SparseVectorFilterProto& v,
                                         const IdNameBiMap& valid_ids) {
-  OR_RETURN_IF_ERROR(CheckIdsRangeAndStrictlyIncreasing(v.filtered_ids()));
-  OR_RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(CheckIdsRangeAndStrictlyIncreasing(v.filtered_ids()));
+  ABSL_RETURN_IF_ERROR(
       CheckIdsSubset(v.filtered_ids(), valid_ids, "filtered_ids", "model IDs"));
   if (!v.filter_by_ids() && !v.filtered_ids().empty()) {
     return absl::InvalidArgumentError(
@@ -128,25 +128,26 @@ absl::Status ValidateSparseVectorFilter(const SparseVectorFilterProto& v,
 absl::Status ValidateModelSolveParameters(
     const ModelSolveParametersProto& parameters,
     const ModelSummary& model_summary) {
-  OR_RETURN_IF_ERROR(ValidateSparseVectorFilter(
+  ABSL_RETURN_IF_ERROR(ValidateSparseVectorFilter(
       parameters.variable_values_filter(), model_summary.variables))
       << "invalid variable_values_filter";
-  OR_RETURN_IF_ERROR(ValidateSparseVectorFilter(
+  ABSL_RETURN_IF_ERROR(ValidateSparseVectorFilter(
       parameters.reduced_costs_filter(), model_summary.variables))
       << "invalid reduced_costs_filter";
-  OR_RETURN_IF_ERROR(ValidateSparseVectorFilter(
+  ABSL_RETURN_IF_ERROR(ValidateSparseVectorFilter(
       parameters.dual_values_filter(), model_summary.linear_constraints))
       << "invalid dual_values_filter";
   if (parameters.has_initial_basis()) {
-    OR_RETURN_IF_ERROR(ValidateBasis(parameters.initial_basis(), model_summary,
-                                     /*check_dual_feasibility=*/false));
+    ABSL_RETURN_IF_ERROR(ValidateBasis(parameters.initial_basis(),
+                                       model_summary,
+                                       /*check_dual_feasibility=*/false));
   }
   for (const SolutionHintProto& solution_hint : parameters.solution_hints()) {
-    OR_RETURN_IF_ERROR(ValidateSolutionHint(solution_hint, model_summary));
+    ABSL_RETURN_IF_ERROR(ValidateSolutionHint(solution_hint, model_summary));
   }
-  OR_RETURN_IF_ERROR(ValidateBranchingPriorities(
+  ABSL_RETURN_IF_ERROR(ValidateBranchingPriorities(
       parameters.branching_priorities(), model_summary));
-  OR_RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       ValidateObjectiveParameters(parameters.primary_objective_parameters()))
       << "invalid primary_objective_parameters";
   for (const auto& [objective, params] :
@@ -157,11 +158,11 @@ absl::Status ValidateModelSolveParameters(
                 "objective: "
              << objective;
     }
-    OR_RETURN_IF_ERROR(ValidateObjectiveParameters(params))
+    ABSL_RETURN_IF_ERROR(ValidateObjectiveParameters(params))
         << "invalid auxiliary_objective_parameters entry for objective: "
         << objective;
   }
-  OR_RETURN_IF_ERROR(ValidateLazyLinearConstraints(
+  ABSL_RETURN_IF_ERROR(ValidateLazyLinearConstraints(
       parameters.lazy_linear_constraint_ids(), model_summary))
       << "invalid lazy_linear_constraint_ids";
   return absl::OkStatus();

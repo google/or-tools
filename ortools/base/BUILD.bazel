@@ -182,11 +182,11 @@ cc_library(
         "options.h",
     ],
     deps = [
-        ":status_macros",
         "@abseil-cpp//absl/base:config",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
         "@protobuf",
@@ -286,9 +286,9 @@ cc_library(
     name = "parse_text_proto",
     hdrs = ["parse_text_proto.h"],
     deps = [
-        "//ortools/base:status_macros",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/strings:string_view",
         "@protobuf",
     ],
@@ -358,25 +358,12 @@ cc_library(
 )
 
 cc_library(
-    name = "source_location",
-    hdrs = ["source_location.h"],
-)
-
-cc_library(
     name = "status_builder",
     hdrs = ["status_builder.h"],
     deps = [
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_builder",
         "@abseil-cpp//absl/strings",
-    ],
-)
-
-cc_library(
-    name = "status_macros",
-    hdrs = ["status_macros.h"],
-    deps = [
-        ":status_builder",
-        "@abseil-cpp//absl/status",
     ],
 )
 

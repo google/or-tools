@@ -71,6 +71,7 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/escaping.h"
 #include "absl/strings/str_cat.h"
@@ -81,7 +82,6 @@
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/log_severity.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/cpp/matchers.h"
 #include "ortools/math_opt/cpp/math_opt.h"
 #include "ortools/math_opt/io/mps_converter.h"
@@ -288,10 +288,10 @@ class VertexCover {
   static absl::StatusOr<std::vector<std::string>> SolveAndFingerprint(
       const SolverType solver_type, const SolveParameters& params) {
     VertexCover vertex_cover;
-    OR_ASSIGN_OR_RETURN(
+    ABSL_ASSIGN_OR_RETURN(
         SolveResult result,
         Solve(vertex_cover.model(), solver_type, {.parameters = params}));
-    OR_RETURN_IF_ERROR(result.termination.EnsureIsOptimal());
+    ABSL_RETURN_IF_ERROR(result.termination.EnsureIsOptimal());
     if (std::abs(result.objective_value() - 18.0) > 1e-4) {
       return ortools::InternalErrorBuilder()
              << "expected objective value of 18, found: "
@@ -390,9 +390,9 @@ absl::StatusOr<std::pair<SolveStats, std::string>> SolveForIPPresolve(
   SolveArguments args;
   args.parameters.presolve = do_presolve ? Emphasis::kMedium : Emphasis::kOff;
   args.message_callback = PrinterMessageCallback(oss);
-  OR_ASSIGN_OR_RETURN(const SolveResult result,
-                      Solve(model, solver_type, args));
-  OR_RETURN_IF_ERROR(result.termination.EnsureIsOptimal());
+  ABSL_ASSIGN_OR_RETURN(const SolveResult result,
+                        Solve(model, solver_type, args));
+  ABSL_RETURN_IF_ERROR(result.termination.EnsureIsOptimal());
   return std::make_pair(result.solve_stats, oss.str());
 }
 
@@ -461,9 +461,9 @@ absl::StatusOr<SolveStats> SolveForCuts(SolverType solver_type, bool use_cuts) {
   SolveArguments args;
   args.parameters.presolve = Emphasis::kOff;
   args.parameters.cuts = use_cuts ? Emphasis::kMedium : Emphasis::kOff;
-  OR_ASSIGN_OR_RETURN(const SolveResult result,
-                      Solve(model, solver_type, args));
-  OR_RETURN_IF_ERROR(result.termination.EnsureIsOptimal());
+  ABSL_ASSIGN_OR_RETURN(const SolveResult result,
+                        Solve(model, solver_type, args));
+  ABSL_RETURN_IF_ERROR(result.termination.EnsureIsOptimal());
   return result.solve_stats;
 }
 
@@ -517,10 +517,10 @@ absl::StatusOr<SolveStats> SolveForRootLp(
     params.presolve = Emphasis::kOff;
   }
 
-  OR_ASSIGN_OR_RETURN(
+  ABSL_ASSIGN_OR_RETURN(
       const SolveResult result,
       Solve(vertex_cover.model(), solver_type, {.parameters = params}));
-  OR_RETURN_IF_ERROR(result.termination.EnsureIsOptimal());
+  ABSL_RETURN_IF_ERROR(result.termination.EnsureIsOptimal());
   return result.solve_stats;
 }
 
@@ -1041,7 +1041,7 @@ namespace {
 
 absl::StatusOr<std::unique_ptr<Model>> LoadMiplibInstance(
     absl::string_view name) {
-  OR_ASSIGN_OR_RETURN(
+  ABSL_ASSIGN_OR_RETURN(
       const ModelProto model_proto,
       ReadMpsFile(absl::StrCat("ortools/math_opt/solver_tests/testdata/", name,
                                ".mps")));

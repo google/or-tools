@@ -148,7 +148,7 @@ code:
 #include "ortools/base/init_google.h"
 #include "absl/log/check.h"
 #include "absl/status/status.h"
-#include "ortools/base/status_macros.h"
+#include "absl/status/status_macros.h"
 #include "absl/strings/str_join.h"
 #include "ortools/graph/dag_shortest_path.h"
 #include "ortools/graph_base/graph.h"
@@ -175,7 +175,7 @@ absl::Status Main() {
 
   // We need a topological order. We can find it by hand on this small graph,
   // e.g., {0, 1, 2, 3, 4}, but we demonstrate how to compute one instead.
-  OR_ASSIGN_OR_RETURN(const std::vector<int32_t> topological_order,
+  ABSL_ASSIGN_OR_RETURN(const std::vector<int32_t> topological_order,
                         util::graph::FastTopologicalSort(*graph));
 
   operations_research::ShortestPathsOnDagWrapper<util::StaticGraph<>>

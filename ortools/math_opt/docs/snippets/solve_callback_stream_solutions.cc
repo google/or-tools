@@ -19,9 +19,9 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/synchronization/mutex.h"
 #include "ortools/base/init_google.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/cpp/math_opt.h"
 
 // [END solve_callback_stream_solutions_cc_include]
@@ -47,11 +47,11 @@ absl::Status Main() {
       .events = {math_opt::CallbackEvent::kMipSolution}};
   // Gurobi, CpSat, and SCIP all support this callback.
   const math_opt::SolverType solver = math_opt::SolverType::kGscip;
-  OR_ASSIGN_OR_RETURN(const math_opt::SolveResult result,
-                      math_opt::Solve(model, solver,
-                                      {.callback_registration = cb_reg,
-                                       .callback = std::move(callback)}));
-  OR_RETURN_IF_ERROR(result.termination.EnsureIsOptimal());
+  ABSL_ASSIGN_OR_RETURN(const math_opt::SolveResult result,
+                        math_opt::Solve(model, solver,
+                                        {.callback_registration = cb_reg,
+                                         .callback = std::move(callback)}));
+  ABSL_RETURN_IF_ERROR(result.termination.EnsureIsOptimal());
   std::cout << "Optimal x = " << result.variable_values().at(x) << std::endl;
   return absl::OkStatus();
   // [END solve_callback_stream_solutions]

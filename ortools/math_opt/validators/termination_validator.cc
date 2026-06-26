@@ -15,9 +15,9 @@
 
 #include "absl/log/log.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/strings/str_cat.h"
 #include "ortools/base/status_builder.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/result.pb.h"
 #include "ortools/math_opt/validators/bounds_and_status_validator.h"
 
@@ -39,32 +39,32 @@ absl::Status ValidateTerminationReasonConsistency(
     const TerminationProto& termination) {
   switch (termination.reason()) {
     case TERMINATION_REASON_OPTIMAL: {
-      OR_RETURN_IF_ERROR(CheckPrimalStatusIs(termination.problem_status(),
+      ABSL_RETURN_IF_ERROR(CheckPrimalStatusIs(termination.problem_status(),
+                                               FEASIBILITY_STATUS_FEASIBLE));
+      ABSL_RETURN_IF_ERROR(CheckDualStatusIs(termination.problem_status(),
                                              FEASIBILITY_STATUS_FEASIBLE));
-      OR_RETURN_IF_ERROR(CheckDualStatusIs(termination.problem_status(),
-                                           FEASIBILITY_STATUS_FEASIBLE));
-      OR_RETURN_IF_ERROR(
+      ABSL_RETURN_IF_ERROR(
           CheckFinitePrimalBound(termination.objective_bounds()));
       // TODO(b/290359402): Add CheckFiniteDualBounds() to enforce finite dual
       // bounds when possible.
       return absl::OkStatus();
     }
     case TERMINATION_REASON_INFEASIBLE: {
-      OR_RETURN_IF_ERROR(CheckPrimalStatusIs(termination.problem_status(),
-                                             FEASIBILITY_STATUS_INFEASIBLE));
+      ABSL_RETURN_IF_ERROR(CheckPrimalStatusIs(termination.problem_status(),
+                                               FEASIBILITY_STATUS_INFEASIBLE));
       return absl::OkStatus();
     }
     case TERMINATION_REASON_UNBOUNDED: {
-      OR_RETURN_IF_ERROR(CheckPrimalStatusIs(termination.problem_status(),
-                                             FEASIBILITY_STATUS_FEASIBLE));
-      OR_RETURN_IF_ERROR(CheckDualStatusIs(termination.problem_status(),
-                                           FEASIBILITY_STATUS_INFEASIBLE));
+      ABSL_RETURN_IF_ERROR(CheckPrimalStatusIs(termination.problem_status(),
+                                               FEASIBILITY_STATUS_FEASIBLE));
+      ABSL_RETURN_IF_ERROR(CheckDualStatusIs(termination.problem_status(),
+                                             FEASIBILITY_STATUS_INFEASIBLE));
       return absl::OkStatus();
     }
     case TERMINATION_REASON_INFEASIBLE_OR_UNBOUNDED:
-      OR_RETURN_IF_ERROR(CheckPrimalStatusIs(termination.problem_status(),
-                                             FEASIBILITY_STATUS_UNDETERMINED));
-      OR_RETURN_IF_ERROR(CheckDualStatusIs(
+      ABSL_RETURN_IF_ERROR(CheckPrimalStatusIs(
+          termination.problem_status(), FEASIBILITY_STATUS_UNDETERMINED));
+      ABSL_RETURN_IF_ERROR(CheckDualStatusIs(
           termination.problem_status(), FEASIBILITY_STATUS_INFEASIBLE,
           /*primal_or_dual_infeasible_also_ok=*/true));
       // Note that if primal status was not FEASIBILITY_STATUS_UNDETERMINED,
@@ -76,42 +76,42 @@ absl::Status ValidateTerminationReasonConsistency(
       // TERMINATION_REASON_UNBOUNDED.
       return absl::OkStatus();
     case TERMINATION_REASON_IMPRECISE:
-      OR_RETURN_IF_ERROR(CheckPrimalStatusIs(termination.problem_status(),
+      ABSL_RETURN_IF_ERROR(CheckPrimalStatusIs(
+          termination.problem_status(), FEASIBILITY_STATUS_UNDETERMINED));
+      ABSL_RETURN_IF_ERROR(CheckDualStatusIs(termination.problem_status(),
                                              FEASIBILITY_STATUS_UNDETERMINED));
-      OR_RETURN_IF_ERROR(CheckDualStatusIs(termination.problem_status(),
-                                           FEASIBILITY_STATUS_UNDETERMINED));
-      OR_RETURN_IF_ERROR(
+      ABSL_RETURN_IF_ERROR(
           CheckNotPrimalDualInfeasible(termination.problem_status()));
       // TODO(b/211679884): update when imprecise solutions are added.
       return absl::OkStatus();
     case TERMINATION_REASON_FEASIBLE: {
-      OR_RETURN_IF_ERROR(CheckPrimalStatusIs(termination.problem_status(),
-                                             FEASIBILITY_STATUS_FEASIBLE));
-      OR_RETURN_IF_ERROR(CheckDualStatusIsNot(termination.problem_status(),
-                                              FEASIBILITY_STATUS_INFEASIBLE));
+      ABSL_RETURN_IF_ERROR(CheckPrimalStatusIs(termination.problem_status(),
+                                               FEASIBILITY_STATUS_FEASIBLE));
+      ABSL_RETURN_IF_ERROR(CheckDualStatusIsNot(termination.problem_status(),
+                                                FEASIBILITY_STATUS_INFEASIBLE));
       // Note that if dual status was FEASIBILITY_STATUS_INFEASIBLE, then we
       // would have TERMINATION_REASON_UNBOUNDED (For MIP this follows the
       // assumption that every floating point ray can be scaled to be
       // integer).
-      OR_RETURN_IF_ERROR(
+      ABSL_RETURN_IF_ERROR(
           CheckFinitePrimalBound(termination.objective_bounds()));
       return absl::OkStatus();
     }
     case TERMINATION_REASON_NO_SOLUTION_FOUND: {
       // Primal status may be feasible as long as no solutions are returned.
-      OR_RETURN_IF_ERROR(CheckPrimalStatusIsNot(termination.problem_status(),
-                                                FEASIBILITY_STATUS_INFEASIBLE));
+      ABSL_RETURN_IF_ERROR(CheckPrimalStatusIsNot(
+          termination.problem_status(), FEASIBILITY_STATUS_INFEASIBLE));
       // Note if primal status was FEASIBILITY_STATUS_INFEASIBLE, then we
       // would have TERMINATION_REASON_INFEASIBLE.
       return absl::OkStatus();
     }
     case TERMINATION_REASON_NUMERICAL_ERROR:
     case TERMINATION_REASON_OTHER_ERROR: {
-      OR_RETURN_IF_ERROR(CheckPrimalStatusIs(termination.problem_status(),
+      ABSL_RETURN_IF_ERROR(CheckPrimalStatusIs(
+          termination.problem_status(), FEASIBILITY_STATUS_UNDETERMINED));
+      ABSL_RETURN_IF_ERROR(CheckDualStatusIs(termination.problem_status(),
                                              FEASIBILITY_STATUS_UNDETERMINED));
-      OR_RETURN_IF_ERROR(CheckDualStatusIs(termination.problem_status(),
-                                           FEASIBILITY_STATUS_UNDETERMINED));
-      OR_RETURN_IF_ERROR(
+      ABSL_RETURN_IF_ERROR(
           CheckNotPrimalDualInfeasible(termination.problem_status()));
     }
       return absl::OkStatus();
@@ -150,12 +150,12 @@ absl::Status ValidateTermination(const TerminationProto& termination,
           LimitProto_Name(termination.limit())));
     }
   }
-  OR_RETURN_IF_ERROR(ValidateObjectiveBounds(termination.objective_bounds()));
-  OR_RETURN_IF_ERROR(ValidateProblemStatus(termination.problem_status()));
-  OR_RETURN_IF_ERROR(ValidateBoundStatusConsistency(
+  ABSL_RETURN_IF_ERROR(ValidateObjectiveBounds(termination.objective_bounds()));
+  ABSL_RETURN_IF_ERROR(ValidateProblemStatus(termination.problem_status()));
+  ABSL_RETURN_IF_ERROR(ValidateBoundStatusConsistency(
       termination.objective_bounds(), termination.problem_status(),
       is_maximize));
-  OR_RETURN_IF_ERROR(ValidateTerminationReasonConsistency(termination))
+  ABSL_RETURN_IF_ERROR(ValidateTerminationReasonConsistency(termination))
       << "for termination reason "
       << TerminationReasonProto_Name(termination.reason());
   return absl::OkStatus();

@@ -17,7 +17,7 @@
 
 #include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
-#include "ortools/base/status_macros.h"
+#include "absl/status/status_macros.h"
 #include "ortools/math_opt/cpp/callback.h"
 #include "ortools/math_opt/cpp/model_solve_parameters.h"
 #include "ortools/math_opt/storage/model_storage.h"
@@ -26,9 +26,10 @@ namespace operations_research::math_opt {
 
 absl::Status SolveArguments::CheckModelStorage(
     const ModelStorageCPtr expected_storage) const {
-  OR_RETURN_IF_ERROR(model_parameters.CheckModelStorage(expected_storage))
+  ABSL_RETURN_IF_ERROR(model_parameters.CheckModelStorage(expected_storage))
       << "invalid model_parameters";
-  OR_RETURN_IF_ERROR(callback_registration.CheckModelStorage(expected_storage))
+  ABSL_RETURN_IF_ERROR(
+      callback_registration.CheckModelStorage(expected_storage))
       << "invalid callback_registration";
   return absl::OkStatus();
 }

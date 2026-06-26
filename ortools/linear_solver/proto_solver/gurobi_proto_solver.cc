@@ -26,6 +26,7 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
@@ -34,7 +35,6 @@
 #include "absl/strings/string_view.h"
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/base/timer.h"
 #include "ortools/base/types.h"
 #include "ortools/linear_solver/gurobi_util.h"
@@ -289,7 +289,7 @@ absl::StatusOr<MPSolutionResponse> GurobiSolveProto(
     }
   });
   if (gurobi_env == nullptr) {
-    OR_ASSIGN_OR_RETURN(gurobi_env, GetGurobiEnv());
+    ABSL_ASSIGN_OR_RETURN(gurobi_env, GetGurobiEnv());
     gurobi_env_was_created = true;
   }
 
@@ -303,7 +303,7 @@ absl::StatusOr<MPSolutionResponse> GurobiSolveProto(
 
 // `gurobi_env` references ther GRBenv argument.
 #define RETURN_IF_GUROBI_ERROR(x) \
-  OR_RETURN_IF_ERROR(             \
+  ABSL_RETURN_IF_ERROR(           \
       GurobiCodeToUtilStatus(x, __FILE__, __LINE__, #x, gurobi_env));
 
   RETURN_IF_GUROBI_ERROR(GRBnewmodel(gurobi_env, &gurobi_model,

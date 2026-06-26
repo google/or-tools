@@ -26,11 +26,12 @@
 #include "absl/log/log.h"
 #include "absl/memory/memory.h"
 #include "absl/status/status.h"
+#include "absl/status/status_builder.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/status_builder.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/third_party_solvers/xpress_environment.h"
 
 namespace operations_research::math_opt {
@@ -54,11 +55,11 @@ absl::Status Xpress::ToStatus(const int xprs_err,
   char errmsg[512];
   int status = XPRSgetlasterror(xpress_model_, errmsg);
   if (status == kXpressOk) {
-    return ortools::StatusBuilder(code)
+    return absl::StatusBuilder(code)
            << "Xpress error code: " << xprs_err << ", message: " << errmsg;
   }
-  return ortools::StatusBuilder(code) << "Xpress error code: " << xprs_err
-                                      << " (message could not be fetched)";
+  return absl::StatusBuilder(code) << "Xpress error code: " << xprs_err
+                                   << " (message could not be fetched)";
 }
 
 Xpress::Xpress(XPRSprob& model) : xpress_model_(ABSL_DIE_IF_NULL(model)) {
@@ -130,7 +131,7 @@ absl::Status Xpress::AddVars(std::size_t count,
                              const absl::Span<const double> lb,
                              const absl::Span<const double> ub,
                              const absl::Span<const char> vtype) {
-  OR_ASSIGN_OR_RETURN(int const oldCols, GetIntAttr(XPRS_ORIGINALCOLS));
+  ABSL_ASSIGN_OR_RETURN(int const oldCols, GetIntAttr(XPRS_ORIGINALCOLS));
   if (checkInt32Overflow(count) ||
       checkInt32Overflow(std::size_t(oldCols) + std::size_t(count))) {
     return absl::InvalidArgumentError(
@@ -161,7 +162,7 @@ absl::Status Xpress::AddVars(std::size_t count,
   // non-zero coefficients here. It does NOT allow adding more than INT_MAX
   // variables.
   // Since we don't add any non-zeros here, it is safe to use XPRSaddcols().
-  OR_RETURN_IF_ERROR(ToStatus(XPRSaddcols(
+  ABSL_RETURN_IF_ERROR(ToStatus(XPRSaddcols(
       xpress_model_, num_vars, 0, c_obj, nullptr, nullptr, nullptr,
       lb.empty() ? nullptr : lb.data(), ub.empty() ? nullptr : ub.data())));
   if (!vtype.empty()) {
@@ -225,7 +226,7 @@ absl::Status Xpress::SetLinearObjective(
     const absl::Span<const double> obj_coeffs) {
   static int indexes[1] = {-1};
   double xprs_values[1] = {-constant};
-  OR_RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       ToStatus(XPRSchgobj(xpress_model_, 1, indexes, xprs_values)))
       << "Failed to set objective offset in XPRESS";
 
@@ -280,7 +281,7 @@ absl::Status Xpress::GetControlInfo(char const* name, int* p_id,
 
 absl::StatusOr<int> Xpress::GetIntControl(int control) const {
   int result;
-  OR_RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       ToStatus(XPRSgetintcontrol(xpress_model_, control, &result)))
       << "Error getting Xpress int control: " << control;
   return result;
@@ -302,7 +303,7 @@ absl::Status Xpress::ResetIntControl(int control) {
 
 absl::StatusOr<int64_t> Xpress::GetIntControl64(int control) const {
   XPRSint64 result;
-  OR_RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       ToStatus(XPRSgetintcontrol64(xpress_model_, control, &result)))
       << "Error getting Xpress int64_t control: " << control;
   return result;
@@ -314,7 +315,7 @@ absl::Status Xpress::SetIntControl64(int control, int64_t value) {
 
 absl::StatusOr<double> Xpress::GetDblControl(int control) const {
   double result;
-  OR_RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       ToStatus(XPRSgetdblcontrol(xpress_model_, control, &result)))
       << "Error getting Xpress double control: " << control;
   return result;
@@ -326,11 +327,11 @@ absl::Status Xpress::SetDblControl(int control, double value) {
 
 absl::StatusOr<std::string> Xpress::GetStrControl(int control) const {
   int nbytes = 0;
-  OR_RETURN_IF_ERROR(ToStatus(
+  ABSL_RETURN_IF_ERROR(ToStatus(
       XPRSgetstringcontrol(xpress_model_, control, nullptr, 0, &nbytes)));
   std::vector<char> result(nbytes,
                            '\0');  // nbytes CONTAINS the terminating nul!
-  OR_RETURN_IF_ERROR(ToStatus(XPRSgetstringcontrol(
+  ABSL_RETURN_IF_ERROR(ToStatus(XPRSgetstringcontrol(
       xpress_model_, control, result.data(), nbytes, &nbytes)))
       << "Error getting Xpress string control: " << control;
   return std::string(result.data(), nbytes);
@@ -342,7 +343,7 @@ absl::Status Xpress::SetStrControl(int control, std::string const& value) {
 
 absl::StatusOr<int> Xpress::GetIntAttr(int attribute) const {
   int result;
-  OR_RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       ToStatus(XPRSgetintattrib(xpress_model_, attribute, &result)))
       << "Error getting Xpress int attribute: " << attribute;
   return result;
@@ -350,7 +351,7 @@ absl::StatusOr<int> Xpress::GetIntAttr(int attribute) const {
 
 absl::StatusOr<double> Xpress::GetDoubleAttr(int attribute) const {
   double result;
-  OR_RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       ToStatus(XPRSgetdblattrib(xpress_model_, attribute, &result)))
       << "Error getting Xpress double attribute: " << attribute;
   return result;
@@ -359,7 +360,7 @@ absl::StatusOr<double> Xpress::GetDoubleAttr(int attribute) const {
 absl::StatusOr<double> Xpress::GetObjectiveDoubleAttr(int objidx,
                                                       int attribute) const {
   double result = 0.0;
-  OR_RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       ToStatus(XPRSgetobjdblattrib(xpress_model_, objidx, attribute, &result)))
       << "Error getting Xpress objective double attribute: " << attribute;
   return result;
@@ -370,7 +371,7 @@ absl::StatusOr<int> Xpress::GetDualStatus() const {
   double values[1];
   // Even though we do not need the values, we have to fetch them, otherwise
   // we'd get a segmentation fault
-  OR_RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       ToStatus(XPRSgetduals(xpress_model_, &status, values, 0, 0)))
       << "Failed to retrieve dual status from XPRESS";
   return status;
@@ -378,8 +379,8 @@ absl::StatusOr<int> Xpress::GetDualStatus() const {
 
 absl::Status Xpress::GetBasis(std::vector<int>& rowBasis,
                               std::vector<int>& colBasis) const {
-  OR_ASSIGN_OR_RETURN(int const rows, GetIntAttr(XPRS_ORIGINALROWS));
-  OR_ASSIGN_OR_RETURN(int const cols, GetIntAttr(XPRS_ORIGINALCOLS));
+  ABSL_ASSIGN_OR_RETURN(int const rows, GetIntAttr(XPRS_ORIGINALROWS));
+  ABSL_ASSIGN_OR_RETURN(int const cols, GetIntAttr(XPRS_ORIGINALCOLS));
   rowBasis.resize(rows);
   colBasis.resize(cols);
   return ToStatus(
@@ -397,19 +398,19 @@ absl::Status Xpress::SetStartingBasis(std::vector<int>& rowBasis,
 }
 
 absl::StatusOr<std::vector<double>> Xpress::GetVarLb() const {
-  OR_ASSIGN_OR_RETURN(int const cols, GetIntAttr(XPRS_ORIGINALCOLS));
+  ABSL_ASSIGN_OR_RETURN(int const cols, GetIntAttr(XPRS_ORIGINALCOLS));
   std::vector<double> bounds;
   bounds.reserve(cols);
-  OR_RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       ToStatus(XPRSgetlb(xpress_model_, bounds.data(), 0, cols - 1)))
       << "Failed to retrieve variable LB from XPRESS";
   return bounds;
 }
 absl::StatusOr<std::vector<double>> Xpress::GetVarUb() const {
-  OR_ASSIGN_OR_RETURN(int const cols, GetIntAttr(XPRS_ORIGINALCOLS));
+  ABSL_ASSIGN_OR_RETURN(int const cols, GetIntAttr(XPRS_ORIGINALCOLS));
   std::vector<double> bounds;
   bounds.reserve(cols);
-  OR_RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       ToStatus(XPRSgetub(xpress_model_, bounds.data(), 0, cols - 1)))
       << "Failed to retrieve variable UB from XPRESS";
   return bounds;
@@ -420,9 +421,9 @@ absl::Status Xpress::Interrupt(int reason) {
 }
 
 absl::StatusOr<bool> Xpress::IsMIP() const {
-  OR_ASSIGN_OR_RETURN(int ents, GetIntAttr(XPRS_ORIGINALMIPENTS));
+  ABSL_ASSIGN_OR_RETURN(int ents, GetIntAttr(XPRS_ORIGINALMIPENTS));
   if (ents != 0) return true;
-  OR_ASSIGN_OR_RETURN(int sets, GetIntAttr(XPRS_ORIGINALSETS));
+  ABSL_ASSIGN_OR_RETURN(int sets, GetIntAttr(XPRS_ORIGINALSETS));
   if (sets != 0) return true;
   return false;
 }
@@ -492,7 +493,7 @@ absl::StatusOr<int> Xpress::AddObjective(double constant, int ncols,
                                          absl::Span<int const> colind,
                                          absl::Span<double const> objcoef,
                                          int priority, double weight) {
-  OR_ASSIGN_OR_RETURN(int const objs, GetIntAttr(XPRS_OBJECTIVES));
+  ABSL_ASSIGN_OR_RETURN(int const objs, GetIntAttr(XPRS_OBJECTIVES));
   if (objs == INT_MAX) {
     return ortools::InvalidArgumentErrorBuilder() << "too many objectives";
   }
@@ -526,7 +527,7 @@ absl::Status Xpress::AddSets(absl::Span<char const> settype,
                              absl::Span<XPRSint64 const> start,
                              absl::Span<int const> colind,
                              absl::Span<double const> refval) {
-  OR_ASSIGN_OR_RETURN(int const oldSets, GetIntAttr(XPRS_ORIGINALSETS));
+  ABSL_ASSIGN_OR_RETURN(int const oldSets, GetIntAttr(XPRS_ORIGINALSETS));
   if (checkInt32Overflow(settype.size()) ||
       checkInt32Overflow(std::size_t(oldSets) + settype.size())) {
     return absl::InvalidArgumentError(
@@ -540,7 +541,7 @@ absl::Status Xpress::AddSets(absl::Span<char const> settype,
 absl::Status Xpress::SetIndicators(absl::Span<int const> rowind,
                                    absl::Span<int const> colind,
                                    absl::Span<int const> complement) {
-  OR_ASSIGN_OR_RETURN(int const oldInds, GetIntAttr(XPRS_ORIGINALINDICATORS));
+  ABSL_ASSIGN_OR_RETURN(int const oldInds, GetIntAttr(XPRS_ORIGINALINDICATORS));
   if (checkInt32Overflow(rowind.size()) ||
       checkInt32Overflow(std::size_t(oldInds) + rowind.size())) {
     return absl::InvalidArgumentError(
@@ -561,7 +562,7 @@ absl::Status Xpress::AddRows(absl::Span<char const> rowtype,
                              absl::Span<XPRSint64 const> start,
                              absl::Span<int const> colind,
                              absl::Span<double const> rowcoef) {
-  OR_ASSIGN_OR_RETURN(int const oldRows, GetIntAttr(XPRS_ORIGINALROWS));
+  ABSL_ASSIGN_OR_RETURN(int const oldRows, GetIntAttr(XPRS_ORIGINALROWS));
   if (checkInt32Overflow(rowtype.size()) ||
       checkInt32Overflow(std::size_t(oldRows) + rowtype.size())) {
     return absl::InvalidArgumentError(
@@ -582,7 +583,7 @@ absl::Status Xpress::AddQRow(char sense, double rhs, double rng,
                              absl::Span<int const> qcol1,
                              absl::Span<int const> qcol2,
                              absl::Span<double const> qcoef) {
-  OR_ASSIGN_OR_RETURN(int const oldRows, GetIntAttr(XPRS_ORIGINALROWS));
+  ABSL_ASSIGN_OR_RETURN(int const oldRows, GetIntAttr(XPRS_ORIGINALROWS));
   if (checkInt32Overflow(std::size_t(oldRows) + 1))
     return absl::InvalidArgumentError(
         "XPRESS cannot handle more than 2^31 rows");
@@ -591,7 +592,7 @@ absl::Status Xpress::AddQRow(char sense, double rhs, double rng,
     return absl::InvalidArgumentError("inconsistent arguments to AddQRows");
   XPRSint64 const start = 0;
   const int num_coefs = static_cast<int>(rowcoef.size());
-  OR_RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       ToStatus(XPRSaddrows64(xpress_model_, 1, num_coefs, &sense, &rhs, &rng,
                              &start, colind.data(), rowcoef.data())));
   if (!qcol1.empty()) {
