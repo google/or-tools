@@ -20,12 +20,15 @@ load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_python//python:py_library.bzl", "py_library")
 load("@rules_python//python:py_test.bzl", "py_test")
+load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS")
 
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
     name = "sorted_interval_list_doc_cc",
     hdrs = ["sorted_interval_list_doc.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = ["//visibility:public"],
 )
 
@@ -82,6 +85,8 @@ cc_library(
     name = "py_solve_interrupter_lib",
     srcs = ["py_solve_interrupter.cc"],
     hdrs = ["py_solve_interrupter.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     # This library is not meant to be consumed end users; only by C++ code of
     # Clif libraries that needs a SolverInterrupter.
     visibility = [
@@ -103,6 +108,8 @@ cc_library(
     testonly = True,
     srcs = ["py_solve_interrupter_testing.cc"],
     hdrs = ["py_solve_interrupter_testing.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":py_solve_interrupter_lib",
         "@abseil-cpp//absl/base:nullability",
@@ -162,6 +169,8 @@ cc_library(
     name = "wrappers",
     srcs = ["wrappers.cc"],
     hdrs = ["wrappers.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = ["//visibility:public"],
     deps = [
         "@abseil-cpp//absl/algorithm:container",
@@ -181,6 +190,8 @@ cc_binary(
     name = "gen_wrappers_test_message_pybind11",
     testonly = True,
     srcs = ["gen_wrappers_test_message_pybind11.cc"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":wrappers",
         "//ortools/util/testdata:wrappers_test_message_cc_proto",
@@ -205,6 +216,8 @@ cc_library(
     name = "wrappers_test_message_pybind11",
     testonly = True,
     hdrs = ["wrappers_test_message_pybind11.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
 )
 
 pybind_extension(

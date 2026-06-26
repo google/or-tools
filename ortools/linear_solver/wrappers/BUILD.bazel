@@ -14,6 +14,7 @@
 # ModelBuilder: a lightweight implementation of the linear_solver API
 
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -25,7 +26,8 @@ cc_library(
         "-DUSE_HIGHS",
         "-DUSE_PDLP",
         "-DUSE_SCIP",
-    ],
+    ] + ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     tags = [
         "not_build:arm",
         "not_run:arm",

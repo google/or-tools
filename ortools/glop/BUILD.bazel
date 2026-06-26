@@ -17,12 +17,15 @@ load("@protobuf//bazel:proto_library.bzl", "proto_library")
 load("@protobuf//bazel:py_proto_library.bzl", "py_proto_library")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_cc//cc:cc_test.bzl", "cc_test")
+load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS", "ORTOOLS_TEST_COPTS")
 
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
     name = "rank_one_update",
     hdrs = ["rank_one_update.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/lp_data:lp_types",
         "//ortools/lp_data:lp_utils",
@@ -35,6 +38,8 @@ cc_library(
 cc_library(
     name = "pricing",
     hdrs = ["pricing.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/lp_data:lp_types",
         "//ortools/util:bitset",
@@ -49,6 +54,8 @@ cc_test(
     name = "pricing_test",
     size = "small",
     srcs = ["pricing_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":pricing",
         "//ortools/base:gmock_main",
@@ -62,6 +69,8 @@ cc_library(
     name = "basis_representation",
     srcs = ["basis_representation.cc"],
     hdrs = ["basis_representation.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":lu_factorization",
         ":parameters_cc_proto",
@@ -84,6 +93,8 @@ cc_library(
     name = "variables_info",
     srcs = ["variables_info.cc"],
     hdrs = ["variables_info.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/lp_data:lp_types",
         "//ortools/lp_data:sparse",
@@ -95,6 +106,8 @@ cc_library(
     name = "entering_variable",
     srcs = ["entering_variable.cc"],
     hdrs = ["entering_variable.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":parameters_cc_proto",
         ":reduced_costs",
@@ -114,6 +127,8 @@ cc_library(
     name = "parameters_validation",
     srcs = ["parameters_validation.cc"],
     hdrs = ["parameters_validation.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":parameters_cc_proto",
         "@abseil-cpp//absl/strings",
@@ -124,6 +139,8 @@ cc_library(
     name = "reduced_costs",
     srcs = ["reduced_costs.cc"],
     hdrs = ["reduced_costs.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":basis_representation",
         ":parameters_cc_proto",
@@ -147,6 +164,8 @@ cc_library(
     name = "preprocessor",
     srcs = ["preprocessor.cc"],
     hdrs = ["preprocessor.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":parameters_cc_proto",
         "//ortools/base:iterator_adaptors",
@@ -178,6 +197,8 @@ cc_library(
     name = "markowitz",
     srcs = ["markowitz.cc"],
     hdrs = ["markowitz.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":parameters_cc_proto",
         "//ortools/base:strong_vector",
@@ -198,6 +219,8 @@ cc_library(
     name = "dual_edge_norms",
     srcs = ["dual_edge_norms.cc"],
     hdrs = ["dual_edge_norms.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":basis_representation",
         ":parameters_cc_proto",
@@ -214,6 +237,8 @@ cc_library(
     name = "revised_simplex",
     srcs = ["revised_simplex.cc"],
     hdrs = ["revised_simplex.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":basis_representation",
         ":dual_edge_norms",
@@ -267,6 +292,8 @@ cc_library(
     name = "initial_basis",
     srcs = ["initial_basis.cc"],
     hdrs = ["initial_basis.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":markowitz",
         "//ortools/base:types",
@@ -284,6 +311,8 @@ cc_library(
     name = "variable_values",
     srcs = ["variable_values.cc"],
     hdrs = ["variable_values.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":basis_representation",
         ":dual_edge_norms",
@@ -306,6 +335,8 @@ cc_library(
     name = "update_row",
     srcs = ["update_row.cc"],
     hdrs = ["update_row.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":basis_representation",
         ":parameters_cc_proto",
@@ -325,6 +356,8 @@ cc_library(
     name = "lp_solver",
     srcs = ["lp_solver.cc"],
     hdrs = ["lp_solver.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":parameters_cc_proto",
         ":preprocessor",
@@ -358,6 +391,8 @@ cc_library(
     name = "primal_edge_norms",
     srcs = ["primal_edge_norms.cc"],
     hdrs = ["primal_edge_norms.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":basis_representation",
         ":parameters_cc_proto",
@@ -378,6 +413,8 @@ cc_library(
     name = "lu_factorization",
     srcs = ["lu_factorization.cc"],
     hdrs = ["lu_factorization.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":markowitz",
         ":parameters_cc_proto",
@@ -399,6 +436,8 @@ cc_library(
     name = "status",
     srcs = ["status.cc"],
     hdrs = ["status.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
@@ -410,6 +449,8 @@ cc_library(
     testonly = True,
     srcs = ["preprocessor_testing.cc"],
     hdrs = ["preprocessor_testing.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":preprocessor",
         "//ortools/base:gmock",

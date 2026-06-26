@@ -12,6 +12,7 @@
 # limitations under the License.
 
 load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS")
 load("//tools/testing:bintest.bzl", "bintest")
 
 package(default_visibility = ["//visibility:public"])
@@ -19,6 +20,8 @@ package(default_visibility = ["//visibility:public"])
 cc_binary(
     name = "simple_glop_program_cc",
     srcs = ["simple_glop_program.cc"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/glop:lp_solver",
         "//ortools/glop:parameters_cc_proto",

@@ -20,6 +20,7 @@ load("@protobuf//bazel:py_proto_library.bzl", "py_proto_library")
 load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_cc//cc:cc_test.bzl", "cc_test")
+load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS", "ORTOOLS_TEST_COPTS")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -43,6 +44,8 @@ cc_library(
     name = "rcpsp_parser",
     srcs = ["rcpsp_parser.cc"],
     hdrs = ["rcpsp_parser.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":rcpsp_cc_proto",
         "//ortools/base:path",
@@ -57,6 +60,7 @@ cc_test(
     name = "rcpsp_parser_test",
     size = "small",
     srcs = ["rcpsp_parser_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
     data = [
         "//ortools/scheduling/testdata:c1510_1.mm.txt",
         "//ortools/scheduling/testdata:j301_1.sm",
@@ -68,7 +72,9 @@ cc_test(
         "//ortools/scheduling/testdata:rip1.sch",
         "//ortools/scheduling/testdata:ubo_10_psp2.sch",
     ],
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
+        ":rcpsp_cc_proto",
         ":rcpsp_parser",
         "//ortools/base:gmock_main",
         "//ortools/base:path",
@@ -92,6 +98,8 @@ cc_library(
     name = "jobshop_scheduling_parser",
     srcs = ["jobshop_scheduling_parser.cc"],
     hdrs = ["jobshop_scheduling_parser.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":jobshop_scheduling_cc_proto",
         "//ortools/base:path",
@@ -109,6 +117,7 @@ cc_test(
     name = "jobshop_scheduling_parser_test",
     size = "small",
     srcs = ["jobshop_scheduling_parser_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
     data = [
         "//ortools/scheduling/testdata:02a.fjs",
         "//ortools/scheduling/testdata:1010_1_3",
@@ -119,7 +128,9 @@ cc_test(
         "//ortools/scheduling/testdata:jb1.txt",
         "//ortools/scheduling/testdata:taillard-jobshop-15_15-1_225_100_150-1",
     ],
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
+        ":jobshop_scheduling_cc_proto",
         ":jobshop_scheduling_parser",
         "//ortools/base:gmock_main",
         "//ortools/base:path",
@@ -142,6 +153,8 @@ cc_library(
     name = "course_scheduling",
     srcs = ["course_scheduling.cc"],
     hdrs = ["course_scheduling.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":course_scheduling_cc_proto",
         "//ortools/base:mathutil",
@@ -159,6 +172,8 @@ cc_library(
 cc_binary(
     name = "course_scheduling_run",
     srcs = ["course_scheduling_run.cc"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":course_scheduling",
         ":course_scheduling_cc_proto",
@@ -173,6 +188,8 @@ cc_binary(
 cc_test(
     name = "course_scheduling_test",
     srcs = ["course_scheduling_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":course_scheduling",
         ":course_scheduling_cc_proto",

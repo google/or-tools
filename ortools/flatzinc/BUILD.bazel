@@ -17,6 +17,7 @@
 
 load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -28,6 +29,8 @@ cc_library(
     name = "model",
     srcs = ["model.cc"],
     hdrs = ["model.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base:stl_util",
         "//ortools/base:types",
@@ -61,7 +64,8 @@ cc_library(
         "//conditions:default": ["-Wno-implicit-fallthrough"],
     }) + [
         "$(STACK_FRAME_UNLIMITED)",  # parser.tab.cc
-    ],
+    ] + ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":model",
         "//ortools/base",
@@ -87,7 +91,8 @@ cc_library(
         "@platforms//os:linux": ["-Wno-unused-function"],  # parser.yy.cc
         "@platforms//os:macos": ["-Wno-unused-function"],  # parser.yy.cc
         "//conditions:default": [],
-    }),
+    }) + ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     tags = ["keep_dep"],  # So that build_cleaner doesn't remove this as a dep.
     deps = [
         ":parser_yacc_lib",
@@ -101,6 +106,8 @@ cc_library(
     name = "parser_lib",
     srcs = ["parser.cc"],
     hdrs = ["parser.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":model",
         ":parser_lex_lib",
@@ -112,6 +119,8 @@ cc_library(
 cc_binary(
     name = "parser",
     srcs = ["parser_main.cc"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":model",
         ":parser_lib",
@@ -134,6 +143,8 @@ cc_library(
     name = "checker",
     srcs = ["checker.cc"],
     hdrs = ["checker.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":model",
         "//ortools/base:types",
@@ -154,6 +165,8 @@ cc_library(
     name = "cp_model_fz_solver",
     srcs = ["cp_model_fz_solver.cc"],
     hdrs = ["cp_model_fz_solver.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":checker",
         ":model",
@@ -186,6 +199,8 @@ cc_library(
 cc_binary(
     name = "fz",
     srcs = ["fz.cc"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":cp_model_fz_solver",
         ":model",
