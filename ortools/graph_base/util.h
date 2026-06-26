@@ -110,24 +110,53 @@ class UndirectedAdjacencyListsOfDirectedGraph {
       : graph_(graph) {}
 
   typedef typename Graph::OutgoingOrOppositeIncomingArcIterator ArcIterator;
-  class AdjacencyListIterator : public ArcIterator {
+  class AdjacencyListIterator {
    public:
-    explicit AdjacencyListIterator(const Graph& graph, ArcIterator&& arc_it)
-        : ArcIterator(arc_it), graph_(graph) {}
-    // Overwrite operator* to return the heads of the arcs.
+    using value_type = typename Graph::NodeIndex;
+    using difference_type = typename ArcIterator::difference_type;
+    using iterator_category = typename ArcIterator::iterator_category;
+
+    AdjacencyListIterator() : arc_it_(), graph_(nullptr) {}  // End iterator.
+
+    explicit AdjacencyListIterator(const Graph* graph, ArcIterator&& arc_it)
+        : arc_it_(std::move(arc_it)), graph_(graph) {}
+
     typename Graph::NodeIndex operator*() const {
-      return graph_.Head(ArcIterator::operator*());
+      DCHECK(graph_ != nullptr);
+      return graph_->Head(*arc_it_);
+    }
+
+    friend bool operator==(const AdjacencyListIterator& l,
+                           const AdjacencyListIterator& r) {
+      return l.arc_it_ == r.arc_it_;
+    }
+
+    friend bool operator!=(const AdjacencyListIterator& l,
+                           const AdjacencyListIterator& r) {
+      return l.arc_it_ != r.arc_it_;
+    }
+
+    AdjacencyListIterator& operator++() {
+      ++arc_it_;
+      return *this;
+    }
+
+    AdjacencyListIterator operator++(int) {
+      AdjacencyListIterator tmp = *this;
+      ++(*this);
+      return tmp;
     }
 
    private:
-    const Graph& graph_;
+    ArcIterator arc_it_;
+    const Graph* graph_;
   };
 
   // Returns a pseudo-container of all the nodes adjacent to "node".
   BeginEndWrapper<AdjacencyListIterator> operator[](int node) const {
     const auto& arc_range = graph_.OutgoingOrOppositeIncomingArcs(node);
-    return {AdjacencyListIterator(graph_, arc_range.begin()),
-            AdjacencyListIterator(graph_, arc_range.end())};
+    return {AdjacencyListIterator(&graph_, arc_range.begin()),
+            AdjacencyListIterator(&graph_, arc_range.end())};
   }
 
  private:

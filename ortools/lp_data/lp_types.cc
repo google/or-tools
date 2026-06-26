@@ -21,6 +21,7 @@
 #include <type_traits>
 #include <variant>
 
+#include "absl/base/optimization.h"
 #include "absl/functional/overload.h"
 #include "absl/log/log.h"
 #include "absl/strings/string_view.h"
@@ -288,6 +289,7 @@ SolveStatus FeasibleSolveStatus(const FeasibilityStatus feasibility,
     case FeasibilityStatus::kDual:
       return DualFeasibleSolveStatus(cause);
   }
+  ABSL_UNREACHABLE();
 }
 
 SolveStatus AbnormalSolveStatus(const AbnormalityCause cause) {

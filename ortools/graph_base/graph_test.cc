@@ -13,6 +13,7 @@
 
 #include "ortools/graph_base/graph.h"
 
+#include <concepts>
 #include <cstddef>
 #include <cstdint>
 #include <iterator>
@@ -49,18 +50,125 @@ DEFINE_STRONG_INT_TYPE(StrongNodeId, int32_t);
 DEFINE_STRONG_INT_TYPE(StrongArcId, int32_t);
 
 // Iterators.
-#if __cplusplus >= 202002L
-static_assert(std::forward_iterator<ListGraph<>::OutgoingArcIterator>);
-static_assert(std::forward_iterator<ListGraph<>::OutgoingHeadIterator>);
-static_assert(
-    std::forward_iterator<ReverseArcListGraph<>::OutgoingArcIterator>);
-static_assert(
-    std::forward_iterator<ReverseArcListGraph<>::IncomingArcIterator>);
-static_assert(std::input_iterator<
-              ReverseArcListGraph<>::OutgoingOrOppositeIncomingArcIterator>);
-static_assert(
-    std::forward_iterator<ReverseArcListGraph<>::OutgoingHeadIterator>);
-#endif  // __cplusplus >= 202002L
+template <typename T>
+concept IsInputIterator =
+    std::input_iterator<T> &&
+    // This is supposed to be part of the input_iterator concept but is not in
+    // the current libc++ implementation.
+    std::same_as<typename std::iterator_traits<T>::iterator_category,
+                 std::input_iterator_tag>;
+
+template <typename T>
+concept IsForwardIterator =
+    std::forward_iterator<T> &&
+    std::same_as<typename std::iterator_traits<T>::iterator_category,
+                 std::forward_iterator_tag>;
+
+template <typename T>
+concept IsRandomAccessIterator =
+    std::random_access_iterator<T> &&
+    std::same_as<typename std::iterator_traits<T>::iterator_category,
+                 std::random_access_iterator_tag>;
+
+class ConceptsTest : public ::testing::Test {
+ protected:
+  template <typename GraphT>
+  struct IteratorTypes {
+    static constexpr auto kNode0 = typename GraphT::NodeIndex(0);
+
+    using OutgoingArcs =
+        decltype(std::declval<GraphT>().OutgoingArcs(kNode0).begin());
+
+    template <typename T = GraphT>
+    using IncomingArcs =
+        decltype(std::declval<T>().IncomingArcs(kNode0).begin());
+
+    using OutgoingHeads = decltype(std::declval<GraphT>()[kNode0].begin());
+
+    template <typename T = GraphT>
+    using OppositeIncomingArcs =
+        decltype(std::declval<T>().OppositeIncomingArcs(kNode0).begin());
+
+    template <typename T = GraphT>
+    using OutgoingOrOppositeIncomingArcs =
+        decltype(std::declval<T>()
+                     .OutgoingOrOppositeIncomingArcs(kNode0)
+                     .begin());
+  };
+};
+
+TEST_F(ConceptsTest, ListGraph) {
+  using UntypedIterators = IteratorTypes<ListGraph<>>;
+
+  static_assert(IsForwardIterator<UntypedIterators::OutgoingArcs>);
+  static_assert(IsForwardIterator<UntypedIterators::OutgoingHeads>);
+
+  using TypedIterators = IteratorTypes<ListGraph<StrongNodeId, StrongArcId>>;
+
+  static_assert(IsForwardIterator<TypedIterators::OutgoingArcs>);
+  static_assert(IsForwardIterator<TypedIterators::OutgoingHeads>);
+}
+
+TEST_F(ConceptsTest, StaticGraph) {
+  using UntypedIterators = IteratorTypes<StaticGraph<>>;
+
+  static_assert(IsRandomAccessIterator<UntypedIterators::OutgoingArcs>);
+  static_assert(IsRandomAccessIterator<UntypedIterators::OutgoingHeads>);
+
+  using TypedIterators = IteratorTypes<StaticGraph<StrongNodeId, StrongArcId>>;
+
+  static_assert(IsRandomAccessIterator<TypedIterators::OutgoingArcs>);
+  static_assert(IsRandomAccessIterator<TypedIterators::OutgoingHeads>);
+}
+
+TEST_F(ConceptsTest, ReverseArcListGraph) {
+  using UntypedIterators = IteratorTypes<ReverseArcListGraph<>>;
+
+  static_assert(IsForwardIterator<UntypedIterators::OutgoingArcs>);
+  static_assert(IsForwardIterator<UntypedIterators::OutgoingHeads>);
+  static_assert(IsForwardIterator<UntypedIterators::IncomingArcs<>>);
+  static_assert(IsForwardIterator<UntypedIterators::OppositeIncomingArcs<>>);
+  // TODO(user): Make this a forward iterator.
+  static_assert(
+      IsInputIterator<UntypedIterators::OutgoingOrOppositeIncomingArcs<>>);
+
+  using TypedIterators =
+      IteratorTypes<ReverseArcListGraph<StrongNodeId, StrongArcId>>;
+
+  static_assert(IsForwardIterator<TypedIterators::OutgoingArcs>);
+  static_assert(IsForwardIterator<TypedIterators::OutgoingHeads>);
+  static_assert(IsForwardIterator<TypedIterators::IncomingArcs<>>);
+  static_assert(IsForwardIterator<TypedIterators::OppositeIncomingArcs<>>);
+  // TODO(user): Make this a forward iterator.
+  static_assert(
+      IsInputIterator<TypedIterators::OutgoingOrOppositeIncomingArcs<>>);
+}
+
+TEST_F(ConceptsTest, ReverseArcStaticGraph) {
+  using UntypedIterators = IteratorTypes<ReverseArcStaticGraph<>>;
+
+  static_assert(IsRandomAccessIterator<UntypedIterators::OutgoingArcs>);
+  static_assert(IsRandomAccessIterator<UntypedIterators::OutgoingHeads>);
+  // TODO(user): Make this a random access iterator.
+  static_assert(IsForwardIterator<UntypedIterators::IncomingArcs<>>);
+  static_assert(
+      IsRandomAccessIterator<UntypedIterators::OppositeIncomingArcs<>>);
+  // TODO(user): Make this a random access iterator. Right now this is not
+  // even an input iterator.
+  // static_assert(IsInputIterator<UntypedIterators::OutgoingOrOppositeIncomingArcs<>>);
+
+  using TypedIterators =
+      IteratorTypes<ReverseArcStaticGraph<StrongNodeId, StrongArcId>>;
+
+  static_assert(IsRandomAccessIterator<TypedIterators::OutgoingArcs>);
+  static_assert(IsRandomAccessIterator<TypedIterators::OutgoingHeads>);
+  // TODO(user): Make this a random access iterator.
+  static_assert(IsForwardIterator<TypedIterators::IncomingArcs<>>);
+  static_assert(IsRandomAccessIterator<TypedIterators::OppositeIncomingArcs<>>);
+  // TODO(user): Make this a random access iterator. Right now this is not
+  // even an input iterator.
+  // static_assert(IsInputIterator<TypedIterators::OutgoingOrOppositeIncomingArcs<>>);
+}
 
 // GraphTraits.
 static_assert(
