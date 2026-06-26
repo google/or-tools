@@ -157,7 +157,6 @@ struct CpModelProtoWithMapping {
   std::optional<int> GetVarEqVarLiteral(int var1, int var2);
   int GetOrCreateLiteralForVarNeVar(int var1, int var2);
   std::optional<int> GetVarNeVarLiteral(int var1, int var2);
-  void AddVarNeVarLiteral(int var1, int var2, int literal);
   int GetOrCreateLiteralForVarLeVar(int var1, int var2);
   std::optional<int> GetVarLeVarLiteral(int var1, int var2);
   void AddVarLeVarLiteral(int var1, int var2, int literal);
@@ -933,10 +932,6 @@ void CpModelProtoWithMapping::AddVarEqVarLiteral(int var1, int var2, int lit) {
     }
     var_eq_var_to_literal[key] = lit;
   }
-}
-
-void CpModelProtoWithMapping::AddVarNeVarLiteral(int var1, int var2, int lit) {
-  AddVarEqVarLiteral(var1, var2, NegatedRef(lit));
 }
 
 std::optional<int> CpModelProtoWithMapping::GetVarEqVarLiteral(int var1,
