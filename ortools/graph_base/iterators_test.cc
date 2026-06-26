@@ -33,6 +33,16 @@ static_assert(
                      IntegerRangeIterator<TestIndex>>::iterator_category,
                  std::random_access_iterator_tag>);
 
+static constexpr TestIndex kSentinel(42);
+struct Tag {};
+static_assert(
+    std::forward_iterator<ChasingIterator<TestIndex, kSentinel, Tag>>);
+using ChasingIteratorTraits =
+    std::iterator_traits<ChasingIterator<TestIndex, kSentinel, Tag>>;
+static_assert(std::same_as<ChasingIteratorTraits::iterator_category,
+                           std::forward_iterator_tag>);
+static_assert(std::same_as<ChasingIteratorTraits::reference, TestIndex>);
+
 TEST(IntegerRangeTest, VariousEmptyRanges) {
   bool went_inside = false;
   for ([[maybe_unused]] const int i : IntegerRange<int>(0, 0)) {
@@ -78,59 +88,55 @@ TEST(IntegerRangeTest, AssignToVector) {
 }
 
 TEST(ChasingIteratorTest, ChasingIterator) {
-  static constexpr int kSentinel = 42;
-  struct Tag {};
-  using Iterator = ChasingIterator<int, kSentinel, Tag>;
+  using Iterator = ChasingIterator<TestIndex, kSentinel, Tag>;
   const auto end = Iterator{};
-#if __cplusplus >= 202002L
-  static_assert(std::forward_iterator<Iterator>);
-#endif
   // There are two chains: 0->1->3 and 4->2.
-  const int next[] = {1, 3, kSentinel, kSentinel, 2};
+  const TestIndex next[] = {TestIndex(1), TestIndex(3), kSentinel, kSentinel,
+                            TestIndex(2)};
   {
-    Iterator it(0, next);
+    Iterator it(TestIndex(0), next);
     ASSERT_FALSE(it == end);
-    EXPECT_EQ(*it, 0);
+    EXPECT_EQ(*it, TestIndex(0));
     ++it;
     ASSERT_FALSE(it == end);
-    EXPECT_EQ(*it, 1);
+    EXPECT_EQ(*it, TestIndex(1));
     ++it;
     ASSERT_FALSE(it == end);
-    EXPECT_EQ(*it, 3);
+    EXPECT_EQ(*it, TestIndex(3));
     ++it;
     ASSERT_TRUE(it == end);
   }
   {
-    Iterator it(1, next);
+    Iterator it(TestIndex(1), next);
     ASSERT_FALSE(it == end);
-    EXPECT_EQ(*it, 1);
+    EXPECT_EQ(*it, TestIndex(1));
     ++it;
     ASSERT_FALSE(it == end);
-    EXPECT_EQ(*it, 3);
-    ++it;
-    ASSERT_TRUE(it == end);
-  }
-  {
-    Iterator it(2, next);
-    ASSERT_FALSE(it == end);
-    EXPECT_EQ(*it, 2);
+    EXPECT_EQ(*it, TestIndex(3));
     ++it;
     ASSERT_TRUE(it == end);
   }
   {
-    Iterator it(3, next);
+    Iterator it(TestIndex(2), next);
     ASSERT_FALSE(it == end);
-    EXPECT_EQ(*it, 3);
+    EXPECT_EQ(*it, TestIndex(2));
     ++it;
     ASSERT_TRUE(it == end);
   }
   {
-    Iterator it(4, next);
+    Iterator it(TestIndex(3), next);
     ASSERT_FALSE(it == end);
-    EXPECT_EQ(*it, 4);
+    EXPECT_EQ(*it, TestIndex(3));
+    ++it;
+    ASSERT_TRUE(it == end);
+  }
+  {
+    Iterator it(TestIndex(4), next);
+    ASSERT_FALSE(it == end);
+    EXPECT_EQ(*it, TestIndex(4));
     ++it;
     ASSERT_FALSE(it == end);
-    EXPECT_EQ(*it, 2);
+    EXPECT_EQ(*it, TestIndex(2));
     ++it;
     ASSERT_TRUE(it == end);
   }

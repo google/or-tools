@@ -21,6 +21,7 @@
 #include <type_traits>
 #include <variant>
 
+#include "absl/base/optimization.h"
 #include "absl/functional/overload.h"
 #include "absl/log/log.h"
 #include "absl/strings/string_view.h"
@@ -246,7 +247,9 @@ std::ostream& operator<<(std::ostream& os, const SolveStatus status) {
   return os;
 }
 
-SolveStatus OptimalSolveStatus() { return {SolveStatus::Optimal{}}; }
+SolveStatus OptimalSolveStatus() {
+  return {SolveStatus::Optimal{}};
+}
 
 SolveStatus PrimalInfeasibleSolveStatus() {
   return {SolveStatus::PrimalInfeasible{}};
@@ -288,6 +291,7 @@ SolveStatus FeasibleSolveStatus(const FeasibilityStatus feasibility,
     case FeasibilityStatus::kDual:
       return DualFeasibleSolveStatus(cause);
   }
+  ABSL_UNREACHABLE();
 }
 
 SolveStatus AbnormalSolveStatus(const AbnormalityCause cause) {
@@ -298,7 +302,9 @@ SolveStatus InvalidProblemSolveStatus() {
   return {SolveStatus::InvalidProblem{}};
 }
 
-SolveStatus ImpreciseSolveStatus() { return {SolveStatus::Imprecise{}}; }
+SolveStatus ImpreciseSolveStatus() {
+  return {SolveStatus::Imprecise{}};
+}
 
 ProblemStatus SolveStatus::problem_status() const {
   return std::visit([](const auto& alternative) { return alternative.status; },
