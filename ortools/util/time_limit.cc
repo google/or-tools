@@ -21,6 +21,7 @@
 #include <string>
 #include <utility>
 
+#include "absl/base/optimization.h"
 #include "absl/flags/flag.h"
 #include "absl/log/die_if_null.h"
 #include "absl/log/log.h"
@@ -80,6 +81,7 @@ absl::string_view TimeLimit::GetStateString(const State state) {
       LOG(DFATAL) << "Invalid TimeLimit::State " << static_cast<int>(state);
       return "UNKNOWN TimeLimit::State";
   }
+  ABSL_UNREACHABLE();
 }
 
 std::ostream& operator<<(std::ostream& os, const TimeLimit::State state) {

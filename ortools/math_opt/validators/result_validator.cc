@@ -16,9 +16,9 @@
 #include <limits>
 
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "google/protobuf/repeated_ptr_field.h"
 #include "ortools/base/status_builder.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/core/math_opt_proto_utils.h"
 #include "ortools/math_opt/core/model_summary.h"
 #include "ortools/math_opt/model_parameters.pb.h"
@@ -68,7 +68,7 @@ absl::Status ValidateSolutions(
     const ModelSummary& model_summary) {
   // Validate individual solutions
   for (int i = 0; i < solutions.size(); ++i) {
-    OR_RETURN_IF_ERROR(
+    ABSL_RETURN_IF_ERROR(
         ValidateSolution(solutions[i], parameters, model_summary))
         << "invalid solutions[" << i << "]";
   }
@@ -280,7 +280,7 @@ absl::Status ValidateResult(const SolveResultProto& result,
                             const ModelSummary& model_summary) {
   // TODO(b/290091715): Remove once problem_status and objective bounds are
   // removed from solve_stats and their presence is guaranteed in termination.
-  OR_RETURN_IF_ERROR(ValidateSolveStatsTerminationEqualities(result));
+  ABSL_RETURN_IF_ERROR(ValidateSolveStatsTerminationEqualities(result));
   // TODO(b/290091715): Replace by
   // TerminationProto termination = result.termination();
   // once problem_status and objective bounds are removed from solve_stats and
@@ -289,26 +289,27 @@ absl::Status ValidateResult(const SolveResultProto& result,
   *termination.mutable_objective_bounds() = GetObjectiveBounds(result);
   *termination.mutable_problem_status() = GetProblemStatus(result);
 
-  OR_RETURN_IF_ERROR(ValidateTermination(termination, model_summary.maximize));
-  OR_RETURN_IF_ERROR(ValidateSolveStats(result.solve_stats()));
-  OR_RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
+      ValidateTermination(termination, model_summary.maximize));
+  ABSL_RETURN_IF_ERROR(ValidateSolveStats(result.solve_stats()));
+  ABSL_RETURN_IF_ERROR(
       ValidateSolutions(result.solutions(), parameters, model_summary));
 
   if (termination.reason() == TERMINATION_REASON_OPTIMAL ||
       termination.reason() == TERMINATION_REASON_FEASIBLE) {
-    OR_RETURN_IF_ERROR(CheckHasPrimalSolution(result))
+    ABSL_RETURN_IF_ERROR(CheckHasPrimalSolution(result))
         << "inconsistent termination reason "
         << TerminationReasonProto_Name(termination.reason());
   }
   if (termination.reason() == TERMINATION_REASON_NO_SOLUTION_FOUND) {
-    OR_RETURN_IF_ERROR(RequireNoPrimalFeasibleSolution(result))
+    ABSL_RETURN_IF_ERROR(RequireNoPrimalFeasibleSolution(result))
         << "inconsistent termination reason "
         << TerminationReasonProto_Name(termination.reason());
   }
 
-  OR_RETURN_IF_ERROR(CheckPrimalSolutionAndTerminationConsistency(
+  ABSL_RETURN_IF_ERROR(CheckPrimalSolutionAndTerminationConsistency(
       result.termination(), result.solutions(), model_summary.maximize));
-  OR_RETURN_IF_ERROR(CheckDualSolutionAndStatusConsistency(
+  ABSL_RETURN_IF_ERROR(CheckDualSolutionAndStatusConsistency(
       result.termination(), result.solutions(), model_summary.maximize));
 
   if (result.primal_rays_size() > 0 &&
@@ -320,9 +321,9 @@ absl::Status ValidateResult(const SolveResultProto& result,
         "but a primal ray is returned");
   }
   for (int i = 0; i < result.primal_rays_size(); ++i) {
-    OR_RETURN_IF_ERROR(ValidatePrimalRay(result.primal_rays(i),
-                                         parameters.variable_values_filter(),
-                                         model_summary))
+    ABSL_RETURN_IF_ERROR(ValidatePrimalRay(result.primal_rays(i),
+                                           parameters.variable_values_filter(),
+                                           model_summary))
         << "Invalid primal_rays[" << i << "]";
   }
   if (result.dual_rays_size() > 0 &&
@@ -333,7 +334,7 @@ absl::Status ValidateResult(const SolveResultProto& result,
         "FEASIBILITY_STATUS_FEASIBLE, but a dual ray is returned");
   }
   for (int i = 0; i < result.dual_rays_size(); ++i) {
-    OR_RETURN_IF_ERROR(
+    ABSL_RETURN_IF_ERROR(
         ValidateDualRay(result.dual_rays(i), parameters, model_summary))
         << "Invalid dual_rays[" << i << "]";
   }

@@ -33,6 +33,7 @@
 #include "absl/log/log.h"
 #include "absl/memory/memory.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
@@ -41,7 +42,6 @@
 #include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "ortools/base/protoutil.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/base/types.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/empty_bounds.h"
@@ -889,7 +889,8 @@ int OptStatus(glp_prob*) { return GLP_OPT; }
 
 absl::StatusOr<std::unique_ptr<SolverInterface>> GlpkSolver::New(
     const ModelProto& model, const InitArgs& /*init_args*/) {
-  OR_RETURN_IF_ERROR(ModelIsSupported(model, kGlpkSupportedStructures, "GLPK"));
+  ABSL_RETURN_IF_ERROR(
+      ModelIsSupported(model, kGlpkSupportedStructures, "GLPK"));
   return absl::WrapUnique(new GlpkSolver(model));
 }
 
@@ -1007,13 +1008,13 @@ absl::StatusOr<ProblemStatusProto> GetSimplexProblemStatusProto(
       return problem_status;
     default: {
       // Get primal status from basic solution.
-      OR_ASSIGN_OR_RETURN(
+      ABSL_ASSIGN_OR_RETURN(
           const FeasibilityStatusProto primal_status,
           TranslateProblemStatus(glpk_primal_status, "glp_get_prim_stat"));
       problem_status.set_primal_status(primal_status);
 
       // Get dual status from basic solution.
-      OR_ASSIGN_OR_RETURN(
+      ABSL_ASSIGN_OR_RETURN(
           const FeasibilityStatusProto dual_status,
           TranslateProblemStatus(glpk_dual_status, "glp_get_dual_stat"));
       problem_status.set_dual_status(dual_status);
@@ -1062,22 +1063,22 @@ absl::StatusOr<SolveResultProto> GlpkSolver::Solve(
     const CallbackRegistrationProto& callback_registration,
     const Callback /*cb*/,
     const SolveInterrupter* absl_nullable const interrupter) {
-  OR_RETURN_IF_ERROR(ModelSolveParametersAreSupported(
+  ABSL_RETURN_IF_ERROR(ModelSolveParametersAreSupported(
       model_parameters, kGlpkSupportedStructures, "GLPK"));
-  OR_RETURN_IF_ERROR(CheckCurrentThread());
+  ABSL_RETURN_IF_ERROR(CheckCurrentThread());
 
   const absl::Time start = absl::Now();
 
   const auto set_solve_time =
       [&start](SolveResultProto& result) -> absl::Status {
-    OR_RETURN_IF_ERROR(util_time::EncodeGoogleApiProto(
+    ABSL_RETURN_IF_ERROR(util_time::EncodeGoogleApiProto(
         absl::Now() - start,
         result.mutable_solve_stats()->mutable_solve_time()))
         << "failed to set SolveResultProto.solve_stats.solve_time";
     return absl::OkStatus();
   };
 
-  OR_RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       ListInvertedBounds(
           problem_,
           /*variable_ids=*/variables_.ids,
@@ -1091,13 +1092,13 @@ absl::StatusOr<SolveResultProto> GlpkSolver::Solve(
   {  // Limit scope of `result`.
     std::optional<SolveResultProto> result = EmptyIntegerBoundsResult();
     if (result.has_value()) {
-      OR_RETURN_IF_ERROR(set_solve_time(result.value()));
+      ABSL_RETURN_IF_ERROR(set_solve_time(result.value()));
       return std::move(result).value();
     }
   }
 
-  OR_RETURN_IF_ERROR(CheckRegisteredCallbackEvents(callback_registration,
-                                                   /*supported_events=*/{}));
+  ABSL_RETURN_IF_ERROR(CheckRegisteredCallbackEvents(callback_registration,
+                                                     /*supported_events=*/{}));
 
   BufferedMessageCallback term_hook_data(std::move(message_cb));
   if (term_hook_data.has_user_message_callback()) {
@@ -1151,7 +1152,7 @@ absl::StatusOr<SolveResultProto> GlpkSolver::Solve(
 
     glp_iocp glpk_parameters;
     glp_init_iocp(&glpk_parameters);
-    OR_RETURN_IF_ERROR(SetSharedParameters(
+    ABSL_RETURN_IF_ERROR(SetSharedParameters(
         parameters, term_hook_data.has_user_message_callback(),
         glpk_parameters));
     SetTimeLimitParameter(parameters, glpk_parameters);
@@ -1190,7 +1191,7 @@ absl::StatusOr<SolveResultProto> GlpkSolver::Solve(
     const std::optional<double> feasible_solution_objective_value =
         has_feasible_solution ? std::make_optional(glp_mip_obj_val(problem_))
                               : std::nullopt;
-    OR_ASSIGN_OR_RETURN(
+    ABSL_ASSIGN_OR_RETURN(
         *result.mutable_termination(),
         BuildTermination(problem_, "glp_intopt", rc, MipTerminationOnSuccess,
                          &mip_cb_data, feasible_solution_objective_value,
@@ -1218,7 +1219,7 @@ absl::StatusOr<SolveResultProto> GlpkSolver::Solve(
             "parameter time_limit not supported by GLPK for interior point "
             "algorithm");
       }
-      OR_RETURN_IF_ERROR(SetSharedParameters(
+      ABSL_RETURN_IF_ERROR(SetSharedParameters(
           parameters, term_hook_data.has_user_message_callback(),
           glpk_parameters));
 
@@ -1252,14 +1253,14 @@ absl::StatusOr<SolveResultProto> GlpkSolver::Solve(
             has_feasible_solution
                 ? std::make_optional(glp_ipt_obj_val(problem_))
                 : std::nullopt;
-        OR_ASSIGN_OR_RETURN(
+        ABSL_ASSIGN_OR_RETURN(
             *result.mutable_termination(),
             BuildTermination(problem_, "glp_interior", glp_interior_rc,
                              InteriorTerminationOnSuccess,
                              /*mip_cb_data=*/nullptr,
                              feasible_solution_objective_value,
                              /*gap_limit=*/kNaN));
-        OR_ASSIGN_OR_RETURN(
+        ABSL_ASSIGN_OR_RETURN(
             *result.mutable_solve_stats()->mutable_problem_status(),
             GetBarrierProblemStatusProto(/*glp_interior_rc=*/glp_interior_rc,
                                          /*ipt_status=*/ipt_status));
@@ -1275,11 +1276,11 @@ absl::StatusOr<SolveResultProto> GlpkSolver::Solve(
 
       glp_smcp glpk_parameters;
       glp_init_smcp(&glpk_parameters);
-      OR_RETURN_IF_ERROR(SetSharedParameters(
+      ABSL_RETURN_IF_ERROR(SetSharedParameters(
           parameters, term_hook_data.has_user_message_callback(),
           glpk_parameters));
       SetTimeLimitParameter(parameters, glpk_parameters);
-      OR_RETURN_IF_ERROR(SetLPParameters(parameters, glpk_parameters));
+      ABSL_RETURN_IF_ERROR(SetLPParameters(parameters, glpk_parameters));
 
       // TODO(b/187027049): add option to use glp_exact().
       const int glp_simplex_rc = glp_simplex(problem_, &glpk_parameters);
@@ -1288,7 +1289,7 @@ absl::StatusOr<SolveResultProto> GlpkSolver::Solve(
       const std::optional<double> feasible_solution_objective_value =
           has_feasible_solution ? std::make_optional(glp_get_obj_val(problem_))
                                 : std::nullopt;
-      OR_ASSIGN_OR_RETURN(
+      ABSL_ASSIGN_OR_RETURN(
           *result.mutable_termination(),
           BuildTermination(problem_, "glp_simplex", glp_simplex_rc,
                            SimplexTerminationOnSuccess,
@@ -1304,7 +1305,7 @@ absl::StatusOr<SolveResultProto> GlpkSolver::Solve(
         best_dual_bound = maximize ? -kInf : +kInf;
       }
 
-      OR_ASSIGN_OR_RETURN(
+      ABSL_ASSIGN_OR_RETURN(
           *result.mutable_solve_stats()->mutable_problem_status(),
           GetSimplexProblemStatusProto(
               /*glp_simplex_rc=*/glp_simplex_rc,
@@ -1353,10 +1354,10 @@ absl::StatusOr<SolveResultProto> GlpkSolver::Solve(
     *result.add_solutions() = std::move(solution);
   }
   if (parameters.glpk().compute_unbound_rays_if_possible()) {
-    OR_RETURN_IF_ERROR(AddPrimalOrDualRay(model_parameters, result));
+    ABSL_RETURN_IF_ERROR(AddPrimalOrDualRay(model_parameters, result));
   }
 
-  OR_RETURN_IF_ERROR(set_solve_time(result));
+  ABSL_RETURN_IF_ERROR(set_solve_time(result));
   return result;
 }
 
@@ -1621,8 +1622,8 @@ void GlpkSolver::AddDualSolution(
 absl::Status GlpkSolver::AddPrimalOrDualRay(
     const ModelSolveParametersProto& model_parameters,
     SolveResultProto& result) {
-  OR_ASSIGN_OR_RETURN(const std::optional<GlpkRay> opt_unbound_ray,
-                      GlpkComputeUnboundRay(problem_));
+  ABSL_ASSIGN_OR_RETURN(const std::optional<GlpkRay> opt_unbound_ray,
+                        GlpkComputeUnboundRay(problem_));
   if (!opt_unbound_ray.has_value()) {
     return absl::OkStatus();
   }
@@ -1687,7 +1688,7 @@ absl::Status GlpkSolver::AddPrimalOrDualRay(
 }
 
 absl::StatusOr<bool> GlpkSolver::Update(const ModelUpdateProto& model_update) {
-  OR_RETURN_IF_ERROR(CheckCurrentThread());
+  ABSL_RETURN_IF_ERROR(CheckCurrentThread());
 
   // We must do that *after* testing current thread since the Solver class won't
   // destroy this instance from another thread when the update is not supported

@@ -17,9 +17,9 @@
 #include <cstdint>
 
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/types/span.h"
 #include "ortools/base/status_builder.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
 #include "ortools/math_opt/validators/ids_validator.h"
 
@@ -89,9 +89,9 @@ absl::Status SparseMatrixValid(const SparseDoubleMatrixProto& matrix,
 absl::Status SparseMatrixIdsAreKnown(const SparseDoubleMatrixProto& matrix,
                                      const IdNameBiMap& row_ids,
                                      const IdNameBiMap& column_ids) {
-  OR_RETURN_IF_ERROR(CheckIdsSubset(matrix.row_ids(), row_ids))
+  ABSL_RETURN_IF_ERROR(CheckIdsSubset(matrix.row_ids(), row_ids))
       << "Unknown row_id";
-  OR_RETURN_IF_ERROR(CheckIdsSubset(matrix.column_ids(), column_ids))
+  ABSL_RETURN_IF_ERROR(CheckIdsSubset(matrix.column_ids(), column_ids))
       << "Unknown column_id";
   return absl::OkStatus();
 }

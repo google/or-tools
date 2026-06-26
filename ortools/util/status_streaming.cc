@@ -19,12 +19,12 @@
 #include "absl/status/status.h"
 #include "absl/strings/cord.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/source_location.h"
+#include "absl/types/source_location.h"
 
 namespace operations_research {
 
 StatusProto StreamStatus(const absl::Status& status,
-                         const ortools::SourceLocation warning_loc) {
+                         const absl::SourceLocation warning_loc) {
   StatusProto ret;
   ret.set_code(static_cast<int32_t>(status.code()));
   ret.set_message(status.message());
@@ -37,7 +37,7 @@ StatusProto StreamStatus(const absl::Status& status,
 }
 
 absl::Status UnstreamStatus(const StatusProto& status_proto,
-                            ortools::SourceLocation loc) {
+                            absl::SourceLocation loc) {
   return absl::Status(static_cast<absl::StatusCode>(status_proto.code()),
                       status_proto.message());
 }

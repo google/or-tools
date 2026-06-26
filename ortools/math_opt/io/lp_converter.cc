@@ -15,8 +15,8 @@
 
 #include <string>
 
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/model_exporter.h"
 #include "ortools/math_opt/io/proto_converter.h"
@@ -25,8 +25,8 @@
 namespace operations_research::math_opt {
 
 absl::StatusOr<std::string> ModelProtoToLp(const ModelProto& model) {
-  OR_ASSIGN_OR_RETURN(const MPModelProto mp_model_proto,
-                      MathOptModelToMPModelProto(model));
+  ABSL_ASSIGN_OR_RETURN(const MPModelProto mp_model_proto,
+                        MathOptModelToMPModelProto(model));
   return ExportModelAsLpFormat(mp_model_proto, {.show_unused_variables = true});
 }
 

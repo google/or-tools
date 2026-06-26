@@ -52,17 +52,17 @@ namespace operations_research::math_opt {
 //
 // Usage:
 //   Model model = ...;
-//   OR_ASSIGN_OR_RETURN(
+//   ABSL_ASSIGN_OR_RETURN(
 //     const std::unique_ptr<IncrementalSolver> incremental_solve,
 //     NewIncrementalSolver(&model, SolverType::kXxx));
 //
-//   OR_ASSIGN_OR_RETURN(const SolveResult result1,
+//   ABSL_ASSIGN_OR_RETURN(const SolveResult result1,
 //   incremental_solve->Solve());
 //
 //   model.AddVariable(...);
 //   ...
 //
-//   OR_ASSIGN_OR_RETURN(const SolveResult result2,
+//   ABSL_ASSIGN_OR_RETURN(const SolveResult result2,
 //   incremental_solve->Solve());
 //
 //   ...

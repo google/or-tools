@@ -21,9 +21,9 @@
 
 #include "absl/log/check.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/types/span.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/core/math_opt_proto_utils.h"
 #include "ortools/math_opt/cpp/math_opt.h"
 #include "ortools/math_opt/validators/model_validator.h"
@@ -40,7 +40,7 @@ namespace {
 absl::Status ValidateFullFiniteSolution(const Model& model,
                                         const VariableMap<double>& solution) {
   for (const auto& [v, value] : solution) {
-    OR_RETURN_IF_ERROR(model.ValidateExistingVariableOfThisModel(v));
+    ABSL_RETURN_IF_ERROR(model.ValidateExistingVariableOfThisModel(v));
     if (!std::isfinite(value)) {
       return ortools::InvalidArgumentErrorBuilder()
              << "the solution contains non-finite value " << value
@@ -93,8 +93,9 @@ absl::StatusOr<VariableMap<double>> MoveVariablesToTheirBestFeasibleValue(
     // TODO(b/193121090): here we build the proto as the APIs of MathOpt only
     // works with the proto and can't use the C++ Model (or ModelStorage).
     const ModelProto model_proto = model.ExportModel();
-    OR_RETURN_IF_ERROR(ValidateModel(model_proto).status()) << "invalid model";
-    OR_RETURN_IF_ERROR(ModelIsSupported(
+    ABSL_RETURN_IF_ERROR(ValidateModel(model_proto).status())
+        << "invalid model";
+    ABSL_RETURN_IF_ERROR(ModelIsSupported(
         model_proto,
         SupportedProblemStructures{
             .integer_variables = SupportType::kSupported,
@@ -102,7 +103,7 @@ absl::StatusOr<VariableMap<double>> MoveVariablesToTheirBestFeasibleValue(
         /*solver_name=*/"MoveVariablesToTheirBestFeasibleValue"));
   }
   for (const Variable v : variables) {
-    OR_RETURN_IF_ERROR(model.ValidateExistingVariableOfThisModel(v))
+    ABSL_RETURN_IF_ERROR(model.ValidateExistingVariableOfThisModel(v))
         << "invalid `variables`";
     if (v.lower_bound() > v.upper_bound()) {
       return ortools::InvalidArgumentErrorBuilder()
@@ -121,9 +122,9 @@ absl::StatusOr<VariableMap<double>> MoveVariablesToTheirBestFeasibleValue(
              << "] that contain no integer value";
     }
   }
-  OR_RETURN_IF_ERROR(ValidateFullFiniteSolution(model, input_solution))
+  ABSL_RETURN_IF_ERROR(ValidateFullFiniteSolution(model, input_solution))
       << "invalid `input_solution`";
-  OR_RETURN_IF_ERROR(ValidateOptions(options)) << "invalid `options`";
+  ABSL_RETURN_IF_ERROR(ValidateOptions(options)) << "invalid `options`";
 
   // We maintain a solution with updated value for each variable in the order of
   // traversal.

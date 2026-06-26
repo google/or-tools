@@ -20,12 +20,12 @@ cc_library(
     deps = [
         ":lp_name",
         "//ortools/base:status_builder",
-        "//ortools/base:status_macros",
         "//ortools/base:strong_int",
         "//ortools/base:strong_vector",
         "//ortools/util:fp_roundtrip_conv",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
     ],
@@ -50,10 +50,10 @@ cc_library(
     deps = [
         ":lp_model",
         "//ortools/base:status_builder",
-        "//ortools/base:status_macros",
         "//ortools/base:strong_vector",
         "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
     ],
 )

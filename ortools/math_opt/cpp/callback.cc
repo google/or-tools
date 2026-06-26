@@ -19,13 +19,13 @@
 
 #include "absl/log/check.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "ortools/base/protoutil.h"
 #include "ortools/base/status_builder.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/cpp/map_filter.h"
 #include "ortools/math_opt/cpp/model.h"
@@ -93,7 +93,7 @@ absl::Status CallbackData::CheckModelStorage(
     const ModelStorageCPtr expected_storage) const {
   if (solution.has_value()) {
     for (const auto& [v, _] : solution.value()) {
-      OR_RETURN_IF_ERROR(internal::CheckModelStorage(
+      ABSL_RETURN_IF_ERROR(internal::CheckModelStorage(
           /*storage=*/v.storage(), /*expected_storage=*/expected_storage))
           << "invalid variable " << v << " in solution";
     }
@@ -158,9 +158,9 @@ absl::StatusOr<CallbackRegistration> CallbackRegistration::FromProto(
 
 absl::Status CallbackRegistration::CheckModelStorage(
     const ModelStorageCPtr expected_storage) const {
-  OR_RETURN_IF_ERROR(mip_node_filter.CheckModelStorage(expected_storage))
+  ABSL_RETURN_IF_ERROR(mip_node_filter.CheckModelStorage(expected_storage))
       << "invalid mip_node_filter";
-  OR_RETURN_IF_ERROR(mip_solution_filter.CheckModelStorage(expected_storage))
+  ABSL_RETURN_IF_ERROR(mip_solution_filter.CheckModelStorage(expected_storage))
       << "invalid mip_solution_filter";
   return absl::OkStatus();
 }
@@ -224,14 +224,14 @@ absl::StatusOr<CallbackResult> CallbackResult::FromProto(
 absl::Status CallbackResult::CheckModelStorage(
     const ModelStorageCPtr expected_storage) const {
   for (const GeneratedLinearConstraint& constraint : new_constraints) {
-    OR_RETURN_IF_ERROR(
+    ABSL_RETURN_IF_ERROR(
         internal::CheckModelStorage(/*storage=*/constraint.storage(),
                                     /*expected_storage=*/expected_storage))
         << "invalid new_constraints";
   }
   for (const VariableMap<double>& solution : suggested_solutions) {
     for (const auto& [v, _] : solution) {
-      OR_RETURN_IF_ERROR(internal::CheckModelStorage(
+      ABSL_RETURN_IF_ERROR(internal::CheckModelStorage(
           /*storage=*/v.storage(), /*expected_storage=*/expected_storage))
           << "invalid variable " << v << " in suggested_solutions";
     }

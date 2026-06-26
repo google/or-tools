@@ -28,12 +28,12 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/status_builder.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/elemental/arrays.h"
 #include "ortools/math_opt/elemental/attr_key.h"
 #include "ortools/math_opt/elemental/attributes.h"
@@ -380,7 +380,7 @@ template <typename AttrType>
 absl::StatusOr<std::vector<AttrKeyFor<AttrType>>> DynamicSlice(
     const Elemental& e, const AttrType attr, const int key_index,
     const int element_id) {
-  OR_RETURN_IF_ERROR(ValidateSliceKeyIndex(attr, key_index));
+  ABSL_RETURN_IF_ERROR(ValidateSliceKeyIndex(attr, key_index));
   return ApplyOnIndex<GetAttrKeySize<AttrType>()>(
       [&e, attr, element_id]<int k>() {
         return e.Slice<k, Elemental::StatusPolicy>(attr, element_id);
@@ -396,7 +396,7 @@ absl::StatusOr<int64_t> DynamicGetSliceSize(const Elemental& e,
                                             const AttrType attr,
                                             const int key_index,
                                             const int element_id) {
-  OR_RETURN_IF_ERROR(ValidateSliceKeyIndex(attr, key_index));
+  ABSL_RETURN_IF_ERROR(ValidateSliceKeyIndex(attr, key_index));
   return ApplyOnIndex<GetAttrKeySize<AttrType>()>(
       [&e, attr, element_id]<int k>() {
         return e.GetSliceSize<k, Elemental::StatusPolicy>(attr, element_id);

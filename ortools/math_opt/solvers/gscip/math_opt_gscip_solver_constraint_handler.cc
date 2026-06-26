@@ -17,12 +17,12 @@
 #include <vector>
 
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
 #include "ortools/base/protoutil.h"
 #include "ortools/base/status_builder.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/math_opt_proto_utils.h"
 #include "ortools/math_opt/solvers/gscip/gscip.h"
@@ -108,17 +108,17 @@ absl::StatusOr<GScipCallbackResult> GScipSolverConstraintHandler::EnforceLp(
     GScipConstraintHandlerContext context,
     const GScipSolverConstraintData& constraint_data,
     bool solution_infeasible) {
-  OR_RETURN_IF_ERROR(constraint_data.Validate());
+  ABSL_RETURN_IF_ERROR(constraint_data.Validate());
   if (!constraint_data.run_at_solutions ||
       constraint_data.user_callback == nullptr) {
     return GScipCallbackResult::kFeasible;
   }
-  OR_ASSIGN_OR_RETURN(
+  ABSL_ASSIGN_OR_RETURN(
       const CallbackDataProto cb_data,
       MakeCbData(context, constraint_data, CALLBACK_EVENT_MIP_SOLUTION));
 
-  OR_ASSIGN_OR_RETURN(const CallbackResultProto result,
-                      constraint_data.user_callback(cb_data));
+  ABSL_ASSIGN_OR_RETURN(const CallbackResultProto result,
+                        constraint_data.user_callback(cb_data));
   return ApplyCallback(result, context, constraint_data,
                        ConstraintHandlerCallbackType::kEnfoLp);
 }
@@ -134,38 +134,39 @@ absl::StatusOr<bool> GScipSolverConstraintHandler::CheckIsFeasible(
         "only if you have set some SCIP parameters manually, e.g. "
         "display/allviols=TRUE");
   }
-  OR_RETURN_IF_ERROR(constraint_data.Validate());
+  ABSL_RETURN_IF_ERROR(constraint_data.Validate());
   if (!constraint_data.run_at_solutions ||
       constraint_data.user_callback == nullptr) {
     return true;
   }
-  OR_ASSIGN_OR_RETURN(
+  ABSL_ASSIGN_OR_RETURN(
       const CallbackDataProto cb_data,
       MakeCbData(context, constraint_data, CALLBACK_EVENT_MIP_SOLUTION));
-  OR_ASSIGN_OR_RETURN(const CallbackResultProto result,
-                      constraint_data.user_callback(cb_data));
-  OR_ASSIGN_OR_RETURN(const GScipCallbackResult cb_result,
-                      ApplyCallback(result, context, constraint_data,
-                                    ConstraintHandlerCallbackType::kConsCheck));
+  ABSL_ASSIGN_OR_RETURN(const CallbackResultProto result,
+                        constraint_data.user_callback(cb_data));
+  ABSL_ASSIGN_OR_RETURN(
+      const GScipCallbackResult cb_result,
+      ApplyCallback(result, context, constraint_data,
+                    ConstraintHandlerCallbackType::kConsCheck));
   return cb_result == GScipCallbackResult::kFeasible;
 }
 
 absl::StatusOr<GScipCallbackResult> GScipSolverConstraintHandler::SeparateLp(
     GScipConstraintHandlerContext context,
     const GScipSolverConstraintData& constraint_data) {
-  OR_RETURN_IF_ERROR(constraint_data.Validate());
+  ABSL_RETURN_IF_ERROR(constraint_data.Validate());
   if (!constraint_data.run_at_nodes ||
       constraint_data.user_callback == nullptr) {
     return GScipCallbackResult::kDidNotFind;
   }
-  OR_ASSIGN_OR_RETURN(
+  ABSL_ASSIGN_OR_RETURN(
       const CallbackDataProto cb_data,
       MakeCbData(context, constraint_data, CALLBACK_EVENT_MIP_NODE));
-  OR_ASSIGN_OR_RETURN(const CallbackResultProto result,
-                      constraint_data.user_callback(cb_data));
-  OR_ASSIGN_OR_RETURN(const GScipCallbackResult cb_result,
-                      ApplyCallback(result, context, constraint_data,
-                                    ConstraintHandlerCallbackType::kSepaLp));
+  ABSL_ASSIGN_OR_RETURN(const CallbackResultProto result,
+                        constraint_data.user_callback(cb_data));
+  ABSL_ASSIGN_OR_RETURN(const GScipCallbackResult cb_result,
+                        ApplyCallback(result, context, constraint_data,
+                                      ConstraintHandlerCallbackType::kSepaLp));
   if (cb_result == GScipCallbackResult::kFeasible) {
     return GScipCallbackResult::kDidNotFind;
   }
@@ -176,19 +177,19 @@ absl::StatusOr<GScipCallbackResult>
 GScipSolverConstraintHandler::SeparateSolution(
     GScipConstraintHandlerContext context,
     const GScipSolverConstraintData& constraint_data) {
-  OR_RETURN_IF_ERROR(constraint_data.Validate());
+  ABSL_RETURN_IF_ERROR(constraint_data.Validate());
   if (!constraint_data.run_at_solutions ||
       constraint_data.user_callback == nullptr) {
     return GScipCallbackResult::kDidNotRun;
   }
-  OR_ASSIGN_OR_RETURN(
+  ABSL_ASSIGN_OR_RETURN(
       const CallbackDataProto cb_data,
       MakeCbData(context, constraint_data, CALLBACK_EVENT_MIP_SOLUTION));
-  OR_ASSIGN_OR_RETURN(const CallbackResultProto result,
-                      constraint_data.user_callback(cb_data));
-  OR_ASSIGN_OR_RETURN(const GScipCallbackResult cb_result,
-                      ApplyCallback(result, context, constraint_data,
-                                    ConstraintHandlerCallbackType::kSepaSol));
+  ABSL_ASSIGN_OR_RETURN(const CallbackResultProto result,
+                        constraint_data.user_callback(cb_data));
+  ABSL_ASSIGN_OR_RETURN(const GScipCallbackResult cb_result,
+                        ApplyCallback(result, context, constraint_data,
+                                      ConstraintHandlerCallbackType::kSepaSol));
   if (cb_result == GScipCallbackResult::kFeasible) {
     return GScipCallbackResult::kDidNotFind;
   }
@@ -235,8 +236,8 @@ absl::StatusOr<CallbackDataProto> GScipSolverConstraintHandler::MakeCbData(
   cb_stats.set_number_of_solutions_found(stats.num_solutions_found);
   cb_stats.set_cutting_planes_in_lp(stats.num_cuts_in_lp);
   const absl::Duration elapsed = absl::Now() - constraint_data.solve_start_time;
-  OR_ASSIGN_OR_RETURN(*cb_data.mutable_runtime(),
-                      util_time::EncodeGoogleApiProto(elapsed));
+  ABSL_ASSIGN_OR_RETURN(*cb_data.mutable_runtime(),
+                        util_time::EncodeGoogleApiProto(elapsed));
   return cb_data;
 }
 
@@ -260,12 +261,13 @@ absl::StatusOr<GScipCallbackResult> GScipSolverConstraintHandler::ApplyCallback(
       scip_constraint.coefficients.push_back(cut.linear_expression().values(i));
     }
     if (cut.is_lazy()) {
-      OR_RETURN_IF_ERROR(context.AddLazyLinearConstraint(scip_constraint, ""));
+      ABSL_RETURN_IF_ERROR(
+          context.AddLazyLinearConstraint(scip_constraint, ""));
       cb_result = MergeConstraintHandlerResults(
           cb_result, GScipCallbackResult::kConstraintAdded, scip_cb_type);
     } else {
-      OR_ASSIGN_OR_RETURN(const GScipCallbackResult cut_result,
-                          context.AddCut(scip_constraint, ""));
+      ABSL_ASSIGN_OR_RETURN(const GScipCallbackResult cut_result,
+                            context.AddCut(scip_constraint, ""));
       cb_result =
           MergeConstraintHandlerResults(cb_result, cut_result, scip_cb_type);
     }

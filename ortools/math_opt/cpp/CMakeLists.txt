@@ -38,6 +38,7 @@ ortools_cxx_library(
   LINK_LIBRARIES
     ortools::base_gmock
     absl::log
+    absl::source_location
     absl::status
     absl::strings
   TESTING

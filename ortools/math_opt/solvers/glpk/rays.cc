@@ -19,9 +19,9 @@
 
 #include "absl/log/check.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "ortools/base/status_builder.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/third_party_solvers/glpk/glpk_computational_form.h"
 #include "ortools/third_party_solvers/glpk/glpk_formatters.h"
 
@@ -375,9 +375,9 @@ absl::StatusOr<std::optional<GlpkRay>> GlpkComputeUnboundRay(
       ComputeFormVarStatus(problem,
                            /*num_cstrs=*/glp_get_num_rows(problem),
                            /*k=*/unbound_ray) == GLP_BS;
-  OR_ASSIGN_OR_RETURN(GlpkRay ray,
-                      (is_dual_ray ? ComputeDualRay(problem, unbound_ray)
-                                   : ComputePrimalRay(problem, unbound_ray)));
+  ABSL_ASSIGN_OR_RETURN(GlpkRay ray,
+                        (is_dual_ray ? ComputeDualRay(problem, unbound_ray)
+                                     : ComputePrimalRay(problem, unbound_ray)));
   return ray;
 }
 

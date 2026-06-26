@@ -19,10 +19,10 @@
 
 #include "absl/log/check.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/strings/string_view.h"
 #include "google/protobuf/message.h"
 #include "google/protobuf/text_format.h"
-#include "ortools/base/status_macros.h"
 
 namespace google::protobuf::contrib::parse_proto {
 
@@ -37,7 +37,7 @@ absl::Status ParseTextProtoInto(absl::string_view input, T* proto) {
 template <typename T>
 absl::StatusOr<T> ParseTextProto(absl::string_view asciipb) {
   T msg;
-  OR_RETURN_IF_ERROR(ParseTextProtoInto(asciipb, &msg));
+  ABSL_RETURN_IF_ERROR(ParseTextProtoInto(asciipb, &msg));
   return msg;
 }
 

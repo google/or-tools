@@ -48,8 +48,10 @@ set(ABSL_DEPS
   absl::leak_check
   absl::memory
   absl::meta
+  absl::source_location
   absl::stacktrace
   absl::status
+  absl::status_builder
   absl::statusor
   absl::str_format
   absl::strings

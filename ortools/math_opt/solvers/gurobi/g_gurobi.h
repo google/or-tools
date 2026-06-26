@@ -41,8 +41,8 @@
 
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "absl/types/source_location.h"
 #include "absl/types/span.h"
-#include "ortools/base/source_location.h"
 #include "ortools/gurobi/isv_public/gurobi_isv.h"
 #include "ortools/third_party_solvers/gurobi_environment.h"
 
@@ -592,7 +592,7 @@ class Gurobi {
 
   absl::Status ToStatus(
       int grb_err, absl::StatusCode code = absl::StatusCode::kInvalidArgument,
-      ortools::SourceLocation loc = ortools::SourceLocation::current()) const;
+      absl::SourceLocation loc = absl::SourceLocation::current()) const;
 
  private:
   // optional_owned_primary_env can be null, model and model_env cannot.

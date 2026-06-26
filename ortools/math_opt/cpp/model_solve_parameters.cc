@@ -22,11 +22,11 @@
 #include "absl/algorithm/container.h"
 #include "absl/log/check.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/time/time.h"
 #include "google/protobuf/repeated_field.h"
 #include "ortools/base/protoutil.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/cpp/linear_constraint.h"
 #include "ortools/math_opt/cpp/model.h"
 #include "ortools/math_opt/cpp/solution.h"
@@ -60,37 +60,38 @@ ModelSolveParameters ModelSolveParameters::OnlySomePrimalVariables(
 absl::Status ModelSolveParameters::CheckModelStorage(
     const ModelStorageCPtr expected_storage) const {
   for (const SolutionHint& hint : solution_hints) {
-    OR_RETURN_IF_ERROR(hint.CheckModelStorage(expected_storage))
+    ABSL_RETURN_IF_ERROR(hint.CheckModelStorage(expected_storage))
         << "invalid hint in solution_hints";
   }
   if (initial_basis.has_value()) {
-    OR_RETURN_IF_ERROR(initial_basis->CheckModelStorage(expected_storage))
+    ABSL_RETURN_IF_ERROR(initial_basis->CheckModelStorage(expected_storage))
         << "invalid initial_basis";
   }
-  OR_RETURN_IF_ERROR(variable_values_filter.CheckModelStorage(expected_storage))
+  ABSL_RETURN_IF_ERROR(
+      variable_values_filter.CheckModelStorage(expected_storage))
       << "invalid variable_values_filter";
-  OR_RETURN_IF_ERROR(dual_values_filter.CheckModelStorage(expected_storage))
+  ABSL_RETURN_IF_ERROR(dual_values_filter.CheckModelStorage(expected_storage))
       << "invalid dual_values_filter";
-  OR_RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       quadratic_dual_values_filter.CheckModelStorage(expected_storage))
       << "invalid quadratic_dual_values_filter";
-  OR_RETURN_IF_ERROR(reduced_costs_filter.CheckModelStorage(expected_storage))
+  ABSL_RETURN_IF_ERROR(reduced_costs_filter.CheckModelStorage(expected_storage))
       << "invalid reduced_costs_filter";
   for (const auto [var, unused] : branching_priorities) {
-    OR_RETURN_IF_ERROR(internal::CheckModelStorage(
+    ABSL_RETURN_IF_ERROR(internal::CheckModelStorage(
         /*storage=*/var.storage(),
         /*expected_storage=*/expected_storage))
         << "invalid variable " << var << " in branching_priorities";
   }
   for (const auto& [objective, params] : objective_parameters) {
-    OR_RETURN_IF_ERROR(internal::CheckModelStorage(
+    ABSL_RETURN_IF_ERROR(internal::CheckModelStorage(
         /*storage=*/objective.storage(),
         /*expected_storage=*/expected_storage))
         << "invalid objective " << objective << " in objective_parameters";
   }
   for (const LinearConstraint lazy_linear_constraint :
        lazy_linear_constraints) {
-    OR_RETURN_IF_ERROR(internal::CheckModelStorage(
+    ABSL_RETURN_IF_ERROR(internal::CheckModelStorage(
         /*storage=*/lazy_linear_constraint.storage(),
         /*expected_storage=*/expected_storage))
         << "invalid LinearConstraint " << lazy_linear_constraint
@@ -102,13 +103,13 @@ absl::Status ModelSolveParameters::CheckModelStorage(
 absl::Status ModelSolveParameters::SolutionHint::CheckModelStorage(
     const ModelStorageCPtr expected_storage) const {
   for (const auto& [v, _] : variable_values) {
-    OR_RETURN_IF_ERROR(internal::CheckModelStorage(
+    ABSL_RETURN_IF_ERROR(internal::CheckModelStorage(
         /*storage=*/v.storage(),
         /*expected_storage=*/expected_storage))
         << "invalid variable " << v << " in variable_values";
   }
   for (const auto& [c, _] : dual_values) {
-    OR_RETURN_IF_ERROR(internal::CheckModelStorage(
+    ABSL_RETURN_IF_ERROR(internal::CheckModelStorage(
         /*storage=*/c.storage(),
         /*expected_storage=*/expected_storage))
         << "invalid constraint " << c << " in dual_values";
@@ -152,7 +153,7 @@ ModelSolveParameters::ObjectiveParameters::Proto() const {
         *objective_degradation_relative_tolerance);
   }
   if (time_limit < absl::InfiniteDuration()) {
-    OR_RETURN_IF_ERROR(util_time::EncodeGoogleApiProto(
+    ABSL_RETURN_IF_ERROR(util_time::EncodeGoogleApiProto(
         time_limit, params.mutable_time_limit()));
   }
   return params;

@@ -26,10 +26,10 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/model_validator.h"
 #include "ortools/math_opt/core/math_opt_proto_utils.h"
@@ -215,7 +215,7 @@ absl::StatusOr<MPGeneralConstraintProto> SosConstraintFromMathOptToMPModel(
 
 absl::StatusOr<::operations_research::math_opt::ModelProto>
 MPModelProtoToMathOptModel(const ::operations_research::MPModelProto& model) {
-  OR_RETURN_IF_ERROR(IsSupported(model));
+  ABSL_RETURN_IF_ERROR(IsSupported(model));
 
   ModelProto output;
   output.set_name(model.name());
@@ -351,7 +351,7 @@ MPModelProtoToMathOptModel(const ::operations_research::MPModelProto& model) {
         auto& new_indicator_constraint =
             (*output.mutable_indicator_constraints())
                 [output.indicator_constraints_size()];
-        OR_ASSIGN_OR_RETURN(
+        ABSL_ASSIGN_OR_RETURN(
             new_indicator_constraint,
             IndicatorConstraintFromMPModelToMathOpt(
                 general_constraint.indicator_constraint(), in_name));
@@ -388,7 +388,7 @@ MPModelProtoSolutionHintToMathOptHint(const MPModelProto& model) {
 
 absl::StatusOr<::operations_research::MPModelProto> MathOptModelToMPModelProto(
     const ::operations_research::math_opt::ModelProto& model) {
-  OR_RETURN_IF_ERROR(ValidateModel(model).status());
+  ABSL_RETURN_IF_ERROR(ValidateModel(model).status());
   if (!model.second_order_cone_constraints().empty()) {
     return absl::InvalidArgumentError(
         "translating models with second-order cone constraints is not "
@@ -491,14 +491,14 @@ absl::StatusOr<::operations_research::MPModelProto> MathOptModelToMPModelProto(
     }
   }
   for (const auto& [id, in_constraint] : model.sos1_constraints()) {
-    OR_ASSIGN_OR_RETURN(*output.add_general_constraint(),
-                        SosConstraintFromMathOptToMPModel(
-                            in_constraint, MPSosConstraint::SOS1_DEFAULT,
-                            variable_id_to_mp_position));
+    ABSL_ASSIGN_OR_RETURN(*output.add_general_constraint(),
+                          SosConstraintFromMathOptToMPModel(
+                              in_constraint, MPSosConstraint::SOS1_DEFAULT,
+                              variable_id_to_mp_position));
   }
 
   for (const auto& [id, in_constraint] : model.sos2_constraints()) {
-    OR_ASSIGN_OR_RETURN(
+    ABSL_ASSIGN_OR_RETURN(
         *output.add_general_constraint(),
         SosConstraintFromMathOptToMPModel(in_constraint, MPSosConstraint::SOS2,
                                           variable_id_to_mp_position));

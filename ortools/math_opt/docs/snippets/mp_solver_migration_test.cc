@@ -17,11 +17,11 @@
 #include <ostream>
 #include <vector>
 
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/time/time.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/linear_solver/linear_expr.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
@@ -143,9 +143,10 @@ absl::StatusOr<double> SolveWithMathOpt() {
   const SolveParameters params = {.enable_output = true,
                                   .time_limit = absl::Seconds(10),
                                   .relative_gap_tolerance = 0.05};
-  OR_ASSIGN_OR_RETURN(const SolveResult result,
-                      Solve(model, SolverType::kGscip, {.parameters = params}));
-  OR_RETURN_IF_ERROR(result.termination.EnsureIsOptimalOrFeasible());
+  ABSL_ASSIGN_OR_RETURN(
+      const SolveResult result,
+      Solve(model, SolverType::kGscip, {.parameters = params}));
+  ABSL_RETURN_IF_ERROR(result.termination.EnsureIsOptimalOrFeasible());
 
   // Get the solution.
   std::cout << "objective: " << result.objective_value() << "\n"
@@ -209,14 +210,14 @@ absl::StatusOr<std::vector<double>> SolveIncrementallyWithMathOpt() {
   // GLOP will only hot-start incremental solves when presolve is disabled.
   const SolveParameters params = {.enable_output = true,
                                   .presolve = Emphasis::kOff};
-  OR_ASSIGN_OR_RETURN(const std::unique_ptr<IncrementalSolver> solver,
-                      NewIncrementalSolver(&model, SolverType::kGlop));
+  ABSL_ASSIGN_OR_RETURN(const std::unique_ptr<IncrementalSolver> solver,
+                        NewIncrementalSolver(&model, SolverType::kGlop));
   std::vector<double> objective_values;
   for (int i = 0; i < 5; ++i) {
     model.set_upper_bound(x, 2 * (i + 1));
-    OR_ASSIGN_OR_RETURN(const SolveResult result,
-                        solver->Solve({.parameters = params}));
-    OR_RETURN_IF_ERROR(result.termination.EnsureIsOptimal());
+    ABSL_ASSIGN_OR_RETURN(const SolveResult result,
+                          solver->Solve({.parameters = params}));
+    ABSL_RETURN_IF_ERROR(result.termination.EnsureIsOptimal());
     objective_values.push_back(result.objective_value());
   }
   return objective_values;

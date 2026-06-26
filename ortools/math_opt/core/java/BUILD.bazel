@@ -91,11 +91,11 @@ or_java_wrap_cc(
     ],
     deps = [
         ":solver",
-        "//ortools/base:status_macros",
         "//ortools/math_opt:callback_cc_proto",
         "//ortools/math_opt:model_cc_proto",
         "//ortools/math_opt:model_parameters_cc_proto",
         "//ortools/math_opt:parameters_cc_proto",
         "//ortools/math_opt:result_cc_proto",
+        "@abseil-cpp//absl/status:status_macros",
     ],
 )

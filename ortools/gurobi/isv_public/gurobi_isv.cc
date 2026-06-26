@@ -19,10 +19,10 @@
 #include "absl/cleanup/cleanup.h"
 #include "absl/log/check.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "ortools/base/status_builder.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/solvers/gurobi.pb.h"
 
 namespace operations_research::math_opt {
@@ -49,37 +49,38 @@ absl::StatusOr<GRBenv*> NewPrimaryEnvFromISVKey(const GurobiIsvKey& isv_key) {
            << operation_name << " returned the error (" << err_code
            << "): " << GRBgeterrormsg(primary_env);
   };
-  OR_RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       handle_failure(GRBemptyenv(&primary_env), "GRBemptyenv()"));
   // We want to turn off logging before setting the ISV key so that it doesn't
   // leak. We store the original logging state, and reset it at the end.
   int original_output_flag;
-  OR_RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       handle_failure(GRBgetintparam(primary_env, GRB_INT_PAR_OUTPUTFLAG,
                                     &original_output_flag),
                      "getting original GRB_INT_PAR_OUTPUTFLAG value"));
-  OR_RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       handle_failure(GRBsetintparam(primary_env, GRB_INT_PAR_OUTPUTFLAG, 0),
                      "turning off GRB_INT_PAR_OUTPUTFLAG"));
-  OR_RETURN_IF_ERROR(handle_failure(
+  ABSL_RETURN_IF_ERROR(handle_failure(
       GRBsetstrparam(primary_env, "GURO_PAR_ISVNAME", isv_key.name.c_str()),
       "setting GURO_PAR_ISVNAME"));
-  OR_RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       handle_failure(GRBsetstrparam(primary_env, "GURO_PAR_ISVAPPNAME",
                                     isv_key.application_name.c_str()),
                      "setting GURO_PAR_ISVAPPNAME"));
   if (isv_key.expiration != 0) {
-    OR_RETURN_IF_ERROR(
+    ABSL_RETURN_IF_ERROR(
         handle_failure(GRBsetintparam(primary_env, "GURO_PAR_ISVEXPIRATION",
                                       isv_key.expiration),
                        "setting GURO_PAR_ISVEXPIRATION"));
   }
-  OR_RETURN_IF_ERROR(handle_failure(
+  ABSL_RETURN_IF_ERROR(handle_failure(
       GRBsetstrparam(primary_env, "GURO_PAR_ISVKEY", isv_key.key.c_str()),
       "setting GURO_PAR_ISVKEY"));
-  OR_RETURN_IF_ERROR(handle_failure(GRBstartenv(primary_env), "GRBstartenv()"));
+  ABSL_RETURN_IF_ERROR(
+      handle_failure(GRBstartenv(primary_env), "GRBstartenv()"));
   // Reset output flag to its original value.
-  OR_RETURN_IF_ERROR(handle_failure(
+  ABSL_RETURN_IF_ERROR(handle_failure(
       GRBsetintparam(primary_env, GRB_INT_PAR_OUTPUTFLAG, original_output_flag),
       "resetting GRB_INT_PAR_OUTPUTFLAG"));
   // Environment initialization succeeded, we don't want to free it upon exiting

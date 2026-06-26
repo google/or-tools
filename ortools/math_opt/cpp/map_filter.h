@@ -23,8 +23,8 @@
 #include "absl/algorithm/container.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/cpp/key_types.h"
 #include "ortools/math_opt/cpp/linear_constraint.h"
 #include "ortools/math_opt/cpp/model.h"
@@ -197,7 +197,7 @@ absl::Status MapFilter<KeyType>::CheckModelStorage(
     return absl::OkStatus();
   }
   for (const KeyType& k : filtered_keys.value()) {
-    OR_RETURN_IF_ERROR(internal::CheckModelStorage(
+    ABSL_RETURN_IF_ERROR(internal::CheckModelStorage(
         /*storage=*/k.storage(),
         /*expected_storage=*/expected_storage));
   }

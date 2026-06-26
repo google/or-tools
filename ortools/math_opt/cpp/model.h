@@ -73,7 +73,7 @@ namespace math_opt {
 // objective_expression += 2 * x;
 // objective_expression += y;
 // model.Maximize(objective_expression);
-// OR_ASSIGN_OR_RETURN(const math_opt::SolveResult result,
+// ABSL_ASSIGN_OR_RETURN(const math_opt::SolveResult result,
 //                  Solve(model, math_opt::SolverType::kGscip));
 // switch (result.termination.reason) {
 //   case math_opt::TerminationReason::kOptimal:
@@ -123,8 +123,8 @@ class Model {
   // apply an update to the model.
   //
   // Usage example reading an MPS file:
-  //   OR_ASSIGN_OR_RETURN(const ModelProto model_proto, ReadMpsFile(path));
-  //   OR_ASSIGN_OR_RETURN(const std::unique_ptr<Model> model,
+  //   ABSL_ASSIGN_OR_RETURN(const ModelProto model_proto, ReadMpsFile(path));
+  //   ABSL_ASSIGN_OR_RETURN(const std::unique_ptr<Model> model,
   //                    Model::FromModelProto(model_proto));
   static absl::StatusOr<std::unique_ptr<Model>> FromModelProto(
       const ModelProto& model_proto);

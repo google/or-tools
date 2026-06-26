@@ -27,6 +27,7 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/escaping.h"
 #include "absl/strings/str_cat.h"
@@ -37,7 +38,6 @@
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/map_util.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/gurobi/gurobi_stdout_matchers.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/cpp/matchers.h"
@@ -103,7 +103,7 @@ struct EnumFormatter {
 
 absl::StatusOr<std::unique_ptr<Model>> LoadMiplibInstance(
     const absl::string_view name) {
-  OR_ASSIGN_OR_RETURN(
+  ABSL_ASSIGN_OR_RETURN(
       const ModelProto model_proto,
       ReadMpsFile(absl::StrCat("ortools/math_opt/solver_tests/testdata/", name,
                                ".mps")));

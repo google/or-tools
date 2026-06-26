@@ -28,6 +28,7 @@ target_include_directories(${NAME} PRIVATE
   ${PROJECT_BINARY_DIR})
 target_link_libraries(${NAME} PRIVATE
   absl::synchronization
+  absl::status_builder
   absl::strings
   absl::str_format
   protobuf::libprotobuf

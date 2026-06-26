@@ -60,9 +60,9 @@ namespace math_opt {
 //   model.AddVariable(0.0, 1.0, true, "y");
 //   model.set_maximize(true);
 //
-//   OR_ASSIGN_OR_RETURN(const std::optional<ModelUpdateProto> update_proto,
+//   ABSL_ASSIGN_OR_RETURN(const std::optional<ModelUpdateProto> update_proto,
 //                    update_tracker.ExportModelUpdate());
-//   OR_RETURN_IF_ERROR(update_tracker.AdvanceCheckpoint());
+//   ABSL_RETURN_IF_ERROR(update_tracker.AdvanceCheckpoint());
 //
 //   if (update_proto) {
 //     ... use *update_proto here ...

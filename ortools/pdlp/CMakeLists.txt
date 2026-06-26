@@ -50,6 +50,7 @@ target_include_directories(${NAME} PUBLIC
   $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>)
 target_link_libraries(${NAME} PRIVATE
   absl::memory
+  absl::status_builder
   absl::strings
   absl::str_format
   Eigen3::Eigen

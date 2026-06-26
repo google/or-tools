@@ -25,9 +25,9 @@
 #include "absl/log/log.h"
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
+#include "absl/types/source_location.h"
 #include "absl/types/span.h"
 #include "google/protobuf/repeated_ptr_field.h"
-#include "ortools/base/source_location.h"
 
 namespace operations_research::math_opt {
 namespace {
@@ -91,7 +91,7 @@ MessageCallback PrinterMessageCallback(std::ostream& output_stream,
 }
 
 MessageCallback InfoLoggerMessageCallback(const absl::string_view prefix,
-                                          const ortools::SourceLocation loc) {
+                                          const absl::SourceLocation loc) {
   return [=](absl::Span<const std::string> messages) {
     for (const std::string& message : messages) {
       LOG(INFO).AtLocation(loc.file_name(), loc.line()) << prefix << message;
@@ -100,7 +100,7 @@ MessageCallback InfoLoggerMessageCallback(const absl::string_view prefix,
 }
 
 MessageCallback VLoggerMessageCallback(int level, absl::string_view prefix,
-                                       ortools::SourceLocation loc) {
+                                       absl::SourceLocation loc) {
   return [=](absl::Span<const std::string> messages) {
     for (const std::string& message : messages) {
       VLOG(level).AtLocation(loc.file_name(), loc.line()) << prefix << message;

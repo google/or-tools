@@ -144,11 +144,11 @@
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
 #include "base/context.h"
 #include "ortools/base/init_google.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/base/strong_int.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/math_opt/cpp/math_opt.h"
@@ -188,8 +188,8 @@ absl::StatusOr<math_opt::SolveResult> RunSolve(const math_opt::Model& model,
     args.message_callback = math_opt::PrinterMessageCallback();
     const base::WithDeadline deadline(absl::Now() +
                                       3 * absl::GetFlag(FLAGS_time_limit));
-    OR_ASSIGN_OR_RETURN(const std::unique_ptr<math_opt::SolveService> stub,
-                        math_opt::SolveServerStub());
+    ABSL_ASSIGN_OR_RETURN(const std::unique_ptr<math_opt::SolveService> stub,
+                          math_opt::SolveServerStub());
     return math_opt::StubbyRemoteStreamingSolve(stub.get(), model, solver_type,
                                                 args);
   }
@@ -201,8 +201,8 @@ absl::StatusOr<math_opt::CallbackResult> OnMipSolution(
   CHECK(data.solution.has_value());
   math_opt::CallbackResult result;
 
-  OR_ASSIGN_OR_RETURN(const std::vector<models::MathOptCircuit::Cutset> cuts,
-                      circuit.ExactSeparateIntegerSolution(*data.solution));
+  ABSL_ASSIGN_OR_RETURN(const std::vector<models::MathOptCircuit::Cutset> cuts,
+                        circuit.ExactSeparateIntegerSolution(*data.solution));
   for (const models::MathOptCircuit::Cutset& cutset : cuts) {
     result.AddLazyConstraint(circuit.CreateCutsetConstraint(cutset));
   }
@@ -218,10 +218,10 @@ absl::StatusOr<math_opt::CallbackResult> OnMipNode(
   // The values of edge_threshold and min_violation should be in (0, 1). They
   // were not tuned for this problem, values that worked well on other problems
   // were reused.
-  OR_ASSIGN_OR_RETURN(const std::vector<models::MathOptCircuit::Cutset> cuts,
-                      circuit.QuickSeparate(*data.solution,
-                                            /*edge_threshold=*/0.5,
-                                            /*min_violation*/ 0.05));
+  ABSL_ASSIGN_OR_RETURN(const std::vector<models::MathOptCircuit::Cutset> cuts,
+                        circuit.QuickSeparate(*data.solution,
+                                              /*edge_threshold=*/0.5,
+                                              /*min_violation*/ 0.05));
 
   for (const models::MathOptCircuit::Cutset& cutset : cuts) {
     result.AddLazyConstraint(circuit.CreateCutsetConstraint(cutset));
@@ -365,9 +365,9 @@ absl::Status Main() {
         LOG(FATAL) << "unexpected event: " << data.event;
     }
   };
-  OR_ASSIGN_OR_RETURN(const math_opt::SolveResult result,
-                      RunSolve(model, solver, std::move(args)));
-  OR_RETURN_IF_ERROR(result.termination.EnsureIsOptimalOrFeasible());
+  ABSL_ASSIGN_OR_RETURN(const math_opt::SolveResult result,
+                        RunSolve(model, solver, std::move(args)));
+  ABSL_RETURN_IF_ERROR(result.termination.EnsureIsOptimalOrFeasible());
   std::cout << "Objective value: " << result.objective_value() << std::endl;
   return absl::OkStatus();
 }

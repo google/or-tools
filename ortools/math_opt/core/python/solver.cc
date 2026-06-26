@@ -26,8 +26,8 @@
 
 #include "absl/base/nullability.h"
 #include "absl/memory/memory.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/solver_debug.h"
 #include "ortools/math_opt/infeasible_subsystem.pb.h"
@@ -109,7 +109,7 @@ class PybindSolver {
   static absl::StatusOr<std::unique_ptr<PybindSolver>> New(
       const SolverTypeProto solver_type, const ModelProto& model,
       SolverInitializerProto solver_initializer) {
-    OR_ASSIGN_OR_RETURN(
+    ABSL_ASSIGN_OR_RETURN(
         std::unique_ptr<Solver> solver,
         Solver::New(solver_type, model,
                     {.streamable = std::move(solver_initializer)}));

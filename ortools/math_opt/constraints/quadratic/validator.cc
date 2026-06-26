@@ -14,8 +14,9 @@
 #include "ortools/math_opt/constraints/quadratic/validator.h"
 
 #include "absl/status/status.h"
+#include "absl/status/status_builder.h"
+#include "absl/status/status_macros.h"
 #include "ortools/base/status_builder.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/core/model_summary.h"
 #include "ortools/math_opt/core/sparse_vector_view.h"
 #include "ortools/math_opt/model.pb.h"
@@ -30,19 +31,19 @@ namespace operations_research::math_opt {
 absl::Status ValidateConstraint(const QuadraticConstraintProto& constraint,
                                 const IdNameBiMap& variable_universe) {
   // Step 1: Validate linear terms.
-  OR_RETURN_IF_ERROR(CheckIdsAndValues(
+  ABSL_RETURN_IF_ERROR(CheckIdsAndValues(
       MakeView(constraint.linear_terms()),
       {.allow_positive_infinity = false, .allow_negative_infinity = false}))
       << "bad linear term in quadratic constraint";
-  OR_RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       CheckIdsSubset(constraint.linear_terms().ids(), variable_universe))
       << "bad linear term ID in quadratic constraint";
 
   // Step 2: Validate quadratic terms.
-  OR_RETURN_IF_ERROR(SparseMatrixValid(constraint.quadratic_terms(),
-                                       /*enforce_upper_triangular=*/true))
+  ABSL_RETURN_IF_ERROR(SparseMatrixValid(constraint.quadratic_terms(),
+                                         /*enforce_upper_triangular=*/true))
       << "bad quadratic term in quadratic constraint";
-  OR_RETURN_IF_ERROR(SparseMatrixIdsAreKnown(
+  ABSL_RETURN_IF_ERROR(SparseMatrixIdsAreKnown(
       constraint.quadratic_terms(), variable_universe, variable_universe))
       << "bad quadratic term ID in quadratic constraint";
 
@@ -50,9 +51,9 @@ absl::Status ValidateConstraint(const QuadraticConstraintProto& constraint,
   {
     const double lb = constraint.lower_bound();
     const double ub = constraint.upper_bound();
-    OR_RETURN_IF_ERROR(CheckScalar(lb, {.allow_positive_infinity = false}))
+    ABSL_RETURN_IF_ERROR(CheckScalar(lb, {.allow_positive_infinity = false}))
         << "bad quadratic constraint lower bound";
-    OR_RETURN_IF_ERROR(CheckScalar(ub, {.allow_negative_infinity = false}))
+    ABSL_RETURN_IF_ERROR(CheckScalar(ub, {.allow_negative_infinity = false}))
         << "bad quadratic constraint upper bound";
     if (lb > ub) {
       return ortools::InvalidArgumentErrorBuilder()

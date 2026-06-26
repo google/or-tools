@@ -25,10 +25,10 @@
 #include "Eigen/SparseCore"
 #include "absl/log/check.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 
 namespace operations_research::pdlp {
@@ -240,7 +240,7 @@ absl::Status TestableCanFitInMpModelProto(const QuadraticProgram& qp,
 }  // namespace internal
 
 absl::StatusOr<MPModelProto> QpToMpModelProto(const QuadraticProgram& qp) {
-  OR_RETURN_IF_ERROR(CanFitInMpModelProto(qp));
+  ABSL_RETURN_IF_ERROR(CanFitInMpModelProto(qp));
   if (qp.objective_scaling_factor == 0) {
     return absl::InvalidArgumentError(
         "objective_scaling_factor cannot be zero.");

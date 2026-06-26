@@ -19,10 +19,10 @@
 #include <optional>
 
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/status_builder.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/base/types.h"
 #include "ortools/math_opt/core/model_summary.h"
 
@@ -88,8 +88,8 @@ absl::Status CheckIdsIdentical(absl::Span<const int64_t> first_ids,
            << first_description << " has size " << first_ids.size() << ", but "
            << second_description << " has size " << second_ids.Size();
   }
-  OR_RETURN_IF_ERROR(CheckIdsSubset(first_ids, second_ids, first_description,
-                                    second_description));
+  ABSL_RETURN_IF_ERROR(CheckIdsSubset(first_ids, second_ids, first_description,
+                                      second_description));
   return absl::OkStatus();
 }
 

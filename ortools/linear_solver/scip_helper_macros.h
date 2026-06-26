@@ -23,10 +23,10 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/strings/escaping.h"
 #include "absl/strings/string_view.h"
 #include "ortools/base/status_builder.h"
-#include "ortools/base/status_macros.h"
 #include "scip/pub_message.h"
 #include "scip/type_retcode.h"
 
@@ -191,7 +191,7 @@ inline absl::Status ScipCodeToUtilStatus(
         retcode, __FILE__, __LINE__, #x, captured_errors);          \
   }()
 
-#define RETURN_IF_SCIP_ERROR(x) OR_RETURN_IF_ERROR(SCIP_TO_STATUS(x));
+#define RETURN_IF_SCIP_ERROR(x) ABSL_RETURN_IF_ERROR(SCIP_TO_STATUS(x));
 
 }  // namespace operations_research
 

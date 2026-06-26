@@ -128,11 +128,11 @@ cc_binary(
     srcs = ["root_a_tree.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/base:status_macros",
         "//ortools/graph:rooted_tree",
         "//ortools/graph_base:graph",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/strings",
     ],
 )
@@ -148,10 +148,10 @@ cc_binary(
     srcs = ["rooted_tree_paths.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/base:status_macros",
         "//ortools/graph:rooted_tree",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/strings",
     ],
 )
@@ -274,12 +274,12 @@ cc_binary(
     srcs = ["dag_shortest_path_one_to_all.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/base:status_macros",
         "//ortools/graph:dag_shortest_path",
         "//ortools/graph_base:graph",
         "//ortools/graph_base:topologicalsorter",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/strings",
     ],
 )
@@ -328,12 +328,12 @@ cc_binary(
     srcs = ["dag_multiple_shortest_paths_one_to_all.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/base:status_macros",
         "//ortools/graph:dag_shortest_path",
         "//ortools/graph_base:graph",
         "//ortools/graph_base:topologicalsorter",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/strings",
     ],
 )

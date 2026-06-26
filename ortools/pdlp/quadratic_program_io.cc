@@ -28,6 +28,8 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/status/status.h"
+#include "absl/status/status_builder.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_format.h"
@@ -36,8 +38,6 @@
 #include "ortools/base/helpers.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/base/options.h"
-#include "ortools/base/status_builder.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/model_exporter.h"
 #include "ortools/lp_data/mps_reader_template.h"
@@ -83,10 +83,10 @@ absl::Status WriteLinearProgramToMps(const QuadraticProgram& linear_program,
     return absl::InvalidArgumentError(
         "'linear_program' has a quadratic objective");
   }
-  OR_ASSIGN_OR_RETURN(MPModelProto proto, QpToMpModelProto(linear_program));
-  OR_ASSIGN_OR_RETURN(std::string mps_export, ExportModelAsMpsFormat(proto));
+  ABSL_ASSIGN_OR_RETURN(MPModelProto proto, QpToMpModelProto(linear_program));
+  ABSL_ASSIGN_OR_RETURN(std::string mps_export, ExportModelAsMpsFormat(proto));
   File* file;
-  OR_RETURN_IF_ERROR(file::Open(mps_file, "w", &file, file::Defaults()));
+  ABSL_RETURN_IF_ERROR(file::Open(mps_file, "w", &file, file::Defaults()));
   auto status = file::WriteString(file, mps_export, file::Defaults());
   status.Update(file->Close(file::Defaults()));
   return status;
@@ -95,7 +95,8 @@ absl::Status WriteLinearProgramToMps(const QuadraticProgram& linear_program,
 absl::Status WriteQuadraticProgramToMPModelProto(
     const QuadraticProgram& quadratic_program,
     const std::string& mpmodel_proto_file) {
-  OR_ASSIGN_OR_RETURN(MPModelProto proto, QpToMpModelProto(quadratic_program));
+  ABSL_ASSIGN_OR_RETURN(MPModelProto proto,
+                        QpToMpModelProto(quadratic_program));
 
   return file::SetBinaryProto(mpmodel_proto_file, proto, file::Defaults());
 }
@@ -370,7 +371,7 @@ absl::StatusOr<QuadraticProgram> ReadMpsLinearProgram(
       pass_one_reader.ParseFile(lp_file, &dimension_and_names,
                                 MPSReaderFormat::kAutoDetect);
   if (!pass_one_format.ok()) {
-    return ortools::StatusBuilder(pass_one_format.status()) << absl::StrFormat(
+    return absl::StatusBuilder(pass_one_format.status()) << absl::StrFormat(
                "Could not read or parse file `%s` as an MPS file", lp_file);
   }
   if (dimension_and_names.FailedToParse()) {
@@ -387,7 +388,7 @@ absl::StatusOr<QuadraticProgram> ReadMpsLinearProgram(
   const absl::StatusOr<MPSReaderFormat> pass_two_format =
       pass_two_reader.ParseFile(lp_file, &qp_data_wrapper, *pass_one_format);
   if (!pass_two_format.ok()) {
-    return ortools::StatusBuilder(pass_two_format.status()) << absl::StrFormat(
+    return absl::StatusBuilder(pass_two_format.status()) << absl::StrFormat(
                "Could not read or parse file `%s` as an MPS file "
                "(maybe file changed between reads?)",
                lp_file);

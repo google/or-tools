@@ -21,9 +21,9 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/types/span.h"
 #include "ortools/base/status_builder.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/linear_solver/scip_helper_macros.h"
 #include "ortools/math_opt/solvers/gscip/gscip.h"
 #include "ortools/math_opt/solvers/gscip/gscip_callback_result.h"
@@ -118,7 +118,7 @@ absl::StatusOr<GScipCallbackResult> ApplyCallback(
       absl::MakeSpan(constraints, total_num_constraints);
   absl::Span<SCIP_Cons*> useful_constraints =
       all_constraints.subspan(0, num_useful_constraints);
-  OR_ASSIGN_OR_RETURN(
+  ABSL_ASSIGN_OR_RETURN(
       const GScipCallbackResult result,
       ApplyCallback(useful_constraints, callback_function, callback_type));
   // The first num_useful_constraints are the ones that are more likely to be
@@ -129,7 +129,7 @@ absl::StatusOr<GScipCallbackResult> ApplyCallback(
       result == GScipCallbackResult::kFeasible) {
     absl::Span<SCIP_Cons*> remaining_constraints =
         all_constraints.subspan(num_useful_constraints);
-    OR_ASSIGN_OR_RETURN(
+    ABSL_ASSIGN_OR_RETURN(
         const GScipCallbackResult remaining_result,
         ApplyCallback(remaining_constraints, callback_function, callback_type));
     if (remaining_result != GScipCallbackResult::kDidNotFind &&
