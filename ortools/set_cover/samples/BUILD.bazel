@@ -13,14 +13,18 @@
 
 load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 load("@rules_python//python:py_binary.bzl", "py_binary")
+load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS")
 load("//tools/testing:bintest.bzl", "bintest")
 
 cc_binary(
     name = "set_cover_cc",
     srcs = ["set_cover.cc"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
+        "//ortools/set_cover:set_cover_cc_proto",
         "//ortools/set_cover:set_cover_heuristics",
         "//ortools/set_cover:set_cover_invariant",
         "//ortools/set_cover:set_cover_model",

@@ -31,8 +31,16 @@ build --java_runtime_version=remotejdk_21 # Hermetic JRE
 # Per plaform options
 ###############################################################################
 
+# TODO(user): Most of these flags should be per-compiler instead of
+# per-platform.
+
 # By default, build with various extra flags per platform.
 build --enable_platform_specific_config
+
+# Disable warnings in anything but //ortools. Those are not actionable and pollute CI logs.
+build:linux --per_file_copt=//.*,-//ortools/.*@--no-warnings --host_per_file_copt=//.*,-//ortools/.*@--no-warnings
+build:macos --per_file_copt=//.*,-//ortools/.*@--no-warnings --host_per_file_copt=//.*,-//ortools/.*@--no-warnings
+build:windows --per_file_copt=//.*,-//ortools/.*@/W0 --host_per_file_copt=//.*,-//ortools/.*@/W0
 
 ###############################################################################
 # Options for Linux.
@@ -40,7 +48,9 @@ build --enable_platform_specific_config
 
 build:linux --cxxopt=-std=c++20 --host_cxxopt=-std=c++20
 build:linux --cxxopt=-Wno-sign-compare --host_cxxopt=-Wno-sign-compare
+build:linux --cxxopt=-Wno-comment --host_cxxopt=-Wno-comment
 build:linux --cxxopt=-Wno-range-loop-construct --host_cxxopt=-Wno-range-loop-construct
+build:linux --cxxopt=-Wno-nullability-completeness --host_cxxopt=-Wno-nullability-completeness
 
 ###############################################################################
 # Options for macOS.
@@ -51,6 +61,7 @@ build --apple_platform_type=macos
 build:macos --features=-supports_dynamic_linker
 build:macos --cxxopt=-std=c++20 --host_cxxopt=-std=c++20
 build:macos --cxxopt=-Wno-sign-compare --host_cxxopt=-Wno-sign-compare
+build:macos --cxxopt=-Wno-comment --host_cxxopt=-Wno-comment
 build:macos --cxxopt=-Wno-dangling-field --host_cxxopt=-Wno-dangling-field
 build:macos --cxxopt=-Wno-range-loop-construct --host_cxxopt=-Wno-range-loop-construct
 build:macos --cxxopt=-mmacos-version-min=10.15 --host_cxxopt=-mmacos-version-min=10.15

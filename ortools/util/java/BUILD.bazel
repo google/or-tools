@@ -19,6 +19,7 @@ load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_cc//cc:cc_test.bzl", "cc_test")
 load("//bazel:or_java_wrap_cc.bzl", "or_java_wrap_cc")
+load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS", "ORTOOLS_TEST_COPTS")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -40,6 +41,8 @@ cc_library(
     name = "wrappers",
     srcs = ["wrappers.cc"],
     hdrs = ["wrappers.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = ["//visibility:public"],
     deps = [
         "@abseil-cpp//absl/base:nullability",
@@ -75,6 +78,8 @@ or_java_wrap_cc(
 cc_library(
     name = "java_swig_solve_interrupter",
     hdrs = ["java_swig_solve_interrupter.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = ["//visibility:public"],
     deps = ["//ortools/util:solve_interrupter"],
 )
@@ -82,6 +87,8 @@ cc_library(
 cc_test(
     name = "java_swig_solve_interrupter_test",
     srcs = ["java_swig_solve_interrupter_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":java_swig_solve_interrupter",
         "//ortools/base:gmock_main",
@@ -113,6 +120,8 @@ cc_library(
     name = "jni_helper",
     srcs = ["jni_helper.cc"],
     hdrs = ["jni_helper.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "@abseil-cpp//absl/base:nullability",
         "@abseil-cpp//absl/synchronization",
@@ -123,6 +132,8 @@ cc_binary(
     name = "gen_wrappers_test_message_java_swig",
     testonly = 1,
     srcs = ["gen_wrappers_test_message_java_swig.cc"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     tags = ["manual"],
     deps = [
         ":wrappers",
