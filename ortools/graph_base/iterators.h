@@ -236,19 +236,12 @@ class IntegerRange : public BeginEndWrapper<IntegerRangeIterator<IntegerType>> {
 // chasing on `next` until `sentinel` is found. `Tag` allows distinguishing
 // different iterators with the same index type and sentinel.
 template <typename IndexT, const IndexT& sentinel, typename Tag>
-class ChasingIterator
-#if __cplusplus < 201703L
-    : public std::iterator<std::input_iterator_tag, IndexT>
-#endif
-{
+class ChasingIterator {
  public:
-  using difference_type = ptrdiff_t;
+  using difference_type =
+      std::make_signed_t<decltype(iterators_internal::GetValue(IndexT(0)))>;
   using value_type = IndexT;
-#if __cplusplus >= 201703L && __cplusplus < 202002L
-  using iterator_category = std::input_iterator_tag;
-  using pointer = IndexT*;
-  using reference = IndexT&;
-#endif
+  using iterator_category = std::forward_iterator_tag;
 
   ChasingIterator() : index_(sentinel), next_(nullptr) {}
 

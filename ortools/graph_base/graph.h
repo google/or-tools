@@ -482,21 +482,13 @@ constexpr auto size(const BaseGraph<Impl, NodeIndexType, ArcIndexType,
 // arc with `&Graph::Head`.
 template <typename Graph, typename ArcIterator, typename PropertyT,
           PropertyT (Graph::*property)(typename Graph::ArcIndex) const>
-class ArcPropertyIterator
-#if __cplusplus < 201703L
-    : public std::iterator<std::input_iterator_tag, PropertyT>
-#endif
-{
+class ArcPropertyIterator {
  public:
   using value_type = PropertyT;
-  // TODO(b/385094969): This should be `NodeIndex` for integers,
-  // `NodeIndex::value_type` for strong signed integer types.
-  using difference_type = std::ptrdiff_t;
-#if __cplusplus >= 201703L && __cplusplus < 202002L
-  using iterator_category = std::input_iterator_tag;
-  using pointer = PropertyT*;
-  using reference = PropertyT&;
-#endif
+  using difference_type = std::iterator_traits<ArcIterator>::difference_type;
+  using iterator_category = std::forward_iterator_tag;
+  // TODO(user): Use the iterator category of the underlying iterator:
+  // std::iterator_traits<ArcIterator>::iterator_category;
 
   ArcPropertyIterator() = default;
 
@@ -689,12 +681,9 @@ class SVector {
       T* new_storage = Allocate(new_capacity);
       CHECK(new_storage != nullptr);
       T* new_base = new_storage + static_cast<ptrdiff_t>(new_capacity);
-      // TODO(user): in C++17 we could use std::uninitialized_move instead
-      // of this loop.
-      for (ptrdiff_t i = static_cast<ptrdiff_t>(-size_);
-           i < static_cast<ptrdiff_t>(size_); ++i) {
-        new (new_base + i) T(std::move(base_[i]));
-      }
+      // Note: There is no aliasing between input and output ranges.
+      const ptrdiff_t ssize = static_cast<ptrdiff_t>(size_);
+      std::uninitialized_move(base_ - ssize, base_ + ssize, new_base - ssize);
       IndexT saved_size = size_;
       clear_and_dealloc();
       size_ = saved_size;
@@ -1009,9 +998,6 @@ class StaticGraph final
   StaticGraph(StaticGraph&& other) = default;
   StaticGraph& operator=(const StaticGraph& other) = default;
   StaticGraph& operator=(StaticGraph&& other) = default;
-
-  // Do not use directly. See instead the arc iteration functions below.
-  class OutgoingArcIterator;
 
   NodeIndexType Head(ArcIndexType arc) const {
     DCHECK(IsArcValid(arc));
@@ -1651,31 +1637,6 @@ void BaseGraph<Impl, NodeIndexType, ArcIndexType, HasNegativeReverseArcs>::
         t##ArcIterator(*this, node, Base::kNilArc));                       \
   }
 
-// Adapt our old iteration style to support range-based for loops. Add typedefs
-// required by std::iterator_traits.
-#define DEFINE_STL_ITERATOR_FUNCTIONS(iterator_class_name)  \
-  using iterator_category = std::input_iterator_tag;        \
-  using difference_type = ptrdiff_t;                        \
-  using pointer = const ArcIndexType*;                      \
-  using value_type = ArcIndexType;                          \
-  using reference = value_type;                             \
-  bool operator!=(const iterator_class_name& other) const { \
-    return this->index_ != other.index_;                    \
-  }                                                         \
-  bool operator==(const iterator_class_name& other) const { \
-    return this->index_ == other.index_;                    \
-  }                                                         \
-  ArcIndexType operator*() const { return this->Index(); }  \
-  iterator_class_name& operator++() {                       \
-    this->Next();                                           \
-    return *this;                                           \
-  }                                                         \
-  iterator_class_name operator++(int) {                     \
-    auto tmp = *this;                                       \
-    this->Next();                                           \
-    return tmp;                                             \
-  }
-
 // StaticGraph implementation --------------------------------------------------
 
 template <typename NodeIndexType, typename ArcIndexType>
@@ -1844,6 +1805,13 @@ template <typename NodeIndexType, typename ArcIndexType>
 class ReverseArcListGraph<NodeIndexType,
                           ArcIndexType>::OutgoingOrOppositeIncomingArcIterator {
  public:
+  using difference_type =
+      decltype(iterators_internal::GetValue(ArcIndexType(0)));
+  using value_type = ArcIndexType;
+  using iterator_category = std::input_iterator_tag;
+  using pointer = void;
+  using reference = void;
+
   OutgoingOrOppositeIncomingArcIterator(const ReverseArcListGraph& graph,
                                         NodeIndexType node)
       : graph_(&graph), index_(graph.reverse_start_[node]), node_(node) {
@@ -1857,10 +1825,20 @@ class ReverseArcListGraph<NodeIndexType,
     DCHECK(arc == Base::kNilArc || graph.Tail(arc) == node);
   }
 
-  bool Ok() const { return index_ != Base::kNilArc; }
-  ArcIndexType Index() const { return index_; }
-  void Next() {
-    DCHECK(Ok());
+  ArcIndexType operator*() const { return index_; }
+
+  friend bool operator==(const OutgoingOrOppositeIncomingArcIterator& l,
+                         const OutgoingOrOppositeIncomingArcIterator& r) {
+    return l.index_ == r.index_;
+  }
+
+  friend bool operator!=(const OutgoingOrOppositeIncomingArcIterator& l,
+                         const OutgoingOrOppositeIncomingArcIterator& r) {
+    return l.index_ != r.index_;
+  }
+
+  OutgoingOrOppositeIncomingArcIterator& operator++() {
+    DCHECK(index_ != Base::kNilArc);
     if (index_ < ArcIndexType(0)) {
       index_ = graph_->next_[index_];
       if (index_ == Base::kNilArc) {
@@ -1869,9 +1847,19 @@ class ReverseArcListGraph<NodeIndexType,
     } else {
       index_ = graph_->next_[index_];
     }
+    return *this;
   }
 
-  DEFINE_STL_ITERATOR_FUNCTIONS(OutgoingOrOppositeIncomingArcIterator);
+  OutgoingOrOppositeIncomingArcIterator operator++(int) {
+    OutgoingOrOppositeIncomingArcIterator tmp = *this;
+    ++(*this);
+    return tmp;
+  }
+
+  // TODO(user): Remove all uses.
+  bool Ok() const { return index_ != Base::kNilArc; }
+  ArcIndexType Index() const { return index_; }
+  void Next() { ++*this; }
 
  private:
   const ReverseArcListGraph* graph_;
@@ -1940,6 +1928,13 @@ template <typename NodeIndexType, typename ArcIndexType>
 class ReverseArcStaticGraph<
     NodeIndexType, ArcIndexType>::OutgoingOrOppositeIncomingArcIterator {
  public:
+  using difference_type =
+      decltype(iterators_internal::GetValue(ArcIndexType(0)));
+  using value_type = ArcIndexType;
+  using iterator_category = std::input_iterator_tag;
+  using pointer = void;
+  using reference = void;
+
   OutgoingOrOppositeIncomingArcIterator(const ReverseArcStaticGraph& graph,
                                         NodeIndexType node)
       : index_(graph.reverse_start_[node]),
@@ -1961,17 +1956,36 @@ class ReverseArcStaticGraph<
            (index_ >= next_start_));
   }
 
-  ArcIndexType Index() const { return index_; }
-  bool Ok() const { return index_ != limit_; }
-  void Next() {
-    DCHECK(Ok());
+  ArcIndexType operator*() const { return index_; }
+
+  friend bool operator==(const OutgoingOrOppositeIncomingArcIterator& l,
+                         const OutgoingOrOppositeIncomingArcIterator& r) {
+    return l.index_ == r.index_;
+  }
+
+  friend bool operator!=(const OutgoingOrOppositeIncomingArcIterator& l,
+                         const OutgoingOrOppositeIncomingArcIterator& r) {
+    return l.index_ != r.index_;
+  }
+
+  OutgoingOrOppositeIncomingArcIterator& operator++() {
     index_++;
     if (index_ == first_limit_) {
       index_ = next_start_;
     }
+    return *this;
   }
 
-  DEFINE_STL_ITERATOR_FUNCTIONS(OutgoingOrOppositeIncomingArcIterator);
+  OutgoingOrOppositeIncomingArcIterator operator++(int) {
+    OutgoingOrOppositeIncomingArcIterator tmp = *this;
+    ++(*this);
+    return tmp;
+  }
+
+  // TODO(user): Remove all uses.
+  bool Ok() const { return index_ != limit_; }
+  ArcIndexType Index() const { return index_; }
+  void Next() { ++*this; }
 
  private:
   ArcIndexType index_;
@@ -2182,6 +2196,5 @@ GraphT GraphFromArcs(typename GraphT::NodeIndex num_nodes,
 }  // namespace util
 
 #undef DEFINE_RANGE_BASED_ARC_ITERATION
-#undef DEFINE_STL_ITERATOR_FUNCTIONS
 
 #endif  // UTIL_GRAPH_GRAPH_H_

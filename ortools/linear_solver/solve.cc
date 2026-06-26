@@ -142,8 +142,9 @@ MPModelRequest ReadMipModel(const std::string& input) {
     model_proto = std::move(result).value();
   } else if (absl::EndsWith(input, ".mps") ||
              absl::EndsWith(input, ".mps.gz")) {
-    QCHECK_OK(glop::MPSReader().ParseFile(input, &model_proto))
-        << "Error while parsing the mps file '" << input << "'.";
+    absl::StatusOr<MPModelProto> result = glop::MpsFileToMPModelProto(input);
+    CHECK_OK(result) << "Error while parsing the mps file '" << input << "'.";
+    model_proto = std::move(result).value();
   } else {
     ReadFileToProto(input, &model_proto).IgnoreError();
     ReadFileToProto(input, &request_proto).IgnoreError();

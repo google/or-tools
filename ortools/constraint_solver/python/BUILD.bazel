@@ -49,7 +49,10 @@ pybind_extension(
 pybind_library(
     name = "constraint_solver_deps",
     srcs = ["constraint_solver.cc"],
-    visibility = ["//ortools/routing/python:__pkg__"],
+    visibility = [
+        "//ortools/constraint_solver/python:__pkg__",
+        "//ortools/routing/python:__pkg__",
+    ],
     deps = [
         ":constraint_solver_doc",
         "//ortools/constraint_solver:assignment_cc_proto",

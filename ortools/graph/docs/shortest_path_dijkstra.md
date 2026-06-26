@@ -254,7 +254,6 @@ code:
 // Snippet from ortools/graph/samples/dijkstra_one_to_all.cc
 #include <cstdint>
 #include <iostream>
-#include <limits>
 #include <utility>
 #include <vector>
 
@@ -411,7 +410,6 @@ The code is below:
 // Snippet from ortools/graph/samples/dijkstra_sequential.cc
 #include <cstdint>
 #include <iostream>
-#include <limits>
 #include <string>
 #include <utility>
 #include <vector>
