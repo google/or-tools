@@ -30,24 +30,21 @@ portable software suite for solving combinatorial optimization problems.
 
 The suite contains:
 
-*   Two constraint programming solver (CP* and CP-SAT);
-*   Two linear programming solvers (Glop and PDLP);
+*   Two constraint programming solver (CP* and CP-SAT).
+*   Two linear programming solvers (Glop and PDLP).
 *   Wrappers around commercial and other open source solvers, including mixed
-    integer solvers;
-*   Bin packing and knapsack algorithms;
+    integer solvers (MPSolver and MathOpt).
+*   Bin packing, set covering, and knapsack algorithms.
 *   Algorithms for the Traveling Salesman Problem and Vehicle Routing Problem;
 *   Graph algorithms (shortest paths, min cost flow, max flow, linear sum
     assignment).
 
-We wrote OR-Tools in C++, but provide wrappers in Python, C# and Java.
+We wrote OR-Tools in C++, but provide wrappers in Python, C#, and Java.
 
 ## Codemap
 
 This software suite is composed of the following components:
 
-*   [Makefile](Makefile) Top-level for
-    [GNU Make](https://www.gnu.org/software/make/manual/make.html) based build.
-*   [makefiles](makefiles) Subsidiary Make files, CI and build system documentation.
 *   [CMakeLists.txt](CMakeLists.txt) Top-level for
     [CMake](https://cmake.org/cmake/help/latest/) based build.
 *   [cmake](cmake) Subsidiary CMake files, CI and build system documentation.
