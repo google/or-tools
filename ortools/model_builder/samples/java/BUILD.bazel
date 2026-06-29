@@ -19,7 +19,7 @@ package(default_visibility = ["//visibility:public"])
 java_binary(
     name = "AssignmentMb",
     srcs = ["AssignmentMb.java"],
-    main_class = "com.google.ortools.linearsolver.samples.AssignmentMb",
+    main_class = "com.google.ortools.modelbuilder.samples.AssignmentMb",
     tags = [
         "not_build:arm",
         "not_run:arm",
@@ -44,7 +44,7 @@ bintest(
 java_binary(
     name = "BinPackingMb",
     srcs = ["BinPackingMb.java"],
-    main_class = "com.google.ortools.linearsolver.samples.BinPackingMb",
+    main_class = "com.google.ortools.modelbuilder.samples.BinPackingMb",
     tags = [
         "not_build:arm",
         "not_run:arm",
@@ -69,7 +69,7 @@ bintest(
 java_binary(
     name = "CloneModelMb",
     srcs = ["CloneModelMb.java"],
-    main_class = "com.google.ortools.linearsolver.samples.CloneModelMb",
+    main_class = "com.google.ortools.modelbuilder.samples.CloneModelMb",
     tags = [
         "not_build:arm",
         "not_run:arm",
@@ -94,7 +94,7 @@ bintest(
 java_binary(
     name = "SimpleLpProgramMb",
     srcs = ["SimpleLpProgramMb.java"],
-    main_class = "com.google.ortools.linearsolver.samples.SimpleLpProgramMb",
+    main_class = "com.google.ortools.modelbuilder.samples.SimpleLpProgramMb",
     tags = [
         "not_build:arm",
         "not_run:arm",
@@ -119,7 +119,7 @@ bintest(
 java_binary(
     name = "SimpleMipProgramMb",
     srcs = ["SimpleMipProgramMb.java"],
-    main_class = "com.google.ortools.linearsolver.samples.SimpleMipProgramMb",
+    main_class = "com.google.ortools.modelbuilder.samples.SimpleMipProgramMb",
     tags = [
         "not_build:arm",
         "not_run:arm",

@@ -13,7 +13,7 @@
 
 // Minimal example to call the MIP solver.
 // [START program]
-package com.google.ortools.linearsolver.samples;
+package com.google.ortools.modelbuilder.samples;
 // [START import]
 import com.google.ortools.Loader;
 import com.google.ortools.modelbuilder.LinearExpr;
