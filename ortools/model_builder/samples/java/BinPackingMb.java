@@ -13,7 +13,7 @@
 
 // MIP example that solves a bin packing problem.
 // [START program]
-package com.google.ortools.linearsolver.samples;
+package com.google.ortools.modelbuilder.samples;
 
 // [START import]
 import com.google.ortools.Loader;

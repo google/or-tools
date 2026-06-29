@@ -457,6 +457,7 @@ foreach(SAMPLES IN ITEMS
  constraint_solver
  routing
  linear_solver
+ model_builder
  ${MATH_OPT_DIR}
  ${PDLP_DIR}
  sat)
