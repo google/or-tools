@@ -15,6 +15,8 @@ load("@pip_deps//:requirements.bzl", "requirement")
 load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 load("//tools/testing:bintest.bzl", "py_bintest")
 
+package(default_visibility = ["//visibility:public"])
+
 cc_binary(
     name = "basic_example",
     srcs = ["basic_example.cc"],
@@ -246,6 +248,19 @@ cc_binary(
 )
 
 cc_binary(
+    name = "area_socp",
+    srcs = ["area_socp.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/math_opt/cpp:math_opt",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
+    ],
+)
+
+cc_binary(
     name = "time_indexed_scheduling",
     srcs = ["time_indexed_scheduling.cc"],
     tags = [
@@ -266,19 +281,6 @@ cc_binary(
         "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/types:span",
-    ],
-)
-
-cc_binary(
-    name = "area_socp",
-    srcs = ["area_socp.cc"],
-    deps = [
-        "//ortools/base",
-        "//ortools/math_opt/cpp:math_opt",
-        "@abseil-cpp//absl/flags:flag",
-        "@abseil-cpp//absl/log:check",
-        "@abseil-cpp//absl/status",
-        "@abseil-cpp//absl/status:status_macros",
     ],
 )
 
