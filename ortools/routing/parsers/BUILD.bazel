@@ -79,7 +79,7 @@ cc_test(
     deps = [
         ":solomon_parser",
         "//ortools/base:gmock_main",
-        "//ortools/base:path",
+        "//ortools/util:data_path_resolver",
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/strings",
     ],
@@ -113,6 +113,7 @@ cc_test(
         ":lilim_parser",
         "//ortools/base:gmock_main",
         "//ortools/base:path",
+        "//ortools/util:data_path_resolver",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:string_view",
     ],
@@ -159,6 +160,7 @@ cc_test(
         "//ortools/base:gmock_main",
         "//ortools/base:log_severity",
         "//ortools/base:path",
+        "//ortools/util:data_path_resolver",
         "@abseil-cpp//absl/log:scoped_mock_log",
         "@abseil-cpp//absl/strings",
     ],
@@ -191,6 +193,7 @@ cc_test(
         ":simple_graph",
         "//ortools/base:gmock_main",
         "//ortools/base:path",
+        "//ortools/util:data_path_resolver",
     ],
 )
 
@@ -219,7 +222,7 @@ cc_test(
     deps = [
         ":pdtsp_parser",
         "//ortools/base:gmock_main",
-        "//ortools/base:path",
+        "//ortools/util:data_path_resolver",
     ],
 )
 
@@ -252,29 +255,31 @@ cc_library(
     ],
 )
 
-#cc_test(
-#    name = "tsplib_parser_test",
-#    size = "small",
-#    timeout = "moderate",
-#    srcs = ["tsplib_parser_test.cc"],
-#    data = [
-#        "//ortools/routing/parsers/testdata:tsplib_Kytojoki_33.vrp",
-#    ],
-#    flaky = 1,  # b/132942541
-#    deps = [
-#        ":tsplib_parser",
-#        "//ortools/base:file",
-#        "//ortools/base:gmock_main",
-#        "//ortools/base:path",
-#        "//ortools/base:temp_file",
-#        "//ortools/base:zipfile",
-#        "@abseil-cpp//absl/base:core_headers",
-#        "@abseil-cpp//absl/container:btree",
-#        "@abseil-cpp//absl/status",
-#        "@abseil-cpp//absl/strings",
-#        "@abseil-cpp//absl/strings:str_format",
-#    ],
-#)
+cc_test(
+    name = "tsplib_parser_test",
+    size = "small",
+    timeout = "moderate",
+    srcs = ["tsplib_parser_test.cc"],
+    data = [
+        "//ortools/routing/parsers/testdata:solomon.zip",
+        "//ortools/routing/parsers/testdata:tsplib_Kytojoki_33.vrp",
+    ],
+    flaky = 1,  # b/132942541
+    deps = [
+        ":tsplib_parser",
+        "//ortools/base:file",
+        "//ortools/base:gmock_main",
+        "//ortools/base:path",
+        "//ortools/base:temp_file",
+        "//ortools/base:zipfile",
+        "//ortools/util:data_path_resolver",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/container:btree",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+    ],
+)
 
 cc_library(
     name = "tsptw_parser",
@@ -306,6 +311,7 @@ cc_test(
         ":tsptw_parser",
         "//ortools/base:gmock_main",
         "//ortools/base:path",
+        "//ortools/util:data_path_resolver",
     ],
 )
 

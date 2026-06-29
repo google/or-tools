@@ -21,12 +21,16 @@
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/log_severity.h"
-#include "ortools/base/path.h"
-
-#define ROOT_DIR "_main/"
+#include "ortools/util/data_path_resolver.h"
 
 namespace operations_research::routing {
 namespace {
+
+std::string GetTestDataPath(absl::string_view filename) {
+  return ortools::GetDataDependencyFilepath(
+      absl::StrCat("ortools/routing/parsers/testdata/", filename));
+}
+
 TEST(CarpParserTest, Constructor) {
   CarpParser parser;
   EXPECT_EQ(parser.name(), "");
@@ -64,9 +68,7 @@ TEST(CarpParserTest, LoadInvalidFileIncorrectNumberOfNodes) {
 
   CarpParser parser;
   EXPECT_FALSE(
-      parser.LoadFile(file::JoinPath(::testing::SrcDir(), ROOT_DIR
-                                     "ortools/routing/parsers/testdata/"
-                                     "carp_gdb19_incorrecto_vertices.dat")));
+      parser.LoadFile(GetTestDataPath("carp_gdb19_incorrecto_vertices.dat")));
 }
 
 TEST(CarpParserTest, LoadInvalidFileIncorrectNumberOfArcsWithServicings) {
@@ -81,9 +83,7 @@ TEST(CarpParserTest, LoadInvalidFileIncorrectNumberOfArcsWithServicings) {
 
   CarpParser parser;
   EXPECT_FALSE(
-      parser.LoadFile(file::JoinPath(::testing::SrcDir(), ROOT_DIR
-                                     "ortools/routing/parsers/testdata/"
-                                     "carp_gdb19_incorrecto_arireq.dat")));
+      parser.LoadFile(GetTestDataPath("carp_gdb19_incorrecto_arireq.dat")));
 }
 
 TEST(CarpParserTest, LoadInvalidFileIncorrectNumberOfArcsWithoutServicings) {
@@ -98,9 +98,7 @@ TEST(CarpParserTest, LoadInvalidFileIncorrectNumberOfArcsWithoutServicings) {
 
   CarpParser parser;
   EXPECT_FALSE(
-      parser.LoadFile(file::JoinPath(::testing::SrcDir(), ROOT_DIR
-                                     "ortools/routing/parsers/testdata/"
-                                     "carp_gdb19_incorrecto_arinoreq.dat")));
+      parser.LoadFile(GetTestDataPath("carp_gdb19_incorrecto_arinoreq.dat")));
 }
 
 TEST(CarpParserTest, LoadInvalidFileIncorrectNumberOfVehicles) {
@@ -115,9 +113,7 @@ TEST(CarpParserTest, LoadInvalidFileIncorrectNumberOfVehicles) {
 
   CarpParser parser;
   EXPECT_FALSE(
-      parser.LoadFile(file::JoinPath(::testing::SrcDir(), ROOT_DIR
-                                     "ortools/routing/parsers/testdata/"
-                                     "carp_gdb19_incorrecto_vehiculos.dat")));
+      parser.LoadFile(GetTestDataPath("carp_gdb19_incorrecto_vehiculos.dat")));
 }
 
 TEST(CarpParserTest, LoadInvalidFileIncorrectCapacity) {
@@ -132,9 +128,7 @@ TEST(CarpParserTest, LoadInvalidFileIncorrectCapacity) {
 
   CarpParser parser;
   EXPECT_FALSE(
-      parser.LoadFile(file::JoinPath(::testing::SrcDir(), ROOT_DIR
-                                     "ortools/routing/parsers/testdata/"
-                                     "carp_gdb19_incorrecto_capacidad.dat")));
+      parser.LoadFile(GetTestDataPath("carp_gdb19_incorrecto_capacidad.dat")));
 }
 
 TEST(CarpParserTest, LoadInvalidFileIncorrectTypeOfArcCost) {
@@ -149,9 +143,7 @@ TEST(CarpParserTest, LoadInvalidFileIncorrectTypeOfArcCost) {
 
   CarpParser parser;
   EXPECT_FALSE(
-      parser.LoadFile(file::JoinPath(::testing::SrcDir(), ROOT_DIR
-                                     "ortools/routing/parsers/testdata/"
-                                     "carp_gdb19_incorrecto_tipo.dat")));
+      parser.LoadFile(GetTestDataPath("carp_gdb19_incorrecto_tipo.dat")));
 }
 
 TEST(CarpParserTest, LoadInvalidFileIncorrectTotalServicingCost) {
@@ -165,9 +157,7 @@ TEST(CarpParserTest, LoadInvalidFileIncorrectTotalServicingCost) {
 
   CarpParser parser;
   EXPECT_FALSE(
-      parser.LoadFile(file::JoinPath(::testing::SrcDir(), ROOT_DIR
-                                     "ortools/routing/parsers/testdata/"
-                                     "carp_gdb19_incorrecto_coste.dat")));
+      parser.LoadFile(GetTestDataPath("carp_gdb19_incorrecto_coste.dat")));
 }
 
 TEST(CarpParserTest, LoadInvalidFileIncorrectDepot) {
@@ -184,9 +174,7 @@ TEST(CarpParserTest, LoadInvalidFileIncorrectDepot) {
 
   CarpParser parser;
   EXPECT_FALSE(
-      parser.LoadFile(file::JoinPath(::testing::SrcDir(), ROOT_DIR
-                                     "ortools/routing/parsers/testdata/"
-                                     "carp_gdb19_incorrecto_deposito.dat")));
+      parser.LoadFile(GetTestDataPath("carp_gdb19_incorrecto_deposito.dat")));
 }
 
 TEST(CarpParserTest, LoadInvalidFileNoEdgeWithServicing) {
@@ -201,10 +189,8 @@ TEST(CarpParserTest, LoadInvalidFileNoEdgeWithServicing) {
   log.StartCapturingLogs();
 
   CarpParser parser;
-  EXPECT_FALSE(parser.LoadFile(
-      file::JoinPath(::testing::SrcDir(),
-                     ROOT_DIR "ortools/routing/parsers"
-                              "/testdata/carp_gdb19_no_arista_req.dat")));
+  EXPECT_FALSE(
+      parser.LoadFile(GetTestDataPath("carp_gdb19_no_arista_req.dat")));
 }
 
 TEST(CarpParserTest, LoadInvalidFileServicingForArcsWithoutServicing) {
@@ -217,10 +203,7 @@ TEST(CarpParserTest, LoadInvalidFileServicingForArcsWithoutServicing) {
   log.StartCapturingLogs();
 
   CarpParser parser;
-  EXPECT_FALSE(
-      parser.LoadFile(file::JoinPath(::testing::SrcDir(), ROOT_DIR
-                                     "ortools/routing/parsers"
-                                     "/testdata/carp_gdb19_mixed_arcs.dat")));
+  EXPECT_FALSE(parser.LoadFile(GetTestDataPath("carp_gdb19_mixed_arcs.dat")));
 }
 
 TEST(CarpParserTest, LoadInvalidFileServicingForArcsInWrongOrder) {
@@ -234,15 +217,11 @@ TEST(CarpParserTest, LoadInvalidFileServicingForArcsInWrongOrder) {
 
   CarpParser parser;
   EXPECT_FALSE(parser.LoadFile(
-      file::JoinPath(::testing::SrcDir(),
-                     ROOT_DIR "ortools/routing/parsers/testdata/"
-                              "carp_gdb19_incorrecta_lista_aristas_req.dat")));
+      GetTestDataPath("carp_gdb19_incorrecta_lista_aristas_req.dat")));
 }
 
 TEST(CarpParserTest, LoadInstanceFile) {
-  std::string file_name = file::JoinPath(::testing::SrcDir(), ROOT_DIR
-                                         "ortools/routing/parsers/testdata/"
-                                         "carp_gdb19.dat");
+  std::string file_name = GetTestDataPath("carp_gdb19.dat");
   CarpParser parser;
   EXPECT_TRUE(parser.LoadFile(file_name));
   EXPECT_EQ(parser.name(), "gdb19");
@@ -265,9 +244,7 @@ TEST(CarpParserTest, LoadInstanceFile) {
 }
 
 TEST(CarpParserTest, LoadInstanceFileWithDifferentDepot) {
-  std::string file_name = file::JoinPath(::testing::SrcDir(), ROOT_DIR
-                                         "ortools/routing/parsers/testdata/"
-                                         "carp_gdb19_diferente_deposito.dat");
+  std::string file_name = GetTestDataPath("carp_gdb19_diferente_deposito.dat");
   CarpParser parser;
   EXPECT_TRUE(parser.LoadFile(file_name));
   EXPECT_EQ(parser.depot(), 4);
