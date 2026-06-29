@@ -22,6 +22,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/base/nullability.h"
 #include "absl/functional/any_invocable.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
@@ -117,14 +118,15 @@ IntVarLocalSearchFilter* MakeCumulBoundsPropagatorFilter(
 
 /// Returns a filter checking global linear constraints and costs.
 IntVarLocalSearchFilter* MakeGlobalLPCumulFilter(
-    GlobalDimensionCumulOptimizer* lp_optimizer,
-    GlobalDimensionCumulOptimizer* mp_optimizer, bool filter_objective_cost);
+    GlobalDimensionCumulOptimizer* absl_nonnull lp_optimizer,
+    GlobalDimensionCumulOptimizer* absl_nonnull mp_optimizer,
+    bool filter_objective_cost);
 
 /// Returns a filter checking the feasibility and cost of the resource
 /// assignment.
 LocalSearchFilter* MakeResourceAssignmentFilter(
-    LocalDimensionCumulOptimizer* optimizer,
-    LocalDimensionCumulOptimizer* mp_optimizer,
+    LocalDimensionCumulOptimizer* absl_nonnull optimizer,
+    LocalDimensionCumulOptimizer* absl_nonnull mp_optimizer,
     bool propagate_own_objective_value, bool filter_objective_cost);
 
 /// Returns a filter checking the current solution using CP propagation.

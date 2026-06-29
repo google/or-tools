@@ -35,7 +35,7 @@
 #include <vector>
 
 #include "absl/algorithm/container.h"
-#include "absl/base/attributes.h"
+#include "absl/base/nullability.h"
 #include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
@@ -134,7 +134,8 @@ bool UpdateTimeLimits(Solver* solver, int64_t start_time_ms,
 }  // namespace
 
 const Assignment* SolveWithAlternativeSolvers(
-    Model* primary_model, const std::vector<Model*>& alternative_models,
+    Model* absl_nonnull primary_model,
+    const std::vector<Model*>& alternative_models,
     const RoutingSearchParameters& parameters,
     int max_non_improving_iterations) {
   return SolveFromAssignmentWithAlternativeSolvers(
@@ -143,7 +144,7 @@ const Assignment* SolveWithAlternativeSolvers(
 }
 
 const Assignment* SolveFromAssignmentWithAlternativeSolvers(
-    const Assignment* assignment, Model* primary_model,
+    const Assignment* assignment, Model* absl_nonnull primary_model,
     const std::vector<Model*>& alternative_models,
     const RoutingSearchParameters& parameters,
     int max_non_improving_iterations) {
@@ -153,7 +154,7 @@ const Assignment* SolveFromAssignmentWithAlternativeSolvers(
 }
 
 const Assignment* SolveFromAssignmentWithAlternativeSolversAndParameters(
-    const Assignment* assignment, Model* primary_model,
+    const Assignment* assignment, Model* absl_nonnull primary_model,
     const RoutingSearchParameters& primary_parameters,
     const std::vector<Model*>& alternative_models,
     const std::vector<RoutingSearchParameters>& alternative_parameters,
@@ -495,7 +496,7 @@ std::string RoutingFilteredDecisionBuilder::DebugString() const {
 // IntVarFilteredHeuristic
 
 IntVarFilteredHeuristic::IntVarFilteredHeuristic(
-    Solver* solver, const std::vector<IntVar*>& vars,
+    Solver* absl_nonnull solver, const std::vector<IntVar*>& vars,
     const std::vector<IntVar*>& secondary_vars,
     LocalSearchFilterManager* filter_manager)
     : assignment_(solver->MakeAssignment()),
@@ -637,7 +638,7 @@ bool IntVarFilteredHeuristic::FilterAccept(bool ignore_upper_bound) {
 // RoutingFilteredHeuristic
 
 RoutingFilteredHeuristic::RoutingFilteredHeuristic(
-    Model* model, std::function<bool()> stop_search,
+    Model* absl_nonnull model, std::function<bool()> stop_search,
     LocalSearchFilterManager* filter_manager)
     : IntVarFilteredHeuristic(model->solver(), model->Nexts(),
                               model->CostsAreHomogeneousAcrossVehicles()
@@ -786,7 +787,7 @@ void RoutingFilteredHeuristic::MakePartiallyPerformedPairsUnperformed() {
 // CheapestInsertionFilteredHeuristic
 
 CheapestInsertionFilteredHeuristic::CheapestInsertionFilteredHeuristic(
-    Model* model, std::function<bool()> stop_search,
+    Model* absl_nonnull model, std::function<bool()> stop_search,
     std::function<int64_t(int64_t, int64_t, int64_t)> evaluator,
     std::function<int64_t(int64_t)> penalty_evaluator,
     LocalSearchFilterManager* filter_manager)
@@ -981,7 +982,7 @@ int64_t CheapestInsertionFilteredHeuristic::GetUnperformedValue(
 
 GlobalCheapestInsertionFilteredHeuristic::
     GlobalCheapestInsertionFilteredHeuristic(
-        Model* model, std::function<bool()> stop_search,
+        Model* absl_nonnull model, std::function<bool()> stop_search,
         std::function<int64_t(int64_t, int64_t, int64_t)> evaluator,
         std::function<int64_t(int64_t)> penalty_evaluator,
         LocalSearchFilterManager* filter_manager,

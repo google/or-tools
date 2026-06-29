@@ -18,13 +18,13 @@
 #include <cstdint>
 #include <deque>
 #include <functional>
-#include <limits>
 #include <memory>
 #include <ostream>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "absl/base/nullability.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
@@ -59,7 +59,7 @@ namespace operations_research::routing {
 // as possible based on the model precedences.
 class CumulBoundsPropagator {
  public:
-  explicit CumulBoundsPropagator(const Dimension* dimension);
+  explicit CumulBoundsPropagator(const Dimension* absl_nonnull dimension);
 
   // Tightens the cumul bounds starting from the current cumul var min/max,
   // and propagating the precedences resulting from the next_accessor, and the
@@ -407,11 +407,12 @@ class GlopWrapper : public LinearSolverWrapper {
     // be costly. Note that the assumptions are DCHECKed() in the call below.
     linear_program_.NotifyThatColumnsAreClean();
     VLOG(2) << linear_program_.Dump();
-    const glop::ProblemStatus status = lp_solver_.Solve(linear_program_);
+    const glop::SolveStatus status =
+        lp_solver_.SolveWithDetails(linear_program_);
     if (search_stats_) search_stats_->num_glop_calls_in_lp_scheduling++;
-    const bool feasible_only = status == glop::ProblemStatus::PRIMAL_FEASIBLE;
-    if (status != glop::ProblemStatus::OPTIMAL &&
-        status != glop::ProblemStatus::IMPRECISE && !feasible_only) {
+    const bool feasible_only = status.Is<glop::SolveStatus::PrimalFeasible>();
+    if (!status.Is<glop::SolveStatus::Optimal>() &&
+        !status.Is<glop::SolveStatus::Imprecise>() && !feasible_only) {
       return DimensionSchedulingStatus::INFEASIBLE;
     }
     if (is_relaxation_) {
@@ -712,7 +713,7 @@ class DimensionCumulOptimizerCore {
   using Resource = Model::ResourceGroup::Resource;
 
  public:
-  DimensionCumulOptimizerCore(const Dimension* dimension,
+  DimensionCumulOptimizerCore(const Dimension* absl_nonnull dimension,
                               bool use_precedence_propagator);
 
   // Finds an optimal (or just feasible) solution for the route for the given
@@ -934,7 +935,7 @@ class DimensionCumulOptimizerCore {
 class LocalDimensionCumulOptimizer {
  public:
   LocalDimensionCumulOptimizer(
-      const Dimension* dimension,
+      const Dimension* absl_nonnull dimension,
       RoutingSearchParameters::SchedulingSolver solver_type,
       SearchStats* search_stats);
 
@@ -1035,7 +1036,7 @@ class LocalDimensionCumulOptimizer {
 class GlobalDimensionCumulOptimizer {
  public:
   GlobalDimensionCumulOptimizer(
-      const Dimension* dimension,
+      const Dimension* absl_nonnull dimension,
       RoutingSearchParameters::SchedulingSolver solver_type,
       SearchStats* search_stats);
   // If feasible, computes the optimal cost of the entire model with regards to
@@ -1124,9 +1125,10 @@ bool ComputeVehicleToResourceClassAssignmentCosts(
         ignored_resources_per_class,
     const std::function<int64_t(int64_t)>& next_accessor,
     const std::function<int64_t(int64_t, int64_t)>& transit_accessor,
-    bool optimize_vehicle_costs, LocalDimensionCumulOptimizer* lp_optimizer,
-    LocalDimensionCumulOptimizer* mp_optimizer,
-    std::vector<int64_t>* assignment_costs,
+    bool optimize_vehicle_costs,
+    LocalDimensionCumulOptimizer* absl_nonnull lp_optimizer,
+    LocalDimensionCumulOptimizer* absl_nonnull mp_optimizer,
+    std::vector<int64_t>* absl_nonnull assignment_costs,
     std::vector<std::vector<int64_t>>* cumul_values,
     std::vector<std::vector<int64_t>>* break_values);
 

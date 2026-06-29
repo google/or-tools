@@ -18,6 +18,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/base/nullability.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "ortools/constraint_solver/constraint_solver.h"
@@ -28,7 +29,7 @@ namespace operations_research::routing {
 
 /// A decision builder which tries to assign values to variables as close as
 /// possible to target values first.
-DecisionBuilder* MakeSetValuesFromTargets(Solver* solver,
+DecisionBuilder* MakeSetValuesFromTargets(Solver* absl_nonnull solver,
                                           std::vector<IntVar*> variables,
                                           std::vector<int64_t> targets);
 
@@ -38,15 +39,18 @@ DecisionBuilder* MakeSetValuesFromTargets(Solver* solver,
 /// Variant based on local optimizers, for which each route is handled
 /// separately.
 DecisionBuilder* MakeSetCumulsFromLocalDimensionCosts(
-    Solver* solver, LocalDimensionCumulOptimizer* lp_optimizer,
-    LocalDimensionCumulOptimizer* mp_optimizer, bool optimize_and_pack = false,
+    Solver* absl_nonnull solver,
+    LocalDimensionCumulOptimizer* absl_nonnull lp_optimizer,
+    LocalDimensionCumulOptimizer* absl_nonnull mp_optimizer,
+    bool optimize_and_pack = false,
     std::vector<Model::RouteDimensionTravelInfo>
         dimension_travel_info_per_route = {});
 
 /// Variant based on global optimizers, handling all routes together.
 DecisionBuilder* MakeSetCumulsFromGlobalDimensionCosts(
-    Solver* solver, GlobalDimensionCumulOptimizer* global_optimizer,
-    GlobalDimensionCumulOptimizer* global_mp_optimizer,
+    Solver* absl_nonnull solver,
+    GlobalDimensionCumulOptimizer* absl_nonnull global_optimizer,
+    GlobalDimensionCumulOptimizer* absl_nonnull global_mp_optimizer,
     bool optimize_and_pack = false,
     std::vector<Model::RouteDimensionTravelInfo>
         dimension_travel_info_per_route = {});
@@ -61,22 +65,24 @@ DecisionBuilder* MakeSetCumulsFromGlobalDimensionCosts(
 /// Moreover, the decision will be a simultaneous assignment of the dimension
 /// variables of unchanged routes on the left branch, and an empty decision on
 /// the right branch.
-DecisionBuilder* MakeRestoreDimensionValuesForUnchangedRoutes(Model* model);
+DecisionBuilder* MakeRestoreDimensionValuesForUnchangedRoutes(
+    Model* absl_nonnull model);
 
 /// A container that allows to accumulate variables and weights to generate a
 /// static DecisionBuilder that uses weights to prioritize the branching
 /// decisions (by decreasing weight).
 class FinalizerVariables {
  public:
-  explicit FinalizerVariables(Solver* solver) : solver_(solver) {}
+  explicit FinalizerVariables(Solver* absl_nonnull solver) : solver_(solver) {}
   /// Add a variable to set the closest possible to the target value in the
   /// solution finalizer. The solution finalizer is called each time a solution
   /// is found during the search and allows to instantiate secondary variables
   /// (such as dimension cumul variables).
-  void AddVariableTarget(IntVar* var, int64_t target);
+  void AddVariableTarget(IntVar* absl_nonnull var, int64_t target);
   /// Same as above with a weighted priority: the higher the cost, the more
   /// priority it has to be set close to the target value.
-  void AddWeightedVariableTarget(IntVar* var, int64_t target, int64_t cost);
+  void AddWeightedVariableTarget(IntVar* absl_nonnull var, int64_t target,
+                                 int64_t cost);
   /// Returns a DecisionBuilder* that sets the variables passed through
   /// AddVariableTarget and AddWeightedVariableTarget towards their target,
   /// setting weigthed variables by decreasing weight first, then unweighted
