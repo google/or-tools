@@ -25,6 +25,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/base/nullability.h"
 #include "absl/functional/bind_front.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
@@ -78,8 +79,9 @@ SavingsParameters GetSavingsParametersForRecreateStrategy(
 
 // Returns a ruin procedure based on the given ruin strategy.
 std::unique_ptr<RuinProcedure> MakeRuinProcedure(
-    Model* model, const Assignment* assignment, std::mt19937_64* rnd,
-    RuinStrategy ruin, int num_neighbors_for_route_selection) {
+    Model* absl_nonnull model, const Assignment* absl_nonnull assignment,
+    std::mt19937_64* absl_nonnull rnd, RuinStrategy ruin,
+    int num_neighbors_for_route_selection) {
   switch (ruin.strategy_case()) {
     case RuinStrategy::kSpatiallyCloseRoutes:
       return std::make_unique<CloseRoutesRemovalRuinProcedure>(
@@ -108,7 +110,8 @@ std::unique_ptr<RuinProcedure> MakeRuinProcedure(
 
 // Returns the ruin procedures associated with the given ruin strategies.
 std::vector<std::unique_ptr<RuinProcedure>> MakeRuinProcedures(
-    Model* model, const Assignment* assignment, std::mt19937_64* rnd,
+    Model* absl_nonnull model, const Assignment* absl_nonnull assignment,
+    std::mt19937_64* absl_nonnull rnd,
     const google::protobuf::RepeatedPtrField<
         ::operations_research::routing::RuinStrategy>& ruin_strategies,
     int num_neighbors_for_route_selection) {
@@ -134,7 +137,8 @@ class SequentialRandomizedCompositionStrategy
     : public CompositeRuinProcedure::CompositionStrategy {
  public:
   SequentialRandomizedCompositionStrategy(
-      std::vector<RuinProcedure*> ruin_procedures, std::mt19937_64* rnd)
+      std::vector<RuinProcedure*> ruin_procedures,
+      std::mt19937_64* absl_nonnull rnd)
       : CompositeRuinProcedure::CompositionStrategy(std::move(ruin_procedures)),
         rnd_(*rnd) {}
   const std::vector<RuinProcedure*>& Select() override {
@@ -150,7 +154,7 @@ class SingleRandomCompositionStrategy
     : public CompositeRuinProcedure::CompositionStrategy {
  public:
   SingleRandomCompositionStrategy(std::vector<RuinProcedure*> ruin_procedures,
-                                  std::mt19937_64* rnd)
+                                  std::mt19937_64* absl_nonnull rnd)
       : CompositeRuinProcedure::CompositionStrategy(std::move(ruin_procedures)),
         rnd_(*rnd) {
     single_ruin_.resize(1);
@@ -171,7 +175,8 @@ class SingleRandomCompositionStrategy
 std::unique_ptr<CompositeRuinProcedure::CompositionStrategy>
 MakeRuinCompositionStrategy(
     absl::Span<const std::unique_ptr<RuinProcedure>> ruins,
-    RuinCompositionStrategy::Value composition_strategy, std::mt19937_64* rnd) {
+    RuinCompositionStrategy::Value composition_strategy,
+    std::mt19937_64* absl_nonnull rnd) {
   std::vector<RuinProcedure*> ruin_ptrs;
   ruin_ptrs.reserve(ruins.size());
   for (const auto& ruin : ruins) {
@@ -196,8 +201,9 @@ MakeRuinCompositionStrategy(
 
 // Returns a ruin procedure based on the given ruin and recreate parameters.
 std::unique_ptr<RuinProcedure> MakeRuinProcedure(
-    const RuinRecreateParameters& parameters, Model* model,
-    const Assignment* assignment, std::mt19937_64* rnd) {
+    const RuinRecreateParameters& parameters, Model* absl_nonnull model,
+    const Assignment* absl_nonnull assignment,
+    std::mt19937_64* absl_nonnull rnd) {
   const int num_non_start_end_nodes = model->Size() - model->vehicles();
   const uint32_t preferred_num_neighbors =
       parameters.route_selection_neighbors_ratio() * num_non_start_end_nodes;
@@ -224,9 +230,9 @@ std::unique_ptr<RuinProcedure> MakeRuinProcedure(
 
 // Returns a recreate procedure based on the given parameters.
 std::unique_ptr<RoutingFilteredHeuristic> MakeRecreateProcedure(
-    const RoutingSearchParameters& parameters, Model* model,
+    const RoutingSearchParameters& parameters, Model* absl_nonnull model,
     std::function<bool()> stop_search,
-    LocalSearchFilterManager* filter_manager) {
+    LocalSearchFilterManager* absl_nullable filter_manager) {
   const RecreateStrategy& recreate_strategy =
       parameters.iterated_local_search_parameters()
           .ruin_recreate_parameters()
@@ -300,8 +306,8 @@ class GreedyDescentAcceptanceCriterion : public NeighborAcceptanceCriterion {
   }
 
   bool Accept([[maybe_unused]] const SearchState& search_state,
-              const Assignment* candidate,
-              const Assignment* reference) override {
+              const Assignment* absl_nonnull candidate,
+              const Assignment* absl_nonnull reference) override {
     const bool accept =
         candidate->ObjectiveValue() < reference->ObjectiveValue() ||
         (late_acceptance_window_ > 0 &&
@@ -401,7 +407,7 @@ class LinearCoolingSchedule : public CoolingSchedule {
 std::unique_ptr<CoolingSchedule> MakeCoolingSchedule(
     const Model& model, const SimulatedAnnealingAcceptanceStrategy& sa_params,
     const NeighborAcceptanceCriterion::SearchState& final_search_state,
-    std::mt19937_64* rnd) {
+    std::mt19937_64* absl_nonnull rnd) {
   const auto [initial_temperature, final_temperature] =
       GetSimulatedAnnealingTemperatures(model, sa_params, rnd);
 
@@ -425,13 +431,15 @@ class SimulatedAnnealingAcceptanceCriterion
     : public NeighborAcceptanceCriterion {
  public:
   explicit SimulatedAnnealingAcceptanceCriterion(
-      std::unique_ptr<CoolingSchedule> cooling_schedule, std::mt19937_64* rnd)
+      std::unique_ptr<CoolingSchedule> cooling_schedule,
+      std::mt19937_64* absl_nonnull rnd)
       : cooling_schedule_(std::move(cooling_schedule)),
         rnd_(*rnd),
         probability_distribution_(0.0, 1.0) {}
 
-  bool Accept(const SearchState& search_state, const Assignment* candidate,
-              const Assignment* reference) override {
+  bool Accept(const SearchState& search_state,
+              const Assignment* absl_nonnull candidate,
+              const Assignment* absl_nonnull reference) override {
     double temperature = cooling_schedule_->GetTemperature(search_state);
     return candidate->ObjectiveValue() +
                temperature * std::log(probability_distribution_(rnd_)) <
@@ -453,7 +461,7 @@ class AllNodesPerformedAcceptanceCriterion
       : model_(model) {}
 
   bool Accept([[maybe_unused]] const SearchState& search_state,
-              const Assignment* candidate,
+              const Assignment* absl_nonnull candidate,
               [[maybe_unused]] const Assignment* reference) override {
     for (DisjunctionIndex d(0); d < model_.GetNumberOfDisjunctions(); ++d) {
       // This solution avoids counting non-fixed variables as inactive.
@@ -520,8 +528,8 @@ class MoreNodesPerformedAcceptanceCriterion
       : model_(model) {}
 
   bool Accept([[maybe_unused]] const SearchState& search_state,
-              const Assignment* candidate,
-              const Assignment* reference) override {
+              const Assignment* absl_nonnull candidate,
+              const Assignment* absl_nonnull reference) override {
     return CountPerformedNodes(model_, *candidate) >
            CountPerformedNodes(model_, *reference);
   }
@@ -539,8 +547,8 @@ class AbsencesBasedAcceptanceCriterion : public NeighborAcceptanceCriterion {
         absences_(model.Size(), 0) {}
 
   bool Accept([[maybe_unused]] const SearchState& search_state,
-              const Assignment* candidate,
-              const Assignment* reference) override {
+              const Assignment* absl_nonnull candidate,
+              const Assignment* absl_nonnull reference) override {
     int sum_candidate_absences = 0;
     int sum_reference_absences = 0;
     for (int node = 0; node < model_.Size(); ++node) {
@@ -555,7 +563,7 @@ class AbsencesBasedAcceptanceCriterion : public NeighborAcceptanceCriterion {
     return sum_candidate_absences < sum_reference_absences;
   }
 
-  void OnIterationEnd(const Assignment* reference) override {
+  void OnIterationEnd(const Assignment* absl_nonnull reference) override {
     for (int node = 0; node < model_.Size(); ++node) {
       if (model_.IsStart(node) || model_.IsEnd(node)) continue;
       if (reference->Value(model_.NextVar(node)) == node) {
@@ -564,7 +572,7 @@ class AbsencesBasedAcceptanceCriterion : public NeighborAcceptanceCriterion {
     }
   }
 
-  void OnBestSolutionFound(Assignment* reference) override {
+  void OnBestSolutionFound(Assignment* absl_nonnull reference) override {
     if (!remove_route_with_lowest_absences_) return;
 
     int candidate_route = -1;
@@ -618,8 +626,8 @@ class BooleanOrAcceptanceCriterion : public NeighborAcceptanceCriterion {
       : criteria_(std::move(criteria)) {}
 
   bool Accept([[maybe_unused]] const SearchState& search_state,
-              const Assignment* candidate,
-              const Assignment* reference) override {
+              const Assignment* absl_nonnull candidate,
+              const Assignment* absl_nonnull reference) override {
     for (const auto& criterion : criteria_) {
       if (criterion->Accept(search_state, candidate, reference)) {
         return true;
@@ -628,13 +636,13 @@ class BooleanOrAcceptanceCriterion : public NeighborAcceptanceCriterion {
     return false;
   }
 
-  void OnIterationEnd(const Assignment* reference) override {
+  void OnIterationEnd(const Assignment* absl_nonnull reference) override {
     for (const auto& criterion : criteria_) {
       criterion->OnIterationEnd(reference);
     }
   }
 
-  void OnBestSolutionFound(Assignment* reference) override {
+  void OnBestSolutionFound(Assignment* absl_nonnull reference) override {
     for (const auto& criterion : criteria_) {
       criterion->OnBestSolutionFound(reference);
     }
@@ -697,26 +705,26 @@ int64_t PickRandomPerformedVisit(
 }  // namespace
 
 bool IteratedLocalSearchEventManager::AddSubscriber(
-    IteratedLocalSearchEventSubscriber* subscriber) {
+    IteratedLocalSearchEventSubscriber* absl_nonnull subscriber) {
   const auto [_, inserted] = subscribers_.insert(subscriber);
   return inserted;
 }
 
 bool IteratedLocalSearchEventManager::RemoveSubscriber(
-    IteratedLocalSearchEventSubscriber* subscriber) {
+    IteratedLocalSearchEventSubscriber* absl_nonnull subscriber) {
   const int removed = subscribers_.erase(subscriber);
   return removed > 0;
 }
 
 void IteratedLocalSearchEventManager::OnLocalOptimumReached(
-    const Assignment* assignment) {
+    const Assignment* absl_nonnull assignment) {
   for (const auto& subscriber : subscribers_) {
     subscriber->OnLocalOptimumReached(assignment);
   }
 }
 
 void IteratedLocalSearchEventManager::OnReferenceSolutionUpdated(
-    const Assignment* assignment) {
+    const Assignment* absl_nonnull assignment) {
   for (const auto& subscriber : subscribers_) {
     subscriber->OnReferenceSolutionUpdated(assignment);
   }
@@ -730,7 +738,7 @@ Solution::Solution(const Model& model) : model_(model) {
   route_sizes_.resize(model.vehicles(), 0);
 }
 
-void Solution::Reset(const Assignment* assignment) {
+void Solution::Reset(const Assignment* absl_nonnull assignment) {
   assignment_ = assignment;
 
   // TODO(user): consider resetting only previously set values.
@@ -917,8 +925,10 @@ CompositeRuinProcedure::CompositionStrategy::CompositionStrategy(
     : ruins_(std::move(ruin_procedures)) {}
 
 CompositeRuinProcedure::CompositeRuinProcedure(
-    Model* model, std::vector<std::unique_ptr<RuinProcedure>> ruin_procedures,
-    RuinCompositionStrategy::Value composition_strategy, std::mt19937_64* rnd)
+    Model* absl_nonnull model,
+    std::vector<std::unique_ptr<RuinProcedure>> ruin_procedures,
+    RuinCompositionStrategy::Value composition_strategy,
+    std::mt19937_64* absl_nonnull rnd)
     : model_(*model),
       ruin_procedures_(std::move(ruin_procedures)),
       composition_strategy_(MakeRuinCompositionStrategy(
@@ -927,21 +937,21 @@ CompositeRuinProcedure::CompositeRuinProcedure(
       next_assignment_(model_.solver()->MakeAssignment()) {}
 
 void CompositeRuinProcedure::OnLocalOptimumReached(
-    const Assignment* assignment) {
+    const Assignment* absl_nonnull assignment) {
   for (const auto& ruin : ruin_procedures_) {
     ruin->OnLocalOptimumReached(assignment);
   }
 }
 
 void CompositeRuinProcedure::OnReferenceSolutionUpdated(
-    const Assignment* assignment) {
+    const Assignment* absl_nonnull assignment) {
   for (const auto& ruin : ruin_procedures_) {
     ruin->OnReferenceSolutionUpdated(assignment);
   }
 }
 
 std::function<int64_t(int64_t)> CompositeRuinProcedure::Ruin(
-    const Assignment* assignment) {
+    const Assignment* absl_nonnull assignment) {
   const std::vector<RuinProcedure*>& ruins = composition_strategy_->Select();
 
   auto next_accessors = ruins[0]->Ruin(assignment);
@@ -955,7 +965,8 @@ std::function<int64_t(int64_t)> CompositeRuinProcedure::Ruin(
   return next_accessors;
 }
 
-const Assignment* CompositeRuinProcedure::BuildAssignmentFromNextAccessor(
+const Assignment* absl_nonnull
+CompositeRuinProcedure::BuildAssignmentFromNextAccessor(
     const std::function<int64_t(int64_t)>& next_accessors) {
   next_assignment_->Clear();
 
@@ -984,8 +995,8 @@ const Assignment* CompositeRuinProcedure::BuildAssignmentFromNextAccessor(
 }
 
 CloseRoutesRemovalRuinProcedure::CloseRoutesRemovalRuinProcedure(
-    Model* model, std::mt19937_64* rnd, size_t num_routes,
-    int num_neighbors_for_route_selection)
+    Model* absl_nonnull model, std::mt19937_64* absl_nonnull rnd,
+    size_t num_routes, int num_neighbors_for_route_selection)
     : model_(*model),
       neighbors_manager_(model->GetOrCreateNodeNeighborsByCostClass(
           {num_neighbors_for_route_selection,
@@ -998,7 +1009,7 @@ CloseRoutesRemovalRuinProcedure::CloseRoutesRemovalRuinProcedure(
       removed_routes_(model->vehicles()) {}
 
 std::function<int64_t(int64_t)> CloseRoutesRemovalRuinProcedure::Ruin(
-    const Assignment* assignment) {
+    const Assignment* absl_nonnull assignment) {
   if (num_routes_ == 0) {
     return [this, assignment](int64_t node) {
       return assignment->Value(model_.NextVar(node));
@@ -1052,8 +1063,8 @@ std::function<int64_t(int64_t)> CloseRoutesRemovalRuinProcedure::Ruin(
 }
 
 RandomWalkRemovalRuinProcedure::RandomWalkRemovalRuinProcedure(
-    Model* model, std::mt19937_64* rnd, int walk_length,
-    int num_neighbors_for_route_selection)
+    Model* absl_nonnull model, std::mt19937_64* absl_nonnull rnd,
+    int walk_length, int num_neighbors_for_route_selection)
     : model_(*model),
       rnd_(*rnd),
       node_dist_(0, model->Size() - model->vehicles()),
@@ -1066,7 +1077,7 @@ RandomWalkRemovalRuinProcedure::RandomWalkRemovalRuinProcedure(
       walk_length_(walk_length) {}
 
 std::function<int64_t(int64_t)> RandomWalkRemovalRuinProcedure::Ruin(
-    const Assignment* assignment) {
+    const Assignment* absl_nonnull assignment) {
   auto [curr_node, walk_length] = GetWalkSeedAndLength(assignment);
   if (walk_length == 0 || curr_node == -1) {
     return [this, assignment](int64_t node) {
@@ -1101,7 +1112,7 @@ std::function<int64_t(int64_t)> RandomWalkRemovalRuinProcedure::Ruin(
 }
 
 std::pair<int64_t, int> RandomWalkRemovalRuinProcedure::GetWalkSeedAndLength(
-    const Assignment* assignment) {
+    const Assignment* absl_nonnull assignment) {
   int64_t curr_node =
       PickRandomPerformedVisit(model_, *assignment, rnd_, node_dist_);
   return {curr_node, walk_length_};
@@ -1156,9 +1167,10 @@ int64_t RandomWalkRemovalRuinProcedure::GetNextNodeToRemove(
 }
 
 AdaptiveRandomWalkRemovalRuinProcedure::AdaptiveRandomWalkRemovalRuinProcedure(
-    Model* model, const Assignment* reference_assignment, std::mt19937_64* rnd,
-    int num_neighbors_for_route_selection, double strengthening_factor,
-    double weakening_factor)
+    Model* absl_nonnull model,
+    const Assignment* absl_nonnull reference_assignment,
+    std::mt19937_64* absl_nonnull rnd, int num_neighbors_for_route_selection,
+    double strengthening_factor, double weakening_factor)
     : RandomWalkRemovalRuinProcedure(model, rnd,
                                      /*walk_length=*/0,
                                      num_neighbors_for_route_selection),
@@ -1175,14 +1187,14 @@ AdaptiveRandomWalkRemovalRuinProcedure::AdaptiveRandomWalkRemovalRuinProcedure(
 }
 
 std::function<int64_t(int64_t)> AdaptiveRandomWalkRemovalRuinProcedure::Ruin(
-    const Assignment* assignment) {
+    const Assignment* absl_nonnull assignment) {
   removed_nodes_.clear();
   return RandomWalkRemovalRuinProcedure::Ruin(assignment);
 }
 
 std::pair<int64_t, int>
 AdaptiveRandomWalkRemovalRuinProcedure::GetWalkSeedAndLength(
-    const Assignment* assignment) {
+    const Assignment* absl_nonnull assignment) {
   const int64_t seed_node =
       PickRandomPerformedVisit(model_, *assignment, rnd_, node_dist_);
   return {seed_node, seed_node == -1 ? 0 : walk_lengths_[seed_node]};
@@ -1193,7 +1205,7 @@ void AdaptiveRandomWalkRemovalRuinProcedure::OnNodeRemoved(int64_t node) {
 }
 
 void AdaptiveRandomWalkRemovalRuinProcedure::OnLocalOptimumReached(
-    const Assignment* assignment) {
+    const Assignment* absl_nonnull assignment) {
   if (removed_nodes_.empty()) {
     return;
   }
@@ -1249,7 +1261,7 @@ void AdaptiveRandomWalkRemovalRuinProcedure::OnLocalOptimumReached(
 }
 
 void AdaptiveRandomWalkRemovalRuinProcedure::OnReferenceSolutionUpdated(
-    const Assignment* assignment) {
+    const Assignment* absl_nonnull assignment) {
   reference_assignment_ = assignment;
   const double avg_arc_cost =
       static_cast<double>(assignment->ObjectiveValue()) / model_.Size();
@@ -1257,7 +1269,8 @@ void AdaptiveRandomWalkRemovalRuinProcedure::OnReferenceSolutionUpdated(
   strengthening_threshold_ = std::ceil(strengthening_factor_ * avg_arc_cost);
 }
 
-SISRRuinProcedure::SISRRuinProcedure(Model* model, std::mt19937_64* rnd,
+SISRRuinProcedure::SISRRuinProcedure(Model* absl_nonnull model,
+                                     std::mt19937_64* absl_nonnull rnd,
                                      int max_removed_sequence_size,
                                      int avg_num_removed_visits,
                                      double bypass_factor, int num_neighbors)
@@ -1277,7 +1290,7 @@ SISRRuinProcedure::SISRRuinProcedure(Model* model, std::mt19937_64* rnd,
       routing_solution_(*model) {}
 
 std::function<int64_t(int64_t)> SISRRuinProcedure::Ruin(
-    const Assignment* assignment) {
+    const Assignment* absl_nonnull assignment) {
   const int64_t seed_node =
       PickRandomPerformedVisit(model_, *assignment, rnd_, node_dist_);
   if (seed_node == -1) {
@@ -1435,11 +1448,12 @@ class RuinAndRecreateDecisionBuilder : public DecisionBuilder {
 };
 
 DecisionBuilder* MakeRuinAndRecreateDecisionBuilder(
-    IteratedLocalSearchEventManager* event_manager,
-    const RoutingSearchParameters& parameters, Model* model,
-    std::mt19937_64* rnd, const Assignment* assignment,
+    IteratedLocalSearchEventManager* absl_nonnull event_manager,
+    const RoutingSearchParameters& parameters, Model* absl_nonnull model,
+    std::mt19937_64* absl_nonnull rnd,
+    const Assignment* absl_nonnull assignment,
     std::function<bool()> stop_search,
-    LocalSearchFilterManager* filter_manager) {
+    LocalSearchFilterManager* absl_nullable filter_manager) {
   std::unique_ptr<RuinProcedure> ruin = MakeRuinProcedure(
       parameters.iterated_local_search_parameters().ruin_recreate_parameters(),
       model, assignment, rnd);
@@ -1452,11 +1466,13 @@ DecisionBuilder* MakeRuinAndRecreateDecisionBuilder(
       assignment, std::move(ruin), std::move(recreate)));
 }
 
-DecisionBuilder* MakePerturbationDecisionBuilder(
-    const RoutingSearchParameters& parameters, Model* model,
-    IteratedLocalSearchEventManager* event_manager, std::mt19937_64* rnd,
-    const Assignment* assignment, std::function<bool()> stop_search,
-    LocalSearchFilterManager* filter_manager) {
+DecisionBuilder* absl_nullable MakePerturbationDecisionBuilder(
+    const RoutingSearchParameters& parameters, Model* absl_nonnull model,
+    IteratedLocalSearchEventManager* absl_nonnull event_manager,
+    std::mt19937_64* absl_nonnull rnd,
+    const Assignment* absl_nonnull assignment,
+    std::function<bool()> stop_search,
+    LocalSearchFilterManager* absl_nullable filter_manager) {
   switch (
       parameters.iterated_local_search_parameters().perturbation_strategy()) {
     case PerturbationStrategy::RUIN_AND_RECREATE:
@@ -1470,10 +1486,11 @@ DecisionBuilder* MakePerturbationDecisionBuilder(
 }
 
 std::unique_ptr<NeighborAcceptanceCriterion> MakeNeighborAcceptanceCriterion(
-    const Model& model, IteratedLocalSearchEventManager* event_manager,
+    const Model& model,
+    IteratedLocalSearchEventManager* absl_nonnull event_manager,
     const AcceptanceStrategy& acceptance_strategy,
     const NeighborAcceptanceCriterion::SearchState& final_search_state,
-    std::mt19937_64* rnd) {
+    std::mt19937_64* absl_nonnull rnd) {
   std::unique_ptr<NeighborAcceptanceCriterion> criterion = nullptr;
 
   switch (acceptance_strategy.strategy_case()) {
@@ -1508,10 +1525,11 @@ std::unique_ptr<NeighborAcceptanceCriterion> MakeNeighborAcceptanceCriterion(
 }
 
 std::unique_ptr<NeighborAcceptanceCriterion> MakeNeighborAcceptanceCriterion(
-    const Model& model, IteratedLocalSearchEventManager* event_manager,
+    const Model& model,
+    IteratedLocalSearchEventManager* absl_nonnull event_manager,
     const AcceptancePolicy& acceptance_policy,
     const NeighborAcceptanceCriterion::SearchState& final_search_state,
-    std::mt19937_64* rnd) {
+    std::mt19937_64* absl_nonnull rnd) {
   // The composition rule is ignored if there is only one strategy.
   DCHECK_GE(acceptance_policy.strategies().size(), 1);
   if (acceptance_policy.strategies().size() == 1) {
@@ -1544,7 +1562,7 @@ std::unique_ptr<NeighborAcceptanceCriterion> MakeNeighborAcceptanceCriterion(
 
 std::pair<double, double> GetSimulatedAnnealingTemperatures(
     const Model& model, const SimulatedAnnealingAcceptanceStrategy& sa_params,
-    std::mt19937_64* rnd) {
+    std::mt19937_64* absl_nonnull rnd) {
   if (!sa_params.automatic_temperatures()) {
     return {sa_params.initial_temperature(), sa_params.final_temperature()};
   }

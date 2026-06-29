@@ -23,6 +23,7 @@
 #include <vector>
 
 #include "absl/algorithm/container.h"
+#include "absl/base/nullability.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/functional/any_invocable.h"
 #include "absl/log/check.h"
@@ -67,7 +68,8 @@ class DifferentFromValues : public Constraint {
 };
 }  // namespace
 
-Constraint* MakeDifferentFromValues(Solver* solver, IntVar* var,
+Constraint* MakeDifferentFromValues(Solver* absl_nonnull solver,
+                                    IntVar* absl_nonnull var,
                                     std::vector<int64_t> values) {
   return solver->RevAlloc(
       new DifferentFromValues(solver, var, std::move(values)));
@@ -279,8 +281,9 @@ class ResourceAssignmentConstraint : public Constraint {
 }  // namespace
 
 Constraint* MakeResourceConstraint(
-    const Model::ResourceGroup* resource_group,
-    const std::vector<IntVar*>* vehicle_resource_vars, Model* model) {
+    const Model::ResourceGroup* absl_nonnull resource_group,
+    const std::vector<IntVar*>* absl_nonnull vehicle_resource_vars,
+    Model* absl_nonnull model) {
   return model->solver()->RevAlloc(new ResourceAssignmentConstraint(
       resource_group, vehicle_resource_vars, model));
 }
@@ -634,7 +637,7 @@ class PathSpansAndTotalSlacks : public Constraint {
 };
 }  // namespace
 
-Constraint* MakePathSpansAndTotalSlacks(const Dimension* dimension,
+Constraint* MakePathSpansAndTotalSlacks(const Dimension* absl_nonnull dimension,
                                         std::vector<IntVar*> spans,
                                         std::vector<IntVar*> total_slacks) {
   Model* const model = dimension->model();
@@ -643,78 +646,6 @@ Constraint* MakePathSpansAndTotalSlacks(const Dimension* dimension,
   return model->solver()->RevAlloc(new PathSpansAndTotalSlacks(
       model, dimension, std::move(spans), std::move(total_slacks)));
 }
-
-namespace {
-// Very light version of the RangeLessOrEqual constraint (see ./range_cst.cc).
-// Only performs initial propagation and then checks the compatibility of the
-// variable domains without domain pruning.
-// This is useful when to avoid ping-pong effects with costly constraints
-// such as the PathCumul constraint.
-// This constraint has not been added to the cp library (in range_cst.cc) given
-// it only does checking and no propagation (except the initial propagation)
-// and is only fit for local search, in particular in the context of vehicle
-// routing.
-class LightRangeLessOrEqual : public Constraint {
- public:
-  LightRangeLessOrEqual(Solver* s, IntExpr* l, IntExpr* r);
-  ~LightRangeLessOrEqual() override {}
-  void Post() override;
-  void InitialPropagate() override;
-  std::string DebugString() const override;
-  IntVar* Var() override {
-    return solver()->MakeIsLessOrEqualVar(left_, right_);
-  }
-  // TODO(user): introduce a kLightLessOrEqual tag.
-  void Accept(operations_research::ModelVisitor* visitor) const override {
-    visitor->BeginVisitConstraint(
-        operations_research::ModelVisitor::kLessOrEqual, this);
-    visitor->VisitIntegerExpressionArgument(
-        operations_research::ModelVisitor::kLeftArgument, left_);
-    visitor->VisitIntegerExpressionArgument(
-        operations_research::ModelVisitor::kRightArgument, right_);
-    visitor->EndVisitConstraint(operations_research::ModelVisitor::kLessOrEqual,
-                                this);
-  }
-
- private:
-  void CheckRange();
-
-  IntExpr* const left_;
-  IntExpr* const right_;
-  Demon* demon_;
-};
-
-LightRangeLessOrEqual::LightRangeLessOrEqual(Solver* s, IntExpr* l, IntExpr* r)
-    : Constraint(s), left_(l), right_(r), demon_(nullptr) {}
-
-void LightRangeLessOrEqual::Post() {
-  demon_ = MakeConstraintDemon0(
-      solver(), this, &LightRangeLessOrEqual::CheckRange, "CheckRange");
-  left_->WhenRange(demon_);
-  right_->WhenRange(demon_);
-}
-
-void LightRangeLessOrEqual::InitialPropagate() {
-  left_->SetMax(right_->Max());
-  right_->SetMin(left_->Min());
-  if (left_->Max() <= right_->Min()) {
-    demon_->inhibit(solver());
-  }
-}
-
-void LightRangeLessOrEqual::CheckRange() {
-  if (left_->Min() > right_->Max()) {
-    solver()->Fail();
-  }
-  if (left_->Max() <= right_->Min()) {
-    demon_->inhibit(solver());
-  }
-}
-
-std::string LightRangeLessOrEqual::DebugString() const {
-  return left_->DebugString() + " < " + right_->DebugString();
-}
-}  // namespace
 
 namespace {
 
@@ -795,7 +726,7 @@ class RouteConstraint : public Constraint {
 }  // namespace
 
 Constraint* MakeRouteConstraint(
-    Model* model, std::vector<IntVar*> route_cost_vars,
+    Model* absl_nonnull model, std::vector<IntVar*> route_cost_vars,
     std::function<std::optional<int64_t>(const std::vector<int64_t>&)>
         route_evaluator) {
   return model->solver()->RevAlloc(new RouteConstraint(
@@ -1029,8 +960,8 @@ void GlobalVehicleBreaksConstraint::PropagateVehicle(int vehicle) {
 
 }  // namespace
 
-Constraint* MakeGlobalVehicleBreaksConstraint(Solver* solver,
-                                              const Dimension* dimension) {
+Constraint* MakeGlobalVehicleBreaksConstraint(
+    Solver* absl_nonnull solver, const Dimension* absl_nonnull dimension) {
   return solver->RevAlloc(new GlobalVehicleBreaksConstraint(dimension));
 }
 
@@ -1137,7 +1068,7 @@ class NumActiveVehiclesCapacityConstraint : public Constraint {
 }  // namespace
 
 Constraint* MakeNumActiveVehiclesCapacityConstraint(
-    Solver* solver, std::vector<IntVar*> transit_vars,
+    Solver* absl_nonnull solver, std::vector<IntVar*> transit_vars,
     std::vector<IntVar*> active_vars, std::vector<IntVar*> vehicle_active_vars,
     std::vector<int64_t> vehicle_capacities, int max_active_vehicles,
     bool enforce_active_vehicles) {

@@ -19,6 +19,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/base/nullability.h"
 #include "absl/types/span.h"
 
 namespace operations_research::routing {
@@ -86,8 +87,9 @@ bool FindMostExpensiveArcsOnRoute(
     const std::function<bool(int64_t)>& is_end,
     const std::function<int64_t(int64_t, int64_t, int64_t)>&
         arc_cost_for_route_start,
-    std::vector<std::pair<int64_t, int>>* most_expensive_arc_starts_and_ranks,
-    std::pair<int, int>* first_expensive_arc_indices);
+    std::vector<std::pair<int64_t, int>>* absl_nonnull
+        most_expensive_arc_starts_and_ranks,
+    std::pair<int, int>* absl_nonnull first_expensive_arc_indices);
 
 }  // namespace operations_research::routing
 

@@ -33,6 +33,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/base/nullability.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/container/inlined_vector.h"
 #include "absl/log/check.h"
@@ -75,18 +76,19 @@ namespace operations_research::routing {
 // interrupted and the best solution found will be returned immediately.
 // TODO(user): Add a version taking search parameters for alternative models.
 const Assignment* SolveWithAlternativeSolvers(
-    Model* primary_model, const std::vector<Model*>& alternative_models,
+    Model* absl_nonnull primary_model,
+    const std::vector<Model*>& alternative_models,
     const RoutingSearchParameters& parameters,
     int max_non_improving_iterations);
 // Same as above, but taking an initial solution.
 const Assignment* SolveFromAssignmentWithAlternativeSolvers(
-    const Assignment* assignment, Model* primary_model,
+    const Assignment* assignment, Model* absl_nonnull primary_model,
     const std::vector<Model*>& alternative_models,
     const RoutingSearchParameters& parameters,
     int max_non_improving_iterations);
 // Same as above but taking alternative parameters for each alternative model.
 const Assignment* SolveFromAssignmentWithAlternativeSolversAndParameters(
-    const Assignment* assignment, Model* primary_model,
+    const Assignment* assignment, Model* absl_nonnull primary_model,
     const RoutingSearchParameters& parameters,
     const std::vector<Model*>& alternative_models,
     const std::vector<RoutingSearchParameters>& alternative_parameters,
@@ -237,7 +239,8 @@ class RoutingFilteredDecisionBuilder : public DecisionBuilder {
 /// Generic filter-based heuristic applied to IntVars.
 class IntVarFilteredHeuristic {
  public:
-  IntVarFilteredHeuristic(Solver* solver, const std::vector<IntVar*>& vars,
+  IntVarFilteredHeuristic(Solver* absl_nonnull solver,
+                          const std::vector<IntVar*>& vars,
                           const std::vector<IntVar*>& secondary_vars,
                           LocalSearchFilterManager* filter_manager);
 
@@ -339,7 +342,8 @@ class IntVarFilteredHeuristic {
 /// Filter-based heuristic dedicated to routing.
 class RoutingFilteredHeuristic : public IntVarFilteredHeuristic {
  public:
-  RoutingFilteredHeuristic(Model* model, std::function<bool()> stop_search,
+  RoutingFilteredHeuristic(Model* absl_nonnull model,
+                           std::function<bool()> stop_search,
                            LocalSearchFilterManager* filter_manager);
   ~RoutingFilteredHeuristic() override = default;
   /// Builds a solution starting from the routes formed by the next accessor.
@@ -389,7 +393,7 @@ class CheapestInsertionFilteredHeuristic : public RoutingFilteredHeuristic {
  public:
   /// Takes ownership of evaluator.
   CheapestInsertionFilteredHeuristic(
-      Model* model, std::function<bool()> stop_search,
+      Model* absl_nonnull model, std::function<bool()> stop_search,
       std::function<int64_t(int64_t, int64_t, int64_t)> evaluator,
       std::function<int64_t(int64_t)> penalty_evaluator,
       LocalSearchFilterManager* filter_manager);
@@ -527,7 +531,7 @@ class GlobalCheapestInsertionFilteredHeuristic
  public:
   /// Takes ownership of evaluators.
   GlobalCheapestInsertionFilteredHeuristic(
-      Model* model, std::function<bool()> stop_search,
+      Model* absl_nonnull model, std::function<bool()> stop_search,
       std::function<int64_t(int64_t, int64_t, int64_t)> evaluator,
       std::function<int64_t(int64_t)> penalty_evaluator,
       LocalSearchFilterManager* filter_manager,

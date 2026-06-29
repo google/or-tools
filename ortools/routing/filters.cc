@@ -31,6 +31,7 @@
 #include <vector>
 
 #include "absl/algorithm/container.h"
+#include "absl/base/nullability.h"
 #include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
@@ -3390,10 +3391,9 @@ int64_t LPCumulFilter::GetSynchronizedObjectiveValue() const {
 }  // namespace
 
 IntVarLocalSearchFilter* MakeGlobalLPCumulFilter(
-    GlobalDimensionCumulOptimizer* lp_optimizer,
-    GlobalDimensionCumulOptimizer* mp_optimizer, bool filter_objective_cost) {
-  DCHECK_NE(lp_optimizer, nullptr);
-  DCHECK_NE(mp_optimizer, nullptr);
+    GlobalDimensionCumulOptimizer* absl_nonnull lp_optimizer,
+    GlobalDimensionCumulOptimizer* absl_nonnull mp_optimizer,
+    bool filter_objective_cost) {
   const Model& model = *lp_optimizer->dimension()->model();
   return model.solver()->RevAlloc(new LPCumulFilter(
       model.Nexts(), lp_optimizer, mp_optimizer, filter_objective_cost));
@@ -3817,12 +3817,10 @@ void ResourceAssignmentFilter::Synchronize(const Assignment* assignment,
 }  // namespace
 
 LocalSearchFilter* MakeResourceAssignmentFilter(
-    LocalDimensionCumulOptimizer* lp_optimizer,
-    LocalDimensionCumulOptimizer* mp_optimizer,
+    LocalDimensionCumulOptimizer* absl_nonnull lp_optimizer,
+    LocalDimensionCumulOptimizer* absl_nonnull mp_optimizer,
     bool propagate_own_objective_value, bool filter_objective_cost) {
   const Model& model = *lp_optimizer->dimension()->model();
-  DCHECK_NE(lp_optimizer, nullptr);
-  DCHECK_NE(mp_optimizer, nullptr);
   return model.solver()->RevAlloc(new ResourceAssignmentFilter(
       model.Nexts(), lp_optimizer, mp_optimizer, propagate_own_objective_value,
       filter_objective_cost));
@@ -4592,9 +4590,9 @@ void DimensionChecker::UpdateRIQStructure(int begin_index, int end_index) {
       const EInterval fst_to_fst = Delta(fw.tsum_at_fst, lw.tsum_at_fst);
 
       riq_[layer][i] = {
-          .cumuls_to_fst = fw.cumuls_to_fst & lw.cumuls_to_fst - fst_to_fst,
+          .cumuls_to_fst = fw.cumuls_to_fst & (lw.cumuls_to_fst - fst_to_fst),
           .tightest_tsum = fw.tightest_tsum & lw.tightest_tsum,
-          .cumuls_to_lst = fw.cumuls_to_lst + lst_to_lst & lw.cumuls_to_lst,
+          .cumuls_to_lst = (fw.cumuls_to_lst + lst_to_lst) & lw.cumuls_to_lst,
           .tsum_at_fst = fw.tsum_at_fst,
           .tsum_at_lst = lw.tsum_at_lst};
     }

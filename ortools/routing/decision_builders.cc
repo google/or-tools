@@ -23,6 +23,7 @@
 #include <vector>
 
 #include "absl/algorithm/container.h"
+#include "absl/base/nullability.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/types/span.h"
@@ -103,7 +104,7 @@ class SetValuesFromTargets : public DecisionBuilder {
 
 }  // namespace
 
-DecisionBuilder* MakeSetValuesFromTargets(Solver* solver,
+DecisionBuilder* MakeSetValuesFromTargets(Solver* absl_nonnull solver,
                                           std::vector<IntVar*> variables,
                                           std::vector<int64_t> targets) {
   return solver->RevAlloc(
@@ -542,8 +543,10 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
 }  // namespace
 
 DecisionBuilder* MakeSetCumulsFromLocalDimensionCosts(
-    Solver* solver, LocalDimensionCumulOptimizer* lp_optimizer,
-    LocalDimensionCumulOptimizer* mp_optimizer, bool optimize_and_pack,
+    Solver* absl_nonnull solver,
+    LocalDimensionCumulOptimizer* absl_nonnull lp_optimizer,
+    LocalDimensionCumulOptimizer* absl_nonnull mp_optimizer,
+    bool optimize_and_pack,
     std::vector<Model::RouteDimensionTravelInfo>
         dimension_travel_info_per_route) {
   return solver->RevAlloc(new SetCumulsFromLocalDimensionCosts(
@@ -717,8 +720,10 @@ class SetCumulsFromGlobalDimensionCosts : public DecisionBuilder {
 }  // namespace
 
 DecisionBuilder* MakeSetCumulsFromGlobalDimensionCosts(
-    Solver* solver, GlobalDimensionCumulOptimizer* global_optimizer,
-    GlobalDimensionCumulOptimizer* global_mp_optimizer, bool optimize_and_pack,
+    Solver* absl_nonnull solver,
+    GlobalDimensionCumulOptimizer* absl_nonnull global_optimizer,
+    GlobalDimensionCumulOptimizer* absl_nonnull global_mp_optimizer,
+    bool optimize_and_pack,
     std::vector<Model::RouteDimensionTravelInfo>
         dimension_travel_info_per_route) {
   return solver->RevAlloc(new SetCumulsFromGlobalDimensionCosts(
@@ -885,14 +890,16 @@ class RestoreDimensionValuesForUnchangedRoutes : public DecisionBuilder {
 };
 }  // namespace
 
-DecisionBuilder* MakeRestoreDimensionValuesForUnchangedRoutes(Model* model) {
+DecisionBuilder* MakeRestoreDimensionValuesForUnchangedRoutes(
+    Model* absl_nonnull model) {
   return model->solver()->RevAlloc(
       new RestoreDimensionValuesForUnchangedRoutes(model));
 }
 
 // FinalizerVariables
 
-void FinalizerVariables::AddWeightedVariableTarget(IntVar* var, int64_t target,
+void FinalizerVariables::AddWeightedVariableTarget(IntVar* absl_nonnull var,
+                                                   int64_t target,
                                                    int64_t cost) {
   CHECK(var != nullptr);
   const int index =
@@ -910,7 +917,8 @@ void FinalizerVariables::AddWeightedVariableTarget(IntVar* var, int64_t target,
   }
 }
 
-void FinalizerVariables::AddVariableTarget(IntVar* var, int64_t target) {
+void FinalizerVariables::AddVariableTarget(IntVar* absl_nonnull var,
+                                           int64_t target) {
   CHECK(var != nullptr);
   if (finalizer_variable_target_set_.contains(var)) return;
   finalizer_variable_target_set_.insert(var);
