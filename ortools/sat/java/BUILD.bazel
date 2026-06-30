@@ -13,9 +13,8 @@
 
 # Description: java wrapping of the code in ../
 
-load("@contrib_rules_jvm//java:defs.bzl", "java_junit5_test")
 load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
-load("//bazel:swig_java.bzl", "java_wrap_cc")
+load("//bazel:or_java_wrap_cc.bzl", "or_java_wrap_cc")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -41,13 +40,12 @@ genrule(
     tools = [":gen_cp_model_proto_swig"],
 )
 
-java_wrap_cc(
+or_java_wrap_cc(
     name = "cp_model_proto",
     srcs = ["cp_model_proto.swig"],
+    java_deps = ["@maven//:com_google_errorprone_error_prone_annotations"],
     package = "com.google.ortools.sat",
-    swig_includes = [
-        "//ortools/base:base_swig",
-    ],
+    swig_includes = ["//ortools/base:base_swig"],
     visibility = ["//visibility:public"],
     deps = [
         "//ortools/port:proto_utils",
@@ -56,97 +54,25 @@ java_wrap_cc(
     ],
 )
 
-java_junit5_test(
-    name = "CpModelProtoTest",
-    size = "medium",
-    srcs = ["CpModelProtoTest.java"],
-    jvm_flags = ["-Xcheck:jni"],
-    test_class = "com.google.ortools.sat.CpModelProtoTest",
-    deps = [
-        "//ortools/java/com/google/ortools:Loader",
-        "//ortools/sat/java:cp_model_proto",
-        "//ortools/util/java:jni_helper",
-        "@maven//:com_google_truth_truth",
-        "@maven//:org_junit_jupiter_junit_jupiter_api",
-        "@maven//:org_junit_jupiter_junit_jupiter_engine",
-        "@maven//:org_junit_jupiter_junit_jupiter_params",
-        "@maven//:org_junit_platform_junit_platform_launcher",
-        "@maven//:org_junit_platform_junit_platform_reporting",
-    ],
-)
-
-java_wrap_cc(
+or_java_wrap_cc(
     name = "sat",
     srcs = ["sat.swig"],
     java_deps = [
         ":cp_model_proto",
         "//ortools/sat:sat_parameters_java_proto",
         "//ortools/util/java:sorted_interval_list",
+        "@maven//:com_google_errorprone_error_prone_annotations",
         "@protobuf//java/core",
     ],
     package = "com.google.ortools.sat",
     swig_includes = [
+        ":cp_model_proto.swig",
         "//ortools/base:base_swig",
-        "//ortools/sat/java:cp_model_proto.swig",
         "//ortools/util/java:proto.i",
         "//ortools/util/java:sorted_interval_list.swig",
         "//ortools/util/java:vector.swig",
     ],
     use_directors = True,
     visibility = ["//visibility:public"],
-    deps = [
-        "//ortools/sat:swig_helper",
-        "//ortools/util:sorted_interval_list",
-    ],
-)
-
-java_junit5_test(
-    name = "CpModelTest",
-    size = "medium",
-    srcs = ["CpModelTest.java"],
-    test_class = "com.google.ortools.sat.CpModelTest",
-    deps = [
-        "//ortools/java/com/google/ortools:Loader",
-        "//ortools/java/com/google/ortools/sat",
-        "@maven//:com_google_truth_truth",
-        "@maven//:org_junit_jupiter_junit_jupiter_api",
-        "@maven//:org_junit_jupiter_junit_jupiter_engine",
-        "@maven//:org_junit_jupiter_junit_jupiter_params",
-        "@maven//:org_junit_platform_junit_platform_launcher",
-        "@maven//:org_junit_platform_junit_platform_reporting",
-    ],
-)
-
-java_junit5_test(
-    name = "CpSolverTest",
-    size = "medium",
-    srcs = ["CpSolverTest.java"],
-    test_class = "com.google.ortools.sat.CpSolverTest",
-    deps = [
-        "//ortools/java/com/google/ortools:Loader",
-        "//ortools/java/com/google/ortools/sat",
-        "@maven//:com_google_truth_truth",
-        "@maven//:org_junit_jupiter_junit_jupiter_api",
-        "@maven//:org_junit_jupiter_junit_jupiter_engine",
-        "@maven//:org_junit_jupiter_junit_jupiter_params",
-        "@maven//:org_junit_platform_junit_platform_launcher",
-        "@maven//:org_junit_platform_junit_platform_reporting",
-    ],
-)
-
-java_junit5_test(
-    name = "LinearExprTest",
-    size = "medium",
-    srcs = ["LinearExprTest.java"],
-    test_class = "com.google.ortools.sat.LinearExprTest",
-    deps = [
-        "//ortools/java/com/google/ortools:Loader",
-        "//ortools/java/com/google/ortools/sat",
-        "@maven//:com_google_truth_truth",
-        "@maven//:org_junit_jupiter_junit_jupiter_api",
-        "@maven//:org_junit_jupiter_junit_jupiter_engine",
-        "@maven//:org_junit_jupiter_junit_jupiter_params",
-        "@maven//:org_junit_platform_junit_platform_launcher",
-        "@maven//:org_junit_platform_junit_platform_reporting",
-    ],
+    deps = ["//ortools/sat:swig_helper"],
 )

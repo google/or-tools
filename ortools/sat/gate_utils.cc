@@ -25,11 +25,14 @@
 #include "absl/algorithm/container.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
+#include "absl/log/vlog_is_on.h"
 #include "absl/numeric/bits.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/random/distributions.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
+#include "ortools/base/helpers.h"
+#include "ortools/base/options.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/sat_base.h"
@@ -38,9 +41,16 @@
 namespace operations_research::sat {
 
 std::string BinaryCircuit::DebugString() const {
+  int max_depth = 0;
+  std::vector<int> depths(num_vars);
+
   // All these case should be easily simplifiable.
   int num_todo = 0;
   for (const BinaryGate& gate : gates) {
+    depths[gate.target] = std::max(depths[gate.target], depths[gate.a] + 1);
+    depths[gate.target] = std::max(depths[gate.target], depths[gate.b] + 1);
+    max_depth = std::max(max_depth, depths[gate.target]);
+
     if (gate.a == gate.b || gate.type == 0b0000 || gate.type == 0b1111 ||
         gate.type == 0b0101 || gate.type == 0b1010 || gate.type == 0b0011 ||
         gate.type == 0b1100) {
@@ -50,8 +60,9 @@ std::string BinaryCircuit::DebugString() const {
 
   return absl::StrCat("#inputs:", num_inputs, " #vars:", num_vars,
                       " #gates:", gates.size(), " #outputs:", outputs.size(),
-                      " #constraints:", gates.size() - (num_vars - num_inputs),
-                      " #simplifiable:", num_todo);
+                      " #constraints:",
+                      static_cast<int>(gates.size()) - (num_vars - num_inputs),
+                      " #simplifiable:", num_todo, " #depth:", max_depth);
 }
 
 void RemoveConstraints(BinaryCircuit* circuit) {
@@ -652,6 +663,7 @@ void ReduceGates(BinaryCircuit* circuit) {
         circuit->gates[new_gate_index].type = new_type;
         circuit->gates[new_gate_index].a = queue[0];
         circuit->gates[new_gate_index].b = queue[1];
+        circuit->gates[new_gate_index].Simplify();
       }
     }
   }
@@ -671,7 +683,7 @@ std::string ToDotFile(const BinaryCircuit& circuit,
   std::vector<int> out_degree(circuit.num_vars, 0);
   std::vector<int> num_def(circuit.num_vars, 0);
   std::vector<int> types(circuit.num_vars, 0);
-  std::vector<std::pair<int, int>> reverse_arcs;
+  CompactVectorVectorBuilder<int, int> dependency_builder;
   for (const BinaryGate& gate : circuit.gates) {
     if (gate.target == BinaryGate::kConstraintTarget) continue;
 
@@ -681,14 +693,14 @@ std::string ToDotFile(const BinaryCircuit& circuit,
     num_def[gate.target]++;
 
     if (gate.a < gate.target && gate.b < gate.target) {
-      reverse_arcs.push_back({gate.target, gate.a});
+      dependency_builder.Add(gate.target, gate.a);
       if (gate.a != gate.b) {
-        reverse_arcs.push_back({gate.target, gate.b});
+        dependency_builder.Add(gate.target, gate.b);
       }
     }
   }
-  CompactVectorVector<int, int> dependency;
-  dependency.ResetFromPairs(reverse_arcs, circuit.num_vars);
+  const CompactVectorVector<int, int> dependency(dependency_builder,
+                                                 circuit.num_vars);
 
   std::vector<int> nodes;
   std::vector<std::pair<int, int>> arcs;
@@ -805,17 +817,17 @@ std::string ToBenchFile(const BinaryCircuit& circuit) {
 SubcircuitExtractor::SubcircuitExtractor(const BinaryCircuit& circuit)
     : mitter_(circuit) {
   // Do some precomputation.
-  std::vector<std::pair<int, int>> reverse_arcs;
+  CompactVectorVectorBuilder<int, int> dependency_builder;
   for (const BinaryGate& gate : circuit.gates) {
     if (gate.target == BinaryGate::kConstraintTarget) continue;
     if (gate.a < gate.target && gate.b < gate.target) {
-      reverse_arcs.push_back({gate.target, gate.a});
+      dependency_builder.Add(gate.target, gate.a);
       if (gate.a != gate.b) {
-        reverse_arcs.push_back({gate.target, gate.b});
+        dependency_builder.Add(gate.target, gate.b);
       }
     }
   }
-  dependency_.ResetFromPairs(reverse_arcs, circuit.num_vars);
+  dependency_.ResetFromBuilder(dependency_builder, circuit.num_vars);
 }
 
 BinaryCircuit SubcircuitExtractor::Extract(absl::Span<const Literal> literals) {
@@ -969,7 +981,7 @@ BinaryCircuit ConstructMitter(const BinaryCircuit& circuit_a,
 
 // TODO(user): If one call proved all potential equivalences, we can stop.
 // TODO(user): congruence closure is faster... resuse sat code somehow?
-void SimplifyCircuit(
+std::vector<std::pair<Literal, Literal>> SimplifyCircuit(
     int max_num_solves, absl::BitGenRef random,
     std::function<CpSolverResponse(const CpModelProto& cp_model)> solve,
     std::vector<std::vector<BooleanVariable>>* saved_solutions,
@@ -988,8 +1000,7 @@ void SimplifyCircuit(
   SubcircuitExtractor extractor(*circuit);
 
   std::vector<std::pair<Literal, Literal>> new_equiv;
-  for (int c = 0; c < equiv.size(); ++c) {
-    const auto& literals = equiv[c];
+  for (const absl::Span<const Literal> literals : equiv) {
     for (int k = 1; k < literals.size(); ++k) {
       const Literal a = literals[0];
       const Literal b = literals[k];
@@ -1000,7 +1011,7 @@ void SimplifyCircuit(
       if (lmp.num_inputs <= 20) {
         AddNotEquivalentConstraint(a, b, &lmp);
         const bool are_equivalent = !BinaryCircuitIsFeasible(lmp);
-        VLOG(3) << lmp.DebugString() << " equiv: " << are_equivalent << " " << a
+        VLOG(2) << lmp.DebugString() << " equiv: " << are_equivalent << " " << a
                 << " " << b;
         if (are_equivalent) new_equiv.push_back({a, b});
         continue;
@@ -1020,7 +1031,7 @@ void SimplifyCircuit(
   int num_displayed = 0;
   std::vector<BooleanVariable> solution;
   for (int i = 0; i < complexity.size(); ++i) {
-    if (++num_tried <= max_num_solves) {
+    if (solve != nullptr && ++num_tried <= max_num_solves) {
       BinaryCircuit lmp = extractor.Extract({complexity[i].a, complexity[i].b});
       AddNotEquivalentConstraint(complexity[i].a, complexity[i].b, &lmp);
       local_cp_model = ConstructCpModelFromBinaryCircuit(lmp);
@@ -1041,9 +1052,26 @@ void SimplifyCircuit(
           }
         }
         saved_solutions->push_back(solution);
+      } else {
+        if (VLOG_IS_ON(2)) {
+          // Dump info for investigation.
+          const std::string dot_filename =
+              absl::StrCat("/tmp/dot_unclear_", i, ".dot");
+          VLOG(2) << "Dumping to '" << dot_filename << "'";
+          CHECK_OK(file::SetContents(dot_filename, ToDotFile(lmp),
+                                     file::Defaults()));
+
+          std::string filename =
+              absl::StrCat("/tmp/submodel_unclear_", i, ".pb.txt");
+          VLOG(2) << " Dumping equiv checking submodel to '" << filename << "'";
+          CHECK(WriteModelProtoToFile(local_cp_model, filename));
+        }
+
+        // Lets disable sat subsolve as soon as we can't solve one.
+        num_tried = max_num_solves;
       }
 
-      VLOG(3) << i + 1 << "/" << complexity.size() << " " << lmp.DebugString()
+      VLOG(2) << i + 1 << "/" << complexity.size() << " " << lmp.DebugString()
               << " equiv: " << proven_equiv << " (with solver) "
               << complexity[i].a << " " << complexity[i].b;
       if (proven_equiv) {
@@ -1054,9 +1082,9 @@ void SimplifyCircuit(
 
     if (++num_displayed <= 5 || i + 5 >= complexity.size()) {
       if (i + 5 == complexity.size()) {
-        VLOG(3) << "...";
+        VLOG(2) << "...";
       } else {
-        VLOG(3) << "vars " << complexity[i].num_vars << " inputs "
+        VLOG(2) << "vars " << complexity[i].num_vars << " inputs "
                 << complexity[i].num_inputs;
       }
     }
@@ -1065,6 +1093,7 @@ void SimplifyCircuit(
   VLOG(3) << "NEW equivalences" << new_equiv.size();
   RemoveEquivalences(new_equiv, circuit);
   ReduceGates(circuit);
+  return new_equiv;
 }
 
 void RemoveEquivalences(absl::Span<const std::pair<Literal, Literal>> equiv,
@@ -1191,6 +1220,13 @@ void RemoveEquivalences(absl::Span<const std::pair<Literal, Literal>> equiv,
         }
       }
     }
+  }
+
+  // Remap outputs that are equal to their representative.
+  for (int& out_ref : circuit->outputs) {
+    if (representative[out_ref] == kNoLiteralIndex) continue;
+    const Literal lit(representative[out_ref]);
+    if (lit.IsPositive()) out_ref = circuit->mapping[lit.Variable()];
   }
 
   if (num_extra_equivalences > 0) {

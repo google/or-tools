@@ -12,9 +12,10 @@
 # limitations under the License.
 
 file(GLOB _SRCS "*.h" "*.cc")
+list(FILTER _SRCS EXCLUDE REGEX ".*/.*_benchmark.cc")
 list(FILTER _SRCS EXCLUDE REGEX ".*/.*_test.cc")
 list(FILTER _SRCS EXCLUDE REGEX ".*/set_cover_solve.cc")
-list(FILTER _SRCS EXCLUDE REGEX ".*/formatting_helper.*")
+list(FILTER _SRCS EXCLUDE REGEX ".*/reporting.*")
 
 set(NAME ${PROJECT_NAME}_set_cover)
 
@@ -29,13 +30,15 @@ target_include_directories(${NAME} PRIVATE
   ${PROJECT_BINARY_DIR})
 target_link_libraries(${NAME} PRIVATE
   protobuf::libprotobuf
+  ${PROJECT_NAMESPACE}::math_opt_proto
   ${PROJECT_NAMESPACE}::ortools_proto)
 #add_library(${PROJECT_NAMESPACE}::set_cover ALIAS ${NAME})
 
-if(BUILD_TESTING)
+if(BUILD_CXX_TESTING)
   file(GLOB _TEST_SRCS "*_test.cc")
   if(NOT USE_SCIP)
     list(FILTER _TEST_SRCS EXCLUDE REGEX ".*/set_cover_test.cc")
+    list(FILTER _TEST_SRCS EXCLUDE REGEX ".*/knights_test.cc")
   endif()
   foreach(_FULL_FILE_NAME IN LISTS _TEST_SRCS)
     get_filename_component(_NAME ${_FULL_FILE_NAME} NAME_WE)
@@ -50,6 +53,28 @@ if(BUILD_TESTING)
         GTest::gtest
         GTest::gtest_main
         GTest::gmock
+    )
+  endforeach()
+  # Benchmark
+  file(GLOB _BENCHMARK_SRCS "*_benchmark.cc")
+  set(_ARGS "")
+  if(NOT RUN_BENCHMARKS)
+    set(_ARGS "DISABLED")
+  endif()
+  foreach(_FULL_FILE_NAME IN LISTS _BENCHMARK_SRCS)
+    get_filename_component(_NAME ${_FULL_FILE_NAME} NAME_WE)
+    get_filename_component(_FILE_NAME ${_FULL_FILE_NAME} NAME)
+    ortools_cxx_test(
+      NAME
+        set_cover_${_NAME}
+      SOURCES
+        ${_FILE_NAME}
+      LINK_LIBRARIES
+        benchmark::benchmark
+        ortools_benchmark_main
+        GTest::gtest
+        GTest::gmock
+      ${_ARGS}
     )
   endforeach()
 endif()

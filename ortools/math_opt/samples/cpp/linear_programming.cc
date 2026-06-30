@@ -21,11 +21,11 @@
 
 #include "absl/log/check.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "absl/time/time.h"
 #include "ortools/base/init_google.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/cpp/math_opt.h"
 
 namespace {
@@ -64,9 +64,9 @@ absl::Status Main() {
   // Objective
   model.Maximize(10 * x[0] + 6 * x[1] + 4 * x[2]);
 
-  ASSIGN_OR_RETURN(const math_opt::SolveResult result,
-                   Solve(model, math_opt::SolverType::kGlop));
-  RETURN_IF_ERROR(result.termination.EnsureIsOptimal());
+  ABSL_ASSIGN_OR_RETURN(const math_opt::SolveResult result,
+                        Solve(model, math_opt::SolverType::kGlop));
+  ABSL_RETURN_IF_ERROR(result.termination.EnsureIsOptimal());
 
   std::cout << "Problem solved in " << result.solve_time() << std::endl;
   std::cout << "Objective value: " << result.objective_value() << std::endl;

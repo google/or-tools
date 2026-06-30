@@ -25,13 +25,12 @@
 #include "absl/log/vlog_is_on.h"
 #include "absl/memory/memory.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/types/span.h"
-#include "ortools/base/source_location.h"
 #include "ortools/base/status_builder.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/solvers/cplex.pb.h"
 #include "ortools/third_party_solvers/cplex_environment.h"
 
@@ -86,7 +85,7 @@ Cplex::~Cplex() {
 absl::StatusOr<std::unique_ptr<Cplex>> Cplex::New(
     absl::string_view model_name) {
   std::string cplex_lib_dir;
-  RETURN_IF_ERROR(LoadCplexDynamicLibrary(cplex_lib_dir));
+  ABSL_RETURN_IF_ERROR(LoadCplexDynamicLibrary(cplex_lib_dir));
 
   int status_code = 0;
   CPXENVptr env = CPXopenCPLEX(&status_code);
@@ -191,7 +190,7 @@ absl::StatusOr<double> Cplex::GetSolnPoolObjVal(int soln) {
 }
 
 absl::StatusOr<std::vector<double>> Cplex::GetSolnPoolX(int soln) {
-  ASSIGN_OR_RETURN(int n_vars, GetNumCols());
+  ABSL_ASSIGN_OR_RETURN(int n_vars, GetNumCols());
 
   // "empty model" safe-guard
   if (n_vars == 0) return std::vector<double>{};
@@ -214,7 +213,7 @@ absl::StatusOr<double> Cplex::GetObjVal() {
 
 // original API has ret-type=int but information provided is only success or not
 absl::StatusOr<std::vector<double>> Cplex::GetX() {
-  ASSIGN_OR_RETURN(int n_vars, GetNumCols());
+  ABSL_ASSIGN_OR_RETURN(int n_vars, GetNumCols());
 
   // "empty model" safe-guard
   if (n_vars == 0) return std::vector<double>{};
@@ -227,7 +226,7 @@ absl::StatusOr<std::vector<double>> Cplex::GetX() {
 }
 
 absl::StatusOr<std::vector<double>> Cplex::GetPi() {
-  ASSIGN_OR_RETURN(int n_rows, GetNumRows());
+  ABSL_ASSIGN_OR_RETURN(int n_rows, GetNumRows());
 
   // "empty model" safe-guard
   if (n_rows == 0) return std::vector<double>{};
@@ -240,7 +239,7 @@ absl::StatusOr<std::vector<double>> Cplex::GetPi() {
 }
 
 absl::StatusOr<std::vector<double>> Cplex::GetDj() {
-  ASSIGN_OR_RETURN(int n_vars, GetNumCols());
+  ABSL_ASSIGN_OR_RETURN(int n_vars, GetNumCols());
 
   // "empty model" safe-guard
   if (n_vars == 0) return std::vector<double>{};
@@ -472,7 +471,7 @@ absl::Status Cplex::Chgctype(absl::Span<const int> indices,
 }
 
 absl::Status Cplex::DelSetCols(absl::Span<const int> indices) {
-  ASSIGN_OR_RETURN(const int num_cols, GetNumCols());
+  ABSL_ASSIGN_OR_RETURN(const int num_cols, GetNumCols());
   std::vector<int> delstat(num_cols, 0);
   for (const int idx : indices) delstat[idx] = 1;
   int status_code = CPXdelsetcols(cpx_env_, cpx_model_, delstat.data());
@@ -481,7 +480,7 @@ absl::Status Cplex::DelSetCols(absl::Span<const int> indices) {
 }
 
 absl::Status Cplex::DelSetRows(absl::Span<const int> indices) {
-  ASSIGN_OR_RETURN(const int num_rows, GetNumRows());
+  ABSL_ASSIGN_OR_RETURN(const int num_rows, GetNumRows());
   std::vector<int> delstat(num_rows, 0);
   for (const int idx : indices) delstat[idx] = 1;
   int status_code = CPXdelsetrows(cpx_env_, cpx_model_, delstat.data());

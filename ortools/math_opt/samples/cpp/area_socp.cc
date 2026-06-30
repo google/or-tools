@@ -21,8 +21,8 @@
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "ortools/base/init_google.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/cpp/math_opt.h"
 
 ABSL_FLAG(double, area, 9, "Area lower bound.");
@@ -63,9 +63,9 @@ absl::Status Main(const double target_area) {
   model.AddSecondOrderConeConstraint(
       {(width - height) / 2, std::sqrt(target_area)}, (width + height) / 2);
   model.Minimize(width + height);
-  ASSIGN_OR_RETURN(const math_opt::SolveResult result,
-                   Solve(model, math_opt::SolverType::kEcos));
-  RETURN_IF_ERROR(result.termination.EnsureIsOptimalOrFeasible());
+  ABSL_ASSIGN_OR_RETURN(const math_opt::SolveResult result,
+                        Solve(model, math_opt::SolverType::kEcos));
+  ABSL_RETURN_IF_ERROR(result.termination.EnsureIsOptimalOrFeasible());
   std::cout << "Target area: " << target_area << std::endl;
   std::cout << "Area: "
             << result.variable_values().at(width) *

@@ -19,13 +19,13 @@
 
 #include "absl/algorithm/container.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/base/status_builder.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/cpp/math_opt.h"
 #include "ortools/util/fp_roundtrip_conv.h"
 
@@ -37,17 +37,17 @@ absl::Status ValidateOptions(const FeasibilityCheckerOptions& options) {
     return tolerance >= 0 && !std::isnan(tolerance);
   };
   if (!tolerance_is_valid(options.absolute_constraint_tolerance)) {
-    return util::InvalidArgumentErrorBuilder()
+    return ortools::InvalidArgumentErrorBuilder()
            << "invalid absolute_constraint_tolerance value: "
            << options.absolute_constraint_tolerance;
   }
   if (!tolerance_is_valid(options.integrality_tolerance)) {
-    return util::InvalidArgumentErrorBuilder()
+    return ortools::InvalidArgumentErrorBuilder()
            << "invalid integrality_tolerance value: "
            << options.integrality_tolerance;
   }
   if (!tolerance_is_valid(options.nonzero_tolerance)) {
-    return util::InvalidArgumentErrorBuilder()
+    return ortools::InvalidArgumentErrorBuilder()
            << "invalid nonzero_tolerance value: " << options.nonzero_tolerance;
   }
   return absl::OkStatus();
@@ -67,14 +67,14 @@ absl::Status ValidateVariables(const Model& model,
                                const VariableMap<double>& variable_values) {
   for (const Variable variable : model.Variables()) {
     if (!variable_values.contains(variable)) {
-      return util::InvalidArgumentErrorBuilder()
+      return ortools::InvalidArgumentErrorBuilder()
              << "Variable present in `model` but not `variable_values`: "
              << variable;
     }
   }
   for (const auto [variable, unused] : variable_values) {
     if (variable.storage() != model.storage()) {
-      return util::InvalidArgumentErrorBuilder()
+      return ortools::InvalidArgumentErrorBuilder()
              << "Variable present in `variable_values` but not `model`: "
              << variable;
     }
@@ -213,8 +213,8 @@ bool CheckIndicatorConstraint(const IndicatorConstraint constraint,
 absl::StatusOr<ModelSubset> CheckPrimalSolutionFeasibility(
     const Model& model, const VariableMap<double>& variable_values,
     const FeasibilityCheckerOptions& options) {
-  RETURN_IF_ERROR(ValidateOptions(options));
-  RETURN_IF_ERROR(ValidateVariables(model, variable_values));
+  ABSL_RETURN_IF_ERROR(ValidateOptions(options));
+  ABSL_RETURN_IF_ERROR(ValidateVariables(model, variable_values));
 
   ModelSubset violated_constraints;
   for (const Variable variable : model.Variables()) {
@@ -329,9 +329,9 @@ void AppendViolatedConstraintsAsStrings(
 absl::StatusOr<std::vector<std::string>> ViolatedConstraintsAsStrings(
     const Model& model, const ModelSubset& violated_constraints,
     const VariableMap<double>& variable_values) {
-  RETURN_IF_ERROR(violated_constraints.CheckModelStorage(model.storage()))
+  ABSL_RETURN_IF_ERROR(violated_constraints.CheckModelStorage(model.storage()))
       << "violated_constraints and model are inconsistent";
-  RETURN_IF_ERROR(ValidateVariables(model, variable_values));
+  ABSL_RETURN_IF_ERROR(ValidateVariables(model, variable_values));
 
   std::vector<std::string> result;
   for (const Variable variable :

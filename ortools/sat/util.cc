@@ -36,6 +36,7 @@
 #include "ortools/base/log_severity.h"
 #include "ortools/base/macros/os_support.h"
 #include "ortools/base/mathutil.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/saturated_arithmetic.h"
@@ -198,8 +199,8 @@ bool SolveDiophantineEquationOfSizeTwo(int64_t& a, int64_t& b, int64_t& cte,
                                        int64_t& x0, int64_t& y0) {
   CHECK_NE(a, 0);
   CHECK_NE(b, 0);
-  CHECK_NE(a, std::numeric_limits<int64_t>::min());
-  CHECK_NE(b, std::numeric_limits<int64_t>::min());
+  CHECK_NE(a, kint64min);
+  CHECK_NE(b, kint64min);
 
   const int64_t gcd = std::gcd(std::abs(a), std::abs(b));
   if (cte % gcd != 0) return false;
@@ -231,8 +232,8 @@ bool SolveDiophantineEquationOfSizeTwo(int64_t& a, int64_t& b, int64_t& cte,
   // - a * x0 <= cte, in this case y0 will not overflow (<= cte).
   // - a * x0 > cte, in this case y0 will be in (-a, 0].
   const absl::int128 r = t / absl::int128{b};
-  DCHECK_LE(r, absl::int128{std::numeric_limits<int64_t>::max()});
-  DCHECK_GE(r, absl::int128{std::numeric_limits<int64_t>::min()});
+  DCHECK_LE(r, absl::int128{kint64max});
+  DCHECK_GE(r, absl::int128{kint64min});
 
   y0 = static_cast<int64_t>(r);
   return true;
@@ -700,7 +701,7 @@ BasicKnapsackSolver::Result BasicKnapsackSolver::InternalSolve(
     const std::vector<State>& prev = var_activity_states_[i - 1];
     std::vector<State>& current = var_activity_states_[i];
     for (int prev_value = 0; prev_value < num_values; ++prev_value) {
-      if (prev[prev_value].cost == std::numeric_limits<int64_t>::max()) {
+      if (prev[prev_value].cost == kint64max) {
         continue;
       }
       for (const int64_t v : domains_[i].Values()) {
@@ -719,7 +720,7 @@ BasicKnapsackSolver::Result BasicKnapsackSolver::InternalSolve(
   Result result;
   result.solved = true;
 
-  int64_t best_cost = std::numeric_limits<int64_t>::max();
+  int64_t best_cost = kint64max;
   int64_t best_activity;
   for (int v = 0; v < num_values; ++v) {
     // TODO(user): optimize this?
@@ -730,7 +731,7 @@ BasicKnapsackSolver::Result BasicKnapsackSolver::InternalSolve(
     }
   }
 
-  if (best_cost == std::numeric_limits<int64_t>::max()) {
+  if (best_cost == kint64max) {
     result.infeasible = true;
     return result;
   }
@@ -989,7 +990,7 @@ std::vector<int> FindMostDiverseSubset(int k, int n,
 
   if (k == n - 1) {
     // We just exclude the one closer to all the other.
-    int64_t worse = std::numeric_limits<int64_t>::max();
+    int64_t worse = kint64max;
     int to_exclude = -1;
     for (int i = 0; i < n; ++i) {
       if ((always_pick_mask >> i) & 1) continue;

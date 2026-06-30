@@ -16,9 +16,7 @@
 #include <string>
 
 #include "gtest/gtest.h"
-#include "ortools/base/path.h"
-
-#define ROOT_DIR "_main/"
+#include "ortools/util/data_path_resolver.h"
 
 namespace operations_research::routing {
 namespace {
@@ -33,13 +31,11 @@ TEST(TspTWParserTest, LoadDataSet) {
   const bool has_coordinates[] = {false, false, true};
   int count = 0;
   for (const std::string& data :
-       {ROOT_DIR "ortools/routing/parsers/testdata/rc201.0",
-        ROOT_DIR "ortools/routing/parsers/testdata/"
-                 "n20w20.001.txt",
-        ROOT_DIR "ortools/routing/parsers/testdata/"
-                 "n20w20.002.txt"}) {
+       {"ortools/routing/parsers/testdata/rc201.0",
+        "ortools/routing/parsers/testdata/n20w20.001.txt",
+        "ortools/routing/parsers/testdata/n20w20.002.txt"}) {
     TspTWParser parser;
-    EXPECT_TRUE(parser.LoadFile(file::JoinPath(::testing::SrcDir(), data)));
+    EXPECT_TRUE(parser.LoadFile(ortools::GetDataDependencyFilepath(data)));
     EXPECT_EQ(0, parser.depot());
     const int size = sizes[count];
     EXPECT_EQ(size, parser.size());

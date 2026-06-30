@@ -17,7 +17,7 @@ It offers two commands `RUN:` and `CHECK:`.
 *   The `RUN:` command executes the binary and asserts it ran successfully. \
     The passed arguments can use the `$(<label>)` construct to refer to binary
     or data files. These labels are initialized from the `named_data` attribute
-    of the [BUILD rule](cs/file:third_party/ortools/tools/testing/BUILD).
+    of the [BUILD rule](./BUILD.bazel).
 *   The `CHECK:` command takes one or more matchers and asserts that they all
     match the binary output. \
     If several matchers are passed to a single `CHECK:` command, they need to
@@ -151,7 +151,7 @@ it. The extracted values can then be tested using the standard testing API.
 
 Similarly to `bintest` above, text of the form `$(<label>)` in the command line
 arguments is expanded using the `named_data` attribute of the
-[BUILD rule](cs/file:third_party/ortools/tools/testing/BUILD).
+[BUILD rule](./BUILD.bazel).
 
 ```build
 py_bintest(

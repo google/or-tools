@@ -13,6 +13,8 @@
 
 #include "ortools/algorithms/binary_indexed_tree.h"
 
+#include <vector>
+
 #include "gtest/gtest.h"
 
 namespace operations_research {

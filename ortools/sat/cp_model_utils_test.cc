@@ -15,10 +15,12 @@
 
 #include <stdint.h>
 
+#include <algorithm>
 #include <string>
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
+#include "google/protobuf/descriptor.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/parse_test_proto.h"
@@ -395,6 +397,28 @@ TEST(ConvertCpModelProtoToCnfTest, BoolAnd) {
   std::string cnf;
   EXPECT_TRUE(ConvertCpModelProtoToCnf(model_proto, &cnf));
   EXPECT_EQ(expected, cnf);
+}
+
+TEST(LargestConstraintTypeTest, IsCorrect) {
+  const google::protobuf::Descriptor* message_descriptor =
+      ConstraintProto::descriptor();
+  ASSERT_NE(message_descriptor, nullptr);
+
+  const google::protobuf::OneofDescriptor* oneof_descriptor =
+      message_descriptor->FindOneofByName("constraint");
+  ASSERT_NE(oneof_descriptor, nullptr) << "Oneof 'constraint' not found";
+
+  int max_field_number = -1;
+  for (int i = 0; i < oneof_descriptor->field_count(); ++i) {
+    const google::protobuf::FieldDescriptor* field = oneof_descriptor->field(i);
+    ASSERT_NE(field, nullptr);
+    max_field_number = std::max(max_field_number, field->number());
+  }
+
+  EXPECT_EQ(max_field_number, kLargestConstraintType)
+      << "kLargestConstraintType (" << kLargestConstraintType
+      << ") does not match the largest field number in the 'constraint' oneof ("
+      << max_field_number << "). Please update the constant.";
 }
 
 }  // namespace

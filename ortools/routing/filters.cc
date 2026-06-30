@@ -551,17 +551,17 @@ namespace {
 // Node disjunction filter class.
 class NodeDisjunctionFilter : public IntVarLocalSearchFilter {
  public:
+  using Disjunction = Model::Disjunction;
+  static constexpr auto kPenalizeOnce =
+      Model::PenaltyCostBehavior::PENALIZE_ONCE;
   explicit NodeDisjunctionFilter(const Model& routing_model, bool filter_cost)
       : IntVarLocalSearchFilter(routing_model.Nexts()),
-        routing_model_(routing_model),
+        model_(routing_model),
         count_per_disjunction_(routing_model.GetNumberOfDisjunctions(),
                                {.active = 0, .inactive = 0}),
-        synchronized_objective_value_(std::numeric_limits<int64_t>::min()),
-        accepted_objective_value_(std::numeric_limits<int64_t>::min()),
-        filter_cost_(filter_cost),
-        has_mandatory_disjunctions_(routing_model.HasMandatoryDisjunctions()) {}
-
-  using Disjunction = DisjunctionIndex;
+        synchronized_objective_value_(kint64min),
+        accepted_objective_value_(kint64min),
+        filter_cost_(filter_cost) {}
 
   bool Accept(const Assignment* delta, const Assignment* /*deltadelta*/,
               int64_t /*objective_min*/, int64_t objective_max) override {
@@ -588,8 +588,8 @@ class NodeDisjunctionFilter : public IntVarLocalSearchFilter {
         continue;
       }
       // Change counts of all disjunctions affected by this node.
-      for (const Disjunction disjunction :
-           routing_model_.GetDisjunctionIndices(node)) {
+      for (const DisjunctionIndex disjunction :
+           model_.GetDisjunctionIndices(node)) {
         ActivityCount new_count =
             count_per_disjunction_.Get(disjunction.value());
         new_count.active += contribution_delta.active;
@@ -597,45 +597,62 @@ class NodeDisjunctionFilter : public IntVarLocalSearchFilter {
         count_per_disjunction_.Set(disjunction.value(), new_count);
       }
     }
-    // Check if any disjunction has too many active nodes.
-    for (const int index : count_per_disjunction_.ChangedIndices()) {
-      if (count_per_disjunction_.Get(index).active >
-          routing_model_.GetDisjunctionMaxCardinality(Disjunction(index))) {
+    // Check if any disjunction is infeasible.
+    for (const int dindex : count_per_disjunction_.ChangedIndices()) {
+      const Disjunction disj = model_.GetDisjunction(DisjunctionIndex(dindex));
+      if (count_per_disjunction_.Get(dindex).active > disj.max_cardinality) {
+        return false;
+      }
+      const int64_t max_inactives = disj.indices.size() - disj.min_cardinality;
+      if (max_inactives < count_per_disjunction_.Get(dindex).inactive) {
         return false;
       }
     }
-    if (lns_detected || (!filter_cost_ && !has_mandatory_disjunctions_)) {
+    if (lns_detected || !filter_cost_) {
       accepted_objective_value_ = 0;
       return true;
     }
     // Update penalty costs for disjunctions.
     accepted_objective_value_ = synchronized_objective_value_;
     for (const int index : count_per_disjunction_.ChangedIndices()) {
-      // If num inactives did not change, skip. Common shortcut.
-      const int old_inactives =
-          count_per_disjunction_.GetCommitted(index).inactive;
-      const int new_inactives = count_per_disjunction_.Get(index).inactive;
-      if (old_inactives == new_inactives) continue;
-      // If this disjunction has no penalty for inactive nodes, skip.
-      const Disjunction disjunction(index);
-      const int64_t penalty = routing_model_.GetDisjunctionPenalty(disjunction);
-      if (penalty == 0) continue;
+      const ActivityCount& new_counts = count_per_disjunction_.Get(index);
+      const ActivityCount& old_counts =
+          count_per_disjunction_.GetCommitted(index);
+      const Disjunction disj = model_.GetDisjunction(DisjunctionIndex(index));
 
-      // Compute the new cost of activity bound violations.
-      const int max_inactives =
-          routing_model_.GetDisjunctionNodeIndices(disjunction).size() -
-          routing_model_.GetDisjunctionMaxCardinality(disjunction);
-      int new_violation = std::max(0, new_inactives - max_inactives);
-      int old_violation = std::max(0, old_inactives - max_inactives);
-      // If nodes are mandatory, there can be no violation.
-      if (penalty < 0 && new_violation > 0) return false;
-      if (routing_model_.GetDisjunctionPenaltyCostBehavior(disjunction) ==
-          Model::PenaltyCostBehavior::PENALIZE_ONCE) {
-        new_violation = std::min(1, new_violation);
-        old_violation = std::min(1, old_violation);
+      // Compute the new cost of soft min activity bound violations.
+      if (disj.soft_min_penalty != 0 &&
+          old_counts.inactive != new_counts.inactive) {
+        const int64_t max_inactives =
+            disj.indices.size() - disj.soft_min_cardinality;
+        int64_t new_min_violation =
+            std::max<int64_t>(0, new_counts.inactive - max_inactives);
+        int64_t old_min_violation =
+            std::max<int64_t>(0, old_counts.inactive - max_inactives);
+        if (disj.soft_min_penalty_type == kPenalizeOnce) {
+          new_min_violation = std::min<int64_t>(1, new_min_violation);
+          old_min_violation = std::min<int64_t>(1, old_min_violation);
+        }
+        CapAddTo(CapProd(disj.soft_min_penalty,
+                         (new_min_violation - old_min_violation)),
+                 &accepted_objective_value_);
       }
-      CapAddTo(CapProd(penalty, (new_violation - old_violation)),
-               &accepted_objective_value_);
+
+      // Compute the new cost of soft max activity bound violations.
+      if (disj.soft_max_penalty != 0 &&
+          old_counts.active != new_counts.active) {
+        int64_t new_max_violation =
+            std::max<int64_t>(new_counts.active - disj.soft_max_cardinality, 0);
+        int64_t old_max_violation =
+            std::max<int64_t>(old_counts.active - disj.soft_max_cardinality, 0);
+        if (disj.soft_max_penalty_type == kPenalizeOnce) {
+          new_max_violation = std::min<int64_t>(1, new_max_violation);
+          old_max_violation = std::min<int64_t>(1, old_max_violation);
+        }
+        CapAddTo(CapProd(disj.soft_max_penalty,
+                         (new_max_violation - old_max_violation)),
+                 &accepted_objective_value_);
+      }
     }
     // Only compare to max as a cost lower bound is computed.
     return accepted_objective_value_ <= objective_max;
@@ -652,38 +669,46 @@ class NodeDisjunctionFilter : public IntVarLocalSearchFilter {
   void OnSynchronize(const Assignment* /*delta*/) override {
     synchronized_objective_value_ = 0;
     count_per_disjunction_.Revert();
-    const int num_disjunctions = routing_model_.GetNumberOfDisjunctions();
-    for (Disjunction disjunction(0); disjunction < num_disjunctions;
-         ++disjunction) {
+    const int num_disjunctions = model_.GetNumberOfDisjunctions();
+    for (int dindex = 0; dindex < num_disjunctions; ++dindex) {
+      const Disjunction& disj = model_.GetDisjunction(DisjunctionIndex(dindex));
       // Count number of active/inactive nodes of this disjunction.
       ActivityCount count = {.active = 0, .inactive = 0};
-      const auto& nodes = routing_model_.GetDisjunctionNodeIndices(disjunction);
-      for (const int64_t node : nodes) {
+      for (const int64_t node : disj.indices) {
         if (!IsVarSynced(node)) continue;
         const int is_active = Value(node) != node;
         count.active += is_active;
         count.inactive += !is_active;
       }
-      count_per_disjunction_.Set(disjunction.value(), count);
+      count_per_disjunction_.Set(dindex, count);
       // Add penalty of this disjunction to total cost.
       if (!filter_cost_) continue;
-      const int64_t penalty = routing_model_.GetDisjunctionPenalty(disjunction);
-      const int max_actives =
-          routing_model_.GetDisjunctionMaxCardinality(disjunction);
-      int violation = count.inactive - (nodes.size() - max_actives);
-      if (violation > 0 && penalty > 0) {
-        if (routing_model_.GetDisjunctionPenaltyCostBehavior(disjunction) ==
-            Model::PenaltyCostBehavior::PENALIZE_ONCE) {
-          violation = std::min(1, violation);
+
+      if (disj.soft_min_penalty > 0) {
+        const int64_t max_inactives =
+            disj.indices.size() - disj.soft_min_cardinality;
+        int64_t violation = count.inactive - max_inactives;
+        if (violation > 0) {
+          if (disj.soft_min_penalty_type == kPenalizeOnce) violation = 1;
+          CapAddTo(CapProd(disj.soft_min_penalty, violation),
+                   &synchronized_objective_value_);
         }
-        CapAddTo(CapProd(penalty, violation), &synchronized_objective_value_);
+      }
+
+      if (disj.soft_max_penalty > 0) {
+        int64_t violation = count.active - disj.soft_max_cardinality;
+        if (violation > 0) {
+          if (disj.soft_max_penalty_type == kPenalizeOnce) violation = 1;
+          CapAddTo(CapProd(disj.soft_max_penalty, violation),
+                   &synchronized_objective_value_);
+        }
       }
     }
     count_per_disjunction_.Commit();
     accepted_objective_value_ = synchronized_objective_value_;
   }
 
-  const Model& routing_model_;
+  const Model& model_;
   struct ActivityCount {
     int active = 0;
     int inactive = 0;
@@ -692,7 +717,6 @@ class NodeDisjunctionFilter : public IntVarLocalSearchFilter {
   int64_t synchronized_objective_value_;
   int64_t accepted_objective_value_;
   const bool filter_cost_;
-  const bool has_mandatory_disjunctions_;
 };
 }  // namespace
 
@@ -1461,6 +1485,11 @@ bool ChainCumulFilter::AcceptPath(int64_t path_start, int64_t chain_start,
 }
 
 }  // namespace
+
+IntVarLocalSearchFilter* MakeChainCumulFilter(const Dimension& dimension) {
+  Model& model = *dimension.model();
+  return model.solver()->RevAlloc(new ChainCumulFilter(model, dimension));
+}
 
 bool FillDimensionValuesFromDimension(
     int path, int64_t capacity, int64_t span_upper_bound,
@@ -2385,7 +2414,7 @@ bool PathCumulFilter::FinalizeAcceptPath(int64_t /*objective_min*/,
       int prev = -1;
       int rank = -1;
       for (const int node : dimension_values_.Nodes(path)) {
-        int64_t offset = std::numeric_limits<int64_t>::min();
+        int64_t offset = kint64min;
         // Check the "opposite" precedence constraint.
         if (gtl::FindCopy(precedence_offsets_, std::pair<int, int>{node, prev},
                           &offset) &&
@@ -2665,9 +2694,8 @@ bool DimensionHasPathCumulConstraint(const Dimension& dimension) {
   if (dimension.HasBreakConstraints()) return true;
   if (dimension.HasPickupToDeliveryLimits()) return true;
   if (absl::c_any_of(
-          dimension.vehicle_span_upper_bounds(), [](int64_t upper_bound) {
-            return upper_bound != std::numeric_limits<int64_t>::max();
-          })) {
+          dimension.vehicle_span_upper_bounds(),
+          [](int64_t upper_bound) { return upper_bound != kint64max; })) {
     return true;
   }
   if (absl::c_any_of(dimension.slacks(),
@@ -2677,8 +2705,7 @@ bool DimensionHasPathCumulConstraint(const Dimension& dimension) {
   const std::vector<IntVar*>& cumuls = dimension.cumuls();
   for (int i = 0; i < cumuls.size(); ++i) {
     IntVar* const cumul_var = cumuls[i];
-    if (cumul_var->Min() > 0 &&
-        cumul_var->Max() < std::numeric_limits<int64_t>::max() &&
+    if (cumul_var->Min() > 0 && cumul_var->Max() < kint64max &&
         !dimension.model()->IsEnd(i)) {
       return true;
     }
@@ -3313,7 +3340,7 @@ bool LPCumulFilter::Accept(const Assignment* delta,
   }
 
   if (status == DimensionSchedulingStatus::INFEASIBLE) {
-    delta_cost_without_transit_ = std::numeric_limits<int64_t>::max();
+    delta_cost_without_transit_ = kint64max;
     return false;
   }
   return delta_cost_without_transit_ <= objective_max;
@@ -4130,8 +4157,8 @@ PathStateFilter::PathStateFilter(std::unique_ptr<PathState> path_state,
                                  const std::vector<IntVar*>& nexts)
     : path_state_(std::move(path_state)) {
   {
-    int min_index = std::numeric_limits<int>::max();
-    int max_index = std::numeric_limits<int>::min();
+    int min_index = kint32max;
+    int max_index = kint32min;
     for (const IntVar* next : nexts) {
       const int index = next->index();
       min_index = std::min<int>(min_index, index);
@@ -4234,7 +4261,7 @@ void PathStateFilter::
       // Look for smallest non-visited tail_index that is no smaller than
       // current_index.
       int selected_arc = -1;
-      int selected_tail_index = std::numeric_limits<int>::max();
+      int selected_tail_index = kint32max;
       for (int i = num_visited_changed_arcs; i < num_changed_arcs; ++i) {
         const int tail_index = tail_head_indices_[i].tail_index;
         if (current_index <= tail_index && tail_index < selected_tail_index) {
@@ -4330,9 +4357,6 @@ LocalSearchFilter* MakePathStateFilter(Solver* solver,
 
 namespace {
 using EInterval = DimensionChecker::ExtendedInterval;
-
-constexpr int64_t kint64min = std::numeric_limits<int64_t>::min();
-constexpr int64_t kint64max = std::numeric_limits<int64_t>::max();
 
 EInterval operator&(const EInterval& i1, const EInterval& i2) {
   return {std::max(i1.num_negative_infinity == 0 ? i1.min : kint64min,

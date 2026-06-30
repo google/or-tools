@@ -126,10 +126,9 @@ INSTANTIATE_TEST_SUITE_P(
         /*primal_solution_status_always_set=*/true,
         /*dual_solution_status_always_set=*/true)));
 
-INSTANTIATE_TEST_SUITE_P(
-    CplexInvalidInputTest, InvalidInputTest,
-    Values(InvalidInputTestParameters(SolverType::kCplex,
-                                      /*use_integer_variables=*/true)));
+INSTANTIATE_TEST_SUITE_P(CplexInvalidInputTest, InvalidInputTest,
+                         Values(InvalidInputTestParameters(
+                             SolverType::kCplex, TestModelClass::kIp)));
 
 SolveParameters StopBeforeOptimal() {
   return {.node_limit = 1,
@@ -199,7 +198,8 @@ InvalidParameterTestParams MakeCplexBadParams() {
   // TODO(b/168069105): for solver specific errors, we should collect all
   //  errors, not just the first. Then set int_param "parallel/maxnthreads" to
   //  -4 (an invalid value).
-  return InvalidParameterTestParams(SolverType::kCplex, std::move(parameters),
+  return InvalidParameterTestParams(SolverType::kCplex, TestModelClass::kLp,
+                                    std::move(parameters),
                                     {"CPLEX Error  1028"});
 }
 
@@ -230,11 +230,11 @@ INSTANTIATE_TEST_SUITE_P(
     CplexGenericTest, GenericTest,
     Values(GenericTestParameters(SolverType::kCplex,
                                  /*support_interrupter=*/true,
-                                 /*integer_variables=*/false,
+                                 TestModelClass::kLp,
                                  /*expected_log=*/"[optimal solution found]"),
            GenericTestParameters(SolverType::kCplex,
                                  /*support_interrupter=*/true,
-                                 /*integer_variables=*/true,
+                                 TestModelClass::kIp,
                                  /*expected_log=*/"[optimal solution found]")));
 
 TEST(CplexSolverTest, InvalidCoefficient) {

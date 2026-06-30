@@ -51,11 +51,11 @@
 #include "absl/log/check.h"
 #include "absl/random/random.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "ortools/base/init_google.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/cpp/math_opt.h"
 
 ABSL_FLAG(operations_research::math_opt::SolverType, solver_type,
@@ -163,9 +163,9 @@ absl::StatusOr<LinearModel> Train(absl::Span<const LabeledExample> train_data) {
   // Done building the model, now solve.
   math_opt::SolveArguments args;
   args.parameters.enable_output = true;
-  ASSIGN_OR_RETURN(const math_opt::SolveResult result,
-                   Solve(model, absl::GetFlag(FLAGS_solver_type), args));
-  RETURN_IF_ERROR(result.termination.EnsureIsOptimal());
+  ABSL_ASSIGN_OR_RETURN(const math_opt::SolveResult result,
+                        Solve(model, absl::GetFlag(FLAGS_solver_type), args));
+  ABSL_RETURN_IF_ERROR(result.termination.EnsureIsOptimal());
   std::cout << "Training time: " << result.solve_time() << std::endl;
   return LinearModel{.betas = Values(result.variable_values(), betas)};
 }
@@ -184,7 +184,7 @@ absl::Status Main() {
       RandomData(ground_truth, num_test, noise_stddev);
 
   // Solve the regression problem.
-  ASSIGN_OR_RETURN(const LinearModel learned_model, Train(train_data));
+  ABSL_ASSIGN_OR_RETURN(const LinearModel learned_model, Train(train_data));
 
   // Evaluate the solution.
   std::cout << "In sample loss: " << L2Loss(learned_model, train_data)

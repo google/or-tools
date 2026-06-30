@@ -22,6 +22,7 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/strings/str_format.h"
+#include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/interval.h"
 #include "ortools/util/string_array.h"
@@ -94,8 +95,8 @@ void SequenceVar::DurationRange(int64_t* const dmin,
 }
 
 void SequenceVar::HorizonRange(int64_t* const hmin, int64_t* const hmax) const {
-  int64_t hor_min = std::numeric_limits<int64_t>::max();
-  int64_t hor_max = std::numeric_limits<int64_t>::min();
+  int64_t hor_min = kint64max;
+  int64_t hor_max = kint64min;
   for (int i = 0; i < intervals_.size(); ++i) {
     IntervalVar* const t = intervals_[i];
     if (t->MayBePerformed()) {
@@ -133,8 +134,8 @@ void SequenceVar::ActiveHorizonRange(int64_t* const hmin,
       decided.insert(ValueToIndex(last));
     }
   }
-  int64_t hor_min = std::numeric_limits<int64_t>::max();
-  int64_t hor_max = std::numeric_limits<int64_t>::min();
+  int64_t hor_min = kint64max;
+  int64_t hor_max = kint64min;
   for (int i = 0; i < intervals_.size(); ++i) {
     if (!decided.contains(i)) {
       IntervalVar* const t = intervals_[i];
@@ -212,7 +213,7 @@ void SequenceVar::ComputePossibleFirstsAndLasts(
 
   IntVar* const forward_var = nexts_[first];
   std::vector<int> candidates;
-  int64_t smallest_start_max = std::numeric_limits<int64_t>::max();
+  int64_t smallest_start_max = kint64max;
   int ssm_support = -1;
   for (int64_t i = forward_var->Min(); i <= forward_var->Max(); ++i) {
     // TODO(user): use domain iterator.
@@ -245,7 +246,7 @@ void SequenceVar::ComputePossibleFirstsAndLasts(
   }
 
   candidates.clear();
-  int64_t biggest_end_min = std::numeric_limits<int64_t>::min();
+  int64_t biggest_end_min = kint64min;
   int bem_support = -1;
   for (const int candidate : to_check) {
     if (nexts_[IndexToValue(candidate)]->Contains(last)) {

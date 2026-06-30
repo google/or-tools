@@ -173,7 +173,7 @@ endif()
 #     GTest::gtest_main
 # )
 function(ortools_cxx_test)
-  set(options "")
+  set(options "DISABLED")
   set(oneValueArgs "NAME")
   set(multiValueArgs
     "SOURCES;COMPILE_DEFINITIONS;COMPILE_OPTIONS;LINK_LIBRARIES;LINK_OPTIONS")
@@ -183,7 +183,7 @@ function(ortools_cxx_test)
     "${multiValueArgs}"
     ${ARGN}
   )
-  if(NOT BUILD_TESTING)
+  if(NOT BUILD_CXX_TESTING)
     return()
   endif()
 
@@ -224,6 +224,11 @@ function(ortools_cxx_test)
     COMMAND ${TEST_NAME}
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
   )
+  if(TEST_DISABLED)
+    set_tests_properties(cxx_${TEST_NAME} PROPERTIES
+      DISABLED TRUE
+  )
+  endif()
   message(STATUS "Configuring test ${TEST_NAME} ...DONE")
 endfunction()
 
@@ -266,7 +271,7 @@ function(ortools_cxx_library)
     "${multiValueArgs}"
     ${ARGN}
   )
-  if(LIBRARY_TESTING AND NOT BUILD_TESTING)
+  if(LIBRARY_TESTING AND NOT BUILD_CXX_TESTING)
     return()
   endif()
 
@@ -339,7 +344,7 @@ function(ortools_cxx_binary)
     "${multiValueArgs}"
     ${ARGN}
   )
-  if(BINARY_TESTING AND NOT BUILD_TESTING)
+  if(BINARY_TESTING AND NOT BUILD_CXX_TESTING)
     return()
   endif()
 
@@ -392,7 +397,7 @@ find_package(Python3 COMPONENTS Interpreter)
 #     "BINTEST_foo_bar_data=$(CMAKE_CURRENT_SOURCE_DIR)/foo_bar_data.txt"
 # )
 function(ortools_cxx_bintest)
-  set(options "")
+  set(options "DISABLED")
   set(oneValueArgs "NAME;SCRIPT")
   set(multiValueArgs "ENVIRONMENT")
   cmake_parse_arguments(BINTEST
@@ -421,6 +426,11 @@ function(ortools_cxx_bintest)
   set_tests_properties(${BINTEST_NAME} PROPERTIES
     ENVIRONMENT "${BINTEST_ENVIRONMENT}"
   )
+  if(BINTEST_DISABLED)
+    set_tests_properties(${BINTEST_NAME} PROPERTIES
+      DISABLED TRUE
+  )
+  endif()
   message(STATUS "Configuring bintest ${BINTEST_NAME} ...DONE")
 endfunction()
 
@@ -888,6 +898,10 @@ function(add_cxx_sample)
     "${multiValueArgs}"
     ${ARGN}
   )
+  if(NOT BUILD_CXX_SAMPLES)
+    return()
+  endif()
+
   if(NOT SAMPLE_FILE_NAME)
     message(FATAL_ERROR "no FILE_NAME provided")
   endif()
@@ -921,7 +935,7 @@ function(add_cxx_sample)
   endif()
   install(TARGETS ${SAMPLE_NAME})
 
-  if(BUILD_TESTING)
+  if(BUILD_CXX_TESTING)
     add_test(
       NAME cxx_${COMPONENT_NAME}_${SAMPLE_NAME}
       COMMAND ${SAMPLE_NAME})
@@ -955,6 +969,10 @@ function(add_cxx_example)
     "${multiValueArgs}"
     ${ARGN}
   )
+  if(NOT BUILD_CXX_EXAMPLES)
+    return()
+  endif()
+
   if(NOT EXAMPLE_FILE_NAME)
     message(FATAL_ERROR "no FILE_NAME provided")
   endif()
@@ -987,7 +1005,7 @@ function(add_cxx_example)
   endif()
   install(TARGETS ${EXAMPLE_NAME})
 
-  if(BUILD_TESTING)
+  if(BUILD_CXX_TESTING)
     add_test(
       NAME cxx_${COMPONENT_NAME}_${EXAMPLE_NAME}
       COMMAND ${EXAMPLE_NAME})

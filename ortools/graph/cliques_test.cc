@@ -31,8 +31,8 @@
 #include "absl/random/distributions.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
-#include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
+#include "ortools/base/types.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -41,7 +41,7 @@ namespace {
 template <typename NodeIndex>
 class CliqueReporter {
  public:
-  CliqueReporter() : CliqueReporter(std::numeric_limits<int64_t>::max()) {}
+  CliqueReporter() : CliqueReporter(kint64max) {}
   explicit CliqueReporter(int64_t max_cliques)
       : remaining_cliques_(max_cliques) {}
 
@@ -154,6 +154,49 @@ void RunBronKerboschAlgorithmUntilCompletion(
       return;
     }
   }
+}
+
+TEST(FindCliques, CallbackGetsAllCliques) {
+  int64_t call_count = 0;
+  auto graph = std::bind_front(ModuloGraph, 3);
+  FindCliques(graph, 6, [&](const std::vector<int>& clique) {
+    call_count++;
+    EXPECT_EQ(clique.size(), 2);
+    return false;
+  });
+  EXPECT_EQ(call_count, 3);
+}
+TEST(FindCliques, CallbackStopsExploration) {
+  int64_t call_count = 0;
+  auto graph = std::bind_front(ModuloGraph, 2);
+  FindCliques(graph, 10, [&](const std::vector<int>& clique) {
+    call_count++;
+    EXPECT_EQ(clique.size(), 5);
+    return call_count == 2;
+  });
+  EXPECT_EQ(call_count, 2);
+}
+
+TEST(FindCliques, CallbackExplorationOnSmallGraph) {
+  int64_t call_count = 0;
+  // Adjacent numbers are connected. Cliques of [0, 1], [1, 2], [2, 3], etc.
+  auto graph = [](int64_t a, int64_t b) { return std::abs(a - b) <= 1; };
+  FindCliques(graph, 30, [&](const std::vector<int>& clique) {
+    call_count++;
+    return false;
+  });
+  EXPECT_EQ(call_count, 29);
+}
+
+TEST(FindCliques, CallbackStopsExplorationOnSmallGraph) {
+  int64_t call_count = 0;
+  // Adjacent numbers are connected. Cliques of [0, 1], [1, 2], [2, 3], etc.
+  auto graph = [](int64_t a, int64_t b) { return std::abs(a - b) <= 1; };
+  FindCliques(graph, 30, [&](const std::vector<int>& clique) {
+    call_count++;
+    return true;
+  });
+  EXPECT_EQ(call_count, 1);
 }
 
 TEST(BronKerbosch, CompleteGraph) {
@@ -554,7 +597,7 @@ TEST(WeightedBronKerboschBitsetAlgorithmTest, ModuloGraph) {
 // a one second time limit.
 //
 // The graph has approximately 2^58.6 maximal cliques, so they could be in
-// theory all enumerated within the std::numeric_limits<int64_t>::max()
+// theory all enumerated within the kint64max
 // iteration limit, but their number is too large that enumerating them would
 // take tens to hundreds of years with the current technology (as of August
 // 2015). As a result, the algorithm can end in the INTERRUPTED state only when
@@ -599,177 +642,6 @@ TEST(BronKerboschAlgorithmTest, DeterministicTimeLimit) {
   EXPECT_EQ(BronKerboschAlgorithmStatus::INTERRUPTED, status);
   EXPECT_TRUE(time_limit->LimitReached());
 }
-
-// A benchmark that finds all maximal cliques in a modulo graph of the given
-// size.
-void BM_FindCliquesInModuloGraph(benchmark::State& state) {
-  int num_partitions = state.range(0);
-  int partition_size = state.range(1);
-
-  const int kExpectedNumCliques = num_partitions;
-  const int kExpectedCliqueSize = partition_size;
-  const int kGraphSize = num_partitions * partition_size;
-  CliqueSizeVerifier verifier(kExpectedCliqueSize, kExpectedCliqueSize);
-
-  for (auto _ : state) {
-    auto graph = absl::bind_front(ModuloGraph, num_partitions);
-    auto callback =
-        absl::bind_front(&CliqueSizeVerifier::AppendClique, &verifier);
-
-    operations_research::FindCliques(graph, kGraphSize, callback);
-  }
-  EXPECT_EQ(state.max_iterations * kExpectedNumCliques, verifier.num_cliques());
-}
-
-BENCHMARK(BM_FindCliquesInModuloGraph)
-    ->ArgPair(5, 1000)
-    ->ArgPair(10, 500)
-    ->ArgPair(50, 100)
-    ->ArgPair(100, 50)
-    ->ArgPair(500, 10)
-    ->ArgPair(1000, 5);
-
-void BM_FindCliquesInModuloGraphWithBronKerboschAlgorithm(
-    benchmark::State& state) {
-  int num_partitions = state.range(0);
-  int partition_size = state.range(1);
-  const int kExpectedNumCliques = num_partitions;
-  const int kExpectedCliqueSize = partition_size;
-  const int kGraphSize = num_partitions * partition_size;
-  CliqueSizeVerifier verifier(kExpectedCliqueSize, kExpectedCliqueSize);
-  std::unique_ptr<TimeLimit> time_limit = TimeLimit::Infinite();
-
-  auto graph = [num_partitions](int index1, int index2) {
-    return ModuloGraph(num_partitions, index1, index2);
-  };
-
-  for (auto _ : state) {
-    BronKerboschAlgorithm<int> bron_kerbosch(graph, kGraphSize,
-                                             verifier.MakeCliqueCallback());
-    bron_kerbosch.RunWithTimeLimit(time_limit.get());
-  }
-  EXPECT_EQ(state.max_iterations * kExpectedNumCliques, verifier.num_cliques());
-  LOG(INFO) << time_limit->DebugString();
-}
-
-BENCHMARK(BM_FindCliquesInModuloGraphWithBronKerboschAlgorithm)
-    ->ArgPair(5, 1000)
-    ->ArgPair(10, 500)
-    ->ArgPair(50, 100)
-    ->ArgPair(100, 50)
-    ->ArgPair(500, 10)
-    ->ArgPair(1000, 5);
-
-void BM_FindCliquesInModuloGraphWithBitsetBK(benchmark::State& state) {
-  int num_partitions = state.range(0);
-  int partition_size = state.range(1);
-  const int kExpectedNumCliques = num_partitions;
-  const int kExpectedCliqueSize = partition_size;
-  const int num_nodes = num_partitions * partition_size;
-  for (auto _ : state) {
-    WeightedBronKerboschBitsetAlgorithm algo;
-    algo.Initialize(num_nodes);
-    for (int i = 0; i < num_nodes; ++i) {
-      for (int j = i + 1; j < num_nodes; ++j) {
-        if (ModuloGraph(num_partitions, i, j)) algo.AddEdge(i, j);
-      }
-    }
-
-    std::vector<std::vector<int>> cliques = algo.Run();
-    EXPECT_EQ(cliques.size(), kExpectedNumCliques);
-    for (const std::vector<int>& clique : cliques) {
-      EXPECT_EQ(kExpectedCliqueSize, clique.size());
-    }
-  }
-}
-
-BENCHMARK(BM_FindCliquesInModuloGraphWithBitsetBK)
-    ->ArgPair(5, 1000)
-    ->ArgPair(10, 500)
-    ->ArgPair(50, 100)
-    ->ArgPair(100, 50)
-    ->ArgPair(500, 10)
-    ->ArgPair(1000, 5);
-
-// A benchmark that finds all maximal cliques in a 7-partite graph (a graph
-// where the nodes are divided into 7 groups of size 7; each node is connected
-// to all nodes in other groups but to no node in the same group). This graph
-// contains a large number of relatively small cliques.
-void BM_FindCliquesInFull7PartiteGraph(benchmark::State& state) {
-  constexpr int kNumPartitions = 7;
-  constexpr int kExpectedNumCliques = 7 * 7 * 7 * 7 * 7 * 7 * 7;
-  constexpr int kExpectedCliqueSize = kNumPartitions;
-  CliqueSizeVerifier verifier(kExpectedCliqueSize, kExpectedCliqueSize);
-
-  for (auto _ : state) {
-    auto graph = absl::bind_front(FullKPartiteGraph, kNumPartitions);
-    auto callback =
-        absl::bind_front(&CliqueSizeVerifier::AppendClique, &verifier);
-
-    operations_research::FindCliques(graph, kNumPartitions * kNumPartitions,
-                                     callback);
-  }
-  EXPECT_EQ(state.max_iterations * kExpectedNumCliques, verifier.num_cliques());
-}
-
-BENCHMARK(BM_FindCliquesInFull7PartiteGraph);
-
-void BM_FindCliquesInFullKPartiteGraphWithBronKerboschAlgorithm(
-    benchmark::State& state) {
-  int num_partitions = state.range(0);
-  const int kExpectedNumCliques = std::pow(num_partitions, num_partitions);
-  const int kExpectedCliqueSize = num_partitions;
-
-  const auto graph = [num_partitions](int index1, int index2) {
-    return FullKPartiteGraph(num_partitions, index1, index2);
-  };
-  CliqueSizeVerifier verifier(kExpectedCliqueSize, kExpectedCliqueSize);
-  std::unique_ptr<TimeLimit> time_limit = TimeLimit::Infinite();
-
-  for (auto _ : state) {
-    BronKerboschAlgorithm<int> bron_kerbosch(
-        graph, num_partitions * num_partitions, verifier.MakeCliqueCallback());
-    bron_kerbosch.RunWithTimeLimit(time_limit.get());
-  }
-  EXPECT_EQ(state.max_iterations * kExpectedNumCliques, verifier.num_cliques());
-  LOG(INFO) << time_limit->DebugString();
-}
-
-BENCHMARK(BM_FindCliquesInFullKPartiteGraphWithBronKerboschAlgorithm)
-    ->Arg(5)
-    ->Arg(6)
-    ->Arg(7);
-
-void BM_FindCliquesInRandomGraphWithBronKerboschAlgorithm(
-    benchmark::State& state) {
-  int num_nodes = state.range(0);
-  int arc_probability_permille = state.range(1);
-  const double arc_probability = arc_probability_permille / 1000.0;
-  const absl::flat_hash_set<std::pair<int, int>> adjacency_matrix =
-      MakeRandomGraphAdjacencyMatrix(num_nodes, arc_probability,
-                                     GTEST_FLAG_GET(random_seed));
-  const auto graph = [adjacency_matrix](int index1, int index2) {
-    return BitmapGraph(adjacency_matrix, index1, index2);
-  };
-  CliqueSizeVerifier verifier(0, num_nodes);
-  std::unique_ptr<TimeLimit> time_limit = TimeLimit::Infinite();
-  for (auto _ : state) {
-    BronKerboschAlgorithm<int> bron_kerbosch(graph, num_nodes,
-                                             verifier.MakeCliqueCallback());
-    bron_kerbosch.RunWithTimeLimit(time_limit.get());
-  }
-  LOG(INFO) << time_limit->DebugString();
-}
-
-BENCHMARK(BM_FindCliquesInRandomGraphWithBronKerboschAlgorithm)
-    ->ArgPair(50, 800)
-    ->ArgPair(100, 500)
-    ->ArgPair(200, 100)
-    ->ArgPair(1000, 10)
-    ->ArgPair(1000, 20)
-    ->ArgPair(1000, 50)
-    ->ArgPair(1000, 100)
-    ->ArgPair(10000, 1);
 
 }  // namespace
 }  // namespace operations_research

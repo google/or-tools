@@ -62,6 +62,7 @@
 #include "absl/random/seed_sequences.h"
 #include "absl/random/uniform_int_distribution.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
@@ -69,7 +70,6 @@
 #include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "ortools/base/init_google.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/cpp/math_opt.h"
 #include "ortools/util/status_macros.h"
 
@@ -248,9 +248,9 @@ absl::Status FullProblem(const FacilityLocationInstance& instance,
                                 instance.location_fraction * z[facility]);
     }
   }
-  ASSIGN_OR_RETURN(const math_opt::SolveResult result,
-                   math_opt::Solve(model, solver_type));
-  RETURN_IF_ERROR(result.termination.EnsureIsOptimal());
+  ABSL_ASSIGN_OR_RETURN(const math_opt::SolveResult result,
+                        math_opt::Solve(model, solver_type));
+  ABSL_RETURN_IF_ERROR(result.termination.EnsureIsOptimal());
 
   std::cout << "Full problem optimal objective: "
             << absl::StrFormat("%.9f", result.objective_value()) << std::endl;
@@ -360,7 +360,7 @@ absl::StatusOr<math_opt::SolveParameters> EnsureDualRaySolveParameters(
       parameters.glpk.compute_unbound_rays_if_possible = true;
       break;
     default:
-      return util::InternalErrorBuilder()
+      return ortools::InternalErrorBuilder()
              << "unsupported solver: " << solver_type;
   }
   return parameters;
@@ -369,15 +369,16 @@ absl::StatusOr<math_opt::SolveParameters> EnsureDualRaySolveParameters(
 absl::StatusOr<std::unique_ptr<SecondStageSolver>> SecondStageSolver::New(
     FacilityLocationInstance instance, const math_opt::SolverType solver_type) {
   // Set solver arguments to ensure a dual ray is returned.
-  ASSIGN_OR_RETURN(math_opt::SolveParameters parameters,
-                   EnsureDualRaySolveParameters(solver_type));
+  ABSL_ASSIGN_OR_RETURN(math_opt::SolveParameters parameters,
+                        EnsureDualRaySolveParameters(solver_type));
 
   std::unique_ptr<SecondStageSolver> second_stage_solver =
       absl::WrapUnique<SecondStageSolver>(
           new SecondStageSolver(std::move(instance), parameters));
-  ASSIGN_OR_RETURN(std::unique_ptr<math_opt::IncrementalSolver> solver,
-                   math_opt::NewIncrementalSolver(
-                       &second_stage_solver->second_stage_model_, solver_type));
+  ABSL_ASSIGN_OR_RETURN(
+      std::unique_ptr<math_opt::IncrementalSolver> solver,
+      math_opt::NewIncrementalSolver(&second_stage_solver->second_stage_model_,
+                                     solver_type));
   second_stage_solver->solver_ = std::move(solver);
   return std::move(second_stage_solver);
 }
@@ -437,7 +438,7 @@ absl::StatusOr<std::pair<double, Cut>> SecondStageSolver::Solve(
   // Update second stage with first stage solution.
   for (int facility = 0; facility < num_facilities; ++facility) {
     if (z_values[facility] < -kZeroTol) {
-      return util::InternalErrorBuilder()
+      return ortools::InternalErrorBuilder()
              << "negative z_value in first stage: " << z_values[facility]
              << " for facility " << facility;
     }
@@ -451,9 +452,9 @@ absl::StatusOr<std::pair<double, Cut>> SecondStageSolver::Solve(
                                         capacity_value);
   }
   // Solve and process second stage.
-  ASSIGN_OR_RETURN(const math_opt::SolveResult second_stage_result,
-                   solver_->Solve(math_opt::SolveArguments{
-                       .parameters = second_stage_params_}));
+  ABSL_ASSIGN_OR_RETURN(const math_opt::SolveResult second_stage_result,
+                        solver_->Solve(math_opt::SolveArguments{
+                            .parameters = second_stage_params_}));
   switch (second_stage_result.termination.reason) {
     case math_opt::TerminationReason::kInfeasible:
       // If the second stage problem is infeasible we can construct a
@@ -479,7 +480,7 @@ absl::StatusOr<std::pair<double, Cut>> SecondStageSolver::Solve(
         return std::make_pair(upper_bound, optimality_cut);
       }
     default:
-      return util::InternalErrorBuilder()
+      return ortools::InternalErrorBuilder()
              << "second stage was not solved to optimality or infeasibility: "
              << second_stage_result.termination;
   }
@@ -508,7 +509,7 @@ absl::StatusOr<Cut> SecondStageSolver::FeasibilityCut(
   if (!second_stage_result.has_dual_ray()) {
     // MathOpt does not require solvers to return a dual ray on infeasible,
     // but most LP solvers always will.
-    return util::InternalErrorBuilder()
+    return ortools::InternalErrorBuilder()
            << "no dual ray available for feasibility cut";
   }
 
@@ -558,7 +559,7 @@ absl::StatusOr<Cut> SecondStageSolver::OptimalityCut(
   if (!second_stage_result.has_dual_feasible_solution()) {
     // MathOpt does not require solvers to return a dual solution on optimal,
     // but most LP solvers always will.
-    return util::InternalErrorBuilder()
+    return ortools::InternalErrorBuilder()
            << "no dual solution available for optimality cut";
   }
 
@@ -591,12 +592,12 @@ absl::Status Benders(const FacilityLocationInstance& instance,
 
   // Setup first stage model and solver.
   FirstStageProblem first_stage(instance.network, instance.facility_cost);
-  ASSIGN_OR_RETURN(
+  ABSL_ASSIGN_OR_RETURN(
       const std::unique_ptr<math_opt::IncrementalSolver> first_stage_solver,
       math_opt::NewIncrementalSolver(&first_stage.model, solver_type));
   // Setup second stage solver.
-  ASSIGN_OR_RETURN(std::unique_ptr<SecondStageSolver> second_stage_solver,
-                   SecondStageSolver::New(instance, solver_type));
+  ABSL_ASSIGN_OR_RETURN(std::unique_ptr<SecondStageSolver> second_stage_solver,
+                        SecondStageSolver::New(instance, solver_type));
   // Start Benders
   int iteration = 0;
   double best_upper_bound = kInf;
@@ -606,9 +607,9 @@ absl::Status Benders(const FacilityLocationInstance& instance,
     LOG(INFO) << "Iteration: " << iteration;
 
     // Solve and process first stage.
-    ASSIGN_OR_RETURN(const math_opt::SolveResult first_stage_result,
-                     first_stage_solver->Solve());
-    RETURN_IF_ERROR(first_stage_result.termination.EnsureIsOptimal())
+    ABSL_ASSIGN_OR_RETURN(const math_opt::SolveResult first_stage_result,
+                          first_stage_solver->Solve());
+    ABSL_RETURN_IF_ERROR(first_stage_result.termination.EnsureIsOptimal())
         << " in first stage problem";
     for (int j = 0; j < num_facilities; j++) {
       z_values[j] = first_stage_result.variable_values().at(first_stage.z[j]);
@@ -616,7 +617,7 @@ absl::Status Benders(const FacilityLocationInstance& instance,
     const double lower_bound = first_stage_result.objective_value();
     LOG(INFO) << "LB = " << lower_bound;
     // Solve and process second stage.
-    ASSIGN_OR_RETURN(
+    ABSL_ASSIGN_OR_RETURN(
         (auto [upper_bound, cut]),
         second_stage_solver->Solve(
             z_values, first_stage_result.variable_values().at(first_stage.w),
@@ -654,12 +655,13 @@ absl::Status Main() {
       .facility_cost = absl::GetFlag(FLAGS_facility_cost),
       .location_fraction = absl::GetFlag(FLAGS_location_fraction)};
   absl::Time start = absl::Now();
-  RETURN_IF_ERROR(FullProblem(instance, absl::GetFlag(FLAGS_solver_type)))
+  ABSL_RETURN_IF_ERROR(FullProblem(instance, absl::GetFlag(FLAGS_solver_type)))
       << "full solve failed";
   std::cout << "Full solve time: " << absl::Now() - start << std::endl;
   start = absl::Now();
-  RETURN_IF_ERROR(Benders(instance, absl::GetFlag(FLAGS_benders_precission),
-                          absl::GetFlag(FLAGS_solver_type)))
+  ABSL_RETURN_IF_ERROR(Benders(instance,
+                               absl::GetFlag(FLAGS_benders_precission),
+                               absl::GetFlag(FLAGS_solver_type)))
       << "Benders solve failed";
   std::cout << "Benders solve time: " << absl::Now() - start << std::endl;
   return absl::OkStatus();

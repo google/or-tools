@@ -27,7 +27,7 @@
 #include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "ortools/base/protoutil.h"
-#include "ortools/base/status_macros.h"
+#include "ortools/base/status_builder.h"
 #include "ortools/math_opt/cpp/enums.h"
 #include "ortools/math_opt/parameters.pb.h"
 #include "ortools/math_opt/solvers/glpk.pb.h"
@@ -88,6 +88,8 @@ std::optional<absl::string_view> Enum<SolverType>::ToOptString(
       return "santorini";
     case SolverType::kXpress:
       return "xpress";
+    case SolverType::kMinCostFlow:
+      return "min_cost_flow";
     case SolverType::kCplex:
       return "cplex";
   }
@@ -99,7 +101,8 @@ absl::Span<const SolverType> Enum<SolverType>::AllValues() {
       SolverType::kGscip,     SolverType::kGurobi, SolverType::kGlop,
       SolverType::kCpSat,     SolverType::kPdlp,   SolverType::kGlpk,
       SolverType::kEcos,      SolverType::kScs,    SolverType::kHighs,
-      SolverType::kSantorini, SolverType::kXpress, SolverType::kCplex,
+      SolverType::kSantorini, SolverType::kXpress, SolverType::kMinCostFlow,
+      SolverType::kCplex,
   };
   return absl::MakeConstSpan(kSolverTypeValues);
 }
@@ -227,11 +230,15 @@ XpressParametersProto XpressParameters::Proto() const {
   return result;
 }
 
-XpressParameters XpressParameters::FromProto(
+absl::StatusOr<XpressParameters> XpressParameters::FromProto(
     const XpressParametersProto& proto) {
   XpressParameters result;
   for (const XpressParametersProto::Parameter& p : proto.parameters()) {
-    result.param_values[p.name()] = p.value();
+    if (!result.param_values.insert({p.name(), p.value()}).second) {
+      return ortools::InvalidArgumentErrorBuilder()
+             << "duplicate Xpress parameter: '" << absl::CEscape(p.name())
+             << "'";
+    }
   }
   return result;
 }
@@ -402,7 +409,9 @@ absl::StatusOr<SolveParameters> SolveParameters::FromProto(
   result.pdlp = proto.pdlp();
   result.glpk = GlpkParameters::FromProto(proto.glpk());
   result.highs = proto.highs();
-  result.xpress = XpressParameters::FromProto(proto.xpress());
+  OR_ASSIGN_OR_RETURN3(result.xpress,
+                       XpressParameters::FromProto(proto.xpress()),
+                       _ << "invalid xpress parameters");
   result.cplex = CplexParameters::FromProto(proto.cplex());
   return result;
 }

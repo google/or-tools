@@ -20,7 +20,6 @@
 #include <cstdlib>
 #include <deque>
 #include <functional>
-#include <limits>
 #include <memory>
 #include <optional>
 #include <random>
@@ -35,7 +34,6 @@
 #include "absl/container/btree_map.h"
 #include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
-#include "absl/container/flat_hash_set.h"
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
@@ -56,8 +54,10 @@
 #include "ortools/base/macros/os_support.h"
 #include "ortools/base/options.h"
 #include "ortools/base/timer.h"
-#include "ortools/base/version.h"
+#include "ortools/base/types.h"
+#include "ortools/base/version.h"  // IWYU pragma: keep
 #include "ortools/port/proto_utils.h"
+#include "ortools/sat/clause.h"
 #include "ortools/sat/combine_solutions.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_checker.h"
@@ -76,7 +76,6 @@
 #include "ortools/sat/feasibility_pump.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
-#include "ortools/sat/linear_model.h"
 #include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/lp_utils.h"
 #include "ortools/sat/lrat_proof_handler.h"
@@ -89,6 +88,7 @@
 #include "ortools/sat/sat_inprocessing.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/scheduling_local_search.h"
 #include "ortools/sat/shaving_solver.h"
 #include "ortools/sat/stat_tables.h"
 #include "ortools/sat/subsolver.h"
@@ -571,8 +571,8 @@ std::string CpModelStats(const CpModelProto& model_proto) {
     }
   } else {
     int64_t max_complexity = 0;
-    int64_t min = std::numeric_limits<int64_t>::max();
-    int64_t max = std::numeric_limits<int64_t>::min();
+    int64_t min = kint64max;
+    int64_t max = kint64min;
     for (const auto& entry : num_vars_per_domains) {
       min = std::min(min, entry.first.Min());
       max = std::max(max, entry.first.Max());
@@ -590,6 +590,9 @@ std::string CpModelStats(const CpModelProto& model_proto) {
                      absl::StrJoin(constant_values, ","), "} \n");
     absl::StrAppend(&result, Summarize(temp));
   }
+
+  absl::StrAppend(&result, "#Constraints: ",
+                  FormatCounter(model_proto.constraints().size()), "\n");
 
   std::vector<std::string> constraints;
   constraints.reserve(name_to_num_constraints.size());
@@ -844,7 +847,9 @@ void LaunchSubsolvers(Model* global_model, SharedClasses* shared,
     subsolvers[i].reset();
   }
 
-  shared->shared_tree_manager->CloseLratProof();
+  if (shared->shared_tree_manager != nullptr) {
+    shared->shared_tree_manager->CloseLratProof();
+  }
   if (shared->response->ProblemIsSolved() &&
       !shared->response->HasFeasibleSolution()) {
     LratMerger(global_model)
@@ -895,8 +900,7 @@ bool RestrictObjectiveUsingHint(CpModelProto* model_proto) {
 
   const int64_t obj_upper_bound =
       ComputeInnerObjective(model_proto->objective(), solution);
-  const Domain restriction =
-      Domain(std::numeric_limits<int64_t>::min(), obj_upper_bound);
+  const Domain restriction = Domain(kint64min, obj_upper_bound);
 
   if (restriction.IsEmpty()) return false;
 
@@ -1142,6 +1146,13 @@ class FullProblemSolver : public SubSolver {
           RegisterClausesLevelZeroImport(id, shared_->clauses.get(),
                                          &local_model_);
           RegisterClausesExport(id, shared_->clauses.get(), &local_model_);
+
+          // Hack to export all equivalences found so far.
+          //
+          // TODO(user): We probably want to do probing "AFTER" this. But then
+          // we might not want to export all binary clauses found by probing.
+          local_model_.GetOrCreate<BinaryImplicationGraph>()
+              ->ExportAllEquivalences();
         }
 
         auto* logger = local_model_.GetOrCreate<SolverLogger>();
@@ -1435,10 +1446,7 @@ class LnsSolver : public SubSolver {
           *google::protobuf::Arena::Create<CpModelProto>(&arena);
       CpModelProto& mapping_proto =
           *google::protobuf::Arena::Create<CpModelProto>(&arena);
-      auto context = std::make_unique<PresolveContext>(
-          &local_model, &lns_fragment, &mapping_proto);
 
-      *lns_fragment.mutable_variables() = neighborhood.delta.variables();
       std::vector<int> variable_mapping;
       std::vector<int64_t> fixed_values;
       {
@@ -1470,12 +1478,20 @@ class LnsSolver : public SubSolver {
         // TODO(user): the mapping removes fixed variables but the model
         // copy can fix new ones. Should we update the mapping and do a new
         // copy, and so on until fix point?
-        std::vector<int> reverse_mapping;
-        if (!GenerateMapping(context.get(), variable_mapping, reverse_mapping,
+        if (!GenerateMapping(neighborhood.delta, variable_mapping,
                              fixed_values)) {
           return;
         }
-        ModelCopy copier(context.get(), variable_mapping, reverse_mapping);
+        ModelCopy copier(&lns_fragment, &local_model, variable_mapping);
+        if (!copier.ImportVariables(neighborhood.delta)) return;
+
+        if (use_hint) {
+          if (neighborhood.delta.has_solution_hint()) {
+            copier.ImportSolutionHint(neighborhood.delta);
+          } else {
+            copier.ImportSolutionHint(helper_->ModelProto());
+          }
+        }
 
         // Copy and simplify the constraints from the initial model.
         if (!copier.ImportAndSimplifyConstraints(helper_->ModelProto())) {
@@ -1488,14 +1504,6 @@ class LnsSolver : public SubSolver {
           return;
         }
 
-        if (use_hint) {
-          if (neighborhood.delta.has_solution_hint()) {
-            copier.ImportSolutionHint(neighborhood.delta);
-          } else {
-            copier.ImportSolutionHint(helper_->ModelProto());
-          }
-        }
-
         // Copy the rest of the model, except symmetries (we don't want to use
         // the symmetry of the main problem in the LNS presolved problem).
         if (!copier.ImportEverythingExceptVariablesConstraintsAndHint(
@@ -1503,9 +1511,7 @@ class LnsSolver : public SubSolver {
           return;
         }
 
-        if (!copier.RemapVariablesInProtoAndContext()) {
-          return;
-        }
+        if (!copier.FinishCopy(neighborhood.delta)) return;
       }
 
       lns_fragment.set_name(absl::StrCat("lns_", task_id, "_", source_info));
@@ -1544,6 +1550,9 @@ class LnsSolver : public SubSolver {
 
       const int num_vars_before_presolve = lns_fragment.variables_size();
       std::vector<int> postsolve_mapping;
+
+      auto context = std::make_unique<PresolveContext>(
+          &local_model, &lns_fragment, &mapping_proto);
       const CpSolverStatus presolve_status =
           PresolveCpModel(context.get(), &postsolve_mapping);
 
@@ -1615,10 +1624,11 @@ class LnsSolver : public SubSolver {
                                  mapping_proto, postsolve_mapping,
                                  &local_solution_values);
         // Map the solution back to the original variables.
-        const int num_vars = variable_mapping.size();
+        const int num_vars = helper_->ModelProto().variables().size();
         solution_values.reserve(num_vars);
         for (int i = 0; i < num_vars; ++i) {
-          const int mapped_ref = variable_mapping[i];
+          const int mapped_ref =
+              variable_mapping.empty() ? i : variable_mapping[i];
           if (mapped_ref != kNoVariableMapping) {
             int64_t value = local_solution_values[PositiveRef(mapped_ref)];
             if (RefIsPositive(mapped_ref)) {
@@ -1629,7 +1639,7 @@ class LnsSolver : public SubSolver {
               solution_values.push_back(1 - value);
             }
           } else {
-            DCHECK_NE(fixed_values[i], std::numeric_limits<int64_t>::min());
+            DCHECK_NE(fixed_values[i], kint64min);
             solution_values.push_back(fixed_values[i]);
           }
         }
@@ -1669,7 +1679,10 @@ class LnsSolver : public SubSolver {
         //
         // TODO(user): This do not work if they are symmetries loaded into SAT.
         // For now we just disable this if there is any symmetry. See for
-        // instance spot5_1401.fzn. Be smarter about that.
+        // instance spot5_1401.fzn. Be smarter about that. We use
+        // !VariablesTouchSymmetries() which is a bit better. Maybe we can use
+        // VariablesSplitSymmetries() but that currently require more work and
+        // in general, we would need to disable the symmetry that we fix here.
         //
         // The issue is that as we fix level zero variables from a partial
         // solution, the symmetry propagator could wrongly fix other variables
@@ -1685,10 +1698,12 @@ class LnsSolver : public SubSolver {
         //
         // TODO(user): We could however fix it in the LNS Helper!
         if (data.status == CpSolverStatus::OPTIMAL &&
-            !shared_->model_proto.has_symmetry() && !solution_values.empty() &&
-            neighborhood.is_simple && shared_->bounds != nullptr &&
+            !solution_values.empty() && neighborhood.is_simple &&
+            shared_->bounds != nullptr &&
             !neighborhood.variables_that_can_be_fixed_to_local_optimum
-                 .empty()) {
+                 .empty() &&
+            !helper_->VariablesTouchSymmetries(
+                neighborhood.variables_that_can_be_fixed_to_local_optimum)) {
           display_lns_info = true;
           shared_->bounds->FixVariablesFromPartialSolution(
               solution_values,
@@ -1776,12 +1791,12 @@ class LnsSolver : public SubSolver {
   }
 
  private:
-  // Generates a mapping which removes fixed variables (except those in kInverse
-  // constraints, and one fixed literal).
-  bool GenerateMapping(PresolveContext* context,
+  // Generates a mapping which removes fixed variables (except one fixed
+  // literal).
+  bool GenerateMapping(CpModelProto& proto_with_variables,
                        std::vector<int>& variable_mapping,
-                       std::vector<int>& reverse_mapping,
                        std::vector<int64_t>& fixed_values) {
+    int new_var_index = 0;
     std::vector<int> representatives;
     if (shared_->clauses != nullptr) {
       representatives = shared_->clauses->GetRepresentatives();
@@ -1793,39 +1808,45 @@ class LnsSolver : public SubSolver {
 
     // Fixed variables can be removed from the model. If a variable is fixed
     // then the equivalent variables can be fixed too.
-    const CpModelProto& lns_fragment = *context->working_model;
-    const int num_vars = lns_fragment.variables_size();
-    context->InitializeNewDomains();
-    auto fix_literal = [&](int literal, bool value) {
-      return value ? context->SetLiteralToTrue(literal)
-                   : context->SetLiteralToFalse(literal);
+    const int num_vars = proto_with_variables.variables_size();
+    auto is_fixed = [&](int ref) {
+      const int var = PositiveRef(ref);
+      const auto& domain = proto_with_variables.variables(var).domain();
+      return domain[0] == domain[domain.size() - 1];
+    };
+    auto fixed_literal_value = [&](int ref) {
+      const int var = PositiveRef(ref);
+      const int value = proto_with_variables.variables(var).domain(0);
+      return RefIsPositive(ref) ? value : 1 - value;
+    };
+    auto fix_literal = [&](int literal, int value) {
+      if (!RefIsPositive(literal)) {
+        literal = PositiveRef(literal);
+        value = 1 - value;
+      }
+      if (is_fixed(literal) && fixed_literal_value(literal) != value) {
+        return false;
+      }
+      auto* domain =
+          proto_with_variables.mutable_variables(literal)->mutable_domain();
+      domain->Clear();
+      domain->Add(value);
+      domain->Add(value);
+      return true;
     };
     for (int i = 0; i < num_vars; ++i) {
-      if (context->IsFixed(i)) {
+      if (proto_with_variables.variables(i).domain().empty()) return false;
+      if (is_fixed(i)) {
         const int rep = get_representative(i);
         if (rep != i) {
-          if (!fix_literal(rep, context->LiteralIsTrue(i))) return false;
+          if (!fix_literal(rep, fixed_literal_value(i))) return false;
         }
       }
     }
     for (int i = 0; i < num_vars; ++i) {
       const int rep = get_representative(i);
-      if (rep != i && context->IsFixed(rep)) {
-        if (!fix_literal(i, context->LiteralIsTrue(rep))) return false;
-      }
-    }
-
-    // ModelCopy does not support removing variables appearing in kInverse
-    // constraints.
-    absl::flat_hash_set<int> unremovable_vars;
-    for (const ConstraintProto& ct : lns_fragment.constraints()) {
-      if (ct.constraint_case() == ConstraintProto::kInverse) {
-        for (int var : ct.inverse().f_direct()) {
-          unremovable_vars.insert(var);
-        }
-        for (int var : ct.inverse().f_inverse()) {
-          unremovable_vars.insert(var);
-        }
+      if (rep != i && is_fixed(rep)) {
+        if (!fix_literal(i, fixed_literal_value(rep))) return false;
       }
     }
 
@@ -1834,26 +1855,25 @@ class LnsSolver : public SubSolver {
     fixed_values.reserve(num_vars);
     for (int i = 0; i < num_vars; ++i) {
       bool add_to_mapping = true;
-      if (context->IsFixed(i)) {
-        const int64_t value = context->FixedValue(i);
+      if (is_fixed(i)) {
+        const int64_t value = proto_with_variables.variables(i).domain(0);
         fixed_values.push_back(value);
-        add_to_mapping = unremovable_vars.contains(i);
+        add_to_mapping = false;
         if (first_fixed_literal == -1 && (value == 0 || value == 1)) {
           first_fixed_literal = i;
           add_to_mapping = true;
         }
       } else {
-        fixed_values.push_back(std::numeric_limits<int64_t>::min());
+        fixed_values.push_back(kint64min);
       }
       if (add_to_mapping && variable_mapping[i] == kNoVariableMapping) {
         const int rep = get_representative(i);
         const int rep_var = PositiveRef(rep);
         if (variable_mapping[rep_var] == kNoVariableMapping) {
-          variable_mapping[i] = reverse_mapping.size();
+          variable_mapping[i] = new_var_index++;
           variable_mapping[rep_var] = RefIsPositive(rep)
                                           ? variable_mapping[i]
                                           : NegatedRef(variable_mapping[i]);
-          reverse_mapping.push_back(i);
         } else {
           variable_mapping[i] = RefIsPositive(rep)
                                     ? variable_mapping[rep_var]
@@ -1936,26 +1956,47 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
   NeighborhoodGeneratorHelper* helper = unique_helper.get();
   subsolvers.push_back(std::move(unique_helper));
 
-  // How many shared tree workers to run?
-  const int num_shared_tree_workers = shared->shared_tree_manager->NumWorkers();
+  // Compute the number of shared tree workers.
+  {
+    SatParameters* mutable_params = global_model->GetOrCreate<SatParameters>();
+    if (shared->model_proto.assumptions().empty()) {
+      int num_shared_tree_workers = params.shared_tree_num_workers();
+      // Set the number of shared tree workers if it was not set.
+      // Note: it has to be done after presolve, as presolve might empty
+      // the objective.
+      if (num_shared_tree_workers == -1) {
+        if (shared->model_proto.has_objective() &&
+            !shared->model_proto.objective().vars().empty()) {
+          // We reserve 16 workers for the main solver, and then we split the
+          // rest between the main solver and the shared tree search.
+          num_shared_tree_workers =
+              std::max((params.num_workers() - 16) / 2, 0);
+        } else {
+          num_shared_tree_workers = std::max((params.num_workers() - 8) / 2, 0);
+        }
+      }
 
-  // Add shared tree workers if asked.
-  if (num_shared_tree_workers >= 2 &&
-      shared->model_proto.assumptions().empty()) {
-    for (const SatParameters& local_params : RepeatParameters(
-             name_filter.Filter({name_to_params.at("shared_tree")}),
-             num_shared_tree_workers)) {
-      full_worker_subsolvers.push_back(std::make_unique<FullProblemSolver>(
-          local_params.name(), local_params,
-          /*split_in_chunks=*/params.interleave_search(), shared));
+      // We need at least 4 workers for the shared tree search to be efficient.
+      if (num_shared_tree_workers >= 4) {
+        SOLVER_LOG(shared->logger, "Setting number of shared tree workers to ",
+                   num_shared_tree_workers);
+        mutable_params->set_shared_tree_num_workers(num_shared_tree_workers);
+        shared->InitSharedTreeManager(global_model);
+      } else {
+        SOLVER_LOG(shared->logger, "Not using shared tree search.");
+        mutable_params->set_shared_tree_num_workers(0);
+      }
+    } else if (params.shared_tree_num_workers() != 0) {
+      mutable_params->set_shared_tree_num_workers(0);
+      SOLVER_LOG(shared->logger,
+                 "Disabling shared tree search for problems with "
+                 "assumptions.");
     }
   }
 
   // Add full problem solvers.
-  for (const SatParameters& local_params : GetFullWorkerParameters(
-           params, shared->model_proto,
-           /*num_already_present=*/full_worker_subsolvers.size(),
-           &name_filter)) {
+  for (const SatParameters& local_params :
+       GetFullWorkerParameters(params, shared->model_proto, &name_filter)) {
     if (!name_filter.Keep(local_params.name())) continue;
 
     // TODO(user): This is currently not supported here.
@@ -2019,6 +2060,10 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
         lns_params_base, lns_params_stalling, helper, shared));
   }
 
+  const bool has_no_overlap_or_cumulative =
+      !helper->TypeToConstraints(ConstraintProto::kNoOverlap).empty() ||
+      !helper->TypeToConstraints(ConstraintProto::kCumulative).empty();
+
   // Add incomplete subsolvers that require an objective.
   //
   // They are all re-entrant, so we do not need to specify more than the number
@@ -2028,37 +2073,43 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
       !shared->model_proto.objective().vars().empty()) {
     // Enqueue all the possible LNS neighborhood subsolvers.
     // Each will have their own metrics.
-    if (name_filter.Keep("rnd_var_lns")) {
+    if (name_filter.Keep("lns_rnd_var")) {
       reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
           std::make_unique<RelaxRandomVariablesGenerator>(
               helper, name_filter.LastName()),
           lns_params_base, lns_params_stalling, helper, shared));
     }
-    if (name_filter.Keep("rnd_cst_lns")) {
+    if (name_filter.Keep("lns_rnd_cst")) {
       reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
           std::make_unique<RelaxRandomConstraintsGenerator>(
               helper, name_filter.LastName()),
           lns_params_base, lns_params_stalling, helper, shared));
     }
-    if (name_filter.Keep("graph_var_lns")) {
+    if (name_filter.Keep("lns_graph_var")) {
       reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
           std::make_unique<VariableGraphNeighborhoodGenerator>(
               helper, name_filter.LastName()),
           lns_params_base, lns_params_stalling, helper, shared));
     }
-    if (name_filter.Keep("graph_arc_lns")) {
+    if (name_filter.Keep("lns_graph_arc")) {
       reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
           std::make_unique<ArcGraphNeighborhoodGenerator>(
               helper, name_filter.LastName()),
           lns_params_base, lns_params_stalling, helper, shared));
     }
-    if (name_filter.Keep("graph_cst_lns")) {
+    if (name_filter.Keep("lns_small_component")) {
+      reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
+          std::make_unique<SmallComponentNeighborhoodGenerator>(
+              helper, name_filter.LastName()),
+          lns_params_base, lns_params_stalling, helper, shared));
+    }
+    if (name_filter.Keep("lns_graph_cst")) {
       reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
           std::make_unique<ConstraintGraphNeighborhoodGenerator>(
               helper, name_filter.LastName()),
           lns_params_base, lns_params_stalling, helper, shared));
     }
-    if (name_filter.Keep("graph_dec_lns")) {
+    if (name_filter.Keep("lns_graph_dec")) {
       reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
           std::make_unique<DecompositionGraphNeighborhoodGenerator>(
               helper, name_filter.LastName()),
@@ -2066,26 +2117,22 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
     }
     if (params.use_lb_relax_lns() &&
         params.num_workers() >= params.lb_relax_num_workers_threshold() &&
-        name_filter.Keep("lb_relax_lns")) {
+        name_filter.Keep("lns_lb_relax")) {
       reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
           std::make_unique<LocalBranchingLpBasedNeighborhoodGenerator>(
               helper, name_filter.LastName(), shared->time_limit, shared),
           lns_params_base, lns_params_stalling, helper, shared));
     }
 
-    const bool has_no_overlap_or_cumulative =
-        !helper->TypeToConstraints(ConstraintProto::kNoOverlap).empty() ||
-        !helper->TypeToConstraints(ConstraintProto::kCumulative).empty();
-
     // Scheduling (no_overlap and cumulative) specific LNS.
     if (has_no_overlap_or_cumulative) {
-      if (name_filter.Keep("scheduling_intervals_lns")) {
+      if (name_filter.Keep("lns_scheduling_intervals")) {
         reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
             std::make_unique<RandomIntervalSchedulingNeighborhoodGenerator>(
                 helper, name_filter.LastName()),
             lns_params_base, lns_params_stalling, helper, shared));
       }
-      if (name_filter.Keep("scheduling_time_window_lns")) {
+      if (name_filter.Keep("lns_scheduling_time_window")) {
         reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
             std::make_unique<SchedulingTimeWindowNeighborhoodGenerator>(
                 helper, name_filter.LastName()),
@@ -2094,7 +2141,7 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
       const std::vector<std::vector<int>> intervals_in_constraints =
           helper->GetUniqueIntervalSets();
       if (intervals_in_constraints.size() > 2 &&
-          name_filter.Keep("scheduling_resource_windows_lns")) {
+          name_filter.Keep("lns_scheduling_resource_windows")) {
         reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
             std::make_unique<SchedulingResourceWindowsNeighborhoodGenerator>(
                 helper, intervals_in_constraints, name_filter.LastName()),
@@ -2106,31 +2153,31 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
     const bool has_no_overlap2d =
         !helper->TypeToConstraints(ConstraintProto::kNoOverlap2D).empty();
     if (has_no_overlap2d) {
-      if (name_filter.Keep("packing_random_lns")) {
+      if (name_filter.Keep("lns_packing_random")) {
         reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
             std::make_unique<RandomRectanglesPackingNeighborhoodGenerator>(
                 helper, name_filter.LastName()),
             lns_params_base, lns_params_stalling, helper, shared));
       }
-      if (name_filter.Keep("packing_square_lns")) {
+      if (name_filter.Keep("lns_packing_square")) {
         reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
             std::make_unique<RectanglesPackingRelaxOneNeighborhoodGenerator>(
                 helper, name_filter.LastName()),
             lns_params_base, lns_params_stalling, helper, shared));
       }
-      if (name_filter.Keep("packing_swap_lns")) {
+      if (name_filter.Keep("lns_packing_swap")) {
         reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
             std::make_unique<RectanglesPackingRelaxTwoNeighborhoodsGenerator>(
                 helper, name_filter.LastName()),
             lns_params_base, lns_params_stalling, helper, shared));
       }
-      if (name_filter.Keep("packing_precedences_lns")) {
+      if (name_filter.Keep("lns_packing_precedences")) {
         reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
             std::make_unique<RandomPrecedencesPackingNeighborhoodGenerator>(
                 helper, name_filter.LastName()),
             lns_params_base, lns_params_stalling, helper, shared));
       }
-      if (name_filter.Keep("packing_slice_lns")) {
+      if (name_filter.Keep("lns_packing_slice")) {
         reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
             std::make_unique<SlicePackingNeighborhoodGenerator>(
                 helper, name_filter.LastName()),
@@ -2140,7 +2187,7 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
 
     // Generic scheduling/packing LNS.
     if (has_no_overlap_or_cumulative || has_no_overlap2d) {
-      if (name_filter.Keep("scheduling_precedences_lns")) {
+      if (name_filter.Keep("lns_scheduling_precedences")) {
         reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
             std::make_unique<RandomPrecedenceSchedulingNeighborhoodGenerator>(
                 helper, name_filter.LastName()),
@@ -2153,13 +2200,13 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
     const int num_routes = static_cast<int>(
         helper->TypeToConstraints(ConstraintProto::kRoutes).size());
     if (num_circuit + num_routes > 0) {
-      if (name_filter.Keep("routing_random_lns")) {
+      if (name_filter.Keep("lns_routing_random")) {
         reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
             std::make_unique<RoutingRandomNeighborhoodGenerator>(
                 helper, name_filter.LastName()),
             lns_params_routing, lns_params_stalling, helper, shared));
       }
-      if (name_filter.Keep("routing_path_lns")) {
+      if (name_filter.Keep("lns_routing_path")) {
         reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
             std::make_unique<RoutingPathNeighborhoodGenerator>(
                 helper, name_filter.LastName()),
@@ -2167,7 +2214,7 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
       }
     }
     if (num_routes > 0 || num_circuit > 1) {
-      if (name_filter.Keep("routing_full_path_lns")) {
+      if (name_filter.Keep("lns_routing_full_path")) {
         reentrant_interleaved_subsolvers.push_back(std::make_unique<LnsSolver>(
             std::make_unique<RoutingFullPathNeighborhoodGenerator>(
                 helper, name_filter.LastName()),
@@ -2180,7 +2227,8 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
   //
   // Compared to LNS, these are not re-entrant, so we need to schedule the
   // correct number for parallelism.
-  if (shared->model_proto.has_objective()) {
+  if (shared->model_proto.has_objective() &&
+      !shared->model_proto.objective().vars().empty()) {
     // If not forced by the parameters, we want one LS every 3 threads that
     // work on interleaved stuff. Note that by default they are many LNS, so
     // that shouldn't be too many.
@@ -2222,6 +2270,14 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
                 shared->bounds.get(), shared->clauses.get(), shared->ls_hints,
                 shared->stat_tables));
       }
+    }
+
+    if (has_no_overlap_or_cumulative && name_filter.Keep("ls_scheduling")) {
+      interleaved_subsolvers.push_back(
+          std::make_unique<SchedulingLocalSearchSolver>(
+              "ls_scheduling", SubSolver::INCOMPLETE, shared->model_proto,
+              params, shared->time_limit, shared->response,
+              shared->stat_tables));
     }
 
     if (num_ls_lin > 0) {
@@ -2483,12 +2539,13 @@ void FixVariablesToHintValue(const PartialVariableAssignment& solution_hint,
                              PresolveContext* context, SolverLogger* logger) {
   SOLVER_LOG(logger, "Fixing ", solution_hint.vars().size(),
              " variables to their value in the solution hints.");
+  context->InitializeNewDomains();
   for (int i = 0; i < solution_hint.vars_size(); ++i) {
     const int var = solution_hint.vars(i);
     const int64_t value = solution_hint.values(i);
     if (!context->IntersectDomainWith(var, Domain(value))) {
       const IntegerVariableProto& var_proto =
-          context->working_model->variables(var);
+          context->WorkingModel().variables(var);
       const std::string var_name = var_proto.name().empty()
                                        ? absl::StrCat("var(", var, ")")
                                        : var_proto.name();
@@ -2692,7 +2749,9 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   // Presolve and expansions.
   SOLVER_LOG(logger, "");
   SOLVER_LOG(logger,
-             absl::StrFormat("Starting presolve at %.2fs", wall_timer->Get()));
+             absl::StrFormat("Starting initial copy and canonicalization of "
+                             "the input proto at %.2fs",
+                             wall_timer->Get()));
 
   // Note: Allocating in an arena significantly speed up destruction (free) for
   // large messages.
@@ -2701,14 +2760,23 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
       google::protobuf::Arena::Create<CpModelProto>(&arena);
   CpModelProto* mapping_proto =
       google::protobuf::Arena::Create<CpModelProto>(&arena);
-  auto context = std::make_unique<PresolveContext>(model, new_cp_model_proto,
-                                                   mapping_proto);
 
-  if (!ImportModelWithBasicPresolveIntoContext(model_proto, context.get())) {
+  // The lrat proof handler is needed is some cases, during the initial copy
+  // and the presolve.
+  //
+  // Note that this is the "presolve one", each worker will have its own.
+  std::unique_ptr<LratProofHandler> presolve_lrat_proof_handler =
+      LratProofHandler::MaybeCreate(
+          model, /*enable_rat_proofs=*/params.cp_model_pure_sat_presolve());
+  if (presolve_lrat_proof_handler != nullptr) {
+    model->Register<LratProofHandler>(presolve_lrat_proof_handler.get());
+  }
+
+  if (!CopyModel(model_proto, new_cp_model_proto, model)) {
     const std::string info = "Problem proved infeasible during initial copy.";
     SOLVER_LOG(logger, info);
-    if (context->lrat_proof_handler != nullptr) {
-      context->lrat_proof_handler->Close(/*model_is_unsat=*/true);
+    if (model->Mutable<LratProofHandler>() != nullptr) {
+      model->Mutable<LratProofHandler>()->Close(/*model_is_unsat=*/true);
     }
     CpSolverResponse status_response;
     status_response.set_status(CpSolverStatus::INFEASIBLE);
@@ -2734,23 +2802,33 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
                " routes constraint(s).");
   }
 
-  ClearInternalFields(context->working_model, logger);
+  ClearInternalFields(new_cp_model_proto, logger);
 
   if (absl::GetFlag(FLAGS_cp_model_ignore_objective) &&
-      (context->working_model->has_objective() ||
-       context->working_model->has_floating_point_objective())) {
+      (new_cp_model_proto->has_objective() ||
+       new_cp_model_proto->has_floating_point_objective())) {
     SOLVER_LOG(logger, "Ignoring objective");
-    context->working_model->clear_objective();
-    context->working_model->clear_floating_point_objective();
+    new_cp_model_proto->clear_objective();
+    new_cp_model_proto->clear_floating_point_objective();
   }
 
   if (absl::GetFlag(FLAGS_cp_model_ignore_hints) &&
-      context->working_model->has_solution_hint()) {
+      new_cp_model_proto->has_solution_hint()) {
     SOLVER_LOG(logger, "Ignoring solution hint");
-    context->working_model->clear_solution_hint();
+    new_cp_model_proto->clear_solution_hint();
   }
 
+  SOLVER_LOG(logger,
+             absl::StrFormat("Starting presolve at %.2fs", wall_timer->Get()));
+  auto context = std::make_unique<PresolveContext>(model, new_cp_model_proto,
+                                                   mapping_proto);
+
   // Checks for hints early in case they are forced to be hard constraints.
+  //
+  // Note that this still use the original user-given hint, which is not
+  // clamped. We also don't have hint for potential new variable created during
+  // copy/canonicalization. But we should be able to recover their value quite
+  // quickly when we fix the hint.
   if (params.fix_variables_to_their_hinted_value() &&
       model_proto.has_solution_hint()) {
     FixVariablesToHintValue(model_proto.solution_hint(), context.get(), logger);
@@ -2880,12 +2958,17 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   const CpSolverStatus presolve_status =
       PresolveCpModel(context.get(), &postsolve_mapping);
 
+  // Delete the presolve_lrat_proof_handler.
+  // This is needed to properly write the first proof file.
+  if (presolve_lrat_proof_handler != nullptr) {
+    presolve_lrat_proof_handler->Close(presolve_status ==
+                                       CpSolverStatus::INFEASIBLE);
+    model->Unregister<LratProofHandler>();
+    presolve_lrat_proof_handler.reset(nullptr);
+  }
+
   // Delete the context as soon as the presolve is done. Note that only
   // postsolve_mapping and mapping_proto are needed for postsolve.
-  if (context->lrat_proof_handler != nullptr) {
-    context->lrat_proof_handler->Close(presolve_status ==
-                                       CpSolverStatus::INFEASIBLE);
-  }
   context.reset(nullptr);
 
   if (presolve_status != CpSolverStatus::UNKNOWN) {
@@ -2939,8 +3022,15 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
     } else {
       TimeLimit time_limit;
       shared_time_limit->UpdateLocalLimit(&time_limit);
-      DetectAndAddSymmetryToProto(params, new_cp_model_proto, logger,
-                                  &time_limit);
+      DetectAndAddSymmetryToProto(params, *new_cp_model_proto,
+                                  new_cp_model_proto->mutable_symmetry(),
+                                  logger, &time_limit);
+    }
+
+    // TODO(user): Some code just check new_cp_model_proto->has_symmetry().
+    // If we don't have any generator, better to just clear the field.
+    if (new_cp_model_proto->symmetry().permutations().empty()) {
+      new_cp_model_proto->clear_symmetry();
     }
   }
 
@@ -3061,6 +3151,28 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
     if (absl::GetFlag(FLAGS_cp_model_dump_models)) {
       DumpModelProto(*new_cp_model_proto, "presolved_model");
       DumpModelProto(*mapping_proto, "mapping_model");
+
+      // Debug model with 1-based indices easier to read but cannot be parsed
+      // back! This follow the SAT convention for literal like +3/-3 and
+      // variable starts at 1. Note also that without the model name, the domain
+      // of variable #i will be at line i.
+      {
+        CpModelProto copy = *new_cp_model_proto;
+        copy.clear_name();
+        for (ConstraintProto& ct : *copy.mutable_constraints()) {
+          ApplyToAllVariableIndices(
+              [](int* ref) {
+                if (*ref >= 0) ++*ref;
+              },
+              &ct);
+          ApplyToAllLiteralIndices(
+              [](int* ref) {
+                if (*ref >= 0) ++*ref;
+              },
+              &ct);
+        }
+        DumpModelProto(copy, "debug_1_based_model");
+      }
 
       // If the model is convertible to a MIP, we dump it too.
       //

@@ -63,11 +63,11 @@ py_library(
         ":objectives",
         ":quadratic_constraints",
         ":variables",
+        "//ortools/math_opt/elemental/python:cpp_elemental",
+        "//ortools/math_opt/elemental/python:enums",
         requirement("typing-extensions"),
         "//ortools/math_opt:model_py_pb2",
         "//ortools/math_opt:model_update_py_pb2",
-        "//ortools/math_opt/elemental/python:cpp_elemental",
-        "//ortools/math_opt/elemental/python:enums",
         "//ortools/math_opt/python/elemental",
     ],
 )
@@ -244,8 +244,8 @@ py_library(
     deps = [
         ":from_model",
         ":variables",
-        requirement("numpy"),
         "//ortools/math_opt/elemental/python:enums",
+        requirement("numpy"),
         "//ortools/math_opt/python/elemental",
     ],
 )
@@ -289,6 +289,7 @@ py_library(
         "//ortools/math_opt/solvers:gurobi_py_pb2",
         "//ortools/math_opt/solvers:highs_py_pb2",
         "//ortools/math_opt/solvers:osqp_py_pb2",
+        "//ortools/math_opt/solvers:xpress_py_pb2",
         "//ortools/math_opt/solvers/gscip:gscip_py_pb2",
         "//ortools/pdlp:solvers_py_pb2",
         "//ortools/sat:sat_parameters_py_pb2",
@@ -309,6 +310,7 @@ py_test(
         "//ortools/math_opt/solvers:gurobi_py_pb2",
         "//ortools/math_opt/solvers:highs_py_pb2",
         "//ortools/math_opt/solvers:osqp_py_pb2",
+        "//ortools/math_opt/solvers:xpress_py_pb2",
         "//ortools/math_opt/solvers/gscip:gscip_py_pb2",
         "//ortools/pdlp:solvers_py_pb2",
         "//ortools/sat:sat_parameters_py_pb2",
@@ -414,8 +416,8 @@ py_library(
         ":parameters",
         ":result",
         "//ortools/math_opt:parameters_py_pb2",
-        "//ortools/math_opt:rpc_py_pb2",
         "//ortools/math_opt/core/python:solver",
+        "//ortools/util:status_py_pb2",
         "//ortools/util/python:solve_interrupter",
     ],
 )
@@ -472,8 +474,8 @@ py_library(
     deps = [
         ":bounded_expressions",
         ":from_model",
-        requirement("immutabledict"),
         "//ortools/math_opt/elemental/python:enums",
+        requirement("immutabledict"),
         "//ortools/math_opt/python/elemental",
     ],
 )
@@ -562,7 +564,10 @@ py_test(
 py_library(
     name = "errors",
     srcs = ["errors.py"],
-    deps = ["//ortools/math_opt:rpc_py_pb2"],
+    deps = [
+        "//ortools/util:status_py_pb2",
+        "//ortools/util/python:status_streaming",
+    ],
 )
 
 py_test(
@@ -571,7 +576,8 @@ py_test(
     deps = [
         ":errors",
         requirement("absl-py"),
-        "//ortools/math_opt:rpc_py_pb2",
+        "//ortools/util:status_py_pb2",
+        "//ortools/util/python:status_streaming",
     ],
 )
 

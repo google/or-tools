@@ -243,6 +243,13 @@ class SetCoverModel {
 
   void CreateSparseColumnView();
 
+  // Compares two solutions a and b and returns two vectors:
+  // - the first one contains the indices of the bits set in a but not in b.
+  // - the second one contains the indices of the bits set in b but not in a.
+  // This is useful to understand the differences between two solutions.
+  static std::pair<std::vector<SubsetIndex>, std::vector<SubsetIndex>>
+  CompareSolutions(const SubsetBoolVector& a, const SubsetBoolVector& b);
+
   // Same as CreateSparseRowView, but uses a slicing algorithm, more prone to
   // parallelism.
   SparseRowView ComputeSparseRowViewUsingSlices();

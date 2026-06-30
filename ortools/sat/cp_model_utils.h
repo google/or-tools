@@ -33,6 +33,7 @@
 #include "ortools/base/hash.h"
 #include "ortools/base/macros/os_support.h"
 #include "ortools/base/options.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/sorted_interval_list.h"
@@ -195,10 +196,8 @@ std::vector<int64_t> AllValuesInDomain(const ProtoWithDomain& proto) {
 inline double ScaleObjectiveValue(const CpObjectiveProto& proto,
                                   int64_t value) {
   double result = static_cast<double>(value);
-  if (value == std::numeric_limits<int64_t>::min())
-    result = -std::numeric_limits<double>::infinity();
-  if (value == std::numeric_limits<int64_t>::max())
-    result = std::numeric_limits<double>::infinity();
+  if (value == kint64min) result = -std::numeric_limits<double>::infinity();
+  if (value == kint64max) result = std::numeric_limits<double>::infinity();
   result += proto.offset();
   if (proto.scaling_factor() == 0) return result;
   return proto.scaling_factor() * result;
@@ -362,6 +361,17 @@ void SetupTextFormatPrinter(google::protobuf::TextFormat::Printer* printer);
 static_assert(!kTargetOsSupportsProtoDescriptor);
 #endif  // ORTOOLS_TARGET_OS_SUPPORTS_PROTO_DESCRIPTOR
 
+#if defined(ORTOOLS_TARGET_OS_SUPPORTS_PROTO_DESCRIPTOR)
+template <class M>
+std::string PrettyPrintModelProto([[maybe_unused]] const M& proto) {
+  std::string proto_string;
+  google::protobuf::TextFormat::Printer printer;
+  SetupTextFormatPrinter(&printer);
+  printer.PrintToString(proto, &proto_string);
+  return proto_string;
+}
+#endif  // ORTOOLS_TARGET_OS_SUPPORTS_PROTO_DESCRIPTOR
+
 template <class M>
 bool WriteModelProtoToFile([[maybe_unused]] const M& proto,
                            [[maybe_unused]] absl::string_view filename) {
@@ -369,11 +379,9 @@ bool WriteModelProtoToFile([[maybe_unused]] const M& proto,
   static_assert(kTargetOsSupportsProtoDescriptor);
   if (absl::EndsWith(filename, "txt") ||
       absl::EndsWith(filename, "textproto")) {
-    std::string proto_string;
-    google::protobuf::TextFormat::Printer printer;
-    SetupTextFormatPrinter(&printer);
-    printer.PrintToString(proto, &proto_string);
-    return file::SetContents(filename, proto_string, file::Defaults()).ok();
+    return file::SetContents(filename, PrettyPrintModelProto(proto),
+                             file::Defaults())
+        .ok();
   } else {
     return file::SetBinaryProto(filename, proto, file::Defaults()).ok();
   }
@@ -443,6 +451,10 @@ bool ConvertCpModelProtoToWCnf(const CpModelProto& cp_model, std::string* out);
 
 // We assume delta >= 0 and we only use the low bit of delta.
 int CombineSeed(int base_seed, int64_t delta);
+
+// The largest possible value of ConstraintProto::constraint_case.
+constexpr ConstraintProto::ConstraintCase kLargestConstraintType =
+    ConstraintProto::ConstraintCase::kDummyConstraint;
 
 }  // namespace sat
 }  // namespace operations_research

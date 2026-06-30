@@ -15,8 +15,10 @@
 
 #include <algorithm>
 #include <memory>
+#include <utility>
 #include <vector>
 
+#include "ortools/graph/flow_problem.pb.h"
 #include "ortools/graph/generic_max_flow.h"
 #include "ortools/graph_base/graph.h"
 
@@ -61,7 +63,7 @@ SimpleMaxFlow::Status SimpleMaxFlow::Solve(NodeIndex source, NodeIndex sink) {
   const ArcIndex num_arcs = arc_capacity_.size();
   arc_flow_.assign(num_arcs, 0);
   underlying_max_flow_.reset();
-  underlying_graph_.reset();
+  underlying_graph_ = nullptr;
   optimal_flow_ = 0;
   if (source == sink || source < 0 || sink < 0) {
     return BAD_INPUT;
@@ -69,13 +71,13 @@ SimpleMaxFlow::Status SimpleMaxFlow::Solve(NodeIndex source, NodeIndex sink) {
   if (source >= num_nodes_ || sink >= num_nodes_) {
     return OPTIMAL;
   }
-  underlying_graph_ = std::make_unique<Graph>(num_nodes_, num_arcs);
-  underlying_graph_->AddNode(source);
-  underlying_graph_->AddNode(sink);
+  Graph::Builder builder(num_nodes_, num_arcs);
+  builder.AddNode(source);
+  builder.AddNode(sink);
   for (int arc = 0; arc < num_arcs; ++arc) {
-    underlying_graph_->AddArc(arc_tail_[arc], arc_head_[arc]);
+    builder.AddArc(arc_tail_[arc], arc_head_[arc]);
   }
-  underlying_graph_->Build(&arc_permutation_);
+  underlying_graph_ = std::move(builder).Build(&arc_permutation_);
   underlying_max_flow_ = std::make_unique<GenericMaxFlow<Graph>>(
       underlying_graph_.get(), source, sink);
   for (ArcIndex arc = 0; arc < num_arcs; ++arc) {

@@ -31,6 +31,7 @@
 #include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "google/protobuf/repeated_ptr_field.h"
+#include "ortools/base/types.h"
 #include "ortools/constraint_solver/assignment.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/routing/ils.pb.h"
@@ -294,8 +295,7 @@ class GreedyDescentAcceptanceCriterion : public NeighborAcceptanceCriterion {
   explicit GreedyDescentAcceptanceCriterion(int late_acceptance_window)
       : late_acceptance_window_(late_acceptance_window), history_index_(0) {
     if (late_acceptance_window_ > 0) {
-      history_.resize(late_acceptance_window_,
-                      std::numeric_limits<int64_t>::max());
+      history_.resize(late_acceptance_window_, kint64max);
     }
   }
 
@@ -457,13 +457,28 @@ class AllNodesPerformedAcceptanceCriterion
               [[maybe_unused]] const Assignment* reference) override {
     for (DisjunctionIndex d(0); d < model_.GetNumberOfDisjunctions(); ++d) {
       // This solution avoids counting non-fixed variables as inactive.
-      int num_possible_actives = model_.GetDisjunctionNodeIndices(d).size();
+      int max_num_actives = model_.GetDisjunctionNodeIndices(d).size();
+      int min_num_actives = 0;
       for (const int64_t node : model_.GetDisjunctionNodeIndices(d)) {
         if (candidate->Value(model_.NextVar(node)) == node) {
-          --num_possible_actives;
+          --max_num_actives;
+        } else {
+          ++min_num_actives;
         }
       }
-      if (num_possible_actives < model_.GetDisjunctionMaxCardinality(d)) {
+      // Candidate must be feasible: candidate cardinality interval must
+      // intersect disjunction cardinality interval.
+      if (min_num_actives > model_.GetDisjunctionMaxCardinality(d) ||
+          max_num_actives < model_.GetDisjunctionMinCardinality(d)) {
+        return false;
+      }
+      // Candidate must have no disjunction penalty.
+      if (model_.GetDisjunctionSoftMinPenalty(d) > 0 &&
+          max_num_actives < model_.GetDisjunctionSoftMinCardinality(d)) {
+        return false;
+      }
+      if (model_.GetDisjunctionSoftMaxPenalty(d) > 0 &&
+          min_num_actives > model_.GetDisjunctionSoftMaxCardinality(d)) {
         return false;
       }
     }
@@ -553,7 +568,7 @@ class AbsencesBasedAcceptanceCriterion : public NeighborAcceptanceCriterion {
     if (!remove_route_with_lowest_absences_) return;
 
     int candidate_route = -1;
-    int min_sum_absences = std::numeric_limits<int>::max();
+    int min_sum_absences = kint32max;
 
     for (int route = 0; route < model_.vehicles(); ++route) {
       if (model_.Next(*reference, model_.Start(route)) == model_.End(route))

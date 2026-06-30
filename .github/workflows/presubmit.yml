@@ -18,13 +18,16 @@ env:
   PYTHON_VERSION: '3.12'
   JAVA_DISTRIBUTION: 'temurin'
   JAVA_VERSION: '21'
+  # Disable auth (and caching) when running from a fork.
+  # By default, secrets are not passed to workflows triggered from forks, including Dependabot.
+  USE_GOOGLE_CLOUD_STORAGE: ${{ ! (github.event.pull_request.head.repo.fork || false) }}
 
 jobs:
 ###############################################################################
   clang-format:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
     - uses: jidicula/clang-format-action@v4.18.0
       with:
         exclude-regex: '\.tab\.hh$'
@@ -33,50 +36,56 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-15-intel, macos-latest, windows-2022]
+        os: [ubuntu-latest, macos-latest]
     runs-on: ${{matrix.os}}
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
+    - uses: ./.github/actions/remote_cache
+      with:
+        credentials_json: '${{secrets.GCP_BUCKET_API_KEY}}'
+        set_home_bazelrc: true
     - uses: actions/setup-python@v6
       with:
         python-version: ${{env.PYTHON_VERSION}}
     - uses: bazel-contrib/setup-bazel@0.19.0
     - name: Build
-      run: bazel test --config=ci //ortools/...
       shell: bash
+      run: bazel build --config=ci //...
+    - name: Test
+      shell: bash
+      run: bazel test --config=ci //ortools/...
 ###############################################################################
   CMake:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-15-intel, macos-latest, windows-2022]
+        os: [ubuntu-latest, macos-latest]
         build: [cpp, java, dotnet, python]
         include:
           # Map build to CMake
           - build: cpp
-            cmake: ''
+            cmake_options: '-DBUILD_DEPS=ON'
           - build: java
-            cmake: '-DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF -DBUILD_JAVA=ON -DSKIP_GPG=ON'
+            cmake_options: '-DBUILD_CXX_TESTING=OFF -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF -DBUILD_JAVA=ON -DSKIP_GPG=ON'
           - build: dotnet
-            cmake: '-DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF -DBUILD_DOTNET=ON'
+            cmake_options: '-DBUILD_CXX_TESTING=OFF -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF -DBUILD_DOTNET=ON'
           - build: python
-            cmake: '-DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF -DBUILD_PYTHON=ON'
+            cmake_options: '-DBUILD_CXX_TESTING=OFF -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF -DBUILD_PYTHON=ON'
           # Map os to platform / generator
           - os: ubuntu-latest
             platform: linux
             generator: Ninja
-          - os: macos-15-intel
-            platform: macos
-            generator: Xcode
           - os: macos-latest
             platform: macos
-            generator: Xcode
-          - os: windows-2022
-            platform: windows
-            generator: 'Visual Studio 17 2022'
+            generator: Ninja
+    name: CMake(${{matrix.platform}}•${{matrix.build}})
     runs-on: ${{matrix.os}}
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
+    - uses: ./.github/actions/remote_cache
+      with:
+        credentials_json: '${{secrets.GCP_BUCKET_API_KEY}}'
+        set_cmake_sccache_launcher: true
     - uses: actions/setup-java@v5
       if: ${{ matrix.build == 'java' }}
       with:
@@ -87,10 +96,17 @@ jobs:
         python-version: ${{env.PYTHON_VERSION}}
     - name: Setup linux
       if: ${{ matrix.platform == 'linux' }}
-      run: sudo apt install -y ninja-build ccache swig
+      run: sudo apt install -y ninja-build swig
     - name: Setup macos
+      # can't use brew swig (4.4) since Director python support is broken on macos
+      # see: https://github.com/swig/swig/issues/3279
       if: ${{ matrix.platform == 'macos' }}
-      run: brew install ccache swig
+      run: |
+        brew install ninja
+        wget -q https://downloads.sourceforge.net/project/swig/swig/swig-4.3.1/swig-4.3.1.tar.gz && tar xzvf swig-4.3.1.tar.gz && rm swig-4.3.1.tar.gz
+        cd swig-4.3.1 && ./configure --prefix=$HOME/.local && make -j 4 && make install
+        rm -rf swig-4.3.1
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
     - name: Setup Linux Python Env
       if: ${{ matrix.build == 'python' && matrix.platform == 'linux' }}
       run: echo "$HOME/.local/bin" >> $GITHUB_PATH
@@ -99,29 +115,23 @@ jobs:
       run: |
         echo "$HOME/Library/Python/${{env.PYTHON_VERSION}}/bin" >> $GITHUB_PATH
         echo "$HOME/.local/bin" >> $GITHUB_PATH
-    - name: Setup Windows Python Env
-      if: ${{ matrix.build == 'python' && matrix.platform == 'windows' }}
-      run: |
-        python3 -m pip install --user mypy-protobuf absl-py setuptools wheel numpy pandas
-        echo "$((Get-Item ~).FullName)/AppData/Roaming/Python/Python312/Scripts" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
     - name: Config
       run: >
         cmake
         -S.
         -Bbuild
         -G "${{matrix.generator}}"
-        -DBUILD_DEPS=ON
+        ${{matrix.cmake_options}}
         -DCMAKE_BUILD_TYPE=Release
-        -DCMAKE_C_FLAGS_RELEASE="-O1 -DNDEBUG"
-        -DCMAKE_CXX_FLAGS_RELEASE="-O1 -DNDEBUG"
         -DCMAKE_INSTALL_PREFIX=install
         -DUSE_COINOR=OFF
+        -DUSE_GLPK=OFF
         -DUSE_HIGHS=OFF
         -DUSE_SCIP=OFF
-        ${{matrix.cmake}}
     - name: Build
-      run: cmake --build build --config Release -j --target ${{ matrix.generator == 'Ninja' && 'all' || 'ALL_BUILD'}}
+      run: cmake --build build --config Release -j --target all
+    - id: num_cores
+      uses: ./.github/actions/num_cores
     - name: Test
-      env:
-        CTEST_OUTPUT_ON_FAILURE: 1
-      run: cmake --build build --config Release -j --target ${{ matrix.generator == 'Ninja' && 'test' || 'RUN_TESTS'}}
+      shell: bash
+      run: ctest --test-dir build -C Release -j${{ steps.num_cores.outputs.cores }} --output-on-failure --stop-on-failure

@@ -14,8 +14,8 @@ exclusivity between tasks, and temporal relations between tasks.
 ## Interval variables
 
 Intervals are constraints containing three constant of affine expressions
-(start, size, and end). Creating an interval constraint will enforce that `start
-+ size == end`.
+(start, size, and end). Creating an interval constraint will enforce that
+`start + size == end`.
 
 The more general API uses three expressions to define the interval. If the size
 is fixed, a simpler API uses the start expression and the fixed size.
@@ -127,7 +127,7 @@ int main(int argc, char* argv[]) {
 ### Java code
 
 ```java
-// Snippet from ortools/sat/samples/IntervalSampleSat.java
+// Snippet from ortools/sat/samples/java/IntervalSampleSat.java
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.Loader;
@@ -361,7 +361,7 @@ int main(int argc, char* argv[]) {
 ### Java code
 
 ```java
-// Snippet from ortools/sat/samples/OptionalIntervalSampleSat.java
+// Snippet from ortools/sat/samples/java/OptionalIntervalSampleSat.java
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.Loader;
@@ -741,7 +741,7 @@ int main(int argc, char* argv[]) {
 ### Java code
 
 ```java
-// Snippet from ortools/sat/samples/NoOverlapSampleSat.java
+// Snippet from ortools/sat/samples/java/NoOverlapSampleSat.java
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.Loader;
@@ -1579,7 +1579,7 @@ int main(int argc, char* argv[]) {
 ### Java code
 
 ```java
-// Snippet from ortools/sat/samples/RankingSampleSat.java
+// Snippet from ortools/sat/samples/java/RankingSampleSat.java
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.Loader;
@@ -2310,7 +2310,7 @@ def scheduling_with_calendar_sample_sat():
   # Because of the break, work cannot start at 13h.
 
   start = model.new_int_var_from_domain(
-      cp_model.Domain.from_intervals([(8, 12), (14, 15)]), 'start'
+      cp_model.Domain.from_intervals([[8, 12], [14, 15]]), 'start'
   )
   duration = model.new_int_var(3, 4, 'duration')
   end = model.new_int_var(8, 18, 'end')

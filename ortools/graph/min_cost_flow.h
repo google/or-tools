@@ -169,10 +169,12 @@
 #define ORTOOLS_GRAPH_MIN_COST_FLOW_H_
 
 #include <cstdint>
+#include <memory>
 #include <stack>
 #include <string>
 #include <vector>
 
+#include "absl/base/attributes.h"
 #include "absl/log/log.h"
 #include "absl/strings/string_view.h"
 #include "ortools/graph_base/graph.h"
@@ -246,6 +248,50 @@ class MinCostFlowBase {
     BAD_CAPACITY_RANGE,
   };
 };
+
+struct MinCostFlowParams {
+  // Divide factor for epsilon at each refine step.
+  int64_t alpha = 5;
+
+  // Check that the graph has enough capacity to send all supplies
+  // and serve all demands. Also check that the sum of supplies
+  // is equal to the sum of demands.
+  // This is performed using a max-flow, prior to computing the min-cost flow.
+  // This uses about twice as much memory, but detects infeasible problems
+  // (where the flow can't be satisfied) and makes Solve() return INFEASIBLE.
+  // If you disable this check, you will spare memory but you must
+  // make sure that your problem is feasible, otherwise the code can loop
+  // forever.
+  bool check_feasibility = true;
+
+  // Check that the result is valid.
+  bool check_result = true;
+
+  // Whether to use the UpdatePrices() heuristic.
+  bool update_prices = false;
+
+  // Whether to scale prices. Advanced usage.
+  //
+  // Without cost scaling, the algorithm will return a 1-optimal solution to the
+  // given problem. The solution will be an optimal solution to a perturbed
+  // problem where some of the arc unit costs are changed by at most 1.
+  //
+  // If the costs are initially integer and we scale them by (num_nodes + 1),
+  // then we can show that such 1-optimal solution is actually optimal. This
+  // is what happens by default or when SetPriceScaling(true) is called.
+  //
+  // However, if costs were originally double, there is no need to solve
+  // a problem to optimality where the weights are approximated in the first
+  // place. It is better to multiply doubles by a scaling_factor (prefer a
+  // power of 2) so that the maximum rounded arc unit cost is under kint64max /
+  // (num_nodes + 1) to prevent any overflow. You can then solve without any
+  // cost scaling. The final result will be the optimal to a problem where the
+  // unit cost of some arc as been changed by at most 1 / scaling_factor.
+  bool scale_prices = true;
+};
+
+// Returns a string representation of the Status enum.
+absl::string_view StatusName(MinCostFlowBase::Status status);
 
 // A simple and efficient min-cost flow interface. This is as fast as
 // GenericMinCostFlow<ReverseArcStaticGraph>, which is the fastest, but is uses
@@ -340,25 +386,6 @@ class SimpleMinCostFlow : public MinCostFlowBase {
   FlowQuantity Supply(NodeIndex node) const;
   CostValue UnitCost(ArcIndex arc) const;
 
-  // Advanced usage. The default is true.
-  //
-  // Without cost scaling, the algorithm will return a 1-optimal solution to the
-  // given problem. The solution will be an optimal solution to a perturbed
-  // problem where some of the arc unit costs are changed by at most 1.
-  //
-  // If the cost are initially integer and we scale them by (num_nodes + 1),
-  // then we can show that such 1-optimal solution is actually optimal. This
-  // is what happen by default or when SetPriceScaling(true) is called.
-  //
-  // However, if your cost were originally double, you don't really care to
-  // solve optimally a problem where the weights are approximated in the first
-  // place. It is better to multiply your double by a scaling_factor (prefer a
-  // power of 2) so that the maximum rounded arc unit cost is under kint64max /
-  // (num_nodes + 1) to prevent any overflow. You can then solve without any
-  // cost scaling. The final result will be the optimal to a problem were the
-  // unit cost of some arc as been changed by at most 1 / scaling_factor.
-  void SetPriceScaling(bool value) { scale_prices_ = value; }
-
  private:
   typedef ::util::ReverseArcStaticGraph<NodeIndex, ArcIndex> Graph;
   enum SupplyAdjustment { ADJUST, DONT_ADJUST };
@@ -379,8 +406,6 @@ class SimpleMinCostFlow : public MinCostFlowBase {
   std::vector<FlowQuantity> arc_flow_;
   CostValue optimal_cost_;
   FlowQuantity maximum_flow_;
-
-  bool scale_prices_ = true;
 };
 
 // Generic MinCostFlow that works with all the graphs handling reverse arcs from
@@ -468,23 +493,19 @@ class GenericMinCostFlow : public MinCostFlowBase {
   // Demands are modelled as negative supplies.
   FlowQuantity Supply(NodeIndex node) const;
 
-  // Whether to check the feasibility of the problem with a max-flow, prior to
-  // solving it. This uses about twice as much memory, but detects infeasible
-  // problems (where the flow can't be satisfied) and makes Solve() return
-  // INFEASIBLE. If you disable this check, you will spare memory but you must
-  // make sure that your problem is feasible, otherwise the code can loop
-  // forever.
-  void SetCheckFeasibility(bool value) { check_feasibility_ = value; }
-
-  // Algorithm options.
-  void SetUseUpdatePrices(bool value) { use_price_update_ = value; }
-  void SetPriceScaling(bool value) { scale_prices_ = value; }
+  // Accessor and mutator for the parameters for the min-cost flow algorithm.
+  // Example usage to set individual options
+  //   min_cost_flow.params().check_feasibility = false;
+  //   min_cost_flow.params().scale_prices = false;
+  // For global options, use min_cost_flow.params() = MinCostFlowParams{...};
+  const MinCostFlowParams& params() const { return params_; }
+  MinCostFlowParams& params() { return params_; }
 
  private:
   // Checks for feasibility, i.e., that all the supplies and demands can be
   // matched without exceeding bottlenecks in the network.
-  // Note that CheckFeasibility is called by Solve() when SetCheckFeasibility()
-  // is set to true, which is the default.
+  // Note that CheckFeasibility is called by Solve() when
+  // params_.check_feasibility is set to true, which is the default value.
   bool CheckFeasibility();
 
   // Returns true if the given arc is admissible i.e. if its residual capacity
@@ -569,7 +590,7 @@ class GenericMinCostFlow : public MinCostFlowBase {
   bool Discharge(NodeIndex node);
 
   // Part of the Push LookAhead heuristic.
-  // Returns true iff the node has admissible arc.
+  // Returns true if and only if the node has admissible arc.
   bool NodeHasAdmissibleArc(NodeIndex node);
 
   // Relabels node, i.e., decreases its potential while keeping the
@@ -628,9 +649,7 @@ class GenericMinCostFlow : public MinCostFlowBase {
   // epsilon_ is the tolerance for optimality.
   CostValue epsilon_ = 0;
 
-  // alpha_ is the factor by which epsilon_ is divided at each iteration of
-  // Refine().
-  const int64_t alpha_;
+  MinCostFlowParams params_;
 
   // cost_scaling_factor_ is the scaling factor for cost.
   CostValue cost_scaling_factor_ = 1;
@@ -657,15 +676,6 @@ class GenericMinCostFlow : public MinCostFlowBase {
 
   // A Boolean which is true when feasibility has been checked.
   bool feasibility_checked_ = false;
-
-  // Whether to use the UpdatePrices() heuristic.
-  bool use_price_update_ = false;
-
-  // Whether to check the problem feasibility with a max-flow.
-  bool check_feasibility_ = false;
-
-  // Whether to scale prices, see SimpleMinCostFlow::SetPriceScaling().
-  bool scale_prices_ = true;
 };
 
 #if !SWIG

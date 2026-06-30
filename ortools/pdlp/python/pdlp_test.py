@@ -33,15 +33,24 @@ def small_proto_lp():
         objective_offset=0.0,
         variable=[
             linear_solver_pb2.MPVariableProto(
-                lower_bound=0, upper_bound=np.inf, objective_coefficient=0, name="x"
+                lower_bound=0,
+                upper_bound=np.inf,
+                objective_coefficient=0,
+                name="x",
             ),
             linear_solver_pb2.MPVariableProto(
-                lower_bound=0, upper_bound=np.inf, objective_coefficient=-2, name="y"
+                lower_bound=0,
+                upper_bound=np.inf,
+                objective_coefficient=-2,
+                name="y",
             ),
         ],
         constraint=[
             linear_solver_pb2.MPConstraintProto(
-                var_index=[0, 1], coefficient=[1, 1], lower_bound=-np.inf, upper_bound=1
+                var_index=[0, 1],
+                coefficient=[1, 1],
+                lower_bound=-np.inf,
+                upper_bound=1,
             )
         ],
     )
@@ -57,15 +66,24 @@ def small_proto_qp():
         objective_offset=0.0,
         variable=[
             linear_solver_pb2.MPVariableProto(
-                lower_bound=0, upper_bound=np.inf, objective_coefficient=0, name="x"
+                lower_bound=0,
+                upper_bound=np.inf,
+                objective_coefficient=0,
+                name="x",
             ),
             linear_solver_pb2.MPVariableProto(
-                lower_bound=0, upper_bound=np.inf, objective_coefficient=0, name="y"
+                lower_bound=0,
+                upper_bound=np.inf,
+                objective_coefficient=0,
+                name="y",
             ),
         ],
         constraint=[
             linear_solver_pb2.MPConstraintProto(
-                var_index=[0, 1], coefficient=[1, 1], lower_bound=-np.inf, upper_bound=1
+                var_index=[0, 1],
+                coefficient=[1, 1],
+                lower_bound=-np.inf,
+                upper_bound=1,
             )
         ],
         quadratic_objective=linear_solver_pb2.MPQuadraticObjective(

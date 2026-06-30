@@ -6,6 +6,9 @@ const PARAM_FIELD_NAME_TO_INSTANCE_DICT = Dict(
     "cp_sat" => SatParameters(),
     "glpk" => GlpkParameters(),
     "highs" => HighsOptions(),
+    "pdlp" => PdlpHybridGradientParameters(),
+    "osqp" => OsqpSettings(),
+    "xpress" => XpressParameters(),
 )
 
 # Though these are the supported solvers, nothing in the code is really specific to them
@@ -145,6 +148,8 @@ function MOI.empty!(model::Optimizer)
         INTEGER_CONSTRAINT_KEY => [],
         ZERO_ONE_CONSTRAINT_KEY => [],
     )
+
+    model.parameters = SolveParameters()
     model.objective_set = false
     model.solve_result = nothing
 
@@ -250,11 +255,7 @@ end
 
 
 function MOI.get(model::Optimizer, ::MOI.Silent)
-    if !MOI.is_empty(model) && !isnothing(model.parameters)
-        return !model.parameters.enable_output
-    end
-
-    return true
+    return !model.parameters.enable_output
 end
 
 function MOI.set(model::Optimizer, ::MOI.Silent, silent::Bool)
@@ -268,7 +269,7 @@ end
 MOI.supports(model::Optimizer, ::MOI.Silent) = true
 
 function MOI.get(model::Optimizer, ::MOI.TimeLimitSec)
-    if !MOI.is_empty(model) && !isnothing(model.parameters)
+    if !isempty(model.parameters)
         return model.parameters.time_limit
     end
 
@@ -285,12 +286,12 @@ end
 MOI.supports(model::Optimizer, ::MOI.TimeLimitSec) = true
 
 function MOI.get(model::Optimizer, ::MOI.ObjectiveLimit)
-    if !MOI.is_empty(model) && !isnothing(model.parameters)
+    if !isempty(model.parameters)
         objective_limit = model.parameters.objective_limit
         return objective_limit == -Inf ? nothing : objective_limit
     end
 
-    return nothing
+    return 0.0
 end
 
 function MOI.set(
@@ -312,7 +313,7 @@ end
 MOI.supports(model::Optimizer, ::MOI.ObjectiveLimit) = true
 
 function MOI.get(model::Optimizer, ::MOI.SolutionLimit)
-    if !MOI.is_empty(model) && !isnothing(model.parameters)
+    if !isempty(model.parameters)
         solution_limit = model.parameters.solution_limit
         return solution_limit == 0 ? nothing : solution_limit
     end
@@ -343,7 +344,7 @@ end
 MOI.supports(model::Optimizer, ::MOI.SolutionLimit) = true
 
 function MOI.get(model::Optimizer, ::MOI.NodeLimit)
-    if !MOI.is_empty(model) && !isnothing(model.parameters)
+    if !isempty(model.parameters)
         node_limit = model.parameters.node_limit
         return node_limit == 0 ? nothing : node_limit
     end
@@ -366,7 +367,7 @@ end
 MOI.supports(model::Optimizer, ::MOI.NodeLimit) = true
 
 function MOI.get(model::Optimizer, ::MOI.NumberOfThreads)
-    if !MOI.is_empty(model) && !isnothing(model.parameters)
+    if !isempty(model.parameters)
         number_of_threads = model.parameters.threads
         return number_of_threads == 0 ? nothing : number_of_threads
     end
@@ -393,11 +394,11 @@ end
 MOI.supports(model::Optimizer, ::MOI.NumberOfThreads) = true
 
 function MOI.get(model::Optimizer, ::MOI.AbsoluteGapTolerance)
-    if !MOI.is_empty(model) && !isnothing(model.parameters)
+    if !isempty(model.parameters)
         return model.parameters.absolute_gap_tolerance
     end
 
-    return 0
+    return 0.0
 end
 
 function MOI.set(
@@ -419,11 +420,11 @@ end
 MOI.supports(model::Optimizer, ::MOI.AbsoluteGapTolerance) = true
 
 function MOI.get(model::Optimizer, ::MOI.RelativeGapTolerance)
-    if !MOI.is_empty(model) && !isnothing(model.parameters)
+    if !isempty(model.parameters)
         return model.parameters.relative_gap_tolerance
     end
 
-    return 0
+    return 0.0
 end
 
 function MOI.set(
@@ -461,7 +462,7 @@ function MOI.set(model::Optimizer, ::CutOffLimit, cutoff_limit::Union{Nothing,Re
 end
 
 function MOI.get(model::Optimizer, ::CutOffLimit)
-    if !MOI.is_empty(model) && !isnothing(model.parameters)
+    if !isempty(model.parameters)
         return model.parameters.cutoff_limit
     end
 
@@ -487,7 +488,7 @@ function MOI.set(model::Optimizer, ::BestBoundLimit, best_bound_limit::Union{Not
 end
 
 function MOI.get(model::Optimizer, ::BestBoundLimit)
-    if !MOI.is_empty(model) && !isnothing(model.parameters)
+    if !isempty(model.parameters)
         return model.parameters.best_bound_limit
     end
 
@@ -513,7 +514,7 @@ function MOI.set(model::Optimizer, ::RandomSeed, random_seed::Union{Nothing,Int}
 end
 
 function MOI.get(model::Optimizer, ::RandomSeed)
-    if !MOI.is_empty(model) && !isnothing(model.parameters)
+    if !isempty(model.parameters)
         return model.parameters.random_seed
     end
 
@@ -543,7 +544,7 @@ function MOI.set(
 end
 
 function MOI.get(model::Optimizer, ::SolutionPoolSize)
-    if !MOI.is_empty(model) && !isnothing(model.parameters)
+    if !isempty(model.parameters)
         return model.parameters.solution_pool_size
     end
 
@@ -580,7 +581,7 @@ function MOI.set(
 end
 
 function MOI.get(model::Optimizer, ::LPAlgorithmType)
-    if !MOI.is_empty(model) && !isnothing(model.parameters)
+    if !isempty(model.parameters)
         return model.parameters.lp_algorithm
     end
 
@@ -606,7 +607,7 @@ function MOI.set(model::Optimizer, ::Presolve, presolve::Union{Nothing,Emphasis.
 end
 
 function MOI.get(model::Optimizer, ::Presolve)
-    if !MOI.is_empty(model) && !isnothing(model.parameters)
+    if !isempty(model.parameters)
         return model.parameters.presolve
     end
 
@@ -632,7 +633,7 @@ function MOI.set(model::Optimizer, ::Cuts, cuts::Union{Nothing,Emphasis.T})
 end
 
 function MOI.get(model::Optimizer, ::Cuts)
-    if !MOI.is_empty(model) && !isnothing(model.parameters)
+    if !isempty(model.parameters)
         return model.parameters.cuts
     end
 
@@ -658,7 +659,7 @@ function MOI.set(model::Optimizer, ::Heuristics, heuristics::Union{Nothing,Empha
 end
 
 function MOI.get(model::Optimizer, ::Heuristics)
-    if !MOI.is_empty(model) && !isnothing(model.parameters)
+    if !isempty(model.parameters)
         return model.parameters.heuristics
     end
 
@@ -683,7 +684,7 @@ function MOI.set(model::Optimizer, ::Scaling, scaling::Union{Nothing,Emphasis.T}
 end
 
 function MOI.get(model::Optimizer, ::Scaling)
-    if !MOI.is_empty(model) && !isnothing(model.parameters)
+    if !isempty(model.parameters)
         return model.parameters.scaling
     end
 
@@ -709,7 +710,7 @@ function MOI.set(
 end
 
 function MOI.get(model::Optimizer, ::GscipParametersAttribute)
-    if !MOI.is_empty(model) && !isnothing(model.parameters)
+    if !isempty(model.parameters)
         return model.parameters.gscip
     end
 
@@ -735,7 +736,7 @@ function MOI.set(
 end
 
 function MOI.get(model::Optimizer, ::GurobiParametersAttribute)
-    if !MOI.is_empty(model) && !isnothing(model.parameters)
+    if !isempty(model.parameters)
         return model.parameters.gurobi
     end
 
@@ -761,7 +762,7 @@ function MOI.set(
 end
 
 function MOI.get(model::Optimizer, ::GlopParametersAttribute)
-    if !MOI.is_empty(model) && !isnothing(model.parameters)
+    if !isempty(model.parameters)
         return model.parameters.glop
     end
 
@@ -787,7 +788,7 @@ function MOI.set(
 end
 
 function MOI.get(model::Optimizer, ::SatParametersAttribute)
-    if !MOI.is_empty(model) && !isnothing(model.parameters)
+    if !isempty(model.parameters)
         return model.parameters.cp_sat
     end
 
@@ -813,7 +814,7 @@ function MOI.set(
 end
 
 function MOI.get(model::Optimizer, ::GlpkParametersAttribute)
-    if !MOI.is_empty(model) && !isnothing(model.parameters)
+    if !isempty(model.parameters)
         return model.parameters.glpk
     end
 
@@ -839,7 +840,7 @@ function MOI.set(
 end
 
 function MOI.get(model::Optimizer, ::HighsOptionsAttribute)
-    if !MOI.is_empty(model) && !isnothing(model.parameters)
+    if !isempty(model.parameters)
         return model.parameters.highs
     end
 
@@ -847,6 +848,32 @@ function MOI.get(model::Optimizer, ::HighsOptionsAttribute)
 end
 
 MOI.supports(model::Optimizer, ::HighsOptionsAttribute) = true
+
+
+struct XpressParametersAttribute <: MOI.AbstractOptimizerAttribute end
+MOI.attribute_value_type(::XpressParametersAttribute) = Union{Nothing,XpressParameters}
+
+function MOI.set(
+    model::Optimizer,
+    ::XpressParametersAttribute,
+    xpress_parameters::Union{Nothing,XpressParameters},
+)
+    optionally_initialize_model_and_parameters!(model)
+
+    model.parameters.xpress = xpress_parameters
+
+    return nothing
+end
+
+function MOI.get(model::Optimizer, ::XpressParametersAttribute)
+    if !isempty(model.parameters)
+        return model.parameters.xpress
+    end
+
+    return nothing
+end
+
+MOI.supports(model::Optimizer, ::XpressParametersAttribute) = true
 
 """
 Set the parameter of the model throught the `RawOptimizerAttribute`. All fields
@@ -898,7 +925,7 @@ internal fields split by the `PARAM_SPLITTER` and the solver name. For example,
 `gscip_parameters.preprocessing` should be passed as `gscip__preprocessing`.
 """
 function MOI.get(model::Optimizer, param::MOI.RawOptimizerAttribute)
-    if !isnothing(model.parameters)
+    if !isempty(model.parameters)
         param_name = param.name
 
         if contains(param_name, PARAM_SPLITTER)
@@ -1057,47 +1084,33 @@ function MOI.add_constraint(
     vi::MOI.VariableIndex,
     c::S,
 ) where {S<:SCALAR_SET}
-    if !MOI.is_empty(model)
-        # Check if the variable is already bounded by a constraint.
-        if S <: MOI.LessThan
-            throw_if_upper_bound_is_already_set(model, vi, c)
-        end
+    MOI.is_empty(model) && return nothing
 
-        if S <: MOI.GreaterThan
-            throw_if_lower_bound_is_already_set(model, vi, c)
-        end
+    # Get the int value of the variable index
+    index = vi.value
 
-        if S <: MOI.EqualTo
-            throw_if_upper_bound_is_already_set(model, vi, c)
-            throw_if_lower_bound_is_already_set(model, vi, c)
-        end
+    # retrieve the constraint bounds
+    lower_bound, upper_bound = bounds(c)
 
-        if S <: MOI.Interval
-            throw_if_upper_bound_is_already_set(model, vi, c)
-            throw_if_lower_bound_is_already_set(model, vi, c)
-        end
-
-        # Get the int value of the variable index
-        index = vi.value
-
-        # retrieve the constraint bounds
-        lower_bound, upper_bound = bounds(c)
-
-        # set the bounds on the Variable
-        model.model.variables.lower_bounds[index] = lower_bound
+    # Check if the variable is already bounded by a constraint.
+    if S <: MOI.LessThan || S <: MOI.EqualTo || S <: MOI.Interval
+        throw_if_upper_bound_is_already_set(model, vi, c)
         model.model.variables.upper_bounds[index] = upper_bound
-
-        # update the associated metadata.
-        push!(model.constraint_types_present, (MOI.VariableIndex, typeof(c)))
-        push!(
-            model.constraint_indices_dict[SCALAR_SET_WITH_VARIABLE_INDEX_CONSTRAINT_KEY],
-            MOI.ConstraintIndex{typeof(vi),typeof(c)}(index),
-        )
-
-        return MOI.ConstraintIndex{typeof(vi),typeof(c)}(index)
     end
 
-    return nothing
+    if S <: MOI.GreaterThan || S <: MOI.EqualTo || S <: MOI.Interval
+        throw_if_lower_bound_is_already_set(model, vi, c)
+        model.model.variables.lower_bounds[index] = lower_bound
+    end
+
+    # update the associated metadata.
+    push!(model.constraint_types_present, (MOI.VariableIndex, typeof(c)))
+    push!(
+        model.constraint_indices_dict[SCALAR_SET_WITH_VARIABLE_INDEX_CONSTRAINT_KEY],
+        MOI.ConstraintIndex{typeof(vi),typeof(c)}(index),
+    )
+
+    return MOI.ConstraintIndex{typeof(vi),typeof(c)}(index)
 end
 
 
@@ -1481,7 +1494,7 @@ function MOI.get(
 ) where {T<:Real}
     if !MOI.is_empty(model)
         # Retrieve the upper bound
-        return MOI.LessThan{T}(mode.model.variables.upper_bounds[c.value])
+        return MOI.LessThan{T}(model.model.variables.upper_bounds[c.value])
     end
 
     return nothing
@@ -1775,12 +1788,13 @@ function MOI.set(model::Optimizer, ::MOI.ObjectiveSense, sense::MOI.Optimization
         model.model.objective = nothing
         model.objective_set = false
     end
+
+    return nothing
 end
 
 function MOI.get(model::Optimizer, ::MOI.ObjectiveSense)
-    if !MOI.is_empty(model) && !isnothing(model.model.objective)
-        model.objective_set &&
-            return model.model.objective.maximize ? MOI.MAX_SENSE : MOI.MIN_SENSE
+    if !isnothing(model.model.objective)
+        return model.model.objective.maximize ? MOI.MAX_SENSE : MOI.MIN_SENSE
     end
 
     return MOI.FEASIBILITY_SENSE
@@ -2087,10 +2101,10 @@ function MOI.get(model::Optimizer, attr::MOI.DualStatus)
         return MOI.UNKNOWN_RESULT_STATUS
     elseif model.solve_result.termination.problem_status.dual_status ==
            FeasibilityStatusProto.FEASIBILITY_STATUS_FEASIBLE
-        return MOI.FEASIBLE_SOLUTION
+        return MOI.FEASIBLE_POINT
     elseif model.solve_result.termination.problem_status.dual_status ==
            FeasibilityStatusProto.FEASIBILITY_STATUS_INFEASIBLE
-        return MOI.INFEASIBLE_SOLUTION
+        return MOI.INFEASIBLE_POINT
     else
         # For FEASIBILITY_STATUS_UNSPECIFIED which is a guard value representing no status
         return MOI.NO_SOLUTION
@@ -2424,7 +2438,6 @@ function MOI.get(model::Optimizer, attr::DualSolutionStatus)::MOI.ResultStatusCo
     end
 
     MOI.check_result_index_bounds(model, attr)
-
     dual_status =
         model.solve_result.solutions[attr.result_index].dual_solution.feasibility_status
 

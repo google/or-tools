@@ -25,19 +25,16 @@
 #ifndef UTIL_GRAPH_CONNECTED_COMPONENTS_H_
 #define UTIL_GRAPH_CONNECTED_COMPONENTS_H_
 
+#include <algorithm>
+#include <concepts>
 #include <cstddef>
-#include <functional>
-#include <type_traits>
 #include <vector>
 
-#include "absl/container/btree_map.h"
-#include "absl/container/btree_set.h"
-#include "absl/container/flat_hash_map.h"
-#include "absl/container/flat_hash_set.h"
-#include "absl/hash/hash.h"
 #include "absl/log/check.h"
-#include "absl/meta/type_traits.h"
+#include "absl/log/log.h"
+#include "ortools/base/log_severity.h"
 #include "ortools/base/map_util.h"
+#include "ortools/graph_base/hash_or_tree_container.h"
 
 namespace util {
 // Generic version of GetConnectedComponents() (see below) that supports other
@@ -133,51 +130,17 @@ class DenseConnectedComponentsFinder {
   int num_nodes_at_last_get_roots_call_ = 0;
 };
 
-namespace internal {
-// A helper to deduce the type of map to use depending on whether CompareOrHashT
-// is a comparator or a hasher (prefer the latter).
-template <typename T, typename CompareOrHashT, typename Eq>
-struct ConnectedComponentsTypeHelper {
-  // SFINAE trait to detect hash functors and select unordered containers if so,
-  // and ordered containers otherwise (= by default).
-  template <typename U, typename V, typename E = void>
-  struct SelectContainer {
-    using Set = absl::btree_set<T, CompareOrHashT>;
-    using Map = absl::btree_map<T, int, CompareOrHashT>;
-  };
-
-  // Specialization for when U is a hash functor and Eq is void (no custom
-  // equality).
-  // The expression inside decltype is basically saying that "H(x)" is
-  // well-formed, where H is an instance of U and x is an instance of T, and is
-  // a value of integral type. That is, we are "duck-typing" on whether U looks
-  // like a hash functor.
-  template <typename U, typename V>
-  struct SelectContainer<
-      U, V,
-      absl::enable_if_t<std::is_integral<decltype(std::declval<const U&>()(
-                            std::declval<const T&>()))>::value &&
-                        std::is_same_v<V, void>>> {
-    using Set = absl::flat_hash_set<T, CompareOrHashT>;
-    using Map = absl::flat_hash_map<T, int, CompareOrHashT>;
-  };
-
-  // Specialization for when U is a hash functor and Eq is provided (not void).
-  template <typename U, typename V>
-  struct SelectContainer<
-      U, V,
-      absl::enable_if_t<std::is_integral<decltype(std::declval<const U&>()(
-                            std::declval<const T&>()))>::value &&
-                        !std::is_same_v<V, void>>> {
-    using Set = absl::flat_hash_set<T, CompareOrHashT, Eq>;
-    using Map = absl::flat_hash_map<T, int, CompareOrHashT, Eq>;
-  };
-
-  using Set = typename SelectContainer<CompareOrHashT, Eq>::Set;
-  using Map = typename SelectContainer<CompareOrHashT, Eq>::Map;
+// Used in ConnectedComponentsFinder below. See usage there.
+// Scoped out to avoid the hassle of extremely long enum names in user code.
+enum class NodeOrderInsideComponent : int {
+  // Don't sort nodes. This may be undeterministic. Fastest O(N) time.
+  kNotOrderedUndeterministic = 0,
+  // Sort nodes by their insertion order. Deterministic and fast O(N) time.
+  kInsertionOrder = 1,
+  // Sort nodes by value, if they are comparable. May need O(N log N) time.
+  // If nodes aren't comparable, falls back to kNotOrderedUndeterministic.
+  kByValue = 2,
 };
-
-}  // namespace internal
 
 // Usage:
 //   ConnectedComponentsFinder<MyNodeType> cc;
@@ -215,14 +178,11 @@ struct ConnectedComponentsTypeHelper {
 // ... and so on...
 // Of course, in this usage, the connected components finder retains
 // these pointers through its lifetime (though it doesn't dereference them).
-template <typename T, typename CompareOrHashT = std::less<T>,
+template <typename T,
+          typename CompareOrHashT = util::graph::PreferHashOrCompare<T>,
           typename Eq = void>
 class ConnectedComponentsFinder {
  public:
-  using Set =
-      typename internal::ConnectedComponentsTypeHelper<T, CompareOrHashT,
-                                                       Eq>::Set;
-
   // Constructs a connected components finder.
   ConnectedComponentsFinder() = default;
 
@@ -264,17 +224,17 @@ class ConnectedComponentsFinder {
   //  - the component for 'c' comes after the one for 'b'.
   // There are two versions:
   //  - The first one returns the result, and stores each component in a vector.
-  //    This is the preferred version.
   //  - The second one populates the result, and stores each component in a set.
-  std::vector<std::vector<T>> FindConnectedComponents() {
-    const auto component_ids = delegate_.GetComponentIds();
-    std::vector<std::vector<T>> components(delegate_.GetNumberOfComponents());
-    for (const auto& elem_id : index_) {
-      components[component_ids[elem_id.second]].push_back(elem_id.first);
-    }
-    return components;
-  }
-  void FindConnectedComponents(std::vector<Set>* components) {
+  //
+  // RECOMMENDED:
+  // const std::vector<std::vector<T>> components =
+  //     FindConnectedComponents(NodeOrderInsideComponent::kInsertionOrder);
+  std::vector<std::vector<T>> FindConnectedComponents(
+      // TODO(b/518640449): change default to kInsertionOrder.
+      NodeOrderInsideComponent node_order_inside_component =
+          NodeOrderInsideComponent::kByValue);
+  template <typename SetT>
+  void FindConnectedComponents(std::vector<SetT>* components) {
     const auto component_ids = delegate_.GetComponentIds();
     components->clear();
     components->resize(delegate_.GetNumberOfComponents());
@@ -310,7 +270,7 @@ class ConnectedComponentsFinder {
   }
 
   DenseConnectedComponentsFinder delegate_;
-  typename internal::ConnectedComponentsTypeHelper<T, CompareOrHashT, Eq>::Map
+  typename util::graph::HashOrTreeContainer<T, CompareOrHashT, Eq>::MapInt
       index_;
 };
 
@@ -346,5 +306,71 @@ std::vector<NodeType> GetConnectedComponentsTpl(NodeType num_nodes,
 }
 
 }  // namespace util
+
+template <typename T, typename CompareOrHashT, typename Eq>
+std::vector<std::vector<T>>
+ConnectedComponentsFinder<T, CompareOrHashT, Eq>::FindConnectedComponents(
+    NodeOrderInsideComponent node_order_inside_component) {
+  const int num_nodes = delegate_.GetNumberOfNodes();
+  const int num_components = delegate_.GetNumberOfComponents();
+  const std::vector<int> component_ids = delegate_.GetComponentIds();
+  DCHECK_EQ(component_ids.size(), num_nodes);
+  // Compute the component sizes.
+  std::vector<int> component_size(num_components, 0);
+  for (int c : component_ids) ++component_size[c];
+  // Reserve the output vector<vector<>> with the right component sizes.
+  std::vector<std::vector<T>> components(num_components);
+  for (int c = 0; c < num_components; ++c) {
+    components[c].reserve(component_size[c]);
+  }
+  if (node_order_inside_component ==
+      NodeOrderInsideComponent::kInsertionOrder) {
+    std::vector<const T*> node_ptrs(num_nodes, nullptr);
+    for (const auto& [node, node_id] : index_) {
+      node_ptrs[node_id] = &node;
+    }
+    for (int i = 0; i < num_nodes; ++i) {
+      components[component_ids[i]].push_back(*node_ptrs[i]);
+    }
+    return components;
+  }
+  // Directly append nodes to their component.
+  for (const auto& [node, node_id] : index_) {
+    components[component_ids[node_id]].push_back(node);
+  }
+  if constexpr (requires(T a) { CompareOrHashT{}(a); }) {
+    if (node_order_inside_component ==
+        NodeOrderInsideComponent::kNotOrderedUndeterministic) {
+      return components;
+    }
+    DCHECK_EQ(node_order_inside_component, NodeOrderInsideComponent::kByValue);
+    // Corner case: the user may have provided a hasher-comparator. In this
+    // case, use it to sort the nodes.
+    if constexpr (requires(T a, T b) {
+                    { CompareOrHashT{}(a, b) } -> std::convertible_to<bool>;
+                  }) {
+      for (auto& component : components) {
+        absl::c_sort(component, CompareOrHashT{});
+      }
+    } else if constexpr (requires(T a, T b) {
+                           { a < b } -> std::convertible_to<bool>;
+                         }) {
+      for (auto& component : components) {
+        absl::c_sort(component);
+      }
+    } else {
+      LOG(DFATAL) << "kSortByValue requested but node type is not sortable";
+    }
+  } else {
+    // If the user did not provide a hasher, components are already sorted by
+    // node value since we store them in a btree_set. We just DCHECK that.
+    if (DEBUG_MODE) {
+      for (const auto& component : components) {
+        DCHECK(absl::c_is_sorted(component, CompareOrHashT{}));
+      }
+    }
+  }
+  return components;
+}
 
 #endif  // UTIL_GRAPH_CONNECTED_COMPONENTS_H_

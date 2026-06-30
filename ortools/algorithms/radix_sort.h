@@ -47,6 +47,7 @@
 #include "absl/numeric/bits.h"
 #include "absl/types/span.h"
 #include "ortools/base/log_severity.h"
+#include "ortools/base/types.h"
 
 namespace operations_research {
 
@@ -110,8 +111,7 @@ void RadixSortTpl(absl::Span<T> values) {
   // We could use uint64_t for sizes > 4G, but until we need it, just using
   // uint32_t is simpler. Using smaller types (uint16_t or uint8_t) for smaller
   // sizes was noticeably slower.
-  DCHECK_LE(values.size(),
-            static_cast<size_t>(std::numeric_limits<uint32_t>::max()));
+  DCHECK_LE(values.size(), static_cast<size_t>(kuint32max));
   const uint32_t size = values.size();
 
   // Main Radix/Count-sort counters. Radix sort normally uses several passes,

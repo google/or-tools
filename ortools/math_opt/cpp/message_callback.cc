@@ -25,9 +25,9 @@
 #include "absl/log/log.h"
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
+#include "absl/types/source_location.h"
 #include "absl/types/span.h"
 #include "google/protobuf/repeated_ptr_field.h"
-#include "ortools/base/source_location.h"
 
 namespace operations_research::math_opt {
 namespace {

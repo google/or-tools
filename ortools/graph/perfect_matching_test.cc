@@ -26,6 +26,7 @@
 #include "absl/types/span.h"
 #include "gtest/gtest.h"
 #include "ortools/base/log_severity.h"
+#include "ortools/base/types.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/solve_mp_model.h"
 
@@ -82,21 +83,21 @@ TEST(MinCostPerfectMatchingTest, LargerBipartiteInfeasibleProblem) {
 
 TEST(MinCostPerfectMatchingTest, IntegerOverflow) {
   MinCostPerfectMatching matcher(4);
-  matcher.AddEdgeWithCost(0, 2, std::numeric_limits<int64_t>::max());
-  matcher.AddEdgeWithCost(0, 3, std::numeric_limits<int64_t>::max());
-  matcher.AddEdgeWithCost(1, 2, std::numeric_limits<int64_t>::max());
-  matcher.AddEdgeWithCost(1, 3, std::numeric_limits<int64_t>::max());
+  matcher.AddEdgeWithCost(0, 2, kint64max);
+  matcher.AddEdgeWithCost(0, 3, kint64max);
+  matcher.AddEdgeWithCost(1, 2, kint64max);
+  matcher.AddEdgeWithCost(1, 3, kint64max);
   ASSERT_EQ(matcher.Solve(), MinCostPerfectMatching::INTEGER_OVERFLOW);
 }
 
 TEST(MinCostPerfectMatchingTest, CostOverflow) {
   MinCostPerfectMatching matcher(4);
-  matcher.AddEdgeWithCost(0, 2, std::numeric_limits<int64_t>::max() / 3);
-  matcher.AddEdgeWithCost(0, 3, std::numeric_limits<int64_t>::max() / 3);
-  matcher.AddEdgeWithCost(1, 2, std::numeric_limits<int64_t>::max() / 3);
-  matcher.AddEdgeWithCost(1, 3, std::numeric_limits<int64_t>::max() / 3);
+  matcher.AddEdgeWithCost(0, 2, kint64max / 3);
+  matcher.AddEdgeWithCost(0, 3, kint64max / 3);
+  matcher.AddEdgeWithCost(1, 2, kint64max / 3);
+  matcher.AddEdgeWithCost(1, 3, kint64max / 3);
   ASSERT_EQ(matcher.Solve(), MinCostPerfectMatching::COST_OVERFLOW);
-  EXPECT_EQ(matcher.OptimalCost(), std::numeric_limits<int64_t>::max());
+  EXPECT_EQ(matcher.OptimalCost(), kint64max);
 }
 
 class MacholWienTest : public ::testing::TestWithParam<int> {};
@@ -271,8 +272,7 @@ void CheckOptimalSolution(const MinCostPerfectMatching& matcher,
   EXPECT_EQ(num_seen, matches.size());
 
   // Check that the matching returned has the correct cost.
-  std::vector<int64_t> costs(matches.size(),
-                             std::numeric_limits<int64_t>::max());
+  std::vector<int64_t> costs(matches.size(), kint64max);
   for (const Edge e : edges) {
     if (matches[e.node1] == e.node2) {
       const int rep = std::min(e.node1, e.node2);
@@ -283,7 +283,7 @@ void CheckOptimalSolution(const MinCostPerfectMatching& matcher,
   }
   int64_t actual_cost = 0;
   for (int i = 0; i < costs.size(); ++i) {
-    CHECK_NE(costs[i], std::numeric_limits<int64_t>::max());
+    CHECK_NE(costs[i], kint64max);
     actual_cost += costs[i];
   }
   EXPECT_EQ(matcher.OptimalCost(), actual_cost);

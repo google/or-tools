@@ -19,7 +19,6 @@
 
 #include "ortools/glop/markowitz.h"
 #include "ortools/glop/parameters.pb.h"
-#include "ortools/glop/status.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/permutation.h"
 #include "ortools/lp_data/scattered_vector.h"
@@ -59,8 +58,8 @@ class LuFactorization {
   // it being confused by this revert to identity factorization behavior. The
   // reason behind it is that this way, calling any public function of this
   // class will never cause a crash of the program.
-  ABSL_MUST_USE_RESULT Status
-  ComputeFactorization(const CompactSparseMatrixView& compact_matrix);
+  AbnormalityStatus ComputeFactorization(
+      const CompactSparseMatrixView& compact_matrix);
 
   // Given a set of columns, find a maximum linearly independent subset that can
   // be factorized in a stable way, and complete it into a square matrix using

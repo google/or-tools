@@ -11,13 +11,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_cc//cc:cc_test.bzl", "cc_test")
 
 cc_library(
     name = "attributes",
     hdrs = ["attributes.h"],
-    visibility = ["//ortools/math_opt:__subpackages__"],
+    visibility = [
+        "//ortools/math_opt:__subpackages__",
+        "//third_party/ortools/ortools:__subpackages__",
+    ],
     deps = [
         ":arrays",
         ":elements",
@@ -47,7 +51,10 @@ cc_library(
         "elemental_to_string.cc",
     ],
     hdrs = ["elemental.h"],
-    visibility = ["//ortools/math_opt:__subpackages__"],
+    visibility = [
+        "//ortools/math_opt:__subpackages__",
+        "//third_party/ortools/ortools:__subpackages__",
+    ],
     deps = [
         ":arrays",
         ":attr_key",
@@ -60,7 +67,8 @@ cc_library(
         ":elements",
         ":symmetry",
         ":thread_safe_id_map",
-        "//ortools/base:status_macros",
+        "//ortools/base:status_builder",
+        "//ortools/base:types",
         "//ortools/math_opt:model_cc_proto",
         "//ortools/math_opt:model_update_cc_proto",
         "//ortools/math_opt:sparse_containers_cc_proto",
@@ -73,6 +81,7 @@ cc_library(
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:die_if_null",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:string_view",
@@ -92,11 +101,25 @@ cc_test(
         ":elemental",
         ":elemental_matcher",
         ":elements",
-        ":symmetry",
-        ":testing",
         "//ortools/base:gmock_main",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
+    ],
+)
+
+cc_binary(
+    name = "elemental_benchmark",
+    testonly = 1,
+    srcs = ["elemental_benchmark.cc"],
+    deps = [
+        ":attr_key",
+        ":attributes",
+        ":elemental",
+        ":elements",
+        ":symmetry",
+        ":testing",
+        "//ortools/base:benchmark_main",
+        "@abseil-cpp//absl/log:check",
         "@google_benchmark//:benchmark",
     ],
 )
@@ -104,7 +127,10 @@ cc_test(
 cc_library(
     name = "derived_data",
     hdrs = ["derived_data.h"],
-    visibility = ["//ortools/math_opt:__subpackages__"],
+    visibility = [
+        "//ortools/math_opt:__subpackages__",
+        "//third_party/ortools/ortools:__subpackages__",
+    ],
     deps = [
         ":arrays",
         ":attr_key",
@@ -136,7 +162,7 @@ cc_library(
     srcs = ["element_storage.cc"],
     hdrs = ["element_storage.h"],
     deps = [
-        "//ortools/base:status_macros",
+        "//ortools/base:status_builder",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/status:statusor",
@@ -151,6 +177,16 @@ cc_test(
         ":element_storage",
         "//ortools/base:gmock_main",
         "@abseil-cpp//absl/status",
+    ],
+)
+
+cc_binary(
+    name = "element_storage_benchmark",
+    testonly = 1,
+    srcs = ["element_storage_benchmark.cc"],
+    deps = [
+        ":element_storage",
+        "//ortools/base:benchmark_main",
         "@google_benchmark//:benchmark",
     ],
 )
@@ -219,6 +255,18 @@ cc_test(
         ":attr_storage",
         ":symmetry",
         "//ortools/base:gmock_main",
+    ],
+)
+
+cc_binary(
+    name = "attr_storage_benchmark",
+    testonly = 1,
+    srcs = ["attr_storage_benchmark.cc"],
+    deps = [
+        ":attr_key",
+        ":attr_storage",
+        ":symmetry",
+        "//ortools/base:benchmark_main",
         "@google_benchmark//:benchmark",
     ],
 )
@@ -246,11 +294,14 @@ cc_test(
 cc_library(
     name = "attr_key",
     hdrs = ["attr_key.h"],
-    visibility = ["//ortools/math_opt:__subpackages__"],
+    visibility = [
+        "//ortools/math_opt:__subpackages__",
+        "//third_party/ortools/ortools:__subpackages__",
+    ],
     deps = [
         ":elements",
         ":symmetry",
-        "//ortools/base:status_macros",
+        "//ortools/base:status_builder",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/log:check",
@@ -266,16 +317,27 @@ cc_test(
         ":attr_key",
         ":elements",
         ":symmetry",
-        ":testing",
         "//ortools/base:gmock_main",
         "//ortools/math_opt/testing:stream",
-        "@abseil-cpp//absl/algorithm:container",
-        "@abseil-cpp//absl/container:flat_hash_map",
-        "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/hash:hash_testing",
         "@abseil-cpp//absl/meta:type_traits",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/strings",
+    ],
+)
+
+cc_binary(
+    name = "attr_key_benchmark",
+    testonly = 1,
+    srcs = ["attr_key_benchmark.cc"],
+    deps = [
+        ":attr_key",
+        ":symmetry",
+        ":testing",
+        "//ortools/base:benchmark_main",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:flat_hash_set",
         "@google_benchmark//:benchmark",
     ],
 )
@@ -283,7 +345,10 @@ cc_test(
 cc_library(
     name = "arrays",
     hdrs = ["arrays.h"],
-    visibility = ["//ortools/math_opt/elemental:__subpackages__"],
+    visibility = [
+        "//ortools/math_opt/elemental/codegen:__pkg__",
+        "//ortools/math_opt/elemental/python:__pkg__",
+    ],
 )
 
 cc_library(
@@ -375,14 +440,16 @@ cc_test(
 cc_library(
     name = "safe_attr_ops",
     hdrs = ["safe_attr_ops.h"],
-    visibility = ["//ortools/math_opt/elemental/c_api:__subpackages__"],
+    visibility = [
+        "//ortools/math_opt/elemental/c_api:__subpackages__",
+    ],
     deps = [
         ":derived_data",
         ":elemental",
-        "//ortools/base:status_macros",
+        "//ortools/base:status_builder",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
-        "@abseil-cpp//absl/strings",
     ],
 )
 

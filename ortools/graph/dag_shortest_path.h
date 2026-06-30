@@ -18,6 +18,7 @@
 #include <cstddef>
 #include <functional>
 #include <limits>
+#include <memory>
 #include <vector>
 
 #include "absl/algorithm/container.h"
@@ -83,8 +84,9 @@ std::vector<PathWithLength> KShortestPathsOnDag(
 // A wrapper that holds the memory needed to run many shortest path computations
 // efficiently on the given DAG. One call of `RunShortestPathOnDag()` has time
 // complexity O(|E| + |V|) and space complexity O(|V|).
-// `GraphType` can use any of the interfaces defined in `util/graph/graph.h`.
-// `ArcLengthContainer` can be any container of doubles.
+// `GraphType` can use any of the interfaces defined in
+// `ortools/graph_base/graph.h`. `ArcLengthContainer` can be any container of
+// doubles.
 template <class GraphType, typename ArcLengthContainer = std::vector<double>>
 class ShortestPathsOnDagWrapper {
  public:
@@ -160,9 +162,9 @@ class ShortestPathsOnDagWrapper {
 // computations efficiently on the given DAG. One call of
 // `RunKShortestPathOnDag()` has time complexity O(|E| + k|V|log(d)) where d is
 // the mean degree of the graph and space complexity O(k|V|).
-// `GraphType` can use any of the interfaces defined in `util/graph/graph.h`.
-// IMPORTANT: Only use if `path_count > 1` (k > 1) otherwise use
-// `ShortestPathsOnDagWrapper`.
+// `GraphType` can use any of the interfaces defined in
+// `ortools/graph_base/graph.h`. IMPORTANT: Only use if `path_count > 1` (k > 1)
+// otherwise use `ShortestPathsOnDagWrapper`.
 template <class GraphType, typename ArcLengthContainer = std::vector<double>>
 class KShortestPathsOnDagWrapper {
  public:
@@ -231,7 +233,7 @@ class KShortestPathsOnDagWrapper {
   absl::Span<const NodeIndex> const topological_order_;
   const int path_count_;
 
-  GraphType reverse_graph_;
+  std::unique_ptr<const GraphType> reverse_graph_;
   // Maps reverse arc indices to indices in the original graph.
   std::vector<ArcIndex> arc_indices_;
 
@@ -469,12 +471,12 @@ KShortestPathsOnDagWrapper<GraphType, ArcLengths>::KShortestPathsOnDagWrapper(
   // TODO(b/332475713): Optimize if reverse graph is already provided in
   // `GraphType`.
   const ArcIndex num_arcs = graph_->num_arcs();
-  reverse_graph_ = GraphType(graph_->num_nodes(), num_arcs);
+  typename GraphType::Builder reverse_builder(graph_->num_nodes(), num_arcs);
   for (ArcIndex arc_index(0); arc_index < num_arcs; ++arc_index) {
-    reverse_graph_.AddArc(graph->Head(arc_index), graph->Tail(arc_index));
+    reverse_builder.AddArc(graph->Head(arc_index), graph->Tail(arc_index));
   }
   std::vector<ArcIndex> permutation;
-  reverse_graph_.Build(&permutation);
+  reverse_graph_ = std::move(reverse_builder).Build(&permutation);
   arc_indices_.resize(permutation.size());
   if (!permutation.empty()) {
     for (int i = 0; i < permutation.size(); ++i) {
@@ -547,7 +549,7 @@ void KShortestPathsOnDagWrapper<GraphType, ArcLengths>::RunKShortestPathOnDag(
     if (is_source_[static_cast<size_t>(to)]) {
       min_heap.push_back({.arc_index = GraphType::kNilArc});
     }
-    for (const ArcIndex reverse_arc_index : reverse_graph_.OutgoingArcs(to)) {
+    for (const ArcIndex reverse_arc_index : reverse_graph_->OutgoingArcs(to)) {
       const ArcIndex arc_index =
           arc_indices.empty()
               ? reverse_arc_index

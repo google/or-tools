@@ -14,7 +14,6 @@
 #include "ortools/set_cover/set_cover_invariant.h"
 
 #include <algorithm>
-#include <limits>
 #include <tuple>
 #include <vector>
 
@@ -525,15 +524,15 @@ bool SetCoverInvariant::Deselect(SubsetIndex subset,
 SetCoverSolutionResponse SetCoverInvariant::ExportSolutionAsProto() const {
   SetCoverSolutionResponse message;
   message.set_num_subsets(is_selected_.size());
-  Cost lower_bound = std::numeric_limits<Cost>::max();
   for (const SubsetIndex subset : model_->SubsetRange()) {
     if (is_selected_[subset]) {
       message.add_subset(subset.value());
     }
-    lower_bound = std::min(model_->subset_costs()[subset], lower_bound);
   }
   message.set_cost(cost_);
-  message.set_cost_lower_bound(lower_bound);
+  message.set_cost_lower_bound(lower_bound_);
+  message.set_is_unicost(model_->is_unicost());
+  message.set_problem_name(model_->name());
   return message;
 }
 

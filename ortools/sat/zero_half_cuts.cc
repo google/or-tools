@@ -18,6 +18,7 @@
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/random/bit_gen_ref.h"
 #include "absl/types/span.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/sat/integer_base.h"
@@ -214,7 +215,7 @@ void ZeroHalfCutHelper::EliminateVarUsingRow(int eliminated_col,
 }
 
 std::vector<std::vector<std::pair<glop::RowIndex, IntegerValue>>>
-ZeroHalfCutHelper::InterestingCandidates(ModelRandomGenerator* random) {
+ZeroHalfCutHelper::InterestingCandidates(absl::BitGenRef random) {
   std::vector<std::vector<std::pair<glop::RowIndex, IntegerValue>>> result;
 
   // Remove singleton column from the picture.
@@ -238,7 +239,7 @@ ZeroHalfCutHelper::InterestingCandidates(ModelRandomGenerator* random) {
   // Process rows by increasing size, but randomize if same size.
   std::vector<int> to_process;
   for (int row = 0; row < rows_.size(); ++row) to_process.push_back(row);
-  std::shuffle(to_process.begin(), to_process.end(), *random);
+  std::shuffle(to_process.begin(), to_process.end(), random);
   std::stable_sort(to_process.begin(), to_process.end(), [this](int a, int b) {
     return rows_[a].cols.size() < rows_[b].cols.size();
   });

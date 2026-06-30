@@ -16,7 +16,6 @@
 #include <vector>
 
 #include "absl/base/macros.h"
-#include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/graph_base/graph.h"
@@ -216,33 +215,6 @@ TEST(EulerianPathTest, EulerianTourWithSuccessfulConnectivityCheck) {
   EXPECT_THAT(BuildEulerianTour(graph, /*assume_connectivity=*/false),
               ElementsAre(0, 1, 0));
 }
-template <typename GraphType>
-static void BM_EulerianTourOnGrid(benchmark::State& state) {
-  int size = state.range(0);
-  const int num_nodes = size * size;
-  const int num_edges = 2 * size * (size - 1) + 2 * size - 4;
-  util::ReverseArcListGraph<int, int> graph(num_nodes, num_edges);
-  for (int i = 0; i < size; ++i) {
-    for (int j = 0; j < size; ++j) {
-      if (j < size - 1) {
-        graph.AddArc(i * size + j, i * size + j + 1);
-      }
-      if (i < size - 1) {
-        graph.AddArc(i * size + j, (i + 1) * size + j);
-      }
-    }
-  }
-  for (int i = 1; i < size - 1; ++i) {
-    graph.AddArc(i * size, i * size + size - 1);
-    graph.AddArc(i, (size - 1) * size + i);
-  }
-  for (auto _ : state) {
-    ASSERT_EQ(num_edges + 1, BuildEulerianTour(graph).size());
-  }
-}
-
-BENCHMARK_TEMPLATE(BM_EulerianTourOnGrid, util::ReverseArcStaticGraph<>)
-    ->Range(2, 1 << 10);
 
 }  // namespace
 }  // namespace operations_research

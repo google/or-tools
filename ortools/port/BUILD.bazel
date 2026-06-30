@@ -13,6 +13,7 @@
 
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_cc//cc:cc_test.bzl", "cc_test")
+load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS", "ORTOOLS_TEST_COPTS")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -20,6 +21,8 @@ cc_library(
     name = "proto_utils",
     srcs = ["proto_utils.cc"],
     hdrs = ["proto_utils.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base/macros:os_support",
         "//ortools/util:parse_proto",
@@ -34,6 +37,8 @@ cc_library(
     name = "file",
     srcs = ["file.cc"],
     hdrs = ["file.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base:file",
         "//ortools/base/macros:os_support",
@@ -46,12 +51,16 @@ cc_library(
     name = "sysinfo",
     srcs = ["sysinfo.cc"],
     hdrs = ["sysinfo.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = ["//ortools/base/macros:os"],
 )
 
 cc_test(
     name = "sysinfo_test",
     srcs = ["sysinfo_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":sysinfo",
         "//ortools/base:gmock_main",
@@ -64,6 +73,8 @@ cc_library(
     testonly = True,
     srcs = ["scoped_std_stream_capture.cc"],
     hdrs = ["scoped_std_stream_capture.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base:base_export",
         "//ortools/base:gmock",
@@ -74,6 +85,8 @@ cc_library(
 cc_test(
     name = "scoped_std_stream_capture_test",
     srcs = ["scoped_std_stream_capture_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":scoped_std_stream_capture",
         "//ortools/base:gmock_main",

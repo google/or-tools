@@ -75,7 +75,7 @@ int main(int argc, char* argv[]) {
 ### Java code
 
 ```java
-// Snippet from ortools/sat/samples/LiteralSampleSat.java
+// Snippet from ortools/sat/samples/java/LiteralSampleSat.java
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.sat.BoolVar;
@@ -216,7 +216,7 @@ int main(int argc, char* argv[]) {
 ### Java code
 
 ```java
-// Snippet from ortools/sat/samples/BoolOrSampleSat.java
+// Snippet from ortools/sat/samples/java/BoolOrSampleSat.java
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.Loader;
@@ -382,7 +382,7 @@ int main(int argc, char* argv[]) {
 ### Java code
 
 ```java
-// Snippet from ortools/sat/samples/ReifiedSampleSat.java
+// Snippet from ortools/sat/samples/java/ReifiedSampleSat.java
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.Loader;

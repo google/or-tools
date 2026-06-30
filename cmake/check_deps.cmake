@@ -48,8 +48,10 @@ set(ABSL_DEPS
   absl::leak_check
   absl::memory
   absl::meta
+  absl::source_location
   absl::stacktrace
   absl::status
+  absl::status_builder
   absl::statusor
   absl::str_format
   absl::strings
@@ -114,7 +116,7 @@ if(USE_SCIP)
 endif()
 
 # CXX Test
-if(BUILD_TESTING)
+if(BUILD_CXX_TESTING)
   if(NOT TARGET GTest::gtest_main)
     message(FATAL_ERROR "Target GTest::gtest_main not available.")
   endif()

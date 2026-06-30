@@ -27,7 +27,6 @@ cc_library(
     hdrs = ["arc_flow_builder.h"],
     deps = [
         "//ortools/base:stl_util",
-        "//ortools/base:types",
         "//ortools/graph_base:topologicalsorter",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/log",
@@ -74,7 +73,6 @@ cc_library(
     hdrs = ["vector_bin_packing_parser.h"],
     deps = [
         ":vector_bin_packing_cc_proto",
-        "//ortools/base:types",
         "//ortools/util:filelineiter",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
@@ -106,6 +104,7 @@ cc_test(
     srcs = ["vector_bin_packing_main.cc"],
     args = ["--input $(rootpath //ortools/packing/testdata:1D__bpp_scholl__bin2data.N2W2B1R0.vbp)"],
     data = ["//ortools/packing/testdata:1D__bpp_scholl__bin2data.N2W2B1R0.vbp"],
+    tags = ["noci"],
     deps = [
         "//ortools/base",
         "//ortools/base:file",
@@ -138,7 +137,6 @@ cc_library(
     hdrs = ["binpacking_2d_parser.h"],
     deps = [
         ":multiple_dimensions_bin_packing_cc_proto",
-        "//ortools/base:types",
         "//ortools/util:filelineiter",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings",

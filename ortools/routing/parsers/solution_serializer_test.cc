@@ -14,7 +14,6 @@
 #include "ortools/routing/parsers/solution_serializer.h"
 
 #include <cstdint>
-#include <cstdio>
 #include <string>
 #include <vector>
 
@@ -24,8 +23,8 @@
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/helpers.h"
-#include "ortools/base/mutable_memfile.h"
 #include "ortools/base/options.h"
+#include "ortools/base/temp_file.h"
 #include "ortools/routing/parsers/simple_graph.h"
 
 namespace operations_research::routing {
@@ -151,8 +150,9 @@ TEST(RoutingSolutionSerializerTest, SolutionToTsplib) {
 }
 
 TEST(RoutingSolutionSerializerTest, SolutionToTsplibFile) {
-  const std::string file_name{std::tmpnam(nullptr)};
-  RegisteredMutableMemFile registered(file_name);
+  ASSERT_OK_AND_ASSIGN(
+      const std::string file_name,
+      file::MakeTempFilename(::testing::TempDir(), "sol_tsplib"));
 
   const std::vector<std::vector<int64_t>> solution_vector{{0, 1, 2, 3, 0},
                                                           {0, 4, 5, 6, 0}};
@@ -243,8 +243,9 @@ TEST(RoutingSolutionSerializerTest, SolutionToCvrplibDepot1Dimacs) {
 }
 
 TEST(RoutingSolutionSerializerTest, SolutionToCvrplibFile) {
-  const std::string file_name{std::tmpnam(nullptr)};
-  RegisteredMutableMemFile registered(file_name);
+  ASSERT_OK_AND_ASSIGN(
+      const std::string file_name,
+      file::MakeTempFilename(::testing::TempDir(), "sol_cvrplib"));
 
   const std::vector<std::vector<int64_t>> solution_vector{{0, 1, 2, 3, 0},
                                                           {0, 4, 5, 6, 0}};
@@ -402,8 +403,9 @@ TEST(RoutingSolutionSerializerTest, CarpSolutionToCarplib) {
 }
 
 TEST(RoutingSolutionSerializerTest, CarpSolutionToCarplibFile) {
-  const std::string file_name{std::tmpnam(nullptr)};
-  RegisteredMutableMemFile registered(file_name);
+  ASSERT_OK_AND_ASSIGN(
+      const std::string file_name,
+      file::MakeTempFilename(::testing::TempDir(), "sol_carp_carplib"));
 
   Solution solution = MakeTestArcRoutingInstance();
   const std::string expected_output =
@@ -445,8 +447,9 @@ TEST(RoutingSolutionSerializerTest, NearpSolutionToCarplib) {
 }
 
 TEST(RoutingSolutionSerializerTest, NearpSolutionToCarplibFile) {
-  const std::string file_name{std::tmpnam(nullptr)};
-  RegisteredMutableMemFile registered(file_name);
+  ASSERT_OK_AND_ASSIGN(
+      const std::string file_name,
+      file::MakeTempFilename(::testing::TempDir(), "sol_nearp_carplib"));
 
   Solution solution = MakeTestEdgeNodeArcRoutingInstance();
   const std::string expected_output =
@@ -484,8 +487,9 @@ TEST(RoutingSolutionSerializerTest, CarpSolutionToNearplib) {
 }
 
 TEST(RoutingSolutionSerializerTest, CarpSolutionToNearplibFile) {
-  const std::string file_name{std::tmpnam(nullptr)};
-  RegisteredMutableMemFile registered(file_name);
+  ASSERT_OK_AND_ASSIGN(
+      const std::string file_name,
+      file::MakeTempFilename(::testing::TempDir(), "sol_carp_nearplib"));
 
   Solution solution = MakeTestArcRoutingInstance();
   const std::string date =
@@ -532,8 +536,9 @@ TEST(RoutingSolutionSerializerTest, NearpSolutionToNearplib) {
 }
 
 TEST(RoutingSolutionSerializerTest, NearpSolutionToNearplibFile) {
-  const std::string file_name{std::tmpnam(nullptr)};
-  RegisteredMutableMemFile registered(file_name);
+  ASSERT_OK_AND_ASSIGN(
+      const std::string file_name,
+      file::MakeTempFilename(::testing::TempDir(), "sol_nearp_nearplib"));
 
   Solution solution = MakeTestEdgeNodeArcRoutingInstance();
   const std::string date =

@@ -15,7 +15,6 @@
 // [START imports]
 #include <cstdint>
 #include <iostream>
-#include <limits>
 #include <string>
 #include <utility>
 #include <vector>
@@ -24,6 +23,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "ortools/base/init_google.h"
+#include "ortools/base/types.h"
 #include "ortools/graph/bounded_dijkstra.h"
 #include "ortools/graph_base/graph.h"
 // [END imports]
@@ -47,42 +47,42 @@ int main(int argc, char** argv) {
   const int n = 10;
   const int source = n;
   const int dest = n + 1;
-  util::StaticGraph<> graph;
+  util::StaticGraph<>::Builder builder;
   // There are 3 types of arcs: (1) source to M, (2) within M, and (3) M to
   // dest. This vector stores all of them, first of type (1), then type (2),
   // then type (3). The arcs are ordered by i in M within each type.
   std::vector<int> weights(3 * n);
 
   for (int i = 0; i < n; ++i) {
-    graph.AddArc(source, i);
+    builder.AddArc(source, i);
     weights[i] = 100;
   }
   for (int i = 0; i < n; ++i) {
-    graph.AddArc(i, (i + 1) % n);
+    builder.AddArc(i, (i + 1) % n);
     weights[n + i] = 1;
   }
   for (int i = 0; i < n; ++i) {
-    graph.AddArc(i, dest);
+    builder.AddArc(i, dest);
     weights[2 * n + i] = 100;
   }
 
   // Static graph reorders the arcs at Build() time, use permutation to get from
   // the old ordering to the new one.
   std::vector<int32_t> permutation;
-  graph.Build(&permutation);
+  const auto graph = std::move(builder).Build(&permutation);
   util::Permute(permutation, &weights);
   // [END graph]
 
   // [START first-path]
   // A reusable shortest path calculator.
   operations_research::BoundedDijkstraWrapper<util::StaticGraph<>, int>
-      dijkstra(&graph, &weights);
+      dijkstra(graph.get(), &weights);
 
   // This function returns false if there is no path from `source` to `dest`
   // of length at most `distance_limit`. Avoid CHECK when you cannot prove a
   // path exists.
-  CHECK(dijkstra.OneToOneShortestPath(
-      source, dest, /*distance_limit=*/std::numeric_limits<int>::max()));
+  CHECK(dijkstra.OneToOneShortestPath(source, dest,
+                                      /*distance_limit=*/kint32max));
   std::cout << "Initial distance: " << dijkstra.distances()[dest] << std::endl;
   std::cout << "Initial path: "
             << absl::StrJoin(dijkstra.NodePathTo(dest), ", ") << std::endl;
@@ -97,8 +97,8 @@ int main(int argc, char** argv) {
     weights[permutation[free_from_source]] = 0;
     weights[permutation[2 * n + free_to_dest]] = 0;
 
-    CHECK(dijkstra.OneToOneShortestPath(
-        source, dest, /*distance_limit=*/std::numeric_limits<int>::max()));
+    CHECK(dijkstra.OneToOneShortestPath(source, dest,
+                                        /*distance_limit=*/kint32max));
     std::cout << "source -> " << free_from_source << " and " << free_to_dest
               << " -> dest are now free" << std::endl;
     std::string label = absl::StrCat("_", free_from_source, "_", free_to_dest);

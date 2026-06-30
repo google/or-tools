@@ -23,6 +23,7 @@
 #include "absl/base/optimization.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
+#include "ortools/base/types.h"
 #include "ortools/glop/markowitz.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/lp_utils.h"
@@ -286,7 +287,7 @@ void InitialBasis::GetMarosBasis(ColIndex num_cols, RowToColMapping* basis) {
   for (;;) {
     // Make row selection by the Row Priority Function (RPF) from Maros's
     // book.
-    int max_row_priority_function = std::numeric_limits<int>::min();
+    int max_row_priority_function = kint32min;
     RowIndex max_rpf_row = kInvalidRow;
     for (RowIndex row(0); row < num_rows; row++) {
       if (available[RowToColIndex(row) + first_slack]) {
@@ -304,7 +305,7 @@ void InitialBasis::GetMarosBasis(ColIndex num_cols, RowToColMapping* basis) {
     // Function (cpf).
     const Fractional kStabilityThreshold = 1e-3;
     ColIndex max_cpf_col(kInvalidCol);
-    int max_col_priority_function(std::numeric_limits<int>::min());
+    int max_col_priority_function(kint32min);
     Fractional pivot_absolute_value = 0.0;
     for (const ColIndex col : residual_pattern.RowNonZero(max_rpf_row)) {
       if (!available[col]) continue;

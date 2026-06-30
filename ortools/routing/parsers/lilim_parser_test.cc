@@ -16,13 +16,19 @@
 #include <string>
 
 #include "absl/flags/flag.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 #include "gtest/gtest.h"
 #include "ortools/base/path.h"
-
-#define ROOT_DIR "_main/"
+#include "ortools/util/data_path_resolver.h"
 
 namespace operations_research::routing {
 namespace {
+
+std::string GetTestDataPath(absl::string_view filename) {
+  return ortools::GetDataDependencyFilepath(
+      absl::StrCat("ortools/routing/parsers/testdata/", filename));
+}
 
 void CheckData(const LiLimParser& parser) {
   EXPECT_EQ(parser.NumberOfNodes(), 1009);
@@ -49,9 +55,7 @@ TEST(LiLimParserTest, LoadNonExistingFile) {
 
 TEST(LiLimParserTest, LoadExistingFile) {
   LiLimParser parser;
-  EXPECT_TRUE(parser.LoadFile(file::JoinPath(::testing::SrcDir(), ROOT_DIR
-                                             "ortools/routing/parsers"
-                                             "/testdata/pdptw_LRC2_10_6.txt")));
+  EXPECT_TRUE(parser.LoadFile(GetTestDataPath("pdptw_LRC2_10_6.txt")));
   CheckData(parser);
   // Load a non-existing file to check the parser was cleaned.
   EXPECT_FALSE(parser.LoadFile("doesnotexist.txt"));
@@ -71,10 +75,8 @@ TEST(LiLimParserTest, LoadNonExistingArchive) {
 
 TEST(LiLimParserTest, LoadNonExistingInstance) {
   LiLimParser parser;
-  EXPECT_FALSE(parser.LoadFile("doesnotexist.txt",
-                               file::JoinPath(::testing::SrcDir(), ROOT_DIR
-                                              "ortools/routing/"
-                                              "/parsers/testdata/lilim.zip")));
+  EXPECT_FALSE(
+      parser.LoadFile("doesnotexist.txt", GetTestDataPath("lilim.zip")));
 }
 
 }  // namespace

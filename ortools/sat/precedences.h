@@ -16,6 +16,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <string>
 #include <tuple>
 #include <utility>
 #include <variant>
@@ -39,6 +40,7 @@
 #include "ortools/sat/util.h"
 #include "ortools/util/rev.h"
 #include "ortools/util/strong_integers.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -114,6 +116,17 @@ class Linear2Indices {
   // expression must already be canonicalized and divided by its GCD.
   LinearExpression2Index GetIndex(LinearExpression2 expr) const;
 
+  // Returns the number of positive linear2 expressions that have a potentially
+  // non-trivial bound.
+  // These expressions can be obtained with GetExpression(2 * i),
+  // for all i in [0,NumStoredPositiveLinear2()[.
+  LinearExpression2Index NumStoredPositiveLinear2() const {
+    return LinearExpression2Index(exprs_.size());
+  }
+
+  // Returns the linear expression corresponding to the given index. The index
+  // must be less than 2 * NumStoredPositiveLinear2(). Even indices correspond
+  // to positive linear expressions, and odd indices to their negation.
   LinearExpression2 GetExpression(LinearExpression2Index index) const;
 
   // Return all positive linear2 expressions that have a potentially non-trivial
@@ -342,6 +355,7 @@ class TransitivePrecedencesEvaluator {
  public:
   explicit TransitivePrecedencesEvaluator(Model* model)
       : params_(model->GetOrCreate<SatParameters>()),
+        time_limit_(model->GetOrCreate<TimeLimit>()),
         integer_trail_(model->GetOrCreate<IntegerTrail>()),
         shared_stats_(model->GetOrCreate<SharedStatistics>()),
         root_level_bounds_(model->GetOrCreate<RootLevelLinear2Bounds>()) {
@@ -382,6 +396,7 @@ class TransitivePrecedencesEvaluator {
 
  private:
   SatParameters* params_;
+  TimeLimit* time_limit_;
   IntegerTrail* integer_trail_;
   SharedStatistics* shared_stats_;
   RootLevelLinear2Bounds* root_level_bounds_;

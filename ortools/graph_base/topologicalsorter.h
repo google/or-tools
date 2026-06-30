@@ -56,7 +56,8 @@ namespace graph {
 
 // This is the recommended API when performance matters. It's also very simple.
 // AdjacencyList is any type that lets you iterate over the neighbors of
-// node with the [] operator, for example vector<vector<int>> or util::Graph.
+// node with the [] operator, for example vector<vector<int>> or
+// util::ListGraph.
 //
 // If you don't already have an adjacency list representation, build one using
 // StaticGraph<> in ./graph.h: FastTopologicalSort() can take any such graph as
@@ -78,13 +79,15 @@ namespace graph {
 //
 // EXAMPLES:
 //   std::vector<std::vector<int>> adj = {{..}, {..}, ..};
-//   ASSIGN_OR_RETURN(std::vector<int> topo_order, FastTopologicalSort(adj));
+//   ABSL_ASSIGN_OR_RETURN(std::vector<int> topo_order,
+//       FastTopologicalSort(adj));
 //
 // or
 //   std::vector<pair<int, int>> arcs = {{.., ..}, ..., };
-//   ASSIGN_OR_RETURN(
+//   ABSL_ASSIGN_OR_RETURN(
 //       std::vector<int> topo_order,
-//       FastTopologicalSort(util::StaticGraph<>::FromArcs(num_nodes, arcs)));
+//       FastTopologicalSort(util::GraphFromArcs<util::StaticGraph<>>(num_nodes,
+//       arcs)));
 //
 template <class AdjacencyLists>  // vector<vector<int>>, util::StaticGraph<>, ..
 absl::StatusOr<
@@ -152,7 +155,7 @@ std::vector<T> StableTopologicalSortOrDie(
 inline ABSL_MUST_USE_RESULT std::vector<int> FindCycleInDenseIntGraph(
     int num_nodes, const std::vector<std::pair<int, int>>& arcs) {
   return util::graph::FindCycleInGraph(
-             util::StaticGraph<>::FromArcs(num_nodes, arcs))
+             util::GraphFromArcs<util::StaticGraph<int, int>>(num_nodes, arcs))
       .value();
 }
 
@@ -622,15 +625,15 @@ std::vector<T> StableTopologicalSortOrDie(
 template <class AdjacencyLists>
 absl::StatusOr<std::vector<typename GraphTraits<AdjacencyLists>::NodeIndex>>
 FastTopologicalSort(const AdjacencyLists& adj) {
-  using NodeIndex = typename GraphTraits<AdjacencyLists>::NodeIndex;
-  if (adj.size() > std::numeric_limits<NodeIndex>::max()) {
-    return absl::InvalidArgumentError(
-        absl::StrFormat("Too many nodes: adj.size()=%v", adj.size()));
+  using GraphTraitsT = GraphTraits<AdjacencyLists>;
+  using NodeIndex = GraphTraitsT::NodeIndex;
+  if (GraphTraitsT::num_nodes(adj) > std::numeric_limits<NodeIndex>::max()) {
+    return absl::InvalidArgumentError(absl::StrFormat(
+        "Too many nodes: num_nodes=%v", GraphTraitsT::num_nodes(adj)));
   }
-  const NodeIndex num_nodes(adj.size());
+  const NodeIndex num_nodes = GraphTraitsT::num_nodes(adj);
   std::vector<NodeIndex> indegree(static_cast<size_t>(num_nodes), NodeIndex(0));
-  std::vector<NodeIndex> topo_order;
-  topo_order.reserve(static_cast<size_t>(num_nodes));
+  NodeIndex* const indegree_data = indegree.data();
   for (NodeIndex from(0); from < num_nodes; ++from) {
     for (const NodeIndex head : adj[from]) {
       if (!(NodeIndex(0) <= head && head < num_nodes)) {
@@ -641,20 +644,27 @@ FastTopologicalSort(const AdjacencyLists& adj) {
       // NOTE(user): We could detect self-arcs here (head == from) and exit
       // early, but microbenchmarks show a 2 to 4% slow-down if we do it, so we
       // simply rely on self-arcs being detected as cycles in the topo sort.
-      ++indegree[static_cast<size_t>(head)];
+      ++indegree_data[static_cast<size_t>(head)];
     }
   }
+  std::vector<NodeIndex> topo_order(static_cast<size_t>(num_nodes));
+  NodeIndex* const topo_order_data = topo_order.data();
+  size_t topo_order_size = 0;
   for (NodeIndex i(0); i < num_nodes; ++i) {
-    if (!indegree[static_cast<size_t>(i)]) topo_order.push_back(i);
+    if (!indegree_data[static_cast<size_t>(i)]) {
+      topo_order_data[topo_order_size++] = i;
+    }
   }
   size_t num_visited = 0;
-  while (num_visited < topo_order.size()) {
-    const NodeIndex from = topo_order[num_visited++];
+  while (num_visited < topo_order_size) {
+    const NodeIndex from = topo_order_data[num_visited++];
     for (const NodeIndex head : adj[from]) {
-      if (!--indegree[static_cast<size_t>(head)]) topo_order.push_back(head);
+      if (!--indegree_data[static_cast<size_t>(head)]) {
+        topo_order_data[topo_order_size++] = head;
+      }
     }
   }
-  if (topo_order.size() < static_cast<size_t>(num_nodes)) {
+  if (topo_order_size < static_cast<size_t>(num_nodes)) {
     return absl::InvalidArgumentError("The graph has a cycle");
   }
   return topo_order;
@@ -664,12 +674,13 @@ template <class AdjacencyLists>
 absl::StatusOr<
     std::vector<typename util::GraphTraits<AdjacencyLists>::NodeIndex>>
 FindCycleInGraph(const AdjacencyLists& adj) {
-  using NodeIndex = typename GraphTraits<AdjacencyLists>::NodeIndex;
-  if (adj.size() > std::numeric_limits<NodeIndex>::max()) {
-    return absl::InvalidArgumentError(
-        absl::StrFormat("Too many nodes: adj.size()=%v", adj.size()));
+  using GraphTraitsT = GraphTraits<AdjacencyLists>;
+  using NodeIndex = GraphTraitsT::NodeIndex;
+  if (GraphTraitsT::num_nodes(adj) > std::numeric_limits<NodeIndex>::max()) {
+    return absl::InvalidArgumentError(absl::StrFormat(
+        "Too many nodes: num_nodes=%v", GraphTraitsT::num_nodes(adj)));
   }
-  const NodeIndex num_nodes(adj.size());
+  const NodeIndex num_nodes = GraphTraitsT::num_nodes(adj);
 
   // First pass to validate that inputs are valid.
   for (NodeIndex node(0); node < NodeIndex(node); ++node) {

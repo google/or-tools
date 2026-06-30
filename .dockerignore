@@ -55,6 +55,7 @@ packages
 build/
 build_cmake/
 build_all/
+build_cpp/
 build_dotnet/
 build_java/
 build_python/

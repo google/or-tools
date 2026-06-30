@@ -98,6 +98,7 @@ class CpModelPresolver {
   // Visible for testing.
   void RemoveEmptyConstraints();
   void DetectDuplicateColumns();
+
   // Detects variable that must take different values.
   void DetectDifferentVariables();
 
@@ -138,6 +139,7 @@ class CpModelPresolver {
   bool PresolveIntMod(int c, ConstraintProto* ct);
   bool PresolveIntProd(ConstraintProto* ct);
   bool PresolveInterval(int c, ConstraintProto* ct);
+  bool PresolveLegacyInverse(ConstraintProto* ct);
   bool PresolveInverse(ConstraintProto* ct);
   bool DivideLinMaxByGcd(int c, ConstraintProto* ct);
   bool PresolveLinMax(int c, ConstraintProto* ct);
@@ -156,8 +158,8 @@ class CpModelPresolver {
   bool PresolveCircuit(ConstraintProto* ct);
   bool PresolveRoutes(ConstraintProto* ct);
 
-  bool PresolveAtMostOrExactlyOne(ConstraintProto* ct);
-  bool PresolveAtMostOne(ConstraintProto* ct);
+  bool PresolveAtMostOrExactlyOne(ConstraintProto* ct, bool use_dual_reduction);
+  bool PresolveAtMostOne(ConstraintProto* ct, bool use_dual_reduction = true);
   bool PresolveExactlyOne(ConstraintProto* ct);
 
   bool PresolveBoolAnd(ConstraintProto* ct);
@@ -178,11 +180,12 @@ class CpModelPresolver {
   ABSL_MUST_USE_RESULT bool CanonicalizeAllLinears();
   bool PropagateDomainsInLinear(int ct_index, ConstraintProto* ct);
   bool RemoveSingletonInLinear(ConstraintProto* ct);
-  bool PresolveSmallLinear(ConstraintProto* ct);
+  bool PresolveSmallLinear(ConstraintProto* ct, bool canonicalize = true);
   bool PresolveEmptyLinearConstraint(ConstraintProto* ct);
   bool PresolveLinearOfSizeOne(ConstraintProto* ct);
   bool PresolveLinearOfSizeTwo(ConstraintProto* ct);
   bool PresolveLinearOnBooleans(ConstraintProto* ct);
+  bool PresolveSmallLinearOnBooleans(ConstraintProto* ct);
   bool PresolveDiophantine(ConstraintProto* ct);
   bool AddVarAffineRepresentativeFromLinearEquality(int target_index,
                                                     ConstraintProto* ct);
@@ -218,6 +221,18 @@ class CpModelPresolver {
       const CpModelMapping* mapping = nullptr,
       BinaryImplicationGraph* implication_graph = nullptr,
       Trail* trail = nullptr);
+
+  // A bit like DetectDuplicateConstraintsWithDifferentEnforcements() but
+  // for linear constraints with different rhs.
+  void DetectUnenforcedEnforcedLinearPair();
+
+  // if var only appear in
+  // literal => var \in domain
+  // var + linear_terms \in other_domain which is trivial if var is relaxed.
+  //
+  // then we can remove var, and transform the constraint to
+  // literal => linear_terms \in tighter_domain.
+  void MaybeRemoveLinkingVariable(int var, int c_linear1, int c_linear);
 
   // Detects if a linear constraint is "included" in another one, and do
   // related presolve.
@@ -320,6 +335,11 @@ class CpModelPresolver {
   // one constraint.
   void TransformClausesToExactlyOne();
 
+  // Use all the detected precedences to detect if a part of a no_overlap
+  // constraint can only be executed after the rest and thus the no_overlap
+  // constraint can be split into smaller no_overlap constraints.
+  void SplitNoOverlapAndCumulativeConstraints();
+
   // Converts bool_or and at_most_one of size 2 to bool_and.
   void ConvertToBoolAnd();
 
@@ -405,6 +425,9 @@ class CpModelPresolver {
   void MaybePermuteVariablesRandomly(std::vector<int>& mapping);
   CpSolverStatus LogAndValidatePresolvedModel();
 
+  void AddLinear2ToModel(const LinearExpression2& linear2, int64_t lb,
+                         int64_t ub);
+
   std::vector<int>* postsolve_mapping_;
   PresolveContext* context_;
   SolutionCrush& solution_crush_;
@@ -454,7 +477,12 @@ class CpModelPresolver {
   //
   // We reuse an IntegerVariable/IntegerValue based class via
   // GetLinearExpression2FromProto() only visible in the .cc.
+  //
+  // We have two versions of this map: one that only consider linear2 that
+  // are encoded as such in the model, and a more general one that consider any
+  // linear2 that was detected by the presolve.
   BestBinaryRelationBounds known_linear2_;
+  BestBinaryRelationBounds known_model_linear2_;
 
   struct IntervalConstraintEq {
     const CpModelProto* working_model;
@@ -483,22 +511,23 @@ CpSolverStatus PresolveCpModel(PresolveContext* context,
 //
 // Empty constraints are ignored. We also do a bit more:
 // - We ignore names when comparing constraint.
-// - For linear constraints, we ignore the domain. This is because we can
-//   just merge them if the constraints are the same.
+// - For linear constraints, we ignore the domain if ignore_linear_domain is
+//   true. This is because we can just merge them if the constraints are the
+//   same.
 // - We return the special kObjectiveConstraint (< 0) representative if a linear
 //   constraint is parallel to the objective and has no enforcement literals.
 //   The domain of such constraint can just be merged with the objective domain.
 //
-// If ignore_enforcement is true, we ignore enforcement literal, but do not
-// do the linear domain or objective special cases. This allow to cover some
-// other cases like:
+// If ignore_enforcement is true, we ignore enforcement literal, This allow to
+// cover some other cases like:
 // - enforced constraint duplicate of non-enforced one.
 // - Two enforced constraints with singleton enforcement (vpphard).
 //
 // Visible here for testing. This is meant to be called at the end of the
 // presolve where constraints have been canonicalized.
 std::vector<std::pair<int, int>> FindDuplicateConstraints(
-    const CpModelProto& model_proto, bool ignore_enforcement = false);
+    const CpModelProto& model_proto, bool ignore_enforcement,
+    bool ignore_linear_domain);
 
 }  // namespace sat
 }  // namespace operations_research

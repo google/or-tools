@@ -100,13 +100,13 @@ class Model {
    \endcode
    */
   template <typename T>
-  T Add(std::function<T(Model*)> f) {
+  T Add(const std::function<T(Model*)>& f) {
     return f(this);
   }
 
   /// Similar to Add() but this is const.
   template <typename T>
-  T Get(std::function<T(const Model&)> f) const {
+  T Get(const std::function<T(const Model&)>& f) const {
     return f(*this);
   }
 
@@ -194,6 +194,12 @@ class Model {
     const size_t type_id = FastTypeId<T>();
     CHECK(!singletons_.contains(type_id));
     singletons_[type_id] = non_owned_class;
+  }
+
+  template <typename T>
+  void Unregister() {
+    const size_t type_id = FastTypeId<T>();
+    singletons_.erase(type_id);
   }
 
   const std::string& Name() const { return name_; }

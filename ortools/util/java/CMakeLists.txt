@@ -11,24 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set_property(SOURCE sorted_interval_list.swig PROPERTY CPLUSPLUS ON)
-set_property(SOURCE sorted_interval_list.swig PROPERTY SWIG_MODULE_NAME main)
-set_property(SOURCE sorted_interval_list.swig PROPERTY COMPILE_DEFINITIONS
-  ${OR_TOOLS_COMPILE_DEFINITIONS})
-set_property(SOURCE sorted_interval_list.swig PROPERTY COMPILE_OPTIONS
-  -package ${JAVA_PACKAGE}.util)
-swig_add_library(jniutil
-  TYPE OBJECT
-  LANGUAGE java
-  OUTPUT_DIR ${JAVA_PROJECT_DIR}/${JAVA_SRC_PATH}/util
-  SOURCES sorted_interval_list.swig)
-
-target_include_directories(jniutil PRIVATE ${JNI_INCLUDE_DIRS})
-set_target_properties(jniutil PROPERTIES
-  SWIG_USE_TARGET_INCLUDE_DIRECTORIES ON
-  POSITION_INDEPENDENT_CODE ON)
-target_link_libraries(jniutil PRIVATE ortools::ortools)
-
+# Wrappers
 add_library(util_java_wrappers OBJECT wrappers.h wrappers.cc)
 set_target_properties(util_java_wrappers PROPERTIES
   POSITION_INDEPENDENT_CODE ON)
@@ -42,13 +25,61 @@ target_link_libraries(util_java_wrappers PUBLIC
   protobuf::libprotobuf)
 add_library(${PROJECT_NAMESPACE}::util_java_wrappers ALIAS util_java_wrappers)
 
+# Sorted Interval List
+set_property(SOURCE sorted_interval_list.swig PROPERTY CPLUSPLUS ON)
+set_property(SOURCE sorted_interval_list.swig PROPERTY SWIG_MODULE_NAME sorted_interval_list)
+set_property(SOURCE sorted_interval_list.swig PROPERTY COMPILE_DEFINITIONS
+  ${OR_TOOLS_COMPILE_DEFINITIONS})
+set_property(SOURCE sorted_interval_list.swig PROPERTY COMPILE_OPTIONS
+  -package ${JAVA_PACKAGE}.util)
+swig_add_library(jni_sorted_interval_list
+  TYPE OBJECT
+  LANGUAGE java
+  OUTPUT_DIR ${JAVA_PROJECT_DIR}/${JAVA_SRC_PATH}/util
+  SOURCES sorted_interval_list.swig)
+
+target_include_directories(jni_sorted_interval_list PRIVATE ${JNI_INCLUDE_DIRS})
+set_target_properties(jni_sorted_interval_list PROPERTIES
+  SWIG_USE_TARGET_INCLUDE_DIRECTORIES ON
+  POSITION_INDEPENDENT_CODE ON)
+target_link_libraries(jni_sorted_interval_list PRIVATE ortools::ortools)
+
+# Java Swig Solve Interrupter
+set_property(SOURCE java_swig_solve_interrupter.swig PROPERTY CPLUSPLUS ON)
+set_property(SOURCE java_swig_solve_interrupter.swig PROPERTY SWIG_MODULE_NAME solve_interrupter)
+set_property(SOURCE java_swig_solve_interrupter.swig PROPERTY COMPILE_DEFINITIONS
+  ${OR_TOOLS_COMPILE_DEFINITIONS})
+set_property(SOURCE java_swig_solve_interrupter.swig PROPERTY COMPILE_OPTIONS
+  -package ${JAVA_PACKAGE}.util)
+swig_add_library(jni_java_swig_solve_interrupter
+  TYPE OBJECT
+  LANGUAGE java
+  OUTPUT_DIR ${JAVA_PROJECT_DIR}/${JAVA_SRC_PATH}/util
+  SOURCES java_swig_solve_interrupter.swig)
+
+target_include_directories(jni_java_swig_solve_interrupter PRIVATE ${JNI_INCLUDE_DIRS})
+set_target_properties(jni_java_swig_solve_interrupter PROPERTIES
+  SWIG_USE_TARGET_INCLUDE_DIRECTORIES ON
+  POSITION_INDEPENDENT_CODE ON)
+target_link_libraries(jni_java_swig_solve_interrupter PRIVATE ortools::ortools)
+
+# JNI Helper
 add_library(util_java_jni_helper OBJECT jni_helper.h jni_helper.cc)
 set_target_properties(util_java_jni_helper PROPERTIES
   POSITION_INDEPENDENT_CODE ON)
 target_include_directories(util_java_jni_helper PUBLIC
   ${PROJECT_SOURCE_DIR}
   ${PROJECT_BINARY_DIR})
-target_include_directories(util_java_jni_helper PRIVATE ${JNI_INCLUDE_DIRS})
-target_link_libraries(util_java_jni_helper PRIVATE ${JNI_LIBRARIES})
+target_link_libraries(util_java_jni_helper PRIVATE JNI::JNI JNI::JVM)
 add_library(${PROJECT_NAMESPACE}::util_java_jni_helper ALIAS util_java_jni_helper)
 
+
+if(BUILD_JAVA_TESTING)
+  # TODO: need to generate the wrappers_test_message.swig
+
+  file(GLOB JAVA_SRCS "*Test.java")
+  list(FILTER JAVA_SRCS EXCLUDE REGEX ".*/WrappersTestMessageTest.java")
+  foreach(FILE_NAME IN LISTS JAVA_SRCS)
+    add_java_test(FILE_NAME ${FILE_NAME})
+  endforeach()
+endif()

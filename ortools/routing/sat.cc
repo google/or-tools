@@ -16,15 +16,18 @@
 #include <cstdint>
 #include <functional>
 #include <limits>
+#include <memory>
 #include <ostream>
 #include <utility>
 #include <vector>
 
 #include "absl/container/btree_map.h"
+#include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "ortools/base/map_util.h"
+#include "ortools/base/types.h"
 #include "ortools/constraint_solver/assignment.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/routing/parameters.pb.h"
@@ -142,8 +145,8 @@ void AddSoftCumulBounds(const Dimension* dimension, int index, int cumul,
       const int soft_ub_var =
           AddVariable(cp_model, 0, CapSub(cumul_max, soft_ub));
       // soft_ub_var >= cumul - soft_ub
-      AddLinearConstraint(cp_model, std::numeric_limits<int64_t>::min(),
-                          soft_ub, {{cumul, 1}, {soft_ub_var, -1}});
+      AddLinearConstraint(cp_model, kint64min, soft_ub,
+                          {{cumul, 1}, {soft_ub_var, -1}});
       cp_model->mutable_objective()->add_vars(soft_ub_var);
       cp_model->mutable_objective()->add_coeffs(soft_ub_coef);
     }
@@ -156,8 +159,7 @@ void AddSoftCumulBounds(const Dimension* dimension, int index, int cumul,
       const int soft_lb_var =
           AddVariable(cp_model, 0, CapSub(soft_lb, cumul_min));
       // soft_lb_var >= soft_lb - cumul
-      AddLinearConstraint(cp_model, soft_lb,
-                          std::numeric_limits<int64_t>::max(),
+      AddLinearConstraint(cp_model, soft_lb, kint64max,
                           {{cumul, 1}, {soft_lb_var, 1}});
       cp_model->mutable_objective()->add_vars(soft_lb_var);
       cp_model->mutable_objective()->add_coeffs(soft_lb_coef);
@@ -181,11 +183,11 @@ void AddDimensions(const routing::Model& model, const ArcVarMap& arc_vars,
       if (model.IsStart(i) || model.IsEnd(i)) continue;
       // Reducing bounds supposing the triangular inequality.
       const int64_t cumul_min = std::max<int64_t>(
-          std::numeric_limits<int64_t>::min() / num_cumuls,
+          kint64min / num_cumuls,
           std::max(dimension->cumuls()[i]->Min(),
                    CapAdd(transit(model.Start(0), i), min_start)));
       const int64_t cumul_max = std::min<int64_t>(
-          std::numeric_limits<int64_t>::max() / num_cumuls,
+          kint64max / num_cumuls,
           std::min(dimension->cumuls()[i]->Max(),
                    CapSub(max_end, transit(i, model.End(0)))));
       cumuls[i] = AddVariable(cp_model, cumul_min, cumul_max);
@@ -198,9 +200,9 @@ void AddDimensions(const routing::Model& model, const ArcVarMap& arc_vars,
       if (tail == head || model.IsStart(tail) || model.IsStart(head)) continue;
       // arc[tail][head] -> cumuls[head] >= cumuls[tail] + transit.
       // This is a relaxation of the model as it does not consider slack max.
-      AddLinearConstraint(
-          cp_model, transit(tail, head), std::numeric_limits<int64_t>::max(),
-          {{cumuls[head], 1}, {cumuls[tail], -1}}, {arc_var.second});
+      AddLinearConstraint(cp_model, transit(tail, head), kint64max,
+                          {{cumuls[head], 1}, {cumuls[tail], -1}},
+                          {arc_var.second});
     }
   }
 }
@@ -271,7 +273,7 @@ void AddPickupDeliveryConstraints(const routing::Model& model,
     const int64_t pickup = pickups[0];
     const int64_t delivery = deliveries[0];
     // ranks[pickup] + 1 <= ranks[delivery].
-    AddLinearConstraint(cp_model, 1, std::numeric_limits<int64_t>::max(),
+    AddLinearConstraint(cp_model, 1, kint64max,
                         {{ranks[delivery], 1}, {ranks[pickup], -1}});
     // vehicles[pickup] == vehicles[delivery]
     AddLinearConstraint(cp_model, 0, 0,
@@ -306,7 +308,7 @@ ArcVarMap PopulateMultiRouteModelFromRoutingModel(const routing::Model& model,
       if (head_index == tail_index && head_index == depot) continue;
       const int64_t cost = tail != head ? model.GetHomogeneousCost(tail, head)
                                         : model.UnperformedPenalty(tail);
-      if (cost == std::numeric_limits<int64_t>::max()) continue;
+      if (cost == kint64max) continue;
       const Arc arc = {tail_index, head_index};
       if (arc_vars.contains(arc)) continue;
       const int index = AddVariable(cp_model, 0, 1);
@@ -372,7 +374,7 @@ ArcVarMap PopulateSingleRouteModelFromRoutingModel(const routing::Model& model,
       if (model.IsEnd(head)) head = model.Start(0);
       const int64_t cost = tail != head ? model.GetHomogeneousCost(tail, head)
                                         : model.UnperformedPenalty(tail);
-      if (cost == std::numeric_limits<int64_t>::max()) continue;
+      if (cost == kint64max) continue;
       const int index = AddVariable(cp_model, 0, 1);
       circuit->add_literals(index);
       circuit->add_tails(tail);
@@ -477,9 +479,8 @@ void AddGeneralizedDimensions(
     for (int cp_node = 1; cp_node < num_cp_nodes; ++cp_node) {
       const int node = cp_node - 1;
       int64_t cumul_min = dimension->cumuls()[node]->Min();
-      int64_t cumul_max =
-          std::min(dimension->cumuls()[node]->Max(),
-                   std::numeric_limits<int64_t>::max() / (2 * num_cp_nodes));
+      int64_t cumul_max = std::min(dimension->cumuls()[node]->Max(),
+                                   kint64max / (2 * num_cp_nodes));
       if (model.IsStart(node) || model.IsEnd(node)) {
         const int vehicle = model.VehicleIndex(node);
         cumul_max =
@@ -496,8 +497,8 @@ void AddGeneralizedDimensions(
         if (!vehicle_performs_node[vehicle].contains(cp_node)) continue;
         const int64_t vehicle_capacity =
             dimension->vehicle_capacities()[vehicle];
-        AddLinearConstraint(cp_model, std::numeric_limits<int64_t>::min(),
-                            vehicle_capacity, {{cumuls[cp_node], 1}},
+        AddLinearConstraint(cp_model, kint64min, vehicle_capacity,
+                            {{cumuls[cp_node], 1}},
                             {vehicle_performs_node[vehicle].at(cp_node)});
       }
     }
@@ -522,9 +523,7 @@ void AddGeneralizedDimensions(
                   ? dimension->slacks()[cp_tail - 1]->Max()
                   : 0;
           slack[cp_tail] = AddVariable(
-              cp_model, 0,
-              std::min(slack_max, std::numeric_limits<int64_t>::max() /
-                                      (2 * num_cp_nodes)));
+              cp_model, 0, std::min(slack_max, kint64max / (2 * num_cp_nodes)));
           if (slack_max > 0 && slack_cost > 0) {
             cp_model->mutable_objective()->add_vars(slack[cp_tail]);
             cp_model->mutable_objective()->add_coeffs(slack_cost);
@@ -545,11 +544,10 @@ void AddGeneralizedDimensions(
     for (int vehicle = 0; vehicle < model.vehicles(); vehicle++) {
       const int64_t span_limit =
           dimension->vehicle_span_upper_bounds()[vehicle];
-      if (span_limit == std::numeric_limits<int64_t>::max()) continue;
+      if (span_limit == kint64max) continue;
       int cp_start = model.Start(vehicle) + 1;
       int cp_end = model.End(vehicle) + 1;
-      AddLinearConstraint(cp_model, std::numeric_limits<int64_t>::min(),
-                          span_limit,
+      AddLinearConstraint(cp_model, kint64min, span_limit,
                           {{cumuls[cp_end], 1}, {cumuls[cp_start], -1}});
     }
 
@@ -566,7 +564,7 @@ void AddGeneralizedDimensions(
                                  dimension->vehicle_capacities()[vehicle]));
         // -inf <= cumuls[cp_end] - cumuls[cp_start] - extra <= bound
         AddLinearConstraint(
-            cp_model, std::numeric_limits<int64_t>::min(), bound,
+            cp_model, kint64min, bound,
             {{cumuls[cp_end], 1}, {cumuls[cp_start], -1}, {extra, -1}});
         // Add extra * cost to objective.
         cp_model->mutable_objective()->add_vars(extra);
@@ -665,8 +663,7 @@ void AddGeneralizedPickupDeliveryConstraints(
       ranks_difference.push_back({ranks[cp_delivery], 1});
     }
     // SUM(delivery)ranks[delivery] - SUM(pickup)ranks[pickup] >= 1
-    AddLinearConstraint(cp_model, 1, std::numeric_limits<int64_t>::max(),
-                        ranks_difference);
+    AddLinearConstraint(cp_model, 1, kint64max, ranks_difference);
   }
 }
 
@@ -704,10 +701,8 @@ ArcVarMap PopulateGeneralizedRouteModelFromRoutingModel(
     vehicle_performs_node[vehicle][cp_end] = end_arc_var;
   }
 
-  // is_unperformed[node] variable equals to 1 if visit is unperformed, and 0
-  // otherwise.
+  // is_unperformed[node] variable is 1 iff visit is unperformed.
   std::vector<int> is_unperformed(num_cp_nodes, -1);
-  // Initialize is_unperformed variables for nodes that must be performed.
   for (int node = 0; node < num_nodes; node++) {
     const int cp_node = node + 1;
     // Forced active and nodes that are not involved in any disjunctions are
@@ -716,80 +711,71 @@ ArcVarMap PopulateGeneralizedRouteModelFromRoutingModel(
         model.GetDisjunctionIndices(node);
     if (disjunction_indices.empty() || model.ActiveVar(node)->Min() == 1) {
       is_unperformed[cp_node] = AddVariable(cp_model, 0, 0);
-      continue;
-    }
-    // Check if the node is in a forced active disjunction.
-    for (DisjunctionIndex disjunction_index : disjunction_indices) {
-      const int num_nodes =
-          model.GetDisjunctionNodeIndices(disjunction_index).size();
-      const int64_t penalty = model.GetDisjunctionPenalty(disjunction_index);
-      const int64_t max_cardinality =
-          model.GetDisjunctionMaxCardinality(disjunction_index);
-      if (num_nodes == max_cardinality &&
-          (penalty < 0 || penalty == std::numeric_limits<int64_t>::max())) {
-        // Nodes in this disjunction are forced active.
-        is_unperformed[cp_node] = AddVariable(cp_model, 0, 0);
-        break;
-      }
-    }
-  }
-  // Add alternative visits. Create self-looped arc variables. Set penalty for
-  // not performing disjunctions.
-  for (DisjunctionIndex disjunction_index(0);
-       disjunction_index < model.GetNumberOfDisjunctions();
-       disjunction_index++) {
-    const std::vector<int64_t>& disjunction_indices =
-        model.GetDisjunctionNodeIndices(disjunction_index);
-    const int disjunction_size = disjunction_indices.size();
-    const int64_t penalty = model.GetDisjunctionPenalty(disjunction_index);
-    const int64_t max_cardinality =
-        model.GetDisjunctionMaxCardinality(disjunction_index);
-    // Case when disjunction involves only 1 node, the node is only present in
-    // this disjunction, and the node can be unperformed.
-    if (disjunction_size == 1 &&
-        model.GetDisjunctionIndices(disjunction_indices[0]).size() == 1 &&
-        is_unperformed[disjunction_indices[0] + 1] == -1) {
-      const int cp_node = disjunction_indices[0] + 1;
+    } else {
       const Arc arc = {cp_node, cp_node};
       DCHECK(!arc_vars.contains(arc));
       is_unperformed[cp_node] = AddVariable(cp_model, 0, 1);
       arc_vars.insert({arc, is_unperformed[cp_node]});
-      cp_model->mutable_objective()->add_vars(is_unperformed[cp_node]);
-      cp_model->mutable_objective()->add_coeffs(penalty);
-      continue;
     }
+  }
+  // Set disjunction constraints and penalties.
+  for (DisjunctionIndex index(0); index < model.GetNumberOfDisjunctions();
+       index++) {
+    const routing::Model::Disjunction& disj = model.GetDisjunction(index);
     // num_performed + SUM(node)is_unperformed[node] = disjunction_size
-    const int num_performed = AddVariable(cp_model, 0, max_cardinality);
+    const int num_performed =
+        AddVariable(cp_model, disj.min_cardinality, disj.max_cardinality);
     std::vector<std::pair<int, double>> var_coeffs;
     var_coeffs.push_back({num_performed, 1});
-    for (const int node : disjunction_indices) {
+    for (const int node : disj.indices) {
       const int cp_node = node + 1;
-      // Node can be unperformed.
-      if (is_unperformed[cp_node] == -1) {
-        const Arc arc = {cp_node, cp_node};
-        DCHECK(!arc_vars.contains(arc));
-        is_unperformed[cp_node] = AddVariable(cp_model, 0, 1);
-        arc_vars.insert({arc, is_unperformed[cp_node]});
-      }
       var_coeffs.push_back({is_unperformed[cp_node], 1});
     }
-    AddLinearConstraint(cp_model, disjunction_size, disjunction_size,
+    AddLinearConstraint(cp_model, disj.indices.size(), disj.indices.size(),
                         var_coeffs);
-    // When penalty is negative or max int64_t (forced active), num_violated is
-    // 0.
-    if (penalty < 0 || penalty == std::numeric_limits<int64_t>::max()) {
-      AddLinearConstraint(cp_model, max_cardinality, max_cardinality,
-                          {{num_performed, 1}});
-      continue;
+    // Soft min violation.
+    if (disj.soft_min_penalty > 0 && disj.soft_min_cardinality > 0) {
+      int violation_var = -1;
+      if (disj.soft_min_penalty_type == routing::Model::PENALIZE_ONCE) {
+        // Big-M formulation for !has_violation -> (soft_min <= num_performed):
+        // with M = max(soft_min - num_performed) = soft_min,
+        // soft_min <= num_performed + has_violation * M.
+        violation_var = AddVariable(cp_model, 0, 1);
+        AddLinearConstraint(
+            cp_model, disj.soft_min_cardinality, kint64max,
+            {{num_performed, 1}, {violation_var, disj.soft_min_cardinality}});
+      } else {  // PENALIZE_PER_INACTIVE
+        // num_performed + violation >= soft_min.
+        violation_var = AddVariable(cp_model, 0, disj.soft_min_cardinality);
+        AddLinearConstraint(cp_model, disj.soft_min_cardinality, kint64max,
+                            {{num_performed, 1}, {violation_var, 1}});
+      }
+      cp_model->mutable_objective()->add_vars(violation_var);
+      cp_model->mutable_objective()->add_coeffs(disj.soft_min_penalty);
     }
-    // If number of active indices is less than max_cardinality, then for each
-    // violated index 'penalty' is paid.
-    const int num_violated = AddVariable(cp_model, 0, max_cardinality);
-    cp_model->mutable_objective()->add_vars(num_violated);
-    cp_model->mutable_objective()->add_coeffs(penalty);
-    // num_performed + num_violated = max_cardinality
-    AddLinearConstraint(cp_model, max_cardinality, max_cardinality,
-                        {{num_performed, 1}, {num_violated, 1}});
+    // Soft max violation.
+    if (disj.soft_max_penalty > 0 &&
+        disj.soft_max_cardinality < disj.indices.size()) {
+      int violation_var = -1;
+      const int64_t soft_max_slack =
+          disj.indices.size() - disj.soft_max_cardinality;
+      if (disj.soft_max_penalty_type == routing::Model::PENALIZE_ONCE) {
+        // Big-M formulation for !has_violation -> (num_performed <= soft_max):
+        // with M = max(num_performed - soft_max) = #indices - soft_max,
+        // num_performed <= soft_max + has_violation * M.
+        violation_var = AddVariable(cp_model, 0, 1);
+        AddLinearConstraint(
+            cp_model, kint64min, disj.soft_max_cardinality,
+            {{num_performed, 1}, {violation_var, -soft_max_slack}});
+      } else {  // PENALIZE_PER_INACTIVE
+        // num_performed - violation <= soft_max.
+        violation_var = AddVariable(cp_model, 0, soft_max_slack);
+        AddLinearConstraint(cp_model, kint64min, disj.soft_max_cardinality,
+                            {{num_performed, 1}, {violation_var, 1}});
+      }
+      cp_model->mutable_objective()->add_vars(violation_var);
+      cp_model->mutable_objective()->add_coeffs(disj.soft_max_penalty);
+    }
   }
   // Create "arc" variables.
   std::vector<std::pair<int, double>> first_to_end_arcs;
@@ -811,8 +797,7 @@ ArcVarMap PopulateGeneralizedRouteModelFromRoutingModel(
 
       bool feasible = false;
       for (int vehicle = 0; vehicle < model.vehicles(); vehicle++) {
-        if (model.GetArcCostForVehicle(tail, head, vehicle) !=
-            std::numeric_limits<int64_t>::max()) {
+        if (model.GetArcCostForVehicle(tail, head, vehicle) != kint64max) {
           feasible = true;
           break;
         }
@@ -915,7 +900,7 @@ ArcVarMap PopulateGeneralizedRouteModelFromRoutingModel(
       }
       int64_t cost = model.GetArcCostForVehicle(tail, head, vehicle);
       // Arcs with int64_t's max cost are infeasible.
-      if (cost == std::numeric_limits<int64_t>::max()) continue;
+      if (cost == kint64max) continue;
       const int vehicle_class =
           model.GetVehicleClassIndexOfVehicle(vehicle).value();
       if (!vehicle_class_performs_arc[vehicle_class].contains(arc_var)) {
@@ -1001,7 +986,7 @@ ArcVarMap PopulateGeneralizedRouteModelFromRoutingModel(
   }
   if (primary_dimension != nullptr) {
     for (int cp_node = 0; cp_node < num_cp_nodes; ++cp_node) {
-      int64_t min_transit = std::numeric_limits<int64_t>::max();
+      int64_t min_transit = kint64max;
       if (cp_node != 0 && !model.IsEnd(cp_node - 1)) {
         for (int vehicle = 0; vehicle < model.vehicles(); vehicle++) {
           const TransitCallback1& transit =
@@ -1014,7 +999,7 @@ ArcVarMap PopulateGeneralizedRouteModelFromRoutingModel(
       routes_ct->add_demands(min_transit);
     }
     DCHECK_EQ(routes_ct->demands_size(), num_cp_nodes);
-    int64_t max_capacity = std::numeric_limits<int64_t>::min();
+    int64_t max_capacity = kint64min;
     for (int vehicle = 0; vehicle < model.vehicles(); vehicle++) {
       max_capacity = std::max(max_capacity,
                               primary_dimension->vehicle_capacities()[vehicle]);

@@ -38,6 +38,7 @@
 #include "ortools/base/map_util.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/timer.h"
+#include "ortools/base/types.h"
 #include "ortools/constraint_solver/assignment.h"
 #include "ortools/constraint_solver/constraints.h"
 #include "ortools/constraint_solver/local_search.h"
@@ -196,13 +197,13 @@ Solver::DemonPriority Demon::priority() const {
 std::string Demon::DebugString() const { return "Demon"; }
 
 void Demon::inhibit(Solver* s) {
-  if (stamp_ < std::numeric_limits<uint64_t>::max()) {
-    s->SaveAndSetValue(&stamp_, std::numeric_limits<uint64_t>::max());
+  if (stamp_ < kuint64max) {
+    s->SaveAndSetValue(&stamp_, kuint64max);
   }
 }
 
 void Demon::desinhibit(Solver* s) {
-  if (stamp_ == std::numeric_limits<uint64_t>::max()) {
+  if (stamp_ == kuint64max) {
     s->SaveAndSetValue(&stamp_, s->stamp() - 1);
   }
 }

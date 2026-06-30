@@ -17,6 +17,7 @@
 
 load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -28,8 +29,11 @@ cc_library(
     name = "model",
     srcs = ["model.cc"],
     hdrs = ["model.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base:stl_util",
+        "//ortools/base:types",
         "//ortools/util:logging",
         "//ortools/util:string_array",
         "@abseil-cpp//absl/base:core_headers",
@@ -55,10 +59,13 @@ cc_library(
         "parser_util.cc",
         "parser_util.h",
     ],
-    copts = [
-        "-Wno-implicit-fallthrough",
+    copts = select({
+        "@platforms//os:windows": [],
+        "//conditions:default": ["-Wno-implicit-fallthrough"],
+    }) + [
         "$(STACK_FRAME_UNLIMITED)",  # parser.tab.cc
-    ],
+    ] + ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":model",
         "//ortools/base",
@@ -77,25 +84,30 @@ cc_library(
 cc_library(
     name = "parser_lex_lib",
     srcs = ["parser.yy.cc"],
-    copts = [
-        "-Wno-implicit-fallthrough",
-    ] + select({
+    copts = select({
+        "@platforms//os:windows": [],
+        "//conditions:default": ["-Wno-implicit-fallthrough"],
+    }) + select({
         "@platforms//os:linux": ["-Wno-unused-function"],  # parser.yy.cc
         "@platforms//os:macos": ["-Wno-unused-function"],  # parser.yy.cc
         "//conditions:default": [],
-    }),
+    }) + ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     tags = ["keep_dep"],  # So that build_cleaner doesn't remove this as a dep.
     deps = [
         ":parser_yacc_lib",
         "//ortools/base",
         "@abseil-cpp//absl/strings",
     ],
+    alwayslink = 1,
 )
 
 cc_library(
     name = "parser_lib",
     srcs = ["parser.cc"],
     hdrs = ["parser.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":model",
         ":parser_lex_lib",
@@ -107,6 +119,8 @@ cc_library(
 cc_binary(
     name = "parser",
     srcs = ["parser_main.cc"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":model",
         ":parser_lib",
@@ -129,13 +143,17 @@ cc_library(
     name = "checker",
     srcs = ["checker.cc"],
     hdrs = ["checker.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":model",
+        "//ortools/base:types",
         "//ortools/util:logging",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -147,11 +165,14 @@ cc_library(
     name = "cp_model_fz_solver",
     srcs = ["cp_model_fz_solver.cc"],
     hdrs = ["cp_model_fz_solver.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":checker",
         ":model",
         "//ortools/base:iterator_adaptors",
         "//ortools/base:stl_util",
+        "//ortools/base:types",
         "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:cp_model_checker",
         "//ortools/sat:cp_model_solver",
@@ -178,6 +199,8 @@ cc_library(
 cc_binary(
     name = "fz",
     srcs = ["fz.cc"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":cp_model_fz_solver",
         ":model",

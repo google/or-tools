@@ -40,6 +40,7 @@
 #include "ortools/base/map_util.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/interval.h"
 #include "ortools/glop/parameters.pb.h"
@@ -58,9 +59,6 @@
 namespace operations_research::routing {
 
 namespace {
-
-constexpr int64_t kint64min = std::numeric_limits<int64_t>::min();
-constexpr int64_t kint64max = std::numeric_limits<int64_t>::max();
 
 // The following sets of parameters give the fastest response time without
 // impacting solutions found negatively.
@@ -961,7 +959,12 @@ DimensionCumulOptimizerCore::OptimizeSingleRouteWithResources(
       statuses.push_back(DimensionSchedulingStatus::INFEASIBLE);
       continue;
     }
-
+    const int64_t resource_fixed_cost =
+        optimize_with_resources
+            ? resources[resource_indices[i]]
+                  .GetDimensionAttributes(dimension_->index())
+                  .fixed_cost()
+            : 0;
     statuses.push_back(
         solver->Solve(model->RemainingTime() * solve_duration_ratio));
     if (statuses.back() == DimensionSchedulingStatus::INFEASIBLE) {
@@ -970,7 +973,8 @@ DimensionCumulOptimizerCore::OptimizeSingleRouteWithResources(
     if (costs_without_transits != nullptr) {
       costs_without_transits->at(i) =
           optimize_vehicle_costs
-              ? CapAdd(cost_offset, solver->GetObjectiveValue())
+              ? CapAdd(resource_fixed_cost,
+                       CapAdd(cost_offset, solver->GetObjectiveValue()))
               : 0;
     }
 
@@ -2788,6 +2792,14 @@ bool DimensionCumulOptimizerCore::SetGlobalConstraintsForResourceAssignment(
                 solver)) {
           return false;
         }
+        const int64_t fixed_cost =
+            resource_group.GetResource(resource_index)
+                .GetDimensionAttributes(dimension_->index())
+                .fixed_cost();
+        if (fixed_cost != 0) {
+          solver->SetObjectiveCoefficient(solver->AddVariable(1, 1),
+                                          fixed_cost);
+        }
         continue;
       }
       num_required_resources++;
@@ -2907,6 +2919,10 @@ bool DimensionCumulOptimizerCore::SetGlobalConstraintsForResourceAssignment(
           solver->SetEnforcementLiteral(ct, assign_rc_to_v);
           solver->SetCoefficient(ct, end_index, 1);
           solver->SetCoefficient(ct, start_index, -1);
+        }
+        if (attributes.fixed_cost() != 0) {
+          solver->SetObjectiveCoefficient(assign_rc_to_v,
+                                          attributes.fixed_cost());
         }
       }
     }

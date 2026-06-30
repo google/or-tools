@@ -13,13 +13,13 @@
 
 #include "ortools/sat/circuit.h"
 
-#include <functional>
 #include <utility>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/types/span.h"
 #include "ortools/graph_base/strongly_connected_components.h"
 #include "ortools/sat/all_different.h"
@@ -30,6 +30,7 @@
 #include "ortools/sat/pb_constraint.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/strong_integers.h"
 
 namespace operations_research {
@@ -49,14 +50,14 @@ CircuitPropagator::CircuitPropagator(
   prev_.resize(num_nodes_, -1);
   next_literal_.resize(num_nodes_);
   must_be_in_cycle_.resize(num_nodes_);
+
+  const int num_arcs = tails.size();
   absl::flat_hash_map<LiteralIndex, int> literal_to_watch_index;
+  literal_to_watch_index.reserve(num_arcs);
 
   // Temporary data to fill watch_index_to_arcs_.
-  const int num_arcs = tails.size();
-  std::vector<int> keys;
-  std::vector<Arc> values;
-  keys.reserve(num_arcs);
-  values.reserve(num_arcs);
+  CompactVectorVectorBuilder<int, Arc> watch_index_to_arcs_builder;
+  watch_index_to_arcs_builder.ReserveNumItems(num_arcs);
 
   graph_.reserve(num_arcs);
   self_arcs_.resize(num_nodes_, kFalseLiteralIndex);
@@ -96,18 +97,14 @@ CircuitPropagator::CircuitPropagator(
 
     // Tricky: For self-arc, we watch instead when the arc become false.
     const Literal watched_literal = tail == head ? literal.Negated() : literal;
-    const auto& it = literal_to_watch_index.find(watched_literal.Index());
-    int watch_index = it != literal_to_watch_index.end() ? it->second : -1;
-    if (watch_index == -1) {
-      watch_index = watch_index_to_literal_.size();
-      literal_to_watch_index[watched_literal.Index()] = watch_index;
+    const auto [it, inserted] = literal_to_watch_index.insert(
+        {watched_literal.Index(), literal_to_watch_index.size()});
+    if (inserted) {
       watch_index_to_literal_.push_back(watched_literal);
     }
-
-    keys.push_back(watch_index);
-    values.push_back({tail, head});
+    watch_index_to_arcs_builder.Add(it->second, {tail, head});
   }
-  watch_index_to_arcs_.ResetFromFlatMapping(keys, values);
+  watch_index_to_arcs_.ResetFromBuilder(watch_index_to_arcs_builder);
 
   for (int node = 0; node < num_nodes_; ++node) {
     if (self_arcs_[node] == kFalseLiteralIndex ||

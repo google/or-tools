@@ -257,7 +257,7 @@ function(add_python_test)
     set(COMPONENT_NAME ${TEST_COMPONENT_NAME})
   endif()
 
-  if(BUILD_TESTING)
+  if(BUILD_PYTHON_TESTING)
     add_test(
       NAME python_${COMPONENT_NAME}_${TEST_NAME}
       COMMAND ${VENV_Python3_EXECUTABLE} -m pytest ${TEST_FILE_NAME}
@@ -416,11 +416,11 @@ file(COPY
   ortools/sat/python/cp_model.py
   DESTINATION ${PYTHON_PROJECT_DIR}/sat/python)
 file(COPY
-  ortools/sat/colab/flags.py
   ortools/sat/colab/visualization.py
   DESTINATION ${PYTHON_PROJECT_DIR}/sat/colab)
 file(COPY
   ortools/util/python/solve_interrupter.py
+  ortools/util/python/status_streaming.py
   DESTINATION ${PYTHON_PROJECT_DIR}/util/python)
 
 # Adds py.typed to make typed packages.
@@ -513,7 +513,6 @@ add_custom_command(
   COMMAND ${CMAKE_COMMAND} -E
     $<IF:$<BOOL:${BUILD_absl}>,copy,true>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::base>>
-    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::borrowed_fixup_buffer>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::city>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::civil_time>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::cord>>
@@ -578,9 +577,11 @@ add_custom_command(
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::random_seed_sequences>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::raw_hash_set>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::raw_logging_internal>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::source_location>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::spinlock_wait>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::stacktrace>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::status>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::status_builder>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::statusor>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::str_format_internal>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::strerror>>
@@ -716,7 +717,7 @@ add_custom_command(
   COMMAND ${CMAKE_COMMAND} -E copy
    $<TARGET_FILE:solve_interrupter_pybind11> ${PYTHON_PROJECT}/util/python
   COMMAND ${CMAKE_COMMAND} -E
-   $<IF:$<BOOL:${BUILD_TESTING}>,copy,true>
+  $<IF:$<BOOL:${BUILD_PYTHON_TESTING}>,copy,true>
    $<$<TARGET_EXISTS:solve_interrupter_testing_pybind11>:$<TARGET_FILE:solve_interrupter_testing_pybind11>> ${PYTHON_PROJECT}/util/python
   COMMAND ${CMAKE_COMMAND} -E touch ${PROJECT_BINARY_DIR}/python/pybind11_timestamp
   MAIN_DEPENDENCY
@@ -865,7 +866,7 @@ if(BUILD_VENV)
     VERBATIM)
 endif()
 
-if(BUILD_TESTING)
+if(BUILD_PYTHON_TESTING)
   configure_file(
     ${PROJECT_SOURCE_DIR}/ortools/init/python/version_test.py.in
     ${PROJECT_BINARY_DIR}/python/version_test.py
@@ -971,7 +972,7 @@ function(add_python_sample)
     set(COMPONENT_NAME ${SAMPLE_COMPONENT_NAME})
   endif()
 
-  if(BUILD_TESTING)
+  if(BUILD_PYTHON_TESTING)
     add_test(
       NAME python_${COMPONENT_NAME}_${SAMPLE_NAME}
       COMMAND ${VENV_Python3_EXECUTABLE} ${SAMPLE_FILE_NAME}
@@ -1021,7 +1022,7 @@ if(NOT EXAMPLE_FILE_NAME)
     set(COMPONENT_NAME ${EXAMPLE_COMPONENT_NAME})
   endif()
 
-  if(BUILD_TESTING)
+  if(BUILD_PYTHON_TESTING)
     add_test(
       NAME python_${COMPONENT_NAME}_${EXAMPLE_NAME}
       COMMAND ${VENV_Python3_EXECUTABLE} ${EXAMPLE_FILE_NAME}

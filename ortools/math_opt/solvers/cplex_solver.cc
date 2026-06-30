@@ -35,6 +35,7 @@
 #include "absl/log/log.h"
 #include "absl/memory/memory.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/escaping.h"
 #include "absl/strings/numbers.h"
@@ -48,7 +49,6 @@
 #include "google/protobuf/repeated_ptr_field.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/protoutil.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/inverted_bounds.h"
 #include "ortools/math_opt/core/math_opt_proto_utils.h"
@@ -137,7 +137,7 @@ static absl::StatusOr<TOutput> CheckCopySpan(
   out.reserve(in.size());
 
   for (const auto& item : in) {
-    RETURN_IF_ERROR(check_fn(item));
+    ABSL_RETURN_IF_ERROR(check_fn(item));
     out.push_back(item);
   }
 
@@ -183,8 +183,8 @@ absl::StatusOr<CplexParametersProto> MergeParameters(
   {
     absl::Duration time_limit = absl::InfiniteDuration();
     if (solve_parameters.has_time_limit()) {
-      ASSIGN_OR_RETURN(time_limit, util_time::DecodeGoogleApiProto(
-                                       solve_parameters.time_limit()));
+      ABSL_ASSIGN_OR_RETURN(time_limit, util_time::DecodeGoogleApiProto(
+                                            solve_parameters.time_limit()));
     }
     if (time_limit < absl::InfiniteDuration()) {
       AddCplexParameterProto<double>(merged_parameters, "CPXPARAM_TimeLimit",
@@ -547,7 +547,7 @@ std::vector<std::string> TruncateNames(
 
 absl::Status SafeCplexDouble(const double d) {
   if (std::isfinite(d) && std::abs(d) >= CPX_INFBOUND) {
-    return util::InvalidArgumentErrorBuilder()
+    return ortools::InvalidArgumentErrorBuilder()
            << "finite value: " << d << " will be treated as infinite by CPLEX";
   }
   return absl::OkStatus();
@@ -614,7 +614,7 @@ absl::StatusOr<TerminationProto> CplexSolver::ConvertTerminationReason(
     const bool had_iteration_limit, const bool had_objective_limit,
     const SolutionClaims solution_claims, const double best_primal_bound,
     const double best_dual_bound) {
-  ASSIGN_OR_RETURN(const bool is_maximize, IsMaximize());
+  ABSL_ASSIGN_OR_RETURN(const bool is_maximize, IsMaximize());
 
   switch (cplex_status) {
     case 1:  // CPX_STAT_OPTIMAL
@@ -848,14 +848,14 @@ absl::StatusOr<TerminationProto> CplexSolver::ConvertTerminationReason(
 absl::StatusOr<bool> CplexSolver::IsMaximize() const {
   CHECK(cplex_ != nullptr);
 
-  ASSIGN_OR_RETURN(const int obj_sense, cplex_->GetObjSen());
+  ABSL_ASSIGN_OR_RETURN(const int obj_sense, cplex_->GetObjSen());
   return obj_sense == CPX_MAX;
 }
 
 absl::StatusOr<bool> CplexSolver::IsMIP() const {
   CHECK(cplex_ != nullptr);
 
-  ASSIGN_OR_RETURN(auto problem_type, cplex_->GetProbType());
+  ABSL_ASSIGN_OR_RETURN(auto problem_type, cplex_->GetProbType());
   return problem_type == CPXPROB_MILP || problem_type == CPXPROB_FIXEDMILP;
 }
 
@@ -886,35 +886,35 @@ absl::StatusOr<SolveResultProto> CplexSolver::ExtractSolveResultProto(
     const bool had_objective_limit) {
   SolveResultProto result;
 
-  ASSIGN_OR_RETURN(auto cplex_stat, cplex_->GetStat());
+  ABSL_ASSIGN_OR_RETURN(auto cplex_stat, cplex_->GetStat());
 
   SolutionClaims solution_claims;
-  ASSIGN_OR_RETURN(SolutionsAndClaims solution_and_claims,
-                   GetSolutions(model_parameters));
+  ABSL_ASSIGN_OR_RETURN(SolutionsAndClaims solution_and_claims,
+                        GetSolutions(model_parameters));
 
-  ASSIGN_OR_RETURN(const double best_primal_bound,
-                   GetBestPrimalBound(solution_and_claims.solutions));
-  ASSIGN_OR_RETURN(const double best_dual_bound,
-                   GetBestDualBound(solution_and_claims.solutions));
+  ABSL_ASSIGN_OR_RETURN(const double best_primal_bound,
+                        GetBestPrimalBound(solution_and_claims.solutions));
+  ABSL_ASSIGN_OR_RETURN(const double best_dual_bound,
+                        GetBestDualBound(solution_and_claims.solutions));
   solution_claims = solution_and_claims.solution_claims;
 
   for (SolutionProto& solution : solution_and_claims.solutions) {
     *result.add_solutions() = std::move(solution);
   }
 
-  ASSIGN_OR_RETURN(
+  ABSL_ASSIGN_OR_RETURN(
       *result.mutable_termination(),
       ConvertTerminationReason(cplex_stat, had_cutoff, had_iteration_limit,
                                had_objective_limit, solution_claims,
                                best_primal_bound, best_dual_bound));
 
-  ASSIGN_OR_RETURN(*result.mutable_solve_stats(), GetSolveStats(start));
+  ABSL_ASSIGN_OR_RETURN(*result.mutable_solve_stats(), GetSolveStats(start));
   return result;
 }
 
 absl::StatusOr<CplexSolver::SolutionsAndClaims> CplexSolver::GetSolutions(
     const ModelSolveParametersProto& model_parameters) {
-  ASSIGN_OR_RETURN(const bool is_mip, IsMIP());
+  ABSL_ASSIGN_OR_RETURN(const bool is_mip, IsMIP());
 
   if (is_mip) {
     return GetMipSolutions(model_parameters);
@@ -930,20 +930,20 @@ absl::StatusOr<SolveStatsProto> CplexSolver::GetSolveStats(
   CHECK_OK(util_time::EncodeGoogleApiProto(absl::Now() - start,
                                            solve_stats.mutable_solve_time()));
 
-  ASSIGN_OR_RETURN(auto problem_type, cplex_->GetProbType());
+  ABSL_ASSIGN_OR_RETURN(auto problem_type, cplex_->GetProbType());
 
   int simplex_iters = 0;
   if (problem_type == CPXPROB_MILP) {
-    ASSIGN_OR_RETURN(simplex_iters, cplex_->GetMipItCnt());
+    ABSL_ASSIGN_OR_RETURN(simplex_iters, cplex_->GetMipItCnt());
   } else {
-    ASSIGN_OR_RETURN(simplex_iters, cplex_->GetItCnt());
+    ABSL_ASSIGN_OR_RETURN(simplex_iters, cplex_->GetItCnt());
   }
   solve_stats.set_simplex_iterations(simplex_iters);
 
-  ASSIGN_OR_RETURN(int barrier_iters, cplex_->GetBarItCnt());
+  ABSL_ASSIGN_OR_RETURN(int barrier_iters, cplex_->GetBarItCnt());
   solve_stats.set_barrier_iterations(barrier_iters);
 
-  ASSIGN_OR_RETURN(int node_count, cplex_->GetNodeCnt());
+  ABSL_ASSIGN_OR_RETURN(int node_count, cplex_->GetNodeCnt());
   solve_stats.set_node_count(node_count);
 
   return solve_stats;
@@ -952,13 +952,13 @@ absl::StatusOr<SolveStatsProto> CplexSolver::GetSolveStats(
 absl::StatusOr<CplexSolver::SolutionsAndClaims> CplexSolver::GetMipSolutions(
     const ModelSolveParametersProto& model_parameters) {
   // Assumption: we did not touch CPX_PARAM_SOLNPOOLCAPACITY
-  ASSIGN_OR_RETURN(int num_solutions, cplex_->GetSolNPoolNumSolns());
+  ABSL_ASSIGN_OR_RETURN(int num_solutions, cplex_->GetSolNPoolNumSolns());
   std::vector<SolutionProto> solutions;
   solutions.reserve(num_solutions);
 
   for (int i = 0; i < num_solutions; ++i) {
     PrimalSolutionProto primal_solution;
-    ASSIGN_OR_RETURN(const double sol_val, cplex_->GetSolnPoolObjVal(i));
+    ABSL_ASSIGN_OR_RETURN(const double sol_val, cplex_->GetSolnPoolObjVal(i));
     primal_solution.set_objective_value(sol_val);
 
     // Only the incumbent (solution 0) is vouched for by the termination
@@ -967,8 +967,8 @@ absl::StatusOr<CplexSolver::SolutionsAndClaims> CplexSolver::GetMipSolutions(
     primal_solution.set_feasibility_status(
         i == 0 ? SOLUTION_STATUS_FEASIBLE : SOLUTION_STATUS_UNDETERMINED);
 
-    ASSIGN_OR_RETURN(const std::vector<double> cpx_var_values,
-                     cplex_->GetSolnPoolX(i));
+    ABSL_ASSIGN_OR_RETURN(const std::vector<double> cpx_var_values,
+                          cplex_->GetSolnPoolX(i));
     CplexVectorToSparseDoubleVector(cpx_var_values, variables_map_,
                                     *primal_solution.mutable_variable_values(),
                                     model_parameters.variable_values_filter());
@@ -977,10 +977,10 @@ absl::StatusOr<CplexSolver::SolutionsAndClaims> CplexSolver::GetMipSolutions(
         std::move(primal_solution);
   }
 
-  ASSIGN_OR_RETURN(const int cpx_stat, cplex_->GetStat());
+  ABSL_ASSIGN_OR_RETURN(const int cpx_stat, cplex_->GetStat());
 
   // Set solution claims
-  ASSIGN_OR_RETURN(const double best_dual_bound, GetCplexBestDualBound());
+  ABSL_ASSIGN_OR_RETURN(const double best_dual_bound, GetCplexBestDualBound());
 
   const SolutionClaims solution_claims = {
       .primal_feasible_solution_exists = num_solutions > 0,
@@ -1002,7 +1002,7 @@ absl::StatusOr<CplexSolver::SolutionsAndClaims> CplexSolver::GetMipSolutions(
 absl::StatusOr<CplexSolver::SolutionAndClaim<PrimalSolutionProto>>
 CplexSolver::GetConvexPrimalSolutionIfAvailable(
     const ModelSolveParametersProto& model_parameters) {
-  ASSIGN_OR_RETURN(auto soln_info, cplex_->SolnInfo());
+  ABSL_ASSIGN_OR_RETURN(auto soln_info, cplex_->SolnInfo());
 
   // Check solntype (index 1) to see if any solution exists (even infeasible)
   if (std::get<1>(soln_info) == CPX_NO_SOLN) {
@@ -1010,7 +1010,7 @@ CplexSolver::GetConvexPrimalSolutionIfAvailable(
         .solution = std::nullopt, .feasible_solution_exists = false};
   }
 
-  ASSIGN_OR_RETURN(double sol_val, cplex_->GetObjVal());
+  ABSL_ASSIGN_OR_RETURN(double sol_val, cplex_->GetObjVal());
 
   PrimalSolutionProto primal_solution;
   primal_solution.set_objective_value(sol_val);
@@ -1024,7 +1024,7 @@ CplexSolver::GetConvexPrimalSolutionIfAvailable(
     primal_solution.set_feasibility_status(SOLUTION_STATUS_INFEASIBLE);
   }
 
-  ASSIGN_OR_RETURN(auto sol_x, cplex_->GetX());
+  ABSL_ASSIGN_OR_RETURN(auto sol_x, cplex_->GetX());
   CplexVectorToSparseDoubleVector(sol_x, variables_map_,
                                   *primal_solution.mutable_variable_values(),
                                   model_parameters.variable_values_filter());
@@ -1040,7 +1040,7 @@ CplexSolver::GetConvexPrimalSolutionIfAvailable(
 // CPXgetobjval/CPXgetbestobjval
 absl::StatusOr<double> CplexSolver::GetBestPrimalBound(
     absl::Span<const SolutionProto> solutions) const {
-  ASSIGN_OR_RETURN(const bool is_maximize, IsMaximize());
+  ABSL_ASSIGN_OR_RETURN(const bool is_maximize, IsMaximize());
   double best_objective_value = is_maximize ? -kInf : kInf;
   for (const SolutionProto& solution : solutions) {
     if (solution.has_primal_solution() &&
@@ -1057,8 +1057,8 @@ absl::StatusOr<double> CplexSolver::GetBestPrimalBound(
 
 absl::StatusOr<double> CplexSolver::GetBestDualBound(
     absl::Span<const SolutionProto> solutions) const {
-  ASSIGN_OR_RETURN(const bool is_maximize, IsMaximize());
-  ASSIGN_OR_RETURN(double best_dual_bound, GetCplexBestDualBound());
+  ABSL_ASSIGN_OR_RETURN(const bool is_maximize, IsMaximize());
+  ABSL_ASSIGN_OR_RETURN(double best_dual_bound, GetCplexBestDualBound());
   for (const SolutionProto& solution : solutions) {
     if (solution.has_dual_solution() &&
         solution.dual_solution().feasibility_status() ==
@@ -1073,22 +1073,22 @@ absl::StatusOr<double> CplexSolver::GetBestDualBound(
 }
 
 absl::StatusOr<double> CplexSolver::GetCplexBestDualBound() const {
-  ASSIGN_OR_RETURN(const bool is_mip, IsMIP());
+  ABSL_ASSIGN_OR_RETURN(const bool is_mip, IsMIP());
   if (is_mip) {
-    ASSIGN_OR_RETURN(auto best_obj_val, cplex_->GetBestObjVal());
+    ABSL_ASSIGN_OR_RETURN(auto best_obj_val, cplex_->GetBestObjVal());
     if (std::abs(best_obj_val) < CPX_INFBOUND) return best_obj_val;
   }
 
-  ASSIGN_OR_RETURN(const bool is_maximize, IsMaximize());
+  ABSL_ASSIGN_OR_RETURN(const bool is_maximize, IsMaximize());
   return is_maximize ? kInf : -kInf;
 }
 
 absl::StatusOr<CplexSolver::SolutionsAndClaims> CplexSolver::GetLpSolution(
     const ModelSolveParametersProto& model_parameters) {
-  ASSIGN_OR_RETURN(auto primal_solution_and_claim,
-                   GetConvexPrimalSolutionIfAvailable(model_parameters));
-  ASSIGN_OR_RETURN(auto dual_solution_and_claim,
-                   GetConvexDualSolutionIfAvailable(model_parameters));
+  ABSL_ASSIGN_OR_RETURN(auto primal_solution_and_claim,
+                        GetConvexPrimalSolutionIfAvailable(model_parameters));
+  ABSL_ASSIGN_OR_RETURN(auto dual_solution_and_claim,
+                        GetConvexDualSolutionIfAvailable(model_parameters));
 
   const SolutionClaims solution_claims = {
       .primal_feasible_solution_exists =
@@ -1117,7 +1117,7 @@ absl::StatusOr<CplexSolver::SolutionsAndClaims> CplexSolver::GetLpSolution(
 absl::StatusOr<CplexSolver::SolutionAndClaim<DualSolutionProto>>
 CplexSolver::GetConvexDualSolutionIfAvailable(
     const ModelSolveParametersProto& model_parameters) {
-  ASSIGN_OR_RETURN(auto soln_info, cplex_->SolnInfo());
+  ABSL_ASSIGN_OR_RETURN(auto soln_info, cplex_->SolnInfo());
 
   // Check solntype (index 1) to see if any solution exists
   // CPX_PRIMAL_SOLN (3) does not contain duals
@@ -1127,7 +1127,7 @@ CplexSolver::GetConvexDualSolutionIfAvailable(
         .solution = std::nullopt, .feasible_solution_exists = false};
   }
 
-  ASSIGN_OR_RETURN(const int cpx_stat, cplex_->GetStat());
+  ABSL_ASSIGN_OR_RETURN(const int cpx_stat, cplex_->GetStat());
 
   DualSolutionProto dual_solution;
   bool dual_feasible_solution_exists = false;
@@ -1136,16 +1136,16 @@ CplexSolver::GetConvexDualSolutionIfAvailable(
   // At non-optimal terminations (e.g., iteration limit), the primal objective
   // from CPXgetobjval is not a valid dual objective value.
   if (cpx_stat == CPX_STAT_OPTIMAL || cpx_stat == CPX_STAT_OPTIMAL_INFEAS) {
-    ASSIGN_OR_RETURN(double sol_val, cplex_->GetObjVal());
+    ABSL_ASSIGN_OR_RETURN(double sol_val, cplex_->GetObjVal());
     dual_solution.set_objective_value(sol_val);
   }
 
-  ASSIGN_OR_RETURN(std::vector<double> sol_dual, cplex_->GetPi());
+  ABSL_ASSIGN_OR_RETURN(std::vector<double> sol_dual, cplex_->GetPi());
   CplexVectorToSparseDoubleVector(sol_dual, linear_constraints_map_,
                                   *dual_solution.mutable_dual_values(),
                                   model_parameters.dual_values_filter());
 
-  ASSIGN_OR_RETURN(std::vector<double> sol_reduced, cplex_->GetDj());
+  ABSL_ASSIGN_OR_RETURN(std::vector<double> sol_reduced, cplex_->GetDj());
   CplexVectorToSparseDoubleVector(sol_reduced, variables_map_,
                                   *dual_solution.mutable_reduced_costs(),
                                   model_parameters.reduced_costs_filter());
@@ -1166,19 +1166,20 @@ CplexSolver::GetConvexDualSolutionIfAvailable(
 absl::Status CplexSolver::SetParameters(
     const SolveParametersProto& parameters,
     const ModelSolveParametersProto& model_parameters) {
-  ASSIGN_OR_RETURN(const bool is_mip, IsMIP());
-  ASSIGN_OR_RETURN(const bool is_maximization, IsMaximize());
+  ABSL_ASSIGN_OR_RETURN(const bool is_mip, IsMIP());
+  ABSL_ASSIGN_OR_RETURN(const bool is_maximization, IsMaximize());
 
   // Parameters vs. cplex versions
-  ASSIGN_OR_RETURN(const std::string cplex_version, Version());
-  ASSIGN_OR_RETURN(const CplexVersion version_loaded,
-                   ParseCplexVersion(cplex_version));
+  ABSL_ASSIGN_OR_RETURN(const std::string cplex_version, Version());
+  ABSL_ASSIGN_OR_RETURN(const CplexVersion version_loaded,
+                        ParseCplexVersion(cplex_version));
   const bool supports_objective_limit =
       version_loaded >= CplexVersion{21, 1, 0};  // modern versions only!
 
-  ASSIGN_OR_RETURN(const CplexParametersProto cplex_parameters,
-                   MergeParameters(parameters, model_parameters, is_mip,
-                                   !is_maximization, supports_objective_limit));
+  ABSL_ASSIGN_OR_RETURN(
+      const CplexParametersProto cplex_parameters,
+      MergeParameters(parameters, model_parameters, is_mip, !is_maximization,
+                      supports_objective_limit));
 
   std::vector<std::string> parameter_errors;
   for (const CplexParametersProto::Parameter& parameter :
@@ -1266,11 +1267,11 @@ absl::Status CplexSolver::AddNewVariables(const VariablesProto& new_variables) {
     }
   }
 
-  ASSIGN_OR_RETURN(
+  ABSL_ASSIGN_OR_RETURN(
       auto checked_lbs,
       CheckCopySpan<std::vector<double>>(
           absl::MakeConstSpan(new_variables.lower_bounds()), SafeCplexDouble));
-  ASSIGN_OR_RETURN(
+  ABSL_ASSIGN_OR_RETURN(
       auto checked_ubs,
       CheckCopySpan<std::vector<double>>(
           absl::MakeConstSpan(new_variables.upper_bounds()), SafeCplexDouble));
@@ -1282,9 +1283,9 @@ absl::Status CplexSolver::AddNewVariables(const VariablesProto& new_variables) {
   absl::Span<const char> variable_types_span_to_pass_on = variable_types;
   if (!is_mip) variable_types_span_to_pass_on = absl::Span<const char>{};
 
-  RETURN_IF_ERROR(cplex_->NewCols(checked_lbs, checked_ubs,
-                                  variable_types_span_to_pass_on,
-                                  names_maybe_truncated));
+  ABSL_RETURN_IF_ERROR(cplex_->NewCols(checked_lbs, checked_ubs,
+                                       variable_types_span_to_pass_on,
+                                       names_maybe_truncated));
 
   num_cplex_variables_ += num_new_variables;
 
@@ -1296,15 +1297,15 @@ absl::Status CplexSolver::AddSingleObjective(const ObjectiveProto& objective) {
 
   bool is_maximize = objective.maximize();
 
-  RETURN_IF_ERROR(cplex_->ChgObjSen(is_maximize ? CPX_MAX : CPX_MIN));
+  ABSL_RETURN_IF_ERROR(cplex_->ChgObjSen(is_maximize ? CPX_MAX : CPX_MIN));
 
-  RETURN_IF_ERROR(cplex_->ChgObjOffset(objective.offset()));
+  ABSL_RETURN_IF_ERROR(cplex_->ChgObjOffset(objective.offset()));
 
-  ASSIGN_OR_RETURN(
+  ABSL_ASSIGN_OR_RETURN(
       (auto [indices, values]),
       PrepareLinearObjectiveNonzeros(objective.linear_coefficients().ids(),
                                      objective.linear_coefficients().values()));
-  RETURN_IF_ERROR(cplex_->ChgObj(indices, values));
+  ABSL_RETURN_IF_ERROR(cplex_->ChgObj(indices, values));
 
   return absl::OkStatus();
 }
@@ -1331,9 +1332,9 @@ absl::Status CplexSolver::AddNewLinearConstraints(
         gtl::InsertKeyOrDie(&linear_constraints_map_, id);
 
     const double lb = new_constraints.lower_bounds(i);
-    RETURN_IF_ERROR(SafeCplexDouble(lb));
+    ABSL_RETURN_IF_ERROR(SafeCplexDouble(lb));
     const double ub = new_constraints.upper_bounds(i);
-    RETURN_IF_ERROR(SafeCplexDouble(ub));
+    ABSL_RETURN_IF_ERROR(SafeCplexDouble(ub));
 
     constraint_data.lower_bound = lb;
     constraint_data.upper_bound = ub;
@@ -1371,11 +1372,11 @@ absl::Status CplexSolver::AddNewLinearConstraints(
   const std::vector<std::string> names_maybe_truncated =
       TruncateNames(new_constraints.names());
 
-  RETURN_IF_ERROR(cplex_->NewRows(rhs, sense,
-                                  absl::Span<const double>(),  // rngval
-                                  names_maybe_truncated));
+  ABSL_RETURN_IF_ERROR(cplex_->NewRows(rhs, sense,
+                                       absl::Span<const double>(),  // rngval
+                                       names_maybe_truncated));
 
-  RETURN_IF_ERROR(cplex_->ChgRngVal(range_cons_index, range_cons_diff));
+  ABSL_RETURN_IF_ERROR(cplex_->ChgRngVal(range_cons_index, range_cons_diff));
 
   num_cplex_lin_cons_ += num_new_constraints;
 
@@ -1385,7 +1386,7 @@ absl::Status CplexSolver::AddNewLinearConstraints(
 absl::Status CplexSolver::ChangeCoefficients(
     const SparseDoubleMatrixProto& matrix) {
   for (const double coefficient : matrix.coefficients()) {
-    RETURN_IF_ERROR(SafeCplexDouble(coefficient));
+    ABSL_RETURN_IF_ERROR(SafeCplexDouble(coefficient));
   }
   const int num_coefficients = matrix.row_ids().size();
   std::vector<CplexLinearConstraintIndex> row_index(num_coefficients);
@@ -1401,16 +1402,18 @@ absl::Status CplexSolver::ChangeCoefficients(
 absl::Status CplexSolver::LoadModel(const ModelProto& input_model) {
   CHECK(cplex_ != nullptr);
 
-  RETURN_IF_ERROR(cplex_->ChgProbName(TruncateName(input_model.name())));
+  ABSL_RETURN_IF_ERROR(cplex_->ChgProbName(TruncateName(input_model.name())));
 
-  RETURN_IF_ERROR(AddNewVariables(input_model.variables()));
+  ABSL_RETURN_IF_ERROR(AddNewVariables(input_model.variables()));
 
-  RETURN_IF_ERROR(AddNewLinearConstraints(input_model.linear_constraints()));
+  ABSL_RETURN_IF_ERROR(
+      AddNewLinearConstraints(input_model.linear_constraints()));
 
-  RETURN_IF_ERROR(ChangeCoefficients(input_model.linear_constraint_matrix()));
+  ABSL_RETURN_IF_ERROR(
+      ChangeCoefficients(input_model.linear_constraint_matrix()));
 
   if (input_model.auxiliary_objectives().empty()) {
-    RETURN_IF_ERROR(AddSingleObjective(input_model.objective()));
+    ABSL_RETURN_IF_ERROR(AddSingleObjective(input_model.objective()));
   } else {
     return absl::UnimplementedError(
         "Multiple objectives are currently not supported in CPLEX interface");
@@ -1495,8 +1498,8 @@ absl::Status CplexSolver::UpdateLinearConstraints(
 
     // Validate the new bounds before mutating cached state, matching the
     // initial-load validation in AddNewLinearConstraints().
-    RETURN_IF_ERROR(SafeCplexDouble(update_data.new_lower_bound));
-    RETURN_IF_ERROR(SafeCplexDouble(update_data.new_upper_bound));
+    ABSL_RETURN_IF_ERROR(SafeCplexDouble(update_data.new_lower_bound));
+    ABSL_RETURN_IF_ERROR(SafeCplexDouble(update_data.new_upper_bound));
 
     // Save into linear_constraints_map_[id] the new bounds for the linear
     // constraint.
@@ -1537,9 +1540,9 @@ absl::Status CplexSolver::UpdateLinearConstraints(
 
   // Pass down changes to Cplex.
   if (!rhs_index.empty()) {
-    RETURN_IF_ERROR(cplex_->ChgSense(rhs_index, sense_data));
-    RETURN_IF_ERROR(cplex_->ChgRhs(rhs_index, rhs_data));
-    RETURN_IF_ERROR(cplex_->ChgRngVal(range_cons_index, range_cons_diff));
+    ABSL_RETURN_IF_ERROR(cplex_->ChgSense(rhs_index, sense_data));
+    ABSL_RETURN_IF_ERROR(cplex_->ChgRhs(rhs_index, rhs_data));
+    ABSL_RETURN_IF_ERROR(cplex_->ChgRngVal(range_cons_index, range_cons_diff));
   }
 
   return absl::OkStatus();
@@ -1578,32 +1581,32 @@ absl::StatusOr<bool> CplexSolver::Update(const ModelUpdateProto& model_update) {
     return false;
   }
 
-  RETURN_IF_ERROR(AddNewVariables(model_update.new_variables()));
+  ABSL_RETURN_IF_ERROR(AddNewVariables(model_update.new_variables()));
 
-  RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       AddNewLinearConstraints(model_update.new_linear_constraints()));
 
-  RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       ChangeCoefficients(model_update.linear_constraint_matrix_updates()));
 
   if (model_update.objective_updates().has_direction_update()) {
-    RETURN_IF_ERROR(cplex_->ChgObjSen(
+    ABSL_RETURN_IF_ERROR(cplex_->ChgObjSen(
         model_update.objective_updates().direction_update() ? CPX_MAX
                                                             : CPX_MIN));
   }
 
   if (model_update.objective_updates().has_offset_update()) {
-    RETURN_IF_ERROR(
+    ABSL_RETURN_IF_ERROR(
         cplex_->ChgObjOffset(model_update.objective_updates().offset_update()));
   }
 
   if (!model_update.objective_updates().linear_coefficients().ids().empty()) {
-    ASSIGN_OR_RETURN(
+    ABSL_ASSIGN_OR_RETURN(
         (auto [obj_indices, obj_values]),
         PrepareLinearObjectiveNonzeros(
             model_update.objective_updates().linear_coefficients().ids(),
             model_update.objective_updates().linear_coefficients().values()));
-    RETURN_IF_ERROR(cplex_->ChgObj(obj_indices, obj_values));
+    ABSL_RETURN_IF_ERROR(cplex_->ChgObj(obj_indices, obj_values));
   }
 
   // Update bounds
@@ -1612,10 +1615,10 @@ absl::StatusOr<bool> CplexSolver::Update(const ModelUpdateProto& model_update) {
   // Validate all new variable bounds before passing them to CPLEX, matching
   // the initial-load validation in AddNewVariables().
   for (int i = 0; i < var_updates.lower_bounds().ids_size(); ++i) {
-    RETURN_IF_ERROR(SafeCplexDouble(var_updates.lower_bounds().values(i)));
+    ABSL_RETURN_IF_ERROR(SafeCplexDouble(var_updates.lower_bounds().values(i)));
   }
   for (int i = 0; i < var_updates.upper_bounds().ids_size(); ++i) {
-    RETURN_IF_ERROR(SafeCplexDouble(var_updates.upper_bounds().values(i)));
+    ABSL_RETURN_IF_ERROR(SafeCplexDouble(var_updates.upper_bounds().values(i)));
   }
 
   if (!var_updates.lower_bounds().ids().empty()) {
@@ -1627,7 +1630,7 @@ absl::StatusOr<bool> CplexSolver::Update(const ModelUpdateProto& model_update) {
       values.push_back(var_updates.lower_bounds().values(i));
       lu.push_back('L');
     }
-    RETURN_IF_ERROR(cplex_->Chgbds(indices, lu, values));
+    ABSL_RETURN_IF_ERROR(cplex_->Chgbds(indices, lu, values));
   }
   if (!var_updates.upper_bounds().ids().empty()) {
     std::vector<int> indices;
@@ -1638,7 +1641,7 @@ absl::StatusOr<bool> CplexSolver::Update(const ModelUpdateProto& model_update) {
       values.push_back(var_updates.upper_bounds().values(i));
       lu.push_back('U');
     }
-    RETURN_IF_ERROR(cplex_->Chgbds(indices, lu, values));
+    ABSL_RETURN_IF_ERROR(cplex_->Chgbds(indices, lu, values));
   }
 
   // Integers
@@ -1653,12 +1656,12 @@ absl::StatusOr<bool> CplexSolver::Update(const ModelUpdateProto& model_update) {
       index.push_back(variables_map_.at(update.ids(i)));
       value.push_back(update.values(i) ? CPX_INTEGER : CPX_CONTINUOUS);
     }
-    RETURN_IF_ERROR(cplex_->Chgctype(index, value));
+    ABSL_RETURN_IF_ERROR(cplex_->Chgctype(index, value));
   }
 
   DeletedIndices deleted_indices;
 
-  RETURN_IF_ERROR(UpdateLinearConstraints(
+  ABSL_RETURN_IF_ERROR(UpdateLinearConstraints(
       model_update.linear_constraint_updates(), deleted_indices.variables));
 
   for (const VariableId id : model_update.deleted_variable_ids()) {
@@ -1677,12 +1680,13 @@ absl::StatusOr<bool> CplexSolver::Update(const ModelUpdateProto& model_update) {
   UpdateCplexIndices(deleted_indices);
 
   if (!deleted_indices.linear_constraints.empty()) {
-    RETURN_IF_ERROR(cplex_->DelSetRows(deleted_indices.linear_constraints));
+    ABSL_RETURN_IF_ERROR(
+        cplex_->DelSetRows(deleted_indices.linear_constraints));
     num_cplex_lin_cons_ -= deleted_indices.linear_constraints.size();
   }
 
   if (!deleted_indices.variables.empty()) {
-    RETURN_IF_ERROR(cplex_->DelSetCols(deleted_indices.variables));
+    ABSL_RETURN_IF_ERROR(cplex_->DelSetCols(deleted_indices.variables));
     num_cplex_variables_ -= deleted_indices.variables.size();
   }
 
@@ -1691,24 +1695,25 @@ absl::StatusOr<bool> CplexSolver::Update(const ModelUpdateProto& model_update) {
 
 absl::StatusOr<std::unique_ptr<CplexSolver>> CplexSolver::New(
     const ModelProto& input_model, const SolverInterface::InitArgs& init_args) {
-  RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       ModelIsSupported(input_model, kCplexSupportedStructures, "Cplex"));
 
-  ASSIGN_OR_RETURN(std::unique_ptr<Cplex> cplex, CplexFromInitArgs(init_args));
+  ABSL_ASSIGN_OR_RETURN(std::unique_ptr<Cplex> cplex,
+                        CplexFromInitArgs(init_args));
   auto cplex_solver = absl::WrapUnique(new CplexSolver(std::move(cplex)));
-  RETURN_IF_ERROR(cplex_solver->LoadModel(input_model));
+  ABSL_RETURN_IF_ERROR(cplex_solver->LoadModel(input_model));
   return cplex_solver;
 }
 
 absl::StatusOr<InvertedBounds> CplexSolver::ListInvertedBounds() const {
   InvertedBounds inverted_bounds;
-  ASSIGN_OR_RETURN(const int n_vars, cplex_->GetNumCols());
+  ABSL_ASSIGN_OR_RETURN(const int n_vars, cplex_->GetNumCols());
 
   if (n_vars > 0) {
-    ASSIGN_OR_RETURN(const std::vector<double> var_lbs,
-                     cplex_->GetLb(0, n_vars - 1));
-    ASSIGN_OR_RETURN(const std::vector<double> var_ubs,
-                     cplex_->GetUb(0, n_vars - 1));
+    ABSL_ASSIGN_OR_RETURN(const std::vector<double> var_lbs,
+                          cplex_->GetLb(0, n_vars - 1));
+    ABSL_ASSIGN_OR_RETURN(const std::vector<double> var_ubs,
+                          cplex_->GetUb(0, n_vars - 1));
 
     for (const auto& [id, index] : variables_map_) {
       if (var_lbs[index] > var_ubs[index]) {
@@ -1745,7 +1750,7 @@ absl::StatusOr<SolveResultProto> CplexSolver::Solve(
     const MessageCallback message_cb,
     const CallbackRegistrationProto& callback_registration, const Callback cb,
     const SolveInterrupter* absl_nullable const interrupter) {
-  RETURN_IF_ERROR(ModelSolveParametersAreSupported(
+  ABSL_RETURN_IF_ERROR(ModelSolveParametersAreSupported(
       model_parameters, kCplexSupportedStructures, "Cplex"));
 
   // Solution hints are silently ignored — CPLEX's C API supports MIP starts
@@ -1766,8 +1771,9 @@ absl::StatusOr<SolveResultProto> CplexSolver::Solve(
 
   const absl::Time start = absl::Now();
 
-  ASSIGN_OR_RETURN(const InvertedBounds inverted_bounds, ListInvertedBounds());
-  RETURN_IF_ERROR(inverted_bounds.ToStatus());
+  ABSL_ASSIGN_OR_RETURN(const InvertedBounds inverted_bounds,
+                        ListInvertedBounds());
+  ABSL_RETURN_IF_ERROR(inverted_bounds.ToStatus());
 
   // Set output-routing parameters before applying solver parameters, so that
   // console suppression is in effect when CPLEX processes parameter changes.
@@ -1776,12 +1782,12 @@ absl::StatusOr<SolveResultProto> CplexSolver::Solve(
   //    callback for it, then this parameter value is ignored and no traces
   //    are printed."
   if (message_cb != nullptr) {
-    RETURN_IF_ERROR(cplex_->SetParamBool(CPXPARAM_ScreenOutput, false));
-    RETURN_IF_ERROR(cplex_->SetParamBool(CPXPARAM_ParamDisplay, false));
+    ABSL_RETURN_IF_ERROR(cplex_->SetParamBool(CPXPARAM_ScreenOutput, false));
+    ABSL_RETURN_IF_ERROR(cplex_->SetParamBool(CPXPARAM_ParamDisplay, false));
   } else {
-    RETURN_IF_ERROR(cplex_->SetParamBool(CPXPARAM_ScreenOutput,
-                                         parameters.enable_output()));
-    RETURN_IF_ERROR(cplex_->SetParamBool(CPXPARAM_ParamDisplay, true));
+    ABSL_RETURN_IF_ERROR(cplex_->SetParamBool(CPXPARAM_ScreenOutput,
+                                              parameters.enable_output()));
+    ABSL_RETURN_IF_ERROR(cplex_->SetParamBool(CPXPARAM_ParamDisplay, true));
   }
 
   // We use a volatile int as the terminate flag for CPLEX.
@@ -1794,7 +1800,7 @@ absl::StatusOr<SolveResultProto> CplexSolver::Solve(
       interrupter, [&terminate_flag]() { terminate_flag = 1; });
 
   // Pass the address of the terminate flag to CPLEX.
-  RETURN_IF_ERROR(cplex_->SetTerminate(&terminate_flag));
+  ABSL_RETURN_IF_ERROR(cplex_->SetTerminate(&terminate_flag));
 
   // Ensure we clear the terminate pointer in CPLEX when we exit this function
   // to avoid CPLEX accessing a dangling pointer (local variable on stack).
@@ -1818,8 +1824,8 @@ absl::StatusOr<SolveResultProto> CplexSolver::Solve(
   bool log_attached = false;
 
   // IMPORTANT: The cleanup MUST be constructed BEFORE any AddFuncDest call.
-  // If an AddFuncDest call fails mid-way (via RETURN_IF_ERROR), the cleanup
-  // detaches every channel that was successfully attached, preventing a
+  // If an AddFuncDest call fails mid-way (via ABSL_RETURN_IF_ERROR), the
+  // cleanup detaches every channel that was successfully attached, preventing a
   // use-after-free when buffered_message_callback is destroyed on stack
   // unwind.
   absl::Cleanup clear_message_cb = [&]() {
@@ -1845,7 +1851,7 @@ absl::StatusOr<SolveResultProto> CplexSolver::Solve(
   if (message_cb != nullptr) {
     buffered_message_callback =
         std::make_unique<BufferedMessageCallback>(message_cb);
-    ASSIGN_OR_RETURN(
+    ABSL_ASSIGN_OR_RETURN(
         (std::tie(result_channel, warning_channel, error_channel, log_channel)),
         cplex_->GetChannels());
 
@@ -1853,33 +1859,33 @@ absl::StatusOr<SolveResultProto> CplexSolver::Solve(
 
     auto attach = [&](CPXCHANNELptr channel, bool& attached) -> absl::Status {
       if (channel == nullptr) return absl::OkStatus();
-      RETURN_IF_ERROR(
+      ABSL_RETURN_IF_ERROR(
           cplex_->AddFuncDest(channel, handle, MessageCallbackImpl));
       attached = true;
       return absl::OkStatus();
     };
 
-    RETURN_IF_ERROR(attach(result_channel, result_attached));
-    RETURN_IF_ERROR(attach(warning_channel, warning_attached));
-    RETURN_IF_ERROR(attach(error_channel, error_attached));
-    RETURN_IF_ERROR(attach(log_channel, log_attached));
+    ABSL_RETURN_IF_ERROR(attach(result_channel, result_attached));
+    ABSL_RETURN_IF_ERROR(attach(warning_channel, warning_attached));
+    ABSL_RETURN_IF_ERROR(attach(error_channel, error_attached));
+    ABSL_RETURN_IF_ERROR(attach(log_channel, log_attached));
   }
 
   // Set solver parameters (time limits, tolerances, algorithm choices, etc.)
   // Applied after channel attachment so that any diagnostics CPLEX emits
   // during parameter setup are routed through the user's message callback.
-  RETURN_IF_ERROR(SetParameters(parameters, model_parameters));
+  ABSL_RETURN_IF_ERROR(SetParameters(parameters, model_parameters));
 
   if (callback_registration.request_registration_size() > 0 || cb != nullptr) {
     return absl::UnimplementedError(
         "Callbacks are not currently supported for CPLEX.");
   }
 
-  ASSIGN_OR_RETURN(const bool is_mip, IsMIP());
+  ABSL_ASSIGN_OR_RETURN(const bool is_mip, IsMIP());
   if (is_mip) {
-    RETURN_IF_ERROR(cplex_->MipOpt());
+    ABSL_RETURN_IF_ERROR(cplex_->MipOpt());
   } else {
-    RETURN_IF_ERROR(cplex_->LpOpt());
+    ABSL_RETURN_IF_ERROR(cplex_->LpOpt());
   }
 
   if (buffered_message_callback != nullptr) {
@@ -1901,21 +1907,21 @@ absl::StatusOr<SolveResultProto> CplexSolver::Solve(
   // This is unconditional: when message_cb was set, ScreenOutput is already
   // false (set above); this handles the case where message_cb is null but
   // enable_output was true.
-  RETURN_IF_ERROR(cplex_->SetParamBool(CPXPARAM_ScreenOutput, false));
+  ABSL_RETURN_IF_ERROR(cplex_->SetParamBool(CPXPARAM_ScreenOutput, false));
 
   const bool had_cutoff = parameters.has_cutoff_limit();
   const bool had_iteration_limit = parameters.has_iteration_limit();
   const bool had_objective_limit = parameters.has_objective_limit();
 
-  ASSIGN_OR_RETURN(
+  ABSL_ASSIGN_OR_RETURN(
       SolveResultProto solve_result,
       ExtractSolveResultProto(start, model_parameters, had_cutoff,
                               had_iteration_limit, had_objective_limit));
 
   // Reset CPLEX parameters so that settings from this Solve() call do not
   // leak into subsequent Solve() calls (mirrors Gurobi's ResetParameters).
-  RETURN_IF_ERROR(cplex_->SetDefaults());
-  RETURN_IF_ERROR(ResetModelParameters(model_parameters));
+  ABSL_RETURN_IF_ERROR(cplex_->SetDefaults());
+  ABSL_RETURN_IF_ERROR(ResetModelParameters(model_parameters));
 
   return solve_result;
 }
@@ -1943,7 +1949,7 @@ CplexSolver::PrepareLinearObjectiveNonzeros(
   std::vector<double> res_values;
 
   for (size_t i = 0; i < indices.size(); ++i) {
-    RETURN_IF_ERROR(SafeCplexDouble(values[i]));
+    ABSL_RETURN_IF_ERROR(SafeCplexDouble(values[i]));
     res_indices.push_back(variables_map_.at(indices[i]));
     res_values.push_back(values[i]);
   }

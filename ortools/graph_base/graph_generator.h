@@ -14,13 +14,13 @@
 #ifndef UTIL_GRAPH_GRAPH_GENERATOR_H_
 #define UTIL_GRAPH_GRAPH_GENERATOR_H_
 
+#include <utility>
+
 // Generates a complete undirected graph with `num_nodes` nodes.
 //
 // A complete graph is a graph in which all pairs of distinct nodes are
 // connected by an edge.
 // The graph is represented using the provided `Graph` template.
-// If the chosen graph type requires a call to `Build()`, the user is expected
-// to perform this call, possibly after tweaking the graph.
 //
 // Consider using `CompleteGraph` (util/graph/graph.h) instead of this function
 // in production code, as it uses constant memory to store the graph. Instead,
@@ -36,16 +36,16 @@
 template <typename Graph>
 Graph GenerateCompleteUndirectedGraph(
     const typename Graph::NodeIndex num_nodes) {
-  Graph graph;
-  graph.Reserve(num_nodes, num_nodes * (num_nodes - 1));
-  graph.AddNode(num_nodes - 1);  // Only for degenerate cases with no arcs.
+  typename Graph::Builder builder;
+  builder.Reserve(num_nodes, num_nodes * (num_nodes - 1));
+  builder.AddNode(num_nodes - 1);  // Only for degenerate cases with no arcs.
   for (typename Graph::NodeIndex src = 0; src < num_nodes; ++src) {
     for (typename Graph::NodeIndex dst = src + 1; dst < num_nodes; ++dst) {
-      graph.AddArc(src, dst);
-      graph.AddArc(dst, src);
+      builder.AddArc(src, dst);
+      builder.AddArc(dst, src);
     }
   }
-  return graph;
+  return std::move(*std::move(builder).Build(nullptr));
 }
 
 // Generates a complete undirected bipartite graph with `num_nodes_1` and
@@ -54,8 +54,6 @@ Graph GenerateCompleteUndirectedGraph(
 // A complete bipartite graph is a graph in which all pairs of distinct nodes,
 // one in each part, are connected by an edge.
 // The graph is represented using the provided `Graph` template.
-// If the chosen graph type requires a call to `Build()`, the user is expected
-// to perform this call, possibly after tweaking the graph.
 //
 // Args:
 //   num_nodes_1: The number of nodes in the first part of the graph.
@@ -67,16 +65,16 @@ template <typename Graph>
 Graph GenerateCompleteUndirectedBipartiteGraph(
     const typename Graph::NodeIndex num_nodes_1,
     const typename Graph::NodeIndex num_nodes_2) {
-  Graph graph;
-  graph.Reserve(num_nodes_1 + num_nodes_2, 2 * num_nodes_1 * num_nodes_2);
-  graph.AddNode(num_nodes_1 + num_nodes_2 - 1);  // Only for degenerate cases.
+  typename Graph::Builder builder;
+  builder.Reserve(num_nodes_1 + num_nodes_2, 2 * num_nodes_1 * num_nodes_2);
+  builder.AddNode(num_nodes_1 + num_nodes_2 - 1);  // Only for degenerate cases.
   for (typename Graph::NodeIndex src = 0; src < num_nodes_1; ++src) {
     for (typename Graph::NodeIndex dst = 0; dst < num_nodes_2; ++dst) {
-      graph.AddArc(src, num_nodes_1 + dst);
-      graph.AddArc(num_nodes_1 + dst, src);
+      builder.AddArc(src, num_nodes_1 + dst);
+      builder.AddArc(num_nodes_1 + dst, src);
     }
   }
-  return graph;
+  return std::move(*std::move(builder).Build(nullptr));
 }
 
 // Generates a complete directed bipartite graph with `num_nodes_1` and
@@ -86,8 +84,6 @@ Graph GenerateCompleteUndirectedBipartiteGraph(
 // one in each part, are connected by an edge. Edges are directed from the first
 // part towards the second part.
 // The graph is represented using the provided `Graph` template.
-// If the chosen graph type requires a call to `Build()`, the user is expected
-// to perform this call, possibly after tweaking the graph.
 //
 // Consider using `CompleteBipartiteGraph` (util/graph/graph.h) instead of this
 // function in production code, as it uses constant memory to store the graph.
@@ -105,15 +101,15 @@ template <typename Graph>
 Graph GenerateCompleteDirectedBipartiteGraph(
     const typename Graph::NodeIndex num_nodes_1,
     const typename Graph::NodeIndex num_nodes_2) {
-  Graph graph;
-  graph.Reserve(num_nodes_1 + num_nodes_2, num_nodes_1 * num_nodes_2);
-  graph.AddNode(num_nodes_1 + num_nodes_2 - 1);  // Only for degenerate cases.
+  typename Graph::Builder builder;
+  builder.Reserve(num_nodes_1 + num_nodes_2, num_nodes_1 * num_nodes_2);
+  builder.AddNode(num_nodes_1 + num_nodes_2 - 1);  // Only for degenerate cases.
   for (typename Graph::NodeIndex src = 0; src < num_nodes_1; ++src) {
     for (typename Graph::NodeIndex dst = 0; dst < num_nodes_2; ++dst) {
-      graph.AddArc(src, num_nodes_1 + dst);
+      builder.AddArc(src, num_nodes_1 + dst);
     }
   }
-  return graph;
+  return std::move(*std::move(builder).Build(nullptr));
 }
 
 #endif  // UTIL_GRAPH_GRAPH_GENERATOR_H_

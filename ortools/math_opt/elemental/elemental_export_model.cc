@@ -13,7 +13,6 @@
 
 #include <array>
 #include <cstdint>
-#include <limits>
 #include <optional>
 #include <utility>
 #include <vector>
@@ -23,10 +22,11 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/status_builder.h"
-#include "ortools/base/status_macros.h"
+#include "ortools/base/types.h"
 #include "ortools/math_opt/elemental/attr_key.h"
 #include "ortools/math_opt/elemental/attributes.h"
 #include "ortools/math_opt/elemental/derived_data.h"
@@ -42,13 +42,11 @@ namespace operations_research::math_opt {
 
 namespace {
 
-constexpr int32_t kInt32Max = std::numeric_limits<int32_t>::max();
-
 absl::Status CanExportToProto(int64_t num_entries) {
-  if (num_entries > kInt32Max) {
-    return util::InvalidArgumentErrorBuilder()
+  if (num_entries > kint32max) {
+    return ortools::InvalidArgumentErrorBuilder()
            << "Cannot export to proto, RepeatedField can hold at most "
-              "std::numeric_limits<int32_t>::max() = 2**31-1 = 2147483647 "
+              "kint32max = 2**31-1 = 2147483647 "
               "entries "
               "but found: "
            << num_entries << " entries";
@@ -102,7 +100,7 @@ absl::Status ValidateElementsFitInProto(const Elemental& model) {
   return ForEachIndexUntilError<kNumElements>(
       [&model]<int e>() -> absl::Status {
         constexpr auto element_type = static_cast<ElementType>(e);
-        RETURN_IF_ERROR(CanExportToProto(model.NumElements(element_type)))
+        ABSL_RETURN_IF_ERROR(CanExportToProto(model.NumElements(element_type)))
             << "too many elements of type: " << element_type;
         return absl::OkStatus();
       });
@@ -115,7 +113,7 @@ absl::Status ValidateElementsFitInProto(const Elemental& model) {
 absl::Status ValidateAttrsFitInProto(const Elemental& model) {
   return ForEachAttrUntilError([&model](auto attr) -> absl::Status {
     if constexpr (GetAttrKeySize<decltype(attr)>() > 1) {
-      RETURN_IF_ERROR(CanExportToProto(model.AttrNumNonDefaults(attr)))
+      ABSL_RETURN_IF_ERROR(CanExportToProto(model.AttrNumNonDefaults(attr)))
           << "too many non-default values for attribute: " << attr;
     }
     return absl::OkStatus();
@@ -124,8 +122,8 @@ absl::Status ValidateAttrsFitInProto(const Elemental& model) {
 
 // Returns an error if model will not fit into a ModelProto.
 absl::Status ValidateModelFitsInProto(const Elemental& model) {
-  RETURN_IF_ERROR(ValidateElementsFitInProto(model));
-  RETURN_IF_ERROR(ValidateAttrsFitInProto(model));
+  ABSL_RETURN_IF_ERROR(ValidateElementsFitInProto(model));
+  ABSL_RETURN_IF_ERROR(ValidateAttrsFitInProto(model));
   return absl::OkStatus();
 }
 
@@ -153,7 +151,7 @@ std::optional<SparseDoubleVectorProto> ExportSparseDoubleVector(
   if (keys.empty()) {
     return std::nullopt;
   }
-  CHECK_LE(keys.size(), kInt32Max);
+  CHECK_LE(keys.size(), kint32max);
   SparseDoubleVectorProto result;
   const int32_t num_keys = static_cast<int32_t>(keys.size());
   result.mutable_ids()->Reserve(num_keys);
@@ -189,7 +187,7 @@ std::optional<SparseDoubleMatrixProto> ExportSparseDoubleMatrix(
   if (keys.empty()) {
     return std::nullopt;
   }
-  CHECK_LE(keys.size(), kInt32Max);
+  CHECK_LE(keys.size(), kint32max);
   SparseDoubleMatrixProto result;
   // See function level comment, the caller must ensure this is safe.
   const int nnz = static_cast<int>(keys.size());
@@ -217,7 +215,7 @@ std::optional<SparseDoubleVectorProto> ExportSparseDoubleMatrixSlice(
   if (slice.empty()) {
     return std::nullopt;
   }
-  CHECK_LE(slice.size(), kInt32Max);
+  CHECK_LE(slice.size(), kint32max);
   const int slice_size = static_cast<int>(slice.size());
   absl::c_sort(slice);
   SparseDoubleVectorProto vec;
@@ -315,7 +313,7 @@ ExportQuadraticConstraints(
     const ElementIdsSpan<ElementType::kQuadraticConstraint> quad_con_ids,
     const bool remove_names) {
   absl::flat_hash_map<QuadraticConstraintId, QuadraticConstraintProto> result;
-  CHECK_LE(quad_con_ids.size(), kInt32Max);
+  CHECK_LE(quad_con_ids.size(), kint32max);
   for (const QuadraticConstraintId id : quad_con_ids) {
     QuadraticConstraintProto quad_con;
     if (!remove_names) {
@@ -359,7 +357,7 @@ ExportIndicatorConstraints(
     const ElementIdsSpan<ElementType::kIndicatorConstraint> ind_con_ids,
     const bool remove_names) {
   absl::flat_hash_map<IndicatorConstraintId, IndicatorConstraintProto> result;
-  CHECK_LE(ind_con_ids.size(), kInt32Max);
+  CHECK_LE(ind_con_ids.size(), kint32max);
   for (const IndicatorConstraintId id : ind_con_ids) {
     IndicatorConstraintProto ind_con;
     if (!remove_names) {
@@ -433,8 +431,8 @@ absl::StatusOr<ObjectiveProto> ExportAuxiliaryObjective(
     const bool remove_names) {
   ObjectiveProto result;
   if (!remove_names) {
-    ASSIGN_OR_RETURN(const absl::string_view name,
-                     elemental.GetElementName(id));
+    ABSL_ASSIGN_OR_RETURN(const absl::string_view name,
+                          elemental.GetElementName(id));
     result.set_name(name);
   }
   result.set_maximize(
@@ -453,7 +451,7 @@ absl::StatusOr<ObjectiveProto> ExportAuxiliaryObjective(
 
 absl::StatusOr<ModelProto> ExportModelProto(const Elemental& elemental,
                                             const bool remove_names) {
-  RETURN_IF_ERROR(ValidateModelFitsInProto(elemental));
+  ABSL_RETURN_IF_ERROR(ValidateModelFitsInProto(elemental));
   ModelProto result;
   if (!remove_names) {
     result.set_name(elemental.model_name());
@@ -473,7 +471,7 @@ absl::StatusOr<ModelProto> ExportModelProto(const Elemental& elemental,
   // Auxiliary objectives
   for (const AuxiliaryObjectiveId aux_obj_id :
        elemental.AllElements<ElementType::kAuxiliaryObjective>()) {
-    ASSIGN_OR_RETURN(
+    ABSL_ASSIGN_OR_RETURN(
         ((*result.mutable_auxiliary_objectives())[aux_obj_id.value()]),
         ExportAuxiliaryObjective(elemental, aux_obj_id, remove_names));
   }
@@ -540,10 +538,10 @@ absl::Status ValidateElementUpdatesFitInProto(
   return ForEachIndexUntilError<kNumElements>(
       [&diff, &new_elements]<int e>() -> absl::Status {
         constexpr auto element_type = static_cast<ElementType>(e);
-        RETURN_IF_ERROR(
+        ABSL_RETURN_IF_ERROR(
             CanExportToProto(diff.deleted_elements(element_type).size()))
             << "too many deleted elements of type: " << element_type;
-        RETURN_IF_ERROR(CanExportToProto(new_elements[e].size()))
+        ABSL_RETURN_IF_ERROR(CanExportToProto(new_elements[e].size()))
             << "too many new elements of type: " << element_type;
         return absl::OkStatus();
       });
@@ -555,7 +553,7 @@ absl::Status ValidateElementUpdatesFitInProto(
 // TODO(b/372411343): this is too conservative for quadratic constraints.
 absl::Status ValidateAttrUpdatesFitInProto(const Diff& diff) {
   return ForEachAttrUntilError([&diff](auto attr) -> absl::Status {
-    RETURN_IF_ERROR(CanExportToProto(diff.modified_keys(attr).size()))
+    ABSL_RETURN_IF_ERROR(CanExportToProto(diff.modified_keys(attr).size()))
         << "too many modifications for attribute: " << attr;
     return absl::OkStatus();
   });
@@ -581,8 +579,8 @@ absl::Status ValidateAttrUpdatesFitInProto(const Diff& diff) {
 absl::Status ValidateModelUpdateFitsInProto(
     const Diff& diff,
     const std::array<std::vector<int64_t>, kNumElements>& new_elements) {
-  RETURN_IF_ERROR(ValidateElementUpdatesFitInProto(diff, new_elements));
-  RETURN_IF_ERROR(ValidateAttrUpdatesFitInProto(diff));
+  ABSL_RETURN_IF_ERROR(ValidateElementUpdatesFitInProto(diff, new_elements));
+  ABSL_RETURN_IF_ERROR(ValidateAttrUpdatesFitInProto(diff));
   return absl::OkStatus();
 }
 
@@ -626,7 +624,7 @@ absl::StatusOr<std::optional<SparseDoubleVectorProto>> ExportLinObjCoefUpdate(
       keys.push_back(AttrKey(id));
     }
   }
-  RETURN_IF_ERROR(CanExportToProto(keys.size()))
+  ABSL_RETURN_IF_ERROR(CanExportToProto(keys.size()))
       << "cannot export linear objective coefficients in model update";
   return ExportSparseDoubleVector(elemental, DoubleAttr1::kObjLinCoef, keys);
 }
@@ -650,7 +648,7 @@ absl::StatusOr<std::optional<SparseDoubleMatrixProto>> ExportQuadObjCoefUpdate(
       }
     }
   }
-  RETURN_IF_ERROR(CanExportToProto(keys.size()))
+  ABSL_RETURN_IF_ERROR(CanExportToProto(keys.size()))
       << "cannot export linear objective coefficients in model update";
   absl::c_sort(keys);
   return ExportSparseDoubleMatrix(elemental, SymmetricDoubleAttr2::kObjQuadCoef,
@@ -739,10 +737,11 @@ std::optional<LinearConstraintUpdatesProto> ExportLinearConstraintUpdates(
 absl::StatusOr<std::optional<ObjectiveUpdatesProto>> ExportObjectiveUpdates(
     const Elemental& elemental, const Diff& diff,
     const ElementIdsSpan<ElementType::kVariable> new_var_ids) {
-  ASSIGN_OR_RETURN(std::optional<SparseDoubleVectorProto> lin_coef_updates,
-                   ExportLinObjCoefUpdate(elemental, diff, new_var_ids));
-  ASSIGN_OR_RETURN(std::optional<SparseDoubleMatrixProto> quad_coef_updates,
-                   ExportQuadObjCoefUpdate(elemental, diff, new_var_ids));
+  ABSL_ASSIGN_OR_RETURN(std::optional<SparseDoubleVectorProto> lin_coef_updates,
+                        ExportLinObjCoefUpdate(elemental, diff, new_var_ids));
+  ABSL_ASSIGN_OR_RETURN(
+      std::optional<SparseDoubleMatrixProto> quad_coef_updates,
+      ExportQuadObjCoefUpdate(elemental, diff, new_var_ids));
   const bool maximize_modified =
       diff.modified_keys(BoolAttr0::kMaximize).contains(AttrKey());
   const bool offset_modified =
@@ -802,7 +801,7 @@ bool ModelUpdateIsEmpty(
 template <typename AttrType>
 absl::Status EnsureAttrModificationsEmpty(const Diff& diff, AttrType attr) {
   if (!diff.modified_keys(attr).empty()) {
-    return util::InvalidArgumentErrorBuilder()
+    return ortools::InvalidArgumentErrorBuilder()
            << "Modification for attribute " << attr
            << " is not supported for ModelUpdateProto export.";
   }
@@ -815,11 +814,13 @@ ExportQuadraticConstraintsUpdates(
     const ElementIdsSpan<ElementType::kQuadraticConstraint> new_quad_cons,
     const bool remove_names) {
   // Quadratic constraints are currently immutable (beyond variable deletions)
-  RETURN_IF_ERROR(EnsureAttrModificationsEmpty(diff, DoubleAttr1::kQuadConLb));
-  RETURN_IF_ERROR(EnsureAttrModificationsEmpty(diff, DoubleAttr1::kQuadConUb));
-  RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
+      EnsureAttrModificationsEmpty(diff, DoubleAttr1::kQuadConLb));
+  ABSL_RETURN_IF_ERROR(
+      EnsureAttrModificationsEmpty(diff, DoubleAttr1::kQuadConUb));
+  ABSL_RETURN_IF_ERROR(
       EnsureAttrModificationsEmpty(diff, DoubleAttr2::kQuadConLinCoef));
-  RETURN_IF_ERROR(EnsureAttrModificationsEmpty(
+  ABSL_RETURN_IF_ERROR(EnsureAttrModificationsEmpty(
       diff, SymmetricDoubleAttr3::kQuadConQuadCoef));
   auto deleted = DeletedIdsSorted<ElementType::kQuadraticConstraint>(diff);
   if (deleted.empty() && new_quad_cons.empty()) {
@@ -840,13 +841,15 @@ ExportIndicatorConstraintsUpdates(
     const ElementIdsSpan<ElementType::kIndicatorConstraint> new_ind_cons,
     const bool remove_names) {
   // Indicator constraints are currently immutable (beyond variable deletions)
-  RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       EnsureAttrModificationsEmpty(diff, BoolAttr1::kIndConActivateOnZero));
-  RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       EnsureAttrModificationsEmpty(diff, VariableAttr1::kIndConIndicator));
-  RETURN_IF_ERROR(EnsureAttrModificationsEmpty(diff, DoubleAttr1::kIndConLb));
-  RETURN_IF_ERROR(EnsureAttrModificationsEmpty(diff, DoubleAttr1::kIndConUb));
-  RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
+      EnsureAttrModificationsEmpty(diff, DoubleAttr1::kIndConLb));
+  ABSL_RETURN_IF_ERROR(
+      EnsureAttrModificationsEmpty(diff, DoubleAttr1::kIndConUb));
+  ABSL_RETURN_IF_ERROR(
       EnsureAttrModificationsEmpty(diff, DoubleAttr2::kIndConLinCoef));
   auto deleted = DeletedIdsSorted<ElementType::kIndicatorConstraint>(diff);
   if (deleted.empty() && new_ind_cons.empty()) {
@@ -928,8 +931,9 @@ ExportAuxiliaryObjectivesUpdates(
   }
   *result.mutable_deleted_objective_ids() = std::move(deleted);
   for (const AuxiliaryObjectiveId id : new_aux_objs) {
-    ASSIGN_OR_RETURN(((*result.mutable_new_objectives())[id.value()]),
-                     ExportAuxiliaryObjective(elemental, id, remove_names));
+    ABSL_ASSIGN_OR_RETURN(
+        ((*result.mutable_new_objectives())[id.value()]),
+        ExportAuxiliaryObjective(elemental, id, remove_names));
   }
   return result;
 }
@@ -943,7 +947,7 @@ absl::StatusOr<std::optional<ModelUpdateProto>> ExportModelUpdateProto(
   }
   // Warning: further validation is required, see comments on
   // ValidateModelUpdateFitsInProto().
-  RETURN_IF_ERROR(ValidateModelUpdateFitsInProto(diff, new_elements));
+  ABSL_RETURN_IF_ERROR(ValidateModelUpdateFitsInProto(diff, new_elements));
 
   ModelUpdateProto result;
   const int64_t var_checkpoint = diff.checkpoint(ElementType::kVariable);
@@ -972,15 +976,16 @@ absl::StatusOr<std::optional<ModelUpdateProto>> ExportModelUpdateProto(
 
   // Objective
   {
-    ASSIGN_OR_RETURN(std::optional<ObjectiveUpdatesProto> objective_updates,
-                     ExportObjectiveUpdates(elemental, diff, new_var_ids));
+    ABSL_ASSIGN_OR_RETURN(
+        std::optional<ObjectiveUpdatesProto> objective_updates,
+        ExportObjectiveUpdates(elemental, diff, new_var_ids));
     if (objective_updates.has_value()) {
       *result.mutable_objective_updates() = *std::move(objective_updates);
     }
   }
   // Auxiliary objectives
   {
-    ASSIGN_OR_RETURN(
+    ABSL_ASSIGN_OR_RETURN(
         std::optional<AuxiliaryObjectivesUpdatesProto> aux_objs,
         ExportAuxiliaryObjectivesUpdates(elemental, diff, new_var_ids,
                                          new_aux_objs, remove_names));
@@ -1022,7 +1027,7 @@ absl::StatusOr<std::optional<ModelUpdateProto>> ExportModelUpdateProto(
         }
       }
     }
-    RETURN_IF_ERROR(CanExportToProto(mat_keys.size()))
+    ABSL_RETURN_IF_ERROR(CanExportToProto(mat_keys.size()))
         << "too many linear constraint matrix nonzeros in model update";
     absl::c_sort(mat_keys);
     if (auto mat = ExportSparseDoubleMatrix(elemental, DoubleAttr2::kLinConCoef,
@@ -1033,7 +1038,7 @@ absl::StatusOr<std::optional<ModelUpdateProto>> ExportModelUpdateProto(
   }
   // Quadratic constraints
   {
-    ASSIGN_OR_RETURN(
+    ABSL_ASSIGN_OR_RETURN(
         std::optional<QuadraticConstraintUpdatesProto> quad_updates,
         ExportQuadraticConstraintsUpdates(elemental, diff, new_quad_cons,
                                           remove_names));
@@ -1043,9 +1048,10 @@ absl::StatusOr<std::optional<ModelUpdateProto>> ExportModelUpdateProto(
   }
   // Indicator constraints
   {
-    ASSIGN_OR_RETURN(std::optional<IndicatorConstraintUpdatesProto> ind_updates,
-                     ExportIndicatorConstraintsUpdates(
-                         elemental, diff, new_ind_cons, remove_names));
+    ABSL_ASSIGN_OR_RETURN(
+        std::optional<IndicatorConstraintUpdatesProto> ind_updates,
+        ExportIndicatorConstraintsUpdates(elemental, diff, new_ind_cons,
+                                          remove_names));
     if (ind_updates.has_value()) {
       *result.mutable_indicator_constraint_updates() = *std::move(ind_updates);
     }
@@ -1058,12 +1064,12 @@ absl::StatusOr<std::optional<ModelUpdateProto>> ExportModelUpdateProto(
 absl::StatusOr<std::optional<ModelUpdateProto>> Elemental::ExportModelUpdate(
     const DiffHandle diff, const bool remove_names) const {
   if (&diff.diffs_ != diffs_.get()) {
-    return util::InvalidArgumentErrorBuilder()
+    return ortools::InvalidArgumentErrorBuilder()
            << "diff with id: " << diff.id() << " is from another Elemental";
   }
   Diff* diff_value = diffs_->Get(diff.id());
   if (diff_value == nullptr) {
-    return util::InvalidArgumentErrorBuilder()
+    return ortools::InvalidArgumentErrorBuilder()
            << "Model has no diff with id: " << diff.id();
   }
   // It intentional that that this function is implemented without access to the

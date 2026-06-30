@@ -19,12 +19,13 @@
 
 #include <cstdlib>
 #include <limits>
+#include <memory>
 
+#include "absl/container/flat_hash_map.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/map_util.h"
 #include "ortools/math_opt/solvers/gscip/gscip.h"
-#include "ortools/math_opt/solvers/gscip/gscip.pb.h"
 #include "ortools/math_opt/solvers/gscip/gscip_testing.h"
 #include "scip/scip.h"
 

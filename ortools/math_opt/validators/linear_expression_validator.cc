@@ -16,7 +16,8 @@
 #include <cstdint>
 
 #include "absl/status/status.h"
-#include "ortools/base/status_macros.h"
+#include "absl/status/status_macros.h"
+#include "ortools/base/status_builder.h"
 #include "ortools/math_opt/core/model_summary.h"
 #include "ortools/math_opt/core/sparse_vector_view.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
@@ -27,17 +28,17 @@ namespace operations_research::math_opt {
 
 absl::Status ValidateLinearExpression(const LinearExpressionProto& expression,
                                       const IdNameBiMap& variable_universe) {
-  RETURN_IF_ERROR(CheckIdsAndValues(
+  ABSL_RETURN_IF_ERROR(CheckIdsAndValues(
       MakeView(expression.ids(), expression.coefficients()),
       {.allow_positive_infinity = false, .allow_negative_infinity = false}))
       << "invalid linear expression terms";
   for (const int64_t var_id : expression.ids()) {
     if (!variable_universe.HasId(var_id)) {
-      return util::InvalidArgumentErrorBuilder()
+      return ortools::InvalidArgumentErrorBuilder()
              << "invalid variable id: " << var_id;
     }
   }
-  RETURN_IF_ERROR(CheckScalarNoNanNoInf(expression.offset()))
+  ABSL_RETURN_IF_ERROR(CheckScalarNoNanNoInf(expression.offset()))
       << "invalid linear expression offset";
   return absl::OkStatus();
 }

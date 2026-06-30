@@ -27,10 +27,15 @@ add_subdirectory(storage)
 add_subdirectory(validators)
 
 set(NAME ${PROJECT_NAME}_math_opt)
-add_library(${NAME} OBJECT)
-target_sources(${NAME} PUBLIC
+add_library(${NAME} INTERFACE)
+target_sources(${NAME} INTERFACE
   $<TARGET_OBJECTS:${NAME}_core>
   $<TARGET_OBJECTS:${NAME}_core_c_api>
+  $<TARGET_OBJECTS:${NAME}_constraints_indicator>
+  $<TARGET_OBJECTS:${NAME}_constraints_quadratic>
+  $<TARGET_OBJECTS:${NAME}_constraints_second_order_cone>
+  $<TARGET_OBJECTS:${NAME}_constraints_sos>
+  $<TARGET_OBJECTS:${NAME}_constraints_util>
   $<TARGET_OBJECTS:${NAME}_cpp>
   $<TARGET_OBJECTS:${NAME}_elemental>
   $<TARGET_OBJECTS:${NAME}_io>
@@ -39,7 +44,3 @@ target_sources(${NAME} PUBLIC
   $<TARGET_OBJECTS:${NAME}_storage>
   $<TARGET_OBJECTS:${NAME}_validators>
 )
-target_link_libraries(${NAME} INTERFACE
-  ${NAME}_constraints
-)
-install(TARGETS ${PROJECT_NAME}_math_opt EXPORT ${PROJECT_NAME}Targets)

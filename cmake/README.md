@@ -90,6 +90,7 @@ Here the list of supported solvers:
 *   CPLEX\*
 *   GLOP
 *   GLPK\*
+*   Gurobi
 *   HiGHS\*
 *   PDLP
 *   SCIP
@@ -185,28 +186,30 @@ CMake Option                    | Default Value   | Note
 `BUILD_FLATZINC`                | ON\*            | Build the flatzinc library
 | **Dependencies** |
 `BUILD_DEPS`                    | OFF*            | Default to ON if `BUILD_JAVA=ON` or `BUILD_PYTHON=ON` or `BUILD_DOTNET=ON`
-`BUILD_ZLIB`                    | OFF*            | Build the zlib dynamic library<br>**Forced** to ON if `BUILD_DEPS=ON`
-`BUILD_BZip2`                   | OFF*            | Build the bzip2 dynamic library<br>**Forced** to ON if `BUILD_DEPS=ON`
-`BUILD_absl`                    | OFF*            | Build the abseil-cpp dynamic libraries<br>**Forced** to ON if `BUILD_DEPS=ON`
-`BUILD_Protobuf`                | OFF*            | Build the protobuf dynamic libraries<br>**Forced** to ON if `BUILD_DEPS=ON`
-`BUILD_re2`                     | OFF*            | Build the re2 dynamic libraries<br>**Forced** to ON if `BUILD_DEPS=ON`
-`BUILD_Eigen3`                  | OFF*            | Build the Eigen3 libraries<br>**Forced** to ON if `BUILD_DEPS=ON`
+`BUILD_ZLIB`                    | `BUILD_DEPS`    | Build the zlib dynamic library<br>**Forced** to ON if `BUILD_DEPS=ON`
+`BUILD_BZip2`                   | `BUILD_DEPS`    | Build the bzip2 dynamic library<br>**Forced** to ON if `BUILD_DEPS=ON`
+`BUILD_absl`                    | `BUILD_DEPS`    | Build the abseil-cpp dynamic libraries<br>**Forced** to ON if `BUILD_DEPS=ON`
+`BUILD_Protobuf`                | `BUILD_DEPS`    | Build the protobuf dynamic libraries<br>**Forced** to ON if `BUILD_DEPS=ON`
+`BUILD_re2`                     | `BUILD_DEPS`    | Build the re2 dynamic libraries<br>**Forced** to ON if `BUILD_DEPS=ON`
+`BUILD_Eigen3`                  | `BUILD_DEPS`    | Build the Eigen3 libraries<br>**Forced** to ON if `BUILD_DEPS=ON`
 | Coin-OR |
 `USE_COINOR`                    | ON\*            | Enable Coin-OR support
-`BUILD_CoinUtils`               | OFF\*           | Build the CoinUtils dynamic library<br>**Forced** to ON if `USE_COINOR=ON` **and** `BUILD_DEPS=ON`
-`BUILD_Osi`                     | OFF\*           | Build the Osi dynamic library<br>**Forced** to ON if `USE_COINOR=ON` **and** `BUILD_DEPS=ON`
-`BUILD_Clp`                     | OFF\*           | Build the Clp dynamic library<br>**Forced** to ON if `USE_COINOR=ON` **and** `BUILD_DEPS=ON`
-`BUILD_Cgl`                     | OFF\*           | Build the Cgl dynamic library<br>**Forced** to ON if `USE_COINOR=ON` **and** `BUILD_DEPS=ON`
-`BUILD_Cbc`                     | OFF\*           | Build the Cbc dynamic library<br>**Forced** to ON if `USE_COINOR=ON` **and** `BUILD_DEPS=ON`
+`BUILD_CoinUtils`               | `BUILD_DEPS`    | Build the CoinUtils dynamic library<br>**Forced** to ON if `USE_COINOR=ON` **and** `BUILD_DEPS=ON`
+`BUILD_Osi`                     | `BUILD_DEPS`    | Build the Osi dynamic library<br>**Forced** to ON if `USE_COINOR=ON` **and** `BUILD_DEPS=ON`
+`BUILD_Clp`                     | `BUILD_DEPS`    | Build the Clp dynamic library<br>**Forced** to ON if `USE_COINOR=ON` **and** `BUILD_DEPS=ON`
+`BUILD_Cgl`                     | `BUILD_DEPS`    | Build the Cgl dynamic library<br>**Forced** to ON if `USE_COINOR=ON` **and** `BUILD_DEPS=ON`
+`BUILD_Cbc`                     | `BUILD_DEPS`    | Build the Cbc dynamic library<br>**Forced** to ON if `USE_COINOR=ON` **and** `BUILD_DEPS=ON`
 | GLPK |
 `USE_GLPK`                      | OFF\*           | Enable GLPK support
-`BUILD_GLPK`                    | OFF\*           | Build the GLPK dynamic libraries<br>**Forced** to ON if `USE_GLPK=ON` **and** `BUILD_DEPS=ON`
+`BUILD_GLPK`                    | `BUILD_DEPS`    | Build the GLPK dynamic libraries<br>**Forced** to ON if `USE_GLPK=ON` **and** `BUILD_DEPS=ON`
+| GUROBI |
+`USE_GUROBI`                    | ON\*            | Enable GUROBI support<br>OFF is still experimental.
 | HiGHS |
 `USE_HIGHS`                     | ON\*            | Enable HIGHS support
-`BUILD_HIGHS`                   | OFF\*           | Build the HiGHS dynamic libraries<br>**Forced** to ON if `USE_HIGHS=ON` **and** `BUILD_DEPS=ON`
+`BUILD_HIGHS`                   | `BUILD_DEPS`    | Build the HiGHS dynamic libraries<br>**Forced** to ON if `USE_HIGHS=ON` **and** `BUILD_DEPS=ON`
 | SCIP |
 `USE_SCIP`                      | ON\*            | Enable SCIP support
-`BUILD_SCIP`                    | OFF\*           | Build the SCIP dynamic libraries<br>**Forced** to ON if `USE_SCIP=ON` **and** `BUILD_DEPS=ON`
+`BUILD_SCIP`                    | `BUILD_DEPS`    | Build the SCIP dynamic libraries<br>**Forced** to ON if `USE_SCIP=ON` **and** `BUILD_DEPS=ON`
 | CPLEX
 `USE_CPLEX`                     | OFF             | Enable CPLEX support
 | **Documentation** |
@@ -216,6 +219,12 @@ CMake Option                    | Default Value   | Note
 `BUILD_JAVA_DOC`                | OFF\*           | Build Java documentation<br>**Forced** to ON if `BUILD_DOC=ON`
 `BUILD_PYTHON_DOC`              | OFF\*           | Build Python documentation<br>**Forced** to ON if `BUILD_DOC=ON`
 `INSTALL_DOC`                   | OFF\*           | Install all documentations<br>**Forced** to OFF if `BUILD_DOC=OFF`
+| **Testing** |
+`BUILD_TESTING`                 | ON\*            | Build and add to ctest all test units.
+`BUILD_CXX_TESTING`             | ON\*            | Build all C++ tests<br>**Forced** to OFF if `BUILD_TESTING=OFF`
+`BUILD_DOTNET_TESTING`          | ON\*            | Build all .Net tests<br>**Forced** to OFF if `BUILD_DOTNET=OFF` or `BUILD_TESTING=OFF`
+`BUILD_JAVA_TESTING`            | ON\*            | Build all Java tests<br>**Forced** to OFF if `BUILD_JAVA=OFF` or `BUILD_TESTING=OFF`
+`BUILD_PYTHON_TESTING`          | ON\*            | Build all Python tests<br>**Forced** to OFF if `BUILD_PYTHON=OFF` or `BUILD_TESTING=OFF`
 | **Samples** |
 `BUILD_SAMPLES`                 | ON\*            | Build all samples<br>Default to ON if `BUILD_DEPS=ON`
 `BUILD_CXX_SAMPLES`             | ON\*            | Build all C++ samples<br>**Forced** to OFF if `BUILD_SAMPLE=OFF`

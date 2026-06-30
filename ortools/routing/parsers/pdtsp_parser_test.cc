@@ -18,19 +18,17 @@
 #include <string>
 
 #include "gtest/gtest.h"
-#include "ortools/base/path.h"
-
-#define ROOT_DIR "_main/"
+#include "ortools/util/data_path_resolver.h"
 
 namespace operations_research::routing {
 namespace {
 TEST(PdTspParserTest, LoadDataSet) {
-  for (const std::string& data : {
-           ROOT_DIR "ortools/routing/parsers/testdata/"
-                    "pdtsp_prob10b.txt",
-       }) {
+  for (const std::string& data : {"ortools/routing/parsers/testdata/"
+                                  "pdtsp_prob10b.txt",
+                                  "ortools/routing/parsers/testdata/"
+                                  "pdtsp_prob10b.txt.gz"}) {
     PdTspParser parser;
-    EXPECT_TRUE(parser.LoadFile(file::JoinPath(::testing::SrcDir(), data)));
+    EXPECT_TRUE(parser.LoadFile(ortools::GetDataDependencyFilepath(data)));
     EXPECT_EQ(0, parser.depot());
     EXPECT_EQ(21, parser.Size());
     EXPECT_FALSE(parser.IsPickup(0));   // depot

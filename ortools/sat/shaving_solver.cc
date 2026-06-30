@@ -82,7 +82,7 @@ std::function<void()> ObjectiveShavingSolver::GenerateTask(int64_t task_id) {
   return [this, task_id]() {
     if (ResetAndSolveModel(task_id)) {
       const CpSolverResponse local_response =
-          local_sat_model_->GetOrCreate<SharedResponseManager>()->GetResponse();
+          local_model_->GetOrCreate<SharedResponseManager>()->GetResponse();
 
       if (local_response.status() == CpSolverStatus::OPTIMAL ||
           local_response.status() == CpSolverStatus::FEASIBLE) {
@@ -104,9 +104,9 @@ std::function<void()> ObjectiveShavingSolver::GenerateTask(int64_t task_id) {
 
     absl::MutexLock mutex_lock(mutex_);
     task_in_flight_ = false;
-    if (local_sat_model_ != nullptr) {
-      const double dtime = local_sat_model_->GetOrCreate<TimeLimit>()
-                               ->GetElapsedDeterministicTime();
+    if (local_model_ != nullptr) {
+      const double dtime =
+          local_model_->GetOrCreate<TimeLimit>()->GetElapsedDeterministicTime();
       AddTaskDeterministicDuration(dtime);
       shared_->time_limit->AdvanceDeterministicTime(dtime);
     }
@@ -128,6 +128,9 @@ void ObjectiveShavingSolver::Synchronize() {
   }
 
   // The current objective lower bound has been improved, restarting.
+  //
+  // TODO(user): If we are exploring a range with current_objective_target_ub_
+  // still greater, it probably do not make sense to restart.
   if (shared_->response->GetInnerObjectiveLowerBound() > objective_lb_) {
     stop_current_chunk_.store(true);
   }
@@ -169,16 +172,16 @@ void ObjectiveShavingSolver::ResetModel() {
 }
 
 bool ObjectiveShavingSolver::ResetAndSolveModel(int64_t task_id) {
-  local_sat_model_ = std::make_unique<Model>(name());
-  *local_sat_model_->GetOrCreate<SatParameters>() = local_params_;
-  local_sat_model_->GetOrCreate<SatParameters>()->set_random_seed(
+  local_model_ = std::make_unique<Model>(name());
+  *local_model_->GetOrCreate<SatParameters>() = local_params_;
+  local_model_->GetOrCreate<SatParameters>()->set_random_seed(
       CombineSeed(local_params_.random_seed(), task_id));
 
-  auto* time_limit = local_sat_model_->GetOrCreate<TimeLimit>();
+  auto* time_limit = local_model_->GetOrCreate<TimeLimit>();
   shared_->time_limit->UpdateLocalLimit(time_limit);
   time_limit->RegisterSecondaryExternalBooleanAsLimit(&stop_current_chunk_);
 
-  auto* random = local_sat_model_->GetOrCreate<ModelRandomGenerator>();
+  auto* random = local_model_->GetOrCreate<ModelRandomGenerator>();
 
   // We copy the model.
   ResetModel();
@@ -192,7 +195,7 @@ bool ObjectiveShavingSolver::ResetAndSolveModel(int64_t task_id) {
     absl::MutexLock mutex_lock(mutex_);
     objective_lb = objective_lb_;
     if (objective_ub_ - objective_lb <=
-        local_params_.shaving_search_threshold()) {
+        local_params_.objective_shaving_search_threshold()) {
       current_objective_target_ub_ = objective_lb;
     } else {
       const IntegerValue mid = (objective_ub_ - objective_lb) / 2;
@@ -237,13 +240,13 @@ bool ObjectiveShavingSolver::ResetAndSolveModel(int64_t task_id) {
   // Clear the objective.
   local_proto_->clear_objective();
   local_proto_->set_name(absl::StrCat(local_proto_->name(), "_obj_shaving_",
-                                      objective_lb.value()));
+                                      chosen_objective_ub.value()));
 
   // Dump?
   if (absl::GetFlag(FLAGS_cp_model_dump_submodels)) {
-    const std::string name =
-        absl::StrCat(absl::GetFlag(FLAGS_cp_model_dump_prefix),
-                     "objective_shaving_", objective_lb.value(), ".pb.txt");
+    const std::string name = absl::StrCat(
+        absl::GetFlag(FLAGS_cp_model_dump_prefix), "objective_shaving_",
+        chosen_objective_ub.value(), ".pb.txt");
     LOG(INFO) << "Dumping objective shaving model to '" << name << "'.";
     CHECK(WriteModelProtoToFile(*local_proto_, name));
   }
@@ -253,7 +256,7 @@ bool ObjectiveShavingSolver::ResetAndSolveModel(int64_t task_id) {
     mapping_proto_.Clear();
     postsolve_mapping_.clear();
     auto context = std::make_unique<PresolveContext>(
-        local_sat_model_.get(), local_proto_, &mapping_proto_);
+        local_model_.get(), local_proto_, &mapping_proto_);
     const CpSolverStatus presolve_status =
         PresolveCpModel(context.get(), &postsolve_mapping_);
     if (presolve_status == CpSolverStatus::INFEASIBLE) {
@@ -273,7 +276,8 @@ bool ObjectiveShavingSolver::ResetAndSolveModel(int64_t task_id) {
   // such non fully-presolved model.
   if (time_limit->LimitReached()) return false;
 
-  LoadCpModel(*local_proto_, local_sat_model_.get());
+  LoadCpModel(*local_proto_, local_model_.get());
+  SolveLoadedCpModel(*local_proto_, local_model_.get());
   return true;
 }
 
@@ -450,33 +454,48 @@ bool VariablesShavingSolver::ConstraintIsInactive(int c) const
 bool VariablesShavingSolver::FindNextVar(State* state)
     ABSL_SHARED_LOCKS_REQUIRED(mutex_) {
   const int num_vars = var_domains_.size();
-  ++current_index_;
+  ++current_index_;  // Starts at -1.
 
   // We start by shaving the objective in order to increase the lower bound.
+  // We abort for models with large number of objective variables. We also
+  // ignore when the objective is a single variable.
+  int num_objective_vars_to_scan = 0;
   if (model_proto_.has_objective()) {
     const int num_obj_vars = model_proto_.objective().vars().size();
-    if (num_obj_vars > 1) {
-      while (current_index_ < num_obj_vars) {
-        const int var = model_proto_.objective().vars(current_index_);
-        if (VarIsFixed(var)) {
-          ++current_index_;
-          continue;
-        }
-        state->var_index = var;
-        state->minimize = model_proto_.objective().coeffs(current_index_) > 0;
-        state->shave_using_objective = true;
-        return true;
-      }
+    if (num_obj_vars > 1 && num_obj_vars * 10 < num_vars) {
+      num_objective_vars_to_scan = num_obj_vars;
     }
   }
 
-  // Otherwise loop over all variables.
-  // TODO(user): maybe we should just order all possible State, putting the
-  // objective first, and just loop.
-  for (int i = 0; i < num_vars; ++i) {
-    const int var = (current_index_ / 2 + i) % num_vars;
+  while (current_index_ < num_objective_vars_to_scan) {
+    const int var = model_proto_.objective().vars(current_index_);
     if (VarIsFixed(var)) {
       ++current_index_;
+      continue;
+    }
+
+    state->var_index = var;
+    state->minimize = model_proto_.objective().coeffs(current_index_) > 0;
+    state->shave_using_objective = true;
+    return true;
+  }
+
+  // Otherwise loop over all variables. The method returns false when all
+  // variables are fixed.
+  // TODO(user): maybe we should just order all possible State, putting the
+  // objective first, and just loop.
+  const int starting_index = current_index_;
+  while (current_index_ - starting_index < num_vars * 2) {
+    const int normalized_index = current_index_ - num_objective_vars_to_scan;
+    const int loop_index = normalized_index / (2 * num_vars);
+    const int var_index = (normalized_index / 2) % num_vars;
+    const bool minimize = normalized_index % 2 == 0;
+
+    // Skip fixed variables.
+    if (VarIsFixed(var_index)) {
+      ++current_index_;
+      // Skip maximization too.
+      if (minimize) ++current_index_;
       continue;
     }
 
@@ -484,15 +503,23 @@ bool VariablesShavingSolver::FindNextVar(State* state)
     // looking at it.
     if (model_proto_.has_objective() &&
         model_proto_.objective().vars_size() == 1 &&
-        var == model_proto_.objective().vars(0)) {
+        var_index == model_proto_.objective().vars(0)) {
+      current_index_ += 2;  // Skip minimize and maximize.
       continue;
     }
 
-    state->var_index = var;
-    state->minimize = current_index_ % 2 == 0;
-    state->shave_using_objective = current_index_ / num_vars < 2;
+    state->var_index = var_index;
+    state->minimize = minimize;
+    // Starting from the second loop, we use the objective to do the shaving.
+    //
+    // As we will test both minimization and maximization, we only consider
+    // shaving using the objective when the domain has more than 2 values.
+    //
+    // TODO(user): Explore other policies like alternating.
+    state->shave_using_objective = loop_index > 0 && DomainSize(var_index) > 2;
     return true;
   }
+
   return false;
 }
 
@@ -550,11 +577,9 @@ void VariablesShavingSolver::CopyModelConnectedToVar(
     return cc_finder.Connected(root_index, ct_to_node(c));
   };
 
-  PresolveContext context(local_model, shaving_proto, nullptr);
   std::vector<int> interval_mapping;
-  ImportModelAndDomainsWithBasicPresolveIntoContext(
-      model_proto_, var_domains_, active_constraints, &context,
-      &interval_mapping);
+  CopyModelAdvanced(model_proto_, var_domains_, active_constraints,
+                    &interval_mapping, shaving_proto, local_model);
 
   // Now copy the ignored constraints "partially".
   for (const int c : ignored_constraints) {
@@ -610,9 +635,7 @@ void VariablesShavingSolver::CopyModelConnectedToVar(
       shaving_proto->mutable_objective()->add_coeffs(-1);
     }
   } else {
-    const Domain domain =
-        ReadDomainFromProto(shaving_proto->variables(state->var_index));
-
+    const Domain& domain = var_domains_[state->var_index];
     int64_t delta = 0;
     if (domain.Size() > local_params_.shaving_search_threshold()) {
       const int64_t mid_range = (domain.Max() - domain.Min()) / 2;
@@ -673,6 +696,14 @@ bool VariablesShavingSolver::ResetAndSolveModel(int64_t task_id, State* state,
   shaving_proto->set_name(absl::StrCat("shaving_var_", state->var_index,
                                        (state->minimize ? "_min" : "_max")));
 
+  if (absl::GetFlag(FLAGS_cp_model_dump_submodels)) {
+    const std::string shaving_name = absl::StrCat(
+        absl::GetFlag(FLAGS_cp_model_dump_prefix), "shaving_var_",
+        state->var_index, (state->minimize ? "_min" : "_max"), ".pb.txt");
+    LOG(INFO) << "Dumping shaving model to '" << shaving_name << "'.";
+    CHECK(WriteModelProtoToFile(*shaving_proto, shaving_name));
+  }
+
   // Presolve if asked.
   if (local_params_.cp_model_presolve()) {
     std::vector<int> postsolve_mapping;
@@ -697,7 +728,6 @@ bool VariablesShavingSolver::ResetAndSolveModel(int64_t task_id, State* state,
     auto context = std::make_unique<PresolveContext>(local_model, shaving_proto,
                                                      &mapping_proto);
     context->InitializeNewDomains();
-    context->UpdateNewConstraintsVariableUsage();
     const int num_constraints = shaving_proto->constraints().size();
     std::vector<bool> useful_interval(num_constraints, false);
     std::vector<int> no_overalp_2d;
@@ -730,14 +760,6 @@ bool VariablesShavingSolver::ResetAndSolveModel(int64_t task_id, State* state,
       data->mutable_x_intervals()->Truncate(new_size);
       data->mutable_y_intervals()->Truncate(new_size);
     }
-  }
-
-  if (absl::GetFlag(FLAGS_cp_model_dump_submodels)) {
-    const std::string shaving_name = absl::StrCat(
-        absl::GetFlag(FLAGS_cp_model_dump_prefix), "shaving_var_",
-        state->var_index, (state->minimize ? "_min" : "_max"), ".pb.txt");
-    LOG(INFO) << "Dumping shaving model to '" << shaving_name << "'.";
-    CHECK(WriteModelProtoToFile(*shaving_proto, shaving_name));
   }
 
   auto* local_response_manager =

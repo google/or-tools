@@ -33,6 +33,7 @@ const CPSATDomainReductionStrategy = Sat.var"DecisionStrategyProto.DomainReducti
 # EXPERIMENTAL. For now, this is meant to be used by the solver and not filled by clients.
 const CPSATExperimentalSymmetry = Sat.SymmetryProto
 const CpSolverResponse = Sat.CpSolverResponse
+const CpSolverStatus = Sat.CpSolverStatus
 
 """
 Given the nature of the fields, we are using an alias for the VariablesProto struct.
@@ -85,6 +86,13 @@ const NewCPSatLinearConstraint =
         Vector{Int64}(), # domain
     )
 
+## Added as all constraints end up invoking `to_proto_struct`.
+function to_proto_struct(
+    cpsat_linear_constraint::CPSatLinearConstraintProto,
+)::Sat.LinearConstraintProto
+    return cpsat_linear_constraint
+end
+
 """
 Given the nature of the fields, we are using an alias for the CircuitConstraintProto struct
 of CPSat.
@@ -92,7 +100,7 @@ The circuit constraint takes a graph and forces the arcs present (with arc
 presence indicated by a literal) to form a unique cycle.
 """
 const CircuitConstraintProto = Sat.CircuitConstraintProto
-const CircuitConstraint =
+const NewCircuitConstraint =
     () -> CircuitConstraintProto(
         Vector{Int32}(), # tails
         Vector{Int32}(), # heads
@@ -122,6 +130,9 @@ const GScipParameters_Emphasis = OperationsResearch.var"GScipParameters.Emphasis
 ## Gurobi parameters types.
 const GurobiParametersProto_Parameter = MathOpt.var"GurobiParametersProto.Parameter"
 
+## Xpress parameters types.
+const XpressParametersProto_Parameter = MathOpt.var"XpressParametersProto.Parameter"
+
 ## Glop parameters types.
 const GlopParameters_PricingRule = OperationsResearch.glop.var"GlopParameters.PricingRule"
 const GlopParameters_SolverBehavior =
@@ -140,7 +151,6 @@ const SatParameters_ConflictMinimizationAlgorithm =
     Sat.var"SatParameters.ConflictMinimizationAlgorithm"
 const SatParameters_BinaryMinizationAlgorithm =
     Sat.var"SatParameters.BinaryMinizationAlgorithm"
-const SatParameters_ClauseProtection = Sat.var"SatParameters.ClauseProtection"
 const SatParameters_ClauseOrdering =
     OperationsResearch.sat.var"SatParameters.ClauseOrdering"
 const SatParameters_RestartAlgorithm = Sat.var"SatParameters.RestartAlgorithm"
@@ -600,12 +610,50 @@ end
 
 function to_proto_struct(gurobi_parameters::GurobiParameters)::MathOpt.GurobiParametersProto
     parameters =
-        Vector{GurobiParametersProto_Parameter}(length(gurobi_parameters.parameters))
+        Vector{GurobiParametersProto_Parameter}(undef, length(gurobi_parameters.parameters))
     for (index, parameter) in enumerate(gurobi_parameters.parameters)
         parameters[index] = to_proto_struct(parameter)
     end
 
-    return MathOpt.GurobiParametersProto(gurobi_parameters.parameters)
+    return MathOpt.GurobiParametersProto(parameters)
+end
+
+"""
+  Mutable wrapper struct for the XpressParametersProto.Parameter struct.
+"""
+mutable struct XpressParameters_Parameter
+    name::String
+    value::String
+end
+
+function to_proto_struct(
+    xpress_parameters_parameter::XpressParameters_Parameter,
+)::XpressParametersProto_Parameter
+    return XpressParametersProto_Parameter(
+        xpress_parameters_parameter.name,
+        xpress_parameters_parameter.value,
+    )
+end
+
+"""
+  Mutable wrapper struct for the XpressParameters struct.
+"""
+mutable struct XpressParameters
+    parameters::Vector{XpressParameters_Parameter}
+
+    function XpressParameters(; parameters = Vector{XpressParameters_Parameter}())
+        new(parameters)
+    end
+end
+
+function to_proto_struct(xpress_parameters::XpressParameters)::MathOpt.XpressParametersProto
+    parameters =
+        Vector{XpressParametersProto_Parameter}(undef, length(xpress_parameters.parameters))
+    for (index, parameter) in enumerate(xpress_parameters.parameters)
+        parameters[index] = to_proto_struct(parameter)
+    end
+
+    return MathOpt.XpressParametersProto(parameters)
 end
 
 """
@@ -656,6 +704,7 @@ mutable struct GlopParameters
     objective_upper_limit::Float64
     degenerate_ministep_factor::Float64
     random_seed::Int32
+    use_absl_random::Bool
     num_omp_threads::Int32
     perturb_costs_in_dual_simplex::Bool
     use_dedicated_dual_feasibility_algorithm::Bool
@@ -668,6 +717,7 @@ mutable struct GlopParameters
     push_to_vertex::Bool
     use_implied_free_preprocessor::Bool
     max_valid_magnitude::Float64
+    drop_magnitude::Float64
     dual_price_prioritize_norm::Bool
 
     function GlopParameters(;
@@ -715,6 +765,7 @@ mutable struct GlopParameters
         objective_upper_limit = Float64(Inf),
         degenerate_ministep_factor = Float64(0.01),
         random_seed = Int32(1),
+        use_absl_random = false,
         num_omp_threads = Int32(1),
         perturb_costs_in_dual_simplex = false,
         use_dedicated_dual_feasibility_algorithm = true,
@@ -727,6 +778,7 @@ mutable struct GlopParameters
         push_to_vertex = true,
         use_implied_free_preprocessor = true,
         max_valid_magnitude = Float64(1e30),
+        drop_magnitude = Float64(1e-30),
         dual_price_prioritize_norm = false,
     )
         new(
@@ -774,6 +826,7 @@ mutable struct GlopParameters
             objective_upper_limit,
             degenerate_ministep_factor,
             random_seed,
+            use_absl_random,
             num_omp_threads,
             perturb_costs_in_dual_simplex,
             use_dedicated_dual_feasibility_algorithm,
@@ -786,6 +839,7 @@ mutable struct GlopParameters
             push_to_vertex,
             use_implied_free_preprocessor,
             max_valid_magnitude,
+            drop_magnitude,
             dual_price_prioritize_norm,
         )
     end
@@ -839,6 +893,7 @@ function to_proto_struct(
         glop_parameters.objective_upper_limit,
         glop_parameters.degenerate_ministep_factor,
         glop_parameters.random_seed,
+        glop_parameters.use_absl_random,
         glop_parameters.num_omp_threads,
         glop_parameters.perturb_costs_in_dual_simplex,
         glop_parameters.use_dedicated_dual_feasibility_algorithm,
@@ -851,6 +906,7 @@ function to_proto_struct(
         glop_parameters.push_to_vertex,
         glop_parameters.use_implied_free_preprocessor,
         glop_parameters.max_valid_magnitude,
+        glop_parameters.drop_magnitude,
         glop_parameters.dual_price_prioritize_norm,
     )
 end
@@ -860,28 +916,36 @@ end
 """
 mutable struct SatParameters
     name::String
-    preferred_variable_order::SatParameters_VariableOrder.T
-    initial_polarity::SatParameters_Polarity.T
+    preferred_variable_order::Sat.var"SatParameters.VariableOrder".T
+    initial_polarity::Sat.var"SatParameters.Polarity".T
     use_phase_saving::Bool
     polarity_rephase_increment::Int32
+    polarity_exploit_ls_hints::Bool
     random_polarity_ratio::Float64
     random_branches_ratio::Float64
     use_erwa_heuristic::Bool
     initial_variables_activity::Float64
     also_bump_variables_in_conflict_reasons::Bool
-    minimization_algorithm::SatParameters_ConflictMinimizationAlgorithm.T
-    binary_minimization_algorithm::SatParameters_BinaryMinizationAlgorithm.T
+    minimization_algorithm::Sat.var"SatParameters.ConflictMinimizationAlgorithm".T
+    binary_minimization_algorithm::Sat.var"SatParameters.BinaryMinizationAlgorithm".T
     subsumption_during_conflict_analysis::Bool
+    extra_subsumption_during_conflict_analysis::Bool
+    decision_subsumption_during_conflict_analysis::Bool
+    eagerly_subsume_last_n_conflicts::Int32
+    subsume_during_vivification::Bool
+    use_chronological_backtracking::Bool
+    max_backjump_levels::Int32
+    chronological_backtrack_min_conflicts::Int32
     clause_cleanup_period::Int32
+    clause_cleanup_period_increment::Int32
     clause_cleanup_target::Int32
     clause_cleanup_ratio::Float64
-    clause_cleanup_protection::SatParameters_ClauseProtection.T
     clause_cleanup_lbd_bound::Int32
-    clause_cleanup_ordering::SatParameters_ClauseOrdering.T
+    clause_cleanup_lbd_tier1::Int32
+    clause_cleanup_lbd_tier2::Int32
+    clause_cleanup_ordering::Sat.var"SatParameters.ClauseOrdering".T
     pb_cleanup_increment::Int32
     pb_cleanup_ratio::Float64
-    minimize_with_propagation_restart_period::Int32
-    minimize_with_propagation_num_decisions::Int32
     variable_activity_decay::Float64
     max_variable_activity_value::Float64
     glucose_max_decay::Float64
@@ -889,7 +953,7 @@ mutable struct SatParameters
     glucose_decay_increment_period::Int32
     clause_activity_decay::Float64
     max_clause_activity_value::Float64
-    restart_algorithms::Vector{SatParameters_RestartAlgorithm.T}
+    restart_algorithms::Vector{Sat.var"SatParameters.RestartAlgorithm".T}
     default_restart_algorithms::String
     restart_period::Int32
     restart_running_window_size::Int32
@@ -902,6 +966,7 @@ mutable struct SatParameters
     strategy_change_increase_ratio::Float64
     max_time_in_seconds::Float64
     max_deterministic_time::Float64
+    max_num_deterministic_batches::Int32
     max_number_of_conflicts::Int64
     max_memory_in_mb::Int64
     absolute_gap_limit::Float64
@@ -911,8 +976,6 @@ mutable struct SatParameters
     permute_presolve_constraint_order::Bool
     use_absl_random::Bool
     log_search_progress::Bool
-    log_frequency_in_seconds::Float64
-    model_reduction_log_frequency_in_seconds::Float64
     log_subsolver_statistics::Bool
     log_prefix::String
     log_to_stdout::Bool
@@ -921,6 +984,7 @@ mutable struct SatParameters
     minimize_reduction_during_pb_resolution::Bool
     count_assumption_levels_in_lbd::Bool
     presolve_bve_threshold::Int32
+    filter_sat_postsolve_clauses::Bool
     presolve_bve_clause_weight::Int32
     probing_deterministic_time_limit::Float64
     presolve_probing_deterministic_time_limit::Float64
@@ -931,11 +995,17 @@ mutable struct SatParameters
     cp_model_presolve::Bool
     cp_model_probing_level::Int32
     cp_model_use_sat_presolve::Bool
-    use_sat_inprocessing::Bool
+    load_at_most_ones_in_sat_presolve::Bool
+    remove_fixed_variables_early::Bool
     detect_table_with_cost::Bool
     table_compression_level::Int32
     expand_alldiff_constraints::Bool
+    max_alldiff_domain_size::Int32
     expand_reservoir_constraints::Bool
+    max_domain_size_for_linear2_expansion::Int32
+    expand_reservoir_using_circuit::Bool
+    encode_cumulative_as_reservoir::Bool
+    max_lin_max_size_for_expansion::Int32
     disable_constraint_expansion::Bool
     encode_complex_linear_constraint_with_integer::Bool
     merge_no_overlap_work_limit::Float64
@@ -946,41 +1016,163 @@ mutable struct SatParameters
     ignore_names::Bool
     infer_all_diffs::Bool
     find_big_linear_overlap::Bool
+    find_clauses_that_are_exactly_one::Bool
+    use_sat_inprocessing::Bool
+    inprocessing_dtime_ratio::Float64
+    inprocessing_probing_dtime::Float64
+    inprocessing_minimization_dtime::Float64
+    inprocessing_minimization_use_conflict_analysis::Bool
+    inprocessing_minimization_use_all_orderings::Bool
+    inprocessing_use_congruence_closure::Bool
+    inprocessing_use_sat_sweeping::Bool
     num_workers::Int32
     num_search_workers::Int32
-    min_num_lns_workers::Int32
+    num_full_subsolvers::Int32
     subsolvers::Vector{String}
     extra_subsolvers::Vector{String}
     ignore_subsolvers::Vector{String}
-    subsolver_params::Vector{<:SatParameters}
+    filter_subsolvers::Vector{String}
+    subsolver_params::Vector{SatParameters}
     interleave_search::Bool
     interleave_batch_size::Int32
     share_objective_bounds::Bool
     share_level_zero_bounds::Bool
+    share_linear2_bounds::Bool
     share_binary_clauses::Bool
+    share_glue_clauses::Bool
+    minimize_shared_clauses::Bool
+    share_glue_clauses_dtime::Float64
+    check_lrat_proof::Bool
+    check_merged_lrat_proof::Bool
+    output_lrat_proof::Bool
+    check_drat_proof::Bool
+    output_drat_proof::Bool
+    max_drat_time_in_seconds::Float64
     debug_postsolve_with_full_solver::Bool
     debug_max_num_presolve_operations::Int32
     debug_crash_on_bad_hint::Bool
+    debug_crash_if_presolve_breaks_hint::Bool
+    debug_crash_if_lrat_check_fails::Bool
     use_optimization_hints::Bool
-    minimize_core::Bool
+    core_minimization_level::Int32
     find_multiple_cores::Bool
     cover_optimization::Bool
-    max_sat_assumption_order::SatParameters_MaxSatAssumptionOrder.T
+    max_sat_assumption_order::Sat.var"SatParameters.MaxSatAssumptionOrder".T
     max_sat_reverse_assumption_order::Bool
-    max_sat_stratification::SatParameters_MaxSatStratificationAlgorithm.T
+    max_sat_stratification::Sat.var"SatParameters.MaxSatStratificationAlgorithm".T
     propagation_loop_detection_factor::Float64
     use_precedences_in_disjunctive_constraint::Bool
+    transitive_precedences_work_limit::Int32
     max_size_to_create_precedence_literals_in_disjunctive::Int32
     use_strong_propagation_in_disjunctive::Bool
+    use_dynamic_precedence_in_disjunctive::Bool
+    use_dynamic_precedence_in_cumulative::Bool
     use_overload_checker_in_cumulative::Bool
+    use_conservative_scale_overload_checker::Bool
     use_timetable_edge_finding_in_cumulative::Bool
+    max_num_intervals_for_timetable_edge_finding::Int32
     use_hard_precedences_in_cumulative::Bool
     exploit_all_precedences::Bool
     use_disjunctive_constraint_in_cumulative::Bool
+    no_overlap_2d_boolean_relations_limit::Int32
     use_timetabling_in_no_overlap_2d::Bool
     use_energetic_reasoning_in_no_overlap_2d::Bool
-    use_pairwise_reasoning_in_no_overlap_2d::Bool
+    use_area_energetic_reasoning_in_no_overlap_2d::Bool
+    use_try_edge_reasoning_in_no_overlap_2d::Bool
+    max_pairs_pairwise_reasoning_in_no_overlap_2d::Int32
+    maximum_regions_to_split_in_disconnected_no_overlap_2d::Int32
+    use_linear3_for_no_overlap_2d_precedences::Bool
     use_dual_scheduling_heuristics::Bool
+    use_all_different_for_circuit::Bool
+    routing_cut_subset_size_for_binary_relation_bound::Int32
+    routing_cut_subset_size_for_tight_binary_relation_bound::Int32
+    routing_cut_subset_size_for_exact_binary_relation_bound::Int32
+    routing_cut_subset_size_for_shortest_paths_bound::Int32
+    routing_cut_dp_effort::Float64
+    routing_cut_max_infeasible_path_length::Int32
+    search_branching::Sat.var"SatParameters.SearchBranching".T
+    hint_conflict_limit::Int32
+    repair_hint::Bool
+    fix_variables_to_their_hinted_value::Bool
+    use_probing_search::Bool
+    use_extended_probing::Bool
+    probing_num_combinations_limit::Int32
+    shaving_deterministic_time_in_probing_search::Float64
+    shaving_search_deterministic_time::Float64
+    shaving_search_threshold::Int64
+    use_objective_lb_search::Bool
+    use_objective_shaving_search::Bool
+    variables_shaving_level::Int32
+    pseudo_cost_reliability_threshold::Int64
+    optimize_with_core::Bool
+    optimize_with_lb_tree_search::Bool
+    save_lp_basis_in_lb_tree_search::Bool
+    binary_search_num_conflicts::Int32
+    optimize_with_max_hs::Bool
+    use_feasibility_jump::Bool
+    use_ls_only::Bool
+    feasibility_jump_decay::Float64
+    feasibility_jump_linearization_level::Int32
+    feasibility_jump_restart_factor::Int32
+    feasibility_jump_batch_dtime::Float64
+    feasibility_jump_var_randomization_probability::Float64
+    feasibility_jump_var_perburbation_range_ratio::Float64
+    feasibility_jump_enable_restarts::Bool
+    feasibility_jump_max_expanded_constraint_size::Int32
+    num_violation_ls::Int32
+    violation_ls_perturbation_period::Int32
+    violation_ls_compound_move_probability::Float64
+    shared_tree_num_workers::Int32
+    use_shared_tree_search::Bool
+    shared_tree_worker_min_restarts_per_subtree::Int32
+    shared_tree_worker_enable_trail_sharing::Bool
+    shared_tree_worker_enable_phase_sharing::Bool
+    shared_tree_open_leaves_per_worker::Float64
+    shared_tree_max_nodes_per_worker::Int32
+    shared_tree_split_strategy::Sat.var"SatParameters.SharedTreeSplitStrategy".T
+    shared_tree_balance_tolerance::Int32
+    shared_tree_split_min_dtime::Float64
+    enumerate_all_solutions::Bool
+    keep_all_feasible_solutions_in_presolve::Bool
+    fill_tightened_domains_in_response::Bool
+    fill_additional_solutions_in_response::Bool
+    instantiate_all_variables::Bool
+    auto_detect_greater_than_at_least_one_of::Bool
+    stop_after_first_solution::Bool
+    stop_after_presolve::Bool
+    stop_after_root_propagation::Bool
+    lns_initial_difficulty::Float64
+    lns_initial_deterministic_limit::Float64
+    use_lns::Bool
+    use_lns_only::Bool
+    solution_pool_size::Int32
+    solution_pool_diversity_limit::Int32
+    alternative_pool_size::Int32
+    use_rins_lns::Bool
+    use_feasibility_pump::Bool
+    use_lb_relax_lns::Bool
+    lb_relax_num_workers_threshold::Int32
+    fp_rounding::Sat.var"SatParameters.FPRoundingMethod".T
+    diversify_lns_params::Bool
+    randomize_search::Bool
+    search_random_variable_pool_size::Int64
+    push_all_tasks_toward_start::Bool
+    use_optional_variables::Bool
+    use_exact_lp_reason::Bool
+    use_combined_no_overlap::Bool
+    at_most_one_max_expansion_size::Int32
+    catch_sigint_signal::Bool
+    use_implied_bounds::Bool
+    polish_lp_solution::Bool
+    lp_primal_tolerance::Float64
+    lp_dual_tolerance::Float64
+    convert_intervals::Bool
+    symmetry_level::Int32
+    use_symmetry_in_lp::Bool
+    keep_symmetry_in_presolve::Bool
+    symmetry_detection_deterministic_time_limit::Float64
+    new_linear_propagation::Bool
+    linear_split_size::Int32
     linearization_level::Int32
     boolean_encoding_level::Int32
     max_domain_size_when_encoding_eq_neq_constraints::Int32
@@ -992,6 +1184,7 @@ mutable struct SatParameters
     add_mir_cuts::Bool
     add_zero_half_cuts::Bool
     add_clique_cuts::Bool
+    add_rlt_cuts::Bool
     max_all_diff_cut_size::Int32
     add_lin_max_cuts::Bool
     max_integer_rounding_scaling::Int32
@@ -1004,69 +1197,14 @@ mutable struct SatParameters
     cut_active_count_decay::Float64
     cut_cleanup_target::Int32
     new_constraints_batch_size::Int32
-    search_branching::SatParameters_SearchBranching.T
-    hint_conflict_limit::Int32
-    repair_hint::Bool
-    fix_variables_to_their_hinted_value::Bool
     exploit_integer_lp_solution::Bool
     exploit_all_lp_solution::Bool
     exploit_best_solution::Bool
     exploit_relaxation_solution::Bool
     exploit_objective::Bool
-    probing_period_at_root::Int64
-    use_probing_search::Bool
-    use_shaving_in_probing_search::Bool
-    shaving_search_deterministic_time::Float64
-    use_objective_lb_search::Bool
-    use_objective_shaving_search::Bool
-    pseudo_cost_reliability_threshold::Int64
-    optimize_with_core::Bool
-    optimize_with_lb_tree_search::Bool
-    binary_search_num_conflicts::Int32
-    optimize_with_max_hs::Bool
-    test_feasibility_jump::Bool
-    feasibility_jump_max_num_values_scanned::Int64
-    feasibility_jump_protect_linear_feasibility::Bool
-    feasibility_jump_decay::Float64
-    feasibility_jump_var_randomization_probability::Float64
-    feasibility_jump_var_perburbation_range_ratio::Float64
-    feasibility_jump_enable_restarts::Bool
-    num_violation_ls::Int32
-    violation_ls_perturbation_period::Int32
-    shared_tree_num_workers::Int32
-    use_shared_tree_search::Bool
-    shared_tree_worker_objective_split_probability::Float64
-    shared_tree_max_nodes_per_worker::Int32
-    shared_tree_split_strategy::SatParameters_SharedTreeSplitStrategy.T
-    enumerate_all_solutions::Bool
-    keep_all_feasible_solutions_in_presolve::Bool
-    fill_tightened_domains_in_response::Bool
-    fill_additional_solutions_in_response::Bool
-    instantiate_all_variables::Bool
-    auto_detect_greater_than_at_least_one_of::Bool
-    stop_after_first_solution::Bool
-    stop_after_presolve::Bool
-    stop_after_root_propagation::Bool
-    use_lns_only::Bool
-    solution_pool_size::Int32
-    use_rins_lns::Bool
-    use_feasibility_pump::Bool
-    use_lb_relax_lns::Bool
-    fp_rounding::SatParameters_FPRoundingMethod.T
-    diversify_lns_params::Bool
-    randomize_search::Bool
-    search_randomization_tolerance::Int64
-    use_optional_variables::Bool
-    use_exact_lp_reason::Bool
-    use_branching_in_lp::Bool
-    use_combined_no_overlap::Bool
-    catch_sigint_signal::Bool
-    use_implied_bounds::Bool
-    polish_lp_solution::Bool
-    convert_intervals::Bool
-    symmetry_level::Int32
-    new_linear_propagation::Bool
-    linear_split_size::Int32
+    detect_linearized_product::Bool
+    use_new_integer_conflict_resolution::Bool
+    create_1uip_boolean_during_icr::Bool
     mip_max_bound::Float64
     mip_var_scaling::Float64
     mip_scale_large_domain::Bool
@@ -1077,32 +1215,42 @@ mutable struct SatParameters
     mip_check_precision::Float64
     mip_compute_true_objective_bound::Bool
     mip_max_valid_magnitude::Float64
+    mip_treat_high_magnitude_bounds_as_infinity::Bool
     mip_drop_tolerance::Float64
+    mip_presolve_level::Int32
 
     function SatParameters(;
         name = "",
-        preferred_variable_order = SatParameters_VariableOrder.IN_ORDER,
-        initial_polarity = SatParameters_Polarity.POLARITY_FALSE,
+        preferred_variable_order = Sat.var"SatParameters.VariableOrder".IN_ORDER,
+        initial_polarity = Sat.var"SatParameters.Polarity".POLARITY_FALSE,
         use_phase_saving = true,
         polarity_rephase_increment = Int32(1000),
+        polarity_exploit_ls_hints = false,
         random_polarity_ratio = Float64(0.0),
         random_branches_ratio = Float64(0.0),
         use_erwa_heuristic = false,
         initial_variables_activity = Float64(0.0),
         also_bump_variables_in_conflict_reasons = false,
         minimization_algorithm = SatParameters_ConflictMinimizationAlgorithm.RECURSIVE,
-        binary_minimization_algorithm = SatParameters_BinaryMinizationAlgorithm.BINARY_MINIMIZATION_FIRST,
+        binary_minimization_algorithm = SatParameters_BinaryMinizationAlgorithm.BINARY_MINIMIZATION_FROM_UIP_AND_DECISIONS,
         subsumption_during_conflict_analysis = true,
+        extra_subsumption_during_conflict_analysis = true,
+        decision_subsumption_during_conflict_analysis = true,
+        eagerly_subsume_last_n_conflicts = Int32(4),
+        subsume_during_vivification = true,
+        use_chronological_backtracking = false,
+        max_backjump_levels = Int32(50),
+        chronological_backtrack_min_conflicts = Int32(1000),
         clause_cleanup_period = Int32(10000),
+        clause_cleanup_period_increment = Int32(0),
         clause_cleanup_target = Int32(0),
         clause_cleanup_ratio = Float64(0.5),
-        clause_cleanup_protection = SatParameters_ClauseProtection.PROTECTION_NONE,
         clause_cleanup_lbd_bound = Int32(5),
-        clause_cleanup_ordering = SatParameters_ClauseOrdering.CLAUSE_ACTIVITY,
+        clause_cleanup_lbd_tier1 = Int32(0),
+        clause_cleanup_lbd_tier2 = Int32(0),
+        clause_cleanup_ordering = Sat.var"SatParameters.ClauseOrdering".CLAUSE_ACTIVITY,
         pb_cleanup_increment = Int32(200),
         pb_cleanup_ratio = Float64(0.5),
-        minimize_with_propagation_restart_period = Int32(10),
-        minimize_with_propagation_num_decisions = Int32(1000),
         variable_activity_decay = Float64(0.8),
         max_variable_activity_value = Float64(1e100),
         glucose_max_decay = Float64(0.95),
@@ -1110,7 +1258,7 @@ mutable struct SatParameters
         glucose_decay_increment_period = Int32(5000),
         clause_activity_decay = Float64(0.999),
         max_clause_activity_value = Float64(1e20),
-        restart_algorithms = Vector{SatParameters_RestartAlgorithm.T}(),
+        restart_algorithms = Vector{Sat.var"SatParameters.RestartAlgorithm".T}(),
         default_restart_algorithms = "LUBY_RESTART,LBD_MOVING_AVERAGE_RESTART,DL_MOVING_AVERAGE_RESTART",
         restart_period = Int32(50),
         restart_running_window_size = Int32(50),
@@ -1123,6 +1271,7 @@ mutable struct SatParameters
         strategy_change_increase_ratio = Float64(0.0),
         max_time_in_seconds = Float64(Inf),
         max_deterministic_time = Float64(Inf),
+        max_num_deterministic_batches = Int32(0),
         max_number_of_conflicts = Int64(9223372036854775807),
         max_memory_in_mb = Int64(10000),
         absolute_gap_limit = Float64(1e-4),
@@ -1132,8 +1281,6 @@ mutable struct SatParameters
         permute_presolve_constraint_order = false,
         use_absl_random = false,
         log_search_progress = false,
-        log_frequency_in_seconds = Float64(-1),
-        model_reduction_log_frequency_in_seconds = Float64(5),
         log_subsolver_statistics = false,
         log_prefix = "",
         log_to_stdout = true,
@@ -1142,8 +1289,9 @@ mutable struct SatParameters
         minimize_reduction_during_pb_resolution = false,
         count_assumption_levels_in_lbd = true,
         presolve_bve_threshold = Int32(500),
+        filter_sat_postsolve_clauses = false,
         presolve_bve_clause_weight = Int32(3),
-        probing_deterministic_time_limit = Float64(1),
+        probing_deterministic_time_limit = Float64(1.0),
         presolve_probing_deterministic_time_limit = Float64(30.0),
         presolve_blocked_clause = true,
         presolve_use_bva = true,
@@ -1152,11 +1300,17 @@ mutable struct SatParameters
         cp_model_presolve = true,
         cp_model_probing_level = Int32(2),
         cp_model_use_sat_presolve = true,
-        use_sat_inprocessing = false,
+        load_at_most_ones_in_sat_presolve = false,
+        remove_fixed_variables_early = true,
         detect_table_with_cost = false,
         table_compression_level = Int32(2),
         expand_alldiff_constraints = false,
+        max_alldiff_domain_size = Int32(256),
         expand_reservoir_constraints = true,
+        max_domain_size_for_linear2_expansion = Int32(8),
+        expand_reservoir_using_circuit = false,
+        encode_cumulative_as_reservoir = false,
+        max_lin_max_size_for_expansion = Int32(0),
         disable_constraint_expansion = false,
         encode_complex_linear_constraint_with_integer = false,
         merge_no_overlap_work_limit = Float64(1e12),
@@ -1167,41 +1321,163 @@ mutable struct SatParameters
         ignore_names = true,
         infer_all_diffs = true,
         find_big_linear_overlap = true,
+        find_clauses_that_are_exactly_one = true,
+        use_sat_inprocessing = true,
+        inprocessing_dtime_ratio = Float64(0.2),
+        inprocessing_probing_dtime = Float64(1.0),
+        inprocessing_minimization_dtime = Float64(1.0),
+        inprocessing_minimization_use_conflict_analysis = true,
+        inprocessing_minimization_use_all_orderings = false,
+        inprocessing_use_congruence_closure = true,
+        inprocessing_use_sat_sweeping = false,
         num_workers = Int32(0),
         num_search_workers = Int32(0),
-        min_num_lns_workers = Int32(2),
+        num_full_subsolvers = Int32(0),
         subsolvers = Vector{String}(),
         extra_subsolvers = Vector{String}(),
         ignore_subsolvers = Vector{String}(),
+        filter_subsolvers = Vector{String}(),
         subsolver_params = Vector{SatParameters}(),
         interleave_search = false,
         interleave_batch_size = Int32(0),
         share_objective_bounds = true,
         share_level_zero_bounds = true,
+        share_linear2_bounds = false,
         share_binary_clauses = true,
+        share_glue_clauses = true,
+        minimize_shared_clauses = true,
+        share_glue_clauses_dtime = Float64(1.0),
+        check_lrat_proof = false,
+        check_merged_lrat_proof = false,
+        output_lrat_proof = false,
+        check_drat_proof = false,
+        output_drat_proof = false,
+        max_drat_time_in_seconds = Float64(Inf),
         debug_postsolve_with_full_solver = false,
         debug_max_num_presolve_operations = Int32(0),
         debug_crash_on_bad_hint = false,
+        debug_crash_if_presolve_breaks_hint = false,
+        debug_crash_if_lrat_check_fails = false,
         use_optimization_hints = true,
-        minimize_core = true,
+        core_minimization_level = Int32(2),
         find_multiple_cores = true,
         cover_optimization = true,
-        max_sat_assumption_order = SatParameters_MaxSatAssumptionOrder.DEFAULT_ASSUMPTION_ORDER,
+        max_sat_assumption_order = Sat.var"SatParameters.MaxSatAssumptionOrder".DEFAULT_ASSUMPTION_ORDER,
         max_sat_reverse_assumption_order = false,
-        max_sat_stratification = SatParameters_MaxSatStratificationAlgorithm.STRATIFICATION_DESCENT,
+        max_sat_stratification = Sat.var"SatParameters.MaxSatStratificationAlgorithm".STRATIFICATION_DESCENT,
         propagation_loop_detection_factor = Float64(10.0),
         use_precedences_in_disjunctive_constraint = true,
+        transitive_precedences_work_limit = Int32(1000000),
         max_size_to_create_precedence_literals_in_disjunctive = Int32(60),
         use_strong_propagation_in_disjunctive = false,
+        use_dynamic_precedence_in_disjunctive = false,
+        use_dynamic_precedence_in_cumulative = false,
         use_overload_checker_in_cumulative = false,
+        use_conservative_scale_overload_checker = false,
         use_timetable_edge_finding_in_cumulative = false,
+        max_num_intervals_for_timetable_edge_finding = Int32(100),
         use_hard_precedences_in_cumulative = false,
         exploit_all_precedences = false,
         use_disjunctive_constraint_in_cumulative = true,
+        no_overlap_2d_boolean_relations_limit = Int32(10),
         use_timetabling_in_no_overlap_2d = false,
         use_energetic_reasoning_in_no_overlap_2d = false,
-        use_pairwise_reasoning_in_no_overlap_2d = false,
+        use_area_energetic_reasoning_in_no_overlap_2d = false,
+        use_try_edge_reasoning_in_no_overlap_2d = false,
+        max_pairs_pairwise_reasoning_in_no_overlap_2d = Int32(1250),
+        maximum_regions_to_split_in_disconnected_no_overlap_2d = Int32(0),
+        use_linear3_for_no_overlap_2d_precedences = true,
         use_dual_scheduling_heuristics = true,
+        use_all_different_for_circuit = false,
+        routing_cut_subset_size_for_binary_relation_bound = Int32(0),
+        routing_cut_subset_size_for_tight_binary_relation_bound = Int32(0),
+        routing_cut_subset_size_for_exact_binary_relation_bound = Int32(8),
+        routing_cut_subset_size_for_shortest_paths_bound = Int32(8),
+        routing_cut_dp_effort = Float64(1e7),
+        routing_cut_max_infeasible_path_length = Int32(6),
+        search_branching = Sat.var"SatParameters.SearchBranching".AUTOMATIC_SEARCH,
+        hint_conflict_limit = Int32(10),
+        repair_hint = false,
+        fix_variables_to_their_hinted_value = false,
+        use_probing_search = false,
+        use_extended_probing = true,
+        probing_num_combinations_limit = Int32(20000),
+        shaving_deterministic_time_in_probing_search = Float64(0.001),
+        shaving_search_deterministic_time = Float64(0.1),
+        shaving_search_threshold = Int64(64),
+        use_objective_lb_search = false,
+        use_objective_shaving_search = false,
+        variables_shaving_level = Int32(-1),
+        pseudo_cost_reliability_threshold = Int64(100),
+        optimize_with_core = false,
+        optimize_with_lb_tree_search = false,
+        save_lp_basis_in_lb_tree_search = false,
+        binary_search_num_conflicts = Int32(-1),
+        optimize_with_max_hs = false,
+        use_feasibility_jump = true,
+        use_ls_only = false,
+        feasibility_jump_decay = Float64(0.95),
+        feasibility_jump_linearization_level = Int32(2),
+        feasibility_jump_restart_factor = Int32(1),
+        feasibility_jump_batch_dtime = Float64(0.1),
+        feasibility_jump_var_randomization_probability = Float64(0.05),
+        feasibility_jump_var_perburbation_range_ratio = Float64(0.2),
+        feasibility_jump_enable_restarts = true,
+        feasibility_jump_max_expanded_constraint_size = Int32(500),
+        num_violation_ls = Int32(0),
+        violation_ls_perturbation_period = Int32(100),
+        violation_ls_compound_move_probability = Float64(0.5),
+        shared_tree_num_workers = Int32(-1),
+        use_shared_tree_search = false,
+        shared_tree_worker_min_restarts_per_subtree = Int32(1),
+        shared_tree_worker_enable_trail_sharing = true,
+        shared_tree_worker_enable_phase_sharing = true,
+        shared_tree_open_leaves_per_worker = Float64(2.0),
+        shared_tree_max_nodes_per_worker = Int32(10000),
+        shared_tree_split_strategy = Sat.var"SatParameters.SharedTreeSplitStrategy".SPLIT_STRATEGY_AUTO,
+        shared_tree_balance_tolerance = Int32(1),
+        shared_tree_split_min_dtime = Float64(0.1),
+        enumerate_all_solutions = false,
+        keep_all_feasible_solutions_in_presolve = false,
+        fill_tightened_domains_in_response = false,
+        fill_additional_solutions_in_response = false,
+        instantiate_all_variables = true,
+        auto_detect_greater_than_at_least_one_of = true,
+        stop_after_first_solution = false,
+        stop_after_presolve = false,
+        stop_after_root_propagation = false,
+        lns_initial_difficulty = Float64(0.5),
+        lns_initial_deterministic_limit = Float64(0.1),
+        use_lns = true,
+        use_lns_only = false,
+        solution_pool_size = Int32(3),
+        solution_pool_diversity_limit = Int32(10),
+        alternative_pool_size = Int32(1),
+        use_rins_lns = true,
+        use_feasibility_pump = true,
+        use_lb_relax_lns = true,
+        lb_relax_num_workers_threshold = Int32(16),
+        fp_rounding = Sat.var"SatParameters.FPRoundingMethod".PROPAGATION_ASSISTED,
+        diversify_lns_params = false,
+        randomize_search = false,
+        search_random_variable_pool_size = Int64(0),
+        push_all_tasks_toward_start = false,
+        use_optional_variables = false,
+        use_exact_lp_reason = true,
+        use_combined_no_overlap = false,
+        at_most_one_max_expansion_size = Int32(3),
+        catch_sigint_signal = true,
+        use_implied_bounds = true,
+        polish_lp_solution = false,
+        lp_primal_tolerance = Float64(1e-7),
+        lp_dual_tolerance = Float64(1e-7),
+        convert_intervals = true,
+        symmetry_level = Int32(2),
+        use_symmetry_in_lp = false,
+        keep_symmetry_in_presolve = false,
+        symmetry_detection_deterministic_time_limit = Float64(1.0),
+        new_linear_propagation = true,
+        linear_split_size = Int32(100),
         linearization_level = Int32(1),
         boolean_encoding_level = Int32(1),
         max_domain_size_when_encoding_eq_neq_constraints = Int32(16),
@@ -1213,6 +1489,7 @@ mutable struct SatParameters
         add_mir_cuts = true,
         add_zero_half_cuts = true,
         add_clique_cuts = true,
+        add_rlt_cuts = true,
         max_all_diff_cut_size = Int32(64),
         add_lin_max_cuts = true,
         max_integer_rounding_scaling = Int32(600),
@@ -1225,69 +1502,14 @@ mutable struct SatParameters
         cut_active_count_decay = Float64(0.8),
         cut_cleanup_target = Int32(1000),
         new_constraints_batch_size = Int32(50),
-        search_branching = SatParameters_SearchBranching.AUTOMATIC_SEARCH,
-        hint_conflict_limit = Int32(10),
-        repair_hint = false,
-        fix_variables_to_their_hinted_value = false,
         exploit_integer_lp_solution = true,
         exploit_all_lp_solution = true,
         exploit_best_solution = false,
         exploit_relaxation_solution = false,
         exploit_objective = true,
-        probing_period_at_root = Int64(0),
-        use_probing_search = false,
-        use_shaving_in_probing_search = true,
-        shaving_search_deterministic_time = Float64(0.001),
-        use_objective_lb_search = false,
-        use_objective_shaving_search = false,
-        pseudo_cost_reliability_threshold = Int64(100),
-        optimize_with_core = false,
-        optimize_with_lb_tree_search = false,
-        binary_search_num_conflicts = Int32(-1),
-        optimize_with_max_hs = false,
-        test_feasibility_jump = false,
-        feasibility_jump_max_num_values_scanned = Int64(4096),
-        feasibility_jump_protect_linear_feasibility = true,
-        feasibility_jump_decay = Float64(1.0),
-        feasibility_jump_var_randomization_probability = Float64(0.0),
-        feasibility_jump_var_perburbation_range_ratio = Float64(0.2),
-        feasibility_jump_enable_restarts = true,
-        num_violation_ls = Int32(0),
-        violation_ls_perturbation_period = Int32(100),
-        shared_tree_num_workers = Int32(0),
-        use_shared_tree_search = false,
-        shared_tree_worker_objective_split_probability = Float64(0.5),
-        shared_tree_max_nodes_per_worker = Int32(128),
-        shared_tree_split_strategy = SatParameters_SharedTreeSplitStrategy.SPLIT_STRATEGY_AUTO,
-        enumerate_all_solutions = false,
-        keep_all_feasible_solutions_in_presolve = false,
-        fill_tightened_domains_in_response = false,
-        fill_additional_solutions_in_response = false,
-        instantiate_all_variables = true,
-        auto_detect_greater_than_at_least_one_of = true,
-        stop_after_first_solution = false,
-        stop_after_presolve = false,
-        stop_after_root_propagation = false,
-        use_lns_only = false,
-        solution_pool_size = Int32(3),
-        use_rins_lns = true,
-        use_feasibility_pump = true,
-        use_lb_relax_lns = false,
-        fp_rounding = SatParameters_FPRoundingMethod.PROPAGATION_ASSISTED,
-        diversify_lns_params = false,
-        randomize_search = false,
-        search_randomization_tolerance = Int64(0),
-        use_optional_variables = false,
-        use_exact_lp_reason = true,
-        use_branching_in_lp = false,
-        use_combined_no_overlap = false,
-        catch_sigint_signal = true,
-        use_implied_bounds = true,
-        polish_lp_solution = false,
-        convert_intervals = true,
-        symmetry_level = Int32(2),
-        new_linear_propagation = false,
-        linear_split_size = Int32(100),
+        detect_linearized_product = false,
+        use_new_integer_conflict_resolution = false,
+        create_1uip_boolean_during_icr = true,
         mip_max_bound = Float64(1e7),
         mip_var_scaling = Float64(1.0),
         mip_scale_large_domain = false,
@@ -1297,8 +1519,10 @@ mutable struct SatParameters
         mip_max_activity_exponent = Int32(53),
         mip_check_precision = Float64(1e-4),
         mip_compute_true_objective_bound = true,
-        mip_max_valid_magnitude = Float64(1e30),
+        mip_max_valid_magnitude = Float64(1e20),
+        mip_treat_high_magnitude_bounds_as_infinity = false,
         mip_drop_tolerance = Float64(1e-16),
+        mip_presolve_level = Int32(2),
     )
         new(
             name,
@@ -1306,6 +1530,7 @@ mutable struct SatParameters
             initial_polarity,
             use_phase_saving,
             polarity_rephase_increment,
+            polarity_exploit_ls_hints,
             random_polarity_ratio,
             random_branches_ratio,
             use_erwa_heuristic,
@@ -1314,16 +1539,23 @@ mutable struct SatParameters
             minimization_algorithm,
             binary_minimization_algorithm,
             subsumption_during_conflict_analysis,
+            extra_subsumption_during_conflict_analysis,
+            decision_subsumption_during_conflict_analysis,
+            eagerly_subsume_last_n_conflicts,
+            subsume_during_vivification,
+            use_chronological_backtracking,
+            max_backjump_levels,
+            chronological_backtrack_min_conflicts,
             clause_cleanup_period,
+            clause_cleanup_period_increment,
             clause_cleanup_target,
             clause_cleanup_ratio,
-            clause_cleanup_protection,
             clause_cleanup_lbd_bound,
+            clause_cleanup_lbd_tier1,
+            clause_cleanup_lbd_tier2,
             clause_cleanup_ordering,
             pb_cleanup_increment,
             pb_cleanup_ratio,
-            minimize_with_propagation_restart_period,
-            minimize_with_propagation_num_decisions,
             variable_activity_decay,
             max_variable_activity_value,
             glucose_max_decay,
@@ -1344,6 +1576,7 @@ mutable struct SatParameters
             strategy_change_increase_ratio,
             max_time_in_seconds,
             max_deterministic_time,
+            max_num_deterministic_batches,
             max_number_of_conflicts,
             max_memory_in_mb,
             absolute_gap_limit,
@@ -1353,8 +1586,6 @@ mutable struct SatParameters
             permute_presolve_constraint_order,
             use_absl_random,
             log_search_progress,
-            log_frequency_in_seconds,
-            model_reduction_log_frequency_in_seconds,
             log_subsolver_statistics,
             log_prefix,
             log_to_stdout,
@@ -1363,6 +1594,7 @@ mutable struct SatParameters
             minimize_reduction_during_pb_resolution,
             count_assumption_levels_in_lbd,
             presolve_bve_threshold,
+            filter_sat_postsolve_clauses,
             presolve_bve_clause_weight,
             probing_deterministic_time_limit,
             presolve_probing_deterministic_time_limit,
@@ -1373,11 +1605,17 @@ mutable struct SatParameters
             cp_model_presolve,
             cp_model_probing_level,
             cp_model_use_sat_presolve,
-            use_sat_inprocessing,
+            load_at_most_ones_in_sat_presolve,
+            remove_fixed_variables_early,
             detect_table_with_cost,
             table_compression_level,
             expand_alldiff_constraints,
+            max_alldiff_domain_size,
             expand_reservoir_constraints,
+            max_domain_size_for_linear2_expansion,
+            expand_reservoir_using_circuit,
+            encode_cumulative_as_reservoir,
+            max_lin_max_size_for_expansion,
             disable_constraint_expansion,
             encode_complex_linear_constraint_with_integer,
             merge_no_overlap_work_limit,
@@ -1388,23 +1626,45 @@ mutable struct SatParameters
             ignore_names,
             infer_all_diffs,
             find_big_linear_overlap,
+            find_clauses_that_are_exactly_one,
+            use_sat_inprocessing,
+            inprocessing_dtime_ratio,
+            inprocessing_probing_dtime,
+            inprocessing_minimization_dtime,
+            inprocessing_minimization_use_conflict_analysis,
+            inprocessing_minimization_use_all_orderings,
+            inprocessing_use_congruence_closure,
+            inprocessing_use_sat_sweeping,
             num_workers,
             num_search_workers,
-            min_num_lns_workers,
+            num_full_subsolvers,
             subsolvers,
             extra_subsolvers,
             ignore_subsolvers,
+            filter_subsolvers,
             subsolver_params,
             interleave_search,
             interleave_batch_size,
             share_objective_bounds,
             share_level_zero_bounds,
+            share_linear2_bounds,
             share_binary_clauses,
+            share_glue_clauses,
+            minimize_shared_clauses,
+            share_glue_clauses_dtime,
+            check_lrat_proof,
+            check_merged_lrat_proof,
+            output_lrat_proof,
+            check_drat_proof,
+            output_drat_proof,
+            max_drat_time_in_seconds,
             debug_postsolve_with_full_solver,
             debug_max_num_presolve_operations,
             debug_crash_on_bad_hint,
+            debug_crash_if_presolve_breaks_hint,
+            debug_crash_if_lrat_check_fails,
             use_optimization_hints,
-            minimize_core,
+            core_minimization_level,
             find_multiple_cores,
             cover_optimization,
             max_sat_assumption_order,
@@ -1412,17 +1672,117 @@ mutable struct SatParameters
             max_sat_stratification,
             propagation_loop_detection_factor,
             use_precedences_in_disjunctive_constraint,
+            transitive_precedences_work_limit,
             max_size_to_create_precedence_literals_in_disjunctive,
             use_strong_propagation_in_disjunctive,
+            use_dynamic_precedence_in_disjunctive,
+            use_dynamic_precedence_in_cumulative,
             use_overload_checker_in_cumulative,
+            use_conservative_scale_overload_checker,
             use_timetable_edge_finding_in_cumulative,
+            max_num_intervals_for_timetable_edge_finding,
             use_hard_precedences_in_cumulative,
             exploit_all_precedences,
             use_disjunctive_constraint_in_cumulative,
+            no_overlap_2d_boolean_relations_limit,
             use_timetabling_in_no_overlap_2d,
             use_energetic_reasoning_in_no_overlap_2d,
-            use_pairwise_reasoning_in_no_overlap_2d,
+            use_area_energetic_reasoning_in_no_overlap_2d,
+            use_try_edge_reasoning_in_no_overlap_2d,
+            max_pairs_pairwise_reasoning_in_no_overlap_2d,
+            maximum_regions_to_split_in_disconnected_no_overlap_2d,
+            use_linear3_for_no_overlap_2d_precedences,
             use_dual_scheduling_heuristics,
+            use_all_different_for_circuit,
+            routing_cut_subset_size_for_binary_relation_bound,
+            routing_cut_subset_size_for_tight_binary_relation_bound,
+            routing_cut_subset_size_for_exact_binary_relation_bound,
+            routing_cut_subset_size_for_shortest_paths_bound,
+            routing_cut_dp_effort,
+            routing_cut_max_infeasible_path_length,
+            search_branching,
+            hint_conflict_limit,
+            repair_hint,
+            fix_variables_to_their_hinted_value,
+            use_probing_search,
+            use_extended_probing,
+            probing_num_combinations_limit,
+            shaving_deterministic_time_in_probing_search,
+            shaving_search_deterministic_time,
+            shaving_search_threshold,
+            use_objective_lb_search,
+            use_objective_shaving_search,
+            variables_shaving_level,
+            pseudo_cost_reliability_threshold,
+            optimize_with_core,
+            optimize_with_lb_tree_search,
+            save_lp_basis_in_lb_tree_search,
+            binary_search_num_conflicts,
+            optimize_with_max_hs,
+            use_feasibility_jump,
+            use_ls_only,
+            feasibility_jump_decay,
+            feasibility_jump_linearization_level,
+            feasibility_jump_restart_factor,
+            feasibility_jump_batch_dtime,
+            feasibility_jump_var_randomization_probability,
+            feasibility_jump_var_perburbation_range_ratio,
+            feasibility_jump_enable_restarts,
+            feasibility_jump_max_expanded_constraint_size,
+            num_violation_ls,
+            violation_ls_perturbation_period,
+            violation_ls_compound_move_probability,
+            shared_tree_num_workers,
+            use_shared_tree_search,
+            shared_tree_worker_min_restarts_per_subtree,
+            shared_tree_worker_enable_trail_sharing,
+            shared_tree_worker_enable_phase_sharing,
+            shared_tree_open_leaves_per_worker,
+            shared_tree_max_nodes_per_worker,
+            shared_tree_split_strategy,
+            shared_tree_balance_tolerance,
+            shared_tree_split_min_dtime,
+            enumerate_all_solutions,
+            keep_all_feasible_solutions_in_presolve,
+            fill_tightened_domains_in_response,
+            fill_additional_solutions_in_response,
+            instantiate_all_variables,
+            auto_detect_greater_than_at_least_one_of,
+            stop_after_first_solution,
+            stop_after_presolve,
+            stop_after_root_propagation,
+            lns_initial_difficulty,
+            lns_initial_deterministic_limit,
+            use_lns,
+            use_lns_only,
+            solution_pool_size,
+            solution_pool_diversity_limit,
+            alternative_pool_size,
+            use_rins_lns,
+            use_feasibility_pump,
+            use_lb_relax_lns,
+            lb_relax_num_workers_threshold,
+            fp_rounding,
+            diversify_lns_params,
+            randomize_search,
+            search_random_variable_pool_size,
+            push_all_tasks_toward_start,
+            use_optional_variables,
+            use_exact_lp_reason,
+            use_combined_no_overlap,
+            at_most_one_max_expansion_size,
+            catch_sigint_signal,
+            use_implied_bounds,
+            polish_lp_solution,
+            lp_primal_tolerance,
+            lp_dual_tolerance,
+            convert_intervals,
+            symmetry_level,
+            use_symmetry_in_lp,
+            keep_symmetry_in_presolve,
+            symmetry_detection_deterministic_time_limit,
+            new_linear_propagation,
+            linear_split_size,
             linearization_level,
             boolean_encoding_level,
             max_domain_size_when_encoding_eq_neq_constraints,
@@ -1434,6 +1794,7 @@ mutable struct SatParameters
             add_mir_cuts,
             add_zero_half_cuts,
             add_clique_cuts,
+            add_rlt_cuts,
             max_all_diff_cut_size,
             add_lin_max_cuts,
             max_integer_rounding_scaling,
@@ -1446,69 +1807,14 @@ mutable struct SatParameters
             cut_active_count_decay,
             cut_cleanup_target,
             new_constraints_batch_size,
-            search_branching,
-            hint_conflict_limit,
-            repair_hint,
-            fix_variables_to_their_hinted_value,
             exploit_integer_lp_solution,
             exploit_all_lp_solution,
             exploit_best_solution,
             exploit_relaxation_solution,
             exploit_objective,
-            probing_period_at_root,
-            use_probing_search,
-            use_shaving_in_probing_search,
-            shaving_search_deterministic_time,
-            use_objective_lb_search,
-            use_objective_shaving_search,
-            pseudo_cost_reliability_threshold,
-            optimize_with_core,
-            optimize_with_lb_tree_search,
-            binary_search_num_conflicts,
-            optimize_with_max_hs,
-            test_feasibility_jump,
-            feasibility_jump_max_num_values_scanned,
-            feasibility_jump_protect_linear_feasibility,
-            feasibility_jump_decay,
-            feasibility_jump_var_randomization_probability,
-            feasibility_jump_var_perburbation_range_ratio,
-            feasibility_jump_enable_restarts,
-            num_violation_ls,
-            violation_ls_perturbation_period,
-            shared_tree_num_workers,
-            use_shared_tree_search,
-            shared_tree_worker_objective_split_probability,
-            shared_tree_max_nodes_per_worker,
-            shared_tree_split_strategy,
-            enumerate_all_solutions,
-            keep_all_feasible_solutions_in_presolve,
-            fill_tightened_domains_in_response,
-            fill_additional_solutions_in_response,
-            instantiate_all_variables,
-            auto_detect_greater_than_at_least_one_of,
-            stop_after_first_solution,
-            stop_after_presolve,
-            stop_after_root_propagation,
-            use_lns_only,
-            solution_pool_size,
-            use_rins_lns,
-            use_feasibility_pump,
-            use_lb_relax_lns,
-            fp_rounding,
-            diversify_lns_params,
-            randomize_search,
-            search_randomization_tolerance,
-            use_optional_variables,
-            use_exact_lp_reason,
-            use_branching_in_lp,
-            use_combined_no_overlap,
-            catch_sigint_signal,
-            use_implied_bounds,
-            polish_lp_solution,
-            convert_intervals,
-            symmetry_level,
-            new_linear_propagation,
-            linear_split_size,
+            detect_linearized_product,
+            use_new_integer_conflict_resolution,
+            create_1uip_boolean_during_icr,
             mip_max_bound,
             mip_var_scaling,
             mip_scale_large_domain,
@@ -1519,7 +1825,9 @@ mutable struct SatParameters
             mip_check_precision,
             mip_compute_true_objective_bound,
             mip_max_valid_magnitude,
+            mip_treat_high_magnitude_bounds_as_infinity,
             mip_drop_tolerance,
+            mip_presolve_level,
         )
     end
 end
@@ -1534,6 +1842,7 @@ function to_proto_struct(
         sat_parameters.initial_polarity,
         sat_parameters.use_phase_saving,
         sat_parameters.polarity_rephase_increment,
+        sat_parameters.polarity_exploit_ls_hints,
         sat_parameters.random_polarity_ratio,
         sat_parameters.random_branches_ratio,
         sat_parameters.use_erwa_heuristic,
@@ -1542,16 +1851,23 @@ function to_proto_struct(
         sat_parameters.minimization_algorithm,
         sat_parameters.binary_minimization_algorithm,
         sat_parameters.subsumption_during_conflict_analysis,
+        sat_parameters.extra_subsumption_during_conflict_analysis,
+        sat_parameters.decision_subsumption_during_conflict_analysis,
+        sat_parameters.eagerly_subsume_last_n_conflicts,
+        sat_parameters.subsume_during_vivification,
+        sat_parameters.use_chronological_backtracking,
+        sat_parameters.max_backjump_levels,
+        sat_parameters.chronological_backtrack_min_conflicts,
         sat_parameters.clause_cleanup_period,
+        sat_parameters.clause_cleanup_period_increment,
         sat_parameters.clause_cleanup_target,
         sat_parameters.clause_cleanup_ratio,
-        sat_parameters.clause_cleanup_protection,
         sat_parameters.clause_cleanup_lbd_bound,
+        sat_parameters.clause_cleanup_lbd_tier1,
+        sat_parameters.clause_cleanup_lbd_tier2,
         sat_parameters.clause_cleanup_ordering,
         sat_parameters.pb_cleanup_increment,
         sat_parameters.pb_cleanup_ratio,
-        sat_parameters.minimize_with_propagation_restart_period,
-        sat_parameters.minimize_with_propagation_num_decisions,
         sat_parameters.variable_activity_decay,
         sat_parameters.max_variable_activity_value,
         sat_parameters.glucose_max_decay,
@@ -1572,6 +1888,7 @@ function to_proto_struct(
         sat_parameters.strategy_change_increase_ratio,
         sat_parameters.max_time_in_seconds,
         sat_parameters.max_deterministic_time,
+        sat_parameters.max_num_deterministic_batches,
         sat_parameters.max_number_of_conflicts,
         sat_parameters.max_memory_in_mb,
         sat_parameters.absolute_gap_limit,
@@ -1581,8 +1898,6 @@ function to_proto_struct(
         sat_parameters.permute_presolve_constraint_order,
         sat_parameters.use_absl_random,
         sat_parameters.log_search_progress,
-        sat_parameters.log_frequency_in_seconds,
-        sat_parameters.model_reduction_log_frequency_in_seconds,
         sat_parameters.log_subsolver_statistics,
         sat_parameters.log_prefix,
         sat_parameters.log_to_stdout,
@@ -1591,6 +1906,7 @@ function to_proto_struct(
         sat_parameters.minimize_reduction_during_pb_resolution,
         sat_parameters.count_assumption_levels_in_lbd,
         sat_parameters.presolve_bve_threshold,
+        sat_parameters.filter_sat_postsolve_clauses,
         sat_parameters.presolve_bve_clause_weight,
         sat_parameters.probing_deterministic_time_limit,
         sat_parameters.presolve_probing_deterministic_time_limit,
@@ -1601,11 +1917,17 @@ function to_proto_struct(
         sat_parameters.cp_model_presolve,
         sat_parameters.cp_model_probing_level,
         sat_parameters.cp_model_use_sat_presolve,
-        sat_parameters.use_sat_inprocessing,
+        sat_parameters.load_at_most_ones_in_sat_presolve,
+        sat_parameters.remove_fixed_variables_early,
         sat_parameters.detect_table_with_cost,
         sat_parameters.table_compression_level,
         sat_parameters.expand_alldiff_constraints,
+        sat_parameters.max_alldiff_domain_size,
         sat_parameters.expand_reservoir_constraints,
+        sat_parameters.max_domain_size_for_linear2_expansion,
+        sat_parameters.expand_reservoir_using_circuit,
+        sat_parameters.encode_cumulative_as_reservoir,
+        sat_parameters.max_lin_max_size_for_expansion,
         sat_parameters.disable_constraint_expansion,
         sat_parameters.encode_complex_linear_constraint_with_integer,
         sat_parameters.merge_no_overlap_work_limit,
@@ -1616,23 +1938,45 @@ function to_proto_struct(
         sat_parameters.ignore_names,
         sat_parameters.infer_all_diffs,
         sat_parameters.find_big_linear_overlap,
+        sat_parameters.find_clauses_that_are_exactly_one,
+        sat_parameters.use_sat_inprocessing,
+        sat_parameters.inprocessing_dtime_ratio,
+        sat_parameters.inprocessing_probing_dtime,
+        sat_parameters.inprocessing_minimization_dtime,
+        sat_parameters.inprocessing_minimization_use_conflict_analysis,
+        sat_parameters.inprocessing_minimization_use_all_orderings,
+        sat_parameters.inprocessing_use_congruence_closure,
+        sat_parameters.inprocessing_use_sat_sweeping,
         sat_parameters.num_workers,
         sat_parameters.num_search_workers,
-        sat_parameters.min_num_lns_workers,
+        sat_parameters.num_full_subsolvers,
         sat_parameters.subsolvers,
         sat_parameters.extra_subsolvers,
         sat_parameters.ignore_subsolvers,
+        sat_parameters.filter_subsolvers,
         sat_parameters.subsolver_params,
         sat_parameters.interleave_search,
         sat_parameters.interleave_batch_size,
         sat_parameters.share_objective_bounds,
         sat_parameters.share_level_zero_bounds,
+        sat_parameters.share_linear2_bounds,
         sat_parameters.share_binary_clauses,
+        sat_parameters.share_glue_clauses,
+        sat_parameters.minimize_shared_clauses,
+        sat_parameters.share_glue_clauses_dtime,
+        sat_parameters.check_lrat_proof,
+        sat_parameters.check_merged_lrat_proof,
+        sat_parameters.output_lrat_proof,
+        sat_parameters.check_drat_proof,
+        sat_parameters.output_drat_proof,
+        sat_parameters.max_drat_time_in_seconds,
         sat_parameters.debug_postsolve_with_full_solver,
         sat_parameters.debug_max_num_presolve_operations,
         sat_parameters.debug_crash_on_bad_hint,
+        sat_parameters.debug_crash_if_presolve_breaks_hint,
+        sat_parameters.debug_crash_if_lrat_check_fails,
         sat_parameters.use_optimization_hints,
-        sat_parameters.minimize_core,
+        sat_parameters.core_minimization_level,
         sat_parameters.find_multiple_cores,
         sat_parameters.cover_optimization,
         sat_parameters.max_sat_assumption_order,
@@ -1640,17 +1984,117 @@ function to_proto_struct(
         sat_parameters.max_sat_stratification,
         sat_parameters.propagation_loop_detection_factor,
         sat_parameters.use_precedences_in_disjunctive_constraint,
+        sat_parameters.transitive_precedences_work_limit,
         sat_parameters.max_size_to_create_precedence_literals_in_disjunctive,
         sat_parameters.use_strong_propagation_in_disjunctive,
+        sat_parameters.use_dynamic_precedence_in_disjunctive,
+        sat_parameters.use_dynamic_precedence_in_cumulative,
         sat_parameters.use_overload_checker_in_cumulative,
+        sat_parameters.use_conservative_scale_overload_checker,
         sat_parameters.use_timetable_edge_finding_in_cumulative,
+        sat_parameters.max_num_intervals_for_timetable_edge_finding,
         sat_parameters.use_hard_precedences_in_cumulative,
         sat_parameters.exploit_all_precedences,
         sat_parameters.use_disjunctive_constraint_in_cumulative,
+        sat_parameters.no_overlap_2d_boolean_relations_limit,
         sat_parameters.use_timetabling_in_no_overlap_2d,
         sat_parameters.use_energetic_reasoning_in_no_overlap_2d,
-        sat_parameters.use_pairwise_reasoning_in_no_overlap_2d,
+        sat_parameters.use_area_energetic_reasoning_in_no_overlap_2d,
+        sat_parameters.use_try_edge_reasoning_in_no_overlap_2d,
+        sat_parameters.max_pairs_pairwise_reasoning_in_no_overlap_2d,
+        sat_parameters.maximum_regions_to_split_in_disconnected_no_overlap_2d,
+        sat_parameters.use_linear3_for_no_overlap_2d_precedences,
         sat_parameters.use_dual_scheduling_heuristics,
+        sat_parameters.use_all_different_for_circuit,
+        sat_parameters.routing_cut_subset_size_for_binary_relation_bound,
+        sat_parameters.routing_cut_subset_size_for_tight_binary_relation_bound,
+        sat_parameters.routing_cut_subset_size_for_exact_binary_relation_bound,
+        sat_parameters.routing_cut_subset_size_for_shortest_paths_bound,
+        sat_parameters.routing_cut_dp_effort,
+        sat_parameters.routing_cut_max_infeasible_path_length,
+        sat_parameters.search_branching,
+        sat_parameters.hint_conflict_limit,
+        sat_parameters.repair_hint,
+        sat_parameters.fix_variables_to_their_hinted_value,
+        sat_parameters.use_probing_search,
+        sat_parameters.use_extended_probing,
+        sat_parameters.probing_num_combinations_limit,
+        sat_parameters.shaving_deterministic_time_in_probing_search,
+        sat_parameters.shaving_search_deterministic_time,
+        sat_parameters.shaving_search_threshold,
+        sat_parameters.use_objective_lb_search,
+        sat_parameters.use_objective_shaving_search,
+        sat_parameters.variables_shaving_level,
+        sat_parameters.pseudo_cost_reliability_threshold,
+        sat_parameters.optimize_with_core,
+        sat_parameters.optimize_with_lb_tree_search,
+        sat_parameters.save_lp_basis_in_lb_tree_search,
+        sat_parameters.binary_search_num_conflicts,
+        sat_parameters.optimize_with_max_hs,
+        sat_parameters.use_feasibility_jump,
+        sat_parameters.use_ls_only,
+        sat_parameters.feasibility_jump_decay,
+        sat_parameters.feasibility_jump_linearization_level,
+        sat_parameters.feasibility_jump_restart_factor,
+        sat_parameters.feasibility_jump_batch_dtime,
+        sat_parameters.feasibility_jump_var_randomization_probability,
+        sat_parameters.feasibility_jump_var_perburbation_range_ratio,
+        sat_parameters.feasibility_jump_enable_restarts,
+        sat_parameters.feasibility_jump_max_expanded_constraint_size,
+        sat_parameters.num_violation_ls,
+        sat_parameters.violation_ls_perturbation_period,
+        sat_parameters.violation_ls_compound_move_probability,
+        sat_parameters.shared_tree_num_workers,
+        sat_parameters.use_shared_tree_search,
+        sat_parameters.shared_tree_worker_min_restarts_per_subtree,
+        sat_parameters.shared_tree_worker_enable_trail_sharing,
+        sat_parameters.shared_tree_worker_enable_phase_sharing,
+        sat_parameters.shared_tree_open_leaves_per_worker,
+        sat_parameters.shared_tree_max_nodes_per_worker,
+        sat_parameters.shared_tree_split_strategy,
+        sat_parameters.shared_tree_balance_tolerance,
+        sat_parameters.shared_tree_split_min_dtime,
+        sat_parameters.enumerate_all_solutions,
+        sat_parameters.keep_all_feasible_solutions_in_presolve,
+        sat_parameters.fill_tightened_domains_in_response,
+        sat_parameters.fill_additional_solutions_in_response,
+        sat_parameters.instantiate_all_variables,
+        sat_parameters.auto_detect_greater_than_at_least_one_of,
+        sat_parameters.stop_after_first_solution,
+        sat_parameters.stop_after_presolve,
+        sat_parameters.stop_after_root_propagation,
+        sat_parameters.lns_initial_difficulty,
+        sat_parameters.lns_initial_deterministic_limit,
+        sat_parameters.use_lns,
+        sat_parameters.use_lns_only,
+        sat_parameters.solution_pool_size,
+        sat_parameters.solution_pool_diversity_limit,
+        sat_parameters.alternative_pool_size,
+        sat_parameters.use_rins_lns,
+        sat_parameters.use_feasibility_pump,
+        sat_parameters.use_lb_relax_lns,
+        sat_parameters.lb_relax_num_workers_threshold,
+        sat_parameters.fp_rounding,
+        sat_parameters.diversify_lns_params,
+        sat_parameters.randomize_search,
+        sat_parameters.search_random_variable_pool_size,
+        sat_parameters.push_all_tasks_toward_start,
+        sat_parameters.use_optional_variables,
+        sat_parameters.use_exact_lp_reason,
+        sat_parameters.use_combined_no_overlap,
+        sat_parameters.at_most_one_max_expansion_size,
+        sat_parameters.catch_sigint_signal,
+        sat_parameters.use_implied_bounds,
+        sat_parameters.polish_lp_solution,
+        sat_parameters.lp_primal_tolerance,
+        sat_parameters.lp_dual_tolerance,
+        sat_parameters.convert_intervals,
+        sat_parameters.symmetry_level,
+        sat_parameters.use_symmetry_in_lp,
+        sat_parameters.keep_symmetry_in_presolve,
+        sat_parameters.symmetry_detection_deterministic_time_limit,
+        sat_parameters.new_linear_propagation,
+        sat_parameters.linear_split_size,
         sat_parameters.linearization_level,
         sat_parameters.boolean_encoding_level,
         sat_parameters.max_domain_size_when_encoding_eq_neq_constraints,
@@ -1662,6 +2106,7 @@ function to_proto_struct(
         sat_parameters.add_mir_cuts,
         sat_parameters.add_zero_half_cuts,
         sat_parameters.add_clique_cuts,
+        sat_parameters.add_rlt_cuts,
         sat_parameters.max_all_diff_cut_size,
         sat_parameters.add_lin_max_cuts,
         sat_parameters.max_integer_rounding_scaling,
@@ -1674,69 +2119,14 @@ function to_proto_struct(
         sat_parameters.cut_active_count_decay,
         sat_parameters.cut_cleanup_target,
         sat_parameters.new_constraints_batch_size,
-        sat_parameters.search_branching,
-        sat_parameters.hint_conflict_limit,
-        sat_parameters.repair_hint,
-        sat_parameters.fix_variables_to_their_hinted_value,
         sat_parameters.exploit_integer_lp_solution,
         sat_parameters.exploit_all_lp_solution,
         sat_parameters.exploit_best_solution,
         sat_parameters.exploit_relaxation_solution,
         sat_parameters.exploit_objective,
-        sat_parameters.probing_period_at_root,
-        sat_parameters.use_probing_search,
-        sat_parameters.use_shaving_in_probing_search,
-        sat_parameters.shaving_search_deterministic_time,
-        sat_parameters.use_objective_lb_search,
-        sat_parameters.use_objective_shaving_search,
-        sat_parameters.pseudo_cost_reliability_threshold,
-        sat_parameters.optimize_with_core,
-        sat_parameters.optimize_with_lb_tree_search,
-        sat_parameters.binary_search_num_conflicts,
-        sat_parameters.optimize_with_max_hs,
-        sat_parameters.test_feasibility_jump,
-        sat_parameters.feasibility_jump_max_num_values_scanned,
-        sat_parameters.feasibility_jump_protect_linear_feasibility,
-        sat_parameters.feasibility_jump_decay,
-        sat_parameters.feasibility_jump_var_randomization_probability,
-        sat_parameters.feasibility_jump_var_perburbation_range_ratio,
-        sat_parameters.feasibility_jump_enable_restarts,
-        sat_parameters.num_violation_ls,
-        sat_parameters.violation_ls_perturbation_period,
-        sat_parameters.shared_tree_num_workers,
-        sat_parameters.use_shared_tree_search,
-        sat_parameters.shared_tree_worker_objective_split_probability,
-        sat_parameters.shared_tree_max_nodes_per_worker,
-        sat_parameters.shared_tree_split_strategy,
-        sat_parameters.enumerate_all_solutions,
-        sat_parameters.keep_all_feasible_solutions_in_presolve,
-        sat_parameters.fill_tightened_domains_in_response,
-        sat_parameters.fill_additional_solutions_in_response,
-        sat_parameters.instantiate_all_variables,
-        sat_parameters.auto_detect_greater_than_at_least_one_of,
-        sat_parameters.stop_after_first_solution,
-        sat_parameters.stop_after_presolve,
-        sat_parameters.stop_after_root_propagation,
-        sat_parameters.use_lns_only,
-        sat_parameters.solution_pool_size,
-        sat_parameters.use_rins_lns,
-        sat_parameters.use_feasibility_pump,
-        sat_parameters.use_lb_relax_lns,
-        sat_parameters.fp_rounding,
-        sat_parameters.diversify_lns_params,
-        sat_parameters.randomize_search,
-        sat_parameters.search_randomization_tolerance,
-        sat_parameters.use_optional_variables,
-        sat_parameters.use_exact_lp_reason,
-        sat_parameters.use_branching_in_lp,
-        sat_parameters.use_combined_no_overlap,
-        sat_parameters.catch_sigint_signal,
-        sat_parameters.use_implied_bounds,
-        sat_parameters.polish_lp_solution,
-        sat_parameters.convert_intervals,
-        sat_parameters.symmetry_level,
-        sat_parameters.new_linear_propagation,
-        sat_parameters.linear_split_size,
+        sat_parameters.detect_linearized_product,
+        sat_parameters.use_new_integer_conflict_resolution,
+        sat_parameters.create_1uip_boolean_during_icr,
         sat_parameters.mip_max_bound,
         sat_parameters.mip_var_scaling,
         sat_parameters.mip_scale_large_domain,
@@ -1747,9 +2137,14 @@ function to_proto_struct(
         sat_parameters.mip_check_precision,
         sat_parameters.mip_compute_true_objective_bound,
         sat_parameters.mip_max_valid_magnitude,
+        sat_parameters.mip_treat_high_magnitude_bounds_as_infinity,
         sat_parameters.mip_drop_tolerance,
+        sat_parameters.mip_presolve_level,
     )
 end
+
+encoded_parameters_size(sat_parameters::SatParameters) =
+    PB._encoded_size(to_proto_struct(sat_parameters))
 
 """
   Mutable wrapper struct for the GlpkParameters struct.
@@ -1924,6 +2319,30 @@ mutable struct PdlpTerminationCriteria
     time_sec_limit::Float64
     iteration_limit::Int32
     kkt_matrix_pass_limit::Float64
+
+    function PdlpTerminationCriteria(;
+        optimality_norm = PdlpOptimalityNorm.OPTIMALITY_NORM_L2,
+        optimality_criteria = nothing,
+        eps_optimal_absolute = 1.0e-6,
+        eps_optimal_relative = 1.0e-6,
+        eps_primal_infeasible = 1.0e-8,
+        eps_dual_infeasible = 1.0e-8,
+        time_sec_limit = Inf,
+        iteration_limit = Int32(2147483647),
+        kkt_matrix_pass_limit = Inf,
+    )
+        new(
+            optimality_norm,
+            optimality_criteria,
+            eps_optimal_absolute,
+            eps_optimal_relative,
+            eps_primal_infeasible,
+            eps_dual_infeasible,
+            time_sec_limit,
+            iteration_limit,
+            kkt_matrix_pass_limit,
+        )
+    end
 end
 
 function to_proto_struct(
@@ -1972,6 +2391,70 @@ mutable struct PdlpHybridGradientParameters
     use_feasibility_polishing::Bool
     apply_feasibility_polishing_after_limits_reached::Bool
     apply_feasibility_polishing_if_solver_is_interrupted::Bool
+
+    function PdlpHybridGradientParameters(;
+        termination_criteria = nothing,
+        num_threads = Int32(1),
+        num_shards = Int32(0),
+        scheduler_type = PdlpSchedulerType.SCHEDULER_TYPE_GOOGLE_THREADPOOL,
+        record_iteration_stats = false,
+        verbosity_level = Int32(0),
+        log_interval_seconds = 0.0,
+        major_iteration_frequency = Int32(64),
+        termination_check_frequency = Int32(64),
+        restart_strategy = PdlpHybridGradientParams_RestartStrategy.ADAPTIVE_HEURISTIC,
+        primal_weight_update_smoothing = 0.5,
+        initial_primal_weight = 0.0,
+        presolve_options = nothing,
+        l_inf_ruiz_iterations = Int32(5),
+        l2_norm_rescaling = true,
+        sufficient_reduction_for_restart = 0.1,
+        necessary_reduction_for_restart = 0.9,
+        linesearch_rule = PdlpHybridGradientParams_LinesearchRule.ADAPTIVE_LINESEARCH_RULE,
+        adaptive_linesearch_parameters = nothing,
+        malitsky_pock_parameters = nothing,
+        initial_step_size_scaling = 1.0,
+        random_projection_seeds = Int32[],
+        infinite_constraint_bound_threshold = Inf,
+        handle_some_primal_gradients_on_finite_bounds_as_residuals = true,
+        use_diagonal_qp_trust_region_solver = false,
+        diagonal_qp_trust_region_solver_tolerance = 1.0e-8,
+        use_feasibility_polishing = false,
+        apply_feasibility_polishing_after_limits_reached = false,
+        apply_feasibility_polishing_if_solver_is_interrupted = false,
+    )
+        new(
+            termination_criteria,
+            num_threads,
+            num_shards,
+            scheduler_type,
+            record_iteration_stats,
+            verbosity_level,
+            log_interval_seconds,
+            major_iteration_frequency,
+            termination_check_frequency,
+            restart_strategy,
+            primal_weight_update_smoothing,
+            initial_primal_weight,
+            presolve_options,
+            l_inf_ruiz_iterations,
+            l2_norm_rescaling,
+            sufficient_reduction_for_restart,
+            necessary_reduction_for_restart,
+            linesearch_rule,
+            adaptive_linesearch_parameters,
+            malitsky_pock_parameters,
+            initial_step_size_scaling,
+            random_projection_seeds,
+            infinite_constraint_bound_threshold,
+            handle_some_primal_gradients_on_finite_bounds_as_residuals,
+            use_diagonal_qp_trust_region_solver,
+            diagonal_qp_trust_region_solver_tolerance,
+            use_feasibility_polishing,
+            apply_feasibility_polishing_after_limits_reached,
+            apply_feasibility_polishing_if_solver_is_interrupted,
+        )
+    end
 end
 
 
@@ -2047,6 +2530,7 @@ mutable struct SolveParameters
     osqp::Union{Nothing,OsqpSettings}
     glpk::Union{Nothing,GlpkParameters}
     highs::Union{Nothing,HighsOptions}
+    xpress::Union{Nothing,XpressParameters}
 
     function SolveParameters(;
         time_limit = nothing,
@@ -2075,6 +2559,7 @@ mutable struct SolveParameters
         osqp = nothing,
         glpk = nothing,
         highs = nothing,
+        xpress = nothing,
     )
         new(
             time_limit,
@@ -2103,6 +2588,7 @@ mutable struct SolveParameters
             osqp,
             glpk,
             highs,
+            xpress,
         )
     end
 end
@@ -2148,6 +2634,11 @@ function to_proto_struct(solve_parameters::SolveParameters)::MathOpt.SolveParame
         osqp_parameters = to_proto_struct(solve_parameters.osqp)
     end
 
+    xpress_parameters = nothing
+    if !isnothing(solve_parameters.xpress)
+        xpress_parameters = to_proto_struct(solve_parameters.xpress)
+    end
+
     return MathOpt.SolveParametersProto(
         solve_parameters.time_limit,
         solve_parameters.iteration_limit,
@@ -2175,6 +2666,7 @@ function to_proto_struct(solve_parameters::SolveParameters)::MathOpt.SolveParame
         osqp_parameters,
         glpk_parameters,
         highs_parameters,
+        xpress_parameters,
     )
 end
 
@@ -2196,6 +2688,7 @@ mutable struct IntegerVariable
     domain::Vector{Int64}
 
     IntegerVariable() = new("", Vector{Int64}())
+    IntegerVariable(domain::Vector{Int64}) = new("", domain)
 end
 
 function to_proto_struct(integer_variable::IntegerVariable)::Sat.IntegerVariableProto
@@ -2207,12 +2700,15 @@ end
     Mutable wrapper struct for the LinearArgumentProto struct.
 """
 mutable struct LinearArgument
-    target::Union{Nothing,LinearExpression}
-    exprs::Vector{LinearExpression}
+    target::Union{Nothing,CPSatLinearExpression}
+    exprs::Vector{CPSatLinearExpression}
 end
 
 function to_proto_struct(linear_argument::LinearArgument)::Sat.LinearArgumentProto
-    return Sat.LinearArgumentProto(linear_argument.target, linear_argument.exprs)
+    return Sat.LinearArgumentProto(
+        to_proto_struct(linear_argument.target),
+        to_proto_struct.(linear_argument.exprs),
+    )
 end
 
 """
@@ -2221,8 +2717,8 @@ end
 mutable struct AllDifferentConstraint
     exprs::Vector{CPSatLinearExpression}
 
-    function AllDifferentConstraint()
-        new(Vector{CPSatLinearExpression}())
+    function AllDifferentConstraint(; exprs = Vector{CPSatLinearExpression}())
+        new(exprs)
     end
 end
 
@@ -2252,7 +2748,7 @@ mutable struct ElementConstraint
         linear_target = nothing,
         exprs = Vector{CPSatLinearExpression}(),
     )
-        new(nothing, nothing, Vector{CPSatLinearExpression}())
+        new(linear_index, linear_target, exprs)
     end
 end
 
@@ -2310,8 +2806,13 @@ mutable struct RoutesConstraint
     literals::Vector{Int32}
     dimensions::Vector{NodeExpressions}
 
-    function RoutesConstraint()
-        new(Vector{Int32}(), Vector{Int32}(), Vector{Int32}(), Vector{NodeExpressions}())
+    function RoutesConstraint(;
+        tails = Vector{Int32}(),
+        heads = Vector{Int32}(),
+        literals = Vector{Int32}(),
+        dimensions = Vector{NodeExpressions}(),
+    )
+        new(tails, heads, literals, dimensions)
     end
 end
 
@@ -2336,12 +2837,15 @@ mutable struct TableConstraint
     exprs::Vector{CPSatLinearExpression}
     negated::Bool
 
-    function TableConstraint()
+    function TableConstraint(;
+        values::Vector{Int64} = Vector{Int64}(),
+        exprs = Vector{CPSatLinearExpression}(),
+        negated = false,
+    )
         new(
-            Vector{Int32}(), # [Deprecated] vars
-            Vector{Int64}(),
-            Vector{CPSatLinearExpression}(),
-            false,  # negated is falase by default
+            values,
+            exprs,
+            negated,  # negated is false by default
         )
     end
 end
@@ -2350,7 +2854,12 @@ end
 function to_proto_struct(table_constraint::TableConstraint)::Sat.TableConstraintProto
     exprs = to_proto_struct.(table_constraint.exprs)
 
-    return Sat.TableConstraintProto(vars, exprs, negated)
+    return Sat.TableConstraintProto(
+        Vector{Int32}(), # [Deprecated] vars
+        table_constraint.values,
+        table_constraint.exprs,
+        table_constraint.negated,
+    )
 end
 
 """
@@ -2368,14 +2877,21 @@ mutable struct AutomatonConstraint
     transition_label::Vector{Int64}
     exprs::Vector{CPSatLinearExpression}
 
-    function AutomatonConstraint()
+    function AutomatonConstraint(;
+        starting_state = zero(Int64),
+        final_states = Vector{Int64}(),
+        transition_tail = Vector{Int64}(),
+        transition_head = Vector{Int64}(),
+        transition_label = Vector{Int64}(),
+        exprs = Vector{CPSatLinearExpression}(),
+    )
         new(
-            zero(Int64),
-            Vector{Int64}(),
-            Vector{Int64}(),
-            Vector{Int64}(),
-            Vector{Int64}(),
-            Vector{CPSatLinearExpression}(),
+            starting_state,
+            final_states,
+            transition_tail,
+            transition_head,
+            transition_label,
+            exprs,
         )
     end
 end
@@ -2422,14 +2938,14 @@ mutable struct ReservoirConstraint
     level_changes::Vector{CPSatLinearExpression}
     active_literals::Vector{Int32}
 
-    function ReservoirConstraint()
-        new(
-            zero(Int64), # min_level
-            zero(Int64), # max_level
-            Vector{CPSatLinearExpression}(), # time_exprs
-            Vector{CPSatLinearExpression}(), # level_changes
-            Vector{Int32}(), # active_literals
-        )
+    function ReservoirConstraint(;
+        min_level = zero(Int64),
+        max_level = zero(Int64),
+        time_exprs = Vector{CPSatLinearExpression}(),
+        level_changes = Vector{CPSatLinearExpression}(),
+        active_literals = Vector{Int32}(),
+    )
+        new(min_level, max_level, time_exprs, level_changes, active_literals)
     end
 end
 
@@ -2544,49 +3060,13 @@ function to_proto_struct(
 end
 
 """
-  Alias for the `ListOfVariablesProto` struct.
-  
-  This is a list of variables, without any semantics.
-
-  This constraint is not meant to be used and will be rejected by the
-  solver. It is meant to mark variable when testing the presolve code.
-"""
-const ListOfVariablesProto = Sat.ListOfVariablesProto
-const ListOfVariables = () -> ListOfVariablesProto(
-    Vector{Int32}(), # vars
-)
-
-
-"""
   Mutable wrapper for the `ConstraintProto` in CPSat.
 """
 mutable struct CPSATConstraint
     name::String
     enforcement_literal::Vector{Int32}
-    constraint::Union{
-        Nothing,
-        PB.OneOf{
-            <:Union{
-                AllDifferentConstraint,
-                CPSatLinearConstraintProto,
-                LinearArgument,
-                BoolArgument,
-                InverseConstraintProto,
-                ListOfVariablesProto,
-                ElementConstraint,
-                CircuitConstraintProto,
-                RoutesConstraint,
-                TableConstraint,
-                AutomatonConstraint,
-                ReservoirConstraint,
-                ReservoirConstraint,
-                IntervalConstraint,
-                NoOverlapConstraintProto,
-                NoOverlap2DConstraintProto,
-                CumulativeConstraint,
-            },
-        },
-    }
+    constraint::Union{Nothing,NamedTuple}
+
     function CPSATConstraint(;
         name = "",
         enforcement_literal = Vector{Int32}(),
@@ -2602,14 +3082,16 @@ end
 
 function to_proto_struct(cpsat_constraint::CPSATConstraint)::Sat.ConstraintProto
     constraint = nothing
+    constraint_symbol = nothing
     if !isnothing(cpsat_constraint.constraint)
-        constraint = to_proto_struct(cpsat_constraint.constraint)
+        constraint_symbol = keys(cpsat_constraint.constraint)[1]
+        constraint = to_proto_struct(cpsat_constraint.constraint[constraint_symbol])
     end
 
     return Sat.ConstraintProto(
         cpsat_constraint.name,
         cpsat_constraint.enforcement_literal,
-        constraint,
+        PB.OneOf(constraint_symbol, constraint),
     )
 end
 
@@ -2706,13 +3188,13 @@ end
   Define the strategy to follow when the solver needs to take a new decision.
   Note that this strategy is only defined on a subset of variables.
 """
-mutable struct DecisionStrategy
+mutable struct CPSATDecisionStrategy
     variables::Vector{Int32}
     exprs::Vector{CPSatLinearExpression}
     variable_selection_strategy::CPSATVariableSelectionStrategy.T
     domain_reduction_strategy::CPSATDomainReductionStrategy.T
 
-    function DecisionStrategy(;
+    function CPSATDecisionStrategy(;
         variables = Vector{Int32}(),
         exprs = Vector{CPSatLinearExpression}(),
         variable_selection_strategy = CPSATVariableSelectionStrategy.CHOOSE_FIRST,
@@ -2722,8 +3204,10 @@ mutable struct DecisionStrategy
     end
 end
 
-function to_proto_struct(decision_strategy::DecisionStrategy)::Sat.DecisionStrategyProto
-    return Sat.DecisionStrategyProto(
+function to_proto_struct(
+    decision_strategy::CPSATDecisionStrategy,
+)::Sat.DecisionStrategyProto
+    return Sat.CPSATDecisionStrategyProto(
         decision_strategy.variables,
         to_proto_struct.(decision_strategy.exprs),
         decision_strategy.variable_selection_strategy,
@@ -2742,7 +3226,7 @@ mutable struct CpModel
     constraints::Vector{CPSATConstraint}
     objective::Union{Nothing,CpObjective}
     floating_point_objective::Union{Nothing,FloatObjective}
-    search_strategy::Vector{DecisionStrategy}
+    search_strategy::Vector{CPSATDecisionStrategy}
     solution_hint::Union{Nothing,CPSATPartialVariableAssignment}
     assumptions::Vector{Int32}
     symmetry::Union{Nothing,CPSATExperimentalSymmetry}
@@ -2753,7 +3237,7 @@ mutable struct CpModel
         constraints = Vector{CPSATConstraint}(),
         objective = nothing,
         floating_point_objective = nothing,
-        search_strategy = Vector{DecisionStrategy}(),
+        search_strategy = Vector{CPSATDecisionStrategy}(),
         solution_hint = nothing,
         assumptions = Vector{Int32}(),
     )
@@ -2802,4 +3286,4 @@ function to_proto_struct(cp_model::CpModel)::Sat.CpModelProto
 end
 
 # The size of the model.
-encoded_model_size(model::CpModel) = PB._to_encoded_size(to_proto_struct(model))
+encoded_model_size(model::CpModel) = PB._encoded_size(to_proto_struct(model))

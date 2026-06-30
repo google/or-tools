@@ -28,6 +28,7 @@
 #include "absl/types/span.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/interval.h"
 #include "ortools/routing/lp_scheduling.h"
@@ -172,7 +173,7 @@ void AppendRouteCumulAndBreakVarAndValues(
   int new_num_values = old_num_values;
   for (int j = old_num_values; j < vals.size(); ++j) {
     // Value kint64min signals an unoptimized variable, skip setting those.
-    if (vals[j] == std::numeric_limits<int64_t>::min()) continue;
+    if (vals[j] == kint64min) continue;
     // Skip variables that are not bound.
     if (vars[j]->Bound()) continue;
     vals[new_num_values] = vals[j];
@@ -330,7 +331,7 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
     return true;
   }
 
-  inline void DetermineVehiclesRequiringResourceAssignment(
+  void DetermineVehiclesRequiringResourceAssignment(
       std::vector<int>* vehicles_without_resource_assignment,
       std::vector<int>* vehicles_with_resource_assignment,
       util_intops::StrongVector<RCIndex, absl::flat_hash_set<int>>*
@@ -667,7 +668,7 @@ class SetCumulsFromGlobalDimensionCosts : public DecisionBuilder {
     DCHECK_EQ(cp_variables_.size(), cp_values_.size());
     // Value kint64min signals an unoptimized variable, set to min instead.
     for (int j = 0; j < cp_values_.size(); ++j) {
-      if (cp_values_[j] == std::numeric_limits<int64_t>::min()) {
+      if (cp_values_[j] == kint64min) {
         cp_values_[j] = cp_variables_[j]->Min();
       }
     }

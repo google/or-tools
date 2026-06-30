@@ -28,6 +28,7 @@
 #include "ortools/sat/precedences.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/synchronization.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -85,6 +86,7 @@ class Precedences2DPropagator : public PropagatorInterface {
   Linear2Indices* lin2_indices_;
   Trail* trail_;
   IntegerTrail* integer_trail_;
+  TimeLimit* time_limit_;
 
   int last_helper_inprocessing_count_ = -1;
   int num_known_linear2_ = 0;

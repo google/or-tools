@@ -11,7 +11,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@pip_deps//:requirements.bzl", "requirement")
 load("@rules_python//python:py_binary.bzl", "py_binary")
 
 package(default_visibility = ["//visibility:public"])
@@ -19,5 +18,4 @@ package(default_visibility = ["//visibility:public"])
 py_binary(
     name = "bazel2cmake",
     srcs = ["bazel2cmake.py"],
-    deps = [requirement("absl-py")],
 )

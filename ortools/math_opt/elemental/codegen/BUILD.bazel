@@ -68,7 +68,7 @@ cc_binary(
     srcs = ["codegen.cc"],
     visibility = [
         "//ortools/math_opt/elemental/c_api:__subpackages__",
-        "//ortools/math_opt/elemental/python:__subpackages__",
+        "//ortools/math_opt/elemental/python:__pkg__",
     ],
     deps = [
         ":gen",

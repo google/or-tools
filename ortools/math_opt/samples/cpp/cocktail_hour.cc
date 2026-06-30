@@ -43,6 +43,7 @@
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
@@ -51,7 +52,6 @@
 #include "absl/types/span.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/map_util.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/cpp/math_opt.h"
 #include "ortools/util/status_macros.h"
 
@@ -257,10 +257,11 @@ absl::StatusOr<Menu> SolveForMenu(
   model.Maximize(cocktails_made);
   const math_opt::SolveArguments args = {
       .parameters = {.enable_output = enable_solver_output}};
-  ASSIGN_OR_RETURN(const math_opt::SolveResult result,
-                   math_opt::Solve(model, math_opt::SolverType::kGscip, args));
+  ABSL_ASSIGN_OR_RETURN(
+      const math_opt::SolveResult result,
+      math_opt::Solve(model, math_opt::SolverType::kGscip, args));
 
-  RETURN_IF_ERROR(result.termination.EnsureIsOptimalOrFeasible());
+  ABSL_RETURN_IF_ERROR(result.termination.EnsureIsOptimalOrFeasible());
   Menu menu;
   for (const absl::string_view ingredient : kIngredients) {
     if (result.variable_values().at(ingredient_vars.at(ingredient)) > 0.5) {
@@ -291,7 +292,7 @@ absl::Status AnalysisMode() {
     const absl::StatusOr<Menu> menu = SolveForMenu(
         i, false, /*existing_ingredients=*/{}, /*unavailable_ingredients=*/{},
         /*required_cocktails=*/{}, /*blocked_cocktails=*/{});
-    RETURN_IF_ERROR(menu.status())
+    ABSL_RETURN_IF_ERROR(menu.status())
         << "Failure when solving for " << i << " ingredients";
     std::cout << i << " | " << menu->cocktails.size() << std::endl;
   }

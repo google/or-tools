@@ -21,6 +21,7 @@
 
 #include "absl/strings/str_format.h"
 #include "absl/types/span.h"
+#include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraints.h"
 #include "ortools/constraint_solver/utilities.h"
@@ -41,8 +42,8 @@ void Diffn::Post() {
   delayed_demon_ = MakeDelayedConstraintDemon0(s, this, &Diffn::PropagateAll,
                                                "PropagateAll");
   if (solver()->parameters().diffn_use_cumulative() &&
-      IsArrayInRange<int64_t>(x_, 0, std::numeric_limits<int64_t>::max()) &&
-      IsArrayInRange<int64_t>(y_, 0, std::numeric_limits<int64_t>::max())) {
+      IsArrayInRange<int64_t>(x_, 0, kint64max) &&
+      IsArrayInRange<int64_t>(y_, 0, kint64max)) {
     Constraint* ct1 = nullptr;
     Constraint* ct2 = nullptr;
     {

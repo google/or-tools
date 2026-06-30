@@ -13,11 +13,14 @@
 
 #include "ortools/math_opt/constraints/indicator/validator.h"
 
-#include <cmath>
+#include <cstdint>
 
 #include "absl/status/status.h"
-#include "ortools/base/status_macros.h"
+#include "absl/status/status_builder.h"
+#include "absl/status/status_macros.h"
+#include "ortools/base/status_builder.h"
 #include "ortools/math_opt/core/model_summary.h"
+#include "ortools/math_opt/core/sparse_vector_view.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/validators/scalar_validator.h"
 #include "ortools/math_opt/validators/sparse_vector_validator.h"
@@ -28,28 +31,28 @@ absl::Status ValidateConstraint(const IndicatorConstraintProto& constraint,
                                 const IdNameBiMap& variable_universe) {
   if (constraint.has_indicator_id() &&
       !variable_universe.HasId(constraint.indicator_id())) {
-    return util::InvalidArgumentErrorBuilder()
+    return ortools::InvalidArgumentErrorBuilder()
            << "Invalid indicator variable id in indicator constraint: "
            << constraint.indicator_id();
   }
-  RETURN_IF_ERROR(CheckIdsAndValues(
+  ABSL_RETURN_IF_ERROR(CheckIdsAndValues(
       MakeView(constraint.expression()), /*options=*/
       {.allow_positive_infinity = false, .allow_negative_infinity = false}))
       << "expression of implied constraint in indicator constraint";
   for (const int64_t var_id : constraint.expression().ids()) {
     if (!variable_universe.HasId(var_id)) {
-      return util::InvalidArgumentErrorBuilder()
+      return ortools::InvalidArgumentErrorBuilder()
              << "Invalid variable id in implied constraint in indicator "
                 "constraint: "
              << var_id;
     }
   }
-  RETURN_IF_ERROR(CheckScalar(
+  ABSL_RETURN_IF_ERROR(CheckScalar(
       constraint.lower_bound(),
       {.allow_positive_infinity = false, .allow_negative_infinity = true}))
       << "invalid lower bound in indicator constraint: "
       << constraint.lower_bound();
-  RETURN_IF_ERROR(CheckScalar(
+  ABSL_RETURN_IF_ERROR(CheckScalar(
       constraint.upper_bound(),
       {.allow_positive_infinity = true, .allow_negative_infinity = false}))
       << "invalid upper bound in indicator constraint: "

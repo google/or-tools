@@ -31,6 +31,7 @@
 #include "absl/status/status.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
+#include "ortools/base/types.h"
 #include "ortools/math_opt/cpp/matchers.h"
 #include "ortools/math_opt/cpp/math_opt.h"
 #include "ortools/math_opt/solver_tests/callback_tests.h"
@@ -41,9 +42,11 @@
 #include "ortools/math_opt/solver_tests/lp_model_solve_parameters_tests.h"
 #include "ortools/math_opt/solver_tests/lp_parameter_tests.h"
 #include "ortools/math_opt/solver_tests/lp_tests.h"
+#include "ortools/math_opt/solver_tests/min_cost_flow_tests.h"
 #include "ortools/math_opt/solver_tests/mip_tests.h"
 #include "ortools/math_opt/solver_tests/multi_objective_tests.h"
 #include "ortools/math_opt/solver_tests/status_tests.h"
+#include "ortools/math_opt/solver_tests/test_models.h"
 #include "ortools/math_opt/solvers/highs.pb.h"
 #include "ortools/math_opt/testing/param_name.h"
 
@@ -84,11 +87,11 @@ INSTANTIATE_TEST_SUITE_P(
     HighsGenericTest, GenericTest,
     Values(GenericTestParameters(SolverType::kHighs,
                                  /*support_interrupter=*/false,
-                                 /*integer_variables=*/false,
+                                 TestModelClass::kLp,
                                  /*expected_log=*/"HiGHS run time"),
            GenericTestParameters(SolverType::kHighs,
                                  /*support_interrupter=*/false,
-                                 /*integer_variables=*/true,
+                                 TestModelClass::kIp,
                                  /*expected_log=*/"Solving report")));
 
 // These tests require callback support.
@@ -106,6 +109,20 @@ INSTANTIATE_TEST_SUITE_P(
                                  /*supports_objective_limit=*/false,
                                  /*supports_best_bound_limit=*/true,
                                  /*reports_limits=*/true)));
+
+INSTANTIATE_TEST_SUITE_P(
+    HighsMinCostFlowTest, MinCostFlowTest,
+    testing::Values(MinCostFlowTestParams{
+        .name = "highs",
+        .solver_type = math_opt::SolverType::kHighs,
+        .lp_not_flow_error_substring = std::nullopt,
+        .mip_not_flow_error_substring = std::nullopt,
+        .floating_point_cost_error_substring = std::nullopt,
+        .floating_point_capacity_error_substring = std::nullopt,
+        .certifies_nontrivial_infeasibility = false,
+        .returns_dual_solution = true,
+    }),
+    ParamName{});
 
 ParameterSupport HighsMipParameterSupport() {
   return {.supports_node_limit = true,
@@ -224,17 +241,16 @@ INSTANTIATE_TEST_SUITE_P(HighsStatusTest, StatusTest,
 
 INSTANTIATE_TEST_SUITE_P(
     HighsMessageCallbackTest, MessageCallbackTest,
-    Values(
-        MessageCallbackTestParams(SolverType::kHighs,
-                                  /*support_message_callback=*/true,
-                                  /*support_interrupter=*/false,
-                                  /*integer_variables=*/false,
-                                  /*ending_substring=*/"HiGHS run time"),
-        MessageCallbackTestParams(SolverType::kHighs,
-                                  /*support_message_callback=*/true,
-                                  /*support_interrupter=*/false,
-                                  /*integer_variables=*/true,
-                                  /*ending_substring=*/"LP iterations     0")));
+    Values(MessageCallbackTestParams(SolverType::kHighs,
+                                     /*support_message_callback=*/true,
+                                     /*support_interrupter=*/false,
+                                     /*integer_variables=*/false,
+                                     /*ending_substring=*/"HiGHS run time"),
+           MessageCallbackTestParams(SolverType::kHighs,
+                                     /*support_message_callback=*/true,
+                                     /*support_interrupter=*/false,
+                                     /*integer_variables=*/true,
+                                     /*ending_substring=*/"(heuristics)")));
 
 // HiGHS does not support callbacks other than message callback.
 GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(CallbackTest);
@@ -272,12 +288,11 @@ TEST(HighsSolverTest, IterationLimitTooLarge) {
   Model model;
   const Variable x = model.AddContinuousVariable(0.0, 1.0);
   model.Maximize(x);
-  SolveParameters params = {.iteration_limit =
-                                std::numeric_limits<int64_t>::max()};
+  SolveParameters params = {.iteration_limit = kint64max};
   EXPECT_THAT(Solve(model, SolverType::kHighs, {.parameters = params}),
               StatusIs(absl::StatusCode::kInvalidArgument,
                        HasSubstr("iteration_limit")));
-  params.iteration_limit = std::numeric_limits<int32_t>::max();
+  params.iteration_limit = kint32max;
   EXPECT_THAT(Solve(model, SolverType::kHighs, {.parameters = params}),
               IsOkAndHolds(IsOptimal(1.0)));
 }

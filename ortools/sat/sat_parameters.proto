@@ -26,7 +26,7 @@ option java_multiple_files = true;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 362
+// NEXT TAG: 369
 message SatParameters {
   // In some context, like in a portfolio of search, it makes sense to name a
   // given parameters set for logging purpose.
@@ -174,6 +174,13 @@ message SatParameters {
   // conflicts before we will consider backjumping.
   optional int32 chronological_backtrack_min_conflicts = 332 [default = 1000];
 
+  // Advanced usage. When assumptions are used and ASSUMPTION_UNSAT is returned,
+  // the solver will try to learn something if possible. However, to do this,
+  // the current state of the solver will be backtracked, which make it
+  // impossible to do custom analysis of the last conflict. It is possible to
+  // turn that off, so that on ASSUMPTION_UNSAT, the trail is left untouched.
+  optional bool learn_on_assumptions_unsat = 364 [default = true];
+
   // ==========================================================================
   // Clause database management
   // ==========================================================================
@@ -188,7 +195,7 @@ message SatParameters {
   // Note that this doesn't include the "protected" clauses.
   optional int32 clause_cleanup_target = 13 [default = 0];
 
-  // During a cleanup, if clause_cleanup_target is 0, we will delete the
+  // During a cleanup, if clause_cleanup_target is 0, we will keep the
   // clause_cleanup_ratio of "deletable" clauses instead of aiming for a fixed
   // target of clauses to keep.
   optional double clause_cleanup_ratio = 190 [default = 0.5];
@@ -697,6 +704,12 @@ message SatParameters {
   // Note that we only have a basic version currently.
   optional bool inprocessing_use_congruence_closure = 342 [default = true];
 
+  // Experimental. We don't have LRAT support for this. Recovers a "circuit"
+  // structure based on the gate detection used by congruence closure, and try
+  // to detect more equivalence via sampling. This is like the custom SAT
+  // sweeping done on a logic circuit with binary gates.
+  optional bool inprocessing_detect_and_sweep_circuit = 362 [default = false];
+
   // Whether we use the SAT sweeping algorithm described in "Clausal Equivalence
   // Sweeping", Armin Biere, Katalin Fazekas, Mathias Fleury, Nils Froleyks,
   // 2025.
@@ -1194,11 +1207,23 @@ message SatParameters {
 
     // Randomized search. Used to increase entropy in the search.
     RANDOMIZED_SEARCH = 8;
+
+    // This is a lightweight search heuristic that tries to shave variable
+    // domains and literals in a round-robin fashion at decision level 0.
+    // Note that unlike the dedicated shaving subsolver using assumptions, if
+    // the search restarts, we simply move to the next candidate without
+    // guaranteeing a fixed amount of effort is spent on the current one.
+    ROUND_ROBIN_SHAVING_SEARCH = 9;
   }
+
   optional SearchBranching search_branching = 82 [default = AUTOMATIC_SEARCH];
 
   // Conflict limit used in the phase that exploit the solution hint.
   optional int32 hint_conflict_limit = 153 [default = 10];
+
+  // Try first to use the hint as assumption in the phase that exploit the
+  // solution hint. This should be way faster if the hint is completable.
+  optional bool try_hint_as_assumptions = 363 [default = true];
 
   // If true, the solver tries to repair the solution given in the hint. This
   // search terminates after the 'hint_conflict_limit' is reached and the solver
@@ -1225,17 +1250,28 @@ message SatParameters {
   // upper bound of a variable are infeasible) to the probing search. (<= 0
   // disables it).
   optional double shaving_deterministic_time_in_probing_search = 204
-      [default = 0.001];
+      [default = 0.05];
 
   // Specifies the amount of deterministic time spent of each try at shaving a
   // bound in the shaving search.
   optional double shaving_search_deterministic_time = 205 [default = 0.1];
+
+  // Specify the search heuristic used in the shaving search.
+  optional bool shaving_search_use_random_search = 366 [default = false];
+
+  // Number of conflicts between restarts in the shaving search.
+  // If <= 0, we use the default restart policy.
+  optional int32 shaving_search_restart_limit = 367 [default = 10];
 
   // Specifies the threshold between two modes in the shaving procedure.
   // If the range of the variable/objective is less than this threshold, then
   // the shaving procedure will try to remove values one by one. Otherwise, it
   // will try to remove one range at a time.
   optional int64 shaving_search_threshold = 290 [default = 64];
+
+  // For the objective, we prefer to try as much as possible to increase the
+  // current best bound. Except if the range is "large".
+  optional int64 objective_shaving_search_threshold = 368 [default = 1000];
 
   // If true, search will search in ascending max objective value (when
   // minimizing) starting from the lower bound of the objective.
@@ -1367,6 +1403,12 @@ message SatParameters {
   // If true, shared tree workers share their target phase when returning an
   // assigned subtree for the next worker to use.
   optional bool shared_tree_worker_enable_phase_sharing = 304 [default = true];
+
+  // If true, shared tree workers will propagate all constraints after enqueuing
+  // each decision, otherwise they will only propagate at root and leaf nodes on
+  // their assigned subtree.
+  optional bool shared_tree_worker_propagate_intermediate_nodes = 365
+      [default = false];
 
   // How many open leaf nodes should the shared tree maintain per worker.
   optional double shared_tree_open_leaves_per_worker = 281 [default = 2.0];

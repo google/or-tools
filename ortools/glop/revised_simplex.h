@@ -93,10 +93,13 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <string>
+#include <variant>
 #include <vector>
 
 #include "absl/base/attributes.h"
+#include "absl/base/nullability.h"
 #include "absl/log/die_if_null.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/random/random.h"
@@ -154,6 +157,11 @@ class RevisedSimplex {
   // and try to use the previously computed solution as a warm-start. To disable
   // this behavior or give explicit warm-start data, use one of the State*()
   // functions below.
+  SolveStatus Solve(const LinearProgram& lp, TimeLimit& time_limit);
+
+  // Legacy version of Solve() passing a pointer on TimeLimit and expecting it
+  // to be non-null; returning SolveStatus::problem_status().
+  [[deprecated("Prefer Solve(const LinearProgram&, TimeLimit&).")]]
   ABSL_MUST_USE_RESULT Status Solve(const LinearProgram& lp,
                                     TimeLimit* time_limit);
 
@@ -184,7 +192,7 @@ class RevisedSimplex {
   ConstraintStatus GetConstraintStatus(RowIndex row) const;
   const BasisState& GetState() const;
   double DeterministicTime() const;
-  bool objective_limit_reached() const { return objective_limit_reached_; }
+  bool objective_limit_reached() const;
 
   DenseColumn::ConstView GetDualSquaredNorms() {
     return dual_edge_norms_.GetEdgeSquaredNorms();
@@ -236,8 +244,8 @@ class RevisedSimplex {
 
   // Initializes the matrix for the given 'linear_program' and 'state' and
   // computes the variable values for basic variables using non-basic variables.
-  void ComputeBasicVariablesForState(const LinearProgram& linear_program,
-                                     const BasisState& state);
+  AbnormalityStatus ComputeBasicVariablesForState(
+      const LinearProgram& linear_program, const BasisState& state);
 
   // This is used in a MIP context to polish the final basis. We assume that the
   // columns for which SetIntegralityScale() has been called correspond to
@@ -266,9 +274,9 @@ class RevisedSimplex {
   DenseRow* MutableUpperBounds() {
     return variables_info_.MutableUpperBounds();
   }
-  ABSL_MUST_USE_RESULT Status MinimizeFromTransposedMatrixWithSlack(
+  SolveStatus MinimizeFromTransposedMatrixWithSlack(
       const DenseRow& objective, Fractional objective_scaling_factor,
-      Fractional objective_offset, TimeLimit* time_limit);
+      Fractional objective_offset, TimeLimit& time_limit);
 
  private:
   struct IterationStats : public StatsGroup {
@@ -321,9 +329,50 @@ class RevisedSimplex {
     FINAL_CHECK
   };
 
-  ABSL_MUST_USE_RESULT Status SolveInternal(double start_time, bool maximize,
-                                            const DenseRow& objective,
-                                            TimeLimit* time_limit);
+  // A pending status which is:
+  // * either a feasibility but the solve is not finished,
+  // * or a final status for the problem (infeasible, feasible with tolerances,
+  //   time-limit reached,...).
+  //
+  // See IsSolveStatus() to test specific SolveStatus alternatives in a pending
+  // status.
+  using PendingStatus = std::variant<FeasibilityStatus, SolveStatus>;
+
+  // Returns a debug string representation of PendingStatus.
+  static std::string GetPendingStatusString(
+      const PendingStatus& pending_status);
+
+  // Returns true if the input pending_status is a SolveStatus with the
+  // SolveStatusAlternative value.
+  //
+  // Example:
+  //   PendingStatus pending_status = ...;
+  //   if (IsSolveStatus<SolveStatus::Optimal>(pending_status)) { ... }
+  template <typename SolveStatusAlternative>
+  bool IsSolveStatus(const PendingStatus& pending_status) {
+    return std::holds_alternative<SolveStatus>(pending_status) &&
+           std::get<SolveStatus>(pending_status).Is<SolveStatusAlternative>();
+  }
+
+  SolveStatus SolveInternal(double start_time, bool is_maximization_problem,
+                            const DenseRow& objective_coefficients,
+                            TimeLimit& time_limit);
+
+  // Implementation of SolveInternal() which does not set solve_status_. It
+  // should not be called outside SolveInternal() code itself.
+  SolveStatus SolveInternalImpl(double start_time, bool is_maximization_problem,
+                                const DenseRow& objective_coefficients,
+                                TimeLimit& time_limit);
+
+  // Phase-I of the Primal Simplex algorithm (feasibility).
+  PendingStatus PrimalPhaseI(bool is_maximization_problem,
+                             const DenseRow& objective_coefficients,
+                             TimeLimit& time_limit);
+
+  // Phase-I of the Dual Simplex algorithm (feasibility).
+  PendingStatus DualPhaseI(bool is_maximization_problem,
+                           const DenseRow& objective_coefficients,
+                           TimeLimit& time_limit);
 
   // Propagates parameters_ to all the other classes that need it.
   //
@@ -353,6 +402,9 @@ class RevisedSimplex {
   // Displays a short string with the current iteration and objective value.
   void DisplayIterationInfo(bool primal, RefactorizationReason reason =
                                              RefactorizationReason::DEFAULT);
+
+  // Displays the pending status.
+  void DisplayPendingStatus(const PendingStatus& pending_status);
 
   // Displays the error bounds of the current solution.
   void DisplayErrors();
@@ -440,16 +492,15 @@ class RevisedSimplex {
 
   // Initializes the starting basis. In most cases it starts by the all slack
   // basis and tries to apply some heuristics to replace fixed variables.
-  ABSL_MUST_USE_RESULT Status CreateInitialBasis();
+  AbnormalityStatus CreateInitialBasis();
 
   // Sets the initial basis to the given columns, try to factorize it and
   // recompute the basic variable values.
-  ABSL_MUST_USE_RESULT Status
-  InitializeFirstBasis(const RowToColMapping& initial_basis);
+  AbnormalityStatus InitializeFirstBasis(const RowToColMapping& initial_basis);
 
   // Entry point for the solver initialization.
-  ABSL_MUST_USE_RESULT Status Initialize(const LinearProgram& lp);
-  ABSL_MUST_USE_RESULT Status FinishInitialization(bool solve_from_scratch);
+  AbnormalityStatus Initialize(const LinearProgram& lp);
+  AbnormalityStatus FinishInitialization(bool solve_from_scratch);
 
   // Saves the current variable statuses in solution_state_.
   void SaveState();
@@ -520,11 +571,11 @@ class RevisedSimplex {
   // not refactorized, set refactorize to true. Otherwise, the row number of the
   // leaving variable is written in *leaving_row, and the step length
   // is written in *step_length.
-  Status ChooseLeavingVariableRow(ColIndex entering_col,
-                                  Fractional reduced_cost, bool* refactorize,
-                                  RowIndex* leaving_row,
-                                  Fractional* step_length,
-                                  Fractional* target_bound);
+  void ChooseLeavingVariableRow(ColIndex entering_col, Fractional reduced_cost,
+                                bool* absl_nonnull refactorize,
+                                RowIndex* absl_nonnull leaving_row,
+                                Fractional* absl_nonnull step_length,
+                                Fractional* absl_nonnull target_bound);
 
   // Chooses the leaving variable for the primal phase-I algorithm. The
   // algorithm follows more or less what is described in Istvan Maros's book in
@@ -546,9 +597,9 @@ class RevisedSimplex {
   //   along this dual edge.
   // - target_bound: the bound at which the leaving variable should go when
   //   leaving the basis.
-  ABSL_MUST_USE_RESULT Status DualChooseLeavingVariableRow(
-      RowIndex* leaving_row, Fractional* cost_variation,
-      Fractional* target_bound);
+  void DualChooseLeavingVariableRow(RowIndex* absl_nonnull leaving_row,
+                                    Fractional* absl_nonnull cost_variation,
+                                    Fractional* absl_nonnull target_bound);
 
   // Updates the prices used by DualChooseLeavingVariableRow() after a simplex
   // iteration by using direction_. The prices are stored in
@@ -575,9 +626,10 @@ class RevisedSimplex {
   // Dual Phase-1 Algorithm for the Simplex Method", Computational Optimization
   // and Applications, October 2003, Volume 26, Issue 1, pp 63-81.
   // http://rd.springer.com/article/10.1023%2FA%3A1025102305440
-  ABSL_MUST_USE_RESULT Status DualPhaseIChooseLeavingVariableRow(
-      RowIndex* leaving_row, Fractional* cost_variation,
-      Fractional* target_bound);
+  void DualPhaseIChooseLeavingVariableRow(
+      RowIndex* absl_nonnull leaving_row,
+      Fractional* absl_nonnull cost_variation,
+      Fractional* absl_nonnull target_bound);
 
   // Makes sure the boxed variable are dual-feasible by setting them to the
   // correct bound according to their reduced costs. This is called
@@ -608,9 +660,8 @@ class RevisedSimplex {
   // Updates the system state according to the given basis pivot.
   // Returns an error if the update could not be done because of some precision
   // issue.
-  ABSL_MUST_USE_RESULT Status UpdateAndPivot(ColIndex entering_col,
-                                             RowIndex leaving_row,
-                                             Fractional target_bound);
+  AbnormalityStatus UpdateAndPivot(ColIndex entering_col, RowIndex leaving_row,
+                                   Fractional target_bound);
 
   // Displays all the timing stats related to the calling object.
   void DisplayAllStats();
@@ -622,21 +673,20 @@ class RevisedSimplex {
   // The general idea is that if a refactorization is going to be needed during
   // a simplex iteration, it is better to do it as soon as possible so that
   // every component can take advantage of it.
-  Status RefactorizeBasisIfNeeded(bool* refactorize);
+  AbnormalityStatus RefactorizeBasisIfNeeded(bool* refactorize);
 
   // Main iteration loop of the primal simplex.
-  ABSL_MUST_USE_RESULT Status PrimalMinimize(TimeLimit* time_limit);
+  PendingStatus PrimalMinimize(TimeLimit& time_limit);
 
   // Main iteration loop of the dual simplex.
-  ABSL_MUST_USE_RESULT Status DualMinimize(bool feasibility_phase,
-                                           TimeLimit* time_limit);
+  PendingStatus DualMinimize(bool feasibility_phase, TimeLimit& time_limit);
 
   // Pushes all super-basic variables to bounds (if applicable) or to zero (if
   // unconstrained). This is part of a "crossover" procedure to find a vertex
   // solution given a (near) optimal solution. Assumes that Minimize() or
   // DualMinimize() has already run, i.e., that we are at an optimal solution
   // within numerical tolerances.
-  ABSL_MUST_USE_RESULT Status PrimalPush(TimeLimit* time_limit);
+  AbnormalityStatus PrimalPush(TimeLimit& time_limit);
 
   // Experimental. This is useful in a MIP context. It performs a few degenerate
   // pivot to try to mimize the fractionality of the optimal basis.
@@ -646,7 +696,14 @@ class RevisedSimplex {
   //
   // I could only find slides for the reference of this "LP Solution Polishing
   // to improve MIP Performance", Matthias Miltenberger, Zuse Institute Berlin.
-  ABSL_MUST_USE_RESULT Status Polish(TimeLimit* time_limit);
+  AbnormalityStatus PrimalPolish(TimeLimit& time_limit);
+  AbnormalityStatus DualPolish(TimeLimit& time_limit);
+
+  // Helper function for Primal/DualPolish().
+  Fractional IntegralityChange(ColIndex col, Fractional old_value,
+                               Fractional new_value) const;
+  int NumNonIntegerInBasis() const;
+  void FillWithNonIntegerInBasis(std::vector<RowIndex>* candidates);
 
   // Utility functions to return the current ColIndex of the slack column with
   // given number. Note that currently, such columns are always present in the
@@ -658,10 +715,11 @@ class RevisedSimplex {
   // during the last call to this method.
   // TODO(user): Update the internals of revised simplex so that the time
   // limit is updated at the source and remove this method.
-  void AdvanceDeterministicTime(TimeLimit* time_limit);
+  void AdvanceDeterministicTime(TimeLimit& time_limit);
 
-  // Problem status
-  ProblemStatus problem_status_;
+  // Status of the last solve; should only be set by SolveInternal(), based on
+  // SolveInternalImpl() result.
+  std::optional<SolveStatus> solve_status_;
 
   // Current number of rows in the problem.
   RowIndex num_rows_ = RowIndex(0);
@@ -843,13 +901,6 @@ class RevisedSimplex {
 
   // Indicate the current phase of the solve.
   Phase phase_ = Phase::FEASIBILITY;
-
-  // Indicates whether simplex ended due to the objective limit being reached.
-  // Note that it's not enough to compare the final objective value with the
-  // limit due to numerical issues (i.e., the limit which is reached within
-  // given tolerance on the internal objective may no longer be reached when the
-  // objective scaling and offset are taken into account).
-  bool objective_limit_reached_;
 
   // Temporary SparseColumn used by ChooseLeavingVariableRow().
   SparseColumn leaving_candidates_;

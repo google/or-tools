@@ -718,7 +718,7 @@ class PathOperator : public IntVarLocalSearchOperator {
   /// Only returns a valid value if path variables are taken into account.
   int64_t Path(int64_t node) const {
     if constexpr (ignore_path_vars) return 0LL;
-    return Value(node + number_of_nexts_);
+    return Value(PathIndex(node));
   }
 
   /// Number of next variables.
@@ -797,11 +797,25 @@ class PathOperator : public IntVarLocalSearchOperator {
   virtual int64_t GetBaseNodeRestartPosition(int base_index) {
     return StartNode(base_index);
   }
-  /// Set the next base to increment on next iteration. All base > base_index
+  /// Sets the next base to increment on next iteration. All base > base_index
   /// will be reset to their start value.
   virtual void SetNextBaseToIncrement(int64_t base_index) {
     next_base_to_increment_ = base_index;
   }
+  /// Returns true if the node can be moved to the given path.
+  /// If paths are ignored, always returns true.
+  bool IsCompatibleWithPath(int64_t node, int64_t path) const {
+    if constexpr (ignore_path_vars) return true;
+    return this->Var(PathIndex(node))->Contains(path);
+  }
+  bool CheckPathCompatibility(absl::Span<const int64_t> path,
+                              int path_id) const {
+    for (int64_t node : path) {
+      if (!IsCompatibleWithPath(node, path_id)) return false;
+    }
+    return true;
+  }
+
   /// Indicates if alternatives should be considered when iterating over base
   /// nodes.
   virtual bool ConsiderAlternatives(int64_t) const { return false; }
@@ -823,7 +837,7 @@ class PathOperator : public IntVarLocalSearchOperator {
 
   int64_t OldPath(int64_t node) const {
     if constexpr (ignore_path_vars) return 0LL;
-    return OldValue(node + number_of_nexts_);
+    return OldValue(PathIndex(node));
   }
 
   int CurrentNodePathStart(int64_t node) const {
@@ -834,18 +848,35 @@ class PathOperator : public IntVarLocalSearchOperator {
 
   /// Moves the chain starting after the node before_chain and ending at the
   /// node chain_end after the node destination
-  bool MoveChain(int64_t before_chain, int64_t chain_end, int64_t destination) {
-    if (destination == before_chain || destination == chain_end) return false;
+  struct ChangeResult {
+    bool has_change;
+    bool is_feasible;
+  };
+  ChangeResult MoveChainWithCheck(int64_t before_chain, int64_t chain_end,
+                                  int64_t destination,
+                                  bool check_path_compatibility) {
+    if (destination == before_chain || destination == chain_end) {
+      return {.has_change = false, .is_feasible = true};
+    }
     DCHECK(CheckChainValidity(before_chain, chain_end, destination) &&
            !IsPathEnd(chain_end) && !IsPathEnd(destination));
     const int64_t destination_path = Path(destination);
     const int64_t after_chain = Next(chain_end);
     SetNext(chain_end, Next(destination), destination_path);
+    bool is_path_compatible =
+        !check_path_compatibility ||
+        this->IsCompatibleWithPath(chain_end, destination_path);
     if constexpr (!ignore_path_vars) {
       int current = destination;
       int next = Next(before_chain);
       while (current != chain_end) {
         SetNext(current, next, destination_path);
+        if (check_path_compatibility && is_path_compatible &&
+            !this->IsCompatibleWithPath(next, destination_path)) {
+          is_path_compatible = false;
+          // TODO(user): Investigate if we could break here (making sure the
+          // path inconsistencies don't break the operator).
+        }
         current = next;
         next = Next(next);
       }
@@ -853,7 +884,11 @@ class PathOperator : public IntVarLocalSearchOperator {
       SetNext(destination, Next(before_chain), destination_path);
     }
     SetNext(before_chain, after_chain, Path(before_chain));
-    return true;
+    return {.has_change = true, .is_feasible = is_path_compatible};
+  }
+  bool MoveChain(int64_t before_chain, int64_t chain_end, int64_t destination) {
+    return MoveChainWithCheck(before_chain, chain_end, destination, false)
+        .has_change;
   }
 
   /// Reverses the chain starting after before_chain and ending before
@@ -896,15 +931,28 @@ class PathOperator : public IntVarLocalSearchOperator {
   }
 
   /// Swaps the nodes node1 and node2.
-  bool SwapNodes(int64_t node1, int64_t node2) {
+  ChangeResult SwapNodesWithCheck(int64_t node1, int64_t node2,
+                                  bool check_path_compatibility) {
     if (IsPathEnd(node1) || IsPathEnd(node2) || IsPathStart(node1) ||
         IsPathStart(node2)) {
-      return false;
+      return {.has_change = false, .is_feasible = true};
     }
-    if (node1 == node2) return false;
+    if (node1 == node2) return {.has_change = false, .is_feasible = true};
     const int64_t prev_node1 = Prev(node1);
-    const bool ok = MoveChain(prev_node1, node1, Prev(node2));
-    return MoveChain(Prev(node2), node2, prev_node1) || ok;
+    if constexpr (!ignore_path_vars) {
+      const auto [has_change1, is_feasible1] = MoveChainWithCheck(
+          prev_node1, node1, Prev(node2), check_path_compatibility);
+      const auto [has_change2, is_feasible2] = MoveChainWithCheck(
+          Prev(node2), node2, prev_node1, check_path_compatibility);
+      return {.has_change = has_change1 || has_change2,
+              .is_feasible = is_feasible1 && is_feasible2};
+    }
+    bool ok = MoveChain(prev_node1, node1, Prev(node2));
+    ok = MoveChain(Prev(node2), node2, prev_node1) || ok;
+    return {.has_change = ok, .is_feasible = true};
+  }
+  bool SwapNodes(int64_t node1, int64_t node2) {
+    return SwapNodesWithCheck(node1, node2, false).has_change;
   }
 
   /// Insert the inactive node after destination.
@@ -1084,6 +1132,8 @@ class PathOperator : public IntVarLocalSearchOperator {
     const int node = node_iterator->GetValue();
     return node >= 0 ? node : default_value;
   }
+
+  int64_t PathIndex(int64_t node) const { return node + number_of_nexts_; }
 
   void OnStart() override {
     optimal_paths_enabled_ = false;

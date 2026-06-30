@@ -13,6 +13,7 @@
 
 #include "ortools/graph/dag_constrained_shortest_path.h"
 
+#include <memory>
 #include <utility>
 #include <vector>
 
@@ -46,7 +47,7 @@ PathWithLength ConstrainedShortestPathsOnDag(
   using ArcIndex = GraphType::ArcIndex;
 
   const int num_arcs = arcs_with_length_and_resources.size();
-  GraphType graph(num_nodes, num_arcs);
+  GraphType::Builder builder(num_nodes, num_arcs);
   std::vector<double> arc_lengths;
   arc_lengths.reserve(num_arcs);
   std::vector<std::vector<double>> arc_resources(max_resources.size());
@@ -54,7 +55,7 @@ PathWithLength ConstrainedShortestPathsOnDag(
     arc_resources[i].reserve(num_arcs);
   }
   for (const auto& arc : arcs_with_length_and_resources) {
-    graph.AddArc(arc.from, arc.to);
+    builder.AddArc(arc.from, arc.to);
     arc_lengths.push_back(arc.length);
     for (int i = 0; i < arc.resources.size(); ++i) {
       arc_resources[i].push_back(arc.resources[i]);
@@ -62,7 +63,7 @@ PathWithLength ConstrainedShortestPathsOnDag(
   }
 
   std::vector<ArcIndex> permutation;
-  graph.Build(&permutation);
+  const auto graph = std::move(builder).Build(&permutation);
   util::Permute(permutation, &arc_lengths);
   for (int i = 0; i < max_resources.size(); ++i) {
     util::Permute(permutation, &arc_resources[i]);
@@ -72,15 +73,15 @@ PathWithLength ConstrainedShortestPathsOnDag(
       internal::GetInversePermutation(permutation);
 
   const absl::StatusOr<std::vector<NodeIndex>> topological_order =
-      util::graph::FastTopologicalSort(graph);
+      util::graph::FastTopologicalSort(*graph);
   CHECK_OK(topological_order) << "arcs_with_length form a cycle.";
 
   std::vector<NodeIndex> sources = {source};
   std::vector<NodeIndex> destinations = {destination};
   ConstrainedShortestPathsOnDagWrapper<util::StaticGraph<>>
-      constrained_shortest_path_on_dag(&graph, &arc_lengths, &arc_resources,
-                                       *topological_order, sources,
-                                       destinations, &max_resources);
+      constrained_shortest_path_on_dag(graph.get(), &arc_lengths,
+                                       &arc_resources, *topological_order,
+                                       sources, destinations, &max_resources);
 
   GraphPathWithLength<GraphType> path_with_length =
       constrained_shortest_path_on_dag.RunConstrainedShortestPathOnDag();

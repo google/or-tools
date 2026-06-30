@@ -467,13 +467,10 @@ class Domain {
   PositiveModuloBySuperset(const Domain& modulo) const;
 
   /**
-   * Returns a superset of {x ∈ Int64, ∃ e ∈ D, ∃ d ∈ divisor, x = e / d }.
-   *
-   * We check that divisor is strictly positive.
-   * For now we just intersect with the min/max possible value.
+   * Returns a superset of:
+   * {x ∈ Int64, ∃ e ∈ D, ∃ d ∈ divisor \ {0}, x = e / d }.
    */
-  ABSL_MUST_USE_RESULT Domain
-  PositiveDivisionBySuperset(const Domain& divisor) const;
+  ABSL_MUST_USE_RESULT Domain DivisionBySuperset(const Domain& divisor) const;
 
   /**
    * Returns a superset of {x ∈ Int64, ∃ y ∈ D, x = y * y }.
@@ -508,6 +505,14 @@ class Domain {
    */
   ABSL_MUST_USE_RESULT Domain
   SimplifyUsingImpliedDomain(const Domain& implied_domain) const;
+
+  /**
+   * If this \minus other is a singleton, returns it. Returns nullopt otherwise.
+   *
+   * This is similar to checking if this.IntersectionWith(other.Complement()) is
+   * non-empty and fixed, but avoid allocating memory.
+   */
+  std::optional<int64_t> UniqueValueNotIn(const Domain& other) const;
 
   /**
    * Returns a compact string of a vector of intervals like "[1,4][6][10,20]".

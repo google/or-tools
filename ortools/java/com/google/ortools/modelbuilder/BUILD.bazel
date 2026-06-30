@@ -38,5 +38,6 @@ java_library(
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/linear_solver/java:modelbuilder",
+        "@maven//:com_google_errorprone_error_prone_annotations",
     ],
 )

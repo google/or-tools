@@ -197,12 +197,12 @@ bool UseLinearRelaxationForSatAssignmentPreference(
   glop::LPSolver lp_solver;
   NestedTimeLimit nested_time_limit(time_limit, time_limit->GetTimeLeft(),
                                     parameters.lp_max_deterministic_time());
-  const glop::ProblemStatus lp_status =
-      lp_solver.SolveWithTimeLimit(lp_model, nested_time_limit.GetTimeLimit());
+  const glop::SolveStatus lp_status =
+      lp_solver.SolveWithDetails(lp_model, nested_time_limit.GetTimeLimit());
 
-  if (lp_status != glop::ProblemStatus::OPTIMAL &&
-      lp_status != glop::ProblemStatus::PRIMAL_FEASIBLE &&
-      lp_status != glop::ProblemStatus::IMPRECISE) {
+  if (!lp_status.Is<glop::SolveStatus::Optimal>() &&
+      !lp_status.Is<glop::SolveStatus::PrimalFeasible>() &&
+      !lp_status.Is<glop::SolveStatus::Imprecise>()) {
     // We have no useful information from the LP, we will abort this LNS.
     return false;
   }

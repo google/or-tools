@@ -11,20 +11,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <algorithm>
 #include <cctype>
+#include <cstdio>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
+#include <random>
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <tuple>
+#include <utility>
+#include <vector>
 
 #include "absl/log/globals.h"
+#include "absl/log/log.h"
+#include "absl/random/random.h"
+#include "absl/strings/str_cat.h"
 #include "gtest/gtest.h"
-#include "ortools/base/init_google.h"
 #include "ortools/base/log_severity.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/third_party_solvers/xpress_environment.h"
+
 #define XPRS_NAMELENGTH 1028
 
 namespace operations_research {
@@ -37,7 +46,7 @@ namespace operations_research {
 
 class XPRSGetter {
  public:
-  XPRSGetter(MPSolver* solver) : solver_(solver) {}
+  explicit XPRSGetter(MPSolver* solver) : solver_(solver) {}
 
   int getNumVariables() {
     int cols;

@@ -11,16 +11,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Description: java wrapping of the C++ code at ../
-
-load("@contrib_rules_jvm//java:defs.bzl", "java_junit5_test")
-load("//bazel:swig_java.bzl", "java_wrap_cc")
+load("//bazel:or_java_wrap_cc.bzl", "or_java_wrap_cc")
 
 package(default_visibility = ["//visibility:public"])
 
-java_wrap_cc(
+or_java_wrap_cc(
     name = "graph",
     srcs = ["graph.swig"],
+    java_deps = ["@protobuf//java/core"],
     module = "graph",
     package = "com.google.ortools.graph",
     swig_includes = ["//ortools/base:base_swig"],
@@ -29,21 +27,5 @@ java_wrap_cc(
         "//ortools/graph:assignment",
         "//ortools/graph:max_flow",
         "//ortools/graph:min_cost_flow",
-    ],
-)
-
-java_junit5_test(
-    name = "FlowTest",
-    size = "small",
-    srcs = ["FlowTest.java"],
-    test_class = "com.google.ortools.graph.FlowTest",
-    deps = [
-        "//ortools/graph/java:graph",
-        "//ortools/java/com/google/ortools:Loader",
-        "@maven//:org_junit_jupiter_junit_jupiter_api",
-        "@maven//:org_junit_jupiter_junit_jupiter_engine",
-        "@maven//:org_junit_jupiter_junit_jupiter_params",
-        "@maven//:org_junit_platform_junit_platform_launcher",
-        "@maven//:org_junit_platform_junit_platform_reporting",
     ],
 )

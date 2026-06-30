@@ -14,7 +14,7 @@
 #include "ortools/set_cover/set_cover_heuristics.h"
 
 #include <algorithm>
-#include <climits>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <limits>
@@ -22,15 +22,14 @@
 #include <utility>
 #include <vector>
 
-#include "absl/base/casts.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
-#include "absl/numeric/bits.h"
 #include "absl/random/distributions.h"
 #include "absl/random/random.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "ortools/algorithms/adjustable_k_ary_heap.h"
+#include "ortools/algorithms/multikey_radix_sort.h"
 #include "ortools/base/adjustable_priority_queue-inl.h"
 #include "ortools/base/adjustable_priority_queue.h"
 #include "ortools/set_cover/base_types.h"
@@ -81,13 +80,20 @@ bool TrivialSolutionGenerator::NextSolution(
 }
 
 // RandomSolutionGenerator.
-
+// General note on the use of InsecureBitGen:
+// - it's the recommended faster way to generate large numbers of random values.
+//   We need this to shuffles large vectors of SubsetIndex or ElementIndex
+//   multiple times.
+// - we create an instance in each function to avoid thread-safety issues.
+// - we use InsecureBitGen because we don't need cryptographic security: we're
+//   just shuffling data i.e. indices or rows and columns.
 bool RandomSolutionGenerator::NextSolution(
     absl::Span<const SubsetIndex> focus) {
   StopWatch stop_watch(&run_time_);
   inv()->ClearTrace();
   std::vector<SubsetIndex> shuffled(focus.begin(), focus.end());
-  std::shuffle(shuffled.begin(), shuffled.end(), absl::BitGen());
+  absl::InsecureBitGen bit_gen;
+  std::shuffle(shuffled.begin(), shuffled.end(), bit_gen);
   for (const SubsetIndex subset : shuffled) {
     if (inv()->is_selected()[subset]) continue;
     if (inv()->num_free_elements()[subset] != 0) {
@@ -289,132 +295,27 @@ class ComputationUsefulnessStats {
 }  // namespace
 
 namespace {
-// Clearly not the fastest radix sort, but its complexity is the right one.
-// Furthermore:
-// - it is as memory-safe as std::vectors can be (no pointers),
-// - no multiplication is performed,
-// - it is stable
-// - it handles the cases of signed and unsigned integers automatically,
-// - bounds on the keys are optional, or they can be computed automatically,
-// - based on those bounds, the number of passes is automatically computed,
-// - a payload is associated to each key, and it is sorted in the same way
-//   as the keys. This payload can be a vector of integers or a vector of
-//   pointers to larger objects.
-// TODO(user): Make it an independent library.
-// - add support for decreasing counting sort,
-// - make payloads optional,
-// - support floats and doubles,
-// - improve performance.
-// - use vectorized code.
-namespace internal {
-template <typename T>
-auto RawBits(T x) {
-  if constexpr (sizeof(T) == sizeof(uint32_t)) {
-    return absl::bit_cast<uint32_t>(x);
-  } else {
-    static_assert(sizeof(T) == sizeof(uint64_t));
-    return absl::bit_cast<uint64_t>(x);
-  }
-}
-
-inline uint32_t Bucket(uint32_t x, uint32_t shift, uint32_t radix) {
-  DCHECK_EQ(0, radix & (radix - 1));  // Must be a power of two.
-  // NOMUTANTS -- a way to compute the remainder of a division when radix is a
-  // power of two.
-  return (x >> shift) & (radix - 1);
-}
-
-template <typename T>
-int NumBitsToRepresent(T value) {
-  DCHECK_LE(absl::countl_zero(RawBits(value)), sizeof(T) * CHAR_BIT);
-  return sizeof(T) * CHAR_BIT - absl::countl_zero(RawBits(value));
-}
-
-template <typename Key, typename Counter>
-void UpdateCounters(uint32_t radix, int shift, std::vector<Key>& keys,
-                    std::vector<Counter>& counts) {
-  std::fill(counts.begin(), counts.end(), 0);
-  DCHECK_EQ(counts[0], 0);
-  DCHECK_EQ(0, radix & (radix - 1));  // Must be a power of two.
-  const auto num_keys = keys.size();
-  for (int64_t i = 0; i < num_keys; ++i) {
-    ++counts[Bucket(keys[i], shift, radix)];
-  }
-  // Now the counts will contain the sum of the sizes below and including each
-  // bucket.
-  for (uint64_t i = 1; i < radix; ++i) {
-    counts[i] += counts[i - 1];
-  }
-}
-
-template <typename Key, typename Payload, typename Counter>
-void IncreasingCountingSort(uint32_t radix, int shift, std::vector<Key>& keys,
-                            std::vector<Payload>& payloads,
-                            std::vector<Key>& scratch_keys,
-                            std::vector<Payload>& scratch_payloads,
-                            std::vector<Counter>& counts) {
-  DCHECK_EQ(0, radix & (radix - 1));  // Must be a power of two.
-  UpdateCounters(radix, shift, keys, counts);
-  const auto num_keys = keys.size();
-  // In this order for stability.
-  for (int64_t i = num_keys - 1; i >= 0; --i) {
-    Counter c = --counts[Bucket(keys[i], shift, radix)];
-    scratch_keys[c] = keys[i];
-    scratch_payloads[c] = payloads[i];
-  }
-  std::swap(keys, scratch_keys);
-  std::swap(payloads, scratch_payloads);
-}
-}  // namespace internal
-
-template <typename Key, typename Payload>
-void RadixSort(int radix_log, std::vector<Key>& keys,
-               std::vector<Payload>& payloads, Key /*min_key*/, Key max_key) {
-  // range_log is the number of bits necessary to represent the max_key
-  // We could as well use max_key - min_key, but it is more expensive to
-  // compute.
-  const int range_log = internal::NumBitsToRepresent(max_key);
-  DCHECK_EQ(internal::NumBitsToRepresent(0), 0);
-  DCHECK_LE(internal::NumBitsToRepresent(std::numeric_limits<Key>::max()),
-            std::numeric_limits<Key>::digits);
-  const int radix = 1 << radix_log;  // By definition.
-  std::vector<uint32_t> counters(radix, 0);
-  std::vector<Key> scratch_keys(keys.size());
-  std::vector<Payload> scratch_payloads(payloads.size());
-  for (int shift = 0; shift < range_log; shift += radix_log) {
-    DCHECK_LE(1 << shift, max_key);
-    internal::IncreasingCountingSort(radix, shift, keys, payloads, scratch_keys,
-                                     scratch_payloads, counters);
-  }
-}
-
 // TODO(user): Move this to SetCoverInvariant.
 
 std::vector<ElementIndex> GetUncoveredElementsSortedByDegree(
     const SetCoverInvariant* const inv) {
   const BaseInt num_elements = inv->model()->num_elements();
-  std::vector<ElementIndex> degree_sorted_elements;  // payloads
-  degree_sorted_elements.reserve(num_elements);
-  std::vector<BaseInt> keys;
-  keys.reserve(num_elements);
+  std::vector<std::pair<BaseInt, ElementIndex>> elements_with_degree;
+  elements_with_degree.reserve(num_elements);
   const SparseRowView& rows = inv->model()->rows();
-  BaseInt max_degree = 0;
   for (const ElementIndex element : inv->model()->ElementRange()) {
     // Already covered elements should not be considered.
     if (inv->coverage()[element] != 0) continue;
-    degree_sorted_elements.push_back(element);
-    const BaseInt size = rows[element].size();
-    max_degree = std::max(max_degree, size);
-    keys.push_back(size);
+    elements_with_degree.push_back({rows[element].size(), element});
   }
-  RadixSort(11, keys, degree_sorted_elements, 1, max_degree);
-#ifndef NDEBUG
-  BaseInt prev_key = -1;
-  for (const auto key : keys) {
-    DCHECK_LE(prev_key, key);
-    prev_key = key;
+  MultikeyRadixSort(
+      elements_with_degree,
+      [](const std::pair<BaseInt, ElementIndex>& p) { return p.first; });
+  std::vector<ElementIndex> degree_sorted_elements;
+  degree_sorted_elements.reserve(elements_with_degree.size());
+  for (const auto& p : elements_with_degree) {
+    degree_sorted_elements.push_back(p.second);
   }
-#endif
   return degree_sorted_elements;
 }
 
@@ -486,35 +387,43 @@ bool ElementDegreeSolutionGenerator::NextSolution(
   return true;
 }
 
-namespace {
+namespace internal {
 // Returns the segment starts for a permutation sorted by degree.
 // A segment is a contiguous range of elements with the same degree.
 // `get_degree(i)` should return the degree of the i-th element in the
 // permutation.
-template <typename DegreeGetter>
-std::vector<size_t> GetSegmentStarts(size_t permutation_size,
-                                     DegreeGetter get_degree) {
+std::vector<size_t> ComputeSegmentStarts(
+    const absl::Span<const ElementIndex> elements_sorted_by_degree,
+    const SparseRowView& rows) {
   std::vector<size_t> segment_starts;
+  if (elements_sorted_by_degree.empty()) {
+    segment_starts.push_back(0);
+    return segment_starts;
+  }
   segment_starts.push_back(0);
-  for (size_t i = 1; i < permutation_size; ++i) {
-    if (get_degree(i) != get_degree(i - 1)) {
+  size_t prev_size = rows[elements_sorted_by_degree[0]].size();
+  for (size_t i = 1; i < elements_sorted_by_degree.size(); ++i) {
+    const size_t current_size = rows[elements_sorted_by_degree[i]].size();
+    if (current_size != prev_size) {
       segment_starts.push_back(i);
+      prev_size = current_size;
     }
   }
-  segment_starts.push_back(permutation_size);
+  segment_starts.push_back(elements_sorted_by_degree.size());
   return segment_starts;
 }
 
 // Shuffles each segment of `elements` as defined by `segment_starts`.
 void ShuffleSegments(const std::vector<size_t>& segment_starts,
                      std::vector<ElementIndex>* elements) {
+  absl::InsecureBitGen bit_gen;
   for (size_t j = 0; j < segment_starts.size() - 1; ++j) {
-    // NOMUTANTS -- don't need to test shuffling a segment of length 1.
+    // NOMUTANTS -- don't need to shuffle a segment of length 1.
     if (segment_starts[j + 1] - segment_starts[j] > 1) {
       std::shuffle(
           elements->begin() + segment_starts[j],
           // NOMUTANTS -- the end iterator is not included in the range.
-          elements->begin() + segment_starts[j + 1], absl::BitGen());
+          elements->begin() + segment_starts[j + 1], bit_gen);
     }
   }
 }
@@ -567,7 +476,7 @@ void RunLazyElementDegreePass(
              << " num_uncovered_elements = " << inv->num_uncovered_elements();
   }
 }
-}  // namespace
+}  // namespace internal
 
 // LazyElementDegreeSolutionGenerator.
 // There is no need to use a priority queue here, as the ratios are computed
@@ -589,15 +498,15 @@ bool LazyElementDegreeSolutionGenerator::NextSolution(
 
   // Get the segment starts for the permutation sorted by degree so that we can
   // shuffle the elements with the same degree in each pass.
-  const std::vector<size_t> segment_starts = GetSegmentStarts(
-      degree_sorted_elements.size(),
-      [&](size_t i) { return rows[degree_sorted_elements[i]].size(); });
+  const std::vector<size_t> segment_starts =
+      internal::ComputeSegmentStarts(degree_sorted_elements, rows);
 
   ComputationUsefulnessStats stats(inv(), false);
 
   const SubsetBoolVector initial_solution = inv()->is_selected();
 
-  RunLazyElementDegreePass(degree_sorted_elements, in_focus, inv(), &stats);
+  internal::RunLazyElementDegreePass(degree_sorted_elements, in_focus, inv(),
+                                     &stats);
   Cost best_cost = inv()->cost();
   SubsetBoolVector best_solution = inv()->is_selected();
 
@@ -606,9 +515,10 @@ bool LazyElementDegreeSolutionGenerator::NextSolution(
     inv()->Recompute(CL::kCostAndCoverage);
 
     // Shuffle the elements with the same degree in each pass.
-    ShuffleSegments(segment_starts, &degree_sorted_elements);
+    internal::ShuffleSegments(segment_starts, &degree_sorted_elements);
 
-    RunLazyElementDegreePass(degree_sorted_elements, in_focus, inv(), &stats);
+    internal::RunLazyElementDegreePass(degree_sorted_elements, in_focus, inv(),
+                                       &stats);
     if (inv()->num_uncovered_elements() == 0 && inv()->cost() < best_cost) {
       best_cost = inv()->cost();
       best_solution = inv()->is_selected();
@@ -964,11 +874,200 @@ bool GuidedLocalSearch::NextSolution(absl::Span<const SubsetIndex> focus) {
   return true;
 }
 
+std::vector<SubsetIndex> ComputeClique(const SetCoverInvariant& inv,
+                                       SubsetIndex subset, int max_clique_size,
+                                       absl::Duration max_duration) {
+  absl::Duration run_time;
+  StopWatch stop_watch(&run_time);
+  std::vector<SubsetIndex> clique;
+  clique.push_back(subset);
+
+  const SetCoverModel& model = *inv.model();
+  // Initialize candidates with neighbors of 'subset'.
+  std::vector<SubsetIndex> candidates;
+  // Boolean vector to quickly check if a subset is a neighbor of the current
+  // node in the clique.
+  SubsetBoolVector is_neighbor(model.num_subsets(), false);
+  is_neighbor[subset] = true;
+  VLOG(1) << "ComputeClique: " << subset.value();
+  for (const ElementIndex element : model.columns()[subset]) {
+    for (const SubsetIndex neighbor : model.rows()[element]) {
+      if (!is_neighbor[neighbor] && inv.is_selected()[neighbor]) {
+        candidates.push_back(neighbor);
+        is_neighbor[neighbor] = true;
+      }
+    }
+  }
+
+  for (const SubsetIndex candidate : candidates) {
+    is_neighbor[candidate] = false;
+  }
+  is_neighbor[subset] = false;
+
+  // Sort candidates by decreasing size (heuristic to find larger cliques).
+  const SparseColumnView& columns = model.columns();
+  std::sort(candidates.begin(), candidates.end(),
+            [&columns](SubsetIndex a, SubsetIndex b) {
+              return columns[a].size() > columns[b].size();
+            });
+
+  while (!candidates.empty()) {
+    if (clique.size() >= max_clique_size) break;
+    if (stop_watch.GetElapsedDuration() > max_duration) break;
+    // Pick the best candidate.
+    const SubsetIndex best_candidate = candidates.front();
+    clique.push_back(best_candidate);
+
+    // Identify neighbors of best_candidate to filter candidates.
+    // We mark them in 'is_neighbor'.
+    for (const SubsetIndex neighbor :
+         IntersectingSubsetsRange(model, best_candidate)) {
+      is_neighbor[neighbor] = true;
+    }
+
+    // Check that deadline has not been exceeded.
+    if (stop_watch.GetElapsedDuration() > max_duration) break;
+
+    // Filter candidates: keep only those that are neighbors of best_candidate.
+    // We reuse the 'candidates' vector to avoid allocation, but we need a
+    // read/write head.
+    BaseInt write_index = 0;
+    for (const SubsetIndex candidate : candidates) {
+      if (candidate == best_candidate) continue;
+      if (is_neighbor[candidate]) {
+        candidates[write_index] = candidate;
+        ++write_index;
+      }
+    }
+    candidates.resize(write_index);
+
+    if (stop_watch.GetElapsedDuration() > max_duration) break;
+
+    // Reset is_neighbor for the next iteration.
+    for (const SubsetIndex neighbor :
+         IntersectingSubsetsRange(model, best_candidate)) {
+      is_neighbor[neighbor] = false;
+    }
+  }
+
+  return clique;
+}
+
+std::pair<bool, std::vector<double>> GetSubsetWeights(
+    const SetCoverModel& model) {
+  const BaseInt num_subsets = model.num_subsets();
+  const SparseColumnView& columns = model.columns();
+  std::vector<double> weights;
+  weights.reserve(num_subsets);
+
+  bool has_valid_subset = false;
+  for (const SubsetIndex subset : model.SubsetRange()) {
+    const BaseInt size = columns[subset].size();
+    if (size > 2) {
+      const double weight = static_cast<double>(size);
+      weights.push_back(weight);
+      if (weight > 0) has_valid_subset = true;
+    } else {
+      weights.push_back(0.0);
+    }
+  }
+  return {has_valid_subset, weights};
+}
+
+bool CliqueGuidedLNS::NextSolution(absl::Span<const SubsetIndex> focus) {
+  StopWatch stop_watch(&run_time_);
+  DCHECK(inv()->CheckConsistency(CL::kFreeAndUncovered));
+
+  Cost best_cost = inv()->cost();
+  SubsetBoolVector best_choices = inv()->is_selected();
+
+  // Try to use the trace to know which subsets are in the solution.
+  std::vector<SubsetIndex> selected_subsets;
+  selected_subsets.reserve(inv()->trace().size());
+  for (const SetCoverDecision& decision : inv()->trace()) {
+    if (inv()->is_selected()[decision.subset()]) {
+      selected_subsets.push_back(decision.subset());
+    }
+  }
+
+  // If the trace is empty, but the cost is not zero: we have a solution. Use
+  // all selected subsets.
+  if (selected_subsets.empty() && inv()->cost() > 0.0) {
+    for (const SubsetIndex subset : model()->SubsetRange()) {
+      if (inv()->is_selected()[subset]) {
+        selected_subsets.push_back(subset);
+      }
+    }
+  }
+
+  if (selected_subsets.empty()) return false;
+
+  // TODO(user): Use the weights in the clique computation ?
+  // TODO(user): Make it possible to pass code that improves on the solution`
+  // as a parameter.
+  LazyElementDegreeSolutionGenerator lazy_element_degree(inv());
+  LazySteepestSearch lazy_steepest_search(inv());
+
+  const auto [has_valid_subset, weights] = GetSubsetWeights(*model());
+
+  DCHECK(has_valid_subset);
+
+  auto bit_gen = absl::BitGen();
+  absl::uniform_int_distribution<BaseInt> dist(0, selected_subsets.size() - 1);
+  for (int i = 0; i < max_num_cliques_; ++i) {
+    VLOG(1) << "Clique " << i << " cost " << inv()->cost();
+    // Check global time budget.
+    // TODO(user): check whether to do it here or after the clique computation.
+    if (stop_watch.GetElapsedDuration() > time_limit()) {
+      break;
+    }
+
+    SubsetIndex subset;
+    do {
+      subset = SubsetIndex(dist(bit_gen));
+      if (stop_watch.GetElapsedDuration() > time_limit()) {
+        break;
+      }
+    } while (!inv()->is_selected()[subset]);
+
+    if (!inv()->is_selected()[subset]) break;
+
+    std::vector<SubsetIndex> clique = ComputeClique(
+        *inv(), subset, max_clique_size_,
+        std::min(time_limit() - run_time_, absl::Milliseconds(100)));
+    max_clique_size_generated_ =
+        std::max(max_clique_size_generated_, static_cast<int>(clique.size()));
+
+    // Deselect elements of the clique.
+    for (const SubsetIndex subset : clique) {
+      DCHECK(inv()->is_selected()[subset]);
+      inv()->Deselect(subset, CL::kCostAndCoverage);
+    }
+
+    // Call LazyElementDegree.
+    lazy_element_degree.NextSolution();
+    // lazy_steepest_search.NextSolution();
+
+    if (inv()->cost() < best_cost) {
+      best_cost = inv()->cost();
+      best_choices = inv()->is_selected();
+    } else {
+      inv()->LoadSolution(best_choices);
+      inv()->Recompute(CL::kCostAndCoverage);
+    }
+  }
+  inv()->LoadSolution(best_choices);
+  inv()->Recompute(CL::kCostAndCoverage);
+  DCHECK(inv()->CheckConsistency(CL::kCostAndCoverage));
+  return true;
+}
+
 namespace {
 void SampleSubsets(std::vector<SubsetIndex>* list, BaseInt num_subsets) {
   num_subsets = std::min<BaseInt>(num_subsets, list->size());
   CHECK_GE(num_subsets, 0);
-  std::shuffle(list->begin(), list->end(), absl::BitGen());
+  absl::InsecureBitGen bit_gen;
+  std::shuffle(list->begin(), list->end(), bit_gen);
   list->resize(num_subsets);
 }
 }  // namespace
@@ -1052,7 +1151,9 @@ std::vector<SubsetIndex> ClearMostCoveredElements(
 
   // Actually *sample* sampled_subset.
   // TODO(user): find another algorithm if necessary.
-  std::shuffle(sampled_subsets.begin(), sampled_subsets.end(), absl::BitGen());
+  // Improve to use SampleSubsets(&sampled_subsets, max_num_subsets);
+  absl::InsecureBitGen bit_gen;
+  std::shuffle(sampled_subsets.begin(), sampled_subsets.end(), bit_gen);
   sampled_subsets.resize(
       std::min<BaseInt>(sampled_subsets.size(), max_num_subsets));
 
@@ -1064,7 +1165,7 @@ std::vector<SubsetIndex> ClearMostCoveredElements(
   return sampled_subsets;
 }
 
-namespace {
+namespace internal {
 // Performs a single pass of dual ascent with the given element permutation.
 // Returns the lower bound and the dual values.
 // The input SetCoverInvariant is not modified.
@@ -1072,17 +1173,26 @@ namespace {
 // the number of subset endpoints.
 std::pair<Cost, ElementCostVector> PerformDualAscent(
     const SetCoverInvariant& inv,
-    const std::vector<ElementIndex>& element_permutation) {
+    const std::vector<ElementIndex>& element_permutation,
+    const int32_t step = 1) {
+  // Ideally, we should DCHECK that step is a prime number, but we don't want to
+  // pay the price of the primality test at each call.
+  CHECK(step == 1 || step == 2 || step % 2 != 0);  // Step is 1, 2 or odd.
   const SetCoverModel& model = *(inv.model());
   const SparseRowView& rows = model.rows();
   const SubsetCostVector& costs = model.subset_costs();
-  ElementCostVector dual_values(model.num_elements(),
-                                0.0);     // Initialize dual variables to 0
+  const BaseInt num_elements = model.num_elements();
+  ElementCostVector dual_values(num_elements, 0.0);  // Set dual variables to 0.
   SubsetCostVector reduced_cost = costs;  // Remaining budget for each set j
   Cost lower_bound = 0.0;
 
-  // Iterate through each element i
-  for (const ElementIndex i : element_permutation) {
+  absl::InsecureBitGen bit_gen;
+  // Iterate through each element i through the permutation with a step of size
+  // prime, wrapping around at the end of the permutation.
+  // But first, we start at a random position in the permutation.
+  BaseInt pos(absl::Uniform<BaseInt>(bit_gen, 0, num_elements));
+  for (int counter = 0; counter < num_elements; ++counter) {
+    const ElementIndex i(element_permutation[pos]);
     // Find the minimum reduced cost among all sets containing element i
     Cost delta = std::numeric_limits<Cost>::max();
 
@@ -1102,69 +1212,106 @@ std::pair<Cost, ElementCostVector> PerformDualAscent(
         reduced_cost[j] -= delta;
       }
     }
+    // Wrap around if pos + step exceeds the number of elements.
+    // This is equivalent to pos = (pos + step) % num_elements, but faster.
+    // We do not use the modulo operator because it is slow.
+    pos = (step >= num_elements - pos) ? pos + step - num_elements : pos + step;
+    while (pos >= num_elements) {  // Wrap around if still necessary.
+      pos -= num_elements;
+    }
   }
 
   return {lower_bound, dual_values};
 }
-}  // namespace
+
+std::vector<int32_t> GenerateFirstNPrimes(int32_t n) {
+  if (n <= 0) return {};
+  if (n == 1) return {2};
+
+  // Estimate the N-th prime using the Prime Number Theorem upper bound.
+  // p_n < n * (ln(n) + ln(ln(n)) + 0.5) for n >= 6.
+  int32_t max_limit = 15;  // Covers small n
+  if (n >= 6) {
+    const double log_n = std::log(n);
+    const double log_log_n = std::log(log_n);
+    max_limit = static_cast<int32_t>(n * (log_n + log_log_n + 0.5));
+  }
+
+  // Sieve of Eratosthenes (odd numbers only to save 50% memory/time).
+  // is_odd_prime[i] represents the primality of the number 2*i + 1.
+  const int32_t sieve_size = (max_limit + 1) / 2;
+  std::vector<bool> is_odd_prime(sieve_size, true);
+  is_odd_prime[0] = false;  // index 0 represents 1
+  std::vector<int32_t> primes;
+  primes.reserve(n);
+  primes.push_back(2);
+
+  for (int32_t i = 1; 2 * i * (i + 1) < sieve_size; ++i) {
+    if (is_odd_prime[i]) {
+      const int32_t prime = 2 * i + 1;
+      const int32_t start = 2 * i * (i + 1);
+      for (int32_t j = start; j < sieve_size; j += prime) {
+        is_odd_prime[j] = false;
+      }
+    }
+  }
+  for (int32_t i = 1; i < sieve_size && primes.size() < n; ++i) {
+    if (is_odd_prime[i]) {
+      primes.push_back(2 * i + 1);
+    }
+  }
+  return primes;
+}
+
+}  // namespace internal
 
 Cost ComputeDualAscentLB(const SetCoverInvariant& inv, int num_random_passes) {
   const BaseInt num_elements = inv.model()->num_elements();
   std::vector<ElementIndex> element_permutation(num_elements);
   std::iota(element_permutation.begin(), element_permutation.end(),
             ElementIndex(0));
-  Cost max_lower_bound = PerformDualAscent(inv, element_permutation).first;
+  Cost max_lower_bound =
+      internal::PerformDualAscent(inv, element_permutation, 1).first;
+  absl::InsecureBitGen bit_gen;
+  std::shuffle(element_permutation.begin(), element_permutation.end(), bit_gen);
+  // We generate a few more primes than num_random_passes as a provision against
+  // the possibility that some primes may be skipped because they divide
+  // num_elements. There cannot be more that 9 such primes for a 32-bit integer,
+  // since 2 * 3 * 5 * 7 * 11 * 13 * 17 * 19 * 23 * 29 > 2^32.
+  // For a 64-bit integer, the number is 15.
+  const int32_t kNumMaxDifferentPrimeFactors = 9;
+  const std::vector<int32_t> primes = internal::GenerateFirstNPrimes(
+      num_random_passes + kNumMaxDifferentPrimeFactors);
+  int prime_index = 0;
   for (int i = 0; i < num_random_passes; ++i) {
-    std::shuffle(element_permutation.begin(), element_permutation.end(),
-                 absl::BitGen());
+    int32_t prime = primes[prime_index];
+    while (num_elements % prime == 0) {
+      ++prime_index;
+      prime = primes[prime_index];
+    }
     max_lower_bound = std::max(
-        max_lower_bound, PerformDualAscent(inv, element_permutation).first);
+        max_lower_bound,
+        internal::PerformDualAscent(inv, element_permutation, prime).first);
+    ++prime_index;
   }
   return max_lower_bound;
 }
 
-Cost ComputeDegreeBasedDualAscentLB(const SetCoverInvariant& inv,
-                                    int num_random_passes) {
+Cost ComputeDualAscentLBFullRandom(const SetCoverInvariant& inv,
+                                   int num_random_passes) {
   const BaseInt num_elements = inv.model()->num_elements();
-  std::vector<ElementIndex> permutation;
-  permutation.reserve(num_elements);
-  std::vector<BaseInt> degrees;
-  degrees.reserve(num_elements);
-  const SparseRowView& rows = inv.model()->rows();
-  // Sort the elements according by increasing degree.
-  // We use radix sort, which requires an auxiliary array (degrees).
-  BaseInt max_degree = 0;
-  for (const ElementIndex element : inv.model()->ElementRange()) {
-    permutation.push_back(element);
-    const BaseInt size = rows[element].size();
-    max_degree = std::max(max_degree, size);
-    degrees.push_back(size);
-  }
-  RadixSort(11, degrees, permutation, 1, max_degree);
-
-  Cost max_lower_bound = PerformDualAscent(inv, permutation).first;
-  if (num_random_passes == 0) {
-    return max_lower_bound;
-  }
-
-  // Find the starts of the segments of equal degrees.
-  // The initial permutation is sorted according to degrees, so the segments are
-  // contiguous. We will shuffle each segment independently.
-  std::vector<size_t> segment_starts;
-  segment_starts.push_back(0);
-  for (size_t i = 1; i < permutation.size(); ++i) {
-    if (degrees[i] != degrees[i - 1]) {
-      segment_starts.push_back(i);
-    }
-  }
-  segment_starts.push_back(permutation.size());
-
+  std::vector<ElementIndex> element_permutation(num_elements);
+  std::iota(element_permutation.begin(), element_permutation.end(),
+            ElementIndex(0));
+  Cost max_lower_bound =
+      internal::PerformDualAscent(inv, element_permutation).first;
+  absl::InsecureBitGen bit_gen;
   for (int i = 0; i < num_random_passes; ++i) {
-    // Shuffle each segment independently.
-    ShuffleSegments(segment_starts, &permutation);
-    // Perform dual ascent with the updated permutation.
+    std::shuffle(element_permutation.begin(), element_permutation.end(),
+                 bit_gen);
     max_lower_bound =
-        std::max(max_lower_bound, PerformDualAscent(inv, permutation).first);
+        std::max(max_lower_bound,
+                 internal::PerformDualAscent(inv, element_permutation).first);
   }
   return max_lower_bound;
 }

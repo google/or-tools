@@ -50,7 +50,7 @@ elseif(UNIX)
                         INSTALL_RPATH "$ORIGIN/${libdir_relative_path}")
 endif()
 
-if(BUILD_TESTING)
+if(BUILD_CXX_TESTING)
   add_test(
     NAME cxx_packing_vector_bin_packing
     COMMAND vector_bin_packing --input ${CMAKE_CURRENT_SOURCE_DIR}/testdata/1D__bpp_scholl__bin2data.N2W2B1R0.vbp)

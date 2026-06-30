@@ -13,49 +13,63 @@
 
 #include "ortools/linear_solver/glop_utils.h"
 
+#include <variant>
+
+#include "absl/functional/overload.h"
 #include "absl/log/log.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/lp_data/lp_types.h"
 
 namespace operations_research {
 
-MPSolver::ResultStatus GlopToMPSolverResultStatus(glop::ProblemStatus s) {
-  switch (s) {
-    case glop::ProblemStatus::OPTIMAL:
-      return MPSolver::OPTIMAL;
-    case glop::ProblemStatus::PRIMAL_FEASIBLE:
-      return MPSolver::FEASIBLE;
-
-    // Note(user): MPSolver does not have the equivalent of
-    // INFEASIBLE_OR_UNBOUNDED however UNBOUNDED is almost never relevant in
-    // applications, so we decided to report this status as INFEASIBLE since
-    // it should almost always be the case. Historically, we where reporting
-    // ABNORMAL, but that was more confusing than helpful.
-    //
-    // TODO(user): We could argue that it is infeasible to find the optimal of
-    // an unbounded problem. So it might just be simpler to completely get rid
-    // of the MpSolver::UNBOUNDED status that seems to never be used
-    // programmatically.
-    case glop::ProblemStatus::INFEASIBLE_OR_UNBOUNDED:  // PASS_THROUGH_INTENDED
-    case glop::ProblemStatus::PRIMAL_INFEASIBLE:        // PASS_THROUGH_INTENDED
-    case glop::ProblemStatus::DUAL_UNBOUNDED:
-      return MPSolver::INFEASIBLE;
-
-    case glop::ProblemStatus::DUAL_INFEASIBLE:  // PASS_THROUGH_INTENDED
-    case glop::ProblemStatus::PRIMAL_UNBOUNDED:
-      return MPSolver::UNBOUNDED;
-
-    case glop::ProblemStatus::DUAL_FEASIBLE:  // PASS_THROUGH_INTENDED
-    case glop::ProblemStatus::INIT:
-      return MPSolver::NOT_SOLVED;
-
-    case glop::ProblemStatus::ABNORMAL:   // PASS_THROUGH_INTENDED
-    case glop::ProblemStatus::IMPRECISE:  // PASS_THROUGH_INTENDED
-    case glop::ProblemStatus::INVALID_PROBLEM:
-      return MPSolver::ABNORMAL;
-  }
-  LOG(DFATAL) << "Invalid glop::ProblemStatus " << s;
-  return MPSolver::ABNORMAL;
+MPSolver::ResultStatus GlopToMPSolverResultStatus(const glop::SolveStatus s) {
+  return std::visit(
+      absl::Overload{
+          [&](const glop::SolveStatus::Optimal&) { return MPSolver::OPTIMAL; },
+          [&](const glop::SolveStatus::PrimalInfeasible&) {
+            return MPSolver::INFEASIBLE;
+          },
+          [&](const glop::SolveStatus::DualInfeasible&) {
+            return MPSolver::UNBOUNDED;
+          },
+          [&](const glop::SolveStatus::InfeasibleOrUnbounded&) {
+            // Note(user): MPSolver does not have the equivalent of
+            // INFEASIBLE_OR_UNBOUNDED however UNBOUNDED is almost never
+            // relevant in applications, so we decided to report this status as
+            // INFEASIBLE since it should almost always be the
+            // case. Historically, we where reporting ABNORMAL, but that was
+            // more confusing than helpful.
+            //
+            // TODO(user): We could argue that it is infeasible to find the
+            // optimal of an unbounded problem. So it might just be simpler to
+            // completely get rid of the MpSolver::UNBOUNDED status that seems
+            // to never be used programmatically.
+            return MPSolver::INFEASIBLE;
+          },
+          [&](const glop::SolveStatus::PrimalUnbounded&) {
+            return MPSolver::UNBOUNDED;
+          },
+          [&](const glop::SolveStatus::DualUnbounded&) {
+            return MPSolver::INFEASIBLE;
+          },
+          [&](const glop::SolveStatus::Init&) { return MPSolver::NOT_SOLVED; },
+          [&](const glop::SolveStatus::PrimalFeasible&) {
+            return MPSolver::FEASIBLE;
+          },
+          [&](const glop::SolveStatus::DualFeasible&) {
+            return MPSolver::NOT_SOLVED;
+          },
+          [&](const glop::SolveStatus::Imprecise&) {
+            return MPSolver::ABNORMAL;
+          },
+          [&](const glop::SolveStatus::Abnormal&) {
+            return MPSolver::ABNORMAL;
+          },
+          [&](const glop::SolveStatus::InvalidProblem&) {
+            return MPSolver::ABNORMAL;
+          },
+      },
+      s.value);
 }
 
 MPSolver::BasisStatus GlopToMPSolverVariableStatus(glop::VariableStatus s) {

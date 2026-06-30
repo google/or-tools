@@ -12,8 +12,13 @@
 # limitations under the License.
 
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
 
-package(default_visibility = ["//visibility:public"])
+package(default_visibility = [
+    "//experimental/users/rander/santorini:__subpackages__",
+    "//ortools/javatests/com/google/ortools/mathopt:__subpackages__",
+    "//visibility:public",
+])
 
 cc_library(
     name = "param_name",
@@ -27,4 +32,22 @@ cc_library(
 cc_library(
     name = "stream",
     hdrs = ["stream.h"],
+)
+
+cc_test(
+    name = "param_name_test",
+    srcs = ["param_name_test.cc"],
+    deps = [
+        ":param_name",
+        "//ortools/base:gmock_main",
+    ],
+)
+
+cc_test(
+    name = "stream_test",
+    srcs = ["stream_test.cc"],
+    deps = [
+        ":stream",
+        "//ortools/base:gmock_main",
+    ],
 )

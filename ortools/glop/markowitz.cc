@@ -16,14 +16,12 @@
 #include <algorithm>
 #include <cstdint>
 #include <cstdlib>
-#include <limits>
-#include <string>
 #include <vector>
 
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/strings/str_format.h"
-#include "ortools/glop/status.h"
+#include "ortools/base/types.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/permutation.h"
 #include "ortools/lp_data/sparse.h"
@@ -33,7 +31,7 @@
 namespace operations_research {
 namespace glop {
 
-Status Markowitz::ComputeRowAndColumnPermutation(
+AbnormalityStatus Markowitz::ComputeRowAndColumnPermutation(
     const CompactSparseMatrixView& basis_matrix, RowPermutation* row_perm,
     ColumnPermutation* col_perm) {
   SCOPED_TIME_STAT(&stats_);
@@ -44,7 +42,7 @@ Status Markowitz::ComputeRowAndColumnPermutation(
   row_perm->assign(num_rows, kInvalidRow);
 
   // Get the empty matrix corner case out of the way.
-  if (basis_matrix.IsEmpty()) return Status::OK();
+  if (basis_matrix.IsEmpty()) return OkAbnormalityStatus();
   basis_matrix_ = &basis_matrix;
 
   // Initialize all the matrices.
@@ -92,10 +90,10 @@ Status Markowitz::ComputeRowAndColumnPermutation(
     // report the singularity of the matrix.
     if (pivot_row == kInvalidRow || pivot_col == kInvalidCol ||
         std::abs(pivot_coefficient) <= singularity_threshold) {
-      const std::string error_message = absl::StrFormat(
-          "The matrix is singular! pivot = %E", pivot_coefficient);
-      VLOG(1) << "ERROR_LU: " << error_message;
-      return Status(Status::ERROR_LU, error_message);
+      VLOG(1) << absl::StrFormat("The matrix is singular! pivot = %E",
+                                 pivot_coefficient);
+      return AbnormalityStatus(
+          AbnormalityCause::kLuFactorizationMarkowitzPivotTooSmall);
     }
     DCHECK_EQ((*row_perm)[pivot_row], kInvalidRow);
     DCHECK_EQ((*col_perm)[pivot_col], kInvalidCol);
@@ -153,18 +151,18 @@ Status Markowitz::ComputeRowAndColumnPermutation(
       1.0 * stats_num_pivots_without_fill_in / num_rows.value());
   stats_.degree_two_pivot_columns.Add(1.0 * stats_degree_two_pivot_columns /
                                       num_rows.value());
-  return Status::OK();
+  return OkAbnormalityStatus();
 }
 
-Status Markowitz::ComputeLU(const CompactSparseMatrixView& basis_matrix,
-                            RowPermutation* row_perm,
-                            ColumnPermutation* col_perm,
-                            TriangularMatrix* lower, TriangularMatrix* upper) {
+AbnormalityStatus Markowitz::ComputeLU(
+    const CompactSparseMatrixView& basis_matrix, RowPermutation* row_perm,
+    ColumnPermutation* col_perm, TriangularMatrix* lower,
+    TriangularMatrix* upper) {
   // The two first swaps allow to use less memory since this way upper_
   // and lower_ will always stay empty at the end of this function.
   lower_.Swap(lower);
   upper_.Swap(upper);
-  GLOP_RETURN_IF_ERROR(
+  GLOP_RETURN_IF_ABNORMAL(
       ComputeRowAndColumnPermutation(basis_matrix, row_perm, col_perm));
   SCOPED_TIME_STAT(&stats_);
   lower_.ApplyRowPermutationToNonDiagonalEntries(*row_perm);
@@ -173,7 +171,7 @@ Status Markowitz::ComputeLU(const CompactSparseMatrixView& basis_matrix,
   upper_.Swap(upper);
   DCHECK(lower->IsLowerTriangular());
   DCHECK(upper->IsUpperTriangular());
-  return Status::OK();
+  return OkAbnormalityStatus();
 }
 
 void Markowitz::Clear() {
@@ -394,7 +392,7 @@ int64_t Markowitz::FindPivot(const RowPermutation& row_perm,
 
   // Note(user): we use int64_t since this is a product of two ints, moreover
   // the ints should be relatively small, so that should be fine for a while.
-  int64_t min_markowitz_number = std::numeric_limits<int64_t>::max();
+  int64_t min_markowitz_number = kint64max;
   examined_col_.clear();
   const int num_columns_to_examine = parameters_.markowitz_zlatev_parameter();
   const Fractional threshold = parameters_.lu_factorization_pivot_threshold();

@@ -18,7 +18,6 @@
 #include <atomic>
 #include <cstdint>
 #include <functional>
-#include <limits>
 #include <memory>
 #include <string>
 #include <utility>
@@ -27,11 +26,13 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/functional/any_invocable.h"
 #include "absl/log/check.h"
+#include "absl/random/bit_gen_ref.h"
 #include "absl/random/distributions.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/types/span.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/constraint_violation.h"
 #include "ortools/sat/cp_model_copy.h"
 #include "ortools/sat/integer_base.h"
@@ -148,6 +149,7 @@ struct LsOptions {
   double perturbation_probability = 0.0;
   bool use_decay = true;
   bool use_compound_moves = true;
+  bool start_with_random_weights = true;
   bool use_objective = true;  // No effect if there are no objective.
 
   // Allows to identify which options worked well.
@@ -158,6 +160,7 @@ struct LsOptions {
     if (use_decay) parts.push_back("decay");
     if (use_compound_moves) parts.push_back("compound");
     if (perturbation_probability > 0) parts.push_back("perturb");
+    if (start_with_random_weights) parts.push_back("rweights");
     if (use_objective) parts.push_back("obj");
     return absl::StrJoin(parts, "_");
   }
@@ -174,17 +177,19 @@ struct LsOptions {
            perturbation_probability == o.perturbation_probability &&
            use_decay == o.use_decay &&
            use_compound_moves == o.use_compound_moves &&
+           start_with_random_weights == o.start_with_random_weights &&
            use_objective == o.use_objective;
   }
 
-  void Randomize(const SatParameters& params, ModelRandomGenerator* random) {
+  void Randomize(const SatParameters& params, absl::BitGenRef random) {
     perturbation_probability =
-        absl::Bernoulli(*random, 0.5)
+        absl::Bernoulli(random, 0.5)
             ? 0.0
             : params.feasibility_jump_var_randomization_probability();
-    use_decay = absl::Bernoulli(*random, 0.5);
-    use_compound_moves = absl::Bernoulli(*random, 0.5);
-    use_objective = absl::Bernoulli(*random, 0.5);
+    use_decay = absl::Bernoulli(random, 0.5);
+    use_compound_moves = absl::Bernoulli(random, 0.5);
+    start_with_random_weights = absl::Bernoulli(random, 0.5);
+    use_objective = absl::Bernoulli(random, 0.5);
   }
 };
 
@@ -198,13 +203,19 @@ struct LsState {
   // Contains a value for each variable of the FeasibilityJumpSolver's
   // input_model_proto_.
   std::vector<int64_t> input_solution;
+
   // Contains a value for each variable of the FeasibilityJumpSolver's
   // dense_model_. This can be recomputed from `input_solution` when the mapping
   // between the two models changes.
   std::vector<int64_t> solution;
+
   // The score of a solution is the sum of infeasibility of each constraint of
   // the FeasibilityJumpSolver's dense_model_, weighted by `weights`.
   std::vector<double> weights;
+
+  // This is used when we find a new solution to compute a "delta" with it.
+  // This starts equal to input_solution, but it is set to the last solution
+  // found if we find many solutions during the same run.
   std::shared_ptr<const SharedSolutionRepository<int64_t>::Solution>
       base_solution;
 
@@ -245,7 +256,7 @@ struct LsState {
   int64_t num_batches_before_change = 0;
 
   // Used by LS to know the rank of the starting solution for this state.
-  int64_t last_solution_rank = std::numeric_limits<int64_t>::max();
+  int64_t last_solution_rank = kint64max;
 
   // Tricky: If this changed since last time, we need to recompute the
   // compound moves as the objective constraint bound changed.
@@ -254,10 +265,13 @@ struct LsState {
 };
 
 // Shared set of local search states that we work on.
+//
+// Note that we can have more than one set of SharedLsStates. For instance the
+// FeasibilityJumpSolver that do not use the same linearization level do not
+// share the same set of states. This is done like this because the number of
+// weights can be different between these workers.
 class SharedLsStates {
  public:
-  // Important: max_parallelism should be greater or equal than the actual
-  // number of thread sharing this class, otherwise the code will break.
   SharedLsStates(absl::string_view name, const SatParameters& params,
                  SharedStatTables* stat_tables)
       : name_(name), params_(params), stat_tables_(stat_tables) {
@@ -269,8 +283,9 @@ class SharedLsStates {
   ~SharedLsStates();
 
   // Returns the next available state in round-robin fashion.
-  // This is thread safe. If we respect the max_parallelism guarantee, then
-  // all states should be independent.
+  //
+  // If all states are currently worked on, this will create a new one.
+  // So this will always return a valid state.
   LsState* GetNextState() {
     absl::MutexLock mutex_lock(mutex_);
     int next = -1;
@@ -384,13 +399,14 @@ class FeasibilityJumpSolver : public SubSolver {
       : SubSolver(name, type),
         input_model_proto_(input_model_proto),
         dense_model_(name, input_model_proto, shared_bounds, shared_clauses),
-        params_(params),
+        params_(std::move(params)),
         states_(std::move(ls_states)),
         shared_time_limit_(shared_time_limit),
         shared_response_(shared_response),
         shared_hints_(shared_hints),
         stat_tables_(stat_tables),
-        random_(params_) {
+        random_engine_(params_),
+        random_(random_engine_.bit_gen_ref()) {
     shared_time_limit_->UpdateLocalLimit(&time_limit_);
   }
 
@@ -512,7 +528,12 @@ class FeasibilityJumpSolver : public SubSolver {
   SharedResponseManager* shared_response_;
   SharedLsSolutionRepository* shared_hints_;
   SharedStatTables* stat_tables_;
-  ModelRandomGenerator random_;
+
+  // We don't have a local Model* here, so we need to keep the underlying memory
+  // for our random_ generator, and we want to initialize it like in other
+  // places.
+  ModelRandomGenerator::ModelRandomEngine random_engine_;
+  absl::BitGenRef random_;
 
   // Whether each `dense_model_` variable occurs in a positive/negative term in
   // the objective.

@@ -49,6 +49,7 @@
 #define ORTOOLS_GRAPH_ASSIGNMENT_H_
 
 #include <cstdint>
+#include <optional>
 #include <vector>
 
 namespace operations_research {
@@ -134,6 +135,10 @@ class SimpleLinearSumAssignment {
   }
 
  private:
+  // If the graph is a complete bipartite graph, solve with a faster data
+  // structure. Returns std::nullopt if this was not the case.
+  std::optional<Status> SolveIfCompleteBipartite();
+
   NodeIndex num_nodes_;
   std::vector<NodeIndex> arc_tail_;
   std::vector<NodeIndex> arc_head_;

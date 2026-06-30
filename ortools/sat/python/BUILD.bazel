@@ -14,7 +14,7 @@
 # Description: python wrapping of the C++ code at ../
 
 load("@pip_deps//:requirements.bzl", "requirement")
-load("@pybind11_bazel//:build_defs.bzl", "pybind_extension")
+load("@pybind11_bazel//:build_defs.bzl", "pybind_extension", "pybind_library")
 load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_python//python:py_library.bzl", "py_library")
@@ -26,11 +26,60 @@ cc_library(
     hdrs = ["linear_expr_doc.h"],
 )
 
+pybind_library(
+    name = "pybind_constraint",
+    srcs = ["pybind_constraint.cc"],
+    hdrs = ["pybind_constraint.h"],
+    linkstatic = 1,
+    deps = [
+        ":linear_expr",
+        "//ortools/base:types",
+        "//ortools/port:proto_utils",
+        "//ortools/sat:cp_model_cc_proto",
+        "//ortools/sat:cp_model_utils",
+        "//ortools/util:saturated_arithmetic",
+        "//ortools/util:sorted_interval_list",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
+pybind_library(
+    name = "pybind_linearexpr",
+    srcs = ["pybind_linearexpr.cc"],
+    hdrs = ["pybind_linearexpr.h"],
+    linkstatic = 1,
+    deps = [
+        ":linear_expr",
+        ":linear_expr_doc",
+        "//ortools/base:types",
+        "//ortools/util:sorted_interval_list",
+        "@abseil-cpp//absl/base:dynamic_annotations",
+        "@abseil-cpp//absl/functional:any_invocable",
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
+pybind_library(
+    name = "pybind_solver",
+    srcs = ["pybind_solver.cc"],
+    hdrs = ["pybind_solver.h"],
+    linkstatic = 1,
+    deps = [
+        ":linear_expr",
+        "//ortools/sat:cp_model_utils",
+        "//ortools/sat:swig_helper",
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
 cc_library(
     name = "linear_expr",
     srcs = ["linear_expr.cc"],
     hdrs = ["linear_expr.h"],
     deps = [
+        "//ortools/base:types",
         "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:cp_model_utils",
         "//ortools/util:fp_roundtrip_conv",
@@ -80,6 +129,9 @@ pybind_extension(
         ":linear_expr",
         ":linear_expr_doc",
         ":proto_builder_pybind11",
+        ":pybind_constraint",
+        ":pybind_linearexpr",
+        ":pybind_solver",
         "//ortools/port:proto_utils",
         "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:cp_model_utils",

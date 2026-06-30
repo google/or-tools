@@ -39,8 +39,11 @@ cc_library(
         ":iterators",
         "//ortools/base:constant_divisor",
         "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/base:nullability",
         "@abseil-cpp//absl/debugging:leak_check",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/memory",
         "@abseil-cpp//absl/types:span",
     ],
 )
@@ -52,7 +55,6 @@ cc_library(
     hdrs = ["random_graph.h"],
     deps = [
         ":graph",
-        "//ortools/base:types",
         "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/memory",
@@ -67,6 +69,7 @@ cc_library(
     deps = [
         "//ortools/base:numbers",
         "//ortools/util:filelineiter",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
@@ -108,6 +111,7 @@ cc_test(
     name = "test_util_test",
     srcs = ["test_util_test.cc"],
     deps = [
+        ":graph",
         ":io",
         ":test_util",
         "//ortools/base:gmock_main",
@@ -180,18 +184,40 @@ cc_library(
 )
 
 cc_library(
-    name = "connected_components",
-    srcs = ["connected_components.cc"],
-    hdrs = ["connected_components.h"],
+    name = "hash_or_tree_container",
+    srcs = [],
+    hdrs = ["hash_or_tree_container.h"],
     deps = [
-        "//ortools/base:map_util",
-        "//ortools/base:stl_util",
+        "@abseil-cpp//absl/container:btree",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:flat_hash_set",
+    ],
+)
+
+cc_test(
+    name = "hash_or_tree_container_test",
+    srcs = ["hash_or_tree_container_test.cc"],
+    deps = [
+        ":hash_or_tree_container",
+        "//ortools/base:gmock_main",
         "@abseil-cpp//absl/container:btree",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/hash",
+    ],
+)
+
+cc_library(
+    name = "connected_components",
+    srcs = ["connected_components.cc"],
+    hdrs = ["connected_components.h"],
+    deps = [
+        ":hash_or_tree_container",
+        "//ortools/base:log_severity",
+        "//ortools/base:map_util",
+        "//ortools/base:stl_util",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
-        "@abseil-cpp//absl/meta:type_traits",
     ],
 )
 
@@ -201,7 +227,7 @@ cc_library(
     deps = [
         ":graph",
         ":iterators",
-        "//ortools/base:stl_util",
+        "//ortools/base:unique_array",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/types:span",
     ],

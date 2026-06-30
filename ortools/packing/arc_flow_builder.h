@@ -46,7 +46,6 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/types/span.h"
-#include "ortools/base/types.h"
 
 namespace operations_research {
 namespace packing {

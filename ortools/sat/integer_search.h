@@ -28,7 +28,6 @@
 #include <functional>
 #include <vector>
 
-#include "absl/container/flat_hash_set.h"
 #include "absl/types/span.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -43,8 +42,6 @@
 #include "ortools/sat/sat_inprocessing.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
-#include "ortools/sat/synchronization.h"
-#include "ortools/sat/util.h"
 #include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
 
@@ -302,10 +299,11 @@ class IntegerSearchHelper {
     must_process_conflict_ = true;
   }
 
-  // Tries to take the current decision, this might backjump. If
-  // use_representative is true, the representative of the decision is taken
-  // instead. Returns false if the model is UNSAT.
-  bool TakeDecision(Literal decision, bool use_representative = true);
+  // Tries to take the current decision, this might backjump.
+  // If the decision is not a representative, the representative is enqueued as
+  // the decision instead.
+  // Returns false if the model is UNSAT.
+  bool TakeDecision(Literal decision);
 
   // Tries to find a feasible solution to the current model.
   //
@@ -334,86 +332,6 @@ class IntegerSearchHelper {
   Inprocessing* inprocessing_;
 
   bool must_process_conflict_ = false;
-};
-
-// This class will loop continuously on model variables and try to probe/shave
-// its bounds.
-class ContinuousProber {
- public:
-  // The model_proto is just used to construct the lists of variable to probe.
-  ContinuousProber(const CpModelProto& model_proto, Model* model);
-
-  // Starts or continues probing variables and their bounds.
-  // It returns:
-  //   - SatSolver::INFEASIBLE if the problem is proven infeasible.
-  //   - SatSolver::FEASIBLE when a feasible solution is found
-  //   - SatSolver::LIMIT_REACHED if the limit stored in the model is reached
-  // Calling Probe() after it has returned FEASIBLE or LIMIT_REACHED will resume
-  // probing from its previous state.
-  SatSolver::Status Probe();
-
- private:
-  static const int kTestLimitPeriod = 20;
-  static const int kLogPeriod = 5000;
-  static const int kSyncPeriod = 50;
-
-  SatSolver::Status ShaveLiteral(Literal literal);
-  bool ReportStatus(SatSolver::Status status);
-  void LogStatistics();
-  SatSolver::Status PeriodicSyncAndCheck();
-
-  // Variables to probe.
-  std::vector<BooleanVariable> bool_vars_;
-  std::vector<IntegerVariable> int_vars_;
-
-  // Model object.
-  Model* model_;
-  SatSolver* sat_solver_;
-  TimeLimit* time_limit_;
-  BinaryImplicationGraph* binary_implication_graph_;
-  ClauseManager* clause_manager_;
-  Trail* trail_;
-  IntegerTrail* integer_trail_;
-  IntegerEncoder* encoder_;
-  Inprocessing* inprocessing_;
-  const SatParameters parameters_;
-  LevelZeroCallbackHelper* level_zero_callbacks_;
-  Prober* prober_;
-  SharedResponseManager* shared_response_manager_;
-  SharedBoundsManager* shared_bounds_manager_;
-  ModelRandomGenerator* random_;
-
-  // Statistics.
-  int64_t num_literals_probed_ = 0;
-  int64_t num_bounds_shaved_ = 0;
-  int64_t num_bounds_tried_ = 0;
-  int64_t num_at_least_one_probed_ = 0;
-  int64_t num_at_most_one_probed_ = 0;
-
-  // Period counters;
-  int num_logs_remaining_ = 0;
-  int num_syncs_remaining_ = 0;
-  int num_test_limit_remaining_ = 0;
-
-  // Shaving management.
-  bool use_shaving_ = false;
-  int trail_index_at_start_of_iteration_ = 0;
-  int integer_trail_index_at_start_of_iteration_ = 0;
-
-  // Current state of the probe.
-  double active_limit_;
-  // TODO(user): use 2 vector<bool>.
-  absl::flat_hash_set<BooleanVariable> probed_bool_vars_;
-  absl::flat_hash_set<LiteralIndex> shaved_literals_;
-  int iteration_ = 1;
-  int current_int_var_ = 0;
-  int current_bool_var_ = 0;
-  int current_bv1_ = 0;
-  int current_bv2_ = 0;
-  int random_pair_of_bool_vars_probed_ = 0;
-  int random_triplet_of_bool_vars_probed_ = 0;
-  std::vector<std::vector<Literal>> tmp_dnf_;
-  std::vector<Literal> tmp_literals_;
 };
 
 }  // namespace sat

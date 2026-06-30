@@ -219,7 +219,7 @@ ReducedDomainNeighborhood GetRinsRensNeighborhood(
   }
 
   absl::StrAppend(&reduced_domains.source_info,
-                  use_lp_relaxation ? "lp" : "pump", "_lns");
+                  use_lp_relaxation ? "lp" : "pump");
   return reduced_domains;
 }
 

@@ -30,6 +30,7 @@
 #include "absl/types/span.h"
 #include "ortools/base/log_severity.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
@@ -54,7 +55,7 @@ namespace sat {
 LbTreeSearch::LbTreeSearch(Model* model)
     : name_(model->Name()),
       time_limit_(model->GetOrCreate<TimeLimit>()),
-      random_(model->GetOrCreate<ModelRandomGenerator>()),
+      random_(*model->GetOrCreate<ModelRandomGenerator>()),
       sat_solver_(model->GetOrCreate<SatSolver>()),
       integer_encoder_(model->GetOrCreate<IntegerEncoder>()),
       trail_(model->GetOrCreate<Trail>()),
@@ -303,11 +304,11 @@ void LbTreeSearch::MarkBranchAsInfeasible(Node& node, bool true_branch) {
   if (true_branch) {
     node.UpdateTrueObjective(kMaxIntegerValue);
     MarkSubtreeAsDeleted(node.true_child);
-    node.true_child = NodeIndex(std::numeric_limits<int32_t>::max());
+    node.true_child = NodeIndex(kint32max);
   } else {
     node.UpdateFalseObjective(kMaxIntegerValue);
     MarkSubtreeAsDeleted(node.false_child);
-    node.false_child = NodeIndex(std::numeric_limits<int32_t>::max());
+    node.false_child = NodeIndex(kint32max);
   }
 }
 

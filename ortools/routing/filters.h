@@ -105,6 +105,12 @@ IntVarLocalSearchFilter* MakePathCumulFilter(const Dimension& dimension,
                                              bool filter_objective_cost,
                                              bool may_use_optimizers);
 
+/// Version of dimension path filter in O(length of moved chains). Currently
+/// only supports dimensions without costs (global and local span cost, soft
+/// bounds) and with unconstrained cumul variables except overall capacity and
+/// cumul variables of path ends.
+IntVarLocalSearchFilter* MakeChainCumulFilter(const Dimension& dimension);
+
 /// Returns a filter handling dimension cumul bounds.
 IntVarLocalSearchFilter* MakeCumulBoundsPropagatorFilter(
     const Dimension& dimension);

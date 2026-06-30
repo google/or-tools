@@ -13,6 +13,8 @@
 
 #include "ortools/base/dump_vars.h"
 
+#include <cstdint>
+#include <memory>
 #include <optional>
 #include <sstream>
 #include <string>
@@ -20,6 +22,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/numeric/int128.h"
 #include "gtest/gtest.h"
 #include "ortools/base/strong_int.h"
 #include "ortools/base/strong_vector.h"
@@ -186,6 +189,19 @@ TEST(DumpVars, LazyEvaluation) {
     EXPECT_EQ("y = 5", vars.as("y").str());
     EXPECT_EQ(5, n);
   }
+}
+
+TEST(DumpVars, Int128) {
+  absl::int128 i128 = 123456789;
+  absl::uint128 ui128 = 987654321;
+  EXPECT_EQ("i128 = 123456789", ToString(DUMP_VARS(i128)));
+  EXPECT_EQ("ui128 = 987654321", ToString(DUMP_VARS(ui128)));
+
+  std::vector<absl::int128> vec = {i128};
+  EXPECT_EQ("vec = 123456789,", ToString(DUMP_VARS(vec)));
+
+  std::optional<absl::uint128> opt = ui128;
+  EXPECT_EQ("opt = 987654321", ToString(DUMP_VARS(opt)));
 }
 
 TEST(DumpVars, TemporaryLifetime) {

@@ -36,6 +36,7 @@
 #include "absl/types/span.h"
 #include "ortools/base/hash.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/base/types.h"
 #include "ortools/glop/variables_info.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/sat/debug_solution.h"
@@ -698,7 +699,7 @@ void LinearConstraintManager::FillDerivedFields(ConstraintInfo* info) {
   info->constraint.lb = std::max(min_sum, info->constraint.lb);
   info->constraint.ub = std::min(max_sum, info->constraint.ub);
   CHECK_NE(CapSub(info->constraint.ub.value(), info->constraint.lb.value()),
-           std::numeric_limits<int64_t>::max());
+           kint64max);
   info->lb_is_trivial = min_sum >= info->constraint.lb;
   info->ub_is_trivial = max_sum <= info->constraint.ub;
 }

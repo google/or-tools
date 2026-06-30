@@ -13,13 +13,11 @@
 
 #include "ortools/algorithms/space_saving_most_frequent.h"
 
-#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <memory>
 #include <optional>
-#include <random>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -31,7 +29,6 @@
 #include "absl/log/check.h"
 #include "absl/random/distributions.h"
 #include "absl/random/random.h"
-#include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 
@@ -468,61 +465,6 @@ TEST(SpaceSavingMostFrequent, WorksWithUniquePtr) {
 
   EXPECT_EQ(res, naive_most_frequent.GetMostFrequent(10));
 }
-
-template <int kElementSize>
-struct Element {
-  Element() = default;
-  explicit Element(int value) : value(value) {}
-  int value;
-  std::array<int, kElementSize> zeros;
-  template <typename H>
-  friend H AbslHashValue(H h, const Element& e) {
-    return H::combine(std::move(h), e.value);
-  }
-  friend bool operator==(const Element& a, const Element& b) {
-    return a.value == b.value;
-  }
-};
-
-template <int kSize, int kCapacity, int kElementSize>
-void BM_Add_GeometricDistributed(benchmark::State& state) {
-  using Element = Element<kElementSize>;
-  static constexpr int kNumInputs = 100;
-  absl::BitGen random;
-  std::vector<std::vector<Element>> inputs;
-  inputs.reserve(kNumInputs);
-  std::geometric_distribution<int> distribution(1.0 / kCapacity);
-  for (int i = 0; i < kNumInputs; ++i) {
-    std::vector<Element>& input = inputs.emplace_back();
-    input.reserve(kSize);
-    for (int j = 0; j < kSize; ++j) {
-      input.push_back(Element(distribution(random)));
-    }
-  }
-
-  // Start the benchmark.
-  for (auto _ : state) {
-    for (const std::vector<Element>& input : inputs) {
-      SpaceSavingMostFrequent<Element> most_frequent(kCapacity);
-      for (const Element& value : input) {
-        most_frequent.Add(value);
-      }
-    }
-  }
-  state.SetItemsProcessed(state.iterations() * kNumInputs * kSize);
-}
-
-BENCHMARK(BM_Add_GeometricDistributed<30, 10, 0>);
-BENCHMARK(BM_Add_GeometricDistributed<100, 30, 0>);
-BENCHMARK(BM_Add_GeometricDistributed<1000, 100, 0>);
-BENCHMARK(BM_Add_GeometricDistributed<10000, 1000, 0>);
-BENCHMARK(BM_Add_GeometricDistributed<100000, 10000, 0>);
-
-BENCHMARK(BM_Add_GeometricDistributed<30, 10, 4>);
-BENCHMARK(BM_Add_GeometricDistributed<100, 30, 4>);
-BENCHMARK(BM_Add_GeometricDistributed<1000, 100, 4>);
-BENCHMARK(BM_Add_GeometricDistributed<10000, 1000, 4>);
-BENCHMARK(BM_Add_GeometricDistributed<100000, 10000, 4>);
 
 }  // namespace
 }  // namespace operations_research

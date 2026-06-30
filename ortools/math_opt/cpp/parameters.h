@@ -32,6 +32,7 @@
 #include "ortools/math_opt/solvers/gscip/gscip.pb.h"  // IWYU pragma: export
 #include "ortools/math_opt/solvers/gurobi.pb.h"       // IWYU pragma: export
 #include "ortools/math_opt/solvers/highs.pb.h"        // IWYU pragma: export
+#include "ortools/math_opt/solvers/xpress.pb.h"       // IWYU pragma: export
 #include "ortools/pdlp/solvers.pb.h"                  // IWYU pragma: export
 #include "ortools/sat/sat_parameters.pb.h"            // IWYU pragma: export
 
@@ -115,6 +116,24 @@ enum class SolverType {
   // Supports LP, MIP, and nonconvex integer quadratic problems.
   // A fast option, but has special licensing.
   kXpress = SOLVER_TYPE_XPRESS,
+
+  // Google's Min-Cost Flow solver.
+  //
+  // Uses a specialized solver for Min-Cost Flow problems (see
+  // https://developers.google.com/optimization/flow/mincostflow). Supports LP
+  // problems that match the structure of a Min-Cost Flow problem (see
+  // go/mathopt-min-cost-flow).
+  //
+  // Requirements:
+  //  * The constraint matrix must be the node-arc incidence matrix of a
+  //    digraph, that is, each variable appears in exactly two constraints, with
+  //    coefficients +1 and -1.
+  //  * Only linear constraints are allowed.
+  //  * All linear constraints must be equality constraints.
+  //  * All variable lower bounds must be 0.
+  //  * All variables and constraints must have integer bounds and costs.
+  //  * The objective must be linear.
+  kMinCostFlow = SOLVER_TYPE_MIN_COST_FLOW,
 
   // IBM ILOG CPLEX solver (third party).
   //
@@ -294,7 +313,8 @@ struct XpressParameters {
   absl::linked_hash_map<std::string, std::string> param_values;
 
   XpressParametersProto Proto() const;
-  static XpressParameters FromProto(const XpressParametersProto& proto);
+  static absl::StatusOr<XpressParameters> FromProto(
+      const XpressParametersProto& proto);
 
   bool empty() const { return param_values.empty(); }
 };

@@ -1,0 +1,778 @@
+# Copyright 2010-2025 Google LLC
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+load("@contrib_rules_jvm//java:defs.bzl", "java_junit5_test")
+
+java_junit5_test(
+    name = "ModelIdTest",
+    srcs = ["ModelIdTest.java"],
+    deps = [
+        "//ortools/java/com/google/ortools:Loader",
+        "//ortools/java/com/google/ortools/mathopt:model_id",
+        "@maven//:com_google_truth_truth",
+        "@maven//:org_junit_jupiter_junit_jupiter_api",
+        "@maven//:org_junit_jupiter_junit_jupiter_engine",
+        "@maven//:org_junit_jupiter_junit_jupiter_params",
+        "@maven//:org_junit_platform_junit_platform_launcher",
+        "@maven//:org_junit_platform_junit_platform_reporting",
+    ],
+)
+
+java_junit5_test(
+    name = "SparseContainersTest",
+    srcs = ["SparseContainersTest.java"],
+    deps = [
+        "//ortools/java/com/google/ortools:Loader",
+        "//ortools/java/com/google/ortools/mathopt:model_element",
+        "//ortools/java/com/google/ortools/mathopt:sparse_containers",
+        "//ortools/math_opt:sparse_containers_java_proto",
+        "@maven//:com_google_guava_guava",
+        "@maven//:com_google_truth_extensions_truth_proto_extension",
+        "@maven//:org_junit_jupiter_junit_jupiter_api",
+        "@maven//:org_junit_jupiter_junit_jupiter_engine",
+        "@maven//:org_junit_jupiter_junit_jupiter_params",
+        "@maven//:org_junit_platform_junit_platform_launcher",
+        "@maven//:org_junit_platform_junit_platform_reporting",
+    ],
+)
+
+java_junit5_test(
+    name = "VariableTest",
+    srcs = ["VariableTest.java"],
+    deps = [
+        "//ortools/java/com/google/ortools:Loader",
+        "//ortools/java/com/google/ortools/mathopt:hash_linear_expression",
+        "//ortools/java/com/google/ortools/mathopt:model_id",
+        "//ortools/java/com/google/ortools/mathopt:variable",
+        "//ortools/math_opt:model_java_proto",
+        "@maven//:com_google_guava_guava",
+        "@maven//:com_google_truth_extensions_truth_proto_extension",
+        "@maven//:com_google_truth_truth",
+        "@maven//:org_junit_jupiter_junit_jupiter_api",
+        "@maven//:org_junit_jupiter_junit_jupiter_engine",
+        "@maven//:org_junit_jupiter_junit_jupiter_params",
+        "@maven//:org_junit_platform_junit_platform_launcher",
+        "@maven//:org_junit_platform_junit_platform_reporting",
+    ],
+)
+
+java_junit5_test(
+    name = "VariablesTest",
+    srcs = ["VariablesTest.java"],
+    deps = [
+        "//ortools/java/com/google/ortools:Loader",
+        "//ortools/java/com/google/ortools/mathopt:model_id",
+        "//ortools/java/com/google/ortools/mathopt:variable",
+        "//ortools/java/com/google/ortools/mathopt:variables",
+        "//ortools/math_opt:model_java_proto",
+        "//ortools/math_opt:model_update_java_proto",
+        "@maven//:com_google_truth_extensions_truth_proto_extension",
+        "@maven//:com_google_truth_truth",
+        "@maven//:org_junit_jupiter_junit_jupiter_api",
+        "@maven//:org_junit_jupiter_junit_jupiter_engine",
+        "@maven//:org_junit_jupiter_junit_jupiter_params",
+        "@maven//:org_junit_platform_junit_platform_launcher",
+        "@maven//:org_junit_platform_junit_platform_reporting",
+    ],
+)
+
+java_junit5_test(
+    name = "LinearConstraintTest",
+    srcs = ["LinearConstraintTest.java"],
+    deps = [
+        "//ortools/java/com/google/ortools:Loader",
+        "//ortools/java/com/google/ortools/mathopt:hash_linear_expression",
+        "//ortools/java/com/google/ortools/mathopt:linear_constraint",
+        "//ortools/java/com/google/ortools/mathopt:model_id",
+        "//ortools/java/com/google/ortools/mathopt:variable",
+        "//ortools/java/com/google/ortools/mathopt:variables",
+        "//ortools/math_opt:model_java_proto",
+        "@maven//:com_google_truth_extensions_truth_proto_extension",
+        "@maven//:com_google_truth_truth",
+        "@maven//:org_jspecify_jspecify",
+        "@maven//:org_junit_jupiter_junit_jupiter_api",
+        "@maven//:org_junit_jupiter_junit_jupiter_engine",
+        "@maven//:org_junit_jupiter_junit_jupiter_params",
+        "@maven//:org_junit_platform_junit_platform_launcher",
+        "@maven//:org_junit_platform_junit_platform_reporting",
+    ],
+)
+
+java_junit5_test(
+    name = "IndicatorConstraintTest",
+    srcs = ["IndicatorConstraintTest.java"],
+    deps = [
+        "//ortools/java/com/google/ortools:Loader",
+        "//ortools/java/com/google/ortools/mathopt:indicator_constraint",
+        "//ortools/java/com/google/ortools/mathopt:model_id",
+        "//ortools/java/com/google/ortools/mathopt:variable",
+        "//ortools/math_opt:model_java_proto",
+        "//ortools/math_opt:sparse_containers_java_proto",
+        "@maven//:com_google_guava_guava",
+        "@maven//:com_google_truth_extensions_truth_proto_extension",
+        "@maven//:com_google_truth_truth",
+        "@maven//:org_junit_jupiter_junit_jupiter_api",
+        "@maven//:org_junit_jupiter_junit_jupiter_engine",
+        "@maven//:org_junit_jupiter_junit_jupiter_params",
+        "@maven//:org_junit_platform_junit_platform_launcher",
+        "@maven//:org_junit_platform_junit_platform_reporting",
+    ],
+)
+
+java_junit5_test(
+    name = "IndicatorConstraintsTest",
+    srcs = ["IndicatorConstraintsTest.java"],
+    deps = [
+        "//ortools/java/com/google/ortools:Loader",
+        "//ortools/java/com/google/ortools/mathopt:expressions",
+        "//ortools/java/com/google/ortools/mathopt:indicator_constraint",
+        "//ortools/java/com/google/ortools/mathopt:indicator_constraints",
+        "//ortools/java/com/google/ortools/mathopt:model_id",
+        "//ortools/java/com/google/ortools/mathopt:variable",
+        "//ortools/java/com/google/ortools/mathopt:variables",
+        "//ortools/math_opt:model_update_java_proto",
+        "@maven//:com_google_guava_guava",
+        "@maven//:com_google_truth_extensions_truth_proto_extension",
+        "@maven//:com_google_truth_truth",
+        "@maven//:org_junit_jupiter_junit_jupiter_api",
+        "@maven//:org_junit_jupiter_junit_jupiter_engine",
+        "@maven//:org_junit_jupiter_junit_jupiter_params",
+        "@maven//:org_junit_platform_junit_platform_launcher",
+        "@maven//:org_junit_platform_junit_platform_reporting",
+    ],
+)
+
+java_junit5_test(
+    name = "MergeTest",
+    srcs = ["MergeTest.java"],
+    deps = [
+        "//ortools/java/com/google/ortools:Loader",
+        "//ortools/java/com/google/ortools/mathopt:merge",
+        "@maven//:com_google_guava_guava",
+        "@maven//:com_google_truth_truth",
+        "@maven//:org_junit_jupiter_junit_jupiter_api",
+        "@maven//:org_junit_jupiter_junit_jupiter_engine",
+        "@maven//:org_junit_jupiter_junit_jupiter_params",
+        "@maven//:org_junit_platform_junit_platform_launcher",
+        "@maven//:org_junit_platform_junit_platform_reporting",
+    ],
+)
+
+java_junit5_test(
+    name = "ObjectiveTest",
+    srcs = ["ObjectiveTest.java"],
+    deps = [
+        "//ortools/java/com/google/ortools:Loader",
+        "//ortools/java/com/google/ortools/mathopt:expressions",
+        "//ortools/java/com/google/ortools/mathopt:model_id",
+        "//ortools/java/com/google/ortools/mathopt:objective",
+        "//ortools/java/com/google/ortools/mathopt:variable",
+        "//ortools/java/com/google/ortools/mathopt:variables",
+        "//ortools/math_opt:model_java_proto",
+        "@maven//:com_google_guava_guava",
+        "@maven//:com_google_truth_extensions_truth_proto_extension",
+        "@maven//:com_google_truth_truth",
+        "@maven//:org_jspecify_jspecify",
+        "@maven//:org_junit_jupiter_junit_jupiter_api",
+        "@maven//:org_junit_jupiter_junit_jupiter_engine",
+        "@maven//:org_junit_jupiter_junit_jupiter_params",
+        "@maven//:org_junit_platform_junit_platform_launcher",
+        "@maven//:org_junit_platform_junit_platform_reporting",
+    ],
+)
+
+java_junit5_test(
+    name = "AuxiliaryObjectiveTest",
+    srcs = ["AuxiliaryObjectiveTest.java"],
+    deps = [
+        "//ortools/java/com/google/ortools:Loader",
+        "//ortools/java/com/google/ortools/mathopt:auxiliary_objective",
+        "//ortools/java/com/google/ortools/mathopt:model_id",
+        "//ortools/java/com/google/ortools/mathopt:objective",
+        "//ortools/java/com/google/ortools/mathopt:variable",
+        "//ortools/java/com/google/ortools/mathopt:variables",
+        "@maven//:com_google_guava_guava",
+        "@maven//:com_google_truth_truth",
+        "@maven//:org_junit_jupiter_junit_jupiter_api",
+        "@maven//:org_junit_jupiter_junit_jupiter_engine",
+        "@maven//:org_junit_jupiter_junit_jupiter_params",
+        "@maven//:org_junit_platform_junit_platform_launcher",
+        "@maven//:org_junit_platform_junit_platform_reporting",
+    ],
+)
+
+java_junit5_test(
+    name = "LinearConstraintsTest",
+    srcs = ["LinearConstraintsTest.java"],
+    deps = [
+        "//ortools/java/com/google/ortools:Loader",
+        "//ortools/java/com/google/ortools/mathopt:linear_constraint",
+        "//ortools/java/com/google/ortools/mathopt:linear_constraints",
+        "//ortools/java/com/google/ortools/mathopt:model_id",
+        "//ortools/java/com/google/ortools/mathopt:variable",
+        "//ortools/java/com/google/ortools/mathopt:variables",
+        "//ortools/math_opt:model_java_proto",
+        "//ortools/math_opt:sparse_containers_java_proto",
+        "@maven//:com_google_truth_extensions_truth_proto_extension",
+        "@maven//:com_google_truth_truth",
+        "@maven//:org_junit_jupiter_junit_jupiter_api",
+        "@maven//:org_junit_jupiter_junit_jupiter_engine",
+        "@maven//:org_junit_jupiter_junit_jupiter_params",
+        "@maven//:org_junit_platform_junit_platform_launcher",
+        "@maven//:org_junit_platform_junit_platform_reporting",
+    ],
+)
+
+java_junit5_test(
+    name = "LinearConstraintsUpdateTest",
+    srcs = ["LinearConstraintsUpdateTest.java"],
+    deps = [
+        "//ortools/java/com/google/ortools:Loader",
+        "//ortools/java/com/google/ortools/mathopt:linear_constraint",
+        "//ortools/java/com/google/ortools/mathopt:linear_constraints",
+        "//ortools/java/com/google/ortools/mathopt:model_id",
+        "//ortools/java/com/google/ortools/mathopt:variable",
+        "//ortools/java/com/google/ortools/mathopt:variables",
+        "//ortools/math_opt:model_update_java_proto",
+        "@maven//:com_google_guava_guava",
+        "@maven//:com_google_truth_extensions_truth_proto_extension",
+        "@maven//:com_google_truth_truth",
+        "@maven//:org_junit_jupiter_junit_jupiter_api",
+        "@maven//:org_junit_jupiter_junit_jupiter_engine",
+        "@maven//:org_junit_jupiter_junit_jupiter_params",
+        "@maven//:org_junit_platform_junit_platform_launcher",
+        "@maven//:org_junit_platform_junit_platform_reporting",
+    ],
+)
+
+java_junit5_test(
+    name = "ModelTest",
+    srcs = ["ModelTest.java"],
+    deps = [
+        "//ortools/java/com/google/ortools:Loader",
+        "//ortools/java/com/google/ortools/mathopt:auxiliary_objective",
+        "//ortools/java/com/google/ortools/mathopt:expressions",
+        "//ortools/java/com/google/ortools/mathopt:hash_linear_expression",
+        "//ortools/java/com/google/ortools/mathopt:indicator_constraint",
+        "//ortools/java/com/google/ortools/mathopt:linear_constraint",
+        "//ortools/java/com/google/ortools/mathopt:model",
+        "//ortools/java/com/google/ortools/mathopt:objective",
+        "//ortools/java/com/google/ortools/mathopt:variable",
+        "//ortools/java/com/google/ortools/mathopt/testing:math_opt_proto_subject",
+        "//ortools/math_opt:model_java_proto",
+        "//ortools/math_opt:model_update_java_proto",
+        "//ortools/math_opt:sparse_containers_java_proto",
+        "@maven//:com_google_guava_guava",
+        "@maven//:com_google_truth_extensions_truth_proto_extension",
+        "@maven//:com_google_truth_truth",
+        "@maven//:org_junit_jupiter_junit_jupiter_api",
+        "@maven//:org_junit_jupiter_junit_jupiter_engine",
+        "@maven//:org_junit_jupiter_junit_jupiter_params",
+        "@maven//:org_junit_platform_junit_platform_launcher",
+        "@maven//:org_junit_platform_junit_platform_reporting",
+    ],
+)
+
+java_junit5_test(
+    name = "JniSolverTest",
+    srcs = ["JniSolverTest.java"],
+    deps = [
+        "//ortools/java/com/google/ortools:Loader",
+        "//ortools/java/com/google/ortools/mathopt/testing:string_correspondences",
+        "//ortools/math_opt:callback_java_proto",
+        "//ortools/math_opt:model_java_proto",
+        "//ortools/math_opt:model_parameters_java_proto",
+        "//ortools/math_opt:parameters_java_proto",
+        "//ortools/math_opt:result_java_proto",
+        "//ortools/math_opt:solution_java_proto",
+        "//ortools/math_opt/core/java:solver_swig",
+        "//ortools/math_opt/solvers:cp_sat_solver",
+        "//ortools/math_opt/solvers:glop_solver",
+        "//ortools/math_opt/solvers:gscip_solver",
+        "//ortools/util/java:java_swig_solve_interrupter_swig",
+        "@maven//:com_google_guava_guava",
+        "@maven//:com_google_truth_extensions_truth_proto_extension",
+        "@maven//:com_google_truth_truth",
+        "@maven//:org_junit_jupiter_junit_jupiter_api",
+        "@maven//:org_junit_jupiter_junit_jupiter_engine",
+        "@maven//:org_junit_jupiter_junit_jupiter_params",
+        "@maven//:org_junit_platform_junit_platform_launcher",
+        "@maven//:org_junit_platform_junit_platform_reporting",
+    ],
+)
+
+java_junit5_test(
+    name = "BasisTest",
+    srcs = ["BasisTest.java"],
+    deps = [
+        "//ortools/java/com/google/ortools:Loader",
+        "//ortools/java/com/google/ortools/mathopt:basis",
+        "//ortools/java/com/google/ortools/mathopt:linear_constraint",
+        "//ortools/java/com/google/ortools/mathopt:model",
+        "//ortools/java/com/google/ortools/mathopt:solution_status",
+        "//ortools/java/com/google/ortools/mathopt:variable",
+        "//ortools/java/com/google/ortools/mathopt/testing:math_opt_proto_subject",
+        "//ortools/math_opt:solution_java_proto",
+        "@maven//:com_google_guava_guava",
+        "@maven//:com_google_truth_truth",
+        "@maven//:org_junit_jupiter_junit_jupiter_api",
+        "@maven//:org_junit_jupiter_junit_jupiter_engine",
+        "@maven//:org_junit_jupiter_junit_jupiter_params",
+        "@maven//:org_junit_platform_junit_platform_launcher",
+        "@maven//:org_junit_platform_junit_platform_reporting",
+    ],
+)
+
+java_junit5_test(
+    name = "SolutionStatusTest",
+    srcs = ["SolutionStatusTest.java"],
+    deps = [
+        "//ortools/java/com/google/ortools:Loader",
+        "//ortools/java/com/google/ortools/mathopt:solution_status",
+        "//ortools/math_opt:solution_java_proto",
+        "@maven//:com_google_truth_truth",
+        "@maven//:org_junit_jupiter_junit_jupiter_api",
+        "@maven//:org_junit_jupiter_junit_jupiter_engine",
+        "@maven//:org_junit_jupiter_junit_jupiter_params",
+        "@maven//:org_junit_platform_junit_platform_launcher",
+        "@maven//:org_junit_platform_junit_platform_reporting",
+    ],
+)
+
+java_junit5_test(
+    name = "SolutionTest",
+    srcs = ["SolutionTest.java"],
+    deps = [
+        "//ortools/java/com/google/ortools:Loader",
+        "//ortools/java/com/google/ortools/mathopt:basis",
+        "//ortools/java/com/google/ortools/mathopt:linear_constraint",
+        "//ortools/java/com/google/ortools/mathopt:model",
+        "//ortools/java/com/google/ortools/mathopt:solution",
+        "//ortools/java/com/google/ortools/mathopt:solution_status",
+        "//ortools/java/com/google/ortools/mathopt:variable",
+        "//ortools/math_opt:solution_java_proto",
+        "@maven//:com_google_truth_truth",
+        "@maven//:org_junit_jupiter_junit_jupiter_api",
+        "@maven//:org_junit_jupiter_junit_jupiter_engine",
+        "@maven//:org_junit_jupiter_junit_jupiter_params",
+        "@maven//:org_junit_platform_junit_platform_launcher",
+        "@maven//:org_junit_platform_junit_platform_reporting",
+    ],
+)
+
+java_junit5_test(
+    name = "UtilFromProtoTest",
+    srcs = ["UtilFromProtoTest.java"],
+    deps = [
+        "//ortools/java/com/google/ortools:Loader",
+        "//ortools/java/com/google/ortools/mathopt:linear_constraint",
+        "//ortools/java/com/google/ortools/mathopt:model",
+        "//ortools/java/com/google/ortools/mathopt:util_from_proto",
+        "//ortools/java/com/google/ortools/mathopt:variable",
+        "//ortools/math_opt:sparse_containers_java_proto",
+        "@maven//:com_google_truth_truth",
+        "@maven//:org_junit_jupiter_junit_jupiter_api",
+        "@maven//:org_junit_jupiter_junit_jupiter_engine",
+        "@maven//:org_junit_jupiter_junit_jupiter_params",
+        "@maven//:org_junit_platform_junit_platform_launcher",
+        "@maven//:org_junit_platform_junit_platform_reporting",
+    ],
+)
+
+java_junit5_test(
+    name = "SolveResultTest",
+    srcs = ["SolveResultTest.java"],
+    deps = [
+        "//ortools/java/com/google/ortools:Loader",
+        "//ortools/java/com/google/ortools/mathopt:basis",
+        "//ortools/java/com/google/ortools/mathopt:linear_constraint",
+        "//ortools/java/com/google/ortools/mathopt:model",
+        "//ortools/java/com/google/ortools/mathopt:solve_result",
+        "//ortools/java/com/google/ortools/mathopt:variable",
+        "//ortools/math_opt:result_java_proto",
+        "//ortools/math_opt:solution_java_proto",
+        "//ortools/math_opt/solvers:osqp_java_proto",
+        "//ortools/math_opt/solvers/gscip:gscip_java_proto",
+        "//ortools/pdlp:solve_log_java_proto",
+        "@maven//:com_google_truth_truth",
+        "@maven//:org_junit_jupiter_junit_jupiter_api",
+        "@maven//:org_junit_jupiter_junit_jupiter_engine",
+        "@maven//:org_junit_jupiter_junit_jupiter_params",
+        "@maven//:org_junit_platform_junit_platform_launcher",
+        "@maven//:org_junit_platform_junit_platform_reporting",
+    ],
+)
+
+java_junit5_test(
+    name = "ObjectivesTest",
+    srcs = ["ObjectivesTest.java"],
+    deps = [
+        "//ortools/java/com/google/ortools:Loader",
+        "//ortools/java/com/google/ortools/mathopt:auxiliary_objective",
+        "//ortools/java/com/google/ortools/mathopt:model_id",
+        "//ortools/java/com/google/ortools/mathopt:objective",
+        "//ortools/java/com/google/ortools/mathopt:objectives",
+        "//ortools/java/com/google/ortools/mathopt:variable",
+        "//ortools/java/com/google/ortools/mathopt:variables",
+        "//ortools/math_opt:model_java_proto",
+        "//ortools/math_opt:model_update_java_proto",
+        "//ortools/math_opt:sparse_containers_java_proto",
+        "@maven//:com_google_guava_guava",
+        "@maven//:com_google_truth_extensions_truth_proto_extension",
+        "@maven//:com_google_truth_truth",
+        "@maven//:org_junit_jupiter_junit_jupiter_api",
+        "@maven//:org_junit_jupiter_junit_jupiter_engine",
+        "@maven//:org_junit_jupiter_junit_jupiter_params",
+        "@maven//:org_junit_platform_junit_platform_launcher",
+        "@maven//:org_junit_platform_junit_platform_reporting",
+    ],
+)
+
+java_junit5_test(
+    name = "SolverTypeTest",
+    srcs = ["SolverTypeTest.java"],
+    deps = [
+        "//ortools/java/com/google/ortools:Loader",
+        "//ortools/java/com/google/ortools/mathopt:solver_type",
+        "//ortools/math_opt:parameters_java_proto",
+        "@maven//:com_google_truth_truth",
+        "@maven//:org_junit_jupiter_junit_jupiter_api",
+        "@maven//:org_junit_jupiter_junit_jupiter_engine",
+        "@maven//:org_junit_jupiter_junit_jupiter_params",
+        "@maven//:org_junit_platform_junit_platform_launcher",
+        "@maven//:org_junit_platform_junit_platform_reporting",
+    ],
+)
+
+java_junit5_test(
+    name = "SolveTest",
+    srcs = ["SolveTest.java"],
+    deps = [
+        "//ortools/java/com/google/ortools:Loader",
+        "//ortools/java/com/google/ortools/mathopt:basis",
+        "//ortools/java/com/google/ortools/mathopt:callback_data",
+        "//ortools/java/com/google/ortools/mathopt:callback_event",
+        "//ortools/java/com/google/ortools/mathopt:callback_registration",
+        "//ortools/java/com/google/ortools/mathopt:callback_result",
+        "//ortools/java/com/google/ortools/mathopt:expressions",
+        "//ortools/java/com/google/ortools/mathopt:model",
+        "//ortools/java/com/google/ortools/mathopt:model_solve_parameters",
+        "//ortools/java/com/google/ortools/mathopt:solve",
+        "//ortools/java/com/google/ortools/mathopt:solve_parameters",
+        "//ortools/java/com/google/ortools/mathopt:solve_result",
+        "//ortools/java/com/google/ortools/mathopt:solver_type",
+        "//ortools/java/com/google/ortools/mathopt:variable",
+        "//ortools/java/com/google/ortools/mathopt/testing:math_opt_proto_subject",
+        "//ortools/java/com/google/ortools/mathopt/testing:string_correspondences",
+        "//ortools/java/com/google/ortools/util:solve_interrupter",
+        "//ortools/math_opt:callback_java_proto",
+        "//ortools/math_opt:model_parameters_java_proto",
+        "//ortools/math_opt:parameters_java_proto",
+        "//ortools/math_opt/solvers:cp_sat_solver",
+        "//ortools/math_opt/solvers:glop_solver",
+        "//ortools/math_opt/solvers:gscip_solver",
+        "@maven//:com_google_guava_guava",
+        "@maven//:com_google_truth_extensions_truth_proto_extension",
+        "@maven//:com_google_truth_truth",
+        "@maven//:org_junit_jupiter_junit_jupiter_api",
+        "@maven//:org_junit_jupiter_junit_jupiter_engine",
+        "@maven//:org_junit_jupiter_junit_jupiter_params",
+        "@maven//:org_junit_platform_junit_platform_launcher",
+        "@maven//:org_junit_platform_junit_platform_reporting",
+    ],
+)
+
+java_junit5_test(
+    name = "SolveParametersTest",
+    srcs = ["SolveParametersTest.java"],
+    deps = [
+        "//ortools/glop:parameters_java_proto",
+        "//ortools/java/com/google/ortools:Loader",
+        "//ortools/java/com/google/ortools/mathopt:solve_parameters",
+        "//ortools/math_opt:parameters_java_proto",
+        "//ortools/math_opt/solvers:glpk_java_proto",
+        "//ortools/math_opt/solvers:gurobi_java_proto",
+        "//ortools/math_opt/solvers:highs_java_proto",
+        "//ortools/math_opt/solvers:osqp_java_proto",
+        "//ortools/math_opt/solvers:xpress_java_proto",
+        "//ortools/math_opt/solvers/gscip:gscip_java_proto",
+        "//ortools/pdlp:solvers_java_proto",
+        "//ortools/sat:sat_parameters_java_proto",
+        "@maven//:com_google_truth_truth",
+        "@maven//:org_junit_jupiter_junit_jupiter_api",
+        "@maven//:org_junit_jupiter_junit_jupiter_engine",
+        "@maven//:org_junit_jupiter_junit_jupiter_params",
+        "@maven//:org_junit_platform_junit_platform_launcher",
+        "@maven//:org_junit_platform_junit_platform_reporting",
+    ],
+)
+
+java_junit5_test(
+    name = "ScopedCppMessageCallbackTest",
+    srcs = ["ScopedCppMessageCallbackTest.java"],
+    deps = [
+        "//ortools/java/com/google/ortools:Loader",
+        "//ortools/java/com/google/ortools/mathopt:scoped_cpp_message_callback",
+        "//ortools/java/com/google/ortools/mathopt/testing:string_correspondences",
+        "//ortools/math_opt:callback_java_proto",
+        "//ortools/math_opt:model_java_proto",
+        "//ortools/math_opt:model_parameters_java_proto",
+        "//ortools/math_opt:parameters_java_proto",
+        "//ortools/math_opt:result_java_proto",
+        "//ortools/math_opt/core/java:solver_swig",  # buildcleaner: keep
+        "//ortools/math_opt/solvers:glop_solver",
+        "@maven//:com_google_truth_truth",
+        "@maven//:org_junit_jupiter_junit_jupiter_api",
+        "@maven//:org_junit_jupiter_junit_jupiter_engine",
+        "@maven//:org_junit_jupiter_junit_jupiter_params",
+        "@maven//:org_junit_platform_junit_platform_launcher",
+        "@maven//:org_junit_platform_junit_platform_reporting",
+    ],
+)
+
+java_junit5_test(
+    name = "CallbackEventTest",
+    srcs = ["CallbackEventTest.java"],
+    deps = [
+        "//ortools/java/com/google/ortools:Loader",
+        "//ortools/java/com/google/ortools/mathopt:callback_event",
+        "//ortools/math_opt:callback_java_proto",
+        "@maven//:com_google_truth_truth",
+        "@maven//:org_junit_jupiter_junit_jupiter_api",
+        "@maven//:org_junit_jupiter_junit_jupiter_engine",
+        "@maven//:org_junit_jupiter_junit_jupiter_params",
+        "@maven//:org_junit_platform_junit_platform_launcher",
+        "@maven//:org_junit_platform_junit_platform_reporting",
+    ],
+)
+
+java_junit5_test(
+    name = "CallbackResultTest",
+    srcs = ["CallbackResultTest.java"],
+    deps = [
+        "//ortools/java/com/google/ortools:Loader",
+        "//ortools/java/com/google/ortools/mathopt:callback_result",
+        "//ortools/java/com/google/ortools/mathopt:expressions",
+        "//ortools/java/com/google/ortools/mathopt:model",
+        "//ortools/java/com/google/ortools/mathopt:variable",
+        "//ortools/math_opt:callback_java_proto",
+        "//ortools/math_opt:sparse_containers_java_proto",
+        "@maven//:com_google_guava_guava",
+        "@maven//:com_google_truth_extensions_truth_proto_extension",
+        "@maven//:com_google_truth_truth",
+        "@maven//:org_junit_jupiter_junit_jupiter_api",
+        "@maven//:org_junit_jupiter_junit_jupiter_engine",
+        "@maven//:org_junit_jupiter_junit_jupiter_params",
+        "@maven//:org_junit_platform_junit_platform_launcher",
+        "@maven//:org_junit_platform_junit_platform_reporting",
+    ],
+)
+
+java_junit5_test(
+    name = "CallbackDataTest",
+    srcs = ["CallbackDataTest.java"],
+    deps = [
+        "//ortools/java/com/google/ortools:Loader",
+        "//ortools/java/com/google/ortools/mathopt:callback_data",
+        "//ortools/java/com/google/ortools/mathopt:callback_event",
+        "//ortools/java/com/google/ortools/mathopt:model",
+        "//ortools/java/com/google/ortools/mathopt:variable",
+        "//ortools/java/com/google/ortools/util:proto_duration_conversion",
+        "//ortools/math_opt:callback_java_proto",
+        "//ortools/math_opt:sparse_containers_java_proto",
+        "@maven//:com_google_guava_guava",
+        "@maven//:com_google_truth_extensions_truth_proto_extension",
+        "@maven//:com_google_truth_truth",
+        "@maven//:org_junit_jupiter_junit_jupiter_api",
+        "@maven//:org_junit_jupiter_junit_jupiter_engine",
+        "@maven//:org_junit_jupiter_junit_jupiter_params",
+        "@maven//:org_junit_platform_junit_platform_launcher",
+        "@maven//:org_junit_platform_junit_platform_reporting",
+    ],
+)
+
+java_junit5_test(
+    name = "CallbackRegistrationTest",
+    srcs = ["CallbackRegistrationTest.java"],
+    deps = [
+        "//ortools/java/com/google/ortools:Loader",
+        "//ortools/java/com/google/ortools/mathopt:callback_event",
+        "//ortools/java/com/google/ortools/mathopt:callback_registration",
+        "//ortools/math_opt:callback_java_proto",
+        "@maven//:com_google_guava_guava",
+        "@maven//:com_google_truth_extensions_truth_proto_extension",
+        "@maven//:com_google_truth_truth",
+        "@maven//:org_junit_jupiter_junit_jupiter_api",
+        "@maven//:org_junit_jupiter_junit_jupiter_engine",
+        "@maven//:org_junit_jupiter_junit_jupiter_params",
+        "@maven//:org_junit_platform_junit_platform_launcher",
+        "@maven//:org_junit_platform_junit_platform_reporting",
+    ],
+)
+
+java_junit5_test(
+    name = "HashLinearExpressionTest",
+    srcs = ["HashLinearExpressionTest.java"],
+    deps = [
+        "//ortools/java/com/google/ortools:Loader",
+        "//ortools/java/com/google/ortools/mathopt:hash_linear_expression",
+        "//ortools/java/com/google/ortools/mathopt:model",
+        "//ortools/java/com/google/ortools/mathopt:variable",
+        "@maven//:com_google_guava_guava",
+        "@maven//:com_google_truth_truth",
+        "@maven//:org_junit_jupiter_junit_jupiter_api",
+        "@maven//:org_junit_jupiter_junit_jupiter_engine",
+        "@maven//:org_junit_jupiter_junit_jupiter_params",
+        "@maven//:org_junit_platform_junit_platform_launcher",
+        "@maven//:org_junit_platform_junit_platform_reporting",
+    ],
+)
+
+java_junit5_test(
+    name = "LinearConstraintsAddConstraintOverloadTest",
+    srcs = ["LinearConstraintsAddConstraintOverloadTest.java"],
+    deps = [
+        "//ortools/java/com/google/ortools:Loader",
+        "//ortools/java/com/google/ortools/mathopt:expressions",
+        "//ortools/java/com/google/ortools/mathopt:hash_linear_expression",
+        "//ortools/java/com/google/ortools/mathopt:linear_constraint",
+        "//ortools/java/com/google/ortools/mathopt:linear_constraints",
+        "//ortools/java/com/google/ortools/mathopt:model_id",
+        "//ortools/java/com/google/ortools/mathopt:variable",
+        "//ortools/java/com/google/ortools/mathopt:variables",
+        "//ortools/java/com/google/ortools/mathopt/testing:linear_constraint_subject",
+        "@maven//:org_junit_jupiter_junit_jupiter_api",
+        "@maven//:org_junit_jupiter_junit_jupiter_engine",
+        "@maven//:org_junit_jupiter_junit_jupiter_params",
+        "@maven//:org_junit_platform_junit_platform_launcher",
+        "@maven//:org_junit_platform_junit_platform_reporting",
+    ],
+)
+
+java_junit5_test(
+    name = "ModelAddLinearConstraintOverloadsTest",
+    srcs = ["ModelAddLinearConstraintOverloadsTest.java"],
+    deps = [
+        "//ortools/java/com/google/ortools:Loader",
+        "//ortools/java/com/google/ortools/mathopt:expressions",
+        "//ortools/java/com/google/ortools/mathopt:hash_linear_expression",
+        "//ortools/java/com/google/ortools/mathopt:linear_constraint",
+        "//ortools/java/com/google/ortools/mathopt:model",
+        "//ortools/java/com/google/ortools/mathopt:variable",
+        "//ortools/java/com/google/ortools/mathopt/testing:linear_constraint_subject",
+        "@maven//:org_junit_jupiter_junit_jupiter_api",
+        "@maven//:org_junit_jupiter_junit_jupiter_engine",
+        "@maven//:org_junit_jupiter_junit_jupiter_params",
+        "@maven//:org_junit_platform_junit_platform_launcher",
+        "@maven//:org_junit_platform_junit_platform_reporting",
+    ],
+)
+
+java_junit5_test(
+    name = "ExpressionsTest",
+    srcs = ["ExpressionsTest.java"],
+    deps = [
+        "//ortools/java/com/google/ortools:Loader",
+        "//ortools/java/com/google/ortools/mathopt:expressions",
+        "//ortools/java/com/google/ortools/mathopt:hash_linear_expression",
+        "//ortools/java/com/google/ortools/mathopt:model",
+        "//ortools/java/com/google/ortools/mathopt:variable",
+        "@maven//:com_google_guava_guava",
+        "@maven//:com_google_truth_truth",
+        "@maven//:org_junit_jupiter_junit_jupiter_api",
+        "@maven//:org_junit_jupiter_junit_jupiter_engine",
+        "@maven//:org_junit_jupiter_junit_jupiter_params",
+        "@maven//:org_junit_platform_junit_platform_launcher",
+        "@maven//:org_junit_platform_junit_platform_reporting",
+    ],
+)
+
+java_junit5_test(
+    name = "ScopedCppSolveCallbackTest",
+    srcs = ["ScopedCppSolveCallbackTest.java"],
+    deps = [
+        "//ortools/java/com/google/ortools:Loader",
+        "//ortools/java/com/google/ortools/mathopt:scoped_cpp_solve_callback",
+        "//ortools/math_opt:callback_java_proto",
+        "//ortools/math_opt:model_java_proto",
+        "//ortools/math_opt:model_parameters_java_proto",
+        "//ortools/math_opt:parameters_java_proto",
+        "//ortools/math_opt:result_java_proto",
+        "//ortools/math_opt/core/java:solver_swig",  # buildcleaner: keep
+        "//ortools/math_opt/solvers:cp_sat_solver",
+        "@maven//:com_google_guava_guava",
+        "@maven//:com_google_truth_truth",
+        "@maven//:org_junit_jupiter_junit_jupiter_api",
+        "@maven//:org_junit_jupiter_junit_jupiter_engine",
+        "@maven//:org_junit_jupiter_junit_jupiter_params",
+        "@maven//:org_junit_platform_junit_platform_launcher",
+        "@maven//:org_junit_platform_junit_platform_reporting",
+    ],
+)
+
+java_junit5_test(
+    name = "ModelSolveParametersTest",
+    srcs = ["ModelSolveParametersTest.java"],
+    deps = [
+        "//ortools/java/com/google/ortools:Loader",
+        "//ortools/java/com/google/ortools/mathopt:basis",
+        "//ortools/java/com/google/ortools/mathopt:linear_constraint",
+        "//ortools/java/com/google/ortools/mathopt:model",
+        "//ortools/java/com/google/ortools/mathopt:model_solve_parameters",
+        "//ortools/java/com/google/ortools/mathopt:variable",
+        "//ortools/java/com/google/ortools/mathopt/testing:math_opt_proto_subject",
+        "//ortools/math_opt:model_parameters_java_proto",
+        "//ortools/math_opt:solution_java_proto",
+        "//ortools/math_opt:sparse_containers_java_proto",
+        "@maven//:com_google_guava_guava",
+        "@maven//:com_google_truth_truth",
+        "@maven//:org_junit_jupiter_junit_jupiter_api",
+        "@maven//:org_junit_jupiter_junit_jupiter_engine",
+        "@maven//:org_junit_jupiter_junit_jupiter_params",
+        "@maven//:org_junit_platform_junit_platform_launcher",
+        "@maven//:org_junit_platform_junit_platform_reporting",
+    ],
+)
+
+java_junit5_test(
+    name = "MathOptInternalExceptionTest",
+    srcs = ["MathOptInternalExceptionTest.java"],
+    deps = [
+        "//ortools/java/com/google/ortools:Loader",
+        "//ortools/java/com/google/ortools/mathopt:math_opt_internal_exception",
+        "@maven//:com_google_truth_truth",
+        "@maven//:org_junit_jupiter_junit_jupiter_api",
+        "@maven//:org_junit_jupiter_junit_jupiter_engine",
+        "@maven//:org_junit_jupiter_junit_jupiter_params",
+        "@maven//:org_junit_platform_junit_platform_launcher",
+        "@maven//:org_junit_platform_junit_platform_reporting",
+    ],
+)
+
+java_junit5_test(
+    name = "ErrorsTest",
+    size = "small",
+    srcs = ["ErrorsTest.java"],
+    deps = [
+        "//ortools/java/com/google/ortools:Loader",
+        "//ortools/java/com/google/ortools/mathopt:errors",
+        "//ortools/java/com/google/ortools/mathopt:math_opt_internal_exception",
+        "//ortools/util:status_java_proto",
+        "@maven//:com_google_truth_truth",
+        "@maven//:org_junit_jupiter_junit_jupiter_api",
+        "@maven//:org_junit_jupiter_junit_jupiter_engine",
+        "@maven//:org_junit_jupiter_junit_jupiter_params",
+        "@maven//:org_junit_platform_junit_platform_launcher",
+        "@maven//:org_junit_platform_junit_platform_reporting",
+    ],
+)

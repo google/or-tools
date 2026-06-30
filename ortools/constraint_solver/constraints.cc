@@ -23,6 +23,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
+#include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/string_array.h"
@@ -307,8 +308,8 @@ void IndexOfFirstMaxValue::InitialPropagate() {
   const int64_t vsize = vars_.size();
   const int64_t imin = std::max(int64_t{0}, index_->Min());
   const int64_t imax = std::min(vsize - 1, index_->Max());
-  int64_t max_max = std::numeric_limits<int64_t>::min();
-  int64_t max_min = std::numeric_limits<int64_t>::min();
+  int64_t max_max = kint64min;
+  int64_t max_min = kint64min;
 
   // Compute min and max value in the current interval covered by index_.
   for (int i = imin; i <= imax; ++i) {

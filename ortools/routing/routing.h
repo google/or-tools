@@ -175,7 +175,9 @@ Keywords: Vehicle Routing, Traveling Salesman Problem, TSP, VRP, CVRPTW, PDP.
 #include "absl/strings/string_view.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
+#include "ortools/base/base_export.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/base/types.h"
 #include "ortools/constraint_solver/assignment.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/local_search.h"
@@ -198,12 +200,47 @@ class Dimension;
 class FinalizerVariables;
 class GlobalDimensionCumulOptimizer;
 class LocalDimensionCumulOptimizer;
-#if !defined(SWIG)
 class IntVarFilteredDecisionBuilder;
 class RoutingFilteredDecisionBuilder;
-using util::ReverseArcListGraph;
 class SweepArranger;
-#endif  // !defined(SWIG)
+
+// A set of integers that by default contains all the integers in [0, size) and
+// only supports erasing values. The implementation delays the materialization
+// of the set until the first call to `Erase()`.
+class LazyMonotonicSet {
+ public:
+  explicit LazyMonotonicSet(int size) : size_(size), touched_(false) {}
+  LazyMonotonicSet(const LazyMonotonicSet& other) = default;
+  LazyMonotonicSet& operator=(const LazyMonotonicSet& other) = default;
+  void Reset(absl::Span<const int> values) {
+    set_.clear();
+    touched_ = false;
+    set_.reserve(values.size());
+    for (int value : values) {
+      set_.insert(value);
+      touched_ = true;
+    }
+  }
+  void Erase(int value) {
+    if (!touched_) {
+      set_.reserve(size_);
+      for (int i = 0; i < size_; ++i) set_.insert(i);
+      touched_ = true;
+    }
+    set_.erase(value);
+  }
+  bool Contains(int value) const {
+    if (!Touched()) return true;
+    return set_.contains(value);
+  }
+  bool Touched() const { return touched_; }
+  absl::flat_hash_set<int> Values() const { return set_; }
+
+ private:
+  int size_;
+  absl::flat_hash_set<int> set_;
+  bool touched_;
+};
 
 class PathsMetadata {
  public:
@@ -419,23 +456,25 @@ class OR_DLL Model {
     class Attributes {
      public:
       Attributes();
-      Attributes(
-          Domain start_domain, Domain end_domain,
-          int64_t span_upper_bound = std::numeric_limits<int64_t>::max());
+      Attributes(Domain start_domain, Domain end_domain,
+                 int64_t span_upper_bound = kint64max, int64_t fixed_cost = 0);
 
       const Domain& start_domain() const { return start_domain_; }
       const Domain& end_domain() const { return end_domain_; }
       int64_t span_upper_bound() const { return span_upper_bound_; }
+      int64_t fixed_cost() const { return fixed_cost_; }
 
       friend bool operator==(const Attributes& a, const Attributes& b) {
         return a.start_domain_ == b.start_domain_ &&
                a.end_domain_ == b.end_domain_ &&
-               a.span_upper_bound_ == b.span_upper_bound_;
+               a.span_upper_bound_ == b.span_upper_bound_ &&
+               a.fixed_cost_ == b.fixed_cost_;
       }
       template <typename H>
       friend H AbslHashValue(H h, const Attributes& attributes) {
         return H::combine(std::move(h), attributes.start_domain_,
-                          attributes.end_domain_, attributes.span_upper_bound_);
+                          attributes.end_domain_, attributes.span_upper_bound_,
+                          attributes.fixed_cost_);
       }
 
      private:
@@ -448,7 +487,10 @@ class OR_DLL Model {
       /// The span upper bound constrains the dimension span of the vehicle
       /// assigned to this resource: cumul[End(v)] - cumul[Start(v)] <=
       /// span_upper_bound
-      int64_t span_upper_bound_ = std::numeric_limits<int64_t>::max();
+      int64_t span_upper_bound_ = kint64max;
+      // The fixed cost of the resource, added to the cost of the solution if
+      // the resource is used.
+      int64_t fixed_cost_ = 0;
     };
 
     /// A Resource sets attributes (costs/constraints) for a set of dimensions.
@@ -459,6 +501,10 @@ class OR_DLL Model {
         return index < dimension_attributes_per_index_.size()
                    ? attributes_[dimension_attributes_per_index_[index]]
                    : GetDefaultAttributes();
+      }
+      const std::vector<ResourceGroup::Attributes>& GetAllDimensionAttributes()
+          const {
+        return attributes_;
       }
 
      private:
@@ -707,18 +753,18 @@ class OR_DLL Model {
   /// (and doesn't create the new dimension).
   /// Takes ownership of the callback 'evaluator'.
   bool AddDimension(int evaluator_index, int64_t slack_max, int64_t capacity,
-                    bool fix_start_cumul_to_zero, const std::string& name);
+                    bool fix_start_cumul_to_zero, absl::string_view name);
   bool AddDimensionWithVehicleTransits(
       const std::vector<int>& evaluator_indices, int64_t slack_max,
-      int64_t capacity, bool fix_start_cumul_to_zero, const std::string& name);
+      int64_t capacity, bool fix_start_cumul_to_zero, absl::string_view name);
   bool AddDimensionWithVehicleCapacity(int evaluator_index, int64_t slack_max,
                                        std::vector<int64_t> vehicle_capacities,
                                        bool fix_start_cumul_to_zero,
-                                       const std::string& name);
+                                       absl::string_view name);
   bool AddDimensionWithVehicleTransitAndCapacity(
       const std::vector<int>& evaluator_indices, int64_t slack_max,
       std::vector<int64_t> vehicle_capacities, bool fix_start_cumul_to_zero,
-      const std::string& name);
+      absl::string_view name);
   /// Creates a dimension where the transit variable on arc i->j is the sum of:
   /// - A "fixed" transit value, obtained from the fixed_evaluator_index for
   ///   this vehicle, referencing evaluators in transit_evaluators_, and
@@ -729,7 +775,7 @@ class OR_DLL Model {
       const std::vector<int>& fixed_evaluator_indices,
       const std::vector<int>& cumul_dependent_evaluator_indices,
       int64_t slack_max, std::vector<int64_t> vehicle_capacities,
-      bool fix_start_cumul_to_zero, const std::string& name);
+      bool fix_start_cumul_to_zero, absl::string_view name);
 
   /// Creates a dimension where the transit variable is constrained to be
   /// equal to 'value'; 'capacity' is the upper bound of the cumul variables.
@@ -741,10 +787,10 @@ class OR_DLL Model {
   /// (and doesn't create the new dimension but still register a new callback).
   std::pair<int, bool> AddConstantDimensionWithSlack(
       int64_t value, int64_t capacity, int64_t slack_max,
-      bool fix_start_cumul_to_zero, const std::string& name);
+      bool fix_start_cumul_to_zero, absl::string_view name);
   std::pair<int, bool> AddConstantDimension(int64_t value, int64_t capacity,
                                             bool fix_start_cumul_to_zero,
-                                            const std::string& name) {
+                                            absl::string_view name) {
     return AddConstantDimensionWithSlack(value, capacity, 0,
                                          fix_start_cumul_to_zero, name);
   }
@@ -760,7 +806,7 @@ class OR_DLL Model {
   std::pair<int, bool> AddVectorDimension(std::vector<int64_t> values,
                                           int64_t capacity,
                                           bool fix_start_cumul_to_zero,
-                                          const std::string& name);
+                                          absl::string_view name);
   /// Creates a dimension where the transit variable is constrained to be
   /// equal to 'values[i][next(i)]' for node i; 'capacity' is the upper bound of
   /// the cumul variables. 'name' is the name used to reference the dimension;
@@ -772,7 +818,7 @@ class OR_DLL Model {
   /// (and doesn't create the new dimension but still register a new callback).
   std::pair<int, bool> AddMatrixDimension(
       std::vector<std::vector<int64_t> /*needed_for_swig*/> values,
-      int64_t capacity, bool fix_start_cumul_to_zero, const std::string& name);
+      int64_t capacity, bool fix_start_cumul_to_zero, absl::string_view name);
   /// Creates a dimension with transits depending on the cumuls of another
   /// dimension. 'pure_transits' are the per-vehicle fixed transits as above.
   /// 'dependent_transits' is a vector containing for each vehicle an index to a
@@ -784,7 +830,7 @@ class OR_DLL Model {
       const std::vector<int>& dependent_transits,
       const Dimension* base_dimension, int64_t slack_max,
       std::vector<int64_t> vehicle_capacities, bool fix_start_cumul_to_zero,
-      const std::string& name) {
+      absl::string_view name) {
     return AddDimensionDependentDimensionWithVehicleCapacityInternal(
         pure_transits, dependent_transits, base_dimension, slack_max,
         std::move(vehicle_capacities), fix_start_cumul_to_zero, name);
@@ -794,16 +840,16 @@ class OR_DLL Model {
   bool AddDimensionDependentDimensionWithVehicleCapacity(
       const std::vector<int>& transits, const Dimension* base_dimension,
       int64_t slack_max, std::vector<int64_t> vehicle_capacities,
-      bool fix_start_cumul_to_zero, const std::string& name);
+      bool fix_start_cumul_to_zero, absl::string_view name);
   /// Homogeneous versions of the functions above.
   bool AddDimensionDependentDimensionWithVehicleCapacity(
       int transit, const Dimension* base_dimension, int64_t slack_max,
       int64_t vehicle_capacity, bool fix_start_cumul_to_zero,
-      const std::string& name);
+      absl::string_view name);
   bool AddDimensionDependentDimensionWithVehicleCapacity(
       int pure_transit, int dependent_transit, const Dimension* base_dimension,
       int64_t slack_max, int64_t vehicle_capacity, bool fix_start_cumul_to_zero,
-      const std::string& name);
+      absl::string_view name);
 
   /// Creates a cached StateDependentTransit from an std::function.
   static Model::StateDependentTransit MakeStateDependentTransit(
@@ -850,7 +896,7 @@ class OR_DLL Model {
   const Dimension& GetDimensionOrDie(absl::string_view dimension_name) const;
   /// Returns a dimension from its name. Returns nullptr if the dimension does
   /// not exist.
-  Dimension* GetMutableDimension(const std::string& dimension_name) const;
+  Dimension* GetMutableDimension(absl::string_view dimension_name) const;
   /// Set the given dimension as "primary constrained". As of August 2013, this
   /// is only used by ArcIsMoreConstrainedThanArc().
   /// "dimension" must be the name of an existing dimension, or be empty, in
@@ -917,25 +963,59 @@ class OR_DLL Model {
                                   int64_t max_cardinality = 1,
                                   PenaltyCostBehavior penalty_cost_behavior =
                                       PenaltyCostBehavior::PENALIZE_ONCE);
+  /// Creates a disjunction without setting its maximum or minimum cardinality.
+  DisjunctionIndex MakeDisjunction(const std::vector<int64_t>& indices);
+  /// Sets the maximum number of active indices in the disjunction. It must be
+  /// in [0, num_indices].
+  void SetDisjunctionHardMaximum(DisjunctionIndex disj_index,
+                                 int64_t max_cardinality);
+  /// Sets the minimum number of active indices in the disjunction. It must be
+  /// in [0, num_indices].
+  void SetDisjunctionHardMinimum(DisjunctionIndex disj_index,
+                                 int64_t min_cardinality);
+  /// Sets the penalty and the soft maximum number of active indices in the
+  /// disjunction. Cardinality must be in [0, num_indices]. If n is the number
+  /// of active indices in the disjunction, the following penalty is added to
+  /// the cost function:
+  /// - if `penalty_cost_behavior` is `PENALIZE_PER_INACTIVE`:
+  ///   `penalty * max(0, n - soft_max_cardinality)`
+  /// - if `penalty_cost_behavior` is `PENALIZE_ONCE`:
+  ///   `penalty * (n > soft_max_cardinality ? 1 : 0)`.
+  void SetDisjunctionSoftMaximum(DisjunctionIndex disj_index,
+                                 int64_t soft_max_cardinality, int64_t penalty,
+                                 PenaltyCostBehavior penalty_cost_behavior);
+  /// Sets the penalty and the soft minimum number of active indices in the
+  /// disjunction. Cardinality must be in [0, num_indices]. If n is the number
+  /// of active indices in the disjunction, the following penalty is added to
+  /// the cost function:
+  /// - if `penalty_cost_behavior` is `PENALIZE_PER_INACTIVE`:
+  ///   `penalty * max(0, soft_min_cardinality - n)`
+  /// - if `penalty_cost_behavior` is `PENALIZE_ONCE`:
+  ///   `penalty * (n < soft_min_cardinality ? 1 : 0)`.
+  void SetDisjunctionSoftMinimum(DisjunctionIndex disj_index,
+                                 int64_t soft_min_cardinality, int64_t penalty,
+                                 PenaltyCostBehavior penalty_cost_behavior);
   /// Returns the indices of the disjunctions to which an index belongs.
   const std::vector<DisjunctionIndex>& GetDisjunctionIndices(
       int64_t index) const {
     return index_to_disjunctions_[index];
   }
-  /// Calls f for each variable index of indices in the same disjunctions as the
-  /// node corresponding to the variable index 'index'; only disjunctions of
-  /// cardinality 'cardinality' are considered.
-  template <typename F>
-  void ForEachNodeInDisjunctionWithMaxCardinalityFromIndex(
-      int64_t index, int64_t max_cardinality, F f) const {
-    for (const DisjunctionIndex disjunction : GetDisjunctionIndices(index)) {
-      if (disjunctions_[disjunction].value.max_cardinality == max_cardinality) {
-        for (const int64_t d_index : disjunctions_[disjunction].indices) {
-          f(d_index);
-        }
-      }
-    }
-  }
+  /// Structure storing a value for a set of variable indices. Is used to store
+  /// data for index disjunctions (variable indices, max_cardinality and penalty
+  /// when unperformed).
+  struct Disjunction {
+    std::vector<int64_t> indices;
+    int64_t min_cardinality = 0;
+    int64_t soft_min_cardinality = 0;
+    int64_t soft_min_penalty = 0;
+    PenaltyCostBehavior soft_min_penalty_type =
+        PenaltyCostBehavior::PENALIZE_ONCE;
+    int64_t max_cardinality = kint64max;
+    int64_t soft_max_cardinality = kint64max;
+    int64_t soft_max_penalty = 0;
+    PenaltyCostBehavior soft_max_penalty_type =
+        PenaltyCostBehavior::PENALIZE_ONCE;
+  };
 #if !defined(SWIGPYTHON)
   /// Returns the variable indices of the nodes in the disjunction of index
   /// 'index'.
@@ -943,30 +1023,41 @@ class OR_DLL Model {
       DisjunctionIndex index) const {
     return disjunctions_[index].indices;
   }
+  const Disjunction& GetDisjunction(DisjunctionIndex index) const {
+    return disjunctions_[index];
+  }
 #endif  // !defined(SWIGPYTHON)
-  /// Returns the penalty of the node disjunction of index 'index'.
-  int64_t GetDisjunctionPenalty(DisjunctionIndex index) const {
-    return disjunctions_[index].value.penalty;
-  }
-  /// Returns the maximum number of possible active nodes of the node
-  /// disjunction of index 'index'.
-  int64_t GetDisjunctionMaxCardinality(DisjunctionIndex index) const {
-    return disjunctions_[index].value.max_cardinality;
-  }
-  /// Returns the @ref PenaltyCostBehavior used by the disjunction of index
-  /// 'index'.
-  PenaltyCostBehavior GetDisjunctionPenaltyCostBehavior(
-      DisjunctionIndex index) const {
-    return disjunctions_[index].value.penalty_cost_behavior;
-  }
+  /// Returns the maximum number of possible active nodes of the given
+  /// disjunction.
+  int64_t GetDisjunctionMaxCardinality(DisjunctionIndex index) const;
+  /// Returns the minimum number of possible active nodes of the given
+  /// disjunction.
+  int64_t GetDisjunctionMinCardinality(DisjunctionIndex index) const;
+  /// Returns the soft maximum number of possible active nodes of the given
+  /// disjunction.
+  int64_t GetDisjunctionSoftMaxCardinality(DisjunctionIndex index) const;
+  /// Returns the soft minimum number of possible active nodes of the given
+  /// disjunction.
+  int64_t GetDisjunctionSoftMinCardinality(DisjunctionIndex index) const;
+  /// Returns the soft max penalty of the given disjunction.
+  int64_t GetDisjunctionSoftMaxPenalty(DisjunctionIndex index) const;
+  /// Returns the soft min penalty of the given disjunction.
+  int64_t GetDisjunctionSoftMinPenalty(DisjunctionIndex index) const;
+  int64_t GetDisjunctionPenalty(DisjunctionIndex index) const;
+  /// Returns the @ref PenaltyCostBehavior used by the given disjunction for
+  /// for soft minimums.
+  PenaltyCostBehavior GetDisjunctionSoftMinPenaltyCostBehavior(
+      DisjunctionIndex index) const;
+  /// Returns the @ref PenaltyCostBehavior used by the given disjunction for
+  /// soft maximums.
+  PenaltyCostBehavior GetDisjunctionSoftMaxPenaltyCostBehavior(
+      DisjunctionIndex index) const;
   /// Returns the number of node disjunctions in the model.
-  int GetNumberOfDisjunctions() const { return disjunctions_.size(); }
-  /// Returns true if the model contains mandatory disjunctions (ones with
-  /// kNoPenalty as penalty).
-  bool HasMandatoryDisjunctions() const;
-  /// Returns true if the model contains at least one disjunction which is
-  /// constrained by its max_cardinality.
-  bool HasMaxCardinalityConstrainedDisjunctions() const;
+  int GetNumberOfDisjunctions() const;
+  /// Returns true if the model contains hard-constrained disjunctions,
+  /// i.e. disjunctions with a penalty cost set to kNoPenalty,
+  /// with a min_cardinality > 0 or a max_cardinality < indices.size().
+  bool HasHardDisjunctions() const;
   /// Returns the list of all perfect binary disjunctions, as pairs of variable
   /// indices: a disjunction is "perfect" when its variables do not appear in
   /// any other disjunction. Each pair is sorted (lowest variable index first),
@@ -1008,8 +1099,7 @@ class OR_DLL Model {
 
   /// Returns true if a vehicle is allowed to visit a given node.
   bool IsVehicleAllowedForIndex(int vehicle, int64_t index) const {
-    return allowed_vehicles_[index].empty() ||
-           allowed_vehicles_[index].contains(vehicle);
+    return allowed_vehicles_[index].Contains(vehicle);
   }
 
   /// Notifies that index1 and index2 form a pair of nodes which should belong
@@ -2059,9 +2149,7 @@ class OR_DLL Model {
   /// Updates the time limit of the search limit.
   void UpdateTimeLimit(absl::Duration time_limit) {
     RegularLimit* limit = GetOrCreateLimit();
-    limit->UpdateLimits(time_limit, std::numeric_limits<int64_t>::max(),
-                        std::numeric_limits<int64_t>::max(),
-                        limit->solutions());
+    limit->UpdateLimits(time_limit, kint64max, kint64max, limit->solutions());
   }
 
   /// Helper method to update time limits.
@@ -2246,21 +2334,6 @@ class OR_DLL Model {
     LOCAL_SEARCH_OPERATOR_COUNTER
   };
 
-  /// Structure storing a value for a set of variable indices. Is used to store
-  /// data for index disjunctions (variable indices, max_cardinality and penalty
-  /// when unperformed).
-  template <typename T>
-  struct ValuedNodes {
-    std::vector<int64_t> indices;
-    T value;
-  };
-  struct DisjunctionValues {
-    int64_t penalty;
-    int64_t max_cardinality;
-    PenaltyCostBehavior penalty_cost_behavior;
-  };
-  typedef ValuedNodes<DisjunctionValues> Disjunction;
-
   /// Storage of a cost cache element corresponding to a cost arc ending at
   /// node 'index' and on the cost class 'cost_class'.
   struct CostCacheElement {
@@ -2289,13 +2362,13 @@ class OR_DLL Model {
       const std::vector<int>& evaluator_indices,
       const std::vector<int>& cumul_dependent_evaluator_indices,
       int64_t slack_max, std::vector<int64_t> vehicle_capacities,
-      bool fix_start_cumul_to_zero, const std::string& name);
+      bool fix_start_cumul_to_zero, absl::string_view name);
   bool AddDimensionDependentDimensionWithVehicleCapacityInternal(
       const std::vector<int>& pure_transits,
       const std::vector<int>& dependent_transits,
       const Dimension* base_dimension, int64_t slack_max,
       std::vector<int64_t> vehicle_capacities, bool fix_start_cumul_to_zero,
-      const std::string& name);
+      absl::string_view name);
   bool InitializeDimensionInternal(
       const std::vector<int>& evaluator_indices,
       const std::vector<int>& cumul_dependent_evaluator_indices,
@@ -2368,6 +2441,8 @@ class OR_DLL Model {
   // nodes in topological order based on precedence constraints for
   // dimensions of the model.
   void FinalizePrecedences();
+  // Sets up all cost variables including the global cost variable.
+  void SetupCosts(const RoutingSearchParameters& parameters);
   int64_t GetArcCostForClassInternal(int64_t from_index, int64_t to_index,
                                      CostClassIndex cost_class_index) const;
   int64_t GetArcCostWithGuidedLocalSearchPenalties(int64_t from_index,
@@ -2640,14 +2715,12 @@ class OR_DLL Model {
   /// i.e. by default empty routes will not contribute to the cost nor be
   /// considered for constraints.
   std::vector<bool> vehicle_used_when_empty_;
-#if !defined(SWIG)
   absl::flat_hash_map<
       std::pair<std::string, std::string>,
       std::vector<Solver::PathEnergyCostConstraintSpecification::EnergyCost>,
       absl::Hash<std::pair<std::string, std::string>>>
       force_distance_to_energy_costs_;
   util_intops::StrongVector<CostClassIndex, CostClass> cost_classes_;
-#endif  // !defined(SWIG)
   bool costs_are_homogeneous_across_vehicles_;
   bool cache_callbacks_;
   mutable std::vector<CostCacheElement> cost_cache_;  /// Index by source index.
@@ -2660,11 +2733,14 @@ class OR_DLL Model {
   util_intops::StrongVector<DisjunctionIndex, Disjunction> disjunctions_;
   std::vector<std::vector<DisjunctionIndex>> index_to_disjunctions_;
   /// Same vehicle costs
+  template <typename T>
+  struct ValuedNodes {
+    std::vector<int64_t> indices;
+    T value;
+  };
   std::vector<ValuedNodes<int64_t>> same_vehicle_costs_;
   /// Allowed vehicles
-#if !defined(SWIG)
-  std::vector<absl::flat_hash_set<int>> allowed_vehicles_;
-#endif  // !defined(SWIG)
+  std::vector<LazyMonotonicSet> allowed_vehicles_;
   /// Pickup and delivery
   std::vector<PickupDeliveryPair> pickup_delivery_pairs_;
   std::vector<PickupDeliveryPair>
@@ -2797,9 +2873,7 @@ class OR_DLL Model {
                       std::unique_ptr<NodeNeighborsByCostClass>>
       node_neighbors_by_cost_class_per_size_;
   std::unique_ptr<FinalizerVariables> finalizer_variables_;
-#if !defined(SWIG)
   std::unique_ptr<SweepArranger> sweep_arranger_;
-#endif  // !defined(SWIG)
 
   RegularLimit* limit_ = nullptr;
   RegularLimit* cumulative_limit_ = nullptr;
@@ -3408,7 +3482,7 @@ class Dimension {
 
   /// Accessors.
 #if !defined(SWIG)
-  const ReverseArcListGraph<int, int>& GetPathPrecedenceGraph() const {
+  const util::ReverseArcListGraph<int, int>& GetPathPrecedenceGraph() const {
     return path_precedence_graph_;
   }
 #endif  // !defined(SWIG)
@@ -3612,9 +3686,9 @@ class Dimension {
 
   class SelfBased {};
   Dimension(Model* model, std::vector<int64_t> vehicle_capacities,
-            const std::string& name, const Dimension* base_dimension);
+            absl::string_view name, const Dimension* base_dimension);
   Dimension(Model* model, std::vector<int64_t> vehicle_capacities,
-            const std::string& name, SelfBased);
+            absl::string_view name, SelfBased);
   void Initialize(absl::Span<const int> transit_evaluators,
                   absl::Span<const int> cumul_dependent_transit_evaluators,
                   absl::Span<const int> state_dependent_transit_evaluators,
@@ -3669,9 +3743,7 @@ class Dimension {
   /// class.
   std::vector<int> cumul_dependent_class_evaluators_;
   std::vector<int> vehicle_to_cumul_dependent_class_;
-#if !defined(SWIG)
-  ReverseArcListGraph<int, int> path_precedence_graph_;
-#endif  // !defined(SWIG)
+  util::ReverseArcListGraph<int, int> path_precedence_graph_;
   // For every {first_node, second_node, offset} element in node_precedences_,
   // if both first_node and second_node are performed, then
   // cumuls_[second_node] must be greater than (or equal to)

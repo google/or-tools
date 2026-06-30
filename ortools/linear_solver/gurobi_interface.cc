@@ -60,6 +60,7 @@
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/log/die_if_null.h"
+#include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/strings/str_format.h"
 #include "absl/synchronization/mutex.h"
@@ -72,6 +73,7 @@
 #include "ortools/linear_solver/proto_solver/proto_utils.h"
 #include "ortools/third_party_solvers/gurobi_environment.h"
 #include "ortools/util/lazy_mutable_copy.h"
+#include "ortools/util/status_streaming.h"
 #include "ortools/util/time_limit.h"
 
 ABSL_FLAG(int, num_gurobi_threads, 0,

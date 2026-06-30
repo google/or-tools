@@ -27,6 +27,7 @@
 #include "absl/numeric/int128.h"
 #include "absl/types/span.h"
 #include "ortools/base/mathutil.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/enforcement.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
@@ -295,7 +296,7 @@ bool LinearConstraintPropagator<use_int128>::Propagate() {
   // If use_int128 is true, the slack or propagation slack can be larger than
   // this. To detect overflow with capped arithmetic, it is important the slack
   // used in our algo never exceed this value.
-  const absl::int128 max_slack = std::numeric_limits<int64_t>::max() - 1;
+  const absl::int128 max_slack = kint64max - 1;
 
   // Conflict?
   IntegerValue slack;
@@ -1674,14 +1675,19 @@ bool FixedModuloPropagator::Propagate() {
 
   if (status != EnforcementStatus::IS_ENFORCED) return true;
   if (!PropagateSignsAndTargetRange()) return false;
-  if (!PropagateOuterBounds()) return false;
+  bool changed = true;
+  if (!PropagateOuterBounds(&changed)) return false;
+
+  // Subtle: we might need to run PropagateSignsAndTargetRange() again to make
+  // sure that the invariant `expr >= 0 => target >= 0` is respected.
+  if (changed) {
+    if (!PropagateSignsAndTargetRange()) return false;
+  }
 
   if (integer_trail_.LowerBound(expr_) >= 0) {
-    if (!PropagateBoundsWhenExprIsNonNegative(expr_, target_)) return false;
+    return PropagateBoundsWhenExprIsNonNegative(expr_, target_);
   } else if (integer_trail_.UpperBound(expr_) <= 0) {
-    if (!PropagateBoundsWhenExprIsNonNegative(negated_expr_, negated_target_)) {
-      return false;
-    }
+    return PropagateBoundsWhenExprIsNonNegative(negated_expr_, negated_target_);
   }
 
   return true;
@@ -1827,13 +1833,15 @@ bool FixedModuloPropagator::PropagateSignsAndTargetRange() {
   return true;
 }
 
-bool FixedModuloPropagator::PropagateOuterBounds() {
+bool FixedModuloPropagator::PropagateOuterBounds(bool* changed) {
+  *changed = false;
   const IntegerValue min_expr = integer_trail_.LowerBound(expr_);
   const IntegerValue max_expr = integer_trail_.UpperBound(expr_);
   const IntegerValue min_target = integer_trail_.LowerBound(target_);
   const IntegerValue max_target = integer_trail_.UpperBound(target_);
 
   if (max_expr % mod_ > max_target) {
+    *changed = true;
     if (!enforcement_helper_.SafeEnqueue(
             enforcement_id_,
             expr_.LowerOrEqual((max_expr / mod_) * mod_ + max_target),
@@ -1844,6 +1852,7 @@ bool FixedModuloPropagator::PropagateOuterBounds() {
   }
 
   if (min_expr % mod_ < min_target) {
+    *changed = true;
     if (!enforcement_helper_.SafeEnqueue(
             enforcement_id_,
             expr_.GreaterOrEqual((min_expr / mod_) * mod_ + min_target),
@@ -1854,6 +1863,7 @@ bool FixedModuloPropagator::PropagateOuterBounds() {
   }
 
   if (min_expr / mod_ == max_expr / mod_) {
+    *changed = true;
     if (min_target < min_expr % mod_) {
       if (!enforcement_helper_.SafeEnqueue(
               enforcement_id_,
@@ -1867,6 +1877,7 @@ bool FixedModuloPropagator::PropagateOuterBounds() {
     }
 
     if (max_target > max_expr % mod_) {
+      *changed = true;
       if (!enforcement_helper_.SafeEnqueue(
               enforcement_id_,
               target_.LowerOrEqual(max_expr - (max_expr / mod_) * mod_),
@@ -1880,6 +1891,7 @@ bool FixedModuloPropagator::PropagateOuterBounds() {
   } else if (min_expr / mod_ == 0 && min_target < 0) {
     // expr == target when expr <= 0.
     if (min_target < min_expr) {
+      *changed = true;
       if (!enforcement_helper_.SafeEnqueue(
               enforcement_id_, target_.GreaterOrEqual(min_expr),
               {integer_trail_.LowerBoundAsLiteral(target_),
@@ -1890,6 +1902,7 @@ bool FixedModuloPropagator::PropagateOuterBounds() {
   } else if (max_expr / mod_ == 0 && max_target > 0) {
     // expr == target when expr >= 0.
     if (max_target > max_expr) {
+      *changed = true;
       if (!enforcement_helper_.SafeEnqueue(
               enforcement_id_, target_.LowerOrEqual(max_expr),
               {integer_trail_.UpperBoundAsLiteral(target_),

@@ -20,9 +20,9 @@
 
 #include "absl/log/check.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/strings/str_join.h"
 #include "ortools/base/init_google.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/graph/rooted_tree.h"
 #include "ortools/graph_base/graph.h"
 // [END imports]
@@ -45,9 +45,9 @@ absl::Status Main() {
   int root = 2;
   std::vector<int32_t> topological_order;
   std::vector<int32_t> depth;
-  ASSIGN_OR_RETURN(const operations_research::RootedTree<int32_t> tree,
-                   operations_research::RootedTreeFromGraph(
-                       root, graph, &topological_order, &depth));
+  ABSL_ASSIGN_OR_RETURN(const operations_research::RootedTree<int32_t> tree,
+                        operations_research::RootedTreeFromGraph(
+                            root, graph, &topological_order, &depth));
 
   // Parents are:
   //  0 -> 1

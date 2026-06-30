@@ -57,6 +57,7 @@
 #include "ortools/base/map_util.h"
 #include "ortools/base/options.h"
 #include "ortools/base/path.h"
+#include "ortools/graph_base/graph.h"
 #include "ortools/graph_base/io.h"
 #include "ortools/graph_base/util.h"
 #include "ortools/util/time_limit.h"
@@ -75,11 +76,11 @@ using ::util::GraphIsSymmetric;
 // Shortcut that calls RecursivelyRefinePartitionByAdjacency() on all nodes
 // of a graph, and outputs the resulting partition.
 std::string FullyRefineGraph(absl::Span<const std::pair<int, int>> arcs) {
-  Graph graph;
+  Graph::Builder graph_builder;
   for (const std::pair<int, int>& arc : arcs) {
-    graph.AddArc(arc.first, arc.second);
+    graph_builder.AddArc(arc.first, arc.second);
   }
-  graph.Build();
+  const auto graph = std::move(graph_builder).BuildGraph(nullptr);
   GraphSymmetryFinder symmetry_finder(graph, GraphIsSymmetric(graph));
   DynamicPartition partition(graph.num_nodes());
   symmetry_finder.RecursivelyRefinePartitionByAdjacency(0, &partition);
@@ -151,8 +152,7 @@ TEST(RecursivelyRefinePartitionByAdjacencyTest, FlowerOfCycles) {
 TEST(GraphSymmetryFinderTest, EmptyGraph) {
   for (bool is_undirected : {true, false}) {
     SCOPED_TRACE(DUMP_VARS(is_undirected));
-    Graph empty_graph;
-    empty_graph.Build();
+    const auto empty_graph = Graph::Builder().BuildGraph(nullptr);
     GraphSymmetryFinder symmetry_finder(empty_graph, is_undirected);
 
     EXPECT_TRUE(symmetry_finder.IsGraphAutomorphism(DynamicPermutation(0)));
@@ -170,8 +170,7 @@ TEST(GraphSymmetryFinderTest, EmptyGraph) {
 }
 
 TEST(GraphSymmetryFinderTest, EmptyGraphAndDoNothing) {
-  Graph empty_graph;
-  empty_graph.Build();
+  const auto empty_graph = Graph::Builder().BuildGraph(nullptr);
   GraphSymmetryFinder symmetry_finder(empty_graph, /*is_undirected=*/true);
 }
 
@@ -181,11 +180,11 @@ class IsGraphAutomorphismTest : public testing::Test {
       int num_nodes, const std::vector<std::pair<int, int>>& graph_arcs,
       absl::Span<const std::vector<int>> permutation_cycles,
       bool expected_is_automorphism) {
-    Graph graph(num_nodes, graph_arcs.size());
+    Graph::Builder graph_builder(num_nodes, graph_arcs.size());
     for (const std::pair<int, int>& arc : graph_arcs) {
-      graph.AddArc(arc.first, arc.second);
+      graph_builder.AddArc(arc.first, arc.second);
     }
-    graph.Build();
+    const auto graph = std::move(graph_builder).BuildGraph(nullptr);
     GraphSymmetryFinder symmetry_finder(graph, GraphIsSymmetric(graph));
 
     DynamicPermutation permutation(graph.num_nodes());
@@ -331,10 +330,10 @@ class FindSymmetriesTest : public ::testing::Test {
   void ExpectSymmetries(const std::vector<std::pair<int, int>>& arcs,
                         absl::string_view expected_node_equivalence_classes,
                         double log_of_expected_permutation_group_size) {
-    Graph graph;
+    Graph::Builder graph_builder;
     for (const std::pair<int, int>& arc : arcs)
-      graph.AddArc(arc.first, arc.second);
-    graph.Build();
+      graph_builder.AddArc(arc.first, arc.second);
+    const auto graph = std::move(graph_builder).BuildGraph(nullptr);
     GraphSymmetryFinder symmetry_finder(graph, GraphIsSymmetric(graph));
     std::vector<std::unique_ptr<SparsePermutation>> generators;
     std::vector<int> node_equivalence_classes(graph.num_nodes(), 0);
@@ -696,46 +695,43 @@ TEST_F(FindSymmetriesTest, InwardGrid) {
   }
 }
 
-void AddReverseArcs(Graph* graph) {
-  const int num_arcs = graph->num_arcs();
+void AddReverseArcs(Graph::Builder& builder) {
+  const auto graph = Graph::Builder(builder).BuildGraph(nullptr);
+  const int num_arcs = graph.num_arcs();
   for (int a = 0; a < num_arcs; ++a) {
-    graph->AddArc(graph->Head(a), graph->Tail(a));
+    builder.AddArc(graph.Head(a), graph.Tail(a));
   }
 }
 
-void AddReverseArcsAndFinalize(Graph* graph) {
-  AddReverseArcs(graph);
-  graph->Build();
-}
-
-void SetGraphEdges(absl::Span<const std::pair<int, int>> edges, Graph* graph) {
-  DCHECK_EQ(graph->num_arcs(), 0);
-  for (const auto [from, to] : edges) graph->AddArc(from, to);
-  AddReverseArcsAndFinalize(graph);
+std::unique_ptr<Graph> MakeGraphFromEdges(
+    absl::Span<const std::pair<int, int>> edges) {
+  Graph::Builder builder;
+  for (const auto [from, to] : edges) builder.AddArc(from, to);
+  AddReverseArcs(builder);
+  return std::move(builder).Build(nullptr);
 }
 
 TEST(CountTrianglesTest, EmptyGraph) {
-  EXPECT_THAT(CountTriangles(Graph(0, 0), /*max_degree=*/0), IsEmpty());
-  EXPECT_THAT(CountTriangles(Graph(0, 0), /*max_degree=*/9999), IsEmpty());
+  EXPECT_THAT(CountTriangles(Graph(), /*max_degree=*/0), IsEmpty());
+  EXPECT_THAT(CountTriangles(Graph(), /*max_degree=*/9999), IsEmpty());
 }
 
 TEST(CountTrianglesTest, SimpleUndirectedExample) {
   // 0--1--2
   //  `.|`.|
   //    3--4--5
-  Graph g;
-  SetGraphEdges(
-      {{0, 1}, {1, 2}, {0, 3}, {1, 4}, {1, 3}, {2, 4}, {3, 4}, {4, 5}}, &g);
+  const auto g = MakeGraphFromEdges(
+      {{0, 1}, {1, 2}, {0, 3}, {1, 4}, {1, 3}, {2, 4}, {3, 4}, {4, 5}});
   // Reminder: every undirected triangle counts as two directed triangles.
-  EXPECT_THAT(CountTriangles(g, /*max_degree=*/999),
+  EXPECT_THAT(CountTriangles(*g, /*max_degree=*/999),
               ElementsAre(2, 6, 2, 4, 4, 0));
-  EXPECT_THAT(CountTriangles(g, /*max_degree=*/3),
+  EXPECT_THAT(CountTriangles(*g, /*max_degree=*/3),
               ElementsAre(2, 0, 2, 4, 0, 0));
-  EXPECT_THAT(CountTriangles(g, /*max_degree=*/2),
+  EXPECT_THAT(CountTriangles(*g, /*max_degree=*/2),
               ElementsAre(2, 0, 2, 0, 0, 0));
-  EXPECT_THAT(CountTriangles(g, /*max_degree=*/1),
+  EXPECT_THAT(CountTriangles(*g, /*max_degree=*/1),
               ElementsAre(0, 0, 0, 0, 0, 0));
-  EXPECT_THAT(CountTriangles(g, /*max_degree=*/0),
+  EXPECT_THAT(CountTriangles(*g, /*max_degree=*/0),
               ElementsAre(0, 0, 0, 0, 0, 0));
 }
 
@@ -745,7 +741,7 @@ TEST(CountTrianglesTest, SimpleDirectedExample) {
   // 0     |    |     5
   //  \    |    v    /
   //   `-> 3 <- 4 <-'
-  Graph g;
+  Graph::Builder builder;
   for (auto [from, to] : std::vector<std::pair<int, int>>{
            {0, 1},
            {1, 2},
@@ -757,12 +753,12 @@ TEST(CountTrianglesTest, SimpleDirectedExample) {
            {2, 4},
            {4, 2},
        }) {
-    g.AddArc(from, to);
+    builder.AddArc(from, to);
   }
-  g.Build();
-  EXPECT_THAT(CountTriangles(g, /*max_degree=*/999),
+  const auto g = std::move(builder).Build(nullptr);
+  EXPECT_THAT(CountTriangles(*g, /*max_degree=*/999),
               ElementsAre(1, 0, 0, 0, 0, 2));
-  EXPECT_THAT(CountTriangles(g, /*max_degree=*/1),
+  EXPECT_THAT(CountTriangles(*g, /*max_degree=*/1),
               ElementsAre(0, 0, 0, 0, 0, 0));
 }
 
@@ -770,15 +766,14 @@ TEST(LocalBfsTest, SimpleExample) {
   // 0--1--2
   //  `.|`.|
   //    3--4--5
-  Graph g;
-  SetGraphEdges(
-      {{0, 1}, {1, 2}, {0, 3}, {1, 4}, {1, 3}, {2, 4}, {3, 4}, {4, 5}}, &g);
-  std::vector<bool> tmp_mask(g.num_nodes(), false);
+  const auto g = MakeGraphFromEdges(
+      {{0, 1}, {1, 2}, {0, 3}, {1, 4}, {1, 3}, {2, 4}, {3, 4}, {4, 5}});
+  std::vector<bool> tmp_mask(g->num_nodes(), false);
   std::vector<int> visited;
   std::vector<int> num_within_radius;
 
   // Run a first unlimited BFS from 0.
-  LocalBfs(g, /*source=*/0, /*stop_after_num_nodes=*/99, &visited,
+  LocalBfs(*g, /*source=*/0, /*stop_after_num_nodes=*/99, &visited,
            &num_within_radius, &tmp_mask);
   EXPECT_THAT(
       visited,
@@ -791,7 +786,7 @@ TEST(LocalBfsTest, SimpleExample) {
 
   // Then a BFS that stops after visiting 4 nodes: we should finish exploring
   // that distance, i.e. explore 2 and 4, but not 5. Still, 5 is "visited".
-  LocalBfs(g, /*source=*/0, /*stop_after_num_nodes=*/4, &visited,
+  LocalBfs(*g, /*source=*/0, /*stop_after_num_nodes=*/4, &visited,
            &num_within_radius, &tmp_mask);
   EXPECT_THAT(visited, AnyOf(ElementsAre(0, 1, 3, 2, 4, 5),
                              ElementsAre(0, 1, 3, 4, 2, 5),
@@ -799,7 +794,7 @@ TEST(LocalBfsTest, SimpleExample) {
   EXPECT_THAT(num_within_radius, ElementsAre(1, 3, 5, 6));
 
   // Then a BFS that stops after visiting 2 nodes.
-  LocalBfs(g, /*source=*/0, /*stop_after_num_nodes=*/2, &visited,
+  LocalBfs(*g, /*source=*/0, /*stop_after_num_nodes=*/2, &visited,
            &num_within_radius, &tmp_mask);
   EXPECT_THAT(visited,
               AnyOf(ElementsAre(0, 1, 3, 2, 4), ElementsAre(0, 1, 3, 4, 2),
@@ -807,12 +802,12 @@ TEST(LocalBfsTest, SimpleExample) {
   EXPECT_THAT(num_within_radius, ElementsAre(1, 3, 5));
 
   // Now run a BFS from node 3, stop exploring after 1 node.
-  LocalBfs(g, /*source=*/3, /*stop_after_num_nodes=*/1, &visited,
+  LocalBfs(*g, /*source=*/3, /*stop_after_num_nodes=*/1, &visited,
            &num_within_radius, &tmp_mask);
   EXPECT_THAT(visited, UnorderedElementsAre(3, 0, 1, 4));
   EXPECT_THAT(num_within_radius, ElementsAre(1, 4));
   // Now after 2 nodes.
-  LocalBfs(g, /*source=*/3, /*stop_after_num_nodes=*/2, &visited,
+  LocalBfs(*g, /*source=*/3, /*stop_after_num_nodes=*/2, &visited,
            &num_within_radius, &tmp_mask);
   EXPECT_THAT(visited, UnorderedElementsAre(3, 0, 1, 4, 2, 5));
   EXPECT_THAT(num_within_radius, ElementsAre(1, 4, 6));

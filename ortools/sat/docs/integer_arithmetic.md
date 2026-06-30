@@ -201,7 +201,7 @@ int main(int argc, char* argv[]) {
 ### Java code
 
 ```java
-// Snippet from ortools/sat/samples/RabbitsAndPheasantsSat.java
+// Snippet from ortools/sat/samples/java/RabbitsAndPheasantsSat.java
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.Loader;
@@ -526,7 +526,7 @@ int main(int argc, char* argv[]) {
 ### Java code
 
 ```java
-// Snippet from ortools/sat/samples/EarlinessTardinessCostSampleSat.java
+// Snippet from ortools/sat/samples/java/EarlinessTardinessCostSampleSat.java
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.Loader;
@@ -851,14 +851,14 @@ def step_function_sample_sat():
   # expr == 0 on [5, 6] U [8, 10]
   b0 = model.new_bool_var('b0')
   model.add_linear_expression_in_domain(
-      x, cp_model.Domain.from_intervals([(5, 6), (8, 10)])
+      x, cp_model.Domain.from_intervals([[5, 6], [8, 10]])
   ).only_enforce_if(b0)
   model.add(expr == 0).only_enforce_if(b0)
 
   # expr == 2 on [0, 1] U [3, 4] U [11, 20]
   b2 = model.new_bool_var('b2')
   model.add_linear_expression_in_domain(
-      x, cp_model.Domain.from_intervals([(0, 1), (3, 4), (11, 20)])
+      x, cp_model.Domain.from_intervals([[0, 1], [3, 4], [11, 20]])
   ).only_enforce_if(b2)
   model.add(expr == 2).only_enforce_if(b2)
 
@@ -982,7 +982,7 @@ int main(int argc, char* argv[]) {
 ### Java code
 
 ```java
-// Snippet from ortools/sat/samples/StepFunctionSampleSat.java
+// Snippet from ortools/sat/samples/java/StepFunctionSampleSat.java
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.Loader;

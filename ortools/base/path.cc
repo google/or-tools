@@ -14,9 +14,12 @@
 #include "ortools/base/path.h"
 
 #include <cstring>
+#include <initializer_list>
 #include <string>
+#include <utility>
 
 #include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 
 namespace file {
 

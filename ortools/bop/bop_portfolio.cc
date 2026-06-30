@@ -17,7 +17,6 @@
 
 #include <algorithm>
 #include <cstdint>
-#include <limits>
 #include <memory>
 #include <string>
 #include <utility>
@@ -31,6 +30,7 @@
 #include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/base/types.h"
 #include "ortools/bop/boolean_problem.h"
 #include "ortools/bop/boolean_problem.pb.h"
 #include "ortools/bop/bop_base.h"
@@ -158,7 +158,7 @@ BopOptimizerBase::Status PortfolioOptimizer::Optimize(
 
   const int64_t init_cost = problem_state.solution().IsFeasible()
                                 ? problem_state.solution().GetCost()
-                                : std::numeric_limits<int64_t>::max();
+                                : kint64max;
   const double init_deterministic_time =
       time_limit->GetElapsedDeterministicTime();
 
@@ -189,7 +189,7 @@ BopOptimizerBase::Status PortfolioOptimizer::Optimize(
   //              of the gap, or use the same gain as for the second solution.
   const int64_t gain =
       optimization_status == BopOptimizerBase::SOLUTION_FOUND
-          ? (init_cost == std::numeric_limits<int64_t>::max()
+          ? (init_cost == kint64max
                  ? 1
                  : init_cost - learned_info->solution.GetCost())
           : 0;

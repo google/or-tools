@@ -34,6 +34,11 @@ struct LinearRelaxation {
   std::vector<LinearConstraint> linear_constraints;
   std::vector<std::vector<Literal>> at_most_ones;
   std::vector<CutGenerator> cut_generators;
+
+  struct Counters {
+    int64_t num_tighter_multi_enforced_linear1 = 0;
+  };
+  Counters counters;
 };
 
 // Looks at all the encoding literal (li <=> var == value_i) that have a

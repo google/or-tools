@@ -26,7 +26,7 @@ import immutabledict
 
 from ortools.math_opt.elemental.python import enums
 from ortools.math_opt.python import bounded_expressions, from_model
-from ortools.math_opt.python.elemental import elemental
+from ortools.math_opt.python.elemental import elemental as elemental_lib
 
 LinearTypes = Union[int, float, "LinearBase"]
 QuadraticTypes = Union[int, float, "LinearBase", "QuadraticBase"]
@@ -604,11 +604,11 @@ class Variable(LinearBase, from_model.FromModel):
 
     __slots__ = "_elemental", "_id"
 
-    def __init__(self, elem: elemental.Elemental, vid: int) -> None:
+    def __init__(self, elem: elemental_lib.Elemental, vid: int) -> None:
         """Internal only, prefer Model functions (add_variable() and get_variable())."""
         if not isinstance(vid, int):
             raise TypeError(f"vid type should be int, was:{type(vid)}")
-        self._elemental: elemental.Elemental = elem
+        self._elemental: elemental_lib.Elemental = elem
         self._id: int = vid
 
     @property
@@ -656,7 +656,7 @@ class Variable(LinearBase, from_model.FromModel):
         return self._id
 
     @property
-    def elemental(self) -> elemental.Elemental:
+    def elemental(self) -> elemental_lib.Elemental:
         """Internal use only."""
         return self._elemental
 

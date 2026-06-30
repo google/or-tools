@@ -35,6 +35,7 @@
 #include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/base/timer.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/enforcement.h"
 #include "ortools/sat/lrat_proof_handler.h"
@@ -100,7 +101,7 @@ class SatSolver {
     const int num_vars = NumVariables();
 
     // We need to be able to encode the variable as a literal.
-    CHECK_LT(2 * num_vars, std::numeric_limits<int32_t>::max());
+    CHECK_LT(2 * num_vars, kint32max);
     SetNumVariables(num_vars + 1);
     return BooleanVariable(num_vars);
   }
@@ -245,12 +246,25 @@ class SatSolver {
   // consequences of others before them due to the newly learned clauses.
   int AssumptionLevel() const { return assumption_level_; }
 
+  // Enqueues an assumption and returns true if no conflict occurred.
+  // Returns false if the assumption was already false.
+  // This provides an alternative to ResetWithGivenAssumptions(), allowing the
+  // caller to enqueue consequences of the assumptions before propagation.
+  bool EnqueueAssumption(Literal lit);
+
   // This can be called just after SolveWithAssumptions() returned
   // ASSUMPTION_UNSAT or after EnqueueDecisionAndBacktrackOnConflict() leaded
   // to a conflict. It returns a subsequence (in the correct order) of the
   // previously enqueued decisions that cannot be taken together without making
   // the problem UNSAT.
   std::vector<Literal> GetLastIncompatibleDecisions();
+
+  // This returns a ClausePtr to a clause containing all the negation of
+  // GetLastIncompatibleDecisions(). If the options are on, this will already
+  // have an LRAT proof. Note that the pointer will only be valid until the next
+  // ASSUMPTION_UNSAT conflict. If you plan to keep this clause, you should make
+  // a copy (with its own trivial "copy" LRAT proof).
+  ClausePtr GetLastIncompatibleDecisionsAsClausePtr();
 
   // Returns a subset of decisions that are sufficient to ensure all literals in
   // `literals` are fixed to their current value.
@@ -336,8 +350,14 @@ class SatSolver {
   // is reached or the model was proven UNSAT. If `callback` is provided it is
   // called for each learned conflict (if any), before backtracking. Returns
   // IsModelUnsat().
+  //
+  // Note that if this is called at level zero, we might trigger a cleanup to
+  // remove all fixed variables from our clause database. This can have
+  // side-effect, so it can be disabled by setting
+  // potentially_process_fixed_variables to false.
   ABSL_MUST_USE_RESULT bool FinishPropagation(
-      std::optional<ConflictCallback> callback = std::nullopt);
+      std::optional<ConflictCallback> callback = std::nullopt,
+      bool potentially_process_fixed_variables = true);
 
   // Like Backtrack(0) but make sure the propagation is finished and return
   // false if unsat was detected. This also removes any assumptions level.
@@ -387,7 +407,7 @@ class SatSolver {
     // It is important to process the newly fixed variables, so they are not
     // present in the clauses we export.
     if (num_processed_fixed_variables_ < trail_->Index()) {
-      ProcessNewlyFixedVariables();
+      if (!ProcessNewlyFixedVariables()) return false;
     }
     clauses_propagator_->DeleteRemovedClauses();
 
@@ -489,9 +509,11 @@ class SatSolver {
   // not needed.
   bool AddClauseDuringSearch(absl::Span<const Literal> literals);
 
-  // Performs propagation of the recently enqueued elements.
-  // Mainly visible for testing.
-  ABSL_MUST_USE_RESULT bool Propagate();
+  // Performs propagation of the recently enqueued elements. If
+  // potentially_process_fixed_variables is true, we might clean-up the clause
+  // database by removing fixed literals. Mainly visible for testing.
+  ABSL_MUST_USE_RESULT bool Propagate(
+      bool potentially_process_fixed_variables = true);
 
   bool MinimizeByPropagation(double dtime,
                              bool minimize_new_clauses_only = false);
@@ -506,7 +528,7 @@ class SatSolver {
   }
 
   // Simplifies the problem when new variables are assigned at level 0.
-  void ProcessNewlyFixedVariables();
+  bool ProcessNewlyFixedVariables();
 
   int64_t NumFixedVariables() const {
     if (CurrentDecisionLevel() > 0) {
@@ -519,6 +541,7 @@ class SatSolver {
   SolverLogger* mutable_logger() { return logger_; }
 
   // Processes the current conflict from trail->FailingClause().
+  // Returns false if the model is unsat or the assumptions are unsat.
   //
   // This learns the conflict, backtracks, enqueues the consequence of the
   // learned conflict and return. If `callback` is provided it is called with
@@ -528,7 +551,7 @@ class SatSolver {
   // return false without backtracking in case of ASSUMPTIONS_UNSAT. This is
   // only exposed to allow processing a conflict detected outside normal
   // propagation.
-  void ProcessCurrentConflict(
+  bool ProcessCurrentConflict(
       std::optional<ConflictCallback> callback = std::nullopt);
 
   void EnsureNewClauseIndexInitialized() {
@@ -655,6 +678,12 @@ class SatSolver {
   // True and Enqueue() this change.
   void EnqueueNewDecision(Literal literal);
 
+  // Enqueues an assumption and returns true if no conflict occurred.
+  // Sets MutableConflict to a fake conflict if `lit` is already false.
+  // Called by both EnqueueAssumption() and ResetWithGivenAssumptions().
+  // `lit` must already be present in `assumptions_`.
+  bool EnqueueAssumptionInternal(Literal lit);
+
   // Update the propagators_ list with the relevant propagators.
   void InitializePropagators();
 
@@ -765,6 +794,14 @@ class SatSolver {
   void BumpClauseActivity(SatClause* clause);
   void RescaleClauseActivities(double scaling_factor);
   void UpdateClauseActivityIncrement();
+
+  // When we reach ASSUMPTION_UNSAT, we might want to learn the last conflict.
+  // This code is special since all assumptions are at the same level, so we
+  // don't use normal conflict resolution.
+  void MaybeLearnOnAssumptionUnsat();
+  void MaybeLazilyFillIncompatibleDecisions();
+  void ProveIncompatibleDecisions(absl::Span<const Literal> literals,
+                                  bool need_failing_clause);
 
   std::string DebugString(const SatClause& clause) const;
   std::string StatusString(Status status) const;
@@ -887,6 +924,28 @@ class SatSolver {
     std::vector<Literal> literals;
   };
   std::vector<NewClauses> learned_clauses_;
+
+  // This is used by GetLastIncompatibleDecisions().
+  //
+  // We really have two cases, either this was due to a conflict, and we
+  // already "analyzed" the reason. Or it was due to trying to assign an already
+  // propagated literal, and lazily_fill_from is set.
+  //
+  // TODO(user): This is a bit hacky, but likely to change if we manage to treat
+  // a conflict that proves assumptions unsat in the same way as a normal
+  // conflict.
+  struct IncompatibleDecisions {
+    std::optional<Literal> lazily_fill_from;
+
+    std::vector<Literal> decisions;
+
+    // Associated clause (the negation of decisions).
+    ClausePtr clause_ptr;
+
+    // In some cases, clause_ptr will point to this "temporary" SatClause.
+    std::unique_ptr<SatClause> underlying_memory;
+  };
+  IncompatibleDecisions incompatible_decisions_;
 
   // When true, temporarily disable the deletion of clauses that are not needed
   // anymore. This is a hack for TryToMinimizeClause() because we use
@@ -1078,8 +1137,9 @@ inline std::function<void(Model*)> ExcludeCurrentSolutionAndBacktrack() {
     for (int i = 0; i < current_level; ++i) {
       clause_to_exclude_solution.push_back(decisions[i].literal.Negated());
     }
-    sat_solver->Backtrack(0);
-    AddClauseConstraint(clause_to_exclude_solution, model);
+    if (sat_solver->ResetToLevelZero()) {
+      AddClauseConstraint(clause_to_exclude_solution, model);
+    }
   };
 }
 

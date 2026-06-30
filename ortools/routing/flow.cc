@@ -26,6 +26,7 @@
 #include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/base/map_util.h"
+#include "ortools/base/types.h"
 #include "ortools/constraint_solver/assignment.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/graph/min_cost_flow.h"
@@ -51,11 +52,15 @@ void AddDisjunctionsFromNodes(const Model& model,
 }  // namespace
 
 bool Model::IsMatchingModel() const {
+  // Check that each node appears in at most one disjunction.
   // TODO(user): Support overlapping disjunctions and disjunctions with
   // a cardinality > 1.
   absl::flat_hash_set<int> disjunction_nodes;
   for (DisjunctionIndex i(0); i < GetNumberOfDisjunctions(); ++i) {
-    if (GetDisjunctionMaxCardinality(i) > 1) return false;
+    const Disjunction disj = GetDisjunction(i);
+    if (disj.max_cardinality > 1) return false;
+    if (disj.soft_max_penalty != 0) return false;
+    if (disj.soft_min_cardinality > 1) return false;
     for (int64_t node : GetDisjunctionNodeIndices(i)) {
       if (!disjunction_nodes.insert(node).second) return false;
     }
@@ -85,14 +90,13 @@ bool Model::IsMatchingModel() const {
     for (int64_t vehicle_capacity : dimension->vehicle_capacities()) {
       max_vehicle_capacity = std::max(max_vehicle_capacity, vehicle_capacity);
     }
-    std::vector<int64_t> transits(nexts_.size(),
-                                  std::numeric_limits<int64_t>::max());
+    std::vector<int64_t> transits(nexts_.size(), kint64max);
     for (int i = 0; i < nexts_.size(); ++i) {
       if (!IsStart(i) && !IsEnd(i)) {
         transits[i] = std::min(transits[i], transit(i));
       }
     }
-    int64_t min_transit = std::numeric_limits<int64_t>::max();
+    int64_t min_transit = kint64max;
     // Find the minimal accumulated value resulting from a pickup and delivery
     // pair.
     for (const auto& [pickups, deliveries] : GetPickupAndDeliveryPairs()) {
@@ -198,12 +202,14 @@ bool Model::SolveMatchingModel(Assignment* assignment,
       penalty = kNoPenalty;
     } else {
       for (DisjunctionIndex index : disjunctions) {
-        const int64_t d_penalty = GetDisjunctionPenalty(index);
-        if (d_penalty == kNoPenalty) {
+        const Disjunction& disj = GetDisjunction(index);
+        if (disj.min_cardinality == 1) {
           penalty = kNoPenalty;
           break;
         }
-        penalty = CapAdd(penalty, d_penalty);
+        if (disj.soft_min_cardinality == 1) {
+          penalty = CapAdd(penalty, disj.soft_min_penalty);
+        }
       }
     }
     disjunction_penalties.push_back(penalty);
@@ -216,9 +222,13 @@ bool Model::SolveMatchingModel(Assignment* assignment,
         GetDisjunctionIndices(node);
     DCHECK_LE(disjunctions.size(), 1);
     disjunction_to_flow_nodes.push_back({});
-    disjunction_penalties.push_back(
-        disjunctions.empty() ? kNoPenalty
-                             : GetDisjunctionPenalty(disjunctions.back()));
+    int64_t penalty = kNoPenalty;
+    if (!disjunctions.empty()) {
+      const Disjunction& disj = GetDisjunction(disjunctions.back());
+      if (disj.min_cardinality == 0) penalty = 0;
+      if (disj.soft_min_cardinality == 1) penalty = disj.soft_min_penalty;
+    }
+    disjunction_penalties.push_back(penalty);
     if (disjunctions.empty()) {
       in_disjunction[node] = true;
       flow_to_non_pd[num_flow_nodes] = node;
@@ -372,7 +382,7 @@ bool Model::SolveMatchingModel(Assignment* assignment,
   const int actual_flow_num_nodes = num_flow_nodes + 3;
   if (log(static_cast<double>(arc_with_max_cost.cost) + 1) +
           2 * log(actual_flow_num_nodes) >
-      log(std::numeric_limits<int64_t>::max())) {
+      log(kint64max)) {
     scale_factor = CapProd(actual_flow_num_nodes, actual_flow_num_nodes);
   }
 

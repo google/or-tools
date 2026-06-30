@@ -81,9 +81,9 @@ class SolverInterface {
   // class and looks like:
   //
   //   absl::Status Callback(const CallbackDataProto& callback_data) {
-  //     RETURN_IF_ERROR(ValidateCallbackDataProto(callback_data, ...));
+  //     ABSL_RETURN_IF_ERROR(ValidateCallbackDataProto(callback_data, ...));
   //     CallbackResultProto result = user_cb(callback_data);
-  //     RETURN_IF_ERROR(ValidateCallbackResultProto(result));
+  //     ABSL_RETURN_IF_ERROR(ValidateCallbackResultProto(result));
   //     return result;
   //   }
   //

@@ -90,13 +90,14 @@ cc_library(
     srcs = ["validator.cc"],
     hdrs = ["validator.h"],
     deps = [
-        "//ortools/base:status_macros",
         "//ortools/math_opt:model_cc_proto",
         "//ortools/math_opt:sparse_containers_cc_proto",
         "//ortools/math_opt/core:model_summary",
         "//ortools/math_opt/core:sparse_vector_view",
         "//ortools/math_opt/validators:linear_expression_validator",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_builder",
+        "@abseil-cpp//absl/status:status_macros",
     ],
 )
 

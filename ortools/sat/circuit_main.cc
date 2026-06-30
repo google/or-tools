@@ -25,6 +25,7 @@
 #include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "ortools/base/helpers.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/log_severity.h"
@@ -234,8 +235,8 @@ void Run(std::string filename1, std::string filename2) {
     CompactVectorVector<int, Literal> equiv =
         SampleForEquivalences(mitter, random, {});
     std::vector<int> special_nodes;
-    for (int i = 0; i < equiv.size(); ++i) {
-      for (const Literal lit : equiv[i]) {
+    for (const absl::Span<const Literal> literals : equiv) {
+      for (const Literal lit : literals) {
         const int node = mitter.mapping[lit.Variable()];
         if (node < circuit1.num_vars) {
           special_nodes.push_back(node);

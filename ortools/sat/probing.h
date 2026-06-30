@@ -21,7 +21,6 @@
 
 #include "absl/container/btree_map.h"
 #include "absl/container/btree_set.h"
-#include "absl/container/flat_hash_set.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
@@ -34,6 +33,7 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/logging.h"
@@ -117,9 +117,21 @@ class Prober {
   // Statistics.
   // They are reset each time ProbleBooleanVariables() is called.
   // Note however that we do not reset them on a call to ProbeOneVariable().
-  int num_decisions() const { return num_decisions_; }
-  int num_new_literals_fixed() const { return num_new_literals_fixed_; }
-  int num_new_binary_clauses() const { return num_new_binary_; }
+  int64_t num_decisions() const { return counters_.num_decisions; }
+  int64_t num_new_literals_fixed() const {
+    return counters_.num_new_literals_fixed;
+  }
+  int64_t num_new_binary_clauses() const { return counters_.num_new_binary; }
+
+  int64_t num_total_new_binary() const {
+    return counters_.num_total_new_binary;
+  }
+  int64_t num_total_new_integer_bounds() const {
+    return counters_.num_total_new_integer_bounds;
+  }
+  int64_t num_total_new_literals_fixed() const {
+    return counters_.num_total_new_literals_fixed;
+  }
 
   // Register a callback that will be called on each "propagation".
   // One can inspect the VariablesAssignment to see what are the inferred
@@ -158,6 +170,7 @@ class Prober {
   TimeLimit* time_limit_;
   BinaryImplicationGraph* implication_graph_;
   ClauseManager* clause_manager_;
+  SharedStatistics* shared_stats_;
   LratProofHandler* lrat_proof_handler_;
   TrailCopy* trail_copy_;
 
@@ -181,14 +194,20 @@ class Prober {
   CompactVectorVector<int, ClausePtr> tmp_dnf_clauses_;
 
   // Probing statistics.
-  int num_decisions_ = 0;
-  int num_new_holes_ = 0;
-  int num_new_binary_ = 0;
-  int num_new_integer_bounds_ = 0;
-  int num_new_literals_fixed_ = 0;
-  int num_lrat_clauses_ = 0;
-  int num_lrat_proof_clauses_ = 0;
-  int num_unneeded_lrat_clauses_ = 0;
+  struct Counters {
+    int64_t num_decisions = 0;
+    int64_t num_new_holes = 0;
+    int64_t num_new_binary = 0;
+    int64_t num_new_integer_bounds = 0;
+    int64_t num_new_literals_fixed = 0;
+    int64_t num_total_new_binary = 0;
+    int64_t num_total_new_integer_bounds = 0;
+    int64_t num_total_new_literals_fixed = 0;
+    int64_t num_lrat_clauses = 0;
+    int64_t num_lrat_proof_clauses = 0;
+    int64_t num_unneeded_lrat_clauses = 0;
+  };
+  Counters counters_;
 
   std::function<void(Literal decision)> callback_ = nullptr;
 

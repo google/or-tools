@@ -41,10 +41,10 @@
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "ortools/base/init_google.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/cpp/math_opt.h"
 
 ABSL_FLAG(int, num_colors, 4, "Maximum number of colors.");
@@ -109,9 +109,9 @@ absl::StatusOr<GraphColoringSolution> SolveGraphColoring(
   args.parameters.enable_output = absl::GetFlag(FLAGS_solver_output);
 
   // solve the model and check the result
-  ASSIGN_OR_RETURN(const math_opt::SolveResult result,
-                   Solve(model, math_opt::SolverType::kCpSat));
-  RETURN_IF_ERROR(result.termination.EnsureIsOptimalOrFeasible());
+  ABSL_ASSIGN_OR_RETURN(const math_opt::SolveResult result,
+                        Solve(model, math_opt::SolverType::kCpSat));
+  ABSL_RETURN_IF_ERROR(result.termination.EnsureIsOptimalOrFeasible());
 
   // build solution from solver output
   GraphColoringSolution solution;
@@ -163,8 +163,8 @@ absl::Status RealMain() {
   // The chromatic number of this graph is 4. The graph is planar
   // and it has a 4-clique (Brazil, Bolivia, Paraguay, Argentina)
   // https://en.wikipedia.org/wiki/Four_color_theorem
-  ASSIGN_OR_RETURN(GraphColoringSolution solution,
-                   SolveGraphColoring(instance));
+  ABSL_ASSIGN_OR_RETURN(GraphColoringSolution solution,
+                        SolveGraphColoring(instance));
 
   const std::vector<std::string> vertex_names = {
       "Colombia",      "Ecuador", "Venezuela", "Guyana",  "Suriname",

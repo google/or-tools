@@ -15,6 +15,7 @@ set(NAME ${PROJECT_NAME}_math_opt_elemental)
 add_library(${NAME} OBJECT)
 
 file(GLOB_RECURSE _SRCS "*.h" "*.cc")
+list(FILTER _SRCS EXCLUDE REGEX ".*/.*_benchmark.cc")
 list(FILTER _SRCS EXCLUDE REGEX ".*/.*_test.cc")
 list(FILTER _SRCS EXCLUDE REGEX "/elemental_matcher.*")
 list(FILTER _SRCS EXCLUDE REGEX "/python/.*")
@@ -29,7 +30,7 @@ target_link_libraries(${NAME} PRIVATE
   absl::strings
 )
 
-if(BUILD_TESTING)
+if(BUILD_CXX_TESTING)
   ortools_cxx_library(
     NAME
       math_opt_elemental_matcher

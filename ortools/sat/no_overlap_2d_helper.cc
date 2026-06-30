@@ -206,6 +206,7 @@ void NoOverlap2DConstraintHelper::Reset(
   std::vector<AffineExpression> y_sizes;
   std::vector<LiteralIndex> y_reason_for_presence;
 
+  std::vector<int> old_to_new_box_index(NumBoxes(), -1);
   auto add_non_fixed_box = [&](int box_index) {
     x_starts.push_back(x_helper_->Starts()[box_index]);
     x_ends.push_back(x_helper_->Ends()[box_index]);
@@ -225,6 +226,8 @@ void NoOverlap2DConstraintHelper::Reset(
       y_reason_for_presence.push_back(kNoLiteralIndex);
     }
 
+    DCHECK_EQ(old_to_new_box_index[box_index], -1);
+    old_to_new_box_index[box_index] = x_starts.size() - 1;
     return x_starts.size() - 1;
   };
 
@@ -248,7 +251,7 @@ void NoOverlap2DConstraintHelper::Reset(
   active_bounding_boxes.reserve(new_num_boxes);
   active_box_indexes.reserve(new_num_boxes);
   DCHECK_EQ(x_helper_->CurrentDecisionLevel(), 0);
-  for (int box : non_fixed_box_indexes) {
+  for (const int box : non_fixed_box_indexes) {
     if (IsAbsent(box)) continue;
     active_bounding_boxes.push_back(GetBoundingRectangle(box));
     // At level zero we can do a stronger check whether a box is fixed, since
@@ -266,7 +269,7 @@ void NoOverlap2DConstraintHelper::Reset(
   CompactVectorVector<int> components =
       GetOverlappingRectangleComponents(absl::MakeSpan(active_bounding_boxes));
   connected_components_.clear();
-  for (absl::Span<const int> component : components.AsVectorOfSpan()) {
+  for (const absl::Span<const int> component : components) {
     if (component.size() < 2) continue;
     connected_components_.Add({});
     for (int idx : component) {
@@ -305,6 +308,16 @@ void NoOverlap2DConstraintHelper::Reset(
   y_helper_->SetEnforcementId(enforcement_id_);
   x_demands_helper_ = nullptr;
   y_demands_helper_ = nullptr;
+
+  // Remap the watch indices.
+  for (int& ref : watch_index_to_box_) {
+    if (ref == -1) continue;
+    if (old_to_new_box_index[ref] == -1) {
+      ref = -1;
+    } else {
+      ref = old_to_new_box_index[ref];
+    }
+  }
 }
 
 bool NoOverlap2DConstraintHelper::IsEnforced() const {
@@ -312,11 +325,34 @@ bool NoOverlap2DConstraintHelper::IsEnforced() const {
          EnforcementStatus::IS_ENFORCED;
 }
 
+bool NoOverlap2DConstraintHelper::IncrementalPropagate(
+    const std::vector<int>& watch_indices) {
+  if (!IsEnforced()) return true;
+  for (const int id : propagators_watching_) {
+    watcher_->CallOnNextPropagate(id);
+  }
+
+  if (x_helper_->CurrentDecisionLevel() == 0) {
+    // We will recompute the cache in any case, so we can return here.
+    return Propagate();
+  }
+
+  for (const int i : watch_indices) {
+    const int local_index = watch_index_to_box_[i];
+    if (local_index != -1) {
+      x_helper_->RecomputeCache(local_index);
+      y_helper_->RecomputeCache(local_index);
+    }
+  }
+  return true;
+}
+
 bool NoOverlap2DConstraintHelper::Propagate() {
   if (!IsEnforced()) return true;
   for (const int id : propagators_watching_) {
     watcher_->CallOnNextPropagate(id);
   }
+
   if (!x_helper_->Propagate() || !y_helper_->Propagate()) return false;
 
   if (x_helper_->CurrentDecisionLevel() == 0) {
@@ -376,6 +412,7 @@ void NoOverlap2DConstraintHelper::RegisterWith(
     absl::Span<const Literal> enforcement_literals) {
   const int id = watcher->Register(this);
   const int num_boxes = NumBoxes();
+  watch_index_to_box_.assign(num_boxes, -1);
   for (int b = 0; b < num_boxes; ++b) {
     if (x_helper_->IsOptional(b)) {
       watcher->WatchLiteral(x_helper_->PresenceLiteral(b), id);
@@ -383,14 +420,25 @@ void NoOverlap2DConstraintHelper::RegisterWith(
     if (y_helper_->IsOptional(b)) {
       watcher->WatchLiteral(y_helper_->PresenceLiteral(b), id);
     }
-    watcher->WatchIntegerVariable(x_helper_->Sizes()[b].var, id);
-    watcher->WatchIntegerVariable(x_helper_->Starts()[b].var, id);
-    watcher->WatchIntegerVariable(x_helper_->Ends()[b].var, id);
-    watcher->WatchIntegerVariable(y_helper_->Sizes()[b].var, id);
-    watcher->WatchIntegerVariable(y_helper_->Starts()[b].var, id);
-    watcher->WatchIntegerVariable(y_helper_->Ends()[b].var, id);
+
+    // Initially there is no remapping.
+    watch_index_to_box_[b] = b;
+
+    // It is important to only update the cache of start/end/etc...
+    // incrementally otherwise we will be in O(num_boxes) each time we push a
+    // bound.
+    //
+    // TODO(user): split x/y watching, but then we need to be careful when
+    // we swap x/y ...
+    watcher->WatchIntegerVariable(x_helper_->Sizes()[b].var, id, b);
+    watcher->WatchIntegerVariable(x_helper_->Starts()[b].var, id, b);
+    watcher->WatchIntegerVariable(x_helper_->Ends()[b].var, id, b);
+    watcher->WatchIntegerVariable(y_helper_->Sizes()[b].var, id, b);
+    watcher->WatchIntegerVariable(y_helper_->Starts()[b].var, id, b);
+    watcher->WatchIntegerVariable(y_helper_->Ends()[b].var, id, b);
   }
   watcher->SetPropagatorPriority(id, 0);
+
   enforcement_id_ =
       enforcement_helper_.Register(enforcement_literals, watcher, id);
   x_helper_->SetEnforcementId(enforcement_id_);

@@ -25,6 +25,7 @@
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/parse_test_proto.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/integer_base.h"
@@ -414,10 +415,8 @@ TEST(SharedResponseManagerTest, GapIntegralTest) {
   // Unknown count as max possible difference.
   shared_time_limit->AdvanceDeterministicTime(1.0);
   shared_response->UpdateGapIntegral();
-  const double value1 =
-      1.0 *
-      log(1 + 4 * (static_cast<double>(std::numeric_limits<int64_t>::max()) -
-                   static_cast<double>(std::numeric_limits<int64_t>::min())));
+  const double value1 = 1.0 * log(1 + 4 * (static_cast<double>(kint64max) -
+                                           static_cast<double>(kint64min)));
   EXPECT_EQ(value1, shared_response->GapIntegral());
 
   // No time, so still same. But the function height will change.

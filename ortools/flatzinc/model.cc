@@ -15,7 +15,6 @@
 
 #include <algorithm>
 #include <cstdint>
-#include <limits>
 #include <string>
 #include <utility>
 #include <vector>
@@ -30,6 +29,7 @@
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/stl_util.h"
+#include "ortools/base/types.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/string_array.h"
 
@@ -57,6 +57,7 @@ Domain Domain::IntegerValue(int64_t value) {
 }
 
 Domain Domain::Interval(int64_t included_min, int64_t included_max) {
+  if (included_min > included_max) return Domain::EmptyDomain();
   Domain result;
   result.is_interval = true;
   result.values.push_back(included_min);
@@ -206,10 +207,8 @@ bool Domain::IntersectWithInterval(int64_t interval_min, int64_t interval_max) {
 
 bool Domain::IntersectWithListOfIntegers(absl::Span<const int64_t> integers) {
   if (is_interval) {
-    const int64_t dmin =
-        values.empty() ? std::numeric_limits<int64_t>::min() : values[0];
-    const int64_t dmax =
-        values.empty() ? std::numeric_limits<int64_t>::max() : values[1];
+    const int64_t dmin = values.empty() ? kint64min : values[0];
+    const int64_t dmax = values.empty() ? kint64max : values[1];
     values.clear();
     for (const int64_t v : integers) {
       if (v >= dmin && v <= dmax) values.push_back(v);
@@ -339,14 +338,12 @@ bool Domain::empty() const {
 
 int64_t Domain::Min() const {
   CHECK(!empty());
-  return is_interval && values.empty() ? std::numeric_limits<int64_t>::min()
-                                       : values.front();
+  return is_interval && values.empty() ? kint64min : values.front();
 }
 
 int64_t Domain::Max() const {
   CHECK(!empty());
-  return is_interval && values.empty() ? std::numeric_limits<int64_t>::max()
-                                       : values.back();
+  return is_interval && values.empty() ? kint64max : values.back();
 }
 
 int64_t Domain::Value() const {
@@ -356,8 +353,7 @@ int64_t Domain::Value() const {
 
 bool Domain::IsAllInt64() const {
   return is_interval &&
-         (values.empty() || (values[0] == std::numeric_limits<int64_t>::min() &&
-                             values[1] == std::numeric_limits<int64_t>::max()));
+         (values.empty() || (values[0] == kint64min && values[1] == kint64max));
 }
 
 bool Domain::Contains(int64_t value) const {
@@ -554,8 +550,7 @@ Argument Argument::VoidArgument() {
 Argument Argument::FromDomain(const Domain& domain) {
   if (domain.is_interval) {
     if (domain.values.empty()) {
-      return Argument::Interval(std::numeric_limits<int64_t>::min(),
-                                std::numeric_limits<int64_t>::max());
+      return Argument::Interval(kint64min, kint64max);
     } else {
       return Argument::Interval(domain.values[0], domain.values[1]);
     }
@@ -766,6 +761,32 @@ int Argument::Size() const {
     }
     default:
       break;
+  }
+  ABSL_UNREACHABLE();
+}
+
+std::string Argument::TypeString() const {
+  switch (type) {
+    case INT_VALUE:
+      return "INT_VALUE";
+    case INT_INTERVAL:
+      return "INT_INTERVAL";
+    case INT_LIST:
+      return "INT_LIST";
+    case DOMAIN_LIST:
+      return "DOMAIN_LIST";
+    case VAR_REF:
+      return "VAR_REF";
+    case VAR_REF_ARRAY:
+      return "VAR_REF_ARRAY";
+    case VOID_ARGUMENT:
+      return "VOID_ARGUMENT";
+    case FLOAT_VALUE:
+      return "FLOAT_VALUE";
+    case FLOAT_INTERVAL:
+      return "FLOAT_INTERVAL";
+    case FLOAT_LIST:
+      return "FLOAT_LIST";
   }
   ABSL_UNREACHABLE();
 }
@@ -1038,6 +1059,14 @@ Variable* Model::AddConstant(int64_t value) {
 Variable* Model::AddFloatConstant(double value) {
   Variable* const var =
       new Variable(absl::StrCat(value), Domain::FloatValue(value), true);
+  variables_.push_back(var);
+  return var;
+}
+
+Variable* Model::AddSetConstant(const Domain& domain) {
+  Variable* const var = new Variable(domain.DebugString(), domain, true);
+  var->domain.is_a_set = true;
+  var->domain.is_fixed_set = true;
   variables_.push_back(var);
   return var;
 }

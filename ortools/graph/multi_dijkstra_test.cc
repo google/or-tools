@@ -50,24 +50,19 @@ TEST(MultiDijkstraTest, SmallTest) {
   //             |          |
   //             '--- 3 <---'
   //
-  util::Graph graph;
-  std::vector<double> arc_lengths;
-  graph.AddArc(0, 1);
-  arc_lengths.push_back(0.3);
-  graph.AddArc(0, 4);
-  arc_lengths.push_back(0.6);
-  graph.AddArc(1, 2);
-  arc_lengths.push_back(0.0);
-  graph.AddArc(2, 4);
-  arc_lengths.push_back(0.2);
-  graph.AddArc(2, 3);
-  arc_lengths.push_back(0.0);
-  graph.AddArc(3, 1);
-  arc_lengths.push_back(0.0);
+  const auto graph = util::GraphFromArcs<util::StaticGraph<>>(5, {
+                                                                     {0, 1},
+                                                                     {0, 4},
+                                                                     {1, 2},
+                                                                     {2, 4},
+                                                                     {2, 3},
+                                                                     {3, 1},
+                                                                 });
+  static constexpr double kArcLengths[] = {0.3, 0.6, 0.0, 0.2, 0.0, 0.0};
 
   EXPECT_THAT(
       MultiDijkstra<double>(
-          graph, [&arc_lengths](int arc) { return arc_lengths[arc]; },
+          graph, [](int arc) { return kArcLengths[arc]; },
           {{0}, {1, 2}, {3, 4}, {4}, {}},
           [](int, int, double) -> bool { return false; }),
       ElementsAre(
@@ -113,8 +108,9 @@ TEST(MultiDijkstraTest, RandomizedStressTest) {
     const int num_nodes = absl::Uniform(random, 0, max_num_nodes);
     const int num_arcs =
         num_nodes == 0 ? 0 : absl::Uniform(random, 0, max_num_arcs);
-    std::unique_ptr<util::StaticGraph<>> graph = util::GenerateRandomMultiGraph(
-        num_nodes, num_arcs, /*finalized=*/true, random);
+    std::unique_ptr<util::StaticGraph<>> graph =
+        util::GenerateRandomMultiGraph(num_nodes, num_arcs, random)
+            .Build(nullptr);
 
     // Set up the input source sets.
     int num_sources =

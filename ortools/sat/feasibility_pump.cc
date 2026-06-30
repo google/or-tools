@@ -22,11 +22,11 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
-#include "absl/meta/type_traits.h"
+#include "absl/log/log.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/base/types.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/glop/revised_simplex.h"
-#include "ortools/glop/status.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_data_utils.h"
 #include "ortools/lp_data/lp_types.h"
@@ -385,10 +385,10 @@ bool FeasibilityPump::SolveLp() {
   const int num_vars = integer_variables_.size();
   VLOG(3) << "LP relaxation: " << lp_data_.GetDimensionString() << ".";
 
-  const auto status = simplex_.Solve(lp_data_, time_limit_);
+  const auto status = simplex_.Solve(lp_data_, *time_limit_);
   total_num_simplex_iterations_ += simplex_.GetNumberOfIterations();
-  if (!status.ok()) {
-    VLOG(1) << "The LP solver encountered an error: " << status.error_message();
+  if (status.Is<glop::SolveStatus::Abnormal>()) {
+    VLOG(1) << "The LP solver encountered an error: " << status;
     simplex_.ClearStateForNextSolve();
     return false;
   }
@@ -396,16 +396,16 @@ bool FeasibilityPump::SolveLp() {
   // TODO(user): This shouldn't really happen except if the problem is UNSAT.
   // But we can't just rely on a potentially imprecise LP to close the problem.
   // The rest of the solver should do that with exact precision.
-  VLOG(3) << "simplex status: " << simplex_.GetProblemStatus();
-  if (simplex_.GetProblemStatus() == glop::ProblemStatus::PRIMAL_INFEASIBLE) {
+  VLOG(3) << "simplex status: " << status;
+  if (status.Is<glop::SolveStatus::PrimalInfeasible>()) {
     return false;
   }
 
   lp_solution_fractionality_ = 0.0;
-  if (simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL ||
-      simplex_.GetProblemStatus() == glop::ProblemStatus::DUAL_FEASIBLE ||
-      simplex_.GetProblemStatus() == glop::ProblemStatus::PRIMAL_FEASIBLE ||
-      simplex_.GetProblemStatus() == glop::ProblemStatus::IMPRECISE) {
+  if (status.Is<glop::SolveStatus::Optimal>() ||
+      status.Is<glop::SolveStatus::DualFeasible>() ||
+      status.Is<glop::SolveStatus::PrimalFeasible>() ||
+      status.Is<glop::SolveStatus::Imprecise>()) {
     lp_solution_is_set_ = true;
     for (int i = 0; i < num_vars; i++) {
       const double value = GetVariableValueAtCpScale(ColIndex(i));
@@ -705,15 +705,12 @@ void FeasibilityPump::FillIntegerSolutionStats() {
     for (const auto& term : integer_lp_[i].terms) {
       const int64_t prod =
           CapProd(integer_solution_[term.first.value()], term.second.value());
-      if (prod <= std::numeric_limits<int64_t>::min() ||
-          prod >= std::numeric_limits<int64_t>::max()) {
+      if (prod <= kint64min || prod >= kint64max) {
         activity = prod;
         break;
       }
       activity = CapAdd(activity, prod);
-      if (activity <= std::numeric_limits<int64_t>::min() ||
-          activity >= std::numeric_limits<int64_t>::max())
-        break;
+      if (activity <= kint64min || activity >= kint64max) break;
     }
     if (activity > integer_lp_[i].ub || activity < integer_lp_[i].lb) {
       integer_solution_is_feasible_ = false;

@@ -12,7 +12,9 @@
 # limitations under the License.
 
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
 load("//bazel:compilation_flags.bzl", "SAFE_FP_CODE")
+load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS", "ORTOOLS_TEST_COPTS")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -20,20 +22,43 @@ cc_library(
     name = "lp_types",
     srcs = ["lp_types.cc"],
     hdrs = ["lp_types.h"],
-    copts = SAFE_FP_CODE,
+    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base:strong_vector",
+        "//ortools/glop:status",
         "//ortools/util:bitset",
         "//ortools/util:strong_integers",
+        "//ortools/util:time_limit",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/functional:overload",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings:string_view",
+    ],
+)
+
+cc_test(
+    name = "lp_types_test",
+    srcs = ["lp_types_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        ":lp_types",
+        ":lp_types_testing",
+        "//ortools/base:gmock_main",
+        "//ortools/glop:status",
+        "//ortools/util:time_limit",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
 cc_library(
     name = "permutation",
     hdrs = ["permutation.h"],
-    copts = SAFE_FP_CODE,
+    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":lp_types",
         "//ortools/base:strong_vector",
@@ -46,7 +71,8 @@ cc_library(
 cc_library(
     name = "scattered_vector",
     hdrs = ["scattered_vector.h"],
-    copts = SAFE_FP_CODE,
+    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":lp_types",
         "//ortools/util:bitset",
@@ -57,11 +83,11 @@ cc_library(
 cc_library(
     name = "sparse_vector",
     hdrs = ["sparse_vector.h"],
-    copts = SAFE_FP_CODE,
+    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":lp_types",
         ":permutation",
-        "//ortools/base:types",
         "//ortools/graph_base:iterators",
         "//ortools/util:return_macros",
         "@abseil-cpp//absl/log:check",
@@ -73,7 +99,8 @@ cc_library(
     name = "sparse_column",
     srcs = ["sparse_column.cc"],
     hdrs = ["sparse_column.h"],
-    copts = SAFE_FP_CODE,
+    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":lp_types",
         ":permutation",
@@ -86,7 +113,8 @@ cc_library(
 cc_library(
     name = "sparse_row",
     hdrs = ["sparse_row.h"],
-    copts = SAFE_FP_CODE,
+    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":sparse_vector",
         "//ortools/base:strong_vector",
@@ -97,7 +125,8 @@ cc_library(
     name = "sparse",
     srcs = ["sparse.cc"],
     hdrs = ["sparse.h"],
-    copts = SAFE_FP_CODE,
+    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":lp_types",
         ":permutation",
@@ -105,9 +134,10 @@ cc_library(
         ":sparse_column",
         "//ortools/graph_base:iterators",
         "//ortools/util:bitset",
+        "//ortools/util:fp_roundtrip_conv",
         "//ortools/util:return_macros",
         "@abseil-cpp//absl/log:check",
-        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",
     ],
 )
@@ -116,7 +146,8 @@ cc_library(
     name = "matrix_scaler",
     srcs = ["matrix_scaler.cc"],
     hdrs = ["matrix_scaler.h"],
-    copts = SAFE_FP_CODE,
+    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":lp_data",
         ":lp_types",
@@ -124,12 +155,11 @@ cc_library(
         ":sparse",
         ":sparse_column",
         "//ortools/base:strong_vector",
-        "//ortools/base:types",
         "//ortools/glop:parameters_cc_proto",
         "//ortools/glop:revised_simplex",
-        "//ortools/glop:status",
         "//ortools/util:return_macros",
         "//ortools/util:time_limit",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings:str_format",
     ],
@@ -139,7 +169,8 @@ cc_library(
     name = "lp_data",
     srcs = ["lp_data.cc"],
     hdrs = ["lp_data.h"],
-    copts = SAFE_FP_CODE,
+    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":lp_print_utils",
         ":lp_types",
@@ -153,6 +184,7 @@ cc_library(
         "//ortools/util:fp_utils",
         "//ortools/util:strong_integers",
         "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
@@ -164,7 +196,8 @@ cc_library(
     name = "lp_data_utils",
     srcs = ["lp_data_utils.cc"],
     hdrs = ["lp_data_utils.h"],
-    copts = SAFE_FP_CODE,
+    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":lp_data",
         ":lp_types",
@@ -180,7 +213,8 @@ cc_library(
     name = "lp_utils",
     srcs = ["lp_utils.cc"],
     hdrs = ["lp_utils.h"],
-    copts = SAFE_FP_CODE,
+    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":lp_types",
         ":permutation",
@@ -196,7 +230,8 @@ cc_library(
     name = "matrix_utils",
     srcs = ["matrix_utils.cc"],
     hdrs = ["matrix_utils.h"],
-    copts = SAFE_FP_CODE,
+    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":lp_types",
         ":sparse",
@@ -210,7 +245,8 @@ cc_library(
     name = "lp_parser",
     srcs = ["lp_parser.cc"],
     hdrs = ["lp_parser.h"],
-    copts = SAFE_FP_CODE,
+    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":lp_data",
         ":lp_types",
@@ -232,7 +268,8 @@ cc_library(
     name = "lp_print_utils",
     srcs = ["lp_print_utils.cc"],
     hdrs = ["lp_print_utils.h"],
-    copts = SAFE_FP_CODE,
+    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":lp_types",
         "//ortools/base:types",
@@ -247,7 +284,8 @@ cc_library(
     name = "proto_utils",
     srcs = ["proto_utils.cc"],
     hdrs = ["proto_utils.h"],
-    copts = SAFE_FP_CODE,
+    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":lp_data",
         ":lp_types",
@@ -262,10 +300,10 @@ cc_library(
     name = "mps_reader_template",
     srcs = ["mps_reader_template.cc"],
     hdrs = ["mps_reader_template.h"],
-    copts = SAFE_FP_CODE,
+    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base:file",
-        "//ortools/base:status_macros",
         "//ortools/util:filelineiter",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/container:flat_hash_set",
@@ -273,6 +311,8 @@ cc_library(
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_builder",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:string_view",
@@ -283,13 +323,13 @@ cc_library(
     name = "mps_reader",
     srcs = ["mps_reader.cc"],
     hdrs = ["mps_reader.h"],
-    copts = SAFE_FP_CODE,
+    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":lp_data",
         ":lp_types",
         ":mps_reader_template",
         "//ortools/base:protobuf_util",
-        "//ortools/base:status_macros",
         "//ortools/linear_solver:linear_solver_cc_proto",
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/container:btree",
@@ -297,6 +337,7 @@ cc_library(
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:string_view",
@@ -307,16 +348,17 @@ cc_library(
     name = "sol_reader",
     srcs = ["sol_reader.cc"],
     hdrs = ["sol_reader.h"],
-    copts = SAFE_FP_CODE,
+    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":lp_data",
         ":lp_types",
         "//ortools/base:numbers",
-        "//ortools/base:status_macros",
         "//ortools/linear_solver:linear_solver_cc_proto",
         "//ortools/util:file_util",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:string_view",
@@ -327,7 +369,8 @@ cc_library(
     name = "lp_decomposer",
     srcs = ["lp_decomposer.cc"],
     hdrs = ["lp_decomposer.h"],
-    copts = SAFE_FP_CODE,
+    copts = SAFE_FP_CODE + ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":lp_data",
         ":lp_types",
@@ -339,5 +382,18 @@ cc_library(
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/synchronization",
         "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_library(
+    name = "lp_types_testing",
+    testonly = True,
+    srcs = ["lp_types_testing.cc"],
+    hdrs = ["lp_types_testing.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        ":lp_types",
+        "//ortools/base:gmock",
     ],
 )

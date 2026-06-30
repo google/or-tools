@@ -14,6 +14,7 @@
 #include "ortools/algorithms/knapsack_solver.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <limits>
 #include <memory>
@@ -27,10 +28,12 @@
 #include "absl/strings/string_view.h"
 #include "absl/time/time.h"
 #include "ortools/base/stl_util.h"
+#include "ortools/base/types.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
+#include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/time_limit.h"
 
@@ -114,7 +117,7 @@ KnapsackSearchNode::KnapsackSearchNode(const KnapsackSearchNode* const parent,
       parent_(parent),
       assignment_(assignment),
       current_profit_(0),
-      profit_upper_bound_(std::numeric_limits<int64_t>::max()),
+      profit_upper_bound_(kint64max),
       next_item_id_(kNoSelection) {}
 
 // ----- KnapsackSearchPath -----
@@ -173,7 +176,7 @@ KnapsackPropagator::KnapsackPropagator(const KnapsackState& state)
     : items_(),
       current_profit_(0),
       profit_lower_bound_(0),
-      profit_upper_bound_(std::numeric_limits<int64_t>::max()),
+      profit_upper_bound_(kint64max),
       state_(state) {}
 
 KnapsackPropagator::~KnapsackPropagator() { gtl::STLDeleteElements(&items_); }
@@ -186,8 +189,8 @@ void KnapsackPropagator::Init(const std::vector<int64_t>& profits,
     items_[i] = new KnapsackItem(i, weights[i], profits[i]);
   }
   current_profit_ = 0;
-  profit_lower_bound_ = std::numeric_limits<int64_t>::min();
-  profit_upper_bound_ = std::numeric_limits<int64_t>::max();
+  profit_lower_bound_ = kint64min;
+  profit_upper_bound_ = kint64max;
   InitPropagator();
 }
 
@@ -477,7 +480,7 @@ bool KnapsackGenericSolver::UpdatePropagators(const KnapsackSearchPath& path) {
 }
 
 int64_t KnapsackGenericSolver::GetAggregatedProfitUpperBound() const {
-  int64_t upper_bound = std::numeric_limits<int64_t>::max();
+  int64_t upper_bound = kint64max;
   for (KnapsackPropagator* const prop : propagators_) {
     prop->ComputeProfitBounds();
     const int64_t propagator_upper_bound = prop->profit_upper_bound();
@@ -1292,7 +1295,7 @@ class KnapsackCpSat : public BaseKnapsackSolver {
             const std::vector<int64_t>& capacities) override;
 
   // Solves the problem and returns the profit of the optimal solution.
-  int64_t Solve(TimeLimit* time_limit, double time_limit_in_seconds,
+  int64_t Solve(TimeLimit* time_limit, double time_limit_in_second,
                 bool* is_solution_optimal) override;
 
   // Returns true if the item 'item_id' is packed in the optimal knapsack.
@@ -1539,16 +1542,14 @@ int KnapsackSolver::ReduceProblem(int num_items) {
   }
 
   int64_t best_lower_bound = 0LL;
-  std::vector<int64_t> J0_upper_bounds(num_items,
-                                       std::numeric_limits<int64_t>::max());
-  std::vector<int64_t> J1_upper_bounds(num_items,
-                                       std::numeric_limits<int64_t>::max());
+  std::vector<int64_t> J0_upper_bounds(num_items, kint64max);
+  std::vector<int64_t> J1_upper_bounds(num_items, kint64max);
   for (int item_id = 0; item_id < num_items; ++item_id) {
     if (time_limit_->LimitReached()) {
       break;
     }
     int64_t lower_bound = 0LL;
-    int64_t upper_bound = std::numeric_limits<int64_t>::max();
+    int64_t upper_bound = kint64max;
     solver_->GetLowerAndUpperBoundWhenItem(item_id, false, &lower_bound,
                                            &upper_bound);
     J1_upper_bounds.at(item_id) = upper_bound;
@@ -1648,7 +1649,7 @@ void BaseKnapsackSolver::GetLowerAndUpperBoundWhenItem(int /*item_id*/,
   CHECK(lower_bound != nullptr);
   CHECK(upper_bound != nullptr);
   *lower_bound = 0LL;
-  *upper_bound = std::numeric_limits<int64_t>::max();
+  *upper_bound = kint64max;
 }
 
 }  // namespace operations_research

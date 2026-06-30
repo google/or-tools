@@ -47,6 +47,7 @@
 #include <optional>
 #include <random>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -1294,7 +1295,8 @@ std::optional<TerminationReason> PreprocessSolver::ApplyPresolveIfEnabled(
   // To simplify our code we ignore the return value indicating whether
   // postprocessing is required. We simply call `RecoverSolution()`
   // unconditionally, which may do nothing.
-  presolve_info_->preprocessor.Run(&glop_lp);
+  const glop::Preprocessor::Result preprocessor_result =
+      presolve_info_->preprocessor.Run(&glop_lp);
   presolve_info_->presolved_problem_was_maximization =
       glop_lp.IsMaximizationProblem();
   MPModelProto output;
@@ -1313,11 +1315,11 @@ std::optional<TerminationReason> PreprocessSolver::ApplyPresolveIfEnabled(
   // A status of `INIT` means the preprocessor created a (usually) smaller
   // problem that needs solving. Other statuses mean the preprocessor solved
   // the problem completely.
-  if (presolve_info_->preprocessor.status() != glop::ProblemStatus::INIT) {
+  if (preprocessor_result.solve_status.has_value()) {
     col_scaling_vec_ = OnesVector(sharded_qp_.PrimalSharder());
     row_scaling_vec_ = OnesVector(sharded_qp_.DualSharder());
-    return GlopStatusToTerminationReason(presolve_info_->preprocessor.status(),
-                                         logger_);
+    return GlopStatusToTerminationReason(
+        preprocessor_result.solve_status->problem_status(), logger_);
   }
   return std::nullopt;
 }
@@ -1420,12 +1422,14 @@ double PreprocessSolver::InitialPrimalWeight(
 
 PrimalAndDualSolution PreprocessSolver::RecoverOriginalSolution(
     PrimalAndDualSolution working_solution) const {
+  glop::SolveStatus solve_status = glop::OptimalSolveStatus();
   glop::ProblemSolution glop_solution(glop::RowIndex{0}, glop::ColIndex{0});
   if (presolve_info_.has_value()) {
     // We compute statuses relative to the working problem so we can detect when
     // variables are at their bounds without floating-point roundoff induced by
     // scaling.
-    glop_solution = internal::ComputeStatuses(Qp(), working_solution);
+    std::tie(solve_status, glop_solution) =
+        internal::ComputeStatuses(Qp(), working_solution);
   }
   CoefficientWiseProductInPlace(col_scaling_vec_, sharded_qp_.PrimalSharder(),
                                 working_solution.primal_solution);
@@ -1446,7 +1450,7 @@ PrimalAndDualSolution PreprocessSolver::RecoverOriginalSolution(
         glop_solution.dual_values[i] *= -1;
       }
     }
-    presolve_info_->preprocessor.RecoverSolution(&glop_solution);
+    presolve_info_->preprocessor.RecoverSolution(solve_status, &glop_solution);
     PrimalAndDualSolution solution;
     solution.primal_solution =
         Eigen::Map<Eigen::VectorXd>(glop_solution.primal_values.data(),
@@ -3153,14 +3157,11 @@ SolverResult PrimalDualHybridGradient(
 
 namespace internal {
 
-glop::ProblemSolution ComputeStatuses(const QuadraticProgram& qp,
-                                      const PrimalAndDualSolution& solution) {
+std::pair<glop::SolveStatus, glop::ProblemSolution> ComputeStatuses(
+    const QuadraticProgram& qp, const PrimalAndDualSolution& solution) {
   glop::ProblemSolution glop_solution(
       glop::RowIndex(solution.dual_solution.size()),
       glop::ColIndex(solution.primal_solution.size()));
-  // This doesn't matter much as glop's preprocessor doesn't use this much.
-  // We pick IMPRECISE since we are often calling this code early in the solve.
-  glop_solution.status = glop::ProblemStatus::IMPRECISE;
   for (glop::RowIndex i{0}; i.value() < solution.dual_solution.size(); ++i) {
     if (qp.constraint_lower_bounds[i.value()] ==
         qp.constraint_upper_bounds[i.value()]) {
@@ -3200,7 +3201,11 @@ glop::ProblemSolution ComputeStatuses(const QuadraticProgram& qp,
       }
     }
   }
-  return glop_solution;
+
+  // This doesn't matter much as glop's preprocessor doesn't use this much.
+  // We pick IMPRECISE since we are often calling this code early in the solve.
+  glop_solution.status = glop::ProblemStatus::IMPRECISE;
+  return {glop::ImpreciseSolveStatus(), glop_solution};
 }
 
 }  // namespace internal

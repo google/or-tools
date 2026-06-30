@@ -61,6 +61,7 @@ cc_library(
         "//ortools/base:zipfile",
         "//ortools/util:filelineiter",
         "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings",
         "@re2",
@@ -78,8 +79,9 @@ cc_test(
     deps = [
         ":solomon_parser",
         "//ortools/base:gmock_main",
-        "//ortools/base:path",
+        "//ortools/util:data_path_resolver",
         "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -92,6 +94,7 @@ cc_library(
         "//ortools/base:file",
         "//ortools/base:numbers",
         "//ortools/base:path",
+        "//ortools/base:types",
         "//ortools/base:zipfile",
         "//ortools/util:filelineiter",
         "@abseil-cpp//absl/strings",
@@ -110,6 +113,9 @@ cc_test(
         ":lilim_parser",
         "//ortools/base:gmock_main",
         "//ortools/base:path",
+        "//ortools/util:data_path_resolver",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:string_view",
     ],
 )
 
@@ -154,7 +160,9 @@ cc_test(
         "//ortools/base:gmock_main",
         "//ortools/base:log_severity",
         "//ortools/base:path",
+        "//ortools/util:data_path_resolver",
         "@abseil-cpp//absl/log:scoped_mock_log",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -185,6 +193,7 @@ cc_test(
         ":simple_graph",
         "//ortools/base:gmock_main",
         "//ortools/base:path",
+        "//ortools/util:data_path_resolver",
     ],
 )
 
@@ -197,7 +206,6 @@ cc_library(
         "//ortools/base:gzipfile",
         "//ortools/base:mathutil",
         "//ortools/base:strtoint",
-        "//ortools/base:types",
         "//ortools/util:filelineiter",
         "@abseil-cpp//absl/strings",
     ],
@@ -214,7 +222,7 @@ cc_test(
     deps = [
         ":pdtsp_parser",
         "//ortools/base:gmock_main",
-        "//ortools/base:path",
+        "//ortools/util:data_path_resolver",
     ],
 )
 
@@ -230,14 +238,16 @@ cc_library(
         "//ortools/base:map_util",
         "//ortools/base:numbers",
         "//ortools/base:path",
-        "//ortools/base:status_macros",
+        "//ortools/base:status_builder",
         "//ortools/base:strtoint",
+        "//ortools/base:types",
         "//ortools/base:zipfile",
         "//ortools/util:filelineiter",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",
@@ -251,6 +261,7 @@ cc_test(
     timeout = "moderate",
     srcs = ["tsplib_parser_test.cc"],
     data = [
+        "//ortools/routing/parsers/testdata:solomon.zip",
         "//ortools/routing/parsers/testdata:tsplib_Kytojoki_33.vrp",
     ],
     flaky = 1,  # b/132942541
@@ -258,9 +269,10 @@ cc_test(
         ":tsplib_parser",
         "//ortools/base:file",
         "//ortools/base:gmock_main",
-        "//ortools/base:memfile",
         "//ortools/base:path",
+        "//ortools/base:temp_file",
         "//ortools/base:zipfile",
+        "//ortools/util:data_path_resolver",
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/container:btree",
         "@abseil-cpp//absl/status",
@@ -280,7 +292,6 @@ cc_library(
         "//ortools/base:mathutil",
         "//ortools/base:numbers",
         "//ortools/base:path",
-        "//ortools/base:types",
         "//ortools/base:zipfile",
         "//ortools/util:filelineiter",
         "@abseil-cpp//absl/strings",
@@ -300,6 +311,7 @@ cc_test(
         ":tsptw_parser",
         "//ortools/base:gmock_main",
         "//ortools/base:path",
+        "//ortools/util:data_path_resolver",
     ],
 )
 
@@ -333,7 +345,7 @@ cc_test(
         ":solution_serializer",
         "//ortools/base:file",
         "//ortools/base:gmock_main",
-        "//ortools/base:mutable_memfile",
+        "//ortools/base:temp_file",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/time",
     ],
@@ -345,6 +357,7 @@ cc_library(
     hdrs = ["cvrptw_lib.h"],
     deps = [
         "//ortools/base:strong_vector",
+        "//ortools/base:types",
         "//ortools/constraint_solver:cp",
         "//ortools/routing",
         "//ortools/routing:index_manager",

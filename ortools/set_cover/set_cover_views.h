@@ -1,4 +1,3 @@
-// Copyright 2025 Francesco Cavaliere
 // Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,6 +14,7 @@
 #ifndef ORTOOLS_SET_COVER_SET_COVER_VIEWS_H_
 #define ORTOOLS_SET_COVER_SET_COVER_VIEWS_H_
 
+#include <functional>
 #include <vector>
 
 #include "absl/log/check.h"
@@ -39,7 +39,7 @@ namespace operations_research {
 // increasing complexity.
 // Currently, the simplest approach is to define only full-model indices while
 // reusing the original strong types for the core model. The main challenge
-// arises in FullToCoreModel, where a "filtered" full-model must be handled. In
+// arises in PricingModel, where a "filtered" full-model must be handled. In
 // such cases, static casts are employed to manage the type conversions
 // effectively.
 DEFINE_STRONG_INT_TYPE(FullSubsetIndex, BaseInt);
@@ -47,15 +47,15 @@ DEFINE_STRONG_INT_TYPE(FullElementIndex, BaseInt);
 
 // Syntactic sugar to define strong-typed indices casts.
 // Note: look at `strong_int.h` for more details about `StrongIntConvert`
-#define ENABLE_EXPLICIT_STRONG_TYPE_CAST(FROM, TO)        \
+#define DEFINE_STRONG_INT_CONVERSION(FROM, TO)            \
   constexpr TO StrongIntConvert(FROM j, TO* /*unused*/) { \
     return TO(static_cast<FROM::ValueType>(j));           \
   }
-ENABLE_EXPLICIT_STRONG_TYPE_CAST(SubsetIndex, FullSubsetIndex);
-ENABLE_EXPLICIT_STRONG_TYPE_CAST(FullSubsetIndex, SubsetIndex);
-ENABLE_EXPLICIT_STRONG_TYPE_CAST(ElementIndex, FullElementIndex);
-ENABLE_EXPLICIT_STRONG_TYPE_CAST(FullElementIndex, ElementIndex);
-#undef ENABLE_EXPLICIT_STRONG_TYPE_CAST
+DEFINE_STRONG_INT_CONVERSION(SubsetIndex, FullSubsetIndex);
+DEFINE_STRONG_INT_CONVERSION(FullSubsetIndex, SubsetIndex);
+DEFINE_STRONG_INT_CONVERSION(ElementIndex, FullElementIndex);
+DEFINE_STRONG_INT_CONVERSION(FullElementIndex, ElementIndex);
+#undef DEFINE_STRONG_INT_CONVERSION
 
 using FullElementCostVector = util_intops::StrongVector<FullElementIndex, Cost>;
 using FullSubsetCostVector = util_intops::StrongVector<FullSubsetIndex, Cost>;
@@ -82,15 +82,15 @@ using FullToCoreSubsetMapVector =
 using CoreToFullSubsetMapVector =
     util_intops::StrongVector<SubsetIndex, FullSubsetIndex>;
 
-class StrongModelView {
+class FullModelView {
  private:
   // Transformations to convert between the core and full model columns.
-  struct SparseColTransform {
+  struct SparseColumnTransform {
     TransformView<ElementIndex, ColumnEntryIndex,
-                  TypeCastTransform<ElementIndex, FullElementIndex>>
+                  StaticCastTransform<ElementIndex, FullElementIndex>>
     operator()(const SparseColumn& column) const {
       return TransformView<ElementIndex, ColumnEntryIndex,
-                           TypeCastTransform<ElementIndex, FullElementIndex>>(
+                           StaticCastTransform<ElementIndex, FullElementIndex>>(
           &column);
     }
   };
@@ -98,32 +98,31 @@ class StrongModelView {
   // Transformations to convert between the core and full model rows.
   struct SparseRowTransform {
     TransformView<SubsetIndex, RowEntryIndex,
-                  TypeCastTransform<SubsetIndex, FullSubsetIndex>>
+                  StaticCastTransform<SubsetIndex, FullSubsetIndex>>
     operator()(const SparseRow& row) const {
       return TransformView<SubsetIndex, RowEntryIndex,
-                           TypeCastTransform<SubsetIndex, FullSubsetIndex>>(
+                           StaticCastTransform<SubsetIndex, FullSubsetIndex>>(
           &row);
     }
   };
 
  public:
-  StrongModelView() = default;
-  explicit StrongModelView(const SetCoverModel* model) : model_(model) {}
+  explicit FullModelView(const SetCoverModel& model) : model_(model) {}
 
-  BaseInt num_subsets() const { return model_->num_subsets(); }
-  BaseInt num_elements() const { return model_->num_elements(); }
+  BaseInt num_subsets() const { return model_.get().num_subsets(); }
+  BaseInt num_elements() const { return model_.get().num_elements(); }
 
   TransformView<Cost, FullSubsetIndex> subset_costs() const {
-    return TransformView<Cost, FullSubsetIndex>(&model_->subset_costs());
+    return TransformView<Cost, FullSubsetIndex>(&model_.get().subset_costs());
   }
-  TransformView<SparseColumn, FullSubsetIndex, SparseColTransform> columns()
+  TransformView<SparseColumn, FullSubsetIndex, SparseColumnTransform> columns()
       const {
-    return TransformView<SparseColumn, FullSubsetIndex, SparseColTransform>(
-        &model_->columns());
+    return TransformView<SparseColumn, FullSubsetIndex, SparseColumnTransform>(
+        &model_.get().columns());
   }
   TransformView<SparseRow, FullElementIndex, SparseRowTransform> rows() const {
     return TransformView<SparseRow, FullElementIndex, SparseRowTransform>(
-        &model_->rows());
+        &model_.get().rows());
   }
   util_intops::StrongIntRange<FullSubsetIndex> SubsetRange() const {
     return {FullSubsetIndex(), FullSubsetIndex(num_subsets())};
@@ -131,44 +130,47 @@ class StrongModelView {
   util_intops::StrongIntRange<FullElementIndex> ElementRange() const {
     return {FullElementIndex(), FullElementIndex(num_elements())};
   }
-  const SetCoverModel& base() const { return *model_; }
+  const SetCoverModel& base() const { return model_.get(); }
 
  private:
-  const SetCoverModel* model_;
+  std::reference_wrapper<const SetCoverModel> model_;
 };
 
-class IndexListModelView {
+class FocusModelView {
  public:
-  IndexListModelView() = default;
-  IndexListModelView(const SetCoverModel* model,
-                     const SubsetToIntVector* cols_sizes,
-                     const ElementToIntVector* rows_sizes,
-                     const std::vector<SubsetIndex>* cols_focus,
-                     const std::vector<ElementIndex>* rows_focus)
+  FocusModelView(const SetCoverModel& model,
+                 const SubsetToIntVector& column_sizes,
+                 const ElementToIntVector& row_sizes,
+                 const std::vector<SubsetIndex>& column_focus,
+                 const std::vector<ElementIndex>& row_focus)
       : model_(model),
-        cols_sizes_(cols_sizes),
-        rows_sizes_(rows_sizes),
-        cols_focus_(cols_focus),
-        rows_focus_(rows_focus) {}
+        column_sizes_(column_sizes),
+        row_sizes_(row_sizes),
+        column_focus_(column_focus),
+        row_focus_(row_focus) {}
 
-  BaseInt num_subsets() const { return model_->num_subsets(); }
-  BaseInt num_elements() const { return model_->num_elements(); }
-  BaseInt num_focus_subsets() const { return cols_focus_->size(); }
-  BaseInt num_focus_elements() const { return rows_focus_->size(); }
+  BaseInt num_subsets() const { return model_.get().num_subsets(); }
+  BaseInt num_elements() const { return model_.get().num_elements(); }
+  BaseInt num_focus_subsets() const { return column_focus_.get().size(); }
+  BaseInt num_focus_elements() const { return row_focus_.get().size(); }
 
   IndexListView<Cost, SubsetIndex> subset_costs() const {
-    return {&model_->subset_costs(), cols_focus_};
+    return {&model_.get().subset_costs(), &column_focus_.get()};
   }
-  TwoLevelsView<IndexListView<SparseColumn, SubsetIndex>, ElementToIntVector>
+  NestedMaskedView<IndexListView<SparseColumn, SubsetIndex>, ElementToIntVector>
   columns() const {
-    return {{&model_->columns(), cols_focus_}, rows_sizes_};
+    return {{&model_.get().columns(), &column_focus_.get()}, row_sizes_.get()};
   }
-  TwoLevelsView<IndexListView<SparseRow, ElementIndex>, SubsetToIntVector>
+  NestedMaskedView<IndexListView<SparseRow, ElementIndex>, SubsetToIntVector>
   rows() const {
-    return {{&model_->rows(), rows_focus_}, cols_sizes_};
+    return {{&model_.get().rows(), &row_focus_.get()}, column_sizes_.get()};
   }
-  const std::vector<SubsetIndex>& SubsetRange() const { return *cols_focus_; }
-  const std::vector<ElementIndex>& ElementRange() const { return *rows_focus_; }
+  const std::vector<SubsetIndex>& SubsetRange() const {
+    return column_focus_.get();
+  }
+  const std::vector<ElementIndex>& ElementRange() const {
+    return row_focus_.get();
+  }
   FullElementIndex MapCoreToFullElementIndex(ElementIndex core_i) const {
     DCHECK(ElementIndex() <= core_i && core_i < ElementIndex(num_elements()));
     return static_cast<FullElementIndex>(core_i);
@@ -184,71 +186,71 @@ class IndexListModelView {
   }
   BaseInt column_size(SubsetIndex j) const {
     DCHECK(SubsetIndex() <= j && j < SubsetIndex(num_subsets()));
-    return (*cols_sizes_)[j];
+    return column_sizes_.get()[j];
   }
   BaseInt row_size(ElementIndex i) const {
     DCHECK(ElementIndex() <= i && i < ElementIndex(num_elements()));
-    return (*rows_sizes_)[i];
+    return row_sizes_.get()[i];
   }
-  const SetCoverModel& base() const { return *model_; }
+  const SetCoverModel& base() const { return model_.get(); }
 
  private:
-  const SetCoverModel* model_;
-  const SubsetToIntVector* cols_sizes_;
-  const ElementToIntVector* rows_sizes_;
-  const std::vector<SubsetIndex>* cols_focus_;
-  const std::vector<ElementIndex>* rows_focus_;
+  std::reference_wrapper<const SetCoverModel> model_;
+  std::reference_wrapper<const SubsetToIntVector> column_sizes_;
+  std::reference_wrapper<const ElementToIntVector> row_sizes_;
+  std::reference_wrapper<const std::vector<SubsetIndex>> column_focus_;
+  std::reference_wrapper<const std::vector<ElementIndex>> row_focus_;
 };
 
 // A lightweight sub-model view that uses boolean vectors to enable or disable
 // specific items. Iterating over all active columns or rows is less efficient,
-// particularly when only a small subset is active.
+// particularly when only a now small subset is active.
 // NOTE: this view does **not** store any size-related information.
-class FilterModelView {
+class MaskedModelView {
  public:
-  FilterModelView() = default;
-  FilterModelView(const SetCoverModel* model,
-                  const SubsetBoolVector* cols_sizes,
-                  const ElementBoolVector* rows_sizes, BaseInt num_subsets,
+  MaskedModelView(const SetCoverModel& model,
+                  const SubsetBoolVector& column_mask,
+                  const ElementBoolVector& row_mask, BaseInt num_subsets,
                   BaseInt num_elements)
       : model_(model),
-        is_focus_col_(cols_sizes),
-        is_focus_row_(rows_sizes),
+        column_mask_(column_mask),
+        row_mask_(row_mask),
         num_subsets_(num_subsets),
         num_elements_(num_elements) {}
 
-  BaseInt num_subsets() const { return model_->num_subsets(); }
-  BaseInt num_elements() const { return model_->num_elements(); }
+  BaseInt num_subsets() const { return model_.get().num_subsets(); }
+  BaseInt num_elements() const { return model_.get().num_elements(); }
   BaseInt num_focus_subsets() const { return num_subsets_; }
   BaseInt num_focus_elements() const { return num_elements_; }
 
-  IndexFilterView<Cost, SubsetBoolVector> subset_costs() const {
-    return {&model_->subset_costs(), is_focus_col_};
+  MaskedValuesView<Cost, SubsetBoolVector> subset_costs() const {
+    return {&model_.get().subset_costs(), column_mask_.get()};
   }
-  TwoLevelsView<IndexFilterView<SparseColumn, SubsetBoolVector>,
-                ElementBoolVector>
+  NestedMaskedView<MaskedValuesView<SparseColumn, SubsetBoolVector>,
+                   ElementBoolVector>
   columns() const {
-    return {{&model_->columns(), is_focus_col_}, is_focus_row_};
+    return {{&model_.get().columns(), column_mask_.get()}, row_mask_.get()};
   }
-  TwoLevelsView<IndexFilterView<SparseRow, ElementBoolVector>, SubsetBoolVector>
+  NestedMaskedView<MaskedValuesView<SparseRow, ElementBoolVector>,
+                   SubsetBoolVector>
   rows() const {
-    return {{&model_->rows(), is_focus_row_}, is_focus_col_};
+    return {{&model_.get().rows(), row_mask_.get()}, column_mask_.get()};
   }
-  FilterIndexRangeView<SubsetIndex, SubsetBoolVector> SubsetRange() const {
-    return FilterIndexRangeView<SubsetIndex, SubsetBoolVector>{is_focus_col_};
+  MaskedIndicesView<SubsetIndex, SubsetBoolVector> SubsetRange() const {
+    return MaskedIndicesView<SubsetIndex, SubsetBoolVector>{column_mask_.get()};
   }
-  FilterIndexRangeView<ElementIndex, ElementBoolVector> ElementRange() const {
-    return FilterIndexRangeView<ElementIndex, ElementBoolVector>{is_focus_row_};
+  MaskedIndicesView<ElementIndex, ElementBoolVector> ElementRange() const {
+    return MaskedIndicesView<ElementIndex, ElementBoolVector>{row_mask_.get()};
   }
-  bool IsFocusCol(SubsetIndex j) const { return (*is_focus_col_)[j]; }
-  bool IsFocusRow(ElementIndex i) const { return (*is_focus_row_)[i]; }
+  bool IsColumnInFocus(SubsetIndex j) const { return column_mask_.get()[j]; }
+  bool IsRowInFocus(ElementIndex i) const { return row_mask_.get()[i]; }
 
-  const SetCoverModel& base() const { return *model_; }
+  const SetCoverModel& base() const { return model_.get(); }
 
  private:
-  const SetCoverModel* model_;
-  const SubsetBoolVector* is_focus_col_;
-  const ElementBoolVector* is_focus_row_;
+  std::reference_wrapper<const SetCoverModel> model_;
+  std::reference_wrapper<const SubsetBoolVector> column_mask_;
+  std::reference_wrapper<const ElementBoolVector> row_mask_;
   BaseInt num_subsets_;
   BaseInt num_elements_;
 };

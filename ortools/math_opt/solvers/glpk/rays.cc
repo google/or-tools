@@ -19,9 +19,9 @@
 
 #include "absl/log/check.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
-#include "absl/strings/str_cat.h"
-#include "ortools/base/status_macros.h"
+#include "ortools/base/status_builder.h"
 #include "ortools/third_party_solvers/glpk/glpk_computational_form.h"
 #include "ortools/third_party_solvers/glpk/glpk_formatters.h"
 
@@ -121,9 +121,9 @@ absl::StatusOr<GlpkRay> ComputePrimalRay(glp_prob* const problem,
     case GLP_NF:  // Free (unbounded).
       break;
     default:  // GLP_BS (basic), GLP_NS (fixed) or invalid value
-      return absl::InternalError(absl::StrCat(
-          "unexpected ", BasisStatusString(non_basic_variable_status),
-          " reported as cause of unboundness"));
+      return ortools::InternalErrorBuilder()
+             << "unexpected " << BasisStatusString(non_basic_variable_status)
+             << " reported as cause of unboundness";
   }
 
   GlpkRay::SparseVector ray_non_zeros;
@@ -362,8 +362,9 @@ absl::StatusOr<std::optional<GlpkRay>> GlpkComputeUnboundRay(
   if (!glp_bf_exists(problem)) {
     const int factorization_rc = glp_factorize(problem);
     if (factorization_rc != 0) {
-      return util::InternalErrorBuilder() << "glp_factorize() failed: "
-                                          << ReturnCodeString(factorization_rc);
+      return ortools::InternalErrorBuilder()
+             << "glp_factorize() failed: "
+             << ReturnCodeString(factorization_rc);
     }
   }
 
@@ -374,9 +375,9 @@ absl::StatusOr<std::optional<GlpkRay>> GlpkComputeUnboundRay(
       ComputeFormVarStatus(problem,
                            /*num_cstrs=*/glp_get_num_rows(problem),
                            /*k=*/unbound_ray) == GLP_BS;
-  ASSIGN_OR_RETURN(GlpkRay ray,
-                   (is_dual_ray ? ComputeDualRay(problem, unbound_ray)
-                                : ComputePrimalRay(problem, unbound_ray)));
+  ABSL_ASSIGN_OR_RETURN(GlpkRay ray,
+                        (is_dual_ray ? ComputeDualRay(problem, unbound_ray)
+                                     : ComputePrimalRay(problem, unbound_ray)));
   return ray;
 }
 

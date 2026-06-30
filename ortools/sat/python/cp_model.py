@@ -39,7 +39,7 @@ Additional methods for solving CP-SAT models:
 
 * [`Constraint`](#cp_model.Constraint): A few utility methods for modifying
   constraints created by `CpModel`.
-* [`LinearExpr`](#lineacp_model.LinearExpr): Methods for creating constraints
+* [`LinearExpr`](#cp_model.LinearExpr): Methods for creating constraints
   and the objective from large arrays of coefficients.
 
 Other methods and functions listed are primarily used for developing OR-Tools,
@@ -85,7 +85,6 @@ INT32_MIN = -(2**31)
 INT32_MAX = 2**31 - 1
 
 # CpSolver status (exported to avoid importing cp_model_cp2).
-UNKNOWN = cmh.CpSolverStatus.UNKNOWN
 UNKNOWN = cmh.CpSolverStatus.UNKNOWN
 MODEL_INVALID = cmh.CpSolverStatus.MODEL_INVALID
 FEASIBLE = cmh.CpSolverStatus.FEASIBLE
@@ -829,6 +828,18 @@ class CpModel(cmh.CpBaseModel):
           ValueError: if min_level > 0
         """
 
+        if max_level < min_level:
+            raise ValueError("Reservoir constraint must have a max_level >= min_level")
+
+        if max_level < 0:
+            raise ValueError("Reservoir constraint must have a max_level >= 0")
+
+        if min_level > 0:
+            raise ValueError("Reservoir constraint must have a min_level <= 0")
+
+        if not times:
+            raise ValueError("Reservoir constraint must have a non-empty times array")
+
         return self._add_reservoir(
             times,
             level_changes,
@@ -1570,12 +1581,14 @@ class CpModel(cmh.CpBaseModel):
         self._set_objective(obj, maximize=True)
 
     def has_objective(self) -> bool:
+        """Returns true if the model has an objective (integer or floating point)."""
         return (
             self.model_proto.has_objective()
             or self.model_proto.has_floating_point_objective()
         )
 
     def clear_objective(self):
+        """Clears the objective of the model."""
         self.model_proto.clear_objective()
         self.model_proto.clear_floating_point_objective()
 
@@ -2126,7 +2139,7 @@ class CpSolverSolutionCallback(cmh.SolutionCallback):
         return self.BooleanValue(lit)
 
     def value(self, expression: LinearExprT) -> int:
-        """Evaluates an linear expression in the current solution.
+        """Evaluates a linear expression in the current solution.
 
         Args:
             expression: a linear expression of the model.
@@ -2143,13 +2156,13 @@ class CpSolverSolutionCallback(cmh.SolutionCallback):
         return self.Value(expression)
 
     def float_value(self, expression: LinearExprT) -> float:
-        """Evaluates an linear expression in the current solution.
+        """Evaluates a linear expression in the current solution.
 
         Args:
             expression: a linear expression of the model.
 
         Returns:
-            An integer value equal to the evaluation of the linear expression
+            A float value equal to the evaluation of the linear expression
             against the current solution.
 
         Raises:
@@ -2219,7 +2232,7 @@ class CpSolverSolutionCallback(cmh.SolutionCallback):
 
     @property
     def deterministic_time(self) -> float:
-        """Returns the determistic time in seconds since the creation of the solver."""
+        """Returns the deterministic time in seconds since the creation of the solver."""
         if not self.has_response():
             raise RuntimeError("solve() has not been called.")
         return self.DeterministicTime()

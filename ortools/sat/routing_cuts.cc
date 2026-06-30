@@ -1280,7 +1280,8 @@ class RouteRelationsBuilder {
       }
     }
     const std::vector<std::vector<IntegerVariable>> connected_components =
-        cc_finder.FindConnectedComponents();
+        cc_finder.FindConnectedComponents(
+            NodeOrderInsideComponent::kNotOrderedUndeterministic);
     for (int i = 0; i < connected_components.size(); ++i) {
       for (const IntegerVariable var : connected_components[i]) {
         dimension_by_var_[GetPositiveOnlyIndex(var)] = i;
@@ -2932,13 +2933,13 @@ void ExtractAllSubsetsFromForest(absl::Span<const int> parent,
   subsets->clear();
 
   // Starts by creating the corresponding graph and find the root.
-  util::StaticGraph<int> graph(num_nodes, num_nodes - 1);
+  util::StaticGraph<>::Builder builder(num_nodes, num_nodes - 1);
   for (int i = 0; i < num_nodes; ++i) {
     if (parent[i] != i) {
-      graph.AddArc(parent[i], i);
+      builder.AddArc(parent[i], i);
     }
   }
-  graph.Build();
+  const auto graph = std::move(builder).BuildGraph(nullptr);
 
   // Perform a dfs on the rooted tree.
   // The subset_data will just be the node in post-order.

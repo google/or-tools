@@ -14,6 +14,7 @@
 #include "ortools/graph/k_shortest_paths.h"
 
 #include <algorithm>
+#include <memory>
 #include <random>
 #include <set>
 #include <string>
@@ -26,7 +27,6 @@
 #include "absl/random/distributions.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
-#include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/graph/shortest_paths.h"
@@ -43,123 +43,124 @@ using util::Permute;
 using util::StaticGraph;
 
 TEST(KShortestPathsYenDeathTest, EmptyGraph) {
-  StaticGraph<> graph;
+  StaticGraph<>::Builder builder;
+  const auto graph = std::move(builder).Build(nullptr);
   std::vector<PathDistance> lengths;
 
-  EXPECT_DEATH(YenKShortestPaths(graph, lengths, /*source=*/0,
+  EXPECT_DEATH(YenKShortestPaths(*graph, lengths, /*source=*/0,
                                  /*destination=*/1, /*k=*/10),
                "graph.num_nodes\\(\\) > 0");
 }
 
 TEST(KShortestPathsYenDeathTest, NoArcGraph) {
-  StaticGraph<> graph;
-  graph.AddNode(1);
-  (void)graph.Build();
+  StaticGraph<>::Builder builder;
+  builder.AddNode(1);
+  const auto graph = std::move(builder).Build(nullptr);
   std::vector<PathDistance> lengths;
 
-  EXPECT_DEATH(YenKShortestPaths(graph, lengths, /*source=*/0,
+  EXPECT_DEATH(YenKShortestPaths(*graph, lengths, /*source=*/0,
                                  /*destination=*/1, /*k=*/10),
                "graph.num_arcs\\(\\) > 0");
 }
 
 TEST(KShortestPathsYenDeathTest, NonExistingSourceBecauseNegative) {
-  StaticGraph<> graph;
-  graph.AddNode(1);
-  graph.AddArc(0, 1);
-  (void)graph.Build();
+  StaticGraph<>::Builder builder;
+  builder.AddNode(1);
+  builder.AddArc(0, 1);
+  const auto graph = std::move(builder).Build(nullptr);
   std::vector<PathDistance> lengths{0};
 
-  EXPECT_DEATH(YenKShortestPaths(graph, lengths, /*source=*/-1,
+  EXPECT_DEATH(YenKShortestPaths(*graph, lengths, /*source=*/-1,
                                  /*destination=*/1, /*k=*/10),
                "source >= 0");
 }
 
 TEST(KShortestPathsYenDeathTest, NonExistingSourceBecauseTooLarge) {
-  StaticGraph<> graph;
-  graph.AddNode(1);
-  graph.AddArc(0, 1);
-  (void)graph.Build();
+  StaticGraph<>::Builder builder;
+  builder.AddNode(1);
+  builder.AddArc(0, 1);
+  const auto graph = std::move(builder).Build(nullptr);
   std::vector<PathDistance> lengths{0};
 
-  EXPECT_DEATH(YenKShortestPaths(graph, lengths, /*source=*/1'000,
+  EXPECT_DEATH(YenKShortestPaths(*graph, lengths, /*source=*/1'000,
                                  /*destination=*/1, /*k=*/10),
                "source < graph.num_nodes()");
 }
 
 TEST(KShortestPathsYenDeathTest, NonExistingDestinationBecauseNegative) {
-  StaticGraph<> graph;
-  graph.AddNode(1);
-  graph.AddArc(0, 1);
-  (void)graph.Build();
+  StaticGraph<>::Builder builder;
+  builder.AddNode(1);
+  builder.AddArc(0, 1);
+  const auto graph = std::move(builder).Build(nullptr);
   std::vector<PathDistance> lengths{0};
 
-  EXPECT_DEATH(YenKShortestPaths(graph, lengths, /*source=*/0,
+  EXPECT_DEATH(YenKShortestPaths(*graph, lengths, /*source=*/0,
                                  /*destination=*/-1, /*k=*/10),
                "destination >= 0");
 }
 
 TEST(KShortestPathsYenDeathTest, NonExistingDestinationBecauseTooLarge) {
-  StaticGraph<> graph;
-  graph.AddNode(1);
-  graph.AddArc(0, 1);
-  (void)graph.Build();
+  StaticGraph<>::Builder builder;
+  builder.AddNode(1);
+  builder.AddArc(0, 1);
+  const auto graph = std::move(builder).Build(nullptr);
   std::vector<PathDistance> lengths{0};
 
-  EXPECT_DEATH(YenKShortestPaths(graph, lengths, /*source=*/0,
+  EXPECT_DEATH(YenKShortestPaths(*graph, lengths, /*source=*/0,
                                  /*destination=*/1'000, /*k=*/10),
                "destination < graph.num_nodes()");
 }
 
 TEST(KShortestPathsYenDeathTest, KEqualsZero) {
-  StaticGraph<> graph;
-  graph.AddArc(0, 1);
-  graph.AddArc(1, 2);
-  (void)graph.Build();
+  StaticGraph<>::Builder builder;
+  builder.AddArc(0, 1);
+  builder.AddArc(1, 2);
+  const auto graph = std::move(builder).Build(nullptr);
   std::vector<PathDistance> lengths{1, 1};
 
-  EXPECT_DEATH(YenKShortestPaths(graph, lengths, /*source=*/0,
+  EXPECT_DEATH(YenKShortestPaths(*graph, lengths, /*source=*/0,
                                  /*destination=*/2, /*k=*/0),
                "k != 0");
 }
 
 TEST(KShortestPathsYenTest, ReducesToShortestPath) {
-  StaticGraph<> graph;
-  graph.AddArc(0, 1);
-  graph.AddArc(1, 2);
-  (void)graph.Build();
+  StaticGraph<>::Builder builder;
+  builder.AddArc(0, 1);
+  builder.AddArc(1, 2);
+  const auto graph = std::move(builder).Build(nullptr);
   std::vector<PathDistance> lengths{1, 1};
 
   const KShortestPaths<StaticGraph<>> paths =
-      YenKShortestPaths(graph, lengths, /*source=*/0,
+      YenKShortestPaths(*graph, lengths, /*source=*/0,
                         /*destination=*/2, /*k=*/1);
   EXPECT_THAT(paths.paths, ElementsAre(std::vector<int>{0, 1, 2}));
   EXPECT_THAT(paths.distances, ElementsAre(2));
 }
 
 TEST(KShortestPathsYenTest, OnlyHasOnePath) {
-  StaticGraph<> graph;
-  graph.AddArc(0, 1);
-  graph.AddArc(1, 2);
-  (void)graph.Build();
+  StaticGraph<>::Builder builder;
+  builder.AddArc(0, 1);
+  builder.AddArc(1, 2);
+  const auto graph = std::move(builder).Build(nullptr);
   std::vector<PathDistance> lengths{1, 1};
 
   const KShortestPaths<StaticGraph<>> paths =
-      YenKShortestPaths(graph, lengths, /*source=*/0,
+      YenKShortestPaths(*graph, lengths, /*source=*/0,
                         /*destination=*/2, /*k=*/10);
   EXPECT_THAT(paths.paths, ElementsAre(std::vector<int>{0, 1, 2}));
   EXPECT_THAT(paths.distances, ElementsAre(2));
 }
 
 TEST(KShortestPathsYenTest, HasTwoPaths) {
-  StaticGraph<> graph;
-  graph.AddArc(0, 1);
-  graph.AddArc(0, 2);
-  graph.AddArc(1, 2);
-  (void)graph.Build();
+  StaticGraph<>::Builder builder;
+  builder.AddArc(0, 1);
+  builder.AddArc(0, 2);
+  builder.AddArc(1, 2);
+  const auto graph = std::move(builder).Build(nullptr);
   std::vector<PathDistance> lengths{1, 30, 1};
 
   const KShortestPaths<StaticGraph<>> paths =
-      YenKShortestPaths(graph, lengths, /*source=*/0,
+      YenKShortestPaths(*graph, lengths, /*source=*/0,
                         /*destination=*/2, /*k=*/10);
   EXPECT_THAT(paths.paths,
               ElementsAre(std::vector<int>{0, 1, 2}, std::vector<int>{0, 2}));
@@ -167,17 +168,17 @@ TEST(KShortestPathsYenTest, HasTwoPaths) {
 }
 
 TEST(KShortestPathsYenTest, HasTwoPathsWithLongerPath) {
-  StaticGraph<> graph;
-  graph.AddArc(0, 1);
-  graph.AddArc(0, 4);
-  graph.AddArc(1, 2);
-  graph.AddArc(2, 3);
-  graph.AddArc(3, 4);
-  (void)graph.Build();
+  StaticGraph<>::Builder builder;
+  builder.AddArc(0, 1);
+  builder.AddArc(0, 4);
+  builder.AddArc(1, 2);
+  builder.AddArc(2, 3);
+  builder.AddArc(3, 4);
+  const auto graph = std::move(builder).Build(nullptr);
   std::vector<PathDistance> lengths{1, 30, 1, 1, 1};
 
   const KShortestPaths<StaticGraph<>> paths =
-      YenKShortestPaths(graph, lengths, /*source=*/0,
+      YenKShortestPaths(*graph, lengths, /*source=*/0,
                         /*destination=*/4, /*k=*/10);
   EXPECT_THAT(paths.paths, ElementsAre(std::vector<int>{0, 1, 2, 3, 4},
                                        std::vector<int>{0, 4}));
@@ -185,18 +186,18 @@ TEST(KShortestPathsYenTest, HasTwoPathsWithLongerPath) {
 }
 
 TEST(KShortestPathsYenTest, ReturnsTheRightNumberOfPaths) {
-  StaticGraph<> graph;
-  graph.AddArc(0, 1);
-  graph.AddArc(0, 2);
-  graph.AddArc(0, 3);
-  graph.AddArc(1, 2);
-  graph.AddArc(3, 2);
+  StaticGraph<>::Builder builder;
+  builder.AddArc(0, 1);
+  builder.AddArc(0, 2);
+  builder.AddArc(0, 3);
+  builder.AddArc(1, 2);
+  builder.AddArc(3, 2);
 
-  (void)graph.Build();
+  const auto graph = std::move(builder).Build(nullptr);
   std::vector<PathDistance> lengths{1, 1, 1, 1, 1};
 
   const KShortestPaths<StaticGraph<>> paths =
-      YenKShortestPaths(graph, lengths, /*source=*/0,
+      YenKShortestPaths(*graph, lengths, /*source=*/0,
                         /*destination=*/2, /*k=*/2);
   EXPECT_THAT(paths.paths,
               ElementsAre(std::vector<int>{0, 2}, std::vector<int>{0, 1, 2}));
@@ -219,7 +220,7 @@ TEST(KShortestPathsYenTest, ShortestPathSelectedFromCandidates) {
   //    |  /\  |  /\  |
   //    | /  \ | /  \ |
   //    4 ---- 5 ---- 8
-  StaticGraph<> graph;
+  StaticGraph<>::Builder builder;
 
   using TailHeadCost = std::tuple<int, int, int>;
   std::vector<TailHeadCost> arcs = {
@@ -237,16 +238,16 @@ TEST(KShortestPathsYenTest, ShortestPathSelectedFromCandidates) {
   std::vector<PathDistance> lengths;
   lengths.reserve(arcs.size());
   for (const auto& [tail, head, cost] : arcs) {
-    graph.AddArc(tail, head);
+    builder.AddArc(tail, head);
     lengths.push_back(cost);
   }
 
   std::vector<int> permutation;
-  graph.Build(&permutation);
+  const auto graph = std::move(builder).Build(&permutation);
   Permute(permutation, &lengths);
 
   const KShortestPaths<StaticGraph<>> paths =
-      YenKShortestPaths(graph, lengths, /*source=*/0,
+      YenKShortestPaths(*graph, lengths, /*source=*/0,
                         /*destination=*/6, /*k=*/14);
 
   EXPECT_THAT(paths.distances,
@@ -277,8 +278,9 @@ namespace internal {
 
 template <typename Graph, typename NodeIndexType, typename ArcIndexType,
           typename URBG, bool IsDirected>
-Graph GenerateUniformGraph(URBG&& urbg, const NodeIndexType num_nodes,
-                           const ArcIndexType num_edges) {
+std::unique_ptr<Graph> GenerateUniformGraph(URBG&& urbg,
+                                            const NodeIndexType num_nodes,
+                                            const ArcIndexType num_edges) {
   // TODO(user): make these utility functions so they can be reused.
   const auto pick_one_node = [&urbg, num_nodes]() -> NodeIndexType {
     const NodeIndexType node = absl::Uniform(urbg, 0, num_nodes);
@@ -306,8 +308,8 @@ Graph GenerateUniformGraph(URBG&& urbg, const NodeIndexType num_nodes,
   // arcs, whichever is lower. The set is useful to ensure the graph does not
   // contain the same arc more than once (the result would be a multigraph).
   // TODO(user): this is an awful way to generate a complete graph.
-  StaticGraph<> graph;
-  graph.AddNode(num_nodes - 1);
+  StaticGraph<>::Builder builder;
+  builder.AddNode(num_nodes - 1);
 
   std::set<std::pair<NodeIndexType, NodeIndexType>> arcs;
   for (ArcIndexType i = 0; i < std::min(num_edges, max_num_arcs); ++i) {
@@ -317,19 +319,17 @@ Graph GenerateUniformGraph(URBG&& urbg, const NodeIndexType num_nodes,
     if (IsDirected && (arcs.find({dst, src}) != arcs.end())) continue;
 
     arcs.insert({src, dst});
-    graph.AddArc(src, dst);
+    builder.AddArc(src, dst);
 
     if (IsDirected) {
       arcs.insert({dst, src});
-      graph.AddArc(dst, src);
+      builder.AddArc(dst, src);
     }
   }
 
   // No need to keep the permutation when building, as there are no associated
   // attributes such as lengths in this function.
-  graph.Build(nullptr);
-
-  return graph;
+  return std::move(builder).Build(nullptr);
 }
 
 }  // namespace internal
@@ -346,8 +346,9 @@ Graph GenerateUniformGraph(URBG&& urbg, const NodeIndexType num_nodes,
 template <typename NodeIndexType, typename ArcIndexType,
           typename Graph = StaticGraph<NodeIndexType, ArcIndexType>,
           typename URBG>
-Graph GenerateUniformGraph(URBG&& urbg, const NodeIndexType num_nodes,
-                           const ArcIndexType num_edges) {
+std::unique_ptr<Graph> GenerateUniformGraph(URBG&& urbg,
+                                            const NodeIndexType num_nodes,
+                                            const ArcIndexType num_edges) {
   return internal::GenerateUniformGraph<Graph, NodeIndexType, ArcIndexType,
                                         URBG, /*IsDirected=*/false>(
       urbg, num_nodes, num_edges);
@@ -355,8 +356,8 @@ Graph GenerateUniformGraph(URBG&& urbg, const NodeIndexType num_nodes,
 template <typename NodeIndexType, typename ArcIndexType,
           typename Graph = StaticGraph<NodeIndexType, ArcIndexType>,
           typename URBG>
-Graph GenerateUniformDirectedGraph(URBG&& urbg, const NodeIndexType num_nodes,
-                                   const ArcIndexType num_arcs) {
+std::unique_ptr<Graph> GenerateUniformDirectedGraph(
+    URBG&& urbg, const NodeIndexType num_nodes, const ArcIndexType num_arcs) {
   return internal::GenerateUniformGraph<Graph, NodeIndexType, ArcIndexType,
                                         URBG, /*IsDirected=*/true>(
       urbg, num_nodes, num_arcs);
@@ -396,10 +397,10 @@ TEST(KShortestPathsYenTest, RandomTest) {
   for (int graph_iter = 0; graph_iter < kNumGraphs; ++graph_iter) {
     (void)graph_iter;
 
-    StaticGraph<> graph =
+    const auto graph =
         GenerateUniformDirectedGraph(random, kNumNodes, kNumArcs);
     std::vector<PathDistance> lengths;
-    for (int i = 0; i < graph.num_arcs(); ++i) {
+    for (int i = 0; i < graph->num_arcs(); ++i) {
       lengths.push_back(absl::Uniform(random, kMinLength, kMaxLength));
     }
 
@@ -424,8 +425,8 @@ TEST(KShortestPathsYenTest, RandomTest) {
         tentative_paths.erase(tentative_paths.begin());
 
         const int last_node = partial_path.back();
-        for (const int next_arc : graph.OutgoingArcs(last_node)) {
-          const int next_node = graph.Head(next_arc);
+        for (const int next_arc : graph->OutgoingArcs(last_node)) {
+          const int next_node = graph->Head(next_arc);
           ASSERT_NE(last_node, next_node);
 
           if (absl::c_find(partial_path, next_node) != partial_path.end()) {
@@ -454,12 +455,12 @@ TEST(KShortestPathsYenTest, RandomTest) {
 
       // Use the algorithm-under-test to generate as many paths as possible.
       const KShortestPaths yen_paths =
-          YenKShortestPaths(graph, lengths, src, dst,
+          YenKShortestPaths(*graph, lengths, src, dst,
                             /*k=*/brute_force_paths.size());
 
       // The two sets of paths must correspond.
       EXPECT_THAT(brute_force_paths, UnorderedElementsAreArray(yen_paths.paths))
-          << "[" << util::GraphToString(graph, util::PRINT_GRAPH_ARCS)
+          << "[" << util::GraphToString(*graph, util::PRINT_GRAPH_ARCS)
           << "] Brute-force paths: ["
           << absl::StrJoin(brute_force_paths, ", ", format_path)
           << "] Yen paths: ["
@@ -467,49 +468,6 @@ TEST(KShortestPathsYenTest, RandomTest) {
     }
   }
 }
-
-void BM_Yen(benchmark::State& state) {
-  const int num_nodes = state.range(0);
-  // Use half the maximum number of arcs, so that the graph is a bit sparse.
-  const int num_arcs = num_nodes * (num_nodes - 1) / 4;
-  // TODO(user): when supported, also benchmark negative weights
-  // (separately?).
-  constexpr int kMinLength = 0;
-  constexpr int kMaxLength = 1'000;
-
-  std::mt19937 random(12345);
-  const auto pick_one_node = [&random, num_nodes]() -> int {
-    int node = absl::Uniform(random, 0, num_nodes);
-    CHECK_GE(node, 0);
-    CHECK_LT(node, num_nodes);
-    return node;
-  };
-  const auto pick_two_distinct_nodes =
-      [&pick_one_node]() -> std::pair<int, int> {
-    int src = pick_one_node();
-    int dst;
-    do {
-      dst = pick_one_node();
-    } while (src == dst);
-    CHECK_NE(src, dst);
-    return {src, dst};
-  };
-
-  StaticGraph<> graph =
-      GenerateUniformDirectedGraph(random, num_nodes, num_arcs);
-  std::vector<PathDistance> lengths;
-  for (int i = 0; i < graph.num_arcs(); ++i) {
-    lengths.push_back(absl::Uniform(random, kMinLength, kMaxLength));
-  }
-
-  for (auto unused : state) {
-    int src, dst;
-    std::tie(src, dst) = pick_two_distinct_nodes();
-    YenKShortestPaths(graph, lengths, src, dst, /*k=*/10);
-  }
-}
-
-BENCHMARK(BM_Yen)->Range(10, 1'000);
 
 }  // namespace
 }  // namespace operations_research

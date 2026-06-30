@@ -22,10 +22,10 @@
 #include "Eigen/SparseCore"
 #include "absl/container/flat_hash_map.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/core/inverted_bounds.h"
 #include "ortools/math_opt/core/math_opt_proto_utils.h"
 #include "ortools/math_opt/core/sparse_vector_view.h"
@@ -80,7 +80,7 @@ Eigen::VectorXd EncodeSolution(
 
 absl::StatusOr<PdlpBridge> PdlpBridge::FromProto(
     const ModelProto& model_proto) {
-  RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       ModelIsSupported(model_proto, kPdlpSupportedStructures, "PDLP"));
   PdlpBridge result;
   pdlp::QuadraticProgram& pdlp_lp = result.pdlp_lp_;

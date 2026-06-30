@@ -307,21 +307,22 @@ absl::Status LoadXpressDynamicLibrary(std::string& xpresspath) {
       if (!XPRSgetversionnumbers ||
           XPRSgetversionnumbers(&major, &minor, &build) != 0)
         *xpress_load_status =
-            util::StatusBuilder(absl::StatusCode::kNotFound)
+            ortools::NotFoundErrorBuilder()
             << "Xpress optimizer library too old, need at least version "
             << XPVERSION;
       else if (major < XPVERSION)
-        *xpress_load_status = util::StatusBuilder(absl::StatusCode::kNotFound)
+        *xpress_load_status = ortools::NotFoundErrorBuilder()
                               << "Xpress optimizer library version " << major
                               << " too old, need at least version "
                               << XPVERSION;
       else
         *xpress_load_status = absl::OkStatus();
     } else {
-      *xpress_load_status = absl::NotFoundError(
-          absl::StrCat("Could not find the Xpress shared library. Looked in: [",
-                       absl::StrJoin(canonical_paths, "', '"),
-                       "]. Please check environment variable XPRESSDIR"));
+      *xpress_load_status =
+          ortools::NotFoundErrorBuilder()
+          << "Could not find the Xpress shared library. Looked in: ["
+          << absl::StrJoin(canonical_paths, "', '")
+          << "]. Please check environment variable XPRESSDIR";
     }
   });
   xpresspath.clear();

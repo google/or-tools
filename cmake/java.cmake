@@ -108,12 +108,19 @@ file(GLOB_RECURSE proto_java_files RELATIVE ${PROJECT_SOURCE_DIR}
   "ortools/sat/sat_parameters.proto"
   "ortools/util/*.proto"
   )
-if(USE_PDLP)
+list(REMOVE_ITEM proto_java_files "ortools/constraint_solver/assignment.proto")
+list(REMOVE_ITEM proto_java_files "ortools/util/testdata/wrappers_test_message.proto")
+if(BUILD_MATH_OPT)
+  file(GLOB_RECURSE mathopt_proto_java_files RELATIVE ${PROJECT_SOURCE_DIR}
+    "ortools/math_opt/*.proto"
+    "ortools/math_opt/solvers/*.proto"
+  )
+  list(APPEND proto_java_files ${mathopt_proto_java_files})
+endif()
+if(USE_PDLP OR BUILD_MATH_OPT)
   file(GLOB_RECURSE pdlp_proto_java_files RELATIVE ${PROJECT_SOURCE_DIR} "ortools/pdlp/*.proto")
   list(APPEND proto_java_files ${pdlp_proto_java_files})
 endif()
-list(REMOVE_ITEM proto_java_files "ortools/constraint_solver/assignment.proto")
-list(REMOVE_ITEM proto_java_files "ortools/util/testdata/wrappers_test_message.proto")
 foreach(PROTO_FILE IN LISTS proto_java_files)
   #message(STATUS "protoc proto(java): ${PROTO_FILE}")
   get_filename_component(PROTO_DIR ${PROTO_FILE} DIRECTORY)
@@ -246,7 +253,7 @@ function(add_java_test)
       ${JAVA_TEST_DIR}/timestamp
     WORKING_DIRECTORY ${JAVA_TEST_DIR})
 
-  if(BUILD_TESTING)
+  if(BUILD_JAVA_TESTING)
     add_test(
       NAME java_${COMPONENT_NAME}_${TEST_NAME}
       COMMAND ${MAVEN_EXECUTABLE} test
@@ -267,15 +274,22 @@ foreach(SUBPROJECT IN ITEMS
  init
  linear_solver
  constraint_solver
- routing
- sat
- util)
+ routing)
   add_subdirectory(ortools/${SUBPROJECT}/java)
   target_link_libraries(jni${JAVA_ARTIFACT} PRIVATE jni${SUBPROJECT})
 endforeach()
+# from ortools/linear_solver/java
 target_link_libraries(jni${JAVA_ARTIFACT} PRIVATE jnimodelbuilder)
-target_link_libraries(jni${JAVA_ARTIFACT} PRIVATE ortools::util_java_jni_helper)
+add_subdirectory(ortools/math_opt/core/java)
+target_link_libraries(jni${JAVA_ARTIFACT} PRIVATE mathopt_java_jni_helper)
+target_link_libraries(jni${JAVA_ARTIFACT} PRIVATE jnimathopt)
+add_subdirectory(ortools/sat/java)
+target_link_libraries(jni${JAVA_ARTIFACT} PRIVATE jnisat)
 target_link_libraries(jni${JAVA_ARTIFACT} PRIVATE jni_cp_model_proto)
+add_subdirectory(ortools/util/java)
+target_link_libraries(jni${JAVA_ARTIFACT} PRIVATE util_java_jni_helper)
+target_link_libraries(jni${JAVA_ARTIFACT} PRIVATE jni_sorted_interval_list)
+target_link_libraries(jni${JAVA_ARTIFACT} PRIVATE jni_java_swig_solve_interrupter)
 
 #################################
 ##  Java Native Maven Package  ##
@@ -338,7 +352,6 @@ add_custom_command(
   COMMAND ${CMAKE_COMMAND} -E
     $<IF:$<BOOL:${BUILD_absl}>,copy,true>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::base>>
-    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::borrowed_fixup_buffer>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::city>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::civil_time>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::cord>>
@@ -403,9 +416,11 @@ add_custom_command(
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::random_seed_sequences>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::raw_hash_set>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::raw_logging_internal>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::source_location>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::spinlock_wait>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::stacktrace>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::status>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::status_builder>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::statusor>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::str_format_internal>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::strerror>>
@@ -569,6 +584,13 @@ add_custom_target(java_deploy
   WORKING_DIRECTORY ${JAVA_PROJECT_DIR})
 add_dependencies(java_deploy java_package)
 
+#################
+##  Java Test  ##
+#################
+if(BUILD_JAVA_TESTING)
+  add_subdirectory(ortools/javatests/com/google/ortools javatests/ortools)
+endif()
+
 ###############
 ## Doc rules ##
 ###############
@@ -654,13 +676,9 @@ function(add_java_sample)
   message(STATUS "Configuring sample ${SAMPLE_FILE_NAME} ...")
 
   if(NOT SAMPLE_COMPONENT_NAME)
-    # sample is located in ortools/<component_name>/sample/
-    get_filename_component(SAMPLE_DIR ${SAMPLE_FILE_NAME} DIRECTORY)
-    get_filename_component(COMPONENT_DIR ${SAMPLE_DIR} DIRECTORY)
-    get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
-  else()
-    set(COMPONENT_NAME ${SAMPLE_COMPONENT_NAME})
+    message(FATAL_ERROR "no FILE_NAME provided")
   endif()
+  set(COMPONENT_NAME ${SAMPLE_COMPONENT_NAME})
   string(REPLACE "_" "" COMPONENT_NAME_LOWER ${COMPONENT_NAME})
 
   set(SAMPLE_DIR ${PROJECT_BINARY_DIR}/java/${COMPONENT_NAME}/${SAMPLE_NAME})
@@ -703,7 +721,7 @@ function(add_java_sample)
       ${SAMPLE_DIR}/timestamp
     WORKING_DIRECTORY ${SAMPLE_DIR})
 
-  if(BUILD_TESTING)
+  if(BUILD_JAVA_TESTING)
     add_test(
       NAME java_${COMPONENT_NAME}_${SAMPLE_NAME}
       COMMAND ${MAVEN_EXECUTABLE} exec:java
@@ -793,7 +811,7 @@ if(NOT EXAMPLE_FILE_NAME)
       ${JAVA_EXAMPLE_DIR}/timestamp
     WORKING_DIRECTORY ${JAVA_EXAMPLE_DIR})
 
-  if(BUILD_TESTING)
+  if(BUILD_JAVA_TESTING)
     add_test(
       NAME java_${COMPONENT_NAME}_${EXAMPLE_NAME}
       COMMAND ${MAVEN_EXECUTABLE} exec:java

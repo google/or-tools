@@ -259,7 +259,7 @@ TEST(BinaryImplicationGraphTest, BasicCliqueDetection) {
   for (const std::vector<Literal>& at_most_one : at_most_ones) {
     EXPECT_TRUE(graph->AddAtMostOne(at_most_one));
   }
-  graph->TransformIntoMaxCliques(&at_most_ones);
+  EXPECT_TRUE(graph->TransformIntoMaxCliques(&at_most_ones));
   EXPECT_THAT(at_most_ones[0], LiteralsAre(+1, +2, +3));
   EXPECT_TRUE(at_most_ones[1].empty());
   EXPECT_TRUE(at_most_ones[2].empty());
@@ -278,7 +278,7 @@ TEST(BinaryImplicationGraphTest, CliqueDetectionAndDuplicates) {
   }
 
   // Here we do not change the clique.
-  graph->TransformIntoMaxCliques(&at_most_ones);
+  EXPECT_TRUE(graph->TransformIntoMaxCliques(&at_most_ones));
   EXPECT_THAT(at_most_ones,
               ElementsAre(LiteralsAre(+1, +2), LiteralsAre(+2, +2)));
 
@@ -422,7 +422,9 @@ void TryAmoEquivalences(absl::Span<const std::vector<int>> cliques) {
       return;
     }
   }
-  graph->DetectEquivalences();
+
+  // This can be either false or true since this is a fuzzer test.
+  (void)graph->DetectEquivalences();
 }
 
 }  // namespace

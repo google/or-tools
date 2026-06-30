@@ -201,7 +201,7 @@ int main(int argc, char* argv[]) {
 ### Java code samples
 
 ```java
-// Snippet from ortools/sat/samples/AssumptionsSampleSat.java
+// Snippet from ortools/sat/samples/java/AssumptionsSampleSat.java
 package com.google.ortools.sat.samples;
 import com.google.ortools.Loader;
 import com.google.ortools.sat.CpSolverStatus;

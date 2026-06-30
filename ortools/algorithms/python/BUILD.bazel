@@ -17,13 +17,16 @@ load("@pip_deps//:requirements.bzl", "requirement")
 load("@pybind11_bazel//:build_defs.bzl", "pybind_extension")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_python//python:py_test.bzl", "py_test")
+load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS")
 
 package(default_visibility = ["//visibility:public"])
 
 # knapsack_solver
 cc_library(
-    name = "knapsack_solver_doc",
+    name = "knapsack_solver_doc_cc",
     hdrs = ["knapsack_solver_doc.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = ["//visibility:public"],
 )
 
@@ -32,7 +35,7 @@ pybind_extension(
     srcs = ["knapsack_solver.cc"],
     visibility = ["//visibility:public"],
     deps = [
-        ":knapsack_solver_doc",
+        ":knapsack_solver_doc_cc",
         "//ortools/algorithms:knapsack_solver",
     ],
 )

@@ -211,6 +211,11 @@ void RunAllExamples(int32_t facilities, int32_t clients, double fix_cost) {
   UncapacitatedFacilityLocation(facilities, clients, fix_cost,
                                 MPSolver::GLPK_MIXED_INTEGER_PROGRAMMING);
 #endif
+#if defined(USE_HIGHS)
+  LOG(INFO) << "---- Integer programming example with HiGHS ----";
+  UncapacitatedFacilityLocation(facilities, clients, fix_cost,
+                                MPSolver::HIGHS_MIXED_INTEGER_PROGRAMMING);
+#endif
 #if defined(USE_SCIP)
   LOG(INFO) << "---- Integer programming example with SCIP ----";
   UncapacitatedFacilityLocation(facilities, clients, fix_cost,

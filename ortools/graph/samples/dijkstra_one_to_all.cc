@@ -15,11 +15,12 @@
 // [START imports]
 #include <cstdint>
 #include <iostream>
-#include <limits>
+#include <utility>
 #include <vector>
 
 #include "absl/strings/str_join.h"
 #include "ortools/base/init_google.h"
+#include "ortools/base/types.h"
 #include "ortools/graph/bounded_dijkstra.h"
 #include "ortools/graph_base/graph.h"
 // [END imports]
@@ -28,32 +29,32 @@ int main(int argc, char** argv) {
   InitGoogle(argv[0], &argc, &argv, true);
 
   // Create the graph
-  util::StaticGraph<> graph;
+  util::StaticGraph<>::Builder builder(5, 6);
   std::vector<int> weights;
-  graph.AddArc(0, 1);
+  builder.AddArc(0, 1);
   weights.push_back(2);
-  graph.AddArc(1, 2);
+  builder.AddArc(1, 2);
   weights.push_back(4);
-  graph.AddArc(1, 3);
+  builder.AddArc(1, 3);
   weights.push_back(0);
-  graph.AddArc(2, 3);
+  builder.AddArc(2, 3);
   weights.push_back(6);
-  graph.AddArc(3, 0);
+  builder.AddArc(3, 0);
   weights.push_back(8);
-  graph.AddArc(4, 2);
+  builder.AddArc(4, 2);
   weights.push_back(1);
 
   // Static graph reorders the arcs at Build() time, use permutation to get
   // from the old ordering to the new one.
   std::vector<int32_t> permutation;
-  graph.Build(&permutation);
+  const auto graph = std::move(builder).Build(&permutation);
   util::Permute(permutation, &weights);
 
   // Compute the shortest path to each reachable node.
   operations_research::BoundedDijkstraWrapper<util::StaticGraph<>, int>
-      dijkstra(&graph, &weights);
+      dijkstra(graph.get(), &weights);
   const std::vector<int> reachable_from_zero = dijkstra.RunBoundedDijkstra(
-      /*source_node=*/0, /*distance_limit=*/std::numeric_limits<int>::max());
+      /*source_node=*/0, /*distance_limit=*/kint32max);
 
   // Print paths from zero to the reachable nodes ordered by distance.
   for (const int dest : reachable_from_zero) {

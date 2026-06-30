@@ -34,6 +34,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/lrat_proof_handler.h"
 #include "ortools/sat/model.h"
@@ -337,7 +338,8 @@ class IntegerEncoder {
 
   // Makes sure all element in the >= encoding are non-trivial and canonical.
   // The input variable must be positive.
-  bool UpdateEncodingOnInitialDomainChange(IntegerVariable var, Domain domain);
+  bool UpdateEncodingOnInitialDomainChange(IntegerVariable var,
+                                           const Domain& domain);
 
   // All IntegerVariable passed to the functions above must be in
   // [0, NumVariables).
@@ -502,7 +504,7 @@ class LazyReasonInterface {
 // alternatively, push "place_holder" to the boolean trail. But for
 // non-chronological backtracking, having the assignment level here seems nice.
 struct GlobalTrailIndex {
-  constexpr static int kNoIntegerIndex = std::numeric_limits<int>::max();
+  constexpr static int kNoIntegerIndex = kint32max;
 
   int level;
   int bool_index;
@@ -1067,7 +1069,7 @@ class IntegerTrail final : public SatPropagator {
       IntegerLiteral i_lit, bool use_lazy_reason,
       absl::Span<const Literal> literal_reason,
       absl::Span<const IntegerLiteral> integer_reason,
-      int trail_index_with_same_reason = std::numeric_limits<int>::max());
+      int trail_index_with_same_reason = kint32max);
 
   // Internal implementation of the EnqueueLiteral() functions.
   ABSL_MUST_USE_RESULT bool EnqueueLiteralInternal(
@@ -1148,8 +1150,8 @@ class IntegerTrail final : public SatPropagator {
   // was added. This is only used when use_new_integer_conflict_resolution is
   // true.
   struct ExtraTrailEntry {
-    int32_t assignment_level;
-    int32_t bool_trail_index;
+    int32_t assignment_level = 0;
+    int32_t bool_trail_index = 0;
   };
   std::vector<ExtraTrailEntry> extra_trail_info_;
 

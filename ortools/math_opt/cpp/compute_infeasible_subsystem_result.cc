@@ -25,11 +25,11 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/constraints/indicator/indicator_constraint.h"
 #include "ortools/math_opt/constraints/quadratic/quadratic_constraint.h"
 #include "ortools/math_opt/constraints/second_order_cone/second_order_cone_constraint.h"
@@ -83,7 +83,7 @@ absl::Status BoundsMapProtoToCpp(
   for (const auto& [raw_id, bounds_proto] : source) {
     const typename K::IdType strong_id(raw_id);
     if (!(model->*contains_strong_id)(strong_id)) {
-      return util::InvalidArgumentErrorBuilder()
+      return ortools::InvalidArgumentErrorBuilder()
              << "no " << object_name << " with id: " << raw_id;
     }
     target.insert(
@@ -102,7 +102,7 @@ absl::Status RepeatedIdsProtoToCpp(
   for (const int64_t raw_id : source) {
     const typename K::IdType strong_id(raw_id);
     if (!(model->*contains_strong_id)(strong_id)) {
-      return util::InvalidArgumentErrorBuilder()
+      return ortools::InvalidArgumentErrorBuilder()
              << "no " << object_name << " with id: " << raw_id;
     }
     target.insert(K(model, strong_id));
@@ -136,31 +136,31 @@ google::protobuf::RepeatedField<int64_t> RepeatedIdsCppToProto(
 absl::StatusOr<ModelSubset> ModelSubset::FromProto(
     const ModelStorageCPtr model, const ModelSubsetProto& proto) {
   ModelSubset model_subset;
-  RETURN_IF_ERROR(BoundsMapProtoToCpp(proto.variable_bounds(),
-                                      model_subset.variable_bounds, model,
-                                      &ModelStorage::has_variable, "variable"))
+  ABSL_RETURN_IF_ERROR(
+      BoundsMapProtoToCpp(proto.variable_bounds(), model_subset.variable_bounds,
+                          model, &ModelStorage::has_variable, "variable"))
       << "element of variable_bounds";
-  RETURN_IF_ERROR(RepeatedIdsProtoToCpp(
+  ABSL_RETURN_IF_ERROR(RepeatedIdsProtoToCpp(
       proto.variable_integrality(), model_subset.variable_integrality, model,
       &ModelStorage::has_variable, "variable"))
       << "element of variable_integrality";
-  RETURN_IF_ERROR(BoundsMapProtoToCpp(
+  ABSL_RETURN_IF_ERROR(BoundsMapProtoToCpp(
       proto.linear_constraints(), model_subset.linear_constraints, model,
       &ModelStorage::has_linear_constraint, "linear constraint"));
-  RETURN_IF_ERROR(BoundsMapProtoToCpp(
+  ABSL_RETURN_IF_ERROR(BoundsMapProtoToCpp(
       proto.quadratic_constraints(), model_subset.quadratic_constraints, model,
       &ModelStorage::has_constraint, "quadratic constraint"));
-  RETURN_IF_ERROR(RepeatedIdsProtoToCpp(
+  ABSL_RETURN_IF_ERROR(RepeatedIdsProtoToCpp(
       proto.second_order_cone_constraints(),
       model_subset.second_order_cone_constraints, model,
       &ModelStorage::has_constraint, "second-order cone constraint"));
-  RETURN_IF_ERROR(RepeatedIdsProtoToCpp(
+  ABSL_RETURN_IF_ERROR(RepeatedIdsProtoToCpp(
       proto.sos1_constraints(), model_subset.sos1_constraints, model,
       &ModelStorage::has_constraint, "SOS1 constraint"));
-  RETURN_IF_ERROR(RepeatedIdsProtoToCpp(
+  ABSL_RETURN_IF_ERROR(RepeatedIdsProtoToCpp(
       proto.sos2_constraints(), model_subset.sos2_constraints, model,
       &ModelStorage::has_constraint, "SOS2 constraint"));
-  RETURN_IF_ERROR(RepeatedIdsProtoToCpp(
+  ABSL_RETURN_IF_ERROR(RepeatedIdsProtoToCpp(
       proto.indicator_constraints(), model_subset.indicator_constraints, model,
       &ModelStorage::has_constraint, "indicator constraint"));
   return model_subset;
@@ -189,7 +189,7 @@ absl::Status ModelSubset::CheckModelStorage(
       [expected_storage](const auto& map,
                          const absl::string_view name) -> absl::Status {
     for (const auto& [key, unused] : map) {
-      RETURN_IF_ERROR(
+      ABSL_RETURN_IF_ERROR(
           internal::CheckModelStorage(key.storage(), expected_storage))
           << "invalid key " << key << " in " << name;
     }
@@ -199,24 +199,27 @@ absl::Status ModelSubset::CheckModelStorage(
       [expected_storage](const auto& set,
                          const absl::string_view name) -> absl::Status {
     for (const auto entry : set) {
-      RETURN_IF_ERROR(
+      ABSL_RETURN_IF_ERROR(
           internal::CheckModelStorage(entry.storage(), expected_storage))
           << "invalid entry " << entry << " in " << name;
     }
     return absl::OkStatus();
   };
 
-  RETURN_IF_ERROR(validate_map_keys(variable_bounds, "variable_bounds"));
-  RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(validate_map_keys(variable_bounds, "variable_bounds"));
+  ABSL_RETURN_IF_ERROR(
       validate_set_elements(variable_integrality, "variable_integrality"));
-  RETURN_IF_ERROR(validate_map_keys(linear_constraints, "linear_constraints"));
-  RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
+      validate_map_keys(linear_constraints, "linear_constraints"));
+  ABSL_RETURN_IF_ERROR(
       validate_map_keys(quadratic_constraints, "quadratic_constraints"));
-  RETURN_IF_ERROR(validate_set_elements(second_order_cone_constraints,
-                                        "second_order_cone_constraints"));
-  RETURN_IF_ERROR(validate_set_elements(sos1_constraints, "sos1_constraints"));
-  RETURN_IF_ERROR(validate_set_elements(sos2_constraints, "sos2_constraints"));
-  RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(validate_set_elements(second_order_cone_constraints,
+                                             "second_order_cone_constraints"));
+  ABSL_RETURN_IF_ERROR(
+      validate_set_elements(sos1_constraints, "sos1_constraints"));
+  ABSL_RETURN_IF_ERROR(
+      validate_set_elements(sos2_constraints, "sos2_constraints"));
+  ABSL_RETURN_IF_ERROR(
       validate_set_elements(indicator_constraints, "indicator_constraints"));
   return absl::OkStatus();
 }
@@ -359,7 +362,7 @@ ComputeInfeasibleSubsystemResult::FromProto(
   }
   // We intentionally call this validator after checking `feasibility` so that
   // we can return a friendlier message for UNSPECIFIED.
-  RETURN_IF_ERROR(
+  ABSL_RETURN_IF_ERROR(
       ValidateComputeInfeasibleSubsystemResultNoModel(result_proto));
   result.feasibility = *feasibility;
   OR_ASSIGN_OR_RETURN3(

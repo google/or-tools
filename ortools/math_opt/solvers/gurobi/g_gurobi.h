@@ -41,8 +41,8 @@
 
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "absl/types/source_location.h"
 #include "absl/types/span.h"
-#include "ortools/base/source_location.h"
 #include "ortools/gurobi/isv_public/gurobi_isv.h"
 #include "ortools/third_party_solvers/gurobi_environment.h"
 

@@ -240,7 +240,7 @@ bool EquivalenceSatSweeping::DoOneRound(
       constexpr int kMaxTries = 10;
       for (tries = 0; tries < kMaxTries; ++tries) {
         next_candidate_var = RepresentativeVar(
-            BooleanVariable(absl::Uniform<int>(*random_, 0, num_vars)));
+            BooleanVariable(absl::Uniform<int>(random_, 0, num_vars)));
         if (var_to_clauses_[next_candidate_var].size() < 2) continue;
         const Literal positive_lit(next_candidate_var, true);
         if (implication_graph_->RepresentativeOf(positive_lit) !=
@@ -355,7 +355,7 @@ bool EquivalenceSatSweeping::DoOneRound(
     } else if (!result.new_equivalences.empty()) {
       // Try a different variable from the same neighborhood.
       const int var_index =
-          absl::Uniform<int>(*random_, 0, bools_with_new_equivalences.size());
+          absl::Uniform<int>(random_, 0, bools_with_new_equivalences.size());
       const BooleanVariable unmapped_next_candidate_var =
           bools_with_new_equivalences[var_index];
       next_candidate_var = RepresentativeVar(
@@ -413,8 +413,8 @@ SatSweepingResult DoFullSatSweeping(
 
   auto* sat_solver = neighborhood_model.GetOrCreate<SatSolver>();
   BooleanVariable max_boolean = BooleanVariable(0);
-  for (int i = 0; i < clauses.size(); ++i) {
-    for (const Literal l : clauses[i]) {
+  for (const absl::Span<const Literal> clause : clauses) {
+    for (const Literal l : clause) {
       max_boolean = std::max(max_boolean, l.Variable());
     }
   }
@@ -422,11 +422,11 @@ SatSweepingResult DoFullSatSweeping(
   sat_solver->SetNumVariables(max_boolean.value() + 1);
 
   absl::flat_hash_set<std::pair<Literal, Literal>> input_binary_clauses;
-  for (int i = 0; i < clauses.size(); ++i) {
-    sat_solver->AddProblemClause(clauses[i]);
-    if (clauses[i].size() == 2) {
-      Literal l1 = clauses[i][0];
-      Literal l2 = clauses[i][1];
+  for (const absl::Span<const Literal> clause : clauses) {
+    sat_solver->AddProblemClause(clause);
+    if (clause.size() == 2) {
+      Literal l1 = clause[0];
+      Literal l2 = clause[1];
       if (l1.Variable() > l2.Variable()) {
         std::swap(l1, l2);
       }
@@ -618,8 +618,7 @@ SatSweepingResult DoFullSatSweeping(
 
   // Remove binary clauses that were already in the input
   absl::flat_hash_set<std::pair<Literal, Literal>> input_clauses;
-  for (int i = 0; i < clauses.size(); i++) {
-    const absl::Span<const Literal> clause = clauses[i];
+  for (const absl::Span<const Literal> clause : clauses) {
     if (clause.size() != 2) continue;
     Literal l1 = clause[0];
     Literal l2 = clause[1];

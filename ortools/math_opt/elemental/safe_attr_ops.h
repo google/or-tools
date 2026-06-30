@@ -19,9 +19,9 @@
 #include <vector>
 
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
-#include "absl/strings/str_cat.h"
-#include "ortools/base/status_macros.h"
+#include "ortools/base/status_builder.h"
 #include "ortools/math_opt/elemental/derived_data.h"
 #include "ortools/math_opt/elemental/elemental.h"
 
@@ -35,35 +35,35 @@ struct AttrOp {
 
   static absl::StatusOr<AttrType> SafeCastAttr(int attr) {
     if (attr < 0 || attr >= Descriptor::NumAttrs()) {
-      return absl::InvalidArgumentError(
-          absl::StrCat("invalid attribute ", attr));
+      return ortools::InvalidArgumentErrorBuilder()
+             << "invalid attribute " << attr;
     }
     return static_cast<AttrType>(attr);
   }
 
   static absl::StatusOr<ValueType> Get(Elemental* e, int attr, Key key) {
-    ASSIGN_OR_RETURN(const auto typed_attr, SafeCastAttr(attr));
+    ABSL_ASSIGN_OR_RETURN(const auto typed_attr, SafeCastAttr(attr));
     return e->GetAttr<Elemental::StatusPolicy>(typed_attr, key);
   }
 
   static absl::Status Set(Elemental* e, int attr, Key key, ValueType value) {
-    ASSIGN_OR_RETURN(const auto typed_attr, SafeCastAttr(attr));
+    ABSL_ASSIGN_OR_RETURN(const auto typed_attr, SafeCastAttr(attr));
     return e->SetAttr<Elemental::StatusPolicy>(typed_attr, key, value);
   }
 
   static absl::StatusOr<bool> IsNonDefault(Elemental* e, int attr, Key key) {
-    ASSIGN_OR_RETURN(const auto typed_attr, SafeCastAttr(attr));
+    ABSL_ASSIGN_OR_RETURN(const auto typed_attr, SafeCastAttr(attr));
     return e->AttrIsNonDefault<Elemental::StatusPolicy>(typed_attr, key);
   }
 
   static absl::StatusOr<int64_t> NumNonDefaults(Elemental* e, int attr) {
-    ASSIGN_OR_RETURN(const auto typed_attr, SafeCastAttr(attr));
+    ABSL_ASSIGN_OR_RETURN(const auto typed_attr, SafeCastAttr(attr));
     return e->AttrNumNonDefaults(typed_attr);
   }
 
   static absl::StatusOr<std::vector<Key>> GetNonDefaults(Elemental* e,
                                                          int attr) {
-    ASSIGN_OR_RETURN(const auto typed_attr, SafeCastAttr(attr));
+    ABSL_ASSIGN_OR_RETURN(const auto typed_attr, SafeCastAttr(attr));
     return e->AttrNonDefaults(typed_attr);
   }
 };

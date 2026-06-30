@@ -29,6 +29,7 @@
 #include "absl/types/span.h"
 #include "ortools/base/log_severity.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/base/types.h"
 #include "ortools/glop/lp_solver.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
@@ -259,7 +260,7 @@ int64_t FindRationalFactor(double x, int64_t limit, double tolerance) {
     }
     x = 1 / x;
     const double floored_x = std::floor(x);
-    if (floored_x >= static_cast<double>(std::numeric_limits<int64_t>::max())) {
+    if (floored_x >= static_cast<double>(kint64max)) {
       return 0;
     }
     const int64_t new_q =
@@ -1206,12 +1207,11 @@ absl::Status ConstraintScaler::ScaleAndAddConstraint(
   // on an int64_t, if the scaled bounds are too large, the constraint is either
   // always true or always false.
   const Fractional scaled_lb = std::ceil(lb * scaling_factor);
-  if (lb == kInfinity || scaled_lb >= std::numeric_limits<int64_t>::max()) {
+  if (lb == kInfinity || scaled_lb >= kint64max) {
     // Corner case: infeasible model.
-    arg->add_domain(std::numeric_limits<int64_t>::max());
-  } else if (lb == -kInfinity ||
-             scaled_lb <= std::numeric_limits<int64_t>::min()) {
-    arg->add_domain(std::numeric_limits<int64_t>::min());
+    arg->add_domain(kint64max);
+  } else if (lb == -kInfinity || scaled_lb <= kint64min) {
+    arg->add_domain(kint64min);
   } else {
     arg->add_domain(CeilRatio(IntegerValue(static_cast<int64_t>(scaled_lb)),
                               IntegerValue(gcd))
@@ -1219,12 +1219,11 @@ absl::Status ConstraintScaler::ScaleAndAddConstraint(
   }
 
   const Fractional scaled_ub = std::floor(ub * scaling_factor);
-  if (ub == -kInfinity || scaled_ub <= std::numeric_limits<int64_t>::min()) {
+  if (ub == -kInfinity || scaled_ub <= kint64min) {
     // Corner case: infeasible model.
-    arg->add_domain(std::numeric_limits<int64_t>::min());
-  } else if (ub == kInfinity ||
-             scaled_ub >= std::numeric_limits<int64_t>::max()) {
-    arg->add_domain(std::numeric_limits<int64_t>::max());
+    arg->add_domain(kint64min);
+  } else if (ub == kInfinity || scaled_ub >= kint64max) {
+    arg->add_domain(kint64max);
   } else {
     arg->add_domain(FloorRatio(IntegerValue(static_cast<int64_t>(scaled_ub)),
                                IntegerValue(gcd))
@@ -1945,8 +1944,8 @@ double ComputeTrueObjectiveLowerBound(
   glop_parameters.set_max_number_of_iterations(100 * proto.variables().size());
   glop_parameters.set_change_status_to_imprecise(false);
   solver.SetParameters(glop_parameters);
-  const glop::ProblemStatus& status = solver.Solve(lp);
-  if (status == glop::ProblemStatus::OPTIMAL) {
+  const glop::SolveStatus& status = solver.SolveWithDetails(lp);
+  if (status.Is<glop::SolveStatus::Optimal>()) {
     return solver.GetObjectiveValue();
   }
 

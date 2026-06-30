@@ -16,7 +16,6 @@
 #include <stdlib.h>
 
 #include <algorithm>
-#include <atomic>
 #include <cmath>
 #include <cstdint>
 #include <functional>
@@ -27,6 +26,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/flags/flag.h"
 #include "absl/functional/any_invocable.h"
 #include "absl/functional/bind_front.h"
 #include "absl/functional/function_ref.h"
@@ -38,11 +38,14 @@
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "ortools/algorithms/binary_search.h"
+#include "ortools/base/log_severity.h"
+#include "ortools/base/types.h"
 #include "ortools/sat/combine_solutions.h"
 #include "ortools/sat/constraint_violation.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_checker.h"
 #include "ortools/sat/cp_model_copy.h"
+#include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/linear_model.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -385,6 +388,9 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
       }
       reset_weights = true;
     }
+    if (!state_->solution.empty()) {
+      CHECK_EQ(state_->solution.size(), dense_model_.var_domains().size());
+    }
 
     // If we found a new best solution, we will restart all violation ls (we
     // still finish each batch though). We will also reset the luby sequence.
@@ -402,10 +408,10 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
       reset_weights = true;
       if (state_->options.use_restart) {
         states_->CollectStatistics(*state_);
-        state_->options.Randomize(params_, &random_);
+        state_->options.Randomize(params_, random_);
         state_->counters = LsCounters();  // Reset.
       } else {
-        state_->options.Randomize(params_, &random_);
+        state_->options.Randomize(params_, random_);
       }
       if (type() == SubSolver::INCOMPLETE) {
         // This is not used once we have a solution, and setting it to false
@@ -469,7 +475,9 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
 
       if (ub < lb) return;  // Search is finished.
       bool reduced = false;
-      if (!evaluator_->ReduceObjectiveBounds(lb.value(), ub.value(), reduced)) {
+      const int64_t mapped_lb = dense_model_.MapInnerObjectiveValue(lb.value());
+      const int64_t mapped_ub = dense_model_.MapInnerObjectiveValue(ub.value());
+      if (!evaluator_->ReduceObjectiveBounds(mapped_lb, mapped_ub, reduced)) {
         return;  // Search is finished.
       }
       if (reduced) {
@@ -507,6 +515,11 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
     if (reset_weights) {
       state_->bump_value = 1.0;
       state_->weights.assign(evaluator_->NumEvaluatorConstraints(), 1.0);
+      if (state_->options.start_with_random_weights) {
+        for (double& w : state_->weights) {
+          w = absl::Uniform(random_, 1.0, 2.0);
+        }
+      }
       recompute_compound_weights = true;
     }
     if (recompute_compound_weights) {
@@ -549,6 +562,32 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
       } else {
         shared_response_->LogMessage(name(), "infeasible solution. Aborting.");
         model_is_supported_ = false;
+        if (DEBUG_MODE) {
+          CpSolverResponse response;
+          response.set_solution_info(
+              absl::StrCat(name(), "_", state_->options.name()));
+          evaluator_->ComputeAllNonLinearViolations(state_->solution);
+          for (int c = 0; c < evaluator_->NumEvaluatorConstraints(); ++c) {
+            if (!evaluator_->IsViolated(c)) continue;
+            LOG(INFO) << "Constraint " << c << " is violated with weight "
+                      << state_->weights[c] << " and compound weight "
+                      << state_->compound_weights[c] << ".";
+            LOG(INFO) << "Constraint " << c << " is "
+                      << evaluator_->ConstraintDebugString(c);
+          }
+          response.mutable_solution()->Assign(state_->solution.begin(),
+                                              state_->solution.end());
+          const std::string file =
+              absl::StrCat(absl::GetFlag(FLAGS_cp_model_dump_prefix),
+                           "wrong_response.pb.txt");
+          LOG(INFO) << "Dumping infeasible response proto to '" << file << "'.";
+          CHECK(WriteModelProtoToFile(response, file));
+
+          // Crash.
+          LOG(FATAL) << "Infeasible LS solution!"
+                     << " source: '" << response.solution_info() << "'"
+                     << " dumped CpSolverResponse to '" << file << "'.";
+        }
       }
     }
 
@@ -581,7 +620,7 @@ double FeasibilityJumpSolver::ComputeScore(absl::Span<const double> weights,
   ++state_->counters.num_scores_computed;
   double score = evaluator_->WeightedViolationDelta(
       linear_only, weights, var, delta, absl::MakeSpan(state_->solution));
-  constexpr double kEpsilon = 1.0 / std::numeric_limits<int64_t>::max();
+  constexpr double kEpsilon = 1.0 / kint64max;
   score += kEpsilon * delta * evaluator_->ObjectiveCoefficient(var);
   return score;
 }
@@ -621,8 +660,8 @@ std::pair<int64_t, double> FeasibilityJumpSolver::ComputeLinearJump(int var) {
     // Point p1 is improving. Look for best before it.
     // Note that we can exclude all point after current_value since it is
     // worse and we assume convexity.
-    const Domain dom = var_domains[var].IntersectionWith(
-        Domain(std::numeric_limits<int64_t>::min(), p1 - 1));
+    const Domain dom =
+        var_domains[var].IntersectionWith(Domain(kint64min, p1 - 1));
     if (dom.IsEmpty()) {
       best_jump = {p1, v1};
     } else {
@@ -643,8 +682,8 @@ std::pair<int64_t, double> FeasibilityJumpSolver::ComputeLinearJump(int var) {
     if (v2 < 0.0) {
       // Point p2 is improving. Look for best after it.
       // Similarly, we exclude the other points by convexity.
-      const Domain dom = var_domains[var].IntersectionWith(
-          Domain(p2 + 1, std::numeric_limits<int64_t>::max()));
+      const Domain dom =
+          var_domains[var].IntersectionWith(Domain(p2 + 1, kint64max));
       if (dom.IsEmpty()) {
         best_jump = {p2, v2};
       } else {

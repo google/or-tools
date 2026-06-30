@@ -26,6 +26,7 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/ascii.h"
 #include "absl/strings/match.h"
@@ -35,7 +36,6 @@
 #include "absl/types/span.h"
 #include "ortools/base/helpers.h"
 #include "ortools/base/options.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 
 ABSL_RETIRED_FLAG(bool, lp_log_invalid_name, false, "DEPRECATED.");
@@ -255,8 +255,8 @@ absl::StatusOr<std::string> ExportModelAsMpsFormat(
 absl::Status WriteModelToMpsFile(absl::string_view filename,
                                  const MPModelProto& model,
                                  const MPModelExportOptions& options) {
-  ASSIGN_OR_RETURN(std::string mps_data,
-                   ExportModelAsMpsFormat(model, options));
+  ABSL_ASSIGN_OR_RETURN(std::string mps_data,
+                        ExportModelAsMpsFormat(model, options));
   return file::SetContents(filename, mps_data, file::Defaults());
 }
 

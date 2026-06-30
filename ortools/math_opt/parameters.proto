@@ -17,11 +17,11 @@ syntax = "proto3";
 package operations_research.math_opt;
 
 import "google/protobuf/duration.proto";
-import "ortools/pdlp/solvers.proto";
 import "ortools/glop/parameters.proto";
+import "ortools/math_opt/solvers/gscip/gscip.proto";
+import "ortools/pdlp/solvers.proto";
 import "ortools/math_opt/solvers/cplex.proto";
 import "ortools/math_opt/solvers/glpk.proto";
-import "ortools/math_opt/solvers/gscip/gscip.proto";
 import "ortools/math_opt/solvers/gurobi.proto";
 import "ortools/math_opt/solvers/highs.proto";
 import "ortools/math_opt/solvers/osqp.proto";
@@ -117,11 +117,29 @@ enum SolverTypeProto {
   // A fast option, but has special licensing.
   SOLVER_TYPE_XPRESS = 13;
 
+  // Google's Min-Cost Flow solver.
+  //
+  // Uses a specialized solver for Min-Cost Flow problems (see
+  // https://developers.google.com/optimization/flow/mincostflow). Supports LP
+  // problems that match the structure of a Min-Cost Flow problem (see
+  // go/mathopt-min-cost-flow).
+  //
+  // Requirements:
+  //  * The constraint matrix must be the node-arc incidence matrix of a
+  //    digraph, that is, each variable appears in exactly two constraints, with
+  //    coefficients +1 and -1.
+  //  * Only linear constraints are allowed.
+  //  * All linear constraints must be equality constraints.
+  //  * All variable lower bounds must be 0.
+  //  * All variables and constraints must have integer bounds and costs.
+  //  * The objective must be linear.
+  SOLVER_TYPE_MIN_COST_FLOW = 14;
+
   // IBM ILOG CPLEX solver (third party).
   //
   // Supports LP, MIP. (other problem-types are unimplemented)
   // A fast option, but has special licensing.
-  SOLVER_TYPE_CPLEX = 14;
+  SOLVER_TYPE_CPLEX = 15;
 }
 
 // Selects an algorithm for solving linear programs.
@@ -171,13 +189,6 @@ enum EmphasisProto {
   EMPHASIS_MEDIUM = 3;
   EMPHASIS_HIGH = 4;
   EMPHASIS_VERY_HIGH = 5;
-}
-
-// Configures if potentially bad solver input is a warning or an error.
-//
-// TODO(b/196132970): implement this feature.
-message StrictnessProto {
-  bool bad_parameter = 1;
 }
 
 // This message contains solver specific data that are used when the solver is

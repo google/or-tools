@@ -15,7 +15,7 @@ Samples:
 
 *   [vrp_pickup_delivery.cc](../samples/vrp_pickup_delivery.cc)
 *   [vrp_pickup_delivery.py](../samples/vrp_pickup_delivery.py)
-*   [VrpPickupDelivery.java](../samples/VrpPickupDelivery.java)
+*   [VrpPickupDelivery.java](../samples/java/VrpPickupDelivery.java)
 *   [VrpPickupDelivery.cs](../samples/VrpPickupDelivery.cs)
 
 ### FIFO Policy
@@ -26,7 +26,7 @@ Samples:
 
 *   [vrp_pickup_delivery_fifo.cc](../samples/vrp_pickup_delivery_fifo.cc)
 *   [vrp_pickup_delivery_fifo.py](../samples/vrp_pickup_delivery_fifo.py)
-*   [VrpPickupDeliveryFifo.java](../samples/VrpPickupDeliveryFifo.java)
+*   [VrpPickupDeliveryFifo.java](../samples/java/VrpPickupDeliveryFifo.java)
 *   [VrpPickupDeliveryFifo.cs](../samples/VrpPickupDeliveryFifo.cs)
 
 ### LIFO Policy
@@ -37,5 +37,5 @@ Samples:
 
 *   [vrp_pickup_delivery_lifo.cc](../samples/vrp_pickup_delivery_lifo.cc)
 *   [vrp_pickup_delivery_lifo.py](../samples/vrp_pickup_delivery_lifo.py)
-*   [VrpPickupDeliveryLifo.java](../samples/VrpPickupDeliveryLifo.java)
+*   [VrpPickupDeliveryLifo.java](../samples/java/VrpPickupDeliveryLifo.java)
 *   [VrpPickupDeliveryLifo.cs](../samples/VrpPickupDeliveryLifo.cs)

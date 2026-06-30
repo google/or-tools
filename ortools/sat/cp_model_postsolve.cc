@@ -16,12 +16,14 @@
 #include <algorithm>
 #include <cstdint>
 #include <limits>
+#include <string>
 #include <vector>
 
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/types/span.h"
 #include "ortools/base/log_severity.h"
+#include "ortools/base/types.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
@@ -97,7 +99,6 @@ void PostsolveExactlyOne(const ConstraintProto& ct,
 // There must be one.
 void SetEnforcementLiteralToFalse(const ConstraintProto& ct,
                                   std::vector<Domain>* domains) {
-  CHECK(!ct.enforcement_literal().empty()) << ProtobufShortDebugString(ct);
   bool has_free_enforcement_literal = false;
   for (const int enf : ct.enforcement_literal()) {
     if ((*domains)[PositiveRef(enf)].IsFixed()) continue;
@@ -110,9 +111,13 @@ void SetEnforcementLiteralToFalse(const ConstraintProto& ct,
     break;
   }
   if (!has_free_enforcement_literal) {
+    std::string domain_info = "\n";
+    for (const int var : UsedVariables(ct)) {
+      absl::StrAppend(&domain_info, var, ":", (*domains)[var].ToString(), "\n");
+    }
     LOG(FATAL)
-        << "Unsatisfied linear constraint with no free enforcement literal: "
-        << ProtobufShortDebugString(ct);
+        << "Unsatisfied linear constraint with no free enforcement literal:\n"
+        << ProtobufShortDebugString(ct) << domain_info;
   }
 }
 
@@ -269,7 +274,7 @@ bool LinearExpressionIsFixed(const LinearExpressionProto& expr,
 // support post-solving the case where whatever the value of all expression,
 // there will be a valid target.
 void PostsolveLinMax(const ConstraintProto& ct, std::vector<Domain>* domains) {
-  int64_t max_value = std::numeric_limits<int64_t>::min();
+  int64_t max_value = kint64min;
   for (const LinearExpressionProto& expr : ct.lin_max().exprs()) {
     // In most case all expression are fixed, except in the corner case where
     // one of the expression refer to the target itself !
@@ -425,6 +430,34 @@ void PostsolveResponse(const int64_t num_variables_in_original_model,
         break;
       }
     }
+
+    // Special case for enforced linear1, we don't fix variable, we just
+    // restrict the domain....
+    if (ct.constraint_case() == ConstraintProto::kLinear &&
+        ct.linear().vars().size() == 1 && !ct.enforcement_literal().empty()) {
+      if (constraint_can_be_ignored) continue;
+
+      bool enforced = true;
+      for (const int enf : ct.enforcement_literal()) {
+        const int var = PositiveRef(enf);
+        const bool is_true =
+            domains[var].IsFixed() &&
+            RefIsPositive(enf) == (domains[var].FixedValue() == 1);
+        if (!is_true) {
+          enforced = false;
+          break;
+        }
+      }
+      if (enforced) {
+        const int var = ct.linear().vars(0);
+        const Domain implied =
+            ReadDomainFromProto(ct.linear())
+                .InverseMultiplicationBy(ct.linear().coeffs(0));
+        domains[var] = domains[var].IntersectionWith(implied);
+        continue;
+      }
+    }
+
     if (constraint_can_be_ignored) {
       ArbitrarilyFixVariables(ct, absl::MakeSpan(domains));
       CheckPostsolveFixedVariables(ct, domains);

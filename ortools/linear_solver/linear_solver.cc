@@ -63,6 +63,7 @@
 #include "ortools/port/proto_utils.h"
 #include "ortools/util/fp_utils.h"
 #include "ortools/util/lazy_mutable_copy.h"
+#include "ortools/util/status_streaming.h"
 #include "ortools/util/time_limit.h"
 
 ABSL_FLAG(bool, verify_solution, false,

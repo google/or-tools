@@ -12,11 +12,9 @@
 # limitations under the License.
 
 file(GLOB _SRCS "*.h" "*.cc")
+list(FILTER _SRCS EXCLUDE REGEX ".*/.*_benchmark.cc")
 list(FILTER _SRCS EXCLUDE REGEX ".*/.*_test.cc")
-list(REMOVE_ITEM _SRCS
-  ${CMAKE_CURRENT_SOURCE_DIR}/shortest_paths_benchmarks.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/solve_flow_model.cc
-)
+list(REMOVE_ITEM _SRCS ${CMAKE_CURRENT_SOURCE_DIR}/solve_flow_model.cc)
 
 set(NAME ${PROJECT_NAME}_graph)
 
@@ -44,7 +42,8 @@ target_link_libraries(${NAME} PRIVATE
   $<$<BOOL:${USE_COINOR}>:Coin::Cbc>)
 #add_library(${PROJECT_NAMESPACE}::graph ALIAS ${NAME})
 
-if(BUILD_TESTING)
+if(BUILD_CXX_TESTING)
+  # Test
   file(GLOB _TEST_SRCS "*_test.cc")
   list(FILTER _TEST_SRCS EXCLUDE REGEX "shortest_paths_test.cc") # timeout
   list(FILTER _TEST_SRCS EXCLUDE REGEX "max_flow_test.cc")
@@ -77,9 +76,31 @@ if(BUILD_TESTING)
     COMPILE_DEFINITIONS
     -DROOT_DIR="${CMAKE_SOURCE_DIR}/"
   )
-
   # These tests are too long so we disable them.
   set_tests_properties(
     cxx_graph_min_cost_flow_test
     PROPERTIES DISABLED TRUE)
+  # Benchmark
+  file(GLOB _BENCHMARK_SRCS "*_benchmark.cc")
+  set(_ARGS "")
+  if(NOT RUN_BENCHMARKS)
+    set(_ARGS "DISABLED")
+  endif()
+  foreach(_FULL_FILE_NAME IN LISTS _BENCHMARK_SRCS)
+    get_filename_component(_NAME ${_FULL_FILE_NAME} NAME_WE)
+    get_filename_component(_FILE_NAME ${_FULL_FILE_NAME} NAME)
+    ortools_cxx_test(
+      NAME
+        graph_${_NAME}
+      SOURCES
+        ${_FILE_NAME}
+      LINK_LIBRARIES
+        absl::status_matchers
+        benchmark::benchmark
+        ortools_benchmark_main
+        GTest::gtest
+        GTest::gmock
+      ${_ARGS}
+    )
+  endforeach()
 endif()

@@ -18,7 +18,6 @@
 #include <cstdlib>
 #include <functional>
 #include <iterator>
-#include <limits>
 #include <string>
 #include <utility>
 #include <vector>
@@ -27,6 +26,8 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
+#include "absl/strings/str_join.h"
+#include "ortools/base/types.h"
 #include "ortools/flatzinc/model.h"
 #include "ortools/util/logging.h"
 
@@ -118,6 +119,9 @@ std::vector<int64_t> SetEvalAt(
       } else {
         return domain.values;
       }
+    }
+    case Argument::INT_LIST: {
+      return {arg.ValueAt(pos)};
     }
     case Argument::VAR_REF_ARRAY: {
       return set_evaluator(arg.variables[pos]);
@@ -305,7 +309,7 @@ bool CheckOrToolsArgMaxInt(
   const int min_index = ct.arguments[2].Value();
   const int multiplier = ct.arguments[3].Value();
   int index = -1;
-  int64_t max_value = std::numeric_limits<int64_t>::min();
+  int64_t max_value = kint64min;
   for (int i = 0; i < Length(ct.arguments[0]); ++i) {
     const int64_t value = EvalAt(ct.arguments[0], i, evaluator) * multiplier;
     if (value > max_value) {
@@ -334,6 +338,19 @@ bool CheckOrToolsArraySetElement(
   const std::vector<int64_t> element =
       SetEvalAt(ct.arguments[2], index - min_index, set_evaluator);
   const std::vector<int64_t> target = SetEval(ct.arguments[3], set_evaluator);
+  if (element != target) {
+    LOG(INFO) << "CheckOrToolsArraySetElement: element: ["
+              << absl::StrJoin(element, ",") << "], target: ["
+              << absl::StrJoin(target, ",") << "]";
+    LOG(INFO) << "index: " << ct.arguments[0].DebugString() << " "
+              << ct.arguments[0].TypeString();
+    LOG(INFO) << "index_set: " << ct.arguments[1].DebugString() << " "
+              << ct.arguments[1].TypeString();
+    LOG(INFO) << "element: " << ct.arguments[2].DebugString() << " "
+              << ct.arguments[2].TypeString();
+    LOG(INFO) << "target: " << ct.arguments[3].DebugString() << " "
+              << ct.arguments[3].TypeString();
+  }
   return element == target;
 }
 
@@ -662,7 +679,7 @@ bool CheckDisjunctive(
     start_durations_pairs.push_back({start, duration});
   }
   std::sort(start_durations_pairs.begin(), start_durations_pairs.end());
-  int64_t previous_end = std::numeric_limits<int64_t>::min();
+  int64_t previous_end = kint64min;
   for (const auto& pair : start_durations_pairs) {
     if (pair.first < previous_end) return false;
     previous_end = pair.first + pair.second;
@@ -683,7 +700,7 @@ bool CheckDisjunctiveStrict(
     start_durations_pairs.push_back({start, duration});
   }
   std::sort(start_durations_pairs.begin(), start_durations_pairs.end());
-  int64_t previous_end = std::numeric_limits<int64_t>::min();
+  int64_t previous_end = kint64min;
   for (const auto& pair : start_durations_pairs) {
     if (pair.first < previous_end) return false;
     previous_end = pair.first + pair.second;
@@ -706,7 +723,7 @@ bool CheckOrToolsDisjunctiveStrictOpt(
     start_durations_pairs.push_back({start, duration});
   }
   std::sort(start_durations_pairs.begin(), start_durations_pairs.end());
-  int64_t previous_end = std::numeric_limits<int64_t>::min();
+  int64_t previous_end = kint64min;
   for (const auto& pair : start_durations_pairs) {
     if (pair.first < previous_end) return false;
     previous_end = pair.first + pair.second;
@@ -1272,7 +1289,7 @@ bool CheckMaximumArgInt(
 bool CheckMaximumInt(
     const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
     const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
-  int64_t max_value = std::numeric_limits<int64_t>::min();
+  int64_t max_value = kint64min;
   for (int i = 0; i < Length(ct.arguments[1]); ++i) {
     max_value = std::max(max_value, EvalAt(ct.arguments[1], i, evaluator));
   }
@@ -1303,7 +1320,7 @@ bool CheckMinimumArgInt(
 bool CheckMinimumInt(
     const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
     const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
-  int64_t min_value = std::numeric_limits<int64_t>::max();
+  int64_t min_value = kint64max;
   for (int i = 0; i < Length(ct.arguments[1]); ++i) {
     min_value = std::min(min_value, EvalAt(ct.arguments[1], i, evaluator));
   }

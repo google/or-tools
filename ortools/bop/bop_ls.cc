@@ -17,7 +17,6 @@
 #include <array>
 #include <cstdint>
 #include <cstdlib>
-#include <limits>
 #include <memory>
 #include <string>
 #include <vector>
@@ -32,6 +31,7 @@
 #include "absl/types/span.h"
 #include "ortools/base/log_severity.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/base/types.h"
 #include "ortools/bop/boolean_problem.pb.h"
 #include "ortools/bop/bop_base.h"
 #include "ortools/bop/bop_parameters.pb.h"
@@ -222,9 +222,9 @@ AssignmentAndConstraintFeasibilityMaintainer::
     by_variable_matrix_[var].push_back(
         ConstraintEntry(kObjectiveConstraint, weight));
   }
-  constraint_lower_bounds_.push_back(std::numeric_limits<int64_t>::min());
+  constraint_lower_bounds_.push_back(kint64min);
   constraint_values_.push_back(0);
-  constraint_upper_bounds_.push_back(std::numeric_limits<int64_t>::max());
+  constraint_upper_bounds_.push_back(kint64max);
 
   // Add each constraint.
   ConstraintIndex num_constraints_with_objective(1);
@@ -244,12 +244,10 @@ AssignmentAndConstraintFeasibilityMaintainer::
           ConstraintEntry(num_constraints_with_objective, weight));
     }
     constraint_lower_bounds_.push_back(
-        constraint.has_lower_bound() ? constraint.lower_bound()
-                                     : std::numeric_limits<int64_t>::min());
+        constraint.has_lower_bound() ? constraint.lower_bound() : kint64min);
     constraint_values_.push_back(0);
     constraint_upper_bounds_.push_back(
-        constraint.has_upper_bound() ? constraint.upper_bound()
-                                     : std::numeric_limits<int64_t>::max());
+        constraint.has_upper_bound() ? constraint.upper_bound() : kint64max);
 
     ++num_constraints_with_objective;
   }
@@ -414,7 +412,7 @@ std::string AssignmentAndConstraintFeasibilityMaintainer::DebugString() const {
   }
   str += "\nmin  curr  max\n";
   for (ConstraintIndex ct(0); ct < constraint_values_.size(); ++ct) {
-    if (constraint_lower_bounds_[ct] == std::numeric_limits<int64_t>::min()) {
+    if (constraint_lower_bounds_[ct] == kint64min) {
       str += absl::StrFormat("-  %d  %d\n", constraint_values_[ct],
                              constraint_upper_bounds_[ct]);
     } else {
@@ -513,7 +511,7 @@ const TermIndex OneFlipConstraintRepairer::kInvalidTerm(-2);
 
 ConstraintIndex OneFlipConstraintRepairer::ConstraintToRepair() const {
   ConstraintIndex selected_ct = kInvalidConstraint;
-  int32_t selected_num_branches = std::numeric_limits<int32_t>::max();
+  int32_t selected_num_branches = kint32max;
   int num_infeasible_constraints_left = maintainer_.NumInfeasibleConstraints();
 
   // Optimization: We inspect the constraints in reverse order because the
