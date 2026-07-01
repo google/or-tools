@@ -18,6 +18,7 @@
 #include "absl/strings/string_view.h"
 #include "gtest/gtest.h"
 #include "ortools/base/path.h"
+#include "ortools/scheduling/jobshop_scheduling.pb.h"
 
 namespace operations_research {
 namespace scheduling {
