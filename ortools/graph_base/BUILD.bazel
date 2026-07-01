@@ -57,7 +57,6 @@ cc_library(
         ":graph",
         "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/log:check",
-        "@abseil-cpp//absl/memory",
         "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/random:bit_gen_ref",
     ],
@@ -191,6 +190,7 @@ cc_library(
         "@abseil-cpp//absl/container:btree",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/container:hash_container_defaults",
     ],
 )
 

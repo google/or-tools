@@ -26,6 +26,7 @@
 #include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/container/hash_container_defaults.h"
 
 namespace util {
 namespace graph {
@@ -33,21 +34,27 @@ namespace graph {
 namespace internal {
 
 // Detects if T is hashable with absl::Hash.
+template <typename T>
+using IsHashable =
+    std::is_default_constructible<absl::DefaultHashContainerHash<T>>;
+
 template <typename T, typename = void>
-struct IsHashable : std::false_type {};
+struct DefaultHasher {
+  using type = void;
+};
 
 template <typename T>
-struct IsHashable<
-    T, std::void_t<decltype(std::declval<typename absl::flat_hash_set<
-                                T>::hasher>()(std::declval<const T&>()))>>
-    : std::true_type {};
+struct DefaultHasher<T, std::enable_if_t<IsHashable<T>::value>> {
+  using type = typename absl::flat_hash_set<T>::hasher;
+};
+
 }  // namespace internal
 
-// Selects absl::Hash<T> if possible, otherwise std::less<T>.
+// Selects absl::flat_hash_set<T>::hasher if possible, otherwise std::less<T>.
 template <typename T>
 using PreferHashOrCompare =
     std::conditional_t<internal::IsHashable<T>::value,
-                       typename absl::flat_hash_set<T>::hasher, std::less<T>>;
+                       typename internal::DefaultHasher<T>::type, std::less<T>>;
 
 template <typename T, typename CompareOrHashT = PreferHashOrCompare<T>,
           typename Eq = void>

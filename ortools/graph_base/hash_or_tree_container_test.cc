@@ -40,6 +40,18 @@ TEST(HashOrTreeContainerTest, DefaultSelectsHash) {
                                absl::flat_hash_map<std::string, int>>);
 }
 
+struct NonHashable {
+  int x;
+  bool operator<(const NonHashable& other) const { return x < other.x; }
+};
+
+TEST(HashOrTreeContainerTest, DefaultSelectsBtreeForNonHashable) {
+  static_assert(std::is_same_v<HashOrTreeContainer<NonHashable>::Set,
+                               absl::btree_set<NonHashable>>);
+  static_assert(std::is_same_v<HashOrTreeContainer<NonHashable>::MapInt,
+                               absl::btree_map<NonHashable, int>>);
+}
+
 TEST(HashOrTreeContainerTest, ExplicitlySelectsHash) {
   static_assert(
       std::is_same_v<HashOrTreeContainer<char, absl::Hash<char>, void>::MapInt,
