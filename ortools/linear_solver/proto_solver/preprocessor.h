@@ -14,6 +14,7 @@
 #ifndef ORTOOLS_LINEAR_SOLVER_PROTO_SOLVER_PREPROCESSOR_H_
 #define ORTOOLS_LINEAR_SOLVER_PROTO_SOLVER_PREPROCESSOR_H_
 
+#include "ortools/glop/parameters.pb.h"
 #include "ortools/glop/preprocessor.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"

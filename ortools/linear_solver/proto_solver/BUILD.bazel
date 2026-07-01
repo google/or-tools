@@ -149,6 +149,7 @@ cc_library(
     deps = [
         ":proto_utils",
         ":sat_solver_utils",
+        "//ortools/glop:parameters_cc_proto",
         "//ortools/glop:preprocessor",
         "//ortools/linear_solver:linear_solver_cc_proto",
         "//ortools/linear_solver:model_validator",
@@ -214,6 +215,7 @@ cc_library(
     copts = ORTOOLS_DEFAULT_COPTS,
     linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
+        "//ortools/glop:parameters_cc_proto",
         "//ortools/glop:preprocessor",
         "//ortools/lp_data",
         "//ortools/lp_data:lp_types",

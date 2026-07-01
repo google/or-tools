@@ -35,8 +35,8 @@ cc_library(
     deps = [
         "//ortools/base:file",
         "//ortools/linear_solver:gurobi_util",
-        "//ortools/linear_solver:linear_solver_base",
         "//ortools/linear_solver:linear_solver_cc_proto",
+        "//ortools/linear_solver:linear_solver_lib",
         "//ortools/linear_solver:model_exporter",
         "//ortools/linear_solver:solve_mp_model",
         "//ortools/linear_solver/proto_solver:glop_proto_solver",

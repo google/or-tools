@@ -15,7 +15,6 @@
 
 #include <atomic>
 #include <optional>
-#include <string>
 #include <utility>
 
 #include "absl/log/check.h"

@@ -25,6 +25,7 @@
 #include "absl/functional/overload.h"
 #include "absl/strings/str_cat.h"
 #include "ortools/glop/lp_solver.h"
+#include "ortools/glop/parameters.pb.h"
 #include "ortools/glop/parameters_validation.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/model_validator.h"

@@ -241,7 +241,7 @@ cc_library(
     deps = [
         "//ortools/base:stl_util",
         "//ortools/base:types",
-        "//ortools/linear_solver:linear_solver_base",
+        "//ortools/linear_solver:linear_solver_lib",
         "//ortools/linear_solver:linear_solver_scip",
         "//ortools/sat:cp_model",
         "//ortools/sat:cp_model_cc_proto",

@@ -17,8 +17,10 @@
 #include <memory>
 #include <vector>
 
+#include "ortools/glop/parameters.pb.h"
 #include "ortools/glop/preprocessor.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
+#include "ortools/lp_data/lp_types.h"
 #include "ortools/util/logging.h"
 
 namespace operations_research {

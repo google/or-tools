@@ -31,7 +31,6 @@
 #include "absl/strings/string_view.h"
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
-#include "absl/types/optional.h"
 #include "google/protobuf/repeated_field.h"
 #include "lp_data/HConst.h"
 #include "lp_data/HighsInfo.h"

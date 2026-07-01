@@ -21,6 +21,7 @@
 #include "absl/log/check.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/glop/preprocessor.h"
+#include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/proto_solver/preprocessor.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"
