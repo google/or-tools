@@ -21,7 +21,7 @@ from ortools.glop import parameters_pb2 as glop_parameters_pb2
 from ortools.math_opt import parameters_pb2 as math_opt_parameters_pb2
 from ortools.math_opt.python import parameters
 from ortools.math_opt.python.testing import compare_proto
-from ortools.math_opt.solvers import glpk_pb2, gurobi_pb2, highs_pb2, osqp_pb2
+from ortools.math_opt.solvers import cplex_pb2, glpk_pb2, gurobi_pb2, highs_pb2, osqp_pb2
 from ortools.math_opt.solvers.gscip import gscip_pb2
 from ortools.pdlp import solvers_pb2 as pdlp_solvers_pb2
 from ortools.sat import sat_parameters_pb2
@@ -64,6 +64,53 @@ class GlpkParameters(parameterized.TestCase):
         )
         self.assertEqual(params.to_proto(), proto)
         self.assertEqual(parameters.parse_glpk_parameters(proto), params)
+
+
+class CplexParameters(absltest.TestCase):
+
+    def test_to_proto_round_trip(self) -> None:
+        params = parameters.CplexParameters(
+            bool_param_values={"CPXPARAM_ScreenOutput": False},
+            int_param_values={"CPXPARAM_Threads": 4},
+            long_param_values={"CPXPARAM_MIP_Limits_Nodes": 100},
+            double_param_values={"CPXPARAM_TimeLimit": 3.14},
+            string_param_values={"CPXPARAM_WorkDir": "/tmp"},
+        )
+        proto = cplex_pb2.CplexParametersProto(
+            parameters=[
+                cplex_pb2.CplexParametersProto.Parameter(
+                    parameter_bool=cplex_pb2.CplexParametersProto.ParameterBool(name="CPXPARAM_ScreenOutput", value=False)
+                ),
+                cplex_pb2.CplexParametersProto.Parameter(
+                    parameter_int32=cplex_pb2.CplexParametersProto.ParameterInt32(name="CPXPARAM_Threads", value=4)
+                ),
+                cplex_pb2.CplexParametersProto.Parameter(
+                    parameter_int64=cplex_pb2.CplexParametersProto.ParameterInt64(name="CPXPARAM_MIP_Limits_Nodes", value=100)
+                ),
+                cplex_pb2.CplexParametersProto.Parameter(
+                    parameter_double=cplex_pb2.CplexParametersProto.ParameterDouble(name="CPXPARAM_TimeLimit", value=3.14)
+                ),
+                cplex_pb2.CplexParametersProto.Parameter(
+                    parameter_string=cplex_pb2.CplexParametersProto.ParameterString(name="CPXPARAM_WorkDir", value="/tmp")
+                ),
+            ]
+        )
+        self.assertEqual(params.to_proto(), proto)
+        self.assertEqual(parameters.parse_cplex_parameters(proto), params)
+
+    def test_parse_proto_fails_repeated_key(self) -> None:
+        proto = cplex_pb2.CplexParametersProto(
+            parameters=[
+                cplex_pb2.CplexParametersProto.Parameter(
+                    parameter_int32=cplex_pb2.CplexParametersProto.ParameterInt32(name="CPXPARAM_Threads", value=4)
+                ),
+                cplex_pb2.CplexParametersProto.Parameter(
+                    parameter_int32=cplex_pb2.CplexParametersProto.ParameterInt32(name="CPXPARAM_Threads", value=8)
+                ),
+            ]
+        )
+        with self.assertRaisesRegex(ValueError, "Duplicate.*CPXPARAM_Threads"):
+            parameters.parse_cplex_parameters(proto)
 
 
 class ProtoRoundTrip(absltest.TestCase):
@@ -204,6 +251,11 @@ class SolveParametersTest(compare_proto.MathOptProtoAssertions, parameterized.Te
             "highs",
             highs_pb2.HighsOptionsProto(bool_options={"solve_relaxation": True}),
         ),
+        (
+            "cplex",
+            "cplex",
+            parameters.CplexParameters(int_param_values={"CPXPARAM_Threads": 4}),
+        ),
     )
     def test_to_proto_with_specifics(
         self, field: str, solver_specific_param: Any
@@ -213,7 +265,7 @@ class SolveParametersTest(compare_proto.MathOptProtoAssertions, parameterized.Te
         proto = math_opt_parameters_pb2.SolveParametersProto(threads=3)
         proto_solver_specific_param = (
             solver_specific_param.to_proto()
-            if field in ("gurobi", "glpk")
+            if field in ("gurobi", "glpk", "cplex")
             else solver_specific_param
         )
         getattr(proto, field).CopyFrom(proto_solver_specific_param)

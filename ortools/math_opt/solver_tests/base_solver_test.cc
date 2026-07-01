@@ -1,4 +1,4 @@
-// Copyright 2010-2025 Google LLC
+// Copyright 2010-2026 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -51,6 +51,8 @@ bool ActivatePrimalRay(const SolverType solver_type, SolveParameters& params) {
       return false;
     case SolverType::kXpress:
       return false;
+    case SolverType::kCplex:
+      return false;
     default:
       LOG(FATAL)
           << "Solver " << solver_type
@@ -84,6 +86,8 @@ bool ActivateDualRay(const SolverType solver_type, SolveParameters& params) {
     case SolverType::kHighs:
       return false;
     case SolverType::kXpress:
+      return false;
+    case SolverType::kCplex:
       return false;
     default:
       LOG(FATAL)

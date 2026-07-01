@@ -1,0 +1,62 @@
+// Copyright 2010-2026 Google LLC
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Proto messages specific to Cplex.
+syntax = "proto3";
+
+package operations_research.math_opt;
+
+// Parameters used to initialize the Cplex solver.
+message CplexInitializerProto {}
+
+// Cplex specific parameters for solving. See
+//   https://www.ibm.com/docs/en/cofz/22.1.2?topic=SS9UKU_22.1.2/com.ibm.cplex.zos.help/CPLEX/Parameters/topics/introAccess.htm
+// for a list of possible parameters
+message CplexParametersProto {
+  message ParameterDouble {
+    string name = 1;
+    double value = 2;
+  }
+
+  message ParameterBool {
+    string name = 1;
+    bool value = 2;
+  }
+
+  message ParameterInt32 {
+    string name = 1;
+    int32 value = 2;
+  }
+
+  message ParameterInt64 {
+    string name = 1;
+    int64 value = 2;
+  }
+
+  message ParameterString {
+    string name = 1;
+    string value = 2;
+  }
+
+  message Parameter {
+    oneof parameter {
+      ParameterDouble parameter_double = 1;
+      ParameterBool parameter_bool = 2;
+      ParameterInt32 parameter_int32 = 3;
+      ParameterInt64 parameter_int64 = 4;
+      ParameterString parameter_string = 5;
+    }
+  }
+
+  repeated Parameter parameters = 1;
+}

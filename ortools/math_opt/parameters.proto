@@ -1,4 +1,4 @@
-// Copyright 2010-2025 Google LLC
+// Copyright 2010-2026 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -20,6 +20,7 @@ import "google/protobuf/duration.proto";
 import "ortools/glop/parameters.proto";
 import "ortools/math_opt/solvers/gscip/gscip.proto";
 import "ortools/pdlp/solvers.proto";
+import "ortools/math_opt/solvers/cplex.proto";
 import "ortools/math_opt/solvers/glpk.proto";
 import "ortools/math_opt/solvers/gurobi.proto";
 import "ortools/math_opt/solvers/highs.proto";
@@ -133,6 +134,12 @@ enum SolverTypeProto {
   //  * All variables and constraints must have integer bounds and costs.
   //  * The objective must be linear.
   SOLVER_TYPE_MIN_COST_FLOW = 14;
+
+  // IBM ILOG CPLEX solver (third party).
+  //
+  // Supports LP, MIP. (other problem-types are unimplemented)
+  // A fast option, but has special licensing.
+  SOLVER_TYPE_CPLEX = 15;
 }
 
 // Selects an algorithm for solving linear programs.
@@ -190,6 +197,7 @@ message SolverInitializerProto {
   GurobiInitializerProto gurobi = 1;
   reserved 2;
   XpressInitializerProto xpress = 3;
+  CplexInitializerProto cplex = 4;
 }
 
 // Parameters to control a single solve.
@@ -391,6 +399,8 @@ message SolveParametersProto {
   HighsOptionsProto highs = 27;
 
   XpressParametersProto xpress = 28;
+
+  CplexParametersProto cplex = 29;
 
   reserved 11;  // Deleted
 }
