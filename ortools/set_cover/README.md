@@ -31,7 +31,7 @@ SetCoverInvariant inv(&model);
 
 It is highly recommended to use the **lazy element degree solution generator**
 (`LazyElementDegreeSolutionGenerator`) in tandem with **lazy steepest search**
-(`LazySteepestSearch`), instead of `GreedySolutionGenerator` and
+(`LazySteepestSearch`), instead of `GreedySolutionOptimizer` and
 `SteepestSearch`.
 
 To our knowledge and in our experience, it is the most efficient approximate
@@ -56,10 +56,10 @@ solver for set covering, making it essential for very large-scale problems.
 
 ```cpp
 LazyElementDegreeSolutionGenerator lazy_element_degree(&inv);
-CHECK(lazy_element_degree.NextSolution());
+CHECK(lazy_element_degree.Optimize());
 
 LazySteepestSearch lazy_steepest(&inv);
-CHECK(lazy_steepest.NextSolution());
+CHECK(lazy_steepest.Optimize());
 ```
 
 ### Further Refinement with Guided Local Search (GLS)
@@ -73,7 +73,7 @@ frequently used features to diversify the search and escape local minima.
 ```cpp
 GuidedLocalSearch gls(&inv);
 gls.SetMaxIterations(1000);
-CHECK(gls.NextSolution());
+CHECK(gls.Optimize());
 ```
 ## Lower Bounds / Evaluating Solution Quality
 
@@ -96,10 +96,10 @@ The solver provides two fast lower-bound algorithms based on **dual ascent**:
 ```cpp
 // Solve using a heuristic.
 LazyElementDegreeSolutionGenerator lazy_element_degree(&inv);
-CHECK(lazy_element_degree.NextSolution());
+CHECK(lazy_element_degree.Optimize());
 
 LazySteepestSearch lazy_steepest(&inv);
-CHECK(lazy_steepest.NextSolution());
+CHECK(lazy_steepest.Optimize());
 
 const Cost solution_cost = inv.cost();
 
@@ -123,11 +123,11 @@ for (int i = 0; i < 10000; ++i) {
   inv.LoadSolution(best_choices);
   ClearRandomSubsets(0.1 * model.num_subsets().value(), &inv);
 
-  GreedySolutionGenerator greedy(&inv);
-  CHECK(greedy.NextSolution());
+  GreedySolutionOptimizer greedy(&inv);
+  CHECK(greedy.Optimize());
 
   SteepestSearch steepest(&inv);
-  CHECK(steepest.NextSolution());
+  CHECK(steepest.Optimize());
 
   EXPECT_EQ(inv.num_uncovered_elements(), 0);
   if (inv.cost() < best_cost) {
@@ -220,7 +220,7 @@ exactly to global optimality using a Mixed-Integer Programming (MIP) solver.
 // if it has enough time to run).
 SetCoverMip mip(&inv);
 mip.SetTimeLimit(absl::Seconds(10));
-mip.NextSolution();
+mip.Optimize();
 
 SubsetBoolVector best_choices = inv.is_selected();
 LOG(INFO) << "Optimal Cost: " << inv.cost();

@@ -30,14 +30,14 @@ enum class SetCoverMipSolver : int {
   PDLP = 4
 };
 
-class SetCoverMip : public SubsetListBasedSolutionGenerator {
+class SetCoverMip : public SubsetListBasedOptimizer {
  public:
   // Simpler constructors that uses SCIP by default.
   explicit SetCoverMip(SetCoverInvariant* inv)
       : SetCoverMip(inv, "SetCoverMip") {}
 
   SetCoverMip(SetCoverInvariant* inv, absl::string_view name)
-      : SubsetListBasedSolutionGenerator(
+      : SubsetListBasedOptimizer(
             inv, SetCoverInvariant::ConsistencyLevel::kCostAndCoverage, "Mip",
             name),
         mip_solver_(SetCoverMipSolver::SCIP),
@@ -58,11 +58,9 @@ class SetCoverMip : public SubsetListBasedSolutionGenerator {
 
   math_opt::TerminationReason solve_status() const { return solve_status_; }
 
-  using SubsetListBasedSolutionGenerator::NextSolution;
-
   // Computes the next partial solution considering only the subsets whose
   // indices are in focus.
-  bool NextSolution(absl::Span<const SubsetIndex> focus) final;
+  bool OptimizeImpl(absl::Span<const SubsetIndex> focus) override;
 
   const SubsetWeightVector& solution_weights() const {
     return solution_weights_;

@@ -36,8 +36,8 @@ def main():
 
     # [START solve]
     inv = set_cover.SetCoverInvariant(model)
-    greedy = set_cover.GreedySolutionGenerator(inv)
-    has_found = greedy.next_solution()
+    greedy = set_cover.GreedySolutionOptimizer(inv)
+    has_found = greedy.optimize()
     if not has_found:
         print("No solution found by the greedy heuristic.")
         return

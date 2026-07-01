@@ -46,7 +46,7 @@ class RunResult {
   // happen, thus there is no result to report.
   RunResult() = default;
 
-  explicit RunResult(const SetCoverSolutionGenerator& gen)
+  explicit RunResult(const SetCoverOptimizer& gen)
       : response_(gen.inv()->ExportSolutionAsProto()),
         solution_(gen.inv()->is_selected()) {
     response_.set_problem_name(gen.inv()->model()->name());

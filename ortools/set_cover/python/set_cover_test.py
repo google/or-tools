@@ -71,8 +71,8 @@ class SetCoverTest(absltest.TestCase):
         model = create_knights_cover_model(3, 3)
         inv = set_cover.SetCoverInvariant(model)
 
-        greedy = set_cover.GreedySolutionGenerator(inv)
-        self.assertTrue(greedy.next_solution())
+        greedy = set_cover.GreedySolutionOptimizer(inv)
+        self.assertTrue(greedy.optimize())
         self.assertTrue(
             inv.check_consistency(set_cover.consistency_level.FREE_AND_UNCOVERED)
         )
@@ -80,7 +80,7 @@ class SetCoverTest(absltest.TestCase):
 
         steepest = set_cover.SteepestSearch(inv)
         steepest.set_max_iterations(500)
-        self.assertTrue(steepest.next_solution())
+        self.assertTrue(steepest.optimize())
         self.assertTrue(
             inv.check_consistency(set_cover.consistency_level.FREE_AND_UNCOVERED)
         )
@@ -88,7 +88,7 @@ class SetCoverTest(absltest.TestCase):
 
         inv.import_solution_from_proto(greedy_proto)
         steepest.set_max_iterations(500)
-        self.assertTrue(steepest.next_solution())
+        self.assertTrue(steepest.optimize())
         self.assertTrue(
             inv.check_consistency(set_cover.consistency_level.FREE_AND_UNCOVERED)
         )
@@ -101,13 +101,13 @@ class SetCoverTest(absltest.TestCase):
 
         inv = set_cover.SetCoverInvariant(model)
         trivial = set_cover.TrivialSolutionGenerator(inv)
-        self.assertTrue(trivial.next_solution())
+        self.assertTrue(trivial.optimize())
         self.assertTrue(
             inv.check_consistency(set_cover.consistency_level.COST_AND_COVERAGE)
         )
 
-        greedy = set_cover.GreedySolutionGenerator(inv)
-        self.assertTrue(greedy.next_solution())
+        greedy = set_cover.GreedySolutionOptimizer(inv)
+        self.assertTrue(greedy.optimize())
         self.assertTrue(
             inv.check_consistency(set_cover.consistency_level.FREE_AND_UNCOVERED)
         )
@@ -115,7 +115,7 @@ class SetCoverTest(absltest.TestCase):
         self.assertEqual(inv.num_uncovered_elements(), 0)
         steepest = set_cover.SteepestSearch(inv)
         steepest.set_max_iterations(500)
-        self.assertTrue(steepest.next_solution())
+        self.assertTrue(steepest.optimize())
         self.assertTrue(
             inv.check_consistency(set_cover.consistency_level.COST_AND_COVERAGE)
         )
@@ -137,15 +137,15 @@ class SetCoverTest(absltest.TestCase):
         self.assertTrue(model.compute_feasibility())
         inv = set_cover.SetCoverInvariant(model)
 
-        greedy = set_cover.GreedySolutionGenerator(inv)
-        self.assertTrue(greedy.next_solution())
+        greedy = set_cover.GreedySolutionOptimizer(inv)
+        self.assertTrue(greedy.optimize())
         self.assertTrue(
             inv.check_consistency(set_cover.consistency_level.FREE_AND_UNCOVERED)
         )
 
         steepest = set_cover.SteepestSearch(inv)
         steepest.set_max_iterations(500)
-        self.assertTrue(steepest.next_solution())
+        self.assertTrue(steepest.optimize())
         self.assertTrue(
             inv.check_consistency(set_cover.consistency_level.FREE_AND_UNCOVERED)
         )
@@ -156,14 +156,14 @@ class SetCoverTest(absltest.TestCase):
         inv = set_cover.SetCoverInvariant(model)
 
         degree = set_cover.ElementDegreeSolutionGenerator(inv)
-        self.assertTrue(degree.next_solution())
+        self.assertTrue(degree.optimize())
         self.assertTrue(
             inv.check_consistency(set_cover.consistency_level.COST_AND_COVERAGE)
         )
 
         steepest = set_cover.SteepestSearch(inv)
         steepest.set_max_iterations(500)
-        self.assertTrue(steepest.next_solution())
+        self.assertTrue(steepest.optimize())
         self.assertTrue(
             inv.check_consistency(set_cover.consistency_level.FREE_AND_UNCOVERED)
         )
@@ -173,15 +173,15 @@ class SetCoverTest(absltest.TestCase):
         self.assertTrue(model.compute_feasibility())
         inv = set_cover.SetCoverInvariant(model)
 
-        greedy = set_cover.GreedySolutionGenerator(inv)
-        self.assertTrue(greedy.next_solution())
+        greedy = set_cover.GreedySolutionOptimizer(inv)
+        self.assertTrue(greedy.optimize())
         self.assertTrue(
             inv.check_consistency(set_cover.consistency_level.FREE_AND_UNCOVERED)
         )
 
         gls = set_cover.GuidedLocalSearch(inv)
         gls.set_max_iterations(500)
-        self.assertTrue(gls.next_solution())
+        self.assertTrue(gls.optimize())
         self.assertTrue(
             inv.check_consistency(set_cover.consistency_level.FREE_AND_UNCOVERED)
         )
@@ -192,14 +192,14 @@ class SetCoverTest(absltest.TestCase):
         inv = set_cover.SetCoverInvariant(model)
 
         random = set_cover.RandomSolutionGenerator(inv)
-        self.assertTrue(random.next_solution())
+        self.assertTrue(random.optimize())
         self.assertTrue(
             inv.check_consistency(set_cover.consistency_level.COST_AND_COVERAGE)
         )
 
         steepest = set_cover.SteepestSearch(inv)
         steepest.set_max_iterations(500)
-        self.assertTrue(steepest.next_solution())
+        self.assertTrue(steepest.optimize())
         self.assertTrue(
             inv.check_consistency(set_cover.consistency_level.FREE_AND_UNCOVERED)
         )
@@ -210,14 +210,14 @@ class SetCoverTest(absltest.TestCase):
         inv = set_cover.SetCoverInvariant(model)
 
         trivial = set_cover.TrivialSolutionGenerator(inv)
-        self.assertTrue(trivial.next_solution())
+        self.assertTrue(trivial.optimize())
         self.assertTrue(
             inv.check_consistency(set_cover.consistency_level.COST_AND_COVERAGE)
         )
 
         steepest = set_cover.SteepestSearch(inv)
         steepest.set_max_iterations(500)
-        self.assertTrue(steepest.next_solution())
+        self.assertTrue(steepest.optimize())
         self.assertTrue(
             inv.check_consistency(set_cover.consistency_level.FREE_AND_UNCOVERED)
         )

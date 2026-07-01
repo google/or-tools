@@ -43,17 +43,17 @@ namespace operations_research {
 // Algorithms.” Mathematical Programming, 91 (3): 447–78.
 // https://link.springer.com/article/10.1007/s101070100262
 
-// The implementation benefits from the features of SetCoverSolutionGenerator.
-// Notice however that NextSolution() is not implemented, and the class is
+// The implementation benefits from the features of SetCoverOptimizer.
+// Notice however that Optimize() is not implemented, and the class is
 // intended to be used only for ComputeLowerBound(). FOR THE TIME BEING.
 
-class SetCoverLagrangian : public SubsetListBasedSolutionGenerator {
+class SetCoverLagrangian : public SubsetListBasedOptimizer {
  public:
   explicit SetCoverLagrangian(SetCoverInvariant* inv)
       : SetCoverLagrangian(inv, "Lagrangian") {}
 
   SetCoverLagrangian(SetCoverInvariant* inv, const absl::string_view name)
-      : SubsetListBasedSolutionGenerator(
+      : SubsetListBasedOptimizer(
             inv, SetCoverInvariant::ConsistencyLevel::kInconsistent,
             "Lagrangian", name),
         num_threads_(1),
@@ -65,10 +65,8 @@ class SetCoverLagrangian : public SubsetListBasedSolutionGenerator {
     return *this;
   }
 
-  using SubsetListBasedSolutionGenerator::NextSolution;
-
-  // This is a dummy implementation of NextSolution() that is not used.
-  bool NextSolution(absl::Span<const SubsetIndex> _) final { return false; }
+  // This is a dummy implementation of OptimizeImpl() that is not used.
+  bool OptimizeImpl(absl::Span<const SubsetIndex> _) override { return false; }
 
   // Initializes the multipliers vector (u) based on the cost per subset.
   ElementCostVector InitializeLagrangeMultipliers() const;

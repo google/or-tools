@@ -190,6 +190,8 @@ cc_library(
     linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":base_types",
+        ":set_cover_heuristics",
+        ":set_cover_invariant",
         ":set_cover_model",
         "//ortools/base:stl_util",
         "//ortools/base:strong_int",
@@ -277,7 +279,9 @@ cc_library(
         ":base_types",
         ":set_cover_cc_proto",
         ":set_cover_model",
+        "//ortools/base:bzip2file",
         "//ortools/base:file",
+        "//ortools/base:gzipfile",
         "//ortools/base:types",
         "//ortools/util:filelineiter",
         "@abseil-cpp//absl/log",
@@ -285,6 +289,7 @@ cc_library(
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
         "@abseil-cpp//absl/strings:string_view",
+        "@protobuf",
     ],
 )
 
@@ -376,6 +381,34 @@ cc_binary(
 )
 
 cc_test(
+    name = "set_cover_cft_test",
+    size = "large",
+    timeout = "eternal",
+    srcs = ["set_cover_cft_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    data = [
+        "//operations_research_data/operations_research_data/SET_COVERING:rail",
+        "//operations_research_data/operations_research_data/SET_COVERING:scp",
+    ],
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    tags = ["manual"],
+    deps = [
+        ":base_types",
+        ":set_cover_cft",
+        ":set_cover_invariant",
+        ":set_cover_model",
+        ":set_cover_reader",
+        "//ortools/base:gmock_main",
+        "//ortools/base:path",
+        "//ortools/base:timer",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/time",
+    ],
+)
+
+cc_test(
     name = "set_cover_test",
     size = "medium",
     timeout = "eternal",
@@ -412,6 +445,7 @@ cc_test(
     deps = [
         ":base_types",
         ":set_cover_cc_proto",
+        ":set_cover_cft",
         ":set_cover_heuristics",
         ":set_cover_invariant",
         ":set_cover_mip",

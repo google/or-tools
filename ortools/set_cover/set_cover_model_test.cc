@@ -429,21 +429,6 @@ TEST(SetCoverModelTest, CreateSparseRowView2) {
               ElementsAre(SubsetIndex(0), SubsetIndex(3)));
 }
 
-namespace {
-// Returns true if the two sparse columns are equal.
-bool Equal(const SparseColumn& sparse_col, const SparseColumn& other_col) {
-  EXPECT_EQ(sparse_col.empty(), other_col.empty());
-  ColumnEntryIndex entry(0);
-  for (const ElementIndex element : other_col) {
-    if (element != sparse_col[entry]) {
-      return false;
-    }
-    ++entry;
-  }
-  return true;
-}
-}  // namespace
-
 // Model Analysis Tests
 
 TEST(SetCoverModelTest, IsUnicost2) {
@@ -574,8 +559,9 @@ TEST(SetCoverModelTest, Resize) {
   EXPECT_EQ(model.num_elements(), 5);
   model.CreateSparseRowView();
   ASSERT_THAT(model.rows(), SizeIs(5));
-  EXPECT_THAT(model.rows()[ElementIndex(3)], IsEmpty());
-  EXPECT_THAT(model.rows()[ElementIndex(4)], IsEmpty());
+  EXPECT_TRUE(model.has_zero_cost_dummy_column());
+  EXPECT_THAT(model.rows()[ElementIndex(3)], ElementsAre(SubsetIndex(6)));
+  EXPECT_THAT(model.rows()[ElementIndex(4)], ElementsAre(SubsetIndex(6)));
 }
 
 TEST(SetCoverModelTest, GenerateRandomModelFrom) {

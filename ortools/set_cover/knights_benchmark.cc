@@ -11,9 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <string>
-#include <vector>
-
 #include "benchmark/benchmark.h"
 #include "ortools/set_cover/base_types.h"
 #include "ortools/set_cover/set_cover_heuristics.h"
@@ -64,7 +61,7 @@ void BM_Steepest(benchmark::State& state) {
   for (auto s : state) {
     SetCoverModel model = KnightsCover(SIZE, SIZE).model();
     SetCoverInvariant inv(&model);
-    GreedySolutionGenerator greedy(&inv);
+    GreedySolutionOptimizer greedy(&inv);
     SteepestSearch steepest(&inv);
   }
 }

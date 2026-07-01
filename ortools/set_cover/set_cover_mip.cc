@@ -46,7 +46,7 @@ ElementToIntVector Subtract(const ElementToIntVector& a,
 template <typename IndexType, typename ValueType>
 using StrictVector = util_intops::StrongVector<IndexType, ValueType>;
 
-bool SetCoverMip::NextSolution(absl::Span<const SubsetIndex> focus) {
+bool SetCoverMip::OptimizeImpl(absl::Span<const SubsetIndex> focus) {
   inv()->ReportLowerBound(0.0, true);
   StopWatch stop_watch(&run_time_);
   const SubsetIndex num_subsets(model()->num_subsets());

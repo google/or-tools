@@ -127,18 +127,5 @@ TEST_F(SparseColumnTest, StrongVectorElementIndex) {
   CompareVectors(strong_vector, expected_data);
 }
 
-SparseRow GenerateRandomSparseRow(size_t size, int64_t max_value) {
-  SparseRow sparse_row;
-  sparse_row.reserve(size);
-  absl::BitGen gen;
-  std::uniform_int_distribution<int64_t> dist(0, max_value);
-  SubsetIndex current_value(0);
-  for (size_t i = 0; i < size; ++i) {
-    current_value += SubsetIndex(dist(gen));
-    sparse_row.push_back(current_value);
-  }
-  return sparse_row;
-}
-
 }  // namespace
 }  // namespace operations_research

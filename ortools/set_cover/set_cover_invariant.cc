@@ -21,6 +21,7 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/types/span.h"
+#include "ortools/algorithms/multikey_radix_sort.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/set_cover/base_types.h"
 #include "ortools/set_cover/set_cover_model.h"
@@ -358,6 +359,7 @@ bool SetCoverInvariant::ComputeIsRedundant(SubsetIndex subset) const {
 
 std::vector<SubsetIndex> SetCoverInvariant::ComputeUncoveredFocus() const {
   std::vector<SubsetIndex> focus;
+  focus.reserve(model_->num_subsets());
   SubsetBoolVector seen_subsets(model_->num_subsets(), false);
   // NOTE(user): to be optimal in memory, we could use is_selected_ to store the
   // fact that a subset has been processed and is therefore redundant.
@@ -373,7 +375,8 @@ std::vector<SubsetIndex> SetCoverInvariant::ComputeUncoveredFocus() const {
       }
     }
   }
-  std::sort(focus.begin(), focus.end());
+  RangeRadixSort(0, model_->num_subsets(), focus,
+                 [](const SubsetIndex j) { return j.value(); });
   return focus;
 }
 

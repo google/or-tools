@@ -26,6 +26,7 @@
 #include "absl/time/time.h"
 #include "ortools/base/helpers.h"
 #include "ortools/base/init_google.h"
+#include "ortools/base/options.h"
 #include "ortools/base/path.h"
 #include "ortools/base/timer.h"
 #include "ortools/set_cover/base_types.h"
@@ -254,11 +255,9 @@ std::vector<BenchmarksTableRow> BenchmarksTable() {
 #undef APPEND
 }
 
-// Runs a solution generator and reports the results in a string. Returns the
-// result as a RunResult for further use.
-RunResult RunAndReport(SetCoverSolutionGenerator& gen, Report& report) {
+RunResult RunAndReport(SetCoverOptimizer& gen, Report& report) {
   gen.inv()->Clear();
-  CHECK(gen.NextSolution());
+  CHECK(gen.Optimize());
   const RunResult result(gen);
   DCHECK(gen.inv()->CheckConsistency(CL::kCostAndCoverage));
   report.ReportRunResult(result);
@@ -275,7 +274,7 @@ RunResult RunAndReport(SetCoverMip& gen, bool use_integers, Report& report) {
       use_integers ? absl::GetFlag(FLAGS_mip_time_limit_seconds)
                    : absl::GetFlag(FLAGS_lp_time_limit_seconds);
   gen.SetTimeLimit(absl::Seconds(time_limit_seconds));
-  if (gen.NextSolution()) {
+  if (gen.Optimize()) {
     const RunResult result(
         inv->model()->name(),
         use_integers ? "SetCoverMIP" : "SetCoverLPLowerBound",
@@ -284,7 +283,7 @@ RunResult RunAndReport(SetCoverMip& gen, bool use_integers, Report& report) {
     report.ReportRunResult(result);
     return result;
   }
-  LOG(INFO) << "SetCoverMip::NextSolution() failed with status: "
+  LOG(INFO) << "SetCoverMip::Optimize() failed with status: "
             << gen.solve_status();
   return RunResult(gen);
 }
@@ -293,12 +292,11 @@ RunResult RunAndReport(SetCoverMip& gen, bool use_integers, Report& report) {
 // reports the results in a string. Returns the result as a RunResult for
 // further use.
 RunResult RunFromResultAndReport(const RunResult& base_result,
-                                 SetCoverSolutionGenerator& gen,
-                                 Report& report) {
+                                 SetCoverOptimizer& gen, Report& report) {
   SetCoverInvariant* inv = gen.inv();
   inv->LoadSolution(base_result.solution());
   inv->Recompute(CL::kCostAndCoverage);
-  CHECK(gen.NextSolution());
+  CHECK(gen.Optimize());
   DCHECK(inv->CheckConsistency(CL::kCostAndCoverage));
   const RunResult result(
       base_result.problem_name(),
@@ -340,6 +338,18 @@ Cost ComputeLagrangianLowerBound(SetCoverInvariant& inv, int _) {
   return lower_bound;
 }
 
+// Computes a lower bound using `gen` optimizer, and reports the results.
+RunResult RunLowerBoundAndReport(bool run_lower_bound, SetCoverOptimizer& gen,
+                                 Report& report) {
+  if (!run_lower_bound) return RunResult();
+  CHECK(gen.Optimize());
+  const RunResult result(gen.inv()->model()->name(), gen.name(),
+                         gen.inv()->LowerBound(), 0, gen.run_time(),
+                         SubsetBoolVector());
+  report.ReportRunResult(result);
+  return result;
+}
+
 // Computes a lower bound using `lb_function`, and reports the results in a
 // string. Returns the result as a RunResult for further use.
 template <typename Func>
@@ -361,7 +371,7 @@ RunResult RunLowerBoundAndReport(bool run_lower_bound, Func lb_function,
 RunResult RunChvatalAndReport(bool run_chvatal, SetCoverInvariant& inv,
                               Report& report) {
   if (!run_chvatal) return RunResult();
-  GreedySolutionGenerator chvatal(&inv);  // Classic greedy (Chvatal)
+  GreedySolutionOptimizer chvatal(&inv);  // Classic greedy (Chvatal)
   return RunAndReport(chvatal, report);
 }
 
@@ -411,7 +421,7 @@ RunResult RunCliqueGuidedAndReport(bool run_clique_guided,
   CliqueGuidedLNS clique_guided_lns(&inv);
   clique_guided_lns.SetMaxCliqueSize(1000).SetMaxNumCliques(400).SetTimeLimit(
       absl::Milliseconds(500));
-  clique_guided_lns.NextSolution();
+  clique_guided_lns.Optimize();
   return RunFromResultAndReport(lazy_random_steepest_result, clique_guided_lns,
                                 report);
 }
@@ -448,11 +458,11 @@ RunResult RunMipAndReport(bool run_mip, bool use_integers,
 }
 
 RunResult RunThriftyLNSAndReport(bool run_thrifty_lns, const RunResult& start,
-                                 SetCoverSolutionGenerator& first_sol_gen,
-                                 SetCoverSolutionGenerator& improvement_gen,
+                                 SetCoverOptimizer& initial_sol_gen,
+                                 SetCoverOptimizer& improvement_gen,
                                  Report& report) {
   if (!run_thrifty_lns) return RunResult();
-  SetCoverInvariant& inv = *first_sol_gen.inv();
+  SetCoverInvariant& inv = *initial_sol_gen.inv();
   CHECK_EQ(&inv, improvement_gen.inv());
 
   Cost best_cost = start.cost();
@@ -468,17 +478,17 @@ RunResult RunThriftyLNSAndReport(bool run_thrifty_lns, const RunResult& start,
     // Note: ClearRandomSubsets modifies inv.
     const std::vector<SubsetIndex> range = ClearRandomSubsets(
         kFractionOfElementsToClear * inv.trace().size(), &inv);
-    CHECK(first_sol_gen.NextSolution());
+    CHECK(initial_sol_gen.Optimize());
     if (inv.cost() < best_cost) {
       best_cost = inv.cost();
       best_solution = inv.is_selected();
     }
   }
   timer.Stop();
-  const RunResult result(inv.model()->name(),
-                         absl::StrCat("ThriftyLNS(", first_sol_gen.name(), ")"),
-                         best_cost, inv.ComputeCardinality(),
-                         timer.GetDuration(), best_solution);
+  const RunResult result(
+      inv.model()->name(),
+      absl::StrCat("ThriftyLNS(", initial_sol_gen.name(), ")"), best_cost,
+      inv.ComputeCardinality(), timer.GetDuration(), best_solution);
   report.ReportRunResult(result);
   return result;
 }
@@ -496,7 +506,7 @@ double RunSolvers() {
   report.LogStats(model);
   SetCoverInvariant inv(&model);
 
-  GreedySolutionGenerator greedy(&inv);
+  GreedySolutionOptimizer greedy(&inv);
   const RunResult greedy_result = RunAndReport(greedy, report);
   SteepestSearch steepest(&inv);
   RunFromResultAndReport(greedy_result, steepest, report);
@@ -513,10 +523,15 @@ double RunSolvers() {
       RunAndReport(lazy_element_degree, report);
   RunFromResultAndReport(lazy_element_degree_result, steepest, report);
   RunFromResultAndReport(lazy_element_degree_result, lazy_steepest, report);
-  RunLowerBoundAndReport(true, ComputeDualAscentLB, "DualAscentLB", inv,
-                         report);
-  RunLowerBoundAndReport(true, ComputeDualAscentLBFullRandom,
-                         "DualAscentLBFullRandom", inv, report);
+  DualAscentOptimizer dual_ascent(&inv);
+  dual_ascent.SetNumRandomPasses(
+      absl::GetFlag(FLAGS_num_random_dual_ascent_passes));
+  RunLowerBoundAndReport(true, dual_ascent, report);
+
+  DualAscentOptimizer dual_ascent_full_random(&inv);
+  dual_ascent_full_random.UseFullRandomization(true).SetNumRandomPasses(
+      absl::GetFlag(FLAGS_num_random_dual_ascent_passes));
+  RunLowerBoundAndReport(true, dual_ascent_full_random, report);
 
   RunLowerBoundAndReport(true, ComputeLagrangianLowerBound, "LagrangianLB", inv,
                          report);
@@ -653,13 +668,18 @@ void Benchmarks() {
       report.ReportGap(clique_guided_result, loaded_solution_result);
       report.ReportGap(clique_guided_result, lazy_random_steepest_result);
 
-      const RunResult dual_ascent_result = RunLowerBoundAndReport(
-          run_lower_bounds, ComputeDualAscentLB, "DualAscentLB", inv, report);
+      DualAscentOptimizer dual_ascent(&inv);
+      dual_ascent.SetNumRandomPasses(
+          absl::GetFlag(FLAGS_num_random_dual_ascent_passes));
+      const RunResult dual_ascent_result =
+          RunLowerBoundAndReport(run_lower_bounds, dual_ascent, report);
       report.ReportGap(loaded_solution_result, dual_ascent_result);
 
+      DualAscentOptimizer dual_ascent_full_random(&inv);
+      dual_ascent_full_random.UseFullRandomization(true).SetNumRandomPasses(
+          absl::GetFlag(FLAGS_num_random_dual_ascent_passes));
       const RunResult dual_ascent_full_random_result = RunLowerBoundAndReport(
-          run_lower_bounds, ComputeDualAscentLBFullRandom,
-          "DualAscentLBFullRandom", inv, report);
+          run_lower_bounds, dual_ascent_full_random, report);
       report.ReportGap(loaded_solution_result, dual_ascent_full_random_result);
 
       const RunResult lagrangian_relaxation_result =

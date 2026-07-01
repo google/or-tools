@@ -59,35 +59,37 @@ SetCoverModel CreateSimpleModel() {
   return model;
 }
 
-TEST(SetCoverHeuristicsTest, ComputeDualAscentLB) {
-  SetCoverModel model = CreateSimpleModel();
-  const SetCoverInvariant inv(&model);
-  const Cost lb = ComputeDualAscentLB(inv, 10);
-  EXPECT_GE(lb, 0.0);
-}
-
-TEST(SetCoverHeuristicsTest, ComputeDualAscentLBFullRandom) {
-  SetCoverModel model = CreateSimpleModel();
-  const SetCoverInvariant inv(&model);
-  const Cost lb = ComputeDualAscentLBFullRandom(inv, 10);
-  EXPECT_GE(lb, 0.0);
-}
-
-TEST(SetCoverHeuristicsTest, GreedySolutionGenerator) {
+TEST(SetCoverHeuristicsTest, DualAscentOptimizer) {
   SetCoverModel model = CreateSimpleModel();
   SetCoverInvariant inv(&model);
-  GreedySolutionGenerator greedy(&inv);
-  EXPECT_TRUE(greedy.NextSolution());
+  DualAscentOptimizer lb(&inv);
+  EXPECT_TRUE(lb.SetNumRandomPasses(10).Optimize());
+  EXPECT_DOUBLE_EQ(inv.LowerBound(), 3.0);
+}
+
+TEST(SetCoverHeuristicsTest, DualAscentOptimizerFullRandom) {
+  SetCoverModel model = CreateSimpleModel();
+  SetCoverInvariant inv(&model);
+  DualAscentOptimizer lb(&inv);
+  EXPECT_TRUE(lb.UseFullRandomization(true).SetNumRandomPasses(10).Optimize());
+  EXPECT_DOUBLE_EQ(inv.LowerBound(), 3.0);
+}
+
+TEST(SetCoverHeuristicsTest, GreedySolutionOptimizer) {
+  SetCoverModel model = CreateSimpleModel();
+  SetCoverInvariant inv(&model);
+  GreedySolutionOptimizer greedy(&inv);
+  EXPECT_TRUE(greedy.Optimize());
   EXPECT_LE(inv.cost(), 6.0);
 }
 
 TEST(SetCoverHeuristicsTest, SteepestSearch) {
   SetCoverModel model = CreateSimpleModel();
   SetCoverInvariant inv(&model);
-  GreedySolutionGenerator greedy(&inv);
-  EXPECT_TRUE(greedy.NextSolution());
+  GreedySolutionOptimizer greedy(&inv);
+  EXPECT_TRUE(greedy.Optimize());
   SteepestSearch steepest(&inv);
-  EXPECT_TRUE(steepest.SetMaxIterations(10).NextSolution());
+  EXPECT_TRUE(steepest.SetMaxIterations(10).Optimize());
 }
 
 TEST(SetCoverHeuristicsTest, GenerateFirstNPrimes) {

@@ -60,13 +60,13 @@ struct SubsetAndPriority {
 
 }  // namespace
 
-bool SetCoverSolutionGenerator::CheckInvariantConsistency() const {
+bool SetCoverOptimizer::CheckInvariantConsistency() const {
   return inv_->CheckConsistency(consistency_level_);
 }
 
 // TrivialSolutionGenerator.
 
-bool TrivialSolutionGenerator::NextSolution(
+bool TrivialSolutionGenerator::OptimizeImpl(
     absl::Span<const SubsetIndex> focus) {
   StopWatch stop_watch(&run_time_);
   const SubsetIndex num_subsets(model()->num_subsets());
@@ -87,7 +87,7 @@ bool TrivialSolutionGenerator::NextSolution(
 // - we create an instance in each function to avoid thread-safety issues.
 // - we use InsecureBitGen because we don't need cryptographic security: we're
 //   just shuffling data i.e. indices or rows and columns.
-bool RandomSolutionGenerator::NextSolution(
+bool RandomSolutionGenerator::OptimizeImpl(
     absl::Span<const SubsetIndex> focus) {
   StopWatch stop_watch(&run_time_);
   inv()->ClearTrace();
@@ -105,9 +105,9 @@ bool RandomSolutionGenerator::NextSolution(
   return true;
 }
 
-// GreedySolutionGenerator.
+// GreedySolutionOptimizer.
 
-bool GreedySolutionGenerator::NextSolution(
+bool GreedySolutionOptimizer::OptimizeImpl(
     absl::Span<const SubsetIndex> focus) {
   StopWatch stop_watch(&run_time_);
   DCHECK(inv()->CheckConsistency(CL::kCostAndCoverage));
@@ -173,9 +173,9 @@ bool GreedySolutionGenerator::NextSolution(
   return true;
 }
 
-// LazyGreedySolutionGenerator.
+// LazyGreedySolutionOptimizer.
 
-bool LazyGreedySolutionGenerator::NextSolution(
+bool LazyGreedySolutionOptimizer::OptimizeImpl(
     absl::Span<const SubsetIndex> focus) {
   StopWatch stop_watch(&run_time_);
   DCHECK(inv()->CheckConsistency(CL::kCostAndCoverage));
@@ -334,10 +334,10 @@ double Determinant(Cost c1, BaseInt n1, Cost c2, BaseInt n2) {
 // on-demand. Also elements are sorted based on degree once and for all and
 // moved past when the elements become already covered.
 
-bool ElementDegreeSolutionGenerator::NextSolution(
+bool ElementDegreeSolutionGenerator::OptimizeImpl(
     const SubsetBoolVector& in_focus) {
   StopWatch stop_watch(&run_time_);
-  DVLOG(1) << "Entering ElementDegreeSolutionGenerator::NextSolution";
+  DVLOG(1) << "Entering ElementDegreeSolutionGenerator::OptimizeImpl";
   inv()->Recompute(CL::kFreeAndUncovered);
   // Create the list of all the indices in the problem.
   std::vector<ElementIndex> degree_sorted_elements =
@@ -483,11 +483,11 @@ void RunLazyElementDegreePass(
 // on-demand. Also elements are sorted based on degree once and for all and
 // moved past when the elements become already covered.
 
-bool LazyElementDegreeSolutionGenerator::NextSolution(
+bool LazyElementDegreeSolutionGenerator::OptimizeImpl(
     const SubsetBoolVector& in_focus) {
   StopWatch stop_watch(&run_time_);
   inv()->CompressTrace();
-  DVLOG(1) << "Entering LazyElementDegreeSolutionGenerator::NextSolution";
+  DVLOG(1) << "Entering LazyElementDegreeSolutionGenerator::OptimizeImpl";
   DCHECK(inv()->CheckConsistency(CL::kCostAndCoverage));
 
   // Create the list of all the uncovered elements in the problem, sorted by
@@ -533,12 +533,12 @@ bool LazyElementDegreeSolutionGenerator::NextSolution(
 
 // SteepestSearch.
 
-bool SteepestSearch::NextSolution(const SubsetBoolVector& in_focus) {
+bool SteepestSearch::OptimizeImpl(const SubsetBoolVector& in_focus) {
   StopWatch stop_watch(&run_time_);
   const int64_t num_iterations = max_iterations();
   DCHECK(inv()->CheckConsistency(CL::kCostAndCoverage));
   inv()->Recompute(CL::kFreeAndUncovered);
-  DVLOG(1) << "Entering SteepestSearch::NextSolution, num_iterations = "
+  DVLOG(1) << "Entering SteepestSearch::OptimizeImpl, num_iterations = "
            << num_iterations;
   // Return false if inv() contains no solution.
   // TODO(user): This should be relaxed for partial solutions.
@@ -587,11 +587,11 @@ bool SteepestSearch::NextSolution(const SubsetBoolVector& in_focus) {
 
 // LazySteepestSearch.
 
-bool LazySteepestSearch::NextSolution(const SubsetBoolVector& in_focus) {
+bool LazySteepestSearch::OptimizeImpl(const SubsetBoolVector& in_focus) {
   StopWatch stop_watch(&run_time_);
   const int64_t num_iterations = max_iterations();
   DCHECK(inv()->CheckConsistency(CL::kCostAndCoverage));
-  DVLOG(1) << "Entering LazySteepestSearch::NextSolution, num_iterations = "
+  DVLOG(1) << "Entering LazySteepestSearch::OptimizeImpl, num_iterations = "
            << num_iterations;
   const BaseInt num_selected_subsets = inv()->trace().size();
   std::vector<Cost> selected_costs;
@@ -683,11 +683,11 @@ void GuidedTabuSearch::UpdatePenalties(absl::Span<const SubsetIndex> focus) {
   }
 }
 
-bool GuidedTabuSearch::NextSolution(absl::Span<const SubsetIndex> focus) {
+bool GuidedTabuSearch::OptimizeImpl(absl::Span<const SubsetIndex> focus) {
   StopWatch stop_watch(&run_time_);
   const int64_t num_iterations = max_iterations();
   DCHECK(inv()->CheckConsistency(CL::kFreeAndUncovered));
-  DVLOG(1) << "Entering GuidedTabuSearch::NextSolution, num_iterations = "
+  DVLOG(1) << "Entering GuidedTabuSearch::OptimizeImpl, num_iterations = "
            << num_iterations;
   const SubsetCostVector& subset_costs = model()->subset_costs();
   Cost best_cost = inv()->cost();
@@ -793,7 +793,7 @@ Cost GuidedLocalSearch::ComputeDelta(SubsetIndex subset) const {
   return kInfinity;
 }
 
-bool GuidedLocalSearch::NextSolution(absl::Span<const SubsetIndex> focus) {
+bool GuidedLocalSearch::OptimizeImpl(absl::Span<const SubsetIndex> focus) {
   StopWatch stop_watch(&run_time_);
   const int64_t num_iterations = max_iterations();
   inv()->Recompute(CL::kRedundancy);
@@ -974,7 +974,7 @@ std::pair<bool, std::vector<double>> GetSubsetWeights(
   return {has_valid_subset, weights};
 }
 
-bool CliqueGuidedLNS::NextSolution(absl::Span<const SubsetIndex> focus) {
+bool CliqueGuidedLNS::OptimizeImpl(absl::Span<const SubsetIndex> focus) {
   StopWatch stop_watch(&run_time_);
   DCHECK(inv()->CheckConsistency(CL::kFreeAndUncovered));
 
@@ -1045,8 +1045,8 @@ bool CliqueGuidedLNS::NextSolution(absl::Span<const SubsetIndex> focus) {
     }
 
     // Call LazyElementDegree.
-    lazy_element_degree.NextSolution();
-    // lazy_steepest_search.NextSolution();
+    lazy_element_degree.Optimize();
+    // lazy_steepest_search.Optimize();
 
     if (inv()->cost() < best_cost) {
       best_cost = inv()->cost();
@@ -1265,55 +1265,54 @@ std::vector<int32_t> GenerateFirstNPrimes(int32_t n) {
 
 }  // namespace internal
 
-Cost ComputeDualAscentLB(const SetCoverInvariant& inv, int num_random_passes) {
-  const BaseInt num_elements = inv.model()->num_elements();
+bool DualAscentOptimizer::OptimizeImpl(absl::Span<const SubsetIndex> focus) {
+  StopWatch stop_watch(&run_time_);
+  const BaseInt num_elements = inv()->model()->num_elements();
   std::vector<ElementIndex> element_permutation(num_elements);
   std::iota(element_permutation.begin(), element_permutation.end(),
             ElementIndex(0));
   Cost max_lower_bound =
-      internal::PerformDualAscent(inv, element_permutation, 1).first;
-  absl::InsecureBitGen bit_gen;
-  std::shuffle(element_permutation.begin(), element_permutation.end(), bit_gen);
-  // We generate a few more primes than num_random_passes as a provision against
-  // the possibility that some primes may be skipped because they divide
-  // num_elements. There cannot be more that 9 such primes for a 32-bit integer,
-  // since 2 * 3 * 5 * 7 * 11 * 13 * 17 * 19 * 23 * 29 > 2^32.
-  // For a 64-bit integer, the number is 15.
-  const int32_t kNumMaxDifferentPrimeFactors = 9;
-  const std::vector<int32_t> primes = internal::GenerateFirstNPrimes(
-      num_random_passes + kNumMaxDifferentPrimeFactors);
-  int prime_index = 0;
-  for (int i = 0; i < num_random_passes; ++i) {
-    int32_t prime = primes[prime_index];
-    while (num_elements % prime == 0) {
-      ++prime_index;
-      prime = primes[prime_index];
-    }
-    max_lower_bound = std::max(
-        max_lower_bound,
-        internal::PerformDualAscent(inv, element_permutation, prime).first);
-    ++prime_index;
-  }
-  return max_lower_bound;
-}
+      internal::PerformDualAscent(*inv(), element_permutation).first;
+  inv()->ReportLowerBound(max_lower_bound, /*is_cost_consistent=*/false);
 
-Cost ComputeDualAscentLBFullRandom(const SetCoverInvariant& inv,
-                                   int num_random_passes) {
-  const BaseInt num_elements = inv.model()->num_elements();
-  std::vector<ElementIndex> element_permutation(num_elements);
-  std::iota(element_permutation.begin(), element_permutation.end(),
-            ElementIndex(0));
-  Cost max_lower_bound =
-      internal::PerformDualAscent(inv, element_permutation).first;
   absl::InsecureBitGen bit_gen;
-  for (int i = 0; i < num_random_passes; ++i) {
+
+  if (use_full_randomization_) {                    // NOMUTANTS
+    for (int i = 0; i < num_random_passes_; ++i) {  // NOMUTANTS
+      std::shuffle(element_permutation.begin(), element_permutation.end(),
+                   bit_gen);
+      max_lower_bound = std::max(
+          max_lower_bound,
+          internal::PerformDualAscent(*inv(), element_permutation).first);
+    }
+  } else {
     std::shuffle(element_permutation.begin(), element_permutation.end(),
                  bit_gen);
-    max_lower_bound =
-        std::max(max_lower_bound,
-                 internal::PerformDualAscent(inv, element_permutation).first);
+    // We generate a few more primes than num_random_passes_ as a provision
+    // against the possibility that some primes may be skipped because they
+    // divide num_elements. There cannot be more that 9 such primes for a
+    // 32-bit integer, since
+    // 2 * 3 * 5 * 7 * 11 * 13 * 17 * 19 * 23 * 29 > 2^32.
+    // For a 64-bit integer, the number is 15.
+    const int32_t kNumMaxDifferentPrimeFactors = 9;
+    const std::vector<int32_t> primes = internal::GenerateFirstNPrimes(
+        num_random_passes_ + kNumMaxDifferentPrimeFactors);
+    int prime_index = 0;
+    for (int i = 0; i < num_random_passes_; ++i) {
+      int32_t prime = primes[prime_index];
+      while (num_elements % prime == 0) {  // NOMUTANTS
+        ++prime_index;
+        prime = primes[prime_index];
+      }
+      max_lower_bound = std::max(
+          max_lower_bound,
+          internal::PerformDualAscent(*inv(), element_permutation, prime)
+              .first);
+      ++prime_index;
+    }
   }
-  return max_lower_bound;
+  inv()->ReportLowerBound(max_lower_bound, /*is_cost_consistent=*/false);
+  return true;
 }
 
 }  // namespace operations_research

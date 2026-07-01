@@ -15,6 +15,7 @@
 #define ORTOOLS_SET_COVER_SET_COVER_SUBMODEL_H_
 
 #include <functional>
+#include <limits>
 #include <vector>
 
 #include "absl/log/check.h"
@@ -29,6 +30,15 @@ namespace operations_research {
 struct PrimalDualState;
 class SubmodelSolution;
 class DualState;
+
+static constexpr SubsetIndex kNullSubsetIndex =
+    std::numeric_limits<SubsetIndex>::max();
+static constexpr ElementIndex kNullElementIndex =
+    std::numeric_limits<ElementIndex>::max();
+static constexpr FullModelSubsetIndex kNullFullModelSubsetIndex =
+    std::numeric_limits<FullModelSubsetIndex>::max();
+static constexpr FullModelElementIndex kNullFullModelElementIndex =
+    std::numeric_limits<FullModelElementIndex>::max();
 
 // The CFT algorithm generates sub-models in two distinct ways:
 //
@@ -81,6 +91,7 @@ class CoreModel;
 // SubmodelView inherits from FocusModelView, which provides the "view"
 // machinery.
 class SubmodelView : public FocusModelView {
+  // Base class view type alias.
   using base_view = FocusModelView;
 
  public:
@@ -89,32 +100,38 @@ class SubmodelView : public FocusModelView {
 
   // Focus construction: create a sub-model with only the required items
   SubmodelView(const SetCoverModel& model,
-               const std::vector<FullSubsetIndex>& columns_focus);
+               const std::vector<FullModelSubsetIndex>& columns_in_focus);
 
   virtual ~SubmodelView() = default;
 
   ///////// Core-model interface: /////////
 
   // Current fixed cost: sum of the cost of the fixed columns
-  Cost fixed_cost() const { return fixed_cost_; }
+  Cost fixed_cost() const {
+    DCHECK_GE(fixed_cost_, 0.0);
+    return fixed_cost_;
+  }
 
   // List of fixed columns.
-  const std::vector<FullSubsetIndex>& fixed_columns() const {
+  const std::vector<FullModelSubsetIndex>& fixed_columns() const {
+    DCHECK(CheckIndices(fixed_columns_,
+                        FullModelSubsetIndex(full_model_.get().num_subsets())));
     return fixed_columns_;
   }
 
   // Redefine the active items. The new sub-model will ignore all columns not in
   // focus and (optionally) the rows for which row_flags is not true. It does
   // not overwrite the current fixing.
-  void SetFocus(const std::vector<FullSubsetIndex>& columns_focus);
+  void SetFocus(const std::vector<FullModelSubsetIndex>& columns_in_focus);
 
   // Fix the provided columns, removing them from the submodel. Rows now covered
   // by fixed columns are also removed from the submodel along with non-fixed
   // columns that only cover those rows.
   virtual Cost FixMoreColumns(const std::vector<SubsetIndex>& columns_to_fix);
 
+  // Resets the column fixing state using the given full column indices.
   virtual void ResetColumnFixing(
-      const std::vector<FullSubsetIndex>& columns_to_fix,
+      const std::vector<FullModelSubsetIndex>& columns_to_fix,
       const DualState& state);
 
   // Hook function for specializations. This function can be used to define a
@@ -124,6 +141,12 @@ class SubmodelView : public FocusModelView {
   virtual bool UpdateCore(Cost best_lower_bound,
                           const ElementCostVector& best_multipliers,
                           const SubmodelSolution& best_solution, bool force) {
+    DCHECK_GE(best_lower_bound, 0.0);
+#ifndef NDEBUG
+    for (const Cost m : best_multipliers) {
+      DCHECK_GE(m, 0.0);
+    }
+#endif
     (void)best_lower_bound;
     (void)best_multipliers;
     (void)best_solution;
@@ -131,11 +154,13 @@ class SubmodelView : public FocusModelView {
     return false;
   }
 
+  // Returns a typed view of the full model.
   FullModelView StrongTypedFullModelView() const {
     return FullModelView(full_model_.get());
   }
 
  private:
+  // Resets the sub-model back to the identity view.
   void ResetToIdentitySubmodel();
 
   // Pointer to the original model
@@ -143,14 +168,20 @@ class SubmodelView : public FocusModelView {
 
   // Columns/rows sizes after filtering (size==0 <==> inactive)
   SubsetToIntVector column_sizes_;
+
+  // Array containing size of each row after filtering.
   ElementToIntVector row_sizes_;
 
   // List of columns/rows currently active
-  std::vector<SubsetIndex> column_focus_;
-  std::vector<ElementIndex> row_focus_;
+  std::vector<SubsetIndex> columns_in_focus_;
 
-  // Fixing data
-  std::vector<FullSubsetIndex> fixed_columns_;
+  // List of active row indices in focus.
+  std::vector<ElementIndex> rows_in_focus_;
+
+  // List of fixed subset indices in full model space.
+  std::vector<FullModelSubsetIndex> fixed_columns_;
+
+  // Accumulated cost of the fixed columns.
   Cost fixed_cost_ = 0.0;
 };
 
@@ -168,75 +199,110 @@ class CoreModel : public SetCoverModel {
 
   // Focus construction: create a sub-model with only the required items
   CoreModel(const SetCoverModel& model,
-            const std::vector<FullSubsetIndex>& columns_focus);
+            const std::vector<FullModelSubsetIndex>& columns_in_focus);
 
   virtual ~CoreModel() = default;
 
   ///////// Sub-model view interface: /////////
 
+  // Returns the number of subsets in the full model.
   BaseInt num_subsets() const { return full_model_.num_subsets(); }
 
+  // Returns the number of elements in the full model.
   BaseInt num_elements() const { return full_model_.num_elements(); }
 
+  // Returns the number of subsets in focus.
   BaseInt num_focus_subsets() const { return SetCoverModel::num_subsets(); }
 
+  // Returns the number of elements in focus.
   BaseInt num_focus_elements() const { return SetCoverModel::num_elements(); }
 
+  // Returns the size of the column for the given subset.
   BaseInt column_size(SubsetIndex j) const {
-    DCHECK(SubsetIndex() <= j && j < SubsetIndex(num_subsets()));
+    DCHECK_GE(j, SubsetIndex());
+    DCHECK_LT(j, SubsetIndex(num_subsets()));
     return columns()[j].size();
   }
 
+  // Returns the size of the row for the given element.
   BaseInt row_size(ElementIndex i) const {
-    DCHECK(ElementIndex() <= i && i < ElementIndex(num_elements()));
+    DCHECK_GE(i, ElementIndex());
+    DCHECK_LT(i, ElementIndex(num_elements()));
     return rows()[i].size();
   }
 
-  FullElementIndex MapCoreToFullElementIndex(ElementIndex core_i) const {
+  // Maps a core element index to a full element index.
+  FullModelElementIndex MapCoreToFullElementIndex(ElementIndex core_i) const {
     DCHECK(ElementIndex() <= core_i && core_i < ElementIndex(num_elements()));
-    return core_to_full_row_map_[core_i];
+    FullModelElementIndex result = core_to_full_row_map_[core_i];
+    DCHECK(result == kNullFullModelElementIndex ||
+           (FullModelElementIndex() <= result &&
+            result < FullModelElementIndex(num_elements())));
+    return result;
   }
 
-  ElementIndex MapFullToCoreElementIndex(FullElementIndex full_i) const {
-    DCHECK(FullElementIndex() <= full_i &&
-           full_i < FullElementIndex(num_elements()));
-    return full_to_core_row_map_[full_i];
+  // Maps a full element index to a core element index.
+  ElementIndex MapFullToCoreElementIndex(FullModelElementIndex full_i) const {
+    DCHECK(FullModelElementIndex() <= full_i &&
+           full_i < FullModelElementIndex(num_elements()));
+    ElementIndex result = full_to_core_row_map_[full_i];
+    DCHECK(result == kNullElementIndex ||
+           (ElementIndex() <= result && result < ElementIndex(num_elements())));
+    return result;
   }
 
-  FullSubsetIndex MapCoreToFullSubsetIndex(SubsetIndex core_j) const {
+  // Maps a core subset index to a full subset index.
+  FullModelSubsetIndex MapCoreToFullSubsetIndex(SubsetIndex core_j) const {
     DCHECK(SubsetIndex() <= core_j && core_j < SubsetIndex(num_subsets()));
-    return core_to_full_column_map_[core_j];
+    FullModelSubsetIndex result = core_to_full_column_map_[core_j];
+    DCHECK(result == kNullFullModelSubsetIndex ||
+           (FullModelSubsetIndex() <= result &&
+            result < FullModelSubsetIndex(num_subsets())));
+    return result;
   }
 
   // Member functions relevant for the CFT inherited from SetCoverModel
   using SetCoverModel::columns;
+
+  // Range of active element indices.
   using SetCoverModel::ElementRange;
+
+  // Sparse rows view in the SetCoverModel.
   using SetCoverModel::rows;
+
+  // Vector of subset costs.
   using SetCoverModel::subset_costs;
+
+  // Range of active subset indices.
   using SetCoverModel::SubsetRange;
 
   ///////// Core-model interface: /////////
 
   // Current fixed cost: sum of the cost of the fixed columns
-  Cost fixed_cost() const { return fixed_cost_; }
+  Cost fixed_cost() const {
+    DCHECK_GE(fixed_cost_, 0.0);
+    return fixed_cost_;
+  }
 
   // List of fixed columns.
-  const std::vector<FullSubsetIndex>& fixed_columns() const {
+  const std::vector<FullModelSubsetIndex>& fixed_columns() const {
+    DCHECK(CheckIndices(fixed_columns_, FullModelSubsetIndex(num_subsets())));
     return fixed_columns_;
   }
 
   // Redefine the active items. The new sub-model will ignore all columns not in
   // focus and (optionally) the rows for which row_flags is not true. It does
   // not overwrite the current fixing.
-  void SetFocus(const std::vector<FullSubsetIndex>& columns_focus);
+  void SetFocus(const std::vector<FullModelSubsetIndex>& columns_in_focus);
 
   // Fix the provided columns, removing them from the submodel. Rows now covered
   // by fixed columns are also removed from the submodel along with non-fixed
   // columns that only cover those rows.
   virtual Cost FixMoreColumns(const std::vector<SubsetIndex>& columns_to_fix);
 
+  // Resets the column fixing state using the given full column indices.
   virtual void ResetColumnFixing(
-      const std::vector<FullSubsetIndex>& columns_to_fix,
+      const std::vector<FullModelSubsetIndex>& columns_to_fix,
       const DualState& state);
 
   // Hook function for specializations. This function can be used to define a
@@ -246,6 +312,12 @@ class CoreModel : public SetCoverModel {
   virtual bool UpdateCore(Cost best_lower_bound,
                           const ElementCostVector& best_multipliers,
                           const SubmodelSolution& best_solution, bool force) {
+    DCHECK_GE(best_lower_bound, 0.0);
+#ifndef NDEBUG
+    for (const Cost m : best_multipliers) {
+      DCHECK_GE(m, 0.0);
+    }
+#endif
     (void)best_lower_bound;
     (void)best_multipliers;
     (void)best_solution;
@@ -256,28 +328,40 @@ class CoreModel : public SetCoverModel {
   FullModelView StrongTypedFullModelView() const { return full_model_; }
 
  private:
+  // Updates row and column index mappings under the given column fixing.
   void UpdateMappingsForFixedColumns(
       const std::vector<SubsetIndex>& columns_to_fix);
 
+  // Computes new row mapping vectors after updating fixed columns.
   CoreToFullElementMapVector ComputeRowMappings();
 
+  // Creates a new compacted core model applying the given row mappings.
   SetCoverModel MakeNewCoreModel(
       const CoreToFullElementMapVector& new_core_to_full_row_map);
 
+  // Resets the core model back to the identity view.
   void ResetToIdentitySubmodel();
 
   // Pointer to the original model
   FullModelView full_model_;
 
+  // Mapping index array from full element indices to core element indices.
   FullToCoreElementMapVector full_to_core_row_map_;
+
+  // Mapping index array from core element indices to full element indices.
   CoreToFullElementMapVector core_to_full_row_map_;
+
+  // Mapping index array from core subset indices to full subset indices.
   CoreToFullSubsetMapVector core_to_full_column_map_;
 
   // Fixing data
   Cost fixed_cost_ = 0.0;
-  std::vector<FullSubsetIndex> fixed_columns_;
+
+  // List of fixed subset indices in full model space.
+  std::vector<FullModelSubsetIndex> fixed_columns_;
 };
 
+// Validates that the submodel satisfies consistency invariants.
 template <typename SubmodelT>
 bool ValidateSubmodel(const SubmodelT& model) {
   if (model.num_elements() <= 0) {

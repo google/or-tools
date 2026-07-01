@@ -71,6 +71,7 @@ class SetCoverModel {
         subset_costs_(),
         is_unicost_(true),
         is_unicost_valid_(false),
+        has_zero_cost_dummy_column_(false),
         columns_(),
         rows_(),
         all_subsets_() {}
@@ -126,6 +127,12 @@ class SetCoverModel {
   // Returns the fill rate of the matrix.
   double FillRate() const {
     return 1.0 * num_nonzeros() / (1.0 * num_elements() * num_subsets());
+  }
+
+  // Returns true if the model has a zero-cost dummy column, which is a column
+  // added by a file reader to ensure that the problem is feasible.
+  bool has_zero_cost_dummy_column() const {
+    return has_zero_cost_dummy_column_;
   }
 
   // Computes the number of singleton columns in the model, i.e. subsets
@@ -399,6 +406,9 @@ class SetCoverModel {
 
   // True when is_unicost_ is up-to-date.
   bool is_unicost_valid_;
+
+  // True if the model has a zero-cost dummy column.
+  bool has_zero_cost_dummy_column_;
 
   // Stores the run time for CreateSparseRowView. Interesting to compare with
   // the time spent to actually generate a solution to the model.

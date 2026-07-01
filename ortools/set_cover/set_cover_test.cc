@@ -11,16 +11,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <algorithm>
-#include <limits>
 #include <string>
-#include <vector>
 
 #include "absl/log/check.h"
 #include "absl/log/log.h"
-#include "absl/strings/str_cat.h"
 #include "absl/time/time.h"
-#include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/parse_text_proto.h"
@@ -48,11 +43,11 @@ TEST(SetCoverTest, GuidedLocalSearchVerySmall) {
   model.ImportModelFromProto(proto);
   CHECK(model.ComputeFeasibility());
   SetCoverInvariant inv(&model);
-  GreedySolutionGenerator greedy_search(&inv);
-  CHECK(greedy_search.NextSolution());
+  GreedySolutionOptimizer greedy_search(&inv);
+  CHECK(greedy_search.Optimize());
   CHECK(inv.CheckConsistency(CL::kFreeAndUncovered));
   GuidedLocalSearch search(&inv);
-  CHECK(search.SetMaxIterations(100).NextSolution());
+  CHECK(search.SetMaxIterations(100).Optimize());
   CHECK(inv.CheckConsistency(CL::kRedundancy));
 }
 
@@ -71,18 +66,18 @@ TEST(SetCoverTest, InitialValues) {
 
   SetCoverInvariant inv(&model);
   TrivialSolutionGenerator trivial(&inv);
-  CHECK(trivial.NextSolution());
+  CHECK(trivial.Optimize());
   LOG(INFO) << "TrivialSolutionGenerator cost: " << inv.cost();
   EXPECT_TRUE(inv.CheckConsistency(CL::kCostAndCoverage));
 
-  GreedySolutionGenerator greedy(&inv);
-  EXPECT_TRUE(greedy.NextSolution());
-  LOG(INFO) << "GreedySolutionGenerator cost: " << inv.cost();
+  GreedySolutionOptimizer greedy(&inv);
+  EXPECT_TRUE(greedy.Optimize());
+  LOG(INFO) << "GreedySolutionOptimizer cost: " << inv.cost();
   EXPECT_TRUE(inv.CheckConsistency(CL::kFreeAndUncovered));
 
   EXPECT_EQ(inv.num_uncovered_elements(), 0);
   SteepestSearch steepest(&inv);
-  CHECK(steepest.SetMaxIterations(500).NextSolution());
+  CHECK(steepest.SetMaxIterations(500).Optimize());
   LOG(INFO) << "SteepestSearch cost: " << inv.cost();
   EXPECT_TRUE(inv.CheckConsistency(CL::kFreeAndUncovered));
 }
@@ -111,7 +106,7 @@ TEST(SetCoverTest, FractionalSolution) {
   SetCoverMip mip(&inv);
 
   mip.UseMipSolver(SetCoverMipSolver::GLOP).SetTimeLimit(absl::Seconds(1));
-  mip.NextSolution();
+  mip.Optimize();
 
   EXPECT_THAT(mip.solution_weights(), Pointwise(DoubleEq(), {0.5, 0.5, 0.5}));
   EXPECT_THAT(inv.LowerBound(), DoubleEq(1.5));
@@ -129,7 +124,7 @@ TEST(SetCoverTest, MipErasePreviousSubsets) {
   inv.Select(SubsetIndex(2), CL::kCostAndCoverage);
   SetCoverMip mip(&inv);
   mip.UseIntegers(true).SetTimeLimit(absl::Milliseconds(500));
-  mip.NextSolution();
+  mip.Optimize();
 
   EXPECT_THAT(inv.is_selected(), ElementsAre(true, false, false));
 }
