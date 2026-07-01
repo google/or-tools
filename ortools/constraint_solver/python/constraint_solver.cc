@@ -34,7 +34,7 @@
 #include "ortools/constraint_solver/reversible_engine.h"
 #include "ortools/constraint_solver/search_limit.pb.h"
 #include "ortools/constraint_solver/sequence_var.h"
-#include "ortools/util/piecewise_linear_function.h"
+#include "ortools/constraint_solver/solver_parameters.pb.h"
 #include "ortools/util/tuple_set.h"
 #include "pybind11/cast.h"
 #include "pybind11/functional.h"
