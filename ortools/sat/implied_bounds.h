@@ -246,15 +246,19 @@ class ProductDecomposer {
   std::vector<LiteralValueValue> TryToDecompose(const AffineExpression& left,
                                                 const AffineExpression& right);
 
-  // Looks at value encodings and detects if the product of two variables can be
-  // linearized.
+  std::vector<LiteralValueValue> TryToDecomposeAffineExpressionTimesConstant(
+      const AffineExpression& expr, IntegerValue constant);
+
+  // Looks at value encodings and detects if the product of two variables
+  // can be linearized.
   //
   // On true, the builder will be cleared to contain the linearization. On
   // false, it might be in an undefined state.
   //
-  // In the returned encoding, note that all the literals will be unique and in
-  // exactly one relation, and that the values can be duplicated. This is what
-  // we call an "element" encoding. The expressions will also be canonical.
+  // In the returned encoding, note that all the literals will be unique and
+  // in exactly one relation, and that the values can be duplicated. This is
+  // what we call an "element" encoding. The expressions will also be
+  // canonical.
   bool TryToLinearize(const AffineExpression& left,
                       const AffineExpression& right,
                       LinearConstraintBuilder* builder);

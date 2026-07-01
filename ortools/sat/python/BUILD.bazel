@@ -175,6 +175,7 @@ py_test(
     name = "cp_model_test",
     size = "medium",
     srcs = ["cp_model_test.py"],
+    tags = ["noci"],  # Times out occasionally in ASAN mode.
     deps = [
         ":cp_model",
         ":cp_model_helper",

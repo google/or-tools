@@ -172,32 +172,6 @@ TEST(SetToNegatedLinearExpressionTest, BasicTest) {
   EXPECT_EQ(-3, negated_expr.offset());
 }
 
-void Random(ConstraintProto ct) {
-  // The behavior of both functions differ on the enforcement_literal, so
-  // we clear it. TODO(user): make the behavior identical.
-  ct.clear_enforcement_literal();
-
-  absl::flat_hash_set<int> expected;
-  {
-    const IndexReferences references = GetReferencesUsedByConstraint(ct);
-    expected.insert(references.variables.begin(), references.variables.end());
-    expected.insert(references.literals.begin(), references.literals.end());
-  }
-
-  absl::flat_hash_set<int> var_and_literals;
-  ApplyToAllVariableIndices(
-      [&var_and_literals](int* ref) { var_and_literals.insert(*ref); }, &ct);
-  ApplyToAllLiteralIndices(
-      [&var_and_literals](int* ref) { var_and_literals.insert(*ref); }, &ct);
-  EXPECT_EQ(var_and_literals, expected) << ProtobufDebugString(ct);
-
-  std::vector<int> intervals;
-  ApplyToAllIntervalIndices(
-      [&intervals](int* ref) { intervals.push_back(*ref); }, &ct);
-  gtl::STLSortAndRemoveDuplicates(&intervals);
-  EXPECT_EQ(intervals, UsedIntervals(ct)) << ProtobufDebugString(ct);
-}
-
 TEST(ConstraintCaseNameTest, TestFewCases) {
   EXPECT_EQ("kBoolOr",
             ConstraintCaseName(ConstraintProto::ConstraintCase::kBoolOr));

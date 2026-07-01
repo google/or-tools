@@ -42,6 +42,7 @@
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/util.h"
+#include "ortools/util/logging.h"
 #include "ortools/util/strong_integers.h"
 
 namespace operations_research {
@@ -189,6 +190,21 @@ void AddExtraSchedulingPropagators(SatParameters& new_params) {
   new_params.set_use_area_energetic_reasoning_in_no_overlap_2d(true);
   new_params.set_use_try_edge_reasoning_in_no_overlap_2d(true);
   new_params.set_no_overlap_2d_boolean_relations_limit(100);
+}
+
+void AddLightSchedulingPropagators(SatParameters& new_params) {
+  new_params.set_exploit_all_precedences(true);
+  new_params.set_use_hard_precedences_in_cumulative(true);
+  new_params.set_use_overload_checker_in_cumulative(true);
+  new_params.set_use_strong_propagation_in_disjunctive(true);
+  // new_params.set_use_timetable_edge_finding_in_cumulative(true);
+  // new_params.set_use_conservative_scale_overload_checker(true);
+  // new_params.set_max_pairs_pairwise_reasoning_in_no_overlap_2d(5000);
+  // new_params.set_use_timetabling_in_no_overlap_2d(true);
+  new_params.set_use_energetic_reasoning_in_no_overlap_2d(true);
+  new_params.set_use_area_energetic_reasoning_in_no_overlap_2d(true);
+  // new_params.set_use_try_edge_reasoning_in_no_overlap_2d(true);
+  // new_params.set_no_overlap_2d_boolean_relations_limit(100);
 }
 
 // We want a random tie breaking among variables with equivalent values.
@@ -606,7 +622,7 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     strategies["objective_lb_search"] = new_params;
 
     if (base_params.use_dual_scheduling_heuristics()) {
-      AddExtraSchedulingPropagators(new_params);
+      AddLightSchedulingPropagators(new_params);
     }
     new_params.set_linearization_level(2);
     strategies["objective_lb_search_max_lp"] = new_params;
@@ -618,6 +634,7 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     new_params.set_cp_model_presolve(true);
     new_params.set_cp_model_probing_level(0);
     new_params.set_symmetry_level(0);
+    new_params.set_use_dynamic_precedence_in_disjunctive(true);
     strategies["objective_shaving"] = new_params;
 
     new_params.set_linearization_level(0);
@@ -630,6 +647,8 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
       AddExtraSchedulingPropagators(new_params);
     }
     new_params.set_linearization_level(2);
+    new_params.set_add_lp_constraints_lazily(false);
+    new_params.set_root_lp_iterations(100'000);
     strategies["objective_shaving_max_lp"] = new_params;
   }
 
@@ -660,7 +679,7 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     new_params.set_use_probing_search(true);
     new_params.set_at_most_one_max_expansion_size(2);
     if (base_params.use_dual_scheduling_heuristics()) {
-      AddExtraSchedulingPropagators(new_params);
+      AddLightSchedulingPropagators(new_params);
     }
     new_params.set_cut_level(0);
     strategies["probing"] = new_params;
@@ -680,6 +699,7 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     SatParameters new_params = base_params;
     new_params.set_search_branching(SatParameters::ROUND_ROBIN_SHAVING_SEARCH);
     new_params.set_cut_level(0);
+    new_params.set_shaving_deterministic_time_in_probing_search(0.0);
     strategies["shaving"] = new_params;
 
     new_params.set_linearization_level(0);
@@ -691,6 +711,24 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     new_params.set_add_lp_constraints_lazily(false);
     new_params.set_root_lp_iterations(100'000);
     strategies["shaving_max_lp"] = new_params;
+  }
+
+  {
+    SatParameters new_params = base_params;
+    new_params.set_search_branching(SatParameters::ROUND_ROBIN_SHAVING_SEARCH);
+    new_params.set_cut_level(0);
+    new_params.set_shaving_search_restart_limit(0);
+    strategies["shaving_dt"] = new_params;
+
+    new_params.set_linearization_level(0);
+    strategies["shaving_dt_no_lp"] = new_params;
+
+    // We want to spend more time on the LP here.
+    new_params.set_linearization_level(2);
+    new_params.set_cut_level(1);
+    new_params.set_add_lp_constraints_lazily(false);
+    new_params.set_root_lp_iterations(100'000);
+    strategies["shaving_dt_max_lp"] = new_params;
   }
 
   // Search variation.
@@ -879,11 +917,11 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
 //   - Fast restart in randomized search
 //   - Different propatation levels for scheduling constraints
 std::vector<SatParameters> GetFullWorkerParameters(
-    const SatParameters& base_params, const CpModelProto& cp_model,
-    SubsolverNameFilter* filter) {
+    const CpModelProto& cp_model, SolverLogger* logger,
+    SatParameters* base_params, SubsolverNameFilter* name_filter) {
   // Defines a set of named strategies so it is easier to read in one place
   // the one that are used. See below.
-  const auto strategies = GetNamedParameters(base_params);
+  const auto strategies = GetNamedParameters(*base_params);
 
   // We only use a "fixed search" worker if some strategy is specified or
   // if we have a scheduling model.
@@ -898,12 +936,12 @@ std::vector<SatParameters> GetFullWorkerParameters(
   std::vector<std::string> names;
 
   // Starts by adding user specified ones.
-  for (const std::string& name : base_params.extra_subsolvers()) {
+  for (const std::string& name : base_params->extra_subsolvers()) {
     names.push_back(name);
   }
 
   // We use the default if empty.
-  if (base_params.subsolvers().empty()) {
+  if (base_params->subsolvers().empty()) {
     // Note that the order is important as the list can be truncated.
     names.push_back("default_lp");
     names.push_back("fixed");
@@ -921,20 +959,20 @@ std::vector<SatParameters> GetFullWorkerParameters(
     names.push_back("shaving_no_lp");
     names.push_back("pseudo_costs");
     names.push_back("lb_tree_search");
-    names.push_back("probing");
+    names.push_back("probing_no_lp");
     names.push_back("objective_lb_search");
     names.push_back("objective_shaving_no_lp");
     names.push_back("quick_restart");
     names.push_back("objective_shaving_max_lp");
     names.push_back("shaving_max_lp");
-    names.push_back("probing_no_lp");
+    names.push_back("probing_max_lp");
     names.push_back("objective_lb_search_no_lp");
     names.push_back("objective_lb_search_max_lp");
     if (cp_model.has_symmetry()) {
       names.push_back("max_lp");
     }
   } else {
-    for (const std::string& name : base_params.subsolvers()) {
+    for (const std::string& name : base_params->subsolvers()) {
       // Hack for flatzinc. At the time of parameter setting, the objective is
       // not expanded. So we do not know if core is applicable or not.
       if (name == "core_or_no_lp") {
@@ -953,7 +991,7 @@ std::vector<SatParameters> GetFullWorkerParameters(
   // Remove the names that should be ignored.
   int new_size = 0;
   for (const std::string& name : names) {
-    if (filter->Keep(name)) {
+    if (name_filter->Keep(name)) {
       names[new_size++] = name;
     }
   }
@@ -1023,7 +1061,7 @@ std::vector<SatParameters> GetFullWorkerParameters(
     // Add this strategy.
     params.set_name(name);
     params.set_random_seed(CombineSeed(
-        base_params.random_seed(), static_cast<int64_t>(result.size()) + 1));
+        base_params->random_seed(), static_cast<int64_t>(result.size()) + 1));
     result.push_back(params);
   }
 
@@ -1031,31 +1069,80 @@ std::vector<SatParameters> GetFullWorkerParameters(
   //
   // TODO(user): Actually make sure the gap num_workers <-> num_heuristics is
   // contained.
-  if (base_params.interleave_search()) return result;
+  if (base_params->interleave_search()) return result;
 
   // Apply the logic for how many we keep.
-  const int num_shared_tree_workers = base_params.shared_tree_num_workers();
+  // Compute the number of shared tree workers.
+  int num_shared_tree_workers = base_params->shared_tree_num_workers();
+  const int num_workers = base_params->num_workers();
+  const bool has_objective =
+      cp_model.has_objective() && !cp_model.objective().vars().empty();
+  if (cp_model.assumptions().empty()) {
+    // Set the number of shared tree workers if it was not set.
+    // Note: it has to be done after presolve, as presolve might empty
+    // the objective.
+    if (num_shared_tree_workers == -1) {
+      if (has_objective) {
+        // We reserve 24 workers for the main solver (full solvers and
+        // first_solution solvers or interleaved solvers), and then we split the
+        // rest between the main solver and the shared tree search.
+        num_shared_tree_workers = std::max((num_workers - 24) / 2, 0);
+      } else {
+        // We target 4 shared tree workers with 16 workers, and a growth rate
+        // after 16 workers of 3/4.
+        num_shared_tree_workers = std::max((num_workers - 8) / 2, 0) +
+                                  std::max((num_workers - 16) / 4, 0);
+      }
+      // We need at least 4 workers for the shared tree search to be efficient.
+      if (num_shared_tree_workers >= 4) {
+        base_params->set_shared_tree_num_workers(num_shared_tree_workers);
+        SOLVER_LOG(logger, "Setting number of shared tree workers to ",
+                   num_shared_tree_workers);
+      } else {
+        base_params->set_shared_tree_num_workers(0);
+        SOLVER_LOG(logger, "Not using shared tree search");
+      }
+    } else if (num_shared_tree_workers == 0) {
+      SOLVER_LOG(logger, "Shared tree search is disabled");
+    } else {
+      SOLVER_LOG(logger, "Using ", num_shared_tree_workers,
+                 " shared tree workers");
+    }
+  } else if (base_params->shared_tree_num_workers() > 0) {
+    base_params->set_shared_tree_num_workers(0);
+    SOLVER_LOG(logger,
+               "Not using shared tree search as the model has assumptions");
+  }
+
   DCHECK_GE(num_shared_tree_workers, 0);
-  int target_subsolver_size = base_params.num_full_subsolvers();
+  int target_subsolver_size = base_params->num_full_subsolvers();
   const bool force_num_full_subsolvers = target_subsolver_size > 0;
   if (target_subsolver_size == 0) {
     // Derive some automatic number to leave room for LS/LNS and other
     // strategies not taken into account here.
-    const auto heuristic_num_workers = [](int num_workers) {
+    const auto heuristic_num_workers = [has_objective](int num_workers) {
       DCHECK_GE(num_workers, 0);
-      if (num_workers == 1) return 1;
-      if (num_workers <= 4) return num_workers - 1;
-      if (num_workers <= 8) return num_workers - 2;
-      if (num_workers <= 16) return num_workers - (num_workers / 4 + 1);
-      return num_workers - (num_workers / 2 - 4);
+      if (has_objective) {
+        if (num_workers == 1) return 1;
+        if (num_workers <= 4) return num_workers - 1;
+        if (num_workers <= 8) return num_workers - 2;
+        if (num_workers <= 16) return num_workers - (num_workers / 4 + 1);
+        return num_workers - (num_workers / 2) + 4;
+      } else {
+        if (num_workers == 1) return 1;
+        if (num_workers <= 4) return num_workers - 1;
+        if (num_workers <= 8) return num_workers - 2;
+        if (num_workers <= 16) return num_workers - (num_workers / 4);
+        return num_workers - (num_workers / 4);
+      }
     };
     target_subsolver_size =
-        std::max(0, heuristic_num_workers(base_params.num_workers()) -
+        std::max(0, heuristic_num_workers(base_params->num_workers()) -
                         num_shared_tree_workers);
   } else {
     // We cap the number of subsolvers by the number of workers.
     target_subsolver_size =
-        std::min(target_subsolver_size, base_params.num_workers());
+        std::min(target_subsolver_size, base_params->num_workers());
   }
 
   if (result.size() > target_subsolver_size) {
@@ -1073,7 +1160,7 @@ std::vector<SatParameters> GetFullWorkerParameters(
   for (int i = 0; i < num_shared_tree_workers; ++i) {
     SatParameters params = strategies.at("shared_tree");
     params.set_random_seed(CombineSeed(
-        base_params.random_seed(), static_cast<int64_t>(result.size()) + 1));
+        base_params->random_seed(), static_cast<int64_t>(result.size()) + 1));
     result.push_back(params);
   }
 

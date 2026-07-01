@@ -2481,8 +2481,10 @@ bool CpModelPresolver::RemoveSingletonInLinear(ConstraintProto* ct) {
           indicator =
               context_->NewBoolVarWithConjunction(ct->enforcement_literal());
           auto* new_ct = context_->AddConstraint();
-          *new_ct->mutable_enforcement_literal() = ct->enforcement_literal();
           new_ct->mutable_bool_or()->add_literals(indicator);
+          for (const int literal : ct->enforcement_literal()) {
+            new_ct->mutable_bool_or()->add_literals(NegatedRef(literal));
+          }
         }
         for (int i = 0; i < num_vars; ++i) {
           const int64_t best_value =
@@ -3178,9 +3180,12 @@ bool CpModelPresolver::PresolveLinear2NeCst(ConstraintProto* ct, int64_t rhs) {
       // We cannot have both lit1 and lit2 true.
       const int lit1 = context_->GetOrCreateVarValueEncoding(var1, value1);
       const int lit2 = context_->GetOrCreateVarValueEncoding(var2, value2);
-      auto* bool_or = context_->AddEnforcedConstraint(ct)->mutable_bool_or();
+      auto* bool_or = context_->AddConstraint()->mutable_bool_or();
       bool_or->add_literals(NegatedRef(lit1));
       bool_or->add_literals(NegatedRef(lit2));
+      for (const int lit : ct->enforcement_literal()) {
+        bool_or->add_literals(NegatedRef(lit));
+      }
       ++num_clauses;
     }
 
@@ -3334,13 +3339,19 @@ bool CpModelPresolver::PresolveEnforcedLinear2EqCst(ConstraintProto* ct,
       const int lit1 = context_->GetOrCreateVarValueEncoding(var1, value1);
       const int lit2 = context_->GetOrCreateVarValueEncoding(var2, value2);
 
-      ConstraintProto* imply_equiv1 = context_->AddEnforcedConstraint(ct);
+      ConstraintProto* imply_equiv1 = context_->AddConstraint();
       imply_equiv1->mutable_bool_or()->add_literals(NegatedRef(lit1));
       imply_equiv1->mutable_bool_or()->add_literals(lit2);
+      for (const int lit : ct->enforcement_literal()) {
+        imply_equiv1->mutable_bool_or()->add_literals(NegatedRef(lit));
+      }
 
-      ConstraintProto* imply_equiv2 = context_->AddEnforcedConstraint(ct);
+      ConstraintProto* imply_equiv2 = context_->AddConstraint();
       imply_equiv2->mutable_bool_or()->add_literals(lit1);
       imply_equiv2->mutable_bool_or()->add_literals(NegatedRef(lit2));
+      for (const int lit : ct->enforcement_literal()) {
+        imply_equiv2->mutable_bool_or()->add_literals(NegatedRef(lit));
+      }
     }
 
     // If the domains of var1 (resp. var2) is small, exclude the other values
@@ -3369,7 +3380,10 @@ bool CpModelPresolver::PresolveEnforcedLinear2EqCst(ConstraintProto* ct,
       } else {
         // Add a clause on the set of possible values.
         BoolArgumentProto* clause =
-            context_->AddEnforcedConstraint(ct)->mutable_bool_or();
+            context_->AddConstraint()->mutable_bool_or();
+        for (const int lit : ct->enforcement_literal()) {
+          clause->add_literals(NegatedRef(lit));
+        }
         for (const int64_t value : seen[i]) {
           const int lit = context_->GetOrCreateVarValueEncoding(var, value);
           clause->add_literals(lit);
@@ -5447,7 +5461,10 @@ bool CpModelPresolver::PresolveSmallLinearOnBooleans(ConstraintProto* ct) {
 
     // Add a new clause to exclude this bad assignment.
     BoolArgumentProto* new_clause =
-        context_->AddEnforcedConstraint(ct)->mutable_bool_or();
+        context_->AddConstraint()->mutable_bool_or();
+    for (const int lit : ct->enforcement_literal()) {
+      new_clause->add_literals(NegatedRef(lit));
+    }
     for (int i = 0; i < num_vars; ++i) {
       new_clause->add_literals(((mask >> i) & 1) ? NegatedRef(linear.vars(i))
                                                  : linear.vars(i));
@@ -7240,7 +7257,11 @@ bool CpModelPresolver::PresolveNoOverlap2D(int /*c*/, ConstraintProto* ct) {
         new_no_overlap_2d->add_x_intervals(proto.x_intervals(b));
         new_no_overlap_2d->add_y_intervals(proto.y_intervals(b));
       }
-      for (const int b : fixed_item_indexes) {
+      // Sort the fixed items for determinism.
+      std::vector<int> fixed_item_indexes_vec(fixed_item_indexes.begin(),
+                                              fixed_item_indexes.end());
+      absl::c_sort(fixed_item_indexes_vec);
+      for (const int b : fixed_item_indexes_vec) {
         new_no_overlap_2d->add_x_intervals(proto.x_intervals(b));
         new_no_overlap_2d->add_y_intervals(proto.y_intervals(b));
       }
@@ -8356,6 +8377,7 @@ void CpModelPresolver::RunPropagatorsForConstraint(const ConstraintProto& ct) {
   local_params.set_use_dual_scheduling_heuristics(true);
 
   model.GetOrCreate<TimeLimit>()->MergeWithGlobalTimeLimit(time_limit_);
+  model.GetOrCreate<ModelSharedTimeLimit>()->DisableStop();
   std::vector<int> variable_mapping;
   CreateValidModelWithSingleConstraint(ct, context_, &variable_mapping,
                                        &tmp_model_);
@@ -8844,6 +8866,7 @@ bool CpModelPresolver::PresolvePureSatPart() {
   // one, and we could merge this with what the ProcessSetPPC() is doing.
   Model local_model;
   local_model.GetOrCreate<TimeLimit>()->MergeWithGlobalTimeLimit(time_limit_);
+  local_model.GetOrCreate<ModelSharedTimeLimit>()->DisableStop();
   *local_model.GetOrCreate<SatParameters>() = context_->params();
   auto* sat_solver = local_model.GetOrCreate<SatSolver>();
   auto* graph = local_model.GetOrCreate<BinaryImplicationGraph>();
@@ -9659,7 +9682,7 @@ void CpModelPresolver::ExpandObjective() {
     if (obj_coeff == 0) continue;
 
     const bool to_lb = (index % 2) == 0;
-    if (obj_coeff > 0 == to_lb) {
+    if ((obj_coeff > 0) == to_lb) {
       const ConstraintProto& ct = context_->Constraint(index_to_best_c[index]);
       if (ct.constraint_case() == ConstraintProto::kExactlyOne) {
         int64_t shift = 0;
@@ -11506,12 +11529,12 @@ void CpModelPresolver::DetectDuplicateConstraintsWithDifferentEnforcements(
       // if we encounter them here in some corner cases. And the code after
       // 'continue' uses this, in particular to update the hint.
       bool skip = false;
-      if (RefIsPositive(a) == context_->ObjectiveCoeff(PositiveRef(a)) > 0) {
+      if (RefIsPositive(a) == (context_->ObjectiveCoeff(PositiveRef(a)) > 0)) {
         context_->UpdateRuleStats("duplicate: dual fixing enforcement");
         if (!context_->SetLiteralToFalse(a)) return;
         skip = true;
       }
-      if (RefIsPositive(b) == context_->ObjectiveCoeff(PositiveRef(b)) > 0) {
+      if (RefIsPositive(b) == (context_->ObjectiveCoeff(PositiveRef(b)) > 0)) {
         context_->UpdateRuleStats("duplicate: dual fixing enforcement");
         if (!context_->SetLiteralToFalse(b)) return;
         skip = true;
@@ -13413,12 +13436,13 @@ void CpModelPresolver::MaybeRemoveLinkingVariable(int var, int c_linear1,
   if (!is_trivial_when_not_enforced) {
     // We need a new constraint in this case.
     ConstraintProto* new_ct = context_->AddConstraint();
+    mutable_ct = context_->MutableConstraint(c_linear);
     *new_ct = *mutable_ct;
     FillDomainInProto(relaxed_rhs, new_ct->mutable_linear());
   }
 
   // Add the enforcement to the long linear constraint.
-  for (const int lit : ct_linear1.enforcement_literal()) {
+  for (const int lit : context_->Constraint(c_linear1).enforcement_literal()) {
     mutable_ct->add_enforcement_literal(lit);
   }
   context_->UpdateConstraintVariableUsage(c_linear);
@@ -13438,6 +13462,9 @@ void CpModelPresolver::MaybeRemoveLinkingVariable(int var, int c_linear1,
   context_->UpdateConstraintVariableUsage(c_linear1);
 
   context_->MarkVariableAsRemoved(var);
+
+  PresolveSmallLinear(mutable_ct);
+  context_->UpdateConstraintVariableUsage(c_linear);
 }
 
 // Special case: if a literal l appear in exactly two constraints:
@@ -14163,23 +14190,26 @@ void CpModelPresolver::PresolveToFixPoint() {
           }
           check_time_limit = true;
           break;
-        case ConstraintProto::kBoolOr: {
-          // Try to infer domain reductions from clauses and the saved "implies
-          // in domain" relations.
-          for (const auto& pair :
-               context_->deductions.ProcessClause(ct->bool_or().literals())) {
-            bool modified = false;
-            if (!context_->IntersectDomainWith(pair.first, pair.second,
-                                               &modified)) {
-              return;
+        case ConstraintProto::kBoolOr:
+          if (ct->enforcement_literal().empty()) {
+            // Try to infer domain reductions from clauses and the saved
+            // "implies in domain" relations.
+            for (const auto& pair :
+                 context_->deductions.ProcessClause(ct->bool_or().literals())) {
+              bool modified = false;
+              if (!context_->IntersectDomainWith(pair.first, pair.second,
+                                                 &modified)) {
+                return;
+              }
+              if (modified) {
+                context_->UpdateRuleStats(
+                    "deductions: reduced variable domain");
+              }
             }
-            if (modified) {
-              context_->UpdateRuleStats("deductions: reduced variable domain");
-            }
+            if (bool_or_check_time_limit.LimitReached())
+              check_time_limit = true;
           }
-          if (bool_or_check_time_limit.LimitReached()) check_time_limit = true;
           break;
-        }
         default:
           break;
       }

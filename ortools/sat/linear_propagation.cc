@@ -598,10 +598,11 @@ std::pair<IntegerValue, int> LinearPropagator::AnalyzeConstraint(int id) {
   // Compute the slack and max_variations_ of each variables.
   // We also filter out fixed variables in a reversible way.
   IntegerValue implied_lb(0);
-  const auto vars = GetVariables(info);
   IntegerValue max_variation(0);
   bool first_change = true;
   num_terms_for_dtime_update_ += info.rev_size;
+
+  IntegerVariable* vars = &variables_buffer_[info.start];
   IntegerValue* max_variations = max_variations_.data();
   const IntegerValue* lower_bounds = integer_trail_->LowerBoundsData();
   if (info.all_coeffs_are_one) {

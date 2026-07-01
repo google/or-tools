@@ -206,24 +206,6 @@ TEST(ModelCopyTest, RemoveDuplicateFromEnforcementLiterals) {
   EXPECT_THAT(new_cp_model, EqualsProto(expected_moded));
 }
 
-namespace {
-std::vector<int> ReverseMapping(const std::vector<int>& mapping) {
-  int max_var = 0;
-  for (int lit : mapping) {
-    if (lit == kNoVariableMapping) continue;
-    max_var = std::max(max_var, PositiveRef(lit));
-  }
-  std::vector<int> reverse_mapping(max_var + 1, kNoVariableMapping);
-  for (int i = 0; i < mapping.size(); ++i) {
-    const int mapped = mapping[i];
-    if (mapped == kNoVariableMapping) continue;
-    reverse_mapping[PositiveRef(mapped)] =
-        RefIsPositive(mapped) ? i : NegatedRef(i);
-  }
-  return reverse_mapping;
-}
-}  // namespace
-
 TEST(ModelCopyTest, RemapLiteralsInBoolOr) {
   const CpModelProto initial_model = ParseTestProto(R"pb(
     variables { domain: [ 1, 1 ] }

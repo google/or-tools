@@ -405,10 +405,37 @@ std::vector<LiteralValueValue> TryToReconcileSize2Encodings(
   return terms;
 }
 
+std::vector<LiteralValueValue>
+ProductDecomposer::TryToDecomposeAffineExpressionTimesConstant(
+    const AffineExpression& expr, IntegerValue constant) {
+  // const absl::btree_map<int, std::vector<ValueLiteralPair>>& encodings =
+  //     element_encodings_->Get(expr.var);
+  std::vector<LiteralValueValue> terms;
+  // if (!encodings.empty()) {
+  //   LOG(INFO) << "TryToDecomposeAffineExpressionTimesConstant: " << expr.var
+  //             << " " << constant << " has " <<
+  //             encodings.begin()->second.size()
+  //             << " literals";
+  // }
+  //   const auto& [unused, encoding] = *encodings.begin();
+  //   for (const auto& [value, literal] : encoding) {
+  //     terms.push_back({literal, expr.ValueAt(value), constant});
+  //   }
+  // }
+  return terms;
+}
+
 std::vector<LiteralValueValue> ProductDecomposer::TryToDecompose(
     const AffineExpression& left, const AffineExpression& right) {
-  if (integer_trail_->IsFixed(left) || integer_trail_->IsFixed(right)) {
+  if (integer_trail_->IsFixed(left) && integer_trail_->IsFixed(right)) {
     return {};
+  }
+  if (integer_trail_->IsFixed(left)) {
+    return TryToDecomposeAffineExpressionTimesConstant(
+        right, integer_trail_->FixedValue(left));
+  } else if (integer_trail_->IsFixed(right)) {
+    return TryToDecomposeAffineExpressionTimesConstant(
+        left, integer_trail_->FixedValue(right));
   }
 
   // Fill in the encodings for the left variable.

@@ -622,6 +622,10 @@ NeighborhoodGeneratorHelper::GetActiveRectangles(
     result.no_overlap_2d_constraints = {no_overlap_2d_constraints.begin(),
                                         no_overlap_2d_constraints.end()};
   }
+  absl::c_sort(results, [](const ActiveRectangle& a, const ActiveRectangle& b) {
+    return std::tie(a.x_interval, a.y_interval) <
+           std::tie(b.x_interval, b.y_interval);
+  });
   return results;
 }
 
@@ -2141,6 +2145,7 @@ Neighborhood LocalBranchingLpBasedNeighborhoodGenerator::Generate(
   model.GetOrCreate<TimeLimit>()->ResetLimitFromParameters(*params);
   if (global_time_limit_ != nullptr) {
     global_time_limit_->UpdateLocalLimit(model.GetOrCreate<TimeLimit>());
+    model.GetOrCreate<ModelSharedTimeLimit>()->DisableStop();
   }
 
   // Tricky: we want the inner_objective_lower_bound in the response to be in
@@ -2602,12 +2607,15 @@ Neighborhood RectanglesPackingRelaxOneNeighborhoodGenerator::Generate(
   const int num_to_sample = data.difficulty * all_active_rectangles.size();
   const int num_to_relax = std::min<int>(distances.size(), num_to_sample);
   Rectangle relaxed_bounding_box = center_rect;
-  absl::flat_hash_set<int> boxes_to_relax;
+  std::vector<int> boxes_to_relax;
+  absl::flat_hash_set<int> boxes_to_relax_seen;
   for (int i = 0; i < num_to_relax; ++i) {
     const int rectangle_idx = distances[i].first;
     const ActiveRectangle& rectangle = all_active_rectangles[rectangle_idx];
     relaxed_bounding_box.GrowToInclude(get_rectangle(rectangle));
-    boxes_to_relax.insert(rectangle_idx);
+    if (boxes_to_relax_seen.insert(rectangle_idx).second) {
+      boxes_to_relax.push_back(rectangle_idx);
+    }
   }
 
   // Heuristic: we relax a bit the bounding box in order to allow some
@@ -2745,10 +2753,12 @@ Neighborhood RectanglesPackingRelaxTwoNeighborhoodsGenerator::Generate(
   }
   const int num_to_sample_each =
       data.difficulty * all_active_rectangles.size() / 2;
-  std::sort(distances1.begin(), distances1.end(),
-            [](const auto& a, const auto& b) { return a.second < b.second; });
-  std::sort(distances2.begin(), distances2.end(),
-            [](const auto& a, const auto& b) { return a.second < b.second; });
+  absl::c_stable_sort(distances1, [](const auto& a, const auto& b) {
+    return a.second < b.second;
+  });
+  absl::c_stable_sort(distances2, [](const auto& a, const auto& b) {
+    return a.second < b.second;
+  });
   for (auto& samples : {distances1, distances2}) {
     const int num_potential_samples = samples.size();
     for (int i = 0; i < std::min(num_potential_samples, num_to_sample_each);

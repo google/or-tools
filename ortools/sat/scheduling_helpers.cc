@@ -749,11 +749,18 @@ bool SchedulingConstraintHelper::PushTaskOrderWhenPresent(int t_before,
 
   const auto [expr, rhs] =
       EncodeDifferenceLowerThan(ends_[t_before], starts_[t_after], 0);
-  const auto status = linear2_bounds_->GetStatus(expr, kMinIntegerValue, rhs);
+  const LinearExpression2Index index = linear2_bounds_->GetIndex(expr);
+  const auto [known_lb, known_ub] =
+      linear2_bounds_->GetBoundsOnCanonicalizedExpression(index, expr);
 
-  if (status == RelationStatus::IS_TRUE) return true;
+  if (known_ub <= rhs) {
+    // A better relation is already known.
+    // Sometime it is not properly propagated though.
+    return linear2_bounds_->MaybePropagate(index, expr, known_ub);
+  }
 
-  if (status == RelationStatus::IS_FALSE) {
+  if (known_lb > rhs) {
+    // This is a conflict.
     LinearExpression2 negated_expr = expr;
     negated_expr.Negate();
     linear2_bounds_->AddReasonForUpperBoundLowerThan(
@@ -780,8 +787,19 @@ bool SchedulingConstraintHelper::PushTaskOrderWhenPresent(int t_before,
   FlagItemAsUsedInReason(t_after);
   RunCallbackIfSet();
 
-  return linear2_bounds_->EnqueueLowerOrEqual(expr, rhs, literal_reason_,
-                                              integer_reason_);
+  if (!linear2_bounds_->EnqueueLowerOrEqual(index, expr, rhs, literal_reason_,
+                                            integer_reason_)) {
+    return false;
+  }
+
+  // TODO(user): Updating the cache right aways seems a bit worse. Do more
+  // investigation.
+  if (/* DISABLES CODE */ (false)) {
+    if (!UpdateCachedValues(t_before)) return false;
+    if (!UpdateCachedValues(t_after)) return false;
+  }
+
+  return true;
 }
 
 bool SchedulingConstraintHelper::ReportConflict() {

@@ -339,11 +339,11 @@ std::vector<int> TryEdgeRectanglePropagator::GetMinimumProblemWithPropagation(
   DCHECK(model.ComputeFeasibility());
   SetCoverInvariant inv(&model);
   LazyElementDegreeSolutionGenerator greedy_search(&inv);
-  CHECK(greedy_search.NextSolution());
+  CHECK(greedy_search.Optimize());
   LazySteepestSearch steepest_search(&inv);
-  CHECK(steepest_search.NextSolution());
+  CHECK(steepest_search.Optimize());
   GuidedLocalSearch search(&inv);
-  CHECK(search.SetMaxIterations(100).NextSolution());
+  CHECK(search.SetMaxIterations(100).Optimize());
   DCHECK(inv.CheckConsistency(
       SetCoverInvariant::ConsistencyLevel::kFreeAndUncovered));
 

@@ -174,13 +174,10 @@ void SatPresolver::AddClause(absl::Span<const Literal> clause) {
   in_clause_to_process_.push_back(true);
   clause_to_process_.push_back(ci);
 
-  bool changed = false;
   std::vector<Literal>& clause_ref = clauses_.back();
   if (!equiv_mapping_.empty()) {
-    for (int i = 0; i < clause_ref.size(); ++i) {
-      const Literal old_literal = clause_ref[i];
-      clause_ref[i] = Literal(equiv_mapping_[clause_ref[i]]);
-      if (old_literal != clause_ref[i]) changed = true;
+    for (Literal& l : clause_ref) {
+      l = Literal(equiv_mapping_[l]);
     }
   }
   std::sort(clause_ref.begin(), clause_ref.end());

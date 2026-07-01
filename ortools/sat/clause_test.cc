@@ -407,26 +407,6 @@ TEST(BinaryImplicationGraphTest, DetectEquivalencePropagateThings) {
   EXPECT_TRUE(graph->DetectEquivalences());
 }
 
-void TryAmoEquivalences(absl::Span<const std::vector<int>> cliques) {
-  Model model;
-  auto* trail = model.GetOrCreate<Trail>();
-  auto* graph = model.GetOrCreate<BinaryImplicationGraph>();
-  trail->Resize(1000);
-  graph->Resize(1000);
-  for (const auto& clique : cliques) {
-    std::vector<Literal> literals;
-    for (const int i : clique) {
-      literals.push_back(Literal(i));
-    }
-    if (!graph->AddAtMostOne(literals)) {
-      return;
-    }
-  }
-
-  // This can be either false or true since this is a fuzzer test.
-  (void)graph->DetectEquivalences();
-}
-
 }  // namespace
 }  // namespace sat
 }  // namespace operations_research

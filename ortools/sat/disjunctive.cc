@@ -109,11 +109,13 @@ void AddDisjunctive(const std::vector<Literal>& enforcement_literals,
     if (!params.use_strong_propagation_in_disjunctive()) {
       // This one will not propagate anything if we added all precedence
       // literals since the linear propagator will already do that in that case.
-      DisjunctiveSimplePrecedences* simple_precedences =
-          new DisjunctiveSimplePrecedences(helper, model);
-      const int id = simple_precedences->RegisterWith(watcher);
-      watcher->SetPropagatorPriority(id, 1);
-      model->TakeOwnership(simple_precedences);
+      for (const bool time_direction : {true, false}) {
+        DisjunctiveSimplePrecedences* simple_precedences =
+            new DisjunctiveSimplePrecedences(time_direction, helper, model);
+        const int id = simple_precedences->RegisterWith(watcher);
+        watcher->SetPropagatorPriority(id, 1);
+        model->TakeOwnership(simple_precedences);
+      }
     }
     {
       // Only one direction is needed by this one.
@@ -795,6 +797,7 @@ int DisjunctiveOverloadChecker::RegisterWith(GenericLiteralWatcher* watcher) {
 
 int DisjunctiveSimplePrecedences::RegisterWith(GenericLiteralWatcher* watcher) {
   const int id = watcher->Register(this);
+  helper_->SetTimeDirection(time_direction_);
   helper_->WatchAllTasks(id);
   watcher->NotifyThatPropagatorMayNotReachFixedPointInOnePass(id);
   return id;
@@ -804,34 +807,11 @@ bool DisjunctiveSimplePrecedences::Propagate() {
   if (!helper_->IsEnforced()) return true;
   stats_.OnPropagate();
 
-  const bool current_direction = helper_->CurrentTimeIsForward();
-  for (const bool direction : {current_direction, !current_direction}) {
-    if (!helper_->SynchronizeAndSetTimeDirection(direction)) {
-      ++stats_.num_conflicts;
-      return false;
-    }
-    if (!PropagateOneDirection()) {
-      ++stats_.num_conflicts;
-      return false;
-    }
+  if (!helper_->SynchronizeAndSetTimeDirection(time_direction_)) {
+    ++stats_.num_conflicts;
+    return false;
   }
 
-  stats_.EndWithoutConflicts();
-  return true;
-}
-
-bool DisjunctiveSimplePrecedences::Push(TaskTime before, int t) {
-  const int t_before = before.task_index;
-
-  DCHECK_NE(t_before, t);
-  helper_->ResetReason();
-  helper_->AddReasonForBeingBeforeAssumingNoOverlap(t_before, t);
-  if (!helper_->PushTaskOrderWhenPresent(t_before, t)) return false;
-  ++stats_.num_propagations;
-  return true;
-}
-
-bool DisjunctiveSimplePrecedences::PropagateOneDirection() {
   // We will loop in a decreasing way here.
   // And add tasks that are present to the task_set_.
   absl::Span<const TaskTime> task_by_negated_start_max =
@@ -889,6 +869,7 @@ bool DisjunctiveSimplePrecedences::PropagateOneDirection() {
         helper_->AddPresenceReason(t);
         helper_->AddReasonForBeingBeforeAssumingNoOverlap(blocking_task, t);
         helper_->AddReasonForBeingBeforeAssumingNoOverlap(t, blocking_task);
+        ++stats_.num_conflicts;
         return helper_->ReportConflict();
       } else if (end_min > best_task_before.time) {
         best_task_before = {t, end_min};
@@ -899,7 +880,10 @@ bool DisjunctiveSimplePrecedences::PropagateOneDirection() {
     if (blocking_task != -1) {
       DCHECK(!helper_->IsAbsent(blocking_task));
       if (best_task_before.time > helper_->StartMin(blocking_task)) {
-        if (!Push(best_task_before, blocking_task)) return false;
+        if (!Push(best_task_before, blocking_task)) {
+          ++stats_.num_conflicts;
+          return false;
+        }
       }
 
       // Update best_task_before.
@@ -922,10 +906,26 @@ bool DisjunctiveSimplePrecedences::PropagateOneDirection() {
       if (best_task_before.time > helper_->StartMin(t)) {
         // Corner case if a previous push caused a subsequent task to be absent.
         if (helper_->IsAbsent(t)) continue;
-        if (!Push(best_task_before, t)) return false;
+        if (!Push(best_task_before, t)) {
+          ++stats_.num_conflicts;
+          return false;
+        }
       }
     }
   }
+
+  stats_.EndWithoutConflicts();
+  return true;
+}
+
+bool DisjunctiveSimplePrecedences::Push(TaskTime before, int t) {
+  const int t_before = before.task_index;
+
+  DCHECK_NE(t_before, t);
+  helper_->ResetReason();
+  helper_->AddReasonForBeingBeforeAssumingNoOverlap(t_before, t);
+  if (!helper_->PushTaskOrderWhenPresent(t_before, t)) return false;
+  ++stats_.num_propagations;
   return true;
 }
 

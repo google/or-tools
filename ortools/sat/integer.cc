@@ -1152,11 +1152,16 @@ void IntegerTrail::RelaxLinearReason(IntegerValue slack,
   }
   trail_indices->resize(new_size);
   std::make_heap(relax_heap_.begin(), relax_heap_.end());
+  if (relax_heap_.empty()) return;
 
-  while (slack > 0 && !relax_heap_.empty()) {
-    const RelaxHeapEntry heap_entry = relax_heap_.front();
-    std::pop_heap(relax_heap_.begin(), relax_heap_.end());
-    relax_heap_.pop_back();
+  // Optim: Our heap never grow past its initial size, this helps a bit.
+  int heap_size = relax_heap_.size();
+  RelaxHeapEntry* heap = relax_heap_.data();
+
+  while (slack > 0 && heap_size > 0) {
+    const RelaxHeapEntry heap_entry = heap[0];
+    std::pop_heap(heap, heap + heap_size);
+    --heap_size;
 
     // The slack might have changed since the entry was added.
     if (heap_entry.diff > slack) {
@@ -1188,14 +1193,15 @@ void IntegerTrail::RelaxLinearReason(IntegerValue slack,
       trail_indices->push_back(index);
       continue;
     }
-    relax_heap_.push_back({index, heap_entry.coeff, diff});
-    std::push_heap(relax_heap_.begin(), relax_heap_.end());
+
+    heap[heap_size++] = {index, heap_entry.coeff, diff};
+    std::push_heap(heap, heap + heap_size);
   }
 
   // If we aborted early because of the slack, we need to push all remaining
   // indices back into the reason.
-  for (const RelaxHeapEntry& entry : relax_heap_) {
-    trail_indices->push_back(entry.index);
+  for (int i = 0; i < heap_size; ++i) {
+    trail_indices->push_back(heap[i].index);
   }
   relax_heap_.clear();
 }

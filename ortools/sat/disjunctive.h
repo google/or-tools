@@ -214,16 +214,19 @@ class DisjunctiveOverloadChecker : public PropagatorInterface {
 // propagates a lot.
 class DisjunctiveSimplePrecedences : public PropagatorInterface {
  public:
-  explicit DisjunctiveSimplePrecedences(SchedulingConstraintHelper* helper,
+  explicit DisjunctiveSimplePrecedences(bool time_direction,
+                                        SchedulingConstraintHelper* helper,
                                         Model* model = nullptr)
-      : helper_(helper), stats_("DisjunctiveSimplePrecedences", model) {}
+      : time_direction_(time_direction),
+        helper_(helper),
+        stats_("DisjunctiveSimplePrecedences", model) {}
   bool Propagate() final;
   int RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
-  bool PropagateOneDirection();
   bool Push(TaskTime before, int t);
 
+  const bool time_direction_;
   SchedulingConstraintHelper* helper_;
   PropagationStatistics stats_;
 };

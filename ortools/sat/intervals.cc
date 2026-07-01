@@ -167,7 +167,6 @@ IntervalsRepository::GetOrCreateDisjunctivePrecedenceLiteralIfNonTrivial(
   const RelationStatus a_before_b_root_status =
       root_level_bounds_->GetLevelZeroStatus(expr_a_before_b, kMinIntegerValue,
                                              ub_a_before_b);
-
   if (enforcement_literals.empty() &&
       b_before_a_root_status != RelationStatus::IS_UNKNOWN &&
       a_before_b_root_status == b_before_a_root_status) {
@@ -199,13 +198,6 @@ IntervalsRepository::GetOrCreateDisjunctivePrecedenceLiteralIfNonTrivial(
     }
     return kNoLiteralIndex;
   }
-  const RelationStatus b_before_a_status = linear2_bounds_->GetStatus(
-      expr_b_before_a, kMinIntegerValue, ub_b_before_a);
-  if (b_before_a_status != RelationStatus::IS_UNKNOWN) {
-    // Abort if the relation is already known.
-    return kNoLiteralIndex;
-  }
-
   if (a_before_b_root_status == RelationStatus::IS_FALSE) {
     if (!enforcement_literals.empty() ||
         b_before_a_root_status == RelationStatus::IS_UNKNOWN) {
@@ -214,8 +206,16 @@ IntervalsRepository::GetOrCreateDisjunctivePrecedenceLiteralIfNonTrivial(
     }
     return kNoLiteralIndex;
   }
-  const RelationStatus a_before_b_status = linear2_bounds_->GetStatus(
-      expr_a_before_b, kMinIntegerValue, ub_a_before_b);
+
+  const RelationStatus b_before_a_status =
+      linear2_bounds_->GetStatus(expr_b_before_a, ub_b_before_a);
+  if (b_before_a_status != RelationStatus::IS_UNKNOWN) {
+    // Abort if the relation is already known.
+    return kNoLiteralIndex;
+  }
+
+  const RelationStatus a_before_b_status =
+      linear2_bounds_->GetStatus(expr_a_before_b, ub_a_before_b);
   if (a_before_b_status != RelationStatus::IS_UNKNOWN) {
     // Abort if the relation is already known.
     return kNoLiteralIndex;
@@ -296,7 +296,8 @@ IntervalsRepository::GetOrCreateDisjunctivePrecedenceLiteralIfNonTrivial(
 bool IntervalsRepository::CreatePrecedenceLiteralIfNonTrivial(
     AffineExpression x, AffineExpression y) {
   const auto [expr, ub] = EncodeDifferenceLowerThan(x, y, 0);
-  auto reified_bound = reified_precedences_->GetEncodedBound(expr, ub);
+  const LinearExpression2Index index = linear2_bounds_->GetIndex(expr);
+  auto reified_bound = reified_precedences_->GetEncodedBound(index, expr, ub);
   if (std::holds_alternative<ReifiedLinear2Bounds::ReifiedBoundType>(
           reified_bound)) {
     const auto bound_type =
@@ -341,7 +342,8 @@ bool IntervalsRepository::CreatePrecedenceLiteralIfNonTrivial(
 LiteralIndex IntervalsRepository::GetPrecedenceLiteral(
     AffineExpression x, AffineExpression y) const {
   const auto [expr, ub] = EncodeDifferenceLowerThan(x, y, 0);
-  auto reified_bound = reified_precedences_->GetEncodedBound(expr, ub);
+  const LinearExpression2Index index = linear2_bounds_->GetIndex(expr);
+  auto reified_bound = reified_precedences_->GetEncodedBound(index, expr, ub);
   if (std::holds_alternative<IntegerLiteral>(reified_bound)) {
     return integer_encoder_->GetAssociatedLiteral(
         std::get<IntegerLiteral>(reified_bound));

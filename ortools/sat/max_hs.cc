@@ -596,6 +596,7 @@ SatSolver::Status HittingSetOptimizer::Optimize() {
     }
 
     inner_model.GetOrCreate<TimeLimit>()->MergeWithGlobalTimeLimit(time_limit_);
+    inner_model.GetOrCreate<ModelSharedTimeLimit>()->DisableStop();
     response_ =
         solve_cp_model_callback_(hitting_set_linear_model_, &inner_model);
     if (response_.status() != CpSolverStatus::OPTIMAL) {

@@ -512,6 +512,9 @@ void SharedResponseManager::NotifyThatImprovingProblemIsInfeasible(
       callback(info);
     }
   }
+  if (always_synchronize_) {
+    shared_time_limit_->Stop();
+  }
 }
 
 void SharedResponseManager::AddUnsatCore(const std::vector<int>& core) {

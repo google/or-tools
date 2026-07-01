@@ -30,6 +30,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/algorithm/container.h"
 #include "absl/base/thread_annotations.h"
 #include "absl/container/btree_map.h"
 #include "absl/container/btree_set.h"
@@ -1294,7 +1295,6 @@ class FeasibilityPumpSolver : public SubSolver {
 
       // Abort if the problem is solved.
       if (shared_->SearchIsDone()) {
-        shared_->time_limit->Stop();
         return;
       }
 
@@ -1433,6 +1433,8 @@ class LnsSolver : public SubSolver {
       TimeLimit* local_time_limit = local_model.GetOrCreate<TimeLimit>();
       local_time_limit->ResetLimitFromParameters(local_params);
       shared_->time_limit->UpdateLocalLimit(local_time_limit);
+      // Don't let our LNS model to stop the main solve.
+      local_model.GetOrCreate<ModelSharedTimeLimit>()->DisableStop();
 
       // Presolve and solve the LNS fragment.
       size_t buffer_size;
@@ -1585,7 +1587,7 @@ class LnsSolver : public SubSolver {
       if (presolve_status == CpSolverStatus::UNKNOWN) {
         // Sometimes when presolve is aborted in the middle, we don't want to
         // load the model as it might fail some DCHECK.
-        if (shared_->SearchIsDone()) return;
+        if (local_time_limit->LimitReached()) return;
 
         LoadCpModel(lns_fragment, &local_model);
         QuickSolveWithHint(lns_fragment, &local_model);
@@ -1735,7 +1737,6 @@ class LnsSolver : public SubSolver {
              data.status == CpSolverStatus::INFEASIBLE)) {
           shared_->response->NotifyThatImprovingProblemIsInfeasible(
               solution_info);
-          shared_->time_limit->Stop();
         }
       }
 
@@ -1783,7 +1784,9 @@ class LnsSolver : public SubSolver {
   void Synchronize() override {
     double sum = 0.0;
     const absl::Span<const double> dtimes = generator_->Synchronize();
-    for (const double dtime : dtimes) {
+    std::vector<double> sorted_dtimes(dtimes.begin(), dtimes.end());
+    absl::c_sort(sorted_dtimes);
+    for (const double dtime : sorted_dtimes) {
       sum += dtime;
       AddTaskDeterministicDuration(dtime);
     }
@@ -1956,47 +1959,15 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
   NeighborhoodGeneratorHelper* helper = unique_helper.get();
   subsolvers.push_back(std::move(unique_helper));
 
-  // Compute the number of shared tree workers.
-  {
-    SatParameters* mutable_params = global_model->GetOrCreate<SatParameters>();
-    if (shared->model_proto.assumptions().empty()) {
-      int num_shared_tree_workers = params.shared_tree_num_workers();
-      // Set the number of shared tree workers if it was not set.
-      // Note: it has to be done after presolve, as presolve might empty
-      // the objective.
-      if (num_shared_tree_workers == -1) {
-        if (shared->model_proto.has_objective() &&
-            !shared->model_proto.objective().vars().empty()) {
-          // We reserve 16 workers for the main solver, and then we split the
-          // rest between the main solver and the shared tree search.
-          num_shared_tree_workers =
-              std::max((params.num_workers() - 16) / 2, 0);
-        } else {
-          num_shared_tree_workers = std::max((params.num_workers() - 8) / 2, 0);
-        }
-      }
-
-      // We need at least 4 workers for the shared tree search to be efficient.
-      if (num_shared_tree_workers >= 4) {
-        SOLVER_LOG(shared->logger, "Setting number of shared tree workers to ",
-                   num_shared_tree_workers);
-        mutable_params->set_shared_tree_num_workers(num_shared_tree_workers);
-        shared->InitSharedTreeManager(global_model);
-      } else {
-        SOLVER_LOG(shared->logger, "Not using shared tree search.");
-        mutable_params->set_shared_tree_num_workers(0);
-      }
-    } else if (params.shared_tree_num_workers() != 0) {
-      mutable_params->set_shared_tree_num_workers(0);
-      SOLVER_LOG(shared->logger,
-                 "Disabling shared tree search for problems with "
-                 "assumptions.");
-    }
+  // Add full problem solvers.
+  const std::vector<SatParameters> full_worker_params = GetFullWorkerParameters(
+      shared->model_proto, shared->logger,
+      global_model->GetOrCreate<SatParameters>(), &name_filter);
+  if (params.shared_tree_num_workers() > 0) {
+    shared->InitSharedTreeManager(global_model);
   }
 
-  // Add full problem solvers.
-  for (const SatParameters& local_params :
-       GetFullWorkerParameters(params, shared->model_proto, &name_filter)) {
+  for (const SatParameters& local_params : full_worker_params) {
     if (!name_filter.Keep(local_params.name())) continue;
 
     // TODO(user): This is currently not supported here.
@@ -2577,66 +2548,145 @@ void ClearInternalFields(CpModelProto* model_proto, SolverLogger* logger) {
   }
 }
 
-}  // namespace
+class CpModelSolver {
+ public:
+  CpModelSolver(const CpModelProto& model_proto, Model* model)
+      : model_proto_(model_proto),
+        model_(model),
+        params_(*model->GetOrCreate<SatParameters>()),
+        shared_time_limit_(model->GetOrCreate<ModelSharedTimeLimit>()),
+        shared_response_manager_(model->GetOrCreate<SharedResponseManager>()) {
+    shared_response_manager_->set_dump_prefix(
+        absl::GetFlag(FLAGS_cp_model_dump_prefix));
+  }
 
-CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
-  auto* wall_timer = model->GetOrCreate<WallTimer>();
-  auto* user_timer = model->GetOrCreate<UserTimer>();
-  wall_timer->Start();
-  user_timer->Start();
+  bool Initialize() {
+    // Enable the logging component.
+    InitializeSolverLogger();
+    RegisterSearchStatisticCallback(model_);
 
-  if constexpr (std::is_base_of_v<google::protobuf::Message, CpModelProto>) {
-    // Dump initial model?
-    if (absl::GetFlag(FLAGS_cp_model_dump_models)) {
-      DumpModelProto(model_proto, "model");
-    }
-    if (absl::GetFlag(FLAGS_cp_model_export_model)) {
-      if (model_proto.name().empty()) {
-        DumpModelProto(model_proto, "unnamed_model");
-      } else {
-        DumpModelProto(model_proto, model_proto.name());
+    // Note that the postprocessors are executed in reverse order, so this will
+    // always dump the response just before it is returned since it is the first
+    // one we register.
+    AddDumpFinalResponsePostprocessor();
+
+    // Always display the final response stats if requested.
+    // This also copy the logs to the response if requested.
+    AddSetStatsAndLogsInFinalResponsePostprocessor();
+
+    // Always add the timing information to a response. Note that it is
+    // important to add this after the log/dump postprocessor since we execute
+    // them in reverse order.
+    AddSetTimingInResponsePostprocessor();
+
+    // Validate parameters.
+    // Note that the few parameters we use before that are Booleans and thus
+    // "safe". We need to delay the validation to return a proper response.
+    if (!ValidateParameters()) return false;
+
+    // Initialize the time limit from the parameters.
+    model_->GetOrCreate<TimeLimit>()->ResetLimitFromParameters(params_);
+
+    // Register SIGINT handler if requested by the parameters.
+    AddSigintHandler();
+
+    if (!ValidateInputProto()) return false;
+
+    return CopyInputProto();
+  }
+
+  void Solve() {
+    if (Presolve()) {
+      InitializeDebugSolutionFromHint();
+      // Note that this needs to be done before SharedClasses are created.
+      DetectPresolvedModelSymmetry();
+      shared_ = std::make_unique<SharedClasses>(presolved_model_proto_, model_);
+      AddFillTightenedDomainInResponsePostprocessor();
+      AddCheckSolutionCallback();
+      AddSolutionPostsolveCallback();
+      DumpPresolvedProto();
+      if (!StopAfterPresolve()) {
+        SolvePresolvedModel();
       }
     }
   }
 
-  MergeParamsWithFlagsAndDefaults(model->GetOrCreate<SatParameters>());
-  const SatParameters& params = *model->GetOrCreate<SatParameters>();
-
-  // Enable the logging component.
-  SolverLogger* logger = model->GetOrCreate<SolverLogger>();
-  logger->EnableLogging(params.log_search_progress());
-  logger->SetLogToStdOut(params.log_to_stdout());
-  std::string log_string;
-  if (params.log_to_response()) {
-    logger->AddInfoLoggingCallback([&log_string](absl::string_view message) {
-      absl::StrAppend(&log_string, message, "\n");
-    });
+  CpSolverResponse GetResponse() {
+    return shared_response_manager_->GetResponse();
   }
 
-  auto* shared_response_manager = model->GetOrCreate<SharedResponseManager>();
-  shared_response_manager->set_dump_prefix(
-      absl::GetFlag(FLAGS_cp_model_dump_prefix));
+ protected:
+  // Initialization.
+  void InitializeSolverLogger();
+  void AddDumpFinalResponsePostprocessor();
+  void AddSetStatsAndLogsInFinalResponsePostprocessor();
+  void AddSetTimingInResponsePostprocessor();
+  bool ValidateParameters();
+  void AddSigintHandler();
+  bool ValidateInputProto();
+  bool CopyInputProto();
 
-  if (logger->LoggingIsEnabled()) {
+  // Presolve.
+  bool Presolve();
+  void MaybeFixVariablesToHintValue(PresolveContext* context);
+  void AddFloatingPointObjectiveResponsePostprocessor();
+  bool FixAssumptionsIfNotSupported(PresolveContext* context);
+
+  void InitializeDebugSolutionFromHint();
+  void DetectPresolvedModelSymmetry();
+  void AddFillTightenedDomainInResponsePostprocessor();
+  void AddCheckSolutionCallback();
+  void AddSolutionPostsolveCallback();
+
+  void DumpPresolvedProto();
+  bool StopAfterPresolve();
+  void SolvePresolvedModel();
+
+  const CpModelProto& model_proto_;
+  Model* model_;
+  const SatParameters& params_;
+  SolverLogger* logger_;
+  SharedTimeLimit* shared_time_limit_;
+  SharedResponseManager* shared_response_manager_;
+  std::unique_ptr<SharedClasses> shared_;
+
+  bool hint_feasible_before_presolve_ = false;
+  std::unique_ptr<LratProofHandler> presolve_lrat_proof_handler_;
+  google::protobuf::Arena arena_;
+  CpModelProto* presolved_model_proto_;
+  CpModelProto* mapping_proto_;
+  std::vector<int> postsolve_mapping_;
+  std::string log_string_;
+  std::vector<int64_t> debug_solution_from_hint_;
+};
+
+void CpModelSolver::InitializeSolverLogger() {
+  logger_ = model_->GetOrCreate<SolverLogger>();
+  logger_->EnableLogging(params_.log_search_progress());
+  logger_->SetLogToStdOut(params_.log_to_stdout());
+  if (params_.log_to_response()) {
+    logger_->AddInfoLoggingCallback([&](absl::string_view message) {
+      absl::StrAppend(&log_string_, message, "\n");
+    });
+  }
+  if (logger_->LoggingIsEnabled()) {
     SolverProgressLogger* progress_logger =
-        model->GetOrCreate<SolverProgressLogger>();
+        model_->GetOrCreate<SolverProgressLogger>();
     progress_logger->SetIsOptimization(
-        model_proto.has_objective() ||
-        model_proto.has_floating_point_objective());
-    shared_response_manager->AddStatusChangeCallback(
+        model_proto_.has_objective() ||
+        model_proto_.has_floating_point_objective());
+    shared_response_manager_->AddStatusChangeCallback(
         [progress_logger](const SolverStatusChangeInfo& info) {
           progress_logger->UpdateProgress(info);
         });
   }
-  RegisterSearchStatisticCallback(model);
+}
 
+void CpModelSolver::AddDumpFinalResponsePostprocessor() {
   if constexpr (std::is_base_of_v<google::protobuf::Message,
                                   CpSolverResponse>) {
-    // Note that the postprocessors are executed in reverse order, so this
-    // will always dump the response just before it is returned since it is
-    // the first one we register.
     if (absl::GetFlag(FLAGS_cp_model_dump_response)) {
-      shared_response_manager->AddFinalResponsePostprocessor(
+      shared_response_manager_->AddFinalResponsePostprocessor(
           [](CpSolverResponse* response) {
             const std::string file = absl::StrCat(
                 absl::GetFlag(FLAGS_cp_model_dump_prefix), "response.pb.txt");
@@ -2645,215 +2695,310 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
           });
     }
   }
+}
 
-  // Always display the final response stats if requested.
-  // This also copy the logs to the response if requested.
-  shared_response_manager->AddFinalResponsePostprocessor(
-      [logger, &model_proto, &log_string](CpSolverResponse* response) {
-        SOLVER_LOG(logger, CpSolverResponseStats(
-                               *response,
-                               model_proto.has_objective() ||
-                                   model_proto.has_floating_point_objective()));
-        if (!log_string.empty()) {
-          response->set_solve_log(log_string);
+void CpModelSolver::AddSetStatsAndLogsInFinalResponsePostprocessor() {
+  shared_response_manager_->AddFinalResponsePostprocessor(
+      [&](CpSolverResponse* response) {
+        SOLVER_LOG(
+            logger_,
+            CpSolverResponseStats(
+                *response, model_proto_.has_objective() ||
+                               model_proto_.has_floating_point_objective()));
+        if (!log_string_.empty()) {
+          response->set_solve_log(log_string_);
         }
       });
+}
 
-  // Always add the timing information to a response. Note that it is important
-  // to add this after the log/dump postprocessor since we execute them in
-  // reverse order.
-  ModelSharedTimeLimit* shared_time_limit =
-      model->GetOrCreate<ModelSharedTimeLimit>();
-  shared_response_manager->AddResponsePostprocessor(
-      [&wall_timer, &user_timer,
-       &shared_time_limit](CpSolverResponse* response) {
+void CpModelSolver::AddSetTimingInResponsePostprocessor() {
+  auto* wall_timer = model_->GetOrCreate<WallTimer>();
+  auto* user_timer = model_->GetOrCreate<UserTimer>();
+  shared_response_manager_->AddResponsePostprocessor(
+      [&, wall_timer, user_timer](CpSolverResponse* response) {
         response->set_wall_time(wall_timer->Get());
         response->set_user_time(user_timer->Get());
         response->set_deterministic_time(
-            shared_time_limit->GetElapsedDeterministicTime());
+            shared_time_limit_->GetElapsedDeterministicTime());
       });
+}
 
-  // Validate parameters.
-  //
-  // Note that the few parameters we use before that are Booleans and thus
-  // "safe". We need to delay the validation to return a proper response.
-  {
-    const std::string error = ValidateParameters(params);
-    if (!error.empty()) {
-      SOLVER_LOG(logger, "Invalid parameters: ", error);
+bool CpModelSolver::ValidateParameters() {
+  const std::string error = sat::ValidateParameters(params_);
+  if (!error.empty()) {
+    SOLVER_LOG(logger_, "Invalid parameters: ", error);
 
-      // TODO(user): We currently reuse the MODEL_INVALID status even though it
-      // is not the best name for this. Maybe we can add a PARAMETERS_INVALID
-      // when it become needed. Or rename to INVALID_INPUT ?
-      CpSolverResponse status_response;
-      status_response.set_status(CpSolverStatus::MODEL_INVALID);
-      status_response.set_solution_info(error);
-      shared_response_manager->FillSolveStatsInResponse(model,
-                                                        &status_response);
-      shared_response_manager->AppendResponseToBeMerged(status_response);
-      return shared_response_manager->GetResponse();
-    }
+    // TODO(user): We currently reuse the MODEL_INVALID status even though it
+    // is not the best name for this. Maybe we can add a PARAMETERS_INVALID
+    // when it become needed. Or rename to INVALID_INPUT ?
+    CpSolverResponse status_response;
+    status_response.set_status(CpSolverStatus::MODEL_INVALID);
+    status_response.set_solution_info(error);
+    shared_response_manager_->FillSolveStatsInResponse(model_,
+                                                       &status_response);
+    shared_response_manager_->AppendResponseToBeMerged(status_response);
+    return false;
   }
+  return true;
+}
 
-  // Initialize the time limit from the parameters.
-  model->GetOrCreate<TimeLimit>()->ResetLimitFromParameters(params);
-
+void CpModelSolver::AddSigintHandler() {
 #if defined(ORTOOLS_TARGET_OS_SUPPORTS_THREADS)
   static_assert(operations_research::kTargetOsSupportsThreads);
-  // Register SIGINT handler if requested by the parameters.
-  if (params.catch_sigint_signal()) {
-    model->GetOrCreate<SigintHandler>()->Register(
-        [shared_time_limit]() { shared_time_limit->Stop(); });
+  if (params_.catch_sigint_signal()) {
+    model_->GetOrCreate<SigintHandler>()->Register(
+        [&]() { shared_time_limit_->Stop(); });
   }
 #else
   static_assert(!operations_research::kTargetOsSupportsThreads);
 #endif  // defined( ORTOOLS_TARGET_OS_SUPPORTS_THREADS)
+}
 
+bool CpModelSolver::ValidateInputProto() {
   if (DEBUG_MODE && !ProbablyRunningInsideUnitTest()) {
     LOG_EVERY_N_SEC(WARNING, 0.1)
         << "WARNING: CP-SAT is running in debug mode. The solver will "
            "be slow because we will do a lot of extra checks. Compile in "
            "optimization mode to gain an order of magnitude speedup.";
   }
-  SOLVER_LOG(logger, "");
-  SOLVER_LOG(logger, "Starting ", CpSatSolverVersion());
-  SOLVER_LOG(logger, "Parameters: ", ProtobufShortDebugString(params));
+  SOLVER_LOG(logger_, "");
+  SOLVER_LOG(logger_, "Starting ", CpSatSolverVersion());
+  SOLVER_LOG(logger_, "Parameters: ", ProtobufShortDebugString(params_));
 
   // Internally we adapt the parameters so that things are disabled if
   // they do not make sense.
-  AdaptGlobalParameters(model_proto, model);
+  AdaptGlobalParameters(model_proto_, model_);
 
-  if (logger->LoggingIsEnabled() && params.use_absl_random()) {
-    model->GetOrCreate<ModelRandomGenerator>()->LogSalt();
+  if (logger_->LoggingIsEnabled() && params_.use_absl_random()) {
+    model_->GetOrCreate<ModelRandomGenerator>()->LogSalt();
   }
 
   // Validate model_proto.
   // TODO(user): provide an option to skip this step for speed?
-  {
-    const std::string error = ValidateInputCpModel(params, model_proto);
-    if (!error.empty()) {
-      SOLVER_LOG(logger, "Invalid model: ", error);
-      CpSolverResponse status_response;
-      status_response.set_status(CpSolverStatus::MODEL_INVALID);
-      status_response.set_solution_info(error);
-      shared_response_manager->FillSolveStatsInResponse(model,
-                                                        &status_response);
-      shared_response_manager->AppendResponseToBeMerged(status_response);
-      return shared_response_manager->GetResponse();
-    }
+  const std::string error = ValidateInputCpModel(params_, model_proto_);
+  if (!error.empty()) {
+    SOLVER_LOG(logger_, "Invalid model: ", error);
+    CpSolverResponse status_response;
+    status_response.set_status(CpSolverStatus::MODEL_INVALID);
+    status_response.set_solution_info(error);
+    shared_response_manager_->FillSolveStatsInResponse(model_,
+                                                       &status_response);
+    shared_response_manager_->AppendResponseToBeMerged(status_response);
+    return false;
   }
+  return true;
+}
 
-  SOLVER_LOG(logger, "");
-  SOLVER_LOG(logger, "Initial ", CpModelStats(model_proto));
+bool CpModelSolver::CopyInputProto() {
+  SOLVER_LOG(logger_, "");
+  SOLVER_LOG(logger_, "Initial ", CpModelStats(model_proto_));
 
   // Presolve and expansions.
-  SOLVER_LOG(logger, "");
-  SOLVER_LOG(logger,
+  SOLVER_LOG(logger_, "");
+  SOLVER_LOG(logger_,
              absl::StrFormat("Starting initial copy and canonicalization of "
                              "the input proto at %.2fs",
-                             wall_timer->Get()));
+                             model_->GetOrCreate<WallTimer>()->Get()));
 
   // Note: Allocating in an arena significantly speed up destruction (free) for
   // large messages.
-  google::protobuf::Arena arena;
-  CpModelProto* new_cp_model_proto =
-      google::protobuf::Arena::Create<CpModelProto>(&arena);
-  CpModelProto* mapping_proto =
-      google::protobuf::Arena::Create<CpModelProto>(&arena);
+  presolved_model_proto_ =
+      google::protobuf::Arena::Create<CpModelProto>(&arena_);
+  mapping_proto_ = google::protobuf::Arena::Create<CpModelProto>(&arena_);
 
   // The lrat proof handler is needed is some cases, during the initial copy
   // and the presolve.
   //
   // Note that this is the "presolve one", each worker will have its own.
-  std::unique_ptr<LratProofHandler> presolve_lrat_proof_handler =
-      LratProofHandler::MaybeCreate(
-          model, /*enable_rat_proofs=*/params.cp_model_pure_sat_presolve());
-  if (presolve_lrat_proof_handler != nullptr) {
-    model->Register<LratProofHandler>(presolve_lrat_proof_handler.get());
+  presolve_lrat_proof_handler_ = LratProofHandler::MaybeCreate(
+      model_, /*enable_rat_proofs=*/params_.cp_model_pure_sat_presolve());
+  if (presolve_lrat_proof_handler_ != nullptr) {
+    model_->Register<LratProofHandler>(presolve_lrat_proof_handler_.get());
   }
 
-  if (!CopyModel(model_proto, new_cp_model_proto, model)) {
+  if (!CopyModel(model_proto_, presolved_model_proto_, model_)) {
     const std::string info = "Problem proved infeasible during initial copy.";
-    SOLVER_LOG(logger, info);
-    if (model->Mutable<LratProofHandler>() != nullptr) {
-      model->Mutable<LratProofHandler>()->Close(/*model_is_unsat=*/true);
+    SOLVER_LOG(logger_, info);
+    if (model_->Mutable<LratProofHandler>() != nullptr) {
+      model_->Mutable<LratProofHandler>()->Close(/*model_is_unsat=*/true);
     }
     CpSolverResponse status_response;
     status_response.set_status(CpSolverStatus::INFEASIBLE);
     status_response.set_solution_info(info);
-    shared_response_manager->AppendResponseToBeMerged(status_response);
+    shared_response_manager_->AppendResponseToBeMerged(status_response);
     SharedLratProofStatus* lrat_proof_status =
-        model->GetOrCreate<SharedLratProofStatus>();
-    LratMerger(model).Merge(lrat_proof_status->GetProofFilenames());
-    lrat_proof_status->Log(logger);
-    return shared_response_manager->GetResponse();
+        model_->GetOrCreate<SharedLratProofStatus>();
+    LratMerger(model_).Merge(lrat_proof_status->GetProofFilenames());
+    lrat_proof_status->Log(logger_);
+    return false;
   }
 
   // This uses the relations from the model_proto to fill the node expressions
-  // of new_cp_model_proto. This is useful to have as many binary relations as
-  // possible (new_cp_model_proto can have less relations because the model
-  // copier can remove the ones which are always true).
+  // of presolved_model_proto_. This is useful to have as many binary relations
+  // as possible (presolved_model_proto_ can have less relations because the
+  // model copier can remove the ones which are always true).
   const auto [num_routes, num_dimensions] =
-      MaybeFillMissingRoutesConstraintNodeExpressions(model_proto,
-                                                      *new_cp_model_proto);
+      MaybeFillMissingRoutesConstraintNodeExpressions(model_proto_,
+                                                      *presolved_model_proto_);
   if (num_dimensions > 0) {
-    SOLVER_LOG(logger, "Routes: ", num_dimensions,
+    SOLVER_LOG(logger_, "Routes: ", num_dimensions,
                " dimension(s) automatically inferred for ", num_routes,
                " routes constraint(s).");
   }
 
-  ClearInternalFields(new_cp_model_proto, logger);
+  ClearInternalFields(presolved_model_proto_, logger_);
 
   if (absl::GetFlag(FLAGS_cp_model_ignore_objective) &&
-      (new_cp_model_proto->has_objective() ||
-       new_cp_model_proto->has_floating_point_objective())) {
-    SOLVER_LOG(logger, "Ignoring objective");
-    new_cp_model_proto->clear_objective();
-    new_cp_model_proto->clear_floating_point_objective();
+      (presolved_model_proto_->has_objective() ||
+       presolved_model_proto_->has_floating_point_objective())) {
+    SOLVER_LOG(logger_, "Ignoring objective");
+    presolved_model_proto_->clear_objective();
+    presolved_model_proto_->clear_floating_point_objective();
   }
 
   if (absl::GetFlag(FLAGS_cp_model_ignore_hints) &&
-      new_cp_model_proto->has_solution_hint()) {
-    SOLVER_LOG(logger, "Ignoring solution hint");
-    new_cp_model_proto->clear_solution_hint();
+      presolved_model_proto_->has_solution_hint()) {
+    SOLVER_LOG(logger_, "Ignoring solution hint");
+    presolved_model_proto_->clear_solution_hint();
   }
+  return true;
+}
 
-  SOLVER_LOG(logger,
-             absl::StrFormat("Starting presolve at %.2fs", wall_timer->Get()));
-  auto context = std::make_unique<PresolveContext>(model, new_cp_model_proto,
-                                                   mapping_proto);
+bool CpModelSolver::Presolve() {
+  SOLVER_LOG(logger_, absl::StrFormat("Starting presolve at %.2fs",
+                                      model_->GetOrCreate<WallTimer>()->Get()));
+  auto context = std::make_unique<PresolveContext>(
+      model_, presolved_model_proto_, mapping_proto_);
 
   // Checks for hints early in case they are forced to be hard constraints.
+  MaybeFixVariablesToHintValue(context.get());
+
+  // If the objective was a floating point one, do some postprocessing on the
+  // final response.
+  AddFloatingPointObjectiveResponsePostprocessor();
+
+  // For the case where the assumptions are currently not supported, we just
+  // assume they are fixed, and will always report all of them in the UNSAT
+  // core if the problem turn out to be UNSAT.
   //
+  // If the mode is not degraded, we will hopefully report a small subset
+  // in case there is no feasible solution under these assumptions.
+  if (!FixAssumptionsIfNotSupported(context.get())) {
+    return false;
+  }
+
+  // Do the actual presolve.
+  const CpSolverStatus presolve_status =
+      PresolveCpModel(context.get(), &postsolve_mapping_);
+
+  // Delete the presolve_lrat_proof_handler_.
+  // This is needed to properly write the first proof file.
+  if (presolve_lrat_proof_handler_ != nullptr) {
+    presolve_lrat_proof_handler_->Close(presolve_status ==
+                                        CpSolverStatus::INFEASIBLE);
+    model_->Unregister<LratProofHandler>();
+    presolve_lrat_proof_handler_.reset(nullptr);
+  }
+
+  // Delete the context as soon as the presolve is done. Note that only
+  // postsolve_mapping_ and mapping_proto_ are needed for postsolve.
+  context.reset(nullptr);
+
+  if (presolve_status != CpSolverStatus::UNKNOWN) {
+    if (presolve_status == CpSolverStatus::INFEASIBLE &&
+        hint_feasible_before_presolve_ &&
+        params_.debug_crash_if_presolve_breaks_hint()) {
+      LOG(FATAL) << "Presolve bug: model with feasible hint found UNSAT "
+                    "after presolve.";
+    }
+    SOLVER_LOG(logger_, "Problem closed by presolve.");
+    CpSolverResponse status_response;
+    status_response.set_status(presolve_status);
+    shared_response_manager_->FillSolveStatsInResponse(model_,
+                                                       &status_response);
+    shared_response_manager_->AppendResponseToBeMerged(status_response);
+    SharedLratProofStatus* lrat_proof_status =
+        model_->GetOrCreate<SharedLratProofStatus>();
+    LratMerger(model_).Merge(lrat_proof_status->GetProofFilenames());
+    lrat_proof_status->Log(logger_);
+    return false;
+  }
+
+  SOLVER_LOG(logger_, "");
+  SOLVER_LOG(logger_, "Presolved ", CpModelStats(*presolved_model_proto_));
+  return true;
+}
+
+void CpModelSolver::MaybeFixVariablesToHintValue(PresolveContext* context) {
   // Note that this still use the original user-given hint, which is not
   // clamped. We also don't have hint for potential new variable created during
   // copy/canonicalization. But we should be able to recover their value quite
   // quickly when we fix the hint.
-  if (params.fix_variables_to_their_hinted_value() &&
-      model_proto.has_solution_hint()) {
-    FixVariablesToHintValue(model_proto.solution_hint(), context.get(), logger);
+  if (params_.fix_variables_to_their_hinted_value() &&
+      model_proto_.has_solution_hint()) {
+    FixVariablesToHintValue(model_proto_.solution_hint(), context, logger_);
   }
 
   // If the hint is complete, we can use the solution checker to do more
   // validation. Note that after the model has been validated, we are sure there
   // are do duplicate variables in the solution hint, so we can just check the
   // size.
-  bool hint_feasible_before_presolve = false;
+  hint_feasible_before_presolve_ = false;
   if (!context->ModelIsUnsat()) {
-    hint_feasible_before_presolve =
-        SolutionHintIsCompleteAndFeasible(model_proto, logger);
+    hint_feasible_before_presolve_ =
+        SolutionHintIsCompleteAndFeasible(model_proto_, logger_);
   }
+}
 
-  // If the objective was a floating point one, do some postprocessing on the
-  // final response.
-  if (model_proto.has_floating_point_objective()) {
-    shared_response_manager->AddFinalResponsePostprocessor(
-        [&params, &model_proto, mapping_proto,
-         &logger](CpSolverResponse* response) {
+bool CpModelSolver::FixAssumptionsIfNotSupported(PresolveContext* context) {
+  if (!model_proto_.assumptions().empty() &&
+      (params_.num_workers() > 1 || model_proto_.has_objective() ||
+       model_proto_.has_floating_point_objective() ||
+       params_.enumerate_all_solutions() || params_.interleave_search())) {
+    SOLVER_LOG(
+        logger_,
+        "Warning: solving with assumptions was requested in a non-fully "
+        "supported setting.\nWe will assumes these assumptions true while "
+        "solving, but if the model is infeasible, you will not get a useful "
+        "'sufficient_assumptions_for_infeasibility' field in the response, it "
+        "will include all assumptions.");
+
+    shared_response_manager_->AddFinalResponsePostprocessor(
+        [&](CpSolverResponse* response) {
+          if (response->status() != CpSolverStatus::INFEASIBLE) return;
+
+          // For now, just pass in all assumptions.
+          *response->mutable_sufficient_assumptions_for_infeasibility() =
+              model_proto_.assumptions();
+        });
+
+    // Clear them from the new proto.
+    presolved_model_proto_->clear_assumptions();
+
+    context->InitializeNewDomains();
+    for (const int ref : model_proto_.assumptions()) {
+      if (!context->SetLiteralToTrue(ref)) {
+        CpSolverResponse status_response;
+        status_response.set_status(CpSolverStatus::INFEASIBLE);
+        status_response.add_sufficient_assumptions_for_infeasibility(ref);
+        shared_response_manager_->FillSolveStatsInResponse(model_,
+                                                           &status_response);
+        shared_response_manager_->AppendResponseToBeMerged(status_response);
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+void CpModelSolver::AddFloatingPointObjectiveResponsePostprocessor() {
+  if (model_proto_.has_floating_point_objective()) {
+    shared_response_manager_->AddFinalResponsePostprocessor(
+        [&](CpSolverResponse* response) {
           if (response->solution().empty()) return;
 
           // Compute the true objective of the best returned solution.
-          const auto& float_obj = model_proto.floating_point_objective();
+          const auto& float_obj = model_proto_.floating_point_objective();
           double value = float_obj.offset();
           const int num_terms = float_obj.vars().size();
           for (int i = 0; i < num_terms; ++i) {
@@ -2865,19 +3010,19 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
           // Also copy the scaled objective which must be in the mapping model.
           // This can be useful for some client, like if they want to do
           // multi-objective optimization in stages.
-          if (!mapping_proto->has_objective()) return;
-          const CpObjectiveProto& integer_obj = mapping_proto->objective();
+          if (!mapping_proto_->has_objective()) return;
+          const CpObjectiveProto& integer_obj = mapping_proto_->objective();
           *response->mutable_integer_objective() = integer_obj;
 
           // If requested, compute a correct lb from the one on the integer
           // objective. We only do that if some error were introduced by the
           // scaling algorithm.
-          if (params.mip_compute_true_objective_bound() &&
+          if (params_.mip_compute_true_objective_bound() &&
               !integer_obj.scaling_was_exact()) {
             const int64_t integer_lb = response->inner_objective_lower_bound();
             const double lb = ComputeTrueObjectiveLowerBound(
-                model_proto, integer_obj, integer_lb);
-            SOLVER_LOG(logger, "[Scaling] scaled_objective_bound: ",
+                model_proto_, integer_obj, integer_lb);
+            SOLVER_LOG(logger_, "[Scaling] scaled_objective_bound: ",
                        response->best_objective_bound(),
                        " corrected_bound: ", lb,
                        " delta: ", response->best_objective_bound() - lb);
@@ -2898,190 +3043,106 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
           if (response->status() == CpSolverStatus::OPTIMAL) {
             const double gap = std::abs(response->objective_value() -
                                         response->best_objective_bound());
-            if (gap > params.absolute_gap_limit()) {
-              SOLVER_LOG(logger,
+            if (gap > params_.absolute_gap_limit()) {
+              SOLVER_LOG(logger_,
                          "[Scaling] Warning: OPTIMAL was reported, yet the "
                          "objective gap (",
                          gap, ") is greater than requested absolute limit (",
-                         params.absolute_gap_limit(), ").");
+                         params_.absolute_gap_limit(), ").");
             }
           }
         });
   }
+}
 
-  if (!model_proto.assumptions().empty() &&
-      (params.num_workers() > 1 || model_proto.has_objective() ||
-       model_proto.has_floating_point_objective() ||
-       params.enumerate_all_solutions() || params.interleave_search())) {
-    SOLVER_LOG(
-        logger,
-        "Warning: solving with assumptions was requested in a non-fully "
-        "supported setting.\nWe will assumes these assumptions true while "
-        "solving, but if the model is infeasible, you will not get a useful "
-        "'sufficient_assumptions_for_infeasibility' field in the response, it "
-        "will include all assumptions.");
-
-    // For the case where the assumptions are currently not supported, we just
-    // assume they are fixed, and will always report all of them in the UNSAT
-    // core if the problem turn out to be UNSAT.
-    //
-    // If the mode is not degraded, we will hopefully report a small subset
-    // in case there is no feasible solution under these assumptions.
-    shared_response_manager->AddFinalResponsePostprocessor(
-        [&model_proto](CpSolverResponse* response) {
-          if (response->status() != CpSolverStatus::INFEASIBLE) return;
-
-          // For now, just pass in all assumptions.
-          *response->mutable_sufficient_assumptions_for_infeasibility() =
-              model_proto.assumptions();
-        });
-
-    // Clear them from the new proto.
-    new_cp_model_proto->clear_assumptions();
-
-    context->InitializeNewDomains();
-    for (const int ref : model_proto.assumptions()) {
-      if (!context->SetLiteralToTrue(ref)) {
-        CpSolverResponse status_response;
-        status_response.set_status(CpSolverStatus::INFEASIBLE);
-        status_response.add_sufficient_assumptions_for_infeasibility(ref);
-        shared_response_manager->FillSolveStatsInResponse(model,
-                                                          &status_response);
-        shared_response_manager->AppendResponseToBeMerged(status_response);
-        return shared_response_manager->GetResponse();
-      }
-    }
-  }
-
-  // Do the actual presolve.
-  std::vector<int> postsolve_mapping;
-  const CpSolverStatus presolve_status =
-      PresolveCpModel(context.get(), &postsolve_mapping);
-
-  // Delete the presolve_lrat_proof_handler.
-  // This is needed to properly write the first proof file.
-  if (presolve_lrat_proof_handler != nullptr) {
-    presolve_lrat_proof_handler->Close(presolve_status ==
-                                       CpSolverStatus::INFEASIBLE);
-    model->Unregister<LratProofHandler>();
-    presolve_lrat_proof_handler.reset(nullptr);
-  }
-
-  // Delete the context as soon as the presolve is done. Note that only
-  // postsolve_mapping and mapping_proto are needed for postsolve.
-  context.reset(nullptr);
-
-  if (presolve_status != CpSolverStatus::UNKNOWN) {
-    if (presolve_status == CpSolverStatus::INFEASIBLE &&
-        hint_feasible_before_presolve &&
-        params.debug_crash_if_presolve_breaks_hint()) {
-      LOG(FATAL) << "Presolve bug: model with feasible hint found UNSAT "
-                    "after presolve.";
-    }
-    SOLVER_LOG(logger, "Problem closed by presolve.");
-    CpSolverResponse status_response;
-    status_response.set_status(presolve_status);
-    shared_response_manager->FillSolveStatsInResponse(model, &status_response);
-    shared_response_manager->AppendResponseToBeMerged(status_response);
-    SharedLratProofStatus* lrat_proof_status =
-        model->GetOrCreate<SharedLratProofStatus>();
-    LratMerger(model).Merge(lrat_proof_status->GetProofFilenames());
-    lrat_proof_status->Log(logger);
-    return shared_response_manager->GetResponse();
-  }
-
-  SOLVER_LOG(logger, "");
-  SOLVER_LOG(logger, "Presolved ", CpModelStats(*new_cp_model_proto));
-
-  std::vector<int64_t> debug_solution_from_hint;
+void CpModelSolver::InitializeDebugSolutionFromHint() {
   if (absl::GetFlag(FLAGS_cp_model_use_hint_for_debug_only) &&
-      hint_feasible_before_presolve) {
-    SOLVER_LOG(logger, "Using solution hint only as debug solution");
-    debug_solution_from_hint.resize(
-        new_cp_model_proto->solution_hint().values_size());
-    for (int i = 0; i < new_cp_model_proto->solution_hint().values_size();
+      hint_feasible_before_presolve_) {
+    SOLVER_LOG(logger_, "Using solution hint only as debug solution");
+    debug_solution_from_hint_.resize(
+        presolved_model_proto_->solution_hint().values_size());
+    for (int i = 0; i < presolved_model_proto_->solution_hint().values_size();
          ++i) {
-      debug_solution_from_hint[new_cp_model_proto->solution_hint().vars(i)] =
-          new_cp_model_proto->solution_hint().values(i);
+      debug_solution_from_hint_[presolved_model_proto_->solution_hint().vars(
+          i)] = presolved_model_proto_->solution_hint().values(i);
     }
-    new_cp_model_proto->clear_solution_hint();
+    presolved_model_proto_->clear_solution_hint();
   }
+}
 
-  // Detect the symmetry of the presolved model.
-  // Note that this needs to be done before SharedClasses are created.
-  //
+void CpModelSolver::DetectPresolvedModelSymmetry() {
   // TODO(user): We could actually report a complete feasible hint before this
   // point. But the proper fix is to report it even before the presolve.
-  if (params.symmetry_level() > 1 && !params.stop_after_presolve() &&
-      !shared_time_limit->LimitReached()) {
-    if (params.keep_symmetry_in_presolve() &&
-        new_cp_model_proto->has_symmetry()) {
+  if (params_.symmetry_level() > 1 && !params_.stop_after_presolve() &&
+      !shared_time_limit_->LimitReached()) {
+    if (params_.keep_symmetry_in_presolve() &&
+        presolved_model_proto_->has_symmetry()) {
       // Symmetry should be already computed and correct, so we don't redo it.
       // Moreover it is possible we will not find them again as the constraints
       // might have changed.
     } else {
       TimeLimit time_limit;
-      shared_time_limit->UpdateLocalLimit(&time_limit);
-      DetectAndAddSymmetryToProto(params, *new_cp_model_proto,
-                                  new_cp_model_proto->mutable_symmetry(),
-                                  logger, &time_limit);
+      shared_time_limit_->UpdateLocalLimit(&time_limit);
+      DetectAndAddSymmetryToProto(params_, *presolved_model_proto_,
+                                  presolved_model_proto_->mutable_symmetry(),
+                                  logger_, &time_limit);
     }
 
-    // TODO(user): Some code just check new_cp_model_proto->has_symmetry().
+    // TODO(user): Some code just check presolved_model_proto_->has_symmetry().
     // If we don't have any generator, better to just clear the field.
-    if (new_cp_model_proto->symmetry().permutations().empty()) {
-      new_cp_model_proto->clear_symmetry();
+    if (presolved_model_proto_->symmetry().permutations().empty()) {
+      presolved_model_proto_->clear_symmetry();
     }
   }
+}
 
-  // TODO(user): reduce this function size and find a better place for this?
-  SharedClasses shared(new_cp_model_proto, model);
-
-  if (params.fill_tightened_domains_in_response()) {
-    shared_response_manager->AddResponsePostprocessor(
-        [&model_proto, new_cp_model_proto, mapping_proto, &postsolve_mapping,
-         logger, &shared](CpSolverResponse* response) {
-          // Collect the info we know about new_cp_model_proto bounds.
+void CpModelSolver::AddFillTightenedDomainInResponsePostprocessor() {
+  if (params_.fill_tightened_domains_in_response()) {
+    shared_response_manager_->AddResponsePostprocessor(
+        [&](CpSolverResponse* response) {
+          // Collect the info we know about presolved_model_proto_ bounds.
           // Note that this is not really needed as we should have the same
-          // information in the mapping_proto.
+          // information in the mapping_proto_.
           std::vector<Domain> bounds;
           for (const IntegerVariableProto& vars :
-               new_cp_model_proto->variables()) {
+               presolved_model_proto_->variables()) {
             bounds.push_back(ReadDomainFromProto(vars));
           }
 
           // Intersect with the SharedBoundsManager if it exist.
-          if (shared.bounds != nullptr) {
-            shared.bounds->UpdateDomains(&bounds);
+          if (shared_->bounds != nullptr) {
+            shared_->bounds->UpdateDomains(&bounds);
           }
 
           // Postsolve and fill the field.
-          FillTightenedDomainInResponse(model_proto, *mapping_proto,
-                                        postsolve_mapping, bounds, response,
-                                        logger);
+          FillTightenedDomainInResponse(model_proto_, *mapping_proto_,
+                                        postsolve_mapping_, bounds, response,
+                                        logger_);
         });
   }
+}
 
+void CpModelSolver::AddCheckSolutionCallback() {
   // Solution checking.
   // We either check all solutions, or only the last one.
   // Checking all solution might be expensive if we creates many.
-  auto check_solution = [&model_proto, &params, mapping_proto,
-                         &postsolve_mapping](const CpSolverResponse& response) {
+  auto check_solution = [&](const CpSolverResponse& response) {
     if (response.solution().empty()) return;
 
     bool solution_is_feasible = true;
-    if (params.cp_model_presolve()) {
+    if (params_.cp_model_presolve()) {
       // We pass presolve data for more informative message in case the solution
       // is not feasible.
-      solution_is_feasible = SolutionIsFeasible(
-          model_proto, response.solution(), mapping_proto, &postsolve_mapping);
+      solution_is_feasible =
+          SolutionIsFeasible(model_proto_, response.solution(), mapping_proto_,
+                             &postsolve_mapping_);
     } else {
       solution_is_feasible =
-          SolutionIsFeasible(model_proto, response.solution());
+          SolutionIsFeasible(model_proto_, response.solution());
     }
     if (solution_is_feasible && response.status() == CpSolverStatus::OPTIMAL) {
       solution_is_feasible =
-          SolutionCanBeOptimal(model_proto, response.solution());
+          SolutionCanBeOptimal(model_proto_, response.solution());
     }
 
     // We dump the response when infeasible, this might help debugging.
@@ -3099,39 +3160,40 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   };
   if (DEBUG_MODE ||
       absl::GetFlag(FLAGS_cp_model_check_intermediate_solutions)) {
-    shared_response_manager->AddSolutionCallback(std::move(check_solution));
+    shared_response_manager_->AddSolutionCallback(std::move(check_solution));
   } else {
-    shared_response_manager->AddFinalResponsePostprocessor(
+    shared_response_manager_->AddFinalResponsePostprocessor(
         [checker = std::move(check_solution)](CpSolverResponse* response) {
           checker(*response);
         });
   }
+}
 
+void CpModelSolver::AddSolutionPostsolveCallback() {
   // Solution postsolving.
-  if (params.cp_model_presolve()) {
-    shared_response_manager->AddSolutionPostprocessor(
-        [&model_proto, &params, mapping_proto, &model,
-         &postsolve_mapping](std::vector<int64_t>* solution) {
-          AddPostsolveClauses(postsolve_mapping, model, mapping_proto);
-          PostsolveResponseWrapper(params, model_proto.variables_size(),
-                                   *mapping_proto, postsolve_mapping, solution);
+  if (params_.cp_model_presolve()) {
+    shared_response_manager_->AddSolutionPostprocessor(
+        [&](std::vector<int64_t>* solution) {
+          AddPostsolveClauses(postsolve_mapping_, model_, mapping_proto_);
+          PostsolveResponseWrapper(params_, model_proto_.variables_size(),
+                                   *mapping_proto_, postsolve_mapping_,
+                                   solution);
         });
-    shared_response_manager->AddResponsePostprocessor(
-        [&postsolve_mapping](CpSolverResponse* response) {
-          // Map back the sufficient assumptions for infeasibility.
-          for (int& ref :
-               *(response
-                     ->mutable_sufficient_assumptions_for_infeasibility())) {
-            ref = RefIsPositive(ref)
-                      ? postsolve_mapping[ref]
-                      : NegatedRef(postsolve_mapping[PositiveRef(ref)]);
-          }
-        });
+    shared_response_manager_->AddResponsePostprocessor([&](CpSolverResponse*
+                                                               response) {
+      // Map back the sufficient assumptions for infeasibility.
+      for (int& ref :
+           *(response->mutable_sufficient_assumptions_for_infeasibility())) {
+        ref = RefIsPositive(ref)
+                  ? postsolve_mapping_[ref]
+                  : NegatedRef(postsolve_mapping_[PositiveRef(ref)]);
+      }
+    });
   } else {
-    shared_response_manager->AddResponsePostprocessor(
-        [&model_proto](CpSolverResponse* response) {
+    shared_response_manager_->AddResponsePostprocessor(
+        [&](CpSolverResponse* response) {
           // Truncate the solution in case model expansion added more variables.
-          const int initial_size = model_proto.variables_size();
+          const int initial_size = model_proto_.variables_size();
           if (!response->solution().empty()) {
             response->mutable_solution()->Truncate(initial_size);
           }
@@ -3139,25 +3201,25 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   }
 
   // Make sure everything stops when we have a first solution if requested.
-  if (params.stop_after_first_solution()) {
-    shared_response_manager->AddSolutionCallback(
-        [shared_time_limit](const CpSolverResponse&) {
-          shared_time_limit->Stop();
-        });
+  if (params_.stop_after_first_solution()) {
+    shared_response_manager_->AddSolutionCallback(
+        [&](const CpSolverResponse&) { shared_time_limit_->Stop(); });
   }
+}
 
+void CpModelSolver::DumpPresolvedProto() {
   if constexpr (std::is_base_of_v<google::protobuf::Message, CpModelProto> &&
                 std::is_base_of_v<google::protobuf::Message, MPModelProto>) {
     if (absl::GetFlag(FLAGS_cp_model_dump_models)) {
-      DumpModelProto(*new_cp_model_proto, "presolved_model");
-      DumpModelProto(*mapping_proto, "mapping_model");
+      DumpModelProto(*presolved_model_proto_, "presolved_model");
+      DumpModelProto(*mapping_proto_, "mapping_model");
 
       // Debug model with 1-based indices easier to read but cannot be parsed
       // back! This follow the SAT convention for literal like +3/-3 and
       // variable starts at 1. Note also that without the model name, the domain
       // of variable #i will be at line i.
       {
-        CpModelProto copy = *new_cp_model_proto;
+        CpModelProto copy = *presolved_model_proto_;
         copy.clear_name();
         for (ConstraintProto& ct : *copy.mutable_constraints()) {
           ApplyToAllVariableIndices(
@@ -3178,15 +3240,16 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
       //
       // TODO(user): We could try to dump our linear relaxation too.
       MPModelProto mip_model;
-      if (ConvertCpModelProtoToMPModelProto(*new_cp_model_proto, &mip_model)) {
+      if (ConvertCpModelProtoToMPModelProto(*presolved_model_proto_,
+                                            &mip_model)) {
         DumpModelProto(mip_model, "presolved_mp_model");
       }
 
       // If the model is convertible to a pure SAT one, we dump it too.
       std::string cnf_string;
-      if (ConvertCpModelProtoToCnf(*new_cp_model_proto, &cnf_string)) {
+      if (ConvertCpModelProtoToCnf(*presolved_model_proto_, &cnf_string)) {
         const std::string suffix =
-            new_cp_model_proto->has_objective() ? "_no_objective" : "";
+            presolved_model_proto_->has_objective() ? "_no_objective" : "";
         const std::string filename =
             absl::StrCat(absl::GetFlag(FLAGS_cp_model_dump_prefix),
                          "presolved_cnf_model", suffix, ".cnf");
@@ -3194,7 +3257,8 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
         const absl::Status status =
             file::SetContents(filename, cnf_string, file::Defaults());
         if (!status.ok()) LOG(ERROR) << status;
-      } else if (ConvertCpModelProtoToWCnf(*new_cp_model_proto, &cnf_string)) {
+      } else if (ConvertCpModelProtoToWCnf(*presolved_model_proto_,
+                                           &cnf_string)) {
         const std::string filename =
             absl::StrCat(absl::GetFlag(FLAGS_cp_model_dump_prefix),
                          "presolved_wcnf_model.wcnf");
@@ -3205,39 +3269,45 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
       }
     }
   }
+}
 
-  if (params.stop_after_presolve() || shared_time_limit->LimitReached()) {
+bool CpModelSolver::StopAfterPresolve() {
+  if (params_.stop_after_presolve() || shared_time_limit_->LimitReached()) {
     int64_t num_terms = 0;
-    for (const ConstraintProto& ct : new_cp_model_proto->constraints()) {
+    for (const ConstraintProto& ct : presolved_model_proto_->constraints()) {
       num_terms += static_cast<int>(UsedVariables(ct).size());
     }
-    SOLVER_LOG(
-        logger, "Stopped after presolve.",
-        "\nPresolvedNumVariables: ", new_cp_model_proto->variables().size(),
-        "\nPresolvedNumConstraints: ", new_cp_model_proto->constraints().size(),
-        "\nPresolvedNumTerms: ", num_terms);
+    SOLVER_LOG(logger_, "Stopped after presolve.", "\nPresolvedNumVariables: ",
+               presolved_model_proto_->variables().size(),
+               "\nPresolvedNumConstraints: ",
+               presolved_model_proto_->constraints().size(),
+               "\nPresolvedNumTerms: ", num_terms);
 
     CpSolverResponse status_response;
-    shared_response_manager->FillSolveStatsInResponse(model, &status_response);
-    shared_response_manager->AppendResponseToBeMerged(status_response);
-    return shared_response_manager->GetResponse();
+    shared_response_manager_->FillSolveStatsInResponse(model_,
+                                                       &status_response);
+    shared_response_manager_->AppendResponseToBeMerged(status_response);
+    return true;
   }
+  return false;
+}
 
-  SOLVER_LOG(logger, "");
-  SOLVER_LOG(logger, "Preloading model.");
+void CpModelSolver::SolvePresolvedModel() {
+  SOLVER_LOG(logger_, "");
+  SOLVER_LOG(logger_, "Preloading model.");
 
   // If specified, we load the initial objective domain right away in the
   // response manager. Note that the presolve will always fill it with the
   // trivial min/max value if the user left it empty. This avoids to display
   // [-infinity, infinity] for the initial objective search space.
-  if (new_cp_model_proto->has_objective()) {
-    shared_response_manager->InitializeObjective(*new_cp_model_proto);
-    shared_response_manager->SetGapLimitsFromParameters(params);
+  if (presolved_model_proto_->has_objective()) {
+    shared_response_manager_->InitializeObjective(*presolved_model_proto_);
+    shared_response_manager_->SetGapLimitsFromParameters(params_);
   }
 
   // Start counting the primal integral from the current deterministic time and
   // initial objective domain gap that we just filled.
-  shared_response_manager->UpdateGapIntegral();
+  shared_response_manager_->UpdateGapIntegral();
 
   // Re-test a complete solution hint to see if it survived the presolve.
   // If it is feasible, we load it right away.
@@ -3251,52 +3321,79 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   // hint will be infeasible, so the activities of the variables will be
   // different.
   bool hint_feasible_after_presolve;
-  if (!params.enumerate_all_solutions()) {
+  if (!params_.enumerate_all_solutions()) {
     hint_feasible_after_presolve = SolutionHintIsCompleteAndFeasible(
-        *new_cp_model_proto, logger, shared_response_manager);
+        *presolved_model_proto_, logger_, shared_response_manager_);
   } else {
-    hint_feasible_after_presolve =
-        SolutionHintIsCompleteAndFeasible(*new_cp_model_proto, logger, nullptr);
+    hint_feasible_after_presolve = SolutionHintIsCompleteAndFeasible(
+        *presolved_model_proto_, logger_, nullptr);
   }
 
-  if (hint_feasible_before_presolve && !hint_feasible_after_presolve &&
-      params.debug_crash_if_presolve_breaks_hint()) {
+  if (hint_feasible_before_presolve_ && !hint_feasible_after_presolve &&
+      params_.debug_crash_if_presolve_breaks_hint()) {
     LOG(FATAL) << "Presolve broke a feasible hint";
   }
 
-  if (!debug_solution_from_hint.empty()) {
-    model->GetOrCreate<SharedResponseManager>()->LoadDebugSolution(
-        debug_solution_from_hint);
+  if (!debug_solution_from_hint_.empty()) {
+    model_->GetOrCreate<SharedResponseManager>()->LoadDebugSolution(
+        debug_solution_from_hint_);
   } else {
-    LoadDebugSolution(*new_cp_model_proto, model);
+    LoadDebugSolution(*presolved_model_proto_, model_);
   }
 
-  if (!model->GetOrCreate<TimeLimit>()->LimitReached()) {
+  if (!model_->GetOrCreate<TimeLimit>()->LimitReached()) {
 #if defined(ORTOOLS_TARGET_OS_SUPPORTS_THREADS)
     static_assert(operations_research::kTargetOsSupportsThreads);
-    if (params.num_workers() > 1 || params.interleave_search() ||
-        !params.subsolvers().empty() || !params.filter_subsolvers().empty() ||
-        params.use_ls_only()) {
-      SolveCpModelParallel(&shared, model);
+    if (params_.num_workers() > 1 || params_.interleave_search() ||
+        !params_.subsolvers().empty() || !params_.filter_subsolvers().empty() ||
+        params_.use_ls_only()) {
+      SolveCpModelParallel(shared_.get(), model_);
 #else   // defined(ORTOOLS_TARGET_OS_SUPPORTS_THREADS)
     static_assert(!operations_research::kTargetOsSupportsThreads);
     if (/* DISABLES CODE */ (false)) {
       // We ignore the multithreading parameter in this case.
 #endif  // defined(ORTOOLS_TARGET_OS_SUPPORTS_THREADS)
     } else {
-      shared_response_manager->SetUpdateGapIntegralOnEachChange(true);
+      shared_response_manager_->SetUpdateGapIntegralOnEachChange(true);
 
       // To avoid duplicating code, the single-thread version reuse most of
       // the multi-thread architecture.
       std::vector<std::unique_ptr<SubSolver>> subsolvers;
       subsolvers.push_back(std::make_unique<FullProblemSolver>(
-          "main", params, /*split_in_chunks=*/false, &shared));
-      LaunchSubsolvers(model, &shared, subsolvers, {});
+          "main", params_, /*split_in_chunks=*/false, shared_.get()));
+      LaunchSubsolvers(model_, shared_.get(), subsolvers, {});
+    }
+  }
+}
+
+}  // namespace
+
+CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
+  MergeParamsWithFlagsAndDefaults(model->GetOrCreate<SatParameters>());
+  model->GetOrCreate<WallTimer>()->Start();
+  model->GetOrCreate<UserTimer>()->Start();
+
+  if constexpr (std::is_base_of_v<google::protobuf::Message, CpModelProto>) {
+    // Dump initial model?
+    if (absl::GetFlag(FLAGS_cp_model_dump_models)) {
+      DumpModelProto(model_proto, "model");
+    }
+    if (absl::GetFlag(FLAGS_cp_model_export_model)) {
+      if (model_proto.name().empty()) {
+        DumpModelProto(model_proto, "unnamed_model");
+      } else {
+        DumpModelProto(model_proto, model_proto.name());
+      }
     }
   }
 
-  return shared_response_manager->GetResponse();
-}  // NOLINT(readability/fn_size)
+  CpModelSolver solver(model_proto, model);
+  if (solver.Initialize()) {
+    solver.Solve();
+  }
+
+  return solver.GetResponse();
+}
 
 CpSolverResponse Solve(const CpModelProto& model_proto) {
   Model model;

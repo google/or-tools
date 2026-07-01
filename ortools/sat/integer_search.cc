@@ -498,7 +498,7 @@ std::function<BooleanOrIntegerLiteral()> IntegerValueSelectionHeuristic(
   }
 
   return SequentialValueSelection(value_selection_heuristics,
-                                  var_selection_heuristic, model);
+                                  std::move(var_selection_heuristic), model);
 }
 
 std::function<BooleanOrIntegerLiteral()> SatSolverHeuristic(Model* model) {
@@ -1633,6 +1633,53 @@ std::function<bool()> RestartEveryKFailures(int k, SatSolver* solver) {
   };
 }
 
+std::function<bool()> RestartAfterDeterministicTime(double deterministic_time,
+                                                    TimeLimit* time_limit) {
+  bool reset_at_next_call = true;
+  double deterministic_deadline = 0.0;
+  return [=]() mutable {
+    if (reset_at_next_call) {
+      deterministic_deadline =
+          time_limit->GetElapsedDeterministicTime() + deterministic_time;
+      reset_at_next_call = false;
+    } else if (time_limit->GetElapsedDeterministicTime() >=
+               deterministic_deadline) {
+      reset_at_next_call = true;
+    }
+    return reset_at_next_call;
+  };
+}
+
+std::function<bool()> RestartAfterFixedDeterministicTimeOrKFailures(
+    double deterministic_time, TimeLimit* time_limit, int k, SatSolver* solver,
+    ModelRandomGenerator* random) {
+  bool reset_at_next_call = true;
+  double deterministic_deadline = 0.0;
+  int next_num_failures = 0;
+  bool restart_on_failures = false;
+  return [=]() mutable {
+    if (reset_at_next_call) {
+      restart_on_failures = absl::Bernoulli(*random, 0.5);
+      if (restart_on_failures) {
+        next_num_failures = solver->num_failures() + k;
+      } else {
+        deterministic_deadline =
+            time_limit->GetElapsedDeterministicTime() + deterministic_time;
+      }
+      reset_at_next_call = false;
+    } else {
+      if (restart_on_failures && solver->num_failures() >= next_num_failures) {
+        reset_at_next_call = true;
+      } else if (!restart_on_failures &&
+                 time_limit->GetElapsedDeterministicTime() >=
+                     deterministic_deadline) {
+        reset_at_next_call = true;
+      }
+    }
+    return reset_at_next_call;
+  };
+}
+
 std::function<bool()> SatSolverRestartPolicy(Model* model) {
   auto policy = model->GetOrCreate<RestartPolicy>();
   return [policy]() { return policy->ShouldRestart(); };
@@ -1815,17 +1862,28 @@ void ConfigureSearchHeuristics(Model* model) {
                          model);
       };
 
-      const auto restart_policy = [&parameters, model]() {
-        const int restart_limit = parameters.shaving_search_restart_limit();
-        if (restart_limit <= 0) {
+      const int conflict_restart_limit =
+          parameters.shaving_search_restart_limit();
+      const double dtime_restart_limit =
+          parameters.shaving_search_deterministic_time();
+      const auto restart_policy = [conflict_restart_limit, dtime_restart_limit,
+                                   model]() {
+        if (conflict_restart_limit <= 0 && dtime_restart_limit <= 0.0) {
           return SatSolverRestartPolicy(model);
-        } else {
-          return RestartEveryKFailures(restart_limit,
+        } else if (dtime_restart_limit <= 0.0) {
+          return RestartEveryKFailures(conflict_restart_limit,
                                        model->GetOrCreate<SatSolver>());
+        } else if (conflict_restart_limit <= 0) {
+          return RestartAfterDeterministicTime(dtime_restart_limit,
+                                               model->GetOrCreate<TimeLimit>());
+        } else {
+          return RestartAfterFixedDeterministicTimeOrKFailures(
+              dtime_restart_limit, model->GetOrCreate<TimeLimit>(),
+              conflict_restart_limit, model->GetOrCreate<SatSolver>(),
+              model->GetOrCreate<ModelRandomGenerator>());
         }
       };
 
-      heuristics.decision_policies.reserve(2);
       if (!integer_vars.empty()) {
         heuristics.decision_policies.push_back(SequentialSearch(
             {ShaveModelIntegerVariableBounds(integer_vars, model), search()}));
@@ -1840,7 +1898,7 @@ void ConfigureSearchHeuristics(Model* model) {
 
       if (heuristics.decision_policies.empty()) {
         heuristics.decision_policies.push_back(search());
-        heuristics.restart_policies.push_back(restart_policy());
+        heuristics.restart_policies.push_back(SatSolverRestartPolicy(model));
       }
 
       return;

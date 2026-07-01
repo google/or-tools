@@ -27,9 +27,9 @@
 
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
-#include "absl/container/flat_hash_set.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/strings/string_view.h"
 #include "ortools/sat/clause.h"
@@ -71,10 +71,16 @@ class ContinuousProber {
   static const int kTestLimitPeriod = 20;
   static const int kLogPeriod = 5000;
   static const int kSyncPeriod = 50;
-  static const int kShavingUpdateFrequency = 20;
+  static constexpr int kNumPairsOfBooleanVarsToProbe = 5000;
 
   struct MethodStats {
     explicit MethodStats(absl::string_view name = "") : name(name) {}
+    virtual ~MethodStats() = default;
+
+    virtual void AddToStats(
+        std::vector<std::pair<std::string, int64_t>>& stats) const;
+    virtual std::string StatsStr() const;
+
     std::string name;
     int64_t num_calls = 0;
     int64_t num_new_bounds = 0;
@@ -82,36 +88,83 @@ class ContinuousProber {
     int64_t num_new_binary = 0;
   };
 
+  struct ProbingStats : public MethodStats {
+    explicit ProbingStats(absl::string_view state_name = "")
+        : MethodStats(state_name) {}
+    ~ProbingStats() override = default;
+
+    void AddToStats(
+        std::vector<std::pair<std::string, int64_t>>& stats) const override;
+    std::string StatsStr() const override;
+
+    int iteration = 1;
+    int current_var = 0;
+  };
+
+  struct ShavingStats : public ProbingStats {
+    static constexpr int kUpdateFrequency = 30;
+    static constexpr int kRateWindowSizeMax = 200;
+    static constexpr double kLimitMultiplierMax = 20.0;
+    static constexpr double kLimitIncrease = 1.5;
+
+    explicit ShavingStats(double dtime, absl::string_view state_name = "")
+        : ProbingStats(state_name), base_dtime(dtime) {}
+    ~ShavingStats() override = default;
+
+    void AddToStats(
+        std::vector<std::pair<std::string, int64_t>>& stats) const override;
+    std::string StatsStr() const override;
+    void AdaptMultiplier(bool success, int num_vars);
+
+    const double base_dtime;
+    double limit_multiplier = 1.0;
+    RunningAverage success_tracker;
+    int limit_update_frequency = 0;
+    int ineffective_streak = 0;
+    int limit_reset_count = 0;
+  };
+
   // Probes variable bounds. Returns a status if the main Probe() function
   // should abort and return this status, or nullopt if probing should continue.
-  std::optional<SatSolver::Status> ProbeIntegerVariables(double time_limit);
+  std::optional<SatSolver::Status> ProbeIntegerVariables(double deadline);
+  // Shaves variable bounds. Returns a status if the main Probe() function
+  // should abort and return this status, or nullopt if shaving should continue.
+  std::optional<SatSolver::Status> ShaveIntegerVariables(double deadline);
   // Probes Boolean variables from the model.
-  std::optional<SatSolver::Status> ProbeBooleanVariables(double time_limit);
+  std::optional<SatSolver::Status> ProbeBooleanVariables(double deadline);
+  // Shaves Boolean variables from the model.
+  std::optional<SatSolver::Status> ShaveBooleanVariables(double deadline);
   // Probes clauses of the SAT model.
-  std::optional<SatSolver::Status> ProbeAtLeastOnes(double time_limit);
+  std::optional<SatSolver::Status> ProbeAtLeastOnes(double deadline);
   // Probes at_most_ones of the SAT model.
-  std::optional<SatSolver::Status> ProbeAtMostOnes(double time_limit);
+  std::optional<SatSolver::Status> ProbeAtMostOnes(double deadline);
   // Probes combinations of Booleans variables.
-  std::optional<SatSolver::Status> ProbePairsOfBoolVars(double time_limit);
+  std::optional<SatSolver::Status> ProbePairsOfBoolVars(double deadline);
 
-  // Returns true if boool_var is not assigned and not redundant.
+  // Returns true if bool_var is not assigned and not redundant.
   bool ShouldProbe(BooleanVariable bool_var) const;
   // Returns true if var is the representative of its orbit.
   bool IsOrbitRepresentative(int var) const;
+  void CompactAndShuffleBooleanVariables(
+      std::vector<BooleanVariable>& bool_vars);
+  void CompactAndShuffleIntegerVariables(
+      std::vector<IntegerVariable>& int_vars);
   SatSolver::Status ShaveLiteral(Literal literal,
                                  bool literal_is_an_integer_bound);
   bool ReportStatus(SatSolver::Status status);
   void LogStatistics();
   SatSolver::Status PeriodicSyncAndCheck();
-  void AdaptShavingMultiplier(bool success);
 
   MethodStats GetStats(Prober* prober) const;
   static void AddStats(MethodStats& total_stats, const MethodStats& start_stats,
                        const MethodStats& end_stats);
 
-  // Variables to probe.
-  std::vector<BooleanVariable> bool_vars_;
-  std::vector<IntegerVariable> int_vars_;
+  // Variables containers. We reuse the bool_vars_to_probe_ for the pair of
+  // Booleans probing method.
+  std::vector<BooleanVariable> bool_vars_to_probe_;
+  std::vector<BooleanVariable> bool_vars_to_shave_;
+  std::vector<IntegerVariable> int_vars_to_probe_;
+  std::vector<IntegerVariable> int_vars_to_shave_;
 
   // Model object.
   Model* model_;
@@ -131,42 +184,28 @@ class ContinuousProber {
   SharedBoundsManager* shared_bounds_manager_;
   SharedStatistics* shared_stats_;
   absl::BitGenRef random_;
+  const double base_dtime_;
+  const bool use_shaving_ = false;
 
   // Var representatives, for the symmetry of the model proto.
   std::vector<int> var_to_representative_;
-
-  // Statistics.
-  struct Counters {
-    MethodStats at_least_one_stats = MethodStats("at_least_one");
-    MethodStats at_most_one_stats = MethodStats("at_most_one");
-    MethodStats one_variable_stats = MethodStats("one_variable");
-    MethodStats pairs_stats = MethodStats("pairs");
-    MethodStats shaving = MethodStats("shaving");
-  };
-  Counters counters_;
 
   // Period counters;
   int num_logs_remaining_ = 0;
   int num_syncs_remaining_ = 0;
   int num_test_limit_remaining_ = 0;
 
-  // Current state of the probe limit.
-  const double base_dtime_;
-  double limit_multiplier_ = 1.0;
-  // TODO(user): use 2 vector<bool>.
-  absl::flat_hash_set<BooleanVariable> probed_bool_vars_;
-  absl::flat_hash_set<LiteralIndex> shaved_literals_;
-  int iteration_ = 1;
-  int current_int_var_ = 0;
-  int current_bool_var_ = 0;
-  int current_bv1_ = 0;
-  int current_bv2_ = 0;
-  int random_pair_of_bool_vars_probed_ = 0;
-  bool use_shaving_ = false;
+  // Current statistics and states of the continuous probing and shaving
+  // process.
+  MethodStats at_least_one_stats_;
+  MethodStats at_most_one_stats_;
+  MethodStats pairs_stats_;
+  ProbingStats bool_probing_;
+  ProbingStats int_probing_;
+  ShavingStats bool_shaving_;
+  ShavingStats int_shaving_;
   std::vector<std::vector<Literal>> tmp_dnf_;
   std::vector<Literal> tmp_literals_;
-  RunningAverage shaving_success_rate_;
-  int update_frequency_ = kShavingUpdateFrequency;
 };
 
 }  // namespace sat

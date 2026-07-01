@@ -419,6 +419,10 @@ struct LinearExpression2 {
   IntegerValue DivideByGcd();
 
   bool IsCanonicalized() const;
+  bool IsCanonicalizedAndGcdReduced() const {
+    return IsCanonicalized() &&
+           std::gcd(coeffs[0].value(), coeffs[1].value()) <= 1;
+  }
 
   // Makes sure expr and -expr have the same canonical representation by
   // negating the expression of it is in the non-canonical form. Returns true if
