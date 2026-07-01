@@ -22,6 +22,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/base/nullability.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/time/time.h"
 #include "ortools/constraint_solver/assignment.h"
@@ -39,7 +40,7 @@ class Solution {
   explicit Solution(const Model& model);
 
   // Initializes the routing solution for the given assignment.
-  void Reset(const Assignment* assignment);
+  void Reset(const Assignment* absl_nonnull assignment);
 
   // Initializes next and prev pointers for the route served by the given
   // vehicle, if not already done.
@@ -106,14 +107,14 @@ class IteratedLocalSearchEventSubscriber {
 
   // Called when the ILS algorithm reaches a local optimum, i.e., after the
   // perturbation and the optional local search phases.
-  virtual void OnLocalOptimumReached(const Assignment*) {
+  virtual void OnLocalOptimumReached(const Assignment* absl_nonnull) {
     // No-op by default.
   }
 
   // Called when the reference solution is updated, i.e., when a candidate
   // solution is accepted according to the reference solution acceptance
   // criterion.
-  virtual void OnReferenceSolutionUpdated(const Assignment*) {
+  virtual void OnReferenceSolutionUpdated(const Assignment* absl_nonnull) {
     // No-op by default.
   }
 };
@@ -122,16 +123,18 @@ class IteratedLocalSearchEventSubscriber {
 class IteratedLocalSearchEventManager {
  public:
   // Adds a subscriber to the list of subscribers.
-  bool AddSubscriber(IteratedLocalSearchEventSubscriber* subscriber);
+  bool AddSubscriber(
+      IteratedLocalSearchEventSubscriber* absl_nonnull subscriber);
 
   // Removes a subscriber from the list of subscribers.
-  bool RemoveSubscriber(IteratedLocalSearchEventSubscriber* subscriber);
+  bool RemoveSubscriber(
+      IteratedLocalSearchEventSubscriber* absl_nonnull subscriber);
 
   // Notifies all subscribers that a local optimum has been reached.
-  void OnLocalOptimumReached(const Assignment* assignment);
+  void OnLocalOptimumReached(const Assignment* absl_nonnull assignment);
 
   // Notifies all subscribers that the reference solution has been updated.
-  void OnReferenceSolutionUpdated(const Assignment* assignment);
+  void OnReferenceSolutionUpdated(const Assignment* absl_nonnull assignment);
 
  private:
   absl::flat_hash_set<IteratedLocalSearchEventSubscriber*> subscribers_;
@@ -144,24 +147,26 @@ class RuinProcedure : public IteratedLocalSearchEventSubscriber {
 
   // Returns next accessors describing the ruined solution.
   virtual std::function<int64_t(int64_t)> Ruin(
-      const Assignment* assignment) = 0;
+      const Assignment* absl_nonnull assignment) = 0;
 };
 
 // Removes a number of routes that are spatially close together.
 class CloseRoutesRemovalRuinProcedure : public RuinProcedure {
  public:
-  CloseRoutesRemovalRuinProcedure(Model* model, std::mt19937_64* rnd,
+  CloseRoutesRemovalRuinProcedure(Model* absl_nonnull model,
+                                  std::mt19937_64* absl_nonnull rnd,
                                   size_t num_routes,
                                   int num_neighbors_for_route_selection);
   // Returns next accessors where at most num_routes routes have been shortcut,
   // i.e., next(shortcut route begin) = shortcut route end.
   // Next accessors for nodes belonging to shortcut routes are still set to
   // their original value and should not be used.
-  std::function<int64_t(int64_t)> Ruin(const Assignment* assignment) override;
+  std::function<int64_t(int64_t)> Ruin(
+      const Assignment* absl_nonnull assignment) override;
 
  private:
   const Model& model_;
-  const Model::NodeNeighborsByCostClass* const neighbors_manager_;
+  const Model::NodeNeighborsByCostClass* absl_nullable const neighbors_manager_;
   const size_t num_routes_;
   std::mt19937_64& rnd_;
   std::uniform_int_distribution<int64_t> node_dist_;
@@ -174,16 +179,18 @@ class CloseRoutesRemovalRuinProcedure : public RuinProcedure {
 // single entity.
 class RandomWalkRemovalRuinProcedure : public RuinProcedure {
  public:
-  RandomWalkRemovalRuinProcedure(Model* model, std::mt19937_64* rnd,
+  RandomWalkRemovalRuinProcedure(Model* absl_nonnull model,
+                                 std::mt19937_64* absl_nonnull rnd,
                                  int walk_length,
                                  int num_neighbors_for_route_selection);
 
-  std::function<int64_t(int64_t)> Ruin(const Assignment* assignment) override;
+  std::function<int64_t(int64_t)> Ruin(
+      const Assignment* absl_nonnull assignment) override;
 
  protected:
   // Returns the seed node and the length of the random walk.
   virtual std::pair<int64_t, int> GetWalkSeedAndLength(
-      const Assignment* assignment);
+      const Assignment* absl_nonnull assignment);
 
   // Called when a node is removed from the solution.
   virtual void OnNodeRemoved(int64_t) {
@@ -199,7 +206,7 @@ class RandomWalkRemovalRuinProcedure : public RuinProcedure {
   int64_t GetNextNodeToRemove(const Assignment* assignment, int node);
 
   Solution routing_solution_;
-  const Model::NodeNeighborsByCostClass* const neighbors_manager_;
+  const Model::NodeNeighborsByCostClass* absl_nullable const neighbors_manager_;
   const int walk_length_;
   std::bernoulli_distribution boolean_dist_;
 };
@@ -207,23 +214,25 @@ class RandomWalkRemovalRuinProcedure : public RuinProcedure {
 class AdaptiveRandomWalkRemovalRuinProcedure
     : public RandomWalkRemovalRuinProcedure {
  public:
-  AdaptiveRandomWalkRemovalRuinProcedure(Model* model,
-                                         const Assignment* reference_assignment,
-                                         std::mt19937_64* rnd,
-                                         int num_neighbors_for_route_selection,
-                                         double strengthening_factor,
-                                         double weakening_factor);
+  AdaptiveRandomWalkRemovalRuinProcedure(
+      Model* absl_nonnull model,
+      const Assignment* absl_nonnull reference_assignment,
+      std::mt19937_64* absl_nonnull rnd, int num_neighbors_for_route_selection,
+      double strengthening_factor, double weakening_factor);
 
-  std::function<int64_t(int64_t)> Ruin(const Assignment* assignment) override;
-  void OnLocalOptimumReached(const Assignment* assignment) override;
-  void OnReferenceSolutionUpdated(const Assignment* assignment) override;
+  std::function<int64_t(int64_t)> Ruin(
+      const Assignment* absl_nonnull assignment) override;
+  void OnLocalOptimumReached(
+      const Assignment* absl_nonnull assignment) override;
+  void OnReferenceSolutionUpdated(
+      const Assignment* absl_nonnull assignment) override;
 
  private:
   std::pair<int64_t, int> GetWalkSeedAndLength(
-      const Assignment* assignment) override;
+      const Assignment* absl_nonnull assignment) override;
   void OnNodeRemoved(int64_t node) override;
 
-  const Assignment* reference_assignment_;
+  const Assignment* absl_nonnull reference_assignment_;
   double strengthening_factor_;
   double weakening_factor_;
   int64_t weakening_threshold_;
@@ -253,19 +262,23 @@ class CompositeRuinProcedure : public RuinProcedure {
   };
 
   CompositeRuinProcedure(
-      Model* model, std::vector<std::unique_ptr<RuinProcedure>> ruin_procedures,
+      Model* absl_nonnull model,
+      std::vector<std::unique_ptr<RuinProcedure>> ruin_procedures,
       RuinCompositionStrategy::Value composition_strategy,
-      std::mt19937_64* rnd);
+      std::mt19937_64* absl_nonnull rnd);
 
-  std::function<int64_t(int64_t)> Ruin(const Assignment* assignment) override;
+  std::function<int64_t(int64_t)> Ruin(
+      const Assignment* absl_nonnull assignment) override;
 
-  void OnLocalOptimumReached(const Assignment* assignment) override;
+  void OnLocalOptimumReached(
+      const Assignment* absl_nonnull assignment) override;
 
-  void OnReferenceSolutionUpdated(const Assignment* assignment) override;
+  void OnReferenceSolutionUpdated(
+      const Assignment* absl_nonnull assignment) override;
 
  private:
   // Creates a new assignment from the given next accessor.
-  const Assignment* BuildAssignmentFromNextAccessor(
+  const Assignment* absl_nonnull BuildAssignmentFromNextAccessor(
       const std::function<int64_t(int64_t)>& next_accessor);
 
   const Model& model_;
@@ -274,8 +287,8 @@ class CompositeRuinProcedure : public RuinProcedure {
 
   // Used by BuildAssignmentFromNextAccessor to rebuild a proper assignment
   // from next accessors. Stored at the object level to minimize re-allocations.
-  Assignment* ruined_assignment_;
-  Assignment* next_assignment_;
+  Assignment* absl_nonnull ruined_assignment_;
+  Assignment* absl_nonnull next_assignment_;
 };
 
 // Performs a ruin based on the Slack Induction by String Removals (SISR)
@@ -294,11 +307,13 @@ class CompositeRuinProcedure : public RuinProcedure {
 // See also SISRRuinStrategy in ils.proto.
 class SISRRuinProcedure : public RuinProcedure {
  public:
-  SISRRuinProcedure(Model* model, std::mt19937_64* rnd,
+  SISRRuinProcedure(Model* absl_nonnull model,
+                    std::mt19937_64* absl_nonnull rnd,
                     int max_removed_sequence_size, int avg_num_removed_visits,
                     double bypass_factor, int num_neighbors);
 
-  std::function<int64_t(int64_t)> Ruin(const Assignment* assignment) override;
+  std::function<int64_t(int64_t)> Ruin(
+      const Assignment* absl_nonnull assignment) override;
 
  private:
   int RuinRoute(const Assignment& assignment, int64_t seed_visit,
@@ -317,7 +332,7 @@ class SISRRuinProcedure : public RuinProcedure {
   int max_removed_sequence_size_;
   int avg_num_removed_visits_;
   double bypass_factor_;
-  const Model::NodeNeighborsByCostClass* const neighbors_manager_;
+  const Model::NodeNeighborsByCostClass* absl_nullable const neighbors_manager_;
   std::uniform_int_distribution<int64_t> node_dist_;
   std::bernoulli_distribution boolean_dist_;
   std::uniform_real_distribution<double> probability_dist_;
@@ -327,11 +342,13 @@ class SISRRuinProcedure : public RuinProcedure {
 
 // Returns a DecisionBuilder implementing a perturbation step of an Iterated
 // Local Search approach.
-DecisionBuilder* MakePerturbationDecisionBuilder(
-    const RoutingSearchParameters& parameters, Model* model,
-    IteratedLocalSearchEventManager* event_manager, std::mt19937_64* rnd,
-    const Assignment* assignment, std::function<bool()> stop_search,
-    LocalSearchFilterManager* filter_manager);
+DecisionBuilder* absl_nullable MakePerturbationDecisionBuilder(
+    const RoutingSearchParameters& parameters, Model* absl_nonnull model,
+    IteratedLocalSearchEventManager* absl_nonnull event_manager,
+    std::mt19937_64* absl_nonnull rnd,
+    const Assignment* absl_nonnull assignment,
+    std::function<bool()> stop_search,
+    LocalSearchFilterManager* absl_nullable filter_manager);
 
 // Neighbor acceptance criterion interface.
 class NeighborAcceptanceCriterion : public IteratedLocalSearchEventSubscriber {
@@ -348,28 +365,31 @@ class NeighborAcceptanceCriterion : public IteratedLocalSearchEventSubscriber {
   // Returns whether `candidate` should replace `reference` given the provided
   // search state.
   virtual bool Accept(const SearchState& search_state,
-                      const Assignment* candidate,
-                      const Assignment* reference) = 0;
+                      const Assignment* absl_nonnull candidate,
+                      const Assignment* absl_nonnull reference) = 0;
 
   // Called at the end of an ILS iteration.
-  virtual void OnIterationEnd([[maybe_unused]] const Assignment* reference) {}
+  virtual void OnIterationEnd(
+      [[maybe_unused]] const Assignment* absl_nonnull reference) {}
 
   // Called when a new best solution found is found.
-  virtual void OnBestSolutionFound([[maybe_unused]] Assignment* reference) {}
+  virtual void OnBestSolutionFound(
+      [[maybe_unused]] Assignment* absl_nonnull reference) {}
 };
 
 // Returns a neighbor acceptance criterion based on the given parameters.
 std::unique_ptr<NeighborAcceptanceCriterion> MakeNeighborAcceptanceCriterion(
-    const Model& model, IteratedLocalSearchEventManager* event_manager,
+    const Model& model,
+    IteratedLocalSearchEventManager* absl_nonnull event_manager,
     const AcceptancePolicy& acceptance_policy,
     const NeighborAcceptanceCriterion::SearchState& final_search_state,
-    std::mt19937_64* rnd);
+    std::mt19937_64* absl_nonnull rnd);
 
 // Returns initial and final simulated annealing temperatures according to the
 // given simulated annealing input parameters.
 std::pair<double, double> GetSimulatedAnnealingTemperatures(
     const Model& model, const SimulatedAnnealingAcceptanceStrategy& sa_params,
-    std::mt19937_64* rnd);
+    std::mt19937_64* absl_nonnull rnd);
 
 }  // namespace operations_research::routing
 
