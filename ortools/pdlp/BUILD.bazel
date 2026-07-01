@@ -376,6 +376,7 @@ cc_library(
         ":solve_log_cc_proto",
         ":solvers_cc_proto",
         "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
     ],
 )
 

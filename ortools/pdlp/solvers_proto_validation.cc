@@ -48,18 +48,13 @@ absl::Status ValidateTerminationCriteria(const TerminationCriteria& criteria) {
       criteria.optimality_norm() != OPTIMALITY_NORM_L_INF_COMPONENTWISE) {
     return InvalidArgumentError("invalid value for optimality_norm");
   }
-  if (criteria.has_detailed_optimality_criteria() ||
-      criteria.has_simple_optimality_criteria()) {
-    if (criteria.has_eps_optimal_absolute()) {
-      return InvalidArgumentError(
-          "eps_optimal_absolute should not be set if "
-          "detailed_optimality_criteria or simple_optimality_criteria is used");
-    }
-    if (criteria.has_eps_optimal_relative()) {
-      return InvalidArgumentError(
-          "eps_optimal_relative should not be set if "
-          "detailed_optimality_criteria or simple_optimality_criteria is used");
-    }
+  if (criteria.has_eps_optimal_absolute()) {
+    return InvalidArgumentError(
+        "eps_optimal_absolute should not be set (deprecated)");
+  }
+  if (criteria.has_eps_optimal_relative()) {
+    return InvalidArgumentError(
+        "eps_optimal_relative should not be set (deprecated)");
   }
   if (criteria.has_detailed_optimality_criteria()) {
     ABSL_RETURN_IF_ERROR(CheckNonNegative(

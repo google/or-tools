@@ -17,6 +17,7 @@
 #include <cmath>
 #include <optional>
 
+#include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "ortools/pdlp/solve_log.pb.h"
 #include "ortools/pdlp/solvers.pb.h"
@@ -128,16 +129,8 @@ TerminationCriteria::DetailedOptimalityCriteria EffectiveOptimalityCriteria(
   if (termination_criteria.has_detailed_optimality_criteria()) {
     return termination_criteria.detailed_optimality_criteria();
   }
-  TerminationCriteria::SimpleOptimalityCriteria simple_criteria;
-  if (termination_criteria.has_simple_optimality_criteria()) {
-    simple_criteria = termination_criteria.simple_optimality_criteria();
-  } else {
-    simple_criteria.set_eps_optimal_absolute(
-        termination_criteria.eps_optimal_absolute());
-    simple_criteria.set_eps_optimal_relative(
-        termination_criteria.eps_optimal_relative());
-  }
-  return EffectiveOptimalityCriteria(simple_criteria);
+  return EffectiveOptimalityCriteria(
+      termination_criteria.simple_optimality_criteria());
 }
 
 TerminationCriteria::DetailedOptimalityCriteria EffectiveOptimalityCriteria(
