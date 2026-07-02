@@ -81,7 +81,7 @@ struct StreamableGurobiInitArguments {
 
 // A license key for the Xpress solver.
 struct XpressLicenseKey {
-  std::string path ABSL_REQUIRE_EXPLICIT_INIT;
+  std::string path;
 
   XpressInitializerProto::License Proto() const;
   static XpressLicenseKey FromProto(
