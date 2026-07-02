@@ -36,10 +36,10 @@ target_link_libraries(${NAME} PRIVATE
 
 if(BUILD_CXX_TESTING)
   file(GLOB _TEST_SRCS "*_test.cc")
+  list(FILTER _TEST_SRCS EXCLUDE REGEX ".*/set_cover_cft_test.cc") # need input file
+  list(FILTER _TEST_SRCS EXCLUDE REGEX ".*/knights_test.cc") # timeout
   if(NOT USE_SCIP)
     list(FILTER _TEST_SRCS EXCLUDE REGEX ".*/set_cover_test.cc")
-    list(FILTER _TEST_SRCS EXCLUDE REGEX ".*/set_cover_cft_test.cc")
-    list(FILTER _TEST_SRCS EXCLUDE REGEX ".*/knights_test.cc")
   endif()
   foreach(_FULL_FILE_NAME IN LISTS _TEST_SRCS)
     get_filename_component(_NAME ${_FULL_FILE_NAME} NAME_WE)
