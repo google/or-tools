@@ -368,6 +368,17 @@ ortools_cxx_bintest(
 )
 
 add_python_binary(
+  NAME bzl_py_example_tree_ensemble_optimization_sat_py3
+  FILE ${CMAKE_CURRENT_SOURCE_DIR}/tree_ensemble_optimization_sat.py
+)
+
+ortools_cxx_bintest(
+  NAME bzl_py_example_tree_ensemble_optimization_sat_py_test
+  SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/tree_ensemble_optimization_sat_py_test.bintest
+  ENVIRONMENT BINTEST_tree_ensemble_optimization_sat_py3=$<TARGET_FILE:bzl_py_example_tree_ensemble_optimization_sat_py3>
+)
+
+add_python_binary(
   NAME bzl_py_example_tasks_and_workers_assignment_sat_py3
   FILE ${CMAKE_CURRENT_SOURCE_DIR}/tasks_and_workers_assignment_sat.py
 )
