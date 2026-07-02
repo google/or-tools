@@ -24,3 +24,20 @@ index 2b6bbfe..ca2f697 100644
        endif()
      endif()
    else()
+diff --git a/absl/container/internal/raw_hash_set.h b/absl/container/internal/raw_hash_set.h
+index a50a488..1964e7b 100644
+--- a/absl/container/internal/raw_hash_set.h
++++ b/absl/container/internal/raw_hash_set.h
+@@ -225,9 +225,9 @@
+ #include <ranges>  // NOLINT(build/c++20)
+ #endif
+ 
+-#ifdef __BMI2__
+-#include <bmi2intrin.h>
+-#endif  // __BMI2__
++#if defined(__i386__) || defined(__x86_64__)
++#include <immintrin.h>
++#endif
+ 
+ namespace absl {
+ ABSL_NAMESPACE_BEGIN
