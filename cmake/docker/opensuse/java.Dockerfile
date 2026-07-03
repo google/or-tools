@@ -1,10 +1,10 @@
 FROM ortools/cmake:opensuse_swig AS env
 
 # Install Java JDK and Maven
-RUN zypper refresh \
+RUN zypper update -y \
 && zypper install -y java-21-openjdk-devel maven \
 && zypper clean -a
-ENV PATH=/usr/share/maven/bin:$PATH
+ENV JAVA_HOME=/usr/lib64/jvm/java-21-openjdk
 
 FROM env AS devel
 WORKDIR /home/project
