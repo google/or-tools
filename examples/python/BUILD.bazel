@@ -623,6 +623,23 @@ bintest(
 )
 
 py_binary(
+    name = "tree_ensemble_optimization_sat_py3",
+    srcs = ["tree_ensemble_optimization_sat.py"],
+    main = "tree_ensemble_optimization_sat.py",
+    deps = [
+        requirement("absl-py"),
+        "//ortools/sat/python:cp_model",
+    ],
+)
+
+bintest(
+    name = "tree_ensemble_optimization_sat_py_test",
+    size = "small",
+    srcs = [":tree_ensemble_optimization_sat_py_test.bintest"],
+    named_data = {"tree_ensemble_optimization_sat_py3": ":tree_ensemble_optimization_sat_py3"},
+)
+
+py_binary(
     name = "tasks_and_workers_assignment_sat_py3",
     srcs = ["tasks_and_workers_assignment_sat.py"],
     main = "tasks_and_workers_assignment_sat.py",
