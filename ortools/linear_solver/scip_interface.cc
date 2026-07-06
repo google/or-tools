@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <cmath>
 #include <cstdint>
 #include <limits>
 #include <memory>
@@ -212,6 +213,9 @@ class SCIPInterface : public MPSolverInterface {
   // scip_ is still set to null).
   SCIP* DeleteSCIP(bool return_scip = false);
 
+  // Replaces +/- inf by +/- ScipInf(), fails when |d| is in [ScipInf(), inf).
+  double ScipInfClamp(double d);
+
   // SCIP has many internal checks (many of which are numerical) that can fail
   // during various phases: upon startup, when loading the model, when solving,
   // etc. Often, the user is meant to stop at the first error, but since most
@@ -277,6 +281,22 @@ SCIPInterface::SCIPInterface(MPSolver* solver)
 }
 
 SCIPInterface::~SCIPInterface() { DeleteSCIP(); }
+
+double SCIPInterface::ScipInfClamp(const double d) {
+  const double kScipInf = infinity();
+  if (d == std::numeric_limits<double>::infinity()) {
+    return kScipInf;
+  }
+  if (d == -std::numeric_limits<double>::infinity()) {
+    return -kScipInf;
+  }
+  // NaN is considered finite here.
+  if (d > kScipInf || d < -kScipInf) {
+    LOG(ERROR) << d << " is not in SCIP's finite range: [" << -kScipInf << ", "
+               << kScipInf << "]";
+  }
+  return d;
+}
 
 void SCIPInterface::Reset() {
   // We hold calls to SCIPinterruptSolve() until the new scip_ is fully built.
@@ -530,8 +550,8 @@ void SCIPInterface::ExtractNewVariables() {
       // The true objective coefficient will be set later in ExtractObjective.
       double tmp_obj_coef = 0.0;
       RETURN_AND_STORE_IF_SCIP_ERROR(SCIPcreateVar(
-          scip_, &scip_var, var->name().c_str(), var->lb(), var->ub(),
-          tmp_obj_coef,
+          scip_, &scip_var, var->name().c_str(), ScipInfClamp(var->lb()),
+          ScipInfClamp(var->ub()), tmp_obj_coef,
           var->integer() ? SCIP_VARTYPE_INTEGER : SCIP_VARTYPE_CONTINUOUS, true,
           false, nullptr, nullptr, nullptr, nullptr, nullptr));
       RETURN_AND_STORE_IF_SCIP_ERROR(SCIPaddVar(scip_, scip_var));
@@ -605,7 +625,7 @@ void SCIPInterface::ExtractNewConstraints() {
         if (ct->ub() < std::numeric_limits<double>::infinity()) {
           RETURN_AND_STORE_IF_SCIP_ERROR(SCIPcreateConsIndicator(
               scip_, &scip_constraint, ct->name().c_str(), ind_var, size,
-              vars.get(), coeffs.get(), ct->ub(),
+              vars.get(), coeffs.get(), ScipInfClamp(ct->ub()),
               /*initial=*/!is_lazy,
               /*separate=*/true,
               /*enforce=*/true,
@@ -624,7 +644,7 @@ void SCIPInterface::ExtractNewConstraints() {
           }
           RETURN_AND_STORE_IF_SCIP_ERROR(SCIPcreateConsIndicator(
               scip_, &scip_constraint, ct->name().c_str(), ind_var, size,
-              vars.get(), coeffs.get(), -ct->lb(),
+              vars.get(), coeffs.get(), ScipInfClamp(-ct->lb()),
               /*initial=*/!is_lazy,
               /*separate=*/true,
               /*enforce=*/true,
@@ -643,7 +663,7 @@ void SCIPInterface::ExtractNewConstraints() {
         // for an explanation of the parameters.
         RETURN_AND_STORE_IF_SCIP_ERROR(SCIPcreateConsLinear(
             scip_, &scip_constraint, ct->name().c_str(), size, vars.get(),
-            coeffs.get(), ct->lb(), ct->ub(),
+            coeffs.get(), ScipInfClamp(ct->lb()), ScipInfClamp(ct->ub()),
             /*initial=*/!is_lazy,
             /*separate=*/true,
             /*enforce=*/true,
