@@ -28,7 +28,7 @@ module(
 bazel_dep(name = "bazel_skylib", version = "1.9.0")
 bazel_dep(name = "contrib_rules_jvm", version = "0.32.0")
 bazel_dep(name = "platforms", version = "1.1.0")
-bazel_dep(name = "rules_cc", version = "0.2.18")
+bazel_dep(name = "rules_cc", version = "0.2.20")
 bazel_dep(name = "rules_go", version = "0.59.0")
 bazel_dep(name = "rules_java", version = "9.6.1")
 bazel_dep(name = "rules_jvm_external", version = "6.10")
