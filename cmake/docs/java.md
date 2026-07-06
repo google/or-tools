@@ -1,13 +1,15 @@
-Linux                                        | macOS                                        | Windows
--------------------------------------------- | -------------------------------------------- | -------
-[![Status][linux_java_svg]][linux_java_link] | [![Status][macos_java_svg]][macos_java_link] | [![Status][windows_java_svg]][windows_java_link]
+| amd64 Linux | arm64 macOS | amd64 macOS | amd64 Windows |
+| :---: | :---: | :---: | :---: |
+| [![Status][linux_java_svg]][linux_java_link] | [![Status][arm64_macos_java_svg]][arm64_macos_java_link] | [![Status][amd64_macos_java_svg]][amd64_macos_java_link] | [![Status][windows_java_svg]][windows_java_link] |
 
-[linux_java_svg]: https://github.com/google/or-tools/actions/workflows/cmake_linux_java.yml/badge.svg?branch=main
-[linux_java_link]: https://github.com/google/or-tools/actions/workflows/cmake_linux_java.yml
-[macos_java_svg]: https://github.com/google/or-tools/actions/workflows/cmake_macos_java.yml/badge.svg?branch=main
-[macos_java_link]: https://github.com/google/or-tools/actions/workflows/cmake_macos_java.yml
-[windows_java_svg]: https://github.com/google/or-tools/actions/workflows/cmake_windows_java.yml/badge.svg?branch=main
-[windows_java_link]: https://github.com/google/or-tools/actions/workflows/cmake_windows_java.yml
+[linux_java_svg]: ./../../../../actions/workflows/amd64_linux_cmake_java.yml/badge.svg?branch=main
+[linux_java_link]: ./../../../../actions/workflows/amd64_linux_cmake_java.yml
+[arm64_macos_java_svg]: ./../../../../actions/workflows/arm64_macos_cmake_java.yml/badge.svg?branch=main
+[arm64_macos_java_link]: ./../../../../actions/workflows/arm64_macos_cmake__java.yml
+[amd64_macos_java_svg]: ./../../../../actions/workflows/amd64_macos_cmake_java.yml/badge.svg?branch=main
+[amd64_macos_java_link]: ./../../../../actions/workflows/amd64_macos_cmake__java.yml
+[windows_java_svg]: ./../../../../actions/workflows/amd64_windows_cmake_java.yml/badge.svg?branch=main
+[windows_java_link]: ./../../../../actions/workflows/amd64_windows_cmake_java.yml
 
 # Introduction
 
