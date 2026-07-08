@@ -478,7 +478,7 @@ add_custom_command(
     ${JAVA_RESSOURCES_PATH}/${JAVA_NATIVE_PROJECT}/
 
   COMMAND ${CMAKE_COMMAND} -E
-    $<IF:$<BOOL:${BUILD_HIGHS}>,copy,true>
+    $<IF:$<OR:${need_unix_highs_lib},${need_windows_highs_lib}>,copy,true>
     $<${need_unix_highs_lib}:$<${is_highs_shared}:$<TARGET_SONAME_FILE:highs::highs>>>
     $<${need_windows_highs_lib}:$<TARGET_FILE:highs::highs>>
     ${JAVA_RESSOURCES_PATH}/${JAVA_NATIVE_PROJECT}/
