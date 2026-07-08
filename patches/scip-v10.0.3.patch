@@ -1,5 +1,5 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index e12c43fb..cc1b6970 100644
+index d102fd09..b7e59243 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -52,9 +52,11 @@ set(CPACK_PACKAGE_VENDOR "Zuse Institute Berlin")
@@ -17,7 +17,7 @@ index e12c43fb..cc1b6970 100644
  
  if(SCIPOptSuite_BINARY_DIR)
    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${SCIPOptSuite_BINARY_DIR}/bin)
-@@ -517,10 +519,10 @@ endif()
+@@ -523,10 +525,10 @@ endif()
  message(STATUS "Finding Solver \"${LPS}\"")
  if(LPS STREQUAL "spx")
      message(STATUS "Finding Soplex")
@@ -30,7 +30,7 @@ index e12c43fb..cc1b6970 100644
      if (DEFINED SOPLEX_WITH_PAPILO)
          message(STATUS "SOPLEX links PAPILO")
          if((NOT SCIP_WITH_PAPILO)) # TODO not sure how to handle AUTOBUILD
-@@ -593,11 +595,11 @@ if(SOPLEX_FOUND)
+@@ -599,11 +601,11 @@ if(SOPLEX_FOUND)
      message(STATUS "Finding SOPLEX - found")
      # SoPlex headers can be directly included
      include_directories(${SOPLEX_INCLUDE_DIRS})
