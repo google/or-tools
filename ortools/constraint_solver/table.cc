@@ -17,7 +17,6 @@
 
 #include <algorithm>
 #include <cstdint>
-#include <limits>
 #include <string>
 #include <vector>
 
@@ -28,8 +27,6 @@
 #include "absl/types/span.h"
 #include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
-#include "ortools/constraint_solver/constraints.h"
-#include "ortools/constraint_solver/utilities.h"
 #include "ortools/constraint_solver/variables.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/string_array.h"
