@@ -17,8 +17,6 @@ import static java.lang.Math.max;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.ortools.mathopt.IndicatorConstraintProto;
-import com.google.ortools.mathopt.IndicatorConstraintUpdatesProto;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;

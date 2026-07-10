@@ -14,7 +14,6 @@
 package com.google.ortools.mathopt;
 
 import com.google.common.base.Preconditions;
-import com.google.ortools.mathopt.LinearConstraintsProto;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;

@@ -14,12 +14,6 @@
 package com.google.ortools.mathopt;
 
 import com.google.common.collect.ImmutableList;
-import com.google.ortools.mathopt.CallbackDataProto;
-import com.google.ortools.mathopt.CallbackRegistrationProto;
-import com.google.ortools.mathopt.CallbackResultProto;
-import com.google.ortools.mathopt.ModelSolveParametersProto;
-import com.google.ortools.mathopt.SolveParametersProto;
-import com.google.ortools.mathopt.SolveResultProto;
 import com.google.ortools.util.ScopedSwigInterrupter;
 import com.google.ortools.util.SolveInterrupter;
 import java.util.Optional;

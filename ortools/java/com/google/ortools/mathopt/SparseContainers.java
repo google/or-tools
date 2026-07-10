@@ -17,9 +17,6 @@ import static com.google.common.collect.Streams.stream;
 import static java.util.Comparator.comparingLong;
 import static java.util.Map.Entry.comparingByKey;
 
-import com.google.ortools.mathopt.SparseBoolVectorProto;
-import com.google.ortools.mathopt.SparseDoubleVectorProto;
-import com.google.ortools.mathopt.SparseInt32VectorProto;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.Set;

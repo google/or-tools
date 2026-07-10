@@ -14,7 +14,6 @@
 package com.google.ortools.mathopt;
 
 import com.google.common.base.Verify;
-import com.google.ortools.mathopt.CallbackEventProto;
 import java.util.EnumMap;
 import java.util.Optional;
 

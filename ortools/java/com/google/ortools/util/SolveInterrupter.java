@@ -25,9 +25,8 @@ import java.util.List;
  * from any thread.
  *
  * <p>Setting a callback on interruption is an advanced feature, most users should just create a
- * {@link SolveInterrupter} and pass it to {@link
- * com.google.ortools.mathopt.Solve#solve(Model, SolverType,
- * com.google.ortools.mathopt.Solve.Args)}.
+ * {@link SolveInterrupter} and pass it to {@link com.google.ortools.mathopt.Solve#solve(Model,
+ * SolverType, com.google.ortools.mathopt.Solve.Args)}.
  *
  * <p>Thread-safety: the functions on this class are threadsafe, in that they can be invoked from
  * any thread without additional synchronization. However, in a callback registered through {@link

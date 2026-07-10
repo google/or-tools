@@ -13,9 +13,6 @@
 
 package com.google.ortools.sat;
 
-import com.google.ortools.sat.CpSolverResponse;
-import com.google.ortools.sat.CpSolverStatus;
-import com.google.ortools.sat.SatParameters;
 import java.util.List;
 import java.util.function.Consumer;
 

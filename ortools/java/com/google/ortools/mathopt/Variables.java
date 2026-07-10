@@ -18,9 +18,6 @@ import static java.lang.Math.max;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.ortools.mathopt.ModelUpdateProto;
-import com.google.ortools.mathopt.VariableUpdatesProto;
-import com.google.ortools.mathopt.VariablesProto;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -67,7 +64,7 @@ final class Variables {
   Variable addVariable(String name) {
     return addVariable(
         /* lowerBound= */ Double.NEGATIVE_INFINITY,
-        /*upperBound=*/Double.POSITIVE_INFINITY,
+        /* upperBound= */ Double.POSITIVE_INFINITY,
         /* isInteger= */ false, name);
   }
 

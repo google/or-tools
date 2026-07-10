@@ -16,7 +16,6 @@ package com.google.ortools.mathopt;
 import static com.google.ortools.util.ProtoDurationConversion.toJavaDuration;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.ortools.mathopt.CallbackDataProto;
 import java.time.Duration;
 import java.util.Optional;
 

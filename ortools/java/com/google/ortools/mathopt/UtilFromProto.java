@@ -15,8 +15,6 @@ package com.google.ortools.mathopt;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
-import com.google.ortools.mathopt.SparseDoubleVectorProto;
-import com.google.ortools.mathopt.SparseInt32VectorProto;
 
 /** Util class for converting protos to objects. */
 final class UtilFromProto {
