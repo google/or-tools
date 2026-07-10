@@ -17,8 +17,6 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.ortools.mathopt.IndicatorConstraintProto;
-import com.google.ortools.mathopt.SparseDoubleVectorProto;
 import org.junit.jupiter.api.Test;
 
 public final class IndicatorConstraintTest {

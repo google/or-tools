@@ -70,7 +70,7 @@ public final class FlowTest {
       maxFlow.addArcWithCapacity(tails[i], heads[i], capacities[i]);
     }
     maxFlow.setArcCapacity(7, 6);
-    final MaxFlow.Status solveStatus = maxFlow.solve(/*source=*/0, /*sink=*/numNodes - 1);
+    final MaxFlow.Status solveStatus = maxFlow.solve(/* source= */ 0, /* sink= */ numNodes - 1);
     assertEquals(solveStatus, MaxFlow.Status.OPTIMAL);
     final long totalFlow = maxFlow.getOptimalFlow();
     assertEquals(expectedTotalFlow, totalFlow);

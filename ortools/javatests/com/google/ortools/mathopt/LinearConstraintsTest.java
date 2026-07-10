@@ -17,8 +17,6 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.google.ortools.mathopt.LinearConstraintsProto;
-import com.google.ortools.mathopt.SparseDoubleMatrixProto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -49,7 +47,7 @@ public final class LinearConstraintsTest {
     var constraints = new LinearConstraints(modelId);
 
     LinearConstraint c =
-        constraints.addLinearConstraint(/* lowerBound = */ -1.0, /* upperBound = */ 3.0, "c");
+        constraints.addLinearConstraint(/* lowerBound= */ -1.0, /* upperBound= */ 3.0, "c");
 
     assertThat(c.getLowerBound()).isEqualTo(-1.0);
     assertThat(c.getUpperBound()).isEqualTo(3.0);

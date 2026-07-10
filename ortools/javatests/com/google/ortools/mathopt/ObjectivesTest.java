@@ -19,13 +19,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.ortools.mathopt.AuxiliaryObjectivesUpdatesProto;
-import com.google.ortools.mathopt.ModelUpdateProto;
-import com.google.ortools.mathopt.ObjectiveProto;
-import com.google.ortools.mathopt.ObjectiveUpdatesProto;
 import com.google.ortools.mathopt.Objectives.Diff;
 import com.google.ortools.mathopt.Objectives.UpdateResult;
-import com.google.ortools.mathopt.SparseDoubleVectorProto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

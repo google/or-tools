@@ -18,7 +18,6 @@ import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.ortools.mathopt.Variable.OnChangeListener;
-import com.google.ortools.mathopt.VariablesProto;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
 import java.util.Collections;

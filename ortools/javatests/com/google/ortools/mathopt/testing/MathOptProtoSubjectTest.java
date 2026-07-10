@@ -18,7 +18,6 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.ortools.mathopt.testing.MathOptProtoSubject.assertThat;
 
 import com.google.common.truth.ExpectFailure.SimpleSubjectBuilderCallback;
-import com.google.ortools.mathopt.testing.TestMessage;
 import com.google.protobuf.Message;
 import org.junit.jupiter.api.Test;
 

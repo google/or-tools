@@ -16,7 +16,6 @@ edition = "2024";
 package operations_research.math_opt.testing;
 
 option java_outer_classname = "TestMessageOuterClass";
-
 option java_package = "com.google.ortools.mathopt.testing";
 
 message TestSubmessage {

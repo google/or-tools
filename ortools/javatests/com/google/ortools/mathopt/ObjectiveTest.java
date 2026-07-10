@@ -19,7 +19,6 @@ import static com.google.ortools.mathopt.Expressions.linExpr;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.google.common.collect.ImmutableList;
-import com.google.ortools.mathopt.ObjectiveProto;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
