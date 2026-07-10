@@ -13,6 +13,7 @@
 
 // [START program]
 package com.google.ortools.algorithms.samples;
+
 // [START import]
 import com.google.ortools.Loader;
 import com.google.ortools.algorithms.KnapsackSolver;
