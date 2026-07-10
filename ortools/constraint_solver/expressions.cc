@@ -518,7 +518,7 @@ int64_t TimesIntNegCstExpr::Min() const {
 
 void TimesIntNegCstExpr::SetMin(int64_t m) {
   if (m != kint64min) {
-    expr_->SetMax(PosIntDivDown(-m, -value_));
+    expr_->SetMax(PosIntDivDown(CapOpp(m), CapOpp(value_)));
   }
 }
 
@@ -528,7 +528,7 @@ int64_t TimesIntNegCstExpr::Max() const {
 
 void TimesIntNegCstExpr::SetMax(int64_t m) {
   if (m != kint64max) {
-    expr_->SetMin(PosIntDivUp(-m, -value_));
+    expr_->SetMin(PosIntDivUp(CapOpp(m), CapOpp(value_)));
   }
 }
 
@@ -599,7 +599,7 @@ void SetPosGenMinExpr(IntExpr* left, IntExpr* right, int64_t m) {
     } else {  // m < 0
       const int64_t lmin = left->Min();
       if (0 != lmin) {  // We cannot deduce anything if 0 is in the domain.
-        right->SetMin(-PosIntDivDown(-m, lmin));
+        right->SetMin(CapOpp(PosIntDivDown(CapOpp(m), lmin)));
       }
     }
   }
@@ -634,13 +634,13 @@ void TimesSetMin(IntExpr* left, IntExpr* right, IntExpr* minus_left,
     if (right->Min() >= 0) {
       SetPosPosMinExpr(left, right, m);
     } else if (right->Max() <= 0) {
-      SetPosPosMaxExpr(left, minus_right, -m);
+      SetPosPosMaxExpr(left, minus_right, CapOpp(m));
     } else {  // right->Min() < 0 && right->Max() > 0
       SetPosGenMinExpr(left, right, m);
     }
   } else if (left->Max() <= 0) {
     if (right->Min() >= 0) {
-      SetPosPosMaxExpr(right, minus_left, -m);
+      SetPosPosMaxExpr(right, minus_left, CapOpp(m));
     } else if (right->Max() <= 0) {
       SetPosPosMinExpr(minus_left, minus_right, m);
     } else {  // right->Min() < 0 && right->Max() > 0
@@ -1125,7 +1125,7 @@ void DivPosIntExpr::SetMin(int64_t m) {
   if (m > 0) {
     DivPosIntExpr_SetPosMin(num_, denom_, m);
   } else {
-    DivPosIntExpr_SetPosMax(opp_num_, denom_, -m);
+    DivPosIntExpr_SetPosMax(opp_num_, denom_, CapOpp(m));
   }
 }
 
@@ -1133,7 +1133,7 @@ void DivPosIntExpr::SetMax(int64_t m) {
   if (m >= 0) {
     DivPosIntExpr_SetPosMax(num_, denom_, m);
   } else {
-    DivPosIntExpr_SetPosMin(opp_num_, denom_, -m);
+    DivPosIntExpr_SetPosMin(opp_num_, denom_, CapOpp(m));
   }
 }
 
@@ -1234,14 +1234,14 @@ void DivIntExpr_SetPosMin(IntExpr* num, IntExpr* denom, int64_t m) {
       num->SetMin(m);
       denom->SetRange(1, num_max / m);
     } else if (num_max <= 0) {
-      num->SetMax(-m);
+      num->SetMax(CapOpp(m));
       denom->SetRange(num_min / m, -1);
     } else {
-      if (m > -num_min) {  // Denominator is forced positive.
+      if (m > CapOpp(num_min)) {  // Denominator is forced positive.
         num->SetMin(m);
         denom->SetRange(1, num_max / m);
       } else if (m > num_max) {  // Denominator is forced negative.
-        num->SetMax(-m);
+        num->SetMax(CapOpp(m));
         denom->SetRange(num_min / m, -1);
       } else {
         denom->SetRange(num_min / m, num_max / m);
@@ -1299,7 +1299,7 @@ int64_t DivIntExpr::Min() const {
     const int64_t adjusted_denom_max = denom_max == 0 ? -1 : denom_max;
     return num_max >= 0 ? num_max / adjusted_denom_max : num_max / denom_min;
   } else {  // Denominator across 0.
-    return std::min(num_min, -num_max);
+    return std::min(num_min, CapOpp(num_max));
   }
 }
 
@@ -1321,9 +1321,10 @@ int64_t DivIntExpr::Max() const {
   } else if (denom_max <= 0) {  // Denominator strictly negative.
     DCHECK_LT(denom_min, 0);
     const int64_t adjusted_denom_max = denom_max == 0 ? -1 : denom_max;
-    return num_min >= 0 ? num_min / denom_min : -num_min / -adjusted_denom_max;
+    return num_min >= 0 ? num_min / denom_min
+                        : CapOpp(num_min) / CapOpp(adjusted_denom_max);
   } else {  // Denominator across 0.
-    return std::max(num_max, -num_min);
+    return std::max(num_max, CapOpp(num_min));
   }
 }
 
@@ -1340,7 +1341,7 @@ void DivIntExpr::SetMin(int64_t m) {
   if (m > 0) {
     DivIntExpr_SetPosMin(num_, denom_, m);
   } else {
-    DivIntExpr_SetPosMax(opp_num_, denom_, -m);
+    DivIntExpr_SetPosMax(opp_num_, denom_, CapOpp(m));
   }
 }
 
@@ -1349,7 +1350,7 @@ void DivIntExpr::SetMax(int64_t m) {
   if (m >= 0) {
     DivIntExpr_SetPosMax(num_, denom_, m);
   } else {
-    DivIntExpr_SetPosMin(opp_num_, denom_, -m);
+    DivIntExpr_SetPosMin(opp_num_, denom_, CapOpp(m));
   }
 }
 
@@ -1395,23 +1396,23 @@ void IntAbsConstraint::PropagateSub() {
   const int64_t smin = sub_->Min();
   const int64_t smax = sub_->Max();
   if (smax <= 0) {
-    target_var_->SetRange(-smax, -smin);
+    target_var_->SetRange(CapOpp(smax), CapOpp(smin));
   } else if (smin >= 0) {
     target_var_->SetRange(smin, smax);
   } else {
-    target_var_->SetRange(0, std::max(-smin, smax));
+    target_var_->SetRange(0, std::max(CapOpp(smin), smax));
   }
 }
 
 void IntAbsConstraint::PropagateTarget() {
   const int64_t target_max = target_var_->Max();
-  sub_->SetRange(-target_max, target_max);
+  sub_->SetRange(CapOpp(target_max), target_max);
   const int64_t target_min = target_var_->Min();
   if (target_min > 0) {
-    if (sub_->Min() > -target_min) {
+    if (sub_->Min() > CapOpp(target_min)) {
       sub_->SetMin(target_min);
     } else if (sub_->Max() < target_min) {
-      sub_->SetMax(-target_min);
+      sub_->SetMax(CapOpp(target_min));
     }
   }
 }
@@ -1440,7 +1441,7 @@ int64_t IntAbs::Min() const {
     return emin;
   }
   if (emax <= 0) {
-    return -emax;
+    return CapOpp(emax);
   }
   return 0;
 }
@@ -1450,10 +1451,10 @@ void IntAbs::SetMin(int64_t m) {
     int64_t emin = 0;
     int64_t emax = 0;
     expr_->Range(&emin, &emax);
-    if (emin > -m) {
+    if (emin > CapOpp(m)) {
       expr_->SetMin(m);
     } else if (emax < m) {
-      expr_->SetMax(-m);
+      expr_->SetMax(CapOpp(m));
     }
   }
 }
@@ -1462,10 +1463,10 @@ int64_t IntAbs::Max() const {
   int64_t emin = 0;
   int64_t emax = 0;
   expr_->Range(&emin, &emax);
-  return std::max(-emin, emax);
+  return std::max(CapOpp(emin), emax);
 }
 
-void IntAbs::SetMax(int64_t m) { expr_->SetRange(-m, m); }
+void IntAbs::SetMax(int64_t m) { expr_->SetRange(CapOpp(m), m); }
 
 void IntAbs::Range(int64_t* mi, int64_t* ma) {
   int64_t emin = 0;
@@ -1475,24 +1476,24 @@ void IntAbs::Range(int64_t* mi, int64_t* ma) {
     *mi = emin;
     *ma = emax;
   } else if (emax <= 0) {
-    *mi = -emax;
-    *ma = -emin;
+    *mi = CapOpp(emax);
+    *ma = CapOpp(emin);
   } else {
     *mi = 0;
-    *ma = std::max(-emin, emax);
+    *ma = std::max(CapOpp(emin), emax);
   }
 }
 
 void IntAbs::SetRange(int64_t mi, int64_t ma) {
-  expr_->SetRange(-ma, ma);
+  expr_->SetRange(CapOpp(ma), ma);
   if (mi > 0) {
     int64_t emin = 0;
     int64_t emax = 0;
     expr_->Range(&emin, &emax);
-    if (emin > -mi) {
+    if (emin > CapOpp(mi)) {
       expr_->SetMin(mi);
     } else if (emax < mi) {
-      expr_->SetMax(-mi);
+      expr_->SetMax(CapOpp(mi));
     }
   }
 }
@@ -1533,13 +1534,9 @@ IntSquare::IntSquare(Solver* s, IntExpr* e) : BaseIntExpr(s), expr_(e) {}
 
 int64_t IntSquare::Min() const {
   const int64_t emin = expr_->Min();
-  if (emin >= 0) {
-    return emin >= kint32max ? kint64max : emin * emin;
-  }
+  if (emin >= 0) return CapProd(emin, emin);
   const int64_t emax = expr_->Max();
-  if (emax < 0) {
-    return emax <= -kint32max ? kint64max : emax * emax;
-  }
+  if (emax < 0) return CapProd(emax, emax);
   return 0LL;
 }
 
@@ -1563,10 +1560,7 @@ void IntSquare::SetMin(int64_t m) {
 int64_t IntSquare::Max() const {
   const int64_t emax = expr_->Max();
   const int64_t emin = expr_->Min();
-  if (emax >= kint32max || emin <= -kint32max) {
-    return kint64max;
-  }
-  return std::max(emin * emin, emax * emax);
+  return std::max(CapProd(emin, emin), CapProd(emax, emax));
 }
 
 void IntSquare::SetMax(int64_t m) {
@@ -1604,7 +1598,7 @@ PosIntSquare::PosIntSquare(Solver* s, IntExpr* e) : IntSquare(s, e) {}
 
 int64_t PosIntSquare::Min() const {
   const int64_t emin = expr_->Min();
-  return emin >= kint32max ? kint64max : emin * emin;
+  return CapProd(emin, emin);
 }
 void PosIntSquare::SetMin(int64_t m) {
   if (m <= 0) {
@@ -1619,7 +1613,7 @@ void PosIntSquare::SetMin(int64_t m) {
 
 int64_t PosIntSquare::Max() const {
   const int64_t emax = expr_->Max();
-  return emax >= kint32max ? kint64max : emax * emax;
+  return CapProd(emax, emax);
 }
 void PosIntSquare::SetMax(int64_t m) {
   if (m < 0) {

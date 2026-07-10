@@ -46,6 +46,7 @@
 #include "ortools/constraint_solver/assignment.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/reversible_data.h"
+#include "ortools/constraint_solver/reversible_engine.h"
 #include "ortools/constraint_solver/search_limit.pb.h"
 #include "ortools/constraint_solver/utilities.h"
 #include "ortools/util/bitset.h"
