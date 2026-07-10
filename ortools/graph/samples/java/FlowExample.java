@@ -17,9 +17,7 @@ import com.google.ortools.Loader;
 import com.google.ortools.graph.MaxFlow;
 import com.google.ortools.graph.MinCostFlow;
 
-/**
- * Sample showing how to model using the flow solver.
- */
+/** Sample showing how to model using the flow solver. */
 public class FlowExample {
   private static void solveMinCostFlow() {
     System.out.println("Min Cost Flow Problem - Simple interface");
