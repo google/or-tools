@@ -24,7 +24,9 @@ testing::Matcher<std::string> EmptyOrGurobiLicenseWarning() {
   return testing::AnyOf(
       "",
       testing::MatchesRegex(
-          R"regexp(\n*-+\nWarning: your license will expire in [0-9]+ days\n-+\n+)regexp"));
+          R"regexp(\n*-+\nWarning: your license will expire in [0-9]+ days\n-+\n+)regexp"),
+      testing::MatchesRegex(
+          R"regexp(\n*Set parameter LicenseID to value [0-9]+\n+)regexp"));
 }
 
 testing::Matcher<std::string> EmptyOrGurobiLicenseWarningIfGurobi(
