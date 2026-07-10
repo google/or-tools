@@ -979,15 +979,6 @@ class StaticGraph final
 
   using Base::IsArcValid;
 
-  // TODO(b/501313028): Use `GraphFromArcs()` instead.
-  template <class ArcContainer>  // e.g. vector<pair<int, int>>.
-  static StaticGraph FromArcs(NodeIndexType num_nodes,
-                              const ArcContainer& arcs) {
-    StaticGraph::Builder builder(num_nodes, arcs.size());
-    for (const auto& [from, to] : arcs) builder.AddArc(from, to);
-    return std::move(builder).BuildGraph(nullptr);
-  }
-
   // Default constructor creates an empty graph.
   StaticGraph()
       : StaticGraph(internal::Vector<NodeIndexType, ArcIndexType>(
