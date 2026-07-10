@@ -194,6 +194,30 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "index",
+    hdrs = ["index.h"],
+    deps = [
+        ":hash_or_tree_container",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/hash",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_test(
+    name = "index_test",
+    srcs = ["index_test.cc"],
+    deps = [
+        ":index",
+        "//ortools/base:gmock_main",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/random:distributions",
+    ],
+)
+
 cc_test(
     name = "hash_or_tree_container_test",
     srcs = ["hash_or_tree_container_test.cc"],
