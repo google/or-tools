@@ -54,7 +54,7 @@ int RunLinearExample() {
   parameters.set_provide_strong_optimal_guarantee(true);
   solver.SetParameters(parameters);
 
-  const SolveStatus status = solver.SolveWithDetails(lp);
+  const SolveStatus status = solver.Solve(lp);
   if (!status.Is<SolveStatus::Optimal>()) {
     std::cout << "No solution found: " << status << "!" << std::endl;
     return EXIT_FAILURE;

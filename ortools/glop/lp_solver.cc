@@ -150,23 +150,13 @@ GlopParameters* LPSolver::GetMutableParameters() { return &parameters_; }
 
 SolverLogger& LPSolver::GetSolverLogger() { return logger_; }
 
-ProblemStatus LPSolver::Solve(const LinearProgram& lp) {
-  return SolveWithDetails(lp).problem_status();
-}
-
-SolveStatus LPSolver::SolveWithDetails(const LinearProgram& lp) {
+SolveStatus LPSolver::Solve(const LinearProgram& lp) {
   std::unique_ptr<TimeLimit> time_limit =
       TimeLimit::FromParameters(parameters_);
-  return SolveWithDetails(lp, *time_limit);
+  return Solve(lp, *time_limit);
 }
 
-ProblemStatus LPSolver::SolveWithTimeLimit(const LinearProgram& lp,
-                                           TimeLimit& time_limit) {
-  return SolveWithDetails(lp, time_limit).problem_status();
-}
-
-SolveStatus LPSolver::SolveWithDetails(const LinearProgram& lp,
-                                       TimeLimit& time_limit) {
+SolveStatus LPSolver::Solve(const LinearProgram& lp, TimeLimit& time_limit) {
   ++num_solves_;
   num_revised_simplex_iterations_ = 0;
   DumpLinearProgramIfRequiredByFlags(lp, num_solves_);

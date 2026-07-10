@@ -376,7 +376,6 @@ cc_library(
         "//ortools/util:logging",
         "//ortools/util:testing_utils",
         "//ortools/util:time_limit",
-        "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
