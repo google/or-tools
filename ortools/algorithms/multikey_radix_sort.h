@@ -332,6 +332,18 @@ void DistributeHistograms(Container& in, Container& out, int num_bits,
   }
 }
 
+// Handle containers that have Resize instead of resize.
+template <typename C>
+void ResizeProtoOrStl(C& c, const std::size_t sz) {
+  using ValueType =
+      typename std::iterator_traits<decltype(std::begin(c))>::value_type;
+  if constexpr (requires { c.resize(sz); }) {
+    c.resize(sz);
+  } else if constexpr (requires { c.Resize(sz, ValueType{}); }) {
+    c.Resize(sz, ValueType{});
+  }
+}
+
 // Builds a container of the same size as the input container.
 // If ValueType is default constructible, the buffer is resized to avoid
 // copying all elements. Otherwise, elements are copied from values.
@@ -343,7 +355,7 @@ Container BuildSameSizeContainer(const Container& values) {
       typename std::iterator_traits<decltype(std::begin(values))>::value_type;
   Container buffer;
   if constexpr (std::is_default_constructible_v<ValueType>) {
-    buffer.resize(std::size(values));
+    ResizeProtoOrStl(buffer, std::size(values));
   } else {
     buffer = values;
   }
