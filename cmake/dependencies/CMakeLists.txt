@@ -335,11 +335,11 @@ if(BUILD_soplex)
   FetchContent_Declare(
     soplex
     GIT_REPOSITORY "https://github.com/scipopt/soplex.git"
-    GIT_TAG        "v8.0.2"
+    GIT_TAG        "v8.0.3"
     GIT_SHALLOW TRUE
     UPDATE_COMMAND git reset --hard
     PATCH_COMMAND git apply --ignore-whitespace
-    "${CMAKE_CURRENT_LIST_DIR}/../../patches/soplex-v8.0.2.patch"
+    "${CMAKE_CURRENT_LIST_DIR}/../../patches/soplex-v8.0.3.patch"
     SYSTEM
   )
   set(SHARED ON CACHE BOOL "Soplex param" FORCE)
