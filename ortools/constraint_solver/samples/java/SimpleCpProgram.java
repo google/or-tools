@@ -13,15 +13,17 @@
 
 // [START program]
 package com.google.ortools.constraintsolver.samples;
+
 // [START import]
 import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.DecisionBuilder;
 import com.google.ortools.constraintsolver.IntVar;
 import com.google.ortools.constraintsolver.Solver;
 import java.util.logging.Logger;
+
 // [END import]
 
-/** Simple CP Program.*/
+/** Simple CP Program. */
 public class SimpleCpProgram {
   private SimpleCpProgram() {}
 
