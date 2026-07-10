@@ -2604,19 +2604,19 @@ class PlusCstVar : public IntVar {
   }
 
   IntVar* IsEqual(int64_t constant) override {
-    return var_->IsEqual(constant - cst_);
+    return var_->IsEqual(CapSub(constant, cst_));
   }
 
   IntVar* IsDifferent(int64_t constant) override {
-    return var_->IsDifferent(constant - cst_);
+    return var_->IsDifferent(CapSub(constant, cst_));
   }
 
   IntVar* IsGreaterOrEqual(int64_t constant) override {
-    return var_->IsGreaterOrEqual(constant - cst_);
+    return var_->IsGreaterOrEqual(CapSub(constant, cst_));
   }
 
   IntVar* IsLessOrEqual(int64_t constant) override {
-    return var_->IsLessOrEqual(constant - cst_);
+    return var_->IsLessOrEqual(CapSub(constant, cst_));
   }
 
   IntVar* SubVar() const { return var_; }
@@ -2797,7 +2797,7 @@ class SubCstIntVar : public IntVar {
         : UnaryIterator(v, hole, rev), cst_(c) {}
     ~SubCstIntVarIterator() override {}
 
-    int64_t Value() const override { return cst_ - iterator_->Value(); }
+    int64_t Value() const override { return CapSub(cst_, iterator_->Value()); }
 
    private:
     const int64_t cst_;
@@ -2842,19 +2842,19 @@ class SubCstIntVar : public IntVar {
   }
 
   IntVar* IsEqual(int64_t constant) override {
-    return var_->IsEqual(cst_ - constant);
+    return var_->IsEqual(CapSub(cst_, constant));
   }
 
   IntVar* IsDifferent(int64_t constant) override {
-    return var_->IsDifferent(cst_ - constant);
+    return var_->IsDifferent(CapSub(cst_, constant));
   }
 
   IntVar* IsGreaterOrEqual(int64_t constant) override {
-    return var_->IsLessOrEqual(cst_ - constant);
+    return var_->IsLessOrEqual(CapSub(cst_, constant));
   }
 
   IntVar* IsLessOrEqual(int64_t constant) override {
-    return var_->IsGreaterOrEqual(cst_ - constant);
+    return var_->IsGreaterOrEqual(CapSub(cst_, constant));
   }
 
   IntVar* SubVar() const { return var_; }
@@ -2870,11 +2870,11 @@ SubCstIntVar::SubCstIntVar(Solver* s, IntVar* v, int64_t c)
 
 SubCstIntVar::~SubCstIntVar() {}
 
-int64_t SubCstIntVar::Min() const { return cst_ - var_->Max(); }
+int64_t SubCstIntVar::Min() const { return CapSub(cst_, var_->Max()); }
 
 void SubCstIntVar::SetMin(int64_t m) { var_->SetMax(CapSub(cst_, m)); }
 
-int64_t SubCstIntVar::Max() const { return cst_ - var_->Min(); }
+int64_t SubCstIntVar::Max() const { return CapSub(cst_, var_->Min()); }
 
 void SubCstIntVar::SetMax(int64_t m) { var_->SetMin(CapSub(cst_, m)); }
 
@@ -2882,18 +2882,20 @@ void SubCstIntVar::SetRange(int64_t l, int64_t u) {
   var_->SetRange(CapSub(cst_, u), CapSub(cst_, l));
 }
 
-void SubCstIntVar::SetValue(int64_t v) { var_->SetValue(cst_ - v); }
+void SubCstIntVar::SetValue(int64_t v) { var_->SetValue(CapSub(cst_, v)); }
 
 bool SubCstIntVar::Bound() const { return var_->Bound(); }
 
 void SubCstIntVar::WhenRange(Demon* d) { var_->WhenRange(d); }
 
-int64_t SubCstIntVar::Value() const { return cst_ - var_->Value(); }
+int64_t SubCstIntVar::Value() const { return CapSub(cst_, var_->Value()); }
 
-void SubCstIntVar::RemoveValue(int64_t v) { var_->RemoveValue(cst_ - v); }
+void SubCstIntVar::RemoveValue(int64_t v) {
+  var_->RemoveValue(CapSub(cst_, v));
+}
 
 void SubCstIntVar::RemoveInterval(int64_t l, int64_t u) {
-  var_->RemoveInterval(cst_ - u, cst_ - l);
+  var_->RemoveInterval(CapSub(cst_, u), CapSub(cst_, l));
 }
 
 void SubCstIntVar::WhenBound(Demon* d) { var_->WhenBound(d); }
@@ -2903,7 +2905,7 @@ void SubCstIntVar::WhenDomain(Demon* d) { var_->WhenDomain(d); }
 uint64_t SubCstIntVar::Size() const { return var_->Size(); }
 
 bool SubCstIntVar::Contains(int64_t v) const {
-  return var_->Contains(cst_ - v);
+  return var_->Contains(CapSub(cst_, v));
 }
 
 std::string SubCstIntVar::DebugString() const {
@@ -2934,7 +2936,7 @@ class OppIntVar : public IntVar {
         : UnaryIterator(v, hole, reversible) {}
     ~OppIntVarIterator() override {}
 
-    int64_t Value() const override { return -iterator_->Value(); }
+    int64_t Value() const override { return CapOpp(iterator_->Value()); }
   };
 
   OppIntVar(Solver* s, IntVar* v);
@@ -2974,19 +2976,19 @@ class OppIntVar : public IntVar {
   }
 
   IntVar* IsEqual(int64_t constant) override {
-    return var_->IsEqual(-constant);
+    return var_->IsEqual(CapOpp(constant));
   }
 
   IntVar* IsDifferent(int64_t constant) override {
-    return var_->IsDifferent(-constant);
+    return var_->IsDifferent(CapOpp(constant));
   }
 
   IntVar* IsGreaterOrEqual(int64_t constant) override {
-    return var_->IsLessOrEqual(-constant);
+    return var_->IsLessOrEqual(CapOpp(constant));
   }
 
   IntVar* IsLessOrEqual(int64_t constant) override {
-    return var_->IsGreaterOrEqual(-constant);
+    return var_->IsGreaterOrEqual(CapOpp(constant));
   }
 
   IntVar* SubVar() const { return var_; }
@@ -2999,11 +3001,11 @@ OppIntVar::OppIntVar(Solver* s, IntVar* v) : IntVar(s), var_(v) {}
 
 OppIntVar::~OppIntVar() {}
 
-int64_t OppIntVar::Min() const { return -var_->Max(); }
+int64_t OppIntVar::Min() const { return CapOpp(var_->Max()); }
 
 void OppIntVar::SetMin(int64_t m) { var_->SetMax(CapOpp(m)); }
 
-int64_t OppIntVar::Max() const { return -var_->Min(); }
+int64_t OppIntVar::Max() const { return CapOpp(var_->Min()); }
 
 void OppIntVar::SetMax(int64_t m) { var_->SetMin(CapOpp(m)); }
 
@@ -3017,12 +3019,12 @@ bool OppIntVar::Bound() const { return var_->Bound(); }
 
 void OppIntVar::WhenRange(Demon* d) { var_->WhenRange(d); }
 
-int64_t OppIntVar::Value() const { return -var_->Value(); }
+int64_t OppIntVar::Value() const { return CapOpp(var_->Value()); }
 
-void OppIntVar::RemoveValue(int64_t v) { var_->RemoveValue(-v); }
+void OppIntVar::RemoveValue(int64_t v) { var_->RemoveValue(CapOpp(v)); }
 
 void OppIntVar::RemoveInterval(int64_t l, int64_t u) {
-  var_->RemoveInterval(-u, -l);
+  var_->RemoveInterval(CapOpp(u), CapOpp(l));
 }
 
 void OppIntVar::WhenBound(Demon* d) { var_->WhenBound(d); }
@@ -3031,7 +3033,7 @@ void OppIntVar::WhenDomain(Demon* d) { var_->WhenDomain(d); }
 
 uint64_t OppIntVar::Size() const { return var_->Size(); }
 
-bool OppIntVar::Contains(int64_t v) const { return var_->Contains(-v); }
+bool OppIntVar::Contains(int64_t v) const { return var_->Contains(CapOpp(v)); }
 
 std::string OppIntVar::DebugString() const {
   return absl::StrFormat("-(%s)", var_->DebugString());
@@ -3075,7 +3077,7 @@ class TimesCstIntVar : public IntVar {
     if (cst_ > 0) {
       return var_->IsGreaterOrEqual(PosIntDivUp(constant, cst_));
     } else {
-      return var_->IsLessOrEqual(PosIntDivDown(-constant, -cst_));
+      return var_->IsLessOrEqual(PosIntDivDown(CapOpp(constant), CapOpp(cst_)));
     }
   }
 
@@ -3083,7 +3085,8 @@ class TimesCstIntVar : public IntVar {
     if (cst_ > 0) {
       return var_->IsLessOrEqual(PosIntDivDown(constant, cst_));
     } else {
-      return var_->IsGreaterOrEqual(PosIntDivUp(-constant, -cst_));
+      return var_->IsGreaterOrEqual(
+          PosIntDivUp(CapOpp(constant), CapOpp(cst_)));
     }
   }
 
@@ -3421,7 +3424,7 @@ int64_t TimesNegCstIntVar::Min() const { return CapProd(var_->Max(), cst_); }
 
 void TimesNegCstIntVar::SetMin(int64_t m) {
   if (m != kint64min) {
-    var_->SetMax(PosIntDivDown(-m, -cst_));
+    var_->SetMax(PosIntDivDown(CapOpp(m), CapOpp(cst_)));
   }
 }
 
@@ -3429,7 +3432,7 @@ int64_t TimesNegCstIntVar::Max() const { return CapProd(var_->Min(), cst_); }
 
 void TimesNegCstIntVar::SetMax(int64_t m) {
   if (m != kint64max) {
-    var_->SetMin(PosIntDivUp(-m, -cst_));
+    var_->SetMin(PosIntDivUp(CapOpp(m), CapOpp(cst_)));
   }
 }
 
@@ -3665,8 +3668,7 @@ IntVar* NewIntMinusVar(Solver* s, int64_t value, IntVar* var) {
     case IntVar::VAR_ADD_CST: {
       PlusCstVar* const cst_add_var = reinterpret_cast<PlusCstVar*>(var);
       IntVar* const sub_var = cst_add_var->SubVar();
-      DCHECK(!SubOverflows(value, cst_add_var->Constant()));
-      const int64_t new_constant = value - cst_add_var->Constant();
+      const int64_t new_constant = CapSub(value, cst_add_var->Constant());
       if (new_constant == 0) {
         return sub_var;
       } else {
@@ -3677,8 +3679,7 @@ IntVar* NewIntMinusVar(Solver* s, int64_t value, IntVar* var) {
     case IntVar::CST_SUB_VAR: {
       SubCstIntVar* const cst_sub_var = reinterpret_cast<SubCstIntVar*>(var);
       IntVar* const sub_var = cst_sub_var->SubVar();
-      DCHECK(!SubOverflows(value, cst_sub_var->Constant()));
-      const int64_t new_constant = value - cst_sub_var->Constant();
+      const int64_t new_constant = CapSub(value, cst_sub_var->Constant());
       return NewVarPlusInt(s, sub_var, new_constant);
     }
     case IntVar::OPP_VAR: {
