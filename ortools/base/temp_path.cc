@@ -21,6 +21,7 @@
 #include "absl/strings/string_view.h"
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
+#include "ortools/base/file.h"
 #include "ortools/base/filesystem.h"
 
 namespace file {
