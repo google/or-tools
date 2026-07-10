@@ -312,11 +312,11 @@ if(BUILD_HIGHS)
   FetchContent_Declare(
     highs
     GIT_REPOSITORY "https://github.com/ERGO-Code/HiGHS.git"
-    GIT_TAG        "v1.14.0"
+    GIT_TAG        "v1.15.0"
     GIT_SHALLOW TRUE
     UPDATE_COMMAND git reset --hard
-    PATCH_COMMAND git apply --ignore-whitespace
-    "${CMAKE_CURRENT_LIST_DIR}/../../patches/highs-v1.14.0.patch"
+    #PATCH_COMMAND git apply --ignore-whitespace
+    #"${CMAKE_CURRENT_LIST_DIR}/../../patches/highs-v1.15.0.patch"
     SYSTEM
   )
   set(CI OFF) # disable CI tests
