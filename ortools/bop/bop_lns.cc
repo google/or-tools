@@ -198,7 +198,7 @@ bool UseLinearRelaxationForSatAssignmentPreference(
   NestedTimeLimit nested_time_limit(time_limit, time_limit->GetTimeLeft(),
                                     parameters.lp_max_deterministic_time());
   const glop::SolveStatus lp_status =
-      lp_solver.SolveWithDetails(lp_model, nested_time_limit.GetTimeLimit());
+      lp_solver.Solve(lp_model, nested_time_limit.GetTimeLimit());
 
   if (!lp_status.Is<glop::SolveStatus::Optimal>() &&
       !lp_status.Is<glop::SolveStatus::PrimalFeasible>() &&

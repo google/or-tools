@@ -545,8 +545,7 @@ glop::SolveStatus LinearRelaxation::Solve(bool incremental_solve,
   }
   NestedTimeLimit nested_time_limit(time_limit, time_limit->GetTimeLeft(),
                                     parameters_.lp_max_deterministic_time());
-  return lp_solver_.SolveWithDetails(lp_model_,
-                                     nested_time_limit.GetTimeLimit());
+  return lp_solver_.Solve(lp_model_, nested_time_limit.GetTimeLimit());
 }
 
 double LinearRelaxation::ComputeLowerBoundUsingStrongBranching(
