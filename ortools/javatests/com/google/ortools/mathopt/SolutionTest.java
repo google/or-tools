@@ -16,15 +16,6 @@ package com.google.ortools.mathopt;
 import static com.google.common.truth.Truth.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.google.ortools.mathopt.BasisProto;
-import com.google.ortools.mathopt.BasisStatusProto;
-import com.google.ortools.mathopt.DualRayProto;
-import com.google.ortools.mathopt.DualSolutionProto;
-import com.google.ortools.mathopt.PrimalRayProto;
-import com.google.ortools.mathopt.PrimalSolutionProto;
-import com.google.ortools.mathopt.SolutionProto;
-import com.google.ortools.mathopt.SolutionStatusProto;
-import com.google.ortools.mathopt.SparseBasisStatusVector;
 import org.junit.jupiter.api.Test;
 
 public final class SolutionTest {

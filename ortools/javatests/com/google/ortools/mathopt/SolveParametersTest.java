@@ -17,14 +17,6 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.ortools.GScipParameters;
 import com.google.ortools.glop.GlopParameters;
-import com.google.ortools.mathopt.EmphasisProto;
-import com.google.ortools.mathopt.GlpkParametersProto;
-import com.google.ortools.mathopt.GurobiParametersProto;
-import com.google.ortools.mathopt.HighsOptionsProto;
-import com.google.ortools.mathopt.LPAlgorithmProto;
-import com.google.ortools.mathopt.OsqpSettingsProto;
-import com.google.ortools.mathopt.SolveParametersProto;
-import com.google.ortools.mathopt.XpressParametersProto;
 import com.google.ortools.pdlp.PrimalDualHybridGradientParams;
 import com.google.ortools.sat.SatParameters;
 import java.time.Duration;

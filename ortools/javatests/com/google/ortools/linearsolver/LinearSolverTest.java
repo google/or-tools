@@ -20,13 +20,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.ortools.Loader;
-import com.google.ortools.linearsolver.MPConstraintProto;
-import com.google.ortools.linearsolver.MPModelProto;
-import com.google.ortools.linearsolver.MPModelRequest;
-import com.google.ortools.linearsolver.MPSolutionResponse;
-import com.google.ortools.linearsolver.MPSolverResponseStatus;
-import com.google.ortools.linearsolver.MPVariableProto;
-import com.google.ortools.linearsolver.PartialVariableAssignment;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -437,6 +430,7 @@ public final class LinearSolverTest {
     }
     assertTrue(success);
   }
+
   @Test
   public void testMPSolver_exportModelToProto() {
     final MPSolver.OptimizationProblemType problemType =

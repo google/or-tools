@@ -16,16 +16,6 @@ package com.google.ortools.sat;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.ortools.Loader;
-import com.google.ortools.sat.ConstraintProto;
-import com.google.ortools.sat.CpModelProto;
-import com.google.ortools.sat.CpObjectiveProto;
-import com.google.ortools.sat.CpSolverResponse;
-import com.google.ortools.sat.CpSolverStatus;
-import com.google.ortools.sat.DecisionStrategyProto;
-import com.google.ortools.sat.IntegerVariableProto;
-import com.google.ortools.sat.IntervalConstraintProto;
-import com.google.ortools.sat.LinearConstraintProto;
-import com.google.ortools.sat.PartialVariableAssignment;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

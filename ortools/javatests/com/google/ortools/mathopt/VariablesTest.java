@@ -17,9 +17,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.google.ortools.mathopt.ModelUpdateProto;
 import com.google.ortools.mathopt.Variables.Diff;
-import com.google.ortools.mathopt.VariablesProto;
 import org.junit.jupiter.api.Test;
 
 public final class VariablesTest {
@@ -136,8 +134,8 @@ public final class VariablesTest {
   public void diffUpdate_diffHasNewVariable() {
     Variables variables = new Variables(new ModelId(""));
     Diff diff = variables.addDiff();
-    var unused =
-        variables.addVariable(/*lowerBound=*/-1.0, /*upperBound=*/3.5, /*isInteger=*/false, "x");
+    var unused = variables.addVariable(
+        /* lowerBound= */ -1.0, /* upperBound= */ 3.5, /* isInteger= */ false, "x");
 
     ModelUpdateProto.Builder expectedUpdates = ModelUpdateProto.newBuilder();
     expectedUpdates.getNewVariablesBuilder()
@@ -152,8 +150,8 @@ public final class VariablesTest {
   @Test
   public void diffUpdate_setLowerBoundBeforeCheckpoint() {
     Variables variables = new Variables(new ModelId(""));
-    Variable x =
-        variables.addVariable(/*lowerBound=*/-1.0, /*upperBound=*/3.5, /*isInteger=*/false, "x");
+    Variable x = variables.addVariable(
+        /* lowerBound= */ -1.0, /* upperBound= */ 3.5, /* isInteger= */ false, "x");
     Diff diff = variables.addDiff();
     x.setLowerBound(-2.0);
 
@@ -165,8 +163,8 @@ public final class VariablesTest {
   @Test
   public void diffUpdate_setLowerBoundBeforeCheckpointUnchanged() {
     Variables variables = new Variables(new ModelId(""));
-    Variable x =
-        variables.addVariable(/*lowerBound=*/-1.0, /*upperBound=*/3.5, /*isInteger=*/false, "x");
+    Variable x = variables.addVariable(
+        /* lowerBound= */ -1.0, /* upperBound= */ 3.5, /* isInteger= */ false, "x");
     Diff diff = variables.addDiff();
     x.setLowerBound(-1.0);
 
@@ -179,8 +177,8 @@ public final class VariablesTest {
   public void diffUpdate_setLowerBoundAfterCheckpoint() {
     Variables variables = new Variables(new ModelId(""));
     Diff diff = variables.addDiff();
-    Variable x =
-        variables.addVariable(/*lowerBound=*/-1.0, /*upperBound=*/3.5, /*isInteger=*/false, "x");
+    Variable x = variables.addVariable(
+        /* lowerBound= */ -1.0, /* upperBound= */ 3.5, /* isInteger= */ false, "x");
     x.setLowerBound(-2.0);
 
     ModelUpdateProto.Builder expectedUpdates = ModelUpdateProto.newBuilder();
@@ -196,8 +194,8 @@ public final class VariablesTest {
   @Test
   public void diffUpdate_setUpperBoundBeforeCheckpoint() {
     Variables variables = new Variables(new ModelId(""));
-    Variable x =
-        variables.addVariable(/*lowerBound=*/-1.0, /*upperBound=*/3.5, /*isInteger=*/false, "x");
+    Variable x = variables.addVariable(
+        /* lowerBound= */ -1.0, /* upperBound= */ 3.5, /* isInteger= */ false, "x");
     Diff diff = variables.addDiff();
     x.setUpperBound(2.0);
 
@@ -209,8 +207,8 @@ public final class VariablesTest {
   @Test
   public void diffUpdate_setUpperBoundBeforeCheckpointUnchanged() {
     Variables variables = new Variables(new ModelId(""));
-    Variable x =
-        variables.addVariable(/*lowerBound=*/-1.0, /*upperBound=*/3.5, /*isInteger=*/false, "x");
+    Variable x = variables.addVariable(
+        /* lowerBound= */ -1.0, /* upperBound= */ 3.5, /* isInteger= */ false, "x");
     Diff diff = variables.addDiff();
     x.setUpperBound(3.5);
 
@@ -223,8 +221,8 @@ public final class VariablesTest {
   public void diffUpdate_setUpperBoundAfterCheckpoint() {
     Variables variables = new Variables(new ModelId(""));
     Diff diff = variables.addDiff();
-    Variable x =
-        variables.addVariable(/*lowerBound=*/-1.0, /*upperBound=*/3.5, /*isInteger=*/false, "x");
+    Variable x = variables.addVariable(
+        /* lowerBound= */ -1.0, /* upperBound= */ 3.5, /* isInteger= */ false, "x");
     x.setUpperBound(2.0);
 
     ModelUpdateProto.Builder expectedUpdates = ModelUpdateProto.newBuilder();
@@ -240,8 +238,8 @@ public final class VariablesTest {
   @Test
   public void diffUpdate_setIntegerBeforeCheckpoint() {
     Variables variables = new Variables(new ModelId(""));
-    Variable x =
-        variables.addVariable(/*lowerBound=*/-1.0, /*upperBound=*/3.5, /*isInteger=*/false, "x");
+    Variable x = variables.addVariable(
+        /* lowerBound= */ -1.0, /* upperBound= */ 3.5, /* isInteger= */ false, "x");
     Diff diff = variables.addDiff();
     x.setInteger(true);
 
@@ -253,8 +251,8 @@ public final class VariablesTest {
   @Test
   public void diffUpdate_setIntegerBeforeCheckpointUnchanged() {
     Variables variables = new Variables(new ModelId(""));
-    Variable x =
-        variables.addVariable(/*lowerBound=*/-1.0, /*upperBound=*/3.5, /*isInteger=*/false, "x");
+    Variable x = variables.addVariable(
+        /* lowerBound= */ -1.0, /* upperBound= */ 3.5, /* isInteger= */ false, "x");
     Diff diff = variables.addDiff();
     x.setInteger(false);
 
@@ -267,8 +265,8 @@ public final class VariablesTest {
   public void diffUpdate_setIntegerAfterCheckpoint() {
     Variables variables = new Variables(new ModelId(""));
     Diff diff = variables.addDiff();
-    Variable x =
-        variables.addVariable(/*lowerBound=*/-1.0, /*upperBound=*/3.5, /*isInteger=*/false, "x");
+    Variable x = variables.addVariable(
+        /* lowerBound= */ -1.0, /* upperBound= */ 3.5, /* isInteger= */ false, "x");
     x.setInteger(true);
 
     ModelUpdateProto.Builder expectedUpdates = ModelUpdateProto.newBuilder();
@@ -415,8 +413,8 @@ public final class VariablesTest {
     Variable x = variables.addVariable("x").setLowerBound(0.0).setUpperBound(1.0);
     Variable y = variables.addVariable("y").setLowerBound(2.0).setUpperBound(3.0);
     Diff diff = variables.addDiff();
-    var unused =
-        variables.addVariable(/*lowerBound=*/4.0, /*upperBound=*/5.0, /*isInteger=*/false, "z");
+    var unused = variables.addVariable(
+        /* lowerBound= */ 4.0, /* upperBound= */ 5.0, /* isInteger= */ false, "z");
     variables.deleteVariable(x);
     y.setInteger(true);
     y.setLowerBound(6.0);

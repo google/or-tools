@@ -19,10 +19,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.ortools.mathopt.Basis.BasisStatus;
-import com.google.ortools.mathopt.BasisProto;
-import com.google.ortools.mathopt.BasisStatusProto;
-import com.google.ortools.mathopt.SolutionStatusProto;
-import com.google.ortools.mathopt.SparseBasisStatusVector;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 

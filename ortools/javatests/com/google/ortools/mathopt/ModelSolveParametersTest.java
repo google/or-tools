@@ -19,12 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.ortools.mathopt.Basis.BasisStatus;
-import com.google.ortools.mathopt.BasisStatusProto;
 import com.google.ortools.mathopt.ModelSolveParameters.SolutionHint;
-import com.google.ortools.mathopt.ModelSolveParametersProto;
-import com.google.ortools.mathopt.SolutionHintProto;
-import com.google.ortools.mathopt.SolutionStatusProto;
-import com.google.ortools.mathopt.SparseDoubleVectorProto;
 import org.junit.jupiter.api.Test;
 
 public class ModelSolveParametersTest {

@@ -19,7 +19,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.google.ortools.Loader;
-import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.util.Domain;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;

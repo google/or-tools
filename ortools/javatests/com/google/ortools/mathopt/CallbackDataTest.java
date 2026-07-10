@@ -19,13 +19,10 @@ import static com.google.ortools.util.ProtoDurationConversion.toProtoDuration;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.ortools.mathopt.CallbackDataProto;
 import com.google.ortools.mathopt.CallbackDataProto.BarrierStats;
 import com.google.ortools.mathopt.CallbackDataProto.MipStats;
 import com.google.ortools.mathopt.CallbackDataProto.PresolveStats;
 import com.google.ortools.mathopt.CallbackDataProto.SimplexStats;
-import com.google.ortools.mathopt.CallbackEventProto;
-import com.google.ortools.mathopt.SparseDoubleVectorProto;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
 

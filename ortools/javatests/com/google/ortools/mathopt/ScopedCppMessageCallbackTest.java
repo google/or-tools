@@ -17,13 +17,6 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.ortools.mathopt.testing.StringCorrespondences.hasSubstring;
 
 import com.google.ortools.Loader;
-import com.google.ortools.mathopt.CallbackRegistrationProto;
-import com.google.ortools.mathopt.ModelProto;
-import com.google.ortools.mathopt.ModelSolveParametersProto;
-import com.google.ortools.mathopt.SolveParametersProto;
-import com.google.ortools.mathopt.SolveResultProto;
-import com.google.ortools.mathopt.SolverTypeProto;
-import com.google.ortools.mathopt.TerminationReasonProto;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;

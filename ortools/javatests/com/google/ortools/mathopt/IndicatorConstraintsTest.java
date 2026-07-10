@@ -19,7 +19,6 @@ import static com.google.ortools.mathopt.Expressions.linExpr;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.ortools.mathopt.IndicatorConstraintUpdatesProto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
