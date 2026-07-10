@@ -14,11 +14,6 @@
 package com.google.ortools.mathopt;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.ortools.mathopt.DualRayProto;
-import com.google.ortools.mathopt.DualSolutionProto;
-import com.google.ortools.mathopt.PrimalRayProto;
-import com.google.ortools.mathopt.PrimalSolutionProto;
-import com.google.ortools.mathopt.SolutionProto;
 import java.util.Optional;
 
 /**

@@ -18,9 +18,6 @@ import static java.util.Map.Entry.comparingByKey;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
-import com.google.ortools.mathopt.BasisProto;
-import com.google.ortools.mathopt.BasisStatusProto;
-import com.google.ortools.mathopt.SparseBasisStatusVector;
 import java.util.EnumMap;
 import java.util.Optional;
 
@@ -212,7 +209,7 @@ public final class Basis {
    * <p>This is the inverse operation of {@link #basisVectorToProto(ImmutableMap)}.
    *
    * @throws IllegalArgumentException if the {@code proto} is invalid and if it has a linear
-   * constraint ID that does not exist in {@code model}.
+   *     constraint ID that does not exist in {@code model}.
    */
   public static ImmutableMap<LinearConstraint, BasisStatus> linearConstraintBasisFromProto(
       Model model, SparseBasisStatusVector proto) {

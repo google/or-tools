@@ -13,11 +13,6 @@
 
 package com.google.ortools.sat;
 
-import com.google.ortools.sat.ConstraintProto;
-import com.google.ortools.sat.CpModelProto;
-import com.google.ortools.sat.IntervalConstraintProto;
-import com.google.ortools.sat.LinearExpressionProto;
-
 /** An interval variable. This class must be constructed from the CpModel class. */
 public final class IntervalVar {
   IntervalVar(CpModelProto.Builder builder, LinearExpressionProto.Builder startBuilder,

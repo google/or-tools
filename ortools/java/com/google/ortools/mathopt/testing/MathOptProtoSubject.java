@@ -15,7 +15,6 @@ package com.google.ortools.mathopt.testing;
 
 import static com.google.common.truth.Truth.assertAbout;
 
-import com.google.common.truth.Fact;
 import com.google.common.truth.FailureMetadata;
 import com.google.common.truth.Subject;
 import com.google.protobuf.Message;

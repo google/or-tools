@@ -17,7 +17,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.ortools.mathopt.VariablesProto;
 import java.util.Comparator;
 import java.util.Map;
 

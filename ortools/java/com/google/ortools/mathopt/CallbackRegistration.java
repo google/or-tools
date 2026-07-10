@@ -14,8 +14,6 @@
 package com.google.ortools.mathopt;
 
 import com.google.common.collect.ImmutableList;
-import com.google.ortools.mathopt.CallbackEventProto;
-import com.google.ortools.mathopt.CallbackRegistrationProto;
 import java.util.EnumSet;
 
 /**

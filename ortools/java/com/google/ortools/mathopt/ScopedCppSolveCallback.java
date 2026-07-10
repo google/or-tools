@@ -13,8 +13,6 @@
 
 package com.google.ortools.mathopt;
 
-import com.google.ortools.mathopt.CallbackDataProto;
-import com.google.ortools.mathopt.CallbackResultProto;
 import java.util.Optional;
 import java.util.function.Function;
 import org.jspecify.annotations.Nullable;

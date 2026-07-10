@@ -16,7 +16,6 @@ package com.google.ortools.mathopt;
 import static com.google.ortools.mathopt.Expressions.linExpr;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.ortools.mathopt.CallbackResultProto;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -299,6 +298,7 @@ public final class CallbackResult {
 
   private static final class GeneratedLinearConstraint {
     final double lowerBound;
+
     /** Must not be modified. Triggers an exception otherwise. */
     final Iterable<Map.Entry<Variable, Double>> linearTerms;
 

@@ -14,12 +14,13 @@
 package com.google.ortools.constraintsolver;
 
 /**
- * Represents an operation upon three {@code long}-valued operands and producing a
- * {@code long}-valued result.  This is the primitive type specialization of
- * TernaryOperator for {@code long}.
+ * Represents an operation upon three {@code long}-valued operands and producing a {@code
+ * long}-valued result. This is the primitive type specialization of TernaryOperator for {@code
+ * long}.
  *
- * <p>This is a functional interface
- * whose functional method is {@link #applyAsLong(long, long, long)}.
+ * <p>This is a functional interface whose functional method is {@link #applyAsLong(long, long,
+ * long)}.
+ *
  * @see BinaryOperator
  * @see LongUnaryOperator.
  */
