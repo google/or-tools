@@ -32,6 +32,11 @@
 
 #include "absl/base/config.h"
 
+// Abseil >= LTS 20260526 provides absl::SourceLocation; use it when available.
+#if defined(__has_include) && __has_include("absl/types/source_location.h")
+#include "absl/types/source_location.h"
+#else
+
 namespace absl {
 
 // Class representing a specific location in the source code of a program.
@@ -117,9 +122,15 @@ class SourceLocation {
 
 }  // namespace absl
 
+#endif  // __has_include("absl/types/source_location.h")
+
 // If a function takes an `absl::SourceLocation` parameter, pass this as the
-// argument.
+// argument. Abseil's own SourceLocation has no DoNotInvokeDirectly().
+#if defined(__has_include) && __has_include("absl/types/source_location.h")
+#define ABSL_LOC ::absl::SourceLocation::current()
+#else
 #define ABSL_LOC ::absl::SourceLocation::DoNotInvokeDirectly(__LINE__, __FILE__)
+#endif
 
 // ABSL_LOC_CURRENT_DEFAULT_ARG
 //
