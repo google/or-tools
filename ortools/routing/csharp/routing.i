@@ -317,6 +317,39 @@ using Domain = Google.OrTools.Util.Domain;
     routeConstraintCallbacks.Add(c);
     return c;
   }
+
+  private sealed class RouteConstraintOptionalCostCallback
+      : RouteConstraintCallback {
+    private readonly Func<long[], long?> routeEvaluator;
+
+    public RouteConstraintOptionalCostCallback(
+        Func<long[], long?> routeEvaluator) {
+      this.routeEvaluator = routeEvaluator;
+    }
+
+    public override RouteConstraintResult Evaluate(long[] route) {
+      long? cost = routeEvaluator(route);
+      if (!cost.HasValue) {
+        return new RouteConstraintResult {
+            is_satisfied = false,
+            cost = 0,
+        };
+      }
+      return new RouteConstraintResult {
+          is_satisfied = true,
+          cost = cost.Value,
+      };
+    }
+  }
+
+  // Convenience overload: null means the route violates the constraint.
+  public void AddRouteConstraint(
+      Func<long[], long?> routeEvaluator,
+      bool costs_are_homogeneous_across_vehicles = false) {
+    AddRouteConstraint(
+        new RouteConstraintOptionalCostCallback(routeEvaluator),
+        costs_are_homogeneous_across_vehicles);
+  }
 %}
 %typemap(csin) operations_research::routing::RouteConstraintCallback* %{ RouteConstraintCallback.getCPtr(StoreRouteConstraintCallback($csinput)) %}
 
