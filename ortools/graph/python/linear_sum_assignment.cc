@@ -20,7 +20,7 @@ using ::operations_research::SimpleLinearSumAssignment;
 using NodeIndex = ::operations_research::SimpleLinearSumAssignment::NodeIndex;
 using ::pybind11::arg;
 
-PYBIND11_MODULE(linear_sum_assignment, m) {
+PYBIND11_MODULE(linear_sum_assignment, m, pybind11::mod_gil_not_used()) {
   pybind11::class_<SimpleLinearSumAssignment> slsa(m,
                                                    "SimpleLinearSumAssignment");
   slsa.def(pybind11::init<>());
