@@ -14,12 +14,14 @@
 // MIP example that uses a variable array.
 // [START program]
 package com.google.ortools.linearsolver.samples;
+
 // [START import]
 import com.google.ortools.Loader;
 import com.google.ortools.linearsolver.MPConstraint;
 import com.google.ortools.linearsolver.MPObjective;
 import com.google.ortools.linearsolver.MPSolver;
 import com.google.ortools.linearsolver.MPVariable;
+
 // [END import]
 
 // [START program_part1]
@@ -38,6 +40,7 @@ public class MipVarArray {
     public final int numVars = 5;
     public final int numConstraints = 4;
   }
+
   // [END data_model]
 
   public static void main(String[] args) throws Exception {

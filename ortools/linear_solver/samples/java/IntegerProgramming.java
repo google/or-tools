@@ -18,14 +18,16 @@ import com.google.ortools.linearsolver.MPConstraint;
 import com.google.ortools.linearsolver.MPObjective;
 import com.google.ortools.linearsolver.MPSolver;
 import com.google.ortools.linearsolver.MPVariable;
+import java.util.NoSuchElementException;
 
 /** Integer programming example that shows how to use the API. */
 public class IntegerProgramming {
+  private IntegerProgramming() {} // Non-instantiable
+
   private static void runIntegerProgrammingExample(String solverType) {
     MPSolver solver = MPSolver.createSolver(solverType);
     if (solver == null) {
-      System.out.println("Could not create solver " + solverType);
-      return;
+      throw new NoSuchElementException(solverType);
     }
     double infinity = Double.POSITIVE_INFINITY;
     // x1 and x2 are integer non-negative variables.
@@ -71,17 +73,25 @@ public class IntegerProgramming {
     System.out.println("Problem solved in " + solver.nodes() + " branch-and-bound nodes");
   }
 
-  public static void main(String[] args) throws Exception {
+  private static void tryRunIntegerProgrammingExample(String solverType) {
+    try {
+      runIntegerProgrammingExample(solverType);
+    } catch (NoSuchElementException e) {
+      System.out.println("Failed to run integer programming example with " + solverType);
+    }
+  }
+
+  public static void main(String[] args) {
     Loader.loadNativeLibraries();
     System.out.println("---- Integer programming example with SCIP (recommended) ----");
-    runIntegerProgrammingExample("SCIP");
+    tryRunIntegerProgrammingExample("SCIP");
     System.out.println("---- Integer programming example with CBC ----");
-    runIntegerProgrammingExample("CBC");
+    tryRunIntegerProgrammingExample("CBC");
     System.out.println("---- Integer programming example with GLPK ----");
-    runIntegerProgrammingExample("GLPK");
+    tryRunIntegerProgrammingExample("GLPK");
     System.out.println("---- Integer programming example with CP-SAT ----");
-    runIntegerProgrammingExample("SAT");
+    tryRunIntegerProgrammingExample("SAT");
     System.out.println("---- Integer programming example with XPRESS ----");
-    runIntegerProgrammingExample("XPRESS");
+    tryRunIntegerProgrammingExample("XPRESS");
   }
 }

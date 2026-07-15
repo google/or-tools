@@ -18,16 +18,22 @@ import com.google.ortools.linearsolver.MPConstraint;
 import com.google.ortools.linearsolver.MPObjective;
 import com.google.ortools.linearsolver.MPSolver;
 import com.google.ortools.linearsolver.MPVariable;
+import java.util.NoSuchElementException;
 
-/**
- * Linear programming example that shows how to use the API.
- */
+/** Linear programming example that shows how to use the API. */
 public class LinearProgramming {
-  private static void runLinearProgrammingExample(String solverType, boolean printModel) {
+  private LinearProgramming() {} // Non-instantiable
+
+  /** Print mode options for the linear programming model. */
+  enum PrintMode {
+    NO_PRINT, // Do not print the model.
+    PRINT_MODEL, // Print the model in LP format.
+  }
+
+  private static void runLinearProgrammingExample(String solverType, PrintMode printMode) {
     MPSolver solver = MPSolver.createSolver(solverType);
     if (solver == null) {
-      System.out.println("Could not create solver " + solverType);
-      return;
+      throw new NoSuchElementException(solverType);
     }
     double infinity = Double.POSITIVE_INFINITY;
     // x1, x2 and x3 are continuous non-negative variables.
@@ -63,7 +69,7 @@ public class LinearProgramming {
     System.out.println("Number of variables = " + solver.numVariables());
     System.out.println("Number of constraints = " + solver.numConstraints());
 
-    if (printModel) {
+    if (printMode == PrintMode.PRINT_MODEL) {
       String model = solver.exportModelAsLpFormat(/* obfuscate= */ false);
       System.out.println(model);
     }
@@ -109,13 +115,21 @@ public class LinearProgramming {
     System.out.println("    activity = " + activities[c2.index()]);
   }
 
-  public static void main(String[] args) throws Exception {
+  private static void tryRunLinearProgrammingExample(String solverType, PrintMode printModel) {
+    try {
+      runLinearProgrammingExample(solverType, printModel);
+    } catch (NoSuchElementException e) {
+      System.out.println("Failed to run linear programming example with " + solverType);
+    }
+  }
+
+  public static void main(String[] args) {
     Loader.loadNativeLibraries();
     System.out.println("---- Linear programming example with GLOP (recommended) ----");
-    runLinearProgrammingExample("GLOP", true);
+    tryRunLinearProgrammingExample("GLOP", PrintMode.PRINT_MODEL);
     System.out.println("---- Linear programming example with CLP ----");
-    runLinearProgrammingExample("CLP", false);
+    tryRunLinearProgrammingExample("CLP", PrintMode.NO_PRINT);
     System.out.println("---- Linear programming example with XPRESS ----");
-    runLinearProgrammingExample("XPRESS_LP", false);
+    tryRunLinearProgrammingExample("XPRESS_LP", PrintMode.NO_PRINT);
   }
 }
