@@ -57,8 +57,10 @@ Usage
 """
 
 import itertools
+from typing import Any
+
 from absl import app
-import numpy as np
+
 from ortools.sat.python import cp_model
 
 # ---------------------------------------------------------------------------
@@ -121,13 +123,22 @@ _SCALE = 10**6
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _leaf_paths(
-    node: dict | float, path: list[tuple[str, float, bool]] | None = None
+    node: dict[str, Any] | float,
+    path: list[tuple[str, float, bool]] | None = None,
 ) -> list[tuple[float, list[tuple[str, float, bool]]]]:
     """Enumerate (leaf_value, root-to-leaf conditions) for every leaf.
 
     Each condition is (feature, threshold, went_left) where went_left=True
     means the split sent us left, i.e. feature_value < threshold.
+
+    Args:
+      node: The tree, or subtree, to enumerate.
+      path: The path from the root to this node.
+
+    Returns:
+      List of (leaf_value, root-to-leaf conditions) tuples.
     """
     if path is None:
         path = []
@@ -143,7 +154,10 @@ def _leaf_paths(
     return results
 
 
-def _predict(candidates: dict[str, float], trees: list[dict | float]) -> float:
+def _predict(
+    candidates: dict[str, float],
+    trees: list[dict[str, Any] | float],
+) -> float:
     """Evaluate the ensemble at a single point (brute-force reference)."""
     total = 0.0
     for tree in trees:
@@ -159,27 +173,24 @@ def _predict(candidates: dict[str, float], trees: list[dict | float]) -> float:
 # CP-SAT encoding
 # ---------------------------------------------------------------------------
 
+
 def solve_with_cpsat(
-    trees: list[dict | float],
+    trees: list[dict[str, Any] | float],
     candidates: dict[str, list[float]],
 ) -> tuple[dict[str, float], float, str]:
     """Encode the tree ensemble as a CP-SAT model and solve to global optimality.
 
-    Parameters
-    ----------
-    trees:
-        List of tree dicts (or scalar leaf values for depth-0 stumps).
-    candidates:
-        Mapping from feature name to the ordered list of candidate values.
+    Args:
+      trees: List of tree dicts (or scalar leaf values for depth-0 stumps).
+      candidates: Mapping from feature name to the ordered list of candidate
+        values.
 
-    Returns
-    -------
-    best_point:
-        Optimal assignment {feature: value}.
-    best_obj:
-        Predicted objective at the optimal point (true float, not scaled).
-    status:
-        CP-SAT solver status string.
+    Returns:
+      A tuple of (best_point, best_obj, status) containing:
+        best_point: Optimal assignment {feature: value}.
+        best_obj: Predicted objective at the optimal point (true float, not
+          scaled).
+        status: CP-SAT solver status string.
     """
     model = cp_model.CpModel()
     features = list(candidates)
@@ -192,7 +203,7 @@ def solve_with_cpsat(
     for f in features:
         model.add_exactly_one(z[f])
 
-    obj_terms: list = []
+    obj_terms: list[Any] = []
 
     for tree_idx, tree in enumerate(trees):
         leaf_paths = _leaf_paths(tree)
@@ -209,9 +220,7 @@ def solve_with_cpsat(
                 if feat not in allowed:
                     continue  # fixed (non-tunable) feature — skip
                 allowed[feat] &= {
-                    k
-                    for k, v in enumerate(candidates[feat])
-                    if (v < thr) == went_left
+                    k for k, v in enumerate(candidates[feat]) if (v < thr) == went_left
                 }
                 if not allowed[feat]:
                     feasible = False
@@ -259,8 +268,9 @@ def solve_with_cpsat(
 # Brute-force reference
 # ---------------------------------------------------------------------------
 
+
 def solve_brute_force(
-    trees: list[dict | float],
+    trees: list[dict[str, Any] | float],
     candidates: dict[str, list[float]],
 ) -> tuple[dict[str, float], float]:
     """Enumerate all candidate combinations and return the global optimum."""
@@ -280,13 +290,14 @@ def solve_brute_force(
 # Main
 # ---------------------------------------------------------------------------
 
+
 def main(_):
     n_combos = 1
     for vals in _CANDIDATES.values():
         n_combos *= len(vals)
 
     print(
-        f"Tree ensemble optimisation via CP-SAT\n"
+        "Tree ensemble optimisation via CP-SAT\n"
         f"  Trees: {len(_TREES)}, features: {list(_CANDIDATES)}\n"
         f"  Search space: {n_combos} combinations\n"
     )
@@ -300,16 +311,16 @@ def main(_):
 
     # Brute-force verification
     bf_point, bf_obj = solve_brute_force(_TREES, _CANDIDATES)
-    print(f"\nBrute-force")
+    print("\nBrute-force")
     for f, v in bf_point.items():
         print(f"  {f} = {v}")
     print(f"  objective = {bf_obj:.6f}")
 
     # Verify
     tol = 1e-4
-    assert abs(cp_obj - bf_obj) < tol, (
-        f"CP-SAT objective {cp_obj:.6f} differs from brute-force {bf_obj:.6f}"
-    )
+    assert (
+        abs(cp_obj - bf_obj) < tol
+    ), f"CP-SAT objective {cp_obj:.6f} differs from brute-force {bf_obj:.6f}"
     print(f"\nVerification passed: CP-SAT matches brute-force (tol={tol})")
 
 
