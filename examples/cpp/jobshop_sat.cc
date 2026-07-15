@@ -41,7 +41,7 @@ ABSL_FLAG(bool, use_optional_variables, false,
           "interval or not.");
 ABSL_FLAG(bool, use_interval_makespan, false,
           "Whether we encode the makespan using an interval or not.");
-ABSL_FLAG(bool, use_variable_duration_to_encode_transition, false,
+ABSL_FLAG(bool, use_variable_duration_to_encode_transition, true,
           "Whether we move the transition cost to the alternative duration.");
 ABSL_FLAG(
     bool, use_cumulative_relaxation, true,

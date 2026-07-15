@@ -15,29 +15,21 @@
 
 #include <algorithm>
 #include <cstdint>
-#include <cstdlib>
-#include <limits>
 #include <string>
 #include <vector>
 
-#include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
-#include "absl/log/globals.h"
 #include "absl/log/log.h"
 #include "absl/strings/str_join.h"
 #include "absl/types/span.h"
-#include "google/protobuf/text_format.h"
 #include "google/protobuf/wrappers.pb.h"
-#include "ortools/base/log_severity.h"
 #include "ortools/base/types.h"
 #include "ortools/graph_base/connected_components.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/scheduling/jobshop_scheduling.pb.h"
-#include "ortools/scheduling/jobshop_scheduling_parser.h"
 #include "ortools/util/sorted_interval_list.h"
 
 using operations_research::scheduling::jssp::Job;
@@ -240,15 +232,15 @@ void CreateAlternativeTasks(
           } else {
             alt_interval = cp_model.NewOptionalFixedSizeIntervalVar(
                 alt_start, alt_duration, alt_presence);
-            if (!tasks[t].duration.IsConstant()) {
-              cp_model.AddEquality(tasks[t].duration, alt_duration)
-                  .OnlyEnforceIf(alt_presence);
-            }
           }
 
           // Link local and global variables.
           if (options.use_optional_variables) {
             cp_model.AddEquality(tasks[t].start, alt_start)
+                .OnlyEnforceIf(alt_presence);
+          }
+          if (!tasks[t].duration.IsConstant()) {
+            cp_model.AddEquality(tasks[t].duration, alt_duration)
                 .OnlyEnforceIf(alt_presence);
           }
 
@@ -339,48 +331,49 @@ void CreateMachines(
     circuit.AddArc(0, 0, empty_circuit);
 
     for (int i = 0; i < num_intervals; ++i) {
-      const int job_i = machine_to_tasks[m][i].job;
       const MachineTaskData& tail = machine_to_tasks[m][i];
+      const int job_i = tail.job;
 
-      // TODO(user): simplify the code!
       CHECK_EQ(i, job_i);
 
       // Source to nodes.
       circuit.AddArc(0, i + 1, cp_model.NewBoolVar());
+
       // Node to sink.
-      circuit.AddArc(i + 1, 0, cp_model.NewBoolVar());
-
-      // If the circuit is empty, the interval cannot be performed.
-      cp_model.AddImplication(empty_circuit, ~tail.interval.PresenceBoolVar());
-
-      // Used to constrain the size of the tail interval.
-      std::vector<BoolVar> literals;
-      std::vector<int64_t> transitions;
+      const BoolVar last_job = cp_model.NewBoolVar();
+      circuit.AddArc(i + 1, 0, last_job);
+      cp_model.AddEquality(tail.interval.SizeExpr(), tail.fixed_duration)
+          .OnlyEnforceIf(last_job);
 
       // Node to node.
       for (int j = 0; j < num_intervals; ++j) {
-        if (i == j) {
-          circuit.AddArc(i + 1, i + 1, ~tail.interval.PresenceBoolVar());
+        if (i == j) {  // Self loop. True if the interval is absent.
+          const BoolVar absent_lit = ~tail.interval.PresenceBoolVar();
+
+          // Tell the circuit constraint the task is optional.
+          circuit.AddArc(i + 1, i + 1, absent_lit);
+
+          // Fix the size of the interval if unperformed.
+          cp_model.AddEquality(tail.interval.SizeExpr(), tail.fixed_duration)
+              .OnlyEnforceIf(absent_lit);
+
+          // If the circuit is empty, the interval cannot be performed.
+          cp_model.AddImplication(empty_circuit, absent_lit);
         } else {
           const MachineTaskData& head = machine_to_tasks[m][j];
           const int job_j = head.job;
 
-          // TODO(user): simplify the code!
           CHECK_EQ(j, job_j);
           const int64_t transition =
               machine_transitions.transition_time(job_i * num_jobs + job_j);
+          CHECK_GE(transition, 0);
           if (transition != 0) ++num_non_zero_transitions;
 
           const BoolVar lit = cp_model.NewBoolVar();
           circuit.AddArc(i + 1, j + 1, lit);
 
           if (options.use_variable_duration_to_encode_transition) {
-            // Store the delays and the literals for the linear expression of
-            // the size of the tail interval.
-            literals.push_back(lit);
-            transitions.push_back(transition);
-            // This is redundant with the linear expression below, but makes
-            // much shorter explanations.
+            // Link the arc literal to the size of the interval.
             cp_model
                 .AddEquality(tail.interval.SizeExpr(),
                              tail.fixed_duration + transition)
@@ -388,21 +381,14 @@ void CreateMachines(
           }
 
           // Make sure the interval follow the circuit in time.
-          // Note that we use the start + duration + transition  as this is more
-          // precise than the non-propagated end.
+          // Note that we use the start + duration + transition  as this is
+          // more precise than the non-propagated end.
           cp_model
               .AddLessOrEqual(
                   tail.interval.StartExpr() + tail.fixed_duration + transition,
                   head.interval.StartExpr())
               .OnlyEnforceIf(lit);
         }
-      }
-
-      // Add a linear equation to define the size of the tail interval.
-      if (options.use_variable_duration_to_encode_transition) {
-        cp_model.AddEquality(tail.interval.SizeExpr(),
-                             LinearExpr::WeightedSum(literals, transitions) +
-                                 tail.fixed_duration);
       }
     }
     LOG(INFO) << "Machine " << m
