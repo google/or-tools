@@ -48,6 +48,7 @@ bintest(
     size = "medium",
     srcs = [":assignment_with_constraints_sat_py_test.bintest"],
     named_data = {"assignment_with_constraints_sat_py3": ":assignment_with_constraints_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -65,6 +66,7 @@ bintest(
     size = "medium",
     srcs = [":balance_group_sat_py_test.bintest"],
     named_data = {"balance_group_sat_py3": ":balance_group_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -82,6 +84,7 @@ bintest(
     size = "medium",
     srcs = [":bus_driver_scheduling_sat_py_test.bintest"],
     named_data = {"bus_driver_scheduling_sat_py3": ":bus_driver_scheduling_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -96,6 +99,7 @@ bintest(
     size = "medium",
     srcs = [":bus_driver_scheduling_flow_sat_py_test.bintest"],
     named_data = {"bus_driver_scheduling_flow_sat_py3": ":bus_driver_scheduling_flow_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -113,6 +117,7 @@ bintest(
     size = "small",
     srcs = [":car_sequencing_optimization_sat_py_test.bintest"],
     named_data = {"car_sequencing_optimization_sat_py3": ":car_sequencing_optimization_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -130,6 +135,7 @@ bintest(
     size = "medium",
     srcs = [":chemical_balance_sat_py_test.bintest"],
     named_data = {"chemical_balance_sat_py3": ":chemical_balance_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -147,6 +153,7 @@ bintest(
     size = "medium",
     srcs = [":clustering_sat_py_test.bintest"],
     named_data = {"clustering_sat_py3": ":clustering_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -164,6 +171,7 @@ bintest(
     size = "medium",
     srcs = [":cover_rectangle_sat_py_test.bintest"],
     named_data = {"cover_rectangle_sat_py3": ":cover_rectangle_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -177,6 +185,7 @@ bintest(
     name = "flexible_job_shop_sat_py_test",
     srcs = [":flexible_job_shop_sat_py_test.bintest"],
     named_data = {"flexible_job_shop_sat_py3": ":flexible_job_shop_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -194,6 +203,7 @@ bintest(
     name = "gate_scheduling_sat_py_test",
     srcs = [":gate_scheduling_sat_py_test.bintest"],
     named_data = {"gate_scheduling_sat_py3": ":gate_scheduling_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -211,6 +221,7 @@ bintest(
     size = "medium",
     srcs = [":golomb_sat_py_test.bintest"],
     named_data = {"golomb_sat_py3": ":golomb_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -228,6 +239,7 @@ bintest(
     name = "hidato_sat_py_test",
     srcs = [":hidato_sat_py_test.bintest"],
     named_data = {"hidato_sat_py3": ":hidato_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -241,6 +253,7 @@ bintest(
     name = "jobshop_ft06_distance_sat_py_test",
     srcs = [":jobshop_ft06_distance_sat_py_test.bintest"],
     named_data = {"jobshop_ft06_distance_sat_py3": ":jobshop_ft06_distance_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -257,6 +270,7 @@ bintest(
     name = "jobshop_ft06_sat_py_test",
     srcs = [":jobshop_ft06_sat_py_test.bintest"],
     named_data = {"jobshop_ft06_sat_py3": ":jobshop_ft06_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -274,6 +288,7 @@ bintest(
     size = "medium",
     srcs = [":jobshop_with_maintenance_sat_py_test.bintest"],
     named_data = {"jobshop_with_maintenance_sat_py3": ":jobshop_with_maintenance_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -293,6 +308,7 @@ bintest(
     size = "medium",
     srcs = [":knapsack_2d_sat_py_test.bintest"],
     named_data = {"knapsack_2d_sat_py3": ":knapsack_2d_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -312,6 +328,7 @@ bintest(
         "line_balancing_sat_py3": ":line_balancing_sat_py3",
         "salbp_20_1.alb": "//examples/python/testdata:salbp_20_1.alb",
     },
+    tags = ["noci"],
 )
 
 py_binary(
@@ -329,6 +346,7 @@ bintest(
     size = "medium",
     srcs = [":maximize_combinations_sat_py_test.bintest"],
     named_data = {"maximize_combinations_sat_py3": ":maximize_combinations_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -345,6 +363,7 @@ bintest(
     name = "maze_escape_sat_py_test",
     srcs = [":maze_escape_sat_py_test.bintest"],
     named_data = {"maze_escape_sat_py3": ":maze_escape_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -361,6 +380,7 @@ bintest(
     name = "music_playlist_sat_py_test",
     srcs = [":music_playlist_sat_py_test.bintest"],
     named_data = {"music_playlist_sat_py3": ":music_playlist_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -378,6 +398,7 @@ bintest(
     size = "medium",
     srcs = [":no_wait_baking_scheduling_sat_py_test.bintest"],
     named_data = {"no_wait_baking_scheduling_sat_py3": ":no_wait_baking_scheduling_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -395,6 +416,7 @@ bintest(
     size = "medium",
     srcs = [":pell_equation_sat_py_test.bintest"],
     named_data = {"pell_equation_sat_py3": ":pell_equation_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -412,6 +434,7 @@ bintest(
     size = "medium",
     srcs = [":pentominoes_sat_py_test.bintest"],
     named_data = {"pentominoes_sat_py3": ":pentominoes_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -429,6 +452,7 @@ bintest(
     size = "medium",
     srcs = [":prize_collecting_tsp_sat_py_test.bintest"],
     named_data = {"prize_collecting_tsp_sat_py3": ":prize_collecting_tsp_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -478,6 +502,7 @@ bintest(
     size = "medium",
     srcs = [":prize_collecting_vrp_sat_py_test.bintest"],
     named_data = {"prize_collecting_vrp_sat_py3": ":prize_collecting_vrp_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -495,6 +520,7 @@ bintest(
     size = "medium",
     srcs = [":qubo_sat_py_test.bintest"],
     named_data = {"qubo_sat_py3": ":qubo_sat_py3"},
+    tags = ["noci"],
 )
 
 bintest(
@@ -504,6 +530,7 @@ bintest(
         "rcpsp_sat_py3": ":rcpsp_sat_py3",
         "c1510_1.mm.txt": "//ortools/scheduling/testdata:c1510_1.mm.txt",
     },
+    tags = ["noci"],
 )
 
 bintest(
@@ -513,6 +540,7 @@ bintest(
         "rcpsp_sat_py3": ":rcpsp_sat_py3",
         "j301_1.sm": "//ortools/scheduling/testdata:j301_1.sm",
     },
+    tags = ["noci"],
 )
 
 py_binary(
@@ -541,6 +569,7 @@ bintest(
     name = "shift_scheduling_sat_py_test",
     srcs = [":shift_scheduling_sat_py_test.bintest"],
     named_data = {"shift_scheduling_sat_py3": ":shift_scheduling_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -558,6 +587,7 @@ bintest(
     size = "medium",
     srcs = [":single_machine_scheduling_with_setup_release_due_dates_sat_py_test.bintest"],
     named_data = {"single_machine_scheduling_with_setup_release_due_dates_sat_py3": ":single_machine_scheduling_with_setup_release_due_dates_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -574,6 +604,7 @@ bintest(
     name = "spread_robots_sat_py_test",
     srcs = [":spread_robots_sat_py_test.bintest"],
     named_data = {"spread_robots_sat_py3": ":spread_robots_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -590,6 +621,7 @@ bintest(
     name = "steel_mill_slab_sat_py_test",
     srcs = [":steel_mill_slab_sat_py_test.bintest"],
     named_data = {"steel_mill_slab_sat_py3": ":steel_mill_slab_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -603,6 +635,7 @@ bintest(
     name = "sudoku_sat_py_test",
     srcs = [":sudoku_sat_py_test.bintest"],
     named_data = {"sudoku_sat_py3": ":sudoku_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -620,6 +653,7 @@ bintest(
     size = "medium",
     srcs = [":task_allocation_sat_py_test.bintest"],
     named_data = {"task_allocation_sat_py3": ":task_allocation_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -654,6 +688,7 @@ bintest(
     size = "medium",
     srcs = [":tasks_and_workers_assignment_sat_py_test.bintest"],
     named_data = {"tasks_and_workers_assignment_sat_py3": ":tasks_and_workers_assignment_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -672,6 +707,7 @@ bintest(
     size = "medium",
     srcs = [":test_scheduling_sat_py_test.bintest"],
     named_data = {"test_scheduling_sat_py3": ":test_scheduling_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -686,6 +722,7 @@ bintest(
     size = "medium",
     srcs = [":tsp_sat_py_test.bintest"],
     named_data = {"tsp_sat_py3": ":tsp_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -703,6 +740,7 @@ bintest(
     size = "medium",
     srcs = [":vendor_scheduling_sat_py_test.bintest"],
     named_data = {"vendor_scheduling_sat_py3": ":vendor_scheduling_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -720,6 +758,7 @@ bintest(
     size = "medium",
     srcs = [":wedding_optimal_chart_sat_py_test.bintest"],
     named_data = {"wedding_optimal_chart_sat_py3": ":wedding_optimal_chart_sat_py3"},
+    tags = ["noci"],
 )
 
 py_binary(
@@ -733,4 +772,5 @@ bintest(
     name = "zebra_sat_py_test",
     srcs = [":zebra_sat_py_test.bintest"],
     named_data = {"zebra_sat_py3": ":zebra_sat_py3"},
+    tags = ["noci"],
 )
