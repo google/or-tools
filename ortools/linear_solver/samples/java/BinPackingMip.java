@@ -14,12 +14,14 @@
 // MIP example that solves a bin packing problem.
 // [START program]
 package com.google.ortools.linearsolver.samples;
+
 // [START import]
 import com.google.ortools.Loader;
 import com.google.ortools.linearsolver.MPConstraint;
 import com.google.ortools.linearsolver.MPObjective;
 import com.google.ortools.linearsolver.MPSolver;
 import com.google.ortools.linearsolver.MPVariable;
+
 // [END import]
 
 /** Bin packing problem. */
@@ -32,6 +34,7 @@ public class BinPackingMip {
     public final int numBins = weights.length;
     public final int binCapacity = 100;
   }
+
   // [END data_model]
 
   public static void main(String[] args) throws Exception {
@@ -126,6 +129,7 @@ public class BinPackingMip {
     }
     // [END print_solution]
   }
+
   private BinPackingMip() {}
 }
 // [END program_part2]

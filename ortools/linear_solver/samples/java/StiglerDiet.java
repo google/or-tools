@@ -14,6 +14,7 @@
 // [START program]
 // The Stigler diet problem.
 package com.google.ortools.linearsolver.samples;
+
 // [START import]
 import com.google.ortools.Loader;
 import com.google.ortools.linearsolver.MPConstraint;
@@ -22,6 +23,7 @@ import com.google.ortools.linearsolver.MPSolver;
 import com.google.ortools.linearsolver.MPVariable;
 import java.util.ArrayList;
 import java.util.List;
+
 // [END import]
 
 /** Stigler diet example. */
