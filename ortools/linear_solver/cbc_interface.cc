@@ -341,6 +341,34 @@ MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters& param) {
   // Solve
   CbcModel model(osi_);
 
+  // Use the solution hint if any.
+  if (!solver_->solution_hint_.empty()) {
+    const int num_cols = model.getNumCols();
+
+    // Build a full solution vector. Column 0 is the dummy variable for the
+    // objective offset (fixed at 1.0). Real variables start at column 1.
+    std::vector hint_solution(num_cols, 0.0);
+    hint_solution[0] = 1.0;  // Dummy variable is fixed at 1.0.
+
+    for (const auto& [hint_var, hint_val] : solver_->solution_hint_) {
+      const int var_index = hint_var->index();
+      const int cbc_col = MPSolverVarIndexToCbcVarIndex(var_index);
+      if (cbc_col >= 0 && cbc_col < num_cols) {
+        hint_solution[cbc_col] = hint_val;
+      }
+    }
+
+    // setBestSolution registers the hint as the best known solution, which
+    // branchAndBound uses to prune the search and guide heuristics.
+    model.setBestSolution(hint_solution.data(), num_cols, COIN_DBL_MAX, false);
+    // setHotstartSolution sets a depth-first search preference, prioritizing
+    // exploration near the hint. (The solution values themselves are only used
+    // when CbcModel is compiled with HOTSTART > 0, which is never the case as
+    // it is hardocded to -1, but the depth-first side effect seems to be always
+    // active.)
+    model.setHotstartSolution(hint_solution.data());
+  }
+
   // Set log level.
   CoinMessageHandler message_handler;
   model.passInMessageHandler(&message_handler);
