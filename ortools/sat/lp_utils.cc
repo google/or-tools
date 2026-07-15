@@ -1944,7 +1944,7 @@ double ComputeTrueObjectiveLowerBound(
   glop_parameters.set_max_number_of_iterations(100 * proto.variables().size());
   glop_parameters.set_change_status_to_imprecise(false);
   solver.SetParameters(glop_parameters);
-  const glop::SolveStatus& status = solver.SolveWithDetails(lp);
+  const glop::SolveStatus& status = solver.Solve(lp);
   if (status.Is<glop::SolveStatus::Optimal>()) {
     return solver.GetObjectiveValue();
   }

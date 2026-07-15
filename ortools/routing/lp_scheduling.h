@@ -407,8 +407,7 @@ class GlopWrapper : public LinearSolverWrapper {
     // be costly. Note that the assumptions are DCHECKed() in the call below.
     linear_program_.NotifyThatColumnsAreClean();
     VLOG(2) << linear_program_.Dump();
-    const glop::SolveStatus status =
-        lp_solver_.SolveWithDetails(linear_program_);
+    const glop::SolveStatus status = lp_solver_.Solve(linear_program_);
     if (search_stats_) search_stats_->num_glop_calls_in_lp_scheduling++;
     const bool feasible_only = status.Is<glop::SolveStatus::PrimalFeasible>();
     if (!status.Is<glop::SolveStatus::Optimal>() &&
