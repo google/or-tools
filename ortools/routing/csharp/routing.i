@@ -39,6 +39,71 @@ JAGGED_MATRIX_AS_CSHARP_ARRAY(int, int, int, IntVectorVector);
 %template(Int64VectorVector) std::vector<std::vector<int64_t> >;
 VECTOR_AS_CSHARP_ARRAY(int64_t, int64_t, long, Int64Vector);
 JAGGED_MATRIX_AS_CSHARP_ARRAY(int64_t, int64_t, long, Int64VectorVector);
+%typemap(csdirectorin) const std::vector<int64_t>& "new Int64Vector($iminput, false).ToArray()"
+
+%feature("director") operations_research::routing::RouteConstraintCallback;
+
+%inline %{
+namespace operations_research::routing {
+/**
+ * Result returned by RouteConstraintCallback::Evaluate().
+ *
+ * Set is_satisfied to false when the route violates the constraint.
+ * In that case the solver should filter out the solution and cost is ignored.
+ * Set is_satisfied to true and populate cost with the route penalty or cost
+ * to apply.
+ *
+ * Example:
+ * \code
+ * var result = new RouteConstraintResult {
+ *   is_satisfied = true,
+ *   cost = 42,
+ * };
+ * \endcode
+ */
+struct RouteConstraintResult {
+  bool is_satisfied = false;
+  int64_t cost = 0;
+};
+
+/**
+ * Implement this class in C# to inspect a route and return an optional cost.
+ *
+ * Override Evaluate(long[] route) and return a RouteConstraintResult.
+ * Return is_satisfied = false when the route violates the constraint, in
+ * which case the solver will filter out the solution. Return
+ * is_satisfied = true and set cost to the penalty to apply.
+ * The callback runs after the route is built, so it can use the full sequence
+ * of visited nodes to compute a penalty.
+ *
+ * Example:
+ * \code
+ * private sealed class PenalizeLongRoutes : RouteConstraintCallback {
+ *   public override RouteConstraintResult Evaluate(long[] route) {
+ *     return new RouteConstraintResult {
+ *       is_satisfied = route.Length > 10,
+ *       cost = route.Length > 10 ? 100 : 0,
+ *     };
+ *   }
+ * }
+ *
+ * model.AddRouteConstraint(new PenalizeLongRoutes());
+ * \endcode
+ */
+class RouteConstraintCallback {
+ public:
+  RouteConstraintCallback() = default;
+  virtual ~RouteConstraintCallback() = default;
+  /**
+   * Evaluates a complete route and returns an optional penalty.
+   */
+  virtual RouteConstraintResult Evaluate(
+      const std::vector<int64_t>& route) const {
+    return RouteConstraintResult();
+  }
+};
+}  // namespace operations_research::routing
+%}
 
 %import "ortools/constraint_solver/csharp/constraint_solver.i"
 %import "ortools/util/csharp/sorted_interval_list.i"  // Domain
@@ -158,20 +223,56 @@ using Google.OrTools.ConstraintSolver;
     groupDelayCallbacks.Add(groupDelay);
     return groupDelay;
   }
+
+  public IntVarVector Cumuls() {
+    return cumuls();
+  }
+
+  public IntVarVector Slacks() {
+    return slacks();
+  }
+
+  public IntVarVector Transits() {
+    return transits();
+  }
 %}
 %unignore Dimension::Dimension;
 %unignore Dimension::~Dimension;
 %unignore Dimension::CumulVar;
+%unignore Dimension::FixedTransitVar;
+%unignore Dimension::GetCumulVarMax;
+%unignore Dimension::GetCumulVarMin;
 %unignore Dimension::GetQuadraticCostSoftSpanUpperBoundForVehicle;
 %unignore Dimension::GetSoftSpanUpperBoundForVehicle;
+%unignore Dimension::GetSpanCostCoefficientForVehicle;
+%unignore Dimension::GetTransitValue;
+%unignore Dimension::GetTransitValueFromClass;
+%unignore Dimension::HasPickupToDeliveryLimits;
 %unignore Dimension::HasQuadraticCostSoftSpanUpperBounds;
 %unignore Dimension::HasSoftSpanUpperBounds;
+%unignore Dimension::InitializeBreaks;
+%unignore Dimension::model;
 %unignore Dimension::SetBreakIntervalsOfVehicle;
+%unignore Dimension::SetBreakDistanceDurationOfVehicle;
+%unignore Dimension::SetCumulVarSoftLowerBound;
+%unignore Dimension::SetCumulVarRange;
 %unignore Dimension::SetCumulVarSoftUpperBound;
 %unignore Dimension::SetGlobalSpanCostCoefficient;
+%unignore Dimension::SetPickupToDeliveryLimitFunctionForPair;
 %unignore Dimension::SetQuadraticCostSoftSpanUpperBoundForVehicle;
+%unignore Dimension::SetSlackCostCoefficientForVehicle;
+%unignore Dimension::SetSlackCostCoefficientForAllVehicles;
+%unignore Dimension::SetSpanCostCoefficientForVehicle;
+%unignore Dimension::SetSpanCostCoefficientForAllVehicles;
+%unignore Dimension::SetSpanUpperBoundForVehicle;
 %unignore Dimension::SetSoftSpanUpperBoundForVehicle;
+%csmethodmodifiers Dimension::cumuls "private";
+%unignore Dimension::cumuls;
+%csmethodmodifiers Dimension::slacks "private";
+%unignore Dimension::slacks;
 %unignore Dimension::SlackVar;
+%csmethodmodifiers Dimension::transits "private";
+%unignore Dimension::transits;
 %unignore Dimension::TransitVar;
 
 // Routing Model
@@ -207,23 +308,105 @@ using Domain = Google.OrTools.Util.Domain;
     solutionCallbacks.Add(c);
     return c;
   }
+
+  private List<RouteConstraintCallback> routeConstraintCallbacks;
+  private RouteConstraintCallback StoreRouteConstraintCallback(
+      RouteConstraintCallback c) {
+    if (routeConstraintCallbacks == null)
+      routeConstraintCallbacks = new List<RouteConstraintCallback>();
+    routeConstraintCallbacks.Add(c);
+    return c;
+  }
+
+  private sealed class RouteConstraintOptionalCostCallback
+      : RouteConstraintCallback {
+    private readonly Func<long[], long?> routeEvaluator;
+
+    public RouteConstraintOptionalCostCallback(
+        Func<long[], long?> routeEvaluator) {
+      this.routeEvaluator = routeEvaluator;
+    }
+
+    public override RouteConstraintResult Evaluate(long[] route) {
+      long? cost = routeEvaluator(route);
+      if (!cost.HasValue) {
+        return new RouteConstraintResult {
+            is_satisfied = false,
+            cost = 0,
+        };
+      }
+      return new RouteConstraintResult {
+          is_satisfied = true,
+          cost = cost.Value,
+      };
+    }
+  }
+
+  // Convenience overload: null means the route violates the constraint.
+  public void AddRouteConstraint(
+      Func<long[], long?> routeEvaluator,
+      bool costs_are_homogeneous_across_vehicles = false) {
+    AddRouteConstraint(
+        new RouteConstraintOptionalCostCallback(routeEvaluator),
+        costs_are_homogeneous_across_vehicles);
+  }
 %}
+%typemap(csin) operations_research::routing::RouteConstraintCallback* %{ RouteConstraintCallback.getCPtr(StoreRouteConstraintCallback($csinput)) %}
+
+%feature("director") operations_research::routing::RouteConstraintCallback;
+%unignore operations_research::routing::RouteConstraintResult;
+%unignore operations_research::routing::RouteConstraintResult::RouteConstraintResult;
+%unignore operations_research::routing::RouteConstraintResult::is_satisfied;
+%unignore operations_research::routing::RouteConstraintResult::cost;
+%unignore operations_research::routing::RouteConstraintCallback;
+%unignore operations_research::routing::RouteConstraintCallback::RouteConstraintCallback;
+%unignore operations_research::routing::RouteConstraintCallback::~RouteConstraintCallback;
+%unignore operations_research::routing::RouteConstraintCallback::Evaluate;
+
 %unignore Model::Model;
 %unignore Model::~Model;
 %unignore Model::AddAtSolutionCallback;
+%unignore Model::AddEnterSearchCallback;
+%unignore Model::AddSearchMonitor;
 %unignore Model::AddConstantDimensionWithSlack;
+%unignore Model::AddConstantDimension;
 %unignore Model::AddDimension;
+%unignore Model::AddDimensionWithCumulDependentVehicleTransitAndCapacity;
+%unignore Model::AddDimensionWithVehicleTransits;
 %unignore Model::AddDimensionWithVehicleCapacity;
+%unignore Model::AddDimensionWithVehicleTransitAndCapacity;
 %unignore Model::AddDisjunction;
+%unignore Model::AddHardTypeIncompatibility;
 %unignore Model::AddMatrixDimension;
 %unignore Model::AddPickupAndDelivery;
+%unignore Model::AddRequiredTypeAlternativesWhenAddingType;
+%unignore Model::AddTemporalTypeIncompatibility;
+%unignore Model::AddRouteConstraint;
+%unignore Model::AddToAssignment;
 %unignore Model::AddVariableMinimizedByFinalizer;
 %unignore Model::AddVectorDimension;
+%unignore Model::ActiveVar;
+%unignore Model::ActiveVehicleVar;
+%unignore Model::ApplyLocks;
+%unignore Model::ApplyLocks(const std::vector<int64_t>&);
+%unignore Model::ApplyLocksToAllVehicles;
+%unignore Model::CancelSearch;
+%unignore Model::CloseModelWithParameters;
+%unignore Model::CompactAssignment;
 %unignore Model::CostVar;
+%unignore Model::CostsAreHomogeneousAcrossVehicles;
 %unignore Model::CumulVar;
+%unignore Model::CumulDependentTransitCallback;
 %unignore Model::End;
+%unignore Model::FastSolveFromAssignmentWithParameters;
+%unignore Model::GetAllDimensionNames;
+%unignore Model::GetAmortizedLinearCostFactorOfVehicles;
+%unignore Model::GetAmortizedQuadraticCostFactorOfVehicles;
 %unignore Model::GetArcCostForVehicle;
+%unignore Model::GetAutomaticFirstSolutionStrategy;
 %unignore Model::GetDimensionOrDie;
+%unignore Model::GetDimensions;
+%unignore Model::GetDisjunctionIndices;
 %unignore Model::GetDisjunctionMaxCardinality;
 %unignore Model::GetDisjunctionMinCardinality;
 %unignore Model::GetDisjunctionSoftMaxCardinality;
@@ -233,10 +416,22 @@ using Domain = Google.OrTools.Util.Domain;
 %unignore Model::GetDisjunctionSoftMinPenalty;
 %unignore Model::GetDisjunctionSoftMinPenaltyCostBehavior;
 %unignore Model::GetDisjunctionPenalty;
+%unignore Model::GetFixedCostOfVehicle;
+%unignore Model::GetNumberOfDecisionsInFirstSolution;
+%unignore Model::GetNumberOfRejectsInFirstSolution;
 %unignore Model::GetNumberOfDisjunctions;
+%unignore Model::GetVehicleClassCount;
+%unignore Model::GetVehicleClassesCount;
+%unignore Model::GetVisitType;
 %unignore Model::GetMutableDimension;
+%unignore Model::IsDelivery;
 %unignore Model::IsEnd;
+%unignore Model::IsPickup;
 %unignore Model::IsStart;
+%unignore Model::Next;
+%unignore Model::VehicleIndex;
+%unignore Model::IsVehicleAllowedForIndex;
+%unignore Model::IsVehicleUsedWhenEmpty;
 %unignore Model::IsVehicleUsed;
 %unignore Model::MakeDisjunction;
 %unignore Model::SetDisjunctionHardMaximum;
@@ -244,19 +439,47 @@ using Domain = Google.OrTools.Util.Domain;
 %unignore Model::SetDisjunctionSoftMaximum;
 %unignore Model::SetDisjunctionSoftMinimum;
 %unignore Model::NextVar;
+%unignore Model::Nexts;
+%unignore Model::ReadAssignment;
 %unignore Model::ReadAssignmentFromRoutes;
+%unignore Model::RegisterCumulDependentTransitCallback;
 %unignore Model::RegisterTransitCallback;
 %unignore Model::RegisterTransitMatrix;
 %unignore Model::RegisterUnaryTransitCallback;
 %unignore Model::RegisterUnaryTransitVector;
+%unignore Model::ResourceVar;
+%unignore Model::RestoreAssignment;
+%unignore Model::SetAllowedVehiclesForIndex;
+%unignore Model::SetAllowedVehiclesForIndex(const std::vector<int>&, int64_t);
+%unignore Model::SetAmortizedCostFactorsOfAllVehicles;
+%unignore Model::SetAmortizedCostFactorsOfVehicle;
 %unignore Model::SetArcCostEvaluatorOfAllVehicles;
 %unignore Model::SetArcCostEvaluatorOfVehicle;
+%unignore Model::SetFixedCostOfAllVehicles;
+%unignore Model::SetFixedCostOfVehicle;
+%unignore Model::SetPathEnergyCostOfVehicle;
+%unignore Model::SetPathEnergyCostsOfVehicle;
 %unignore Model::SetPickupAndDeliveryPolicyOfAllVehicles;
+%unignore Model::SetPrimaryConstrainedDimension;
+%unignore Model::SetVehicleUsedWhenEmpty;
+%unignore Model::SetVisitType;
 %unignore Model::Size;
+%unignore Model::Solve;
+%unignore Model::SolveFromAssignmentWithParameters;
+%unignore Model::SolveWithParameters;
 %unignore Model::SolveFromAssignmentWithParameters(const operations_research::Assignment*, const RoutingSearchParameters&);
 %unignore Model::SolveWithParameters(const RoutingSearchParameters&);
 %unignore Model::Start;
+%unignore Model::TransitCallback;
+%unignore Model::UnaryTransitCallbackOrNull;
+%unignore Model::UpdateTimeLimit;
 %unignore Model::VehicleVar;
+%unignore Model::VehicleRouteConsideredVar;
+%unignore Model::WriteAssignment;
+%unignore Model::nodes;
+%unignore Model::solver;
+%unignore Model::status;
+%unignore Model::vehicles;
 %rename("GetStatus") Model::status;
 // Model nested enum
 %unignore Model::PenaltyCostBehavior;
@@ -304,4 +527,30 @@ using Google.OrTools.ConstraintSolver;
 }  // namespace operations_research::routing
 
 %include "ortools/routing/routing.h"
+
+%extend operations_research::routing::Model {
+  void ApplyLocks(const std::vector<int64_t>& locks) {
+    $self->ApplyLocks(absl::Span<const int64_t>(locks));
+  }
+
+  void SetAllowedVehiclesForIndex(const std::vector<int>& vehicles,
+                                  int64_t index) {
+    $self->SetAllowedVehiclesForIndex(absl::Span<const int>(vehicles), index);
+  }
+
+  void AddRouteConstraint(
+      operations_research::routing::RouteConstraintCallback* route_evaluator,
+      bool costs_are_homogeneous_across_vehicles = false) {
+    $self->AddRouteConstraint(
+        [route_evaluator](const std::vector<int64_t>& route)
+            -> std::optional<int64_t> {
+          const operations_research::routing::RouteConstraintResult result =
+              route_evaluator->Evaluate(route);
+          if (!result.is_satisfied) return std::nullopt;
+          return result.cost;
+        },
+        costs_are_homogeneous_across_vehicles);
+  }
+}
+
 %unignoreall
