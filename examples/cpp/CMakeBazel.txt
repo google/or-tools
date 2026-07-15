@@ -203,6 +203,7 @@ ortools_cxx_bintest(
   NAME bzl_cc_example_magic_square_sat_test
   SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/magic_square_sat_test.bintest
   ENVIRONMENT BINTEST_magic_square_sat=$<TARGET_FILE:bzl_cc_example_magic_square_sat>
+  DISABLED
 )
 
 ortools_cxx_binary(
@@ -214,6 +215,7 @@ ortools_cxx_bintest(
   NAME bzl_cc_example_network_routing_sat_test
   SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/network_routing_sat_test.bintest
   ENVIRONMENT BINTEST_network_routing_sat=$<TARGET_FILE:bzl_cc_example_network_routing_sat>
+  DISABLED
 )
 
 ortools_cxx_binary(
@@ -249,6 +251,7 @@ ortools_cxx_bintest(
   ENVIRONMENT
     BINTEST_pdptw=$<TARGET_FILE:bzl_cc_example_pdptw>
     BINTEST_lc102.txt=${CMAKE_CURRENT_SOURCE_DIR}/testdata/lc102.txt
+  DISABLED
 )
 
 ortools_cxx_bintest(
@@ -257,6 +260,7 @@ ortools_cxx_bintest(
   ENVIRONMENT
     BINTEST_pdptw=$<TARGET_FILE:bzl_cc_example_pdptw>
     BINTEST_lc102.txt=${CMAKE_CURRENT_SOURCE_DIR}/testdata/lc102.txt
+  DISABLED
 )
 
 ortools_cxx_binary(

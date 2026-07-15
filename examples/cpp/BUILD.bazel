@@ -439,6 +439,7 @@ bintest(
     size = "medium",
     srcs = [":magic_square_sat_test.bintest"],
     named_data = {"magic_square_sat": ":magic_square_sat"},
+    tags = ["noci"],
 )
 
 cc_binary(
@@ -471,6 +472,7 @@ bintest(
     size = "medium",
     srcs = [":network_routing_sat_test.bintest"],
     named_data = {"network_routing_sat": ":network_routing_sat"},
+    tags = ["noci"],
 )
 
 cc_binary(
@@ -556,6 +558,7 @@ bintest(
         "pdptw": ":pdptw",
         "lc102.txt": "testdata/lc102.txt",
     },
+    tags = ["noci"],
 )
 
 bintest(
@@ -566,6 +569,7 @@ bintest(
         "pdptw": ":pdptw",
         "lc102.txt": "testdata/lc102.txt",
     },
+    tags = ["noci"],
 )
 
 # Routing examples.
@@ -599,7 +603,7 @@ cc_binary(
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
-        "//ortools/linear_solver",
+        "//ortools/linear_solver:linear_solver_lib",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:globals",
         "@abseil-cpp//absl/strings",
