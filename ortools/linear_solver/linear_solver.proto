@@ -28,12 +28,12 @@
 
 syntax = "proto2";
 
-option java_package = "com.google.ortools.linearsolver";
-option java_multiple_files = true;
+package operations_research;
 
 import "ortools/util/optional_boolean.proto";
 
-package operations_research;
+option java_package = "com.google.ortools.linearsolver";
+option java_multiple_files = true;
 
 // A variable is always constrained in the form:
 //    lower_bound <= x <= upper_bound

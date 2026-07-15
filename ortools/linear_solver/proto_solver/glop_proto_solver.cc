@@ -238,8 +238,7 @@ MPSolutionResponse GlopSolveProto(
   }
 
   // Solve.
-  const glop::SolveStatus status =
-      lp_solver.SolveWithDetails(linear_program, *time_limit);
+  const glop::SolveStatus status = lp_solver.Solve(linear_program, *time_limit);
   // Set response status.
   {
     auto [solution_status, solution_status_str] =
