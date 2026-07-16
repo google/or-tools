@@ -18,6 +18,7 @@
 #include <stdexcept>
 #include <string>
 #include <tuple>
+#include <utility>
 #include <variant>
 #include <vector>
 
@@ -1012,7 +1013,7 @@ Raises:
                     "The name of the interval variable.")
       .def(
           "start_expr",
-          [](std::shared_ptr<IntervalVar> self)
+          [](const std::shared_ptr<IntervalVar>& self)
               -> std::variant<int64_t, std::shared_ptr<LinearExpr>> {
             const IntervalConstraintProto& proto = self->proto()->interval();
             if (proto.start().vars().empty()) {
@@ -1024,7 +1025,7 @@ Raises:
           "Returns the start expression of the interval variable.")
       .def(
           "size_expr",
-          [](std::shared_ptr<IntervalVar> self)
+          [](const std::shared_ptr<IntervalVar>& self)
               -> std::variant<int64_t, std::shared_ptr<LinearExpr>> {
             const IntervalConstraintProto& proto = self->proto()->interval();
             if (proto.size().vars().empty()) {
@@ -1036,7 +1037,7 @@ Raises:
           "Returns the size expression of the interval variable.")
       .def(
           "end_expr",
-          [](std::shared_ptr<IntervalVar> self)
+          [](const std::shared_ptr<IntervalVar>& self)
               -> std::variant<int64_t, std::shared_ptr<LinearExpr>> {
             const IntervalConstraintProto& proto = self->proto()->interval();
             if (proto.end().vars().empty()) {
@@ -1066,7 +1067,7 @@ Raises:
       .def("Index", &IntervalVar::index)
       .def("Name", &IntervalVar::name)
       .def("StartExpr",
-           [](std::shared_ptr<IntervalVar> self)
+           [](const std::shared_ptr<IntervalVar>& self)
                -> std::variant<int64_t, std::shared_ptr<LinearExpr>> {
              const IntervalConstraintProto& proto = self->proto()->interval();
              if (proto.start().vars().empty()) {
@@ -1076,7 +1077,7 @@ Raises:
              }
            })
       .def("SizeExpr",
-           [](std::shared_ptr<IntervalVar> self)
+           [](const std::shared_ptr<IntervalVar>& self)
                -> std::variant<int64_t, std::shared_ptr<LinearExpr>> {
              const IntervalConstraintProto& proto = self->proto()->interval();
              if (proto.size().vars().empty()) {
@@ -1086,7 +1087,7 @@ Raises:
              }
            })
       .def("EndExpr",
-           [](std::shared_ptr<IntervalVar> self)
+           [](const std::shared_ptr<IntervalVar>& self)
                -> std::variant<int64_t, std::shared_ptr<LinearExpr>> {
              const IntervalConstraintProto& proto = self->proto()->interval();
              if (proto.end().vars().empty()) {
@@ -1104,14 +1105,15 @@ Raises:
         if (proto.vars().empty()) {
           return proto.offset();
         } else {
-          return RebuildFromLinearExpressionProto(proto, model_proto);
+          return RebuildFromLinearExpressionProto(proto,
+                                                  std::move(model_proto));
         }
       },
       py::arg("proto"), py::arg("model_proto"));
 
   m.def(
       "prettyprint_model_proto",
-      [](std::shared_ptr<CpModelProto> model_proto) -> std::string {
+      [](const std::shared_ptr<CpModelProto>& model_proto) -> std::string {
 #if defined(ORTOOLS_TARGET_OS_SUPPORTS_PROTO_DESCRIPTOR)
         return PrettyPrintModelProto(*model_proto);
 #else
