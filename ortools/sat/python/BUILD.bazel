@@ -68,7 +68,9 @@ pybind_library(
     linkstatic = 1,
     deps = [
         ":linear_expr",
+        "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:cp_model_utils",
+        "//ortools/sat:sat_parameters_cc_proto",
         "//ortools/sat:swig_helper",
         "@abseil-cpp//absl/strings",
     ],

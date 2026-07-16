@@ -18,6 +18,7 @@
 #include <stdexcept>
 #include <string>
 #include <tuple>
+#include <variant>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
@@ -1011,34 +1012,37 @@ Raises:
                     "The name of the interval variable.")
       .def(
           "start_expr",
-          [](std::shared_ptr<IntervalVar> self) -> py::object {
+          [](std::shared_ptr<IntervalVar> self)
+              -> std::variant<int64_t, std::shared_ptr<LinearExpr>> {
             const IntervalConstraintProto& proto = self->proto()->interval();
             if (proto.start().vars().empty()) {
-              return py::cast(proto.start().offset());
+              return proto.start().offset();
             } else {
-              return py::cast(self->StartExpr());
+              return self->StartExpr();
             }
           },
           "Returns the start expression of the interval variable.")
       .def(
           "size_expr",
-          [](std::shared_ptr<IntervalVar> self) -> py::object {
+          [](std::shared_ptr<IntervalVar> self)
+              -> std::variant<int64_t, std::shared_ptr<LinearExpr>> {
             const IntervalConstraintProto& proto = self->proto()->interval();
             if (proto.size().vars().empty()) {
-              return py::cast(proto.size().offset());
+              return proto.size().offset();
             } else {
-              return py::cast(self->SizeExpr());
+              return self->SizeExpr();
             }
           },
           "Returns the size expression of the interval variable.")
       .def(
           "end_expr",
-          [](std::shared_ptr<IntervalVar> self) -> py::object {
+          [](std::shared_ptr<IntervalVar> self)
+              -> std::variant<int64_t, std::shared_ptr<LinearExpr>> {
             const IntervalConstraintProto& proto = self->proto()->interval();
             if (proto.end().vars().empty()) {
-              return py::cast(proto.end().offset());
+              return proto.end().offset();
             } else {
-              return py::cast(self->EndExpr());
+              return self->EndExpr();
             }
           },
           "Returns the end expression of the interval variable.")
@@ -1062,49 +1066,54 @@ Raises:
       .def("Index", &IntervalVar::index)
       .def("Name", &IntervalVar::name)
       .def("StartExpr",
-           [](std::shared_ptr<IntervalVar> self) -> py::object {
+           [](std::shared_ptr<IntervalVar> self)
+               -> std::variant<int64_t, std::shared_ptr<LinearExpr>> {
              const IntervalConstraintProto& proto = self->proto()->interval();
              if (proto.start().vars().empty()) {
-               return py::cast(proto.start().offset());
+               return proto.start().offset();
              } else {
-               return py::cast(self->StartExpr());
+               return self->StartExpr();
              }
            })
       .def("SizeExpr",
-           [](std::shared_ptr<IntervalVar> self) -> py::object {
+           [](std::shared_ptr<IntervalVar> self)
+               -> std::variant<int64_t, std::shared_ptr<LinearExpr>> {
              const IntervalConstraintProto& proto = self->proto()->interval();
              if (proto.size().vars().empty()) {
-               return py::cast(proto.size().offset());
+               return proto.size().offset();
              } else {
-               return py::cast(self->SizeExpr());
+               return self->SizeExpr();
              }
            })
-      .def("EndExpr", [](std::shared_ptr<IntervalVar> self) -> py::object {
-        const IntervalConstraintProto& proto = self->proto()->interval();
-        if (proto.end().vars().empty()) {
-          return py::cast(proto.end().offset());
-        } else {
-          return py::cast(self->EndExpr());
-        }
-      });
+      .def("EndExpr",
+           [](std::shared_ptr<IntervalVar> self)
+               -> std::variant<int64_t, std::shared_ptr<LinearExpr>> {
+             const IntervalConstraintProto& proto = self->proto()->interval();
+             if (proto.end().vars().empty()) {
+               return proto.end().offset();
+             } else {
+               return self->EndExpr();
+             }
+           });
 
   m.def(
       "rebuild_from_linear_expression_proto",
       [](const LinearExpressionProto& proto,
-         std::shared_ptr<CpModelProto> model_proto) -> py::object {
+         std::shared_ptr<CpModelProto> model_proto)
+          -> std::variant<int64_t, std::shared_ptr<LinearExpr>> {
         if (proto.vars().empty()) {
-          return py::cast(proto.offset());
+          return proto.offset();
         } else {
-          return py::cast(RebuildFromLinearExpressionProto(proto, model_proto));
+          return RebuildFromLinearExpressionProto(proto, model_proto);
         }
       },
       py::arg("proto"), py::arg("model_proto"));
 
   m.def(
       "prettyprint_model_proto",
-      [](std::shared_ptr<CpModelProto> model_proto) -> py::object {
+      [](std::shared_ptr<CpModelProto> model_proto) -> std::string {
 #if defined(ORTOOLS_TARGET_OS_SUPPORTS_PROTO_DESCRIPTOR)
-        return py::cast(PrettyPrintModelProto(*model_proto));
+        return PrettyPrintModelProto(*model_proto);
 #else
         throw std::runtime_error("unsupported: no proto descriptors");
 #endif  // defined(ORTOOLS_TARGET_OS_SUPPORTS_PROTO_DESCRIPTOR)
