@@ -22,6 +22,7 @@ import com.google.ortools.sat.CpSolverSolutionCallback;
 import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.LinearExpr;
+
 // [END import]
 
 /** OR-Tools solution to the N-queens problem. */
@@ -59,6 +60,7 @@ public final class NQueensSat {
     private int solutionCount;
     private final IntVar[] queens;
   }
+
   // [END solution_printer]
 
   public static void main(String[] args) {

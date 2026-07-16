@@ -16,7 +16,6 @@
 // [START import]
 #include <stdlib.h>
 
-#include <atomic>
 #include <map>
 #include <numeric>
 #include <string>
@@ -25,6 +24,7 @@
 
 #include "absl/log/check.h"
 #include "absl/log/globals.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_format.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/log_severity.h"
@@ -33,7 +33,6 @@
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
-#include "ortools/util/time_limit.h"
 // [END import]
 
 namespace operations_research {
