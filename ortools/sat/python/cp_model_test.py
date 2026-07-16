@@ -69,7 +69,7 @@ class SolutionFloatValue(cp_model.CpSolverSolutionCallback):
         self.__value = self.float_value(self.__expr)
 
     @property
-    def value(self) -> float:
+    def value(self) -> float:  # pyrefly: ignore[bad-override]
         return self.__value
 
 
@@ -982,7 +982,12 @@ class CpModelTest(absltest.TestCase):
                 x,
                 0,
                 [2, 3],
-                [(0, 0, 0), (0, 1, 1), (2, 2), (2, 3, 3)],
+                [
+                    (0, 0, 0),
+                    (0, 1, 1),
+                    (2, 2),
+                    (2, 3, 3),
+                ],  # pyrefly: ignore[bad-argument-type]
             )
         with self.assertRaises(ValueError):
             model.add_automaton(

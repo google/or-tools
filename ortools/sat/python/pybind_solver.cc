@@ -21,8 +21,10 @@
 #include <vector>
 
 #include "absl/strings/str_cat.h"
+#include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/python/linear_expr.h"
+#include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/swig_helper.h"
 #include "pybind11/functional.h"
 #include "pybind11/gil.h"
