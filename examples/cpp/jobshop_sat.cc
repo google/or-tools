@@ -87,12 +87,6 @@ void Solve(const JsspInputProblem& problem) {
   SatParameters parameters;
   parameters.set_log_search_progress(true);
 
-  // Prefer objective_shaving_search over objective_lb_search.
-  if (parameters.num_workers() >= 16 && parameters.num_workers() < 24) {
-    parameters.add_ignore_subsolvers("objective_lb_search");
-    parameters.add_extra_subsolvers("objective_shaving_search");
-  }
-
   // Tells the solver we have a makespan objective.
   // Also take decision based on precedence, this usually work better.
   parameters.set_push_all_tasks_toward_start(true);
@@ -103,6 +97,22 @@ void Solve(const JsspInputProblem& problem) {
     CHECK(google::protobuf::TextFormat::MergeFromString(
         absl::GetFlag(FLAGS_params), &parameters))
         << absl::GetFlag(FLAGS_params);
+  }
+
+  // A good default set of workers as of Jul 2026.
+  if (parameters.subsolvers().empty() && parameters.num_workers() == 16) {
+    LOG(INFO) << "Overriding the set of subsolvers for 16 workers.";
+    parameters.add_subsolvers("fixed_no_lp");
+    parameters.add_subsolvers("max_lp");
+    parameters.add_subsolvers("no_lp");
+    parameters.add_subsolvers("objective_shaving_no_lp");
+    parameters.add_subsolvers("objective_shaving_max_lp");
+    parameters.add_subsolvers("probing_no_lp");
+    parameters.add_subsolvers("pseudo_costs");
+    parameters.add_subsolvers("quick_restart_no_lp");
+    parameters.add_subsolvers("reduced_costs");
+    parameters.add_subsolvers("shaving_no_lp");
+    parameters.add_subsolvers("shaving_max_lp");
   }
 
   const CpSolverResponse response =
