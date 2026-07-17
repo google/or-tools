@@ -57,6 +57,7 @@ solve_with_time_limit_sample_sat()
 #include "ortools/base/log_severity.h"
 #include "absl/log/check.h"
 #include "absl/log/globals.h"
+#include "absl/log/log.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -331,6 +332,7 @@ solve_and_print_intermediate_solutions_sample_sat()
 #include "ortools/base/log_severity.h"
 #include "absl/log/check.h"
 #include "absl/log/globals.h"
+#include "absl/log/log.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -695,6 +697,7 @@ To search for all solutions, a parameter of the SAT solver must be changed.
 #include "ortools/base/log_severity.h"
 #include "absl/log/check.h"
 #include "absl/log/globals.h"
+#include "absl/log/log.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -1022,14 +1025,12 @@ limit, and setting that bool to true.
 // Snippet from ortools/sat/samples/stop_after_n_solutions_sample_sat.cc
 #include <stdlib.h>
 
-#include <atomic>
-
 #include "ortools/base/init_google.h"
 #include "ortools/base/log_severity.h"
 #include "absl/log/check.h"
 #include "absl/log/globals.h"
+#include "absl/log/log.h"
 #include "ortools/util/sorted_interval_list.h"
-#include "ortools/util/time_limit.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"

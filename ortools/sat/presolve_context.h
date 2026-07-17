@@ -15,8 +15,6 @@
 #define ORTOOLS_SAT_PRESOLVE_CONTEXT_H_
 
 #include <cstdint>
-#include <memory>
-#include <optional>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -27,6 +25,7 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/flags/declare.h"
 #include "absl/log/check.h"
+#include "absl/random/bit_gen_ref.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
@@ -38,6 +37,7 @@
 #include "ortools/sat/presolve_util.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/solution_crush.h"
+#include "ortools/sat/solution_crush.pb.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/affine_relation.h"
 #include "ortools/util/bitset.h"
@@ -267,7 +267,8 @@ class LazyConstraintVariableGraph {
 // in-memory domain of each variables and the constraint variable graph.
 class PresolveContext {
  public:
-  PresolveContext(Model* model, CpModelProto* cp_model, CpModelProto* mapping)
+  PresolveContext(Model* model, CpModelProto* cp_model, CpModelProto* mapping,
+                  SolutionCrushProto* solution_crush_proto = nullptr)
       : mapping_model(mapping),
         lrat_proof_handler(model->Mutable<LratProofHandler>()),
         logger_(model->GetOrCreate<SolverLogger>()),
@@ -275,6 +276,7 @@ class PresolveContext {
         time_limit_(model->GetOrCreate<TimeLimit>()),
         random_(model->GetOrCreate<ModelRandomGenerator>()),
         working_model_(cp_model),
+        solution_crush_(solution_crush_proto),
         graph_(cp_model, &solution_crush_) {}
 
   // Helpers to adds new variables to the presolved model.

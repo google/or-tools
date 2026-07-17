@@ -20,6 +20,7 @@
 
 #include "absl/container/btree_set.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/types/span.h"
 #include "gtest/gtest.h"
 #include "ortools/base/container_logging.h"

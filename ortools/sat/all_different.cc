@@ -14,7 +14,6 @@
 #include "ortools/sat/all_different.h"
 
 #include <algorithm>
-#include <functional>
 #include <utility>
 #include <vector>
 

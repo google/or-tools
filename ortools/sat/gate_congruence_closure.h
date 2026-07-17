@@ -24,9 +24,11 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/hash/hash.h"
+#include "absl/random/bit_gen_ref.h"
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/clause.h"
+#include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/gate_utils.h"
 #include "ortools/sat/lrat_proof_handler.h"
 #include "ortools/sat/model.h"

@@ -15,12 +15,10 @@
 
 #include <cmath>
 #include <cstdint>
-#include <limits>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"

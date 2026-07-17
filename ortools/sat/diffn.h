@@ -19,6 +19,7 @@
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
+#include "absl/random/bit_gen_ref.h"
 #include "absl/types/span.h"
 #include "ortools/sat/2d_orthogonal_packing.h"
 #include "ortools/sat/diffn_util.h"

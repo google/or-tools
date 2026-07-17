@@ -30,10 +30,12 @@
 #include "ortools/base/init_google.h"
 #include "ortools/base/log_severity.h"
 #include "ortools/base/options.h"
+#include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/gate_utils.h"
 #include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/filelineiter.h"
 

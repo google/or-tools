@@ -17,6 +17,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/random/bit_gen_ref.h"
 #include "absl/types/span.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/sat/integer_base.h"

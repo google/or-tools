@@ -25,7 +25,6 @@
 #include <random>
 #include <string>
 #include <string_view>
-#include <thread>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -91,6 +90,7 @@
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/scheduling_local_search.h"
 #include "ortools/sat/shaving_solver.h"
+#include "ortools/sat/solution_crush.h"
 #include "ortools/sat/stat_tables.h"
 #include "ortools/sat/subsolver.h"
 #include "ortools/sat/synchronization.h"
@@ -102,6 +102,13 @@
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/testing_utils.h"
 #include "ortools/util/time_limit.h"
+
+#if defined(ORTOOLS_TARGET_OS_SUPPORTS_THREADS)
+static_assert(operations_research::kTargetOsSupportsThreads);
+#include "ortools/base/threadpool.h"
+#else
+static_assert(!operations_research::kTargetOsSupportsThreads);
+#endif
 
 ABSL_FLAG(
     bool, cp_model_export_model, false,
@@ -916,15 +923,11 @@ bool RestrictObjectiveUsingHint(CpModelProto* model_proto) {
   return true;
 }
 
-// Returns true iff there is a hint, and (ignoring fixed variables) if it is
-// complete and feasible.
-bool SolutionHintIsCompleteAndFeasible(
-    const CpModelProto& model_proto, SolverLogger* logger = nullptr,
-    SharedResponseManager* manager = nullptr) {
-  if (!model_proto.has_solution_hint() && model_proto.variables_size() > 0) {
-    return false;
-  }
-
+// Returns true iff the partial variable assignment is complete (ignoring fixed
+// variables) and feasible. If so, sets the full assignment in `solution`.
+bool PartialVariableAssignmentIsCompleteAndFeasible(
+    const CpModelProto& model_proto, const PartialVariableAssignment& hint,
+    std::vector<int64_t>& solution, SolverLogger* logger = nullptr) {
   int num_active_variables = 0;
   int num_hinted_variables = 0;
   for (int var = 0; var < model_proto.variables_size(); ++var) {
@@ -932,8 +935,8 @@ bool SolutionHintIsCompleteAndFeasible(
     ++num_active_variables;
   }
 
-  for (int i = 0; i < model_proto.solution_hint().vars_size(); ++i) {
-    const int ref = model_proto.solution_hint().vars(i);
+  for (int i = 0; i < hint.vars_size(); ++i) {
+    const int ref = hint.vars(i);
     if (VarIsFixed(model_proto, PositiveRef(ref))) continue;
     ++num_hinted_variables;
   }
@@ -948,7 +951,7 @@ bool SolutionHintIsCompleteAndFeasible(
     return false;
   }
 
-  std::vector<int64_t> solution(model_proto.variables_size(), 0);
+  solution.assign(model_proto.variables_size(), 0);
   // Pre-assign from fixed domains.
   for (int var = 0; var < model_proto.variables_size(); ++var) {
     if (VarIsFixed(model_proto, var)) {
@@ -956,10 +959,10 @@ bool SolutionHintIsCompleteAndFeasible(
     }
   }
 
-  for (int i = 0; i < model_proto.solution_hint().vars_size(); ++i) {
-    const int ref = model_proto.solution_hint().vars(i);
+  for (int i = 0; i < hint.vars_size(); ++i) {
+    const int ref = hint.vars(i);
     const int var = PositiveRef(ref);
-    const int64_t value = model_proto.solution_hint().values(i);
+    const int64_t value = hint.values(i);
     const int64_t hinted_value = RefIsPositive(ref) ? value : -value;
     const Domain domain = ReadDomainFromProto(model_proto.variables(var));
     if (!domain.Contains(hinted_value)) {
@@ -994,11 +997,24 @@ bool SolutionHintIsCompleteAndFeasible(
     }
     return false;
   }
-  if (is_feasible) {
+  return is_feasible;
+}
+
+// Returns true iff there is a hint, and (ignoring fixed variables) if it is
+// complete and feasible.
+bool SolutionHintIsCompleteAndFeasible(
+    const CpModelProto& model_proto, SolverLogger* logger = nullptr,
+    SharedResponseManager* manager = nullptr) {
+  if (!model_proto.has_solution_hint() && model_proto.variables_size() > 0) {
+    return false;
+  }
+  std::vector<int64_t> solution;
+  if (PartialVariableAssignmentIsCompleteAndFeasible(
+          model_proto, model_proto.solution_hint(), solution, logger)) {
     if (manager != nullptr && !solution.empty()) {
       // Add it to the pool right away! Note that we already have a log in this
       // case, so we don't log anything more.
-      manager->NewSolution(solution, "complete_hint", nullptr);
+      manager->NewSolution(solution, "complete_hint");
     } else if (logger != nullptr) {
       std::string message = "The solution hint is complete and is feasible.";
       if (model_proto.has_objective()) {
@@ -1019,7 +1035,7 @@ bool SolutionHintIsCompleteAndFeasible(
     // informative by returning a message instead of just VLOGing it.
     if (logger != nullptr) {
       SOLVER_LOG(logger,
-                 "The solution hint is complete, but it is infeasible! we "
+                 "The solution hint is incomplete or is infeasible! We "
                  "will try to repair it.");
     }
     return false;
@@ -2550,15 +2566,34 @@ void ClearInternalFields(CpModelProto* model_proto, SolverLogger* logger) {
 
 class CpModelSolver {
  public:
-  CpModelSolver(const CpModelProto& model_proto, Model* model)
+  struct Options {
+    bool validate_parameters = true;
+    bool validate_input_proto = true;
+    bool copy_input_proto = true;
+    bool dump_presolved_proto = true;
+
+    static Options Default() { return Options(); }
+  };
+
+  CpModelSolver(const CpModelProto& model_proto, Model* model,
+                std::string* log_string,
+                const Options& options = Options::Default())
       : model_proto_(model_proto),
         model_(model),
+        options_(options),
         params_(*model->GetOrCreate<SatParameters>()),
         shared_time_limit_(model->GetOrCreate<ModelSharedTimeLimit>()),
-        shared_response_manager_(model->GetOrCreate<SharedResponseManager>()) {
+        shared_response_manager_(model->GetOrCreate<SharedResponseManager>()),
+        log_string_(log_string) {
     shared_response_manager_->set_dump_prefix(
         absl::GetFlag(FLAGS_cp_model_dump_prefix));
+    // Note: Allocating in an arena significantly speeds up destruction (free)
+    // for large messages.
+    presolved_model_proto_ =
+        google::protobuf::Arena::Create<CpModelProto>(&arena_);
+    mapping_proto_ = google::protobuf::Arena::Create<CpModelProto>(&arena_);
   }
+  virtual ~CpModelSolver() = default;
 
   bool Initialize() {
     // Enable the logging component.
@@ -2606,18 +2641,19 @@ class CpModelSolver {
       AddSolutionPostsolveCallback();
       DumpPresolvedProto();
       if (!StopAfterPresolve()) {
+        LoadPresolvedModel();
         SolvePresolvedModel();
       }
     }
   }
 
-  CpSolverResponse GetResponse() {
+  virtual CpSolverResponse GetResponse() {
     return shared_response_manager_->GetResponse();
   }
 
  protected:
   // Initialization.
-  void InitializeSolverLogger();
+  virtual void InitializeSolverLogger();
   void AddDumpFinalResponsePostprocessor();
   void AddSetStatsAndLogsInFinalResponsePostprocessor();
   void AddSetTimingInResponsePostprocessor();
@@ -2627,23 +2663,26 @@ class CpModelSolver {
   bool CopyInputProto();
 
   // Presolve.
-  bool Presolve();
+  virtual bool Presolve();
   void MaybeFixVariablesToHintValue(PresolveContext* context);
   void AddFloatingPointObjectiveResponsePostprocessor();
   bool FixAssumptionsIfNotSupported(PresolveContext* context);
+  virtual CpSolverStatus PresolveCpModel(PresolveContext* context);
 
   void InitializeDebugSolutionFromHint();
   void DetectPresolvedModelSymmetry();
   void AddFillTightenedDomainInResponsePostprocessor();
   void AddCheckSolutionCallback();
-  void AddSolutionPostsolveCallback();
+  virtual void AddSolutionPostsolveCallback();
 
   void DumpPresolvedProto();
   bool StopAfterPresolve();
+  virtual void LoadPresolvedModel();
   void SolvePresolvedModel();
 
   const CpModelProto& model_proto_;
   Model* model_;
+  const Options options_;
   const SatParameters& params_;
   SolverLogger* logger_;
   SharedTimeLimit* shared_time_limit_;
@@ -2655,9 +2694,11 @@ class CpModelSolver {
   google::protobuf::Arena arena_;
   CpModelProto* presolved_model_proto_;
   CpModelProto* mapping_proto_;
+  std::unique_ptr<SolutionCrushProto> solution_crush_proto_;
   std::vector<int> postsolve_mapping_;
-  std::string log_string_;
   std::vector<int64_t> debug_solution_from_hint_;
+
+  std::string* log_string_;
 };
 
 void CpModelSolver::InitializeSolverLogger() {
@@ -2666,7 +2707,7 @@ void CpModelSolver::InitializeSolverLogger() {
   logger_->SetLogToStdOut(params_.log_to_stdout());
   if (params_.log_to_response()) {
     logger_->AddInfoLoggingCallback([&](absl::string_view message) {
-      absl::StrAppend(&log_string_, message, "\n");
+      absl::StrAppend(log_string_, message, "\n");
     });
   }
   if (logger_->LoggingIsEnabled()) {
@@ -2705,8 +2746,8 @@ void CpModelSolver::AddSetStatsAndLogsInFinalResponsePostprocessor() {
             CpSolverResponseStats(
                 *response, model_proto_.has_objective() ||
                                model_proto_.has_floating_point_objective()));
-        if (!log_string_.empty()) {
-          response->set_solve_log(log_string_);
+        if (!log_string_->empty()) {
+          response->set_solve_log(*log_string_);
         }
       });
 }
@@ -2724,6 +2765,7 @@ void CpModelSolver::AddSetTimingInResponsePostprocessor() {
 }
 
 bool CpModelSolver::ValidateParameters() {
+  if (!options_.validate_parameters) return true;
   const std::string error = sat::ValidateParameters(params_);
   if (!error.empty()) {
     SOLVER_LOG(logger_, "Invalid parameters: ", error);
@@ -2790,6 +2832,8 @@ bool CpModelSolver::ValidateInputProto() {
 }
 
 bool CpModelSolver::CopyInputProto() {
+  if (!options_.copy_input_proto) return true;
+
   SOLVER_LOG(logger_, "");
   SOLVER_LOG(logger_, "Initial ", CpModelStats(model_proto_));
 
@@ -2799,12 +2843,6 @@ bool CpModelSolver::CopyInputProto() {
              absl::StrFormat("Starting initial copy and canonicalization of "
                              "the input proto at %.2fs",
                              model_->GetOrCreate<WallTimer>()->Get()));
-
-  // Note: Allocating in an arena significantly speed up destruction (free) for
-  // large messages.
-  presolved_model_proto_ =
-      google::protobuf::Arena::Create<CpModelProto>(&arena_);
-  mapping_proto_ = google::protobuf::Arena::Create<CpModelProto>(&arena_);
 
   // The lrat proof handler is needed is some cases, during the initial copy
   // and the presolve.
@@ -2867,8 +2905,14 @@ bool CpModelSolver::CopyInputProto() {
 bool CpModelSolver::Presolve() {
   SOLVER_LOG(logger_, absl::StrFormat("Starting presolve at %.2fs",
                                       model_->GetOrCreate<WallTimer>()->Get()));
+  // We need a solution crush proto to crush the solution found in parallel of
+  // presolve, if any.
+  if (params_.cp_model_presolve() && params_.cp_model_direct_solve()) {
+    solution_crush_proto_ = std::make_unique<SolutionCrushProto>();
+  }
   auto context = std::make_unique<PresolveContext>(
-      model_, presolved_model_proto_, mapping_proto_);
+      model_, presolved_model_proto_, mapping_proto_,
+      solution_crush_proto_.get());
 
   // Checks for hints early in case they are forced to be hard constraints.
   MaybeFixVariablesToHintValue(context.get());
@@ -2888,8 +2932,7 @@ bool CpModelSolver::Presolve() {
   }
 
   // Do the actual presolve.
-  const CpSolverStatus presolve_status =
-      PresolveCpModel(context.get(), &postsolve_mapping_);
+  const CpSolverStatus presolve_status = PresolveCpModel(context.get());
 
   // Delete the presolve_lrat_proof_handler_.
   // This is needed to properly write the first proof file.
@@ -3055,6 +3098,10 @@ void CpModelSolver::AddFloatingPointObjectiveResponsePostprocessor() {
   }
 }
 
+CpSolverStatus CpModelSolver::PresolveCpModel(PresolveContext* context) {
+  return sat::PresolveCpModel(context, &postsolve_mapping_);
+}
+
 void CpModelSolver::InitializeDebugSolutionFromHint() {
   if (absl::GetFlag(FLAGS_cp_model_use_hint_for_debug_only) &&
       hint_feasible_before_presolve_) {
@@ -3066,7 +3113,6 @@ void CpModelSolver::InitializeDebugSolutionFromHint() {
       debug_solution_from_hint_[presolved_model_proto_->solution_hint().vars(
           i)] = presolved_model_proto_->solution_hint().values(i);
     }
-    presolved_model_proto_->clear_solution_hint();
   }
 }
 
@@ -3292,7 +3338,7 @@ bool CpModelSolver::StopAfterPresolve() {
   return false;
 }
 
-void CpModelSolver::SolvePresolvedModel() {
+void CpModelSolver::LoadPresolvedModel() {
   SOLVER_LOG(logger_, "");
   SOLVER_LOG(logger_, "Preloading model.");
 
@@ -3337,10 +3383,13 @@ void CpModelSolver::SolvePresolvedModel() {
   if (!debug_solution_from_hint_.empty()) {
     model_->GetOrCreate<SharedResponseManager>()->LoadDebugSolution(
         debug_solution_from_hint_);
+    presolved_model_proto_->clear_solution_hint();
   } else {
     LoadDebugSolution(*presolved_model_proto_, model_);
   }
+}
 
+void CpModelSolver::SolvePresolvedModel() {
   if (!model_->GetOrCreate<TimeLimit>()->LimitReached()) {
 #if defined(ORTOOLS_TARGET_OS_SUPPORTS_THREADS)
     static_assert(operations_research::kTargetOsSupportsThreads);
@@ -3366,6 +3415,336 @@ void CpModelSolver::SolvePresolvedModel() {
   }
 }
 
+#if defined(ORTOOLS_TARGET_OS_SUPPORTS_THREADS)
+
+// A CpModelSolver run in parallel of presolve by a DefaultCpModelSolver.
+// This solver assumes that the parameters and the input proto have already been
+// validated by the DefaultCpModelSolver. It also assumes that cp_model_presolve
+// is false.
+class DirectSolverThread : public CpModelSolver {
+ public:
+  // - `model_proto`: the user input proto.
+  // - `model_copy_proto`: the user input proto copy, as computed by the
+  //    DefaultCpModelSolver (by CopyInputProto(), which does some very basic
+  //    presolve).
+  // - `model`: the model to use for this solver.
+  // - `global_model`: the model used by the DefaultCpModelSolver.
+  DirectSolverThread(const CpModelProto& model_proto,
+                     const CpModelProto& model_copy_proto, Model* model,
+                     Model* global_model, std::string* log_string)
+      : CpModelSolver(
+            model_proto, model, log_string,
+            // This is called just before presolve in the DefaultCpModelSolver
+            // below. At this point the parameters and the input proto have
+            // already been validated by the DefaultCpModelSolver. The input
+            // proto has also already been copied, into model_copy_proto.
+            Options{.validate_parameters = false,
+                    .validate_input_proto = false,
+                    .copy_input_proto = false,
+                    .dump_presolved_proto = false}),
+        global_model_(global_model) {
+    CHECK(!params_.cp_model_presolve());
+    // Note that we need to make a copy of a model_copy_proto because it will be
+    // modified by the presolve in DefaultCpModelSolver, upon return of this
+    // constructor.
+    *presolved_model_proto_ = model_copy_proto;
+    num_variables_before_expansion_ = model_copy_proto.variables_size();
+    CHECK(Initialize());
+    thread_pool_ = std::make_unique<ThreadPool>(/*num_threads=*/1);
+    thread_pool_->Schedule([this] { Solve(); });
+  }
+
+  // Returns a response if the time limit is reached, if the problem is solved,
+  // or if a first solution is found and stop_after_first_solution is true. In
+  // this case the DefaultCpModelSolver should stop too and return this
+  // response. Otherwise, returns nullopt.
+  std::optional<CpSolverResponse> Stop() {
+    const bool limit_reached = shared_time_limit_->LimitReached();
+    shared_time_limit_->Stop();
+    thread_pool_.reset();
+
+    if (limit_reached || shared_response_manager_->ProblemIsSolved() ||
+        (shared_response_manager_->HasFeasibleSolution() &&
+         params_.stop_after_first_solution())) {
+      SolverLogger* logger = model_->GetOrCreate<SolverLogger>();
+      logger->EnableLogging(params_.log_search_progress());
+      logger->SetLogToStdOut(params_.log_to_stdout());
+      if (shared_ != nullptr) {
+        shared_->LogFinalStatistics();
+      }
+      return shared_response_manager_->GetResponse();
+    }
+    return std::nullopt;
+  }
+
+  std::vector<std::vector<int64_t>> GetSolutions() {
+    std::vector<std::vector<int64_t>> solutions;
+    if (shared_response_manager_->HasFeasibleSolution()) {
+      auto& solution_repository =
+          shared_response_manager_->SolutionPool().BestSolutions();
+      for (const auto& solution : solution_repository.GetBestNSolutions(
+               solution_repository.NumSolutions())) {
+        solutions.push_back(solution->variable_values);
+        // Truncate the solution in case model expansion added more variables.
+        solutions.back().resize(num_variables_before_expansion_);
+      }
+    }
+    return solutions;
+  }
+
+  void GetVariableBounds(std::vector<int64_t>* lower_bounds,
+                         std::vector<int64_t>* upper_bounds) {
+    auto* shared_bounds = model_->Mutable<SharedBoundsManager>();
+    if (shared_bounds != nullptr) {
+      shared_bounds->GetAllBounds(lower_bounds, upper_bounds);
+    } else {
+      lower_bounds->clear();
+      upper_bounds->clear();
+    }
+  }
+
+  std::pair<int64_t, int64_t> GetObjectiveBounds() {
+    auto& objective = presolved_model_proto_->objective();
+    int64_t lb =
+        shared_response_manager_->GetInnerObjectiveLowerBound().value();
+    int64_t ub =
+        shared_response_manager_->GetInnerObjectiveUpperBound().value();
+    lb = lb == kint64min ? lb : PostsolveInnerObjectiveValue(objective, lb);
+    ub = ub == kint64max ? ub : PostsolveInnerObjectiveValue(objective, ub);
+    return {lb, ub};
+  }
+
+ protected:
+  void InitializeSolverLogger() override {
+    // Create a SolverLogger with logging disabled and no logging to stdout.
+    logger_ = model_->GetOrCreate<SolverLogger>();
+
+    // If logging is enabled in the DefaultCpModelSolver, log the direct solve
+    // progress with a "[DirectSolve]" prefix.
+    if (global_model_->GetOrCreate<SolverLogger>()->LoggingIsEnabled()) {
+      SolverProgressLogger* progress_logger =
+          new SolverProgressLogger(global_model_);
+      global_model_->TakeOwnership(progress_logger);
+      progress_logger->SetLogPrefix("[DirectSolve] ");
+      shared_response_manager_->AddStatusChangeCallback(
+          [progress_logger](const SolverStatusChangeInfo& info) {
+            progress_logger->UpdateProgress(info);
+          });
+    }
+  }
+
+  void AddSolutionPostsolveCallback() override {
+    CpModelSolver::AddSolutionPostsolveCallback();
+    if (params_.stop_after_first_solution()) {
+      // Make sure to also stop the DefaultCpModelSolver.
+      shared_response_manager_->AddSolutionCallback(
+          [&](const CpSolverResponse&) {
+            global_model_->GetOrCreate<ModelSharedTimeLimit>()->Stop();
+          });
+    }
+  }
+
+  Model* global_model_;
+  int num_variables_before_expansion_;
+  std::unique_ptr<ThreadPool> thread_pool_;
+};
+
+void RemapBounds(std::vector<int64_t>& lower_bounds,
+                 std::vector<int64_t>& upper_bounds,
+                 absl::Span<const int> old_to_new_mapping) {
+  CHECK_EQ(lower_bounds.size(), old_to_new_mapping.size());
+  CHECK_EQ(upper_bounds.size(), old_to_new_mapping.size());
+  int new_num_vars = 0;
+  for (int new_var : old_to_new_mapping) {
+    new_num_vars = std::max(new_num_vars, new_var + 1);
+  }
+  std::vector<int64_t> new_lower_bounds(new_num_vars, kMinIntegerValue.value());
+  std::vector<int64_t> new_upper_bounds(new_num_vars, kMaxIntegerValue.value());
+  for (int old_var = 0; old_var < old_to_new_mapping.size(); ++old_var) {
+    const int new_var = old_to_new_mapping[old_var];
+    if (new_var >= 0) {
+      new_lower_bounds[new_var] =
+          std::max(new_lower_bounds[new_var], lower_bounds[old_var]);
+      new_upper_bounds[new_var] =
+          std::min(new_upper_bounds[new_var], upper_bounds[old_var]);
+    }
+  }
+  std::swap(lower_bounds, new_lower_bounds);
+  std::swap(upper_bounds, new_upper_bounds);
+}
+
+#endif  // ORTOOLS_TARGET_OS_SUPPORTS_THREADS
+
+// A CpModelSolver which can start another one in parallel of presolve.
+// More precisely, this solver starts a DirectSolverThread just before presolve,
+// and stops it just after. It then launches the subsolvers on the presolved
+// model, unless the time limit is reached or the DirectSolverThread found a
+// solution which can be returned right away (e.g. if the problem is solved, or
+// stop_after_first_solution is true).
+class DefaultCpModelSolver : public CpModelSolver {
+ public:
+  DefaultCpModelSolver(const CpModelProto& model_proto, Model* model,
+                       std::string* log_string)
+      : CpModelSolver(model_proto, model, log_string) {}
+
+  CpSolverResponse GetResponse() override {
+    if (!response_.has_value()) {
+      response_ = shared_response_manager_->GetResponse();
+    }
+    return *response_;
+  }
+
+ protected:
+  bool Presolve() override {
+    const bool ok = CpModelSolver::Presolve();
+#if defined(ORTOOLS_TARGET_OS_SUPPORTS_THREADS)
+    if (direct_solver_ != nullptr) {
+      // Save the response so that `GetResponse()` returns this one, if any,
+      // instead of the response of the DefaultCpModelSolver.
+      response_ = direct_solver_->Stop();
+      // Save the solutions and bounds from the direct solver, so that they can
+      // be merged with those of the DefaultCpModelSolver in
+      // LoadPresolvedModel().
+      direct_solver_solutions_ = direct_solver_->GetSolutions();
+      direct_solver_->GetVariableBounds(&direct_solver_lower_bounds_,
+                                        &direct_solver_upper_bounds_);
+      direct_solver_objective_bounds_ = direct_solver_->GetObjectiveBounds();
+      direct_solver_.reset();
+      direct_solver_model_.reset();
+      if (response_.has_value()) {
+        // Return false in order to skip solving the presolved model.
+        return false;
+      }
+    }
+#endif
+    return ok;
+  }
+
+  CpSolverStatus PresolveCpModel(PresolveContext* context) override {
+#if defined(ORTOOLS_TARGET_OS_SUPPORTS_THREADS)
+    // Launch solvers without presolve in separate threads just before doing the
+    // actual presolve.
+    static_assert(operations_research::kTargetOsSupportsThreads);
+    if (params_.cp_model_direct_solve() && params_.num_workers() > 1 &&
+        params_.cp_model_presolve() && !params_.check_lrat_proof() &&
+        !params_.output_lrat_proof() && !params_.enumerate_all_solutions() &&
+        model_proto_.assumptions().empty()) {
+      StartDirectSolver();
+    }
+#endif
+    return CpModelSolver::PresolveCpModel(context);
+  }
+
+  void LoadPresolvedModel() override {
+    CpModelSolver::LoadPresolvedModel();
+#if defined(ORTOOLS_TARGET_OS_SUPPORTS_THREADS)
+    // Crush and import the solutions found by the direct solver, if any.
+    if (solution_crush_proto_ != nullptr) {
+      SharedResponseManager* shared_response_manager =
+          model_->GetOrCreate<SharedResponseManager>();
+      for (const auto& solution : direct_solver_solutions_) {
+        SolutionCrush solution_crush;
+        solution_crush.LoadSolution(solution);
+        for (const auto& step : solution_crush_proto_->steps()) {
+          solution_crush.ApplySolutionCrushStep(step);
+        }
+        PartialVariableAssignment hint;
+        solution_crush.StoreSolutionAsHint(hint);
+        std::vector<int64_t> values;
+        if (PartialVariableAssignmentIsCompleteAndFeasible(
+                *presolved_model_proto_, hint, values)) {
+          shared_response_manager->NewSolution(
+              values, "direct_solver", /*model=*/nullptr, /*source_id=*/-1,
+              /*with_callbacks=*/false);
+        } else if (params_.debug_crash_if_presolve_breaks_hint()) {
+          LOG(FATAL) << "SolutionCrush broke a feasible solution found in "
+                        "parallel of presolve";
+        }
+      }
+      direct_solver_solutions_.clear();
+
+      auto* shared_bounds = model_->Mutable<SharedBoundsManager>();
+      if (shared_bounds != nullptr && !direct_solver_lower_bounds_.empty()) {
+        for (const auto& step : solution_crush_proto_->steps()) {
+          switch (step.step_case()) {
+            case SolutionCrushStep::kResize: {
+              direct_solver_lower_bounds_.resize(step.resize().new_size(),
+                                                 kMinIntegerValue.value());
+              direct_solver_upper_bounds_.resize(step.resize().new_size(),
+                                                 kMaxIntegerValue.value());
+              break;
+            }
+            case SolutionCrushStep::kRemapVariables: {
+              RemapBounds(direct_solver_lower_bounds_,
+                          direct_solver_upper_bounds_,
+                          step.remap_variables().old_to_new_mapping());
+              break;
+            }
+            default:
+              break;
+          }
+        }
+        std::vector<int> variables;
+        variables.reserve(direct_solver_lower_bounds_.size());
+        for (int i = 0; i < direct_solver_lower_bounds_.size(); ++i) {
+          variables.push_back(i);
+        }
+        // TODO(user): Note that if the presolve introduce a new variable X = Y
+        // + Z, it will have "trivial" bounds, and we will not compute the
+        // information as tightely as we could. I.e. no code will compute tight
+        // bounds on X from the ones on Y and Z.
+        shared_bounds->ReportPotentialNewBounds("direct_solver", variables,
+                                                direct_solver_lower_bounds_,
+                                                direct_solver_upper_bounds_);
+        direct_solver_lower_bounds_.clear();
+        direct_solver_upper_bounds_.clear();
+      }
+      solution_crush_proto_.reset();
+
+      if (presolved_model_proto_->has_objective()) {
+        auto& objective = presolved_model_proto_->objective();
+        int64_t lb = direct_solver_objective_bounds_.first;
+        int64_t ub = direct_solver_objective_bounds_.second;
+        lb = lb == kint64min ? lb : PresolveInnerObjectiveValue(objective, lb);
+        ub = ub == kint64max ? ub : PresolveInnerObjectiveValue(objective, ub);
+        shared_response_manager->UpdateInnerObjectiveBounds("direct_solver", lb,
+                                                            ub);
+      }
+    }
+#endif  // ORTOOLS_TARGET_OS_SUPPORTS_THREADS
+  }
+
+ private:
+#if defined(ORTOOLS_TARGET_OS_SUPPORTS_THREADS)
+  void StartDirectSolver() {
+    direct_solver_model_ = std::make_unique<Model>();
+    SatParameters& direct_solver_params =
+        *direct_solver_model_->GetOrCreate<SatParameters>();
+    direct_solver_params = params_;
+    direct_solver_params.set_cp_model_presolve(false);
+    direct_solver_params.set_stop_after_presolve(false);
+    // TODO(user): adjust these parameters as needed (including the
+    // number and type of subsolvers).
+
+    direct_solver_model_->Register<WallTimer>(model_->GetOrCreate<WallTimer>());
+    direct_solver_model_->Register<UserTimer>(model_->GetOrCreate<UserTimer>());
+
+    direct_solver_ = std::make_unique<DirectSolverThread>(
+        model_proto_, *presolved_model_proto_, direct_solver_model_.get(),
+        model_, log_string_);
+  }
+
+  std::unique_ptr<Model> direct_solver_model_;
+  std::unique_ptr<DirectSolverThread> direct_solver_;
+  std::vector<std::vector<int64_t>> direct_solver_solutions_;
+  std::vector<int64_t> direct_solver_lower_bounds_;
+  std::vector<int64_t> direct_solver_upper_bounds_;
+  std::pair<int64_t, int64_t> direct_solver_objective_bounds_ = {kint64min,
+                                                                 kint64max};
+#endif
+  std::optional<CpSolverResponse> response_;
+};
+
 }  // namespace
 
 CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
@@ -3387,7 +3766,8 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
     }
   }
 
-  CpModelSolver solver(model_proto, model);
+  std::string log_string;
+  DefaultCpModelSolver solver(model_proto, model, &log_string);
   if (solver.Initialize()) {
     solver.Solve();
   }

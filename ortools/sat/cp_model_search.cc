@@ -194,17 +194,11 @@ void AddExtraSchedulingPropagators(SatParameters& new_params) {
 
 void AddLightSchedulingPropagators(SatParameters& new_params) {
   new_params.set_exploit_all_precedences(true);
+  new_params.set_use_area_energetic_reasoning_in_no_overlap_2d(true);
+  new_params.set_use_energetic_reasoning_in_no_overlap_2d(true);
   new_params.set_use_hard_precedences_in_cumulative(true);
   new_params.set_use_overload_checker_in_cumulative(true);
   new_params.set_use_strong_propagation_in_disjunctive(true);
-  // new_params.set_use_timetable_edge_finding_in_cumulative(true);
-  // new_params.set_use_conservative_scale_overload_checker(true);
-  // new_params.set_max_pairs_pairwise_reasoning_in_no_overlap_2d(5000);
-  // new_params.set_use_timetabling_in_no_overlap_2d(true);
-  new_params.set_use_energetic_reasoning_in_no_overlap_2d(true);
-  new_params.set_use_area_energetic_reasoning_in_no_overlap_2d(true);
-  // new_params.set_use_try_edge_reasoning_in_no_overlap_2d(true);
-  // new_params.set_no_overlap_2d_boolean_relations_limit(100);
 }
 
 // We want a random tie breaking among variables with equivalent values.
@@ -643,12 +637,12 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     // TODO(user): These are really slow, we should probably tune them.
     // For now we only add them where we already have a slow LP.
     // Note that this is the same logic for "objective_lb_search" above.
+    // Note: using light scheduling here has a negative impact on some of the
+    // scheduling problems (proving time for mmlib50_5010_1.mm).
     if (base_params.use_dual_scheduling_heuristics()) {
       AddExtraSchedulingPropagators(new_params);
     }
     new_params.set_linearization_level(2);
-    new_params.set_add_lp_constraints_lazily(false);
-    new_params.set_root_lp_iterations(100'000);
     strategies["objective_shaving_max_lp"] = new_params;
   }
 
@@ -699,7 +693,7 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     SatParameters new_params = base_params;
     new_params.set_search_branching(SatParameters::ROUND_ROBIN_SHAVING_SEARCH);
     new_params.set_cut_level(0);
-    new_params.set_shaving_deterministic_time_in_probing_search(0.0);
+    new_params.set_shaving_search_deterministic_time(0.0);
     strategies["shaving"] = new_params;
 
     new_params.set_linearization_level(0);

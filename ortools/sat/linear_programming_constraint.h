@@ -161,6 +161,9 @@ class LinearProgrammingConstraint : public PropagatorInterface,
     objective_cp_ = ivar;
     objective_cp_is_part_of_lp_ = false;
     for (const IntegerVariable var : integer_variables_) {
+      // TODO(user): it is possible that var == NegationOf(objective_cp_).
+      // Try to handle this case properly, which would remove the need to
+      // be careful with the extra_term in ConvertToLinearConstraint().
       if (var == objective_cp_) {
         objective_cp_is_part_of_lp_ = true;
         break;

@@ -212,12 +212,12 @@ class RootLevelLinear2Bounds {
   // more restricted than what was currently stored.
   std::pair<bool, bool> Add(LinearExpression2 expr, IntegerValue lb,
                             IntegerValue ub) {
+    const bool negated = expr.CanonicalizeAndUpdateBounds(lb, ub);
+    if (expr.coeffs[0] == 0 || expr.coeffs[1] == 0) return {false, false};
     if (integer_trail_->LevelZeroUpperBound(expr) <= ub &&
         integer_trail_->LevelZeroLowerBound(expr) >= lb) {
       return {false, false};
     }
-    const bool negated = expr.CanonicalizeAndUpdateBounds(lb, ub);
-    if (expr.coeffs[0] == 0 || expr.coeffs[1] == 0) return {false, false};
     const LinearExpression2Index index = lin2_indices_->AddOrGet(expr);
     bool ub_changed = AddUpperBound(index, ub);
     bool lb_changed = AddUpperBound(NegationOf(index), -lb);
@@ -229,11 +229,12 @@ class RootLevelLinear2Bounds {
 
   // Same as above, but only update the upper bound.
   bool AddUpperBound(LinearExpression2 expr, IntegerValue ub) {
-    if (integer_trail_->LevelZeroUpperBound(expr) <= ub) return false;
     expr.SimpleCanonicalization();
     if (expr.coeffs[0] == 0 || expr.coeffs[1] == 0) return false;
     const IntegerValue gcd = expr.DivideByGcd();
     ub = FloorRatio(ub, gcd);
+
+    if (integer_trail_->LevelZeroUpperBound(expr) <= ub) return false;
     return AddUpperBound(lin2_indices_->AddOrGet(expr), ub);
   }
 

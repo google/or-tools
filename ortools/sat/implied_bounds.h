@@ -26,7 +26,6 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
-#include "ortools/lp_data/lp_types.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
@@ -211,8 +210,14 @@ class ElementEncodings {
   // Register the fact that var = sum literal * value with sum literal == 1.
   // Note that we call this an "element" encoding because a value can appear
   // more than once.
+  // The key must be unique for a given exactly_one constraint (implicit or
+  // explicit).
+  // Note that we can exploit the fact in the element_encoding, that one or more
+  // encoding of different variable comes from the same exactly_one, and are
+  // thus "parallel". This can happen for duration/demands on cumulative for
+  // instance.
   void Add(IntegerVariable var, const std::vector<ValueLiteralPair>& encoding,
-           int exactly_one_index);
+           int key);
 
   // Returns an empty map if there is no such encoding.
   const absl::btree_map<int, std::vector<ValueLiteralPair>>& Get(
@@ -246,19 +251,15 @@ class ProductDecomposer {
   std::vector<LiteralValueValue> TryToDecompose(const AffineExpression& left,
                                                 const AffineExpression& right);
 
-  std::vector<LiteralValueValue> TryToDecomposeAffineExpressionTimesConstant(
-      const AffineExpression& expr, IntegerValue constant);
-
-  // Looks at value encodings and detects if the product of two variables
-  // can be linearized.
+  // Looks at value encodings and detects if the product of two variables can be
+  // linearized.
   //
   // On true, the builder will be cleared to contain the linearization. On
   // false, it might be in an undefined state.
   //
-  // In the returned encoding, note that all the literals will be unique and
-  // in exactly one relation, and that the values can be duplicated. This is
-  // what we call an "element" encoding. The expressions will also be
-  // canonical.
+  // In the returned encoding, note that all the literals will be unique and in
+  // exactly one relation, and that the values can be duplicated. This is what
+  // we call an "element" encoding. The expressions will also be canonical.
   bool TryToLinearize(const AffineExpression& left,
                       const AffineExpression& right,
                       LinearConstraintBuilder* builder);
@@ -269,7 +270,7 @@ class ProductDecomposer {
   IntegerEncoder* integer_encoder_;
 };
 
-// Class used to detect and hold all the information about a variable beeing the
+// Class used to detect and hold all the information about a variable being the
 // product of two others. This class is meant to be used by LP relaxation and
 // cuts.
 class ProductDetector {

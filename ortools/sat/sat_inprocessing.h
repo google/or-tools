@@ -25,6 +25,7 @@
 #include <deque>
 #include <vector>
 
+#include "absl/random/bit_gen_ref.h"
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/clause.h"

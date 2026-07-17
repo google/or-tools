@@ -515,7 +515,7 @@ class SharedResponseManager {
   std::shared_ptr<const SharedSolutionRepository<int64_t>::Solution>
   NewSolution(absl::Span<const int64_t> solution_values,
               absl::string_view solution_info, Model* model = nullptr,
-              int source_id = -1);
+              int source_id = -1, bool with_callbacks = true);
 
   // Changes the solution to reflect the fact that the "improving" problem is
   // infeasible. This means that if we have a solution, we have proven
@@ -602,6 +602,7 @@ class SharedResponseManager {
   SharedSolutionPool solution_pool_;  // Thread-safe.
 
   int num_solutions_ ABSL_GUARDED_BY(mutex_) = 0;
+  // These refer to the inner objective of the "presolved" problem.
   int64_t inner_objective_lower_bound_ ABSL_GUARDED_BY(mutex_) = kint64min;
   int64_t inner_objective_upper_bound_ ABSL_GUARDED_BY(mutex_) = kint64max;
   int64_t best_solution_objective_value_ ABSL_GUARDED_BY(mutex_) = kint64max;
@@ -698,6 +699,8 @@ class SharedBoundsManager {
   // This should not be called too often as it lock the class for
   // O(num_variables) time.
   void UpdateDomains(std::vector<Domain>* domains);
+  void GetAllBounds(std::vector<int64_t>* lower_bounds,
+                    std::vector<int64_t>* upper_bounds);
 
   // Publishes any new bounds so that GetChangedBounds() will reflect the latest
   // state.

@@ -19,6 +19,7 @@
 
 #include "absl/container/btree_set.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/random/random.h"
 #include "absl/strings/string_view.h"
 #include "gtest/gtest.h"

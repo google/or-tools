@@ -147,7 +147,17 @@ bool SharedTreeEncoder::Node::AddImplication(ProtoLiteral literal) {
       shared_.var_lower_bounds.emplace(literal.proto_var(), literal.lb());
   if (!inserted && it->second >= literal.lb()) return false;
   it->second = literal.lb();
+  vars_with_new_bound_.insert(literal.proto_var());
   return true;
+}
+
+IntegerValue SharedTreeEncoder::Node::GetImpliedLowerBoundForVar(
+    int var) const {
+  auto it = shared_.var_lower_bounds.find(var);
+  if (it != shared_.var_lower_bounds.end()) {
+    return it->second;
+  }
+  return kMinIntegerValue;
 }
 
 void SharedTreeEncoder::Node::ExportInferredReasonClause(
@@ -202,6 +212,7 @@ void SharedTreeEncoder::Node::Cleanup() {
   }
   gtl::STLClearObject(&shared_.var_lower_bounds);
   gtl::STLClearObject(&reason_clauses_);
+  gtl::STLClearObject(&vars_with_new_bound_);
 }
 
 std::vector<Literal> SharedTreeEncoder::Node::NegatedDecisions() const {
@@ -279,7 +290,7 @@ std::optional<ProtoLiteral> SharedTreeEncoder::EncodeLiteral(Literal literal) {
   return literal.IsPositive() ? result : result.Negated();
 }
 
-void SharedTreeEncoder::ImportNode(
+SharedTreeEncoder::Node* SharedTreeEncoder::ImportNode(
     const SharedTreeNode& node,
     const absl::flat_hash_map<Literal, ClausePtr>& importable_reason_clauses) {
   Node* decoded_node = EnsureNodeExists(node.id, node.parent_id, node.decision);
@@ -297,6 +308,7 @@ void SharedTreeEncoder::ImportNode(
   }
   UpdateNode(node, importable_reason_clauses);
   ProcessNodeChanges();
+  return decoded_node;
 }
 
 void SharedTreeEncoder::SplitNode(NodeId parent, ProtoLiteral decision,
@@ -501,6 +513,37 @@ void SharedTreeEncoder::UpdateNode(
   }
 }
 
+void SharedTreeEncoder::ResolveBoundsOnPath(Node* leaf) {
+  if (leaf == nullptr) return;
+  Node* node = leaf->GetLevelStart();
+  while (!node->shared().is_root()) {
+    Node* sibling = node->sibling();
+    Node* parent_level_start = node->parent()->GetLevelStart();
+    if (!node->shared().is_closed()) {
+      for (int var : node->vars_with_new_bound_) {
+        const IntegerValue resolved_bound =
+            std::min(node->GetImpliedLowerBoundForVar(var),
+                     sibling->GetImpliedLowerBoundForVar(var));
+        if (resolved_bound == kMinIntegerValue) continue;
+        ProtoLiteral implied = ProtoLiteral(var, resolved_bound);
+        // Note: this call updates parent_level_start->vars_with_new_bound_, so
+        // we will resolve the new bounds further up the tree on the next
+        // iteration.
+        if (parent_level_start->AddImplication(implied) &&
+            lrat_proof_handler_ != nullptr) {
+          const Literal decoded = Decode(implied);
+          SetProofToPropagateImpliedNodes(node->parent());
+          tmp_proof_.push_back(node->ReasonClauseOrNull(decoded));
+          tmp_proof_.push_back(node->sibling()->ReasonClauseOrNull(decoded));
+          parent_level_start->ExportInferredReasonClause(decoded, tmp_proof_);
+        }
+      }
+    }
+    node->vars_with_new_bound_.clear();
+    node = parent_level_start;
+  }
+}
+
 void SharedTreeEncoder::SyncNodesOnPath(NodeId leaf_id,
                                         SharedTreeEncoder& worker_tree) {
   if (leaf_id == kNoNodeId) return;
@@ -521,16 +564,17 @@ void SharedTreeEncoder::SyncNodesOnPath(NodeId leaf_id,
   // moving on to its child, we will miss implications when a node becomes
   // implied, as implications are moved to the parent which was imported
   // earlier.
-  for (const Node* node : to_update_) {
-    SharedTreeEncoder::Node* worker_node =
-        worker_tree.nodes_by_id_[node->shared().id];
+  for (Node* node : to_update_) {
+    Node* worker_node = worker_tree.nodes_by_id_[node->shared().id];
     if (worker_node == nullptr) break;
     ImportNode(worker_node->shared(), worker_node->reason_clauses());
     if (node->shared().is_closed()) break;
   }
-
+  ResolveBoundsOnPath(leaf);
   for (const Node* node : to_update_) {
-    worker_tree.ImportNode(node->shared(), node->reason_clauses());
+    Node* worker_node =
+        worker_tree.ImportNode(node->shared(), node->reason_clauses());
+    worker_node->vars_with_new_bound_.clear();
   }
   to_update_.clear();
 }

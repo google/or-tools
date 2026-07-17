@@ -20,6 +20,7 @@
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "ortools/sat/enforcement.h"
@@ -31,6 +32,7 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/precedences.h"
 #include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/util/sort.h"
 #include "ortools/util/strong_integers.h"
@@ -813,6 +815,13 @@ void SchedulingConstraintHelper::WatchAllTasks(int id) {
   // when the helper Propagate() is called. This result in less entries in our
   // watched lists.
   propagator_ids_.push_back(id);
+}
+
+void SchedulingConstraintHelper::Register(PropagatorInterface* propagator,
+                                          int priority) {
+  const int id = watcher_->Register(propagator);
+  watcher_->SetPropagatorPriority(id, priority);
+  WatchAllTasks(id);
 }
 
 void SchedulingConstraintHelper::FlagItemAsUsedInReason(int t) {

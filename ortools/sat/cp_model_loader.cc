@@ -30,6 +30,7 @@
 #include "absl/log/log.h"
 #include "absl/log/vlog_is_on.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/base/stl_util.h"
@@ -689,15 +690,16 @@ void ExtractElementEncoding(const CpModelProto& model_proto, Model* m) {
   std::vector<Literal> selectors;
   std::vector<AffineExpression> exprs;
   std::vector<AffineExpression> negated_exprs;
-  for (int c = 0; c < model_proto.constraints_size(); ++c) {
-    const ConstraintProto& ct = model_proto.constraints(c);
-    if (ct.constraint_case() != ConstraintProto::kExactlyOne) continue;
+  int exactly_one_index = 0;
+  auto process_exactly_one = [&](absl::Span<const int> exo_proto_literals,
+                                 absl::string_view log_name) {
+    ++exactly_one_index;  // Increase once for each exactly_one.
 
     // Project the implied values onto each integer variable.
     absl::btree_map<IntegerVariable, std::vector<ValueLiteralPair>>
         var_to_value_literal_list;
-    for (const int l : ct.exactly_one().literals()) {
-      const Literal literal = mapping->Literal(l);
+    for (const int ref : exo_proto_literals) {
+      const Literal literal = mapping->Literal(ref);
       for (const auto& var_value : implied_bounds->GetImpliedValues(literal)) {
         var_to_value_literal_list[var_value.first].push_back(
             {var_value.second, literal});
@@ -710,7 +712,7 @@ void ExtractElementEncoding(const CpModelProto& model_proto, Model* m) {
 
     // Search for variable fully covered by the literals of the exactly_one.
     for (auto& [var, encoding] : var_to_value_literal_list) {
-      if (encoding.size() < ct.exactly_one().literals_size()) {
+      if (encoding.size() < exo_proto_literals.size()) {
         VLOG(2) << "X" << var.value() << " has " << encoding.size()
                 << " implied values, and a domain of size "
                 << m->GetOrCreate<IntegerTrail>()
@@ -721,15 +723,15 @@ void ExtractElementEncoding(const CpModelProto& model_proto, Model* m) {
 
       // We use the order of literals of the exactly_one.
       ++num_element_encoded;
-      element_encodings->Add(var, encoding, c);
+      element_encodings->Add(var, encoding, exactly_one_index);
       if (VLOG_IS_ON(1)) {
         encoded_variables.push_back(var);
         absl::StrAppend(&encoded_variables_str, " X", var.value());
       }
 
-      // Encode the holes propagation (but we don't create extra literal if they
-      // are not already there). If there are non-encoded values we also add the
-      // direct min/max propagation.
+      // Encode the holes propagation (but we don't create extra literal if
+      // they are not already there). If there are non-encoded values we
+      // also add the direct min/max propagation.
       bool need_extra_propagation = false;
       std::sort(encoding.begin(), encoding.end(),
                 ValueLiteralPair::CompareByValue());
@@ -739,7 +741,8 @@ void ExtractElementEncoding(const CpModelProto& model_proto, Model* m) {
         while (j < encoding.size() && encoding[j].value == value) ++j;
 
         if (j - i == 1) {
-          // Lets not create var >= value or var <= value if they do not exist.
+          // Lets not create var >= value or var <= value if they do not
+          // exist.
           if (!encoder->IsFixedOrHasAssociatedLiteral(
                   IntegerLiteral::GreaterOrEqual(var, value)) ||
               !encoder->IsFixedOrHasAssociatedLiteral(
@@ -757,10 +760,10 @@ void ExtractElementEncoding(const CpModelProto& model_proto, Model* m) {
             continue;
           }
 
-          // If all literal supporting a value are false, then the value must be
-          // false. Note that such a clause is only useful if there are more
-          // than one literal supporting the value, otherwise we should already
-          // have detected the equivalence.
+          // If all literal supporting a value are false, then the value
+          // must be false. Note that such a clause is only useful if there
+          // are more than one literal supporting the value, otherwise we
+          // should already have detected the equivalence.
           ++num_support_clauses;
           clause.clear();
           for (int k = i; k < j; ++k) clause.push_back(encoding[k].literal);
@@ -768,9 +771,9 @@ void ExtractElementEncoding(const CpModelProto& model_proto, Model* m) {
               encoder->GetOrCreateLiteralAssociatedToEquality(var, value);
           clause.push_back(eq_lit.Negated());
 
-          // TODO(user): It should be safe otherwise the exactly_one will have
-          // duplicate literal, but I am not sure that if presolve is off we can
-          // assume that.
+          // TODO(user): It should be safe otherwise the exactly_one will
+          // have duplicate literal, but I am not sure that if presolve is
+          // off we can assume that.
           sat_solver->AddProblemClause(clause);
         }
       }
@@ -797,8 +800,58 @@ void ExtractElementEncoding(const CpModelProto& model_proto, Model* m) {
       }
     }
     if (encoded_variables.size() > 1 && VLOG_IS_ON(1)) {
-      VLOG(1) << "exactly_one(" << c << ") encodes " << encoded_variables.size()
+      VLOG(1) << log_name << " encodes " << encoded_variables.size()
               << " variables at the same time: " << encoded_variables_str;
+    }
+  };
+
+  std::vector<std::vector<int>> incoming_node_literals;
+  std::vector<std::vector<int>> outgoing_node_literals;
+  std::vector<int> tmp_tails;
+  std::vector<int> tmp_heads;
+  for (int c = 0; c < model_proto.constraints_size(); ++c) {
+    const ConstraintProto& ct = model_proto.constraints(c);
+    if (ct.constraint_case() == ConstraintProto::kExactlyOne) {
+      process_exactly_one(ct.exactly_one().literals(),
+                          absl::StrCat("exactly_one(", c, ")"));
+    } else if (ct.constraint_case() == ConstraintProto::kCircuit) {
+      tmp_tails = {ct.circuit().tails().begin(), ct.circuit().tails().end()};
+      tmp_heads = {ct.circuit().heads().begin(), ct.circuit().heads().end()};
+      const int num_nodes = ReindexArcs(&tmp_tails, &tmp_heads);
+      incoming_node_literals.clear();
+      incoming_node_literals.resize(num_nodes);
+      outgoing_node_literals.clear();
+      outgoing_node_literals.resize(num_nodes);
+      for (int i = 0; i < tmp_tails.size(); ++i) {
+        const int lit = ct.circuit().literals(i);
+        incoming_node_literals[tmp_heads[i]].push_back(lit);
+        outgoing_node_literals[tmp_tails[i]].push_back(lit);
+      }
+      for (const auto& literals : incoming_node_literals) {
+        process_exactly_one(literals, absl::StrCat("circuit_in(", c, ")"));
+      }
+      for (const auto& literals : outgoing_node_literals) {
+        process_exactly_one(literals, absl::StrCat("circuit_out(", c, ")"));
+      }
+    } else if (ct.constraint_case() == ConstraintProto::kRoutes) {
+      tmp_tails = {ct.routes().tails().begin(), ct.routes().tails().end()};
+      tmp_heads = {ct.routes().heads().begin(), ct.routes().heads().end()};
+      const int num_nodes = ReindexArcs(&tmp_tails, &tmp_heads);
+      incoming_node_literals.clear();
+      incoming_node_literals.resize(num_nodes);
+      outgoing_node_literals.clear();
+      outgoing_node_literals.resize(num_nodes);
+      for (int i = 0; i < tmp_tails.size(); ++i) {
+        const int lit = ct.routes().literals(i);
+        incoming_node_literals[tmp_heads[i]].push_back(lit);
+        outgoing_node_literals[tmp_tails[i]].push_back(lit);
+      }
+      for (int i = 1; i < num_nodes; ++i) {
+        process_exactly_one(incoming_node_literals[i],
+                            absl::StrCat("routes_in(", c, ")"));
+        process_exactly_one(outgoing_node_literals[i],
+                            absl::StrCat("routes_out(", c, ")"));
+      }
     }
   }
 
@@ -865,7 +918,7 @@ void PropagateEncodingFromEquivalenceRelations(const CpModelProto& model_proto,
 
     // Same for the == literals.
     //
-    // TODO(user): This is similar to LoadEquivalenceAC() for unreified
+    // TODO(user): This is similar to LoadEquivalenceAC() for un-reified
     // constraints, but when the later is called, more encoding might have taken
     // place.
     for (int i = 0; i < 2; ++i) {
@@ -1057,7 +1110,7 @@ namespace {
 
 // Boolean encoding of:
 // enforcement_literal => coeff1 * var1 + coeff2 * var2 == rhs;
-void LoadEquivalenceAC(const std::vector<Literal> enforcement_literal,
+void LoadEquivalenceAC(const std::vector<Literal>& enforcement_literal,
                        IntegerValue coeff1, IntegerVariable var1,
                        IntegerValue coeff2, IntegerVariable var2,
                        const IntegerValue rhs, Model* m) {
@@ -1102,7 +1155,7 @@ void LoadEquivalenceAC(const std::vector<Literal> enforcement_literal,
 
 // Boolean encoding of:
 // enforcement_literal => coeff1 * var1 + coeff2 * var2 != rhs;
-void LoadEquivalenceNeqAC(const std::vector<Literal> enforcement_literal,
+void LoadEquivalenceNeqAC(const std::vector<Literal>& enforcement_literal,
                           IntegerValue coeff1, IntegerVariable var1,
                           IntegerValue coeff2, IntegerVariable var2,
                           const IntegerValue rhs, Model* m) {

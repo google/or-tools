@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include <memory>
+#include <string>
 #include <vector>
 
 #include "absl/log/check.h"
@@ -710,6 +711,166 @@ TEST(FindCpModelSymmetries, BinPacking) {
     }
     CHECK_EQ(num_fixed, std::max(0, 6 - i)) << i;
   }
+}
+
+const char kBaseReservoirModel[] = R"pb(
+  variables {
+    name: 't0'
+    domain: [ 0, 10 ]
+  }
+  variables {
+    name: 't1'
+    domain: [ 0, 10 ]
+  }
+  variables {
+    name: 'act0'
+    domain: [ 0, 1 ]
+  }
+  variables {
+    name: 'act1'
+    domain: [ 0, 1 ]
+  }
+  variables {
+    name: 't2'
+    domain: [ 0, 10 ]
+  }
+  variables {
+    name: 't3'
+    domain: [ 0, 10 ]
+  }
+  variables {
+    name: 'act2'
+    domain: [ 0, 1 ]
+  }
+  variables {
+    name: 'act3'
+    domain: [ 0, 1 ]
+  }
+  constraints {
+    reservoir {
+      min_level: 0
+      max_level: 10
+      time_exprs {
+        vars: [ 0 ]
+        coeffs: [ 1 ]
+        offset: 0
+      }
+      time_exprs {
+        vars: [ 1 ]
+        coeffs: [ 1 ]
+        offset: 0
+      }
+      level_changes { offset: 5 }
+      level_changes { offset: 5 }
+      active_literals: [ 2, 3 ]
+    }
+  }
+  constraints {
+    reservoir {
+      min_level: 0
+      max_level: 10
+      time_exprs {
+        vars: [ 4 ]
+        coeffs: [ 1 ]
+        offset: 0
+      }
+      time_exprs {
+        vars: [ 5 ]
+        coeffs: [ 1 ]
+        offset: 0
+      }
+      level_changes { offset: 5 }
+      level_changes { offset: 5 }
+      active_literals: [ 6, 7 ]
+    }
+  }
+)pb";
+
+TEST(FindCpModelSymmetries, FindsSymmetryInReservoir) {
+  CpModelProto model = ParseTestProto(kBaseReservoirModel);
+  SolverLogger logger;
+  std::vector<std::unique_ptr<SparsePermutation>> generators;
+  TimeLimit time_limit;
+  FindCpModelSymmetries({}, model, &generators, &logger, &time_limit);
+
+  std::vector<std::string> generator_strs;
+  for (const auto& gen : generators) {
+    generator_strs.push_back(gen->DebugString());
+  }
+  EXPECT_THAT(generator_strs, testing::UnorderedElementsAre(
+                                  "(4 5) (6 7)", "(0 4) (1 5) (2 6) (3 7)"));
+}
+
+TEST(FindCpModelSymmetries, ReservoirAsymmetricReservoirs) {
+  CpModelProto model = ParseTestProto(kBaseReservoirModel);
+  model.mutable_constraints(0)->mutable_reservoir()->set_max_level(8);
+
+  SolverLogger logger;
+  std::vector<std::unique_ptr<SparsePermutation>> generators;
+  TimeLimit time_limit;
+  FindCpModelSymmetries({}, model, &generators, &logger, &time_limit);
+
+  std::vector<std::string> generator_strs;
+  for (const auto& gen : generators) {
+    generator_strs.push_back(gen->DebugString());
+  }
+  EXPECT_THAT(generator_strs,
+              testing::UnorderedElementsAre("(0 1) (2 3)", "(4 5) (6 7)"));
+}
+
+TEST(FindCpModelSymmetries, ReservoirActiveVariableAsymmetry) {
+  CpModelProto model = ParseTestProto(kBaseReservoirModel);
+  model.mutable_variables(2)->clear_domain();
+  model.mutable_variables(2)->add_domain(1);
+  model.mutable_variables(2)->add_domain(1);
+
+  SolverLogger logger;
+  std::vector<std::unique_ptr<SparsePermutation>> generators;
+  TimeLimit time_limit;
+  FindCpModelSymmetries({}, model, &generators, &logger, &time_limit);
+
+  std::vector<std::string> generator_strs;
+  for (const auto& gen : generators) {
+    generator_strs.push_back(gen->DebugString());
+  }
+  EXPECT_THAT(generator_strs, testing::UnorderedElementsAre("(4 5) (6 7)"));
+}
+
+TEST(FindCpModelSymmetries, ReservoirTimeVariableAsymmetry) {
+  CpModelProto model = ParseTestProto(kBaseReservoirModel);
+  model.mutable_variables(0)->clear_domain();
+  model.mutable_variables(0)->add_domain(0);
+  model.mutable_variables(0)->add_domain(8);
+
+  SolverLogger logger;
+  std::vector<std::unique_ptr<SparsePermutation>> generators;
+  TimeLimit time_limit;
+  FindCpModelSymmetries({}, model, &generators, &logger, &time_limit);
+
+  std::vector<std::string> generator_strs;
+  for (const auto& gen : generators) {
+    generator_strs.push_back(gen->DebugString());
+  }
+  EXPECT_THAT(generator_strs, testing::UnorderedElementsAre("(4 5) (6 7)"));
+}
+
+TEST(FindCpModelSymmetries, ReservoirLevelChangeAsymmetry) {
+  CpModelProto model = ParseTestProto(kBaseReservoirModel);
+  model.mutable_constraints(0)
+      ->mutable_reservoir()
+      ->mutable_level_changes(0)
+      ->set_offset(4);
+
+  SolverLogger logger;
+  std::vector<std::unique_ptr<SparsePermutation>> generators;
+  TimeLimit time_limit;
+  FindCpModelSymmetries({}, model, &generators, &logger, &time_limit);
+
+  std::vector<std::string> generator_strs;
+  for (const auto& gen : generators) {
+    generator_strs.push_back(gen->DebugString());
+  }
+  EXPECT_THAT(generator_strs, testing::UnorderedElementsAre("(4 5) (6 7)"));
 }
 
 }  // namespace

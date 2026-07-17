@@ -184,7 +184,13 @@ LinearConstraint ScatteredIntegerVector::ConvertToLinearConstraint(
       if (coeff != 0) ++final_size;
     }
   }
-  if (extra_term != std::nullopt) ++final_size;
+  if (extra_term != std::nullopt) {
+    ++final_size;
+    if (!VariableIsPositive(extra_term->first)) {
+      extra_term->first = NegationOf(extra_term->first);
+      extra_term->second = -extra_term->second;
+    }
+  }
 
   // Allocate once.
   LinearConstraint result;
@@ -195,18 +201,36 @@ LinearConstraint ScatteredIntegerVector::ConvertToLinearConstraint(
   if (is_sparse_) {
     std::sort(non_zeros_.begin(), non_zeros_.end());
     for (const glop::ColIndex col : non_zeros_) {
-      const IntegerValue coeff = dense_vector_[col];
+      IntegerValue coeff = dense_vector_[col];
       if (coeff == 0) continue;
       result.vars[new_size] = integer_variables[col.value()];
       result.coeffs[new_size] = coeff;
+
+      // Corner case if the extra term is part of the linear constraint.
+      if (extra_term != std::nullopt &&
+          result.vars[new_size] == extra_term->first) {
+        coeff += extra_term->second;
+        extra_term = std::nullopt;
+        if (coeff == 0) continue;
+      }
+
       ++new_size;
     }
   } else {
     const int size = dense_vector_.size();
     for (glop::ColIndex col(0); col < size; ++col) {
-      const IntegerValue coeff = dense_vector_[col];
+      IntegerValue coeff = dense_vector_[col];
       if (coeff == 0) continue;
       result.vars[new_size] = integer_variables[col.value()];
+
+      // Corner case if the extra term is part of the linear constraint.
+      if (extra_term != std::nullopt &&
+          result.vars[new_size] == extra_term->first) {
+        coeff += extra_term->second;
+        extra_term = std::nullopt;
+        if (coeff == 0) continue;
+      }
+
       result.coeffs[new_size] = coeff;
       ++new_size;
     }
@@ -221,7 +245,8 @@ LinearConstraint ScatteredIntegerVector::ConvertToLinearConstraint(
     ++new_size;
   }
 
-  CHECK_EQ(new_size, final_size);
+  result.num_terms = new_size;
+  CHECK_LE(new_size, final_size);
   DivideByGCD(&result);
   return result;
 }

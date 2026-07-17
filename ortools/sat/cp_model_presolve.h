@@ -37,6 +37,7 @@
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/solution_crush.h"
 #include "ortools/sat/util.h"
+#include "ortools/util/bitset.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/time_limit.h"
 
@@ -57,7 +58,8 @@ namespace sat {
 // IntegerVariableProto definition of max(i, j) that will be kept in the output.
 // TODO(user): This behavior is not well unit-tested.
 void ApplyVariableMapping(absl::Span<int> mapping, CpModelProto* cp_model,
-                          std::vector<int>* reverse_mapping);
+                          std::vector<int>* reverse_mapping,
+                          SolutionCrush& solution_crush);
 
 // Presolves the initial content of presolved_model.
 //

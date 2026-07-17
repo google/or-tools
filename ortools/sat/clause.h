@@ -30,6 +30,7 @@
 #include "absl/functional/any_invocable.h"
 #include "absl/functional/function_ref.h"
 #include "absl/log/check.h"
+#include "absl/random/bit_gen_ref.h"
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/graph/cliques.h"
@@ -1008,7 +1009,7 @@ class BinaryImplicationGraph : public SatPropagator {
       implications_and_amos_;
 
   // Used by RemoveDuplicatesAndFixedVariables() and NotifyPossibleDuplicate().
-  util_intops::StrongVector<LiteralIndex, bool> might_have_dups_;
+  Bitset64<LiteralIndex> might_have_dups_;
   std::vector<Literal> to_clean_;
 
   std::vector<Literal> at_most_one_buffer_;
@@ -1083,8 +1084,8 @@ class BinaryImplicationGraph : public SatPropagator {
   // For in-processing and removing variables.
   std::vector<Literal> direct_implications_;
   std::vector<Literal> direct_implications_of_negated_literal_;
-  util_intops::StrongVector<LiteralIndex, bool> in_direct_implications_;
-  util_intops::StrongVector<LiteralIndex, bool> is_removed_;
+  Bitset64<LiteralIndex> in_direct_implications_;
+  Bitset64<LiteralIndex> is_removed_;
   util_intops::StrongVector<LiteralIndex, int> estimated_sizes_;
 
   // For RemoveFixedVariables().

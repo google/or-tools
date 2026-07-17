@@ -385,7 +385,22 @@ class SchedulingConstraintHelper : public PropagatorInterface {
 
   // Registers the given propagator id to be called if any of the tasks
   // in this class change. Note that we do not watch size max though.
+  //
+  // Note that experiment showed that it is not really worth it to try to only
+  // wake a propagator if only a specific subset of the interval bounds changed.
+  // It seems that this actually affect a really low percentage of Propagate()
+  // calls (when only irrelevant bound changes). And it has a non-negligeable
+  // cost for the extra tracking.
   void WatchAllTasks(int id);
+
+  // Helper function to register a given scheduling propagator.
+  //
+  // Most scheduling propagators just call WatchAllTasks() and can be registered
+  // in the same way. In particular, since the helper is actually the one that
+  // will add them to the propagation queue, function like
+  // watcher->NotifyThatPropagatorMayNotReachFixedPointInOnePass() do not change
+  // anything and do not need to be called.
+  void Register(PropagatorInterface* propagator, int priority);
 
   // Sometimes, typically for no_overlap_2d, we can use the variables that are
   // fixed at current decision level to define a scheduling sub-problem. For

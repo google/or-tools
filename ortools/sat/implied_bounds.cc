@@ -29,10 +29,8 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/log/vlog_is_on.h"
-#include "absl/meta/type_traits.h"
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
-#include "ortools/lp_data/lp_types.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
@@ -278,11 +276,11 @@ bool ImpliedBounds::ProcessIntegerTrail(Literal first_decision) {
 
 void ElementEncodings::Add(IntegerVariable var,
                            const std::vector<ValueLiteralPair>& encoding,
-                           int exactly_one_index) {
+                           int key) {
   if (!var_to_index_to_element_encodings_.contains(var)) {
     element_encoded_variables_.push_back(var);
   }
-  var_to_index_to_element_encodings_[var][exactly_one_index] = encoding;
+  var_to_index_to_element_encodings_[var][key] = encoding;
 }
 
 const absl::btree_map<int, std::vector<ValueLiteralPair>>&
@@ -405,37 +403,10 @@ std::vector<LiteralValueValue> TryToReconcileSize2Encodings(
   return terms;
 }
 
-std::vector<LiteralValueValue>
-ProductDecomposer::TryToDecomposeAffineExpressionTimesConstant(
-    const AffineExpression& expr, IntegerValue constant) {
-  // const absl::btree_map<int, std::vector<ValueLiteralPair>>& encodings =
-  //     element_encodings_->Get(expr.var);
-  std::vector<LiteralValueValue> terms;
-  // if (!encodings.empty()) {
-  //   LOG(INFO) << "TryToDecomposeAffineExpressionTimesConstant: " << expr.var
-  //             << " " << constant << " has " <<
-  //             encodings.begin()->second.size()
-  //             << " literals";
-  // }
-  //   const auto& [unused, encoding] = *encodings.begin();
-  //   for (const auto& [value, literal] : encoding) {
-  //     terms.push_back({literal, expr.ValueAt(value), constant});
-  //   }
-  // }
-  return terms;
-}
-
 std::vector<LiteralValueValue> ProductDecomposer::TryToDecompose(
     const AffineExpression& left, const AffineExpression& right) {
-  if (integer_trail_->IsFixed(left) && integer_trail_->IsFixed(right)) {
+  if (integer_trail_->IsFixed(left) || integer_trail_->IsFixed(right)) {
     return {};
-  }
-  if (integer_trail_->IsFixed(left)) {
-    return TryToDecomposeAffineExpressionTimesConstant(
-        right, integer_trail_->FixedValue(left));
-  } else if (integer_trail_->IsFixed(right)) {
-    return TryToDecomposeAffineExpressionTimesConstant(
-        left, integer_trail_->FixedValue(right));
   }
 
   // Fill in the encodings for the left variable.

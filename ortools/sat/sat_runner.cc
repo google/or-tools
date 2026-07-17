@@ -24,7 +24,6 @@
 #include "absl/flags/parse.h"
 #include "absl/flags/usage.h"
 #include "absl/log/check.h"
-#include "absl/log/flags.h"
 #include "absl/log/initialize.h"
 #include "absl/log/log.h"
 #include "absl/strings/match.h"

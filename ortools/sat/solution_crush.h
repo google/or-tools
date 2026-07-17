@@ -28,6 +28,7 @@
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/diffn_util.h"
+#include "ortools/sat/solution_crush.pb.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/sorted_interval_list.h"
 
@@ -52,7 +53,7 @@ namespace sat {
 // this will set b to -1, which is outside of its [0,1] domain.
 class SolutionCrush {
  public:
-  SolutionCrush() = default;
+  explicit SolutionCrush(SolutionCrushProto* proto = nullptr) : proto_(proto) {}
 
   // SolutionCrush is neither copyable nor movable.
   SolutionCrush(const SolutionCrush&) = delete;
@@ -70,6 +71,7 @@ class SolutionCrush {
   // any other method.
   void LoadSolution(int num_vars,
                     const absl::flat_hash_map<int, int64_t>& solution);
+  void LoadSolution(absl::Span<const int64_t> solution);
 
   // Resizes the solution to contain `new_size` variables. Does not change the
   // value of existing variables, and does not set any value for the new
@@ -82,10 +84,11 @@ class SolutionCrush {
   // `literal` already has a value.
   void MaybeSetLiteralToValueEncoding(int literal, int var, int64_t value);
 
-  // Sets the value of `literal` to "`var`'s value >=/<= `value`". Does nothing
-  // if `literal` already has a value.
+  // Sets the value of `literal` to "`var`'s value >=/==/<= `value`". Does
+  // nothing if `literal` already has a value.
+  enum Relation { LE, EQ, GE };
   void MaybeSetLiteralToOrderEncoding(int literal, int var, int64_t value,
-                                      bool is_le);
+                                      Relation relation);
 
   // Sets the value of `var` to the value of the given linear expression, if all
   // the variables in this expression have a value. `linear` must be a list of
@@ -127,17 +130,18 @@ class SolutionCrush {
   // Sets the value of `var` to `value` if the value of `condition_lit` is true.
   void SetVarToValueIf(int var, int64_t value, int condition_lit);
 
-  // Sets the value of `var` to the value `expr` if the value of `condition_lit`
-  // is true.
+  // Sets the value of `var` to the value `expr` if the value of all
+  // `condition_lits` is true (in particular if `condition_lits` is empty).
   void SetVarToLinearExpressionIf(int var, const LinearExpressionProto& expr,
-                                  int condition_lit);
+                                  absl::Span<const int> condition_lits);
 
   // Sets the value of `literal` to `value` if the value of `condition_lit` is
   // true.
   void SetLiteralToValueIf(int literal, bool value, int condition_lit);
 
   // Sets the value of `var` to `value_if_true` if the value of all the
-  // `condition_lits` literals is true, and to `value_if_false` otherwise.
+  // `condition_lits` literals is true (in particular if `condition_lits` is
+  // empty), and to `value_if_false` otherwise.
   void SetVarToConditionalValue(int var, absl::Span<const int> condition_lits,
                                 int64_t value_if_true, int64_t value_if_false);
 
@@ -160,6 +164,7 @@ class SolutionCrush {
   // 3/ The hinted value is not in the domain, and there is no escape value.
   //    Update the hinted value to be in the domain by pushing it in the given
   //    direction, and update the encoding literals to reflect the new value
+  // `encoding` maps values to their encoding literal.
   void SetOrUpdateVarToDomainWithOptionalEscapeValue(
       int var, const Domain& reduced_var_domain,
       std::optional<int64_t> unique_escape_value,
@@ -201,6 +206,12 @@ class SolutionCrush {
   // Otherwise does nothing.
   void MaybeSwapOrbitopeColumns(absl::Span<const std::vector<int>> orbitope,
                                 int row, int pivot_col, bool value);
+
+  // Sorts the columns of `orbitope` so that the values in the given `row` are
+  // in increasing order from left to right. Does nothing if any variable in
+  // `row` does not have a value.
+  void SortOrbitopeColumns(absl::Span<const std::vector<int>> orbitope,
+                           int row);
 
   // Sets the value of the i-th variable in `vars` so that the given constraint
   // "dotproduct(coeffs, vars values) = rhs" is satisfied, if all the other
@@ -306,8 +317,18 @@ class SolutionCrush {
   void SetLinearWithComplexDomainExpandedVars(
       const LinearConstraintProto& linear, absl::Span<const int> bucket_lits);
 
+  // Remap the variable indices. `old_to_new_mapping` maps old to new variable
+  // indices. A removed variable is "mapped" to a negative index. Two old
+  // variables can be mapped to the same new variable. The mapping must be dense
+  // in [0, max(old_to_new_mapping)].
+  void RemapVariables(absl::Span<const int> old_to_new_mapping);
+
+  // Applies the given step to the solution.
+  void ApplySolutionCrushStep(const SolutionCrushStep& step);
+
   // Stores the solution as a hint in the given model.
   void StoreSolutionAsHint(CpModelProto& model) const;
+  void StoreSolutionAsHint(PartialVariableAssignment& hint) const;
 
   // Given a list of N disjoint packing areas (each described by a union of
   // rectangles) and a list of M boxes (described by their x and y interval
@@ -370,6 +391,7 @@ class SolutionCrush {
   std::vector<bool> var_has_value_;
   // This contains all the solution values or zero if a solution is not loaded.
   std::vector<int64_t> var_values_;
+  SolutionCrushProto* proto_;
 };
 
 }  // namespace sat

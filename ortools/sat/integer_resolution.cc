@@ -242,8 +242,8 @@ void IntegerConflictResolution::AddToQueue(GlobalTrailIndex source_index,
       DCHECK_LT(tmp_queue_.back(), source_index);
     }
 
-    CHECK_LT(integer_trail_->GlobalIndexAt(data.int_index_in_queue),
-             source_index);
+    DCHECK_LT(integer_trail_->GlobalIndexAt(data.int_index_in_queue),
+              source_index);
 
     // In all case, we need the bound at the time.
     // in some rare case, we have reason.index_at_propagation <
@@ -253,10 +253,13 @@ void IntegerConflictResolution::AddToQueue(GlobalTrailIndex source_index,
       ++num_possibly_non_optimal_reason_;
     }
 
+    // No need to relax further than this in the code below.
+    data.bound = std::max(data.bound, integer_trail_->LevelZeroLowerBound(var));
+
     IntegerValue required_bound =
         integer_trail_->IntegerLiteralAtIndex(data.int_index_in_queue).bound;
-
     CHECK_GE(required_bound, data.bound);
+
     if (slack > 0 && required_bound > data.bound) {
       CHECK_GT(reason.coeffs[i], 0);
       IntegerValue delta = FloorRatio(slack, reason.coeffs[i]);

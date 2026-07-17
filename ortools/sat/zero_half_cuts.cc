@@ -18,11 +18,11 @@
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/types/span.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/sat/integer_base.h"
-#include "ortools/sat/util.h"
 #include "ortools/util/strong_integers.h"
 
 namespace operations_research {

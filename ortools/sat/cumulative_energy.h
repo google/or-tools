@@ -18,6 +18,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/random/bit_gen_ref.h"
 #include "absl/types/span.h"
 #include "ortools/sat/2d_orthogonal_packing.h"
 #include "ortools/sat/integer.h"

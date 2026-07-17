@@ -22,6 +22,7 @@
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/random/distributions.h"
 #include "absl/random/random.h"
@@ -36,9 +37,8 @@
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/integer_search.h"
 #include "ortools/sat/intervals.h"
-#include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/model.h"
-#include "ortools/sat/precedences.h"
+#include "ortools/sat/old_precedences_propagator.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"

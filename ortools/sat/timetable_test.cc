@@ -21,6 +21,7 @@
 
 #include "absl/container/btree_map.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_join.h"
 #include "absl/types/span.h"
 #include "gtest/gtest.h"
@@ -31,7 +32,7 @@
 #include "ortools/sat/integer_search.h"
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/model.h"
-#include "ortools/sat/precedences.h"
+#include "ortools/sat/old_precedences_propagator.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/scheduling_helpers.h"

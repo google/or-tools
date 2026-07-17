@@ -16,7 +16,6 @@
 #include <algorithm>
 #include <cstdint>
 #include <deque>
-#include <limits>
 #include <optional>
 #include <utility>
 #include <vector>
@@ -27,6 +26,7 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/container/inlined_vector.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
@@ -482,7 +482,7 @@ void ExpandReservoir(ConstraintProto* reservoir_ct, PresolveContext* context) {
           AddLinearExpressionToLinearConstraint(demand, -1, lin);
           context->CanonicalizeLinearConstraint(demand_ct);
           context->solution_crush().SetVarToLinearExpressionIf(new_var, demand,
-                                                               active);
+                                                               {active});
         }
 
         // not(active) => new_var == 0.

@@ -15,6 +15,7 @@
 
 #include <vector>
 
+#include "absl/container/flat_hash_map.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "gtest/gtest.h"
@@ -893,6 +894,94 @@ TEST(SharedTreeManagerTest, TrailSharing) {
   EXPECT_THAT(trail2.GetNode(leaf_id2)->shared().var_lower_bounds,
               testing::ElementsAre(testing::Pair(2, IntegerValue(1))));
   EXPECT_THAT(phase2, testing::ElementsAre(ProtoLiteral(3, 1)));
+}
+
+TEST(SharedTreeEncoderTest, VariableBoundsResolution) {
+  SharedTreeEncoder manager(nullptr);
+  SharedTreeEncoder worker1(nullptr);
+  SharedTreeEncoder worker2(nullptr);
+  manager.ImportNode({.id = NodeId(1)});
+  manager.SplitNode(NodeId(1), ProtoLiteral(0, 1), NodeId(2));
+  manager.SyncNodesOnPath(NodeId(2), worker1);
+  manager.SyncNodesOnPath(NodeId(3), worker2);
+
+  worker1.GetNode(NodeId(2))->AddImplication(ProtoLiteral(1, 5));
+  manager.SyncNodesOnPath(NodeId(2), worker1);
+  worker2.GetNode(NodeId(3))->AddImplication(ProtoLiteral(1, 3));
+  manager.SyncNodesOnPath(NodeId(3), worker2);
+
+  EXPECT_THAT(manager.GetNode(NodeId(1))->shared().var_lower_bounds,
+              UnorderedElementsAre(testing::Pair(1, IntegerValue(3))));
+}
+
+TEST(SharedTreeEncoderTest, VariableBoundsInAllLeavesResolveToRoot) {
+  SharedTreeEncoder manager(nullptr);
+  manager.ImportNode({.id = NodeId(1)});
+  manager.SplitNode(NodeId(1), ProtoLiteral(0, 1), NodeId(2));
+  manager.SplitNode(NodeId(2), ProtoLiteral(1, 1), NodeId(4));
+  manager.SplitNode(NodeId(3), ProtoLiteral(2, 1), NodeId(6));
+  const int var = 3;
+  const absl::flat_hash_map<NodeId, IntegerValue> leaf_lower_bounds = {
+      {NodeId(4), IntegerValue(5)},
+      {NodeId(5), IntegerValue(7)},
+      {NodeId(6), IntegerValue(4)},
+      {NodeId(7), IntegerValue(6)},
+  };
+
+  for (const auto& [node, lower_bound] : leaf_lower_bounds) {
+    SharedTreeEncoder worker(nullptr);
+    manager.SyncNodesOnPath(node, worker);
+    worker.GetNode(node)->AddImplication(ProtoLiteral(var, lower_bound));
+    manager.SyncNodesOnPath(node, worker);
+  }
+
+  EXPECT_THAT(manager.GetNode(NodeId(1))->shared().var_lower_bounds,
+              UnorderedElementsAre(testing::Pair(var, IntegerValue(4))));
+  EXPECT_THAT(manager.GetNode(NodeId(2))->shared().var_lower_bounds,
+              UnorderedElementsAre(testing::Pair(var, IntegerValue(5))));
+  EXPECT_THAT(manager.GetNode(NodeId(3))->shared().var_lower_bounds,
+              UnorderedElementsAre(testing::Pair(var, IntegerValue(4))));
+}
+
+TEST(SharedTreeEncoderTest, VariableBoundsResolutionLratProof) {
+  SatParameters params;
+  params.set_output_lrat_proof(true);
+  params.set_check_lrat_proof(true);
+  params.set_debug_crash_if_lrat_check_fails(true);
+  Model model;
+  model.Add(NewSatParameters(params));
+  auto lrat = LratProofHandler::MaybeCreate(
+      params, model.GetOrCreate<SharedLratProofStatus>(),
+      model.GetOrCreate<SharedStatistics>());
+  SharedTreeEncoder manager(lrat.get());
+  manager.ImportNode({.id = NodeId(1)});
+  manager.SplitNode(NodeId(1), ProtoLiteral(0, 1), NodeId(2));
+  manager.SplitNode(NodeId(2), ProtoLiteral(1, 1), NodeId(4));
+  manager.SplitNode(NodeId(3), ProtoLiteral(2, 1), NodeId(6));
+  ProtoLiteral leaf_implication(3, 1);
+  std::vector<ClausePtr> leaf_clauses;
+
+  for (NodeId node : {NodeId(4), NodeId(7), NodeId(6), NodeId(5)}) {
+    SharedTreeEncoder worker(lrat.get());
+    manager.SyncNodesOnPath(node, worker);
+    SharedTreeEncoder::Node* worker_node = worker.GetNode(node);
+    std::vector<Literal> lits = worker_node->ExpectedReasonClauseLiterals(
+        worker.Decode(leaf_implication));
+    leaf_clauses.push_back(NewClausePtr(lits));
+    lrat->AddProblemClause(leaf_clauses.back());
+    worker_node->AddImplication(leaf_implication);
+    worker.GetNode(node)->ExportInferredReasonClause(
+        worker.Decode(leaf_implication), {leaf_clauses.back()});
+    manager.SyncNodesOnPath(node, worker);
+  }
+  EXPECT_THAT(manager.GetNode(NodeId(1))->shared().var_lower_bounds,
+              testing::UnorderedElementsAre(testing::Pair(3, IntegerValue(1))));
+  EXPECT_THAT(manager.GetNode(NodeId(1))->reason_clauses(),
+              testing::UnorderedElementsAre(
+                  testing::Pair(manager.Decode(leaf_implication), testing::_)));
+  for (ClausePtr clause : leaf_clauses) {
+    lrat->DeleteClause(clause);
+  }
 }
 
 TEST(SharedTreeEncoderTest, SetObjectiveLowerBound) {

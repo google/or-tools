@@ -15,7 +15,6 @@
 
 #include <cstdint>
 #include <cstdlib>
-#include <limits>
 #include <optional>
 #include <string>
 #include <utility>
@@ -29,6 +28,7 @@
 #include "ortools/base/log_severity.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/types.h"
+#include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/presolve_context.h"
 #include "ortools/sat/solution_crush.h"
@@ -395,7 +395,7 @@ void OrderEncoding::CollectAllOrderEncodingValues() {
     if (it != encoded_le_literal_.end()) continue;
     const int le_literal = context_->NewBoolVar("order encoding");
     solution_crush_.MaybeSetLiteralToOrderEncoding(le_literal, var_, value,
-                                                   /*is_le=*/true);
+                                                   SolutionCrush::Relation::LE);
     encoded_le_literal_[value] = le_literal;
   }
 
@@ -405,7 +405,7 @@ void OrderEncoding::CollectAllOrderEncodingValues() {
     if (it != encoded_le_literal_.end()) continue;
     const int ge_literal = context_->NewBoolVar("order encoding");
     solution_crush_.MaybeSetLiteralToOrderEncoding(ge_literal, var_, value,
-                                                   /*is_le=*/false);
+                                                   SolutionCrush::Relation::GE);
     encoded_le_literal_[previous_value] = NegatedRef(ge_literal);
   }
 }
