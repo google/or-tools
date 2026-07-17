@@ -603,6 +603,7 @@ cc_binary(
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
+        "//ortools/linear_solver:linear_solver_all",
         "//ortools/linear_solver:linear_solver_lib",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:globals",
@@ -623,8 +624,9 @@ cc_binary(
     deps = [
         "//ortools/base",
         "//ortools/base:log_severity",
-        "//ortools/linear_solver",
+        "//ortools/linear_solver:linear_solver_all",  # No gurobi.
         "//ortools/linear_solver:linear_solver_cc_proto",
+        "//ortools/linear_solver:linear_solver_lib",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:globals",
         "@abseil-cpp//absl/strings",
@@ -643,6 +645,7 @@ cc_binary(
     srcs = ["linear_solver_protocol_buffers.cc"],
     deps = [
         "//ortools/base",
+        "//ortools/linear_solver:linear_solver_all",
         "//ortools/linear_solver:linear_solver_cc_proto",
         "//ortools/linear_solver:solve_mp_model",
         "@abseil-cpp//absl/log",
@@ -662,7 +665,8 @@ cc_binary(
     srcs = ["strawberry_fields_with_column_generation.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/linear_solver",
+        "//ortools/linear_solver:linear_solver_all",
+        "//ortools/linear_solver:linear_solver_lib",
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:globals",
@@ -972,7 +976,7 @@ cc_binary(
     srcs = ["uncapacitated_facility_location.cc"],
     deps = [
         "//ortools/base:log_severity",
-        "//ortools/linear_solver",
+        "//ortools/linear_solver:linear_solver_lib",
         "//ortools/util:random_engine",
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/flags:parse",
