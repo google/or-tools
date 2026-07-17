@@ -45,6 +45,7 @@
 #include "ortools/sat/lrat_proof_handler.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/stats.h"
@@ -918,16 +919,16 @@ void BinaryImplicationGraph::Resize(int num_variables) {
   implies_something_.resize(num_literals);
   might_have_dups_.resize(num_literals);
   is_redundant_.resize(num_literals);
-  is_removed_.resize(num_literals, false);
+  is_removed_.resize(num_literals);
   estimated_sizes_.resize(num_literals, 0);
   implied_by_.resize(num_literals);
-  in_direct_implications_.resize(num_literals, false);
+  in_direct_implications_.resize(num_literals);
   reasons_.resize(num_variables);
 }
 
 void BinaryImplicationGraph::NotifyPossibleDuplicate(Literal a) {
   if (might_have_dups_[a.Index()]) return;
-  might_have_dups_[a.Index()] = true;
+  might_have_dups_.Set(a.Index());
   to_clean_.push_back(a);
 }
 
@@ -977,7 +978,7 @@ bool BinaryImplicationGraph::RemoveDuplicatesAndFixedVariables() {
   // that might become implications and require more cleanup...
   while (!to_clean_.empty()) {
     for (const Literal l : to_clean_) {
-      might_have_dups_[l.Index()] = false;
+      might_have_dups_.Clear(l.Index());
       if (!CleanUpImplicationList(l)) return false;
     }
     to_clean_.clear();
@@ -3385,7 +3386,7 @@ const std::vector<Literal>& BinaryImplicationGraph::DirectImplications(
 
   // Clear old state.
   for (const Literal l : direct_implications_) {
-    in_direct_implications_[l] = false;
+    in_direct_implications_.Clear(l);
   }
   direct_implications_.clear();
 
@@ -3396,7 +3397,7 @@ const std::vector<Literal>& BinaryImplicationGraph::DirectImplications(
     if (l == literal) continue;
     if (assignment.LiteralIsAssigned(l)) continue;
     if (!is_removed_[l] && !in_direct_implications_[l]) {
-      in_direct_implications_[l] = true;
+      in_direct_implications_.Set(l);
       direct_implications_.push_back(l);
     }
   }
@@ -3408,7 +3409,7 @@ const std::vector<Literal>& BinaryImplicationGraph::DirectImplications(
       if (l == literal) continue;
       if (assignment.LiteralIsAssigned(l)) continue;
       if (!is_removed_[l] && !in_direct_implications_[l.NegatedIndex()]) {
-        in_direct_implications_[l.NegatedIndex()] = true;
+        in_direct_implications_.Set(l.NegatedIndex());
         direct_implications_.push_back(l.Negated());
       }
     }
@@ -3535,7 +3536,7 @@ void BinaryImplicationGraph::RemoveBooleanVariable(
   // We need to remove any occurrence of var in our implication lists, this will
   // be delayed to the CleanupAllRemovedVariables() call.
   for (const LiteralIndex index : {literal.Index(), literal.NegatedIndex()}) {
-    is_removed_[index] = true;
+    is_removed_.Set(index);
     ClearImplications(Literal(index));
     implications_and_amos_[index].ShrinkToFit();
     if (!is_redundant_[index]) {
@@ -3552,7 +3553,7 @@ void BinaryImplicationGraph::RemoveAllRedundantVariables(
     if (is_redundant_[a] && !is_removed_[a]) {
       postsolve_clauses->push_back(
           {Literal(a), Literal(RepresentativeOf(Literal(a))).Negated()});
-      is_removed_[a] = true;
+      is_removed_.Set(a);
       ClearImplications(Literal(a));
       implications_and_amos_[a].ShrinkToFit();
       continue;

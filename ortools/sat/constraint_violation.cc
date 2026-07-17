@@ -37,6 +37,7 @@
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/diffn_util.h"
 #include "ortools/sat/integer_base.h"
+#include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/dense_set.h"
 #include "ortools/util/saturated_arithmetic.h"

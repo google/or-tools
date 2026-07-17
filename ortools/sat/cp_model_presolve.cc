@@ -19,7 +19,6 @@
 #include <cstdlib>
 #include <deque>
 #include <functional>
-#include <limits>
 #include <memory>
 #include <numeric>
 #include <optional>
@@ -3653,7 +3652,7 @@ void CpModelPresolver::TryToReduceCoefficientsOfLinearConstraint(
   // Only consider "simple" constraints.
   const LinearConstraintProto& lin = ct->linear();
   if (lin.domain().size() != 2) return;
-  const Domain rhs = ReadDomainFromProto(lin);
+  if (lin.vars().size() <= 1) return;
 
   // Precompute a bunch of quantities and "canonicalize" the constraint.
   int64_t lb_sum = 0;
@@ -3697,6 +3696,7 @@ void CpModelPresolver::TryToReduceCoefficientsOfLinearConstraint(
 
   // Mark trivially false constraint as such. This should have been already
   // done, but we require non-negative quantity below.
+  const Domain rhs = ReadDomainFromProto(lin);
   if (lb_sum > rhs.Max() || rhs.Min() > ub_sum) {
     (void)MarkConstraintAsFalse(ct, "linear: trivially false");
     context_->UpdateConstraintVariableUsage(c);
@@ -8082,7 +8082,12 @@ bool CpModelPresolver::PresolveCircuit(ConstraintProto* ct) {
     context_->UpdateRuleStats("circuit: removed false arcs");
     return true;
   }
-  RunPropagatorsForConstraint(*ct);
+
+  // TODO(user): This can be really slow, and likely do not bring much.
+  // We only do that if we have less than 1k literals. Just remove ?
+  if (proto.literals().size() < 1'000) {
+    RunPropagatorsForConstraint(*ct);
+  }
   return false;
 }
 
@@ -11453,6 +11458,7 @@ void CpModelPresolver::DetectDuplicateConstraintsWithDifferentEnforcements(
   timer.AddCounter("without_enforcements",
                    duplicates_without_enforcement.size());
   for (const auto& [dup, rep] : duplicates_without_enforcement) {
+    if (timer.WorkLimitIsReached()) break;
     auto* dup_ct = context_->MutableConstraint(dup);
     auto* rep_ct = context_->MutableConstraint(rep);
 
@@ -11602,8 +11608,10 @@ void CpModelPresolver::DetectDuplicateConstraintsWithDifferentEnforcements(
         for (const int proto_lit : ct_a.enforcement_literal()) {
           const Literal lit = mapping->Literal(proto_lit);
           DCHECK(!trail->Assignment().LiteralIsAssigned(lit));
-          for (const Literal implication_lit :
-               implication_graph->DirectImplications(lit)) {
+          absl::Span<const Literal> implied =
+              implication_graph->DirectImplications(lit);
+          timer.TrackSimpleLoop(implied.size());
+          for (const Literal implication_lit : implied) {
             auto extracted = enforcement_vars.extract(implication_lit);
             if (!extracted.empty() && lit != implication_lit) {
               implications_used.push_back({lit, implication_lit});
@@ -13991,11 +13999,26 @@ void CpModelPresolver::PresolveToFixPoint() {
   if (context_->params().permute_presolve_constraint_order()) {
     std::shuffle(queue.begin(), queue.end(), context_->random());
   } else {
-    std::sort(queue.begin(), queue.end(), [this](int a, int b) {
-      const int score_a = context_->ConstraintToVars(a).size();
-      const int score_b = context_->ConstraintToVars(b).size();
-      return score_a < score_b || (score_a == score_b && a < b);
-    });
+    if (queue.size() > context_->NumVariables()) {
+      // We do a radix-sort if there are more constraints than variables, it can
+      // be way faster when there is a lot of constraints.
+      CompactVectorVectorBuilder<int, int> builder;
+      builder.ReserveNumItems(queue.size());
+      for (const int c : queue) {
+        builder.Add(context_->ConstraintToVars(c).size(), c);
+      }
+      CompactVectorVector<int, int> by_arity;
+      by_arity.ResetFromBuilder(builder);
+      queue.assign(by_arity.AllValuesSortedByKey().begin(),
+                   by_arity.AllValuesSortedByKey().end());
+    } else {
+      // Normal sort.
+      std::sort(queue.begin(), queue.end(), [this](int a, int b) {
+        const int score_a = context_->ConstraintToVars(a).size();
+        const int score_b = context_->ConstraintToVars(b).size();
+        return score_a < score_b || (score_a == score_b && a < b);
+      });
+    }
   }
 
   // We put a hard limit on the number of loop to prevent some corner case with
@@ -14585,6 +14608,11 @@ bool CpModelPresolver::CanonicalizeAllLinears() {
 // - Everything will be remapped so that only the variables appearing in some
 //   constraints will be kept and their index will be in [0, num_new_variables).
 CpSolverStatus CpModelPresolver::Presolve() {
+  // Initialize the initial context.working_model domains.
+  //
+  // Note that we did some basic presolving during the first copy of the model.
+  // This is important since initializing the constraint <-> variable graph can
+  // be costly, so better to remove trivially feasible constraint for instance.
   context_->InitializeNewDomains();
 
   if (context_->params().cp_model_pure_sat_presolve()) {
@@ -14641,7 +14669,7 @@ CpSolverStatus CpModelPresolver::Presolve() {
     const int old_size = postsolve_mapping_->size();
     ApplyVariableMapping(absl::MakeSpan(mapping),
                          context_->UnsafeMutableWorkingModel(),
-                         postsolve_mapping_);
+                         postsolve_mapping_, context_->solution_crush());
     CHECK_EQ(old_size, postsolve_mapping_->size());
     if (context_->lrat_proof_handler != nullptr) {
       context_->lrat_proof_handler->RemapBooleanVariables(
@@ -14677,6 +14705,11 @@ CpSolverStatus CpModelPresolver::Presolve() {
         context_->WorkingModel().objective();
   }
 
+  context_->InitializeNewDomains();
+  if (!context_->solution_crush().SolutionIsLoaded()) {
+    context_->LoadAndClampSolutionHint();
+  }
+
   // If there is a large proprotion of fixed variables, lets remap the model
   // before we start the actual presolve. This is useful for LNS in particular.
   //
@@ -14693,16 +14726,7 @@ CpSolverStatus CpModelPresolver::Presolve() {
     return InfeasibleStatus();
   }
 
-  // Initialize the initial context.working_model domains.
-  // Initialize the objective and the constraint <-> variable graph.
-  //
-  // Note that we did some basic presolving during the first copy of the model.
-  // This is important since initializing the constraint <-> variable graph can
-  // be costly, so better to remove trivially feasible constraint for instance.
   context_->InitializeNewDomains();
-  if (!context_->solution_crush().SolutionIsLoaded()) {
-    context_->LoadAndClampSolutionHint();
-  }
   context_->ReadObjectiveFromProto();
   if (!context_->CanonicalizeObjective()) return InfeasibleStatus();
 
@@ -15090,7 +15114,7 @@ CpSolverStatus CpModelPresolver::Presolve() {
   const int old_size = postsolve_mapping_->size();
   ApplyVariableMapping(absl::MakeSpan(mapping),
                        context_->UnsafeMutableWorkingModel(),
-                       postsolve_mapping_);
+                       postsolve_mapping_, context_->solution_crush());
   CHECK_EQ(old_size, postsolve_mapping_->size());
 
   // Compact all non-empty constraint at the beginning.
@@ -15150,7 +15174,8 @@ CpSolverStatus CpModelPresolver::LogAndValidatePresolvedModel() {
 }
 
 void ApplyVariableMapping(absl::Span<int> mapping, CpModelProto* cp_model,
-                          std::vector<int>* reverse_mapping) {
+                          std::vector<int>* reverse_mapping,
+                          SolutionCrush& solution_crush) {
   // Remap all the variable/literal references in the constraints and the
   // enforcement literals in the variables.
   const auto mapping_function = [&mapping, &reverse_mapping](int* ref) {
@@ -15253,30 +15278,8 @@ void ApplyVariableMapping(absl::Span<int> mapping, CpModelProto* cp_model,
   }
 
   // Remap the solution hint.
-  if (cp_model->has_solution_hint()) {
-    auto* mutable_hint = cp_model->mutable_solution_hint();
-
-    // Note that after remapping, we may have duplicate variables. For instance,
-    // identical constant variables are mapped to a single one. So we make sure
-    // we don't output duplicates here and just keep the first occurrence.
-    absl::flat_hash_set<int> hinted_images;
-
-    int new_size = 0;
-    const int old_size = mutable_hint->vars().size();
-    for (int i = 0; i < old_size; ++i) {
-      const int hinted_var = mutable_hint->vars(i);
-      const int64_t hinted_value = mutable_hint->values(i);
-      const int image = mapping[hinted_var];
-      if (image >= 0) {
-        if (!hinted_images.insert(image).second) continue;
-        mutable_hint->set_vars(new_size, image);
-        mutable_hint->set_values(new_size, hinted_value);
-        ++new_size;
-      }
-    }
-    mutable_hint->mutable_vars()->Truncate(new_size);
-    mutable_hint->mutable_values()->Truncate(new_size);
-  }
+  solution_crush.RemapVariables(mapping);
+  solution_crush.StoreSolutionAsHint(*cp_model);
 
   // Move the variable definitions.
   google::protobuf::RepeatedPtrField<IntegerVariableProto>
@@ -15359,8 +15362,8 @@ bool CpModelPresolver::MaybeRemoveFixedVariables(
   // Note that this might re-add fixed variable that are still used.
   const int old_size = postsolve_mapping->size();
   ApplyVariableMapping(absl::MakeSpan(mapping),
-                       context_->UnsafeMutableWorkingModel(),
-                       postsolve_mapping);
+                       context_->UnsafeMutableWorkingModel(), postsolve_mapping,
+                       context_->solution_crush());
   if (postsolve_mapping->size() > old_size) {
     const int new_extra = postsolve_mapping->size() - old_size;
     SOLVER_LOG(logger_, "TODO: ", new_extra,

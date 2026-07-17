@@ -14,18 +14,21 @@
 #ifndef ORTOOLS_SAT_LINEAR_RELAXATION_H_
 #define ORTOOLS_SAT_LINEAR_RELAXATION_H_
 
+#include <cstdint>
 #include <optional>
+#include <tuple>
 #include <vector>
 
+#include "absl/container/flat_hash_set.h"
 #include "absl/types/span.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cuts.h"
 #include "ortools/sat/integer_base.h"
-#include "ortools/sat/intervals.h"
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/presolve_util.h"
 #include "ortools/sat/sat_base.h"
+#include "ortools/sat/scheduling_helpers.h"
 
 namespace operations_research {
 namespace sat {
@@ -35,8 +38,14 @@ struct LinearRelaxation {
   std::vector<std::vector<Literal>> at_most_ones;
   std::vector<CutGenerator> cut_generators;
 
+  // Stores the set of implied values that have been used in an element encoding
+  // to avoid adding them multiple times.
+  absl::flat_hash_set<std::tuple<Literal, IntegerVariable, IntegerValue>>
+      already_relaxed_implied_values;
+
   struct Counters {
     int64_t num_tighter_multi_enforced_linear1 = 0;
+    int64_t num_skipped_linear1 = 0;
   };
   Counters counters;
 };

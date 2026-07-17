@@ -116,6 +116,7 @@ class TaskSet {
   int GetCriticalIndex() const { return optimized_restart_; }
 
   absl::Span<const Entry> SortedTasks() const { return sorted_tasks_; }
+  int NumEntries() const { return sorted_tasks_.size(); }
 
  private:
   FixedCapacityVector<Entry>& sorted_tasks_;
@@ -188,7 +189,6 @@ class DisjunctiveOverloadChecker : public PropagatorInterface {
   }
 
   bool Propagate() final;
-  int RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
   bool PropagateSubwindow(absl::Span<TaskTime> sub_window,
@@ -220,8 +220,8 @@ class DisjunctiveSimplePrecedences : public PropagatorInterface {
       : time_direction_(time_direction),
         helper_(helper),
         stats_("DisjunctiveSimplePrecedences", model) {}
+
   bool Propagate() final;
-  int RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
   bool Push(TaskTime before, int t);
@@ -242,8 +242,8 @@ class DisjunctiveDetectablePrecedences : public PropagatorInterface {
     ranks_.resize(helper->NumTasks());
     to_add_.ClearAndReserve(helper->NumTasks());
   }
+
   bool Propagate() final;
-  int RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
   bool PropagateWithRanks();
@@ -289,13 +289,15 @@ class DisjunctiveNotLast : public PropagatorInterface {
       : time_direction_(time_direction),
         helper_(helper),
         stats_("DisjunctiveNotLast", model) {}
+
   bool Propagate() final;
-  int RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
   bool PropagateSubwindow(TaskSet& task_set,
-                          absl::Span<TaskTime> task_by_increasing_start_max,
+                          absl::Span<TaskTime> task_by_increasing_shifted_smin,
                           absl::Span<TaskTime> task_by_increasing_end_max);
+  bool Push(const TaskSet& task_set, int t, int critical_index,
+            IntegerValue end_min_of_critical_tasks);
 
   const bool time_direction_;
   SchedulingConstraintHelper* helper_;
@@ -312,8 +314,8 @@ class DisjunctiveEdgeFinding : public PropagatorInterface {
         stats_("DisjunctiveEdgeFinding", model) {
     event_size_.ClearAndReserve(helper->NumTasks());
   }
+
   bool Propagate() final;
-  int RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
   bool PropagateSubwindow(
@@ -353,7 +355,6 @@ class DisjunctivePrecedences : public PropagatorInterface {
   }
 
   bool Propagate() final;
-  int RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
   bool PropagateSubwindow(absl::Span<TaskTime> window);
@@ -382,8 +383,8 @@ class DisjunctiveWithTwoItems : public PropagatorInterface {
  public:
   explicit DisjunctiveWithTwoItems(SchedulingConstraintHelper* helper)
       : helper_(helper) {}
+
   bool Propagate() final;
-  int RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
   SchedulingConstraintHelper* helper_;

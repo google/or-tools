@@ -756,7 +756,7 @@ void SharedResponseManager::FillObjectiveValuesInResponse(
 
   // Update the best bound in the response.
   response->set_inner_objective_lower_bound(
-      ScaleInnerObjectiveValue(obj, inner_objective_lower_bound_));
+      PostsolveInnerObjectiveValue(obj, inner_objective_lower_bound_));
   response->set_best_objective_bound(
       ScaleObjectiveValue(obj, inner_objective_lower_bound_));
 
@@ -767,7 +767,8 @@ void SharedResponseManager::FillObjectiveValuesInResponse(
 std::shared_ptr<const SharedSolutionRepository<int64_t>::Solution>
 SharedResponseManager::NewSolution(absl::Span<const int64_t> solution_values,
                                    absl::string_view solution_info,
-                                   Model* model, int source_id) {
+                                   Model* model, int source_id,
+                                   bool with_callbacks) {
   absl::MutexLock mutex_lock(mutex_);
   std::shared_ptr<const SharedSolutionRepository<int64_t>::Solution> ret;
 
@@ -830,6 +831,12 @@ SharedResponseManager::NewSolution(absl::Span<const int64_t> solution_values,
     UpdateBestStatus(CpSolverStatus::OPTIMAL);
   }
 
+  TestGapLimitsIfNeeded();
+
+  if (!with_callbacks) {
+    return ret;
+  }
+
   // Logging.
   ++num_solutions_;
 
@@ -872,8 +879,7 @@ SharedResponseManager::NewSolution(absl::Span<const int64_t> solution_values,
   }
 
   // Call callbacks.
-  // Note that we cannot call function that try to get the mutex_ here.
-  TestGapLimitsIfNeeded();
+  // Note that we cannot call functions that try to get the mutex_ here.
   for (const auto& pair : callbacks_) {
     pair.second(tmp_postsolved_response);
   }
@@ -1189,6 +1195,13 @@ void SharedBoundsManager::UpdateDomains(std::vector<Domain>* domains) {
     (*domains)[var] = (*domains)[var].IntersectionWith(Domain(
         synchronized_lower_bounds_[var], synchronized_upper_bounds_[var]));
   }
+}
+
+void SharedBoundsManager::GetAllBounds(std::vector<int64_t>* lower_bounds,
+                                       std::vector<int64_t>* upper_bounds) {
+  absl::MutexLock mutex_lock(mutex_);
+  *lower_bounds = synchronized_lower_bounds_;
+  *upper_bounds = synchronized_upper_bounds_;
 }
 
 void SharedBoundsManager::LogStatistics(SolverLogger* logger) {

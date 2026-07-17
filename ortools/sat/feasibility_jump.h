@@ -34,6 +34,7 @@
 #include "absl/types/span.h"
 #include "ortools/base/types.h"
 #include "ortools/sat/constraint_violation.h"
+#include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_copy.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/restart.h"

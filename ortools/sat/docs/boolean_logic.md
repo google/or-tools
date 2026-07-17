@@ -48,6 +48,7 @@ literal_sample_sat()
 #include "ortools/base/log_severity.h"
 #include "absl/log/check.h"
 #include "absl/log/globals.h"
+#include "absl/log/log.h"
 #include "ortools/sat/cp_model.h"
 
 namespace operations_research {

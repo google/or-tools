@@ -42,6 +42,7 @@
 #include "ortools/sat/sat_inprocessing.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
 
@@ -260,6 +261,10 @@ bool LinearizedPartIsLarge(Model* model);
 
 // A restart policy that restarts every k failures.
 std::function<bool()> RestartEveryKFailures(int k, SatSolver* solver);
+
+// A restart policy that restarts after a fixed deterministic time.
+std::function<bool()> RestartAfterDeterministicTime(double deterministic_time,
+                                                    TimeLimit* time_limit);
 
 // A restart policy that uses the underlying sat solver's policy.
 std::function<bool()> SatSolverRestartPolicy(Model* model);

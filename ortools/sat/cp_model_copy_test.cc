@@ -13,17 +13,13 @@
 
 #include "ortools/sat/cp_model_copy.h"
 
-#include <algorithm>
-
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/parse_test_proto.h"
 #include "ortools/base/protobuf_util.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/model.h"
-#include "ortools/sat/presolve_context.h"
 #include "ortools/sat/sat_parameters.pb.h"
 
 namespace operations_research {

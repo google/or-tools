@@ -137,6 +137,10 @@ class SharedTreeEncoder {
     Node(SharedTreeEncoder* encoder, NodeId id, ProtoLiteral decision,
          std::optional<Literal> decoded_decision, Node* parent);
 
+    // Returns the lower bound of a variable implied at this node, or
+    // kMinIntegerValue if the lower bound of `var` is not implied at this node.
+    IntegerValue GetImpliedLowerBoundForVar(int var) const;
+
     const SharedTreeNode& shared() const { return shared_; }
     Literal decoded_decision() const { return decoded_decision_; }
     Node* parent() const { return parent_node_; }
@@ -215,6 +219,8 @@ class SharedTreeEncoder {
     Node* sibling_node_ = nullptr;
     mutable Node* level_start_ = nullptr;
     std::array<Node*, 2> children_ = {nullptr, nullptr};
+    // Stores the list of variables with a new bound since the last sync.
+    absl::flat_hash_set<int> vars_with_new_bound_;
   };
 
   explicit SharedTreeEncoder(LratProofHandler* lrat_proof_handler,
@@ -245,9 +251,9 @@ class SharedTreeEncoder {
   // If LRAT is enabled, and any new implications are added to `node`, the
   // encoder will import a clause with the same literals as
   // `importable_reason_clauses[implied]`.
-  void ImportNode(const SharedTreeNode& node,
-                  const absl::flat_hash_map<Literal, ClausePtr>&
-                      importable_reason_clauses = {});
+  Node* ImportNode(const SharedTreeNode& node,
+                   const absl::flat_hash_map<Literal, ClausePtr>&
+                       importable_reason_clauses = {});
 
   // Convenience function to add children to `parent`.
   void SplitNode(NodeId parent, ProtoLiteral decision, NodeId first_child);
@@ -312,6 +318,13 @@ class SharedTreeEncoder {
   void UpdateNode(
       const SharedTreeNode& other,
       const absl::flat_hash_map<Literal, ClausePtr>& importable_reason_clauses);
+
+  // Resolves variable bounds on the path from the root to `leaf` that have been
+  // updated since the last sync.
+  // Resolving a variable bound ensures that the parent node has a lower bound
+  // for that variable no less than the lower bound of the variable in each
+  // child node.
+  void ResolveBoundsOnPath(Node* leaf);
 
   // Sets tmp_proof_ to the sequence of clauses needed to propagate the
   // decisions of all implied nodes on the path from the root to `node`.

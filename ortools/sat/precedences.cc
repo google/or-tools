@@ -1579,16 +1579,15 @@ void Linear2Bounds::AddReasonForUpperBoundLowerThan(
     LinearExpression2 expr, IntegerValue ub,
     std::vector<Literal>* literal_reason,
     std::vector<IntegerLiteral>* integer_reason) const {
-  DCHECK_LE(UpperBound(expr), ub);
-
-  // Explanation are by order of preference, with no reason needed first.
-  if (integer_trail_->LevelZeroUpperBound(expr) <= ub) {
-    return;
-  }
   expr.SimpleCanonicalization();
   const IntegerValue gcd = expr.DivideByGcd();
   ub = FloorRatio(ub, gcd);
+  DCHECK_LE(UpperBound(expr), ub);
+
+  // Explanation are by order of preference, with no reason needed first.
+  if (integer_trail_->LevelZeroUpperBound(expr) <= ub) return;
   const LinearExpression2Index index = lin2_indices_->GetIndex(expr);
+
   if (index != kNoLinearExpression2Index) {
     // No reason.
     if (root_level_bounds_->GetUpperBoundNoTrail(index) <= ub) {

@@ -117,6 +117,9 @@ class CompactVectorVector {
   absl::Span<const V> operator[](K key) const;
   std::vector<absl::Span<const V>> AsVectorOfSpan() const;
 
+  // Special accessor when CompactVectorVector is used as a radix sort :)
+  absl::Span<const V> AllValuesSortedByKey() const { return buffer_; }
+
   // Restore to empty vector<vector<>>.
   void clear();
 

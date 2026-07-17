@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <cstdlib>
 #include <memory>
 #include <optional>
 #ifdef CHECK_CRUSH
@@ -57,7 +58,19 @@ void SolutionCrush::LoadSolution(
   }
 }
 
+void SolutionCrush::LoadSolution(absl::Span<const int64_t> solution) {
+  CHECK(!solution_is_loaded_);
+  CHECK(var_has_value_.empty());
+  CHECK(var_values_.empty());
+  solution_is_loaded_ = true;
+  var_has_value_.assign(solution.size(), true);
+  var_values_.assign(solution.begin(), solution.end());
+}
+
 void SolutionCrush::Resize(int new_size) {
+  if (proto_ != nullptr) {
+    proto_->add_steps()->mutable_resize()->set_new_size(new_size);
+  }
   if (!solution_is_loaded_) return;
   var_has_value_.resize(new_size, false);
   var_values_.resize(new_size, 0);
@@ -65,26 +78,51 @@ void SolutionCrush::Resize(int new_size) {
 
 void SolutionCrush::MaybeSetLiteralToValueEncoding(int literal, int var,
                                                    int64_t value) {
-  DCHECK(RefIsPositive(var));
-  if (!solution_is_loaded_) return;
-  if (!HasValue(PositiveRef(literal)) && HasValue(var)) {
-    SetLiteralValue(literal, GetVarValue(var) == value);
-  }
+  MaybeSetLiteralToOrderEncoding(literal, var, value, Relation::EQ);
 }
 
 void SolutionCrush::MaybeSetLiteralToOrderEncoding(int literal, int var,
-                                                   int64_t value, bool is_le) {
+                                                   int64_t value,
+                                                   Relation relation) {
   DCHECK(RefIsPositive(var));
+  if (proto_ != nullptr) {
+    auto* step =
+        proto_->add_steps()->mutable_maybe_set_literal_to_order_encoding();
+    step->set_literal(literal);
+    step->set_var(var);
+    step->set_value(value);
+    step->set_relation(
+        relation == Relation::LE
+            ? MaybeSetLiteralToOrderEncoding::LESS_THAN_OR_EQUAL
+        : relation == Relation::EQ
+            ? MaybeSetLiteralToOrderEncoding::EQUAL
+            : MaybeSetLiteralToOrderEncoding::GREATER_THAN_OR_EQUAL);
+  }
   if (!solution_is_loaded_) return;
   if (!HasValue(PositiveRef(literal)) && HasValue(var)) {
-    SetLiteralValue(
-        literal, is_le ? GetVarValue(var) <= value : GetVarValue(var) >= value);
+    if (relation == Relation::LE) {
+      SetLiteralValue(literal, GetVarValue(var) <= value);
+    } else if (relation == Relation::EQ) {
+      SetLiteralValue(literal, GetVarValue(var) == value);
+    } else {
+      SetLiteralValue(literal, GetVarValue(var) >= value);
+    }
   }
 }
 
 void SolutionCrush::SetVarToLinearExpression(
     int new_var, absl::Span<const std::pair<int, int64_t>> linear,
     int64_t offset) {
+  if (proto_ != nullptr) {
+    auto* step = proto_->add_steps()->mutable_set_var_to_linear_expression_if();
+    step->set_var(new_var);
+    LinearExpressionProto* expr = step->mutable_expr();
+    for (const auto [var, coeff] : linear) {
+      expr->add_vars(var);
+      expr->add_coeffs(coeff);
+    }
+    expr->set_offset(offset);
+  }
   if (!solution_is_loaded_) return;
   int64_t new_value = offset;
   for (const auto [var, coeff] : linear) {
@@ -99,6 +137,16 @@ void SolutionCrush::SetVarToLinearExpression(int new_var,
                                              absl::Span<const int64_t> coeffs,
                                              int64_t offset) {
   DCHECK_EQ(vars.size(), coeffs.size());
+  if (proto_ != nullptr) {
+    auto* step = proto_->add_steps()->mutable_set_var_to_linear_expression_if();
+    step->set_var(new_var);
+    LinearExpressionProto* expr = step->mutable_expr();
+    for (int i = 0; i < vars.size(); ++i) {
+      expr->add_vars(vars[i]);
+      expr->add_coeffs(coeffs[i]);
+    }
+    expr->set_offset(offset);
+  }
   if (!solution_is_loaded_) return;
   int64_t new_value = offset;
   for (int i = 0; i < vars.size(); ++i) {
@@ -111,6 +159,13 @@ void SolutionCrush::SetVarToLinearExpression(int new_var,
 }
 
 void SolutionCrush::SetVarToClause(int new_var, absl::Span<const int> clause) {
+  if (proto_ != nullptr) {
+    auto* step = proto_->add_steps()->mutable_set_var_to_clause();
+    step->set_var(new_var);
+    for (const int literal : clause) {
+      step->add_clause(literal);
+    }
+  }
   if (!solution_is_loaded_) return;
   int new_value = 0;
   bool all_have_value = true;
@@ -133,6 +188,13 @@ void SolutionCrush::SetVarToClause(int new_var, absl::Span<const int> clause) {
 
 void SolutionCrush::SetVarToConjunction(int new_var,
                                         absl::Span<const int> conjunction) {
+  if (proto_ != nullptr) {
+    auto* step = proto_->add_steps()->mutable_set_var_to_conjunction();
+    step->set_var(new_var);
+    for (const int literal : conjunction) {
+      step->add_conjunction(literal);
+    }
+  }
   if (!solution_is_loaded_) return;
   int new_value = 1;
   bool all_have_value = true;
@@ -156,6 +218,18 @@ void SolutionCrush::SetVarToConjunction(int new_var,
 void SolutionCrush::SetVarToValueIfLinearConstraintViolated(
     int new_var, int64_t value,
     absl::Span<const std::pair<int, int64_t>> linear, const Domain& domain) {
+  if (proto_ != nullptr) {
+    auto* step = proto_->add_steps()
+                     ->mutable_set_var_to_value_if_linear_constraint_violated();
+    step->set_var(new_var);
+    step->set_value(value);
+    LinearConstraintProto* constraint = step->mutable_linear_constraint();
+    for (const auto [var, coeff] : linear) {
+      constraint->add_vars(var);
+      constraint->add_coeffs(coeff);
+    }
+    FillDomainInProto(domain, constraint);
+  }
   if (!solution_is_loaded_) return;
   int64_t linear_value = 0;
   bool all_have_value = true;
@@ -186,10 +260,20 @@ void SolutionCrush::SetVarToValueIf(int var, int64_t value, int condition_lit) {
 }
 
 void SolutionCrush::SetVarToLinearExpressionIf(
-    int var, const LinearExpressionProto& expr, int condition_lit) {
+    int var, const LinearExpressionProto& expr,
+    absl::Span<const int> condition_lits) {
+  if (proto_ != nullptr) {
+    auto* step = proto_->add_steps()->mutable_set_var_to_linear_expression_if();
+    step->set_var(var);
+    *step->mutable_expr() = expr;
+    step->mutable_condition_lits()->Add(condition_lits.begin(),
+                                        condition_lits.end());
+  }
   if (!solution_is_loaded_) return;
-  if (!HasValue(PositiveRef(condition_lit))) return;
-  if (!GetLiteralValue(condition_lit)) return;
+  for (const int condition_lit : condition_lits) {
+    if (!HasValue(PositiveRef(condition_lit))) return;
+    if (!GetLiteralValue(condition_lit)) return;
+  }
   const std::optional<int64_t> expr_value = GetExpressionValue(expr);
   if (expr_value.has_value()) {
     SetVarValue(var, expr_value.value());
@@ -206,6 +290,15 @@ void SolutionCrush::SetLiteralToValueIf(int literal, bool value,
 void SolutionCrush::SetVarToConditionalValue(
     int var, absl::Span<const int> condition_lits, int64_t value_if_true,
     int64_t value_if_false) {
+  if (proto_ != nullptr) {
+    auto* step = proto_->add_steps()->mutable_set_var_to_conditional_value();
+    step->set_var(var);
+    for (const int condition_lit : condition_lits) {
+      step->add_condition_lits(condition_lit);
+    }
+    step->set_value_if_true(value_if_true);
+    step->set_value_if_false(value_if_false);
+  }
   if (!solution_is_loaded_) return;
   bool condition_value = true;
   for (const int condition_lit : condition_lits) {
@@ -219,6 +312,11 @@ void SolutionCrush::SetVarToConditionalValue(
 }
 
 void SolutionCrush::MakeLiteralsEqual(int lit1, int lit2) {
+  if (proto_ != nullptr) {
+    auto* step = proto_->add_steps()->mutable_make_literals_equal();
+    step->set_lit1(lit1);
+    step->set_lit2(lit2);
+  }
   if (!solution_is_loaded_) return;
   if (HasValue(PositiveRef(lit2))) {
     SetLiteralValue(lit1, GetLiteralValue(lit2));
@@ -228,6 +326,11 @@ void SolutionCrush::MakeLiteralsEqual(int lit1, int lit2) {
 }
 
 void SolutionCrush::SetOrUpdateVarToDomain(int var, const Domain& domain) {
+  if (proto_ != nullptr) {
+    auto* step = proto_->add_steps()->mutable_set_or_update_var_to_domain();
+    step->set_var(var);
+    FillDomainInProto(domain, step);
+  }
   if (!solution_is_loaded_) return;
   if (HasValue(var)) {
     SetVarValue(var, domain.ClosestValue(GetVarValue(var)));
@@ -241,6 +344,20 @@ void SolutionCrush::SetOrUpdateVarToDomainWithOptionalEscapeValue(
     std::optional<int64_t> unique_escape_value,
     bool push_down_when_not_in_domain,
     const absl::btree_map<int64_t, int>& encoding) {
+  if (proto_ != nullptr) {
+    auto* step =
+        proto_->add_steps()
+            ->mutable_set_or_update_var_to_domain_with_optional_escape_value();
+    step->set_var(var);
+    FillDomainInProto(reduced_var_domain, step);
+    if (unique_escape_value.has_value()) {
+      step->set_unique_escape_value(unique_escape_value.value());
+    }
+    step->set_push_down_when_not_in_domain(push_down_when_not_in_domain);
+    for (const auto [value, literal] : encoding) {
+      step->mutable_encoding()->insert({value, literal});
+    }
+  }
   if (!solution_is_loaded_) return;
   if (HasValue(var)) {
     const int64_t old_value = GetVarValue(var);
@@ -280,6 +397,11 @@ void SolutionCrush::UpdateLiteralsToFalseIfDifferent(int lit1, int lit2) {
 }
 
 void SolutionCrush::UpdateLiteralsWithDominance(int lit, int dominating_lit) {
+  if (proto_ != nullptr) {
+    auto* step = proto_->add_steps()->mutable_update_literals_with_dominance();
+    step->set_lit(lit);
+    step->set_dominating_lit(dominating_lit);
+  }
   if (!solution_is_loaded_) return;
   if (!HasValue(PositiveRef(lit)) || !HasValue(PositiveRef(dominating_lit))) {
     return;
@@ -293,6 +415,21 @@ void SolutionCrush::UpdateLiteralsWithDominance(int lit, int dominating_lit) {
 void SolutionCrush::MaybeUpdateVarWithSymmetriesToValue(
     int var, bool value,
     absl::Span<const std::unique_ptr<SparsePermutation>> generators) {
+  if (proto_ != nullptr) {
+    auto* step = proto_->add_steps()
+                     ->mutable_maybe_update_var_with_symmetries_to_value();
+    step->set_var(var);
+    step->set_value(value);
+    for (const auto& generator : generators) {
+      auto* gen_proto = step->add_generators();
+      for (int i = 0; i < generator->NumCycles(); ++i) {
+        for (const int var : generator->Cycle(i)) {
+          gen_proto->add_support(var);
+        }
+        gen_proto->add_cycle_sizes(generator->Cycle(i).size());
+      }
+    }
+  }
   if (!solution_is_loaded_) return;
   if (!HasValue(var)) return;
   if (GetVarValue(var) == static_cast<int64_t>(value)) return;
@@ -328,6 +465,18 @@ void SolutionCrush::MaybeUpdateVarWithSymmetriesToValue(
 void SolutionCrush::MaybeSwapOrbitopeColumns(
     absl::Span<const std::vector<int>> orbitope, int row, int pivot_col,
     bool value) {
+  if (proto_ != nullptr) {
+    auto* step = proto_->add_steps()->mutable_maybe_swap_orbitope_columns();
+    for (const auto& row : orbitope) {
+      auto* orbitope_row = step->add_orbitope_rows();
+      for (const int literal : row) {
+        orbitope_row->add_literals(literal);
+      }
+    }
+    step->set_row(row);
+    step->set_pivot_col(pivot_col);
+    step->set_value(value);
+  }
   if (!solution_is_loaded_) return;
   int col = -1;
   for (int c = 0; c < orbitope[row].size(); ++c) {
@@ -350,18 +499,67 @@ void SolutionCrush::MaybeSwapOrbitopeColumns(
     if (!HasValue(PositiveRef(orbitope[i][pivot_col]))) return;
   }
   for (int i = 0; i < orbitope.size(); ++i) {
-    const int src_lit = orbitope[i][col];
-    const int dst_lit = orbitope[i][pivot_col];
-    const bool src_value = GetLiteralValue(src_lit);
-    const bool dst_value = GetLiteralValue(dst_lit);
-    SetLiteralValue(src_lit, dst_value);
-    SetLiteralValue(dst_lit, src_value);
+    const int src_var = orbitope[i][col];
+    const int dst_var = orbitope[i][pivot_col];
+    const int64_t src_value = GetVarValue(src_var);
+    const int64_t dst_value = GetVarValue(dst_var);
+    SetVarValue(src_var, dst_value);
+    SetVarValue(dst_var, src_value);
+  }
+}
+
+void SolutionCrush::SortOrbitopeColumns(
+    absl::Span<const std::vector<int>> orbitope, int row) {
+  if (proto_ != nullptr) {
+    auto* step = proto_->add_steps()->mutable_sort_orbitope_columns();
+    for (const auto& row : orbitope) {
+      auto* orbitope_row = step->add_orbitope_rows();
+      for (const int literal : row) {
+        orbitope_row->add_literals(literal);
+      }
+    }
+    step->set_row(row);
+  }
+  if (!solution_is_loaded_) return;
+
+  // Collect the value and original column of each variable in `row`.
+  std::vector<std::pair<int64_t, int>> var_value_and_column;
+  for (int col = 0; col < orbitope[row].size(); ++col) {
+    const int var = orbitope[row][col];
+    if (!HasValue(var)) return;
+    var_value_and_column.push_back({GetVarValue(var), col});
+  }
+  std::sort(var_value_and_column.begin(), var_value_and_column.end());
+
+  // Permute the columns of the orbitope according to the sorted columns.
+  std::vector<int64_t> values(orbitope[0].size());
+  for (int i = 0; i < orbitope.size(); ++i) {
+    for (int j = 0; j < orbitope[i].size(); ++j) {
+      values[j] = GetVarValue(orbitope[i][j]);
+    }
+    for (int j = 0; j < orbitope[i].size(); ++j) {
+      SetVarValue(orbitope[i][j], values[var_value_and_column[j].second]);
+    }
   }
 }
 
 void SolutionCrush::UpdateRefsWithDominance(
     int ref, int64_t min_value, int64_t max_value,
     absl::Span<const std::pair<int, Domain>> dominating_refs) {
+  if (proto_ != nullptr) {
+    auto* step = proto_->add_steps()->mutable_update_terms_with_dominance();
+    step->set_var(PositiveRef(ref));
+    step->set_coeff(RefIsPositive(ref) ? 1 : -1);
+    step->set_min_value(min_value);
+    step->set_max_value(max_value);
+    for (const auto& [dominating_ref, dominating_ref_domain] :
+         dominating_refs) {
+      auto* dominating_term_proto = step->add_dominating_terms();
+      dominating_term_proto->set_var(PositiveRef(dominating_ref));
+      dominating_term_proto->set_coeff(RefIsPositive(dominating_ref) ? 1 : -1);
+      FillDomainInProto(dominating_ref_domain, dominating_term_proto);
+    }
+  }
   if (!solution_is_loaded_) return;
   const std::optional<int64_t> ref_value = GetRefValue(ref);
   if (!ref_value.has_value()) return;
@@ -396,6 +594,18 @@ void SolutionCrush::SetVarToLinearConstraintSolution(
     absl::Span<const int64_t> coeffs, int64_t rhs) {
   DCHECK_EQ(vars.size(), coeffs.size());
   DCHECK(!var_index.has_value() || var_index.value() < vars.size());
+  if (proto_ != nullptr) {
+    auto* step =
+        proto_->add_steps()->mutable_set_var_to_linear_constraint_solution();
+    step->mutable_enforcement_lits()->Add(enforcement_lits.begin(),
+                                          enforcement_lits.end());
+    if (var_index.has_value()) step->set_var_index(var_index.value());
+    step->mutable_vars()->Add(vars.begin(), vars.end());
+    step->mutable_default_values()->Add(default_values.begin(),
+                                        default_values.end());
+    step->mutable_coeffs()->Add(coeffs.begin(), coeffs.end());
+    step->set_rhs(rhs);
+  }
   if (!solution_is_loaded_) return;
   bool constraint_is_enforced = true;
   for (const int lit : enforcement_lits) {
@@ -443,6 +653,14 @@ void SolutionCrush::SetReservoirCircuitVars(
     const ReservoirConstraintProto& reservoir, int64_t min_level,
     int64_t max_level, absl::Span<const int> level_vars,
     const CircuitConstraintProto& circuit) {
+  if (proto_ != nullptr) {
+    auto* step = proto_->add_steps()->mutable_set_reservoir_circuit_vars();
+    *step->mutable_reservoir() = reservoir;
+    step->set_min_level(min_level);
+    step->set_max_level(max_level);
+    step->mutable_level_vars()->Add(level_vars.begin(), level_vars.end());
+    *step->mutable_circuit() = circuit;
+  }
   if (!solution_is_loaded_) return;
   // The values of the active events, in the order they should appear in the
   // circuit. The values are collected first, and sorted later.
@@ -538,6 +756,15 @@ void SolutionCrush::SetReservoirCircuitVars(
 void SolutionCrush::SetVarToReifiedPrecedenceLiteral(
     int var, const LinearExpressionProto& time_i,
     const LinearExpressionProto& time_j, int active_i, int active_j) {
+  if (proto_ != nullptr) {
+    auto* step =
+        proto_->add_steps()->mutable_set_var_to_reified_precedence_literal();
+    step->set_var(var);
+    *step->mutable_time_i() = time_i;
+    *step->mutable_time_j() = time_j;
+    step->set_active_i(active_i);
+    step->set_active_j(active_j);
+  }
   if (!solution_is_loaded_) return;
   std::optional<int64_t> time_i_value = GetExpressionValue(time_i);
   std::optional<int64_t> time_j_value = GetExpressionValue(time_j);
@@ -556,6 +783,14 @@ void SolutionCrush::SetIntModExpandedVars(const ConstraintProto& ct,
                                           int div_var, int prod_var,
                                           int64_t default_div_value,
                                           int64_t default_prod_value) {
+  if (proto_ != nullptr) {
+    auto* step = proto_->add_steps()->mutable_set_int_mod_expanded_vars();
+    *step->mutable_ct() = ct;
+    step->set_div_var(div_var);
+    step->set_prod_var(prod_var);
+    step->set_default_div_value(default_div_value);
+    step->set_default_prod_value(default_prod_value);
+  }
   if (!solution_is_loaded_) return;
   bool constraint_is_enforced = true;
   for (const int lit : ct.enforcement_literal()) {
@@ -588,6 +823,11 @@ void SolutionCrush::SetIntModExpandedVars(const ConstraintProto& ct,
 void SolutionCrush::SetIntProdExpandedVars(const LinearArgumentProto& int_prod,
                                            absl::Span<const int> prod_vars) {
   DCHECK_EQ(int_prod.exprs_size(), prod_vars.size() + 2);
+  if (proto_ != nullptr) {
+    auto* step = proto_->add_steps()->mutable_set_int_prod_expanded_vars();
+    *step->mutable_int_prod() = int_prod;
+    step->mutable_prod_vars()->Add(prod_vars.begin(), prod_vars.end());
+  }
   if (!solution_is_loaded_) return;
   std::optional<int64_t> v = GetExpressionValue(int_prod.exprs(0));
   if (!v.has_value()) return;
@@ -603,8 +843,14 @@ void SolutionCrush::SetIntProdExpandedVars(const LinearArgumentProto& int_prod,
 void SolutionCrush::SetLinMaxExpandedVars(
     const LinearArgumentProto& lin_max,
     absl::Span<const int> enforcement_lits) {
-  if (!solution_is_loaded_) return;
   DCHECK_EQ(enforcement_lits.size(), lin_max.exprs_size());
+  if (proto_ != nullptr) {
+    auto* step = proto_->add_steps()->mutable_set_lin_max_expanded_vars();
+    *step->mutable_lin_max() = lin_max;
+    step->mutable_enforcement_lits()->Add(enforcement_lits.begin(),
+                                          enforcement_lits.end());
+  }
+  if (!solution_is_loaded_) return;
   const std::optional<int64_t> target_value =
       GetExpressionValue(lin_max.target());
   if (!target_value.has_value()) return;
@@ -627,6 +873,24 @@ void SolutionCrush::SetAutomatonExpandedVars(
     const AutomatonConstraintProto& automaton,
     absl::Span<const StateVar> state_vars,
     absl::Span<const TransitionVar> transition_vars) {
+  if (proto_ != nullptr) {
+    auto* step = proto_->add_steps()->mutable_set_automaton_expanded_vars();
+    *step->mutable_automaton() = automaton;
+    for (const auto& [var, time, state] : state_vars) {
+      auto* state_var = step->add_state_vars();
+      state_var->set_var(var);
+      state_var->set_time(time);
+      state_var->set_state(state);
+    }
+    for (const auto& [var, time, transition_tail, transition_label] :
+         transition_vars) {
+      auto* transition_var = step->add_transition_vars();
+      transition_var->set_var(var);
+      transition_var->set_time(time);
+      transition_var->set_transition_tail(transition_tail);
+      transition_var->set_transition_label(transition_label);
+    }
+  }
   if (!solution_is_loaded_) return;
   absl::flat_hash_map<std::pair<int64_t, int64_t>, int64_t> transitions;
   for (int i = 0; i < automaton.transition_tail_size(); ++i) {
@@ -663,6 +927,22 @@ void SolutionCrush::SetAutomatonExpandedVars(
 void SolutionCrush::SetTableExpandedVars(
     absl::Span<const int> column_vars, absl::Span<const int> existing_row_lits,
     absl::Span<const TableRowLiteral> new_row_lits) {
+  if (proto_ != nullptr) {
+    auto* step = proto_->add_steps()->mutable_set_table_expanded_vars();
+    step->mutable_column_vars()->Add(column_vars.begin(), column_vars.end());
+    step->mutable_existing_row_lits()->Add(existing_row_lits.begin(),
+                                           existing_row_lits.end());
+    for (const auto& row_lit : new_row_lits) {
+      auto* new_row_lit = step->add_new_row_lits();
+      new_row_lit->set_lit(row_lit.lit);
+      for (int i = 0; i < row_lit.var_values.size(); ++i) {
+        for (const int64_t val : row_lit.var_values[i]) {
+          new_row_lit->add_vars(i);
+          new_row_lit->add_values(val);
+        }
+      }
+    }
+  }
   if (!solution_is_loaded_) return;
   int row_lit_values_sum = 0;
   for (const int lit : existing_row_lits) {
@@ -692,6 +972,12 @@ void SolutionCrush::SetTableExpandedVars(
 
 void SolutionCrush::SetLinearWithComplexDomainExpandedVars(
     const LinearConstraintProto& linear, absl::Span<const int> bucket_lits) {
+  if (proto_ != nullptr) {
+    auto* step = proto_->add_steps()
+                     ->mutable_set_linear_with_complex_domain_expanded_vars();
+    *step->mutable_linear() = linear;
+    step->mutable_bucket_lits()->Add(bucket_lits.begin(), bucket_lits.end());
+  }
   if (!solution_is_loaded_) return;
   int64_t expr_value = 0;
   for (int i = 0; i < linear.vars_size(); ++i) {
@@ -707,27 +993,35 @@ void SolutionCrush::SetLinearWithComplexDomainExpandedVars(
   }
 }
 
-void SolutionCrush::StoreSolutionAsHint(CpModelProto& model) const {
-  if (!solution_is_loaded_) return;
-  model.clear_solution_hint();
-  for (int i = 0; i < var_values_.size(); ++i) {
-    if (var_has_value_[i]) {
-      model.mutable_solution_hint()->add_vars(i);
-      model.mutable_solution_hint()->add_values(var_values_[i]);
-    }
-  }
-}
-
-void SolutionCrush::PermuteVariables(const SparsePermutation& permutation) {
-  CHECK(solution_is_loaded_);
-  permutation.ApplyToDenseCollection(var_has_value_);
-  permutation.ApplyToDenseCollection(var_values_);
-}
-
 void SolutionCrush::AssignVariableToPackingArea(
     const CompactVectorVector<int, Rectangle>& areas, const CpModelProto& model,
     absl::Span<const int> x_intervals, absl::Span<const int> y_intervals,
     absl::Span<const BoxInAreaLiteral> box_in_area_lits) {
+  if (proto_ != nullptr) {
+    auto* step = proto_->add_steps()->mutable_assign_variable_to_packing_area();
+    for (int i = 0; i < areas.size(); ++i) {
+      auto* rectangles_proto = step->add_areas();
+      for (const Rectangle& rectangle : areas[i]) {
+        auto* rectangle_proto = rectangles_proto->add_rectangles();
+        rectangle_proto->set_x_min(rectangle.x_min.value());
+        rectangle_proto->set_x_max(rectangle.x_max.value());
+        rectangle_proto->set_y_min(rectangle.y_min.value());
+        rectangle_proto->set_y_max(rectangle.y_max.value());
+      }
+    }
+    for (const int x_interval : x_intervals) {
+      *step->add_x_intervals() = model.constraints(x_interval);
+    }
+    for (const int y_interval : y_intervals) {
+      *step->add_y_intervals() = model.constraints(y_interval);
+    }
+    for (const auto& box_in_area_lit : box_in_area_lits) {
+      auto* box_in_area_lit_proto = step->add_box_in_area_lits();
+      box_in_area_lit_proto->set_box_index(box_in_area_lit.box_index);
+      box_in_area_lit_proto->set_area_index(box_in_area_lit.area_index);
+      box_in_area_lit_proto->set_literal(box_in_area_lit.literal);
+    }
+  }
   if (!solution_is_loaded_) return;
   struct RectangleTypeAndIndex {
     enum class Type {
@@ -803,6 +1097,317 @@ void SolutionCrush::AssignVariableToPackingArea(
     SetLiteralValue(literal,
                     box_to_area_pairs.contains({box_index, area_index}));
   }
+}
+
+void SolutionCrush::RemapVariables(absl::Span<const int> old_to_new_mapping) {
+  if (proto_ != nullptr) {
+    auto* step = proto_->add_steps()->mutable_remap_variables();
+    step->mutable_old_to_new_mapping()->Add(old_to_new_mapping.begin(),
+                                            old_to_new_mapping.end());
+  }
+  if (!solution_is_loaded_) return;
+  DCHECK_EQ(old_to_new_mapping.size(), var_has_value_.size());
+
+  int new_num_vars = 0;
+  for (int new_var : old_to_new_mapping) {
+    new_num_vars = std::max(new_num_vars, new_var + 1);
+  }
+  std::vector<bool> var_has_value(new_num_vars, false);
+  std::vector<int64_t> var_values(new_num_vars, 0);
+  for (int old_var = 0; old_var < old_to_new_mapping.size(); ++old_var) {
+    const int new_var = old_to_new_mapping[old_var];
+    if (new_var >= 0 && var_has_value_[old_var]) {
+      if (var_has_value[new_var]) {
+        DCHECK_EQ(var_values[new_var], var_values_[old_var]);
+      }
+      var_has_value[new_var] = true;
+      var_values[new_var] = var_values_[old_var];
+    }
+  }
+
+  std::swap(var_has_value_, var_has_value);
+  std::swap(var_values_, var_values);
+}
+
+void SolutionCrush::ApplySolutionCrushStep(
+    const SolutionCrushStep& crush_step) {
+  switch (crush_step.step_case()) {
+    case SolutionCrushStep::kResize: {
+      auto& step = crush_step.resize();
+      Resize(step.new_size());
+      break;
+    }
+    case SolutionCrushStep::kMaybeSetLiteralToOrderEncoding: {
+      auto& step = crush_step.maybe_set_literal_to_order_encoding();
+      MaybeSetLiteralToOrderEncoding(
+          step.literal(), step.var(), step.value(),
+          step.relation() == MaybeSetLiteralToOrderEncoding::LESS_THAN_OR_EQUAL
+              ? Relation::LE
+              : (step.relation() == MaybeSetLiteralToOrderEncoding::EQUAL
+                     ? Relation::EQ
+                     : Relation::GE));
+      break;
+    }
+    case SolutionCrushStep::kSetVarToClause: {
+      auto& step = crush_step.set_var_to_clause();
+      SetVarToClause(step.var(), step.clause());
+      break;
+    }
+    case SolutionCrushStep::kSetVarToConjunction: {
+      auto& step = crush_step.set_var_to_conjunction();
+      SetVarToConjunction(step.var(), step.conjunction());
+      break;
+    }
+    case SolutionCrushStep::kSetVarToValueIfLinearConstraintViolated: {
+      auto& step = crush_step.set_var_to_value_if_linear_constraint_violated();
+      std::vector<std::pair<int, int64_t>> linear;
+      linear.reserve(step.linear_constraint().vars_size());
+      for (int i = 0; i < step.linear_constraint().vars_size(); ++i) {
+        linear.push_back({step.linear_constraint().vars(i),
+                          step.linear_constraint().coeffs(i)});
+      }
+      SetVarToValueIfLinearConstraintViolated(
+          step.var(), step.value(), linear,
+          ReadDomainFromProto(step.linear_constraint()));
+      break;
+    }
+    case SolutionCrushStep::kSetVarToLinearExpressionIf: {
+      auto& step = crush_step.set_var_to_linear_expression_if();
+      SetVarToLinearExpressionIf(step.var(), step.expr(),
+                                 step.condition_lits());
+      break;
+    }
+    case SolutionCrushStep::kSetVarToConditionalValue: {
+      auto& step = crush_step.set_var_to_conditional_value();
+      SetVarToConditionalValue(step.var(), step.condition_lits(),
+                               step.value_if_true(), step.value_if_false());
+      break;
+    }
+    case SolutionCrushStep::kMakeLiteralsEqual: {
+      auto& step = crush_step.make_literals_equal();
+      MakeLiteralsEqual(step.lit1(), step.lit2());
+      break;
+    }
+    case SolutionCrushStep::kSetOrUpdateVarToDomain: {
+      auto& step = crush_step.set_or_update_var_to_domain();
+      SetOrUpdateVarToDomain(step.var(), ReadDomainFromProto(step));
+      break;
+    }
+    case SolutionCrushStep::kSetOrUpdateVarToDomainWithOptionalEscapeValue: {
+      auto& step =
+          crush_step.set_or_update_var_to_domain_with_optional_escape_value();
+      SetOrUpdateVarToDomainWithOptionalEscapeValue(
+          step.var(), ReadDomainFromProto(step),
+          step.has_unique_escape_value()
+              ? std::make_optional(step.unique_escape_value())
+              : std::nullopt,
+          step.push_down_when_not_in_domain(),
+          absl::btree_map<int64_t, int>(step.encoding().begin(),
+                                        step.encoding().end()));
+      break;
+    }
+    case SolutionCrushStep::kUpdateLiteralsWithDominance: {
+      auto& step = crush_step.update_literals_with_dominance();
+      UpdateLiteralsWithDominance(step.lit(), step.dominating_lit());
+      break;
+    }
+    case SolutionCrushStep::kUpdateTermsWithDominance: {
+      auto& step = crush_step.update_terms_with_dominance();
+      std::vector<std::pair<int, Domain>> dominating_refs;
+      dominating_refs.reserve(step.dominating_terms_size());
+      for (const auto& dominating_term : step.dominating_terms()) {
+        CHECK_EQ(std::abs(dominating_term.coeff()), 1);
+        dominating_refs.push_back({dominating_term.coeff() == 1
+                                       ? dominating_term.var()
+                                       : NegatedRef(dominating_term.var()),
+                                   ReadDomainFromProto(dominating_term)});
+      }
+      CHECK_EQ(std::abs(step.coeff()), 1);
+      UpdateRefsWithDominance(
+          step.coeff() == 1 ? step.var() : NegatedRef(step.var()),
+          step.min_value(), step.max_value(), dominating_refs);
+      break;
+    }
+    case SolutionCrushStep::kMaybeUpdateVarWithSymmetriesToValue: {
+      auto& step = crush_step.maybe_update_var_with_symmetries_to_value();
+      const int num_vars = var_values_.size();
+      std::vector<std::unique_ptr<SparsePermutation>> generators;
+      generators.reserve(step.generators_size());
+      for (const auto& perm : step.generators()) {
+        generators.push_back(CreateSparsePermutationFromProto(num_vars, perm));
+      }
+      MaybeUpdateVarWithSymmetriesToValue(step.var(), step.value() != 0,
+                                          generators);
+      break;
+    }
+    case SolutionCrushStep::kMaybeSwapOrbitopeColumns: {
+      auto& step = crush_step.maybe_swap_orbitope_columns();
+      std::vector<std::vector<int>> orbitope;
+      orbitope.reserve(step.orbitope_rows_size());
+      for (const auto& row : step.orbitope_rows()) {
+        orbitope.emplace_back(row.literals().begin(), row.literals().end());
+      }
+      MaybeSwapOrbitopeColumns(orbitope, step.row(), step.pivot_col(),
+                               step.value());
+      break;
+    }
+    case SolutionCrushStep::kSortOrbitopeColumns: {
+      auto& step = crush_step.sort_orbitope_columns();
+      std::vector<std::vector<int>> orbitope;
+      orbitope.reserve(step.orbitope_rows_size());
+      for (const auto& row : step.orbitope_rows()) {
+        orbitope.emplace_back(row.literals().begin(), row.literals().end());
+      }
+      SortOrbitopeColumns(orbitope, step.row());
+      break;
+    }
+    case SolutionCrushStep::kSetVarToLinearConstraintSolution: {
+      auto& step = crush_step.set_var_to_linear_constraint_solution();
+      SetVarToLinearConstraintSolution(
+          step.enforcement_lits(),
+          step.has_var_index() ? std::make_optional(step.var_index())
+                               : std::nullopt,
+          step.vars(), step.default_values(), step.coeffs(), step.rhs());
+      break;
+    }
+    case SolutionCrushStep::kSetReservoirCircuitVars: {
+      auto& step = crush_step.set_reservoir_circuit_vars();
+      SetReservoirCircuitVars(step.reservoir(), step.min_level(),
+                              step.max_level(), step.level_vars(),
+                              step.circuit());
+      break;
+    }
+    case SolutionCrushStep::kSetVarToReifiedPrecedenceLiteral: {
+      auto& step = crush_step.set_var_to_reified_precedence_literal();
+      SetVarToReifiedPrecedenceLiteral(step.var(), step.time_i(), step.time_j(),
+                                       step.active_i(), step.active_j());
+      break;
+    }
+    case SolutionCrushStep::kSetIntModExpandedVars: {
+      auto& step = crush_step.set_int_mod_expanded_vars();
+      SetIntModExpandedVars(step.ct(), step.div_var(), step.prod_var(),
+                            step.default_div_value(),
+                            step.default_prod_value());
+      break;
+    }
+    case SolutionCrushStep::kSetIntProdExpandedVars: {
+      auto& step = crush_step.set_int_prod_expanded_vars();
+      SetIntProdExpandedVars(step.int_prod(), step.prod_vars());
+      break;
+    }
+    case SolutionCrushStep::kSetLinMaxExpandedVars: {
+      auto& step = crush_step.set_lin_max_expanded_vars();
+      SetLinMaxExpandedVars(step.lin_max(), step.enforcement_lits());
+      break;
+    }
+    case SolutionCrushStep::kSetAutomatonExpandedVars: {
+      auto& step = crush_step.set_automaton_expanded_vars();
+      std::vector<StateVar> state_vars;
+      state_vars.reserve(step.state_vars_size());
+      for (const auto& var : step.state_vars()) {
+        state_vars.push_back({var.var(), var.time(), var.state()});
+      }
+      std::vector<TransitionVar> transition_vars;
+      transition_vars.reserve(step.transition_vars_size());
+      for (const auto& var : step.transition_vars()) {
+        transition_vars.push_back({var.var(), var.time(), var.transition_tail(),
+                                   var.transition_label()});
+      }
+      SetAutomatonExpandedVars(step.automaton(), state_vars, transition_vars);
+      break;
+    }
+    case SolutionCrushStep::kSetTableExpandedVars: {
+      auto& step = crush_step.set_table_expanded_vars();
+      std::vector<TableRowLiteral> new_row_lits;
+      new_row_lits.reserve(step.new_row_lits_size());
+      for (const auto& r : step.new_row_lits()) {
+        TableRowLiteral row_lit;
+        row_lit.lit = r.lit();
+        row_lit.var_values.resize(step.column_vars_size());
+        for (int i = 0; i < r.vars_size(); ++i) {
+          row_lit.var_values[r.vars(i)].push_back(r.values(i));
+        }
+        new_row_lits.push_back(std::move(row_lit));
+      }
+      SetTableExpandedVars(step.column_vars(), step.existing_row_lits(),
+                           new_row_lits);
+      break;
+    }
+    case SolutionCrushStep::kSetLinearWithComplexDomainExpandedVars: {
+      auto& step = crush_step.set_linear_with_complex_domain_expanded_vars();
+      SetLinearWithComplexDomainExpandedVars(step.linear(), step.bucket_lits());
+      break;
+    }
+    case SolutionCrushStep::kAssignVariableToPackingArea: {
+      auto& step = crush_step.assign_variable_to_packing_area();
+      CompactVectorVector<int, Rectangle> areas;
+      areas.reserve(step.areas_size());
+      for (const auto& area : step.areas()) {
+        areas.Add({});
+        for (const auto& rectangle : area.rectangles()) {
+          areas.AppendToLastVector({.x_min = rectangle.x_min(),
+                                    .x_max = rectangle.x_max(),
+                                    .y_min = rectangle.y_min(),
+                                    .y_max = rectangle.y_max()});
+        }
+      }
+      CpModelProto cp_model_proto;
+      std::vector<int> x_intervals;
+      std::vector<int> y_intervals;
+      x_intervals.reserve(step.x_intervals_size());
+      y_intervals.reserve(step.y_intervals_size());
+      for (const auto& x_interval : step.x_intervals()) {
+        x_intervals.push_back(cp_model_proto.constraints_size());
+        *cp_model_proto.add_constraints() = x_interval;
+      }
+      for (const auto& y_interval : step.y_intervals()) {
+        y_intervals.push_back(cp_model_proto.constraints_size());
+        *cp_model_proto.add_constraints() = y_interval;
+      }
+      std::vector<BoxInAreaLiteral> box_in_area_lits;
+      box_in_area_lits.reserve(step.box_in_area_lits_size());
+      for (const auto& box_in_area_lit : step.box_in_area_lits()) {
+        box_in_area_lits.push_back({.box_index = box_in_area_lit.box_index(),
+                                    .area_index = box_in_area_lit.area_index(),
+                                    .literal = box_in_area_lit.literal()});
+      }
+      AssignVariableToPackingArea(areas, cp_model_proto, x_intervals,
+                                  y_intervals, box_in_area_lits);
+      break;
+    }
+    case SolutionCrushStep::kRemapVariables: {
+      auto& step = crush_step.remap_variables();
+      RemapVariables(step.old_to_new_mapping());
+      break;
+    }
+    case SolutionCrushStep::STEP_NOT_SET:
+    default:
+      LOG(FATAL) << "Unsupported SolutionCrushStep: " << crush_step.step_case();
+  }
+}
+
+void SolutionCrush::StoreSolutionAsHint(CpModelProto& model) const {
+  if (!solution_is_loaded_) return;
+  model.clear_solution_hint();
+  if (!var_values_.empty()) {
+    StoreSolutionAsHint(*model.mutable_solution_hint());
+  }
+}
+
+void SolutionCrush::StoreSolutionAsHint(PartialVariableAssignment& hint) const {
+  if (!solution_is_loaded_) return;
+  for (int i = 0; i < var_values_.size(); ++i) {
+    if (var_has_value_[i]) {
+      hint.add_vars(i);
+      hint.add_values(var_values_[i]);
+    }
+  }
+}
+
+void SolutionCrush::PermuteVariables(const SparsePermutation& permutation) {
+  CHECK(solution_is_loaded_);
+  permutation.ApplyToDenseCollection(var_has_value_);
+  permutation.ApplyToDenseCollection(var_values_);
 }
 
 }  // namespace sat

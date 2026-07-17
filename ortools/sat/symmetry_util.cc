@@ -24,6 +24,7 @@
 #include "absl/types/span.h"
 #include "ortools/algorithms/dynamic_partition.h"
 #include "ortools/algorithms/sparse_permutation.h"
+#include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/util.h"
 
 namespace operations_research {

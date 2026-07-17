@@ -19,7 +19,6 @@
 #include <cstdint>
 #include <cstdlib>
 #include <functional>
-#include <limits>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -587,6 +586,35 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
           builder.AddArc(task_node, constraint_node);
           builder.AddArc(task_node,
                          interval_constraint_index_to_node.at(ct.intervals(i)));
+        }
+        break;
+      }
+      case ConstraintProto::kReservoir: {
+        const ReservoirConstraintProto& ct = constraint.reservoir();
+
+        std::vector<int64_t> local_color = color;
+        local_color.push_back(ct.min_level());
+        local_color.push_back(ct.max_level());
+        CHECK_EQ(constraint_node, new_node(local_color));
+
+        // Each event is a tuple, modeled as an event node with three subnodes:
+        // - time (VAR_LIN_EXPR_NODE) -> event_node.
+        // - level (VAR_LIN_EXPR_NODE) <- event_node.
+        // - active (VAR_COEFFICIENT_NODE) -> event_node.
+        std::vector<int64_t> event_color = color;
+        event_color.push_back(0);
+
+        const int num_events = ct.time_exprs_size();
+        for (int i = 0; i < num_events; ++i) {
+          const int event_node = new_node(event_color);
+          builder.AddArc(event_node, constraint_node);
+          builder.AddArc(shared_linear_expr_node(ct.time_exprs(i)), event_node);
+          builder.AddArc(event_node,
+                         shared_linear_expr_node(ct.level_changes(i)));
+
+          if (!ct.active_literals().empty()) {
+            builder.AddArc(get_literal_node(ct.active_literals(i)), event_node);
+          }
         }
         break;
       }
@@ -1214,8 +1242,12 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
     const int num_objective_terms = context->ObjectiveMap().size();
     if (orbitope[0].size() == num_objective_terms) {
       int num_in_column = 0;
-      for (const std::vector<int>& row : orbitope) {
-        if (context->ObjectiveMap().contains(row[0])) ++num_in_column;
+      int objective_row = 0;
+      for (int row = 0; row < orbitope.size(); ++row) {
+        if (context->ObjectiveMap().contains(orbitope[row][0])) {
+          ++num_in_column;
+          objective_row = row;
+        }
       }
       if (num_in_column == 1) {
         context->WriteObjectiveToProto();
@@ -1231,6 +1263,7 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
           new_ct->add_domain(kint64max);
         }
         context->UpdateRuleStats("symmetry: objective is one orbitope row.");
+        context->solution_crush().SortOrbitopeColumns(orbitope, objective_row);
         return true;
       }
     }
@@ -1276,28 +1309,46 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
   // Fix "can_be_fixed_to_false" instead of the orbitope if it is larger.
   if (max_num_fixed_in_orbitope < can_be_fixed_to_false.size()) {
     const int orbit_index = orbits[distinguished_var];
+    if (first_heuristic_size < can_be_fixed_to_false.size()) {
+      // We have one or more orbit intersecting an AMO. We want to set each var
+      // in can_be_fixed_to_false to false, so we would naively pick a symmetry
+      // to enforce that. But that will be wrong if we do this twice: after we
+      // permute the hint to fix the first one we would look for a symmetry
+      // group element that fixes the second one to false. But there are many of
+      // those, and picking the wrong one would risk making the first one true
+      // again. Since this is a AMO, fixing the one that is true doesn't have
+      // this problem. We don't know where the "1" is, but we can do one
+      // "MaybeUpdate" per orbit, with the one of `distinguished_var` done last
+      // (since calling "MaybeUpdate" can undo the effect of the previous calls;
+      // and because the implication constraint added below requires
+      // `distinguished_var` to be true if not all the orbit is false).
+      for (int i = 0; i < can_be_fixed_to_false.size(); ++i) {
+        const int var = can_be_fixed_to_false[i];
+        if (orbits[var] == orbit_index) continue;
+        if (var_can_be_true_per_orbit[orbits[var]] == -1) continue;
+        context->solution_crush().MaybeUpdateVarWithSymmetriesToValue(
+            var_can_be_true_per_orbit[orbits[var]], true, generators);
+        // There is no point calling "MaybeUpdate" more than once per orbit.
+        var_can_be_true_per_orbit[orbits[var]] = -1;
+      }
+    }
+    // Whether we have a single orbit (first heuristic), or one or more orbit
+    // intersecting an AMO, we need this step for the implication constraint
+    // added below.
+    context->solution_crush().MaybeUpdateVarWithSymmetriesToValue(
+        distinguished_var, true, generators);
+
     int num_in_orbit = 0;
     for (int i = 0; i < can_be_fixed_to_false.size(); ++i) {
       const int var = can_be_fixed_to_false[i];
       if (orbits[var] == orbit_index) ++num_in_orbit;
       context->UpdateRuleStats("symmetry: fixed to false in general orbit");
-      if (var_can_be_true_per_orbit[orbits[var]] != -1) {
-        // We are breaking the symmetry in a way that makes the hint invalid.
-        // We want `var` to be false, so we would naively pick a symmetry to
-        // enforce that. But that will be wrong if we do this twice: after we
-        // permute the hint to fix the first one we would look for a symmetry
-        // group element that fixes the second one to false. But there are many
-        // of those, and picking the wrong one would risk making the first one
-        // true again. Since this is a AMO, fixing the one that is true doesn't
-        // have this problem.
-        context->solution_crush().MaybeUpdateVarWithSymmetriesToValue(
-            var_can_be_true_per_orbit[orbits[var]], true, generators);
-      }
       if (!context->SetLiteralToFalse(var)) return false;
     }
 
     // Moreover, we can add the implication that in the orbit of
-    // distinguished_var, either everything is false, or var is at one.
+    // distinguished_var, either everything is false, or distinguished_var is
+    // true.
     if (orbit_sizes[orbit_index] > num_in_orbit + 1) {
       context->UpdateRuleStats(
           "symmetry: added orbit symmetry breaking implications");

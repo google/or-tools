@@ -23,6 +23,7 @@
 #include <vector>
 
 #include "absl/algorithm/container.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/log/vlog_is_on.h"
@@ -34,6 +35,7 @@
 #include "ortools/base/helpers.h"
 #include "ortools/base/options.h"
 #include "ortools/base/stl_util.h"
+#include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/util.h"

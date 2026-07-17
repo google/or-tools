@@ -441,8 +441,13 @@ void LinearizeComplexLinear1(Model* m, const CpModelProto& model_proto,
           const ConstraintProto& ct = model_proto.constraints(info.c);
           current_d = current_d.UnionWith(domain);
           some_non_full_encoding_constraint |= !info.is_fully_reified;
+          const bool ct_is_used_in_an_element_encoding =
+              info.domain.IsFixed() &&
+              relaxation->already_relaxed_implied_values.contains(
+                  {info.lit, var, info.domain.Min()});
           disjoints.push_back(std::move(info));
-          if (!mapping->IsLinear1EncodingConstraint(&ct)) {
+          if (!mapping->IsLinear1EncodingConstraint(&ct) &&
+              !ct_is_used_in_an_element_encoding) {
             some_non_encoding_constraint = true;
           }
         }
@@ -480,7 +485,7 @@ void LinearizeComplexLinear1(Model* m, const CpModelProto& model_proto,
         // max/min activity can be way larger than the domain of the encoded
         // variable. We disable this in this case.
         //
-        // TODO(user): the relaxation will be less powerfull though. Provide a
+        // TODO(user): the relaxation will be less powerful though. Provide a
         // way to use them in the LP but not in cuts ? This might not be worth
         // the effort though.
         LinearConstraint lb_lin = lb_ct.Build();
@@ -1497,6 +1502,16 @@ void AppendLinearConstraintRelaxation(const ConstraintProto& ct, Model* model,
   // Already dealt with ?
   if (ct.linear().vars().size() == 1 &&
       mapping->IsLinear1EncodingConstraint(&ct)) {
+    ++relaxation->counters.num_skipped_linear1;
+    return;
+  }
+  if (ct.linear().vars_size() == 1 && ct.linear().domain_size() == 2 &&
+      ct.linear().domain(0) == ct.linear().domain(1) &&
+      ct.linear().coeffs(0) == 1 && ct.enforcement_literal_size() == 1 &&
+      relaxation->already_relaxed_implied_values.contains(
+          {mapping->Literal(ct.enforcement_literal(0)),
+           mapping->Integer(ct.linear().vars(0)), ct.linear().domain(0)})) {
+    ++relaxation->counters.num_skipped_linear1;
     return;
   }
 
@@ -2209,6 +2224,12 @@ void AppendElementEncodingRelaxation(Model* m, LinearRelaxation* relaxation) {
       LinearConstraint lc = builder.Build();
       if (!PossibleOverflow(*integer_trail, lc)) {
         relaxation->linear_constraints.push_back(std::move(lc));
+        // Mark the linear1 constraint used as redundant for the linear
+        // relaxation.
+        for (const auto& [value, literal] : literal_value_list) {
+          relaxation->already_relaxed_implied_values.insert(
+              {literal, var, value});
+        }
       }
     }
   }
@@ -2330,7 +2351,8 @@ LinearRelaxation ComputeLinearRelaxation(const CpModelProto& model_proto,
                " #tight_equality:",
                num_tight_equality_encoding_relaxations,
                " #loose_equality:", num_loose_equality_encoding_relaxations,
-               " #inequality:", num_inequality_encoding_relaxations);
+               " #inequality:", num_inequality_encoding_relaxations,
+               " #skipped_linear1:", relaxation.counters.num_skipped_linear1);
   }
   if (!relaxation.linear_constraints.empty() ||
       !relaxation.at_most_ones.empty()) {

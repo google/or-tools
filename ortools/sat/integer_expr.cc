@@ -27,6 +27,7 @@
 #include "absl/numeric/int128.h"
 #include "absl/types/span.h"
 #include "ortools/base/mathutil.h"
+#include "ortools/base/stl_util.h"
 #include "ortools/base/types.h"
 #include "ortools/sat/enforcement.h"
 #include "ortools/sat/integer.h"
@@ -40,6 +41,20 @@
 
 namespace operations_research {
 namespace sat {
+
+namespace {
+
+bool HasDuplicateVariables(absl::Span<const IntegerVariable> vars) {
+  std::vector<IntegerVariable> copy;
+  copy.reserve(vars.size());
+  for (int i = 0; i < vars.size(); ++i) {
+    copy.push_back(PositiveVariable(vars[i]));
+  }
+  gtl::STLSortAndRemoveDuplicates(&copy);
+  return copy.size() < vars.size();
+}
+
+}  // namespace
 
 template <bool use_int128>
 LinearConstraintPropagator<use_int128>::LinearConstraintPropagator(
@@ -55,6 +70,7 @@ LinearConstraintPropagator<use_int128>::LinearConstraintPropagator(
       max_variations_(new IntegerValue[size_]) {
   // TODO(user): deal with this corner case.
   CHECK(!vars.empty());
+  DCHECK(!HasDuplicateVariables(vars));
 
   // Copy data.
   memcpy(vars_.get(), vars.data(), size_ * sizeof(IntegerVariable));
@@ -94,6 +110,7 @@ LinearConstraintPropagator<use_int128>::LinearConstraintPropagator(
       max_variations_(new IntegerValue[size_]) {
   // TODO(user): deal with this corner case.
   CHECK_GT(size_, 0);
+  DCHECK(!HasDuplicateVariables(absl::MakeSpan(vars_.get(), size_)));
 
   // Handle negative coefficients.
   for (int i = 0; i < size_; ++i) {

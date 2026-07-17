@@ -29,9 +29,11 @@
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/sat/cp_model.h"
+#include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/diffn_util.h"
 #include "ortools/sat/integer_base.h"
+#include "ortools/sat/sat_parameters.pb.h"
 
 namespace operations_research {
 namespace sat {

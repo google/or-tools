@@ -21,6 +21,7 @@
 #include "absl/log/log.h"
 #include "absl/numeric/int128.h"
 #include "absl/types/span.h"
+#include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_checker.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/linear_constraint.h"

@@ -18,6 +18,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/random/bit_gen_ref.h"
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/model.h"
@@ -109,9 +110,9 @@ class SatDecisionPolicy {
   // Like SetAssignmentPreference() but it can be overridden by phase-saving.
   void SetTargetPolarityIfUnassigned(Literal l) {
     if (trail_.Assignment().VariableIsAssigned(l.Variable())) return;
-    has_target_polarity_[l.Variable()] = true;
-    target_polarity_[l.Variable()] = var_polarity_[l.Variable()] =
-        l.IsPositive();
+    has_target_polarity_.Set(l.Variable(), true);
+    target_polarity_.Set(l.Variable(), l.IsPositive());
+    var_polarity_.Set(l.Variable(), l.IsPositive());
     best_partial_assignment_.push_back(l);
     target_length_++;
   }
@@ -120,7 +121,7 @@ class SatDecisionPolicy {
   }
   void ClearBestPartialAssignment() {
     target_length_ = 0;
-    has_target_polarity_.assign(has_target_polarity_.size(), false);
+    has_target_polarity_.ClearAll();
     best_partial_assignment_.clear();
   }
 
@@ -245,19 +246,19 @@ class SatDecisionPolicy {
   util_intops::StrongVector<BooleanVariable, int64_t> num_bumps_;
 
   // If the polarity if forced (externally) we always use this first.
-  util_intops::StrongVector<BooleanVariable, bool> has_forced_polarity_;
-  util_intops::StrongVector<BooleanVariable, bool> forced_polarity_;
+  Bitset64<BooleanVariable> has_forced_polarity_;
+  Bitset64<BooleanVariable> forced_polarity_;
 
   // If we are in a stable phase, we follow the current target.
   bool in_stable_phase_ = false;
   int target_length_ = 0;
-  util_intops::StrongVector<BooleanVariable, bool> has_target_polarity_;
-  util_intops::StrongVector<BooleanVariable, bool> target_polarity_;
+  Bitset64<BooleanVariable> has_target_polarity_;
+  Bitset64<BooleanVariable> target_polarity_;
 
   // Otherwise we follow var_polarity_ which is reset at the beginning of
   // each new polarity phase. This is also overwritten by phase saving.
   // Each phase last for an arithmetically increasing number of conflicts.
-  util_intops::StrongVector<BooleanVariable, bool> var_polarity_;
+  Bitset64<BooleanVariable> var_polarity_;
   bool maybe_enable_phase_saving_ = true;
   int64_t polarity_phase_ = 0;
   int64_t num_conflicts_until_rephase_ = 1000;

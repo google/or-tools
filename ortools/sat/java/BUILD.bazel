@@ -23,7 +23,6 @@ cc_binary(
     srcs = ["gen_cp_model_proto_swig.cc"],
     deps = [
         "//ortools/sat:cp_model_cc_proto",
-        "//ortools/sat:sat_parameters_cc_proto",
         "//ortools/util/java:wrappers",
         "@abseil-cpp//absl/flags:parse",
         "@abseil-cpp//absl/flags:usage",

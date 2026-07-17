@@ -203,17 +203,6 @@ inline double ScaleObjectiveValue(const CpObjectiveProto& proto,
   return proto.scaling_factor() * result;
 }
 
-// Similar to ScaleObjectiveValue() but uses the integer version.
-inline int64_t ScaleInnerObjectiveValue(const CpObjectiveProto& proto,
-                                        int64_t value) {
-  if (proto.integer_scaling_factor() == 0) {
-    return value + proto.integer_before_offset();
-  }
-  return (value + proto.integer_before_offset()) *
-             proto.integer_scaling_factor() +
-         proto.integer_after_offset();
-}
-
 // Removes the objective scaling and offset from the given value.
 inline double UnscaleObjectiveValue(const CpObjectiveProto& proto,
                                     double value) {
@@ -222,6 +211,31 @@ inline double UnscaleObjectiveValue(const CpObjectiveProto& proto,
     result /= proto.scaling_factor();
   }
   return result - proto.offset();
+}
+
+// Transforms an inner objective value to an "outer" one (original value before
+// presolve). Note that the "outer" objective here refers to the integer
+// expression of the objective before presolve, but not counting the objective
+// offset and/or scaling. So this is not completely in the user-domain.
+inline int64_t PostsolveInnerObjectiveValue(const CpObjectiveProto& proto,
+                                            int64_t value) {
+  if (proto.integer_scaling_factor() == 0) {
+    return value + proto.integer_before_offset();
+  }
+  return (value + proto.integer_before_offset()) *
+             proto.integer_scaling_factor() +
+         proto.integer_after_offset();
+}
+
+// Inverse of PostsolveInnerObjectiveValue(). See the comments above.
+inline int64_t PresolveInnerObjectiveValue(const CpObjectiveProto& proto,
+                                           int64_t value) {
+  if (proto.integer_scaling_factor() == 0) {
+    return value - proto.integer_before_offset();
+  }
+  return (value - proto.integer_after_offset()) /
+             proto.integer_scaling_factor() -
+         proto.integer_before_offset();
 }
 
 // Computes the "inner" objective of a response that contains a solution.

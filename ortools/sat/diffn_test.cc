@@ -16,6 +16,7 @@
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_join.h"
 #include "gtest/gtest.h"
 #include "ortools/sat/cp_model.h"

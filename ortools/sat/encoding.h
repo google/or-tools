@@ -27,11 +27,13 @@
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/random/bit_gen_ref.h"
 #include "absl/types/span.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/pb_constraint.h"
 #include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/strong_integers.h"

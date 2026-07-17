@@ -52,7 +52,7 @@ Solving a problem yields the following possible status (CpSolverStatus):
     been reached before any of the statuses below could be determined.
 -   **[MODEL_INVALID]** The given CpModelProto didn't pass the validation step.
     You can get a detailed error by calling `ValidateCpModel(model_proto)`in
-    C++, or `model.Validate()` in other languages.
+    C++, or `model.validate()` in other languages.
 -   **[FEASIBLE]** A feasible solution has been found. But the search was
     stopped before we could prove optimality or before we enumerated all
     solutions of a feasibility problem (if asked).
@@ -148,6 +148,7 @@ if __name__ == '__main__':
 #include "ortools/base/log_severity.h"
 #include "absl/log/check.h"
 #include "absl/log/globals.h"
+#include "absl/log/log.h"
 #include "absl/types/span.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/sat/cp_model.h"

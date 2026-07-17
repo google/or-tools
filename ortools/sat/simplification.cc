@@ -35,7 +35,6 @@
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
-#include "ortools/sat/util.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
