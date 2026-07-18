@@ -290,6 +290,8 @@ void SetCoverModel::SetSubsetCost(SubsetIndex subset, Cost cost) {
 }
 
 void SetCoverModel::AddElementToSubset(BaseInt element, BaseInt subset) {
+  CHECK_GE(element, 0) << "Invalid element index: " << element;
+  CHECK_GE(subset, 0) << "Invalid subset index: " << subset;
   elements_in_subsets_are_sorted_ = false;
   if (subset >= num_subsets()) {
     num_subsets_ = subset + 1;
