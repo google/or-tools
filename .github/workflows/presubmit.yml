@@ -44,7 +44,7 @@ jobs:
       with:
         credentials_json: '${{secrets.GCP_BUCKET_API_KEY}}'
         set_home_bazelrc: true
-    - uses: actions/setup-python@v6
+    - uses: actions/setup-python@v7
       with:
         python-version: ${{env.PYTHON_VERSION}}
     - uses: bazel-contrib/setup-bazel@0.19.0
@@ -91,7 +91,7 @@ jobs:
       with:
         distribution: ${{env.JAVA_DISTRIBUTION}}
         java-version: ${{env.JAVA_VERSION}}
-    - uses: actions/setup-python@v6
+    - uses: actions/setup-python@v7
       with:
         python-version: ${{env.PYTHON_VERSION}}
     - name: Setup linux

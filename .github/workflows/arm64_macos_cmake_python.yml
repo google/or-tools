@@ -37,7 +37,7 @@ jobs:
           credentials_json: '${{secrets.GCP_BUCKET_API_KEY}}'
           set_cmake_sccache_launcher: true
       - name: Setup Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: ${{matrix.python.version}}
       - name: Update Path

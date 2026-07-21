@@ -34,7 +34,7 @@ jobs:
           credentials_json: '${{secrets.GCP_BUCKET_API_KEY}}'
           set_cmake_sccache_launcher: true
       - name: Setup .NET 8.0
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: 8.0.x
       - name: Check dotnet

@@ -31,7 +31,7 @@ jobs:
           echo "JAVA_HOME=$JAVA_HOME_21_X64" >> $GITHUB_ENV
         # Install .NET SDKs
       - name: Setup .NET 8.0
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: 8.0.x
       - name: Check dotnet
