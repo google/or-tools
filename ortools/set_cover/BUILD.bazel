@@ -386,10 +386,6 @@ cc_test(
     timeout = "eternal",
     srcs = ["set_cover_cft_test.cc"],
     copts = ORTOOLS_TEST_COPTS,
-    data = [
-        "//operations_research_data/operations_research_data/SET_COVERING:rail",
-        "//operations_research_data/operations_research_data/SET_COVERING:scp",
-    ],
     linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     tags = ["manual"],
     deps = [
