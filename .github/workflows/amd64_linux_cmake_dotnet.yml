@@ -36,7 +36,7 @@ jobs:
           sudo apt install -y ninja-build swig
           swig -version
       - name: Setup .NET 8.0
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: 8.0.x
       - name: Check dotnet
