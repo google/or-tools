@@ -55,6 +55,7 @@ if(BUILD_CXX_TESTING)
       SOURCES
         ${_FILE_NAME}
       LINK_LIBRARIES
+        absl::scoped_mock_log
         GTest::gtest
         GTest::gtest_main
         GTest::gmock
