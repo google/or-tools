@@ -14,10 +14,10 @@
 // Testing correctness of the code snippets in the comments of math_opt.h.
 
 #include <iostream>
-#include <limits>
 #include <ostream>
 
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/status/status_macros.h"
 #include "ortools/base/init_google.h"

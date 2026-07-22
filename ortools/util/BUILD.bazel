@@ -491,6 +491,9 @@ cc_library(
     hdrs = ["testing_utils.h"],
     copts = ORTOOLS_DEFAULT_COPTS,
     linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        "@abseil-cpp//absl/log",
+    ],
 )
 
 cc_library(

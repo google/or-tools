@@ -19,6 +19,7 @@
 #include <ostream>
 
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/status/status_macros.h"
 #include "absl/time/time.h"

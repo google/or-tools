@@ -13,12 +13,8 @@
 
 #include "ortools/math_opt/solvers/message_callback_data.h"
 
-#include <algorithm>
-#include <functional>
 #include <string>
 #include <thread>  // NOLINT(build/c++11)
-#include <tuple>
-#include <type_traits>
 #include <vector>
 
 #include "absl/cleanup/cleanup.h"

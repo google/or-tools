@@ -20,6 +20,7 @@
 #include "absl/status/status_macros.h"
 #include "absl/types/span.h"
 #include "ortools/base/status_builder.h"
+#include "ortools/math_opt/core/model_summary.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
 #include "ortools/math_opt/validators/ids_validator.h"
 

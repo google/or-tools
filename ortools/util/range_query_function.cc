@@ -14,8 +14,8 @@
 #include "ortools/util/range_query_function.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <functional>
-#include <memory>
 #include <utility>
 #include <vector>
 

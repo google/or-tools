@@ -20,6 +20,7 @@
 #include "absl/strings/cord.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/source_location.h"
+#include "ortools/util/status.pb.h"
 
 namespace operations_research {
 

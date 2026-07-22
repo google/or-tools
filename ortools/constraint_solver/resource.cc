@@ -23,7 +23,6 @@
 #include <algorithm>
 #include <cstdint>
 #include <functional>
-#include <limits>
 #include <queue>
 #include <string>
 #include <utility>
@@ -39,10 +38,10 @@
 #include "ortools/base/stl_util.h"
 #include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
-#include "ortools/constraint_solver/constraints.h"
 #include "ortools/constraint_solver/interval.h"
 #include "ortools/constraint_solver/reversible_data.h"
 #include "ortools/constraint_solver/sequence_var.h"
+#include "ortools/constraint_solver/solver_parameters.pb.h"
 #include "ortools/constraint_solver/utilities.h"
 #include "ortools/util/monoid_operation_tree.h"
 #include "ortools/util/saturated_arithmetic.h"

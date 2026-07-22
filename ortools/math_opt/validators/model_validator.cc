@@ -14,8 +14,6 @@
 #include "ortools/math_opt/validators/model_validator.h"
 
 #include <cstdint>
-#include <limits>
-#include <utility>
 
 #include "absl/status/status.h"
 #include "absl/status/status_macros.h"

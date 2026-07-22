@@ -15,7 +15,6 @@
 
 #include <algorithm>
 #include <cstdint>
-#include <limits>
 #include <memory>
 #include <string>
 #include <utility>
@@ -29,7 +28,6 @@
 #include "absl/types/span.h"
 #include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
-#include "ortools/constraint_solver/constraints.h"
 #include "ortools/constraint_solver/model_cache.h"
 #include "ortools/constraint_solver/reversible_data.h"
 #include "ortools/constraint_solver/reversible_engine.h"
@@ -169,16 +167,16 @@ std::string BooleanVar::DebugString() const {
   }
   switch (value_) {
     case 0:
-      out += "0";
+      out += '0';
       break;
     case 1:
-      out += "1";
+      out += '1';
       break;
     case kUnboundBooleanVarValue:
       out += "0 .. 1";
       break;
   }
-  out += ")";
+  out += ')';
   return out;
 }
 
@@ -1704,7 +1702,7 @@ class SimpleBitSet : public DomainIntVar::BitSet {
     for (int i = 0; i < bsize_; ++i) {
       absl::StrAppendFormat(&out, "%x", bits_[i]);
     }
-    out += ")";
+    out += ')';
     return out;
   }
 
@@ -2416,7 +2414,7 @@ std::string DomainIntVar::DebugString() const {
   } else {
     absl::StrAppendFormat(&out, "%d..%d", min_.Value(), max_.Value());
   }
-  out += ")";
+  out += ')';
   return out;
 }
 

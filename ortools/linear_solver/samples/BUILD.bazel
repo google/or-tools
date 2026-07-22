@@ -29,6 +29,7 @@ cc_test(
         "//ortools/base",
         "//ortools/base:log_severity",
         "//ortools/linear_solver:linear_solver_lib",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:globals",
     ],
@@ -43,6 +44,7 @@ cc_test(
         "//ortools/base",
         "//ortools/base:log_severity",
         "//ortools/linear_solver:linear_solver_lib",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:globals",
         "@abseil-cpp//absl/strings:str_format",
@@ -58,6 +60,7 @@ cc_test(
         "//ortools/base",
         "//ortools/base:log_severity",
         "//ortools/linear_solver:linear_solver_lib",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:globals",
         "@abseil-cpp//absl/strings:str_format",
@@ -73,6 +76,7 @@ cc_test(
         "//ortools/base",
         "//ortools/base:log_severity",
         "//ortools/linear_solver:linear_solver_lib",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:globals",
         "@abseil-cpp//absl/strings:str_format",
@@ -99,7 +103,10 @@ cc_test(
     srcs = ["bin_packing_mip.cc"],
     copts = ORTOOLS_TEST_COPTS,
     linkopts = ORTOOLS_DEFAULT_LINKOPTS,
-    deps = ["//ortools/linear_solver:linear_solver_lib"],
+    deps = [
+        "//ortools/linear_solver:linear_solver_lib",
+        "@abseil-cpp//absl/log",
+    ],
 )
 
 cc_test(
@@ -111,6 +118,7 @@ cc_test(
         "//ortools/base",
         "//ortools/base:log_severity",
         "//ortools/linear_solver:linear_solver_lib",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:globals",
     ],
 )
@@ -124,6 +132,7 @@ cc_test(
         "//ortools/base",
         "//ortools/base:log_severity",
         "//ortools/linear_solver:linear_solver_lib",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:globals",
     ],
 )
@@ -137,6 +146,7 @@ cc_test(
         "//ortools/base",
         "//ortools/base:log_severity",
         "//ortools/linear_solver:linear_solver_lib",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:globals",
     ],
 )
@@ -150,6 +160,7 @@ cc_test(
         "//ortools/base",
         "//ortools/base:log_severity",
         "//ortools/linear_solver:linear_solver_lib",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:globals",
         "@abseil-cpp//absl/strings:str_format",
     ],
@@ -165,6 +176,7 @@ cc_test(
         "//ortools/base:log_severity",
         "//ortools/linear_solver:linear_solver_glop",
         "//ortools/linear_solver:linear_solver_lib",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:globals",
     ],
 )
@@ -178,6 +190,7 @@ cc_test(
         "//ortools/base",
         "//ortools/base:log_severity",
         "//ortools/linear_solver:linear_solver_lib",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:globals",
     ],
 )
