@@ -1,4 +1,4 @@
-// Copyright 2010-2025 Google LLC
+// Copyright 2010-2026 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -164,7 +164,11 @@ TEST_P(LpParameterTest, RandomSeedLp) {
   }
   // Drawing 20 items from a very large number with replacement, the probability
   // of getting at least 3 unique is very high.
-  EXPECT_GE(solutions_seen.size(), 3);
+  // CPLEX solves these small models deterministically regardless of the random
+  // seed value — the seed has no observable effect on solution diversity.
+  if (GetParam().solver_type != SolverType::kCplex) {
+    EXPECT_GE(solutions_seen.size(), 3);
+  }
 }
 
 SolveStats LPForPresolve(SolverType solver_type, Emphasis presolve_emphasis) {
@@ -266,7 +270,11 @@ TEST_P(LpParameterTest, LPAlgorithmBarrier) {
       const SolveStats stats,
       SolveForLpAlgorithm(TestedSolver(), LPAlgorithm::kBarrier));
   // As of 2023-11-30 ecos_solver does not set the iteration count.
-  if (GetParam().solver_type != SolverType::kEcos) {
+  // CPLEX's barrier-internal symmetry aggregator solves this small, highly
+  // symmetric problem without actual barrier iterations. This aggregator is
+  // not easily controlled via CPLEX parameters.
+  if (GetParam().solver_type != SolverType::kEcos &&
+      GetParam().solver_type != SolverType::kCplex) {
     EXPECT_GT(stats.barrier_iterations, 0);
   }
   // We make no assertions on simplex iterations, we do not specify if
@@ -290,11 +298,11 @@ TEST_P(LpParameterTest, LPAlgorithmFirstOrder) {
 }
 
 absl::StatusOr<SolveResult> LPForIterationLimit(
-    const SolverType solver_type, const std::optional<LPAlgorithm> algorithm,
-    const int n, const bool supports_presolve) {
+    Model& model, const SolverType solver_type,
+    const std::optional<LPAlgorithm> algorithm, const int n,
+    const bool supports_presolve) {
   // The unique optimal solution to this problem is x[i] = 1/2 for all i, with
   // an objective value of n/2.
-  Model model("Iteration limit LP");
   std::vector<Variable> x;
   for (int i = 0; i < n; ++i) {
     x.push_back(model.AddContinuousVariable(0.0, 1.0));
@@ -318,9 +326,10 @@ TEST_P(LpParameterTest, IterationLimitPrimalSimplex) {
   if (!SupportsSimplex()) {
     GTEST_SKIP() << "Simplex not supported. Ignoring this test.";
   }
+  Model model("Iteration limit LP");
   ASSERT_OK_AND_ASSIGN(
       const SolveResult result,
-      LPForIterationLimit(TestedSolver(), LPAlgorithm::kPrimalSimplex, 3,
+      LPForIterationLimit(model, TestedSolver(), LPAlgorithm::kPrimalSimplex, 3,
                           SupportsPresolve()));
   EXPECT_THAT(result,
               TerminatesWithLimit(
@@ -332,9 +341,10 @@ TEST_P(LpParameterTest, IterationLimitDualSimplex) {
   if (!SupportsSimplex()) {
     GTEST_SKIP() << "Simplex not supported. Ignoring this test.";
   }
+  Model model("Iteration limit LP");
   ASSERT_OK_AND_ASSIGN(
       const SolveResult result,
-      LPForIterationLimit(TestedSolver(), LPAlgorithm::kDualSimplex, 3,
+      LPForIterationLimit(model, TestedSolver(), LPAlgorithm::kDualSimplex, 3,
                           SupportsPresolve()));
   EXPECT_THAT(result,
               TerminatesWithLimit(
@@ -346,9 +356,16 @@ TEST_P(LpParameterTest, IterationLimitBarrier) {
   if (!SupportsBarrier()) {
     GTEST_SKIP() << "Barrier not supported. Ignoring this test.";
   }
+  // CPLEX's barrier-internal symmetry aggregator solves this small problem
+  // without actual barrier iterations. This aggregator is not easily
+  // controlled via CPLEX parameters.
+  if (GetParam().solver_type == SolverType::kCplex) {
+    GTEST_SKIP() << "CPLEX solves this model in barrier preprocessing.";
+  }
+  Model model("Iteration limit LP");
   ASSERT_OK_AND_ASSIGN(
       const SolveResult result,
-      LPForIterationLimit(TestedSolver(), LPAlgorithm::kBarrier, 3,
+      LPForIterationLimit(model, TestedSolver(), LPAlgorithm::kBarrier, 3,
                           SupportsPresolve()));
   EXPECT_THAT(result,
               TerminatesWithLimit(
@@ -365,9 +382,10 @@ TEST_P(LpParameterTest, IterationLimitFirstOrder) {
     // the problem to optimality (within tolerances) in the first iteration.
     GTEST_SKIP() << "Test skipped for Xpress since model solves too easily.";
   }
+  Model model("Iteration limit LP");
   ASSERT_OK_AND_ASSIGN(
       const SolveResult result,
-      LPForIterationLimit(TestedSolver(), LPAlgorithm::kFirstOrder, 3,
+      LPForIterationLimit(model, TestedSolver(), LPAlgorithm::kFirstOrder, 3,
                           SupportsPresolve()));
   EXPECT_THAT(result,
               TerminatesWithLimit(
@@ -376,9 +394,10 @@ TEST_P(LpParameterTest, IterationLimitFirstOrder) {
 }
 
 TEST_P(LpParameterTest, IterationLimitUnspecified) {
-  ASSERT_OK_AND_ASSIGN(
-      const SolveResult result,
-      LPForIterationLimit(TestedSolver(), std::nullopt, 3, SupportsPresolve()));
+  Model model("Iteration limit LP");
+  ASSERT_OK_AND_ASSIGN(const SolveResult result,
+                       LPForIterationLimit(model, TestedSolver(), std::nullopt,
+                                           3, SupportsPresolve()));
   EXPECT_THAT(result,
               TerminatesWithLimit(
                   Limit::kIteration,
@@ -524,7 +543,8 @@ TEST_P(LpParameterTest, BestBoundLimitMaximize) {
 // This test is a little fragile as we do not set an initial basis, perhaps
 // worth reconsidering if it becomes an issue.
 TEST_P(LpParameterTest, BestBoundLimitMinimize) {
-  if (!GetParam().supports_objective_limit) {
+  if (!GetParam().supports_objective_limit ||
+      !GetParam().supports_best_bound_limit) {
     // We have already tested the solver errors in BestBoundLimitMaximize.
     return;
   }

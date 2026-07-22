@@ -136,7 +136,15 @@ public enum SolverType {
    *   <li>The objective must be linear.
    * </ul>
    */
-  MIN_COST_FLOW(SolverTypeProto.SOLVER_TYPE_MIN_COST_FLOW);
+  MIN_COST_FLOW(SolverTypeProto.SOLVER_TYPE_MIN_COST_FLOW),
+
+  /**
+   * IBM ILOG CPLEX solver (third party).
+   *
+   * <p>Supports LP and MIP problems (other types are unimplemented). A fast option, but has special
+   * licensing.
+   */
+  CPLEX(SolverTypeProto.SOLVER_TYPE_CPLEX);
 
   private static class ProtoMap {
     private static final EnumMap<SolverTypeProto, SolverType> map =
