@@ -325,8 +325,9 @@ set(need_unix_clp_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_Clp}>>")
 set(need_unix_cgl_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_Cgl}>>")
 set(need_unix_cbc_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_Cbc}>>")
 
-set(need_unix_highs_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_HIGHS}>>")
-set(need_windows_highs_lib "$<AND:${is_windows},$<BOOL:${BUILD_HIGHS}>>")
+set(is_highs_shared "$<STREQUAL:$<TARGET_PROPERTY:highs::highs,TYPE>,SHARED_LIBRARY>")
+set(need_unix_highs_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_HIGHS}>,${is_highs_shared}>")
+set(need_windows_highs_lib "$<AND:${is_windows},$<BOOL:${BUILD_HIGHS}>,${is_highs_shared}>")
 
 set(need_unix_scip_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_SCIP}>>")
 set(need_windows_scip_lib "$<AND:${is_windows},$<BOOL:${BUILD_SCIP}>>")
@@ -477,7 +478,7 @@ add_custom_command(
     ${JAVA_RESSOURCES_PATH}/${JAVA_NATIVE_PROJECT}/
 
   COMMAND ${CMAKE_COMMAND} -E
-    $<IF:$<BOOL:${BUILD_HIGHS}>,copy,true>
+    $<IF:$<OR:${need_unix_highs_lib},${need_windows_highs_lib}>,copy,true>
     $<${need_unix_highs_lib}:$<TARGET_SONAME_FILE:highs::highs>>
     $<${need_windows_highs_lib}:$<TARGET_FILE:highs::highs>>
     ${JAVA_RESSOURCES_PATH}/${JAVA_NATIVE_PROJECT}/
