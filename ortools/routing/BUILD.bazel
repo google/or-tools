@@ -308,6 +308,7 @@ cc_library(
         "//ortools/util:stats",
         "//ortools/util:time_limit",
         "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/base:no_destructor",
         "@abseil-cpp//absl/base:nullability",
         "@abseil-cpp//absl/container:btree",

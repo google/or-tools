@@ -21,13 +21,13 @@
 
 edition = "2024";
 
-option java_package = "com.google.ortools.routing";
-option csharp_namespace = "Google.OrTools.Routing";
+package operations_research.routing;
 
 import "ortools/routing/enums.proto";
 import "ortools/routing/heuristic_parameters.proto";
 
-package operations_research.routing;
+option java_package = "com.google.ortools.routing";
+option csharp_namespace = "Google.OrTools.Routing";
 
 // Ruin strategy that removes a number of spatially close routes.
 message SpatiallyCloseRoutesRuinStrategy {
