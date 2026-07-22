@@ -21,8 +21,10 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/hash/hash.h"
 #include "absl/random/distributions.h"
 #include "absl/random/random.h"
+#include "absl/strings/string_view.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 
@@ -46,7 +48,7 @@ TEST(IndexTest, BasicOperationsHashable) {
   EXPECT_EQ(map.LookupOrAdd("apple"), 0);
   EXPECT_EQ(map.LookupOrAdd("banana"), 1);
   EXPECT_EQ(map.LookupOrAdd("apple"), 0);  // duplicate
-  EXPECT_THAT(map.TryInsert("apple"), Pair(0, false));
+  EXPECT_THAT(map.TryEmplace("apple"), Pair(0, false));
   EXPECT_EQ(map.size(), 2);
   EXPECT_THAT(map.span(), ElementsAre("apple", "banana"));
 
@@ -69,7 +71,7 @@ TEST(IndexTest, BasicOperationsHashable) {
 
 TEST(IndexTest, MoveOperationsHashable) {
   Index<std::string> map;
-  EXPECT_THAT(map.TryInsert("apple"), Pair(0, true));
+  EXPECT_THAT(map.TryEmplace("apple"), Pair(0, true));
   EXPECT_EQ(map.LookupOrAdd("banana"), 1);
 
   // Move constructor
@@ -115,6 +117,11 @@ TEST(IndexTest, MoveOperationsHashable) {
 struct NonHashable {
   int x;
   bool operator<(const NonHashable& other) const { return x < other.x; }
+
+  template <typename Sink>
+  friend void AbslStringify(Sink& sink, const NonHashable& obj) {
+    absl::Format(&sink, "NonHashable{%d}", obj.x);
+  }
 };
 
 TEST(IndexTest, BasicOperationsNonHashable) {
@@ -125,7 +132,7 @@ TEST(IndexTest, BasicOperationsNonHashable) {
   // Test LookupOrAdd.
   EXPECT_EQ(map.LookupOrAdd(NonHashable{1}), 0);
   EXPECT_EQ(map.LookupOrAdd(NonHashable{-1}), 1);
-  EXPECT_THAT(map.TryInsert(NonHashable{1}), Pair(0, false));  // duplicate
+  EXPECT_THAT(map.TryEmplace(NonHashable{1}), Pair(0, false));  // duplicate
   EXPECT_EQ(map.size(), 2);
   EXPECT_EQ(map.span()[0].x, 1);
   EXPECT_EQ(map.span()[1].x, -1);
@@ -136,7 +143,7 @@ TEST(IndexTest, BasicOperationsNonHashable) {
 
 TEST(IndexTest, MoveOperationsNonHashable) {
   Index<NonHashable> map;
-  EXPECT_THAT(map.TryInsert(NonHashable{1}), Pair(0, true));
+  EXPECT_THAT(map.TryEmplace(NonHashable{1}), Pair(0, true));
   map.LookupOrAdd(NonHashable{-1});
 
   // Move constructor
@@ -166,11 +173,11 @@ TEST(IndexTest, CustomHashAndEq) {
     }
   };
   Index<T, Hash, Eq> vs;
-  EXPECT_THAT(vs.TryInsert(T{3}), Pair(0, true));
+  EXPECT_THAT(vs.TryEmplace(T{3}), Pair(0, true));
   EXPECT_EQ(vs.Lookup(T{1}), std::nullopt);
   EXPECT_EQ(vs.LookupOrAdd(T{1}), 1);
   EXPECT_EQ(vs.LookupOrAdd(T{5}), 2);
-  EXPECT_THAT(vs.TryInsert(T{9}), Pair(0, false));
+  EXPECT_THAT(vs.TryEmplace(T{9}), Pair(0, false));
   Index<T, Hash, Eq> vs2 = std::move(vs);
   Index<T, Hash, Eq> vs3;
   vs3 = std::move(vs2);
@@ -259,6 +266,170 @@ TEST(IndexTest, ComparatorFallback) {
   EXPECT_EQ(map.Lookup({1, 2}), 0);
   EXPECT_EQ(map.Lookup({3, 4}), 1);
   EXPECT_EQ(map.Lookup({5}), std::nullopt);
+}
+
+struct CopyCounterKey {
+  struct Hash;
+  struct Eq;
+  struct Less;
+
+  explicit CopyCounterKey(absl::string_view id) : id(id) { ++num_constructs; }
+
+  CopyCounterKey(const CopyCounterKey& other) : id(other.id) { num_copies++; }
+  CopyCounterKey(CopyCounterKey&& other) : id(std::move(other.id)) {
+    num_moves++;
+  }
+  CopyCounterKey& operator=(const CopyCounterKey& other) {
+    id = other.id;
+    num_copies++;
+    return *this;
+  }
+  CopyCounterKey& operator=(CopyCounterKey&& other) {
+    id = std::move(other.id);
+    num_moves++;
+    return *this;
+  }
+
+  static void ResetCounters() {
+    num_constructs = 0;
+    num_copies = 0;
+    num_moves = 0;
+  };
+
+  std::string id;
+  static int num_constructs;
+  static int num_copies;
+  static int num_moves;
+};
+
+int CopyCounterKey::num_constructs = 0;
+int CopyCounterKey::num_copies = 0;
+int CopyCounterKey::num_moves = 0;
+
+struct CopyCounterKey::Hash {
+  using is_transparent = void;
+
+  size_t operator()(const CopyCounterKey& key) const {
+    return absl::HashOf(key.id);
+  }
+  size_t operator()(absl::string_view id) const { return absl::HashOf(id); }
+};
+
+struct CopyCounterKey::Eq {
+  using is_transparent = void;
+
+  bool operator()(absl::string_view a, const CopyCounterKey& b) const {
+    return a == b.id;
+  }
+  bool operator()(const CopyCounterKey& a, absl::string_view b) const {
+    return a.id == b;
+  }
+  bool operator()(const CopyCounterKey& a, const CopyCounterKey& b) const {
+    return a.id == b.id;
+  }
+};
+
+struct CopyCounterKey::Less {
+  using is_transparent = void;
+
+  bool operator()(absl::string_view a, const CopyCounterKey& b) const {
+    return a < b.id;
+  }
+  bool operator()(const CopyCounterKey& a, absl::string_view b) const {
+    return a.id < b;
+  }
+  bool operator()(const CopyCounterKey& a, const CopyCounterKey& b) const {
+    return a.id < b.id;
+  }
+};
+
+TEST(IndexTest, HeterogeneousTryEmplaceHashable) {
+  Index<CopyCounterKey, CopyCounterKey::Hash, CopyCounterKey::Eq> map(
+      100  // Get into the non-SOO mode of hash maps.
+  );
+
+  // Emplace a new object, heterogeneously.
+  map.TryEmplace("apple");
+  ASSERT_EQ(CopyCounterKey::num_constructs, 1);
+  ASSERT_EQ(CopyCounterKey::num_copies, 0);
+  ASSERT_EQ(CopyCounterKey::num_moves, 0);
+
+  // Insert the same object again, homogeneously.
+  CopyCounterKey::ResetCounters();
+  map.TryEmplace(CopyCounterKey("apple"));
+  ASSERT_EQ(CopyCounterKey::num_constructs, 1);
+  ASSERT_EQ(CopyCounterKey::num_copies, 0);
+  ASSERT_EQ(CopyCounterKey::num_moves, 0);
+
+  // Emplace the same object again, heterogeneously.
+  CopyCounterKey::ResetCounters();
+  map.TryEmplace(absl::string_view("apple"));
+  ASSERT_EQ(CopyCounterKey::num_constructs, 0);
+  ASSERT_EQ(CopyCounterKey::num_copies, 0);
+  ASSERT_EQ(CopyCounterKey::num_moves, 0);
+
+  // Insert the same object again, homogeneously, but through an lvalue
+  // reference to check that we handle forwarding correctly.
+  CopyCounterKey apple("apple");
+  CopyCounterKey::ResetCounters();
+  map.TryEmplace(apple);
+  ASSERT_EQ(CopyCounterKey::num_constructs, 0);
+  ASSERT_EQ(CopyCounterKey::num_copies, 0);
+  ASSERT_EQ(CopyCounterKey::num_moves, 0);
+
+  // Insert another object, homogeneously, through an rvalue reference, and
+  // check that it got moved.
+  CopyCounterKey banana("banana");
+  CopyCounterKey::ResetCounters();
+  map.TryEmplace(std::move(banana));
+  ASSERT_EQ(CopyCounterKey::num_constructs, 0);
+  ASSERT_EQ(CopyCounterKey::num_copies, 0);
+  ASSERT_EQ(CopyCounterKey::num_moves, 1);
+
+  // Insert another object, homogeneously, through an lvalue reference, and
+  // check that it got copied.
+  CopyCounterKey cherry("cherry");
+  CopyCounterKey::ResetCounters();
+  map.TryEmplace(cherry);
+  ASSERT_EQ(CopyCounterKey::num_constructs, 0);
+  ASSERT_EQ(CopyCounterKey::num_copies, 1);
+  ASSERT_EQ(CopyCounterKey::num_moves, 0);
+}
+
+TEST(IndexTest, HeterogeneousTryEmplaceNonHashable) {
+  Index<CopyCounterKey, CopyCounterKey::Less> map(
+      100  // Get into the non-SOO mode of hash maps.
+  );
+
+  // Emplace a new object, heterogeneously.
+  CopyCounterKey::ResetCounters();
+  map.TryEmplace("apple");
+  ASSERT_EQ(CopyCounterKey::num_constructs, 1);
+  ASSERT_EQ(CopyCounterKey::num_copies, 0);
+  ASSERT_EQ(CopyCounterKey::num_moves, 0);
+
+  // Insert the same object again, homogeneously.
+  CopyCounterKey::ResetCounters();
+  map.TryEmplace(CopyCounterKey("apple"));
+  ASSERT_EQ(CopyCounterKey::num_constructs, 1);
+  ASSERT_EQ(CopyCounterKey::num_copies, 0);
+  ASSERT_EQ(CopyCounterKey::num_moves, 0);
+
+  // Emplace the same object again, heterogeneously.
+  CopyCounterKey::ResetCounters();
+  map.TryEmplace(absl::string_view("apple"));
+  ASSERT_EQ(CopyCounterKey::num_constructs, 0);
+  ASSERT_EQ(CopyCounterKey::num_copies, 0);
+  ASSERT_EQ(CopyCounterKey::num_moves, 0);
+
+  // Insert the same object again, homogeneously, but through an lvalue
+  // reference to check that we handle forwarding correctly.
+  CopyCounterKey apple("apple");
+  CopyCounterKey::ResetCounters();
+  map.TryEmplace(apple);
+  ASSERT_EQ(CopyCounterKey::num_constructs, 0);
+  ASSERT_EQ(CopyCounterKey::num_copies, 0);
+  ASSERT_EQ(CopyCounterKey::num_moves, 0);
 }
 
 }  // namespace
