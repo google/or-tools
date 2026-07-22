@@ -71,12 +71,13 @@ public class TspCircuitBoard {
     public final int vehicleNumber = 1;
     public final int depot = 0;
   }
+
   // [END data_model]
 
   // [START euclidean_distance]
   /// @brief Compute Euclidean distance matrix from locations array.
-  /// @details It uses an array of locations and computes
-  /// the Euclidean distance between any two locations.
+  /// @details It uses an array of locations and computes the Euclidean distance between any two
+  ///     locations.
   private static long[][] computeEuclideanDistanceMatrix(int[][] locations) {
     // Calculate distance matrix using Euclidean distance.
     long[][] distanceMatrix = new long[locations.length][locations.length];
@@ -116,6 +117,7 @@ public class TspCircuitBoard {
     logger.info(route);
     logger.info("Route distance: " + routeDistance);
   }
+
   // [END solution_printer]
 
   public static void main(String[] args) throws Exception {

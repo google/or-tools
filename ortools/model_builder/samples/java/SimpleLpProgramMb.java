@@ -22,6 +22,7 @@ import com.google.ortools.modelbuilder.ModelBuilder;
 import com.google.ortools.modelbuilder.ModelSolver;
 import com.google.ortools.modelbuilder.SolveStatus;
 import com.google.ortools.modelbuilder.Variable;
+
 // [END import]
 
 /** Minimal Linear Programming example to showcase calling the solver. */
