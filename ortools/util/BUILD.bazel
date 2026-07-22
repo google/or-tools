@@ -15,7 +15,9 @@ load("@protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
 load("@protobuf//bazel:java_proto_library.bzl", "java_proto_library")
 load("@protobuf//bazel:proto_library.bzl", "proto_library")
 load("@protobuf//bazel:py_proto_library.bzl", "py_proto_library")
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
 load("@rules_go//proto:def.bzl", "go_proto_library")
 load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS", "ORTOOLS_TEST_COPTS")
 
@@ -453,6 +455,25 @@ cc_proto_library(
     deps = [":file_util_test_proto"],
 )
 
+cc_test(
+    name = "file_util_test",
+    size = "small",
+    srcs = ["file_util_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        ":file_util",
+        ":file_util_test_cc_proto",
+        "//ortools/base:file",
+        "//ortools/base:gmock_main",
+        "//ortools/base:gzipstring",
+        "//ortools/base:parse_test_proto",
+        "//ortools/base:temp_file",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/strings",
+        "@protobuf",
+    ],
+)
 
 cc_library(
     name = "random_engine",
@@ -626,6 +647,369 @@ cc_library(
     deps = ["@abseil-cpp//absl/log:check"],
 )
 
+cc_test(
+    name = "dense_set_test",
+    srcs = ["dense_set_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        ":dense_set",
+        "//ortools/base:gmock_main",
+        "//ortools/base:strong_int",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/random:bit_gen_ref",
+    ],
+)
+
+cc_binary(
+    name = "dense_set_benchmark",
+    srcs = ["dense_set_benchmark.cc"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        ":dense_set",
+        "//ortools/base:benchmark_main",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/random:bit_gen_ref",
+        "@google_benchmark//:benchmark",
+    ],
+)
+
+cc_test(
+    name = "solve_interrupter_test",
+    srcs = ["solve_interrupter_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        ":solve_interrupter",
+        "//ortools/base:gmock_main",
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
+cc_test(
+    name = "fp_roundtrip_conv_testing_test",
+    srcs = ["fp_roundtrip_conv_testing_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        ":fp_roundtrip_conv",
+        ":fp_roundtrip_conv_testing",
+        "//ortools/base:gmock_main",
+    ],
+)
+
+cc_test(
+    name = "flat_matrix_test",
+    srcs = ["flat_matrix_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        ":flat_matrix",
+        ":random_engine",
+        "//ortools/base:dump_vars",
+        "//ortools/base:gmock_main",
+        "@abseil-cpp//absl/base",
+        "@abseil-cpp//absl/log:check",
+    ],
+)
+
+cc_binary(
+    name = "flat_matrix_benchmark",
+    srcs = ["flat_matrix_benchmark.cc"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        ":flat_matrix",
+        ":random_engine",
+        "//ortools/base:benchmark_main",
+        "@abseil-cpp//absl/base",
+        "@abseil-cpp//absl/log:check",
+        "@google_benchmark//:benchmark",
+    ],
+)
+
+cc_test(
+    name = "status_macros_test",
+    srcs = ["status_macros_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        ":status_macros",
+        "//ortools/base:gmock_main",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:status_macros",
+        "@abseil-cpp//absl/status:statusor",
+    ],
+)
+
+cc_test(
+    name = "logging_test",
+    size = "small",
+    srcs = ["logging_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        ":logging",
+        "//ortools/base:gmock_main",
+        "//ortools/port:scoped_std_stream_capture",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
+cc_test(
+    name = "lazy_mutable_copy_test",
+    srcs = ["lazy_mutable_copy_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        ":lazy_mutable_copy",
+        "//ortools/base:gmock_main",
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
+cc_test(
+    name = "adaptative_parameter_value_test",
+    srcs = ["adaptative_parameter_value_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        ":adaptative_parameter_value",
+        "//ortools/base:gmock_main",
+        "@abseil-cpp//absl/random",
+    ],
+)
+
+cc_test(
+    name = "random_engine_test",
+    srcs = ["random_engine_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        ":random_engine",
+        "//ortools/base:gmock_main",
+    ],
+)
+
+cc_test(
+    name = "rev_test",
+    srcs = ["rev_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        ":rev",
+        ":strong_integers",
+        "//ortools/base:gmock_main",
+        "@abseil-cpp//absl/container:btree",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/random:distributions",
+    ],
+)
+
+cc_test(
+    name = "range_query_function_test",
+    srcs = ["range_query_function_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        ":range_query_function",
+        "//ortools/base:gmock_main",
+        "//ortools/base:types",
+        "@abseil-cpp//absl/log:check",
+    ],
+)
+
+cc_test(
+    name = "running_stat_test",
+    size = "small",
+    srcs = ["running_stat_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        ":running_stat",
+        "//ortools/base:gmock_main",
+    ],
+)
+
+cc_test(
+    name = "fp_utils_test",
+    size = "small",
+    srcs = ["fp_utils_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        ":fp_utils",
+        "//ortools/base:gmock_main",
+        "//ortools/base:types",
+        "@abseil-cpp//absl/base",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_binary(
+    name = "fp_utils_benchmark",
+    srcs = ["fp_utils_benchmark.cc"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        ":fp_utils",
+        "//ortools/base:benchmark_main",
+        "@abseil-cpp//absl/log:check",
+        "@google_benchmark//:benchmark",
+    ],
+)
+
+cc_test(
+    name = "time_limit_test",
+    size = "small",
+    srcs = ["time_limit_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    flaky = 1,  # 2014-05-21: 102 failures over 10000 runs (forge, fastbuild).
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        ":testing_utils",
+        ":time_limit",
+        "//ortools/base:gmock_main",
+        "//ortools/base:log_severity",
+        "//ortools/base:threadpool",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log:log_streamer",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/time",
+    ],
+)
+
+cc_binary(
+    name = "time_limit_benchmark",
+    srcs = ["time_limit_benchmark.cc"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        ":time_limit",
+        "//ortools/base:benchmark_main",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
+        "@google_benchmark//:benchmark",
+    ],
+)
+
+cc_test(
+    name = "tuple_set_test",
+    size = "small",
+    srcs = ["tuple_set_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        ":tuple_set",
+        "//ortools/base:gmock_main",
+    ],
+)
+
+cc_test(
+    name = "rational_approximation_test",
+    size = "small",
+    srcs = ["rational_approximation_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        ":fp_utils",
+        ":rational_approximation",
+        "//ortools/base:gmock_main",
+    ],
+)
+
+cc_test(
+    name = "saturated_arithmetic_test",
+    srcs = ["saturated_arithmetic_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        ":saturated_arithmetic",
+        ":strong_integers",
+        "//ortools/base:gmock_main",
+        "//ortools/base:types",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/numeric:int128",
+        "@abseil-cpp//absl/random",
+    ],
+)
+
+cc_binary(
+    name = "saturated_arithmetic_benchmark",
+    srcs = ["saturated_arithmetic_benchmark.cc"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        ":saturated_arithmetic",
+        "//ortools/base:benchmark_main",
+        "//ortools/base:types",
+        "@abseil-cpp//absl/log",
+        "@google_benchmark//:benchmark",
+    ],
+)
+
+cc_test(
+    name = "permutation_test",
+    size = "small",
+    srcs = ["permutation_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        ":permutation",
+        "//ortools/base:gmock_main",
+    ],
+)
+
+cc_test(
+    name = "zvector_test",
+    size = "large",
+    srcs = ["zvector_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        ":zvector",
+        "//ortools/base:gmock_main",
+        "@abseil-cpp//absl/random",
+    ],
+)
+
+cc_test(
+    name = "cached_log_test",
+    size = "small",
+    srcs = ["cached_log_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        ":cached_log",
+        "//ortools/base:gmock_main",
+    ],
+)
+
+cc_test(
+    name = "affine_relation_test",
+    size = "small",
+    srcs = [
+        "affine_relation_test.cc",
+    ],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        ":affine_relation",
+        "//ortools/base:gmock_main",
+    ],
+)
+
 cc_library(
     name = "status_streaming",
     srcs = ["status_streaming.cc"],
@@ -639,6 +1023,22 @@ cc_library(
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/strings:cord",
         "@abseil-cpp//absl/strings:string_view",
+        "@abseil-cpp//absl/types:source_location",
+    ],
+)
+
+cc_test(
+    name = "status_streaming_test",
+    srcs = ["status_streaming_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        ":status_cc_proto",
+        ":status_streaming",
+        "//ortools/base:gmock_main",
+        "//ortools/base:log_severity",
+        "@abseil-cpp//absl/log:scoped_mock_log",
+        "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/types:source_location",
     ],
 )
@@ -671,5 +1071,45 @@ cc_library(
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:string_view",
         "@rules_cc//cc/runfiles",
+    ],
+)
+
+cc_test(
+    name = "random_subset_test",
+    srcs = ["random_subset_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    tags = ["noci"],
+    deps = [
+        ":random_engine",
+        ":random_subset",
+        ":testing_utils",
+        "//ortools/algorithms:n_choose_k",
+        "//ortools/base:dump_vars",
+        "//ortools/base:gmock_main",
+        "//ortools/base:log_severity",
+        "//ortools/base:mathutil",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/container:btree",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/numeric:int128",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/random:distributions",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/time",
+    ],
+)
+
+cc_binary(
+    name = "random_subset_benchmark",
+    srcs = ["random_subset_benchmark.cc"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        ":random_subset",
+        "//ortools/base:benchmark_main",
+        "@abseil-cpp//absl/random",
+        "@google_benchmark//:benchmark",
     ],
 )
