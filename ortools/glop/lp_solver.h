@@ -18,6 +18,7 @@
 #include <string>
 #include <utility>
 
+#include "absl/base/nullability.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/glop/revised_simplex.h"
 #include "ortools/lp_data/lp_data.h"
@@ -41,7 +42,7 @@ class LPSolver {
   // See the proto for an extensive documentation.
   void SetParameters(const GlopParameters& parameters);
   const GlopParameters& GetParameters() const;
-  GlopParameters* GetMutableParameters();
+  GlopParameters* absl_nonnull GetMutableParameters();
 
   // Returns a string that describes the version of the solver.
   static std::string GlopVersion();
