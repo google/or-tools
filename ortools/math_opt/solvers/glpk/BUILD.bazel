@@ -13,13 +13,18 @@
 
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_cc//cc:cc_test.bzl", "cc_test")
+load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS", "ORTOOLS_TEST_COPTS")
 
-package(default_visibility = ["//ortools/math_opt/solvers:__subpackages__"])
+package(default_visibility = [
+    "//ortools/math_opt/solvers:__subpackages__",
+])
 
 cc_library(
     name = "rays",
     srcs = ["rays.cc"],
     hdrs = ["rays.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     target_compatible_with =
         select({
             "//ortools/linear_solver:use_glpk": [],
@@ -41,6 +46,8 @@ cc_library(
     name = "glpk_sparse_vector",
     srcs = ["glpk_sparse_vector.cc"],
     hdrs = ["glpk_sparse_vector.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     target_compatible_with =
         select({
             "//ortools/linear_solver:use_glpk": [],
@@ -55,6 +62,8 @@ cc_library(
 cc_test(
     name = "glpk_sparse_vector_test",
     srcs = ["glpk_sparse_vector_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     target_compatible_with =
         select({
             "//ortools/linear_solver:use_glpk": [],
@@ -70,6 +79,8 @@ cc_library(
     name = "gap",
     srcs = ["gap.cc"],
     hdrs = ["gap.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     target_compatible_with =
         select({
             "//ortools/linear_solver:use_glpk": [],
@@ -80,6 +91,8 @@ cc_library(
 cc_test(
     name = "gap_test",
     srcs = ["gap_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     target_compatible_with =
         select({
             "//ortools/linear_solver:use_glpk": [],

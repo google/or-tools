@@ -17,8 +17,11 @@ load("@protobuf//bazel:proto_library.bzl", "proto_library")
 load("@protobuf//bazel:py_proto_library.bzl", "py_proto_library")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_cc//cc:cc_test.bzl", "cc_test")
+load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS", "ORTOOLS_TEST_COPTS")
 
-package(default_visibility = ["//ortools/math_opt/solvers:__subpackages__"])
+package(default_visibility = [
+    "//ortools/math_opt/solvers:__subpackages__",
+])
 
 proto_library(
     name = "gscip_proto",
@@ -50,6 +53,8 @@ cc_library(
     name = "gscip_parameters",
     srcs = ["gscip_parameters.cc"],
     hdrs = ["gscip_parameters.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":gscip_cc_proto",
         "@abseil-cpp//absl/log:check",
@@ -62,6 +67,8 @@ cc_library(
 cc_test(
     name = "gscip_parameters_test",
     srcs = ["gscip_parameters_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":gscip_cc_proto",
         ":gscip_parameters",
@@ -81,6 +88,8 @@ cc_library(
         "gscip.h",
         "gscip_event_handler.h",
     ],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = [
         "//ortools/math_opt/io:__subpackages__",
         "//ortools/math_opt/solvers:__subpackages__",
@@ -115,6 +124,8 @@ cc_library(
     testonly = 1,
     srcs = ["gscip_testing.cc"],
     hdrs = ["gscip_testing.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":gscip",
         ":gscip_cc_proto",
@@ -128,6 +139,8 @@ cc_test(
     name = "gscip_io_test",
     size = "medium",
     srcs = ["gscip_io_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":gscip",
         ":gscip_cc_proto",
@@ -143,6 +156,8 @@ cc_library(
     name = "gscip_ext",
     srcs = ["gscip_ext.cc"],
     hdrs = ["gscip_ext.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":gscip",
         "@abseil-cpp//absl/container:flat_hash_map",
@@ -159,6 +174,8 @@ cc_test(
     name = "gscip_ext_test",
     size = "small",
     srcs = ["gscip_ext_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":gscip",
         ":gscip_cc_proto",
@@ -175,6 +192,8 @@ cc_test(
 cc_test(
     name = "gscip_event_handler_test",
     srcs = ["gscip_event_handler_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":gscip",
         ":gscip_cc_proto",
@@ -193,6 +212,8 @@ cc_library(
     name = "gscip_from_mp_model_proto",
     srcs = ["gscip_from_mp_model_proto.cc"],
     hdrs = ["gscip_from_mp_model_proto.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":gscip",
         ":gscip_ext",
@@ -212,6 +233,8 @@ cc_library(
     name = "gscip_message_handler",
     srcs = ["gscip_message_handler.cc"],
     hdrs = ["gscip_message_handler.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/linear_solver:scip_helper_macros",
         "@abseil-cpp//absl/log",
@@ -227,6 +250,8 @@ cc_library(
     name = "gscip_callback_result",
     srcs = ["gscip_callback_result.cc"],
     hdrs = ["gscip_callback_result.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "@abseil-cpp//absl/base:core_headers",
         "@scip",
@@ -237,6 +262,8 @@ cc_library(
     name = "gscip_constraint_handler",
     srcs = ["gscip_constraint_handler.cc"],
     hdrs = ["gscip_constraint_handler.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":gscip",
         ":gscip_callback_result",
@@ -255,6 +282,8 @@ cc_library(
 cc_test(
     name = "gscip_constraint_handler_test",
     srcs = ["gscip_constraint_handler_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":gscip",
         ":gscip_callback_result",
@@ -276,6 +305,8 @@ cc_library(
     name = "math_opt_gscip_solver_constraint_handler",
     srcs = ["math_opt_gscip_solver_constraint_handler.cc"],
     hdrs = ["math_opt_gscip_solver_constraint_handler.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":gscip",
         ":gscip_callback_result",

@@ -81,9 +81,9 @@ py_test(
         ":cpp_elemental",
         ":enums",
         requirement("absl-py"),
+        "//ortools/math_opt/python/testing:compare_proto",
         requirement("numpy"),
         "//ortools/math_opt:model_py_pb2",
         "//ortools/math_opt:model_update_py_pb2",
-        "//ortools/math_opt/python/testing:compare_proto",
     ],
 )

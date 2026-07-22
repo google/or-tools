@@ -12,6 +12,7 @@
 # limitations under the License.
 
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS")
 
 package(default_visibility = [
     "//ortools/gurobi:__subpackages__",
@@ -20,12 +21,10 @@ package(default_visibility = [
 
 cc_library(
     name = "g_gurobi",
-    srcs = [
-        "g_gurobi.cc",
-    ],
-    hdrs = [
-        "g_gurobi.h",
-    ],
+    srcs = ["g_gurobi.cc"],
+    hdrs = ["g_gurobi.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     tags = [
         "not_build:arm",
         "not_run:arm",

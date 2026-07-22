@@ -12,6 +12,7 @@
 # limitations under the License.
 
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -20,5 +21,7 @@ cc_library(
     testonly = True,
     srcs = ["gurobi_stdout_matchers.cc"],
     hdrs = ["gurobi_stdout_matchers.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = ["//ortools/base:gmock"],
 )

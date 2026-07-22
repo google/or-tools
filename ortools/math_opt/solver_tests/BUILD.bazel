@@ -13,6 +13,7 @@
 
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_cc//cc:cc_test.bzl", "cc_test")
+load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS", "ORTOOLS_TEST_COPTS")
 
 package(default_visibility = ["//ortools/math_opt:__subpackages__"])
 
@@ -21,6 +22,8 @@ cc_library(
     testonly = 1,
     srcs = ["base_solver_test.cc"],
     hdrs = ["base_solver_test.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base:gmock",
         "//ortools/math_opt/cpp:math_opt",
@@ -33,9 +36,11 @@ cc_library(
     testonly = 1,
     srcs = ["callback_tests.cc"],
     hdrs = ["callback_tests.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
     data = [
         "//ortools/math_opt/solver_tests/testdata:23588.mps",
     ],
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":base_solver_test",
         ":test_models",
@@ -70,9 +75,11 @@ cc_library(
     testonly = 1,
     srcs = ["status_tests.cc"],
     hdrs = ["status_tests.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
     data = [
         "//ortools/math_opt/solver_tests/testdata:23588.mps",
     ],
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":test_models",
         "//ortools/base:gmock",
@@ -96,6 +103,8 @@ cc_library(
     testonly = 1,
     srcs = ["lp_tests.cc"],
     hdrs = ["lp_tests.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":base_solver_test",
         "//ortools/base:gmock",
@@ -116,6 +125,8 @@ cc_library(
     testonly = 1,
     srcs = ["min_cost_flow_tests.cc"],
     hdrs = ["min_cost_flow_tests.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base:gmock",
         "//ortools/math_opt/cpp:matchers",
@@ -136,6 +147,8 @@ cc_library(
     testonly = 1,
     srcs = ["lp_incomplete_solve_tests.cc"],
     hdrs = ["lp_incomplete_solve_tests.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":test_models",
         "//ortools/base:gmock",
@@ -156,6 +169,8 @@ cc_library(
     testonly = 1,
     srcs = ["invalid_input_tests.cc"],
     hdrs = ["invalid_input_tests.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":base_solver_test",
         ":test_models",
@@ -179,6 +194,8 @@ cc_test(
     name = "unregistered_solver_test",
     size = "small",
     srcs = ["unregistered_solver_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     # SCIP depends on strerror_r() returning a `char*` which is GNU
     # specific. Android returns an `int`.
     tags = ["no_test_android"],
@@ -196,6 +213,8 @@ cc_library(
     testonly = 1,
     srcs = ["mip_tests.cc"],
     hdrs = ["mip_tests.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":base_solver_test",
         "//ortools/base:gmock",
@@ -213,6 +232,8 @@ cc_library(
     testonly = 1,
     srcs = ["ip_model_solve_parameters_tests.cc"],
     hdrs = ["ip_model_solve_parameters_tests.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":base_solver_test",
         "//ortools/base:gmock",
@@ -232,6 +253,8 @@ cc_library(
     testonly = 1,
     srcs = ["ip_multiple_solutions_tests.cc"],
     hdrs = ["ip_multiple_solutions_tests.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base:gmock",
         "//ortools/math_opt/cpp:matchers",
@@ -248,6 +271,8 @@ cc_library(
     testonly = 1,
     srcs = ["lp_model_solve_parameters_tests.cc"],
     hdrs = ["lp_model_solve_parameters_tests.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":base_solver_test",
         ":test_models",
@@ -265,6 +290,8 @@ cc_library(
     testonly = 1,
     srcs = ["lp_parameter_tests.cc"],
     hdrs = ["lp_parameter_tests.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base:gmock",
         "//ortools/math_opt/cpp:matchers",
@@ -286,6 +313,8 @@ cc_library(
     testonly = 1,
     srcs = ["lp_initial_basis_tests.cc"],
     hdrs = ["lp_initial_basis_tests.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":base_solver_test",
         "//ortools/base:gmock",
@@ -303,10 +332,12 @@ cc_library(
     testonly = 1,
     srcs = ["ip_parameter_tests.cc"],
     hdrs = ["ip_parameter_tests.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
     data = [
         "//ortools/math_opt/solver_tests/testdata:23588.mps",
         "//ortools/math_opt/solver_tests/testdata:beavma.mps",
     ],
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":test_models",
         "//ortools/base:gmock",
@@ -335,9 +366,11 @@ cc_library(
     testonly = 1,
     srcs = ["multi_objective_tests.cc"],
     hdrs = ["multi_objective_tests.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
     data = [
         "//ortools/math_opt/solver_tests/testdata:23588.mps",
     ],
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base:gmock",
         "//ortools/math_opt:model_cc_proto",
@@ -364,6 +397,8 @@ cc_library(
     testonly = 1,
     srcs = ["qp_tests.cc"],
     hdrs = ["qp_tests.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base:gmock",
         "//ortools/math_opt/cpp:matchers",
@@ -382,6 +417,8 @@ cc_library(
     testonly = 1,
     srcs = ["qc_tests.cc"],
     hdrs = ["qc_tests.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base:gmock",
         "//ortools/math_opt/cpp:matchers",
@@ -400,6 +437,8 @@ cc_library(
     testonly = 1,
     srcs = ["second_order_cone_tests.cc"],
     hdrs = ["second_order_cone_tests.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base:gmock",
         "//ortools/math_opt/cpp:matchers",
@@ -418,6 +457,8 @@ cc_library(
     testonly = 1,
     srcs = ["logical_constraint_tests.cc"],
     hdrs = ["logical_constraint_tests.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base:gmock",
         "//ortools/math_opt:model_update_cc_proto",
@@ -438,13 +479,14 @@ cc_library(
     testonly = 1,
     srcs = ["test_models.cc"],
     hdrs = ["test_models.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/math_opt/cpp:math_opt",
         "@abseil-cpp//absl/base:nullability",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/random",
-        "@abseil-cpp//absl/random:distributions",
         "@abseil-cpp//absl/strings",
     ],
 )
@@ -452,6 +494,8 @@ cc_library(
 cc_test(
     name = "test_models_test",
     srcs = ["test_models_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     # SCIP depends on strerror_r() returning a `char*` which is GNU
     # specific. Android returns an `int`.
     tags = ["no_test_android"],
@@ -473,6 +517,8 @@ cc_library(
     testonly = True,
     srcs = ["generic_tests.cc"],
     hdrs = ["generic_tests.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":test_models",
         "//ortools/base:gmock",
@@ -502,6 +548,8 @@ cc_library(
     testonly = 1,
     srcs = ["infeasible_subsystem_tests.cc"],
     hdrs = ["infeasible_subsystem_tests.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base:gmock",
         "//ortools/gurobi:gurobi_stdout_matchers",

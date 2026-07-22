@@ -17,6 +17,7 @@ load("@protobuf//bazel:proto_library.bzl", "proto_library")
 load("@protobuf//bazel:py_proto_library.bzl", "py_proto_library")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_cc//cc:cc_test.bzl", "cc_test")
+load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS", "ORTOOLS_TEST_COPTS")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -26,6 +27,8 @@ cc_library(
         "gscip_solver.cc",
         "gscip_solver.h",
     ],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":message_callback_data",
         "//ortools/base:map_util",
@@ -76,6 +79,8 @@ cc_library(
     name = "gurobi_callback",
     srcs = ["gurobi_callback.cc"],
     hdrs = ["gurobi_callback.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     tags = [
         "not_build:arm",
         "not_run:arm",
@@ -114,6 +119,8 @@ cc_library(
     hdrs = [
         "gurobi_init_arguments.h",
     ],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     tags = [
         "not_build:arm",
         "not_run:arm",
@@ -171,6 +178,8 @@ cc_library(
         "glop_solver.cc",
         "glop_solver.h",
     ],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base:map_util",
         "//ortools/base:protoutil",
@@ -222,6 +231,8 @@ cc_library(
         "cp_sat_solver.cc",
         "cp_sat_solver.h",
     ],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base:protoutil",
         "//ortools/linear_solver:linear_solver_cc_proto",
@@ -265,6 +276,9 @@ cc_library(
 cc_test(
     name = "glop_solver_test",
     srcs = ["glop_solver_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    tags = ["no_test_wasm"],  # TODO(b/240593929): we should test wasm
     deps = [
         ":glop_solver",
         "//ortools/base:gmock",
@@ -293,8 +307,9 @@ cc_test(
 
 cc_test(
     name = "cp_sat_solver_test",
-    timeout = "eternal",
     srcs = ["cp_sat_solver_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     tags = [
         # `--config=android_arm` and `--config=android_arm64` both timeout on
         # this test.
@@ -330,6 +345,8 @@ cc_library(
     name = "message_callback_data",
     srcs = ["message_callback_data.cc"],
     hdrs = ["message_callback_data.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/math_opt/core:solver_interface",
         "@abseil-cpp//absl/strings",
@@ -340,6 +357,9 @@ cc_library(
 cc_test(
     name = "message_callback_data_test",
     srcs = ["message_callback_data_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    tags = ["no_test_wasm"],  # TODO(b/240593929): we should test wasm
     deps = [
         ":message_callback_data",
         "//ortools/base:gmock_main",
@@ -353,6 +373,8 @@ cc_library(
     name = "pdlp_bridge",
     srcs = ["pdlp_bridge.cc"],
     hdrs = ["pdlp_bridge.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/math_opt:model_cc_proto",
         "//ortools/math_opt:model_parameters_cc_proto",
@@ -379,6 +401,8 @@ cc_library(
         "pdlp_solver.cc",
         "pdlp_solver.h",
     ],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":pdlp_bridge",
         "//ortools/base:protoutil",
@@ -418,6 +442,8 @@ cc_test(
     name = "pdlp_solver_test",
     size = "small",
     srcs = ["pdlp_solver_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":pdlp_solver",
         "//ortools/base:gmock",
@@ -454,11 +480,12 @@ cc_library(
         "glpk_solver.cc",
         "glpk_solver.h",
     ],
-    target_compatible_with =
-        select({
-            "//ortools/linear_solver:use_glpk": [],
-            "//conditions:default": ["@platforms//:incompatible"],
-        }),
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    target_compatible_with = select({
+        "//ortools/linear_solver:use_glpk": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
     deps = [
         ":glpk_cc_proto",
         ":message_callback_data",
@@ -509,6 +536,8 @@ cc_library(
         "min_cost_flow_solver.cc",
         "min_cost_flow_solver.h",
     ],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base:map_util",
         "//ortools/base:protoutil",
@@ -546,6 +575,8 @@ cc_library(
 cc_test(
     name = "min_cost_flow_solver_test",
     srcs = ["min_cost_flow_solver_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     tags = [
         "no_test_wasm",
         "noci",
@@ -577,11 +608,19 @@ cc_test(
 cc_test(
     name = "glpk_solver_test",
     srcs = ["glpk_solver_test.cc"],
-    target_compatible_with =
-        select({
-            "//ortools/linear_solver:use_glpk": [],
-            "//conditions:default": ["@platforms//:incompatible"],
-        }),
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    tags = [
+        # GLPK does not build on darwin_x86_64 with duplicated DEBUG macro
+        # issue.
+        "no_test_darwin_x86_64",
+        # TODO(b/240593929): we should test wasm
+        "no_test_wasm",
+    ],
+    target_compatible_with = select({
+        "//ortools/linear_solver:use_glpk": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
     deps = [
         ":glpk_solver",
         "//ortools/base:gmock_main",
@@ -634,8 +673,6 @@ py_proto_library(
     deps = [":osqp_proto"],
 )
 
-# Highs has a large number of asan failures that are easy to trigger. Further, our version of Highs
-# is very out of date, some (but not all) of these have already been fixed. For use in google3, we
 # generally do not recommend Highs, and if it is used, we would recommend using a subprocess solver.
 cc_library(
     name = "highs_solver",
@@ -643,6 +680,8 @@ cc_library(
         "highs_solver.cc",
         "highs_solver.h",
     ],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     # Highs does not compile on WASM.
     tags = ["no_test_wasm"],
     deps = [
@@ -685,8 +724,10 @@ cc_library(
 cc_test(
     name = "highs_solver_test",
     srcs = ["highs_solver_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
     flaky = 1,
-    # Highs fails to build with WASM in @zstr.
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    # Highs fails to build with WASM in //third_party/zstr.
     tags = [
         "no_test_wasm",
         "noci",
@@ -802,6 +843,8 @@ cc_library(
         "xpress_solver.cc",
         "xpress_solver.h",
     ],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base:map_util",
         "//ortools/base:protoutil",
@@ -846,6 +889,8 @@ cc_library(
 cc_test(
     name = "xpress_solver_test",
     srcs = ["xpress_solver_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":xpress_solver",
         "//ortools/base:gmock",  # Not gunit_main: we have a custom main().

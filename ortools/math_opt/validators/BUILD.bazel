@@ -12,6 +12,7 @@
 # limitations under the License.
 
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS")
 
 package(default_visibility = ["//ortools/math_opt:__subpackages__"])
 
@@ -19,6 +20,8 @@ cc_library(
     name = "ids_validator",
     srcs = ["ids_validator.cc"],
     hdrs = ["ids_validator.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base:status_builder",
         "//ortools/base:types",
@@ -34,6 +37,8 @@ cc_library(
     name = "scalar_validator",
     srcs = ["scalar_validator.cc"],
     hdrs = ["scalar_validator.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/strings",
@@ -44,6 +49,8 @@ cc_library(
     name = "sparse_matrix_validator",
     srcs = ["sparse_matrix_validator.cc"],
     hdrs = ["sparse_matrix_validator.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":ids_validator",
         "//ortools/base:status_builder",
@@ -59,6 +66,8 @@ cc_library(
 cc_library(
     name = "sparse_vector_validator",
     hdrs = ["sparse_vector_validator.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":ids_validator",
         ":scalar_validator",
@@ -73,6 +82,8 @@ cc_library(
     name = "model_validator",
     srcs = ["model_validator.cc"],
     hdrs = ["model_validator.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":ids_validator",
         ":scalar_validator",
@@ -98,6 +109,8 @@ cc_library(
     name = "solve_stats_validator",
     srcs = ["solve_stats_validator.cc"],
     hdrs = ["solve_stats_validator.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base:protoutil",
         "//ortools/math_opt:result_cc_proto",
@@ -112,6 +125,8 @@ cc_library(
     name = "result_validator",
     srcs = ["result_validator.cc"],
     hdrs = ["result_validator.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":solution_validator",
         ":solve_stats_validator",
@@ -132,6 +147,8 @@ cc_library(
     name = "solution_validator",
     srcs = ["solution_validator.cc"],
     hdrs = ["solution_validator.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":ids_validator",
         ":scalar_validator",
@@ -153,6 +170,8 @@ cc_library(
     name = "solve_parameters_validator",
     srcs = ["solve_parameters_validator.cc"],
     hdrs = ["solve_parameters_validator.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base:protoutil",
         "//ortools/base:status_builder",
@@ -169,6 +188,8 @@ cc_library(
     name = "callback_validator",
     srcs = ["callback_validator.cc"],
     hdrs = ["callback_validator.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":ids_validator",
         ":model_parameters_validator",
@@ -195,6 +216,8 @@ cc_library(
     name = "model_parameters_validator",
     srcs = ["model_parameters_validator.cc"],
     hdrs = ["model_parameters_validator.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":ids_validator",
         ":solution_validator",
@@ -217,6 +240,8 @@ cc_library(
     name = "linear_expression_validator",
     srcs = ["linear_expression_validator.cc"],
     hdrs = ["linear_expression_validator.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":scalar_validator",
         ":sparse_vector_validator",
@@ -233,6 +258,8 @@ cc_library(
     name = "infeasible_subsystem_validator",
     srcs = ["infeasible_subsystem_validator.cc"],
     hdrs = ["infeasible_subsystem_validator.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":bounds_and_status_validator",
         ":ids_validator",
@@ -249,6 +276,8 @@ cc_library(
     name = "bounds_and_status_validator",
     srcs = ["bounds_and_status_validator.cc"],
     hdrs = ["bounds_and_status_validator.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":scalar_validator",
         "//ortools/base:status_builder",
@@ -263,6 +292,8 @@ cc_library(
     name = "termination_validator",
     srcs = ["termination_validator.cc"],
     hdrs = ["termination_validator.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":bounds_and_status_validator",
         "//ortools/base:status_builder",

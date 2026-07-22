@@ -12,14 +12,19 @@
 # limitations under the License.
 
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS")
 
 # Code specific to XPRESS used in xpress_solver.cc.
-package(default_visibility = ["//ortools/math_opt/solvers:__subpackages__"])
+package(default_visibility = [
+    "//ortools/math_opt/solvers:__subpackages__",
+])
 
 cc_library(
     name = "g_xpress",
     srcs = ["g_xpress.cc"],
     hdrs = ["g_xpress.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base:status_builder",
         "//ortools/third_party_solvers:xpress_environment",

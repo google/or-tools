@@ -175,7 +175,7 @@ cc_test(
     name = "dump_vars_test",
     size = "small",
     srcs = ["dump_vars_test.cc"],
-    copts = ORTOOLS_DEFAULT_COPTS,
+    copts = ORTOOLS_TEST_COPTS,
     linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":dump_vars",

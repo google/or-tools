@@ -14,10 +14,13 @@
 load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_cc//cc:cc_test.bzl", "cc_test")
+load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS", "ORTOOLS_TEST_COPTS")
 
 cc_library(
     name = "attributes",
     hdrs = ["attributes.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = [
         "//ortools/math_opt:__subpackages__",
         "//third_party/ortools/ortools:__subpackages__",
@@ -33,6 +36,8 @@ cc_library(
 cc_test(
     name = "attributes_test",
     srcs = ["attributes_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":arrays",
         ":attributes",
@@ -51,6 +56,8 @@ cc_library(
         "elemental_to_string.cc",
     ],
     hdrs = ["elemental.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = [
         "//ortools/math_opt:__subpackages__",
         "//third_party/ortools/ortools:__subpackages__",
@@ -93,6 +100,8 @@ cc_library(
 cc_test(
     name = "elemental_test",
     srcs = ["elemental_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":attr_key",
         ":attributes",
@@ -111,6 +120,8 @@ cc_binary(
     name = "elemental_benchmark",
     testonly = 1,
     srcs = ["elemental_benchmark.cc"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":attr_key",
         ":attributes",
@@ -127,6 +138,8 @@ cc_binary(
 cc_library(
     name = "derived_data",
     hdrs = ["derived_data.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = [
         "//ortools/math_opt:__subpackages__",
         "//third_party/ortools/ortools:__subpackages__",
@@ -145,6 +158,8 @@ cc_library(
 cc_test(
     name = "derived_data_test",
     srcs = ["derived_data_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":arrays",
         ":attr_key",
@@ -161,6 +176,8 @@ cc_library(
     name = "element_storage",
     srcs = ["element_storage.cc"],
     hdrs = ["element_storage.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base:status_builder",
         "@abseil-cpp//absl/algorithm:container",
@@ -173,6 +190,8 @@ cc_library(
 cc_test(
     name = "element_storage_test",
     srcs = ["element_storage_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":element_storage",
         "//ortools/base:gmock_main",
@@ -184,6 +203,8 @@ cc_binary(
     name = "element_storage_benchmark",
     testonly = 1,
     srcs = ["element_storage_benchmark.cc"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":element_storage",
         "//ortools/base:benchmark_main",
@@ -194,12 +215,16 @@ cc_binary(
 cc_library(
     name = "element_diff",
     hdrs = ["element_diff.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = ["@abseil-cpp//absl/container:flat_hash_set"],
 )
 
 cc_test(
     name = "element_diff_test",
     srcs = ["element_diff_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":element_diff",
         "//ortools/base:gmock_main",
@@ -210,6 +235,8 @@ cc_library(
     name = "diff",
     srcs = ["diff.cc"],
     hdrs = ["diff.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "derived_data",
         ":attr_diff",
@@ -225,6 +252,8 @@ cc_library(
 cc_test(
     name = "diff_test",
     srcs = ["diff_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":attr_key",
         ":attributes",
@@ -238,6 +267,8 @@ cc_test(
 cc_library(
     name = "attr_storage",
     hdrs = ["attr_storage.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":attr_key",
         ":symmetry",
@@ -250,6 +281,8 @@ cc_library(
 cc_test(
     name = "attr_storage_test",
     srcs = ["attr_storage_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":attr_key",
         ":attr_storage",
@@ -262,6 +295,8 @@ cc_binary(
     name = "attr_storage_benchmark",
     testonly = 1,
     srcs = ["attr_storage_benchmark.cc"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":attr_key",
         ":attr_storage",
@@ -274,6 +309,8 @@ cc_binary(
 cc_library(
     name = "attr_diff",
     hdrs = ["attr_diff.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":attr_key",
         "@abseil-cpp//absl/container:flat_hash_set",
@@ -283,6 +320,8 @@ cc_library(
 cc_test(
     name = "attr_diff_test",
     srcs = ["attr_diff_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":attr_diff",
         ":attr_key",
@@ -294,6 +333,8 @@ cc_test(
 cc_library(
     name = "attr_key",
     hdrs = ["attr_key.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = [
         "//ortools/math_opt:__subpackages__",
         "//third_party/ortools/ortools:__subpackages__",
@@ -313,6 +354,8 @@ cc_library(
 cc_test(
     name = "attr_key_test",
     srcs = ["attr_key_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":attr_key",
         ":elements",
@@ -330,6 +373,8 @@ cc_binary(
     name = "attr_key_benchmark",
     testonly = 1,
     srcs = ["attr_key_benchmark.cc"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":attr_key",
         ":symmetry",
@@ -345,6 +390,8 @@ cc_binary(
 cc_library(
     name = "arrays",
     hdrs = ["arrays.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = [
         "//ortools/math_opt/elemental/codegen:__pkg__",
         "//ortools/math_opt/elemental/python:__pkg__",
@@ -355,6 +402,8 @@ cc_library(
     name = "elemental_differencer",
     srcs = ["elemental_differencer.cc"],
     hdrs = ["elemental_differencer.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":attr_key",
         ":attributes",
@@ -371,6 +420,8 @@ cc_library(
 cc_test(
     name = "elemental_differencer_test",
     srcs = ["elemental_differencer_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":attr_key",
         ":attributes",
@@ -385,6 +436,8 @@ cc_test(
 cc_test(
     name = "arrays_test",
     srcs = ["arrays_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":arrays",
         "//ortools/base:gmock_main",
@@ -397,6 +450,8 @@ cc_test(
 cc_test(
     name = "elemental_export_model_test",
     srcs = ["elemental_export_model_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":attr_key",
         ":attributes",
@@ -412,6 +467,8 @@ cc_test(
 cc_test(
     name = "elemental_to_string_test",
     srcs = ["elemental_to_string_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":attr_key",
         ":attributes",
@@ -426,6 +483,8 @@ cc_test(
 cc_test(
     name = "safe_attr_ops_test",
     srcs = ["safe_attr_ops_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":attr_key",
         ":attributes",
@@ -440,6 +499,8 @@ cc_test(
 cc_library(
     name = "safe_attr_ops",
     hdrs = ["safe_attr_ops.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = [
         "//ortools/math_opt/elemental/c_api:__subpackages__",
     ],
@@ -457,12 +518,16 @@ cc_library(
     name = "testing",
     testonly = 1,
     hdrs = ["testing.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [":attr_key"],
 )
 
 cc_library(
     name = "tagged_id",
     hdrs = ["tagged_id.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/log:check",
@@ -473,6 +538,8 @@ cc_library(
 cc_test(
     name = "tagged_id_test",
     srcs = ["tagged_id_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":tagged_id",
         "//ortools/base:gmock_main",
@@ -486,6 +553,8 @@ cc_test(
 cc_library(
     name = "symmetry",
     hdrs = ["symmetry.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings:str_format",
@@ -498,6 +567,8 @@ cc_library(
     testonly = 1,
     srcs = ["elemental_matcher.cc"],
     hdrs = ["elemental_matcher.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":elemental",
         ":elemental_differencer",
@@ -509,6 +580,8 @@ cc_library(
 cc_library(
     name = "element_ref_tracker",
     hdrs = ["element_ref_tracker.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":attr_key",
         ":elements",
@@ -522,6 +595,8 @@ cc_library(
     name = "elements",
     srcs = ["elements.cc"],
     hdrs = ["elements.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = ["//ortools/math_opt:__subpackages__"],
     deps = [
         ":tagged_id",
@@ -533,6 +608,8 @@ cc_library(
 cc_test(
     name = "elements_test",
     srcs = ["elements_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":elements",
         "//ortools/base:gmock_main",
@@ -545,6 +622,8 @@ cc_test(
 cc_test(
     name = "elemental_matcher_test",
     srcs = ["elemental_matcher_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":elemental",
         ":elemental_differencer",
@@ -557,6 +636,8 @@ cc_test(
 cc_test(
     name = "element_ref_tracker_test",
     srcs = ["element_ref_tracker_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":attr_key",
         ":element_ref_tracker",
@@ -569,6 +650,8 @@ cc_test(
 cc_library(
     name = "thread_safe_id_map",
     hdrs = ["thread_safe_id_map.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base:stl_util",
         "@abseil-cpp//absl/base:core_headers",
@@ -581,6 +664,8 @@ cc_library(
 cc_test(
     name = "thread_safe_id_map_test",
     srcs = ["thread_safe_id_map_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":thread_safe_id_map",
         "//ortools/base:gmock_main",
@@ -590,6 +675,8 @@ cc_test(
 cc_test(
     name = "elemental_from_proto_test",
     srcs = ["elemental_from_proto_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":attr_key",
         ":attributes",
@@ -607,6 +694,8 @@ cc_test(
 cc_test(
     name = "elemental_update_from_proto_test",
     srcs = ["elemental_update_from_proto_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":attr_key",
         ":attributes",
