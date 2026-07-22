@@ -14,20 +14,19 @@
 load("@pip_deps//:requirements.bzl", "requirement")
 load("@rules_python//python:py_library.bzl", "py_library")
 
+package(default_visibility = ["//visibility:public"])
+
 py_library(
     name = "remote_http_solve",
     srcs = ["remote_http_solve.py"],
-    visibility = [
-        "//examples/service:__subpackages__",
-        "//ortools/service:__subpackages__",
-    ],
+    visibility = ["//examples/service:__subpackages__"],
     deps = [
         ":proto_converter",
+        "//ortools/math_opt/python:mathopt",
         "//ortools/service/v1:optimization_py_pb2",
         "@protobuf//:protobuf_python",
         requirement("requests"),
         "//ortools/math_opt:rpc_py_pb2",
-        "//ortools/math_opt/python:mathopt",
     ],
 )
 

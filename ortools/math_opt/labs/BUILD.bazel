@@ -12,11 +12,15 @@
 # limitations under the License.
 
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
+load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS", "ORTOOLS_TEST_COPTS")
 
 cc_library(
     name = "general_constraint_to_mip",
     srcs = ["general_constraint_to_mip.cc"],
     hdrs = ["general_constraint_to_mip.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = ["//visibility:public"],
     deps = [
         ":linear_expr_util",
@@ -30,6 +34,8 @@ cc_library(
     name = "linear_expr_util",
     srcs = ["linear_expr_util.cc"],
     hdrs = ["linear_expr_util.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = ["//visibility:public"],
     deps = [
         "//ortools/math_opt/cpp:math_opt",
@@ -41,6 +47,8 @@ cc_library(
     name = "solution_feasibility_checker",
     srcs = ["solution_feasibility_checker.cc"],
     hdrs = ["solution_feasibility_checker.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = ["//visibility:public"],
     deps = [
         "//ortools/base:mathutil",
@@ -60,6 +68,8 @@ cc_library(
     name = "solution_improvement",
     srcs = ["solution_improvement.cc"],
     hdrs = ["solution_improvement.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = ["//visibility:public"],
     deps = [
         "//ortools/math_opt/core:math_opt_proto_utils",
@@ -76,10 +86,10 @@ cc_library(
 
 cc_library(
     name = "dualizer",
-    srcs = [
-        "dualizer.cc",
-    ],
+    srcs = ["dualizer.cc"],
     hdrs = ["dualizer.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = ["//visibility:public"],
     deps = [
         "//ortools/base:map_util",

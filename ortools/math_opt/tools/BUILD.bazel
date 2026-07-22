@@ -15,12 +15,14 @@
 
 load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS")
 
-package(default_visibility = ["//visibility:private"])
+package(default_visibility = ["//visibility:public"])
 
 cc_binary(
     name = "mathopt_solve",
     srcs = ["mathopt_solve.cc"],
+    copts = ORTOOLS_DEFAULT_COPTS,
     tags = [
         "not_build:arm",
         "not_run:arm",
@@ -58,6 +60,8 @@ cc_binary(
 cc_binary(
     name = "mathopt_convert",
     srcs = ["mathopt_convert.cc"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":file_format_flags",
         "//ortools/base",
@@ -75,6 +79,8 @@ cc_library(
     name = "file_format_flags",
     srcs = ["file_format_flags.cc"],
     hdrs = ["file_format_flags.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base:file",
         "//ortools/linear_solver:linear_solver_cc_proto",

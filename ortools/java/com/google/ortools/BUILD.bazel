@@ -13,10 +13,13 @@
 
 load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 load("@rules_java//java:java_library.bzl", "java_library")
+load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS")
 
 # Utilities to load native libraries in java or-tools.
 cc_binary(
     name = "libjniortools.so",
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     linkshared = True,
     target_compatible_with = select({
         "@platforms//os:linux": [],
@@ -39,6 +42,8 @@ cc_binary(
 
 cc_binary(
     name = "libjniortools.dylib",
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     linkshared = True,
     target_compatible_with = select({
         "@platforms//os:osx": [],
@@ -62,6 +67,8 @@ cc_binary(
 
 cc_binary(
     name = "jniortools.dll",
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     linkshared = True,
     target_compatible_with = select({
         "@platforms//os:windows": [],

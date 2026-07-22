@@ -13,11 +13,14 @@
 
 load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS")
 
 cc_library(
     name = "gen",
     srcs = ["gen.cc"],
     hdrs = ["gen.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/math_opt/elemental:arrays",
         "//ortools/math_opt/elemental:attributes",
@@ -32,6 +35,8 @@ cc_library(
     name = "gen_c",
     srcs = ["gen_c.cc"],
     hdrs = ["gen_c.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":gen",
         "@abseil-cpp//absl/base:core_headers",
@@ -46,6 +51,8 @@ cc_library(
     name = "testing",
     testonly = 1,
     hdrs = ["testing.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [":gen"],
 )
 
@@ -53,6 +60,8 @@ cc_library(
     name = "gen_python",
     srcs = ["gen_python.cc"],
     hdrs = ["gen_python.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":gen",
         "@abseil-cpp//absl/base:core_headers",
@@ -66,6 +75,8 @@ cc_library(
 cc_binary(
     name = "codegen",
     srcs = ["codegen.cc"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = [
         "//ortools/math_opt/elemental/c_api:__subpackages__",
         "//ortools/math_opt/elemental/python:__pkg__",

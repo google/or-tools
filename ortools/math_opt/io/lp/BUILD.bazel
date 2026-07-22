@@ -12,11 +12,16 @@
 # limitations under the License.
 
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS")
+
+package(default_visibility = ["//ortools/math_opt:__subpackages__"])
 
 cc_library(
     name = "lp_model",
     srcs = ["lp_model.cc"],
     hdrs = ["lp_model.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":lp_name",
         "//ortools/base:status_builder",
@@ -35,6 +40,8 @@ cc_library(
     name = "lp_name",
     srcs = ["lp_name.cc"],
     hdrs = ["lp_name.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base:status_builder",
         "@abseil-cpp//absl/status",
@@ -47,6 +54,8 @@ cc_library(
     name = "model_utils",
     srcs = ["model_utils.cc"],
     hdrs = ["model_utils.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":lp_model",
         "//ortools/base:status_builder",

@@ -14,10 +14,7 @@
 load("@pip_deps//:requirements.bzl", "requirement")
 load("@rules_python//python:py_library.bzl", "py_library")
 
-package(default_visibility = [
-    "//ortools/math_opt/elemental/python:__subpackages__",
-    "//ortools/math_opt/python:__subpackages__",
-])
+package(default_visibility = ["//visibility:public"])
 
 py_library(
     name = "elemental",

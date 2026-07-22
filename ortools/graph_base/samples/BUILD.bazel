@@ -12,6 +12,7 @@
 # limitations under the License.
 
 load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS")
 load("//tools/testing:bintest.bzl", "bintest")
 
 package(default_visibility = ["//visibility:public"])
@@ -19,6 +20,8 @@ package(default_visibility = ["//visibility:public"])
 cc_binary(
     name = "bfs_directed",
     srcs = ["bfs_directed.cc"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/graph_base:bfs",
@@ -38,6 +41,8 @@ bintest(
 cc_binary(
     name = "bfs_undirected",
     srcs = ["bfs_undirected.cc"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/graph_base:bfs",
@@ -57,6 +62,8 @@ bintest(
 cc_binary(
     name = "bfs_one_to_all",
     srcs = ["bfs_one_to_all.cc"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
         "//ortools/graph_base:bfs",

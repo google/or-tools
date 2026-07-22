@@ -29,9 +29,7 @@ proto_library(
 
 cc_proto_library(
     name = "callback_cc_proto",
-    deps = [
-        ":callback_proto",
-    ],
+    deps = [":callback_proto"],
 )
 
 py_proto_library(
@@ -47,16 +45,12 @@ java_proto_library(
 proto_library(
     name = "model_proto",
     srcs = ["model.proto"],
-    deps = [
-        ":sparse_containers_proto",
-    ],
+    deps = [":sparse_containers_proto"],
 )
 
 cc_proto_library(
     name = "model_cc_proto",
-    deps = [
-        ":model_proto",
-    ],
+    deps = [":model_proto"],
 )
 
 py_proto_library(
@@ -81,9 +75,7 @@ proto_library(
 
 cc_proto_library(
     name = "model_parameters_cc_proto",
-    deps = [
-        ":model_parameters_proto",
-    ],
+    deps = [":model_parameters_proto"],
 )
 
 py_proto_library(
@@ -107,9 +99,7 @@ proto_library(
 
 cc_proto_library(
     name = "model_update_cc_proto",
-    deps = [
-        ":model_update_proto",
-    ],
+    deps = [":model_update_proto"],
 )
 
 py_proto_library(
@@ -141,9 +131,7 @@ proto_library(
 
 cc_proto_library(
     name = "parameters_cc_proto",
-    deps = [
-        ":parameters_proto",
-    ],
+    deps = [":parameters_proto"],
 )
 
 py_proto_library(
@@ -170,9 +158,7 @@ proto_library(
 
 cc_proto_library(
     name = "result_cc_proto",
-    deps = [
-        ":result_proto",
-    ],
+    deps = [":result_proto"],
 )
 
 py_proto_library(
@@ -188,16 +174,12 @@ java_proto_library(
 proto_library(
     name = "solution_proto",
     srcs = ["solution.proto"],
-    deps = [
-        ":sparse_containers_proto",
-    ],
+    deps = [":sparse_containers_proto"],
 )
 
 cc_proto_library(
     name = "solution_cc_proto",
-    deps = [
-        ":solution_proto",
-    ],
+    deps = [":solution_proto"],
 )
 
 py_proto_library(
@@ -217,9 +199,7 @@ proto_library(
 
 cc_proto_library(
     name = "sparse_containers_cc_proto",
-    deps = [
-        ":sparse_containers_proto",
-    ],
+    deps = [":sparse_containers_proto"],
 )
 
 py_proto_library(
@@ -235,16 +215,12 @@ java_proto_library(
 proto_library(
     name = "infeasible_subsystem_proto",
     srcs = ["infeasible_subsystem.proto"],
-    deps = [
-        ":result_proto",
-    ],
+    deps = [":result_proto"],
 )
 
 cc_proto_library(
     name = "infeasible_subsystem_cc_proto",
-    deps = [
-        ":infeasible_subsystem_proto",
-    ],
+    deps = [":infeasible_subsystem_proto"],
 )
 
 py_proto_library(

@@ -13,6 +13,7 @@
 
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_cc//cc:cc_test.bzl", "cc_test")
+load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS", "ORTOOLS_TEST_COPTS")
 
 package(default_visibility = ["//ortools/math_opt:__subpackages__"])
 
@@ -20,6 +21,8 @@ cc_library(
     name = "model_util",
     srcs = ["model_util.cc"],
     hdrs = ["model_util.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base:strong_int",
         "//ortools/math_opt/cpp:variable_and_expressions",
@@ -34,6 +37,8 @@ cc_library(
 cc_test(
     name = "model_util_test",
     srcs = ["model_util_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         ":model_util",
         "//ortools/base:gmock_main",

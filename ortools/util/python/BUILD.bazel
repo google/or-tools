@@ -90,6 +90,7 @@ cc_library(
     # This library is not meant to be consumed end users; only by C++ code of
     # Clif libraries that needs a SolverInterrupter.
     visibility = [
+        "//ortools/math_opt:__subpackages__",
         "//ortools/math_opt/core/python:__subpackages__",
         "//ortools/math_opt/python:__subpackages__",
     ],

@@ -688,9 +688,7 @@ py_test(
     size = "medium",
     srcs = ["vrp_nodes_indices.py"],
     main = "vrp_nodes_indices.py",
-    deps = [
-        "//ortools/routing/python:routing_py",
-    ],
+    deps = ["//ortools/routing/python:routing_py"],
 )
 
 cc_test(

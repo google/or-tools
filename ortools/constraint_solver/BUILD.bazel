@@ -19,6 +19,7 @@ load("@protobuf//bazel:proto_library.bzl", "proto_library")
 load("@protobuf//bazel:py_proto_library.bzl", "py_proto_library")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_python//python:py_library.bzl", "py_library")
+load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS")
 
 proto_library(
     name = "assignment_proto",
@@ -128,6 +129,8 @@ cc_library(
     name = "model_cache",
     srcs = ["model_cache.cc"],
     hdrs = ["model_cache.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = ["//visibility:public"],
     deps = [
         "//ortools/base:safe_hash_map",
@@ -141,6 +144,8 @@ cc_library(
     name = "reversible_engine",
     srcs = ["reversible_engine.cc"],
     hdrs = ["reversible_engine.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = ["//visibility:public"],
     deps = [
         ":solver_parameters_cc_proto",
@@ -156,6 +161,8 @@ cc_library(
     name = "reversible_data",
     srcs = ["reversible_data.cc"],
     hdrs = ["reversible_data.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = ["//visibility:public"],
     deps = [
         ":reversible_engine",
@@ -169,6 +176,8 @@ cc_library(
     name = "utilities",
     srcs = ["utilities.cc"],
     hdrs = ["utilities.h"],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = ["//visibility:public"],
     deps = [
         "//ortools/base:types",
@@ -236,6 +245,8 @@ cc_library(
         "variables.h",
         "visitor.h",
     ],
+    copts = ORTOOLS_DEFAULT_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     visibility = ["//visibility:public"],
     deps = [
         ":assignment_cc_proto",
