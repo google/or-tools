@@ -88,25 +88,27 @@ The first resource limit is $$L_1 = 6$$ and the second $$L_2=3$$. In the image
 below, each arc is labeled `X(Y,Z)`, where X is the cost of the arc and Y and Z
 are the first and second resource use of the arc.
 
-```dot
-digraph d {
-  rankdir="TB"
-  node [style=filled, color="lightskyblue"]
-  0 -> 1 [label="5(1,2)"];
-  0 -> 2 [label="4(3,2)", penwidth=4, color="red"];
-  0 -> 2 [label="1(2,3)"];
-  1 -> 3 [label="-3(8,0)"];
-  2 -> 3 [label="0(3,1)", penwidth=4, color="red"];
-  {rank = same; 2; 3;}
-}
+```mermaid
+graph TB
+    0((0))
+    1((1))
+    2((2))
+    3((3))
+    0 -- "5(1,2)" --> 1
+    0 == "4(3,2)" ==> 2
+    0 -- "1(2,3)" --> 2
+    1 -- "-3(8,0)" --> 3
+    2 == "0(3,1)" ==> 3
+    classDef node stroke:black,fill:lightskyblue
+    linkStyle 1,4 stroke:red,stroke-width:2px,color:black;
 ```
 
 The constrained shortest path is shown in red in the image. It has a cost of 4,
-and uses $$6 \leqslant L_1$$ of the first resource and $$3 \leqslant L_1$$ of
+and uses $$6 \leqslant L_1$$ of the first resource and $$3 \leqslant L_2$$ of
 the second resource.
 
 We solve this using `ConstrainedShortestPathsOnDag()` from
-[`dag_constrained_shortest_path.h`](../graph/dag_constrained_shortest_path.h)
+[`dag_constrained_shortest_path.h`](../dag_constrained_shortest_path.h)
 below:
 
 ```cpp
@@ -199,6 +201,7 @@ We let $$M = \{0, 1, \ldots, 4\}$$ be the set of nodes in the middle.
 In this problem, there is a single resource constraint with limit $$L_1 = 1$$.
 All arcs starting from `source` or going to `dest` do not use any resource. For
 each arc between $$i \in M$$ and $$i + 1 \in M$$, the arc has a resource use of
+
 1. This constraint implies that a feasible path can only pass through one or two
 nodes in $$M$$.
 

@@ -50,7 +50,7 @@ center is the best with length 2, and the bolded blue path on the left is second
 best with length 3.
 
 We solve this using `KShortestPathsOnDag()` from
-[`dag_shortest_path.h`](http://cs/ortools/graph/dag_shortest_path.h)
+[`dag_shortest_path.h`](../dag_shortest_path.h)
 below:
 
 ```cpp
@@ -115,10 +115,10 @@ the same nodes with all arcs reversed, and find the k-shortest paths from $$t$$
 to each node, and last reverse the paths.
 
 We will now show an example solving this problem using
-[`dag_shortest_path.h`](http://cs/ortools/graph/dag_shortest_path.h).
+[`dag_shortest_path.h`](../dag_shortest_path.h).
 Unlike the previous example, we must use the lower level API of
 `KShortestPathsOnDagWrapper`, which requires building a
-[`util::StaticGraph`](http://cs/google3/ortools/graph_base/graph.h) to get started.
+[`util::StaticGraph`](../../graph_base/graph.h) to get started.
 (This was done for us by `KShortestPathsOnDag()` in the above examples).
 
 The example below can be found at
@@ -222,9 +222,10 @@ int main(int argc, char** argv) {
 }
 ```
 
-> NOTE :You can use a [`util::ListGraph`](http://cs/google3/ortools/graph_base/graph.h)
-> instead of `util::StaticGraph` above, which is simpler as it does not require
-> a `Build()` step and does not permute the edges, but it is slower.
+> NOTE :You can use a `util::ListGraph` from
+> [`graph.h`](../../graph_base/graph.h) instead of `util::StaticGraph`
+> above, which is simpler as it does not require a `Build()` step and does not
+> permute the edges, but it is slower.
 
 Running this code generates the output:
 
