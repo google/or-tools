@@ -13,7 +13,7 @@
 
 #include "ortools/util/qap_reader.h"
 
-#include <limits>
+#include <cstdint>
 #include <string>
 #include <vector>
 

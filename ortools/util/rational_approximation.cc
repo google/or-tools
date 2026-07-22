@@ -14,6 +14,7 @@
 #include "ortools/util/rational_approximation.h"
 
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
 #include <limits>
 

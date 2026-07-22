@@ -13,6 +13,8 @@
 
 #include "ortools/math_opt/io/names_removal.h"
 
+#include <cstdint>
+
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/model_update.pb.h"
 

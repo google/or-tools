@@ -25,6 +25,7 @@
 #include "absl/strings/escaping.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/status_builder.h"
 #include "ortools/math_opt/io/lp/lp_name.h"
 #include "ortools/util/fp_roundtrip_conv.h"

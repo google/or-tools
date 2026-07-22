@@ -14,7 +14,6 @@
 #include "ortools/util/file_util.h"
 
 #include <string>
-#include <utility>
 
 #include "absl/log/check.h"
 #include "absl/log/log.h"
@@ -30,7 +29,6 @@
 #include "google/protobuf/message.h"
 #include "google/protobuf/text_format.h"
 #include "google/protobuf/util/json_util.h"
-#include "ortools/base/file.h"
 #include "ortools/base/gzipstring.h"
 #include "ortools/base/helpers.h"
 #include "ortools/base/options.h"

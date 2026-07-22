@@ -14,7 +14,6 @@
 #include "ortools/constraint_solver/expr_cst.h"
 
 #include <cstdint>
-#include <limits>
 #include <string>
 #include <utility>
 #include <vector>
@@ -26,7 +25,6 @@
 #include "absl/strings/str_join.h"
 #include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
-#include "ortools/constraint_solver/constraints.h"
 #include "ortools/constraint_solver/expressions.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"

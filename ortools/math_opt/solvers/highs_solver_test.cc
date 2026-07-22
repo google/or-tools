@@ -21,7 +21,6 @@
 // There is no way to turn off cuts when using highs as a MIP solver, this
 // forces us to disable some tests.
 
-#include <cstdint>
 #include <limits>
 #include <memory>
 #include <optional>

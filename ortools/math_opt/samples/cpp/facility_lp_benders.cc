@@ -57,6 +57,7 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/memory/memory.h"
 #include "absl/random/random.h"
 #include "absl/random/seed_sequences.h"
@@ -70,6 +71,7 @@
 #include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "ortools/base/init_google.h"
+#include "ortools/base/status_builder.h"
 #include "ortools/math_opt/cpp/math_opt.h"
 #include "ortools/util/status_macros.h"
 

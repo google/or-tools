@@ -42,6 +42,7 @@
 #include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "ortools/base/protoutil.h"
+#include "ortools/base/status_builder.h"
 #include "ortools/base/types.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/empty_bounds.h"
@@ -67,6 +68,7 @@
 #include "ortools/third_party_solvers/glpk/glpk_env_deleter.h"
 #include "ortools/third_party_solvers/glpk/glpk_formatters.h"
 #include "ortools/util/solve_interrupter.h"
+#include "third_party/gloop/base/sysinfo.h"
 
 namespace operations_research {
 namespace math_opt {

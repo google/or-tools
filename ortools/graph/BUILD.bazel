@@ -835,6 +835,7 @@ cc_test(
         "//ortools/base:log_severity",
         "//ortools/base:types",
         "//ortools/linear_solver:linear_solver_cc_proto",
+        "//ortools/linear_solver:linear_solver_sat",
         "//ortools/linear_solver:solve_mp_model",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",

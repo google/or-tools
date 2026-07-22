@@ -45,6 +45,7 @@
 #include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "ortools/base/protoutil.h"
+#include "ortools/base/status_builder.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/proto_solver/proto_utils.h"
 #include "ortools/linear_solver/proto_solver/sat_proto_solver.h"

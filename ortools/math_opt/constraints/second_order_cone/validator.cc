@@ -13,13 +13,10 @@
 
 #include "ortools/math_opt/constraints/second_order_cone/validator.h"
 
-#include <cstdint>
-
 #include "absl/status/status.h"
 #include "absl/status/status_builder.h"
 #include "absl/status/status_macros.h"
 #include "ortools/math_opt/core/model_summary.h"
-#include "ortools/math_opt/core/sparse_vector_view.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
 #include "ortools/math_opt/validators/linear_expression_validator.h"

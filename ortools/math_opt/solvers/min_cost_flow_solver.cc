@@ -36,6 +36,7 @@
 #include "absl/time/time.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/protoutil.h"
+#include "ortools/base/status_builder.h"
 #include "ortools/base/strong_int.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/graph/min_cost_flow.h"

@@ -15,6 +15,7 @@
 #define ORTOOLS_MATH_OPT_IO_LP_LP_NAME_H_
 
 #include "absl/status/status.h"
+#include "absl/strings/string_view.h"
 
 namespace operations_research::lp_format {
 

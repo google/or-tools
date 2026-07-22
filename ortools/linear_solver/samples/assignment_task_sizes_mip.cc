@@ -15,15 +15,18 @@
 // Solve a simple assignment problem.
 // [START import]
 #include <cstdint>
+#include <cstdlib>
 #include <memory>
 #include <numeric>
 #include <vector>
 
 #include "absl/log/check.h"
 #include "absl/log/globals.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_format.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/log_severity.h"
+#include "ortools/linear_solver/linear_expr.h"
 #include "ortools/linear_solver/linear_solver.h"
 // [END import]
 

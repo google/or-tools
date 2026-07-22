@@ -44,6 +44,7 @@
 #include "google/protobuf/repeated_ptr_field.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/protoutil.h"
+#include "ortools/base/status_builder.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/invalid_indicators.h"
 #include "ortools/math_opt/core/inverted_bounds.h"

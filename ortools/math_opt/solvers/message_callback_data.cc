@@ -14,13 +14,14 @@
 #include "ortools/math_opt/solvers/message_callback_data.h"
 
 #include <cstddef>
-#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
+#include "absl/synchronization/mutex.h"
+#include "ortools/math_opt/core/solver_interface.h"
 
 namespace operations_research {
 namespace math_opt {

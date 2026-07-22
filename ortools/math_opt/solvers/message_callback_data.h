@@ -18,6 +18,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/base/thread_annotations.h"
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
 #include "ortools/math_opt/core/solver_interface.h"
