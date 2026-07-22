@@ -71,9 +71,8 @@ public class Tsp {
 
   // [START manhattan_distance]
   /// @brief Manhattan distance implemented as a callback.
-  /// @details It uses an array of positions and computes
-  /// the Manhattan distance between the two positions of
-  /// two different indices.
+  /// @details It uses an array of positions and computes the Manhattan distance between the two
+  ///     positions of two different indices.
   static class ManhattanDistance implements LongBinaryOperator {
     public ManhattanDistance(DataModel data, IndexManager manager) {
       // precompute distance between location to have distance callback in O(1)

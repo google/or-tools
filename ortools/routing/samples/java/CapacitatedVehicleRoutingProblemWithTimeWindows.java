@@ -32,8 +32,7 @@ import java.util.logging.Logger;
 
 /**
  * Sample showing how to model and solve a capacitated vehicle routing problem with time windows
- * using the swig-wrapped version of the vehicle routing library in
- * //ortools/constraint_solver.
+ * using the swig-wrapped version of the vehicle routing library in //ortools/constraint_solver.
  */
 public class CapacitatedVehicleRoutingProblemWithTimeWindows {
   private static final Logger logger =
@@ -45,7 +44,7 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
     final V second;
 
     public static <K, V> Pair<K, V> of(K element0, V element1) {
-      return new Pair<K, V>(element0, element1);
+      return new Pair<>(element0, element1);
     }
 
     public Pair(K element0, V element1) {

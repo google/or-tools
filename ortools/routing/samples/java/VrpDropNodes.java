@@ -25,9 +25,10 @@ import com.google.ortools.routing.Model;
 import com.google.ortools.routing.RoutingSearchParameters;
 import com.google.protobuf.Duration;
 import java.util.logging.Logger;
+
 // [END import]
 
-/** Minimal VRP.*/
+/** Minimal VRP. */
 public class VrpDropNodes {
   private static final Logger logger = Logger.getLogger(VrpDropNodes.class.getName());
 
@@ -109,6 +110,7 @@ public class VrpDropNodes {
     logger.info("Total Distance of all routes: " + totalDistance + "m");
     logger.info("Total Load of all routes: " + totalLoad);
   }
+
   // [END solution_printer]
 
   public static void main(String[] args) throws Exception {

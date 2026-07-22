@@ -25,9 +25,10 @@ import com.google.ortools.routing.IndexManager;
 import com.google.ortools.routing.Model;
 import com.google.ortools.routing.RoutingSearchParameters;
 import java.util.logging.Logger;
+
 // [END import]
 
-/** Minimal Pickup & Delivery Problem (PDP).*/
+/** Minimal Pickup & Delivery Problem (PDP). */
 public class VrpPickupDeliveryFifo {
   private static final Logger logger = Logger.getLogger(VrpPickupDeliveryFifo.class.getName());
 
@@ -98,6 +99,7 @@ public class VrpPickupDeliveryFifo {
     }
     logger.info("Total Distance of all routes: " + totalDistance + "m");
   }
+
   // [END solution_printer]
 
   public static void main(String[] args) throws Exception {

@@ -73,6 +73,7 @@ public class TspCities {
     logger.info(route);
     logger.info("Route distance: " + routeDistance + "miles");
   }
+
   // [END solution_printer]
 
   public static void main(String[] args) throws Exception {
