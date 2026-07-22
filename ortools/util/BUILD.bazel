@@ -16,6 +16,7 @@ load("@protobuf//bazel:java_proto_library.bzl", "java_proto_library")
 load("@protobuf//bazel:proto_library.bzl", "proto_library")
 load("@protobuf//bazel:py_proto_library.bzl", "py_proto_library")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_go//proto:def.bzl", "go_proto_library")
 load("//ortools/copts:configure_copts.bzl", "ORTOOLS_DEFAULT_COPTS", "ORTOOLS_DEFAULT_LINKOPTS", "ORTOOLS_TEST_COPTS")
 
 package(default_visibility = ["//visibility:public"])
@@ -440,6 +441,18 @@ py_proto_library(
     name = "status_py_pb2",
     deps = [":status_proto"],
 )
+
+go_proto_library(
+    name = "status_go_proto",
+    protos = [":status_proto"],
+)
+
+cc_proto_library(
+    name = "file_util_test_cc_proto",
+    testonly = True,
+    deps = [":file_util_test_proto"],
+)
+
 
 cc_library(
     name = "random_engine",
