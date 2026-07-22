@@ -199,8 +199,7 @@ cc_library(
     hdrs = ["index.h"],
     deps = [
         ":hash_or_tree_container",
-        "@abseil-cpp//absl/container:flat_hash_set",
-        "@abseil-cpp//absl/hash",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/types:span",
     ],
@@ -213,8 +212,10 @@ cc_test(
         ":index",
         "//ortools/base:gmock_main",
         "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/hash",
         "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/random:distributions",
+        "@abseil-cpp//absl/strings:string_view",
     ],
 )
 

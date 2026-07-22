@@ -16,6 +16,7 @@
 
 #include <concepts>
 #include <cstddef>
+#include <cstring>
 #include <functional>
 #include <memory>
 #include <optional>
@@ -41,7 +42,7 @@ class Index {
                  CompareOrHashT compare_or_hash = CompareOrHashT(),
                  Eq eq = Eq());
 
-  int LookupOrAdd(T object) { return TryInsert(std::move(object)).first; }
+  int LookupOrAdd(T object) { return TryEmplace(std::move(object)).first; }
   std::optional<int> Lookup(const T& object) const {
     return impl_->Lookup(object);
   }
@@ -53,8 +54,9 @@ class Index {
   int size() const { return span().size(); }
 
   // Like LookupOrAdd(), but also returns whether the object was newly inserted.
-  std::pair<int, bool> TryInsert(T object) {
-    return impl_->TryInsert(std::move(object));
+  template <typename U>
+  std::pair<int, bool> TryEmplace(U&& object) {
+    return impl_->TryEmplace(std::forward<U>(object));
   }
 
   // For direct range iteration.
@@ -81,30 +83,101 @@ concept LooksLikeHasher = requires(const H& h, const ValueT& v) {
 };
 }  // namespace internal
 
+// Implementation of `Index`. Conceptually this is a `vector<T>` of objects, and
+// a set of `T*` (represented has a hash set or ordered set depending on
+// `CompareOrHashT`). A subtlety is that instead of storing pointers as `T*`, we
+// store indices into the vector of objects, from which we can retrieve the
+// actual object pointers. Adding a new object to the vector invalidates
+// pointers, but not indices. Storing indices therefore allows adding new
+// objects to the vector without having to touch other entries in the set.
+//
+// The indices are represented in a type-safe way as `ObjectIndex`.
+// We rely on heterogeneous lookup (https://abseil.io/tips/144) to allow lookups
+// into the set by `const T& t`, while the actual set keys are `ObjectIndex`:
+// we simply need to compare the object `t` with the object at corresponding
+// index in the vector.
+// More generally, when the functors `CompareOrHashT` and `Eq` are transparent,
+// lookups are allowed using any key type `U&&` that can be transparently
+// compared with `T`.
+//
+// For insertions (see `TryEmplace`), the situation is a a bit more complex.
+// We want to be able to do the lookup and insertion in one step using
+// `try_emplace`, without constructing unnecessary temporaries. So we need both
+// an index (in case the object is not present and needs to be inserted) and a
+// `U&&` lookup key. This is represented by `EmplaceableObject`, whis is a
+// temporary value-typed object that acts as a lookup key but converts to an
+// `ObjectIndex`, inserting a new `T` in the vector when the set decides that it
+// needs to be inserted.
 template <typename T, typename CompareOrHashT, typename Eq>
 class Index<T, CompareOrHashT, Eq>::Impl {
  public:
-  // We need to wrap T object when looking them up, to differentiate from
-  // looking up an int, when T is also of type int.
-  struct LookupKey {
-    const T& object;
+  // A temporary object to represent a potential new object in the index.
+  template <typename U>
+  struct EmplaceableObject {
+    static constexpr bool kIsEmplaceableObject = true;
+
+    const U& key_ref() const { return key; }
+
+    U&& key;  // The lookup key (might be different from T if transparent).
+    int index_if_inserted;  // The index to give the newly emplaced object.
+    Impl* const impl;
+  };
+
+  class ObjectIndex {
+   public:
+    using ValueType = int;
+
+    template <typename U>
+    explicit ObjectIndex(EmplaceableObject<U> emplaceable)
+        : ObjectIndex(emplaceable.index_if_inserted) {
+      // We need to emplace the object here instead of in `TryInsert`, because
+      // in debug mode absl containers immediately rehash/compare the keys to
+      // check invariants, and looking up by `ObjectIndex` will try to look up
+      // by index, so the object needs to already be inserted.
+      emplaceable.impl->objects_.emplace_back(std::forward<U>(emplaceable.key));
+    }
+
+    explicit ObjectIndex(ValueType index) {
+      memcpy(index_, &index, sizeof(ValueType));
+    }
+
+    ValueType index() const {
+      ValueType index;
+      memcpy(&index, index_, sizeof(ValueType));
+      return index;
+    }
+
+   private:
+    char index_[sizeof(ValueType)];
   };
 
   // To support heterogeneous lookup, we need to wrap the functors. See usage.
+  struct FunctorWrapper;
   struct CompareOrHashTWrapper;
   struct EqWrapper;
+  struct Empty {};
 
+  // TODO(user): Ideally this would be a `Set`, but
+  // guaranteed-not-to-construct emplace is only supported for maps through
+  // `try_emplace`.
   using Container =
-      typename HashOrTreeContainer<int, CompareOrHashTWrapper, EqWrapper>::Set;
+      typename HashOrTreeContainer<ObjectIndex, CompareOrHashTWrapper,
+                                   EqWrapper>::template Map<Empty>;
+
+  static_assert(sizeof(typename Container::value_type) ==
+                sizeof(typename ObjectIndex::ValueType) + 1);
+  static_assert(alignof(typename Container::value_type) == 1);
 
   static Container MakeContainer(Impl* impl, int reserve_num_objects,
                                  CompareOrHashT compare_or_hash, Eq eq) {
     if constexpr (internal::LooksLikeHasher<CompareOrHashT, T>) {
-      return Container(reserve_num_objects,
-                       CompareOrHashTWrapper{impl, std::move(compare_or_hash)},
-                       EqWrapper{impl, std::move(eq)});
+      return Container(
+          reserve_num_objects,
+          CompareOrHashTWrapper{{impl}, std::move(compare_or_hash)},
+          EqWrapper{{impl}, std::move(eq)});
     } else {
-      return Container(CompareOrHashTWrapper{impl, std::move(compare_or_hash)});
+      return Container(
+          CompareOrHashTWrapper{{impl}, std::move(compare_or_hash)});
     }
   }
 
@@ -115,21 +188,19 @@ class Index<T, CompareOrHashT, Eq>::Impl {
   }
 
   // Replication of the public API.
-  std::pair<int, bool> TryInsert(T object) {
-    const int i = objects_.size();
-    objects_.push_back(std::move(object));
-    auto result = index_.insert(i);
-    if (result.second) return std::make_pair(i, true);
-    // The object was already present. Remove it from the vector and return the
-    // existing index.
-    objects_.pop_back();
-    return std::make_pair(*result.first, false);
+  template <typename U>
+  std::pair<int, bool> TryEmplace(U&& u) {
+    const auto [it, inserted] = index_.try_emplace(EmplaceableObject<U>{
+        .key = std::forward<U>(u),
+        .index_if_inserted = static_cast<int>(objects_.size()),
+        .impl = this});
+    return std::make_pair(it->first.index(), inserted);
   }
 
   std::optional<int> Lookup(const T& object) const {
-    auto it = index_.find(LookupKey{object});
+    auto it = index_.find(object);
     if (it == index_.end()) return std::nullopt;
-    return *it;
+    return it->first.index();
   }
 
   const T& operator[](int index) const {
@@ -160,57 +231,55 @@ Index<T, CompareOrHashT, Eq>::Index(int reserve_num_objects,
           reserve_num_objects, std::move(compare_or_hash), std::move(eq))) {}
 
 template <typename T, typename CompareOrHashT, typename Eq>
-struct Index<T, CompareOrHashT, Eq>::Impl::CompareOrHashTWrapper {
+struct Index<T, CompareOrHashT, Eq>::Impl::FunctorWrapper {
   using is_transparent = void;
 
-  // If CompareOrHashT is a hasher, here's its heterogeneous lookup API.
-  size_t operator()(int index) const
-    requires internal::LooksLikeHasher<CompareOrHashT, T>
-  {
-    return compare_or_hash(impl->objects_[index]);
+  template <typename KeyT>
+  decltype(auto) GetKey(const KeyT& k) const {
+    if constexpr (std::is_same_v<KeyT, ObjectIndex>) {
+      // This is the index of an object in our vector of objects.
+      return impl->objects_[k.index()];
+    } else if constexpr (requires { k.kIsEmplaceableObject; }) {
+      // This is an EmplaceableObject, use the transparent lookup key.
+      return k.key_ref();
+    } else {
+      // This is a transparent lookup key.
+      return k;
+    }
   }
-  size_t operator()(const LookupKey& key) const
+  const Index::Impl* impl = nullptr;
+};
+
+template <typename T, typename CompareOrHashT, typename Eq>
+struct Index<T, CompareOrHashT, Eq>::Impl::CompareOrHashTWrapper
+    : public FunctorWrapper {
+  // If CompareOrHashT is a hasher, here's its heterogeneous lookup API.
+  template <typename KeyT>
+  size_t operator()(const KeyT& k) const
     requires internal::LooksLikeHasher<CompareOrHashT, T>
   {
-    return compare_or_hash(key.object);
+    return compare_or_hash(FunctorWrapper::GetKey(k));
   }
 
   // If CompareOrHashT is a comparator, here's its heterogeneous lookup API.
-  bool operator()(int a, int b) const
+  template <typename KeyT1, typename KeyT2>
+  bool operator()(const KeyT1& a, const KeyT2& b) const
     requires(!internal::LooksLikeHasher<CompareOrHashT, T>)
   {
-    return compare_or_hash(impl->objects_[a], impl->objects_[b]);
-  }
-  bool operator()(int a, const LookupKey& b) const
-    requires(!internal::LooksLikeHasher<CompareOrHashT, T>)
-  {
-    return compare_or_hash(impl->objects_[a], b.object);
-  }
-  bool operator()(const LookupKey& a, int b) const
-    requires(!internal::LooksLikeHasher<CompareOrHashT, T>)
-  {
-    return compare_or_hash(a.object, impl->objects_[b]);
+    return compare_or_hash(FunctorWrapper::GetKey(a),
+                           FunctorWrapper::GetKey(b));
   }
 
-  const Index::Impl* impl = nullptr;
   [[no_unique_address]] CompareOrHashT compare_or_hash;
 };
 
 template <typename T, typename CompareOrHashT, typename Eq>
-struct Index<T, CompareOrHashT, Eq>::Impl::EqWrapper {
-  using is_transparent = void;
-
-  bool operator()(int a, int b) const {
-    return eq(impl->objects_[a], impl->objects_[b]);
-  }
-  bool operator()(int a, const LookupKey& b) const {
-    return eq(impl->objects_[a], b.object);
-  }
-  bool operator()(const LookupKey& a, int b) const {
-    return eq(a.object, impl->objects_[b]);
+struct Index<T, CompareOrHashT, Eq>::Impl::EqWrapper : public FunctorWrapper {
+  template <typename KeyT1, typename KeyT2>
+  bool operator()(const KeyT1& a, const KeyT2& b) const {
+    return eq(FunctorWrapper::GetKey(a), FunctorWrapper::GetKey(b));
   }
 
-  const Index::Impl* impl = nullptr;
   [[no_unique_address]] Eq eq;
 };
 
