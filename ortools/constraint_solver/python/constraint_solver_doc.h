@@ -5711,7 +5711,7 @@ static const char* __doc_operations_research_Solver_SetUseFastLocalSearch =
     R"doc(enabled for metaheuristics. Disables/enables fast local search.)doc";
 
 static const char* __doc_operations_research_Solver_ShouldFail =
-    R"doc(See http://cs/file:constraint_solver.swig%20ShouldFail.)doc";
+    R"doc(See ortools/constraint_solver/constraint_solver.h)doc";
 
 static const char* __doc_operations_research_Solver_Solve =
     R"doc(@{ Solves the problem using the given DecisionBuilder and returns true

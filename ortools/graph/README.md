@@ -201,7 +201,7 @@ node.
 You can find some canonical examples in [`samples`][samples].
 
 <!-- Links used throughout the document. -->
-[graph_h]: ../graph/graph.h
+[graph_h]: ../graph_base/graph.h
 [bounded_dijkstra_h]: ../graph/bounded_dijkstra.h
 [bidirectional_dijkstra_h]: ../graph/bidirectional_dijkstra.h
 [shortest_paths_h]: ../graph/shortest_paths.h
@@ -216,4 +216,4 @@ You can find some canonical examples in [`samples`][samples].
 [max_flow_h]: ../graph/max_flow.h
 [min_cost_flow_h]: ../graph/min_cost_flow.h
 [samples]: ../graph/samples/
-[graph]: ../graph/
+[graph]: ../graph_base/
