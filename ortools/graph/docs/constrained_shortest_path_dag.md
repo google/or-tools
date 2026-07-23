@@ -99,8 +99,9 @@ graph TB
     0 -- "1(2,3)" --> 2
     1 -- "-3(8,0)" --> 3
     2 == "0(3,1)" ==> 3
-    classDef node stroke:black,fill:lightskyblue
-    linkStyle 1,4 stroke:red,stroke-width:2px,color:black;
+    classDef default stroke:black,fill:lightskyblue,color:black
+    linkStyle default color:black
+    linkStyle 1,4 stroke:red,stroke-width:2px
 ```
 
 The constrained shortest path is shown in red in the image. It has a cost of 4,
@@ -201,7 +202,6 @@ We let $$M = \{0, 1, \ldots, 4\}$$ be the set of nodes in the middle.
 In this problem, there is a single resource constraint with limit $$L_1 = 1$$.
 All arcs starting from `source` or going to `dest` do not use any resource. For
 each arc between $$i \in M$$ and $$i + 1 \in M$$, the arc has a resource use of
-
 1. This constraint implies that a feasible path can only pass through one or two
 nodes in $$M$$.
 

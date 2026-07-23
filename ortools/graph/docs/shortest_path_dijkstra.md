@@ -34,8 +34,9 @@ graph LR
     3 -- "4" -->5
     4 -- "2" -->3
     4 == "5" ==>5
-    classDef node stroke:black,fill:lightskyblue
-    linkStyle 0,4,9 stroke:red,stroke-width:2px,color:black;
+    classDef default stroke:black,fill:lightskyblue,color:black
+    linkStyle default color:black
+    linkStyle 0,4,9 stroke:red,stroke-width:2px
 ```
 
 Our goal is to find the shortest path from 0 to 5 (shown in red in the image)
