@@ -19,16 +19,27 @@ list(APPEND _SRCS
   rcpsp_parser.cc
   rcpsp_parser.h
 )
-set(NAME ${PROJECT_NAME}_scheduling)
 
-# Will be merge in libortools.so
-add_library(${NAME} OBJECT ${_SRCS})
-set_target_properties(${NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
-target_include_directories(${NAME} PRIVATE
-  ${PROJECT_SOURCE_DIR}
-  ${PROJECT_BINARY_DIR})
-target_link_libraries(${NAME} PRIVATE
-  absl::strings
-  protobuf::libprotobuf
-  ${PROJECT_NAMESPACE}::ortools_proto)
-#add_library(${PROJECT_NAMESPACE}::scheduling ALIAS ${NAME})
+ortools_cxx_library(
+  NAME
+    ortools_scheduling
+  TYPE
+    SHARED
+  SOURCES
+    ${_SRCS}
+    $<TARGET_OBJECTS:scheduling_proto>
+  COMPILE_DEFINITIONS
+    ${OR_TOOLS_COMPILE_DEFINITIONS}
+  COMPILE_OPTIONS
+    ${OR_TOOLS_COMPILE_OPTIONS}
+  LINK_LIBRARIES
+    ortools::ortools_core
+    absl::strings
+    protobuf::libprotobuf
+)
+if(MSVC AND BUILD_SHARED_LIBS)
+  target_compile_definitions(ortools_scheduling PUBLIC "OR_SCHEDULING_PROTO_DLL=__declspec(dllimport)")
+ else()
+  target_compile_definitions(ortools_scheduling PUBLIC "OR_SCHEDULING_PROTO_DLL=")
+endif()
+

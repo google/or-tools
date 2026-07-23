@@ -18,6 +18,7 @@
 #include <string>
 
 #include "absl/strings/string_view.h"
+#include "ortools/base/base_export.h"
 #include "ortools/base/version.h"
 
 namespace operations_research {
@@ -25,7 +26,7 @@ namespace operations_research {
 /**
  * Simple structure that holds useful C++ flags to setup from non-C++ languages.
  */
-struct CppFlags {
+struct OR_INIT_DLL CppFlags {
   /**
    * @brief Controls the logging level shown on stderr.
    *
@@ -77,7 +78,7 @@ struct CppFlags {
  *
  * It is meant to be used once at the start of a program.
  */
-class CppBridge {
+class OR_INIT_DLL CppBridge {
  public:
   /**
    * Initialize the C++ logging layer.

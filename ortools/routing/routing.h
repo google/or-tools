@@ -292,7 +292,7 @@ struct SearchStats {
   int64_t num_generalized_cp_sat_calls_in_routing = 0;
 };
 
-class OR_DLL Model {
+class OR_ROUTING_DLL Model {
  public:
   /// Types of precedence policy applied to pickup and delivery pairs.
   enum PickupAndDeliveryPolicy {
@@ -2920,7 +2920,7 @@ class OR_DLL Model {
 };
 
 /// Routing model visitor.
-class OR_DLL ModelVisitor : public operations_research::BaseObject {
+class OR_ROUTING_DLL ModelVisitor : public operations_research::BaseObject {
  public:
   /// Constraint types.
   static const char kLightElement[];

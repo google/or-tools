@@ -64,6 +64,7 @@ if(BUILD_CXX_TESTING)
     protobuf::libprotobuf
     protobuf-matchers
     TESTING
+    NO_INSTALL
   )
   file(GLOB _TEST_SRCS "*_test.cc")
   foreach(_FULL_FILE_NAME IN LISTS _TEST_SRCS)
@@ -90,9 +91,10 @@ if(BUILD_CXX_TESTING)
     TYPE
       STATIC
     LINK_LIBRARIES
-    ortools_base
+    ortools::ortools_core
     benchmark::benchmark
     TESTING
+    NO_INSTALL
   )
 
   file(GLOB _BENCHMARK_SRCS "*_benchmark.cc")

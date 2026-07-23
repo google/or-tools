@@ -448,11 +448,15 @@ def map_cc_binary(ctx: BazelContext, name: str, **kwargs) -> CMakeCall:
     srcs = kwargs.get("srcs", [])
     hdrs = kwargs.get("hdrs", [])
     deps = kwargs.get("deps", [])
+    ortools_deps = []
+    if not ENABLE_ORTOOLS_LIBRARIES:
+        ortools_deps.append("ortools::ortools")
     return CMakeCall(
         "ortools_cxx_binary",
         CMakeArg("NAME", ctx.cmake_name(name)),
         CMakeArg("SOURCES", sorted(srcs + hdrs)),
-        CMakeArg("LINK_LIBRARIES", ctx.cmake_deps(deps)),
+        CMakeArg("LINK_LIBRARIES", ortools_deps + ctx.cmake_deps(deps)),
+        CMakeArg(name="NO_INSTALL", values=[], remove_if_empty=False),
     )
 
 
@@ -460,12 +464,16 @@ def map_cc_library(ctx: BazelContext, name: str, **kwargs) -> CMakeCall:
     srcs = kwargs.get("srcs", [])
     hdrs = kwargs.get("hdrs", [])
     deps = kwargs.get("deps", [])
+    ortools_deps = []
+    if not ENABLE_ORTOOLS_LIBRARIES:
+        ortools_deps.append("ortools::ortools")
     return CMakeCall(
         "ortools_cxx_library",
         CMakeArg("NAME", ctx.cmake_name(name)),
         CMakeArg("SOURCES", sorted(srcs + hdrs)),
-        CMakeArg("LINK_LIBRARIES", ctx.cmake_deps(deps)),
+        CMakeArg("LINK_LIBRARIES", ortools_deps + ctx.cmake_deps(deps)),
         CMakeArg("TYPE", ["INTERFACE" if not srcs else "SHARED"]),
+        CMakeArg(name="NO_INSTALL", values=[], remove_if_empty=False),
     )
 
 

@@ -60,6 +60,8 @@ def _load_ortools_libs():
             for dll in ["zlib1.dll", "bz2.dll",
                         "abseil_dll.dll", "utf8_validity.dll", "re2.dll", "libprotobuf.dll",
                         "highs.dll", "libscip.dll",
+                        "ortools_core.dll",
+                        "ortools_math_opt.dll", "ortools_packing.dll", "ortools_routing.dll", "ortools_scheduling.dll",
                         "ortools.dll"]:
                 dll_path = os.path.join(basedir, ".libs", dll)
                 if os.path.exists(dll_path):

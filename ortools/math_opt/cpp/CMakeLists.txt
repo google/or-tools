@@ -37,11 +37,13 @@ ortools_cxx_library(
     STATIC
   LINK_LIBRARIES
     ortools::base_gmock
+    ortools::ortools_math_opt
     absl::log
     absl::source_location
     absl::status
     absl::strings
   TESTING
+  NO_INSTALL
 )
 
 if(BUILD_CXX_TESTING)

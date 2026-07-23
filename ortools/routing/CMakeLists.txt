@@ -14,7 +14,7 @@
 file(GLOB _SRCS "*.h" "*.cc")
 list(FILTER _SRCS EXCLUDE REGEX ".*/.*_benchmark.cc")
 list(FILTER _SRCS EXCLUDE REGEX ".*/.*_test.cc")
-set(NAME ${PROJECT_NAME}_routing)
+set(NAME ${PROJECT_NAME}_routing_solver)
 
 # Will be merge in libortools.so
 #add_library(${NAME} STATIC ${_SRCS})
@@ -24,7 +24,7 @@ set_target_properties(${NAME} PROPERTIES
   )
 if(MSVC AND BUILD_SHARED_LIBS)
   target_compile_definitions(${NAME} PUBLIC "OR_BUILD_DLL")
-  target_compile_definitions(${NAME} PRIVATE "OR_EXPORT")
+  target_compile_definitions(${NAME} PRIVATE "OR_ROUTING_EXPORT")
 endif()
 target_include_directories(${NAME} PRIVATE
   ${PROJECT_SOURCE_DIR}
@@ -36,6 +36,8 @@ target_link_libraries(${NAME} PRIVATE
   absl::strings
   absl::str_format
   protobuf::libprotobuf
-  ${PROJECT_NAMESPACE}::ortools_proto
-  ${PROJECT_NAMESPACE}::routing_proto)
+  ortools::ortools_core
+  ortools::routing_proto
+)
+add_dependencies(ortools_routing_solver routing_proto)
 #add_library(${PROJECT_NAMESPACE}::routing ALIAS ${NAME})

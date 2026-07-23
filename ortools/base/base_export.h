@@ -14,17 +14,35 @@
 #ifndef ORTOOLS_BASE_BASE_EXPORT_H_
 #define ORTOOLS_BASE_BASE_EXPORT_H_
 
-#if defined(_MSC_VER) && defined(OR_BUILD_DLL)
 // Annoying stuff for windows -- makes sure clients can import these functions
+#if defined(_MSC_VER) && defined(OR_BUILD_DLL)
 #if defined(OR_EXPORT)
 #define OR_DLL __declspec(dllexport)
 #else
 #define OR_DLL __declspec(dllimport)
 #endif  // defined(OR_EXPORT)
+
+#if defined(OR_INIT_EXPORT)
+#define OR_INIT_DLL __declspec(dllexport)
+#else
+#define OR_INIT_DLL __declspec(dllimport)
+#endif  // defined(OR_INIT_EXPORT)
+
+#if defined(OR_ROUTING_EXPORT)
+#define OR_ROUTING_DLL __declspec(dllexport)
+#else
+#define OR_ROUTING_DLL __declspec(dllimport)
+#endif  // defined(OR_ROUTING_EXPORT)
 #endif  // _MSC_VER && OR_BUILD_DLL
 
 #ifndef OR_DLL
 #define OR_DLL
+#endif
+#ifndef OR_INIT_DLL
+#define OR_INIT_DLL
+#endif
+#ifndef OR_ROUTING_DLL
+#define OR_ROUTING_DLL
 #endif
 
 #endif  // ORTOOLS_BASE_BASE_EXPORT_H_
