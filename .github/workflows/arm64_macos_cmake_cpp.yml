@@ -1,12 +1,7 @@
 # ref: https://github.com/actions/runner-images
 name: arm64 MacOS CMake C++
 
-on:
-  push:
-    branches:
-      - ci
-      - main
-  workflow_dispatch:
+on: [push, workflow_dispatch]
 
 concurrency:
   group: ${{github.workflow}}-${{github.ref}}
