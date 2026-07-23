@@ -15,6 +15,7 @@ file(GLOB _SRCS "*.h" "*.cc")
 list(FILTER _SRCS EXCLUDE REGEX ".*/.*_benchmark.cc")
 list(FILTER _SRCS EXCLUDE REGEX ".*/.*_test.cc")
 list(FILTER _SRCS EXCLUDE REGEX ".*/set_cover_solve.cc")
+list(FILTER _SRCS EXCLUDE REGEX ".*/set_cover_mip.*")
 list(FILTER _SRCS EXCLUDE REGEX ".*/reporting.*")
 
 set(NAME ${PROJECT_NAME}_set_cover)
@@ -30,7 +31,6 @@ target_include_directories(${NAME} PRIVATE
   ${PROJECT_BINARY_DIR})
 target_link_libraries(${NAME} PRIVATE
   protobuf::libprotobuf
-  ${PROJECT_NAMESPACE}::math_opt_proto
   ${PROJECT_NAMESPACE}::ortools_proto)
 #add_library(${PROJECT_NAMESPACE}::set_cover ALIAS ${NAME})
 
@@ -54,8 +54,15 @@ if(BUILD_CXX_TESTING)
         GTest::gtest
         GTest::gtest_main
         GTest::gmock
+        ortools::ortools_math_opt
     )
   endforeach()
+  if(TARGET set_cover_set_cover_test)
+    target_sources(set_cover_set_cover_test PRIVATE
+      "set_cover_mip.h"
+      "set_cover_mip.cc"
+    )
+  endif()
   # Benchmark
   file(GLOB _BENCHMARK_SRCS "*_benchmark.cc")
   set(_ARGS "")

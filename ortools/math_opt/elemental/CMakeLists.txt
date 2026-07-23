@@ -45,7 +45,9 @@ if(BUILD_CXX_TESTING)
       absl::strings
       GTest::gmock
       ortools::base_gmock
+      ortools::ortools_math_opt
     TESTING
+    NO_INSTALL
   )
 
   file(GLOB _TEST_SRCS "*_test.cc")

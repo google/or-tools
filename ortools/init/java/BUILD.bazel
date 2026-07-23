@@ -25,6 +25,7 @@ or_java_wrap_cc(
         "//ortools/base:base_swig",
         "//ortools/util/java:absl_string_view.swig",
     ],
+    swig_opt = "-DOR_INIT_DLL=",
     visibility = ["//visibility:public"],
     deps = ["//ortools/init"],
 )

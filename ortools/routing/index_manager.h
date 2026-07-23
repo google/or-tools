@@ -50,7 +50,7 @@ namespace operations_research::routing {
 /// indices range between 0 and n-1, where n = number of vehicles * 2 (for start
 /// and end nodes) + number of non-start or end nodes.
 ///
-class OR_DLL IndexManager {
+class OR_ROUTING_DLL IndexManager {
  public:
   // For compatibility only.
 #if !defined(SWIG)

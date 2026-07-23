@@ -32,8 +32,8 @@ target_link_libraries(${NAME} PRIVATE
   absl::strings
   absl::str_format
   protobuf::libprotobuf
-  ${PROJECT_NAMESPACE}::ortools_proto
-  ${PROJECT_NAMESPACE}::math_opt_proto
+  ortools::ortools_core
+  ortools::math_opt_proto
   $<$<BOOL:${USE_COINOR}>:Coin::Cbc>)
 #add_library(${PROJECT_NAMESPACE}::gurobi ALIAS ${NAME})
 
@@ -49,4 +49,5 @@ ortools_cxx_library(
     ortools::base_gmock
     GTest::gtest
   TESTING
+  NO_INSTALL
 )

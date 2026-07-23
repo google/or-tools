@@ -23,8 +23,10 @@ ortools_cxx_library(
     STATIC
   LINK_LIBRARIES
     ortools::base_gmock
+    ortools::ortools_math_opt
     absl::log
   TESTING
+  NO_INSTALL
 )
 
 ortools_cxx_library(
@@ -37,6 +39,7 @@ ortools_cxx_library(
     STATIC
   LINK_LIBRARIES
     ortools::base_gmock
+    ortools::ortools_math_opt
     absl::log
     absl::status
     absl::strings
@@ -44,7 +47,9 @@ ortools_cxx_library(
     ortools::math_opt_matchers
     ortools::math_opt_base_solver_test
     ortools::math_opt_test_models
+    protobuf::libprotobuf
   TESTING
+  NO_INSTALL
 )
 
 
@@ -58,10 +63,12 @@ ortools_cxx_library(
     STATIC
   LINK_LIBRARIES
     ortools::base_gmock
+    ortools::ortools_math_opt
     absl::log
     ortools::math_opt_matchers
     ortools::math_opt_test_models
   TESTING
+  NO_INSTALL
 )
 
 ortools_cxx_library(
@@ -74,10 +81,12 @@ ortools_cxx_library(
     STATIC
   LINK_LIBRARIES
     ortools::base_gmock
+    ortools::ortools_math_opt
     absl::log
     ortools::math_opt_matchers
     ortools::math_opt_base_solver_test
   TESTING
+  NO_INSTALL
 )
 
 ortools_cxx_library(
@@ -90,6 +99,7 @@ ortools_cxx_library(
     STATIC
   LINK_LIBRARIES
     ortools::base_gmock
+    ortools::ortools_math_opt
     absl::log
     absl::status
     absl::status_matchers
@@ -97,6 +107,7 @@ ortools_cxx_library(
     ortools::math_opt_matchers
     ortools::math_opt_base_solver_test
   TESTING
+  NO_INSTALL
 )
 
 ortools_cxx_library(
@@ -109,10 +120,12 @@ ortools_cxx_library(
     STATIC
   LINK_LIBRARIES
     ortools::base_gmock
+    ortools::ortools_math_opt
     absl::log
     ortools::math_opt_matchers
     ortools::math_opt_test_models
   TESTING
+  NO_INSTALL
 )
 
 ortools_cxx_library(
@@ -125,9 +138,11 @@ ortools_cxx_library(
     STATIC
   LINK_LIBRARIES
     ortools::base_gmock
+    ortools::ortools_math_opt
     absl::log
     ortools::math_opt_base_solver_test
   TESTING
+  NO_INSTALL
 )
 
 # In CMake, or-tools is linked with all solvers enable at configure time so this
@@ -157,6 +172,7 @@ ortools_cxx_library(
     ortools::math_opt_matchers
     ortools::math_opt_base_solver_test
   TESTING
+  NO_INSTALL
 )
 
 ortools_cxx_library(
@@ -169,10 +185,12 @@ ortools_cxx_library(
     STATIC
   LINK_LIBRARIES
     ortools::base_gmock
+    ortools::ortools_math_opt
     absl::log
     ortools::math_opt_matchers
     ortools::math_opt_base_solver_test
   TESTING
+  NO_INSTALL
 )
 
 ortools_cxx_library(
@@ -185,9 +203,11 @@ ortools_cxx_library(
     STATIC
   LINK_LIBRARIES
     ortools::base_gmock
+    ortools::ortools_math_opt
     absl::strings
     ortools::math_opt_matchers
   TESTING
+  NO_INSTALL
 )
 
 ortools_cxx_library(
@@ -200,10 +220,12 @@ ortools_cxx_library(
     STATIC
   LINK_LIBRARIES
     ortools::base_gmock
+    ortools::ortools_math_opt
     absl::log
     ortools::math_opt_matchers
     ortools::math_opt_base_solver_test
   TESTING
+  NO_INSTALL
 )
 
 ortools_cxx_library(
@@ -216,11 +238,13 @@ ortools_cxx_library(
     STATIC
   LINK_LIBRARIES
     ortools::base_gmock
+    ortools::ortools_math_opt
     absl::log
     absl::status
     absl::strings
     ortools::math_opt_matchers
   TESTING
+  NO_INSTALL
 )
 
 ortools_cxx_library(
@@ -233,10 +257,12 @@ ortools_cxx_library(
     STATIC
   LINK_LIBRARIES
     ortools::base_gmock
+    ortools::ortools_math_opt
     absl::log
     absl::status
     ortools::math_opt_base_solver_test
   TESTING
+  NO_INSTALL
 )
 
 ortools_cxx_library(
@@ -249,10 +275,12 @@ ortools_cxx_library(
     STATIC
   LINK_LIBRARIES
     ortools::base_gmock
+    ortools::ortools_math_opt
     absl::log
     ortools::math_opt_matchers
     ortools::math_opt_test_models
   TESTING
+  NO_INSTALL
 )
 
 ortools_cxx_library(
@@ -265,9 +293,11 @@ ortools_cxx_library(
     STATIC
   LINK_LIBRARIES
     ortools::base_gmock
+    ortools::ortools_math_opt
     absl::log
     ortools::math_opt_matchers
   TESTING
+  NO_INSTALL
 )
 
 ortools_cxx_library(
@@ -280,9 +310,11 @@ ortools_cxx_library(
     STATIC
   LINK_LIBRARIES
     ortools::base_gmock
+    ortools::ortools_math_opt
     absl::log
     ortools::math_opt_matchers
   TESTING
+  NO_INSTALL
 )
 
 ortools_cxx_library(
@@ -295,9 +327,11 @@ ortools_cxx_library(
     STATIC
   LINK_LIBRARIES
     ortools::base_gmock
+    ortools::ortools_math_opt
     absl::log
     ortools::math_opt_matchers
   TESTING
+  NO_INSTALL
 )
 
 ortools_cxx_library(
@@ -310,9 +344,11 @@ ortools_cxx_library(
     STATIC
   LINK_LIBRARIES
     ortools::base_gmock
+    ortools::ortools_math_opt
     absl::log
     ortools::math_opt_matchers
   TESTING
+  NO_INSTALL
 )
 
 ortools_cxx_library(
@@ -325,9 +361,11 @@ ortools_cxx_library(
     STATIC
   LINK_LIBRARIES
     ortools::base_gmock
+    ortools::ortools_math_opt
     absl::log
     ortools::math_opt_matchers
   TESTING
+  NO_INSTALL
 )
 
 ortools_cxx_library(
@@ -339,9 +377,11 @@ ortools_cxx_library(
   TYPE
     STATIC
   LINK_LIBRARIES
+    ortools::ortools_math_opt
     absl::log
     absl::strings
   TESTING
+  NO_INSTALL
 )
 
 if(USE_SCIP AND USE_GLOP)
@@ -368,11 +408,13 @@ ortools_cxx_library(
     STATIC
   LINK_LIBRARIES
     ortools::base_gmock
+    ortools::ortools_math_opt
     absl::log
     ortools::gurobi_stdout_matchers
     ortools::math_opt_matchers
     ortools::math_opt_test_models
   TESTING
+  NO_INSTALL
 )
 
 ortools_cxx_library(
@@ -385,6 +427,7 @@ ortools_cxx_library(
     STATIC
   LINK_LIBRARIES
     ortools::base_gmock
+    ortools::ortools_math_opt
     absl::log
     absl::status
     absl::strings
@@ -392,4 +435,5 @@ ortools_cxx_library(
     ortools::gurobi_stdout_matchers
     ortools::math_opt_matchers
   TESTING
+  NO_INSTALL
 )

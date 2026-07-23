@@ -27,20 +27,36 @@ add_subdirectory(storage)
 add_subdirectory(validators)
 
 set(NAME ${PROJECT_NAME}_math_opt)
-add_library(${NAME} INTERFACE)
-target_sources(${NAME} INTERFACE
-  $<TARGET_OBJECTS:${NAME}_core>
-  $<TARGET_OBJECTS:${NAME}_core_c_api>
-  $<TARGET_OBJECTS:${NAME}_constraints_indicator>
-  $<TARGET_OBJECTS:${NAME}_constraints_quadratic>
-  $<TARGET_OBJECTS:${NAME}_constraints_second_order_cone>
-  $<TARGET_OBJECTS:${NAME}_constraints_sos>
-  $<TARGET_OBJECTS:${NAME}_constraints_util>
-  $<TARGET_OBJECTS:${NAME}_cpp>
-  $<TARGET_OBJECTS:${NAME}_elemental>
-  $<TARGET_OBJECTS:${NAME}_io>
-  $<TARGET_OBJECTS:${NAME}_labs>
-  $<TARGET_OBJECTS:${NAME}_solvers>
-  $<TARGET_OBJECTS:${NAME}_storage>
-  $<TARGET_OBJECTS:${NAME}_validators>
+
+ortools_cxx_library(
+  NAME
+    ${NAME}
+  TYPE
+    SHARED
+  SOURCES
+    $<TARGET_OBJECTS:ortools_gurobi>
+    $<TARGET_OBJECTS:math_opt_proto>
+    $<TARGET_OBJECTS:${NAME}_core>
+    $<TARGET_OBJECTS:${NAME}_core_c_api>
+    $<TARGET_OBJECTS:${NAME}_constraints_indicator>
+    $<TARGET_OBJECTS:${NAME}_constraints_quadratic>
+    $<TARGET_OBJECTS:${NAME}_constraints_second_order_cone>
+    $<TARGET_OBJECTS:${NAME}_constraints_sos>
+    $<TARGET_OBJECTS:${NAME}_constraints_util>
+    $<TARGET_OBJECTS:${NAME}_cpp>
+    $<TARGET_OBJECTS:${NAME}_elemental>
+    $<TARGET_OBJECTS:${NAME}_io>
+    $<TARGET_OBJECTS:${NAME}_labs>
+    $<TARGET_OBJECTS:${NAME}_solvers>
+    $<TARGET_OBJECTS:${NAME}_storage>
+    $<TARGET_OBJECTS:${NAME}_validators>
+  LINK_LIBRARIES
+    ortools::ortools_core
+    protobuf::libprotobuf
 )
+if(MSVC AND BUILD_SHARED_LIBS)
+  target_compile_definitions(${NAME} PUBLIC "OR_MATH_OPT_PROTO_DLL=__declspec(dllimport)")
+ else()
+  target_compile_definitions(${NAME} PUBLIC "OR_MATH_OPT_PROTO_DLL=")
+endif()
+

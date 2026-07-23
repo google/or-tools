@@ -106,8 +106,8 @@ Solver(name = "pheasant",
 #include "ortools/util/tuple_set.h"
 
 #ifndef SWIG
-OR_DLL ABSL_DECLARE_FLAG(int64_t, cp_random_seed);
-OR_DLL ABSL_DECLARE_FLAG(bool, cp_disable_solve);
+OR_ROUTING_DLL ABSL_DECLARE_FLAG(int64_t, cp_random_seed);
+OR_ROUTING_DLL ABSL_DECLARE_FLAG(bool, cp_disable_solve);
 #endif  // SWIG
 
 class File;
@@ -4328,7 +4328,7 @@ class ImprovementSearchLimit : public SearchLimit {
   bool gradient_stage_;
 };
 
-class OR_DLL DisjunctiveConstraint : public Constraint {
+class OR_ROUTING_DLL DisjunctiveConstraint : public Constraint {
  public:
   DisjunctiveConstraint(Solver* s, const std::vector<IntervalVar*>& intervals,
                         const std::string& name);

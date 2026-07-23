@@ -24,6 +24,7 @@ cc_library(
     linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
         "//ortools/base",
+        "//ortools/base:base_export",
         "//ortools/base:log_severity",
         "//ortools/base:version",
         "//ortools/sat:cp_model_solver",
