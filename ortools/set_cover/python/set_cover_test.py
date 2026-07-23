@@ -222,6 +222,35 @@ class SetCoverTest(absltest.TestCase):
             inv.check_consistency(set_cover.consistency_level.FREE_AND_UNCOVERED)
         )
 
+    def test_all_subsets_property(self):
+        model = create_knights_cover_model(4, 4)
+        all_subs = model.all_subsets
+        self.assertLen(all_subs, model.num_subsets)
+        self.assertEqual(all_subs, list(range(model.num_subsets)))
+
+    def test_focus_based_next_solution(self):
+        model = create_knights_cover_model(8, 8)
+        self.assertTrue(model.compute_feasibility())
+        inv = set_cover.SetCoverInvariant(model)
+
+        focus = list(range(model.num_subsets))
+        greedy = set_cover.GreedySolutionGenerator(inv)
+        self.assertTrue(greedy.next_solution(focus))
+        self.assertEqual(inv.num_uncovered_elements(), 0)
+
+    def test_guided_tabu_search_lagrangian_factor(self):
+        model = create_knights_cover_model(8, 8)
+        self.assertTrue(model.compute_feasibility())
+        inv = set_cover.SetCoverInvariant(model)
+
+        greedy = set_cover.GreedySolutionGenerator(inv)
+        self.assertTrue(greedy.next_solution())
+
+        gts = set_cover.GuidedTabuSearch(inv)
+        gts.initialize()
+        gts.set_lagrangian_factor(0.5)
+        self.assertAlmostEqual(gts.get_lagrangian_factor(), 0.5)
+
     # TODO(user): KnightsCoverGreedyAndTabu, KnightsCoverGreedyRandomClear,
     # KnightsCoverElementDegreeRandomClear, KnightsCoverRandomClearMip,
     # KnightsCoverMip

@@ -72,7 +72,8 @@ using ::py::make_iterator;
 std::vector<SubsetIndex> VectorIntToVectorSubsetIndex(
     absl::Span<const BaseInt> ints) {
   std::vector<SubsetIndex> subs;
-  std::transform(ints.begin(), ints.end(), subs.begin(),
+  subs.reserve(ints.size());
+  std::transform(ints.begin(), ints.end(), std::back_inserter(subs),
                  [](int subset) -> SubsetIndex { return SubsetIndex(subset); });
   return subs;
 }
@@ -200,9 +201,11 @@ PYBIND11_MODULE(set_cover, m) {
       .def_property_readonly("all_subsets",
                              [](SetCoverModel& model) -> std::vector<BaseInt> {
                                std::vector<BaseInt> subsets;
+                               subsets.reserve(model.all_subsets().size());
                                std::transform(
                                    model.all_subsets().begin(),
-                                   model.all_subsets().end(), subsets.begin(),
+                                   model.all_subsets().end(),
+                                   std::back_inserter(subsets),
                                    [](const SubsetIndex element) -> BaseInt {
                                      return element.value();
                                    });
