@@ -198,7 +198,7 @@ function(ortools_cxx_test)
   add_executable(${TEST_NAME} "")
   target_sources(${TEST_NAME} PRIVATE ${TEST_SOURCES})
   target_compile_definitions(${TEST_NAME} PRIVATE ${TEST_COMPILE_DEFINITIONS})
-  target_compile_features(${TEST_NAME} PRIVATE cxx_std_17)
+  target_compile_features(${TEST_NAME} PRIVATE cxx_std_20)
   target_compile_options(${TEST_NAME} PRIVATE ${TEST_COMPILE_OPTIONS})
   target_link_libraries(${TEST_NAME} PRIVATE
     ${PROJECT_NAMESPACE}::ortools
@@ -241,30 +241,35 @@ endfunction()
 # NAME: CMake target name
 # SOURCES: List of source files
 # [TYPE]: SHARED, STATIC or INTERFACE
-# [COMPILE_DEFINITIONS]: List of private compile definitions
-# [COMPILE_OPTIONS]: List of private compile options
+# [COMPILE_DEFINITIONS]: List of **public** compile definitions
 # [LINK_LIBRARIES]: List of **public** libraries to use when linking
-# note: ortools::ortools is always linked to the target
-# [LINK_OPTIONS]: List of private link options
+# [LOCAL_COMPILE_DEFINITIONS]: List of private compile definitions
+# [LOCAL_COMPILE_OPTIONS]: List of private compile options
+# [LOCAL_LINK_OPTIONS]: List of private link options
+# [TESTING]: option flag if this library is only used to build test.
 # e.g.:
 # ortools_cxx_library(
 #   NAME
-#     foo_bar_library
+#     foo_bar
 #   SOURCES
-#     bar_library.cc
-#     ${PROJECT_SOURCE_DIR}/ortools/foo/bar_library.cc
+#     bar.cc
+#     ${PROJECT_SOURCE_DIR}/ortools/foo/bar.cc
 #   TYPE
 #     SHARED
+#   COMPILE_DEFINITIONS
+#     OR_BUILD_DLL
 #   LINK_LIBRARIES
 #     GTest::gmock
 #     GTest::gtest_main
+#   LOCAL_COMPILE_DEFINITIONS
+#     OR_FOOBAR_EXPORT
 #   TESTING
 # )
 function(ortools_cxx_library)
   set(options "TESTING")
   set(oneValueArgs "NAME;TYPE")
   set(multiValueArgs
-    "SOURCES;COMPILE_DEFINITIONS;COMPILE_OPTIONS;LINK_LIBRARIES;LINK_OPTIONS")
+    "SOURCES;COMPILE_DEFINITIONS;LINK_LIBRARIES;LOCAL_COMPILE_DEFINITIONS;LOCAL_COMPILE_OPTIONS;LOCAL_LINK_OPTIONS")
   cmake_parse_arguments(LIBRARY
     "${options}"
     "${oneValueArgs}"
@@ -284,27 +289,47 @@ function(ortools_cxx_library)
   message(STATUS "Configuring library ${LIBRARY_NAME} ...")
 
   add_library(${LIBRARY_NAME} ${LIBRARY_TYPE} "")
+  set_target_properties(${LIBRARY_NAME} PROPERTIES
+    CXX_STANDARD 20
+    CXX_STANDARD_REQUIRED ON
+    CXX_EXTENSIONS OFF)
+
+  target_include_directories(${LIBRARY_NAME} INTERFACE
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
+    $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>
+    $<INSTALL_INTERFACE:include>
+  )
+
   if(LIBRARY_TYPE STREQUAL "INTERFACE")
-    target_link_libraries(${LIBRARY_NAME} INTERFACE ${PROJECT_NAMESPACE}::ortools ${LIBRARY_LINK_LIBRARIES})
+    target_compile_features(${LIBRARY_NAME} INTERFACE cxx_std_20)
+    target_compile_definitions(${LIBRARY_NAME} INTERFACE ${LIBRARY_COMPILE_DEFINITIONS})
+    target_link_libraries(${LIBRARY_NAME} INTERFACE ${LIBRARY_LINK_LIBRARIES})
   else()
+    target_compile_features(${LIBRARY_NAME} PUBLIC cxx_std_20)
+    target_compile_definitions(${LIBRARY_NAME} PUBLIC ${LIBRARY_COMPILE_DEFINITIONS})
+    target_link_libraries(${LIBRARY_NAME} PUBLIC ${LIBRARY_LINK_LIBRARIES})
+
     target_sources(${LIBRARY_NAME} PRIVATE ${LIBRARY_SOURCES})
-    target_compile_definitions(${LIBRARY_NAME} PRIVATE ${LIBRARY_COMPILE_DEFINITIONS})
-    target_compile_features(${LIBRARY_NAME} PRIVATE cxx_std_17)
-    target_compile_options(${LIBRARY_NAME} PRIVATE ${LIBRARY_COMPILE_OPTIONS})
-    target_link_libraries(${LIBRARY_NAME} PUBLIC ${PROJECT_NAMESPACE}::ortools ${LIBRARY_LINK_LIBRARIES})
-    target_link_options(${LIBRARY_NAME} PRIVATE ${LIBRARY_LINK_OPTIONS})
+    target_compile_definitions(${LIBRARY_NAME} PRIVATE ${LIBRARY_LOCAL_COMPILE_DEFINITIONS})
+    target_compile_options(${LIBRARY_NAME} PRIVATE ${LIBRARY_LOCAL_COMPILE_OPTIONS})
+    target_link_options(${LIBRARY_NAME} PRIVATE ${LIBRARY_LOCAL_LINK_OPTIONS})
   endif()
 
   include(GNUInstallDirs)
   if(APPLE)
     set_target_properties(${LIBRARY_NAME} PROPERTIES
-      INSTALL_RPATH "@loader_path/../${CMAKE_INSTALL_LIBDIR};@loader_path")
+      INSTALL_RPATH "@loader_path/../${CMAKE_INSTALL_LIBDIR};@loader_path"
+      # Apple Clang don't support version x.y.z with z > 255
+      VERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
+    )
   elseif(UNIX)
     cmake_path(RELATIVE_PATH CMAKE_INSTALL_FULL_LIBDIR
       BASE_DIRECTORY ${CMAKE_INSTALL_FULL_BINDIR}
       OUTPUT_VARIABLE libdir_relative_path)
     set_target_properties(${LIBRARY_NAME} PROPERTIES
-      INSTALL_RPATH "$ORIGIN/${libdir_relative_path}:$ORIGIN")
+      INSTALL_RPATH "$ORIGIN/${libdir_relative_path}:$ORIGIN"
+      VERSION ${PROJECT_VERSION}
+    )
   endif()
   add_library(${PROJECT_NAMESPACE}::${LIBRARY_NAME} ALIAS ${LIBRARY_NAME})
   message(STATUS "Configuring library ${LIBRARY_NAME} ...DONE")
@@ -318,7 +343,7 @@ endfunction()
 # SOURCES: List of source files
 # [COMPILE_DEFINITIONS]: List of private compile definitions
 # [COMPILE_OPTIONS]: List of private compile options
-# [LINK_LIBRARIES]: List of **public** libraries to use when linking
+# [LINK_LIBRARIES]: List of private libraries to use when linking
 # note: ortools::ortools is always linked to the target
 # [LINK_OPTIONS]: List of private link options
 # e.g.:
@@ -359,7 +384,7 @@ function(ortools_cxx_binary)
   add_executable(${BINARY_NAME} ${BINARY_TYPE} "")
   target_sources(${BINARY_NAME} PRIVATE ${BINARY_SOURCES})
   target_compile_definitions(${BINARY_NAME} PRIVATE ${BINARY_COMPILE_DEFINITIONS})
-  target_compile_features(${BINARY_NAME} PRIVATE cxx_std_17)
+  target_compile_features(${BINARY_NAME} PRIVATE cxx_std_20)
   target_compile_options(${BINARY_NAME} PRIVATE ${BINARY_COMPILE_OPTIONS})
   target_link_libraries(${BINARY_NAME} PRIVATE ${PROJECT_NAMESPACE}::ortools ${BINARY_LINK_LIBRARIES})
   target_link_options(${BINARY_NAME} PRIVATE ${BINARY_LINK_OPTIONS})
@@ -579,19 +604,19 @@ endif()
 ###############
 ##  ORTOOLS  ##
 ###############
+
+
+
+
+
+
 # Main Target
 add_library(${PROJECT_NAME} "")
-# Compile options
-if(MSVC)
-  set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 20)
-else()
-  set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 17)
-endif()
 set_target_properties(${PROJECT_NAME} PROPERTIES
+  CXX_STANDARD 20
   CXX_STANDARD_REQUIRED ON
   CXX_EXTENSIONS OFF)
-target_compile_features(${PROJECT_NAME} PUBLIC
-  $<IF:$<CXX_COMPILER_ID:MSVC>,cxx_std_20,cxx_std_17>)
+target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20)
 target_compile_definitions(${PROJECT_NAME} PUBLIC ${OR_TOOLS_COMPILE_DEFINITIONS})
 if(MSVC AND BUILD_SHARED_LIBS)
   target_compile_definitions(${PROJECT_NAME} PRIVATE OR_EXPORT)

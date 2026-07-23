@@ -105,6 +105,21 @@ endif()
 include(CMakeDependentOption)
 
 # Optional components (enabled by default)
+
+# Core contains (base,port,util,graph*,algorithms,bop,glop,pdlp,sat,set_cover,lp_data,linear_solver)
+# TODO(mizux): move out linear_solver from core.
+#option(BUILD_CORE "Build ortools core" ON)
+set(BUILD_CORE ON)
+message(STATUS "Build Core: ${BUILD_CORE}")
+option(BUILD_PACKING "Build the packing solver" ON)
+message(STATUS "Build Packing: ${BUILD_PACKING}")
+option(BUILD_ROUTING "Build the routing and cp solver" ON)
+message(STATUS "Build routing: ${BUILD_ROUTING}")
+option(BUILD_SCHEDULING "Build the scheduling solver" ON)
+message(STATUS "Build Scheduling: ${BUILD_SCHEDULING}")
+option(BUILD_MATH_OPT "Build the math opt solver" ON)
+message(STATUS "Build MathOpt: ${BUILD_MATH_OPT}")
+
 ## Flatzinc
 if(EMSCRIPTEN)
   set(BUILD_FLATZINC OFF)
@@ -112,10 +127,6 @@ else()
   option(BUILD_FLATZINC "Build flatzinc" ON)
 endif()
 message(STATUS "Build Flatzinc: ${BUILD_FLATZINC}")
-
-## MathOpt
-option(BUILD_MATH_OPT "Build the MATH_OPT" ON)
-message(STATUS "Build MathOpt: ${BUILD_MATH_OPT}")
 
 # Documentations
 option(BUILD_DOC "Build documentation" OFF)
