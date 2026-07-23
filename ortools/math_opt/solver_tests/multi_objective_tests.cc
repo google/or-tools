@@ -385,11 +385,6 @@ TEST_P(SimpleMultiObjectiveTest,
           .objective_parameters = {
               {aux_obj, {.time_limit = absl::Milliseconds(1)}}}}};
   const auto result = Solve(*model, GetParam().solver_type, args);
-  if (GetParam().solver_type == SolverType::kXpress) {
-    EXPECT_THAT(result, StatusIs(absl::StatusCode::kInvalidArgument,
-                                 HasSubstr("per-objective time limits")));
-    return;
-  }
   if (!GetParam().supports_auxiliary_objectives) {
     EXPECT_THAT(result, StatusIs(absl::StatusCode::kInvalidArgument,
                                  HasSubstr("multiple objectives")));
@@ -410,6 +405,17 @@ TEST_P(SimpleMultiObjectiveTest,
   if (!GetParam().supports_integer_variables) {
     GTEST_SKIP() << kNoIntegerVariableSupportMessage;
   }
+  if (GetParam().solver_type == SolverType::kXpress) {
+    // Xpress behaves very differently from what this test expects:
+    // If the first objective hits a time limit without finding a solution
+    // (this is what happens here) then Xpress leaves the first solution
+    // unfixed and continues with the second solution. Since the second
+    // solution solves to optimality, Xpress will report "optimal" in the end.
+    // The rationale for this behavior is that a time limit on everything but
+    // the first objective is interpreted as "if you can solve this then great,
+    // if not, move on".
+    GTEST_SKIP() << "skipped since Xpress behaves differently in this context";
+  }
   ASSERT_OK_AND_ASSIGN(const std::unique_ptr<Model> model,
                        Load23588MiplibInstance());
   model->AddMaximizationObjective(0, /*priority=*/1);
@@ -419,11 +425,6 @@ TEST_P(SimpleMultiObjectiveTest,
           .objective_parameters = {{model->primary_objective(),
                                     {.time_limit = absl::Milliseconds(1)}}}}};
   const auto result = Solve(*model, GetParam().solver_type, args);
-  if (GetParam().solver_type == SolverType::kXpress) {
-    EXPECT_THAT(result, StatusIs(absl::StatusCode::kInvalidArgument,
-                                 HasSubstr("per-objective time limits")));
-    return;
-  }
   if (!GetParam().supports_auxiliary_objectives) {
     EXPECT_THAT(result, StatusIs(absl::StatusCode::kInvalidArgument,
                                  HasSubstr("multiple objectives")));
@@ -485,11 +486,6 @@ TEST_P(SimpleMultiObjectiveTest,
                                     {.time_limit = absl::Seconds(10)}}}}};
   args.parameters.time_limit = absl::Milliseconds(1);
   const auto result = Solve(*model, GetParam().solver_type, args);
-  if (GetParam().solver_type == SolverType::kXpress) {
-    EXPECT_THAT(result, StatusIs(absl::StatusCode::kInvalidArgument,
-                                 HasSubstr("per-objective time limits")));
-    return;
-  }
   ASSERT_OK(result);
   EXPECT_THAT(*result, TerminatesWithLimit(Limit::kTime));
   // Solvers do not stop very precisely, use a large number to avoid flaky
