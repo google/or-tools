@@ -12,21 +12,22 @@ EXCLUDE_DIRS = {
     "gen",
     "docs",
     "copts",
-    # "constraint_solver",  # routing deps
-    # "routing",  # leaf
+    #"constraint_solver",  # routing deps
+    #"routing",  # leaf
     "cpp",
     "dotnet",
     "flatzinc",
-    # "gurobi",  # math_opt deps
-    # "init",  # leaf
+    #"math_opt",  # leaf
+    #"gurobi",  # math_opt deps
+    #"init",  # leaf
     "java",
     "javatests",
     "julia",
     "model_builder",  # only samples
-    # "packing",  # leaf
-    # "scheduling",  # leaf
+    #"packing",  # leaf
+    #"scheduling",  # leaf
     "python",
-    # "third_party_solvers",
+    #"third_party_solvers",
     "service",
 }
 
@@ -383,10 +384,32 @@ if __name__ == "__main__":
 
     print("\n# CMake OR-Tools layout proposal\n")
     diag = '''\
-sdsdsds
-sdsd
-sdsd
-sdsd
+```mermaid
+graph TB
+    CORE("libortools_core.so\\n(base,port,util,\\ngraph,graph_base,algorithms,\\nset_cover,sat,glop,bop,pdlp,\\nthird_party,lp_data)")
+    LS("libortools_linearsolver.so\\n(linear_solver)")
+    MO("libortools_mathopt.so\\n(math_opt,gurobi)")
+    PACKING("libortools_packing.so\\n(packing)")
+    ROUTING("libortools_routing.so\\n(routing,constraint_solver)")
+    SCHEDULING("libortools_scheduling.so\\n(scheduling)")
+    OR("libortools.so\\n(init)")
+
+    OR --> LS
+    LS --> CORE
+    OR --> MO
+    MO --> CORE
+    OR --> PACKING
+    PACKING --> CORE
+    PACKING --> LS
+    OR --> ROUTING
+    ROUTING --> CORE
+    ROUTING --> LS
+    OR --> SCHEDULING
+    SCHEDULING --> CORE
+    SCHEDULING --> LS
+    classDef default stroke:black,fill:lightskyblue,color:black
+    linkStyle default color:black
+```
 '''
     print(diag)
 

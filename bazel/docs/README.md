@@ -272,12 +272,34 @@ flowchart LR
 
 note: we expect to found one cluster
 
-- **Cluster 1:** `Algo`, `util`, `glop`, `lp_data`, `base`, `packing`, `LS`, `Graph`, `GraphBase`, `bop`, `port`, `sat`, `init`, `MathOpt`, `SetCovr`, `routing`, `pdlp`, `scheduling`, `CP`, `3PSolver`, `gurobi`
+- **Cluster 1:** `Algo`, `LS`, `routing`, `packing`, `Graph`, `glop`, `util`, `sat`, `port`, `bop`, `lp_data`, `SetCovr`, `init`, `base`, `GraphBase`, `MathOpt`, `scheduling`, `3PSolver`, `pdlp`, `CP`, `gurobi`
 
 # CMake OR-Tools layout proposal
 
-sdsdsds
-sdsd
-sdsd
-sdsd
+```mermaid
+graph TB
+    CORE("libortools_core.so\n(base,port,util,\ngraph,graph_base,algorithms,\nset_cover,sat,glop,bop,pdlp,\nthird_party,lp_data)")
+    LS("libortools_linearsolver.so\n(linear_solver)")
+    MO("libortools_mathopt.so\n(math_opt,gurobi)")
+    PACKING("libortools_packing.so\n(packing)")
+    ROUTING("libortools_routing.so\n(routing,constraint_solver)")
+    SCHEDULING("libortools_scheduling.so\n(scheduling)")
+    OR("libortools.so\n(init)")
+
+    OR --> LS
+    LS --> CORE
+    OR --> MO
+    MO --> CORE
+    OR --> PACKING
+    PACKING --> CORE
+    PACKING --> LS
+    OR --> ROUTING
+    ROUTING --> CORE
+    ROUTING --> LS
+    OR --> SCHEDULING
+    SCHEDULING --> CORE
+    SCHEDULING --> LS
+    classDef default stroke:black,fill:lightskyblue,color:black
+    linkStyle default color:black
+```
 
