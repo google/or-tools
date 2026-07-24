@@ -26,6 +26,7 @@ from ortools.math_opt.solvers import glpk_pb2
 from ortools.math_opt.solvers import gurobi_pb2
 from ortools.math_opt.solvers import highs_pb2
 from ortools.math_opt.solvers import osqp_pb2
+from ortools.math_opt.solvers import xpress_pb2
 from ortools.math_opt.solvers.gscip import gscip_pb2
 from ortools.sat import sat_parameters_pb2
 
@@ -77,6 +78,8 @@ class SolverType(enum.Enum):
         QPs are unimplemented).
       SANTORINI: The Santorini Solver (first party). Supports MIP. Experimental,
         do not use in production.
+      XPRESS: Fico XPRESS solver (third party). Supports LP, MIP, and nonconvex
+        integer quadratic problems. A fast option, but has special licensing.
     """
 
     GSCIP = math_opt_parameters_pb2.SOLVER_TYPE_GSCIP
@@ -90,6 +93,7 @@ class SolverType(enum.Enum):
     SCS = math_opt_parameters_pb2.SOLVER_TYPE_SCS
     HIGHS = math_opt_parameters_pb2.SOLVER_TYPE_HIGHS
     SANTORINI = math_opt_parameters_pb2.SOLVER_TYPE_SANTORINI
+    XPRESS = math_opt_parameters_pb2.SOLVER_TYPE_XPRESS
 
 
 def solver_type_from_proto(
@@ -267,6 +271,48 @@ class GlpkParameters:
 
 
 @dataclasses.dataclass
+class XpressParameters:
+    """Xpress specific parameters for solving.
+
+    See
+    https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/HTML/chapter7.html
+    for a list of possible parameters (called "controls" in Xpress).
+
+    In addition to all Xpress controls, the following special parameters are also
+    supported:
+      * "EXPORT_MODEL" (string): If present then the low level Xpress model (the
+        XPRSprob instance) is written to that file right before XPRSoptimize() is
+        called. This can be useful for debugging.
+      * "FORCE_POSTSOLVE" (int): If set to a non-zero value then the low-level
+        code will call XPRSpostsolve() right after calling XPRSoptimize(). If not
+        set or set to zero then calling XPRSpostsolve() is delayed to the latest
+        possible point in time to enable incremental solves.
+      * "STOP_AFTER_LP" (int): If set to a non-zero value then the solve will be
+        stopped right after solving the root relaxation. This is the same as
+        passing the ' l' (ell) flag to XPRSoptimize() and stops the process
+        earlier than a limit like MAXNODE=0.
+
+    Example use:
+      xpress=XpressParameters();
+      xpress.param_values["BarIterLimit"] = "10";
+
+    Parameters are applied in the following order:
+     * Any parameters derived from ortools parameters (like LP algorithm).
+     * param_values in iteration order (insertion order).
+    """
+
+    param_values: Dict[str, str] = dataclasses.field(default_factory=dict)
+
+    def to_proto(self) -> xpress_pb2.XpressParametersProto:
+        return xpress_pb2.XpressParametersProto(
+            parameters=[
+                xpress_pb2.XpressParametersProto.Parameter(name=key, value=val)
+                for key, val in self.param_values.items()
+            ]
+        )
+
+
+@dataclasses.dataclass
 class SolveParameters:
     """Parameters to control a single solve.
 
@@ -375,6 +421,7 @@ class SolveParameters:
       SolveParameters.scaling to OsqpSettingsProto.
     glpk: GLPK specific solve parameters.
     highs: HiGHS specific solve parameters.
+    xpress: Xpress specific solve parameters.
   """  # fmt: skip
 
     time_limit: Optional[datetime.timedelta] = None
@@ -415,6 +462,7 @@ class SolveParameters:
     highs: highs_pb2.HighsOptionsProto = dataclasses.field(
         default_factory=highs_pb2.HighsOptionsProto
     )
+    xpress: XpressParameters = dataclasses.field(default_factory=XpressParameters)
 
     def to_proto(self) -> math_opt_parameters_pb2.SolveParametersProto:
         """Returns a protocol buffer equivalent to this."""
@@ -433,6 +481,7 @@ class SolveParameters:
             osqp=self.osqp,
             glpk=self.glpk.to_proto(),
             highs=self.highs,
+            xpress=self.xpress.to_proto(),
         )
         if self.time_limit is not None:
             result.time_limit.FromTimedelta(self.time_limit)

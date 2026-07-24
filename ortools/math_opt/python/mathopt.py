@@ -86,6 +86,7 @@ from ortools.math_opt.python.init_arguments import StreamablePdlpInitArguments
 from ortools.math_opt.python.init_arguments import StreamableSantoriniInitArguments
 from ortools.math_opt.python.init_arguments import StreamableScsInitArguments
 from ortools.math_opt.python.init_arguments import StreamableSolverInitArguments
+from ortools.math_opt.python.init_arguments import StreamableXpressInitArguments
 from ortools.math_opt.python.linear_constraints import LinearConstraint
 from ortools.math_opt.python.linear_constraints import LinearConstraintMatrixEntry
 from ortools.math_opt.python.message_callback import list_message_callback
@@ -114,6 +115,7 @@ from ortools.math_opt.python.parameters import SolveParameters
 from ortools.math_opt.python.parameters import solver_type_from_proto
 from ortools.math_opt.python.parameters import solver_type_to_proto
 from ortools.math_opt.python.parameters import SolverType
+from ortools.math_opt.python.parameters import XpressParameters
 from ortools.math_opt.python.quadratic_constraints import QuadraticConstraint
 from ortools.math_opt.python.result import FeasibilityStatus
 from ortools.math_opt.python.result import Limit

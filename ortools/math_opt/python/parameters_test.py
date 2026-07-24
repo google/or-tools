@@ -26,6 +26,7 @@ from ortools.math_opt.solvers import glpk_pb2
 from ortools.math_opt.solvers import gurobi_pb2
 from ortools.math_opt.solvers import highs_pb2
 from ortools.math_opt.solvers import osqp_pb2
+from ortools.math_opt.solvers import xpress_pb2
 from ortools.math_opt.solvers.gscip import gscip_pb2
 from ortools.sat import sat_parameters_pb2
 
@@ -70,6 +71,21 @@ class GlpkParameters(absltest.TestCase):
         glpk_proto = parameters.GlpkParameters().to_proto()
         expected_proto = glpk_pb2.GlpkParametersProto()
         self.assertEqual(glpk_proto, expected_proto)
+
+
+class XpressParameters(absltest.TestCase):
+
+    def test_to_proto(self) -> None:
+        xpress_proto = parameters.XpressParameters(
+            param_values={"x": "dog", "ab": "7"}
+        ).to_proto()
+        expected_proto = xpress_pb2.XpressParametersProto(
+            parameters=[
+                xpress_pb2.XpressParametersProto.Parameter(name="x", value="dog"),
+                xpress_pb2.XpressParametersProto.Parameter(name="ab", value="7"),
+            ]
+        )
+        self.assertEqual(expected_proto, xpress_proto)
 
 
 class ProtoRoundTrip(absltest.TestCase):
@@ -208,6 +224,11 @@ class SolveParametersTest(compare_proto.MathOptProtoAssertions, parameterized.Te
             "highs",
             highs_pb2.HighsOptionsProto(bool_options={"solve_relaxation": True}),
         ),
+        (
+            "xpress",
+            "xpress",
+            parameters.XpressParameters(param_values={"BarIterLimit": "10"}),
+        ),
     )
     def test_to_proto_with_specifics(
         self, field: str, solver_specific_param: Any
@@ -217,7 +238,7 @@ class SolveParametersTest(compare_proto.MathOptProtoAssertions, parameterized.Te
         expected = math_opt_parameters_pb2.SolveParametersProto(threads=3)
         proto_solver_specific_param = (
             solver_specific_param.to_proto()
-            if field in ("gurobi", "glpk")
+            if field in ("gurobi", "glpk", "xpress")
             else solver_specific_param
         )
         getattr(expected, field).CopyFrom(proto_solver_specific_param)
