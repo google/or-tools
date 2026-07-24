@@ -720,6 +720,9 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
   ${PDLP_DEPS}
   ${SCIP_DEPS}
   Threads::Threads)
+if(UNIX AND NOT APPLE AND USE_HIGHS AND BUILD_HIGHS)
+  target_link_options(${PROJECT_NAME} PRIVATE "LINKER:--exclude-libs,libhighs.a")
+endif()
 if(WIN32)
   target_link_libraries(${PROJECT_NAME} PUBLIC psapi.lib ws2_32.lib)
 endif()
