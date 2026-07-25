@@ -562,6 +562,7 @@ cc_library(
         "not_run:arm",
     ],
     deps = [
+        "//ortools/base:status_macros",
         "//ortools/third_party_solvers:gurobi_environment",
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/log",
@@ -570,6 +571,19 @@ cc_library(
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
+    ],
+)
+
+cc_test(
+    name = "gurobi_util_test",
+    srcs = ["gurobi_util_test.cc"],
+    copts = ORTOOLS_TEST_COPTS,
+    linkopts = ORTOOLS_DEFAULT_LINKOPTS,
+    deps = [
+        ":gurobi_util",
+        "//ortools/base:gmock_main",
+        "//ortools/third_party_solvers:gurobi_environment",
+        "@abseil-cpp//absl/cleanup",
     ],
 )
 
