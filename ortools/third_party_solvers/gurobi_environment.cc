@@ -310,7 +310,7 @@ void LoadGurobiFunctions(DynamicLibrary* gurobi_dynamic_library) {
   gurobi_dynamic_library->GetFunction(&GRBsetdblparam, "GRBsetdblparam");
   gurobi_dynamic_library->GetFunction(&GRBsetstrparam, "GRBsetstrparam");
   gurobi_dynamic_library->GetFunction(&GRBresetparams, "GRBresetparams");
-  gurobi_dynamic_library->GetFunction(&GRBcopyparams, "GRBcopyparams");
+  gurobi_dynamic_library->TryGetFunction(&GRBcopyparams, "GRBcopyparams");
   gurobi_dynamic_library->GetFunction(&GRBloadenv, "GRBloadenv");
   gurobi_dynamic_library->GetFunction(&GRBstartenv, "GRBstartenv");
   gurobi_dynamic_library->GetFunction(&GRBemptyenv, "GRBemptyenv");
@@ -339,7 +339,7 @@ std::vector<std::string> GurobiDynamicLibraryPotentialPaths() {
   std::vector<std::string> potential_paths;
   // clang-format off
   const std::vector<absl::string_view> kGurobiVersions = {
-      "1301", "1300",
+      "1302", "1301", "1300",
       "1203", "1202", "1201", "1200",
       "1103", "1102", "1101", "1100",
       "1003", "1002", "1001", "1000",
@@ -407,7 +407,7 @@ std::vector<std::string> GurobiDynamicLibraryPotentialPaths() {
 #if defined(__GNUC__)
   // clang-format off
   for (const absl::string_view version : {
-      "13.0.1", "13.0.0",
+      "13.0.2", "13.0.1", "13.0.0",
       "12.0.3", "12.0.2", "12.0.1", "12.0.0",
       "11.0.3", "11.0.2", "11.0.1", "11.0.0",
       "10.0.3", "10.0.2", "10.0.1", "10.0.0",
@@ -428,12 +428,15 @@ absl::Status LoadGurobiDynamicLibrary(
     DynamicLibrary gurobi_library;
   };
 
-  static absl::NoDestructor<GurobiLibraryStruct> loaded([&potential_paths]() {
-    GurobiLibraryStruct result;
+  static absl::NoDestructor<GurobiLibraryStruct> loaded;
+  static const bool initialized = [&potential_paths]() {
+    GurobiLibraryStruct& result = *loaded;
+    std::vector<std::string> attempted_paths;
     // Try to load the library from the potential paths.
     for (const absl::string_view path : potential_paths) {
+      attempted_paths.push_back(std::string(path));
       if (result.gurobi_library.TryToLoad(path)) {
-        VLOG(1) << "Found the Gurobi library in '" << path << ".";
+        VLOG(1) << "Found the Gurobi library in '" << path << "'.";
         break;
       }
     }
@@ -443,8 +446,9 @@ absl::Status LoadGurobiDynamicLibrary(
       const std::vector<std::string> canonical_paths =
           GurobiDynamicLibraryPotentialPaths();
       for (const absl::string_view path : canonical_paths) {
+        attempted_paths.push_back(std::string(path));
         if (result.gurobi_library.TryToLoad(path)) {
-          VLOG(1) << "Found the Gurobi library in '" << path << ".";
+          VLOG(1) << "Found the Gurobi library in '" << path << "'.";
           break;
         }
       }
@@ -455,13 +459,14 @@ absl::Status LoadGurobiDynamicLibrary(
       result.gurobi_load_status = absl::OkStatus();
     } else {
       result.gurobi_load_status = absl::NotFoundError(absl::StrCat(
-          "Could not find the Gurobi shared library. Looked in: [",
-          absl::StrJoin(potential_paths, "', '"),
-          "]. If you know where it"
+          "Could not find the Gurobi shared library. Looked in: ['",
+          absl::StrJoin(attempted_paths, "', '"),
+          "']. If you know where it"
           " is, pass the full path to 'LoadGurobiDynamicLibrary()'."));
     }
-    return result;
-  }());
+    return true;
+  }();
+  (void)initialized;
 
   return loaded->gurobi_load_status;
 }

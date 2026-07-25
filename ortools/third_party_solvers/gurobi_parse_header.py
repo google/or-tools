@@ -139,6 +139,14 @@ EXPORTED_FUNCTIONS = frozenset(
     ]
 )
 
+OPTIONAL_FUNCTIONS = frozenset(
+    [
+        # Removed from the Gurobi 13 C API. Keep loading optional while callers
+        # provide a fallback implementation.
+        "GRBcopyparams",
+    ]
+)
+
 # TODO(user): Filter #define too.
 
 
@@ -167,7 +175,8 @@ class GurobiHeaderParser:
 
         self.__header += f"extern std::function<{return_type}({args})> {name};\n"
         self.__define += f"std::function<{return_type}({args})> {name} = nullptr;\n"
-        self.__assign += f"  gurobi_dynamic_library->GetFunction(&{name}, "
+        get_function = "TryGetFunction" if name in OPTIONAL_FUNCTIONS else "GetFunction"
+        self.__assign += f"  gurobi_dynamic_library->{get_function}(&{name}, "
         self.__assign += f'"{name}");\n'
 
     def parse(self, filepath: str) -> None:

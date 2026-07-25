@@ -27,6 +27,24 @@
 #include "ortools/third_party_solvers/gurobi_environment.h"
 
 namespace operations_research {
+namespace {
+
+constexpr int kGurobiOkCode = 0;
+constexpr int kIntParam = 1;
+constexpr int kDoubleParam = 2;
+constexpr int kStringParam = 3;
+
+absl::Status GurobiStatus(const int gurobi_code, GRBenv* const env,
+                          const std::string& operation) {
+  if (gurobi_code == kGurobiOkCode) {
+    return absl::OkStatus();
+  }
+  return absl::InvalidArgumentError(
+      absl::StrCat(operation, " failed with Gurobi error ", gurobi_code, ": ",
+                   GRBgeterrormsg(env)));
+}
+
+}  // namespace
 
 bool GurobiIsCorrectlyInstalled() {
   absl::StatusOr<GRBenv*> status = GetGurobiEnv();
@@ -53,6 +71,74 @@ absl::StatusOr<GRBenv*> GetGurobiEnv() {
   }
 
   return env;
+}
+
+absl::Status CopyGurobiParameters(GRBenv* const dest, GRBenv* const src) {
+  if (GRBcopyparams) {
+    return GurobiStatus(GRBcopyparams(dest, src), src, "GRBcopyparams()");
+  }
+
+  const int num_parameters = GRBgetnumparams(src);
+  for (int i = 0; i < num_parameters; ++i) {
+    char* param_name = nullptr;
+    RETURN_IF_ERROR(GurobiStatus(GRBgetparamname(src, i, &param_name), src,
+                                 "GRBgetparamname()"));
+    const int param_type = GRBgetparamtype(src, param_name);
+    switch (param_type) {
+      case kIntParam: {
+        int current_value;
+        int default_value;
+        int min_value;
+        int max_value;
+        RETURN_IF_ERROR(GurobiStatus(
+            GRBgetintparaminfo(src, param_name, &current_value, &min_value,
+                               &max_value, &default_value),
+            src, absl::StrCat("GRBgetintparaminfo(", param_name, ")")));
+        if (current_value != default_value) {
+          RETURN_IF_ERROR(GurobiStatus(
+              GRBsetintparam(dest, param_name, current_value), dest,
+              absl::StrCat("GRBsetintparam(", param_name, ")")));
+        }
+        break;
+      }
+      case kDoubleParam: {
+        double current_value;
+        double default_value;
+        double min_value;
+        double max_value;
+        RETURN_IF_ERROR(GurobiStatus(
+            GRBgetdblparaminfo(src, param_name, &current_value, &min_value,
+                               &max_value, &default_value),
+            src, absl::StrCat("GRBgetdblparaminfo(", param_name, ")")));
+        if (current_value != default_value) {
+          RETURN_IF_ERROR(GurobiStatus(
+              GRBsetdblparam(dest, param_name, current_value), dest,
+              absl::StrCat("GRBsetdblparam(", param_name, ")")));
+        }
+        break;
+      }
+      case kStringParam: {
+        char current_value[GRB_MAX_STRLEN + 1];
+        char default_value[GRB_MAX_STRLEN + 1];
+        RETURN_IF_ERROR(GurobiStatus(
+            GRBgetstrparaminfo(src, param_name, current_value, default_value),
+            src, absl::StrCat("GRBgetstrparaminfo(", param_name, ")")));
+        // This ensures that strcmp does not go beyond the end of the char array.
+        current_value[GRB_MAX_STRLEN] = '\0';
+        default_value[GRB_MAX_STRLEN] = '\0';
+        if (std::strcmp(current_value, default_value) != 0) {
+          RETURN_IF_ERROR(GurobiStatus(
+              GRBsetstrparam(dest, param_name, current_value), dest,
+              absl::StrCat("GRBsetstrparam(", param_name, ")")));
+        }
+        break;
+      }
+      default:
+        LOG(WARNING) << "Skipping Gurobi parameter '" << param_name
+                     << "' of unknown type " << param_type << ".";
+    }
+  }
+  return absl::OkStatus();
 }
 
 std::string GurobiParamInfoForLogging(GRBenv* grb, bool one_liner_output) {

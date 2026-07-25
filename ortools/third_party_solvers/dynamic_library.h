@@ -32,6 +32,10 @@
 class DynamicLibrary {
  public:
   DynamicLibrary() : library_handle_(nullptr) {}
+  DynamicLibrary(const DynamicLibrary&) = delete;
+  DynamicLibrary& operator=(const DynamicLibrary&) = delete;
+  DynamicLibrary(DynamicLibrary&&) = delete;
+  DynamicLibrary& operator=(DynamicLibrary&&) = delete;
 
   ~DynamicLibrary() {
     if (library_handle_ == nullptr) {
@@ -59,6 +63,16 @@ class DynamicLibrary {
 
   template <typename T>
   std::function<T> GetFunction(const char* function_name) {
+    std::function<T> function = TryGetFunction<T>(function_name);
+
+    CHECK(function) << "Error: could not find function "
+                    << std::string(function_name) << " in " << library_name_;
+
+    return function;
+  }
+
+  template <typename T>
+  std::function<T> TryGetFunction(const char* function_name) {
 #if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__)
     // On Windows, avoid casting to void*: not supported by MinGW.
     FARPROC function_address =
@@ -67,9 +81,9 @@ class DynamicLibrary {
     const void* function_address = dlsym(library_handle_, function_name);
 #endif  // MinGW.
 
-    CHECK(function_address)
-        << "Error: could not find function " << std::string(function_name)
-        << " in " << library_name_;
+    if (function_address == nullptr) {
+      return nullptr;
+    }
 
     return TypeParser<T>::CreateFunction(function_address);
   }
@@ -82,6 +96,11 @@ class DynamicLibrary {
   template <typename T>
   void GetFunction(std::function<T>* function, const char* function_name) {
     *function = GetFunction<T>(function_name);
+  }
+
+  template <typename T>
+  void TryGetFunction(std::function<T>* function, const char* function_name) {
+    *function = TryGetFunction<T>(function_name);
   }
 
   template <typename T>
