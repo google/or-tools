@@ -397,6 +397,7 @@ cc_library(
     copts = ORTOOLS_DEFAULT_COPTS,
     linkopts = ORTOOLS_DEFAULT_LINKOPTS,
     deps = [
+        ":base_export",
         ":file",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
