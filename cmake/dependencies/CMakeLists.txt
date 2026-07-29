@@ -526,6 +526,7 @@ if(BUILD_googletest)
     SYSTEM
   )
   set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+  set(gtest_disable_warnings_as_errors ON CACHE BOOL "" FORCE)
   set(GTEST_HAS_ABSL ON)
   set(INSTALL_GTEST ON)
   FetchContent_MakeAvailable(googletest)
