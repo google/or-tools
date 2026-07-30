@@ -98,8 +98,7 @@ void RunCopyGurobiParametersTest(const bool force_fallback) {
   }
 
   ExpectTestParameters(dest, /*expected_output_flag=*/0, /*expected_threads=*/1,
-                       /*expected_mip_gap=*/0.123,
-                       "gurobi_util_test_src.log");
+                       /*expected_mip_gap=*/0.123, "gurobi_util_test_src.log");
 }
 
 TEST(GurobiUtilTest, CopyGurobiParametersCopiesChangedParameters) {

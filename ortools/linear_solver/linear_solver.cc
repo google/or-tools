@@ -452,7 +452,7 @@ constexpr
         {MPSolver::PDLP_LINEAR_PROGRAMMING, "pdlp"},
         {MPSolver::CPLEX_MIXED_INTEGER_PROGRAMMING, "cplex"},
         {MPSolver::XPRESS_MIXED_INTEGER_PROGRAMMING, "xpress"},
-    };
+};
 // static
 bool MPSolver::ParseSolverType(absl::string_view solver_id,
                                MPSolver::OptimizationProblemType* type) {

@@ -81,8 +81,8 @@ absl::Status CopyGurobiParameters(GRBenv* const dest, GRBenv* const src) {
   const int num_parameters = GRBgetnumparams(src);
   for (int i = 0; i < num_parameters; ++i) {
     char* param_name = nullptr;
-    RETURN_IF_ERROR(GurobiStatus(GRBgetparamname(src, i, &param_name), src,
-                                 "GRBgetparamname()"));
+    ABSL_RETURN_IF_ERROR(GurobiStatus(GRBgetparamname(src, i, &param_name), src,
+                                      "GRBgetparamname()"));
     const int param_type = GRBgetparamtype(src, param_name);
     switch (param_type) {
       case kIntParam: {
@@ -90,12 +90,12 @@ absl::Status CopyGurobiParameters(GRBenv* const dest, GRBenv* const src) {
         int default_value;
         int min_value;
         int max_value;
-        RETURN_IF_ERROR(GurobiStatus(
+        ABSL_RETURN_IF_ERROR(GurobiStatus(
             GRBgetintparaminfo(src, param_name, &current_value, &min_value,
                                &max_value, &default_value),
             src, absl::StrCat("GRBgetintparaminfo(", param_name, ")")));
         if (current_value != default_value) {
-          RETURN_IF_ERROR(GurobiStatus(
+          ABSL_RETURN_IF_ERROR(GurobiStatus(
               GRBsetintparam(dest, param_name, current_value), dest,
               absl::StrCat("GRBsetintparam(", param_name, ")")));
         }
@@ -106,12 +106,12 @@ absl::Status CopyGurobiParameters(GRBenv* const dest, GRBenv* const src) {
         double default_value;
         double min_value;
         double max_value;
-        RETURN_IF_ERROR(GurobiStatus(
+        ABSL_RETURN_IF_ERROR(GurobiStatus(
             GRBgetdblparaminfo(src, param_name, &current_value, &min_value,
                                &max_value, &default_value),
             src, absl::StrCat("GRBgetdblparaminfo(", param_name, ")")));
         if (current_value != default_value) {
-          RETURN_IF_ERROR(GurobiStatus(
+          ABSL_RETURN_IF_ERROR(GurobiStatus(
               GRBsetdblparam(dest, param_name, current_value), dest,
               absl::StrCat("GRBsetdblparam(", param_name, ")")));
         }
@@ -120,14 +120,15 @@ absl::Status CopyGurobiParameters(GRBenv* const dest, GRBenv* const src) {
       case kStringParam: {
         char current_value[GRB_MAX_STRLEN + 1];
         char default_value[GRB_MAX_STRLEN + 1];
-        RETURN_IF_ERROR(GurobiStatus(
+        ABSL_RETURN_IF_ERROR(GurobiStatus(
             GRBgetstrparaminfo(src, param_name, current_value, default_value),
             src, absl::StrCat("GRBgetstrparaminfo(", param_name, ")")));
-        // This ensures that strcmp does not go beyond the end of the char array.
+        // This ensures that strcmp does not go beyond the end of the char
+        // array.
         current_value[GRB_MAX_STRLEN] = '\0';
         default_value[GRB_MAX_STRLEN] = '\0';
         if (std::strcmp(current_value, default_value) != 0) {
-          RETURN_IF_ERROR(GurobiStatus(
+          ABSL_RETURN_IF_ERROR(GurobiStatus(
               GRBsetstrparam(dest, param_name, current_value), dest,
               absl::StrCat("GRBsetstrparam(", param_name, ")")));
         }
