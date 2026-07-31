@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# usage: ./tools/check_ortools_deps.py > bazel/docs/README.md
 """Analyzes C++ Bazel dependencies between OR-Tools subdirectories.
 
 This script runs Bazel cquery to analyze top-level module dependency graphs
@@ -11,30 +12,28 @@ import os
 import subprocess
 import sys
 
-# Subdirectories/files in ortools/ to ignore (non-package dirs or build files)
+# Subdirectories under ortools/ to exclude from top-level C++ module dependency
+# analysis. These fall into the following categories:
+# - Non-C++ language bindings and wrappers: dotnet, java, javatests, julia,
+#   python
+# - Non-code build files and documentation: copts, docs, doxygen, gen
+# - Standalone front-ends, sample code, and service endpoints: cpp, flatzinc,
+#   model_builder, service
+# Note: Core C++ solver components (e.g., constraint_solver, math_opt,
+# routing, etc.) are included.
 EXCLUDE_DIRS = {
-    "BUILD.bazel",
-    "BUILD",
-    "doxygen",
-    "gen",
-    "docs",
     "copts",
-    # "constraint_solver",  # routing deps
-    # "routing",  # leaf
     "cpp",
+    "docs",
     "dotnet",
+    "doxygen",
     "flatzinc",
-    # "math_opt",  # leaf
-    # "gurobi",  # math_opt deps
-    # "init",  # leaf
+    "gen",
     "java",
     "javatests",
     "julia",
-    "model_builder",  # only samples
-    # "packing",  # leaf
-    # "scheduling",  # leaf
+    "model_builder",
     "python",
-    # "third_party_solvers",
     "service",
 }
 
@@ -53,15 +52,13 @@ DIR_ALIASES = {
 }
 
 
-def get_ortools_subdirs(ortools_path: str = "ortools") -> list[str]:
+def get_ortools_subdirs() -> list[str]:
   """Finds all valid top-level directory names under ortools/.
-
-  Args:
-    ortools_path: Path to the ortools directory.
 
   Returns:
     A sorted list of valid subdirectory names.
   """
+  ortools_path = "ortools"
   if not os.path.exists(ortools_path):
     print(f"Error: Directory '{ortools_path}' not found.", file=sys.stderr)
     sys.exit(1)
@@ -99,14 +96,11 @@ def cquery_bazel_cc_library_deps(dir_a: str, dir_b: str) -> bool:
   target_a = f"kind('cc_library rule', //ortools/{dir_a}/...)"
   target_b = f"kind('cc_library rule', //ortools/{dir_b}/...)"
   cquery = f"somepath({target_a}, {target_b})"
-  try:
-    result = subprocess.run(
-        ["bazel", "cquery", cquery], capture_output=True, text=True, check=False
-    )
-    # If bazel finds at least one path, stdout will contain target names
-    return bool(result.stdout.strip())
-  except (subprocess.SubprocessError, OSError):
-    return False
+  result = subprocess.run(
+      ["bazel", "cquery", cquery], capture_output=True, text=True, check=False
+  )
+  # If bazel finds at least one path, stdout will contain target names
+  return bool(result.stdout.strip())
 
 
 def find_strongly_connected_components(
@@ -130,31 +124,33 @@ def find_strongly_connected_components(
   on_stack = set()
   sccs = []
 
-  def strongconnect(node):
+  # Tarjan's algorithm
+  # https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm#The_algorithm_in_pseudocode
+  def strongconnect(curr_node):
     nonlocal index
-    indices[node] = index
-    lowlink[node] = index
+    indices[curr_node] = index
+    lowlink[curr_node] = index
     index += 1
-    stack.append(node)
-    on_stack.add(node)
+    stack.append(curr_node)
+    on_stack.add(curr_node)
 
     for neighbor in dirs:
-      if node == neighbor:
+      if curr_node == neighbor:
         continue
-      if adj_matrix.get((node, neighbor), False):
+      if adj_matrix.get((curr_node, neighbor), False):
         if neighbor not in indices:
           strongconnect(neighbor)
-          lowlink[node] = min(lowlink[node], lowlink[neighbor])
+          lowlink[curr_node] = min(lowlink[curr_node], lowlink[neighbor])
         elif neighbor in on_stack:
-          lowlink[node] = min(lowlink[node], indices[neighbor])
+          lowlink[curr_node] = min(lowlink[curr_node], indices[neighbor])
 
-    if lowlink[node] == indices[node]:
+    if lowlink[curr_node] == indices[curr_node]:
       scc = []
       while True:
         w = stack.pop()
         on_stack.remove(w)
         scc.append(w)
-        if w == node:
+        if w == curr_node:
           break
       sccs.append(scc)
 
@@ -229,7 +225,9 @@ def build_scc_condensation_mermaid(
 def find_weakly_connected_components(
     adj_matrix: dict[tuple[str, str], bool], dirs: list[str]
 ) -> list[list[str]]:
-  """Finds Weakly Connected Components (WCCs) using BFS/DFS on an undirected view of the graph.
+  """Finds Weakly Connected Components (WCCs).
+
+  Uses BFS/DFS on an undirected view of the graph.
 
   Args:
     adj_matrix: Dictionary mapping (src, dep) directory pairs to booleans.
@@ -313,7 +311,7 @@ def build_aliases_table(dirs: list[str]) -> str:
 def build_matrix_table(
     dirs: list[str], dep_matrix: dict[tuple[str, str], bool]
 ) -> str:
-  """Builds a Markdown matrix table representing dependencies between directories.
+  """Builds a Markdown matrix table of directory dependencies.
 
   Args:
     dirs: List of directory names.
@@ -445,8 +443,9 @@ def analyze_dependencies(
   return (deps_matrix, sccs, wccs)
 
 
-if __name__ == "__main__":
-  subdirectories = get_ortools_subdirs("ortools")
+def main() -> None:
+  """Main entry point for analyzing OR-Tools subdirectory dependencies."""
+  subdirectories = get_ortools_subdirs()
   print(
       f"Found {len(subdirectories)} subdirectories to check.", file=sys.stderr
   )
@@ -530,3 +529,7 @@ graph TB
 ```
 """
   print(diag)
+
+
+if __name__ == "__main__":
+  main()
