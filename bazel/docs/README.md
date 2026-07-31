@@ -1,3 +1,5 @@
+<!-- disclaimer: this is an auto-generated report, do not modify -->
+<!-- disableFinding(LINE_OVER_80) -->
 # OR-Tools Subdirectory Dependency Analysis
 
 Using `bazel cquery somepath(kind('cc_library rule', //ortools/a/...), kind('cc_library rule', //ortools/b/...))`to find directory dependencies.
@@ -185,32 +187,31 @@ flowchart LR
 
 ## Directory Pairs Cycles
 
-
-Cycle: Algo <--> LS
-Cycle: Algo <--> lp_data
-Cycle: Algo <--> sat
-Cycle: Algo <--> SetCovr
-Cycle: glop <--> lp_data
-Cycle: Graph <--> LS
-Cycle: LS <--> pdlp
-Cycle: port <--> util
+- **Cycle 1:** `Algo` <--> `LS`
+- **Cycle 2:** `Algo` <--> `lp_data`
+- **Cycle 3:** `Algo` <--> `sat`
+- **Cycle 4:** `Algo` <--> `SetCovr`
+- **Cycle 5:** `glop` <--> `lp_data`
+- **Cycle 6:** `Graph` <--> `LS`
+- **Cycle 7:** `LS` <--> `pdlp`
+- **Cycle 8:** `port` <--> `util`
 
 ## Strongly Connected Components (Cyclic Dependencies / Clusters)
 
-- **Component 1:** `base` (base)
-- **Component 2:** `port` (port), `util` (util)
-- **Component 3:** `GraphBase` (graph_base)
-- **Component 4:** `3PSolver` (third_party_solvers)
-- **Component 5:** `pdlp` (pdlp), `SetCovr` (set_cover), `sat` (sat), `bop` (bop), `LS` (linear_solver), `Graph` (graph), `lp_data` (lp_data), `glop` (glop), `Algo` (algorithms)
-- **Component 6:** `CP` (constraint_solver)
-- **Component 7:** `gurobi` (gurobi)
-- **Component 8:** `init` (init)
-- **Component 9:** `MathOpt` (math_opt)
-- **Component 10:** `packing` (packing)
-- **Component 11:** `routing` (routing)
-- **Component 12:** `scheduling` (scheduling)
+- **Component 1:** `base`
+- **Component 2:** `port`, `util`
+- **Component 3:** `GraphBase`
+- **Component 4:** `3PSolver`
+- **Component 5:** `Algo`, `Graph`, `LS`, `SetCovr`, `bop`, `glop`, `lp_data`, `pdlp`, `sat`
+- **Component 6:** `CP`
+- **Component 7:** `gurobi`
+- **Component 8:** `init`
+- **Component 9:** `MathOpt`
+- **Component 10:** `packing`
+- **Component 11:** `routing`
+- **Component 12:** `scheduling`
 
-# Strongly Connected Component (SCC) Condensation Graph
+## Strongly Connected Component (SCC) Condensation Graph
 
 Each node represents an SCC. Multi-directory nodes indicate cyclic dependencies.
 
@@ -269,12 +270,11 @@ flowchart LR
 
 ## Weakly Connected Components (Isolated Module Subgraphs)
 
-
 note: we expect to found one cluster
 
-- **Cluster 1:** `Algo`, `LS`, `routing`, `packing`, `Graph`, `glop`, `util`, `sat`, `port`, `bop`, `lp_data`, `SetCovr`, `init`, `base`, `GraphBase`, `MathOpt`, `scheduling`, `3PSolver`, `pdlp`, `CP`, `gurobi`
+- **Cluster 1:** `3PSolver`, `Algo`, `CP`, `GraphBase`, `Graph`, `LS`, `MathOpt`, `SetCovr`, `base`, `bop`, `glop`, `gurobi`, `init`, `lp_data`, `packing`, `pdlp`, `port`, `routing`, `sat`, `scheduling`, `util`
 
-# CMake OR-Tools layout proposal
+## CMake OR-Tools layout proposal
 
 ```mermaid
 graph TB
