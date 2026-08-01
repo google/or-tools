@@ -17,12 +17,14 @@
 #include <cstddef>
 #include <iterator>
 #include <memory>
+#include <tuple>
 #include <vector>
 
 #include "absl/types/span.h"
 #include "ortools/set_cover/base_types.h"
 #include "ortools/set_cover/set_cover_heuristics.h"
 #include "ortools/set_cover/set_cover_invariant.h"
+#include "ortools/set_cover/set_cover_lagrangian.h"
 #include "ortools/set_cover/set_cover_model.h"
 #include "ortools/set_cover/set_cover_reader.h"
 #include "pybind11/numpy.h"
@@ -33,7 +35,9 @@
 
 using ::operations_research::BaseInt;
 using ::operations_research::ClearRandomSubsets;
+using ::operations_research::Cost;
 using ::operations_research::DualAscentOptimizer;
+using ::operations_research::ElementCostVector;
 using ::operations_research::ElementDegreeSolutionGenerator;
 using ::operations_research::ElementIndex;
 using ::operations_research::GreedySolutionOptimizer;
@@ -55,6 +59,7 @@ using ::operations_research::WriteSetCoverSolutionText;
 
 using ::operations_research::SetCoverDecision;
 using ::operations_research::SetCoverInvariant;
+using ::operations_research::SetCoverLagrangian;
 using ::operations_research::SetCoverModel;
 using ::operations_research::SparseColumn;
 using ::operations_research::SparseRow;
@@ -80,6 +85,12 @@ std::vector<SubsetIndex> VectorIntToVectorSubsetIndex(
 SubsetCostVector VectorDoubleToSubsetCostVector(
     absl::Span<const double> doubles) {
   SubsetCostVector costs(doubles.begin(), doubles.end());
+  return costs;
+}
+
+ElementCostVector VectorDoubleToElementCostVector(
+    absl::Span<const double> doubles) {
+  ElementCostVector costs(doubles.begin(), doubles.end());
   return costs;
 }
 
@@ -623,5 +634,136 @@ PYBIND11_MODULE(set_cover, m) {
   m.def("read_set_cover_solution_proto", &ReadSetCoverSolutionProto);
 
   // set_cover_lagrangian.h
-  // TODO(user): add support for SetCoverLagrangian.
+  // OptimizeImpl() is a dummy in this class, which the header says is meant to
+  // be used only through ComputeLowerBound(), so optimize() is not exposed.
+  py::class_<SetCoverLagrangian>(m, "SetCoverLagrangian")
+      .def(py::init<SetCoverInvariant*>())
+      .def("use_num_threads", &SetCoverLagrangian::UseNumThreads,
+           arg("num_threads"), py::return_value_policy::reference_internal)
+      .def("initialize_lagrange_multipliers",
+           [](const SetCoverLagrangian& lagrangian) -> std::vector<double> {
+             return lagrangian.InitializeLagrangeMultipliers().get();
+           })
+      .def(
+          "compute_reduced_costs",
+          [](const SetCoverLagrangian& lagrangian,
+             const std::vector<double>& costs,
+             const std::vector<double>& multipliers) -> std::vector<double> {
+            return lagrangian
+                .ComputeReducedCosts(
+                    VectorDoubleToSubsetCostVector(costs),
+                    VectorDoubleToElementCostVector(multipliers))
+                .get();
+          },
+          arg("costs"), arg("multipliers"))
+      .def(
+          "parallel_compute_reduced_costs",
+          [](const SetCoverLagrangian& lagrangian,
+             const std::vector<double>& costs,
+             const std::vector<double>& multipliers) -> std::vector<double> {
+            return lagrangian
+                .ParallelComputeReducedCosts(
+                    VectorDoubleToSubsetCostVector(costs),
+                    VectorDoubleToElementCostVector(multipliers))
+                .get();
+          },
+          arg("costs"), arg("multipliers"))
+      .def(
+          "compute_subgradient",
+          [](const SetCoverLagrangian& lagrangian,
+             const std::vector<double>& reduced_costs) -> std::vector<double> {
+            return lagrangian
+                .ComputeSubgradient(
+                    VectorDoubleToSubsetCostVector(reduced_costs))
+                .get();
+          },
+          arg("reduced_costs"))
+      .def(
+          "parallel_compute_subgradient",
+          [](const SetCoverLagrangian& lagrangian,
+             const std::vector<double>& reduced_costs) -> std::vector<double> {
+            return lagrangian
+                .ParallelComputeSubgradient(
+                    VectorDoubleToSubsetCostVector(reduced_costs))
+                .get();
+          },
+          arg("reduced_costs"))
+      .def(
+          "compute_lagrangian_value",
+          [](const SetCoverLagrangian& lagrangian,
+             const std::vector<double>& reduced_costs,
+             const std::vector<double>& multipliers) -> Cost {
+            return lagrangian.ComputeLagrangianValue(
+                VectorDoubleToSubsetCostVector(reduced_costs),
+                VectorDoubleToElementCostVector(multipliers));
+          },
+          arg("reduced_costs"), arg("multipliers"))
+      .def(
+          "parallel_compute_lagrangian_value",
+          [](const SetCoverLagrangian& lagrangian,
+             const std::vector<double>& reduced_costs,
+             const std::vector<double>& multipliers) -> Cost {
+            return lagrangian.ParallelComputeLagrangianValue(
+                VectorDoubleToSubsetCostVector(reduced_costs),
+                VectorDoubleToElementCostVector(multipliers));
+          },
+          arg("reduced_costs"), arg("multipliers"))
+      // UpdateMultipliers() mutates its argument through a pointer. The Python
+      // binding returns the updated multipliers instead.
+      .def(
+          "update_multipliers",
+          [](const SetCoverLagrangian& lagrangian, double step_size,
+             Cost lagrangian_value, Cost upper_bound,
+             const std::vector<double>& reduced_costs,
+             const std::vector<double>& multipliers) -> std::vector<double> {
+            ElementCostVector updated =
+                VectorDoubleToElementCostVector(multipliers);
+            lagrangian.UpdateMultipliers(
+                step_size, lagrangian_value, upper_bound,
+                VectorDoubleToSubsetCostVector(reduced_costs), &updated);
+            return updated.get();
+          },
+          arg("step_size"), arg("lagrangian_value"), arg("upper_bound"),
+          arg("reduced_costs"), arg("multipliers"))
+      .def(
+          "parallel_update_multipliers",
+          [](const SetCoverLagrangian& lagrangian, double step_size,
+             Cost lagrangian_value, Cost upper_bound,
+             const std::vector<double>& reduced_costs,
+             const std::vector<double>& multipliers) -> std::vector<double> {
+            ElementCostVector updated =
+                VectorDoubleToElementCostVector(multipliers);
+            lagrangian.ParallelUpdateMultipliers(
+                step_size, lagrangian_value, upper_bound,
+                VectorDoubleToSubsetCostVector(reduced_costs), &updated);
+            return updated.get();
+          },
+          arg("step_size"), arg("lagrangian_value"), arg("upper_bound"),
+          arg("reduced_costs"), arg("multipliers"))
+      .def(
+          "compute_gap",
+          [](const SetCoverLagrangian& lagrangian,
+             const std::vector<double>& reduced_costs,
+             const std::vector<bool>& solution,
+             const std::vector<double>& multipliers) -> Cost {
+            return lagrangian.ComputeGap(
+                VectorDoubleToSubsetCostVector(reduced_costs),
+                BoolVectorToSubsetBoolVector(solution),
+                VectorDoubleToElementCostVector(multipliers));
+          },
+          arg("reduced_costs"), arg("solution"), arg("multipliers"))
+      // ThreePhase() is declared in set_cover_lagrangian.h:135 but defined
+      // nowhere in the tree, so binding it produces an undefined symbol at
+      // module load. Left out until it has an implementation.
+      .def(
+          "compute_lower_bound",
+          [](SetCoverLagrangian& lagrangian, const std::vector<double>& costs,
+             Cost upper_bound)
+              -> std::tuple<Cost, std::vector<double>, std::vector<double>> {
+            auto [lower_bound, reduced_costs, multipliers] =
+                lagrangian.ComputeLowerBound(
+                    VectorDoubleToSubsetCostVector(costs), upper_bound);
+            return {lower_bound, reduced_costs.get(), multipliers.get()};
+          },
+          arg("costs"), arg("upper_bound"));
 }

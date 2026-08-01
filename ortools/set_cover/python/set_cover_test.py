@@ -222,6 +222,95 @@ class SetCoverTest(absltest.TestCase):
             inv.check_consistency(set_cover.consistency_level.FREE_AND_UNCOVERED)
         )
 
+    def test_lagrangian_initialize_multipliers(self):
+        model = create_knights_cover_model(8, 8)
+        inv = set_cover.SetCoverInvariant(model)
+
+        lagrangian = set_cover.SetCoverLagrangian(inv)
+        multipliers = lagrangian.initialize_lagrange_multipliers()
+        self.assertLen(multipliers, model.num_elements)
+        for multiplier in multipliers:
+            self.assertGreaterEqual(multiplier, 0.0)
+
+    def test_lagrangian_reduced_costs(self):
+        model = create_knights_cover_model(4, 4)
+        inv = set_cover.SetCoverInvariant(model)
+
+        lagrangian = set_cover.SetCoverLagrangian(inv)
+        multipliers = lagrangian.initialize_lagrange_multipliers()
+        costs = list(model.subset_costs)
+        reduced_costs = lagrangian.compute_reduced_costs(costs, multipliers)
+        self.assertLen(reduced_costs, model.num_subsets)
+
+    def test_lagrangian_subgradient_and_value(self):
+        model = create_knights_cover_model(4, 4)
+        inv = set_cover.SetCoverInvariant(model)
+
+        lagrangian = set_cover.SetCoverLagrangian(inv)
+        multipliers = lagrangian.initialize_lagrange_multipliers()
+        costs = list(model.subset_costs)
+        reduced_costs = lagrangian.compute_reduced_costs(costs, multipliers)
+
+        subgradient = lagrangian.compute_subgradient(reduced_costs)
+        self.assertLen(subgradient, model.num_elements)
+
+        value = lagrangian.compute_lagrangian_value(reduced_costs, multipliers)
+        self.assertIsInstance(value, float)
+
+    def test_lagrangian_update_multipliers(self):
+        model = create_knights_cover_model(4, 4)
+        inv = set_cover.SetCoverInvariant(model)
+
+        lagrangian = set_cover.SetCoverLagrangian(inv)
+        multipliers = lagrangian.initialize_lagrange_multipliers()
+        costs = list(model.subset_costs)
+        reduced_costs = lagrangian.compute_reduced_costs(costs, multipliers)
+        value = lagrangian.compute_lagrangian_value(reduced_costs, multipliers)
+
+        updated = lagrangian.update_multipliers(
+            1.0, value, 100.0, reduced_costs, multipliers
+        )
+        self.assertLen(updated, model.num_elements)
+        for multiplier in updated:
+            self.assertGreaterEqual(multiplier, 0.0)
+
+    def test_lagrangian_lower_bound(self):
+        model = create_knights_cover_model(8, 8)
+        self.assertTrue(model.compute_feasibility())
+        inv = set_cover.SetCoverInvariant(model)
+
+        greedy = set_cover.GreedySolutionOptimizer(inv)
+        self.assertTrue(greedy.optimize())
+        upper_bound = inv.cost()
+
+        lagrangian = set_cover.SetCoverLagrangian(inv)
+        # compute_lower_bound() runs the parallel code paths unconditionally,
+        # and the thread pool only exists once use_num_threads() has been
+        # called. Without this line the C++ dereferences a null thread pool.
+        lagrangian.use_num_threads(4)
+        costs = list(model.subset_costs)
+        lower_bound, reduced_costs, multipliers = lagrangian.compute_lower_bound(
+            costs, upper_bound
+        )
+        self.assertLen(reduced_costs, model.num_subsets)
+        self.assertLen(multipliers, model.num_elements)
+        self.assertLessEqual(lower_bound, upper_bound)
+
+    def test_lagrangian_parallel_matches_serial(self):
+        model = create_knights_cover_model(4, 4)
+        inv = set_cover.SetCoverInvariant(model)
+
+        lagrangian = set_cover.SetCoverLagrangian(inv)
+        self.assertIs(lagrangian.use_num_threads(2), lagrangian)
+
+        multipliers = lagrangian.initialize_lagrange_multipliers()
+        costs = list(model.subset_costs)
+        serial = lagrangian.compute_reduced_costs(costs, multipliers)
+        parallel = lagrangian.parallel_compute_reduced_costs(costs, multipliers)
+        self.assertLen(parallel, len(serial))
+        for serial_cost, parallel_cost in zip(serial, parallel):
+            self.assertAlmostEqual(serial_cost, parallel_cost)
+
     # TODO(user): KnightsCoverGreedyAndTabu, KnightsCoverGreedyRandomClear,
     # KnightsCoverElementDegreeRandomClear, KnightsCoverRandomClearMip,
     # KnightsCoverMip
