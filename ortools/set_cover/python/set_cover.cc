@@ -72,7 +72,8 @@ using ::py::make_iterator;
 std::vector<SubsetIndex> VectorIntToVectorSubsetIndex(
     absl::Span<const BaseInt> ints) {
   std::vector<SubsetIndex> subs;
-  std::transform(ints.begin(), ints.end(), subs.begin(),
+  subs.reserve(ints.size());
+  std::transform(ints.begin(), ints.end(), std::back_inserter(subs),
                  [](int subset) -> SubsetIndex { return SubsetIndex(subset); });
   return subs;
 }
@@ -197,17 +198,21 @@ PYBIND11_MODULE(set_cover, m) {
              return make_iterator<>(IntIterator::begin(model.num_elements()),
                                     IntIterator::end(model.num_elements()));
            })
-      .def_property_readonly("all_subsets",
-                             [](SetCoverModel& model) -> std::vector<BaseInt> {
-                               std::vector<BaseInt> subsets;
-                               std::transform(
-                                   model.all_subsets().begin(),
-                                   model.all_subsets().end(), subsets.begin(),
-                                   [](const SubsetIndex element) -> BaseInt {
-                                     return element.value();
-                                   });
-                               return subsets;
-                             })
+      .def_property_readonly(
+          "all_subsets",
+          [](SetCoverModel& model) -> std::vector<BaseInt> {
+            // all_subsets() returns by value, so it must be
+            // bound to a local: calling it twice would give
+            // begin() and end() of two distinct temporaries.
+            const std::vector<SubsetIndex> all = model.all_subsets();
+            std::vector<BaseInt> subsets;
+            subsets.reserve(all.size());
+            std::transform(all.begin(), all.end(), std::back_inserter(subsets),
+                           [](const SubsetIndex element) -> BaseInt {
+                             return element.value();
+                           });
+            return subsets;
+          })
       .def("set_name", &SetCoverModel::SetName)
       .def("add_empty_subset", &SetCoverModel::AddEmptySubset, arg("cost"))
       .def(
