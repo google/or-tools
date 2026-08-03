@@ -2275,6 +2275,7 @@ void CpModelProtoWithMapping::FznDiffn(const fz::Constraint& fz_ct,
 
 void CpModelProtoWithMapping::OrToolsNetworkFlow(const fz::Constraint& fz_ct,
                                                  ConstraintProto* ct) {
+  DCHECK_GE(fz_ct.arguments.size(), 6);
   // Note that we leave ct empty here (with just the name set).
   // We simply do a linear encoding of this constraint.
   const bool has_cost = fz_ct.type == "ortools_network_flow_cost";
